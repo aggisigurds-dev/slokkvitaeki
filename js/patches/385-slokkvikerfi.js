@@ -212,6 +212,7 @@
         case 'heim': return (String(r.postnumer || '') + ' ' + String(r.heimilisfang || '')).toLowerCase();   // póstnúmerið stendur fremst í reitnum
         case 'ar': return String(sidast(r) || '');
         case 'skref': return SKREF.filter(s => r[s[0]]).length;
+        case 'ein': return r.einingar || 0;
         case 'verd': return verd(r) || 0;
         case 'stada': return x.s.o;
         default: return r.skodunarmanudur || 99;
@@ -241,6 +242,13 @@
   }
   function skrefHtml(r) {
     return '<span class="_sk-skref">' + SKREF.map(s => '<i class="' + (r[s[0]] ? 'on' : '') + '" title="' + s[1] + (r[s[0]] ? ' ' + dm(r[s[0]]) : ' — ekki búið') + '">' + s[1].slice(0, 2) + '</i>').join('') + '</span>';
+  }
+  // 09.10.2026 — einingafjöldi kerfisins (FLOKKUR.einingar): talan úr nýjustu skoðunarskýrslu (sama og haus 274), annars áskriftarkortið.
+  function einHtml(r) {
+    if (r.einingar == null) return '<span class="_sk-mono" style="color:#94a3b8">—</span>';
+    const ur = r.einingar_ar ? 'úr skoðun ' + r.einingar_ar : 'úr áskriftarkorti (engin skýrsla)';
+    const misr = r.einingar_ar && r.einingar_askrift && r.einingar_askrift !== r.einingar ? ' · áskriftarkort segir ' + r.einingar_askrift : '';
+    return '<span class="_sk-mono' + (r.einingar_ar ? '' : ' _sk-ein-askrift') + '" title="' + esc(r.einingar + ' einingar ' + ur + misr) + '">' + r.einingar + (misr ? ' <span class="_sk-ein-misr" aria-hidden="true">≠</span>' : '') + '</span>';
   }
   function verdHtml(r) { const v = verd(r); if (v == null && FLOKKUR.verdTomt != null) return '<span class="_sk-mono" style="color:#94a3b8">' + esc(FLOKKUR.verdTomt) + '</span>'; return v == null ? '<span class="_sk-vantar" title="Ekkert verð skráð — reikningsdrög verða til án upphæðar">⚠ vantar</span>' : '<span class="_sk-mono">' + kr(v) + '</span>'; }
 
@@ -280,8 +288,8 @@
       // Póstur-dálkurinn er farinn — póstnúmerið stendur fremst í Heimilisfangi eins og á Ársskoðun. Allir dálkar nema
       // Staða eru fastir; Staða (síðastur) tekur afganginn, svo autt pláss lendir aftast í röðinni, ekki á milli dálka.
       // 392 á breiddirnar í Brunastáli — dálkanúmerin þar (col:nth-child) fylgja þessari röð.
-      '<div class="_sk-tblwrap"><table class="_sk-tbl" data-_pm-status-done="1"><colgroup><col style="width:240px"><col style="width:250px"><col style="width:190px"><col style="width:86px"><col style="width:214px"><col style="width:132px"><col style="width:100px"><col></colgroup>' +
-        '<thead><tr>' + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
+      '<div class="_sk-tblwrap"><table class="_sk-tbl" data-_pm-status-done="1"><colgroup><col style="width:240px"><col style="width:' + (FLOKKUR.einingar ? 210 : 250) + 'px"><col style="width:190px"><col style="width:86px"><col style="width:' + (FLOKKUR.einingar ? 196 : 214) + 'px"><col style="width:132px">' + (FLOKKUR.einingar ? '<col style="width:70px">' : '') + '<col style="width:100px"><col></colgroup>' +
+        '<thead><tr>' + th('nafn', 'Fyrirtæki · kerfi') + th('nota', 'Nóta') + th('heim', 'Heimilisfang') + th('man', 'Skoðun') + th('ar', 'Ár', ' style="text-align:center"') + th('skref', 'Skref ' + arNu) + (FLOKKUR.einingar ? th('ein', 'Einingar', ' style="text-align:right"') : '') + th('verd', FLOKKUR.verdHaus || 'Verð') + th('stada', 'Staða') + '</tr></thead><tbody>' +
         (sia.map(x => { const r = x.r; return '<tr class="_sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
           '<td><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
             '<span class="_sk-undir">' + (r.kennitala ? '<span class="_sk-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '<span class="_sk-kerfi">' + esc(r.heiti) + (r.tegund ? ' · ' + esc(r.tegund) : '') + '</span></span></td>' +
@@ -289,9 +297,9 @@
           '<td><span class="_sk-addr">' + (r.postnumer ? '<span class="_sk-post">' + esc(r.postnumer) + '</span> ' : '') + esc(r.heimilisfang || '') + '</span></td>' +
           '<td><select class="_sk-man" data-kid="' + r.kerfi_id + '" title="Skoðunarmánuður"><option value="">—</option>' + MON.map((m, i) => '<option value="' + (i + 1) + '"' + (r.skodunarmanudur === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></td>' +
           '<td style="text-align:center">' + arHtml(r) + '<span class="_sk-sidast">síðast ' + dm(sidast(r)) + '</span></td>' +
-          '<td>' + skrefHtml(r) + '</td><td>' + verdHtml(r) + '</td>' +
+          '<td>' + skrefHtml(r) + '</td>' + (FLOKKUR.einingar ? '<td style="text-align:right">' + einHtml(r) + '</td>' : '') + '<td>' + verdHtml(r) + '</td>' +
           '<td><span class="_sk-stcell">' + vinnslaHak(r, x.s) + '<span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></span></td></tr>'; }).join('') ||
-          '<tr><td colspan="8" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : (FLOKKUR.tomt || 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".')) + '</td></tr>') +
+          '<tr><td colspan="' + (FLOKKUR.einingar ? 9 : 8) + '" class="_sk-tomt">' + (allt.length ? 'Ekkert kerfi passar við síuna.' : (FLOKKUR.tomt || 'Ekkert slökkvikerfi skráð enn — smelltu á „＋ Nýtt kerfi".')) + '</td></tr>') +
         '</tbody></table></div>' +
       '<div class="_sk-cards">' + sia.map(x => { const r = x.r; return '<div class="_sk-card _sk-row' + (r.i_thjonustu ? '' : ' ur') + '" data-fid="' + r.fyrirtaeki_id + '" data-kid="' + r.kerfi_id + '">' +
         '<div class="_sk-cardhd"><div class="_sk-cardnafn"><span class="_sk-co">' + esc(r.nafn) + (r.i_arsskodun ? ' <span class="_sk-svc" title="Líka í ársskoðun slökkvitækja">🧯</span>' : '') + '</span>' +
@@ -300,7 +308,7 @@
           '<span class="_sk-stcell">' + vinnslaHak(r, x.s) + '<span class="_sk-st _sk-st--' + x.s.c + '">' + esc(x.s.t) + '</span></span></div>' +
         '<div class="_sk-cardlina"><label>Skoðun</label><select class="_sk-man" data-kid="' + r.kerfi_id + '" title="Skoðunarmánuður"><option value="">— mánuð vantar —</option>' + MON_FULL.map((m, i) => '<option value="' + (i + 1) + '"' + (r.skodunarmanudur === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') + '</select>' +
           '<span class="_sk-cardsidast">síðast ' + dm(sidast(r)) + '</span></div>' +
-        '<div class="_sk-cardlina">' + arHtml(r).replace('<span class="_sk-sidast">', '<span class="_sk-sidast" style="display:none">') + skrefHtml(r) + '<span class="_sk-sp"></span>' + verdHtml(r) + '</div>' +
+        '<div class="_sk-cardlina">' + arHtml(r).replace('<span class="_sk-sidast">', '<span class="_sk-sidast" style="display:none">') + skrefHtml(r) + (FLOKKUR.einingar ? '<span class="_sk-sp"></span><span class="_sk-ein-k">' + einHtml(r) + ' ein.</span>' : '') + '<span class="_sk-sp"></span>' + verdHtml(r) + '</div>' +
         '<div class="_sk-notacell"><textarea class="_sk-nota" rows="2" data-kid="' + r.kerfi_id + '" placeholder="Nóta…">' + esc(r.nota || '') + '</textarea><span class="_sk-notast"></span></div>' +
         '</div>'; }).join('') + '</div>');
   }
@@ -544,6 +552,7 @@
       V + '._sk-yr.both{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e}' + V + '._sk-yr.both::before{background:#7df0b4}',
       V + '._sk-yr.penda{color:#fff8e6;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45)}',
       V + '._sk-skref{display:inline-flex;gap:3px}',
+      V + '._sk-ein-askrift{color:#94a3b8}' + V + '._sk-ein-misr{font-size:10px;color:#b45309;margin-left:2px}' + V + '._sk-ein-k{font:600 12px var(--mono,monospace)}',
       V + '._sk-skref i{font-style:normal;font:700 9.5px var(--mono,monospace);letter-spacing:.04em;text-transform:uppercase;width:24px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0}',
       V + '._sk-skref i.on{color:#fff;background:linear-gradient(145deg,#1c7a45,#0c3f22);border-color:#041c0e}',
       V + '._sk-vantar{font-size:11.5px;font-weight:600;color:#8a5c04;background:#fbeac6;border:1px solid rgba(217,146,6,.5);border-radius:6px;padding:2px 7px;white-space:nowrap}',

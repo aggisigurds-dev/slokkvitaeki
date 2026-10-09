@@ -60,15 +60,28 @@
     if (_saekjaRows && (Date.now() - _saekjaAt) < 60000) return _saekjaRows;
     const sb = SB(); if (!sb) throw new Error('Engin tenging við gagnagrunn');
     const arNu = new Date().getFullYear();
-    const [docs, reikn, drog, solur, kort] = await Promise.all([
+    // 09.10.2026 (Agnar: „sýna einingafjöldann … þessa tölu þarna“ = „66 einingar í kerfinu“ úr haus 274): summa búnaðar
+    // (í lagi + ekki í lagi) í NÝJUSTU skýrslu kerfisins, hvaða ár sem er — sama reikniregla og 274 (bun.reduce). Aðeins
+    // data->bunadur er sótt, ekki öll skýrslan.
+    const [docs, reikn, drog, solur, kort, bunAllt] = await Promise.all([
       fetchAll((a, b) => sb.from('customer_documents').select('id,fyrirtaeki_id,year,drive_file_id,storage_path,doc_date')
         .eq('doc_type', 'brunakerfi').not('fyrirtaeki_id', 'is', null).order('id').range(a, b)),
       fetchAll((a, b) => sb.from('customer_documents').select('id,fyrirtaeki_id,year,doc_date,amount,invoice_number,is_duplicate')
         .eq('doc_type', 'reikningur').eq('vidskiptategund', 'brunakerfi').eq('year', arNu).not('fyrirtaeki_id', 'is', null).order('id').range(a, b)),
       fetchAll((a, b) => sb.from('brunakerfi_skyrslur').select('id,fyrirtaeki_id,year,status,updated_at').eq('year', arNu).order('id').range(a, b)),
       fetchAll((a, b) => sb.from('solur').select('id,customer_id,created_at,status,samtals,is_credit,num').eq('source', 'brunakerfi').order('id').range(a, b)),
-      askriftarkort()
+      askriftarkort(),
+      fetchAll((a, b) => sb.from('brunakerfi_skyrslur').select('id,fyrirtaeki_id,year,status,bunadur:data->bunadur').order('year', { ascending: false }).order('id', { ascending: false }).range(a, b)).catch(() => [])
     ]);
+    const einMap = {};
+    (bunAllt || []).forEach(s => {
+      if (!s || !s.fyrirtaeki_id) return;
+      const n = (Array.isArray(s.bunadur) ? s.bunadur : []).reduce((tot, x) => tot + (+(x && x.iLagi) || 0) + (+(x && x.ekki) || 0), 0);
+      if (!(n > 0)) return;
+      // Sama val og 274: nýjasta árið, og innan ársins LOKASKÝRSLAN fram yfir drög (mælt 09.10: Bílabúð Benna á drög 55 nýrri en lokaskýrslu 66).
+      const stig = (+s.year || 0) * 10 + (s.status === 'final' ? 1 : 0), fyrri = einMap[s.fyrirtaeki_id];
+      if (!fyrri || stig > fyrri.stig) einMap[s.fyrirtaeki_id] = { n, year: +s.year, status: s.status, stig };
+    });
     // 25.09.2026 (Agnar: „afhverju er þetta grátt" + „⚠ vistaðist ekki" á Hlíðasmára 15).
     // Áskriftarkortið geymir TVÖ snið: hlut með unit_count/inspect_month/notes, og eldra
     // berskjaldað `true`. Sían hér tók aðeins hluti, svo boolean-færslurnar duttu ÚT —
@@ -110,6 +123,7 @@
         skodad_at: iAr || (dr && dr.status === 'final' ? dr.updated_at : null), skyrsla_at: iAr, send_at: null,
         reikningur_at: rk ? (rk.doc_date || arNu + '-01-01') : sl ? sl.created_at : null,
         verd_fast: rk && rk.amount != null ? +rk.amount : sl && sl.samtals != null ? +sl.samtals : null,
+        einingar: einMap[c.id] ? einMap[c.id].n : (n || null), einingar_ar: einMap[c.id] ? einMap[c.id].year : null, einingar_askrift: n || null,
         kostnadur: {}
       };
     });
@@ -186,7 +200,7 @@
     if (!window.Thjonustuskra || !Thjonustuskra.buaTil) { setTimeout(boot, 300); return; }
     window.BrunakerfiSkra = Thjonustuskra.buaTil({
       key: 'brunaskra', titill: 'Brunakerfis skoðun', takn: '', navEftir: 'brunayfirlit',
-      saekja, vista, opna, merkjaVinnslu, nytt: false, felaSjalfgefid: false, verdHaus: 'Reikningur', verdTomt: '—', verdKpi: false,
+      saekja, vista, opna, merkjaVinnslu, nytt: false, felaSjalfgefid: false, verdHaus: 'Reikningur', verdTomt: '—', verdKpi: false, einingar: true,
       skref: [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['reikningur_at', 'Reikningur']],
       tomt: 'Ekkert fyrirtæki er á áskriftarlista brunakerfa og engin brunakerfisskýrsla fannst.'
     });
