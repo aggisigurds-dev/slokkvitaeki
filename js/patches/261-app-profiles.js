@@ -90,7 +90,7 @@
     brunayfirlit: 'flame', brunaskra: 'flame', slokkvikerfi: 'bell',
     'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
     'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
-    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', turbopaint: 'brush', '3dwork': 'cube'
+    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube'
   };
   function pgIcon(p) {
     var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
@@ -157,6 +157,9 @@
     { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1' },
     { k: 'br-raddminni',     label: 'Raddminni (Brunahólf)',  short: 'Raddminni', emoji: '🎙️', url: 'https://brunaholf.netlify.app/radd.html' },
     { k: 'br-kerfisheilsa',  label: 'Kerfisheilsa (Brunahólf)', short: 'Kerfisheilsa', emoji: '🛡️', url: 'https://brunaholf.netlify.app/kerfisheilsa.html' },
+    // 09.10.2026 (Agnar: „þjónustugátt. Stjórnborðið. Finn það ekki … setja það líka inn á Þjónustuborð öpp"):
+    // stjórnsíða Þjónustuvefsins (/gatt-admin/) — aðgangar kúnna + „Opna sem kúnni" (án lykilorðs kúnnans).
+    { k: 'br-thjonustugatt', label: 'Þjónustugátt · stjórnborð (kúnnavefir)', short: 'Þj.gátt', emoji: '🔑', url: 'https://brunaholf.netlify.app/gatt-admin/' },
     // Yfirferð efnislista — símavæn síða þar sem yfirmaður fer yfir flaggaða
     // Efnislista (Kröfu yfirlit 👔-takkinn), breytir magni, vistar og staðfestir.
     { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },
@@ -208,7 +211,7 @@
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
-      defaults: ['bord', 'samthykkja', 'tolvupostar', 'arsskodun', 'reikninga-postur'] },
+      defaults: ['bord', 'samthykkja', 'tolvupostar', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -636,6 +639,8 @@
     if (key === 'verkefni' && arr.indexOf('samthykkja') < 0 && !(c && c.__samt446)) { var bi = arr.indexOf('bord'); arr = arr.slice(0, bi + 1).concat(['samthykkja'], arr.slice(bi + 1)); }
     // 09.10.2026: Tölvupóstar (449) sömuleiðis á Þjónustuborðs-appið, á eftir Samþykkja.
     if (key === 'verkefni' && arr.indexOf('tolvupostar') < 0 && !(c && c.__tp449)) { var ti = arr.indexOf('samthykkja'); ti = ti < 0 ? arr.indexOf('bord') : ti; arr = arr.slice(0, ti + 1).concat(['tolvupostar'], arr.slice(ti + 1)); }
+    // 09.10.2026: Þjónustugátt-stjórnborðið á Þjónustuborðs-appið, aftast.
+    if (key === 'verkefni' && arr.indexOf('br-thjonustugatt') < 0 && !(c && c.__gatt) && arr.length) arr = arr.concat(['br-thjonustugatt']);
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }
