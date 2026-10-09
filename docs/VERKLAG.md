@@ -176,6 +176,44 @@ git push
 
 ---
 
+## Þegar þú samþykkir beiðni á Þjónustuborðinu
+
+### Annar greiðandi af úttekt — þá fylgir ÞRENNT, ekki bara reikningurinn
+
+*Regla frá Agnari 09.10.2026.*
+
+> **Þegar annar greiðandi tekur við úttekt þarf að uppfæra og færa tækjalistann
+> yfir, og gera NÝJA skýrslu sem fer með nýju kröfunni í Kröfuyfirlit.**
+
+Reikningurinn einn og sér er ekki nóg. Færir þú bara hann situr eftir:
+
+1. **Tækjalistinn** á gamla staðnum. Nýi greiðandinn á þá prófíl án tækja — og
+   næsta ársskoðun sér ekkert að skoða hjá honum, en telur tækin áfram hjá hinum.
+2. **Skýrslan** á gamla staðnum. Krafan fer þá út án skýrslu, og kúnninn fær
+   reikning fyrir úttekt sem hann hefur engin gögn um.
+
+Þrjú skref, í þessari röð:
+
+| # | Skref | Af hverju röðin |
+|---|---|---|
+| 1 | **Tækjalistinn færist** á nýja greiðandann og er uppfærður eftir úttektinni (ný tæki inn, úrelt út) | Skýrslan er byggð á listanum — listinn fyrst, alltaf (sjá `project_skyrsla_eftir_reikningi`) |
+| 2 | **Ný skýrsla** gerð á nýja greiðandann | Gamla skýrslan tilheyrir gamla félaginu og má hvorki færast né tvítelja |
+| 3 | **Skýrslan fylgir nýju kröfunni** í Kröfuyfirliti | Krafa án skýrslu er það sem kúnninn hringir út af |
+
+**Staðurinn sjálfur færist ALDREI.** Rekstrarfélagsreglan stendur: húsið heldur
+sínu númeri, sinni sögu og sínum eigin tækjum. Það er greiðandinn — og þau tæki
+sem úttektin náði til — sem færast.
+
+**Dæmið sem bjó regluna til (Hamraborg 7, 08.–09.10.2026):** jarðhæðin reyndist
+vera Eldsalir ehf., ekki Heimaleiga. Reikningurinn var kreditfærður og
+endurútgefinn (R-001109) og nýr staður stofnaður (#1851) — en tækin fimm og
+skýrslan sátu eftir hjá Heimaleigu. Nýi staðurinn stóð því tómur á meðan krafan
+var tilbúin til sendingar. Sjá líka `project_greidandi_vs_stadur` og
+`feedback_ekki_rukka_mismun` (mismunur rukkast aldrei eftir á — tækjaskráin er
+leiðrétt fyrir NÆSTU úttekt).
+
+---
+
 ## Reglur sem má aldrei brjóta
 
 Þessar eru skrifaðar með blóði — hver þeirra kostaði raunverulegt tjón.
@@ -188,6 +226,7 @@ git push
 | **Aldrei staðfesta viðmót með API-kalli** | Raunverulegur smellur og lestur á því sem sést. `ok:true` hefur logið margoft. |
 | **Aldrei hækka grunnlínu á verði** | Sjá að ofan. |
 | **Aldrei loka verki án sönnunar** | 109 af 147 „kláruðum" eiga enga. Helmingur af „búið" var ekki búið. |
+| **Aldrei færa reikning á annan greiðanda án tækjalista og nýrrar skýrslu** | Sjá kaflann hér að ofan. Nýi greiðandinn stendur annars tómur og krafan fer út án skýrslu. |
 
 ---
 
