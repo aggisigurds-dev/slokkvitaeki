@@ -312,7 +312,7 @@
     if (!h) return '';
     if (h.rymi === SAMT_HAM) return S.rows.filter(r => iHam(r, k) && erSamthykki(r)).length;
     if (h.rymi === 'vinnublod') return vbrListi(n).filter(vbrBidur).length;
-    if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && x.hluti !== 'buid').length : '';
+    if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && (x.hluti === 'bidur' || x.hluti === 'claude' || x.hluti === 'undirbuid')).length : '';
     if (h.board) return S.rows.filter(r => iHam(r, k) && (isFree(r) || onBoardOf(r, n))).length;
     if (k === 'samskipti') return S.rows.filter(r => isPost(r) && !r.svarad_at).length;
     if (k === 'krofur') return S.counts.krofur == null ? '' : S.counts.krofur;

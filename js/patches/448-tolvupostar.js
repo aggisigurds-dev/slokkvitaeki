@@ -50,6 +50,9 @@
   const toast = (m, w) => { try { if (window.Bord368 && Bord368.toast) return Bord368.toast(m, w); } catch (_) {} try { if (window.App && App.toast) return App.toast(m); } catch (_) {} console[w ? 'warn' : 'log']('[448] ' + m); };
   // Það sem lítur út eins og beiðni um skjal — MERKI, ekki sía (21.09: sía sem fellir póst þegjandi er verri en langur listi).
   const BEIDNI_RE = /reikning|sk[ýy]rsl|sta[ðd]festing|[úu]ttekt|tilbo[ðd]|kvittun|yfirlit|vottor[ðd]|senda m[ée]r|geti[ðd] [þt]i[ðd] sent|sendi[ðd] m[ée]r|afrit/i;
+  // Sjálfvirkur sendandi / tilkynning — sömu hugmynd og regla 3–4 í bh_postur_inn_a_bord (11.09): sést, en telst ekki „bíða svars“.
+  const SJALFV_RE = /no-?reply|noreply|donotreply|mailer-daemon|postmaster|notification|newsletter|nyhetsbrev|frettabref|booking.com|google.com|microsoft.com|teya.|alfred.is|unimaze|rsk.is|postur.is|facebookmail|linkedin.com|paypal.com|apple.com|amazon.|netlify.com|github.com|supabase.|dropbox.com|inexchange|nova.is|siminn.is|vodafone.is|payday.is|dk.is|stolpi.is|inkasso|motus.is|landsbankinn|islandsbanki|arionbanki|skatturinn|island.is|sendgrid|mailchimp|hubspot|salesforce/i;
+  const SJALFV_EFNI = /^(Delivery Status Notification|Undeliverable|Mail delivery failed|Automatic reply|Sjálfvirkt svar|Out of office)/i;
   // Gmail-merki sem Gmail setur sjálft — geymd, ekki sýnd (sama regla og 240 merkiEigin).
   const KERFISMERKI = /^(CATEGORY_|IMPORTANT$|STARRED$|UNREAD$|INBOX$|SENT$|DRAFT$|SPAM$|TRASH$|CHAT$)/;
   const STJORNUR = { STARRED: '★', YELLOW_STAR: '★', BLUE_STAR: '★', RED_STAR: '★', GREEN_STAR: '★', ORANGE_STAR: '★', PURPLE_STAR: '★', GREEN_CIRCLE: '●', BLUE_CIRCLE: '●', RED_CIRCLE: '●', ORANGE_CIRCLE: '●', PURPLE_CIRCLE: '●', YELLOW_CIRCLE: '●' };
@@ -128,24 +131,28 @@
       let kunni = null;
       try { if (window.KunnaLeit && KunnaLeit.hladid()) kunni = KunnaLeit.finna(sidastaInn, postar); } catch (_) {}
       const texti = (sidastaInn.subject || '') + ' ' + (sidastaInn.snippet || '') + ' ' + (sidastaInn.body_preview || '').slice(0, 600);
+      const sjalfvirkt = !mal && (SJALFV_RE.test(String(sidastaInn.sender_email || '')) || SJALFV_EFNI.test(String(sidastaInn.subject || '')));
       const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
+        : sjalfvirkt ? 'sjalfvirkt'
         : (!svarad && !lokid && sidasta.folder !== 'SENT') ? 'bidur' : 'buid';
       ut.push({ k, msgs, inn, sidastaInn, sidasta, merki: [...merki], stjornur: [...stj], vidhengi: vidh, mal, tags, svarTag, lokid, svarad, falid, kunni, hluti,
-        beidni: BEIDNI_RE.test(texti), mikilv: stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important),
+        sjalfvirkt, beidni: !sjalfvirkt && BEIDNI_RE.test(texti), mikilv: stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important),
         account: sidastaInn.account, nafn: sidastaInn.sender_name || sidastaInn.sender_email || '—', netfang: sidastaInn.sender_email || '',
         efni: sidastaInn.subject || '(ekkert efni)', timi: sidastaInn.received_at, fjoldi: msgs.length });
     });
     ut.sort((a, b) => ts(b.timi) - ts(a.timi));
     return ut;
   }
-  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['buid', 'Svarað · lokið', '_ok']];
+  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok']];
+  const FELLT = { buid: true, sjalfvirkt: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
+  const erFellt = (h, s) => !!FELLT[h] && !s.merki;
   const HLUTA_L = Object.fromEntries(HLUTAR.map(h => [h[0], h[1]]));
   function siad() {
     const s = S.sia;
     let l = S.thraedir.filter(t => S.synaFalid ? t.falid : !t.falid);
     if (s.holf !== 'baedi') l = l.filter(t => stuttHolf(t.account) === s.holf);
-    if (s.osvarad) l = l.filter(t => t.hluti !== 'buid');
+    if (s.osvarad) l = l.filter(t => t.hluti !== 'buid' && t.hluti !== 'sjalfvirkt');
     if (s.beidnir) l = l.filter(t => t.beidni);
     if (s.vidhengi) l = l.filter(t => t.vidhengi.length);
     if (s.merki) l = l.filter(t => s.merki === '★' ? t.stjornur.length : t.merki.indexOf(s.merki) >= 0);
@@ -157,7 +164,7 @@
   const hlutaListi = (l, h) => l.filter(t => t.hluti === h);
   const merkjaTalning = () => { const c = {}; S.thraedir.filter(t => !t.falid).forEach(t => { t.merki.forEach(m => { c[m] = (c[m] || 0) + 1; }); if (t.stjornur.length) c['★'] = (c['★'] || 0) + 1; }); return Object.entries(c).sort((a, b) => b[1] - a[1]); };
   const finna = k => S.thraedir.find(t => t.k === k) || null;
-  const valinn = () => { const l = siad(); let t = S.valinn && finna(S.valinn); if (!t || l.indexOf(t) < 0) { t = l[0] || null; S.valinn = t ? t.k : null; } return t; };
+  const valinn = () => { const l = siad(); let t = S.valinn && finna(S.valinn); if (!t || l.indexOf(t) < 0) { t = null; for (const h of HLUTAR) { if (erFellt(h[0], S.sia)) continue; t = l.find(x => x.hluti === h[0]) || null; if (t) break; } t = t || l[0] || null; S.valinn = t ? t.k : null; } return t; };
   // Uppkastið sem Claude skildi eftir í nótu málsins: allt á eftir SÍÐUSTU línunni `---SVAR---`.
   function uppkastUrNotu(mal) {
     const n = String((mal && mal.notes) || '');
@@ -349,8 +356,8 @@
     const hausTala = (S.loaded ? [n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★'].join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
     const listi = !S.loaded ? '<div class="empty"><span class="coin" aria-hidden="true"></span>' + (S.villa ? esc(S.villa) : 'Sæki póstinn…') + '</div>'
       : !l.length ? '<div class="empty"><span class="coin" aria-hidden="true"></span>Enginn póstur passar við síuna.</div>'
-      : HLUTAR.map(h => { const m = hlutaListi(l, h[0]); if (!m.length) return ''; const fela = h[0] === 'buid' && !S.synaLokid && !s.merki;
-          return '<div class="vbr-sect" data-h="' + h[0] + '">' + esc(h[1]) + ' · ' + m.length + (fela ? ' <button type="button" class="tp-link" data-t5="tp-syna-lokid" data-v="1">sýna</button>' : h[0] === 'buid' ? ' <button type="button" class="tp-link" data-t5="tp-syna-lokid" data-v="0">fela</button>' : '') + '</div>' + (fela ? '' : m.map(t => rodHtml(t, val)).join(''));
+      : HLUTAR.map(h => { const m = hlutaListi(l, h[0]); if (!m.length) return ''; const fela = erFellt(h[0], s);
+          return '<div class="vbr-sect" data-h="' + h[0] + '">' + esc(h[1]) + ' · ' + m.length + (h[0] in FELLT ? ' <button type="button" class="tp-link" data-t5="tp-syna-lokid" data-v="' + h[0] + '">' + (fela ? 'sýna' : 'fela') + '</button>' : '') + '</div>' + (fela ? '' : m.map(t => rodHtml(t, val)).join(''));
         }).join('');
     return '<div class="vbr samt tp"' + (w ? ' style="--vbr-w:' + w + 'px"' : '') + '>' +
       '<aside class="panel vbr-list" aria-label="Tölvupóstar">' +
@@ -366,7 +373,7 @@
         '<div class="vbr-items">' + listi + (S.synaFalid ? '' : '<div class="vbr-sect"><button type="button" class="tp-link" data-t5="tp-syna-falid" data-v="1">' + S.thraedir.filter(t => t.falid).length + ' faldir · sýna</button></div>') + (S.synaFalid ? '<div class="vbr-sect"><button type="button" class="tp-link" data-t5="tp-syna-falid" data-v="0">‹ aftur í póstinn</button></div>' : '') + '</div>' +
         '<div class="vbr-grip" data-vbr-grip title="Draga til að breyta breidd listans"></div>' +
       '</aside>' +
-      '<div class="vbr-main"><section class="sel samt-sel tp-sel" aria-live="polite">' + thradurHtml(val) + '</section></div></div>';
+      '<div class="vbr-main"><section class="panel tp-sel" aria-live="polite">' + thradurHtml(val) + '</section></div></div>';
   }
   function tryggjaStil() {
     try {
@@ -387,7 +394,7 @@
         '.tp .tp-nota{white-space:pre-wrap;font-size:12.5px;line-height:1.5;color:var(--ink2);max-height:260px;overflow:auto}.tp .tp-uppk{margin-top:8px;padding:8px 10px;border-left:3px solid #c9a24a;background:rgba(232,203,122,.18);white-space:pre-wrap;font-size:12.5px;line-height:1.5}.tp .tp-uppk b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8a6218;margin-bottom:4px}',
         '.tp .tp-skeytin{display:flex;flex-direction:column;gap:10px;margin-top:14px}.tp .tp-skeyti{padding:12px 14px;border:1px solid var(--rule2);border-radius:6px;background:#fff}.tp .tp-skeyti._okkar{background:rgba(232,203,122,.12);border-color:rgba(184,137,46,.4)}.tp .tp-skeyti header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;font-size:12.5px}.tp .tp-skeyti header .s{color:var(--mute);font-size:11.5px}.tp .tp-skeyti header time{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mute)}',
         '.tp .tp-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere}.tp .tp-vidh{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
-        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}'
+        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}'
       ].join('\n');
       root.appendChild(st);
     } catch (_) {}
@@ -403,7 +410,7 @@
       case 'rod': S.sia.rodun = v; vistaSiu(); R(); return true;
       case 'sia': S.sia[v] = !S.sia[v]; R(); return true;
       case 'merki': S.sia.merki = v; R(); return true;
-      case 'syna-lokid': S.synaLokid = v === '1'; R(); return true;
+      case 'syna-lokid': FELLT[v] = !FELLT[v]; R(); return true;
       case 'syna-falid': S.synaFalid = v === '1'; S.valinn = null; R(); return true;
       case 'hoppa': { try { const root = (el.getRootNode && el.getRootNode()) || document; const s = root.querySelector('.tp .vbr-sect[data-h="' + v + '"]'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} return true; }
       case 'uppf': saekjaNyjan(); return true;
@@ -431,7 +438,7 @@
 
   window.Tolvupostar = {
     S, HOLF, HLUTAR, HLUTA_L, load, loaded: () => S.loaded, loading: () => S.loading, loadedAt: () => S.loadedAt, villa: () => S.villa,
-    siad, hlutaListi, finna, valinn, merkjaTalning, vistaSiu, rymiHtml, smellur, innslattur, saekjaNyjan,
+    siad, hlutaListi, finna, FELLT, erFellt, valinn, merkjaTalning, vistaSiu, rymiHtml, smellur, innslattur, saekjaNyjan,
     tilClaude: (k, v, sky) => { const t = finna(k); return t ? adgerd(t, () => tilClaude(t, v, sky)) : Promise.resolve(); },
     stjarna: k => { const t = finna(k); return t ? adgerd(t, () => stjarna(t)) : Promise.resolve(); },
     svarad: k => { const t = finna(k); return t ? adgerd(t, () => merkjaSvarad(t)) : Promise.resolve(); },
