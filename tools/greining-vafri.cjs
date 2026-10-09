@@ -27,7 +27,12 @@ const BARA = arg('bara', '');
 const MED_OCR = process.argv.includes('--ocr');
 const LIFANDI = 'https://slokkvitaeki.netlify.app';
 fs.mkdirSync(OUT, { recursive: true });
+// --fsk-ut <mappa>: skjámyndir Teikningar-spjaldsins (forskoðun) og stóru myndarinnar
+const FSK_UT = arg('fsk-ut', '');
+if (FSK_UT) fs.mkdirSync(FSK_UT, { recursive: true });
 const SYND = -987654321;
+// --port: annar prófþjónn (npx serve) getur setið á 5599
+const PORT = +arg('port', 5599);
 
 const HUS = (arg('hus', '') ? arg('hus').split('|') : [
   'Fiskislóð 41, 101 Reykjavík',
@@ -66,7 +71,7 @@ function thjonn() {
         fs.createReadStream(f).pipe(svar);
       } catch (e) { svar.writeHead(500); svar.end(String(e && e.message)); }
     });
-    s.listen(5599, '127.0.0.1', () => res(s));
+    s.listen(PORT, '127.0.0.1', () => res(s));
   });
 }
 
@@ -96,18 +101,19 @@ async function samhengi(b, nafn, vp, skra) {
     skra.gripid.push({ nafn, stutt, body: (req.postData() || '').slice(0, 600), t: Date.now() });
     return route.fulfill({ status: 200, contentType: 'application/json', body: /\/storage\//.test(req.url()) ? '{"Key":"x"}' : '[]' });
   });
-  await ctx.route(/127\.0\.0\.1:5599\/(\.netlify\/functions|api)\//, async (route) => {
+  await ctx.route(new RegExp('127\\.0\\.0\\.1:' + PORT + '/(\\.netlify/functions|api)/'), async (route) => {
     const req = route.request();
     const u = new URL(req.url());
     const m = /^\/(?:\.netlify\/functions|api)\/([a-z0-9-]+)/.exec(u.pathname);
     if (m && STADBUNDIN[m[1]]) return route.continue();
     if (!['GET', 'HEAD'].includes(req.method())) {
-      if (m && m[1] === 'husmynd') return route.fulfill({ response: await route.fetch({ url: LIFANDI + u.pathname + u.search }) });   // les aðeins
+      // les aðeins — samhengið getur lokast meðan svarið er á leiðinni (loftmynd Eignarinnar + 367): þá er beiðnin látin falla
+      if (m && m[1] === 'husmynd') { try { return await route.fulfill({ response: await route.fetch({ url: LIFANDI + u.pathname + u.search, timeout: 45000 }) }); } catch (_) { return route.fulfill({ status: 502, contentType: 'application/json', body: '{}' }).catch(() => {}); } }
       skra.gripid.push({ nafn, stutt: req.method() + ' ' + u.pathname, body: (req.postData() || '').slice(0, 300), t: Date.now() });
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     }
     try { return route.fulfill({ response: await route.fetch({ url: LIFANDI + u.pathname + u.search, timeout: 45000 }) }); }
-    catch (e) { return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: 'próf: ' + e.message }) }); }
+    catch (e) { return route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: 'próf: ' + e.message }) }).catch(() => {}); }
   });
   // lifandi TurboPaint aldrei opnað
   await ctx.route(/kjarni\.vercel\.app\/kjarni/, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>TurboPaint (próf)</title>' }));
@@ -132,6 +138,8 @@ async function profaHus(b, adr, vp, skra) {
   const errs = [];
   page.on('pageerror', (e) => errs.push('pageerror: ' + e.message.split('\n')[0]));
   page.on('console', (m) => { if (m.type() === 'error') { const t = m.text(); if (!/Failed to load resource|favicon|net::ERR/.test(t)) errs.push('console: ' + t.slice(0, 200)); } });
+  // 451 grípur villur í teikningu spjalds og skrifar console.warn — það er villa í prófinu (spjald sem teiknast ekki)
+  page.on('console', (m) => { if (m.type() === 'warning' && /\[451\] teikna /.test(m.text())) errs.push('451-teikning: ' + m.text().slice(0, 200)); });
   // layout-shift: skráð með hnútum, svo hægt sé að telja aðeins tilfærslur INNI í spjöldunum eftir að þau birtust
   await page.addInitScript(() => {
     window.__gls = [];
@@ -175,7 +183,7 @@ async function profaHus(b, adr, vp, skra) {
     } catch (_) {}
   });
   const t0 = Date.now();
-  await page.goto('http://127.0.0.1:5599/index.html#greining/' + encodeURIComponent(adr), { waitUntil: 'domcontentloaded' });
+  await page.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent(adr), { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#_gr451', { timeout: 90000 }).catch(() => {});
   const komid = !!(await page.$('#_gr451'));
   check(nafn + ': síðan opnaðist (#greining → sýndarprófíll + spjöld)', komid, 'ekkert #_gr451');
@@ -243,18 +251,87 @@ async function profaHus(b, adr, vp, skra) {
     check(nafn + ': handval tegundar breytir kröfutöflunni (aðeins útlit)', breytt === opts[Math.min(3, opts.length - 1)], breytt);
     await page.selectOption(SEL, upph); await page.waitForTimeout(300);
   }
-  const mynd = await page.$('#_gr451 [data-gr-ljos], #_gr451 .gr-mynd[data-gr-a="blad"]');
+  // ── Teikningar: forskoðun (smámyndir latt, heiti hæða, stór mynd með örvum) ──
+  // Fyrst: hve margar PDF-forskoðanir byrjuðu ÁÐUR en spjaldið sást (latt = aðeins þær sem sjást, + biðröð 2)
+  const fskFyrir = await page.evaluate(() => {
+    const k = document.querySelector('#_gr451 [data-gr="teikn"]'); const vh = innerHeight;
+    const iSjonmali = (e, m) => { if (e.closest('details:not([open])')) return false; const r = e.getBoundingClientRect(); if (!r.width) return false; let t = Math.max(-m, r.top), b = Math.min(innerHeight + m, r.bottom); for (let a = e.parentElement; a && a !== document.documentElement; a = a.parentElement) { if (/(auto|scroll|hidden|clip)/.test(getComputedStyle(a).overflowY)) { const q = a.getBoundingClientRect(); t = Math.max(t, q.top - m); b = Math.min(b, q.bottom + m); } } return b - t > 4; };   // skrunílát klippa og lokað <details> felur (IntersectionObserver sér hvort tveggja; rect lokaðs details-efnis lýgur)
+    const synileg = k ? [...k.querySelectorAll('[data-gr-fskm][data-pdf]')].filter((e) => iSjonmali(e, 250)).length : 0;
+    return { f: window.Greining451 && Greining451.forsk ? Greining451.forsk() : { byrjad: 0, mest: 0 }, synileg };
+  });
+  const fsk = await page.evaluate(async () => {
+    const k = document.querySelector('#_gr451 [data-gr="teikn"]'); if (!k || !window.Greining451.forsk) return null;
+    k.scrollIntoView({ block: 'start' });
+    const t0 = Date.now();
+    // bíða: PDF-biðröðin tóm OG hver sýnileg smámynd búin að hlaðast (smámyndir skjalasafnsins koma frá FotoWeb, ekki biðröðinni)
+    const vh = innerHeight;
+    const iSjonmali = (e, m) => { if (e.closest('details:not([open])')) return false; const r = e.getBoundingClientRect(); if (!r.width) return false; let t = Math.max(-m, r.top), b = Math.min(innerHeight + m, r.bottom); for (let a = e.parentElement; a && a !== document.documentElement; a = a.parentElement) { if (/(auto|scroll|hidden|clip)/.test(getComputedStyle(a).overflowY)) { const q = a.getBoundingClientRect(); t = Math.max(t, q.top - m); b = Math.min(b, q.bottom + m); } } return b - t > 4; };   // skrunílát klippa (IntersectionObserver sér það líka)
+    const synilegir = () => [...k.querySelectorAll('[data-gr-fskm], .gr-skurdur, .gr-3d-flis')].filter((e) => iSjonmali(e, 0));
+    const buin = (e) => { const im = e.querySelector(':scope > img'); return !!(im && im.complete && im.naturalWidth > 0); };
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 400));
+      const f = Greining451.forsk();
+      if ((f.virk === 0 && f.bid === 0 && Date.now() - t0 > 1500 && synilegir().every(buin)) || Date.now() - t0 > 45000) break;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+    const reitir = synilegir();
+    const hladnar = reitir.filter(buin).length;
+    return {
+      f: Greining451.forsk(), synilegir: reitir.length, hladnar,
+      vaentir: (() => { const t = (Greining451.gogn() || {}).teikn; return !!(t && ((t.dr && t.dr.length) || (t.bord && t.bord.length))); })(),
+      heiti: [...k.querySelectorAll('.gr-fsk-heiti, .gr-haed-haus')].map((x) => (x.firstChild ? x.firstChild.textContent : x.textContent).trim()).slice(0, 16),
+      pdfReitir: [...k.querySelectorAll('*')].filter((e) => !e.children.length && /^(PDF|TEIKNING)$/.test(e.textContent.trim())).length,
+      smelltu: k.querySelectorAll('.gr-pdf-bida').length,
+      teljari: ([...document.querySelectorAll('#_gr451 [data-gr="samantekt"] .gr-punktar li')].map((x) => x.textContent).find((x) => /^Teikningar/.test(x)) || '').replace(/^Teikningar/, ''),
+    };
+  });
+  if (fsk) {
+    console.log('   teikningar: ' + JSON.stringify({ heiti: fsk.heiti, synilegir: fsk.synilegir, hladnar: fsk.hladnar, forsk: fsk.f }) + ' · samantekt: ' + fsk.teljari);
+    check(nafn + ': Teikningar — engir „PDF“-reitir og ekkert „smelltu til að birta“', fsk.pdfReitir === 0 && fsk.smelltu === 0, fsk.pdfReitir + ' / ' + fsk.smelltu);
+    if (fsk.synilegir) check(nafn + ': forskoðun hlaðin á sýnilegum blöðum (' + fsk.hladnar + '/' + fsk.synilegir + ')', fsk.hladnar >= Math.ceil(fsk.synilegir * 0.8), fsk.hladnar + '/' + fsk.synilegir + ' ' + JSON.stringify(fsk.f));
+    check(nafn + ': PDF-forskoðun latt og mest 2 í einu (hámark ' + fsk.f.mest + '; ' + fskFyrir.f.byrjad + ' byrjaðar áður en spjaldið sást, ' + fskFyrir.synileg + ' í sjónmáli)', fsk.f.mest <= 2 && fskFyrir.f.byrjad <= fskFyrir.synileg + 2, JSON.stringify(fskFyrir));
+    if (fsk.vaentir) check(nafn + ': Teikningar-spjaldið sýnir blöð (' + fsk.heiti.length + ' heiti)', fsk.heiti.length > 0, 'ekkert heiti — spjaldið teiknaðist ekki');
+    if (fsk.heiti.length) check(nafn + ': hæðir og blöð bera heiti (Kjallari / N. hæð / …)', fsk.heiti.some((h) => /hæð|Kjallari|Grunnmynd|Þak|Ris|Milligólf|Designer-3D/.test(h)), JSON.stringify(fsk.heiti));
+    if (fsk.vaentir) check(nafn + ': Samantekt telur hæðir í teikningum', /hæð|grunnmynd|engar fundust|engin gildandi/.test(fsk.teljari), fsk.teljari);
+    // „Eldri útgáfur“: lokað þar til smellt er — þá fyrst hlaðast smámyndirnar (latt)
+    const eldri = await page.$('#_gr451 [data-gr="teikn"] details.gr-eldri > summary');
+    if (eldri) {
+      const fyrir = await page.evaluate(() => { const d = document.querySelector('#_gr451 [data-gr="teikn"] details.gr-eldri'); return d.querySelectorAll('[data-gr-fskm] > img').length; });
+      await eldri.scrollIntoViewIfNeeded().catch(() => {}); await eldri.click().catch(() => {});
+      await page.waitForFunction(() => { const d = document.querySelector('#_gr451 [data-gr="teikn"] details.gr-eldri'); const im = [...d.querySelectorAll('[data-gr-fskm] > img')]; return im.length && im.every((i) => i.complete); }, null, { timeout: 30000 }).catch(() => {});
+      const eftir = await page.evaluate(() => { const d = document.querySelector('#_gr451 [data-gr="teikn"] details.gr-eldri'); return { opin: d.open, myndir: [...d.querySelectorAll('[data-gr-fskm] > img')].filter((i) => i.naturalWidth > 0).length, flisar: d.querySelectorAll('[data-gr-fskm]').length }; });
+      check(nafn + ': „Eldri útgáfur“ hleðst fyrst við smell (' + fyrir + ' myndir fyrir, ' + eftir.myndir + '/' + eftir.flisar + ' eftir)', fyrir === 0 && eftir.opin && eftir.myndir > 0, JSON.stringify({ fyrir, eftir }));
+      await eldri.click().catch(() => {});
+    }
+    if (FSK_UT) { const el = await page.$('#_gr451 [data-gr="teikn"]'); if (el && vp !== 1600) { await el.evaluate((k) => k.scrollIntoView({ block: 'start' })); await page.waitForTimeout(400); await page.screenshot({ path: path.join(FSK_UT, vp + '-' + slug(adr) + '-teikningar.png') }).catch(() => {}); } else if (el) await el.screenshot({ path: path.join(FSK_UT, vp + '-' + slug(adr) + '-teikningar.png') }).catch((e) => console.log('   (skjámynd teikninga brást: ' + e.message.split('\n')[0] + ')')); }
+  }
+  const mynd = (await page.$('#_gr451 [data-gr="teikn"] [data-gr-a="fsk"]')) || (await page.$('#_gr451 [data-gr-ljos]'));
   if (mynd) {
     await mynd.scrollIntoViewIfNeeded().catch(() => {});
     await mynd.click().catch(() => {});
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1500);
     const ljos = await page.$('#gr-ljos');
-    const forsk = await page.$('#tfs');
-    check(nafn + ': smellur á teikningu stækkar hana (ljóskassi eða forskoðun 384)', !!ljos || !!forsk, 'hvorugt opnaðist');
-    if (vp === 1600) await page.screenshot({ path: path.join(OUT, vp + '-' + slug(adr) + '-stokkun.png') }).catch(() => {});
-    if (ljos) await page.click('#gr-ljos [data-gr-loka]').catch(() => {});
-    if (forsk) await page.keyboard.press('Escape').catch(() => {});
-    await page.waitForTimeout(500);
+    check(nafn + ': smellur á teikningu opnar stóra mynd', !!ljos, 'ekkert #gr-ljos');
+    if (ljos) {
+      const lesa = () => page.evaluate(() => ({ t: (document.querySelector('#gr-ljos .gr-ltitill') || {}).textContent || '', n: (document.querySelector('#gr-ljos .gr-lteljari') || {}).textContent || '' }));
+      const a = await lesa();
+      await page.waitForFunction(() => { const im = document.querySelector('#gr-ljos .gr-lb img'); return im && !im.hidden && im.naturalWidth > 0; }, null, { timeout: 40000 }).catch(() => {});
+      const synd = await page.evaluate(() => { const im = document.querySelector('#gr-ljos .gr-lb img'); return !!(im && !im.hidden && im.naturalWidth > 0); });
+      check(nafn + ': stóra myndin birtist („' + a.t + '“)', synd, 'myndin hlóðst ekki á 40 s');
+      if (FSK_UT && vp !== 980) await page.screenshot({ path: path.join(FSK_UT, vp + '-' + slug(adr) + '-stor-mynd.png') }).catch(() => {});
+      if (/^\d+\s*\/\s*\d+$/.test(a.n) && !/^1\s*\/\s*1$/.test(a.n)) {
+        await page.keyboard.press('ArrowRight'); await page.waitForTimeout(700);
+        const b = await lesa();
+        check(nafn + ': ör (→) flettir í næstu teikningu (' + a.n + ' „' + a.t + '“ → ' + b.n + ' „' + b.t + '“)', /^2\s*\//.test(b.n), JSON.stringify([a, b]));
+        await page.click('#gr-ljos .gr-lor.v').catch(() => {}); await page.waitForTimeout(500);
+        const c = await lesa();
+        check(nafn + ': vinstri ör (takki) fer til baka', /^1\s*\//.test(c.n), JSON.stringify(c));
+      }
+      if (vp === 1600) await page.screenshot({ path: path.join(OUT, vp + '-' + slug(adr) + '-stokkun.png') }).catch(() => {});
+      await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+      check(nafn + ': Esc lokar stóru myndinni', !(await page.$('#gr-ljos')), 'enn opin');
+    }
+    await page.waitForTimeout(300);
   }
   const vm = await page.$('#_gr451 [data-gr-a="vm"]');
   if (vm) { await vm.click().catch(() => {}); await page.waitForTimeout(500); }
@@ -318,7 +395,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     console.log('\n── Sala-hlekkurinn ──');
     const ctx = await samhengi(b, 'sala', 1600, skra);
     const page = await ctx.newPage();
-    await page.goto('http://127.0.0.1:5599/index.html#sala', { waitUntil: 'domcontentloaded' });
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html#sala', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#view-sala a.gr-sala-hl', { timeout: 60000 }).catch(() => {});
     const a = await page.$('#view-sala a.gr-sala-hl');
     check('Sala: hlekkurinn „Greining fasteignar" er á söluborðinu', !!a, 'fannst ekki');
@@ -354,7 +431,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     console.log('\n── Teikning → Greining fasteignar (1404) ──');
     const ctx = await samhengi(b, 'teikning', 1600, skra);
     const page = await ctx.newPage();
-    await page.goto('http://127.0.0.1:5599/index.html', { waitUntil: 'domcontentloaded' });
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.Companies && Companies.list && Companies.list.length > 100 && window.FloorPlan && window.DB && DB.sb, null, { timeout: 90000 });
     await page.evaluate(async () => { await DB._primeCompany(1404); Companies.opnaTeikningu(1404); });
     await page.waitForSelector('#modal-floorplan .fp-greining-btn', { timeout: 20000 }).catch(() => {});
@@ -375,7 +452,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     console.log('\n── „Setja í Teikningu" (1237, öll skrif gripin) ──');
     const ctx = await samhengi(b, 'setja', 1600, skra);
     const page = await ctx.newPage();
-    await page.goto('http://127.0.0.1:5599/index.html#greining/' + encodeURIComponent('Skútuvogur 2, 104 Reykjavík'), { waitUntil: 'domcontentloaded' });
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent('Skútuvogur 2, 104 Reykjavík'), { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#_gr451', { timeout: 90000 }).catch(() => {});
     await bidaKyrr(page, 75000);
     const s = await page.$('#_gr451 [data-gr-a="setja"][data-id="1237"]');
@@ -407,7 +484,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     console.log('\n── OCR á skrifstofutölvunni (ein beiðni) ──');
     const ctx = await samhengi(b, 'ocr', 1600, skra);
     const page = await ctx.newPage();
-    await page.goto('http://127.0.0.1:5599/index.html#greining/' + encodeURIComponent(arg('ocr-hus', 'Berjavellir 6, 221 Hafnarfjörður')), { waitUntil: 'domcontentloaded' });
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent(arg('ocr-hus', 'Berjavellir 6, 221 Hafnarfjörður')), { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#_gr451', { timeout: 90000 }).catch(() => {});
     await bidaKyrr(page, 75000);
     const t = await page.$('#_gr451 [data-gr-a="ocr"]');
