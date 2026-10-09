@@ -514,6 +514,19 @@ skal uppfæra spjaldið þar í sama commiti. „Þín regla" á hverju spjaldi 
 Nýr sendingargluggi fær nýtt númer + spjald í 447a. Merkið fer ALDREI í texta/skjal sem kúnninn fær (netvörður SAFE 08.10).
 Smellur á merkið opnar `?sv=SV-07#svarstod` í nýjum flipa.
 
+## Reglur `#reglur` (449, 08.10.2026)
+
+Reglur og leiðbeiningar um brunavarnabúnað (Agnar: „nýja page … neðarlega á hliðarstikunni með öllum helstu reglum").
+**Enginn reglutexti í kóðanum:** síðan les `.claude/skills/arnold/references/*.md` (sama reglusafn og Arnold notar);
+`build-dist.js` afritar `references/*.md` + `*.json` í `dist/reglur/` (`copyReglur`). Staðbundið (`npx serve .`) er
+`/reglur/` ekki til og síðan fellur á `/.claude/skills/arnold/references/`. Kaflar og röð: `references/kaflar.json`
+(`skra`, `hlutar` = fyrirsagnir sem byrja svona, `inngangur`, `efni` fyrir fleiri skrár, `valkvaett` = sleppt þegjandi
+ef skráin vantar). Ný regluskrá = ein lína þar, enginn JS. Hliðarstika: ['Reglur'] í ORDER 68 á eftir Birgðum, svo hann
+sest ofan við Öpp/„Sjá meira" líka undir vistaðri röð. Leit síar línur með klasa (`rg-x`), engin endurteikning;
+hápunktar með CSS Custom Highlight API. Kafli-hopp skrunar síðuna (view er skrunarinn, padding fyrir borðann) í tveimur
+umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin. Ekkert ritað, enginn nýr vafralykill.
+`window.Reglur = { opna, hoppa(id), leita(q), hlada, md }`.
+
 ## Lærdómur
 
 - **30.09.2026** — Borðið í dag er 368-thjonustubord5.js (Shadow DOM). Papp 231 var fjarlægt í d3eb1b78 ásamt spjallinu (347) — kaflinn um 231 hér er sögulegur og lýsir gagnalíkaninu sem 368 erfði, ekki lifandi skrá. thjonustubeidni-taflan og slug-arnir standa óbreyttir. (js/patches/368-thjonustubord5.js)

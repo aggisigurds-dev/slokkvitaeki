@@ -55,7 +55,27 @@ for (const rel of walk(ROOT)) {
 }
 console.log(`build-dist: copied ${n} files into dist/  (functions ship separately from netlify/functions)`);
 
+copyReglur();
 bundleIndexHtml();
+
+// ── Reglur-síðan (patch 449, 08.10.2026) ───────────────────────────────────
+// Reglusafn Arnolds er EIN heimild: .claude/skills/arnold/references/*.md. Síðan #reglur les
+// sömu skrár — ekkert afrit í JS-strengjum. Hér er eina undantekningin frá „*.md og .claude fara
+// aldrei út": references/*.md og *.json (kaflaskráin kaflar.json) fara í dist/reglur/. Aðeins
+// þessi eina mappa, flöt, og aðeins þessar endingar — allt sem lagt er þar verður opinbert.
+function copyReglur() {
+  const src = join(ROOT, '.claude', 'skills', 'arnold', 'references');
+  if (!existsSync(src)) { console.warn('build-dist: ' + relative(ROOT, src) + ' fannst ekki — Reglur-síðan verður tóm'); return; }
+  const dst = join(OUT, 'reglur');
+  mkdirSync(dst, { recursive: true });
+  let k = 0;
+  for (const name of readdirSync(src)) {
+    if (!/\.(md|json)$/i.test(name) || !statSync(join(src, name)).isFile()) continue;
+    copyFileSync(join(src, name), join(dst, name));
+    k++;
+  }
+  console.log(`build-dist: afritaði ${k} reglu-skrár í dist/reglur/ (Reglur-síðan, 449)`);
+}
 stampBuild();
 
 // ── Byggingar-stimpill (2026-07-30) ────────────────────────────────────────

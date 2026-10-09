@@ -35,10 +35,12 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 
 | Skrá | Hvað |
 |---|---|
+| `references/bunadur.md` | **Reglurnar sem þú reiknar eftir:** handslökkvitæki, slöngukefli, reykskynjarar, skilti og merkingar |
 | `references/reglusafn.md` | **Öll lög, reglugerðir, HMS-leiðbeiningar og staðlar með tenglum** og greinanúmerum + forgangsröð heimilda |
 | `references/neydarlysing.md` | Neyðarlýsing og útljós: hverjir eru skyldugir (9.4.12, eftir notkunarflokki), fjölbýli, eldri hús, eftirlit, þjónustusamningur, löggilding (rafvirkjameistari), staðlar EN 1838/50172, sölutækifæri |
 | `references/byggingargogn.md` | Skráningartafla (m², hæðir, eignir) og **byggingarlýsing (HVAR búnaður á að vera)** úr skjalasafni — hvernig á að finna, lesa og treysta; dæmi Fiskislóð 41 |
 | `references/fjolbyli.md` | Húsfélög: búnaður í sameign (stigagangar + kjallari), neyðarlýsing í fjölbýli, Sameign-greiningin í appinu |
+| `references/kaflar.json` | Kaflaskrá **Reglur-síðunnar** í appinu (`#reglur`, patch 449) — síðan birtir references-skrárnar beint; ný skrá verður kafli með einni línu þar |
 
 **Reglan um heimildir:** samþykkt **byggingarlýsing / brunahönnun hússins ræður** þar sem hún nefnir staði (hún er
 forsenda byggingarleyfisins, 723/2017 3. gr.). Annars teikningin (SLT/BRSL/EI), svo byggingarreglugerð + HMS, svo
@@ -55,7 +57,7 @@ skráðu stutta staðreynd hjá Charlize (`topic: reglur`).
    og sérstakir hættupunktar (eldhús, rafmagnstafla, eldfimir vökvar,
    vörumóttaka, lager). Vanti þær, spurðu — eða taktu skýrt fram á hverju er
    giskað.
-2. **Reiknaðu kröfuna** með formúlunum hér að neðan.
+2. **Reiknaðu kröfuna** með reglunum í `references/bunadur.md`.
 3. **Staðsettu á teikningu** ef hún fylgir: dragðu 25 m gönguleiðar-hringi frá
    tækjum og 30+9 m þekjuboga frá keflum; hvert horn verður að nást. Merktu
    punkta á Miro-borð ef beðið er um.
@@ -63,53 +65,11 @@ skráðu stutta staðreynd hjá Charlize (`topic: reglur`).
 5. Ef Supabase-aðgangur er til staðar: berðu tillöguna saman við skráð tæki
    staðarins (uttaeki með fyrirtaeki_id) og bentu á það sem vantar upp á kröfu.
 
-## Handslökkvitæki (byggingarreglugerð 112/2012 gr. 9.4.5–9.4.6 · 165.BR1 · rg. 1068/2011)
+## Búnaðarreglurnar — `references/bunadur.md`
 
-- Hámarks **gönguleið 25 m** frá hverjum stað að næsta tæki (flokkur A).
-- Eldfimir vökvar (flokkur B): hámark **20 m** og tæki við hvern hættupunkt.
-- **Minnst 2 tæki á hverri hæð.** Undantekning: ≤100 m² og lítið brunaálag →
-  eitt tæki ≥13A dugar.
-- Samanlagt slökkvigildi á hæð **≥ 0,065 × gólfflötur (m²)**, aldrei < 26A.
-  Dæmi: 800 m² → 52A → fjögur 13A tæki (léttvatn 9 l = 13A).
-- **Slöngukefli eða úðakerfi á hæðinni helmingar slökkviþörfina** — en 26A
-  lágmarkið og 2ja tækja krafan standa óbreytt.
-- B-flokks slökkviþörf: tafla 3 í 165.BR1 (13B→0,09 m², 21B→0,14 m²,
-  34B→0,23 m² fyrir eitt tæki); vökvi sem hellist niður: slökkvigildi ≥ 10 ×
-  rúmmál vökva í lítrum.
-- **Handfang ≤ 90 cm frá gólfi**, í þar til gerðu upphengi, á merktum og
-  aðgengilegum stað (rg. 1068/2011, 5. gr.).
-- Staðsetning: við útganga, á göngum/stigapöllum, sömu staðir á öllum hæðum.
-  **Aldrei bak við hurð, í skáp, í afkima.**
-- Árleg yfirferð þjónustuaðila (rg. 1068/2011, 8. gr.).
-- Val eftir rými: verslun/skrifstofa = léttvatn + CO2 við rafbúnað; eldhús =
-  froða/CO2 + eldvarnarteppi; verkstæði/lager = duft + kefli; duft innandyra
-  byrgir sýn og skemmir rafeindabúnað — léttvatn frekar í verslunarrými;
-  duft aldrei minna en 6 kg sem aðaltæki, aukatæki minnst 2 kg.
-
-## Slöngukefli / brunaslöngur (gr. 9.4.6 · HMS-leiðbeining um slöngukefli)
-
-- **Skylda í notkunarflokki 1–2 (verslun, skrifstofur) yfir 500 m²**; einnig í
-  flokkum 4–6 (hótel, sjúkrastofnanir, leikskólar) eftir brunaálagi.
-- Drægni: slanga **25–30 m + kastlengd bunu allt að 9 m** — **öll horn allra
-  rýma verða að nást**. Í löngum byggingum ≈ eitt kefli á hverja 35–40 m,
-  aldrei færri en tvö á stórri hæð.
-- Staðsetning **við hurð í flóttaleið**; slangan má aldrei teppa brunahurð
-  eða loka flóttaleið notandans.
-- **Miðja keflis 1–1,5 m frá gólfi.** Keflið rautt, merkt skv. gr. 9.8.7.
-
-## Reykskynjarar (gr. 9.4.3–9.4.4)
-
-- Stakir reykskynjarar þar sem brunavarnir krefjast en sjálfvirkt
-  brunaviðvörunarkerfi er ekki skylt.
-- Notkunarflokkur 3 (íbúðir): **minnst 1 skynjari á hverja 80 m² og minnst
-  einn á hverri hæð**; einn í hverri íbúð/notkunareiningu að lágmarki.
-- **Eitt í hverju gistiherbergi** nema sjálfvirkt kerfi sé í húsinu.
-- Hljóðstyrkur **≥ 75 dB(A) í hverju svefnherbergi**.
-- Staðsetning: í lofti, frá vegg/horni (almenn viðmiðun ≥ 50 cm), við/yfir
-  flóttaleiðum og framan við svefnherbergi; ekki beint við eldunartæki eða
-  baðgufu (þar frekar hitaskynjari).
-- Stærri atvinnuhús: sjálfvirkt brunaviðvörunarkerfi skv. hönnun — Arnold
-  vísar á brunahönnuð fyrir kerfishönnun en getur rýnt skynjaraþekju.
+Reglurnar um handslökkvitæki, slöngukefli/brunaslöngur, reykskynjara og skilti/merkingar — gönguleiðir, slökkvigildi,
+fjöldi á hæð, hæð frá gólfi, drægni, staðsetning — eru í `references/bunadur.md`. Lestu hann áður en þú reiknar.
+Sami texti birtist á Reglur-síðunni í appinu (`#reglur`, patch 449), svo breyting þar breytir síðunni líka.
 
 ## Neyðarlýsing og útljós (gr. 9.4.12 og 9.5.11 · HMS 9.4.12 · EN 1838/50172)
 
@@ -122,16 +82,6 @@ skráðu stutta staðreynd hjá Charlize (`topic: reglur`).
   Þjónustusamningur ekki almenn skylda — nema byggingarlýsing lofi honum.
 - **Réttindi:** ekki HMS-starfsleyfissvið (1067/2011); uppsetning = löggiltur rafverktaki; staðfesting til slökkviliðs
   (Fylgiblað 1) undirrituð af rafvirkjameistara.
-
-## Skilti og merkingar (gr. 9.8.7 · rg. 1068/2011)
-
-- Allur slökkvibúnaður (tæki og kefli) merktur með stöðluðu skilti
-  (ISO 7010, F001 slökkvitæki / F002 slöngukefli), **sýnilegt óháð almennri
-  lýsingu** — sjálflýsandi eða á neyðarlýsingu.
-- Flóttaleiðaskilti (grænt, E001/E002) yfir/við allar flóttaleiðir og útganga
-  þar sem krafist er; stefnuörvar þar sem leiðin er ekki augljós.
-- Skilti í augnhæð eða ofan hurðar; hindrunarlaus sýn frá rýminu.
-- Slökkvitæki hangi undir sínu skilti — skilti án tækis er frávik í úttekt.
 
 ## Að finna teikningar af hvaða húsi sem er (Reykjavík)
 
@@ -324,11 +274,11 @@ DB.sb.from = t => { const q = f(t); for (const m of ['insert','update','upsert',
   (vatnsidnadur.net/wp-content/uploads/2018/01/MVS-165_BR1.pdf)
 - Reglugerð 1068/2011 um slökkvitæki
 
-## TurboPaint — þar sem tölurnar hér að ofan eru útfærðar
+## TurboPaint — þar sem tölurnar í `references/bunadur.md` eru útfærðar
 
 Roster-hlutverk Arnolds er „teiknar slökkvitækja-layout á hústeikningar". Verkfærið
-er **TurboPaint** í kjarna-repo-inu, `/kjarni/turbopaint`, og tölurnar úr þessu
-skjali eru **þegar keyrðar þar í kóða**. Þær eiga einn stað, ekki tvo:
+er **TurboPaint** í kjarna-repo-inu, `/kjarni/turbopaint`, og tölurnar úr
+`references/bunadur.md` eru **þegar keyrðar þar í kóða**. Þær eiga einn stað, ekki tvo:
 
 | Skrá | Hvað hún geymir |
 |---|---|

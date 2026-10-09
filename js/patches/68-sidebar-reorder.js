@@ -157,6 +157,7 @@
     ['Geymsla'],
     ['Lánstæki'],
     ['Birgðir'],
+    ['Reglur'],   // 08.10.2026 (449): „neðarlega á hliðarstikunni" — sest strax á eftir Birgðum líka undir vistaðri röð (ofan við Öpp / „Sjá meira")
     SEP,
     ['Tilboð'],
     ['Samningar'],

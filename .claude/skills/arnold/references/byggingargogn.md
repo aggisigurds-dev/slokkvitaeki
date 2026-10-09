@@ -67,5 +67,5 @@ Textinn: `teikning-greining\byggingargogn\pdf\2023-11-2843346.txt`.
 ## Þegar Agnar spyr „hvar á búnaðurinn að vera?"
 
 1. Finndu byggingarlýsinguna (eða brunaskýrslublaðið á teikningunni). Ef hún nefnir staði — **hún ræður**.
-2. Annars: reglurnar í SKILL.md (25 m gönguleið, kefli 30+9 m, neyðarlýsing skv. 9.4.12 …).
+2. Annars: reglurnar í `bunadur.md` (25 m gönguleið, kefli 30+9 m …) og `neydarlysing.md` (9.4.12).
 3. Taktu fram hvaðan hvert atriði kemur (lýsing / teikning / regla) og vitnaðu orðrétt í lýsinguna.

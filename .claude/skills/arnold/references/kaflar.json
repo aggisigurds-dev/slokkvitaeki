@@ -1,0 +1,28 @@
+{
+  "_um": [
+    "Kaflaskrá Reglur-síðunnar í appinu (slokkvitaeki.netlify.app/#reglur, js/patches/449-reglur.js).",
+    "build-dist.js afritar references/*.md og *.json í dist/reglur/; síðan les þessa skrá og svo markdown-skrárnar.",
+    "Nýr kafli = ein lína hér. Röðin hér er röðin á síðunni.",
+    "id: ascii-auðkenni · heiti: titill kaflans · skra: skrá í references/ · valkvaett: true = sleppt þegjandi ef skráin er ekki til.",
+    "hlutar (valfrjálst): fyrirsagnir skrárinnar sem byrja svona, í þessari röð — hver með öllu sem stendur undir henni. Án hluta: öll skráin nema # titillinn.",
+    "inngangur: true = textinn milli # titils og fyrstu fyrirsagnar fylgir með. efni: listi af {skra, hlutar, inngangur} þegar kafli sækir í fleiri skrár."
+  ],
+  "kaflar": [
+    { "id": "flokkar", "heiti": "Kröfur eftir tegund rekstrar", "skra": "flokkar.md", "valkvaett": true },
+    { "id": "handslokkvitaeki", "heiti": "Handslökkvitæki", "skra": "bunadur.md", "hlutar": ["Handslökkvitæki"] },
+    { "id": "slongukefli", "heiti": "Slöngukefli / brunaslöngur", "skra": "bunadur.md", "hlutar": ["Slöngukefli"] },
+    { "id": "reykskynjarar", "heiti": "Reykskynjarar", "skra": "bunadur.md", "hlutar": ["Reykskynjarar"] },
+    { "id": "neydarlysing", "heiti": "Neyðarlýsing og útljós", "skra": "neydarlysing.md",
+      "hlutar": ["1.2 Tafla", "Niðurstaða", "1.1", "1.4", "3. Staðlar", "4. Hagnýt", "5. Óvíst", "Heimildir"] },
+    { "id": "merkingar", "heiti": "Skilti og merkingar", "skra": "bunadur.md", "hlutar": ["Skilti og merkingar"] },
+    { "id": "eftirlit", "heiti": "Eldvarnaeftirlit og ábyrgð eiganda", "skra": "neydarlysing.md", "hlutar": ["2. Eftirlit"] },
+    { "id": "fjolbyli", "heiti": "Fjölbýli og sameign",
+      "efni": [
+        { "skra": "fjolbyli.md", "inngangur": true, "hlutar": ["Reglan um staðsetningu", "Í appinu"] },
+        { "skra": "neydarlysing.md", "hlutar": ["1.3 Fjölbýli"] }
+      ] },
+    { "id": "bygging", "heiti": "Byggingarlýsing og skráningartafla", "skra": "byggingargogn.md" },
+    { "id": "heimildir", "heiti": "Heimildir", "skra": "reglusafn.md",
+      "hlutar": ["1. Lög", "2. Reglugerðir", "3. Leiðbeiningar", "4. Staðlar", "5. Forgangsröð"] }
+  ]
+}
