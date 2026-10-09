@@ -159,7 +159,7 @@
     { k: 'br-kerfisheilsa',  label: 'Kerfisheilsa (Brunahólf)', short: 'Kerfisheilsa', emoji: '🛡️', url: 'https://brunaholf.netlify.app/kerfisheilsa.html' },
     // 09.10.2026 (Agnar: „þjónustugátt. Stjórnborðið. Finn það ekki … setja það líka inn á Þjónustuborð öpp"):
     // stjórnsíða Þjónustuvefsins (/gatt-admin/) — aðgangar kúnna + „Opna sem kúnni" (án lykilorðs kúnnans).
-    { k: 'br-thjonustugatt', label: 'Þjónustugátt · stjórnborð (kúnnavefir)', short: 'Þj.gátt', emoji: '🔑', url: 'https://brunaholf.netlify.app/gatt-admin/' },
+    { k: 'br-thjonustugatt', label: 'Þjónustugátt · stjórnborð (kúnnavefir)', short: 'Þj.gátt', emoji: '🔑', url: '/gatt-admin/' },
     // Yfirferð efnislista — símavæn síða þar sem yfirmaður fer yfir flaggaða
     // Efnislista (Kröfu yfirlit 👔-takkinn), breytir magni, vistar og staðfestir.
     { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },

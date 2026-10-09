@@ -91,6 +91,7 @@
         '<td><span class="pill ' + st.c + '"><span class="dot"></span>' + st.t + '</span></td>' +
         '<td class="hide-sm acc ' + (a.email ? '' : 'none') + '">' + esc(a.email || '—') + '</td>' +
         '<td><div class="actions">' +
+          '<button class="btn btn--sm btn--accent" data-act="imp" title="Opna vef kúnnans án lykilorðs">Opna sem kúnni ↗</button>' +
           '<button class="btn btn--sm" data-act="copy">⧉ Hlekkur</button>' +
           '<button class="btn btn--sm" data-act="edit">Aðgangur</button>' +
         '</div></td></tr>' +
@@ -101,6 +102,13 @@
       var id = tr.getAttribute('data-id');
       var a = state.access.find(function (x) { return String(x.id) === id; });
       tr.querySelector('[data-act="copy"]').onclick = function () { copy(urlOf(a)); };
+      // 09.10.2026: opna vef kúnna án lykilorðs. Í sama flipa (virkar líka í uppsettu appi / iframe-lausu).
+      tr.querySelector('[data-act="imp"]').onclick = function () {
+        api({ action: 'impersonate', id: a.id }).then(function (res) {
+          if (res.ok && res.url) { try { (window.top || window).location.href = res.url; } catch (_) { location.href = res.url; } }
+          else toast(res.error || 'Villa');
+        }).catch(function () { toast('Netvilla'); });
+      };
       tr.querySelector('[data-act="edit"]').onclick = function () { toggleEditor(a); };
     });
   }

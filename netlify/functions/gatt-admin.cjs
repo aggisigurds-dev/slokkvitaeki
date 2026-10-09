@@ -122,6 +122,22 @@ exports.handler = async (event) => {
       return P.json(200, { ok: true, password: pw, row: pubRow((await r.json())[0]) });
     }
 
+    // 09.10.2026 (Agnar: „komast inn á fyrirtækin" án lykilorðs kúnnans): starfsmaður opnar vef kúnna.
+    // Einnota 2-mín hlekkur → gatt-login GET setur session og vísar á /gatt/. Sama hlið og restin af
+    // stjórnsíðunni (requireStaff efst). Hver opnun skráð í agent_logs (sýnilegt spor).
+    if (action === 'impersonate') {
+      if (!P.envReady()) return P.json(503, { error: 'PORTAL_JWT_SECRET vantar' });
+      const id = String(body.id || '');
+      if (!id) return P.json(400, { error: 'id vantar' });
+      const r = await P.sbGet(`portal_users?id=eq.${encodeURIComponent(id)}&select=id,base_id,slug,active,display_name&limit=1`);
+      const u = r.ok ? (await r.json())[0] : null;
+      if (!u) return P.json(404, { error: 'Aðgangur fannst ekki' });
+      if (!u.active) return P.json(400, { error: 'Vefurinn er afvirkjaður — virkjaðu hann fyrst' });
+      const t = P.signToken({ imp: u.id }, 120);
+      try { await P.sbPost('agent_logs', { agent: 'gatt-admin', action: 'opna-sem-kunni', felag: String(u.base_id), target: String(u.display_name || u.slug).slice(0, 200), status: 'ok', by_who: 'starfsmadur' }); } catch (_) {}
+      return P.json(200, { ok: true, url: origin(event) + '/api/gatt-login?imp=' + encodeURIComponent(t) });
+    }
+
     if (action === 'clear-password') {
       const id = String(body.id || '');
       const r = await P.sbPatch(`portal_users?id=eq.${id}&select=*`, { pass_hash: null });
