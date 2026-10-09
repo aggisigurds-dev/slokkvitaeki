@@ -90,14 +90,15 @@
         "grunnmyndir",
         "snið",
         "útlit",
+        "séruppdrættir (raflagnir, lagnir, burðarvirki, brunavarnir)",
         "skráningartöflur",
         "byggingarlýsingar"
       ],
       "stada": "virk",
-      "homlur": "Önnur sveitarfélög eiga ekkert rafrænt safn hér. map.is-söfnin skila PDF án smámynda (451 teiknar PDF-hæð við smell). Lýsigögn bera oft heimilisfang lóðarinnar, ekki hússins. map.is: Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn.",
+      "homlur": "Önnur sveitarfélög eiga ekkert rafrænt safn hér. Reykjavík: séruppdrættir eru í safni 5004 án lýsingar og dagsetningar (byggingarnefndarnúmer í staðinn). map.is-söfnin skila PDF án smámynda (451 teiknar fyrstu síðu með pdf.js) og sum blöð eru skemmd hjá sveitarfélaginu (Dalshraun 10: 3 loftræsiteikningar, 742 bæti) — sýnd sem skemmd og talin. Lýsigögn bera oft heimilisfang lóðarinnar, ekki hússins. map.is: Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn.",
       "laga": "—",
       "lykill_fer": "—",
-      "i_appinu": "374 TeiknSaekja, teikn-listi, teikn-mynd, teikn-pdf, 384",
+      "i_appinu": "374 TeiknSaekja, teikn-listi, seruppdrattir (?listi=1), teikn-mynd, teikn-pdf, 384, 451 Teikningar (Aðrar teikningar + Sjá allar)",
       "kannad": "2026-10-09"
     },
     {
@@ -194,10 +195,10 @@
         "verslanir og starfsemi á staðnum (nafn, tegund)"
       ],
       "stada": "notað",
-      "homlur": "Ein kurteis fyrirspurn per uppflettingu; stundum 500/504/429 (þá „Reyna aftur“). User-Agent með „netlify.app“ fær 406. Ekki tæmandi (Hlíðasmári 17: enginn rekstur).",
+      "homlur": "Skráð af sjálfboðaliðum og getur verið úrelt (Dalshraun 10: Nesdekk vantaði) — síðasta breyting hverrar færslu sýnd. Overpass er stundum hægt eða svarar 500/504/429 (mælt 09.10: 8,9 s); því sér kall (?osm=1) og skyndiminni á þjóni í 14 daga. User-Agent með „netlify.app“ fær 406. Ekki tæmandi.",
       "laga": "—",
       "lykill_fer": "—",
-      "i_appinu": "fasteign-opin, 451 Rekstur"
+      "i_appinu": "fasteign-opin (?osm=1, skyndiminni hus_upplysingar_cache osm:<heitinr>), 451 Rekstur — raðað á eftir okkar skrá og fyrirtækjaskrá"
     },
     {
       "kannad": "2026-10-09",
@@ -358,15 +359,15 @@
       "heiti": "Já.is (kort, 360° myndir, leit)",
       "slod": "https://ja.is/",
       "gefur": [
+        "nýjustu rekstraraðilar á heimilisfangi",
         "götumyndir",
-        "fyrirtæki á heimilisfangi",
         "símanúmer"
       ],
       "stada": "bannað (skilmálar)",
-      "homlur": "robots.txt bannar /?, /search/?, /kort/leit/ og /webapi/. Cloudflare Turnstile. Ekki sótt sjálfvirkt.",
-      "laga": "Skriflegt leyfi eða samningur við Já um gagnaaðgang.",
+      "homlur": "Gefur nýjustu rekstraraðila á heimilisfanginu (Dalshraun 10, 09.10.2026: Nesdekk og Músik og Sport — OpenStreetMap hafði þá ekki). robots.txt bannar /?, /search/?, /kort/leit/ og /webapi/ og Cloudflare Turnstile ver leitina — sjálfvirk sókn þarf samþykki Agnars og leyfi frá Já. Ekki sótt sjálfvirkt.",
+      "laga": "Samþykki Agnars + skriflegt leyfi eða samningur við Já um gagnaaðgang. Þangað til: hnappurinn „Opna á Já.is“ í Rekstri (handvirkt).",
       "lykill_fer": "—",
-      "i_appinu": "ekki notað"
+      "i_appinu": "451 Rekstur — hnappurinn „Opna á Já.is“ (opnar leitina í nýjum flipa, ekkert sótt)"
     },
     {
       "kannad": "2026-10-09",

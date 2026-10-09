@@ -17,6 +17,11 @@
  * Pípur, hiti og loft eru allt merkt „Lagnir". Ekkert heitir Pípulagnir
  * eða Loftræsting. Kópavogur, Garðabær og Hafnarfjörður fá ekkert kall.
  *
+ * 09.10.2026 (Greining fasteignar, 451 — „preview af þessum sérteikningum“): ?listi=1&landnr=N skilar BLÖÐUNUM sjálfum
+ *   { landnr, blod: [{ flokkur, tegund, infoUrl, thumb, stor, filename, bnnr, blad, hofundur, heimilisfang }] }
+ *   thumb = 800 px forskoðun FotoWeb (opinber, engin seta), stor = stærsta forskoðunin (til stækkunar). Mest 3 síður
+ *   (75 blöð) á flokk, flokkarnir samsíða. Skyndiminni: lykill serlisti:<landnr>, útgáfa serupp-listi-1, 30 dagar.
+ *
  * Skyndiminni: hus_upplysingar_cache, lykill serupp:<landnr> og
  * seradr:<heimilisfang>, útgáfa serupp-1. Önnur útgáfa en húsflettingin
  * (2026-09-14) svo röðin blandast ekki við aðaluppdrættina.
@@ -223,6 +228,59 @@ async function saekjaFlokka(landnr) {
   return flokkar;
 }
 
+/* ── ?listi=1 — blöðin sjálf með forskoðun (451 Sérteikningar) ─────────────────────────────────────────────── */
+const LISTI_UTGAFA = 'serupp-listi-1';
+const LISTI_DAGAR = 30;
+const mdGildi = (a, k) => { const v = a && a.metadata && a.metadata[k] && a.metadata[k].value; return v == null ? '' : String(Array.isArray(v) ? v[0] : v).trim(); };
+const algild = (h) => (h ? (String(h).startsWith('http') ? String(h) : FOTOWEB + h) : null);
+async function lesaLista(landnr) {
+  try {
+    const u = `${SB_URL}/rest/v1/hus_upplysingar_cache?lykill=eq.${encodeURIComponent('serlisti:' + landnr)}`
+      + `&utgafa=eq.${encodeURIComponent(LISTI_UTGAFA)}&select=svar,uppfaert&limit=1`;
+    const r = await fetch(u, { headers: SB_HAUS, signal: AbortSignal.timeout(2500) });
+    if (!r.ok) return null;
+    const rad = (await r.json())[0];
+    if (!rad || !rad.svar || !Array.isArray(rad.svar.blod)) return null;
+    if (rad.uppfaert && Date.now() - Date.parse(rad.uppfaert) > LISTI_DAGAR * 864e5) return null;
+    return rad.svar;
+  } catch (_) { return null; }
+}
+async function skrifaLista(landnr, svar) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, {
+      method: 'POST',
+      headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ lykill: 'serlisti:' + landnr, heimilisfang: String(landnr), utgafa: LISTI_UTGAFA, svar, uppfaert: new Date().toISOString() }),
+      signal: AbortSignal.timeout(2500),
+    });
+  } catch (_) {}
+}
+async function saekjaLista(landnr) {
+  const flokkar = await Promise.all(FLOKKAR.map(async (f) => {
+    const ut = [];
+    let slod = ARCH + '?q=' + encodeURIComponent(landnr + ' ' + f.tegund);
+    for (let p = 0; p < 3 && slod; p++) {
+      const b = await fotoweb(slod);
+      for (const a of (Array.isArray(b.data) ? b.data : [])) {
+        if (tegundAf(a) && tegundAf(a) !== f.tegund) continue;
+        if (mdGildi(a, '202') && mdGildi(a, '202') !== String(landnr)) continue;     // aðeins þetta landnúmer
+        const pv = (Array.isArray(a.previews) ? a.previews : []).filter((x) => x && x.href).sort((x, y) => (x.size || 0) - (y.size || 0));
+        const smatt = pv.find((x) => (x.size || 0) >= 400) || pv[pv.length - 1];
+        const stort = pv[pv.length - 1];
+        const fn = String(a.filename || '');
+        ut.push({
+          flokkur: f.id, tegund: f.tegund, infoUrl: algild(a.href), thumb: algild(smatt && smatt.href), stor: algild(stort && stort.href),
+          filename: fn, bnnr: mdGildi(a, '209') || null, blad: Number((fn.match(/-(\d{3,4})\.[a-z]+$/i) || [])[1]) || null,
+          hofundur: mdGildi(a, '116') || null, heimilisfang: mdGildi(a, '210') || null,
+        });
+      }
+      slod = b.paging && b.paging.next ? b.paging.next : null;
+    }
+    return ut;
+  }));
+  return [].concat(...flokkar);
+}
+
 function medCache(svar, cache) {
   return { ...svar, cache: !!cache, utgafa: UTGAFA };
 }
@@ -234,6 +292,19 @@ export default async (req) => {
   const landnrBeint = (sp.get('landnr') || '').replace(/[^0-9]/g, '');
   const heimilisfang = (sp.get('heimilisfang') || '').normalize('NFC').trim();
   if (!landnrBeint && heimilisfang.length < 4) return json({ error: 'landnr eða heimilisfang vantar' }, 400);
+  if (sp.get('listi') === '1') {
+    if (!landnrBeint) return json({ error: 'listi þarf landnr', blod: [] }, 400);
+    if (!endurnyja) { const til = await lesaLista(landnrBeint); if (til) return json({ ...til, cache: true }); }
+    try {
+      const blod = await saekjaLista(landnrBeint);
+      const svar = { landnr: Number(landnrBeint), heimild: 'Skjalasafn Reykjavíkur · 5004-Séruppdrættir', blod, saott: new Date().toISOString() };
+      await skrifaLista(landnrBeint, svar);
+      return json({ ...svar, cache: false });
+    } catch (e) {
+      // 200 með villu: „náðist ekki" er svar sem síðan sýnir, ekki rauð villa í vafraborðinu
+      return json({ error: 'Náði ekki í séruppdrættina: ' + (e && e.message ? e.message : e), landnr: Number(landnrBeint), blod: [] });
+    }
+  }
 
   if (heimilisfang && !erReykjavik(heimilisfang)) {
     const utan = { utan: true, flokkar: [] };

@@ -81,6 +81,14 @@ krefst(/const lagleg = \(coId\) => \+coId > 0 && \+coId !== SYND/.test(f452), '4
 const f363 = les('js/patches/363-banner-upplysingar.js');
 krefst(/window\.BannerUpplysingar = \{[^}]*vistaReit[^}]*vistaUppruna/.test(f363), '363: vistaReit/vistaUppruna verða að vera opin fyrir 452 (ein skrifleið í reitina)');
 krefst(/const LYKILL_UPPRUNI = 'banner_upplysingar_uppruni';/.test(f363) && /patch\[LYKILL_UPPRUNI\]\[String\(coId\)\]\[reitur\] = u;/.test(f363), '363: uppruni sjálfsóttra gilda á sinn eigin lykil (banner_upplysingar_uppruni), aldrei ofan í reitina');
+// 9. myndrænt + sérteikningar (09.10.2026): Já.is aldrei sótt sjálfvirkt (robots.txt, samþykki vantar) — aðeins hnappur;
+//    TurboPaint-borð aðeins lesin; „Skoða í TurboPaint“ birtist ekki fyrr en kjarni gefur slóðarsniðmát (engin dauð tengsl)
+for (const ff of ['js/patches/451-greining-fasteignar.js', 'netlify/functions/fasteign-opin.js', 'netlify/functions/seruppdrattir.js']) {
+  const kk = les(ff).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  krefst(!/fetch\([^)]*ja\.is/.test(kk) && !/['"]https:\/\/(www\.)?ja\.is\/(webapi|search|kort\/leit)/.test(kk), ff + ': Já.is má ekki sækja sjálfvirkt (robots.txt) — aðeins hnappurinn „Opna á Já.is“');
+}
+krefst(/const TP_SKODA = (null|'https:\/\/[^']+\{url\}[^']*');/.test(g), '451: TP_SKODA verður að vera null eða sniðmát með {url} — enginn „Skoða í TurboPaint“-takki án slóðar');
+krefst(/data-gr-ltp hidden/.test(g), '451: „Skoða í TurboPaint“ í skoðaranum á að vera falinn þar til slóðin er til');
 // 5. töflur
 const toflur = (g.match(/<table /g) || []).length, merktar = (g.match(/<table data-_pm-status-done="1"/g) || []).length;
 krefst(toflur === merktar, '451: ' + (toflur - merktar) + ' tafla án data-_pm-status-done (00-legacy setur þá tækja-fellilista sem skrifar uttaeki.status)');

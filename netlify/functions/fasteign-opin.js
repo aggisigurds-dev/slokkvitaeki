@@ -22,9 +22,31 @@
  */
 const WFS = 'https://geo.fasteignaskra.is/ws/geoserver/wfs';
 const BVS = 'https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja/Leit/MapServer/3/query';
-// 09.10.2026: overpass.kumi.systems og overpass.private.coffee svöruðu 500 á allt; maps.mail.ru > 9 s. Aðalþjónninn
-// svarar stundum 500/504/429 á álagstoppum — því önnur tilraun á hann eftir stutta bið.
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass-api.de/api/interpreter'];
+// 09.10.2026: aðalþjónninn svarar stundum 500/504/429 eða ekki innan tímans á álagstoppum (Agnar sá „Overpass svaraði ekki
+// (The operation was aborted due to timeout)" og tegund/rekstur flökti milli uppflettinga). Því: (1) skyndiminni á þjóni —
+// hus_upplysingar_cache, lykill osm:<heitinr>, 14 dagar: svarið er lesið þaðan og Overpass ekki kallað; (2) varaþjónn
+// (overpass.kumi.systems) ef aðalþjónninn bregst; (3) bregðist báðir er eldra skyndiminni notað og merkt.
+// Mælt 09.10 kl. 10:30: overpass-api.de svaraði á 8,9 s (504 á GET), kumi.systems 500 á allt, private.coffee 429 → Overpass
+// fer í SÉR kall (?osm=1) með sitt eigið 10 s þak; aðalkallið les aðeins skyndiminnið og bíður aldrei eftir Overpass.
+const OVERPASS = [['https://overpass-api.de/api/interpreter', 7600], ['https://overpass.kumi.systems/api/interpreter', 1600]];
+const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
+const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
+const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
+const OSM_UTGAFA = 'osm-2', OSM_DAGAR = 14;   // osm-2: með breytingardags hverrar færslu (out meta)
+async function osmLesa(heitinr) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?lykill=eq.${encodeURIComponent('osm:' + heitinr)}&utgafa=eq.${OSM_UTGAFA}&select=svar,uppfaert&limit=1`, { headers: SB_HAUS, signal: AbortSignal.timeout(2000) });
+    if (!r.ok) return null;
+    const rad = (await r.json())[0];
+    return rad && rad.svar && Array.isArray(rad.svar.listi) ? { svar: rad.svar, aldur: Date.now() - Date.parse(rad.uppfaert || 0) } : null;
+  } catch (_) { return null; }
+}
+async function osmSkrifa(heitinr, svar) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/hus_upplysingar_cache?on_conflict=lykill`, { method: 'POST', headers: { ...SB_HAUS, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ lykill: 'osm:' + heitinr, heimilisfang: String(heitinr), utgafa: OSM_UTGAFA, svar, uppfaert: new Date().toISOString() }), signal: AbortSignal.timeout(2000) });
+  } catch (_) {}
+}
 const UA = 'Slokkvitaeki/1.0 (fasteignagreining; slokkvitaeki.is)';
 
 const cors = {
@@ -92,16 +114,38 @@ async function einingar(st) {
 }
 
 const TEGUNDIR = { shop: 'verslun', amenity: 'þjónusta', office: 'skrifstofa', craft: 'iðn', tourism: 'ferðaþjónusta', leisure: 'afþreying', healthcare: 'heilbrigði' };
-async function rekstur(st) {
+// Aðalkallið: rekstur úr skyndiminni (hvaða aldur sem er — merkt). Vanti það eða sé það eldra en 14 dagar sækir vafrinn
+// ferskt með ?osm=1 (reksturFerskt) — sér kall, svo hæg Overpass-svör tefja aldrei eignina, lóðina eða rýmin.
+async function reksturGeymdur(st) {
+  const hnr = Number(st.HEINUM) || null;
+  const geymt = hnr ? await osmLesa(hnr) : null;
+  if (!geymt) return null;
+  return Object.assign({}, geymt.svar, { ur_skyndiminni: true, aldur_dagar: Math.floor(geymt.aldur / 864e5), gamalt: geymt.aldur >= OSM_DAGAR * 864e5 });
+}
+async function reksturFerskt(st, frestur) {
   const lat = Number(st.N_HNIT_WGS84), lon = Number(st.E_HNIT_WGS84);
   if (!isFinite(lat) || !isFinite(lon)) return null;
+  const hnr = Number(st.HEINUM) || null;
+  const geymt = hnr ? await osmLesa(hnr) : null;
+  if (geymt && geymt.aldur < OSM_DAGAR * 864e5) return Object.assign({}, geymt.svar, { ur_skyndiminni: true });
+  try {
+    const nytt = await reksturOverpass(st, lat, lon, frestur || Date.now() + 9000);
+    if (hnr) await osmSkrifa(hnr, Object.assign({}, nytt, { saott: new Date().toISOString() }));
+    return nytt;
+  } catch (e) {
+    if (geymt) return Object.assign({}, geymt.svar, { ur_skyndiminni: true, gamalt: true, villa_nu: String((e && e.message) || e) });
+    throw e;
+  }
+}
+async function reksturOverpass(st, lat, lon, frestur) {
   const gata = String(st.HEITI_NF || '').replace(/"/g, '');
-  const q = `[out:json][timeout:6];(nwr(around:45,${lat},${lon})[name][!highway][!route][!boundary][!place][!railway][!natural];nwr["addr:street"="${gata}"]["addr:housenumber"~"^${Number(st.HUSNR)}[A-Za-z]?$"](around:400,${lat},${lon}););out tags center 40;`;
+  const q = `[out:json][timeout:6];(nwr(around:45,${lat},${lon})[name][!highway][!route][!boundary][!place][!railway][!natural];nwr["addr:street"="${gata}"]["addr:housenumber"~"^${Number(st.HUSNR)}[A-Za-z]?$"](around:400,${lat},${lon}););out meta center 40;`;   // meta: síðasta breyting hverrar færslu (Agnar 09.10: OSM getur verið úrelt — Nesdekk vantaði)
   let sidast = null;
-  for (const [i, ep] of OVERPASS.entries()) {
-    if (i) await new Promise((r) => setTimeout(r, 700));
+  for (const [ep, ms0] of OVERPASS) {
+    const ms = Math.min(ms0, frestur - Date.now() - 300);   // allt innan 10 s þaks fallsins
+    if (ms < 800) break;
     try {
-      const r = await fetch(ep + '?data=' + encodeURIComponent(q), { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(i ? 3500 : 4000) });
+      const r = await fetch(ep + '?data=' + encodeURIComponent(q), { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(ms) });
       if (!r.ok) { sidast = new Error('Overpass ' + r.status); continue; }
       const d = await r.json();
       const listi = (d.elements || []).map((e) => {
@@ -114,6 +158,7 @@ async function rekstur(st) {
           gata: t['addr:street'] || null, nr: t['addr:housenumber'] || null,
           vefur: t.website || t['contact:website'] || null, opid: t.opening_hours || null, simi: t.phone || t['contact:phone'] || null,
           haedir: t['building:levels'] || null, osm: e.type + '/' + e.id,
+          breytt: e.timestamp ? String(e.timestamp).slice(0, 10) : null,   // aðeins dagsetningin — engin notendanöfn OSM-framlagsaðila
         };
       }).filter((x) => x.tegund || x.haedir);
       return { listi: listi.slice(0, 30), heimild: '© OpenStreetMap-framlagsaðilar (ODbL) · ' + ep.split('/')[2] };
@@ -154,6 +199,18 @@ async function vefur(raw) {
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   const sp = new URL(req.url).searchParams;
+  // ?staerdir=1&u=<pdf>&u=… — stærð PDF-blaða teikningasafna (HEAD) svo skemmd blöð sjáist án þess að sækja þau.
+  // Mælt 09.10.2026: þrjár loftræsiteikningar Dalshrauns 10 hjá Hafnarfirði eru 742 bæti (tómar). Aðeins söfnin fjögur.
+  if (sp.get('staerdir') === '1') {
+    const HYSLAR = new Set(['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is']);
+    const urls = [...new Set(sp.getAll('u'))].filter((x) => { try { const u = new URL(x); return u.protocol === 'https:' && HYSLAR.has(u.hostname); } catch (_) { return false; } }).slice(0, 120);
+    const ut = {};
+    await Promise.all(urls.map(async (x) => {
+      try { const r = await fetch(x, { method: 'HEAD', headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) }); const n = Number(r.headers.get('content-length')); ut[x] = r.ok && isFinite(n) ? n : null; }
+      catch (_) { ut[x] = null; }
+    }));
+    return json({ staerdir: ut }, 200, true);
+  }
   const vef = sp.get('vefur');
   if (vef) {
     try { const v = await vefur(vef); return json(v, v.villa ? 502 : 200, !v.villa); }
@@ -162,6 +219,15 @@ export default async (req) => {
   const heitinr = (sp.get('heitinr') || '').replace(/[^0-9]/g, '');
   const heimilisfang = (sp.get('heimilisfang') || '').normalize('NFC').trim();
   if (!heitinr && heimilisfang.length < 4) return json({ error: 'heitinr eða heimilisfang vantar' }, 400);
+  if (sp.get('osm') === '1') {
+    const frestur = Date.now() + 9300;
+    // ?osm=1&heitinr=N — aðeins reksturinn (Overpass), með eigið tímaþak; skrifar skyndiminnið
+    let st0;
+    try { st0 = await finnaStadfang({ heitinr, heimilisfang }); } catch (e) { return json({ villa: 'Staðfangaskrá svaraði ekki (' + ((e && e.message) || e) + ')' }); }
+    if (!st0) return json({ villa: 'Staðfangið fannst ekki' });
+    try { return json({ rekstur: await reksturFerskt(st0, frestur) }); }
+    catch (e) { return json({ villa: String((e && e.message) || e) }); }   // 200: síðan sýnir „svaraði ekki", ekki rauða villu
+  }
   const lyk = heitinr ? 'h' + heitinr : 'a' + heimilisfang.toLowerCase();
   const m = minni.get(lyk);
   if (m && Date.now() - m.t < 15 * 60000) return json(m.v);
@@ -183,12 +249,13 @@ export default async (req) => {
     return json({ error: 'Fann ekki staðfangið í Staðfangaskrá HMS', tillogur, ekkertFannst: true }, 200);
   }
   const eign = { landnr: Number(st.LANDNR), heitinr: Number(st.HEINUM), lat: Number(st.N_HNIT_WGS84), lon: Number(st.E_HNIT_WGS84), postnr: Number(st.POSTNR) || null, svfnr: String(st.SVFNR || ''), label: String(st.VEF_BIRTING || '').replace(/\s*\(.*$/, '').trim() };
-  const [a, b, c] = await Promise.allSettled([lod(st.LANDNR), einingar(st), rekstur(st)]);
+  const [a, b, c] = await Promise.allSettled([lod(st.LANDNR), einingar(st), reksturGeymdur(st)]);
   const villur = {};
   if (a.status === 'rejected') villur.lod = String((a.reason && a.reason.message) || a.reason);
   if (b.status === 'rejected') villur.einingar = String((b.reason && b.reason.message) || b.reason);
   if (c.status === 'rejected') villur.rekstur = String((c.reason && c.reason.message) || c.reason);
-  const v = { eign, lod: a.status === 'fulfilled' ? a.value : null, einingar: b.status === 'fulfilled' ? b.value : null, rekstur: c.status === 'fulfilled' ? c.value : null, villur, saott: new Date().toISOString() };
+  const rek = c.status === 'fulfilled' ? c.value : null;
+  const v = { eign, lod: a.status === 'fulfilled' ? a.value : null, einingar: b.status === 'fulfilled' ? b.value : null, rekstur: rek, reksturSaekja: !rek || !!rek.gamalt, villur, saott: new Date().toISOString() };
   if (!Object.keys(villur).length) minni.set(lyk, { t: Date.now(), v });
   return json(v);
 };
