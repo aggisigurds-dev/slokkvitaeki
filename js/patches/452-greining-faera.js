@@ -57,6 +57,10 @@
     if (+b.stigagangar > 0) baeta({ reitur: 'stiga', merki: 'Stigagangar', gildi: String(+b.stigagangar), birt: b.stigagangar + ' stigag.', heimild: tafla, vissa: o.stigagangar });
     // byggingarár: aðeins úr lesinni byggingarlýsingu (Kaupskrá HMS er ekki notuð)
     if (+b.byggingarar > 1800) baeta({ reitur: 'byggar', merki: 'Byggingarár', gildi: String(+b.byggingarar), birt: String(+b.byggingarar), heimild: 'Byggingarlýsing', vissa: o.byggingarar });
+    // herbergi (gisting) og íbúðir (íbúðarhús) — 451 einingar(): uppruni + dags; ekki sjálfgefið nema vissa sé a.m.k. miðlungs
+    const ei = (window.Greining451 && Greining451.einingar) ? Greining451.einingar(g) : {};
+    if (ei.herbergi && (ei.gisting || ei.herbergi.aaetlad)) baeta({ reitur: 'herbergi', merki: 'Herbergi', gildi: String(ei.herbergi.fjoldi), birt: ei.herbergi.fjoldi + ' herb.', heimild: ei.herbergi.heimild, vissa: ei.herbergi.vissa });
+    if (ei.ibudir && ei.ibudarhus && ei.ibudir.fjoldi > 0) baeta({ reitur: 'ibudir', merki: 'Íbúðir', gildi: String(ei.ibudir.fjoldi), birt: ei.ibudir.fjoldi + ' íb.', heimild: ei.ibudir.heimild + (ei.ibudir.kjallari ? ' (' + ei.ibudir.kjallari + ' í kjallara ekki taldir)' : ''), vissa: ei.ibudir.vissa });
     if (g && g.tegund && g.tegund.tegund && g.tegund.tegund !== 'annad') baeta({ teg: true, reitur: 'tegund', merki: 'Tegund rekstrar', gildi: g.tegund.tegund, birt: g.tegund.heiti || g.tegund.tegund, heimild: g.tegund.rok || 'Greining fasteignar' });
     return ut;
   }
@@ -300,6 +304,8 @@
     } catch (e) { if (w.o.isConnected) w.buk.innerHTML = '<div class="gr-fvar">Gögnin fengust ekki: ' + esc((e && e.message) || e) + '</div>'; return; }
     if (!w.o.isConnected) return;
     const haedir = bord && Array.isArray(bord.haedir) ? bord.haedir.length : 0;
+    // tegund félagsins sjálfs (stadur_flokkun: handval → sjálfvirk) ræður flokkun herbergja/íbúða á prófílnum
+    try { const fl = window.Flokkun && Flokkun.stadur ? await Flokkun.stadur(coId) : null; if (fl && fl.flokkun) g.tegundFelags = fl.flokkun.tegund_handval || fl.flokkun.tegund || null; } catch (_) {}
     const atr = atridiFra(g);
     const rad = await stodur(coId, atr);
     if (!w.o.isConnected) return;

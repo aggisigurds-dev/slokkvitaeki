@@ -224,6 +224,9 @@ export async function byggingUppl({ heimilisfang, landnr }) {
     ut.rummal_m3 = l.brutto_rummal_m3 ?? null;
     ut.haedir = l.haedir ? { ofanjardar: l.haedir_ofan, kjallari: !!l.kjallari, ris: !!l.ris, listi: l.haedir } : null;
     ut.eignir = Number.isFinite(l.eignir) ? l.eignir : null;
+    // eignarhlutanúmerin sjálf (0101 … 0406): fyrstu tveir stafir = hæð („00" kjallari — oftast geymslur/bílastæði).
+    // 451 telur íbúðir í íbúðarhúsi út frá þeim (Agnar 09.10.2026: „hvað það eru mörg … íbúðir í fjölbýlishúsum")
+    ut.eignarhlutar = Array.isArray(l.eignarhlutar) ? l.eignarhlutar.map(String).slice(0, 600) : null;
     ut.oryggi.m2 = v.bruttoflotur_m2 || null;
     ut.oryggi.haedir = v.haedir || null;
     ut.oryggi.rummal = v.brutto_rummal_m3 || null;
@@ -250,6 +253,14 @@ export async function byggingUppl({ heimilisfang, landnr }) {
     if (t.byggingarar) { ut.byggingarar = t.byggingarar; ut.oryggi.byggingarar = 'miðlungs'; }
     if (t.notkunarflokkur) ut.notkunarflokkur_lysing = t.notkunarflokkur;
   }
+  // herbergi og hámarksfjöldi úr ÖLLUM lesnum lýsingum hússins (brúin: tolur.herbergi_nefnd, tolur.hamarksfjoldi_manns) —
+  // lýsing með heimilisfangi hússins fyrst, annars nýjust (Agnar 09.10.2026: „hvað það eru mörg herbergi á hótelunum")
+  const medTolu = (lyk) => lysLesin.filter((x) => x.l.tolur && Number.isFinite(+x.l.tolur[lyk]) && +x.l.tolur[lyk] > 0);
+  const veljaLys = (a) => (husLabel ? a.find((x) => samaHus(x.r.gata || '', husLabel)) : null) || a[0];
+  const hb = veljaLys(medTolu('herbergi_nefnd'));
+  if (hb) ut.herbergi = { fjoldi: +hb.l.tolur.herbergi_nefnd, dags: hb.r.dags || null, slod: hb.r.infoUrl, heimild: hb.l.heimild || null };
+  const hm = veljaLys(medTolu('hamarksfjoldi_manns'));
+  if (hm) ut.hamarksfjoldi = { fjoldi: +hm.l.tolur.hamarksfjoldi_manns, dags: hm.r.dags || null, slod: hm.r.infoUrl };
   if (!ut.byggingarar) ut.athugasemdir.push('Byggingarár fannst ekki í lesinni byggingarlýsingu (Kaupskrá HMS er ekki notuð).');
 
   const s = [ut.oryggi.m2, ut.oryggi.haedir];

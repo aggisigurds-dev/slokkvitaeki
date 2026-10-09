@@ -379,6 +379,13 @@ async function profaHus(b, adr, vp, skra) {
       }
     }
   }
+  // ── Herbergi / Íbúðir í Byggingarupplýsingum (Agnar 09.10.2026)
+  {
+    const hl = await page.evaluate(() => [...document.querySelectorAll('#_gr451 [data-gr="bygg"] .ssp-lina')].map((l) => l.textContent.replace(/\s+/g, ' ').trim()).filter((t) => /^(Herbergi|Íbúðir|Hámarksfjöldi)/.test(t)));
+    console.log('   herbergi/íbúðir: ' + JSON.stringify(hl));
+    if (/^Laugavegur 120/.test(adr)) check(nafn + ': Byggingarupplýsingar — Herbergi úr byggingarlýsingu með uppruna', hl.some((t) => /^Herbergi\s*\d/.test(t) && /Byggingarlýsing/.test(t)), JSON.stringify(hl));
+    if (/^Berjavellir 6/.test(adr)) check(nafn + ': Byggingarupplýsingar — Íbúðir úr eignarhlutum (24)', hl.some((t) => /^Íbúðir\s*24/.test(t)), JSON.stringify(hl));
+  }
   // ── Brunavarnir á teikningu (Agnar 09.10.2026): hæðarmynd með útgöngum, rýmum úr lýsingu, táknum og talningu
   {
     await page.waitForSelector('#_gr451 [data-gr="bruna"] [data-gr-buk][data-birt="1"]', { timeout: 30000 }).catch(() => {});
@@ -757,7 +764,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     const takki = await page.$('button._gr-profil-takki[data-co="1404"]');
     const stadur = await page.evaluate(() => { const t = document.querySelector('button._gr-profil-takki[data-co="1404"]'); if (!t) return null; const n = t.nextElementSibling, r = t.getBoundingClientRect(), v = n && n.getBoundingClientRect(); return { lina: !!t.closest('.b411-oskrad'), naest: n ? n.className : '', synilegur: r.width > 0 && r.height > 0, sama: v ? Math.abs(r.height - v.height) <= 1 && Math.abs(r.top - v.top) <= 1 : false, h: Math.round(r.height), husLina: !!document.querySelector('#companies-main ._fasteign button._greining-takki'), texti: t.textContent.trim() }; });
     check('Prófíll 1404: „Greining“ í Óskráð-línunni beint á undan „+ Fleiri upplýsingar“, sama stærð (' + (stadur && stadur.h) + ' px) — Hús-línutakkinn farinn', !!(takki && stadur && stadur.synilegur && /_bupp-vixl/.test(stadur.naest) && stadur.sama && !stadur.husLina && (stadur.lina || true)), JSON.stringify(stadur));
-    const REIT = ['haedir', 'kjallari', 'm2', 'eignir', 'stiga', 'byggar'];
+    const REIT = ['haedir', 'kjallari', 'm2', 'eignir', 'stiga', 'byggar', 'ibudir', 'herbergi'];
     const fyrir = await page.evaluate((R) => R.reduce((o, r) => { o[r] = window.BannerUpplysingar ? BannerUpplysingar.gildi(1404, r) : null; return o; }, {}), REIT);
     console.log('   1404 fyrir: ' + JSON.stringify(fyrir));
     if (takki) {
@@ -844,6 +851,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     // Glugginn býður næstu húsnúmer (7 fyrst) og aðra lóð; val greinir hana án þess að snerta prófílinn (aðeins lestur).
     {
       const adrarFyrir = adrar.length;
+      await page.goto('about:blank');   // full endurhleðsla — hash-skipti úr #greining/… yfir á #company/… eru annars sama skjal
       await page.goto('http://127.0.0.1:' + PORT + '/index.html#company/1486', { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('button._gr-profil-takki[data-co="1486"]', { timeout: 60000 }).catch(() => {});
       await page.waitForTimeout(1200);
@@ -874,6 +882,35 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
         await page.click('#gr-faera [data-f="loka"]').catch(() => {});
       }
       check('1486: aðeins lesið — engin skrif á 1486 (gripin skrif: ' + (adrar.length - adrarFyrir) + ')', !adrar.slice(adrarFyrir).some((x) => /1486/.test(x)), JSON.stringify(adrar.slice(adrarFyrir, adrarFyrir + 4)));
+    }
+    // Herbergi / Íbúðir (Agnar 09.10.2026) — glugginn á fjórum félögum, AÐEINS lestur (ekkert hakað né vistað)
+    {
+      const adrarFyrir = adrar.length;
+      const PROF = [
+        [1486, 'Vegamótastígur 7, 101 Reykjavík', 'Midtown (hótel, lýsing skönnuð)'],
+        [869, null, 'Máni Apartments (íbúðagisting, Laugavegur 18)'],
+        [489, null, 'Berjavellir 6 (fjölbýli)'],
+        [192, null, 'Center hótel (Laugavegur 120)'],
+      ];
+      for (const [id, adr, heiti] of PROF) {
+        const til = await page.evaluate((i) => !!((window.Companies && Companies.list) || []).find((c) => +c.id === i), id);
+        if (!til) { console.log('   ' + id + ' ' + heiti + ': ekki í Companies.list — sleppt'); continue; }
+        await page.evaluate(({ i, a }) => GreiningFaera.opnaProfil(i, a ? { adr: a } : {}), { i: id, a: adr });
+        await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera [data-f="fannst-ekki"], #gr-faera .gr-fvar', { timeout: 90000 }).catch(() => {});
+        await page.waitForTimeout(400);
+        const v = await page.evaluate(() => ({ rodir: [...document.querySelectorAll('#gr-faera .gr-ftafla tbody tr')].map((tr) => ({ t: tr.innerText.replace(/\s+/g, ' ').trim().slice(0, 150), hak: !!tr.querySelector('input:checked') })), undir: (document.querySelector('#gr-faera .ssp-undir') || {}).textContent || '' }));
+
+        const hR = v.rodir.find((r) => /^Herbergi/.test(r.t)), iR = v.rodir.find((r) => /^Íbúðir/.test(r.t));
+        console.log('   ' + id + ' ' + heiti + ': ' + JSON.stringify({ herbergi: hR, ibudir: iR, alls: v.rodir.length }));
+        if (id === 192) check('192 Center hótel: Herbergi úr byggingarlýsingu (uppruni + dags) í glugganum', !!hR && /herb\./.test(hR.t) && /Byggingarlýsing \d{2}\/\d{2}\/\d{4}/.test(hR.t), JSON.stringify(v.rodir.slice(0, 8)));
+        if (id === 489) check('489 Berjavellir 6: Íbúðir úr eignarhlutum skráningartöflu (24, uppruni)', !!iR && /24 íb\./.test(iR.t) && /Skráningartafla/.test(iR.t), JSON.stringify(v.rodir.slice(0, 8)));
+        if (id === 869) check('869 Máni Apartments: Íbúðir úr eignarhlutum (íbúðagisting)', !!iR && /íb\./.test(iR.t), JSON.stringify(v.rodir.slice(0, 8)));
+        if (id === 1486) check('1486 Midtown (Vegamótastígur 7): enginn tilbúinn herbergjafjöldi — lýsingin skönnuð og ólesin, ekkert giskað', !hR, JSON.stringify(v.rodir.slice(0, 8)));
+        await mynd(page, '1600-herbergi-ibudir-' + id + '.png');
+        await page.click('#gr-faera [data-f="loka"]').catch(() => {});
+        await page.waitForTimeout(250);
+      }
+      check('Herbergi/Íbúðir: aðeins lesið á 1486/869/489/192 (gripin skrif: ' + (adrar.length - adrarFyrir) + ')', adrar.length === adrarFyrir, JSON.stringify(adrar.slice(adrarFyrir, adrarFyrir + 4)));
     }
     check('Færa í prófíl: engar síðuvillur', !villur.length, JSON.stringify(villur.slice(0, 3)));
     await ctx.close();

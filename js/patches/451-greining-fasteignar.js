@@ -1254,6 +1254,68 @@
     }
     byggHtml(g);
   };
+  /* 2b · HERBERGI OG ÍBÚÐIR (Agnar 09.10.2026: „ef þú sérð eða getur fundið út hvað það eru mörg herbergi á hótelunum, eða
+   * íbúðir í fjölbýlishúsum, þá væri frábært að fá það inn á company profile")
+   *   herbergi  byggingarlýsing (brúin: tolur.herbergi_nefnd, OCR eða textalag) → varaleið: talning herbergjaheita í textalagi
+   *             grunnmynda (smellt — „áætlað úr teikningu"). Aðeins sjálfgefið í prófílinn fyrir gistingu (annars getur talan
+   *             verið „3 herbergja íbúð").
+   *   íbúðir    eignarhlutar skráningartöflunnar á hæðum 01+ (00 = kjallari: geymslur/bílastæði) í íbúðarhúsi/íbúðagistingu.
+   *             Notkun hvers hluta er ekki lesin → vissa miðlungs (há ef allar summur töflunnar stemma). Annars aðeins
+   *             „eignir (ekki endilega íbúðir)". */
+  const GISTING = /^(hotel|gistiheimili|gisting|hostel|ibudagisting)/;
+  const IBUDARHUS = /^(fjolbyli|ibud)/;
+  const HTAL = new Map();   // heimilisfang → talning herbergja í textalagi grunnmynda
+  function einingar(g) {
+    const b = (g && g.bygg) || {}, teg = String((g && (g.tegundFelags || (g.tegund && g.tegund.tegund))) || '');
+    const ut = { gisting: GISTING.test(teg), ibudarhus: IBUDARHUS.test(teg), teg };
+    if (b.herbergi && +b.herbergi.fjoldi > 0) {
+      ut.herbergi = { fjoldi: +b.herbergi.fjoldi, dags: b.herbergi.dags || null, slod: b.herbergi.slod || null,
+        heimild: 'Byggingarlýsing' + (b.herbergi.dags ? ' ' + dags(b.herbergi.dags) : '') + (b.herbergi.heimild === 'textalag' ? ' (textalag)' : ' (OCR)'),
+        vissa: ut.gisting ? 'miðlungs' : 'lágt' };
+    } else {
+      const t = g && HTAL.get(afbr(g.adr));
+      if (t && t.stada === 'komid' && t.fjoldi > 0) ut.herbergi = { fjoldi: t.fjoldi, aaetlad: true, heimild: 'Áætlað úr teikningu — ' + t.haedir.filter((h) => h.n).map((h) => h.heiti + ' ' + h.n).join(', '), vissa: 'lágt' };
+    }
+    const eh = Array.isArray(b.eignarhlutar) ? b.eignarhlutar.filter((x) => /^\d{4}$/.test(String(x))) : [];
+    if (eh.length) {
+      const ofan = eh.filter((x) => +String(x).slice(0, 2) >= 1), sp = /^(\d+)\/(\d+)$/.exec(String((b.skraningartafla && b.skraningartafla.summuprof) || ''));
+      const summur = !!(sp && +sp[2] > 0 && +sp[1] === +sp[2]);
+      ut.ibudir = { fjoldi: ofan.length, alls: eh.length, kjallari: eh.length - ofan.length, summur, vissa: ut.ibudarhus ? (summur ? 'há' : 'miðlungs') : 'lágt',
+        heimild: 'Skráningartafla' + (b.skraningartafla && b.skraningartafla.dags ? ' ' + dags(b.skraningartafla.dags) : '') + ' — eignarhlutar á hæðum' };
+    }
+    if (b.hamarksfjoldi && +b.hamarksfjoldi.fjoldi > 0) ut.hamarksfjoldi = b.hamarksfjoldi;
+    return ut;
+  }
+  // Varaleið (smellt): herbergjaheiti í textalagi grunnmyndanna („Herb.", „Gistiherb. 104", „Hótelherbergi") — skönnuð blöð ekki talin
+  const HERB_RE = /(^|[\s.])(herb\.?|herbergi|gistiherb\w*|hótelherb\w*|hotelherb\w*|svíta|svita|suite)(?=$|[\s.\d])/i;
+  function teljaHerbergi(g) {
+    const lyk = afbr(g.adr);
+    if (HTAL.has(lyk) && HTAL.get(lyk).stada !== 'villa') return;
+    const t = { stada: 'saeki', haedir: [], fjoldi: 0, skannad: 0 };
+    HTAL.set(lyk, t);
+    teikna('bygg');
+    (async () => {
+      await pdfjsHlada();
+      const hs = batHaedir(g).filter((h) => h.pdf).slice(0, 10);
+      for (const h of hs) {
+        try {
+          const r = await fetch(PDFF + '?url=' + encodeURIComponent(h.pdf), { signal: AbortSignal.timeout(45000) });
+          if (!r.ok) continue;
+          const baeti = new Uint8Array(await r.arrayBuffer()); if (baeti.length < 5000) continue;
+          const doc = await window.pdfjsLib.getDocument({ data: baeti }).promise;
+          try {
+            const s = await doc.getPage(1), vp = s.getViewport({ scale: 1 }), tc = await s.getTextContent();
+            const ord = batOrd(tc, vp);
+            if (ord.filter((o) => /[A-Za-zÀ-ſ]{2,}/.test(o.t)).length < 12) { t.skannad++; continue; }
+            const n = ord.filter((o) => HERB_RE.test(o.t) && o.t.length <= 28).length;
+            t.haedir.push({ heiti: h.heiti, n });
+            t.fjoldi += n;
+          } finally { try { doc.destroy(); } catch (_) {} }
+        } catch (_) {}
+      }
+      t.stada = 'komid'; t.hs = hs.length;
+    })().catch((e) => { t.stada = 'villa'; t.villa = (e && e.message) || String(e); }).then(() => { if (S.g === g) teikna('bygg'); });
+  }
   function byggHtml(g, geymt) {
     const b = g.bygg || {};
     const e = b.eign || {};
@@ -1273,6 +1335,26 @@
       linur.push(lina('Byggingarár', b.byggingarar ? esc(b.byggingarar) : '—', b.oryggi && b.oryggi.byggingarar, b.byggingarar ? ' <span class="ssp-daufur">(úr byggingarlýsingu)</span>' : ''));
       linur.push(lina('Stigagangar', b.stigagangar ? tala(b.stigagangar) : '—', b.stigagangar ? b.oryggi && b.oryggi.stigagangar : null));
     }
+    // herbergi / íbúðir / hámarksfjöldi — sýnt þótt engin tafla sé lesin (lýsingin getur verið lesin ein)
+    const ei = einingar(g);
+    if (ei.ibudir && (ei.ibudarhus || (!ei.gisting && ei.ibudir.fjoldi > 1))) {
+      const ib = ei.ibudir;
+      linur.push(ei.ibudarhus
+        ? lina('Íbúðir', tala(ib.fjoldi), ib.vissa, ' <span class="ssp-daufur">(eignarhlutar á hæðum' + (ib.kjallari ? ' — ' + ib.kjallari + ' í kjallara ekki taldir' : '') + (ib.summur ? '' : ' · notkun hvers hluta ekki lesin') + ')</span>')
+        : lina('Íbúðir', '—', null, ' <span class="ssp-daufur">(' + tala(ib.fjoldi) + ' eignir á hæðum — ekki endilega íbúðir)</span>'));
+    }
+    if (ei.herbergi) {
+      const hb = ei.herbergi;
+      linur.push(lina('Herbergi', tala(hb.fjoldi) + ' herb.', hb.vissa, ' <span class="ssp-daufur">(' + (hb.slod ? skjalHlekkur(hb.slod, esc(hb.heimild)) : esc(hb.heimild)) + (ei.gisting || hb.aaetlad ? '' : ' — nefnt í lýsingu, ekki víst að eigi við gistingu') + ')</span>'));
+    } else if (ei.gisting) {
+      const t = HTAL.get(afbr(g.adr));
+      const tst = !t ? '<button type="button" class="ssp-btn" data-gr-a="telja-herb" style="height:24px!important;padding:0 8px!important;font-size:11.5px!important;margin-left:6px">Telja á teikningum</button>'
+        : t.stada === 'saeki' ? ' <span class="ssp-daufur">telur herbergjaheiti í textalagi grunnmynda…</span>'
+        : t.stada === 'villa' ? ' <span class="ssp-daufur">talning brást: ' + esc(t.villa || '') + '</span>'
+        : ' <span class="ssp-daufur">ekkert herbergjaheiti í textalagi ' + (t.hs || 0) + ' grunnmynda' + (t.skannad ? ' (' + t.skannad + ' skönnuð — ekki talin)' : '') + '</span>';
+      linur.push(lina('Herbergi', '—', null, ' <span class="ssp-daufur">(byggingarlýsingin nefnir enga tölu eða er ólesin)</span>' + tst));
+    }
+    if (ei.hamarksfjoldi) linur.push(lina('Hámarksfjöldi', tala(ei.hamarksfjoldi.fjoldi) + ' manns', null, ' <span class="ssp-daufur">(' + skjalHlekkur(ei.hamarksfjoldi.slod, 'byggingarlýsing ' + (dags(ei.hamarksfjoldi.dags) || '')) + ')</span>'));
     // opin gögn (fasteign-opin): lóðarstærð úr Landeignaskrá og rými úr Borgarvefsjá — sýnd þótt engin tafla sé lesin
     const op = g.opin;
     if (op && op.lod && (op.lod.skrad_m2 || op.lod.maeld_m2)) linur.push(lina('Lóð', tala(op.lod.skrad_m2 || op.lod.maeld_m2) + ' m²', null, ' <span class="ssp-daufur">(Landeignaskrá)</span>'));
@@ -3231,6 +3313,7 @@
       if (erBeintPdf(u)) { opnaForskodun(); return; }
       ljos(myndSlod(u), el.getAttribute('data-titill') || '');
     } else if (a === 'forskodun') { e.preventDefault(); opnaForskodun(); }
+    else if (a === 'telja-herb') { e.preventDefault(); if (g) teljaHerbergi(g); }
     else if (a === 'teikn-landnr') { e.preventDefault(); const l = +el.getAttribute('data-l'); if (l && window.TeikningaForskodun) TeikningaForskodun.opna(l, 'L' + l, null, { sia: 'grunn' }); }
     else if (a === 'faera') {
       e.preventDefault();
@@ -3484,6 +3567,7 @@
   }
   window.Greining451 = {
     gognFyrirProfil,
+    einingar: (g) => { try { return einingar(g); } catch (_) { return {}; } },
     naestu, leysa: (arg) => leysa(arg),
     opna: (arg) => { location.hash = slodFyrir(arg || ''); },
     opnaNu: opna,
