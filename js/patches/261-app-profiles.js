@@ -1838,7 +1838,10 @@
     var f = document.getElementById('_app-frame');
     if (f) return f;
     f = document.createElement('div'); f.id = '_app-frame';
-    f.innerHTML = '<iframe id="_app-iframe" title="app" allow="clipboard-write; clipboard-read"></iframe>';
+    // 09.10.2026 (Agnar: Raddminni í The Box „Kemst ekki í hljóðnemann: Permission denied" þótt Chrome og Android leyfðu):
+    // iframe á annað lén fær ENGA hljóðnema-/myndavélar-/staðsetningarheimild nema hún sé framseld hér með allow= —
+    // getUserMedia hafnar þá alltaf, óháð stillingum símans. radd.html og jarvis.html þurfa microphone.
+    f.innerHTML = '<iframe id="_app-iframe" title="app" allow="clipboard-write; clipboard-read; microphone; camera; geolocation; fullscreen" allowfullscreen></iframe>';
     document.body.appendChild(f);
     return f;
   }
