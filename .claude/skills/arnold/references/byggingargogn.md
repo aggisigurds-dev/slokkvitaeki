@@ -57,6 +57,26 @@ byggingarleyfisins og gengur framar almennri reglu (723/2017, 3. gr.).
 
 Textinn: `teikning-greining\byggingargogn\pdf\2023-11-2843346.txt`.
 
+## Samanburður á 40 húsum (09.10.2026) — hvort skjalið á að treysta
+
+Skýrsla: `teikning-greining\byggingargogn\samanburdur\skyrsla.html` (hús fyrir hús í `samanburdur.json`, pípan í `scripts\`).
+
+| Atriði | Betri heimild | Mælt |
+|---|---|---|
+| m², m² á hæð, hæðir, kjallari, rúmmál | **Skráningartafla** | 34/40 fundust, 29/40 af réttu húsi; 67/70 tölur réttar, engin röng merkt „há" |
+| Eignir | Skráningartafla | engin summa prófar — óvíst |
+| Brunavarnir, notkunarflokkur | **Byggingarlýsing** | 33/40 fundust, brunavarnakafli í 24 (0 af 13 fjölbýlum); textalag 100 %, skannað 90 % |
+| Hvar í húsinu (staðir) | **Lýsing með textalagi** | textalag 87 % fundust / 86 % rétt; skannað aðeins 16 % → tillaga, aldrei í reiti Agnars |
+| Byggingarár | Kaupskrá HMS (32/40) | ekki nota í kerfinu fyrr en Agnar samþykkir skilmálana |
+| Neyðarlýsing | Byggingarlýsing | krafin í 24 lýsingum, lux í 16, þjónustusamningur nefndur í 16 |
+
+- **Rétt hús er stærsti vandinn.** Á lóð með mörgum húsum er nýjasta skjalið oft af öðru húsi (Skeifan 5: tafla af
+  53 m² eldsneytisgeymum; Seljavegur 2: lýsing af fjölbýli á sömu lóð). Matshluti + húsnúmer af blaðinu leysir flest;
+  segðu alltaf hvaða hús skjalið á við.
+- Tafla og lýsing eru oft úr ólíkum umsóknum (sami dagur í 10/30) — nefndu dagsetningu hvors.
+- OCR (RapidOCR) kann ekki íslenska stafi; hærri upplausn hjálpar lítið. Tesseract „isl" er næsta tilraun.
+- Skannað blað: 1½–3 mín í lestri (allt að 8). Textalag < 1 s, en sum nýleg PDF hafa brenglað textalag.
+
 ## Aðrar heimildir
 
 - **HMS fasteignaskrá** (hms.is) lokar á sjálfvirkar fyrirspurnir (429); api.hms.is í áskrift.
