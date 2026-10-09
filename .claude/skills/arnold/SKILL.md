@@ -40,6 +40,7 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 | `references/neydarlysing.md` | Neyðarlýsing og útljós: hverjir eru skyldugir (9.4.12, eftir notkunarflokki), fjölbýli, eldri hús, eftirlit, þjónustusamningur, löggilding (rafvirkjameistari), staðlar EN 1838/50172, sölutækifæri |
 | `references/byggingargogn.md` | Skráningartafla (m², hæðir, eignir) og **byggingarlýsing (HVAR búnaður á að vera)** úr skjalasafni — hvernig á að finna, lesa og treysta; dæmi Fiskislóð 41 |
 | `references/fjolbyli.md` | Húsfélög: búnaður í sameign (stigagangar + kjallari), neyðarlýsing í fjölbýli, Sameign-greiningin í appinu |
+| `references/flokkar.md` / `flokkar.json` | **Kröfur eftir tegund fasteignar/rekstrar** (28 tegundir × 13 kerfi: skylt / skilyrt / ekki, eftirlit, þjónusta, óvissa). Sama efni í töflunni `flokkar_krofur` (Supabase). Flokkun staðanna: `v_stadur_flokkun` (tegund = handval ef til, annars sjálfvirkt); kerfaskrá stað × kerfi: `v_stadur_kerfi` (til staðar, þjónustuaðili, verð, samningur, tækifæri a–d). Sjálfvirk flokkun skrifar aldrei yfir handval; röð í `stadur_kerfi` sem manneskja breytir verður `uppruni='handvirkt'` |
 | `references/kaflar.json` | Kaflaskrá **Reglur-síðunnar** í appinu (`#reglur`, patch 449) — síðan birtir references-skrárnar beint; ný skrá verður kafli með einni línu þar |
 
 **Reglan um heimildir:** samþykkt **byggingarlýsing / brunahönnun hússins ræður** þar sem hún nefnir staði (hún er
