@@ -7,7 +7,7 @@
  *
  * EINN íhlutur, ein skrifleið:
  *   · GreiningFaera.opna(coId, g)      — „Færa í prófíl" úr Greiningu fasteignar (451, viðskiptavinur á staðnum)
- *   · GreiningFaera.opnaProfil(coId)   — „Greining" í Hús-línu prófílsins (432): sækir gögnin (Greining451.
+ *   · GreiningFaera.opnaProfil(coId)   — „Greining" í Óskráð-línu prófílsins (363/411): sækir gögnin (Greining451.
  *                                         gognFyrirProfil, sama sókn og skyndiminni) og sýnir þau INNI á prófílnum
  *   · GreiningFaera.stofna(g)          — „Stofna sem viðskiptavin" (451, ekki viðskiptavinur á staðnum)
  *
@@ -152,6 +152,9 @@
       R + ' .gr-fnaest > div{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.1)}',
       R + ' .gr-fnaest > div > b{flex:1;font:600 13px ' + SANS + '}',
       R + ' .gr-fhl{color:#7a1012;font-weight:600}',
+      R + ' .gr-fnaestu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
+      R + ' .gr-fannad{display:flex;gap:8px;align-items:center;margin:0 0 10px}',
+      R + ' .gr-fannad input{flex:1;min-width:0;height:32px;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.2);background:#fff;font:500 13px ' + SANS + ';color:#141822;box-shadow:inset 0 2px 4px rgba(10,14,22,.08)}',
       // sími: hver röð er spjald — hakið vinstra megin, atriði · sjálfsótt · á prófílnum · staða staflað hægra megin
       '@container (max-width: 560px){' + R + ' .gr-fform{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-ftafla thead{display:none}' + R + ' .gr-ftafla,' + R + ' .gr-ftafla tbody{display:block}' + R + ' .gr-ftafla tr{display:grid;grid-template-columns:34px minmax(0,1fr);margin-bottom:6px;border-radius:6px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.1)}' + R + ' .gr-ftafla td{display:block;box-shadow:none!important;border-radius:0!important;padding:4px 10px 4px 0;width:auto!important}' + R + ' .gr-ftafla td:first-child{grid-row:1 / span 4;padding:8px 0 0 8px}' + R + ' .gr-ftafla td:nth-child(2){padding-top:8px}' + R + ' .gr-ftafla td:last-child{padding-bottom:8px}}',
     ].join('\n');
@@ -196,7 +199,17 @@
       : '<span class="gr-fst ' + esc(r.stada) + '">' + (r.stada === 'enginn' ? 'ekki hægt' : 'villa') + '</span><small>' + esc(r.skyring || '') + '</small>';
     const sjalfgefid = (r) => r.stada === 'tomt' && r.vissa !== 'lágt' && !(r.teg && r.sjalfvirk && r.sjalfvirk !== 'annad');
     const teiknBord = !!(opts.bordHaedir);
-    w.buk.innerHTML =
+    // Staðfangið fannst ekki (Midtown Hotel, „Vegamótastígur 9": lóðirnar sameinaðar — húsið heitir Vegamótastígur 7 í
+    // Staðfangaskrá): næstu húsnúmer við götuna (sömu megin fyrst) + reitur fyrir aðra lóð (heimilisfang eða landnúmer).
+    // Valið greinir AÐRA lóð en heimilisfang félagsins — ekkert fer á prófílinn nema notandinn velji „Bæta á síðu".
+    const profill = opts.fra === 'profill';
+    const ekki = profill && g && !((g.opin && g.opin.eign) || (g.bygg && g.bygg.eign));
+    const naest = ekki ? ((window.Greining451 && Greining451.naestu) ? Greining451.naestu(adr, g.opinTillogur) : (g.opinTillogur || [])) : [];
+    const leit = profill ? (ekki ? '<div class="gr-fvar" data-f="fannst-ekki"><b>„' + esc(adr) + '“ finnst ekki í Staðfangaskrá HMS.</b> Lóðir eru stundum sameinaðar eða húsið skráð á annað númer — veldu næsta húsnúmer við götuna eða sláðu inn aðra lóð.' +
+        (naest.length ? '<div class="gr-fnaestu">' + naest.slice(0, 6).map((t) => '<button type="button" class="ssp-btn" data-f="adr" data-v="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' : '') + '</div>' : '') +
+      (opts.felagAdr && opts.felagAdr !== adr ? '<div class="gr-fath" data-f="onnur">Greint eftir <b>' + esc(adr) + '</b> — ekki heimilisfangi félagsins (' + esc(opts.felagAdr) + '). Ekkert fer á síðuna nema þú veljir það.</div>' : '') +
+      '<form class="gr-fannad" data-f="annad"><input type="text" name="annad" autocomplete="off" placeholder="Önnur lóð: heimilisfang eða landnúmer (t.d. L205361)" aria-label="Önnur lóð: heimilisfang eða landnúmer"><button type="submit" class="ssp-btn">Greina</button></form>' : '';
+    w.buk.innerHTML = leit +
       '<div class="gr-fath">Sjálfsótt úr opinberum skrám (skráningartafla, byggingarlýsing, OpenStreetMap). Aðeins <b>tómir</b> reitir fyllast; fylltum reit er aldrei breytt. Hvert gildi ber 🏛 og uppruna á prófílnum.</div>' +
       (rad.length ? '<table data-_pm-status-done="1" class="gr-ftafla"><thead><tr><th></th><th>Atriði</th><th>Sjálfsótt</th><th>Á prófílnum</th><th>Staða</th></tr></thead><tbody>' +
         rad.map((r, i) => '<tr><td>' + (r.stada === 'tomt' ? '<input type="checkbox" data-i="' + i + '"' + (sjalfgefid(r) ? ' checked' : '') + ' aria-label="' + esc(r.merki) + '">' : '') + '</td>' +
@@ -223,6 +236,9 @@
     if (tk) tk.onclick = () => { w.loka(); if (opts.setjaITeikningu) opts.setjaITeikningu(coId); };
     const full = w.buk.querySelector('[data-f="full"]');
     if (full) full.onclick = () => w.loka();
+    w.buk.querySelectorAll('[data-f="adr"]').forEach((b) => { b.onclick = () => opnaProfil(coId, { adr: b.getAttribute('data-v') }); });
+    const fa = w.buk.querySelector('[data-f="annad"]');
+    if (fa) fa.onsubmit = (e) => { e.preventDefault(); const v = String(fa.elements.annad.value || '').trim(); if (v) opnaProfil(coId, { adr: v }); };
     void teiknBord;
   }
   // EIN staðfesting: listinn yfir það sem breytist
@@ -253,10 +269,27 @@
     o = o || {};
     if (!lagleg(coId)) return;
     const co = coAf(coId);
-    const adr = String(o.adr || (co && co.heimilisfang) || '').trim();
+    const felagAdr = String((co && co.heimilisfang) || '').trim();
+    let adr = String(o.adr || felagAdr).trim();
     const w = gluggi('Greining', co ? co.nafn + (adr ? ' · ' + adr : '') : '#' + coId);
     if (!adr) { w.buk.innerHTML = '<div class="gr-fvar">Ekkert heimilisfang á félaginu — skráðu það á prófílnum fyrst.</div>'; return; }
     if (!window.Greining451 || !Greining451.gognFyrirProfil) { w.buk.innerHTML = '<div class="gr-fvar">Greining fasteignar (451) er ekki hlaðin.</div>'; return; }
+    // landnúmer í reitnum → heimilisfang úr Landeignaskrá; finnist það ekki (sameinuð lóð) bjóðast teikningar þess í skjalasafni
+    if (/^L?\s?\d{5,7}$/i.test(adr) && Greining451.leysa) {
+      w.buk.innerHTML = '<div class="gr-fath">Fletti landnúmerinu upp í Landeignaskrá…</div>';
+      const l = await Greining451.leysa(adr);
+      if (!w.o.isConnected) return;
+      if (!l || !l.adr) {
+        const nr = adr.replace(/\D/g, '');
+        w.buk.innerHTML = '<div class="gr-fvar" data-f="landnr-ekki">' + esc((l && l.villa) || ('Landnúmerið ' + nr + ' fannst ekki.')) + ' Lóðin gæti hafa verið sameinuð annarri — teikningar hennar geta samt verið í skjalasafninu.</div>' +
+          '<div class="gr-ftakkar">' + (window.TeikningaForskodun ? '<button type="button" class="ssp-btn" data-f="ltk">Teikningar L' + esc(nr) + ' í skjalasafni</button>' : '') + '<span class="gr-fbil"></span><button type="button" class="ssp-btn" data-f="aftur">Til baka</button></div>';
+        const t = w.buk.querySelector('[data-f="ltk"]'); if (t) t.onclick = () => { w.loka(); TeikningaForskodun.opna(+nr, 'L' + nr, null, { sia: 'grunn' }); };
+        w.buk.querySelector('[data-f="aftur"]').onclick = () => opnaProfil(coId, {});
+        return;
+      }
+      adr = l.adr;
+      const u = w.o.querySelector('.ssp-undir'); if (u) u.textContent = co ? co.nafn + ' · ' + adr : adr;
+    }
     w.buk.innerHTML = '<div class="gr-fath">Sæki skráningartöflu, byggingarlýsingu, Staðfangaskrá og OpenStreetMap fyrir ' + esc(adr) + '…</div>';
     let g, bord = null;
     try {
@@ -271,13 +304,13 @@
     const rad = await stodur(coId, atr);
     if (!w.o.isConnected) return;
     teiknaVal(w, coId, g, rad, {
-      fra: 'profill', bordHaedir: haedir,
+      fra: 'profill', bordHaedir: haedir, felagAdr,
       teikning: haedir ? '' : 'engar hæðir í Teikningu enn',
       setjaITeikningu: (id) => { if (window.Companies && Companies.opnaTeikningu) { Companies.opnaTeikningu(id); setTimeout(() => { try { if (window.TeiknBord && TeiknBord.finnaAlltHusid) TeiknBord.finnaAlltHusid().catch(() => {}); } catch (_) {} }, 1500); } },
     });
   }
   document.addEventListener('click', (e) => {
-    const b = e.target && e.target.closest ? e.target.closest('button._greining-takki[data-co]') : null;
+    const b = e.target && e.target.closest ? e.target.closest('button._gr-profil-takki[data-co],button._greining-takki[data-co]') : null;
     if (!b) return;
     e.preventDefault(); e.stopPropagation();
     opnaProfil(+b.getAttribute('data-co'));

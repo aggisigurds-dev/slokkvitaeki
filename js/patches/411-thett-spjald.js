@@ -87,6 +87,10 @@
     r('.co-bupp:not(._bupp-thjappad) .b411-oskrad > span', 'opacity:.55'),
     r('.co-bupp .b411-oskrad ._bupp-vixl', 'display:inline-flex!important;align-items:center;height:26px!important;padding:0 10px!important;margin:0!important;border:1px dashed rgba(20,24,34,.35)!important;border-radius:7px!important;background:transparent!important;box-shadow:none!important;color:#3a4250!important;font-size:12px!important;font-weight:600!important;white-space:nowrap;flex:none'),
     r('.co-bupp > ._bupp-vixl', 'display:none!important'),   // takkinn utan línunnar (augnablikið áður en hann er færður)
+    // „Greining" (452) — sama stærð og stíll og „+ Fleiri upplýsingar", lítið stækkunarglerstákn; utan línunnar (engin auð lína) stakur
+    r('.co-bupp .b411-oskrad ._gr-profil-takki,.co-bupp > ._gr-profil-takki', 'display:inline-flex!important;align-items:center;gap:5px;height:26px!important;min-height:0!important;width:auto!important;min-width:0!important;padding:0 10px!important;margin:0!important;border:1px dashed rgba(20,24,34,.35)!important;border-radius:7px!important;background:transparent!important;box-shadow:none!important;color:#3a4250!important;font-size:12px!important;font-weight:600!important;text-decoration:none!important;white-space:nowrap;flex:none;cursor:pointer'),
+    r('.co-bupp .b411-oskrad ._gr-profil-takki:hover,.co-bupp > ._gr-profil-takki:hover', 'border-style:solid!important;color:#141822!important'),
+    r('.co-bupp > ._gr-profil-takki', 'grid-column:1 / -1!important;justify-self:start!important;align-self:start!important'),
     // 3) athugasemdin: ein lína sem vex
     r('.co-banner-right', 'gap:4px!important'),
     r('.co-banner-right .co-banner-note', 'flex:none!important;min-height:36px!important;height:36px;line-height:' + LINA_H + 'px!important;padding:7px 10px!important;resize:none!important;overflow:hidden!important;box-sizing:border-box!important;transition:none!important'),
@@ -143,7 +147,8 @@
     var tom = Array.prototype.slice.call(box.querySelectorAll('._bupp-lina._bupp-tomt'));
     var vixl = box.querySelector('._bupp-vixl');
     var lina = box.querySelector(':scope > .b411-oskrad');
-    if (!tom.length) { if (lina) { if (vixl && lina.contains(vixl)) box.appendChild(vixl); lina.remove(); } return; }
+    var gr = box.querySelector('._gr-profil-takki');   // „Greining" (363/452) fylgir víxltakkanum, beint á undan honum
+    if (!tom.length) { if (lina) { if (gr && lina.contains(gr)) box.appendChild(gr); if (vixl && lina.contains(vixl)) box.appendChild(vixl); lina.remove(); } return; }
     if (!lina) {
       lina = document.createElement('div'); lina.className = 'b411-oskrad';
       lina.innerHTML = '<b>Óskráð</b><span></span>';
@@ -152,6 +157,7 @@
     var nofn = tom.map(function (l) { return txt(l.querySelector('._bupp-merki')) || txt(l).slice(0, 14); }).filter(Boolean).join(' · ');
     var sp = lina.querySelector('span'); if (sp && sp.textContent !== nofn) sp.textContent = nofn;
     if (vixl && vixl.parentElement !== lina) lina.appendChild(vixl);     // sami takki, sama hlustun (363)
+    if (gr && vixl && (gr.parentElement !== lina || gr.nextElementSibling !== vixl)) lina.insertBefore(gr, vixl);
     if (box.lastElementChild !== lina) box.appendChild(lina);
   }
 

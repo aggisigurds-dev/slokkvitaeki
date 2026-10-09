@@ -691,6 +691,8 @@
       ${RB('._bupp-simi ._bupp-vixl', 'display:block')}
       ${R('._bupp-vixl', 'align-self:flex-start;margin-top:3px;padding:2px 0;background:none;border:0;font:inherit;font-size:11px;color:rgba(255,255,255,.5);cursor:pointer;text-decoration:underline;text-underline-offset:3px')}
       ${R('._bupp-vixl:hover', 'color:rgba(255,255,255,.8)')}
+      ${R('button._gr-profil-takki', 'display:inline-flex;align-items:center;gap:4px;align-self:flex-start;margin:3px 10px 0 0!important;padding:2px 0!important;height:auto!important;min-height:0!important;width:auto!important;min-width:0!important;background:none!important;border:0!important;box-shadow:none!important;font:inherit;font-size:11px!important;font-weight:600!important;color:rgba(255,255,255,.75)!important;cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap')}
+      ${R('button._gr-profil-takki:hover', 'color:#fff!important')}
     `;
     (document.head || document.documentElement).appendChild(s);
   }
@@ -868,6 +870,10 @@
               (stMisr ? '⚠ ' : '') + esc(st.texti) + '</span>' +
           '</div>'
         : '') +
+      // „Greining" (Agnar 09.10.2026, skjámynd: „beint fyrir framan + Fleiri upplýsingar") — 452 opnar gluggann (delegated),
+      // 411 færir hann með víxltakkanum inn í Óskráð-línuna. Aldrei á sýndarfyrirtækinu (Greining fasteignar, neikvætt id).
+      (+coId > 0 ? '<button type="button" class="_gr-profil-takki" data-co="' + (+coId) + '" title="Greining fasteignar — sækir skráningartöflu, byggingarlýsingu, Staðfangaskrá og OpenStreetMap og sýnir hvað má bæta á síðuna">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.6 15.6 5 5"/></svg>Greining</button>' : '') +
       '<button type="button" class="_bupp-vixl">' + (opid(coId) ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     uppfaeraTomt(box, coId);
     merkjaSjalf(box, coId);

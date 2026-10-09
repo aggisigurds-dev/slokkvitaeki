@@ -394,9 +394,16 @@
       '#gr-ljos .gr-lor.v{left:12px}', '#gr-ljos .gr-lor.h{right:12px}',
       '#gr-ljos .gr-lor[disabled]{opacity:.28;cursor:default}',
       '@media (max-width: 700px){#gr-ljos .gr-lor{width:38px;height:56px;margin-top:-28px;font-size:24px}#gr-ljos .gr-lor.v{left:4px}#gr-ljos .gr-lor.h{right:4px}#gr-ljos .gr-lundir{max-width:100%;flex-basis:100%;order:5}}',
-      '#gr-ljos .gr-lb{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px}',
-      '#gr-ljos .gr-lb img{max-width:100%;max-height:100%;background:#fff;cursor:zoom-in}',
-      '#gr-ljos .gr-lb.stor img{max-width:none;max-height:none;cursor:zoom-out}',
+      '#gr-ljos{touch-action:none;overscroll-behavior:contain}',
+      '#gr-ljos .gr-lb{flex:1;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:zoom-in}',
+      '#gr-ljos .gr-lb.zm{cursor:grab}', '#gr-ljos .gr-lb.drag{cursor:grabbing}',
+      '#gr-ljos .gr-lb img{position:absolute;left:0;top:0;max-width:none!important;max-height:none!important;background:#fff;pointer-events:none;-webkit-user-drag:none;user-select:none;box-shadow:0 6px 30px rgba(0,0,0,.5)}',
+      '#gr-ljos .gr-lb .gr-lbid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}',
+      '#gr-ljos .gr-lhr{position:absolute;right:12px;bottom:12px;z-index:3;padding:5px 11px;border-radius:7px;background:rgba(10,12,16,.85);border:1px solid rgba(255,255,255,.22);color:#fff;font:600 12px ' + SANS + ';pointer-events:none}',
+      '#gr-ljos .gr-lhr[hidden]{display:none}',
+      '#gr-ljos .gr-lz{display:inline-flex;align-items:center;gap:4px}',
+      '#gr-ljos .gr-lz .ssp-btn{min-width:34px;justify-content:center}',
+      '#gr-ljos .gr-lzt{min-width:48px;text-align:center;font:600 12px ' + MONO + ';color:rgba(255,255,255,.85)}',
       // tenglar á Sölu og í Teikningu
       'a.gr-sala-hl' + K + '{display:inline-flex!important;align-items:center;gap:5px;height:26px;padding:0 10px!important;margin-left:8px;border-radius:6px;border:1px solid rgba(20,24,34,.18);background:' + SILVER + ';color:#1f2530!important;font:600 12px/1 ' + SANS + '!important;text-decoration:none!important;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.12)}',
     ].join('\n');
@@ -523,6 +530,14 @@
     return { adr: t };
   }
 
+  // Næstu húsnúmer við götuna, sömu megin fyrst: „Vegamótastígur 9" → Vegamótastígur 7, 4 (Staðfangaskrá: tillogur fasteign-opin)
+  function naestu(adr, tillogur) {
+    const m = /\s(\d+)\s*[a-záðéíóúýþæö]?(?=[\s,]|$)/i.exec(String(adr || ''));
+    const n = m ? +m[1] : null;
+    const nr = (t) => { const x = /\s(\d+)/.exec(String(t || '')); return x ? +x[1] : null; };
+    const fj = (t) => { const k = nr(t); return n == null || k == null ? 999 : Math.abs(k - n) + (k % 2 !== n % 2 ? 0.5 : 0); };
+    return (tillogur || []).slice().sort((a, b) => fj(a) - fj(b));
+  }
   let _opnar = null;
   // Sýndarprófíllinn aftur á skjáinn (eftir ræsilendingu sem skipti um sýn) — sama uppfletting, engin ný sókn
   function endurvekja() {
@@ -874,12 +889,19 @@
   const SVF = { '0000': 'Reykjavík', '1000': 'Kópavogur', '1100': 'Seltjarnarnes', '1300': 'Garðabær', '1400': 'Hafnarfjörður', '1604': 'Mosfellsbær', '2000': 'Reykjanesbær', '3000': 'Akranes', '6000': 'Akureyri' };
   TEIKNA.eign = (g) => {
     const po = g.parts.opin || {}, pb = g.parts.bygg || {};
-    if (!g.adr) { setjaStodu('eign', 'tomt', g.villa ? 'villa' : 'bíður'); setjaBuk('eign', '<div class="' + (g.villa ? 'gr-villa' : 'gr-tomt') + '">' + esc(g.villa || 'Ekkert heimilisfang.') + '</div>'); return; }
+    if (!g.adr) {
+      setjaStodu('eign', 'tomt', g.villa ? 'villa' : 'bíður');
+      // landnúmer sem er ekki (lengur) í Landeignaskrá — oft sameinuð lóð: teikningar þess geta samt verið í skjalasafninu
+      const ln = erLandnr(g.arg) ? String(g.arg).replace(/\D/g, '') : '';
+      setjaBuk('eign', '<div class="' + (g.villa ? 'gr-villa' : 'gr-tomt') + '">' + esc(g.villa || 'Ekkert heimilisfang.') + (ln ? ' Lóðin gæti hafa verið sameinuð annarri — sláðu inn heimilisfang eða næsta húsnúmer í hausnum.' : '') + '</div>' +
+        (ln && window.TeikningaForskodun ? '<div class="gr-takkar" style="margin-top:6px"><button type="button" class="ssp-btn" data-gr-a="teikn-landnr" data-l="' + esc(ln) + '">Teikningar L' + esc(ln) + ' í skjalasafni</button></div>' : ''));
+      return;
+    }
     if ((po.stada === 'saeki' || !po.stada) && (pb.stada === 'saeki' || !pb.stada)) { setjaStodu('eign', 'saeki', 'sæki Staðfangaskrá…'); return; }
     const o = g.opin && g.opin.eign, e = (g.bygg && g.bygg.eign) || g.eignHus || {};
     if (!o && !e.landnr) {
       setjaStodu('eign', po.stada === 'villa' ? 'villa' : 'tomt', 'fannst ekki');
-      const till = g.opinTillogur || [];
+      const till = naestu(g.adr, g.opinTillogur);
       setjaBuk('eign', '<div class="gr-tomt"><b>„' + esc(g.adr) + '" fannst ekki í Staðfangaskrá HMS.</b> Athugaðu húsnúmer og póstnúmer — tillögur birtast líka meðan slegið er inn í hausnum.</div>' +
         (till.length ? '<div class="ssp-skilti">Staðföng sem eru til á götunni</div><div class="gr-takkar" style="margin-top:4px">' + till.map((t) => '<button type="button" class="ssp-btn" data-gr-a="opna" data-v="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' : ''));
       return;
@@ -1788,7 +1810,7 @@
 
   /* 5c · STÓR MYND MEÐ ÖRVUM (← → milli hæða og blaða, Esc lokar) */
   const STOR = new Map();
-  function skeraMynd(src, sk, fr) {
+  function skeraMynd(src, sk, fr, hamark) {
     return new Promise((res, rej) => {
       const im = new Image();
       try { if (new URL(src, location.href).origin !== location.origin && !/^(blob|data):/.test(src)) im.crossOrigin = 'anonymous'; } catch (_) {}
@@ -1796,7 +1818,7 @@
         try {
           const W = im.naturalWidth, H = im.naturalHeight;
           const x = sk.x / fr.b * W, y = sk.y / fr.h * H, w = sk.w / fr.b * W, h = sk.h / fr.h * H;
-          const k = Math.min(1, 3200 / Math.max(w, h, 1));
+          const k = Math.min(1, (hamark || 3200) / Math.max(w, h, 1));
           const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
           const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
           cx.drawImage(im, x, y, w, h, 0, 0, cv.width, cv.height);
@@ -1819,6 +1841,27 @@
     }
     return STOR.get(lyk);
   }
+  // Háupplausnarútgáfa blaðs fyrir aðdrátt (Agnar 09.10.2026: „það er bara ein zoomstilling … Væri frábært ef ég gæti notað
+  // scrollhjólið á músinni til að zooma inn og út og hreyft viewið í zoominu"): vigur-PDF teiknað aftur með pdf.js í mikilli
+  // upplausn (skarpur texti), TIF/JPEG úr skjalasafni í fullri upplausn um teikn-mynd. Skurður hæðar (Teikning) skorinn úr
+  // háupplausnarmyndinni. null = engin betri útgáfa til (Designer-3D, vinnumynd, loftmynd).
+  const HAUPPL = new Map();
+  function haupplausn(it) {
+    const PX = (window.innerWidth || 1200) < 700 ? 4200 : 5600;
+    const innri = (u) => { try { const x = new URL(u, location.href); return /teikn-(mynd|pdf)/.test(x.pathname) ? (x.searchParams.get('url') || '') : ''; } catch (_) { return ''; } };
+    const frum = it.slod || innri(it.mynd || '') || '';
+    const lyk = (it.pdf || frum || it.mynd || '') + (it.skurdur ? '#' + [it.skurdur.x, it.skurdur.y, it.skurdur.w, it.skurdur.h].join(',') : '') + '|hr';
+    if (HAUPPL.has(lyk)) return HAUPPL.get(lyk);
+    const pdfSlod = it.pdf || (/\.pdf(\.info)?$/i.test(frum) ? frum : '');
+    let p = null;
+    if (pdfSlod) p = pdfSmamynd(pdfSlod, PX);
+    else if (frum && /^https:\/\/(skjalasafn\.reykjavik\.is|teikningar\.hafnarfjordur\.is)\//.test(frum)) p = Promise.resolve(myndSlod(frum));
+    else if (it.mynd && it.skurdur && it.frum) p = Promise.resolve(it.mynd);
+    else return null;
+    if (it.skurdur && it.frum) p = p.then((src) => skeraMynd(src, it.skurdur, it.frum, 7000));
+    HAUPPL.set(lyk, p); p.catch(() => HAUPPL.delete(lyk));
+    return p;
+  }
   let _ljosLok = null;
   function ljosSafn(safn0, i0) {
     if (_ljosLok) _ljosLok();
@@ -1831,13 +1874,74 @@
     o.id = 'gr-ljos'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
     o.innerHTML = '<div class="gr-lh"><span class="gr-ltitill"></span><span class="gr-lundir"></span><span class="gr-lbil"></span>' +
       (fjoldi > 1 ? '<span class="gr-lteljari"></span>' : '') +
+      '<span class="gr-lz" role="group" aria-label="Aðdráttur"><button type="button" class="ssp-btn" data-gr-lz="-1" title="Minnka (−)" aria-label="Minnka">−</button><span class="gr-lzt">100 %</span>' +
+      '<button type="button" class="ssp-btn" data-gr-lz="1" title="Stækka (+) — líka skrunhjól og tvísmellur" aria-label="Stækka">+</button><button type="button" class="ssp-btn" data-gr-lz="0" title="Passa í glugga (0)">Passa</button></span>' +
       '<a class="ssp-btn" data-gr-ltp hidden target="_blank" rel="noopener">Skoða í TurboPaint</a>' +
       '<button type="button" class="ssp-btn" data-gr-lfsk hidden title="Opnar forskoðun teikninganna (384): þysja, prenta, sækja í fullum gæðum">Forskoðun</button><button type="button" class="ssp-btn" data-gr-loka>Loka</button></div>' +
-      '<div class="gr-lb"><span class="gr-lbid">Sæki mynd…</span><img alt="" hidden></div>' +
+      '<div class="gr-lb"><span class="gr-lbid">Sæki mynd…</span><img alt="" hidden draggable="false"><span class="gr-lhr" hidden>Hleð skarpri útgáfu…</span></div>' +
       (fjoldi > 1 ? '<button type="button" class="gr-lor v" data-gr-lor="-1" aria-label="Fyrri teikning">‹</button><button type="button" class="gr-lor h" data-gr-lor="1" aria-label="Næsta teikning">›</button>' : '');
     document.body.appendChild(o);
-    const img = o.querySelector('.gr-lb img'), bid = o.querySelector('.gr-lbid'), lb = o.querySelector('.gr-lb');
+    const img = o.querySelector('.gr-lb img'), bid = o.querySelector('.gr-lbid'), lb = o.querySelector('.gr-lb'), hrM = o.querySelector('.gr-lhr'), zt = o.querySelector('.gr-lzt');
     let nr = -1, kall = 0;
+    // ── AÐDRÁTTUR: z = 1 er „passa í glugga" (bw × bh); myndin er staðsett með left/top/width/height (alltaf skörp — engin
+    //    teygð rasta úr transform). Aðdráttur um punkt heldur punktinum undir bendlinum kyrrum.
+    const V = { z: 1, tx: 0, ty: 0, bw: 0, bh: 0, ar: 0, syntNr: -1, hr: false, hrBid: false };
+    const ZMIN = 1, ZMAX = 12, BIL = 10;
+    const kassi = () => lb.getBoundingClientRect();
+    const passa = () => {
+      const k = kassi(); if (!V.ar || !k.width) return;
+      const w = Math.max(40, k.width - 2 * BIL), h = Math.max(40, k.height - 2 * BIL);
+      if (w / h > V.ar) { V.bh = h; V.bw = h * V.ar; } else { V.bw = w; V.bh = w / V.ar; }
+    };
+    const midja = () => { const k = kassi(); V.z = 1; V.tx = (k.width - V.bw) / 2; V.ty = (k.height - V.bh) / 2; };
+    // myndin má aldrei hverfa: a.m.k. 30 % af glugganum (eða myndinni, ef hún er minni) sést alltaf
+    const halda = () => {
+      const k = kassi(), W = V.bw * V.z, H = V.bh * V.z, mx = Math.min(W, k.width) * 0.3, my = Math.min(H, k.height) * 0.3;
+      V.tx = Math.min(k.width - mx, Math.max(mx - W, V.tx)); V.ty = Math.min(k.height - my, Math.max(my - H, V.ty));
+    };
+    const beita = () => {
+      if (!V.bw) return;
+      img.style.width = (V.bw * V.z).toFixed(2) + 'px'; img.style.height = (V.bh * V.z).toFixed(2) + 'px';
+      img.style.left = V.tx.toFixed(2) + 'px'; img.style.top = V.ty.toFixed(2) + 'px';
+      lb.classList.toggle('zm', V.z > 1.001);
+      if (zt) zt.textContent = Math.round(V.z * 100) + ' %';
+      if (V.z > 1.5) skarpari();
+    };
+    const zoom = (f, px, py) => {
+      if (img.hidden || !V.bw) return false;
+      const z2 = Math.min(ZMAX, Math.max(ZMIN, V.z * f));
+      if (Math.abs(z2 - V.z) < 1e-4) return false;
+      const ux = (px - V.tx) / (V.bw * V.z), uy = (py - V.ty) / (V.bh * V.z);
+      V.z = z2; V.tx = px - ux * V.bw * z2; V.ty = py - uy * V.bh * z2;
+      if (V.z <= 1.0001) midja(); else halda();
+      beita();
+      return true;
+    };
+    const iMidju = (f) => { const k = kassi(); zoom(f, k.width / 2, k.height / 2); };
+    const vixla = (cx, cy) => { const k = kassi(); if (V.z > 1.05) { midja(); beita(); } else zoom(2.5 / V.z, cx - k.left, cy - k.top); };
+    // skarpari útgáfa yfir 1,5× — sama rúmfræði (bw × bh), aðeins upplausn myndarinnar breytist
+    const skarpari = () => {
+      if (V.hr || V.hrBid) return;
+      // blað sem er þegar í fullri upplausn (frumrit ≥ 4000 px, t.d. TIF úr skjalasafni) er skarpt — ekkert sótt aftur
+      if (Math.max(img.naturalWidth, img.naturalHeight) >= 4000) { V.hr = true; img.dataset.hr = 'frumrit'; return; }
+      const it = safn[nr]; const p = it ? haupplausn(it) : null;
+      if (!p) { V.hr = true; return; }
+      V.hrBid = true; hrM.hidden = false;
+      const k = kall;
+      p.then((src) => {
+        if (k !== kall) return;
+        if (!src || src === img.getAttribute('src')) { V.hr = true; V.hrBid = false; hrM.hidden = true; return; }
+        const pre = new Image();
+        pre.onload = () => { if (k !== kall) return; img.src = src; img.dataset.hr = '1'; V.hr = true; V.hrBid = false; hrM.hidden = true; };
+        pre.onerror = () => { if (k === kall) { V.hr = true; V.hrBid = false; hrM.hidden = true; } };
+        pre.src = src;
+      }, () => { if (k === kall) { V.hr = true; V.hrBid = false; hrM.hidden = true; } });
+    };
+    img.addEventListener('load', () => {
+      if (V.syntNr === nr) return;   // háupplausnin kom — rúmfræðin stendur
+      V.syntNr = nr; V.ar = img.naturalWidth / Math.max(1, img.naturalHeight);
+      passa(); midja(); beita();
+    });
     const syna = (n) => {
       if (n < 0 || n >= fjoldi || n === nr) return;
       nr = n; const it = safn[n], k = ++kall;
@@ -1848,30 +1952,97 @@
       o.querySelectorAll('[data-gr-lor]').forEach((b) => { const s = n + +b.getAttribute('data-gr-lor'); b.disabled = s < 0 || s >= fjoldi; });
       const fb = o.querySelector('[data-gr-lfsk]'); if (fb) fb.hidden = !it.forsk;
       const tp = o.querySelector('[data-gr-ltp]'), tu = tpSlod(it); if (tp) { tp.hidden = !tu; if (tu) tp.href = tu; else tp.removeAttribute('href'); }
-      lb.classList.remove('stor'); img.hidden = true; bid.hidden = false; bid.textContent = it.pdf ? 'Teikna PDF-teikninguna…' : 'Sæki mynd…';
+      // nýtt blað: aðdráttur endurstilltur
+      Object.assign(V, { z: 1, syntNr: -1, hr: false, hrBid: false }); hrM.hidden = true; delete img.dataset.hr;
+      lb.classList.remove('zm'); if (zt) zt.textContent = '100 %';
+      img.hidden = true; bid.hidden = false; bid.textContent = it.pdf ? 'Teikna PDF-teikninguna…' : 'Sæki mynd…';
       storMynd(it).then((src) => {
         if (k !== kall) return;
         img.onload = () => { if (k === kall) { img.hidden = false; bid.hidden = true; } };
         img.onerror = () => { if (k === kall) bid.textContent = 'Myndin fékkst ekki.'; };
-        img.src = src;
+        img.removeAttribute('src'); img.src = src;
       }, (e) => { if (k === kall) bid.textContent = 'Myndin fékkst ekki (' + ((e && e.message) || e) + ').'; });
     };
+    // ── skrunhjól: aðdráttur um bendilinn; síðan sjálf skrunar aldrei meðan skoðarinn er opinn
+    o.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!e.target.closest || !e.target.closest('.gr-lb')) return;
+      const r = kassi(), d = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      zoom(Math.exp(-Math.max(-300, Math.min(300, d)) * 0.0018), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    // ── músardráttur / snerting (pointer events): einn bendill hliðrar, tveir fingur klípa, tvípikk víxlar
+    const ptr = new Map();
+    let drag = null, klipa = null, hreyft = false, sidastaPik = null, sidastaTeg = 'mouse';
+    lb.addEventListener('pointerdown', (e) => {
+      sidastaTeg = e.pointerType || 'mouse';
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (img.hidden) return;
+      try { lb.setPointerCapture(e.pointerId); } catch (_) {}
+      ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptr.size === 1) hreyft = false;
+      if (ptr.size >= 2) { const [a, b] = [...ptr.values()]; klipa = { d: Math.hypot(b.x - a.x, b.y - a.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }; drag = null; }
+      else { drag = { x: e.clientX, y: e.clientY }; if (V.z > 1.001) lb.classList.add('drag'); }
+    });
+    lb.addEventListener('pointermove', (e) => {
+      if (!ptr.has(e.pointerId)) return;
+      ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (klipa && ptr.size >= 2) {
+        const [a, b] = [...ptr.values()], d = Math.hypot(b.x - a.x, b.y - a.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, r = kassi();
+        V.tx += mx - klipa.mx; V.ty += my - klipa.my;   // hliðrun með miðpunkti fingranna
+        const f = d / klipa.d;
+        klipa = { d, mx, my }; hreyft = true;
+        if (!zoom(f, mx - r.left, my - r.top)) { halda(); beita(); }
+        return;
+      }
+      if (drag) {
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        if (Math.abs(dx) + Math.abs(dy) > 2) hreyft = true;
+        if (V.z > 1.001) { V.tx += dx; V.ty += dy; halda(); beita(); }
+        drag = { x: e.clientX, y: e.clientY };
+      }
+    });
+    const upp = (e) => {
+      if (!ptr.has(e.pointerId)) return;
+      ptr.delete(e.pointerId);
+      if (ptr.size < 2) klipa = null;
+      if (ptr.size === 1) { const a = [...ptr.values()][0]; drag = { x: a.x, y: a.y }; }
+      if (!ptr.size) {
+        drag = null; lb.classList.remove('drag');
+        if (e.type === 'pointerup' && e.pointerType !== 'mouse' && !hreyft) {
+          const nu = Date.now();
+          if (sidastaPik && nu - sidastaPik.t < 330 && Math.hypot(e.clientX - sidastaPik.x, e.clientY - sidastaPik.y) < 30) { vixla(e.clientX, e.clientY); sidastaPik = null; }
+          else sidastaPik = { t: nu, x: e.clientX, y: e.clientY };
+        }
+      }
+    };
+    lb.addEventListener('pointerup', upp); lb.addEventListener('pointercancel', upp);
+    lb.addEventListener('dblclick', (e) => { e.preventDefault(); if (sidastaTeg === 'mouse' && !img.hidden) vixla(e.clientX, e.clientY); });
+    const nyStaerd = () => { if (!V.ar) return; passa(); midja(); beita(); };
+    window.addEventListener('resize', nyStaerd);
     const lykill = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); loka(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); syna(nr + 1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); syna(nr - 1); }
+      else if (e.key === '+' || e.key === '=') { e.preventDefault(); e.stopPropagation(); iMidju(1.25); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); e.stopPropagation(); iMidju(0.8); }
+      else if (e.key === '0') { e.preventDefault(); e.stopPropagation(); if (V.bw) { midja(); beita(); } }
     };
-    const loka = () => { o.remove(); document.removeEventListener('keydown', lykill, true); _ljosLok = null; };
+    const loka = () => { o.remove(); document.removeEventListener('keydown', lykill, true); window.removeEventListener('resize', nyStaerd); _ljosLok = null; };
     o.addEventListener('click', (e) => {
       const t = e.target;
       if (t.closest('[data-gr-loka]')) { loka(); return; }
       const lor = t.closest('[data-gr-lor]'); if (lor) { syna(nr + +lor.getAttribute('data-gr-lor')); return; }
+      const lz = t.closest('[data-gr-lz]'); if (lz) { const v = +lz.getAttribute('data-gr-lz'); if (!v) { if (V.bw) { midja(); beita(); } } else iMidju(v > 0 ? 1.25 : 0.8); return; }
       if (t.closest('[data-gr-lfsk]')) { loka(); opnaForskodun(); return; }
-      if (t === img) { lb.classList.toggle('stor'); return; }
-      if (t === lb) loka();
+      // smellur á auðan flöt utan myndarinnar lokar — ekki eftir drátt, og aldrei á myndina sjálfa
+      if (t === lb && !hreyft) {
+        const r = img.getBoundingClientRect();
+        if (img.hidden || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) loka();
+      }
     });
     document.addEventListener('keydown', lykill, true);
     _ljosLok = loka;
+    o.__skodari = { V, zoom, beita, midja };   // prófin lesa stöðuna
     syna(Math.max(0, safn.indexOf(byrjun)));
   }
 
@@ -2578,6 +2749,7 @@
       if (erBeintPdf(u)) { opnaForskodun(); return; }
       ljos(myndSlod(u), el.getAttribute('data-titill') || '');
     } else if (a === 'forskodun') { e.preventDefault(); opnaForskodun(); }
+    else if (a === 'teikn-landnr') { e.preventDefault(); const l = +el.getAttribute('data-l'); if (l && window.TeikningaForskodun) TeikningaForskodun.opna(l, 'L' + l, null, { sia: 'grunn' }); }
     else if (a === 'faera') {
       e.preventDefault();
       if (window.GreiningFaera && g) GreiningFaera.opna(+el.getAttribute('data-id'), g, { fra: 'greining' });
@@ -2820,6 +2992,7 @@
   }
   window.Greining451 = {
     gognFyrirProfil,
+    naestu, leysa: (arg) => leysa(arg),
     opna: (arg) => { location.hash = slodFyrir(arg || ''); },
     opnaNu: opna,
     stada: () => ({ virkt: S.virkt, arg: S.arg, adr: S.adr, parts: S.g ? JSON.parse(JSON.stringify(S.g.parts)) : null }),

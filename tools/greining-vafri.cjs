@@ -32,6 +32,9 @@ const SER_UT = arg('ser-ut', '');
 if (SER_UT) fs.mkdirSync(SER_UT, { recursive: true });
 // --fsk-ut <mappa>: skjámyndir Teikningar-spjaldsins (forskoðun) og stóru myndarinnar
 const FSK_UT = arg('fsk-ut', '');
+// --skodari-ut <mappa>: skjámyndir af aðdregnum skoðara
+const SKODARI_UT = arg('skodari-ut', '');
+if (SKODARI_UT) fs.mkdirSync(SKODARI_UT, { recursive: true });
 if (FSK_UT) fs.mkdirSync(FSK_UT, { recursive: true });
 const SYND = -987654321;
 // --port: annar prófþjónn (npx serve) getur setið á 5599
@@ -443,6 +446,86 @@ async function profaHus(b, adr, vp, skra) {
       }
     }
   }
+  // ── Stóri skoðarinn sem myndskoðari (Agnar 09.10.2026: „Væri frábært ef ég gæti notað scrollhjólið á músinni til að
+  //    zooma inn og út og hreyft viewið í zoominu"): skrunhjól um bendilinn (punkturinn kyrr ±2 px), háupplausn yfir 1,5×,
+  //    dráttur hliðrar, 0 passar, tvísmellur = 2,5×, + takkinn, ör endurstillir, klípa með tveimur fingrum (375, CDP-snerting)
+  {
+    const fl = (await page.$('#_gr451 [data-gr="teikn"] .gr-fsk[data-gr-a="fsk"]')) || (await page.$('#_gr451 [data-gr="teikn"] [data-gr-a="fsk"]'));
+    if (fl) {
+      await fl.scrollIntoViewIfNeeded().catch(() => {});
+      await fl.click({ position: { x: 20, y: 20 } }).catch(() => {});
+      await page.waitForFunction(() => { const im = document.querySelector('#gr-ljos .gr-lb img'); return im && !im.hidden && im.naturalWidth > 0 && parseFloat(im.style.width) > 0; }, null, { timeout: 40000 }).catch(() => {});
+      const rect = () => page.evaluate(() => {
+        const o = document.getElementById('gr-ljos'), im = o && o.querySelector('.gr-lb img'), b = o && o.querySelector('.gr-lb'); if (!im) return null;
+        const r = im.getBoundingClientRect(), k = b.getBoundingClientRect();
+        return { x: r.left, y: r.top, w: r.width, h: r.height, kx: k.left, ky: k.top, kw: k.width, kh: k.height, nw: im.naturalWidth, hr: im.dataset.hr === '1' || im.dataset.hr === 'frumrit', frumrit: im.dataset.hr === 'frumrit', zt: (o.querySelector('.gr-lzt') || {}).textContent || '', titill: (o.querySelector('.gr-ltitill') || {}).textContent || '', sy: window.scrollY, hrM: !(o.querySelector('.gr-lhr') || {}).hidden };
+      });
+      const r0 = await rect();
+      if (r0 && r0.w > 0) {
+        if (vp !== 375) {
+          const mx = r0.x + r0.w * 0.35, my = r0.y + r0.h * 0.4, u = 0.35, v = 0.4;
+          await page.mouse.move(mx, my);
+          for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, -120); await page.waitForTimeout(60); }
+          await page.waitForTimeout(250);
+          const r1 = await rect(), px = r1.x + u * r1.w, py = r1.y + v * r1.h;
+          check(nafn + ': skoðari — skrunhjól dregur að um bendilinn („' + r0.titill + '“ ' + r0.zt + ' → ' + r1.zt + '; punkturinn hreyfðist ' + (Math.round(Math.hypot(px - mx, py - my) * 10) / 10) + ' px; síðan skrunaði ekki)', r1.w > r0.w * 1.8 && Math.abs(px - mx) <= 2 && Math.abs(py - my) <= 2 && r1.sy === r0.sy, JSON.stringify({ r0, r1, px, py, mx, my }));
+          const tHr = Date.now(); let hr = null, saBid = false;
+          while (Date.now() - tHr < 60000) { hr = await rect(); if (hr.hrM) saBid = true; if (hr.hr) break; await page.waitForTimeout(400); }
+          check(nafn + ': skoðari — skörp útgáfa yfir 1,5× (' + (hr && hr.frumrit ? 'blaðið er þegar í fullri upplausn, ' + r0.nw + ' px — ekkert teygt' : 'frumrit ' + r0.nw + ' → ' + (hr && hr.nw) + ' px' + (saBid ? ', „Hleð skarpri útgáfu…“ sást' : '')) + ')', !!(hr && hr.hr && (hr.frumrit ? r0.nw >= 4000 : hr.nw > r0.nw)), JSON.stringify(hr));
+          if (SKODARI_UT) await page.screenshot({ path: path.join(SKODARI_UT, vp + '-' + slug(adr) + '-adregid.png') }).catch(() => {});
+          const a = await rect();
+          await page.mouse.move(a.kx + a.kw / 2, a.ky + a.kh / 2); await page.mouse.down(); await page.mouse.move(a.kx + a.kw / 2 + 120, a.ky + a.kh / 2 + 70, { steps: 6 }); await page.mouse.up();
+          await page.waitForTimeout(150);
+          const b = await rect();
+          check(nafn + ': skoðari — dráttur hliðrar myndinni (Δ ' + Math.round(b.x - a.x) + ', ' + Math.round(b.y - a.y) + ' px) og skoðarinn helst opinn', Math.abs((b.x - a.x) - 120) <= 3 && Math.abs((b.y - a.y) - 70) <= 3 && !!(await page.$('#gr-ljos')), JSON.stringify({ a, b }));
+          await page.keyboard.press('0'); await page.waitForTimeout(150);
+          const c = await rect();
+          check(nafn + ': skoðari — 0 passar í glugga (' + c.zt + ')', Math.abs(c.w - r0.w) <= 1 && c.zt === '100 %', JSON.stringify({ c, r0 }));
+          await page.mouse.dblclick(c.x + c.w * 0.5, c.y + c.h * 0.5); await page.waitForTimeout(250);
+          const d = await rect();
+          check(nafn + ': skoðari — tvísmellur víxlar í 2,5× (' + d.zt + ')', d.zt === '250 %', JSON.stringify(d));
+          await page.mouse.dblclick(c.x + c.w * 0.5, c.y + c.h * 0.5); await page.waitForTimeout(250);
+          const d2 = await rect();
+          check(nafn + ': skoðari — tvísmellur aftur = passa (' + d2.zt + ')', d2.zt === '100 %', JSON.stringify(d2));
+          await page.click('#gr-ljos [data-gr-lz="1"]'); await page.waitForTimeout(120);
+          const e2 = await rect();
+          await page.keyboard.press('-'); await page.waitForTimeout(120);
+          const e3 = await rect();
+          check(nafn + ': skoðari — „+“ takkinn og „−“ flýtilykill (' + e2.zt + ' → ' + e3.zt + ')', e2.zt === '125 %' && e3.zt === '100 %', JSON.stringify({ e2, e3 }));
+        } else {
+          // tveggja fingra klípa (CDP-snerting → pointer events) um miðjuna
+          const cdp = await page.context().newCDPSession(page);
+          const cx = r0.kx + r0.kw / 2, cy = r0.ky + r0.kh / 2;
+          const uu = (cx - r0.x) / r0.w, vv = (cy - r0.y) / r0.h;
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx - 30, y: cy, id: 1 }, { x: cx + 30, y: cy, id: 2 }] });
+          for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx - 30 - i * 11, y: cy, id: 1 }, { x: cx + 30 + i * 11, y: cy, id: 2 }] }); await page.waitForTimeout(25); }
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForTimeout(250);
+          const r1 = await rect(), px = r1.x + uu * r1.w, py = r1.y + vv * r1.h;
+          check(nafn + ': skoðari — klípa með tveimur fingrum dregur að (' + r0.zt + ' → ' + r1.zt + '; miðpunkturinn hreyfðist ' + (Math.round(Math.hypot(px - cx, py - cy) * 10) / 10) + ' px)', r1.w > r0.w * 2 && Math.abs(px - cx) <= 3 && Math.abs(py - cy) <= 3, JSON.stringify({ r0, r1, px, py, cx, cy }));
+          // einn fingur hliðrar
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: cx, y: cy, id: 3 }] });
+          for (let i = 1; i <= 5; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: cx + i * 12, y: cy + i * 8, id: 3 }] });
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForTimeout(200);
+          const r2 = await rect();
+          check(nafn + ': skoðari — einn fingur hliðrar (Δ ' + Math.round(r2.x - r1.x) + ', ' + Math.round(r2.y - r1.y) + ' px)', Math.abs((r2.x - r1.x) - 60) <= 3 && Math.abs((r2.y - r1.y) - 40) <= 3, JSON.stringify({ r1, r2 }));
+          const tHr = Date.now(); let hr = null;
+          while (Date.now() - tHr < 60000) { hr = await rect(); if (hr.hr) break; await page.waitForTimeout(400); }
+          check(nafn + ': skoðari (sími) — skörp útgáfa (' + (hr && hr.frumrit ? 'þegar í fullri upplausn, ' + r0.nw + ' px' : 'frumrit ' + r0.nw + ' → ' + (hr && hr.nw) + ' px') + ')', !!(hr && hr.hr && (hr.frumrit ? r0.nw >= 4000 : hr.nw > r0.nw)), JSON.stringify(hr));
+          if (SKODARI_UT) await page.screenshot({ path: path.join(SKODARI_UT, vp + '-' + slug(adr) + '-klipa.png') }).catch(() => {});
+          await cdp.detach().catch(() => {});
+        }
+        if (await page.$('#gr-ljos .gr-lor.h:not([disabled])')) {
+          await page.keyboard.press('ArrowRight'); await page.waitForTimeout(900);
+          const g2 = await rect();
+          check(nafn + ': skoðari — ör í næsta blað endurstillir aðdrátt (' + (g2 && g2.zt) + ' „' + (g2 && g2.titill) + '“)', !!(g2 && g2.zt === '100 %'), JSON.stringify(g2));
+        }
+      }
+      await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+      check(nafn + ': skoðari — Esc lokar', !(await page.$('#gr-ljos')), 'enn opinn');
+    }
+  }
   const vm = await page.$('#_gr451 [data-gr-a="vm"]');
   if (vm) { await vm.click().catch(() => {}); await page.waitForTimeout(500); }
   const lnk = await page.$('#companies-main.gr-sydar ._bupp-teikn');
@@ -620,9 +703,11 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     page.on('pageerror', (e) => villur.push(e.message.split('\n')[0]));
     page.on('dialog', (d) => d.dismiss().catch(() => {}));
     await page.goto('http://127.0.0.1:' + PORT + '/index.html#company/1404', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('button._greining-takki[data-co="1404"]', { timeout: 60000 }).catch(() => {});
-    const takki = await page.$('button._greining-takki[data-co="1404"]');
-    check('Prófíll 1404: lítill „Greining“-takki í Hús-línunni (432)', !!takki, 'fannst ekki');
+    await page.waitForSelector('button._gr-profil-takki[data-co="1404"]', { timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    const takki = await page.$('button._gr-profil-takki[data-co="1404"]');
+    const stadur = await page.evaluate(() => { const t = document.querySelector('button._gr-profil-takki[data-co="1404"]'); if (!t) return null; const n = t.nextElementSibling, r = t.getBoundingClientRect(), v = n && n.getBoundingClientRect(); return { lina: !!t.closest('.b411-oskrad'), naest: n ? n.className : '', synilegur: r.width > 0 && r.height > 0, sama: v ? Math.abs(r.height - v.height) <= 1 && Math.abs(r.top - v.top) <= 1 : false, h: Math.round(r.height), husLina: !!document.querySelector('#companies-main ._fasteign button._greining-takki'), texti: t.textContent.trim() }; });
+    check('Prófíll 1404: „Greining“ í Óskráð-línunni beint á undan „+ Fleiri upplýsingar“, sama stærð (' + (stadur && stadur.h) + ' px) — Hús-línutakkinn farinn', !!(takki && stadur && stadur.synilegur && /_bupp-vixl/.test(stadur.naest) && stadur.sama && !stadur.husLina && (stadur.lina || true)), JSON.stringify(stadur));
     const REIT = ['haedir', 'kjallari', 'm2', 'eignir', 'stiga', 'byggar'];
     const fyrir = await page.evaluate((R) => R.reduce((o, r) => { o[r] = window.BannerUpplysingar ? BannerUpplysingar.gildi(1404, r) : null; return o; }, {}), REIT);
     console.log('   1404 fyrir: ' + JSON.stringify(fyrir));
@@ -632,7 +717,7 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
       await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera .gr-fvar', { timeout: 60000 }).catch(() => {});
       const s = await page.evaluate(() => ({ dlg: !!document.getElementById('gr-faera'), hash: location.hash, full: (document.querySelector('#gr-faera [data-f="full"]') || {}).getAttribute ? document.querySelector('#gr-faera [data-f="full"]').getAttribute('href') : null, banner: (document.querySelector('#companies-main .co-banner') || {}).offsetHeight }));
       check('„Greining“ opnar glugga INNI á prófílnum (slóðin helst #company/1404) með „Opna fulla greiningu“ → #greining/…', s.dlg && /^#company\/1404/.test(s.hash) && /^#greining\//.test(s.full || ''), JSON.stringify(s));
-      check('„Greining“-takkinn breytir ekki hæð borðans (fast pláss í Hús-línunni)', s.banner === hFyrir, hFyrir + ' → ' + s.banner);
+      check('„Greining“-takkinn breytir ekki hæð borðans (fast pláss í Óskráð-línunni)', s.banner === hFyrir, hFyrir + ' → ' + s.banner);
       await mynd(page, '1600-greining-takki-1404.png');
       await page.click('#gr-faera [data-f="loka"]').catch(() => {});
     }
@@ -706,13 +791,48 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
     if (fb) { await fb.scrollIntoViewIfNeeded().catch(() => {}); await fb.click(); await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera .gr-fvar', { timeout: 30000 }).catch(() => {});
       const t = await page.evaluate(() => (document.querySelector('#gr-faera .ssp-titill') || {}).textContent || '');
       check('„Færa í prófíl“ opnar sama glugga (' + t + ')', /Færa í prófíl/.test(t), t); await mynd(page, '1600-faera-ur-greiningu.png'); await page.click('#gr-faera [data-f="loka"]').catch(() => {}); }
+    // 1486 Heimaleiga - Midtown Hotel: „Vegamótastígur 9" er ekki í Staðfangaskrá (sameinaðar lóðir — Vegamótastígur 7–9).
+    // Glugginn býður næstu húsnúmer (7 fyrst) og aðra lóð; val greinir hana án þess að snerta prófílinn (aðeins lestur).
+    {
+      const adrarFyrir = adrar.length;
+      await page.goto('http://127.0.0.1:' + PORT + '/index.html#company/1486', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('button._gr-profil-takki[data-co="1486"]', { timeout: 60000 }).catch(() => {});
+      await page.waitForTimeout(1200);
+      const t1486 = await page.$('button._gr-profil-takki[data-co="1486"]');
+      check('1486: „Greining“-takkinn á prófílnum', !!t1486, 'fannst ekki');
+      if (t1486) {
+        await t1486.click();
+        await page.waitForSelector('#gr-faera [data-f="fannst-ekki"], #gr-faera .gr-ftafla', { timeout: 60000 }).catch(() => {});
+        const v = await page.evaluate(() => ({ ekki: !!document.querySelector('#gr-faera [data-f="fannst-ekki"]'), till: [...document.querySelectorAll('#gr-faera [data-f="adr"]')].map((b) => b.textContent), annad: !!document.querySelector('#gr-faera [data-f="annad"] input') }));
+        check('1486: „Vegamótastígur 9“ finnst ekki → næstu húsnúmer boðin, sömu megin fyrst (' + v.till.join(', ') + ') + reitur fyrir aðra lóð', v.ekki && /^Vegamótastígur 7/.test(v.till[0] || '') && v.annad, JSON.stringify(v));
+        await mynd(page, '1600-greining-1486-fannst-ekki.png');
+        const b7 = await page.$('#gr-faera [data-f="adr"]');
+        if (b7) {
+          await b7.click();
+          await page.waitForSelector('#gr-faera [data-f="onnur"]', { timeout: 60000 }).catch(() => {});
+          await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera .gr-fvar:not([data-f])', { timeout: 60000 }).catch(() => {});
+          const v7 = await page.evaluate(() => ({ onnur: ((document.querySelector('#gr-faera [data-f="onnur"]') || {}).textContent || '').slice(0, 140), rodir: [...document.querySelectorAll('#gr-faera .gr-ftafla tbody tr')].map((tr) => tr.innerText.replace(/\s+/g, ' ').trim().slice(0, 70)), undir: (document.querySelector('#gr-faera .ssp-undir') || {}).textContent || '' }));
+          console.log('   1486 → Vegamótastígur 7: ' + JSON.stringify(v7));
+          check('1486: „Vegamótastígur 7“ greint í glugganum, merkt önnur lóð en félagsins (' + v7.rodir.length + ' atriði)', /Vegamótastígur 7/.test(v7.onnur) && /Vegamótastígur 9/.test(v7.onnur), JSON.stringify(v7));
+          await mynd(page, '1600-greining-1486-vegamotastigur-7.png');
+        }
+        // landnúmer sem er ekki lengur í Landeignaskrá (101424 = gamla Vegamótastígur 9-lóðin)
+        await page.evaluate(() => GreiningFaera.opnaProfil(1486, { adr: 'L101424' }));
+        await page.waitForSelector('#gr-faera [data-f="landnr-ekki"], #gr-faera .gr-ftafla', { timeout: 30000 }).catch(() => {});
+        const ln = await page.evaluate(() => ({ ekki: !!document.querySelector('#gr-faera [data-f="landnr-ekki"]'), teikn: !!document.querySelector('#gr-faera [data-f="ltk"]') }));
+        check('1486: landnúmer 101424 (sameinuð lóð) → skýring + teikningar landnúmersins í skjalasafni', ln.ekki && ln.teikn, JSON.stringify(ln));
+        await page.click('#gr-faera [data-f="aftur"]').catch(() => {}); await page.waitForTimeout(300);
+        await page.click('#gr-faera [data-f="loka"]').catch(() => {});
+      }
+      check('1486: aðeins lesið — engin skrif á 1486 (gripin skrif: ' + (adrar.length - adrarFyrir) + ')', !adrar.slice(adrarFyrir).some((x) => /1486/.test(x)), JSON.stringify(adrar.slice(adrarFyrir, adrarFyrir + 4)));
+    }
     check('Færa í prófíl: engar síðuvillur', !villur.length, JSON.stringify(villur.slice(0, 3)));
     await ctx.close();
     // sími (375): „Greining“-glugginn á prófílnum — aðeins lestur
     { const c3 = await samhengi(b, 'faera-simi', 375, skra); const p3 = await c3.newPage();
       await p3.goto('http://127.0.0.1:' + PORT + '/index.html#company/1404', { waitUntil: 'domcontentloaded' });
-      await p3.waitForSelector('button._greining-takki', { timeout: 60000 }).catch(() => {});
-      const tk = await p3.$('button._greining-takki'); check('375: „Greining“-takkinn á prófílnum', !!tk, 'fannst ekki');
+      await p3.waitForSelector('button._gr-profil-takki', { timeout: 60000 }).catch(() => {});
+      const tk = await p3.$('button._gr-profil-takki'); check('375: „Greining“-takkinn á prófílnum (á undan „+ Fleiri upplýsingar“)', !!tk && await tk.evaluate((t) => !!(t.nextElementSibling && t.nextElementSibling.classList.contains('_bupp-vixl'))), 'fannst ekki');
       await p3.evaluate(() => GreiningFaera.opnaProfil(1404, { adr: 'Berjavellir 6, 221 Hafnarfjörður' }));
       await p3.waitForSelector('#gr-faera .gr-ftafla', { timeout: 60000 }).catch(() => {});
       const lar = await p3.evaluate(() => { const d = document.getElementById('gr-faera'); return d ? d.scrollWidth - d.clientWidth : -1; });
