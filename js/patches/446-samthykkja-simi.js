@@ -40,12 +40,21 @@
     ['mikilv', 'Mikilvægast', 'Áríðandi mál efst, svo röð borðsins'],
     ['verdm', 'Verðmætast', 'Hæsta upphæð efst'],
     ['elst', 'Lengst beðið', 'Elsta málið efst — það sem hefur beðið lengst'],
-    ['postur', 'Svara pósti', 'Mál úr tölvupósti sem bíða svars efst — nýjast fyrst']   // Agnar 08.10: „taka út frest og setja svara pósti“
+    /* Agnar 08.10: „taka út frest og setja svara pósti". 09.10: „geturðu látið svara tölvupóstum í
+     * samþykktir bara sýna tölvupósta sem ég á eftir að svara" — hún var RÖÐUN (lyfti þeim efst en
+     * listinn var jafn langur) og er nú SÍA. Skilgreiningin á „ósvarað" kemur úr 368 svo síminn og
+     * tölvan séu sammála; hún hvílir á mælingu þjónsins á útsendum pósti, ekki merki. */
+    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']
   ];
   let rodun = 'sjalf';
   try { const v = localStorage.getItem(ROD_LYKILL); if (RADANIR.some(x => x[0] === v)) rodun = v; } catch (_) {}
   const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
   function rada(listi, A) {
+    // „Svara pósti" er sía, ekki röðun — og hún er framkvæmd FYRST, svo teljarar og hlutar telji
+    // aðeins það sem sést. Sé 368 eldri útgáfa (A.postOsvarad vantar) stendur gamla hegðunin.
+    if (rodun === 'postur' && A && A.postOsvarad) {
+      return listi.filter(A.postOsvarad).sort((a, b) => ts(b.created_at) - ts(a.created_at));
+    }
     if (rodun === 'sjalf') return listi;
     const idx = new Map(listi.map((r, i) => [r.id, i]));
     const d = (a, b) => idx.get(a.id) - idx.get(b.id);

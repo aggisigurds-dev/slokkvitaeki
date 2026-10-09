@@ -2129,7 +2129,19 @@
   const SAMT_ROD_LYKILL = 'samthykkja_rodun';
   const SAMT_RADANIR = [['sjalf', 'Sjálfgefið', 'Áríðandi, svo upphæð, svo frestur'], ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
     ['mikilv', 'Mikilvægast', 'Áríðandi mál efst'], ['verdm', 'Verðmætast', 'Hæsta upphæð efst'], ['elst', 'Lengst beðið', 'Elsta málið efst'],
-    ['postur', 'Svara pósti', 'Mál úr tölvupósti efst — nýjast fyrst']];
+    /* 09.10.2026 (Agnar: „geturðu látið svara tölvupóstum í samþykktir bara sýna tölvupósta sem ég á eftir að svara").
+     * „Svara pósti" var RÖÐUN — hún lyfti póstmálum efst en skildi öll hin eftir fyrir neðan, svo listinn var jafn
+     * langur og áður. Nú er hún SÍA: aðeins póstmál sem enginn hefur svarað. Hinar fimm eru áfram raðanir. */
+    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']];
+  /* Hvað telst svarað? Tvennt, og hvorugt er ágiskun:
+   *  · `svarad_at` — borðið sjálft skrifar það þegar svar er sent héðan.
+   *  · `sonnun.styrkur = 'svarad'` — þjónninn (thjb_sonnun_reikna) fann ÚTSENDAN póst á sendandann
+   *    eftir að erindið barst. Það er mæling á email_digest, ekki merki sem einhver setti.
+   * Mál sem ÉG bjó til úr pósti ber `source='email'` en engan `channel_ref`; þá getur þjónninn ekki
+   * mælt svarið og málið telst ósvarað. Það er rétt átt að skjátlast í: betra að sýna mál sem er
+   * búið að svara en að fela eitt sem bíður. */
+  const postSvarad = r => !!r.svarad_at || !!(sonn(r) && sonn(r).styrkur === 'svarad');
+  const postOsvarad = r => isPost(r) && !postSvarad(r);
   let samtRodun = 'sjalf';
   try { const v = localStorage.getItem(SAMT_ROD_LYKILL); if (SAMT_RADANIR.some(x => x[0] === v)) samtRodun = v; } catch (_) {}
   const samtRada = (a, b) => {
@@ -2139,7 +2151,8 @@
       case 'elst': return ts(a.created_at) - ts(b.created_at);
       case 'mikilv': return (b.important ? 1 : 0) - (a.important ? 1 : 0);
       case 'verdm': return upphaedMals(b) - upphaedMals(a);
-      case 'postur': { const pa = isPost(a) ? 1 : 0, pb = isPost(b) ? 1 : 0; return (pb - pa) || (pa ? ts(b.created_at) - ts(a.created_at) : 0); }
+      // Sían sjálf er í `samtListi`; hér er aðeins röðun innan hennar — nýjasti pósturinn efst.
+      case 'postur': return ts(b.created_at) - ts(a.created_at);
       default: return 0;
     }
   };
@@ -2180,7 +2193,14 @@
     h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
   }
   const samtHluti = r => (erBuid(r) ? -1 : !erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
-  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || samtRada(a, b) || rodunSamt(a, b));
+  /* `osiad` = skilaðu listanum ÁN „Svara pósti"-síunnar.
+   * 09.10.2026, mælt á localhost: símasíðan (446) les listann héðan OG hefur sinn eigin
+   * röðunarrofa. Síuðum við hér líka sat síminn fastur — „Sjálfgefið" þar gat ekki skilað
+   * hinum 98 málunum, því `samtRodun` hér uppfærist aðeins við smell á BORÐINU. Borðið síar
+   * fyrir sig; síminn fær hrálistann og síar sjálfur með sömu reglu (`postOsvarad`). */
+  const samtListi = (n, osiad) => S.rows
+    .filter(r => iHam(r, SAMT_HAM) && (osiad || samtRodun !== 'postur' || postOsvarad(r)))
+    .sort((a, b) => samtHluti(a) - samtHluti(b) || samtRada(a, b) || rodunSamt(a, b));
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     const listi = samtListi(n);
@@ -6227,7 +6247,8 @@
   /* 08.10.2026 — út fyrir Samþykkja-símasíðuna (446): SAMI listinn, SÖMU svörin (svaraSamthykki / done), sömu
    * hjálparföll. Síðan teiknar sig þegar þetta borð teiknar (sjá _eftir í render()). Ekkert hér skrifar sjálft. */
   window.Samthykkja = {
-    listi: () => samtListi(nu()), hluti: samtHluti, svara: svaraSamthykki, loka: done,
+    // Hrálistinn — 446 á sína eigin síu og má ekki erfa þessa.
+    listi: () => samtListi(nu(), true), hluti: samtHluti, svara: svaraSamthykki, loka: done,
     load: () => load(true), loaded: () => !!S.loaded, busy: id => !!S.busy[id], nu, loadedAt: () => S.loadedAt, loading: () => !!S.loading,
     // Símasíðan (446): S.loading sem situr fast (sókn rofnaði við flipaskipti / svefn símans) stöðvaði hverja nýja sókn
     // með „_aftur“ — hér er merkið losað og sótt aftur. Nota aðeins þegar hleðsla hefur staðið > 20 s.
@@ -6235,7 +6256,7 @@
     upphaed: upphaedMals, aiLine, sonn, erBuid, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
     // 368ab — símasíðan (446) sýnir sömu ákvörðunarblokk. Greiningin á aðeins að eiga sér EINN
     // stað; væri hún afrituð þangað myndu útgáfurnar reka í sundur um leið og orðalagið breytist.
-    adgerdir: adgerdirUrNotu,
+    adgerdir: adgerdirUrNotu, postOsvarad,
     velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} },
     // 08.10.2026 — sönnunarmyndir á spjöldin í símanum (Agnar: „screenshot feature þarna inn til sönnunar eða
     // staðfestingar"): EIN fyrirspurn fyrir allan listann (thjonustubeidni_files .in(ids)), ekki ein per mál.
