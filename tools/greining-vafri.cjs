@@ -382,14 +382,14 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
   const b = await chromium.launch({ headless: true });
   const skra = { ut: [], gripid: [], syndNet: [] };
   const nidur = [];
-  const breiddir = process.argv.includes('--bara-auka') ? [] : BARA ? [+BARA] : [1600, 980, 375];
+  const breiddir = (process.argv.includes('--bara-auka') || process.argv.includes('--bara-faera')) ? [] : BARA ? [+BARA] : [1600, 980, 375];
   for (const vp of breiddir) {
     const husin = [...new Set(vp === 1600 ? HUS : HUS.slice(0, 3).concat(HUS.filter((h) => /Skútuvogur 2|Nónhæð 6/.test(h))))];
     for (const adr of husin) {
       try { nidur.push(await profaHus(b, adr, vp, skra)); } catch (e) { check(vp + ' ' + adr + ': prófið keyrði', false, e.message); }
     }
   }
-  const AUKA = !process.argv.includes('--engin-auka');
+  const AUKA = !process.argv.includes('--engin-auka') && !process.argv.includes('--bara-faera');
   // Sala → hlekkur → #greining
   if (AUKA) {
     console.log('\n── Sala-hlekkurinn ──');
@@ -478,6 +478,243 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
       }
     }
     await ctx.close();
+  }
+  // ── „Færa í prófíl" / „Greining" á prófílnum / „Stofna sem viðskiptavin" (452) ──
+  // Raunveruleg skrif AÐEINS á 1404 (Test fyrirtæki): app_settings_merge sem snertir eingöngu banner_upplysingar[1404]
+  // og banner_upplysingar_uppruni[1404]. Allt annað gripið. Ekkert fyrirtæki stofnað: innsetningin í fyrirtaeki fær
+  // falsað svar (id 9990001) og þjónustuskrifin eru gripin og borin saman við leið kerfanna sjálfra.
+  const FAERA = !process.argv.includes('--engin-faera') && (AUKA || process.argv.includes('--bara-faera'));
+  const STOFNA_UT = arg('stofna-ut', '');
+  if (STOFNA_UT) fs.mkdirSync(STOFNA_UT, { recursive: true });
+  const mynd = async (page, nafn) => { if (STOFNA_UT) await page.screenshot({ path: path.join(STOFNA_UT, nafn) }).catch(() => {}); };
+  if (FAERA) {
+    console.log('\n── Færa í prófíl + Greining-takkinn (1404 — raunveruleg skrif aðeins þar) ──');
+    const ctx = await samhengi(b, 'faera', 1600, skra);
+    const raun = [], adrar = [];
+    await ctx.route(/supabase\.co\/rest\/v1\/rpc\/app_settings_merge/, async (route) => {
+      const req = route.request(); if (req.method() !== 'POST') return route.fallback();
+      let p = null; try { p = JSON.parse(req.postData() || '{}').p_patch; } catch (_) {}
+      const keys = p && typeof p === 'object' ? Object.keys(p) : [];
+      const bara1404 = keys.length > 0 && keys.every((k) => /^banner_upplysingar(_uppruni)?$/.test(k) && p[k] && typeof p[k] === 'object' && Object.keys(p[k]).length > 0 && Object.keys(p[k]).every((c) => c === '1404'));
+      if (bara1404) { raun.push((req.postData() || '').slice(0, 240)); return route.continue(); }
+      adrar.push('rpc app_settings_merge ' + (req.postData() || '').slice(0, 160));
+      return route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+    });
+    await ctx.route(/supabase\.co\/rest\/v1\/stadur_flokkun/, async (route) => {
+      const req = route.request(); if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
+      if (req.method() === 'PATCH' && /fyrirtaeki_id=eq\.1404(&|$)/.test(req.url())) { raun.push('PATCH stadur_flokkun 1404 ' + (req.postData() || '').slice(0, 120)); return route.continue(); }
+      adrar.push(req.method() + ' stadur_flokkun ' + req.url().split('?')[1]); return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    });
+    const page = await ctx.newPage();
+    const villur = [];
+    page.on('pageerror', (e) => villur.push(e.message.split('\n')[0]));
+    page.on('dialog', (d) => d.dismiss().catch(() => {}));
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html#company/1404', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('button._greining-takki[data-co="1404"]', { timeout: 60000 }).catch(() => {});
+    const takki = await page.$('button._greining-takki[data-co="1404"]');
+    check('Prófíll 1404: lítill „Greining“-takki í Hús-línunni (432)', !!takki, 'fannst ekki');
+    const REIT = ['haedir', 'kjallari', 'm2', 'eignir', 'stiga', 'byggar'];
+    const fyrir = await page.evaluate((R) => R.reduce((o, r) => { o[r] = window.BannerUpplysingar ? BannerUpplysingar.gildi(1404, r) : null; return o; }, {}), REIT);
+    console.log('   1404 fyrir: ' + JSON.stringify(fyrir));
+    if (takki) {
+      const hFyrir = await page.evaluate(() => (document.querySelector('#companies-main .co-banner') || {}).offsetHeight);
+      await takki.click();
+      await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera .gr-fvar', { timeout: 60000 }).catch(() => {});
+      const s = await page.evaluate(() => ({ dlg: !!document.getElementById('gr-faera'), hash: location.hash, full: (document.querySelector('#gr-faera [data-f="full"]') || {}).getAttribute ? document.querySelector('#gr-faera [data-f="full"]').getAttribute('href') : null, banner: (document.querySelector('#companies-main .co-banner') || {}).offsetHeight }));
+      check('„Greining“ opnar glugga INNI á prófílnum (slóðin helst #company/1404) með „Opna fulla greiningu“ → #greining/…', s.dlg && /^#company\/1404/.test(s.hash) && /^#greining\//.test(s.full || ''), JSON.stringify(s));
+      check('„Greining“-takkinn breytir ekki hæð borðans (fast pláss í Hús-línunni)', s.banner === hFyrir, hFyrir + ' → ' + s.banner);
+      await mynd(page, '1600-greining-takki-1404.png');
+      await page.click('#gr-faera [data-f="loka"]').catch(() => {});
+    }
+    // árekstur: „Hæðir" fyllt með öðru gildi en sjálfsótta (prófunargildi á 1404) — má ALDREI yfirskrifast
+    const setti = !fyrir.haedir;
+    if (setti) await page.evaluate(() => BannerUpplysingar.vistaReit(1404, 'haedir', '9'));
+    const atrekstur = setti ? '9' : fyrir.haedir;
+    // 1404 („Langamýri 22a, 210") flettist upp á Selfossi í skránum — glugginn fær gögn Berjavalla 6 til að prófa skrifin
+    await page.evaluate(() => GreiningFaera.opnaProfil(1404, { adr: 'Berjavellir 6, 221 Hafnarfjörður' }));
+    await page.waitForSelector('#gr-faera .gr-ftafla', { timeout: 60000 }).catch(() => {});
+    const rodir = await page.evaluate(() => [...document.querySelectorAll('#gr-faera .gr-ftafla tbody tr')].map((tr) => ({ t: tr.innerText.replace(/\s+/g, ' ').trim(), cb: !!tr.querySelector('input[type=checkbox]'), hak: !!tr.querySelector('input[type=checkbox]:checked') })));
+    console.log('   raðir: ' + JSON.stringify(rodir.map((r) => (r.cb ? (r.hak ? '[x] ' : '[ ] ') : '    ') + r.t.slice(0, 90))));
+    const hR = rodir.find((r) => /^Hæðir/.test(r.t));
+    check('Fylltur reitur („Hæðir" = ' + atrekstur + ') sýnir bæði gildin og ber engan hak — aldrei yfirskrift', !!hR && !hR.cb && /stangast á|eins/.test(hR.t), JSON.stringify(hR));
+    await mynd(page, '1600-faera-val.png');
+    const valin = rodir.filter((r) => r.hak).length;
+    if (valin) {
+      await page.click('#gr-faera [data-f="baeta"]');
+      await page.waitForSelector('#gr-faera [data-f="stadfesta"]', { timeout: 5000 }).catch(() => {});
+      const listi = await page.$$eval('#gr-faera .gr-flisti li', (x) => x.map((y) => y.textContent));
+      check('Ein staðfesting: listinn yfir það sem breytist (' + listi.length + ' atriði)', listi.length === valin, JSON.stringify(listi));
+      await mynd(page, '1600-faera-stadfesting.png');
+      await page.click('#gr-faera [data-f="stadfesta"]');
+      await page.waitForFunction(() => /vistuð á prófílnum/.test((document.querySelector('#gr-faera .gr-fath') || {}).textContent || ''), null, { timeout: 30000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      const eftir = await page.evaluate((R) => R.reduce((o, r) => { o[r] = BannerUpplysingar.gildi(1404, r); return o; }, {}), REIT);
+      const merki = await page.evaluate(() => { try { BannerUpplysingar.haldaVid(); } catch (_) {} return [...document.querySelectorAll('#companies-main .co-bupp ._bupp-sjalf:not([hidden])')].map((m) => m.dataset.reitur + ': ' + m.title.slice(0, 70)); });
+      console.log('   1404 eftir: ' + JSON.stringify(eftir) + ' · 🏛 ' + JSON.stringify(merki));
+      check('Tómu reitirnir fylltust (m² 2971, eignir 24) um vistunarleið prófílsins (363 vistaReit → app_settings_merge, ' + raun.length + ' raunskrif á 1404)', eftir.m2 === '2971' && eftir.eignir === '24' && raun.length > 0, JSON.stringify(eftir));
+      check('„Hæðir" óbreytt (' + atrekstur + ') — fylltur reitur ekki yfirskrifaður', eftir.haedir === atrekstur, eftir.haedir);
+      check('🏛 með uppruna við sjálfsóttu reitina á prófílnum', merki.some((m) => /^m2:.*Skráningartafla/.test(m)), JSON.stringify(merki));
+      await page.click('#gr-faera [data-f="loka"]').catch(() => {});
+      await page.evaluate(() => { const v = document.querySelector('#companies-main .co-bupp ._bupp-vixl'); if (v && /Fleiri/.test(v.textContent)) v.click(); });
+      await page.waitForTimeout(400);
+      await page.waitForSelector('#companies-main .co-bupp ._bupp-sjalf:not([hidden])', { timeout: 8000 }).catch(() => {}); await page.evaluate(() => { const m = document.querySelector('#companies-main .co-bupp ._bupp-sjalf:not([hidden])') || document.querySelector('#companies-main .co-bupp'); if (m) m.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(300); await mynd(page, '1600-profill-1404-eftir.png');
+      // hreinsun: 1404 eins og það var
+      await page.evaluate(async ({ R, f }) => { for (const r of R) { if (BannerUpplysingar.gildi(1404, r) !== (f[r] || '')) await BannerUpplysingar.vistaReit(1404, r, f[r] || ''); if (BannerUpplysingar.uppruni(1404, r)) await BannerUpplysingar.vistaUppruna(1404, r, null); } }, { R: REIT, f: fyrir });
+      await page.waitForTimeout(800);
+      const hreint = await page.evaluate((R) => R.reduce((o, r) => { o[r] = BannerUpplysingar.gildi(1404, r); return o; }, {}), REIT);
+      check('1404 hreinsað eftir prófið (reitirnir eins og fyrir)', REIT.every((r) => (hreint[r] || '') === (fyrir[r] || '')), JSON.stringify(hreint));
+    } else check('Færa í prófíl: eitthvað hakað sjálfgefið', false, JSON.stringify(rodir));
+    // tegund rekstrar → stadur_flokkun.tegund_handval (449a leidrettaTegund) — aðeins ef ekkert handval er til; 1404 hreinsað
+    {
+      const tegFyrir = await page.evaluate(async () => { try { const f = await Flokkun.stadur(1404); return f && f.flokkun ? { handval: f.flokkun.tegund_handval || null, tegund: f.flokkun.tegund || null } : null; } catch (e) { return { villa: e.message }; } });
+      console.log('   1404 flokkun fyrir: ' + JSON.stringify(tegFyrir));
+      const nyTeg = tegFyrir && tegFyrir.tegund === 'skrifstofa' ? 'verslun_litil' : 'skrifstofa';
+      await page.evaluate((t) => GreiningFaera.opna(1404, { adr: 'próf', bygg: {}, tegund: { tegund: t, heiti: t, rok: 'próf (greining-vafri)' } }), nyTeg);
+      await page.waitForSelector('#gr-faera .gr-ftafla', { timeout: 20000 }).catch(() => {});
+      const tr = await page.evaluate(() => { const r = document.querySelector('#gr-faera .gr-ftafla tbody tr'); return r ? { t: r.innerText.replace(/\s+/g, ' '), cb: !!r.querySelector('input[type=checkbox]') } : null; });
+      if (tegFyrir && tegFyrir.handval) {
+        check('Tegund: handval er til á 1404 (' + tegFyrir.handval + ') → enginn hak, ekkert yfirskrifað', tr && !tr.cb, JSON.stringify(tr));
+      } else if (tegFyrir && !tegFyrir.villa && tr && tr.cb) {
+        await page.check('#gr-faera .gr-ftafla tbody tr input[type=checkbox]');
+        await page.click('#gr-faera [data-f="baeta"]'); await page.click('#gr-faera [data-f="stadfesta"]');
+        await page.waitForFunction(() => /vistuð á prófílnum/.test((document.querySelector('#gr-faera .gr-fath') || {}).textContent || ''), null, { timeout: 20000 }).catch(() => {});
+        const eftirT = await page.evaluate(async () => { const f = await Flokkun.stadur(1404); return f && f.flokkun ? f.flokkun.tegund_handval : null; });
+        check('Tegund rekstrar vistaðist sem handval um Flokkun.leidrettaTegund (' + eftirT + ')', eftirT === nyTeg, String(eftirT));
+        await page.evaluate(async () => { try { await Flokkun.leidrettaTegund(1404, null); } catch (_) {} });
+        const hreinT = await page.evaluate(async () => { const f = await Flokkun.stadur(1404); return f && f.flokkun ? f.flokkun.tegund_handval : 'enginn'; });
+        check('Tegund 1404 hreinsuð (handval aftur autt)', !hreinT, String(hreinT));
+      } else check('Tegund: staða röðarinnar lesin (' + JSON.stringify(tegFyrir) + ')', !!tr, JSON.stringify(tr));
+      await page.click('#gr-faera [data-f="loka"]').catch(() => {});
+    }
+    check('Færa í prófíl: engin skrif á önnur félög (gripin: ' + adrar.length + ')', !adrar.some((x) => /banner_upplysingar/.test(x)), JSON.stringify(adrar.slice(0, 4)));
+    // úr Greiningu fasteignar: „Færa í prófíl" við viðskiptavininn í Hjá okkur (1404 á Langamýri 22a) — sami gluggi
+    await page.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent('Langamýri 22a, 210 Garðabær'), { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#_gr451 [data-gr-a="faera"][data-id="1404"]', { timeout: 90000 }).catch(() => {});
+    const fb = await page.$('#_gr451 [data-gr-a="faera"][data-id="1404"]');
+    check('Greining fasteignar: „Færa í prófíl“ við viðskiptavininn (1404) í Hjá okkur', !!fb, 'fannst ekki');
+    if (fb) { await fb.scrollIntoViewIfNeeded().catch(() => {}); await fb.click(); await page.waitForSelector('#gr-faera .gr-ftafla, #gr-faera .gr-fvar', { timeout: 30000 }).catch(() => {});
+      const t = await page.evaluate(() => (document.querySelector('#gr-faera .ssp-titill') || {}).textContent || '');
+      check('„Færa í prófíl“ opnar sama glugga (' + t + ')', /Færa í prófíl/.test(t), t); await mynd(page, '1600-faera-ur-greiningu.png'); await page.click('#gr-faera [data-f="loka"]').catch(() => {}); }
+    check('Færa í prófíl: engar síðuvillur', !villur.length, JSON.stringify(villur.slice(0, 3)));
+    await ctx.close();
+    // sími (375): „Greining“-glugginn á prófílnum — aðeins lestur
+    { const c3 = await samhengi(b, 'faera-simi', 375, skra); const p3 = await c3.newPage();
+      await p3.goto('http://127.0.0.1:' + PORT + '/index.html#company/1404', { waitUntil: 'domcontentloaded' });
+      await p3.waitForSelector('button._greining-takki', { timeout: 60000 }).catch(() => {});
+      const tk = await p3.$('button._greining-takki'); check('375: „Greining“-takkinn á prófílnum', !!tk, 'fannst ekki');
+      await p3.evaluate(() => GreiningFaera.opnaProfil(1404, { adr: 'Berjavellir 6, 221 Hafnarfjörður' }));
+      await p3.waitForSelector('#gr-faera .gr-ftafla', { timeout: 60000 }).catch(() => {});
+      const lar = await p3.evaluate(() => { const d = document.getElementById('gr-faera'); return d ? d.scrollWidth - d.clientWidth : -1; });
+      check('375: glugginn passar á símann (engin lárétt skrun)', lar >= 0 && lar <= 1, String(lar)); await mynd(p3, '375-greining-gluggi.png');
+      await c3.close(); }
+
+    console.log('\n── Stofna sem viðskiptavin (ekkert stofnað — innsetning og þjónustuskrif gripin) ──');
+    const ctx2 = await samhengi(b, 'stofna', 1600, skra);
+    const ins = [], thj = [];
+    const FALS = 9990001;
+    await ctx2.route(/supabase\.co\/rest\/v1\/fyrirtaeki(\?|$)/, async (route) => {
+      const req = route.request();
+      if (req.method() === 'POST') { let body = {}; try { body = JSON.parse(req.postData() || '{}'); } catch (_) {} ins.push(body); return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(Object.assign({ id: FALS, created_at: new Date().toISOString() }, body)) }); }
+      if (req.method() === 'PATCH') { thj.push('PATCH fyrirtaeki ' + decodeURIComponent((req.url().split('?')[1] || '')) + ' ' + (req.postData() || '')); return route.fulfill({ status: 204, body: '' }); }
+      if (req.method() === 'GET' && /Prófunarfélag/.test(decodeURIComponent(req.url())) && ins[1]) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([Object.assign({ id: FALS }, ins[1])]) });
+      return route.fallback();
+    });
+    await ctx2.route(/supabase\.co\/rest\/v1\/(rpc\/app_settings_merge|override_log|slokkvikerfi)/, async (route) => {
+      const req = route.request(); if (req.method() === 'GET' || req.method() === 'HEAD') return route.fallback();
+      thj.push(req.method() + ' ' + req.url().replace(/^.*\/v1\//, '').split('?')[0] + ' ' + (req.postData() || '').slice(0, 260));
+      return route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+    });
+    // (a) venjulega leiðin: „+ Nýtt fyrirtæki" → „Vista fyrirtæki"
+    const NAFN = 'Prófunarfélag Greiningar ehf', ADR = 'Nónhæð 6, 210 Garðabær';
+    const p1 = await ctx2.newPage();
+    await p1.goto('http://127.0.0.1:' + PORT + '/index.html#companies', { waitUntil: 'domcontentloaded' });
+    await p1.waitForFunction(() => window.Companies && Companies.openNew && document.querySelector('#nf-nafn'), null, { timeout: 60000 }).catch(() => {});
+    await p1.evaluate(() => Companies.openNew());
+    await p1.fill('#nf-nafn', NAFN); await p1.fill('#nf-heimilisfang', ADR);
+    await p1.click('#modal-nyfyrirtaeki .modal-ft .btn-primary');
+    await p1.waitForTimeout(2500);
+    const venjuleg = ins[0] || null;
+    await p1.close();
+    // (b) Greining fasteignar → „Stofna sem viðskiptavin"
+    const p2 = await ctx2.newPage();
+    const v2 = [];
+    p2.on('pageerror', (e) => v2.push(e.message.split('\n')[0]));
+    p2.on('dialog', (d) => d.accept().catch(() => {}));   // 158 spyr með confirm() — „já" eins og notandinn
+    await p2.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent(ADR), { waitUntil: 'domcontentloaded' });
+    await p2.waitForSelector('#_gr451 [data-gr-a="stofna"]', { timeout: 90000 }).catch(() => {});
+    const st = await p2.$('#_gr451 [data-gr-a="stofna"]');
+    check('„Stofna sem viðskiptavin“ í Hjá okkur (ekki viðskiptavinur á staðnum)', !!st, 'fannst ekki');
+    if (st) {
+      await st.scrollIntoViewIfNeeded().catch(() => {}); await st.click();
+      await p2.waitForSelector('#gr-faera [data-f="nafn"]', { timeout: 10000 }).catch(() => {});
+      // tvískráning: kennitala sem er þegar til (1404) → viðvörun og „Stofna" læst þar til „Stofna samt"
+      const kt1404 = await p2.evaluate(() => { const c = (Companies.list || []).find((x) => +x.id === 1404); return c ? c.kennitala : ''; });
+      if (kt1404) {
+        await p2.fill('#gr-faera [data-f="kt"]', kt1404);
+        const tv = await p2.evaluate(() => ({ var: !!document.querySelector('#gr-faera .gr-fvar'), laest: document.querySelector('#gr-faera [data-f="stofna"]').disabled }));
+        check('Tvískráning: sama kennitala og 1404 → viðvörun og „Stofna" læst þar til „Stofna samt"', tv.var && tv.laest, JSON.stringify(tv));
+        await mynd(p2, '1600-stofna-tviskraning.png');
+        await p2.fill('#gr-faera [data-f="kt"]', '');
+      }
+      await p2.fill('#gr-faera [data-f="nafn"]', NAFN);
+      await p2.fill('#gr-faera [data-f="adr"]', ADR);
+      for (const k of ['ars', 'bru', 'slokk']) await p2.check('#gr-faera [data-thj="' + k + '"]');
+      const an = await p2.isChecked('#gr-faera [data-thj="an"]');
+      check('Þjónustuval: „Án þjónustu" hverfur þegar þjónusta er valin', !an, String(an));
+      await mynd(p2, '1600-stofna-form.png');
+      await p2.click('#gr-faera [data-f="stofna"]');
+      await p2.waitForFunction(() => /Næstu skref/i.test((document.querySelector('#gr-faera .ssp-titill') || {}).textContent || ''), null, { timeout: 30000 }).catch(() => {});
+      const nyja = ins[1] || null;
+      const eins = !!(venjuleg && nyja && JSON.stringify(Object.keys(venjuleg).sort()) === JSON.stringify(Object.keys(nyja).sort()) && Object.keys(venjuleg).every((k) => venjuleg[k] === nyja[k]));
+      check('Stofnun = SAMA beiðni og „+ Nýtt fyrirtæki“ (fyrirtaeki-innsetning, sömu dálkar og gildi)', eins, JSON.stringify({ venjuleg, nyja }));
+      check('Engin önnur innsetning í fyrirtaeki (1 + 1)', ins.length === 2, String(ins.length));
+      const hash = await p2.evaluate(() => location.hash);
+      check('Eftir stofnun opnast nýi prófíllinn og „Næstu skref“ (þjónusta + Færa í prófíl)', /^#company\/9990001/.test(hash) && !!(await p2.$('#gr-faera [data-f="faera"]')), hash);
+      await mynd(p2, '1600-stofna-naestu-skref.png');
+      // Ársskoðun: „Setja í þjónustu" á prófílnum (280) → Confirm → skrif
+      const fyrirArs = thj.length;
+      if (await p2.$('#gr-faera [data-f="ars"]')) {
+        await p2.click('#gr-faera [data-f="ars"]');
+        await p2.waitForSelector('#_cfm-ok', { timeout: 8000 }).catch(() => {});
+        await mynd(p2, '1600-stofna-ars-confirm.png');
+        await p2.click('#_cfm-ok').catch(() => {});
+        await p2.waitForTimeout(2500);
+      }
+      const ars = thj.slice(fyrirArs);
+      console.log('   ársskoðun-skrif: ' + JSON.stringify(ars.map((x) => x.slice(0, 140))));
+      check('Ársskoðun um 280 („Setja í þjónustu“): er_i_thjonustu + arsskodun_customers.subscribed + override_log á 9990001', ars.some((x) => /PATCH fyrirtaeki id=eq\.9990001 .*"er_i_thjonustu":true/.test(x)) && ars.some((x) => /arsskodun_customers.*"9990001".*"subscribed":true/.test(x)) && ars.some((x) => /override_log.*9990001/.test(x)), JSON.stringify(ars));
+      // Brunakerfi: „+ Bæta við fyrirtæki" (147) → leitin forfyllt → smellur á röðina → saveOne (ÞRÖNGUR patch)
+      await p2.waitForSelector('#gr-faera [data-f="bru"]', { timeout: 15000 }).catch(() => {});
+      const fyrirBru = thj.length;
+      if (await p2.$('#gr-faera [data-f="bru"]')) {
+        await p2.click('#gr-faera [data-f="bru"]');
+        await p2.waitForFunction((n) => (document.getElementById('_bk-a-search') || {}).value === n, NAFN, { timeout: 20000 }).catch(() => {});
+        await p2.waitForSelector('._bk-a-row', { timeout: 15000 }).catch(() => {});
+        await mynd(p2, '1600-stofna-brunakerfi.png');
+        const rod = await p2.$('._bk-a-row');
+        if (rod) { await rod.click(); await p2.waitForTimeout(2500); }
+        await p2.evaluate(() => { const d = document.getElementById('_bk-edit-dlg'); if (d) d.remove(); });
+      }
+      const bru = thj.slice(fyrirBru);
+      console.log('   brunakerfi-skrif: ' + JSON.stringify(bru.map((x) => x.slice(0, 160))));
+      check('Brunakerfi um 147 („+ Bæta við fyrirtæki“, saveOne): þröngur patch — aðeins brunakerfi_customers[9990001]', bru.some((x) => /brunakerfi_customers":\{"9990001":\{[^}]*"co_id":9990001/.test(x)) && !bru.some((x) => /brunakerfi_customers":\{"(?!9990001")\d+"/.test(x)), JSON.stringify(bru));
+      // aftur á prófíl nýja félagsins → Næstu skref birtast aftur
+      await p2.evaluate(() => { location.hash = '#company/9990001'; });
+      // Slökkvikerfi: „＋ Nýtt kerfi" (385) opnast með fyrirtækið í leitinni — notandinn klárar þar
+      await p2.waitForSelector('#gr-faera [data-f="slokk"]', { timeout: 20000 }).catch(() => {});
+      if (await p2.$('#gr-faera [data-f="slokk"]')) {
+        await p2.click('#gr-faera [data-f="slokk"]');
+        await p2.waitForFunction((n) => (document.getElementById('_skn-leit') || {}).value === n, NAFN, { timeout: 15000 }).catch(() => {});
+        const leit = await p2.evaluate(() => (document.getElementById('_skn-leit') || {}).value || '');
+        check('Slökkvikerfi um 385 („＋ Nýtt kerfi“): glugginn opinn með fyrirtækið í leitinni — ekkert vistað fyrr en „Skrá kerfi“', leit === NAFN, leit);
+        await mynd(p2, '1600-stofna-slokkvikerfi.png');
+        await p2.click('#_skn-haetta').catch(() => {});
+      } else check('Slökkvikerfi: takkinn í Næstu skrefum', false, 'fannst ekki');
+      check('Engin slökkvikerfis-innsetning án „Skrá kerfi" (gripið: ' + thj.filter((x) => /slokkvikerfi/.test(x)).length + ')', !thj.some((x) => /^POST slokkvikerfi/.test(x)), JSON.stringify(thj.filter((x) => /slokkvikerfi/.test(x))));
+      check('Stofna: engar síðuvillur', !v2.length, JSON.stringify(v2.slice(0, 3)));
+    }
+    await ctx2.close();
   }
   // OCR-beiðni (aðeins með --ocr): fyrir prófhús með ólesnu skjali
   if (MED_OCR) {
