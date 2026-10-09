@@ -199,8 +199,10 @@
     const manud = (x) => (x == null ? null : (MANUDIR[+x - 1] || String(x)));
     const arman = (x) => { const m = /^(\d{4})-(\d{2})$/.exec(String(x || '')); return m ? m[2] + '/' + m[1] : (x ? F().birtaDags(x) || String(x) : null); };
     const verd = s.verd && typeof s.verd === 'object' ? s.verd : {};
-    const VERD = [['askrift_tekjur_2026', 'Áskrift 2026'], ['askrift_tekjur_2025', 'Áskrift 2025'], ['reikningar_2026', 'Reikningar 2026'], ['reikningar_2025', 'Reikningar 2025'], ['skodun_an_vsk_sidasta_skyrsla', 'Skoðun án vsk'], ['sala_2026', 'Sala 2026']];
-    const verdTexti = VERD.filter(([k]) => verd[k] != null).map(([k, h]) => h + ': ' + F().fmtKr(verd[k])).join(' · ');
+    // askrift_tekjur_YYYY = revenue_YYYY í brunakerfi_customers: ALLAR tekjur af félaginu það ár (líka uppsetning og
+    // viðbætur), ekki áskriftarverð — Miðgarður 2026: 3.549.926 kr. 0 kr = engin skráning, sleppt.
+    const VERD = [['skodun_an_vsk_sidasta_skyrsla', 'Skoðun án vsk (síðasta skýrsla)'], ['askrift_tekjur_2026', 'Tekjur 2026'], ['askrift_tekjur_2025', 'Tekjur 2025'], ['reikningar_2026', 'Reikningar 2026'], ['reikningar_2025', 'Reikningar 2025'], ['sala_2026', 'Sala 2026']];
+    const verdTexti = VERD.filter(([k]) => verd[k] != null && Number(verd[k]) !== 0).map(([k, h]) => h + ': ' + F().fmtKr(verd[k])).join(' · ');
     const REITIR = [
       ['Stjórnstöð', v(s.stjornstodvar) == null ? null : tala(s.stjornstodvar) + ' stk'],
       ['Framleiðandi', v(s.framleidandi)],
