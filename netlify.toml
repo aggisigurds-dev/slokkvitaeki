@@ -31,6 +31,20 @@
 # dist/ inniheldur hvorki *.md, *.sql né _*-skrár (build-dist síar), en þessar
 # reglur standa áfram sem vörn í dýpt — og verða að standa FREMST í
 # redirect-röðinni; Netlify tekur fyrstu reglu sem passar.
+# 09.10.2026: Þjónustugáttin býr á brunaholf.netlify.app (þar er PORTAL_JWT_SECRET sett og innskráning virkar).
+# Eintakið hér hafði ekkert leyndarmál og gat aldrei skráð inn — gamlir hlekkir/flýtileiðir fara því þangað.
+[[redirects]]
+  from = "/gatt/*"
+  to = "https://brunaholf.netlify.app/gatt/:splat"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/gatt-admin/*"
+  to = "https://brunaholf.netlify.app/gatt-admin/:splat"
+  status = 302
+  force = true
+
 [[redirects]]
   from = "/CLAUDE.md"
   to = "/404.html"
