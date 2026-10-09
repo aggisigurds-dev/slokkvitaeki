@@ -18,7 +18,8 @@ const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 krefst(html, /437-teikning-gluggi\.js\?v=20261002opna/, 'index.html: 437 vantar ?v=20261002opna');
 krefst(html, /384-teikninga-forskodun\.js\?v=20261002syn/, 'index.html: 384 vantar ?v=20261002syn');
 // 09.10.2026: 20261009faera (452 — vistaReit opið, Stærð/Byggingarár/Eignir, 🏛) ber festTakka-lagfæringuna líka
-krefst(html, /363-banner-upplysingar\.js\?v=(20261002opna|20261004tomt|20261009faera)/, 'index.html: 363 vantar ?v=20261009faera (eða 20261004tomt / 20261002opna)');
+// 09.10.2026: 20261009grein („Greining“ í Óskráð-línunni á undan „+ Fleiri upplýsingar“) — sama festTakka
+krefst(html, /363-banner-upplysingar\.js\?v=(20261002opna|20261004tomt|20261009faera|20261009grein)/, 'index.html: 363 vantar ?v=20261009grein (eða 20261009faera / 20261004tomt / 20261002opna)');
 krefst(html, /374-teikning-saekja\.js\?v=20261003thagufall/, 'index.html: 374 vantar ?v=20261003thagufall');
 
 krefst(p437, /background:#1a1814!important/, '437 á að mála modal-bd dokkkað gegn app.css #fff');
