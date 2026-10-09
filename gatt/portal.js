@@ -262,7 +262,8 @@
         '<td>' + (b.br ? 'Já' : '—') + '</td>' +
         '<td><div class="yrs">' + boxes + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
-        '<td class="r">' + docLink('Skjöl', b.docId) + '</td></tr>';
+        // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
+        '<td class="r"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">Skjöl</a></td></tr>';
     }).join('') || '<tr><td colspan="7" class="empty">Engar byggingar skráðar</td></tr>';
   }
 
@@ -319,6 +320,19 @@
   }
 
   /* ── nav / lang / logout ── */
+  function goView(v) {
+    document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
+    ['yfirlit', 'skyrslur', 'reikningar', 'skilabod'].forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
+  }
+  // „Skjöl" á Yfirliti → Skýrslur síaðar á þá byggingu (smellir á sama flís og notandinn myndi gera).
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-skjol]'); if (!a) return;
+    e.preventDefault();
+    var n = a.getAttribute('data-skjol'); goView('skyrslur'); window.scrollTo(0, 0);
+    var chips = document.querySelectorAll('#v-skyrslur .chip'), hit = null;
+    chips.forEach(function (c) { if (c.getAttribute('data-b') === n) hit = c; });
+    if (hit) hit.click(); else { chips.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-b') === ''); }); renderSkyrslur(n); }
+  });
   function wireNav() {
     document.querySelectorAll('nav .tab').forEach(function (t) {
       t.onclick = function () {
@@ -335,7 +349,8 @@
       fetch('/api/gatt-login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
         .then(function () { location.reload(); });
     };
-    $('#langBtn').onclick = function () { /* EN/IS þýðingar koma síðar */ };
+    // EN/IS þýðingar ekki komnar — takki sem gerir ekkert er falinn þar til þær koma (09.10.2026).
+    var lb = $('#langBtn'); if (lb) lb.style.display = 'none';
     $('#msg-form').onsubmit = function (e) {
       e.preventDefault();
       var inp = $('#msg-input'), text = inp.value.trim();
@@ -365,7 +380,7 @@
   function showOpenRibbon() {
     var r = document.createElement('div'); r.className = 'open-ribbon';
     r.textContent = '🔓 Opinn aðgangur — vefurinn læsist þegar lykilorð er sett';
-    r.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(138,109,47,.96);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);max-width:92vw;text-align:center';
+    r.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(138,109,47,.96);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);max-width:92vw;text-align:center';
     document.body.appendChild(r);
   }
 
