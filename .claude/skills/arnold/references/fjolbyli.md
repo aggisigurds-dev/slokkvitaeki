@@ -10,7 +10,7 @@ reykskynjara í sameign sem er þá bara stigagangurinn upp og kjallari ef slík
 - **Sameign:** stigagangar/stigahús, anddyri, gangar, kjallari (geymslugangur, hjóla- og vagnageymsla, þvottahús,
   þurrkherbergi, tæknirými/inntak, sorp), sameiginleg bílgeymsla.
 - Slökkvitæki húsfélags: í stigagangi (við inngang / á stigapöllum, sama stað á öllum hæðum) og í kjallara.
-- Reykskynjarar í sameign: stigagangar og kjallari (sjá `bunadur.md`, gr. 9.4.3–9.4.4).
+- Reykskynjarar í sameign: stigagangar og kjallari (sjá `bunadur.md`, gr. 9.4.2–9.4.3).
 - **Neyðarlýsing í fjölbýli (fl. 3, gr. 9.4.12):** skylda í stigahúsum **yfir fjórar hæðir**, í **gluggalausum**
   stigahúsum og göngum (líka í kjallara), við lyftur/lyftuvélar og í tæknirýmum. **Sameiginleg bílgeymsla = fl. 1** →
   neyðarlýsing á öllum flóttaleiðum. Óljóst hvort kjallari telst með í hæðafjölda. Sjá `neydarlysing.md` §1.3.

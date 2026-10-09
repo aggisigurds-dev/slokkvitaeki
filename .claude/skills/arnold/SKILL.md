@@ -266,7 +266,7 @@ DB.sb.from = t => { const q = f(t); for (const m of ['insert','update','upsert',
 
 **Heildarlistinn með tenglum er í `references/reglusafn.md`.** Helstu:
 
-- Byggingarreglugerð 112/2012, 9. hluti (gr. 9.4.3, 9.4.5, 9.4.6, 9.4.12, 9.5.11, 9.8.7)
+- Byggingarreglugerð 112/2012, 9. hluti (gr. 9.4.2–9.4.5, 9.4.12, 9.5.11, 9.8.7 — útgáfa í gildi frá 1. maí 2026)
 - Reglugerð um eldvarnir og eldvarnaeftirlit 723/2017 · Reglugerð um þjónustuaðila brunavarna 1067/2011
 - HMS leiðbeining 9.4.12 Neyðarlýsing: byggingarreglugerd.is/leidbeiningar/neydarlysing
 - HMS leiðbeiningar: byggingarreglugerd.is/leidbeiningar/slongukefli

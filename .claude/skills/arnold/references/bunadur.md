@@ -4,7 +4,7 @@ Reglurnar sem Arnold reiknar eftir: handslökkvitæki, slöngukefli, reykskynjar
 Sami texti birtist á Reglur-síðunni í appinu (`#reglur`, patch 449). Ein heimild á einum stað — breyttu hér,
 ekki í SKILL.md og ekki í kóða síðunnar. Kaflar síðunnar eru taldir upp í `kaflar.json`.
 
-## Handslökkvitæki (byggingarreglugerð 112/2012 gr. 9.4.5–9.4.6 · 165.BR1 · rg. 1068/2011)
+## Handslökkvitæki (byggingarreglugerð 112/2012 gr. 9.4.4–9.4.5 · 165.BR1 · rg. 1068/2011)
 
 - Hámarks **gönguleið 25 m** frá hverjum stað að næsta tæki (flokkur A).
 - Eldfimir vökvar (flokkur B): hámark **20 m** og tæki við hvern hættupunkt.
@@ -27,7 +27,7 @@ ekki í SKILL.md og ekki í kóða síðunnar. Kaflar síðunnar eru taldir upp 
   byrgir sýn og skemmir rafeindabúnað — léttvatn frekar í verslunarrými;
   duft aldrei minna en 6 kg sem aðaltæki, aukatæki minnst 2 kg.
 
-## Slöngukefli / brunaslöngur (gr. 9.4.6 · HMS-leiðbeining um slöngukefli)
+## Slöngukefli / brunaslöngur (gr. 9.4.5 · HMS-leiðbeining um slöngukefli)
 
 - **Skylda í notkunarflokki 1–2 (verslun, skrifstofur) yfir 500 m²**; einnig í
   flokkum 4–6 (hótel, sjúkrastofnanir, leikskólar) eftir brunaálagi.
@@ -38,7 +38,7 @@ ekki í SKILL.md og ekki í kóða síðunnar. Kaflar síðunnar eru taldir upp 
   eða loka flóttaleið notandans.
 - **Miðja keflis 1–1,5 m frá gólfi.** Keflið rautt, merkt skv. gr. 9.8.7.
 
-## Reykskynjarar (gr. 9.4.3–9.4.4)
+## Reykskynjarar (gr. 9.4.2–9.4.3)
 
 - Stakir reykskynjarar þar sem brunavarnir krefjast en sjálfvirkt
   brunaviðvörunarkerfi er ekki skylt.
