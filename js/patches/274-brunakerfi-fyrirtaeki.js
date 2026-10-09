@@ -593,6 +593,7 @@
       r('.b274-tala', 'display:flex;align-items:baseline;gap:10px;white-space:nowrap'),
       r('.b274-tala .n', 'font-family:' + DISPLAY + ';font-size:38px;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
       r('.b274-tala .l', 'font-family:' + DISPLAY + ';font-size:16px;font-weight:700;color:#d9dee6'),
+      r('.b274-tala .e', 'align-self:center;height:24px;padding:0 8px;border-radius:5px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#e8e2d4;font:600 11.5px var(--mono,monospace);cursor:pointer'),
       r('.b274-hm', 'display:flex;flex-direction:column;gap:6px;margin-left:8px;min-width:0'),
       r('.b274-stika', 'display:flex;gap:3px;height:8px;width:280px;max-width:100%'),
       r('.b274-stika i', 'display:block;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);min-width:4px'),
@@ -1083,6 +1084,14 @@
     const meta = (repNow && repNow.data && repNow.data.meta) || {};
     const bun = ((repNow && repNow.data && repNow.data.bunadur) || []).map((x, i) => ({ label: x.label || BUN_LABELS[i] || '', n: (+x.iLagi || 0) + (+x.ekki || 0) })).filter(x => x.n > 0);
     const einingar = bun.reduce((t, x) => t + x.n, 0);
+    // 09.10.2026 (Agnar: „leyfa mér að setja inn 91 einingar frá einhverjum stað svo það sjáist á rauða bannerinum og á
+    // yfirlitssíðunni"): einingafjöldi ÁSKRIFTARKORTSINS (brunakerfi_customers[fid].unit_count) — sama tala og rauða flísin
+    // (386) og Kerfin-taflan (385/388) lesa þegar engin skýrsla er til. Skýrslan gengur fyrir þegar hún er til; þá sést
+    // kortstalan í titlinum á ✎ og ≠ ef hún stangast á. Ritun aðeins fyrir félag á áskriftarlistanum (sjá vinnslaVisir).
+    const askriftEin = bkSt && typeof bkSt === 'object' && +bkSt.unit_count > 0 ? +bkSt.unit_count : 0;
+    const einSyn = einingar || askriftEin;
+    const einL = einingar ? 'einingar í kerfinu' : askriftEin ? 'einingar · áskriftarkort' : 'engin skoðun enn';
+    const einTakki = bkSt == null ? '' : '<button type="button" class="e" data-bkc-einingar="' + askriftEin + '" title="' + esc((askriftEin ? 'Áskriftarkort: ' + askriftEin + ' einingar' : 'Enginn einingafjöldi á áskriftarkorti') + (einingar && askriftEin && einingar !== askriftEin ? ' · skýrslan segir ' + einingar : '') + ' — smelltu til að breyta') + '">✎' + (einingar && askriftEin && einingar !== askriftEin ? ' ≠' : '') + '</button>';
     const litur = l => /reyk/i.test(l) ? '#38bdf8' : /hita/i.test(l) ? '#f97316' : /handbo/i.test(l) ? '#2563eb' : /bj[öo]ll|s[íi]ren/i.test(l) ? '#dc2626' : /rafhl/i.test(l) ? '#f6b545' : '#9ca3af';
     const stika = bun.length
       ? '<div class="b274-stika" role="img" aria-label="' + esc(bun.map(x => x.label + ' ' + x.n).join(', ')) + '">' + bun.map(x => '<i style="flex:' + x.n + ';background:' + litur(x.label) + '"></i>').join('') + '</div>' +
@@ -1121,7 +1130,7 @@
           '<header class="b274-hd">' +
             '<div class="b274-hl">' +
               '<div class="b274-t"><i class="b274-led ' + led + '"></i>Brunakerfis skoðun ' + NOW + ' · ' + esc(pillTxt) + '</div>' +
-              '<div class="b274-tala"><span class="n">' + (einingar || '—') + '</span><span class="l">' + (einingar ? 'einingar í kerfinu' : 'engin skoðun enn') + '</span></div>' +
+              '<div class="b274-tala"><span class="n">' + (einSyn || '—') + '</span><span class="l">' + einL + '</span>' + einTakki + '</div>' +
             '</div>' +
             '<div class="b274-hm">' + stika + '</div>' +
             '<div class="b274-hr">' +
@@ -1484,6 +1493,26 @@
       const svar = await AS.save({ brunakerfi_customers: { [fid]: sent } });
       const nu = (AS.path('brunakerfi_customers') || {})[fid] || {};
       if (svar === false || +nu.in_progress_year !== gildi) { b.disabled = false; if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist ekki — reyndu aftur'); return; }
+      reload();
+    }));
+    // ✎ Einingafjöldi áskriftarkortsins — sama skrif og 147 saveOne (þröngt: aðeins þetta félag, co_id með ef eldra `true`-snið).
+    w.querySelectorAll('[data-bkc-einingar]').forEach(b => b.addEventListener('click', async () => {
+      const AS = window.AppSettings; if (!AS || !AS.save || !AS.path || !C || !C.co) return;
+      const fid = String(C.co.id);
+      const fyrir = (AS.path('brunakerfi_customers') || {})[fid];
+      if (fyrir == null) { if (window.Toast && Toast.show) Toast.show('Félagið er ekki á áskriftarlista brunakerfa — bættu því við fyrst'); return; }
+      const svarTxt = window.prompt('Einingafjöldi brunakerfisins (áskriftarkort) — sést á rauðu flísinni og í Kerfin-töflunni þar til skýrsla er til:', b.dataset.bkcEiningar || '');
+      if (svarTxt == null) return;
+      const n = parseInt(String(svarTxt).replace(/[^0-9]/g, ''), 10);
+      if (!(n >= 0)) { if (window.Toast && Toast.show) Toast.show('Skrifaðu heila tölu'); return; }
+      const sent = { unit_count: n }; if (typeof fyrir !== 'object') sent.co_id = +fid;
+      b.disabled = true;
+      const svar = await AS.save({ brunakerfi_customers: { [fid]: sent } });
+      const nu = (AS.path('brunakerfi_customers') || {})[fid] || {};
+      if (svar === false || +nu.unit_count !== n) { b.disabled = false; if (window.Toast && Toast.show) Toast.show('⚠ Vistaðist ekki — reyndu aftur'); return; }
+      // Rauða flísin (386) teiknast ekki aftur af sjálfu sér — uppfæra textann á staðnum.
+      try { const tu = document.querySelector('#_sks-tabs ._sks-tab[data-flipi="bru"] ._sks-tu'); if (tu) { const sk = (tu.textContent.match(/skoðað .*$/) || [''])[0]; tu.textContent = [n ? n + (n === 1 ? ' eining' : ' einingar') : 'Brunaviðvörunarkerfi', sk].filter(Boolean).join(' · '); } } catch (_) {}
+      if (window.Toast && Toast.show) Toast.show('✓ ' + n + ' einingar skráðar á áskriftarkortið');
       reload();
     }));
     // 📧 Senda — brunakerfisskýrsla (+ reikningur) ársins gegnum póst-ritilinn (254).
