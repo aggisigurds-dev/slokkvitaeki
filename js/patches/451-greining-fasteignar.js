@@ -122,6 +122,7 @@
     // Gervi-auðkennin slá út !important-reglur 442 (4 auðkenni) og síma-laganna.
     const K = ':not(#_g451a):not(#_g451b):not(#_g451c):not(#_g451d):not(#_g451e)';
     const R = '#' + ID + K;
+    const svgU = (x) => 'url("data:image/svg+xml,' + encodeURIComponent(x) + '")';
     // Síma-lögin (402 p(): 6 auðkenni, 338/356/261) gefa borðanum display með !important — sjö gervi-auðkenni slá þau út
     const MS = 'html[data-viewmode="mobile"] body #companies-main.gr-sydar:not(#_g451m1):not(#_g451m2):not(#_g451m3):not(#_g451m4):not(#_g451m5):not(#_g451m6):not(#_g451m7)';
     const M = 'html body #companies-main.gr-sydar:not(#_g451m1):not(#_g451m2):not(#_g451m3):not(#_g451m4):not(#_g451m5):not(#_g451m6):not(#_g451m7)';
@@ -353,6 +354,53 @@
       R + ' .gr-tp b{font:700 13px ' + SANS + ';color:#141822}', R + ' .gr-tp span{font:500 11px ' + MONO + ';color:#525b6b}',
       R + ' .gr-fsk{position:relative}',
       R + ' .gr-fsk-tp{position:absolute;top:6px;right:6px;z-index:2;padding:2px 7px;border-radius:6px;background:' + METAL + ';color:#fff!important;font:700 10px ' + MONO + ';text-decoration:none!important}',
+      // ── Brunavarnir á teikningu (5h): föst hæð sviðs, skýringa og stöðulína — ekkert ýtist þegar teikningin kemur
+      R + ' .gr-bat{--bat-h:600px;margin:14px 0 6px}', R + ' .gr-bat > .gr-hluti-haus{margin-top:0}',
+      R + ' .gr-bat-haedir{display:flex;align-items:center;gap:6px;height:38px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;margin:0 0 8px;scrollbar-width:thin}',
+      R + ' .gr-bat-hd{flex:none;height:30px;padding:0 12px;margin:0;border-radius:7px;border:1px solid #000;background:' + METAL + ';color:#e4e7ec;font:700 12px/1 ' + SANS + ';cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 5px rgba(0,0,0,.3)}',
+      R + ' .gr-bat-hd.on{background:linear-gradient(180deg,#d6262c 0%,#a3141a 55%,#7d0d12 100%);color:#fff;box-shadow:0 0 12px -2px rgba(210,30,30,.6),inset 0 1px 0 rgba(255,255,255,.25)}',
+      R + ' .gr-bat-hd-undir{flex:none;margin-left:6px;font:500 11px ' + MONO + ';color:#6b7483}',
+      R + ' .gr-bat-grind{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:12px;align-items:start}', R + ' .gr-bat-grind.ein{grid-template-columns:minmax(0,1fr)}',
+      R + ' .gr-bat-svid{position:relative;height:var(--bat-h);display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.14),0 2px 6px rgba(10,14,22,.12);overflow:hidden}',
+      R + ' .gr-bat-bid{font:600 13px ' + SANS + ';color:#6b7483;padding:0 16px;text-align:center}', R + ' .gr-bat-bid.villa{color:#b42318}',
+      R + ' .gr-bat-blad{position:relative;z-index:1;max-height:100%;overflow:hidden;background:transparent;flex:none}',
+      R + ' .gr-bat-svid.mynd::before{content:"Sæki mynd…";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 13px ' + SANS + ';color:#8a929e;z-index:0}',
+      R + ' .gr-bat-blad > img:first-child{position:absolute;left:0;top:0;width:100%;height:100%;display:block;max-width:none!important;max-height:none!important}',
+      R + ' .gr-bat-blad.heil{width:100%;height:100%}', R + ' .gr-bat-blad.heil > img:first-child{object-fit:contain}',
+      R + ' .gr-bat-m{position:absolute;max-width:none!important;max-height:none!important;opacity:0;transition:opacity .18s;pointer-events:none}', R + ' .gr-bat-m.on{opacity:1}',
+      R + ' .gr-bat-hr{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:3px solid transparent;pointer-events:none;transition:border-color .18s,box-shadow .18s}',
+      R + ' .gr-bat-hr.on{border-color:rgba(232,106,18,.95);box-shadow:0 0 0 4px rgba(232,106,18,.25)}',
+      R + ' .gr-bat-r{position:absolute;transform:translate(-50%,-50%);padding:1px 6px;border-radius:5px;background:rgba(20,22,28,.82);color:#fff;font:700 10.5px/1.35 ' + SANS + ';white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4);z-index:2}',
+      R + ' .gr-bat-r.on{background:#e86a12;box-shadow:0 0 0 2px #fff,0 0 10px rgba(232,106,18,.8)}', R + ' .gr-bat-blad.val .gr-bat-r:not(.on){opacity:.4}',
+      R + ' .gr-bat-d{position:absolute;height:7px;min-width:8px;border-radius:4px;background:#0a8f3c;box-shadow:0 0 0 1.5px #fff,0 0 8px rgba(10,143,60,.8);z-index:1}',
+      R + ' .gr-bat-d.stor{background:repeating-linear-gradient(90deg,#0a8f3c 0 6px,#5fd08a 6px 9px)}',
+      R + ' .gr-bat-i{position:absolute;width:20px;height:20px;transform:translate(-50%,-50%);border-radius:4px;background-size:100% 100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));max-width:none!important;z-index:3}',
+      R + ' .gr-bat-i.okkar{outline:2px solid #d9b762;outline-offset:1px}', R + ' .gr-bat-i.lys{outline:1.5px dashed #a86a12;outline-offset:1px}',
+      R + ' .i-utg{background-image:' + svgU("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='.6' y='.6' width='22.8' height='22.8' rx='3.2' fill='#0a8f3c' stroke='#fff' stroke-width='1.2'/><path d='M15.2 4.2h4.6v15.6h-4.6' fill='none' stroke='#fff' stroke-width='1.5'/><circle cx='10.6' cy='5.3' r='1.75' fill='#fff'/><path d='M9.6 7.9 6.3 10.3l.9 1.2 2.4-1.6.5 3.1-2.7 3.4 1.2 1 3-3.6 1.7 1.9v3.9h1.6v-4.5l-2.1-2.4-.5-2.3 1.3 1.1 2.4-.5-.3-1.5-1.7.3z' fill='#fff'/></svg>") + '}',
+      R + ' .i-neyd{background-image:' + svgU("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='.6' y='.6' width='22.8' height='22.8' rx='3.2' fill='#a86a12' stroke='#fff' stroke-width='1.2'/><rect x='6' y='10' width='12' height='5.2' rx='1.6' fill='#fff'/><path d='M12 4.2v3M6.3 6l1.8 1.8M17.7 6l-1.8 1.8' stroke='#fff' stroke-width='1.6' stroke-linecap='round'/><path d='M8 17.8h8' stroke='#fff' stroke-width='1.4'/></svg>") + '}',
+      R + ' .i-reykluga{background-image:' + svgU("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='.6' y='.6' width='22.8' height='22.8' rx='3.2' fill='#3a3f48' stroke='#fff' stroke-width='1.2'/><path d='M3.8 17.5 12 11.5l8.2 6' fill='none' stroke='#fff' stroke-width='1.6'/><path d='M12 15V4.6M8.8 7.7 12 4.5l3.2 3.2' fill='none' stroke='#ffb347' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/></svg>") + '}',
+      R + ' .i-bjorgun{background-image:' + svgU("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='.6' y='.6' width='22.8' height='22.8' rx='3.2' fill='#0a8f3c' stroke='#fff' stroke-width='1.2'/><rect x='4.6' y='6' width='8.6' height='12' fill='none' stroke='#fff' stroke-width='1.5'/><path d='M10.5 12h8.2M15.8 9l3 3-3 3' fill='none' stroke='#fff' stroke-width='1.6'/></svg>") + '}',
+      R + ' .i-pin{background:#b42318;border-radius:50%!important;box-shadow:0 0 0 2px #fff}',
+      R + ' .gr-bat-skyr{display:flex;gap:6px;height:36px;align-items:center;overflow-x:auto;overflow-y:hidden;white-space:nowrap;margin:8px 0 4px;scrollbar-width:thin}',
+      R + ' .gr-bat-sk{flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px 0 5px;border-radius:7px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.13);font:600 11.5px ' + SANS + ';color:#141822}',
+      R + ' .gr-bat-sk b{font:700 11.5px ' + MONO + ';color:#141822}', R + ' .gr-bat-sk.tomt{color:#6b7483;padding:0 10px;font-weight:500}',
+      R + ' .gr-bat-ik{position:static!important;display:inline-block;width:18px;height:18px;transform:none!important;flex:none;background-size:100% 100%;border-radius:3px;max-width:none!important}',
+      R + ' .gr-bat-ik.i-dyr{background:#0a8f3c;height:7px;width:20px;border-radius:4px;box-shadow:0 0 0 1.5px #fff,0 0 0 2.5px rgba(0,0,0,.2)}',
+      R + ' .gr-bat-ik.okkar{outline:2px solid #d9b762;outline-offset:1px}', R + ' .gr-bat-ik.lys{outline:1.5px dashed #a86a12;outline-offset:1px}',
+      R + ' .gr-bat-stada{height:20px;line-height:20px;font:500 12px ' + SANS + ';color:#3b4250;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}', R + ' .gr-bat-stada.val{color:#b4530f;font-weight:700}',
+      R + ' .gr-bat-hlid{height:var(--bat-h);overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;scrollbar-width:thin}',
+      R + ' .gr-bat-fyrir{font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#6b7483;margin:4px 0 0}',
+      R + ' .gr-bat-tal{flex:none;display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px;margin:0;width:100%;border:0;border-radius:8px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.13);cursor:pointer;font:inherit;color:#141822}',
+      R + ' .gr-bat-tal1{font:600 12.5px/1.35 ' + SANS + '}', R + ' .gr-bat-tal1 b{margin-right:4px}',
+      R + ' .gr-bat-tal2{font:500 11.5px/1.35 ' + SANS + ';color:#3b4250;height:2.7em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+      R + ' .gr-bat-tal.st-ok{box-shadow:inset 3px 0 0 #2fbf6b,inset 0 0 0 1px rgba(20,24,34,.13)}', R + ' .gr-bat-tal.st-nei{box-shadow:inset 3px 0 0 #e0453c,inset 0 0 0 1px rgba(20,24,34,.13)}',
+      R + ' .gr-bat-tal.st-ovisst{box-shadow:inset 3px 0 0 #d9b762,inset 0 0 0 1px rgba(20,24,34,.13)}',
+      R + ' .gr-bat-q{flex:none;display:block;text-align:left;padding:7px 10px;margin:0;width:100%;border:0;border-radius:8px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.13);cursor:pointer;font:500 12.5px/1.45 ' + SANS + ';color:#141822}',
+      R + ' .gr-bat-q q{quotes:"\\201E" "\\201C"}', R + ' .gr-bat-q small{display:block;margin-top:3px;font:700 10.5px ' + MONO + ';color:#b4530f;letter-spacing:.03em}', R + ' .gr-bat-q.neit{color:#6b7483}',
+      R + ' .gr-bat-q.on,' + R + ' .gr-bat-tal.on{background:#fff4ea;box-shadow:inset 0 0 0 2px #e86a12}',
+      R + ' .gr-bv q.gr-bat-qq{cursor:pointer}', R + ' .gr-bv q.gr-bat-qq.on{background:#fff4ea;box-shadow:0 0 0 2px #e86a12;border-radius:4px}',
+      '@container (max-width: 860px){' + R + ' .gr-bat{--bat-h:440px}' + R + ' .gr-bat-grind{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-bat-hlid{height:auto;overflow:visible}}',
+      '@container (max-width: 560px){' + R + ' .gr-bat{--bat-h:340px}' + R + ' .gr-bat-i{width:15px;height:15px}' + R + ' .gr-bat-r{font-size:9px;padding:0 4px}' + R + ' .gr-bat-hd-undir{display:none}}',
       '@container (max-width: 860px){' + R + ' .gr-myndraen{grid-template-columns:220px minmax(0,1fr)}' + R + ' .gr-sula{grid-template-columns:90px minmax(0,1fr) 96px}}',
       '@container (max-width: 560px){' + R + ' .gr-myndraen{grid-template-columns:minmax(0,1fr);height:auto}' + R + ' .gr-hero{height:190px}' + R + ' .gr-med-skjal{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-med-skjal > .gr-skjal-fl{order:-1;max-width:200px}' + R + ' .gr-krofu-haus{flex-direction:column}' + R + ' .gr-skjal-litil{width:100%;max-width:200px}}',
       // haus borðans: loftmynd í stað upphafsstafanna — sama hæð (56 px tölva / 36 px sími)
@@ -829,6 +877,7 @@
         if (b.dataset.birt !== '1') b.dataset.birt = '1';   // mælingin (tools/greining-vafri) greinir birt efni frá staðgenglum
         if (lyk === 'eign') { kortFesta(b); loftFesta(b); }
         fskFesta(b);
+        if (lyk === 'bruna') { batFesta(b); batMerkja(); }
         if (aftur) aftur();
       }
       fyrriBirt = ma && b._h != null;
@@ -1351,7 +1400,9 @@
       setjaStodu('bruna', 'tomt', lys.length ? 'ólesin' : 'engin lýsing');
       safnByrja('bruna');
       const bt0 = bestaBrunablad(g.teikn).slice(0, 4);
-      setjaBuk('bruna', (bt0.length ? '<div class="gr-skjal-rod">' + bt0.map((x) => fskFlis(x, 'Brunavarnir', false, { hopur: 'bruna-skjal', undir: undirAf(x) })).join('') + '</div>' : '') + '<div class="gr-tomt">' + (lys.length ? lys.length + (lys.length === 1 ? ' byggingarlýsing fannst' : ' byggingarlýsingar fundust') + ' en engin hefur verið lesin enn — „Lesa skjölin“ í Byggingarupplýsingum les hana á skrifstofutölvunni.' : 'Engin byggingarlýsing fannst í skjalasafninu.') + '</div>');
+      if (S.batG !== g) { S.batG = g; S.batQ = -1; }
+      S.batTilv = [];
+      setjaBuk('bruna', (bt0.length ? '<div class="gr-skjal-rod">' + bt0.map((x) => fskFlis(x, 'Brunavarnir', false, { hopur: 'bruna-skjal', undir: undirAf(x) })).join('') + '</div>' : '') + batHtml(g, []) + '<div class="gr-tomt">' + (lys.length ? lys.length + (lys.length === 1 ? ' byggingarlýsing fannst' : ' byggingarlýsingar fundust') + ' en engin hefur verið lesin enn — „Lesa skjölin“ í Byggingarupplýsingum les hana á skrifstofutölvunni.' : 'Engin byggingarlýsing fannst í skjalasafninu.') + '</div>');
       return;
     }
     const efni = bv.efni || {};
@@ -1359,13 +1410,20 @@
     safnByrja('bruna');
     const bt = bestaBrunablad(g.teikn).slice(0, 3);
     const skjolRod = '<div class="gr-skjal-rod">' + skjalFlis(bv.slod, 'Byggingarlýsing', dags(bv.dags), 'bruna-skjal') + bt.map((x) => fskFlis(x, 'Brunavarnir', false, { hopur: 'bruna-skjal', undir: undirAf(x) })).join('') + '</div>';
+    if (S.batG !== g) { S.batG = g; S.batQ = -1; }
+    const tilv = batTilvitnanir(bv); S.batTilv = tilv;
+    const tIdx = new Map(tilv.map((x) => [x.texti, x.i]));
     setjaStodu('bruna', 'komid', til.length + ' atriði');
     setjaUndir('bruna', 'Byggingarlýsing ' + dags(bv.dags));
-    setjaBuk('bruna', skjolRod + '<div class="gr-bv">' + til.map(([k, h]) => {
+    setjaBuk('bruna', skjolRod + batHtml(g, tilv) + '<div class="gr-bv">' + til.map(([k, h]) => {
       const x = efni[k], d = (x.daemi || []).slice(0, 3);
       const allarNeit = d.length && d.every((y) => y.neitun);
       return '<div class="gr-bv-rod">' + (EFNI_GLYFF[k] ? taknHtml(EFNI_GLYFF[k], allarNeit ? 'nei' : 'til', '', 22) : '') + '<b>' + esc(h) + '</b> <span class="ssp-daufur" style="font:500 11px ' + MONO + '">' + (x.fjoldi || d.length) + '× nefnt' + (allarNeit ? ' — aðeins með neitun' : '') + '</span>' +
-        d.map((y) => '<q class="' + (y.neitun ? 'neit' : '') + '"' + (y.neitun ? ' title="Setningin inniheldur neitun — ekki til staðar / ekki krafa"' : '') + '>' + esc(y.setning) + '</q>').join('') + '</div>';
+        d.map((y) => {
+          const qi = tIdx.has(String(y.setning || '').replace(/\s+/g, ' ').trim()) ? tIdx.get(String(y.setning || '').replace(/\s+/g, ' ').trim()) : -1;
+          const tt = [y.neitun ? 'Setningin inniheldur neitun — ekki til staðar / ekki krafa' : '', qi >= 0 ? 'Smelltu til að lýsa upp rýmin á teikningunni' : ''].filter(Boolean).join(' · ');
+          return '<q class="' + [y.neitun ? 'neit' : '', qi >= 0 ? 'gr-bat-qq' + (S.batQ === qi ? ' on' : '') : ''].filter(Boolean).join(' ') + '"' + (qi >= 0 ? ' data-gr-a="bat-q" data-q="' + qi + '"' : '') + (tt ? ' title="' + tt + '"' : '') + '>' + esc(y.setning) + '</q>';
+        }).join('') + '</div>';
     }).join('') + '</div>' + stadirHtml(bv) +
       '<div class="gr-uppruni">Orðrétt úr byggingarlýsingu ' + skjalHlekkur(bv.slod, dags(bv.dags) || 'skjal') + ' · ' + (bv.heimild === 'textalag' ? 'textalag PDF (nákvæmt)' : 'OCR af skannaðri mynd — getur verið rangt lesið') +
       (b.skraningartafla && b.skraningartafla.dags && bv.dags && b.skraningartafla.dags !== bv.dags ? ' · ATH: taflan er frá ' + esc(dags(b.skraningartafla.dags)) + ', lýsingin frá ' + esc(dags(bv.dags)) + ' (ólíkar umsóknir)' : '') +
@@ -1543,7 +1601,7 @@
           const obj = Array.isArray(b.objects) ? b.objects : [];
           const takn = obj.filter((o) => o && o.type === 'symbol');
           const teg = {}; takn.forEach((o) => { const n = String(o.name || o.symbolId || 'tákn'); teg[n] = (teg[n] || 0) + 1; });
-          ut.tp.push({ co, id: b.id, nafn: b.name || 'Borð', uppfaert: b.updated_at, takn: takn.length, tegundir: Object.entries(teg).sort((a, z) => z[1] - a[1]).slice(0, 4), myndir: obj.filter((o) => o && o.type === 'image').length });
+          ut.tp.push({ co, id: b.id, nafn: b.name || 'Borð', uppfaert: b.updated_at, takn: takn.length, tegundir: Object.entries(teg).sort((a, z) => z[1] - a[1]).slice(0, 4), myndir: obj.filter((o) => o && o.type === 'image').length, haedir: tpHaedir(obj) });
         });
       } catch (_) {}
     }));
@@ -2272,6 +2330,430 @@
       '<div class="gr-kerfi-tal"><i class="gr-led g"></i>' + n.til + ' til staðar · <i class="gr-led r"></i>' + n.vantar + ' vantar · <i class="gr-led y"></i>' + n.ovitad + ' óvitað</div>';
   }
 
+  /* 5h · BRUNAVARNIR Á TEIKNINGU (Agnar 09.10.2026) — stór hæðarmynd með yfirlagi:
+   *   útgangar   „ÚT" úr textalagi teikningarinnar + útidyr greindar úr veggjalínum Teikningar (383 rist) + ÚT-merki
+   *              úr Teikningu/TurboPaint — grænt, útgangstákn í anda ISO 7010 E001/E002
+   *   rými       sem byggingarlýsingin nefnir (stigahús, tækni-/inntaksrými, stjórnrými vatnsúðakerfis, dekkjalager,
+   *              skrifstofur, svalir …) staðsett með rýmisheitum textalagsins (383 raunUrSidu; 446 flokkur fyrir stigahús)
+   *              — smellur á tilvitnun lýsir þau upp (flötur úr veggjalínum þegar hæðin er í Teikningu)
+   *   tákn       skammstafanir teikningarinnar eftir HENNAR EIGIN skýringum („HSL = Handslökkvitæki") — aldrei
+   *              giskað á merkingu; neyðarlýsing og reyklúgur við rýmin sem setning lýsingarinnar nefnir (merkt „úr lýsingu")
+   *   talning    „Þrjár flóttaleiðir eru frá dekkjalager, þar af tvær beint út" borið saman við dyr rýmisins á
+   *              teikningunni — sjálfvirkt og merkt óvíst þar sem rýmismörk lokast ekki
+   * Viðskiptavinur með hæðir í Teikningu: hæðir hans (skornar eins og í Teikningu, 383 frum/skurður). Annars nýjasta
+   * grunnmynd hverrar hæðar úr skjalasafninu. Skönnuð teikning (ekkert textalag): aðeins það sem fannst + tilvitnanir. */
+  const BAT = new Map();   // lykill hæðar → greining (lotan)
+  // [lykill, heiti, í setningu lýsingar, á teikningu]
+  const BAT_RYMI = [
+    ['stigahus', 'Stigahús', /stigah[úu]s/, /stigah|stigag|(^|\s)stigi(\s|$)/],
+    ['udi', 'Stjórnrými vatnsúðakerfis', /stj[óo]rnr[ýy]m/, /vatns[úu][ðd]|[úu][ðd]akerf|sprinkl/],
+    ['taekni', 'Tækni- og inntaksrými', /t[æa]kni-|t[æa]knir[ýy]m|inntaksr[ýy]m/, /t[æa]knir|t[æa]kniher|inntak|lagnar[ýy]m|rafmagnst|t[öo]fluher/],
+    ['dekkjalager', 'Dekkjalager', /dekkjalag|dekkjageyms/, /dekkjalag|dekkjageyms/],
+    ['dekkjaverkst', 'Dekkjaverkstæði', /dekkjaverkst/, /dekkjaverkst/],
+    ['skrifstofa', 'Skrifstofur', /skrifstof/, /skrifst/],
+    ['svalir', 'Svalir', /sval(ir|a|anna)\b|sv[öo]lum/, /sval|sv[öo]l/],
+    ['lyfta', 'Lyfta', /lyft(a|u|ur|unni)\b/, /(^|\s)lyfta/],
+    ['anddyri', 'Anddyri', /anddyr/, /anddyr/],
+    ['kaffistofa', 'Kaffistofa', /kaffistof|matsal|m[öo]tuneyt/, /kaffist|matsal|m[öo]tuneyt/],
+  ];
+  const BAT_RYMI_HEITI = Object.fromEntries(BAT_RYMI.map((r) => [r[0], r[1]]));
+  // búnaður sem setning lýsingarinnar staðsetur í rýmum („Neyðarlýsing … í stigahúsum", „reyklúgu í þaki")
+  const BAT_BUN = [['neyd', 'Neyðarlýsing', /ney[ðd]arl[ýy]s|ney[ðd]arlj[óo]s/], ['reykluga', 'Reyklúga', /reykl[úu]g/]];
+  // merking skammstöfunar (úr skýringum blaðsins) → tákn
+  const BAT_SKYR = [
+    [/merkt(ur)? [úu]tgang|[úu]tgangur|ney[ðd]ar[úu]tg/, 'utg'], [/sl[öo]kkvit[æa]k/, 'extinguisher'], [/brunasl[öo]ng|sl[öo]ngukef/, 'hose'],
+    [/reykskynj/, 'detector'], [/handbo[ðd]|brunabo[ðd]|stj[óo]rnst[öo][ðd] brunavi/, 'alarm'], [/ney[ðd]arlj[óo]s|ney[ðd]arl[ýy]s/, 'neyd'],
+    [/bj[öo]rgunarop/, 'bjorgun'], [/reykl[úu]g|reykr[æa]s/, 'reykluga'],
+  ];
+  // merki úr Teikningu / TurboPaint (sign / symbolId „teikn:<x>") → tákn 434 + heiti
+  const BAT_TEG = { taeki: ['pin', 'Okkar tæki (Teikning)'], hose: ['hose', 'Brunaslanga'], slanga: ['hose', 'Brunaslanga'], bjalla: ['alarm', 'Bjalla / brunaviðvörun'], skilti_slt: ['sign-extinguisher', 'Skilti slökkvitækis'],
+    skilti_slanga: ['sign-hose', 'Skilti brunaslöngu'], lettvatn: ['extinguisher', 'Léttvatnstæki'], duft: ['extinguisher', 'Dufttæki'], co2: ['extinguisher', 'CO₂-tæki'], rafmagn: ['electric', 'Rafmagn'],
+    reykskynjari: ['detector', 'Reykskynjari'], hitaskynjari: ['detector', 'Hitaskynjari'], segull: ['magnet', 'Segull'] };
+  const batTeg = (t) => BAT_TEG[t] || ['pin', String(t || 'Merki').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())];
+  const ER_UT = (t) => t === 'ut' || t === 'neydarutgangur';
+  const TOLUORD = { ein: 1, eina: 1, einn: 1, 'tvær': 2, tveir: 2, 'þrjár': 3, 'þrír': 3, 'fjórar': 4, 'fjórir': 4, fimm: 5, sex: 6 };
+  const tolu = (w) => (/^\d+$/.test(w) ? +w : TOLUORD[String(w || '').toLowerCase()] || null);
+  function batLykill(texti, setning) {
+    const t = String(texti || '').toLowerCase();
+    const r = BAT_RYMI.find((x) => (setning ? x[2] : x[3]).test(t));
+    if (r) return r[0];
+    if (!setning) { try { const f = window.TeiknSameign && TeiknSameign.flokkur(texti); if (f && (f.teg === 'stigahus' || f.teg === 'taekni')) return f.teg; } catch (_) {} }
+    return '';
+  }
+  // „Þrjár flóttaleiðir eru frá dekkjalager, þar af tvær beint út." → { n: 3, beint: 2, fra: 'dekkjalager', key }
+  function batTalning(s) {
+    const m = /(\d+|ein|eina|tvær|þrjár|fjórar|fimm|sex)\s+(?:óháðar\s+|sjálfstæðar\s+)?flóttalei[ðd]ir?\s+(?:er|eru)\s+(?:frá|úr)\s+([^,.;]+?)\s*(?=[,.;]|$)/i.exec(String(s || ''));
+    if (!m) return null;
+    const n = tolu(m[1]); if (!n) return null;
+    const b = /þar af\s+(\d+|ein|tvær|þrjár|fjórar)\s+beint\s+út/i.exec(s);
+    return { n, beint: b ? tolu(b[1]) : null, fra: m[2].trim(), key: batLykill(m[2], true) };
+  }
+  // Setningar lýsingarinnar sem nefna rými eða telja flóttaleiðir (hver einu sinni)
+  const _batTilv = new WeakMap();
+  function batTilvitnanir(bv) {
+    if (!bv || typeof bv !== 'object') return [];
+    if (_batTilv.has(bv)) return _batTilv.get(bv);
+    const efni = bv.efni || {}, sed = new Map();
+    Object.keys(efni).forEach((k) => ((efni[k] && efni[k].daemi) || []).forEach((d) => { const s = String((d && d.setning) || '').replace(/\s+/g, ' ').trim(); if (s && !sed.has(s)) sed.set(s, !!d.neitun); }));
+    const ut = [];
+    sed.forEach((neitun, s) => {
+      const t = s.toLowerCase();
+      const rymi = BAT_RYMI.filter((r) => r[2].test(t)).map((r) => r[0]);
+      const tal = batTalning(s);
+      if (!rymi.length && !tal) return;
+      const bunR = {};
+      BAT_BUN.forEach(([b, , re]) => {
+        const m = re.exec(t); if (!m) return;
+        // reyklúga: „Reykræsing frá X … um reyklúgur í þaki og opnast með hnappi frá stjórnrými" — X, ekki stjórnrýmið
+        const k = BAT_RYMI.filter((r) => { const q = r[2].exec(t); return q && (b !== 'reykluga' || q.index < m.index); }).map((r) => r[0]);
+        if (k.length) bunR[b] = k;
+      });
+      ut.push({ i: ut.length, texti: s, neitun, rymi, tal, bunR });
+    });
+    _batTilv.set(bv, ut);
+    return ut;
+  }
+  // TurboPaint-tákn hæðarinnar: myndin ber uttekt.haedId; tákn eru börn hennar (miðja = x + size/2) → hlutföll síðu
+  function tpHaedir(obj) {
+    return obj.filter((o) => o && o.type === 'image' && o.uttekt && o.uttekt.haedId && !o.rotation && +o.width > 0 && +o.height > 0).map((im) => ({
+      haedId: String(im.uttekt.haedId),
+      takn: obj.filter((o) => o && o.type === 'symbol' && !o.hidden && o.parentId === im.id).map((o) => {
+        const s = +o.size || 24;
+        return { u: (+o.x + s / 2 - +im.x) / +im.width, v: (+o.y + s / 2 - +im.y) / +im.height, teg: String(o.uttektSign || String(o.symbolId || '').replace(/^teikn:/, '')), unitId: o.uttektUnitId ? String(o.uttektUnitId) : '' };
+      }).filter((x) => isFinite(x.u) && isFinite(x.v) && x.u >= 0 && x.u <= 1 && x.v >= 0 && x.v <= 1),
+    }));
+  }
+  function batHaedir(g) {
+    const t = (g && g.teikn) || {}, ut = [];
+    (t.bord || []).forEach((b) => (b.bord.haedir || []).map((h, i) => ({ h, i })).sort((a, z) => (HL.rod(HL.lykill(a.h.nafn)) - HL.rod(HL.lykill(z.h.nafn))) || (a.i - z.i)).forEach(({ h, i }) => {
+      const url = h.image_url || '';
+      if (!url || /^data:/.test(url)) return;
+      const innri = (() => { try { return new URL(url, location.href).searchParams.get('url') || url; } catch (_) { return url; } })();
+      const pdf = /\.pdf(\.info)?(\?|#|$)/i.test(innri) ? innri : null;
+      const fr = h.frum && h.frum.b > 0 && h.frum.h > 0 ? h.frum : null;
+      const sk = fr && h.skurdur && h.skurdur.w > 0 && h.skurdur.h > 0 ? h.skurdur : (fr ? { x: 0, y: 0, w: fr.b, h: fr.h } : null);
+      const tp = [];
+      (t.tp || []).filter((x) => x.co && +x.co.id === +b.co.id).forEach((x) => (x.haedir || []).forEach((hh) => { if (hh.haedId === String(h.id)) tp.push.apply(tp, hh.takn); }));
+      ut.push({ lykill: 'b' + b.co.id + ':' + (h.id || i), heiti: h.nafn || ('Hæð ' + (i + 1)), undir: b.co.nafn + ' · Teikning', kind: 'bord', h, pdf, mynd: pdf ? null : url, fr, sk, tp });
+    }));
+    if (!ut.length && t.dr) {
+      flokkaBlod(t.dr, g.bygg).haedir.forEach(({ x, keys }) => {
+        const d = x.d; if (!d || d.skemmt) return;
+        const pdf = /\.pdf(\.info)?$/i.test(String(d.infoUrl || '')) ? d.infoUrl : null;
+        ut.push({ lykill: 's' + d.infoUrl, heiti: haedaHeiti(keys, x.ris), undir: (dags(d.dags) || 'án dags.') + ' · skjalasafn', kind: 'safn', d, pdf, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)) });
+      });
+    }
+    return ut.slice(0, 10);
+  }
+  // Textabútar síðunnar: miðja (x, y), upphaf grunnlínu (ox, oy), lesstefna (dx, dy) og leturhæð — í punktum síðunnar
+  function batOrd(tc, vp) {
+    const vt = vp.transform, ap = (x, y) => [vt[0] * x + vt[2] * y + vt[4], vt[1] * x + vt[3] * y + vt[5]];
+    const ut = [];
+    ((tc && tc.items) || []).forEach((it) => {
+      const t = String(it.str || '').replace(/\s+/g, ' ').trim(); if (!t) return;
+      const m = it.transform || [1, 0, 0, 1, 0, 0], dl = Math.hypot(m[0], m[1]) || 1, fs = Math.hypot(m[2], m[3]) || 1, w = +it.width || 0;
+      const p = ap(m[4] + m[0] / dl * w / 2 + m[2] * 0.32, m[5] + m[1] / dl * w / 2 + m[3] * 0.32);
+      const o = ap(m[4], m[5]), d = ap(m[4] + m[0] / dl, m[5] + m[1] / dl);
+      const dx = d[0] - o[0], dy = d[1] - o[1], dn = Math.hypot(dx, dy) || 1;
+      ut.push({ t, x: p[0], y: p[1], ox: o[0], oy: o[1], dx: dx / dn, dy: dy / dn, fs });
+    });
+    return ut;
+  }
+  const SKST = /^[A-ZÁÐÉÍÓÚÝÞÆÖ]{1,4}\d?$/;
+  function batTexti(ut, tc, vp, ord, pts) {
+    const B = vp.width, H = vp.height;
+    // skýringar blaðsins: „HSL" og „= Handslökkvitæki" á sömu línu (lesstefna skiptir máli — Fiskislóð er öll 90°)
+    const legI = new Set();
+    ord.forEach((e) => {
+      if (!/^=\s*\S/.test(e.t)) return;
+      let b = -1, bd = Infinity;
+      ord.forEach((a, i) => {
+        if (!SKST.test(a.t)) return;
+        const ox = e.ox - a.ox, oy = e.oy - a.oy, lang = ox * a.dx + oy * a.dy, thv = Math.abs(ox * a.dy - oy * a.dx);
+        if (lang > 0 && lang < a.fs * 8 && thv < a.fs * 0.7 && lang < bd) { bd = lang; b = i; }
+      });
+      if (b >= 0) { legI.add(b); if (!ut.skyr[ord[b].t]) ut.skyr[ord[b].t] = e.t.replace(/^=\s*/, '').trim(); }
+    });
+    ord.forEach((o, i) => {
+      if (legI.has(i)) return;
+      const u = o.x / B, v = o.y / H;
+      if (/^[ÚU]T$/.test(o.t)) { ut.ut.push({ u, v, upp: 'teikning', heiti: 'ÚT' + (ut.skyr[o.t] ? ' = ' + ut.skyr[o.t] : '') }); pts.push([u, v]); return; }
+      if (!SKST.test(o.t)) return;
+      const mean = ut.skyr[o.t]; if (!mean) return;
+      const gl = BAT_SKYR.find((x) => x[0].test(mean.toLowerCase()));
+      if (!gl) return;
+      if (gl[1] === 'utg') { ut.ut.push({ u, v, upp: 'teikning', heiti: o.t + ' = ' + mean }); pts.push([u, v]); return; }
+      ut.takn.push({ u, v, glyff: gl[1], heiti: mean, skst: o.t, upp: 'teikning' }); pts.push([u, v]);
+    });
+    let herb = [];
+    try { herb = (window.Teikn3D && Teikn3D.raun && Teikn3D.raun.urSidu) ? (Teikn3D.raun.urSidu(tc, null, vp).herbergi || []) : []; } catch (e) { console.warn('[451] rými úr textalagi', e); }
+    herb.forEach((h) => {
+      if (/^=/.test(h.texti) || !isFinite(h.u) || !isFinite(h.v)) return;
+      ut.herb.push({ texti: h.texti, nr: h.nr || '', key: batLykill(h.texti), u: h.u, v: h.v, utNaest: 0 });
+      pts.push([h.u, h.v]);
+    });
+    // ÚT-merki næst hverju rými (nálgun þegar rýmismörk eru ekki lesin)
+    if (ut.herb.length) ut.ut.forEach((x) => {
+      let b = null, bd = Infinity;
+      ut.herb.forEach((h) => { const d = Math.hypot((h.u - x.u) * B, (h.v - x.v) * H); if (d < bd) { bd = d; b = h; } });
+      if (b) b.utNaest++;
+    });
+  }
+  // sjálfvirkur skurður blaðs úr skjalasafni: utan um rými, ÚT og tákn (titilreitur og skýringar utan)
+  function batSkurdur(pts) {
+    if (pts.length < 4) return { x: 0, y: 0, w: 1, h: 1 };
+    let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
+    pts.forEach(([u, v]) => { x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); });
+    const m = 0.045; x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(1, x1 + m); y1 = Math.min(1, y1 + m);
+    if (x1 - x0 < 0.25 || y1 - y0 < 0.25) return { x: 0, y: 0, w: 1, h: 1 };
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  // Veggjalínur Teikningar (px frummyndar): útidyr + flötur og dyr hvers rýmis sem lýsingin getur nefnt
+  function batRymi(ut, h, fr) {
+    const vl = Array.isArray(h.veggjaLinur) ? h.veggjaLinur : [];
+    const rist = window.Teikn3D && Teikn3D.raun && Teikn3D.raun.rist;
+    if (vl.length < 8 || !rist) return;
+    const V = [], Gl = [], Hu = [];
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    vl.forEach((l) => {
+      const p = l && l.p; if (!Array.isArray(p) || p.length < 4 || !p.slice(0, 4).every((n) => isFinite(+n))) return;
+      const r = [+p[0], +p[1], +p[2], +p[3], Math.max(6, +l.t || 6)];
+      (l.tegund === 'hurd' ? Hu : l.tegund === 'gler' ? Gl : V).push(r);
+      x0 = Math.min(x0, r[0], r[2]); x1 = Math.max(x1, r[0], r[2]); y0 = Math.min(y0, r[1], r[3]); y1 = Math.max(y1, r[1], r[3]);
+    });
+    if (V.length < 4 || !Hu.length) return;
+    const st = Math.max(x1 - x0, y1 - y0), VIK = Math.max(8, st * 0.006), BIL = st * 0.15, allar = V.concat(Gl, Hu);
+    // göt í útvegg (gluggar sem greindust ekki sem gler) lokuð á útlínu-ramma hússins — annars lekur hvert rými út
+    [['x', x0], ['x', x1], ['y', y0], ['y', y1]].forEach(([as, gildi]) => {
+      const bil = allar.filter((r) => (as === 'x' ? Math.abs(r[0] - gildi) < VIK && Math.abs(r[2] - gildi) < VIK : Math.abs(r[1] - gildi) < VIK && Math.abs(r[3] - gildi) < VIK))
+        .map((r) => (as === 'x' ? [Math.min(r[1], r[3]), Math.max(r[1], r[3])] : [Math.min(r[0], r[2]), Math.max(r[0], r[2])])).sort((a, b) => a[0] - b[0]);
+      let e0 = -Infinity;
+      bil.forEach((b, i) => { if (i && b[0] - e0 > 2 && b[0] - e0 < BIL) V.push(as === 'x' ? [gildi, e0, gildi, b[0], 6] : [e0, gildi, b[0], gildi, 6]); e0 = Math.max(e0, b[1]); });
+    });
+    const golf = { x: (x0 + x1) / 2, z: (y0 + y1) / 2, w: x1 - x0 + 120, h: y1 - y0 + 120 };
+    const R = rist(V, Gl, Hu, golf, Math.max(4, Math.round(Math.max(golf.w, golf.h) / 520)));
+    const rs = R.rs, lokad = new Map();
+    // hlið dyra: innan lokaðs rýmis (gríma) eða úti (flóðfylling nær út á jaðar)
+    const hlid = (x, y) => { const k = Math.round(x / rs) + ',' + Math.round(y / rs); if (!lokad.has(k)) lokad.set(k, R.herbergi(x, y, Infinity)); return lokad.get(k); };
+    const breidd = Hu.map((d) => Math.hypot(d[2] - d[0], d[3] - d[1])).sort((a, b) => a - b), mid = breidd[Math.floor(breidd.length / 2)] || 1;
+    const dyr = Hu.map((d) => {
+      const mx = (d[0] + d[2]) / 2, my = (d[1] + d[3]) / 2, L = Math.hypot(d[2] - d[0], d[3] - d[1]) || 1, nx = -(d[3] - d[1]) / L, ny = (d[2] - d[0]) / L, f = d[4] / 2 + rs * 2.5;
+      const a = [mx + nx * f, my + ny * f], b = [mx - nx * f, my - ny * f], ma = hlid(a[0], a[1]), mb = hlid(b[0], b[1]);
+      return { mx, my, L, a, b, uti: !!ma !== !!mb, stor: L > mid * 1.8, ang: Math.atan2(d[3] - d[1], d[2] - d[0]) * 180 / Math.PI };
+    });
+    ut.veggir = true;
+    ut.dyr = dyr.filter((d) => d.uti).map((d) => ({ u: d.mx / fr.b, v: d.my / fr.h, L: d.L / fr.b, ang: d.ang, stor: d.stor }));
+    const hamark = golf.w * golf.h * 0.7, x0g = golf.x - golf.w / 2 - 1, z0g = golf.z - golf.h / 2 - 1;
+    ut.herb.forEach((r) => {
+      if (!r.key) return;
+      const m = R.herbergi(r.u * fr.b, r.v * fr.h, hamark);
+      if (!m) { r.lekur = true; return; }
+      const min = dyr.filter((d) => R.inni(m, d.a[0], d.a[1]) || R.inni(m, d.b[0], d.b[1]));
+      const gang = min.filter((d) => !d.stor), stor = min.filter((d) => d.stor);
+      r.st = { dyr: gang.length, uti: gang.filter((d) => d.uti).length, stor: stor.length, storUti: stor.filter((d) => d.uti).length, utInni: ut.ut.filter((x) => R.inni(m, x.u * fr.b, x.v * fr.h)).length };
+      try {
+        const cv = document.createElement('canvas'); cv.width = R.nx; cv.height = R.nz;
+        const cx = cv.getContext('2d'), id = cx.createImageData(R.nx, R.nz), px = id.data;
+        for (let i = 0; i < m.length; i++) if (m[i]) { const j = i * 4; px[j] = 232; px[j + 1] = 106; px[j + 2] = 18; px[j + 3] = 118; }
+        cx.putImageData(id, 0, 0);
+        r.maska = { src: cv.toDataURL('image/png'), u: x0g / fr.b, v: z0g / fr.h, uw: R.nx * rs / fr.b, vh: R.nz * rs / fr.h };
+      } catch (_) {}
+    });
+  }
+  async function batGreina(src) {
+    const ut = { stada: 'komid', texti: false, mynd: null, still: null, ar: 0, c: null, herb: [], ut: [], takn: [], dyr: [], merki: [], skyr: {}, veggir: false, skannad: false, kind: src.kind };
+    const fr = src.fr, sk = src.sk;
+    let c = fr && sk ? { x: sk.x / fr.b, y: sk.y / fr.h, w: sk.w / fr.b, h: sk.h / fr.h } : null;
+    const pts = [];
+    // merki úr Teikningu (px frummyndar) og TurboPaint (hlutföll síðu) — TurboPaint-tákn sem bera sama unitId og
+    // Teikningar-merki eru sama merkið (samstillt) og teljast einu sinni
+    const merki = [];
+    if (fr && src.h && Array.isArray(src.h.markers)) src.h.markers.forEach((m) => {
+      if (!m || !isFinite(m.x) || !isFinite(m.y)) return;
+      const sign = m.kind === 'sign' || String(m.unitId || '').indexOf('s:') === 0;
+      merki.push({ u: m.x / fr.b, v: m.y / fr.h, teg: sign ? String(m.sign || String(m.unitId).split(':')[1] || '') : 'taeki', unitId: String(m.unitId || ''), upp: 'Teikning' });
+    });
+    const ids = new Set(merki.map((m) => m.unitId).filter(Boolean));
+    (src.tp || []).forEach((t) => { if (t.unitId && ids.has(t.unitId)) return; merki.push({ u: t.u, v: t.v, teg: t.teg, unitId: t.unitId, upp: 'TurboPaint' }); });
+    if (src.pdf) {
+      await pdfjsHlada();
+      const r = await fetch(PDFF + '?url=' + encodeURIComponent(src.pdf), { signal: AbortSignal.timeout(45000) });
+      if (!r.ok) throw new Error('PDF fékkst ekki (' + r.status + ')');
+      const baeti = new Uint8Array(await r.arrayBuffer());
+      if (baeti.length < 5000) throw new Error('skjalið er skemmt hjá sveitarfélaginu (' + baeti.length + ' bæti)');
+      const doc = await window.pdfjsLib.getDocument({ data: baeti }).promise;
+      try {
+        const s = await doc.getPage(1), vp = s.getViewport({ scale: 1 });
+        const tc = await s.getTextContent();
+        const ord = batOrd(tc, vp);
+        ut.texti = ord.filter((o) => /[A-Za-zÀ-ſ]{2,}/.test(o.t)).length >= 12;
+        if (ut.texti) batTexti(ut, tc, vp, ord, pts);
+        if (ut.texti && fr && src.h) { try { batRymi(ut, src.h, fr); } catch (e) { console.warn('[451] veggjalínur', e); } }
+        if (!c) c = batSkurdur(pts);
+        const B = vp.width, H = vp.height, W = (window.innerWidth || 1200) < 700 ? 1100 : 1700;
+        const sc = W / Math.max(1, c.w * B);
+        const rv = s.getViewport({ scale: sc, offsetX: -c.x * B * sc, offsetY: -c.y * H * sc });
+        const cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(c.w * B * sc)); cv.height = Math.max(1, Math.round(c.h * H * sc));
+        const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+        await s.render({ canvasContext: cx, viewport: rv }).promise;
+        const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.86));
+        if (!blob) throw new Error('mynd varð ekki til');
+        ut.mynd = URL.createObjectURL(blob); ut.ar = cv.width / cv.height;
+      } finally { try { doc.destroy(); } catch (_) {} }
+    } else if (src.mynd) {
+      ut.mynd = src.mynd;
+      if (c && fr) { ut.still = { w: 1 / c.w, h: 1 / c.h, x: -c.x / c.w, y: -c.y / c.h }; ut.ar = (c.w * fr.b) / (c.h * fr.h); }
+    }
+    ut.skannad = !ut.texti;
+    if (!c) c = { x: 0, y: 0, w: 1, h: 1 };
+    ut.c = c;
+    const P = (u, v) => ({ x: (u - c.x) / c.w, y: (v - c.y) / c.h });
+    const kort = (a) => a.map((o) => Object.assign({}, o, P(o.u, o.v))).filter((o) => o.x >= -0.005 && o.x <= 1.005 && o.y >= -0.005 && o.y <= 1.005);
+    ut.herb = kort(ut.herb).map((h) => { if (h.maska) { const k = h.maska; h.maska = { src: k.src, x: (k.u - c.x) / c.w, y: (k.v - c.y) / c.h, w: k.uw / c.w, h: k.vh / c.h }; } return h; });
+    ut.ut = kort(ut.ut); ut.takn = kort(ut.takn);
+    ut.dyr = kort(ut.dyr).map((d) => Object.assign(d, { l: d.L / c.w }));
+    ut.merki = ut.ar ? kort(merki) : [];
+    // ÚT-merki úr Teikningu/TurboPaint teljast með útgöngum
+    ut.merki.filter((m) => ER_UT(m.teg)).forEach((m) => ut.ut.push({ x: m.x, y: m.y, upp: m.upp, heiti: 'Útgangur — merki í ' + m.upp }));
+    ut.merki = ut.merki.filter((m) => !ER_UT(m.teg));
+    ut.pdfHam = !!src.pdf;
+    return ut;
+  }
+  function batByrja(lyk) {
+    if (!lyk || BAT.has(lyk) || !S.g) return;
+    const g = S.g, src = batHaedir(g).find((h) => h.lykill === lyk);
+    if (!src) return;
+    BAT.set(lyk, { stada: 'saeki' });
+    batGreina(src).then((r) => { BAT.set(lyk, r); }, (e) => { BAT.set(lyk, { stada: 'villa', villa: (e && e.message) || String(e) }); console.warn('[451] brunavarnir á teikningu', e); })
+      .then(() => { if (S.g === g) teikna('bruna'); });
+  }
+  let _batIo = null;
+  function batFesta(rot) {
+    const el = rot && rot.querySelector('[data-gr-bat-svid][data-bat-bid]');
+    if (!el) return;
+    if (!_batIo && 'IntersectionObserver' in window) {
+      _batIo = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { _batIo.unobserve(en.target); batByrja(en.target.getAttribute('data-gr-bat-svid')); } }), { rootMargin: '200px 0px' });
+    }
+    if (_batIo) _batIo.observe(el); else batByrja(el.getAttribute('data-gr-bat-svid'));
+  }
+  // Tilvitnun valin → rýmin hennar lýst upp (beint í DOM, engin endurteikning — sama staða fer í næstu teikningu)
+  function batMerkja() {
+    const k = spjald('bruna'); if (!k) return;
+    const x = (S.batTilv || [])[S.batQ];
+    const keys = new Set(x ? x.rymi.concat(x.tal && x.tal.key ? [x.tal.key] : []) : []);
+    k.querySelectorAll('.gr-bat [data-rymi]').forEach((el) => el.classList.toggle('on', keys.has(el.getAttribute('data-rymi'))));
+    k.querySelectorAll('[data-gr-a="bat-q"]').forEach((el) => el.classList.toggle('on', +el.getAttribute('data-q') === S.batQ));
+    const bl = k.querySelector('.gr-bat-blad'); if (bl) bl.classList.toggle('val', !!x);
+    const s = k.querySelector('[data-bat-val]');
+    if (s) {
+      const synd = [...keys].filter((key) => k.querySelector('.gr-bat-blad [data-rymi="' + key + '"]'));
+      const txt = !x ? '' : (synd.length ? 'Lýst upp: ' + synd.map((key) => BAT_RYMI_HEITI[key] || key).join(', ') : 'Rými tilvitnunarinnar eru ekki merkt á þessari hæð') +
+        ([...keys].filter((key) => !synd.includes(key)).length && synd.length ? ' · ekki á þessari hæð: ' + [...keys].filter((key) => !synd.includes(key)).map((key) => BAT_RYMI_HEITI[key] || key).join(', ') : '');
+      if (s.textContent !== txt) s.textContent = txt;
+    }
+  }
+  function batBera(cl, r, haedNafn) {
+    if (!cl.key) return { st: 'ovisst', txt: 'Rýmið („' + cl.fra + '“) er ekki merkt svo á teikningunni' };
+    if (!r || r.stada === 'saeki') return { st: 'bid', txt: 'Teikning: les…' };
+    if (r.stada !== 'komid') return { st: 'ovisst', txt: 'Teikningin fékkst ekki' };
+    if (!r.texti) return { st: 'ovisst', txt: 'Teikningin er skönnuð — ekki talið' };
+    const h = r.herb.find((x) => x.key === cl.key);
+    if (!h) return { st: 'ovisst', txt: 'Ekki á þessari hæð (' + haedNafn + ')' };
+    const s = h.st;
+    if (s) {
+      const ok = s.dyr === cl.n && (cl.beint == null || s.uti === cl.beint);
+      return { st: ok ? 'ok' : 'nei', txt: 'Teikning (' + haedNafn + '): ' + s.dyr + (s.dyr === 1 ? ' gönguhurð' : ' gönguhurðir') + ' úr rýminu, ' + s.uti + ' beint út' + (s.stor ? ' + ' + s.stor + ' innkeyrsluhurðir (' + s.storUti + ' út)' : '') + ' · ' + s.utInni + ' ÚT-merki — ' + (ok ? 'stemmir' : 'ber ekki saman, skoða á staðnum') };
+    }
+    return { st: 'ovisst', txt: 'Teikning (' + haedNafn + '): ≈ ' + h.utNaest + ' ÚT-merki næst rýminu — nálgun, rýmismörk ' + (h.lekur ? 'lokast ekki' : 'ekki lesin') };
+  }
+  const BAT_IK = { utg: 'i-utg', neyd: 'i-neyd', reykluga: 'i-reykluga', bjorgun: 'i-bjorgun' };
+  const batIkon = (glyff, bg, cls, extra) => (BAT_IK[glyff] ? '<i class="' + cls + ' ' + BAT_IK[glyff] + '"' + (extra || '') + '></i>'
+    : (() => { const u = taknMynd(glyff, bg); return u ? '<img class="' + cls + '" alt="" src="' + u + '"' + (extra || '') + '>' : '<i class="' + cls + ' i-pin"' + (extra || '') + '></i>'; })());
+  function batHtml(g, tilv) {
+    const hs = batHaedir(g);
+    if (!hs.length) return '';
+    const val = hs.find((h) => h.lykill === S.batHaed) || hs[0];
+    const r = BAT.get(val.lykill);
+    const pc = (v) => (Math.round(v * 10000) / 100) + '%';
+    const stadur = (o) => 'left:' + pc(o.x) + ';top:' + pc(o.y);
+    const valin = tilv[S.batQ], valKeys = new Set(valin ? valin.rymi.concat(valin.tal && valin.tal.key ? [valin.tal.key] : []) : []);
+    const nefnd = new Set(); tilv.forEach((x) => { x.rymi.forEach((k) => nefnd.add(k)); if (x.tal && x.tal.key) nefnd.add(x.tal.key); });
+    const komid = r && r.stada === 'komid';
+    // ── sviðið (föst hæð — ekkert ýtist þegar teikningin kemur)
+    let svid;
+    if (!r || r.stada === 'saeki') svid = '<span class="gr-bat-bid">Les teikninguna — textalag, rými og útganga…</span>';
+    else if (r.stada === 'villa') svid = '<span class="gr-bat-bid villa">Teikningin fékkst ekki: ' + esc(r.villa) + '</span>';
+    else if (!r.mynd) svid = '<span class="gr-bat-bid">Engin mynd á hæðinni.</span>';
+    else if (!r.ar) svid = '<div class="gr-bat-blad heil"><img alt="" src="' + esc(r.mynd) + '"></div>';
+    else {
+      const lag = [];
+      // rými sem lýsingin nefnir: flötur (gríma úr veggjalínum) + nafnspjald
+      r.herb.filter((h) => h.key && nefnd.has(h.key)).forEach((h) => {
+        const on = valKeys.has(h.key) ? ' on' : '';
+        if (h.maska) lag.push('<img class="gr-bat-m' + on + '" data-rymi="' + h.key + '" alt="" src="' + h.maska.src + '" style="left:' + pc(h.maska.x) + ';top:' + pc(h.maska.y) + ';width:' + pc(h.maska.w) + ';height:' + pc(h.maska.h) + '">');
+        else lag.push('<i class="gr-bat-hr' + on + '" data-rymi="' + h.key + '" style="' + stadur(h) + '"></i>');
+      });
+      r.dyr.forEach((d) => lag.push('<i class="gr-bat-d' + (d.stor ? ' stor' : '') + '" style="' + stadur(d) + ';width:' + pc(d.l) + ';transform:translate(-50%,-50%) rotate(' + Math.round(d.ang) + 'deg)" title="' + (d.stor ? 'Innkeyrsluhurð út' : 'Útidyr') + ' — greint úr veggjalínum Teikningar"></i>'));
+      r.herb.filter((h) => h.key && nefnd.has(h.key)).forEach((h) => lag.push('<strong class="gr-bat-r' + (valKeys.has(h.key) ? ' on' : '') + '" data-rymi="' + h.key + '" style="' + stadur({ x: Math.min(0.94, Math.max(0.06, h.x)), y: Math.min(0.97, Math.max(0.03, h.y)) }) + '">' + esc(h.texti) + '</strong>'));
+      r.takn.forEach((t) => lag.push(batIkon(t.glyff, '#b42318', 'gr-bat-i', ' style="' + stadur(t) + '" title="' + esc(t.skst + ' = ' + t.heiti + ' (á teikningunni)') + '"')));
+      r.merki.forEach((m) => { const tg = batTeg(m.teg); lag.push(batIkon(tg[0], '#2a2a30', 'gr-bat-i okkar', ' style="' + stadur(m) + '" title="' + esc(tg[1] + ' — merki í ' + m.upp) + '"')); });
+      r.ut.forEach((x) => lag.push('<i class="gr-bat-i i-utg' + (x.upp !== 'teikning' ? ' okkar' : '') + '" style="' + stadur(x) + '" title="' + esc(x.heiti || 'Útgangur') + '"></i>'));
+      // neyðarlýsing / reyklúga við rýmin sem setningin nefnir — „úr lýsingu", ekki staðsetning búnaðar
+      const merkt = new Set();
+      tilv.forEach((x) => Object.keys(x.bunR).forEach((b) => x.bunR[b].forEach((key) => r.herb.filter((h) => h.key === key).forEach((h) => {
+        const lk = b + '|' + h.x.toFixed(3) + '|' + h.y.toFixed(3); if (merkt.has(lk)) return; merkt.add(lk);
+        const n = [...merkt].filter((q) => q.endsWith('|' + h.x.toFixed(3) + '|' + h.y.toFixed(3))).length - 1;
+        lag.push('<i class="gr-bat-i lys ' + BAT_IK[b] + '" data-rymi="' + key + '" style="' + stadur(h) + ';transform:translate(calc(-50% + ' + (n * 22 - 11) + 'px),calc(-50% - 22px))" title="' + esc((b === 'neyd' ? 'Neyðarlýsing' : 'Reyklúga') + ' í rýminu skv. byggingarlýsingu: „' + x.texti + '“') + '"></i>');
+      }))));
+      const still = r.still ? ' style="position:absolute;max-width:none;width:' + pc(r.still.w) + ';height:' + pc(r.still.h) + ';left:' + pc(r.still.x) + ';top:' + pc(r.still.y) + '"' : '';
+      svid = '<div class="gr-bat-blad' + (valin ? ' val' : '') + '" style="aspect-ratio:' + r.ar.toFixed(4) + ';width:min(100%,calc(var(--bat-h) * ' + r.ar.toFixed(4) + '))"><img alt="" src="' + esc(r.mynd) + '"' + still + '>' + lag.join('') + '</div>';
+    }
+    // ── skýringar (föst hæð, ein lína sem skrunar lárétt)
+    const sk = [];
+    const chip = (ik, txt, n, t) => sk.push('<span class="gr-bat-sk"' + (t ? ' title="' + esc(t) + '"' : '') + '>' + ik + '<span>' + esc(txt) + '</span><b>' + n + '</b></span>');
+    if (komid) {
+      const utT = r.ut.filter((x) => x.upp === 'teikning').length, utO = r.ut.length - utT;
+      if (utT) chip('<i class="gr-bat-ik i-utg"></i>', 'Útgangur (ÚT á teikningu)', utT);
+      if (r.dyr.length) chip('<i class="gr-bat-ik i-dyr"></i>', 'Útidyr greindar' + (r.dyr.some((d) => d.stor) ? ' (þ.a. ' + r.dyr.filter((d) => d.stor).length + ' innkeyrslu)' : ''), r.dyr.length, 'Dyr á útvegg — sjálfvirkt úr veggjalínum Teikningar');
+      if (utO) chip('<i class="gr-bat-ik i-utg okkar"></i>', 'ÚT-merki okkar', utO);
+      const tg = new Map(); r.takn.forEach((t) => { const k = t.skst + ' = ' + t.heiti; tg.set(k, (tg.get(k) || 0) + 1); });
+      tg.forEach((n, k) => { const t = r.takn.find((x) => x.skst + ' = ' + x.heiti === k); chip(batIkon(t.glyff, '#b42318', 'gr-bat-ik'), k, n, 'Skammstöfun teikningarinnar eftir skýringum blaðsins'); });
+      const mg = new Map(); r.merki.forEach((m) => { const k = batTeg(m.teg)[1]; mg.set(k, (mg.get(k) || 0) + 1); });
+      mg.forEach((n, k) => { const m = r.merki.find((x) => batTeg(x.teg)[1] === k); chip(batIkon(batTeg(m.teg)[0], '#2a2a30', 'gr-bat-ik okkar'), k, n, 'Merki í Teikningu / TurboPaint'); });
+      BAT_BUN.forEach(([b, heiti]) => { const keys = new Set(); tilv.forEach((x) => (x.bunR[b] || []).forEach((k) => keys.add(k))); const n = r.herb.filter((h) => keys.has(h.key)).length; if (n) chip('<i class="gr-bat-ik lys ' + BAT_IK[b] + '"></i>', heiti + ' — skv. lýsingu', n + ' rými', 'Sett við rýmin sem setning byggingarlýsingarinnar nefnir — ekki staðsetning búnaðarins'); });
+    }
+    const skyr = '<div class="gr-bat-skyr">' + (sk.length ? sk.join('') : '<span class="gr-bat-sk tomt">' + (komid ? 'Engin útgangamerki eða tákn lesin á þessari hæð' : 'Skýringar birtast þegar teikningin er lesin') + '</span>') + '</div>';
+    // ── staða (ein lína)
+    let stada = '';
+    if (komid) {
+      if (r.skannad) stada = (r.pdfHam ? 'Skönnuð teikning' : 'Teikningin er mynd') + ' — ekkert textalag: útgangar og rýmisheiti eru ekki lesin, ekkert giskað' + (r.merki.length || r.ut.length ? ' · ' + (r.merki.length + r.ut.length) + ' merki úr Teikningu/TurboPaint sýnd' : '') + '.';
+      else {
+        const her = [...nefnd].filter((k) => r.herb.some((h) => h.key === k)), vant = [...nefnd].filter((k) => !her.includes(k));
+        stada = (her.length ? 'Rými úr lýsingunni á teikningunni: ' + her.map((k) => (BAT_RYMI_HEITI[k] || k) + (r.herb.filter((h) => h.key === k).length > 1 ? ' ×' + r.herb.filter((h) => h.key === k).length : '')).join(', ') : (nefnd.size ? 'Ekkert rými lýsingarinnar merkt á þessari hæð' : r.herb.length + ' rými lesin á teikningunni')) +
+          (vant.length && her.length ? ' · ekki á þessari hæð: ' + vant.map((k) => BAT_RYMI_HEITI[k] || k).join(', ') : '');
+      }
+    } else stada = r && r.stada === 'villa' ? 'Teikningin fékkst ekki.' : 'Les teikninguna…';
+    // ── talning og tilvitnanir (þekkt úr lýsingunni fyrirfram — breytast ekki þegar teikningin kemur)
+    const tal = tilv.filter((x) => x.tal).map((x) => {
+      const v = batBera(x.tal, r, val.heiti), led = { ok: 'g', nei: 'r', ovisst: 'y' }[v.st] || '';
+      return '<button type="button" class="gr-bat-tal st-' + v.st + (S.batQ === x.i ? ' on' : '') + '" data-gr-a="bat-q" data-q="' + x.i + '" title="' + esc('„' + x.texti + '“ — ' + v.txt) + '">' +
+        '<span class="gr-bat-tal1"><b>' + esc(x.tal.key ? BAT_RYMI_HEITI[x.tal.key] : x.tal.fra) + '</b> Lýsing: ' + x.tal.n + ' flóttaleiðir' + (x.tal.beint != null ? ', þar af ' + x.tal.beint + ' beint út' : '') + '</span>' +
+        '<span class="gr-bat-tal2"><i class="gr-led ' + led + '"></i>' + esc(v.txt) + '</span></button>';
+    });
+    const qs = tilv.map((x) => '<button type="button" class="gr-bat-q' + (S.batQ === x.i ? ' on' : '') + (x.neitun ? ' neit' : '') + '" data-gr-a="bat-q" data-q="' + x.i + '"><q>' + esc(x.texti) + '</q>' +
+      (x.rymi.length ? '<small>' + esc(x.rymi.map((k) => BAT_RYMI_HEITI[k]).join(' · ')) + '</small>' : '') + '</button>');
+    const hlid = tilv.length ? '<div class="gr-bat-hlid">' + (tal.length ? '<div class="gr-bat-fyrir">Talning flóttaleiða — lýsing borin við teikninguna</div>' + tal.join('') : '') +
+      '<div class="gr-bat-fyrir">Tilvitnanir — smelltu til að lýsa upp rýmin</div>' + qs.join('') + '</div>' : '';
+    const flipar = '<div class="gr-bat-haedir" role="group" aria-label="Hæð">' + hs.map((h) => '<button type="button" class="gr-bat-hd' + (h === val ? ' on' : '') + '" data-gr-a="bat-haed" data-l="' + esc(h.lykill) + '" aria-pressed="' + (h === val) + '" title="' + esc(h.undir) + '">' + esc(h.heiti) + '</button>').join('') +
+      '<span class="gr-bat-hd-undir">' + esc(val.undir) + '</span></div>';
+    return '<div class="gr-bat" data-gr-bat="' + esc(val.lykill) + '">' +
+      '<div class="gr-hluti-haus"><span>Brunavarnir á teikningu</span><small>útgangar · rými úr lýsingu · búnaður</small></div>' + flipar +
+      '<div class="gr-bat-grind' + (hlid ? '' : ' ein') + '"><div class="gr-bat-vinstri"><div class="gr-bat-svid' + (r && r.mynd ? ' mynd' : '') + '" data-gr-bat-svid="' + esc(val.lykill) + '"' + (r ? '' : ' data-bat-bid="1"') + '>' + svid + '</div>' +
+      skyr + '<div class="gr-bat-stada" title="' + esc(stada) + '">' + esc(stada) + '</div><div class="gr-bat-stada val" data-bat-val></div></div>' + hlid + '</div>' +
+      '<div class="gr-uppruni">Útgangar og tákn úr textalagi teikningarinnar (skammstafanir eftir skýringum blaðsins) · útidyr, rýmisfletir og talning úr veggjalínum Teikningar — sjálfvirkt, staðfesta á staðnum · neyðarlýsing og reyklúgur eftir orðalagi lýsingarinnar · á skannaðri teikningu er ekkert giskað<span class="gr-sjalf">sjálfsótt</span></div></div>';
+  }
+
   /* 5g · SKJAL SEM TALAN KEMUR ÚR — smámynd skráningartöflu / byggingarlýsingar / brunateikningar við texta spjaldanna */
   function skjalD(slod) {
     if (!slod) return null;
@@ -2781,6 +3263,16 @@
         if (f) { if (u.d) { f.skra = u.d; f.nafn = u.d.nafn || f.nafn; f.hemill = false; f.villa = null; } else { f.villa = u.hemill ? 'Uppfærsluborðið (431) hafnaði — stilling „Af"?' : u.villa; } }
         teikna('rekstur'); teikna('krofur'); teikna('samantekt');
       }, (err) => { segja('Uppfletting brást: ' + ((err && err.message) || err)); el.disabled = false; });
+    } else if (a === 'bat-haed') {
+      e.preventDefault();
+      const l = el.getAttribute('data-l');
+      // hæð valin með smelli: greind strax (smellurinn er beiðnin — ekki beðið eftir að sviðið sjáist)
+      if (l && l !== S.batHaed) { S.batHaed = l; batByrja(l); teikna('bruna'); }
+    } else if (a === 'bat-q') {
+      e.preventDefault();
+      const q = +el.getAttribute('data-q');
+      S.batQ = S.batQ === q ? -1 : q;
+      batMerkja();
     } else if (a === 'vm') {
       e.preventDefault();
       const k = el.getAttribute('data-k');
@@ -2998,6 +3490,7 @@
     stada: () => ({ virkt: S.virkt, arg: S.arg, adr: S.adr, parts: S.g ? JSON.parse(JSON.stringify(S.g.parts)) : null }),
     gogn: () => S.g,
     likTegund: (g) => { try { return likTegund(g); } catch (_) { return null; } },
+    bat: () => { const hs = S.g ? batHaedir(S.g) : []; const val = hs.find((h) => h.lykill === S.batHaed) || hs[0]; return { haedir: hs.map((h) => ({ lykill: h.lykill, heiti: h.heiti, kind: h.kind, pdf: !!h.pdf })), valin: val ? val.lykill : null, q: S.batQ, tilv: (S.batTilv || []).map((x) => ({ i: x.i, rymi: x.rymi, tal: x.tal })), greining: [...BAT].map(([k, v]) => ({ k, stada: v.stada, villa: v.villa || null, texti: !!v.texti, skannad: !!v.skannad, veggir: !!v.veggir, ar: v.ar || 0, ut: (v.ut || []).length, utTeikn: (v.ut || []).filter((x) => x.upp === 'teikning').length, dyr: (v.dyr || []).length, takn: (v.takn || []).map((t) => t.skst), merki: (v.merki || []).map((m) => m.teg), skyr: v.skyr || {}, herb: (v.herb || []).map((h) => ({ texti: h.texti, key: h.key, st: h.st || null, utNaest: h.utNaest, maska: !!h.maska })) })) }; },
     forsk: () => ({ virk: FSK.virk, bid: FSK.bid.length, mest: FSK.mest, byrjad: FSK.byrjad, lokid: FSK.lokid, villur: FSK.villur, safn: (SAFN.teikn || []).length }),
     samaHeimili, thatta,
     SYND,

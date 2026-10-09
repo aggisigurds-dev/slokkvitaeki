@@ -379,6 +379,55 @@ async function profaHus(b, adr, vp, skra) {
       }
     }
   }
+  // ── Brunavarnir á teikningu (Agnar 09.10.2026): hæðarmynd með útgöngum, rýmum úr lýsingu, táknum og talningu
+  {
+    await page.waitForSelector('#_gr451 [data-gr="bruna"] [data-gr-buk][data-birt="1"]', { timeout: 30000 }).catch(() => {});
+    const bs = await page.evaluate(() => window.Greining451.bat());
+    const maela = () => page.evaluate(() => {
+      const el = document.querySelector('#_gr451 [data-gr="bruna"] .gr-bat'); if (!el) return null;
+      const bl = el.querySelector('.gr-bat-blad'), im = bl && bl.querySelector('img');
+      return { svid: Math.round(el.querySelector('.gr-bat-svid').getBoundingClientRect().height), haed: Math.round(el.getBoundingClientRect().height),
+        mynd: !!(im && im.complete && im.naturalWidth > 0), ut: el.querySelectorAll('.gr-bat-blad .i-utg').length, dyr: el.querySelectorAll('.gr-bat-blad .gr-bat-d').length,
+        rymi: el.querySelectorAll('.gr-bat-blad .gr-bat-r').length, takn: el.querySelectorAll('.gr-bat-blad .gr-bat-i').length,
+        tal: [...el.querySelectorAll('.gr-bat-tal')].map((t) => (/st-(\w+)/.exec(t.className) || [])[1] + ': ' + t.textContent.replace(/\s+/g, ' ').slice(0, 170)) };
+    });
+    if (bs.haedir.length) {
+      const b0 = await maela();
+      check(nafn + ': Brunavarnir á teikningu — hluti með ' + bs.haedir.length + (bs.haedir.length === 1 ? ' hæð' : ' hæðum') + ' (' + bs.haedir.map((h) => h.heiti).join(', ') + ')', !!b0, 'enginn .gr-bat');
+      await page.evaluate(() => { const x = document.querySelector('#_gr451 [data-gr="bruna"] .gr-bat-svid'); if (x) x.scrollIntoView({ block: 'center' }); });
+      const bida = async (lyk) => { const t0 = Date.now(); let g = null; while (Date.now() - t0 < 60000) { await page.waitForTimeout(700); const x = await page.evaluate(() => window.Greining451.bat()); g = x.greining.find((y) => y.k === lyk); if (x.valin === lyk && g && g.stada !== 'saeki') break; } await page.waitForTimeout(600); return g; };
+      const g1 = await bida(bs.valin);
+      await page.waitForFunction(() => { const im = document.querySelector('#_gr451 [data-gr="bruna"] .gr-bat-blad img'); return !im || (im.complete && im.naturalWidth > 0); }, null, { timeout: 40000 }).catch(() => {});
+      const b1 = await maela();
+      check(nafn + ': Brunavarnir á teikningu — „' + bs.haedir[0].heiti + '“ greind (' + (g1 ? g1.stada + (g1.texti ? ', textalag' : ', skönnuð') + (g1.veggir ? ', veggjalínur Teikningar' : '') : '?') + ')', !!(g1 && g1.stada === 'komid' && b1 && b1.mynd), JSON.stringify({ g1: g1 && { stada: g1.stada, villa: g1.villa }, b1 }));
+      check(nafn + ': Brunavarnir á teikningu — fast svið, ekkert ýtist þegar teikningin kemur (' + (b0 && b0.svid) + ' → ' + (b1 && b1.svid) + ' px; hlutinn ' + (b0 && b0.haed) + ' → ' + (b1 && b1.haed) + ')', !!(b0 && b1 && b0.svid === b1.svid && Math.abs(b0.haed - b1.haed) <= 1), JSON.stringify({ b0, b1 }));
+      if (g1 && g1.texti) check(nafn + ': útgangar sýndir grænt (' + b1.ut + ' útgangstákn, ' + b1.dyr + ' útidyr)', b1.ut + b1.dyr > 0, JSON.stringify(b1));
+      if (g1 && g1.skannad) check(nafn + ': skönnuð teikning — ekkert giskað (engin rými né ÚT úr textalagi)', g1.herb.length === 0 && g1.utTeikn === 0, JSON.stringify(g1).slice(0, 300));
+      console.log('   brunavarnir á teikningu: ' + JSON.stringify({ haedir: bs.haedir.map((h) => h.heiti + (h.pdf ? '' : ' (mynd)')), g1: g1 && { texti: g1.texti, veggir: g1.veggir, ut: g1.ut, dyr: g1.dyr, takn: g1.takn.join(','), merki: g1.merki.join(','), skyr: Object.keys(g1.skyr).length, rymi: g1.herb.filter((h) => h.key).map((h) => h.texti + (h.st ? ' ' + JSON.stringify(h.st) : ' ≈' + h.utNaest + ' ÚT')) }, tal: b1 && b1.tal }).slice(0, 2400));
+      const qi = g1 ? bs.tilv.map((x) => ({ x, n: g1.herb.filter((h) => x.rymi.includes(h.key)).length })).filter((y) => y.n > 0).sort((p, q) => q.n - p.n)[0] : null; if (qi) Object.assign(qi, { i: qi.x.i });  // tilvitnunin sem lýsir upp flest rými
+      if (qi) {
+        await page.click('#_gr451 [data-gr="bruna"] .gr-bat-q[data-q="' + qi.i + '"]').catch(() => {});
+        await page.waitForTimeout(450);
+        const on = await page.evaluate(() => ({ r: document.querySelectorAll('#_gr451 .gr-bat-blad .gr-bat-r.on').length, m: document.querySelectorAll('#_gr451 .gr-bat-blad .gr-bat-m.on, #_gr451 .gr-bat-blad .gr-bat-hr.on').length, txt: (document.querySelector('#_gr451 [data-bat-val]') || {}).textContent || '' }));
+        check(nafn + ': smellur á tilvitnun lýsir upp rýmin (' + on.r + ' rými, ' + on.m + ' fletir) — „' + on.txt.slice(0, 90) + '“', on.r > 0 && on.m > 0, JSON.stringify(on));
+        const b2 = await maela();
+        check(nafn + ': tilvitnunarsmellur hreyfir ekkert (hlutinn ' + b1.haed + ' → ' + b2.haed + ' px)', Math.abs(b2.haed - b1.haed) <= 1, JSON.stringify({ b1: b1.haed, b2: b2.haed }));
+      }
+      if (SER_UT) { const el = await page.$('#_gr451 [data-gr="bruna"] .gr-bat'); if (el) await el.screenshot({ path: path.join(SER_UT, vp + '-' + slug(adr) + '-brunavarnir-teikning.png') }).catch(() => {}); }
+      if (qi) await page.click('#_gr451 [data-gr="bruna"] .gr-bat-q[data-q="' + qi.i + '"]').catch(() => {});
+      if (bs.haedir.length > 1) {
+        const l2 = bs.haedir[1].lykill;
+        await page.evaluate((l) => { const b = [...document.querySelectorAll('#_gr451 .gr-bat-hd')].find((x) => x.getAttribute('data-l') === l); if (b) b.click(); }, l2);
+        const g2 = await bida(l2);
+        const b3 = await maela();
+        check(nafn + ': hæðaskipti („' + bs.haedir[1].heiti + '“) — greind, hlutinn heldur hæð sinni', !!(g2 && g2.stada === 'komid' && b3 && b1 && b3.svid === b1.svid && Math.abs(b3.haed - b1.haed) <= 1), JSON.stringify({ g2: g2 && { stada: g2.stada, villa: g2.villa }, b1: b1 && b1.haed, b3 }));
+        console.log('   ' + bs.haedir[1].heiti + ': ' + String(JSON.stringify(g2 && { texti: g2.texti, veggir: g2.veggir, ut: g2.ut, dyr: g2.dyr, rymi: g2.herb.filter((h) => h.key).map((h) => h.texti + (h.st ? ' ' + JSON.stringify(h.st) : ' ≈' + h.utNaest + ' ÚT')) })).slice(0, 900));
+        if (SER_UT && vp === 1600) { const el = await page.$('#_gr451 [data-gr="bruna"] .gr-bat'); if (el) await el.screenshot({ path: path.join(SER_UT, vp + '-' + slug(adr) + '-brunavarnir-teikning-2.png') }).catch(() => {}); }
+        await page.evaluate((l) => { const b = [...document.querySelectorAll('#_gr451 .gr-bat-hd')].find((x) => x.getAttribute('data-l') === l); if (b) b.click(); }, bs.haedir[0].lykill);
+        await page.waitForTimeout(600);
+      }
+    }
+  }
   const mynd = (await page.$('#_gr451 [data-gr="teikn"] [data-gr-a="fsk"]')) || (await page.$('#_gr451 [data-gr-ljos]'));
   if (mynd) {
     await mynd.scrollIntoViewIfNeeded().catch(() => {});

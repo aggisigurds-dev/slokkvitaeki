@@ -89,6 +89,16 @@ for (const ff of ['js/patches/451-greining-fasteignar.js', 'netlify/functions/fa
 }
 krefst(/const TP_SKODA = (null|'https:\/\/[^']+\{url\}[^']*');/.test(g), '451: TP_SKODA verður að vera null eða sniðmát með {url} — enginn „Skoða í TurboPaint“-takki án slóðar');
 krefst(/data-gr-ltp hidden/.test(g), '451: „Skoða í TurboPaint“ í skoðaranum á að vera falinn þar til slóðin er til');
+// 10. Brunavarnir á teikningu: skammstöfun fær merkingu AÐEINS úr skýringum blaðsins sjálfs; skönnuð teikning fær engar
+//     staðsetningar úr textalagi (ekkert giskað); greiningin les bara (enginn insert/update/upsert/delete í 5h)
+{
+  const i0 = g.indexOf('/* 5h · BRUNAVARNIR Á TEIKNINGU'), i1 = g.indexOf('/* 5g · SKJAL SEM TALAN KEMUR ÚR');
+  const bat = i0 >= 0 && i1 > i0 ? g.slice(i0, i1) : '';
+  krefst(!!bat, '451: kaflinn 5h (Brunavarnir á teikningu) fannst ekki á undan 5g');
+  krefst(/const mean = ut\.skyr\[o\.t\]; if \(!mean\) return;/.test(bat), '451 5h: skammstafanir mega aðeins fá merkingu úr skýringum blaðsins (ut.skyr) — ekkert giskað');
+  krefst(/if \(ut\.texti\) batTexti\(/.test(bat), '451 5h: rými/útgangar úr textalagi aðeins þegar textalag er til (skönnuð teikning: ekkert giskað)');
+  krefst(!/\.(insert|update|upsert|delete)\(/.test(bat) && !/method:\s*['"](POST|PUT|PATCH|DELETE)/i.test(bat), '451 5h: Brunavarnir á teikningu má ekkert skrifa');
+}
 // 5. töflur
 const toflur = (g.match(/<table /g) || []).length, merktar = (g.match(/<table data-_pm-status-done="1"/g) || []).length;
 krefst(toflur === merktar, '451: ' + (toflur - merktar) + ' tafla án data-_pm-status-done (00-legacy setur þá tækja-fellilista sem skrifar uttaeki.status)');
