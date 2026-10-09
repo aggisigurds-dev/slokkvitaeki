@@ -912,6 +912,30 @@ const slug = (s) => String(s).split(',')[0].normalize('NFD').replace(/[\u0300-\u
       }
       check('Herbergi/Íbúðir: aðeins lesið á 1486/869/489/192 (gripin skrif: ' + (adrar.length - adrarFyrir) + ')', adrar.length === adrarFyrir, JSON.stringify(adrar.slice(adrarFyrir, adrarFyrir + 4)));
     }
+    // Óvíst staðfang (Bríetartún 9 → „Hátún 9" úr rangt kóðaðri fyrirspurn) og hús á lóð með mörgum matshlutum
+    {
+      const opnaG = async (adr) => { await page.goto('about:blank'); await page.goto('http://127.0.0.1:' + PORT + '/index.html#greining/' + encodeURIComponent(adr), { waitUntil: 'domcontentloaded' }); await page.waitForSelector('#_gr451 [data-gr="bygg"] [data-gr-buk][data-birt="1"]', { timeout: 90000 }).catch(() => {}); await page.waitForTimeout(2500); };
+      const lesa = () => page.evaluate(() => { const k = document.getElementById('_gr451'); const t = (l) => ((k && k.querySelector('[data-gr="' + l + '"] [data-gr-buk]')) || {}).textContent || ''; return { eignOv: !!(k && k.querySelector('[data-gr="eign"] [data-gr-oviss]')), byggOv: !!(k && k.querySelector('[data-gr="bygg"] [data-gr-oviss]')), bygg: t('bygg').replace(/\s+/g, ' ').slice(0, 1400), mhl: [...document.querySelectorAll('#_gr451 .gr-mhl button')].map((b) => b.textContent + (b.getAttribute('aria-pressed') === 'true' ? ' [valið]' : '')) }; });
+      await opnaG('Br\uFFFDetart\uFFFDn 9, 105 Reykjav\uFFFDk');
+      const ov = await lesa();
+      check('Óvíst staðfang (rangt kóðað „Bríetartún 9" → ágiskun „Hátún 9"): bæði spjöld segja „óvíst", engar tölur ágiskuðu lóðarinnar', ov.eignOv && ov.byggOv && !/Brúttó|Hátún 9\.?\s*Engin/.test(ov.bygg), JSON.stringify(ov));
+      await mynd(page, '1600-ovisst-stadfang.png');
+      await opnaG('Skútuvogur 2, 104 Reykjavík');
+      const s0 = await lesa();
+      const til = await page.$('#_gr451 .gr-mhl button[aria-pressed="false"]');
+      if (til) { await til.click(); await page.waitForFunction(() => /38,8 m²/.test((document.querySelector('#_gr451 [data-gr="bygg"] [data-gr-buk]') || {}).textContent || ''), null, { timeout: 60000 }).catch(() => {}); }
+      const s1 = await lesa();
+      check('Hús á lóðinni (Skútuvogur 2): skipt í mhl. 02 → tölur þess hússins, merkt „valið handvirkt"', s0.mhl.length >= 2 && /38,8 m²/.test(s1.bygg) && /valið handvirkt/.test(s1.bygg), JSON.stringify({ s0: s0.mhl, s1 }));
+      await mynd(page, '1600-hus-a-lodinni-skutuvogur-2.png');
+      const sj = await page.$('#_gr451 .gr-mhl button[data-v=""]');
+      if (sj) { await sj.click(); await page.waitForFunction(() => /6\.115,3 m²/.test((document.querySelector('#_gr451 [data-gr="bygg"] [data-gr-buk]') || {}).textContent || ''), null, { timeout: 60000 }).catch(() => {}); }
+      const s2 = await lesa();
+      check('Hús á lóðinni: „Sjálfgefið" setur húsið á heimilisfanginu aftur (mhl. 01, 6.115,3 m²)', /6\.115,3 m²/.test(s2.bygg) && !/valið handvirkt/.test(s2.bygg), JSON.stringify(s2));
+      await opnaG('Bríetartún 9, 105 Reykjavík');
+      const b9 = await lesa();
+      check('Bríetartún 9 (Höfðatorgsreitur): engar tölur rangs húss sjálfgefið; lesna taflan (mhl. 03, Katrínartún 2) býðst sem val', b9.mhl.length >= 1 && /Engar tölur sýndar/.test(b9.bygg) && !/Brúttó/.test(b9.bygg), JSON.stringify(b9));
+      await mynd(page, '1600-hus-a-lodinni-brietartun-9.png');
+    }
     check('Færa í prófíl: engar síðuvillur', !villur.length, JSON.stringify(villur.slice(0, 3)));
     await ctx.close();
     // sími (375): „Greining“-glugginn á prófílnum — aðeins lestur

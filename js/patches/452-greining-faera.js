@@ -207,7 +207,8 @@
     // Staðfangaskrá): næstu húsnúmer við götuna (sömu megin fyrst) + reitur fyrir aðra lóð (heimilisfang eða landnúmer).
     // Valið greinir AÐRA lóð en heimilisfang félagsins — ekkert fer á prófílinn nema notandinn velji „Bæta á síðu".
     const profill = opts.fra === 'profill';
-    const ekki = profill && g && !((g.opin && g.opin.eign) || (g.bygg && g.bygg.eign));
+    // óviss lóð (landeignaskrár-ágiskun) telst „finnst ekki" — gögn ágiskuðu lóðarinnar fara aldrei á prófílinn
+    const ekki = profill && g && !((g.opin && g.opin.eign) || (g.bygg && g.bygg.eign && !g.bygg.eign.oviss && !g.bygg.oviss));
     const naest = ekki ? ((window.Greining451 && Greining451.naestu) ? Greining451.naestu(adr, g.opinTillogur) : (g.opinTillogur || [])) : [];
     const leit = profill ? (ekki ? '<div class="gr-fvar" data-f="fannst-ekki"><b>„' + esc(adr) + '“ finnst ekki í Staðfangaskrá HMS.</b> Lóðir eru stundum sameinaðar eða húsið skráð á annað númer — veldu næsta húsnúmer við götuna eða sláðu inn aðra lóð.' +
         (naest.length ? '<div class="gr-fnaestu">' + naest.slice(0, 6).map((t) => '<button type="button" class="ssp-btn" data-f="adr" data-v="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' : '') + '</div>' : '') +

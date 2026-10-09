@@ -947,7 +947,17 @@
       return;
     }
     if ((po.stada === 'saeki' || !po.stada) && (pb.stada === 'saeki' || !pb.stada)) { setjaStodu('eign', 'saeki', 'sæki Staðfangaskrá…'); return; }
-    const o = g.opin && g.opin.eign, e = (g.bygg && g.bygg.eign) || g.eignHus || {};
+    const o = g.opin && g.opin.eign, e0 = (g.bygg && g.bygg.eign) || g.eignHus || {};
+    const ov = !o && (e0.oviss || g.eignOviss) ? (e0.oviss ? e0 : g.eignOviss) : null;
+    const e = ov ? {} : e0;
+    if (ov) {
+      setjaStodu('eign', 'villa', 'óvíst');
+      const till = naestu(g.adr, g.opinTillogur);
+      setjaBuk('eign', '<div class="gr-varud" data-gr-oviss><b>Óvíst — „' + esc(g.adr) + '“ fannst ekki nákvæmlega í Staðfangaskrá.</b> Næsta lóð í Landeignaskrá er „' + esc(ov.label || '?') + '“ (L' + esc(ov.landnr) + ') — gögn hennar eru <b>ekki</b> sýnd, svo rangt hús birtist ekki. Veldu rétta lóð: sláðu inn landnúmer (t.d. L199350) eða annað heimilisfang í hausnum.</div>' +
+        (till.length ? '<div class="ssp-skilti">Staðföng sem eru til á götunni</div><div class="gr-takkar" style="margin-top:4px">' + till.map((t) => '<button type="button" class="ssp-btn" data-gr-a="opna" data-v="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>' : '') +
+        '<div class="gr-takkar" style="margin-top:6px"><button type="button" class="ssp-btn" data-gr-a="opna" data-v="L' + esc(ov.landnr) + '" title="Aðeins ef þú veist að húsið er á þessari lóð">Nota samt L' + esc(ov.landnr) + ' (' + esc(ov.label || '') + ')</button></div>');
+      return;
+    }
     if (!o && !e.landnr) {
       setjaStodu('eign', po.stada === 'villa' ? 'villa' : 'tomt', 'fannst ekki');
       const till = naestu(g.adr, g.opinTillogur);
@@ -1183,11 +1193,12 @@
   /* 2 · BYGGINGARUPPLÝSINGAR (bygging-uppl + skyndiminni fasteign_greining) ─────────────────────────────── */
   const lykillEignar = (e) => e && e.landnr ? 'eign:' + e.landnr + (e.svf && e.heitinr ? ':' + e.heitinr : '') : null;
   function byggingGogn(g, ferskt) {
-    const k = 'bygg|' + afbr(g.adr);
+    const mhl = S.mhl && S.mhl[afbr(g.adr)];
+    const k = 'bygg|' + afbr(g.adr) + (mhl ? '|' + mhl : '');
     if (ferskt) LOTA.delete(k);
     return lota(k, async () => {
       // skyndiminni þjónsins fyrst (birtist strax), ferskt svar síðan
-      const j = await saekjaJson(BYGG + '?heimilisfang=' + encodeURIComponent(g.adr), 28000);
+      const j = await saekjaJson(BYGG + '?heimilisfang=' + encodeURIComponent(g.adr) + (mhl ? '&mhl=' + encodeURIComponent(mhl) : ''), 28000);
       if (j && j.error && !j.eign) { const e = new Error(j.error); e.ekkertFannst = true; throw e; }
       return j;
     });
@@ -1200,7 +1211,7 @@
   let _vistad = new Map();
   async function vistaSkyndi(g) {
     try {
-      if (!g.bygg || !g.bygg.eign || !sb()) return;
+      if (!g.bygg || !g.bygg.eign || !sb() || g.bygg.oviss || g.bygg.eign.oviss || (S.mhl && S.mhl[afbr(g.adr)])) return;
       const e = g.bygg.eign, lyk = lykillEignar(e);
       if (!lyk) return;
       const teikn = g.teikn && g.teikn.dr ? { fjoldi: g.teikn.dr.length, grunn: g.teikn.grunn ? g.teikn.grunn.length : null, safn: (g.teikn.eign && (g.teikn.eign.heimildNafn || g.teikn.eign.heimild)) || null } : null;
@@ -1237,6 +1248,7 @@
         // geymt svar á þjóninum (sama landnúmer) birtist strax meðan ferska svarið er á leiðinni
         fetch(HUS + '?heimilisfang=' + encodeURIComponent(g.adr), { signal: AbortSignal.timeout(15000) }).then((r) => r.json()).then(async (h) => {
           if (S.g !== g || !h || !h.eign) return;
+          if (h.eign.oviss) { g.eignOviss = h.eign; teikna('eign'); return; }   // ágiskuð lóð (Bríetartún 9 → „Hátún 9"): engin gögn
           g.eignHus = h.eign;
           const s = await lesaSkyndi(h.eign);
           if (S.g !== g || !s || !s.gogn || !s.gogn.bygg || (g.parts.bygg && g.parts.bygg.stada !== 'saeki')) return;
@@ -1319,6 +1331,12 @@
   function byggHtml(g, geymt) {
     const b = g.bygg || {};
     const e = b.eign || {};
+    if (b.oviss || e.oviss) {
+      setjaStodu('bygg', 'villa', 'óvíst staðfang');
+      setjaUndir('bygg', '');
+      setjaBuk('bygg', '<div class="gr-varud" data-gr-oviss><b>Óvíst staðfang — engar tölur sýndar.</b> „' + esc(g.adr) + '“ fannst ekki nákvæmlega í Staðfangaskrá; ágiskuð lóð („' + esc(e.label || '?') + '“, L' + esc(e.landnr) + ') er ekki notuð. Veldu rétta lóð í hausnum (landnúmer eða heimilisfang).</div>');
+      return;
+    }
     if (e.label) setjaUndir('bygg', e.label + (e.landnr ? ' · L' + e.landnr : '') + (e.safn ? ' · ' + e.safn : ''));
     const lesnar = (b.heimildir || []).filter((h) => h.lesin).length, alls = (b.heimildir || []).length;   // líka lesin skjöl sem reyndust ekki tafla (mælt Skútuvogur 2: 8 lesin, 6 töflur)
     setjaStodu('bygg', geymt ? 'saeki' : (b.m2 != null ? 'komid' : alls ? 'tomt' : 'tomt'), geymt || (alls ? lesnar + ' af ' + alls + ' skjölum lesin' : 'engin skjöl'));
@@ -1335,6 +1353,15 @@
       linur.push(lina('Byggingarár', b.byggingarar ? esc(b.byggingarar) : '—', b.oryggi && b.oryggi.byggingarar, b.byggingarar ? ' <span class="ssp-daufur">(úr byggingarlýsingu)</span>' : ''));
       linur.push(lina('Stigagangar', b.stigagangar ? tala(b.stigagangar) : '—', b.stigagangar ? b.oryggi && b.oryggi.stigagangar : null));
     }
+    // hús á lóð með mörgum matshlutum (Höfðatorgsreiturinn): valið hús + takkar til að skipta (lesnar töflur)
+    const mh = Array.isArray(b.matshlutar) ? b.matshlutar.filter((x) => x.matshluti) : [];
+    const mhlNu = (S.mhl && S.mhl[afbr(g.adr)]) || (st && st.matshluti) || '';
+    const bladAdr = (x) => String(x.a_bladi || '').split(/Skrásetjari|Breytingar|Hönnuður/)[0].trim();
+    // fleiri en eitt hús lesið — eða eina lesna taflan á ekki við heimilisfangið (Bríetartún 9: aðeins H1 Katrínartún 2 lesin)
+    const mhlHand = !!(S.mhl && S.mhl[afbr(g.adr)]);
+    const husLod = (mh.length > 1 || (mh.length && (!st || mhlHand))) ? '<div class="ssp-skilti">Hús á lóðinni — veldu húsið sem tölurnar eiga við</div><div class="gr-takkar gr-mhl" style="margin-top:4px">' +
+      mh.map((x) => '<button type="button" class="ssp-btn' + (String(x.matshluti) === String(mhlNu) ? ' malm' : '') + '" data-gr-a="mhl" data-v="' + esc(x.matshluti) + '" aria-pressed="' + (String(x.matshluti) === String(mhlNu)) + '" title="' + esc('Skráningartafla ' + (dags(x.dags) || '') + (bladAdr(x) ? ' · á blaðinu: „' + bladAdr(x) + '“' : '')) + '">mhl. ' + esc(x.matshluti) + (bladAdr(x) ? ' · ' + esc(bladAdr(x).slice(0, 30)) : '') + (x.m2 != null ? ' · ' + tala(x.m2) + ' m²' : '') + '</button>').join('') + (mhlHand ? '<button type="button" class="ssp-btn" data-gr-a="mhl" data-v="" title="Húsið sem heimilisfangið vísar á (heimilisfang á blaði eða eini matshlutinn)">Sjálfgefið</button>' : '') + '</div>' +
+      (mhlHand && st ? '<div class="gr-varud" style="margin:6px 0 0">Tölurnar eiga við <b>mhl. ' + esc(st.matshluti || '?') + '</b>' + (st.a_bladi ? ' („' + esc(String(st.a_bladi).split(/Skrásetjari|Breytingar|Hönnuður/)[0].trim()) + '“)' : '') + ' — valið handvirkt, ekki endilega húsið á „' + esc(g.adr) + '“.</div>' : '') : '';
     // herbergi / íbúðir / hámarksfjöldi — sýnt þótt engin tafla sé lesin (lýsingin getur verið lesin ein)
     const ei = einingar(g);
     if (ei.ibudir && (ei.ibudarhus || (!ei.gisting && ei.ibudir.fjoldi > 1))) {
@@ -1380,7 +1407,7 @@
       (h.lesin ? '' : ' <small>ólesið</small>') + '</li>'), 6) : '';
     safnByrja('bygg');
     const tafla = st && st.slod ? skjalFlis(st.slod, 'Skráningartafla', [dags(st.dags), st.matshluti ? 'mhl. ' + st.matshluti : ''].filter(Boolean).join(' · '), 'skjal') : '';
-    setjaBuk('bygg', (linur.length ? (tafla ? '<div class="gr-med-skjal"><div class="gr-reitir">' + linur.join('') + '</div><div class="gr-skjal-fl">' + tafla + '</div></div>' : '<div class="gr-reitir">' + linur.join('') + '</div>') + uppruni : '<div class="gr-tomt">' + (alls ? 'Engar tölur lesnar enn úr skjölum hússins.' : 'Engin skráningartafla eða byggingarlýsing fannst í skjalasafninu fyrir ' + esc(e.label || g.adr) + '.') + '</div>') +
+    setjaBuk('bygg', husLod + (linur.length ? (tafla ? '<div class="gr-med-skjal"><div class="gr-reitir">' + linur.join('') + '</div><div class="gr-skjal-fl">' + tafla + '</div></div>' : '<div class="gr-reitir">' + linur.join('') + '</div>') + uppruni : '<div class="gr-tomt">' + (alls ? 'Engar tölur lesnar enn úr skjölum hússins.' : 'Engin skráningartafla eða byggingarlýsing fannst í skjalasafninu fyrir ' + esc(e.label || g.adr) + '.') + '</div>') +
       haedaTafla + (varud.length ? '<div class="gr-varud">' + varud.join('<br>') + '</div>' : '') + ocr + skjalaListi);
   }
 
@@ -3314,6 +3341,16 @@
       ljos(myndSlod(u), el.getAttribute('data-titill') || '');
     } else if (a === 'forskodun') { e.preventDefault(); opnaForskodun(); }
     else if (a === 'telja-herb') { e.preventDefault(); if (g) teljaHerbergi(g); }
+    else if (a === 'mhl') {
+      e.preventDefault();
+      if (!g || !g.adr) return;
+      S.mhl = S.mhl || {};
+      if (el.getAttribute('data-v')) S.mhl[afbr(g.adr)] = el.getAttribute('data-v'); else delete S.mhl[afbr(g.adr)];
+      g.parts.bygg = { stada: 'saeki' };
+      teikna('bygg');
+      byggingGogn(g).then((v) => { if (S.g !== g) return; g.parts.bygg = { stada: 'komid', t: Date.now() }; g.bygg = v; }, (err) => { if (S.g !== g) return; g.parts.bygg = { stada: 'villa', villa: (err && err.message) || String(err) }; })
+        .then(() => { if (S.g === g) { ['bygg', 'bruna', 'samantekt', 'krofur', 'eign'].forEach(teikna); } });
+    }
     else if (a === 'teikn-landnr') { e.preventDefault(); const l = +el.getAttribute('data-l'); if (l && window.TeikningaForskodun) TeikningaForskodun.opna(l, 'L' + l, null, { sia: 'grunn' }); }
     else if (a === 'faera') {
       e.preventDefault();

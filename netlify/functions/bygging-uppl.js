@@ -118,7 +118,7 @@ async function lesnSkjol(landnr, signal) {
   return m;
 }
 
-export async function byggingUppl({ heimilisfang, landnr }) {
+export async function byggingUppl({ heimilisfang, landnr, mhl }) {
   const ut = { eign: null, m2: null, m2_birt: null, rummal_m3: null, haedir: null, eignir: null, stigagangar: null, byggingarar: null,
     brunavarnir: null, lysingar: [], heimildir: [], olesin: [], oryggi: { m2: null, haedir: null, eignir: null, stigagangar: null, byggingarar: null, heild: 'ekkert' },
     athugasemdir: [], ocr_min_skjal: OCR_MIN_SKJAL };
@@ -130,6 +130,13 @@ export async function byggingUppl({ heimilisfang, landnr }) {
     if (!s.eign) return { ...ut, error: s.error || 'Fann ekki heimilisfangið' };
     ut.eign = { landnr: s.eign.landnr, heitinr: s.eign.heitinr, label: s.eign.label, postnr: s.eign.postnr, svf: s.eign.svf || null, safn: s.eign.heimildNafn || null, oviss: !!s.eign.oviss };
     husLabel = s.eign.oviss ? null : s.eign.label;
+    // 09.10.2026 (Bríetartún 9 → „Hátún 9", oviss): ágiskuð lóð má ALDREI bera tölur hljóðlaust — svarið segir að
+    // staðfangið hafi ekki fundist nákvæmlega og hverja lóð ágiskunin benti á; engin skjöl eða tölur þeirrar lóðar.
+    if (s.eign.oviss) {
+      ut.oviss = true;
+      ut.athugasemdir.push('Óvíst — „' + heimilisfang + '" fannst ekki nákvæmlega í Staðfangaskrá. Næsta lóð í Landeignaskrá er „' + (s.eign.label || '?') + '" (L' + s.eign.landnr + ') — tölur hennar eru ekki sýndar. Veldu rétta lóð: landnúmer eða annað heimilisfang.');
+      return ut;
+    }
     listi = Array.isArray(s.results) ? s.results : [];
     if (s.error) ut.athugasemdir.push(s.error);
     // Reykjavík: teikningalisti Kjarna er orðaleit á landnúmerinu og ber ekki reit 202 (landnúmer) — hann tók með
@@ -197,7 +204,16 @@ export async function byggingUppl({ heimilisfang, landnr }) {
   const lesnar = skran.map((r) => ({ r, l: LESID.get(r.infoUrl) })).filter((x) => x.l && x.l.tegund === 'skraningartafla' && !x.l.ekki_tafla);
   const matshlutar = new Set(lesnar.map((x) => x.l.matshluti).filter(Boolean));
   let valin = null, samsvorun = null;
-  if (husLabel) {
+  // Hús lóðarinnar (lesnar töflur, nýjasta per matshluta): 451 leyfir að skipta milli þeirra (Höfðatorgsreiturinn:
+  // S1 = Bríetartún 9–11, H1 Katrínartún 2, H2, bílageymsla — allar teikningar skráðar á „Borgartún 8-16A")
+  const mhlYfirlit = new Map();
+  lesnar.forEach((x) => { const k = x.l.matshluti || '—'; if (!mhlYfirlit.has(k)) mhlYfirlit.set(k, { matshluti: x.l.matshluti || null, a_bladi: x.l.heimilisfang || null, m2: x.l.bruttoflotur_m2 ?? null, haedir_ofan: x.l.haedir_ofan ?? null, eignir: Number.isFinite(x.l.eignir) ? x.l.eignir : null, dags: x.r.dags || null, slod: x.r.infoUrl }); });
+  ut.matshlutar = [...mhlYfirlit.values()];
+  if (mhl) {
+    valin = lesnar.find((x) => String(x.l.matshluti || '') === String(mhl)) || null;
+    if (valin) samsvorun = 'valið af notanda (matshluti ' + mhl + ')';
+  }
+  if (!valin && husLabel) {
     valin = lesnar.find((x) => x.l.heimilisfang && samaHus(x.l.heimilisfang, husLabel));
     if (valin) samsvorun = 'heimilisfang á blaðinu';
   }
@@ -276,7 +292,8 @@ export default async (req) => {
   if (!landnr && heimilisfang.length < 4) return json({ error: 'heimilisfang eða landnr vantar' }, 400);
   if (heimilisfang && !thattaHeimilisfang(heimilisfang)) return json({ error: 'Heimilisfangið er ekki á sniðinu „Gata 12, 105 Bær"' }, 400);
   try {
-    const v = await byggingUppl({ heimilisfang, landnr });
+    const mhl = (sp.get('mhl') || '').replace(/[^0-9A-Za-z]/g, '').slice(0, 4) || null;
+    const v = await byggingUppl({ heimilisfang, landnr, mhl });
     // „fannst ekki" er svar (200 + error), ekki bilun — 404 kæmi sem rauð villa í vafraborðinu
     return json(v, 200);
   } catch (e) {
