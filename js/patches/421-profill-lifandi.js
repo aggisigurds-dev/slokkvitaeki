@@ -35,7 +35,8 @@
   // kom hingað og ALLUR prófíllinn var rifinn ~1,5 s eftir hverja nýja línu (mælt í 412 px: #companies-main 7.215 →
   // 2.469 px, spjaldið horfið, byggt aftur í lotum á ~1 s). Skýrsluskjöl og reikningar (customer_documents, solur)
   // endurteikna prófílinn áfram eins og áður — þaðan les Skjöl og viðhengi (199).
-  const SJALFTEIKNA = /^(brunakerfi_skyrslur|slokkvikerfi|slokkvikerfi_skodanir)$/;
+  // 09.10.2026: Kerfi og þjónusta (450) vistar í stadur_kerfi / stadur_flokkun og uppfærir aðeins röðina sem breyttist.
+  const SJALFTEIKNA = /^(brunakerfi_skyrslur|slokkvikerfi|slokkvikerfi_skodanir|stadur_kerfi|stadur_flokkun)$/;
   const NOTANDI_MS = 20000, KYRRD_MS = 2500, BID_MS = 450;
 
   let _adgerd = 0;              // síðasta raunverulega aðgerð notanda

@@ -17,6 +17,11 @@
  *
  * Útlit: Brunastál C — málmhaus með hnoðum, stálplata, stálspjöld, tafla C, Playfair-fyrirsagnir.
  * Engin emoji, engir bláir takkar, tenglar látlausir. Ekkert ritað á þjóninn; enginn nýr vafralykill.
+ *
+ * 09.10.2026 — TVEIR FLIPAR: „Reglur" (allt hér að ofan) og „Flokkun viðskiptavina" (449b — sía yfir alla staði eftir
+ * tegund, notkunarflokki, kerfum og tækifærum; gögnin í 449a). Þessi skrá á flipastikuna, hausinn og slóðina
+ * (#reglur / #reglur/flokkun); 449b á aðeins innihald síns flipa (#_fl449-root). 218 lætur slóðir með „/" vera, svo
+ * undirslóðin er lesin og varin hér.
  * ========================================================================== */
 (() => {
   if (window.__reglur449) return;
@@ -292,6 +297,8 @@
 
   /* ── ÁSTAND (í breytum, ekki í DOM) ─────────────────────────────────────── */
   let leit = '', _virkur = null, _teiknad = false, _villa = null;
+  let _flipi = 'reglur';             // 'reglur' | 'flokkun'
+  const FLIPAR = ['reglur', 'flokkun'];
   let _blokkir = [], _kaflar = [];   // fyllt eftir teikningu
 
   /* ── CSS ───────────────────────────────────────────────────────────────── */
@@ -313,6 +320,11 @@
       R + ' .rg-tala{margin-left:auto;display:flex;align-items:baseline;justify-content:flex-end;gap:8px;min-width:120px}',
       R + ' .rg-tala b{font-family:' + DISP + ';font-weight:800;font-size:34px;line-height:1;color:#fff;font-variant-numeric:lining-nums}',
       R + ' .rg-tala span{font-family:' + DISP + ';font-weight:700;font-size:15px;color:#cfd5de}',
+      // Flipastika (Reglur | Flokkun viðskiptavina) — stálband undir hausnum
+      R + ' .rg-flipar{display:flex;align-items:center;gap:8px;min-height:56px;padding:8px 22px;background:#d6dbe3;background-image:' + STAL_IMG + ';border-bottom:1px solid rgba(20,24,34,.16)}',
+      R + ' .rg-flipi{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:9px;font:600 14px ' + SANS + ';cursor:pointer;background:' + SILVER + ';border:1px solid rgba(20,24,34,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;white-space:nowrap}',
+      R + ' .rg-flipi[aria-selected="true"]{background:' + DARK_PLATE + ';border-color:#000;color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.4)}',
+      R + ' .rg-flipi:focus-visible{outline:2px solid #971515;outline-offset:2px}',
       // Leitarstika — límist efst
       R + ' .rg-stika{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px;height:64px;padding:0 22px;background:#dfe3ea;background-image:' + STAL_IMG + ';border-bottom:1px solid rgba(20,24,34,.14);box-shadow:0 6px 14px -12px rgba(10,14,22,.55)}',
       R + ' .rg-leitbox{position:relative;flex:0 1 560px;min-width:0}',
@@ -397,6 +409,7 @@
       '@container rg (max-width: 760px){' +
         R + ' .rg-haus{padding:8px 18px 8px 20px;min-height:58px}' + R + ' .rg-tt{font-size:23px}' + R + ' .rg-st{font-size:10.5px}' +
         R + ' .rg-tala{min-width:84px}' + R + ' .rg-tala b{font-size:26px}' + R + ' .rg-tala span{font-size:13px}' +
+        R + ' .rg-flipar{padding:8px 12px;gap:6px}' + R + ' .rg-flipi{flex:1 1 0;min-width:0;justify-content:center;height:44px;padding:0 10px;font-size:14px;overflow:hidden;text-overflow:ellipsis}' +
         R + ' .rg-stika{height:auto;flex-wrap:wrap;padding:10px 12px 0;gap:8px}' +
         R + ' .rg-leitbox{flex:1 1 0}' + R + ' input.rg-leit{height:44px!important;font-size:16px!important;padding-right:84px!important}' +
         R + ' .rg-fjoldi{max-width:72px}' + R + ' .rg-fjoldi .l{display:none}' + R + ' .rg-fjoldi .s{display:inline}' +
@@ -449,9 +462,19 @@
   const beygjaKafla = (n) => (n % 10 === 1 && n % 100 !== 11) ? 'kafli' : 'kaflar';
   const beygjaLinu = (n) => (n % 10 === 1 && n % 100 !== 11) ? 'lína' : 'línur';
 
+  const UNDIRTITILL = {
+    reglur: 'Brunavarnabúnaður · lög, reglugerðir og leiðbeiningar',
+    flokkun: 'Viðskiptavinir eftir tegund fasteignar og rekstrar · kerfi og tækifæri',
+  };
   function grindHtml() {
-    return '<header class="rg-haus"><div><div class="rg-tt">Reglur</div><div class="rg-st">Brunavarnabúnaður · lög, reglugerðir og leiðbeiningar</div></div>' +
+    return '<header class="rg-haus"><div><div class="rg-tt">Reglur</div><div class="rg-st" data-rg-st>' + esc(UNDIRTITILL[_flipi]) + '</div></div>' +
         '<div class="rg-tala"><b data-rg-tala></b><span data-rg-tala-ord></span></div></header>' +
+      '<nav class="rg-flipar" role="tablist" aria-label="Flipar">' +
+        '<button type="button" class="rg-flipi" role="tab" id="rg-flipi-reglur" data-rg="flipi" data-v="reglur" aria-controls="rg-efni-reglur" aria-selected="' + (_flipi === 'reglur') + '">Reglur</button>' +
+        '<button type="button" class="rg-flipi" role="tab" id="rg-flipi-flokkun" data-rg="flipi" data-v="flokkun" aria-controls="rg-efni-flokkun" aria-selected="' + (_flipi === 'flokkun') + '">Flokkun viðskiptavina</button>' +
+      '</nav>' +
+      '<div class="rg-flipi-efni" id="rg-efni-flokkun" role="tabpanel" aria-labelledby="rg-flipi-flokkun"' + (_flipi === 'flokkun' ? '' : ' hidden') + '><div id="_fl449-root"></div></div>' +
+      '<div class="rg-flipi-efni" id="rg-efni-reglur" role="tabpanel" aria-labelledby="rg-flipi-reglur"' + (_flipi === 'reglur' ? '' : ' hidden') + '>' +
       '<div class="rg-stika">' +
         '<div class="rg-leitbox">' + svg(IK.leit) + '<input type="search" class="rg-leit" data-rg-leit placeholder="Leita, t.d. lux, 9.4.12, stigahús" aria-label="Leita í reglunum" autocomplete="off" spellcheck="false" enterkeyhint="search">' +
           '<span class="rg-fjoldi" aria-live="polite"><span class="l" data-rg-fjoldi></span><span class="s" data-rg-fjoldi-s aria-hidden="true"></span></span></div>' +
@@ -463,7 +486,50 @@
       '<div class="rg-grind">' +
         '<nav class="rg-efni" aria-label="Efnisyfirlit"><div class="rg-efni-tt">Efnisyfirlit</div><div class="rg-efni-listi" data-rg-efni></div></nav>' +
         '<div class="rg-plotu" data-rg-plotu><div class="rg-hledur">Hleður reglum…</div></div>' +
+      '</div>' +
       '</div>';
+  }
+
+  /* ── FLIPAR ─────────────────────────────────────────────────────────────── */
+  // Hausinn (titill, undirtitill, tala) er þessarar skrár; 449b segir aðeins hver talan er (FlokkunSia.tala()).
+  function uppfaeraHaus() {
+    const root = document.querySelector('#' + VIEW_ID + ' #_rg449-root');
+    if (!root || !root.firstChild) return;
+    setjaTexta(root.querySelector('[data-rg-st]'), UNDIRTITILL[_flipi]);
+    let b = '', o = '';
+    if (_flipi === 'flokkun') {
+      const t = window.FlokkunSia && FlokkunSia.tala ? FlokkunSia.tala() : null;
+      if (t && t.n != null) { b = String(t.n); o = t.ord || ''; }
+    } else if (_teiknad) {
+      const n = root.querySelectorAll('.rg-kafli').length;
+      b = String(n); o = beygjaKafla(n);
+    }
+    setjaTexta(root.querySelector('[data-rg-tala]'), b);
+    setjaTexta(root.querySelector('[data-rg-tala-ord]'), o);
+  }
+  function slodFlipa() { return '#' + NAV_KEY + (_flipi === 'flokkun' ? '/flokkun' : ''); }
+  function lesaSlod() {
+    const h = (location.hash || '').replace(/^#/, '').split('/');
+    if (h[0] !== NAV_KEY) return null;
+    return FLIPAR.includes(h[1]) ? h[1] : 'reglur';
+  }
+  function veljaFlipa(f, uppfaeraSlod) {
+    if (!FLIPAR.includes(f)) f = 'reglur';
+    _flipi = f;
+    const v = document.getElementById(VIEW_ID);
+    const root = v && v.querySelector('#_rg449-root');
+    if (root && root.firstChild) {
+      root.querySelectorAll('.rg-flipi').forEach((b) => { const a = String(b.dataset.v === f); if (b.getAttribute('aria-selected') !== a) b.setAttribute('aria-selected', a); });
+      root.querySelectorAll('.rg-flipi-efni').forEach((p) => { const fela = p.id !== 'rg-efni-' + f; if (p.hidden !== fela) p.hidden = fela; });
+    }
+    if (f === 'flokkun') {
+      const hysill = root && root.querySelector('#_fl449-root');
+      if (hysill && window.FlokkunSia && typeof FlokkunSia.opna === 'function') { try { FlokkunSia.opna(hysill); } catch (e) { console.warn('[449] Flokkun', e); } }
+    }
+    uppfaeraHaus();
+    if (uppfaeraSlod) {
+      try { if (location.hash !== slodFlipa()) history.replaceState(null, '', slodFlipa()); } catch (_) {}
+    }
   }
 
   function efniHtml(gogn) {
@@ -505,9 +571,8 @@
     const h = efniHtml(_gogn);
     root.querySelectorAll('[data-rg-efni]').forEach((l) => { l.innerHTML = h.efni; });
     plata.innerHTML = h.kaflar || '<div class="rg-tomt">Engir kaflar í kaflaskránni.</div>';
-    const b = root.querySelector('[data-rg-tala]'), o = root.querySelector('[data-rg-tala-ord]');
-    b.textContent = String(h.fjoldi); o.textContent = beygjaKafla(h.fjoldi);
     _teiknad = true;
+    uppfaeraHaus();
     skraBlokkir(root);
     beitaLeit();
     merkjaVirkan();
@@ -630,6 +695,7 @@
 
   /* ── HOPP Í KAFLA + HVAR ER ÉG ─────────────────────────────────────────── */
   function hoppa(id) {
+    if (_flipi !== 'reglur') veljaFlipa('reglur', true);
     const sec = document.getElementById('rg-' + id);
     if (!sec) return;
     if (sec.classList.contains('rg-x')) { leit = ''; const inp = document.querySelector('#' + VIEW_ID + ' [data-rg-leit]'); if (inp) inp.value = ''; beitaLeit(); }
@@ -655,7 +721,7 @@
   }
   function merkjaVirkan(fast) {
     const root = document.querySelector('#' + VIEW_ID + ' #_rg449-root');
-    if (!root || !_teiknad) return;
+    if (!root || !_teiknad || _flipi !== 'reglur') return;
     if (!fast) {
       const efst = (root.querySelector('.rg-stika') || root).getBoundingClientRect().bottom + 24;
       let id = null;
@@ -692,7 +758,8 @@
     v.addEventListener('click', (e) => {
       const b = e.target.closest('[data-rg]'); if (!b || !v.contains(b)) return;
       const a = b.dataset.rg;
-      if (a === 'kafli') { e.preventDefault(); hoppa(b.dataset.v); return; }
+      if (a === 'flipi') { e.preventDefault(); if (b.dataset.v !== _flipi) veljaFlipa(b.dataset.v, true); return; }
+      if (a === 'kafli') { e.preventDefault(); if (_flipi !== 'reglur') veljaFlipa('reglur', true); hoppa(b.dataset.v); return; }
       if (a === 'hreinsa') { leit = ''; const inp = v.querySelector('[data-rg-leit]'); if (inp) { inp.value = ''; inp.focus(); } beitaLeit(); return; }
       if (a === 'reyna') { _villa = null; opna(); }
     });
@@ -718,6 +785,7 @@
 
   function opna() {
     injectCss(); ensureView(); teikna();
+    veljaFlipa(_flipi, false);
     if (_gogn || _villa) return;
     hlada().then(() => { _villa = null; teikna(); }, (err) => { _villa = (err && err.message) || 'óþekkt villa'; try { if (window.logProblem) window.logProblem('reglur_hledsla', _villa); } catch (_) {} teikna(); });
   }
@@ -754,14 +822,14 @@
         document.querySelectorAll('.vnav-btn').forEach((b) => { const a = b.dataset.view === NAV_KEY; if (b.classList.contains('active') !== a) b.classList.toggle('active', a); });
         try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
         opna();
-        try { if (location.hash.replace('#', '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+        try { if (location.hash !== slodFlipa()) history.replaceState(null, '', slodFlipa()); } catch (_) {}
         return;
       }
       const me = document.getElementById(VIEW_ID);
       if (me) { me.style.display = 'none'; me.classList.remove('active'); }
       const r = orig(k);
       try {
-        if (typeof k === 'string' && location.hash.replace('#', '') === NAV_KEY) {
+        if (typeof k === 'string' && lesaSlod()) {
           const slug = (window.UrlRouting && UrlRouting.slugForView) ? UrlRouting.slugForView(k) : k;
           history.replaceState(null, '', '#' + slug);
         }
@@ -778,13 +846,30 @@
     if (document.querySelector('.view')) { injectCss(); ensureView(); }
     const ok = navTakki() & hookSwitch();
     if (!ok && ++_tilraunir < 40) { setTimeout(start, 300); return; }
+    const fraSlod = () => {
+      const f = lesaSlod();
+      if (!f || !window.App || !App.switchView) return false;
+      if (f !== _flipi) _flipi = f;
+      const el = document.getElementById(VIEW_ID);
+      if (!el || !el.classList.contains('active')) App.switchView(NAV_KEY);
+      else veljaFlipa(f, true);
+      return true;
+    };
     try {
-      if (location.hash.replace('#', '') === NAV_KEY) {
-        const el = document.getElementById(VIEW_ID);
-        if (!el || !el.classList.contains('active')) App.switchView(NAV_KEY);
+      if (fraSlod() && lesaSlod() === 'flokkun') {
+        // 218 ver aðeins slóðir án „/" gegn ræsi-lendingum (Sala um t≈1500 ms) — undirslóðin er varin hér á sama hátt:
+        // endurtekið í ~2 s þar til notandinn snertir síðuna.
+        let n = 0;
+        const snert = () => !!(window.UrlRouting && UrlRouting.userTouched && UrlRouting.userTouched());
+        (function tikk() {
+          if (snert() || ++n > 24) return;
+          const el = document.getElementById(VIEW_ID);
+          if (!el || !el.classList.contains('active')) { try { App.switchView(NAV_KEY); } catch (_) {} }
+          setTimeout(tikk, 80);
+        })();
       }
     } catch (_) {}
-    window.addEventListener('hashchange', () => { if (location.hash.replace('#', '') === NAV_KEY && window.App && App.switchView) App.switchView(NAV_KEY); });
+    window.addEventListener('hashchange', () => { try { fraSlod(); } catch (_) {} });
     window.addEventListener('scroll', aSkruni, { capture: true, passive: true });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
@@ -796,6 +881,9 @@
     leita: (q) => { leit = String(q || ''); const i = document.querySelector('#' + VIEW_ID + ' [data-rg-leit]'); if (i) i.value = leit; beitaLeit(); },
     hlada,
     md: (t) => blokkir(String(t).replace(/\r\n?/g, '\n').split('\n'), { stigBil: 0, iLista: false }),
+    flipi: () => _flipi,
+    veljaFlipa: (f) => veljaFlipa(f, true),
+    uppfaeraHaus,
     version: '449',
   };
   console.log('[449] Reglur');
