@@ -51,7 +51,7 @@ const BANN = [
 // hvaða útlit hver beiðni bar eru á þjóninum (automation_triggers.gogn->>utlit). Hækkað af því lykillinn stenst regluna.
 // 08.10.2026 — `samthykkja_rodun` (446): röðunarval Samþykkja-símasíðunnar, útlitsval þessa vafra; málin og svörin sjálf
 // eru á þjóninum (thjonustubeidni). Hækkað 151 → 152 af því lykillinn stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 152, ui: 0 } };
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 153, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

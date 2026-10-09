@@ -1374,7 +1374,10 @@
       // 368y: myndaforsýn í fylgiskjölum og vinnusvæði Vinnublaða — sömu litir og tákn og annars staðar (þemað er frosið).
       '.fsmynd{display:block;margin-top:4px;border:1px solid #2a2823;border-radius:3px;background:#000;overflow:hidden;cursor:zoom-in}.fsmynd img{display:block;width:100%;height:auto;max-height:240px;object-fit:contain;background:#fff}',
       '.vbstrip{min-height:44px}',
-      '.vbr{display:grid;grid-template-columns:minmax(230px,290px) minmax(0,1fr);gap:18px;align-items:start}',
+      '.vbr{display:grid;grid-template-columns:var(--vbr-w,290px) minmax(0,1fr);gap:18px;align-items:start}',
+      '.vbr-grip{position:absolute;top:0;right:0;width:10px;height:100%;cursor:col-resize;z-index:2;touch-action:none}.vbr-grip::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:transparent}.vbr-grip:hover::after,.vbr-grip.virk::after{background:var(--g6)}',
+      '.samt-rod{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 0}.samt-rod button{height:26px;padding:0 9px;border-radius:5px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;font-size:11px;font-weight:600;color:inherit;cursor:pointer}.samt-rod button[aria-pressed="true"]{background:#1f2530;color:#fff;border-color:#000}',
+      '.samt-teljari{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px 12px 6px}.samt-teljari button{display:flex;align-items:center;gap:7px;min-height:36px;padding:4px 9px;border-radius:7px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;color:inherit;text-align:left;cursor:pointer}.samt-teljari button b{font-size:17px;line-height:1;min-width:22px;text-align:center}.samt-teljari button small{display:block;font:500 10px var(--mono);color:var(--mute)}.samt-teljari button._gull b{color:#8a6218}.samt-teljari button._ok b{color:#16783f}.samt-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c,#145229);color:#fff;border-color:#0b3519}.samt-teljari button._claude small{color:#bfe3c9}',
       '.vbr-list{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}',
       '.vbr-items{overflow:auto;min-height:0}',
       '.vbr-sect{padding:9px 14px 4px;font:600 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);border-top:1px solid var(--rule2)}.vbr-sect:first-child{border-top:0}',
@@ -1412,7 +1415,7 @@
       '.vbt-fot{padding:4px 14px 12px;font-size:12.5px;color:var(--mute)}.vbt-fot b{color:var(--ink);font-variant-numeric:tabular-nums}.vbt-fot .villa{color:var(--terra);font-weight:700}',
       '@container t5 (max-width: 1250px){.vbt-rond{grid-template-columns:repeat(4,minmax(0,1fr))}}',
       '@container t5 (max-width: 560px){.vbt-rond{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 8px 4px}.vbt-kort{padding:7px 4px 6px}.vbt-dalkar{gap:4px}.vbt-btn{height:40px}.vbt-nafn{font-size:10.5px}}',
-      '@container t5 (max-width: 900px){.vbr{grid-template-columns:minmax(0,1fr)}.vbr-list{position:static;max-height:none}.vbr-items{max-height:260px}.vbr-cols{grid-template-columns:minmax(0,1fr)}.vbr-titill{font-size:22px}}',
+      '@container t5 (max-width: 900px){.vbr{grid-template-columns:minmax(0,1fr)}.vbr-grip{display:none}.vbr-list{position:static;max-height:none}.vbr-items{max-height:260px}.vbr-cols{grid-template-columns:minmax(0,1fr)}.vbr-titill{font-size:22px}}',
       // Breiðir skjáir: einingar hamsins vinstra megin, aðrar hægra megin, borðið í miðjunni.
       '@container t5 (min-width: 1600px){.layout{display:grid;grid-template-columns:minmax(280px,320px) minmax(0,1fr) minmax(300px,360px);gap:18px;align-items:start}' +
         '.layout.nol{grid-template-columns:minmax(0,1fr) minmax(300px,360px)}.layout.nor{grid-template-columns:minmax(280px,320px) minmax(0,1fr)}.layout.nol.nor{grid-template-columns:minmax(0,1fr)}}',
@@ -1469,6 +1472,7 @@
     // 18.09.2026 — stærðarhandfangið í hægri brún einingar. Breiddin er 1/2/3 dálkar
     // af þremur, svo dráttur smellur í þrep: hlutfall bendilsins af breidd ristarinnar.
     r.addEventListener('pointerdown', onBreiddNidur);
+    r.addEventListener('pointerdown', onVbrGrip);   // 09.10.2026 — breidd Samþykkja-listans
     r.addEventListener('pointerdown', chkDragNidur);
     r.addEventListener('change', onChange);
     r.addEventListener('keydown', onKey);
@@ -1971,8 +1975,64 @@
   // + merkið spurning) og svarað (svar:* — bíður Claude). Hægra megin er sama spjald og Valið mál, með allri lýsingunni.
   const SPURNING = 'spurning';
   // 368z4: mál sem gögnin sýna afgreitt (greitt / sent / klárað / svarað) fara efst — þau þarf aðeins að loka.
+  /* 09.10.2026 (Agnar: „put those filters, sorters and such in the webpage as well"): sama röðun og á símasíðunni (446),
+   * SAMI localStorage-lykill svo sími og tölva raði eins. Röðun er innan hvers hluta; „Sjálfgefið" = rodunSamt. Útlitsval
+   * eins vafra → localStorage er leyfilegt (CLAUDE.md: Samstillt milli véla). */
+  const SAMT_ROD_LYKILL = 'samthykkja_rodun';
+  const SAMT_RADANIR = [['sjalf', 'Sjálfgefið', 'Áríðandi, svo upphæð, svo frestur'], ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
+    ['mikilv', 'Mikilvægast', 'Áríðandi mál efst'], ['verdm', 'Verðmætast', 'Hæsta upphæð efst'], ['elst', 'Lengst beðið', 'Elsta málið efst'],
+    ['postur', 'Svara pósti', 'Mál úr tölvupósti efst — nýjast fyrst']];
+  let samtRodun = 'sjalf';
+  try { const v = localStorage.getItem(SAMT_ROD_LYKILL); if (SAMT_RADANIR.some(x => x[0] === v)) samtRodun = v; } catch (_) {}
+  const samtRada = (a, b) => {
+    const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
+    switch (samtRodun) {
+      case 'nyjast': return ts(b.created_at) - ts(a.created_at);
+      case 'elst': return ts(a.created_at) - ts(b.created_at);
+      case 'mikilv': return (b.important ? 1 : 0) - (a.important ? 1 : 0);
+      case 'verdm': return upphaedMals(b) - upphaedMals(a);
+      case 'postur': { const pa = isPost(a) ? 1 : 0, pb = isPost(b) ? 1 : 0; return (pb - pa) || (pa ? ts(b.created_at) - ts(a.created_at) : 0); }
+      default: return 0;
+    }
+  };
+  const samtRodHtml = () => '<div class="samt-rod" role="tablist" aria-label="Röðun">' + SAMT_RADANIR.map(x =>
+    '<button type="button" data-t5="samt-rod" data-v="' + x[0] + '" aria-pressed="' + (samtRodun === x[0]) + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
+  // Teljarar eins og á símasíðunni: grænn = svarað og Claude á eftir að vinna úr (hluti 2), sundurliðað eftir svari.
+  function samtTeljariHtml(hlutar) {
+    const n = h => (hlutar.find(x => x[2] === h) || [0, []])[1].length;
+    const sv = {}; (hlutar.find(x => x[2] === 2) || [0, []])[1].forEach(r => { const s = svarMals(r); sv[s] = (sv[s] || 0) + 1; });
+    const sund = [['samthykkt', 'samþykkt'], ['vinnsla', 'í vinnslu'], ['endurmeta', 'skýring']].filter(x => sv[x[0]]).map(x => sv[x[0]] + ' ' + x[1]).join(' · ');
+    const b = (h, cls, texti, undir) => '<button type="button" data-t5="samt-hoppa" data-v="' + h + '" class="' + cls + '"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
+    return '<div class="samt-teljari">' + b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
+      b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + (n(-1) ? b(-1, '_ok', 'Afgreitt', 'bara loka') : '') + '</div>';
+  }
+  // Breidd listans (Agnar: „drag the list to the side so more text will fit"): handfang í hægri brún, px í localStorage.
+  const VBR_BREIDD_LYKILL = 'thjonustubord_vbr_breidd';
+  let vbrBreidd = 0;
+  try { vbrBreidd = Math.min(760, Math.max(230, Number(localStorage.getItem(VBR_BREIDD_LYKILL)) || 0)) || 0; } catch (_) {}
+  function onVbrGrip(e) {
+    const h = e.target && e.target.closest ? e.target.closest('[data-vbr-grip]') : null;
+    if (!h) return;
+    const grid = h.closest('.vbr');
+    if (!grid) return;
+    e.preventDefault();
+    h.classList.add('virk');
+    try { h.setPointerCapture(e.pointerId); } catch (_) {}
+    const vinstri = grid.getBoundingClientRect().left;
+    const hreyfa = ev => {
+      const hamark = Math.max(230, grid.getBoundingClientRect().width - 360);   // meginmálið heldur a.m.k. 360 px
+      vbrBreidd = Math.round(Math.min(Math.max(230, ev.clientX - vinstri), hamark));
+      grid.style.setProperty('--vbr-w', vbrBreidd + 'px');
+    };
+    const sleppa = () => {
+      h.classList.remove('virk');
+      h.removeEventListener('pointermove', hreyfa); h.removeEventListener('pointerup', sleppa); h.removeEventListener('pointercancel', sleppa);
+      try { localStorage.setItem(VBR_BREIDD_LYKILL, String(vbrBreidd)); } catch (_) {}
+    };
+    h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
+  }
   const samtHluti = r => (erBuid(r) ? -1 : !erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
-  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || rodunSamt(a, b));
+  const samtListi = n => S.rows.filter(r => iHam(r, SAMT_HAM)).sort((a, b) => samtHluti(a) - samtHluti(b) || samtRada(a, b) || rodunSamt(a, b));
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     const listi = samtListi(n);
@@ -1980,7 +2040,7 @@
     let val = listi.find(r => r.id === S.samtVal);
     if (!val) { val = listi.find(erSamthykki) || listi[0]; S.samtVal = val.id; }
     const nr = listi.indexOf(val);
-    const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1])]);
+    const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1]), h[1]]);
     const item = r => {
       const ef = aiLine(r), undir = [whereOf(r), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
       // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
@@ -1992,10 +2052,11 @@
         (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erBuid(r) ? ' ok' : '') + '">' + (erBuid(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
         (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
     };
-    return '<div class="vbr samt">' +
+    return '<div class="vbr samt"' + (vbrBreidd ? ' style="--vbr-w:' + vbrBreidd + 'px"' : '') + '>' +
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
-        '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' +
-        '<div class="vbr-items">' + hlutar.map(h => (h[1].length ? '<div class="vbr-sect">' + h[0] + ' · ' + h[1].length + '</div>' + h[1].map(item).join('') : '')).join('') + '</div>' +
+        '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' + samtRodHtml() + samtTeljariHtml(hlutar) +
+        '<div class="vbr-items">' + hlutar.map(h => (h[1].length ? '<div class="vbr-sect" data-h="' + h[2] + '">' + h[0] + ' · ' + h[1].length + '</div>' + h[1].map(item).join('') : '')).join('') + '</div>' +
+        '<div class="vbr-grip" data-vbr-grip title="Draga til að breyta breidd listans"></div>' +
       '</aside>' +
       '<div class="vbr-main">' +
         '<div class="vbr-top">' +
@@ -5395,6 +5456,8 @@
         return;
       }
       case 'samt-velja': S.samtVal = id; render(); vbrTilBaka(); return;
+      case 'samt-rod': samtRodun = el.dataset.v; try { localStorage.setItem(SAMT_ROD_LYKILL, samtRodun); } catch (_) {} render(); return;
+      case 'samt-hoppa': { const s = root.querySelector('.vbr-sect[data-h="' + el.dataset.v + '"]'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       case 'samt-fara': {
         const listi = samtListi(nu()), i = listi.findIndex(r => r.id === S.samtVal);
         const j = Math.min(listi.length - 1, Math.max(0, i + Number(el.dataset.v || 0)));
