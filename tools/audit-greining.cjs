@@ -57,6 +57,13 @@ krefst(!/teikning_bord'\)\s*\.(insert|upsert|update)/.test(g), '451: skrifar í 
 krefst(/TeiknBord\.finnaAlltHusid\(\)/.test(g), '451: „Setja í Teikningu" á að nota Finna allt húsið (383) — ekkert vistast fyrr en Vista í Teikningu');
 krefst(/TeiknSaekja\.finna\(SYND\)/.test(g), '451: teikningaleitin á að vera 374 (TeiknSaekja.finna) — ekki afrit af henni');
 krefst(/TeikningaForskodun\.opna\([^)]*, null,/.test(g), '451: forskoðun (384) á að opnast ÁN félags (annars opnar „Opna í TurboPaint" borð fyrir sýndarauðkennið)');
+// 7. forskoðun teikninga (09.10.2026): smámyndir latt (IntersectionObserver), mest 2 PDF-teikningar í einu, PDF af SÖMU rót
+//    (teikn-pdf — söfn Kópavogs/Garðabæjar/Hafnarfjarðar senda enga CORS-hausa) og hæðagreining 374 (TeiknSaekja.flokka)
+krefst(/HAMARK: 2 \}/.test(g) && /FSK\.virk < FSK\.HAMARK/.test(g), '451: forskoðunin verður að takmarka samtímis PDF-teikningar (FSK.HAMARK: 2)');
+krefst(/new IntersectionObserver\(/.test(g) && /FSK\.io\.observe\(el\)/.test(g), '451: smámyndir eiga að hlaðast latt — aðeins þær sem sjást (IntersectionObserver)');
+krefst(/fetch\(PDFF \+ '\?url=' \+ encodeURIComponent\(slod\)/.test(g), '451: PDF-forskoðun á að sækja skjalið um teikn-pdf (sama rót) — beint úr safninu stoppar CORS');
+krefst(/TeiknSaekja\.flokka\(/.test(g), '451: flokkun blaða og hæða á að vera 374 TeiknSaekja.flokka (sama og „Finna allt húsið“) — ekki eigin afrit');
+krefst(!/data-gr-a="pdfhaed"|PDF-teikning — smelltu til að birta/.test(g), '451: „PDF — smelltu til að birta“-reitir eru aflagðir; PDF-hæðir teiknast latt');
 // 5. töflur
 const toflur = (g.match(/<table /g) || []).length, merktar = (g.match(/<table data-_pm-status-done="1"/g) || []).length;
 krefst(toflur === merktar, '451: ' + (toflur - merktar) + ' tafla án data-_pm-status-done (00-legacy setur þá tækja-fellilista sem skrifar uttaeki.status)');

@@ -84,6 +84,7 @@
     tegundVal: null,    // handval tegundar (aðeins útlit, ekki vistað)
     ocr: null,          // { id, stada, texti, byrjad, landnr, timer }
     opidHaed: {},       // `${cid}:${hid}` → 'vm' | '2d'
+    fskSafn: [],        // myndir Teikningar-spjaldsins í birtingarröð — stóra myndin flettir um þær
   };
   // Atburðaskrá (síðustu 100) — til greiningar á ræsingu: window.__gr451log
   const atb = (t) => { try { const a = (window.__gr451log = window.__gr451log || []); a.push([Math.round(performance.now()), t]); if (a.length > 100) a.shift(); } catch (_) {} };
@@ -254,6 +255,30 @@
       R + ' .gr-listi li small{font:500 11px ' + MONO + ';color:#6b7483}',
       R + ' .gr-3d{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}',
       R + ' .gr-3d img{height:120px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(20,24,34,.2);background:#fff;cursor:zoom-in}',
+      // forskoðun: föst stærð á hverri flís — smámyndin sem kemur seinna ýtir engu (Stöðugt viðmót)
+      R + ' .gr-fsk-grind{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:8px}',
+      R + ' .gr-fsk{display:flex;flex-direction:column;background:#fff;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.14),0 2px 4px rgba(10,14,22,.12);overflow:hidden;cursor:zoom-in;min-width:0;text-align:left;border:0;padding:0;margin:0;font:inherit;color:inherit}',
+      R + ' .gr-fsk:hover{box-shadow:inset 0 0 0 1px rgba(20,24,34,.32),0 3px 8px rgba(10,14,22,.18)}',
+      R + ' .gr-fsk-mynd{position:relative;display:block;height:150px;background:#f4f6f9;overflow:hidden;box-shadow:inset 0 -1px 0 rgba(20,24,34,.1)}',
+      R + ' .gr-fsk-mynd > img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff}',
+      R + ' .gr-fsk-bid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center;font:600 10.5px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#8a929e;pointer-events:none}',
+      R + ' .gr-fsk-heiti{display:block;padding:6px 8px 0;font:700 13px/1.3 ' + SANS + ';color:#141822;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      R + ' .gr-fsk-undir{display:block;height:2.8em;padding:2px 8px 0;margin-bottom:7px;font:500 10.5px/1.4 ' + MONO + ';color:#6b7483;overflow:hidden}',
+      R + ' .gr-fsk-ath{margin:6px 0 0;font:500 12px/1.45 ' + SANS + ';color:#525b6b}',
+      R + ' details.gr-eldri{margin-top:8px}',
+      R + ' details.gr-eldri > summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;list-style:none;padding:4px 0;font:600 12px ' + SANS + ';color:#3a4250}',
+      R + ' details.gr-eldri > summary::-webkit-details-marker{display:none}',
+      R + ' details.gr-eldri > summary::before{content:"\\25B8";font-size:11px;color:#6b7483}',
+      R + ' details.gr-eldri[open] > summary::before{content:"\\25BE"}',
+      R + ' details.gr-eldri .gr-fsk-grind{margin-top:6px}',
+      R + ' .gr-skurdur > .gr-fsk-bid,' + R + ' .gr-haed-pdf > .gr-fsk-bid{background:repeating-linear-gradient(135deg,#f4f6f9 0 10px,#eceff4 10px 20px)}',
+      R + ' .gr-haed-pdf{height:220px;cursor:zoom-in;box-shadow:none}',
+      R + ' .gr-haed-3d{display:flex;flex-direction:column}',
+      R + ' .gr-3d-flis{position:relative;display:block;width:100%;aspect-ratio:4/3;border:0;padding:0;margin:0;background:#11141c;cursor:zoom-in;overflow:hidden}',
+      R + ' .gr-3d-flis img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}',
+      R + ' .gr-3d-fleiri{display:flex;gap:6px;padding:6px 8px 8px}',
+      R + ' .gr-3d-fleiri button{flex:1 1 0;height:56px;border:0;padding:0;margin:0;border-radius:5px;overflow:hidden;background:#11141c;cursor:zoom-in}',
+      R + ' .gr-3d-fleiri img{width:100%;height:100%;object-fit:contain;display:block}',
       // heimildir og hömlur
       R + ' .gr-heim{display:flex;flex-direction:column;gap:4px}',
       R + ' .gr-hrod{background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.1)}',
@@ -272,12 +297,22 @@
         R + ' .gr-tafla td{border-radius:0!important;box-shadow:inset 1px 0 0 rgba(20,24,34,.1),inset -1px 0 0 rgba(20,24,34,.1)!important}' + R + ' .gr-tafla td:first-child{border-radius:6px 6px 0 0!important}' + R + ' .gr-tafla td:last-child{border-radius:0 0 6px 6px!important}' +
         R + ' .gr-tafla .gr-num{text-align:left}' + R + ' .gr-tafla td[data-l]::before{content:attr(data-l);display:block;font:700 10px ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#525b6b;margin-bottom:2px}' + '}',
       '@container (max-width: 560px){' + R + ' .ssp-haus .ssp-undir{display:none!important}' + R + ' .gr-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ' .gr-reitir{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-punktar li{grid-template-columns:minmax(0,1fr);gap:2px}' + R + ' .gr-punktar{min-height:420px}' + R + ' .gr-setn{min-height:88px}' +
-        R + ' .gr-myndir{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ' .gr-haedir{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-k b{font-size:22px}}',
+        R + ' .gr-myndir{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ' .gr-fsk-grind{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ' .gr-fsk-mynd{height:124px}' + R + ' .gr-haedir{grid-template-columns:minmax(0,1fr)}' + R + ' .gr-k b{font-size:22px}}',
       '@media (max-width: 700px){.gr-leit' + K + '{flex-basis:100%;max-width:none;margin-left:0}.gr-leit .gr-inn' + K + '{font-size:16px!important;height:44px!important}.gr-leit .gr-saekja' + K + '{height:44px!important}}',
       // ljósakassi
       '#gr-ljos{position:fixed;inset:0;z-index:100050;background:rgba(10,12,16,.92);display:flex;flex-direction:column}',
       '#gr-ljos .gr-lh{display:flex;align-items:center;gap:10px;padding:10px 14px;color:#fff;font:600 13px ' + SANS + ';background:' + METAL + ';border-bottom:1px solid #000}',
-      '#gr-ljos .gr-lh button{margin-left:auto}',
+      '#gr-ljos .gr-lh{flex-wrap:wrap;row-gap:6px}',
+      '#gr-ljos .gr-ltitill{font:700 14px ' + SANS + '}',
+      '#gr-ljos .gr-lundir{font:500 11.5px ' + MONO + ';color:rgba(255,255,255,.65);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}',
+      '#gr-ljos .gr-lbil{flex:1}',
+      '#gr-ljos .gr-lteljari{font:600 12px ' + MONO + ';color:rgba(255,255,255,.8)}',
+      '#gr-ljos .gr-lbid{color:rgba(255,255,255,.75);font:600 13px ' + SANS + '}',
+      '#gr-ljos .gr-lb img[hidden]{display:none}',
+      '#gr-ljos .gr-lor{position:absolute;top:50%;width:46px;height:68px;margin-top:-34px;border:1px solid rgba(255,255,255,.28);border-radius:9px;background:' + METAL + ';color:#fff;font:700 30px/1 ' + SANS + ';cursor:pointer;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.5)}',
+      '#gr-ljos .gr-lor.v{left:12px}', '#gr-ljos .gr-lor.h{right:12px}',
+      '#gr-ljos .gr-lor[disabled]{opacity:.28;cursor:default}',
+      '@media (max-width: 700px){#gr-ljos .gr-lor{width:38px;height:56px;margin-top:-28px;font-size:24px}#gr-ljos .gr-lor.v{left:4px}#gr-ljos .gr-lor.h{right:4px}#gr-ljos .gr-lundir{max-width:100%;flex-basis:100%;order:5}}',
       '#gr-ljos .gr-lb{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px}',
       '#gr-ljos .gr-lb img{max-width:100%;max-height:100%;background:#fff;cursor:zoom-in}',
       '#gr-ljos .gr-lb.stor img{max-width:none;max-height:none;cursor:zoom-out}',
@@ -653,7 +688,7 @@
   // BIRTING Í RÖÐ (Stöðugt viðmót): spjald sýnir efni sitt aðeins þegar SÍN gögn eru komin OG öll spjöld fyrir ofan eru
   // birt. Þá ýtir spjald sem stækkar aðeins frátekinni hæð (staðgenglum) niður — aldrei efni sem notandinn er þegar að lesa.
   // Samantektin efst er föst að stærð og birtist strax. Hausinn (staða) uppfærist alltaf — hann er fastur á hæð.
-  const KORT_HLUTAR = { samantekt: [], eign: ['opin', 'bygg'], hja: ['hja'], bygg: ['bygg', 'opin'], bruna: ['bygg'], krofur: ['krofur', 'bygg', 'hja', 'opin', 'rekstur'], teikn: ['teikn'], rekstur: ['rekstur', 'opin'], heimildir: ['heimildir'] };
+  const KORT_HLUTAR = { samantekt: [], eign: ['opin', 'bygg'], hja: ['hja'], bygg: ['bygg', 'opin'], bruna: ['bygg'], krofur: ['krofur', 'bygg', 'hja', 'opin', 'rekstur'], teikn: ['teikn', 'bygg'], rekstur: ['rekstur', 'opin'], heimildir: ['heimildir'] };
   function hlutiLokid(g, l) {
     const p = g.parts[l];
     if (!p) return !g.adr;                          // án heimilisfangs eru hlutarnir ekki sóttir
@@ -688,6 +723,7 @@
         b.innerHTML = b._ny; b._h = b._ny;
         if (b.dataset.birt !== '1') b.dataset.birt = '1';   // mælingin (tools/greining-vafri) greinir birt efni frá staðgenglum
         if (lyk === 'eign') { kortFesta(b); loftFesta(b); }
+        if (lyk === 'teikn') fskFesta(b);
         if (aftur) aftur();
       }
       fyrriBirt = ma && b._h != null;
@@ -1357,59 +1393,345 @@
   }
   const myndSlod = (u) => MYND + '?url=' + encodeURIComponent(u);
   const erBeintPdf = (u) => /\.pdf$/i.test(String(u || '')) && !/skjalasafn\.reykjavik/i.test(String(u || ''));
+  /* 5a · HEITI HÆÐA OG FLOKKUN BLAÐA (Agnar 09.10.2026: „geturðu líka sett preview á hæðirnar og mikilvægar teikningar
+   * með heitunum 1. hæð, 2. hæð og framvegis"). Hæðagreiningin er sú sama og „Finna allt húsið“ (383 fahLykill /
+   * fahNafn / fahRod ofan á 374 TeiknSaekja.flokka); þak telst með risi og milligólf fær sitt heiti. */
+  const HL = {
+    lykill(t0) {
+      const t = String(t0 || '').toLowerCase();
+      if (/kjall/.test(t)) return 'K';
+      if (/millig[óo]lf|millipall/.test(t)) return 'M';
+      if (/(^|[^a-zþæöðáéíóúý])(ris|þak)/.test(t)) return 'R';
+      const m = t.match(/(\d+)\.?\s*h(æ|ae)ð/) || t.match(/^(\d+)/);
+      return m ? String(+m[1]) : t;
+    },
+    rod: (k) => (k === 'K' ? -1 : k === 'M' ? 1.5 : k === 'R' ? 999 : (/^\d+$/.test(String(k)) ? +k : 500)),
+  };
+  function haedaHeiti(keys, ris) {
+    const k = keys.slice().sort((a, b) => HL.rod(a) - HL.rod(b));
+    const tolur = k.filter((x) => /^\d+$/.test(x)).map(Number);
+    let tl = '';
+    if (tolur.length >= 3 && tolur[tolur.length - 1] - tolur[0] === tolur.length - 1) tl = tolur[0] + '.–' + tolur[tolur.length - 1] + '. hæð';
+    else if (tolur.length === 2) tl = tolur[0] + '. og ' + tolur[1] + '. hæð';
+    else if (tolur.length) tl = tolur.map((n) => n + '.').join(', ') + ' hæð';
+    const hl = [];
+    if (k.includes('K')) hl.push('Kjallari');
+    if (tl) hl.push(tl);
+    if (k.includes('M')) hl.push('Milligólf');
+    if (k.includes('R')) hl.push(ris ? 'Ris' : 'Þak');
+    const lag = hl.map((h, i) => (i && /^[A-ZÞÆÖÁÉÍÓÚÝÐ][a-zþæöðáéíóúý]/.test(h) ? h.charAt(0).toLowerCase() + h.slice(1) : h));
+    return lag.length === 2 ? lag[0] + ' og ' + lag[1] : lag.join(', ');
+  }
+  // „A-B - Útlitsmyndir-vestur/suður hliðar A:02.07.13 Bætt inn … ,1:100" → „Útlitsmyndir-vestur/suður hliðar"
+  const hreinsaTitil = (t) => String(t || '').replace(/^[A-ZÁÐÉÍÓÚÝÞÆÖ](?:-[A-ZÁÐÉÍÓÚÝÞÆÖ])*\s*-\s*/, '').replace(/\s+[A-Z]:\d{2}\.\d{2}\.\d{2,4}.*$/, '').replace(/\s*,\s*1:\d+.*$/, '').trim();
+  // Garðabær skilur lýsinguna eftir tóma og setur tegund blaðsins í gerd („Grunnmynd, afstaða"); Hafnarfjörður setur „Óskráð"
+  const blodTexti = (d) => [d.lysing, d.gerd && !/^(óskráð|annað)$/i.test(String(d.gerd).trim()) ? d.gerd : ''].filter(Boolean).join(' · ') || d.tegund || d.filename || '';
+  const TEKNI = /raflagn|lagna|burðarv|sérupp|loftræs|járna|undirst|hita|fráveit|vatns|mæliblað|hæðablað/i;
+  const arFra = (dags, n) => (dags && /^\d{4}/.test(dags) ? (+dags.slice(0, 4) + n) + dags.slice(4) : '');
+  function flokkaBlod(dr, bygg) {
+    const adal = (d) => /aðalupp|bygginga?nefnd/i.test(String(d.tegund || ''));
+    const gild0 = (dr || []).filter((d) => d && d.infoUrl && !d.urelt);
+    const gild = gild0.some(adal) ? gild0.filter(adal) : gild0.filter((d) => !TEKNI.test(String(d.tegund || '') + ' ' + String(d.gerd || '')));
+    const rad = gild.map((d) => {
+      const txt = blodTexti(d), tl = txt.toLowerCase();
+      const f = (window.TeiknSaekja && TeiknSaekja.flokka) ? TeiknSaekja.flokka(Object.assign({}, d, { lysing: txt }))
+        : { grunn: !!d.grunnmynd, snid: false, utlit: false, haed: [], kjallari: false, ris: false };
+      const keys = f.grunn ? [].concat(f.kjallari ? ['K'] : [], (f.haed || []).map(String), /millig[óo]lf|millipall/.test(tl) ? ['M'] : [],
+        (f.ris || /(^|[^a-zþæöðáéíóúý])þak/.test(tl)) ? ['R'] : []) : [];
+      return { d, f, txt, titill: hreinsaTitil(txt), keys: [...new Set(keys)], ris: !!f.ris, dags: String(d.dags || ''),
+        afstada: /afst[öo]ðu|afstaða|l[óo]ðarmynd|h[úu]s [áa] l[óo]ð/.test(tl), skraning: /skr[áa]ningartafl/.test(tl), lysing: /byggingarl[ýy]sing/.test(tl) };
+    });
+    const grunn = rad.filter((x) => x.f.grunn);
+    const nefnd = grunn.filter((x) => x.keys.length);
+    // Skráningartaflan (bygging-uppl) segir hve margar hæðir húsið hefur — blöð utan þess eru oftast eldra hús á lóðinni
+    // (Fiskislóð 41: „Grunnmynd 7-8. hæð" 2006 og „kjallara K2" 2005 við hliðina á 2023-uppdráttum tveggja hæða húss).
+    const bh = bygg && bygg.haedir, vis = !!(bh && bh.ofanjardar > 0 && bygg.oryggi && /há|miðl/.test(String(bygg.oryggi.haedir || '')));
+    const utan = (k) => vis && ((/^\d+$/.test(k) && +k > bh.ofanjardar) || (k === 'K' && bh.kjallari === false));
+    // nýjasta gilda blað hverrar hæðar fremst (sama dagsetning → blaðið sem nær yfir færri hæðir, eins og 383 velur)
+    const bestur = new Map();
+    nefnd.forEach((x) => x.keys.forEach((k) => {
+      if (utan(k)) return;
+      const b = bestur.get(k);
+      if (!b || x.dags > b.dags || (x.dags === b.dags && x.keys.length < b.keys.length)) bestur.set(k, x);
+    }));
+    const adalBlod = new Map();
+    bestur.forEach((x, k) => { if (!adalBlod.has(x)) adalBlod.set(x, []); adalBlod.get(x).push(k); });
+    const haedir = [...adalBlod].map(([x, ks]) => ({ x, keys: ks.sort((a, b) => HL.rod(a) - HL.rod(b)) })).sort((a, b) => HL.rod(a.keys[0]) - HL.rod(b.keys[0]));
+    const nyjast = nefnd.reduce((m, x) => (x.dags > m ? x.dags : m), '');
+    const onefnd = grunn.filter((x) => !x.keys.length).sort((a, b) => String(a.d.filename || a.d.infoUrl).localeCompare(String(b.d.filename || b.d.infoUrl), 'is', { numeric: true }));
+    // ónefnd grunnmyndablöð (Garðabær skráir ekki hæð) eru aðalatriði ef engin hæð er nefnd, annars aðeins jafnnýleg
+    const onefndAdal = nefnd.length ? onefnd.filter((x) => x.dags && nyjast && x.dags >= arFra(nyjast, -1)) : onefnd;
+    const nyrra = (a, b) => b.dags.localeCompare(a.dags);
+    const passarEkki = nefnd.filter((x) => !adalBlod.has(x) && x.keys.every(utan)).sort(nyrra);
+    const eldri = nefnd.filter((x) => !adalBlod.has(x) && !x.keys.every(utan)).concat(onefnd.filter((x) => !onefndAdal.includes(x))).sort(nyrra);
+    // önnur blöð: gildandi útgáfa = blöð innan árs frá því nýjasta í flokknum; eldri undir „Eldri útgáfur"
+    // („Útlit, snið“ á einu blaði er aðeins undir Sniði)
+    const flokkur = (sia) => {
+      const r = rad.filter((x) => !x.f.grunn && sia(x)).sort(nyrra);
+      const n = r.length && r[0].dags ? arFra(r[0].dags, -1) : '';
+      return { nyjar: r.filter((x) => !n || !x.dags || x.dags >= n), eldri: r.filter((x) => n && x.dags && x.dags < n) };
+    };
+    return {
+      haedir, onefnd: onefndAdal, eldri, passarEkki, bh: vis ? bh : null, alls: gild.length,
+      snid: flokkur((x) => x.f.snid), utlit: flokkur((x) => x.f.utlit && !x.f.snid), afstada: flokkur((x) => x.afstada),
+      skraning: flokkur((x) => x.skraning), lysing: flokkur((x) => x.lysing),
+    };
+  }
+  // „3 hæðir + kjallari, 2 snið, 4 útlit" — línan í Samantekt
+  function teiknTeljari(fl) {
+    const ks = new Set(); fl.haedir.forEach((h) => h.keys.forEach((k) => ks.add(k)));
+    const tolur = [...ks].filter((k) => /^\d+$/.test(k)).length;
+    const aukar = [ks.has('K') ? 'kjallari' : '', ks.has('M') ? 'milligólf' : '', ks.has('R') ? 'ris/þak' : ''].filter(Boolean);
+    let s = (tolur ? tolur + (tolur === 1 ? ' hæð' : ' hæðir') : '') + (aukar.length ? (tolur ? ' + ' : '') + aukar.join(' + ') : '');
+    if (!s && fl.onefnd.length) s = fl.onefnd.length + (fl.onefnd.length === 1 ? ' grunnmynd' : ' grunnmyndir') + ' (hæð óskráð)';
+    const adrir = [[fl.snid.nyjar.length, 'snið', 'snið'], [fl.utlit.nyjar.length, 'útlit', 'útlit'], [fl.afstada.nyjar.length, 'afstöðumynd', 'afstöðumyndir']]
+      .filter((x) => x[0]).map((x) => x[0] + ' ' + (x[0] === 1 ? x[1] : x[2]));
+    return [s].concat(adrir).filter(Boolean).join(', ');
+  }
+
+  /* 5b · FORSKOÐUN — smámyndir hlaðnar latt (aðeins þær sem sjást), mest 2 PDF-teikningar í einu, geymdar í lotunni */
+  const FSK = { io: null, bid: [], virk: 0, mest: 0, byrjad: 0, lokid: 0, villur: 0, HAMARK: 2 };
+  const FSK_MYND = new Map();   // `${slóð}|${px}` → loforð um blob-slóð (lotan)
+  let _pdfjsP = null;
+  function pdfjsHlada() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (_pdfjsP) return _pdfjsP;
+    // sama útgáfa og slóð og 383 saekjaPdfJs / 384 hladaPdfJs
+    const P = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+    _pdfjsP = new Promise((res, rej) => {
+      const sk = document.createElement('script'); sk.src = P + 'pdf.min.js';
+      sk.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = P + 'pdf.worker.min.js'; } catch (_) {} res(); };
+      sk.onerror = () => { _pdfjsP = null; rej(new Error('pdf.js hlóðst ekki')); };
+      document.head.appendChild(sk);
+    });
+    return _pdfjsP;
+  }
+  // Fyrsta síða PDF-teikningar (Kópavogur, Garðabær, Hafnarfjörður — engin smámynd í skránni) í mynd, lengri hlið = px
+  function pdfSmamynd(slod, px) {
+    const k = slod + '|' + px;
+    if (!FSK_MYND.has(k)) {
+      const p = (async () => {
+        await pdfjsHlada();
+        const r = await fetch(PDFF + '?url=' + encodeURIComponent(slod), { signal: AbortSignal.timeout(45000) });
+        if (!r.ok) throw new Error('PDF fékkst ekki (' + r.status + ')');
+        const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
+        try {
+          const s = await doc.getPage(1), v0 = s.getViewport({ scale: 1 });
+          const vp = s.getViewport({ scale: px / Math.max(v0.width, v0.height, 1) });
+          const cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+          const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+          await s.render({ canvasContext: cx, viewport: vp }).promise;
+          const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.84));
+          if (!blob) throw new Error('mynd varð ekki til');
+          return URL.createObjectURL(blob);
+        } finally { try { doc.destroy(); } catch (_) {} }
+      })();
+      FSK_MYND.set(k, p);
+      p.catch(() => FSK_MYND.delete(k));
+    }
+    return FSK_MYND.get(k);
+  }
+  function fskFesta(rot) {
+    if (!rot) return;
+    if (!FSK.io && 'IntersectionObserver' in window) {
+      FSK.io = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { FSK.io.unobserve(en.target); fskHlada(en.target); } }), { rootMargin: '250px 0px' });
+    }
+    rot.querySelectorAll('[data-gr-fskm]:not([data-fsk-ath])').forEach((el) => { el.setAttribute('data-fsk-ath', '1'); if (FSK.io) FSK.io.observe(el); else fskHlada(el); });
+  }
+  function fskHlada(el) {
+    const beint = el.getAttribute('data-th') || el.getAttribute('data-mynd');
+    if (beint) { fskSetja(el, beint); return; }   // smámynd skjalasafnsins — vafrinn sækir hana sjálfur
+    if (el.getAttribute('data-pdf')) { FSK.bid.push(el); fskNaesta(); }
+  }
+  function fskNaesta() {
+    while (FSK.virk < FSK.HAMARK && FSK.bid.length) {
+      const el = FSK.bid.shift();
+      if (!el.isConnected) continue;
+      FSK.virk++; FSK.byrjad++; if (FSK.virk > FSK.mest) FSK.mest = FSK.virk;
+      pdfSmamynd(el.getAttribute('data-pdf'), +(el.getAttribute('data-px') || 380))
+        .then((u) => { FSK.lokid++; fskSetja(el, u); }, (e) => { FSK.villur++; fskVilla(el, e); })
+        .finally(() => { FSK.virk--; fskNaesta(); });
+    }
+  }
+  function fskSetja(el, src) {
+    if (!el.isConnected || el.querySelector(':scope > img')) return;
+    const im = new Image(); im.alt = ''; im.decoding = 'async';
+    const st = el.getAttribute('data-still'); if (st) im.setAttribute('style', st);
+    im.onload = () => { const b = el.querySelector(':scope > .gr-fsk-bid'); if (b) b.remove(); };
+    im.onerror = () => { im.remove(); fskVilla(el); };
+    im.src = src;
+    el.insertBefore(im, el.firstChild);
+  }
+  function fskVilla(el) {
+    const b = el.querySelector(':scope > .gr-fsk-bid'); if (b) b.textContent = 'Engin forskoðun — smelltu til að opna';
+  }
+  // Smámynd eins blaðs úr skjalasafninu; skráð í S.fskSafn svo smellur opni stóru myndina með örvum milli blaða
+  function fskFlis(x, heiti, eldri) {
+    const d = x.d, i = S.fskSafn.length, pdf = erBeintPdf(d.infoUrl);
+    const undir = [dags(d.dags) || 'án dags.', x.titill].filter(Boolean).join(' · ');
+    S.fskSafn.push({ titill: heiti, undir, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : myndSlod(d.infoUrl), forsk: true, eldri: !!eldri });
+    const m = d.thumb ? ' data-th="' + esc(d.thumb) + '"' : pdf ? ' data-pdf="' + esc(d.infoUrl) + '"' : ' data-mynd="' + esc(myndSlod(d.infoUrl)) + '"';
+    return '<button type="button" class="gr-fsk" data-gr-a="fsk" data-i="' + i + '" title="' + esc(heiti + ' — ' + undir) + '">' +
+      '<span class="gr-fsk-mynd" data-gr-fskm' + m + '><span class="gr-fsk-bid">' + (pdf ? 'Teikna forskoðun…' : 'Sæki forskoðun…') + '</span></span>' +
+      '<span class="gr-fsk-heiti">' + esc(heiti) + '</span><span class="gr-fsk-undir">' + esc(undir) + '</span></button>';
+  }
+
+  /* 5c · STÓR MYND MEÐ ÖRVUM (← → milli hæða og blaða, Esc lokar) */
+  const STOR = new Map();
+  function skeraMynd(src, sk, fr) {
+    return new Promise((res, rej) => {
+      const im = new Image();
+      try { if (new URL(src, location.href).origin !== location.origin && !/^(blob|data):/.test(src)) im.crossOrigin = 'anonymous'; } catch (_) {}
+      im.onload = () => {
+        try {
+          const W = im.naturalWidth, H = im.naturalHeight;
+          const x = sk.x / fr.b * W, y = sk.y / fr.h * H, w = sk.w / fr.b * W, h = sk.h / fr.h * H;
+          const k = Math.min(1, 3200 / Math.max(w, h, 1));
+          const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+          const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+          cx.drawImage(im, x, y, w, h, 0, 0, cv.width, cv.height);
+          cv.toBlob((b) => (b ? res(URL.createObjectURL(b)) : rej(new Error('skurður'))), 'image/jpeg', 0.9);
+        } catch (e) { rej(e); }
+      };
+      im.onerror = () => rej(new Error('mynd'));
+      im.src = src;
+    });
+  }
+  function storMynd(it) {
+    const lyk = (it.pdf || it.mynd || '') + (it.skurdur ? '#' + [it.skurdur.x, it.skurdur.y, it.skurdur.w, it.skurdur.h].join(',') : '');
+    if (!STOR.has(lyk)) {
+      const p = (async () => {
+        const src = it.pdf ? await pdfSmamynd(it.pdf, 2600) : it.mynd;
+        if (!it.skurdur || !it.frum) return src;
+        try { return await skeraMynd(src, it.skurdur, it.frum); } catch (_) { return src; }   // menguð mynd → allt blaðið
+      })();
+      STOR.set(lyk, p); p.catch(() => STOR.delete(lyk));
+    }
+    return STOR.get(lyk);
+  }
+  let _ljosLok = null;
+  function ljosSafn(safn0, i0) {
+    if (_ljosLok) _ljosLok();
+    // örvarnar fara um gildandi blöð — eða um eldri útgáfurnar sé ein þeirra opnuð
+    const byrjun = safn0[i0] || safn0[0];
+    const safn = safn0.filter((x) => !!x.eldri === !!(byrjun && byrjun.eldri));
+    const fjoldi = safn.length;
+    const o = document.createElement('div');
+    o.id = 'gr-ljos'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    o.innerHTML = '<div class="gr-lh"><span class="gr-ltitill"></span><span class="gr-lundir"></span><span class="gr-lbil"></span>' +
+      (fjoldi > 1 ? '<span class="gr-lteljari"></span>' : '') +
+      '<button type="button" class="ssp-btn" data-gr-lfsk hidden title="Opnar forskoðun teikninganna (384): þysja, prenta, sækja í fullum gæðum">Forskoðun</button><button type="button" class="ssp-btn" data-gr-loka>Loka</button></div>' +
+      '<div class="gr-lb"><span class="gr-lbid">Sæki mynd…</span><img alt="" hidden></div>' +
+      (fjoldi > 1 ? '<button type="button" class="gr-lor v" data-gr-lor="-1" aria-label="Fyrri teikning">‹</button><button type="button" class="gr-lor h" data-gr-lor="1" aria-label="Næsta teikning">›</button>' : '');
+    document.body.appendChild(o);
+    const img = o.querySelector('.gr-lb img'), bid = o.querySelector('.gr-lbid'), lb = o.querySelector('.gr-lb');
+    let nr = -1, kall = 0;
+    const syna = (n) => {
+      if (n < 0 || n >= fjoldi || n === nr) return;
+      nr = n; const it = safn[n], k = ++kall;
+      o.querySelector('.gr-ltitill').textContent = it.titill || 'Mynd';
+      o.querySelector('.gr-lundir').textContent = it.undir || '';
+      const tj = o.querySelector('.gr-lteljari'); if (tj) tj.textContent = (n + 1) + ' / ' + fjoldi;
+      o.setAttribute('aria-label', it.titill || 'Mynd');
+      o.querySelectorAll('[data-gr-lor]').forEach((b) => { const s = n + +b.getAttribute('data-gr-lor'); b.disabled = s < 0 || s >= fjoldi; });
+      const fb = o.querySelector('[data-gr-lfsk]'); if (fb) fb.hidden = !it.forsk;
+      lb.classList.remove('stor'); img.hidden = true; bid.hidden = false; bid.textContent = it.pdf ? 'Teikna PDF-teikninguna…' : 'Sæki mynd…';
+      storMynd(it).then((src) => {
+        if (k !== kall) return;
+        img.onload = () => { if (k === kall) { img.hidden = false; bid.hidden = true; } };
+        img.onerror = () => { if (k === kall) bid.textContent = 'Myndin fékkst ekki.'; };
+        img.src = src;
+      }, (e) => { if (k === kall) bid.textContent = 'Myndin fékkst ekki (' + ((e && e.message) || e) + ').'; });
+    };
+    const lykill = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); loka(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); syna(nr + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); syna(nr - 1); }
+    };
+    const loka = () => { o.remove(); document.removeEventListener('keydown', lykill, true); _ljosLok = null; };
+    o.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.closest('[data-gr-loka]')) { loka(); return; }
+      const lor = t.closest('[data-gr-lor]'); if (lor) { syna(nr + +lor.getAttribute('data-gr-lor')); return; }
+      if (t.closest('[data-gr-lfsk]')) { loka(); opnaForskodun(); return; }
+      if (t === img) { lb.classList.toggle('stor'); return; }
+      if (t === lb) loka();
+    });
+    document.addEventListener('keydown', lykill, true);
+    _ljosLok = loka;
+    syna(Math.max(0, safn.indexOf(byrjun)));
+  }
+
+  /* 5d · HÆÐIR VIÐSKIPTAVINAR ÚR TEIKNINGU (skurður, tæki, vinnumynd 445) */
   function haedHtml(co, h, i) {
     const lyk = co.id + ':' + (h.id || i);
     const vm = h.vinnumynd && h.vinnumynd.url;
     const hamur = S.opidHaed[lyk] || (vm ? 'vm' : '2d');
     const mk = (Array.isArray(h.markers) ? h.markers : []);
     const taeki = mk.filter((m) => !(m && (m.kind === 'sign' || String(m.unitId || '').indexOf('s:') === 0))).length;
-    const haus = '<div class="gr-haed-haus">' + esc(h.nafn || ('Hæð ' + (i + 1))) + ' <span class="ssp-daufur" style="font:500 11px ' + MONO + '">' + taeki + ' tæki merkt</span>' +
+    const nafn = h.nafn || ('Hæð ' + (i + 1));
+    const haus = '<div class="gr-haed-haus">' + esc(nafn) + ' <span class="ssp-daufur" style="font:500 11px ' + MONO + '">' + taeki + ' tæki merkt</span>' +
       (vm ? '<button type="button" class="ssp-btn" data-gr-a="vm" data-k="' + esc(lyk) + '" style="height:26px!important;padding:0 8px!important;font-size:11.5px!important">' + (hamur === 'vm' ? '2D með tækjum' : 'Vinnumynd') + '</button>' : '') + '</div>';
+    const nr = S.fskSafn.length;
+    const titill = co.nafn + ' — ' + nafn;
     // hlutföll myndarinnar fyrirfram (vinnumynd ber b/h) — myndin sem hleðst seinna ýtir engu niður
     const vmHlutf = h.vinnumynd && h.vinnumynd.b > 0 && h.vinnumynd.h > 0 ? ' style="aspect-ratio:' + (h.vinnumynd.b / h.vinnumynd.h).toFixed(4) + '"' : '';
-    if (hamur === 'vm' && vm) return '<div class="gr-haed">' + haus + '<img class="gr-vm" loading="lazy" alt=""' + vmHlutf + ' src="' + esc(vm) + '" data-gr-ljos="' + esc(vm) + '" data-gr-titill="' + esc(co.nafn + ' — ' + (h.nafn || '')) + '"></div>';
+    if (hamur === 'vm' && vm) {
+      S.fskSafn.push({ titill, undir: 'Vinnumynd úr Teikningu · ' + taeki + ' tæki merkt', mynd: vm });
+      return '<div class="gr-haed">' + haus + '<img class="gr-vm" loading="lazy" alt=""' + vmHlutf + ' src="' + esc(vm) + '" data-gr-a="fsk" data-i="' + nr + '"></div>';
+    }
     const url = h.image_url;
     if (!url || /^data:/.test(url) && url.length > 4e6) return '<div class="gr-haed">' + haus + '<div class="gr-tomt" style="padding:10px">Engin mynd á hæðinni.</div></div>';
     const fr = h.frum && h.frum.b && h.frum.h ? h.frum : null;
     const sk = h.skurdur && h.skurdur.w > 0 && h.skurdur.h > 0 && fr ? h.skurdur : (fr ? { x: 0, y: 0, w: fr.b, h: fr.h } : null);
-    // Bein PDF-teikning (Hafnarfjörður, Kópavogur, Garðabær): <img> getur ekki birt PDF — mælt 09.10 á Berjavöllum 6: þrjár
-    // myndvillur fóru í villuskrána (POST /api/villur). Teikning teiknar PDF-ið með pdf.js (435 TeiknGaedi.bindSrc); hér er það
-    // aðeins gert við smell, svo sex 6000-díla PDF séu ekki teiknuð í hvert sinn sem síðan opnast.
+    // Bein PDF-teikning (Hafnarfjörður, Kópavogur, Garðabær): <img> getur ekki birt PDF — fyrsta síðan er teiknuð með pdf.js
+    // þegar hæðin sést (latt, mest 2 í einu), ekki lengur „smelltu til að birta“.
     const innri = (() => { try { return new URL(url, location.href).searchParams.get('url') || url; } catch (_) { return url; } })();
     const pdfHaed = erBeintPdf(innri);
-    if (!sk || !fr) return '<div class="gr-haed">' + haus + (pdfHaed ? '<div class="gr-tomt" style="padding:10px">PDF-teikning — opnaðu í Teikningu.</div>' : '<img class="gr-vm" loading="lazy" alt="" src="' + esc(url) + '" data-gr-ljos="' + esc(url) + '">') + '</div>';
+    S.fskSafn.push({ titill, undir: 'Teikning · ' + taeki + ' tæki merkt' + (h.uppruni && h.uppruni.dags ? ' · blað ' + dags(h.uppruni.dags) : ''), mynd: pdfHaed ? null : url, pdf: pdfHaed ? innri : null, skurdur: sk && fr ? sk : null, frum: fr });
+    const smella = ' data-gr-a="fsk" data-i="' + nr + '"';
+    if (!sk || !fr) {
+      if (pdfHaed) return '<div class="gr-haed">' + haus + '<span class="gr-fsk-mynd gr-haed-pdf" data-gr-fskm data-pdf="' + esc(innri) + '" data-px="1100"' + smella + '><span class="gr-fsk-bid">Teikna forskoðun…</span></span></div>';
+      return '<div class="gr-haed">' + haus + '<img class="gr-vm" loading="lazy" alt="" src="' + esc(url) + '"' + smella + '></div>';
+    }
     const pct = (v) => (Math.round(v * 10000) / 100) + '%';
     const pts = mk.filter((m) => m && isFinite(m.x) && isFinite(m.y) && m.x >= sk.x && m.x <= sk.x + sk.w && m.y >= sk.y && m.y <= sk.y + sk.h)
       .map((m) => '<i class="gr-pt' + ((m.kind === 'sign' || String(m.unitId || '').indexOf('s:') === 0) ? ' st' : '') + '" style="left:' + pct((m.x - sk.x) / sk.w) + ';top:' + pct((m.y - sk.y) / sk.h) + '"></i>').join('');
     const imgStill = 'width:' + pct(fr.b / sk.w) + ';height:' + pct(fr.h / sk.h) + ';left:' + pct(-sk.x / sk.w) + ';top:' + pct(-sk.y / sk.h);
-    if (pdfHaed) return '<div class="gr-haed">' + haus + '<div class="gr-skurdur gr-pdf-bida" style="aspect-ratio:' + (sk.w / sk.h).toFixed(4) + '" data-gr-a="pdfhaed" data-url="' + esc(url) + '" data-still="' + esc(imgStill) + '" title="Teikna PDF-teikninguna (pdf.js)"><span class="gr-pdf-texti">PDF-teikning — smelltu til að birta</span>' + pts + '</div></div>';
-    return '<div class="gr-haed">' + haus + '<div class="gr-skurdur" style="aspect-ratio:' + (sk.w / sk.h).toFixed(4) + '" data-gr-ljos="' + esc(url) + '" data-gr-titill="' + esc(co.nafn + ' — ' + (h.nafn || '')) + '">' +
-      '<img loading="lazy" alt="" src="' + esc(url) + '" style="width:' + pct(fr.b / sk.w) + ';height:' + pct(fr.h / sk.h) + ';left:' + pct(-sk.x / sk.w) + ';top:' + pct(-sk.y / sk.h) + '">' + pts + '</div></div>';
+    const hlutf = ' style="aspect-ratio:' + (sk.w / sk.h).toFixed(4) + '"';
+    if (pdfHaed) return '<div class="gr-haed">' + haus + '<div class="gr-skurdur"' + hlutf + ' data-gr-fskm data-pdf="' + esc(innri) + '" data-px="1800" data-still="' + esc(imgStill) + '"' + smella + '><span class="gr-fsk-bid">Teikna forskoðun…</span>' + pts + '</div></div>';
+    return '<div class="gr-haed">' + haus + '<div class="gr-skurdur"' + hlutf + smella + '>' +
+      '<img loading="lazy" alt="" src="' + esc(url) + '" style="' + imgStill + '">' + pts + '</div></div>';
   }
-  function blodMynd(d, f) {
-    const titill = d.lysing || d.tegund || d.filename || 'Teikning';
-    const merki = f && f.merki ? f.merki : '';
-    const flis = d.thumb ? '<div class="gr-flis" style="background-image:url(\'' + esc(d.thumb) + '\')"></div>' : '<div class="gr-flis">' + (erBeintPdf(d.infoUrl) ? 'PDF' : 'TEIKNING') + '</div>';
-    return '<button type="button" class="gr-mynd" data-gr-a="blad" data-url="' + esc(d.infoUrl) + '" data-titill="' + esc(titill) + '" title="Stækka">' + flis +
-      '<span class="gr-mt">' + esc(titill) + '<small>' + esc([merki, d.dags ? dags(d.dags) : ''].filter(Boolean).join(' · ')) + '</small></span></button>';
+  function thrivHtml(b) {
+    const bl = b.blender;
+    if (!bl || !Array.isArray(bl.myndir) || !bl.myndir.length) return '';
+    const ms = bl.myndir.slice(0, 3);
+    const nr0 = S.fskSafn.length;
+    ms.forEach((m) => S.fskSafn.push({ titill: 'Designer-3D — ' + b.co.nafn, undir: kl(bl.t) + (m.heiti ? ' · ' + m.heiti : ''), mynd: m.url }));
+    return '<div class="gr-haed gr-haed-3d"><div class="gr-haed-haus">Designer-3D <span class="ssp-daufur" style="font:500 11px ' + MONO + '">' + esc(kl(bl.t)) + '</span></div>' +
+      '<button type="button" class="gr-3d-flis" data-gr-a="fsk" data-i="' + nr0 + '" title="Stækka"><img loading="lazy" alt="' + esc(ms[0].heiti || 'Designer-3D') + '" src="' + esc(ms[0].url) + '"></button>' +
+      (ms.length > 1 ? '<div class="gr-3d-fleiri">' + ms.slice(1).map((m, j) => '<button type="button" data-gr-a="fsk" data-i="' + (nr0 + 1 + j) + '" title="' + esc(m.heiti || '') + '"><img loading="lazy" alt="" src="' + esc(m.url) + '"></button>').join('') + '</div>' : '') + '</div>';
   }
+
   TEIKNA.teikn = (g) => {
     const p = g.parts.teikn || {};
     if (!g.adr) { setjaStodu('teikn', 'tomt', 'bíður'); setjaBuk('teikn', '<div class="gr-tomt">Ekkert heimilisfang.</div>'); return; }
     if (p.stada === 'saeki' || !p.stada) { setjaStodu('teikn', 'saeki', 'leita í skjalasafni…'); return; }
     if (p.stada === 'villa') { setjaStodu('teikn', 'villa', 'villa'); setjaBuk('teikn', '<div class="gr-villa">Náði ekki í teikningar: ' + esc(p.villa) + '</div><div class="gr-takkar"><button type="button" class="ssp-btn" data-gr-a="aftur" data-l="teikn">Reyna aftur</button></div>'); return; }
     const t = g.teikn || {};
+    S.fskSafn = [];
     if (t.bord && t.bord.length) {
       setjaStodu('teikn', 'komid', 'úr Teikningu');
       setjaUndir('teikn', t.bord.map((b) => b.co.nafn).join(' · '));
       setjaBuk('teikn', t.bord.map((b) => {
-        const hs = b.bord.haedir || [];
-        const bl = b.blender;
-        return '<div class="ssp-skilti">' + esc(b.co.nafn) + ' — ' + hs.length + (hs.length === 1 ? ' hæð' : ' hæðir') + ' í Teikningu · uppfært ' + esc(kl(b.bord.updated_at)) + '</div>' +
-          '<div class="gr-haedir">' + hs.map((h, i) => haedHtml(b.co, h, i)).join('') + '</div>' +
-          (bl ? '<div class="ssp-skilti">Designer-3D · ' + esc(kl(bl.t)) + '</div><div class="gr-3d">' + bl.myndir.slice(0, 3).map((m) => '<img loading="lazy" alt="' + esc(m.heiti || '') + '" src="' + esc(m.url) + '" data-gr-ljos="' + esc(m.url) + '" data-gr-titill="' + esc('Designer-3D — ' + (m.heiti || '')) + '">').join('') + '</div>' : '') +
+        // hæðirnar neðst → efst (Kjallari, 1., 2. … Ris) — óþekkt heiti halda sínum stað innbyrðis
+        const hs = (b.bord.haedir || []).map((h, i) => ({ h, i })).sort((a, z) => (HL.rod(HL.lykill(a.h.nafn)) - HL.rod(HL.lykill(z.h.nafn))) || (a.i - z.i));
+        return '<div class="ssp-skilti" style="margin-top:0">' + esc(b.co.nafn) + ' — ' + hs.length + (hs.length === 1 ? ' hæð' : ' hæðir') + ' í Teikningu · uppfært ' + esc(kl(b.bord.updated_at)) + '</div>' +
+          '<div class="gr-haedir">' + thrivHtml(b) + hs.map(({ h, i }) => haedHtml(b.co, h, i)).join('') + '</div>' +
           '<div class="gr-takkar"><button type="button" class="ssp-btn malm" data-gr-a="teikning" data-id="' + +b.co.id + '">Opna í Teikningu</button><button type="button" class="ssp-btn" data-gr-a="3d" data-id="' + +b.co.id + '">3D</button>' +
-          '<span class="ssp-daufur" style="font-size:12px">Rauðir punktar = tæki, grænir = merki (skurður hæðar eins og í Teikningu).</span></div>';
+          '<span class="ssp-daufur" style="font-size:12px">Smelltu á hæð til að stækka (← → milli hæða). Rauðir punktar = tæki, grænir = merki.</span></div>';
       }).join(''));
       return;
     }
@@ -1418,18 +1740,36 @@
       setjaBuk('teikn', '<div class="gr-tomt">' + esc(t.villa || 'Engar teikningar fundust.') + '</div>' + setjaITeikninguHtml(t));
       return;
     }
-    const grunn = t.grunn || [], snid = t.snid || [];
+    const fl = flokkaBlod(t.dr, g.bygg);
     const safn = (t.eign && (t.eign.heimildNafn || (t.eign.heimild === 'reykjavik' ? 'Skjalasafn Reykjavíkur' : ''))) || '';
     setjaStodu('teikn', 'komid', t.dr.length + ' blöð');
     setjaUndir('teikn', safn);
-    const utlit = snid.filter((x) => x.f.utlit && x.d.thumb).slice(0, 4);
-    setjaBuk('teikn', (grunn.length ? '<div class="ssp-skilti" style="margin-top:0">Grunnmyndir (gildandi aðaluppdrættir) — ' + grunn.length + '</div><div class="gr-myndir">' + grunn.slice(0, 12).map((x) => blodMynd(x.d, x.f)).join('') + '</div>' : '<div class="gr-tomt">Engin gildandi grunnmynd í skránni.</div>') +
-      (grunn.length > 12 ? '<div class="gr-uppruni">+ ' + (grunn.length - 12) + ' fleiri grunnmyndir í forskoðuninni.</div>' : '') +
-      (utlit.length ? '<div class="ssp-skilti">Útlit hússins</div><div class="gr-myndir">' + utlit.map((x) => blodMynd(x.d, x.f)).join('') + '</div>' : '') +
-      (snid.length ? '<div class="ssp-skilti">Snið og útlit (viðmið, ekki hæðir)</div>' + listiMedMeira(snid.map((x) => '<li>' + skjalHlekkur(x.d.infoUrl, x.d.lysing || x.d.tegund || 'blað') + ' <small>' + esc([x.f.snid ? 'snið' : '', x.f.utlit ? 'útlit' : '', dags(x.d.dags)].filter(Boolean).join(' · ')) + '</small></li>'), 5) : '') +
-      ((t.adrir || []).length ? '<div class="ssp-skilti">Skráningartafla og byggingarlýsing</div>' + listiMedMeira(t.adrir.map((d) => '<li>' + skjalHlekkur(d.infoUrl, d.lysing || 'skjal') + ' <small>' + esc(dags(d.dags)) + '</small></li>'), 4) : '') +
-      '<div class="gr-takkar"><button type="button" class="ssp-btn" data-gr-a="forskodun">Skoða allar í forskoðun</button>' + setjaITeikninguHtml(t, true) + '</div>' +
-      '<div class="gr-uppruni">Sama leit og „Sækja teikningu“ í Teikningu (374) · ' + esc(safn || 'skjalasafn sveitarfélagsins') + '<span class="gr-sjalf">sjálfsótt</span></div>');
+    const grind = (a) => '<div class="gr-fsk-grind">' + a.join('') + '</div>';
+    const fela = (listi, heitiF, titill, skyring) => listi.length
+      ? '<details class="gr-eldri"><summary>' + esc(titill) + ' (' + listi.length + ')</summary>' + (skyring ? '<div class="gr-fsk-ath">' + skyring + '</div>' : '') + grind(listi.map((x) => fskFlis(x, heitiF(x), true))) + '</details>' : '';
+    const hl = [];
+    // hæðir — grunnmyndir gildandi aðaluppdrátta, neðst → efst
+    const onefndHeiti = (x, i, a) => (/grunnmyndir|allt h[úu]s/i.test(x.txt) ? 'Grunnmyndir (allt húsið)' : (fl.haedir.length ? 'Grunnmynd (hæð óskráð)' : (a.length > 1 ? 'Grunnmynd ' + (i + 1) + ' af ' + a.length : 'Grunnmynd')));
+    const hFlisar = fl.haedir.map((h) => fskFlis(h.x, haedaHeiti(h.keys, h.x.ris)));
+    const oFlisar = fl.onefnd.map((x, i, a) => fskFlis(x, onefndHeiti(x, i, a)));
+    hl.push('<div class="ssp-skilti" style="margin-top:0">Hæðir — grunnmyndir gildandi aðaluppdrátta</div>' +
+      (hFlisar.length || oFlisar.length ? grind(hFlisar.concat(oFlisar)) : '<div class="gr-tomt">Engin gildandi grunnmynd í skránni.</div>') +
+      (!fl.haedir.length && fl.onefnd.length ? '<div class="gr-fsk-ath">Skráin merkir ekki hæð á þessi blöð (' + esc(safn || 'sveitarfélagið') + ') — opnaðu blaðið til að sjá hvaða hæð það sýnir.</div>' : '') +
+      fela(fl.eldri, (x) => (x.keys.length ? haedaHeiti(x.keys, x.ris) : 'Grunnmynd'), 'Eldri útgáfur') +
+      fela(fl.passarEkki, (x) => haedaHeiti(x.keys, x.ris), 'Passa ekki við skráningartöfluna',
+        fl.bh ? 'Skráningartaflan segir ' + fl.bh.ofanjardar + (fl.bh.ofanjardar === 1 ? ' hæð' : ' hæðir') + ' ofanjarðar' + (fl.bh.kjallari === false ? ' og engan kjallara' : '') + ' — þessi blöð eru líklega af eldra húsi á lóðinni.' : ''));
+    // önnur mikilvæg blöð: snið, útlit, afstöðumynd, skráningartafla, byggingarlýsing — gildandi útgáfa fremst
+    [['snid', 'Snið'], ['utlit', 'Útlit'], ['afstada', 'Afstöðumynd'], ['skraning', 'Skráningartafla'], ['lysing', 'Byggingarlýsing']].forEach(([k, nafn]) => {
+      const f = fl[k];
+      if (!f.nyjar.length && !f.eldri.length) return;
+      const heiti = (x) => x.titill || nafn;
+      hl.push('<div class="ssp-skilti">' + esc(nafn) + '</div>' + (f.nyjar.length ? grind(f.nyjar.slice(0, 8).map((x) => fskFlis(x, heiti(x)))) : '') +
+        fela(f.nyjar.slice(8).concat(f.eldri), heiti, f.nyjar.length ? 'Eldri útgáfur' : 'Eldri útgáfur — engin nýleg'));
+    });
+    setjaBuk('teikn', hl.join('') +
+      '<div class="gr-takkar"><button type="button" class="ssp-btn" data-gr-a="forskodun">Öll ' + t.dr.length + ' blöðin í forskoðun</button>' + setjaITeikninguHtml(t, true) + '</div>' +
+      '<div class="gr-uppruni">Sama leit og „Sækja teikningu“ í Teikningu (374), sama hæðagreining og „Finna allt húsið“ (383) · ' + esc(safn || 'skjalasafn sveitarfélagsins') +
+      ' · smelltu á blað til að stækka (← → milli blaða)<span class="gr-sjalf">sjálfsótt</span></div>');
   };
   function setjaITeikninguHtml(t, inni) {
     const an = (t && t.anBords) || [];
@@ -1670,7 +2010,16 @@
       if (bv && bv.efni && (bv.efni.neydarlysing || {}).daemi && bv.efni.neydarlysing.daemi.some((d) => !d.neitun)) taek.push('neyðarlýsing — árleg prófun');
     }
     if (taek.length) punktar.push(['Tækifæri', esc(taek.join(' · '))]);
-    if (t) punktar.push(['Teikningar', t.bord && t.bord.length ? esc(t.bord.map((x) => x.co.nafn + ': ' + (x.bord.haedir || []).length + ' hæðir í Teikningu').join(' · ')) : t.dr ? esc(t.dr.length + ' blöð í skjalasafni, ' + ((t.grunn || []).length) + ' gildandi grunnmyndir') : 'engar fundust']);
+    if (t) {
+      let tx = 'engar fundust';
+      if (t.bord && t.bord.length) {
+        tx = t.bord.map((x) => {
+          const hs = (x.bord.haedir || []).slice().sort((a, b) => HL.rod(HL.lykill(a.nafn)) - HL.rod(HL.lykill(b.nafn)));
+          return x.co.nafn + ': ' + hs.length + (hs.length === 1 ? ' hæð' : ' hæðir') + ' í Teikningu' + (hs.length ? ' (' + hs.map((h) => h.nafn).filter(Boolean).slice(0, 8).join(', ') + ')' : '') + (x.blender ? ' + Designer-3D' : '');
+        }).join(' · ');
+      } else if (t.dr) { const tj = teiknTeljari(flokkaBlod(t.dr, g.bygg)); tx = (tj || 'engin gildandi grunnmynd') + ' · ' + t.dr.length + ' blöð í skjalasafni'; }
+      punktar.push(['Teikningar', esc(tx)]);
+    }
     if (b && (b.olesin || []).length) punktar.push(['Ólesið', esc((b.olesin || []).length + ' skjöl — „Lesa skjölin“ les þau á skrifstofutölvunni')]);
     setjaBuk('samantekt', '<div class="gr-kpi">' + kpis.join('') + '</div><p class="gr-setn">' + setn + '</p>' +
       '<ul class="gr-punktar">' + punktar.map(([m, v]) => '<li><span>' + esc(m) + '</span><span>' + v + '</span></li>').join('') + '</ul>' +
@@ -1703,22 +2052,17 @@
       if (erBeintPdf(u)) { opnaForskodun(); return; }
       ljos(myndSlod(u), el.getAttribute('data-titill') || '');
     } else if (a === 'forskodun') { e.preventDefault(); opnaForskodun(); }
+    else if (a === 'fsk') {
+      e.preventDefault();
+      const i = +el.getAttribute('data-i');
+      if (S.fskSafn && S.fskSafn[i]) ljosSafn(S.fskSafn, i);
+    }
     else if (a === 'teikning' || a === '3d') {
       e.preventDefault();
       opnaTeikningu(+el.getAttribute('data-id'), a === '3d');
     } else if (a === 'setja') {
       e.preventDefault();
       setjaITeikningu(+el.getAttribute('data-id'));
-    } else if (a === 'pdfhaed') {
-      e.preventDefault();
-      if (el.querySelector('img')) return;
-      const im = document.createElement('img'); im.alt = ''; im.setAttribute('style', el.getAttribute('data-still') || '');
-      const t = el.querySelector('.gr-pdf-texti'); if (t) t.textContent = 'Teikna PDF…';
-      im.onload = () => { el.classList.remove('gr-pdf-bida'); if (t) t.remove(); el.removeAttribute('data-gr-a'); el.setAttribute('data-gr-ljos', im.src); };
-      im.onerror = () => { if (t) t.textContent = 'Náði ekki að teikna PDF-ið — opnaðu í Teikningu'; };
-      el.insertBefore(im, el.firstChild);
-      const u = el.getAttribute('data-url');
-      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(im, u); else if (t) t.textContent = 'PDF — opnaðu í Teikningu';
     } else if (a === 'opna') {
       e.preventDefault();
       opna(el.getAttribute('data-v'));
@@ -1792,21 +2136,7 @@
       TeiknBord.finnaAlltHusid().catch((err) => console.warn('[451] finna allt húsið', err));
     }, 300);
   }
-  function ljos(url, titill) {
-    let o = document.getElementById('gr-ljos');
-    if (o) o.remove();
-    o = document.createElement('div');
-    o.id = 'gr-ljos';
-    o.setAttribute('role', 'dialog');
-    o.setAttribute('aria-label', titill || 'Mynd');
-    o.innerHTML = '<div class="gr-lh"><span>' + esc(titill || 'Mynd') + '</span><button type="button" class="ssp-btn" data-gr-loka>Loka</button></div><div class="gr-lb"><img alt="" src="' + esc(url) + '"></div>';
-    const loka = () => { o.remove(); document.removeEventListener('keydown', esc_); };
-    const esc_ = (e) => { if (e.key === 'Escape') loka(); };
-    o.querySelector('[data-gr-loka]').onclick = loka;
-    o.querySelector('.gr-lb').onclick = (e) => { if (e.target.tagName === 'IMG') e.currentTarget.classList.toggle('stor'); else loka(); };
-    document.addEventListener('keydown', esc_);
-    document.body.appendChild(o);
-  }
+  function ljos(url, titill) { ljosSafn([{ mynd: url, titill: titill || 'Mynd' }], 0); }
 
   /* ── LEIÐIR INN: slóð, Sala, Teikning ───────────────────────────────────────────────────────────────────── */
   function fraSlod() {
@@ -1945,6 +2275,7 @@
     opnaNu: opna,
     stada: () => ({ virkt: S.virkt, arg: S.arg, adr: S.adr, parts: S.g ? JSON.parse(JSON.stringify(S.g.parts)) : null }),
     gogn: () => S.g,
+    forsk: () => ({ virk: FSK.virk, bid: FSK.bid.length, mest: FSK.mest, byrjad: FSK.byrjad, lokid: FSK.lokid, villur: FSK.villur, safn: (S.fskSafn || []).length }),
     samaHeimili, thatta,
     SYND,
     version: '451',
