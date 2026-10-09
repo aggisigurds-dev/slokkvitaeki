@@ -2009,7 +2009,7 @@
   // Breidd listans (Agnar: „drag the list to the side so more text will fit"): handfang í hægri brún, px í localStorage.
   const VBR_BREIDD_LYKILL = 'thjonustubord_vbr_breidd';
   let vbrBreidd = 0;
-  try { vbrBreidd = Math.min(760, Math.max(230, Number(localStorage.getItem(VBR_BREIDD_LYKILL)) || 0)) || 0; } catch (_) {}
+  try { const v = Number(localStorage.getItem(VBR_BREIDD_LYKILL)); vbrBreidd = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}   // ekkert vistað → sjálfgefin 290
   function onVbrGrip(e) {
     const h = e.target && e.target.closest ? e.target.closest('[data-vbr-grip]') : null;
     if (!h) return;
