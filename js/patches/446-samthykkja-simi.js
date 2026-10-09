@@ -111,6 +111,17 @@
       V + ' .sm-lysing .k{font-family:' + MONO + ';font-size:10px;letter-spacing:.14em;color:#6b7483;margin:10px 0 4px}',
       V + ' .sm-lysing .t{font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1f2530;max-height:260px;overflow:auto}',
       V + ' .sm-lysing .opna{display:inline-flex;align-items:center;height:36px;padding:0 12px;margin-top:10px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12.5px ' + SANS + ';text-decoration:none;cursor:pointer}',
+      // 446c „Þetta gerist" — beint fyrir ofan svarhnappana, sami lestur og á borðinu.
+      V + ' .sm-adg{margin:0 12px 10px;padding:10px 12px;border:1px solid rgba(20,24,34,.16);border-radius:9px;background:linear-gradient(180deg,#fbfcfe,#eef1f6)}',
+      V + ' .sm-adg .r{display:flex;gap:9px;align-items:baseline;padding:4px 0;font-size:12.5px;line-height:1.45;color:#39414f}',
+      V + ' .sm-adg .r+.r{border-top:1px solid rgba(20,24,34,.08)}',
+      V + ' .sm-adg .r b{flex:none;min-width:94px;font-weight:800;color:#1f2530}',
+      V + ' .sm-adg .r._maelt{background:rgba(190,150,60,.12);border-radius:6px;padding-left:6px;margin-left:-6px}',
+      V + ' .sm-adg .till{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(20,24,34,.18);font-size:12px;font-weight:700;color:#8a6218}',
+      V + ' .sm-adg .sonn{margin-top:7px;padding-top:7px;border-top:1px solid rgba(20,24,34,.12);font-size:12px;line-height:1.45}',
+      V + ' .sm-adg .sonn b{display:block;font:700 10px ' + MONO + ';letter-spacing:.13em;text-transform:uppercase;color:#6b7483}',
+      V + ' .sm-adg .sonn span{display:block;margin-top:2px;color:#4a5361}',
+      V + ' .sm-adg .sonn._ok b{color:#1f6b3c}' + V + ' .sm-adg .sonn._gisk b{color:#8a6218}',
       V + ' .sm-svor{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px}',
       V + ' .sm-svor._eitt{grid-template-columns:1fr}',
       V + ' .sm-svor button{height:48px;border-radius:9px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 14px ' + SANS + ';cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}',
@@ -168,6 +179,33 @@
     const undir = [A.whereOf(r), A.ageDays(r) + ' d.'].filter(Boolean).join(' · ');
     const op = opin.has(r.id);
     const k = (v, cls, texti) => '<button type="button" data-sm="svar" data-v="' + v + '" data-id="' + r.id + '" class="' + cls + '"' + (bid ? ' disabled' : '') + '>' + texti + '</button>';
+    /* 446c — „ÞETTA GERIST" beint fyrir ofan takkana (Agnar 09.10.2026: „auðveldara að átta sig á
+     * hvað felur í sér að samþykkja/hafna … ég gefst upp á því oft"). Sama greining og á borðinu
+     * (368 `Samthykkja.adgerdir`), ekki afrit — annars reka útgáfurnar í sundur. Blokkin birtist
+     * aðeins þegar lýsingin ber raunverulegar ákvörðunarlínur; annars ekkert. */
+    let adg = '';
+    if (samt && !buid && A.adgerdir) {
+      const a = A.adgerdir(r.notes);
+      if (a && a.adg.length) {
+        const SJALFG = { endurmeta: 'Skrifaðu skýringu — ég endurmet málið.', vinnsla: 'Málið bíður; ekkert gert í bili.',
+                         hafnad: 'Ekkert gert.', samthykkt: '' };
+        adg = '<div class="sm-adg">' + a.adg.map(x => {
+          const t = x.texti || SJALFG[x.v] || '';
+          return '<div class="r' + (a.maelt === x.v ? ' _maelt' : '') + '"><b>' + esc(x.takn + ' ' + x.heiti) + '</b>' +
+            '<span>' + esc(t.slice(0, 200) || '—') + '</span></div>';
+        }).join('') + (a.tillaga ? '<div class="till">Tillaga: ' + esc(a.tillaga.slice(0, 200)) + '</div>' : '') +
+        (() => {
+          // Er þetta mælt eða ágiskun? `sonnun` er reiknuð á þjóninum og veit muninn.
+          const s = A.sonn ? A.sonn(r) : null;
+          if (!s || (!s.texti && !s.naesta)) return '<div class="sonn _ekkert"><b>— Engin sjálfvirk mæling</b>' +
+            '<span>Ekkert í gögnunum staðfestir þetta. Það sem stendur hér að ofan er lesið úr lýsingunni.</span></div>';
+          const ok = !!(s.styrkur || s.buid), gisk = !!s.liklega;
+          return '<div class="sonn ' + (ok ? '_ok' : gisk ? '_gisk' : '') + '"><b>' +
+            (ok ? '✔ Staðfest úr gögnum' : gisk ? '≈ ÁGISKUN — ekki sannreynt' : '• Staða úr gögnum') + '</b>' +
+            '<span>' + esc(s.texti || s.naesta || '') + '</span></div>';
+        })() + '</div>';
+      }
+    }
     let svor = '';
     if (samt && buid) svor = '<div class="sm-svor _eitt">' + '<button type="button" data-sm="loka" data-id="' + r.id + '" class="_graen"' + (bid ? ' disabled' : '') + '>' + (bid ? 'Augnablik…' : '✓ Loka — afgreitt') + '</button></div>';
     else if (samt) svor = '<div class="sm-svor">' + k('samthykkt', '_gull', bid ? 'Augnablik…' : '✓ Samþykkja') + k('vinnsla', '', '▶ Í vinnslu') + k('hafnad', '_raud', '✕ Hafna') +
@@ -186,7 +224,7 @@
       '<div class="sm-lysing">' +
         (r.notes ? '<div class="k">LÝSING OG ATHUGASEMDIR</div><div class="t">' + esc(r.notes) + '</div>' : '<div class="k">ENGIN LÝSING</div>') +
         '<a class="opna" href="#bord" data-sm="bord" data-id="' + r.id + '">Opna á Þjónustuborði ›</a>' +
-      '</div>' + svor + '</article>';
+      '</div>' + adg + svor + '</article>';
   }
 
   // 08.10.2026 (Agnar: „counter af hvað ég er búinn að svara mörgum sem Claude á síðan eftir að vinna úr“): teljarar undir

@@ -51,7 +51,14 @@ const BANN = [
 // hvaða útlit hver beiðni bar eru á þjóninum (automation_triggers.gogn->>utlit). Hækkað af því lykillinn stenst regluna.
 // 08.10.2026 — `samthykkja_rodun` (446): röðunarval Samþykkja-símasíðunnar, útlitsval þessa vafra; málin og svörin sjálf
 // eru á þjóninum (thjonustubeidni). Hækkað 151 → 152 af því lykillinn stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 153, ui: 0 } };
+// 09.10.2026: slokkvitaeki ls 153 -> 154. Enginn NÝR lykill varð til — `SAMT_ROD_LYKILL` í 368 geymir NÁKVÆMLEGA sama
+// streng og `ROD_LYKILL` í 446 (`samthykkja_rodun`), viljandi, svo sími og tölva raði eins. Vörðurinn les hins vegar
+// `setItem(BREYTA)` sem fastanafnið `<BREYTA>` og getur ekki séð að tvö nöfn beri sama streng, svo sami lykillinn
+// taldist tvisvar. Röðun er útlitsval eins vafra (CLAUDE.md telur hana upp með síu, samanbroti og þema) og málin,
+// svörin og tillögurnar sjálfar eru á þjóninum. Hækkað af því lykillinn stenst regluna, ekki til að fá grænt.
+// ⚠ Takmörkun vörðarins, skráð hér svo næsti lesandi eyði ekki tíma í hana: hver nýr FASTI sem geymir þegar talinn
+// lyklastreng hækkar töluna um einn. Talningin er á nöfnum, ekki strengjum.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 154, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

@@ -1146,6 +1146,23 @@
       '.stitle{font-family:var(--disp);font-size:23px;font-weight:800;line-height:1.15;color:var(--on);overflow-wrap:anywhere}',
       '.smeta{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--on2);overflow-wrap:anywhere}',
       '.aisum{font-size:12.5px;line-height:1.55;color:var(--on2)}.aisum .slabel{margin-right:8px}',
+      // 368ab „Þetta gerist": fjórir svarmöguleikar í fjórum línum, hver með sínu merki.
+      // Gull = samþykkja, rautt = hafna — sömu litir og takkarnir sjálfir bera.
+      '.adgerdir{margin:10px 0 2px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(255,255,255,.035)}',
+      '.adgerdir .nthead{margin-bottom:6px}',
+      '.adg-r{display:flex;gap:10px;align-items:baseline;padding:3px 0;font-size:12.5px;line-height:1.5;color:var(--on2)}',
+      '.adg-r+.adg-r{border-top:1px solid rgba(255,255,255,.06)}',
+      '.adg-r b{flex:none;min-width:104px;font-weight:700;color:var(--on)}',
+      '.adg-r.gull b{color:#e8c882}.adg-r.raud b{color:#e08a60}',
+      '.adg-r.maelt{background:rgba(232,200,130,.09);border-radius:6px;padding-left:6px;margin-left:-6px}',
+      '.adg-till{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.14);font-size:12px;color:#e8c882}',
+      '.adg-eldra{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--on3)}',
+      // „Er þetta satt?" — grænt = mælt, gult = ágiskun, grátt = ekkert mælt.
+      '.adg-sonn{margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;line-height:1.5;color:var(--on2)}',
+      '.adg-sonn b{display:block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--on3)}',
+      '.adg-sonn span{display:block;margin-top:2px}',
+      '.adg-sonn.ok b{color:#8fd3a6}.adg-sonn.gisk b{color:#e0b060}.adg-sonn.ekkert b{color:#9aa3b2}',
+      '.adg-sonn.gisk span,.adg-sonn.ekkert span{color:var(--on3)}',
       '.aisum.stada .nsk{display:block;margin-top:3px}.aisum.stada .nsk.m{font-size:11px;opacity:.7}.aisum.stada.buid{color:#8fd3a6}',
       '.naesta{margin:4px 0 2px;font-size:12.5px;line-height:1.45;color:var(--ink2)}.naesta b{font-weight:700;color:var(--ink)}',
       '.naesta.buid,.naesta.buid b{color:var(--green)}.naesta.lik b{color:var(--gink)}',
@@ -1550,10 +1567,18 @@
   function stadaHtml(r) {
     const s = sonn(r);
     if (!s || (!s.texti && !s.naesta)) return '';
-    return '<div class="aisum stada' + (s.buid ? ' buid' : '') + '"><span class="slabel">Staða úr gögnum</span>' +
-      (s.texti ? (s.buid ? '✓ ' : '') + esc(s.texti) : '') +
-      (s.naesta ? '<span class="nsk">Næsta skref: ' + esc(s.naesta) + '</span>' : '') +
-      (r.sonnun_at ? '<span class="nsk m">Staðan breyttist síðast ' + esc(fmtD(r.sonnun_at)) + ' kl. ' + klukka(new Date(r.sonnun_at)) + ' · metin sjálfkrafa</span>' : '') +
+    /* 368ab — ENGIN ENDURTEKNING. Á samþykktar-máli ber „Þetta gerist"-blokkin fyrir ofan
+     * þegar mælinguna sjálfa, hvort hún sé staðfest eða ágiskun, og hvenær hún var gerð.
+     * Þá stóð sami texti tvisvar á sama spjaldi — nákvæmlega það sem Agnar bað um að losna
+     * við (09.10.2026: „endalausum texta sem ég þarf að lesa yfir aftur og aftur").
+     * Hér stendur þá AÐEINS næsta skref, sem blokkin segir ekki. */
+    const stutt = erSamthykki(r) && !!adgerdirUrNotu(r.notes);
+    if (stutt && !s.naesta) return '';
+    return '<div class="aisum stada' + (s.buid ? ' buid' : '') + '"><span class="slabel">' +
+      (stutt ? 'Næsta skref' : 'Staða úr gögnum') + '</span>' +
+      (stutt ? esc(s.naesta) : (s.texti ? (s.buid ? '✓ ' : '') + esc(s.texti) : '') +
+        (s.naesta ? '<span class="nsk">Næsta skref: ' + esc(s.naesta) + '</span>' : '') +
+        (r.sonnun_at ? '<span class="nsk m">Staðan breyttist síðast ' + esc(fmtD(r.sonnun_at)) + ' kl. ' + klukka(new Date(r.sonnun_at)) + ' · metin sjálfkrafa</span>' : '')) +
     '</div>';
   }
   const kr = x => Math.round(Number(x) || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr.';
@@ -1833,6 +1858,128 @@
       el.className = 'ntst ' + s.t;
     });
   }
+  /* ── „ÞETTA GERIST" — ákvörðunin dregin upp úr nótunni (368ab) ───────────
+   * Agnar 09.10.2026: „geturðu gert betri samantekt eða auðveldara að átta sig
+   * á hvað felur í sér að samþykkja/hafna … er svo lengi að fara í gegnum
+   * þetta sérstaklega þegar búið er að endurmeta og blablaa, ég gefst upp á
+   * því oft."
+   *
+   * Nótan á samþykktar-máli ber ákvörðunarlínurnar fjórar (✓ ▶ ✕ 💬) OG allt
+   * hitt: sönnunargögn, uppkast að svari, fyrri tillögur, endurmat. Á máli
+   * eins og Flétturima 16 eru ÞRJÁR útgáfur af svörunum í sömu nótu og sú
+   * sem gildir stendur efst — en hún drukknar. Takkarnir eru svo neðst,
+   * langt frá textanum sem segir hvað þeir gera.
+   *
+   * Hér eru línurnar lesnar út og settar beint fyrir ofan takkana. TVÆR reglur:
+   *  · SAGAN ER SKORIN AF. Allt frá fyrstu sögu-merkingu („Fyrri tillaga",
+   *    „Endurmetið", „Uppfært", eða lína af þremur striklínum) telst eldra.
+   *    Venjan í nótunum er nýjast efst, svo hausinn er núgildandi tillaga.
+   *  · EKKERT ER FALIÐ. Nótan sjálf stendur óbreytt fyrir neðan — þetta er
+   *    útdráttur, ekki ritstjórn. Finnist engin lína birtist blokkin ekki.
+   */
+  const ADG_LINUR = [
+    ['samthykkt', '✓', 'Samþykkja', 'gull'],
+    ['vinnsla',   '▶', 'Í vinnslu', ''],
+    ['hafnad',    '✕', 'Hafna',     'raud'],
+    ['endurmeta', '💬', 'Skýring',  '']
+  ];
+  // Lína sem segir að það sem á eftir kemur sé eldra. Þrjú strik eða fleiri af
+  // hvaða gerð sem er (—, –, -) telst skil; sömuleiðis þessi þrjú orð fremst.
+  const SAGA_MERKI = /^\s*(?:[—–-]{3,}|(?:Fyrri tillaga|Endurmetið|Endurmetin|Uppfært)\b)/;
+  function adgerdirUrNotu(notes) {
+    const allt = String(notes || '');
+    if (!allt) return null;
+    const allarLinur = allt.split(/\r?\n/);
+    let skil = allarLinur.findIndex(l => SAGA_MERKI.test(l));
+    // Sé sagan fremst (t.d. „LEIÐRÉTTING" efst) og engin aðgerð á undan henni,
+    // lesum við alla nótuna frekar en að skila engu.
+    let haus = skil > 0 ? allarLinur.slice(0, skil) : allarLinur;
+    const lesa = raðir => {
+      const út = [];
+      ADG_LINUR.forEach(([v, takn, heiti, cls]) => {
+        for (const l of raðir) {
+          const t = l.trim();
+          if (t.indexOf(takn) !== 0) continue;
+          // „✓ Samþykkja: ég stofna…" → „ég stofna…"; „✕ Hafna." → "" (þá heitið eitt)
+          let texti = t.slice(takn.length).replace(/^\s*[^:]{0,24}?:\s*/, '').trim();
+          // Línan „💬 Skýring." skilur eftir sig orðið sjálft og varð „💬 SkýringSkýring."
+          // í viðmótinu. Beri textinn aðeins heitið aftur er hann tómur.
+          if (new RegExp('^' + heiti + '[.!]?$', 'i').test(texti)) texti = '';
+          út.push({ v, takn, heiti, cls, texti });
+          break;
+        }
+      });
+      return út;
+    };
+    let adg = lesa(haus);
+    if (!adg.length && skil > 0) adg = lesa(allarLinur);
+    if (!adg.length) return null;
+    const tl = (skil > 0 ? haus : allarLinur).find(l => /^\s*Tillaga\s*:/.test(l));
+    const tillaga = tl ? tl.replace(/^\s*Tillaga\s*:\s*/, '').trim() : '';
+    // Hvaða aðgerð mælir tillagan með? Fyrsta heitið sem stendur í henni.
+    let maelt = '';
+    if (tillaga) {
+      const f = ADG_LINUR.find(([, , heiti]) => new RegExp('^' + heiti, 'i').test(tillaga));
+      if (f) maelt = f[0];
+    }
+    return { adg, tillaga, maelt, saga: skil > 0 };
+  }
+  /* „ER ÞETTA SATT?" — hversu sterk er sönnunin undir málinu (368ab) ────────
+   * Agnar 09.10.2026: „hvort það sem ég staðfesti er raunverulega rétt, eða
+   * eitthvað gisk, væri gott að fá einhverja sönnun, í staðinn fyrir endalausan
+   * texta sem ég þarf að lesa yfir aftur og aftur til að reyna að átta mig á
+   * hvort þetta sé satt eða ekki."
+   *
+   * `sonnun` er ÞEGAR reiknuð á þjóninum (thjb_sonnun_reikna) og veit muninn:
+   * `styrkur` = mælt og staðfest · `liklega` = ÁGISKUN (sala hjá kúnnanum eftir
+   * stofnun, engin bein tenging) · `upplysing` = aðeins staða sölunnar. Sá munur
+   * sást hvergi í viðmótinu — allt birtist eins og „Staða úr gögnum".
+   *
+   * Fjórða tilvikið er það sem mestu skiptir: EKKERT mælt. Þá stendur það
+   * skýrum stöfum, svo hann viti að þarna er hann að treysta texta en ekki
+   * mælingu. Þögn má ekki líta út eins og staðfesting.
+   */
+  function sonnLina(r) {
+    const s = sonn(r);
+    if (!s || (!s.texti && !s.naesta)) {
+      return '<div class="adg-sonn ekkert"><b>— Engin sjálfvirk mæling</b>' +
+        '<span>Ekkert í gögnunum staðfestir þetta mál sjálfkrafa. Það sem stendur hér að ofan er lesið úr lýsingunni.</span></div>';
+    }
+    const stadfest = !!(s.styrkur || s.buid);
+    const gisk = !!s.liklega;
+    const cls = stadfest ? 'ok' : gisk ? 'gisk' : '';
+    const merki = stadfest ? '✔ Staðfest úr gögnum' : gisk ? '≈ ÁGISKUN — ekki sannreynt' : '• Staða úr gögnum';
+    // Mælt ÁÐUR en málinu var breytt → mælingin lýsir ekki því sem stendur núna.
+    const m = r.sonnun_at ? new Date(r.sonnun_at) : null;
+    const u = r.updated_at ? new Date(r.updated_at) : null;
+    const gamalt = m && u && u - m > 60000;
+    const dags = m ? fmtD(r.sonnun_at) + ' kl. ' + klukka(m) : '';
+    return '<div class="adg-sonn ' + cls + '"><b>' + esc(merki) + '</b>' +
+      '<span>' + esc(s.texti || s.naesta || '') +
+        (dags ? ' · mælt sjálfkrafa ' + dags : '') +
+        (gamalt ? ' · ⚠ MÆLT ÁÐUR en málinu var síðast breytt' : '') + '</span></div>';
+  }
+  function adgerdirHtml(r) {
+    if (!erSamthykki(r)) return '';
+    const a = adgerdirUrNotu(r.notes);
+    if (!a) return '';
+    // Segi lýsinguna ekki bera texta stendur sjálfgefna merkingin — aldrei autt hólf.
+    const SJALFG = { endurmeta: 'Skrifaðu skýringu — ég endurmet málið og kem með nýja tillögu.',
+                     vinnsla: 'Málið bíður; ekkert gert í bili.', hafnad: 'Ekkert gert.', samthykkt: '' };
+    const radir = a.adg.map(x => {
+      const t = x.texti || SJALFG[x.v] || '';
+      return '<div class="adg-r' + (x.cls ? ' ' + x.cls : '') + (a.maelt === x.v ? ' maelt' : '') + '">' +
+        '<b>' + esc(x.takn + ' ' + x.heiti) + '</b>' +
+        '<span' + (t ? ' title="' + esc(t) + '"' : '') + '>' + esc(t.slice(0, 240) || '—') + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="adgerdir"><div class="nthead"><span class="slabel">Þetta gerist</span>' +
+      (a.saga ? '<span class="grow"></span><span class="adg-eldra">eldri útgáfur neðar í lýsingunni</span>' : '') +
+      '</div>' + radir +
+      (a.tillaga ? '<div class="adg-till">Tillaga: ' + esc(a.tillaga.slice(0, 240)) + '</div>' : '') +
+      sonnLina(r) + '</div>';
+  }
+
   // kort = á hvítu spjaldi · dark = í svarta spjaldinu
   function notaHtml(r, cls, label) {
     const g = ntGildi(r);
@@ -1960,6 +2107,7 @@
       (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
+      adgerdirHtml(r) +
       stadaHtml(r) +
       sagaHtml(r) + skjolHtml(r) + well +
       // póstmál: málið SJÁLFT er staðurinn (↩ Svara í sama þræði) — enginn „Opna" takki sem vísar á sig sjálft
@@ -6085,6 +6233,9 @@
     // með „_aftur“ — hér er merkið losað og sótt aftur. Nota aðeins þegar hleðsla hefur staðið > 20 s.
     endurhlada: () => { if (S.loading && S.loadedAt && Date.now() - S.loadedAt.getTime() > 20000) { S.loading = false; } else if (S.loading && !S.loadedAt) { S.loading = false; } return load(true); },
     upphaed: upphaedMals, aiLine, sonn, erBuid, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
+    // 368ab — símasíðan (446) sýnir sömu ákvörðunarblokk. Greiningin á aðeins að eiga sér EINN
+    // stað; væri hún afrituð þangað myndu útgáfurnar reka í sundur um leið og orðalagið breytist.
+    adgerdir: adgerdirUrNotu,
     velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} },
     // 08.10.2026 — sönnunarmyndir á spjöldin í símanum (Agnar: „screenshot feature þarna inn til sönnunar eða
     // staðfestingar"): EIN fyrirspurn fyrir allan listann (thjonustubeidni_files .in(ids)), ekki ein per mál.
