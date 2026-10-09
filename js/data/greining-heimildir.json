@@ -1,0 +1,514 @@
+{
+  "lysing": "Heimildir og hömlur — „Greining fasteignar“ (451). Ein lína per gagnaheimild: hvað hún gefur, staða, hvað stoppar og hvað þarf til að laga eða kaupa. Uppfærið hér þegar heimild er keypt eða löguð. Lyklar fara ALDREI í kóða — Netlify env-breyta eða Supabase secret.",
+  "uppfaert": "2026-10-09",
+  "heimildir": [
+    {
+      "id": "okkar-skra",
+      "heiti": "Okkar skrá (fyrirtaeki, uttaeki, flokkun, kerfaskrá, teikning_bord)",
+      "slod": "",
+      "gefur": [
+        "viðskiptavinir á heimilisfanginu",
+        "tækjafjöldi",
+        "síðasta skoðun",
+        "flokkun og kerfi",
+        "hæðir í Teikningu"
+      ],
+      "stada": "notað",
+      "homlur": "Heimilisfang er borið saman eftir götu + húsnúmeri (nefnifall og þágufall). Staður skráður með röngu eða styttu heimilisfangi finnst ekki.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "451 Hjá okkur",
+      "kannad": "2026-10-09"
+    },
+    {
+      "id": "stadfangaskra",
+      "heiti": "Staðfangaskrá HMS (WFS)",
+      "slod": "https://geo.fasteignaskra.is/ws/geoserver/wfs",
+      "gefur": [
+        "landnúmer",
+        "heitinúmer",
+        "sveitarfélag",
+        "hnit"
+      ],
+      "stada": "virk",
+      "homlur": "Skráin er ekki tæmandi (t.d. Hjallahraun 4) og húsnúmer sem ekki er til finnst ekki (Nónhæð 10 — aðeins 1, 2, 3, 4, 6). Ekkert eignarhald.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "hus-upplysingar, geocode, bygging-uppl",
+      "kannad": "2026-10-09"
+    },
+    {
+      "id": "landeignaskra-leit",
+      "heiti": "Landeignaskrá HMS (leit)",
+      "slod": "https://geo.fasteignaskra.is/landeignaskra/",
+      "gefur": [
+        "landnúmer út frá heimilisfangi",
+        "tillögur meðan slegið er inn"
+      ],
+      "stada": "virk",
+      "homlur": "Engin CORS-hausar — fer um eigið Netlify-fall (landnr). Skilar mest ~5–10 niðurstöðum.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "landnr-fall, 325, tillögur í haus 451",
+      "kannad": "2026-10-09"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "landeignaskra-wfs",
+      "heiti": "Landeignaskrá HMS (WFS public:Landeignaskra)",
+      "slod": "https://geo.fasteignaskra.is/ws/geoserver/wfs",
+      "gefur": [
+        "lóðarstærð"
+      ],
+      "stada": "notað",
+      "homlur": "Lóðarstærð segir ekki til um gólfflöt.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "fasteign-opin, 451 Byggingarupplýsingar"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "rvk-fastanumer",
+      "heiti": "Borgarvefsjá Leit/3 (rými og fastanúmer, Reykjavík)",
+      "slod": "https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja/Leit/MapServer/3",
+      "gefur": [
+        "fjöldi rýma (matshluti/hæð/eining)",
+        "fastanúmer",
+        "hæðakóðar"
+      ],
+      "stada": "notað",
+      "homlur": "Aðeins Reykjavík; nýbyggingar vantar (Fiskislóð 41 = 0). Skilmálar óstaðfestir.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "fasteign-opin, 451 Byggingarupplýsingar"
+    },
+    {
+      "id": "skjalasafn-teikningar",
+      "heiti": "Teikningasöfn sveitarfélaga (Reykjavík FotoWeb · Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes um map.is)",
+      "slod": "https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/",
+      "gefur": [
+        "grunnmyndir",
+        "snið",
+        "útlit",
+        "skráningartöflur",
+        "byggingarlýsingar"
+      ],
+      "stada": "virk",
+      "homlur": "Önnur sveitarfélög eiga ekkert rafrænt safn hér. map.is-söfnin skila PDF án smámynda (451 teiknar PDF-hæð við smell). Lýsigögn bera oft heimilisfang lóðarinnar, ekki hússins. map.is: Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "374 TeiknSaekja, teikn-listi, teikn-mynd, teikn-pdf, 384",
+      "kannad": "2026-10-09"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "mapis-teiknigrunn",
+      "heiti": "map.is queryTeiknigrunn (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes)",
+      "slod": "https://www.map.is/",
+      "gefur": [
+        "teikningar (PDF)",
+        "útlit",
+        "skráningartöflur"
+      ],
+      "stada": "notað",
+      "homlur": "Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn. Til upplýsingar: robots.txt map.is bannar /webservice/ fyrir vélmenni; þjónustan þarf setu og token (teikn-listi sækir þau).",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "teikn-listi, hus-upplysingar, teikn-pdf → 374 TeiknSaekja → 451 Teikningar (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes)"
+    },
+    {
+      "id": "skraningartafla",
+      "heiti": "Skráningartafla (úr teikningasafni, sniðmát HMS)",
+      "slod": "",
+      "gefur": [
+        "brúttóflötur",
+        "birt flatarmál",
+        "rúmmál",
+        "m² á hæð",
+        "eignir",
+        "matshluti"
+      ],
+      "stada": "virk",
+      "homlur": "Skönnuð mynd — þarf OCR (skrifstofutölvan, 1½–8 mín á blað). Rétt hús á lóð með mörg hús er stærsti vandinn (Skeifan 5, Seljavegur 2) — matshluti og heimilisfang á blaðinu ráða. Mælt: 67/70 lykiltölur réttar, engin röng merkt „há“.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "bygging-uppl, 451 Byggingarupplýsingar",
+      "kannad": "2026-10-09"
+    },
+    {
+      "id": "byggingarlysing",
+      "heiti": "Byggingarlýsing (úr teikningasafni)",
+      "slod": "",
+      "gefur": [
+        "brunahólfun",
+        "brunaviðvörunarkerfi",
+        "vatnsúðakerfi",
+        "neyðarlýsing",
+        "slökkvitæki",
+        "flóttaleiðir",
+        "byggingarár (stundum)"
+      ],
+      "stada": "virk",
+      "homlur": "Textalag PDF: 87% atriða fundust, 86% rétt. Skönnuð lýsing: aðeins ~16% — staðir sýndir sem tillaga. Tafla og lýsing eru oft úr ólíkum umsóknum (sami dagur aðeins 10 af 30).",
+      "laga": "Tesseract með íslensku málsniði („isl“) í stað RapidOCR myndi bæta skannaðar lýsingar (tillaga).",
+      "lykill_fer": "—",
+      "i_appinu": "bygging-uppl, 451 Brunavarnir",
+      "kannad": "2026-10-09"
+    },
+    {
+      "id": "ocr-skrifstofa",
+      "heiti": "OCR á skrifstofutölvunni (RapidOCR, luna-bridge bygging-ocr)",
+      "slod": "",
+      "gefur": [
+        "lestur skannaðra skráningartaflna og byggingarlýsinga"
+      ],
+      "stada": "takmarkað magn",
+      "homlur": "Keyrir AÐEINS á skrifstofutölvunni (DESKTOP-509MN7M) — hún þarf að vera í gangi. 1½–8 mín á skannað blað, mest 6 skjöl á beiðni (15 mín þak brúarinnar). RapidOCR kann ekki íslenska stafi. Netlify-föll hafa 10 s þak og enga OCR-vél.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "„Lesa skjölin“ í 451 → automation_triggers → luna-bridge → fasteign_greining",
+      "kannad": "2026-10-09"
+    },
+    {
+      "id": "flokkar-krofur",
+      "heiti": "Reglusafn Arnolds (flokkar_krofur, flokkar.json)",
+      "slod": "https://island.is/reglugerdir/nr/0112-2012",
+      "gefur": [
+        "kröfur eftir tegund og kerfi",
+        "skilyrði og magn",
+        "tegund út frá ÍSAT og nafni"
+      ],
+      "stada": "notað",
+      "homlur": "Leiðbeinandi — endanlegt samþykki er hjá hönnuði og slökkviliði. Tegund er ágiskun ef enginn rekstur er þekktur á staðnum.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "449a, 450, 451 Kröfur",
+      "kannad": "2026-10-09"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "overpass-osm",
+      "heiti": "OpenStreetMap (Overpass) — staðir við hnit",
+      "slod": "https://overpass-api.de/",
+      "gefur": [
+        "verslanir og starfsemi á staðnum (nafn, tegund)"
+      ],
+      "stada": "notað",
+      "homlur": "Ein kurteis fyrirspurn per uppflettingu; stundum 500/504/429 (þá „Reyna aftur“). User-Agent með „netlify.app“ fær 406. Ekki tæmandi (Hlíðasmári 17: enginn rekstur).",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "fasteign-opin, 451 Rekstur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "fyrirtaeki-vefsida",
+      "heiti": "Vefsíða fyrirtækis (titill og lýsing)",
+      "slod": "",
+      "gefur": [
+        "lýsing rekstrar af forsíðu"
+      ],
+      "stada": "notað",
+      "homlur": "Ein sókn á forsíðu (300 KB, 6 s); slóðin kemur úr OpenStreetMap. Mest 3 vefir per uppflettingu.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "fasteign-opin ?vefur=, 451 Rekstur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "kt-lookup",
+      "heiti": "Fyrirtækjaskrá Skattsins (um kt-lookup)",
+      "slod": "https://www.skatturinn.is/fyrirtaekjaskra/",
+      "gefur": [
+        "nafn",
+        "lögheimili",
+        "rekstrarform",
+        "ÍSAT",
+        "stofndagur",
+        "staða (afskráð/gjaldþrota)"
+      ],
+      "stada": "takmarkað magn",
+      "homlur": "Leitar aðeins eftir KENNITÖLU. Skafar vefsíðu Skattsins: robots.txt bannar /fyrirtaekjaskra/leit (Crawl-delay 5) og skilmálar banna afritun — Skatturinn hafnar Netlify við magn. Ekkert VSK-númer.",
+      "laga": "Skipta yfir í opinbera API Skattsins (sjá næstu línu) — ókeypis lykill.",
+      "lykill_fer": "—",
+      "i_appinu": "kt-lookup (skyndiminni), 451 Rekstur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "skatturinn-api",
+      "heiti": "Skatturinn — fyrirtækjaskrá, API v2.1 (opinbert)",
+      "slod": "https://api.skatturinn.is/",
+      "gefur": [
+        "nafn",
+        "heimilisföng",
+        "rekstrarform",
+        "ÍSAT",
+        "VSK-númer",
+        "staða/gjaldþrot",
+        "tengdir aðilar"
+      ],
+      "stada": "þarf lykil",
+      "homlur": "Ókeypis „Almennur aðgangur“: 60 köll/mín, 15.000/mán. Bannar fjöldaútdrátt og endursölu. Engin leit eftir heimilisfangi.",
+      "laga": "api.skatturinn.is/signup → „Almennur aðgangur“ → afrita Primary key (0 kr). Mikilvægasti lykillinn — leysir robots-vandann í kt-lookup.",
+      "lykill_fer": "Netlify env SKATTURINN_API_KEY",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "id": "husmynd",
+      "heiti": "Loftmynd í haus prófílsins (Borgarvefsjá 2018 · map.is)",
+      "slod": "https://borgarvefsja.reykjavik.is/",
+      "gefur": [
+        "loftmynd af húsinu"
+      ],
+      "stada": "virk",
+      "homlur": "Reykjavíkurmyndin er frá 17.7.2018 (nýbyggingar sjást ekki — Fiskislóð 41 sýnir gryfju). map.is-hlutinn: Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn.",
+      "laga": "Nýrri mynd í Reykjavík: Esri World Imagery (sjá esri-world-imagery) eða opinber loftmyndaþjónusta.",
+      "lykill_fer": "—",
+      "i_appinu": "husmynd-fall → 451 Eignin (loftmynd) og 367 (haus prófílsins; á sýndarprófílnum falin því vistun hennar er stöðvuð)",
+      "kannad": "2026-10-09"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "mapis-loftmynd",
+      "heiti": "map.is myndkort (Loftmyndir ehf.)",
+      "slod": "https://www.map.is/",
+      "gefur": [
+        "nýlegar loftmyndir í Kópavogi, Garðabæ, Hafnarfirði"
+      ],
+      "stada": "notað",
+      "homlur": "Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn. Til upplýsingar: mapcache svarar 403 án Referer frá map.is (husmynd-fallið sendir hann); myndirnar eru frá Loftmyndum ehf. og merktar „Loftmynd · map.is“.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "husmynd-fall → 451 Eignin (loftmynd, ein sókn á uppflettingu, geymd í lotunni) og 367"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "borgarvefsja-sogulegar",
+      "heiti": "Borgarvefsjá — sögulegar loftmyndir 1902–2018",
+      "slod": "https://borgarvefsja.reykjavik.is/arcgis/rest/services/Borgarvefsja/oldArialPhotos/MapServer",
+      "gefur": [
+        "sögulegar loftmyndir (t.d. 1954)"
+      ],
+      "stada": "virk",
+      "homlur": "Aðeins Reykjavík. Skilmálar óstaðfestir. Ekki tengt síðunni enn.",
+      "laga": "Tengja sem „saga hússins“ (ekkert þarf frá Agnari).",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "esri-world-imagery",
+      "heiti": "Esri World Imagery (loftmynd)",
+      "slod": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer",
+      "gefur": [
+        "nýleg loftmynd (04.05.2026, 0,31 m)"
+      ],
+      "stada": "þarf lykil",
+      "homlur": "Svarar án lykils (mynd 04.05.2026, 0,31 m — mun nýrri en Borgarvefsjá 2018), en skilmálar Esri krefjast ArcGIS-leyfis eða -lykils. Ekki notað.",
+      "laga": "Agnar stofnar ókeypis ArcGIS Location Platform-aðgang og býr til API-lykil (Notepad-aðferðin).",
+      "lykill_fer": "Netlify env ARCGIS_API_KEY",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-09-16",
+      "id": "kortaflisar-osm",
+      "heiti": "Kortaflísar (OSM lokaði → Esri World Street Map)",
+      "slod": "https://operations.osmfoundation.org/policies/tiles/",
+      "gefur": [
+        "götukort"
+      ],
+      "stada": "lokað",
+      "homlur": "OSM lokaði á appið 16.09.2026. Appið notar nú Esri World Street Map án lykils — skilmálar Esri krefjast ArcGIS-lykils (sami vandi og loftmyndin).",
+      "laga": "Sami ArcGIS-lykill og fyrir loftmyndina (ókeypis þrep), eða MapTiler/Stadia-lykill.",
+      "lykill_fer": "Netlify env ARCGIS_API_KEY",
+      "i_appinu": "Esri í staðinn"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "mapillary",
+      "heiti": "Mapillary (götumyndir)",
+      "slod": "https://www.mapillary.com/developer",
+      "gefur": [
+        "götumyndir af húsinu"
+      ],
+      "stada": "þarf lykil",
+      "homlur": "API-ið krefst aðgangslykils (svarar code 190). Myndir undir CC-BY-SA. Þekja við húsin óstaðfest.",
+      "laga": "mapillary.com/dashboard/developers (Meta-innskráning) → „Register application“ → client token (MLY|…). Ókeypis.",
+      "lykill_fer": "Netlify env MAPILLARY_TOKEN",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "google-street-view",
+      "heiti": "Google Street View Static / Places",
+      "slod": "https://console.cloud.google.com/",
+      "gefur": [
+        "götumynd",
+        "fyrirtæki á staðnum",
+        "opnunartími"
+      ],
+      "stada": "þarf lykil",
+      "homlur": "Þarf Google Cloud-lykil og greiðslukort (ókeypis mánaðarkvóti). Opni hlekkurinn google.com/maps/search/?api=1 virkar án lykils (er í haus prófílsins).",
+      "laga": "Google Cloud: verkefni + greiðslukort (ókeypis mánaðarþak), virkja Street View Static API og Places API (New), takmarka lykilinn við slokkvitaeki.netlify.app.",
+      "lykill_fer": "Netlify env GOOGLE_MAPS_API_KEY",
+      "i_appinu": "aðeins hlekkur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "ja-is",
+      "heiti": "Já.is (kort, 360° myndir, leit)",
+      "slod": "https://ja.is/",
+      "gefur": [
+        "götumyndir",
+        "fyrirtæki á heimilisfangi",
+        "símanúmer"
+      ],
+      "stada": "bannað (skilmálar)",
+      "homlur": "robots.txt bannar /?, /search/?, /kort/leit/ og /webapi/. Cloudflare Turnstile. Ekki sótt sjálfvirkt.",
+      "laga": "Skriflegt leyfi eða samningur við Já um gagnaaðgang.",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "1819",
+      "heiti": "1819.is",
+      "slod": "https://1819.is/",
+      "gefur": [
+        "sími",
+        "netfang",
+        "vefsíða",
+        "opnunartími"
+      ],
+      "stada": "lokað",
+      "homlur": "Aðeins innra API (prod.1819.is/api/v1/), engir birtir skilmálar; 1819 selur gagnagrunninn. Hlekkur á kennitöluna er á spjaldinu.",
+      "laga": "Spyrja 1819 um gagnaáskrift.",
+      "lykill_fer": "—",
+      "i_appinu": "aðeins hlekkur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "keldan",
+      "heiti": "Keldan",
+      "slod": "https://keldan.is/",
+      "gefur": [
+        "ÍSAT",
+        "heimilisfang",
+        "sími (frítt)",
+        "ársreikningar, starfsfólk, velta (læst)"
+      ],
+      "stada": "þarf áskrift",
+      "homlur": "Fjárhagur, starfsfólk og eignir læst; robots bannar /Leit.",
+      "laga": "Áskrift 5.490 kr/mán + vsk.",
+      "lykill_fer": "—",
+      "i_appinu": "aðeins hlekkur"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "creditinfo",
+      "heiti": "Creditinfo",
+      "slod": "https://www.creditinfo.is/um-creditinfo/verdskra",
+      "gefur": [
+        "hluthafar",
+        "raunverulegir eigendur",
+        "fasteignaskrá",
+        "lánshæfi"
+      ],
+      "stada": "þarf áskrift",
+      "homlur": "Greitt per uppflettingu.",
+      "laga": "Hluthafar 1.170 kr, raunverulegir eigendur 2.590 kr, fasteignaskrá 2.190 kr, lánshæfi 1.610 kr (án vsk).",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "skatturinn-arsreikningar",
+      "heiti": "Ársreikningaskrá Skattsins",
+      "slod": "https://www.skatturinn.is/fyrirtaekjaskra/",
+      "gefur": [
+        "ársreikningar",
+        "meðalfjöldi starfsmanna"
+      ],
+      "stada": "takmarkað magn",
+      "homlur": "Rafrænt ókeypis en aðeins handvirkt (PDF); vefslóðin er bönnuð í robots.",
+      "laga": "Aðeins handvirkt.",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "hms-fasteignaskra-askrift",
+      "heiti": "Fasteignaskrá HMS — áskrift / vefþjónusta",
+      "slod": "https://hms.is/fasteignaskra",
+      "gefur": [
+        "eigendur",
+        "fasteignamat",
+        "byggingarár",
+        "flatarmál eininga",
+        "fjöldi íbúða"
+      ],
+      "stada": "þarf áskrift",
+      "homlur": "api.hms.is svarar 403 án áskriftar; hms.is og leit.fasteignaskra.is eru á bak við botavörn.",
+      "laga": "Áskrift HMS: 5.400 kr/mán + 90.300 kr uppsetning + 32–95 kr per eign (verðskrá HMS, kannað 09.10.2026). Hjá Creditinfo: fasteignaskrá 2.190 kr stykkið.",
+      "lykill_fer": "Netlify env HMS_API_KEY",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "island-is-eigendur",
+      "heiti": "Eigendur fasteigna (island.is / Fasteignaskrá)",
+      "slod": "https://island.is/",
+      "gefur": [
+        "eigendur"
+      ],
+      "stada": "þarf innskráningu",
+      "homlur": "Eigendur og veðbönd aðeins með rafrænum skilríkjum (persónubundið), stakar greiddar uppflettingar — ekki til sjálfvirkrar notkunar.",
+      "laga": "Aðeins um áskrift HMS (sjá línu að ofan).",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "id": "kaupskra-hms",
+      "heiti": "Kaupskrá fasteigna (HMS, opin gögn)",
+      "slod": "https://hms.is/gogn-og-maelabord/visitolur/kaupskra-fasteigna",
+      "gefur": [
+        "byggingarár (besta heimildin, 32/40)",
+        "matshluti",
+        "seldar einingar"
+      ],
+      "stada": "skilmálar óyfirfarnir",
+      "homlur": "Má EKKI nota fyrr en Agnar hefur farið yfir skilmálana.",
+      "laga": "Agnar les skilmála HMS og samþykkir (eða ekki) — þá má byggingarár koma þaðan.",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað",
+      "kannad": "2026-10-09"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "hagstofa",
+      "heiti": "Hagstofa Íslands — fyrirtæki",
+      "slod": "https://hagstofa.is/talnaefni/atvinnuvegir/fyrirtaeki/",
+      "gefur": [
+        "samtölur eftir ÍSAT"
+      ],
+      "stada": "virk",
+      "homlur": "Aðeins samtölur — ekkert per fyrirtæki eða heimilisfang.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    },
+    {
+      "kannad": "2026-10-09",
+      "id": "adrar-myndir",
+      "heiti": "Panoramax · KartaView · Wikimedia Commons · LMÍ",
+      "slod": "https://commons.wikimedia.org/",
+      "gefur": [
+        "götumyndir / ljósmyndir"
+      ],
+      "stada": "lokað",
+      "homlur": "Prófað 09.10 á Skútuvogi 2 og Nónhæð 6: Panoramax 0 myndir, KartaView 0–2 myndir 2018–19 í ~105 m fjarlægð (5–20 s), Commons 0, LMÍ aðeins söguleg/gróf gögn.",
+      "laga": "—",
+      "lykill_fer": "—",
+      "i_appinu": "ekki notað"
+    }
+  ]
+}

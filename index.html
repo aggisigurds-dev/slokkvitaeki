@@ -483,6 +483,8 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
+<!-- 451: sýndarvörður — stöðvar hvert skrif á sýndarfyrirtækið (Greining fasteignar) ÁÐUR en supabase-js grípur fetch -->
+<script src="/js/sydarvordur.js?v=20261009a"></script>
 <script src="/js/rest-samnyting.js?v=20261005b"></script>
 <script src="/js/db.js?v=20261001ub"></script>
 <!-- Problem registry: loads right after db.js so window.logProblem + auto error
@@ -1390,6 +1392,8 @@ var Lanstaeki = {
 <script defer src="/js/patches/449-reglur.js?v=20261009a"></script>
 <script defer src="/js/patches/449b-flokkun-sia.js?v=20261009a"></script>
 <script defer src="/js/patches/450-kerfi-thjonusta.js?v=20261009b"></script>
+<!-- 09.10.2026: Greining fasteignar — #greining/<heimilisfang>: tómur prófíll (sýndarfyrirtæki) + byggingarupplýsingar, brunavarnir, kröfur, teikningar -->
+<script defer src="/js/patches/451-greining-fasteignar.js?v=20261009a"></script>
 <script defer src="/js/patches/396-bilstjori-spjaldtolva.js?v=20261007h"></script>
 <script defer src="/js/patches/395-app-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/394-ars-vinnusvaedi.js?v=20261004skrun"></script>
