@@ -2183,10 +2183,15 @@
       '</div>';
     var docs=[];
     try{ docs=(await listFirmDocs(name))||[]; }catch(e){ console.warn('[rekstrarfelog] docs',e); }
+    // 09.10.2026 (Agnar hlóð samantekt upp á Center Hótel og gat ekki opnað hana): skjal sem „+ Hlaða upp" setur hingað
+    // (CompanyAttachments.upload) ber AÐEINS `path` í samningar-fötunni — enga drive_url/url. „opna" birtist bara fyrir
+    // drive_url/url, svo upphlaðið skjal stóð sem dautt nafn. Nú opnast það í sömu forskoðun og á fyrirtækjasíðunni (111).
     var docHtml=docs.length? docs.map(function(d){
       var nm=d.name||d.file||'skjal'; var url=d.drive_url||d.url||'#';
+      var opna=(url&&url!=='#') ? '<a href="'+esc(url)+'" target="_blank" style="color:var(--brand)">opna</a>'
+              : (d.path ? '<a href="#" class="_rf_docopen" data-doc-id="'+esc(d.id||d.path)+'" style="color:var(--brand)">opna</a>' : '');
       return '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--brd);font-size:13px">'+
-             '<span>📄 '+esc(nm)+'</span>'+(url&&url!=='#'?'<a href="'+esc(url)+'" target="_blank" style="color:var(--brand)">opna</a>':'')+'</div>';
+             '<span>📄 '+esc(nm)+'</span>'+opna+'</div>';
     }).join('') : '<div style="color:var(--ink4);font-size:13px;padding:4px 0">Engin skjöl skráð á félagið ennþá.</div>';
 
     // Editable rekstrarfélag info card (kennitala / netföng / lén / nótur).
@@ -2585,6 +2590,17 @@
       } catch(e){ alert('Villa við upphal: '+(e.message||e)); }
       btn.textContent='+ Hlaða upp'; btn.disabled=false;
       fillBody(body,name,info); // refresh
+    });
+    // „opna" á upphlöðnu skjali félagsins → sama forskoðun og á fyrirtækjasíðunni (undirrituð slóð úr samningar-fötunni).
+    // Listinn er nýr hnútur við hverja fillBody, svo hlustarinn safnast ekki upp.
+    var docList=body.querySelector('._rf_doclist');
+    if(docList) docList.addEventListener('click', function(e){
+      var a=e.target.closest && e.target.closest('._rf_docopen'); if(!a) return;
+      e.preventDefault();
+      var key=a.getAttribute('data-doc-id');
+      var d=docs.find(function(x){ return (x.id||x.path)===key; });
+      if(d && window.CompanyAttachments && CompanyAttachments.openPreview) CompanyAttachments.openPreview(d);
+      else alert('Gat ekki opnað skjalið — endurhladdu síðunni.');
     });
   }
 
