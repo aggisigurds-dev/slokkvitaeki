@@ -6,9 +6,9 @@ Unnið 08.10.2026. **Allar tilvitnanir eru úr frumtexta sem var sóttur og lesi
 
 > **Fyrirvari.** Leiðbeinandi. Meginreglur byggingarreglugerðar eru ófrávíkjanlegar en viðmiðunarreglur (t.d. töflur 9.02 og 9.03, 500 m² mörk slöngukefla) má víkja frá með brunahönnun (HMS-leiðbeiningar, inngangur). **Samþykkt byggingarlýsing / brunahönnun hússins ræður** þar sem hún segir annað (723/2017 3. gr.). Endanlegt mat er hjá hönnuði og slökkviliði.
 
-## ⚠ Greinanúmer hafa breyst — athuga eldri texta
+## ⚠ Greinanúmer — leiðrétting á eldri vísunum
 
-Í útgáfunni sem nú gildir (1. maí 2026) er röð greina í 9.4. kafla þessi — **eldri vísanir í SKILL.md og `krofur.ts` eru einni grein of hátt**:
+Í útgáfunni sem nú gildir (1. maí 2026) er röð greina í 9.4. kafla þessi — **vísanir í SKILL.md og `krofur.ts` (handslökkvitæki „9.4.5“, slöngukefli „9.4.6“) eru einni grein of hátt**:
 
 | Grein | Efni |
 |---|---|
