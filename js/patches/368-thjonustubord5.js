@@ -174,7 +174,7 @@
   const MAL_TEG = { tilbod: 'Tilboð', email: 'Póstur', skyrsla: 'Skýrsla', heimsokn: 'Heimsókn', hringja: 'Hringja', samningur: 'Samningur', skjalabeidni: 'Skjöl', verkdagbok: 'Verkdagbók', annad: 'Annað', skodun_tilbod: 'Skoðun & tilboð', nyr_samningur: 'Nýr samningur', uttekt_eftirfylgni: 'Úttekt / eftirfylgni' };
   // Síður í kerfinu sem hægt er að festa með einum smelli. Gáttirnar eru sér síður á sama vef.
   const TILLOGUR = [
-    ['Gátt-admin', 'https://brunaholf.netlify.app/gatt-admin/'], ['Þjónustugáttin', 'https://brunaholf.netlify.app/gatt-admin/'],
+    ['Gátt-admin', '/gatt-admin/'], ['Þjónustugáttin', '/gatt/'],
     ['Kröfu yfirlit', '#krofu-yfirlit'], ['Pósthólf', '#thjonustuver-postar'], ['Reikninga-póstur', '#reikninga-postur'],
     ['Aksturslisti', '#aksturslisti']
   ];
@@ -4916,7 +4916,7 @@
       '<div class="t5"><div class="col">' +
         '<div class="head" style="position:relative"><div>' +
           // 09.10.2026 (Agnar: „setja stjórnborðið þarna sem ég kemst inn á fyrirtækin" — efst t.h.): Þjónustugátt-stjórnborðið.
-          '<a class="btn iv" href="https://brunaholf.netlify.app/gatt-admin/" target="_blank" rel="noopener" title="Stjórnborð þjónustugáttarinnar — opna vef hvers fyrirtækis" style="position:absolute;top:0;right:0;text-decoration:none;z-index:2">Þjónustugátt ›</a>' +
+          '<a class="btn iv" href="/gatt-admin/" title="Stjórnborð þjónustugáttarinnar — opna vef hvers fyrirtækis" style="position:absolute;top:0;right:0;text-decoration:none;z-index:2">Þjónustugátt ›</a>' +
           '<div class="kicker">Þjónusta · ' + VIKUDAGUR[now.getDay()] + ' ' + now.getDate() + '. ' + MAN[now.getMonth()] + '</div>' +
           '<h1 class="h1">Þjónustuborð</h1>' +
           '<p class="meta">' + (mode.board ? (c.mode !== 'thjonusta' ? 'Hamur: ' + esc(mode.l) + ' · ' : '') + master.length + ' á Master · ' + mine.length + ' á þínu borði · ' + hot + ' áríðandi' : 'Hamur: ' + esc(mode.l)) +
