@@ -192,8 +192,29 @@
     });
     return plotur.join('');
   }
+  // TEIKNING (09.10.2026, Agnar: „setja líka skynjaratölurnar samanburðinn"): smaatridi.teikning = skynjarar taldir á
+  // teikningum úr skjalasafni (teikning-greining/brunavidvorun). Sýnir hannað, ekki uppsett — borið við okkar skrá.
+  function teikningHtml(t) {
+    if (!t || typeof t !== 'object') return '';
+    const n = (x) => (x == null || x === '' ? null : Number(x).toLocaleString('de-DE'));
+    const a = [];
+    if (t.ekki_teiknadir) a.push('Engir skynjarar teiknaðir (aðeins í skýringum)');
+    else if (t.reykskynjarar != null) a.push(n(t.reykskynjarar) + ' reykskynjarar' + (t.hluti ? ' (aðeins hluti hússins)' : ''));
+    if (t.hitaskynjarar) a.push(n(t.hitaskynjarar) + ' hitaskynjarar');
+    if (t.handbodar) a.push(n(t.handbodar) + ' handboðar');
+    if (t.bjollur) a.push(n(t.bjollur) + ' bjöllur/sírenur');
+    const lina = (m, g) => g ? '<div class="ssp-lina heil"><span class="ssp-merki">' + esc(m) + '</span><span class="ssp-gildi">' + esc(g) + '</span></div>' : '';
+    return '<div class="kt-sma"><div class="ssp-skilti">Á teikningu · skjalasafn' + (t.talid ? ' · talið ' + esc(F().birtaDags(t.talid) || t.talid) : '') + '</div>' +
+      '<div class="ssp-reitir">' + lina('Teikning', a.join(' · ') || null) + lina('Okkar skrá', t.skra_vid_talningu ? String(t.skra_vid_talningu).replace(/\s*\n\s*/g, ' ') : null) +
+      lina('Mismunur', t.mismunur ? t.mismunur + (t.vissa ? ' · vissa ' + t.vissa : '') : null) + lina('Blöð', t.blod || null) + '</div>' +
+      (t.athugasemd ? '<div class="kt-sma-texti">' + esc(t.athugasemd) + '</div>' : '') +
+      '<div class="kt-sma-texti"><i>Teikning sýnir hvað var hannað, ekki hvað er uppsett — stærðargráða, staðfestist við skoðun.</i></div></div>';
+  }
   function smaHtml(s) {
     if (!s || typeof s !== 'object') return '';
+    // aðeins teikningatalning (engin brunakerfisskrá, t.d. Midtown 1486): sýna hana eina, ekki tóma skrá
+    const skraLyklar = Object.keys(s).filter((k) => k !== 'teikning');
+    if (!skraLyklar.length) return teikningHtml(s.teikning);
     const v = (x) => (x == null || x === '' ? null : x);
     const tala = (x) => (x == null ? null : Number(x).toLocaleString('de-DE'));
     const manud = (x) => (x == null ? null : (MANUDIR[+x - 1] || String(x)));
@@ -229,7 +250,7 @@
       (vantar.length ? '<div class="kt-sma-texti"><b>Vantar í skrá:</b> ' + esc(vantar.join(', ')) + (s.naegilega_skrad ? '' : ' — ekki nægilega skráð') + '</div>' : '') +
       (ath.length ? '<div class="kt-sma-texti"><b>Athugasemdir:</b> ' + esc(ath.join(' · ')) + '</div>' : '') +
       (bl ? '<div class="kt-sma-texti"><b>Byggingarlýsing</b>' + (bl.skjal ? ' (' + esc(bl.skjal) + ')' : '') + ': ' + esc(bl.segir || '') + (Array.isArray(bl.misraemi) && bl.misraemi.length ? '<br><b>Misræmi:</b> ' + esc(bl.misraemi.join(' · ')) : '') + '</div>' : '') +
-    '</div>';
+    '</div>' + teikningHtml(s.teikning);
   }
   function rodStadaHtml(fid, k) {
     const s = _rodStada.get(fid + '|' + k) || {};
