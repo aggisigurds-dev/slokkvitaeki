@@ -118,6 +118,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
 | Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn með tenglum í `.claude/skills/arnold/references/` | skill `arnold` 💪 |
+| **Svör Agnars á Þjónustuborðinu** — „klára svörin", „yfirfara svör", „ég er búinn að svara", „vinna úr Samþykkja", „hvað bíður Claude" 🕵️ | `samthykktir` |
 | Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |
 
 Kveikjuorð (copy-paste): [`docs/TRIGGERS.md`](docs/TRIGGERS.md) — `hindra klúður`, `villuleit`, `variant`, `kennitala`, `skýrsla`, `reikningur`, `krafa`, `RLS`, `hraði`, `kort`, `prentun`, … Agentaskrá: [`docs/AGENTASKRA.md`](docs/AGENTASKRA.md).

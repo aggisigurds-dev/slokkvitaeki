@@ -24,6 +24,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `kjarni/.agents/skills` | 5 **raunveruleg** skills | Ekki stubbar. Platform-tól (schema, shadcn, pgTap, cache). |
 | Parent `.claude/agents` | ekki til | Rétt. Ekki búa til. |
 | Skill `hindra-kludur` / „hindra klúður" | **ekki á diski** | Leitað í öllum þremur repo. Næsta vörn: `villuleit` + `variant-analysis` + `netvordur`. |
+| **`.claude/agents/*.md` í repóinu** | **ekki kallanleg** sem `subagent_type` | Mælt 09.10.2026: nýr agent í `slokkvitaeki/.claude/agents/` kom EKKI fram í agent-listanum — aðeins `rukkari`, og hann af því hann á spegil í `~/.claude/agents/`. **Eigi agent að vera kallanlegur úr hvaða lotu sem er verður hann að liggja í `~/.claude/agents/`.** Repo-skrárnar eru skjöl sem á að LESA (sbr. `netvordur`, sem er keyrður sem `general-purpose` með skrána orðrétt). Lotan sem skrifar nýjan agent getur ekki kallað á hann — hann kemur fram í næstu lotu. |
 
 **23 einstök agent-nöfn** á diski (13 í brunaholf + 12 í slokkvitaeki; `joker` og `kunnaskra` eru í báðum sem sitthvor heimaskrá).
 
@@ -37,7 +38,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 |---|---|---|---|---|---|
 | `jarvis` | 🎩 Jarvis | brunaholf | `.claude/agents/jarvis.md` (kj afrit) | `hver er staðan` · `morgunyfirferð` · `Jarvis` | Fundin upp tala/dagsetning/nafn. Lestu ekki heilar töflur. |
 | `bokari` | 💰 Samantha | brunaholf | `.claude/agents/bokari.md` (kj afrit) | `taxti` · `VSK` · `NLSH` · `uppgjör` · `stemmir tala` · `krafa` (með sala) | Baka afslátt í línu **og** geyma í `afslattur`. Stofna eða senda reikning. |
-| `eldklar-postur` | ✉ Póstvörður Eldklárs | brunaholf | `.claude/agents/eldklar-postur.md` | `nýjustu póstar` · `sækja úr pósti` · `hvað kom í pósti` · `reikningalota` | Snertir AÐEINS eldklar@eldklar.is; skráir punkta í Drög-stöð, skrifar aldrei í sölur/drög/Payday; skáldar aldrei kúnnanafn. |
+| `eldklar-postur` | ✉ Póstvörður Eldklárs | brunaholf | `.claude/agents/eldklar-postur.md` | `nýjustu póstar` · `sækja úr pósti` · `hvað kom í pósti` · `reikningalota` | Snertir AÐEINS eldklar@eldklar.is; skráir punkta í Drög-stöð, skrifar aldrei í sölur/drög/Payday; skáldar aldrei kúnnanafn. |
 | `rukkari` | 🦆 Jóakim aðalönd | brunaholf (spegill í slokkvitaeki + ~/.claude/agents) | `.claude/agents/rukkari.md` | `rukka` · `rukkunarmál` · `reikningalota` · `klára reikninga` · `hvað er tilbúið að senda` · `ósent` · `ógreitt` · `útistandandi` | Senda eða skrifa sjálfur í drög, sölur eða Payday. Giska á tölu. Spyrja um það sem stendur í REIKNINGALOTA.md. |
 | `sara-organizer` | 🗂️ Sara (pör) | brunaholf | `.claude/agents/sara-organizer.md` (kj afrit) | `para` · `þekja` · `gloppa` · `vantar að rukka` | Giska á pörun. Stofna/breyta reikningi. Senda póst. Sameina rekstrarfélaga-staði. |
 | `sara-coworker` | 🗂️ Sara (skýrslur) | slokkvitaeki | `.claude/agents/sara-coworker.md` (kj afrit, styttra) | `skýrsla` · `úttekt` · `fylla skýrslu` | Yfirskrifa texta sem er þegar í reit. Baka afslátt **og** `afslattur`. Segja „vistað" án lesturs til baka. Hengja brunakerfi á úttekt. Sameina staði. |
@@ -58,6 +59,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `kort` | 🗺️ Ramsay | slokkvitaeki | `.claude/agents/kort.md` (kj afrit) | `kort` · `pinnar` · `geocode` · `Leaflet` · `kill-dots` | Vektor-merki (á að vera `L.divIcon`). Rugla við `bord-flettur` (síðurnar). |
 | `sala-reikningar` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/sala-reikningar.md` (kj afrit) | `reikningur` · `sala` · `POS` · `Payday` · `dkPlus` · `afsláttur` · `krafa` | Afsláttur á tvo vegu. Blokka Vista. Yfirskrifa úttektartexta. Leiða vottun af tækjalista. |
 | `thema` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/thema.md` (kj afrit) | `þema` · `skinna` · `Brunastál` · `theme.css` | Endurvekja þemaskipti (frosið 17.08.2026) án Agnars. |
+| `samthykktir` | 🕵️ Columbo | slokkvitaeki + **`~/.claude/agents`** | `.claude/agents/samthykktir.md` (spegill í heimamöppu — ANNARS er hann ekki kallanlegur, sbr. 09.10.2026) | `klára svörin` · `yfirfara svör` · `vinna úr Samþykkja` · `ég er búinn að svara` · `afgreiða samþykktir` · `hvað bíður Claude` · `svörin mín á þjónustuborðinu` | Framkvæma án þess að endurmæla forsenduna (9 af 93 voru röng 08.10.2026). Gera meira en ✓ lofaði. Loka máli án mælingar. Senda póst eða kröfu — lokasending er Agnars. |
 | `bord-flettur` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/bord-flettur.md` (kj afrit, styttra) | `flipi` · `borð` · `nav` · `bílstjóri` · `aksturslisti` · `bakk` | Blanda bakk-lögum (18/276/277). Nota `history.length` fyrir bakk. |
 | `adstod` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/adstod.md` (kj afrit) | `watchlist` · `banner` · `aðstoð` | (Fasi 2 AI-tips er óunninn; ekki lofa honum.) |
 
@@ -84,7 +86,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 
 Áhöfnin á `jarvis.html` (spjaldið Sérfræðingar) er **17 sæti**. Hún stemmir við agent-skrárnar sem eiga roster-nafn. **Ekki** uppfært í þessari lotu.
 
-Sæti: Jarvis · Samantha · Sara · Charlize · Freeman · Statham · Willis · Samuel L. J. · Dr. House · Trump · Arnold · DeVito · Ramsay · Elon Musk · Natalie · Joker · Jóakim aðalönd (🦆 rukkari, svið `rukkun`, 05.09.2026).
+Sæti: Jarvis · Samantha · Sara · Charlize · Freeman · Statham · Willis · Samuel L. J. · Dr. House · Trump · Arnold · DeVito · Ramsay · Elon Musk · Natalie · Joker · Jóakim aðalönd (🦆 rukkari, svið `rukkun`, 05.09.2026) · **Columbo** (🕵️ `samthykktir`, svið `samþykktir`, 09.10.2026 — nafnið valið af því hlutverkið ER að spyrja einnar spurningar í viðbót áður en máli er lokað).
 
 Agentar **án** roster-sætis (notaðir samt): `adstod`, `bord-flettur`, `netvordur`, `sala-reikningar`, `thema`, `framendi`. Þeir eru í þessari skrá, ekki í HUD-listanum.
 

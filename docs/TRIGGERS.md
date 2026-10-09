@@ -64,6 +64,7 @@ base 293, Hlaðvarpinn, Steypustöðin 2026.
 | `para` / `þekja` / `gloppa` / `vantar að rukka` | `sara-organizer` *(brunaholf)* | Pör skýrsla↔reikningur, `v_bundle_coverage`, aldrei ágiskun. |
 | `reikningur` / `sala` / `POS` / `Payday` / `dkPlus` / `afsláttur` | `sala-reikningar` | Sala, reikningagerð, PDF-vistun, póstur. ALLTAF LEYFA VISTUN. |
 | `krafa` / `kröfur` / `útistandandi` | `sala-reikningar` + `bokari` *(brunaholf)* | Kröfuyfirlit / AR. Bókari sannreynir tölu. |
+| `klára svörin` / `yfirfara svör` / `vinna úr Samþykkja` / `ég er búinn að svara` / `afgreiða samþykktir` / `hvað bíður Claude` | `samthykktir` 🕵️ | Vinna úr svörum Agnars á Þjónustuborðinu. Endurmæla forsendu HVERS máls áður en nokkuð er gert, gera nákvæmlega það sem ✓ lofaði, loka með sönnun. Sendir aldrei. |
 | `rukka` / `rukkunarmál` / `reikningalota` / `klára reikninga` / `hvað er tilbúið að senda` | `rukkari` *(brunaholf, spegill í slokkvitaeki)* | Stjórnar allri lotunni: les REIKNINGALOTA.md, tengingar, Drög-stöð, póstur; kallar á bokari / sala-reikningar / eldklar-postur. Útskýrir sig sjálfur — Agnar útskýrir ekkert. |
 | `taxti` / `VSK` / `NLSH` / `uppgjör` / `stemmir tala` | `bokari` *(brunaholf)* | Verðleggja, efnislisti, af hverju tala stemmir ekki. |
 | `audit` / `samræmi` / `stemmir` / `passar magnið` | `uttekt-audit` | Magn á tækjalista ↔ skýrslu ↔ reikningi. Lesaðeins. `docs/SAMRAEMI-<ár>.md`. |
@@ -93,6 +94,7 @@ base 293, Hlaðvarpinn, Steypustöðin 2026.
 ## Límsetningar (copy-paste)
 
 ```
+klára svörin: ég er búinn að svara á Samþykkja — taktu biðröðina
 hindra klúður: audit-all + netvörður áður en merge; grep systkini-kt / public_url / Payday-eftir-kt
 villuleit: sama mynstur og Plaza — systkini-kt málar skýrslu á öll hótel
 variant: röng join, tæki→nafn í stað FK
