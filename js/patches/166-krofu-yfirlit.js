@@ -59,6 +59,22 @@
       // ósýnilegur rammi þar til hann er valinn.
       V + '._ky-note{color:#11141c !important;background:transparent !important;border:1px solid transparent !important;border-bottom:1px dashed #d7dce4 !important;border-radius:5px !important;box-shadow:none !important}' +
       V + '._ky-note::placeholder{color:#c8cfd9}' +
+      /* 09.10.2026 (Agnar: „allllldreii setja svona texta á reikningana … settu frekar bara
+       * skýringarglugga á kröfuyfirlitið"). Sagan á bak við kröfuna — hvaða vinnublað, hvaða
+       * samþykkt, hvað var óvíst — á heima HÉR, ekki í `athugasemdir`, sem prentast sem
+       * „Vegna"-lína á reikninginn og fer til viðskiptavinarins. */
+      V + '._ky-sky{flex:none;width:26px;height:26px;margin-right:6px;border-radius:6px;border:1px solid #e2e6ec;background:#fff;color:#9aa3b2;font:700 13px system-ui;cursor:pointer;line-height:1}' +
+      V + '._ky-sky.has{border-color:#93c5fd;background:#eff6ff;color:#1d4ed8}' +
+      V + '._ky-sky:hover{border-color:#93c5fd;color:#1d4ed8}' +
+      V + ' ._kysky-bak{position:fixed;inset:0;z-index:99999;background:rgba(10,14,22,.55);display:flex;align-items:center;justify-content:center;padding:18px}' +
+      V + ' ._kysky-box{background:#fff;border-radius:12px;max-width:620px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}' +
+      V + ' ._kysky-haus{padding:14px 18px;border-bottom:1px solid #e9edf3;font:700 14px system-ui;color:#11141c}' +
+      V + ' ._kysky-haus small{display:block;margin-top:3px;font:500 11.5px ui-monospace,monospace;color:#6b7483;letter-spacing:.04em}' +
+      V + ' ._kysky-txt{flex:1;min-height:180px;margin:14px 18px;padding:12px;border:1px solid #e2e6ec;border-radius:8px;font:400 13px/1.6 system-ui;color:#11141c;resize:vertical}' +
+      V + ' ._kysky-fot{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:0 18px 16px}' +
+      V + ' ._kysky-fot .adv{font:500 11.5px system-ui;color:#6b7483}' +
+      V + ' ._kysky-fot button{height:38px;padding:0 16px;border-radius:8px;border:1px solid #d7dce4;background:#fff;font:700 13px system-ui;cursor:pointer}' +
+      V + ' ._kysky-fot button._v{background:#111827;border-color:#111827;color:#fff}' +
       V + '._ky-note:hover{border-bottom-color:#b6bec9 !important}' +
       V + '._ky-note:focus{background:#fff !important;border:1px solid #93c5fd !important}' +
       B + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
@@ -1343,6 +1359,7 @@
                 <button type="button" class="_ky-view-invoice kym-doc" data-id="${s.id}" title="Skoða / prenta reikning">${MIC.print}<span>Reikningur</span></button>
                 ${midarSkyrslaBtn(s)}
               </div>
+              <button type="button" class="_ky-sky kym-sky${(s.krafa_note || '').trim() ? ' has' : ''}" data-id="${s.id}" title="${(s.krafa_note || '').trim() ? 'Skýring — öll sagan á bak við þessa kröfu' : 'Engin skýring skráð — smelltu til að skrifa'}" aria-label="Skýring ${esc(s.num || '')}">ℹ</button>
               <input class="_ky-note kym-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." aria-label="Minnispunktur ${esc(s.num || '')}">
               <span class="kym-amt">${fmtKr(s.samtals)}</span>
               ${isDraft ? '<span class="ky-drog-pill kym-drog" title="Aðeins drög í Payday — krafan hefur ekki farið til kúnna. Sendu hana úr Payday.">Drög í Payday</span>' : ''}
@@ -1897,6 +1914,52 @@
     //   • _state er EKKI uppfært fyrr en skrifin heppnast (áður sagði skjá-
     //     cache-inn „vistað" eftir misheppnaða skrif og næsta tilraun slapp)
     //   • villan SÉST (rauð undirlína + rauður texti + logProblem)
+    /* ℹ Skýringargluggi — sama reitur (`krafa_note`), bara læsilegur.
+     * Innri línan er of mjó fyrir sögu sem skiptir máli (hvaða vinnublað, hvaða
+     * samþykkt, hvað var óstaðfest). Hér sést hún öll og má laga. Vistast á SÖMU
+     * leið og línan; `athugasemdir` er ALDREI snert héðan — sá reitur prentast. */
+    main.querySelectorAll('._ky-sky').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const sala = (_state.all || []).find(x => String(x.id) === String(id)) || {};
+        const lina = main.querySelector('._ky-note[data-id="' + id + '"]');
+        const bak = document.createElement('div');
+        bak.className = '_kysky-bak';
+        bak.innerHTML =
+          '<div class="_kysky-box" role="dialog" aria-modal="true" aria-label="Skýring">' +
+            '<div class="_kysky-haus">Skýring — ' + esc(sala.customer_nafn || '') +
+              '<small>' + esc(sala.num || '') + ' · ' + fmtKr(sala.samtals || 0) +
+              ' · innri nóta, fer ALDREI á reikninginn</small></div>' +
+            '<textarea class="_kysky-txt" placeholder="Hvaðan kemur krafan? Hvaða vinnublað, hvaða samþykkt, hvað er óstaðfest?"></textarea>' +
+            '<div class="_kysky-fot"><span class="adv"></span><span>' +
+              '<button type="button" class="_x">Loka</button> ' +
+              '<button type="button" class="_v">Vista</button></span></div>' +
+          '</div>';
+        const txt = bak.querySelector('._kysky-txt');
+        const adv = bak.querySelector('.adv');
+        txt.value = (lina ? lina.value : (sala.krafa_note || '')) || '';
+        const loka = () => bak.remove();
+        bak.addEventListener('click', e => { if (e.target === bak) loka(); });
+        bak.querySelector('._x').addEventListener('click', loka);
+        bak.querySelector('._v').addEventListener('click', async () => {
+          const val = (txt.value || '').trim();
+          const SB = getSB();
+          if (!SB) { adv.textContent = '⚠ Engin gagnabankatenging — ekki vistað'; return; }
+          adv.textContent = 'Vista…';
+          let w = null;
+          try { w = await SB.from('solur').update({ krafa_note: val || null }).eq('id', id); }
+          catch (e) { w = { error: e }; }
+          if (w && w.error) { adv.textContent = '⚠ Vistaðist EKKI: ' + (w.error.message || w.error); return; }
+          // Fyrst þegar skrifin heppnuðust má skjárinn segja „vistað" (sama regla og línan).
+          if (lina) { lina.value = val; lina.dataset.vistad = val; }
+          if (sala) sala.krafa_note = val || null;
+          btn.classList.toggle('has', !!val);
+          loka();
+        });
+        document.body.appendChild(bak);
+        txt.focus();
+      });
+    });
     main.querySelectorAll('._ky-note').forEach(inp => {
       inp.dataset.vistad = (inp.value || '').trim();
       const vistaNote = async () => {
@@ -2863,6 +2926,7 @@
                   ${skyrslaBtn}
                 </div>
                 <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;margin:0 10px">
+                  <button type="button" class="_ky-sky${(s.krafa_note || '').trim() ? ' has' : ''}" data-id="${s.id}" title="${(s.krafa_note || '').trim() ? 'Skýring — öll sagan á bak við þessa kröfu' : 'Engin skýring skráð — smelltu til að skrifa'}" aria-label="Skýring ${esc(s.num || '')}">ℹ</button>
                   <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:0;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 </div>
                 <div class="ky-row-end" style="display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;justify-content:flex-end">
