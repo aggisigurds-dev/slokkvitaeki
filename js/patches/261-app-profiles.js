@@ -83,7 +83,7 @@
     'krofu-yfirlit': 'money', income: 'money', 'br-krofur': 'money', 'br-krofuyfirlit': 'money', 'br-skuldunautar': 'money',
     'br-fjarmalyfirlit': 'money', 'br-gerdreikninga': 'money', 'br-reikningagerd': 'money',
     'bokhalds-yfirlit': 'chart', kostnadur: 'chart', 'br-efniskostnadur': 'chart',
-    'reikninga-postur': 'mail', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
+    'reikninga-postur': 'mail', tolvupostar: 'mail', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
     companies: 'building', rekstrarfelog: 'building', 'br-verkkaupar': 'building', vidskiptavinir: 'users',
     sala: 'cart', bord: 'grid', 'minar-sidur': 'grid', arsskodun: 'check', 'br-yfirferd': 'check',
     thjonustuverk: 'wrench', 'thjonustu-verkstaedi': 'wrench', 'br-verkstadir': 'wrench',
@@ -110,6 +110,7 @@
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
     { k: 'samthykkja',       label: 'Samþykkja',             short: 'Samþykkja',  emoji: '✅' },   // 446 (08.10.2026) — símasíða Samþykkja-hamsins
+    { k: 'tolvupostar',      label: 'Tölvupóstar',           short: 'Póstar',     emoji: '✉️' },   // 449 (09.10.2026) — símasíða Tölvupósta-hamsins
     { k: 'svarstod',         label: 'Svar-stöð · hvernig textar verða til', short: 'Svar-stöð', emoji: '✉️' },   // 447 (08.10.2026)
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
@@ -207,7 +208,7 @@
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
-      defaults: ['bord', 'samthykkja', 'arsskodun', 'reikninga-postur'] },
+      defaults: ['bord', 'samthykkja', 'tolvupostar', 'arsskodun', 'reikninga-postur'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -633,6 +634,8 @@
     // 08.10.2026 (Agnar: „setja hana inn í öpp Þjónustuborð“): Samþykkja-síðan (446) fer á Þjónustuborðs-appið við lestur,
     // á eftir borðinu, svo vistaðar stillingar þurfi enga handavinnu. Má taka út í síðuvalinu eins og hverja aðra.
     if (key === 'verkefni' && arr.indexOf('samthykkja') < 0 && !(c && c.__samt446)) { var bi = arr.indexOf('bord'); arr = arr.slice(0, bi + 1).concat(['samthykkja'], arr.slice(bi + 1)); }
+    // 09.10.2026: Tölvupóstar (449) sömuleiðis á Þjónustuborðs-appið, á eftir Samþykkja.
+    if (key === 'verkefni' && arr.indexOf('tolvupostar') < 0 && !(c && c.__tp449)) { var ti = arr.indexOf('samthykkja'); ti = ti < 0 ? arr.indexOf('bord') : ti; arr = arr.slice(0, ti + 1).concat(['tolvupostar'], arr.slice(ti + 1)); }
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return pageByKey(k); });
   }

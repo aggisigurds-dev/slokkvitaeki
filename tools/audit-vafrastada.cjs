@@ -58,7 +58,9 @@ const BANN = [
 // svörin og tillögurnar sjálfar eru á þjóninum. Hækkað af því lykillinn stenst regluna, ekki til að fá grænt.
 // ⚠ Takmörkun vörðarins, skráð hér svo næsti lesandi eyði ekki tíma í hana: hver nýr FASTI sem geymir þegar talinn
 // lyklastreng hækkar töluna um einn. Talningin er á nöfnum, ekki strengjum.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 154, ui: 0 } };
+// 09.10.2026 — `tolvupostar_sia` (448): hólf · röðun · sía Tölvupósta-hamsins, útlitsval eins vafra; pósturinn, málin og
+// svörin eru á þjóninum (email_digest, thjonustubeidni, reikninga_postur_activity). Hækkað 154 → 155 af því lykillinn stenst regluna.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 155, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

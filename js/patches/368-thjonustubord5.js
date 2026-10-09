@@ -227,6 +227,9 @@
     // lifa per starfsmann (by_staff.<nafn>.mitt), sjá M(). Málin eru í „Master og mitt borð".
     mitt:      { l: 'Mitt vinnuborð', board: false, mitt: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samthykkja: { l: 'Samþykkja', board: false, rymi: SAMT_HAM, first: [], filter: 'allt', flokkar: [], merki: [] },
+    // 09.10.2026 (Agnar: „ham sem er tölvupóstar með eldklar@ og bokhald@ … merkingarnar og labels koma með … geti svarað þaðan“):
+    // rýmið sjálft býr í 448-tolvupostar.js (gögn, teikning, aðgerðir) — hér aðeins færslan, talan og dreifingin.
+    tolvupostar: { l: 'Tölvupóstar', board: false, rymi: 'tolvupostar', first: [], filter: 'allt', flokkar: [], merki: [] },
     thjonusta: { l: 'Master og mitt borð', board: true, first: [], filter: 'allt', flokkar: [], merki: [] },
     samskipti: { l: 'Samskipti', board: false, first: ['postsvor'], filter: 'allt', flokkar: ['samskipti'], merki: ['senda_tolvupost', 'hringja'] },
     krofur:    { l: 'Kröfur', board: false, first: ['krofumal', 'krofur', 'gleymt', 'bakfaersla', 'afgreidsla'], filter: 'allt', flokkar: ['rukkun'], merki: ['eftir_ad_rukka', 'bokhald'] },
@@ -309,6 +312,7 @@
     if (!h) return '';
     if (h.rymi === SAMT_HAM) return S.rows.filter(r => iHam(r, k) && erSamthykki(r)).length;
     if (h.rymi === 'vinnublod') return vbrListi(n).filter(vbrBidur).length;
+    if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && x.hluti !== 'buid').length : '';
     if (h.board) return S.rows.filter(r => iHam(r, k) && (isFree(r) || onBoardOf(r, n))).length;
     if (k === 'samskipti') return S.rows.filter(r => isPost(r) && !r.svarad_at).length;
     if (k === 'krofur') return S.counts.krofur == null ? '' : S.counts.krofur;
@@ -2201,6 +2205,12 @@
   const samtListi = (n, osiad) => S.rows
     .filter(r => iHam(r, SAMT_HAM) && (osiad || samtRodun !== 'postur' || postOsvarad(r)))
     .sort((a, b) => samtHluti(a) - samtHluti(b) || samtRada(a, b) || rodunSamt(a, b));
+  // 448 teiknar Tölvupósta-rýmið; sækir sjálft við fyrstu opnun og kallar render() hér þegar gögnin lenda.
+  function tpRymiHtml() {
+    if (!window.Tolvupostar) return emptyHtml('Tölvupóstar (448) eru ekki hlaðnir.');
+    if (!Tolvupostar.loaded() && !Tolvupostar.loading()) Tolvupostar.load();
+    return Tolvupostar.rymiHtml();
+  }
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     const listi = samtListi(n);
@@ -4868,7 +4878,7 @@
           ? mine.map(r => mineRow(r, r.id === selId) + (r.id === selId ? '<div class="sel inline">' + selMarkup + '</div>' : '')).join('')
           : emptyHtml('Borðið þitt er autt. Taktu mál af Master eða skráðu nýtt mál á þig.'))) +
       '</section>';
-    const board = rymi === VBR_HAM ? vbRymiHtml(n) : rymi === SAMT_HAM ? samtRymiHtml(n) : mode.board
+    const board = rymi === VBR_HAM ? vbRymiHtml(n) : rymi === SAMT_HAM ? samtRymiHtml(n) : rymi === 'tolvupostar' ? tpRymiHtml() : mode.board
       ? midjuEiningar + '<div class="board' + (feedFalinn ? ' bara' : '') + '" data-view="' + (feedFalinn ? 'mitt' : S.view) + '">' +
           (feedFalinn ? '' : '<div class="seg phone-seg" role="group" aria-label="Borð">' +
             '<button type="button" data-t5="view" data-v="master" aria-pressed="' + (S.view === 'master') + '">' + esc(siuHeiti) + '<span class="c">' + visible.length + '</span></button>' +
@@ -5543,6 +5553,7 @@
     }
     if (!el || el.tagName === 'SELECT') return;
     const a = el.dataset.t5, id = el.dataset.id ? Number(el.dataset.id) : null, m = el.dataset.m;
+    if (a && a.indexOf('tp-') === 0 && window.Tolvupostar) { if (Tolvupostar.smellur(el, e)) return; }   // 448 Tölvupóstar
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
     const nyttId = () => 'lk' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -6160,6 +6171,7 @@
   }
   function onInput(e) {
     const el = e.target, k = el && el.dataset ? el.dataset.k : null;
+    if (el && el.dataset && el.dataset.tpIn && window.Tolvupostar) { Tolvupostar.innslattur(el); return; }   // 448 — reitir svarsins lifa í S þar
     if (k === 'lq' || k === 'nc') leita(k, el.value);
     else if (el && el.dataset && el.dataset.sk) skrifaSk(el);
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
@@ -6246,6 +6258,12 @@
   }
   /* 08.10.2026 — út fyrir Samþykkja-símasíðuna (446): SAMI listinn, SÖMU svörin (svaraSamthykki / done), sömu
    * hjálparföll. Síðan teiknar sig þegar þetta borð teiknar (sjá _eftir í render()). Ekkert hér skrifar sjálft. */
+  // 09.10.2026 — það sem 448 (Tölvupóstar) þarf frá borðinu: teikna, toast, skuggarótin (fyrir eigið stílblað) og að opna mál.
+  window.Bord368 = {
+    render, toast,
+    root: () => { const v = document.getElementById(VIEW_ID); return v && v.shadowRoot; },
+    opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); }
+  };
   window.Samthykkja = {
     // Hrálistinn — 446 á sína eigin síu og má ekki erfa þessa.
     listi: () => samtListi(nu(), true), hluti: samtHluti, svara: svaraSamthykki, loka: done,
