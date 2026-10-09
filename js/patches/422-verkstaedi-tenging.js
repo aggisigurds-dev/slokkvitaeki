@@ -75,7 +75,7 @@
     const best = new Map();
     linur.forEach((l) => {
       const v = verk.get(l.job_id);
-      if (!v || v.status === 'eytt') return;
+      if (!v || v.status === 'eytt' || v.status === 'cancelled') return;   // 09.10.2026 (mál #1125, samþykkt): afturkölluð verkbeiðni losar tækin eins og eydd
       const cur = best.get(l.uttaeki_id);
       const lykill = (x) => (Date.parse(x.verk.created_at) || 0) * 1e6 + (+x.lina.id || 0);
       const nyr = { lina: l, verk: v };

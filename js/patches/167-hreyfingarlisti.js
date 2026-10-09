@@ -776,7 +776,8 @@ ${''/* 08.10.2026 (Agnar: „i dont think i need a sumary of kreditfært"): Kred
             <label class="hl2-reitur">${IKON.leit}<input class="_hr-search" type="text" placeholder="Sía lista — nafn, R-númer, upphæð …" aria-label="Sía lista" value="${esc(_state.search)}"></label>
           </div>
           ${sidasta ? sidastaHtml(sidasta) : ''}
-          ${listHtml(rows)}
+          ${listHtml(rows.slice(0, _state.syn || 150))}
+          ${rows.length > (_state.syn || 150) ? '<button type="button" class="hl2-silfur hl2-fleiri" style="display:block;margin:10px auto 4px">Sýna fleiri · ' + Math.min(150, rows.length - (_state.syn || 150)) + ' af ' + (rows.length - (_state.syn || 150)) + ' eftir</button>' : ''}
           <div class="hl2-fot"><span>${esc(rows.length === all.length ? ft(all.length, 'færsla', 'færslur') : 'Sýni ' + rows.length + ' af ' + all.length + ' færslum')}</span>${_state.uppr ? '<span>Uppruni: ' + esc((UPPRUNI.find(u => u.k === _state.uppr) || {}).heiti || '') + '</span>' : ''}</div>
         </section>
 
@@ -799,8 +800,11 @@ ${''/* 08.10.2026 (Agnar: „i dont think i need a sumary of kreditfært"): Kred
     }));
     main.querySelector('._hr-csv')?.addEventListener('click', exportCSV);
     main.querySelectorAll('._hr-chip').forEach(c => {
-      c.addEventListener('click', () => { _state.filter = c.dataset.k; render(); });
+      c.addEventListener('click', () => { _state.filter = c.dataset.k; _state.syn = 150; render(); });
     });
+    // 09.10.2026 (mál #1126, samþykkt): listinn teiknar 150 í einu — reykprófið 07.10 mældi 42.040 DOM-stök
+    // með öllu teiknuðu. Tölurnar efst telja áfram ALLT; leit og síur leita í öllu; „Sýna fleiri" bætir 150 við.
+    main.querySelector('.hl2-fleiri')?.addEventListener('click', () => { _state.syn = (_state.syn || 150) + 150; render(); });
     main.querySelectorAll('._hr-sort').forEach(h => {
       h.addEventListener('click', () => {
         const k = h.dataset.k;
