@@ -933,7 +933,9 @@
       setjaStodu('hja', 'tomt', 'ekki viðskiptavinur');
       hausProfill([]);
       setjaUndir('hja', 'Nei');
-      setjaBuk('hja', '<div class="gr-tomt"><b>Viðskiptavinur hjá okkur: Nei.</b> Ekkert virkt fyrirtæki í okkar skrá á þessu heimilisfangi' + (g.kt ? ' eða með kennitölunni' : '') + ' (leitað í ' + tala(h.leitad) + ' færslum eftir götu og húsnúmeri, nefnifalli og þágufalli).</div>');
+      setjaBuk('hja', '<div class="gr-tomt"><b>Viðskiptavinur hjá okkur: Nei.</b> Ekkert virkt fyrirtæki í okkar skrá á þessu heimilisfangi' + (g.kt ? ' eða með kennitölunni' : '') + ' (leitað í ' + tala(h.leitad) + ' færslum eftir götu og húsnúmeri, nefnifalli og þágufalli).</div>' +
+        '<div class="gr-takkar"><button type="button" class="ssp-btn malm" data-gr-a="stofna" title="Stofnar fyrirtækið með „Nýtt fyrirtæki“-leið appsins og skráir í þá þjónustu sem þú velur — staðfest í glugganum">Stofna sem viðskiptavin</button>' +
+        '<span class="ssp-daufur" style="font-size:12px">Nafn, kennitala og heimilisfang fyllast út — þú velur þjónustu og staðfestir.</span></div>');
       return;
     }
     hausProfill(h.listi.map((r) => r.co));
@@ -954,7 +956,8 @@
         '<td class="gr-num">' + tala(r.taeki) + '</td><td class="gr-num">' + (r.sidast ? esc(dags(r.sidast)) : '—') + '</td>' +
         '<td>' + tegundTxt(r.flokkun) + '</td><td>' + kerfiTxt(r.kerfi) + '</td>' +
         '<td>' + (r.bord && Array.isArray(r.bord.haedir) && r.bord.haedir.length ? tala(r.bord.haedir.length) + (r.bord.haedir.length === 1 ? ' hæð' : ' hæðir') : '<span class="ssp-daufur">engin</span>') + '</td>' +
-        '<td><a class="ssp-btn malm" href="#company/' + +r.co.id + '" data-gr-a="profill" data-id="' + +r.co.id + '">Opna prófíl</a></td></tr>').join('') +
+        '<td><div class="gr-takkar" style="margin:0;flex-wrap:nowrap"><a class="ssp-btn malm" href="#company/' + +r.co.id + '" data-gr-a="profill" data-id="' + +r.co.id + '">Opna prófíl</a>' +
+        '<button type="button" class="ssp-btn" data-gr-a="faera" data-id="' + +r.co.id + '" title="Velja sjálfsótt atriði (m², hæðir, eignir …) sem fara í tóma reiti á prófílnum — ekkert yfirskrifast">Færa í prófíl</button></div></td></tr>').join('') +
       '</tbody></table>'));
   };
 
@@ -2052,6 +2055,13 @@
       if (erBeintPdf(u)) { opnaForskodun(); return; }
       ljos(myndSlod(u), el.getAttribute('data-titill') || '');
     } else if (a === 'forskodun') { e.preventDefault(); opnaForskodun(); }
+    else if (a === 'faera') {
+      e.preventDefault();
+      if (window.GreiningFaera && g) GreiningFaera.opna(+el.getAttribute('data-id'), g, { fra: 'greining' });
+    } else if (a === 'stofna') {
+      e.preventDefault();
+      if (window.GreiningFaera && g) GreiningFaera.stofna(g);
+    }
     else if (a === 'fsk') {
       e.preventDefault();
       const i = +el.getAttribute('data-i');
@@ -2270,11 +2280,28 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 
+  // „Greining" á raunverulega prófílnum (452): sömu gögn og síðan sækir — bygging-uppl, fasteign-opin, kröfuskrá —
+  // í sama lotu-skyndiminni (LOTA). Líkleg tegund úr OpenStreetMap/nafni (fyrirtækjaskrá ekki kölluð hér).
+  async function gognFyrirProfil(adr, nafn) {
+    const g = { adr: String(adr || '').trim(), parts: {}, hja: { listi: [] }, rekstur: { felog: [] } };
+    if (!g.adr) throw new Error('Ekkert heimilisfang á félaginu');
+    const [b, o, k] = await Promise.allSettled([byggingGogn(g), opinGogn(g), krofurGogn()]);
+    g.bygg = b.status === 'fulfilled' ? b.value : null;
+    g.opin = o.status === 'fulfilled' ? o.value : null;
+    g.krofur = k.status === 'fulfilled' ? k.value : null;
+    g.villur = { bygg: b.status === 'rejected' ? String((b.reason && b.reason.message) || b.reason) : null, opin: o.status === 'rejected' ? String((o.reason && o.reason.message) || o.reason) : null };
+    if (nafn) g.rekstur.felog.push({ nafn });
+    try { g.tegund = g.krofur ? likTegund(g) : null; } catch (_) { g.tegund = null; }
+    if (g.tegund && g.krofur && g.krofur.kr && g.krofur.kr.tegundir) { const t = g.krofur.kr.tegundir.get(g.tegund.tegund); g.tegund.heiti = t ? t.heiti : g.tegund.tegund; }
+    return g;
+  }
   window.Greining451 = {
+    gognFyrirProfil,
     opna: (arg) => { location.hash = slodFyrir(arg || ''); },
     opnaNu: opna,
     stada: () => ({ virkt: S.virkt, arg: S.arg, adr: S.adr, parts: S.g ? JSON.parse(JSON.stringify(S.g.parts)) : null }),
     gogn: () => S.g,
+    likTegund: (g) => { try { return likTegund(g); } catch (_) { return null; } },
     forsk: () => ({ virk: FSK.virk, bid: FSK.bid.length, mest: FSK.mest, byrjad: FSK.byrjad, lokid: FSK.lokid, villur: FSK.villur, safn: (S.fskSafn || []).length }),
     samaHeimili, thatta,
     SYND,

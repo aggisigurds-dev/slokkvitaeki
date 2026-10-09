@@ -87,6 +87,15 @@
     }
   }
 
+  // 09.10.2026 (Agnar: „lítinn hnapp í fyrirtækjaprófílinn. Greining. Sem þá sækir öll gögnin. Og maður getur valið
+  // bæta upplýsingum á síðu“): „Greining“ í Hús-línunni — sama lína og fyrir, svo bannerinn stækkar ekki. Smellurinn er
+  // 452 (GreiningFaera.opnaProfil): sækir gögnin og sýnir þau INNI á prófílnum; ekkert skrifast nema notandinn velji.
+  const grTakki = (id) => '<button type="button" class="_greining-takki" data-co="' + (+id) + '" title="Greining fasteignar — sækja öll gögn um húsið og velja hvað fer á síðuna">Greining</button>';
+  function medGreiningu(html, id) {
+    if (!html || !id) return html;   // 452 hlustar á smellinn (delegated) — hnappurinn er alltaf teiknaður, sig breytist ekki
+    const i = html.indexOf('</div>');
+    return i < 0 ? html : html.slice(0, i) + grTakki(id) + html.slice(i);
+  }
   function markup(adr, h) {
     if (!h) return '';
     if (h.svar) {
@@ -131,7 +140,7 @@
     const sig = (h && h.svar ? 's:' + linurUrSvari(h.svar).map(x => x.join('=')).join('|') + (linurUrSvari(h.svar).length ? '' : ':vantar') : h && h.tomt ? 'tomt' : h && h.villa ? 'villa' : 'bid') +
       (saekibid.has(lykill) ? ':sæki' : '');
     let el = box.querySelector('._fasteign');
-    const html = markup(adr, h);
+    const html = medGreiningu(markup(adr, h), id);
     if (!html) { if (el) el.remove(); return; }
     if (el && el.dataset.sig === sig) return;
     if (!el) {
@@ -196,6 +205,10 @@
       'box-shadow:none!important;color:rgba(255,255,255,.72)!important;font:inherit!important;font-size:11.5px!important;font-weight:400!important;' +
       'line-height:19px!important;text-decoration:underline!important;text-underline-offset:3px!important;cursor:pointer!important;white-space:nowrap!important}' +
       'button._fasteign-takki:hover{color:#fff!important}' +
+      'button._greining-takki{margin:0 0 0 auto!important;padding:0 9px!important;height:19px!important;min-height:0!important;width:auto!important;flex:none!important;' +
+      'border:1px solid rgba(255,255,255,.38)!important;border-radius:10px!important;background:rgba(255,255,255,.06)!important;box-shadow:none!important;' +
+      'color:#fff!important;font:inherit!important;font-size:10.5px!important;font-weight:700!important;line-height:17px!important;letter-spacing:.04em!important;cursor:pointer!important;white-space:nowrap!important}' +
+      'button._greining-takki:hover{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.7)!important}' +
       'button._fasteign-takki:disabled{opacity:.6!important;cursor:default!important}' +
       '._fasteign-gildi{flex:1 1 auto;min-width:0;font-size:11.5px;line-height:19px;color:rgba(255,255,255,.72);padding:0 2px;white-space:nowrap}';
     (document.head || document.documentElement).appendChild(s);

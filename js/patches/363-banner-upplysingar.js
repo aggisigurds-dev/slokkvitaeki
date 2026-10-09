@@ -102,7 +102,12 @@
   // Talnalínur og flísar (v2). Sömu lyklar og tilboðstólið.
   const TOLUR = [
     { merki: 'Hús',
-      reitir: [{ reitur: 'haedir', eining: 'hæðir', titill: 'Hæðir ofan jarðar' }],
+      reitir: [
+        { reitur: 'haedir', eining: 'hæðir', titill: 'Hæðir ofan jarðar' },
+        // 09.10.2026 (Greining fasteignar, 452): stærð og byggingarár — skráningartafla/byggingarlýsing gefa þau
+        { reitur: 'm2', eining: 'm²', titill: 'Stærð hússins í m² (brúttó)', breid: true },
+        { reitur: 'byggar', eining: 'byggt', titill: 'Byggingarár', breid: true }
+      ],
       flisar: [
         { reitur: 'jardhaed', gildi: 'yes', merki: 'jarðhæð', titill: 'Jarðhæð með tækjum' },
         { reitur: 'kjallari', gildi: 'yes', merki: 'kjallari', titill: 'Kjallari með sameign — geymslur, þvottahús eða sorpgeymsla' }
@@ -111,7 +116,8 @@
       reitir: [
         { reitur: 'stiga',    eining: 'stigag.', titill: 'Fjöldi stigaganga' },
         { reitur: 'ibudir',   eining: 'íb.',     titill: 'Fjöldi íbúða' },
-        { reitur: 'herbergi', eining: 'herb.',   titill: 'Fjöldi herbergja (hótel, gisting)' }
+        { reitur: 'herbergi', eining: 'herb.',   titill: 'Fjöldi herbergja (hótel, gisting)' },
+        { reitur: 'eignir',   eining: 'eignir',  titill: 'Fjöldi eigna í húsinu (fasteignaskrá — íbúðir, rými, geymslur)' }
       ] }
   ];
   const VALLINUR = [
@@ -166,6 +172,34 @@
     const f = serverKort()[String(coId)];
     const v = (f && typeof f === 'object') ? f[reitur] : '';
     return (v == null) ? '' : String(v);
+  }
+
+  // Sjálfsótt gildi (Greining fasteignar, 452) bera uppruna: banner_upplysingar_uppruni[coId][reitur] =
+  // { gildi, heimild, af, t }. 🏛 birtist við reitinn á meðan gildið í reitnum er ÞAÐ sem var sótt — breytir
+  // notandinn því hverfur merkið (gildið er þá hans). Reglan „Sjálfsóttar upplýsingar merktar".
+  const LYKILL_UPPRUNI = 'banner_upplysingar_uppruni';
+  function uppruni(coId, reitur) {
+    try {
+      const o = (window.AppSettings && AppSettings.get) ? AppSettings.get(LYKILL_UPPRUNI) : null;
+      const u = o && o[String(coId)] && o[String(coId)][reitur];
+      return (u && typeof u === 'object') ? u : null;
+    } catch (_) { return null; }
+  }
+  function sjalfsott(coId, reitur) {
+    const u = uppruni(coId, reitur), v = gildi(coId, reitur);
+    return u && v !== '' && String(u.gildi) === v ? u : null;
+  }
+  function vistaUppruna(coId, reitur, u) {
+    const patch = {}; patch[LYKILL_UPPRUNI] = {}; patch[LYKILL_UPPRUNI][String(coId)] = {}; patch[LYKILL_UPPRUNI][String(coId)][reitur] = u;
+    return Promise.resolve().then(() => AppSettings.save(patch)).then((ok) => ok !== false, () => false);
+  }
+  function merkjaSjalf(box, coId) {
+    box.querySelectorAll('._bupp-sjalf[data-reitur]').forEach((m) => {
+      const u = sjalfsott(coId, m.dataset.reitur);
+      const t = u ? 'Sjálfsótt: ' + (u.heimild || 'opinber skrá') + (u.af ? ' — ' + u.af : '') + (u.t ? ' · ' + String(u.t).slice(0, 10) : '') + '. Breyttu reitnum ef gildið er rangt; þá er það þitt.' : '';
+      if (m.hidden !== !u) m.hidden = !u;
+      if (m.title !== t) m.title = t;
+    });
   }
 
   // Það sem VIÐ skrifuðum síðast — gildir þar til serverinn skilar því sama.
@@ -624,6 +658,9 @@
       ${R('._bupp-innri', 'display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;flex:1 1 auto;min-width:0')}
       ${R('._bupp-talapar', 'display:inline-flex;align-items:baseline;gap:3px')}
       ${R('input.co-bupp-reitur._bupp-tala', 'flex:none;width:30px;text-align:right;padding:0 3px')}
+      ${R('input.co-bupp-reitur._bupp-tala._breid', 'width:42px')}
+      ${R('._bupp-sjalf', 'font-size:10.5px;line-height:1;opacity:.85;cursor:help')}
+      ${R('._bupp-sjalf[hidden]', 'display:none!important')}
       ${R('._bupp-eining', 'font-size:10.5px;color:rgba(255,255,255,.45)!important;white-space:nowrap')}
       ${R('button._bupp-flis', 'display:inline-flex;align-items:center;height:18px!important;min-height:0!important;min-width:0!important;width:auto!important;margin:0!important;padding:0 7px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:9px!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;color:rgba(255,255,255,.55)!important;font:inherit;font-size:10.5px!important;font-weight:400!important;line-height:16px!important;letter-spacing:normal!important;text-transform:none!important;white-space:nowrap;cursor:pointer')}
       ${R('button._bupp-flis:hover', 'border-color:rgba(255,255,255,.5)!important;color:rgba(255,255,255,.85)!important')}
@@ -641,6 +678,7 @@
          við setjum aðeins leturstærðina svo iOS þysji ekki inn. */
       ${R('input.co-bupp-reitur._simi', 'font-size:16px')}
       ${RB('._bupp-simi input.co-bupp-reitur._bupp-tala', 'width:44px')}
+      ${RB('._bupp-simi input.co-bupp-reitur._bupp-tala._breid', 'width:58px')}
       ${RB('._bupp-simi button._bupp-flis', 'height:32px!important;line-height:30px!important;font-size:13px!important;padding:0 12px!important;border-radius:16px!important')}
       /* MÆLT 09.09.2026: sex línur bæta 271 px við bannerinn í símaham —
          nær þrefalda hæð hans — og oftast eru þær AUÐAR. Agnar bað um daufar
@@ -683,9 +721,9 @@
   }
   function talaHtml(coId, r) {
     return '<span class="_bupp-talapar">' +
-      '<input class="co-bupp-reitur _bupp-tala" data-reitur="' + r.reitur + '" inputmode="numeric" maxlength="6" ' +
+      '<input class="co-bupp-reitur _bupp-tala' + (r.breid ? ' _breid' : '') + '" data-reitur="' + r.reitur + '" inputmode="numeric" maxlength="6" ' +
       'value="' + esc(gildi(coId, r.reitur)) + '" placeholder="–" title="' + esc(r.titill) + ' — vistast strax">' +
-      '<span class="_bupp-eining">' + esc(r.eining) + '</span></span>';
+      '<span class="_bupp-eining">' + esc(r.eining) + '</span><span class="_bupp-sjalf" data-reitur="' + r.reitur + '" hidden>\u{1F3DB}</span></span>';
   }
   function textalinaHtml(coId, l) {
     const v = esc(gildi(coId, l.reitur));
@@ -832,6 +870,7 @@
         : '') +
       '<button type="button" class="_bupp-vixl">' + (opid(coId) ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     uppfaeraTomt(box, coId);
+    merkjaSjalf(box, coId);
     thjappa(box);
 
     box.querySelectorAll('.co-bupp-reitur').forEach(inp => {
@@ -902,6 +941,7 @@
     });
     merkjaFlisar(box, coId);
     uppfaeraTomt(box, coId);
+    merkjaSjalf(box, coId);
     thjappa(box);
     // Tillögurnar breytast þegar reitur fyllist (hér eða á annarri vél) eða
     // athugasemd breytist — teiknum þá upp á nýtt, en aldrei ofan í innslátt.
@@ -951,6 +991,8 @@
   window.addEventListener('hashchange', () => { try { haldaVid(); } catch (_) {} });
   haldaVid();
 
-  window.BannerUpplysingar = { haldaVid, gildi, tillogur, skrarSvar, saekjaSkrar, LYKILL };
+  // 09.10.2026: vistaReit/vistaUppruna/uppruni/REITIR opin fyrir „Færa í prófíl" (452) — ein skrifleið í reitina.
+  const REITIR = TOLUR.reduce((a, t) => a.concat(t.reitir.map((r) => ({ reitur: r.reitur, titill: r.titill, eining: r.eining })), (t.flisar || []).map((x) => ({ reitur: x.reitur, titill: x.titill, gildi: x.gildi }))), []);
+  window.BannerUpplysingar = { haldaVid, gildi, tillogur, skrarSvar, saekjaSkrar, LYKILL, LYKILL_UPPRUNI, vistaReit, vistaUppruna, uppruni, sjalfsott, REITIR };
   console.log('[patch-363] 🏢 Banner-upplýsingar v2 — hús, tæki, aðkoma, tillögur + afsláttarlína');
 })();

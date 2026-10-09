@@ -64,6 +64,23 @@ krefst(/new IntersectionObserver\(/.test(g) && /FSK\.io\.observe\(el\)/.test(g),
 krefst(/fetch\(PDFF \+ '\?url=' \+ encodeURIComponent\(slod\)/.test(g), '451: PDF-forskoðun á að sækja skjalið um teikn-pdf (sama rót) — beint úr safninu stoppar CORS');
 krefst(/TeiknSaekja\.flokka\(/.test(g), '451: flokkun blaða og hæða á að vera 374 TeiknSaekja.flokka (sama og „Finna allt húsið“) — ekki eigin afrit');
 krefst(!/data-gr-a="pdfhaed"|PDF-teikning — smelltu til að birta/.test(g), '451: „PDF — smelltu til að birta“-reitir eru aflagðir; PDF-hæðir teiknast latt');
+// 8. Greining → prófíllinn (452, 09.10.2026): „Færa í prófíl", „Greining"-takkinn og „Stofna sem viðskiptavin"
+//    · ALDREI yfirskrift á fylltum reit: hver reitur lesinn aftur rétt fyrir skrif (tomtNu) og handval tegundar líka
+//    · ein skrifleið í reitina: 363 vistaReit (sama og prófíllinn) — 452 snertir enga töflu beint
+//    · stofnun AÐEINS um „Nýtt fyrirtæki" (Companies.submitNew); þjónusta um stjórntæki kerfanna (280 / 147 / 385)
+const f452 = les('js/patches/452-greining-faera.js');
+const k452 = f452.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/[^\n'"]*$/gm, '');
+krefst(idx.includes('/js/patches/452-greining-faera.js'), 'index.html: 452-greining-faera.js er ekki hlaðin');
+krefst(!/\.(insert|upsert|update|delete)\(/.test(k452), '452: bein skrif í töflu — öll skrif fara um vistunarleiðir prófílsins (363 vistaReit, 449a leidrettaTegund) og stofnleið appsins');
+krefst(!/AppSettings\.save\(/.test(k452) && !/arsskodun_customers|brunakerfi_customers/.test(k452) && !/from\('slokkvikerfi'\)/.test(k452), '452: þjónustuskráning framhjá kerfunum — notaðu stjórntæki þeirra (280 Setja í þjónustu, 147 Bæta við fyrirtæki, 385 Nýtt kerfi)');
+krefst(/if \(!tomtNu\(coId, a\.reitur\)\) \{[^\n]*continue; \}\s*const ok = await B\.vistaReit\(coId, a\.reitur, a\.gildi\);/.test(f452), '452: vistaReit verður að koma beint á eftir endurlestri reitsins (tomtNu) — fylltur reitur má aldrei yfirskrifast');
+krefst((k452.match(/vistaReit\(/g) || []).length === 1, '452: vistaReit má aðeins kalla á EINUM stað (í skrifa(), á eftir tomtNu-vörninni)');
+krefst(/if \(f\.flokkun\.tegund_handval\) \{[^\n]*continue; \}\s*await Flokkun\.leidrettaTegund\(coId, a\.gildi\);/.test(f452), '452: tegund rekstrar má aðeins vistast þegar ekkert handval er til (lesið aftur rétt fyrir skrif)');
+krefst(/await Companies\.submitNew\(\)/.test(f452) && !/from\('fyrirtaeki'\)/.test(k452), '452: stofnun á AÐEINS að fara um „Nýtt fyrirtæki" (Companies.openNew + Companies.submitNew)');
+krefst(/const lagleg = \(coId\) => \+coId > 0 && \+coId !== SYND/.test(f452), '452: vörn gegn sýndarfyrirtækinu (lagleg) vantar');
+const f363 = les('js/patches/363-banner-upplysingar.js');
+krefst(/window\.BannerUpplysingar = \{[^}]*vistaReit[^}]*vistaUppruna/.test(f363), '363: vistaReit/vistaUppruna verða að vera opin fyrir 452 (ein skrifleið í reitina)');
+krefst(/const LYKILL_UPPRUNI = 'banner_upplysingar_uppruni';/.test(f363) && /patch\[LYKILL_UPPRUNI\]\[String\(coId\)\]\[reitur\] = u;/.test(f363), '363: uppruni sjálfsóttra gilda á sinn eigin lykil (banner_upplysingar_uppruni), aldrei ofan í reitina');
 // 5. töflur
 const toflur = (g.match(/<table /g) || []).length, merktar = (g.match(/<table data-_pm-status-done="1"/g) || []).length;
 krefst(toflur === merktar, '451: ' + (toflur - merktar) + ' tafla án data-_pm-status-done (00-legacy setur þá tækja-fellilista sem skrifar uttaeki.status)');
