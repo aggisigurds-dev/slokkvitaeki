@@ -45,6 +45,7 @@
     { k: 'eldvarnaeftirlit', heiti: 'Eldvarnaeftirlit (árlegt)', stutt: 'Eftirl' },
     { k: 'slokkvikerfi_eldhus', heiti: 'Slökkvikerfi í eldhúsháfi', stutt: 'Eldhús' },
     { k: 'rymingaruppdrattur', heiti: 'Rýmingaruppdráttur', stutt: 'Rým' },
+    { k: 'fjoldaskilti', heiti: 'Fjöldaskilti (hámarksfjöldi)', stutt: 'Fjöldi' },
   ];
   const KERFI_MAP = new Map(KERFI.map((x) => [x.k, x]));
   // Tækifæri — reiknað í v_stadur_kerfi. led = litur ljóssins (442 .ssp-led).
