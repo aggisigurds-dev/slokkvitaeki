@@ -1569,6 +1569,11 @@ console.log('[patch-master] loaded with all fixes');
   // vidskiptavinir kennitala, and delete them.
   var lastCleanup = 0;
   function cleanupFyrirtaeki(){
+    // ÓVIRKT 09.10.2026: þessi hreinsun eyddi HVERJU nýju fyrirtæki (≤ 30 s gamalt) sem átti kennitölu í
+    // vidskiptavinir — líka nýrri starfsstöð rekstrarfélags (Nesdekk, Dalshraun 10: id 1852 stofnað 09:06:05,
+    // eytt 09:06:07 af þessum kóða). Starfsstöðvar deila kennitölu (hver staður sín röð), svo reglan á ekki við.
+    // Aldrei sjálfvirk hörð eyðing á fyrirtaeki; tvískráning úr Sölu er betri en týndur viðskiptavinur.
+    return;
     if(Date.now() - lastCleanup < 10000) return; // max once per 10s
     lastCleanup = Date.now();
     if(!window.DB || !window.DB.sb) return;
