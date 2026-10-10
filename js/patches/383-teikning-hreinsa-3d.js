@@ -1608,28 +1608,14 @@
     if (husM < 4 || husM > 300) return gamalt;
     return hd.dilarAMetra / punktar;
   }
-  // LOFTHÆÐ eftir tegund hússins (Agnar 10.10.2026: „2m 50cm í íbúðarhúsum. 3m í iðnaðarhúsnæðum"): íbúðir, gisting og
-  // búseta 2,50 m; allt annað (iðnaður, verkstæði, verslun, skrifstofur, lager, óflokkað) 3,0 m. Tegundin kemur úr
-  // flokkun staðarins (449a, v_stadur_flokkun); náist hún ekki gildir 3,0 m eins og áður.
-  const LOFTH_IBUD = new Set(['fjolbyli_lagt', 'fjolbyli_hatt', 'einbyli', 'ibudagisting', 'herbergjaleiga', 'hotel',
-    'heimagisting_10', 'heimagisting_yfir10', 'ibudir_aldradra', 'hjukrunarheimili', 'fristundahus']);
-  const _lofth = new Map();
-  async function lofthaedFyrir(fid) {
-    if (!fid || !window.Flokkun || typeof window.Flokkun.stadur !== 'function') return 3.0;
-    if (!_lofth.has(fid)) {
-      _lofth.set(fid, Promise.race([
-        Promise.resolve(window.Flokkun.stadur(fid)).then(r => (r && r.flokkun && LOFTH_IBUD.has(r.flokkun.tegund)) ? 2.5 : 3.0),
-        new Promise(res => setTimeout(() => res(null), 4000))
-      ]).catch(() => null).then(v => { if (v == null) _lofth.delete(fid); return v || 3.0; }));
-    }
-    return _lofth.get(fid);
-  }
+  // LOFTHÆÐ: 3,0 m í öllum húsum (Agnar 10.10.2026: „Allt 3 metra" — 2,5 m í íbúðarhúsum var prófað sama dag og hafnað).
+  const LOFTH_M = 3.0;
 
   async function syna3d(gamur, gogn) {
     await saekjaThree();
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
     if (!haedir.length) throw new Error('Engin hæð til að sýna');
-    const LOFTH = Math.min(6, Math.max(2.2, +(gogn && gogn.lofth) || 3.0));     // lofthæð (m) — lofthaedFyrir()
+    const LOFTH = LOFTH_M;
     const b = gamur.clientWidth || 800, h = gamur.clientHeight || 500;
     const teiknari = new T.WebGLRenderer({ antialias: true, alpha: false });
     teiknari.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -4078,7 +4064,7 @@
     document.body.appendChild(gamur);
     let syn = null;
     try {
-      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt', lofth: await lofthaedFyrir(FP.companyId) });
+      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt' });
       tima.svid = Math.round(t() - t0); t0 = t();
       const r = syn.fastMynd(o);
       if (!r) throw new Error('myndin teiknaðist ekki');
@@ -4835,7 +4821,7 @@
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     try {
-      G.syn3d = await syna3d(gamur, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn, lofth: await lofthaedFyrir(FP.companyId) });
+      G.syn3d = await syna3d(gamur, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
       const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
       // Skýring lita — fylgir því sem er á skjánum: valin hæð ein, eða allar. Litirnir byggja á EI-merkjum sem voru lesin
