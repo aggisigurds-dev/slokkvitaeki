@@ -188,6 +188,79 @@ vafranum. Afbrigði af 1: kyrrstaðan verður að ná yfir alla lotu biðraðari
 
 ---
 
+## 12. Spegill sem er gamall les eins og frávik
+
+`audit-payday-samraeming` flaggaði 09.10.2026 þremur kröfum sem „merkt send en
+fór aldrei": R-001109, R-001110, R-001117, alls 305.333 kr. Allar þrjár BÁRU
+raunverulegt `dk_invoice_id` — þær fóru í Payday kl. 15:33:58, 15:34:09 og
+15:34:54. Spegillinn `payday_invoices_slokk` var síðast uppfærður **15:32:44**.
+Tvær mínútur.
+
+Vörðurinn mælir SPEGILINN, ekki Payday. Sé hann eldri en atburðurinn verður
+hver nýleg aðgerð að „fráviki".
+
+**Reglan:** áður en spegils-frávik er kallað frávik — lestu hvenær spegillinn
+var uppfærður og berðu það saman við tímann á aðgerðinni. `select max(updated_at)
+from payday_invoices_slokk` svarar því á einni sekúndu.
+
+---
+
+## 13. Hrá fyrirspurn sem hermir eftir viðmótinu — og appið hafði rétt fyrir sér
+
+09.10.2026, spurningin var „eru þessar kröfur örugglega ósendar". Hrá SQL gaf
+**23 ósendar, þar af 12 sem voru þegar kreditfærðar** — 1.741.218 kr sem leit út
+eins og Agnar væri að fara að rukka tvisvar, þar af tvær með GREIDDAN
+Payday-reikning á sömu upphæð.
+
+Ekkert af því var satt. `166-krofu-yfirlit.js` (lína ~922) fjarlægir bæði
+kreditfærsluna OG móðurina sem hún bakfærir:
+
+```js
+const cids = new Set(rows.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
+rows = rows.filter(s => !s.is_credit && !cids.has(String(s.id)));
+```
+
+Fyrirspurnin mín sleppti seinni helmingnum. Viðmótið sýndi 9 kröfur, 259.852 kr —
+og það var rétta talan.
+
+**Reglan:** ætlirðu að staðfesta tölu sem viðmótið sýnir skaltu LESA síu
+viðmótsins fyrst og herma eftir henni allri. Ósamræmi milli þín og appsins er
+jafn líklega þín villa — og hér var það þannig. Sama gildir um
+`v_solur_lifandi`, sem gerir þetta rétt og má nota í staðinn.
+
+---
+
+## 14. `false or NULL` er NULL
+
+Í sömu yfirferð:
+
+```sql
+coalesce(svarad_at is not null, false) or coalesce(sonnun->>'styrkur'='svarad', false)
+```
+
+Án `coalesce` skilaði prófið **0 svöruð og 0 ósvöruð af 7** — þriggja gilda
+rökfræði Postgres gerir `false or NULL` að `NULL`, og báðar talningar féllu.
+Það leit út eins og „ekkert til".
+
+**Reglan:** hver `or`/`and` yfir reit sem má vera NULL fær `coalesce(..., false)`.
+Tala sem er núll í BÁÐA flokka er merki um NULL, ekki um tóman heim.
+
+---
+
+## 15. Rétt breyting í röngum teiknara mælist sem „engin breyting"
+
+Sama dag: ℹ-takki bættur við hverja kröfu í `166`. Eftir hleðslu: **0 takkar**,
+þótt kóðinn væri réttur og skráin þýddist. `166` teiknar kröfuraðir á TVEIMUR
+stöðum (`kym-`-röðin og `kyIcon`/`kyAbtn`-röðin) og aðeins annar er virkur.
+Mælingin sem fann það var `document.querySelectorAll('._ky-note').length` = 43
+á móti `.kym-note` = 0.
+
+**Reglan:** finnist breyting ekki í viðmótinu skaltu telja SYSTKINI hennar áður
+en þú leitar að hleðsluvillu — teldu reitinn sem þú festir þig við. Sé hann til
+í fjölda en þinn ekki, ertu í röngum teiknara.
+
+---
+
 ## Gátlisti áður en sagt er „mælt"
 
 1. Hvaða útgáfa svaraði? (`build.json` / `?v=`)

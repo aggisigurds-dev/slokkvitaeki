@@ -137,7 +137,40 @@ kallar á nýja spurningu, stofnaðu nýtt samþykktarmál frekar en að spyrja 
 
 **Sönnun fylgir hverju máli:** skjáskot af síðunni/tölunni sem málið byggir á fer í `thjonustubeidni_files` (bucket `verkbord-files/<id>/<ms>-<nafn>`) — Samþykkja-símasíðan (446) sýnir þau sem ræmu á spjaldinu. Skrifta með service-lykli úr `luna-bridge/.env` (sjá minni `stofna-samthykki.js`-mynstur).
 
-**Drög úr samþykktu vinnublaði = beint INSERT í `solur`.** Trigger `solur_set_num` gefur R-númer, `trg_vidskiptategund` setur `uttekt`, `trg_solur_fill_base_id` fyllir grunn. Línur `[{qty,desc,vsk_pct,unit_price_ex_vat}]` úr `sara_yfirferd.linur` (+ Akstur × `akstur`, Skýrslugerð 5.600), `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null = ÓSENT í Kröfuyfirliti. Innri texti í `athugasemdir` (aldrei `krafa_note`). SARA-línan → `stada='klarad'`. Dæmi 09.10: R-001111…R-001116.
+**Drög úr samþykktu vinnublaði = beint INSERT í `solur`.** Trigger `solur_set_num` gefur R-númer, `trg_vidskiptategund` setur `uttekt`, `trg_solur_fill_base_id` fyllir grunn. Línur `[{qty,desc,vsk_pct,unit_price_ex_vat}]` úr `sara_yfirferd.linur` (+ Akstur × `akstur`, Skýrslugerð 5.600), `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null = ÓSENT í Kröfuyfirliti. SARA-línan → `stada='klarad'`. Dæmi 09.10: R-001111…R-001116.
+
+> ⛔ **LEIÐRÉTT 09.10.2026 — hér stóð „innri texti í `athugasemdir` (aldrei `krafa_note`)". ÞAÐ ER ÖFUGT.**
+> `athugasemdir` **PRENTAST**: `vegnaLine()` í `233-uttekt-pdf-autosave.js` gerir úr honum
+> „Vegna"-línuna á reikningnum og `hreinsaNotu()` í `netlify/functions/payday-push.cjs` sendir
+> hann í `description` á Payday-kröfuna — hann fer því bæði á blaðið og í heimabanka kúnnans.
+> `krafa_note` er innri reiturinn; 166 segir það sjálft í title-inu og ℹ-takkinn þar opnar
+> skýringarglugga á hann.
+> **Það sem þetta kostaði:** sex reikningar fengu texta eins og „Drög stofnuð 09.10.2026 (Claude)
+> — mál #1175 … ÓSENT — Agnar fer yfir og sendir", og **einn þeirra (R-001117) var þegar farinn**
+> til viðskiptavinar með kennitölu fyrri eigenda á blaðinu. Agnar: „allllldreiii setja svona texta
+> á reikningana." Vörður: `tools/audit-reikningstexti.cjs`.
+> Í `athugasemdir` fer AÐEINS viðskiptavina-texti: „Heimsókn &lt;dags&gt;" eða lýsing á verkinu — og
+> aldrei dagsetning sem er ekki staðfest.
+
+## Yfirferð á ósendum kröfum („eru þetta örugglega réttar kröfur?")
+
+Þrjú próf, öll þrjú, á hverja kröfu — Agnar veit oft ekkert um reikning sem vélin bjó til:
+
+1. **Reikningurinn stemmir.** Σ(qty × unit_price_ex_vat) × 1,24 = `samtals`, upp á krónu.
+2. **Einingaverðin eru úr verðskránni.** Bera saman við `vorur.verd_an_vsk`. 09.10 stemmdu öll
+   níu; frávik þar er annaðhvort samið verð (þá á það að sjást) eða villa.
+3. **Krafan er ekki þegar til annars staðar.** `payday_invoices_slokk` á sömu kt og upphæð,
+   `stolpi_reikningar` á kt (fyrri eigendur rukkuðu til 07.05.2026), og önnur sala á sama félag
+   sama ár.
+
+Og tvennt í viðbót áður en hún telst sendanleg: **netfang** á félaginu, og — fyrir úttekt —
+**skýrsla ársins** (`customer_documents`, `doc_type='uttektarskyrsla'`, `year`, ekki `is_duplicate`).
+
+⚠ **Hermdu eftir SÍU VIÐMÓTSINS, ekki þinni eigin.** Hrá fyrirspurn 09.10 gaf 23 ósendar kröfur
+þar sem 12 voru þegar kreditfærðar — 1.741.218 kr sem leit út eins og tvírukkun í uppsiglingu.
+Viðmótið hafði rétt fyrir sér og fyrirspurnin mín rangt: 166 fjarlægir bæði kreditfærsluna OG
+móðurina. Notaðu `v_solur_lifandi` eða afritaðu síuna úr 166 í heild.
+Sjá `docs/MAELINGAR.md` gildrur 12–15.
 
 **Kt-skipti (nýir eigendur):** kt á `fyrirtaeki` OG `customers_base` (+ `override_log`), kreditfærsla með `is_credit/credit_of/kredit_a` (sama snið og 26-credit-invoice), nýr reikningur ÓSENDUR, Payday-krafan afturkölluð (`payday-push {action:'cancel', sale_id}` — aðeins með orðum Agnars í spjalli), og **skýrslan endurgerð**: `CompanyInspectionReport.open(id)` í höfuðlausum Playwright (jsPDF, ekki html2canvas) — `#_cir-save` er læstur „✓ Vistuð" þegar skýrsla ársins er til; opna með JS og smella, 168 vistar handvirkt samt og uppfærir `customer_documents`-röðina í stað.
 
