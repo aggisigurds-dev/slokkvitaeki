@@ -106,6 +106,26 @@ Hann skimar. Stutt tafla: hvað var gert, með hvaða mælingu. Svo það sem ef
 og hvað stoppar það. Eitt sem hann þarf að ákveða í einu — og ef svarið við máli
 kallar á nýja spurningu, stofnaðu nýtt samþykktarmál frekar en að spyrja í lausu lofti.
 
+## Lærdómur úr stóru yfirferðinni 08.–09.10.2026 (128 mál endurmæld)
+
+**Villumynstrin sem framleiddu röngu málin — athugaðu hvert þeirra ÁÐUR en mál fer á borðið:**
+1. **„Ósent / enginn reikningur" án kreditfærslu.** Sala með aðra sölu `credit_of` á sig er BAKFÆRÐ, ekki ósend (Eclipse R-000727 → R-000728 → R-000940; Grillvagninn; RB Rúm). Alltaf `select num from solur where credit_of=<id>` + Payday-staða (CANCELLED/CREDIT).
+2. **„Enginn reikningur 2026" án Stólpa.** 103 af 148 „án reiknings" áttu Stólpa-reikning (R-10xxxx í `customer_documents` EÐA `stolpi_reikningar` á kt — 21 félög áttu bara það síðara). Stólpi hætti 07.05.2026; heimsókn eftir maí á að eiga sölu í `solur`.
+3. **Úrelt síðan málið var stofnað** (greitt/sent/sótt/þjónustað eftir stofnun). Endurmæla sama dag og málið birtist.
+4. **Sama atriði í tveimur málum** (Menja #1122/#1155, Hagvagnar í fjórum málum). Leita á borðinu fyrst.
+5. **Samþykkt í spjalli en aldrei framkvæmt** (#877/#882/#884 frá 12.09). Takkinn á borðinu er eina sporið.
+6. Rangar smáupplýsingar: tækjatala, dagsetningar, reikningur annars félags í rökstuðningi.
+
+**Sönnun fylgir hverju máli:** skjáskot af síðunni/tölunni sem málið byggir á fer í `thjonustubeidni_files` (bucket `verkbord-files/<id>/<ms>-<nafn>`) — Samþykkja-símasíðan (446) sýnir þau sem ræmu á spjaldinu. Skrifta með service-lykli úr `luna-bridge/.env` (sjá minni `stofna-samthykki.js`-mynstur).
+
+**Drög úr samþykktu vinnublaði = beint INSERT í `solur`.** Trigger `solur_set_num` gefur R-númer, `trg_vidskiptategund` setur `uttekt`, `trg_solur_fill_base_id` fyllir grunn. Línur `[{qty,desc,vsk_pct,unit_price_ex_vat}]` úr `sara_yfirferd.linur` (+ Akstur × `akstur`, Skýrslugerð 5.600), `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null = ÓSENT í Kröfuyfirliti. Innri texti í `athugasemdir` (aldrei `krafa_note`). SARA-línan → `stada='klarad'`. Dæmi 09.10: R-001111…R-001116.
+
+**Kt-skipti (nýir eigendur):** kt á `fyrirtaeki` OG `customers_base` (+ `override_log`), kreditfærsla með `is_credit/credit_of/kredit_a` (sama snið og 26-credit-invoice), nýr reikningur ÓSENDUR, Payday-krafan afturkölluð (`payday-push {action:'cancel', sale_id}` — aðeins með orðum Agnars í spjalli), og **skýrslan endurgerð**: `CompanyInspectionReport.open(id)` í höfuðlausum Playwright (jsPDF, ekki html2canvas) — `#_cir-save` er læstur „✓ Vistuð" þegar skýrsla ársins er til; opna með JS og smella, 168 vistar handvirkt samt og uppfærir `customer_documents`-röðina í stað.
+
+**Verkefnalisti:** `POST https://brunaholf.netlify.app/api/verkefnalisti {action:'update', id, status:'klarad'|'sleppt', claude_notes}` — alltaf með sönnun í `claude_notes`.
+
+**Ársskoðun-blob:** `app_settings_merge({"arsskodun_customers":{"<id>":{…}}})` með ÖLLUM 8 equipment-lyklum (merge skilur gömlu eftir); afrit fyrst í `backup_<dags>_…`; `uttaeki`-raðir verða að fylgja því 153 telur `_unit_count` úr þeim.
+
 ## Að stofna mál til samþykkis (hinn helmingurinn — skráð 08.10.2026)
 
 Þegar Claude þarf ákvörðun Agnars („máttu útbúa samþykktarform af þessu og setja á Samþykkja") verður til eitt
