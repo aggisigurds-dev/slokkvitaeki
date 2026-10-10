@@ -351,7 +351,8 @@ krefst(/const STILLINGAR = \[[^\]]*'eldVal'\]/, 'handval eldveggja (eldVal) ver�
 krefst(/eldVal: n\.eldVal \|\| g\.eldVal/, 'sameinaHaedir verður að halda eldVal þegar röð þjónsins berst');
 krefst(/hRef\.eldVal = fyrri;[\s\S]{0,400}vistaSjalfkrafa\('eldveggir'\)/, 'val í 3D verður að skrifast í haedir[].eldVal og vistast (Agnar: „savað síðan réttu útgáfuna")');
 krefst(/texti: u \? \(u\.type \? String\(u\.type\) : radnr\.slice\(-6\)\) : '', gerd/, 'miðar tækjanna eiga að sýna TEGUND (Agnar: „grænu pinnarnir sýndu slökkvitæki eða brunaslöngur")');
-krefst(/const lk = taekjalikan\(mk\.gerd, veggH, litur\);/, 'tækin verða að teiknast sem líkön (slökkvitæki, slanga, reykskynjari, rafmagnstafla, skilti) — Agnar 04.10.2026');
+krefst(/const lk = taekjalikan\(mk\.gerd, (?:veggH|3 \* metri), litur\);/, 'tækin verða að teiknast sem líkön (slökkvitæki, slanga, reykskynjari, rafmagnstafla, skilti) — Agnar 04.10.2026');
+krefst(/const metri = metriA3d\(hd, k\), veggH = LOFTH \* metri[\s\S]*LOFTH_IBUD = new Set\(\['fjolbyli_lagt'|LOFTH_IBUD = new Set\(\['fjolbyli_lagt'[\s\S]*const metri = metriA3d\(hd, k\), veggH = LOFTH \* metri/, 'vegghæð = lofthæð staðarins: 2,5 m í íbúðarhúsum, 3 m í iðnaðarhúsnæði — Agnar 10.10.2026');
 krefst(/gerd: gerdTaekis\(u && u\.type\)/, 'hvert tæki verður að bera gerð sína inn í 3D');
 krefst(/teiknaTaekistakn\(mc, mk\.gerd\)/, 'miðar tækjanna verða að bera tákn tegundarinnar (🧯 🔔 slöngukefli — Agnar 04.10.2026)');
 krefst(/new T\.TorusGeometry\(hr\[0\] \* e, hr\[1\] \* e/, 'slöngukeflið í 3D á að vera spóla úr hringjum eins og táknið');
