@@ -403,6 +403,29 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
   (trigger `vorur_hafna_eyddum`). Taktu nafnið af listanum fyrst, eins og vorur.js gerir.
 - Vörumyndir: data-URL JPEG ~600×600 á hvítum grunni (sjá minni `vorumyndir-hvitur-bakgrunnur`).
 
+## Hreyfingarlisti (167) og Drög (143) — skilgreiningarnar (05.–09.10.2026)
+
+- **Ógreitt** (`erOgreitt` í `js/patches/167-hreyfingarlisti.js`) = Kröfu yfirlit (greitt_med `reikningur`, ógreitt,
+  ekki `void`, ekki kreditfært) + „Til að rukka" (`final` + `greitt_sidar`) + drög sem bíða í afgreiðslu.
+  Agnar 05.10: „bara það sem er í Kröfuyfirlit ógreitt, og síðan það sem er eftir í afgreiðslu ekki búið að
+  sækja". Kreditfært = einhver kreditnóta vísar á id-ið með `credit_of` — sótt fyrir ALLT tímabilið (kreditnóta í
+  október á reikning úr september). Mælt 05.10: gamla reglan 6.955.840 kr (kreditfærðir 3,43 m, bakfært 0,81 m og
+  öll drög töldust), rétt 2.348.149 (41 krafa = Kröfu yfirlit + 8 drög í afgreiðslu).
+- **Í afgreiðslu** = drög (`status='drog'`, ekki `hidden`) með verkbeiðni `ready` og enga `received` /
+  `inprogress` / `in_progress` — sama regla og `locFor` í `js/patches/143-drog-list.js`. Lestu ALLAR verkbeiðnir:
+  sumar heita eins og salan sjálf (R-001002, engin `-V1`), og sía `like 'R-%-V%'` missti þær.
+- **Sölur / Greitt / Nettó:** bakfærðar (`void`) sölur eru úti síðan 08.10. Hvort drög eigi að teljast er opin
+  spurning (mál 1119).
+- **Uppruni** (`solur.source`): `pos` + `sott` = Búð / söluborð · `uttekt` = Ársskoðun (165, 418) · `brunakerfi`
+  = Brunakerfis skoðun (273, 291) · `slokkvikerfi` = Slökkvikerfis skoðun (386, frá 05.10) · annað (`vinnublad`,
+  `claude`, `claude-krofuyfirferd`, null). Kreditnóta fær uppruna reikningsins sem hún bakfærir.
+- **Sjálfgefin röðun:** Skráð, nýjast efst, og fest efst „Síðasta afgreiðsla" (nýjasta `final` sala með source
+  `pos`/`sott`) með Breyta og PDF — Agnar vill finna afgreiðsluna strax ef þarf að breyta henni. Tölurnar efst
+  telja ALLT; listinn teiknar 150 í einu (09.10, #1126).
+- **Drög-staðsetning** (143): Verkstæði (received/inprogress) › Afgreiðsla (ready) › Sótt · klára (collected) ›
+  Verkbeiðni afturkölluð (cancelled) › Verkbeiðni eytt › Bara drög. „Enginn viðskiptavinur" = greitt síðar /
+  reikningur án `customer_id` og `customer_base_id` — krafan verður ekki send (vörðurinn `audit-solu-id`).
+
 ## Lærdómur
 
 - **30.09.2026** — ÓNÝTT TÆKI RUKKAST NÚNA (28.09): valið 'onytt' í ársskoðun féll áður í skip og hvarf af reikningnum. Tækið var yfirfarið — vinnan var unnin þótt niðurstaðan sé ónýtt. 129 gefur því eigin röð sem sækir VERÐ OG VÖRU YFIRFERÐAR (verdKind='yfirferd'); kindKey ræður aðeins merkinu, litnum og afsláttarlyklinum. Textinn á reikningi kemur úr ONYTT_SKYRING í 129 — EINI staðurinn sem þarf að breyta, því 165 scrapeCostRows les undirlínuna orðrétt í desc. Umfang: ársskoðun ein; verkstæðisleiðin (269) setur status='onytt' og dettur út um NONBILL. (js/patches/129-company-total-cost.js, js/patches/165-visit-workflow.js)
