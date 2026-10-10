@@ -84,7 +84,8 @@ Kláruð mál bera reikningsnúmerið í `athugasemd` svo næsta lota sjái hva�
 3. **Stilltu stöðu per tæki** eftir blaðinu: Yfirferð / Hleðsla / Nýtt / ⊘ Ónýtt.
    Tæki sem eru **ekki á blaðinu á að eyða** — raðnúmerin eru sjálfgerð og skipta engu máli.
 4. **Hakaðu við hvert tæki** (sér ✓-hnappur, óháður stöðuvalinu).
-5. **Akstur:** fór eitthvað í hleðslu? Þá `2 × 3.000`, annars `1`. Sjá `references/verd.md`.
+5. **Akstur:** fór eitthvað í hleðslu? Þá `2`, annars `1` (3.600 kr hvor ferð án vsk — verðið kemur úr
+   `window.SlokkVisitDefaults`, sjá `references/verd.md`; „3.000" var úrelt tala, leiðrétt 08.10.2026).
 6. **Aukahlutir** í gegnum „+ Bæta við vöru eða þjónustu" — aldrei sem sér tæki.
 7. **Staðfesta lista.**
 8. **Vista / í Vinnslu.** Ekki „Klára heimsókn".
@@ -139,6 +140,13 @@ Röðin er föst og brunaslöngu-línan er alltaf sér lína í lokin:
 Öll slökkvitæki yfirfarin og vottuð í lagi. Fjögur slökkvitæki endurhlaðin og vottuð í lagi.
 Brunaslöngur prófaðar á fullum þrýstingi og vottaðar í lagi.
 ```
+
+„…og vottaðar í lagi" er **viðbót manns** — appið skrifar aðeins „Brunaslöngur prófaðar á fullum þrýstingi."
+(294, Blikkhella). Bættu vottuninni við aðeins þegar blaðið segir að slöngurnar séu í lagi.
+
+**Regla Agnars í Svar-stöð:** áður en þú skrifar eða lagfærir úttektarlýsingu, lestu
+`app_settings.settings->'svarstod'->'reglur'->'uttekt'->>'t'` (síðan `#svarstod` → flipinn Úttektarlýsing).
+Það sem stendur þar gengur framar þessari skrá. Tómt = engin viðbótarregla.
 
 **Bilanir fara í „Athugasemdir", ekki í „Annað".** Og aldrei votta slöngur sjálfkrafa ef ein
 lekur — sjá Blikkhellu-dæmið í `references/husmal.md`.

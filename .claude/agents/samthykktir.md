@@ -105,3 +105,39 @@ sannreynanlegt á undan því sem krefst ákvörðunar.
 Hann skimar. Stutt tafla: hvað var gert, með hvaða mælingu. Svo það sem eftir stendur
 og hvað stoppar það. Eitt sem hann þarf að ákveða í einu — og ef svarið við máli
 kallar á nýja spurningu, stofnaðu nýtt samþykktarmál frekar en að spyrja í lausu lofti.
+
+## Að stofna mál til samþykkis (hinn helmingurinn — skráð 08.10.2026)
+
+Þegar Claude þarf ákvörðun Agnars („máttu útbúa samþykktarform af þessu og setja á Samþykkja") verður til eitt
+mál á lið í `thjonustubeidni` — það birtist strax á Samþykkja (hamurinn á borðinu og símasíðan `#samthykkja`, 446).
+
+**Fyrst: tvítekning.** Leitaðu að opnu máli um sama efni áður en þú stofnar (`tags::text like '%samthykki%'` og
+`svar:%`, status ≠ lokad, ekki `ham:vinnublod`). Annar gluggi gæti hafa stofnað það sama dag (dæmi 08.10: Ajour-
+innskráning #1157 og 132 beiðnir Verkefnalistans #1129 voru þegar til).
+
+**Reitirnir:** `assigned_to='Agnar'`, `created_by='claude'`, `source='claude'`, `type='annad'` (eða `spurning`),
+`status='nytt'`, `priority='venjulegur'`, `tags` = `["samthykki", "claude:<stutt-slug>"]` + `"spurning"` ef það er
+opin spurning (fer þá í „Þarf svar frá þér", annars „Tilbúið — bara samþykkja") + tengimerki eftir við (t.d.
+`"verkefnalisti:<uuid>"`, `"sala:R-…"`, `"payday:N"`). `fyrirtaeki_id`/`customer_nafn` ef málið á félag.
+
+**Titillinn** segir niðurstöðuna og ber upphæðina ef hún er til — Samþykkja raðar eftir stærstu „… kr" í titlinum.
+
+**`notes` — fast snið** (sjá #1186–#1194):
+```
+<1–3 setningar: hvað er að og af hverju það skiptir máli>
+
+✓ Samþykkja: <nákvæmlega hvað Claude gerir — og hvað hann gerir EKKI („ÞÚ sendir")>
+▶ Í vinnslu: <millisporið>
+✕ Hafna: <hvað gerist þá — oftast ekkert>
+💬 Skýring: <hvað hann getur sagt til að breyta tillögunni>
+
+Tillaga: <eitt val + ein setning af hverju>
+
+SÖNNUN (mælt DD.MM.ÁÁÁÁ, <heimild>)
+· <tölur, númer, dagsetningar, skrá:lína — allt sem þú mældir, ekkert ágiskað>
+```
+Lestu svarið aftur eftir innsetningu (`returning id, title, tags`). Ekkert er „sett á borðið" fyrr en það sést.
+
+**Hreinsa Þjónustuborð (Stjórnstöð 420)** lokar sjálft málum með HARÐA tengingu þegar verkinu er lokið
+(`payday-xml-sala:` greitt/ógilt · `payday:N` greitt · `sala:R-…` send/greidd/ógild · vinnublað klárað ·
+reikningur sendur á sama félag · skýrsla dagsett eftir málið). Mál án slíks merkis lokar enginn nema þú.
