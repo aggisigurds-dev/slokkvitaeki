@@ -30,7 +30,16 @@
   function svgIc(k, w) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.7) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[k] || '') + '</svg>';
   }
-  function icon(k) { return ICON[k] ? '<span class="ic" aria-hidden="true">' + svgIc(k) + '</span>' : ''; }
+  // Stór fyllt tákn á lykiltölu-spjöldin (eins og í mockup Agnars 10.10.2026) — fyllt
+  // með málmhallanum #g-ic úr index.html, svo þau fylgja þema fyrirtækisins.
+  var ART = {
+    'Byggingar': '<path fill-rule="evenodd" d="M15 44V9l9-5 9 5v35ZM3 44V19h10v25ZM35 44V15h10v29ZM18.2 11.5h4v3.4h-4ZM18.2 17.5h4v3.4h-4ZM18.2 23.5h4v3.4h-4ZM18.2 29.5h4v3.4h-4ZM25.8 11.5h4v3.4h-4ZM25.8 17.5h4v3.4h-4ZM25.8 23.5h4v3.4h-4ZM25.8 29.5h4v3.4h-4ZM21.5 36.5h5v7.5h-5ZM5.2 22h2.6v3h-2.6ZM5.2 28h2.6v3h-2.6ZM5.2 34h2.6v3h-2.6ZM9.2 22h2.6v3h-2.6ZM9.2 28h2.6v3h-2.6ZM9.2 34h2.6v3h-2.6ZM37.2 18h2.6v3h-2.6ZM37.2 24h2.6v3h-2.6ZM37.2 30h2.6v3h-2.6ZM37.2 36h2.6v3h-2.6ZM41.2 18h2.6v3h-2.6ZM41.2 24h2.6v3h-2.6ZM41.2 30h2.6v3h-2.6ZM41.2 36h2.6v3h-2.6Z"/><path d="M1 44h46v2.4H1z"/>',
+    'Slökkvitæki': '<path fill-rule="evenodd" d="M16 21a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v20a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4ZM19.5 23.5h9v9.5h-9ZM19.5 37h9v1.8h-9Z"/><path d="M21 9.5h6v6h-6zM19 6h10v4.2H19z"/><path d="M29 6.6 40.2 3c1.7-.5 2.5 1.5 1 2.3L30 10.4Z"/><path d="M29 9.8 38.6 13c1.5.5 1 2.5-.6 2.2L29 13.2Z"/><path d="M21 8.6C12.5 8.6 8.5 13.5 8.5 21.5v14.5c0 2.6.9 4.3 2.6 5.3" fill="none" stroke-width="3" stroke-linecap="round"/><path d="m9.2 40.6 3.6 1.5-1.5 3.4-3.6-1.5z"/>',
+    'Brunaslöngur': '<path fill-rule="evenodd" d="M9 8h26a2 2 0 0 1 2 2v26a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2ZM11.2 11h1.6v24h-1.6ZM14.65 11h1.6v24h-1.6ZM18.1 11h1.6v24h-1.6ZM21.55 11h1.6v24h-1.6ZM25 11h1.6v24h-1.6ZM28.45 11h1.6v24h-1.6ZM31.9 11h1.6v24h-1.6Z"/><path d="M6 4.5h32v2.4H6z"/><path d="M37 21.6h2.4v2.8H37zM42.2 19.6a3.4 3.4 0 1 1 0 6.8 3.4 3.4 0 0 1 0-6.8Z"/><path d="M12 38v3.6c0 1.6-.8 2.6-2.2 2.9" fill="none" stroke-width="3" stroke-linecap="round"/><path d="M6.6 42.4h4.2v4.4H6.6z"/>',
+    'Brunakerfi': '<path fill-rule="evenodd" d="M24 3 41 9v13c0 11.5-7.4 19.6-17 23C14.4 41.6 7 33.5 7 22V9ZM24.6 13c1.6 5.2-2.2 7.4-3.8 10.2-1.6 2.6-3.2 4.8-3.2 8.4a6.6 6.6 0 0 0 13.2 0c0-3.6-1.6-6.2-3.6-8.2 0 2.6-1 4.2-2.6 5.2 1-5.8 0-10.6 0-15.6Z"/><path d="M24 38.2a3.2 3.2 0 0 1-3.2-3.2c0-2.2 1.6-3.2 2.6-4.8.4 1.4 1 2.2 2 2.6.6-.6 1-1.6 1-2.6 1 1.2 1.4 2.6 1.4 3.8a3.6 3.6 0 0 1-3.8 4.2Z"/>',
+    'Skoðun á tíma': '<path fill-rule="evenodd" d="M4 24a20 20 0 1 0 40 0 20 20 0 1 0-40 0ZM8.4 24a15.6 15.6 0 1 0 31.2 0 15.6 15.6 0 1 0-31.2 0Z"/><path d="M22.7 11.5h2.6V24h-2.6z"/><path d="m24.8 22.7 8.7 5.6-1.4 2.2-8.7-5.6z"/><path d="M21.3 24a2.7 2.7 0 1 0 5.4 0 2.7 2.7 0 1 0-5.4 0Z"/><path d="M23 5.6h2v3h-2zM23 39.4h2v3h-2zM5.6 23h3v2h-3zM39.4 23h3v2h-3z" opacity=".75"/>',
+  };
+  function icon(k) { return ART[k] ? '<svg class="art" viewBox="0 0 48 48" aria-hidden="true">' + ART[k] + '</svg>' : ''; }
   // Íslensk fleirtala: 1, 21, 31 … (ekki 11) taka eintölu
   function eint(n) { return n % 10 === 1 && n % 100 !== 11; }
   function tala(n, et, ft) { return n + ' ' + (eint(n) ? et : ft); }
