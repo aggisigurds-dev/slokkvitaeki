@@ -100,8 +100,83 @@ Peningar fyrst (ógreitt, ósent, rangur greiðandi), svo gagnaleiðréttingar s
 Ársskoðun eða borðið, svo kóði. Innan hvers flokks: það sem er fljótlegt og
 sannreynanlegt á undan því sem krefst ákvörðunar.
 
+## Að stofna samþykktarmál — sniðið (Agnar 07.10.2026: „setja svona spurningar inn á samþykktir … svara á morgun")
+
+Þegar lota endar á spurningum sem Agnar þarf að ákveða fara þær á borðið hans, ekki í lausu lofti í spjallinu.
+
+- **Eitt mál á lið** (Agnar 11.09: „eitt mál á mig í hverjum lið … svo ég geti bara samþykkt hvert og eitt").
+- `thjonustubeidni`-röð: `source='claude'`, `type='annad'`, `status='nytt'`, `priority='venjulegur'`,
+  `assigned_to='Agnar'`, `created_by='claude'`, `tags` (jsonb) `["samthykki","spurning","<lotumerki, t.d. claude-0710>",
+  "<efni/tilvísun, t.d. sala:R-001055>"]`, og `fyrirtaeki_id` / `customer_base_id` þegar málið á eitt félag.
+  `samthykki` setur það í hamin Samþykkja; `spurning` í „Þarf svar frá þér".
+- **`notes`** byrjar á þremur línum — `✓ Samþykkja: <nákvæmlega hvað ég geri>` · `▶ Í vinnslu: …` ·
+  `✕ Hafna: <hvað gerist ef ekki>` — svo `Tillaga: ✓/▶/✕` og síðan mældu gögnin MEÐ dagsetningu og auðkennum
+  (R-nr, mál-nr, fyrirtækis-id, upphæðir). **`summary`**: ein–tvær setningar um vandann.
+- **Áður en stofnað er:** leitaðu að tvítaki meðal opinna mála (R-nr/félag í `tags` eða titli) — 07.10 voru
+  Kötlufell 9 og Furugrund 66 þegar á borðinu sem „XML hafnað" (1088, 1107). Það sem er bara „lestu þetta" á
+  EKKI heima í Samþykkja (sjá 1031: 31 slík fylltu þriðjung listans og drekktu raunverulegu spurningunum).
+- **Forsendur breytast áður en svarað er.** 07.10 → 08.10 voru NLSH-drögin vistuð og bakfærðar sölur farnar úr
+  Sölum, svo tvö mál (1118, 1119) þurftu leiðréttingarlínu. Rútínan hér að ofan endurmælir alltaf fyrst —
+  skrifaðu leiðréttinguna aftast í `notes` með dagsetningu frekar en að breyta tillögunni hljóðlaust.
+
 ## Svarsniðið til Agnars
 
 Hann skimar. Stutt tafla: hvað var gert, með hvaða mælingu. Svo það sem eftir stendur
 og hvað stoppar það. Eitt sem hann þarf að ákveða í einu — og ef svarið við máli
 kallar á nýja spurningu, stofnaðu nýtt samþykktarmál frekar en að spyrja í lausu lofti.
+
+## Lærdómur úr stóru yfirferðinni 08.–09.10.2026 (128 mál endurmæld)
+
+**Villumynstrin sem framleiddu röngu málin — athugaðu hvert þeirra ÁÐUR en mál fer á borðið:**
+1. **„Ósent / enginn reikningur" án kreditfærslu.** Sala með aðra sölu `credit_of` á sig er BAKFÆRÐ, ekki ósend (Eclipse R-000727 → R-000728 → R-000940; Grillvagninn; RB Rúm). Alltaf `select num from solur where credit_of=<id>` + Payday-staða (CANCELLED/CREDIT).
+2. **„Enginn reikningur 2026" án Stólpa.** 103 af 148 „án reiknings" áttu Stólpa-reikning (R-10xxxx í `customer_documents` EÐA `stolpi_reikningar` á kt — 21 félög áttu bara það síðara). Stólpi hætti 07.05.2026; heimsókn eftir maí á að eiga sölu í `solur`.
+3. **Úrelt síðan málið var stofnað** (greitt/sent/sótt/þjónustað eftir stofnun). Endurmæla sama dag og málið birtist.
+4. **Sama atriði í tveimur málum** (Menja #1122/#1155, Hagvagnar í fjórum málum). Leita á borðinu fyrst.
+5. **Samþykkt í spjalli en aldrei framkvæmt** (#877/#882/#884 frá 12.09). Takkinn á borðinu er eina sporið.
+6. Rangar smáupplýsingar: tækjatala, dagsetningar, reikningur annars félags í rökstuðningi.
+
+**Sönnun fylgir hverju máli:** skjáskot af síðunni/tölunni sem málið byggir á fer í `thjonustubeidni_files` (bucket `verkbord-files/<id>/<ms>-<nafn>`) — Samþykkja-símasíðan (446) sýnir þau sem ræmu á spjaldinu. Skrifta með service-lykli úr `luna-bridge/.env` (sjá minni `stofna-samthykki.js`-mynstur).
+
+**Drög úr samþykktu vinnublaði = beint INSERT í `solur`.** Trigger `solur_set_num` gefur R-númer, `trg_vidskiptategund` setur `uttekt`, `trg_solur_fill_base_id` fyllir grunn. Línur `[{qty,desc,vsk_pct,unit_price_ex_vat}]` úr `sara_yfirferd.linur` (+ Akstur × `akstur`, Skýrslugerð 5.600), `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null = ÓSENT í Kröfuyfirliti. Innri texti í `athugasemdir` (aldrei `krafa_note`). SARA-línan → `stada='klarad'`. Dæmi 09.10: R-001111…R-001116.
+
+**Kt-skipti (nýir eigendur):** kt á `fyrirtaeki` OG `customers_base` (+ `override_log`), kreditfærsla með `is_credit/credit_of/kredit_a` (sama snið og 26-credit-invoice), nýr reikningur ÓSENDUR, Payday-krafan afturkölluð (`payday-push {action:'cancel', sale_id}` — aðeins með orðum Agnars í spjalli), og **skýrslan endurgerð**: `CompanyInspectionReport.open(id)` í höfuðlausum Playwright (jsPDF, ekki html2canvas) — `#_cir-save` er læstur „✓ Vistuð" þegar skýrsla ársins er til; opna með JS og smella, 168 vistar handvirkt samt og uppfærir `customer_documents`-röðina í stað.
+
+**Verkefnalisti:** `POST https://brunaholf.netlify.app/api/verkefnalisti {action:'update', id, status:'klarad'|'sleppt', claude_notes}` — alltaf með sönnun í `claude_notes`.
+
+**Ársskoðun-blob:** `app_settings_merge({"arsskodun_customers":{"<id>":{…}}})` með ÖLLUM 8 equipment-lyklum (merge skilur gömlu eftir); afrit fyrst í `backup_<dags>_…`; `uttaeki`-raðir verða að fylgja því 153 telur `_unit_count` úr þeim.
+
+## Að stofna mál til samþykkis (hinn helmingurinn — skráð 08.10.2026)
+
+Þegar Claude þarf ákvörðun Agnars („máttu útbúa samþykktarform af þessu og setja á Samþykkja") verður til eitt
+mál á lið í `thjonustubeidni` — það birtist strax á Samþykkja (hamurinn á borðinu og símasíðan `#samthykkja`, 446).
+
+**Fyrst: tvítekning.** Leitaðu að opnu máli um sama efni áður en þú stofnar (`tags::text like '%samthykki%'` og
+`svar:%`, status ≠ lokad, ekki `ham:vinnublod`). Annar gluggi gæti hafa stofnað það sama dag (dæmi 08.10: Ajour-
+innskráning #1157 og 132 beiðnir Verkefnalistans #1129 voru þegar til).
+
+**Reitirnir:** `assigned_to='Agnar'`, `created_by='claude'`, `source='claude'`, `type='annad'` (eða `spurning`),
+`status='nytt'`, `priority='venjulegur'`, `tags` = `["samthykki", "claude:<stutt-slug>"]` + `"spurning"` ef það er
+opin spurning (fer þá í „Þarf svar frá þér", annars „Tilbúið — bara samþykkja") + tengimerki eftir við (t.d.
+`"verkefnalisti:<uuid>"`, `"sala:R-…"`, `"payday:N"`). `fyrirtaeki_id`/`customer_nafn` ef málið á félag.
+
+**Titillinn** segir niðurstöðuna og ber upphæðina ef hún er til — Samþykkja raðar eftir stærstu „… kr" í titlinum.
+
+**`notes` — fast snið** (sjá #1186–#1194):
+```
+<1–3 setningar: hvað er að og af hverju það skiptir máli>
+
+✓ Samþykkja: <nákvæmlega hvað Claude gerir — og hvað hann gerir EKKI („ÞÚ sendir")>
+▶ Í vinnslu: <millisporið>
+✕ Hafna: <hvað gerist þá — oftast ekkert>
+💬 Skýring: <hvað hann getur sagt til að breyta tillögunni>
+
+Tillaga: <eitt val + ein setning af hverju>
+
+SÖNNUN (mælt DD.MM.ÁÁÁÁ, <heimild>)
+· <tölur, númer, dagsetningar, skrá:lína — allt sem þú mældir, ekkert ágiskað>
+```
+Lestu svarið aftur eftir innsetningu (`returning id, title, tags`). Ekkert er „sett á borðið" fyrr en það sést.
+
+**Hreinsa Þjónustuborð (Stjórnstöð 420)** lokar sjálft málum með HARÐA tengingu þegar verkinu er lokið
+(`payday-xml-sala:` greitt/ógilt · `payday:N` greitt · `sala:R-…` send/greidd/ógild · vinnublað klárað ·
+reikningur sendur á sama félag · skýrsla dagsett eftir málið). Mál án slíks merkis lokar enginn nema þú.

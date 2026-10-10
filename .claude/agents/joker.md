@@ -557,6 +557,36 @@ hverfur ÖLL síuröndin í Ársskoðun og Bílstjóra-sýnin tekur yfir — og 
 not hard." Hann hefur rétt fyrir sér. Sé sýn sett sem tekur yfir borð, á
 útgönguleiðin að vera sýnileg í sömu sýn.
 
+## Listasíða í Brunastál C — uppskriftin (Hreyfingarlisti 167 + Drög 143, 05.10.2026)
+
+Agnar: „gera hreyfingarlistann meira professional og stylish" → mockup á Design-striga → „annars bara flott,
+mátt byggja" + „passaðu að allar tengingar séu tengdar og ekkert breytist nema útlitið". Svona gekk það upp:
+
+1. **Mockup fyrst, með raunverulegum gögnum** (Design-striginn úr Brunastál-kerfinu, línurnar úr skjáskotum
+   Agnars). Hann sá strax „skrítnar tölur" — mockupið varð gagnaúttekt: Ógreitt var 6,96 m en átti að vera
+   2,35 m (skilgreiningin: `sala-reikningar`). Taktu tölurnar á mockupi alvarlega, þær eru sýnilegastar þar.
+2. **Krókarnir haldast, útlitið fær nýtt forskeyti.** Allir hook-klasar (`_hr-*`), `data-id/k/s`, auðkenni sem
+   aðrir pappar skrifa í (`#_drog-q` ← 371) og föllin á bak við eru óbreytt. Nafnlausum smellföllum er breytt í
+   nefnd föll (`breytaSolu`, `bakfaera`, `bakfaeraOgNytt`, `keyra`) svo takkinn OG ⋯-valmyndin kalli á sama kóðann.
+   Nýja útlitið fær eigið forskeyti (`hl2-`, `dr2-`) — eldri reglur 313/315/337 elta gömlu klasanöfnin.
+3. **Byggingin:** síðuhaus = málmhaus með fjórum hnoðum (Playfair 30–32 px titill, mono hástafa-undirlína) ·
+   lykiltölur = hvítar „línur" á burstaðri stálplötu, Nettó í dökkum málmi (aldrei blátt) · listaskel með eigin
+   málmhaus (síur = silfur/málm með fjölda, innfelldur leitarreitur) · tafla: ljós haus, mono hástafir,
+   raðanlegir hausar með SVG-örvum · staða = silfurplata með ljósi (grænt greitt, gull ógreitt, rautt kredit) ·
+   ein aðgerð sýnileg + ⋯ (DS: Valmynd) · sími: spjöld á stálplötu með ÖLLUM aðgerðum sýnilegum (lárétt skrun).
+4. **Drög = Miðakerfið:** miði með rifflipa (R-númer með dofnu forskeyti + biðtími), götun með tveimur hökum
+   (hringir í lit plötunnar, `overflow:hidden` á takkanum sem ber miðann), biðtímakaflar Í dag / 1–7 / 8–14 /
+   15+ (aðeins við dagsetningarröðun — upphæðarröðun er einn listi), Klára = grænn Sækja-málmur, allur miðinn = Breyta.
+5. **Gildrurnar fimm** (313-skanninn, `small{!important}`, appham-uppblástur, ⋯ í `<body>` með krómzoomi, gömul
+   klasanöfn) og síminn sem er 980 px breiður: `.claude/skills/slokkvitaeki-layout/SKILL.md` §9–10.
+6. **Prófað án skrifa:** stubbaðu `SaleEditor.openById` / `Confirm.show` meðan smellt er á allt (uppskrift í
+   skillinu §10). Mældu líka DOM-stök — 962 raðir í nýju útliti = 42 þús. stök → 150 í einu (#1126, 09.10).
+7. **Litabeiðni sem víkur frá „engir bláir"** gildir þegar Agnar biður sjálfur: „Á verkstæði" í dökkum málmbláum
+   (05.10). Uppskriftin er Sækja-málmurinn í bláu: `linear-gradient(145deg,#02060f 0%,#0a1c3a 20%,#123166 43%,
+   #1b4488 53%,#0b2148 74%,#020814 100%)`, rammi `rgba(84,132,214,.55)`, hvítt letur, ljósbrún + blár bjarmi.
+   Á tölvu gildir `js/patches/224-uttekt-taeki.js`, í síma/appi `js/patches/402-brunastal-fyrirtaekjasida.js`
+   (`p()`-reglurnar þar eru AÐEINS sími/app) — breyttu báðum.
+
 ## Lærdómur
 
 - **04.10.2026** — 04.10.2026 SÍÐUSTÆRÐ (333): hver síða/gluggi á sína stærð í síma, vistaða á þjóninn (AppSettings simi_sidustaerd {simi,tolva}). Talan = hlutfall af raunstærð (100 % = venjulegt app); virkt zoom = króm (353, ≈2,38 á S26 í Tölvusíðu-ham) × talan. Óstillt síða heldur gömlu stærðinni; BYRJUN-tafla í 333 gefur byrjun (company/teikningar 0,7, kostnadur 0,75 o.fl.). Gluggar (.modal) fá lykil m:<id> + ramma milli app-hauss og botnstiku. Fljótandi #_app-zoom er farinn — litaspjaldið í app-hausnum opnar #_sz-pnl. Á tölvu: S26-snið í 320 (980×1900, ?simikrom=2.38). GILDRA: @media (max-width:760px) kviknar ALDREI á S26 (síðan segist 980 px) — notið gámafyrirspurn (container-type:inline-size) fyrir þröngt útlit, sbr. 419 Kostnaður. GILDRA 2: appham-reglur blása select/input upp í 16–18 px/52 px (261 + simi-compact-layer) — tvöfalt auðkenni þarf til að hemja það í töflum. (js/patches/333-app-page-zoom.js, js/patches/353-simi-krom-zoom.js, js/patches/320-device-frame.js, js/patches/419-kostnadur.js, js/patches/402-brunastal-fyrirtaekjasida.js)

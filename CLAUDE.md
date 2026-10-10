@@ -120,6 +120,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
 | Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn með tenglum í `.claude/skills/arnold/references/` | skill `arnold` 💪 |
+| **Texti sem fer úr kerfinu** — póstur, skýrslur, reikningslínur, „vegna", kröfulýsing, svör, SMS: hvaðan, hvaða texti, hvar skráður, reglur Agnars. Númerin SV-01…SV-27 standa í haus hvers sendingarglugga | síðan `#svarstod` (gögn í `js/patches/447a-svarstod-gogn.js`) + `sala-reikningar` |
 | **Svör Agnars á Þjónustuborðinu** — „klára svörin", „yfirfara svör", „ég er búinn að svara", „vinna úr Samþykkja", „hvað bíður Claude" 🕵️ | `samthykktir` |
 | Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |
 | **Rekstrarfélög** (margir staðir á kt): skýrsla ↔ reikningur ↔ tækjaskrá eftir tölum per tegund, „para eftir magni", tvíræð, vegna-línan, hleðsluspá — Skýrslu-stöð ⚖ + `tools/renna-rekstrarfelag.cjs` | skill `rekstrarfelog-parun` (+ `skjol` í brunaholf) |
@@ -260,6 +261,16 @@ The `.cjs` extension is required, not cosmetic — this repo's `package.json`
 has `"type": "module"`, so a plain `.js` file here loads through the ESM
 loader and its `module.exports` silently doesn't take effect (empty exports,
 `launch is not a function` — cost real time to track down once already).
+
+**Uppfært 08.10.2026:** í þeirri lotu HÉKK `bh-browser.cjs` í `launch()` (engin villa, ekkert svar), en
+plain Playwright virkaði gegnum egress-proxy-inn: `chromium.launch({ executablePath: '/opt/pw-browsers/chromium',
+proxy: { server: process.env.HTTPS_PROXY, bypass: '<IP gámsins>' } })` + `newContext({ ignoreHTTPSErrors: true })`.
+Supabase svaraði (401 án lykils = náði í gegn). Tvær gildrur: (1) með `proxy` fer **127.0.0.1/localhost líka um
+proxy-inn** (síðan sýnir „agent-proxy relay … HTTPS CONNECT"), svo staðbundni þjónninn (`python3 -m http.server
+8787`) er opnaður á IP gámsins (`hostname -I`, t.d. `http://192.0.2.2:8787/`) sem er líka í `bypass`; (2) Netlify
+deploy-preview lén skiluðu `ERR_TOO_MANY_RETRIES` — prófaðu staðbundið. Hleruð skrif: `context.route('**/*')` og
+`fulfill` á allt sem er ekki GET/HEAD/OPTIONS á supabase.co / `/api/`. Skjáskot náðust aðeins eftir smell inni á
+síðunni (ræsihulan `.boot-veil` situr annars yfir öllu í hausalausum vafra).
 
 ---
 

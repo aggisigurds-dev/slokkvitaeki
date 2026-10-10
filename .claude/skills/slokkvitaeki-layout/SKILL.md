@@ -149,6 +149,9 @@ Existing usage, by frequency:
 breakpoints; add to an existing block instead. If a new one is genuinely
 needed, say so explicitly rather than adding it silently.
 
+**But none of these fire on Agnar's phone** (980 px desktop-site layout) - for
+the phone/app use `data-viewmode` (§1) or a container query (§9).
+
 ## 4. The theme is FROZEN
 
 Brunastal + red is the only supported look. The theme switcher was deliberately
@@ -268,8 +271,8 @@ if you add more.
 ## 7. Constraints
 
 - **No build step.** No React, Vite, Tailwind, or PostCSS. Plain HTML/CSS/JS.
-- Modern CSS is available but currently unused: **no `@layer`, no
-  `@container`.** Introducing them is fine but is a new pattern - flag it.
+- No `@layer`. **`@container` IS in use since 2026-10** (419, 356, 402, 167,
+  143) - it is the only way to get a narrow layout on the real phone, see §9.
 - Cache-busting is manual: bump `?v=` in `index.html` when changing a CSS file.
 
 ## 8. Verify before claiming done
@@ -282,3 +285,88 @@ A CSS edit here is not proof of anything. Confirm in the browser:
    the value actually applied and was not stamped over by a patch.
 
 If a change does not take effect, re-read section 1 before adding `!important`.
+
+## 9. The phone is 980 px wide - use container queries, not media queries
+
+Measured 2026-10-04/05 on Agnar's Samsung S26:
+
+- The S26 runs Chrome in **desktop-site mode**, and since 2026-10-05 the app
+  asks for it itself (inline `<head>` script in `index.html` sets viewport
+  `width=980` + `window.__HUB_VP` on touch phones in app mode). The layout
+  viewport is therefore ~980 px: **`@media (max-width: 900px)` - and every
+  other breakpoint in §3 - NEVER fires on the real phone.** `data-viewmode`
+  still resolves to `mobile` in app mode, so §1's viewmode rules do apply.
+- For a narrow layout inside a page, make the page root a container and
+  query it:
+
+  ```css
+  #view-x .x-root { container-type: inline-size; container-name: x; }
+  @container x (max-width: 640px) { #view-x .x-kpi { grid-template-columns: repeat(2, 1fr); } }
+  ```
+
+  In use: `js/patches/419-kostnadur.js`, `js/patches/356-arsgrind-simi.js`,
+  `js/patches/402-brunastal-fyrirtaekjasida.js`,
+  `js/patches/167-hreyfingarlisti.js` (`hl2`), `js/patches/143-drog-list.js` (`dr2`).
+  A container cannot style itself - put the rule on its descendants.
+- App mode zooms the page: `.view.active { zoom: var(--app-page-zoom) }`
+  (`js/patches/333-app-page-zoom.js`, per-page sizes). Anything appended to
+  `<body>` is **not** zoomed - see §10.4.
+- Simulate in the preview: viewport 980x1900 +
+  `/?app=fjarmal&simikrom=2.38`, then `App.switchView('<page>')`. Deep links
+  in app mode land on the app's start page, and pages that are not in the app
+  (e.g. `drog` outside Fjármál) are refused - test those at 980 px without
+  `?app=`.
+
+## 10. Building a new page in Brunastál C - five traps (measured 2026-10-05)
+
+Hreyfingarlisti (167) and Drög (143) were rebuilt on 2026-10-05; every one of
+these cost a round trip. Read them before writing the CSS.
+
+1. **The 313 contrast scanner writes inline `color:#fff !important`** (marked
+   `data-cc313`) on text it believes sits on a dark surface. It misread silver
+   chips as dark and whitened their counters - and inline `!important` beats
+   every stylesheet. A page that owns its contrast goes into `SKIP_CLOSEST` in
+   `js/patches/313-contrast-clarity.js` (now `#view-hreyfingarlisti .hl2,
+   #view-drog .dr2`). Symptom check:
+   `document.querySelectorAll('#view-x [data-cc313]').length` must be 0.
+2. **`small { color: #3a4250 !important }`** (bstal-polish stylesheet) beats
+   any `<small>` badge colour that lacks `!important` - the red "Útrunnið"
+   chip in `js/patches/122-samningshafar-receive.js` showed dark text on red.
+   Every coloured `<small>` badge carries `color: ... !important`.
+3. **App-mode inflation**: `js/patches/261-app-profiles.js` +
+   `js/patches/314-simi-compact-layer.js` stamp buttons to ~50 px and
+   inputs/selects to 52 px / 16-18 px with `!important`. Every button/input/
+   select rule of a new page carries a four-id chain
+   `:not(#_xA):not(#_xB):not(#_xC):not(#_xD)` (§1 idiom) **and** `!important`
+   on height, min-height, min-width, width, margin, padding and font.
+4. **Popovers belong in `<body>`** (`position: fixed`) so the table's scroll
+   box does not clip them - but then they are not page-zoomed. Give them
+   `body.appmode .pop, html[data-viewmode="mobile"] .pop { zoom: var(--app-krom-zoom, 1) }`
+   and divide the computed viewport position by the popover's own zoom:
+   `el.style.left = left / (parseFloat(getComputedStyle(el).zoom) || 1) + 'px'`.
+   Close on outside `mousedown`/`touchstart` (capture), `scroll` (capture),
+   `resize` and Escape (return focus to the opener); every re-render of the
+   list closes it first. Reference: `opnaValmynd()` in 167, `opnaVal()` in 143.
+5. **Legacy selectors follow old class names.** 313, 315 and 337 style
+   `.page-title`, `.stat-card`, `.filter-chip`, `.filter-row`, `.hl-mcard`,
+   `.abtn5` under `#view-...` (337 turns `.filter-chip` into 46x42 columns).
+   Give the new look a fresh prefix (`hl2-`, `dr2-`) and keep only the *hook*
+   classes and ids the JS binds to (`_hr-*`, `#_drog-q`, `data-act`) - grep
+   that no stylesheet targets them before reusing.
+
+Also: re-render lists through `Stodugt.vernda(rot)`
+(`js/patches/388-stodugt-vidmot.js`) so scroll, focus and selection survive;
+draw icons as inline stroke SVG - the arrows `▲ ▼ ↕` render as emoji on
+Android; and measure the DOM: 962 rows in the new markup were 42,040
+elements, so long lists draw 150 at a time ("Sýna fleiri").
+
+**Testing clicks without writing to PROD** (the preview talks to the live
+database): temporarily replace the write entry points with recorders, click
+everything, then restore -
+
+```js
+const calls = [], o1 = SaleEditor.openById, o2 = Confirm.show;
+SaleEditor.openById = id => calls.push('open:' + id);
+Confirm.show = async () => { calls.push('confirm'); return false; };
+try { /* click ticket, Klára, menu items ... */ } finally { SaleEditor.openById = o1; Confirm.show = o2; }
+```

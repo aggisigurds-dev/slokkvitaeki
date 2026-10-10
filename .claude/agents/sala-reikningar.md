@@ -18,9 +18,11 @@ tools: Bash, Read, Grep, Glob, Edit
 
 Þegar „✅ Staðfesta lista" er ýtt (patch 224 `.ut-listlock`) myndast textinn í
 „📝 Upplýsingar um úttekt" sjálfkrafa — Elías skrifaði hann áður í hverja skýrslu.
-**Orðalag og röð (Agnar/Elías, skjalfest):** (1) „Öll tæki yfirfarin og vottuð í
-lagi." → (2) hleðsla / ónýtt / ný tæki inn á milli → (3) hausskipti **alltaf beint
-á undan** → (4) „Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi."
+**Orðalag og röð (Agnar/Elías, skjalfest; húsmál 01.08):** (1) „Öll slökkvitæki yfirfarin og vottuð í
+lagi." (ónýtt skeytt inn: „…nema eitt sem var dæmt ónýtt") → (2) hleðsla að hluta / ný tæki /
+reykskynjarar → (3) stútaskipti **alltaf beint á undan** → (4) „Brunaslöngur prófaðar á fullum þrýstingi."
+— vottunina skrifar MAÐUR (sjá húsmálsgreinina neðar). Úrelt eldra orðalag: „Öll tæki", „hausskipti",
+„þrýsting og vottaðar í lagi".
 Beygingar: brunaslanga kvenkyns (eina/tvær/þrjár), tæki hvorugkyns (eitt/tvö/þrjú).
 
 **Gögnin koma úr sömu heimild og reikningurinn** — `UnitServicePicker.getChoice`
@@ -45,6 +47,22 @@ sagði textinn alltaf „prófaðar á fullum þrýsting og **vottaðar í lagi*
 slanga var í tækjalistanum — liability-gildra (Blikkhella: „…og ein þeirra lekur" → EKKI
 vottað). Nú segir hann aðeins „Brunaslanga **prófuð** á fullum þrýstingi." (verkið);
 vottunina/leka-athugasemd skrifar maður sjálfur. Vottun leiðist ALDREI af tækjalistanum.
+
+## Svar-stöð — kort af ÖLLUM texta sem fer úr kerfinu (`#svarstod`, 447/447a, 08.10.2026)
+
+Áður en orðalagi pósts, reikningslínu, „vegna"-línu, kröfulýsingar eða úttektartexta er breytt: opnaðu Svar-stöð.
+Hver sendileið (27) á spjald með textanum orðrétt, `{breytum}`, skrá:línu og reglum, og númer **SV-01 … SV-27** sem
+stendur líka smátt í haus sendingargluggans og í kóðanum við hann (`grep "SV-07"` finnur gluggann). Agnar segir
+„breyttu SV-07" — það er spjaldið og glugginn.
+- **Gögnin búa í `js/patches/447a-svarstod-gogn.js`.** Breytir þú staðaltexta eða bætir við sendingarglugga: uppfærðu
+  spjaldið þar í SAMA commiti (nýr gluggi = nýtt SV-númer + `kodi` í `ReceiptSender.compose/sendDoc` eða
+  `window.svKodi('SV-xx')` í hausnum). Merkið fer ALDREI í texta/skjal sem kúnninn fær (netvörður SAFE 08.10).
+- **„Þín regla"** á hverju spjaldi = `app_settings.settings->'svarstod'->'reglur'-><leidId>->>'t'` (vistað af Agnari).
+  Lestu reglu leiðarinnar áður en þú skrifar texta fyrir hana; hún gengur framar þessari skrá. Sjálfvirku
+  sendingarnar lesa hana ekki enn (vörðuð svæði — sér samþykki).
+- **Ósamræmi-flipinn** (20 atriði, 08.10) er verklisti: sendDoc sendir brunakerfisskýrslu/samning sem „Reikningur"
+  (254:311), „Bankaupplýsingar koma hér" (53:33), gjalddagi 7+3 / 10 / 14, þrjú félagsnöfn, Þjónustuver-svar ekki
+  í þræði (309), póststillingar í Stillingum sem enginn les (85/86), o.fl. Lagaðu ekkert þaðan án ákvörðunar Agnars.
 
 ## Sjálfvirk PDF-vistun úttektar-skjala — `js/patches/233-uttekt-pdf-autosave.js` (+168/165)
 
@@ -384,6 +402,29 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
 - **Gildra:** innsetning í `vorur` hverfur hljóðlaust ef nafnið er á `sala.deleted_product_names`
   (trigger `vorur_hafna_eyddum`). Taktu nafnið af listanum fyrst, eins og vorur.js gerir.
 - Vörumyndir: data-URL JPEG ~600×600 á hvítum grunni (sjá minni `vorumyndir-hvitur-bakgrunnur`).
+
+## Hreyfingarlisti (167) og Drög (143) — skilgreiningarnar (05.–09.10.2026)
+
+- **Ógreitt** (`erOgreitt` í `js/patches/167-hreyfingarlisti.js`) = Kröfu yfirlit (greitt_med `reikningur`, ógreitt,
+  ekki `void`, ekki kreditfært) + „Til að rukka" (`final` + `greitt_sidar`) + drög sem bíða í afgreiðslu.
+  Agnar 05.10: „bara það sem er í Kröfuyfirlit ógreitt, og síðan það sem er eftir í afgreiðslu ekki búið að
+  sækja". Kreditfært = einhver kreditnóta vísar á id-ið með `credit_of` — sótt fyrir ALLT tímabilið (kreditnóta í
+  október á reikning úr september). Mælt 05.10: gamla reglan 6.955.840 kr (kreditfærðir 3,43 m, bakfært 0,81 m og
+  öll drög töldust), rétt 2.348.149 (41 krafa = Kröfu yfirlit + 8 drög í afgreiðslu).
+- **Í afgreiðslu** = drög (`status='drog'`, ekki `hidden`) með verkbeiðni `ready` og enga `received` /
+  `inprogress` / `in_progress` — sama regla og `locFor` í `js/patches/143-drog-list.js`. Lestu ALLAR verkbeiðnir:
+  sumar heita eins og salan sjálf (R-001002, engin `-V1`), og sía `like 'R-%-V%'` missti þær.
+- **Sölur / Greitt / Nettó:** bakfærðar (`void`) sölur eru úti síðan 08.10. Hvort drög eigi að teljast er opin
+  spurning (mál 1119).
+- **Uppruni** (`solur.source`): `pos` + `sott` = Búð / söluborð · `uttekt` = Ársskoðun (165, 418) · `brunakerfi`
+  = Brunakerfis skoðun (273, 291) · `slokkvikerfi` = Slökkvikerfis skoðun (386, frá 05.10) · annað (`vinnublad`,
+  `claude`, `claude-krofuyfirferd`, null). Kreditnóta fær uppruna reikningsins sem hún bakfærir.
+- **Sjálfgefin röðun:** Skráð, nýjast efst, og fest efst „Síðasta afgreiðsla" (nýjasta `final` sala með source
+  `pos`/`sott`) með Breyta og PDF — Agnar vill finna afgreiðsluna strax ef þarf að breyta henni. Tölurnar efst
+  telja ALLT; listinn teiknar 150 í einu (09.10, #1126).
+- **Drög-staðsetning** (143): Verkstæði (received/inprogress) › Afgreiðsla (ready) › Sótt · klára (collected) ›
+  Verkbeiðni afturkölluð (cancelled) › Verkbeiðni eytt › Bara drög. „Enginn viðskiptavinur" = greitt síðar /
+  reikningur án `customer_id` og `customer_base_id` — krafan verður ekki send (vörðurinn `audit-solu-id`).
 
 ## Lærdómur
 

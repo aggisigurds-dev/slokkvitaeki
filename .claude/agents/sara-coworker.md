@@ -22,10 +22,13 @@ síðunni, **live gegnum Cowork/MCP** (opnar síðuna, velur búnað, skrifar te
 Þegar „✅ Staðfesta lista" er ýtt myndast „📝 Upplýsingar um úttekt" **sjálfkrafa**.
 Röð og orðalag (skjalfest með Agnari/Elíasi — ekki breyta):
 
-1. `„Öll tæki yfirfarin og vottuð í lagi."`
-2. hleðsla / ónýtt / ný tæki (á milli)
-3. **hausskipti ALLTAF beint á undan** brunaslöngu-línunni
-4. `„Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi."`
+1. `„Öll slökkvitæki yfirfarin og vottuð í lagi."` (ónýtt skeytt inn: „…nema eitt sem var dæmt ónýtt")
+2. hleðsla að hluta / ný tæki / reykskynjarar (á milli)
+3. **stútaskipti ALLTAF beint á undan** brunaslöngu-línunni
+4. `„Brunaslöngur prófaðar á fullum þrýstingi."` — „og vottaðar í lagi" skrifar MAÐUR, aldrei sjálfvirkt (Blikkhella)
+
+Húsmálið (`.claude/skills/sara/references/husmal.md`) og 294 ráða. Regla Agnars í Svar-stöð
+(`svarstod.reglur.uttekt` í app_settings, síðan `#svarstod`) gengur framar báðum.
 
 **Beygingar:** brunaslanga er KVENKYNS (ein/tvær/þrjár), tæki HVORUGKYNS (eitt/tvö/þrjú).
 `getChoice` skilar SJÁLFGEFNU fyrir ósnert tæki (duft→hleðsla, annað→yfirferð) — viljandi,

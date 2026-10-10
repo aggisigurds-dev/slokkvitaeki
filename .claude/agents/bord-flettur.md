@@ -536,4 +536,20 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 
 ## Lærdómur
 
+- **08.10.2026 — Gátlisti fyrir nýja síðu (lært á Svar-stöð 447 og Kostnaði 419).** (1) Búðu `view-<key>` til STRAX,
+  falið, við ræsingu — annars hunsar beinirinn (218) `#<key>` (~1,9 s gluggi) og lendir á Stjórnstöð. (2) Hópur í
+  hliðarstiku: bættu lyklinum í `SEC` í 391. (3) **Röðin í hliðarstikunni kemur úr `AppSettings.sidebar_order`** —
+  nýr lykill sem er ekki þar lendir NEÐST; settu hann á réttan stað í þjóns-gildinu (atómísk SQL á app_settings eða
+  AppSettings.save) eftir að síðan er komin í loftið. (4) Síðuval appa: `PAGES` í 261. `insertOnce(...)` með nýju
+  flaggi brýtur `audit-app-sidulisti` (FLOGG-listinn þar er fastur) — bættu flagginu þar líka eða slepptu insertOnce.
+  (5) Nýr `localStorage`-lykill brýtur `audit-vafrastada` (grunnlína 152) — slepptu honum eða rökstyddu og hækkaðu.
+  (6) Hjálparfall sem gluggar annarra pappa nota við ræsingu (t.d. `window.svKodi`) verður að hlaðast SNEMMA í
+  index.html (447a stendur á undan 00-legacy). (7) Fangaðu smelli inni í Shadow DOM með `e.composedPath()`.
+
 - **04.10.2026** — 04.10.2026: litaspjaldið í app-hausnum (#_app-style, 261) opnar nú „Stærð og útlit" (AppPageZoom.vixla, 333) í stað PageEditor beint — „Litir og letur…" þar opnar ritilinn. Síðulykill 333: m:<modal-id> ef gluggi er opinn, f:<app-síða> fyrir iframe-síður, annars hash-rót (#company/123 → company). Companies.openDetail skiptir um slóð án hashchange — 333 vaktar lykilinn á 700 ms fresti. Öpp-stýriborðið (354) fékk S26-hnapp við hvert app (SlokkDevFrame.open('s26')). (js/patches/261-app-profiles.js, js/patches/333-app-page-zoom.js, js/patches/354-opp-styribord.js)
+
+## Lærdómur
+
+- **10.10.2026** — 05.10.2026 — „Sækja inn úr fyrirtæki" (122) opnar MERKJA-haminn (openReceiveModal(true)): aðeins uttaeki.status='loaned', engin verkbeiðni og engin drög. Agnar: „ekki verkbeiðni … bara fram og til baka hægra megin" (Komið úr þjónustu, 269). Áður kallaði takkinn openReceiveModal(event) → venjulegi hamurinn → verkbeiðni + drög (R-001080, hreinsuð mjúkt). Leysir af ákvörðunina 29.09 í 422; 422 gildir áfram um verkbeiðnir sem til eru, og afturkölluð (cancelled) losar tækin eins og eydd síðan 09.10 (#1125). (js/patches/122-samningshafar-receive.js, js/patches/422-verkstaedi-tenging.js, js/patches/269-verkstaedi-loaned.js)
+
+- **10.10.2026** — 07.10.2026 — Þjónustuver (309) svarstaða: „svarað"-merkið býr í samskipti_stada síðan 21.09 (EKKI localStorage eins og kaflinn að ofan segir), ein röð per fyrirtaeki_id ALLRA bygginga félagsins (base), með handled_by og note. cut = síðasta svar okkar / handled_at / fyrirtaeki_virkni (reikningur, sala, skýrsla — RPC bh_fyrirtaeki_virkni_uppfaera = 🔄 Uppfæra, keyrir líka kl. 05:30). Staða Þjónustuborðsmáls (lokad / svarad_at) er EKKI lesin, svo lokað mál stendur áfram „vantar svar" (mál 1120). Merktu aðeins svarað með sönnun: lokað mál, sjálfvirk staðfesting frá kerfi kúnnans, eða þakkarpóstur á eftir svari okkar. (js/patches/309-thjonustuver-postar.js)
