@@ -90,6 +90,9 @@ Slökkvitækjaþjónusta (🧯 `uttekt`) og brunakerfisþjónusta (🔥 `brunake
 sér kerfi. Þær mega **aldrei** mála hvor aðra: ekki á Ársskoðun-🧾, ekki á
 prófílspjöldum, ekki í `document_pairs`.
 
+- **Þriðja þjónustan (05.10.2026): 🍳 slökkvikerfi** (eldhúskerfi, 385/386). Reikningurinn verður til úr
+  skoðuninni sjálfri (`source/vidskiptategund 'slokkvikerfi'`) og ber AÐEINS slökkvikerfisskýrsluna — sami staður
+  getur átt slökkvitækjaskýrslu sama árs (Hótel Varmaland). Sjá `sala-reikningar` → Slökkvikerfisreikningur.
 - Allir reikningar halda `doc_type=reikningur`. **Aldrei** `doc_type=brunakerfi`
   á reikningi og **aldrei** búa til `doc_type=brunakerfi-reikningur`.
 - Raunverulegi merkimiðinn er `customer_documents.vidskiptategund`
