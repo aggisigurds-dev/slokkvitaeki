@@ -208,3 +208,25 @@ keyrðu hana ef endurskoða þarf húsmálið eða staðfesta hvernig eitthvað 
 - `references/stada.md` — hvaða fyrirtæki eru búin, hver bíða og hvers vegna, og
   hvernig `sara_yfirferd`-borðið er lesið. **Taflan er heimildin, ekki skráin** —
   uppfærðu hana samt í lok hverrar lotu svo næsta lota byrji ekki upp á nýtt.
+
+## Drög úr samþykktri SARA-línu — beint í grunninn (09.10.2026)
+
+Samþykki á vinnublaði býr EKKI til sölu (Samþykkja skrifar aðeins stöðu). Þegar Agnar
+hefur samþykkt línuna á borðinu og ekkert viðmót er við höndina má stofna drögin með
+einu INSERT í `solur` — gikkirnir sjá um restina:
+
+- `solur_set_num` gefur næsta R-númer (senda `num` ekki með).
+- `trg_vidskiptategund` → `uttekt`; `trg_solur_fill_base_id` fyllir `customer_base_id`.
+- Línur: `[{"qty":n,"desc":"<heiti úr SARA.linur>","vsk_pct":24,"unit_price_ex_vat":v}]`
+  + `Akstur` × `sara.akstur` (3.600) + `Skýrslugerð` (5.600). 0-kr hleðslulínur sleppast.
+- `upphaed_an_vsk` = Σ qty×v · `vsk_upphaed` = round(×0,24) · `samtals` = summa.
+- `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null
+  → birtist ÓSENT í Kröfuyfirliti; Agnar sendir.
+- Innri texti (hvaða blað, hvað er óvíst) í `athugasemdir`. ALDREI `krafa_note` — það prentast.
+- Á eftir: `sara_yfirferd.stada='klarad'`, `samthykkt_at`, athugasemd með R-númerinu.
+- Tæki sem blaðið nefnir með raðnúmeri: leita FYRST að FC-/TMP-röðum sem eru þegar til á
+  staðnum og setja raðnúmerið á þær (Veghús 1: FC139-lettvatn-1/2 → 326/2566) — ekki stofna
+  nýjar raðir (tvítalning).
+
+Dæmi 09.10.2026: R-001111 Suðurlandsbraut 30 (SARA 49), R-001112 Matborðið (42),
+R-001113 Veghús 1 (35), R-001114 Tjarnarból 2 (12), R-001115 Megin, R-001116 Bíll.is.

@@ -80,3 +80,15 @@ tala rataði inn í markaðsgreiningu áður en hún fannst.
 
 Afritaðu töfluna fyrst (`create table backup_… as select * from …`), keyrðu
 `node tools/audit-all.cjs`, og segðu hvað var mælt fyrir og eftir.
+
+## Þrjár heimildir sem „enginn reikningur" gleymir (08.–09.10.2026)
+
+1. **Stólpa-reikningar á kennitölu** búa í `stolpi_reikningar` (kt10, tegund='reikningur') —
+   ekki aðeins sem R-10xxxx-skjöl í `customer_documents`. 21 félög áttu reikning þar sem
+   aldrei kom sem skjal (nafnamunur: „Bárugrandi 1,húsfélag" ≠ „Húsfélagið Bárugranda 1").
+   Stólpi hætti 07.05.2026; heimsókn eftir maí á sölu í `solur` eða ekkert.
+2. **Kreditfærslur**: sala með `credit_of` á sig er bakfærð og telst hvorki rukkun né
+   ósent; Payday CREDIT/CANCELLED er aldrei greiðsla (`paid_date` á kreditinu villir).
+3. **Búðarsala** (`vidskiptategund='bud'`, R-000531 JDÓ) getur verið úttektin sjálf.
+Auk þess: 139 `uttaeki`-raðir bera status „Í lagi" og teljast ekki með í Ársskoðun
+(`status='active'` er eina sían) — tækjatala úr `uttaeki` getur því verið of lág.
