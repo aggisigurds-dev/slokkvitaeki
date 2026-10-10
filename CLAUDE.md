@@ -16,7 +16,9 @@ It contains everything Claude Code needs to know to be useful immediately.
 > og [`docs/MAELINGAR.md`](docs/MAELINGAR.md) — **gildrurnar sem láta mælitækið ljúga**
 > (fastur biðtími í stað kyrrstöðu · tilbúinn atburður í stað raunverulegrar afhleðslu ·
 > normalísering sem étur það sem greinir að · tómt svar úr RLS · falið spjald · nafnaleit
-> í minnkuðum búnti · vörður á skrá í stað atriðis). **Lesa áður en sagt er „mælt".**
+> í minnkuðum búnti · vörður á skrá í stað atriðis · „fyrsta sem fannst" af mörgum röðum ·
+> útskrift skipunar tekin sem gildi · útdráttur prófaður á öðru hráefni en fallið fær ·
+> bið styttri en lota biðraðarinnar). **Lesa áður en sagt er „mælt".**
 > Hver gildra þar er mæld, með því sem hún kostaði. Regla 3 hér að neðan er marklaus ef
 > mælitækið lýgur.
 >
@@ -120,6 +122,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn með tenglum í `.claude/skills/arnold/references/` | skill `arnold` 💪 |
 | **Svör Agnars á Þjónustuborðinu** — „klára svörin", „yfirfara svör", „ég er búinn að svara", „vinna úr Samþykkja", „hvað bíður Claude" 🕵️ | `samthykktir` |
 | Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |
+| **Rekstrarfélög** (margir staðir á kt): skýrsla ↔ reikningur ↔ tækjaskrá eftir tölum per tegund, „para eftir magni", tvíræð, vegna-línan, hleðsluspá — Skýrslu-stöð ⚖ + `tools/renna-rekstrarfelag.cjs` | skill `rekstrarfelog-parun` (+ `skjol` í brunaholf) |
 
 Kveikjuorð (copy-paste): [`docs/TRIGGERS.md`](docs/TRIGGERS.md) — `hindra klúður`, `villuleit`, `variant`, `kennitala`, `skýrsla`, `reikningur`, `krafa`, `RLS`, `hraði`, `kort`, `prentun`, … Agentaskrá: [`docs/AGENTASKRA.md`](docs/AGENTASKRA.md).
 

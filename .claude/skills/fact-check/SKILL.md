@@ -75,6 +75,15 @@ tala rataði inn í markaðsgreiningu áður en hún fannst.
   kt-hittið er alltaf rangt.
 - **Ný og endurvakin félög:** saga sem vantar er EKKI sönnun um brottfall.
   Taktu aldrei félag úr þjónustu á þeirri forsendu einni.
+- **Sagan geymir stundum skýrslur ALLRA staða hópsins** (kt-leki úr batch-lestri):
+  Grjótháls bar 4 færslur fyrir 2026 og 7 fyrir 2025, allar frá systurstöðum.
+  Mælt 06.10.2026: **119 félag+ár með fleiri en eina sögufærslu** (111 félög, mest
+  15) og **138 facts-raðir með heimildarskjal af öðru ári** en `report_year` (17 af
+  öðru félagi). „Skýrsla stangast á við reikning" þýðir oftar að geymslan sé röng
+  en reikningurinn — **lestu PDF-ið** (`lesa` í para-rekstrarfelag) áður en þú dæmir.
+- **Rekstrarfélög (margir staðir á kt):** reikningur ↔ skýrsla ↔ tækjaskrá eftir
+  tölum per tegund, `reikningslestur.vegna` sker úr, einn reikningur ein skýrsla,
+  tvíræð aldrei pöruð sjálfkrafa → skill **`rekstrarfelog-parun`**.
 
 ## Áður en þú skrifar
 

@@ -142,6 +142,50 @@ Eftir ýtingu: `git fetch && git status -sb` (á að vera án `ahead`/`behind`) 
 `git diff origin/master --quiet -- <skrár>`. Sama gildir víðar — `grep` á útskrift
 svarar „stóð þetta orð þarna", ekki „tókst aðgerðin".
 
+## 12. „Fyrsta sem fannst" er ekki mæling
+
+**06.10.2026.** Greiningin á rekstrarfélögum tók **fyrstu** sögufærsluna fyrir hvert
+(félag, ár). Sagan undir Grjóthálsi geymdi fjórar færslur fyrir 2026 — frá öllum fimm
+stöðum Aðalskoðunar — og sú fyrsta var Hjallahraun. Þá leit út fyrir að Grjótháls og
+Hjallahraun ættu sömu tölur (tvíræð) og að reikningur R-106443 „vegna Gjótháls"
+stangaðist á við skýrsluna. PDF-ið sjálft sagði nákvæmlega reikninginn.
+
+**Reglan:** þegar lykill getur átt fleiri en eina röð, **teldu þær** áður en þú velur,
+og veldu á sönnun (skjal lesið, staður nefndur), ekki á röð. Prentaðu hvað var valið og
+hverju var sleppt (sjá 9). Mælt í heild: 119 félag+ár með fleiri en eina sögufærslu.
+
+## 13. Útskrift skipunar sem lítur út eins og gildi
+
+**06.10.2026.** `netlify env:get VEL_HEARTBEAT_TOKEN --site …` keyrt úr rangri möppu
+prentaði villutexta („No project linked …", 73 stafir með bilum). Skriftan tók síðustu
+línuna sem lykilinn og skrifaði hana í `.env`. Hjartslátturinn hélt áfram að svara 401 —
+nú með „réttu" .env-skránni, sem var verra en engin.
+
+**Reglan:** gildi sem kemur úr skipun er **mælt** áður en það er notað: lengd, bil, snið
+(lykill hefur engin bil, engin orð). Og keyrðu CLI-ið þar sem það á heima (brunaholf-mappan
+er tengd síðunni). Sjá 11 — sama fjölskylda: textinn er ekki ástandið.
+
+## 14. Mældu á textanum sem fallið sér
+
+**06.10.2026.** Regexinn `hjá fyrirtækinu (…)` fann aldrei línuna í úttektarskýrslu.
+Drive-MCP sýndi textann fallega á einni línu; pdf-parse (sem fallið notar) skilar
+„hjá \nfyrirtækinu Steypustöðin Borgarnesi kt:… \n" — línuskil á undan OG eftir orðinu.
+Tvær útsendingar fóru út áður en ég las pdf-parse-textann sjálfan.
+
+**Reglan:** prófaðu útdráttinn á **sama hráefni og framleiðslukóðinn fær** (sama safn,
+sama útgáfa, sömu bæti), ekki á öðru tóli sem sýnir sama skjal. Sæktu skrána, keyrðu
+sama parser, skoðaðu `JSON.stringify(texti.slice(…))`.
+
+## 15. Biðröð sem tæmist á 20 s fresti
+
+**05.10.2026.** Endursköpun á því hvernig gamalt eintak yfirskrifaði `app_profiles_json`
+„fann ekkert" — vistunin fer í biðröð (`saveVordud`) sem tæmist á 20 sekúndna fresti og
+við `pagehide`. Prófunin lokaði síðunni eftir 15 s og sá aldrei skrifin.
+
+**Reglan:** sé ferli með biðröð/tímamæli, bíddu **lengur en lotuna** (hér ≥ 46 s) eða
+knýðu fram tæminguna (`pagehide`) — og staðfestu á þjóninum (`audit_vernd`), ekki í
+vafranum. Afbrigði af 1: kyrrstaðan verður að ná yfir alla lotu biðraðarinnar.
+
 ---
 
 ## Gátlisti áður en sagt er „mælt"
@@ -155,3 +199,6 @@ svarar „stóð þetta orð þarna", ekki „tókst aðgerðin".
 7. Get ég sýnt hvað tækið sá OG hverju það sleppti?
 8. Fékk ég sömu niðurstöðu með óháðri aðferð?
 9. Staðfesti ég á ástandinu — eða bara á því sem skipunin prentaði?
+10. Gat lykillinn átt fleiri en eina röð — taldi ég þær, eða tók ég þá fyrstu?
+11. Prófaði ég útdráttinn á sama hráefni og framleiðslukóðinn fær?
+12. Nær biðin yfir heila lotu biðraðarinnar / tímamælisins?

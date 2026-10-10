@@ -103,3 +103,6 @@ tmp_*.py
 # CI klónar opinbera Brunahólf-repóið hingað svo audit-agentar sjái systur-skrár
 .sister/
 tools/opp-skjaskot/
+
+# úttak greiningartóla (para-rekstrarfelag --tillogur, renna-rekstrarfelag)
+ut/
