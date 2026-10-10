@@ -89,6 +89,10 @@ exports.handler = async (event) => {
     if (action === 'create') {
       const baseId = parseInt(body.base_id, 10);
       if (!baseId) return P.json(400, { error: 'base_id vantar' });
+      // Einn aðgangur per félag (einkvæmur lykill portal_users_base_id_key). Tvísmellur
+      // bjó áður til -2 raðir (S&H Invest, S30 — eytt 10.10.2026).
+      const dup = await P.sbGet(`portal_users?base_id=eq.${baseId}&select=id&limit=1`);
+      if (dup.ok && (await dup.json()).length) return P.json(409, { error: 'Vefur er þegar til fyrir þetta félag' });
       const names = await baseNames([baseId]);
       const name = (names[baseId] || {}).nafn || ('Félag ' + baseId);
       // einkvæmt slug
@@ -97,6 +101,7 @@ exports.handler = async (event) => {
       const taken = new Set((ex.ok ? await ex.json() : []).map((x) => x.slug));
       if (taken.has(slug)) { let n = 2; while (taken.has(slug + '-' + n)) n++; slug = slug + '-' + n; }
       const ins = await P.sbPost('portal_users', { base_id: baseId, slug: slug, active: true, display_name: name });
+      if (ins.status === 409) return P.json(409, { error: 'Vefur er þegar til fyrir þetta félag' });
       if (!ins.ok) return P.json(ins.status, { error: 'Gat ekki stofnað', detail: await ins.text() });
       const row = (await ins.json())[0];
       return P.json(200, { ok: true, row: pubRow(row), url: origin(event) + '/gatt/?c=' + slug });
