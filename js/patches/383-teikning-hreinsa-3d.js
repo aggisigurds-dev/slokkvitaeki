@@ -1610,6 +1610,8 @@
   }
   // LOFTHÆÐ: 3,0 m í öllum húsum (Agnar 10.10.2026: „Allt 3 metra" — 2,5 m í íbúðarhúsum var prófað sama dag og hafnað).
   const LOFTH_M = 3.0;
+  // SVALIR (Agnar 10.10.2026: „Hafðu svalirnar bara í 1.1m"): veggjaLinur með tegund 'svalir' = svalaveggur/handrið, 1,1 m.
+  const SVALIR_M = 1.1;
 
   async function syna3d(gamur, gogn) {
     await saekjaThree();
@@ -1925,6 +1927,20 @@
           });
           glerM.instanceMatrix.needsUpdate = true; glerM.renderOrder = 2; hopur.add(glerM);
           losa.push(gE);
+        }
+        // Svalir: svalaveggur/handrið 1,1 m í lit veggjanna, minnst 20 cm þykkur; lengdur um hálfa þykkt svo bogabútar mætist.
+        if (hd.svalir && hd.svalir.length) {
+          const svE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D }), svH = SVALIR_M * metri;
+          const svM = new T.InstancedMesh(kG, [svE, svE, kTopp, svE, svE, svE], hd.svalir.length);
+          hd.svalir.forEach((v, i) => {
+            const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
+            const th = Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg);
+            q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
+            m.compose(st.set((ax + bx) / 2, svH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az) + th, svH, th));
+            svM.setMatrixAt(i, m);
+          });
+          svM.instanceMatrix.needsUpdate = true; hopur.add(svM);
+          losa.push(svE); veggEfni.push(svE); lg.svalir = svM;
         }
         // Hurðargöt: veggurinn heldur áfram OFAN við hurðina (dyrakarmur) — rýmið lokast en gengt er undir. Hurðaropið er
         // 2,22 m óháð lofthæð (karmur 78 cm við 3 m, 28 cm við 2,5 m), en karmurinn aldrei undir 25 cm.
@@ -2464,6 +2480,7 @@
           });
           const gler = lg.heilir ? (hd.gler || []).map(v => butur(v, 0)) : [];
           const hurdir = lg.heilir ? (hd.hurdir || []).map(v => butur(v, 0.8)) : [];
+          const svalir = lg.heilir ? (hd.svalir || []).map(v => butur(v, 0.6)) : [];
           const taeki = (hd.merki || []).map(mk => {
             const fest = hd.butar ? festaAVegg(hd.butar, mk.x, mk.y, 45 * (Math.max(hd.frumB || 0, hd.frumH || 0) / 2384 || 2.5)) : { x: mk.x, y: mk.y, nx: 0, ny: 1, aVegg: false };
             return { x: X(fest.x * f - gw2), z: Z(fest.y * f - gh2), nx: +fest.nx.toFixed(4), nz: +fest.ny.toFixed(4), aVegg: !!fest.aVegg, gerd: mk.gerd || 'slokkvitaeki', stimpill: mk.stimpill || undefined, litur: mk.litur || '', tegund: String(mk.texti || '').slice(0, 40) };
@@ -2484,6 +2501,7 @@
           const y = M(P.y);
           const haed = { nr: lg.nr, nafn: hd.nafn || (lg.nr + 1) + '. hæð', 'hæð': y, veggH: lg.lofth, golf, veggir, gler, hurdir, taeki };
           if (hd.haedId) haed.haedId = hd.haedId;        // raunsaett.py skilar því aftur með vinnuskjali hæðarinnar
+          if (svalir.length) { haed.svalir = svalir; haed.svalirH = SVALIR_M; }   // sena.py: lágir veggir
           const pg = raun && o.pdf && hd.haedId && o.pdf[hd.haedId];
           if (pg && hd.frumB > 0 && hd.frumH > 0 && hd.sk) {
             // hlutföll síðunnar → dílar frummyndar − skurður → heimur → metrar: sama leið og veggirnir (butur)
@@ -3836,7 +3854,7 @@
     // TEGUND (06.10.2026, áfangi 1: TurboPaint sem leiðréttingarbekkur): hver lína ber veggur / gler / hurð. Gler og
     // hurðir eru EKKI veggir í grímunni — þau fara beint í 3D sem glerfletir og hurðargöt, eins og notandinn merkti þau.
     const tpVeggir = tp.filter(v => !v.tegund || v.tegund === 'veggur' || v.tegund === 'ei60' || v.tegund === 'ei30');
-    const tpGler = tp.filter(v => v.tegund === 'gler'), tpHurdir = tp.filter(v => v.tegund === 'hurd');
+    const tpGler = tp.filter(v => v.tegund === 'gler'), tpHurdir = tp.filter(v => v.tegund === 'hurd'), tpSvalir = tp.filter(v => v.tegund === 'svalir');
     // [ax, ay, bx, by, þykkt, eldflokkur?] — eldflokkurinn (60/30) fylgir aðeins eldveggjum TurboPaint
     const tpButar = listi => { const ut = []; listi.forEach(v => { const t = Number(v.t) || 0, e = eldflokkurVeggs(v); for (let i = 0; i + 3 < v.p.length; i += 2) ut.push(e ? [v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t, e] : [v.p[i], v.p[i + 1], v.p[i + 2], v.p[i + 3], t]); }); return ut; };
     const veggir = r.thekja >= NOTHAEF_THEKJA && !h.pdfVeggir.length && !tp.length ? r.veggir : new Uint8Array(r.W * r.H);
@@ -3971,6 +3989,8 @@
     const leidrett = !!(h.leidrett && tp.length);
     const merktGler = tpGler.length ? klippaButa(tpButar(tpGler), sk) : null;
     const merktarHurdir = tpHurdir.length ? klippaButa(tpButar(tpHurdir), sk) : null;
+    // svalir eru ekki veggir í grímunni (engin brunahólf, engin hurðarbil) — þær fara beint í 3D sem lágur veggur
+    const svalir = tpSvalir.length ? klippaButa(tpButar(tpSvalir), sk) : [];
     let gler = null;
     if (leidrett) gler = merktGler || [];
     else {
@@ -4015,7 +4035,7 @@
       talning.metrar = Math.round(butar.reduce((s0, v) => s0 + Math.hypot(v[2] - v[0], v[3] - v[1]), 0) * mpx);
     }
     try { console.info('[383] 3D ' + (h.nafn || '') + ': ' + JSON.stringify(talning)); } catch (_) {}
-    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
+    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, svalir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
   }
   // EI-merki fyrir 3D: það sem teikningin geymir, annars TEXTALAG vigur-PDF-sins (ódýrt, engin myndgreining). Aðeins í
   // minni — ekkert er skrifað í teikninguna og 2D-glugginn sýnir merkin ekki (Agnar 03.10.2026: sú sýn býr í TurboPaint).
