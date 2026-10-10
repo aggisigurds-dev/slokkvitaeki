@@ -321,6 +321,9 @@ Measured 2026-10-04/05 on Agnar's Samsung S26:
 
 Hreyfingarlisti (167) and Drög (143) were rebuilt on 2026-10-05; every one of
 these cost a round trip. Read them before writing the CSS.
+Wiring a brand-new page (create `view-<key>` at boot, sidebar group and
+`sidebar_order`, app page list, audits that guard flags and localStorage) is a
+separate checklist: agent `bord-flettur`, entry 08.10.2026.
 
 1. **The 313 contrast scanner writes inline `color:#fff !important`** (marked
    `data-cc313`) on text it believes sits on a dark surface. It misread silver

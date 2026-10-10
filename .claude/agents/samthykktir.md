@@ -100,25 +100,6 @@ Peningar fyrst (ógreitt, ósent, rangur greiðandi), svo gagnaleiðréttingar s
 Ársskoðun eða borðið, svo kóði. Innan hvers flokks: það sem er fljótlegt og
 sannreynanlegt á undan því sem krefst ákvörðunar.
 
-## Að stofna samþykktarmál — sniðið (Agnar 07.10.2026: „setja svona spurningar inn á samþykktir … svara á morgun")
-
-Þegar lota endar á spurningum sem Agnar þarf að ákveða fara þær á borðið hans, ekki í lausu lofti í spjallinu.
-
-- **Eitt mál á lið** (Agnar 11.09: „eitt mál á mig í hverjum lið … svo ég geti bara samþykkt hvert og eitt").
-- `thjonustubeidni`-röð: `source='claude'`, `type='annad'`, `status='nytt'`, `priority='venjulegur'`,
-  `assigned_to='Agnar'`, `created_by='claude'`, `tags` (jsonb) `["samthykki","spurning","<lotumerki, t.d. claude-0710>",
-  "<efni/tilvísun, t.d. sala:R-001055>"]`, og `fyrirtaeki_id` / `customer_base_id` þegar málið á eitt félag.
-  `samthykki` setur það í hamin Samþykkja; `spurning` í „Þarf svar frá þér".
-- **`notes`** byrjar á þremur línum — `✓ Samþykkja: <nákvæmlega hvað ég geri>` · `▶ Í vinnslu: …` ·
-  `✕ Hafna: <hvað gerist ef ekki>` — svo `Tillaga: ✓/▶/✕` og síðan mældu gögnin MEÐ dagsetningu og auðkennum
-  (R-nr, mál-nr, fyrirtækis-id, upphæðir). **`summary`**: ein–tvær setningar um vandann.
-- **Áður en stofnað er:** leitaðu að tvítaki meðal opinna mála (R-nr/félag í `tags` eða titli) — 07.10 voru
-  Kötlufell 9 og Furugrund 66 þegar á borðinu sem „XML hafnað" (1088, 1107). Það sem er bara „lestu þetta" á
-  EKKI heima í Samþykkja (sjá 1031: 31 slík fylltu þriðjung listans og drekktu raunverulegu spurningunum).
-- **Forsendur breytast áður en svarað er.** 07.10 → 08.10 voru NLSH-drögin vistuð og bakfærðar sölur farnar úr
-  Sölum, svo tvö mál (1118, 1119) þurftu leiðréttingarlínu. Rútínan hér að ofan endurmælir alltaf fyrst —
-  skrifaðu leiðréttinguna aftast í `notes` með dagsetningu frekar en að breyta tillögunni hljóðlaust.
-
 ## Svarsniðið til Agnars
 
 Hann skimar. Stutt tafla: hvað var gert, með hvaða mælingu. Svo það sem eftir stendur
@@ -209,6 +190,10 @@ SÖNNUN (mælt DD.MM.ÁÁÁÁ, <heimild>)
 · <tölur, númer, dagsetningar, skrá:lína — allt sem þú mældir, ekkert ágiskað>
 ```
 Lestu svarið aftur eftir innsetningu (`returning id, title, tags`). Ekkert er „sett á borðið" fyrr en það sést.
+
+**Ekki „lestu þetta".** Mál sem er bara upplýsing, ekki ákvörðun, á ekki heima í Samþykkja — 31 slík (vinnublaða-staðfestingar, sjá #1031) fylltu þriðjung listans og drekktu raunverulegu spurningunum (20.09).
+
+**Forsendur breytast áður en hann svarar** — hann svarar oft daginn eftir (07.10: „svara á morgun"). 07.→08.10 voru NLSH-drögin vistuð og bakfærðar sölur farnar úr Sölum, svo #1118/#1119 fengu línu aftast: „— Leiðrétt DD.MM.ÁÁÁÁ (Claude, endurmæling): …". Breyttu aldrei tillögunni hljóðlaust.
 
 **Hreinsa Þjónustuborð (Stjórnstöð 420)** lokar sjálft málum með HARÐA tengingu þegar verkinu er lokið
 (`payday-xml-sala:` greitt/ógilt · `payday:N` greitt · `sala:R-…` send/greidd/ógild · vinnublað klárað ·
