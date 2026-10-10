@@ -1931,7 +1931,9 @@
         // Svalir: svalaveggur/handrið 1,1 m í lit veggjanna, minnst 20 cm þykkur; lengdur um hálfa þykkt svo bogabútar mætist.
         if (hd.svalir && hd.svalir.length) {
           const svE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D }), svH = SVALIR_M * metri;
-          const svM = new T.InstancedMesh(kG, [svE, svE, kTopp, svE, svE, svE], hd.svalir.length);
+          // eigið toppefni: kTopp veggjanna er teiknað með lit á hvert eintak (instanceColor) og three r128 skiptir ekki um forrit
+          const svT = new T.MeshLambertMaterial({ color: kTopp.color.getHex() }); svT.userData.toppur = true;
+          const svM = new T.InstancedMesh(kG, [svE, svE, svT, svE, svE, svE], hd.svalir.length);
           hd.svalir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
             const th = Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg);
@@ -1940,7 +1942,7 @@
             svM.setMatrixAt(i, m);
           });
           svM.instanceMatrix.needsUpdate = true; hopur.add(svM);
-          losa.push(svE); veggEfni.push(svE); lg.svalir = svM;
+          losa.push(svE, svT); veggEfni.push(svE, svT); lg.svalir = svM;
         }
         // Hurðargöt: veggurinn heldur áfram OFAN við hurðina (dyrakarmur) — rýmið lokast en gengt er undir. Hurðaropið er
         // 2,22 m óháð lofthæð (karmur 78 cm við 3 m, 28 cm við 2,5 m), en karmurinn aldrei undir 25 cm.

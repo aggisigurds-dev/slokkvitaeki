@@ -353,12 +353,13 @@ krefst(/hRef\.eldVal = fyrri;[\s\S]{0,400}vistaSjalfkrafa\('eldveggir'\)/, 'val 
 krefst(/texti: u \? \(u\.type \? String\(u\.type\) : radnr\.slice\(-6\)\) : '', gerd/, 'miðar tækjanna eiga að sýna TEGUND (Agnar: „grænu pinnarnir sýndu slökkvitæki eða brunaslöngur")');
 krefst(/const lk = taekjalikan\(mk\.gerd, (?:veggH|3 \* metri), litur\);/, 'tækin verða að teiknast sem líkön (slökkvitæki, slanga, reykskynjari, rafmagnstafla, skilti) — Agnar 04.10.2026');
 krefst(/const LOFTH_M = 3\.0;[\s\S]*const metri = metriA3d\(hd, k\), veggH = LOFTH \* metri/, 'vegghæð = 3 m í öllum húsum, metrakvarðinn sér (Agnar 10.10.2026: „Allt 3 metra")');
+krefst(/const SVALIR_M = 1\.1;[\s\S]*if \(hd\.svalir && hd\.svalir\.length\)[\s\S]*tpSvalir = tp\.filter\(v => v\.tegund === 'svalir'\)/, 'svalir (tegund svalir) teiknast sem 1,1 m lágur veggur — Agnar 10.10.2026');
 krefst(/gerd: gerdTaekis\(u && u\.type\)/, 'hvert tæki verður að bera gerð sína inn í 3D');
 krefst(/teiknaTaekistakn\(mc, mk\.gerd\)/, 'miðar tækjanna verða að bera tákn tegundarinnar (🧯 🔔 slöngukefli — Agnar 04.10.2026)');
 krefst(/new T\.TorusGeometry\(hr\[0\] \* e, hr\[1\] \* e/, 'slöngukeflið í 3D á að vera spóla úr hringjum eins og táknið');
 krefst(/gerd === 'bjalla'\) \{\s+\/\/ viðvörunarbjalla: rauð skál/, 'viðvörunarbjallan verður að eiga líkan í 3D');
 krefst(/hRef = u && haedir\(\)\.find\(x => x && x\.id === u\.haedId\)/, 'handval verður að skrifast í LIFANDI hæðarhlutinn (fundinn eftir auðkenni) — tilvísun frá opnun 3D verður úrelt þegar röð þjónsins berst og þá vistast valið ekki');
-krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, hurdEld, eld, holf/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
+krefst(/veggjaPx: butar \? butar\.length : n, butar, gler, hurdir, (?:svalir, )?hurdEld, eld, holf/, 'undirbua verður að rétta syna3d heilu veggina og glerið');
 krefst(/if \(hd\.butar && hd\.butar\.length\) \{/, 'syna3d verður að teikna heila veggi (einn kassi á vegg) þegar þeir eru til');
 krefst(/kassarUrGrimu\(hd\.veggir, hd\.W, hd\.H\)/, 'gamla ristarleiðin verður að standa sem varaleið fyrir teikningar án veggjanets');
 krefst(/syna\(nr\) \{/, 'hæðatakkarnir (ein hæð í einu) eru farnir — fjölhæða hús verða ólæsileg án þeirra');
