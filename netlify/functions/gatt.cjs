@@ -1,6 +1,7 @@
 // gatt.js — gögn Þjónustuvefsins fyrir INNSKRÁÐAN viðskiptavin.
 //
 //   GET  /api/gatt   → { account, stats, buildings[], reports[], invoices[], messages[] }
+//                      account.details = portal_users.show_details → buildings[].equipment
 //   POST /api/gatt   { body }  → viðskiptavinur sendir fyrirspurn (skilaboð)
 //
 // base_id kemur úr session-tokeninu (aldrei úr slóð) → einangrun. UNDANTEKNING:
@@ -57,7 +58,7 @@ exports.handler = async (event) => {
     const slug = String((event.queryStringParameters || {}).c || '').trim();
     if (slug) {
       try {
-        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,display_name,theme&limit=1`);
+        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,display_name,theme,show_details&limit=1`);
         const u = (ur.ok ? await ur.json() : [])[0];
         if (u && u.active && !u.pass_hash) { baseId = u.base_id; openMode = true; openAcct = u; }
       } catch (_) {}
@@ -79,6 +80,17 @@ exports.handler = async (event) => {
   }
 
   try {
+    // 0) Stillingar aðgangsins lesnar LIFANDI (þema + nánari upplýsingar) — tokenið
+    //    geymir þemað frá innskráningu, svo breyting á stjórnsíðunni gildir strax.
+    let acct = openAcct;
+    if (!acct) {
+      try {
+        const ar0 = await P.sbGet(`portal_users?base_id=eq.${baseId}&active=eq.true&select=theme,show_details,display_name&order=show_details.desc,created_at.asc&limit=1`);
+        if (ar0.ok) acct = (await ar0.json())[0] || null;
+      } catch (_) {}
+    }
+    const showDetails = !!(acct && acct.show_details);
+
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
     const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu&order=nafn`);
     const sites = fr.ok ? await fr.json() : [];
@@ -159,6 +171,27 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
+    // 2d) Tækjaskrá per byggingu — AÐEINS þegar „nánari upplýsingar" er hakað.
+    //     Kúnna-öruggir reitir: tegund, stærð, staðsetning, raðnúmer (ekki TMP-),
+    //     skoðunardagar. Aldrei notes/phone/client/custody. Úrelt tæki sleppt.
+    const eqById = {};
+    if (showDetails && siteIds.length) {
+      try {
+        const er = await P.sbGet(`uttaeki?fyrirtaeki_id=in.(${siteIds.join(',')})&status=neq.urelt&select=fyrirtaeki_id,type,size,location,serial,last_insp,next_insp,status&order=type.asc,size.asc,location.asc&limit=5000`);
+        if (er.ok) {
+          const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9áéíóúýþæöð]+/g, '');
+          const addrById = {}; sites.forEach((s) => { addrById[s.id] = norm(s.heimilisfang); });
+          (await er.json()).forEach((u) => {
+            const loc = u.location && norm(u.location) !== addrById[u.fyrirtaeki_id] ? u.location : null;
+            const nr = u.serial && !/^TMP-/i.test(u.serial) ? u.serial : null;
+            (eqById[u.fyrirtaeki_id] = eqById[u.fyrirtaeki_id] || []).push({
+              tegund: u.type || '', staerd: u.size || '', stadsetning: loc, nr: nr,
+              sidast: u.last_insp || null, naest: u.next_insp || null, lan: u.status === 'loaned' });
+          });
+        }
+      } catch (_) {}
+    }
+
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
       const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
@@ -180,6 +213,7 @@ exports.handler = async (event) => {
         bru_skodun_manudur: bruEntry && bruEntry.inspect_month != null ? Number(bruEntry.inspect_month) : null,
         taeki: slokkMinusHose(rawTotal, slo),
         slo: slo,
+        ...(showDetails ? { equipment: eqById[s.id] || [] } : {}),
       };
     });
 
@@ -253,10 +287,10 @@ exports.handler = async (event) => {
     // heiti félags úr customers_base (fyrir hausinn) ef ekki í tokeni/opnum aðgangi
     let name = session ? session.name : (openAcct && openAcct.display_name);
     if (!name) { try { const br = await P.sbGet(`customers_base?id=eq.${baseId}&select=nafn&limit=1`); if (br.ok) name = ((await br.json())[0] || {}).nafn || ''; } catch (_) {} }
-    const theme = session ? (session.theme || 'steel') : ((openAcct && openAcct.theme) || 'steel');
+    const theme = (acct && acct.theme) || (session && session.theme) || 'steel';
 
     return P.json(200, {
-      account: { name: name || '', theme: theme, open: openMode },
+      account: { name: name || '', theme: theme, open: openMode, details: showDetails },
       stats, buildings: onBoard, reports, invoices, messages,
     });
   } catch (e) {

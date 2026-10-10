@@ -39,9 +39,12 @@ function origin(event) {
   const host = (event.headers && (event.headers.host || event.headers.Host)) || 'brunaholf.netlify.app';
   return 'https://' + host;
 }
+// Þemu Þjónustuvefsins (gatt/index.html :root[data-theme=…]). Annað gildi er hunsað.
+const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar'];
 function pubRow(r) { // aldrei skila pass_hash í vafra
   return { id: r.id, base_id: r.base_id, slug: r.slug, email: r.email || '', hasPassword: !!r.pass_hash,
-    active: r.active, theme: r.theme, display_name: r.display_name, last_login: r.last_login, created_at: r.created_at };
+    active: r.active, theme: r.theme, display_name: r.display_name, last_login: r.last_login, created_at: r.created_at,
+    show_details: !!r.show_details };
 }
 async function baseNames(ids) {
   const uniq = [...new Set(ids.filter((x) => x != null))];
@@ -106,7 +109,9 @@ exports.handler = async (event) => {
       if (typeof body.email === 'string') patch.email = body.email.trim().toLowerCase() || null;
       if (typeof body.password === 'string' && body.password) patch.pass_hash = P.hashPassword(body.password);
       if (typeof body.display_name === 'string') patch.display_name = body.display_name.trim();
-      if (typeof body.theme === 'string') patch.theme = body.theme.trim();
+      if (typeof body.theme === 'string' && THEMES.includes(body.theme.trim())) patch.theme = body.theme.trim();
+      // Hak: kúnni sér nánari upplýsingar um eign (tækjaskrá) þegar hann smellir á hana
+      if (typeof body.show_details === 'boolean') patch.show_details = body.show_details;
       if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });
       const r = await P.sbPatch(`portal_users?id=eq.${id}&select=*`, patch);
       if (!r.ok) return P.json(r.status, { error: 'Villa', detail: await r.text() });
