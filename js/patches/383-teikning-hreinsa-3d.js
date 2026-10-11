@@ -1987,6 +1987,10 @@
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
     if (!haedir.length) throw new Error('Engin hæð til að sýna');
     const LOFTH = LOFTH_M;
+    // HÚSSÝNIN (gogn.hus — Agnar 11.10.2026: „mynd af allri byggingunni vinstra megin á skjánum … samanfallin hæð ofan á
+    // hæð með þaki. Síðan extendable eins og 3D heildarmyndin er"): hæðirnar staflast þétt (plata 30 cm), þak á efstu hæð,
+    // engin tæki, ógegnsæ gólf; husSundur() dregur hæðirnar í sundur eins og heildarmyndin og smellur velur hæð (gogn.aHaed).
+    const husH = !!(gogn && gogn.hus);
     const b = gamur.clientWidth || 800, h = gamur.clientHeight || 500;
     const teiknari = new T.WebGLRenderer({ antialias: true, alpha: false });
     teiknari.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -2003,7 +2007,7 @@
     const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     const taekiHlutir = [];     // líkön, stangir, kúlur og miðar tækjanna — falin þegar föst vinnumynd er tekin (fastMynd)
-    let staerst = 1, haedY = 0, vidmid = null, heilir = 0;
+    let staerst = 1, haedY = 0, haedYX = 0, vidmid = null, heilir = 0;
     const lg0StigaHlidrun = [];
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
     // líkansins — stærðirnar eru ýktar um það bil tvöfalt svo tækin sjáist í yfirliti yfir heilt hús).
@@ -2169,7 +2173,7 @@
     haedir.forEach((hd, nr) => {
       const k = kassarUrGrimu(hd.veggir, hd.W, hd.H);
       staerst = Math.max(staerst, k.gw, k.gh);
-      const metri = metriA3d(hd, k), veggH = LOFTH * metri, bil = veggH * 3.2;
+      const metri = metriA3d(hd, k), veggH = LOFTH * metri, bil = husH ? veggH + 0.3 * metri : veggH * 3.2;
       const hopur = new T.Group(); hopur.position.y = haedY; svid.add(hopur);
       // Hæðir úr SAMA teikningasetti (sama blaðstærð) raðast eftir stöðu sinni á blaðinu og í sama kvarða — annars
       // sveif álma á 2. hæð yfir miðju 1. hæðar og varð stærri en hún er (skurðirnir eru misstórir). `punktar` =
@@ -2240,9 +2244,9 @@
       const aferd = new T.CanvasTexture(golfStr); aferd.anisotropy = 4;
       // Gegnsætt UTAN húss (golfMedUti) + alphaTest svo grá lóð sé ekki draugaplata.
       // Efri hæðir fá hálfgagnsætt gólf INNI — annars hylur efsta hæðin allar hinar ofan frá.
-      const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide, transparent: true, opacity: nr > 0 ? 0.42 : 1, depthWrite: nr === 0, alphaTest: 0.05 });
+      const golfG = new T.PlaneGeometry(k.gw, k.gh), golfE = new T.MeshBasicMaterial({ map: aferd, side: T.DoubleSide, transparent: true, opacity: nr > 0 && !husH ? 0.42 : 1, depthWrite: nr === 0 || husH, alphaTest: 0.05 });
       const golf = new T.Mesh(golfG, golfE); golf.rotation.x = -Math.PI / 2; hopur.add(golf);
-      const lg = { hopur, golfE, golfG, nr, hd, valinn: null, veggH, metri, lofth: LOFTH, gw: k.gw, gh: k.gh, k };
+      const lg = { hopur, golfE, golfG, golfM: golf, nr, hd, valinn: null, veggH, metri, lofth: LOFTH, gw: k.gw, gh: k.gh, k, yS: haedY, yX: haedYX };
       losa.push(golfG, golfE, aferd); lag.push(lg);
       litaHolf(lg);
       // Grátt útlit: grá steypuslæða yfir teikningunni (Agnar 07.10: „make the floor greyish" — áður hvít). Aðeins INNAN
@@ -2259,7 +2263,9 @@
       // GÓLFEFNI: parket og flísar eftir rýmum (gráa útlitið; Brunahólf-útlitið sýnir teikninguna eins og áður)
       if (hd.butar && hd.butar.length && !(gogn && gogn.anGolfefna)) {
         try {
-          const ge = golfEfni(hd, k, metri, golfStr);
+          const geL = (hd.heitiTexta || []).length + '|' + (hd.heitiOcr || []).length + '|' + golfStr.width + '|' + golfStr.height;
+          const ge = hd._ge && hd._geL === geL ? hd._ge : golfEfni(hd, k, metri, golfStr);
+          hd._ge = ge; hd._geL = geL;
           if (ge) { lg.efniAf = new T.CanvasTexture(ge.strigi); lg.efniAf.anisotropy = 4; losa.push(lg.efniAf); lg.golfefni = ge; (syna3d._golfefni = syna3d._golfefni || {})[hd.nafn || nr] = ge.rymi; console.info("[383] gólfefni " + (hd.nafn || nr) + ": " + JSON.stringify(ge.talning)); }
         } catch (e) { console.warn('[383] gólfefni', e); }
       }
@@ -2503,7 +2509,7 @@
           losa.push(mA, mE); midar.push({ midi, hlutfall: ms.width / ms.height });
         }
       });
-      haedY += bil;
+      haedY += bil; haedYX += veggH * 3.2;
     });
     // HELLULÖGN (Agnar 10.10.2026: „hellulagningamynstur á jörðina kringum bygginguna"): gráar 40 × 40 cm hellur undir
     // neðstu hæðinni, 8 m út fyrir teikninguna. Sést þar sem gólfið er gegnsætt utan húss. Ekki á fastri vinnumynd.
@@ -2523,6 +2529,23 @@
       const hE = new T.MeshBasicMaterial({ map: hT }), hG = new T.PlaneGeometry(w, d);   // óupplýst eins og gólfin (lárétt verður annars hvítt)
       const hM = new T.Mesh(hG, hE); hM.rotation.x = -Math.PI / 2; hM.position.y = -0.04 * m0; lg0.hopur.add(hM);
       losa.push(hT, hE, hG); lg0.hellur = hM;
+    }
+    // HÚSSÝNIN: þak á efstu hæð (útlína hússins úr gólfefnunum — án þeirra ekkert þak, ekki blað í fullri stærð) og engin tæki
+    let thak = null, husA = 0, husAnim = null, husMerki = null;
+    if (husH && lag.length) {
+      taekiHlutir.forEach(o => { o.visible = false; });
+      const efst = lag[lag.length - 1], src = efst.golfefni && efst.golfefni.strigi;
+      if (src) {
+        const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+        const x = c.getContext('2d'); x.drawImage(src, 0, 0);
+        x.globalCompositeOperation = 'source-in'; x.fillStyle = '#9a9ca0'; x.fillRect(0, 0, c.width, c.height);
+        x.globalCompositeOperation = 'source-atop';                       // fínt malarkorn
+        for (let i = 0, n = c.width * c.height / 70; i < n; i++) { const g = 125 + (Math.random() * 45 | 0); x.fillStyle = 'rgba(' + g + ',' + g + ',' + (g + 4) + ',.55)'; x.fillRect(Math.random() * c.width, Math.random() * c.height, 1.6, 1.6); }
+        const tT = new T.CanvasTexture(c); tT.anisotropy = 4;
+        const tE = new T.MeshBasicMaterial({ map: tT, transparent: true, alphaTest: 0.3, side: T.DoubleSide });
+        thak = new T.Mesh(efst.golfG, tE); thak.rotation.x = -Math.PI / 2; thak.position.y = efst.veggH + 0.03 * efst.metri; thak.renderOrder = 3;
+        efst.hopur.add(thak); losa.push(tT, tE);
+      }
     }
     // Sól: ein ljóslind yfir allt húsið (skyggir fleti veggjanna; skuggarnir sjálfir eru bakaðir hér á eftir).
     const R = staerst * 0.78;
@@ -2600,6 +2623,7 @@
     // ofan frá: allt húsið (og efri hæðir) innan rammans — sjónsviðið nær styttra á gólfinu þegar horft er beint niður
     const SJONARHORN = { ofan: { theta: 0, phi: 0.42, fjarl: fjarlSka * 1.3 }, ska: { theta: -0.6, phi: 0.95, fjarl: fjarlSka } };
     let theta = SJONARHORN.ofan.theta, phi = SJONARHORN.ofan.phi, fjarl = SJONARHORN.ofan.fjarl;
+    if (husH) { theta = -0.62; phi = 1.02; fjarl = fjarlSka * 0.95; }
     let flug = null;     // mjúk færsla á milli sjónarhorna (kallað í hverjum ramma)
     const fljuga = (t, p, fj) => {
       let d = (t - theta) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
@@ -2660,6 +2684,18 @@
       bendlar.delete(e.pointerId); klipa = 0; el.style.cursor = 'grab';
       const smellur = p && !fjolsnert && e.type === 'pointerup' && !p.faera && Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 7 && performance.now() - p.t0 < 600;
       if (!bendlar.size) fjolsnert = false;
+      if (smellur && husH && gogn.aHaed) {
+        const r = el.getBoundingClientRect();
+        ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+        geisli.setFromCamera(ndc, vel);
+        let best = null;
+        lag.forEach(lg => {
+          const hl = [lg.golfM].concat(lg.veggir ? [lg.veggir] : [], lg === lag[lag.length - 1] && thak && thak.visible ? [thak] : []);
+          const hit = geisli.intersectObjects(hl, false)[0];
+          if (hit && (!best || hit.distance < best.d)) best = { d: hit.distance, nr: lg.nr };
+        });
+        if (best) { try { gogn.aHaed(best.nr); } catch (err) { console.warn('[383] aHaed', err); } }
+      }
       if (smellur && handfang && handfang.aSmell) { try { handfang.aSmell(veggurUndir(e.clientX, e.clientY), e.clientX, e.clientY); } catch (err) { console.warn('[383] aSmell', err); } }
     };
     const hjol = e => { e.preventDefault(); if (ganga) { gangaFaera((e.deltaY < 0 ? 1 : -1) * 0.8 * ganga.metri, 0); gangaVel(); return; } fjarl *= e.deltaY > 0 ? 1.12 : 0.89; stillaVel(); };
@@ -2731,6 +2767,7 @@
     const lykkja = () => {
       if (!lifir) return;
       if (flug) flug();
+      if (husAnim) husAnim();
       const nu = performance.now(), dt = Math.min(0.1, (nu - sidast) / 1000); sidast = nu;
       if (ganga) {
         if (takkar.fram || takkar.hlid) { const v = 1.6 * ganga.metri * dt * (takkar.hratt ? 2.5 : 1); gangaFaera((takkar.fram || 0) * v, (takkar.hlid || 0) * v); }
@@ -2882,6 +2919,34 @@
       merkja(nr, i) { lag.forEach(lg => { const v = lg.nr === nr ? i : null; if (lg.valinn !== v) { lg.valinn = v; litaVeggi(lg); } }); },
       // SAMEIGN (446): sýna / fela gulleitu sameignina og deyfðar íbúðir · setjaSameign(fall(haedId) → niðurstaða)
       sameign(on) { synaSameign(on); return samOn; },
+      // HÚSSÝNIN: hæðirnar í sundur (on) eða saman með þaki; valin hæð fær gullna útlínu
+      husSundur(on) {
+        if (!husH) return;
+        const a0 = husA, a1 = on ? 1 : 0, t0 = performance.now(), efst = lag[lag.length - 1];
+        const f0 = fjarl, f1 = fjarl * (on ? 1.45 : 1 / 1.45);
+        husAnim = () => {
+          const t = Math.min(1, (performance.now() - t0) / 650), e2 = t * (2 - t);
+          husA = a0 + (a1 - a0) * e2;
+          lag.forEach(lg => { lg.hopur.position.y = lg.yS + (lg.yX - lg.yS) * husA; });
+          if (thak) thak.visible = husA < 0.5;
+          mid.y = (efst.hopur.position.y + efst.veggH) * 0.45; fjarl = f0 + (f1 - f0) * e2; stillaVel();
+          if (t >= 1) husAnim = null;
+        };
+      },
+      husVelja(nr) {
+        if (!husH) return;
+        if (husMerki) { if (husMerki.parent) husMerki.parent.remove(husMerki); husMerki = null; }
+        const lg = lag[nr]; if (!lg || !lg.hd.butar || !lg.hd.butar.length || !lg.f) return;
+        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+        lg.hd.butar.forEach(v => { for (const [px, pz] of [[v[0], v[1]], [v[2], v[3]]]) { const X = px * lg.f - lg.gw / 2, Z = pz * lg.f - lg.gh / 2; if (X < x0) x0 = X; if (X > x1) x1 = X; if (Z < z0) z0 = Z; if (Z > z1) z1 = Z; } });
+        if (!isFinite(x0)) return;
+        const pad = 0.35 * lg.metri, hh = lg.veggH + pad, g = new T.BoxGeometry(x1 - x0 + 2 * pad, hh, z1 - z0 + 2 * pad);
+        const kant = new T.EdgesGeometry(g), lin = new T.LineSegments(kant, new T.LineBasicMaterial({ color: 0xd9b45a, depthTest: false }));
+        const fyl = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xd9b45a, transparent: true, opacity: 0.16, depthWrite: false }));
+        lin.renderOrder = 12; fyl.renderOrder = 11;
+        husMerki = new T.Group(); husMerki.add(fyl, lin); husMerki.position.set((x0 + x1) / 2, hh / 2, (z0 + z1) / 2);
+        lg.hopur.add(husMerki); losa.push(g, kant, lin.material, fyl.material);
+      },
       // RÝMISHAMUR (Agnar 11.10.2026): tegundir rýma í lit; umfang 'baedi' | 'sameign' | 'ibudir'
       rymi(on, umfang) {
         if (umfang && umfang !== rymiUmfang) { rymiUmfang = umfang; lag.forEach(lg => { if (lg.rymiAf) { lg.rymiAf.dispose(); lg.rymiAf = null; } }); }
@@ -2906,7 +2971,9 @@
           if (lg.hd.haedId !== hid || !lg.golfStr || !lg.hd.butar || !lg.hd.butar.length) return;
           lg.hd.heitiOcr = heiti;
           let ge = null;
-          try { ge = golfEfni(lg.hd, lg.k, lg.metri, lg.golfStr); } catch (e) { console.warn('[383] gólfefni (heiti)', e); }
+          const geL = (lg.hd.heitiTexta || []).length + '|' + heiti.length + '|' + lg.golfStr.width + '|' + lg.golfStr.height;
+          if (lg.hd._ge && lg.hd._geL === geL) ge = lg.hd._ge;
+          else { try { ge = golfEfni(lg.hd, lg.k, lg.metri, lg.golfStr); } catch (e) { console.warn('[383] gólfefni (heiti)', e); } lg.hd._ge = ge; lg.hd._geL = geL; }
           if (!ge) return;
           if (lg.efniAf) lg.efniAf.dispose();
           if (lg.rymiAf) { lg.rymiAf.dispose(); lg.rymiAf = null; }
