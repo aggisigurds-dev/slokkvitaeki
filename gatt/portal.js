@@ -538,13 +538,51 @@
 
   // Myndir sóttar einu sinni á lotu (sama blað á oft margar hæðir)
   var myndir = {};
-  function hladaMynd(url) {
-    if (!myndir[url]) myndir[url] = new Promise(function (res, rej) {
-      var i = new Image();
-      i.onload = function () { res(i); };
-      i.onerror = function () { delete myndir[url]; rej(new Error('mynd')); };
-      i.src = url;
+  // Hreint PDF (Hafnarfjörður o.fl.: teikn-mynd skilar PDF-inu sjálfu, sem <img> sýnir ekki) er teiknað
+  // með pdf.js eins og í Teikningu appsins (435 TeiknGaedi): sama PDF-leið (teikn-pdf) og sama útgáfa.
+  // Kvarðinn reiknast af breidd strigans á móti frum.b, svo skurður og merki lenda rétt.
+  var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  function pdfSlod(url) {
+    try {
+      var u = new URL(url, location.href), inn = u.searchParams.get('url') || '';
+      if (!/teikn-mynd/.test(u.pathname) || !inn || !/\.pdf$/i.test(new URL(inn).pathname)) return '';
+      return '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn);
+    } catch (_) { return ''; }
+  }
+  var pdfJsP = null;
+  function saekjaPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (!pdfJsP) pdfJsP = new Promise(function (res, rej) {
+      var sk = document.createElement('script'); sk.src = PDFJS + 'pdf.min.js';
+      sk.onload = function () { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; } catch (_) {} res(); };
+      sk.onerror = function () { pdfJsP = null; rej(new Error('pdf.js')); };
+      document.head.appendChild(sk);
     });
+    return pdfJsP;
+  }
+  function rastaPdf(slod, hlid) {
+    return saekjaPdfJs()
+      .then(function () { return fetch(slod); })
+      .then(function (r) { if (!r.ok) throw new Error('pdf'); return r.arrayBuffer(); })
+      .then(function (buf) { return window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; })
+      .then(function (doc) { return doc.getPage(1); })
+      .then(function (sida) {
+        var v0 = sida.getViewport({ scale: 1 }), vp = sida.getViewport({ scale: hlid / Math.max(v0.width, v0.height, 1) });
+        var cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+        var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+        return sida.render({ canvasContext: cx, viewport: vp }).promise.then(function () { return cv; });
+      });
+  }
+  function hladaMynd(url) {
+    if (!myndir[url]) {
+      var ps = pdfSlod(url);
+      myndir[url] = (ps ? rastaPdf(ps, 3000) : new Promise(function (res, rej) {
+        var i = new Image();
+        i.onload = function () { res(i); };
+        i.onerror = function () { rej(new Error('mynd')); };
+        i.src = url;
+      })).catch(function (e) { delete myndir[url]; throw e; });
+    }
     return myndir[url];
   }
   // Teikning hæðar á striga: skurður (frumdílar → myndadílar) og merkin í lit tegundar — sama reikningur og 456 í appinu
