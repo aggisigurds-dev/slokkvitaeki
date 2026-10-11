@@ -1710,7 +1710,8 @@
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
     sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 }
   };
-  const BAD_M2 = [2.0, 9.5], BAD_BLEK = 0.075;
+  // bað án heitis: 2–9,5 m², blek hreinlætistækja yfir meðallagi hæðarinnar (miðgildi rýma 6–40 m²) og minnst 2,7 %
+  const BAD_M2 = [2.0, 9.5], BAD_BLEK = 0.027;
   function golfEfni(hd, k, metri, golfStr) {
     const W = hd.W, H = hd.H, kv = hd.kvardi, f = kv / k.c;
     if (!(W > 0 && H > 0 && kv > 0 && metri > 0) || !golfStr || !golfStr.width || !hd.butar || !hd.butar.length) return null;
@@ -1740,6 +1741,16 @@
     };
     const vA = teikna(true), uA = flaeda(vA);
     const uB = (hd.svalir || []).length ? flaeda(teikna(false)) : uA;
+    // rönd 20 cm út frá hvorri hlið svalaveggja: rými sem liggur að svalavegg (≥ 1 m) eru svalir, líka þegar brún
+    // svalanna er teiknuð sem veggur undir handriðinu (DRA 2. hæð)
+    let sN = null;
+    if ((hd.svalir || []).length) {
+      const c = document.createElement('canvas'); c.width = RW; c.height = RH;
+      const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'butt';
+      hd.svalir.forEach(v => { x.lineWidth = Math.max(3, Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg) * k.c * s + 0.4 * pxm); x.beginPath(); x.moveTo(v[0] * kv * s, v[1] * kv * s); x.lineTo(v[2] * kv * s, v[3] * kv * s); x.stroke(); });
+      const a = x.getImageData(0, 0, RW, RH).data; sN = new Uint8Array(N);
+      for (let i = 0; i < N; i++) sN[i] = a[i * 4 + 3] >= 128 ? 1 : 0;
+    }
     // blek teikningarinnar (hreinlætistæki) í sama rasta
     const bc = document.createElement('canvas'); bc.width = RW; bc.height = RH;
     const bx = bc.getContext('2d'); bx.drawImage(golfStr, 0, 0, RW, RH);
@@ -1750,13 +1761,14 @@
     for (let p = 0; p < N; p++) if (vA[p]) { const px = p % RW, py = (p - px) / RW; if (px < vx0) vx0 = px; if (px > vx1) vx1 = px; if (py < vy0) vy0 = py; if (py > vy1) vy1 = py; }
     for (let p0 = 0; p0 < N; p0++) {
       if (vA[p0] || uA[p0] || merki[p0] >= 0) continue;
-      const id = rymi.length, r = { n: 0, x0: RW, y0: RH, x1: 0, y1: 0, utiB: 0, blek: 0, sx: 0, sy: 0 };
+      const id = rymi.length, r = { n: 0, x0: RW, y0: RH, x1: 0, y1: 0, utiB: 0, sval: 0, blek: 0, sx: 0, sy: 0 };
       let top = 0; merki[p0] = id; st[top++] = p0;
       while (top) {
         const p = st[--top], px = p % RW, py = (p - px) / RW;
         r.n++; r.sx += px; r.sy += py;
         if (px < r.x0) r.x0 = px; if (px > r.x1) r.x1 = px; if (py < r.y0) r.y0 = py; if (py > r.y1) r.y1 = py;
         if (uB[p]) r.utiB++;
+        if (sN && sN[p]) r.sval++;
         if (bd[p * 4 + 3] > 128 && bd[p * 4] * 0.3 + bd[p * 4 + 1] * 0.59 + bd[p * 4 + 2] * 0.11 < 120) r.blek++;
         let q = p - 1; if (px > 0 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
         q = p + 1; if (px < RW - 1 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
@@ -1777,23 +1789,30 @@
       }
       return b;
     };
-    if (TS && sm) (sm.herbergi || []).forEach(t => {
+    // heiti: textalag PDF (hd.heitiTexta) og sameignargreiningin (446) — { texti, x, y } í dílum skurðarins
+    const heitin = (hd.heitiTexta || []).concat((sm && sm.herbergi) || []);
+    let nHeiti = 0;
+    if (TS) heitin.forEach(t => {
       const fl = TS.flokkur(t.texti), id = rymiVid(t.x, t.y); if (id < 0) return;
-      const teg = fl.teg === 'bad' ? 'bad' : fl.teg === 'svalir' ? 'svalir' : fl.hopur === 'sameign' ? 'sameign' : fl.hopur === 'ibud' ? 'parket' : '';
-      if (teg) (rymi[id].heiti = rymi[id].heiti || []).push(teg);
+      const teg = fl.teg === 'bad' || fl.teg === 'thvottur' ? 'bad' : fl.teg === 'svalir' ? 'svalir' : fl.hopur === 'sameign' ? 'sameign' : fl.hopur === 'ibud' ? 'parket' : '';
+      if (teg) { (rymi[id].heiti = rymi[id].heiti || []).push(teg); nHeiti++; }
     });
+    rymi.forEach(r => { r.m2 = r.n / (pxm * pxm); r.blekH = r.blek / r.n; });
+    const midB = rymi.filter(r => r.m2 >= 6 && r.m2 <= 40).map(r => r.blekH).sort((a, b) => a - b);
+    const badBlek = Math.max(BAD_BLEK, midB.length >= 3 ? midB[midB.length >> 1] * 1.1 : 0);
     rymi.forEach(r => {
-      r.m2 = r.n / (pxm * pxm);
       const bw = (r.x1 - r.x0 + 1) / pxm, bh = (r.y1 - r.y0 + 1) / pxm, h = r.heiti || [];
-      r.lodrett = bh > bw; r.blekH = r.blek / r.n;
+      r.lodrett = bh > bw;
       const mx = r.sx / r.n / (kv * s), my = r.sy / r.n / (kv * s);
-      if (r.utiB / r.n >= 0.5) r.efni = 'svalir';
-      else if (h.includes('bad')) r.efni = 'bad';
-      else if (h.includes('svalir')) r.efni = 'svalir';
+      // svalir: utan útveggja innan svalaveggja, eða lítið rými (≤ 16 m²) sem liggur ≥ 1 m að svalavegg
+      const svalGeo = (r.m2 <= 40 && r.utiB / r.n >= 0.5) || (r.m2 <= 16 && r.sval / (0.2 * pxm) >= 1.0);
+      if (h.includes('svalir')) r.efni = 'svalir';
+      else if (h.includes('bad') && !(h.includes('parket') && r.m2 > 10)) r.efni = 'bad';
       else if (h.includes('sameign')) r.efni = 'sameign';
       else if (h.length) r.efni = 'parket';
+      else if (svalGeo) r.efni = 'svalir';
       else if (TS && sm && (sm.heil || (sm.svaedi || []).length) && TS.iSameign(sm, mx, my, 0)) r.efni = 'sameign';
-      else if (r.m2 >= BAD_M2[0] && r.m2 <= BAD_M2[1] && Math.min(bw, bh) >= 1.2 && Math.max(bw, bh) <= 4.6 && r.blekH >= BAD_BLEK) r.efni = 'bad';
+      else if (r.m2 >= BAD_M2[0] && r.m2 <= BAD_M2[1] && Math.min(bw, bh) >= 1.0 && Math.max(bw, bh) <= 4.6 && r.blekH >= badBlek) r.efni = 'bad';
       else r.efni = 'parket';
     });
     // lekavörn: svalir yfir 45 % gólfsins = útveggur opinn, ekki svalir
@@ -1861,15 +1880,7 @@
     ux.globalCompositeOperation = 'multiply'; ux.globalAlpha = 0.3; ux.drawImage(golfStr, 0, 0, GW, GH);
     ux.globalAlpha = 1; ux.globalCompositeOperation = 'destination-in'; ux.drawImage(iStriga(alla), 0, 0, GW, GH);
     ux.globalCompositeOperation = 'source-over';
-    const talning = {}; rymi.forEach(r => { talning[r.efni] = (talning[r.efni] || 0) + 1; });
-    if (window.__golfDebug) {           // TMP-DBG
-      const d = document.createElement('canvas'); d.width = RW; d.height = RH; const dx = d.getContext('2d'); dx.drawImage(golfStr, 0, 0, RW, RH);
-      const im = dx.getImageData(0, 0, RW, RH), LIT = { parket: [230, 170, 90], bad: [60, 140, 230], svalir: [40, 200, 120], sameign: [200, 80, 200] };
-      for (let p = 0; p < N; p++) { const o = p * 4; let c = null; if (vA[p] && merki[p] < 0) c = [0, 0, 0]; else if (uA[p] && uB[p]) continue; else if (uA[p]) c = [255, 0, 0]; else if (merki[p] >= 0) c = LIT[rymi[merki[p]].efni]; if (!c) continue; for (let q = 0; q < 3; q++) im.data[o + q] = im.data[o + q] * 0.45 + c[q] * 0.55; im.data[o + 3] = 255; }
-      dx.putImageData(im, 0, 0); dx.font = 'bold 11px sans-serif'; dx.fillStyle = '#000';
-      rymi.forEach(r => { if (r.m2 >= 1.5) dx.fillText(r.m2.toFixed(1) + '/' + Math.round(r.blekH * 1000), r.sx / r.n - 14, r.sy / r.n); });
-      (syna3d._golfDbg = syna3d._golfDbg || {})[hd.nafn || '?'] = d.toDataURL('image/png');
-    }
+    const talning = { heiti: nHeiti, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
     return { strigi: ut, rymi: rymi.map(r => ({ efni: r.efni, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })), talning };
   }
   async function syna3d(gamur, gogn) {
@@ -5218,6 +5229,16 @@
       if (!document.getElementById('fp-3d')) return;
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
+    // HEITI HERBERGJA úr textalagi vigur-PDF fyrir gólfefnin (Bað → flísar, Svalir, Gangur …): lesið einu sinni í lotunni
+    // (sameignin hefur oftast þegar lesið það); mest 4 s — annars opnast 3D án þeirra og rýmin flokkast eftir lögun.
+    await Promise.race([Promise.all(ut.map(async u => {
+      const h = hs.find(x => x && x.id === u.haedId); if (!h || !pdfSlod(h) || !(u.frumB > 0)) return;
+      try {
+        const pg = await raunGognUrPdf(h), sk = u.sk || { x: 0, y: 0 };
+        u.heitiTexta = ((pg && pg.herbergi) || []).map(r => ({ texti: r.texti, x: r.u * u.frumB - (sk.x || 0), y: r.v * u.frumH - (sk.y || 0) }));
+      } catch (_) {}
+    })), new Promise(r => setTimeout(r, 4000))]);
+    if (!document.getElementById('fp-3d')) return;
     try {
       G.syn3d = await syna3d(gamur, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
