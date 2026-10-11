@@ -12,6 +12,9 @@
  *   · 3D: föst vinnumynd hæðarinnar (445, „Festa" í 3D) þegar hún er til — sjálfgefin sýn þá.
  * Smellur á mynd opnar Teikningu félagsins á þeirri hæð. Ekkert gagnvirkt á prófílnum, ekkert grípur skrunið.
  *
+ * Uppröðun (Agnar 11.10.2026, síðar): „5 kort sem fyllast upp í fullscreen breidd, síðan ef meira þá bara takki til
+ * að sjá meira" — fimm jafnbreiðir dálkar (3 / 2 í mjórri gámi), umframhæðir faldar á bak við heilbreiðan takka.
+ *
  * Borðinn sjálfur (haus, „Fella" 362, Brunastál-sýnileiki 405) er óbreyttur — spjöldin búa INNI í honum og falla
  * með honum saman. Myndirnar sóttar aðeins þegar spjaldið sést (IntersectionObserver). Aðeins lestur.
  */
@@ -37,10 +40,16 @@
     '#' + ID + ' .cfh-f{display:inline-flex;gap:3px;flex:none}',
     '#' + ID + ' .cfh-f button{height:22px;padding:0 8px;border:1px solid #d6d3cc;border-radius:5px;background:#fff;font:600 11px system-ui,sans-serif;color:#4a4740;cursor:pointer}',
     '#' + ID + ' .cfh-f button[aria-pressed="true"]{background:#2b2a27;border-color:#2b2a27;color:#fff}',
-    '#' + ID + '{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))!important}',
+    // Fimm jafnbreiðir dálkar sem fylla breiddina — auto-fill bjó til tóma dálka og spjöldin urðu mjó
+    '#co-fp-section{container-type:inline-size}',
+    '#' + ID + '{grid-template-columns:repeat(5,minmax(0,1fr))!important}',
+    '@container (max-width:900px){#' + ID + '{grid-template-columns:repeat(3,minmax(0,1fr))!important}}',
+    '@container (max-width:560px){#' + ID + '{grid-template-columns:repeat(2,minmax(0,1fr))!important}}',
     '#' + ID + ':not(.cfh-allar) .cfh-k.cfh-umfram{display:none}',
-    '#' + ID + ' .cfh-fleiri{border:1px dashed #cfccc4;border-radius:10px;background:#fbfaf8;font:600 12px system-ui,sans-serif;color:#4a4740;cursor:pointer;min-height:120px}',
-    '#' + ID + '.cfh-allar .cfh-fleiri{min-height:40px}',
+    '#' + ID + ' .cfh-fleiri{grid-column:1/-1;justify-self:center;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 18px;border:1px solid #d6d3cc;border-radius:8px;background:#fff;font:600 12.5px system-ui,sans-serif;color:#2b2a27;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}',
+    '#' + ID + ' .cfh-fleiri:hover{border-color:#2b2a27}',
+    '#' + ID + ' .cfh-fleiri i{font-style:normal;display:inline-block;transition:transform .2s}',
+    '#' + ID + '.cfh-allar .cfh-fleiri i{transform:rotate(180deg)}',
     '#cfh-stort{position:fixed;inset:0;z-index:9000;background:rgba(20,18,15,.72);display:flex;align-items:center;justify-content:center;padding:16px}',
     '#cfh-stort .cfh-s-k{background:#fff;border-radius:12px;width:min(1500px,100%);height:min(94vh,1100px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}',
     '#cfh-stort .cfh-s-h{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #e3e1dc;font:600 13px system-ui,sans-serif;color:#2b2a27;flex-wrap:wrap}',
@@ -174,7 +183,7 @@
     if (!synd.length) return;
     var g = document.createElement('div');
     g.id = ID;
-    var SYNILEG = 6;
+    var SYNILEG = 5;
     synd.forEach(function (x, j) {
       var h = x.h, vm = !!(h.vinnumynd && h.vinnumynd.url), n = (h.markers || []).length;
       var k = document.createElement('div');
@@ -190,12 +199,13 @@
       g.appendChild(k);
       if (syn) syn.observe(k); else syna(k, h, k._cfh.ham);
     });
-    // Aðeins 6 sýnilegar (Agnar 11.10.2026: „látt kanski bara sjást 5-6 í röð, rest er collapsed")
+    // Fimm sýnilegar í einni röð; restin á bak við heilbreiðan takka (Agnar 11.10.2026)
     if (synd.length > SYNILEG) {
       var fl = document.createElement('button'); fl.type = 'button'; fl.className = 'cfh-fleiri';
       var umfram = synd.length - SYNILEG;
-      fl.textContent = '+ ' + umfram + (umfram === 1 ? ' hæð til viðbótar' : ' hæðir til viðbótar');
-      fl.addEventListener('click', function () { var a = g.classList.toggle('cfh-allar'); fl.textContent = a ? 'Fela' : '+ ' + umfram + (umfram === 1 ? ' hæð til viðbótar' : ' hæðir til viðbótar'); });
+      var lokad = 'Sjá fleiri hæðir (' + umfram + ')';
+      fl.innerHTML = '<span>' + lokad + '</span><i><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></i>';
+      fl.addEventListener('click', function () { var a = g.classList.toggle('cfh-allar'); fl.firstChild.textContent = a ? 'Sýna færri' : lokad; });
       g.appendChild(fl);
     }
     var vp = sec.querySelector('#coFpVp');
