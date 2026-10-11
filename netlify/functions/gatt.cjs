@@ -172,7 +172,7 @@ exports.handler = async (event) => {
 
   try {
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
-    const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,eign,stadur_nr&order=nafn`);
+    const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr&order=nafn`);
     const sites = fr.ok ? await fr.json() : [];
     const siteIds = sites.map((s) => s.id);
     const nafnById = {}, nrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; });
@@ -304,7 +304,9 @@ exports.handler = async (event) => {
       const bruOn = GY.bruInService(bruMap, s.id);
       return {
         id: s.id, nafn: s.nafn, heimilisfang: s.heimilisfang || '',
-        i_thjonustu: s.er_i_thjonustu !== false,
+        // Óvirkur staður (status 'óvirkur', t.d. Reitir 11.10.2026: skráðir í þjónustu en óvirkir svo
+        // allt kerfið nái til þeirra) telst EKKI í þjónustu í gáttinni.
+        i_thjonustu: s.er_i_thjonustu !== false && !/^(óvirkur|ovirkur|inactive)$/i.test(String(s.status || '')),
         bru_i_thjonustu: bruOn,
         stada: st.stada || (s.er_i_thjonustu === false ? 'ekki_i_thjonustu' : 'engin_skyrsla'),
         sidasta_ar: GY.lastYear(arSlokk) || st.report_year || null,
@@ -376,7 +378,7 @@ exports.handler = async (event) => {
     // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
     // Lögheimilis-/samningsstaðir án eign-gildis (Þverholt 14) birtast ekki.
     const eignirUtan = buildings.filter((b) => !(b.i_thjonustu || b.bru_i_thjonustu) && b.eign)
-      .map((b) => ({ id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang, eign: b.eign, beidni: b.beidni }))
+      .map((b) => ({ id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang, eign: b.eign, beidni: b.beidni, teikning: b.teikning || null }))
       .sort((a, c) => (nrById[a.id] || 999) - (nrById[c.id] || 999));   // röð eins og staðirnir voru skráðir
     const inService = onBoard.filter((b) => b.i_thjonustu);
     const stats = {

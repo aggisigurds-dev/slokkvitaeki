@@ -252,7 +252,7 @@
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '' };
       }),
       messages: d.messages || [],
-      eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni }; }),
+      eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null }; }),
     };
     afskeyta(out);
     return out;
@@ -962,13 +962,15 @@
     setjaHero(b); drFotur(true);
     $('#dr-name').textContent = b.nafn || '';
     $('#dr-addr').textContent = b.heimilisfang || '';
-    var e = b.eign || {};
+    var e = b.eign || {}, syn = synOf();
+    var tk = (syn.teikningar || syn.threed) ? (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }) : [];
     function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
     var html = (b.beidni ? '<div class="ebanner">' + svgIc('hak', 2) + '<div><b>Beiðni um þjónustu er móttekin</b><span>Við höfum samband til að skipuleggja fyrstu úttekt.</span></div></div>' : '') +
       '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
         kp('Tegund', e.tegund, true) + kp('Stærð', e.staerd_m2 ? fmtTala(e.staerd_m2) + ' m²' : null) + kp('Byggt', e.byggingarar) + kp('Staða', b.beidni ? 'Beiðni í vinnslu' : 'Ekki í þjónustu', true) + '</div>' +
         (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') +
         (e.heimild ? '<div class="gnote">Mynd og lýsing: ' + esc(e.heimild) + '</div>' : '') + '</section>' +
+      (tk.length ? '<section class="dsec"><h4>Teikningar <span class="cnt">' + tala(tk.length, 'hæð', 'hæðir') + '</span></h4><div class="tgrid" id="dr-tk"></div></section>' : '') +
       '<section class="dsec"><h4>Þjónusta sem við bjóðum</h4><div class="svcg">' +
         SVC_KORT.map(function (s) { return '<div class="svc-k"><span class="ic2">' + svgIc(s[0], 1.7) + '</span><b>' + esc(s[1]) + '</b><span>' + esc(s[2]) + '</span></div>'; }).join('') +
       '</div></section>' +
@@ -978,6 +980,17 @@
         '<li><b>Allt á einum stað</b>Skýrslur, reikningar, teikningar og næsta skoðun birtast hér — og þið sendið verkbeiðnir beint.</li>' +
       '</ol></section>';
     $('#dr-body').innerHTML = html;
+    var g = $('#dr-tk');
+    if (g) {
+      tk.forEach(function (f, k) { g.appendChild(haedarSpjald(b, f, k, syn)); });
+      if (tk.length > 5) {
+        var fl = document.createElement('button'); fl.type = 'button'; fl.className = 'kbtn';
+        var lokad = 'Sjá fleiri hæðir (' + (tk.length - 5) + ')';
+        fl.textContent = lokad;
+        fl.onclick = function () { var a = g.classList.toggle('allar'); fl.textContent = a ? 'Sýna færri' : lokad; };
+        g.appendChild(fl);
+      }
+    }
     $('#dr-body').scrollTop = 0;
     $('#dr-scrim').classList.remove('hidden');
     $('#drawer').classList.remove('hidden');
