@@ -375,7 +375,8 @@
     saekjaLeaflet().then(function () {
       if (!kort) {
         kort = window.L.map(box, { scrollWheelZoom: false }).setView([64.13, -21.9], 11);
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(kort);
+        // Esri World Street Map — sama flísaþjónusta og appið (155/161): enginn lykill, OSM lokaði á appið 16.09.2026
+        window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }).addTo(kort);
       }
       setTimeout(function () { kort.invalidateSize(); }, 50);
       kortMerkja();
