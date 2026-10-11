@@ -1568,7 +1568,9 @@
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
   // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
   const UTLIT_LS = 'teikn3d_utlit';
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xf3f2ef, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
+  // utveggur: örlítill tan-blær á útveggjum og svölum, innveggir hvítir (Agnar 10.10.2026: „Hvítir innri veggir. Bara smá
+  // tan litur á útveggjunum" — eins og ChatGPT-myndin): utHlidar() finnur hlið hvers útveggjar sem snýr út.
+  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xf3f2ef, utveggur: 0xe9dfd0, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
   const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -1612,6 +1614,33 @@
   const LOFTH_M = 3.0;
   // SVALIR (Agnar 10.10.2026: „Hafðu svalirnar bara í 1.1m"): veggjaLinur með tegund 'svalir' = svalaveggur/handrið, 1,1 m.
   const SVALIR_M = 1.1;
+
+  // ÚTVEGGIR: hvaða hlið hvers veggbúts snýr út. Veggir, gler og hurðir teiknuð á striga (gler/hurðir loka opunum) og
+  // flætt utan frá; sýni beggja vegna bútsins (30/50/70 %) segja hvor hliðin er úti. +1 / −1 = hlið normalsins
+  // (−dy, dx) sem snýr út, 0 = innveggur eða stakur veggur úti (báðar hliðar úti). butar eru í dílum skurðarins.
+  function utHlidar(hd) {
+    const W = hd.W, H = hd.H, kv = hd.kvardi;
+    if (!(W > 0 && H > 0 && kv > 0) || !hd.butar || !hd.butar.length || W * H > 16e6) return null;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square';
+    const strik = v => { x.lineWidth = Math.max(3, (v[4] || 0) * kv + 3); x.beginPath(); x.moveTo(v[0] * kv, v[1] * kv); x.lineTo(v[2] * kv, v[3] * kv); x.stroke(); };
+    hd.butar.forEach(strik); (hd.gler || []).forEach(strik); (hd.hurdir || []).forEach(strik);
+    const a = x.getImageData(0, 0, W, H).data, uti = new Uint8Array(W * H), st = new Int32Array(W * H);
+    let top = 0;
+    const yta = p => { if (!uti[p] && a[p * 4 + 3] < 128) { uti[p] = 1; st[top++] = p; } };
+    for (let i = 0; i < W; i++) { yta(i); yta((H - 1) * W + i); }
+    for (let j = 0; j < H; j++) { yta(j * W); yta(j * W + W - 1); }
+    while (top) { const p = st[--top], px = p % W, py = (p - px) / W; if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W); }
+    const er = (px, py) => { px = Math.round(px); py = Math.round(py); return px < 0 || py < 0 || px >= W || py >= H ? 1 : uti[py * W + px]; };
+    return hd.butar.map(v => {
+      const ax = v[0] * kv, ay = v[1] * kv, dx = v[2] * kv - ax, dy = v[3] * kv - ay, L = Math.hypot(dx, dy);
+      if (L < 2) return 0;
+      const nx = -dy / L, ny = dx / L, d = (v[4] || 0) * kv / 2 + 4;
+      let p = 0, m = 0;
+      for (const t of [0.3, 0.5, 0.7]) { const qx = ax + dx * t, qy = ay + dy * t; p += er(qx + nx * d, qy + ny * d); m += er(qx - nx * d, qy - ny * d); }
+      return p >= 2 && m < 2 ? 1 : m >= 2 && p < 2 ? -1 : 0;
+    });
+  }
 
   async function syna3d(gamur, gogn) {
     await saekjaThree();
@@ -1910,6 +1939,24 @@
         veggir.count = hd.butar.length; heilir += hd.butar.length;
         // Litur á hvert eintak (eldflokkur, ályktun, val notanda); efnið sjálft er þá hvítt svo liturinn margfaldist ekki niður.
         kE.color.setHex(0xffffff); kE.userData.litad = true; lg.veggir = veggir; lg.heilir = true;
+        // ÚTKLÆÐNING: þunnt tan-lag á ytri hlið útveggja (aðeins í gráa útlitinu); veggurinn sjálfur og innhliðin hvít.
+        let hlidar = null;
+        try { hlidar = utHlidar(hd); } catch (e) { console.warn('[383] utHlidar', e); }
+        const utI = hlidar ? hlidar.map((h0, i) => h0 ? i : -1).filter(i => i >= 0) : [];
+        if (utI.length) {
+          const klE = new T.MeshLambertMaterial({ color: GRATT_3D.utveggur }); klE.userData.litur = GRATT_3D.utveggur;
+          const klM = new T.InstancedMesh(kG, klE, utI.length), klT = Math.max(0.02, 0.03 * metri), klH = veggH - 0.01 * metri;
+          utI.forEach((i, j) => {
+            const v = hd.butar[i], ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
+            const L = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / L * hlidar[i], nz = (bx - ax) / L * hlidar[i];
+            const th = Math.max(0.8, metri * 0.24, (v[4] || 0) * f || sjalfg), fr = th / 2 + klT / 2;
+            q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
+            m.compose(st.set((ax + bx) / 2 + nx * fr, klH / 2, (az + bz) / 2 + nz * fr), q, kv3.set(L + th + 2 * klT, klH, klT));
+            klM.setMatrixAt(j, m);
+          });
+          klM.instanceMatrix.needsUpdate = true; klM.visible = utlit === 'gratt'; hopur.add(klM);
+          losa.push(klE); veggEfni.push(klE); lg.klaedning = klM;
+        }
         // Spor veggjanna á gólfinu: dökk rönd sem sést aðeins þegar veggirnir eru gegnsæir — annars hverfa þeir alveg.
         const spE = new T.MeshBasicMaterial({ color: 0x4a443c }), spor = new T.InstancedMesh(kG, spE, hd.butar.length), flatt = new T.Matrix4().makeScale(1, 0.012, 1);
         for (let i = 0; i < hd.butar.length; i++) { veggir.getMatrixAt(i, m); m.premultiply(flatt); m.elements[13] = 0.3; spor.setMatrixAt(i, m); }
@@ -1930,7 +1977,8 @@
         }
         // Svalir: svalaveggur/handrið 1,1 m í lit veggjanna, minnst 20 cm þykkur; lengdur um hálfa þykkt svo bogabútar mætist.
         if (hd.svalir && hd.svalir.length) {
-          const svE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D }), svH = SVALIR_M * metri;
+          const svLitur = utlit === 'gratt' ? GRATT_3D.utveggur : VEGGLITUR_3D;
+          const svE = new T.MeshLambertMaterial({ color: svLitur }), svH = SVALIR_M * metri; svE.userData.litur = svLitur;
           // eigið toppefni: kTopp veggjanna er teiknað með lit á hvert eintak (instanceColor) og three r128 skiptir ekki um forrit
           const svT = new T.MeshLambertMaterial({ color: kTopp.color.getHex() }); svT.userData.toppur = true;
           const svM = new T.InstancedMesh(kG, [svE, svE, svT, svE, svE, svE], hd.svalir.length);
@@ -2072,6 +2120,25 @@
       });
       haedY += bil;
     });
+    // HELLULÖGN (Agnar 10.10.2026: „hellulagningamynstur á jörðina kringum bygginguna"): gráar 40 × 40 cm hellur undir
+    // neðstu hæðinni, 8 m út fyrir teikninguna. Sést þar sem gólfið er gegnsætt utan húss. Ekki á fastri vinnumynd.
+    if (lag[0] && !(gogn && gogn.anHellna)) {
+      const lg0 = lag[0], m0 = lg0.metri || 1, ut = 8 * m0, w = lg0.gw + 2 * ut, d = lg0.gh + 2 * ut;
+      const hs = document.createElement('canvas'); hs.width = hs.height = 256;
+      const hx = hs.getContext('2d');
+      hx.fillStyle = '#8f8e89'; hx.fillRect(0, 0, 256, 256);                       // fúgur
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {                      // 4 × 4 hellur = 1,6 m á flís
+        const g = 176 + ((r * 37 + c * 61) % 7) * 4;
+        hx.fillStyle = 'rgb(' + g + ',' + (g - 1) + ',' + (g - 6) + ')';
+        hx.fillRect(c * 64 + 2, r * 64 + 2, 60, 60);
+        hx.fillStyle = 'rgba(255,255,255,.07)'; hx.fillRect(c * 64 + 2, r * 64 + 2, 60, 3);   // ljós brún
+      }
+      const hT = new T.CanvasTexture(hs); hT.wrapS = hT.wrapT = T.RepeatWrapping; hT.anisotropy = 4;
+      hT.repeat.set(w / (1.6 * m0), d / (1.6 * m0));
+      const hE = new T.MeshBasicMaterial({ map: hT }), hG = new T.PlaneGeometry(w, d);   // óupplýst eins og gólfin (lárétt verður annars hvítt)
+      const hM = new T.Mesh(hG, hE); hM.rotation.x = -Math.PI / 2; hM.position.y = -0.04 * m0; lg0.hopur.add(hM);
+      losa.push(hT, hE, hG); lg0.hellur = hM;
+    }
     // Sól: ein ljóslind yfir allt húsið (skyggir fleti veggjanna; skuggarnir sjálfir eru bakaðir hér á eftir).
     const R = staerst * 0.78;
     sol.position.set(-R * 0.8, haedY + R * 1.5, R * 0.65); sol.target.position.set(0, 0, 0);
@@ -2279,7 +2346,7 @@
       daufLog.forEach(m => { m.visible = g; });
       skuggaEfni.forEach(e => { e.opacity = g ? GRATT_3D.skuggi : 0.2; });
       veggEfni.forEach(e => { if (e.userData.toppur && !e.transparent) e.color.setHex(g ? GRATT_3D.toppur : TOPPLITUR_3D); });
-      lag.forEach(lg => { litaVeggi(lg); litaHolf(lg); });
+      lag.forEach(lg => { litaVeggi(lg); litaHolf(lg); if (lg.klaedning) lg.klaedning.visible = g; });
       hurdaEfni.forEach(e => { if (e.userData.hurd === 'eld') e.color.setHex(g ? 0xa58a6a : 0xe08a3c); });
     };
     beitaUtliti();
@@ -2437,7 +2504,7 @@
       },
       // Gegnsæir veggir: tækin og teikningin sjást í gegnum húsið.
       gegnsaett(a) {
-        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : VEGGLITUR_3D)); e.needsUpdate = true; });
+        veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : (e.userData.litur || VEGGLITUR_3D))); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
         hurdaEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.35 : 1; e.depthWrite = !a; e.needsUpdate = true; });
       },
@@ -4086,7 +4153,7 @@
     document.body.appendChild(gamur);
     let syn = null;
     try {
-      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt' });
+      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt', anHellna: true });
       tima.svid = Math.round(t() - t0); t0 = t();
       const r = syn.fastMynd(o);
       if (!r) throw new Error('myndin teiknaðist ekki');
