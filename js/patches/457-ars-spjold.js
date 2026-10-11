@@ -13,8 +13,9 @@
  *   Uppsetning spjalds (grind 4 dálka):
  *     1  MYNDIN af húsinu (11.10.2026, Agnar: „Myndin áttu núna að vera aðalatriðið"): sama mynd og í
  *        fyrirtækjabannernum (367, AppSettings co_bygging_mynd; annars fyrirtaeki.eign.mynd), smækkuð
- *        í 720 px um myndaþjónustu Supabase. Ofan á henni: SKOÐUN <mánuður> efst til vinstri, Í vinnslu-hak
- *        + staða efst til hægri, póstmerkið neðst til vinstri. Án myndar: málmplata með húsatákni.
+ *        í 720 px um myndaþjónustu Supabase. Ofan á henni: SKOÐUN <mánuður> efst til vinstri, póstmerkið
+ *        neðst til vinstri, Í vinnslu-hak + staða neðst til hægri. Án myndar: málmplata með húsatákni.
+ *        11.10.2026 (Agnar: „smækka aðeins í 4-5 á breidd"): spjaldið er ~250 px, myndin 150 px há.
  *     2  nafn (Playfair) · kt · merki
  *     3  heimilisfang (póstnúmer feitt)
  *     4  ferðanóta (fyllir afgangsplássið svo fóturinn situr alltaf neðst)
@@ -79,10 +80,10 @@
       r(T + 'thead th .sort-ar', 'color:#5b6472;margin-left:2px'),
 
       // ── spjaldagrindin
-      r(T + 'tbody', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:18px;padding:2px 0 18px;background:transparent'),
+      r(T + 'tbody', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;padding:2px 0 18px;background:transparent'),
       r(T + 'tbody tr._ars-row',
-        'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:200px auto auto 1fr auto auto 46px;' +
-        'column-gap:8px;row-gap:0;position:relative;padding:0 16px;height:auto;min-height:0;background:#fff;' +
+        'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:150px auto auto 1fr auto auto 50px;' +
+        'column-gap:6px;row-gap:0;position:relative;padding:0 12px;height:auto;min-height:0;background:#fff;' +
         'border:1px solid #000;border-radius:12px;overflow:hidden;cursor:pointer;' +
         'box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)'),
       r(T + 'tbody tr._ars-row:hover', 'box-shadow:0 0 0 1px #000,0 18px 40px -12px rgba(10,14,22,.55),0 2px 6px rgba(10,14,22,.14)'),
@@ -90,81 +91,82 @@
       // MYNDIN — gervistak í grindinni (röð 1), teygt út yfir fyllinguna. --spj-mynd kemur úr stílblaði myndanna;
       // vanti hana stendur hústáknið á málmi. Skygging efst og neðst svo merkin ofan á lesist á hvaða mynd sem er.
       r(T + 'tbody tr._ars-row::before',
-        'content:"";display:block;grid-row:1;grid-column:1/-1;margin:0 -16px;border-bottom:1px solid #000;' +
+        'content:"";display:block;grid-row:1;grid-column:1/-1;margin:0 -12px;border-bottom:1px solid #000;' +
         'background-color:#1c1d21;background-image:' + SKYGGING + ',var(--spj-mynd,' + HUS + '),' + METAL + ';' +
-        'background-size:100% 100%,var(--spj-str,64px 64px),100% 100%;background-position:center,center,center;background-repeat:no-repeat'),
+        'background-size:100% 100%,var(--spj-str,52px 52px),100% 100%;background-position:center,center,center;background-repeat:no-repeat'),
       r(T + 'tbody tr._ars-row.overdue::before', 'border-bottom:3px solid #b0201b'),
       // fóturinn (röð 7): ljós stubbur með línu að ofan
       r(T + 'tbody tr._ars-row::after',
-        'content:"";display:block;grid-row:7;grid-column:1/-1;margin:0 -16px;background:linear-gradient(180deg,#f6f8fb,#eef1f6);border-top:1px solid #e3e7ee'),
+        'content:"";display:block;grid-row:7;grid-column:1/-1;margin:0 -12px;background:linear-gradient(180deg,#f6f8fb,#eef1f6);border-top:1px solid #e3e7ee'),
 
       // ── reitirnir: enginn sebralitur, engin föst hæð, engar línur
       r(T + 'tbody tr._ars-row > td',
         'display:flex;align-items:center;min-width:0;width:auto;height:auto;min-height:0;padding:0;margin:0;border:0;' +
         'background:transparent;box-shadow:none;position:relative;text-align:left;vertical-align:baseline'),
 
-      // 1 · merkin ofan á myndinni: mánuður efst t.v., staða efst t.h., póstmerki neðst t.v.
+      // 1 · merkin ofan á myndinni: mánuður efst t.v., póstmerki neðst t.v., staða neðst t.h.
       r(T + 'tbody tr._ars-row > td._ars-mailcol',
-        'grid-row:1;grid-column:1/-1;justify-self:start;align-self:end;margin-bottom:10px;padding:3px 8px;gap:4px;z-index:1;' +
+        'grid-row:1;grid-column:1/-1;justify-self:start;align-self:end;margin-bottom:8px;padding:2px 7px;gap:4px;z-index:1;' +
         'border-radius:99px;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.3)'),
       r(T + 'tbody tr._ars-row > td._ars-mailcol:empty', 'display:none'),
       r(T + 'tbody tr._ars-row > td:has(> ._mo)',
-        'grid-row:1;grid-column:1/4;justify-self:start;align-self:start;margin-top:12px;height:26px;padding:0 11px;gap:8px;z-index:1;' +
+        'grid-row:1;grid-column:1/-1;justify-self:start;align-self:start;margin-top:9px;height:23px;padding:0 9px;gap:6px;z-index:1;' +
         'border-radius:99px;background:rgba(12,12,14,.74);box-shadow:0 2px 8px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)'),
-      r(T + 'tbody tr._ars-row > td:has(> ._mo)::before', 'content:"Skoðun";font:700 9px/1 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#aab1bb'),
-      r(T + 'tbody tr._ars-row > td > ._mo', 'font:700 12px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:none'),
+      r(T + 'tbody tr._ars-row > td:has(> ._mo)::before', 'content:"Skoðun";font:700 8px/1 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#aab1bb'),
+      r(T + 'tbody tr._ars-row > td > ._mo', 'font:700 11px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:none'),
       r(T + 'tbody tr._ars-row > td > ._mo[style*="c0241f"]', 'color:#ff8a7a'),
-      r(T + 'tbody tr._ars-row > td:has(> ._stcell)', 'grid-row:1;grid-column:2/5;justify-self:end;align-self:start;margin-top:12px;z-index:1'),
+      r(T + 'tbody tr._ars-row > td:has(> ._stcell)', 'grid-row:1;grid-column:1/-1;justify-self:end;align-self:end;margin-bottom:8px;z-index:1'),
       r(T + 'tbody tr._ars-row > td > ._stcell > ._chk', 'box-shadow:0 2px 8px rgba(0,0,0,.35)'),
-      r(T + 'tbody tr._ars-row > td > ._stcell', 'display:inline-flex;align-items:center;gap:7px;width:auto'),
+      r(T + 'tbody tr._ars-row > td > ._stcell', 'display:inline-flex;align-items:center;gap:5px;width:auto'),
       r(T + 'tbody tr._ars-row > td > ._stcell > span:empty', 'display:none'),
-      r(T + 'tbody tr._ars-row > td > ._stcell > ._st', 'width:auto;min-width:0;padding:4px 11px;box-shadow:0 2px 8px rgba(0,0,0,.35)'),
+      r(T + 'tbody tr._ars-row > td > ._stcell > ._st', 'width:auto;min-width:0;min-height:24px;padding:3px 9px;font-size:11px;box-shadow:0 2px 8px rgba(0,0,0,.35)'),
 
       // 2 · nafn, kt og merki
-      r(T + 'tbody tr._ars-row > td._ars-namecell', 'grid-row:2;grid-column:1/-1;display:block;padding-top:14px'),
+      r(T + 'tbody tr._ars-row > td._ars-namecell', 'grid-row:2;grid-column:1/-1;display:block;padding-top:11px'),
       r(T + 'tbody tr._ars-row > td._ars-namecell ._co',
         'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;' +
-        'font:800 19px/1.15 ' + DISPLAY + ';font-variant-numeric:lining-nums;letter-spacing:-.01em;color:#11141c'),
-      r(T + 'tbody tr._ars-row > td._ars-namecell ._kt', 'display:inline-block;margin-top:4px;font:500 11px/1.2 ' + MONO + ';color:#5b6472'),
+        'font:800 16px/1.15 ' + DISPLAY + ';font-variant-numeric:lining-nums;letter-spacing:-.01em;color:#11141c'),
+      r(T + 'tbody tr._ars-row > td._ars-namecell ._kt', 'display:inline-block;margin-top:3px;font:500 10.5px/1.2 ' + MONO + ';color:#5b6472'),
       r(T + 'tbody tr._ars-row > td._ars-namecell input._ars-note-under', 'display:none'),
 
       // 3 · heimilisfang
-      r(T + 'tbody tr._ars-row > td._ars-addrcell', 'grid-row:3;grid-column:1/-1;padding-top:6px'),
-      r(T + 'tbody tr._ars-row > td._ars-addrcell ._addr', 'display:inline;white-space:normal;font:500 12px/1.35 ' + MONO + ';color:#2b313c'),
+      r(T + 'tbody tr._ars-row > td._ars-addrcell', 'grid-row:3;grid-column:1/-1;padding-top:5px'),
+      r(T + 'tbody tr._ars-row > td._ars-addrcell ._addr', 'display:inline;white-space:normal;font:500 11px/1.35 ' + MONO + ';color:#2b313c'),
       r(T + 'tbody tr._ars-row > td._ars-addrcell ._post', 'font-weight:700;color:#1d5bbf;margin-right:6px'),
 
-      // 4 · ferðanóta — fyllir afganginn svo fóturinn er neðst í öllum spjöldum
-      r(T + 'tbody tr._ars-row > td._ars-notacell', 'grid-row:4;grid-column:1/-1;align-items:flex-start;align-self:stretch;margin-top:10px;min-height:22px;padding:4px 8px;border-radius:6px;border:1px dashed rgba(20,24,34,.16);background:#fbfcfd'),
+      // 4 · ferðanóta — röðin fyllir afganginn (1fr) svo fóturinn er neðst í öllum spjöldum; reiturinn heldur eigin hæð
+      r(T + 'tbody tr._ars-row > td._ars-notacell', 'grid-row:4;grid-column:1/-1;align-items:flex-start;align-self:start;margin-top:8px;min-height:20px;padding:3px 7px;border-radius:6px;border:1px dashed rgba(20,24,34,.16);background:#fbfcfd'),
       r(T + 'tbody tr._ars-row > td._ars-notacell._er-med', 'border-style:solid;border-color:rgba(184,145,47,.4);background:#fffbf0'),
-      r(T + 'tbody tr._ars-row > td._ars-notacell ._ars-nota3', '-webkit-line-clamp:3;font:400 12px/1.4 ' + SANS + ';color:#3a4250'),
+      r(T + 'tbody tr._ars-row > td._ars-notacell ._ars-nota3', '-webkit-line-clamp:3;font:400 11.5px/1.4 ' + SANS + ';color:#3a4250'),
 
       // 5 · '23 '24 '25 '26 — sjálfvirk röðun í dálka 1–4 (sama röð og í töflunni)
-      r(T + 'tbody tr._ars-row > td[data-yrcell]', 'grid-row:5;justify-content:center;padding-top:12px'),
+      r(T + 'tbody tr._ars-row > td[data-yrcell]', 'grid-row:5;justify-content:center;padding-top:10px;overflow:visible'),
+      r(T + 'tbody tr._ars-row > td[data-yrcell] ._yr', 'width:100%;min-width:0;max-width:52px'),
 
       // 6 · tækin og áætlunin
-      r(T + 'tbody tr._ars-row > td:has(> ._devs)', 'grid-row:6;grid-column:1/-1;flex-wrap:wrap;gap:6px;padding:10px 0 12px'),
-      r(T + 'tbody tr._ars-row > td > ._devs', 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:1 1 100%;width:100%;margin:0'),
+      r(T + 'tbody tr._ars-row > td:has(> ._devs)', 'grid-row:6;grid-column:1/-1;flex-wrap:wrap;gap:5px;padding:9px 0 11px'),
+      r(T + 'tbody tr._ars-row > td > ._devs', 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;flex:1 1 100%;width:100%;margin:0'),
       r(T + 'tbody tr._ars-row > td > ._devs > div',
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;height:48px;padding:0;margin:0;' +
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;height:40px;padding:0;margin:0;' +
         'background:#fff;border-radius:6px;box-shadow:' + LINE_SH),
       r(T + 'tbody tr._ars-row > td > ._devs > div.off', 'opacity:.5'),
       // 342 hægrijafnar ÆTL-reitinn og gefur b/i 100% breidd — hér er allt miðjað
-      r(T + 'tbody tr._ars-row > td > ._devs > div > b', 'display:block;width:auto;text-align:center;font:800 20px/1 ' + DISPLAY + ';font-variant-numeric:lining-nums;color:#11141c'),
-      r(T + 'tbody tr._ars-row > td > ._devs > div > i', 'display:block;width:auto;text-align:center;font:700 9px/1 ' + MONO + ';font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:#5b6472'),
+      r(T + 'tbody tr._ars-row > td > ._devs > div > b', 'display:block;width:auto;text-align:center;font:800 17px/1 ' + DISPLAY + ';font-variant-numeric:lining-nums;color:#11141c'),
+      r(T + 'tbody tr._ars-row > td > ._devs > div > i', 'display:block;width:auto;text-align:center;font:700 8px/1 ' + MONO + ';font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:#5b6472'),
       // ÆTL á silfri, ekki málmi: 313-birtuskanninn skrifar dökkt inline-blek (!important) á merkið, sem hverfur á svörtu
       r(T + 'tbody tr._ars-row > td > ._devs > div._estcell', 'background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.18),0 2px 4px rgba(10,14,22,.16)'),
-      r(T + 'tbody tr._ars-row > td > ._devs > div._estcell > b', 'font-size:17px'),
+      r(T + 'tbody tr._ars-row > td > ._devs > div._estcell > b', 'font-size:14.5px'),
 
-      // 7 · fótur — merki á undan hverjum takka (í töflunni sagði hausinn hvað þeir eru)
+      // 7 · fótur — lítið merki fyrir ofan hvern takka (í töflunni sagði hausinn hvað þeir eru)
       r(T + 'tbody tr._ars-row > td:has(> ._pri-btn),' + T + 'tbody tr._ars-row > td:has(> ._go-btn),' + T + 'tbody tr._ars-row > td._arsak-cell,' + T + 'tbody tr._ars-row > td:has(> ._ars-endur)',
-        'grid-row:7;gap:7px;z-index:1'),
+        'grid-row:7;flex-direction:column;justify-content:center;gap:3px;z-index:1'),
       r(T + 'tbody tr._ars-row > td:has(> ._pri-btn)::before,' + T + 'tbody tr._ars-row > td:has(> ._go-btn)::before,' + T + 'tbody tr._ars-row > td._arsak-cell::before,' + T + 'tbody tr._ars-row > td:has(> ._ars-endur)::before',
-        'font:700 9.5px/1 ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#5b6472;white-space:nowrap'),
+        'font:700 8px/1 ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#5b6472;white-space:nowrap'),
       r(T + 'tbody tr._ars-row > td:has(> ._pri-btn)', 'grid-column:1;justify-self:start'),
       r(T + 'tbody tr._ars-row > td:has(> ._pri-btn)::before', 'content:"Forg."'),
-      r(T + 'tbody tr._ars-row > td:has(> ._go-btn)', 'grid-column:2;justify-self:start'),
+      r(T + 'tbody tr._ars-row > td:has(> ._go-btn)', 'grid-column:2;justify-self:center'),
       r(T + 'tbody tr._ars-row > td:has(> ._go-btn)::before', 'content:"GÓ"'),
-      r(T + 'tbody tr._ars-row > td._arsak-cell', 'grid-column:3;justify-self:start'),
+      r(T + 'tbody tr._ars-row > td._arsak-cell', 'grid-column:3;justify-self:center'),
       r(T + 'tbody tr._ars-row > td._arsak-cell::before', 'content:"Akstur"'),
       r(T + 'tbody tr._ars-row > td:has(> ._ars-endur)', 'grid-column:4;justify-self:end'),
       r(T + 'tbody tr._ars-row > td:has(> ._ars-endur)::before', 'content:"Endurh."'),
