@@ -628,7 +628,9 @@ exports.handler = async (event) => {
     if (syn.erindi) {
       try {
         const since = new Date(Date.now() - 365 * 864e5).toISOString();
-        const er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
+        let er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
+        // Varaleið þar til migration 2026-10-11_verkbeidnapunktar.sql er beitt (nýju dálkarnir vantar → 400): gamla valið
+        if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
         if (er.ok) {
           const rows = await er.json();
           const slod = await M.undirrita(myndaSlodir(rows), 600);
