@@ -2573,12 +2573,14 @@
         });
         return ut;
       };
+      let nE = 0, nB = 0, nS = 0;
       ge.heitin.forEach((q, ix) => {
         if (q.teg !== 'eldhus' && q.teg !== 'bad') return;
-        const kv2 = veggir(q, ix); if (!kv2.length) return;
+        const kv2 = veggir(q, ix); if (!kv2.length) { nS++; return; }
         if (q.teg === 'eldhus') {
           const k = kv2.sort((a, b) => b.inn - a.inn)[0], laust = k.s1 - k.s0;
-          if (laust < 1.8 * bpm) return;
+          if (laust < 1.8 * bpm) { nS++; return; }
+          nE++;
           const Lr = Math.min(laust - 0.1 * bpm, 4.2 * bpm), u0 = k.s0 + (laust - Lr) / 2;
           const nM = Math.max(2, Math.round(Lr / bpm / 0.6)), wM = Lr / nM, wMm = wM / bpm, kaeli = Lr / bpm >= 2.6;
           for (let i = 0; i < nM; i++) {
@@ -2596,6 +2598,7 @@
         } else {
           const k = kv2.filter(a => a.inn >= 1.1 * bpm).sort((a, b) => a.d - b.d)[0] || kv2.sort((a, b) => b.inn - a.inn)[0];
           const laust = k.s1 - k.s0;
+          nB++;
           // klósett nálægt horni: kassi, skál (sívalningur) og seta
           const uK = k.s0 + 0.45 * bpm;
           setja(k, uK, 0.09, 0.38, 0.17, 0.38, 0.42, INN.postulin);
@@ -2614,6 +2617,7 @@
         }
       });
       if (g.children.length) { lg.hopur.add(g); lg.innr = g; }
+      if (nE + nB + nS) console.info('[383] innréttingar ' + (hd.nafn || lg.nr) + ': ' + nE + ' eldhús, ' + nB + ' böð' + (nS ? ', ' + nS + ' án veggjar' : ''));
     };
     lag.forEach(lg => { try { innretta(lg); } catch (e) { console.warn('[383] innréttingar', e); } });
     // HÚSSÝNIN: þak á efstu hæð (útlína hússins úr gólfefnunum — án þeirra ekkert þak, ekki blað í fullri stærð) og engin tæki
