@@ -690,6 +690,7 @@
         }).join('') + '</tbody></table></div>' +
         '<div class="gnote">Samantekt úr merkingum Slökkvitækja ehf. á teikningum hússins.</div></section>';
     }
+    html += thorfHtml(b, syn);
     // Búnaður
     if (syn.taeki && Array.isArray(b.equipment)) {
       var eq = b.equipment;
@@ -907,6 +908,38 @@
   ICON.teikning = '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 11h7v9M10 4v4M14 11h7M14 11v4"/>';
   ICON.plus = '<path d="M12 5v14M5 12h14"/>';
 
+  /* ── ÞARFAGREINING (fyrirtaeki.eign.thorf) — búnaður og kerfi sem reglur krefjast, per hæð.
+     Leiðbeinandi greining eftir byggingarreglugerð 112/2012 og 165.BR1 (Arnold); fyrirvarinn
+     á að sjást í viðmótinu, ekki bara í athugasemd. */
+  function thorfHtml(b, syn) {
+    var t = b && b.eign && b.eign.thorf;
+    if (!t || !syn.greining || !Array.isArray(t.haedir)) return '';
+    var sum = function (k) { return t.haedir.reduce(function (n, h) { return n + (+h[k] || 0); }, 0); };
+    var tot = [['Slökkvitæki', sum('slokkvitaeki'), '#0f9488'], ['Kolsýrutæki', sum('co2'), '#111827'], ['Slöngukefli', sum('slongur'), '#be123c'],
+      ['Útljós', sum('utljos'), '#15803d'], ['Neyðarljós', sum('neydarljos'), '#ca8a04'], ['Gistiherbergi · rýmingaruppdráttur', sum('herbergi'), '#64748b']];
+    var chips = tot.filter(function (x) { return x[1] > 0; }).map(function (x) {
+      return '<span class="gchip"><i class="gdot" style="background:' + x[2] + '"></i><b>' + fmtTala(x[1]) + '</b>' + esc(x[0]) + '</span>';
+    }).join('');
+    var rows = t.haedir.map(function (h) {
+      return '<tr><td style="font-weight:600;color:var(--ink)">' + esc(h.nafn) + '</td><td class="num r">' + (h.m2 ? fmtTala(h.m2) : '—') + '</td>' +
+        '<td class="num r">' + (h.slokkvitaeki || 0) + '</td><td class="num r">' + (h.co2 || '—') + '</td><td class="num r">' + (h.slongur || '—') + '</td>' +
+        '<td class="num r">' + (h.utljos || '—') + '</td><td class="num r">' + (h.neydarljos || '—') + '</td></tr>';
+    }).join('');
+    var kerfi = (t.kerfi || []).map(function (k) {
+      var sk = /skylt/i.test(k.krafa || '');
+      return '<div class="kcard"><div class="kc-h"><b>' + esc(k.heiti) + '</b><span class="kb ' + (sk ? 'skylt' : 'skil') + '">' + esc(k.krafa || '') + '</span></div>' +
+        '<p>' + esc(k.skyring || '') + '</p>' + (k.heimild ? '<small>' + esc(k.heimild) + '</small>' : '') + '</div>';
+    }).join('');
+    return '<section class="dsec"><h4>Þarfagreining <span class="cnt">' + esc(t.flokkur || '') + '</span></h4>' +
+      '<div class="gsum">' + chips + '</div>' +
+      '<div class="dpanel"><table><thead><tr><th>Hæð</th><th class="r">m²</th><th class="r">Slökkvitæki</th><th class="r">Kolsýra</th><th class="r">Slöngukefli</th><th class="r">Útljós</th><th class="r">Neyðarljós</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      (kerfi ? '<div class="kgrid">' + kerfi + '</div>' : '') +
+      (t.eftirlit ? '<div class="kfoot"><b>Eftirlit:</b> ' + esc(t.eftirlit) + (t.eftirlit_heimild ? ' <span class="dim">(' + esc(t.eftirlit_heimild) + ')</span>' : '') + '</div>' : '') +
+      '<div class="fyrirv">' + (t.forsendur ? esc(t.forsendur) + ' ' : '') +
+        'Leiðbeinandi greining ' + esc(t.hofundur || 'Slökkvitækja ehf.') + ' byggð á byggingarreglugerð 112/2012 og 165.BR1 — endanlegt samþykki brunavarna er hjá hönnuði og slökkviliði sveitarfélagsins.' +
+        (t.dags ? ' <span class="dim">' + esc(fmtDate(t.dags)) + '</span>' : '') + '</div>' +
+    '</section>';
+  }
   function eignaKort(b, j) {
     var e = b.eign || {}, img = e.mynd ? imgW(e.mynd, 900) : '';
     return '<article class="ecard' + (b.beidni ? ' sent' : '') + '">' +
@@ -971,6 +1004,7 @@
         (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') +
         (e.heimild ? '<div class="gnote">Mynd og lýsing: ' + esc(e.heimild) + '</div>' : '') + '</section>' +
       (tk.length ? '<section class="dsec"><h4>Teikningar <span class="cnt">' + tala(tk.length, 'hæð', 'hæðir') + '</span></h4><div class="tgrid" id="dr-tk"></div></section>' : '') +
+      thorfHtml(b, syn) +
       '<section class="dsec"><h4>Þjónusta sem við bjóðum</h4><div class="svcg">' +
         SVC_KORT.map(function (s) { return '<div class="svc-k"><span class="ic2">' + svgIc(s[0], 1.7) + '</span><b>' + esc(s[1]) + '</b><span>' + esc(s[2]) + '</span></div>'; }).join('') +
       '</div></section>' +

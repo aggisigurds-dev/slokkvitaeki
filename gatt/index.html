@@ -501,6 +501,18 @@
   .lb-m canvas,.lb-m img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
   .svc-in{width:100%;margin:-6px 0 16px;border:1px solid var(--line2);border-radius:4px;background:var(--well);box-shadow:var(--well-sh);padding:10px 12px;font-family:var(--ui);font-size:13.5px;color:var(--ink)}
   .svc-in:focus{outline:none;border-color:var(--accent)}
+  /* ── ÞARFAGREINING ── */
+  .kgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+  .kcard{padding:13px 15px;border:1px solid var(--line);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh)}
+  .kc-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
+  .kc-h b{font-size:13.5px;color:var(--ink)}
+  .kcard p{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink2)}
+  .kcard small{display:block;margin-top:6px;font-size:10.5px;letter-spacing:.3px;color:var(--dim)}
+  .kb{flex:none;font-family:var(--lbl);font-size:9.5px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+  .kb.skylt{background:var(--m-face);color:var(--m-ink);border:1px solid var(--m-edge);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+  .kb.skil{background:var(--key);color:var(--ink2);border:1px solid var(--line2)}
+  .kfoot{margin-top:12px;font-size:12.5px;color:var(--ink2)}
+  .fyrirv{margin-top:10px;padding:11px 14px;border-left:3px solid rgba(var(--glow),.55);background:rgba(var(--glow),.05);font-size:11.5px;line-height:1.55;color:var(--ink2)}
   /* ── EIGNASAFN (eignir utan þjónustu, fyrirtaeki.eign) ── */
   .es-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:36px 0 16px}
   .es-h h3{margin:6px 0 0;font-family:var(--serif);font-size:32px;font-weight:600;color:var(--ink);line-height:1.05}
@@ -628,7 +640,7 @@
     .egrid{grid-template-columns:1fr}
     .es-h{flex-direction:column;align-items:flex-start}
     .es-h h3{font-size:27px}
-    .svcg,.skref{grid-template-columns:1fr}
+    .svcg,.skref,.kgrid{grid-template-columns:1fr}
     .dkpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}
     .sklist{grid-template-columns:1fr}
     .dr-head.hero{min-height:200px}.dr-head.hero .dr-tt h3{font-size:27px}
@@ -851,6 +863,6 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/portal.js?v=20261011r"></script>
+<script src="/gatt/portal.js?v=20261011t"></script>
 </body>
 </html>
