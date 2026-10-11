@@ -25,6 +25,9 @@
  *     7  fótur: Forg. · GÓ · Akstur · Endurheimt
  *
  *   Myndin er sett með einni CSS-breytu per stað (--spj-mynd) í eigin stílblaði — enginn hnútur 153 er snertur.
+ *   Stillingin „Heil mynd / Fylla ramma" (Agnar 11.10: „lætur alla myndina sjást … bætist bara við hvítt sem fyllir
+ *   upp í rammann"): heil mynd (contain á hvítu) er sjálfgefin; valið er útlitsval vafrans (localStorage
+ *   `spj_mynd_heil_v1`, '0' = fylla) og klasinn html.spj-heil gildir líka um spjöld skoðunarsíðnanna (458).
  *
  *   Aðeins borðtölva (min-width:901px) — síminn teiknar sín eigin _arsm-row spjöld (331/382).
  */
@@ -95,6 +98,10 @@
         'background-color:#1c1d21;background-image:' + SKYGGING + ',var(--spj-mynd,' + HUS + '),' + METAL + ';' +
         'background-size:100% 100%,var(--spj-str,52px 52px),100% 100%;background-position:center,center,center;background-repeat:no-repeat'),
       r(T + 'tbody tr._ars-row.overdue::before', 'border-bottom:3px solid #b0201b'),
+      // Heil mynd: öll myndin sést (contain) og hvítt fyllir upp í rammann; engin skygging yfir hvítu. Án myndar: óbreytt.
+      'html.ars-spjold.spj-heil body #view-arsskodun ' + T + 'tbody tr._ars-row' + F + '::before{' +
+        'background-image:linear-gradient(transparent,transparent),var(--spj-mynd,' + HUS + '),var(--spj-heil-bak,' + METAL + ')!important;' +
+        'background-size:100% 100%,var(--spj-heil-str,52px 52px),100% 100%!important}',
       // fóturinn (röð 7): ljós stubbur með línu að ofan
       r(T + 'tbody tr._ars-row::after',
         'content:"";display:block;grid-row:7;grid-column:1/-1;margin:0 -12px;background:linear-gradient(180deg,#f6f8fb,#eef1f6);border-top:1px solid #e3e7ee'),
@@ -175,11 +182,13 @@
       r('._tfoot', 'border:0;border-radius:8px;background:#fff;box-shadow:' + LINE_SH),
 
       // ── rofinn sjálfur (situr í 394-hlutahausnum; útlitið gildir í báðum stillingum)
-      'html body #view-arsskodun #_ars-spjold-btn' + F + '{display:inline-flex!important;align-items:center!important;gap:7px!important;height:34px!important;padding:0 12px!important;' +
+      'html body #view-arsskodun #_ars-spjold-btn' + F + ',html body #view-arsskodun #_ars-mynd-btn' + F + '{display:inline-flex!important;align-items:center!important;gap:7px!important;height:34px!important;padding:0 12px!important;' +
         'border-radius:8px!important;border:1px solid rgba(20,24,34,.16)!important;background:' + SILVER + '!important;box-shadow:' + SILVER_SH + '!important;' +
         'font:700 11px/1 ' + MONO + '!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#1f2530!important;cursor:pointer!important;white-space:nowrap!important}',
-      'html body #view-arsskodun #_ars-spjold-btn' + F + ':hover{border-color:rgba(20,24,34,.4)!important}',
-      'html body #view-arsskodun #_ars-spjold-btn svg' + F + '{width:15px!important;height:15px!important;flex:none!important}'
+      'html body #view-arsskodun #_ars-spjold-btn' + F + ':hover,html body #view-arsskodun #_ars-mynd-btn' + F + ':hover{border-color:rgba(20,24,34,.4)!important}',
+      'html body #view-arsskodun #_ars-spjold-btn svg' + F + ',html body #view-arsskodun #_ars-mynd-btn svg' + F + '{width:15px!important;height:15px!important;flex:none!important}',
+      // myndastillingin sést aðeins í spjaldaham
+      'html:not(.ars-spjold) body #view-arsskodun #_ars-mynd-btn' + F + '{display:none!important}'
     ];
     var s = document.createElement('style');
     s.id = '_ars-spjold-css';
@@ -200,6 +209,8 @@
     }
     return u.replace(/["\\\s]/g, encodeURIComponent);
   }
+  // Fylla: cover á málmi · Heil: contain á hvítu (html.spj-heil velur hvort er notað)
+  var MYND_BREYTUR = '--spj-str:cover;--spj-heil-str:contain;--spj-heil-bak:linear-gradient(#fff,#fff)';
   var _myndSig = '';
   function myndir() {
     var map = {};
@@ -210,12 +221,12 @@
     Object.keys(map).forEach(function (id) {
       // slóðin ræður: handvalin mynd ofan á eldri „engin mynd"-færslu ber enn engin:true (deep-merge, 367)
       var m = map[id], u = m && m.url ? myndSlod(m.url) : '';
-      if (u && /^\d+$/.test(id)) { sed[id] = 1; reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}'); }
+      if (u && /^\d+$/.test(id)) { sed[id] = 1; reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + id + '"]{--spj-mynd:url("' + u + '");' + MYND_BREYTUR + '}'); }
     });
     listi.forEach(function (c) {
       if (!c || sed[c.id] || !c.eign || !c.eign.mynd) return;
       var u = myndSlod(c.eign.mynd);
-      if (u) reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + (+c.id) + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}');
+      if (u) reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + (+c.id) + '"]{--spj-mynd:url("' + u + '");' + MYND_BREYTUR + '}');
     });
     var texti = reglur.join('\n');
     var sig = reglur.length + ':' + texti.length;
@@ -233,6 +244,15 @@
   }
 
   var IC_SPJOLD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>';
+  var LYKILL_HEIL = 'spj_mynd_heil_v1';
+  function lesaHeil() { try { return localStorage.getItem(LYKILL_HEIL) !== '0'; } catch (_) { return true; } }
+  function setjaHeil(on) {
+    try { localStorage.setItem(LYKILL_HEIL, on ? '1' : '0'); } catch (_) {}
+    document.documentElement.classList.toggle('spj-heil', on);
+    takki();
+  }
+  var IC_HEIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="7.5" y="8.5" width="9" height="7" rx="1"/></svg>';
+  var IC_FYLLA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/></svg>';
   var IC_LISTI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
 
   // Rofinn í hlutahausnum. 394 smíðar .arsm-sec upp á nýtt þegar sýnin breytist og fjarlægir gamla hausinn —
@@ -254,6 +274,21 @@
     if (b.innerHTML !== html) b.innerHTML = html;
     var t = on ? 'Sýna staðina sem töflu' : 'Sýna staðina sem spjöld — sömu upplýsingar og taflan';
     if (b.title !== t) b.title = t;
+    // Myndastillingin, strax á eftir spjaldarofanum (falin í listaham)
+    var mb = document.getElementById('_ars-mynd-btn');
+    if (!mb || mb.parentElement !== verkf || mb.previousElementSibling !== b) {
+      if (mb) mb.remove();
+      mb = document.createElement('button');
+      mb.id = '_ars-mynd-btn';
+      mb.type = 'button';
+      mb.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); setjaHeil(!document.documentElement.classList.contains('spj-heil')); });
+      b.insertAdjacentElement('afterend', mb);
+    }
+    var heil = document.documentElement.classList.contains('spj-heil');
+    var mh = heil ? IC_FYLLA + '<span>Fylla ramma</span>' : IC_HEIL + '<span>Heil mynd</span>';
+    if (mb.innerHTML !== mh) mb.innerHTML = mh;
+    var mt = heil ? 'Myndirnar fylla rammann (skornar til)' : 'Sýna alla myndina — hvítt fyllir upp í rammann';
+    if (mb.title !== mt) mb.title = mt;
   }
 
   function vakta() {
@@ -262,7 +297,7 @@
     takki();
     new MutationObserver(function () {
       var verkf = v.querySelector('.arsm-sec .arsm-verkf');
-      if (verkf && !verkf.querySelector('#_ars-spjold-btn')) takki();
+      if (verkf && (!verkf.querySelector('#_ars-spjold-btn') || !verkf.querySelector('#_ars-mynd-btn'))) takki();
     }).observe(v, { childList: true, subtree: true });
   }
 
@@ -270,6 +305,7 @@
   window.SpjaldMynd = { slod: myndSlod };
 
   css();
+  document.documentElement.classList.toggle('spj-heil', lesaHeil());
   document.addEventListener('ars:render', function () { try { takki(); myndir(); } catch (_) {} });
   // Ný mynd á fyrirtækjasíðunni (367) eða af annarri vél → myndablaðið endurreiknað strax
   try { if (window.AppSettings && typeof AppSettings.onChange === 'function') AppSettings.onChange(function () { try { myndir(); } catch (_) {} }); } catch (_) {}

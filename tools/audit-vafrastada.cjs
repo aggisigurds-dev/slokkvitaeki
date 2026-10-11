@@ -60,7 +60,12 @@ const BANN = [
 // lyklastreng hækkar töluna um einn. Talningin er á nöfnum, ekki strengjum.
 // 09.10.2026 — `tolvupostar_sia` (448): hólf · röðun · sía Tölvupósta-hamsins, útlitsval eins vafra; pósturinn, málin og
 // svörin eru á þjóninum (email_digest, thjonustubeidni, reikninga_postur_activity). Hækkað 154 → 155 af því lykillinn stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 155, ui: 0 } };
+// 11.10.2026 — `spj_mynd_heil_v1` (457, LYKILL_HEIL): „Heil mynd / Fylla ramma" á myndaspjöldum Ársskoðunar og
+// skoðunarsíðna — útlitsval ÞESSA vafra (hvernig myndin passar í rammann), engin staða gagna; myndirnar sjálfar eru á
+// þjóninum (AppSettings co_bygging_mynd). Spjalda-/listavalið sjálft (ars_spjold_v1) var tekið ÚT sama dag (listi alltaf
+// sjálfgefinn), en þar sem talningin er á nöfnum fastanna stendur hún samt í 156. Hækkað 155 → 156 af því lykillinn
+// stenst regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 156, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

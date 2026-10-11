@@ -30,9 +30,10 @@
   var TOLVA = ['html:not([data-viewmode="mobile"]) body:not(.appmode) '];
   var SIMI = ['html[data-viewmode="mobile"] body ', 'html body.appmode '];
   function smidur(forskeyti) {
-    return function r(sel, css) {
+    return function r(sel, css, heil) {
       var out = [];
       forskeyti.forEach(function (f) {
+        if (heil) f = f.replace(/^html/, 'html.spj-heil');
         VIEWS.forEach(function (v) {
           sel.split(',').forEach(function (x) {
             x = x.trim();
@@ -61,6 +62,9 @@
         'background-color:#1c1d21;background-image:' + SKYGGING + ',var(--spj-mynd,' + HUS + '),' + METAL + ';' +
         'background-size:100% 100%,var(--spj-str,' + px(52) + ' ' + px(52) + '),100% 100%;background-position:center,center,center;background-repeat:no-repeat'),
       r(C + ':has(._sk-st--late)::before', 'border-bottom:3px solid #b0201b'),
+      // Heil mynd (html.spj-heil, stilling úr 457): öll myndin á hvítu, engin skygging
+      r(C + '::before', 'background-image:linear-gradient(transparent,transparent),var(--spj-mynd,' + HUS + '),var(--spj-heil-bak,' + METAL + ');' +
+        'background-size:100% 100%,var(--spj-heil-str,' + px(52) + ' ' + px(52) + '),100% 100%', true),
       r(C + ' ._sk-cardhd', 'display:contents'),
       // staðan + Í vinnslu-hakið neðst t.h. á myndinni
       r(C + ' ._sk-cardhd > ._sk-stcell', 'grid-row:1;grid-column:1;justify-self:end;align-self:end;margin:0 0 ' + px(8) + ';display:inline-flex;align-items:center;gap:' + px(5) + ';z-index:1'),
@@ -119,7 +123,7 @@
     var reglur = [];
     Object.keys(map).forEach(function (id) {
       var m = map[id], u = m && m.url ? slod(m.url) : '';   // slóðin ræður (sjá 457)
-      if (u && /^\d+$/.test(id)) reglur.push('._sk-cards ._sk-card[data-fid="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}');
+      if (u && /^\d+$/.test(id)) reglur.push('._sk-cards ._sk-card[data-fid="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover;--spj-heil-str:contain;--spj-heil-bak:linear-gradient(#fff,#fff)}');
     });
     var texti = reglur.join('\n'), sig = reglur.length + ':' + texti.length;
     if (sig === _sig) return;
