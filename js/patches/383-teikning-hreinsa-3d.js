@@ -1614,6 +1614,9 @@
   const LOFTH_M = 3.0;
   // SVALIR (Agnar 10.10.2026: „Hafðu svalirnar bara í 1.1m"): veggjaLinur með tegund 'svalir' = svalaveggur/handrið, 1,1 m.
   const SVALIR_M = 1.1;
+  // Svalirnar með gleri (Agnar 11.10.2026: „add perhaps a bit of glass to the balcony"): steyptur kantur neðst, glerplata
+  // upp í SVALIR_M og grannt handrið ofan á.
+  const SVALIR_KANTUR_M = 0.35;
 
   // ÚTVEGGIR: hvaða hlið hvers veggbúts snýr út. Veggir, gler og hurðir teiknuð á striga (gler/hurðir loka opunum) og
   // flætt utan frá; sýni beggja vegna bútsins (30/50/70 %) segja hvor hliðin er úti. +1 / −1 = hlið normalsins
@@ -1695,6 +1698,180 @@
     return ut;
   }
 
+  // GÓLFEFNI (Agnar 11.10.2026: „grey tiles on balcony, and bathrooms, wooden floors in the apartments"): rýmin fundin úr
+  // veggjunum sjálfum — veggir, gler, hurðir og svalaveggir loka — og hvert rými fær sitt efni: svalir (innan svalaveggja
+  // en utan útveggja) og baðherbergi gráar flísar, sameign (stigahús, gangar; kjallari allur) ljósar steinflísar, annað
+  // parket langs lengri hliðar rýmisins. Heiti teikningarinnar (446) ráða þar sem þau eru; annars er lítið rými með þéttum
+  // hreinlætistækjum bað. Teikningin dauf ofan á (margfölduð) svo heiti og tæki sjáist. Utan útveggja: gegnsætt (hellur
+  // sjást). null ef útveggirnir loka ekki húsinu (flóðið lak inn) — þá helst teikningin.
+  const GOLF_EFNI = {
+    parket: ['#dcc4a0', '#d3b98f', '#d8bf98', '#ceb38a', '#dac29c'],
+    bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
+    svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
+    sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 }
+  };
+  const BAD_M2 = [2.0, 9.5], BAD_BLEK = 0.075;
+  function golfEfni(hd, k, metri, golfStr) {
+    const W = hd.W, H = hd.H, kv = hd.kvardi, f = kv / k.c;
+    if (!(W > 0 && H > 0 && kv > 0 && metri > 0) || !golfStr || !golfStr.width || !hd.butar || !hd.butar.length) return null;
+    const s = Math.min(1, 1100 / Math.max(W, H)), RW = Math.max(1, Math.round(W * s)), RH = Math.max(1, Math.round(H * s)), N = RW * RH;
+    const pxm = metri * k.c * s;                        // dílar vinnurastans á metra
+    if (!(pxm >= 4)) return null;
+    const sjalfg = Math.max(k.gw, k.gh) * 0.004;
+    const teikna = medSvolum => {
+      const c = document.createElement('canvas'); c.width = RW; c.height = RH;
+      const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square';
+      const strik = (v, th) => { x.lineWidth = Math.max(2, th * k.c * s); x.beginPath(); x.moveTo(v[0] * kv * s, v[1] * kv * s); x.lineTo(v[2] * kv * s, v[3] * kv * s); x.stroke(); };
+      hd.butar.forEach(v => strik(v, Math.max(0.8, metri * 0.24, (v[4] || 0) * f || sjalfg)));
+      (hd.gler || []).concat(hd.hurdir || []).forEach(v => strik(v, Math.max(metri * 0.15, (v[4] || 0) * f)));
+      if (medSvolum) (hd.svalir || []).forEach(v => strik(v, Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg)));
+      const a = x.getImageData(0, 0, RW, RH).data, v = new Uint8Array(N);
+      for (let i = 0; i < N; i++) v[i] = a[i * 4 + 3] >= 128 ? 1 : 0;
+      return v;
+    };
+    const st = new Int32Array(N);
+    const flaeda = veggur => {
+      const uti = new Uint8Array(N); let top = 0;
+      const yta = p => { if (!uti[p] && !veggur[p]) { uti[p] = 1; st[top++] = p; } };
+      for (let i = 0; i < RW; i++) { yta(i); yta((RH - 1) * RW + i); }
+      for (let j = 0; j < RH; j++) { yta(j * RW); yta(j * RW + RW - 1); }
+      while (top) { const p = st[--top], px = p % RW; if (px > 0) yta(p - 1); if (px < RW - 1) yta(p + 1); if (p >= RW) yta(p - RW); if (p < N - RW) yta(p + RW); }
+      return uti;
+    };
+    const vA = teikna(true), uA = flaeda(vA);
+    const uB = (hd.svalir || []).length ? flaeda(teikna(false)) : uA;
+    // blek teikningarinnar (hreinlætistæki) í sama rasta
+    const bc = document.createElement('canvas'); bc.width = RW; bc.height = RH;
+    const bx = bc.getContext('2d'); bx.drawImage(golfStr, 0, 0, RW, RH);
+    const bd = bx.getImageData(0, 0, RW, RH).data;
+    // rými = samfelld svæði innan húss
+    const merki = new Int32Array(N).fill(-1), rymi = [];
+    let vx0 = RW, vy0 = RH, vx1 = 0, vy1 = 0;
+    for (let p = 0; p < N; p++) if (vA[p]) { const px = p % RW, py = (p - px) / RW; if (px < vx0) vx0 = px; if (px > vx1) vx1 = px; if (py < vy0) vy0 = py; if (py > vy1) vy1 = py; }
+    for (let p0 = 0; p0 < N; p0++) {
+      if (vA[p0] || uA[p0] || merki[p0] >= 0) continue;
+      const id = rymi.length, r = { n: 0, x0: RW, y0: RH, x1: 0, y1: 0, utiB: 0, blek: 0, sx: 0, sy: 0 };
+      let top = 0; merki[p0] = id; st[top++] = p0;
+      while (top) {
+        const p = st[--top], px = p % RW, py = (p - px) / RW;
+        r.n++; r.sx += px; r.sy += py;
+        if (px < r.x0) r.x0 = px; if (px > r.x1) r.x1 = px; if (py < r.y0) r.y0 = py; if (py > r.y1) r.y1 = py;
+        if (uB[p]) r.utiB++;
+        if (bd[p * 4 + 3] > 128 && bd[p * 4] * 0.3 + bd[p * 4 + 1] * 0.59 + bd[p * 4 + 2] * 0.11 < 120) r.blek++;
+        let q = p - 1; if (px > 0 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
+        q = p + 1; if (px < RW - 1 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
+        q = p - RW; if (py > 0 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
+        q = p + RW; if (py < RH - 1 && !vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[top++] = q; }
+      }
+      rymi.push(r);
+    }
+    const innan = rymi.reduce((t, r) => t + r.n, 0), ramm = Math.max(1, (vx1 - vx0 + 1) * (vy1 - vy0 + 1));
+    if (!rymi.length || innan < ramm * 0.2) { console.info('[383] gólfefni: útveggir loka ekki húsinu (' + Math.round(innan / ramm * 100) + ' % innan) — teikningin helst'); return null; }
+    // heiti teikningarinnar (446): næsti rýmisdíll innan 0,6 m frá heitinu
+    const TS = window.TeiknSameign, sm = hd.sameign;
+    const rymiVid = (x, y) => {
+      const cx = Math.round(x * kv * s), cy = Math.round(y * kv * s), rr = Math.round(0.6 * pxm);
+      let b = -1, bdst = Infinity;
+      for (let j = Math.max(0, cy - rr); j <= Math.min(RH - 1, cy + rr); j++) for (let i = Math.max(0, cx - rr); i <= Math.min(RW - 1, cx + rr); i++) {
+        const id = merki[j * RW + i], d = (i - cx) * (i - cx) + (j - cy) * (j - cy); if (id >= 0 && d < bdst) { bdst = d; b = id; }
+      }
+      return b;
+    };
+    if (TS && sm) (sm.herbergi || []).forEach(t => {
+      const fl = TS.flokkur(t.texti), id = rymiVid(t.x, t.y); if (id < 0) return;
+      const teg = fl.teg === 'bad' ? 'bad' : fl.teg === 'svalir' ? 'svalir' : fl.hopur === 'sameign' ? 'sameign' : fl.hopur === 'ibud' ? 'parket' : '';
+      if (teg) (rymi[id].heiti = rymi[id].heiti || []).push(teg);
+    });
+    rymi.forEach(r => {
+      r.m2 = r.n / (pxm * pxm);
+      const bw = (r.x1 - r.x0 + 1) / pxm, bh = (r.y1 - r.y0 + 1) / pxm, h = r.heiti || [];
+      r.lodrett = bh > bw; r.blekH = r.blek / r.n;
+      const mx = r.sx / r.n / (kv * s), my = r.sy / r.n / (kv * s);
+      if (r.utiB / r.n >= 0.5) r.efni = 'svalir';
+      else if (h.includes('bad')) r.efni = 'bad';
+      else if (h.includes('svalir')) r.efni = 'svalir';
+      else if (h.includes('sameign')) r.efni = 'sameign';
+      else if (h.length) r.efni = 'parket';
+      else if (TS && sm && (sm.heil || (sm.svaedi || []).length) && TS.iSameign(sm, mx, my, 0)) r.efni = 'sameign';
+      else if (r.m2 >= BAD_M2[0] && r.m2 <= BAD_M2[1] && Math.min(bw, bh) >= 1.2 && Math.max(bw, bh) <= 4.6 && r.blekH >= BAD_BLEK) r.efni = 'bad';
+      else r.efni = 'parket';
+    });
+    // lekavörn: svalir yfir 45 % gólfsins = útveggur opinn, ekki svalir
+    const svalM2 = rymi.reduce((t, r) => t + (r.efni === 'svalir' && !(r.heiti || []).includes('svalir') ? r.n : 0), 0);
+    if (svalM2 > innan * 0.45) rymi.forEach(r => { if (r.efni === 'svalir' && !(r.heiti || []).includes('svalir')) r.efni = 'parket'; });
+    // undir veggjum, hurðum og gleri: efni næsta rýmis (hurðarop og gluggar standa opin niður að gólfi)
+    let hd0 = 0, hd1 = 0;
+    for (let p = 0; p < N; p++) if (merki[p] >= 0) st[hd1++] = p;
+    while (hd0 < hd1) {
+      const p = st[hd0++], px = p % RW, id = merki[p];
+      const nb = q => { if (vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; st[hd1++] = q; } };
+      if (px > 0) nb(p - 1); if (px < RW - 1) nb(p + 1); if (p >= RW) nb(p - RW); if (p < N - RW) nb(p + RW);
+    }
+    // grímur á hvern flokk
+    const lykill = r => r.efni === 'parket' ? (r.lodrett ? 'parketV' : 'parketH') : r.efni;
+    const grimur = {}, alla = new ImageData(RW, RH);
+    for (let p = 0; p < N; p++) {
+      const id = merki[p]; if (id < 0) continue;
+      const l = lykill(rymi[id]);
+      const g = grimur[l] || (grimur[l] = new ImageData(RW, RH));
+      g.data[p * 4 + 3] = 255; alla.data[p * 4 + 3] = 255;
+    }
+    const iStriga = d => { const c = document.createElement('canvas'); c.width = RW; c.height = RH; c.getContext('2d').putImageData(d, 0, 0); return c; };
+    const GW = golfStr.width, GH = golfStr.height, pxmG = metri * k.c * GW / W;
+    const parket = lodrett => {
+      const pw = Math.max(3, 0.19 * pxmG), rad = 6, TH = Math.round(pw * rad), TW = Math.max(16, Math.round(2.8 * pxmG));
+      const c = document.createElement('canvas'); c.width = lodrett ? TH : TW; c.height = lodrett ? TW : TH;
+      const x = c.getContext('2d');
+      if (lodrett) { x.translate(TH, 0); x.rotate(Math.PI / 2); }
+      const L = GOLF_EFNI.parket, sk = Math.max(1, pxmG * 0.008);
+      for (let r = 0; r < rad; r++) {
+        const y = r * TH / rad, h = TH / rad, ofs = ((r * 0.37) % 1) * TW;
+        for (let i = -2; i < 3; i++) {
+          const x0 = ofs + i * TW / 2;
+          x.fillStyle = L[(r * 2 + (((i % 2) + 2) % 2) * 3) % L.length]; x.fillRect(x0, y, TW / 2, h);
+          x.fillStyle = 'rgba(255,248,235,.10)'; x.fillRect(x0, y + h * 0.2, TW / 2, Math.max(1, h * 0.12));   // æð
+          x.fillStyle = 'rgba(96,66,36,.30)'; x.fillRect(x0, y, sk, h);                                           // endasamskeyti
+        }
+        x.fillStyle = 'rgba(96,66,36,.24)'; x.fillRect(0, y, TW, sk);                                              // langsamskeyti
+      }
+      return c;
+    };
+    const flisar = e => {
+      const t = Math.max(4, Math.round(e.m * pxmG)), c = document.createElement('canvas'); c.width = c.height = t * 2;
+      const x = c.getContext('2d'), g = Math.max(1, Math.round(pxmG * 0.006));
+      x.fillStyle = e.fuga; x.fillRect(0, 0, t * 2, t * 2);
+      for (let r = 0; r < 2; r++) for (let q = 0; q < 2; q++) {
+        const d = ((r * 2 + q) % 3 - 1) * 4, [cr, cg, cb] = e.lit;
+        x.fillStyle = 'rgb(' + (cr + d) + ',' + (cg + d) + ',' + (cb + d) + ')'; x.fillRect(q * t + g, r * t + g, t - g, t - g);
+      }
+      return c;
+    };
+    const ut = document.createElement('canvas'); ut.width = GW; ut.height = GH;
+    const ux = ut.getContext('2d');
+    const tmp = document.createElement('canvas'); tmp.width = GW; tmp.height = GH;
+    const tx = tmp.getContext('2d');
+    Object.keys(grimur).forEach(l => {
+      const mynstur = l === 'parketH' ? parket(false) : l === 'parketV' ? parket(true) : flisar(GOLF_EFNI[l]);
+      tx.globalCompositeOperation = 'source-over'; tx.clearRect(0, 0, GW, GH);
+      tx.fillStyle = tx.createPattern(mynstur, 'repeat'); tx.fillRect(0, 0, GW, GH);
+      tx.globalCompositeOperation = 'destination-in'; tx.drawImage(iStriga(grimur[l]), 0, 0, GW, GH);
+      ux.drawImage(tmp, 0, 0);
+    });
+    // teikningin dauf ofan á (heiti, tæki teikningarinnar) — margfölduð svo hvítt hverfur
+    ux.globalCompositeOperation = 'multiply'; ux.globalAlpha = 0.3; ux.drawImage(golfStr, 0, 0, GW, GH);
+    ux.globalAlpha = 1; ux.globalCompositeOperation = 'destination-in'; ux.drawImage(iStriga(alla), 0, 0, GW, GH);
+    ux.globalCompositeOperation = 'source-over';
+    const talning = {}; rymi.forEach(r => { talning[r.efni] = (talning[r.efni] || 0) + 1; });
+    if (window.__golfDebug) {           // TMP-DBG
+      const d = document.createElement('canvas'); d.width = RW; d.height = RH; const dx = d.getContext('2d'); dx.drawImage(golfStr, 0, 0, RW, RH);
+      const im = dx.getImageData(0, 0, RW, RH), LIT = { parket: [230, 170, 90], bad: [60, 140, 230], svalir: [40, 200, 120], sameign: [200, 80, 200] };
+      for (let p = 0; p < N; p++) { const o = p * 4; let c = null; if (vA[p] && merki[p] < 0) c = [0, 0, 0]; else if (uA[p] && uB[p]) continue; else if (uA[p]) c = [255, 0, 0]; else if (merki[p] >= 0) c = LIT[rymi[merki[p]].efni]; if (!c) continue; for (let q = 0; q < 3; q++) im.data[o + q] = im.data[o + q] * 0.45 + c[q] * 0.55; im.data[o + 3] = 255; }
+      dx.putImageData(im, 0, 0); dx.font = 'bold 11px sans-serif'; dx.fillStyle = '#000';
+      rymi.forEach(r => { if (r.m2 >= 1.5) dx.fillText(r.m2.toFixed(1) + '/' + Math.round(r.blekH * 1000), r.sx / r.n - 14, r.sy / r.n); });
+      (syna3d._golfDbg = syna3d._golfDbg || {})[hd.nafn || '?'] = d.toDataURL('image/png');
+    }
+    return { strigi: ut, rymi: rymi.map(r => ({ efni: r.efni, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })), talning };
+  }
   async function syna3d(gamur, gogn) {
     await saekjaThree();
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
@@ -1968,6 +2145,14 @@
       const dE = new T.MeshBasicMaterial({ map: graAf, transparent: true, opacity: nr > 0 ? GRATT_3D.daufur * 0.5 : GRATT_3D.daufur, alphaTest: 0.02, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
       const dauf = new T.Mesh(golfG, dE); dauf.rotation.x = -Math.PI / 2; dauf.position.y = 0.2; dauf.renderOrder = 1; hopur.add(dauf);
       losa.push(dE); daufLog.push(dauf);
+      lg.dauf = dauf; lg.aferd = aferd;
+      // GÓLFEFNI: parket og flísar eftir rýmum (gráa útlitið; Brunahólf-útlitið sýnir teikninguna eins og áður)
+      if (hd.butar && hd.butar.length && !(gogn && gogn.anGolfefna)) {
+        try {
+          const ge = golfEfni(hd, k, metri, golfStr);
+          if (ge) { lg.efniAf = new T.CanvasTexture(ge.strigi); lg.efniAf.anisotropy = 4; losa.push(lg.efniAf); lg.golfefni = ge; (syna3d._golfefni = syna3d._golfefni || {})[hd.nafn || nr] = ge.rymi; console.info("[383] gólfefni " + (hd.nafn || nr) + ": " + JSON.stringify(ge.talning)); }
+        } catch (e) { console.warn('[383] gólfefni', e); }
+      }
       // Veggir: eitt InstancedMesh — eitt teiknikall fyrir alla kassana.
       const f = hd.kvardi / k.c;   // punktar skornu myndarinnar → ristarreitir
       lg.f = f;
@@ -2053,22 +2238,34 @@
           glerM.instanceMatrix.needsUpdate = true; glerM.renderOrder = 2; hopur.add(glerM);
           losa.push(gE);
         }
-        // Svalir: svalaveggur/handrið 1,1 m í lit veggjanna, minnst 20 cm þykkur; lengdur um hálfa þykkt svo bogabútar mætist.
+        // Svalir: steyptur kantur (35 cm) í lit útveggja, glerplata upp í 1,1 m og grannt handrið — lengt um hálfa þykkt svo
+        // bogabútar mætist.
         if (hd.svalir && hd.svalir.length) {
           const svLitur = utlit === 'gratt' ? GRATT_3D.utveggur : VEGGLITUR_3D;
-          const svE = new T.MeshLambertMaterial({ color: svLitur }), svH = SVALIR_M * metri; svE.userData.litur = svLitur; kverkEfni(svE, 0.9 * metri);
+          const svE = new T.MeshLambertMaterial({ color: svLitur }), svH = SVALIR_M * metri, kH = SVALIR_KANTUR_M * metri; svE.userData.litur = svLitur; kverkEfni(svE, 0.9 * metri);
           // eigið toppefni: kTopp veggjanna er teiknað með lit á hvert eintak (instanceColor) og three r128 skiptir ekki um forrit
           const svT = new T.MeshLambertMaterial({ color: kTopp.color.getHex() }); svT.userData.toppur = true;
           const svM = new T.InstancedMesh(kG, [svE, svE, svT, svE, svE, svE], hd.svalir.length);
+          const sgE = new T.MeshLambertMaterial({ color: 0x9fcbe8, transparent: true, opacity: 0.38, depthWrite: false });
+          const svG = new T.InstancedMesh(kG, sgE, hd.svalir.length);
+          const shE = new T.MeshLambertMaterial({ color: 0x8a8f96 });
+          const svR = new T.InstancedMesh(kG, shE, hd.svalir.length);
           hd.svalir.forEach((v, i) => {
             const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
-            const th = Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg);
+            const th = Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg), L = Math.hypot(bx - ax, bz - az) + th;
+            const mx = (ax + bx) / 2, mz = (az + bz) / 2, glH = svH - kH;
             q.setFromAxisAngle(ofan, -Math.atan2(bz - az, bx - ax));
-            m.compose(st.set((ax + bx) / 2, svH / 2, (az + bz) / 2), q, kv3.set(Math.hypot(bx - ax, bz - az) + th, svH, th));
+            m.compose(st.set(mx, kH / 2, mz), q, kv3.set(L, kH, th));                                   // steyptur kantur
             svM.setMatrixAt(i, m);
+            m.compose(st.set(mx, kH + glH / 2, mz), q, kv3.set(L, glH, Math.max(0.05 * metri, th * 0.25)));   // gler
+            svG.setMatrixAt(i, m);
+            m.compose(st.set(mx, svH + 0.025 * metri, mz), q, kv3.set(L, 0.05 * metri, Math.max(0.06 * metri, th * 0.4)));   // handrið
+            svR.setMatrixAt(i, m);
           });
-          svM.instanceMatrix.needsUpdate = true; hopur.add(svM);
-          losa.push(svE, svT); veggEfni.push(svE, svT); lg.svalir = svM;
+          svM.instanceMatrix.needsUpdate = true; svG.instanceMatrix.needsUpdate = true; svR.instanceMatrix.needsUpdate = true;
+          svG.renderOrder = 2;
+          hopur.add(svM, svG, svR);
+          losa.push(svE, svT, sgE, shE); veggEfni.push(svE, svT); lg.svalir = svM;
         }
         // Hurðargöt: veggurinn heldur áfram OFAN við hurðina (dyrakarmur) — rýmið lokast en gengt er undir. Hurðaropið er
         // 2,22 m óháð lofthæð (karmur 78 cm við 3 m, 28 cm við 2,5 m), en karmurinn aldrei undir 25 cm.
@@ -2438,6 +2635,8 @@
       himinn.color.setHex(g ? GRATT_3D.himinn[0] : 0xffffff); himinn.groundColor.setHex(g ? GRATT_3D.himinn[1] : 0xbdb8ae); himinn.intensity = g ? GRATT_3D.himinn[2] : 0.8;
       sol.intensity = g ? GRATT_3D.sol : 0.6;
       daufLog.forEach(m => { m.visible = g; });
+      // gólfefni í gráa útlitinu (þá án gráu slæðunnar), teikningin í Brunahólf-útlitinu
+      lag.forEach(lg => { if (!lg.efniAf) return; lg.golfE.map = g ? lg.efniAf : lg.aferd; lg.golfE.needsUpdate = true; if (lg.dauf) lg.dauf.visible = false; });
       skuggaEfni.forEach(e => { e.opacity = g ? GRATT_3D.skuggi : 0.2; });
       veggEfni.forEach(e => { if (e.userData.toppur && !e.transparent) e.color.setHex(g ? GRATT_3D.toppur : TOPPLITUR_3D); });
       lag.forEach(lg => { litaVeggi(lg); litaHolf(lg); if (lg.klaedning) lg.klaedning.visible = g; });
