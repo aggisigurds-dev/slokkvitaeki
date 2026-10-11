@@ -1763,12 +1763,12 @@
     const pxm = metri * k.c * s;                        // dílar vinnurastans á metra
     if (!(pxm >= 4)) return null;
     const sjalfg = Math.max(k.gw, k.gh) * 0.004;
-    const teikna = medSvolum => {
+    const teikna = (medSvolum, medHurdum = true) => {
       const c = document.createElement('canvas'); c.width = RW; c.height = RH;
       const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square';
       const strik = (v, th) => { x.lineWidth = Math.max(2, th * k.c * s); x.beginPath(); x.moveTo(v[0] * kv * s, v[1] * kv * s); x.lineTo(v[2] * kv * s, v[3] * kv * s); x.stroke(); };
       hd.butar.forEach(v => strik(v, Math.max(0.8, metri * 0.24, (v[4] || 0) * f || sjalfg)));
-      (hd.gler || []).concat(hd.hurdir || []).forEach(v => strik(v, Math.max(metri * 0.15, (v[4] || 0) * f)));
+      (hd.gler || []).concat(medHurdum ? (hd.hurdir || []) : []).forEach(v => strik(v, Math.max(metri * 0.15, (v[4] || 0) * f)));
       if (medSvolum) (hd.svalir || []).forEach(v => strik(v, Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg)));
       const a = x.getImageData(0, 0, RW, RH).data, v = new Uint8Array(N);
       for (let i = 0; i < N; i++) v[i] = a[i * 4 + 3] >= 128 ? 1 : 0;
@@ -1929,6 +1929,48 @@
     const ibudNr = [...numerHop.values()].filter(a => !a.includes(0) && a.includes(1)).length;
     const ibudTrulegt = ibudNr <= Math.max(3, ((fjoldi.stofa || 0) + (fjoldi.eldhus || 0)) * 1.6);
     const ibudir = Math.max(ibudM.length, heitin.length ? (fjoldi.eldhus || 0) : 0, ibudTrulegt ? ibudNr : 0);
+    // ÍBÚÐ FYRIR ÍBÚÐ (Agnar 11.10.2026: „telja fjölda íbúða … sjá stigaganginn sem er sameign"): flóð frá hverju
+    // íbúðanúmeri um gólfið með hurðirnar OPNAR — sameign (stigahús, gangar, lyfta) og utan húss lokuð, svo flóðið fer ekki
+    // á milli íbúða um stigaganginn. Næsta númer vinnur þar sem veggi vantar. ibudR: íbúð hvers díls (−1 = engin).
+    let ibudR = null, ibudListi = [];
+    const ibudNumer = [...numerHop.entries()].filter(([, a]) => !a.includes(0) && a.includes(1)).map(([t]) => numer.find(q => q.t === t && iHaed(q))).filter(Boolean);
+    if (ibudTrulegt && ibudNumer.length) {
+      const vO = teikna(true, false), SAM_IX = new Set(['stigahus', 'gangur', 'lyfta', 'sameign'].map(t => RYMI_IX[t]));
+      const fritt = p => !vO[p] && !uA[p] && tegR[p] !== 255 && !SAM_IX.has(tegR[p]);
+      ibudR = new Int16Array(N).fill(-1);
+      let q0 = 0, q1 = 0;
+      ibudNumer.forEach((q, ix) => {
+        const rr = Math.round(0.8 * pxm); let b = -1, bd2 = Infinity;
+        for (let jj = Math.max(0, q.cy - rr); jj <= Math.min(RH - 1, q.cy + rr); jj++) for (let ii = Math.max(0, q.cx - rr); ii <= Math.min(RW - 1, q.cx + rr); ii++) {
+          const p = jj * RW + ii, d = (ii - q.cx) * (ii - q.cx) + (jj - q.cy) * (jj - q.cy); if (fritt(p) && ibudR[p] < 0 && d < bd2) { bd2 = d; b = p; }
+        }
+        if (b >= 0) { ibudR[b] = ix; st[q1++] = b; }
+      });
+      while (q0 < q1) {
+        const p = st[q0++], px = p % RW, ix = ibudR[p];
+        if (px > 0 && ibudR[p - 1] < 0 && fritt(p - 1)) { ibudR[p - 1] = ix; st[q1++] = p - 1; }
+        if (px < RW - 1 && ibudR[p + 1] < 0 && fritt(p + 1)) { ibudR[p + 1] = ix; st[q1++] = p + 1; }
+        if (p >= RW && ibudR[p - RW] < 0 && fritt(p - RW)) { ibudR[p - RW] = ix; st[q1++] = p - RW; }
+        if (p < N - RW && ibudR[p + RW] < 0 && fritt(p + RW)) { ibudR[p + RW] = ix; st[q1++] = p + RW; }
+      }
+      // veggir innan íbúðar (ekki á milli) fá íbúðina líka, svo litirnir nái að veggjunum
+      let w0 = 0, w1 = 0;
+      for (let p = 0; p < N; p++) if (ibudR[p] >= 0) st[w1++] = p;
+      while (w0 < w1) {
+        const p = st[w0++], px = p % RW, ix = ibudR[p];
+        const nb = q => { if (ibudR[q] < 0 && vO[q] && !uA[q] && tegR[q] !== 255 && !SAM_IX.has(tegR[q])) { ibudR[q] = ix; st[w1++] = q; } };
+        if (px > 0) nb(p - 1); if (px < RW - 1) nb(p + 1); if (p >= RW) nb(p - RW); if (p < N - RW) nb(p + RW);
+      }
+      const n2 = new Array(ibudNumer.length).fill(0), sx2 = n2.slice(), sy2 = n2.slice();
+      for (let p = 0; p < N; p++) { const ix = ibudR[p]; if (ix < 0 || vO[p]) continue; n2[ix]++; sx2[ix] += p % RW; sy2[ix] += (p / RW) | 0; }
+      ibudListi = ibudNumer.map((q, ix) => {
+        const tel = t => heitin.filter(h => h.teg === t && h.p >= 0 && ibudR[h.p] === ix).length;
+        return { nr: q.t, m2: Math.round(n2[ix] / (pxm * pxm)), herb: tel('svefn'), bad: tel('bad'), svalir: tel('svalir'),
+          cx: n2[ix] ? sx2[ix] / n2[ix] : q.cx, cy: n2[ix] ? sy2[ix] / n2[ix] : q.cy };
+      }).sort((a, b) => a.nr.localeCompare(b.nr));
+      // röðin í ibudR fylgir ibudNumer — vísar listans breytast við röðun, svo litur fer eftir númerinu (lit = nr)
+      ibudListi.forEach(a => { a.ix = ibudNumer.findIndex(q => q.t === a.nr); });
+    }
     // grímur á hvern flokk
     const grimur = {}, alla = new ImageData(RW, RH);
     for (let p = 0; p < N; p++) {
@@ -1984,17 +2026,26 @@
     ux.globalAlpha = 1; ux.globalCompositeOperation = 'destination-in'; ux.drawImage(iStriga(alla), 0, 0, GW, GH);
     ux.globalCompositeOperation = 'source-over';
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
-    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: Int16Array.from(nafn),
+    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: Int16Array.from(nafn), ibudR, ibudListi, pxm,
       heitin: heitin.map(q => ({ teg: q.teg, x: q.cx / (kv * s), y: q.cy / (kv * s) })),
       rymi: rymi.map(r => ({ efni: r.efni, teg: r.teg, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })) };
   }
   // RÝMISHAMURINN: hver tegund í sínum lit (RYMI_TEG), teikningin dauf ofan á. umfang 'sameign' / 'ibudir' deyfir hinn
   // hópinn (Agnar: „mismunandi hvort við þjónustum sameignina eða íbúðirnar sjálfar eða bæði").
+  // ÍBÚÐALITIR: ljósir, vel aðgreindir (gullinsnið um litahringinn)
+  const ibudLitur = ix => { const h = (ix * 137.508 + 25) % 360, s = 0.55, l = 0.74, a = s * Math.min(l, 1 - l), k = n => (n + h / 30) % 12, f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)]; };
   function rymisStrigi(ge, umfang, golfStr) {
     const { RW, RH, tegR } = ge, N = RW * RH, im = new ImageData(RW, RH);
     const LIT = RYMI_TEG.map(t => { const n = parseInt(t.lit.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
+    const hverIbud = umfang === 'ibud1' && ge.ibudR;
     for (let p = 0; p < N; p++) {
       const i = tegR[p]; if (i === 255) continue;
+      if (hverIbud) {
+        const ix = ge.ibudR[p], hp = RYMI_TEG[i].hopur, o = p * 4;
+        const c = ix >= 0 ? ibudLitur(ix) : hp === 'sameign' ? LIT[i] : [232, 230, 226];
+        im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
+        continue;
+      }
       const hp = RYMI_TEG[i].hopur, deyft = umfang === 'sameign' ? hp !== 'sameign' : umfang === 'ibudir' ? hp === 'sameign' : false;
       const c = deyft ? [238, 236, 232] : LIT[i], o = p * 4;
       im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
@@ -2005,6 +2056,17 @@
     x.drawImage(c0, 0, 0, GW, GH);
     x.globalCompositeOperation = 'multiply'; x.globalAlpha = 0.3; x.drawImage(golfStr, 0, 0, GW, GH);
     x.globalAlpha = 1; x.globalCompositeOperation = 'destination-in'; x.drawImage(c0, 0, 0, GW, GH);
+    x.globalCompositeOperation = 'source-over';
+    // íbúðanúmer á miðju hverrar íbúðar
+    if (hverIbud && (ge.ibudListi || []).length) {
+      const sk = GW / RW, fs = Math.max(14, Math.round(0.75 * ge.pxm * sk));
+      x.font = '700 ' + fs + 'px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      ge.ibudListi.forEach(a => {
+        const tx = a.cx * sk, ty = a.cy * sk, w = x.measureText(a.nr).width + fs * 0.7, hh = fs * 1.35;
+        x.fillStyle = 'rgba(20,18,15,.82)'; x.beginPath(); if (x.roundRect) x.roundRect(tx - w / 2, ty - hh / 2, w, hh, fs * 0.3); else x.rect(tx - w / 2, ty - hh / 2, w, hh); x.fill();
+        x.fillStyle = '#f1ede4'; x.fillText(a.nr, tx, ty + fs * 0.04);
+      });
+    }
     return ut;
   }
   async function syna3d(gamur, gogn) {
@@ -3082,14 +3144,15 @@
       rymiStada: () => ({ on: rymiOn, umfang: rymiUmfang }),
       // talning rýma eftir tegund — ein hæð (haedId) eða allar; heiti = fjöldi lesinna heita (0 = aðeins áætlun eftir lögun)
       rymiTalning(hid) {
-        const fjoldi = {}; let ibudir = 0, heiti = 0, haedir = 0, anHeita = 0;
+        const fjoldi = {}, ibudListi = []; let ibudir = 0, heiti = 0, haedir = 0, anHeita = 0;
         lag.forEach(lg => {
           if (hid && lg.hd.haedId !== hid) return;
           const ge = lg.golfefni; if (!ge) return;
           haedir++; heiti += ge.nHeiti; ibudir += ge.ibudir; if (!ge.nHeiti) anHeita++;
           Object.keys(ge.fjoldi).forEach(t => { fjoldi[t] = (fjoldi[t] || 0) + ge.fjoldi[t]; });
+          (ge.ibudListi || []).forEach(a => ibudListi.push(Object.assign({ haed: lg.hd.nafn || '' }, a)));
         });
-        return { fjoldi, ibudir, heiti, haedir, anHeita, tegundir: RYMI_TEG };
+        return { fjoldi, ibudir, heiti, haedir, anHeita, tegundir: RYMI_TEG, ibudListi };
       },
       // heiti sem berast eftir á (lestur skrifstofutölvunnar): gólf hæðarinnar reiknað aftur
       setjaHeiti(hid, heiti) {
@@ -5684,6 +5747,7 @@
       let valin = null;     // hæðin sem er sýnd ein (null = allar)
       // RÝMISSKÝRING: talning á tegundum (sýnd hæð eða allar), íbúðir, umfang (Bæði · Sameign · Íbúðir)
       const RYMI_TAKKI = 'height:24px;padding:0 9px;border-radius:7px;border:1px solid rgba(255,255,255,.25);font:700 11px system-ui;cursor:pointer;';
+      const ibudLiturCss = ix => { const h = (ix * 137.508 + 25) % 360; return 'hsl(' + h.toFixed(0) + ',55%,74%)'; };
       function rymiSkyring(vl) {
         const p = gamur.querySelector('#fp-3d-rymi-p'); if (!p || !G.syn3d || !G.syn3d.rymiStada) return;
         const st = G.syn3d.rymiStada();
@@ -5704,10 +5768,15 @@
           tl.anHeita ? tl.anHeita + (tl.anHeita === 1 ? ' hæð án heita (áætlað).' : ' hæðir án heita (áætlað).') : 'Talið eftir heitum teikningarinnar (' + tl.heiti + ').';
         p.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><b style="font-size:13px">Rými' + (u0 ? ' · ' + esc(u0.nafn || '') : (ut.length > 1 ? ' · allt húsið' : '')) + '</b>' +
           '<span style="margin-left:auto;font-size:13px">Íbúðir <b>' + (tl.ibudir || 0) + '</b></span></div>' +
-          '<div style="display:flex;gap:4px">' + umf('baedi', 'Bæði') + umf('sameign', 'Sameign') + umf('ibudir', 'Íbúðir') + '</div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap">' + umf('baedi', 'Bæði') + umf('sameign', 'Sameign') + umf('ibudir', 'Íbúðir') + umf('ibud1', 'Hver íbúð') + '</div>' +
+          (st.umfang === 'ibud1' ? (tl.ibudListi.length ?
+            '<div style="max-height:230px;overflow:auto;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums">' +
+            '<div style="display:grid;grid-template-columns:64px 1fr 44px 34px 34px;gap:6px;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:#bdb6a8"><span>Íbúð</span><span></span><span style="text-align:right">m²</span><span style="text-align:right">Herb.</span><span style="text-align:right">Bað</span></div>' +
+            tl.ibudListi.map(a => { const c = ibudLiturCss(a.ix); return '<div style="display:grid;grid-template-columns:64px 1fr 44px 34px 34px;gap:6px;align-items:center"><span style="display:flex;align-items:center;gap:6px"><i style="width:11px;height:11px;border-radius:3px;background:' + c + ';display:inline-block"></i><b>' + esc(a.nr) + '</b></span><span style="color:#bdb6a8;font-weight:500">' + (u0 ? '' : esc(a.haed)) + '</span><span style="text-align:right"' + (a.m2 ? '' : ' title="Veggi vantar í kringum íbúðina — flötur hennar fannst ekki"') + '>' + (a.m2 || '–') + '</span><span style="text-align:right">' + a.herb + '</span><span style="text-align:right">' + a.bad + '</span></div>'; }).join('') + '</div>' :
+            '<div style="font:500 11px system-ui,sans-serif;color:#c9c2b4">Engin íbúðanúmer lesin á ' + (u0 ? 'hæðinni' : 'hæðunum') + ' — íbúðum verður ekki skipt.</div>') :
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">' +
           '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#bdb6a8">Íbúðir</span>' + ib.map(lina).join('') + '</div>' +
-          '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#bdb6a8">Sameign</span>' + sam.map(lina).join('') + '</div></div>' +
+          '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#bdb6a8">Sameign</span>' + sam.map(lina).join('') + '</div></div>') +
           '<div style="font:500 11px system-ui,sans-serif;color:#c9c2b4">' + esc(ath) + '</div>';
         p.style.display = 'flex';
       }
