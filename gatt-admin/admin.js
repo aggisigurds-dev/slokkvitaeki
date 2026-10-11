@@ -69,6 +69,9 @@
     ['taeki', 'Tækjaskrá', 'Tegund, staðsetning, skoðunardagar'],
     ['skjol', 'Skýrslur og reikningar', 'Skjöl eignarinnar'],
     ['verkbeidni', 'Verkbeiðnir', 'Kúnni sendir verkbeiðni → Þjónustuborð'],
+    ['kerfi', 'Kerfi og kröfur', 'Kerfi hverrar eignar: skylt, til staðar, okkar'],
+    ['erindi', 'Erindi', 'Staða erinda: móttekið → í vinnslu → lokið'],
+    ['eldvarnabok', 'Eldvarnabók', 'Mánaðarlegt eigið eftirlit, undirritað í gáttinni'],
   ];
   function synHtml(a) {
     var s = a.syn || {};

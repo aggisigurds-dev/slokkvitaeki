@@ -3,6 +3,8 @@
 //   GET  /api/gatt   → { account, stats, buildings[], reports[], invoices[], messages[] }
 //                      account.details = portal_users.show_details → buildings[].equipment
 //   POST /api/gatt   { body }  → viðskiptavinur sendir fyrirspurn (skilaboð)
+//   POST /api/gatt   { action:'eldvarnabok', site_id, manudur:'YYYY-MM', svor, stada, undirritad_af, fravik[] }
+//                    → eldvarnabók mánaðarins vistuð (drög) eða undirrituð; nei-svör verða erindi á Þjónustuborði
 //
 // base_id kemur úr session-tokeninu (aldrei úr slóð) → einangrun. UNDANTEKNING:
 // „opinn aðgangur" — ef ?c=<slug> vísar á félag sem er virkt MEÐ EKKERT lykilorð,
@@ -42,7 +44,7 @@ function dedupeDocs(rows, keyFn) {
 }
 // ── Eignasíða (portal_users.show_details + syn) ─────────────────────────────
 // syn = hvaða hlutar sjást; vantar lykil = sjálfgefið (allt nema það sem er slökkt á gatt-admin).
-const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true };
+const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true };
 function lesaSyn(acct) {
   const syn = Object.assign({}, SYN_DEF);
   const s = acct && acct.syn && typeof acct.syn === 'object' ? acct.syn : {};
@@ -88,6 +90,11 @@ function grisjaHaed(h, syn) {
   }
   return out;
 }
+// Staða máls á Þjónustuborði → skref sem kúnninn sér (Móttekið → Í vinnslu → Lokið).
+const ERINDI_SKREF = { nytt: 'mottekid', i_vinnslu: 'i_vinnslu', klarad: 'lokid', lokad: 'lokid' };
+// „Verkbeiðni af þjónustuvef — Reitir - Hilton“ → „Verkbeiðni“ (eignin stendur við hliðina í viðmótinu).
+function erindiTitill(t) { return String(t || '').replace(/\s+af þjónustuvef/i, '').replace(/\s+—\s+[^—]*$/, '').trim() || 'Erindi'; }
+const MAN_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
 function normNr(s) { return String(s == null ? '' : s).replace(/\s+/g, '').replace(/^R-?/i, '').replace(/^0+/, '').toUpperCase(); }
 
 exports.handler = async (event) => {
@@ -126,9 +133,84 @@ exports.handler = async (event) => {
   const showDetails = !!(acct && acct.show_details);
   const syn = lesaSyn(acct);
 
+  // ── Eldvarnabók: vista drög eða undirrita mánuð ───────────────────────────
+  // Eignin verður að vera eign félagsins; mánuðurinn í mesta lagi 12 mánuðum aftur og ekki fram í tímann;
+  // undirritaður mánuður er læstur. Nei-svör við undirritun → eitt mál á Þjónustuborði (source 'gatt').
+  async function vistaEldvarnabok(b) {
+    if (!syn.eldvarnabok) return P.json(403, { error: 'Eldvarnabók er ekki opin á þessum aðgangi' });
+    const sid = parseInt(b.site_id, 10);
+    const m = /^(\d{4})-(\d{2})$/.exec(String(b.manudur || ''));
+    if (!sid || !m) return P.json(400, { error: 'Eign eða mánuð vantar' });
+    const ar = +m[1], mn = +m[2];
+    const nu = new Date(), idx = ar * 12 + mn - 1, nuIdx = nu.getUTCFullYear() * 12 + nu.getUTCMonth();
+    if (mn < 1 || mn > 12 || idx > nuIdx || idx < nuIdx - 12) return P.json(400, { error: 'Mánuður utan leyfilegs bils' });
+    const manudur = m[1] + '-' + m[2] + '-01';
+    const fr0 = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn&limit=1`);
+    const f0 = fr0.ok ? (await fr0.json())[0] : null;
+    if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+    const svor = {};
+    Object.keys(b.svor && typeof b.svor === 'object' ? b.svor : {}).slice(0, 30).forEach((k) => {
+      if (!/^\d{1,2}$/.test(k)) return;
+      const v = b.svor[k] || {};
+      const n = ['ja', 'nei', 'na'].includes(v.n) ? v.n : null;
+      const a = String(v.a || '').trim().slice(0, 500);
+      if (n || a) svor[k] = { n: n, a: a };
+    });
+    const undirrita = b.stada === 'undirritad';
+    const nafn = String(b.undirritad_af || '').trim().slice(0, 120);
+    if (undirrita && !nafn) return P.json(400, { error: 'Nafn þess sem undirritar vantar' });
+    const hofundur = (session ? session.name : (openAcct && openAcct.display_name)) || 'þjónustuvefur';
+    try {
+      const er0 = await P.sbGet(`eldvarnabok?fyrirtaeki_id=eq.${sid}&manudur=eq.${manudur}&select=id,stada&limit=1`);
+      if (!er0.ok) return P.json(503, { error: 'Eldvarnabók ekki tiltæk' });
+      const til = (await er0.json())[0] || null;
+      if (til && til.stada === 'undirritad') return P.json(409, { error: 'Mánuðurinn er þegar undirritaður' });
+      const nuIso = new Date().toISOString();
+      const rod = { svor, stada: undirrita ? 'undirritad' : 'drog', updated_at: nuIso, updated_by: hofundur };
+      if (undirrita) { rod.undirritad_af = nafn; rod.undirritad_at = nuIso; }
+      const w = til
+        ? await P.sbPatch(`eldvarnabok?id=eq.${til.id}&stada=eq.drog`, rod)
+        : await P.sbPost('eldvarnabok', Object.assign({ fyrirtaeki_id: sid, customer_base_id: baseId, manudur }, rod));
+      if (!w.ok) return P.json(w.status, { error: 'Vistun mistókst', detail: (await w.text()).slice(0, 300) });
+      let row = (await w.json())[0] || null;
+      if (!row) return P.json(409, { error: 'Mánuðurinn var undirritaður á meðan — opnaðu hann aftur' });
+      // Frávik → mál á Þjónustuborði (eitt per undirritun), sama 25/klst. þak og önnur erindi.
+      let mal = null;
+      const nei = Object.keys(svor).filter((k) => svor[k].n === 'nei');
+      if (undirrita && nei.length) {
+        try {
+          const since = new Date(Date.now() - 3600e3).toISOString();
+          const cr = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&created_at=gte.${encodeURIComponent(since)}&select=id`);
+          if ((cr.ok ? (await cr.json()).length : 0) < 25) {
+            const lidir = Array.isArray(b.fravik) ? b.fravik : [];
+            const lina = (k) => {
+              const l = lidir.find((x) => String(x && x.nr) === k) || {};
+              return '• Liður ' + k + (l.lidur ? ' — ' + String(l.lidur).slice(0, 160) : '') + (svor[k].a ? ': ' + svor[k].a : '');
+            };
+            const man = MAN_IS[mn - 1] + ' ' + ar;
+            const mr0 = await P.sbPost('thjonustubeidni', {
+              customer_base_id: baseId, customer_nafn: nafn || hofundur, fyrirtaeki_id: sid,
+              title: 'Eldvarnabók — frávik í ' + man + ' af þjónustuvef — ' + (f0.nafn || ''),
+              notes: 'Eigið eftirlit (eldvarnabók) undirritað af ' + nafn + '. Frávik:\n' + nei.map(lina).join('\n'),
+              source: 'gatt', type: 'annad', flokkur: 'thjonusta', status: 'nytt', priority: 'venjulegur',
+              created_by: 'þjónustuvefur', tags: ['gatt', 'eldvarnabok'],
+            });
+            if (mr0.ok) {
+              mal = ((await mr0.json())[0] || {}).id || null;
+              if (mal) { const p2 = await P.sbPatch(`eldvarnabok?id=eq.${row.id}`, { erindi_id: mal }); if (p2.ok) row = (await p2.json())[0] || row; }
+            }
+          }
+        } catch (_) {}
+      }
+      return P.json(200, { ok: true, mal, rod: { fid: row.fyrirtaeki_id, manudur: String(row.manudur).slice(0, 7), svor: row.svor || {}, stada: row.stada,
+        undirritad_af: row.undirritad_af || null, undirritad_at: row.undirritad_at || null, uppf: row.updated_at, erindi: row.erindi_id || null } });
+    } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
+  }
+
   // POST → viðskiptavinur sendir fyrirspurn
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
+    if (b.action === 'eldvarnabok') return vistaEldvarnabok(b);
     const text = String(b.body || '').trim();
     if (!text) return P.json(400, { error: 'Tómt skeyti' });
     if (text.length > 4000) return P.json(400, { error: 'Skeyti of langt' });
@@ -294,6 +376,54 @@ exports.handler = async (event) => {
       if (br0.ok) (await br0.json()).forEach((r) => { if (r.fyrirtaeki_id != null) beidniById[r.fyrirtaeki_id] = true; });
     } catch (_) {}
 
+    // 2g) Kerfi og flokkun per eign (v_stadur_kerfi / v_stadur_flokkun). Aðeins kúnna-öruggir reitir — ALDREI
+    //     verð, athugasemdir, vísbendingar, tækifæri eða heiti annarra þjónustuaðila (innri sölugögn).
+    const kerfiById = {}, flokkunById = {};
+    if (syn.kerfi && siteIds.length) {
+      try {
+        const ids = siteIds.join(',');
+        const kr = await P.sbGet(`v_stadur_kerfi?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,kerfi,til_stadar,skylt,krafa_heimild,thjonustuadili`);
+        if (kr.ok) (await kr.json()).forEach((k) => {
+          if (k.skylt === 'nei' && k.til_stadar !== 'ja') return;
+          const ta = String(k.thjonustuadili || '');
+          (kerfiById[k.fyrirtaeki_id] = kerfiById[k.fyrirtaeki_id] || []).push({
+            k: k.kerfi, skylt: k.skylt || null, til: k.til_stadar || 'ovitad',
+            adili: /^okkar/i.test(ta) ? 'okkar' : (ta ? 'annar' : null), heimild: k.krafa_heimild || null });
+        });
+        const fl = await P.sbGet(`v_stadur_flokkun?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,tegund_heiti,notkunarflokkur,m2,haedir`);
+        if (fl.ok) (await fl.json()).forEach((f) => { flokkunById[f.fyrirtaeki_id] = { tegund: f.tegund_heiti || null, flokkur: f.notkunarflokkur || null, m2: f.m2 != null ? Number(f.m2) : null, haedir: f.haedir || null }; });
+      } catch (_) {}
+    }
+
+    // 2h) Erindi af þjónustuvef síðustu 12 mánuði (Þjónustuborð, source 'gatt') — titill og staða, aldrei nótur.
+    const erindi = [];
+    if (syn.erindi) {
+      try {
+        const since = new Date(Date.now() - 365 * 864e5).toISOString();
+        const er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
+        if (er.ok) (await er.json()).forEach((r) => {
+          const tags = Array.isArray(r.tags) ? r.tags : [];
+          erindi.push({ id: r.id, fid: r.fyrirtaeki_id, titill: erindiTitill(r.title), stada: ERINDI_SKREF[r.status] || 'mottekid',
+            tegund: tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('thjonusta') ? 'thjonusta' : 'fyrirspurn',
+            dags: r.created_at, uppf: r.updated_at });
+        });
+      } catch (_) {}
+    }
+
+    // 2i) Eldvarnabók síðustu 13 mánuði per eign
+    const ebById = {};
+    if (syn.eldvarnabok && siteIds.length) {
+      try {
+        const d0 = new Date(); d0.setUTCDate(1); d0.setUTCMonth(d0.getUTCMonth() - 12);
+        const fra = d0.toISOString().slice(0, 8) + '01';
+        const eb = await P.sbGet(`eldvarnabok?customer_base_id=eq.${baseId}&manudur=gte.${fra}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`);
+        if (eb.ok) (await eb.json()).forEach((r) => {
+          (ebById[r.fyrirtaeki_id] = ebById[r.fyrirtaeki_id] || []).push({ manudur: String(r.manudur).slice(0, 7), svor: r.svor || {}, stada: r.stada,
+            undirritad_af: r.undirritad_af || null, undirritad_at: r.undirritad_at || null, uppf: r.updated_at, erindi: r.erindi_id || null });
+        });
+      } catch (_) {}
+    }
+
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
       const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
@@ -320,6 +450,9 @@ exports.handler = async (event) => {
         // Upplýsingar um fasteignina (mynd, stærð, ár, tegund, lýsing) — opinberar upplýsingar
         eign: s.eign && typeof s.eign === 'object' ? s.eign : null,
         beidni: !!beidniById[s.id],
+        kerfi: kerfiById[s.id] || [],
+        flokkun: flokkunById[s.id] || null,
+        eldvarnabok: syn.eldvarnabok ? (ebById[s.id] || []) : null,
         ...(showDetails && syn.taeki ? { equipment: eqById[s.id] || [] } : {}),
         ...(showDetails && tkById[s.id] ? { teikning: tkById[s.id] } : {}),
       };
@@ -378,7 +511,7 @@ exports.handler = async (event) => {
     // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
     // Lögheimilis-/samningsstaðir án eign-gildis (Þverholt 14) birtast ekki.
     const eignirUtan = buildings.filter((b) => !(b.i_thjonustu || b.bru_i_thjonustu) && b.eign)
-      .map((b) => ({ id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang, eign: b.eign, beidni: b.beidni, teikning: b.teikning || null }))
+      .map((b) => ({ id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang, eign: b.eign, beidni: b.beidni, teikning: b.teikning || null, kerfi: b.kerfi, flokkun: b.flokkun }))
       .sort((a, c) => (nrById[a.id] || 999) - (nrById[c.id] || 999));   // röð eins og staðirnir voru skráðir
     const inService = onBoard.filter((b) => b.i_thjonustu);
     const stats = {
@@ -405,7 +538,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi,
     });
   } catch (e) {
     return P.json(500, { error: String((e && e.message) || e) });
