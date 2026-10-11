@@ -473,7 +473,7 @@
   }
 
   /* ── nav / lang / logout ── */
-  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'skilabod'];
+  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'skilabod'];
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
@@ -1628,7 +1628,7 @@
     state: state, svgIc: svgIc, toast: toast, synOf: synOf, eignAfId: eignAfId, vistaBlob: vistaBlob,
     renderYfirlit: renderYfirlit, renderEgYfir: renderEgYfir, renderEignasafn: renderEignasafn,
     openDrawer: openDrawer, openUtan: openUtan, closeDrawer: closeDrawer, drB: function () { return drB; },
-    synaHaed: synaHaed, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; },
+    synaHaed: synaHaed, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; }, haedarSpjald: haedarSpjald, erindiRod: erindiRod,
     skodanirEignar: skodanirEignar, ebManudir: ebManudir, ebRod: ebRod, MAN_STUTT: MAN_STUTT, MAN_LANGT: MAN_LANGT,
     SLUG: function () { return SLUG; },
   };

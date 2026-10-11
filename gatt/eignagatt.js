@@ -280,7 +280,7 @@
     if (!tab || !v || !st().data) return;
     var synileg = !!syn().vinnusvaedi;
     tab.classList.toggle('hidden', !synileg);
-    if (!synileg) return;
+    if (!synileg) { renderVerkbeidnir(); return; }
     var cnt = erindi().filter(function (e) { return e.stada !== 'lokid' && e.abyrgd && e.abyrgd !== 'okkar'; }).length;
     var badge = $('#vsBadge'); if (badge) { badge.textContent = cnt; badge.classList.toggle('hidden', !cnt); }
     $('#vs-verk').innerHTML = verkefniHtml();
@@ -288,6 +288,7 @@
     $('#vs-nidurhal').innerHTML = nidurhalHtml();
     $('#vs-skjol').innerHTML = skjolHtml();
     if (!$('#v-vinnusvaedi').classList.contains('hidden')) kortLifga();
+    renderVerkbeidnir();
   }
   /* Verkefni — gátlisti */
   function verkefniHtml() {
@@ -530,6 +531,51 @@
     api({ action: 'item_roda', ids: L.map(function (x) { return x.id; }) });
   }
 
+  /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
+  var vbtB = null, vbtQ = '';
+  function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
+  function vbtPassar(b) {
+    if (!vbtQ) return true;
+    return ((b.nafn || '') + ' ' + (b.heimilisfang || '')).toLowerCase().indexOf(vbtQ) > -1;
+  }
+  function renderVerkbeidnir() {
+    var tab = document.querySelector('nav .tab[data-view="verkbeidnir"]'), v = $('#v-verkbeidnir');
+    if (!tab || !v || !st().data) return;
+    var sn = syn(), synileg = !!(sn.verkbeidni || sn.punktar);
+    tab.classList.toggle('hidden', !synileg);
+    if (!synileg) return;
+    var L = allarEignir(), inni = data().buildings || [];
+    $('#vbt-list').innerHTML = L.filter(vbtPassar).slice(0, 24).map(function (b) {
+      var e = b.eign || {}, n = erindi().filter(function (x) { return x.fid === b.id && x.stada !== 'lokid'; }).length;
+      return '<button type="button" class="vbt-c" data-vbt-pick="' + b.id + '"><i' + (e.mynd ? ' style="background-image:url(' + esc(imgW(e.mynd, 200)) + ')"' : '') + '></i><span><b>' + esc(b.nafn) + '</b><small>' + esc(b.heimilisfang || '') + (b.teikning && b.teikning.length ? ' · ' + b.teikning.length + (b.teikning.length === 1 ? ' teikning' : ' teikningar') : ' · engin teikning') + '</small></span>' +
+        (n ? '<span class="kst til">' + n + ' opin</span>' : (inni.indexOf(b) > -1 ? '<span class="kst okkar">Í þjónustu</span>' : '')) + '</button>';
+    }).join('') || '<div class="egp-e">Engin eign passar við „' + esc(vbtQ) + '".</div>';
+    if (vbtB && L.indexOf(vbtB) < 0) vbtB = null;
+    $('#vbt-eign').classList.toggle('hidden', !vbtB);
+    if (vbtB) vbtEign();
+    var opin = erindi().filter(function (e) { return e.stada !== 'lokid' && (e.tegund === 'verkbeidni' || e.tegund === 'verkefni'); });
+    $('#vbt-oll-cnt').textContent = opin.length ? opin.length + ' opnar' : '';
+    $('#vbt-oll-l').innerHTML = opin.length ? opin.slice(0, 20).map(function (e) { return G().erindiRod(e, true); }).join('') : '<div class="dempty">Engar opnar verkbeiðnir. Veldu eign að ofan og settu punkt á teikninguna.</div>';
+  }
+  function vbtEign() {
+    var b = vbtB, sn = syn();
+    $('#vbt-nafn').textContent = b.nafn || ''; $('#vbt-addr').textContent = b.heimilisfang || '';
+    var tk = (b.teikning || []).filter(function (f) { return f && f.mynd; });
+    $('#vbt-hint').innerHTML = tk.length
+      ? ic('teikning', 1.8) + ' Smelltu á <b>+ Punktur</b> á hæðinni og svo á teikninguna þar sem verkið er — eða á teikninguna sjálfa til að stækka hana og merkja þar. Mynd af síma fylgir með.'
+      : 'Engin teikning er skráð á þessa eign enn. Sendu verkbeiðnina með staðsetningu í texta; við merkjum teikningar inn við fyrstu úttekt.';
+    var g = $('#vbt-tk'); g.innerHTML = '';
+    tk.forEach(function (f, j) { g.appendChild(G().haedarSpjald(b, f, j, sn)); });
+    var L = erindi().filter(function (e) { return e.fid === b.id; }), op = L.filter(function (e) { return e.stada !== 'lokid'; }).length;
+    $('#vbt-cnt').textContent = L.length ? op + ' opin · ' + (L.length - op) + ' lokið' : '';
+    $('#vbt-erindi').innerHTML = L.length ? L.slice(0, 12).map(function (e) { return G().erindiRod(e, false); }).join('') : '<div class="dempty">Engin verkbeiðni enn á þessari eign.</div>';
+  }
+  function vbtVelja(id) {
+    vbtB = eignAfId(id) || null;
+    renderVerkbeidnir();
+    var el = $('#vbt-eign'); if (el && vbtB) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   /* ── Sýnishorn ── */
   function demo(DEMO) {
     DEMO.account.syn.punktar = true; DEMO.account.syn.vinnusvaedi = true; DEMO.account.syn.baeta_eign = true;
@@ -559,6 +605,9 @@
     if (t.closest('#vb-close')) { lokaVb(); return; }
     if (t.closest('#lk-close')) { lokaLk(); return; }
     if ((x = t.closest('#vb-abyrgd button'))) { setAbyrgd(x.getAttribute('data-a')); return; }
+    if ((x = t.closest('[data-vbt-pick]'))) { vbtVelja(+x.getAttribute('data-vbt-pick')); return; }
+    if (t.closest('#vbt-an')) { opnaVb(vbtB, null, 'okkar'); return; }
+    if (t.closest('#vbt-skipta')) { vbtB = null; renderVerkbeidnir(); var q = $('#vbt-leit'); if (q) q.focus(); return; }
     if (t.closest('[data-vs-nytt]')) { opnaVb(null, null, 'eigandi'); return; }
     if (t.closest('[data-vs-nytt-okkar]')) { opnaVb(null, null, 'okkar'); return; }
     if ((x = t.closest('[data-cal]'))) { var d = +x.getAttribute('data-cal'); if (d === 0) { cal.y = new Date().getFullYear(); cal.m = new Date().getMonth(); } else { cal.m += d; if (cal.m < 0) { cal.m = 11; cal.y--; } if (cal.m > 11) { cal.m = 0; cal.y++; } } $('#vs-dagatal').innerHTML = dagatalHtml(); return; }
@@ -578,6 +627,7 @@
     if (e.target.id === 'vs-hlekkur') { e.preventDefault(); var u = $('#vs-hl-url').value.trim(); if (!/^https?:\/\//i.test(u)) { toast('Slóðin þarf að byrja á https://'); return; } vistaHlekk($('#vs-hl-heiti').value.trim(), u); }
   });
   document.addEventListener('change', function (e) { if (e.target.id === 'vs-skra') { vistaSkra(e.target.files && e.target.files[0]); e.target.value = ''; } });
+  document.addEventListener('input', function (e) { if (e.target.id === 'vbt-leit') { vbtQ = e.target.value.trim().toLowerCase(); renderVerkbeidnir(); } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vs-leit') { clearTimeout(leitT); var q = e.target.value.trim(); leitT = setTimeout(function () { leita(q); }, 350); } });
   document.addEventListener('DOMContentLoaded', function () {
     tengjaMynd('#vb-mynd', '#vb-prev', function (m) { vbMynd = m; });
