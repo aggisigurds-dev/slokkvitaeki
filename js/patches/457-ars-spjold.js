@@ -11,13 +11,18 @@
  *   eins vafra (localStorage `ars_spjold_v1`) — það snertir engin gögn.
  *
  *   Uppsetning spjalds (grind 4 dálka):
- *     1  málmhaus: póstmerki · SKOÐUN <mánuður> ·················· Í vinnslu-hak + staða
+ *     1  MYNDIN af húsinu (11.10.2026, Agnar: „Myndin áttu núna að vera aðalatriðið"): sama mynd og í
+ *        fyrirtækjabannernum (367, AppSettings co_bygging_mynd; annars fyrirtaeki.eign.mynd), smækkuð
+ *        í 720 px um myndaþjónustu Supabase. Ofan á henni: SKOÐUN <mánuður> efst til vinstri, Í vinnslu-hak
+ *        + staða efst til hægri, póstmerkið neðst til vinstri. Án myndar: málmplata með húsatákni.
  *     2  nafn (Playfair) · kt · merki
  *     3  heimilisfang (póstnúmer feitt)
  *     4  ferðanóta (fyllir afgangsplássið svo fóturinn situr alltaf neðst)
  *     5  '23 · '24 · '25 · '26 — skoðanir og skjöl
  *     6  SLT · BSL · RS · ÆTL
  *     7  fótur: Forg. · GÓ · Akstur · Endurheimt
+ *
+ *   Myndin er sett með einni CSS-breytu per stað (--spj-mynd) í eigin stílblaði — enginn hnútur 153 er snertur.
  *
  *   Aðeins borðtölva (min-width:901px) — síminn teiknar sín eigin _arsm-row spjöld (331/382).
  */
@@ -33,12 +38,14 @@
   var MONO = '"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace';
   var SANS = '"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif';
   var DISPLAY = '"Playfair Display",Georgia,serif';
-  // Tákn Brunastáls C (sömu gildi og 413: METAL, RIVET, LINE, SILVER_BTN)
+  // Tákn Brunastáls C (sömu gildi og 413: METAL, LINE, SILVER_BTN)
   var METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
-  var RIVET = 'radial-gradient(circle,#f4f6f8 0,#aab1bb 1.4px,#3b3f46 2.6px,rgba(0,0,0,.7) 3.1px,transparent 3.6px)';
   var LINE_SH = 'inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)';
   var SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   var SILVER_SH = 'inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)';
+  // Án myndar: daufur hústákn á málmi (sama tákn og eignir gáttarinnar)
+  var HUS = 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#6b717c" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21V6l7.5-3 7.5 3v15"/><path d="M2.5 21h19"/><path d="M8.5 9h2M13.5 9h2M8.5 13h2M13.5 13h2M10.5 21v-4h3v4"/></svg>') + '")';
+  var SKYGGING = 'linear-gradient(180deg,rgba(8,8,10,.5) 0%,rgba(8,8,10,0) 32%,rgba(8,8,10,0) 68%,rgba(8,8,10,.42) 100%)';
 
   // Hver regla fær forskeytið og gervi-auðkennin á hvern lið (415/394 nota 6 — hér 8, og !important alls staðar).
   function r(sel, css) {
@@ -72,20 +79,21 @@
       r(T + 'thead th .sort-ar', 'color:#5b6472;margin-left:2px'),
 
       // ── spjaldagrindin
-      r(T + 'tbody', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:2px 0 18px;background:transparent'),
+      r(T + 'tbody', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:18px;padding:2px 0 18px;background:transparent'),
       r(T + 'tbody tr._ars-row',
-        'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:50px auto auto 1fr auto auto 46px;' +
+        'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:200px auto auto 1fr auto auto 46px;' +
         'column-gap:8px;row-gap:0;position:relative;padding:0 16px;height:auto;min-height:0;background:#fff;' +
         'border:1px solid #000;border-radius:12px;overflow:hidden;cursor:pointer;' +
         'box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)'),
       r(T + 'tbody tr._ars-row:hover', 'box-shadow:0 0 0 1px #000,0 18px 40px -12px rgba(10,14,22,.55),0 2px 6px rgba(10,14,22,.14)'),
       r(T + 'tbody tr._ars-row:focus-visible', 'outline:2px solid #b8912f;outline-offset:2px'),
-      // málmhausinn með tveimur hnoðum — gervistak í grindinni (röð 1), teygt út yfir fyllinguna
+      // MYNDIN — gervistak í grindinni (röð 1), teygt út yfir fyllinguna. --spj-mynd kemur úr stílblaði myndanna;
+      // vanti hana stendur hústáknið á málmi. Skygging efst og neðst svo merkin ofan á lesist á hvaða mynd sem er.
       r(T + 'tbody tr._ars-row::before',
         'content:"";display:block;grid-row:1;grid-column:1/-1;margin:0 -16px;border-bottom:1px solid #000;' +
-        'background:' + RIVET + ' 7px 50%/8px 8px no-repeat,' + RIVET + ' calc(100% - 7px) 50%/8px 8px no-repeat,' + METAL + ';' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,.1)'),
-      r(T + 'tbody tr._ars-row.overdue::before', 'border-bottom:2px solid #b0201b'),
+        'background-color:#1c1d21;background-image:' + SKYGGING + ',var(--spj-mynd,' + HUS + '),' + METAL + ';' +
+        'background-size:100% 100%,var(--spj-str,64px 64px),100% 100%;background-position:center,center,center;background-repeat:no-repeat'),
+      r(T + 'tbody tr._ars-row.overdue::before', 'border-bottom:3px solid #b0201b'),
       // fóturinn (röð 7): ljós stubbur með línu að ofan
       r(T + 'tbody tr._ars-row::after',
         'content:"";display:block;grid-row:7;grid-column:1/-1;margin:0 -16px;background:linear-gradient(180deg,#f6f8fb,#eef1f6);border-top:1px solid #e3e7ee'),
@@ -95,16 +103,22 @@
         'display:flex;align-items:center;min-width:0;width:auto;height:auto;min-height:0;padding:0;margin:0;border:0;' +
         'background:transparent;box-shadow:none;position:relative;text-align:left;vertical-align:baseline'),
 
-      // 1 · málmhaus
-      r(T + 'tbody tr._ars-row > td._ars-mailcol', 'grid-row:1;grid-column:1;justify-self:start;padding-left:6px;gap:4px;z-index:1'),
-      r(T + 'tbody tr._ars-row > td:has(> ._mo)', 'grid-row:1;grid-column:1/3;justify-self:start;padding-left:38px;gap:8px;z-index:1;background:transparent'),
-      r(T + 'tbody tr._ars-row > td:has(> ._mo)::before', 'content:"Skoðun";font:700 9.5px/1 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#8e97a6'),
-      r(T + 'tbody tr._ars-row > td > ._mo', 'font:700 13px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#eef1f4;text-shadow:0 1px 0 rgba(0,0,0,.6)'),
+      // 1 · merkin ofan á myndinni: mánuður efst t.v., staða efst t.h., póstmerki neðst t.v.
+      r(T + 'tbody tr._ars-row > td._ars-mailcol',
+        'grid-row:1;grid-column:1/-1;justify-self:start;align-self:end;margin-bottom:10px;padding:3px 8px;gap:4px;z-index:1;' +
+        'border-radius:99px;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.3)'),
+      r(T + 'tbody tr._ars-row > td._ars-mailcol:empty', 'display:none'),
+      r(T + 'tbody tr._ars-row > td:has(> ._mo)',
+        'grid-row:1;grid-column:1/4;justify-self:start;align-self:start;margin-top:12px;height:26px;padding:0 11px;gap:8px;z-index:1;' +
+        'border-radius:99px;background:rgba(12,12,14,.74);box-shadow:0 2px 8px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)'),
+      r(T + 'tbody tr._ars-row > td:has(> ._mo)::before', 'content:"Skoðun";font:700 9px/1 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#aab1bb'),
+      r(T + 'tbody tr._ars-row > td > ._mo', 'font:700 12px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:none'),
       r(T + 'tbody tr._ars-row > td > ._mo[style*="c0241f"]', 'color:#ff8a7a'),
-      r(T + 'tbody tr._ars-row > td:has(> ._stcell)', 'grid-row:1;grid-column:2/5;justify-self:end;padding-right:6px;z-index:1'),
+      r(T + 'tbody tr._ars-row > td:has(> ._stcell)', 'grid-row:1;grid-column:2/5;justify-self:end;align-self:start;margin-top:12px;z-index:1'),
+      r(T + 'tbody tr._ars-row > td > ._stcell > ._chk', 'box-shadow:0 2px 8px rgba(0,0,0,.35)'),
       r(T + 'tbody tr._ars-row > td > ._stcell', 'display:inline-flex;align-items:center;gap:7px;width:auto'),
       r(T + 'tbody tr._ars-row > td > ._stcell > span:empty', 'display:none'),
-      r(T + 'tbody tr._ars-row > td > ._stcell > ._st', 'width:auto;min-width:0;padding:4px 11px'),
+      r(T + 'tbody tr._ars-row > td > ._stcell > ._st', 'width:auto;min-width:0;padding:4px 11px;box-shadow:0 2px 8px rgba(0,0,0,.35)'),
 
       // 2 · nafn, kt og merki
       r(T + 'tbody tr._ars-row > td._ars-namecell', 'grid-row:2;grid-column:1/-1;display:block;padding-top:14px'),
@@ -171,10 +185,49 @@
     document.head.appendChild(s);
   }
 
+  // ── Myndablaðið: ein regla per stað með mynd → --spj-mynd. Lesið úr sömu heimild og bannerinn (367).
+  // Supabase-myndir eru sóttar smækkaðar (render/image, 720 px) — upprunaskráin er óbreytt.
+  function myndSlod(u) {
+    u = String(u || '').trim();
+    if (!/^https:\/\//i.test(u)) return '';
+    if (u.indexOf('/storage/v1/object/public/') > -1) {
+      u = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=720&quality=72';
+    } else if (/images\.prismic\.io/i.test(u)) {
+      u += (u.indexOf('?') > -1 ? '&' : '?') + 'w=720';
+    }
+    return u.replace(/["\\\s]/g, encodeURIComponent);
+  }
+  var _myndSig = '';
+  function myndir() {
+    var map = {};
+    try { map = (window.AppSettings && AppSettings.path && AppSettings.path('co_bygging_mynd')) || {}; } catch (_) {}
+    var listi = [];
+    try { listi = (window.Arsskodun && Arsskodun._cache && Arsskodun._cache.list) || []; } catch (_) {}
+    var reglur = [], sed = {};
+    Object.keys(map).forEach(function (id) {
+      var m = map[id], u = m && !m.engin ? myndSlod(m.url) : '';
+      if (u && /^\d+$/.test(id)) { sed[id] = 1; reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}'); }
+    });
+    listi.forEach(function (c) {
+      if (!c || sed[c.id] || !c.eign || !c.eign.mynd) return;
+      var u = myndSlod(c.eign.mynd);
+      if (u) reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + (+c.id) + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}');
+    });
+    var texti = reglur.join('\n');
+    var sig = reglur.length + ':' + texti.length;
+    if (sig === _myndSig) return;
+    _myndSig = sig;
+    var st = document.getElementById('_ars-spjold-myndir');
+    if (!st) { st = document.createElement('style'); st.id = '_ars-spjold-myndir'; document.head.appendChild(st); }
+    st.textContent = texti;
+  }
+
   function a() { try { return localStorage.getItem(LYKILL) === '1'; } catch (_) { return false; } }
   function setja(on) {
     try { localStorage.setItem(LYKILL, on ? '1' : '0'); } catch (_) {}
     document.documentElement.classList.toggle('ars-spjold', on);
+    if (on) myndir();
     takki();
   }
 
@@ -214,7 +267,9 @@
 
   css();
   document.documentElement.classList.toggle('ars-spjold', a());
-  document.addEventListener('ars:render', function () { try { takki(); } catch (_) {} });
+  document.addEventListener('ars:render', function () { try { takki(); myndir(); } catch (_) {} });
+  // AppSettings getur borist eftir fyrstu teikningu — myndablaðið er endurreiknað (aðeins ef eitthvað breyttist)
+  [1500, 5000, 15000].forEach(function (t) { setTimeout(function () { try { myndir(); } catch (_) {} }, t); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 })();
