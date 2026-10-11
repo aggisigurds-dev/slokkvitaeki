@@ -135,7 +135,9 @@
   function lbOpin(b, f, ham) {
     var m = $('#lb-merkja'); if (!m) return;
     m.classList.toggle('hidden', !(syn().punktar && f.mynd && ham === 'teikning'));
-    m.classList.remove('on');
+    // merking í gangi af spjaldinu heldur áfram í stækkuðu teikningunni
+    m.classList.toggle('on', !!(placing && placing.fid === f._fid && placing.haed === f._haed));
+    if (m.classList.contains('on')) toast('Smelltu á teikninguna þar sem verkið er');
     m.onclick = function () { if (placing) haettaPlacing(); else byrjaPlacing(b, f); };
   }
   function lbLokad() { haettaPlacing(); lokaPop(); }
