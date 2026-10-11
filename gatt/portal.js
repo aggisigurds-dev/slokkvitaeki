@@ -246,7 +246,7 @@
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null,
-          eign: b.eign || null, beidni: !!b.beidni,
+          eign: b.eign || null, beidni: !!b.beidni, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
           i_thjonustu: b.i_thjonustu, skodun_manudur: b.skodun_manudur, bru_skodun_manudur: b.bru_skodun_manudur,
           ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar,
           kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null,
@@ -404,7 +404,7 @@
       }
       var cls = (b.ontime ? 'ontime' : '') + (det ? ' clk' : '');
       return '<tr data-i="' + bi + '"' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + (det ? ' title="Opna eignasíðu"' : '') + '>' +
-        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 160)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + '</div></div></div></td>' +
+        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + '</div></div></div></td>' +
         '<td class="num">' + (b.sl != null ? b.sl : '—') + '</td>' +
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         '<td>' + kerfiCell(b) + '</td>' +
@@ -715,7 +715,7 @@
     html += '<section class="dsec"><h4>Yfirlit</h4><div class="dkpis">' +
       '<div class="dk"><div class="k">Slökkvitæki</div><div class="v">' + (b.sl != null ? b.sl : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
-      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div></div></div>' +
+      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
     html += umEignina(b) + kerfiHtml(b, false) + erindiHtml(b) + ebMinni(b);
     // Teikningar
@@ -757,7 +757,7 @@
       var eq = b.equipment;
       var groups = {}, order = [];
       eq.forEach(function (e) { var k = (e.tegund || 'Tæki') + (e.staerd ? ' ' + e.staerd : ''); if (!groups[k]) { groups[k] = 0; order.push(k); } groups[k]++; });
-      html += '<section class="dsec"><h4>Búnaður <span class="cnt">' + (eq.length ? tala(eq.length, 'tæki', 'tæki') : '') + '</span></h4>';
+      html += '<section class="dsec"><h4>Búnaður <span class="cnt">' + (eq.length ? tala(eq.length, 'tæki', 'tæki') : '') + (b.prufa ? ' · sýnishorn' : '') + '</span></h4>';
       if (!eq.length) html += '<div class="dpanel"><div class="dempty">Engin tæki skráð á þessa eign.</div></div>';
       else {
         html += '<div class="eqsum">' + order.map(function (k) { return tegundPilla(k).replace('</span>', ' <b>× ' + groups[k] + '</b></span>'); }).join('') + '</div>';

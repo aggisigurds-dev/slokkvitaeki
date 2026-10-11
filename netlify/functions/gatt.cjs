@@ -690,6 +690,32 @@ exports.handler = async (event) => {
       };
     });
 
+    // ── Prufuhamur (11.10.2026, Agnar): eign.prufa = {lettvatn, duft, co2, slongur, brunakerfi:{einingar, reykskynjarar}}
+    //    sýnir kerfið með sýnishornstölum án þess að snerta tækjaskrána (uttaeki). Fjarlægt með: update fyrirtaeki
+    //    set eign = eign - 'prufa' where id = …  — búnaðarkaflinn ber merkið „sýnishorn".
+    const nuAr = new Date().getFullYear();
+    buildings.forEach((b) => {
+      const p = b.eign && b.eign.prufa && typeof b.eign.prufa === 'object' ? b.eign.prufa : null;
+      if (!p) return;
+      const teg = [['Léttvatn', '6 L', +p.lettvatn || 0], ['Duft ABC', '6 kg', +p.duft || 0], ['CO₂', '5 kg', +p.co2 || 0]].filter((t) => t[2] > 0);
+      const slong = +p.slongur || 0, bk = p.brunakerfi && typeof p.brunakerfi === 'object' ? p.brunakerfi : null;
+      const haedir = (b.flokkun && +b.flokkun.haedir) || (b.teikning && b.teikning.length) || 3;
+      b.taeki = teg.reduce((n, t) => n + t[2], 0); b.slo = slong; b.stada = 'ok'; b.sidasta_ar = nuAr;
+      if (b.ar_slokk.indexOf(String(nuAr)) < 0) b.ar_slokk = b.ar_slokk.concat([String(nuAr)]);
+      if (bk) { b.bru_i_thjonustu = true; b.bru_lysing = [bk.einingar ? bk.einingar + ' einingar' : '', bk.reykskynjarar ? bk.reykskynjarar + ' reykskynjarar' : ''].filter(Boolean).join(' · '); if (b.ar_bru.indexOf(String(nuAr)) < 0) b.ar_bru = b.ar_bru.concat([String(nuAr)]); }
+      b.prufa = true;
+      const setja = (k, extra) => { const i = b.kerfi.findIndex((x) => x.k === k); const row = Object.assign({ k, skylt: 'ja', til: 'ja', adili: 'okkar', heimild: null }, extra || {}); if (i > -1) b.kerfi[i] = Object.assign({}, b.kerfi[i], row); else b.kerfi.push(row); };
+      if (b.taeki) setja('slokkvitaeki'); if (slong) setja('slongukefli', { skylt: 'skilyrt' });
+      if (bk) { setja('brunavidvorunarkerfi'); if (bk.reykskynjarar) setja('reykskynjarar'); }
+      if (showDetails && syn.taeki) {
+        const sid = String(nuAr) + '-' + String(((b.skodun_manudur || 6) + 100)).slice(-2) + '-12', nae = String(nuAr + 1) + sid.slice(4);
+        const eq = []; let n = 0;
+        teg.forEach((t) => { for (let i = 0; i < t[2]; i++, n++) eq.push({ tegund: t[0], staerd: t[1], stadsetning: (1 + (n % haedir)) + '. hæð, ' + ['gangur', 'við stiga', 'við útgang', 'eldhús', 'lager', 'móttaka'][Math.floor(n / haedir) % 6] + (n >= haedir * 6 ? ' ' + (Math.floor(n / (haedir * 6)) + 1) : ''), nr: null, sidast: sid, naest: nae, lan: false }); });
+        for (let i = 0; i < slong; i++) eq.push({ tegund: 'Brunaslanga', staerd: '25 m', stadsetning: (1 + (i % haedir)) + '. hæð, slönguskápur', nr: null, sidast: sid, naest: nae, lan: false });
+        b.equipment = eq;
+      }
+    });
+
     // Ein skýrsla per (bygging, tegund, ár) — sama regla og aðal-yfirlitin.
     const reports = dedupeDocs(
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
