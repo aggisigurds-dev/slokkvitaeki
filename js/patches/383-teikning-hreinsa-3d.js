@@ -4940,6 +4940,8 @@
       '<button type="button" id="fp-3d-sjon" title="Skipta á milli sjónarhorns ofan frá (eins og teikningin) og á ská" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Á ská</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
       '<button type="button" id="fp-3d-sameign" aria-pressed="' + (SAM.syn ? 'true' : 'false') + '" title="Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða)" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + (SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)') + ';color:' + (SAM.syn ? '#14120f' : '#fff') + ';font:700 13px system-ui;cursor:pointer">Sameign</button>' +
+      // VEGGJAVÉL (Agnar 11.10.2026): sést aðeins þegar hæð á enga vistaða veggi — sjá veggjavelAHaedir()
+      '<button type="button" id="fp-3d-vel" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Veggjavél</button>' +
       '<button type="button" id="fp-3d-blender" title="Designer-3D: Raunsætt (yfirlit á ská og vinnuskjal ofan frá) eða Einfalt (gráa útlitið), teiknað í Blender á skrifstofutölvunni. Síðasta mynd opnast strax; Teikna aftur býr til nýja." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Designer-3D</button>' +
       '<button type="button" id="fp-3d-gegn" aria-pressed="false" title="Gera veggina gegnsæja svo tækin og teikningin sjáist í gegnum húsið" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gegnsætt</button>' +
       '<button type="button" id="fp-3d-x" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">✕ Loka 3D</button></div>' +
@@ -4961,6 +4963,19 @@
       if (window.TeiknVinnumynd && TeiknVinnumynd.festa) TeiknVinnumynd.festa(G.syn3d.valinHaedId ? G.syn3d.valinHaedId() : null);
     });
     gamur.querySelector('#fp-3d-blender').addEventListener('click', () => { blBidja().catch(e => { console.warn('[383] Blender-mynd', e); }); });
+    // VEGGJAVÉL Á HÆÐIRNAR (Agnar 11.10.2026: „reyndu að láta þetta nota sömu vélina og vinnuaðferð" — DRA: 3D fór í klessu
+    // en Veggjavélin í TurboPaint fann veggina vel): hæðir sem eiga enga vistaða veggi fá fljótlegu greininguna hér; takkinn
+    // sendir þær í sjálfvirka verkferli TurboPaint (Veggjavél, hreinsun, hurðir …), eina af annarri, og þær vistast.
+    {
+      const velT = gamur.querySelector('#fp-3d-vel'), anV = haedirAnVeggja(), n = anV.length;
+      if (n && velT) {
+        velT.style.display = '';
+        velT.textContent = 'Veggjavél · ' + n;
+        velT.title = n + (n === 1 ? ' hæð á' : ' hæðir eiga') + ' enga vistaða veggi, svo 3D notar fljótlega greiningu (' + anV.map(x => x.h.nafn || (x.i + 1) + '. hæð').join(', ') +
+          '). Smelltu: sama Veggjavél og vinnulag og í TurboPaint (sjálfvirka verkferlið), ein hæð af annarri í nýjum flipa — vistast, og 3D notar veggina þegar þú kemur aftur.';
+        velT.addEventListener('click', () => { veggjavelAHaedir(haedirAnVeggja()).catch(e => segja('Veggjavélin fór ekki af stað: ' + ((e && e.message) || e))); });
+      }
+    }
     gamur.querySelector('#fp-3d-sameign').addEventListener('click', () => { samSkipta().catch(e => console.warn('[383] sameign', e)); });
     samTakki3d();
     const skyr = gamur.querySelector('#fp-3d-skyr'), ut = [], sleppt = [], nyirPdf = [], samHlutir = [];
@@ -5215,6 +5230,29 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') { clearTimeout(_tpBid); _tpBid = setTimeout(lesa, 500); }
     });
+  }
+  // Hæðir úr skjalasafninu sem eiga enga vistaða veggi (veggjaLinur) — þær sem 3D greinir sjálft.
+  function haedirAnVeggja() {
+    return (haedir() || []).map((h, i) => ({ h, i }))
+      .filter(x => x.h && x.h.id && haedOpnastITurboPaint(x.h) && !(Array.isArray(x.h.veggjaLinur) && x.h.veggjaLinur.length));
+  }
+  // Sjálfvirka verkferlið í TurboPaint á hæðirnar, eina af annarri: fyrsta hæðin opnast með &sjalfvirkt=1 og hinar í
+  // &rod= — TurboPaint opnar þá næstu þegar hver hefur vistast (kjarni turbopaint-sjalfvirkt-rod).
+  async function veggjavelAHaedir(listi) {
+    if (!listi.length) { segja('Allar hæðirnar eiga vistaða veggi.'); return; }
+    const flipi = window.open('about:blank', '_blank');
+    try {
+      const v = await vistaHaedirFyrirTurboPaint(listi[0].i);
+      const rod = listi.slice(1).map(x => x.h.id);
+      const slod = turboPaintSlod(v.cid, v.h, null, true) + (rod.length ? '&rod=' + encodeURIComponent(rod.join(',')) : '');
+      if (flipi) flipi.location.href = slod; else location.href = slod;
+      _tpOpnad = Date.now();
+      vaktAfturkomu();
+      segja('Veggjavélin keyrir í TurboPaint á ' + listi.length + (listi.length === 1 ? ' hæð' : ' hæðum') + ' (nokkrar mínútur á hæð) — hver vistast og 3D notar veggina þegar þú kemur aftur.');
+    } catch (e) {
+      try { if (flipi) flipi.close(); } catch (_) {}
+      throw e;
+    }
   }
   function haedOpnastITurboPaint(h) {
     const u = String((h && h.image_url) || '');
