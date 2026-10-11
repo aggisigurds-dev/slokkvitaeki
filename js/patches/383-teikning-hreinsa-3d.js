@@ -1960,7 +1960,8 @@
     ux.globalAlpha = 1; ux.globalCompositeOperation = 'destination-in'; ux.drawImage(iStriga(alla), 0, 0, GW, GH);
     ux.globalCompositeOperation = 'source-over';
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
-    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning,
+    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: Int16Array.from(nafn),
+      heitin: heitin.map(q => ({ teg: q.teg, x: q.cx / (kv * s), y: q.cy / (kv * s) })),
       rymi: rymi.map(r => ({ efni: r.efni, teg: r.teg, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })) };
   }
   // RÝMISHAMURINN: hver tegund í sínum lit (RYMI_TEG), teikningin dauf ofan á. umfang 'sameign' / 'ibudir' deyfir hinn
@@ -2530,6 +2531,91 @@
       const hM = new T.Mesh(hG, hE); hM.rotation.x = -Math.PI / 2; hM.position.y = -0.04 * m0; lg0.hopur.add(hM);
       losa.push(hT, hE, hG); lg0.hellur = hM;
     }
+    // INNRÉTTINGAR (Agnar 11.10.2026: „eina fína týpu af eldhúsinnréttingu og klósett og vask"): við heitin Eldhús og Bað.
+    // Veggurinn: sá sem liggur lengst að rými heitisins (eldhús, ≥ 1,8 m) eða næst því (bað). Allt í metrum × metri.
+    const INN = {
+      skapur: new T.MeshLambertMaterial({ color: 0xf3f2ee }), bordplata: new T.MeshLambertMaterial({ color: 0x45474b }),
+      stal: new T.MeshLambertMaterial({ color: 0xc3c7cb }), svart: new T.MeshLambertMaterial({ color: 0x1d1e21 }),
+      postulin: new T.MeshLambertMaterial({ color: 0xffffff }), vidur: new T.MeshLambertMaterial({ color: 0xb48c62 }),
+      kaeli: new T.MeshLambertMaterial({ color: 0xe6e7e8 }), spegill: new T.MeshLambertMaterial({ color: 0xc9d6de })
+    };
+    const innKassi = new T.BoxGeometry(1, 1, 1), innSivalingur = new T.CylinderGeometry(0.5, 0.5, 1, 22);
+    losa.push(innKassi, innSivalingur); Object.values(INN).forEach(e => losa.push(e));
+    const innretta = lg => {
+      if (lg.innr) { lg.hopur.remove(lg.innr); lg.innr = null; }
+      const ge = lg.golfefni, hd = lg.hd;
+      if (!ge || !ge.heitin || !ge.nafnR || !hd.butar || !hd.butar.length || !lg.f) return;
+      const g = new T.Group(), f = lg.f, m = lg.metri, gw2 = lg.gw / 2, gh2 = lg.gh / 2, bpm = m / f;   // bpm: dílar skurðar á metra
+      const iCellu = (x, y, ix) => { const px = Math.round(x * ge.kvs), py = Math.round(y * ge.kvs); return px >= 0 && py >= 0 && px < ge.RW && py < ge.RH && ge.nafnR[py * ge.RW + px] === ix; };
+      // kassi: uC = staða eftir veggnum (dílar skurðar), off = frá fleti veggjar að miðju hlutar (m); w × d × hh (m), y0 (m)
+      const setja = (k, uC, off, w, d, hh, y0, efni, geo) => {
+        const x = k.v[0] + k.ux * uC + k.nx * (k.th / 2 + off * bpm), y = k.v[1] + k.uy * uC + k.ny * (k.th / 2 + off * bpm);
+        const me = new T.Mesh(geo || innKassi, efni);
+        me.scale.set(w * m, hh * m, d * m); me.position.set(x * f - gw2, (y0 + hh / 2) * m, y * f - gh2); me.rotation.y = Math.atan2(k.nx, k.ny);
+        g.add(me); return me;
+      };
+      const veggir = (q, ix) => {
+        const ut = [];
+        hd.butar.forEach(v => {
+          const dx = v[2] - v[0], dy = v[3] - v[1], L = Math.hypot(dx, dy); if (L < 0.9 * bpm) return;
+          const ux = dx / L, uy = dy / L, t = Math.max(0, Math.min(L, (q.x - v[0]) * ux + (q.y - v[1]) * uy));
+          const fx = v[0] + ux * t, fy = v[1] + uy * t, d = Math.hypot(q.x - fx, q.y - fy);
+          if (d > 4 * bpm) return;
+          let nx = -uy, ny = ux; if ((q.x - fx) * nx + (q.y - fy) * ny < 0) { nx = -nx; ny = -ny; }
+          const th = Math.max(0.8, m * 0.24, (v[4] || 0) * f || lg.sjalfg || 0) / f;
+          let s0 = null, s1 = null, inn = 0;
+          const skref = 0.15 * bpm;
+          for (let u = 0; u <= L; u += skref) {
+            if (iCellu(v[0] + ux * u + nx * (th / 2 + 0.35 * bpm), v[1] + uy * u + ny * (th / 2 + 0.35 * bpm), ix)) { inn += skref; if (s0 == null) s0 = u; s1 = u; }
+          }
+          if (inn < 0.9 * bpm || s0 == null) return;
+          ut.push({ v, ux, uy, nx, ny, th, s0, s1, inn, d });
+        });
+        return ut;
+      };
+      ge.heitin.forEach((q, ix) => {
+        if (q.teg !== 'eldhus' && q.teg !== 'bad') return;
+        const kv2 = veggir(q, ix); if (!kv2.length) return;
+        if (q.teg === 'eldhus') {
+          const k = kv2.sort((a, b) => b.inn - a.inn)[0], laust = k.s1 - k.s0;
+          if (laust < 1.8 * bpm) return;
+          const Lr = Math.min(laust - 0.1 * bpm, 4.2 * bpm), u0 = k.s0 + (laust - Lr) / 2;
+          const nM = Math.max(2, Math.round(Lr / bpm / 0.6)), wM = Lr / nM, wMm = wM / bpm, kaeli = Lr / bpm >= 2.6;
+          for (let i = 0; i < nM; i++) {
+            const uc = u0 + wM * (i + 0.5);
+            if (kaeli && i === nM - 1) { setja(k, uc, 0.31, wMm - 0.01, 0.62, 2.05, 0, INN.kaeli); continue; }
+            setja(k, uc, 0.29, wMm - 0.012, 0.58, 0.78, 0.08, INN.skapur);                    // neðri skápur
+            setja(k, uc, 0.27, wMm - 0.012, 0.52, 0.08, 0, INN.bordplata);                     // sökkull
+            setja(k, uc, 0.17, wMm - 0.012, 0.34, 0.68, 1.45, INN.skapur);                     // efri skápur
+          }
+          const bLr = (kaeli ? Lr - wM : Lr) / bpm, bMid = u0 + (kaeli ? Lr - wM : Lr) / 2;
+          setja(k, bMid, 0.315, bLr, 0.63, 0.04, 0.86, INN.bordplata);                        // borðplata
+          setja(k, u0 + (kaeli ? Lr - wM : Lr) * 0.3, 0.3, 0.5, 0.4, 0.012, 0.9, INN.stal);     // vaskur
+          setja(k, u0 + (kaeli ? Lr - wM : Lr) * 0.3, 0.06, 0.03, 0.03, 0.22, 0.9, INN.stal);    // blöndunartæki
+          setja(k, u0 + (kaeli ? Lr - wM : Lr) * 0.72, 0.31, 0.58, 0.5, 0.012, 0.9, INN.svart);  // helluborð
+        } else {
+          const k = kv2.filter(a => a.inn >= 1.1 * bpm).sort((a, b) => a.d - b.d)[0] || kv2.sort((a, b) => b.inn - a.inn)[0];
+          const laust = k.s1 - k.s0;
+          // klósett nálægt horni: kassi, skál (sívalningur) og seta
+          const uK = k.s0 + 0.45 * bpm;
+          setja(k, uK, 0.09, 0.38, 0.17, 0.38, 0.42, INN.postulin);
+          setja(k, uK, 0.42, 0.36, 0.5, 0.4, 0, INN.postulin, innSivalingur);
+          setja(k, uK, 0.42, 0.37, 0.48, 0.025, 0.4, INN.kaeli, innSivalingur);
+          // vaskur: við hinn enda sama veggjar ef pláss er, annars við næsta vegg
+          let kV = k, uV = k.s1 - 0.4 * bpm;
+          if (laust < 1.7 * bpm) { const k2 = kv2.find(a => a !== k && a.inn >= 0.8 * bpm); if (!k2) uV = null; else { kV = k2; uV = (k2.s0 + k2.s1) / 2; } }
+          if (uV != null) {
+            setja(kV, uV, 0.23, 0.6, 0.45, 0.42, 0.42, INN.vidur);                              // skápur undir
+            setja(kV, uV, 0.235, 0.62, 0.47, 0.07, 0.84, INN.postulin);                         // handlaug
+            setja(kV, uV, 0.25, 0.42, 0.3, 0.004, 0.912, INN.stal);                             // skálin
+            setja(kV, uV, 0.05, 0.03, 0.03, 0.15, 0.91, INN.stal);                               // blöndunartæki
+            setja(kV, uV, 0.008, 0.6, 0.012, 0.75, 1.15, INN.spegill);                           // spegill
+          }
+        }
+      });
+      if (g.children.length) { lg.hopur.add(g); lg.innr = g; }
+    };
+    lag.forEach(lg => { try { innretta(lg); } catch (e) { console.warn('[383] innréttingar', e); } });
     // HÚSSÝNIN: þak á efstu hæð (útlína hússins úr gólfefnunum — án þeirra ekkert þak, ekki blað í fullri stærð) og engin tæki
     let thak = null, husA = 0, husAnim = null, husMerki = null;
     if (husH && lag.length) {
@@ -2991,6 +3077,7 @@
           if (lg.efniAf) lg.efniAf.dispose();
           if (lg.rymiAf) { lg.rymiAf.dispose(); lg.rymiAf = null; }
           lg.efniAf = new T.CanvasTexture(ge.strigi); lg.efniAf.anisotropy = 4; losa.push(lg.efniAf); lg.golfefni = ge;
+          try { innretta(lg); } catch (e) { console.warn('[383] innréttingar', e); }
           lg.golfE.map = null; breytt = true;
           console.info('[383] gólfefni ' + (lg.hd.nafn || lg.nr) + ' (heiti lesin): ' + JSON.stringify(ge.talning));
         });
