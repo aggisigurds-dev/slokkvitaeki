@@ -37,7 +37,11 @@ const KVITTAD = {
    * skoðunin var framkvæmd hjá kúnna sem hafði sagt upp — vinnan er unnin og verður ekki
    * rukkuð. Það er tap, ekki bókhaldsvilla, og því ekki rautt hér. */
   'T5:R-001052': 'kreditnótan R-001054 segir sjálf: „eru hættir í þjónustu sögðu upp samning 2025" — enginn nýr reikningur á að fara. Félagið tekið úr þjónustu.',
-  'T5:R-000728': 'mál #984 — Eclipse: kemur nýr reikningur?',
+  /* 11.10.2026: Agnar svaraði máli #1151 á borðinu. Mælt áður en það var kvittað:
+   * fyrirtaeki 837 „Kötlufell 9, húsfélag" er `er_i_thjonustu = false` og borðinn á
+   * félaginu segir „hættir í þjónustu"; R-001018 (59.632 kr, 24.09) var bakfærð með
+   * R-001092 06.10 og enginn nýr reikningur fór út. Sama mynd og T5:R-001052. */
+  'T5:R-001018': 'Agnar 11.10.2026: „Þessi reikningur er bara dauður. Þau voru hætt í þjónustu" — mál #1151. Félagið er_i_thjonustu=false, borði „hættir í þjónustu"; R-001018 bakfærð með R-001092, enginn nýr reikningur á að fara.',
   'T5:R-000716': 'mál #986 — Þangbakki 8-10: ný bankakrafa (Eignaumsjón greiðir)',
   'T5:R-000310': 'mál #771 — Prinsinn Mjódd: rétt kennitala óþekkt',
   'T5:R-000866': 'í staðinn kom minni reikningur R-000873 (23.391 kr, sendur í Payday nr. 251) — „þurfti einungis að yfirfara tæki"',
