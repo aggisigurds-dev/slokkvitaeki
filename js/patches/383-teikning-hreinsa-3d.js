@@ -1655,6 +1655,46 @@
     };
   }
 
+  // INNHORN (lóðréttur kverkaskuggi): endi veggs A sem liggur að vegg B (T- eða L-mót, ekki samsíða framhald). Á hverri
+  // hlið A þar sem B nær út fyrir (innhorn) koma tveir borðar sem dökkna að horninu: á flöt A (inn eftir A) og á flöt B
+  // (frá A eftir B). V = [[ax, az, bx, bz, th]] í hnitum hæðarinnar; skilar [{ x, z, ux, uz, nx, nz }] — hornpunktur,
+  // stefna borðans eftir fletinum og normall flatarins.
+  function innhornBordar(V, bord) {
+    const ut = [], N = V.length;
+    const ein = (x, z) => { const L = Math.hypot(x, z) || 1; return [x / L, z / L]; };
+    for (let a = 0; a < N; a++) {
+      const A = V[a], [uax, uaz] = ein(A[2] - A[0], A[3] - A[1]), LA = Math.hypot(A[2] - A[0], A[3] - A[1]);
+      if (LA < bord * 0.5) continue;
+      for (const endi of [0, 1]) {
+        const ex = endi ? A[2] : A[0], ez = endi ? A[3] : A[1];
+        const ix = endi ? -uax : uax, iz = endi ? -uaz : uaz;                      // inn eftir A frá endanum
+        for (let b = 0; b < N; b++) {
+          if (b === a) continue;
+          const B = V[b], [ubx, ubz] = ein(B[2] - B[0], B[3] - B[1]), LB = Math.hypot(B[2] - B[0], B[3] - B[1]);
+          if (Math.abs(uax * ubx + uaz * ubz) > 0.85) continue;                 // samsíða framhald — ekki horn
+          const t = Math.max(0, Math.min(LB, (ex - B[0]) * ubx + (ez - B[1]) * ubz));
+          const px = B[0] + ubx * t, pz = B[1] + ubz * t, d = Math.hypot(ex - px, ez - pz);
+          if (d > B[4] / 2 + A[4] * 0.3 + bord * 0.15) continue;
+          // normall B sem snýr að A, flötur B þeim megin
+          let nbx = -ubz, nbz = ubx; if (nbx * ix + nbz * iz < 0) { nbx = -nbx; nbz = -nbz; }
+          const fx = px + nbx * B[4] / 2, fz = pz + nbz * B[4] / 2;
+          let nax = -uaz, naz = uax;
+          for (const hl of [1, -1]) {
+            const sx = nax * hl, sz = naz * hl;                                    // hlið A
+            const sig = sx * ubx + sz * ubz >= 0 ? 1 : -1;                           // í hvora átt B liggur þeim megin
+            const nær = sig > 0 ? LB - t : t;                                        // hve langt B nær frá mótunum
+            if (nær < A[4] / 2 + bord * 0.25) continue;                              // ekkert innhorn þeim megin (L, ytra horn)
+            const cx = fx + sx * A[4] / 2, cz = fz + sz * A[4] / 2;
+            ut.push({ x: cx, z: cz, ux: ix, uz: iz, nx: sx, nz: sz });               // á flöt A
+            ut.push({ x: cx, z: cz, ux: sig * ubx, uz: sig * ubz, nx: nbx, nz: nbz });   // á flöt B
+          }
+          break;
+        }
+      }
+    }
+    return ut;
+  }
+
   async function syna3d(gamur, gogn) {
     await saekjaThree();
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
@@ -1971,6 +2011,30 @@
           klM.instanceMatrix.needsUpdate = true; klM.visible = utlit === 'gratt'; hopur.add(klM);
           losa.push(klE); veggEfni.push(klE); lg.klaedning = klM;
         }
+        // LÓÐRÉTTUR KVERKASKUGGI í innhornum (Agnar 10.10.2026: mynd með strikum í hornunum): borði 45 cm sem dökknar að horninu.
+        try {
+          const Vh = hd.butar.map(v => [v[0] * f - k.gw / 2, v[1] * f - k.gh / 2, v[2] * f - k.gw / 2, v[3] * f - k.gh / 2, Math.max(0.8, metri * 0.24, (v[4] || 0) * f || sjalfg)]);
+          const bw = 0.45 * metri, bordar = innhornBordar(Vh, bw);
+          if (bordar.length) {
+            if (!syna3d._hornT) {
+              const c = document.createElement('canvas'); c.width = 64; c.height = 4; const x = c.getContext('2d');
+              const g = x.createLinearGradient(0, 0, 64, 0);
+              g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+              x.fillStyle = g; x.fillRect(0, 0, 64, 4); syna3d._hornT = c;
+            }
+            const hT = new T.CanvasTexture(syna3d._hornT);
+            const hE = new T.MeshBasicMaterial({ map: hT, color: 0x1e1a15, transparent: true, opacity: 0.32, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+            const hG = new T.PlaneGeometry(1, 1), hM = new T.InstancedMesh(hG, hE, bordar.length);
+            const vX = new T.Vector3(), vY = new T.Vector3(0, veggH, 0), vZ = new T.Vector3(), ep = 0.004 * metri;
+            bordar.forEach((h0, i) => {
+              vX.set(h0.ux * bw, 0, h0.uz * bw); vZ.set(h0.nx, 0, h0.nz);
+              m.makeBasis(vX, vY, vZ).setPosition(h0.x + h0.ux * bw / 2 + h0.nx * ep, veggH / 2, h0.z + h0.uz * bw / 2 + h0.nz * ep);
+              hM.setMatrixAt(i, m);
+            });
+            hM.instanceMatrix.needsUpdate = true; hM.renderOrder = 3; hopur.add(hM);
+            losa.push(hT, hE, hG); lg.hornKverk = hM;
+          }
+        } catch (e) { console.warn('[383] innhorn', e); }
         // Spor veggjanna á gólfinu: dökk rönd sem sést aðeins þegar veggirnir eru gegnsæir — annars hverfa þeir alveg.
         const spE = new T.MeshBasicMaterial({ color: 0x4a443c }), spor = new T.InstancedMesh(kG, spE, hd.butar.length), flatt = new T.Matrix4().makeScale(1, 0.012, 1);
         for (let i = 0; i < hd.butar.length; i++) { veggir.getMatrixAt(i, m); m.premultiply(flatt); m.elements[13] = 0.3; spor.setMatrixAt(i, m); }
@@ -2536,6 +2600,7 @@
       gegnsaett(a) {
         veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : (e.userData.litur || VEGGLITUR_3D))); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
+        lag.forEach(lg => { if (lg.hornKverk) lg.hornKverk.visible = !a; });
         hurdaEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.35 : 1; e.depthWrite = !a; e.needsUpdate = true; });
       },
       // Ein hæð í einu (nr) eða allar (null). Stök efri hæð fær heilt gólf — hún hylur þá ekkert.
