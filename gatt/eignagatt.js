@@ -96,7 +96,8 @@
   function smellur(ev, f, b, box) {
     box = box || ev.currentTarget; var c = box && box.querySelector('canvas');
     if (!c || !c._geo) return false;
-    var p = hnit(ev, c); if (!p) return false;
+    var p = hnit(ev, c);
+    if (!p) { if (placing && placing.fid === f._fid && placing.haed === f._haed) { toast('Smelltu innan teikningarinnar (hvíti ramminn utan um blaðið telst ekki)'); return true; } return false; }
     if (placing && placing.fid === f._fid && placing.haed === f._haed) {
       var o = frumdilar(c, p);
       haettaPlacing();
@@ -106,6 +107,14 @@
     var hit = null;
     (c._pts || []).forEach(function (q) { var d = Math.hypot(q.px - p.px, q.py - p.py); if (d <= q.r * 1.6 && (!hit || d < hit.d)) hit = { q: q, d: d }; });
     if (hit) { synaPop(hit.q.e, ev.clientX, ev.clientY); return true; }
+    // Stækkaða teikningin: smellur á blaðið merkir beint — enginn takki þarf að vera á (Agnar 11.10 kl. 23:32:
+    // „fékk teikninguna en fékk ekki gluggann")
+    if (box.id === 'lb-m' && syn().punktar && f.mynd && f._fid != null) {
+      var o2 = frumdilar(c, p);
+      haettaPlacing();
+      opnaVb(b || eignAfId(f._fid), { haed: f._haed, nafn: f.nafn || ('Hæð ' + (f._haed + 1)), x: o2.x, y: o2.y });
+      return true;
+    }
     return false;
   }
   function byrjaPlacing(b, f) {
@@ -138,7 +147,7 @@
     // merking í gangi af spjaldinu heldur áfram í stækkuðu teikningunni
     m.classList.toggle('on', !!(placing && placing.fid === f._fid && placing.haed === f._haed));
     if (m.classList.contains('on')) toast('Smelltu á teikninguna þar sem verkið er');
-    m.onclick = function () { if (placing) haettaPlacing(); else byrjaPlacing(b, f); };
+    m.onclick = function () { byrjaPlacing(b, f); toast('Smelltu á teikninguna þar sem verkið er — hvar sem er á blaðinu'); };
   }
   function lbLokad() { haettaPlacing(); lokaPop(); }
   // Teikna hæðina upp á nýtt þar sem hún sést (spjald + ljósmynd)
@@ -285,6 +294,7 @@
     if (!synileg) { renderVerkbeidnir(); return; }
     var cnt = erindi().filter(function (e) { return e.stada !== 'lokid' && e.abyrgd && e.abyrgd !== 'okkar'; }).length;
     var badge = $('#vsBadge'); if (badge) { badge.textContent = cnt; badge.classList.toggle('hidden', !cnt); }
+    renderChecklist();
     $('#vs-verk').innerHTML = verkefniHtml();
     $('#vs-dagatal').innerHTML = dagatalHtml();
     $('#vs-nidurhal').innerHTML = nidurhalHtml();
@@ -533,6 +543,56 @@
     api({ action: 'item_roda', ids: L.map(function (x) { return x.id; }) });
   }
 
+  /* ═══ CHECKLISTI — frjáls atriði kúnnans, eins og á Þjónustuborðinu (stjarna, hak, röð, hreinsa) ═══ */
+  var STAR_ON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2.5 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.7l-6.1 3.4 1.4-6.8L2.2 9.6l6.9-.8z"/></svg>', STAR_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="m12 2.5 2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.7l-6.1 3.4 1.4-6.8L2.2 9.6l6.9-.8z"/></svg>';
+  function ckL() { return (data().checklist || []).slice().sort(function (a, c) { return (c.stjarna - a.stjarna) || (a.rod || 0) - (c.rod || 0); }); }
+  function ckHtml(it, i, n) {
+    var txt = esc(it.texti).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    return '<div class="ck-r' + (it.lokid ? ' lok' : '') + (it.stjarna && !it.lokid ? ' stj' : '') + '" data-ck="' + it.id + '">' +
+      '<button type="button" class="ck-b' + (it.lokid ? ' on' : '') + '" data-ck-hak="' + it.id + '" aria-label="' + (it.lokid ? 'Opna aftur' : 'Merkja klárað') + '">' + ic('hak', 2.8) + '</button>' +
+      '<span class="ck-t" contenteditable="' + (it.lokid ? 'false' : 'true') + '" spellcheck="false" data-ck-texti="' + it.id + '">' + txt + '</span>' +
+      (it.lokid ? '' : '<button type="button" class="ck-i' + (it.stjarna ? ' on' : '') + '" data-ck-stj="' + it.id + '" aria-label="Stjarna">' + (it.stjarna ? STAR_ON : STAR_OFF) + '</button>' +
+        '<button type="button" class="ck-i" data-ck-upp="' + it.id + '" aria-label="Upp"' + (i === 0 ? ' disabled' : '') + '>' + ic('upp', 2.2) + '</button><button type="button" class="ck-i" data-ck-nidur="' + it.id + '" aria-label="Niður"' + (i === n - 1 ? ' disabled' : '') + '>' + ic('nidur', 2.2) + '</button>') +
+      '<button type="button" class="ck-i" data-ck-eyda="' + it.id + '" aria-label="Eyða">' + ic('x', 2.2) + '</button></div>';
+  }
+  function checklistHtml() {
+    var L = ckL(), opin = L.filter(function (x) { return !x.lokid; }), lok = L.filter(function (x) { return x.lokid; });
+    return '<div class="egp-h"><b>Checklisti</b><span>' + opin.length + ' opin · ' + lok.length + ' klárað</span></div>' +
+      (opin.length ? opin.map(function (it, i) { return ckHtml(it, i, opin.length); }).join('') : '<div class="egp-e">Tómur listi — skrifaðu atriði hér að neðan, Enter bætir við. Stjarna setur efst.</div>') +
+      '<form class="ck-add" id="ck-form"><input class="svc-in" id="ck-inp" placeholder="Nýtt atriði … Enter bætir við" maxlength="500" autocomplete="off"><button type="submit" class="gbtn">' + ic('plus', 2.4) + 'Bæta við</button></form>' +
+      (lok.length ? '<div class="ck-h2"><span class="vs-sub">Klárað · ' + lok.length + '</span><button type="button" class="kbtn sm" data-ck-hreinsa>Hreinsa kláruð</button></div>' + lok.slice(0, 20).map(function (it) { return ckHtml(it, 0, 1); }).join('') : '');
+  }
+  function ckApi(body) {
+    if (st().demo) {
+      var L = data().checklist = data().checklist || [], it = L.filter(function (x) { return x.id === body.id; })[0];
+      if (body.action === 'chk_add') L.push({ id: Date.now(), texti: body.texti, stjarna: false, lokid: null, rod: Date.now() });
+      else if (body.action === 'chk_toggle' && it) it.lokid = body.lokid ? new Date().toISOString() : null;
+      else if (body.action === 'chk_stjarna' && it) it.stjarna = !!body.stjarna;
+      else if (body.action === 'chk_texti' && it) it.texti = body.texti;
+      else if (body.action === 'chk_eyda') data().checklist = L.filter(function (x) { return x.id !== body.id; });
+      else if (body.action === 'chk_hreinsa') data().checklist = L.filter(function (x) { return !x.lokid; });
+      else if (body.action === 'chk_roda') body.ids.forEach(function (id, i) { var x = L.filter(function (y) { return y.id === id; })[0]; if (x) x.rod = i + 1; });
+      renderChecklist(); return Promise.resolve(true);
+    }
+    return api(body).then(function (res) {
+      if (!res.ok) { toast((res.j && res.j.error) || 'Vistun tókst ekki'); renderChecklist(); return false; }
+      data().checklist = res.j.checklist || []; renderChecklist(); return true;
+    });
+  }
+  function renderChecklist() {
+    var el = $('#vs-check'); if (!el || !st().data) return;
+    var inp = $('#ck-inp'), gildi = inp ? inp.value : '', fokus = inp && document.activeElement === inp;
+    el.innerHTML = checklistHtml();
+    if (gildi || fokus) { var ni = $('#ck-inp'); if (ni) { ni.value = gildi; if (fokus) ni.focus(); } }
+  }
+  function ckFaera(id, d) {
+    var L = ckL().filter(function (x) { return !x.lokid; }), i = L.findIndex(function (x) { return x.id === id; }), j = i + d;
+    if (i < 0 || j < 0 || j >= L.length) return;
+    var t = L[i]; L[i] = L[j]; L[j] = t;
+    L.forEach(function (x, n) { x.rod = n + 1; });
+    ckApi({ action: 'chk_roda', ids: L.map(function (x) { return x.id; }) });
+  }
+
   /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
   var vbtB = null, vbtQ = '';
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
@@ -588,6 +648,11 @@
       { id: 13, fid: 9000, titill: 'Fjarlægja fleyg úr brunahurð 2. hæð', stada: 'mottekid', tegund: 'verkefni', abyrgd: 'eigandi', punktur: { haed: 2, nafn: '2. hæð', x: 540, y: 450 }, dags: new Date(nu - 864e5).toISOString(), frestur: new Date(nu + 6 * 864e5).toISOString().slice(0, 10), myndir: [], eftirmyndir: [] },
       { id: 14, fid: 9001, titill: 'Málning á gangi — annar verktaki', stada: 'mottekid', tegund: 'verkefni', abyrgd: 'annar', punktur: null, dags: new Date(nu - 5 * 864e5).toISOString(), myndir: [], eftirmyndir: [] },
     ]);
+    DEMO.checklist = [
+      { id: 1, texti: 'Panta nýjar flóttaleiðamerkingar fyrir kjallara', stjarna: true, lokid: null, rod: 1 },
+      { id: 2, texti: 'Senda rýmingaráætlun á starfsfólk', stjarna: false, lokid: null, rod: 2 },
+      { id: 3, texti: 'Prófa neyðarlýsingu í bílakjallara', stjarna: false, lokid: new Date(nu - 864e5).toISOString(), rod: 3 },
+    ];
     DEMO.items = [
       { id: 1, tegund: 'hlekkur', heiti: 'Rýmingaráætlun (Drive)', url: 'https://drive.google.com/', rod: 1, dags: new Date(nu - 20 * 864e5).toISOString() },
       { id: 2, tegund: 'skjal', heiti: 'Þjónustusamningur 2026.pdf', mime: 'application/pdf', staerd: 418000, url: '#', rod: 2, dags: new Date(nu - 40 * 864e5).toISOString() },
@@ -607,6 +672,12 @@
     if (t.closest('#vb-close')) { lokaVb(); return; }
     if (t.closest('#lk-close')) { lokaLk(); return; }
     if ((x = t.closest('#vb-abyrgd button'))) { setAbyrgd(x.getAttribute('data-a')); return; }
+    if ((x = t.closest('[data-ck-hak]'))) { var ci = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-hak'); })[0]; if (ci) ckApi({ action: 'chk_toggle', id: ci.id, lokid: !ci.lokid }); return; }
+    if ((x = t.closest('[data-ck-stj]'))) { var cs = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-stj'); })[0]; if (cs) ckApi({ action: 'chk_stjarna', id: cs.id, stjarna: !cs.stjarna }); return; }
+    if ((x = t.closest('[data-ck-eyda]'))) { ckApi({ action: 'chk_eyda', id: +x.getAttribute('data-ck-eyda') }); return; }
+    if (t.closest('[data-ck-hreinsa]')) { if (window.confirm('Hreinsa öll kláruð atriði af listanum?')) ckApi({ action: 'chk_hreinsa' }); return; }
+    if ((x = t.closest('[data-ck-upp]'))) { ckFaera(+x.getAttribute('data-ck-upp'), -1); return; }
+    if ((x = t.closest('[data-ck-nidur]'))) { ckFaera(+x.getAttribute('data-ck-nidur'), 1); return; }
     if ((x = t.closest('[data-vbt-pick]'))) { vbtVelja(+x.getAttribute('data-vbt-pick')); return; }
     if (t.closest('#vbt-an')) { opnaVb(vbtB, null, 'okkar'); return; }
     if (t.closest('#vbt-skipta')) { vbtB = null; renderVerkbeidnir(); var q = $('#vbt-leit'); if (q) q.focus(); return; }
@@ -626,8 +697,15 @@
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'vb-form') { e.preventDefault(); sendaVb(); }
     if (e.target.id === 'lk-form') { e.preventDefault(); sendaLk(); }
+    if (e.target.id === 'ck-form') { e.preventDefault(); var ci2 = $('#ck-inp'), tx = ci2.value.trim(); if (!tx) return; ci2.value = ''; ckApi({ action: 'chk_add', texti: tx }).then(function () { var n = $('#ck-inp'); if (n) n.focus(); }); }
     if (e.target.id === 'vs-hlekkur') { e.preventDefault(); var u = $('#vs-hl-url').value.trim(); if (!/^https?:\/\//i.test(u)) { toast('Slóðin þarf að byrja á https://'); return; } vistaHlekk($('#vs-hl-heiti').value.trim(), u); }
   });
+  document.addEventListener('focusout', function (e) {
+    var sp = e.target.closest && e.target.closest('[data-ck-texti]'); if (!sp) return;
+    var id = +sp.getAttribute('data-ck-texti'), it = (data().checklist || []).filter(function (q) { return q.id === id; })[0], tx = sp.textContent.trim().slice(0, 500);
+    if (it && tx && tx !== it.texti) { it.texti = tx; ckApi({ action: 'chk_texti', id: id, texti: tx }); } else renderChecklist();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-ck-texti]')) { e.preventDefault(); e.target.blur(); } });
   document.addEventListener('change', function (e) { if (e.target.id === 'vs-skra') { vistaSkra(e.target.files && e.target.files[0]); e.target.value = ''; } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vbt-leit') { vbtQ = e.target.value.trim().toLowerCase(); renderVerkbeidnir(); } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vs-leit') { clearTimeout(leitT); var q = e.target.value.trim(); leitT = setTimeout(function () { leita(q); }, 350); } });

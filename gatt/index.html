@@ -762,7 +762,8 @@
   .vb-plus:hover{border-color:var(--accent)}
   .vb-plus svg{width:12px;height:12px;color:var(--accent)}
   .vb-n{display:block;font-size:10px;color:var(--accent);font-weight:600;margin-top:1px}
-  .fcard.placing .fm{cursor:crosshair;box-shadow:inset 0 0 0 3px var(--accent)}
+  .fcard.placing .fm{cursor:crosshair;box-shadow:inset 0 0 0 3px var(--accent);background:#dfe3e9}   /* blaðið (hvítt) sker sig úr rammanum */
+  .lb .lb-m{cursor:crosshair}
   .lb.placing .lb-m{cursor:crosshair}
   #lb-merkja.on{border-color:var(--accent);color:var(--accent);box-shadow:var(--key-sh),0 0 0 3px rgba(var(--glow),.2)}
   #vb-modal,#lk-modal{z-index:70}   /* ofan á stækkuðu teikningunni (.lb 48) og sprettiglugganum (60) */
@@ -799,7 +800,7 @@
   .vs-upl input{position:absolute;opacity:0;width:1px;height:1px}
   .vs-upl svg{width:17px;height:17px;color:var(--accent)}
   /* Vinnusvæði */
-  .vs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+  .vs-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}   /* checklisti · verkefni · dagatal / kort · niðurhal · skjöl */
   .vs-p{min-width:0}
   .vs-sub{padding:10px 16px 4px;font-family:var(--lbl);font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent);font-weight:600}
   .vs-r{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line)}
@@ -866,6 +867,28 @@
   .vbt-hint svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px;color:var(--accent)}
   #vbt-tk{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
   @media(max-width:760px){ #vbt-tk{grid-template-columns:minmax(0,1fr)} }
+  /* Checklisti (eins og á Þjónustuborðinu) */
+  .ck-r{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 8px;border-bottom:1px solid var(--line)}
+  .ck-r.stj{background:rgba(var(--glow),.06)}
+  .ck-r.lok .ck-t{text-decoration:line-through;color:var(--dim)}
+  .ck-b{flex:none;width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line2);border-radius:5px;background:var(--key);box-shadow:var(--key-sh);color:transparent;cursor:pointer;padding:0}
+  .ck-b:hover{border-color:var(--accent)}
+  .ck-b.on{background:var(--obsidian);border-color:#000;color:#3fbf73}
+  .ck-b svg{width:13px;height:13px}
+  .ck-t{flex:1;min-width:0;font-size:13px;color:var(--ink);line-height:1.35;word-break:break-word;cursor:text;border:1px solid transparent;border-radius:4px;padding:2px 4px;margin:-2px -4px}
+  .ck-t:focus{outline:none;border-color:var(--accent);background:var(--well)}
+  .ck-t a{color:var(--accent)}
+  .ck-i{flex:none;width:24px;height:24px;display:grid;place-items:center;border:0;background:transparent;color:var(--faint);cursor:pointer;padding:0;border-radius:4px}
+  .ck-i:hover{color:var(--accent);background:var(--row-hover)}
+  .ck-i.on{color:var(--accent)}
+  .ck-i svg{width:14px;height:14px}
+  .ck-i:disabled{opacity:.25;pointer-events:none}
+  .ck-add{display:flex;gap:8px;padding:10px 10px 12px;border-top:1px solid var(--line);background:var(--strip)}
+  .ck-add .svc-in{margin:0;flex:1;min-width:0;height:36px;padding:0 10px}
+  .ck-add .gbtn{height:36px;padding:0 12px;font-size:10.5px}
+  .ck-h2{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}
+  .ck-h2 .vs-sub{padding:0;flex:1}
+  @media(max-width:1100px){ .vs-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media(max-width:900px){ .vs-grid{grid-template-columns:minmax(0,1fr)} .vs-add{flex-wrap:wrap} }
   @media print{
     body *{visibility:hidden!important}
@@ -1013,6 +1036,7 @@
       <div class="kicker">Byggingarumsjón · allt á einum stað</div>
       <h2 class="page">Mitt vinnusvæði</h2>
       <div class="vs-grid">
+        <div class="egp vs-p" id="vs-check"></div>
         <div class="egp vs-p" id="vs-verk"></div>
         <div class="egp vs-p" id="vs-dagatal"></div>
         <div class="egp vs-p vs-kort">
@@ -1210,7 +1234,7 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261011p4"></script>
-<script src="/gatt/portal.js?v=20261011p4"></script>
+<script src="/gatt/eignagatt.js?v=20261011p5"></script>
+<script src="/gatt/portal.js?v=20261011p5"></script>
 </body>
 </html>

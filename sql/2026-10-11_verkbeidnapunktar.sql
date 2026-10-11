@@ -58,3 +58,18 @@ values ('gatt', 'gatt', false, 15728640,
               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'text/csv'])
 on conflict (id) do nothing;
+
+-- 4) portal_checklist — „Checklisti" kúnnans á Mitt vinnusvæði (sama hugsun og á Þjónustuborðinu): frjáls atriði með
+--    stjörnu, hak og röð. Beitt 11.10.2026 kl. 23:35 (MCP-migration portal_checklist).
+create table if not exists public.portal_checklist (
+  id          bigserial primary key,
+  base_id     bigint not null references public.customers_base(id) on delete cascade,
+  texti       text not null,
+  stjarna     boolean not null default false,
+  lokid_at    timestamptz,
+  rod         integer not null default 0,
+  created_by  text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists portal_checklist_base_idx on public.portal_checklist (base_id, rod);
+alter table public.portal_checklist enable row level security;

@@ -261,6 +261,7 @@
       messages: d.messages || [],
       erindi: d.erindi || [],
       items: d.items || [],
+      checklist: d.checklist || [],
       eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null, kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null }; }),
     };
     afskeyta(out);

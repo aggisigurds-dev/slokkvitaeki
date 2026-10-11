@@ -425,6 +425,40 @@ exports.handler = async (event) => {
     return P.json(200, { ok: true, items: await itemsFelags() });
   }
 
+  // ── Checklisti kúnnans (portal_checklist) — Mitt vinnusvæði, 11.10.2026 ──
+  async function checklistFelags() {
+    const r = await P.sbGet(`portal_checklist?base_id=eq.${baseId}&select=id,texti,stjarna,lokid_at,rod,created_at&order=rod.asc,created_at.asc&limit=400`);
+    return r.ok ? (await r.json()).map((x) => ({ id: x.id, texti: x.texti, stjarna: !!x.stjarna, lokid: x.lokid_at || null, rod: x.rod, dags: x.created_at })) : [];
+  }
+  async function checklist(b) {
+    if (!syn.vinnusvaedi) return P.json(403, { error: 'Vinnusvæðið er ekki opið á þessum aðgangi' });
+    const id = parseInt(b.id, 10), hd = { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}` };
+    const eigin = `base_id=eq.${baseId}`;
+    if (b.action === 'chk_add') {
+      const texti = String(b.texti || '').trim().slice(0, 500);
+      if (!texti) return P.json(400, { error: 'Tómt atriði' });
+      const cnt = await P.sbGet(`portal_checklist?${eigin}&select=id`);
+      if (cnt.ok && (await cnt.json()).length >= 400) return P.json(429, { error: 'Listinn er fullur (400 atriði)' });
+      const ins = await P.sbPost('portal_checklist', { base_id: baseId, texti, rod: Date.now(), created_by: hofundurNafn() });
+      if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst' });
+    } else if (b.action === 'chk_toggle' && id) {
+      await P.sbPatch(`portal_checklist?id=eq.${id}&${eigin}`, { lokid_at: b.lokid ? new Date().toISOString() : null });
+    } else if (b.action === 'chk_stjarna' && id) {
+      await P.sbPatch(`portal_checklist?id=eq.${id}&${eigin}`, { stjarna: !!b.stjarna });
+    } else if (b.action === 'chk_texti' && id) {
+      const texti = String(b.texti || '').trim().slice(0, 500);
+      if (texti) await P.sbPatch(`portal_checklist?id=eq.${id}&${eigin}`, { texti });
+    } else if (b.action === 'chk_eyda' && id) {
+      await fetch(`${P.SUPABASE_URL}/rest/v1/portal_checklist?id=eq.${id}&${eigin}`, { method: 'DELETE', headers: hd });
+    } else if (b.action === 'chk_hreinsa') {
+      await fetch(`${P.SUPABASE_URL}/rest/v1/portal_checklist?${eigin}&lokid_at=not.is.null`, { method: 'DELETE', headers: hd });
+    } else if (b.action === 'chk_roda') {
+      const ids = (Array.isArray(b.ids) ? b.ids : []).map((x) => parseInt(x, 10)).filter(Boolean).slice(0, 400);
+      for (let i = 0; i < ids.length; i++) await P.sbPatch(`portal_checklist?id=eq.${ids[i]}&${eigin}`, { rod: i + 1 });
+    } else return P.json(400, { error: 'Óþekkt aðgerð' });
+    return P.json(200, { ok: true, checklist: await checklistFelags() });
+  }
+
   // POST → viðskiptavinur sendir fyrirspurn / aðgerð
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
@@ -437,6 +471,7 @@ exports.handler = async (event) => {
       if (b.action === 'item') return await vistaItem(b);
       if (b.action === 'item_eyda') return await eydaItem(b);
       if (b.action === 'item_roda') return await radaItems(b);
+      if (/^chk_/.test(String(b.action || ''))) return await checklist(b);
     } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
     const text = String(b.body || '').trim();
     if (!text) return P.json(400, { error: 'Tómt skeyti' });
@@ -639,8 +674,8 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
     // 2j) Vinnusvæði: skjöl og hlekkir félagsins
-    let items = [];
-    if (syn.vinnusvaedi) { try { items = await itemsFelags(); } catch (_) {} }
+    let items = [], checklist = [];
+    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -796,7 +831,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items, checklist,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {
