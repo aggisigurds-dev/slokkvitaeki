@@ -364,7 +364,7 @@
   function renderCards(stats) {
     $('#cards').innerHTML = (stats || []).map(function (c) {
       return '<div class="sc' + (c.dark ? ' dark' : '') + '">' + icon(c.k) + '<div class="k">' + esc(c.k) + '</div>' +
-        '<div class="v' + (String(c.v).length >= 9 ? ' xl' : String(c.v).length >= 6 ? ' l' : '') + '">' + esc(c.v) + (c.s ? ' <small>' + esc(c.s) + '</small>' : '') + '</div></div>';
+        '<div class="v' + (String(c.v).length >= 9 ? ' xl' : String(c.v).length >= 6 ? ' l' : '') + '">' + esc(c.v) + (c.s ? ' <small' + (String(c.s).length > 3 ? ' class="nl"' : '') + '>' + esc(c.s) + '</small>' : '') + '</div></div>';
     }).join('');
   }
 
