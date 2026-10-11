@@ -1642,6 +1642,19 @@
     });
   }
 
+  // KVERKASKUGGI Á VEGGJUM (Agnar 10.10.2026: „gradient skugga í kverka á veggjum … skerpuna"): liturinn dökknar mjúklega
+  // síðustu `h` einingar niður að gólfi (hæð í hnitum hæðarinnar, svo dyrakarmar uppi haldast ljósir). Slétt, ekkert korn.
+  const KVERK_NEDST = 0.8;           // margfeldi litarins við gólf
+  function kverkEfni(efni, h) {
+    efni.onBeforeCompile = sh => {
+      sh.uniforms.uKverkH = { value: h };
+      sh.vertexShader = 'varying float vKverk;\n' + sh.vertexShader.replace('#include <begin_vertex>',
+        '#include <begin_vertex>\n#ifdef USE_INSTANCING\n  vKverk = (instanceMatrix * vec4(position, 1.0)).y;\n#else\n  vKverk = position.y;\n#endif');
+      sh.fragmentShader = 'uniform float uKverkH;\nvarying float vKverk;\n' + sh.fragmentShader.replace('#include <color_fragment>',
+        '#include <color_fragment>\n  diffuseColor.rgb *= mix(' + KVERK_NEDST.toFixed(2) + ', 1.0, smoothstep(0.0, uKverkH, vKverk));');
+    };
+  }
+
   async function syna3d(gamur, gogn) {
     await saekjaThree();
     const T = window.THREE, haedir = (gogn && gogn.haedir) || [];
@@ -1921,6 +1934,7 @@
       const kG = new T.BoxGeometry(1, 1, 1), kE = new T.MeshLambertMaterial({ color: VEGGLITUR_3D });
       const kTopp = new T.MeshLambertMaterial({ color: utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D }); kTopp.userData.toppur = true;
       const kEfni = [kE, kE, kTopp, kE, kE, kE];
+      kverkEfni(kE, 0.9 * metri);
       const m = new T.Matrix4();
       let veggir;
       if (hd.butar && hd.butar.length) {
@@ -1944,7 +1958,7 @@
         try { hlidar = utHlidar(hd); } catch (e) { console.warn('[383] utHlidar', e); }
         const utI = hlidar ? hlidar.map((h0, i) => h0 ? i : -1).filter(i => i >= 0) : [];
         if (utI.length) {
-          const klE = new T.MeshLambertMaterial({ color: GRATT_3D.utveggur }); klE.userData.litur = GRATT_3D.utveggur;
+          const klE = new T.MeshLambertMaterial({ color: GRATT_3D.utveggur }); klE.userData.litur = GRATT_3D.utveggur; kverkEfni(klE, 0.9 * metri);
           const klM = new T.InstancedMesh(kG, klE, utI.length), klT = Math.max(0.02, 0.03 * metri), klH = veggH - 0.01 * metri;
           utI.forEach((i, j) => {
             const v = hd.butar[i], ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2;
@@ -1978,7 +1992,7 @@
         // Svalir: svalaveggur/handrið 1,1 m í lit veggjanna, minnst 20 cm þykkur; lengdur um hálfa þykkt svo bogabútar mætist.
         if (hd.svalir && hd.svalir.length) {
           const svLitur = utlit === 'gratt' ? GRATT_3D.utveggur : VEGGLITUR_3D;
-          const svE = new T.MeshLambertMaterial({ color: svLitur }), svH = SVALIR_M * metri; svE.userData.litur = svLitur;
+          const svE = new T.MeshLambertMaterial({ color: svLitur }), svH = SVALIR_M * metri; svE.userData.litur = svLitur; kverkEfni(svE, 0.9 * metri);
           // eigið toppefni: kTopp veggjanna er teiknað með lit á hvert eintak (instanceColor) og three r128 skiptir ekki um forrit
           const svT = new T.MeshLambertMaterial({ color: kTopp.color.getHex() }); svT.userData.toppur = true;
           const svM = new T.InstancedMesh(kG, [svE, svE, svT, svE, svE, svE], hd.svalir.length);
@@ -2187,6 +2201,22 @@
       const skuggi = new T.Mesh(lg.golfG, skE);
       skuggi.rotation.x = -Math.PI / 2; skuggi.position.y = 0.55; skuggi.renderOrder = 2; lg.hopur.add(skuggi);
       skuggaEfni.push(skE); losa.push(aferd, skE); lg.skuggi = skuggi; lg.skuggaStr = str;
+      // KVERKASKUGGI Á GÓLFI: mjúkt dökkt band meðfram veggjum (dýpst í hornum, þar sem böndin skarast), aðeins innan hússins.
+      if (lg.heilir && hd.butar && hd.butar.length) {
+        const ak = document.createElement('canvas'); ak.width = B; ak.height = H;
+        const a1 = ak.getContext('2d'); a1.strokeStyle = '#fff'; a1.lineCap = 'square';
+        hd.butar.forEach(v => {
+          const th = Math.max(0.8, lg.metri * 0.24, (v[4] || 0) * f || sj), p = px(v[0] * f - gw2, v[1] * f - gh2), q = px(v[2] * f - gw2, v[3] * f - gh2);
+          a1.lineWidth = (th + 0.5 * lg.metri) * s; a1.beginPath(); a1.moveTo(p[0], p[1]); a1.lineTo(q[0], q[1]); a1.stroke();
+        });
+        const ao = document.createElement('canvas'); ao.width = B; ao.height = H;
+        const a2 = ao.getContext('2d'); a2.filter = 'blur(' + Math.max(2, 0.3 * lg.metri * s).toFixed(1) + 'px)'; a2.drawImage(ak, 0, 0);
+        if (hd.golf && hd.golf.width) { a2.filter = 'none'; a2.globalCompositeOperation = 'destination-in'; a2.drawImage(hd.golf, 0, 0, B, H); }
+        const aoT = new T.CanvasTexture(ao); aoT.anisotropy = 4;
+        const aoE = new T.MeshBasicMaterial({ map: aoT, color: 0x1e1a15, transparent: true, opacity: 0.26, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+        const aoM = new T.Mesh(lg.golfG, aoE); aoM.rotation.x = -Math.PI / 2; aoM.position.y = 0.5; aoM.renderOrder = 2; lg.hopur.add(aoM);
+        losa.push(aoT, aoE); lg.kverk = aoM;
+      }
     };
     lag.forEach(lg => { try { bakaSkugga(lg); } catch (e) { console.warn('[383] bakaSkugga', e); } });
     // Myndavél á braut um miðjuna: draga = snúa · hjól/klípa = aðdráttur · hægri/shift-draga eða tveir fingur = færa.
