@@ -1833,11 +1833,14 @@
       }
       return b;
     };
-    const heitin = [], ibudM = [];
+    const heitin = [], ibudM = [], numer = [];
     (hd.heitiTexta || []).concat(hd.heitiOcr || [], (sm && sm.herbergi) || []).forEach(t => {
-      const tg = rymisTegund(t.texti); if (!tg) return;
       const cx = Math.round(t.x * kv * s), cy = Math.round(t.y * kv * s);
       if (!(cx >= 0 && cy >= 0 && cx < RW && cy < RH)) return;
+      // rýmisnúmer (0204, 02-01): hvert númer einu sinni — talið sem íbúð ef það stendur í íbúðarrými (hér neðar)
+      const nr = String(t.texti || '').replace(/\s+/g, '');
+      if (/^(0\d{3}|\d{2}-\d{2})$/.test(nr)) { numer.push({ t: nr, cx, cy }); return; }
+      const tg = rymisTegund(t.texti); if (!tg) return;
       if (tg.teg === 'ibud') { if (!ibudM.some(q => Math.hypot(q[0] - cx, q[1] - cy) < 3 * pxm)) ibudM.push([cx, cy]); return; }
       if (heitin.some(q => q.teg === tg.teg && Math.hypot(q.cx - cx, q.cy - cy) < 1.2 * pxm)) return;
       heitin.push({ teg: tg.teg, lika: tg.lika || null, cx, cy, p: naestaRymi(cx, cy) });
@@ -1904,7 +1907,28 @@
     const fjoldi = {};
     heitin.forEach(q => { fjoldi[q.teg] = (fjoldi[q.teg] || 0) + 1; if (q.lika) fjoldi[q.lika] = (fjoldi[q.lika] || 0) + 1; });
     if (!heitin.length) rymi.forEach(r => { if (r.m2 >= 1.5 && r.teg) fjoldi[r.teg] = (fjoldi[r.teg] || 0) + 1; });
-    const ibudir = Math.max(ibudM.length, heitin.length ? (fjoldi.eldhus || 0) : 0);
+    // ÍBÚÐIR: íbúðarmerki („Íbúð 02-01"), eldhús, eða íbúðanúmer sem standa í íbúðarrými (ekki svalir, geymsla,
+    // vinnustofa, sameign). Númer á hverju herbergi (fleiri en ~1,6 × stofur + eldhús) eru herbergjanúmer — þá ekki talin.
+    const EKKI_IBUD = { stigahus: 1, lyfta: 1, sameign: 1, svalir: 1, geymsla: 1, vinnurymi: 1 };
+    // 1 = íbúð, 0 = annað, null = óvíst. Gangur getur verið innan íbúðar — þá ræður næsta heiti þar á eftir.
+    const numerMat = q => {
+      const naer = heitin.map(hh => ({ teg: hh.teg, d: Math.hypot(hh.cx - q.cx, hh.cy - q.cy) })).filter(hh => hh.d <= 3.5 * pxm).sort((a, b) => a.d - b.d);
+      if (naer[0] && EKKI_IBUD[naer[0].teg]) return 0;
+      const fyrst = naer.find(hh => hh.teg !== 'gangur');
+      if (fyrst) return EKKI_IBUD[fyrst.teg] ? 0 : 1;
+      const p = naestaRymi(q.cx, q.cy); if (p < 0 || tegR[p] === 255) return null;
+      const t = RYMI_TEG[tegR[p]].k;
+      return EKKI_IBUD[t] || t === 'gangur' ? 0 : t ? 1 : null;
+    };
+    // hæðarforskeyti (0201 → 02): rýmisnúmer hæðarinnar byrja öll eins; önnur „númer" eru hæðarkótar og suð lestursins
+    const forsk = {}; numer.forEach(q => { const f2 = q.t.slice(0, 2); forsk[f2] = (forsk[f2] || 0) + 1; });
+    const [rikjandi, nR] = Object.entries(forsk).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    const iHaed = q => !rikjandi || nR < 3 || nR < numer.length * 0.5 || q.t.slice(0, 2) === rikjandi;
+    const numerHop = new Map();
+    numer.filter(iHaed).forEach(q => { const m2 = numerMat(q), a = numerHop.get(q.t) || []; a.push(m2); numerHop.set(q.t, a); });
+    const ibudNr = [...numerHop.values()].filter(a => !a.includes(0) && a.includes(1)).length;
+    const ibudTrulegt = ibudNr <= Math.max(3, ((fjoldi.stofa || 0) + (fjoldi.eldhus || 0)) * 1.6);
+    const ibudir = Math.max(ibudM.length, heitin.length ? (fjoldi.eldhus || 0) : 0, ibudTrulegt ? ibudNr : 0);
     // grímur á hvern flokk
     const grimur = {}, alla = new ImageData(RW, RH);
     for (let p = 0; p < N; p++) {
