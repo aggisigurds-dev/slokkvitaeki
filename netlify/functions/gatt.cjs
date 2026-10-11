@@ -139,7 +139,7 @@ exports.handler = async (event) => {
       if (!ins.ok) return P.json(ins.status, { error: 'Villa', detail: await ins.text() });
       const row = (await ins.json())[0];
       // Verkbeiðni og „bæta við þjónustu" verða líka mál á Þjónustuborðinu (source 'gatt').
-      // Eignin er staðfest sem eign félagsins; í mesta lagi 6 mál á klst. per félag (opinn aðgangur
+      // Eignin er staðfest sem eign félagsins; í mesta lagi 25 mál á klst. per félag (opinn aðgangur
       // er án lykilorðs — skilaboðin fara samt alltaf).
       let mal = null;
       if (kind === 'thjonusta' || (kind === 'verkbeidni' && syn.verkbeidni)) {
@@ -154,7 +154,7 @@ exports.handler = async (event) => {
           const since = new Date(Date.now() - 3600e3).toISOString();
           const cr = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&created_at=gte.${encodeURIComponent(since)}&select=id`);
           const nyleg = cr.ok ? (await cr.json()).length : 0;
-          if (nyleg < 6) {
+          if (nyleg < 25) {
             const vb = kind === 'verkbeidni';
             const mr0 = await P.sbPost('thjonustubeidni', {
               customer_base_id: baseId, customer_nafn: hofundur || null, fyrirtaeki_id: fyId,
@@ -172,10 +172,10 @@ exports.handler = async (event) => {
 
   try {
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
-    const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu&order=nafn`);
+    const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,eign,stadur_nr&order=nafn`);
     const sites = fr.ok ? await fr.json() : [];
     const siteIds = sites.map((s) => s.id);
-    const nafnById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; });
+    const nafnById = {}, nrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; });
 
     // 2) Skoðanastaða per byggingu (view)
     const stById = {};
@@ -287,6 +287,13 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
 
+    // 2f) Opnar beiðnir af þjónustuvef per eign (Þjónustuborð, source 'gatt') → „Beiðni í vinnslu"
+    const beidniById = {};
+    try {
+      const br0 = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&status=in.(nytt,i_vinnslu)&deleted_at=is.null&select=fyrirtaeki_id`);
+      if (br0.ok) (await br0.json()).forEach((r) => { if (r.fyrirtaeki_id != null) beidniById[r.fyrirtaeki_id] = true; });
+    } catch (_) {}
+
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
       const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
@@ -308,6 +315,9 @@ exports.handler = async (event) => {
         bru_skodun_manudur: bruEntry && bruEntry.inspect_month != null ? Number(bruEntry.inspect_month) : null,
         taeki: slokkMinusHose(rawTotal, slo),
         slo: slo,
+        // Upplýsingar um fasteignina (mynd, stærð, ár, tegund, lýsing) — opinberar upplýsingar
+        eign: s.eign && typeof s.eign === 'object' ? s.eign : null,
+        beidni: !!beidniById[s.id],
         ...(showDetails && syn.taeki ? { equipment: eqById[s.id] || [] } : {}),
         ...(showDetails && tkById[s.id] ? { teikning: tkById[s.id] } : {}),
       };
@@ -362,6 +372,12 @@ exports.handler = async (event) => {
     // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
     // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
     const onBoard = buildings.filter((b) => b.i_thjonustu || b.bru_i_thjonustu);
+    // Eignasafn: eignir félagsins UTAN þjónustu sem bera eign-upplýsingar (skráðar viljandi sem
+    // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
+    // Lögheimilis-/samningsstaðir án eign-gildis (Þverholt 14) birtast ekki.
+    const eignirUtan = buildings.filter((b) => !(b.i_thjonustu || b.bru_i_thjonustu) && b.eign)
+      .map((b) => ({ id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang, eign: b.eign, beidni: b.beidni }))
+      .sort((a, c) => (nrById[a.id] || 999) - (nrById[c.id] || 999));   // röð eins og staðirnir voru skráðir
     const inService = onBoard.filter((b) => b.i_thjonustu);
     const stats = {
       byggingar: inService.length,
@@ -387,7 +403,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
-      stats, buildings: onBoard, reports, invoices, messages,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages,
     });
   } catch (e) {
     return P.json(500, { error: String((e && e.message) || e) });

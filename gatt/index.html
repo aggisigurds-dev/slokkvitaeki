@@ -297,6 +297,7 @@
   .sc:hover{transform:translateY(-2px);box-shadow:var(--panel-sh-hi)}
   .sc .k{font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--dim);font-weight:500;align-self:end;overflow-wrap:anywhere}
   .sc .v{font-family:var(--serif);font-size:46px;font-weight:600;color:var(--ink);line-height:1;margin-top:6px;text-shadow:0 1px 0 #fff;font-variant-numeric:lining-nums;align-self:start}
+  .sc .v.l{font-size:32px}.sc .v.xl{font-size:24px}
   .sc .v small{font-family:var(--ui);font-size:13px;color:var(--dim);font-weight:400;letter-spacing:.3px;text-shadow:none}
   .sc .art{grid-row:1/span 2;width:56px;height:56px;fill:url(#g-ic);overflow:visible;
     filter:drop-shadow(0 1px 0 rgba(255,255,255,.9)) drop-shadow(0 2px 3px rgba(var(--sh),.22))}
@@ -499,6 +500,61 @@
   .lb-m canvas,.lb-m img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
   .svc-in{width:100%;margin:-6px 0 16px;border:1px solid var(--line2);border-radius:4px;background:var(--well);box-shadow:var(--well-sh);padding:10px 12px;font-family:var(--ui);font-size:13.5px;color:var(--ink)}
   .svc-in:focus{outline:none;border-color:var(--accent)}
+  /* ── EIGNASAFN (eignir utan þjónustu, fyrirtaeki.eign) ── */
+  .es-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:36px 0 16px}
+  .es-h h3{margin:6px 0 0;font-family:var(--serif);font-size:32px;font-weight:600;color:var(--ink);line-height:1.05}
+  .egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+  .ecard{display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:6px;overflow:hidden;background:var(--panel);box-shadow:var(--panel-sh);transition:transform .25s ease,box-shadow .25s ease;animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .ecard:hover{transform:translateY(-3px);box-shadow:var(--panel-sh-hi)}
+  .eimg{position:relative;aspect-ratio:16/10;background:#d9dbde center/cover no-repeat;cursor:pointer;overflow:hidden}
+  .eimg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 60%,rgba(0,0,0,.28) 100%);transition:background .25s}
+  .ecard:hover .eimg::after{background:linear-gradient(180deg,rgba(0,0,0,.1) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,.12) 100%)}
+  .etag{position:absolute;left:12px;top:12px;z-index:1;padding:5px 11px;border-radius:99px;background:rgba(15,15,17,.74);color:#fff;font-family:var(--lbl);font-size:9.5px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .estat{position:absolute;right:12px;top:12px;z-index:1;padding:5px 11px;border-radius:99px;background:rgba(255,255,255,.92);color:var(--ink2);font-size:10.5px;font-weight:600;letter-spacing:.3px;box-shadow:0 2px 8px rgba(0,0,0,.22)}
+  .ecard.sent .estat{background:var(--m-face);color:var(--m-ink);border:1px solid var(--m-edge)}
+  .ebody{padding:15px 17px 4px}
+  .ebody h3{margin:0;font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink);line-height:1.1}
+  .efacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .efacts span{font-size:11px;font-weight:500;color:var(--ink2);padding:3px 9px;border-radius:99px;border:1px solid var(--line2);background:var(--key);box-shadow:inset 0 1px 0 #fff}
+  .efoot{display:flex;gap:8px;align-items:center;padding:14px 17px 17px;margin-top:auto}
+  .efoot .kbtn,.efoot .gbtn{height:38px;flex:1;padding:0 10px;font-size:11px}
+  .eok{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;color:var(--good)}
+  .eok svg{width:15px;height:15px}
+  .bic.ph{background:#ccc center/cover no-repeat;border:1px solid rgba(0,0,0,.15)}
+  .dr-head.hero{min-height:260px;align-items:flex-end;padding-top:26px;background:linear-gradient(180deg,rgba(8,8,10,.08) 0%,rgba(8,8,10,.3) 45%,rgba(8,8,10,.9) 100%),var(--hero) center/cover no-repeat}
+  .dr-head.hero .xbtn{align-self:flex-start}
+  .dr-head.hero .dr-tt h3{font-size:36px}
+  .ebanner{display:flex;gap:12px;align-items:center;margin-bottom:24px;padding:14px 16px;border-radius:5px;border:1px solid rgba(31,122,68,.35);background:linear-gradient(180deg,rgba(31,122,68,.06),rgba(31,122,68,.13));color:var(--ink)}
+  .ebanner svg{width:22px;height:22px;color:var(--good);flex:none}
+  .ebanner b{display:block;font-size:14px}
+  .ebanner span{font-size:12.5px;color:var(--ink2)}
+  .dkpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .dk.t .v{font-family:var(--ui);font-size:17px;font-weight:600;line-height:1.25;margin-top:9px}
+  .elys{font-size:14.5px;line-height:1.65;color:var(--ink2);margin:16px 0 0;max-width:860px}
+  .svcg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .svc-k{padding:16px 16px 17px;border:1px solid var(--line);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--key-sh)}
+  .svc-k .ic2{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--key);border:1px solid var(--line2);color:var(--accent);box-shadow:var(--key-sh);margin-bottom:11px}
+  .svc-k .ic2 svg{width:19px;height:19px}
+  .svc-k b{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
+  .svc-k span{font-size:12.5px;color:var(--ink2);line-height:1.5}
+  .skref{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .skref li{counter-increment:s;position:relative;padding:16px 16px 16px 60px;border:1px solid var(--line);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh);font-size:13px;color:var(--ink2);line-height:1.5}
+  .skref li::before{content:counter(s);position:absolute;left:15px;top:15px;width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--m-coin);color:var(--coin-ink);font-family:var(--serif);font-weight:700;font-size:17px;box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.35)}
+  .skref b{display:block;color:var(--ink);margin-bottom:2px}
+  .mcard.wide{width:min(780px,100%)}
+  .sk-top{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px}
+  .sk-top .flabel{margin:0}
+  .linkb{border:0;background:none;padding:0;font-family:var(--ui);font-size:12px;font-weight:600;color:var(--accent);cursor:pointer}
+  .sklist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px;max-height:330px;overflow:auto;padding:3px}
+  .skrow{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 8px;border:1px solid var(--line2);border-radius:5px;background:var(--key);box-shadow:var(--key-sh);cursor:pointer;min-width:0}
+  .skrow:has(input:checked){border-color:var(--accent);box-shadow:var(--key-sh),0 0 0 3px rgba(var(--glow),.15)}
+  .skrow input{accent-color:var(--accent);width:16px;height:16px;flex:none;margin:0}
+  .skrow i{width:58px;height:40px;border-radius:3px;background:#d4d6d9 center/cover no-repeat;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+  .skrow span{min-width:0}
+  .skrow b{display:block;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .skrow small{display:block;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .skrow.ok{opacity:.55;cursor:default}
+  #sk-adrar,#sk-text{margin-bottom:16px}
   /* ── ERINDI (fyrirspurn / verkbeiðni / bæta við þjónustu) ── */
   .modal{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(var(--sh),.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:fade .2s both}
   .mcard{width:min(580px,100%);max-height:calc(100vh - 40px);overflow:auto;border-radius:6px;padding:24px 26px 22px;
@@ -545,6 +601,7 @@
     .cards{grid-template-columns:repeat(2,1fr);gap:12px}
     .cards .sc:last-child:nth-child(odd){grid-column:1/-1}
     .sc .v{font-size:38px}
+    .sc .v.l{font-size:26px}.sc .v.xl{font-size:20px}
     .sc{column-gap:10px;padding:15px 14px}
     .sc .k{font-size:9.5px;letter-spacing:1px}
     .sc .art{width:40px;height:40px}
@@ -567,6 +624,13 @@
     .dr-foot .kbtn svg,.dr-foot .gbtn svg{display:none}
     .dkpis{grid-template-columns:repeat(3,1fr);gap:8px}
     .tgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .egrid{grid-template-columns:1fr}
+    .es-h{flex-direction:column;align-items:flex-start}
+    .es-h h3{font-size:27px}
+    .svcg,.skref{grid-template-columns:1fr}
+    .dkpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .sklist{grid-template-columns:1fr}
+    .dr-head.hero{min-height:200px}.dr-head.hero .dr-tt h3{font-size:27px}
     .lb{padding:0}.lb-k{height:100vh;border-radius:0}
     .lb-h b{font-size:17px}
     .seg{display:flex;width:100%}.seg button{flex:1;justify-content:center;padding:9px 6px;letter-spacing:.6px}
@@ -656,10 +720,11 @@
       <div class="kicker" id="yf-kicker">Staða brunavarna</div>
       <h2 class="page">Yfirlit</h2>
       <div class="cards" id="cards"></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Hótel</th><th>Slökkvit.</th><th>Slöngur</th><th>Brunak.</th><th>Skoðanir '23–'26<span class="thsub">slökkvitæki · brunakerfi</span></th><th>Næsta skoðun</th><th class="r">Skjöl · erindi</th></tr></thead>
+      <div class="tbl-wrap" id="yf-tbl"><table>
+        <thead><tr><th>Eign</th><th>Slökkvit.</th><th>Slöngur</th><th>Brunak.</th><th>Skoðanir '23–'26<span class="thsub">slökkvitæki · brunakerfi</span></th><th>Næsta skoðun</th><th class="r">Skjöl · erindi</th></tr></thead>
         <tbody id="yf-body"></tbody>
       </table><div class="tbl-foot" id="yf-foot"></div></div>
+      <div id="eignasafn"></div>
     </section>
     <!-- SKÝRSLUR -->
     <section id="v-skyrslur" class="hidden">
@@ -714,7 +779,7 @@
   <div class="dr-foot">
     <button type="button" class="kbtn" data-dr-erindi="fyrirspurn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>Senda fyrirspurn</button>
     <button type="button" class="kbtn" data-dr-erindi="verkbeidni" id="dr-vb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4.5" width="13" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="m9 13 2.2 2.2L15.5 11"/></svg>Senda verkbeiðni</button>
-    <button type="button" class="gbtn" data-dr-erindi="thjonusta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Bæta við þjónustu</button>
+    <button type="button" class="gbtn" id="dr-thj" data-dr-erindi="thjonusta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span id="dr-thj-l">Bæta við þjónustu</span></button>
   </div>
 </aside>
 
@@ -722,7 +787,7 @@
 <div class="modal hidden" id="er-modal" role="dialog" aria-modal="true" aria-labelledby="er-title">
   <form class="mcard" id="er-form">
     <div class="m-head">
-      <div class="grow"><div class="kicker">Erindi til Slökkvitækja ehf.</div><h3 id="er-title"></h3><div class="baddr" id="er-addr"></div></div>
+      <div class="grow"><div class="kicker" id="er-kick">Erindi til Slökkvitækja ehf.</div><h3 id="er-title"></h3><div class="baddr" id="er-addr"></div></div>
       <button type="button" class="xbtn" id="er-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="seg" id="er-seg">
@@ -767,8 +832,24 @@
     <button type="button" class="xbtn" id="lb-x" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="lb-m" id="lb-m"></div>
 </div></div>
+<!-- ══ SKRÁ EIGNIR Í ÞJÓNUSTU (eignasafn) ══ -->
+<div class="modal hidden" id="sk-modal" role="dialog" aria-modal="true" aria-labelledby="sk-title">
+  <form class="mcard wide" id="sk-form">
+    <div class="m-head"><div class="grow"><div class="kicker">Skrá eignir í þjónustu</div><h3 id="sk-title">Veljið eignir</h3><div class="baddr">Ein beiðni fer á hverja eign — við höfum samband og skipuleggjum fyrstu úttekt.</div></div>
+      <button type="button" class="xbtn" id="sk-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="sk-top"><span class="flabel">Eignir</span><button type="button" class="linkb" id="sk-allar">Velja allar</button></div>
+    <div class="sklist" id="sk-list"></div>
+    <span class="flabel">Þjónusta</span>
+    <div class="svc" id="sk-svc"></div>
+    <label class="flabel" for="sk-adrar">Aðrar eignir (valfrjálst — ein á línu)</label>
+    <textarea id="sk-adrar" class="svc-in" rows="3" placeholder="T.d. Smáratorg 5, 201 Kópavogur"></textarea>
+    <label class="flabel" for="sk-text">Athugasemd (valfrjálst)</label>
+    <textarea id="sk-text" class="svc-in" rows="2" placeholder="T.d. tengiliður á staðnum, hvenær hentar…"></textarea>
+    <div class="m-foot"><span class="m-note">Beiðnirnar birtast líka undir Skilaboð.</span><button type="submit" class="gbtn" id="sk-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Senda beiðni</button></div>
+  </form>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/portal.js?v=20261011e"></script>
+<script src="/gatt/portal.js?v=20261011r"></script>
 </body>
 </html>
