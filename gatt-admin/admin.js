@@ -60,6 +60,22 @@
     { k: 'grafit', n: 'Grafít', d: 'Grátt · silfur', hdr: '#27292d', paper: '#e3e4e6', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
     { k: 'blar', n: 'Blátt', d: 'Dökkblátt · silfur', hdr: '#132036', paper: '#e6ebf2', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
   ];
+  // Hlutar eignasíðunnar sem kveikt/slökkt er á per félag (portal_users.syn; vantar = á)
+  var SYN_LIST = [
+    ['teikningar', 'Teikningar', 'Forskoðun hverrar hæðar með merkjum'],
+    ['threed', '3D-mynd', 'Vistuð 3D-mynd hæðar'],
+    ['nidurhal', 'Niðurhal', 'Kúnni getur sótt teikningu og 3D'],
+    ['greining', 'Greining', 'Samantekt tækja, merkja og eldveggja'],
+    ['taeki', 'Tækjaskrá', 'Tegund, staðsetning, skoðunardagar'],
+    ['skjol', 'Skýrslur og reikningar', 'Skjöl eignarinnar'],
+    ['verkbeidni', 'Verkbeiðnir', 'Kúnni sendir verkbeiðni → Þjónustuborð'],
+  ];
+  function synHtml(a) {
+    var s = a.syn || {};
+    return '<div class="synir' + (a.show_details ? '' : ' off') + '">' + SYN_LIST.map(function (x) {
+      return '<label class="sck"><input type="checkbox" data-syn="' + x[0] + '"' + (s[x[0]] === false ? '' : ' checked') + '><span><b>' + esc(x[1]) + '</b><small>' + esc(x[2]) + '</small></span></label>';
+    }).join('') + '</div>';
+  }
   function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES[0]; }
   // Línutákn (engin emoji)
   var IC = {
@@ -127,7 +143,7 @@
       return '<tr class="rowline" data-id="' + a.id + '">' +
         '<td><div class="co">' + esc(a.base_nafn) + '</div><div class="kt">' + esc(a.slug || '') + '</div></td>' +
         '<td><span class="pill ' + st.c + '"><span class="dot"></span>' + st.t + '</span></td>' +
-        '<td class="hide-sm"><div class="look">' + themeChip(a.theme) + (a.show_details ? '<span class="det" title="Kúnni sér nánari upplýsingar um eignir">' + ic('eye') + 'Nánar</span>' : '') + '</div></td>' +
+        '<td class="hide-sm"><div class="look">' + themeChip(a.theme) + (a.show_details ? '<span class="det" title="Kúnni getur opnað eignasíðu">' + ic('eye') + 'Eignasíða</span>' : '') + '</div></td>' +
         '<td class="hide-sm acc ' + (a.email ? '' : 'none') + '">' + esc(a.email || '—') + '</td>' +
         '<td><div class="actions">' +
           '<button class="btn btn--sm btn--accent" data-act="imp" title="Opna vef kúnnans án lykilorðs">' + ic('open') + 'Opna sem kúnni</button>' +
@@ -190,7 +206,8 @@
         '<input type="hidden" data-f="theme" value="' + esc(themeOf(a.theme).k) + '">' +
         '<div class="themes" role="radiogroup" aria-label="Þema vefsins">' + themeCards(themeOf(a.theme).k) + '</div>' +
         '<label class="tgl"><input type="checkbox" data-f="details"' + (a.show_details ? ' checked' : '') + '><span class="sw"></span>' +
-          '<span><b>Nánari upplýsingar um eignir</b><small>Kúnni getur smellt á eign og séð tækjaskrá (tegund, stærð, staðsetningu, skoðunardaga), skoðanasögu, skýrslur og reikninga eignarinnar.</small></span></label>' +
+          '<span><b>Eignasíða</b><small>Kúnni getur smellt á eign og opnað eignasíðu. Veldu hér fyrir neðan hvað sést á henni.</small></span></label>' +
+        synHtml(a) +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
           '<button class="btn btn--accent" data-act="save">Vista aðgang</button>' +
           '<button class="btn" data-act="toggle">' + (a.active ? 'Afvirkja' : 'Virkja') + '</button>' +
@@ -202,6 +219,9 @@
 
   function wireEditor(a, row) {
     var emailEl = row.querySelector('[data-f="email"]');
+    // eignasíðu-hlutarnir eru aðeins virkir þegar aðalrofinn er á
+    var detTgl = row.querySelector('[data-f="details"]'), synBox = row.querySelector('.synir');
+    if (detTgl && synBox) detTgl.addEventListener('change', function () { synBox.classList.toggle('off', !detTgl.checked); });
     // þemaval: smellur (eða Enter/bil) á spjald velur; Forskoða-tengillinn opnar sýnishorn án þess að velja
     row.querySelectorAll('.tcard').forEach(function (c) {
       function pick() {
@@ -224,6 +244,8 @@
       if (pwEl.value.trim()) body.password = pwEl.value.trim();
       var themeEl = row.querySelector('[data-f="theme"]'); if (themeEl) body.theme = themeEl.value;
       var detEl = row.querySelector('[data-f="details"]'); if (detEl) body.show_details = !!detEl.checked;
+      var synEls = row.querySelectorAll('[data-syn]');
+      if (synEls.length) { body.syn = {}; synEls.forEach(function (c) { body.syn[c.getAttribute('data-syn')] = !!c.checked; }); }
       api(body).then(function (res) { if (res.ok) { toast('Vistað'); load(); } else toast(res.error || 'Villa'); });
     };
     row.querySelector('[data-act="toggle"]').onclick = function () {

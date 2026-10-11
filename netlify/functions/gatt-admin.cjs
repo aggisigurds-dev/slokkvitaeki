@@ -44,7 +44,7 @@ const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar'];
 function pubRow(r) { // aldrei skila pass_hash í vafra
   return { id: r.id, base_id: r.base_id, slug: r.slug, email: r.email || '', hasPassword: !!r.pass_hash,
     active: r.active, theme: r.theme, display_name: r.display_name, last_login: r.last_login, created_at: r.created_at,
-    show_details: !!r.show_details };
+    show_details: !!r.show_details, syn: (r.syn && typeof r.syn === 'object') ? r.syn : {} };
 }
 async function baseNames(ids) {
   const uniq = [...new Set(ids.filter((x) => x != null))];
@@ -117,6 +117,12 @@ exports.handler = async (event) => {
       if (typeof body.theme === 'string' && THEMES.includes(body.theme.trim())) patch.theme = body.theme.trim();
       // Hak: kúnni sér nánari upplýsingar um eign (tækjaskrá) þegar hann smellir á hana
       if (typeof body.show_details === 'boolean') patch.show_details = body.show_details;
+      // Hvaða hlutar eignasíðunnar sjást — aðeins þekktir lyklar, aðeins true/false
+      if (body.syn && typeof body.syn === 'object') {
+        const s = {};
+        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
+        patch.syn = s;
+      }
       if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });
       const r = await P.sbPatch(`portal_users?id=eq.${id}&select=*`, patch);
       if (!r.ok) return P.json(r.status, { error: 'Villa', detail: await r.text() });

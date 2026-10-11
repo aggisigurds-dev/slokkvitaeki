@@ -142,6 +142,14 @@
   .editor-in>div{min-width:0}
   .editor-in>.efull{grid-column:1/-1;padding-top:16px;border-top:1px solid var(--line2)}
   .efull .tgl{max-width:640px}
+  .synir{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:-4px 0 16px;transition:opacity .2s}
+  .synir.off{opacity:.42;pointer-events:none}
+  .sck{display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border:1px solid var(--line2);border-radius:4px;background:var(--key);box-shadow:var(--key-sh);cursor:pointer;transition:border-color .15s}
+  .sck:hover{border-color:var(--accent)}
+  .sck input{accent-color:var(--accent);width:15px;height:15px;margin:2px 0 0;flex:none}
+  .sck b{display:block;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .sck small{display:block;font-size:11px;color:var(--dim);line-height:1.35;margin-top:1px}
+  .sck:has(input:checked){border-color:rgba(var(--glow),.55);background:linear-gradient(180deg,#fff,#fbf3ec)}
   .editor h3{display:flex;align-items:center;gap:10px;font-family:var(--ui);font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin:0 0 12px;font-weight:600}
   .editor h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--glow),.5),rgba(var(--glow),0))}
   .fld{margin-bottom:13px}
@@ -230,6 +238,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="/gatt-admin/admin.js?v=20261010"></script>
+<script src="/gatt-admin/admin.js?v=20261011e"></script>
 </body>
 </html>
