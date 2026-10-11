@@ -1721,6 +1721,7 @@
     { k: 'forstofa', nafn: 'Forstofa / hol', lit: '#c9b2e4', hopur: 'ibud' },
     { k: 'geymsla', nafn: 'Geymsla / föt', lit: '#c7b8a2', hopur: 'ibud' },
     { k: 'svalir', nafn: 'Svalir', lit: '#a4d59b', hopur: 'ibud' },
+    { k: 'vinnurymi', nafn: 'Vinnustofa / skrifstofa', lit: '#d6c58c', hopur: 'ibud' },
     { k: 'stigahus', nafn: 'Stigahús', lit: '#e47d68', hopur: 'sameign' },
     { k: 'gangur', nafn: 'Gangur', lit: '#f0a78b', hopur: 'sameign' },
     { k: 'lyfta', nafn: 'Lyfta', lit: '#b9614f', hopur: 'sameign' },
@@ -1742,6 +1743,8 @@
     if (/thvott|(^| )thvo( |$)/.test(t)) return { teg: 'thvottur' };
     if (/(^| )bad|badh|(^| )wc|snyrt|salern|sturt/.test(t)) return { teg: 'bad' };
     if (/sval|sergard/.test(t)) return { teg: 'svalir' };
+    // á undan stofu: „Vinnustofa“ og „Skrifstofa“ enda á -stofa
+    if (/vinnust|skrifst|verkst|versl|lager|fundar|mottak/.test(t)) return { teg: 'vinnurymi' };
     if (/stof[a-z]*\/ *eld/.test(t)) return { teg: 'eldhus', lika: 'stofa' };
     if (/eldh|eldun|kaffi|motuneyt/.test(t)) return { teg: 'eldhus' };
     if (/stof|bordst|setust/.test(t)) return { teg: 'stofa' };
