@@ -7,8 +7,9 @@
  *   (267), forgangur (175), GÓ (418), Í vinnslu-hakið og staðan (153), endurheimt, ferðanótan (153 + 394) — og
  *   smellur á spjaldið opnar staðinn eins og röðin gerði. Dálkahausarnir verða röðunarflísar ofan við spjöldin.
  *
- *   Rofinn „Spjöld / Listi" situr í hlutahausnum hjá „Númer" og kortinu (394 .arsm-verkf). Valið er útlitsval
- *   eins vafra (localStorage `ars_spjold_v1`) — það snertir engin gögn.
+ *   Rofinn „Spjöld / Listi" situr í hlutahausnum hjá „Númer" og kortinu (394 .arsm-verkf). Listinn er ALLTAF
+ *   sjálfgefinn (Agnar 11.10: „hafa samt lista default á báðum stöðum") — valið lifir aðeins þar til síðan er
+ *   endurhlaðin og er hvergi vistað.
  *
  *   Uppsetning spjalds (grind 4 dálka):
  *     1  MYNDIN af húsinu (11.10.2026, Agnar: „Myndin áttu núna að vera aðalatriðið"): sama mynd og í
@@ -32,7 +33,6 @@
   if (window.__arsSpjold457) return;
   window.__arsSpjold457 = true;
 
-  var LYKILL = 'ars_spjold_v1';
   var P = 'html.ars-spjold body #view-arsskodun ';
   var F = ':not(#_p457a):not(#_p457b):not(#_p457c):not(#_p457d):not(#_p457e):not(#_p457f):not(#_p457g):not(#_p457h)';
   var T = '._ars-tblscroll table.data-table ';
@@ -225,9 +225,7 @@
     st.textContent = texti;
   }
 
-  function a() { try { return localStorage.getItem(LYKILL) === '1'; } catch (_) { return false; } }
   function setja(on) {
-    try { localStorage.setItem(LYKILL, on ? '1' : '0'); } catch (_) {}
     document.documentElement.classList.toggle('ars-spjold', on);
     if (on) myndir();
     takki();
@@ -267,8 +265,10 @@
     }).observe(v, { childList: true, subtree: true });
   }
 
+  // Myndaslóðin er líka notuð af spjöldum skoðunarsíðnanna (458)
+  window.SpjaldMynd = { slod: myndSlod };
+
   css();
-  document.documentElement.classList.toggle('ars-spjold', a());
   document.addEventListener('ars:render', function () { try { takki(); myndir(); } catch (_) {} });
   // AppSettings getur borist eftir fyrstu teikningu — myndablaðið er endurreiknað (aðeins ef eitthvað breyttist)
   [1500, 5000, 15000].forEach(function (t) { setTimeout(function () { try { myndir(); } catch (_) {} }, t); });

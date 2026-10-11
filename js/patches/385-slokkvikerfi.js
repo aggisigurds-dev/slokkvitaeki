@@ -41,6 +41,9 @@
   const LS = FLOKKUR.key + '_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
 
   const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
+  // 11.10.2026 (Agnar: „hafa samt lista default á báðum stöðum"): taflan er alltaf sjálfgefin við opnun — spjaldavalið
+  // gildir aðeins þar til síðan er endurhlaðin (mjór gluggi ≤ 900 px fær spjöld eins og áður, sjá utlit()).
+  delete state.utlit;
   let _rows = null, _loading = false, _villa = '';
   let _loadGen = 0, _lastLoad = 0;
   const CACHE_MS = 60000;
@@ -53,7 +56,7 @@
   // þegar glugginn er í raun mjór (≤ 900 px útlitsbreidd) eða þegar þau eru valin með rofanum.
   function utlit() { return state.utlit === 'spjold' || state.utlit === 'tafla' ? state.utlit : ((window.innerWidth || 1200) <= 900 ? 'spjold' : 'tafla'); }
   function lesaSiu() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (_) { return {}; } }
-  function vistaSiu() { try { localStorage.setItem(LS, JSON.stringify({ utlit: state.utlit, stada: state.stada, man: state.man, postnr: state.postnr, felaUr: state.felaUr, sort: state.sort, dir: state.dir })); } catch (_) {} }
+  function vistaSiu() { try { localStorage.setItem(LS, JSON.stringify({ stada: state.stada, man: state.man, postnr: state.postnr, felaUr: state.felaUr, sort: state.sort, dir: state.dir })); } catch (_) {} }
   function dm(iso) { if (!iso) return '—'; const p = String(iso).slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   function fmtKt(kt) { const t = String(kt || '').replace(/\D/g, ''); return t.length === 10 ? t.slice(0, 6) + '-' + t.slice(6) : String(kt || ''); }
   function kr(n) { return Math.round(n).toLocaleString('is-IS') + ' kr'; }
