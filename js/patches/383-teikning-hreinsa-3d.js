@@ -1763,10 +1763,10 @@
     const pxm = metri * k.c * s;                        // dílar vinnurastans á metra
     if (!(pxm >= 4)) return null;
     const sjalfg = Math.max(k.gw, k.gh) * 0.004;
-    const teikna = (medSvolum, medHurdum = true) => {
+    const teikna = (medSvolum, medHurdum = true, auka = 0) => {
       const c = document.createElement('canvas'); c.width = RW; c.height = RH;
       const x = c.getContext('2d'); x.strokeStyle = '#000'; x.lineCap = 'square';
-      const strik = (v, th) => { x.lineWidth = Math.max(2, th * k.c * s); x.beginPath(); x.moveTo(v[0] * kv * s, v[1] * kv * s); x.lineTo(v[2] * kv * s, v[3] * kv * s); x.stroke(); };
+      const strik = (v, th) => { x.lineWidth = Math.max(2, th * k.c * s) + auka; x.beginPath(); x.moveTo(v[0] * kv * s, v[1] * kv * s); x.lineTo(v[2] * kv * s, v[3] * kv * s); x.stroke(); };
       hd.butar.forEach(v => strik(v, Math.max(0.8, metri * 0.24, (v[4] || 0) * f || sjalfg)));
       (hd.gler || []).concat(medHurdum ? (hd.hurdir || []) : []).forEach(v => strik(v, Math.max(metri * 0.15, (v[4] || 0) * f)));
       if (medSvolum) (hd.svalir || []).forEach(v => strik(v, Math.max(0.6, metri * 0.2, (v[4] || 0) * f || sjalfg)));
@@ -1783,8 +1783,27 @@
       while (top) { const p = st[--top], px = p % RW; if (px > 0) yta(p - 1); if (px < RW - 1) yta(p + 1); if (p >= RW) yta(p - RW); if (p < N - RW) yta(p + RW); }
       return uti;
     };
-    const vA = teikna(true), uA = flaeda(vA);
-    const uB = (hd.svalir || []).length ? flaeda(teikna(false)) : uA;
+    // LOKUN ÚTLÍNU (Dalshraun 1, 11.10.2026: glerframhlið draganna með bilum — flóðið lak inn, „2 % innan"): ytra
+    // flóðið fer um veggi sem eru rL þykkari á hvorn veg (bil allt að ~1,2 m lokast), og vex svo rL aftur inn að
+    // raunverulegu veggjunum. Rýmin sjálf eru greind á þunnu veggjunum.
+    const rL = Math.max(2, Math.round(0.6 * pxm));
+    const flaedaLokad = (vThunnt, medSvolum) => {
+      const uT = flaeda(teikna(medSvolum, true, 2 * rL)), d = new Int16Array(N).fill(-1);
+      let q0 = 0, q1 = 0;
+      for (let p = 0; p < N; p++) if (uT[p]) { d[p] = 0; st[q1++] = p; }
+      while (q0 < q1) {
+        const p = st[q0++], dd = d[p]; if (dd >= rL) continue;
+        const px = p % RW;
+        if (px > 0 && d[p - 1] < 0 && !vThunnt[p - 1]) { d[p - 1] = dd + 1; st[q1++] = p - 1; }
+        if (px < RW - 1 && d[p + 1] < 0 && !vThunnt[p + 1]) { d[p + 1] = dd + 1; st[q1++] = p + 1; }
+        if (p >= RW && d[p - RW] < 0 && !vThunnt[p - RW]) { d[p - RW] = dd + 1; st[q1++] = p - RW; }
+        if (p < N - RW && d[p + RW] < 0 && !vThunnt[p + RW]) { d[p + RW] = dd + 1; st[q1++] = p + RW; }
+      }
+      const u = new Uint8Array(N); for (let p = 0; p < N; p++) u[p] = d[p] >= 0 ? 1 : 0;
+      return u;
+    };
+    const vA = teikna(true), uA = flaedaLokad(vA, true);
+    const uB = (hd.svalir || []).length ? flaedaLokad(teikna(false), false) : uA;
     // rönd 20 cm út frá hvorri hlið svalaveggja: rými sem liggur að svalavegg (≥ 1 m) eru svalir, líka þegar brún
     // svalanna er teiknuð sem veggur undir handriðinu (DRA 2. hæð)
     let sN = null;
@@ -2710,6 +2729,8 @@
     let thak = null, husA = 0, husAnim = null, husMerki = null;
     if (husH && lag.length) {
       taekiHlutir.forEach(o => { o.visible = false; });
+      // hæð án gólfefna (útlínan lokaðist ekki): teikningablaðið allt yrði hvít plata í staflanum — dauft og gegnsætt
+      lag.forEach(lg => { if (!lg.golfefni) { lg.golfE.opacity = 0.18; lg.golfE.depthWrite = false; lg.golfE.needsUpdate = true; if (lg.dauf) lg.dauf.visible = false; } });
       const efst = lag[lag.length - 1], src = efst.golfefni && efst.golfefni.strigi;
       if (src) {
         const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
