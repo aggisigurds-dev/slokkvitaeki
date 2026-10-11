@@ -188,6 +188,7 @@
       if (DEMO.account.details) DEMO.buildings.forEach(function (b, bi) { b.equipment = demoEquipment(b); b.teikning = demoTeikning(b, bi); });
       DEMO.account.syn = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true };
       demoEignagatt();
+      if (window.GattVinnusvaedi) GattVinnusvaedi.demo(DEMO);
       renderPortal(DEMO); showDemoRibbon(); return;
     }
     fetch('/api/gatt', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
@@ -259,6 +260,7 @@
       }),
       messages: d.messages || [],
       erindi: d.erindi || [],
+      items: d.items || [],
       eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null, kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null }; }),
     };
     afskeyta(out);
@@ -352,6 +354,7 @@
     renderYfTools();
     renderEgYfir();
     renderEldvarnabok();
+    if (window.GattVinnusvaedi) GattVinnusvaedi.render();
     renderMessages(data.messages);
     wireNav();
   }
@@ -470,7 +473,7 @@
   }
 
   /* ── nav / lang / logout ── */
-  var VIEWS = ['yfirlit', 'eldvarnabok', 'skyrslur', 'reikningar', 'skilabod'];
+  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'skilabod'];
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
@@ -539,7 +542,8 @@
      Smellur á eign opnar eignasíðu: yfirlit, teikningar hverrar hæðar (2D með merkjum
      eða vistuð 3D-mynd, stækka + sækja), greining teikninga, tækjaskrá, skýrslur og
      reikningar. syn (valið á gatt-admin) ræður hvaða hlutar sjást. */
-  var SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true };
+  var SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
+    punktar: true, vinnusvaedi: true, baeta_eign: true };   // 11.10.2026: verkbeiðnapunktar, Mitt vinnusvæði, Bæta við eign (eignagatt.js)
   function synOf() {
     var a = (state.data && state.data.account) || {}, s = {};
     Object.keys(SYN_DEF).forEach(function (k) { s[k] = a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]; });
@@ -621,6 +625,8 @@
         x.fillStyle = m[2] || '#e11d2e'; x.fill();
         x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
       });
+      // Verkbeiðnapunktar ofan á (eignagatt.js) — sami kvarði og merkin, svo smellur reiknast til baka í frumdíla
+      if (window.GattPunktar) GattPunktar.teikna(c, f, { k0: k0, k: k, sk: sk, nb: nb, nh: nh });
       return c;
     });
   }
@@ -672,6 +678,7 @@
     var both = !!(f.mynd && f.threed);
     var k = document.createElement('div');
     k.className = 'fcard' + (j >= 5 ? ' umfram' : '');
+    f._fid = b.id; f._haed = (b.teikning || []).indexOf(f);   // hvaða eign og hæð — fyrir verkbeiðnapunkta
     k._f = f; k._ham = f.threed && (!f.mynd || syn.threed) ? '3d' : 'teikning';
     if (!f.mynd) k._ham = '3d';
     k.innerHTML = '<div class="fcard-h"><span>' + esc(f.nafn || ((j + 1) + '. hæð')) + (f.mynd && f.merki ? '<small>' + tala(f.merki.length, 'merki', 'merki') + '</small>' : '') + '</span>' +
@@ -683,8 +690,9 @@
     k.querySelectorAll('.fseg button').forEach(function (x) {
       x.onclick = function (e) { e.stopPropagation(); k._ham = x.getAttribute('data-ham'); merkja(); synaHaed(k.querySelector('.fm'), f, k._ham); };
     });
-    k.querySelector('.fm').onclick = function () { opnaLb(b, f, k._ham); };
+    k.querySelector('.fm').onclick = function (e) { if (window.GattPunktar && GattPunktar.smellur(e, f, b)) return; opnaLb(b, f, k._ham); };
     var dl = k.querySelector('.dl'); if (dl) dl.onclick = function () { saekja(b, f, k._ham); };
+    if (window.GattPunktar) GattPunktar.spjald(k, b, f);
     if (sjonarhorn) sjonarhorn.observe(k); else synaHaed(k.querySelector('.fm'), f, k._ham);
     return k;
   }
@@ -816,13 +824,15 @@
     $('#lb').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     synaHaed($('#lb-m'), f, ham, 2600);
+    if (window.GattPunktar) GattPunktar.lbOpin(b, f, ham);
   }
   function lokaLb() {
+    if (window.GattPunktar) GattPunktar.lbLokad();
     $('#lb').classList.add('hidden'); $('#lb-m').innerHTML = ''; lbS = null;
     if ($('#drawer').classList.contains('hidden') && $('#er-modal').classList.contains('hidden')) document.body.style.overflow = '';
   }
   document.querySelectorAll('#lb-seg button').forEach(function (x) {
-    x.onclick = function () { if (!lbS) return; lbS.ham = x.getAttribute('data-ham'); lbMerkja(); synaHaed($('#lb-m'), lbS.f, lbS.ham, 2600); };
+    x.onclick = function () { if (!lbS) return; lbS.ham = x.getAttribute('data-ham'); lbMerkja(); synaHaed($('#lb-m'), lbS.f, lbS.ham, 2600); if (window.GattPunktar) GattPunktar.lbOpin(lbS.b, lbS.f, lbS.ham); };
   });
   $('#lb-dl').onclick = function () { if (lbS) saekja(lbS.b, lbS.f, lbS.ham); };
   $('#lb-x').onclick = lokaLb;
@@ -966,6 +976,17 @@
   ICON.utgangur = '<path d="M13 4h6v16h-6"/><path d="M15.5 12H6"/><path d="m9 8.5-3.5 3.5L9 15.5"/>';
   ICON.teikning = '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 11h7v9M10 4v4M14 11h7M14 11v4"/>';
   ICON.plus = '<path d="M12 5v14M5 12h14"/>';
+  // Tákn fyrir eignagatt.js (verkbeiðnapunktar, Mitt vinnusvæði) — stroke-SVG, engin emoji
+  ICON.x = '<path d="M6 6l12 12M18 6 6 18"/>';
+  ICON.til_baka = '<path d="m14 6-6 6 6 6"/>';
+  ICON.afram = '<path d="m10 6 6 6-6 6"/>';
+  ICON.upp = '<path d="m6 14 6-6 6 6"/>';
+  ICON.nidur = '<path d="m6 10 6 6 6-6"/>';
+  ICON.hlekkur = '<path d="M10 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L11.5 5.8"/><path d="M14 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/>';
+  ICON.mynd = '<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m5 18 5-5 3 3 2.5-2.5L20 18"/>';
+  ICON.skjal = '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/>';
+  ICON.kort = '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>';
+  ICON.dagatal = '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>';
 
   /* ── ÞARFAGREINING (fyrirtaeki.eign.thorf) — búnaður og kerfi sem reglur krefjast, per hæð.
      Leiðbeinandi greining eftir byggingarreglugerð 112/2012 og 165.BR1 (Arnold); fyrirvarinn
@@ -1265,7 +1286,8 @@
     return '<div class="erow"><div class="er-h"><span class="tb plain">' + esc(ER_TEG[e.tegund] || 'Erindi') + '</span>' +
       '<b>' + esc(e.titill || '') + '</b>' + (eign ? '<span class="er-e">' + esc(eign.nafn) + '</span>' : '') +
       '<span class="dd">' + esc(fmtDate(e.dags)) + '</span></div>' +
-      '<div class="erstep">' + ER_SKREF.map(function (s, j) { return '<span class="' + (j < i ? 'buid' : j === i ? 'nu' : '') + '">' + esc(s[1]) + '</span>'; }).join('') + '</div></div>';
+      '<div class="erstep">' + ER_SKREF.map(function (s, j) { return '<span class="' + (j < i ? 'buid' : j === i ? 'nu' : '') + '">' + esc(s[1]) + '</span>'; }).join('') + '</div>' +
+      (window.GattPunktar ? GattPunktar.erindiAuki(e) : '') + '</div>';
   }
   function erindiHtml(b) {
     if (!synOf().erindi) return '';
@@ -1601,5 +1623,14 @@
       { id: 3, fid: 9001, titill: 'Verkbeiðni', stada: 'lokid', tegund: 'verkbeidni', dags: new Date(Date.now() - 20 * 864e5).toISOString() }];
   }
 
+  // Innri föll fyrir eignagatt.js (verkbeiðnapunktar, Mitt vinnusvæði) — hleðst á undan og kallar aðeins eftir boot
+  window.Gatt = {
+    state: state, svgIc: svgIc, toast: toast, synOf: synOf, eignAfId: eignAfId, vistaBlob: vistaBlob,
+    renderYfirlit: renderYfirlit, renderEgYfir: renderEgYfir, renderEignasafn: renderEignasafn,
+    openDrawer: openDrawer, openUtan: openUtan, closeDrawer: closeDrawer, drB: function () { return drB; },
+    synaHaed: synaHaed, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; },
+    skodanirEignar: skodanirEignar, ebManudir: ebManudir, ebRod: ebRod, MAN_STUTT: MAN_STUTT, MAN_LANGT: MAN_LANGT,
+    SLUG: function () { return SLUG; },
+  };
   boot();
 })();

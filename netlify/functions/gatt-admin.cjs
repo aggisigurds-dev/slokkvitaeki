@@ -41,6 +41,41 @@ function origin(event) {
 }
 // Þemu Þjónustuvefsins (gatt/index.html :root[data-theme=…]). Annað gildi er hunsað.
 const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar'];
+const M = require('./_gatt-myndir.cjs');
+async function verkListi() {
+  const since = new Date(Date.now() - 30 * 864e5).toISOString();
+  const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at';
+  const filt = 'and=(or(source.eq.gatt,tags.cs.' + encodeURIComponent('["gatt"]') + '),or(status.not.in.(lokad,klarad),updated_at.gte.' + encodeURIComponent(since) + '))';
+  const r = await P.sbGet(`thjonustubeidni?${filt}&deleted_at=is.null&select=${sel}&order=created_at.desc&limit=150`);
+  if (!r.ok) return [];
+  const rows = await r.json();
+  const paths = [];
+  rows.forEach((x) => [].concat(x.myndir || [], x.eftirmyndir || []).forEach((m) => { if (m && m.path) paths.push(m.path); }));
+  const slod = await M.undirrita(paths, 900);
+  const fids = [...new Set(rows.map((x) => x.fyrirtaeki_id).filter(Boolean))];
+  const fnafn = {}, haedir = {};
+  if (fids.length) {
+    const fr = await P.sbGet(`fyrirtaeki?id=in.(${fids.join(',')})&select=id,nafn,heimilisfang`);
+    if (fr.ok) (await fr.json()).forEach((f) => { fnafn[f.id] = f; });
+    const pf = [...new Set(rows.filter((x) => x.punktur && x.fyrirtaeki_id).map((x) => x.fyrirtaeki_id))];
+    if (pf.length) {
+      const tr = await P.sbGet(`teikning_bord?company_id=in.(${pf.join(',')})&select=company_id,haedir,image_url`);
+      if (tr.ok) (await tr.json()).forEach((t) => {
+        const hs = Array.isArray(t.haedir) && t.haedir.length ? t.haedir : (t.image_url ? [{ nafn: 'Teikning', image_url: t.image_url }] : []);
+        haedir[t.company_id] = hs.map((h) => ({ nafn: h.nafn || '', mynd: h.image_url || null, frum: h.frum && h.frum.b > 0 ? { b: h.frum.b, h: h.frum.h } : null,
+          skurdur: h.skurdur && h.skurdur.w > 8 ? { x: h.skurdur.x, y: h.skurdur.y, w: h.skurdur.w, h: h.skurdur.h } : null }));
+      });
+    }
+  }
+  const mynd = (L) => (Array.isArray(L) ? L : []).map((m) => m && m.path && slod[m.path] ? { url: slod[m.path], at: m.at || null, af: m.af || null } : null).filter(Boolean);
+  return rows.map((x) => {
+    const f = fnafn[x.fyrirtaeki_id] || {}, hs = haedir[x.fyrirtaeki_id] || [];
+    const haed = x.punktur && hs[x.punktur.haed] ? hs[x.punktur.haed] : null;
+    return { id: x.id, base_id: x.customer_base_id, fid: x.fyrirtaeki_id, eign: f.nafn || '', heimilisfang: f.heimilisfang || '', title: x.title, summary: x.summary || '',
+      status: x.status, abyrgd: x.abyrgd || 'okkar', tags: Array.isArray(x.tags) ? x.tags : [], created_at: x.created_at, updated_at: x.updated_at,
+      punktur: x.punktur || null, haed, myndir: mynd(x.myndir), eftirmyndir: mynd(x.eftirmyndir), lokid_at: x.lokid_at, lokid_af: x.lokid_af, lokid_lysing: x.lokid_lysing, tilkynnt_at: x.tilkynnt_at };
+  });
+}
 function pubRow(r) { // aldrei skila pass_hash í vafra
   return { id: r.id, base_id: r.base_id, slug: r.slug, email: r.email || '', hasPassword: !!r.pass_hash,
     active: r.active, theme: r.theme, display_name: r.display_name, last_login: r.last_login, created_at: r.created_at,
@@ -74,11 +109,16 @@ exports.handler = async (event) => {
       const access = ar.ok ? await ar.json() : [];
       const mr = await P.sbGet('portal_messages?select=*&order=created_at.desc&limit=100');
       const messages = mr.ok ? await mr.json() : [];
-      const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id)]);
+      // Verkbeiðnir og verkefni af þjónustuvef (11.10.2026): opin mál + þau sem lokað var síðustu 30 daga, með myndum
+      // (undirritaðar úr einkamáls-bucketinu gatt) og hæðinni sem punkturinn situr á, svo starfsmaður sjái staðinn.
+      const verk = await verkListi();
+      const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id)]);
+      verk.forEach((v) => { v.base_nafn = (names[v.base_id] || {}).nafn || ('#' + v.base_id); });
       return P.json(200, {
         access: access.map((a) => Object.assign(pubRow(a), { base_nafn: (names[a.base_id] || {}).nafn || ('#' + a.base_id) })),
         messages: messages.map((m) => ({ id: m.id, base_id: m.base_id, base_nafn: (names[m.base_id] || {}).nafn || ('#' + m.base_id),
           sender: m.sender, body: m.body, author_name: m.author_name, created_at: m.created_at, read_by_staff: m.read_by_staff })),
+        verk,
       });
     }
 
@@ -120,7 +160,7 @@ exports.handler = async (event) => {
       // Hvaða hlutar eignasíðunnar sjást — aðeins þekktir lyklar, aðeins true/false
       if (body.syn && typeof body.syn === 'object') {
         const s = {};
-        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni', 'kerfi', 'erindi', 'eldvarnabok'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
+        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni', 'kerfi', 'erindi', 'eldvarnabok', 'punktar', 'vinnusvaedi', 'baeta_eign'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
         patch.syn = s;
       }
       if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });
@@ -201,6 +241,15 @@ exports.handler = async (event) => {
       } catch (e) { return P.json(502, { error: 'Póstur sendist ekki', detail: String((e && e.message) || e) }); }
       if (!mres.ok) { const t = await mres.text().catch(() => ''); return P.json(502, { error: 'Póstur sendist ekki', detail: t.slice(0, 300) }); }
       return P.json(200, { ok: true, sent_to: to });
+    }
+
+    // Staða verkbeiðnar af vef (nytt → i_vinnslu). Lokun með eftirmynd fer um /api/verkbeidni-lokid.
+    if (action === 'verk-stada') {
+      const id = parseInt(body.id, 10), status = ['nytt', 'i_vinnslu'].includes(body.status) ? body.status : null;
+      if (!id || !status) return P.json(400, { error: 'id/status vantar' });
+      const r = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=id,status`, { status, updated_at: new Date().toISOString() });
+      if (!r.ok) return P.json(r.status, { error: 'Villa', detail: await r.text() });
+      return P.json(200, { ok: true });
     }
 
     if (action === 'reply-msg') {

@@ -72,6 +72,9 @@
     ['kerfi', 'Kerfi og kröfur', 'Kerfi hverrar eignar: skylt, til staðar, okkar'],
     ['erindi', 'Erindi', 'Staða erinda: móttekið → í vinnslu → lokið'],
     ['eldvarnabok', 'Eldvarnabók', 'Mánaðarlegt eigið eftirlit, undirritað í gáttinni'],
+    ['punktar', 'Verkbeiðnapunktar', 'Verkbeiðni sett sem punktur á teikningu með mynd; grænn þegar lagað'],
+    ['vinnusvaedi', 'Mitt vinnusvæði', 'Dagatal, verkefni, kort, niðurhal, skjöl og hlekkir kúnnans'],
+    ['baeta_eign', 'Bæta við eign', 'Kúnni bætir eign við úr Landeignaskrá HMS (utan þjónustu)'],
   ];
   function synHtml(a) {
     var s = a.syn || {};
@@ -117,8 +120,8 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.error) { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">' + esc(d.error) + '</td></tr>'; return; }
-        state.access = d.access || []; state.messages = d.messages || [];
-        renderStats(); renderAccess(); renderMessages();
+        state.access = d.access || []; state.messages = d.messages || []; state.verk = d.verk || [];
+        renderStats(); renderAccess(); renderMessages(); renderVerk();
       })
       .catch(function () { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">Villa við að sækja gögn</td></tr>'; });
   }
@@ -311,6 +314,88 @@
           if (res.ok) { api({ action: 'mark-read', base_id: parseInt(base, 10) }).then(load); toast('Svar sent'); }
           else { toast(res.error || 'Villa'); btn.disabled = false; }
         });
+      };
+    });
+  }
+
+  // ── Verkbeiðnir og verkefni af þjónustuvef (11.10.2026) ────────────────────
+  // Okkar hlið á gáttinni: mynd kúnnans, punkturinn á teikningunni, staða, „Lagað — eftirmynd" (→ /api/verkbeidni-lokid:
+  // lokar málinu, skrifar tilkynningu í skilaboðaþráð kúnnans, punkturinn verður grænn hjá honum). Málið er líka á
+  // Þjónustuborðinu (thjonustubeidni) — þetta er sama röðin.
+  var ABYRGD = { okkar: 'Okkar', eigandi: 'Eigandi sjálfur', annar: 'Annar verktaki' };
+  var STADA = { nytt: 'Nýtt', i_vinnslu: 'Í vinnslu', bedid: 'Beðið', tilbuid: 'Tilbúið', lokad: 'Lokið', klarad: 'Lokið' };
+  var verkSia = 'opin';
+  function verkTitill(t) { return String(t || '').replace(/\s+af þjónustuvef/i, '').replace(/\s+—\s+[^—]*$/, '').trim() || 'Verkbeiðni'; }
+  function myndir(L, eftir) {
+    if (!L || !L.length) return '';
+    return '<div class="vmyndir">' + L.map(function (m) { return '<a class="vth' + (eftir ? ' eftir' : '') + '" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img src="' + esc(m.url) + '" alt="" loading="lazy">' + (eftir ? '<span>Eftir</span>' : '') + '</a>'; }).join('') + '</div>';
+  }
+  function renderVerk() {
+    var el = $('#verkPanel'); if (!el) return;
+    var L = (state.verk || []).filter(function (v) { return verkSia === 'oll' || (verkSia === 'opin' ? !/^(lokad|klarad)$/.test(v.status) : v.abyrgd !== 'okkar'); });
+    var opin = (state.verk || []).filter(function (v) { return !/^(lokad|klarad)$/.test(v.status); }).length;
+    var head = '<div class="vsiur"><button class="btn btn--sm' + (verkSia === 'opin' ? ' on' : '') + '" data-vsia="opin">Opin · ' + opin + '</button><button class="btn btn--sm' + (verkSia === 'kunna' ? ' on' : '') + '" data-vsia="kunna">Verkefni kúnna</button><button class="btn btn--sm' + (verkSia === 'oll' ? ' on' : '') + '" data-vsia="oll">Öll · ' + (state.verk || []).length + '</button></div>';
+    if (!L.length) { el.innerHTML = head + '<div class="empty">Engar verkbeiðnir' + (verkSia === 'opin' ? ' opnar' : '') + '.</div>'; wireVerk(el); return; }
+    el.innerHTML = head + L.map(function (v) {
+      var lok = /^(lokad|klarad)$/.test(v.status);
+      return '<div class="verk' + (lok ? ' lok' : '') + '" data-verk="' + v.id + '">' +
+        '<div class="vh"><i class="vdot ' + esc(v.status) + '"></i><div class="vt"><b>' + esc(verkTitill(v.title)) + '</b><small>' + esc(v.base_nafn) + (v.eign ? ' · ' + esc(v.eign) : '') + (v.punktur ? ' · ' + esc(v.punktur.nafn || 'teikning') + ' (punktur)' : '') + ' · ' + esc(fmtDate(v.created_at)) + '</small></div>' +
+          '<span class="vab ' + esc(v.abyrgd) + '">' + esc(ABYRGD[v.abyrgd] || 'Okkar') + '</span>' +
+          (lok ? '<span class="vst lok">Lokið ' + esc(fmtDate(v.lokid_at || v.updated_at)) + (v.lokid_af ? ' · ' + esc(v.lokid_af) : '') + '</span>'
+            : '<select class="inp vsel" data-vstada="' + v.id + '"><option value="nytt"' + (v.status === 'nytt' ? ' selected' : '') + '>Nýtt</option><option value="i_vinnslu"' + (v.status === 'i_vinnslu' ? ' selected' : '') + '>Í vinnslu</option></select>') + '</div>' +
+        (v.summary ? '<p class="vsum">' + esc(v.summary) + '</p>' : '') +
+        '<div class="vbody">' + (v.punktur && v.haed && v.haed.mynd ? '<div class="vkort" data-vkort="' + v.id + '"><canvas></canvas><span class="vk-l">' + esc(v.haed.nafn || '') + '</span></div>' : '') +
+          '<div class="vmed">' + myndir(v.myndir) + myndir(v.eftirmyndir, true) + (v.lokid_lysing ? '<div class="vlok">' + esc(v.lokid_lysing) + '</div>' : '') +
+          (!lok ? '<form class="vloka" data-vloka="' + v.id + '"><input class="inp" placeholder="Hvað var gert (sést hjá kúnna)" maxlength="1000"><label class="btn btn--sm"><input type="file" accept="image/*" capture="environment" hidden>' + ic('eye') + '<span>Eftirmynd</span></label><span class="vfile"></span><button class="btn btn--sm btn--accent" type="submit">Lagað — loka</button></form>' : '') + '</div></div></div>';
+    }).join('');
+    wireVerk(el);
+    L.forEach(function (v) { if (v.punktur && v.haed && v.haed.mynd) teiknaKort(el.querySelector('[data-vkort="' + v.id + '"] canvas'), v); });
+  }
+  // Smámynd af hæðinni með punktinum — sami reikningur og í gáttinni (skurður í frumdílum, punktur í frumdílum)
+  function teiknaKort(c, v) {
+    if (!c) return;
+    var img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = function () {
+      var nb = img.naturalWidth, nh = img.naturalHeight, h = v.haed, k0 = h.frum && h.frum.b > 0 ? nb / h.frum.b : 1;
+      var sk = h.skurdur || { x: 0, y: 0, w: nb / k0, h: nh / k0 };
+      var sx = sk.x * k0, sy = sk.y * k0, sw = Math.max(1, sk.w * k0), sh = Math.max(1, sk.h * k0), k = Math.min(1, 520 / Math.max(sw, sh));
+      c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+      var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      var px = (v.punktur.x - sk.x) * k0 * k, py = (v.punktur.y - sk.y) * k0 * k, r = Math.max(7, c.width / 60);
+      x.beginPath(); x.arc(px, py, r + 3, 0, 2 * Math.PI); x.fillStyle = '#fff'; x.fill();
+      x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI); x.fillStyle = /^(lokad|klarad)$/.test(v.status) ? '#1f7a44' : v.status === 'i_vinnslu' ? '#c48a1a' : '#c0392b'; x.fill();
+    };
+    img.onerror = function () { c.parentNode.innerHTML = '<div class="vk-e">Teikningin sést ekki hér (PDF) — opnaðu vefinn sem kúnni til að sjá punktinn.</div>'; };
+    img.src = v.haed.mynd;
+  }
+  function wireVerk(el) {
+    el.querySelectorAll('[data-vsia]').forEach(function (b) { b.onclick = function () { verkSia = b.getAttribute('data-vsia'); renderVerk(); }; });
+    el.querySelectorAll('[data-vstada]').forEach(function (s) {
+      s.onchange = function () { api({ action: 'verk-stada', id: parseInt(s.getAttribute('data-vstada'), 10), status: s.value }).then(function (res) { if (res.ok) { toast('Staða vistuð — kúnninn sér hana'); load(); } else toast(res.error || 'Villa'); }); };
+    });
+    el.querySelectorAll('form[data-vloka]').forEach(function (f) {
+      var file = f.querySelector('input[type=file]'), lbl = f.querySelector('.vfile'), mynd = null;
+      file.onchange = function () {
+        var fl = file.files && file.files[0]; if (!fl) return;
+        var url = URL.createObjectURL(fl), im = new Image();
+        im.onload = function () {
+          var k = Math.min(1, 1600 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+          c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          mynd = { data: c.toDataURL('image/jpeg', 0.82), w: c.width, h: c.height }; URL.revokeObjectURL(url); lbl.textContent = 'Mynd valin';
+        };
+        im.src = url;
+      };
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var id = parseInt(f.getAttribute('data-vloka'), 10), lysing = f.querySelector('.inp').value.trim();
+        if (!mynd && !confirm('Engin eftirmynd — loka samt?')) return;
+        var btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+        var body = { id: id, lysing: lysing, af: 'Slökkvitæki ehf.' };
+        if (mynd) { body.mynd = mynd.data; body.mynd_w = mynd.w; body.mynd_h = mynd.h; }
+        gattFetch('/api/verkbeidni-lokid', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json(); })
+          .then(function (res) { if (res.ok) { toast('Lokað — kúnninn fær tilkynningu í gáttinni'); load(); } else { toast(res.error || 'Villa'); btn.disabled = false; } })
+          .catch(function () { toast('Netvilla'); btn.disabled = false; });
       };
     });
   }

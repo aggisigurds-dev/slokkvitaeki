@@ -16,6 +16,7 @@
 const P = require('./_portal.cjs');
 const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
 const GY = require('./_gatt-years.cjs');
+const M = require('./_gatt-myndir.cjs');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -44,7 +45,10 @@ function dedupeDocs(rows, keyFn) {
 }
 // ── Eignasíða (portal_users.show_details + syn) ─────────────────────────────
 // syn = hvaða hlutar sjást; vantar lykil = sjálfgefið (allt nema það sem er slökkt á gatt-admin).
-const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true };
+// 11.10.2026: punktar = verkbeiðni sem punktur á teikningu með mynd; vinnusvaedi = „Mitt vinnusvæði" (dagatal, verkefni,
+// kort, niðurhal, skjöl og hlekkir); baeta_eign = kúnni bætir eign við úr Landeignaskrá.
+const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
+  punktar: true, vinnusvaedi: true, baeta_eign: true };
 function lesaSyn(acct) {
   const syn = Object.assign({}, SYN_DEF);
   const s = acct && acct.syn && typeof acct.syn === 'object' ? acct.syn : {};
@@ -96,6 +100,31 @@ const ERINDI_SKREF = { nytt: 'mottekid', i_vinnslu: 'i_vinnslu', klarad: 'lokid'
 function erindiTitill(t) { return String(t || '').replace(/\s+af þjónustuvef/i, '').replace(/\s+—\s+[^—]*$/, '').trim() || 'Erindi'; }
 const MAN_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
 function normNr(s) { return String(s == null ? '' : s).replace(/\s+/g, '').replace(/^R-?/i, '').replace(/^0+/, '').toUpperCase(); }
+const ABYRGD = ['okkar', 'eigandi', 'annar'];
+// Síun erinda: mál af þjónustuvef (source gatt) EÐA mál sem starfsfólk merkti kúnnanum (tags ∋ 'gatt', t.d. verkefni
+// með abyrgd 'eigandi' stofnuð á Þjónustuborðinu).
+const ERINDI_FILT = 'or=(source.eq.gatt,tags.cs.' + encodeURIComponent('["gatt"]') + ')';
+const ERINDI_SEL = 'id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_lysing,due_at';
+// Ein röð erindis eins og kúnninn má sjá hana: titill, staða, punktur, myndir (undirritaðar), ábyrgð — aldrei innri nótur.
+function erindiRod(r, slod) {
+  const tags = Array.isArray(r.tags) ? r.tags : [];
+  const mynd = (L) => (Array.isArray(L) ? L : []).map((m) => m && m.path && slod[m.path] ? { url: slod[m.path], w: m.w || null, h: m.h || null, at: m.at || null } : null).filter(Boolean);
+  return { id: r.id, fid: r.fyrirtaeki_id, titill: erindiTitill(r.title), lysing: r.summary || null, stada: ERINDI_SKREF[r.status] || 'mottekid', rstada: r.status,
+    tegund: tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('verkefni') ? 'verkefni' : tags.includes('thjonusta') ? 'thjonusta' : 'fyrirspurn',
+    dags: r.created_at, uppf: r.updated_at, frestur: r.due_at || null,
+    abyrgd: ABYRGD.includes(r.abyrgd) ? r.abyrgd : 'okkar', punktur: r.punktur && typeof r.punktur === 'object' ? r.punktur : null,
+    myndir: mynd(r.myndir), eftirmyndir: mynd(r.eftirmyndir), lokid: r.lokid_at || null, lokid_lysing: r.lokid_lysing || null };
+}
+function myndaSlodir(rows) {
+  const p = [];
+  rows.forEach((r) => { [].concat(r.myndir || [], r.eftirmyndir || []).forEach((m) => { if (m && m.path) p.push(m.path); }); });
+  return p;
+}
+function innanIslands(lat, lng) { return isFinite(lat) && isFinite(lng) && lat > 62.5 && lat < 67.5 && lng > -25.5 && lng < -12.5; }
+function origin(event) {
+  const host = (event.headers && (event.headers.host || event.headers.Host)) || 'slokkvitaeki.netlify.app';
+  return 'https://' + host;
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
@@ -207,10 +236,208 @@ exports.handler = async (event) => {
     } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
   }
 
-  // POST → viðskiptavinur sendir fyrirspurn
+  const hofundurNafn = () => (session ? session.name : (openAcct && openAcct.display_name)) || 'þjónustuvefur';
+  // Eign félagsins (fyrirtaeki-röð undir base_id) — eða null. Allar skrif-aðgerðir byrja hér.
+  async function eignFelags(sid, sel) {
+    if (!sid) return null;
+    const r = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${sel || 'id,nafn,heimilisfang'}&limit=1`);
+    return r.ok ? ((await r.json())[0] || null) : null;
+  }
+  async function malAKlst() {
+    const since = new Date(Date.now() - 3600e3).toISOString();
+    const cr = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&created_at=gte.${encodeURIComponent(since)}&select=id`);
+    return cr.ok ? (await cr.json()).length : 99;
+  }
+
+  // ── Verkbeiðni sem punktur á teikningu (eða án punkts) með mynd ───────────
+  // Kúnninn velur hæð, smellir á teikninguna og lýsir verkinu. Punkturinn er í frumdílum myndarinnar (sama
+  // hnitakerfi og merkin). abyrgd segir hver gerir: okkar (Slökkvitæki), eigandi (hann sjálfur) eða annar.
+  async function vistaPunkt(b) {
+    if (!syn.verkbeidni && !syn.punktar) return P.json(403, { error: 'Verkbeiðnir eru ekki opnar á þessum aðgangi' });
+    const sid = parseInt(b.site_id, 10);
+    const f0 = await eignFelags(sid);
+    if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+    const titill = String(b.titill || '').trim().slice(0, 120);
+    const lysing = String(b.lysing || '').trim().slice(0, 2000);
+    if (!titill && !lysing) return P.json(400, { error: 'Lýstu verkinu' });
+    const abyrgd = ABYRGD.includes(b.abyrgd) ? b.abyrgd : 'okkar';
+    let punktur = null;
+    if (b.punktur && typeof b.punktur === 'object' && isFinite(+b.punktur.x) && isFinite(+b.punktur.y)) {
+      const haed = parseInt(b.punktur.haed, 10);
+      const tr = await P.sbGet(`teikning_bord?company_id=eq.${sid}&select=haedir,image_url&limit=1`);
+      const t = tr.ok ? (await tr.json())[0] : null;
+      const hs = t ? (Array.isArray(t.haedir) && t.haedir.length ? t.haedir : (t.image_url ? [{ nafn: 'Teikning' }] : [])) : [];
+      if (!(haed >= 0 && haed < hs.length)) return P.json(400, { error: 'Hæð fannst ekki á teikningu' });
+      punktur = { haed, nafn: String((hs[haed] && hs[haed].nafn) || ('Hæð ' + (haed + 1))).slice(0, 60), x: Math.round(+b.punktur.x), y: Math.round(+b.punktur.y) };
+    }
+    if ((await malAKlst()) >= 25) return P.json(429, { error: 'Of margar beiðnir á klukkustund — reyndu aftur síðar' });
+    const myndir = [];
+    if (b.mynd) {
+      const m = M.lesaDataUrl(b.mynd, 6 * 1024 * 1024);
+      if (!m || !/^image\//.test(m.mime)) return P.json(400, { error: 'Myndin er ekki á studdu sniði (JPEG/PNG/WebP, mest 6 MB)' });
+      const path = `verkbeidnir/${baseId}/${sid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${m.ext}`;
+      if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Myndin vistaðist ekki' });
+      myndir.push({ path, w: +b.mynd_w || null, h: +b.mynd_h || null, at: new Date().toISOString() });
+    }
+    const hofundur = hofundurNafn();
+    const stad = punktur ? punktur.nafn + ' — merkt á teikningu' : (String(b.stadsetning || '').trim().slice(0, 200) || '');
+    const ABL = { okkar: 'Slökkvitæki ehf. lagar', eigandi: 'Eigandi sér um sjálfur (verkefni á borði kúnna)', annar: 'Annar verktaki sér um' };
+    const notes = (lysing ? lysing + '\n' : '') + (stad ? 'Staðsetning: ' + stad + '\n' : '') + 'Ábyrgð: ' + ABL[abyrgd] + (myndir.length ? '\nMynd fylgir (sjá spjald).' : '');
+    const tags = ['gatt', abyrgd === 'okkar' ? 'verkbeidni' : 'verkefni'];
+    if (punktur) tags.push('punktur');
+    const mr = await P.sbPost('thjonustubeidni', {
+      customer_base_id: baseId, customer_nafn: hofundur, fyrirtaeki_id: sid,
+      title: (titill || 'Verkbeiðni') + ' af þjónustuvef — ' + (f0.nafn || ''), summary: lysing || titill, notes,
+      source: 'gatt', type: 'annad', flokkur: 'thjonusta', status: 'nytt', priority: 'venjulegur', created_by: 'þjónustuvefur',
+      tags, punktur, myndir, abyrgd,
+    });
+    if (!mr.ok) return P.json(mr.status, { error: 'Vistun mistókst', detail: (await mr.text()).slice(0, 300) });
+    const row = (await mr.json())[0];
+    // Skilaboðaþráðurinn fær eina línu svo starfsfólk sjái það líka undir Skilaboð
+    try { await P.sbPost('portal_messages', { base_id: baseId, sender: 'kunni', author_name: hofundur, body: (abyrgd === 'okkar' ? 'Verkbeiðni' : 'Verkefni') + ' — ' + (f0.nafn || '') + (punktur ? ' (' + punktur.nafn + ', merkt á teikningu)' : '') + '\n' + (titill ? titill + '\n' : '') + (lysing || '') }); } catch (_) {}
+    const slod = await M.undirrita(myndaSlodir([row]), 600);
+    return P.json(200, { ok: true, erindi: erindiRod(row, slod) });
+  }
+
+  // ── Kúnni klárar eigið verkefni (abyrgd eigandi/annar) með eftirmynd ──────
+  async function lokaVerki(b) {
+    const id = parseInt(b.id, 10);
+    if (!id) return P.json(400, { error: 'id vantar' });
+    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
+    const row0 = r0.ok ? (await r0.json())[0] : null;
+    if (!row0) return P.json(404, { error: 'Verkið fannst ekki' });
+    if (row0.abyrgd === 'okkar') return P.json(403, { error: 'Þetta verk lokar Slökkvitæki ehf. þegar því er lokið' });
+    if (['klarad', 'lokad'].includes(row0.status)) return P.json(409, { error: 'Verkinu er þegar lokið' });
+    const eftir = Array.isArray(row0.eftirmyndir) ? row0.eftirmyndir.slice() : [];
+    if (b.mynd) {
+      const m = M.lesaDataUrl(b.mynd, 6 * 1024 * 1024);
+      if (!m || !/^image\//.test(m.mime)) return P.json(400, { error: 'Myndin er ekki á studdu sniði' });
+      const path = `verkbeidnir/${baseId}/${row0.fyrirtaeki_id || 0}/${Date.now()}-eftir-${Math.random().toString(36).slice(2, 8)}.${m.ext}`;
+      if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Myndin vistaðist ekki' });
+      eftir.push({ path, w: +b.mynd_w || null, h: +b.mynd_h || null, at: new Date().toISOString(), af: hofundurNafn() });
+    }
+    const nu = new Date().toISOString();
+    const pr = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=${ERINDI_SEL}`, {
+      // 'lokad' = sama gildi og ✓ Lokið á Þjónustuborðinu (368 done()) — þá dettur málið af borðinu
+      status: 'lokad', lokid_at: nu, lokid_af: hofundurNafn(), lokid_lysing: String(b.lysing || '').trim().slice(0, 1000) || null, eftirmyndir: eftir, updated_at: nu });
+    if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst' });
+    const row = (await pr.json())[0];
+    const slod = await M.undirrita(myndaSlodir([row]), 600);
+    return P.json(200, { ok: true, erindi: erindiRod(row, slod) });
+  }
+
+  // ── Hnit eignar (kortið): vistuð í fyrirtaeki.eign.hnit — aðeins innan Íslands ──
+  async function vistaHnit(b) {
+    const sid = parseInt(b.site_id, 10), lat = +b.lat, lng = +b.lng;
+    if (!innanIslands(lat, lng)) return P.json(400, { error: 'Hnit utan Íslands' });
+    const f0 = await eignFelags(sid, 'id,eign');
+    if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+    const eign = Object.assign({}, f0.eign && typeof f0.eign === 'object' ? f0.eign : {}, { hnit: { lat: +lat.toFixed(6), lng: +lng.toFixed(6), uppruni: String(b.uppruni || 'gatt').slice(0, 30) } });
+    const pr = await P.sbPatch(`fyrirtaeki?id=eq.${sid}&select=id`, { eign });
+    return pr.ok ? P.json(200, { ok: true, hnit: eign.hnit }) : P.json(pr.status, { error: 'Vistun mistókst' });
+  }
+
+  // ── Bæta við eign úr Landeignaskrá HMS (landnr.js hefur þegar leitað) ──────
+  // Nýr staður félagsins UTAN þjónustu með eign-upplýsingum (landnr/heitinr/hnit) — sama leið og Reitis-eignirnar
+  // 11.10.2026. Engin tvítekning á (félag, landnr) eða sama heimilisfangi; hámark 30 á klukkustund.
+  async function nyEign(b) {
+    if (!syn.baeta_eign) return P.json(403, { error: 'Ekki opið á þessum aðgangi' });
+    const landnr = parseInt(b.landnr, 10), heitinr = parseInt(b.heitinr, 10) || null;
+    const label = String(b.label || '').trim().slice(0, 160);
+    if (!landnr || !label) return P.json(400, { error: 'Veldu heimilisfang úr listanum' });
+    // „Skútuvogur 4  (104) - L 105166" → heiti + póstnúmer
+    const lm = /^(.*?)\s*\((\d{3})\)/.exec(label);
+    const heiti = (lm ? lm[1] : label.replace(/\s*-\s*L\s*\d+$/, '')).trim();
+    const postnr = lm ? lm[2] : (String(b.postnr || '').match(/^\d{3}$/) || [])[0] || null;
+    const allir = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,stadur_nr,eign`);
+    const L = allir.ok ? await allir.json() : [];
+    const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const tvi = L.find((f) => (f.eign && +f.eign.landnr === landnr) || norm(f.heimilisfang).indexOf(norm(heiti)) === 0);
+    if (tvi) return P.json(409, { error: 'Eignin er þegar á listanum: ' + (tvi.nafn || tvi.heimilisfang), id: tvi.id });
+    const since = new Date(Date.now() - 3600e3).toISOString();
+    if (L.filter((f) => f.eign && f.eign.uppruni === 'gatt' && f.eign.skrad_at > since).length >= 30) return P.json(429, { error: 'Of margar eignir á klukkustund' });
+    // Hnit, póstnúmer og sveitarfélag úr Staðfangaskrá (fasteign-opin) — fellur þegjandi ef þjónustan svarar ekki
+    let hnit = null, svf = '', pn = postnr;
+    try {
+      const q = heitinr ? 'heitinr=' + heitinr : 'heimilisfang=' + encodeURIComponent(heiti + (postnr ? ', ' + postnr : ''));
+      const fo = await fetch(origin(event) + '/.netlify/functions/fasteign-opin?' + q, { signal: AbortSignal.timeout(9000) });
+      if (fo.ok) {
+        const j = await fo.json();
+        if (j && j.eign && innanIslands(+j.eign.lat, +j.eign.lon)) hnit = { lat: +(+j.eign.lat).toFixed(6), lng: +(+j.eign.lon).toFixed(6), uppruni: 'stadfangaskra' };
+        if (j && j.eign && j.eign.postnr) pn = pn || String(j.eign.postnr);
+        if (j && j.eign && j.eign.svfnr) svf = String(j.eign.svfnr);
+      }
+    } catch (_) {}
+    const POST = { '101': 'Reykjavík', '102': 'Reykjavík', '103': 'Reykjavík', '104': 'Reykjavík', '105': 'Reykjavík', '107': 'Reykjavík', '108': 'Reykjavík', '109': 'Reykjavík', '110': 'Reykjavík', '111': 'Reykjavík', '112': 'Reykjavík', '113': 'Reykjavík', '116': 'Reykjavík',
+      '170': 'Seltjarnarnes', '200': 'Kópavogur', '201': 'Kópavogur', '202': 'Kópavogur', '203': 'Kópavogur', '210': 'Garðabær', '220': 'Hafnarfjörður', '221': 'Hafnarfjörður', '225': 'Garðabær', '270': 'Mosfellsbær', '600': 'Akureyri', '603': 'Akureyri' };
+    const stadur = pn ? pn + (POST[pn] ? ' ' + POST[pn] : '') : '';
+    const nr = L.reduce((m, f) => Math.max(m, +f.stadur_nr || 0), 0) + 1;
+    const ins = await P.sbPost('fyrirtaeki', {
+      customer_base_id: baseId, nafn: heiti, heimilisfang: heiti + (stadur ? ', ' + stadur : ''), postnumer: pn || null, stadur_nr: nr,
+      er_i_thjonustu: false, status: 'virkur',
+      eign: { landnr, heitinr, hnit, svfnr: svf || null, uppruni: 'gatt', skrad_at: new Date().toISOString(), skrad_af: hofundurNafn(), heimild: 'Landeignaskrá HMS' },
+    });
+    if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst', detail: (await ins.text()).slice(0, 300) });
+    const row = (await ins.json())[0];
+    return P.json(200, { ok: true, eign: { id: row.id, nafn: row.nafn, heimilisfang: row.heimilisfang, eign: row.eign, beidni: false, kerfi: [], flokkun: null, teikning: null } });
+  }
+
+  // ── Vinnusvæði: skjöl og hlekkir á borði kúnnans (portal_items) ───────────
+  async function itemsFelags() {
+    const r = await P.sbGet(`portal_items?base_id=eq.${baseId}&select=id,tegund,heiti,url,path,staerd,mime,rod,created_at&order=rod.asc,created_at.asc`);
+    const L = r.ok ? await r.json() : [];
+    const slod = await M.undirrita(L.map((x) => x.path), 600);
+    return L.map((x) => ({ id: x.id, tegund: x.tegund, heiti: x.heiti, url: x.tegund === 'hlekkur' ? x.url : (slod[x.path] || null), staerd: x.staerd, mime: x.mime, rod: x.rod, dags: x.created_at }));
+  }
+  async function vistaItem(b) {
+    if (!syn.vinnusvaedi) return P.json(403, { error: 'Vinnusvæðið er ekki opið á þessum aðgangi' });
+    const cnt = await P.sbGet(`portal_items?base_id=eq.${baseId}&select=id`);
+    if (cnt.ok && (await cnt.json()).length >= 200) return P.json(429, { error: 'Borðið er fullt (200 atriði)' });
+    const heiti = M.nafnOruggt(b.heiti);
+    let rod = Date.now();
+    if (b.tegund === 'hlekkur') {
+      let u; try { u = new URL(String(b.url || '').trim()); } catch (_) { return P.json(400, { error: 'Ógild slóð' }); }
+      if (!/^https?:$/.test(u.protocol)) return P.json(400, { error: 'Aðeins http(s)-slóðir' });
+      const ins = await P.sbPost('portal_items', { base_id: baseId, tegund: 'hlekkur', heiti: heiti === 'skjal' ? u.hostname : heiti, url: u.href.slice(0, 1000), rod, created_by: hofundurNafn() });
+      if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst' });
+    } else {
+      const m = M.lesaDataUrl(b.gogn, 12 * 1024 * 1024);
+      if (!m) return P.json(400, { error: 'Skráin er ekki á studdu sniði (PDF, mynd, Word, Excel, texti — mest 12 MB)' });
+      const path = `skjol/${baseId}/${Date.now()}-${heiti.replace(/[^A-Za-z0-9._-]+/g, '_')}` + (new RegExp('\\.' + m.ext + '$', 'i').test(heiti) ? '' : '.' + m.ext);
+      if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Skráin vistaðist ekki' });
+      const ins = await P.sbPost('portal_items', { base_id: baseId, tegund: 'skjal', heiti, path, staerd: m.buf.length, mime: m.mime, rod, created_by: hofundurNafn() });
+      if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst' });
+    }
+    return P.json(200, { ok: true, items: await itemsFelags() });
+  }
+  async function eydaItem(b) {
+    const id = parseInt(b.id, 10);
+    const r0 = await P.sbGet(`portal_items?id=eq.${id}&base_id=eq.${baseId}&select=id,path&limit=1`);
+    const x = r0.ok ? (await r0.json())[0] : null;
+    if (!x) return P.json(404, { error: 'Fannst ekki' });
+    await fetch(`${P.SUPABASE_URL}/rest/v1/portal_items?id=eq.${id}&base_id=eq.${baseId}`, { method: 'DELETE', headers: { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}` } });
+    if (x.path) { try { await M.eyda([x.path]); } catch (_) {} }
+    return P.json(200, { ok: true, items: await itemsFelags() });
+  }
+  async function radaItems(b) {
+    const ids = (Array.isArray(b.ids) ? b.ids : []).map((x) => parseInt(x, 10)).filter(Boolean).slice(0, 200);
+    for (let i = 0; i < ids.length; i++) await P.sbPatch(`portal_items?id=eq.${ids[i]}&base_id=eq.${baseId}`, { rod: i + 1 });
+    return P.json(200, { ok: true, items: await itemsFelags() });
+  }
+
+  // POST → viðskiptavinur sendir fyrirspurn / aðgerð
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
     if (b.action === 'eldvarnabok') return vistaEldvarnabok(b);
+    try {
+      if (b.action === 'punktur') return await vistaPunkt(b);
+      if (b.action === 'lokid') return await lokaVerki(b);
+      if (b.action === 'hnit') return await vistaHnit(b);
+      if (b.action === 'ny_eign') return await nyEign(b);
+      if (b.action === 'item') return await vistaItem(b);
+      if (b.action === 'item_eyda') return await eydaItem(b);
+      if (b.action === 'item_roda') return await radaItems(b);
+    } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
     const text = String(b.body || '').trim();
     if (!text) return P.json(400, { error: 'Tómt skeyti' });
     if (text.length > 4000) return P.json(400, { error: 'Skeyti of langt' });
@@ -395,20 +622,23 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
 
-    // 2h) Erindi af þjónustuvef síðustu 12 mánuði (Þjónustuborð, source 'gatt') — titill og staða, aldrei nótur.
-    const erindi = [];
+    // 2h) Erindi síðustu 12 mánuði: af þjónustuvef (source gatt) eða merkt kúnnanum (tags ∋ gatt) — titill, staða,
+    //     punktur, myndir (undirritaðar 10 mín), ábyrgð. Aldrei innri nótur (notes); summary er texti kúnnans.
+    let erindi = [];
     if (syn.erindi) {
       try {
         const since = new Date(Date.now() - 365 * 864e5).toISOString();
-        const er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
-        if (er.ok) (await er.json()).forEach((r) => {
-          const tags = Array.isArray(r.tags) ? r.tags : [];
-          erindi.push({ id: r.id, fid: r.fyrirtaeki_id, titill: erindiTitill(r.title), stada: ERINDI_SKREF[r.status] || 'mottekid',
-            tegund: tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('thjonusta') ? 'thjonusta' : 'fyrirspurn',
-            dags: r.created_at, uppf: r.updated_at });
-        });
+        const er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
+        if (er.ok) {
+          const rows = await er.json();
+          const slod = await M.undirrita(myndaSlodir(rows), 600);
+          erindi = rows.map((r) => erindiRod(r, slod));
+        }
       } catch (_) {}
     }
+    // 2j) Vinnusvæði: skjöl og hlekkir félagsins
+    let items = [];
+    if (syn.vinnusvaedi) { try { items = await itemsFelags(); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -538,7 +768,8 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items,
+      // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {
     return P.json(500, { error: String((e && e.message) || e) });
