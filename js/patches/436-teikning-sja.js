@@ -102,7 +102,7 @@
     cv.height = Math.max(1, Math.round(vp.height));
     const cx = cv.getContext('2d');
     cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
-    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
     if (matchW && matchH && (cv.width !== matchW || cv.height !== matchH)) {
       const ut = document.createElement('canvas');
       ut.width = matchW; ut.height = matchH;

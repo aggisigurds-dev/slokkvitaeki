@@ -297,7 +297,7 @@
       const cx = cv.getContext('2d');
       cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
       const vp = sida.sida.getViewport({ scale: sv.R, offsetX: -sv.x0 * sv.R, offsetY: -sv.y0 * sv.R });
-      await sida.sida.render({ canvasContext: cx, viewport: vp }).promise;
+      await sida.sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
       S.blad = Object.assign({ canvas: cv }, sv);
       S.lykill = '';                                        // teikna strax á skjáinn
       return S.blad;

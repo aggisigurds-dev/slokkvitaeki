@@ -89,7 +89,8 @@
     cv.height = Math.max(1, Math.round(vp.height));
     const cx = cv.getContext('2d');
     cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
-    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    // intent 'print': pdf.js teiknar án requestAnimationFrame — í földum flipa stöðvaðist teikningin annars (11.10.2026)
+    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
     if (matchW && matchH && (cv.width !== matchW || cv.height !== matchH)) {
       const ut = document.createElement('canvas');
       ut.width = matchW; ut.height = matchH;
@@ -181,7 +182,7 @@
     oc.height = Math.max(1, Math.round(vp.height));
     const cx = oc.getContext('2d');
     cx.fillStyle = '#fff'; cx.fillRect(0, 0, oc.width, oc.height);
-    await page.render({ canvasContext: cx, viewport: vp }).promise;
+    await page.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
     const slod = await canvasSlod(oc);
     await F._loadImg(slod);
     try { if (window.TeiknBord && TeiknBord.nyMynd) TeiknBord.nyMynd(); } catch (_) {}
@@ -289,7 +290,7 @@
       oc.height = Math.max(1, Math.round(vp.height));
       const cx = oc.getContext('2d');
       cx.fillStyle = '#fff'; cx.fillRect(0, 0, oc.width, oc.height);
-      await page.render({ canvasContext: cx, viewport: vp }).promise;
+      await page.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
       const slod = await canvasSlod(oc);
       await this._loadImg(slod);
     };

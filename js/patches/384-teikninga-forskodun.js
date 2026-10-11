@@ -65,7 +65,7 @@
     const vp = sida.getViewport({ scale: kv }), cv = document.createElement('canvas');
     cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
     const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
-    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
     const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.9));
     const url = URL.createObjectURL(blob); _myndir.set(d.infoUrl, url);
     d._sidur = doc.numPages;
@@ -89,7 +89,7 @@
     const cx = cv.getContext('2d');
     cx.fillStyle = '#fff';
     cx.fillRect(0, 0, cv.width, cv.height);
-    await sida.render({ canvasContext: cx, viewport: vp }).promise;
+    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
     const url = cv.toDataURL('image/jpeg', 0.72);
     _thumbs.set(d.infoUrl, url);
     return url;
