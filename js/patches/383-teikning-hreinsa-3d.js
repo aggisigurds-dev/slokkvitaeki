@@ -2097,6 +2097,9 @@
     // hæð með þaki. Síðan extendable eins og 3D heildarmyndin er"): hæðirnar staflast þétt (plata 30 cm), þak á efstu hæð,
     // engin tæki, ógegnsæ gólf; husSundur() dregur hæðirnar í sundur eins og heildarmyndin og smellur velur hæð (gogn.aHaed).
     const husH = !!(gogn && gogn.hus);
+    // Hússýnin er lítil (¼ skjás) og keyrir SAMHLIÐA aðalsýninni: hálf upplausn áferða og enginn kverkaskuggi á gólfi —
+    // annars tvöfaldaðist minnið (Dalshraun 1, 6 hæðir af PDF-blöðum: prófunarvafrinn hrundi, 11.10.2026).
+    const TEX = husH ? 1024 : 2048;
     const b = gamur.clientWidth || 800, h = gamur.clientHeight || 500;
     const teiknari = new T.WebGLRenderer({ antialias: true, alpha: false });
     teiknari.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -2344,7 +2347,7 @@
       }
       // Gólf: hreina myndin sem áferð, svo herbergjaskipan og heiti sjáist undir veggjunum.
       const golfStr = document.createElement('canvas');
-      const gs = Math.min(1, 2048 / Math.max(hd.golf.width, hd.golf.height));
+      const gs = Math.min(1, TEX / Math.max(hd.golf.width, hd.golf.height));
       golfStr.width = Math.max(1, Math.round(hd.golf.width * gs)); golfStr.height = Math.max(1, Math.round(hd.golf.height * gs));
       golfStr.getContext('2d').drawImage(hd.golf, 0, 0, golfStr.width, golfStr.height);
       const aferd = new T.CanvasTexture(golfStr); aferd.anisotropy = 4;
@@ -2760,7 +2763,7 @@
     const bakaSkugga = lg => {
       const kvH = lg.hopur.scale.x || 1, lengd = lg.veggH / solTan / kvH;                   // skuggalengd í einingum hæðarinnar
       const dx = solAtt.x / solLarett * lengd, dz = solAtt.z / solLarett * lengd;
-      const s = 2048 / Math.max(lg.gw, lg.gh), B = Math.max(2, Math.round(lg.gw * s)), H = Math.max(2, Math.round(lg.gh * s));
+      const s = TEX / Math.max(lg.gw, lg.gh), B = Math.max(2, Math.round(lg.gw * s)), H = Math.max(2, Math.round(lg.gh * s));
       const grima = document.createElement('canvas'); grima.width = B; grima.height = H;
       const g = grima.getContext('2d'); g.fillStyle = '#fff';           // hvít gríma × litur efnisins = skuggaliturinn
       const px = (x, z) => [(x + lg.gw / 2) * s, (z + lg.gh / 2) * s];
@@ -2793,7 +2796,7 @@
       skuggi.rotation.x = -Math.PI / 2; skuggi.position.y = 0.55; skuggi.renderOrder = 2; lg.hopur.add(skuggi);
       skuggaEfni.push(skE); losa.push(aferd, skE); lg.skuggi = skuggi; lg.skuggaStr = str;
       // KVERKASKUGGI Á GÓLFI: mjúkt dökkt band meðfram veggjum (dýpst í hornum, þar sem böndin skarast), aðeins innan hússins.
-      if (lg.heilir && hd.butar && hd.butar.length) {
+      if (!husH && lg.heilir && hd.butar && hd.butar.length) {
         const ak = document.createElement('canvas'); ak.width = B; ak.height = H;
         const a1 = ak.getContext('2d'); a1.strokeStyle = '#fff'; a1.lineCap = 'square';
         hd.butar.forEach(v => {
