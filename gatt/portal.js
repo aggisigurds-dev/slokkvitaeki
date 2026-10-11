@@ -700,6 +700,8 @@
     // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];
+    // Greining birtist aðeins þegar eitthvað er merkt á teikningarnar (annars tafla full af núllum)
+    if (!gf.some(function (f) { var g = f.greining; return Object.keys(g.taeki || {}).length || Object.keys(g.merki || {}).length || g.ei60 || g.ei30; })) gf = [];
     var lit = {};
     gf.forEach(function (f) { [f.greining.taeki, f.greining.merki].forEach(function (o) { Object.keys(o || {}).forEach(function (l) { lit[l] = o[l].c; }); }); });
     if (tk.length) {
