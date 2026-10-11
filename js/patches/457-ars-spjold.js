@@ -208,7 +208,8 @@
     try { listi = (window.Arsskodun && Arsskodun._cache && Arsskodun._cache.list) || []; } catch (_) {}
     var reglur = [], sed = {};
     Object.keys(map).forEach(function (id) {
-      var m = map[id], u = m && !m.engin ? myndSlod(m.url) : '';
+      // slóðin ræður: handvalin mynd ofan á eldri „engin mynd"-færslu ber enn engin:true (deep-merge, 367)
+      var m = map[id], u = m && m.url ? myndSlod(m.url) : '';
       if (u && /^\d+$/.test(id)) { sed[id] = 1; reglur.push('#view-arsskodun tr._ars-row[data-co-id="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}'); }
     });
     listi.forEach(function (c) {
@@ -270,6 +271,8 @@
 
   css();
   document.addEventListener('ars:render', function () { try { takki(); myndir(); } catch (_) {} });
+  // Ný mynd á fyrirtækjasíðunni (367) eða af annarri vél → myndablaðið endurreiknað strax
+  try { if (window.AppSettings && typeof AppSettings.onChange === 'function') AppSettings.onChange(function () { try { myndir(); } catch (_) {} }); } catch (_) {}
   // AppSettings getur borist eftir fyrstu teikningu — myndablaðið er endurreiknað (aðeins ef eitthvað breyttist)
   [1500, 5000, 15000].forEach(function (t) { setTimeout(function () { try { myndir(); } catch (_) {} }, t); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);

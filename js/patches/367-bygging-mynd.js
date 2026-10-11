@@ -303,7 +303,9 @@
       var pub = s.storage.from(BUCKET).getPublicUrl(slod);
       var url = pub && pub.data && pub.data.publicUrl;
       if (!url) throw new Error('fékk enga slóð á myndina');
-      await skrifaMynd(coId, { url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(), uppspretta: 'handvirkt' });
+      // 11.10.2026: AppSettings sameinar (deep-merge eyðir aldrei lyklum) — eldri „engin mynd"-færsla hélt engin:true
+      // ofan á nýju slóðinni og Ársskoðunarspjöldin (457) sýndu því ekki myndina. Merkið er hreinsað hér.
+      await skrifaMynd(coId, { url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(), uppspretta: 'handvirkt', heimild: 'handvirkt', engin: false, skilabod: '' });
       endurteikna(true);
     } catch (err) {
       console.warn(TAG, err);

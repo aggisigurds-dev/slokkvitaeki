@@ -118,7 +118,7 @@
     try { map = (window.AppSettings && AppSettings.path && AppSettings.path('co_bygging_mynd')) || {}; } catch (_) {}
     var reglur = [];
     Object.keys(map).forEach(function (id) {
-      var m = map[id], u = m && !m.engin ? slod(m.url) : '';
+      var m = map[id], u = m && m.url ? slod(m.url) : '';   // slóðin ræður (sjá 457)
       if (u && /^\d+$/.test(id)) reglur.push('._sk-cards ._sk-card[data-fid="' + id + '"]{--spj-mynd:url("' + u + '");--spj-str:cover}');
     });
     var texti = reglur.join('\n'), sig = reglur.length + ':' + texti.length;
@@ -131,5 +131,6 @@
 
   css();
   document.addEventListener('click', function (e) { if (e.target && e.target.closest && e.target.closest('[data-utlit="spjold"]')) { try { myndir(); } catch (_) {} } }, true);
+  try { if (window.AppSettings && typeof AppSettings.onChange === 'function') AppSettings.onChange(function () { try { myndir(); } catch (_) {} }); } catch (_) {}
   [1500, 5000, 15000].forEach(function (t) { setTimeout(function () { try { myndir(); } catch (_) {} }, t); });
 })();
