@@ -2623,7 +2623,20 @@
     // ofan frá: allt húsið (og efri hæðir) innan rammans — sjónsviðið nær styttra á gólfinu þegar horft er beint niður
     const SJONARHORN = { ofan: { theta: 0, phi: 0.42, fjarl: fjarlSka * 1.3 }, ska: { theta: -0.6, phi: 0.95, fjarl: fjarlSka } };
     let theta = SJONARHORN.ofan.theta, phi = SJONARHORN.ofan.phi, fjarl = SJONARHORN.ofan.fjarl;
-    if (husH) { theta = -0.62; phi = 1.02; fjarl = fjarlSka * 0.95; }
+    if (husH) {
+      // miðja og fjarlægð eftir veggjum allra hæða (heimshnit) — húsið stendur sjaldnast á miðju blaði
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      lag.forEach(lg => {
+        if (!lg.f || !lg.hd.butar) return;
+        const P = lg.hopur.position, sx = lg.hopur.scale.x || 1, sz = lg.hopur.scale.z || 1;
+        lg.hd.butar.forEach(v => { for (const [px, pz] of [[v[0], v[1]], [v[2], v[3]]]) { const X = P.x + (px * lg.f - lg.gw / 2) * sx, Z = P.z + (pz * lg.f - lg.gh / 2) * sz; if (X < x0) x0 = X; if (X > x1) x1 = X; if (Z < z0) z0 = Z; if (Z > z1) z1 = Z; } });
+      });
+      if (isFinite(x0)) { mid.x = (x0 + x1) / 2; mid.z = (z0 + z1) / 2; }
+      const ummal = isFinite(x0) ? Math.max(x1 - x0, z1 - z0, haedY) : staerst;
+      // mjór gluggi (¼ skjás): lárétta sjónhornið ræður — allt húsið (á ská, um 1,2 × lengsta hlið) skal komast fyrir
+      const vf = 42 * Math.PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * b / Math.max(1, h));
+      theta = -0.62; phi = 1.02; fjarl = ummal * 1.2 / (2 * Math.tan(Math.min(vf, hf) / 2));
+    }
     let flug = null;     // mjúk færsla á milli sjónarhorna (kallað í hverjum ramma)
     const fljuga = (t, p, fj) => {
       let d = (t - theta) % (2 * Math.PI); if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
@@ -4311,6 +4324,7 @@
   /* ── 3D yfir allar hæðir ── */
   function loka3d() {
     if (G.syn3d) { try { G.syn3d.loka(); } catch (_) {} G.syn3d = null; }
+    if (G.syn3dHus) { try { G.syn3dHus.loka(); } catch (_) {} G.syn3dHus = null; }
     const g = document.getElementById('fp-3d'); if (g) g.remove();
     const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'false');
   }
@@ -5522,6 +5536,7 @@
         u.heitiTexta = ((pg && pg.herbergi) || []).map(r => ({ texti: r.texti, x: r.u * u.frumB - (sk.x || 0), y: r.v * u.frumH - (sk.y || 0) }));
       } catch (_) {}
     })), new Promise(r => setTimeout(r, 4000))]);
+    let husEl = null, adal = gamur;
     // skannaðar teikningar: heiti sem skrifstofutölvan hefur þegar lesið (skyndiminni) — sama 4 s þak
     await Promise.race([Promise.all(ut.map(async u => {
       if (u.heitiTexta && u.heitiTexta.length) return;
@@ -5530,7 +5545,22 @@
     })), new Promise(r => setTimeout(r, 4000))]);
     if (!document.getElementById('fp-3d')) return;
     try {
-      G.syn3d = await syna3d(gamur, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
+      // SKIPT SÝN (Agnar 11.10.2026: „mynd af allri byggingunni vinstra megin á skjánum, 1/4 af breidd skjás … hægra
+      // megin á skjá 3/4 af skjá er hver hæð fyrir sig sem maður getur valið"): 2+ hæðir og breiður gluggi.
+      if (ut.length >= 2 && gamur.clientWidth >= 900) {
+        husEl = document.createElement('div'); husEl.id = 'fp-3d-hus';
+        husEl.style.cssText = 'position:absolute;left:0;top:0;bottom:0;width:25%;border-right:1px solid rgba(20,18,15,.28);background:#e6e9ec;overflow:hidden';
+        husEl.innerHTML = '<div id="fp-3d-hus-v" style="position:absolute;inset:0"></div>' +
+          '<div style="position:absolute;left:8px;right:8px;top:8px;z-index:2;display:flex;align-items:center;gap:6px;pointer-events:none">' +
+          '<b style="padding:6px 10px;border-radius:8px;background:rgba(20,18,15,.85);color:#f1ede4;font:700 12px system-ui,sans-serif">Húsið</b>' +
+          '<button type="button" id="fp-3d-hus-sundur" aria-pressed="false" title="Draga hæðirnar í sundur — eða setja þær saman aftur með þaki" style="pointer-events:auto;margin-left:auto;height:30px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 12px system-ui;cursor:pointer">Sundur</button></div>' +
+          '<div id="fp-3d-hus-skyr" style="position:absolute;left:8px;right:8px;bottom:8px;z-index:2;padding:5px 9px;border-radius:8px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 11px system-ui,sans-serif;pointer-events:none">Byggi húsið…</div>';
+        adal = document.createElement('div'); adal.id = 'fp-3d-adal'; adal.style.cssText = 'position:absolute;left:25%;right:0;top:0;bottom:0';
+        gamur.insertBefore(adal, gamur.firstChild); gamur.insertBefore(husEl, gamur.firstChild);
+        // takkar og skýringar hægra megin við húsið
+        [gamur.querySelector('#fp-3d-haedir'), gamur.querySelector('#fp-3d-skyr')].forEach(x => { const w = x && x.parentElement; if (w) w.style.left = 'calc(25% + 10px)'; });
+      }
+      G.syn3d = await syna3d(adal, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
       const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
       // Skýring lita — fylgir því sem er á skjánum: valin hæð ein, eða allar. Litirnir byggja á EI-merkjum sem voru lesin
@@ -5609,6 +5639,7 @@
           heitiOcrLesa(sh.h, cid, sh.stig1, u.sk && u.sk.w, u.sk && u.sk.h).then(v => {
             G.heitiBida.delete(u.haedId);
             if (v && v.length && G.syn3d && G.syn3d.setjaHeiti && document.getElementById('fp-3d')) G.syn3d.setjaHeiti(u.haedId, v);
+            if (v && v.length && G.syn3dHus && G.syn3dHus.setjaHeiti) G.syn3dHus.setjaHeiti(u.haedId, v);
             rymiSkyring(valin);
           }, e => { G.heitiBida.delete(u.haedId); console.warn('[383] heiti: ' + ((e && e.message) || e)); rymiSkyring(valin); });
         });
@@ -5711,7 +5742,10 @@
         const mala = () => { hb.innerHTML = ut.map((u, i) => '<button type="button" data-h="' + i + '" aria-pressed="' + (valin === i) + '" title="Sýna aðeins þessa hæð — smelltu aftur til að sjá allar" style="' + TKH + (valin === i ? 'background:#d9b45a;color:#14120f' : 'background:rgba(20,18,15,.85);color:#fff') + '">' + esc(u.nafn || (i + 1) + '. hæð') + '</button>').join(''); };
         hb.addEventListener('click', e => {
           const t = e.target.closest('button[data-h]'); if (!t) return;
-          const nr = +t.dataset.h; valin = valin === nr ? null : nr;
+          // skipt sýn: hægra megin er alltaf ein hæð (allt húsið er vinstra megin)
+          const nr = +t.dataset.h; valin = valin === nr && !husEl ? null : nr;
+          if (G.syn3dHus && G.syn3dHus.husVelja) G.syn3dHus.husVelja(valin);
+          if (husEl) { const hs2 = husEl.querySelector('#fp-3d-hus-skyr'); if (hs2 && ut[nr]) hs2.textContent = (ut[nr].nafn || (nr + 1) + '. hæð') + ' til hægri · smelltu á aðra hæð til að skipta'; }
           if (gb && gb.getAttribute('aria-pressed') === 'true') { gangaLit(false); skyr.textContent = skyrTexti; if (G.syn3d && G.syn3d.ganga) G.syn3d.ganga(false); }
           if (G.syn3d && G.syn3d.syna) G.syn3d.syna(valin);
           mala(); skyring(valin); lokaVali();
@@ -5719,6 +5753,31 @@
         const fyrst = o && o.haedId ? ut.findIndex(u => u.haedId === o.haedId) : -1;
         if (fyrst >= 0 && G.syn3d && G.syn3d.syna) { valin = fyrst; G.syn3d.syna(valin); skyring(valin); }
         mala();
+        // SKIPT SÝN: valin hæð hægra megin (sjálfgefið fyrsta hæð ofan kjallara); húsið vinstra megin velur líka
+        if (husEl) {
+          const veljaH = nr => {
+            if (nr == null || !ut[nr]) return;
+            valin = nr;
+            if (gb && gb.getAttribute('aria-pressed') === 'true') { gangaLit(false); skyr.textContent = skyrTexti; if (G.syn3d && G.syn3d.ganga) G.syn3d.ganga(false); }
+            if (G.syn3d && G.syn3d.syna) G.syn3d.syna(valin);
+            mala(); skyring(valin); lokaVali();
+            if (G.syn3dHus && G.syn3dHus.husVelja) G.syn3dHus.husVelja(valin);
+            const hs2 = husEl.querySelector('#fp-3d-hus-skyr'); if (hs2) hs2.textContent = (ut[nr].nafn || (nr + 1) + '. hæð') + ' til hægri · smelltu á aðra hæð til að skipta';
+          };
+          if (valin == null) { const i0 = ut.findIndex(u => !/kjall/i.test(u.nafn || '')); veljaH(i0 >= 0 ? i0 : 0); }
+          syna3d(husEl.querySelector('#fp-3d-hus-v'), { haedir: ut, hus: true, utlit: 'gratt', aHaed: nr => veljaH(nr) }).then(sy => {
+            if (!document.getElementById('fp-3d') || !husEl.isConnected) { try { sy.loka(); } catch (_) {} return; }
+            G.syn3dHus = sy; sy.husVelja(valin);
+            const hs2 = husEl.querySelector('#fp-3d-hus-skyr'); if (hs2) hs2.textContent = (ut[valin] ? (ut[valin].nafn || (valin + 1) + '. hæð') + ' til hægri · ' : '') + 'smelltu á hæð til að skoða hana';
+            const sb = husEl.querySelector('#fp-3d-hus-sundur');
+            if (sb) sb.addEventListener('click', () => {
+              const a = sb.getAttribute('aria-pressed') !== 'true';
+              sb.setAttribute('aria-pressed', a ? 'true' : 'false'); sb.textContent = a ? 'Saman' : 'Sundur';
+              sb.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; sb.style.color = a ? '#14120f' : '#fff';
+              sy.husSundur(a);
+            });
+          }).catch(err => { console.warn('[383] húsið', err); const hs2 = husEl.querySelector('#fp-3d-hus-skyr'); if (hs2) hs2.textContent = 'Húsið náðist ekki: ' + ((err && err.message) || err); });
+        }
       }
     } catch (e) { loka3d(); segja('⚠ 3D-sýnin opnaðist ekki: ' + ((e && e.message) || e)); }
   }
