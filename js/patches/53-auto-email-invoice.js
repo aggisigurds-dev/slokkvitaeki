@@ -30,7 +30,7 @@
     if (invoice.greitt_med === 'reikningur') {
       lines.push('');
       lines.push('Greiðsluleiðbeiningar:');
-      lines.push('— Banki: Bankaupplýsingar koma hér');
+      lines.push('— Banki: 0528-26-006005');
       lines.push('— Kennitala: ' + getSetting('kennitala',''));
       lines.push('— Eindagi: 14 daga frá útgáfu');
     }

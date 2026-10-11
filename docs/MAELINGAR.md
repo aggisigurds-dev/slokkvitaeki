@@ -261,6 +261,42 @@ en þú leitar að hleðsluvillu — teldu reitinn sem þú festir þig við. S�
 
 ---
 
+## 16. Dálkur sem heitir `status` er ekki endilega staða kerfisins sem hann speglar
+
+**Mælt 11.10.2026, mál #1184 (Heimaleiga → Eldsalir).** Ég sá í `payday_invoices_slokk`:
+
+```
+nr. 374 · Heimaleiga ehf. ·  52.519 kr · status CANCELLED · ógreitt
+nr. 390 · Heimaleiga ehf. · −52.519 kr · status CREDIT    · ógreitt
+```
+
+og dró þá ályktun að kreditnótan FLYTI: reikningurinn var afturkallaður ofan á
+kreditfærsluna, svo kreditið hefði ekkert að ganga á móti og við „ættum" Heimaleigu
+52.519 kr. Ég sannreyndi meira að segja töluna á lifandi Payday með
+`GET /api/payday-pull-slokk?dry=1` — sem skilaði NÁKVÆMLEGA sömu röð. Tvær heimildir,
+sami svarið, og hvorug þeirra svaraði spurningunni sem ég var að spyrja.
+
+**Payday sjálft svaraði henni** þegar ég bað um afturköllun:
+
+```
+400 "Unable to update invoice. Invoice with status Cancelled
+     cannot be updated to status CANCELLED ."
+```
+
+Nótan var ÞEGAR afturkölluð. `status = 'CREDIT'` í speglinum er **tegund skjalsins**
+(kreditnóta), ekki líftímastaða þess — og af því að tegundin fyllir sama dálkinn og
+staðan, þá skrifar hún stöðuna yfir. Kreditnóta sést því aldrei CANCELLED í speglinum,
+hversu afturkölluð sem hún er.
+
+**Reglan:** þegar spegildálkur getur borið tvo óskylda hluti (tegund OG stöðu) er hann
+ekki mælitæki á hvorugt. Þá þarf að spyrja kerfið sjálft um þann hlut sem máli skiptir.
+Hér var ódýrasta rétta mælingin að biðja um aðgerðina og lesa höfnunina: kerfi sem
+segir „er þegar afturkallað" er áreiðanlegasta heimildin um að það sé afturkallað.
+
+**Af hverju þetta er dýrt:** ályktunin „kreditið flýtur" leiðir til leiðréttingar á
+bókhaldi viðskiptavinar sem er ekki brotið. Ég var skrefi frá því að „laga" færslu sem
+var í lagi — og hefði þá skilið eftir mig skýringu á borðinu um vandamál sem var aldrei til.
+
 ## Gátlisti áður en sagt er „mælt"
 
 1. Hvaða útgáfa svaraði? (`build.json` / `?v=`)

@@ -846,6 +846,11 @@
     if (u.some(e => /@eignaumsjon\.is$/.test(e))) return 'gjaldkeri@eignaumsjon.is';
     return u.find(e => /^(reikning|gjaldker|bokhald)/.test(e)) || u[0] || (x.stadur && x.stadur.netfang) || (x.kunni && (x.kunni.netfang || x.kunni.contact_email)) || '';
   }
+  /* Mál #881, samþykkt 09.10.2026. Reikningurinn sem Stólpa-kröfurnar greiddust
+   * inn á (bankayfirlit 01.01–01.06.2026); kt. móttakanda 600508-0400 er Brunahólf
+   * Slökkvitæki ehf. Stóð áður „[BANKAREIKNINGUR — fylla inn áður en sent er]". */
+  const BANKAREIKNINGUR = '0528-26-006005';
+
   function greidslutexti(m, x) {
     const s = x.s, p = x.p;
     if (!s) return '';
@@ -856,7 +861,7 @@
       ', en bankakrafa stofnaðist ekki og því birtist engin krafa í heimabanka.', '');
     L.push('Upphæð: ' + kr(s.samtals));
     if (p && p.due_date) L.push('Gjalddagi: ' + dags(p.due_date));
-    L.push('Greiða má inn á reikning Slökkvitækis ehf.: [BANKAREIKNINGUR — fylla inn áður en sent er]', 'Kennitala móttakanda: 600508-0400', 'Skýring greiðslu: ' + num, '');
+    L.push('Greiða má inn á reikning Slökkvitækis ehf.: ' + BANKAREIKNINGUR, 'Kennitala móttakanda: 600508-0400', 'Skýring greiðslu: ' + num, '');
     L.push('Kær kveðja,', 'Brunahólf Slökkvitæki ehf.', 'kt. 600508-0400', 'sími 565-4080');
     return L.join('\n');
   }
