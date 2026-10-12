@@ -186,7 +186,11 @@
       // punkturinn er ::before — 404 fletur merkið út í texta við uppröðun, svo innri <i> myndi hverfa
       S + '.ut-last.vt{color:#3a4250;gap:5px;font-variant-numeric:tabular-nums}',
       S + '.ut-last.vt::before{content:"";width:6px;height:6px;border-radius:50%;flex:none;background:#8a93a3;display:inline-block;margin-right:5px;vertical-align:middle}',
-      S + '.ut-last.vt-verkstaedi{color:#845400}' + S + '.ut-last.vt-verkstaedi::before{background:#d39a1b}',
+      // 12.10.2026 — Agnar: „þegar eitthvað tæki er inná verkstæði, þá ætti tækið
+      // að sýna blátt á verkstæði inn á fyrirtækja profile". Var gullið, sem las
+      // eins og viðvörun. Blátt er sama fjölskylda og „Tilbúið á verkstæði"
+      // (vt-tilbuid) — textinn greinir þau að, liturinn segir „í höndunum á okkur".
+      S + '.ut-last.vt-verkstaedi{color:#1d4ed8}' + S + '.ut-last.vt-verkstaedi::before{background:#3b82f6}',
       S + '.ut-last.vt-tilbuid{color:#1d4ed8}' + S + '.ut-last.vt-tilbuid::before{background:#2563eb}',
       S + '.ut-last.vt-onytt,' + S + '.ut-last.vt-onytt_skilad{color:#b42318}' + S + '.ut-last.vt-onytt::before,' + S + '.ut-last.vt-onytt_skilad::before{background:#c92a2a}',
       S + '.ut-last.vt-skilad{color:#0b6b3a}' + S + '.ut-last.vt-skilad::before{background:#16783f}',

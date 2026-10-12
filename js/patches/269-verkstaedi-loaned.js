@@ -68,6 +68,7 @@
       if (window.Toast) Toast.show('Afturköllun mistókst: ' + (e.message || e));
       return;
     }
+    try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
     await loadSott(true); await loadShop(true); inject(true);
   }
 
@@ -376,6 +377,9 @@
     const local = _shop.find(u => String(u.id) === String(id)); if (local) Object.assign(local, P);
     _loadedAt = Date.now(); await inject(false);   // sýna nýja stöðu strax
     await saveCustody(id, P);
+    // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
+    // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
+    try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
 
@@ -423,6 +427,9 @@
       }
     }
     try { if (ok && window.Toast && Toast.show) Toast.show('✓ Afhent' + (sc ? ' · ' + (DISP[sc] || sc) + ' skráð' : '')); } catch (_) {}
+    // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
+    // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
+    try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
   async function del(id) {
@@ -432,6 +439,9 @@
     _shop = _shop.filter(u => String(u.id) !== String(id));
     _loadedAt = Date.now(); await inject(false);   // hverfa strax
     await deleteUnit(id);
+    // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
+    // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
+    try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
 

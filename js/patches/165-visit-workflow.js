@@ -699,17 +699,72 @@
 
   // „Í vinnslu"-vísirinn efst (02.10.2026): staðan lesin úr arsskodun_customers, sama heimild og ✓-hakið í Ársskoðun.
   // Lokið á árinu (last_year_inspected = árið) telst EKKI í vinnslu.
+  /* 12.10.2026 — Agnar: „þegar eitthvað tæki er inná verkstæði … setja
+   * fyrirtækið í vinnslu status."
+   *
+   * ÞETTA ER LEITT, EKKI SKRIFAÐ. Freistingin var að kalla á
+   * `ArsWorkflow.markInVinnsla` þegar tæki fer á verkstæðið — en það fall
+   * skrifar `uttekt: true`, þ.e. „úttektin er búin". Tæki sem kúnni skilur
+   * eftir á borðinu segir ekkert um það hvort úttekt hafi farið fram. Það
+   * flagg hefði staðið eftir sem ósatt löngu eftir að tækið fór heim.
+   * Patch 271 ber ör eftir nákvæmlega þessa villu: 249 félög báru
+   * steps_2026.skyrsla+reikningur = true, 13 þeirra án nokkurrar skýrslu.
+   *
+   * Leidd staða þarf enga hreinsun: tækið fer heim, staðan slokknar sjálf.
+   */
+  const _verkst = {};   // coId -> true | false | 'bid'
+  function taekiAVerkstaedi(coId) {
+    if (!coId) return false;
+    const k = String(coId);
+    if (_verkst[k] === true || _verkst[k] === false) return _verkst[k];
+    if (_verkst[k] === 'bid') return false;
+    _verkst[k] = 'bid';
+    (async () => {
+      try {
+        const sb = window.DB && DB.sb;
+        if (!sb) { delete _verkst[k]; return; }
+        const r = await sb.from('uttaeki').select('id')
+          .eq('fyrirtaeki_id', coId).eq('status', 'loaned').limit(1);
+        if (r.error) { delete _verkst[k]; return; }   // sóknarvilla → reyna aftur, ekki fullyrða
+        _verkst[k] = !!(r.data && r.data.length);
+      } catch (_) { delete _verkst[k]; return; }
+      const b = document.getElementById('_vw-topvinnsla') || document.querySelector('._vw-ihaus');
+      if (b) syncTopBtn(b);
+    })();
+    return false;
+  }
+  // Tækið fór á/af verkstæðinu → næsta lestur spyr upp á nýtt.
+  // gleyma(coId) hreinsar eitt felag; gleyma() hreinsar allt — 269 veit ekki
+  // hvada felag atti taekid, adeins ad eitthvad breyttist.
+  function gleymaVerkstaedi(coId) {
+    if (coId == null) { for (const k of Object.keys(_verkst)) delete _verkst[k]; return; }
+    delete _verkst[String(coId)];
+  }
+
   function erIVinnslu(coId) {
     const AS = window.AppSettings; if (!AS || !AS.path || !coId) return false;
     const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
     const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
-    return +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
+    const geymt = +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
+    // Lokið ár stendur: tæki á verkstæði á ekki að rífa klárað ár upp aftur.
+    if (+e.last_year_inspected === ar) return geymt;
+    return geymt || taekiAVerkstaedi(coId);
+  }
+  // Satt AÐEINS vegna verkstæðisins — þá er ekkert geymt flagg til að slökkva á.
+  function vinnslaAfVerkstaedi(coId) {
+    const AS = window.AppSettings; if (!AS || !AS.path || !coId) return false;
+    const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
+    const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
+    const geymt = +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
+    return !geymt && taekiAVerkstaedi(coId) === true;
   }
   // Aðeins snert þegar staðan breytist — vaktin á companies-main myndi annars vekja sig sjálf (classList/attr skrá breytingu).
   function syncTopBtn(btn) {
     const on = erIVinnslu(getCompanyId());
     if (btn.classList.contains('on') !== on) btn.classList.toggle('on', on);
-    const t = on ? 'Í vinnslu — smelltu til að taka af' : 'Merkja í vinnslu (úttekt búin, skýrsla/reikningur eftir)';
+    const t = vinnslaAfVerkstaedi(getCompanyId())
+      ? 'Í vinnslu — tæki félagsins er á verkstæðinu. Slokknar sjálft þegar það fer heim.'
+      : on ? 'Í vinnslu — smelltu til að taka af' : 'Merkja í vinnslu (úttekt búin, skýrsla/reikningur eftir)';
     if (btn.getAttribute('aria-pressed') !== String(on)) btn.setAttribute('aria-pressed', String(on));
     if (btn.title !== t) btn.title = t;
     const led = btn.querySelector('._vw-led');
@@ -718,6 +773,12 @@
   async function onTopVinnsla(b) {
     const coId = getCompanyId();
     if (!coId) { alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju.'); return; }
+    if (vinnslaAfVerkstaedi(coId)) {
+      // Ekkert geymt flagg er kveikt — að skrifa -1 hér myndi engu breyta og
+      // takkinn hrykki strax til baka. Segðu frekar af hverju hann logar.
+      if (window.Toast && Toast.show) Toast.show('Félagið er í vinnslu af því að tæki þess er á verkstæðinu — það slokknar þegar tækið fer heim.');
+      return;
+    }
     const varA = erIVinnslu(coId);
     b.disabled = true;
     let ok = false;
@@ -804,6 +865,9 @@
   }
   attach();
 
+  // 269/224 kalla á þetta þegar tæki fer á eða af verkstæðinu, svo leidda
+  // „í vinnslu"-staðan spyrji upp á nýtt í stað þess að sitja á gömlu svari.
+  window.VisitWorkflowVerkst = { gleyma: gleymaVerkstaedi, erAVerkstaedi: taekiAVerkstaedi };
   console.log('[visit-workflow] installed');
 })();
 /* === END VISIT WORKFLOW v1 === */

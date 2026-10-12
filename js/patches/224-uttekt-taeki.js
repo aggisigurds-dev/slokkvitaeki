@@ -554,6 +554,9 @@
       var afVerk = String(vu.status||'').toLowerCase()==='loaned';
       // Af verkstæði → 'active' (sama og bílstjórinn, 219); skoðunardagsetningar haldast óbreyttar.
       var vpatch = afVerk ? { status:'active', custody_status:null } : { status:'loaned', custody_status:null };
+      // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se
+      // a verkstaedinu. Hun er i skyndiminni, svo hun verdur ad gleyma her.
+      try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(coId); } catch(_){}
       (async function(){
         if(afVerk && vu.custody_status && vu.custody_status!=='komid'){
           var spyr='Tækið er „'+vu.custody_status+'" á verkstæðinu. Taka það samt af verkstæðinu?';
