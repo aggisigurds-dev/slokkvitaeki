@@ -21,6 +21,13 @@
 
   const QUIET_MS = 450;   // svona lengi þarf DOM-ið að vera kjurrt
   const CAP_MS   = 3500;  // aldrei lengur en þetta — slæðan lyftist alltaf
+  // 12.10.2026 — Agnar: „halda vinnunni áfram að setja í eitt load". Slæðan lyftist áður þegar borði + tækjalisti voru
+  // komnir (~0,5 s) og allt annað — afslættir, samantekt, Skjöl — raðaðist svo inn fyrir framan notandann í 2–3 s.
+  // Nú bíður hún eftir LYKILHLUTUNUM og lyftist EINU SINNI: borði, tækjalisti, Skjöl-spjaldið teiknað (sk-yrwrap)
+  // og samantektin (#_ctc-section). Hlutar sem eru ekki komnir eftir FREST_MS teljast ekki væntanlegir (t.d. prófíll
+  // án Skjöl-spjalds) svo slæðan bíður aldrei eftir hluta sem kemur ekki; þakið (CAP_MS) stendur óbreytt.
+  const FREST_MS = 1200;  // hluti sem hefur ekki birst svona fljótt telst ekki vera á leiðinni
+  const SETUR_MS = 150;   // kyrrð eftir að allir lykilhlutar eru komnir
 
   function veil() {
     const main = document.getElementById('companies-main');
@@ -46,6 +53,7 @@
     main.appendChild(ov);
 
     let t = null, done = false, rowsSince = 0;
+    const byrjun = Date.now();
     const mo = new MutationObserver(() => {
       if (done) return;
       // Renderers sem endursetja innerHTML þurrka slæðuna út — setjum hana
@@ -57,6 +65,16 @@
       if (!main.querySelector('.co-banner')) return false;
       return !!(main.querySelector('.ut-list') || main.querySelector('.empty-state') || main.querySelector('table.dtbl tbody tr'));
     }
+    // Allir lykilhlutar komnir? Skjöl (199) setur „Hleð…" strax og sk-yrwrap þegar gögnin eru teiknuð; samantektin
+    // (129) birtist í heilu lagi. Sé hluti ekki einu sinni byrjaður eftir FREST_MS er ekki beðið eftir honum.
+    function lykilhlutar() {
+      if (!listiTil()) return false;
+      const lidid = Date.now() - byrjun;
+      const dyg = main.querySelector('._dyg-section');
+      if (dyg ? !dyg.querySelector('.sk-yrwrap') : lidid < FREST_MS) return false;
+      if (!main.querySelector('#_ctc-section') && lidid < Math.max(FREST_MS, CAP_MS - 500)) return false;
+      return true;
+    }
     function lift() {
       if (done) return;
       done = true;
@@ -67,14 +85,16 @@
     function arm() {
       clearTimeout(t);
       // 01.10.2026: kt-lookup / geocode / company-mail skrifa í borðann EFTIR
-      // fyrstu málun. Þau mega ekki halda „Hleður…“ uppi. Þegar borði og
-      // tækjalisti eru komin lyftist slæðan eftir 180 ms, hvað sem síðar bætist.
-      if (listiTil()) {
+      // fyrstu málun. Þau mega ekki halda „Hleður…“ uppi. 12.10.2026: í stað borða + lista bíður slæðan nú eftir
+      // lykilhlutunum öllum (sjá lykilhlutar()) og lyftist SETUR_MS eftir að þeir eru komnir, hvað sem síðar bætist.
+      if (lykilhlutar()) {
         if (!rowsSince) rowsSince = Date.now();
-        t = setTimeout(lift, Math.max(0, 180 - (Date.now() - rowsSince)));
+        t = setTimeout(lift, Math.max(0, SETUR_MS - (Date.now() - rowsSince)));
         return;
       }
-      t = setTimeout(lift, QUIET_MS);
+      rowsSince = 0;
+      // Hlutar koma líka á tímamælum (ekki aðeins með DOM-breytingu inni í main) — athugað aftur á 200 ms fresti.
+      t = setTimeout(listiTil() ? arm : lift, listiTil() ? 200 : QUIET_MS);
     }
     mo.observe(main, { childList: true, subtree: true });
     arm();

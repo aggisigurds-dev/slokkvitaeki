@@ -404,8 +404,8 @@
     if(my.city && my.city.length>=4){ var cityShared=all.some(function(k){return k!==my && k.city===my.city && k.streetStem!==my.streetStem;}); if(!cityShared && n.indexOf(my.city)>=0) return true; }
     return false;
   }
-  async function filterDocsToLocation(docs, kt, coId){
-    var sibs=await siblingsForKt(kt);
+  async function filterDocsToLocation(docs, kt, coId, sibsKnown){
+    var sibs=sibsKnown || await siblingsForKt(kt);   // sama fyrirspurn — render() gefur svarið sem er þegar komið
     if(sibs.length<=1) return docs;
     var keys=sibs.map(function(s){return {id:s.id, k:addrKeys(s.heimilisfang)};});
     var allK=keys.map(function(x){return x.k;});
@@ -644,13 +644,13 @@
   // sýnir) eftir kt. Aðeins þær sem eru tengdar ÞESSUM stað (customer_id===coId)
   // eða kt-víðar án staðar (customer_id tómt) — svo reikningar rekstrarfélags
   // dreifist ekki á alla staði. Tómt við villu.
-  async function fetchSolurInvoices(kt, coId){
+  async function fetchSolurInvoices(kt, coId, sibsP){
     var sb=SB(); if(!sb||!kt) return [];
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return [];
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
       // 12.10.2026: systkinastaðirnir eru óháðir sölunni — ræstir samtímis (áður beðið eftir sölunni fyrst).
-      var _sibsP=_byrja(siblingsForKt(kt));
+      var _sibsP=sibsP || _byrja(siblingsForKt(kt));   // render() gefur loforðið sem er þegar á leiðinni
       var r=await DB.fetchAll(function(from,to){ return sb.from('solur')
         .select('id,num,samtals,created_at,customer_id,greitt_med,source,vidskiptategund')
         .eq('greitt_med','reikningur')
@@ -1069,8 +1069,9 @@
     var _sibsP = _byrja(kt ? siblingsForKt(kt) : Promise.resolve([]));
     var _bruP = _byrja(fetchBrunakerfiDocs(coId));
     var _slkP = _byrja(fetchSlokkvikerfi(coId));
-    var _solInvP = _byrja(kt ? fetchSolurInvoices(kt, coId) : Promise.resolve([]));
-    await _fcP;
+    var _solInvP = _byrja(kt ? fetchSolurInvoices(kt, coId, _sibsP) : Promise.resolve([]));
+    // fcLoad (year_factcheck) er fyrst lesið í ársmerkjunum hér neðar — beðið þar, ekki hér (mælt 12.10: skjölin biðu
+    // annars ~700 ms eftir fyrirspurn sem þau þurfa ekki).
     var baseId = await _baseP;
     var _docsP = _byrja(fetchDocs(baseId, coId));
     var _pairsP = _byrja(baseId ? fetchPairs(baseId) : Promise.resolve([]));
@@ -1078,10 +1079,12 @@
     // gæti annars lesið tómt blob og fallið á skýrslutöluna); annars á sama stað og áður.
     var _monthP = (window.AppSettings && AppSettings.isLoaded && AppSettings.isLoaded()) ? _byrja(loadInspectMonth(coId, baseId)) : null;
     var docs = await _docsP;
-    if(kt) docs = await filterDocsToLocation(docs, kt, coId);
+    // Systkinastaðirnir eru þegar á leiðinni (_sibsP) — sían fær þá í stað þess að senda sömu fyrirspurn aftur
+    // (mælt 12.10: önnur fyrirspurn fór út 2,3 s eftir opnun og hélt spjaldinu í biðstöðu).
+    var sibs = await _sibsP;
+    if(kt) docs = await filterDocsToLocation(docs, kt, coId, sibs);
     var payday = await _paydayP;
     var srcByNum = await _srcP;
-    var sibs = await _sibsP;
     // Pörin sótt HÉR (áður neðar) því kortaflokkun reikninga (pushInvByService) keyrir
     // strax á eftir og þarf að vita hvaða þjónustu parið segir að reikningurinn tilheyri.
     var pairs = await _pairsP;
@@ -1250,6 +1253,7 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
+    await _fcP;
     var _trio = await _trioP;
     var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invUtByY[y]||[]).length>0, _trio); }).join('');
     var monthInfo = _monthP ? await _monthP : await loadInspectMonth(coId, baseId);

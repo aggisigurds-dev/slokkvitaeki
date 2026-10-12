@@ -1893,7 +1893,7 @@
   // 2026-08-17: observerinn tengist companies-main AFTUR ef viewið endursmíðar
   // nóðuna — gamli hlustaði á aftengda nóðu og þagnaði (sama rót og hjá 165).
   function attach() {
-    let observed = null, _t = 0;
+    let observed = null, _t = 0, _nyttT = 0;
     const obs = new MutationObserver((muts) => {
       const view = document.getElementById('view-companies');
       if (!view || !view.classList.contains('active')) return;
@@ -1904,6 +1904,14 @@
         return !!(t.closest('#_ctc-section, #_ctc-notes, .co-banner, .ut-list'));
       });
       if (allOurs) return;
+      // 12.10.2026 (afköst, „setja í eitt load"): 400 ms debounce beið eftir ÞÖGN — á meðan prófíll teiknast er aldrei
+      // þögn, svo samantektin fór fyrst af stað ~1,8 s eftir opnun (mælt á Center Hótel; birtist 3,05 s). NÝTT fyrirtæki
+      // (ekki enn teiknað) fær teikningu strax, í næsta tifi; endurteikning sama fyrirtækis heldur debounce-inu.
+      const _nyttId = getCompanyId();
+      if (_nyttId && (String(_nyttId) !== _lastKey || !document.getElementById('_ctc-section'))) {
+        if (!_nyttT) _nyttT = setTimeout(() => { _nyttT = 0; maybeRender(); }, 0);
+        return;
+      }
       clearTimeout(_t);
       _t = setTimeout(maybeRender, 400);
     });

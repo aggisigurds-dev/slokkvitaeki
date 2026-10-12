@@ -198,10 +198,15 @@
   function attach() {
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(attach, 700); return; }
-    let t = 0;
+    // 12.10.2026 (afköst, „setja í eitt load"): var debounce (220 ms þögn). Á meðan prófíll teiknast er aldrei þögn,
+    // svo kassinn myndaðist fyrst ~2,7–3,3 s eftir opnun (mælt á Center Hótel) þótt fyrsti kaflinn kæmi eftir 0,56 s.
+    // Nú throttle: mest á ~220 ms fresti, líka á meðan síðan hreyfist. build() er hæfistætt — færir kafla aðeins ef
+    // þeir eru á röngum stað og haus-samanburðurinn (__afslHtml) skrifar ekki sama efni — svo engin lykkja (vaktin
+    // hlustar aðeins á childList).
+    let t = 0, sidast = 0;
     new MutationObserver(() => {
-      clearTimeout(t);
-      t = setTimeout(build, 220);
+      if (t) return;
+      t = setTimeout(() => { t = 0; sidast = Date.now(); build(); }, Math.max(60, 220 - (Date.now() - sidast)));
     }).observe(main, { childList: true, subtree: true });
     // Haus-samantektin þarf líka að fylgja innslætti (%-reiturinn) og vali.
     main.addEventListener('input', e => {
