@@ -202,6 +202,7 @@
         '<div class="note">„Senda" póstar viðskiptavini vefslóð + notandanafn (og lykilorð ef þú bjóst það til núna) gegnum Eldklár-póstinn.</div>' +
       '</div>' +
       '<div class="efull"><h3>Notendur</h3>' + notendurHtml(a) + '</div>' +
+      '<div class="efull"><h3>Greining fasteigna — lesa skjölin áður en opnað er</h3>' + greiningHtml(a) + '</div>' +
       // Útlit og upplýsingar — full breidd svo þemaspjöldin fimm komist í eina röð
       '<div class="efull"><h3>Útlit og upplýsingar</h3>' +
         '<input type="hidden" data-f="theme" value="' + esc(themeOf(a.theme).k) + '">' +
@@ -321,6 +322,53 @@
   // ── Notendur félags (12.10.2026): hlutverk + eignir, lykilorð, sending ──────
   var HLUTVERK_H = { stjornandi: 'Stjórnandi', eldvarnarfulltrui: 'Eldvarnarfulltrúi', skodandi: 'Skoðandi (les)', leigutaki: 'Leigutaki' };
   var HLUTVERK_L = { stjornandi: 'sér allt, skrifar allt', eldvarnarfulltrui: 'sínar eignir, skrifar (eldvarnabók, verk)', skodandi: 'les allt, breytir engu', leigutaki: 'sínar eignir, verkbeiðnir — engin skilaboð, reikningar eða vinnusvæði' };
+  /* Greining fasteigna (12.10.2026): hver eign félagsins með stöðu lesturs úr bygging-uppl — m² brúttó, hæðir, lesin/ólesin
+     skjöl — og „Lesa skjölin" sem biður brúna á skrifstofutölvunni (sama og 451). Þannig les Agnar skjölin áður en hann
+     opnar gáttina fyrir kúnnann; kúnninn sér tölurnar strax í stað „ekki lesið". Sótt þegar ýtt er á Athuga (hæg leit). */
+  var grSt = {};   // site_id → { bygg, bidur, timer }
+  function greiningHtml(a) {
+    var S = stadirFelags(a.base_id);
+    if (!S.length) return '<div class="empty">Engar eignir skráðar á félagið.</div>';
+    return '<div class="grl">' + S.map(function (s) { return '<div class="grr" data-grr="' + s.id + '"><div class="grn"><b>' + esc(s.nafn) + '</b><small>' + esc(s.heimilisfang || '') + '</small></div><div class="grs" id="grs-' + s.id + '">' + greiningStada(s) + '</div></div>'; }).join('') +
+      '</div><div class="note">Tölurnar koma úr skráningartöflum og byggingarlýsingum í skjalasöfnum sveitarfélaganna (bygging-uppl). Lesturinn (OCR) keyrir á skrifstofutölvunni um brúna, ~2,5 mín per skjal, mest 6 í einu — niðurstaðan geymist á þjóninum og birtist í gáttinni.</div>' +
+      '<div style="margin-top:8px"><button class="btn btn--sm" data-gr-allar="' + a.base_id + '">Athuga allar eignir</button></div>';
+  }
+  function greiningStada(s) {
+    var st = grSt[s.id];
+    if (!st) return '<button class="btn btn--sm" data-gr-athuga="' + s.id + '">Athuga</button>';
+    if (st.saekir) return '<span class="dim">Leita í skjalasafni…</span>';
+    var b = st.bygg;
+    if (!b) return '<span class="dim">Fannst ekki í skjalasafni</span> <button class="btn btn--sm" data-gr-athuga="' + s.id + '">Aftur</button>';
+    var H = b.heimildir || [], lesin = H.filter(function (h) { return h.lesin; }).length, ol = (b.olesin || []).length;
+    var tolur = '<span class="grt">' + (b.m2 ? '<b>' + Math.round(b.m2).toLocaleString('is-IS') + ' m²</b>' : '<i>m² ekki lesið</i>') + ' · ' + (b.haedir != null && typeof b.haedir !== 'object' ? '<b>' + esc(b.haedir) + ' hæðir</b>' : '<i>hæðir ekki lesnar</i>') + ' · ' + lesin + ' lesin / ' + ol + ' ólesin</span>';
+    if (st.bidur) return tolur + ' <span class="vst">Beðið um lestur' + (st.i_gangi ? ' (var þegar í gangi)' : '') + ' — brúin les á skrifstofutölvunni, ~' + Math.max(2, Math.round(Math.min(6, ol) * ((b.ocr_min_skjal || 2.5)))) + ' mín</span>';
+    return tolur + (ol ? ' <button class="btn btn--sm btn--accent" data-gr-lesa="' + s.id + '">Lesa skjölin (' + Math.min(6, ol) + ')</button>' : (H.length ? ' <span class="vst lok">Allt lesið</span>' : '')) +
+      ' <a class="btn btn--sm" href="/#greining/' + encodeURIComponent(s.heimilisfang || s.nafn) + '" target="_blank" rel="noopener">Opna í appinu</a>';
+  }
+  function grTeikna(s) { var el = $('#grs-' + s.id); if (el) el.innerHTML = greiningStada(s); }
+  function grAthuga(s) {
+    var st = grSt[s.id] = grSt[s.id] || {}; st.saekir = true; grTeikna(s);
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, 28000);
+    return fetch('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(s.heimilisfang || s.nafn), { signal: ctl.signal }).then(function (r) { return r.json(); }).catch(function () { return null; })
+      .then(function (jx) { clearTimeout(t); st.saekir = false; st.bygg = jx && !jx.error ? jx : null; if (st.bygg && st.bidur && !(st.bygg.olesin || []).length) st.bidur = false; grTeikna(s); return st.bygg; });
+  }
+  function grLesa(s) {
+    var st = grSt[s.id]; if (!st || !st.bygg || !st.bygg.eign) { toast('Athugaðu eignina fyrst'); return; }
+    var b = st.bygg, e = b.eign;
+    api({ action: 'ocr-bidja', site_id: s.id, eign: { landnr: e.landnr, heitinr: e.heitinr || null, svf: e.svf || null }, heimilisfang: e.label ? e.label + (e.postnr ? ', ' + e.postnr : '') : (s.heimilisfang || ''), skjol: (b.olesin || []).slice(0, 6) })
+      .then(function (res) {
+        if (!res.ok) { toast(res.error || 'Beiðnin fór ekki'); return; }
+        st.bidur = true; st.i_gangi = !!res.i_gangi; grTeikna(s);
+        toast('Beiðni send — brúin les ' + res.n + (res.n === 1 ? ' skjal' : ' skjöl') + ' á skrifstofutölvunni');
+        var n = 0; (function kanna() { if (n++ > 20) return; st.timer = setTimeout(function () { grAthuga(s).then(function (bg) { if (bg && (bg.olesin || []).length) kanna(); }); }, 60000); })();
+      });
+  }
+  document.addEventListener('click', function (ev) {
+    var x = ev.target.closest && (ev.target.closest('[data-gr-athuga]') || ev.target.closest('[data-gr-lesa]') || ev.target.closest('[data-gr-allar]')); if (!x) return;
+    if (x.hasAttribute('data-gr-allar')) { var L = stadirFelags(+x.getAttribute('data-gr-allar')); x.disabled = true; (function nk(i) { if (i >= L.length) { x.disabled = false; return; } grAthuga(L[i]).then(function () { nk(i + 1); }); })(0); return; }
+    var s = (state.stadir || []).filter(function (q) { return q.id === +(x.getAttribute('data-gr-athuga') || x.getAttribute('data-gr-lesa')); })[0]; if (!s) return;
+    if (x.hasAttribute('data-gr-lesa')) grLesa(s); else grAthuga(s);
+  });
   function stadirFelags(base) { return (state.stadir || []).filter(function (s) { return s.customer_base_id === base; }); }
   function eignirVal(base, valin, name) {
     var S = stadirFelags(base);

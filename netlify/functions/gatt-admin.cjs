@@ -323,6 +323,34 @@ exports.handler = async (event) => {
       return P.json(res.ok ? 200 : 502, res);
     }
 
+    // Greining fasteignar: lesa skráningartöflur/byggingarlýsingar eignar ÁÐUR en opnað er fyrir kúnnann (Agnar 12.10.2026:
+    // „að ég geti lesið þetta áður en ég opna á fyrir hann"). Sama beiðni og „Lesa skjölin" í appinu (451): röð í
+    // automation_triggers (workflow bygging-ocr) sem brúin á skrifstofutölvunni les. Vafrinn sendir eign + ólesin skjöl
+    // sem hann fékk úr bygging-uppl; hér er aðeins hreinsað, tvítekning varin og skrifað.
+    if (action === 'ocr-bidja') {
+      const sid = parseInt(body.site_id, 10);
+      const fr = sid ? await P.sbGet(`fyrirtaeki?id=eq.${sid}&deleted_at=is.null&select=id,nafn,heimilisfang,customer_base_id&limit=1`) : null;
+      const f = fr && fr.ok ? (await fr.json())[0] : null;
+      if (!f) return P.json(404, { error: 'Eign fannst ekki' });
+      const e = body.eign && typeof body.eign === 'object' ? body.eign : {};
+      const landnr = String(e.landnr || '').replace(/\D/g, '').slice(0, 10);
+      if (!landnr) return P.json(400, { error: 'Landnúmer vantar — bygging-uppl fann ekki eignina' });
+      const skjol = (Array.isArray(body.skjol) ? body.skjol : []).slice(0, 6).map((x) => ({
+        slod: String((x && x.slod) || '').slice(0, 500), tegund: String((x && x.tegund) || '').slice(0, 40), dags: String((x && x.dags) || '').slice(0, 20), lysing: String((x && x.lysing) || '').slice(0, 200),
+      })).filter((x) => /^https:\/\//.test(x.slod));
+      if (!skjol.length) return P.json(400, { error: 'Engin ólesin skjöl í beiðninni' });
+      const fra = new Date(Date.now() - 30 * 60000).toISOString();
+      const q = await P.sbGet(`automation_triggers?workflow=eq.bygging-ocr&gogn->>landnr=eq.${landnr}&status=in.(bida,pending,running)&requested_at=gt.${encodeURIComponent(fra)}&select=id,status&order=id.desc&limit=1`);
+      const til = q.ok ? (await q.json())[0] : null;
+      if (til) return P.json(200, { ok: true, id: til.id, i_gangi: true, n: skjol.length });
+      const heimilisfang = String(body.heimilisfang || f.heimilisfang || '').slice(0, 200);
+      const ins = await P.sbPost('automation_triggers', { workflow: 'bygging-ocr', status: 'bida', requested_by: 'gatt-admin',
+        gogn: { landnr, heitinr: e.heitinr != null ? String(e.heitinr).slice(0, 10) : null, svf: e.svf != null ? String(e.svf).slice(0, 10) : null, heimilisfang, skjol, fyrirtaeki_id: f.id, base_id: f.customer_base_id } });
+      if (!ins.ok) return P.json(ins.status, { error: 'Beiðnin vistaðist ekki', detail: (await ins.text().catch(() => '')).slice(0, 200) });
+      let id = null; try { const r = await ins.json(); id = Array.isArray(r) && r[0] ? r[0].id : null; } catch (_) {}
+      return P.json(200, { ok: true, id, n: skjol.length });
+    }
+
     if (action === 'verk-stada') {
       const id = parseInt(body.id, 10), status = ['nytt', 'i_vinnslu'].includes(body.status) ? body.status : null;
       if (!id || !status) return P.json(400, { error: 'id/status vantar' });
