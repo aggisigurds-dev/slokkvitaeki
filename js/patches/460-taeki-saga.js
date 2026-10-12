@@ -52,10 +52,17 @@
     hladid:   { heiti: 'hlaðið',   staf: 'H', bg: '#2563eb', bor: '#1d4ed8', txt: '#ffffff' },  // blátt
     onytt:    { heiti: 'ónýtt',    staf: 'Ó', bg: '#dc2626', bor: '#b91c1c', txt: '#ffffff' },
     mottekid: { heiti: 'móttekið', staf: 'M', bg: '#64748b', bor: '#475569', txt: '#ffffff' },
-    tilbuid:  { heiti: 'tilbúið',  staf: 'T', bg: '#15803d', bor: '#166534', txt: '#ffffff' }
+    tilbuid:  { heiti: 'tilbúið',  staf: 'T', bg: '#15803d', bor: '#166534', txt: '#ffffff' },
+    /* Agnar 12.10.2026: „ég hef aldrei skráð áður á tæki hvort það hafi verið
+     * yfirfarið eða hlaðið." Bakfyllingin úr `uttaeki.last_insp` veit því ÁRIÐ
+     * en ekki hvað var gert. Grátt og STAFALAUST segir það satt: tækið kom við
+     * þetta ár, meira veit kerfið ekki. Litur sem fullyrti yfirferð væri
+     * ágiskun sem stæði á miðanum um ókomna tíð. 6.189 raðir bera þetta,
+     * á móti 661 `hladid` og 388 `skodad` sem eiga heimild í verklidur.service. */
+    thjonustad: { heiti: 'þjónustað (ekki skráð hvort yfirfarið eða hlaðið)', staf: '', bg: '#94a3b8', bor: '#64748b', txt: '#ffffff' }
   };
   // Röðin á miðanum: nýtt fremst, svo árin í tímaröð. Innan sama árs ræður þessi röð.
-  const ROD = ['nytt', 'hladid', 'skodad', 'onytt', 'mottekid', 'tilbuid'];
+  const ROD = ['nytt', 'hladid', 'skodad', 'thjonustad', 'onytt', 'mottekid', 'tilbuid'];
 
   /* Skyndiminni per lykli. Teikningin er samstillt (430 byggir streng), svo
    * sagan verður að vera komin ÁÐUR en teiknað er — annars blikkar miðinn inn
@@ -314,9 +321,17 @@
       '<div class="_tsg-hint">Sláðu inn ártal og veldu hvað gerðist það ár. Hvert ár getur borið hvern viðburð einu sinni.</div>';
   }
 
-  function opnaRitil(k, heiti, ser) {
+  async function opnaRitil(k, heiti, ser) {
     lokaRitli();
     stilar();
+    /* Ritillinn SÆKIR SJÁLFUR. Áður treysti hann á að miðinn hefði þegar
+     * fyllt skyndiminnið — en frá 12.10.2026 bera spjöldin í „Komið úr
+     * þjónustu" engar flísar (Agnar: „óþarfi að sýna ártölurnar þarna"), svo
+     * ekkert hefði sótt neitt og ritillinn hefði opnast TÓMUR á tæki sem á
+     * sögu. Tóm saga og ósótt saga líta eins út — þess vegna er sótt hér. */
+    const gervi = { uttaeki_id: k.indexOf('u:') === 0 ? Number(k.slice(2)) : null,
+      serial: k.indexOf('s:') === 0 ? k.slice(2) : ser };
+    try { await saekja([gervi]); } catch (_) {}
     const ov = document.createElement('div');
     ov.id = '_tsg-ov';
     ov.innerHTML = '<div id="_tsg-glugg"></div>';

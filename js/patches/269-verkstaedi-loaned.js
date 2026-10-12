@@ -82,11 +82,20 @@
   };
   function sectionHtml() {
     const grp = byClient();
-    /* Saga tækisins á spjaldið. `u` hér er UTTAEKI-röð, svo lykillinn er `u.id`
-     * — 460 býst við `uttaeki_id`. Skilar tómum streng þegar 460 er ekki hlaðið,
-     * svo þessi skjár virkar óháð því. */
-    const sagaU = (u) => ({ uttaeki_id: u.id, serial: u.serial, type: u.type, size: u.size });
-    const sagaHtml = (u) => (window.TaekiSaga ? TaekiSaga.linaHtml(sagaU(u)) : '');
+    /* 12.10.2026 — Agnar sá ártölin á spjöldunum og sagði: „kanski alveg óþarfi
+     * að sýna ártölurnar þarna, frekar bara að maður opni tækið sjálft til að
+     * sjá og skrá". Flísarnar fóru því af spjaldinu; raðnúmerið sjálft er nú
+     * leiðin inn. Smellur opnar sögu-ritilinn (460) — sama ritil og „+" á
+     * Verkspjaldinu, sömu gögn. Spjaldið sjálft skrifar ekkert. */
+    const sagaOpnari = (u, stutt) => {
+      if (!window.TaekiSaga) return '<div class="vkl-ser">' + esc(stutt) + '</div>';
+      const heiti = [u.type, u.size].filter(Boolean).join(' ') || '';
+      return '<div class="vkl-ser vkl-ser--opna" role="button" tabindex="0"' +
+        ' data-tsg-ritill="u:' + u.id + '" data-tsg-heiti="' + esc(heiti) + '"' +
+        ' data-tsg-ser="' + esc(u.serial || '') + '"' +
+        ' title="' + esc((u.serial || '') + ' — opna sögu tækisins (skoðað / hlaðið / nýtt)') + '"' +
+        ' onclick="event.stopPropagation()">' + esc(stutt) + '</div>';
+    };
 
     const tile = (u) => {
       const cs = u.custody_status || 'null';
@@ -102,11 +111,8 @@
         return '<div class="vkl-tile vkl-tile--verk"' + (col ? ' style="--vkm-type:' + esc(col) + '"' : '') + ' title="' + esc((u.serial || '') + ' — unnið í verkbeiðni ' + vs.num) + '">' +
             '<div class="vkl-body">' +
               '<div class="vkl-ty">' + esc(label) + '</div>' +
-              (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
+              (serialShort ? sagaOpnari(u, serialShort) : '') +
               '<div class="vkl-st vkl-st--' + cls + '"><i aria-hidden="true"></i>' + esc(lbl) + '</div>' +
-              // Sagan birtist lika thegar taekid er i verkbeidni -- annars hyrfi
-              // midinn um leid og verk er stofnad a taekid.
-              sagaHtml(u) +
             '</div>' +
             '<div class="vkl-foot vkl-foot--one"><span class="vkl-iverki">í verki ' + esc(vs.num) + '</span></div>' +
           '</div>';
@@ -127,9 +133,8 @@
           '<button type="button" class="vkl-x" aria-label="Eyða tæki" title="Eyða tæki (ef mistalið úr skýrslu)" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')">' + IC.x + '</button>' +
           '<div class="vkl-body">' +
             '<div class="vkl-ty">' + esc(label) + '</div>' +
-            (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
+            (serialShort ? sagaOpnari(u, serialShort) : '') +
             '<div class="vkl-st vkl-st--' + st.cls + '"><i aria-hidden="true"></i>' + esc(st.label(u)) + '</div>' +
-            sagaHtml(u) +
             (() => { const h = hlutir(u); return h.length ? '<div class="vkl-hl" title="' + esc(h.map(x => x.name).join('\n')) + '">' + h.length + (h.length === 1 ? ' varahlutur' : ' varahlutir') + '</div>' : ''; })() +
           '</div>' +
           foot +
@@ -143,11 +148,6 @@
     // þau og skilað þeim"): tilbúin = custody 'tilbuid' (þessi lífsferill) eða tilbúið í verkbeiðni (422).
     const erTilbuid = (u) => { const v = iVerki(u); return v ? v.kind === 'tilbuid' : u.custody_status === 'tilbuid'; };
     const tilbN = (items) => items.filter(erTilbuid).length;
-    /* Teikningin er samstillt (byggir streng), svo sagan verður að vera komin
-     * ÁÐUR. saekja() spyr aðeins um þau sem vantar og kallar á endurteikningu
-     * EINU SINNI þegar svarið lendir; eftir það gerir kallið ekkert. */
-    if (window.TaekiSaga) TaekiSaga.saekja(_shop.map(sagaU), () => { try { inject(true); } catch (_) {} });
-
     const cards = grp.length ? grp.map(g =>
       '<div class="vkl-grp" data-client="' + esc(g.client) + '">' +
         '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki' +
@@ -198,6 +198,7 @@
       W + '.vkl-body{padding:6px 24px 6px 10px}',
       W + '.vkl-ty{font-size:10.5px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       W + '.vkl-ser{margin-top:2px;font-family:' + MONO + ';font-size:9.5px;font-weight:500;color:#6b7483}',
+      W + '.vkl-ser--opna{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}',
       W + '.vkl-st{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       W + '.vkl-st i{flex:none;width:6px;height:6px;border-radius:50%}',
       W + '.vkl-st--nytt{color:#4a5363}' + W + '.vkl-st--nytt i{background:#8a93a3}',
