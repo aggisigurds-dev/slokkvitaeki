@@ -72,8 +72,12 @@
   const typeColor = s => {
     try { return typeof window.SlokkTypeColor === 'function' ? window.SlokkTypeColor({ nafn: s }) : null; } catch (_) { return null; }
   };
-  const actBtn = (id, act, label, icon, kind) =>
-    '<button type="button" class="vkl-act vkl-act--' + kind + '" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')">' + icon + '<span>' + label + '</span></button>';
+  // `titill` er valkvætt — aðeins „Breyta" þarf hann, svo sjáist að hann opnar
+  // þjónustutakkana og varahlutinn aftur (12.10.2026).
+  const actBtn = (id, act, label, icon, kind, titill) =>
+    '<button type="button" class="vkl-act vkl-act--' + kind + '"' +
+      (titill ? ' title="' + esc(titill) + '"' : '') +
+      ' onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')">' + icon + '<span>' + label + '</span></button>';
   const STATE = {
     'null':  { cls: 'nytt',    label: () => 'Nýkomið' },
     komid:   { cls: 'komid',   label: () => 'Á verkstæði' },
@@ -126,8 +130,15 @@
       const hluti = '<button type="button" class="vkl-hluti" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.hluti(\'' + u.id + '\')">' + IC.plus + '<span>Varahlutur</span></button>';
       if (cs === 'null' || cs === 'komid') foot = '<div class="vkl-foot">' + thjon + '</div>' + '<div class="vkl-foot vkl-foot--one">' + hluti + '</div>';
       // „Sótt" LÝKUR lífsferlinum (close → þjónustan skráð á tækið) — sama og áður.
-      else if (cs === 'tilbuid') foot = '<div class="vkl-foot">' + actBtn(u.id, 'sott', 'Sótt', IC.out, 'sott') + actBtn(u.id, 'komid', 'Breyta', IC.check, 'breyta') + '</div>' +
-        '<div class="vkl-foot vkl-foot--one">' + hluti + '</div>';
+      /* 12.10.2026 — Agnar: „geturðu sett varahlutir+ inn í breyta. þarf ekki að
+       * vera sér takki þegar maður er búinn að merkja það tilbúið."
+       *
+       * Hann þarf ekki að færast neitt: „Breyta" KALLAR á act(id,'komid'), sem
+       * setur custody_status aftur í `komid` — og sú grein ber þegar bæði
+       * þjónustutakkana OG „+ Varahlutur". Einn smellur skilar honum því.
+       * Takkinn er hreinn óþarfi á tilbúnu tæki og fer. Spjaldið styttist um
+       * eina röð í kaupbæti. */
+      else if (cs === 'tilbuid') foot = '<div class="vkl-foot">' + actBtn(u.id, 'sott', 'Sótt', IC.out, 'sott') + actBtn(u.id, 'komid', 'Breyta', IC.check, 'breyta', 'Opna aftur — þjónustuval (Yfirfarið · Hlaðið · Ónýtt · Nýtt) og + Varahlutur') + '</div>';
       else if (cs === 'farid') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'sott', 'Ljúka (sótt)', IC.check, 'sott') + '</div>';
       return '<div class="vkl-tile"' + (col ? ' style="--vkm-type:' + esc(col) + '"' : '') + ' title="' + esc((u.serial || '') + ' — ' + label) + '">' +
           '<button type="button" class="vkl-x" aria-label="Eyða tæki" title="Eyða tæki (ef mistalið úr skýrslu)" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')">' + IC.x + '</button>' +
