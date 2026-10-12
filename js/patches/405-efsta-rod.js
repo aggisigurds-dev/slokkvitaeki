@@ -135,7 +135,10 @@
     var hdr = sec.querySelector('span'); var m = hdr && String(hdr.textContent || '').match(/(\d+)\s*sta/i);
     var n = m ? m[1] : '';
     var CHEV = svg('<path d="m6 9 6 6 6-6"/>');
-    var label = opid ? (CHEV + 'Fela teikningu') : (CHEV + 'Teikning' + (n ? ' · ' + n : ''));
+    // 12.10.2026: textinn í eigin span — í þétta spjaldinu (411) sést aðeins örin + fjöldinn („tákn á Teikningum", B27),
+    // svo fjórir takkar komist á eina línu undir myndinni (428 px). Fulli textinn er í title.
+    var label = opid ? (CHEV + '<span class="b405-fpt-t">Fela teikningu</span>')
+      : (CHEV + '<span class="b405-fpt-t">Teikning' + (n ? ' · ' : '') + '</span>' + (n ? '<span class="b405-fpt-n">' + n + '</span>' : ''));
     if (!t) {
       t = el('button', 'b405-fpt', label); t._b405Label = label; t.id = 'b405-fpt'; t.type = 'button'; t.title = 'Sýna eða fela teikninguna og viðbótaupplýsingar';
       t.addEventListener('click', function (ev) {
@@ -158,6 +161,8 @@
     // Nú er borið saman við strenginn sem var síðast settur.
     } else if (t._b405Label !== label) { t.innerHTML = label; t._b405Label = label; }
     t.classList.toggle('opin', opid);
+    var titill = opid ? 'Fela teikninguna og viðbótaupplýsingar' : ('Sýna teikninguna' + (n ? ' (' + n + ' staðsetningar)' : '') + ' og viðbótaupplýsingar');
+    if (t.title !== titill) t.title = titill;
   }
   function ensureSamskipti(main) {
     var head = main.querySelector('._samskipti-card ._skx-head'); if (!head || head.querySelector('.b405-talning')) return;
