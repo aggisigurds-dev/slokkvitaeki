@@ -228,3 +228,9 @@
 # þegar ekkert hefur breyst.
 [functions."trio-cron"]
   schedule = "0 6 * * *"
+
+# Þjónustugátt: vikuleg samantekt í pósti á mánudagsmorgnum (12.10.2026) — aðeins félög með rofann
+# „vikupostur" kveiktan á gatt-admin (sjálfgefið slökkt). Á eftir, næstu skoðanir, opin verk, skírteini
+# sem renna út. „Senda núna" á gatt-admin keyrir sama fallið fyrir eitt félag.
+[functions."gatt-vikupostur"]
+  schedule = "0 7 * * 1"

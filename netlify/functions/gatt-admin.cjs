@@ -45,7 +45,7 @@ const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 async function verkListi() {
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
-  const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at';
+  const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at,einkunn,einkunn_ath,einkunn_at';
   const filt = 'and=(or(source.eq.gatt,tags.cs.' + encodeURIComponent('["gatt"]') + '),or(status.not.in.(lokad,klarad),updated_at.gte.' + encodeURIComponent(since) + '))';
   const r = await P.sbGet(`thjonustubeidni?${filt}&deleted_at=is.null&select=${sel}&order=created_at.desc&limit=150`);
   if (!r.ok) return [];
@@ -74,7 +74,8 @@ async function verkListi() {
     const haed = x.punktur && hs[x.punktur.haed] ? hs[x.punktur.haed] : null;
     return { id: x.id, base_id: x.customer_base_id, fid: x.fyrirtaeki_id, eign: f.nafn || '', heimilisfang: f.heimilisfang || '', title: x.title, summary: x.summary || '',
       status: x.status, abyrgd: x.abyrgd || 'okkar', tags: Array.isArray(x.tags) ? x.tags : [], created_at: x.created_at, updated_at: x.updated_at,
-      punktur: x.punktur || null, haed, myndir: mynd(x.myndir), eftirmyndir: mynd(x.eftirmyndir), lokid_at: x.lokid_at, lokid_af: x.lokid_af, lokid_lysing: x.lokid_lysing, tilkynnt_at: x.tilkynnt_at };
+      punktur: x.punktur || null, haed, myndir: mynd(x.myndir), eftirmyndir: mynd(x.eftirmyndir), lokid_at: x.lokid_at, lokid_af: x.lokid_af, lokid_lysing: x.lokid_lysing, tilkynnt_at: x.tilkynnt_at,
+      einkunn: x.einkunn || null, einkunn_ath: x.einkunn_ath || null, einkunn_at: x.einkunn_at || null };
   });
 }
 function pubRow(r) { // aldrei skila pass_hash í vafra
@@ -310,6 +311,18 @@ exports.handler = async (event) => {
     }
 
     // Staða verkbeiðnar af vef (nytt → i_vinnslu). Lokun með eftirmynd fer um /api/verkbeidni-lokid.
+    // Vikuleg samantekt „núna" fyrir eitt félag (sama fall og mánudagskeyrslan gatt-vikupostur.cjs) — krefst rofans vikupostur
+    if (action === 'vikupostur-senda') {
+      const id = parseInt(body.id, 10);
+      if (!id) return P.json(400, { error: 'id vantar' });
+      const ur = await P.sbGet(`portal_users?id=eq.${id}&select=id,base_id,email,syn,stillingar,active&limit=1`);
+      const u = ur.ok ? (await ur.json())[0] : null;
+      if (!u) return P.json(404, { error: 'Aðgangur fannst ekki' });
+      const VP = require('./gatt-vikupostur.cjs');
+      const res = await VP.sendaFelagi(u, { origin: origin(event), thvinga: true, vidtakandi: String(body.to || '').trim().toLowerCase() || null });
+      return P.json(res.ok ? 200 : 502, res);
+    }
+
     if (action === 'verk-stada') {
       const id = parseInt(body.id, 10), status = ['nytt', 'i_vinnslu'].includes(body.status) ? body.status : null;
       if (!id || !status) return P.json(400, { error: 'id/status vantar' });

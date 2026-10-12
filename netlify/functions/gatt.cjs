@@ -95,7 +95,7 @@ const ABYRGD = ['okkar', 'eigandi', 'annar'];
 // Síun erinda: mál af þjónustuvef (source gatt) EÐA mál sem starfsfólk merkti kúnnanum (tags ∋ 'gatt', t.d. verkefni
 // með abyrgd 'eigandi' stofnuð á Þjónustuborðinu).
 const ERINDI_FILT = 'or=(source.eq.gatt,tags.cs.' + encodeURIComponent('["gatt"]') + ')';
-const ERINDI_SEL = 'id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_lysing,due_at';
+const ERINDI_SEL = 'id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_lysing,due_at,einkunn,einkunn_ath,einkunn_at';
 // Ein röð erindis eins og kúnninn má sjá hana: titill, staða, punktur, myndir (undirritaðar), ábyrgð — aldrei innri nótur.
 function erindiRod(r, slod) {
   const tags = Array.isArray(r.tags) ? r.tags : [];
@@ -104,7 +104,8 @@ function erindiRod(r, slod) {
     tegund: tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('verkefni') ? 'verkefni' : tags.includes('thjonusta') ? 'thjonusta' : 'fyrirspurn',
     dags: r.created_at, uppf: r.updated_at, frestur: r.due_at || null,
     abyrgd: ABYRGD.includes(r.abyrgd) ? r.abyrgd : 'okkar', punktur: r.punktur && typeof r.punktur === 'object' ? r.punktur : null,
-    myndir: mynd(r.myndir), eftirmyndir: mynd(r.eftirmyndir), lokid: r.lokid_at || null, lokid_lysing: r.lokid_lysing || null };
+    myndir: mynd(r.myndir), eftirmyndir: mynd(r.eftirmyndir), lokid: r.lokid_at || null, lokid_lysing: r.lokid_lysing || null,
+    einkunn: r.einkunn || null, einkunn_ath: r.einkunn_ath || null };
 }
 function myndaSlodir(rows) {
   const p = [];
@@ -319,6 +320,24 @@ exports.handler = async (event) => {
     const pr = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=${ERINDI_SEL}`, {
       // 'lokad' = sama gildi og ✓ Lokið á Þjónustuborðinu (368 done()) — þá dettur málið af borðinu
       status: 'lokad', lokid_at: nu, lokid_af: hofundurNafn(), lokid_lysing: String(b.lysing || '').trim().slice(0, 1000) || null, eftirmyndir: eftir, updated_at: nu });
+    if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst' });
+    const row = (await pr.json())[0];
+    const slod = await M.undirrita(myndaSlodir([row]), 600);
+    return P.json(200, { ok: true, erindi: erindiRod(row, slod) });
+  }
+
+  // ── Ánægjukönnun (12.10.2026): kúnni gefur okkar verki stjörnur 1–5 þegar því er lokið — má breyta, ein athugasemd ──
+  async function gefaEinkunn(b) {
+    if (!syn.einkunn) return P.json(403, { error: 'Ánægjukönnun er ekki opin á þessum aðgangi' });
+    const id = parseInt(b.id, 10), st = parseInt(b.stjornur, 10);
+    if (!id || !(st >= 1 && st <= 5)) return P.json(400, { error: 'Stjörnur 1–5 vantar' });
+    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
+    const row0 = r0.ok ? (await r0.json())[0] : null;
+    if (!row0) return P.json(404, { error: 'Verkið fannst ekki' });
+    if ((row0.abyrgd || 'okkar') !== 'okkar') return P.json(403, { error: 'Einkunn er aðeins gefin fyrir verk Slökkvitækja ehf.' });
+    if (!['klarad', 'lokad'].includes(row0.status)) return P.json(409, { error: 'Verkinu er ekki lokið enn' });
+    const ath = String(b.ath || '').trim().slice(0, 300) || (b.ath === undefined ? row0.einkunn_ath : null);
+    const pr = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=${ERINDI_SEL}`, { einkunn: st, einkunn_ath: ath || null, einkunn_at: new Date().toISOString() });
     if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst' });
     const row = (await pr.json())[0];
     const slod = await M.undirrita(myndaSlodir([row]), 600);
@@ -571,6 +590,7 @@ exports.handler = async (event) => {
       if (b.action === 'kerfi_skra') return await skraKerfi(b);
       if (b.action === 'punktur') return await vistaPunkt(b);
       if (b.action === 'lokid') return await lokaVerki(b);
+      if (b.action === 'einkunn') return await gefaEinkunn(b);
       if (b.action === 'hnit') return await vistaHnit(b);
       if (b.action === 'ny_eign') return await nyEign(b);
       if (b.action === 'item') return await vistaItem(b);

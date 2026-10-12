@@ -196,6 +196,7 @@
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button class="btn btn--sm" data-act="open">' + ic('open') + 'Opna vef</button>' +
           '<button class="btn btn--sm btn--accent" data-act="send">' + ic('mail') + 'Senda á viðskiptavin</button>' + '<span title="Svar-stöð SV-12 — textinn sem fer héðan er kortlagður þar (slokkvitaeki.netlify.app/#svarstod)" style="display:inline-block;margin-left:8px;padding:0 5px;border:1px solid currentColor;border-radius:3px;font:700 9.5px/1.5 \'JetBrains Mono\',ui-monospace,monospace;letter-spacing:.06em;vertical-align:middle;opacity:.7">SV-12</span>' +
+          '<button class="btn btn--sm" data-act="vikupostur" title="Sendir vikulegu samantektina núna á netfang aðgangsins og stjórnendur félagsins — krefst rofans Vikuleg samantekt">' + ic('mail') + 'Vikupóstur núna</button>' +
           '<button class="btn btn--sm btn--danger" data-act="del">Aftengja</button>' +
         '</div>' +
         '<div class="note">„Senda" póstar viðskiptavini vefslóð + notandanafn (og lykilorð ef þú bjóst það til núna) gegnum Eldklár-póstinn.</div>' +
@@ -280,6 +281,10 @@
       var body = { action: 'send', id: a.id, to: emailEl.value.trim() };
       if (pwEl.value.trim()) body.password = pwEl.value.trim();
       api(body).then(function (res) { if (res.ok) toast('Sent á ' + res.sent_to); else toast(res.error || 'Sending mistókst'); });
+    };
+    row.querySelector('[data-act="vikupostur"]').onclick = function () {
+      var self = this; self.disabled = true;
+      api({ action: 'vikupostur-senda', id: a.id }).then(function (res) { self.disabled = false; if (res.ok) toast('Vikupóstur sendur á ' + (res.sent_to || []).join(', ') + (res.n != null ? ' · ' + res.n + ' atriði' : '')); else toast(res.error || 'Sending mistókst'); });
     };
     row.querySelector('[data-act="del"]').onclick = function () {
       if (!confirm('Aftengja vef ' + a.base_nafn + '? Innskráning hættir að virka.')) return;
@@ -392,14 +397,15 @@
     var el = $('#verkPanel'); if (!el) return;
     var L = (state.verk || []).filter(function (v) { return verkSia === 'oll' || (verkSia === 'opin' ? !/^(lokad|klarad)$/.test(v.status) : v.abyrgd !== 'okkar'); });
     var opin = (state.verk || []).filter(function (v) { return !/^(lokad|klarad)$/.test(v.status); }).length;
-    var head = '<div class="vsiur"><button class="btn btn--sm' + (verkSia === 'opin' ? ' on' : '') + '" data-vsia="opin">Opin · ' + opin + '</button><button class="btn btn--sm' + (verkSia === 'kunna' ? ' on' : '') + '" data-vsia="kunna">Verkefni kúnna</button><button class="btn btn--sm' + (verkSia === 'oll' ? ' on' : '') + '" data-vsia="oll">Öll · ' + (state.verk || []).length + '</button></div>';
+    var ein = (state.verk || []).filter(function (v) { return v.einkunn; }), medal = ein.length ? (ein.reduce(function (s, v) { return s + v.einkunn; }, 0) / ein.length) : 0;
+    var head = (ein.length ? '<div class="vmedal" title="Ánægjukönnun: meðaleinkunn lokinna verka síðustu 30 daga">★ ' + medal.toFixed(1).replace('.', ',') + ' <small>af 5 · ' + ein.length + (ein.length === 1 ? ' einkunn' : ' einkunnir') + '</small></div>' : '') + '<div class="vsiur"><button class="btn btn--sm' + (verkSia === 'opin' ? ' on' : '') + '" data-vsia="opin">Opin · ' + opin + '</button><button class="btn btn--sm' + (verkSia === 'kunna' ? ' on' : '') + '" data-vsia="kunna">Verkefni kúnna</button><button class="btn btn--sm' + (verkSia === 'oll' ? ' on' : '') + '" data-vsia="oll">Öll · ' + (state.verk || []).length + '</button></div>';
     if (!L.length) { el.innerHTML = head + '<div class="empty">Engar verkbeiðnir' + (verkSia === 'opin' ? ' opnar' : '') + '.</div>'; wireVerk(el); return; }
     el.innerHTML = head + L.map(function (v) {
       var lok = /^(lokad|klarad)$/.test(v.status);
       return '<div class="verk' + (lok ? ' lok' : '') + '" data-verk="' + v.id + '">' +
         '<div class="vh"><i class="vdot ' + esc(v.status) + '"></i><div class="vt"><b>' + esc(verkTitill(v.title)) + '</b><small>' + esc(v.base_nafn) + (v.eign ? ' · ' + esc(v.eign) : '') + (v.punktur ? ' · ' + esc(v.punktur.nafn || 'teikning') + ' (punktur)' : '') + ' · ' + esc(fmtDate(v.created_at)) + '</small></div>' +
           '<span class="vab ' + esc(v.abyrgd) + '">' + esc(ABYRGD[v.abyrgd] || 'Okkar') + '</span>' +
-          (lok ? '<span class="vst lok">Lokið ' + esc(fmtDate(v.lokid_at || v.updated_at)) + (v.lokid_af ? ' · ' + esc(v.lokid_af) : '') + '</span>'
+          (lok ? '<span class="vst lok">Lokið ' + esc(fmtDate(v.lokid_at || v.updated_at)) + (v.lokid_af ? ' · ' + esc(v.lokid_af) : '') + '</span>' + (v.einkunn ? '<span class="vek" title="Einkunn kúnnans' + (v.einkunn_ath ? ': ' + esc(v.einkunn_ath) : '') + '">' + '★'.repeat(v.einkunn) + '<i>' + '★'.repeat(5 - v.einkunn) + '</i>' + (v.einkunn_ath ? ' <small>„' + esc(v.einkunn_ath) + '"</small>' : '') + '</span>' : '')
             : '<select class="inp vsel" data-vstada="' + v.id + '"><option value="nytt"' + (v.status === 'nytt' ? ' selected' : '') + '>Nýtt</option><option value="i_vinnslu"' + (v.status === 'i_vinnslu' ? ' selected' : '') + '>Í vinnslu</option></select>') + '</div>' +
         (v.summary ? '<p class="vsum">' + esc(v.summary) + '</p>' : '') +
         '<div class="vbody">' + (v.punktur && v.haed && v.haed.mynd ? '<div class="vkort" data-vkort="' + v.id + '"><canvas></canvas><span class="vk-l">' + esc(v.haed.nafn || '') + '</span></div>' : '') +
