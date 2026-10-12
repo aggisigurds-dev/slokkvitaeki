@@ -96,6 +96,12 @@
   let sidastMat = 0;
   function tick() {
     const view = document.querySelector('.view.active'); if (!view) return;
+    // 12.10.2026 (afköst, Agnar: „hvort eitthvað sé að hægja á" prófílunum úr Ársskoðun): opinn fyrirtækjaprófíll ber
+    // sinn eigin titil (.co-banner-name á málmborðanum) og hér fannst ALDREI frambjóðandi — mælt null allan tímann á
+    // Center Hótel og Brynju. Án merkts titils keyrði finnaTitil í hverjum ramma meðan prófíllinn teiknaði sig:
+    // 5.201 stak skannað, 2.008 mæld með getBoundingClientRect, 60–88 umferðir, 2,4–4,1 s við EINA opnun (CPU-prófíll).
+    // Engu var breytt á skjánum svo engu er sleppt sem sást.
+    if (view.id === 'view-companies' && view.querySelector('#companies-main .co-banner')) return;
     // Endurmetið í hverju tifi: síður teikna efri hlutann ASYNC — fyrsta tifið gat merkt neðri kaflafyrirsögn sem þá var
     // ein í efstu 320 px (mælt 24.09: Punktar og verð). Komi betri frambjóðandi færist merkið.
     // HT-3.10 (03.10.2026, afköst): finnaTitil les útlit (getBoundingClientRect) og keyrir í HVERJUM ramma meðan síðan

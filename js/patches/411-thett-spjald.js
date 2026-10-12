@@ -162,11 +162,22 @@
   }
 
   // ── 3) athugasemdin vex með textanum upp í 5 línur; meira/minna þar fyrir ofan ──
+  // 12.10.2026 (afköst): fit skrifar hæð, LES scrollHeight og skrifar aftur — hver lestur þvingar útlit alls prófílsins.
+  // Tifið kallaði það við HVERJA DOM-breytingu í #companies-main: 19–22 sinnum við eina opnun, ~80–120 ms hvert
+  // (1,7–2,2 s á Brynju, Hátúni 10 — CPU-prófíll). Hæðin ræðst aðeins af textanum, opið/lokað og breidd reitsins,
+  // svo tifið mælir nú aðeins þegar eitthvað af því breyttist: texti/opið með undirskrift, breidd með ResizeObserver
+  // (les clientWidth þegar útlitið er þegar reiknað) og letur með document.fonts. input/smellur mæla alltaf.
+  function undirskrift(ta) { return ta.value + '\u0001' + ta.classList.contains('b411-opin'); }
+  var breiddVakt = window.ResizeObserver ? new ResizeObserver(function (fl) {
+    fl.forEach(function (f) { var ta = f.target; if (!ta.isConnected) { breiddVakt.unobserve(ta); return; } if (ta.__b411w !== ta.clientWidth) fit(ta); });
+  }) : null;
   function fit(ta) {
     var max = LINA_H * MAX_LINUR + 14;
     var takki = ta.parentElement && ta.parentElement.querySelector('.b411-meira');
+    ta.__b411sig = undirskrift(ta);
     ta.style.setProperty('height', '36px', 'important');   // 338/402 setja hæð með !important — inline án important tapar
     var h = ta.value ? ta.scrollHeight : 36;                 // tómur reitur: scrollHeight telur placeholder-textann (2 línur) — ein lína samt
+    ta.__b411w = ta.value ? ta.clientWidth : -1;             // útlitið var reiknað rétt í þessu (scrollHeight) — lesturinn kostar ekkert
     var opin = ta.classList.contains('b411-opin');
     if (h <= max) {
       ta.style.setProperty('height', Math.max(36, h) + 'px', 'important');
@@ -181,8 +192,9 @@
     }
   }
   function note(ta) {
-    if (ta.__b411) { fit(ta); return; }
+    if (ta.__b411) { if (ta.__b411sig !== undirskrift(ta) || !ta.style.getPropertyValue('height')) fit(ta); return; }
     ta.__b411 = true;
+    if (breiddVakt) breiddVakt.observe(ta);
     ta.rows = 1;
     var p = ta.parentElement;
     if (p && !p.querySelector('.b411-meira')) {
@@ -236,4 +248,9 @@
   })();
   setInterval(function () { if (!document.hidden) tick(); }, 1200);
   window.addEventListener('resize', schedule);
+  // Breytt letur brýtur línur öðruvísi án þess að breiddin breytist — undirskriftin hreinsuð svo næsta tif mælir aftur.
+  // Án ResizeObserver gerir stærðarbreyting gluggans það sama.
+  function endurmaela() { var m = document.getElementById('companies-main'); if (!m) return; Array.prototype.forEach.call(m.querySelectorAll('.co-banner-note'), function (ta) { ta.__b411sig = null; }); schedule(); }
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', endurmaela); } catch (_) {}
+  if (!breiddVakt) window.addEventListener('resize', endurmaela);
 })();

@@ -78,9 +78,41 @@ sem vafrinn raunverulega skilar (seríalíserað, `isConnected`, `dataset.sig`).
    breyttist (295 er fyrirmyndin).
 5. **Aldrei fjarlægja+setja inn** þegar `style.display`/`hidden`/klasi dugar.
 6. **`setInterval` < 1 s:** aðeins ef hann les og ber saman áður en hann skrifar.
+7. **Leit sem bíður eftir jákvæðri niðurstöðu** (t.d. „finna titil, leita aftur í hverju tifi þar til hann
+   finnst") verður að vita hvar hún finnur ALDREI neitt — annars er hún lykkja án DOM-skrifa, ósýnileg í
+   skriftu A. Dæmi 12.10.2026: 409 `finnaTitil` á opnum prófíl, null allan tímann, 54–88 umferðir (Charlize #796).
+8. **Útlitslestur í vaktartifi** (`scrollHeight`, `offset*`, `getBoundingClientRect`, `getComputedStyle`
+   eftir skrif) þvingar útlit ALLRAR síðunnar við hverja DOM-breytingu. Undirskrift á það sem ræður niðurstöðunni;
+   breidd með `ResizeObserver`. Dæmi: 411 `fit`, 19–22 × ~100 ms við eina opnun (Charlize #797).
 
 ## 4. Skil
 
 Eins og `villuleit`-skillið: Charlize-færsla per *mynstur* (`--topic kerfi`), einn listi (Verkefnalisti
 eða `docs/`), og málsgrein til Agnars: hve mörg staðfest með mælingu, hve mörg grunuð, tölur fyrir/eftir.
 Sagt hreint út hvað er óprófað. Sjá Charlize #418 (01/06) og #419 (244) fyrir tvö staðfest dæmi.
+
+## 5. Engin lykkja, en síðan er samt hæg — CPU-prófíll og ógildingar (12.10.2026)
+
+Skrifta A sýnir 0/s í kyrrstöðu en opnunin tekur 10 sek? Þá er sóunin í **lestri**, ekki skrifum, eða í
+stílútreikningi vafrans. Mæla með Playwright + CDP á staðbundnu eintaki (óbúntaðir pappar, svo hver skrá sést):
+
+- `scripts/maela-opnun.cjs` — opnar prófíla eins og röð í Ársskoðun gerir (`_openCompanySafe`), bíður
+  **kyrrstöðu** (1000 ms án DOM-breytinga OG netkalla — MAELINGAR §1), vistar `cpu-<id>.cpuprofile`, telur
+  langar tasks. Skrif hleruð; Node sækir allt utan gámsins (sjá CLAUDE.md, vafrakaflinn 12.10).
+- `scripts/greina-cpu.cjs <prófíll>` — leggur innbyggð föll (`querySelectorAll`, `getBoundingClientRect`…)
+  á **JS-kallandann** og sýnir hvaða vaktar-fall undir 252-mo-throttle ber tímann. Án þess lítur út fyrir að
+  „getBoundingClientRect" sé sökudólgurinn, ekki pappinn sem kallar á það.
+- `scripts/greina-lotur.cjs <prófíll> 409-samraeming:finnaTitil 411-thett:fit` — hve OFT fall keyrði og lengd
+  hverrar umferðar. Fyrir/eftir-talan sem sannar lagfæringu (0 umferðir = staðfest með hegðun, MAELINGAR §6).
+- Trace með ógildingum: `browser.startTracing(page, { categories: ['devtools.timeline',
+  'disabled-by-default-devtools.timeline', 'disabled-by-default-devtools.timeline.invalidationTracking',
+  'disabled-by-default-devtools.timeline.stack'] })` → `scripts/greina-ogilding.cjs <trace>` sýnir hvaða
+  klasi/eigind/`:has` á hvaða hnút skipulagði ógildingu og hvaða JS-lína gerði breytinguna.
+  **Gildra:** stakkurinn á `StyleRecalc`/`UpdateLayoutTree` er staðurinn sem *þvingaði* útreikninginn
+  (t.d. `getComputedStyle` í 195 eða 391), ekki uppruninn. Uppruninn er í `ScheduleStyleInvalidationTracking`.
+
+Mælt 12.10.2026 (Center Hótel 80 tæki, Brynja 92, Aðalskoðun 6): eftir 409/411-lagfæringuna stendur eftir
+**byggingarlegur** kostnaður — prófíllinn er settur saman af ~30 pöppum á 8–10 sek, hver innsetning kallar á
+stílútreikning 2.500–3.200 staka (~100–250 ms), ~25 eldri pappar skanna DOM-ið í hverju tifi (60–300 ms hver),
+og opinn prófíll heldur ~18% CPU í kyrrstöðu (tímamælar). Ein samsett teikning (sjá haus 195) er lausnin þar.
+
