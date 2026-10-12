@@ -365,6 +365,7 @@
       const tomt = iPanta ? 'Ekkert stjörnumerkt — ★ á línu setur vöru hingað' : _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
       html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : tomt) + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á „' + esc(nyr) + '" til að bæta við') + '</div></div>';
     } else {
+      toflustilar();   // fastur haus + fastur nafnadalkur (12.10.2026)
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
         <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th title="Það sem greitt var, eftir afslátt, án VSK — Enter eða smella út vistar">Kaupverð (án VSK)</th><th title="Listaverð birgjans án VSK (fyrir afslátt) — Enter eða smella út vistar">Listaverð (án VSK)</th><th title="Söluverð með VSK — sama verð og í Vörum og þjónustu og á Sölu. Enter eða smella út vistar.">Söluverð (m/VSK)</th><th title="(söluverð án VSK − kaupverð) / kaupverð">Álagning</th><th>Birgir</th><th style="position:sticky;right:0;background:inherit"></th>
       </tr></thead><tbody>`;
@@ -400,7 +401,7 @@
       : '<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:15px;opacity:.4">🔧</div>';
     const m = meta(i.k);
     const panta = !!m.panta;
-    return `<tr${panta ? ' style="background:#fffbeb"' : ''}>
+    return `<tr class="stk-rod"${panta ? ' data-panta="1" style="background:#fffbeb"' : ''}>
       <td style="padding:6px 8px">${mynd}</td>
       <td style="max-width:460px"><strong${opna}>${panta ? '<span style="color:#d97706;margin-right:4px">★</span>' : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
       <td data-stk-magnreit="${esc(i.k)}">${magnHtml(i)}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
@@ -516,6 +517,45 @@
     item.lagmark = r.data.lagmark == null ? null : Number(r.data.lagmark);
     Toast.show(item.lagmark == null ? '✓ Lágmark tekið af' : '✓ Lágmark vistað: ' + item.lagmark);
     render(); updateBadge();
+  }
+  /* 12.10.2026 — Agnar: „ég vill geta notað helvítis töfluna."
+   *
+   * MÆLT þann dag á 1600 px:
+   *  · `thead` bar `position:sticky` en TH-SELLURNAR voru `static`. Sticky á
+   *    <thead> gerir ekkert — það verður að sitja á sellunum. Hausinn hafði
+   *    því ALDREI fests, og á 95 raða lista tapast það hvaða dálkur er hvað
+   *    strax í þriðju röð. Tvær tölur hlið við hlið (Magn, Lágmark) og engin
+   *    fyrirsögn er ekki tafla, það er ágiskun.
+   *  · Nafnadálkurinn var 185 px og ekki fastur. Til að ná í Magn þarf að
+   *    skruna til hægri — og þá hverfur nafnið. Maður breytir tölu án þess
+   *    að sjá hvaða vöru hún tilheyrir. Aðgerðadálkurinn hægra megin var
+   *    hins vegar fastur allan tímann, svo þetta var ósamræmi.
+   *
+   * Allt afmarkað við #view-birgdir: `.dtbl` ber allar töflur appsins.
+   */
+  function toflustilar() {
+    if (document.getElementById('stk-tafla-css')) return;
+    const st = document.createElement('style');
+    st.id = 'stk-tafla-css';
+    const V = '#view-birgdir ';
+    st.textContent = [
+      // Hausinn fylgir niður. z-index 5 svo hann liggi yfir föstu dálkunum.
+      V + '.dtbl thead th{position:sticky;top:0;z-index:5;background:var(--surface2)}',
+      // Mynd + nafn sitja föst vinstra megin. AÐEINS á gagnaröðum — flokkahausar
+      // eru ein colspan-sella og myndu annars leggjast yfir alla línuna.
+      V + '.dtbl tr.stk-rod>td:nth-child(1){position:sticky;left:0;z-index:2;background:var(--bg1)}',
+      V + '.dtbl tr.stk-rod>td:nth-child(2){position:sticky;left:52px;z-index:2;background:var(--bg1);min-width:250px;box-shadow:6px 0 8px -6px rgba(0,0,0,.15)}',
+      V + '.dtbl tr.stk-rod[data-panta]>td:nth-child(1),' + V + '.dtbl tr.stk-rod[data-panta]>td:nth-child(2){background:#fffbeb}',
+      // Hornsellurnar: haus OG fastur dálkur í senn.
+      V + '.dtbl thead th:nth-child(1){left:0;z-index:6}',
+      V + '.dtbl thead th:nth-child(2){left:52px;z-index:6}',
+      // Yfirsveimur má ekki éta bakgrunninn undan föstu sellunum.
+      V + '.dtbl tbody tr.stk-rod:hover>td:nth-child(1),' + V + '.dtbl tbody tr.stk-rod:hover>td:nth-child(2){background:var(--surface2)}',
+      V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(1),' + V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(2){background:#fdf2d0}',
+      // Hæðin sem gerir lóðrétta skrunið að raunverulegu skruni innan töflunnar.
+      V + '.tcard{max-height:calc(100vh - 230px);overflow:auto}'
+    ].join('');
+    document.head.appendChild(st);
   }
   function reiturHtml(i, r) {
     const g = REITIR[r].gildi(i);
