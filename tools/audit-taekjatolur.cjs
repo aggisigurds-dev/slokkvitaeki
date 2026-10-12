@@ -48,11 +48,25 @@ if (/async function backgroundRefresh\(\)[\s\S]{0,400}await loadAll\(\)/.test(ar
 if (/setInterval\([^)]*loadAll/.test(ars) || /setInterval\([^)]*backgroundRefresh/.test(ars)) {
   villur.push('153: 30 s púll á tækjasókn má ekki koma aftur');
 }
-if (!/153-arsskodun\.js\?v=20261002taek/.test(html)) {
-  villur.push('index.html: 153-arsskodun.js vantar ?v=20261002taek');
-}
-if (!/360-raesi-skyndiminni\.js\?v=20261002taek/.test(html)) {
-  villur.push('index.html: 360-raesi-skyndiminni.js vantar ?v=20261002taek');
+/* ÚTGÁFUMERKIN TVÖ VERÐA AÐ FYLGJAST AÐ — en ekki vera FRYST.
+ *
+ * Þessi vörður krafðist áður nákvæmlega `?v=20261002taek` á báðum skrám. Það
+ * var rétt þann dag (báðar urðu að losna úr vafra-skyndiminni í sömu andrá),
+ * en það FRYSTI merkið: hver lögmæt breyting á 153 eða 360 rakst þá á
+ * `audit-utgafumerki`, sem heimtar merki jafn nýtt og efnið. Mælt 12.10.2026:
+ * 360 breyttist (ræsi-afritið mátti ekki lengur slökkva á per-fyrirtækis-sókn)
+ * og verðirnir tveir urðu ósamrýmanlegir — annar heimtaði nýtt, hinn gamalt.
+ *
+ * Ætlunin var aldrei strengurinn sjálfur heldur að skrárnar LOSNI SAMAN.
+ * Því er prófað: báðar bera merki, og það er SAMA merkið. Breytist önnur
+ * verður hin að fylgja — sem er nákvæmlega vörnin sem átti að vera.
+ */
+const m153 = /153-arsskodun\.js\?v=([A-Za-z0-9._-]+)/.exec(html);
+const m360 = /360-raesi-skyndiminni\.js\?v=([A-Za-z0-9._-]+)/.exec(html);
+if (!m153) villur.push('index.html: 153-arsskodun.js ber ekkert ?v= — ræsi-skyndiminnið gæti borið gamla kóðann');
+if (!m360) villur.push('index.html: 360-raesi-skyndiminni.js ber ekkert ?v= — ræsi-skyndiminnið gæti borið gamla kóðann');
+if (m153 && m360 && m153[1] !== m360[1]) {
+  villur.push('index.html: 153 (' + m153[1] + ') og 360 (' + m360[1] + ') bera ÓLÍK ?v= — þær verða að losna úr skyndiminni saman, annars getur gamalt 360 vökvað nýtt 153 með eitruðum snapshot');
 }
 if (!/if \(!DB\._unitsComplete\) return/.test(boot)) {
   villur.push('360: vista má ekki prófílsneið sem heildar-skyndiminni');
