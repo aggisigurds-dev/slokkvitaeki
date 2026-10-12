@@ -86,6 +86,14 @@
     r('.co-bupp button._fasteign-takki:hover', 'color:#141822!important'),
     r('.co-bupp ._bupp-lina > ._fasteign-gildi,.co-bupp ._bupp-lina > ._bupp-afsl,.co-bupp ._serupp-lina > ._serupp-inn', 'min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important'),
     r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important;align-self:start!important'),
+    // 12.10.2026: myndadálkurinn er 428 px — takkaröðin brotnar ALDREI (seinni línan kom ~1,3 s eftir opnun þegar
+    // teikningarofinn (405) bættist við: +48 px hopp). Rofinn er þéttur (ör + fjöldi); takkar mega styttast með „…".
+    r('.b405-knappar', 'flex-wrap:nowrap!important'),
+    r('.b405-knappar > *', 'min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important'),
+    r('.b405-knappar > *:not(#b405-fpt)', 'flex:1 1 auto!important;padding-left:10px!important;padding-right:10px!important'),
+    r('.b405-knappar #b405-fpt', 'flex:0 0 auto!important;padding:0 10px!important;gap:4px!important'),
+    r('.b405-knappar #b405-fpt .b405-fpt-t', 'display:none!important'),
+    r('.b405-knappar #b405-fpt .b405-fpt-n', 'font-family:' + MONO + ';font-size:11.5px;font-weight:700'),
     r('.co-mynd', 'align-self:stretch!important'),
     r('.co-banner-right', 'grid-area:note!important;align-self:start!important'),
     // 2) reitirnir: þéttar línur hlið við hlið, tómir faldir meðan lokað er
