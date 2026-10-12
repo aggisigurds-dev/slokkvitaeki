@@ -26,6 +26,9 @@
   window.__docYearGridInstalled = true;
 
   function SB(){ return (window.DB && window.DB.sb) || window.__vdaSB || null; }
+  // Loforð sem er ræst núna en beðið eftir síðar: tóm meðhöndlun svo höfnun teljist ekki „ómeðhöndluð" (villuvakt
+  // skráir promise_rejection) áður en að biðinni kemur — þar kastar hún áfram eins og áður.
+  function _byrja(p){ if(p && typeof p.catch==='function') p.catch(function(){}); return p; }
   /* ── ÓSÓTT ER EKKI SAMA OG EKKERT ─────────────────────────────────────────
      Fimm sækingar hér skiluðu `[]` þegar þær klikkuðu. Á þessu spjaldi þýðir
      tómt „ekkert skjal er til" — svo bilun leit út eins og VANTAR, sem er
@@ -178,14 +181,14 @@
     var out=[], seen={};
     function add(rows){ (rows||[]).forEach(function(d){ if(d&&d.id!=null&&!seen[d.id]){ seen[d.id]=1; out.push(d); } }); }
     try{
-      if(coId){
-        var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('fyrirtaeki_id', coId);
-        add(r.data);
-      }
-      if(baseId){
-        var r2=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('customer_base_id', baseId);
-        add(r2.data);
-      }
+      // 12.10.2026: fyrirspurnirnar tvær (eftir stað og eftir grunnskrá) eru óháðar — ræstar samtímis, raðað saman í
+      // SÖMU röð og áður (staðurinn fyrst), svo tvítekningarvörnin (seen) velur sömu röð.
+      var _pr=null, _pr2=null;
+      if(coId) _pr=Promise.resolve(sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('fyrirtaeki_id', coId));
+      if(baseId) _pr2=Promise.resolve(sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring').eq('customer_base_id', baseId));
+      if(_pr2) _pr2.catch(function(){});
+      if(_pr){ var r=await _pr; add(r.data); }
+      if(_pr2){ var r2=await _pr2; add(r2.data); }
     }catch(e){}
     return out;
   }
@@ -207,10 +210,14 @@
   async function fetchSlokkvikerfi(coId){
     var sb=SB(); if(!sb||!coId) return { kerfi:0, docs:[] };
     try{
-      var k=await sb.from('slokkvikerfi').select('id').eq('fyrirtaeki_id', coId);
-      var d=await sb.from('customer_documents')
+      // 12.10.2026: óháðar — ræstar samtímis (áður hvor á eftir annarri).
+      var _kP=Promise.resolve(sb.from('slokkvikerfi').select('id').eq('fyrirtaeki_id', coId));
+      var _dP=Promise.resolve(sb.from('customer_documents')
         .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund,stolpi_stada,stolpi_skyring')
-        .eq('fyrirtaeki_id', coId).eq('doc_type','slokkvikerfi');
+        .eq('fyrirtaeki_id', coId).eq('doc_type','slokkvikerfi'));
+      _dP.catch(function(){});
+      var k=await _kP;
+      var d=await _dP;
       if((k&&k.error)||(d&&d.error)) throw ((k&&k.error)||(d&&d.error));
       return { kerfi:((k&&k.data)||[]).length, docs:(d&&d.data)||[] };
     }catch(e){ soknVilla('slökkvikerfisskjöl', e); return { kerfi:0, docs:[] }; }
@@ -642,12 +649,14 @@
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return [];
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
+      // 12.10.2026: systkinastaðirnir eru óháðir sölunni — ræstir samtímis (áður beðið eftir sölunni fyrst).
+      var _sibsP=_byrja(siblingsForKt(kt));
       var r=await DB.fetchAll(function(from,to){ return sb.from('solur')
         .select('id,num,samtals,created_at,customer_id,greitt_med,source,vidskiptategund')
         .eq('greitt_med','reikningur')
         .or('customer_kt.eq.'+d+',customer_kt.eq.'+dash).order('id').range(from,to); }).then(function(rows){ return { data: rows }; }, function(e){ return { error: e }; });
       if(r.error||!r.data) return [];
-      var sibs=await siblingsForKt(kt);
+      var sibs=await _sibsP;
       var multi=sibs.length>1;
       return r.data.filter(function(s){
         if(String(s.customer_id)===String(coId)) return true;
@@ -1048,16 +1057,34 @@
 
     var co=getCompany(coId);
     var kt = co ? co.kennitala : await ktForCoId(coId);
-    await fcLoad(coId);
-    var baseId = await baseIdFyrirFelag(coId, kt);
-    var docs = await fetchDocs(baseId, coId);
+    // 12.10.2026 (afköst — Agnar: „hvort eitthvað sé að hægja á" prófílunum; skýrslugerðin vinnur í þessu spjaldi):
+    // öll köllin hér biðu hvert eftir öðru — 15+ fyrirspurnir í röð, ~300 ms hver. Mælt á Center Hótel: spjaldið
+    // birtist 5,6–7,2 s eftir opnun, síðast af öllu á prófílnum. Flest þurfa aðeins kt / coId / baseId og eru ræst
+    // SAMTÍMIS; aðeins docs → staðsetningarsía → doc_factcheck er raunveruleg keðja. Sömu föll, sömu niðurstöður,
+    // sama röð í notkun (beðið á sama stað og áður). _byrja: höfnun sem er beðið eftir síðar telst ekki ómeðhöndluð.
+    var _fcP = _byrja(fcLoad(coId));
+    var _baseP = _byrja(baseIdFyrirFelag(coId, kt));
+    var _paydayP = _byrja(kt ? fetchPayday(kt) : Promise.resolve([]));
+    var _srcP = _byrja(kt ? fetchSolurSrc(kt) : Promise.resolve({}));
+    var _sibsP = _byrja(kt ? siblingsForKt(kt) : Promise.resolve([]));
+    var _bruP = _byrja(fetchBrunakerfiDocs(coId));
+    var _slkP = _byrja(fetchSlokkvikerfi(coId));
+    var _solInvP = _byrja(kt ? fetchSolurInvoices(kt, coId) : Promise.resolve([]));
+    await _fcP;
+    var baseId = await _baseP;
+    var _docsP = _byrja(fetchDocs(baseId, coId));
+    var _pairsP = _byrja(baseId ? fetchPairs(baseId) : Promise.resolve([]));
+    // Mánuðurinn les handvirkt val úr AppSettings — snemma aðeins ef þær eru komnar (ræsing beint á #company/<id>
+    // gæti annars lesið tómt blob og fallið á skýrslutöluna); annars á sama stað og áður.
+    var _monthP = (window.AppSettings && AppSettings.isLoaded && AppSettings.isLoaded()) ? _byrja(loadInspectMonth(coId, baseId)) : null;
+    var docs = await _docsP;
     if(kt) docs = await filterDocsToLocation(docs, kt, coId);
-    var payday = kt ? await fetchPayday(kt) : [];
-    var srcByNum = kt ? await fetchSolurSrc(kt) : {};
-    var sibs = kt ? await siblingsForKt(kt) : [];
+    var payday = await _paydayP;
+    var srcByNum = await _srcP;
+    var sibs = await _sibsP;
     // Pörin sótt HÉR (áður neðar) því kortaflokkun reikninga (pushInvByService) keyrir
     // strax á eftir og þarf að vita hvaða þjónustu parið segir að reikningurinn tilheyri.
-    var pairs = baseId ? await fetchPairs(baseId) : [];
+    var pairs = await _pairsP;
     _parKind = {};
     pairs.forEach(function(pr){
       if(pr.fyrirtaeki_id!=null && +pr.fyrirtaeki_id!==+coId) return;   // á öðrum stað
@@ -1112,7 +1139,7 @@
     // ── brunakerfis-skoðanir beint eftir fyrirtaeki_id ──
     // Tryggir að brunakerfis-skýrslan lendi í RÉTTUM dálki (🔥) líka þegar
     // staðurinn er ekki tengdur customers_base (þá skilar fetchDocs engu).
-    var bruDocs = await fetchBrunakerfiDocs(coId);
+    var bruDocs = await _bruP;
     bruDocs.forEach(function(d){
       var y=parseInt(d.year,10); if(!(y>=2000&&y<=NOW+1)) return;
       var dup=(bruByY[y]||[]).some(function(x){ return !x._att && x.id===d.id; });
@@ -1120,7 +1147,7 @@
     });
 
     // ── 🍳 slökkvikerfis-skoðanir beint eftir fyrirtaeki_id ──
-    var slk = await fetchSlokkvikerfi(coId);
+    var slk = await _slkP;
     slk.docs.forEach(function(d){
       var y=parseInt(d.year,10); if(!(y>=2000&&y<=NOW+1)) return;
       var dup=(slkByY[y]||[]).some(function(x){ return !x._att && x.id===d.id; });
@@ -1153,7 +1180,7 @@
     // greitt_med='reikningur') vantaði á prófílinn ef þeir voru ekki skráðir í
     // customer_documents. Sækjum þá beint eftir kt og skeytum inn — afrit
     // (sama R-númer) sleppt. Opnast gegnum sömu sölu-leið (data-invopen).
-    var solInv = kt ? await fetchSolurInvoices(kt, coId) : [];
+    var solInv = await _solInvP;
     // R-númer -> solur.id. Viðhengi bera bara „R-843" í skráarnafninu og eiga
     // engan gagnagrunnslykil; þetta brúar þau yfir í raunverulegu söluna svo
     // hægt sé að vista tenginguna sem solur_id.
@@ -1225,7 +1252,7 @@
     // ── status pills ──
     var _trio = await _trioP;
     var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invUtByY[y]||[]).length>0, _trio); }).join('');
-    var monthInfo = await loadInspectMonth(coId, baseId);
+    var monthInfo = _monthP ? await _monthP : await loadInspectMonth(coId, baseId);
     section._monthInfo = monthInfo;
 
     // ── samningur strip ──
