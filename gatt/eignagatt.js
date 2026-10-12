@@ -349,12 +349,67 @@
     if (syna('vs-nidurhal', 'csv')) $('#vs-nidurhal').innerHTML = nidurhalHtml();
     if (syna('vs-skjol', 'skjol_hlekkir')) $('#vs-skjol').innerHTML = skjolHtml();
     if (window.GattVidbot) GattVidbot.render(syna);   // viðbótartólin fimm (gatt/vidbot.js)
+    renderFlyti(); masonry();
     var kortOn = syna('vs-kort-wrap', 'kort');
     if (kortOn && !$('#v-vinnusvaedi').classList.contains('hidden')) kortLifga();
     var sb = $('#vs-stilla'); if (sb) sb.classList.toggle('hidden', !(window.GATT_VERKFAERI || []).some(function (v) { return v.fela && sn[v.k]; }));
     renderVerkbeidnir();
   }
   function felur() { var a = data().account || {}; return (a.stillingar && a.stillingar.verkfaeri) || {}; }
+  /* Flýtileiðastikan: einn flipi per sýnilegt spjald með talningu (rautt = á eftir); smellur skrunar að spjaldinu */
+  function renderFlyti() {
+    var el = $('#vs-flyti'); if (!el) return;
+    var nu = new Date(), E = erindi(), S = (data().skrar || []);
+    var vhSeint = (data().vidhald || []).filter(function (r) { return r.naest && new Date(r.naest + 'T00:00:00') < nu; }).length;
+    var verkOpin = E.filter(function (x) { return x.stada !== 'lokid' && (x.tegund === 'verkbeidni' || x.tegund === 'verkefni'); }).length;
+    var skirt = (data().vidhald || []).filter(function (r) { return r.skirteini; }), skUt = skirt.filter(function (r) { return r.gildir_til && new Date(r.gildir_til + 'T00:00:00') < nu; }).length;
+    var vt = S.filter(function (r) { return r.tegund === 'verktaki'; }), vtUt = vt.filter(function (r) { var t = r.gogn.tryggingar_til; return t && new Date(t + 'T00:00:00') < nu; }).length;
+    var L = [
+      ['vs-check', 'Checklisti', (data().checklist || []).filter(function (c) { return !c.lokid; }).length],
+      ['vs-verk', 'Verkefni', verkOpin],
+      ['vs-dagatal', 'Dagatal', atburdir(nu.getFullYear(), nu.getMonth()).length + (window.GattVidbot ? GattVidbot.atburdir(nu.getFullYear(), nu.getMonth()).length : 0)],
+      ['vs-vidhald', 'Viðhald', (data().vidhald || []).length, vhSeint],
+      ['vs-skirteini', 'Skírteini', skirt.length, skUt],
+      ['vs-kort-wrap', 'Kort', allarEignir().length],
+      ['vs-nidurhal', 'Niðurhal', null],
+      ['vs-skjol', 'Skjöl', (data().items || []).length],
+      ['vs-verktakar', 'Verktakar', vt.length, vtUt],
+      ['vs-rymi', 'Rými', S.filter(function (r) { return r.tegund === 'rymi'; }).length],
+      ['vs-lyklar', 'Lyklar', S.filter(function (r) { return r.tegund === 'lykill'; }).length],
+      ['vs-maelar', 'Mælar', S.filter(function (r) { return r.tegund === 'maelir'; }).length],
+      ['vs-kostnadur', 'Kostnaður', null],
+    ].filter(function (x) { var p = $('#' + x[0]); return p && !p.hidden; });
+    el.innerHTML = L.map(function (x) {
+      var n = x[2], seint = x[3] || 0;
+      return '<button type="button" class="vs-fl" data-flyti="' + x[0] + '">' + esc(x[1]) + (n == null ? '' : seint ? '<span class="n seint" title="' + seint + ' á eftir">' + seint + '</span>' : '<span class="n' + (n ? '' : ' tom') + '">' + n + '</span>') + '</button>';
+    }).join('');
+  }
+  document.addEventListener('click', function (ev) {
+    var x = ev.target.closest && ev.target.closest('[data-flyti]'); if (!x) return;
+    var p = $('#' + x.getAttribute('data-flyti')); if (!p) return;
+    p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    p.classList.add('vs-blik'); setTimeout(function () { p.classList.remove('vs-blik'); }, 1600);
+  });
+  /* Múrsteinaröð: grid-auto-rows 8 px + gap 18 px → span = ceil((hæð + 18) / 26); dense fyllir eyður svo hátt dagatal
+     skilur ekki eftir tómt svæði undir stuttum spjöldum. Endurreiknað þegar spjald breytir hæð (ResizeObserver) og við resize. */
+  function masonry() {
+    var g = $('#vs-grid'); if (!g) return;
+    var P = Array.prototype.slice.call(g.children), v = $('#v-vinnusvaedi');
+    if (!g._ro) {   // sett upp einu sinni, líka þótt flipinn sé falinn við fyrstu teikningu
+      g._ro = true; var t;
+      if (window.ResizeObserver) { var ro = new ResizeObserver(function () { clearTimeout(t); t = setTimeout(masonry, 40); }); P.forEach(function (p) { ro.observe(p); }); }
+      window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(masonry, 80); });
+      document.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('nav .tab')) { setTimeout(masonry, 30); setTimeout(masonry, 400); } });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setTimeout(masonry, 0); });
+    }
+    if (!v || v.classList.contains('hidden')) return;   // falinn flipi mælist 0 — smellur á flipann kallar aftur
+    P.forEach(function (p) {
+      if (p.hidden) { p.style.gridRowEnd = ''; return; }
+      var h = p.getBoundingClientRect().height; if (!h) return;
+      p.style.gridRowEnd = 'span ' + Math.max(1, Math.ceil((h + 18) / 26));
+    });
+  }
+
   function stillaHtml() {
     var sn = syn(), fel = felur();
     return (window.GATT_VERKFAERI || []).filter(function (v) { return v.fela && sn[v.k]; }).map(function (v) { return '<label><input type="checkbox" data-vs-fela="' + v.k + '"' + (fel[v.k] === false ? '' : ' checked') + '>' + esc(v.heiti) + '</label>'; }).join('') +

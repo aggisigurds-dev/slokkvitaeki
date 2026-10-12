@@ -800,7 +800,8 @@
   .vs-upl input{position:absolute;opacity:0;width:1px;height:1px}
   .vs-upl svg{width:17px;height:17px;color:var(--accent)}
   /* Vinnusvæði */
-  .vs-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}   /* checklisti · verkefni · dagatal / kort · niðurhal · skjöl */
+  .vs-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;grid-auto-rows:8px;grid-auto-flow:dense;align-items:start}
+  .vs-grid>.vs-p{align-self:start}   /* checklisti · verkefni · dagatal / kort · niðurhal · skjöl */
   .vs-p{min-width:0}
   .vs-sub{padding:10px 16px 4px;font-family:var(--lbl);font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent);font-weight:600}
   .vs-r{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line)}
@@ -835,8 +836,20 @@
   .kskra-f input{flex:1 1 180px}
   .kbtn.xs{height:24px;padding:0 9px;font-size:9.5px;margin-left:8px;vertical-align:middle}
   /* 12.10.2026: tenglastika kúnnans við hlið fyrirsagnar vinnusvæðisins (portal_users.stillingar.hlekkir) */
-  .vs-haus{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin:8px 0 28px}
-  .vs-haus h2.page{margin:0;flex:0 0 auto}
+  .vs-haus{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:4px 0 12px}
+  .vs-haus h2.page{margin:0;flex:0 0 auto;font-size:40px}
+  .vs-haus h2.page::after{display:none}
+  /* Flýtileiðastikan (12.10.2026, Agnar: „síðan er svo tóm fyrst, maður fattar ekki að skrolla niður"): einn flipi per
+     sýnilegt spjald með talningu — smellur skrunar að spjaldinu. Spjöldin raðast svo í múrsteinaröð (sjá masonry() í eignagatt.js). */
+  .vs-rond{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:10px 0 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .vs-flyti{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 auto;min-width:0}
+  .vs-fl{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px;border-radius:99px;border:1px solid var(--line2);background:var(--key);box-shadow:var(--key-sh);color:var(--ink);font-family:var(--lbl);font-size:9.5px;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:border-color .15s}
+  .vs-fl:hover{border-color:var(--accent)}
+  .vs-fl .n{min-width:18px;height:18px;padding:0 5px;display:inline-grid;place-items:center;border-radius:99px;background:var(--obsidian);color:#e6e2da;font-size:9.5px;letter-spacing:0}
+  .vs-fl .n.seint{background:linear-gradient(180deg,#d9534a,#a8231c);color:#fff}
+  .vs-fl .n.tom{background:transparent;color:var(--dim);border:1px dashed var(--line2)}
+  .vs-p{scroll-margin-top:18px}
+  .vs-p.vs-blik{box-shadow:0 0 0 2px rgba(var(--glow),.75),var(--panel-sh)!important;transition:box-shadow .3s}
   .vs-hlekkir{flex:1 1 320px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:40px;padding:6px 10px;border:1px dashed var(--line2);border-radius:8px}
   .vs-hlekkir.hefur{border-style:solid;background:var(--panel);box-shadow:var(--key-sh)}
   .vs-hlekkir .hl-lys{font-size:12.5px;color:var(--dim);flex:1 1 auto}
@@ -949,7 +962,7 @@
   .qr-a{font-size:11.5px;color:#696d74}
   .qr-vefur{display:none}
   /* Stilla vinnusvæði (kúnninn felur einingar) + saga eignar */
-  .vs-stilla{position:relative;display:flex;justify-content:flex-end;margin:-8px 0 14px}
+  .vs-stilla{position:relative;display:flex;justify-content:flex-end;margin:0;flex:0 0 auto}
   .vs-stilla-p{position:absolute;right:0;top:40px;z-index:30;min-width:260px;padding:12px 14px;border:1px solid var(--line2);border-radius:6px;background:var(--panel);box-shadow:var(--panel-sh-hi);display:flex;flex-direction:column;gap:8px}
   .vs-stilla-p label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer}
   .vs-stilla-p input{accent-color:var(--accent)}
@@ -1259,8 +1272,8 @@
     <section id="v-vinnusvaedi" class="hidden">
       <div class="kicker">Byggingarumsjón · allt á einum stað</div>
       <div class="vs-haus"><h2 class="page">Mitt vinnusvæði</h2><div class="vs-hlekkir" id="vs-hlekkir"></div></div>
-      <div class="vs-stilla"><button type="button" class="kbtn sm" id="vs-stilla">Stilla vinnusvæði</button><div class="vs-stilla-p hidden" id="vs-stilla-p"></div></div>
-      <div class="vs-grid">
+      <div class="vs-rond"><nav class="vs-flyti" id="vs-flyti" aria-label="Flýtileiðir á vinnusvæðinu"></nav><div class="vs-stilla"><button type="button" class="kbtn sm" id="vs-stilla">Stilla vinnusvæði</button><div class="vs-stilla-p hidden" id="vs-stilla-p"></div></div></div>
+      <div class="vs-grid" id="vs-grid">
         <div class="egp vs-p" id="vs-check"></div>
         <div class="egp vs-p" id="vs-verk"></div>
         <div class="egp vs-p" id="vs-dagatal"></div>
@@ -1516,8 +1529,8 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/gatt/verkfaeri.js?v=20261012i"></script>
-<script src="/gatt/eignagatt.js?v=20261012i"></script>
-<script src="/gatt/vidbot.js?v=20261012i"></script>
-<script src="/gatt/portal.js?v=20261012i"></script>
+<script src="/gatt/eignagatt.js?v=20261012j"></script>
+<script src="/gatt/vidbot.js?v=20261012j"></script>
+<script src="/gatt/portal.js?v=20261012j"></script>
 </body>
 </html>
