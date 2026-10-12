@@ -70,6 +70,17 @@
     // sem var vistuð hingað lét Ársskoðun lesa 10–20 tæki sem „öll" og
     // mála 0 SLT/BSL/RS á hverja aðra röð.
     if (snap.complete && snap.units.length) DB._unitsComplete = true;
+    /* 12.10.2026 (Agnar: „þetta er stundum ekki í samræmi strax, mjog villandi").
+     * `_unitsComplete` slekkur á per-fyrirtækis-sókninni í db.js — sem er rétt
+     * eftir ALVÖRU heildarsókn, en rangt hér: þessi gögn eru úr IndexedDB og geta
+     * verið mínútna eða daga gömul. MÆLT þennan dag á Bílasprautun Íslands:
+     * tækið stóð `status:'active', custody:null` á prófílnum meðan grunnurinn
+     * sagði `loaned`/`tilbuid` — merkið „Á verkstæði" gat ekki birst, og lagaðist
+     * aðeins við RaesiCache.hreinsa() + endurhleðslu.
+     * Merkið hér segir db.js að sækja ÞETTA fyrirtæki ferskt þegar prófíll opnast,
+     * þótt heildarmyndin sé „komplett". Ein lítil fyrirspurn á opnun, og aðeins
+     * þangað til bakgrunns-hleðslan skilar alvöru gögnum. */
+    DB._unitsFromSnapshot = true;
     DB.online = true; DB._lastLoadOk = DB._lastLoadOk || (snap.t || Date.now());
     try { DB.setSyncState && DB.setSyncState('syncing'); } catch (_) {}          // ferskt er á leiðinni
     stada.hydrated = true; stada.hydratedAt = Math.round(performance.now()); stada.snapAge_s = snap.t ? Math.round((Date.now() - snap.t) / 1000) : null;

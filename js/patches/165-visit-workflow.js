@@ -737,8 +737,28 @@
   // gleyma(coId) hreinsar eitt felag; gleyma() hreinsar allt — 269 veit ekki
   // hvada felag atti taekid, adeins ad eitthvad breyttist.
   function gleymaVerkstaedi(coId) {
-    if (coId == null) { for (const k of Object.keys(_verkst)) delete _verkst[k]; return; }
+    /* Tvennt verður að gleymast, ekki eitt:
+     *  1. leidda staðan hér (_verkst)
+     *  2. SJÁLFAR TÆKJARAÐIRNAR í DB-skyndiminninu. `_companyFetched[id]` er sett
+     *     eftir fyrstu sókn á félagið og slekkur á næstu — svo prófíll sem var
+     *     opnaður ÁÐUR en tækið fór á verkstæðið sýndi gömlu röðina áfram.
+     *     Mælt 12.10.2026: það var nákvæmlega það sem Agnar sá.
+     */
+    const hreinsaDb = (k) => {
+      try {
+        if (!window.DB) return;
+        if (k == null) { DB._companyFetched = {}; }
+        else if (DB._companyFetched) { delete DB._companyFetched[k]; delete DB._companyFetched[String(k)]; }
+        DB._companySlice = null; DB._companySliceId = 0;
+      } catch (_) {}
+    };
+    if (coId == null) {
+      for (const k of Object.keys(_verkst)) delete _verkst[k];
+      hreinsaDb(null);
+      return;
+    }
     delete _verkst[String(coId)];
+    hreinsaDb(coId);
   }
 
   function erIVinnslu(coId) {

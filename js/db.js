@@ -158,8 +158,17 @@ var DB = {
       }
       var units = (self.cache && self.cache.units) || [];
       var have = false;
-      if (!force && (self._unitsComplete || self._companyFetched[id])) have = true;
-      if (!have) {
+      // `_unitsComplete` eitt dugar EKKI þegar myndin kom úr ræsi-afritinu (360):
+      // hún er heil en getur verið gömul, og prófíllinn myndi þá sýna gamla stöðu
+      // án þess að spyrja. `_companyFetched[id]` stendur áfram — það er sett eftir
+      // raunverulega sókn á ÞETTA fyrirtæki og er því marktækt.
+      var afritEitt = !!self._unitsFromSnapshot;
+      if (!force && ((self._unitsComplete && !afritEitt) || self._companyFetched[id])) have = true;
+      // Raðir í minni telja EKKI sem „komið" þegar myndin er úr ræsi-afritinu:
+      // það er nákvæmlega sá hópur sem má vera gamall. Mælt 12.10.2026 — fyrri
+      // atrenna min lagadi adeins _unitsComplete-flytileidina og THESSI greip
+      // samt, svo prófíllinn hélt áfram að sýna gamla stöðu.
+      if (!have && !afritEitt) {
         for (var j = 0; j < units.length; j++) {
           if (units[j] && +units[j].fyrirtaeki_id === id) { have = true; break; }
         }
@@ -350,6 +359,8 @@ var DB = {
       if (!(u && u.skipped)) {
         this.cache.units = u.data || [];
         this._unitsComplete = true;
+        // Ferskt úr þjóni — afrits-merkið (360) á ekki lengur við.
+        this._unitsFromSnapshot = false;
         this._markCompaniesFetched();
         try { if (window.Uppfaerslubord && Uppfaerslubord.note) Uppfaerslubord.note('taeki'); } catch (_) {}
       }
