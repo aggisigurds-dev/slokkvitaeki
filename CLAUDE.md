@@ -272,6 +272,13 @@ deploy-preview lén skiluðu `ERR_TOO_MANY_RETRIES` — prófaðu staðbundið. 
 `fulfill` á allt sem er ekki GET/HEAD/OPTIONS á supabase.co / `/api/`. Skjáskot náðust aðeins eftir smell inni á
 síðunni (ræsihulan `.boot-veil` situr annars yfir öllu í hausalausum vafra).
 
+**Uppfært 12.10.2026:** sama uppsetning gaf `net::ERR_TOO_MANY_RETRIES` á handahófskenndum köllum (bundles, Supabase,
+letur) — appið hlóðst hálft. Lausn sem virkaði á lifandi síðu og staðbundið: láta **Node sækja allt** utan gámsins í
+`context.route('**/*')` — `const r = await route.fetch({ timeout: 60000 }); return route.fulfill({ response: r });`
+(3 tilraunir), en `route.continue()` fyrir `http://<IP gámsins>`. Staðbundið þarf `/.netlify/functions/` og `/api/`
+að fara á `https://slokkvitaeki.netlify.app/` með `route.fetch({ url })`. Mæliskriftin (CPU-prófíll, trace með
+ógildingarrakningu, kyrrstöðubið) eru í skill `frontend-profiler`.
+
 ---
 
 ## Deploy workflow — `git push` samstillir, `[deploy]` birtir (4 machines, must stay in sync)
