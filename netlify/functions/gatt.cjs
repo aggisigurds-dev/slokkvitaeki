@@ -592,6 +592,11 @@ exports.handler = async (event) => {
         const inn = b.stillingar && typeof b.stillingar === 'object' ? b.stillingar : {};
         const ny = Object.assign({}, acct && acct.stillingar && typeof acct.stillingar === 'object' ? acct.stillingar : {});
         if (inn.greining && typeof inn.greining === 'object') { const g = {}; ['eignin', 'bygging', 'brunavarnir', 'krofur', 'skjalasafn'].forEach((k) => { if (typeof inn.greining[k] === 'boolean') g[k] = inn.greining[k]; }); ny.greining = Object.assign({}, ny.greining || {}, g); }
+        // 12.10.2026: tenglastika kúnnans á vinnusvæðinu — allt fylkið sent í hvert sinn (≤ 20, aðeins http/https)
+        if (Array.isArray(inn.hlekkir)) {
+          ny.hlekkir = inn.hlekkir.slice(0, 20).map((x) => ({ h: String((x && x.h) || '').trim().slice(0, 40), u: String((x && x.u) || '').trim().slice(0, 300) }))
+            .filter((x) => x.h && /^https?:\/\/[^\s]+$/i.test(x.u));
+        }
         const pr = await P.sbPatch(`portal_users?base_id=eq.${baseId}&active=eq.true&select=id`, { stillingar: ny });
         return pr.ok ? P.json(200, { ok: true, stillingar: ny }) : P.json(pr.status, { error: 'Vistun mistókst' });
       }

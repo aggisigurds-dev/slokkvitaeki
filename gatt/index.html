@@ -261,7 +261,7 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 14px 32px -14px rgba(0,0,0,.75)}
   header::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:var(--m-band);
     box-shadow:0 0 14px rgba(var(--glow),.45),0 1px 0 rgba(0,0,0,.45)}
-  .hin{max-width:1440px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:22px}
+  .hin{max-width:1680px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;gap:26px}   /* 12.10.2026: hærri borði, breiðari skjár */
   .brandrow{display:flex;align-items:center;gap:13px}
   .brand b{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:.16em;display:block;line-height:1;
     background:var(--m-text);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.7))}
@@ -281,7 +281,7 @@
   .hbtn:hover{filter:brightness(1.25)}
   .hbtn svg{width:14px;height:14px;opacity:.85}
 
-  main{position:relative;max-width:1440px;margin:0 auto;padding:40px 24px 56px}
+  main{position:relative;max-width:1680px;margin:0 auto;padding:40px 24px 56px}
   .hero-art{position:absolute;right:30px;top:14px;width:128px;height:141px;color:var(--accent);pointer-events:none;filter:drop-shadow(0 1px 0 rgba(255,255,255,.8))}
   .kicker{display:flex;align-items:center;gap:11px;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;color:var(--accent);font-weight:500}
   .kicker::before{content:"";flex:none;width:34px;height:2px;background:var(--m-line);box-shadow:0 0 6px rgba(var(--glow),.4)}
@@ -598,7 +598,7 @@
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
   /* fótur */
-  .foot{max-width:1440px;margin:0 auto;padding:0 24px 40px}
+  .foot{max-width:1680px;margin:0 auto;padding:0 24px 40px}
   .fin{display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid transparent;
     border-image:linear-gradient(90deg,rgba(var(--glow),0),rgba(var(--glow),.55) 50%,rgba(var(--glow),0)) 1;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim)}
   .fin .sp{flex:1}
@@ -834,6 +834,18 @@
   .kskra-f label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
   .kskra-f input{flex:1 1 180px}
   .kbtn.xs{height:24px;padding:0 9px;font-size:9.5px;margin-left:8px;vertical-align:middle}
+  /* 12.10.2026: tenglastika kúnnans við hlið fyrirsagnar vinnusvæðisins (portal_users.stillingar.hlekkir) */
+  .vs-haus{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;margin:8px 0 28px}
+  .vs-haus h2.page{margin:0;flex:0 0 auto}
+  .vs-hlekkir{flex:1 1 320px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:40px;padding:6px 10px;border:1px dashed var(--line2);border-radius:8px}
+  .vs-hlekkir.hefur{border-style:solid;background:var(--panel);box-shadow:var(--key-sh)}
+  .vs-hlekkir .hl-lys{font-size:12.5px;color:var(--dim);flex:1 1 auto}
+  .vs-hlekkir .hl-a{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--line2);background:var(--key);box-shadow:var(--key-sh);color:var(--ink);font-family:var(--lbl);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+  .vs-hlekkir .hl-a:hover{border-color:var(--accent)}
+  .vs-hlekkir .hl-x{border:0;background:transparent;color:var(--dim);font-size:13px;line-height:1;padding:0 2px;cursor:pointer;margin-left:-4px}
+  .vs-hlekkir .hl-x:hover{color:var(--accent)}
+  .vs-hlekkir .hl-f{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%}
+  .vs-hlekkir .hl-f input{height:30px;border:1px solid var(--line2);border-radius:6px;padding:0 9px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink);flex:1 1 140px;min-width:0}
   .cal-d em b.skodun{background:var(--accent)}.cal-d em b.eb{background:#c48a1a}.cal-d em b.frestur{background:#c0392b}.cal-d em b.erindi{background:var(--dim)}.cal-d em b.lokid,.cal-d em b.lok{background:#1f7a44}.cal-d em b.seint{background:#c0392b}
   .cal-l{border-top:1px solid var(--line);max-height:340px;overflow:auto}
   .cal-l .egp-r.hl{background:rgba(var(--glow),.08)}
@@ -1134,7 +1146,7 @@
     <!-- MITT VINNUSVÆÐI (eignagatt.js): verkefni · dagatal · kort · niðurhal · skjöl og hlekkir — röð eins og á Þjónustuborðinu -->
     <section id="v-vinnusvaedi" class="hidden">
       <div class="kicker">Byggingarumsjón · allt á einum stað</div>
-      <h2 class="page">Mitt vinnusvæði</h2>
+      <div class="vs-haus"><h2 class="page">Mitt vinnusvæði</h2><div class="vs-hlekkir" id="vs-hlekkir"></div></div>
       <div class="vs-grid">
         <div class="egp vs-p" id="vs-check"></div>
         <div class="egp vs-p" id="vs-verk"></div>

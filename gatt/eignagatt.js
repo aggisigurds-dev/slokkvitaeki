@@ -304,7 +304,7 @@
     if (!synileg) { renderVerkbeidnir(); return; }
     var cnt = erindi().filter(function (e) { return e.stada !== 'lokid' && e.abyrgd && e.abyrgd !== 'okkar'; }).length;
     var badge = $('#vsBadge'); if (badge) { badge.textContent = cnt; badge.classList.toggle('hidden', !cnt); }
-    renderChecklist(); renderVidhald();
+    renderChecklist(); renderVidhald(); renderHlekkir();
     $('#vs-verk').innerHTML = verkefniHtml();
     $('#vs-dagatal').innerHTML = dagatalHtml();
     $('#vs-nidurhal').innerHTML = nidurhalHtml();
@@ -332,6 +332,31 @@
       '<div class="vs-sub">Verkbeiðnir til Slökkvitækja ehf.</div>' +
       (okkar.length ? okkar.slice(0, 12).map(rod).join('') : '<div class="egp-e">Engar verkbeiðnir enn.</div>') +
       '<div class="vs-foot"><button type="button" class="gbtn sm" data-vs-nytt>' + ic('plus', 2.2) + 'Nýtt verkefni</button><button type="button" class="kbtn sm" data-vs-nytt-okkar>' + ic('plus', 2.2) + 'Verkbeiðni til okkar</button></div>';
+  }
+  /* Tenglastika (12.10.2026, Agnar: „auka stika við hliðina á vinnusvæði … bætt við þínum eigin linkum … textinn
+     hverfur þegar fyrsti hlekkurinn er kominn"). Vistuð í portal_users.stillingar.hlekkir = [{h, u}]. */
+  var hlOpid = false;
+  function hlekkir() { var a = data().account; return (a && a.stillingar && Array.isArray(a.stillingar.hlekkir)) ? a.stillingar.hlekkir : []; }
+  function renderHlekkir() {
+    var el = $('#vs-hlekkir'); if (!el) return;
+    var L = hlekkir();
+    el.classList.toggle('hefur', !!L.length);
+    el.innerHTML = (L.length ? L.map(function (x, i) {
+        return '<a class="hl-a" href="' + esc(x.u) + '" target="_blank" rel="noopener" title="' + esc(x.u) + '">' + esc(x.h) + '</a><button type="button" class="hl-x" data-hl-eyda="' + i + '" title="Fjarlægja tengil" aria-label="Fjarlægja ' + esc(x.h) + '">✕</button>';
+      }).join('') : '<span class="hl-lys">Þínir tenglar — settu hér slóðirnar sem þú notar mest (banki, tryggingar, húsfélagskerfi, teikningar…). Þær birtast hér á vinnusvæðinu þínu.</span>') +
+      (hlOpid ? '<div class="hl-f"><input type="text" id="hl-heiti" maxlength="40" placeholder="Heiti (t.d. Landsbankinn)"><input type="url" id="hl-slod" maxlength="300" placeholder="https://…">' +
+        '<button type="button" class="kbtn sm" data-hl-vista="1">' + ic('hak', 2) + 'Vista</button><button type="button" class="kbtn sm" data-hl-haetta="1">Hætta við</button></div>'
+        : '<button type="button" class="kbtn sm" data-hl-baeta="1">+ Bæta við' + (L.length ? '' : ' tengli') + '</button>');
+  }
+  function hlekkirVista(ny) {
+    var a = data().account; if (!a) return Promise.resolve(false);
+    a.stillingar = a.stillingar || {}; var fyrri = a.stillingar.hlekkir; a.stillingar.hlekkir = ny; renderHlekkir();
+    if (st().demo) return Promise.resolve(true);
+    return api({ action: 'stillingar', stillingar: { hlekkir: ny } }).then(function (res) {
+      if (!res.ok) { a.stillingar.hlekkir = fyrri; renderHlekkir(); toast((res.j && res.j.error) || 'Vistun mistókst'); return false; }
+      if (res.j && res.j.stillingar && Array.isArray(res.j.stillingar.hlekkir)) { a.stillingar.hlekkir = res.j.stillingar.hlekkir; renderHlekkir(); }
+      return true;
+    });
   }
   /* Dagatal */
   function atburdir(y, m) {
@@ -1001,6 +1026,24 @@
     if (t.closest('#vbt-skipta')) { vbtB = null; renderVerkbeidnir(); var q = $('#vbt-leit'); if (q) q.focus(); return; }
     if (t.closest('[data-vs-nytt]')) { opnaVb(null, null, 'eigandi'); return; }
     if (t.closest('[data-vs-nytt-okkar]')) { opnaVb(null, null, 'okkar'); return; }
+    if (t.closest('[data-hl-baeta]')) { hlOpid = true; renderHlekkir(); var h0 = $('#hl-heiti'); if (h0) h0.focus(); return; }
+    if (t.closest('[data-hl-haetta]')) { hlOpid = false; renderHlekkir(); return; }
+    if ((x = t.closest('[data-hl-vista]'))) {
+      var hh = (($('#hl-heiti') || {}).value || '').trim(), uu = (($('#hl-slod') || {}).value || '').trim();
+      if (!hh) { toast('Skrifaðu heiti á tengilinn'); return; }
+      if (uu && !/^https?:\/\//i.test(uu)) uu = 'https://' + uu;
+      if (!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(uu)) { toast('Slóðin þarf að byrja á https://'); return; }
+      if (hlekkir().length >= 20) { toast('Mest 20 tenglar'); return; }
+      x.disabled = true;
+      hlekkirVista(hlekkir().concat([{ h: hh.slice(0, 40), u: uu.slice(0, 300) }])).then(function (ok) { if (ok) { hlOpid = false; renderHlekkir(); toast('Tengill vistaður'); } else x.disabled = false; });
+      return;
+    }
+    if ((x = t.closest('[data-hl-eyda]'))) {
+      var ix = +x.getAttribute('data-hl-eyda'), L0 = hlekkir();
+      if (!L0[ix] || !window.confirm('Fjarlægja tengilinn „' + L0[ix].h + '"?')) return;
+      hlekkirVista(L0.filter(function (_, j) { return j !== ix; })).then(function (ok) { if (ok) toast('Tengill fjarlægður'); });
+      return;
+    }
     if ((x = t.closest('[data-cal-d]'))) {
       // Dagur valinn → skráningarreitur undir dagatalinu (sami dagur aftur = loka)
       var dv = +x.getAttribute('data-cal-d'); cal.sel = cal.sel === dv ? null : dv;
