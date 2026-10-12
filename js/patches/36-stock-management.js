@@ -384,7 +384,7 @@
     const panta = !!m.panta;
     return `<tr${panta ? ' style="background:#fffbeb"' : ''}>
       <td style="padding:6px 8px">${mynd}</td>
-      <td style="max-width:460px"><strong${opna}>${panta ? '<span style="color:#d97706;margin-right:4px">★</span>' : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${m.slod ? `<span style="margin-left:8px;font-size:11px">${slodHtml(m.slod)}</span>` : ''}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
+      <td style="max-width:460px"><strong${opna}>${panta ? '<span style="color:#d97706;margin-right:4px">★</span>' : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
       <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
       <td>${vara ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
       <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
@@ -396,7 +396,9 @@
       <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
       <td style="position:sticky;right:0;background:${panta ? '#fffbeb' : 'var(--bg1)'};box-shadow:-6px 0 8px -6px rgba(0,0,0,.15)"><div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-sm" onclick="Stock.togglePanta(${kq})" title="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta — setja efst'}" style="color:#d97706;font-size:15px;line-height:1">${panta ? '★' : '☆'}</button>
-        <button class="btn btn-ghost btn-sm" onclick="Stock.setjaSlod(${kq})" title="${m.slod ? 'Breyta tengli birgja' : 'Setja inn tengil á vöruna hjá birgja'}" style="${m.slod ? 'color:var(--blu)' : 'opacity:.55'}">🔗</button>
+        ${m.slod
+          ? `<a class="btn btn-ghost btn-sm" href="${esc(m.slod)}" target="_blank" rel="noopener" oncontextmenu="Stock.setjaSlod(${kq});return false" title="Opna hjá birgja: ${esc(hostur(m.slod))} · hægrismella til að breyta eða fjarlægja" style="color:var(--blu);text-decoration:none">🔗</a>`
+          : `<button class="btn btn-ghost btn-sm" onclick="Stock.setjaSlod(${kq})" title="Setja inn tengil á vöruna hjá birgja" style="opacity:.55">🔗</button>`}
         <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
         ${!vara ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
         <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
