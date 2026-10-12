@@ -47,9 +47,17 @@ exports.handler = async (event) => {
   if (!email || !password) return P.json(400, { error: 'Netfang og lykilorð vantar' });
 
   try {
-    const r = await P.sbGet(`portal_users?email=eq.${encodeURIComponent(email)}&select=*&limit=1`);
-    const rows = r.ok ? await r.json() : [];
-    const user = rows[0] || null;
+    // 12.10.2026 — notendur félags (portal_notendur: hlutverk + eignir) ganga fyrir; gamli félagsaðgangurinn
+    // (portal_users.email) er áfram til sem stjórnandi.
+    const nr = await P.sbGet(`portal_notendur?email=eq.${encodeURIComponent(email)}&select=*&limit=1`);
+    const notandi = nr.ok ? ((await nr.json())[0] || null) : null;
+    const tafla = notandi ? 'portal_notendur' : 'portal_users';
+    let user = notandi;
+    if (!user) {
+      const r = await P.sbGet(`portal_users?email=eq.${encodeURIComponent(email)}&select=*&limit=1`);
+      const rows = r.ok ? await r.json() : [];
+      user = rows[0] || null;
+    }
 
     // Læst? (raunverulegur notandi þarf að vita það)
     if (user && user.locked_until && new Date(user.locked_until) > new Date()) {
@@ -66,23 +74,31 @@ exports.handler = async (event) => {
         const fails = (user.failed_attempts || 0) + 1;
         const patch = { failed_attempts: fails };
         if (fails >= MAX_FAILS) patch.locked_until = new Date(Date.now() + LOCK_MINUTES * 60000).toISOString();
-        try { await P.sbPatch(`portal_users?id=eq.${user.id}`, patch); } catch (_) {}
+        try { await P.sbPatch(`${tafla}?id=eq.${user.id}`, patch); } catch (_) {}
       }
       return P.json(401, { error: 'Rangt netfang eða lykilorð' });
     }
 
     // Tókst → núllstilla teljara, stimpla innskráningu, mint token
     try {
-      await P.sbPatch(`portal_users?id=eq.${user.id}`, {
+      await P.sbPatch(`${tafla}?id=eq.${user.id}`, {
         failed_attempts: 0, locked_until: null, last_login: new Date().toISOString(),
       });
     } catch (_) {}
 
-    const token = P.signToken({
-      base_id: user.base_id, email: user.email, theme: user.theme || 'steel', name: user.display_name || '',
-    });
-    return P.json(200, { ok: true, name: user.display_name || '', theme: user.theme || 'steel' },
-      { 'Set-Cookie': P.sessionCookie(token) });
+    let token, nafn, theme;
+    if (notandi) {
+      // þema og heiti félagsins úr félagsaðganginum
+      let felag = null;
+      try { const fr = await P.sbGet(`portal_users?base_id=eq.${notandi.base_id}&active=eq.true&select=theme,display_name&limit=1`); felag = fr.ok ? ((await fr.json())[0] || null) : null; } catch (_) {}
+      theme = (felag && felag.theme) || 'steel'; nafn = notandi.nafn || (felag && felag.display_name) || '';
+      token = P.signToken({ base_id: notandi.base_id, email: notandi.email, theme, name: nafn, uid: notandi.id, hlutverk: notandi.hlutverk,
+        eignir: Array.isArray(notandi.eignir) && notandi.eignir.length ? notandi.eignir : null });
+    } else {
+      theme = user.theme || 'steel'; nafn = user.display_name || '';
+      token = P.signToken({ base_id: user.base_id, email: user.email, theme, name: nafn, hlutverk: 'stjornandi' });
+    }
+    return P.json(200, { ok: true, name: nafn, theme }, { 'Set-Cookie': P.sessionCookie(token) });
   } catch (e) {
     return P.json(500, { error: String((e && e.message) || e) });
   }

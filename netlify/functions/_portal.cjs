@@ -94,7 +94,9 @@ function getSession(event) {
   const token = parseCookies(event)[COOKIE];
   const p = verifyToken(token);
   if (!p || !p.base_id) return null;
-  return { base_id: p.base_id, email: p.email, theme: p.theme || 'steel', name: p.name || '' };
+  return { base_id: p.base_id, email: p.email, theme: p.theme || 'steel', name: p.name || '', uid: p.uid || null,
+    hlutverk: ['stjornandi', 'eldvarnarfulltrui', 'skodandi', 'leigutaki'].includes(p.hlutverk) ? p.hlutverk : 'stjornandi',
+    eignir: Array.isArray(p.eignir) ? p.eignir.map(Number).filter(Boolean) : null, staff: !!p.staff };
 }
 
 // ── Supabase (service-role — aðeins server-megin) ────────────────────────────

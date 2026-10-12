@@ -286,7 +286,17 @@
   /* ═══ MITT VINNUSVÆÐI ═══════════════════════════════════════════════════ */
   var cal = { y: new Date().getFullYear(), m: new Date().getMonth() };
   var kort = null, kortMerki = {}, leitT = null, leitNidur = [];
+  var HL_H = { stjornandi: 'Stjórnandi', eldvarnarfulltrui: 'Eldvarnarfulltrúi', skodandi: 'Lesaðgangur', leigutaki: 'Leigutaki' };
+  function notandiLifga() {
+    var n = data().account && data().account.notandi;
+    document.body.className = document.body.className.replace(/\bhl-\S+/g, '').trim();
+    var g = $('#hnot'); if (g) g.remove();
+    if (!n) return;
+    document.body.classList.add('hl-' + n.hlutverk);
+    var ht = $('#htag'); if (ht) ht.insertAdjacentHTML('afterend', '<span class="hnot" id="hnot">' + esc(n.nafn || '') + (n.nafn ? ' · ' : '') + esc(HL_H[n.hlutverk] || n.hlutverk) + (n.eignir ? ' · ' + n.eignir.length + (n.eignir.length === 1 ? ' eign' : ' eignir') : '') + '</span>');
+  }
   function renderVinnusvaedi() {
+    notandiLifga();
     var tab = document.querySelector('nav .tab[data-view="vinnusvaedi"]'), v = $('#v-vinnusvaedi');
     if (!tab || !v || !st().data) return;
     var synileg = !!syn().vinnusvaedi;

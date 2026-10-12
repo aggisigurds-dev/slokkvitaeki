@@ -161,6 +161,13 @@ exports.handler = async (event) => {
   }
   const showDetails = !!(acct && acct.show_details);
   const syn = lesaSyn(acct);
+  // ── Hlutverk og eignir notanda (12.10.2026): stjórnandi sér allt; eldvarnarfulltrúi sér sínar eignir og skrifar;
+  //    skoðandi les allt en skrifar ekkert; leigutaki sér sínar eignir, sendir verkbeiðnir, sér hvorki skilaboð
+  //    félagsins, reikninga, vinnusvæði né eldvarnabók. Opinn hamur = stjórnandi.
+  const hlutverk = (session && session.hlutverk) || 'stjornandi';
+  const leyfd = session && Array.isArray(session.eignir) && session.eignir.length ? new Set(session.eignir.map(Number)) : null;
+  const lesEingongu = hlutverk === 'skodandi', leigutaki = hlutverk === 'leigutaki';
+  if (leigutaki) { syn.vinnusvaedi = false; syn.eldvarnabok = false; syn.baeta_eign = false; }
 
   // ── Eldvarnabók: vista drög eða undirrita mánuð ───────────────────────────
   // Eignin verður að vera eign félagsins; mánuðurinn í mesta lagi 12 mánuðum aftur og ekki fram í tímann;
@@ -240,6 +247,7 @@ exports.handler = async (event) => {
   // Eign félagsins (fyrirtaeki-röð undir base_id) — eða null. Allar skrif-aðgerðir byrja hér.
   async function eignFelags(sid, sel) {
     if (!sid) return null;
+    if (leyfd && !leyfd.has(Number(sid))) return null;
     const r = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${sel || 'id,nafn,heimilisfang'}&limit=1`);
     return r.ok ? ((await r.json())[0] || null) : null;
   }
@@ -528,6 +536,8 @@ exports.handler = async (event) => {
   // POST → viðskiptavinur sendir fyrirspurn / aðgerð
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
+    if (lesEingongu) return P.json(403, { error: 'Aðgangurinn er lesaðgangur — engar breytingar' });
+    if (leigutaki && !['punktur', 'lokid', 'qr', undefined, ''].includes(b.action)) return P.json(403, { error: 'Ekki í boði fyrir leigutaka' });
     if (b.action === 'eldvarnabok') return vistaEldvarnabok(b);
     try {
       if (b.action === 'punktur') return await vistaPunkt(b);
@@ -598,7 +608,7 @@ exports.handler = async (event) => {
   try {
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
     const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr&order=nafn`);
-    const sites = fr.ok ? await fr.json() : [];
+    const sites = (fr.ok ? await fr.json() : []).filter((s) => !leyfd || leyfd.has(Number(s.id)));
     const siteIds = sites.map((s) => s.id);
     const nafnById = {}, nrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; });
 
@@ -624,7 +634,7 @@ exports.handler = async (event) => {
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
       const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund`);
-      if (dr.ok) docs = await dr.json();
+      if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
     } catch (_) {}
 
     // Ár per byggingu úr RAUNVERULEGUM skjölum á ÞESSU fyrirtaeki_id.
@@ -748,7 +758,7 @@ exports.handler = async (event) => {
         // Varaleið þar til migration 2026-10-11_verkbeidnapunktar.sql er beitt (nýju dálkarnir vantar → 400): gamla valið
         if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
         if (er.ok) {
-          const rows = await er.json();
+          const rows = (await er.json()).filter((r) => !leyfd || (r.fyrirtaeki_id != null && leyfd.has(Number(r.fyrirtaeki_id))));
           const slod = await M.undirrita(myndaSlodir(rows), 600);
           erindi = rows.map((r) => erindiRod(r, slod));
         }
@@ -756,7 +766,7 @@ exports.handler = async (event) => {
     }
     // 2j) Vinnusvæði: skjöl og hlekkir félagsins
     let items = [], checklist = [], vidhald = [];
-    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); vidhald = await vidhaldFelags(); } catch (_) {} }
+    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); vidhald = (await vidhaldFelags()).filter((x) => !leyfd || leyfd.has(Number(x.fid))); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -899,7 +909,7 @@ exports.handler = async (event) => {
 
     // 4) Skilaboð + merkja starfs-skilaboð lesin
     let messages = [];
-    try {
+    if (!leigutaki) try {
       const mr = await P.sbGet(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`);
       if (mr.ok) messages = await mr.json();
       await P.sbPatch(`portal_messages?base_id=eq.${baseId}&sender=eq.starf`, { read_by_customer: true });
@@ -911,8 +921,9 @@ exports.handler = async (event) => {
     const theme = (acct && acct.theme) || (session && session.theme) || 'steel';
 
     return P.json(200, {
-      account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {} },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items, checklist, vidhald,
+      account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
+        notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {

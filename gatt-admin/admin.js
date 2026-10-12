@@ -121,7 +121,7 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.error) { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">' + esc(d.error) + '</td></tr>'; return; }
-        state.access = d.access || []; state.messages = d.messages || []; state.verk = d.verk || [];
+        state.access = d.access || []; state.messages = d.messages || []; state.verk = d.verk || []; state.notendur = d.notendur || []; state.stadir = d.stadir || [];
         renderStats(); renderAccess(); renderMessages(); renderVerk();
       })
       .catch(function () { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">Villa við að sækja gögn</td></tr>'; });
@@ -208,6 +208,7 @@
         '</div>' +
         '<div class="note">„Senda" póstar viðskiptavini vefslóð + notandanafn (og lykilorð ef þú bjóst það til núna) gegnum Eldklár-póstinn.</div>' +
       '</div>' +
+      '<div class="efull"><h3>Notendur</h3>' + notendurHtml(a) + '</div>' +
       // Útlit og upplýsingar — full breidd svo þemaspjöldin fimm komist í eina röð
       '<div class="efull"><h3>Útlit og upplýsingar</h3>' +
         '<input type="hidden" data-f="theme" value="' + esc(themeOf(a.theme).k) + '">' +
@@ -226,6 +227,7 @@
 
   function wireEditor(a, row) {
     var emailEl = row.querySelector('[data-f="email"]');
+    wireNotendur(a, row);
     // eignasíðu-hlutarnir eru aðeins virkir þegar aðalrofinn er á
     var detTgl = row.querySelector('[data-f="details"]'), synBox = row.querySelector('.synir');
     if (detTgl && synBox) detTgl.addEventListener('change', function () { synBox.classList.toggle('off', !detTgl.checked); });
@@ -316,6 +318,69 @@
           else { toast(res.error || 'Villa'); btn.disabled = false; }
         });
       };
+    });
+  }
+
+  // ── Notendur félags (12.10.2026): hlutverk + eignir, lykilorð, sending ──────
+  var HLUTVERK_H = { stjornandi: 'Stjórnandi', eldvarnarfulltrui: 'Eldvarnarfulltrúi', skodandi: 'Skoðandi (les)', leigutaki: 'Leigutaki' };
+  var HLUTVERK_L = { stjornandi: 'sér allt, skrifar allt', eldvarnarfulltrui: 'sínar eignir, skrifar (eldvarnabók, verk)', skodandi: 'les allt, breytir engu', leigutaki: 'sínar eignir, verkbeiðnir — engin skilaboð, reikningar eða vinnusvæði' };
+  function stadirFelags(base) { return (state.stadir || []).filter(function (s) { return s.customer_base_id === base; }); }
+  function eignirVal(base, valin, name) {
+    var S = stadirFelags(base);
+    if (!S.length) return '<span class="note" style="margin:0">Engar eignir skráðar</span>';
+    return '<div class="nt-eignir">' + S.map(function (s) { return '<label><input type="checkbox" name="' + name + '" value="' + s.id + '"' + (valin && valin.indexOf(s.id) > -1 ? ' checked' : '') + '>' + esc(s.nafn) + '</label>'; }).join('') + '</div><span class="note" style="margin:4px 0 0">Ekkert hakað = allar eignir félagsins.</span>';
+  }
+  function notendurHtml(a) {
+    var L = (state.notendur || []).filter(function (n) { return n.base_id === a.base_id; });
+    return '<div class="nt-list">' + (L.length ? L.map(function (n) {
+      var eig = n.eignir && n.eignir.length ? n.eignir.map(function (id) { var s = (state.stadir || []).filter(function (x) { return x.id === id; })[0]; return s ? s.nafn : '#' + id; }).join(', ') : 'allar eignir';
+      return '<div class="nt-r' + (n.active ? '' : ' off') + '" data-nt="' + n.id + '"><div class="nt-t"><b>' + esc(n.nafn || n.email) + '</b><small>' + esc(n.email) + ' · ' + esc(HLUTVERK_H[n.hlutverk] || n.hlutverk) + ' · ' + esc(eig) + (n.last_login ? ' · síðast inn ' + esc(fmtDate(n.last_login)) : ' · aldrei skráð inn') + (n.active ? '' : ' · óvirkur') + '</small></div>' +
+        '<div class="nt-a"><button class="btn btn--sm" data-nt-breyta="' + n.id + '">Breyta</button><button class="btn btn--sm" data-nt-pw="' + n.id + '" title="Nýtt lykilorð">' + ic('key') + '</button><button class="btn btn--sm" data-nt-send="' + n.id + '" title="Senda aðgang í pósti">' + ic('mail') + '</button><button class="btn btn--sm btn--danger" data-nt-del="' + n.id + '">Eyða</button></div></div>' +
+        '<div class="nt-edit hidden" data-nt-edit="' + n.id + '"><div class="nt-grid"><label>Nafn<input class="inp" data-nf="nafn" value="' + esc(n.nafn || '') + '"></label><label>Netfang<input class="inp" data-nf="email" value="' + esc(n.email) + '"></label>' +
+          '<label>Hlutverk<select class="inp" data-nf="hlutverk">' + Object.keys(HLUTVERK_H).map(function (k) { return '<option value="' + k + '"' + (n.hlutverk === k ? ' selected' : '') + '>' + esc(HLUTVERK_H[k]) + '</option>'; }).join('') + '</select></label>' +
+          '<label class="tgl" style="margin:22px 0 0"><input type="checkbox" data-nf="active"' + (n.active ? ' checked' : '') + '><span class="sw"></span><span><b>Virkur</b></span></label></div>' +
+          '<div style="margin-top:8px"><span class="note" style="margin:0 0 4px;display:block">Eignir sem notandinn sér</span>' + eignirVal(a.base_id, n.eignir, 'nt-e-' + n.id) + '</div>' +
+          '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn--sm btn--accent" data-nt-vista="' + n.id + '">Vista notanda</button><button class="btn btn--sm" data-nt-loka="' + n.id + '">Loka</button></div></div>';
+    }).join('') : '<div class="note" style="margin:0 0 8px">Engir notendur enn — félagsaðgangurinn hér að ofan er eini aðgangurinn.</div>') + '</div>' +
+      '<div class="nt-new"><div class="nt-grid"><label>Nafn<input class="inp" data-nn="nafn" placeholder="Fullt nafn"></label><label>Netfang<input class="inp" data-nn="email" placeholder="nafn@felag.is"></label>' +
+        '<label>Hlutverk<select class="inp" data-nn="hlutverk">' + Object.keys(HLUTVERK_H).map(function (k) { return '<option value="' + k + '">' + esc(HLUTVERK_H[k]) + '</option>'; }).join('') + '</select></label></div>' +
+        '<div style="margin-top:8px"><span class="note" style="margin:0 0 4px;display:block">Eignir (valfrjálst)</span>' + eignirVal(a.base_id, [], 'nn-e-' + a.id) + '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn btn--sm btn--accent" data-nt-nyr>' + ic('key') + 'Stofna notanda</button><span class="note" style="margin:0">Lykilorð verður til við stofnun og birtist einu sinni — „Senda" póstar því á notandann.</span></div>' +
+        '<div class="note" style="margin-top:8px">' + Object.keys(HLUTVERK_L).map(function (k) { return '<b>' + esc(HLUTVERK_H[k]) + '</b>: ' + esc(HLUTVERK_L[k]); }).join(' · ') + '</div></div>';
+  }
+  var ntPw = {};
+  function wireNotendur(a, row) {
+    var box = row.querySelector('.nt-list'); if (!box) return;
+    function eig(name) { return [].slice.call(row.querySelectorAll('input[name="' + name + '"]:checked')).map(function (c) { return +c.value; }); }
+    row.addEventListener('click', function (e) {
+      var t = e.target, x;
+      if ((x = t.closest('[data-nt-breyta]'))) { var ed = row.querySelector('[data-nt-edit="' + x.getAttribute('data-nt-breyta') + '"]'); if (ed) ed.classList.toggle('hidden'); return; }
+      if ((x = t.closest('[data-nt-loka]'))) { var ed2 = row.querySelector('[data-nt-edit="' + x.getAttribute('data-nt-loka') + '"]'); if (ed2) ed2.classList.add('hidden'); return; }
+      if ((x = t.closest('[data-nt-vista]'))) {
+        var id = x.getAttribute('data-nt-vista'), ed3 = row.querySelector('[data-nt-edit="' + id + '"]');
+        var body = { action: 'notandi-save', id: id, nafn: ed3.querySelector('[data-nf="nafn"]').value, email: ed3.querySelector('[data-nf="email"]').value, hlutverk: ed3.querySelector('[data-nf="hlutverk"]').value, active: ed3.querySelector('[data-nf="active"]').checked, eignir: eig('nt-e-' + id) };
+        api(body).then(function (res) { if (res.ok) { toast('Notandi vistaður'); load(); } else toast(res.error || 'Villa'); }); return;
+      }
+      if ((x = t.closest('[data-nt-pw]'))) {
+        var id2 = x.getAttribute('data-nt-pw');
+        if (!confirm('Búa til nýtt lykilorð? Gamla hættir að virka.')) return;
+        api({ action: 'notandi-pw', id: id2 }).then(function (res) { if (res.ok) { ntPw[id2] = res.password; window.prompt('Nýtt lykilorð (afritaðu — birtist einu sinni):', res.password); } else toast(res.error || 'Villa'); }); return;
+      }
+      if ((x = t.closest('[data-nt-send]'))) {
+        var id3 = x.getAttribute('data-nt-send');
+        api({ action: 'notandi-send', id: id3, password: ntPw[id3] || null }).then(function (res) { if (res.ok) { toast('Sent á ' + res.sent_to); delete ntPw[id3]; } else toast(res.error || 'Sending mistókst'); }); return;
+      }
+      if ((x = t.closest('[data-nt-del]'))) {
+        var id4 = x.getAttribute('data-nt-del');
+        if (!confirm('Eyða notandanum? Innskráning hans hættir að virka.')) return;
+        api({ action: 'notandi-del', id: id4 }).then(function (res) { if (res.ok) { toast('Eytt'); load(); } else toast(res.error || 'Villa'); }); return;
+      }
+      if (t.closest('[data-nt-nyr]')) {
+        var nn = row.querySelector('.nt-new');
+        var body2 = { action: 'notandi-add', base_id: a.base_id, nafn: nn.querySelector('[data-nn="nafn"]').value, email: nn.querySelector('[data-nn="email"]').value, hlutverk: nn.querySelector('[data-nn="hlutverk"]').value, eignir: eig('nn-e-' + a.id) };
+        if (!body2.email.trim()) { toast('Netfang vantar'); return; }
+        api(body2).then(function (res) { if (res.ok) { ntPw[res.id] = res.password; window.prompt('Notandi stofnaður. Lykilorð (afritaðu — birtist einu sinni; „Senda" póstar því):', res.password); load(); } else toast(res.error || 'Villa'); }); return;
+      }
     });
   }
 

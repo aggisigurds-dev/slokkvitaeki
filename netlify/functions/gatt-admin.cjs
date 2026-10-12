@@ -112,13 +112,19 @@ exports.handler = async (event) => {
       // Verkbeiðnir og verkefni af þjónustuvef (11.10.2026): opin mál + þau sem lokað var síðustu 30 daga, með myndum
       // (undirritaðar úr einkamáls-bucketinu gatt) og hæðinni sem punkturinn situr á, svo starfsmaður sjái staðinn.
       const verk = await verkListi();
+      // Notendur félaga (12.10.2026) + staðir hvers félags (til að afmarka notanda við eignir)
+      const nr = await P.sbGet('portal_notendur?select=id,base_id,email,nafn,hlutverk,eignir,active,last_login,created_at,pass_hash&order=created_at.asc');
+      const notendur = (nr.ok ? await nr.json() : []).map((n) => ({ id: n.id, base_id: n.base_id, email: n.email, nafn: n.nafn || '', hlutverk: n.hlutverk, eignir: n.eignir || null, active: n.active, last_login: n.last_login, hasPassword: !!n.pass_hash }));
+      const bases = [...new Set(access.map((a) => a.base_id))];
+      let stadir = [];
+      if (bases.length) { const sr = await P.sbGet(`fyrirtaeki?customer_base_id=in.(${bases.join(',')})&deleted_at=is.null&select=id,customer_base_id,nafn,heimilisfang,er_i_thjonustu&order=nafn`); if (sr.ok) stadir = await sr.json(); }
       const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id)]);
       verk.forEach((v) => { v.base_nafn = (names[v.base_id] || {}).nafn || ('#' + v.base_id); });
       return P.json(200, {
         access: access.map((a) => Object.assign(pubRow(a), { base_nafn: (names[a.base_id] || {}).nafn || ('#' + a.base_id) })),
         messages: messages.map((m) => ({ id: m.id, base_id: m.base_id, base_nafn: (names[m.base_id] || {}).nafn || ('#' + m.base_id),
           sender: m.sender, body: m.body, author_name: m.author_name, created_at: m.created_at, read_by_staff: m.read_by_staff })),
-        verk,
+        verk, notendur, stadir,
       });
     }
 
@@ -241,6 +247,65 @@ exports.handler = async (event) => {
       } catch (e) { return P.json(502, { error: 'Póstur sendist ekki', detail: String((e && e.message) || e) }); }
       if (!mres.ok) { const t = await mres.text().catch(() => ''); return P.json(502, { error: 'Póstur sendist ekki', detail: t.slice(0, 300) }); }
       return P.json(200, { ok: true, sent_to: to });
+    }
+
+    // ── Notendur félags (portal_notendur) ──
+    const HLUTVERK = ['stjornandi', 'eldvarnarfulltrui', 'skodandi', 'leigutaki'];
+    const eignirInn = (x) => Array.isArray(x) ? [...new Set(x.map((v) => parseInt(v, 10)).filter(Boolean))].slice(0, 500) : null;
+    if (action === 'notandi-add') {
+      const baseId = parseInt(body.base_id, 10), email = String(body.email || '').trim().toLowerCase();
+      if (!baseId || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return P.json(400, { error: 'Félag og gilt netfang vantar' });
+      const dup = await P.sbGet(`portal_notendur?email=eq.${encodeURIComponent(email)}&select=id&limit=1`);
+      if (dup.ok && (await dup.json()).length) return P.json(409, { error: 'Netfangið er þegar í notkun' });
+      const pw = (typeof body.password === 'string' && body.password.length >= 8) ? body.password : genPassword();
+      const eig = eignirInn(body.eignir);
+      const ins = await P.sbPost('portal_notendur', { base_id: baseId, email, nafn: String(body.nafn || '').trim().slice(0, 120) || null, hlutverk: HLUTVERK.includes(body.hlutverk) ? body.hlutverk : 'stjornandi',
+        eignir: eig && eig.length ? eig : null, pass_hash: P.hashPassword(pw), created_by: 'gatt-admin' });
+      if (!ins.ok) return P.json(ins.status, { error: 'Gat ekki stofnað', detail: await ins.text() });
+      return P.json(200, { ok: true, id: ((await ins.json())[0] || {}).id, password: pw });
+    }
+    if (action === 'notandi-save') {
+      const id = String(body.id || ''); if (!id) return P.json(400, { error: 'id vantar' });
+      const patch = {};
+      if (typeof body.nafn === 'string') patch.nafn = body.nafn.trim().slice(0, 120) || null;
+      if (HLUTVERK.includes(body.hlutverk)) patch.hlutverk = body.hlutverk;
+      if (body.eignir !== undefined) { const eig = eignirInn(body.eignir); patch.eignir = eig && eig.length ? eig : null; }
+      if (typeof body.active === 'boolean') patch.active = body.active;
+      if (typeof body.email === 'string' && body.email.trim()) patch.email = body.email.trim().toLowerCase();
+      if (typeof body.password === 'string' && body.password.length >= 8) patch.pass_hash = P.hashPassword(body.password);
+      if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });
+      const r = await P.sbPatch(`portal_notendur?id=eq.${encodeURIComponent(id)}&select=id`, patch);
+      if (!r.ok) return P.json(r.status, { error: 'Villa', detail: await r.text() });
+      return P.json(200, { ok: true });
+    }
+    if (action === 'notandi-pw') {
+      const id = String(body.id || ''); if (!id) return P.json(400, { error: 'id vantar' });
+      const pw = genPassword();
+      const r = await P.sbPatch(`portal_notendur?id=eq.${encodeURIComponent(id)}&select=id`, { pass_hash: P.hashPassword(pw), failed_attempts: 0, locked_until: null });
+      if (!r.ok) return P.json(r.status, { error: 'Villa' });
+      return P.json(200, { ok: true, password: pw });
+    }
+    if (action === 'notandi-del') {
+      const id = String(body.id || ''); if (!id) return P.json(400, { error: 'id vantar' });
+      await fetch(`${P.SUPABASE_URL}/rest/v1/portal_notendur?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', headers: { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}` } });
+      return P.json(200, { ok: true });
+    }
+    if (action === 'notandi-send') {
+      const id = String(body.id || ''); if (!id) return P.json(400, { error: 'id vantar' });
+      const nr0 = await P.sbGet(`portal_notendur?id=eq.${encodeURIComponent(id)}&select=email,nafn,base_id&limit=1`);
+      const n = nr0.ok ? (await nr0.json())[0] : null; if (!n) return P.json(404, { error: 'Notandi fannst ekki' });
+      const ur = await P.sbGet(`portal_users?base_id=eq.${n.base_id}&select=slug,display_name&limit=1`);
+      const u = ur.ok ? (await ur.json())[0] : null;
+      const url = origin(event) + '/gatt/?c=' + ((u && u.slug) || '');
+      const pw = (typeof body.password === 'string' && body.password) ? body.password : null;
+      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222"><p>Sæl/l' + (n.nafn ? ' ' + esc(n.nafn) : '') + ',</p>' +
+        '<p>Hér er aðgangur þinn að þjónustugátt Slökkvitækja ehf. fyrir ' + esc((u && u.display_name) || 'félagið') + '.</p>' +
+        '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br><b>Notandanafn:</b> ' + esc(n.email) + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
+        '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
+      const hdrs = { 'Content-Type': 'application/json' }; if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
+      let mres; try { mres = await fetch(origin(event) + '/api/email-send', { method: 'POST', headers: hdrs, body: JSON.stringify({ from: MAIL_FROM, to: [n.email], subject: 'Aðgangur að þjónustugátt Slökkvitækja ehf.', html }) }); } catch (e) { return P.json(502, { error: 'Póstur sendist ekki' }); }
+      if (!mres.ok) return P.json(502, { error: 'Póstur sendist ekki', detail: (await mres.text().catch(() => '')).slice(0, 200) });
+      return P.json(200, { ok: true, sent_to: n.email });
     }
 
     // Staða verkbeiðnar af vef (nytt → i_vinnslu). Lokun með eftirmynd fer um /api/verkbeidni-lokid.

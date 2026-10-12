@@ -105,3 +105,26 @@ alter table public.portal_vidhald enable row level security;
 --    action 'stillingar'. Beitt 12.10.2026 (MCP-migration portal_users_stillingar). syn (gatt-admin) er okkar val;
 --    stillingar er hans.
 alter table public.portal_users add column if not exists stillingar jsonb not null default '{}'::jsonb;
+
+-- 7) portal_notendur — notendur félags með hlutverki og eignum (12.10.2026, beitt með MCP-migration portal_notendur).
+--    stjornandi: allt · eldvarnarfulltrui: sínar eignir, skrifar · skodandi: les allt, skrifar ekkert · leigutaki: sínar
+--    eignir, verkbeiðnir, engin skilaboð/reikningar/vinnusvæði. eignir = null → allar eignir félagsins. Innskráning
+--    (gatt-login.cjs) leitar fyrst hér, svo í portal_users (félagsaðgangur = stjórnandi). Tokenið ber uid/hlutverk/eignir.
+create table if not exists public.portal_notendur (
+  id              uuid primary key default gen_random_uuid(),
+  base_id         bigint not null references public.customers_base(id) on delete cascade,
+  email           text not null,
+  pass_hash       text,
+  nafn            text,
+  hlutverk        text not null default 'stjornandi' check (hlutverk in ('stjornandi','eldvarnarfulltrui','skodandi','leigutaki')),
+  eignir          bigint[],
+  active          boolean not null default true,
+  failed_attempts integer not null default 0,
+  locked_until    timestamptz,
+  last_login      timestamptz,
+  created_at      timestamptz not null default now(),
+  created_by      text
+);
+create unique index if not exists portal_notendur_email_key on public.portal_notendur (lower(email));
+create index if not exists portal_notendur_base_idx on public.portal_notendur (base_id);
+alter table public.portal_notendur enable row level security;

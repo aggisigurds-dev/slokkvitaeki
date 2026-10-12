@@ -161,6 +161,21 @@
   .urlbox{display:flex;align-items:center;gap:8px;background:var(--well);box-shadow:var(--well-sh);border:1px dashed var(--line2);border-radius:4px;padding:7px 8px 7px 11px}
   .urlbox code{font-family:var(--mono);font-size:11.5px;color:var(--accent2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .note{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.5}
+  /* Notendur félags (12.10.2026) */
+  .nt-r{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .nt-r.off{opacity:.55}
+  .nt-t{flex:1;min-width:0}
+  .nt-t b{display:block;font-size:13.5px;color:var(--ink)}
+  .nt-t small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+  .nt-a{display:flex;gap:5px;flex-wrap:wrap}
+  .nt-edit{padding:10px 12px 12px;margin:6px 0 10px;border:1px solid var(--line2);border-radius:5px;background:var(--panel)}
+  .nt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px}
+  .nt-grid label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:var(--ink2)}
+  .nt-grid .inp{width:100%}
+  .nt-eignir{display:flex;flex-wrap:wrap;gap:6px 14px}
+  .nt-eignir label{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink);cursor:pointer}
+  .nt-new{margin-top:12px;padding:12px;border:1px dashed var(--line2);border-radius:5px}
+  @media(max-width:900px){ .nt-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   /* Verkbeiðnir af vef (11.10.2026) */
   .vsiur{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line)}
   .vsiur .btn.on{border-color:var(--accent);color:var(--accent)}
@@ -271,6 +286,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="/gatt-admin/admin.js?v=20261011p1"></script>
+<script src="/gatt-admin/admin.js?v=20261012a"></script>
 </body>
 </html>

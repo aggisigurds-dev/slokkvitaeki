@@ -52,6 +52,8 @@ exports.handler = async (event) => {
       owns = frows[0] && Number(frows[0].customer_base_id) === Number(baseId);
     }
     if (!owns) return P.json(403, { error: 'Óheimill aðgangur' });
+    // Notandi með afmarkaðar eignir (leigutaki, eldvarnarfulltrúi einnar eignar): aðeins skjöl þeirra eigna
+    if (session && Array.isArray(session.eignir) && session.eignir.length && !(doc.fyrirtaeki_id != null && session.eignir.includes(Number(doc.fyrirtaeki_id)))) return P.json(403, { error: 'Óheimill aðgangur' });
 
     // ── Afhending ──
     // (a) Supabase Storage → skammlífur signed URL (líka fyrir opinbera fatið,
