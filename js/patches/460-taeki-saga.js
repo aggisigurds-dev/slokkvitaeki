@@ -134,7 +134,17 @@
     // leysir með því að slíta línuna í sundur.
     const nyttFlis = erNytt ? '' :
       '<span role="button" tabindex="0" class="tsg-f tsg-vantar" data-tsg-nytt="' + esc(k) + '" title="Skrá hvaða ár tækið var nýtt">nýtt —</span>';
-    return '<div class="tsg">' + nyttFlis + flisar.join('') + '</div>';
+    /* „+" aftast — Agnar 12.10.2026, með krossi teiknuðum við hliðina á flísunum:
+     * „geturðu opnað á það að ég geti sett inn fyrri skoðunarár inn í tækið".
+     * Bakfyllingin gat aðeins gefið það sem grunnurinn mundi — oftast EITT ár.
+     * Árin þar á undan eru til á pappír, hvergi í kerfinu. Þess vegna verður að
+     * vera hægt að slá þau inn OG taka þau út aftur: handfærsla sem ekki verður
+     * leiðrétt er verri en engin. */
+    const heiti = [u && u.type, u && u.size].filter(Boolean).join(' ') || (u && u.service) || '';
+    const plus = '<span role="button" tabindex="0" class="tsg-f tsg-plus" data-tsg-ritill="' + esc(k) +
+      '" data-tsg-heiti="' + esc(heiti) + '" data-tsg-ser="' + esc((u && u.serial) || '') +
+      '" title="Bæta við eða laga ár í sögu tækisins">+</span>';
+    return '<div class="tsg">' + nyttFlis + flisar.join('') + plus + '</div>';
   }
 
   /* Skrá „nýtt <ár>" — eina færslan sem er handvirk, af því að hún er sú eina
@@ -196,7 +206,35 @@
       '.tsg-f i{font-style:normal;font-weight:700;opacity:.85;letter-spacing:.3px}' +
       '.tsg-vantar{background:transparent!important;border-color:#94a3b8!important;color:#94a3b8!important;' +
         'cursor:pointer;font:inherit;font-size:10.5px;border-style:dashed!important}' +
-      '.tsg-vantar:hover{border-color:#64748b!important;color:#cbd5e1!important}';
+      '.tsg-vantar:hover{border-color:#64748b!important;color:#cbd5e1!important}' +
+      '.tsg-plus{background:transparent!important;border-color:#94a3b8!important;color:#64748b!important;' +
+        'cursor:pointer;font-weight:700;padding:1px 9px;border-style:dashed!important}' +
+      '.tsg-plus:hover{border-color:#2563eb!important;color:#2563eb!important}' +
+      '#_tsg-ov{position:fixed;inset:0;background:rgba(10,12,18,.55);z-index:100001;display:flex;' +
+        'align-items:center;justify-content:center;padding:16px}' +
+      '#_tsg-glugg{background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.34);' +
+        'width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;' +
+        'font:13px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:#334155}' +
+      '._tsg-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;' +
+        'padding:12px 16px;background:#141822;color:#fff;font-size:15px}' +
+      '._tsg-hd button{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;' +
+        'font-size:17px;width:30px;height:30px;border-radius:7px;cursor:pointer;line-height:1}' +
+      '._tsg-sub{padding:9px 16px 0;color:#64748b;font-size:12px}' +
+      '._tsg-listi{padding:8px 16px}' +
+      '._tsg-r{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #eef2f7}' +
+      '._tsg-n{flex:1;min-width:0;color:#475569;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '._tsg-x{border:1px solid #e2e8f0;background:#fff;color:#94a3b8;border-radius:7px;' +
+        'width:26px;height:26px;cursor:pointer;font-size:12px;line-height:1;flex:none}' +
+      '._tsg-x:hover{border-color:#dc2626;color:#dc2626}' +
+      '._tsg-tomt{color:#94a3b8;font-size:12px;padding:4px 0}' +
+      '._tsg-baeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 16px;' +
+        'border-top:1px solid #eef2f7}' +
+      '._tsg-baeta label{display:flex;align-items:center;gap:5px;color:#475569;font-size:12px}' +
+      '._tsg-baeta input{width:74px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;' +
+        'font:inherit;font-size:13px;font-variant-numeric:tabular-nums}' +
+      '._tsg-t{border:1px solid;border-radius:999px;color:#fff;padding:5px 11px;cursor:pointer;' +
+        'font:inherit;font-size:12px;font-weight:700}' +
+      '._tsg-hint{padding:0 16px 14px;color:#94a3b8;font-size:11.5px}';
   function stilaRot(rot) {
     if (!rot) return;
     const hafa = rot.getElementById ? rot.getElementById('_tsg-stilar')
@@ -237,5 +275,147 @@
     }
   }, true);
 
-  window.TaekiSaga = { saekja, linaHtml, faerslur, skra, skraNytt, lykill, LITIR, _minni: minni };
+  /* ── RITILL SÖGUNNAR ─────────────────────────────────────────────────────
+   * Teiknaður í `document.body`, EKKI inni í skugganum: Verkspjaldið lifir í
+   * `#vsp-host` með `:host{all:initial}`, svo gluggi þar inni erfði hvorki stíla
+   * né kæmist yfir yfirlagið. Utan skuggans er hann venjulegur gluggi. */
+  const TEG = [
+    ['nytt', 'nýtt'], ['skodad', 'skoðað'], ['hladid', 'hlaðið'], ['onytt', 'ónýtt']
+  ];
+
+  function lokaRitli() { const el = document.getElementById('_tsg-ov'); if (el) el.remove(); }
+
+  function ritillHtml(k, heiti, ser) {
+    const gervi = {
+      uttaeki_id: k.indexOf('u:') === 0 ? Number(k.slice(2)) : null,
+      serial: k.indexOf('s:') === 0 ? k.slice(2) : ser
+    };
+    const f = faerslur(gervi);
+    const radir = f.length ? f.map(x => {
+      const Li = LITIR[x.vidburdur] || LITIR.skodad;
+      return '<div class="_tsg-r">' +
+        '<span class="tsg-f" style="background:' + Li.bg + ';border-color:' + Li.bor + ';color:' + Li.txt + '">' +
+          '<b>' + esc(String(x.ar).slice(-2)) + '</b>' + (Li.staf ? '<i>-' + esc(Li.staf) + '</i>' : '') + '</span>' +
+        '<span class="_tsg-n">' + esc(Li.heiti) + ' ' + esc(x.ar) +
+          (x.dags ? ' · ' + esc(String(x.dags).split('-').reverse().join('/')) : '') +
+          (x.skyring ? ' · ' + esc(String(x.skyring).slice(0, 44)) : '') + '</span>' +
+        (x.id ? '<button type="button" class="_tsg-x" data-tsg-eyda="' + esc(x.id) + '" title="Taka þessa færslu út">✕</button>' : '') +
+        '</div>';
+    }).join('') : '<div class="_tsg-tomt">Engin saga skráð enn.</div>';
+    return '<div class="_tsg-hd"><b>Saga tækisins</b><button type="button" id="_tsg-x">✕</button></div>' +
+      '<div class="_tsg-sub">' + esc(heiti || 'Tæki') + (ser ? ' · ' + esc(ser) : '') + '</div>' +
+      '<div class="_tsg-listi">' + radir + '</div>' +
+      '<div class="_tsg-baeta">' +
+        '<label>Ár <input id="_tsg-ar" type="number" inputmode="numeric" min="1970" max="2100" placeholder="' + (new Date().getFullYear() - 1) + '"></label>' +
+        TEG.map(function (t) { const Li = LITIR[t[0]];
+          return '<button type="button" class="_tsg-t" data-tsg-baeta="' + t[0] + '" style="background:' + Li.bg + ';border-color:' + Li.bor + '">' +
+            (Li.staf ? Li.staf + ' · ' : '') + esc(t[1]) + '</button>'; }).join('') +
+      '</div>' +
+      '<div class="_tsg-hint">Sláðu inn ártal og veldu hvað gerðist það ár. Hvert ár getur borið hvern viðburð einu sinni.</div>';
+  }
+
+  function opnaRitil(k, heiti, ser) {
+    lokaRitli();
+    stilar();
+    const ov = document.createElement('div');
+    ov.id = '_tsg-ov';
+    ov.innerHTML = '<div id="_tsg-glugg"></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function (e) { if (e.target === ov) lokaRitli(); });
+
+    function teiknaRitil() {
+      const g = document.getElementById('_tsg-glugg');
+      if (!g) return;
+      g.innerHTML = ritillHtml(k, heiti, ser);
+      const x = g.querySelector('#_tsg-x');
+      if (x) x.addEventListener('click', lokaRitli);
+      g.querySelectorAll('[data-tsg-baeta]').forEach(function (b) {
+        b.addEventListener('click', async function () {
+          const ar = g.querySelector('#_tsg-ar');
+          if (!ar || !String(ar.value || '').trim()) {
+            if (ar) ar.focus();
+            if (window.Toast) Toast.show('Sláðu inn ártal fyrst');
+            return;
+          }
+          if (await baetaVid(k, ar.value, b.getAttribute('data-tsg-baeta'), ser)) {
+            teiknaRitil();
+            endurteikna();
+          }
+        });
+      });
+      g.querySelectorAll('[data-tsg-eyda]').forEach(function (b) {
+        b.addEventListener('click', async function () {
+          if (await eyda(k, Number(b.getAttribute('data-tsg-eyda')))) {
+            teiknaRitil();
+            endurteikna();
+          }
+        });
+      });
+      const ar = g.querySelector('#_tsg-ar');
+      if (ar) ar.focus();
+    }
+    teiknaRitil();
+  }
+
+  function endurteikna() {
+    if (window.Verkspjald && typeof Verkspjald.teikna === 'function') Verkspjald.teikna();
+    else if (window.Workshop && Workshop.render) Workshop.render();
+  }
+
+  /* Handfærsla ber ÁR en enga dagsetningu. Við vitum árið, ekki daginn, og
+   * dagsetning sem við fyndum upp á liti út eins og mæling. */
+  async function baetaVid(k, ar, vidburdur, ser) {
+    const SB = sb();
+    if (!SB || !k || !LITIR[vidburdur]) return false;
+    const nAr = Number(String(ar).replace(/\D/g, ''));
+    if (!(nAr >= 1970 && nAr <= 2100)) {
+      if (window.Toast) Toast.show('Ártalið er ekki gilt');
+      return false;
+    }
+    const rod = {
+      serial: ser || (k.indexOf('s:') === 0 ? k.slice(2) : ''),
+      uttaeki_id: k.indexOf('u:') === 0 ? Number(k.slice(2)) : null,
+      ar: nAr,
+      vidburdur: vidburdur,
+      heimild: 'slegið inn handvirkt á Verkspjaldinu',
+      created_by: 'app'
+    };
+    const r = await SB.from('taeki_saga').insert(rod).select().maybeSingle();
+    if (r.error) {
+      const tvitak = String(r.error.code || '') === '23505';
+      if (window.Toast) Toast.show(tvitak
+        ? (LITIR[vidburdur].heiti + ' ' + nAr + ' er þegar skráð')
+        : ('Vistaðist ekki: ' + (r.error.message || '')));
+      return false;
+    }
+    if (!minni.has(k)) minni.set(k, []);
+    minni.get(k).push(r.data);
+    if (window.Toast) Toast.show('✓ ' + LITIR[vidburdur].heiti + ' ' + nAr + ' skráð');
+    return true;
+  }
+
+  async function eyda(k, id) {
+    const SB = sb();
+    if (!SB || !id) return false;
+    const r = await SB.from('taeki_saga').delete().eq('id', id);
+    if (r.error) {
+      if (window.Toast) Toast.show('Tókst ekki að eyða: ' + (r.error.message || ''));
+      return false;
+    }
+    const listi = minni.get(k);
+    if (listi) minni.set(k, listi.filter(x => Number(x.id) !== Number(id)));
+    return true;
+  }
+
+  // Smellur á „+" — sama composedPath-leið og „nýtt —", því hvort tveggja situr
+  // inni í skuggarót Verkspjaldsins.
+  document.addEventListener('click', function (e) {
+    const leid = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+    const b = leid.find(el => el && el.getAttribute && el.getAttribute('data-tsg-ritill'));
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    opnaRitil(b.getAttribute('data-tsg-ritill'), b.getAttribute('data-tsg-heiti'), b.getAttribute('data-tsg-ser'));
+  }, true);
+
+  window.TaekiSaga = { saekja, linaHtml, faerslur, skra, skraNytt, baetaVid, eyda, opnaRitil, lykill, LITIR, _minni: minni };
 })();
