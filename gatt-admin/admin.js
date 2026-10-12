@@ -75,6 +75,7 @@
     ['punktar', 'Verkbeiðnapunktar', 'Verkbeiðni sett sem punktur á teikningu með mynd; grænn þegar lagað'],
     ['vinnusvaedi', 'Mitt vinnusvæði', 'Dagatal, verkefni, kort, niðurhal, skjöl og hlekkir kúnnans'],
     ['baeta_eign', 'Bæta við eign', 'Kúnni bætir eign við úr Landeignaskrá HMS (utan þjónustu)'],
+    ['fasteign', 'Greining fasteignar', 'Eignin, byggingarupplýsingar, brunavarnir úr byggingarlýsingu, kröfur, skjalasafn — kúnni velur hvað sést'],
   ];
   function synHtml(a) {
     var s = a.syn || {};

@@ -160,7 +160,7 @@ exports.handler = async (event) => {
       // Hvaða hlutar eignasíðunnar sjást — aðeins þekktir lyklar, aðeins true/false
       if (body.syn && typeof body.syn === 'object') {
         const s = {};
-        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni', 'kerfi', 'erindi', 'eldvarnabok', 'punktar', 'vinnusvaedi', 'baeta_eign'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
+        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni', 'kerfi', 'erindi', 'eldvarnabok', 'punktar', 'vinnusvaedi', 'baeta_eign', 'fasteign'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
         patch.syn = s;
       }
       if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });

@@ -545,7 +545,7 @@
      eða vistuð 3D-mynd, stækka + sækja), greining teikninga, tækjaskrá, skýrslur og
      reikningar. syn (valið á gatt-admin) ræður hvaða hlutar sjást. */
   var SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
-    punktar: true, vinnusvaedi: true, baeta_eign: true };   // 11.10.2026: verkbeiðnapunktar, Mitt vinnusvæði, Bæta við eign (eignagatt.js)
+    punktar: true, vinnusvaedi: true, baeta_eign: true, fasteign: true };   // 11.10.2026: verkbeiðnapunktar, Mitt vinnusvæði, Bæta við eign (eignagatt.js)
   function synOf() {
     var a = (state.data && state.data.account) || {}, s = {};
     Object.keys(SYN_DEF).forEach(function (k) { s[k] = a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]; });
@@ -719,7 +719,7 @@
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
-    html += umEignina(b) + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b);
+    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b);
     // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];
@@ -791,6 +791,7 @@
       }
     }
     $('#dr-body').innerHTML = html;
+    if (window.GattGreining) GattGreining.lifga(b);
     var g = $('#dr-tk');
     if (g) {
       tk.forEach(function (f, j) { g.appendChild(haedarSpjald(b, f, j, syn)); });
@@ -1085,7 +1086,7 @@
         kp('Tegund', e.tegund, true) + kp('Stærð', e.staerd_m2 ? fmtTala(e.staerd_m2) + ' m²' : null) + kp('Byggt', e.byggingarar) + kp('Staða', b.beidni ? 'Beiðni í vinnslu' : 'Ekki í þjónustu', true) + '</div>' +
         (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') +
         (e.heimild ? '<div class="gnote">Mynd og lýsing: ' + esc(e.heimild) + '</div>' : '') + '</section>' +
-      kerfiHtml(b, true) +
+      (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, true) +
       (tk.length ? '<section class="dsec"><h4>Teikningar <span class="cnt">' + tala(tk.length, 'hæð', 'hæðir') + '</span></h4><div class="tgrid" id="dr-tk"></div></section>' : '') +
       thorfHtml(b, syn) +
       '<section class="dsec"><h4>Þjónusta sem við bjóðum</h4><div class="svcg">' +
@@ -1097,6 +1098,7 @@
         '<li><b>Allt á einum stað</b>Skýrslur, reikningar, teikningar og næsta skoðun birtast hér — og þið sendið verkbeiðnir beint.</li>' +
       '</ol></section>';
     $('#dr-body').innerHTML = html;
+    if (window.GattGreining) GattGreining.lifga(b);
     var g = $('#dr-tk');
     if (g) {
       tk.forEach(function (f, k) { g.appendChild(haedarSpjald(b, f, k, syn)); });
@@ -1632,7 +1634,7 @@
     openDrawer: openDrawer, openUtan: openUtan, closeDrawer: closeDrawer, drB: function () { return drB; },
     synaHaed: synaHaed, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; }, haedarSpjald: haedarSpjald, erindiRod: erindiRod,
     skodanirEignar: skodanirEignar, ebManudir: ebManudir, ebRod: ebRod, MAN_STUTT: MAN_STUTT, MAN_LANGT: MAN_LANGT,
-    SLUG: function () { return SLUG; },
+    SLUG: function () { return SLUG; }, KERFI_ROD: KERFI_ROD, KERFI_HEITI: KERFI_HEITI,
   };
   boot();
 })();

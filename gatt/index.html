@@ -925,6 +925,49 @@
   .qr-e{font-family:var(--serif);font-size:18px;font-weight:600;margin-top:12px}
   .qr-a{font-size:11.5px;color:#696d74}
   .qr-vefur{display:none}
+  /* Greining fasteignar á eignasíðu (opinber gögn, 12.10.2026) */
+  .gr-hok{display:flex;flex-wrap:wrap;gap:6px 14px;margin:-4px 0 12px;font-size:12px;color:var(--ink2)}
+  .gr-hok label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .gr-hok input{accent-color:var(--accent)}
+  .gr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .gr-p{border:1px solid var(--line2);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh);overflow:hidden;min-width:0}
+  .gr-p.wide{grid-column:1/-1}
+  .gr-h{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--strip);border-bottom:1px solid var(--line);font-family:var(--lbl);font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .gr-h span{color:var(--dim);letter-spacing:.6px;text-transform:none;font-family:var(--ui);font-size:11.5px;margin-left:auto;text-align:right}
+  .gr-b{padding:10px 14px 12px;font-size:12.5px;line-height:1.5;color:var(--ink2)}
+  .gr-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+  .gr-kv dt{font-family:var(--lbl);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);padding-top:3px}
+  .gr-kv dd{margin:0;color:var(--ink);font-weight:500}
+  .gr-kv dd small{color:var(--dim);font-weight:400}
+  .gr-kort{height:200px;background:#dfe3ea;border-radius:4px;margin-top:10px;overflow:hidden}
+  .gr-tolur{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+  .gr-t{padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--well)}
+  .gr-t .k{font-family:var(--lbl);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--dim)}
+  .gr-t .v{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);line-height:1.1;margin-top:3px}
+  .gr-t .v small{font-family:var(--ui);font-size:11px;color:var(--dim);font-weight:400}
+  .gr-skjol li{display:flex;gap:8px;align-items:baseline;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .gr-skjol li:last-child{border-bottom:0}
+  .gr-skjol i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--faint);position:relative;top:-1px}
+  .gr-skjol i.on{background:var(--good)}
+  .gr-skjol .dd{font-variant-numeric:tabular-nums;color:var(--ink)}
+  .gr-skjol a{color:var(--accent)}
+  .gr-bv{display:flex;flex-direction:column;gap:8px}
+  .gr-bv b{display:block;color:var(--ink)}
+  .gr-bv q{display:block;margin:3px 0 0;padding:6px 10px;border-left:3px solid rgba(var(--glow),.55);background:rgba(var(--glow),.05);font-style:italic;color:var(--ink2);quotes:"„" "“"}
+  .gr-bv q.neit{border-left-color:var(--line2);opacity:.75}
+  .gr-kr{width:100%;border-collapse:collapse;font-size:12.5px}
+  .gr-kr th{text-align:left;font-family:var(--lbl);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--line2)}
+  .gr-kr td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+  .gr-kr td b{color:var(--ink);display:block}
+  .gr-kr td a{color:var(--accent);font-size:11.5px}
+  .gr-kr .kst{white-space:nowrap}
+  .gr-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:8px}
+  .gr-thumbs a{display:block;border:1px solid var(--line2);border-radius:4px;overflow:hidden;background:#fff}
+  .gr-thumbs img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+  .gr-thumbs small{display:block;padding:4px 6px;font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gr-src{margin-top:8px;font-size:10.5px;color:var(--dim)}
+  .gr-src em{font-style:normal;padding:1px 6px;border-radius:3px;background:var(--well);border:1px solid var(--line)}
+  @media(max-width:760px){ .gr-grid{grid-template-columns:minmax(0,1fr)} .gr-tolur{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media print{
     body.qr-prent > *:not(#qr-modal){display:none!important}
     body.qr-prent #qr-modal{position:static;display:block;background:none;padding:0;backdrop-filter:none}
@@ -1310,7 +1353,7 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261012b"></script>
-<script src="/gatt/portal.js?v=20261012b"></script>
+<script src="/gatt/eignagatt.js?v=20261012c"></script>
+<script src="/gatt/portal.js?v=20261012c"></script>
 </body>
 </html>

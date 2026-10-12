@@ -758,6 +758,122 @@
   }
   function lokaQr() { $('#qr-modal').classList.add('hidden'); lokaLikama(); }
 
+  /* ═══ GREINING FASTEIGNAR á eignasíðu (12.10.2026, Agnar: „má alveg hafa allt greiningartólið með, og hök") ═══
+     Sömu opinberu heimildir og síðan „Greining fasteignar" (451) í appinu: fasteign-opin (Staðfanga-/Landeignaskrá),
+     bygging-uppl (skráningartafla + byggingarlýsing, OCR á skrifstofutölvu), teikn-listi (skjalasafn). Kröfur eftir
+     tegund koma með kerfunum (v_stadur_kerfi/flokkar_krofur). Hökin velja hvað sést — vistuð í portal_users.stillingar. */
+  var GR_HLUTAR = [['eignin', 'Eignin'], ['bygging', 'Byggingarupplýsingar'], ['brunavarnir', 'Brunavarnir úr byggingarlýsingu'], ['krofur', 'Kröfur eftir tegund'], ['skjalasafn', 'Teikningar úr skjalasafni']];
+  var grCache = {};
+  function grStill() { var s = (data().account && data().account.stillingar && data().account.stillingar.greining) || {}, o = {}; GR_HLUTAR.forEach(function (h) { o[h[0]] = s[h[0]] !== false; }); return o; }
+  function grTala(n) { return n == null || n === '' ? '—' : Number(n).toLocaleString('is-IS'); }
+  function grEignHtml(b) {
+    if (!syn().fasteign || !b || b.id == null) return '';
+    var st2 = grStill();
+    return '<section class="dsec" id="gr-sec" data-gr-fid="' + b.id + '"><h4>Greining fasteignar <span class="cnt">opinber gögn · sjálfsótt</span></h4>' +
+      '<div class="gr-hok">' + GR_HLUTAR.map(function (h) { return '<label><input type="checkbox" data-gr-hak="' + h[0] + '"' + (st2[h[0]] ? ' checked' : '') + '>' + esc(h[1]) + '</label>'; }).join('') + '</div>' +
+      '<div class="gr-grid">' +
+        '<div class="gr-p" id="gr-eignin"' + (st2.eignin ? '' : ' hidden') + '><div class="gr-h">Eignin<span>Staðfangaskrá · Landeignaskrá HMS</span></div><div class="gr-b"><div class="dim">Sæki…</div></div></div>' +
+        '<div class="gr-p" id="gr-bygging"' + (st2.bygging ? '' : ' hidden') + '><div class="gr-h">Byggingarupplýsingar<span>skráningartafla · skjalasafn</span></div><div class="gr-b"><div class="dim">Sæki…</div></div></div>' +
+        '<div class="gr-p wide" id="gr-brunavarnir"' + (st2.brunavarnir ? '' : ' hidden') + '><div class="gr-h">Brunavarnir úr byggingarlýsingu<span>orðrétt · OCR</span></div><div class="gr-b"><div class="dim">Sæki…</div></div></div>' +
+        '<div class="gr-p wide" id="gr-krofur"' + (st2.krofur ? '' : ' hidden') + '><div class="gr-h">Kröfur eftir tegund<span>' + esc((b.flokkun && b.flokkun.tegund) || (b.eign && b.eign.tegund) || '') + (b.flokkun && b.flokkun.flokkur ? ' · notkunarflokkur ' + esc(b.flokkun.flokkur) : '') + '</span></div><div class="gr-b">' + grKrofurHtml(b) + '</div></div>' +
+        '<div class="gr-p wide" id="gr-skjalasafn"' + (st2.skjalasafn ? '' : ' hidden') + '><div class="gr-h">Teikningar úr skjalasafni<span>aðaluppdrættir</span></div><div class="gr-b"><div class="dim">Sæki…</div></div></div>' +
+      '</div></section>';
+  }
+  function grKrofurHtml(b) {
+    var L = (b.kerfi || []).slice().sort(function (a, c) { return (G().KERFI_ROD || []).indexOf(a.k) - (G().KERFI_ROD || []).indexOf(c.k); });
+    if (!L.length) return '<div class="dim">Engin flokkun skráð á eignina enn — kröfurnar birtast þegar tegund hennar hefur verið staðfest við fyrstu úttekt.</div>';
+    return '<table class="gr-kr"><thead><tr><th>Kerfi</th><th>Krafa</th><th>Til staðar</th><th>Skilyrði / magn · heimild</th></tr></thead><tbody>' + L.map(function (k) {
+      var heiti = (G().KERFI_HEITI && G().KERFI_HEITI[k.k]) || k.k;
+      return '<tr><td><b>' + esc(heiti) + '</b></td><td><span class="kst ' + (k.skylt === 'ja' ? 'til' : k.skylt === 'skilyrt' ? 'oskrad' : 'ekki') + '">' + esc(k.skylt === 'ja' ? 'Skylt' : k.skylt === 'skilyrt' ? 'Skilyrt' : 'Ekki skylt') + '</span></td>' +
+        '<td>' + (k.til === 'ja' ? '<span class="kst okkar">Já' + (k.adili === 'okkar' ? ' · okkar' : '') + '</span>' : k.til === 'nei' ? '<span class="kst vantar">Nei</span>' : '<span class="kst oskrad">Óvitað</span>') + '</td>' +
+        '<td>' + (k.skilyrdi ? esc(k.skilyrdi) : '<span class="dim">—</span>') + (k.heimild ? '<br>' + (k.url ? '<a href="' + esc(k.url) + '" target="_blank" rel="noopener">' + esc(k.heimild) + '</a>' : '<span class="dim">' + esc(k.heimild) + '</span>') : '') + '</td></tr>';
+    }).join('') + '</tbody></table><div class="gr-src">Kröfur úr reglusafni (byggingarreglugerð 112/2012, reglugerð 723/2017) eftir tegund og notkunarflokki — leiðbeinandi; endanlegt mat er hjá hönnuði og slökkviliði. <em>sjálfsótt</em></div>';
+  }
+  function grSet(id, html) { var el = document.querySelector('#' + id + ' .gr-b'); if (el) el.innerHTML = html; }
+  function grJson(url, ms) { return fetch(url, { signal: AbortSignal.timeout(ms || 20000) }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
+  function grLifga(b) {
+    var sec = $('#gr-sec'); if (!sec || !b || +sec.getAttribute('data-gr-fid') !== b.id) return;
+    if (st().demo) { grSet('gr-eignin', '<div class="dim">Sýnishorn — í raunverulegri eign sækir gáttin staðfang, landnúmer, heitinúmer, sveitarfélag, matshluta og lóð úr skrám HMS og sýnir eignina á korti.</div>'); grSet('gr-bygging', '<div class="dim">Sýnishorn — brúttóflötur, hæðir, byggingarár og skjölin í skjalasafninu (skráningartöflur, byggingarlýsingar) koma hér.</div>'); grSet('gr-brunavarnir', '<div class="dim">Sýnishorn — orðréttar setningar úr byggingarlýsingu hússins um brunahólfun, vatnsúðakerfi, brunaviðvörunarkerfi, flóttaleiðir og slökkvitæki.</div>'); grSet('gr-skjalasafn', '<div class="dim">Sýnishorn — fjöldi og smámyndir aðaluppdrátta úr skjalasafni sveitarfélagsins.</div>'); return; }
+    var c = grCache[b.id];
+    if (c) { grFylla(b, c); return; }
+    c = grCache[b.id] = { adr: b.heimilisfang || '' };
+    var hnit = b.eign && (b.eign.hnit || (isFinite(+b.eign.lat) && +b.eign.lat ? { lat: +b.eign.lat, lng: +b.eign.lng } : null));
+    var q = b.eign && b.eign.heitinr ? 'heitinr=' + encodeURIComponent(b.eign.heitinr) : 'heimilisfang=' + encodeURIComponent(c.adr);
+    grJson('/.netlify/functions/fasteign-opin?' + q, 15000).then(function (j) { c.opin = j || false; grFylla(b, c);
+      var landnr = (j && j.eign && j.eign.landnr) || (b.eign && b.eign.landnr);
+      if (landnr) grJson('/.netlify/functions/teikn-listi?landnr=' + encodeURIComponent(landnr), 25000).then(function (t) { c.teikn = t || false; grFylla(b, c); });
+      else { c.teikn = false; grFylla(b, c); }
+    });
+    grJson('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(c.adr), 28000).then(function (j) { c.bygg = j && !j.error ? j : false; grFylla(b, c); });
+    if (hnit) c.hnit = hnit;
+  }
+  var EFNI_H = { brunaholfun: 'Brunahólfun', brunavidvorunarkerfi: 'Brunaviðvörunarkerfi', vatnsudakerfi: 'Vatnsúðakerfi', neydarlysing: 'Neyðarlýsing', handslokkvitaeki: 'Slökkvitæki', brunaslongur: 'Brunaslöngur / slöngukefli', flottaleidir: 'Flóttaleiðir', reyklosun: 'Reyklosun', thjonustusamningur: 'Þjónustusamningur', brunahonnun: 'Brunahönnun', stigahus: 'Stigahús', lyfta: 'Lyfta' };
+  function grFylla(b, c) {
+    var sec = $('#gr-sec'); if (!sec || +sec.getAttribute('data-gr-fid') !== b.id) return;
+    // Eignin
+    if (c.opin !== undefined) {
+      var o = c.opin, e = o && o.eign;
+      if (!o) grSet('gr-eignin', '<div class="dim">Staðfangaskrá svaraði ekki fyrir þetta heimilisfang.</div>');
+      else {
+        var hn = e && isFinite(+e.lat) ? { lat: +e.lat, lng: +e.lon } : c.hnit;
+        grSet('gr-eignin', '<dl class="gr-kv"><dt>Staðfang</dt><dd>' + esc((e && e.label) || c.adr) + '</dd>' +
+          '<dt>Landnúmer</dt><dd>' + (e && e.landnr ? '<a href="https://geo.fasteignaskra.is/landeignaskra/' + esc(e.landnr) + '" target="_blank" rel="noopener">L' + esc(e.landnr) + '</a>' : '—') + '</dd>' +
+          '<dt>Heitinúmer</dt><dd>' + esc(e && e.heitinr ? e.heitinr : '—') + '</dd>' +
+          '<dt>Sveitarfélag</dt><dd>' + esc(e && e.postnr ? e.postnr : '') + (e && e.svfnr ? ' <small>svf. ' + esc(e.svfnr) + '</small>' : '') + '</dd>' +
+          (o.einingar ? '<dt>Matshlutar</dt><dd>' + esc(o.einingar.mhl != null ? o.einingar.mhl : '—') + (o.einingar.fjoldi ? ' <small>· ' + o.einingar.fjoldi + ' eignarhlutar</small>' : '') + '</dd>' : '') +
+          (o.lod ? '<dt>Lóð</dt><dd>' + grTala(o.lod.skrad_m2 || o.lod.maeld_m2) + ' m² <small>Landeignaskrá</small></dd>' : '') + '</dl>' +
+          (hn ? '<div class="gr-kort" id="gr-kort"></div>' : '') +
+          '<div class="gr-src">Staðfangaskrá og Landeignaskrá HMS (opið WFS)' + (hn ? ' · kort: Esri' : '') + ' <em>sjálfsótt</em></div>');
+        if (hn) saekjaLeaflet().then(function () { var el = $('#gr-kort'); if (!el || el._k) return; var m = window.L.map(el, { scrollWheelZoom: false, zoomControl: false, attributionControl: false }).setView([hn.lat, hn.lng], 16); el._k = m; window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(m); window.L.marker([hn.lat, hn.lng], { icon: merkiHtml(b, true) }).addTo(m); setTimeout(function () { m.invalidateSize(); }, 80); });
+      }
+    }
+    // Byggingarupplýsingar + brunavarnir
+    if (c.bygg !== undefined) {
+      var g = c.bygg;
+      if (!g) { grSet('gr-bygging', '<div class="dim">Engin byggingargögn fundust í skjalasafni fyrir þetta heimilisfang.</div>'); grSet('gr-brunavarnir', '<div class="dim">Engin byggingarlýsing fannst.</div>'); }
+      else {
+        var hd = g.haedir && (g.haedir.ofanjardar != null ? g.haedir.ofanjardar : g.haedir), heim = Array.isArray(g.heimildir) ? g.heimildir : [];
+        grSet('gr-bygging', '<div class="gr-tolur">' +
+          '<div class="gr-t"><div class="k">m² brúttó</div><div class="v">' + (g.m2 ? grTala(Math.round(g.m2)) : '—<small> ekki lesið</small>') + '</div></div>' +
+          '<div class="gr-t"><div class="k">Hæðir</div><div class="v">' + (hd != null && typeof hd !== 'object' ? esc(hd) : '—<small> ekki lesið</small>') + '</div></div>' +
+          '<div class="gr-t"><div class="k">Byggt</div><div class="v">' + (g.byggingarar ? esc(g.byggingarar) : (b.eign && b.eign.byggingarar ? esc(b.eign.byggingarar) : '—')) + '</div></div>' +
+          '<div class="gr-t"><div class="k">Eignarhlutar</div><div class="v">' + (g.eignir != null ? esc(g.eignir) : '—') + '</div></div></div>' +
+          (g.notkunarflokkur_lysing ? '<div>Byggingarlýsingin segir notkunarflokk <b>' + esc(g.notkunarflokkur_lysing) + '</b></div>' : '') +
+          (heim.length ? '<div class="lbl" style="margin-top:8px">Skjöl í safninu</div><ul class="gr-skjol" style="list-style:none;margin:4px 0 0;padding:0">' + heim.slice(0, 8).map(function (x) {
+            return '<li><i class="' + (x.lesin ? 'on' : '') + '"></i><span>' + esc(x.tegund === 'skraningartafla' ? 'Skráningartafla' : x.tegund === 'byggingarlysing' ? 'Byggingarlýsing' : (x.tegund || 'Skjal')) + '</span><span class="dd">' + esc(fmtDate(x.dags)) + '</span>' + (x.matshluti ? '<small class="dim">mhl. ' + esc(x.matshluti) + '</small>' : '') + (x.slod ? '<a href="' + esc(x.slod) + '" target="_blank" rel="noopener">opna</a>' : '') + (x.lesin ? '' : '<small class="dim">ólesið</small>') + '</li>';
+          }).join('') + (heim.length > 8 ? '<li><small class="dim">+ ' + (heim.length - 8) + ' fleiri</small></li>' : '') + '</ul>' : '<div class="dim">Engin skráningartafla eða byggingarlýsing í safninu.</div>') +
+          '<div class="gr-src">Skráningartafla og byggingarlýsing úr skjalasafni sveitarfélags, lesin með OCR á skrifstofu Slökkvitækja — tölur birtast aðeins þegar þær hafa verið lesnar, aldrei ágiskaðar. <em>sjálfsótt</em></div>');
+        var bv = g.brunavarnir, efni = bv && bv.efni ? bv.efni : null;
+        if (!efni) { var lys = heim.filter(function (x) { return x.tegund === 'byggingarlysing'; }).length; grSet('gr-brunavarnir', '<div class="dim">' + (lys ? lys + (lys === 1 ? ' byggingarlýsing fannst' : ' byggingarlýsingar fundust') + ' í safninu en hefur ekki verið lesin enn — Slökkvitæki les hana á skrifstofunni við fyrstu úttekt.' : 'Engin byggingarlýsing fannst í skjalasafninu.') + '</div>'); }
+        else {
+          var K = Object.keys(EFNI_H).filter(function (k) { return efni[k] && (efni[k].fjoldi || (efni[k].daemi || []).length); });
+          grSet('gr-brunavarnir', (K.length ? '<div class="gr-bv">' + K.map(function (k) {
+            var x = efni[k], d = (x.daemi || []).slice(0, 2);
+            return '<div><b>' + esc(EFNI_H[k]) + ' <small class="dim" style="font-weight:400">' + (x.fjoldi || d.length) + '× nefnt</small></b>' + d.map(function (y) { return '<q class="' + (y.neitun ? 'neit' : '') + '">' + esc(y.setning || '') + '</q>'; }).join('') + '</div>';
+          }).join('') + '</div>' : '<div class="dim">Lýsingin nefnir engar brunavarnir.</div>') +
+            '<div class="gr-src">Orðrétt úr byggingarlýsingu ' + esc(fmtDate(bv.dags)) + ' · ' + (bv.heimild === 'textalag' ? 'textalag PDF' : 'OCR af skannaðri mynd — getur verið rangt lesið') + (bv.slod ? ' · <a href="' + esc(bv.slod) + '" target="_blank" rel="noopener">skjalið</a>' : '') + ' <em>sjálfsótt</em></div>');
+        }
+      }
+    }
+    // Teikningar úr skjalasafni
+    if (c.teikn !== undefined) {
+      var tt = c.teikn, L = tt && Array.isArray(tt.results) ? tt.results.filter(function (d) { return d && !d.urelt; }) : [];
+      if (!tt || !L.length) grSet('gr-skjalasafn', '<div class="dim">' + (tt ? 'Engar gildandi teikningar fundust í skjalasafninu fyrir þetta landnúmer.' : 'Skjalasafnið svaraði ekki.') + '</div>');
+      else {
+        var grunn = L.filter(function (d) { return d.grunnmynd; }), med = L.filter(function (d) { return d.thumb; }).slice(0, 8);
+        grSet('gr-skjalasafn', '<div class="gr-tolur"><div class="gr-t"><div class="k">Blöð</div><div class="v">' + L.length + '</div></div><div class="gr-t"><div class="k">Grunnmyndir</div><div class="v">' + grunn.length + '</div></div><div class="gr-t"><div class="k">Gildandi</div><div class="v">' + (tt.gildandi != null ? tt.gildandi : L.length) + '</div></div><div class="gr-t"><div class="k">Alls í safni</div><div class="v">' + (tt.fjoldi != null ? tt.fjoldi : L.length) + '</div></div></div>' +
+          (med.length ? '<div class="gr-thumbs">' + med.map(function (d) { return '<a href="' + esc(d.infoUrl || d.thumb) + '" target="_blank" rel="noopener"><img src="/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(d.thumb) + '" alt="" loading="lazy"><small>' + esc([d.haed, d.lysing].filter(Boolean).join(' · ') || d.tegund || 'Teikning') + (d.dags ? ' · ' + esc(fmtDate(d.dags)) : '') + '</small></a>'; }).join('') + '</div>' : '') +
+          '<div class="gr-src">' + esc(tt.heimild || 'Skjalasafn sveitarfélags') + ' — teikningarnar sem Slökkvitæki merkir búnað inn á koma héðan. <em>sjálfsótt</em></div>');
+      }
+    }
+  }
+  function grHak(k, on) {
+    var el = $('#gr-' + k); if (el) el.hidden = !on;
+    var st2 = grStill(); st2[k] = on;
+    if (data().account) { data().account.stillingar = data().account.stillingar || {}; data().account.stillingar.greining = st2; }
+    if (!st().demo) api({ action: 'stillingar', stillingar: { greining: st2 } }).then(function (res) { if (!res.ok) toast('Valið vistaðist ekki'); });
+  }
+
   /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
   var vbtB = null, vbtQ = '';
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
@@ -891,6 +1007,7 @@
     if (it && tx && tx !== it.texti) { it.texti = tx; ckApi({ action: 'chk_texti', id: id, texti: tx }); } else renderChecklist();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-ck-texti]')) { e.preventDefault(); e.target.blur(); } });
+  document.addEventListener('change', function (e) { var gh = e.target.closest && e.target.closest('[data-gr-hak]'); if (gh) grHak(gh.getAttribute('data-gr-hak'), gh.checked); });
   document.addEventListener('change', function (e) { var vs = e.target.closest && e.target.closest('[data-vh-skjal]'); if (vs) { vhSkjal(+vs.getAttribute('data-vh-skjal'), vs.files && vs.files[0]); vs.value = ''; } });
   document.addEventListener('change', function (e) { if (e.target.id === 'vs-skra') { vistaSkra(e.target.files && e.target.files[0]); e.target.value = ''; } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vbt-leit') { vbtQ = e.target.value.trim().toLowerCase(); renderVerkbeidnir(); } });
@@ -908,4 +1025,5 @@
   window.GattPunktar = { teikna: teikna, smellur: smellur, spjald: spjald, lbOpin: lbOpin, lbLokad: lbLokad, erindiAuki: erindiAuki, opna: opnaVb };
   window.GattVinnusvaedi = { render: renderVinnusvaedi, demo: demo };
   window.GattVidhald = { eignHtml: eignHtml, render: renderVidhald };
+  window.GattGreining = { eignHtml: grEignHtml, lifga: grLifga };
 })();

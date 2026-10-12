@@ -48,7 +48,7 @@ function dedupeDocs(rows, keyFn) {
 // 11.10.2026: punktar = verkbeiðni sem punktur á teikningu með mynd; vinnusvaedi = „Mitt vinnusvæði" (dagatal, verkefni,
 // kort, niðurhal, skjöl og hlekkir); baeta_eign = kúnni bætir eign við úr Landeignaskrá.
 const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
-  punktar: true, vinnusvaedi: true, baeta_eign: true };
+  punktar: true, vinnusvaedi: true, baeta_eign: true, fasteign: true };   // fasteign = greining fasteignar á eignasíðu (opinber gögn)
 function lesaSyn(acct) {
   const syn = Object.assign({}, SYN_DEF);
   const s = acct && acct.syn && typeof acct.syn === 'object' ? acct.syn : {};
@@ -142,7 +142,7 @@ exports.handler = async (event) => {
     const slug = String((event.queryStringParameters || {}).c || '').trim();
     if (slug) {
       try {
-        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,display_name,theme,show_details,syn&limit=1`);
+        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,display_name,theme,show_details,syn,stillingar&limit=1`);
         const u = (ur.ok ? await ur.json() : [])[0];
         if (u && u.active && !u.pass_hash) { baseId = u.base_id; openMode = true; openAcct = u; }
       } catch (_) {}
@@ -155,7 +155,7 @@ exports.handler = async (event) => {
   let acct = openAcct;
   if (!acct) {
     try {
-      const ar0 = await P.sbGet(`portal_users?base_id=eq.${baseId}&active=eq.true&select=theme,show_details,display_name,syn&order=show_details.desc,created_at.asc&limit=1`);
+      const ar0 = await P.sbGet(`portal_users?base_id=eq.${baseId}&active=eq.true&select=theme,show_details,display_name,syn,stillingar&order=show_details.desc,created_at.asc&limit=1`);
       if (ar0.ok) acct = (await ar0.json())[0] || null;
     } catch (_) {}
   }
@@ -539,6 +539,14 @@ exports.handler = async (event) => {
       if (b.action === 'item_roda') return await radaItems(b);
       if (/^chk_/.test(String(b.action || ''))) return await checklist(b);
       if (/^vh_/.test(String(b.action || ''))) return await vidhald(b);
+      // Val kúnnans sjálfs (hvað sést í greiningu eignar o.þ.h.) → portal_users.stillingar (sameinað)
+      if (b.action === 'stillingar') {
+        const inn = b.stillingar && typeof b.stillingar === 'object' ? b.stillingar : {};
+        const ny = Object.assign({}, acct && acct.stillingar && typeof acct.stillingar === 'object' ? acct.stillingar : {});
+        if (inn.greining && typeof inn.greining === 'object') { const g = {}; ['eignin', 'bygging', 'brunavarnir', 'krofur', 'skjalasafn'].forEach((k) => { if (typeof inn.greining[k] === 'boolean') g[k] = inn.greining[k]; }); ny.greining = Object.assign({}, ny.greining || {}, g); }
+        const pr = await P.sbPatch(`portal_users?base_id=eq.${baseId}&active=eq.true&select=id`, { stillingar: ny });
+        return pr.ok ? P.json(200, { ok: true, stillingar: ny }) : P.json(pr.status, { error: 'Vistun mistókst' });
+      }
       if (b.action === 'qr') {
         const sid = parseInt(b.site_id, 10), f0 = await eignFelags(sid);
         if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
@@ -717,13 +725,13 @@ exports.handler = async (event) => {
     if (syn.kerfi && siteIds.length) {
       try {
         const ids = siteIds.join(',');
-        const kr = await P.sbGet(`v_stadur_kerfi?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,kerfi,til_stadar,skylt,krafa_heimild,thjonustuadili`);
+        const kr = await P.sbGet(`v_stadur_kerfi?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,kerfi,til_stadar,skylt,krafa_heimild,krafa_url,skilyrdi,thjonustuadili`);
         if (kr.ok) (await kr.json()).forEach((k) => {
           if (k.skylt === 'nei' && k.til_stadar !== 'ja') return;
           const ta = String(k.thjonustuadili || '');
           (kerfiById[k.fyrirtaeki_id] = kerfiById[k.fyrirtaeki_id] || []).push({
             k: k.kerfi, skylt: k.skylt || null, til: k.til_stadar || 'ovitad',
-            adili: /^okkar/i.test(ta) ? 'okkar' : (ta ? 'annar' : null), heimild: k.krafa_heimild || null });
+            adili: /^okkar/i.test(ta) ? 'okkar' : (ta ? 'annar' : null), heimild: k.krafa_heimild || null, skilyrdi: k.skilyrdi || null, url: k.krafa_url || null });
         });
         const fl = await P.sbGet(`v_stadur_flokkun?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,tegund_heiti,notkunarflokkur,m2,haedir`);
         if (fl.ok) (await fl.json()).forEach((f) => { flokkunById[f.fyrirtaeki_id] = { tegund: f.tegund_heiti || null, flokkur: f.notkunarflokkur || null, m2: f.m2 != null ? Number(f.m2) : null, haedir: f.haedir || null }; });
@@ -903,7 +911,7 @@ exports.handler = async (event) => {
     const theme = (acct && acct.theme) || (session && session.theme) || 'steel';
 
     return P.json(200, {
-      account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
+      account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {} },
       stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items, checklist, vidhald,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });

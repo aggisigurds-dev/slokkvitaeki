@@ -100,3 +100,8 @@ create table if not exists public.portal_vidhald (
 create index if not exists portal_vidhald_base_idx on public.portal_vidhald (base_id, naest);
 create index if not exists portal_vidhald_fid_idx on public.portal_vidhald (fyrirtaeki_id);
 alter table public.portal_vidhald enable row level security;
+
+-- 6) portal_users.stillingar — val kúnnans sjálfs (hvaða hlutar greiningar eignar sjást o.þ.h.), skrifað um gatt.cjs
+--    action 'stillingar'. Beitt 12.10.2026 (MCP-migration portal_users_stillingar). syn (gatt-admin) er okkar val;
+--    stillingar er hans.
+alter table public.portal_users add column if not exists stillingar jsonb not null default '{}'::jsonb;
