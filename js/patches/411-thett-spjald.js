@@ -12,7 +12,7 @@
  *      sitja sem þéttar 32 px línur við hlið hver annarrar; opið sýnir tómu reitina tvo í röð.
  *   3. Athugasemdin er EIN lína sem stækkar sjálf með textanum upp í 5 línur; lengri texti fær „Sýna allt / Minna".
  *      (Agnar: „bætir við sjálf upp í 5 línur, síðan þá bara expand and collapse".)
- *   4. Loftmyndin lækkar í 150 px.
+ *   4. Loftmyndin lækkar í 150 px (12.10.2026: 428×190, myndin heil — contain á hvítum grunni).
  *
  * Reglur: engin tenging/takki má breytast — 363 teiknar reitina, hér er aðeins CSS + tvær litlar umraðanir (strikaða
  * línan og takkinn inn í hana) sem eru endurteknar í hverju tifi því 363 skrifar hólfið upp á nýtt. Aðeins tölva í
@@ -43,8 +43,13 @@
     r('.b405-facts .co-banner-skra', 'color:#6b7483!important'),
     r('.b405-facts', 'gap:6px!important'),
     // 4) loftmynd lægri
-    r('.co-mynd-flis', 'height:150px!important;min-height:150px!important;max-height:150px!important'),
-    r('.co-mynd-flis img,.co-mynd-flis canvas', 'height:100%!important;object-fit:cover!important'),
+    // 12.10.2026 (Agnar: „minnka breiddina á myndakassanum og auka hæðina smá á móti … myndin haldi sér allri innan
+    // kassans … hvítur bakgrunnur sem vantar upp á"): 548×150 → 428×190. Myndin er ALLTAF heil (contain, aldrei skorin
+    // eða teygð); auða svæðið til hliðanna/ofan er hvítt. Tóm flís („engin mynd") heldur dökka litnum.
+    r('.co-banner', 'grid-template-columns:minmax(0,1fr) 440px!important'),
+    r('.co-mynd-flis', 'height:190px!important;min-height:190px!important;max-height:190px!important;overflow:hidden!important'),
+    r('.co-mynd-flis img,.co-mynd-flis canvas', 'width:100%!important;height:100%!important;object-fit:contain!important;background:#fff!important'),
+    r('.co-mynd .co-mynd-flis.med,.co-mynd .co-mynd-flis.med .co-mynd-vefja', 'background:#fff!important'),
     // 2b) Agnar 24.09 („move 2 boxes under the 2 boxes on the right"): reitasvæðið í hægri dálkinn, undir loftmynd og
     //     tökkunum tveimur — athugasemdin fyllir vinstri dálkinn á móti.
     // 24.09 14:11 (Agnar: „to empty space on the left now … have it even, afsláttur box only 50% wide and teikningar"):

@@ -25,10 +25,11 @@
   window.__stodugOpnun462 = true;
 
   var NMO = window.__NativeMutationObserver || window.MutationObserver;
+  // Röðin skiptir máli: 405 setur staðreyndirnar á undan húsmyndinni ef hún er komin (sama DOM-röð og áður).
   var SKREF = [
-    ['405', function () { if (window.Efsta405) Efsta405.tick(); }],                        // staðreyndir, knappar, valmynd
-    ['367', function () { if (window.ByggingMynd) ByggingMynd.endurteikna(false); }],       // húsmyndin (150 px flís)
+    ['367', function () { if (window.ByggingMynd) ByggingMynd.endurteikna(false); }],       // húsmyndin (190 px flís)
     ['363', function () { if (window.BannerUpplysingar) BannerUpplysingar.haldaVid(); }],   // upplýsingalínurnar
+    ['405', function () { if (window.Efsta405) Efsta405.tick(); }],                        // staðreyndir, knappar, valmynd
     ['432s', function () { if (window.Seruppdrattir) Seruppdrattir.syna(); }],              // „Séruppdrættir · Sæki…"
     ['432f', function () { if (window.FasteignFacts) FasteignFacts.syna(); }],              // hús-línurnar
     ['411', function () { if (window.Thett411) Thett411.tick(); }],                         // Óskráð-línan, athugasemdin
