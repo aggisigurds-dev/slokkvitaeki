@@ -403,9 +403,9 @@
     return `<tr${panta ? ' style="background:#fffbeb"' : ''}>
       <td style="padding:6px 8px">${mynd}</td>
       <td style="max-width:460px"><strong${opna}>${panta ? '<span style="color:#d97706;margin-right:4px">★</span>' : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
-      <td>${otalid ? '<span style="color:var(--ink3);font-style:italic">ótalið</span>' : `<span class="${magnCls}">${i.magn}</span>`}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
+      <td data-stk-magnreit="${esc(i.k)}">${magnHtml(i)}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
       <td>${vara ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
-      <td style="color:var(--ink3)">${i.lagmark == null ? '—' : i.lagmark}</td>
+      <td data-stk-lagreit="${esc(i.k)}">${lagmarkHtml(i)}</td>
       <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
       <td data-stk-kv="${esc(i.k)}">${vara ? reiturHtml(i, 'kv') : (i.verd_an_vsk ? fmtKr(i.verd_an_vsk) : '—')}</td>
       <td data-stk-lv="${esc(i.k)}">${vara ? reiturHtml(i, 'lv') : '<span style="color:var(--ink3)">—</span>'}</td>
@@ -443,6 +443,79 @@
     if (!(kv > 0) || !(lv > 0) || Math.abs(lv - kv) < 0.5) return '';
     const a = Math.round((lv - kv) / lv * 100);
     return a > 0 ? a + '% undir listaverði' : Math.abs(a) + '% yfir listaverði';
+  }
+  /* 12.10.2026 — Agnar, með hring utan um MAGN-dálkinn: „opppnaðu á alllt …
+   * að ég geti ekki sett helvítis magnið þarna". MAGN var BARA TEXTI; eina
+   * leiðin að því var „± Nota"-glugginn. Verðdálkarnir höfðu haft ritanlega
+   * reiti allan tímann, svo þetta var ósamræmi, ekki vörn.
+   *
+   * TVEIR GEYMSLUSTAÐIR, og þeir mega ekki ruglast:
+   *   söluvara (uppruni 'vorur')  → `vorur.birgdir`  (heiltala)
+   *   verkstæðisvara             → `birgdir.magn`
+   * Sama skipting og confirmNota() notar; hér er hún endurnýtt, ekki endurtekin.
+   *
+   * TÓMUR REITUR ER EKKI NÚLL. Tómt þýðir „ótalið" (magn = null) og núll þýðir
+   * „ekkert til". Að gera ótalið að 0 væri talning sem enginn framkvæmdi —
+   * sama regla og vorur.js ber í athugasemd um að skrifa ekki yfir talningu. */
+  function magnHtml(i) {
+    const cls = i.magn == null ? '' : (i.magn <= 0 ? 'stock-zero' : (i.lagmark != null && i.magn <= i.lagmark ? 'stock-low' : 'stock-ok'));
+    return `<input type="number" min="0" step="1" class="stk-magn ${cls}" data-k="${esc(i.k)}"
+        value="${i.magn == null ? '' : i.magn}" placeholder="ótalið"
+        title="Magn í birgðum — Enter eða smelltu út til að vista. Tómt = ótalið (ekki núll)."
+        style="width:74px;padding:5px 7px;border:1px solid var(--brd);border-radius:6px;font-size:13px;background:var(--bg1);color:var(--ink1);font-weight:700">`;
+  }
+  function lagmarkHtml(i) {
+    // `vorur`-raðir bera engan lágmarks-dálk (sjá lesturinn: lagmark: null fast),
+    // svo þar er ekkert að vista í. Reiturinn er því aðeins á verkstæðisvörum;
+    // hitt yrði reitur sem lítur ritanlegur út en týnir gildinu.
+    if (i.uppruni === 'vorur') return '<span style="color:var(--ink3)" title="Lágmark er ekki til á söluvörum — vantar dálk í vorur-töfluna">—</span>';
+    return `<input type="number" min="0" step="1" class="stk-lagmark" data-k="${esc(i.k)}"
+        value="${i.lagmark == null ? '' : i.lagmark}" placeholder="—"
+        title="Lágmark — viðvörun þegar magn fer niður fyrir. Enter eða smelltu út til að vista."
+        style="width:64px;padding:5px 7px;border:1px solid var(--brd);border-radius:6px;font-size:13px;background:var(--bg1);color:var(--ink3)">`;
+  }
+  async function vistaMagn(inp) {
+    const item = finna(inp.getAttribute('data-k'));
+    if (!item) return;
+    const txt = String(inp.value || '').trim();
+    const fyrir = item.magn;
+    if (txt === '' ? fyrir == null : Number(txt) === fyrir) return;
+    const nytt = txt === '' ? null : Math.max(0, Math.round(Number(txt)));
+    if (txt !== '' && !(nytt >= 0)) { Toast.show('⚠ Ógilt magn'); inp.value = fyrir == null ? '' : fyrir; return; }
+    const SB = getSB(); if (!SB) { Toast.show('⚠ Ekki tengt gagnagrunni — ekkert vistað'); return; }
+    inp.disabled = true;
+    const r = item.uppruni === 'vorur'
+      ? await SB.from('vorur').update({ birgdir: nytt }).eq('id', item.id).select('id,birgdir').maybeSingle()
+      : await SB.from('birgdir').update({ magn: nytt }).eq('id', item.id).select('id,magn').maybeSingle();
+    inp.disabled = false;
+    if (r.error || !r.data) {
+      Toast.show('⚠ Magn vistaðist EKKI: ' + ((r.error && r.error.message) || 'engin röð uppfærð'));
+      inp.value = fyrir == null ? '' : fyrir; return;
+    }
+    const g = item.uppruni === 'vorur' ? r.data.birgdir : r.data.magn;
+    item.magn = g == null ? null : Number(g);
+    if (item.uppruni === 'vorur') { try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {} }
+    Toast.show(item.magn == null ? '✓ Sett á ótalið' : '✓ Magn vistað: ' + item.magn + ' ' + (item.eining || 'stk'));
+    render(); updateBadge();
+  }
+  async function vistaLagmark(inp) {
+    const item = finna(inp.getAttribute('data-k'));
+    if (!item || item.uppruni === 'vorur') return;
+    const txt = String(inp.value || '').trim();
+    const fyrir = item.lagmark;
+    if (txt === '' ? fyrir == null : Number(txt) === fyrir) return;
+    const nytt = txt === '' ? null : Math.max(0, Math.round(Number(txt)));
+    const SB = getSB(); if (!SB) { Toast.show('⚠ Ekki tengt gagnagrunni — ekkert vistað'); return; }
+    inp.disabled = true;
+    const r = await SB.from('birgdir').update({ lagmark: nytt }).eq('id', item.id).select('id,lagmark').maybeSingle();
+    inp.disabled = false;
+    if (r.error || !r.data) {
+      Toast.show('⚠ Lágmark vistaðist EKKI: ' + ((r.error && r.error.message) || 'engin röð uppfærð'));
+      inp.value = fyrir == null ? '' : fyrir; return;
+    }
+    item.lagmark = r.data.lagmark == null ? null : Number(r.data.lagmark);
+    Toast.show(item.lagmark == null ? '✓ Lágmark tekið af' : '✓ Lágmark vistað: ' + item.lagmark);
+    render(); updateBadge();
   }
   function reiturHtml(i, r) {
     const g = REITIR[r].gildi(i);
@@ -509,11 +582,14 @@
   function tengjaVerd(el) {
     if (el._stkVerd) return; el._stkVerd = true;
     el.addEventListener('change', e => {
-      const inp = e.target.closest && e.target.closest('input.stk-verd, input.stk-reitur'); if (!inp) return;
-      if (inp.classList.contains('stk-verd')) vistaSoluverd(inp); else vistaReit(inp);
+      const inp = e.target.closest && e.target.closest('input.stk-verd, input.stk-reitur, input.stk-magn, input.stk-lagmark'); if (!inp) return;
+      if (inp.classList.contains('stk-magn')) vistaMagn(inp);
+      else if (inp.classList.contains('stk-lagmark')) vistaLagmark(inp);
+      else if (inp.classList.contains('stk-verd')) vistaSoluverd(inp);
+      else vistaReit(inp);
     });
     el.addEventListener('keydown', e => {
-      const inp = e.target.closest && e.target.closest('input.stk-verd, input.stk-reitur'); if (!inp) return;
+      const inp = e.target.closest && e.target.closest('input.stk-verd, input.stk-reitur, input.stk-magn, input.stk-lagmark'); if (!inp) return;
       if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
       if (e.key === 'Escape') {
         const it = finna(inp.getAttribute('data-k'));
