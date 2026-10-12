@@ -353,6 +353,12 @@ input,textarea{font-family:inherit}
 
   function taekiHtml(jobs, t, sk) {
     const fleiri = jobs.length > 1;
+    /* Saga tækjanna (460) er sótt hér og teiknuð úr skyndiminni. Teikningin er
+     * samstillt — hún byggir streng — svo sagan verður að vera komin ÁÐUR.
+     * saekja() spyr aðeins um þau sem hafa ekki verið sótt og kallar á
+     * endurteikningu EINU SINNI þegar svarið lendir; eftir það er hún í minni
+     * og þetta kall gerir ekkert. */
+    if (window.TaekiSaga) TaekiSaga.saekja(t.map(x => x.u), teikna);
     const kort = t.map(({ j, u }) => {
       const opid = S.opid === u.id, staða = u.status === 'done' ? ['ok', 'Tilbúið'] : u.status === 'broken' ? ['rautt', 'Ónýtt'] : ['', 'Móttekið'];
       const parts = Array.isArray(u.parts) ? u.parts : [];
@@ -385,7 +391,9 @@ input,textarea{font-family:inherit}
       }
       return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
         '<button type="button" class="vk-h" data-a="opna" data-u="' + u.id + '" aria-expanded="' + opid + '">' +
-          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + '</div></span>' +
+          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + '</div>' +
+            // Saga tækisins (460) — „nýtt 2024 · skoðað 2025 · hlaðið 2026".
+            (window.TaekiSaga ? TaekiSaga.linaHtml(u) : '') + '</span>' +
           '<span class="grow"></span>' + (parts.length && !opid ? '<span class="plata">' + parts.length + ' hl.</span>' : '') +
           '<span class="plata ' + staða[0] + '"><i></i>' + staða[1] + '</span><span class="chev">' + (opid ? I.upp : I.nidur) + '</span></button>' + b + '</div>';
     }).join('');

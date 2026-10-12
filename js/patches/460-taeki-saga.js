@@ -120,8 +120,11 @@
     });
     const erNytt = f.some(x => x.vidburdur === 'nytt');
     // „Nýtt" fremst — tómt þar til það er skráð, aldrei giskað úr created_at.
+    // <span role="button">, EKKI <button>: miðinn situr inni í hausnum á tækjalínunni
+    // (.vk-h er sjálft <button>), og hnappur inni í hnappi er ógilt HTML sem vafrinn
+    // leysir með því að slíta línuna í sundur.
     const nyttFlis = erNytt ? '' :
-      '<button type="button" class="tsg-f tsg-vantar" data-tsg-nytt="' + esc(k) + '" title="Skrá hvaða ár tækið var nýtt">nýtt —</button>';
+      '<span role="button" tabindex="0" class="tsg-f tsg-vantar" data-tsg-nytt="' + esc(k) + '" title="Skrá hvaða ár tækið var nýtt">nýtt —</span>';
     return '<div class="tsg">' + nyttFlis + flisar.join('') + '</div>';
   }
 
@@ -171,11 +174,12 @@
     return true;
   }
 
-  function stilar() {
-    if (document.getElementById('_tsg-stilar')) return;
-    const s = document.createElement('style');
-    s.id = '_tsg-stilar';
-    s.textContent =
+  /* Verkspjaldið (430) teiknar í SHADOW DOM (`#vsp-host`) með `:host{all:initial}`.
+   * Stílblað í `document.head` nær ALDREI þangað inn — mælt 12.10.2026: miðinn var
+   * réttur í trénu (1 `.tsg` í skugganum) en stíllaus á skjánum, svo hann leit út
+   * eins og hann virkaði ekki. Stílarnir fara því í hverja rót sem við finnum.
+   * Sami texti, afritaður — skuggarót deilir engu með skjalinu. */
+  const TSG_CSS =
       '.tsg{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}' +
       '.tsg-f{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:999px;' +
         'border:1px solid;font-size:10.5px;line-height:1.7;letter-spacing:.2px;white-space:nowrap}' +
@@ -183,14 +187,35 @@
       '.tsg-vantar{background:transparent!important;border-color:#94a3b8!important;color:#94a3b8!important;' +
         'cursor:pointer;font:inherit;font-size:10.5px;border-style:dashed!important}' +
       '.tsg-vantar:hover{border-color:#64748b!important;color:#cbd5e1!important}';
-    document.head.appendChild(s);
+  function stilaRot(rot) {
+    if (!rot) return;
+    const hafa = rot.getElementById ? rot.getElementById('_tsg-stilar')
+      : rot.querySelector('#_tsg-stilar');
+    if (hafa) return;
+    const el = document.createElement('style');
+    el.id = '_tsg-stilar';
+    el.textContent = TSG_CSS;
+    (rot === document ? document.head : rot).appendChild(el);
+  }
+  function stilar() {
+    stilaRot(document);
+    // Skuggarætur koma og fara með glugganum — leitum í hvert sinn.
+    document.querySelectorAll('*').forEach(el => { if (el.shadowRoot) stilaRot(el.shadowRoot); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stilar);
   else stilar();
+  try {
+    new MutationObserver(stilar).observe(document.body || document.documentElement,
+      { childList: true, subtree: true });
+  } catch (_) {}
 
   // Smellur á „nýtt —" — einn hlustari á skjalinu svo hann lifi endurteikningar af.
   document.addEventListener('click', async e => {
-    const b = e.target && e.target.closest ? e.target.closest('[data-tsg-nytt]') : null;
+    // Smellur innan úr Shadow DOM er ENDURMIÐAÐUR á hýsilinn áður en hann nær
+    // hingað, svo `e.target` er `#vsp-host` og `closest` finnur ekkert.
+    // `composedPath()` ber alla leiðina, líka innan skuggans.
+    const leid = typeof e.composedPath === 'function' ? e.composedPath() : [e.target];
+    const b = leid.find(el => el && el.getAttribute && el.getAttribute('data-tsg-nytt'));
     if (!b) return;
     e.preventDefault(); e.stopPropagation();
     const k = b.getAttribute('data-tsg-nytt');
