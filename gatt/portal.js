@@ -721,7 +721,7 @@
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
-    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b) + (window.GattSaga ? GattSaga.eignHtml(b) : '') + (window.GattSkyrsla ? GattSkyrsla.eignHtml(b) : '');
+    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b) + (window.GattVidbot ? GattVidbot.eignHtml(b) : '') + (window.GattSaga ? GattSaga.eignHtml(b) : '') + (window.GattSkyrsla ? GattSkyrsla.eignHtml(b) : '');
     // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];

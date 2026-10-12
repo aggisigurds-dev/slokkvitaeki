@@ -514,6 +514,89 @@ exports.handler = async (event) => {
     return P.json(200, { ok: true, kerfi: { k: kerfi, til: patch.til_stadar || (ex ? ex.til_stadar : 'ovitad'), adili: /^okkar/i.test(String(ta || '')) ? 'okkar' : (ta ? 'annar' : null) } });
   }
 
+  // ── Viðbótartól (portal_skrar) — 12.10.2026: verktakar, rými/leigutakar, lyklar, orkumælar + álestrar, kostnaðarfærslur ──
+  // Ein tafla, tegund + gogn jsonb; hver tegund hlýðir sínum rofa í verkfæraskránni. Þjónninn geymir aðeins hreinsuð gögn
+  // (strengir ≤ 400, tölur, já/nei, ≤ 30 lyklar) — hvað lyklarnir þýða ræður gatt/vidbot.js.
+  const SKRAR_TEG = { verktaki: 'verktakar', rymi: 'rymi', lykill: 'lyklar', maelir: 'orkumaelar', alestur: 'orkumaelar', kostnadur: 'kostnadur' };
+  function hreinsaGogn(inn) {
+    const out = {}; if (!inn || typeof inn !== 'object') return out;
+    Object.keys(inn).slice(0, 30).forEach((k) => {
+      if (!/^[a-z_0-9]{1,30}$/.test(k)) return;
+      const v = inn[k];
+      if (typeof v === 'string') { const t = v.trim().slice(0, 400); if (t) out[k] = t; }
+      else if (typeof v === 'number' && isFinite(v)) out[k] = v;
+      else if (typeof v === 'boolean') out[k] = v;
+    });
+    return out;
+  }
+  async function skrarFelags() {
+    const r = await P.sbGet(`portal_skrar?base_id=eq.${baseId}&select=id,tegund,fyrirtaeki_id,foreldri_id,gogn,mynd_path,rod,created_at,updated_at&order=created_at.asc&limit=3000`);
+    const L = (r.ok ? await r.json() : []).filter((x) => syn[SKRAR_TEG[x.tegund]]);
+    const slod = await M.undirrita(L.map((x) => x.mynd_path), 600);
+    return L.map((x) => ({ id: x.id, tegund: x.tegund, fid: x.fyrirtaeki_id, foreldri: x.foreldri_id, gogn: x.gogn && typeof x.gogn === 'object' ? x.gogn : {},
+      mynd: x.mynd_path ? (slod[x.mynd_path] || null) : null, rod: x.rod, dags: x.created_at, uppf: x.updated_at }));
+  }
+  // Takmarkaður notandi (eignir[]) sér aðeins raðir sinna eigna; álestur fylgir mælinum
+  function skrarSia(L) {
+    if (!leyfd) return L;
+    const ok = new Set(L.filter((x) => x.fid == null || leyfd.has(Number(x.fid))).map((x) => x.id));
+    return L.filter((x) => ok.has(x.id) && (x.foreldri == null || ok.has(x.foreldri)));
+  }
+  async function skrar(b) {
+    const hd = { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}` }, eigin = `base_id=eq.${baseId}`, nu = new Date().toISOString();
+    const teg = String(b.tegund || ''), id = parseInt(b.id, 10);
+    const svar = async () => P.json(200, { ok: true, skrar: skrarSia(await skrarFelags()) });
+    const lesaMynd = async (tegund) => {
+      if (!b.mynd) return null;
+      const m = M.lesaDataUrl(b.mynd, 6 * 1024 * 1024);
+      if (!m || !/^image\//.test(m.mime)) throw new Error('Myndin er ekki á studdu sniði');
+      const path = `skrar/${baseId}/${tegund}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${m.ext}`;
+      if (!(await M.hlada(path, m.buf, m.mime))) throw new Error('Myndin vistaðist ekki');
+      return path;
+    };
+    if (b.action === 'skra_add') {
+      if (!SKRAR_TEG[teg]) return P.json(400, { error: 'Óþekkt tegund' });
+      if (!syn[SKRAR_TEG[teg]]) return P.json(403, { error: 'Tólið er ekki opið á þessum aðgangi' });
+      let sid = parseInt(b.site_id, 10) || null, foreldri = parseInt(b.foreldri_id, 10) || null;
+      if (sid && !(await eignFelags(sid, 'id'))) return P.json(404, { error: 'Eign fannst ekki' });
+      if (teg === 'alestur') {
+        if (!foreldri) return P.json(400, { error: 'Mæli vantar' });
+        const pr0 = await P.sbGet(`portal_skrar?id=eq.${foreldri}&${eigin}&tegund=eq.maelir&select=id,fyrirtaeki_id&limit=1`);
+        const p0 = pr0.ok ? (await pr0.json())[0] : null; if (!p0) return P.json(404, { error: 'Mælirinn fannst ekki' });
+        sid = p0.fyrirtaeki_id;
+      } else foreldri = null;
+      const cnt = await P.sbGet(`portal_skrar?${eigin}&select=id&limit=3001`);
+      if (cnt.ok && (await cnt.json()).length >= 3000) return P.json(429, { error: 'Skráin er full (3000 línur)' });
+      let mynd = null; try { mynd = (teg === 'alestur' || teg === 'maelir') ? await lesaMynd(teg) : null; } catch (e) { return P.json(400, { error: e.message }); }
+      const ins = await P.sbPost('portal_skrar', { base_id: baseId, tegund: teg, fyrirtaeki_id: sid, foreldri_id: foreldri, gogn: hreinsaGogn(b.gogn), mynd_path: mynd, created_at: nu, updated_at: nu });
+      if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst' });
+      return svar();
+    }
+    if (!id) return P.json(400, { error: 'id vantar' });
+    const r0 = await P.sbGet(`portal_skrar?id=eq.${id}&${eigin}&select=id,tegund,fyrirtaeki_id,mynd_path&limit=1`);
+    const x = r0.ok ? (await r0.json())[0] : null;
+    if (!x) return P.json(404, { error: 'Línan fannst ekki' });
+    if (!syn[SKRAR_TEG[x.tegund]]) return P.json(403, { error: 'Tólið er ekki opið á þessum aðgangi' });
+    if (leyfd && x.fyrirtaeki_id != null && !leyfd.has(Number(x.fyrirtaeki_id))) return P.json(403, { error: 'Ekki þín eign' });
+    if (b.action === 'skra_edit') {
+      const patch = { updated_at: nu };
+      if (b.gogn && typeof b.gogn === 'object') patch.gogn = hreinsaGogn(b.gogn);
+      if (b.site_id !== undefined && x.tegund !== 'alestur') { const sid = parseInt(b.site_id, 10) || null; if (sid && !(await eignFelags(sid, 'id'))) return P.json(404, { error: 'Eign fannst ekki' }); patch.fyrirtaeki_id = sid; }
+      if (b.mynd) { try { patch.mynd_path = await lesaMynd(x.tegund); } catch (e) { return P.json(400, { error: e.message }); } if (x.mynd_path) { try { await M.eyda([x.mynd_path]); } catch (_) {} } }
+      const pr = await P.sbPatch(`portal_skrar?id=eq.${id}&${eigin}&select=id`, patch);
+      if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst' });
+      return svar();
+    }
+    if (b.action === 'skra_eyda') {
+      const cr = await P.sbGet(`portal_skrar?foreldri_id=eq.${id}&${eigin}&select=mynd_path`);
+      const paths = [x.mynd_path].concat(cr.ok ? (await cr.json()).map((c) => c.mynd_path) : []).filter(Boolean);
+      await fetch(`${P.SUPABASE_URL}/rest/v1/portal_skrar?id=eq.${id}&${eigin}`, { method: 'DELETE', headers: hd });
+      if (paths.length) { try { await M.eyda(paths); } catch (_) {} }
+      return svar();
+    }
+    return P.json(400, { error: 'Óþekkt aðgerð' });
+  }
+
   // ── Viðhaldsáætlun og skírteini (portal_vidhald) — 12.10.2026 ──
   function dagsPlus(d, man) { const x = new Date(d + 'T00:00:00Z'); if (isNaN(x)) return null; x.setUTCMonth(x.getUTCMonth() + man); return x.toISOString().slice(0, 10); }
   function dagsOk(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) ? String(d) : null; }
@@ -598,6 +681,7 @@ exports.handler = async (event) => {
       if (b.action === 'item_roda') return await radaItems(b);
       if (/^chk_/.test(String(b.action || ''))) return await checklist(b);
       if (/^vh_/.test(String(b.action || ''))) return await vidhald(b);
+      if (/^skra_/.test(String(b.action || ''))) return await skrar(b);
       // Val kúnnans sjálfs (hvað sést í greiningu eignar o.þ.h.) → portal_users.stillingar (sameinað)
       if (b.action === 'stillingar') {
         const inn = b.stillingar && typeof b.stillingar === 'object' ? b.stillingar : {};
@@ -821,8 +905,9 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
     // 2j) Vinnusvæði: skjöl og hlekkir félagsins
-    let items = [], checklist = [], vidhald = [];
+    let items = [], checklist = [], vidhald = [], skrar = [];
     if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); vidhald = (await vidhaldFelags()).filter((x) => !leyfd || leyfd.has(Number(x.fid))); } catch (_) {} }
+    if (['verktakar', 'rymi', 'lyklar', 'orkumaelar', 'kostnadur'].some((k) => syn[k])) { try { skrar = skrarSia(await skrarFelags()); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -979,7 +1064,7 @@ exports.handler = async (event) => {
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald, skrar,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {

@@ -348,6 +348,7 @@
     if (syna('vs-dagatal', 'dagatal')) $('#vs-dagatal').innerHTML = dagatalHtml();
     if (syna('vs-nidurhal', 'csv')) $('#vs-nidurhal').innerHTML = nidurhalHtml();
     if (syna('vs-skjol', 'skjol_hlekkir')) $('#vs-skjol').innerHTML = skjolHtml();
+    if (window.GattVidbot) GattVidbot.render(syna);   // viðbótartólin fimm (gatt/vidbot.js)
     var kortOn = syna('vs-kort-wrap', 'kort');
     if (kortOn && !$('#v-vinnusvaedi').classList.contains('hidden')) kortLifga();
     var sb = $('#vs-stilla'); if (sb) sb.classList.toggle('hidden', !(window.GATT_VERKFAERI || []).some(function (v) { return v.fela && sn[v.k]; }));
@@ -439,9 +440,9 @@
     });
     return out.sort(function (a, c) { return a.dagur - c.dagur; });
   }
-  var TEG = { skodun: ['Skoðun', 'skodun'], eldvarnabok: ['Eldvarnabók', 'eb'], frestur: ['Frestur', 'frestur'], erindi: ['Erindi', 'erindi'], lokid: ['Lokið', 'lokid'], vidhald: ['Viðhald', 'skodun'], skirteini: ['Skírteini', 'frestur'] };
+  var TEG = { skodun: ['Skoðun', 'skodun'], eldvarnabok: ['Eldvarnabók', 'eb'], frestur: ['Frestur', 'frestur'], erindi: ['Erindi', 'erindi'], lokid: ['Lokið', 'lokid'], vidhald: ['Viðhald', 'skodun'], skirteini: ['Skírteini', 'frestur'], verktaki: ['Verktaki', 'frestur'], leiga: ['Leigusamningur', 'frestur'] };
   function dagatalHtml() {
-    var y = cal.y, m = cal.m, A = atburdir(y, m), M = G().MAN_LANGT;
+    var y = cal.y, m = cal.m, A = atburdir(y, m).concat(window.GattVidbot ? GattVidbot.atburdir(y, m) : []), M = G().MAN_LANGT;
     var first = new Date(y, m, 1), start = (first.getDay() + 6) % 7, dagar = new Date(y, m + 1, 0).getDate();
     var nu = new Date(), erNu = nu.getFullYear() === y && nu.getMonth() === m;
     var byDay = {}; A.forEach(function (a) { (byDay[a.dagur] = byDay[a.dagur] || []).push(a); });
@@ -1224,6 +1225,7 @@
     (data().items || []).forEach(function (it) { if (hit(it.heiti)) out.push({ h: it.tegund === 'hlekkur' ? 'Hlekkur' : 'Skjal', t: it.heiti, s: '', a: 'url', id: it.url }); });
     (data().reports || []).forEach(function (r) { if (hit(r.bygging) || hit(r.tegund) || hit(r.ar)) out.push({ h: 'Skýrsla', t: (r.tegund || 'Skýrsla') + (r.ar ? ' ' + r.ar : ''), s: r.bygging || '', a: 'tab', id: 'skyrslur' }); });
     (data().invoices || []).forEach(function (r) { if (hit(r.nr) || hit(r.lysing) || hit(r.bygging)) out.push({ h: 'Reikningur', t: (r.nr ? 'Nr. ' + r.nr : 'Reikningur') + (r.lysing ? ' — ' + r.lysing : ''), s: r.bygging || '', a: 'tab', id: 'reikningar' }); });
+    if (window.GattVidbot) out = out.concat(GattVidbot.leit(n));
     return out.slice(0, 14);
   }
   function leitSyna(q) {

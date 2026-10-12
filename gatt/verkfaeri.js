@@ -39,12 +39,12 @@ window.GATT_VERKFAERI = [
   { k: 'einkunn', heiti: 'Ánægjukönnun eftir verk', lysing: 'Ein spurning þegar verki lýkur, stjörnur 1–5', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'skyrsla', heiti: 'Eignarskýrsla og safnskýrsla (PDF)', lysing: 'Ein síða per eign eða allt safnið; skjalfesting 10. gr. fyrir eldvarnareftirlit', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'vikupostur', heiti: 'Vikuleg samantekt í pósti', lysing: 'Mánudagsmorgun: á eftir, næstu skoðanir, opin verk, skírteini sem renna út', hopur: 'stadall', sjalfgefid: false, tilbuid: true },
-  // ── Viðbótartól (væntanleg) ──
-  { k: 'verktakar', heiti: 'Verktakaskrá með SLA', lysing: 'Samningar, viðbragðstími, tryggingaskírteini, verk per verktaka', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
-  { k: 'kostnadur', heiti: 'Kostnaðaryfirlit per eign', lysing: 'Viðhaldskostnaður per eign per ár og áætlun næsta árs', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
-  { k: 'rymi', heiti: 'Rými og leigutakar per hæð', lysing: 'Hver er hvar, tengt teikningunni', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
-  { k: 'lyklar', heiti: 'Lyklar og aðgangur', lysing: 'Lyklaskrá per eign (hurðakóðar bíða læstrar töflu)', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
-  { k: 'orkumaelar', heiti: 'Orkumælar', lysing: 'Álestur með mynd af mæli, ESG-útflutningur', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
+  // ── Viðbótartól (12.10.2026: verktakar, kostnaður, rými, lyklar, orkumælar tilbúin; api + snjallkerfi væntanleg) ──
+  { k: 'verktakar', heiti: 'Verktakaskrá með SLA', lysing: 'Fag, tengiliður, viðbragðstími, samningur og tryggingaskírteini með gildistíma — áminning í dagatali og vikupósti', hopur: 'vidbot', sjalfgefid: true, tilbuid: true, fela: true },
+  { k: 'kostnadur', heiti: 'Kostnaðaryfirlit per eign', lysing: 'Reikningar okkar + eigin kostnaðarfærslur per eign per ár, áætlun næsta árs, CSV', hopur: 'vidbot', sjalfgefid: true, tilbuid: true, fela: true },
+  { k: 'rymi', heiti: 'Rými og leigutakar', lysing: 'Rými per eign og hæð: leigutaki, tengiliður, stærð, leigusamningur til', hopur: 'vidbot', sjalfgefid: true, tilbuid: true, fela: true },
+  { k: 'lyklar', heiti: 'Lyklar og aðgangur', lysing: 'Lyklaskrá per eign: merking, tegund, fjöldi, hver hefur, geymslustaður (engir hurðakóðar)', hopur: 'vidbot', sjalfgefid: true, tilbuid: true, fela: true },
+  { k: 'orkumaelar', heiti: 'Orkumælar', lysing: 'Mælar per eign, álestur með mynd af mæli, notkun milli álestra, CSV fyrir ESG', hopur: 'vidbot', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'api', heiti: 'Útflutnings-API', lysing: 'Lesaðgangur með lykli fyrir eigin kerfi og Power BI', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
   { k: 'snjallkerfi', heiti: 'Snjallkerfi', lysing: 'Skynjari → sjálfvirk verkbeiðni með punkti á teikningu', hopur: 'vidbot', sjalfgefid: false, tilbuid: false },
 ];

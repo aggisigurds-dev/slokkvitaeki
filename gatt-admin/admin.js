@@ -64,7 +64,7 @@
   // Verkfæraskráin er í gatt/verkfaeri.js (hlaðin á undan) — sömu lyklar og á þjóninum (_gatt-verkfaeri.cjs)
   var VERKFAERI = window.GATT_VERKFAERI || [];
   var SYN_LIST = VERKFAERI.map(function (v) { return [v.k, v.heiti, v.lysing, v.hopur, v.tilbuid, v.sjalfgefid]; });
-  var HOPAR = [['grunnur', 'Eignasíðan'], ['stadall', 'Staðalbúnaður'], ['vidbot', 'Viðbótartól — væntanleg']];
+  var HOPAR = [['grunnur', 'Eignasíðan'], ['stadall', 'Staðalbúnaður'], ['vidbot', 'Viðbótartól']];
   function synHtml(a) {
     var s = a.syn || {}, n = 0;
     return '<div class="synir' + (a.show_details ? '' : ' off') + '">' + HOPAR.map(function (h) {

@@ -1023,6 +1023,28 @@
     #eb-prenta{display:none!important}
   }
 
+
+  /* Viðbótartól (gatt/vidbot.js) */
+  .vb-r .egt>b small.vb-fag{font-family:var(--lbl);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);font-weight:600;margin-left:6px}
+  .vb-r .egt>span a{color:inherit}
+  .vb-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center}
+  .vb-chips .kst{height:20px;font-size:9px}
+  .vb-chips .vb-th{width:44px;height:34px}
+  .vb-eign{padding:9px 16px 4px;font-family:var(--lbl);font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent);font-weight:600;background:var(--strip);border-bottom:1px solid var(--line)}
+  .vb-seint{color:#b3261e;font-style:normal}.vb-brad{color:#8a6d1f}
+  .vb-kr{flex:none;font-weight:600;font-size:13px;white-space:nowrap}
+  .vb-tw{overflow:auto}
+  .vb-t{width:100%;border-collapse:collapse;font-size:12.5px}
+  .vb-t th{text-align:right;font-family:var(--lbl);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);padding:9px 12px 7px;border-bottom:1px solid var(--line2);font-weight:600;white-space:nowrap}
+  .vb-t th:first-child,.vb-t td:first-child{text-align:left}
+  .vb-t td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  .vb-t tr.vb-sum td{border-top:2px solid var(--ink);border-bottom:0;font-weight:600}
+  .sr-grid .sr-span{grid-column:span 2}
+  .sr-grid .flabel{margin-bottom:5px}
+  .sr-grid textarea{min-height:56px}
+  #sr-mynd-wrap{margin-bottom:12px}
+  #sr-prev img{max-width:200px;max-height:140px;border-radius:4px;border:1px solid var(--line2);display:block;margin-top:8px}
+  .m-foot #sr-eyda{margin-right:auto}
   /* Leit yfir allt (hausinn) */
   .leit{position:relative;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px 0 11px;border:1px solid #000;border-radius:4px;background:var(--obsidian);color:#cfd2d6;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(0,0,0,.6),0 2px 5px rgba(0,0,0,.6);min-width:230px}
   .leit>svg{width:14px;height:14px;opacity:.75;flex:none}
@@ -1253,6 +1275,11 @@
         </div>
         <div class="egp vs-p" id="vs-nidurhal"></div>
         <div class="egp vs-p" id="vs-skjol"></div>
+        <div class="egp vs-p vs-span2" id="vs-kostnadur" hidden></div>
+        <div class="egp vs-p" id="vs-verktakar" hidden></div>
+        <div class="egp vs-p" id="vs-rymi" hidden></div>
+        <div class="egp vs-p" id="vs-lyklar" hidden></div>
+        <div class="egp vs-p" id="vs-maelar" hidden></div>
       </div>
     </section>
     <!-- VERKBEIÐNIR (eignagatt.js): velja eign → teikningar → punktur + mynd → senda -->
@@ -1469,6 +1496,15 @@
     <div class="m-foot"><span class="m-note" id="qr-url"></span><button type="button" class="kbtn" id="qr-afrita">Afrita slóð</button><button type="button" class="gbtn" id="qr-prenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>Prenta merki</button></div>
   </div>
 </div>
+<div class="modal hidden" id="sr-modal" role="dialog" aria-modal="true" aria-labelledby="sr-h">
+  <form class="mcard" id="sr-form" novalidate>
+    <div class="m-head"><div class="grow"><div class="kicker">Viðbótartól</div><h3 id="sr-h">Skrá</h3><div class="baddr" id="sr-sub"></div></div>
+      <button type="button" class="xbtn" id="sr-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="vh-grid sr-grid" id="sr-fields"></div>
+    <div id="sr-mynd-wrap" class="hidden"><label class="vs-upl"><input type="file" id="sr-mynd" accept="image/*" capture="environment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Mynd af mælinum</span></label><div class="vb-prev" id="sr-prev"></div></div>
+    <div class="m-foot"><button type="button" class="kbtn sm hidden" id="sr-eyda">Eyða</button><span class="m-note"></span><button type="submit" class="gbtn" id="sr-vista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Vista</button></div>
+  </form>
+</div>
 <div class="modal hidden" id="skr-modal" role="dialog" aria-modal="true" aria-labelledby="skr-h">
   <div class="mcard skr-card">
     <div class="m-head"><div class="grow"><div class="kicker">Skýrsla</div><h3 id="skr-h">Eignarskýrsla</h3><div class="baddr">Prentaðu eða vistaðu sem PDF — „Prenta" opnar prentgluggann með „Vista sem PDF".</div></div>
@@ -1479,8 +1515,9 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/verkfaeri.js?v=20261012a"></script>
-<script src="/gatt/eignagatt.js?v=20261012h"></script>
-<script src="/gatt/portal.js?v=20261012h"></script>
+<script src="/gatt/verkfaeri.js?v=20261012i"></script>
+<script src="/gatt/eignagatt.js?v=20261012i"></script>
+<script src="/gatt/vidbot.js?v=20261012i"></script>
+<script src="/gatt/portal.js?v=20261012i"></script>
 </body>
 </html>

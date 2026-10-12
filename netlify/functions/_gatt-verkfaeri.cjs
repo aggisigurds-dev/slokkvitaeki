@@ -6,7 +6,7 @@ const VERKFAERI = [
   ['erindi', true, true], ['verkbeidni', true, true], ['punktar', true, true], ['qr', true, true], ['eldvarnabok', true, true], ['vinnusvaedi', true, true],
   ['checklisti', true, true], ['verkefni', true, true], ['dagatal', true, true], ['vidhald', true, true], ['kort', true, true], ['baeta_eign', true, true],
   ['csv', true, true], ['skjol_hlekkir', true, true], ['leit', true, true], ['einkunn', true, true], ['skyrsla', true, true], ['vikupostur', false, true],
-  ['verktakar', false, false], ['kostnadur', false, false], ['rymi', false, false], ['lyklar', false, false], ['orkumaelar', false, false], ['api', false, false], ['snjallkerfi', false, false],
+  ['verktakar', true, true], ['kostnadur', true, true], ['rymi', true, true], ['lyklar', true, true], ['orkumaelar', true, true], ['api', false, false], ['snjallkerfi', false, false],
 ];
 const LYKLAR = VERKFAERI.map((v) => v[0]);
 const SYN_DEF = {}; VERKFAERI.forEach((v) => { SYN_DEF[v[0]] = v[1] && v[2]; });

@@ -128,3 +128,22 @@ create table if not exists public.portal_notendur (
 create unique index if not exists portal_notendur_email_key on public.portal_notendur (lower(email));
 create index if not exists portal_notendur_base_idx on public.portal_notendur (base_id);
 alter table public.portal_notendur enable row level security;
+
+-- ── 12.10.2026 (viðbótartól, migration portal_skrar_vidbotartol — þegar keyrð með MCP) ──
+-- Ein tafla fyrir verktaka, rými/leigutaka, lykla, orkumæla (+ álestur með foreldri_id) og eigin kostnaðarfærslur.
+-- gogn jsonb er hreinsað á þjóni (gatt.cjs hreinsaGogn): strengir ≤ 400, tölur, já/nei, ≤ 30 lyklar.
+create table if not exists public.portal_skrar (
+  id bigserial primary key,
+  base_id bigint not null,
+  tegund text not null check (tegund in ('verktaki','rymi','lykill','maelir','alestur','kostnadur')),
+  fyrirtaeki_id bigint,
+  foreldri_id bigint references public.portal_skrar(id) on delete cascade,
+  gogn jsonb not null default '{}'::jsonb,
+  mynd_path text,
+  rod integer,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists portal_skrar_base_teg_idx on public.portal_skrar(base_id, tegund);
+create index if not exists portal_skrar_foreldri_idx on public.portal_skrar(foreldri_id);
+alter table public.portal_skrar enable row level security;

@@ -30,12 +30,13 @@ function naestaSkodun(month, last, nu) {
 
 async function safnaEfni(baseId) {
   const nu = new Date(), i30 = new Date(nu.getTime() + 30 * 864e5), i60 = new Date(nu.getTime() + 60 * 864e5);
-  const [sites, nxt, st, erindi, vidhald] = await Promise.all([
+  const [sites, nxt, st, erindi, vidhald, verktakar] = await Promise.all([
     rows(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status&order=nafn`),
     rows(`v_next_inspection?base_id=eq.${baseId}&select=site_id,inspect_month`),
     rows(`v_stadir_skyrslu_stada?base_id=eq.${baseId}&select=site_id,report_year,inspect_month`),
     rows(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&status=not.in.(lokad,klarad)&select=id,fyrirtaeki_id,title,status,abyrgd,due_at,created_at&order=created_at.asc&limit=200`),
     rows(`portal_vidhald?base_id=eq.${baseId}&select=id,fyrirtaeki_id,heiti,naest,abyrgd,gildir_til,skirteini_heiti&order=naest.asc.nullslast&limit=600`),
+    rows(`portal_skrar?base_id=eq.${baseId}&tegund=eq.verktaki&select=id,gogn&limit=500`),
   ]);
   const nafn = {}; sites.forEach((s) => { nafn[s.id] = s.nafn || s.heimilisfang || ('Eign ' + s.id); });
   const skodanir = { aEftir: [], naestu: [] };
@@ -62,8 +63,16 @@ async function safnaEfni(baseId) {
     if (r.naest) { const d = new Date(r.naest); if (d < nu) vh.aEftir.push(x); else if (d <= i30) vh.naestu.push(x); }
     if (r.gildir_til && new Date(r.gildir_til) <= i60) vh.skirteini.push({ eign: x.eign, heiti: r.skirteini_heiti || r.heiti, dags: r.gildir_til, utrunnid: new Date(r.gildir_til) < nu });
   });
-  const n = skodanir.aEftir.length + skodanir.naestu.length + verk.okkar.length + verk.eigin.length + vh.aEftir.length + vh.naestu.length + vh.skirteini.length;
-  return { sites: sites.length, skodanir, verk, vh, n, brynt: skodanir.aEftir.length + vh.aEftir.length + vh.skirteini.filter((s) => s.utrunnid).length };
+  // Verktakar: tryggingaskírteini / samningur sem rennur út innan 60 daga (gogn.tryggingar_til, gogn.samningur_til — gatt/vidbot.js)
+  const vt = [];
+  verktakar.forEach((r) => {
+    const g = r.gogn || {};
+    [['tryggingar_til', 'Tryggingaskírteini'], ['samningur_til', 'Samningur']].forEach(([k, h]) => {
+      if (g[k] && !isNaN(new Date(g[k])) && new Date(g[k]) <= i60) vt.push({ nafn: g.nafn || 'Verktaki', hvad: h, dags: g[k], utrunnid: new Date(g[k]) < nu });
+    });
+  });
+  const n = skodanir.aEftir.length + skodanir.naestu.length + verk.okkar.length + verk.eigin.length + vh.aEftir.length + vh.naestu.length + vh.skirteini.length + vt.length;
+  return { sites: sites.length, skodanir, verk, vh, vt, n, brynt: skodanir.aEftir.length + vh.aEftir.length + vh.skirteini.filter((s) => s.utrunnid).length + vt.filter((s) => s.utrunnid).length };
 }
 
 function html(felag, efni, slod) {
@@ -84,6 +93,7 @@ function html(felag, efni, slod) {
   b += H('Viðhald komið fram yfir', vh.aEftir.length) + UL(vh.aEftir, (x) => E(x) + ' — ' + esc(x.heiti) + ' <span style="color:#b3261e">(' + esc(dags(x.dags)) + ')</span>');
   b += H('Viðhald næstu 30 daga', vh.naestu.length) + UL(vh.naestu, (x) => E(x) + ' — ' + esc(x.heiti) + ' (' + esc(dags(x.dags)) + ')');
   b += H('Skírteini sem renna út (60 dagar)', vh.skirteini.length) + UL(vh.skirteini, (x) => E(x) + ' — ' + esc(x.heiti) + ' <span style="color:' + (x.utrunnid ? '#b3261e' : '#8a6d1f') + '">' + (x.utrunnid ? 'rann út ' : 'gildir til ') + esc(dags(x.dags)) + '</span>');
+  if (efni.vt && efni.vt.length) b += H('Verktakar — tryggingar og samningar sem renna út', efni.vt.length) + UL(efni.vt, (x) => '<b>' + esc(x.nafn) + '</b> — ' + esc(x.hvad) + ' <span style="color:' + (x.utrunnid ? '#b3261e' : '#8a6d1f') + '">' + (x.utrunnid ? 'rann út ' : 'gildir til ') + esc(dags(x.dags)) + '</span>');
   b += '<p style="margin:24px 0 0;font-size:12px;color:#666">Allt í samhengi á þjónustugáttinni: <a href="' + esc(slod) + '" style="color:#1d4ed8">' + esc(slod) + '</a><br>Þessi póstur fer á mánudagsmorgnum meðan tólið „Vikuleg samantekt" er kveikt. Slökkvitæki ehf. slekkur á því eftir beiðni.</p>';
   return b + '</div></div>';
 }
