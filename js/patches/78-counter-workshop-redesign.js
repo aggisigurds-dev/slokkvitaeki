@@ -134,7 +134,16 @@
     const all = q
       ? allActive.filter(j =>
           String(j.customer || '').toLowerCase().includes(q) ||
-          String(j.num || '').toLowerCase().includes(q))
+          String(j.num || '').toLowerCase().includes(q) ||
+          /* 12.10.2026 — Agnar: „ég get ekki neinstaðar leitað upp QR-tækjamerkingarnar
+           * eins og TMP-PZ22AK fyrir Armar". Sían leit AÐEINS á nafn kúnnans og
+           * verknúmerið. Miðinn á kútnum ber raðnúmerið, ekki hvorugt hitt — svo
+           * maðurinn stóð með tækið í höndunum og leitin sagði ekkert.
+           * MÆLT þann dag: 1.123 TMP-kóðar eru til, allir EINKVÆMIR. 26 sátu á virku
+           * verki (þessi sía), 1.097 á sóttu/eyddu — þeir finnast í `runLookup`. */
+          live(j.units).some(u =>
+            String(u.serial || '').toLowerCase().includes(q) ||
+            [u.type, u.size, u.service].filter(Boolean).join(' ').toLowerCase().includes(q)))
       : allActive;
     const byStatus = { received: [], inprogress: [], ready: [] };
     all.forEach(j => {
@@ -1206,10 +1215,77 @@
       } catch (_) { Counter._companies = []; }
       return Counter._companies;
     };
+    /* Raðnúmera-uppfletting (12.10.2026). Kóðinn á miðanum lifir í `verklidur`,
+     * og 1.097 af 1.123 hanga á verki sem er SÓTT eða EYTT — þau eru ekki í
+     * `DB.getActiveJobs()` og sáust því hvergi í appinu, þótt röðin væri til.
+     * Hér er spurt beint í grunninn með verkbeiðnina í eftirdragi. */
+    Counter.ERU_RADNR = q => {
+      const s = String(q || '').trim();
+      if (/^tmp-/i.test(s)) return true;
+      // Ekkert bil, bæði bókstafur og tala, a.m.k. 5 stafir — sleppur hjá kennitölu
+      // (eintómar tölur) og nöfnum (engar tölur).
+      return s.length >= 5 && !/\s/.test(s) && /[A-Za-zÁÉÍÓÚÝÐÞÆÖáéíóúýðþæö]/.test(s) && /\d/.test(s);
+    };
+    Counter.VERK_STADA = {
+      received: 'Móttekið', in_progress: 'Í vinnslu', inprogress: 'Í vinnslu',
+      ready: 'Tilbúið til afhendingar', collected: 'Sótt', eytt: 'Eytt'
+    };
+    Counter.leitaRadnumer = async function(q) {
+      const SB = (window.DB && DB.sb) || null;
+      if (!SB) return null;
+      const hreint = String(q || '').trim().replace(/[%,]/g, '');
+      if (!hreint) return null;
+      try {
+        const r = await SB.from('verklidur')
+          .select('id,serial,type,size,service,status,created_at,uttaeki_id,job_id,verkbeidnir(id,num,customer,phone,status,dropoff,pickup,notes)')
+          .ilike('serial', '%' + hreint + '%')
+          .order('id', { ascending: false })
+          .limit(8);
+        // Tómt svar er ekki staðreynd: villa skilar null (óvíst), ekki [] (ekkert til).
+        if (r.error) return null;
+        return r.data || [];
+      } catch (_) { return null; }
+    };
+    Counter.radnrKort = function(radir) {
+      const e = s => esc(String(s == null ? '' : s));
+      const dd = v => { const s = String(v || ''); const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+      return radir.map(x => {
+        const j = x.verkbeidnir || {};
+        const virkt = !!(window.DB && DB.getJob && DB.getJob(j.id));
+        const heiti = [x.type, x.size].filter(Boolean).join(' ');
+        const dags = [dd(j.dropoff) && 'innlagt ' + dd(j.dropoff), dd(j.pickup) && 'sækja ' + dd(j.pickup)].filter(Boolean).join(' · ');
+        const stada = Counter.VERK_STADA[String(j.status || '')] || j.status || '';
+        return '<div style="margin-top:5px;padding:8px 10px;border:1px solid #d7dbe3;border-radius:9px;background:#fff;font-size:12.5px">' +
+          '<div><b style="color:#0f172a">🏷 ' + e(x.serial) + '</b>' + (heiti ? ' <span style="color:#525b6b">· ' + e(heiti) + '</span>' : '') + '</div>' +
+          '<div style="color:#475569;margin-top:2px">' + (j.num ? '<b>' + e(j.num) + '</b> · ' : '') + e(j.customer || '') +
+            (j.phone ? ' · ☎ ' + e(j.phone) : '') + '</div>' +
+          '<div style="color:#525b6b;margin-top:2px">' + e([dags, stada].filter(Boolean).join(' · ')) + '</div>' +
+          (x.service ? '<div style="color:#525b6b;margin-top:2px">' + e(x.service) + '</div>' : '') +
+          (virkt
+            ? '<button type="button" onclick="Counter.select(' + Number(j.id) + ')" style="margin-top:6px;padding:5px 10px;border:1px solid #2563eb;border-radius:8px;background:#fff;color:#2563eb;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Opna verkið</button>'
+            : '<div style="color:#94a3b8;margin-top:4px;font-size:11.5px">Verkið er ekki lengur á borðinu — þetta er sagan af miðanum.</div>') +
+          '</div>';
+      }).join('');
+    };
     Counter.runLookup = async function(rawQ) {
       const q = String(rawQ || '').trim();
       const box = document.getElementById('counter-lookup');
       if (!box || !q) return;
+      // Raðnúmer fyrst: miðinn á kútnum er nákvæmari lykill en nafn eða kt.
+      if (Counter.ERU_RADNR(q)) {
+        box.innerHTML = '<span style="color:#d97706">🔎 Leita að raðnúmeri…</span>';
+        const radir = await Counter.leitaRadnumer(q);
+        if (String(Counter.search || '').trim().toLowerCase() !== q.toLowerCase()) return;
+        if (radir && radir.length) {
+          box.innerHTML = '<div style="margin-top:2px;color:#475569">🏷 Raðnúmer — fannst í verkbeiðni:</div>' + Counter.radnrKort(radir);
+          return;
+        }
+        if (radir === null) {
+          box.innerHTML = '<span style="color:#b45309">Náði ekki sambandi við grunninn — veit ekki hvort raðnúmerið er til.</span>';
+          return;
+        }
+        // radir === [] → raðnúmerið er sannanlega ekki til; höldum áfram í nafna-/kt-leitina.
+      }
       const digits = q.replace(/\D/g, '');
       const cos = await Counter.loadCompanies();
       // Guard against a newer query having replaced this one mid-await.
