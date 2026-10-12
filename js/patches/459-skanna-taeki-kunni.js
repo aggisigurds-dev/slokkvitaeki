@@ -370,12 +370,66 @@
   // Fylgjumst með í stað þess að tengja einu sinni og vona.
   function vakta() {
     tengja();
+    tengjaVerkstaedi();
     try {
-      new MutationObserver(tengja).observe(document.body, { childList: true, subtree: true });
+      new MutationObserver(() => { tengja(); tengjaVerkstaedi(); }).observe(document.body, { childList: true, subtree: true });
     } catch (_) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);
   else vakta();
 
-  window.SkannaTaeki = { fletta, skanna, verdFyrir };
+  /* ── Verkstæði / Tæki: „Skanna tæki" hefur SAMA blinda blettinn ──────────
+   * `Field.openScan()` opnar textareit (`#scan-serial`) — handvirkur innsláttur
+   * eða strikamerkjalesari, ekki myndavél — og `Field.doLookup()` flettir upp með
+   * `DB.findBySerial()`, sem les AÐEINS `uttaeki` úr minni.
+   *
+   * MÆLT á lifandi síðunni 12.10.2026:
+   *   FC260-co2_5-1 → „Armar · CO2 · 5 kg"     ✓
+   *   TMP-PZ22AK    → „Ekkert tæki fannst"     ✗   (en verkið er til: R-001105-V2)
+   *
+   * Við vefjum fallið í stað þess að skipta því út: upprunalega leiðin keyrir
+   * fyrst og óbreytt, og AÐEINS þegar hún finnur ekkert (engin `.scan-found`
+   * í niðurstöðunni) spyrjum við sömu uppflettingu og skanninn á Sölu notar.
+   * Þannig er ein uppfletting á bak við alla þrjá staðina. */
+  function tengjaVerkstaedi() {
+    if (!window.Field || typeof Field.doLookup !== 'function' || Field.__sktVafid) return;
+    Field.__sktVafid = true;
+    const upphaflegt = Field.doLookup.bind(Field);
+    Field.doLookup = function() {
+      upphaflegt();
+      const inp = document.getElementById('scan-serial');
+      const ut = document.getElementById('scan-result');
+      const kodi = inp ? String(inp.value || '').trim() : '';
+      if (!ut || !kodi) return;
+      if (ut.querySelector('.scan-found')) return;   // uttaeki svaraði — ekkert að bæta við
+      ut.insertAdjacentHTML('beforeend', '<div id="_skt-vs" style="margin-top:8px;color:#64748b;font-size:12.5px">🔎 Leita líka í verkbeiðnum…</div>');
+      fletta(kodi).then(n => {
+        const reitur = document.getElementById('_skt-vs');
+        if (!reitur) return;
+        if (n === null) {
+          reitur.innerHTML = '<span style="color:#b45309">Náði ekki sambandi við grunninn — veit ekki hvort kóðinn er til.</span>';
+          return;
+        }
+        const vl = n.verklidur || [];
+        if (!vl.length) {
+          reitur.innerHTML = 'Kóðinn er ekki heldur í neinni verkbeiðni.';
+          return;
+        }
+        reitur.innerHTML = '<div style="color:#475569;margin-bottom:5px">🏷 Fannst í verkbeiðni:</div>' +
+          vl.map(x => {
+            const j = x.verkbeidnir || {};
+            const heiti = [x.type, x.size].filter(Boolean).join(' ');
+            const dags = [dd(j.dropoff) && 'innlagt ' + dd(j.dropoff), dd(j.pickup) && 'sækja ' + dd(j.pickup)].filter(Boolean).join(' · ');
+            return '<div style="padding:8px 10px;border:1px solid #d7dbe3;border-radius:9px;background:#fff;margin-top:4px">' +
+              '<div><b style="color:#0f172a">' + esc(x.serial) + '</b>' + (heiti ? ' · ' + esc(heiti) : '') + '</div>' +
+              '<div style="margin-top:2px">' + (j.num ? '<b>' + esc(j.num) + '</b> · ' : '') + esc(j.customer || '') +
+                (j.phone ? ' · ☎ ' + esc(j.phone) : '') + '</div>' +
+              '<div style="margin-top:2px;color:#64748b">' + esc([dags, VERK_STADA[String(j.status || '')] || j.status || ''].filter(Boolean).join(' · ')) + '</div>' +
+              '</div>';
+          }).join('');
+      });
+    };
+  }
+
+  window.SkannaTaeki = { fletta, skanna, verdFyrir, tengjaVerkstaedi };
 })();
