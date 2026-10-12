@@ -6399,7 +6399,8 @@
     festaHnapp();
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
-    window.Thjonustubord5 = { show, load, render, version: '368z4' };
+    // rows: aðeins lestur, fyrir ⚡ Hlaða (407) — hvaða fyrirtæki eiga opin mál og ættu að vera hituð (12.10.2026).
+    window.Thjonustubord5 = { show, load, render, rows: () => S.rows.slice(), version: '368z4' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -503,7 +503,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
 <!-- 447a: Svar-stöð gögn + window.svKodi (merkið í sendingargluggum) — snemma, svo gluggar sem teiknast við ræsingu fái það -->
 <script defer src="/js/patches/447a-svarstod-gogn.js?v=20261011a"></script>
-<script defer src="/js/patches/00-legacy.js?v=20261009nesdekk"></script>
+<script defer src="/js/patches/00-legacy.js?v=20261012vakt"></script>
 <script defer src="/js/patches/290-api-key-header.js?v=20260729"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20261003ht"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
@@ -548,7 +548,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- hibernated 2026-06-21 (sign-in unused + the "Skrá inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
 <script defer src="/js/patches/33-sms-reminder.js?v=20261008sv"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 34-dashboard.js -->
-<script defer src="/js/patches/35-service-certificate.js?v=20260510f"></script>
+<script defer src="/js/patches/35-service-certificate.js?v=20261012vakt"></script>
 <script defer src="/js/patches/36-stock-management.js?v=20261012tafla"></script>
 <script defer src="/js/patches/37-bulk-reminders.js?v=20261008sv"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 38-insp-form.js -->
@@ -567,12 +567,12 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/50-service-contracts.js?v=20260926b"></script>
 <script defer src="/js/patches/51-customer-portal.js?v=20260914pg2"></script>
 <!-- hibernated 2026-09-12 (enginn hnappur nær í síðuna, taflan dagbok er ekki til; dagskráin býr í Þjónustuborði 2 og 303 — Verkefnalisti 0f90fa6c): 52-tech-route.js -->
-<script defer src="/js/patches/53-auto-email-invoice.js?v=20261011a"></script>
+<script defer src="/js/patches/53-auto-email-invoice.js?v=20261012vakt"></script>
 <script defer src="/js/patches/54-sales-analytics.js?v=20260510f"></script>
 <script defer src="/js/patches/55-product-images.js?v=20260510f"></script>
 <script defer src="/js/patches/56-global-search.js?v=20260510f"></script>
 <script defer src="/js/patches/57-qr-codes.js?v=20260602d"></script>
-<script defer src="/js/patches/58-device-history.js?v=20260510f"></script>
+<script defer src="/js/patches/58-device-history.js?v=20261012vakt"></script>
 <script defer src="/js/patches/59-technicians.js?v=20260510f"></script>
 <script defer src="/js/patches/60-signature-pad.js?v=20260510f"></script>
 <script defer src="/js/patches/61-command-center.js?v=20260914pg2"></script>
@@ -633,7 +633,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/116-vidsk-pricing.js?v=20260921a"></script>
 <script defer src="/js/patches/118-cart-savings.js?v=20260510f"></script>
 <script defer src="/js/patches/119-send-back-to-workshop.js?v=20261001opnun"></script>
-<script defer src="/js/patches/120-broken-units-workflow.js?v=20260511g"></script>
+<script defer src="/js/patches/120-broken-units-workflow.js?v=20261012vakt"></script>
 <script defer src="/js/patches/121-pickup-checkout.js?v=20260930a"></script>
 <script defer src="/js/patches/122-samningshafar-receive.js?v=20261005merkja"></script>
 <script defer src="/js/patches/123-uttektarskyrsla.js?v=20260510f"></script>
@@ -1101,7 +1101,7 @@ var Lanstaeki = {
 <script src="/js/patches/252-mo-throttle.js?v=20260925afk"></script>
 <!-- HT-3.10: skrif á SAMA gildi ná ekki DOM-inu (klukkan, stöðulínur, classList.add á klasa sem er fyrir). -->
 <script src="/js/patches/440-kyrrd.js?v=20261003a"></script>
-<script src="/js/newfeatures.js?v=20261002sja-bordi"></script>
+<script src="/js/newfeatures.js?v=20261002sja-bordi-vakt"></script>
     <script src="/js/mapfix.js?v=20261001endur"></script>
     <script src="/js/floorplanfix.js?v=20261005"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
@@ -1167,7 +1167,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/196-sidebar-settle.js?v=20260613a"></script>
 <script defer src="/js/patches/197-bokhald-yfirferd.js?v=20260914pg2"></script>
 <script defer src="/js/patches/198-fyrirtaeki-yfirferd.js?v=20261001a"></script>
-<script defer src="/js/patches/199-doc-year-grid.js?v=20261008sv"></script>
+<script defer src="/js/patches/199-doc-year-grid.js?v=20261012samt"></script>
 <script defer src="/js/patches/200-brunakerfi-tilbod.js?v=20260615a"></script>
 <script defer src="/js/patches/201-tilbod-hub.js?v=20261001b53b"></script>
 <script defer src="/js/patches/418-serverd-pakkar.js?v=20260925c"></script>
@@ -1335,7 +1335,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/366-fljotandi-stafli.js?v=20260909a"></script>
 <script defer src="/js/patches/367-bygging-mynd.js?v=20261011engin"></script>
 <script defer src="/js/patches/432-husmynd-utan.js?v=20261001hus"></script>
-<script defer src="/js/patches/368-thjonustubord5.js?v=20261009e"></script>
+<script defer src="/js/patches/368-thjonustubord5.js?v=20261012hita"></script>
 <script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20260924a"></script>
 <script defer src="/js/patches/371-opna-solu.js?v=20260911a"></script>
 <script defer src="/js/patches/374-teikning-saekja.js?v=20261003thagufall-hfj-fjol2"></script>
@@ -1370,7 +1370,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/401-fljotandi-rod.js?v=20260923c"></script>
 <script defer src="/js/patches/402-brunastal-fyrirtaekjasida.js?v=20261005blar"></script>
 <script defer src="/js/patches/403-skjol-spjald.js?v=20261006man"></script>
-<script defer src="/js/patches/404-taeki-spjald.js?v=20261001a"></script>
+<script defer src="/js/patches/404-taeki-spjald.js?v=20261012cv2"></script>
 <script defer src="/js/patches/405-efsta-rod.js?v=20261005kyrrd"></script>
 <script defer src="/js/patches/405-bordi-hnappar.js?v=20260923e"></script>
 <script defer src="/js/patches/411-thett-spjald.js?v=20261012hr"></script>
@@ -1380,7 +1380,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/409-samraeming-sidna.js?v=20261012hr"></script>
 <script defer src="/js/patches/410-simi-yfirferd.js?v=20261005breidd"></script>
 <script defer src="/js/patches/406-bordi-utlit.js?v=20260923b"></script>
-<script defer src="/js/patches/407-hledslutakki.js?v=20261001hlada"></script>
+<script defer src="/js/patches/407-hledslutakki.js?v=20261012hita2"></script>
 <script defer src="/js/patches/410-thjonustu-tengingar.js?v=20260930a"></script>
 <script defer src="/js/patches/399-krofu-simi-midar.js?v=20260923f"></script>
 <script defer src="/js/patches/398-vorur-midar.js?v=20260922c"></script>
@@ -1424,7 +1424,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/430-verkspjald.js?v=20261001f"></script>
 <script defer src="/js/patches/431-uppferslubord.js?v=20261008fest"></script>
 <!-- HT-3.10 liður 1: köll prófílsins send samtímis við opnun. Á EFTIR 378/431 — forsóknin fer í gegnum þau. -->
-<script defer src="/js/patches/441-forsokn.js?v=20261004a"></script>
+<script defer src="/js/patches/441-forsokn.js?v=20261012hita"></script>
 <script defer src="/js/patches/442-stalspjald.js?v=20261004b"></script>
 <script defer src="/js/patches/443-sala-flisar-leit.js?v=20261004b"></script>
 <script defer src="/js/patches/425-allir-brunastal.js?v=20260930a"></script>

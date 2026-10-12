@@ -325,13 +325,21 @@
   // replaced when patch 78 renders Counter UI, leaving the observer
   // orphaned. Result: 🚫 Ónýtt button never showed up after the first
   // load. Now we use body subtree with active-view gating.
+  // 12.10.2026 (afköst): var querySelector('#view-counter.active, #view-workshop.active') og sama fyrir modalana.
+  // Veljaralisti fer ekki auðkennis-hraðleiðina — hann gekk yfir ALLT skjalið (Ársskoðun + prófíll, ~15.000 hnútar)
+  // tvisvar í hverjum ramma: 175 ms við eina prófílopnun (CPU-prófíll). Sama spurning með getElementById;
+  // [style*="flex"] er hlutstrengur í style-eigindinni, eins og hér.
+  function virkt(id) { const e = document.getElementById(id); return !!(e && e.classList.contains('active')); }
+  function flex(id) { const e = document.getElementById(id); return !!(e && (e.getAttribute('style') || '').indexOf('flex') >= 0); }
+  function virkSyn() { return virkt('view-counter') || virkt('view-workshop'); }
+  function opidModal() { return flex('counter-detail-modal') || flex('workshop-detail-modal'); }
   function attach() {
     let _t = 0;
     new MutationObserver(() => {
       // Cheap early-out: only do real work when we're on the Counter or
       // Workshop view (where the buttons matter).
-      const onCounter = !!document.querySelector('#view-counter.active, #view-workshop.active');
-      const detailModalOpen = !!document.querySelector('#counter-detail-modal[style*="flex"], #workshop-detail-modal[style*="flex"]');
+      const onCounter = virkSyn();
+      const detailModalOpen = opidModal();
       if (!onCounter && !detailModalOpen) return;
       clearTimeout(_t);
       _t = setTimeout(() => {
@@ -345,8 +353,8 @@
   // Safety net: poll every 2s for the case where a row was rendered
   // before we attached. Idempotent (each row has _buwDone guard).
   setInterval(() => {
-    const onCounter = !!document.querySelector('#view-counter.active, #view-workshop.active');
-    const detailOpen = !!document.querySelector('#counter-detail-modal[style*="flex"], #workshop-detail-modal[style*="flex"]');
+    const onCounter = virkSyn();
+    const detailOpen = opidModal();
     if (onCounter || detailOpen) injectButtons();
   }, 2000);
 

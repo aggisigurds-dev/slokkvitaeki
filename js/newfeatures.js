@@ -187,6 +187,10 @@ console.log('[NewFeatures v4] Ready');
     // Edit button in unit panel
     (function(){
       new MutationObserver(function(){
+        // 12.10.2026 (afköst): Field-einingin (js/field.js) er ekki til lengur og ekkert býr til .fld-panel/.fld-detail
+        // — en [class*="fld-det"] gekk yfir ALLT skjalið við hverja breytingu, líka class/style-eigindir (146 ms við eina
+        // prófílopnun, CPU-prófíll). Ódýra skilyrðið fyrst; sama niðurstaða þegar Field er til.
+        if(typeof Field==='undefined'||!Field||!Field.unit||!Field.unit.id)return;
         var p=document.querySelector('.fld-panel,.fld-detail,[class*="fld-det"]');
         if(!p||p.querySelector('.unit-edit-btn'))return;
         var u=Field&&Field.unit;if(!u||!u.id)return;
@@ -442,10 +446,13 @@ function colorSchedDates() {
 
 // Run immediately and watch for DOM changes
 colorSchedDates();
+// 12.10.2026 (afköst): kallaði colorSchedDates einu sinni fyrir HVERJA færslu með nýjum hnút — vaktin (252) skilar
+// öllum færslum rammans í einu, svo skjalið var skannað tugum sinnum í sama ramma (0,3 s við eina prófílopnun).
+// Fallið er hæfistætt (dataset.colored), svo ein keyrsla eftir allar færslurnar gefur sömu niðurstöðu.
 var _schedObs = new MutationObserver(function(muts) {
-  muts.forEach(function(m) {
-    if (m.addedNodes.length) colorSchedDates();
-  });
+  for (var i = 0; i < muts.length; i++) {
+    if (muts[i].addedNodes.length) { colorSchedDates(); return; }
+  }
 });
 _schedObs.observe(document.body, {childList: true, subtree: true});
 

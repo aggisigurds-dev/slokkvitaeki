@@ -68,12 +68,15 @@
     btn.addEventListener('click', function (ev) {
       ev.preventDefault(); ev.stopPropagation();
       var open = !menu.hidden; closeAll();
-      if (!open) { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.classList.add('opin'); var r = btn.getBoundingClientRect(); menu.style.top = (r.bottom + 4) + 'px'; var left = r.right - menu.offsetWidth; menu.style.left = Math.max(8, left) + 'px'; if (r.bottom + 4 + menu.offsetHeight > innerHeight - 8) menu.style.top = Math.max(8, r.top - 4 - menu.offsetHeight) + 'px'; }
+      // 12.10.2026: ⋯ valmyndin er position:fixed — content-visibility á hópnum myndi festa hana við hópinn og klippa
+      // hana. Hópurinn með opna valmynd er á skjánum (smellt var á hann), svo hann missir aðeins innilokunina á meðan.
+      if (!open) { var grp = wrap.closest('.b404-grp'); if (grp) grp.classList.add('b404-opin'); menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.classList.add('opin'); var r = btn.getBoundingClientRect(); menu.style.top = (r.bottom + 4) + 'px'; var left = r.right - menu.offsetWidth; menu.style.left = Math.max(8, left) + 'px'; if (r.bottom + 4 + menu.offsetHeight > innerHeight - 8) menu.style.top = Math.max(8, r.top - 4 - menu.offsetHeight) + 'px'; }
     });
     return wrap;
   }
   function closeAll() {
     document.querySelectorAll('.b404-menu:not([hidden])').forEach(function (m) { m.hidden = true; });
+    document.querySelectorAll('.b404-grp.b404-opin').forEach(function (g) { g.classList.remove('b404-opin'); });
     document.querySelectorAll('.b404-meira.opin').forEach(function (b) { b.classList.remove('opin'); b.setAttribute('aria-expanded', 'false'); });
   }
   document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('.b404-vm')) closeAll(); }, true);
@@ -177,7 +180,12 @@
       var gh = g.querySelector('.ut-grp-h'); var f = fam(gh && gh.querySelector('.ut-ico'));
       g.classList.add('b404-grp', 'fam-' + f);
       if (gh) { var chev = gh.querySelector('.ut-grp-chev'); if (chev) chev.innerHTML = ICON.chev; var nm = gh.querySelector('.ut-grp-nm'); if (nm) nm.textContent = FAM[f][0]; }
-      Array.prototype.slice.call(g.querySelectorAll('.ut-row')).forEach(composeRow);
+      var radir = g.querySelectorAll('.ut-row');
+      Array.prototype.slice.call(radir).forEach(composeRow);
+      // 12.10.2026 (afköst): content-visibility:auto á hópnum (sjá CSS) — vafrinn sleppir stíl, útliti og málun hópa
+      // utan skjás. Áætluð hæð þar til hópurinn hefur sést: haus + raðir sem eru í DOM (samanfelldur hópur ber engar).
+      // `auto` lætur vafrann muna raunhæðina eftir fyrstu teikningu, svo skrunstikan festist.
+      g.style.setProperty('contain-intrinsic-size', 'auto ' + (48 + radir.length * 54) + 'px');   // mælt: röð 54 px með bili
       stal.appendChild(g);
     });
     var lock = list.querySelector(':scope > .ut-listlock'); if (lock) { lock.textContent = stripEmoji(txt(lock)); lock.classList.add('b404-lock'); stal.appendChild(lock); }
@@ -395,6 +403,10 @@
       r('.b404-mi svg', 'color:#5b6472;flex:none'), r('.b404-mi:hover', 'background:#f1f4f8'), r('.b404-mi.a', 'color:#b42318;font-weight:600'), r('.b404-mi.a svg', 'color:#b42318'), r('.b404-mi > svg:last-of-type', 'margin-left:auto;color:#0a4a26')
     ].join('\n');
     css += '\n' + P + '.b404-menu[hidden]{display:none!important}'; // [hidden] vinnur display:flex
+    // 12.10.2026 (afköst, Agnar: „gerum allt hitt líka"): hópar utan skjás eru ekki stíl-, útlits- eða málunarreiknaðir.
+    // Mælt á opnun Center Hótels (80 tæki, 8.366 hnútar): stílútreikningur 1,62 → 1,09 s, málun 0,36 → 0,13 s,
+    // heildarvinna aðalþráðar 5,68 → 4,74 s. Hópur með opna ⋯ valmynd (b404-opin) er undanskilinn — sjá menuButton.
+    css += '\n' + P + '.b404-grp:not(.b404-opin){content-visibility:auto}';
     var st = document.createElement('style'); st.id = 'taeki-404'; st.textContent = css; document.head.appendChild(st);
   }
 })();

@@ -237,11 +237,24 @@
   }
 
   // ── forsókn ────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // Nýlega opnaðir prófílar á ÞESSARI tölvu — aðeins auðkenni, til að ⚡ Hlaða (407) viti hverja á að hita fyrst.
+  // Tækjabundið þægindaval (eins og sniðin sjálf), engin staða gagna.
+  const LS_NYLEGA = 'forsokn_nylega', HAMARK_NYLEGA = 20;
+  function skraNylega(id) {
+    try {
+      const a = JSON.parse(localStorage.getItem(LS_NYLEGA) || '[]').filter(x => +x !== id);
+      a.unshift(id);
+      localStorage.setItem(LS_NYLEGA, JSON.stringify(a.slice(0, HAMARK_NYLEGA)));
+    } catch (_) {}
+  }
+  function nylega() { try { const a = JSON.parse(localStorage.getItem(LS_NYLEGA) || '[]'); return Array.isArray(a) ? a.map(Number).filter(Boolean) : []; } catch (_) { return []; } }
+
   function forsaekja(id) {
     id = +id;
     if (!id) return;
     const nu = Date.now();
     if (sidastId === id && nu - sidastT < SAMA_OPNUN_MS) return;       // sama opnun (músarhnappur → smellur → openDetail)
+    skraNylega(id);
     const c = finna(id);
     if (!c) return;
     sidastId = id; sidastT = nu;
@@ -386,7 +399,38 @@
   document.addEventListener('DOMContentLoaded', vefja);
   [300, 1200, 3000].forEach(ms => setTimeout(vefja, ms));
 
+  // ── HITUN fyrir ⚡ Hlaða (407), 12.10.2026 ───────────────────────────────────────────────────────────────────────
+  // Agnar 12.10: „að takkinn sæki sem mest af upplýsingum og uppfæri … fyrirtækjaprofiles". Sendir staðfest snið ÞESSA
+  // fyrirtækis beint í innra lagið, svo skyndiminni Vinnutölvu (378) geymi svörin eftir slóð (10 mín, skrif hreinsa).
+  // Fer viljandi FRAMHJÁ `forsott`: þar lifir svar aðeins 5 sek og ónotuð forsókn telst „miss" — 60 fyrirtæki hituð
+  // án þess að opnast hefðu fellt ÖLL sniðin eftir þrjú. Hér er ekkert talið, ekkert lært og enginn lærdómsgluggi
+  // opnaður. `sed` (Set) sleppir slóðum sem sama hleðslulota hefur þegar sent (almenn köll eins og discount_tiers).
+  function hita(id, sed) {
+    id = +id;
+    if (!id || slokkt || skrifIGangi > 0) return Promise.resolve(0);
+    const c = finna(id);
+    const g = grunnur();
+    if (!c || !g) return Promise.resolve(0);
+    const tk = takn(c);
+    const kollin = [];
+    for (let i = 0; i < snid.length; i++) {
+      const s = snid[i];
+      if (!s.stadfest || (s.m !== 'GET' && s.m !== 'HEAD')) continue;
+      const hluti = ur(s.u, tk);
+      if (!hluti) continue;
+      const slod = g + REST + hluti;
+      const k = lykillAf(s.m, slod, s.r, s.p, s.a, s.ap);
+      if (sed) { if (sed.has(k)) continue; sed.add(k); }
+      let p;
+      try { p = innra.call(window, slod, { method: s.m, headers: hausarFyrir(s) }); } catch (_) { continue; }
+      kollin.push(Promise.resolve(p).then(r => (r && r.ok ? 1 : 0), () => 0));
+    }
+    return Promise.all(kollin).then(a => a.reduce((x, y) => x + y, 0));
+  }
+
   window.Forsokn = {
+    hita,
+    nylega,
     tolur: () => Object.assign({ snid: snid.filter(s => s.stadfest).length, i_laerdomi: snid.filter(s => !s.stadfest).length, i_geymslu: forsott.size, slokkt }, tolur),
     snid: () => snid.filter(s => s.stadfest).map(s => s.m + ' ' + s.u),
     taema,

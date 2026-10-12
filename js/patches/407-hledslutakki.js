@@ -61,7 +61,49 @@
         },
       }) },
     { nafn: 'Ársskoðun',    keyra: () => window.Arsskodun && Arsskodun.loadAll && Arsskodun.loadAll() },
+    // 12.10.2026 — Agnar: „að takkinn sæki sem mest af upplýsingum og uppfæri. Sérstaklega fyrir þjónustuborð og
+    // ársskoðun, skýrslugerð, fyrirtækjaprofiles." Þjónustuborðið (368) hleðst hljóðlega (load(true) teiknar aðeins
+    // ef eitthvað breyttist). Prófílarnir — og þar með Skjöl-spjaldið sem skýrslugerðin vinnur í — eru hitaðir með
+    // sömu slóðum og prófíllinn sjálfur sækir (441 lærði þær), svo skyndiminni 378 svarar þegar prófíllinn opnast.
+    { nafn: 'Þjónustuborð', keyra: () => window.Thjonustubord5 && Thjonustubord5.load && Thjonustubord5.load(true) },
+    { nafn: 'Prófílar',     keyra: () => hitaProfila() },
   ];
+
+  // ── hvaða prófíla á að hita ─────────────────────────────────────────────────────────────────────────────────────
+  // Röðin: þeir sem voru opnaðir nýlega á þessari tölvu (441 man auðkennin) → fyrirtæki með opin mál á Þjónustuborði
+  // → Ársskoðunarlistinn eins og hann stendur á skjánum (síur notandans, sama röðun). Þak: 60 fyrirtæki ≈ 2.000 köll,
+  // tvö fyrirtæki í senn svo Supabase fái jafnan straum. Aðeins lestur.
+  const HAMARK_PROFILAR = 60, SAMTIMIS = 2;
+  let sidastaHitun = null;
+  function profilarAdHita() {
+    const ut = [], sed = new Set();
+    const baeta = (id, hamark) => { id = +id; if (!id || sed.has(id) || ut.length >= hamark) return; sed.add(id); ut.push(id); };
+    try { (window.Forsokn && Forsokn.nylega ? Forsokn.nylega() : []).forEach(id => baeta(id, 15)); } catch (_) {}
+    try {
+      const efri = ut.length + 15;
+      const rows = window.Thjonustubord5 && Thjonustubord5.rows ? Thjonustubord5.rows() : [];
+      rows.forEach(r => { if (r && r.fyrirtaeki_id) baeta(r.fyrirtaeki_id, efri); });
+    } catch (_) {}
+    try {
+      document.querySelectorAll('#view-arsskodun ._ars-row[data-co-id], #view-arsskodun ._ars-card[data-co-id]')
+        .forEach(el => baeta(el.getAttribute('data-co-id'), HAMARK_PROFILAR));
+    } catch (_) {}
+    return ut;
+  }
+  async function hitaProfila() {
+    if (!window.Forsokn || typeof Forsokn.hita !== 'function') return;
+    const ids = profilarAdHita();
+    const sed = new Set();
+    let koll = 0, n = 0;
+    for (let i = 0; i < ids.length; i += SAMTIMIS) {
+      const hluti = ids.slice(i, i + SAMTIMIS);
+      const svor = await Promise.all(hluti.map(id => Promise.resolve(Forsokn.hita(id, sed)).catch(() => 0)));
+      koll += svor.reduce((a, b) => a + b, 0);
+      n += hluti.length;
+      mála('⚡ Prófílar … ' + n + '/' + ids.length, '#f6b545');
+    }
+    sidastaHitun = { felog: n, koll, kl: new Date() };
+  }
 
   let ígangi = false;
 
@@ -93,12 +135,18 @@
 
       const felog = (window.Companies && Companies.list && Companies.list.length) || 0;
       const taeki = (window.DB && DB.cache && DB.cache.units && DB.cache.units.length) || 0;
-      mála('✓ ' + felog + ' · ' + taeki + ' tæki', '#16a34a');
-      try { if (window.Toast && Toast.show) Toast.show('⚡ Vinnutölvan er hlaðin — ' + felog + ' fyrirtæki og ' + taeki + ' tæki í minni'); } catch (_) {}
+      const prof = sidastaHitun ? sidastaHitun.felog : 0;
+      mála('✓ ' + felog + ' · ' + taeki + ' tæki · ' + prof + ' prófílar', '#16a34a');
+      try { if (window.Toast && Toast.show) Toast.show('⚡ Vinnutölvan er hlaðin — ' + felog + ' fyrirtæki, ' + taeki + ' tæki og ' + prof + ' prófílar tilbúnir (gilda í 10 mín)'); } catch (_) {}
     } finally {
       ígangi = false;
       if (takki()) takki().disabled = false;
-      setTimeout(() => { if (!ígangi) mála('⚡ Hlaða', null); }, 6000);
+      // 12.10.2026: hitunin gildir svo lengi sem skyndiminni 378 heldur svörum (10 mín) — takkinn segir hvenær var
+      // hlaðið þar til hún rennur út, svo sjáist hvort enn sé hlaðið. Tímamælirinn lifir aðeins einn í senn.
+      clearTimeout(sækja._t1); clearTimeout(sækja._t2);
+      const kl = new Date(), hhmm = String(kl.getHours()).padStart(2, '0') + ':' + String(kl.getMinutes()).padStart(2, '0');
+      sækja._t1 = setTimeout(() => { if (!ígangi) mála('⚡ Hlaðið ' + hhmm, null); }, 6000);
+      sækja._t2 = setTimeout(() => { if (!ígangi) mála('⚡ Hlaða', null); }, 10 * 60 * 1000);
     }
   }
 
@@ -147,6 +195,8 @@
     b.type = 'button';
     b.title = 'Vinnutölvuhamur — ýttu áður en vinnutörnin byrjar:\n'
             + '• sækir fyrirtækjalistann og öll tæki í einni umferð svo prófílar opnist úr minni\n'
+            + '• hleður Þjónustuborðið og Ársskoðun\n'
+            + '• hitar allt að 60 prófíla (nýlega opnaða, með opin mál, og Ársskoðunarlistann) — Skjöl og skýrslugerð með\n'
             + '• kveikir á skyndiminninu\n'
             + '• kennitala á skrá fylgir með; Skatturinn og húsaupplýsingar bíða þar til prófíll opnast\n\n'
             + 'Aðeins lestur; ekkert er skrifað. Valið gildir fyrir þessa tölvu.';
@@ -164,6 +214,6 @@
   if (document.readyState !== 'loading') setja();
   else document.addEventListener('DOMContentLoaded', setja);
 
-  window.Hledslutakki = { saekja: sækja, skref: () => SKREF.map(s => s.nafn) };
+  window.Hledslutakki = { saekja: sækja, skref: () => SKREF.map(s => s.nafn), profilar: profilarAdHita, sidast: () => sidastaHitun };
 })();
 /* === LOK HLEÐSLUTAKKA === */

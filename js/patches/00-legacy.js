@@ -2025,11 +2025,15 @@ console.log('[patch-master] loaded with all fixes');
       _geyCache = null;
     }).catch(function(e){ alert('Villa: '+e.message); });
   }
+  // 12.10.2026 (afköst): sama og tenging fyrirtækjataflunnar — taflan athuguð á undan getComputedStyle (132 ms við eina
+  // prófílopnun). fixGeymslaTable athugar sjáanleikann sjálft líka.
   setInterval(function(){
     var gv = document.getElementById('view-geymsla');
-    if(!gv || getComputedStyle(gv).display==='none') return;
+    if(!gv) return;
     var table = gv.querySelector('table');
-    if(table && !table.dataset._pmGeyFixed) fixGeymslaTable();
+    if(!table || table.dataset._pmGeyFixed) return;
+    if(getComputedStyle(gv).display==='none') return;
+    fixGeymslaTable();
   }, 1000);
   console.log('[pm] geymsla location fix + kennitala + editable shelf active');
 })();
@@ -2207,11 +2211,16 @@ console.log('[patch-master] loaded with all fixes');
   var vc = document.getElementById('view-companies');
   if(vc) mo.observe(vc, {childList:true, subtree:true});
   // Also run on interval as fallback
+  // 12.10.2026 (afköst): ódýru skilyrðin fyrst. getComputedStyle þvingaði stílútreikning ALLS skjalsins á
+  // sekúndufresti, líka meðan prófíll teiknaðist (285 ms við eina opnun, CPU-prófíll) — þó taflan væri þegar tengd.
+  // Sama niðurstaða: ekkert gerist nema taflan sé til, ótengd OG sýnin sjáanleg.
   setInterval(function(){
     var vc = document.getElementById('view-companies');
-    if(!vc || getComputedStyle(vc).display==='none') return;
+    if(!vc) return;
     var table = vc.querySelector('._cl_table');
-    if(table && !table.dataset._pmRowClicks) wireRowClicks();
+    if(!table || table.dataset._pmRowClicks) return;
+    if(getComputedStyle(vc).display==='none') return;
+    wireRowClicks();
   }, 1000);
   console.log('[pm] company row click fix active');
 })();
