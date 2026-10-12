@@ -26,7 +26,9 @@ exports.handler = async (event) => {
   if (!f) return P.json(404, { error: 'Eignin fannst ekki' });
   let felag = '';
   try { const br = await P.sbGet(`customers_base?id=eq.${f.customer_base_id}&select=nafn&limit=1`); if (br.ok) felag = ((await br.json())[0] || {}).nafn || ''; } catch (_) {}
-  const nafnEignar = String(f.nafn || '').replace(new RegExp('^' + felag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*-\\s*', 'i'), '');
+  // „Reitir - Dalshraun 1" → „Dalshraun 1": félagsforskeytið er fyrsta orð félagsnafnsins (eins og afskeyta() í gáttinni)
+  const fyrsta = (felag.split(/[\s,.]+/)[0] || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nafnEignar = fyrsta ? String(f.nafn || '').replace(new RegExp('^' + fyrsta + '[^-]*-\\s*', 'i'), '') : String(f.nafn || '');
 
   if (event.httpMethod === 'GET') {
     let haedir = [];
