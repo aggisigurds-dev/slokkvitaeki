@@ -25,9 +25,9 @@
   if (window.__geymsluvordur461) return;
   window.__geymsluvordur461 = true;
 
+  // Aðeins lyklar sem SANNANLEGA eru afrit af þjóninum (lesið í 153, 85, 295/431, 375/433).
   var SKYNDIMINNI = [
-    /^ars_snapshot_v1$/, /^slokk_app_settings_v1$/, /^company_mail_cache_v2$/,
-    /^fp_\d+$/, /^bupp_skrar_v2/, /^kt_lookup_/, /^hus_upplysingar_/
+    /^ars_snapshot_v1$/, /^slokk_app_settings_v1$/, /^company_mail_cache_v2$/, /^fp_\d+$/
   ];
   function erSkyndiminni(k) { for (var i = 0; i < SKYNDIMINNI.length; i++) if (SKYNDIMINNI[i].test(k)) return true; return false; }
 
