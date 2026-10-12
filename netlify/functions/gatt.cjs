@@ -539,6 +539,12 @@ exports.handler = async (event) => {
       if (b.action === 'item_roda') return await radaItems(b);
       if (/^chk_/.test(String(b.action || ''))) return await checklist(b);
       if (/^vh_/.test(String(b.action || ''))) return await vidhald(b);
+      if (b.action === 'qr') {
+        const sid = parseInt(b.site_id, 10), f0 = await eignFelags(sid);
+        if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+        const tok = P.signQr(sid); if (!tok) return P.json(503, { error: 'QR-merki ekki uppsett' });
+        return P.json(200, { ok: true, url: origin(event) + '/gatt/q/?t=' + tok, eign: { id: f0.id, nafn: f0.nafn, heimilisfang: f0.heimilisfang } });
+      }
     } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
     const text = String(b.body || '').trim();
     if (!text) return P.json(400, { error: 'Tómt skeyti' });

@@ -134,6 +134,19 @@ function json(code, body, extraHeaders) {
   return { statusCode: code, headers: secHeaders(extraHeaders), body: JSON.stringify(body) };
 }
 
+// ── QR-merki eignar (12.10.2026): token = "<fid>.<hmac>" yfir fyrirtaeki_id með JWT-leyndarmálinu — engin tafla ──
+function signQr(fid) {
+  if (!JWT_SECRET) return null;
+  const sig = b64url(crypto.createHmac('sha256', JWT_SECRET).update('qr:' + String(fid)).digest()).slice(0, 22);
+  return String(fid) + '.' + sig;
+}
+function verifyQr(t) {
+  const m = /^(\d{1,10})\.([A-Za-z0-9_-]{22})$/.exec(String(t || ''));
+  if (!m || !JWT_SECRET) return null;
+  const expected = b64url(crypto.createHmac('sha256', JWT_SECRET).update('qr:' + m[1]).digest()).slice(0, 22);
+  const a = Buffer.from(m[2]), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b) ? parseInt(m[1], 10) : null;
+}
 function envReady() { return !!(SUPABASE_URL && SUPABASE_KEY && JWT_SECRET); } // login/session (þarf JWT)
 function dbReady() { return !!(SUPABASE_URL && SUPABASE_KEY); }                 // stjórnsíða/status (aðeins DB)
 
@@ -194,5 +207,6 @@ module.exports = {
   signToken, verifyToken, hashPassword, verifyPassword,
   parseCookies, sessionCookie, clearCookie, getSession,
   sbGet, sbPatch, sbPost, json, secHeaders, envReady, dbReady,
+  signQr, verifyQr,
   SUPABASE_URL, SUPABASE_KEY,
 };

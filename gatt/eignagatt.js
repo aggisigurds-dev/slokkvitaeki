@@ -737,6 +737,27 @@
     }).then(function (ok) { if (ok) toast('Skírteinið er vistað'); }, function () { toast('Skráin lesist ekki'); });
   }
 
+  /* ═══ QR-MERKI EIGNAR: leigutaki skannar → tilkynnir án innskráningar (/gatt/q/?t=…) ═══ */
+  var qrP = null;
+  function saekjaQr() {
+    if (window.QRCode) return Promise.resolve();
+    if (!qrP) qrP = new Promise(function (res, rej) { var sk = document.createElement('script'); sk.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'; sk.onload = res; sk.onerror = function () { qrP = null; rej(new Error('qr')); }; document.head.appendChild(sk); });
+    return qrP;
+  }
+  function opnaQr(b) {
+    if (!b) return;
+    var box = $('#qr-k'); box.innerHTML = '<div class="ft" style="position:static">Bý til merki…</div>';
+    $('#qr-e').textContent = b.nafn || ''; $('#qr-a').textContent = b.heimilisfang || ''; $('#qr-url').textContent = '';
+    $('#qr-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+    (st().demo ? Promise.resolve({ ok: true, j: { url: location.origin + '/gatt/q/?t=9000.synishorn' } }) : api({ action: 'qr', site_id: b.id })).then(function (res) {
+      if (!res.ok) { box.innerHTML = '<div class="ft" style="position:static">' + esc((res.j && res.j.error) || 'Tókst ekki') + '</div>'; return; }
+      var url = res.j.url; $('#qr-url').textContent = url; $('#qr-modal').setAttribute('data-url', url);
+      saekjaQr().then(function () { box.innerHTML = ''; new window.QRCode(box, { text: url, width: 180, height: 180, correctLevel: window.QRCode.CorrectLevel.M }); },
+        function () { box.innerHTML = '<div class="ft" style="position:static">QR-safnið hlóðst ekki — slóðin er hér að neðan</div>'; });
+    });
+  }
+  function lokaQr() { $('#qr-modal').classList.add('hidden'); lokaLikama(); }
+
   /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
   var vbtB = null, vbtQ = '';
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
@@ -766,6 +787,7 @@
   function vbtEign() {
     var b = vbtB, sn = syn();
     $('#vbt-nafn').textContent = b.nafn || ''; $('#vbt-addr').textContent = b.heimilisfang || '';
+    var qb = $('#vbt-qr'); if (qb) qb.classList.toggle('hidden', !sn.verkbeidni);
     var tk = (b.teikning || []).filter(function (f) { return f && f.mynd; });
     $('#vbt-hint').innerHTML = tk.length
       ? ic('teikning', 1.8) + ' Smelltu á <b>+ Punktur</b> á hæðinni og svo á teikninguna þar sem verkið er — eða á teikninguna sjálfa til að stækka hana og merkja þar. Mynd af síma fylgir með.'
@@ -838,6 +860,10 @@
     if ((x = t.closest('[data-ck-nidur]'))) { ckFaera(+x.getAttribute('data-ck-nidur'), 1); return; }
     if ((x = t.closest('[data-vbt-pick]'))) { vbtVelja(+x.getAttribute('data-vbt-pick')); return; }
     if (t.closest('#vbt-an')) { opnaVb(vbtB, null, 'okkar'); return; }
+    if (t.closest('#vbt-qr')) { opnaQr(vbtB); return; }
+    if (t.closest('#qr-close')) { lokaQr(); return; }
+    if (t.closest('#qr-afrita')) { var u = $('#qr-modal').getAttribute('data-url') || ''; if (u && navigator.clipboard) navigator.clipboard.writeText(u).then(function () { toast('Slóðin afrituð'); }); return; }
+    if (t.closest('#qr-prenta')) { document.body.classList.add('qr-prent'); setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove('qr-prent'); }, 500); }, 50); return; }
     if (t.closest('#vbt-skipta')) { vbtB = null; renderVerkbeidnir(); var q = $('#vbt-leit'); if (q) q.focus(); return; }
     if (t.closest('[data-vs-nytt]')) { opnaVb(null, null, 'eigandi'); return; }
     if (t.closest('[data-vs-nytt-okkar]')) { opnaVb(null, null, 'okkar'); return; }
@@ -851,7 +877,7 @@
     if ((x = t.closest('[data-vs-upp]'))) { faera(+x.getAttribute('data-vs-upp'), -1); return; }
     if ((x = t.closest('[data-vs-nidur]'))) { faera(+x.getAttribute('data-vs-nidur'), 1); return; }
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (placing) haettaPlacing(); lokaPop(); if (!$('#vh-modal').classList.contains('hidden')) lokaVh(); if (!$('#vb-modal').classList.contains('hidden')) lokaVb(); if (!$('#lk-modal').classList.contains('hidden')) lokaLk(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (placing) haettaPlacing(); lokaPop(); if (!$('#vh-modal').classList.contains('hidden')) lokaVh(); if (!$('#qr-modal').classList.contains('hidden')) lokaQr(); if (!$('#vb-modal').classList.contains('hidden')) lokaVb(); if (!$('#lk-modal').classList.contains('hidden')) lokaLk(); } });
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'vb-form') { e.preventDefault(); sendaVb(); }
     if (e.target.id === 'lk-form') { e.preventDefault(); sendaLk(); }
@@ -874,6 +900,7 @@
     tengjaMynd('#lk-mynd', '#lk-prev', function (m) { lkMynd = m; });
     ['#vb-modal', '#lk-modal'].forEach(function (s) { var m = $(s); if (m) m.addEventListener('mousedown', function (ev) { if (ev.target === m) { if (s === '#vb-modal') lokaVb(); else lokaLk(); } }); });
     var vm = $('#vh-modal'); if (vm) vm.addEventListener('mousedown', function (ev) { if (ev.target === vm) lokaVh(); });
+    var qm = $('#qr-modal'); if (qm) qm.addEventListener('mousedown', function (ev) { if (ev.target === qm) lokaQr(); });
     var lbm = $('#lb-m'); if (lbm) lbm.addEventListener('click', function (ev) { var lb = G() && G().lbS(); if (lb && smellur(ev, lb.f, lb.b, lbm)) ev.stopPropagation(); });
     var tab = document.querySelector('nav .tab[data-view="vinnusvaedi"]'); if (tab) tab.addEventListener('click', function () { setTimeout(kortLifga, 30); });
   });

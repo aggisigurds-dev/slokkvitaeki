@@ -913,6 +913,25 @@
   @media(max-width:900px){ .vs-span2{grid-column:auto} .vh-grid{grid-template-columns:minmax(0,1fr)} }
   @media(max-width:1100px){ .vs-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media(max-width:900px){ .vs-grid{grid-template-columns:minmax(0,1fr)} .vs-add{flex-wrap:wrap} }
+  /* QR-merki */
+  #qr-modal{z-index:70}
+  .qr-print{display:flex;justify-content:center;padding:6px 0 16px}
+  .qr-lbl{width:300px;padding:18px 18px 16px;border:1.5px solid var(--ink);border-radius:8px;background:#fff;text-align:center;color:#161616}
+  .qr-brand{font-family:var(--lbl);font-size:9px;letter-spacing:2px;color:#696d74;margin-bottom:8px}
+  .qr-t{font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.1}
+  .qr-s{font-size:12px;color:#3f4247;margin:4px 0 12px}
+  .qr-k{display:flex;justify-content:center;min-height:180px}
+  .qr-k img,.qr-k canvas{width:180px;height:180px;display:block}
+  .qr-e{font-family:var(--serif);font-size:18px;font-weight:600;margin-top:12px}
+  .qr-a{font-size:11.5px;color:#696d74}
+  .qr-vefur{display:none}
+  @media print{
+    body.qr-prent > *:not(#qr-modal){display:none!important}
+    body.qr-prent #qr-modal{position:static;display:block;background:none;padding:0;backdrop-filter:none}
+    body.qr-prent #qr-card{box-shadow:none;border:0;padding:0;max-height:none;width:auto}
+    body.qr-prent #qr-card .m-head,body.qr-prent #qr-card .m-foot{display:none}
+    body.qr-prent .qr-lbl{border-color:#000}
+  }
   @media print{
     body *{visibility:hidden!important}
     #eb-main,#eb-main *{visibility:visible!important}
@@ -1085,7 +1104,7 @@
       </div>
       <div id="vbt-eign" class="hidden">
         <div class="vbt-h"><div><div class="kicker">Valin eign</div><h3 id="vbt-nafn"></h3><div class="baddr" id="vbt-addr"></div></div>
-          <div class="vbt-acts"><button type="button" class="gbtn" id="vbt-an"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Verkbeiðni án teikningar</button><button type="button" class="kbtn" id="vbt-skipta">Velja aðra eign</button></div></div>
+          <div class="vbt-acts"><button type="button" class="gbtn" id="vbt-an"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Verkbeiðni án teikningar</button><button type="button" class="kbtn" id="vbt-qr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 14v7h-7M17 21h4"/></svg>QR-merki</button><button type="button" class="kbtn" id="vbt-skipta">Velja aðra eign</button></div></div>
         <div class="vbt-hint" id="vbt-hint"></div>
         <div class="tgrid allar" id="vbt-tk"></div>
         <section class="dsec" style="margin-top:26px"><h4>Verkbeiðnir þessarar eignar <span class="cnt" id="vbt-cnt"></span></h4><div class="dpanel elist" id="vbt-erindi"></div></section>
@@ -1277,9 +1296,21 @@
     <div class="m-foot"><span class="m-note" id="vh-note">Næsta dagsetning reiknast af „síðast" + tíðni. Liðir birtast í dagatali og á eignasíðu.</span><button type="button" class="kbtn hidden" id="vh-eyda">Eyða lið</button><button type="submit" class="gbtn" id="vh-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span id="vh-send-l">Vista</span></button></div>
   </form>
 </div>
+<div class="modal hidden" id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-h">
+  <div class="mcard" id="qr-card">
+    <div class="m-head"><div class="grow"><div class="kicker">QR-merki eignar</div><h3 id="qr-h">Tilkynna bilun</h3><div class="baddr">Leigutakar og starfsfólk skanna merkið og tilkynna með mynd — án innskráningar. Tilkynningin verður verkbeiðni hér og mál á Þjónustuborðinu.</div></div>
+      <button type="button" class="xbtn" id="qr-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="qr-print" id="qr-print">
+      <div class="qr-lbl"><div class="qr-brand">BRUNAHÓLF · SLÖKKVITÆKI EHF.</div><div class="qr-t">Sérðu bilun eða vantar eitthvað?</div><div class="qr-s">Skannaðu merkið og tilkynntu með mynd</div>
+        <div class="qr-k" id="qr-k"></div>
+        <div class="qr-e" id="qr-e"></div><div class="qr-a" id="qr-a"></div></div>
+    </div>
+    <div class="m-foot"><span class="m-note" id="qr-url"></span><button type="button" class="kbtn" id="qr-afrita">Afrita slóð</button><button type="button" class="gbtn" id="qr-prenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>Prenta merki</button></div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261012a"></script>
-<script src="/gatt/portal.js?v=20261012a"></script>
+<script src="/gatt/eignagatt.js?v=20261012b"></script>
+<script src="/gatt/portal.js?v=20261012b"></script>
 </body>
 </html>
