@@ -447,8 +447,11 @@ exports.handler = async (event) => {
       if (!texti) return P.json(400, { error: 'Tómt atriði' });
       const cnt = await P.sbGet(`portal_checklist?${eigin}&select=id`);
       if (cnt.ok && (await cnt.json()).length >= 400) return P.json(429, { error: 'Listinn er fullur (400 atriði)' });
-      const ins = await P.sbPost('portal_checklist', { base_id: baseId, texti, rod: Date.now(), created_by: hofundurNafn() });
-      if (!ins.ok) return P.json(ins.status, { error: 'Vistun mistókst' });
+      // 12.10.2026: `rod` er INTEGER (int4, hámark 2.147.483.647) — Date.now() er ~1,79e12 og
+      // Postgres hafnaði hverju einasta atriði (22003) → „Vistun mistókst" á öllum listum.
+      // Sekúndur frá 1970 (~1,79e9) raðast eins og passa til 2038.
+      const ins = await P.sbPost('portal_checklist', { base_id: baseId, texti, rod: Math.floor(Date.now() / 1000), created_by: hofundurNafn() });
+      if (!ins.ok) { const t = await ins.text().catch(() => ''); console.error('[gatt] chk_add mistókst', ins.status, t.slice(0, 300)); return P.json(ins.status, { error: 'Vistun mistókst' }); }
     } else if (b.action === 'chk_toggle' && id) {
       await P.sbPatch(`portal_checklist?id=eq.${id}&${eigin}`, { lokid_at: b.lokid ? new Date().toISOString() : null });
     } else if (b.action === 'chk_stjarna' && id) {
@@ -465,6 +468,40 @@ exports.handler = async (event) => {
       for (let i = 0; i < ids.length; i++) await P.sbPatch(`portal_checklist?id=eq.${ids[i]}&${eigin}`, { rod: i + 1 });
     } else return P.json(400, { error: 'Óþekkt aðgerð' });
     return P.json(200, { ok: true, checklist: await checklistFelags() });
+  }
+
+  // ── Kerfi skráð af kúnna (stadur_kerfi) — 12.10.2026 (Agnar: „opna á það að maður geti skráð þær upplýsingar þarna") ──
+  //    Kúnninn segir hvort kerfi er til staðar, hver þjónustar það og athugasemd. Skrifað í SÖMU töflu og spjaldið
+  //    „Kerfi og þjónusta" í appinu les (450) — röðin verður handvirk (gikkur), skrad_af = Þjónustuvefur · notandi.
+  //    Aldrei verð/visbending/tækifæri: þeir dálkar eru ekki snertir. ÓVITAÐ-tækifærið (c) hverfur um leið og kúnninn svarar.
+  const KERFI_LEYFD = ['slokkvitaeki', 'slongukefli', 'reykskynjarar', 'brunavidvorunarkerfi', 'vatnsudakerfi', 'neydarlysing', 'utljos',
+    'reyklosun', 'eldvarnarteppi', 'brunathettingar', 'eldvarnaeftirlit', 'slokkvikerfi_eldhus', 'rymingaruppdrattur', 'fjoldaskilti'];
+  async function skraKerfi(b) {
+    if (!syn.kerfi) return P.json(403, { error: 'Kerfin eru ekki opin á þessum aðgangi' });
+    const sid = parseInt(b.site_id, 10), f0 = await eignFelags(sid, 'id,nafn');
+    if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+    const kerfi = String(b.kerfi || '');
+    if (!KERFI_LEYFD.includes(kerfi)) return P.json(400, { error: 'Óþekkt kerfi' });
+    const til = ['ja', 'nei', 'ovitad'].includes(b.til) ? b.til : null;
+    const adili = ['okkar', 'annar', 'enginn'].includes(b.adili) ? b.adili : null;
+    const nafn = String(b.adili_nafn || '').trim().slice(0, 80);
+    const ath = String(b.ath || '').trim().slice(0, 300);
+    if (!til && !adili && !ath) return P.json(400, { error: 'Ekkert til að skrá' });
+    const hver = hofundurNafn(), dags = new Date().toISOString().slice(0, 10);
+    const ex0 = await P.sbGet(`stadur_kerfi?fyrirtaeki_id=eq.${sid}&kerfi=eq.${kerfi}&select=fyrirtaeki_id,athugasemd,thjonustuadili,til_stadar`);
+    const ex = ex0.ok ? (await ex0.json())[0] || null : null;
+    const patch = { skrad_af: 'Þjónustuvefur · ' + hver, heimild: 'thjonustuvefur', uppruni: 'handvirkt' };
+    if (til) patch.til_stadar = til;
+    if (adili === 'okkar') patch.thjonustuadili = 'okkar — skráð á þjónustuvef';
+    else if (adili === 'annar') patch.thjonustuadili = nafn || 'Annar aðili (skráð á þjónustuvef)';
+    else if (adili === 'enginn') patch.thjonustuadili = null;
+    if (ath) patch.athugasemd = ((ex && ex.athugasemd) ? ex.athugasemd + '\n' : '') + 'Þjónustuvefur ' + dags + ' (' + hver + '): ' + ath;
+    const w = ex
+      ? await P.sbPatch(`stadur_kerfi?fyrirtaeki_id=eq.${sid}&kerfi=eq.${kerfi}`, patch)
+      : await P.sbPost('stadur_kerfi', Object.assign({ fyrirtaeki_id: sid, kerfi, til_stadar: til || 'ovitad' }, patch));
+    if (!w.ok) { const t = await w.text().catch(() => ''); console.error('[gatt] kerfi_skra mistókst', w.status, t.slice(0, 300)); return P.json(w.status, { error: 'Vistun mistókst' }); }
+    const ta = patch.thjonustuadili !== undefined ? patch.thjonustuadili : (ex ? ex.thjonustuadili : null);
+    return P.json(200, { ok: true, kerfi: { k: kerfi, til: patch.til_stadar || (ex ? ex.til_stadar : 'ovitad'), adili: /^okkar/i.test(String(ta || '')) ? 'okkar' : (ta ? 'annar' : null) } });
   }
 
   // ── Viðhaldsáætlun og skírteini (portal_vidhald) — 12.10.2026 ──
@@ -540,6 +577,7 @@ exports.handler = async (event) => {
     if (leigutaki && !['punktur', 'lokid', 'qr', undefined, ''].includes(b.action)) return P.json(403, { error: 'Ekki í boði fyrir leigutaka' });
     if (b.action === 'eldvarnabok') return vistaEldvarnabok(b);
     try {
+      if (b.action === 'kerfi_skra') return await skraKerfi(b);
       if (b.action === 'punktur') return await vistaPunkt(b);
       if (b.action === 'lokid') return await lokaVerki(b);
       if (b.action === 'hnit') return await vistaHnit(b);

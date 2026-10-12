@@ -1272,7 +1272,8 @@
         '<td>' + (k.til === 'ja' ? 'Já' : k.til === 'nei' ? 'Nei' : '<span class="dim">Óvitað</span>') + '</td>' +
         (utan ? '' : '<td class="num">' + (sid ? esc(fmtDate(sid)) : '<span class="dim">—</span>') + '</td><td class="num">' + (nae ? esc(manTxt(nae)) : '<span class="dim">—</span>') + '</td>') +
         '<td>' + (k.adili === 'okkar' ? 'Slökkvitæki ehf.' : k.adili === 'annar' ? 'Annar aðili' : '<span class="dim">—</span>') + '</td>' +
-        '<td><span class="kst ' + (seint ? 'vantar' : st) + '">' + esc(seint ? 'Á eftir' : KST_HEITI[st]) + '</span></td>' +
+        '<td><span class="kst ' + (seint ? 'vantar' : st) + '">' + esc(seint ? 'Á eftir' : KST_HEITI[st]) + '</span>' +
+          '<button type="button" class="kbtn xs" data-kerfi-skra="' + esc(k.k) + '" data-sid="' + b.id + '" title="Skrá hvort kerfið er til staðar og hver þjónustar það">' + (st === 'oskrad' ? 'Skrá' : 'Breyta') + '</button></td>' +
         (utan ? '' : '<td class="r">' + (skj && skj.docId ? docLink('PDF', skj.docId) : '<span class="dim">—</span>') + '</td>') + '</tr>';
     }).join('');
     var cnt = [tel.okkar ? tel.okkar + ' hjá okkur' : '', tel.til ? tel.til + ' til staðar' : '', tel.vantar ? tel.vantar + ' vantar' : '', tel.oskrad ? tel.oskrad + ' óskráð' : '']
@@ -1591,9 +1592,52 @@
       } catch (_) {}
     });
   })();
+  // ── Kerfi skráð af kúnna (12.10.2026): „Skrá"/„Breyta" á hverju kerfi í töflunni → innfelld lína með
+  //    Til staðar · Þjónustuaðili · Athugasemd → POST kerfi_skra → sama tafla og appið les. ──
+  function kerfiSkraOpna(btn) {
+    var tr = btn.closest('tr'), k = btn.getAttribute('data-kerfi-skra'), sid = +btn.getAttribute('data-sid');
+    if (!tr || !k) return;
+    var gamla = tr.parentNode.querySelector('.kskra'); if (gamla) gamla.parentNode.removeChild(gamla);
+    if (tr.nextElementSibling && tr.nextElementSibling.classList.contains('kskra') && tr.nextElementSibling.getAttribute('data-k') === k) return;
+    var b = drB, kr = ((b && b.kerfi) || []).filter(function (x) { return x.k === k; })[0] || {};
+    var sel = function (v, cur) { return v === cur ? ' selected' : ''; };
+    var row = document.createElement('tr'); row.className = 'kskra'; row.setAttribute('data-k', k); row.setAttribute('data-sid', sid);
+    row.innerHTML = '<td colspan="7"><div class="kskra-f"><b>' + esc(KERFI_HEITI[k] || k) + '</b>' +
+      '<label>Til staðar <select data-ks="til"><option value="ja"' + sel('ja', kr.til) + '>Já</option><option value="nei"' + sel('nei', kr.til) + '>Nei</option><option value="ovitad"' + sel('ovitad', kr.til || 'ovitad') + '>Veit ekki</option></select></label>' +
+      '<label>Þjónustuaðili <select data-ks="adili"><option value="">— óbreytt —</option><option value="okkar"' + sel('okkar', kr.adili) + '>Slökkvitæki ehf.</option><option value="annar"' + sel('annar', kr.adili) + '>Annar aðili</option><option value="enginn">Enginn</option></select></label>' +
+      '<input type="text" data-ks="nafn" maxlength="80" placeholder="Nafn þjónustuaðila (ef annar)">' +
+      '<input type="text" data-ks="ath" maxlength="300" placeholder="Athugasemd (valfrjálst)">' +
+      '<button type="button" class="kbtn sm" data-kskra-vista="1">' + svgIc('hak', 2) + 'Vista</button><button type="button" class="kbtn sm" data-kskra-haetta="1">Hætta við</button></div></td>';
+    tr.parentNode.insertBefore(row, tr.nextSibling);
+    var ta = row.querySelector('[data-ks="til"]'); if (ta) ta.focus();
+  }
+  function kerfiSkraVista(btn) {
+    var row = btn.closest('.kskra'); if (!row) return;
+    var g = function (n) { var el = row.querySelector('[data-ks="' + n + '"]'); return el ? el.value : ''; };
+    var body = { action: 'kerfi_skra', site_id: +row.getAttribute('data-sid'), kerfi: row.getAttribute('data-k'), til: g('til'), adili: g('adili') || null, adili_nafn: g('nafn'), ath: g('ath') };
+    btn.disabled = true;
+    var purl = state.open ? ('/api/gatt?c=' + encodeURIComponent(SLUG)) : '/api/gatt';
+    (state.demo ? Promise.resolve({ ok: true, j: { ok: true, kerfi: { k: body.kerfi, til: body.til, adili: body.adili === 'enginn' ? null : (body.adili || null) } } })
+      : fetch(purl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+        .catch(function () { return { ok: false, j: { error: 'Engin tenging' } }; }))
+    .then(function (res) {
+      btn.disabled = false;
+      if (!res.ok || !res.j || !res.j.kerfi) { toast((res.j && res.j.error) || 'Vistun mistókst'); return; }
+      var b = drB, L = b.kerfi = b.kerfi || [], hit = L.filter(function (x) { return x.k === res.j.kerfi.k; })[0];
+      if (hit) { hit.til = res.j.kerfi.til; hit.adili = res.j.kerfi.adili; } else L.push({ k: res.j.kerfi.k, skylt: null, til: res.j.kerfi.til, adili: res.j.kerfi.adili });
+      // Endurteikna skúffuna svo staðan, teljararnir og yfirlitsröndin sýni það sem var skráð
+      var ut = ((state.data && state.data.eignir_utan) || []).indexOf(b);
+      if (ut > -1) openUtan(ut); else if (drOpen > -1) openDrawer(drOpen);
+      toast('Skráð — takk, þetta sést líka hjá okkur');
+    });
+  }
   // Smellir: úttekt á kerfum, opna eldvarnabók, síur á yfirliti
   document.addEventListener('click', function (e) {
     var t = e.target;
+    var ks = t.closest && t.closest('[data-kerfi-skra]'); if (ks) { kerfiSkraOpna(ks); return; }
+    var kv = t.closest && t.closest('[data-kskra-vista]'); if (kv) { kerfiSkraVista(kv); return; }
+    var kh = t.closest && t.closest('[data-kskra-haetta]'); if (kh) { var r0 = kh.closest('.kskra'); if (r0) r0.parentNode.removeChild(r0); return; }
     if (t.closest && t.closest('[data-kerfi-uttekt]')) { openErindiB(drB, 'thjonusta'); return; }
     var eo = t.closest && t.closest('[data-eb-opna]');
     if (eo) { closeDrawer(); goView('eldvarnabok'); ebVelja(+eo.getAttribute('data-eb-opna')); window.scrollTo(0, 0); return; }

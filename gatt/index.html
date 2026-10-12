@@ -823,6 +823,17 @@
   .cal-d:hover{background:var(--row-hover)}
   .cal-d em{display:flex;gap:3px}
   .cal-d em b{width:6px;height:6px;border-radius:50%;background:var(--faint)}
+  /* 12.10.2026: skrá atriði á dag (dagatal) + skrá kerfi í töflunni (kerfi og skoðanir) */
+  .cal-nytt{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 16px 4px;padding:10px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--strip)}
+  .cal-nytt b{font-family:var(--lbl);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+  .cal-nytt input,.cal-nytt select,.kskra-f input,.kskra-f select{height:32px;border:1px solid var(--line2);border-radius:6px;padding:0 9px;font:inherit;font-size:13px;background:var(--panel);color:var(--ink);min-width:0}
+  .cal-nytt input{flex:1 1 220px}
+  .kskra td{background:var(--strip);padding:8px 12px 12px}
+  .kskra-f{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .kskra-f>b{flex:1 1 100%;font-size:12.5px;color:var(--ink)}
+  .kskra-f label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+  .kskra-f input{flex:1 1 180px}
+  .kbtn.xs{height:24px;padding:0 9px;font-size:9.5px;margin-left:8px;vertical-align:middle}
   .cal-d em b.skodun{background:var(--accent)}.cal-d em b.eb{background:#c48a1a}.cal-d em b.frestur{background:#c0392b}.cal-d em b.erindi{background:var(--dim)}.cal-d em b.lokid,.cal-d em b.lok{background:#1f7a44}.cal-d em b.seint{background:#c0392b}
   .cal-l{border-top:1px solid var(--line);max-height:340px;overflow:auto}
   .cal-l .egp-r.hl{background:rgba(var(--glow),.08)}
@@ -1357,7 +1368,7 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261012d"></script>
-<script src="/gatt/portal.js?v=20261012d"></script>
+<script src="/gatt/eignagatt.js?v=20261012e"></script>
+<script src="/gatt/portal.js?v=20261012e"></script>
 </body>
 </html>

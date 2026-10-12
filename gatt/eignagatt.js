@@ -379,6 +379,14 @@
       '<div class="cal-nav"><button type="button" class="kbtn sm" data-cal="-1" aria-label="Fyrri mánuður">' + ic('til_baka', 2.2) + '</button><b>' + esc(heiti) + '</b><button type="button" class="kbtn sm" data-cal="1" aria-label="Næsti mánuður">' + ic('afram', 2.2) + '</button><button type="button" class="kbtn sm" data-cal="0">Í dag</button></div>' +
       '<div class="cal-w">' + ['Má', 'Þr', 'Mi', 'Fi', 'Fö', 'La', 'Su'].map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' +
       '<div class="cal-g">' + cells + '</div>' +
+      // 12.10.2026 (Agnar: „Dagatal virkar ekki, get ekki sett neitt inn"): smellur á dag opnar reit til að skrá
+      // atriði á þann dag — vistast sem liður í viðhaldsáætlun eignarinnar (portal_vidhald, naest = dagurinn) og
+      // birtist því strax hér, á eignasíðunni og í áminningum.
+      (cal.sel ? '<div class="cal-nytt" id="cal-nytt"><b>' + cal.sel + '. ' + esc(M[m]) + ' ' + y + '</b>' +
+        '<input type="text" id="cal-nytt-heiti" maxlength="120" placeholder="Hvað á að gerast þennan dag?">' +
+        '<select id="cal-nytt-eign">' + allarEignir().map(function (x) { return '<option value="' + x.id + '">' + esc(x.nafn) + '</option>'; }).join('') + '</select>' +
+        '<select id="cal-nytt-abyrgd"><option value="eigandi">Ég sjálf/ur</option><option value="okkar">Slökkvitæki ehf.</option><option value="annar">Annar aðili</option></select>' +
+        '<button type="button" class="kbtn sm" data-cal-vista="1">' + ic('hak', 2) + 'Setja á dagatal</button><button type="button" class="kbtn sm" data-cal-haetta="1">Hætta við</button></div>' : '') +
       '<div class="cal-l">' + (A.length ? A.map(function (a) {
         return '<div class="egp-r' + (a.id ? ' clk' : '') + '"' + (a.id ? ' data-vb-opna="' + a.id + '"' : (a.fid && a.teg === 'eldvarnabok' ? ' data-eb-opna="' + a.fid + '"' : '')) + '><span class="egd' + (a.seint ? ' seint' : '') + '"><b>' + a.dagur + '</b>' + esc(G().MAN_STUTT[m]) + '</span>' +
           '<div class="egt"><b>' + esc(a.heiti) + '</b><span>' + esc(a.eign) + '</span></div><span class="kst ' + (a.lok ? 'okkar' : a.seint ? 'vantar' : a.teg === 'eldvarnabok' ? (a.drog ? 'til' : 'oskrad') : 'til') + '">' + esc(TEG[a.teg][0]) + '</span></div>';
@@ -666,7 +674,7 @@
   function vhApi(body) {
     if (st().demo) {
       var L = data().vidhald = data().vidhald || [];
-      if (body.action === 'vh_add') (body.rows || [body]).forEach(function (r) { var sid = r.sidast || null, t = +r.tidni || 12; L.push({ id: Date.now() + Math.random(), fid: +r.site_id, kerfi: r.kerfi, heiti: r.heiti, tidni: t, sidast: sid, naest: sid ? vhPlus(sid, t) : null, abyrgd: r.abyrgd || 'okkar', minning: +r.minning || 30, ath: r.ath || '', skirteini: null, gildir_til: null }); });
+      if (body.action === 'vh_add') (body.rows || [body]).forEach(function (r) { var sid = r.sidast || null, t = +r.tidni || 12; L.push({ id: Date.now() + Math.random(), fid: +r.site_id, kerfi: r.kerfi, heiti: r.heiti, tidni: t, sidast: sid, naest: sid ? vhPlus(sid, t) : (r.naest || null), abyrgd: r.abyrgd || 'okkar', minning: +r.minning || 30, ath: r.ath || '', skirteini: null, gildir_til: null }); });
       else { var it = L.filter(function (x) { return x.id === body.id; })[0];
         if (body.action === 'vh_gert' && it) { it.sidast = body.dags || new Date().toISOString().slice(0, 10); it.naest = vhPlus(it.sidast, it.tidni); }
         else if (body.action === 'vh_edit' && it) { ['heiti', 'abyrgd', 'ath'].forEach(function (k) { if (body[k] != null) it[k] = body[k]; }); if (body.tidni) it.tidni = +body.tidni; if (body.minning) it.minning = +body.minning; if (body.sidast !== undefined) { it.sidast = body.sidast; it.naest = it.sidast ? vhPlus(it.sidast, it.tidni) : null; } }
@@ -993,6 +1001,26 @@
     if (t.closest('#vbt-skipta')) { vbtB = null; renderVerkbeidnir(); var q = $('#vbt-leit'); if (q) q.focus(); return; }
     if (t.closest('[data-vs-nytt]')) { opnaVb(null, null, 'eigandi'); return; }
     if (t.closest('[data-vs-nytt-okkar]')) { opnaVb(null, null, 'okkar'); return; }
+    if ((x = t.closest('[data-cal-d]'))) {
+      // Dagur valinn → skráningarreitur undir dagatalinu (sami dagur aftur = loka)
+      var dv = +x.getAttribute('data-cal-d'); cal.sel = cal.sel === dv ? null : dv;
+      $('#vs-dagatal').innerHTML = dagatalHtml();
+      var rows0 = document.querySelectorAll('#vs-dagatal .cal-l .egp-r'); rows0.forEach(function (q) { q.classList.toggle('hl', cal.sel != null && +(q.querySelector('.egd b') || {}).textContent === cal.sel); });
+      var inn = $('#cal-nytt-heiti'); if (inn) inn.focus();
+      return;
+    }
+    if (t.closest('[data-cal-haetta]')) { cal.sel = null; $('#vs-dagatal').innerHTML = dagatalHtml(); return; }
+    if ((x = t.closest('[data-cal-vista]'))) {
+      var heiti = ($('#cal-nytt-heiti') || {}).value || '', sidv = parseInt(($('#cal-nytt-eign') || {}).value, 10), ab = ($('#cal-nytt-abyrgd') || {}).value || 'eigandi';
+      heiti = heiti.trim(); if (!heiti) { toast('Skrifaðu hvað á að gerast'); var i0 = $('#cal-nytt-heiti'); if (i0) i0.focus(); return; }
+      if (!sidv) { toast('Veldu eign'); return; }
+      var dags = cal.y + '-' + ('0' + (cal.m + 1)).slice(-2) + '-' + ('0' + cal.sel).slice(-2);
+      x.disabled = true;
+      vhApi({ action: 'vh_add', rows: [{ site_id: sidv, heiti: heiti, naest: dags, tidni: 12, abyrgd: ab, minning: 7 }] }).then(function (ok) {
+        if (ok) { cal.sel = null; $('#vs-dagatal').innerHTML = dagatalHtml(); toast('Komið á dagatalið'); } else x.disabled = false;
+      });
+      return;
+    }
     if ((x = t.closest('[data-cal]'))) { var d = +x.getAttribute('data-cal'); if (d === 0) { cal.y = new Date().getFullYear(); cal.m = new Date().getMonth(); } else { cal.m += d; if (cal.m < 0) { cal.m = 11; cal.y--; } if (cal.m > 11) { cal.m = 0; cal.y++; } } $('#vs-dagatal').innerHTML = dagatalHtml(); return; }
     if ((x = t.closest('[data-cal-d]'))) { var r = $('#vs-dagatal .cal-l'); if (r) { var rows = r.querySelectorAll('.egp-r'), dd = +x.getAttribute('data-cal-d'); rows.forEach(function (q) { q.classList.toggle('hl', +(q.querySelector('.egd b') || {}).textContent === dd); }); var hl = r.querySelector('.egp-r.hl'); if (hl) hl.scrollIntoView({ block: 'nearest' }); } return; }
     if ((x = t.closest('[data-vs-csv]'))) { var k = x.getAttribute('data-vs-csv'); if (k === 'eignir') csvEignir(false); else if (k === 'heimilisfong') csvEignir(true); else csvErindi(); return; }
