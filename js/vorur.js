@@ -229,6 +229,14 @@
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
       var virktPill = p.virkt ? '' : '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">ÓVIRKT</span>';
       var adraPill = p.sja_adrar_vorur === true ? '<span style="display:inline-block;background:#e2e8f0;color:#334155;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">aðrar vörur</span>' : '';
+      // 12.10.2026: pöntunarmerkið og tengill birgja úr Birgðum (app_settings.birgdir_meta['v:<id>'], patch 36) sjást
+      // líka hér — sama geymsla, svo stjarnan á Birgðasíðunni og pillan hér eru eitt og hið sama. ⭐ hér að ofan er
+      // áfram „á forsíðu Söluborðs" og er annað merki.
+      var bm = {}; try { bm = (window.AppSettings && AppSettings.path && AppSettings.path('birgdir_meta') || {})['v:' + p.id] || {}; } catch (_) {}
+      var pantaPill = bm.panta ? '<span title="Merkt á Birgðum: þarf að panta" style="display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">★ panta</span>' : '';
+      var slodHost = ''; if (bm.slod) { try { slodHost = new URL(bm.slod).hostname.replace(/^www\./, ''); } catch (_) { slodHost = 'tengill'; } }
+      var slodLink = bm.slod ? '<a href="'+esc(bm.slod)+'" target="_blank" rel="noopener" title="'+esc(bm.slod)+'" onclick="event.stopPropagation()" style="display:inline-block;color:#1d4ed8;font-size:10px;margin-left:4px;text-decoration:none">↗ '+esc(slodHost)+'</a>' : '';
+      adraPill += pantaPill + slodLink;
       // \u2b50 beint \u00e1 kortinu: setur v\u00f6runa \u00e1 s\u00f6luforsi\u00f0una \u00e1n \u00feess a\u00f0 opna hana.
       // Fyllt stjarna = \u00e1 fors\u00ed\u00f0u, t\u00f3m = ekki. Smellurinn stoppar h\u00e9r (stopPropagation
       // \u00ed bindEvents) svo hann opni ekki ritilinn \u00ed lei\u00f0inni.
@@ -634,6 +642,14 @@
         await new Promise(function(r){ setTimeout(r, 150); });
       }
       if(_products.some(function(p){ return p.id === id; })) openEditor(id);
+    },
+    // 12.10.2026: „+ Ný söluvara" á Birgðum opnar nýja vöru hér — birgðastaða söluvara býr í vorur.birgdir.
+    ny: async function(){
+      if(window.App && typeof App.switchView === 'function') App.switchView('vorur');
+      for(var i = 0; i < 30 && document.getElementById('view-vorur').innerHTML.indexOf('vorur-grid') < 0; i++){
+        await new Promise(function(r){ setTimeout(r, 150); });
+      }
+      openEditor(null);
     }
   };
 
