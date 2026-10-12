@@ -38,14 +38,21 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sb = () => (window.DB && DB.sb) || null;
 
-  // Litamiðinn: hver viðburður á sinn lit svo röðin lesist í einu augnakasti.
+  /* LITAMIÐINN — Agnar 12.10.2026, orðrétt:
+   *   „2024(Grænt-nýtt) 2025(Grænblátt-skoðað) 2026(Blátt-Hlaðið)"
+   *
+   * ÁRIÐ er merkið; LITURINN ber merkinguna. Þess vegna stendur aðeins ártalið
+   * á flísinni — orðið („nýtt", „skoðað", „hlaðið") fylgir í titlinum ásamt
+   * dagsetningu og skýringu, svo liturinn þarf aldrei að vera eina heimildin.
+   * Heilir litir með hvítum texta: röðin á að lesast í einu augnakasti á
+   * ljósu spjaldi, ekki krefjast þess að maður rýni. */
   const LITIR = {
-    nytt:     { heiti: 'nýtt',     bg: '#064e3b', bor: '#065f46', txt: '#d1fae5' },
-    skodad:   { heiti: 'skoðað',   bg: '#1e293b', bor: '#334155', txt: '#e2e8f0' },
-    hladid:   { heiti: 'hlaðið',   bg: '#78350f', bor: '#92400e', txt: '#fef3c7' },
-    onytt:    { heiti: 'ónýtt',    bg: '#7f1d1d', bor: '#991b1b', txt: '#fee2e2' },
-    mottekid: { heiti: 'móttekið', bg: '#1e3a5f', bor: '#1e40af', txt: '#dbeafe' },
-    tilbuid:  { heiti: 'tilbúið',  bg: '#14532d', bor: '#166534', txt: '#dcfce7' }
+    nytt:     { heiti: 'nýtt',     staf: 'N', bg: '#16a34a', bor: '#15803d', txt: '#ffffff' },  // grænt
+    skodad:   { heiti: 'skoðað',   staf: 'Y', bg: '#0d9488', bor: '#0f766e', txt: '#ffffff' },  // grænblátt (Y = yfirferð)
+    hladid:   { heiti: 'hlaðið',   staf: 'H', bg: '#2563eb', bor: '#1d4ed8', txt: '#ffffff' },  // blátt
+    onytt:    { heiti: 'ónýtt',    staf: 'Ó', bg: '#dc2626', bor: '#b91c1c', txt: '#ffffff' },
+    mottekid: { heiti: 'móttekið', staf: 'M', bg: '#64748b', bor: '#475569', txt: '#ffffff' },
+    tilbuid:  { heiti: 'tilbúið',  staf: 'T', bg: '#15803d', bor: '#166534', txt: '#ffffff' }
   };
   // Röðin á miðanum: nýtt fremst, svo árin í tímaröð. Innan sama árs ræður þessi röð.
   const ROD = ['nytt', 'hladid', 'skodad', 'onytt', 'mottekid', 'tilbuid'];
@@ -116,7 +123,9 @@
       const titill = [L.heiti + ' ' + x.ar, x.dags ? String(x.dags).split('-').reverse().join('/') : '', x.skyring || '']
         .filter(Boolean).join(' · ');
       return '<span class="tsg-f" title="' + esc(titill) + '" style="background:' + L.bg + ';border-color:' + L.bor + ';color:' + L.txt + '">'
-        + esc(L.heiti) + ' <b>' + esc(x.ar) + '</b></span>';
+        // Tveggja stafa ár (Agnar: „eða bara 24-N.... 25-Y.... 26-H"). Fulla ártalið
+        // stendur í titlinum, svo ekkert tapast — línan á að komast fyrir á tækjalínu.
+        + '<b>' + esc(String(x.ar).slice(-2)) + '</b>' + (L.staf ? '<i>-' + esc(L.staf) + '</i>' : '') + '</span>';
     });
     const erNytt = f.some(x => x.vidburdur === 'nytt');
     // „Nýtt" fremst — tómt þar til það er skráð, aldrei giskað úr created_at.
@@ -181,9 +190,10 @@
    * Sami texti, afritaður — skuggarót deilir engu með skjalinu. */
   const TSG_CSS =
       '.tsg{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}' +
-      '.tsg-f{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:999px;' +
-        'border:1px solid;font-size:10.5px;line-height:1.7;letter-spacing:.2px;white-space:nowrap}' +
-      '.tsg-f b{font-weight:700;font-variant-numeric:tabular-nums}' +
+      '.tsg-f{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;' +
+        'border:1px solid;font-size:11px;line-height:1.75;white-space:nowrap}' +
+      '.tsg-f b{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.3px}' +
+      '.tsg-f i{font-style:normal;font-weight:700;opacity:.85;letter-spacing:.3px}' +
       '.tsg-vantar{background:transparent!important;border-color:#94a3b8!important;color:#94a3b8!important;' +
         'cursor:pointer;font:inherit;font-size:10.5px;border-style:dashed!important}' +
       '.tsg-vantar:hover{border-color:#64748b!important;color:#cbd5e1!important}';
