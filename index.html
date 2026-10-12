@@ -604,7 +604,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/88-apply-utlit-almennt.js?v=20260817retired"></script>
 <script defer src="/js/patches/89-monthly-inspection-strip.js?v=20260824canon"></script>
 <script defer src="/js/patches/90-unit-row-actions.js?v=20260510f"></script>
-<script defer src="/js/patches/91-important-companies.js?v=20261001a"></script>
+<script defer src="/js/patches/91-important-companies.js?v=20261012stod"></script>
 <script defer src="/js/patches/92-credit-by-num.js?v=20260914pg2"></script>
 <script defer src="/js/patches/93-detail-stay-open.js?v=20260512a"></script>
 <script defer src="/js/patches/94-document-templates.js?v=20261008sv"></script>
@@ -649,7 +649,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/134-job-notes-display.js?v=20261001a"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
-<script src="/js/features.js?v=20261004ht"></script>
+<script src="/js/features.js?v=20261012stod"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1301,7 +1301,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/276-brunakerfi-back.js?v=20260921a"></script>
 <script defer src="/js/patches/277-nav-back.js?v=20260806a"></script>
 <script defer src="/js/patches/285-rekstrarfelag-tools.js?v=20260728a"></script>
-<script defer src="/js/patches/286-samskipti-panel.js?v=20261008sv"></script>
+<script defer src="/js/patches/286-samskipti-panel.js?v=20261012stod"></script>
 <script defer src="/js/patches/287-crm-board.js?v=20260921a"></script>
 <script defer src="/js/patches/288-rf-thjonustu-summa.js?v=20261004ssp"></script>
 <script defer src="/js/patches/309-thjonustuver-postar.js?v=20261008sv"></script>
@@ -1329,14 +1329,14 @@ var Lanstaeki = {
 <script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261012ferskt"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
 <script defer src="/js/patches/362-teikning-fella.js?v=20260909a"></script>
-<script defer src="/js/patches/363-banner-upplysingar.js?v=20261009grein"></script>
-<script defer src="/js/patches/432-fasteign-facts.js?v=20261009oskrad"></script>
+<script defer src="/js/patches/363-banner-upplysingar.js?v=20261009grein-stod3"></script>
+<script defer src="/js/patches/432-fasteign-facts.js?v=20261012stod"></script>
 <script src="/js/patches/365-vistun-utskolun.js?v=20260909a"></script>
 <script defer src="/js/patches/366-fljotandi-stafli.js?v=20260909a"></script>
 <script defer src="/js/patches/367-bygging-mynd.js?v=20261011engin"></script>
 <script defer src="/js/patches/432-husmynd-utan.js?v=20261001hus"></script>
 <script defer src="/js/patches/368-thjonustubord5.js?v=20261012hita"></script>
-<script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20260924a"></script>
+<script defer src="/js/patches/370-hreyfingaryfirlit-takki.js?v=20261012stod"></script>
 <script defer src="/js/patches/371-opna-solu.js?v=20260911a"></script>
 <script defer src="/js/patches/374-teikning-saekja.js?v=20261003thagufall-hfj-fjol2"></script>
 <script defer src="/js/patches/375-teikning-vistun.js?v=20261007vinnumynd"></script>
@@ -1371,9 +1371,9 @@ var Lanstaeki = {
 <script defer src="/js/patches/402-brunastal-fyrirtaekjasida.js?v=20261005blar"></script>
 <script defer src="/js/patches/403-skjol-spjald.js?v=20261006man"></script>
 <script defer src="/js/patches/404-taeki-spjald.js?v=20261012cv2"></script>
-<script defer src="/js/patches/405-efsta-rod.js?v=20261005kyrrd"></script>
+<script defer src="/js/patches/405-efsta-rod.js?v=20261012stod"></script>
 <script defer src="/js/patches/405-bordi-hnappar.js?v=20260923e"></script>
-<script defer src="/js/patches/411-thett-spjald.js?v=20261012hr"></script>
+<script defer src="/js/patches/411-thett-spjald.js?v=20261012stod4"></script>
 <script defer src="/js/patches/412-skyrsla-samantekt.js?v=20261003ht"></script>
 <script defer src="/js/patches/413-afslaettir-c.js?v=20261003ht"></script>
 <script defer src="/js/patches/408-brunakerfi-skyrsla-inni.js?v=20261005yf"></script>
@@ -1399,6 +1399,8 @@ var Lanstaeki = {
 <script defer src="/js/patches/451-greining-fasteignar.js?v=20261009j"></script>
 <!-- 09.10.2026: Greining → prófíll — „Færa í prófíl“ (aðeins tómir reitir, 🏛 + uppruni), „Greining“-takki á prófílnum, „Stofna sem viðskiptavin“ um Nýtt fyrirtæki -->
 <script defer src="/js/patches/452-greining-faera.js?v=20261009d"></script>
+<!-- 12.10.2026: Stöðug opnun prófíls — húsmynd, upplýsingalínur, Samskipti o.fl. teiknuð í sama tifi og borðinn (minna hopp efst) -->
+<script defer src="/js/patches/462-stodug-opnun.js?v=20261012b"></script>
 <script defer src="/js/patches/456-teikning-forskodun.js?v=20261011b"></script>
 <!-- 11.10.2026: Ársskoðun — Staðirnir sem spjöld (rofi „Spjöld / Listi“ í hlutahausnum; aðeins CSS ofan á töflu 153) -->
 <script defer src="/js/patches/457-ars-spjold.js?v=20261011heil"></script>

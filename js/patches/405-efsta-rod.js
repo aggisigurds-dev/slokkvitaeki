@@ -232,6 +232,8 @@
     setInterval(function () { if (!document.hidden) tick(); }, 1500);
     schedule();
   })();
+  // 12.10.2026: 453 (stöðug opnun) og 370 kalla tifið strax við teikningu borðans — sama verk, áður en málað er.
+  window.Efsta405 = { tick: schedule, scope: scope };
 
   if (!document.getElementById('efsta-405')) {
     var P = 'html[data-thm-preset="brunastal"] #companies-main ';

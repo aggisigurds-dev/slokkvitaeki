@@ -569,6 +569,9 @@ var Companies = {
             lina.appendChild(flagg);
             var eftir = rot.querySelector('.co-banner-skra') || rot.querySelector('.co-banner-facts');
             if (eftir && eftir.parentNode) eftir.parentNode.insertBefore(lina, eftir.nextSibling);
+            // 12.10.2026 (hopp): 405 flytur línuna í haus borðans — strax, ekki í næsta tifi (línan stóð ~80 ms í
+            // staðreyndunum og ýtti öllu 49 px niður og upp aftur).
+            if (window.Efsta405 && Efsta405.scope()) { try { Efsta405.tick(); } catch (_) {} }
           }, function () {});
         };
         var listi = Companies.list || [];

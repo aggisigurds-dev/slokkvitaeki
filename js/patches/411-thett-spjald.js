@@ -72,6 +72,13 @@
     r('.co-bupp ._fasteign > ._bupp-lina', 'grid-column:span 1!important'),
     r('.co-bupp ._fasteign > ._bupp-lina:only-child', 'grid-column:span 2!important'),
     r('.co-bupp > ._bupp-lina:has(._bupp-afsl)', 'grid-column:span 1!important'),
+    // 12.10.2026 (hopp): „Teikningar · Sæki…" (363, meðan teikningar eru sóttar) tekur heila línu — svarið fyllir hana
+    // oftast með Tillögu + Teikningum (mælt á 6 af 6). Hálf lína hleypti Hús-línunni upp við hliðina á henni (dense) og
+    // Tillagan ýtti henni svo aftur niður: borðinn óx um 38–54 px eftir ~1 s.
+    r('.co-bupp > ._bupp-lina._bupp-teikn-saekir', 'grid-column:1 / -1!important'),
+    // 12.10.2026: „Sækja fasteignaupplýsingar" (432) var hvítur texti (gerður fyrir dökka borðann) á hvítri línu — ósýnilegur
+    r('.co-bupp button._fasteign-takki', 'color:#3a4250!important'),
+    r('.co-bupp button._fasteign-takki:hover', 'color:#141822!important'),
     r('.co-bupp ._bupp-lina > ._fasteign-gildi,.co-bupp ._bupp-lina > ._bupp-afsl,.co-bupp ._serupp-lina > ._serupp-inn', 'min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important'),
     r('.b405-knappar', 'grid-area:knappar!important;margin:0 12px 0 0!important;flex-wrap:wrap!important;align-self:start!important'),
     r('.co-mynd', 'align-self:stretch!important'),
@@ -101,6 +108,9 @@
     // 24.09.2026: hýsillinn (286) stendur tómur í ~1 s áður en kortið kemur (159 px) — frátekið pláss svo Úttektin hoppi ekki niður
     r('._samskipti-host', 'min-height:240px'),
     r('._samskipti-host ._skx-hledur', 'max-height:240px!important;overflow:hidden!important;box-sizing:border-box!important'),   // beinagrindin (286) var 279 px → kortið 159 px: 120 px hopp
+    // 12.10.2026 (hopp): kortið er nú 280–290 px þegar félagið á póst („Nýjasta uppfærsla", 5 af 6 mældum) og 240 px annars.
+    // Beinagrindin er því 280 px — algengasta lokahæðin — svo kortið stækkar ekki um 40–50 px eftir ~2 s.
+    r('._samskipti-host ._skx-hledur', 'height:280px!important;max-height:280px!important'),
     r('.card._samskipti-card:not(.b411-opid) ', 'padding:0 0 8px!important;gap:6px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head', 'padding:5px 12px!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:14px!important'),
     r('.card._samskipti-card:not(.b411-opid) ._skx-head ._skx-acts', 'margin-left:auto!important;display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:6px!important;align-items:center!important'),
@@ -248,6 +258,7 @@
   })();
   setInterval(function () { if (!document.hidden) tick(); }, 1200);
   window.addEventListener('resize', schedule);
+  window.Thett411 = { tick: schedule };   // 12.10.2026: 453 kallar strax við teikningu borðans
   // Breytt letur brýtur línur öðruvísi án þess að breiddin breytist — undirskriftin hreinsuð svo næsta tif mælir aftur.
   // Án ResizeObserver gerir stærðarbreyting gluggans það sama.
   function endurmaela() { var m = document.getElementById('companies-main'); if (!m) return; Array.prototype.forEach.call(m.querySelectorAll('.co-banner-note'), function (ta) { ta.__b411sig = null; }); schedule(); }

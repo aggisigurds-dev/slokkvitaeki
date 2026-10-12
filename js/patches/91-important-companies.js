@@ -91,6 +91,9 @@
       }
     });
     actionsRow.insertBefore(btn, actionsRow.firstChild);
+    // 12.10.2026 (hopp): á tölvu í Brunastáli flytur 405 takkann upp í efstu röðina. Það gerðist í næsta tifi, svo
+    // takkaröðin undir borðanum stóð 32 px há í 40–160 ms og allt fyrir neðan hoppaði niður og upp. Nú strax.
+    try { if (window.Efsta405 && Efsta405.scope()) Efsta405.tick(); } catch (_) {}
   }
 
   // ── 2. Inject "Mikilvæg fyrirtæki" section at TOP of view-field ─────────

@@ -91,7 +91,9 @@
   // undan „+ Fleiri upplýsingar“ (363 teiknar hann, 411 staðsetur, 452 opnar gluggann). Hús-línan sýnir aftur aðeins gögnin.
   function medGreiningu(html) { return html; }
   function markup(adr, h) {
-    if (!h) return '';
+    // 12.10.2026 (hopp): meðan lesið er tekur línan plássið sitt — svarið skilar alltaf Hús-línu (gögn, „vantar heimild"
+    // eða „Sækja fasteignaupplýsingar"), svo borðinn vex ekki þegar það kemur.
+    if (!h) return bid.has(lykillAf(adr)) ? '<div class="_bupp-lina _fasteign-lina"><span class="_bupp-merki">Hús</span><span class="_fasteign-gildi">Sæki…</span></div>' : '';
     if (h.svar) {
       const linur = linurUrSvari(h.svar);
       const heimild = String(h.svar.heimild || 'Teikningagögn');
@@ -111,6 +113,18 @@
         (i ? 'Sæki…' : 'Sækja fasteignaupplýsingar') + '</button></div>';
     }
     return '';
+  }
+
+  // 12.10.2026 (hopp): Hús-línan og Séruppdrættir (432s) settust báðar „beint á eftir Teikningum", svo röðin réðst af
+  // því hvor kom síðar og línurnar skiptu um sæti í grindinni. Föst röð: Teikningar · Séruppdrættir · Hús · Óskráð.
+  // Hreyft aðeins ef staðurinn er rangur (432s staðsetur sig beint á eftir Teikningum — sama röð, ekkert reiptog).
+  function stadsetja(box, el) {
+    const ser = box.querySelector(':scope > ._serupp');
+    const teikn = box.querySelector(':scope > ._bupp-teikn-lina');
+    if (ser || teikn) { const a = ser || teikn; if (a.nextElementSibling !== el) a.insertAdjacentElement('afterend', el); return; }
+    const fyrir = box.querySelector(':scope > .b411-oskrad') || box.querySelector(':scope > ._bupp-vixl');
+    if (fyrir) { if (fyrir.previousElementSibling !== el) fyrir.insertAdjacentElement('beforebegin', el); return; }
+    if (el.parentElement !== box) box.appendChild(el);
   }
 
   let _adrRett = 0;
@@ -136,16 +150,12 @@
     let el = box.querySelector('._fasteign');
     const html = medGreiningu(markup(adr, h), id);
     if (!html) { if (el) el.remove(); return; }
-    if (el && el.dataset.sig === sig) return;
     if (!el) {
       el = document.createElement('div');
       el.className = '_fasteign';
-      const teikn = box.querySelector('._bupp-teikn-lina');
-      const vixl = box.querySelector(':scope > ._bupp-vixl');
-      if (teikn) teikn.insertAdjacentElement('afterend', el);
-      else if (vixl) vixl.insertAdjacentElement('beforebegin', el);
-      else box.appendChild(el);
     }
+    stadsetja(box, el);
+    if (el.dataset.sig === sig) return;
     el.dataset.sig = sig;
     el.innerHTML = html;
     const btn = el.querySelector('._fasteign-takki');

@@ -45,6 +45,9 @@
     // 24.09.2026 (Agnar: „Move Hreyfingaryfirlit to the profile box"): á tölvu í Brunastáli situr takkinn í spjaldinu,
     // við hlið Þjónustusamnings/Teikningar (.b405-knappar, 405) — annars í takkaröðinni eins og áður. 370 á hnútinn
     // OG staðinn (regla 4 í CLAUDE.md: tveir pappar mega aldrei eiga sama hnútinn).
+    // 12.10.2026 (hopp): væri spjaldið ekki komið enn fór takkinn fyrst í takkaröðina (32 px lína birtist) og var
+    // svo fluttur — ±32 px hopp undir borðanum. 405 er beðinn að smíða spjaldið strax; ekkert gerist utan gildissviðs þess.
+    if (!main.querySelector('.co-banner .b405-knappar') && window.Efsta405 && Efsta405.scope()) { try { Efsta405.tick(); } catch (_) {} }
     const heim = main.querySelector('.co-banner .b405-knappar') || rod;
     const til = main.querySelector('.' + KLASI);
     if (til && til.dataset.co === coId && til.parentElement === heim) return;   // þegar komið á réttum stað — engin DOM-breyting
