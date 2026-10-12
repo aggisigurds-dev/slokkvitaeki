@@ -42,7 +42,11 @@
     ['verkstaedi',   '🔧 Verkstæði',   'Efni og varahlutir verkstæðisins sem eru ekki seldir sem vörur.'],
     ['nyjar',        '💡 Nýjar vörur', 'Vörur sem við erum að pæla í að fara að selja — nafn, tengill birgja, verð og minnispunktar. ★ = panta prufu.']
   ];
-  const passarHam = (i, h) => h === 'brunakerfi' ? i.flokkur === 'Brunakerfi'
+  // Fimmti glugginn „★ Þarf að panta" (Agnar 12.10): allt stjörnumerkt úr öllum hömum á einum stað.
+  const PANTA_HAM = 'panta';
+  const hamHeiti = i => (HAMIR.find(h => passarHam(i, h[0])) || HAMIR[0])[1];
+  const passarHam = (i, h) => h === PANTA_HAM ? erPanta(i)
+    : h === 'brunakerfi' ? i.flokkur === 'Brunakerfi'
     : h === 'verkstaedi' ? i.uppruni === 'birgdir' && i.flokkur !== NYJAR
     : h === 'nyjar' ? i.uppruni === 'birgdir' && i.flokkur === NYJAR
     : i.uppruni === 'vorur' && i.flokkur !== 'Brunakerfi';
@@ -91,6 +95,9 @@
       .stk-ham-n { opacity:.6; font-weight:600 }
       .stk-ham-p { background:#fef3c7; color:#92400e; border-radius:99px; padding:0 6px; font-size:10.5px; font-weight:700 }
       .stk-ham.on .stk-ham-p { background:#f59e0b; color:#1f1300 }
+      .stk-hamar-panta { background:#fef3c7; border-color:#fcd34d }
+      .stk-ham-panta { color:#92400e }
+      .stk-ham-panta.on { background:#d97706; color:#fff }
     `;
     document.head.appendChild(s);
   }
@@ -108,6 +115,10 @@
       <div class="modal-bd">
         <input type="hidden" id="be-id">
         <div class="fg"><label class="fl">Nafn *</label><input class="fi" id="be-nafn" placeholder="O-hringur 25mm"></div>
+        <div class="fg" style="margin-top:10px"><label class="fl">Hamur</label>
+          <select class="fi" id="be-hamur" onchange="Stock._hamurIGlugga()">${HAMIR.map(h=>`<option value="${h[0]}">${h[1]}</option>`).join('')}</select>
+          <div id="be-hamur-skyring" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+        </div>
         <div class="frow2" style="margin-top:10px">
           <div class="fg"><label class="fl">Flokkur</label>
             <select class="fi" id="be-flokkur">${CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
@@ -169,7 +180,7 @@
   // Flokkur og stöðusía eru útlitsval þessa tækis (localStorage, sbr. CLAUDE.md) — ekki gögn.
   const LS_SIA = 'birgdir_sia';
   let _catFilter = '', _stada = '', _hamur = 'slokkvitaeki', _bidDB = 0;
-  try { const v = JSON.parse(localStorage.getItem(LS_SIA) || '{}'); _catFilter = v.f || ''; _stada = v.s || ''; if (HAMIR.some(h => h[0] === v.h)) _hamur = v.h; } catch (_) {}
+  try { const v = JSON.parse(localStorage.getItem(LS_SIA) || '{}'); _catFilter = v.f || ''; _stada = v.s || ''; if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM) _hamur = v.h; } catch (_) {}
   const geymaSiu = () => { try { localStorage.setItem(LS_SIA, JSON.stringify({ f: _catFilter, s: _stada, h: _hamur })); } catch (_) {} };
   // Myndir söluvara (vorur.mynd — oft data-URL, ~34 KB) sóttar EFTIR að listinn birtist og fylltar í þær myndir
   // sem eru á skjánum, svo listinn bíði ekki eftir 2–3 MB. Sölu-skyndiminnið (POS) er notað ef það er til.
@@ -303,14 +314,17 @@
     const el = document.getElementById('birgdir-main');
     if (!el) return;
     const q = (_filter || '').trim().toLowerCase();
-    const iHam = _items.filter(i => passarHam(i, _hamur));
-    const leitad = iHam.filter(i => !q || (i.nafn||'').toLowerCase().includes(q) || (i.flokkur||'').toLowerCase().includes(q) || (i.birgi||'').toLowerCase().includes(q) || (i.notes||'').toLowerCase().includes(q));
+    const passarLeit = i => !q || (i.nafn||'').toLowerCase().includes(q) || (i.flokkur||'').toLowerCase().includes(q) || (i.birgi||'').toLowerCase().includes(q) || (i.notes||'').toLowerCase().includes(q);
+    // Leitin leitar í ÖLLUM hömum (Agnar 12.10: „hafðu leitina að hún leiti í öllum hömum") — hamurinn ræður aðeins þegar ekkert er slegið inn.
+    const iHam = q ? _items : _items.filter(i => passarHam(i, _hamur));
+    const leitad = iHam.filter(passarLeit);
     let items = leitad.filter(passarStodu);
     if (_catFilter) items = items.filter(i => (i.flokkur || 'almennt') === _catFilter);
 
     const lowCount = iHam.filter(erLagt).length;
     const nPanta = _items.filter(erPanta).length;
-    const hamLysing = (HAMIR.find(h => h[0] === _hamur) || HAMIR[0])[2];
+    const iPanta = _hamur === PANTA_HAM;
+    const hamLysing = iPanta ? 'Allt sem er stjörnumerkt, úr öllum hömum. Stjarnan á línunni tekur af listanum.' : (HAMIR.find(h => h[0] === _hamur) || HAMIR[0])[2];
 
     // Flísar: fjöldi miðað við leit + stöðusíu, svo þær segja hvar það sem leitað er að býr.
     const fjoldi = {};
@@ -318,21 +332,25 @@
     const cats = [...new Set(iHam.map(i => i.flokkur || 'almennt'))].sort(flokkRod);
     const flis = (lbl, val, n, virk, fall) => `<button type="button" class="btn btn-sm ${virk ? 'btn-primary' : 'btn-outline'}" onclick="window.Stock.${fall}(${JSON.stringify(val).replace(/"/g, '&quot;')})" style="white-space:nowrap">${esc(lbl)}${n == null ? '' : ` <span style="opacity:.65;font-weight:600">${n}</span>`}</button>`;
     // Hamarnir: fjöldi í hverjum + fjöldi stjörnumerktra (þarf að panta) í hverjum.
-    const hamFlis = ([v, l]) => { const n = _items.filter(i => passarHam(i, v)).length; const p = _items.filter(i => passarHam(i, v) && erPanta(i)).length;
-      return `<button type="button" class="stk-ham${_hamur === v ? ' on' : ''}" onclick="window.Stock._setHam('${v}')">${esc(l)} <span class="stk-ham-n">${n}</span>${p ? `<span class="stk-ham-p" title="${p} þarf að panta">★ ${p}</span>` : ''}</button>`; };
+    // Með leit sýna flipateljararnir fjölda LEITARNIÐURSTAÐNA í hverjum ham og enginn flipi er „á" (leitað er alls staðar).
+    const hamFlis = ([v, l]) => { const iV = _items.filter(i => passarHam(i, v) && passarLeit(i)); const n = iV.length; const p = iV.filter(erPanta).length;
+      return `<button type="button" class="stk-ham${_hamur === v && !q ? ' on' : ''}" onclick="window.Stock._setHam('${v}')" title="${q ? n + ' niðurstöður hér' : ''}">${esc(l)} <span class="stk-ham-n">${n}</span>${p ? `<span class="stk-ham-p" title="${p} þarf að panta">★ ${p}</span>` : ''}</button>`; };
     const nyr = _hamur === 'nyjar' ? '+ Ný hugmynd' : _hamur === 'verkstaedi' ? '+ Ný vara' : '+ Ný söluvara';
+    const nPantaLeit = q ? _items.filter(i => erPanta(i) && passarLeit(i)).length : nPanta;
+    const pantaFlis = `<button type="button" class="stk-ham stk-ham-panta${iPanta && !q ? ' on' : ''}" onclick="window.Stock._setHam('${PANTA_HAM}')" title="Allt stjörnumerkt úr öllum hömum">★ Þarf að panta <span class="stk-ham-n">${nPantaLeit}</span></button>`;
 
     let html = `<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
         <div class="stk-hamar">${HAMIR.map(hamFlis).join('')}</div>
+        <div class="stk-hamar stk-hamar-panta">${pantaFlis}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">⬇ CSV</button>
-        <button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>
+        ${iPanta ? '' : `<button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>`}
       </div>
     </div>
-    <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${esc(hamLysing)} &middot; ${iHam.length} hlutir${lowCount > 0 ? ` &middot; <span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : ''}${nPanta ? ` &middot; <span style="color:#b45309;font-weight:600">★ ${nPanta} þarf að panta</span>` : ''}</div>
+    <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `🔍 Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : ''}${nPanta ? ` &middot; <span style="color:#b45309;font-weight:600">★ ${nPanta} þarf að panta</span>` : ''}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
       <input id="stk-leit" type="text" placeholder="Leita að vöru, flokki, birgja eða í athugasemdum…" value="${esc(_filter)}" oninput="window.Stock._setFilter(this.value)"
         style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">
@@ -344,15 +362,15 @@
     </div>` : ''}`;
 
     if (!items.length) {
-      const tomt = _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
+      const tomt = iPanta ? 'Ekkert stjörnumerkt — ★ á línu setur vöru hingað' : _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
       html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : tomt) + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á „' + esc(nyr) + '" til að bæta við') + '</div></div>';
     } else {
       html += `<div class="tcard"><table class="dtbl"><thead><tr>
         <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th title="Það sem greitt var, eftir afslátt, án VSK — Enter eða smella út vistar">Kaupverð (án VSK)</th><th title="Listaverð birgjans án VSK (fyrir afslátt) — Enter eða smella út vistar">Listaverð (án VSK)</th><th title="Söluverð með VSK — sama verð og í Vörum og þjónustu og á Sölu. Enter eða smella út vistar.">Söluverð (m/VSK)</th><th title="(söluverð án VSK − kaupverð) / kaupverð">Álagning</th><th>Birgir</th><th style="position:sticky;right:0;background:inherit"></th>
       </tr></thead><tbody>`;
       const hopar = {};
-      // Stjörnumerktar vörur safnast í einn hóp EFST, óháð flokki.
-      items.forEach(i => { const f = erPanta(i) ? PANTA : (i.flokkur || 'almennt'); (hopar[f] = hopar[f] || []).push(i); });
+      // Stjörnumerktar vörur safnast í einn hóp EFST, óháð flokki. Í „★ Þarf að panta"-glugganum er hópað eftir ham.
+      items.forEach(i => { const f = iPanta ? hamHeiti(i) : erPanta(i) ? PANTA : (i.flokkur || 'almennt'); (hopar[f] = hopar[f] || []).push(i); });
       Object.keys(hopar).sort((a, b) => (a === PANTA ? -1 : b === PANTA ? 1 : flokkRod(a, b))).forEach(f => {
         const pantaStill = f === PANTA ? 'background:#fef3c7;color:#92400e;' : 'background:var(--bg2);color:var(--ink2);';
         html += `<tr class="stk-hopur"><td colspan="12" style="${pantaStill}font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 10px">${esc(f)} <span style="opacity:.6;font-weight:600">· ${hopar[f].length}</span>${f === BRUNAKERFI ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}${f === PANTA ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">stjarnan á línunni tekur af listanum</span>' : ''}</td></tr>`;
@@ -546,8 +564,53 @@
     const magn=document.getElementById('be-magn'); if(magn) magn.value='0';
     const lag=document.getElementById('be-lagmark'); if(lag) lag.value= nyjar ? '0' : '5';
     const verd=document.getElementById('be-verd'); if(verd) verd.value='0';
-    const fl=document.getElementById('be-flokkur'); if(fl) fl.value= nyjar ? NYJAR : 'almennt';
+    const hm=document.getElementById('be-hamur'); if(hm) hm.value = nyjar ? 'nyjar' : 'verkstaedi';
+    hamurIGlugga(nyjar ? NYJAR : 'almennt');
     Modal.open('modal-birgdir-edit');
+  }
+
+  // 12.10.2026 (Agnar: „leyfðu mér að færa milli hama"): Hamur-valið í glugganum ræður hvar varan lendir.
+  // Verkstæði ↔ Nýjar vörur = flokkur á birgdir-röðinni. Slökkvitæki / Brunakerfi = varan er STOFNUÐ í `vorur`
+  // (söluvara — birgðastaða, kostnaðarverð, birgir, lýsing, ★ og 🔗 fylgja) og birgdir-röðin tekin út.
+  function hamurIGlugga(flokkur) {
+    const hm = document.getElementById('be-hamur'), fl = document.getElementById('be-flokkur'), sk = document.getElementById('be-hamur-skyring');
+    if (!hm || !fl) return;
+    const h = hm.value;
+    let kostir, laest = false, skyring = '';
+    if (h === 'nyjar') { kostir = [NYJAR]; laest = true; skyring = 'Hugmynd — ekki söluvara enn.'; }
+    else if (h === 'brunakerfi') { kostir = [BRUNAKERFI]; laest = true; skyring = 'Verður söluvara í Vörum og þjónustu (Brunakerfi, seld gegnum skoðun). Söluverð seturðu þar.'; }
+    else if (h === 'slokkvitaeki') {
+      kostir = [...new Set(_items.filter(i => i.uppruni === 'vorur' && i.flokkur !== BRUNAKERFI).map(i => i.flokkur).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'is'));
+      if (!kostir.length) kostir = ['Varahlutir'];
+      skyring = 'Verður söluvara í Vörum og þjónustu og á Sölu. Söluverð seturðu þar.';
+    }
+    else { kostir = CATEGORIES.filter(c => c !== NYJAR); }
+    fl.innerHTML = kostir.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    fl.value = kostir.includes(flokkur) ? flokkur : kostir[0];
+    fl.disabled = laest;
+    if (sk) sk.textContent = skyring;
+  }
+  async function faeraISoluvoru(id, data, hamur) {
+    const SB = getSB(); if (!SB) return false;
+    const gamla = id ? meta('b:' + id) : {};
+    const vara = {
+      nafn: data.nafn, flokkur: data.flokkur, lysing: data.notes || '', birgi: data.birgi,
+      kostnadarverd: data.verd_an_vsk || null, birgdir: data.magn == null ? 0 : data.magn,
+      verd_an_vsk: 0, vsk_prosenta: 24, virkt: hamur === 'slokkvitaeki', forsida: false
+    };
+    const r = await SB.from('vorur').insert(vara).select('id').single();
+    if (r.error || !r.data) { Toast.show('⚠ Vistaðist EKKI í Vörum: ' + ((r.error && r.error.message) || 'engin röð')); return false; }
+    const nyK = 'v:' + r.data.id;
+    const m = {}; if (gamla.panta) m.panta = true; const slod = (document.getElementById('be-slod')?.value || '').trim() || gamla.slod; if (slod) m.slod = slod;
+    if (Object.keys(m).length) await vistaMeta(nyK, m);
+    if (id) {
+      const d = await SB.from('birgdir').delete().eq('id', id);
+      if (d.error) Toast.show('⚠ Gamla verkstæðisröðin stóð eftir: ' + d.error.message);
+      if (gamla.panta || gamla.slod) await vistaMeta('b:' + id, { panta: false, slod: '' });
+    }
+    try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {}
+    Toast.show('✓ ' + data.nafn + ' er nú söluvara — settu söluverð í Vörum og þjónustu');
+    return true;
   }
 
   function openEdit(id) {
@@ -556,7 +619,8 @@
     document.getElementById('birgdir-modal-title').textContent = 'Breyta vöru';
     document.getElementById('be-id').value = id;
     document.getElementById('be-nafn').value = item.nafn||'';
-    document.getElementById('be-flokkur').value = item.flokkur||'almennt';
+    const hm = document.getElementById('be-hamur'); if (hm) hm.value = item.flokkur === NYJAR ? 'nyjar' : 'verkstaedi';
+    hamurIGlugga(item.flokkur||'almennt');
     document.getElementById('be-eining').value = item.eining||'stk';
     document.getElementById('be-magn').value = item.magn||0;
     document.getElementById('be-lagmark').value = item.lagmark||5;
@@ -582,6 +646,14 @@
     };
     const slod = (document.getElementById('be-slod')?.value||'').trim();
     if (slod && !/^https?:\/\//i.test(slod)) { Toast.show('Tengillinn þarf að byrja á http:// eða https://'); return; }
+    const hamur = document.getElementById('be-hamur')?.value || 'verkstaedi';
+    if (hamur === 'nyjar') data.flokkur = NYJAR;
+    if (hamur === 'slokkvitaeki' || hamur === 'brunakerfi') {
+      if (!await faeraISoluvoru(id, data, hamur)) return;
+      Modal.close('modal-birgdir-edit');
+      load();
+      return;
+    }
     const SB = getSB();
     let nyttId = id;
     if (SB) {
@@ -692,7 +764,8 @@
     load, render, openNew, openEdit, saveItem, deleteItem, openNota, confirmNota, exportCsv, togglePanta, setjaSlod,
     _setFilter(v) { _filter=v; render(); },
     _setCat(v)    { _catFilter=v; geymaSiu(); render(); },
-    _setHam(v)    { if (!HAMIR.some(h => h[0] === v)) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
+    _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
+    _hamurIGlugga() { hamurIGlugga(document.getElementById('be-flokkur')?.value); },
     _setStada(v)  { _stada=v; geymaSiu(); render(); },
     _opnaVoru(id) { if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id); else if (window.App) App.switchView('vorur'); }
   };
