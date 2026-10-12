@@ -87,8 +87,10 @@
   async function fetchStatus(coId, year) {
     const s = sb(); if (!s) return null;
     const out = { skyrsla: null, reikningur: null, kt: null };
-    out.kt = await fetchKt(coId);
-    try {
+    // 12.10.2026 (afköst, „setja í eitt load"): kennitölustaðan, skýrslan og reikningurinn eru óháð — ræst SAMTÍMIS.
+    // Áður fimm fyrirspurnir í röð (~0,7 s); nú tvær í röð þar sem hver keðja þarf það (stöð → grunnur, sala → Payday).
+    const ktP = fetchKt(coId);
+    const skyrslaP = (async () => { try {
       const r = await s.from('customer_documents')
         .select('doc_date,drive_file_id')
         .eq('fyrirtaeki_id', coId).eq('year', year)
@@ -96,8 +98,8 @@
         .or('is_duplicate.is.null,is_duplicate.eq.false')
         .limit(1);
       if (r.data && r.data.length) out.skyrsla = { dags: r.data[0].doc_date, drive: r.data[0].drive_file_id };
-    } catch (_) {}
-    try {
+    } catch (_) {} })();
+    const reikningurP = (async () => { try {
       const r = await s.from('solur')
         .select('num,created_at,samtals,krafa_sent_at,paid_at')
         .eq('source', 'uttekt').eq('customer_id', coId)
@@ -116,16 +118,21 @@
           if (p.data && p.data.length) out.reikningur.payday = p.data[0];
         } catch (_) {}
       }
-    } catch (_) {}
+    } catch (_) {} })();
+    out.kt = await ktP;
+    await skyrslaP;
+    await reikningurP;
     return out;
   }
+  const bidur = new Map();   // 12.10.2026: sótt sem er á leiðinni — forsóknin og tick deila einni sókn
   async function statusFor(coId, year, force) {
     const key = coId + '|' + year;
     const hit = cache.get(key);
     if (!force && hit && (Date.now() - hit.at) < TTL) return hit.data;
-    const data = await fetchStatus(coId, year);
-    if (data) cache.set(key, { at: Date.now(), data });
-    return data;
+    if (!force && bidur.has(key)) return bidur.get(key);
+    const p = fetchStatus(coId, year).then((data) => { if (data) cache.set(key, { at: Date.now(), data }); return data; });
+    bidur.set(key, p);
+    try { return await p; } finally { if (bidur.get(key) === p) bidur.delete(key); }
   }
   function cached(coId, year) {
     const hit = cache.get(coId + '|' + year);
@@ -414,7 +421,16 @@
     }
     paintStrip(coId, year); paintReportBtn(coId, year); paintNextYearBtn(coId, year);
   }
-  const mo = new MutationObserver(() => { clearTimeout(mo._t); mo._t = setTimeout(tick, 120); });
+  // 12.10.2026 (afköst): debounce-ið bíður eftir 120 ms ÞÖGN — á meðan prófíllinn teiknast er aldrei þögn, svo sóknin
+  // hófst fyrst ~2 s eftir opnun (mælt á Center Hótel). Nú fer SÓKNIN af stað við fyrstu breytingu; teikningin heldur
+  // debounce-inu (hún skrifar í hluta sem 129 endurteiknar), en finnur þá svarið tilbúið.
+  function forsaekja() {
+    const coId = getCompanyId(); if (!coId) return;
+    const year = new Date().getFullYear();
+    if (cached(coId, year) || bidur.has(coId + '|' + year)) return;
+    statusFor(coId, year).catch(() => {});
+  }
+  const mo = new MutationObserver(() => { forsaekja(); clearTimeout(mo._t); mo._t = setTimeout(tick, 120); });
   function boot() {
     const main = document.getElementById('companies-main');
     if (main) mo.observe(main, { childList: true, subtree: true });
