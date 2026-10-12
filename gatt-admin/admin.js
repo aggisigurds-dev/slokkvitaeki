@@ -61,26 +61,18 @@
     { k: 'blar', n: 'Blátt', d: 'Dökkblátt · silfur', hdr: '#132036', paper: '#e6ebf2', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
   ];
   // Hlutar eignasíðunnar sem kveikt/slökkt er á per félag (portal_users.syn; vantar = á)
-  var SYN_LIST = [
-    ['teikningar', 'Teikningar', 'Forskoðun hverrar hæðar með merkjum'],
-    ['threed', '3D-mynd', 'Vistuð 3D-mynd hæðar'],
-    ['nidurhal', 'Niðurhal', 'Kúnni getur sótt teikningu og 3D'],
-    ['greining', 'Greining', 'Samantekt tækja, merkja og eldveggja'],
-    ['taeki', 'Tækjaskrá', 'Tegund, staðsetning, skoðunardagar'],
-    ['skjol', 'Skýrslur og reikningar', 'Skjöl eignarinnar'],
-    ['verkbeidni', 'Verkbeiðnir', 'Kúnni sendir verkbeiðni → Þjónustuborð'],
-    ['kerfi', 'Kerfi og kröfur', 'Kerfi hverrar eignar: skylt, til staðar, okkar'],
-    ['erindi', 'Erindi', 'Staða erinda: móttekið → í vinnslu → lokið'],
-    ['eldvarnabok', 'Eldvarnabók', 'Mánaðarlegt eigið eftirlit, undirritað í gáttinni'],
-    ['punktar', 'Verkbeiðnapunktar', 'Verkbeiðni sett sem punktur á teikningu með mynd; grænn þegar lagað'],
-    ['vinnusvaedi', 'Mitt vinnusvæði', 'Dagatal, verkefni, kort, niðurhal, skjöl og hlekkir kúnnans'],
-    ['baeta_eign', 'Bæta við eign', 'Kúnni bætir eign við úr Landeignaskrá HMS (utan þjónustu)'],
-    ['fasteign', 'Greining fasteignar', 'Eignin, byggingarupplýsingar, brunavarnir úr byggingarlýsingu, kröfur, skjalasafn — kúnni velur hvað sést'],
-  ];
+  // Verkfæraskráin er í gatt/verkfaeri.js (hlaðin á undan) — sömu lyklar og á þjóninum (_gatt-verkfaeri.cjs)
+  var VERKFAERI = window.GATT_VERKFAERI || [];
+  var SYN_LIST = VERKFAERI.map(function (v) { return [v.k, v.heiti, v.lysing, v.hopur, v.tilbuid, v.sjalfgefid]; });
+  var HOPAR = [['grunnur', 'Eignasíðan'], ['stadall', 'Staðalbúnaður'], ['vidbot', 'Viðbótartól — væntanleg']];
   function synHtml(a) {
-    var s = a.syn || {};
-    return '<div class="synir' + (a.show_details ? '' : ' off') + '">' + SYN_LIST.map(function (x) {
-      return '<label class="sck"><input type="checkbox" data-syn="' + x[0] + '"' + (s[x[0]] === false ? '' : ' checked') + '><span><b>' + esc(x[1]) + '</b><small>' + esc(x[2]) + '</small></span></label>';
+    var s = a.syn || {}, n = 0;
+    return '<div class="synir' + (a.show_details ? '' : ' off') + '">' + HOPAR.map(function (h) {
+      var L = SYN_LIST.filter(function (x) { return x[3] === h[0]; }); if (!L.length) return '';
+      return '<div class="syn-h">' + esc(h[1]) + '</div>' + L.map(function (x) {
+        var tilb = x[4], on = tilb && (typeof s[x[0]] === 'boolean' ? s[x[0]] : x[5]);
+        return '<label class="sck' + (tilb ? '' : ' bidur') + '"><input type="checkbox" data-syn="' + x[0] + '"' + (on ? ' checked' : '') + (tilb ? '' : ' disabled') + '><span><b>' + esc(x[1]) + (tilb ? '' : ' <i>væntanlegt</i>') + '</b><small>' + esc(x[2]) + '</small></span></label>';
+      }).join('');
     }).join('') + '</div>';
   }
   function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES[0]; }
@@ -254,7 +246,7 @@
       var themeEl = row.querySelector('[data-f="theme"]'); if (themeEl) body.theme = themeEl.value;
       var detEl = row.querySelector('[data-f="details"]'); if (detEl) body.show_details = !!detEl.checked;
       var synEls = row.querySelectorAll('[data-syn]');
-      if (synEls.length) { body.syn = {}; synEls.forEach(function (c) { body.syn[c.getAttribute('data-syn')] = !!c.checked; }); }
+      if (synEls.length) { body.syn = {}; synEls.forEach(function (c) { if (!c.disabled) body.syn[c.getAttribute('data-syn')] = !!c.checked; }); }
       api(body).then(function (res) { if (res.ok) { toast('Vistað'); load(); } else toast(res.error || 'Villa'); });
     };
     row.querySelector('[data-act="toggle"]').onclick = function () {

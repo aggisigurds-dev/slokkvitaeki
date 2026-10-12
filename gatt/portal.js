@@ -186,7 +186,7 @@
       // Sýnishornið sýnir „nánari upplýsingar“ (?details=0 slekkur)
       DEMO.account.details = !/[?&]details=0/.test(location.search);
       if (DEMO.account.details) DEMO.buildings.forEach(function (b, bi) { b.equipment = demoEquipment(b); b.teikning = demoTeikning(b, bi); });
-      DEMO.account.syn = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true };
+      DEMO.account.syn = {}; Object.keys(SYN_DEF).forEach(function (k) { DEMO.account.syn[k] = SYN_DEF[k]; });
       demoEignagatt();
       if (window.GattVinnusvaedi) GattVinnusvaedi.demo(DEMO);
       renderPortal(DEMO); showDemoRibbon(); return;
@@ -544,11 +544,13 @@
      Smellur á eign opnar eignasíðu: yfirlit, teikningar hverrar hæðar (2D með merkjum
      eða vistuð 3D-mynd, stækka + sækja), greining teikninga, tækjaskrá, skýrslur og
      reikningar. syn (valið á gatt-admin) ræður hvaða hlutar sjást. */
-  var SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
-    punktar: true, vinnusvaedi: true, baeta_eign: true, fasteign: true };   // 11.10.2026: verkbeiðnapunktar, Mitt vinnusvæði, Bæta við eign (eignagatt.js)
+  // Verkfæraskráin (gatt/verkfaeri.js, hlaðin á undan): lykill → sjálfgefið; ótilbúið tól er alltaf slökkt
+  var SYN_DEF = {};
+  (window.GATT_VERKFAERI || []).forEach(function (v) { SYN_DEF[v.k] = !!(v.sjalfgefid && v.tilbuid); });
+  var SYN_TILBUID = {}; (window.GATT_VERKFAERI || []).forEach(function (v) { SYN_TILBUID[v.k] = !!v.tilbuid; });
   function synOf() {
     var a = (state.data && state.data.account) || {}, s = {};
-    Object.keys(SYN_DEF).forEach(function (k) { s[k] = a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]; });
+    Object.keys(SYN_DEF).forEach(function (k) { s[k] = (a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]) && SYN_TILBUID[k]; });
     return s;
   }
   var drOpen = -1, drB = null;
@@ -719,7 +721,7 @@
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
-    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b);
+    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b) + (window.GattSaga ? GattSaga.eignHtml(b) : '');
     // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];

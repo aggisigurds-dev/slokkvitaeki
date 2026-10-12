@@ -17,6 +17,7 @@ const P = require('./_portal.cjs');
 const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
 const GY = require('./_gatt-years.cjs');
 const M = require('./_gatt-myndir.cjs');
+const VF = require('./_gatt-verkfaeri.cjs');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -43,18 +44,8 @@ function dedupeDocs(rows, keyFn) {
   for (const d of rows) m.set(keyFn(d), betterDoc(m.get(keyFn(d)), d));
   return [...m.values()];
 }
-// ── Eignasíða (portal_users.show_details + syn) ─────────────────────────────
-// syn = hvaða hlutar sjást; vantar lykil = sjálfgefið (allt nema það sem er slökkt á gatt-admin).
-// 11.10.2026: punktar = verkbeiðni sem punktur á teikningu með mynd; vinnusvaedi = „Mitt vinnusvæði" (dagatal, verkefni,
-// kort, niðurhal, skjöl og hlekkir); baeta_eign = kúnni bætir eign við úr Landeignaskrá.
-const SYN_DEF = { teikningar: true, threed: true, nidurhal: true, greining: true, taeki: true, skjol: true, verkbeidni: true, kerfi: true, erindi: true, eldvarnabok: true,
-  punktar: true, vinnusvaedi: true, baeta_eign: true, fasteign: true };   // fasteign = greining fasteignar á eignasíðu (opinber gögn)
-function lesaSyn(acct) {
-  const syn = Object.assign({}, SYN_DEF);
-  const s = acct && acct.syn && typeof acct.syn === 'object' ? acct.syn : {};
-  Object.keys(SYN_DEF).forEach((k) => { if (typeof s[k] === 'boolean') syn[k] = s[k]; });
-  return syn;
-}
+// ── Eignasíða: syn = hvaða verkfæri eru kveikt (gatt-admin) — skráin er í _gatt-verkfaeri.cjs / gatt/verkfaeri.js ──
+const lesaSyn = VF.lesaSyn;
 // Merki á teikningu → heiti + litur (sömu kóðar og 434-teikning-takn). Tæki = tegund úr tækjaskrá.
 const MERKI = {
   neydarutgangur: ['Neyðarútgangur', '#15803d'], ut: ['Útgangsmerki', '#15803d'], hose: ['Slöngumerki', '#be123c'],
@@ -597,6 +588,8 @@ exports.handler = async (event) => {
           ny.hlekkir = inn.hlekkir.slice(0, 20).map((x) => ({ h: String((x && x.h) || '').trim().slice(0, 40), u: String((x && x.u) || '').trim().slice(0, 300) }))
             .filter((x) => x.h && /^https?:\/\/[^\s]+$/i.test(x.u));
         }
+        // kúnninn felur sjálfur verkfæri sem hann notar ekki (aðeins þau sem við höfum kveikt á birtast til vals)
+        if (inn.verkfaeri && typeof inn.verkfaeri === 'object') { const v = {}; VF.LYKLAR.forEach((k) => { if (typeof inn.verkfaeri[k] === 'boolean') v[k] = inn.verkfaeri[k]; }); ny.verkfaeri = Object.assign({}, ny.verkfaeri || {}, v); }
         const pr = await P.sbPatch(`portal_users?base_id=eq.${baseId}&active=eq.true&select=id`, { stillingar: ny });
         return pr.ok ? P.json(200, { ok: true, stillingar: ny }) : P.json(pr.status, { error: 'Vistun mistókst' });
       }

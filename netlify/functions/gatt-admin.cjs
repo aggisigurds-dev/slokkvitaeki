@@ -42,6 +42,7 @@ function origin(event) {
 // Þemu Þjónustuvefsins (gatt/index.html :root[data-theme=…]). Annað gildi er hunsað.
 const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar'];
 const M = require('./_gatt-myndir.cjs');
+const VF = require('./_gatt-verkfaeri.cjs');
 async function verkListi() {
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
   const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at';
@@ -166,7 +167,7 @@ exports.handler = async (event) => {
       // Hvaða hlutar eignasíðunnar sjást — aðeins þekktir lyklar, aðeins true/false
       if (body.syn && typeof body.syn === 'object') {
         const s = {};
-        ['teikningar', 'threed', 'nidurhal', 'greining', 'taeki', 'skjol', 'verkbeidni', 'kerfi', 'erindi', 'eldvarnabok', 'punktar', 'vinnusvaedi', 'baeta_eign', 'fasteign'].forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });
+        VF.LYKLAR.forEach((k) => { if (typeof body.syn[k] === 'boolean') s[k] = body.syn[k]; });   // skráin: _gatt-verkfaeri.cjs
         patch.syn = s;
       }
       if (!Object.keys(patch).length) return P.json(400, { error: 'Ekkert til að vista' });

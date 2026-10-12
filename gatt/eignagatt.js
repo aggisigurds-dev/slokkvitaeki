@@ -304,13 +304,32 @@
     if (!synileg) { renderVerkbeidnir(); return; }
     var cnt = erindi().filter(function (e) { return e.stada !== 'lokid' && e.abyrgd && e.abyrgd !== 'okkar'; }).length;
     var badge = $('#vsBadge'); if (badge) { badge.textContent = cnt; badge.classList.toggle('hidden', !cnt); }
-    renderChecklist(); renderVidhald(); renderHlekkir();
-    $('#vs-verk').innerHTML = verkefniHtml();
-    $('#vs-dagatal').innerHTML = dagatalHtml();
-    $('#vs-nidurhal').innerHTML = nidurhalHtml();
-    $('#vs-skjol').innerHTML = skjolHtml();
-    if (!$('#v-vinnusvaedi').classList.contains('hidden')) kortLifga();
+    // Hver eining hlýðir rofa okkar (syn) OG vali kúnnans (stillingar.verkfaeri — „Stilla vinnusvæði")
+    var sn = syn(), fel = felur();
+    var syna = function (id, k) { var el = $('#' + id); if (!el) return false; var on = !!sn[k] && fel[k] !== false; el.hidden = !on; return on; };
+    renderHlekkir();   // tenglastika kúnnans (hin lotan 12.10 10:22)
+    if (syna('vs-check', 'checklisti')) renderChecklist();
+    if (syna('vs-vidhald', 'vidhald')) renderVidhald(); syna('vs-skirteini', 'vidhald');
+    if (syna('vs-verk', 'verkefni')) $('#vs-verk').innerHTML = verkefniHtml();
+    if (syna('vs-dagatal', 'dagatal')) $('#vs-dagatal').innerHTML = dagatalHtml();
+    if (syna('vs-nidurhal', 'csv')) $('#vs-nidurhal').innerHTML = nidurhalHtml();
+    if (syna('vs-skjol', 'skjol_hlekkir')) $('#vs-skjol').innerHTML = skjolHtml();
+    var kortOn = syna('vs-kort-wrap', 'kort');
+    if (kortOn && !$('#v-vinnusvaedi').classList.contains('hidden')) kortLifga();
+    var sb = $('#vs-stilla'); if (sb) sb.classList.toggle('hidden', !(window.GATT_VERKFAERI || []).some(function (v) { return v.fela && sn[v.k]; }));
     renderVerkbeidnir();
+  }
+  function felur() { var a = data().account || {}; return (a.stillingar && a.stillingar.verkfaeri) || {}; }
+  function stillaHtml() {
+    var sn = syn(), fel = felur();
+    return (window.GATT_VERKFAERI || []).filter(function (v) { return v.fela && sn[v.k]; }).map(function (v) { return '<label><input type="checkbox" data-vs-fela="' + v.k + '"' + (fel[v.k] === false ? '' : ' checked') + '>' + esc(v.heiti) + '</label>'; }).join('') +
+      '<div class="egp-n">Það sem er tekið af hakinu hverfur af vinnusvæðinu þínu — ekkert eyðist. Slökkvitæki ehf. ræður hvaða tól eru í boði.</div>';
+  }
+  function felaVerkfaeri(k, on) {
+    var a = data().account; if (!a) return;
+    a.stillingar = a.stillingar || {}; a.stillingar.verkfaeri = a.stillingar.verkfaeri || {}; a.stillingar.verkfaeri[k] = on;
+    renderVinnusvaedi();
+    if (!st().demo) api({ action: 'stillingar', stillingar: { verkfaeri: a.stillingar.verkfaeri } }).then(function (res) { if (!res.ok) toast('Valið vistaðist ekki'); });
   }
   /* Verkefni — gátlisti */
   function verkefniHtml() {
@@ -917,6 +936,35 @@
     if (!st().demo) api({ action: 'stillingar', stillingar: { greining: st2 } }).then(function (res) { if (!res.ok) toast('Valið vistaðist ekki'); });
   }
 
+  /* ═══ SAGA EIGNAR — tímalína úr því sem er til: erindi, viðhald, skírteini, eldvarnabók, skýrslur ═══ */
+  function sagaEignar(b) {
+    var L = [], M = G().MAN_LANGT;
+    erindi().filter(function (e) { return e.fid === b.id; }).forEach(function (e) {
+      if (e.dags) L.push({ d: String(e.dags).slice(0, 10), t: 'vb', h: (e.tegund === 'verkefni' ? 'Verkefni skráð' : e.tegund === 'eldvarnabok' ? 'Frávik úr eldvarnabók' : 'Verkbeiðni send'), s: e.titill });
+      if (e.lokid) L.push({ d: String(e.lokid).slice(0, 10), t: 'ok', h: 'Lokið', s: e.titill + (e.lokid_lysing ? ' — ' + e.lokid_lysing : '') });
+    });
+    (data().vidhald || []).filter(function (r) { return r.fid === b.id; }).forEach(function (r) {
+      if (r.sidast) L.push({ d: r.sidast, t: 'ok', h: 'Framkvæmt', s: r.heiti });
+      if (r.skirteini) L.push({ d: r.uppf ? String(r.uppf).slice(0, 10) : r.sidast || '', t: 'sk', h: 'Skírteini', s: r.skirteini.heiti + (r.gildir_til ? ' · gildir til ' + fmtDate(r.gildir_til) : '') });
+    });
+    (b.eldvarnabok || []).forEach(function (r) { if (r.stada === 'undirritad' && r.undirritad_at) L.push({ d: String(r.undirritad_at).slice(0, 10), t: 'eb', h: 'Eldvarnabók undirrituð', s: M[+r.manudur.slice(5) - 1] + ' ' + r.manudur.slice(0, 4) + (r.undirritad_af ? ' · ' + r.undirritad_af : '') }); });
+    (data().reports || []).filter(function (r) { return r.bygging === b.nafn && r.dags && String(r.dags).length >= 10; }).forEach(function (r) { L.push({ d: String(r.dags).slice(0, 10), t: 'ok', h: 'Skoðun — ' + (r.tegund || 'skýrsla'), s: r.magn ? r.magn + ' tæki' : '' }); });
+    return L.filter(function (x) { return x.d; }).sort(function (a, c) { return c.d.localeCompare(a.d); });
+  }
+  function sagaHtml(b) {
+    if (!syn().saga || !b || b.id == null) return '';
+    var L = sagaEignar(b);
+    return '<section class="dsec"><h4>Saga eignar <span class="cnt">' + (L.length ? L.length + ' atburðir' : '') + '</span></h4>' +
+      (L.length ? '<div class="dpanel" style="padding:8px 16px"><div class="sg-l" id="sg-l">' + L.slice(0, 12).map(function (x) { return '<div class="sg-r ' + x.t + '"><span class="sg-d">' + esc(fmtDate(x.d)) + '</span><span class="sg-t"><b>' + esc(x.h) + '</b>' + (x.s ? ' · ' + esc(x.s) : '') + '</span></div>'; }).join('') +
+        (L.length > 12 ? '<div class="sg-r"><span class="sg-d"></span><span class="sg-t"><button type="button" class="kbtn sm" data-sg-meira="' + b.id + '">Sjá allt (' + L.length + ')</button></span></div>' : '') + '</div></div>'
+        : '<div class="dpanel"><div class="dempty">Engin saga enn — skoðanir, verk, skírteini og eldvarnabók birtast hér eftir dagsetningu.</div></div>') + '</section>';
+  }
+  document.addEventListener('click', function (e) {
+    var x = e.target.closest && e.target.closest('[data-sg-meira]'); if (!x) return;
+    var b = eignAfId(+x.getAttribute('data-sg-meira')), L = sagaEignar(b), el = $('#sg-l'); if (!el) return;
+    el.innerHTML = L.map(function (y) { return '<div class="sg-r ' + y.t + '"><span class="sg-d">' + esc(fmtDate(y.d)) + '</span><span class="sg-t"><b>' + esc(y.h) + '</b>' + (y.s ? ' · ' + esc(y.s) : '') + '</span></div>'; }).join('');
+  });
+
   /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
   var vbtB = null, vbtQ = '';
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
@@ -946,7 +994,7 @@
   function vbtEign() {
     var b = vbtB, sn = syn();
     $('#vbt-nafn').textContent = b.nafn || ''; $('#vbt-addr').textContent = b.heimilisfang || '';
-    var qb = $('#vbt-qr'); if (qb) qb.classList.toggle('hidden', !sn.verkbeidni);
+    var qb = $('#vbt-qr'); if (qb) qb.classList.toggle('hidden', !(sn.verkbeidni && sn.qr));
     var tk = (b.teikning || []).filter(function (f) { return f && f.mynd; });
     $('#vbt-hint').innerHTML = tk.length
       ? ic('teikning', 1.8) + ' Smelltu á <b>+ Punktur</b> á hæðinni og svo á teikninguna þar sem verkið er — eða á teikninguna sjálfa til að stækka hana og merkja þar. Mynd af síma fylgir með.'
@@ -1011,6 +1059,8 @@
     if ((x = t.closest('[data-vh-gert]'))) { var vg = vhL().filter(function (q) { return q.id === +x.getAttribute('data-vh-gert'); })[0]; if (vg && window.confirm('Merkja „' + vg.heiti + '" framkvæmt í dag? Næsta dagsetning færist fram um ' + vg.tidni + ' mánuði.')) vhApi({ action: 'vh_gert', id: vg.id }).then(function (ok) { if (ok) toast('Skráð framkvæmt'); }); return; }
     if (t.closest('#vh-close')) { lokaVh(); return; }
     if (t.closest('#vh-eyda')) { if (vhId && window.confirm('Eyða þessum lið úr áætluninni?')) vhApi({ action: 'vh_eyda', id: vhId }).then(function (ok) { if (ok) lokaVh(); }); return; }
+    if (t.closest('#vs-stilla')) { var sp2 = $('#vs-stilla-p'); sp2.innerHTML = stillaHtml(); sp2.classList.toggle('hidden'); return; }
+    if (!t.closest('#vs-stilla-p')) { var sp3 = $('#vs-stilla-p'); if (sp3) sp3.classList.add('hidden'); }
     if ((x = t.closest('[data-ck-hak]'))) { var ci = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-hak'); })[0]; if (ci) ckApi({ action: 'chk_toggle', id: ci.id, lokid: !ci.lokid }); return; }
     if ((x = t.closest('[data-ck-stj]'))) { var cs = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-stj'); })[0]; if (cs) ckApi({ action: 'chk_stjarna', id: cs.id, stjarna: !cs.stjarna }); return; }
     if ((x = t.closest('[data-ck-eyda]'))) { ckApi({ action: 'chk_eyda', id: +x.getAttribute('data-ck-eyda') }); return; }
@@ -1088,7 +1138,7 @@
     if (it && tx && tx !== it.texti) { it.texti = tx; ckApi({ action: 'chk_texti', id: id, texti: tx }); } else renderChecklist();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-ck-texti]')) { e.preventDefault(); e.target.blur(); } });
-  document.addEventListener('change', function (e) { var gh = e.target.closest && e.target.closest('[data-gr-hak]'); if (gh) grHak(gh.getAttribute('data-gr-hak'), gh.checked); });
+  document.addEventListener('change', function (e) { var gh = e.target.closest && e.target.closest('[data-gr-hak]'); if (gh) grHak(gh.getAttribute('data-gr-hak'), gh.checked); var fv = e.target.closest && e.target.closest('[data-vs-fela]'); if (fv) { felaVerkfaeri(fv.getAttribute('data-vs-fela'), fv.checked); var sp4 = $('#vs-stilla-p'); if (sp4) { sp4.innerHTML = stillaHtml(); sp4.classList.remove('hidden'); } } });
   document.addEventListener('change', function (e) { var vs = e.target.closest && e.target.closest('[data-vh-skjal]'); if (vs) { vhSkjal(+vs.getAttribute('data-vh-skjal'), vs.files && vs.files[0]); vs.value = ''; } });
   document.addEventListener('change', function (e) { if (e.target.id === 'vs-skra') { vistaSkra(e.target.files && e.target.files[0]); e.target.value = ''; } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vbt-leit') { vbtQ = e.target.value.trim().toLowerCase(); renderVerkbeidnir(); } });
@@ -1107,4 +1157,5 @@
   window.GattVinnusvaedi = { render: renderVinnusvaedi, demo: demo };
   window.GattVidhald = { eignHtml: eignHtml, render: renderVidhald };
   window.GattGreining = { eignHtml: grEignHtml, lifga: grLifga };
+  window.GattSaga = { eignHtml: sagaHtml };
 })();

@@ -948,6 +948,20 @@
   .qr-e{font-family:var(--serif);font-size:18px;font-weight:600;margin-top:12px}
   .qr-a{font-size:11.5px;color:#696d74}
   .qr-vefur{display:none}
+  /* Stilla vinnusvæði (kúnninn felur einingar) + saga eignar */
+  .vs-stilla{position:relative;display:flex;justify-content:flex-end;margin:-8px 0 14px}
+  .vs-stilla-p{position:absolute;right:0;top:40px;z-index:30;min-width:260px;padding:12px 14px;border:1px solid var(--line2);border-radius:6px;background:var(--panel);box-shadow:var(--panel-sh-hi);display:flex;flex-direction:column;gap:8px}
+  .vs-stilla-p label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer}
+  .vs-stilla-p input{accent-color:var(--accent)}
+  .vs-stilla-p .egp-n{padding:6px 0 0;border:0;background:none}
+  .sg-l{position:relative;padding-left:22px}
+  .sg-l::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line2)}
+  .sg-r{position:relative;display:flex;gap:12px;align-items:flex-start;padding:7px 0}
+  .sg-r::before{content:"";position:absolute;left:-19px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(0,0,0,.12)}
+  .sg-r.ok::before{background:var(--good)}.sg-r.vb::before{background:var(--accent)}.sg-r.eb::before{background:var(--obsidian,#222)}.sg-r.sk::before{background:#c48a1a}
+  .sg-d{flex:none;width:84px;font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink);font-weight:600;padding-top:1px}
+  .sg-t{flex:1;min-width:0;font-size:12.5px;color:var(--ink2);line-height:1.45}
+  .sg-t b{color:var(--ink)}
   /* Hlutverk notanda (12.10.2026): leigutaki sér ekki skilaboð/reikninga; skoðandi fær engin skrif-stjórntæki */
   body.hl-leigutaki nav .tab[data-view="reikningar"],body.hl-leigutaki nav .tab[data-view="skilabod"],body.hl-leigutaki #eignasafn,body.hl-leigutaki [data-dr-erindi="thjonusta"],body.hl-leigutaki #vbt-qr{display:none!important}
   body.hl-skodandi .dr-foot,body.hl-skodandi .vs-foot,body.hl-skodandi .ck-add,body.hl-skodandi .vs-add,body.hl-skodandi .vs-upl,body.hl-skodandi .vb-plus,body.hl-skodandi #lb-merkja,body.hl-skodandi .vbt-acts,body.hl-skodandi .vh-a,body.hl-skodandi .ck-i,body.hl-skodandi .ck-b,body.hl-skodandi .eb-foot,body.hl-skodandi #msg-form,body.hl-skodandi [data-vb-loka],body.hl-skodandi [data-vh-tillogur],body.hl-skodandi .gr-hok,body.hl-skodandi [data-vs-baeta],body.hl-skodandi #es-skra,body.hl-skodandi [data-skra]{display:none!important}
@@ -1147,13 +1161,14 @@
     <section id="v-vinnusvaedi" class="hidden">
       <div class="kicker">Byggingarumsjón · allt á einum stað</div>
       <div class="vs-haus"><h2 class="page">Mitt vinnusvæði</h2><div class="vs-hlekkir" id="vs-hlekkir"></div></div>
+      <div class="vs-stilla"><button type="button" class="kbtn sm" id="vs-stilla">Stilla vinnusvæði</button><div class="vs-stilla-p hidden" id="vs-stilla-p"></div></div>
       <div class="vs-grid">
         <div class="egp vs-p" id="vs-check"></div>
         <div class="egp vs-p" id="vs-verk"></div>
         <div class="egp vs-p" id="vs-dagatal"></div>
         <div class="egp vs-p vs-span2" id="vs-vidhald"></div>
         <div class="egp vs-p" id="vs-skirteini"></div>
-        <div class="egp vs-p vs-kort">
+        <div class="egp vs-p vs-kort" id="vs-kort-wrap">
           <div class="egp-h"><b>Kort</b><span id="vs-kort-n">—</span></div>
           <div class="vs-leit"><label class="yf-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="vs-leit" type="search" placeholder="Leita í Landeignaskrá — gata og húsnúmer" autocomplete="off"></label></div>
           <div id="vs-leit-n" class="vs-leit-n"></div>
@@ -1380,7 +1395,8 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261012f"></script>
-<script src="/gatt/portal.js?v=20261012f"></script>
+<script src="/gatt/verkfaeri.js?v=20261012a"></script>
+<script src="/gatt/eignagatt.js?v=20261012g"></script>
+<script src="/gatt/portal.js?v=20261012g"></script>
 </body>
 </html>
