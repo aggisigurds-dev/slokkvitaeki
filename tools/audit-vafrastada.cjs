@@ -64,7 +64,11 @@ const BANN = [
 // skoðunarsíðna — útlitsval ÞESSA vafra (hvernig myndin passar í rammann), engin staða gagna; myndirnar sjálfar eru á
 // þjóninum (AppSettings co_bygging_mynd). Spjalda-/listavalið sjálft er hvergi vistað (listi alltaf sjálfgefinn).
 // Hækkað 155 → 156 af því lykillinn stenst regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 156, ui: 0 } };
+// 12.10.2026: slokkvitaeki ls 156 -> 157. Nýi lykillinn er `forsokn_nylega` (441): auðkenni prófíla sem voru opnaðir
+// nýlega á ÞESSARI tölvu, svo ⚡ Hlaða (407) hiti þá fyrst. Hann ræður aðeins RÖÐ hitunar í skyndiminni — sami flokkur og
+// `forsokn_snid_v2` (lærð slóðamynstur, þegar talinn); engin staða gagna, ekkert sem önnur vél þarf að sjá. Hækkað af
+// því lykillinn stenst regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 157, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
