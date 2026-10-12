@@ -142,8 +142,18 @@ function dalkarUr(meth, args) {
   if (s.includes('${')) return [];               // template með innsetningu → sleppa
   if (meth === 'select') {
     let ut = '', djupt = 0;
-    for (const ch of s) {                        // fella innfelldar auðlindir  tafla(...)
-      if (ch === '(') { djupt++; continue; }
+    /* Innfelldar auðlindir — `verkbeidnir(num,customer)` í select-i — eru VENSL,
+     * ekki dálkar. Þessi lykkja felldi sviga-innihaldið rétt burt en skildi NAFNIÐ
+     * eftir, svo `verkbeidnir` mældist sem dálkur á `verklidur` og vörðurinn varð
+     * rauður á fyrirspurn sem skilar HTTP 200 (mælt 12.10.2026 á TMP-PZ22AK: hún
+     * skilaði innfelldu verkbeiðninni réttri). Vörður sem gelgir að ósekju verður
+     * þaggaður — og þá ver hann ekkert. Nafnið fer því líka.
+     * `!inner`, `!left` og `alias:` hanga framan/aftan á nafninu og fylgja með. */
+    for (const ch of s) {
+      if (ch === '(') {
+        if (djupt === 0) ut = ut.replace(/[A-Za-z0-9_!:.]+$/, '');
+        djupt++; continue;
+      }
       if (ch === ')') { djupt--; continue; }
       if (djupt === 0) ut += ch;
     }

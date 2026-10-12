@@ -1262,7 +1262,7 @@
           '<div style="color:#525b6b;margin-top:2px">' + e([dags, stada].filter(Boolean).join(' · ')) + '</div>' +
           (x.service ? '<div style="color:#525b6b;margin-top:2px">' + e(x.service) + '</div>' : '') +
           (virkt
-            ? '<button type="button" onclick="Counter.select(' + Number(j.id) + ')" style="margin-top:6px;padding:5px 10px;border:1px solid #2563eb;border-radius:8px;background:#fff;color:#2563eb;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Opna verkið</button>'
+            ? '<button type="button" data-skt-opna="' + Number(j.id) + '" style="margin-top:6px;padding:5px 10px;border:1px solid #2563eb;border-radius:8px;background:#fff;color:#2563eb;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Opna verkið</button>'
             : '<div style="color:#94a3b8;margin-top:4px;font-size:11.5px">Verkið er ekki lengur á borðinu — þetta er sagan af miðanum.</div>') +
           '</div>';
       }).join('');
@@ -1278,6 +1278,10 @@
         if (String(Counter.search || '').trim().toLowerCase() !== q.toLowerCase()) return;
         if (radir && radir.length) {
           box.innerHTML = '<div style="margin-top:2px;color:#475569">🏷 Raðnúmer — fannst í verkbeiðni:</div>' + Counter.radnrKort(radir);
+          box.querySelectorAll('button[data-skt-opna]').forEach(b => b.addEventListener('click', () => {
+            const id = Number(b.getAttribute('data-skt-opna'));
+            if (id && Counter.select) Counter.select(id);
+          }));
           return;
         }
         if (radir === null) {
