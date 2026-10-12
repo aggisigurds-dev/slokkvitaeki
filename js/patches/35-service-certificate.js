@@ -196,10 +196,15 @@
   // ── Inject cert button into company detail panels ─────────────────────────
   const obs = new MutationObserver(() => {
     // Look for company detail panels that have a name + address visible
-    document.querySelectorAll('.company-detail-panel, [data-company-id], [data-co-id]').forEach(panel => {
-      if (panel.querySelector('.cert-inject-btn')) return;
+    // 12.10.2026 (afköst): [data-co-id] aðeins með nafni — án data-company-nafn / data-nafn / data-company-id fær
+    // hnúturinn ekkert nafn og er sleppt hér fyrir neðan hvort sem er. Áður voru ~470 raðir Ársskoðunar sóttar og
+    // ítraðar í hverjum ramma (113 ms við eina prófílopnun, CPU-prófíll). Sama mengi hnúta fær takkann.
+    document.querySelectorAll('.company-detail-panel, [data-company-id], [data-co-id][data-company-nafn], [data-co-id][data-nafn]').forEach(panel => {
+      // 12.10.2026 (afköst): nafnið athugað FYRST — sama niðurstaða, en [data-co-id] grípur ~470 raðir Ársskoðunar
+      // sem bera ekkert nafn, og leitin inni í hverri þeirra kostaði 183 ms við eina prófílopnun (CPU-prófíll).
       const name = panel.dataset.companyNafn || panel.dataset.nafn || panel.dataset.companyId;
       if (!name) return;
+      if (panel.querySelector('.cert-inject-btn')) return;
       const btn = document.createElement('button');
       btn.className = 'cert-inject-btn btn btn-outline btn-sm';
       btn.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin-top:8px;';

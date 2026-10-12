@@ -126,7 +126,10 @@
       actions.appendChild(btn);
     });
   });
-  obs.observe(document.body, { childList:true, subtree:true });
+  // 12.10.2026 (afköst): vaktin er EKKI tengd. Enginn kóði í appinu býr til data-uttaeki-id / data-device-id
+  // (grep, líka dataset.uttaekiId/deviceId) — hún skannaði því allt skjalið í hverjum ramma án þess að finna neitt
+  // (82 ms við eina prófílopnun, Center Hótel, CPU-prófíll). Búi nýr kóði til slíkar raðir: tengja aftur hér.
+  // obs.observe(document.body, { childList:true, subtree:true });
 
   window.DeviceHistory = { show };
   console.log('[device-history] installed');

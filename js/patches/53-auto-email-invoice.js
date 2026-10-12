@@ -105,7 +105,10 @@
       actions.appendChild(btn);
     });
   });
-  obs.observe(document.body, { childList:true, subtree:true });
+  // 12.10.2026 (afköst): vaktin er EKKI tengd. Enginn kóði býr til data-invoice-id (grep, líka dataset.invoiceId) —
+  // hún skannaði allt skjalið í hverjum ramma án þess að finna neitt (65 ms við eina prófílopnun, CPU-prófíll).
+  // Búi nýr kóði til slíkar raðir: tengja aftur hér. AutoEmail.sendInvoice/showSendDialog virka áfram.
+  // obs.observe(document.body, { childList:true, subtree:true });
 
   window.AutoEmail = { sendInvoice, showSendDialog, _send };
   console.log('[auto-email] installed');
