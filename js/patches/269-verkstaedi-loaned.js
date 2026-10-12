@@ -25,6 +25,52 @@
 
   let _shop = [], _loadedAt = 0, _busy = false, _injecting = false;
 
+  /* „ELDRI · AFHENT" — afturköllunarlistinn neðst (Agnar 12.10.2026).
+   * Sótt í `uttaeki_sott_log`, sem `close()` skrifar í ÁÐUR en það skrifar
+   * yfir tækið. Aðeins það sem ekki hefur þegar verið afturkallað, nýjast
+   * efst — „svo það sem ég ýtti á sótt myndi birtast efst svo ég geti
+   * afturkallað". Tuttugu raðir duga fyrir vinnudag. */
+  let _sott = [];
+  let _sottSott = 0;
+  async function loadSott(force) {
+    if (!force && Date.now() - _sottSott < 20000) return _sott;
+    if (!(window.DB && DB.sb)) return _sott;
+    try {
+      const r = await DB.sb.from('uttaeki_sott_log')
+        .select('id,uttaeki_id,serial,felag,sott_at,adur')
+        .is('afturkallad_at', null).order('sott_at', { ascending: false }).limit(20);
+      if (r.error) return _sott;        // tómt svar er ekki staðreynd — höldum því sem við höfðum
+      _sott = r.data || [];
+      _sottSott = Date.now();
+    } catch (_) {}
+    return _sott;
+  }
+
+  /* Afturköllun: `adur` er skrifað ÓBREYTT til baka. Engin endurreikning,
+   * ekkert giskað — það er nákvæmlega staðan sem var áður en smellt var. */
+  async function afturkalla(logId) {
+    const rad = _sott.find(x => String(x.id) === String(logId));
+    if (!rad || !(window.DB && DB.sb)) return;
+    const sp = (window.Confirm && Confirm.show)
+      ? await Confirm.show('Afturkalla afhendingu á ' + (rad.serial || 'tækinu') + '? Það fer aftur á verkstæðið eins og það var.')
+      : window.confirm('Afturkalla afhendingu á ' + (rad.serial || 'tækinu') + '?');
+    if (!sp) return;
+    try {
+      const u = await DB.sb.from('uttaeki').update(rad.adur).eq('id', rad.uttaeki_id);
+      if (u.error) throw u.error;
+      const m = await DB.sb.from('uttaeki_sott_log').update({ afturkallad_at: new Date().toISOString() }).eq('id', rad.id);
+      // Tækið er komið til baka hvað sem þessu líður — en segðu satt ef merkið
+      // festist ekki, annars stendur röðin áfram í listanum og lítur út fyrir
+      // að afturköllunin hafi ekki tekist.
+      if (m && m.error) { if (window.Toast) Toast.show('↩ Tækið er komið aftur, en merkingin í sögunni vistaðist ekki — röðin stendur áfram í listanum.'); }
+      if (window.Toast) Toast.show('↩ ' + (rad.serial || 'Tækið') + ' komið aftur á verkstæðið');
+    } catch (e) {
+      if (window.Toast) Toast.show('Afturköllun mistókst: ' + (e.message || e));
+      return;
+    }
+    await loadSott(true); await loadShop(true); inject(true);
+  }
+
   async function loadShop(force) {
     if (!(window.DB && DB.sb)) { _shop = []; return; }
     if (!force && Date.now() - _loadedAt < 8000) return;
@@ -138,8 +184,8 @@
        * þjónustutakkana OG „+ Varahlutur". Einn smellur skilar honum því.
        * Takkinn er hreinn óþarfi á tilbúnu tæki og fer. Spjaldið styttist um
        * eina röð í kaupbæti. */
-      else if (cs === 'tilbuid') foot = '<div class="vkl-foot">' + actBtn(u.id, 'sott', 'Sótt', IC.out, 'sott') + actBtn(u.id, 'komid', 'Breyta', IC.check, 'breyta', 'Opna aftur — þjónustuval (Yfirfarið · Hlaðið · Ónýtt · Nýtt) og + Varahlutur') + '</div>';
-      else if (cs === 'farid') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'sott', 'Ljúka (sótt)', IC.check, 'sott') + '</div>';
+      else if (cs === 'tilbuid') foot = '<div class="vkl-foot">' + actBtn(u.id, 'sott', 'Sækja', IC.out, 'sott', 'Afhenda tækið og ljúka — þjónustan skráist á það') + actBtn(u.id, 'komid', 'Breyta', IC.check, 'breyta', 'Opna aftur — þjónustuval (Yfirfarið · Hlaðið · Ónýtt · Nýtt) og + Varahlutur') + '</div>';
+      else if (cs === 'farid') foot = '<div class="vkl-foot vkl-foot--one">' + actBtn(u.id, 'sott', 'Ljúka', IC.check, 'sott', 'Afhenda tækið og ljúka') + '</div>';
       return '<div class="vkl-tile"' + (col ? ' style="--vkm-type:' + esc(col) + '"' : '') + ' title="' + esc((u.serial || '') + ' — ' + label) + '">' +
           '<button type="button" class="vkl-x" aria-label="Eyða tæki" title="Eyða tæki (ef mistalið úr skýrslu)" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')">' + IC.x + '</button>' +
           '<div class="vkl-body">' +
@@ -168,6 +214,25 @@
         '<div class="vkl-tiles">' + g.items.map(tile).join('') + '</div>' +
       '</div>').join('')
       : '<div class="vkl-empty">Engin tæki komin úr þjónustu núna.</div>';
+    // Eldri afhendingar — neðst, undir fyrirtækjunum.
+    const dagsTimi = v => { const d = new Date(v); return isNaN(d) ? '' :
+      String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') +
+      ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+    const eldri = _sott.length
+      ? '<div class="vkl-eldri">' +
+          '<div class="vkl-eldri-h">' + IC.truck + '<span>Eldri · afhent</span>' +
+            '<span class="vkl-eldri-n">' + _sott.length + '</span>' +
+            '<span class="vkl-rule" aria-hidden="true"></span></div>' +
+          _sott.map(x => '<div class="vkl-eldri-r">' +
+            '<span class="vkl-eldri-s">' + esc(x.serial || ('#' + x.uttaeki_id)) + '</span>' +
+            '<span class="vkl-eldri-f">' + esc(x.felag || '') + '</span>' +
+            '<span class="vkl-eldri-t">' + esc(dagsTimi(x.sott_at)) + '</span>' +
+            '<button type="button" class="vkl-eldri-b" title="Setja tækið aftur á verkstæðið eins og það var"' +
+              ' onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.afturkalla(\'' + x.id + '\')">↩ Afturkalla</button>' +
+            '</div>').join('') +
+        '</div>'
+      : '';
+
     return '<div id="_vk-loaned">' +
       '<div class="vkl-sec">' + IC.truck + '<span class="vkl-sec-lbl">Komið úr þjónustu</span>' +
         (_shop.length ? '<span class="vkl-sec-n">' + _shop.length + ' tæki</span>' : '') +
@@ -177,6 +242,7 @@
         '<button type="button" class="vkl-merkja" title="Velja fyrirtæki og tæki sem eru á verkstæði — bara merki, enginn reikningur" onclick="event.stopPropagation();window.SamningshafarReceive&&SamningshafarReceive.open(true)">+ Merkja tæki</button>' +
       '</div>' +
       cards +
+      eldri +
     '</div>';
   }
 
@@ -232,6 +298,15 @@
       W + '.vkl-act--sott{border-color:rgba(52,168,98,.55);background:' + GREEN_METAL + ';color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 12px -5px rgba(22,140,72,.65)}',
       W + '.vkl-act--komid:hover,' + W + '.vkl-act--sott:hover{filter:brightness(1.2)}',
       W + '.vkl-empty{padding:16px 8px;color:#525b6b;font-size:12px;text-align:center}',
+      W + '.vkl-eldri{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(20,24,34,.16)}',
+      W + '.vkl-eldri-h{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;font-weight:700;color:#5b6472;letter-spacing:.04em;text-transform:uppercase}',
+      W + '.vkl-eldri-n{padding:0 6px;border-radius:999px;background:rgba(20,24,34,.08);font-size:10px;color:#3a4250}',
+      W + '.vkl-eldri-r{display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px solid rgba(20,24,34,.06);font-size:11px}',
+      W + '.vkl-eldri-s{font-family:' + MONO + ';font-size:10px;color:#3a4250;white-space:nowrap}',
+      W + '.vkl-eldri-f{flex:1;min-width:0;color:#11141c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      W + '.vkl-eldri-t{font-family:' + MONO + ';font-size:10px;color:#6b7483;white-space:nowrap}',
+      W + '.vkl-eldri-b{height:22px;padding:0 8px;border-radius:6px;border:1px solid rgba(20,24,34,.18);background:#fff;color:#3a4250;font:600 10px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;white-space:nowrap}',
+      W + '.vkl-eldri-b:hover{border-color:#1d4ed8;color:#1d4ed8}',
       // 422: tæki í opinni verkbeiðni — plata í stað takka
       W + '.vkl-st--onytt{color:#b42318}' + W + '.vkl-st--onytt i{background:#c92a2a}',
       W + '.vkl-iverki{height:22px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid rgba(20,24,34,.12);background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.08);font-family:' + MONO + ';font-size:10px;font-weight:700;color:#3a4250;letter-spacing:.02em}',
@@ -319,10 +394,35 @@
     const patch = (sc === 'onytt')
       ? { status: 'onytt', custody_status: null, service_choice: null }
       : { status: 'ok', last_insp: today, next_insp: nextY, custody_status: null, service_choice: null };
+    /* 12.10.2026 — Agnar ýtti óvart á þennan takka og tækið hvarf. Fram að því
+     * skrifaði close() status, last_insp, next_insp, custody_status og
+     * service_choice í einu lagi og geymdi EKKERT af fyrri gildunum. Það var
+     * aðeins heppni að systkinatæki bar sömu dagsetningar svo hægt væri að
+     * endurheimta. Nú er staðan skráð ÁÐUR en henni er breytt. */
+    const adur = u ? {
+      status: u.status, last_insp: u.last_insp, next_insp: u.next_insp,
+      custody_status: u.custody_status, service_choice: u.service_choice
+    } : null;
     _shop = _shop.filter(x => String(x.id) !== String(id));   // hverfa strax af borðinu
     _loadedAt = Date.now(); await inject(false);
     const ok = await saveCustody(id, patch);
-    try { if (ok && window.Toast && Toast.show) Toast.show('✓ Tilbúið sótt' + (sc ? ' · ' + (DISP[sc] || sc) + ' skráð' : '')); } catch (_) {}
+    if (ok && adur && DB.sb) {
+      try {
+        const lg = await DB.sb.from('uttaeki_sott_log').insert({
+          uttaeki_id: u.id, serial: u.serial || null,
+          felag: u.client || null, adur: adur, eftir: patch, created_by: 'app'
+        });
+        if (lg && lg.error) throw lg.error;
+      } catch (e) {
+        /* Afhendingin sjálf stendur — hún er þegar vistuð. En afhending án
+         * loggfærslu er afhending sem EKKI er hægt að afturkalla, og þögn um
+         * það er verri en villan. Agnar á að vita það STRAX, meðan hann man
+         * hvað hann ýtti á. */
+        try { if (window.Toast) Toast.show('⚠ Afhent — EN afturköllun var ekki skráð (' + ((e && e.message) || 'óþekkt villa') + '). Þetta tæki birtist ekki í „Eldri · afhent".'); } catch (_) {}
+        try { if (window.logProblem) window.logProblem('sott_log_insert_failed', 'uttaeki ' + u.id + ': ' + String((e && e.message) || e).slice(0, 160)); } catch (_) {}
+      }
+    }
+    try { if (ok && window.Toast && Toast.show) Toast.show('✓ Afhent' + (sc ? ' · ' + (DISP[sc] || sc) + ' skráð' : '')); } catch (_) {}
     await loadShop(true); inject(true);
   }
   async function del(id) {
@@ -350,6 +450,9 @@
     if (_busy) return; _busy = true;
     try {
       await loadShop(force);
+      // Afturkollunarlistinn er sottur i somu lotu — annars teiknadist hann tomur
+      // i fyrstu umferd og poppadi inn a eftir (hopp, 388).
+      await loadSott(force);
       _injecting = true;
       bodies.forEach(body => {
         const old = body.querySelector('#_vk-loaned');
@@ -387,7 +490,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti, prenta: prenta };
+  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti, prenta: prenta, afturkalla: afturkalla };
   console.log('[verkstaedi-loaned] v7 installed (+ rólegur stíll eins og VERK-súlan)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
