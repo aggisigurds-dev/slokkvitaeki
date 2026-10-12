@@ -410,6 +410,13 @@ curl -X POST \
      endurlífgun hans að hvíla á einhverju sem sér þangað: öryggispúls sem er ódýr í kyrrstöðu (`mountCompany`
      hættir strax sé hnúturinn réttur) — ekki á vaktinni sem hætti að ná til hans.
 
+  5. **Hluti sem tekur pláss efst á prófílnum teiknast í SAMA tifi og borðinn** — ekki á eigin `setInterval`/vakt.
+     Mælt 12.10.2026 (13 félög): húsmynd (367), upplýsingalínur (363/432), Samskipti (286) komu hver á sínu tifi
+     0,3–2,3 s eftir opnun og ýttu öllu niður (CLS 0,12–0,25). `462-stodug-opnun.js` kallar þá alla strax (óinngjafin
+     vakt á `#companies-main`) → CLS 0,001–0,01. Nýr slíkur hluti fer í `SKREF`-listann þar; gögn sem berast síðar fá
+     „Sæki…"-staðgengil í SÖMU stærð og svarið (sjá 363 `_bupp-teikn-saekir`, 432 Hús-línuna, 286 beinagrindina).
+     ATH: klasaheiti með `-bidur` verður gullpilla (230 `[class*="-bidur"]`).
+
   Og **samtíma hleðslur eiga að deila EINNI sókn** (`_loadP`-mynstrið í 153 `loadAll()` og `features.js Companies.load()`)
   — annars sækja fjórir kallarar sama mengið og síðasta svarið yfirskrifar hin.
 

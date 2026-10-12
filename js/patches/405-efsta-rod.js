@@ -80,7 +80,9 @@
     var top = row.parentElement; if (!top || top.parentElement !== main) return;
     var svc = row.querySelector('._co-svc-toggle'); if (!svc) return;
     var inSvc = svc.dataset.inservice !== '0';
-    var pl = top.querySelector(':scope > .b405-plata');
+    // 12.10.2026: skoðunarmerkið (ensureFaera) ber líka .b405-plata — væri það komið á undan þjónustu-takkanum (280) tók
+    // stöðuplatan það yfir og „Skoðun: Júlí" varð „Í þjónustu". Stöðuplatan er aðeins sú sem er EKKI skoðunarmerkið.
+    var pl = top.querySelector(':scope > .b405-plata:not(.b405-skodun)');
     if (!pl) { pl = el('span', 'b405-plata'); var back = top.firstElementChild; if (back && back.nextSibling) top.insertBefore(pl, back.nextSibling); else top.appendChild(pl); }
     var want = inSvc ? 'ok' : 'stal', label = inSvc ? 'Í þjónustu' : 'Úr þjónustu';
     if (pl.dataset.st !== want) { pl.dataset.st = want; pl.innerHTML = '<i class="' + want + '"></i>' + label; }
@@ -232,6 +234,8 @@
     setInterval(function () { if (!document.hidden) tick(); }, 1500);
     schedule();
   })();
+  // 12.10.2026: 453 (stöðug opnun) og 370 kalla tifið strax við teikningu borðans — sama verk, áður en málað er.
+  window.Efsta405 = { tick: schedule, scope: scope };
 
   if (!document.getElementById('efsta-405')) {
     var P = 'html[data-thm-preset="brunastal"] #companies-main ';

@@ -917,20 +917,53 @@
     host.className = "_samskipti-host"; host.dataset.fid = fid; host.dataset.ts = String(Date.now());
     Object.keys(_opid).forEach(k => { if (k !== String(fid)) delete _opid[k]; });   // annað félag → sjálfgefin staða
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
-    // 10.09.2026 — minni (60 s) → tækisgeymsla → hleðslukort. Tif-lásnum er sleppt um leið og
-    // eitthvað er komið á skjáinn; ferska sóknin gengur í bakgrunni (uppfaera).
+    await tengja(host, fid);
+  }
+
+  // 10.09.2026 — minni (60 s) → tækisgeymsla → hleðslukort. Tif-lásnum er sleppt um leið og
+  // eitthvað er komið á skjáinn; ferska sóknin gengur í bakgrunni (uppfaera).
+  // 12.10.2026: sameiginlegt decorate() og forbua() — forbúinn hýsill ber hleðslukortið þegar.
+  async function tengja(host, fid) {
     const minni = cache[fid] && Date.now() - cache[fid]._ts < 60000 ? cache[fid] : null;
-    if (minni) { render(host, fid, minni); eittBox(); return; }
+    if (minni) { host.innerHTML = ""; render(host, fid, minni); eittBox(); return; }
+    const bidur = !!host.querySelector("._skx-hledur");
     const lagrad = await GEYMSLA.lesa(fid);
-    if (!document.contains(host) || host.childElementCount) return;
+    if (!document.contains(host) || host.querySelector("._samskipti-card")) return;
+    if (!bidur && host.childElementCount) return;
     let notad = null;
     if (lagrad) {
-      try { render(host, fid, lagrad.data, { lagrad: lagrad.savedAt }); notad = lagrad; eittBox(); }
+      try { host.innerHTML = ""; render(host, fid, lagrad.data, { lagrad: lagrad.savedAt }); notad = lagrad; eittBox(); }
       catch (e) { console.warn("[samskipti-panel] geymd útgáfa ónothæf", e); host.innerHTML = ""; }
     }
-    if (!notad) hledsla(host);
+    if (!notad && !host.querySelector("._skx-hledur")) hledsla(host);
     uppfaera(host, fid, notad).catch(e => console.warn("[samskipti-panel] uppfæra", e));
   }
+
+  // ── FORBÚIÐ PLÁSS (12.10.2026, Agnar: „sem minnst hopp á efri hlutann") ──────────────────
+  // Tifið hér að neðan setti hýsilinn inn 350–650 ms eftir opnun, FYRIR OFAN tækjalistann: 252 px
+  // hopp, það stærsta á prófílnum (mælt á 13 félögum á lifandi síðu). 453 kallar þetta um leið og
+  // borðinn er kominn — sama verk (hýsill undir borðanum + hleðslukort, svo minni → geymsla →
+  // fersk sókn), aðeins í sama tifi og teikningin, áður en málað er. decorate() sér þá hýsilinn
+  // á réttum stað og hættir strax.
+  function forbua() {
+    const main = document.getElementById("companies-main"); if (!main) return;
+    const bn = main.querySelector(":scope > .co-banner"); if (!bn) return;
+    const btn = main.querySelector('button[onclick^="Companies.openEdit"]'); if (!btn) return;
+    const m = String(btn.getAttribute("onclick") || "").match(/openEdit\((\d+)\)/); if (!m) return;
+    const fid = +m[1];
+    let host = document.querySelector("._samskipti-host");
+    if (host && document.contains(host) && host.dataset.fid === String(fid) && host.childElementCount) return;
+    if (host) host.remove();
+    host = document.createElement("div");
+    host.className = "_samskipti-host"; host.dataset.fid = fid; host.dataset.ts = String(Date.now());
+    Object.keys(_opid).forEach(k => { if (k !== String(fid)) delete _opid[k]; });
+    bn.parentElement.insertBefore(host, bn.nextSibling);
+    const minni = cache[fid] && Date.now() - cache[fid]._ts < 60000 ? cache[fid] : null;
+    if (minni) { render(host, fid, minni); eittBox(); return; }
+    hledsla(host);
+    tengja(host, fid).catch(e => console.warn("[samskipti-panel] forbúa", e));
+  }
+  window.SamskiptiPanel = Object.assign(window.SamskiptiPanel || {}, { forbua });
 
   // ── Rekstrarfélags-síðan (#view-rekstrarfelog, patch 175) ─────────────────
   // Sama spjald þar: netföng lesin úr „Upplýsingar um rekstrarfélag"-kassanum,

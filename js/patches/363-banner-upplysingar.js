@@ -782,10 +782,12 @@
   }
 
   function teiknHtml(sk, coId) {
-    if (!sk) return '';
+    const lina = (inni) => '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span><span class="_bupp-teikn-inn">' + inni + '</span></div>';
+    // 12.10.2026 (hopp): meðan sóknin er í gangi tekur línan plássið sitt strax — svarið skilar alltaf Teikningar-línu
+    // („engin teikning fannst" ef ekkert er), svo borðinn vex ekki þegar það kemur.
+    if (!sk) { const m = skrar.get(String(coId)); return (m && m.bid) ? lina('<span class="_bupp-teikn-miss">Sæki…</span>').replace('_bupp-teikn-lina', '_bupp-teikn-lina _bupp-teikn-saekir') : ''; }
     const fl = sk.flokkar || (sk.teikningar && sk.teikningar.flokkar) || null;
     const fj = sk.teikningar && sk.teikningar.fjoldi;
-    const lina = (inni) => '<div class="_bupp-lina _bupp-teikn-lina"><span class="_bupp-merki">Teikningar</span><span class="_bupp-teikn-inn">' + inni + '</span></div>';
     const rows = Array.isArray(sk.results) ? sk.results : [];
     const f = haedirALista(rows);
     if (!f.haed.length && sk.teikningar && Array.isArray(sk.teikningar.haedir)) {
@@ -878,6 +880,7 @@
     uppfaeraTomt(box, coId);
     merkjaSjalf(box, coId);
     thjappa(box);
+    if (box.isConnected) fylgjendur();
 
     box.querySelectorAll('.co-bupp-reitur').forEach(inp => {
       inp.dataset.saved = inp.value;
@@ -974,6 +977,15 @@
     }
   }
 
+  // 12.10.2026 (hopp): teikna() rífur hólfið (innerHTML) og með því línur 432 (Séruppdrættir, Hús) og 411 (Óskráð,
+  // Greining). Þær komu aftur 40–130 ms síðar, hver á sinni vakt: borðinn skrapp saman og óx aftur (mælt 126 → 66 →
+  // 126 → 164 px á Breiðuvík 22). Nú eru þær settar aftur í sama tifi — hver pappi teiknar áfram sína línu.
+  function fylgjendur() {
+    try { if (window.Seruppdrattir) Seruppdrattir.syna(); } catch (_) {}
+    try { if (window.FasteignFacts) FasteignFacts.syna(); } catch (_) {}
+    try { if (window.Thett411) Thett411.tick(); } catch (_) {}
+  }
+
   function haldaVid() {
     const banner = document.querySelector('#companies-main .co-banner') || document.querySelector('.co-banner');
     if (!banner) return;
@@ -990,6 +1002,7 @@
     // Vinstra megin við ✍ Athugasemd-boxið — í auða svæðið sem Agnar merkti.
     const haegri = banner.querySelector('.co-banner-right');
     if (haegri) banner.insertBefore(box, haegri); else banner.appendChild(box);
+    fylgjendur();
   }
 
   setInterval(haldaVid, 1200);
