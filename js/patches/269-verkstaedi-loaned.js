@@ -82,6 +82,12 @@
   };
   function sectionHtml() {
     const grp = byClient();
+    /* Saga tækisins á spjaldið. `u` hér er UTTAEKI-röð, svo lykillinn er `u.id`
+     * — 460 býst við `uttaeki_id`. Skilar tómum streng þegar 460 er ekki hlaðið,
+     * svo þessi skjár virkar óháð því. */
+    const sagaU = (u) => ({ uttaeki_id: u.id, serial: u.serial, type: u.type, size: u.size });
+    const sagaHtml = (u) => (window.TaekiSaga ? TaekiSaga.linaHtml(sagaU(u)) : '');
+
     const tile = (u) => {
       const cs = u.custody_status || 'null';
       const st = STATE[cs] || STATE['null'];
@@ -98,6 +104,9 @@
               '<div class="vkl-ty">' + esc(label) + '</div>' +
               (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
               '<div class="vkl-st vkl-st--' + cls + '"><i aria-hidden="true"></i>' + esc(lbl) + '</div>' +
+              // Sagan birtist lika thegar taekid er i verkbeidni -- annars hyrfi
+              // midinn um leid og verk er stofnad a taekid.
+              sagaHtml(u) +
             '</div>' +
             '<div class="vkl-foot vkl-foot--one"><span class="vkl-iverki">í verki ' + esc(vs.num) + '</span></div>' +
           '</div>';
@@ -120,6 +129,7 @@
             '<div class="vkl-ty">' + esc(label) + '</div>' +
             (serialShort ? '<div class="vkl-ser">' + esc(serialShort) + '</div>' : '') +
             '<div class="vkl-st vkl-st--' + st.cls + '"><i aria-hidden="true"></i>' + esc(st.label(u)) + '</div>' +
+            sagaHtml(u) +
             (() => { const h = hlutir(u); return h.length ? '<div class="vkl-hl" title="' + esc(h.map(x => x.name).join('\n')) + '">' + h.length + (h.length === 1 ? ' varahlutur' : ' varahlutir') + '</div>' : ''; })() +
           '</div>' +
           foot +
@@ -133,6 +143,11 @@
     // þau og skilað þeim"): tilbúin = custody 'tilbuid' (þessi lífsferill) eða tilbúið í verkbeiðni (422).
     const erTilbuid = (u) => { const v = iVerki(u); return v ? v.kind === 'tilbuid' : u.custody_status === 'tilbuid'; };
     const tilbN = (items) => items.filter(erTilbuid).length;
+    /* Teikningin er samstillt (byggir streng), svo sagan verður að vera komin
+     * ÁÐUR. saekja() spyr aðeins um þau sem vantar og kallar á endurteikningu
+     * EINU SINNI þegar svarið lendir; eftir það gerir kallið ekkert. */
+    if (window.TaekiSaga) TaekiSaga.saekja(_shop.map(sagaU), () => { try { inject(true); } catch (_) {} });
+
     const cards = grp.length ? grp.map(g =>
       '<div class="vkl-grp" data-client="' + esc(g.client) + '">' +
         '<div class="vkl-grp-h"><span class="vkl-name">' + esc(g.client) + '</span><span class="vkl-meta">' + g.items.length + ' tæki' +
