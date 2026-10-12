@@ -459,6 +459,72 @@ exports.handler = async (event) => {
     return P.json(200, { ok: true, checklist: await checklistFelags() });
   }
 
+  // ── Viðhaldsáætlun og skírteini (portal_vidhald) — 12.10.2026 ──
+  function dagsPlus(d, man) { const x = new Date(d + 'T00:00:00Z'); if (isNaN(x)) return null; x.setUTCMonth(x.getUTCMonth() + man); return x.toISOString().slice(0, 10); }
+  function dagsOk(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) ? String(d) : null; }
+  async function vidhaldFelags() {
+    const r = await P.sbGet(`portal_vidhald?base_id=eq.${baseId}&select=id,fyrirtaeki_id,kerfi,heiti,tidni_manudir,sidast,naest,abyrgd,skirteini_path,skirteini_heiti,gildir_til,minning_dagar,athugasemd,updated_at&order=naest.asc.nullslast,heiti.asc&limit=600`);
+    const L = r.ok ? await r.json() : [];
+    const slod = await M.undirrita(L.map((x) => x.skirteini_path), 600);
+    return L.map((x) => ({ id: x.id, fid: x.fyrirtaeki_id, kerfi: x.kerfi, heiti: x.heiti, tidni: x.tidni_manudir, sidast: x.sidast, naest: x.naest, abyrgd: x.abyrgd,
+      skirteini: x.skirteini_path ? { url: slod[x.skirteini_path] || null, heiti: x.skirteini_heiti || 'Skírteini' } : null, gildir_til: x.gildir_til, minning: x.minning_dagar, ath: x.athugasemd || '', uppf: x.updated_at }));
+  }
+  async function vidhald(b) {
+    if (!syn.vinnusvaedi) return P.json(403, { error: 'Vinnusvæðið er ekki opið á þessum aðgangi' });
+    const id = parseInt(b.id, 10), hd = { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}` }, eigin = `base_id=eq.${baseId}`, nu = new Date().toISOString();
+    if (b.action === 'vh_add') {
+      const rows = (Array.isArray(b.rows) ? b.rows : [b]).slice(0, 40);
+      const cnt = await P.sbGet(`portal_vidhald?${eigin}&select=id`);
+      if (cnt.ok && (await cnt.json()).length + rows.length > 600) return P.json(429, { error: 'Áætlunin er full' });
+      for (const r of rows) {
+        const sid = parseInt(r.site_id, 10); if (!sid || !(await eignFelags(sid, 'id'))) continue;
+        const heiti = String(r.heiti || '').trim().slice(0, 120); if (!heiti) continue;
+        const tidni = Math.min(120, Math.max(1, parseInt(r.tidni, 10) || 12)), sidast = dagsOk(r.sidast);
+        const naest = sidast ? dagsPlus(sidast, tidni) : dagsOk(r.naest);
+        await P.sbPost('portal_vidhald', { base_id: baseId, fyrirtaeki_id: sid, kerfi: String(r.kerfi || '').slice(0, 40) || null, heiti, tidni_manudir: tidni, sidast, naest,
+          abyrgd: ABYRGD.includes(r.abyrgd) ? r.abyrgd : 'okkar', minning_dagar: Math.min(365, Math.max(0, parseInt(r.minning, 10) || 30)), athugasemd: String(r.ath || '').slice(0, 500) || null, created_by: hofundurNafn() });
+      }
+    } else if (b.action === 'vh_edit' && id) {
+      const r0 = await P.sbGet(`portal_vidhald?id=eq.${id}&${eigin}&select=id,sidast,tidni_manudir&limit=1`);
+      const x = r0.ok ? (await r0.json())[0] : null; if (!x) return P.json(404, { error: 'Fannst ekki' });
+      const patch = { updated_at: nu };
+      if (typeof b.heiti === 'string' && b.heiti.trim()) patch.heiti = b.heiti.trim().slice(0, 120);
+      if (b.tidni != null) patch.tidni_manudir = Math.min(120, Math.max(1, parseInt(b.tidni, 10) || 12));
+      if (b.sidast !== undefined) patch.sidast = dagsOk(b.sidast);
+      if (ABYRGD.includes(b.abyrgd)) patch.abyrgd = b.abyrgd;
+      if (b.minning != null) patch.minning_dagar = Math.min(365, Math.max(0, parseInt(b.minning, 10) || 0));
+      if (typeof b.ath === 'string') patch.athugasemd = b.ath.slice(0, 500) || null;
+      if (b.gildir_til !== undefined) patch.gildir_til = dagsOk(b.gildir_til);
+      const sid2 = patch.sidast !== undefined ? patch.sidast : x.sidast, tid2 = patch.tidni_manudir || x.tidni_manudir;
+      if (sid2) patch.naest = dagsPlus(sid2, tid2); else if (b.naest !== undefined) patch.naest = dagsOk(b.naest);
+      await P.sbPatch(`portal_vidhald?id=eq.${id}&${eigin}`, patch);
+    } else if (b.action === 'vh_gert' && id) {
+      const r0 = await P.sbGet(`portal_vidhald?id=eq.${id}&${eigin}&select=id,tidni_manudir&limit=1`);
+      const x = r0.ok ? (await r0.json())[0] : null; if (!x) return P.json(404, { error: 'Fannst ekki' });
+      const d = dagsOk(b.dags) || new Date().toISOString().slice(0, 10);
+      await P.sbPatch(`portal_vidhald?id=eq.${id}&${eigin}`, { sidast: d, naest: dagsPlus(d, x.tidni_manudir), updated_at: nu });
+    } else if (b.action === 'vh_skirteini' && id) {
+      const r0 = await P.sbGet(`portal_vidhald?id=eq.${id}&${eigin}&select=id,skirteini_path&limit=1`);
+      const x = r0.ok ? (await r0.json())[0] : null; if (!x) return P.json(404, { error: 'Fannst ekki' });
+      const patch = { updated_at: nu, gildir_til: dagsOk(b.gildir_til) };
+      if (b.gogn) {
+        const m = M.lesaDataUrl(b.gogn, 12 * 1024 * 1024);
+        if (!m) return P.json(400, { error: 'Skráin er ekki á studdu sniði (PDF eða mynd, mest 12 MB)' });
+        const heiti = M.nafnOruggt(b.heiti);
+        const path = `skirteini/${baseId}/${Date.now()}-${heiti.replace(/[^A-Za-z0-9._-]+/g, '_')}` + (new RegExp('\\.' + m.ext + '$', 'i').test(heiti) ? '' : '.' + m.ext);
+        if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Skráin vistaðist ekki' });
+        patch.skirteini_path = path; patch.skirteini_heiti = heiti;
+        if (x.skirteini_path) { try { await M.eyda([x.skirteini_path]); } catch (_) {} }
+      }
+      await P.sbPatch(`portal_vidhald?id=eq.${id}&${eigin}`, patch);
+    } else if (b.action === 'vh_eyda' && id) {
+      const r0 = await P.sbGet(`portal_vidhald?id=eq.${id}&${eigin}&select=id,skirteini_path&limit=1`);
+      const x = r0.ok ? (await r0.json())[0] : null;
+      if (x) { await fetch(`${P.SUPABASE_URL}/rest/v1/portal_vidhald?id=eq.${id}&${eigin}`, { method: 'DELETE', headers: hd }); if (x.skirteini_path) { try { await M.eyda([x.skirteini_path]); } catch (_) {} } }
+    } else return P.json(400, { error: 'Óþekkt aðgerð' });
+    return P.json(200, { ok: true, vidhald: await vidhaldFelags() });
+  }
+
   // POST → viðskiptavinur sendir fyrirspurn / aðgerð
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
@@ -472,6 +538,7 @@ exports.handler = async (event) => {
       if (b.action === 'item_eyda') return await eydaItem(b);
       if (b.action === 'item_roda') return await radaItems(b);
       if (/^chk_/.test(String(b.action || ''))) return await checklist(b);
+      if (/^vh_/.test(String(b.action || ''))) return await vidhald(b);
     } catch (e) { return P.json(500, { error: String((e && e.message) || e) }); }
     const text = String(b.body || '').trim();
     if (!text) return P.json(400, { error: 'Tómt skeyti' });
@@ -674,8 +741,8 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
     // 2j) Vinnusvæði: skjöl og hlekkir félagsins
-    let items = [], checklist = [];
-    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); } catch (_) {} }
+    let items = [], checklist = [], vidhald = [];
+    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); vidhald = await vidhaldFelags(); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -831,7 +898,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items, checklist,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices, messages, erindi, items, checklist, vidhald,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {

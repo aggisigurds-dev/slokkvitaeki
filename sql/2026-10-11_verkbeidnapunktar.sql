@@ -73,3 +73,30 @@ create table if not exists public.portal_checklist (
 );
 create index if not exists portal_checklist_base_idx on public.portal_checklist (base_id, rod);
 alter table public.portal_checklist enable row level security;
+
+-- 5) portal_vidhald — fyrirbyggjandi viðhald + skírteini per eign (12.10.2026, beitt með MCP-migration portal_vidhald).
+--    Hvert kerfi fær tíðni í mánuðum; naest = sidast + tíðni; skírteini (bucket gatt, skirteini/<base>/…) með gildir_til;
+--    minning_dagar = hvenær „á eftir"-viðvörun kviknar. Birtist í dagatali og á eignasíðu; mál verða til af þessu
+--    þegar við virkjum sjálfvirkar verkbeiðnir (ekki enn).
+create table if not exists public.portal_vidhald (
+  id             bigserial primary key,
+  base_id        bigint not null references public.customers_base(id) on delete cascade,
+  fyrirtaeki_id  bigint not null,
+  kerfi          text,
+  heiti          text not null,
+  tidni_manudir  integer not null default 12,
+  sidast         date,
+  naest          date,
+  abyrgd         text not null default 'okkar' check (abyrgd in ('okkar','eigandi','annar')),
+  skirteini_path text,
+  skirteini_heiti text,
+  gildir_til     date,
+  minning_dagar  integer not null default 30,
+  athugasemd     text,
+  created_by     text,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create index if not exists portal_vidhald_base_idx on public.portal_vidhald (base_id, naest);
+create index if not exists portal_vidhald_fid_idx on public.portal_vidhald (fyrirtaeki_id);
+alter table public.portal_vidhald enable row level security;

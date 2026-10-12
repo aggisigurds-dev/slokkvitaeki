@@ -294,7 +294,7 @@
     if (!synileg) { renderVerkbeidnir(); return; }
     var cnt = erindi().filter(function (e) { return e.stada !== 'lokid' && e.abyrgd && e.abyrgd !== 'okkar'; }).length;
     var badge = $('#vsBadge'); if (badge) { badge.textContent = cnt; badge.classList.toggle('hidden', !cnt); }
-    renderChecklist();
+    renderChecklist(); renderVidhald();
     $('#vs-verk').innerHTML = verkefniHtml();
     $('#vs-dagatal').innerHTML = dagatalHtml();
     $('#vs-nidurhal').innerHTML = nidurhalHtml();
@@ -333,6 +333,13 @@
         if (y * 12 + m <= nuIdx + 2 && y * 12 + m >= nuIdx - 11 && !(r && r.stada === 'undirritad')) out.push({ dagur: new Date(y, m + 1, 0).getDate(), teg: 'eldvarnabok', heiti: 'Eldvarnabók ' + M[m], eign: b.nafn, fid: b.id, drog: !!r });
       }
     });
+    (d.vidhald || []).forEach(function (r) {
+      var b = eignAfId(r.fid), nafn = b ? b.nafn : '';
+      var dn = r.naest ? new Date(r.naest + 'T00:00:00') : null;
+      if (dn && dn.getFullYear() === y && dn.getMonth() === m) out.push({ dagur: dn.getDate(), teg: 'vidhald', heiti: r.heiti, eign: nafn, fid: r.fid, seint: vhDagar(r.naest) < 0 });
+      var dg = r.gildir_til ? new Date(r.gildir_til + 'T00:00:00') : null;
+      if (dg && dg.getFullYear() === y && dg.getMonth() === m) out.push({ dagur: dg.getDate(), teg: 'skirteini', heiti: 'Skírteini rennur út: ' + r.heiti, eign: nafn, fid: r.fid, seint: vhDagar(r.gildir_til) < 0 });
+    });
     erindi().forEach(function (e) {
       var b = eignAfId(e.fid), nafn = b ? b.nafn : '';
       var ds = e.frestur ? new Date(e.frestur) : null;
@@ -344,7 +351,7 @@
     });
     return out.sort(function (a, c) { return a.dagur - c.dagur; });
   }
-  var TEG = { skodun: ['Skoðun', 'skodun'], eldvarnabok: ['Eldvarnabók', 'eb'], frestur: ['Frestur', 'frestur'], erindi: ['Erindi', 'erindi'], lokid: ['Lokið', 'lokid'] };
+  var TEG = { skodun: ['Skoðun', 'skodun'], eldvarnabok: ['Eldvarnabók', 'eb'], frestur: ['Frestur', 'frestur'], erindi: ['Erindi', 'erindi'], lokid: ['Lokið', 'lokid'], vidhald: ['Viðhald', 'skodun'], skirteini: ['Skírteini', 'frestur'] };
   function dagatalHtml() {
     var y = cal.y, m = cal.m, A = atburdir(y, m), M = G().MAN_LANGT;
     var first = new Date(y, m, 1), start = (first.getDay() + 6) % 7, dagar = new Date(y, m + 1, 0).getDate();
@@ -593,6 +600,143 @@
     ckApi({ action: 'chk_roda', ids: L.map(function (x) { return x.id; }) });
   }
 
+  /* ═══ VIÐHALDSÁÆTLUN OG SKÍRTEINI (portal_vidhald) ═══════════════════════
+     Tíðni per kerfi, næst = síðast + tíðni, áminning í dagatali, skírteini með gildistíma. */
+  var VH_KERFI = { slokkvitaeki: ['Slökkvitæki — árleg skoðun', 12], slongukefli: ['Slöngukefli — árleg skoðun', 12], brunavidvorunarkerfi: ['Brunaviðvörunarkerfi — árleg skoðun', 12],
+    vatnsudakerfi: ['Vatnsúðakerfi — árleg skoðun og þjónusta', 12], neydarlysing: ['Neyðarlýsing — árleg fullprófun', 12], utljos: ['Útljós — árleg skoðun', 12],
+    reykskynjarar: ['Reykskynjarar — árleg prófun', 12], reyklosun: ['Reyklosun — árleg prófun', 12], eldvarnaeftirlit: ['Eldvarnaeftirlit slökkviliðs', 12],
+    slokkvikerfi_eldhus: ['Slökkvikerfi í eldhúsháfi — hálfsárs þjónusta', 6], brunathettingar: ['Brunaþéttingar — úttekt', 48], rafmagn: ['Rafskoðun — töflur og lagnir', 48],
+    lyfta: ['Lyfta — árleg skoðun', 12], eldvarnarteppi: ['Eldvarnarteppi — skoðun', 12], rymingaruppdrattur: ['Rýmingaruppdráttur — yfirferð', 12], fjoldaskilti: ['Fjöldaskilti — yfirferð', 12], annad: ['Annað', 12] };
+  var vhSia = 'allar', vhB = null, vhId = null;
+  function vhL() { return (data().vidhald || []).slice().sort(function (a, c) { return String(a.naest || '9999').localeCompare(String(c.naest || '9999')); }); }
+  function vhDagar(d) { if (!d) return null; return Math.round((new Date(d + 'T00:00:00') - new Date(new Date().toDateString())) / 864e5); }
+  function vhStada(r) { var n = vhDagar(r.naest); if (n == null) return 'oskrad'; if (n < 0) return 'seint'; if (n <= (r.minning || 30)) return 'brad'; return 'ok'; }
+  function vhKerfiHeiti(k) { return (G().KERFI_HEITI && G().KERFI_HEITI[k]) || (VH_KERFI[k] ? VH_KERFI[k][0].split(' — ')[0] : k) || ''; }
+  function vhRod(r, medEign) {
+    var b = eignAfId(r.fid), st2 = vhStada(r), n = vhDagar(r.naest), M = G().MAN_STUTT;
+    var dtxt = r.naest ? '<b>' + esc(fmtDate(r.naest)) + '</b>' + (st2 === 'seint' ? (-n) + ' dögum á eftir' : n === 0 ? 'í dag' : 'eftir ' + n + ' daga') : '<b>—</b>engin dagsetning';
+    return '<div class="vh-r" data-vh="' + r.id + '"><span class="vh-d ' + st2 + '">' + dtxt + '</span>' +
+      '<div class="egt"><b>' + esc(r.heiti) + '</b><span>' + (medEign && b ? esc(b.nafn) + ' · ' : '') + 'tíðni ' + r.tidni + ' mán.' + (r.sidast ? ' · síðast ' + esc(fmtDate(r.sidast)) : '') + (r.gildir_til ? ' · skírteini gildir til ' + esc(fmtDate(r.gildir_til)) : '') + '</span></div>' +
+      '<span class="vb-ab ' + esc(r.abyrgd) + '">' + esc(ABYRGD[r.abyrgd] || 'Okkar') + '</span>' +
+      '<div class="vh-a">' + (r.skirteini && r.skirteini.url ? '<a class="kbtn sm" href="' + esc(r.skirteini.url) + '" target="_blank" rel="noopener" title="' + esc(r.skirteini.heiti) + '">' + ic('pdf', 1.8) + '</a>' : '') +
+      '<label class="kbtn sm" title="Hlaða upp skírteini eða skýrslu">' + ic('skjal', 1.8) + '<input type="file" data-vh-skjal="' + r.id + '" accept=".pdf,image/*,application/pdf"></label>' +
+      '<button type="button" class="kbtn sm" data-vh-gert="' + r.id + '" title="Merkja framkvæmt í dag">' + ic('hak', 2.4) + '</button>' +
+      '<button type="button" class="kbtn sm" data-vh-breyta="' + r.id + '" title="Breyta">' + ic('erindi', 1.8) + '</button></div></div>';
+  }
+  function vidhaldHtml() {
+    var L = vhL(), seint = L.filter(function (r) { return vhStada(r) === 'seint'; }).length, brad = L.filter(function (r) { return vhStada(r) === 'brad'; }).length;
+    var S = L.filter(function (r) { return vhSia === 'allar' || (vhSia === 'seint' ? vhStada(r) === 'seint' : vhStada(r) !== 'ok' && vhStada(r) !== 'oskrad'); });
+    return '<div class="egp-h"><b>Viðhaldsáætlun</b><span>' + (L.length ? L.length + ' liðir · ' + seint + ' á eftir · ' + brad + ' á næstunni' : 'fyrirbyggjandi viðhald') + '</span></div>' +
+      '<div class="vh-sia"><button type="button" class="ysia' + (vhSia === 'allar' ? ' on' : '') + '" data-vh-sia="allar">Allir liðir</button><button type="button" class="ysia' + (vhSia === 'seint' ? ' on' : '') + '" data-vh-sia="seint">Á eftir</button><button type="button" class="ysia' + (vhSia === 'brad' ? ' on' : '') + '" data-vh-sia="brad">Næstu áminningar</button></div>' +
+      (S.length ? S.slice(0, 40).map(function (r) { return vhRod(r, true); }).join('') : (L.length ? '<div class="egp-e">Ekkert í þessari síu.</div>' : '<div class="egp-e">Engin áætlun enn. „Setja upp áætlun" stingur upp á liðum úr kerfum hverrar eignar: tíðni, hver sér um og áminning. Næsta dagsetning reiknast af síðustu skoðun.</div>')) +
+      '<div class="vs-foot"><button type="button" class="gbtn sm" data-vh-tillogur>' + ic('plus', 2.2) + 'Setja upp áætlun</button><button type="button" class="kbtn sm" data-vh-nytt>' + ic('plus', 2.2) + 'Stakur liður</button></div>';
+  }
+  function skirteiniHtml() {
+    var L = vhL().filter(function (r) { return r.skirteini || r.gildir_til; }).sort(function (a, c) { return String(a.gildir_til || '9999').localeCompare(String(c.gildir_til || '9999')); });
+    return '<div class="egp-h"><b>Skírteini</b><span>' + (L.length ? L.length + ' skjöl' : 'vottorð og þjónustumiðar') + '</span></div>' +
+      (L.length ? L.slice(0, 20).map(function (r) {
+        var b = eignAfId(r.fid), n = vhDagar(r.gildir_til), st2 = r.gildir_til ? (n < 0 ? 'seint' : n <= 30 ? 'brad' : 'ok') : 'oskrad';
+        return '<div class="sk-r"><span class="vh-d ' + st2 + '"><b>' + (r.gildir_til ? esc(fmtDate(r.gildir_til)) : '—') + '</b>' + (r.gildir_til ? (n < 0 ? 'útrunnið' : 'gildir til') : 'enginn gildistími') + '</span>' +
+          '<div class="egt"><b>' + esc(r.skirteini ? r.skirteini.heiti : r.heiti) + '</b><span>' + (b ? esc(b.nafn) + ' · ' : '') + esc(r.heiti) + '</span></div>' +
+          (r.skirteini && r.skirteini.url ? '<a class="kbtn sm" href="' + esc(r.skirteini.url) + '" target="_blank" rel="noopener">' + ic('pdf', 1.8) + 'Opna</a>' : '<label class="kbtn sm">' + ic('skjal', 1.8) + 'Hlaða upp<input type="file" data-vh-skjal="' + r.id + '" accept=".pdf,image/*" style="position:absolute;opacity:0;width:1px;height:1px"></label>') + '</div>';
+      }).join('') : '<div class="egp-e">Skírteini, vottorð og skýrslur hengjast á liði í viðhaldsáætluninni með gildistíma — hér sést hvað rennur út næst.</div>');
+  }
+  function renderVidhald() {
+    var a = $('#vs-vidhald'), b = $('#vs-skirteini'); if (!a || !b || !st().data) return;
+    a.innerHTML = vidhaldHtml(); b.innerHTML = skirteiniHtml();
+  }
+  // Eignasíða: liðir eignarinnar + „Setja upp áætlun"
+  function eignHtml(b) {
+    if (!syn().vinnusvaedi || !b || b.id == null) return '';
+    var L = vhL().filter(function (r) { return r.fid === b.id; });
+    return '<section class="dsec"><h4>Viðhaldsáætlun <span class="cnt">' + (L.length ? L.length + ' liðir · ' + L.filter(function (r) { return vhStada(r) === 'seint'; }).length + ' á eftir' : '') + '</span></h4>' +
+      (L.length ? '<div class="dpanel">' + L.map(function (r) { return vhRod(r, false); }).join('') + '</div>' : '<div class="dpanel"><div class="dempty">Engin áætlun fyrir þessa eign enn.</div></div>') +
+      '<div class="kfoot2"><span>Tíðni per kerfi, næsta dagsetning af síðustu skoðun, skírteini með gildistíma. Liðir birtast í dagatali vinnusvæðisins.</span><button type="button" class="kbtn sm" data-vh-tillogur="' + b.id + '">' + ic('plus', 2.2) + 'Setja upp áætlun</button></div></section>';
+  }
+  function vhApi(body) {
+    if (st().demo) {
+      var L = data().vidhald = data().vidhald || [];
+      if (body.action === 'vh_add') (body.rows || [body]).forEach(function (r) { var sid = r.sidast || null, t = +r.tidni || 12; L.push({ id: Date.now() + Math.random(), fid: +r.site_id, kerfi: r.kerfi, heiti: r.heiti, tidni: t, sidast: sid, naest: sid ? vhPlus(sid, t) : null, abyrgd: r.abyrgd || 'okkar', minning: +r.minning || 30, ath: r.ath || '', skirteini: null, gildir_til: null }); });
+      else { var it = L.filter(function (x) { return x.id === body.id; })[0];
+        if (body.action === 'vh_gert' && it) { it.sidast = body.dags || new Date().toISOString().slice(0, 10); it.naest = vhPlus(it.sidast, it.tidni); }
+        else if (body.action === 'vh_edit' && it) { ['heiti', 'abyrgd', 'ath'].forEach(function (k) { if (body[k] != null) it[k] = body[k]; }); if (body.tidni) it.tidni = +body.tidni; if (body.minning) it.minning = +body.minning; if (body.sidast !== undefined) { it.sidast = body.sidast; it.naest = it.sidast ? vhPlus(it.sidast, it.tidni) : null; } }
+        else if (body.action === 'vh_skirteini' && it) { it.gildir_til = body.gildir_til || null; if (body.gogn) it.skirteini = { url: body.gogn, heiti: body.heiti }; }
+        else if (body.action === 'vh_eyda') data().vidhald = L.filter(function (x) { return x.id !== body.id; }); }
+      renderVidhald(); $('#vs-dagatal').innerHTML = dagatalHtml(); return Promise.resolve(true);
+    }
+    return api(body).then(function (res) {
+      if (!res.ok) { toast((res.j && res.j.error) || 'Vistun tókst ekki'); return false; }
+      data().vidhald = res.j.vidhald || []; renderVidhald(); $('#vs-dagatal').innerHTML = dagatalHtml();
+      var drb = G().drB(); if (drb && !$('#drawer').classList.contains('hidden')) endurteiknaDrawer(drb.id);
+      return true;
+    });
+  }
+  function vhPlus(d, m) { var x = new Date(d + 'T00:00:00'); x.setMonth(x.getMonth() + m); return x.toISOString().slice(0, 10); }
+  // Gluggi: tillögur (hak-listi úr kerfum eignar) eða stakur liður (nýr/breyta)
+  function opnaVh(mode, b, r) {
+    vhB = b || null; vhId = r ? r.id : null;
+    var L = allarEignir(), sel = $('#vh-eign');
+    sel.innerHTML = L.map(function (x) { return '<option value="' + x.id + '"' + (b && x.id === b.id ? ' selected' : '') + '>' + esc(x.nafn) + '</option>'; }).join('');
+    $('#vh-kerfi').innerHTML = Object.keys(VH_KERFI).map(function (k) { return '<option value="' + k + '">' + esc(vhKerfiHeiti(k) || VH_KERFI[k][0]) + '</option>'; }).join('');
+    $('#vh-tillogur-wrap').classList.toggle('hidden', mode !== 'tillogur');
+    $('#vh-stak-wrap').classList.toggle('hidden', mode === 'tillogur');
+    $('#vh-eyda').classList.toggle('hidden', !r);
+    $('#vh-h').textContent = mode === 'tillogur' ? 'Setja upp áætlun' : r ? 'Breyta lið' : 'Nýr liður';
+    $('#vh-sub').textContent = b ? b.nafn + (b.heimilisfang ? ' · ' + b.heimilisfang : '') : '';
+    $('#vh-send-l').textContent = mode === 'tillogur' ? 'Setja í áætlun' : 'Vista';
+    if (mode === 'tillogur') {
+      if (!b) { b = L[0]; vhB = b; sel.value = b ? b.id : ''; }
+      vhTillogur(b);
+      sel.onchange = function () { vhB = eignAfId(+sel.value); $('#vh-sub').textContent = vhB ? vhB.nafn : ''; vhTillogur(vhB); };
+    } else {
+      sel.onchange = null;
+      $('#vh-kerfi').value = r ? (r.kerfi || 'annad') : 'annad'; $('#vh-heiti').value = r ? r.heiti : ''; $('#vh-tidni').value = r ? String(r.tidni) : '12';
+      $('#vh-sidast').value = r && r.sidast ? r.sidast : ''; $('#vh-abyrgd').value = r ? r.abyrgd : 'okkar'; $('#vh-minning').value = r ? String(r.minning || 30) : '30'; $('#vh-ath').value = r ? (r.ath || '') : '';
+      $('#vh-kerfi').onchange = function () { var k = $('#vh-kerfi').value; if (!$('#vh-heiti').value.trim() && VH_KERFI[k]) { $('#vh-heiti').value = VH_KERFI[k][0]; $('#vh-tidni').value = String(VH_KERFI[k][1]); } };
+    }
+    $('#vh-modal').setAttribute('data-mode', mode);
+    $('#vh-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  }
+  function vhTillogur(b) {
+    var box = $('#vh-tillogur'); if (!b) { box.innerHTML = ''; return; }
+    var til = vhL().filter(function (r) { return r.fid === b.id; }).map(function (r) { return r.kerfi; });
+    var K = (b.kerfi || []).filter(function (k) { return (k.til === 'ja' || k.adili === 'okkar') && VH_KERFI[k.k] && til.indexOf(k.k) < 0; }).map(function (k) { return { k: k.k, okkar: k.adili === 'okkar' }; });
+    if (b.br && !K.some(function (x) { return x.k === 'brunavidvorunarkerfi'; }) && til.indexOf('brunavidvorunarkerfi') < 0) K.push({ k: 'brunavidvorunarkerfi', okkar: true });
+    if ((b.sl || b.taeki) && !K.some(function (x) { return x.k === 'slokkvitaeki'; }) && til.indexOf('slokkvitaeki') < 0) K.push({ k: 'slokkvitaeki', okkar: true });
+    ['eldvarnaeftirlit', 'rafmagn', 'brunathettingar'].forEach(function (k) { if (!K.some(function (x) { return x.k === k; }) && til.indexOf(k) < 0) K.push({ k: k, okkar: k !== 'eldvarnaeftirlit', valfrjals: true }); });
+    box.innerHTML = K.length ? K.map(function (x) {
+      return '<label><input type="checkbox" value="' + x.k + '" data-okkar="' + (x.okkar ? 1 : 0) + '"' + (x.valfrjals ? '' : ' checked') + '><span>' + esc(VH_KERFI[x.k][0]) + '</span><small>' + VH_KERFI[x.k][1] + ' mán. · ' + (x.okkar ? 'okkar' : 'eigandi') + '</small></label>';
+    }).join('') : '<div class="egp-e">Allt sem kerfin segja til um er þegar í áætlun fyrir þessa eign.</div>';
+  }
+  function lokaVh() { $('#vh-modal').classList.add('hidden'); lokaLikama(); }
+  function sendaVh() {
+    var mode = $('#vh-modal').getAttribute('data-mode'), btn = $('#vh-send'); btn.disabled = true;
+    var p;
+    if (mode === 'tillogur') {
+      var rows = [].slice.call(document.querySelectorAll('#vh-tillogur input:checked')).map(function (c) { return { site_id: vhB && vhB.id, kerfi: c.value, heiti: VH_KERFI[c.value][0], tidni: VH_KERFI[c.value][1], abyrgd: c.getAttribute('data-okkar') === '1' ? 'okkar' : 'eigandi', minning: 30 }; });
+      if (!rows.length) { btn.disabled = false; toast('Hakaðu við liði'); return; }
+      p = vhApi({ action: 'vh_add', rows: rows });
+    } else {
+      var body = { site_id: parseInt($('#vh-eign').value, 10), kerfi: $('#vh-kerfi').value, heiti: $('#vh-heiti').value.trim(), tidni: +$('#vh-tidni').value, sidast: $('#vh-sidast').value || null, abyrgd: $('#vh-abyrgd').value, minning: +$('#vh-minning').value, ath: $('#vh-ath').value.trim() };
+      if (!body.heiti) { btn.disabled = false; toast('Skrifaðu heiti'); $('#vh-heiti').focus(); return; }
+      if (vhId) { body.action = 'vh_edit'; body.id = vhId; } else body.action = 'vh_add';
+      p = vhApi(body);
+    }
+    p.then(function (ok) { btn.disabled = false; if (ok) { lokaVh(); toast(mode === 'tillogur' ? 'Áætlunin er komin inn' : 'Vistað'); } });
+  }
+  function vhSkjal(id, file) {
+    if (!file) return;
+    var r = vhL().filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    var gt = window.prompt('Gildir til (ÁÁÁÁ-MM-DD) — má vera autt:', r.gildir_til || '');
+    if (gt === null) return;
+    gt = gt.trim(); if (gt && !/^\d{4}-\d{2}-\d{2}$/.test(gt)) { toast('Dagsetning á forminu ÁÁÁÁ-MM-DD'); return; }
+    if (file.size > 8 * 1024 * 1024) { toast('Skráin er stærri en 8 MB'); return; }
+    toast('Hleð upp…');
+    (/^image\//.test(file.type) ? minnkaMynd(file, 2400).then(function (m) { return m.data; }) : lesaSkra(file)).then(function (d) {
+      return vhApi({ action: 'vh_skirteini', id: id, gogn: d, heiti: file.name, gildir_til: gt || null });
+    }).then(function (ok) { if (ok) toast('Skírteinið er vistað'); }, function () { toast('Skráin lesist ekki'); });
+  }
+
   /* ═══ VERKBEIÐNIR-FLIPI: velja eign → teikningar → punktur + mynd → senda ═══ */
   var vbtB = null, vbtQ = '';
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
@@ -648,6 +792,13 @@
       { id: 13, fid: 9000, titill: 'Fjarlægja fleyg úr brunahurð 2. hæð', stada: 'mottekid', tegund: 'verkefni', abyrgd: 'eigandi', punktur: { haed: 2, nafn: '2. hæð', x: 540, y: 450 }, dags: new Date(nu - 864e5).toISOString(), frestur: new Date(nu + 6 * 864e5).toISOString().slice(0, 10), myndir: [], eftirmyndir: [] },
       { id: 14, fid: 9001, titill: 'Málning á gangi — annar verktaki', stada: 'mottekid', tegund: 'verkefni', abyrgd: 'annar', punktur: null, dags: new Date(nu - 5 * 864e5).toISOString(), myndir: [], eftirmyndir: [] },
     ]);
+    var d0 = new Date(), iso = function (dd) { var x = new Date(d0); x.setDate(x.getDate() + dd); return x.toISOString().slice(0, 10); };
+    DEMO.vidhald = [
+      { id: 1, fid: 9000, kerfi: 'brunavidvorunarkerfi', heiti: 'Brunaviðvörunarkerfi — árleg skoðun', tidni: 12, sidast: iso(-380), naest: iso(-15), abyrgd: 'okkar', minning: 30, ath: '', skirteini: null, gildir_til: null },
+      { id: 2, fid: 9000, kerfi: 'neydarlysing', heiti: 'Neyðarlýsing — árleg fullprófun', tidni: 12, sidast: iso(-340), naest: iso(25), abyrgd: 'okkar', minning: 30, ath: '', skirteini: { url: '#', heiti: 'Neyðarlýsing 2025.pdf' }, gildir_til: iso(25) },
+      { id: 3, fid: 9001, kerfi: 'rafmagn', heiti: 'Rafskoðun — töflur og lagnir', tidni: 48, sidast: iso(-700), naest: iso(760), abyrgd: 'annar', minning: 60, ath: '', skirteini: { url: '#', heiti: 'Rafskoðun 2024.pdf' }, gildir_til: iso(760) },
+      { id: 4, fid: 9003, kerfi: 'slokkvitaeki', heiti: 'Slökkvitæki — árleg skoðun', tidni: 12, sidast: iso(-200), naest: iso(165), abyrgd: 'okkar', minning: 30, ath: '', skirteini: null, gildir_til: null },
+    ];
     DEMO.checklist = [
       { id: 1, texti: 'Panta nýjar flóttaleiðamerkingar fyrir kjallara', stjarna: true, lokid: null, rod: 1 },
       { id: 2, texti: 'Senda rýmingaráætlun á starfsfólk', stjarna: false, lokid: null, rod: 2 },
@@ -672,6 +823,13 @@
     if (t.closest('#vb-close')) { lokaVb(); return; }
     if (t.closest('#lk-close')) { lokaLk(); return; }
     if ((x = t.closest('#vb-abyrgd button'))) { setAbyrgd(x.getAttribute('data-a')); return; }
+    if ((x = t.closest('[data-vh-sia]'))) { vhSia = x.getAttribute('data-vh-sia'); renderVidhald(); return; }
+    if ((x = t.closest('[data-vh-tillogur]'))) { var fid0 = +x.getAttribute('data-vh-tillogur'); opnaVh('tillogur', fid0 ? eignAfId(fid0) : (G().drB() || null)); return; }
+    if (t.closest('[data-vh-nytt]')) { opnaVh('stak', null, null); return; }
+    if ((x = t.closest('[data-vh-breyta]'))) { var vr = vhL().filter(function (q) { return q.id === +x.getAttribute('data-vh-breyta'); })[0]; if (vr) opnaVh('stak', eignAfId(vr.fid), vr); return; }
+    if ((x = t.closest('[data-vh-gert]'))) { var vg = vhL().filter(function (q) { return q.id === +x.getAttribute('data-vh-gert'); })[0]; if (vg && window.confirm('Merkja „' + vg.heiti + '" framkvæmt í dag? Næsta dagsetning færist fram um ' + vg.tidni + ' mánuði.')) vhApi({ action: 'vh_gert', id: vg.id }).then(function (ok) { if (ok) toast('Skráð framkvæmt'); }); return; }
+    if (t.closest('#vh-close')) { lokaVh(); return; }
+    if (t.closest('#vh-eyda')) { if (vhId && window.confirm('Eyða þessum lið úr áætluninni?')) vhApi({ action: 'vh_eyda', id: vhId }).then(function (ok) { if (ok) lokaVh(); }); return; }
     if ((x = t.closest('[data-ck-hak]'))) { var ci = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-hak'); })[0]; if (ci) ckApi({ action: 'chk_toggle', id: ci.id, lokid: !ci.lokid }); return; }
     if ((x = t.closest('[data-ck-stj]'))) { var cs = (data().checklist || []).filter(function (q) { return q.id === +x.getAttribute('data-ck-stj'); })[0]; if (cs) ckApi({ action: 'chk_stjarna', id: cs.id, stjarna: !cs.stjarna }); return; }
     if ((x = t.closest('[data-ck-eyda]'))) { ckApi({ action: 'chk_eyda', id: +x.getAttribute('data-ck-eyda') }); return; }
@@ -693,10 +851,11 @@
     if ((x = t.closest('[data-vs-upp]'))) { faera(+x.getAttribute('data-vs-upp'), -1); return; }
     if ((x = t.closest('[data-vs-nidur]'))) { faera(+x.getAttribute('data-vs-nidur'), 1); return; }
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (placing) haettaPlacing(); lokaPop(); if (!$('#vb-modal').classList.contains('hidden')) lokaVb(); if (!$('#lk-modal').classList.contains('hidden')) lokaLk(); } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (placing) haettaPlacing(); lokaPop(); if (!$('#vh-modal').classList.contains('hidden')) lokaVh(); if (!$('#vb-modal').classList.contains('hidden')) lokaVb(); if (!$('#lk-modal').classList.contains('hidden')) lokaLk(); } });
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'vb-form') { e.preventDefault(); sendaVb(); }
     if (e.target.id === 'lk-form') { e.preventDefault(); sendaLk(); }
+    if (e.target.id === 'vh-form') { e.preventDefault(); sendaVh(); }
     if (e.target.id === 'ck-form') { e.preventDefault(); var ci2 = $('#ck-inp'), tx = ci2.value.trim(); if (!tx) return; ci2.value = ''; ckApi({ action: 'chk_add', texti: tx }).then(function () { var n = $('#ck-inp'); if (n) n.focus(); }); }
     if (e.target.id === 'vs-hlekkur') { e.preventDefault(); var u = $('#vs-hl-url').value.trim(); if (!/^https?:\/\//i.test(u)) { toast('Slóðin þarf að byrja á https://'); return; } vistaHlekk($('#vs-hl-heiti').value.trim(), u); }
   });
@@ -706,6 +865,7 @@
     if (it && tx && tx !== it.texti) { it.texti = tx; ckApi({ action: 'chk_texti', id: id, texti: tx }); } else renderChecklist();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-ck-texti]')) { e.preventDefault(); e.target.blur(); } });
+  document.addEventListener('change', function (e) { var vs = e.target.closest && e.target.closest('[data-vh-skjal]'); if (vs) { vhSkjal(+vs.getAttribute('data-vh-skjal'), vs.files && vs.files[0]); vs.value = ''; } });
   document.addEventListener('change', function (e) { if (e.target.id === 'vs-skra') { vistaSkra(e.target.files && e.target.files[0]); e.target.value = ''; } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vbt-leit') { vbtQ = e.target.value.trim().toLowerCase(); renderVerkbeidnir(); } });
   document.addEventListener('input', function (e) { if (e.target.id === 'vs-leit') { clearTimeout(leitT); var q = e.target.value.trim(); leitT = setTimeout(function () { leita(q); }, 350); } });
@@ -713,10 +873,12 @@
     tengjaMynd('#vb-mynd', '#vb-prev', function (m) { vbMynd = m; });
     tengjaMynd('#lk-mynd', '#lk-prev', function (m) { lkMynd = m; });
     ['#vb-modal', '#lk-modal'].forEach(function (s) { var m = $(s); if (m) m.addEventListener('mousedown', function (ev) { if (ev.target === m) { if (s === '#vb-modal') lokaVb(); else lokaLk(); } }); });
+    var vm = $('#vh-modal'); if (vm) vm.addEventListener('mousedown', function (ev) { if (ev.target === vm) lokaVh(); });
     var lbm = $('#lb-m'); if (lbm) lbm.addEventListener('click', function (ev) { var lb = G() && G().lbS(); if (lb && smellur(ev, lb.f, lb.b, lbm)) ev.stopPropagation(); });
     var tab = document.querySelector('nav .tab[data-view="vinnusvaedi"]'); if (tab) tab.addEventListener('click', function () { setTimeout(kortLifga, 30); });
   });
 
   window.GattPunktar = { teikna: teikna, smellur: smellur, spjald: spjald, lbOpin: lbOpin, lbLokad: lbLokad, erindiAuki: erindiAuki, opna: opnaVb };
   window.GattVinnusvaedi = { render: renderVinnusvaedi, demo: demo };
+  window.GattVidhald = { eignHtml: eignHtml, render: renderVidhald };
 })();

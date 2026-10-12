@@ -888,6 +888,29 @@
   .ck-add .gbtn{height:36px;padding:0 12px;font-size:10.5px}
   .ck-h2{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}
   .ck-h2 .vs-sub{padding:0;flex:1}
+  /* Viðhaldsáætlun og skírteini */
+  .vs-span2{grid-column:span 2}
+  .vh-r{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+  .vh-r .egt b{white-space:normal}
+  .vh-d{flex:none;min-width:92px;text-align:center;padding:5px 6px;border-radius:4px;background:var(--well);border:1px solid var(--line2);box-shadow:var(--well-sh);font-size:10px;color:var(--dim);line-height:1.15;font-variant-numeric:lining-nums}
+  .vh-d b{display:block;font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .vh-d.seint{border-color:#b3261e}.vh-d.seint b{color:#b3261e}
+  .vh-d.brad{border-color:rgba(var(--glow),.6)}.vh-d.brad b{color:var(--deep)}
+  .vh-d.ok b{color:var(--good)}
+  .vh-a{display:flex;gap:4px;flex:none}
+  .vh-a .kbtn.sm{padding:0 9px}
+  .vh-a label.kbtn{cursor:pointer}
+  .vh-a input[type=file],.vh-a input[type=date]{position:absolute;opacity:0;width:1px;height:1px}
+  .vh-sia{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 4px}
+  .vh-tl{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto;margin:-6px 0 14px}
+  .vh-tl label{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);font-size:13px;color:var(--ink);cursor:pointer}
+  .vh-tl label small{color:var(--dim);margin-left:auto;white-space:nowrap}
+  .vh-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin-bottom:14px}
+  .vh-grid label{display:flex;flex-direction:column;gap:5px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;font-family:var(--lbl);font-weight:600;color:var(--ink2)}
+  .vh-grid .svc-in,.vh-grid select{margin:0;height:38px}
+  .sk-r{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+  @media(max-width:1100px){ .vs-span2{grid-column:span 2} }
+  @media(max-width:900px){ .vs-span2{grid-column:auto} .vh-grid{grid-template-columns:minmax(0,1fr)} }
   @media(max-width:1100px){ .vs-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media(max-width:900px){ .vs-grid{grid-template-columns:minmax(0,1fr)} .vs-add{flex-wrap:wrap} }
   @media print{
@@ -1039,6 +1062,8 @@
         <div class="egp vs-p" id="vs-check"></div>
         <div class="egp vs-p" id="vs-verk"></div>
         <div class="egp vs-p" id="vs-dagatal"></div>
+        <div class="egp vs-p vs-span2" id="vs-vidhald"></div>
+        <div class="egp vs-p" id="vs-skirteini"></div>
         <div class="egp vs-p vs-kort">
           <div class="egp-h"><b>Kort</b><span id="vs-kort-n">—</span></div>
           <div class="vs-leit"><label class="yf-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="vs-leit" type="search" placeholder="Leita í Landeignaskrá — gata og húsnúmer" autocomplete="off"></label></div>
@@ -1232,9 +1257,29 @@
     <div class="m-foot"><span class="m-note"></span><button type="submit" class="gbtn" id="lk-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Merkja lokið</button></div>
   </form>
 </div>
+<div class="modal hidden" id="vh-modal" role="dialog" aria-modal="true" aria-labelledby="vh-h">
+  <form class="mcard" id="vh-form">
+    <div class="m-head"><div class="grow"><div class="kicker">Viðhaldsáætlun</div><h3 id="vh-h">Nýr liður</h3><div class="baddr" id="vh-sub"></div></div>
+      <button type="button" class="xbtn" id="vh-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div id="vh-tillogur-wrap" class="hidden"><label class="flabel">Tillögur úr kerfum eignarinnar — hakaðu við það sem á að fara í áætlun</label><div class="vh-tl" id="vh-tillogur"></div></div>
+    <div id="vh-stak-wrap">
+      <div class="vh-grid">
+        <label>Eign<select class="svc-in" id="vh-eign"></select></label>
+        <label>Kerfi<select class="svc-in" id="vh-kerfi"></select></label>
+        <label style="grid-column:1/-1">Heiti<input class="svc-in" id="vh-heiti" maxlength="120" placeholder="T.d. Árleg skoðun brunaviðvörunarkerfis" autocomplete="off"></label>
+        <label>Tíðni<select class="svc-in" id="vh-tidni"><option value="1">Mánaðarlega</option><option value="3">Ársfjórðungslega</option><option value="6">Á hálfs árs fresti</option><option value="12" selected>Árlega</option><option value="24">Á 2 ára fresti</option><option value="36">Á 3 ára fresti</option><option value="48">Á 4 ára fresti</option><option value="60">Á 5 ára fresti</option></select></label>
+        <label>Síðast framkvæmt<input class="svc-in" id="vh-sidast" type="date"></label>
+        <label>Hver sér um<select class="svc-in" id="vh-abyrgd"><option value="okkar">Slökkvitæki ehf.</option><option value="eigandi">Við sjálf</option><option value="annar">Annar verktaki</option></select></label>
+        <label>Áminning<select class="svc-in" id="vh-minning"><option value="14">14 dögum fyrir</option><option value="30" selected>30 dögum fyrir</option><option value="60">60 dögum fyrir</option><option value="90">90 dögum fyrir</option></select></label>
+        <label style="grid-column:1/-1">Athugasemd<input class="svc-in" id="vh-ath" maxlength="500" placeholder="Valfrjálst"></label>
+      </div>
+    </div>
+    <div class="m-foot"><span class="m-note" id="vh-note">Næsta dagsetning reiknast af „síðast" + tíðni. Liðir birtast í dagatali og á eignasíðu.</span><button type="button" class="kbtn hidden" id="vh-eyda">Eyða lið</button><button type="submit" class="gbtn" id="vh-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span id="vh-send-l">Vista</span></button></div>
+  </form>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/eignagatt.js?v=20261011p5"></script>
-<script src="/gatt/portal.js?v=20261011p5"></script>
+<script src="/gatt/eignagatt.js?v=20261012a"></script>
+<script src="/gatt/portal.js?v=20261012a"></script>
 </body>
 </html>

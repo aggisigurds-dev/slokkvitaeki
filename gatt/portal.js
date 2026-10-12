@@ -262,6 +262,7 @@
       erindi: d.erindi || [],
       items: d.items || [],
       checklist: d.checklist || [],
+      vidhald: d.vidhald || [],
       eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null, kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null }; }),
     };
     afskeyta(out);
@@ -718,7 +719,7 @@
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
-    html += umEignina(b) + kerfiHtml(b, false) + erindiHtml(b) + ebMinni(b);
+    html += umEignina(b) + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b);
     // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];
