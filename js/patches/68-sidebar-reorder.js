@@ -122,6 +122,8 @@
   // gets placed at this position. Multiple substrings let us tolerate
   // the user's typos (e.g. "Stjórnborð" vs "Stjórnstöð") and short forms.
   const ORDER = [
+    ['Vefverslun'],          // 13.10.2026 (Agnar: „setja hana efst á sidebanner"): static <a> → /vefverslun/?breyta=1. Fyrst í ORDER svo hún sest efst líka undir vistaðri röð (þekktur hnappur án nágranna á undan fær order 6)
+    SEP,
     ['Verkborð'],            // 2026-06-22: sameinaði verkborðið (patch 231) efst
     ['Verkdagbók'],
     ['Verkefni'],
