@@ -116,7 +116,7 @@ button{font-family:inherit}
 .vv-fotur .vv-logo{width:100px}
 
 /* Vörusíða */
-.vv-mola{display:flex;flex-wrap:wrap;gap:8px;font-size:14px;color:var(--c-muted)}
+.vv-mola{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;font-size:14px;color:var(--c-muted)}
 .vv-vara-haus{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
 .vv-vara-v{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:12px}
 .vv-vara-h{flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:20px}
@@ -206,7 +206,7 @@ button{font-family:inherit}
 .vv-ekki-i .vv-ef-tafla{width:44px;height:44px;border-radius:12px}
 .vv-ekki-i .vv-ef-tafla .vv-ico{width:22px;height:22px}
 .vv-ekki-i h3{margin:0;font:600 16px/1.25 var(--f-head);color:var(--c-navy)}
-.vv-ekki-i h3 small{display:block;font-size:11.5px;font-weight:600;color:var(--c-orange-ink);letter-spacing:.04em;text-transform:uppercase}
+.vv-ekki-i h3 small{display:block;font-size:12px;font-weight:600;color:var(--c-orange-ink);letter-spacing:.04em;text-transform:uppercase}
 .vv-ekki-i p{margin:0;font-size:13.5px;line-height:1.5;color:var(--c-muted)}
 
 /* Notkunarspjöld */
@@ -222,7 +222,7 @@ button{font-family:inherit}
 .vv-bordi p{margin:0;flex:1;font:600 19px/1.4 var(--f-head)}
 .vv-bordi .vv-bordi-merki{flex:none;text-align:right}
 .vv-bordi .vv-bordi-merki b{display:block;font:700 26px/1 var(--f-head);color:var(--c-orange)}
-.vv-bordi .vv-bordi-merki small{display:block;margin-top:4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--c-on-navy)}
+.vv-bordi .vv-bordi-merki small{display:block;margin-top:4px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--c-on-navy)}
 
 /* Um + mælir */
 .vv-tveir{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:stretch}
@@ -280,9 +280,9 @@ button{font-family:inherit}
 .vv-lina-m{width:72px;height:72px;border-radius:10px;border:1px solid var(--c-line);background:var(--c-white);display:grid;place-items:center;overflow:hidden}
 .vv-lina-m img{max-width:86%;max-height:86%;object-fit:contain}
 .vv-lina h3{margin:0;font:600 15.5px/1.3 var(--f-head);color:var(--c-navy)}
-.vv-lina h3 a{color:inherit;text-decoration:none}
+.vv-lina h3 a{color:inherit;text-decoration:none;display:inline-block;padding:6px 0}
 .vv-lina small{display:block;font-size:13px;color:var(--c-muted)}
-.vv-lina .fjar{background:none;border:0;padding:0;font:500 13px var(--f-body);color:var(--c-muted);text-decoration:underline;cursor:pointer}
+.vv-lina .fjar{background:none;border:0;padding:10px 0;min-height:40px;font:500 13px var(--f-body);color:var(--c-muted);text-decoration:underline;cursor:pointer}
 .vv-lina .samt{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .vv-reitir{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .vv-reitir label{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:500;color:var(--c-navy)}
@@ -332,4 +332,12 @@ body.vv-ritill-a .vv-falid{display:revert!important;opacity:.35;outline:2px dash
   .vv-bordi{flex-wrap:wrap}
   .vv-blad{padding:22px}
 }
+/* Smellifletir (yfirferð 13.10.2026): brauðmolar og merkið í fætinum ná 40 px, og allt kortið opnar vöruna —
+   titillinn teygir hlekkinn yfir kortið, takkinn liggur ofan á. Í breytingaham er teygjan af svo textinn sé smellanlegur. */
+.vv-mola a{display:inline-flex;align-items:center;min-height:40px}
+.vv-kort-b{position:relative}
+.vv-kort h3 a::after{content:"";position:absolute;inset:0}
+.vv-kort-b .vv-btn{position:relative;z-index:1}
+body.vv-ritill-a .vv-kort h3 a::after{display:none}
+.vv-fotur .vv-logo{padding:8px 0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

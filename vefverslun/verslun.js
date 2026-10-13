@@ -194,15 +194,18 @@
 <nav class="vv-flipar" aria-label="Svið"><div class="vv-wrap">${flipar.map(([k, d, h]) => `<a class="vv-flipi" href="${h}"${k === 'verslun' ? ' aria-current="page"' : UT}>${E('span', 'flipi.' + k, d)}</a>`).join('')}</div></nav>`;
   }
   function fotur() {
-    return B('fotur', `<div class="vv-wrap"><a class="vv-logo" href="#/">${M('fotur.logo', { src: 'myndir/brunaholf-logo.png', alt: 'Brunahólf', fit: 'contain', h: 30, bak: 'transparent' })}</a>${E('span', 'fotur.texti', 'Brunahólf · Slökkvitæki ehf. · eldklar@eldklar.is')}</div>`, 'vv-fotur', 'footer');
+    return B('fotur', `<div class="vv-wrap"><a class="vv-logo" href="#/">${M('fotur.logo', { src: 'myndir/brunaholf-logo.png', alt: 'Brunahólf', fit: 'contain', h: 30, bak: 'transparent' })}</a>${E('span', 'fotur.texti', 'Brunahólf · Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfirði · 565-4080 · eldklar@eldklar.is')}</div>`, 'vv-fotur', 'footer');
   }
+  // birgdir: null = ekki talið, < 0 = skekkja í talningu (selt umfram skráð). Aðeins 0 er raunverulega uppselt.
+  const uppseltV = (v) => v.birgdir === 0;
+  const othekktLager = (v) => v.birgdir == null || v.birgdir < 0;
   function merki(v) {
-    if (v.birgdir != null && v.birgdir <= 0) return E('span', 'merki.uppselt', 'Uppselt', 'vv-merki uppselt');
-    if (v.birgdir != null && v.birgdir <= 5) return E('span', 'merki.faeftir', 'Fá eftir', 'vv-merki lagt');
+    if (uppseltV(v)) return E('span', 'merki.uppselt', 'Uppselt', 'vv-merki uppselt');
+    if (v.birgdir > 0 && v.birgdir <= 5) return E('span', 'merki.faeftir', 'Fá eftir', 'vv-merki lagt');
     return '';
   }
   function kort(v) {
-    const uppselt = v.birgdir != null && v.birgdir <= 0;
+    const uppselt = uppseltV(v);
     return `<article class="vv-kort"><a class="vv-kort-m" href="#/vara/${v.id}">${merki(v)}${M('kort.mynd', { src: v.mynd, alt: v.nafn, fit: 'contain', h: 220, bak: '#ffffff' }, { srcKey: `vara.${v.id}.mynd` })}</a>
 <div class="vv-kort-b"><span class="vv-kort-flokkur">${esc(flokkHeiti(v.flokkur))}</span><h3><a href="#/vara/${v.id}">${E('span', `vara.${v.id}.nafn`, v.nafn)}</a></h3>
 <div class="vv-verd"><b>${kr(v.verd)}</b><small>${tala(v.an)} án vsk</small></div>
@@ -555,6 +558,18 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       taekni: [['Gerð', 'Forþrýst duftslökkvitæki'], ['Slökkviefni', 'ABC duft, 6 kg'], ['Drifefni', 'Köfnunarefni (N₂)'], ['Slökkvigeta', '43A 233B C'], ['Losunartími', 'Um 15 sekúndur'], ['Kastlengd', 'Um 6 metrar'], ['Hitaþol', '−30 °C til +60 °C'], ['Hæð og þvermál', 'Um 55 cm · 16 cm'], ['Þyngd með dufti', 'Um 9,5 kg'], ['Staðall', 'ÍST EN 3, CE-merkt'], ['Fylgir', 'Veggfesting og þrýstimælir']],
       thjon: [['Árleg yfirferð', '4.200 kr'], ['Hleðsla eftir notkun', '8.410 kr']],
     },
+    12: {
+      snid: 'duft', geta: '13A 89B C', A: 13, B: 89,
+      merki: 'Í bílinn, bátinn og sumarhúsið',
+      inngangur: 'Lítið og létt fjölnota slökkvitæki sem vinnur á eldi í föstum efnum, eldfimum vökvum og gasi. Passar í bílinn, bátinn, hjólhýsið og sumarhúsið.',
+      um: ['Duft 2 kg. ABC er lítið tæki sem ræður við eld í ólíkum efnum: timbri, pappír og plasti, olíu og bensíni, eða gasi. Það er létt í hendi og passar þar sem pláss er lítið.',
+        'Duftið leggst yfir eldinn, kæfir hann og rýfur efnahvarfið í loganum, svo eldurinn slokknar hratt. Tækið er forþrýst með köfnunarefni og alltaf tilbúið.',
+        'Tvö kíló eru gott tæki í bíl, bát eða hjólhýsi. Sem aðaltæki á vinnustað eða í sameign mælum við með 6 kg tæki, sem hefur meira en þrefalt A-gildi.'],
+      tolur: [['2 kg', 'ABC slökkviduft'], ['13A 89B C', 'Slökkvigeta'], ['≈ 8 sek', 'Losunartími'], ['≈ 4 m', 'Kastlengd']],
+      atridi: ['Slökkvigeta **13A 89B C**', 'Lítið og létt, passar í bíl, bát og hjólhýsi', 'Þolir frost, CE-merkt samkvæmt ÍST EN 3'],
+      taekni: [['Gerð', 'Forþrýst duftslökkvitæki'], ['Slökkviefni', 'ABC duft, 2 kg'], ['Drifefni', 'Köfnunarefni (N₂)'], ['Slökkvigeta', '13A 89B C'], ['Losunartími', 'Um 8 sekúndur'], ['Kastlengd', 'Um 4 metrar'], ['Hitaþol', '−30 °C til +60 °C'], ['Staðall', 'ÍST EN 3, CE-merkt']],
+      thjon: [['Árleg yfirferð', '3.600 kr'], ['Hleðsla eftir notkun', '5.200 kr']],
+    },
     18: {
       snid: 'lettvatn', geta: '21A 144B', A: 21, B: 144, rafm: false,
       tolur: [['6 L', 'Léttvatn'], ['21A 144B', 'Slökkvigeta'], ['A + B', 'Föst efni og vökvar'], ['+5 °C', 'Lægsti hiti · þolir ekki frost']],
@@ -567,7 +582,7 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       tolur: [['2 L', 'Léttvatn'], ['5A 34B', 'Slökkvigeta'], ['1000 V', 'Rafbúnaður úr 1 m'], ['+5 °C', 'Lægsti hiti · þolir ekki frost']],
       atridi: ['Slökkvigeta **5A 34B**', 'Lítið og létt, passar í forstofu, íbúð og sumarbústað sem er kyndur', 'Má nota á rafbúnað upp að 1000 V úr minnst 1 m fjarlægð'],
       taekni: [['Gerð', 'Forþrýst léttvatnstæki'], ['Slökkviefni', 'Vatn með froðuíblöndun, 2 lítrar'], ['Slökkvigeta', '5A 34B'], ['Rafbúnaður', 'Upp að 1000 V, minnst 1 m'], ['Losunartími', 'Um 10 sekúndur'], ['Kastlengd', 'Um 3 metrar'], ['Hitaþol', '+5 °C til +60 °C, þolir ekki frost'], ['Hæð', 'Um 40 cm'], ['Þyngd fullt', 'Um 3,5 kg'], ['Staðall', 'ÍST EN 3, CE-merkt'], ['Fylgir', 'Þrýstimælir']],
-      thjon: [['Árleg yfirferð', '[VERÐ]'], ['Hleðsla eftir notkun', '[VERÐ]']],
+      thjon: [],
     },
     2: {
       snid: 'co2', geta: '34B', A: 0, B: 34,
@@ -622,10 +637,10 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       thjon: [],
     },
   };
-  const SJALFGEFINN_PROFILL = [1, 18, 174, 2, 25, 3, 13, 14, 4, 340];
+  const SJALFGEFINN_PROFILL = [1, 12, 18, 174, 2, 25, 3, 13, 14, 4, 340];
   function sniðVoru(v) {
     if (SERHAEFT[v.id]) return SERHAEFT[v.id].snid;
-    const n = String(v.nafn || '').toLowerCase();
+    const n = String(v.innraNafn || v.nafn || '').toLowerCase();   // innra heitið: birt heiti (t.d. „Kolsýruhylki“) má ekki breyta gerðinni
     if (/co₂|co2|kolsýr/.test(n)) return 'co2';
     if (/léttvatn|lettvatn/.test(n)) return 'lettvatn';
     if (/duft/.test(n)) return 'duft';
@@ -659,7 +674,7 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
     const valid = syn[i];
     let adal;
     if (valid.teg === 'vara') {
-      adal = `${Pr ? E('span', `${P}.merki`, Pr.merki, 'vv-galleri-merki') : ''}${M('vara.galleri', { src: v.mynd, alt: v.nafn, fit: 'contain', h: 600, bak: '#ffffff' }, { srcKey: `${P}.mynd`, strax: 1 })}`;
+      adal = `${Pr ? E('span', `${P}.merki`, (SERHAEFT[v.id] || {}).merki || Pr.merki, 'vv-galleri-merki') : ''}${M('vara.galleri', { src: v.mynd, alt: v.nafn, fit: 'contain', h: 600, bak: '#ffffff' }, { srcKey: `${P}.mynd`, strax: 1 })}`;
     } else {
       const n = valid.n;
       adal = `${M('vara.galleri.not', { src: n.mynd, alt: n.t, fit: 'cover', h: 420 }, { srcKey: `${P}.not.${n.k}.mynd` })}<div class="vv-galleri-texti">${E('span', `${P}.not.${n.k}.merki`, n.merki, 'vv-flokkmerki')}${E('h3', `${P}.not.${n.k}.t`, n.t)}${E('p', `${P}.not.${n.k}.x`, n.x)}</div>`;
@@ -695,7 +710,7 @@ ${E('p', `${P}.ef.${f.k}.n`, f.n)}</div></div>`;
     const notkun = B(`${P}.notkun`, `${yfirHaus(`${P}.notkun`, Pr.notkun.yfir || 'Hvar kemur tækið að gagni?', Pr.notkun.inng)}<div class="vv-not-rod">${Pr.notkun.listi.map((n) => `<div class="vv-not">${M('vara.not.mynd', { src: n.mynd, alt: n.t, fit: 'cover', h: 200 }, { srcKey: `${P}.not.${n.k}.mynd` })}<div class="vv-not-b">${E('span', `${P}.not.${n.k}.merki`, n.merki, 'vv-flokkmerki')}${E('h3', `${P}.not.${n.k}.t`, n.t)}${E('p', `${P}.not.${n.k}.x`, n.x)}</div></div>`).join('')}</div>${B('bordi', `${ico('skjoldur', 'vv-skjoldur')}${Pr.bordi ? E('p', 'bordi.' + Pr.bordi.k, Pr.bordi.x) : E('p', 'bordi.texti', 'Rétt slökkvitæki getur bjargað lífi, eignum og dregið úr skemmdum.')}<div class="vv-bordi-merki">${E('b', 'bordi.merki', 'Slökkvitæki ehf')}${E('small', 'bordi.undir', 'Slökkvitæki · Þjónusta · Varahlutir')}</div>`, 'vv-bordi', 'div')}`, 'vv-kafli');
 
     const um = B(`${P}.um`, `<div class="vv-blad" style="padding:40px;gap:18px">${E('h2', `${P}.um.yfir`, Pr.um.yfir, 'vv-yfir')}
-${Pr.um.p.map((t, i) => E('p', `${P}.um.${i + 1}`, t, 'vv-txt')).join('\n')}
+${(S.um || Pr.um.p).map((t, i) => E('p', `${P}.um.${i + 1}`, t, 'vv-txt')).join('\n')}
 <div class="vv-gott">${ico('vidvorun')}${E('p', `${P}.um.gott`, Pr.um.gott)}</div></div>
 <div class="vv-blad" style="padding:36px;gap:16px">${E('h3', `${P}.maelir.yfir`, Pr.maelir.yfir, 'vv-h3')}${M(`${P}.maelir.mynd`, { src: Pr.maelir.mynd, alt: Pr.maelir.alt, fit: 'cover', h: 200 })}
 <ul class="vv-hak">${Pr.maelir.listi.map((d, i) => `<li>${ico('hak')}${E('span', `${P}.maelir.${i + 1}`, d)}</li>`).join('')}</ul>
@@ -749,24 +764,24 @@ ${hentarSpjald(P, Pr)}</div>`, 'vv-tveir taekni', 'div');
   function sidaVara(id) {
     const v = vara(id);
     if (!v) return `<main class="vv-wrap vv-adal"><div class="vv-tomt">${E('span', 'vara.ekki-til', 'Þessi vara er ekki í versluninni.')}<br><br><a class="vv-btn navy" href="#/">${E('span', 'vara.til-baka', 'Aftur í verslunina')}</a></div></main>`;
-    const P = `vara.${id}`, uppselt = v.birgdir != null && v.birgdir <= 0;
+    const P = `vara.${id}`, uppselt = uppseltV(v);
     const snid = profill(id) ? sniðVoru(v) : null;
     const Pr = snid ? PROFILAR[snid] : null, S = Pr ? serGildi(v) : null;
     const fyrstaMalsgrein = String(v.lysing || '').split(/\n\s*\n/)[0].trim();
     const s = VV.vara;
     const haegri = `<span class="vv-yfirflokkur">${esc(flokkHeiti(v.flokkur))}</span>${E('h1', `${P}.nafn`, v.nafn)}
-${E('p', `${P}.inngangur`, Pr ? Pr.inngangur : fyrstaMalsgrein, 'vv-inng')}
+${E('p', `${P}.inngangur`, Pr ? S.inngangur || Pr.inngangur : fyrstaMalsgrein, 'vv-inng')}
 ${Pr ? `<div class="vv-pillur">${(S.pillur || Pr.pillur).map((d, i) => E('span', `${P}.pilla.${i + 1}`, d, 'vv-pilla')).join('')}</div>
 <ul class="vv-hak">${S.atridi.map((d, i) => `<li>${ico('hak')}${E('span', `${P}.atridi.${i + 1}`, d)}</li>`).join('')}</ul>` : ''}
 <div class="vv-stort-verd"><b>${kr(v.verd)}</b><small>${tala(v.an)} án vsk</small></div>
-<span class="vv-lager">${ico('hringhak')}${uppselt ? E('span', 'lager.uppselt', 'Uppselt í bili. Pantaðu og við látum vita þegar það kemur.') : E('span', 'lager.til', 'Á lager, tilbúið til afhendingar')}</span>
+<span class="vv-lager">${ico('hringhak')}${uppselt ? E('span', 'lager.uppselt', 'Uppselt í bili. Pantaðu og við látum vita þegar það kemur.') : othekktLager(v) ? E('span', 'lager.stadfest', 'Fáanlegt. Við staðfestum afhendingartíma með pöntuninni.') : E('span', 'lager.til', 'Á lager, tilbúið til afhendingar')}</span>
 <fieldset class="vv-afh"><legend>${E('span', 'afh.titill', 'Afhending')}</legend>
-<button type="button" class="vv-val" data-act="afh" data-v="saekja" aria-pressed="${s.afhending === 'saekja'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.saekja.t', 'Sækja hjá okkur')}${E('small', 'afh.saekja.x', '[AFHENDINGARSTAÐUR] · virka daga 8 til 16')}</span>${E('b', 'afh.saekja.verd', '0 kr')}</button>
-<button type="button" class="vv-val" data-act="afh" data-v="senda" aria-pressed="${s.afhending === 'senda'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.senda.t', 'Fá sent heim')}${E('small', 'afh.senda.x', 'Póstsending um land allt')}</span>${E('b', 'afh.senda.verd', '[VERÐ]')}</button></fieldset>
+<button type="button" class="vv-val" data-act="afh" data-v="saekja" aria-pressed="${s.afhending === 'saekja'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.saekja.t', 'Sækja hjá okkur')}${E('small', 'afh.saekja.x', 'Helluhrauni 10, Hafnarfirði · virka daga 8 til 16')}</span>${E('b', 'afh.saekja.verd', '0 kr')}</button>
+<button type="button" class="vv-val" data-act="afh" data-v="senda" aria-pressed="${s.afhending === 'senda'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.senda.t', 'Fá sent heim')}${E('small', 'afh.senda.x', 'Póstsending um land allt')}</span>${E('b', 'afh.senda.verd', 'Bætist við')}</button></fieldset>
 <div class="vv-kaupa"><div class="vv-fj" role="group" aria-label="Fjöldi"><button type="button" class="vv-stp" data-act="faerri" aria-label="Fækka">${ico('minus')}</button><span>${s.fjoldi}</span><button type="button" class="vv-stp" data-act="fleiri" aria-label="Fjölga">${ico('plus')}</button></div>
 <button type="button" class="vv-btn navy" data-act="setja" data-id="${v.id}">${ico('karfa')}${E('span', 'vara.takki', 'Setja í körfu')} · ${kr(v.verd * s.fjoldi)}</button></div>
 ${s.tilk ? `<div class="vv-tilk" role="status"><span>${esc(s.tilk)}</span><a class="vv-btn ljos sm" href="#/karfa">${E('span', 'vara.skoda-korfu', 'Skoða körfu')}</a></div>` : ''}
-<a class="vv-btn ghost" href="${OPINBER}"${UT} style="align-self:flex-start">${E('span', 'vara.tilbod', 'Fleiri en 10 tæki? Fá tilboð')}</a>`;
+<a class="vv-btn ghost" href="${OPINBER}"${UT} style="align-self:flex-start">${E('span', 'vara.tilbod', 'Fleiri en 10 stykki? Fá tilboð')}</a>`;
 
     const venjulegt = Pr ? '' : B(`${P}.um`, `<div class="vv-blad" style="padding:40px;gap:16px">${E('h2', 'vara.um.yfir', 'Um vöruna', 'vv-yfir')}${E('p', `${P}.lysing`, String(v.lysing || '').trim() || 'Lýsing kemur fljótlega.', 'vv-txt')}</div>`, '', 'div');
     const oft = B('vara.oft', `${yfirHaus('vara.oft', 'Oft keypt með', null)}<div class="vv-grind">${tengdar(v).map(kort).join('')}</div>`, 'vv-kafli');
@@ -794,19 +809,19 @@ ${s.tilk ? `<div class="vv-tilk" role="status"><span>${esc(s.tilk)}</span><a cla
 <div class="vv-fj"><button type="button" class="vv-stp litill" data-act="k-faerri" data-id="${v.id}" aria-label="Fækka">${ico('minus')}</button><span>${n}</span><button type="button" class="vv-stp litill" data-act="k-fleiri" data-id="${v.id}" aria-label="Fjölga">${ico('plus')}</button></div>
 <div class="samt">${kr(v.verd * n)}</div></div>`).join('')}</div>
 <div class="vv-blad">${E('h2', 'karfa.afh', 'Afhending', 'vv-h3')}
-<button type="button" class="vv-val" data-act="k-afh" data-v="saekja" aria-pressed="${VV.karfaAfh === 'saekja'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.saekja.t', 'Sækja hjá okkur')}${E('small', 'afh.saekja.x', '[AFHENDINGARSTAÐUR] · virka daga 8 til 16')}</span>${E('b', 'afh.saekja.verd', '0 kr')}</button>
-<button type="button" class="vv-val" data-act="k-afh" data-v="senda" aria-pressed="${VV.karfaAfh === 'senda'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.senda.t', 'Fá sent heim')}${E('small', 'afh.senda.x', 'Póstsending um land allt')}</span>${E('b', 'afh.senda.verd', '[VERÐ]')}</button></div>
+<button type="button" class="vv-val" data-act="k-afh" data-v="saekja" aria-pressed="${VV.karfaAfh === 'saekja'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.saekja.t', 'Sækja hjá okkur')}${E('small', 'afh.saekja.x', 'Helluhrauni 10, Hafnarfirði · virka daga 8 til 16')}</span>${E('b', 'afh.saekja.verd', '0 kr')}</button>
+<button type="button" class="vv-val" data-act="k-afh" data-v="senda" aria-pressed="${VV.karfaAfh === 'senda'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.senda.t', 'Fá sent heim')}${E('small', 'afh.senda.x', 'Póstsending um land allt')}</span>${E('b', 'afh.senda.verd', 'Bætist við')}</button></div>
 <div class="vv-blad">${E('h2', 'karfa.upplysingar', 'Upplýsingar', 'vv-h3')}<div class="vv-reitir">
 <label>${esc(texti('karfa.nafn', 'Nafn'))}<input autocomplete="name" placeholder="Jón Jónsson"></label><label>${esc(texti('karfa.kt', 'Kennitala (fyrir reikning)'))}<input inputmode="numeric" placeholder="000000-0000"></label>
 <label>${esc(texti('karfa.netfang', 'Netfang'))}<input type="email" autocomplete="email" placeholder="jon@daemi.is"></label><label>${esc(texti('karfa.simi', 'Sími'))}<input type="tel" autocomplete="tel" placeholder="000 0000"></label></div></div>
 </div>
 <aside class="vv-samantekt">${E('h2', 'karfa.samantekt', 'Samantekt')}
 <div class="rod"><span>${esc(texti('karfa.vorur', 'Vörur'))}</span><b>${kr(vorur)}</b></div>
-<div class="rod"><span>${esc(texti('karfa.afhending', 'Afhending'))}</span><b>${VV.karfaAfh === 'senda' ? esc(texti('afh.senda.verd', '[VERÐ]')) : '0 kr'}</b></div>
+<div class="rod"><span>${esc(texti('karfa.afhending', 'Afhending'))}</span><b>${VV.karfaAfh === 'senda' ? esc(texti('afh.senda.verd', 'Bætist við')) : '0 kr'}</b></div>
 <div class="rod"><span>${esc(texti('karfa.vsk', 'Þar af vsk (24%)'))}</span><b>${kr(vsk)}</b></div>
 <div class="alls"><span>${esc(texti('karfa.samtals', 'Samtals'))}</span><b>${kr(vorur)}</b></div>
 <button type="button" class="vv-btn breidur" data-act="greida">${E('span', 'karfa.greida', 'Halda áfram í greiðslu')}${ico('haegri')}</button>
-${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: [KORT · MILLIFÆRSLA · REIKNINGUR Á KENNITÖLU]', 'smatt')}</aside></div></main>`;
+${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reikningur á kennitölu fyrirtækis. Sendingarkostnaður bætist við og er staðfestur með pöntuninni.', 'smatt')}</aside></div></main>`;
   }
 
   // ── Teiknun og leiðir ──────────────────────────────────────────────────
@@ -920,11 +935,56 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: [KORT · MILLIFÆRSLA · REI
   window.addEventListener('storage', (e) => { if (e.key === KARFA_LYKILL) { VV.karfa = lesaKorfu(); render(false); } });
 
   // ── Hleðsla ────────────────────────────────────────────────────────────
+  // Heiti sem viðskiptavinur skilur. Innra heitið (kassinn, reikningar) stendur óbreytt í vorur.nafn
+  const NOFN = {
+    18: 'Léttvatn 6 L. AB Slökkvitæki',
+    174: 'Léttvatn 2 L. AB Slökkvitæki',
+    3: 'Reykskynjari með 10 ára rafhlöðu',
+    13: 'Reykskynjari 9V, Numens SND-500',
+    14: 'Reykskynjari, þráðlaust samtengjanlegur',
+    342: 'CO-skynjari (kolsýringur), Kidde, 10 ára rafhlaða',
+    4: 'Eldvarnateppi 1 × 1 m í hylki',
+    340: 'Eldvarnateppi 1 × 1 m í hvítri tösku',
+    339: 'Sjúkrataska, lítil, rauð',
+    338: 'Sjúkrakassi með veggfestingu',
+    341: 'Skipafesting fyrir 5, 6 og 12 kg tæki, svört',
+    113: 'Skipafesting fyrir 6 kg slökkvitæki',
+    86: 'Skilti: Neyðarútgangur, 120 × 340 mm',
+    101: 'L-skilti: Slökkvitæki, sjálflýsandi 150 × 150 mm',
+    373: 'L-skilti: Brunaslanga, sjálflýsandi 150 × 150 mm',
+    140: 'Flatt skilti: Slökkvitæki, sjálflýsandi 150 × 150 mm',
+    141: 'Flatt skilti: Brunaslanga, sjálflýsandi 150 × 150 mm',
+    104: 'Skilti: Flóttaleið, hart og sjálflýsandi 150 × 300 mm',
+    102: 'V-skilti: Brunaslanga, sjálflýsandi',
+    437: 'Kolsýruhylki 5 L (KOLDIX)',
+  };
+  // Lýsingar á vörum sem eiga enga (eða aðeins innri athugasemd) í vorur
+  const LYSINGAR = {
+    341: 'Sterk festing sem heldur slökkvitækinu föstu þar sem hreyfing er á: í bátum, bílum og vinnuvélum. Tækið er spennt fast með ól og sylgju sem er fljótlegt að losa þegar á þarf að halda. Passar fyrir 5, 6 og 12 kg tæki.',
+    113: 'Festing sem heldur 6 kg slökkvitæki föstu í bátum, bílum og vinnuvélum. Tækið er spennt fast með ólum svo það losnar ekki í veltingi eða á ójöfnum vegi.',
+    86: 'Skilti sem merkir neyðarútgang, með texta á íslensku og ensku (FIRE EXIT). Stærð 120 × 340 mm.',
+    101: 'Sjálflýsandi skilti sem merkir hvar slökkvitæki er. L-skiltið stendur hornrétt út frá veggnum, svo það sést eftir ganginum úr báðum áttum. Sjálflýsandi flöturinn safnar birtu og lýsir í myrkri ef rafmagnið fer. Stærð 150 × 150 mm.',
+    373: 'Sjálflýsandi skilti sem merkir hvar brunaslanga er. L-skiltið stendur hornrétt út frá veggnum, svo það sést eftir ganginum úr báðum áttum. Sjálflýsandi flöturinn safnar birtu og lýsir í myrkri ef rafmagnið fer. Stærð 150 × 150 mm.',
+    140: 'Sjálflýsandi skilti sem merkir hvar slökkvitæki er. Flatt skilti sem fer beint á vegginn fyrir ofan tækið. Lýsir í myrkri ef rafmagnið fer. Stærð 150 × 150 mm.',
+    141: 'Sjálflýsandi skilti sem merkir hvar brunaslanga er. Flatt skilti sem fer beint á vegginn fyrir ofan slöngukeflið. Lýsir í myrkri ef rafmagnið fer. Stærð 150 × 150 mm.',
+    104: 'Grænt flóttaleiðarskilti með hlaupandi manni og ör sem vísar í átt að útgangi. Hart og sjálflýsandi, lýsir í myrkri ef rafmagnið fer. Stærð 150 × 300 mm.',
+    102: 'Sjálflýsandi skilti sem merkir hvar brunaslanga er. V-laga skiltið fer á horn eða stendur út frá vegg og sést úr tveimur áttum.',
+    365: 'Neyðarhamar til að hafa í bílnum. Oddurinn brýtur hliðarrúðu og blaðið í handfanginu sker á öryggisbelti, ef ekki er hægt að komast út eftir slys.',
+    342: 'Kolsýringsskynjari (CO) frá Kidde með innsiglaðri rafhlöðu sem endist í 10 ár. Kolsýringur er lyktarlaust og ósýnilegt gas sem myndast við ófullkominn bruna, til dæmis frá kamínu, gasofni eða bíl í bílskúr.',
+  };
+  const STOK_LYSING = 40;   // styttri lýsing en þetta (t.d. „Stærð 150x340" eftir hreinsun) víkur fyrir LYSINGAR
+  function lagaVorur(vorur) {
+    for (const v of vorur) {
+      if (NOFN[v.id]) { v.innraNafn = v.nafn; v.nafn = NOFN[v.id]; }
+      if (LYSINGAR[v.id] && String(v.lysing || '').trim().length < STOK_LYSING) v.lysing = LYSINGAR[v.id];
+    }
+    return vorur;
+  }
   async function saekja(drog) {
     const r = await fetch(API + (drog ? '?drog=1' : ''), { cache: 'no-store' });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Villa ' + r.status);
-    VV.stada = d.stada; VV.efni = d.efni || {}; VV.vorur = d.vorur || [];
+    VV.stada = d.stada; VV.efni = d.efni || {}; VV.vorur = lagaVorur(d.vorur || []);
     VV.drog_uppfaert = d.drog_uppfaert; VV.utgafa = d.utgafa || 0; VV.virkjad = d.virkjad || null;
     return d;
   }

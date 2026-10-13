@@ -46,6 +46,16 @@ function myndarslod(v, mynd) {
   return '';
 }
 
+// Lýsing í vorur er líka minnisblað starfsfólks („Kostar 3958 hja oger", strikamerki). Opinbera verslunin fær aðeins
+// lýsinguna sjálfa: línur með innkaupsverði eða birgi og línur sem eru bara strikamerki falla út.
+const INNRI_LINA = /\bkostar\b|\binnkaup|\bhj[áa]\s+(oger|dalberg)\b|^\s*\d{8,14}\s*$/i;
+function hreinsaLysingu(t) {
+  return String(t || '').split('\n').filter((l) => !INNRI_LINA.test(l)).join('\n')
+    .replace(/Léttvants/g, 'Léttvatns')
+    .replace(/([a-záéíóúýþæö])\.([A-ZÁÉÍÓÚÝÞÆÖ])/g, '$1. $2')
+    .replace(/\n{3,}/g, '\n\n').trim();
+}
+
 async function lesaVorur(efni) {
   const auka = ((efni && efni.vorur && efni.vorur.aukalega) || []).map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200);
   const sia = auka.length
@@ -58,7 +68,7 @@ async function lesaVorur(efni) {
     id: v.id,
     nafn: v.nafn || '',
     flokkur: v.flokkur || 'Annað',
-    lysing: v.lysing || v.description || '',
+    lysing: hreinsaLysingu(v.lysing || v.description),
     ...kr(v.verd_an_vsk, v.vsk_prosenta),
     birgdir: v.birgdir == null ? null : Number(v.birgdir),
     rodun: v.rodun,
