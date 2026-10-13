@@ -570,7 +570,10 @@ ${id ? `<div class="vvr-kafli"><h4>Þessi vörusíða</h4><label class="vvr-rod"
   }
 
   function myndasafn() {
-    const innbyggt = ['hetja', 'notkun-verkstaedi', 'notkun-bilskur', 'notkun-sumarhus', 'notkun-batur', 'notkun-lager', 'notkun-grill', 'flokkur-a', 'flokkur-b', 'flokkur-c', 'ekki-feiti', 'ekki-tolvur', 'ekki-lithium', 'skref-1', 'skref-2', 'skref-3', 'skref-4', 'maelir', 'veggur'].map((n) => 'myndir/' + n + '.jpg');
+    const innbyggt = ['hetja', 'notkun-verkstaedi', 'notkun-bilskur', 'notkun-sumarhus', 'notkun-batur', 'notkun-lager', 'notkun-grill', 'flokkur-a', 'flokkur-b', 'flokkur-c', 'ekki-feiti', 'ekki-tolvur', 'ekki-lithium', 'skref-1', 'skref-2', 'skref-3', 'skref-4', 'maelir', 'veggur',
+      'lv-not-heimili', 'lv-not-stigagangur', 'lv-not-skrifstofa', 'lv-not-verslun', 'lv-not-hotel', 'lv-not-bilskur', 'lv-ef-a', 'lv-ef-b', 'lv-ekki-gas', 'lv-ekki-frost',
+      'co2-not-tolvuver', 'co2-not-rafmagnstafla', 'co2-not-skrifstofa', 'co2-not-rannsoknastofa', 'co2-not-taeknirymi', 'co2-not-verkstaedi', 'co2-ef-rafbunadur', 'co2-ef-b', 'co2-ef-velar', 'co2-ekki-glod', 'co2-ekki-lokad',
+      'co2-skref-1', 'co2-skref-2', 'co2-skref-3', 'co2-skref-4', 'co2-vigtun', 'co2-veggur'].map((n) => 'myndir/' + n + '.jpg');
     const upp = Array.isArray(VV.efni.myndasafn) ? VV.efni.myndasafn : [];
     const vorur = VV.vorur.map((v) => v.mynd).filter(Boolean);
     const takki = (u, c) => `<button type="button" class="${c || ''}" data-r="safn" data-v="${esc(u)}" style="background-image:url('${esc(u).replace(/'/g, '%27')}')" title="${esc(u.split('/').pop())}"></button>`;
