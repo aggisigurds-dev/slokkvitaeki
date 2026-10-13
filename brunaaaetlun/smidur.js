@@ -32,8 +32,8 @@
 
   // ───────────────────────── gögn ─────────────────────────
   async function hlada() {
-    if (!cid) return villa('Engið fyrirtæki valið. Opnaðu Brunaáætlun úr prófíl fyrirtækis í appinu (slóðin endar á <code>?fyrirtaeki=NÚMER</code>).');
     if (!sb) return villa('Engin tenging við gagnagrunn.');
+    if (!cid) return valmynd();
     var r = await Promise.all([
       sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,postnumer,simi,netfang').eq('id', cid).maybeSingle(),
       sb.from('teikning_bord').select('haedir,image_url,markers,updated_at').eq('company_id', cid).maybeSingle(),
@@ -56,6 +56,45 @@
     document.title = 'Brunaáætlun – ' + st.fyr.nafn;
     teiknaAllt();
     for (var i = 0; i < st.haedir.length; i++) { try { await hladaMynd(st.haedir[i].id); } catch (e) { console.warn('mynd', e); } if (st.flipi === 'uppd' && st.haedir[i].id === st.haed) teiknaKort(true); }
+  }
+
+  // ── Fyrirtækjaval (án ?fyrirtaeki, t.d. sem síða í appi): áætlanir í vinnslu + leit í fyrirtækjaskrá ──
+  async function valmynd() {
+    document.title = 'Brunaáætlun';
+    app.innerHTML = '<header class="ba-haus"><div><h1>Brunaáætlun</h1><div class="ba-undir">Veldu stað · rýmingaráætlun, eigið eftirlit og flóttaáætlanir</div></div></header>' +
+      '<main class="ba-svid"><div class="ba-plata"><section class="ba-spjald"><div class="ba-shaus"><h2>Finna stað</h2></div><div class="ba-sinn">' +
+      '<div class="ba-reitur"><input id="ba-leit" placeholder="Nafn eða heimilisfang, t.d. Norðurhella" autocomplete="off"></div><div id="ba-nidurst" class="ba-valisti"></div></div></section>' +
+      '<section class="ba-spjald"><div class="ba-shaus"><h2>Áætlanir í vinnslu</h2></div><div class="ba-sinn"><div id="ba-ivinnslu" class="ba-valisti"><div class="ba-tom">Sæki…</div></div></div></section></div></main>';
+    var rodHtml = function (f, auka) {
+      return '<a class="ba-valrod" href="?fyrirtaeki=' + f.id + '"><span><b>' + esc(f.nafn || '') + '</b><small>' + esc(f.heimilisfang || '') + '</small></span><span class="ba-bil"></span>' + (auka || '') + '</a>';
+    };
+    var plata = function (txt, lit) { return '<span class="ba-p ' + (lit || '') + '"><i></i>' + esc(txt) + '</span>'; };
+    try {
+      var a = await sb.from('brunaaaetlun').select('company_id,updated_at').order('updated_at', { ascending: false }).limit(60);
+      var ids = (a.data || []).map(function (x) { return x.company_id; });
+      var f = ids.length ? await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').in('id', ids) : { data: [] };
+      var nofn = {}; (f.data || []).forEach(function (x) { nofn[x.id] = x; });
+      document.getElementById('ba-ivinnslu').innerHTML = ids.length ? (a.data || []).map(function (x) {
+        return rodHtml(nofn[x.company_id] || { id: x.company_id, nafn: 'Fyrirtæki ' + x.company_id }, plata('Breytt ' + S.dagsIS(x.updated_at), 'g'));
+      }).join('') : '<div class="ba-tom">Engin áætlun hafin enn. Leitaðu að stað hér fyrir ofan.</div>';
+    } catch (e) { document.getElementById('ba-ivinnslu').innerHTML = '<div class="ba-tom">Gat ekki sótt listann.</div>'; }
+    var timi = null, nr = 0;
+    document.getElementById('ba-leit').addEventListener('input', function (ev) {
+      clearTimeout(timi);
+      var q = ev.target.value.replace(/[,()*%]/g, ' ').replace(/\\/g, ' ').trim();
+      timi = setTimeout(async function () {
+        var minn = ++nr, d = document.getElementById('ba-nidurst');
+        if (q.length < 2) { d.innerHTML = ''; return; }
+        var r = await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').is('deleted_at', null).or('nafn.ilike.*' + q + '*,heimilisfang.ilike.*' + q + '*').order('nafn').limit(30);
+        if (minn !== nr) return;
+        var listi = r.data || [];
+        var tb = listi.length ? await sb.from('teikning_bord').select('company_id').in('company_id', listi.map(function (x) { return x.id; })) : { data: [] };
+        if (minn !== nr) return;
+        var med = {}; (tb.data || []).forEach(function (x) { med[x.company_id] = 1; });
+        d.innerHTML = listi.length ? listi.map(function (x) { return rodHtml(x, med[x.id] ? plata('Teikning', 'g') : plata('Engin teikning')); }).join('') : '<div class="ba-tom">Ekkert fannst.</div>';
+      }, 250);
+    });
+    document.getElementById('ba-leit').focus();
   }
 
   // Grunnmynd hæðar: PDF (pdf.js) eða mynd, skorin í rammann, sem JPEG-dataURL
@@ -130,7 +169,7 @@
     app.innerHTML =
       '<header class="ba-haus"><div><h1>Brunaáætlun</h1><div class="ba-undir">' + esc(st.fyr.nafn) + (st.fyr.heimilisfang ? ' · ' + esc(st.fyr.heimilisfang) : '') + '</div></div><div class="ba-bil"></div>' +
       '<div class="ba-takkar"><span id="ba-stada"></span><label class="ba-p" style="cursor:pointer"><input type="checkbox" data-a="uppkast"' + (st.efni.uppkast !== false ? ' checked' : '') + ' style="margin:0"> Uppkast</label>' +
-      '<a class="ba-btn m" href="/#company/' + cid + '">Prófíll</a><button class="ba-btn r" data-a="flipi" data-f="skjol">Prenta skjöl</button></div></header>' +
+      '<a class="ba-btn m" href="?">Allar áætlanir</a><a class="ba-btn m" href="/#company/' + cid + '" target="_blank" rel="noopener">Prófíll</a><button class="ba-btn r" data-a="flipi" data-f="skjol">Prenta skjöl</button></div></header>' +
       '<nav class="ba-flipar" role="tablist">' + FLIPAR.map(function (f) { return '<button class="ba-flipi" role="tab" data-a="flipi" data-f="' + f[0] + '" aria-selected="' + (st.flipi === f[0]) + '">' + f[1] + (f[0] === 'uppl' && vant ? ' <span class="ba-tala" id="ba-vant">' + vant + '</span>' : '') + '</button>'; }).join('') + '</nav>' +
       '<main class="ba-svid" id="ba-svid"></main>';
     stada(st.uppfaert ? 'Vistað' : 'Ný áætlun', st.uppfaert ? 'g' : '');
@@ -167,8 +206,8 @@
     return '<div class="ba-ritill">' +
       '<div class="ba-plata"><div class="ba-merki">Hæð</div><div class="ba-haedir">' + st.haedir.map(function (h) { return '<button class="ba-btn s" data-a="haed" data-h="' + esc(h.id) + '" aria-pressed="' + (h.id === st.haed) + '">' + esc(h.nafn) + '</button>'; }).join('') + '</div>' +
       '<div class="ba-merki">Setja á uppdrátt</div><div class="ba-palletta">' +
-      '<button class="ba-btn breidd" data-a="tol" data-t="velja" aria-pressed="' + (st.tol === 'velja') + '">Velja og færa</button>' +
-      T.ROD.map(function (t) { return '<button class="ba-btn" data-a="tol" data-t="' + t + '" aria-pressed="' + (st.tol === t) + '" title="' + esc(T.TEG[t].heiti) + '">' + T.tak(t, t === 'leid' || t === 'ut' ? 14 : 20) + '<span>' + esc(T.TEG[t].heiti) + '</span></button>'; }).join('') +
+      '<button class="ba-btn" data-a="tol" data-t="velja" aria-pressed="' + (st.tol === 'velja') + '" title="Velja og færa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l14 8-6 2-2 6z"/></svg><span>Velja</span></button>' +
+      T.ROD.map(function (t) { return '<button class="ba-btn" data-a="tol" data-t="' + t + '" aria-pressed="' + (st.tol === t) + '" title="' + esc(T.TEG[t].heiti) + '">' + T.tak(t, t === 'leid' || t === 'ut' ? 12 : 18) + '<span>' + esc(T.TEG[t].stutt || T.TEG[t].heiti) + '</span></button>'; }).join('') +
       '</div><p class="ba-hjalp" id="ba-hjalp"></p></div>' +
       '<section class="ba-spjald"><div class="ba-kortstika">' +
       '<button class="ba-btn s" data-a="zoom" data-z="-1">−</button><button class="ba-btn s" data-a="zoom" data-z="0">Passa</button><button class="ba-btn s" data-a="zoom" data-z="1">+</button>' +

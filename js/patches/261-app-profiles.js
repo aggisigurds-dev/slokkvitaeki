@@ -90,7 +90,7 @@
     brunayfirlit: 'flame', brunaskra: 'flame', slokkvikerfi: 'bell',
     'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
     'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
-    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube'
+    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube', brunaaaetlun: 'flame'
   };
   function pgIcon(p) {
     var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
@@ -170,6 +170,9 @@
     { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
     { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint' },
     { k: '3dwork',          label: '3dwork — merkja/CAD-bekkur',     short: '3dwork', emoji: '🛠️', url: 'https://kjarni-3dwork.vercel.app/3dwork' },
+    // 13.10.2026 (Agnar: „setja þetta tól inn á öpp og síðan inn á brunakerfi appið“): Brunaáætlun-smiðurinn (464,
+    // /brunaaaetlun/) — án ?fyrirtaeki sýnir hann leit og áætlanir í vinnslu, svo hann virkar sem síða í hvaða appi sem er.
+    { k: 'brunaaaetlun',    label: 'Brunaáætlun — rýmingaráætlun, eigið eftirlit, flóttaáætlanir', short: 'Brunaáætlun', emoji: '🗺️', url: '/brunaaaetlun/' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -233,7 +236,7 @@
     { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunakerfi.json', home: 'brunaskra',
       blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
-      defaults: ['brunaskra', 'slokkvikerfi', 'arsskodun', 'sala', 'turbopaint'] },
+      defaults: ['brunaskra', 'slokkvikerfi', 'arsskodun', 'sala', 'turbopaint', 'brunaaaetlun'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
@@ -790,6 +793,7 @@
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
+        insertOnce('__ba1',   'brunaaaetlun', 'turbopaint', 'brunakerfi');   // Brunaáætlun í Brunakerfi-appið (13.10.2026)
         // __bord1 (11.09.2026): Þjónustuborð 2 ('bord', patch 368) kemur í stað gamla mobíl-borðsins
         // ('thjonustubord', 306) í öllum vistuðum öppum og fer á undan 'verkbord' í Verkefni og Boss.
         // Flaggið brennur aðeins ef einhver vistuð app-stilling er til (annars sjá `defaults` um það).

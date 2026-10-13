@@ -142,9 +142,10 @@
 
     /* ── Botnstika: sömu hlutföll í ÖLLUM öppum í raunstærð ──────────────── */
     K + A + '#_app-nav' + P4 + '{padding:5px 8px calc(5px + env(safe-area-inset-bottom,0px))!important;gap:6px!important}',
-    K + A + '#_app-nav button' + P4 + '{flex:1 0 76px!important;min-width:76px!important;min-height:62px!important;'
-      + 'padding:6px 4px!important;font-size:12.5px!important;gap:3px!important;border-radius:12px!important;line-height:1.15!important}',
-    K + A + '#_app-nav button .e' + P4 + '{font-size:24px!important;line-height:1!important}',
+    // 13.10.2026 (Agnar: „botn bannerinn er allt of lítill“): 76×62 → ≥70×80 px, 24 → 30 px tákn, 12,5 → 14 px texti.
+    K + A + '#_app-nav button' + P4 + '{flex:1 0 70px!important;min-width:70px!important;min-height:80px!important;'
+      + 'padding:7px 4px!important;font-size:14px!important;gap:4px!important;border-radius:12px!important;line-height:1.15!important}',
+    K + A + '#_app-nav button .e' + P4 + '{font-size:30px!important;line-height:1!important}',
   ].join('\n');
 
   function mountCss() {

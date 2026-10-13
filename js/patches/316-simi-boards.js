@@ -61,13 +61,14 @@
       '{padding-top:52px!important}',
 
     // ── Öpp bottom nav: 261 still paints min-height:120px ──────────────────
-    A + '#_app-nav{padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px))!important;gap:4px}',
-    A + '#_app-nav button{flex:1 0 64px;min-width:64px;min-height:52px!important;padding:4px 3px!important;font-size:12px!important;gap:2px!important;border-radius:10px}',
-    A + '#_app-nav button .e{font-size:18px!important}',
-    A + '.view.active{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
+    // 13.10.2026 (Agnar: „botn bannerinn er allt of lítill“): 52 → 74 px hnappar, 18 → 28 px tákn, 12 → 14 px texti.
+    A + '#_app-nav{padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))!important;gap:6px}',
+    A + '#_app-nav button{flex:1 0 84px;min-width:84px;min-height:74px!important;padding:6px 4px!important;font-size:14px!important;gap:4px!important;border-radius:12px;line-height:1.15!important}',
+    A + '#_app-nav button .e{font-size:28px!important}',
+    A + '.view.active{padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
-      '{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
-    A + '#_app-frame{top:48px!important;bottom:64px!important}',
+      '{padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))!important}',
+    A + '#_app-frame{top:48px!important;bottom:88px!important}',
     'body.appmode.appmode-nonav .view.active{padding-bottom:24px!important}',
 
     // Fljótandi chrome sem EKKI er hluti af appinu — mælt ofan á Kröfur:

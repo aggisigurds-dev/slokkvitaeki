@@ -8,20 +8,20 @@
 
   // Tegundirnar sem má setja á uppdrátt. gestur: sést á flóttaáætlun gesta · starf: aðeins á rýmingaruppdrætti
   var TEG = {
-    leid:  { heiti: 'Flóttaleið', en: 'Escape route', gestur: 1 },
-    ut:    { heiti: 'Neyðarútgangur', en: 'Emergency exit', gestur: 1 },
-    slt:   { heiti: 'Slökkvitæki', en: 'Fire extinguisher', gestur: 1 },
-    f002:  { heiti: 'Brunaslanga', en: 'Fire hose reel', gestur: 1 },
-    f005:  { heiti: 'Handboði', en: 'Manual call point', gestur: 1 },
-    f016:  { heiti: 'Eldvarnateppi', en: 'Fire blanket', gestur: 1 },
-    e003:  { heiti: 'Sjúkrakassi', en: 'First aid', gestur: 1 },
-    lyfta: { heiti: 'Notið ekki lyftu', en: 'Do not use the lift', gestur: 1 },
-    bv:    { heiti: 'Stjórnstöð brunaviðvörunarkerfis', en: 'Fire alarm panel', gestur: 0 },
-    rafm:  { heiti: 'Rafmagnstafla', en: 'Electrical panel', gestur: 0 },
-    e007:  { heiti: 'Söfnunarsvæði', en: 'Assembly point', gestur: 1 },
-    ter:   { heiti: 'Þú ert hér', en: 'You are here', gestur: 1 },
-    herb:  { heiti: 'Herbergi', en: 'Room', gestur: 0 },
-    texti: { heiti: 'Texti', en: 'Text', gestur: 1 },
+    leid:  { heiti: 'Flóttaleið', stutt: 'Flóttaleið', en: 'Escape route', gestur: 1 },
+    ut:    { heiti: 'Neyðarútgangur', stutt: 'Útgangur', en: 'Emergency exit', gestur: 1 },
+    slt:   { heiti: 'Slökkvitæki', stutt: 'Slökkvitæki', en: 'Fire extinguisher', gestur: 1 },
+    f002:  { heiti: 'Brunaslanga', stutt: 'Brunaslanga', en: 'Fire hose reel', gestur: 1 },
+    f005:  { heiti: 'Handboði', stutt: 'Handboði', en: 'Manual call point', gestur: 1 },
+    f016:  { heiti: 'Eldvarnateppi', stutt: 'Eldv.teppi', en: 'Fire blanket', gestur: 1 },
+    e003:  { heiti: 'Sjúkrakassi', stutt: 'Sjúkrakassi', en: 'First aid', gestur: 1 },
+    lyfta: { heiti: 'Notið ekki lyftu', stutt: 'Lyfta', en: 'Do not use the lift', gestur: 1 },
+    bv:    { heiti: 'Stjórnstöð brunaviðvörunarkerfis', stutt: 'Stjórnstöð', en: 'Fire alarm panel', gestur: 0 },
+    rafm:  { heiti: 'Rafmagnstafla', stutt: 'Rafm.tafla', en: 'Electrical panel', gestur: 0 },
+    e007:  { heiti: 'Söfnunarsvæði', stutt: 'Söfnunarsv.', en: 'Assembly point', gestur: 1 },
+    ter:   { heiti: 'Þú ert hér', stutt: 'Þú ert hér', en: 'You are here', gestur: 1 },
+    herb:  { heiti: 'Herbergi', stutt: 'Herbergi', en: 'Room', gestur: 0 },
+    texti: { heiti: 'Texti', stutt: 'Texti', en: 'Text', gestur: 1 },
   };
   var ROD = ['leid', 'ut', 'slt', 'f002', 'f005', 'f016', 'e003', 'lyfta', 'bv', 'rafm', 'e007', 'ter', 'herb', 'texti'];
 
