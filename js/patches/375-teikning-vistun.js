@@ -138,26 +138,72 @@
     } catch (e) { console.warn('[375] upsert', e && e.message); }
   }
 
+  // Er myndin sem glugginn sýnir (frummynd 383, eða bgImage sé hún enn <img>) þegar bundin við þessa slóð?
+  // 435 merkir `_gaedi = '<gæði>:' + slóð`, 436 `_sja = slóð`; grunn-load (scanner) setur aðeins src.
+  function full(u) { try { return new URL(u, location.href).href; } catch (_) { return String(u || ''); } }
+  function synirNu(url) {
+    try {
+      var TB = window.TeiknBord, F = window.FloorPlan, u = full(url);
+      var listi = [TB && typeof TB.frum === 'function' ? TB.frum() : null, F && F.bgImage];
+      for (var i = 0; i < listi.length; i++) {
+        var m = listi[i];
+        if (!m || m.tagName !== 'IMG' || !m.naturalWidth) continue;
+        var g = String(m._gaedi || '');
+        if ((m._sja && full(m._sja) === u) || (g && full(g.slice(g.indexOf(':') + 1)) === u) || full(m.src) === u) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+  function skerpist(url) {   // 436 (og 435 „fullt") teikna PDF-ið að baki teikn-mynd í skarpari mynd á sömu <img>
+    try { return !!(window.TeiknSja && TeiknSja.pdfSlodUrMynd && TeiknSja.pdfSlodUrMynd(url)); } catch (_) { return false; }
+  }
+
   function beitaAServer(cid, row) {
     var virk = (window.TeiknBord && typeof TeiknBord.virk === 'function') ? TeiknBord.virk() : 0;
     if (virk !== 0) {
       try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
       return;
     }
-    var c = document.getElementById('fp-canvas');
-    if (row.image_url && FloorPlan._srvImg !== row.image_url) {
-      FloorPlan._srvImg = row.image_url;
+    var c = document.getElementById('fp-canvas'), url = row.image_url;
+    if (url && FloorPlan._srvImg !== url) {
+      // 13.10.2026: glugginn opnast úr skyndiminninu með SÖMU slóð og röð þjónsins ber. Nýja myndin hér tók yfir sem
+      // bgImage, svo 26 MP blaðið var afkóðað aftur (868 ms) og fyrsti skurður af því tók 861 ms á aðalþræðinum
+      // (mælt á 1750, 1,7 s eftir opnun). Nú tekur hún aðeins yfir þegar hún ber eitthvað nýtt: aðra slóð, eða
+      // skarpari vigurmynd 436 (blob:) — JPEG-afrit af því sem þegar sést er hunsað.
+      var hl = FloorPlan.__hledurSlod;
+      if (!synirNu(url) && !row.__beidid && hl && hl.cid === cid && full(hl.url) === full(url) && Date.now() - hl.t < 8000) {
+        // Röðin kom á undan myndinni úr skyndiminninu (mælt: röð 397 ms, mynd 529 ms) — hún er á leiðinni, bíða (mest 5 s).
+        row.__beidid = true;
+        var n = 0;
+        (function bida() {
+          if (FloorPlan.companyId !== cid) return;
+          if (synirNu(url) || ++n >= 50) { beitaAServer(cid, row); return; }
+          setTimeout(bida, 100);
+        })();
+        return;
+      }
+      FloorPlan._srvImg = url;
+      var saman = synirNu(url);
+      if (saman && !skerpist(url)) {   // ekkert nýtt væntanlegt — aðeins teikna merkin úr röðinni
+        try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
+        return;
+      }
       var img = new Image();
       img.onload = function () {
         if (FloorPlan.companyId !== cid) return;
+        // 435 „fullt" rastar aðeins sé myndin bgImage við fyrstu hleðslu — sú leið helst óbreytt.
+        if (saman && String(img._gaedi || '').indexOf('fullt:') !== 0 && full(img.currentSrc || img.src) === full(url)) {
+          try { FloorPlan._renderPanel(); } catch (_) {}
+          return;
+        }
         FloorPlan.bgImage = img;
         if (c) c.style.display = 'block';
         var dm = document.getElementById('fp-drop-msg'); if (dm) dm.style.display = 'none';
         try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
       };
-      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, row.image_url);
-      else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, row.image_url);
-      else img.src = row.image_url;
+      if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(img, url);
+      else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(img, url);
+      else img.src = url;
     } else {
       try { FloorPlan._renderCanvas(); FloorPlan._renderPanel(); } catch (_) {}
     }
@@ -222,6 +268,9 @@
     var _load = FloorPlan.load.bind(FloorPlan);
     FloorPlan.load = function (cid) {
       _load(cid);          // localStorage strax (offline / skyndiminni)
+      // Slóðin sem grunn-load var að byrja að hlaða — beitaAServer bíður eftir þeirri mynd frekar en að sækja hana aftur.
+      var pl = FloorPlan.plans && FloorPlan.plans[cid];
+      FloorPlan.__hledurSlod = pl && pl.imageUrl ? { cid: cid, url: pl.imageUrl, t: Date.now() } : null;
       serverFetch(cid);    // þjónn ræður — berst milli véla
     };
 

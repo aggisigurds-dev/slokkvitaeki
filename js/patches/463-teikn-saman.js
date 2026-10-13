@@ -131,5 +131,67 @@
   var reyn = 0;
   (function reyna() { vefjaOpnun(); if (++reyn < 20) setTimeout(reyna, 500); })();
 
-  window.TeiknSaman = { minni: function () { return Array.from(minni.keys()); }, forsaekja: forsaekja };
+  // ── Afkóðun utan aðalþráðarins (13.10.2026, „bæta teikninga-bygginguna") ───────────────────────────────────
+  // Mælt á lifandi síðu: JPEG skjalasafnsins er 6006×4339 (26 MP). Fyrsta _renderCanvas (floorplanfix) stillti canvas á
+  // fulla stærð og málaði ALLT blaðið — afkóðun + málun á aðalþræðinum, 0,7–1,15 s frosinn gluggi — og 383 skar svo að
+  // hæðinni (1351×1349) í næsta tifi; sama aftur þegar 436 skipti inn skýrari mynd. Notandinn sá allt blaðið fyrst og
+  // svo stökk inn í hæðina, tvisvar.
+  // Nú: stór mynd sem er ekki afkóðuð er afkóðuð með img.decode() (utan aðalþráðarins), ekkert málað á meðan, og svo
+  // beðið 383 (TeiknBord.nyMynd) að taka við — það sker strax að hæðinni þegar skurðurinn er þekktur, svo 26 MP blaðið
+  // er aldrei málað. 383 bíður líka (afkodar) svo tifið þess afkóði ekki samstillt í kapphlaupi.
+  var STOR = 6e6;
+  var stada = new WeakMap();   // img → { src, tilbuin } — 436 setur NÝJA slóð á sama <img>, svo slóðin er hluti lykilsins
+  function skurdurThekktur() {
+    try { var TB = window.TeiknBord, hs = TB && TB.haedir && TB.haedir(), h = hs && hs[TB.virk ? TB.virk() : 0]; return !!(h && h.skurdur && h.skurdur.w > 8); }
+    catch (_) { return false; }
+  }
+  function svarKomid() { var F = window.FloorPlan; return !!(F && F.companyId != null && F.__soknLokid === F.companyId); }   // 375: röð þjónsins (eða engin)
+  function merki(syna) {
+    var main = document.getElementById('fp-main'), e = document.getElementById('fp-afk');
+    if (!syna || !main) { if (e) e.remove(); return; }
+    if (e && e.parentNode === main) return;
+    if (e) e.remove();
+    e = document.createElement('div'); e.id = 'fp-afk';
+    e.style.cssText = 'position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.78);font:600 14px system-ui,sans-serif;pointer-events:none';
+    e.textContent = 'Teikna…';
+    main.appendChild(e);
+  }
+  function afkodar(img) {
+    if (!img || img.tagName !== 'IMG' || !img.complete || !img.naturalWidth) return false;
+    if (img.naturalWidth * img.naturalHeight < STOR || typeof img.decode !== 'function') return false;
+    var src = img.currentSrc || img.src || '', s = stada.get(img);
+    if (s && s.src === src) return !s.tilbuin;
+    s = { src: src, tilbuin: false }; stada.set(img, s);
+    merki(true);
+    var t0 = performance.now();
+    img.decode().catch(function () {}).then(function () {
+      try { performance.measure('teikn-afkodun', { start: t0 }); } catch (_) {}
+      var n = 0;
+      (function bida() {
+        if (stada.get(img) !== s) return;                       // ný slóð á sama hnút — sú umferð tekur við
+        var F = window.FloorPlan;
+        if (!F || F.bgImage !== img) { s.tilbuin = true; merki(false); return; }
+        // Skurður hæðarinnar óþekktur og röð þjónsins ókomin: beðið (≤ 2 s) — annars málaðist allt blaðið fyrst (754 ms).
+        if (!skurdurThekktur() && !svarKomid() && ++n < 25) { setTimeout(bida, 80); return; }
+        s.tilbuin = true; merki(false);
+        try { if (window.TeiknBord && TeiknBord.nyMynd) { TeiknBord.nyMynd(); return; } } catch (_) {}
+        try { F._renderCanvas(); } catch (_) {}
+      })();
+    });
+    return true;
+  }
+  function vefjaTeiknun() {
+    var F = window.FloorPlan;
+    if (!F || typeof F._renderCanvas !== 'function' || F._renderCanvas.__teikn463) return;
+    var o = F._renderCanvas;
+    var w = function () { if (afkodar(this && this.bgImage)) return; return o.apply(this, arguments); };
+    for (var k in o) { try { w[k] = o[k]; } catch (_) {} }
+    w.__teikn463 = true;
+    F._renderCanvas = w;
+  }
+  // 434/floorplanfix/newfeatures vefja _renderCanvas við ræsingu — okkar vafningur þarf að vera ystur.
+  var reynT = 0;
+  (function reynaT() { vefjaTeiknun(); if (++reynT < 20) setTimeout(reynaT, 500); })();
+
+  window.TeiknSaman = { minni: function () { return Array.from(minni.keys()); }, forsaekja: forsaekja, afkodar: afkodar };
 })();

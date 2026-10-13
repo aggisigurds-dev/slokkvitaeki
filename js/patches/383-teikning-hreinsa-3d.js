@@ -3908,6 +3908,9 @@
     if (nu && !okkar(nu) && nu !== G.frum) {
       // NÝ frummynd (fyrsta hleðsla, svar þjóns, „Sækja teikningu", „Hlaða upp" eða skipt um hæð).
       if (nu.complete === false) return;
+      // 13.10.2026: 463 afkóðar stórar myndir utan aðalþráðarins og kallar nyMynd() þegar þær eru tilbúnar — skurður hér
+      // á meðan (drawImage) hefði afkóðað 26 MP á aðalþræðinum og fryst gluggann í ~1 s.
+      if (window.TeiknSaman && TeiknSaman.afkodar && TeiknSaman.afkodar(nu)) return;
       faeraMerki(0, 0);
       G.frum = nu; G.stig1 = null; G.synd = null; G.lykill = ''; G.hrein = null; G.hreinLykill = '';
       G.dauft = null; G.dauftLykill = '';
@@ -6401,6 +6404,7 @@
     syn3d: () => G.syn3d,     // opna þrívíddin (prófanir: skuggar(), blenderSena())
     // Vinnumyndin (445): röð þjónsins komin? · smíða fasta mynd hæðar · veggir hennar · lifandi 3D opnað/lokað
     rodKomin: () => G.rodKomin,
+    frum: () => G.frum,       // frummynd virku hæðarinnar (375 sleppir endurhleðslu sé sama slóð þegar komin)
     smidaVinnumynd,
     vinnuButar,
     opna3d: o => { if (!document.getElementById('fp-3d')) { G.hamur = null; return opna3d(o); } },

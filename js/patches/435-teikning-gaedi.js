@@ -84,23 +84,17 @@
     if (matchW && matchH) kv = Math.max(matchW, matchH) / Math.max(v0.width, v0.height, 1);
     else kv = Math.min(6, Math.max(0.4, (hlið || hlid()) / Math.max(v0.width, v0.height, 1)));
     const vp = sida.getViewport({ scale: kv });
+    // 13.10.2026: teiknað BEINT í stærð frummyndarinnar. Áður var 26 MP striginn fylltur hvítur áður en pdf.js fyllti
+    // hann sjálft (beginDrawing), og stæði stærð PDF-sins ekki á díl við JPEG-ið kom annar jafnstór strigi, þriðja
+    // fyllingin og hágæða drawImage yfir. Nú teygir `transform` um muninn í sömu teikningu.
+    const w = matchW && matchH ? matchW : Math.max(1, Math.round(vp.width));
+    const h = matchW && matchH ? matchH : Math.max(1, Math.round(vp.height));
     const cv = document.createElement('canvas');
-    cv.width = Math.max(1, Math.round(vp.width));
-    cv.height = Math.max(1, Math.round(vp.height));
+    cv.width = w; cv.height = h;
     const cx = cv.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+    const tr = (matchW && matchH) ? [w / vp.width, 0, 0, h / vp.height, 0, 0] : null;
     // intent 'print': pdf.js teiknar án requestAnimationFrame — í földum flipa stöðvaðist teikningin annars (11.10.2026)
-    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
-    if (matchW && matchH && (cv.width !== matchW || cv.height !== matchH)) {
-      const ut = document.createElement('canvas');
-      ut.width = matchW; ut.height = matchH;
-      const ox = ut.getContext('2d');
-      ox.fillStyle = '#fff'; ox.fillRect(0, 0, matchW, matchH);
-      ox.imageSmoothingEnabled = true; ox.imageSmoothingQuality = 'high';
-      ox.drawImage(cv, 0, 0, matchW, matchH);
-      cv.width = 0; cv.height = 0;
-      return ut;
-    }
+    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print', transform: tr, background: '#fff' }).promise;
     return cv;
   }
 
