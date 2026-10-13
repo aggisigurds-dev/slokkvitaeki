@@ -582,7 +582,7 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       tolur: [['2 L', 'Léttvatn'], ['5A 34B', 'Slökkvigeta'], ['1000 V', 'Rafbúnaður úr 1 m'], ['+5 °C', 'Lægsti hiti · þolir ekki frost']],
       atridi: ['Slökkvigeta **5A 34B**', 'Lítið og létt, passar í forstofu, íbúð og sumarbústað sem er kyndur', 'Má nota á rafbúnað upp að 1000 V úr minnst 1 m fjarlægð'],
       taekni: [['Gerð', 'Forþrýst léttvatnstæki'], ['Slökkviefni', 'Vatn með froðuíblöndun, 2 lítrar'], ['Slökkvigeta', '5A 34B'], ['Rafbúnaður', 'Upp að 1000 V, minnst 1 m'], ['Losunartími', 'Um 10 sekúndur'], ['Kastlengd', 'Um 3 metrar'], ['Hitaþol', '+5 °C til +60 °C, þolir ekki frost'], ['Hæð', 'Um 40 cm'], ['Þyngd fullt', 'Um 3,5 kg'], ['Staðall', 'ÍST EN 3, CE-merkt'], ['Fylgir', 'Þrýstimælir']],
-      thjon: [],
+      thjon: [['Árleg yfirferð', '3.600 kr'], ['Hleðsla eftir notkun', '5.200 kr']],
     },
     2: {
       snid: 'co2', geta: '34B', A: 0, B: 34,
