@@ -130,7 +130,11 @@
           endurteikna();
         });
       }
-      if (haus.nextSibling !== rod || haus.parentNode !== rod.parentNode) rod.parentNode.insertBefore(haus, rod);
+      // 13.10.2026 (mælt: báðir hnútar færðir í HVERJU tifi): hausinn átti að standa beint á undan röðinni, en valið fer svo
+      // á milli þeirra — næsta tif færði hausinn aftur, þá valið, o.s.frv. Rétta röðin er haus · val · röð.
+      const valNu = document.getElementById('t442-val');
+      const rett = haus.parentNode === rod.parentNode && (haus.nextSibling === rod || (valNu && haus.nextSibling === valNu && valNu.nextSibling === rod));
+      if (!rett) rod.parentNode.insertBefore(haus, rod);
       let val = document.getElementById('t442-val');
       if (!val) {
         val = document.createElement('div'); val.id = 't442-val';
