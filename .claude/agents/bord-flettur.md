@@ -14,6 +14,13 @@ tools: Bash, Read, Grep, Glob, Edit
 > Fluttur hingað 2026-08-01 við uppskiptingu CLAUDE.md (~15k tokens hlóðust í HVERRI
 > lotu). Engu breytt, engu sleppt — hleðst aðeins þegar þessi sérfræðingur er kallaður.
 
+## Djúpdvali — svæfð borð (13.10.2026, patch 465)
+
+Verkdagbók, Aldursgreining, Staðan, Þjónustuverk, Beiðnir, Leiðbeiningar, Móttaka og Vertíð eru í djúpdvala: script-merki
+þeirra eru kommentuð út í `index.html` (build-dist sleppir þeim), skrárnar óbreyttar. `465-djupdvali.js` sendir svæft
+borð á Þjónustuborðið í stað auðs aðalsvæðis. Listi, rök og hvernig á að vekja: `docs/DJUPDVALI.md`. Nýtt borð sem
+vísar á þessi borð verður að fara gegnum `window.X && …` (eins og 16/61/211 gera).
+
 ## URL routing (deep links) — `js/patches/218-url-routing.js`
 
 Views are deep-linkable by an ascii page name in the hash, e.g.

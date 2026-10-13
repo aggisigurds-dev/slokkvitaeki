@@ -65,17 +65,51 @@ try {
     .map(f => ({ nafn: 'dist/js/' + f, efni: fs.readFileSync(path.join(rot, 'dist', 'js', f), 'latin1') }));
 } catch (_) { /* dist óbyggt — statíski hlutinn stendur samt */ }
 
+// 13.10.2026: merkið verður að vera EINKVÆMT fyrir skrána. Áður var tekinn strengurinn í miðri skránni, og fyrir
+// fimm skrár var hann almennur ("width=900,height=1100" er líka í pos.js, 11 og 165; "text-align:right;font-weight:700;"
+// í 197, 27 og 418) — prófið sagði þá svæfðu pappana vaknaða þótt einkvæm auðkenni þeirra (__vertidInstalled o.fl.)
+// fyndust hvergi í bundlunum. Nú er valinn sá strengur næst miðju sem kemur hvergi annars staðar fyrir í js/ né
+// index.html; finnist enginn slíkur er skráin ekki dæmd (sagt frá því) frekar en að dæma á almennum streng.
+const allarAdrar = (() => {
+  const ut = [];
+  const ganga = (d) => { let e = []; try { e = fs.readdirSync(path.join(rot, d), { withFileTypes: true }); } catch (_) {} e.forEach(x => {
+    const p = d + '/' + x.name;
+    if (x.isDirectory()) { if (!/^(node_modules|dist|vendor)$/.test(x.name)) ganga(p); }
+    else if (/\.js$/.test(x.name)) ut.push({ p, efni: les(p) });
+  }); };
+  ganga('js');
+  ut.push({ p: 'index.html', efni: html });
+  return ut;
+})();
+const oalkvaemir = [];
 let skodadir = 0;
 if (bundlar.length) {
   einstakir.forEach(f => {
     const s = les(f);
     if (!s) return;                        // skráin er ekki til (t.d. 145) — getur ekki vaknað
-    // Sérkennilegur strengur úr MIÐRI skránni: nafnið eitt kemur fyrir í athugasemdum annarra.
-    const strengir = (s.match(/'[^'\n]{20,60}'|"[^"\n]{20,60}"/g) || []).map(x => x.slice(1, -1));
-    if (!strengir.length) return;
-    const merki = strengir[Math.floor(strengir.length / 2)];
+    // Sérkennilegur strengur næst MIÐRI skránni sem kemur hvergi annars staðar fyrir: nafnið eitt kemur fyrir í
+    // athugasemdum annarra, og almennir strengir (stílar, gluggastærðir) í öðrum, lifandi pöppum.
+    // Aðeins strengir sem minnkun (esbuild) skilur eftir óbreytta: hreint ASCII, engar gæsalappir né lausnarstafir —
+    // esbuild skrifar broddstafi sem \uXXXX og samræmir tilvitnanir (mælt: this.style.transform='' úr öðrum pappa).
+    // Athugasemdir fyrst burt — esbuild fjarlægir þær, svo strengur úr athugasemd finnst aldrei í bundle (mælt: 04, 23, 45).
+    const kodi = s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[\s;{}()])\/\/[^\n]*/g, '$1');
+    const strengir = (kodi.match(/'[^'\n]{20,60}'|"[^"\n]{20,60}"/g) || []).map(x => x.slice(1, -1))
+      .filter(x => /^[A-Za-z0-9 _.,:;!?()\-\/#%=+*@&|<>\[\]{}]+$/.test(x) && /[A-Za-z]{4}/.test(x));
+    // Uppsetningarverðir (window.__xxxInstalled o.fl.) eru eiginleikanöfn — minnkun styttir þau ekki, svo þau eru
+    // áreiðanlegustu merkin og fara fremst. Regex á hráan kóða getur gripið bil MILLI tveggja strengja (mælt: 45).
+    const verdir = [...new Set((kodi.match(/window\.(__[A-Za-z0-9_]{6,})/g) || []).map(x => x.slice(7)))];
+    if (!strengir.length && !verdir.length) { oalkvaemir.push(f); return; }
+    const midja = Math.floor(strengir.length / 2);
+    // Texti með bilum (skilaboð, heiti) lifir minnkun óbreyttur; kóðabútar milli strengja gera það ekki (virkt:true →
+    // virkt:!0 — mælt á demoseed.js). Fleiri bil fyrst, svo nálægð við miðju.
+    const bil = (x) => (x.match(/ /g) || []).length;
+    const rodud = verdir.concat(strengir.map((x, i) => [x, Math.abs(i - midja)])
+      .sort((a, b) => (bil(b[0]) >= 2) - (bil(a[0]) >= 2) || a[1] - b[1]).map(x => x[0]));
+    // allt að þrjú einkvæm merki — finnist EITT þeirra í bundle er patchinn vaknaður
+    const merkin = rodud.filter(x => !allarAdrar.some(o => o.p !== f && o.efni.indexOf(x) > -1)).slice(0, 4);
+    if (!merkin.length) { oalkvaemir.push(f); return; }
     skodadir++;
-    const fannst = bundlar.filter(b => b.efni.indexOf(Buffer.from(merki, 'utf8').toString('latin1')) > -1);
+    const fannst = bundlar.filter(b => merkin.some(m => b.efni.indexOf(Buffer.from(m, 'utf8').toString('latin1')) > -1));
     if (fannst.length) {
       villur.push('SVÆFÐUR PATCHI ER VAKNAÐUR: ' + f + ' er í ' + fannst.map(x => x.nafn).join(', ') +
                   ' þótt <script>-merki hans sé kommentað út í index.html.');
@@ -85,6 +119,7 @@ if (bundlar.length) {
 
 console.log('SVÆFÐIR PATCHAR — ' + einstakir.length + ' í dvala' +
             (bundlar.length ? ', ' + skodadir + ' bornir við ' + bundlar.length + ' bundle' : ' (dist óbyggt — aðeins statísk athugun)'));
+if (oalkvaemir.length) console.log('  ⚠ ekki dæmdir (enginn einkvæmur strengur): ' + oalkvaemir.join(', '));
 if (!villur.length) {
   console.log('✅ GRÆNT: athugasemdir eru ógagnsæjar fyrir bundlarann og enginn svæfður patchi er í bundle.');
   process.exit(0);
