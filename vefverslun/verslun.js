@@ -405,6 +405,145 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
         ['Dugar kolsýrutæki eitt og sér?', 'Sjaldnast. Það ræður ekki við eld í timbri, pappír og húsgögnum, svo hafðu duft- eða léttvatnstæki líka. Kolsýrutækið fer við rafbúnaðinn.'],
       ],
     },
+
+    reyk: {
+      merki: 'Hver hæð, hvert svefnherbergi',
+      inngangur: 'Reykskynjari varar við reyk áður en eldurinn breiðist út, líka þegar allir sofa. Einfaldasti og ódýrasti hluti brunavarna heimilisins.',
+      pillur: ['{**85 dB**} · minnst', '{**10 ár**} · líftími'],
+      ef: {
+        yfir: 'Hvað nemur skynjarinn best?',
+        inng: 'Flestir brunar á heimilum byrja hægt, með reyk frá glóð. Skynjarinn nemur reykinn löngu áður en logar sjást.',
+        listi: [
+          { k: 'glod', mynd: 'myndir/rk-ef-glod.jpg', ico: 'logi', fl: 'Glóð', t: 'Sófi, rúm og textíll', x: 'Eldur sem kraumar lengi og myndar mikinn reyk.', stig: 4, v: 'Nemur mjög snemma', n: 'Algengur næturbruni. Skynjarinn vekur þig áður en reykurinn verður hættulegur.' },
+          { k: 'eldur', mynd: 'myndir/rk-ef-eldur.jpg', ico: 'logi', fl: 'Opinn eldur', t: 'Logar og reykur', x: 'Eldur sem breiðist hratt út, til dæmis í pappír eða rusli.', stig: 3, v: 'Nemur vel', n: 'Reykurinn stígur upp í loftið þar sem skynjarinn er.' },
+          { k: 'raftaeki', mynd: 'myndir/rk-ef-raftaeki.jpg', ico: 'elding', fl: 'Raftæki', t: 'Ofhitnun', x: 'Fjöltengi, hleðslutæki og raftæki sem byrja að bráðna.', stig: 4, v: 'Nemur mjög snemma', n: 'Plast sem hitnar gefur frá sér reyk áður en það kviknar í því.' },
+        ],
+      },
+      ekkiTitill: 'Ekki setja hann hér', ekkiUndir: 'Þar fer hann í gang að ástæðulausu.',
+      ekki: [
+        { k: 'eldhus', mynd: 'myndir/rk-ekki-eldhus.jpg', ico: 'panna', fl: 'Eldhús', t: 'Beint yfir eldavél', x: 'Gufa og steiking. Settu hann frammi á gangi.' },
+        { k: 'bad', mynd: 'myndir/rk-ekki-bad.jpg', ico: 'vidvorun', fl: 'Baðherbergi', t: 'Gufa úr sturtu', x: 'Gufan líkist reyk. Settu hann utan við baðið.' },
+        { k: 'kalt', mynd: 'myndir/rk-ekki-kalt.jpg', ico: 'snjor', fl: 'Óupphitað', t: 'Kaldur, rykugur skúr', x: 'Ryk, útblástur og kuldi trufla nemann.' },
+      ],
+      notkun: {
+        yfir: 'Hvar kemur skynjarinn að gagni?',
+        inng: 'Þar sem fólk sefur og þar sem það fer út. Myndirnar eru líka í myndasafninu efst.',
+        listi: [
+          { k: 'svefnherbergi', mynd: 'myndir/rk-not-svefnherbergi.jpg', merki: 'Svefn', t: 'Svefnherbergi', x: 'Svo hljóðið nái að vekja þig, líka með lokaðar dyr.' },
+          { k: 'gangur', mynd: 'myndir/rk-not-gangur.jpg', merki: 'Flóttaleið', t: 'Gangur', x: 'Framan við svefnherbergin, á leiðinni út.' },
+          { k: 'stofa', mynd: 'myndir/rk-not-stofa.jpg', merki: 'Glóð', t: 'Stofa', x: 'Sófi, sjónvarp og hleðslutæki. Hér byrja margir brunar.' },
+          { k: 'stigagangur', mynd: 'myndir/rk-not-stigagangur.jpg', merki: 'Hver hæð', t: 'Stigagangur', x: 'Minnst einn á hverri hæð, helst efst í stiganum.' },
+          { k: 'sumarhus', mynd: 'myndir/rk-not-sumarhus.jpg', merki: 'Svefn', t: 'Sumarhús', x: 'Kamína, kerti og fólk sem þekkir ekki húsið.' },
+          { k: 'gisting', mynd: 'myndir/rk-not-gisting.jpg', merki: 'Skylda', t: 'Gistiherbergi', x: 'Einn í hverju herbergi, nema brunaviðvörunarkerfi sé í húsinu.' },
+        ],
+      },
+      um: {
+        yfir: 'Um skynjarann',
+        p: ['Reykskynjari nemur reyk og gefur frá sér hátt viðvörunarhljóð, minnst 85 dB í þriggja metra fjarlægð, svo allir í húsinu vakni.',
+          'Skynjararnir okkar nema reyk frá glóð vel, til dæmis í sófa, rúmi eða ofhitnuðu raftæki. Slíkur eldur getur kraumað lengi áður en logar sjást, og reykurinn er hættulegastur þegar fólk sefur.',
+          'Byggingarreglugerð gerir kröfu um reykskynjara í íbúðum: minnst einn á hverri hæð og einn á hverja 80 m².'],
+        gott: '**Gott að vita:** skynjari með 10 ára rafhlöðu þarf aldrei rafhlöðuskipti. Þú skiptir um allan skynjarann eftir 10 ár.',
+      },
+      maelir: { yfir: 'Prófaðu hann einu sinni í mánuði', mynd: 'myndir/rk-profun.jpg', alt: 'Fingur ýtir á prófunarhnapp reykskynjara', listi: ['Haltu prófunarhnappinum inni þar til hann pípir', 'Ryksugaðu létt yfir raufarnar', 'Stutt píp á mínútu fresti þýðir að rafhlaðan er að klárast', 'Skiptu um skynjarann eftir 10 ár', 'Aldrei mála yfir hann eða líma fyrir'], rautt: 'Heyrist ekkert þegar þú prófar? Skiptu um rafhlöðu eða skynjara strax.' },
+      skref: {
+        yfir: 'Svona setur þú hann upp',
+        undir: 'Tekur nokkrar mínútur. Engar snúrur.',
+        listi: [['Veldu stað', 'Í loftinu, minnst 50 cm frá vegg, horni og ljósum.', 'myndir/rk-skref-1.jpg'], ['Skrúfaðu festinguna', 'Festu plötuna í loftið með skrúfunum.', 'myndir/rk-skref-2.jpg'], ['Snúðu honum á', 'Settu skynjarann á festinguna og snúðu þar til hann smellur.', 'myndir/rk-skref-3.jpg'], ['Prófaðu', 'Ýttu á prófunarhnappinn og hlustaðu.', 'myndir/rk-profun.jpg']],
+        s112: 'Ef skynjarinn fer í gang: komdu öllum út, lokaðu á eftir þér og hringdu í 112.',
+      },
+      stadur: {
+        yfir: 'Reglur um staðsetningu',
+        mynd: 'myndir/rk-loft.jpg', alt: 'Reykskynjari á miðju lofti',
+        reglur: [
+          ['Minnst einn á hverri hæð', 'Og minnst einn á hverja 80 m². Einn í hverri íbúð að lágmarki.'],
+          ['Hljóðið þarf að heyrast í svefnherbergjum', 'Minnst 75 dB inni í hverju svefnherbergi. Í stærri íbúðum þarf skynjara í svefnherbergin eða samtengda skynjara.'],
+          ['Í loftinu, frá vegg og horni', 'Minnst 50 cm frá vegg, horni og loftljósum, helst á miðju lofti.'],
+          ['Við flóttaleiðir', 'Framan við svefnherbergi, á ganginum þar sem fólk fer út.'],
+          ['Einn í hverju gistiherbergi', 'Í gistingu, nema sjálfvirkt brunaviðvörunarkerfi sé í húsinu.'],
+        ],
+        heimild: 'Heimild: byggingarreglugerð nr. 112/2012, greinar 9.4.2 og 9.4.3. Staðallinn um reykskynjara er ÍST EN 14604.',
+      },
+      reikn: { skynjarar: 80 },
+      bordi: { k: 'reyk', x: 'Reykskynjari sem virkar vekur heimilið áður en reykurinn verður hættulegur.' },
+      hentar: { yfir: 'Hvaða skynjari hentar?', x: '**Reykskynjari 2** gengur fyrir 9V rafhlöðu sem skipt er um árlega. **Reykskynjari** er með 10 ára rafhlöðu. **Reykskynjari 3** er líka með 10 ára rafhlöðu og samtengist þráðlaust.', takkar: [['Reykskynjari 2', 13], ['Reykskynjari', 3], ['Reykskynjari 3', 14]] },
+      spurn: () => [
+        ['Af hverju pípir skynjarinn stutt á mínútu fresti?', 'Rafhlaðan er að klárast. Skiptu um hana strax, eða um allan skynjarann ef hann er með innbyggðri 10 ára rafhlöðu.'],
+        ['Hvað þýðir samtengdur?', 'Þegar einn skynjari nemur reyk fara allir í gang, svo þú heyrir viðvörunina þó eldurinn sé á annarri hæð eða í hinum enda hússins.'],
+        ['Hvenær á að skipta um skynjara?', 'Á 10 ára fresti. Neminn eldist og verður ónákvæmari. Dagsetningin stendur á bakhliðinni.'],
+        ['Má setja hann í eldhúsið?', 'Ekki beint við eldavélina, þar fer hann í gang við hverja steikingu. Settu hann frammi á ganginum.'],
+        ['Hversu oft á að prófa hann?', 'Einu sinni í mánuði með prófunarhnappinum, og alltaf þegar þú kemur heim eftir langa fjarveru.'],
+        ['Fer hann í gang ef ég er að heiman?', 'Hann vælir á staðnum en hringir ekki í neinn. Fyrir fyrirtæki og stærri hús þarf brunaviðvörunarkerfi með vöktun.'],
+      ],
+    },
+
+    teppi: {
+      merki: 'Eldhús, kaffistofur og hjólhýsi',
+      inngangur: 'Eldvarnateppi kæfir eld í potti eða pönnu á augabragði. Öruggasta leiðin til að slökkva eld í feiti, þar sem aldrei má nota vatn.',
+      pillur: ['{**F**} · feiti og matarolía', '{**A**} · eldur í fötum'],
+      ef: {
+        yfir: 'Á hvað virkar teppið best?',
+        inng: 'Teppið lokar á súrefnið. Það virkar best á lítinn eld sem það nær að hylja allan.',
+        listi: [
+          { k: 'pottur', mynd: 'myndir/tp-ef-pottur.jpg', ico: 'panna', fl: 'Flokkur F', t: 'Feiti í potti', x: 'Matarolía og feiti í potti eða á pönnu.', stig: 4, v: 'Mjög góð virkni', n: 'Leggðu teppið yfir og láttu það liggja þar til allt hefur kólnað.' },
+          { k: 'fot', mynd: 'myndir/tp-ef-fot.jpg', ico: 'logi', fl: 'Eldur í fatnaði', t: 'Föt og fólk', x: 'Ef kviknar í fötum einhvers.', stig: 4, v: 'Mjög góð virkni', n: 'Vefðu teppinu þétt utan um til að kæfa eldinn.' },
+          { k: 'smaeldar', mynd: 'myndir/tp-ef-smaeldar.jpg', ico: 'logi', fl: 'Smáeldar', t: 'Ruslafata og kerti', x: 'Lítill eldur sem teppið nær að hylja allan.', stig: 3, v: 'Góð virkni', n: 'Ef teppið nær ekki yfir allan eldinn þarf slökkvitæki.' },
+        ],
+      },
+      ekki: [
+        { k: 'utbreiddur', mynd: 'myndir/tp-ekki-utbreiddur.jpg', ico: 'vidvorun', fl: 'Of stór', t: 'Eldur sem hefur breiðst út', x: 'Forðaðu þér, lokaðu á eftir þér og hringdu í 112.' },
+        { k: 'tafla', mynd: 'myndir/tp-ekki-tafla.jpg', ico: 'elding', fl: 'Rafbúnaður', t: 'Rafmagnstöflur', x: 'Notaðu kolsýrutæki.' },
+        { k: 'pollur', mynd: 'myndir/tp-ekki-pollur.jpg', ico: 'brusi', fl: 'Flokkur B', t: 'Stór pollur af eldsneyti', x: 'Teppið nær ekki yfir. Notaðu duft.' },
+      ],
+      notkun: {
+        yfir: 'Hvar kemur teppið að gagni?',
+        inng: 'Alls staðar þar sem eldað er. Myndirnar eru líka í myndasafninu efst.',
+        listi: [
+          { k: 'eldhus', mynd: 'myndir/tp-not-eldhus.jpg', merki: 'F', t: 'Eldhús', x: 'Hangir nálægt útgangi eldhússins, ekki yfir eldavélinni.' },
+          { k: 'kaffistofa', mynd: 'myndir/tp-not-kaffistofa.jpg', merki: 'F', t: 'Kaffistofa og mötuneyti', x: 'Þar sem margir elda og hita mat.' },
+          { k: 'hjolhysi', mynd: 'myndir/tp-not-hjolhysi.jpg', merki: 'F', t: 'Hjólhýsi og húsbíll', x: 'Lítið og létt, tekur ekkert pláss á veggnum.' },
+          { k: 'sumarhus', mynd: 'myndir/tp-not-sumarhus.jpg', merki: 'F', t: 'Sumarhús', x: 'Ókunnugt eldhús og langt í slökkvilið.' },
+          { k: 'bilskur', mynd: 'myndir/tp-not-bilskur.jpg', merki: 'A', t: 'Bílskúr og verkstæði', x: 'Fyrir smáelda og eld í fötum við vinnu.' },
+          { k: 'pallur', mynd: 'myndir/tp-not-pallur.jpg', merki: 'F', t: 'Pallur og grill', x: 'Feiti sem kviknar í á grillinu.' },
+        ],
+      },
+      um: {
+        yfir: 'Um teppið',
+        p: ['Eldvarnateppi er ofið úr glertrefjum sem þola mikinn hita. Það er lagt yfir eldinn og lokar á súrefnið, svo eldurinn kafnar.',
+          'Það er besta leiðin til að slökkva eld í feiti eða matarolíu, því þar má aldrei nota vatn: vatnið sýður samstundis og þeytir logandi feitinni yfir eldhúsið.',
+          'Teppið hangir á vegg. Þú togar í borðana, teppið rennur úr hylkinu og er tilbúið á augabragði.'],
+        gott: '**Gott að vita:** teppið er einnota. Eftir notkun fer það í ruslið og nýtt kemur í staðinn.',
+      },
+      maelir: { yfir: 'Athugaðu teppið', mynd: 'myndir/tp-athugun.jpg', alt: 'Eldvarnateppi á vegg', listi: ['Hylkið hangir á sínum stað og er heilt', 'Borðarnir standa niður úr hylkinu', 'Ekkert hangir fyrir eða hylur það', 'Teppið hefur aldrei verið notað'], rautt: 'Búið að nota teppið? Fáðu þér nýtt, það er einnota.' },
+      skref: {
+        yfir: 'Svona notarðu teppið',
+        undir: 'Aldrei vatn á brennandi feiti.',
+        listi: [['Togaðu í borðana', 'Teppið rennur úr hylkinu. Haltu í borðana.', 'myndir/tp-skref-1.jpg'], ['Hlífðu höndunum', 'Haltu teppinu fyrir framan þig og vefðu brúnunum yfir hendurnar.', 'myndir/tp-skref-2.jpg'], ['Leggðu það yfir eldinn', 'Leggðu það varlega yfir pottinn, frá þér, og þektu allt eldsvæðið.', 'myndir/tp-skref-3.jpg'], ['Slökktu á hellunni', 'Slökktu á hitanum og láttu teppið liggja þar til allt hefur kólnað.', 'myndir/tp-skref-4.jpg']],
+      },
+      stadur: {
+        yfir: 'Hvar á teppið að hanga?',
+        mynd: 'myndir/tp-veggur.jpg', alt: 'Eldvarnateppi við útgang eldhússins',
+        reglur: [
+          ['Í eldhúsinu, nálægt útgangi', 'Svo þú náir í það á leiðinni frá eldinum, ekki yfir honum.'],
+          ['Ekki beint yfir eldavélinni', 'Þar nærðu ekki í það ef kviknar í pottinum.'],
+          ['Í seilingarhæð', 'Allir á heimilinu eiga að ná í borðana án þess að teygja sig.'],
+          ['Eitt í hverju eldhúsi', 'Líka í kaffistofu, mötuneyti, hjólhýsi og sumarhúsi.'],
+          ['Slökkvitæki nálægt', 'Teppið er fyrir pottinn. Slökkvitæki fyrir annað sem kviknar í.'],
+        ],
+        heimild: 'Staðallinn um eldvarnateppi er ÍST EN 1869. Teppin eru einnota.',
+      },
+      reikn: null,
+      bordi: { k: 'teppi', x: 'Eldvarnateppi í eldhúsinu breytir pottabruna í smáatvik.' },
+      reiknTexti: { yfir: 'Eitt teppi í hvert eldhús', x: 'Teppið telst ekki með í slökkvigetu hæðarinnar. Það kemur til viðbótar við slökkvitækið, í eldhúsið þar sem eldað er.', takki: ['Skoða léttvatnstækið', 18] },
+      hentar: { yfir: 'Teppi eða slökkvitæki?', x: 'Á feiti í potti er **eldvarnateppi** best. Á annan eld í eldhúsinu hentar **léttvatn** vel. Hafðu bæði.', takkar: [['Eldvarnateppi', 4], ['Léttvatn 6 L', 18]] },
+      spurn: () => [
+        ['Má nota teppið aftur?', 'Nei. Eldvarnateppi er einnota. Eftir notkun fer það í ruslið og þú færð þér nýtt.'],
+        ['Af hverju ekki vatn á feiti?', 'Vatnið sýður samstundis, þenst út og þeytir logandi feitinni yfir eldhúsið. Teppið kæfir eldinn án þess.'],
+        ['Hvað á teppið að liggja lengi?', 'Þar til potturinn hefur kólnað alveg. Ekki lyfta því til að kíkja, þá getur eldurinn blossað upp aftur.'],
+        ['Hvað ef kviknar í fötum?', 'Vefðu teppinu þétt utan um manneskjuna til að kæfa eldinn, eða láttu hana leggjast og rúlla. Kældu brunann svo með köldu vatni.'],
+        ['Hvar á teppið að hanga?', 'Í eldhúsinu, nálægt útgangi en ekki beint yfir eldavélinni, svo þú náir í það án þess að teygja þig yfir eldinn.'],
+        ['Þarf að skoða teppið?', 'Já, við förum yfir það í árlegu skoðuninni með slökkvitækjunum: hylkið heilt, borðarnir lausir og teppið ónotað.'],
+      ],
+    },
   };
 
   // Það sem er ólíkt eftir stærð: slökkvigeta (A, B), tölurnar fjórar, þrjú atriði, tæknilýsing og þjónustuverð
@@ -444,21 +583,61 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       taekni: [['Gerð', 'Kolsýrutæki (CO₂ undir þrýstingi)'], ['Slökkviefni', 'Kolsýra, 5 kg'], ['Slökkvigeta', '89B'], ['Rafbúnaður', 'Upp að 1000 V, minnst 1 m'], ['Losunartími', 'Um 9 sekúndur'], ['Kastlengd', 'Um 2 til 3 metrar'], ['Hitaþol', '−30 °C til +60 °C'], ['Hæð', 'Um 70 cm'], ['Þyngd fullt', 'Um 14 kg'], ['Staðall', 'ÍST EN 3, CE-merkt'], ['Fylgir', 'Slanga með horni · enginn þrýstimælir']],
       thjon: [['Árleg yfirferð', '4.055 kr'], ['Hleðsla eftir notkun', '8.556 kr']],
     },
+    3: {
+      snid: 'reyk',
+      pillur: ['{**Ljósnemi**} · glóð og reykur', '{**10 ára**} · rafhlaða'],
+      tolur: [['10 ára', 'Rafhlaða fylgir'], ['Ljósnemi', 'Nemur glóð snemma'], ['85 dB', 'Viðvörunarhljóð'], ['Stakur', 'Ekki samtengdur']],
+      atridi: ['Ljósnemi sem nemur reyk frá glóð snemma', '10 ára rafhlaða, engin rafhlöðuskipti', 'Stakur skynjari, CE-vottaður'],
+      taekni: [['Gerð', 'Reykskynjari með ljósnema'], ['Rafhlaða', 'Innbyggð, endist í 10 ár'], ['Samtenging', 'Nei, stakur'], ['Prófunarhnappur', 'Já'], ['Líftími', '10 ár'], ['Vottun', 'CE']],
+      thjon: [],
+    },
+    13: {
+      snid: 'reyk',
+      pillur: ['{**Ljósnemi**} · glóð og reykur', '{**9V**} · rafhlaða'],
+      tolur: [['9V', 'Rafhlaða, skipt árlega'], ['Ljósnemi', 'Nemur glóð snemma'], ['85 dB', 'Viðvörunarhljóð'], ['EN 14604', 'Staðall']],
+      atridi: ['Ljósnemi sem nemur reyk frá glóð snemma', 'Gengur fyrir 9V rafhlöðu sem skipt er um árlega', 'Uppfyllir staðalinn EN 14604'],
+      taekni: [['Gerð', 'Reykskynjari með ljósnema (Numens SND-500)'], ['Rafhlaða', '9V, skipt um árlega'], ['Samtenging', 'Nei, stakur'], ['Prófunarhnappur', 'Já'], ['Líftími', '10 ár'], ['Staðall', 'EN 14604']],
+      thjon: [],
+    },
+    14: {
+      snid: 'reyk',
+      pillur: ['{**Þráðlaus**} · samtenging', '{**10 ára**} · liþíumrafhlaða'],
+      tolur: [['10 ára', 'Liþíumrafhlaða fylgir'], ['Þráðlaus', 'Samtengist öðrum'], ['85 dB', 'Viðvörunarhljóð'], ['LPCB · CE', 'Vottaður']],
+      atridi: ['Samtengist þráðlaust: einn fer í gang, allir fara í gang', '10 ára liþíumrafhlaða fylgir', 'LPCB- og CE-vottaður'],
+      taekni: [['Gerð', 'Reykskynjari, þráðlaust samtengjanlegur (Numens)'], ['Rafhlaða', 'Liþíum, endist í 10 ár, fylgir'], ['Samtenging', 'Þráðlaus (RF)'], ['Prófunarhnappur', 'Já'], ['Líftími', '10 ár'], ['Vottun', 'LPCB, CE']],
+      thjon: [],
+    },
+    4: {
+      snid: 'teppi',
+      tolur: [['1 × 1 m', 'Glertrefjar'], ['F', 'Feiti í potti'], ['Einnota', 'Nýtt eftir notkun'], ['Hylki', 'Losað með borðum']],
+      atridi: ['Kæfir eld í potti á augabragði', 'Togað í borðana og teppið rennur úr hylkinu', 'Leiðbeiningar á íslensku á hylkinu'],
+      taekni: [['Gerð', 'Eldvarnateppi úr glertrefjum'], ['Stærð', '100 × 100 cm'], ['Geymsla', 'Vegghengt hylki, losað með borðum'], ['Hentar fyrir', 'Feiti í potti, eld í fötum, smáelda'], ['Notkun', 'Einnota'], ['Leiðbeiningar', 'Á íslensku, á hylkinu']],
+      thjon: [],
+    },
+    340: {
+      snid: 'teppi',
+      tolur: [['1 × 1 m', 'Eldvarnateppi'], ['F', 'Feiti í potti'], ['Einnota', 'Nýtt eftir notkun'], ['Taska', 'Hangir á vegg']],
+      atridi: ['Kæfir eld í potti á augabragði', 'Í hvítri tösku sem hangir á vegg', 'Frá viðurkenndum framleiðanda sem uppfyllir staðla'],
+      taekni: [['Gerð', 'Eldvarnateppi'], ['Stærð', '100 × 100 cm'], ['Geymsla', 'Hvít taska með auga til að hengja upp'], ['Hentar fyrir', 'Feiti í potti, eld í fötum, smáelda'], ['Notkun', 'Einnota'], ['Staðlar', 'Uppfyllir staðla samkvæmt framleiðanda']],
+      thjon: [],
+    },
   };
-  const SJALFGEFINN_PROFILL = [1, 18, 174, 2, 25];
+  const SJALFGEFINN_PROFILL = [1, 18, 174, 2, 25, 3, 13, 14, 4, 340];
   function sniðVoru(v) {
     if (SERHAEFT[v.id]) return SERHAEFT[v.id].snid;
     const n = String(v.nafn || '').toLowerCase();
     if (/co₂|co2|kolsýr/.test(n)) return 'co2';
     if (/léttvatn|lettvatn/.test(n)) return 'lettvatn';
     if (/duft/.test(n)) return 'duft';
+    if (/reykskynjar/.test(n)) return 'reyk';
+    if (/eldvarna\S*teppi/.test(n)) return 'teppi';
     return null;
   }
   // Sérhæfð gildi vöru, eða gildi næsta tækis af sömu gerð (vara sem fær prófíl í ritlinum án eigin talna)
   function serGildi(v) {
     if (SERHAEFT[v.id]) return SERHAEFT[v.id];
     const s = sniðVoru(v);
-    return SERHAEFT[{ duft: 1, lettvatn: 18, co2: 2 }[s] || 1];
+    return SERHAEFT[{ duft: 1, lettvatn: 18, co2: 2, reyk: 3, teppi: 4 }[s] || 1];
   }
   VV.snidVoru = sniðVoru;
 
@@ -492,6 +671,13 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
     return `<div class="vv-galleri">${adal}</div>${thumbs}`;
   }
 
+  // „Hvaða tæki hentar?"-spjaldið: slökkvitæki deila einu (lyklar hentar.*), skynjarar og teppi eiga sitt
+  function hentarSpjald(P, Pr) {
+    const h = Pr.hentar || { k: 'hentar', yfir: 'Hvaða tæki hentar?', x: '**Duft ABC** vinnur á flestum eldum. **Léttvatn** hentar vel á heimilin, á A og B elda. **CO₂** er fyrir rafmagn og rafeindatæki.', takkar: [['Duft', 1], ['Léttvatn', 18], ['CO₂', 2]] };
+    const k = h.k || `${P}.hentar`;
+    return `<div class="vv-blad navy" style="padding:36px">${E('h3', k + '.yfir', h.yfir, 'vv-h3')}${E('p', k + '.x', h.x, 'vv-dauft')}<div class="vv-flokkar" style="margin-top:6px">${h.takkar.map(([t, id], i) => `<a class="vv-btn sm" href="#/vara/${id}">${E('span', k + (h.k ? ['.duft', '.lettvatn', '.co2'][i] : '.takki' + (i + 1)), t)}</a>`).join('')}</div></div>`;
+  }
+
   function kaflarRikir(v, P, Pr, S) {
     const tolur = B(`${P}.tolur`, S.tolur.map(([a, b], i) => `<div class="vv-tala">${E('b', `${P}.tala.${i + 1}.t`, a)}${E('span', `${P}.tala.${i + 1}.s`, b)}</div>`).join(''), 'vv-tolur', 'div');
 
@@ -504,9 +690,9 @@ ${E('p', `${P}.ef.${f.k}.x`, f.x)}
 ${E('p', `${P}.ef.${f.k}.n`, f.n)}</div></div>`;
     }).join('');
     const ekkiKort = Pr.ekki.map((f) => `<div class="vv-ekki">${M(`${P}.ekki.${f.k}.mynd`, { src: f.mynd, alt: f.t, fit: 'cover', bak: '#ffffff' }, { fast: 1 })}<div class="vv-ekki-i"><span class="vv-ef-tafla">${ico(f.ico)}</span><h3>${E('small', `${P}.ekki.${f.k}.fl`, f.fl)}${E('span', `${P}.ekki.${f.k}.t`, f.t)}</h3>${E('p', `${P}.ekki.${f.k}.x`, f.x)}</div></div>`).join('');
-    const eldflokkar = B(`${P}.eldflokkar`, `${yfirHaus(`${P}.eldflokkar`, 'Á hvað virkar tækið best?', Pr.ef.inng)}<div class="vv-ef-rod" style="grid-template-columns:repeat(${Pr.ef.listi.length},minmax(0,1fr))">${efKort}</div>${B(`${P}.ekki`, `<div class="vv-ekki-titill">${E('b', `${P}.ekki.titill`, 'Ekki ætlað fyrir')}${E('span', `${P}.ekki.undir`, 'Hér hentar annað betur.')}</div>${ekkiKort}`, 'vv-ekki-rod', 'div')}`, 'vv-kafli');
+    const eldflokkar = B(`${P}.eldflokkar`, `${yfirHaus(`${P}.eldflokkar`, Pr.ef.yfir || 'Á hvað virkar tækið best?', Pr.ef.inng)}<div class="vv-ef-rod" style="grid-template-columns:repeat(${Pr.ef.listi.length},minmax(0,1fr))">${efKort}</div>${B(`${P}.ekki`, `<div class="vv-ekki-titill">${E('b', `${P}.ekki.titill`, Pr.ekkiTitill || 'Ekki ætlað fyrir')}${E('span', `${P}.ekki.undir`, Pr.ekkiUndir || 'Hér hentar annað betur.')}</div>${ekkiKort}`, 'vv-ekki-rod', 'div')}`, 'vv-kafli');
 
-    const notkun = B(`${P}.notkun`, `${yfirHaus(`${P}.notkun`, 'Hvar kemur tækið að gagni?', Pr.notkun.inng)}<div class="vv-not-rod">${Pr.notkun.listi.map((n) => `<div class="vv-not">${M('vara.not.mynd', { src: n.mynd, alt: n.t, fit: 'cover', h: 200 }, { srcKey: `${P}.not.${n.k}.mynd` })}<div class="vv-not-b">${E('span', `${P}.not.${n.k}.merki`, n.merki, 'vv-flokkmerki')}${E('h3', `${P}.not.${n.k}.t`, n.t)}${E('p', `${P}.not.${n.k}.x`, n.x)}</div></div>`).join('')}</div>${B('bordi', `${ico('skjoldur', 'vv-skjoldur')}${E('p', 'bordi.texti', 'Rétt slökkvitæki getur bjargað lífi, eignum og dregið úr skemmdum.')}<div class="vv-bordi-merki">${E('b', 'bordi.merki', 'Slökkvitæki ehf')}${E('small', 'bordi.undir', 'Slökkvitæki · Þjónusta · Varahlutir')}</div>`, 'vv-bordi', 'div')}`, 'vv-kafli');
+    const notkun = B(`${P}.notkun`, `${yfirHaus(`${P}.notkun`, Pr.notkun.yfir || 'Hvar kemur tækið að gagni?', Pr.notkun.inng)}<div class="vv-not-rod">${Pr.notkun.listi.map((n) => `<div class="vv-not">${M('vara.not.mynd', { src: n.mynd, alt: n.t, fit: 'cover', h: 200 }, { srcKey: `${P}.not.${n.k}.mynd` })}<div class="vv-not-b">${E('span', `${P}.not.${n.k}.merki`, n.merki, 'vv-flokkmerki')}${E('h3', `${P}.not.${n.k}.t`, n.t)}${E('p', `${P}.not.${n.k}.x`, n.x)}</div></div>`).join('')}</div>${B('bordi', `${ico('skjoldur', 'vv-skjoldur')}${Pr.bordi ? E('p', 'bordi.' + Pr.bordi.k, Pr.bordi.x) : E('p', 'bordi.texti', 'Rétt slökkvitæki getur bjargað lífi, eignum og dregið úr skemmdum.')}<div class="vv-bordi-merki">${E('b', 'bordi.merki', 'Slökkvitæki ehf')}${E('small', 'bordi.undir', 'Slökkvitæki · Þjónusta · Varahlutir')}</div>`, 'vv-bordi', 'div')}`, 'vv-kafli');
 
     const um = B(`${P}.um`, `<div class="vv-blad" style="padding:40px;gap:18px">${E('h2', `${P}.um.yfir`, Pr.um.yfir, 'vv-yfir')}
 ${Pr.um.p.map((t, i) => E('p', `${P}.um.${i + 1}`, t, 'vv-txt')).join('\n')}
@@ -515,16 +701,25 @@ ${Pr.um.p.map((t, i) => E('p', `${P}.um.${i + 1}`, t, 'vv-txt')).join('\n')}
 <ul class="vv-hak">${Pr.maelir.listi.map((d, i) => `<li>${ico('hak')}${E('span', `${P}.maelir.${i + 1}`, d)}</li>`).join('')}</ul>
 ${E('p', `${P}.maelir.rautt`, Pr.maelir.rautt, 'vv-heimild')}</div>`, 'vv-tveir');
 
-    const skref = B(`${P}.skref`, `<div class="vv-blad navy" style="padding:44px 44px 40px;gap:28px"><div class="vv-titilrod">${E('h2', `${P}.skref.yfir`, 'Svona notarðu tækið', 'vv-yfir')}${E('span', `${P}.skref.undir`, Pr.skref.undir)}</div>
+    const skref = B(`${P}.skref`, `<div class="vv-blad navy" style="padding:44px 44px 40px;gap:28px"><div class="vv-titilrod">${E('h2', `${P}.skref.yfir`, Pr.skref.yfir || 'Svona notarðu tækið', 'vv-yfir')}${E('span', `${P}.skref.undir`, Pr.skref.undir)}</div>
 <div class="vv-skref-rod">${Pr.skref.listi.map(([t, x, mynd], i) => `<div class="vv-skref">${M('vara.skref.mynd', { src: mynd, alt: t, fit: 'cover', h: 150 }, { srcKey: `${P}.skref.${i + 1}.mynd` })}<div class="vv-skref-haus"><span class="vv-nr">${i + 1}</span>${E('h3', `${P}.skref.${i + 1}.t`, t)}</div>${E('p', `${P}.skref.${i + 1}.x`, x)}</div>`).join('')}</div>
-<div class="vv-112"><b>112</b>${E('span', `${P}.skref.112`, 'Ef eldurinn er stærri en þú ræður við: forðaðu þér, lokaðu á eftir þér og hringdu í 112.')}</div></div>`, '', 'div');
+<div class="vv-112"><b>112</b>${E('span', `${P}.skref.112`, Pr.skref.s112 || 'Ef eldurinn er stærri en þú ræður við: forðaðu þér, lokaðu á eftir þér og hringdu í 112.')}</div></div>`, '', 'div');
 
-    const stadur = B(`${P}.stadur`, `<div class="vv-blad" style="padding:28px">${M(`${P}.veggur.mynd`, { src: Pr.stadur.mynd, alt: 'Slökkvitæki á vegg undir F001-skilti', fit: 'cover', h: 460, pos: 'right' })}</div>
-<div class="vv-blad" style="padding:40px;gap:20px">${E('h2', `${P}.stadur.yfir`, 'Hvar á tækið að vera?', 'vv-yfir')}<div>${Pr.stadur.reglur.map(([b, s], i) => `<div class="vv-regla"><span class="n">${i + 1}</span><div>${E('b', `${P}.regla.${i + 1}.t`, b)}${E('span', `${P}.regla.${i + 1}.x`, s)}</div></div>`).join('')}</div>
-${E('p', `${P}.stadur.heimild`, HEIMILD, 'vv-heimild')}</div>`, 'vv-tveir jafnt');
+    const stadur = B(`${P}.stadur`, `<div class="vv-blad" style="padding:28px">${M(`${P}.veggur.mynd`, { src: Pr.stadur.mynd, alt: Pr.stadur.alt || 'Slökkvitæki á vegg undir F001-skilti', fit: 'cover', h: 460, pos: Pr.stadur.alt ? 'center' : 'right' })}</div>
+<div class="vv-blad" style="padding:40px;gap:20px">${E('h2', `${P}.stadur.yfir`, Pr.stadur.yfir || 'Hvar á tækið að vera?', 'vv-yfir')}<div>${Pr.stadur.reglur.map(([b, s], i) => `<div class="vv-regla"><span class="n">${i + 1}</span><div>${E('b', `${P}.regla.${i + 1}.t`, b)}${E('span', `${P}.regla.${i + 1}.x`, s)}</div></div>`).join('')}</div>
+${E('p', `${P}.stadur.heimild`, Pr.stadur.heimild || HEIMILD, 'vv-heimild')}</div>`, 'vv-tveir jafnt');
 
     let reikn;
-    if (Pr.reikn) {
+    if (Pr.reikn && Pr.reikn.skynjarar) {
+      const fl = [60, 100, 150, 250], m2 = fl.includes(VV.vara.m2) ? VV.vara.m2 : 100;
+      const fj = Math.max(1, Math.ceil(m2 / Pr.reikn.skynjarar));
+      reikn = B(`${P}.reikn`, `<div class="vv-blad vv-reikn" style="padding:40px"><div style="display:flex;flex-direction:column;gap:14px">${E('h2', `${P}.reikn.yfir`, 'Hversu marga skynjara þarf?', 'vv-yfir')}${E('p', `${P}.reikn.inng`, 'Veldu stærð hæðarinnar. Reglan er minnst einn skynjari á hverja 80 m² og minnst einn á hverri hæð.', 'vv-yfir-inng')}
+<div class="vv-flokkar" role="group" aria-label="Gólfflötur hæðar">${fl.map((m) => `<button type="button" class="vv-stk" data-act="m2" data-v="${m}" aria-pressed="${m2 === m}">${tala(m)} m²</button>`).join('')}</div>
+${E('p', `${P}.reikn.fyrirvari`, 'Auk þess þarf hljóðið að ná 75 dB inni í hverju svefnherbergi. Oftast þýðir það skynjara í hvert svefnherbergi, eða samtengda skynjara.', 'vv-heimild')}</div>
+<div class="vv-reikn-svar"><span style="font-size:14px;font-weight:500;color:var(--c-muted)">${esc(texti(`${P}.reikn.haed`, 'Hæð upp á'))} ${tala(m2)} m²</span><b>${fj} ${esc(fj === 1 ? texti('reikn.skynjari', 'skynjari') : texti('reikn.skynjarar', 'skynjarar'))}</b>
+<span style="font-size:15px">${E('span', `${P}.reikn.lysing`, 'á hverri hæð, minnst')}</span>
+<button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${fj}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${E('span', 'reikn.takki', 'Setja í körfu')} · ${fj}</button></div></div>`, '', 'div');
+    } else if (Pr.reikn) {
       const geta = Math.round(Math.min(200, Math.max(1, nGildi(`${P}.reikn.geta`, S.A || Pr.reikn.geta))));
       const krafa = Math.max(26, Math.round(0.065 * VV.vara.m2));
       const taeki = Math.max(2, Math.ceil(krafa / geta));
@@ -535,15 +730,16 @@ ${E('p', `${P}.reikn.fyrirvari`, 'Leiðbeinandi útreikningur fyrir eina hæð �
 <span style="font-size:15px">${E('span', `${P}.reikn.lysing`, 'Hvert tæki gefur')} <b style="font:inherit;font-weight:600;color:inherit" data-n="${P}.reikn.geta" data-max="200" data-min="1" data-sjg="${S.A || Pr.reikn.geta}">${geta}A</b> · þarf minnst <b style="font:inherit;font-weight:600;color:inherit">${krafa}A</b></span>
 <button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${taeki}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${E('span', 'reikn.takki', 'Setja í körfu')} · ${taeki}</button></div></div>`, '', 'div');
     } else {
-      reikn = B(`${P}.reikn`, `<div class="vv-blad" style="padding:36px 40px;gap:10px">${E('h2', `${P}.reikn.yfir`, 'Kolsýrutæki og slökkvigeta hæðar', 'vv-yfir')}${E('p', `${P}.reikn.inng`, 'Kolsýrutæki fá ekkert A-gildi, svo þau teljast ekki með í slökkvigetu hæðarinnar. Hafðu duft- eða léttvatnstæki fyrir hæðina, og kolsýrutæki við rafbúnaðinn.', 'vv-yfir-inng')}<a class="vv-btn navy sm" href="#/vara/1" style="align-self:flex-start;margin-top:6px">${E('span', `${P}.reikn.takki`, 'Skoða dufttækið')}</a></div>`, '', 'div');
+      const rt = Pr.reiknTexti || { yfir: 'Kolsýrutæki og slökkvigeta hæðar', x: 'Kolsýrutæki fá ekkert A-gildi, svo þau teljast ekki með í slökkvigetu hæðarinnar. Hafðu duft- eða léttvatnstæki fyrir hæðina, og kolsýrutæki við rafbúnaðinn.', takki: ['Skoða dufttækið', 1] };
+      reikn = B(`${P}.reikn`, `<div class="vv-blad" style="padding:36px 40px;gap:10px">${E('h2', `${P}.reikn.yfir`, rt.yfir, 'vv-yfir')}${E('p', `${P}.reikn.inng`, rt.x, 'vv-yfir-inng')}<a class="vv-btn navy sm" href="#/vara/${rt.takki[1]}" style="align-self:flex-start;margin-top:6px">${E('span', `${P}.reikn.takki`, rt.takki[0])}</a></div>`, '', 'div');
     }
 
     const taekni = B(`${P}.taekni`, `<div class="vv-blad" style="padding:40px;gap:18px">${E('h2', `${P}.taekni.yfir`, 'Tæknilýsing', 'vv-yfir')}<table class="vv-tafla"><tbody>${S.taekni.map(([a, b], i) => `<tr>${E('th', `${P}.taekni.${i + 1}.a`, a)}${E('td', `${P}.taekni.${i + 1}.b`, b)}</tr>`).join('')}</tbody></table>
 <div class="vv-flokkar"><a class="vv-btn ghost sm" href="#">${ico('skjal')}${E('span', `${P}.taekni.skjal1`, 'Gagnablað · PDF')}</a><a class="vv-btn ghost sm" href="#">${ico('skjal')}${E('span', `${P}.taekni.skjal2`, 'Notkunarleiðbeiningar · PDF')}</a></div></div>
-<div style="display:flex;flex-direction:column;gap:18px"><div class="vv-blad" style="padding:36px">${E('h3', `${P}.thjon.yfir`, 'Þjónusta við tækið', 'vv-h3')}${E('p', `${P}.thjon.x`, Pr === PROFILAR.co2 ? 'Samkvæmt reglugerð á þjónustuaðili að yfirfara slökkvitæki árlega. Kolsýrutæki vigtum við og hlöðum, og merkjum með dagsetningu.' : 'Samkvæmt reglugerð á þjónustuaðili að yfirfara slökkvitæki árlega. Við skoðum, hleðjum og merkjum tækið með dagsetningu.', 'vv-dauft')}
+<div style="display:flex;flex-direction:column;gap:18px">${S.thjon && S.thjon.length ? `<div class="vv-blad" style="padding:36px">${E('h3', `${P}.thjon.yfir`, 'Þjónusta við tækið', 'vv-h3')}${E('p', `${P}.thjon.x`, Pr === PROFILAR.co2 ? 'Samkvæmt reglugerð á þjónustuaðili að yfirfara slökkvitæki árlega. Kolsýrutæki vigtum við og hlöðum, og merkjum með dagsetningu.' : 'Samkvæmt reglugerð á þjónustuaðili að yfirfara slökkvitæki árlega. Við skoðum, hleðjum og merkjum tækið með dagsetningu.', 'vv-dauft')}
 ${S.thjon.map(([a, b], i) => `<div class="vv-verdlina">${E('span', `${P}.thjon.${i + 1}.a`, a)}${E('b', `${P}.thjon.${i + 1}.b`, b)}</div>`).join('')}
-<a class="vv-btn navy sm" href="${OPINBER}"${UT} style="align-self:flex-start;margin-top:8px">${E('span', `${P}.thjon.takki`, 'Bóka skoðun')}</a></div>
-<div class="vv-blad navy" style="padding:36px">${E('h3', 'hentar.yfir', 'Hvaða tæki hentar?', 'vv-h3')}${E('p', 'hentar.x', '**Duft ABC** vinnur á flestum eldum. **Léttvatn** hentar vel á heimilin, á A og B elda. **CO₂** er fyrir rafmagn og rafeindatæki.', 'vv-dauft')}<div class="vv-flokkar" style="margin-top:6px"><a class="vv-btn sm" href="#/vara/1">${E('span', 'hentar.duft', 'Duft')}</a><a class="vv-btn sm" href="#/vara/18">${E('span', 'hentar.lettvatn', 'Léttvatn')}</a><a class="vv-btn sm" href="#/vara/2">${E('span', 'hentar.co2', 'CO₂')}</a></div></div></div>`, 'vv-tveir taekni', 'div');
+<a class="vv-btn navy sm" href="${OPINBER}"${UT} style="align-self:flex-start;margin-top:8px">${E('span', `${P}.thjon.takki`, 'Bóka skoðun')}</a></div>` : ''}
+${hentarSpjald(P, Pr)}</div>`, 'vv-tveir taekni', 'div');
 
     const spurn = B(`${P}.spurn`, `${yfirHaus(`${P}.spurn`, 'Algengar spurningar', null)}<div class="vv-spurn-rod">${Pr.spurn(S).map(([q, a], i) => `<div class="vv-spurn">${E('h3', `${P}.spurn.${i + 1}.q`, q)}${E('p', `${P}.spurn.${i + 1}.a`, a)}</div>`).join('')}</div>`, 'vv-kafli');
 
@@ -560,7 +756,7 @@ ${S.thjon.map(([a, b], i) => `<div class="vv-verdlina">${E('span', `${P}.thjon.$
     const s = VV.vara;
     const haegri = `<span class="vv-yfirflokkur">${esc(flokkHeiti(v.flokkur))}</span>${E('h1', `${P}.nafn`, v.nafn)}
 ${E('p', `${P}.inngangur`, Pr ? Pr.inngangur : fyrstaMalsgrein, 'vv-inng')}
-${Pr ? `<div class="vv-pillur">${Pr.pillur.map((d, i) => E('span', `${P}.pilla.${i + 1}`, d, 'vv-pilla')).join('')}</div>
+${Pr ? `<div class="vv-pillur">${(S.pillur || Pr.pillur).map((d, i) => E('span', `${P}.pilla.${i + 1}`, d, 'vv-pilla')).join('')}</div>
 <ul class="vv-hak">${S.atridi.map((d, i) => `<li>${ico('hak')}${E('span', `${P}.atridi.${i + 1}`, d)}</li>`).join('')}</ul>` : ''}
 <div class="vv-stort-verd"><b>${kr(v.verd)}</b><small>${tala(v.an)} án vsk</small></div>
 <span class="vv-lager">${ico('hringhak')}${uppselt ? E('span', 'lager.uppselt', 'Uppselt í bili. Pantaðu og við látum vita þegar það kemur.') : E('span', 'lager.til', 'Á lager, tilbúið til afhendingar')}</span>
