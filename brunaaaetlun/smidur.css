@@ -1,0 +1,104 @@
+/* Brunaáætlun — ritill í Brunastáli C (málmhaus með hnoðum, stálplata, hvít spjöld, silfur/málm/rauðir takkar).
+   Táknin eru þau sömu og í 413-afslaettir-c.js; síðan stendur sér (eins og /vefverslun) svo prentun er hrein. */
+:root {
+  --sans: "IBM Plex Sans", system-ui, sans-serif; --disp: "Playfair Display", Georgia, serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  --metal: linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);
+  --stal: #e2e6ec; --stal-img: repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%);
+  --silfur: linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%); --malmtakki: linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);
+  --rautt: linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);
+  --hnod: radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);
+  --ink: #141822; --ink5: #5b6472; --brun: rgba(20,24,34,.14); --gult: #fff2a8;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: var(--sans); color: var(--ink); background: #16171b radial-gradient(1200px 600px at 20% -10%, #2b2d33 0%, #16171b 60%) fixed; font-size: 13px; }
+button { font-family: inherit; }
+.ba-hledur { color: #d9dee6; font-family: var(--mono); padding: 60px; text-align: center; letter-spacing: .1em; }
+.ba-villa { color: #fff; background: #5a0d0d; border: 1px solid #c8102e; border-radius: 10px; padding: 18px 22px; margin: 40px auto; max-width: 640px; line-height: 1.5; }
+
+/* málmhaus síðunnar */
+.ba-haus { position: relative; background: var(--metal); border-bottom: 1px solid #000; padding: 14px 26px 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 6px 18px rgba(0,0,0,.5); }
+.ba-haus::before, .ba-haus::after, .ba-shaus::before, .ba-shaus::after { content: ""; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--hnod); box-shadow: 0 1px 1px rgba(0,0,0,.7); }
+.ba-haus::before, .ba-shaus::before { left: 8px; } .ba-haus::after, .ba-shaus::after { right: 8px; }
+.ba-haus h1 { margin: 0; font-family: var(--disp); font-weight: 800; font-size: 30px; color: #fff; letter-spacing: -.01em; line-height: 1.05; }
+.ba-haus .ba-undir { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #aab3c2; margin-top: 4px; }
+.ba-haus .ba-bil { flex: 1; }
+.ba-haus .ba-takkar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* flipar */
+.ba-flipar { display: flex; gap: 6px; padding: 10px 26px; background: #1c1d22; border-bottom: 1px solid #000; flex-wrap: wrap; }
+.ba-flipi { all: unset; cursor: pointer; font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #c9d0da; padding: 9px 14px; border-radius: 6px; background: #0e0f12; box-shadow: inset 0 2px 5px rgba(0,0,0,.6); display: inline-flex; gap: 8px; align-items: center; }
+.ba-flipi[aria-selected="true"] { background: var(--silfur); color: #1f2530; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(0,0,0,.4); }
+.ba-flipi .ba-tala { font-family: var(--mono); background: #c8102e; color: #fff; border-radius: 9px; padding: 0 6px; font-size: 10.5px; letter-spacing: 0; }
+
+/* stálplata + spjöld */
+.ba-svid { padding: 18px 26px 40px; }
+.ba-plata { background: var(--stal); background-image: var(--stal-img); border: 1px solid #000; border-radius: 14px; padding: 14px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.3); }
+.ba-spjald { background: #fff; border: 1px solid #000; border-radius: 12px; box-shadow: 0 18px 40px -12px rgba(10,14,22,.5), 0 2px 6px rgba(10,14,22,.12); overflow: hidden; min-width: 0; }
+.ba-spjald + .ba-spjald { margin-top: 14px; }
+.ba-shaus { position: relative; background: var(--metal); min-height: 46px; padding: 5px 18px 5px 22px; display: flex; align-items: center; gap: 10px; color: #fff; border-bottom: 1px solid #000; box-shadow: inset 0 1px 0 rgba(255,255,255,.1); }
+.ba-shaus h2 { margin: 0; font-size: 15px; font-weight: 600; text-shadow: 0 1px 1px rgba(0,0,0,.5); flex: 1; }
+.ba-sinn { padding: 14px 16px; }
+.ba-merki { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #3b4250; margin: 2px 0 8px; }
+
+/* plötur */
+.ba-p { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 3px; border: 1px solid rgba(20,24,34,.12); background: var(--silfur); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 1px rgba(0,0,0,.12); font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #2a303b; white-space: nowrap; }
+.ba-p i { width: 7px; height: 7px; border-radius: 50%; background: #8f98a8; display: inline-block; }
+.ba-p.g i { background: #20a34a; box-shadow: 0 0 5px #20a34a; } .ba-p.r i { background: #e0262c; box-shadow: 0 0 5px #e0262c; } .ba-p.y i { background: #e2a400; box-shadow: 0 0 5px #e2a400; }
+
+/* takkar */
+.ba-btn { all: unset; box-sizing: border-box; cursor: pointer; height: 36px; padding: 0 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; background: var(--silfur); border: 1px solid rgba(20,24,34,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(0,0,0,.14); color: #1f2530; white-space: nowrap; }
+.ba-btn:hover { box-shadow: inset 0 0 0 1px rgba(201,42,42,.45), 0 1px 2px rgba(0,0,0,.14); }
+.ba-btn.m { background: var(--malmtakki); border-color: #000; color: #eef1f4; box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 6px rgba(0,0,0,.45); }
+.ba-btn.r { background: var(--rautt); border-color: rgba(190,32,28,.55); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 2px 8px rgba(120,10,10,.45); }
+.ba-btn.s { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 6px; }
+.ba-btn[disabled], .ba-btn.ovirkt { opacity: .38; pointer-events: none; }
+.ba-btn[aria-pressed="true"] { background: var(--malmtakki); color: #fff; border-color: #000; }
+
+/* reitir */
+.ba-reitir { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px 14px; }
+.ba-reitur label { display: block; font-size: 11.5px; font-weight: 600; color: #3b4250; margin: 0 0 4px; }
+.ba-reitur label small { font-weight: 400; color: var(--ink5); margin-left: 6px; }
+.ba-reitur input, .ba-reitur textarea, .ba-inn { width: 100%; background: #eef1f6; border: 1px solid var(--brun); border-radius: 8px; box-shadow: inset 0 2px 5px rgba(0,0,0,.18); padding: 9px 12px; font: 13px/1.4 var(--sans); color: var(--ink); min-height: 40px; outline: none; }
+.ba-reitur textarea, textarea.ba-inn { resize: vertical; min-height: 78px; }
+.ba-reitur input:focus, .ba-reitur textarea:focus, .ba-inn:focus { border-color: #8a1414; box-shadow: inset 0 2px 5px rgba(0,0,0,.18), 0 0 0 2px rgba(200,16,46,.18); }
+.ba-reitur.tomt input, .ba-reitur.tomt textarea { background: var(--gult); }
+.ba-reitur.breidd { grid-column: 1 / -1; }
+
+/* ritill uppdrátta */
+.ba-ritill { display: grid; grid-template-columns: 290px minmax(0, 1fr) 260px; gap: 14px; align-items: start; }
+.ba-palletta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ba-palletta .ba-btn { height: 46px; padding: 0 6px; justify-content: flex-start; font-size: 11.5px; white-space: normal; line-height: 1.15; gap: 6px; min-width: 0; width: 100%; overflow: hidden; }
+.ba-palletta .ba-btn span { min-width: 0; overflow-wrap: anywhere; }
+.ba-palletta .ba-btn.breidd { grid-column: 1 / -1; justify-content: center; }
+.ba-haedir { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.ba-kortstika { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid #d5dbe2; background: #f6f8fb; }
+.ba-kortstika .ba-bil { flex: 1; }
+.ba-kortgluggi { height: calc(100vh - 230px); min-height: 460px; overflow: auto; background: #fff; position: relative; }
+.ba-kortgluggi svg { display: block; touch-action: none; user-select: none; }
+.ba-kortgluggi.baeta svg { cursor: crosshair; }
+.ba-kortgluggi g[data-i] { cursor: move; }
+.ba-hjalp { font-size: 12px; color: var(--ink5); line-height: 1.45; margin: 8px 0 0; }
+.ba-eiginleikar .ba-reitur { margin-bottom: 8px; }
+.ba-tom { color: var(--ink5); font-size: 12.5px; line-height: 1.5; }
+
+/* textar */
+.ba-kafli { border: 1px solid #d5dbe2; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+.ba-kafli-h { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.ba-kafli-h input { flex: 1; font-weight: 600; }
+.ba-kafli textarea { font-family: var(--mono); font-size: 12px; min-height: 120px; }
+.ba-forsyn { border-top: 1px dashed #c9d0d8; margin-top: 8px; padding-top: 8px; font-family: "Segoe UI", Arial, sans-serif; font-size: 12.5px; line-height: 1.45; }
+.ba-forsyn table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; } .ba-forsyn th, .ba-forsyn td { border: 1px solid #c9d0d8; padding: 4px 6px; text-align: left; vertical-align: top; }
+.ba-forsyn th { background: #eef2f6; } .ba-forsyn td.k { width: 30%; font-weight: 600; background: #f8fafc; }
+.ba-forsyn .f { background: var(--gult); border-bottom: 1px dashed #b38f00; padding: 0 3px; }
+.ba-forsyn .box { border: 1px solid #c9d0d8; border-radius: 6px; padding: 6px 9px; margin: 6px 0; }
+
+/* skjöl */
+.ba-skjalalisti { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.ba-skjal .ba-sinn p { margin: 0 0 10px; color: #3b4250; line-height: 1.45; }
+.ba-skjal .ba-takkar { display: flex; gap: 8px; flex-wrap: wrap; }
+.ba-forskodun { margin-top: 14px; }
+.ba-forskodun iframe { width: 100%; height: 80vh; border: 1px solid #000; border-radius: 10px; background: #7d848e; }
+.ba-vantar a { color: #8a1414; cursor: pointer; text-decoration: underline; margin-right: 10px; display: inline-block; }
+
+@media (max-width: 1100px) { .ba-ritill { grid-template-columns: 1fr; } .ba-kortgluggi { height: 70vh; } }

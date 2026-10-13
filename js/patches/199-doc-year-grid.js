@@ -1571,9 +1571,10 @@
     }).join('');
 
     // ── önnur viðhengi strip ──
+    // 13.10.2026 (Agnar: „lengja textareitinn í Önnur viðhengi“): nöfn styttust í 20 stafi — nú 70; Brunastál (403) klippir eftir breidd raðarinnar.
     var otherHtml = (other.length
       ? other.map(function(a){ var ic=/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(a.name)?'🖼':(/\.pdf$/i.test(a.name)?'📄':'📎');
-          return '<span class="sk-att-wrap"><button type="button" class="sk-doc prog" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">'+ic+' '+esc(a.name.length>22?a.name.slice(0,20)+'…':a.name)+'</button>'+
+          return '<span class="sk-att-wrap"><button type="button" class="sk-doc prog" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">'+ic+' '+esc(a.name.length>72?a.name.slice(0,70)+'…':a.name)+'</button>'+
                  '<button type="button" class="sk-att-x" data-del="'+esc(a.id)+'" title="Eyða viðhengi">✕</button></span>'; }).join('')
       : '') + addChip('', '', '+ Viðhengi');
 

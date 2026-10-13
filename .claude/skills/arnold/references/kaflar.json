@@ -16,6 +16,7 @@
       "hlutar": ["1.2 Tafla", "Niðurstaða", "1.1", "1.4", "3. Staðlar", "4. Hagnýt", "5. Óvíst", "Heimildir"] },
     { "id": "merkingar", "heiti": "Skilti og merkingar", "skra": "bunadur.md", "hlutar": ["Skilti og merkingar"] },
     { "id": "eftirlit", "heiti": "Eldvarnaeftirlit og ábyrgð eiganda", "skra": "neydarlysing.md", "hlutar": ["2. Eftirlit"] },
+    { "id": "eigid-eftirlit", "heiti": "Eigið eftirlit og rýmingaráætlun", "skra": "eigid-eftirlit.md", "valkvaett": true },
     { "id": "fjolbyli", "heiti": "Fjölbýli og sameign",
       "efni": [
         { "skra": "fjolbyli.md", "inngangur": true, "hlutar": ["Reglan um staðsetningu", "Í appinu"] },
