@@ -52,8 +52,9 @@ body.vvr-a{padding-top:52px}
 .vvr-rod{display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:center}
 .vvr-rod>label{font-size:13px;color:#334155}
 .vvr-samsett{display:flex;gap:6px;align-items:center;min-width:0}
-.vvr-samsett input[type=range]{flex:1;min-width:0;accent-color:#2563eb}
-.vvr-samsett input[type=number]{width:62px}
+.vvr .vvr-samsett input[type=range]{flex:1 1 auto;min-width:60px;width:auto;accent-color:#2563eb}
+.vvr .vvr-samsett input[type=number]{flex:none;width:68px}
+.vvr .vvr-samsett input[type=text]{flex:1 1 auto;width:auto;min-width:0}
 .vvr input[type=text],.vvr input[type=number],.vvr select,.vvr textarea{width:100%;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:13.5px system-ui,sans-serif;color:#0f172a;background:#fff}
 .vvr textarea{min-height:84px;resize:vertical;line-height:1.45}
 .vvr input:focus,.vvr select:focus,.vvr textarea:focus{outline:2px solid #2563eb;outline-offset:0;border-color:#2563eb}
