@@ -134,9 +134,12 @@
 
       // Lánstæki: loaned-out. 11.09.2026: 'til_radstofunar' er „laus" og 'verkstadi' er á
       // verkstæði (v9.js:553) — merkið taldi öll 12 lausu tækin sem útlánuð.
-      const ln = await sb.from('lanstaeki').select('id', { count: 'exact', head: true })
-        .not('status', 'in', '(available,Laust,til_radstofunar,verkstadi)');
-      setBadge('lanstaeki', ln.count || 0, 'gray');
+      // 13.10.2026: Lánstæki í djúpdvala (docs/DJUPDVALI.md) — engin talning fyrir takka sem er ekki til.
+      if (typeof window.Lanstaeki !== 'undefined') {
+        const ln = await sb.from('lanstaeki').select('id', { count: 'exact', head: true })
+          .not('status', 'in', '(available,Laust,til_radstofunar,verkstadi)');
+        setBadge('lanstaeki', ln.count || 0, 'gray');
+      }
 
       // Geymsla: items in storage (no archived flag, count all)
       const gy = await sb.from('lanstaeki').select('id', { count: 'exact', head: true })

@@ -23,10 +23,16 @@
     'beidnir': 'Beiðnir',
     'leidbeiningar': 'Leiðbeiningar',
     'mottaka': 'Móttaka',
-    'vertid': 'Vertíð'
+    'vertid': 'Vertíð',
+    'lanstaeki': 'Lánstæki'
   };
+  // Lánstæki er inline-kóði í index.html og view-lanstaeki er stöðugt HTML — það sefur þegar Lanstaeki-hluturinn er ekki til.
+  var VAKANDI = { 'lanstaeki': function () { return typeof window.Lanstaeki !== 'undefined'; } };
   var HEIM = 'verkbord';
-  function sofandi(v) { return Object.prototype.hasOwnProperty.call(SVEFN, v) && !document.getElementById('view-' + v); }
+  function sofandi(v) {
+    if (!Object.prototype.hasOwnProperty.call(SVEFN, v)) return false;
+    return VAKANDI[v] ? !VAKANDI[v]() : !document.getElementById('view-' + v);
+  }
   function segja(v) {
     var t = SVEFN[v] + ' er í djúpdvala — opnaði Þjónustuborðið í staðinn.';
     try { if (window.Toast && Toast.show) Toast.show(t); else console.info('[465] ' + t); } catch (_) {}

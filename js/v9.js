@@ -639,7 +639,9 @@
       var last=row.querySelector('td:last-child'); if(!last) return;
       last.appendChild(makeBtn(unit.id,'uttaeki'));
     });
-    // Lánstæki rows
+    // Lánstæki rows — 13.10.2026: Lánstæki í djúpdvala (docs/DJUPDVALI.md); þá hvorki sótt lanstaeki né skannaðar
+    // .dtbl-raðir á hverju 5 s tifi. Vaknar sjálfkrafa þegar Lanstaeki-blokkin í index.html keyrir aftur.
+    if (typeof window.Lanstaeki === 'undefined') return;
     getLoan(function(loans){
       document.querySelectorAll('.dtbl tbody tr, #view-lanstaeki table tbody tr').forEach(function(row){
         if(row.querySelector('._slokk_edit_btn[data-tbl="lanstaeki"]')) return;
