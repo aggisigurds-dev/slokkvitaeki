@@ -252,10 +252,27 @@
     el.textContent = TSG_CSS;
     (rot === document ? document.head : rot).appendChild(el);
   }
-  function stilar() {
+  // Skuggarætur koma og fara með glugganum (368 Þjónustuborð, 430 Verkspjald). 13.10.2026: áður leitaði þetta að þeim
+  // með document.querySelectorAll('*') við HVERJA breytingu hvar sem er í DOM-inu. Með mörg borð opin (~100 þús. hnútar)
+  // kostaði hver umferð 157 ms á aðalþræðinum (mælt). Nú skráir attachShadow nýjar rætur, ein heil leit í byrjun nær
+  // þeim sem urðu til á undan þessum pappa, og hýsill sem bætist við DOM-ið aftur skráist úr breytingunni sjálfri.
+  const ROETUR = new Set();
+  try {
+    const att = Element.prototype.attachShadow;
+    if (att && !att.__tsg460) {
+      const vafin = function () { const r = att.apply(this, arguments); try { ROETUR.add(r); } catch (_) {} return r; };
+      vafin.__tsg460 = true;
+      Element.prototype.attachShadow = vafin;
+    }
+  } catch (_) {}
+  let heildarleit = false;
+  function stilar(skraningar) {
     stilaRot(document);
-    // Skuggarætur koma og fara með glugganum — leitum í hvert sinn.
-    document.querySelectorAll('*').forEach(el => { if (el.shadowRoot) stilaRot(el.shadowRoot); });
+    if (!heildarleit) { heildarleit = true; document.querySelectorAll('*').forEach(el => { if (el.shadowRoot) ROETUR.add(el.shadowRoot); }); }
+    if (Array.isArray(skraningar)) {
+      for (const s of skraningar) for (const n of s.addedNodes || []) if (n.nodeType === 1 && n.shadowRoot) ROETUR.add(n.shadowRoot);
+    }
+    ROETUR.forEach(r => { if (!r.host || !r.host.isConnected) ROETUR.delete(r); else stilaRot(r); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', stilar);
   else stilar();

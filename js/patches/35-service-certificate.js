@@ -194,12 +194,27 @@
   }
 
   // ── Inject cert button into company detail panels ─────────────────────────
-  const obs = new MutationObserver(() => {
+  // 13.10.2026 (afköst): vaktin skannaði ALLT skjalið við hverja DOM-breytingu hvar sem er. Falin borð haldast í DOM-inu,
+  // svo eftir að mörg borð hafa verið opnuð (~100 þús. hnútar) kostaði hver umferð 40–70 ms (CPU-prófíll) — og veljarinn
+  // fann ekkert stak í neinu af 55 borðum appsins (mælt). Nú: ein heil leit í fyrstu umferð eins og áður, síðan aðeins
+  // nýju hnútarnir úr breytingunni.
+  let _fyrstaLeit = true;
+  const nyirHnutar = (skr, sel) => {
+    if (_fyrstaLeit || !Array.isArray(skr)) { _fyrstaLeit = false; return document.querySelectorAll(sel); }
+    const ut = new Set();
+    for (const s of skr) for (const n of s.addedNodes || []) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches(sel)) ut.add(n);
+      n.querySelectorAll(sel).forEach(x => ut.add(x));
+    }
+    return ut;
+  };
+  const obs = new MutationObserver((skr) => {
     // Look for company detail panels that have a name + address visible
     // 12.10.2026 (afköst): [data-co-id] aðeins með nafni — án data-company-nafn / data-nafn / data-company-id fær
     // hnúturinn ekkert nafn og er sleppt hér fyrir neðan hvort sem er. Áður voru ~470 raðir Ársskoðunar sóttar og
     // ítraðar í hverjum ramma (113 ms við eina prófílopnun, CPU-prófíll). Sama mengi hnúta fær takkann.
-    document.querySelectorAll('.company-detail-panel, [data-company-id], [data-co-id][data-company-nafn], [data-co-id][data-nafn]').forEach(panel => {
+    nyirHnutar(skr, '.company-detail-panel, [data-company-id], [data-co-id][data-company-nafn], [data-co-id][data-nafn]').forEach(panel => {
       // 12.10.2026 (afköst): nafnið athugað FYRST — sama niðurstaða, en [data-co-id] grípur ~470 raðir Ársskoðunar
       // sem bera ekkert nafn, og leitin inni í hverri þeirra kostaði 183 ms við eina prófílopnun (CPU-prófíll).
       const name = panel.dataset.companyNafn || panel.dataset.nafn || panel.dataset.companyId;

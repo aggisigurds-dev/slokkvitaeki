@@ -204,9 +204,24 @@
   }
 
   // ── Inject button into existing Stillingar nav + inject gear icon ─────────
-  function _injectSettingsButtons() {
+  // 13.10.2026 (afköst): vaktin skannaði ALLT skjalið við hverja DOM-breytingu hvar sem er. Falin borð haldast í DOM-inu,
+  // svo eftir að mörg borð hafa verið opnuð (~100 þús. hnútar) kostaði hver umferð 40–70 ms (CPU-prófíll) — og veljarinn
+  // fann ekkert stak í neinu af 55 borðum appsins (mælt). Nú: ein heil leit í fyrstu umferð eins og áður, síðan aðeins
+  // nýju hnútarnir úr breytingunni.
+  let _fyrstaLeit = true;
+  const nyirHnutar = (skr, sel) => {
+    if (_fyrstaLeit || !Array.isArray(skr)) { _fyrstaLeit = false; return document.querySelectorAll(sel); }
+    const ut = new Set();
+    for (const s of skr) for (const n of s.addedNodes || []) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches(sel)) ut.add(n);
+      n.querySelectorAll(sel).forEach(x => ut.add(x));
+    }
+    return ut;
+  };
+  function _injectSettingsButtons(skr) {
     // Inject into any existing Stillingar section header
-    document.querySelectorAll('.stillingar-section-hd, [data-settings-inject]:not([data-sm-injected])').forEach(el => {
+    nyirHnutar(skr, '.stillingar-section-hd, [data-settings-inject]:not([data-sm-injected])').forEach(el => {
       el.dataset.smInjected = '1';
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline btn-sm';

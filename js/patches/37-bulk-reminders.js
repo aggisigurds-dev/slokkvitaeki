@@ -338,7 +338,10 @@
   // ── Inject button into toolbar areas ─────────────────────────────────────
   function injectButtons() {
     // Into Þjónustuáætlun / inspection forecast toolbar if it exists
-    const ifToolbar = document.querySelector('#view-inspforecast .if-toolbar, #view-inspforecast .toolbar');
+    // 13.10.2026 (afköst): keyrir við hverja DOM-breytingu. Báðar leitirnar fóru yfir allt skjalið (37 ms umferðin þegar mörg
+    // borð höfðu verið opnuð, CPU-prófíll) — og #view-inspforecast er ekki lengur til. Nú leitað innan ílátanna sjálfra.
+    const vif = document.getElementById('view-inspforecast');
+    const ifToolbar = vif && vif.querySelector('.if-toolbar, .toolbar');
     if (ifToolbar && !ifToolbar.querySelector('.brem-trigger')) {
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline btn-sm brem-trigger';
@@ -347,7 +350,8 @@
       ifToolbar.appendChild(btn);
     }
     // Into Þjónustutæki field toolbar
-    const fieldToolbar = document.querySelector('.field-toolbar');
+    const vf = document.getElementById('view-field');
+    const fieldToolbar = vf && vf.querySelector('.field-toolbar');
     if (fieldToolbar && !fieldToolbar.querySelector('.brem-trigger')) {
       const btn = document.createElement('button');
       btn.className = 'btn btn-outline btn-sm brem-trigger';

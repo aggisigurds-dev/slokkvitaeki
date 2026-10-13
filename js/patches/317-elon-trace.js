@@ -315,6 +315,20 @@
   // keyrði í næsta ramma eftir HVERJA DOM-breytingu hvar sem er — mælt ~7×/s. Stimplarnir eru rakningarmerki (data-elon +
   // hover-titill), ekkert les þá í rauntíma, svo þeir mega koma sekúndu síðar: nú í mesta lagi ein skönnun á ~1,2 s fresti,
   // í lausagangi vafrans, og aldrei í földum flipa.
+  // 13.10.2026: skönnunin fór yfir ALLT skjalið (23 querySelectorAll). Falin borð haldast í DOM-inu, svo eftir að mörg
+  // borð hafa verið opnuð (~100 þús. hnútar) tók hver umferð 336 ms (mælt, CPU-prófíll) — og setInterval hér að neðan
+  // kallar hana á 4 s fresti í kyrrstöðu. Stimplarnir eru aðeins lesnir í því sem sést (hover/rakning), svo nú er
+  // skannað virka borðið og sýnilegir gluggar beint undir body; falið borð fær stimplana þegar það sést og breytist.
+  function sjaanlegt() {
+    const v = document.querySelector('.view.active');
+    if (!v || !document.body) return [document];
+    const ut = [v];
+    for (const c of document.body.children) {
+      if (c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
+      if (c.getClientRects().length) ut.push(c);
+    }
+    return ut;
+  }
   let scheduled = false, sidast = 0;
   function schedule() {
     if (scheduled) return;
@@ -324,7 +338,7 @@
       const keyra = () => {
         scheduled = false; sidast = Date.now();
         if (document.hidden) return;
-        try { scan(document); } catch (e) { console.warn('[elon-trace]', e); }
+        try { sjaanlegt().forEach(scan); } catch (e) { console.warn('[elon-trace]', e); }
       };
       if (window.requestIdleCallback) requestIdleCallback(keyra, { timeout: 1500 }); else keyra();
     }, bid);

@@ -57,17 +57,23 @@
   }
   // automation_runs og google_oauth eru lokaðar anon-lyklinum — brunaholf /api/stjornstod-stada les þær og skilar
   // aðeins tíma síðustu keyrslu og hvaða pósthólf eru tengd (engin tokens).
-  let _ss = null, _ssAt = 0;
-  async function stjornstodStada() {
-    if (_ss && Date.now() - _ssAt < 60000) return _ss;
-    try { _ss = await getJSON(HUB + '/api/stjornstod-stada'); _ssAt = Date.now(); } catch (_) { _ss = _ss || { keyrslur: {}, postholf: [] }; }
-    return _ss;
+  // 13.10.2026: skyndiminnið geymdi aðeins SVARIÐ. Línurnar spyrja samtímis áður en fyrsta svarið kemur, svo hver sendi
+  // sitt eigið kall (mælt: data-sources-status 5×, 4 samhliða, ~2 s hvert; stjornstod-stada 2×). Nú deila þær einni sókn.
+  let _ss = null, _ssAt = 0, _ssP = null;
+  function stjornstodStada() {
+    if (_ss && Date.now() - _ssAt < 60000) return Promise.resolve(_ss);
+    if (!_ssP) _ssP = getJSON(HUB + '/api/stjornstod-stada')
+      .then((r) => { _ss = r; _ssAt = Date.now(); return _ss; }, () => (_ss = _ss || { keyrslur: {}, postholf: [] }))
+      .finally(() => { _ssP = null; });
+    return _ssP;
   }
-  let _dss = null, _dssAt = 0;
-  async function dss() {
-    if (_dss && Date.now() - _dssAt < 60000) return _dss;
-    try { _dss = await getJSON(HUB + '/api/data-sources-status'); _dssAt = Date.now(); } catch (_) { _dss = _dss || { sources: [] }; }
-    return _dss;
+  let _dss = null, _dssAt = 0, _dssP = null;
+  function dss() {
+    if (_dss && Date.now() - _dssAt < 60000) return Promise.resolve(_dss);
+    if (!_dssP) _dssP = getJSON(HUB + '/api/data-sources-status')
+      .then((r) => { _dss = r; _dssAt = Date.now(); return _dss; }, () => (_dss = _dss || { sources: [] }))
+      .finally(() => { _dssP = null; });
+    return _dssP;
   }
   const dssLina = (key) => async () => {
     const s = ((await dss()).sources || []).find((x) => x.key === key);

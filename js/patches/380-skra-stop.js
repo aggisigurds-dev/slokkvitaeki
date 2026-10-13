@@ -91,7 +91,11 @@
 
   function merkja() {
     if (!STADA || !STADA.size) return;
-    const rot = document.querySelectorAll('#view-arsskodun [data-co-id]:not([data-skra-stop]), #view-fyrirtaeki-yfirferd a.fyr-prof:not([data-skra-stop])');
+    // 13.10.2026 (afköst): sama mengi, en leitað innan sýnanna tveggja — leit frá document fór yfir öll falin borð líka
+    // (56 ms umferðin þegar mörg borð höfðu verið opnuð, ~100 þús. hnútar, CPU-prófíll).
+    const va = document.getElementById('view-arsskodun'), vf = document.getElementById('view-fyrirtaeki-yfirferd');
+    const rot = [].concat(va ? Array.from(va.querySelectorAll('[data-co-id]:not([data-skra-stop])')) : [],
+      vf ? Array.from(vf.querySelectorAll('a.fyr-prof:not([data-skra-stop])')) : []);
     if (!rot.length) return;
     rot.forEach((el) => {
       el.setAttribute('data-skra-stop', '0');
