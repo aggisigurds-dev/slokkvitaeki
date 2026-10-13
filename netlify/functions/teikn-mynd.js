@@ -45,7 +45,15 @@ export default async (req) => {
     headers.set('Content-Type', r.headers.get('content-type') || 'application/octet-stream');
     const len = r.headers.get('content-length');
     if (len) headers.set('Content-Length', len);
-    headers.set('Cache-Control', 'public, max-age=3600');
+    // 13.10.2026 (Agnar: „auka hraðann á teikningaglugganum"): fyrsta sókn fer gegnum Kjarna til skjalasafnsins og tók
+    // 3,4–5,7 s; endurtekin af CDN-hnút 0,45 s. Hnúturinn geymdi aðeins í klst og hver hnútur sér. Skjalasafns-slóðirnar
+    // eru dagsettar og breytast ekki — svarið fer því í VARANLEGA skyndiminnið (durable, sameiginlegt öllum hnútum) í ár,
+    // og vafrinn geymir það í viku. Villusvör (villa()) bera enga slíka hausa og geymast ekki.
+    headers.set('Cache-Control', 'public, max-age=604800');
+    headers.set('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=31536000, stale-while-revalidate=604800');
+    // Ný birting tæmir skyndiminnið sjálfgefið (og hér er birt nánast daglega) — merkið heldur myndunum yfir birtingar.
+    // Breytist ÚTTAK fallsins þarf að hreinsa merkið (Netlify purge, cache_tags: ["teikn-mynd"]).
+    headers.set('Netlify-Cache-ID', 'teikn-mynd');
     return new Response(r.body, { status: 200, headers });
   } catch (_) {
     return villa(502, 'Náði ekki í mynd');

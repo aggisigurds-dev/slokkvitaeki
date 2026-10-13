@@ -21,6 +21,17 @@ const cors = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// 13.10.2026: rendition-flæðið tekur 1,5–8 s í hvert sinn og CDN-hnúturinn geymdi aðeins á sínum stað. Skjölin á bak við
+// dagsettu skjalasafns-slóðirnar breytast ekki — varanlega skyndiminnið (durable, öllum hnútum sameiginlegt) geymir þau í ár.
+// Villusvör (villa()) bera enga slíka hausa. ?nidurhal=1 er sér lykill (fyrirspurnin er hluti af lyklinum).
+function geyma(headers) {
+  headers.set('Cache-Control', 'public, max-age=604800');
+  headers.set('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=31536000, stale-while-revalidate=604800');
+  // Ný birting tæmir skyndiminnið sjálfgefið — merkið heldur skjölunum yfir birtingar. Breytist ÚTTAK fallsins þarf að
+  // hreinsa merkið (Netlify purge, cache_tags: ["teikn-pdf"]).
+  headers.set('Netlify-Cache-ID', 'teikn-pdf');
+}
+
 function villa(status, error) {
   return new Response(JSON.stringify({ error }), {
     status,
@@ -58,7 +69,7 @@ export default async (req) => {
         headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
       }
       if (lengd) headers.set('Content-Length', String(lengd));
-      headers.set('Cache-Control', 'public, max-age=86400');
+      geyma(headers);
       return new Response(r.body, { status: 200, headers });
     } catch (_) { return villa(502, 'Náði ekki í PDF-skjalið'); }
   }
@@ -100,7 +111,7 @@ export default async (req) => {
           headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
         }
         if (lengd) headers.set('Content-Length', String(lengd));
-        headers.set('Cache-Control', 'public, max-age=86400');
+        geyma(headers);
         return new Response(r.body, { status: 200, headers });
       }
       if (r.status >= 400 && r.status !== 404) return villa(502, 'Skjalasafnið svaraði ' + r.status);

@@ -128,10 +128,24 @@ export default async (req) => {
         } catch (_) { /* svar Kjarna stendur */ }
       }
     }
-    return new Response(txt, {
-      status: r.status,
-      headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8' },
-    });
+    // 13.10.2026 (hraði teikningagluggans): þrjár raðbundnar sóknir (heimilisfang → landnr) tóku 1,7 + 0,6 + 0,8 s í
+    // hvert sinn sem gluggi opnaðist á félagi án vistaðrar teikningar. Svar MEÐ niðurstöðum fer í varanlega skyndiminnið
+    // (öllum CDN-hnútum sameiginlegt) í viku og er endurnýjað í bakgrunni eftir það — nýjar teikningar skjalasafnsins
+    // birtast því innan viku. Villur og tóm svör geymast ekki.
+    const headers = { ...cors, 'Content-Type': 'application/json; charset=utf-8' };
+    if (r.ok) {
+      let d = null; try { d = JSON.parse(txt); } catch (_) {}
+      if (d && !d.error && Array.isArray(d.results) && d.results.length) {
+        headers['Cache-Control'] = 'public, max-age=3600';
+        headers['Netlify-CDN-Cache-Control'] = 'public, durable, s-maxage=604800, stale-while-revalidate=2592000';
+        headers['Netlify-Cache-ID'] = 'teikn-listi';   // lifir birtingar; hreinsað með merkinu ef úttakið breytist
+      } else if (d && !d.error && Array.isArray(d.results)) {
+        // Tómt svar ræðst af sniði heimilisfangsins (fullt „…, 112 Reykjavík" finnst ekki; glugginn reynir svo styttra) —
+        // geymt í sólarhring, án bakgrunns-endurnýjunar, svo raunveruleg breyting skili sér daginn eftir.
+        headers['Netlify-CDN-Cache-Control'] = 'public, durable, s-maxage=86400';
+      }
+    }
+    return new Response(txt, { status: r.status, headers });
   } catch (_) {
     return json({ error: 'Náði ekki í teikningaskrá.' }, 502);
   }

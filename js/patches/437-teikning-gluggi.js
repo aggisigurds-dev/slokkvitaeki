@@ -51,8 +51,16 @@
       st.id = 'fp-gluggi-css';
     }
     if (st.textContent !== CSS) st.textContent = CSS;
-    if (st.parentNode !== document.head || st !== document.head.lastElementChild) document.head.appendChild(st);
+    // 13.10.2026 (mælt: 5 færslur/s og teikningin máluð 9×/s meðan glugginn stóð KYRR): blaðið var fært aftast í
+    // HVERRI umferð. Jafningjarnir (313 · 319 · 323 · 324 · 341 · 417) færa sitt blað aftast ef ÓKUNNUGT blað stendur
+    // aftar — þetta var þeim ókunnugt, svo blöðin eltust endalaust og hver færsla vakti vaktina hér að neðan aftur.
+    // Sama regla og þeir nota: fært aðeins ef ókunnugt blað stendur aftar (og þeir þekkja nú þetta blað).
+    if (st.parentNode !== document.head) { document.head.appendChild(st); return; }
+    for (let n = st.nextElementSibling; n; n = n.nextElementSibling) {
+      if (JAFNINGJAR.indexOf(n.id) < 0) { document.head.appendChild(st); return; }
+    }
   }
+  const JAFNINGJAR = ['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css', 'ars-skjar-scroll-left-341', '_ars-simi-skjar-417-css', 'fp-gluggi-css'];
 
   function setImp(el, prop, val) {
     if (!el) return;
@@ -212,7 +220,10 @@
     if (!m || !m.isConnected) return;
     if (m.style.display === 'none' && !m.classList.contains('open')) return;
     beita();
-    requestAnimationFrame(teiknaAftur);
+    // 13.10.2026: teikningin var máluð upp á nýtt við HVERJA DOM-breytingu á síðunni (9×/s í kyrrstöðu — hver máling
+    // stillir canvas-stærðina og teiknar 6000 px blaðið aftur). Stærðarbreytingar fara um ResizeObserver (vaktStaerd) og
+    // dráttinn; hér er aðeins málað einu sinni þegar NÝR gluggi birtist (opið-klasinn kominn).
+    if (!m._t437teiknad && m.classList.contains('open')) { m._t437teiknad = 1; requestAnimationFrame(teiknaAftur); }
   }
 
   function tikkOgTeikna() {

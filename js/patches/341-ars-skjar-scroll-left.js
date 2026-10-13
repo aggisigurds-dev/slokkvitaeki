@@ -149,7 +149,7 @@
     // 26.09.2026 (blaðastríð í head, ~20 færslur/s á hverri síðu): skrifa aðeins ef textinn breyttist, og færa aftast
     // aðeins ef ÓKUNNUGT blað stendur aftar — jafningjarnir (313 · 319 · 323 · 324 · 417) mega standa þar.
     const c = css(); if (s.textContent !== c) s.textContent = c;
-    const PEERS = ['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css', 'ars-skjar-scroll-left-341', '_ars-simi-skjar-417-css'];
+    const PEERS = ['_coldrag-css', 'contrast-clarity-css', '_pe-zones-css', '_pe-kanban-css', 'ars-skjar-scroll-left-341', '_ars-simi-skjar-417-css', 'fp-gluggi-css'];
     let aftast = true; for (let n = s.nextElementSibling; n; n = n.nextElementSibling) { if (PEERS.indexOf(n.id) < 0) { aftast = false; break; } }
     if (s.parentNode && !aftast) s.parentNode.appendChild(s);
   }
