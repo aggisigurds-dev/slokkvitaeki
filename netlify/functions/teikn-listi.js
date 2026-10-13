@@ -138,6 +138,7 @@ export default async (req) => {
       if (d && !d.error && Array.isArray(d.results) && d.results.length) {
         headers['Cache-Control'] = 'public, max-age=3600';
         headers['Netlify-CDN-Cache-Control'] = 'public, durable, s-maxage=604800, stale-while-revalidate=2592000';
+        headers['Netlify-Cache-ID'] = 'teikn-listi';   // lifir birtingar; hreinsað með merkinu ef úttakið breytist
       } else if (d && !d.error && Array.isArray(d.results)) {
         // Tómt svar ræðst af sniði heimilisfangsins (fullt „…, 112 Reykjavík" finnst ekki; glugginn reynir svo styttra) —
         // geymt í sólarhring, án bakgrunns-endurnýjunar, svo raunveruleg breyting skili sér daginn eftir.

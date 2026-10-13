@@ -51,6 +51,9 @@ export default async (req) => {
     // og vafrinn geymir það í viku. Villusvör (villa()) bera enga slíka hausa og geymast ekki.
     headers.set('Cache-Control', 'public, max-age=604800');
     headers.set('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=31536000, stale-while-revalidate=604800');
+    // Ný birting tæmir skyndiminnið sjálfgefið (og hér er birt nánast daglega) — merkið heldur myndunum yfir birtingar.
+    // Breytist ÚTTAK fallsins þarf að hreinsa merkið (Netlify purge, cache_tags: ["teikn-mynd"]).
+    headers.set('Netlify-Cache-ID', 'teikn-mynd');
     return new Response(r.body, { status: 200, headers });
   } catch (_) {
     return villa(502, 'Náði ekki í mynd');

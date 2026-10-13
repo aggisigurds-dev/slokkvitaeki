@@ -27,6 +27,9 @@ const cors = {
 function geyma(headers) {
   headers.set('Cache-Control', 'public, max-age=604800');
   headers.set('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=31536000, stale-while-revalidate=604800');
+  // Ný birting tæmir skyndiminnið sjálfgefið — merkið heldur skjölunum yfir birtingar. Breytist ÚTTAK fallsins þarf að
+  // hreinsa merkið (Netlify purge, cache_tags: ["teikn-pdf"]).
+  headers.set('Netlify-Cache-ID', 'teikn-pdf');
 }
 
 function villa(status, error) {
