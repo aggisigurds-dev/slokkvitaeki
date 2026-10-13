@@ -81,7 +81,10 @@ function showEditForm(job){
   };
 }
 function injectButton(){
-  var actions=document.querySelector('.jd-actions');
+  // 13.10.2026 (afköst): keyrir við hverja DOM-breytingu og á 1,5 s fresti; leitin fór yfir allt skjalið þegar verkið var ekki
+  // opið (20 ms+ þegar mörg borð höfðu verið opnuð). Counter.renderDetail (modal.js) teiknar .jd-actions aðeins í #counter-main.
+  var main=document.getElementById('counter-main');
+  var actions=main && main.querySelector('.jd-actions');
   if(!actions || actions.querySelector('._ej_btn')) return;
   var prenta=Array.from(actions.querySelectorAll('button')).find(function(b){return /Prenta/.test(b.textContent);});
   var btn=document.createElement('button');

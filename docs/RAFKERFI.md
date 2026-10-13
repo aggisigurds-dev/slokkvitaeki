@@ -288,6 +288,10 @@ Elon **skráir** þessar línur. Elon **breytir þeim ekki** án netvarðar.
 
 **Patch:** `js/patches/317-elon-trace.js` (MutationObserver, engin Look-A CSS).
 
+Frá 13.10.2026 stimplar 317 aðeins **virka borðið og sýnilega glugga beint undir `body`** — ekki falin borð. Heil
+skönnun skjalsins tók 336 ms þegar mörg borð höfðu verið opnuð (~100 þús. hnútar). Falið borð fær stimplana þegar það
+sést og eitthvað breytist í því; vanti stimpil á sýnilegri peru: `ElonTrace.scan()` skannar enn allt skjalið.
+
 ### Format
 
 ```

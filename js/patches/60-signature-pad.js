@@ -112,8 +112,23 @@
   }
 
   // Inject ✍️ button on job rows
-  const obs = new MutationObserver(() => {
-    document.querySelectorAll('[data-job-id]:not([data-sig-injected])').forEach(row => {
+  // 13.10.2026 (afköst): vaktin skannaði ALLT skjalið við hverja DOM-breytingu hvar sem er. Falin borð haldast í DOM-inu,
+  // svo eftir að mörg borð hafa verið opnuð (~100 þús. hnútar) kostaði hver umferð 40–70 ms (CPU-prófíll) — og veljarinn
+  // fann ekkert stak í neinu af 55 borðum appsins (mælt). Nú: ein heil leit í fyrstu umferð eins og áður, síðan aðeins
+  // nýju hnútarnir úr breytingunni.
+  let _fyrstaLeit = true;
+  const nyirHnutar = (skr, sel) => {
+    if (_fyrstaLeit || !Array.isArray(skr)) { _fyrstaLeit = false; return document.querySelectorAll(sel); }
+    const ut = new Set();
+    for (const s of skr) for (const n of s.addedNodes || []) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches(sel)) ut.add(n);
+      n.querySelectorAll(sel).forEach(x => ut.add(x));
+    }
+    return ut;
+  };
+  const obs = new MutationObserver((skr) => {
+    nyirHnutar(skr, '[data-job-id]:not([data-sig-injected])').forEach(row => {
       const id = row.dataset.jobId;
       if (!id) return;
       row.dataset.sigInjected='1';

@@ -261,8 +261,21 @@
   window.WeeklyReport = { open, _generate };
 
   // ── Inject into dashboard quick actions if present ────────────────────────
-  const _obs = new MutationObserver(() => {
-    const dashActions = document.querySelector('.dash-actions');
+  // 13.10.2026 (afköst): .dash-actions er hvergi teiknað lengur (ekkert í kóðanum, ekkert í neinu af 55 borðum — mælt), en
+  // leitin fór yfir allt skjalið við hverja DOM-breytingu (22 ms umferðin þegar mörg borð höfðu verið opnuð). Nú: fyrsta
+  // umferð leitar í öllu skjalinu eins og áður, síðan aðeins í nýju hnútunum.
+  let _fyrstaLeit = true;
+  const _finna = (skr) => {
+    if (_fyrstaLeit || !Array.isArray(skr)) { _fyrstaLeit = false; return document.querySelector('.dash-actions'); }
+    for (const r of skr) for (const n of r.addedNodes || []) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches('.dash-actions')) return n;
+      const x = n.querySelector('.dash-actions'); if (x) return x;
+    }
+    return null;
+  };
+  const _obs = new MutationObserver((skr) => {
+    const dashActions = _finna(skr);
     if (!dashActions || dashActions.querySelector('.wrep-dash-btn')) return;
     const btn = document.createElement('button');
     btn.className = 'dash-act-btn wrep-dash-btn';

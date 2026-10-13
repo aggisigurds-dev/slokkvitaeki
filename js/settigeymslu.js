@@ -75,7 +75,11 @@ async function moveJobToStorage(jobId,shelf){
 }
 
 function injectButtons(){
-  var items=document.querySelectorAll('.ready-item');
+  // 13.10.2026 (afköst): keyrir á 1,5 s fresti og við hverja DOM-breytingu; leitin fór yfir allt skjalið (23 ms umferðin
+  // þegar mörg borð höfðu verið opnuð). Counter.renderList (modal.js) teiknar .ready-item aðeins í #sidebar-ready.
+  var rdy=document.getElementById('sidebar-ready');
+  if(!rdy) return;
+  var items=rdy.querySelectorAll('.ready-item');
   items.forEach(function(item){
     if(item.dataset._sgInjected==='1')return;
     var sott=item.querySelector('button.btn-success, button[class*="success"]');

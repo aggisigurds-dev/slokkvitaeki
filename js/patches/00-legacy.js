@@ -2620,13 +2620,27 @@ console.log('[patch-master] loaded with all fixes');
 
 /* ===== HIDE Gaedakerfi + Fix Geymsla ===== */
 (function(){
+  // 13.10.2026 (afköst): keyrir á 1 s fresti. Leitin bar saman style-streng HVERS staks í skjalinu; falin borð haldast í
+  // DOM-inu, svo eftir að mörg borð höfðu verið opnuð (~100 þús. hnútar) tók hún 72 ms á hverri sekúndu (CPU-prófíll) — og
+  // gula stikan fannst í engu af 55 borðum (mælt). Nú: virka borðið og sýnilegir gluggar beint undir body.
+  function synilegRot(){
+    var v = document.querySelector('.view.active');
+    if(!v || !document.body) return [document];
+    var ut = [v], b = document.body.children;
+    for(var i = 0; i < b.length; i++){
+      var c = b[i];
+      if(c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
+      if(c.getClientRects().length) ut.push(c);
+    }
+    return ut;
+  }
   function hideGaedakerfi(){
     // Hide any element containing Gaedakerfi text (the yellow IDAN krafa bar)
-    document.querySelectorAll('[style*="fff3cd"], [style*="FFF3CD"]').forEach(function(el){
+    synilegRot().forEach(function(rot){ rot.querySelectorAll('[style*="fff3cd"], [style*="FFF3CD"]').forEach(function(el){
       if(el.textContent.indexOf('akerfi')>=0 || el.textContent.indexOf('IDAN')>=0){
         el.style.display='none';
       }
-    });
+    }); });
   }
   function fixGeymsla(){
     var v = document.getElementById('view-geymsla');

@@ -271,7 +271,20 @@
   }
 
   // Watch the whole document for the "+ Bæta við tæki" button to appear (on company/customer detail open)
-  new MutationObserver(() => inject(document)).observe(document.body, { childList: true, subtree: true });
+  // 13.10.2026 (afköst): findAddButton les textContent hvers einasta takka. Falin borð haldast í DOM-inu, svo eftir að
+  // mörg borð höfðu verið opnuð (~100 þús. hnútar) tók hver umferð 63 ms (CPU-prófíll) við hverja DOM-breytingu. Takkinn
+  // birtist á prófíl (virka borðið) eða í glugga beint undir body (Verkstæði, 104) — aðeins þau eru skoðuð.
+  function synilegt() {
+    const v = document.querySelector('.view.active');
+    if (!v || !document.body) return [document];
+    const ut = [v];
+    for (const c of document.body.children) {
+      if (c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
+      if (c.getClientRects().length) ut.push(c);
+    }
+    return ut;
+  }
+  new MutationObserver(() => { for (const r of synilegt()) inject(r); }).observe(document.body, { childList: true, subtree: true });
   inject(document);
 
   console.log('[bulk-add-units] installed');

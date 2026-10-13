@@ -41,9 +41,13 @@
 
   // ── Inject 🏷 button into each cart line ──────────────────────────────────
   function decorateLines() {
-    const cartContainer = document.querySelector('#pos-lines, [class*="pos-lines"], .pos-lines');
+    // 13.10.2026 (afköst): keyrir á 1,5 s fresti og við hverja DOM-breytingu. Áður var allt skjalið skannað, þ.á m.
+    // [class*="pos-lines"] sem ber saman streng á hverju staki (ónotuð niðurstaða) — 88 ms umferðin þegar mörg borð
+    // höfðu verið opnuð (~100 þús. hnútar, CPU-prófíll). Körfulínurnar teiknast alltaf inni í #pos-lines (pos.js).
+    const cart = document.getElementById('pos-lines');
+    if (!cart) return;
     // Try to find cart line items by structure — they're divs with .pos-qty-up button inside
-    document.querySelectorAll('button.pos-qty-up').forEach(qBtn => {
+    cart.querySelectorAll('button.pos-qty-up').forEach(qBtn => {
       const line = qBtn.closest('div[style*="border-bottom"]') || qBtn.parentElement?.parentElement;
       if (!line || line.dataset._sluDone === '1') return;
       // Find the description and qty

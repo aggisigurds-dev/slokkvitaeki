@@ -113,6 +113,10 @@
   // "modal" in their className) don't accidentally pause realtime
   // updates for the Companies view.
   const modalObs = new MutationObserver(() => {
+    // 13.10.2026 (afköst): utan Fyrirtækjaborðsins og án breytingar í gangi gerir vaktin ekkert hvort sem gluggi er opinn
+    // eða ekki (sjá greinarnar hér að neðan) — en leitin fór samt yfir allt skjalið við hverja DOM-breytingu: 81 ms
+    // umferðin þegar mörg borð höfðu verið opnuð (~100 þús. hnútar, CPU-prófíll). Nú hætt strax í því tilviki.
+    if (!_isEditing && !viewActive()) return;
     const openModal = document.querySelector(
       '[role="dialog"]:not([style*="display: none"]), ' +
       '.modal.open, ' +
