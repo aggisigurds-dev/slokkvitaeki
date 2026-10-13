@@ -2634,6 +2634,7 @@ console.log('[patch-master] loaded with all fixes');
     }
     return ut;
   }
+  window.__synilegRot = synilegRot;
   function hideGaedakerfi(){
     // Hide any element containing Gaedakerfi text (the yellow IDAN krafa bar)
     synilegRot().forEach(function(rot){ rot.querySelectorAll('[style*="fff3cd"], [style*="FFF3CD"]').forEach(function(el){
@@ -2807,8 +2808,13 @@ console.log('[patch-master] loaded with all fixes');
     return null;
   }
 
+  // 13.10.2026 (afköst): keyrir á 1 s fresti og las textContent HVERS takka í skjalinu — þúsundir í földum borðum
+  // (Bókhald, Fyrirtækjayfirferð …): 259 ms á hverjum 20 s í kyrrstöðu (CPU-prófíll). Smellhlustarinn skiptir aðeins
+  // máli á takka sem sést (falnum takka er ekki smellt), svo nú: virka borðið + sýnilegir gluggar.
   function hookBreytaButtons(){
-    var btns=document.querySelectorAll('button');
+    var rotur = window.__synilegRot ? window.__synilegRot() : [document];
+    var btns = [];
+    rotur.forEach(function(r){ r.querySelectorAll('button').forEach(function(b){ btns.push(b); }); });
     btns.forEach(function(btn){
       if(btn.textContent.trim()==='Breyta' && !btn.dataset._pmHooked){
         // Skip per-row Breyta buttons (inside tables or next to serial numbers)

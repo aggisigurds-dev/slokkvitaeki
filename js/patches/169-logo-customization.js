@@ -188,9 +188,11 @@
     // neðan ([class*="settings"] yfir allt skjalið, mælt 29–35 ms í hverri umferð) keyrir ekki lengur á 800 ms fresti.
     const urlInp = document.querySelector('input[data-bk="logo_url"]');
     if (!urlInp) return;
+    // 13.10.2026 (afköst): athugað FYRST hvort hlaðarinn sé kominn — eftir að Stillingar hafa verið opnaðar er reiturinn í
+    // DOM-inu og dýra leitin hér fyrir neðan keyrði áfram á 2,5 s fresti að eilífu (154 ms á 20 s í kyrrstöðu). Sama niðurstaða.
+    if (urlInp.dataset._slUpInjected === '1') return;
     const panels = document.querySelectorAll('.su-panel, [class*="settings"], .su-row');
     if (!panels.length) return;
-    if (urlInp.dataset._slUpInjected === '1') return;
     urlInp.dataset._slUpInjected = '1';
 
     const row = urlInp.closest('.su-row') || urlInp.parentElement;
