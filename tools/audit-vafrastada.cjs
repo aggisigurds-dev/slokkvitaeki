@@ -68,7 +68,12 @@ const BANN = [
 // nýlega á ÞESSARI tölvu, svo ⚡ Hlaða (407) hiti þá fyrst. Hann ræður aðeins RÖÐ hitunar í skyndiminni — sami flokkur og
 // `forsokn_snid_v2` (lærð slóðamynstur, þegar talinn); engin staða gagna, ekkert sem önnur vél þarf að sjá. Hækkað af
 // því lykillinn stenst regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 157, ui: 0 } };
+// 12.10.2026: slokkvitaeki ls 157 -> 158. Nýi lykillinn er `bh_vefverslun_karfa` (vefverslun/verslun.js, KARFA_LYKILL):
+// karfa GESTS í opinberu vefversluninni. Gesturinn á enga auðkenningu á þjóninum fyrr en hann sendir pöntun, svo karfan
+// getur ekki verið annars staðar — og hún er staða eins vafra eins og í hverri vefverslun. Það sem fjórar tölvurnar deila
+// (textar, myndir, þema, vöruval, virkjun) fer allt á þjóninn í töflunni `vefverslun` gegnum /api/vefverslun.
+// Hækkað af því lykillinn stenst regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 158, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
