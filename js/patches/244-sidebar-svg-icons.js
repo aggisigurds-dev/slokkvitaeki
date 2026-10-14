@@ -181,19 +181,23 @@
     return stripAllEmoji(parts.join(' ')).replace(/\s+/g, ' ').trim();
   }
 
+  // 14.10.2026 (mælt í ræsingu): decorateAll keyrir við hverja breytingu á stikunni og á sekúndufresti í 10 s, og hver
+  // takki normaliseraði ÖLL 59 heitin upp á nýtt (NFD) — ~7.000 normalize-köll í umferð, 98–121 ms af ræsingu.
+  // Svarið ræðst af heitinu einu, svo það er geymt; normaliseruðu lyklarnir eru reiknaðir einu sinni.
+  const _normIcon = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  let _iconLyklar = null;
+  const _specMinni = new Map();
   function findIconSpec(label) {
     if (!label) return null;
     if (ICONS[label]) return ICONS[label];
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
-    const nLabel = norm(label);
-    for (const k of Object.keys(ICONS)) {
-      if (norm(k) === nLabel) return ICONS[k];
-    }
-    for (const k of Object.keys(ICONS)) {
-      const nk = norm(k);
-      if (nLabel.startsWith(nk) || nk.startsWith(nLabel)) return ICONS[k];
-    }
-    return null;
+    if (_specMinni.has(label)) return _specMinni.get(label);
+    if (!_iconLyklar) _iconLyklar = Object.keys(ICONS).map(k => [k, _normIcon(k)]);
+    const nLabel = _normIcon(label);
+    let spec = null;
+    for (const [k, nk] of _iconLyklar) if (nk === nLabel) { spec = ICONS[k]; break; }
+    if (!spec) for (const [k, nk] of _iconLyklar) if (nLabel.startsWith(nk) || nk.startsWith(nLabel)) { spec = ICONS[k]; break; }
+    _specMinni.set(label, spec);
+    return spec;
   }
 
   // Strip every emoji from a subtree's text nodes (not from badges).

@@ -139,6 +139,11 @@
     const haus = wrapAllar.parentElement;
     let inp = document.getElementById(ID);
     if (inp && inp.parentElement === haus) {
+      // 14.10.2026 (hopp, mælt á síma): á meðan Sala er FALIN sást #pos-services ekki heldur, svo 2 s púlsinn hér faldi
+      // reitinn — og við endurkomu birtist hann ekki fyrr en næsta umferð (~1 s): „Sýna allt" þrengdist og fór í tvær
+      // línur, flísarnar 29 px niður (CLS 0,079 við aðra opnun). Lista-hamurinn er aðeins dæmdur þegar sýnin sést.
+      const v = document.getElementById('view-sala'), sd = v ? v.style.display : '';
+      if (!v || sd === 'none' || (!sd && !v.classList.contains('active'))) return;
       const svc = document.getElementById('pos-services');
       const flisar = !svc || synilegt(svc);          // Listi-hamurinn (299) hefur sína eigin leit
       if ((inp.style.display === 'none') === flisar) inp.style.display = flisar ? '' : 'none';

@@ -258,7 +258,9 @@
 
   // ---------- Init + watchers ----------
   function tick() {
-    removeToolButtons();
+    // 14.10.2026 (mælt í ræsingu): fjarlæging hér líka — 01-sala-suite setti takkann aftur inn í hvert sinn (0/300/1000/
+    // 2500 ms), og hver innsetning las offsetParent á sjö veljurum = þvingaður útlitsreikningur á óklárri síðu
+    // (77–268 ms af ræsingu í 01). CSS-reglan .sm-toolbtn{display:none!important} felur þá; einn eigandi, engin fjarlæging.
     bindInputs();
     reorderServices();
   }
