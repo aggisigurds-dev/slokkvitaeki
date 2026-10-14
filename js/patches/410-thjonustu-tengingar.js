@@ -662,8 +662,14 @@
         var giska = tg && tg.vara_id ? null : nafnaleit(t.tegund, t.staerd, kind[0]);
         var valinn = tg && tg.vara_id ? tg.vara_id : (giska ? giska.vara.id : '');
         var vantar = false, fl, txt, titl;
+        var v = valinn ? vara(valinn) : null;
         if (tg && tg.ekki_rukka) {
           fl = 'ekkert'; txt = 'EKKI RUKKAÐ'; titl = 'Skráð sem lína sem á ekki að rukkast.';
+        } else if (tg && tg.vara_id && !(v && Number(v.verd_an_vsk) > 0)) {
+          // 14.10.2026 (Agnar: „vantar kannski verð fyrir 1 kg, 9 kg, 12 kg"): línan er til og tengd en ber ekkert verð —
+          // ársskoðunin rukkaði annars 0 kr þegjandi. Rautt, og ✎ Vara fer beint þangað sem verðið er sett.
+          fl = 'rangt'; txt = 'VERÐ VANTAR'; titl = 'Tengda línan er til en verðið er óákveðið — ársskoðunin rukkar 0 kr þar til það er sett (✎ Vara).';
+          vantar = true;
         } else if (tg && tg.vara_id) {
           fl = 'skrad'; txt = 'SKRÁÐ'; titl = 'Skráð tenging — ágiskun kemur hvergi við sögu.';
         } else if (!giska) {
@@ -687,7 +693,6 @@
         } else {
           fl = 'sjalf'; txt = 'GISKAÐ'; titl = 'Nafnaleit hitti á vöru með passandi stærð.';
         }
-        var v = valinn ? vara(valinn) : null;
         linur.push({
           t: t, kind: kind, lyk: lyk, tg: tg, valinn: valinn, vantar: vantar,
           fl: fl, txt: txt, titl: titl,
@@ -731,7 +736,9 @@
         : '';
       // Verð tengdu línunnar + þjónusta/vara + „✎ Vara" sem fer á vöruna til að breyta verðinu (Agnar 14.10). Verðið býr í vorur.
       var verd = L.varaId
-        ? '<div class="' + AUÐK + '-vl"><b>' + esc(krVsk(L.verd, (vara(L.varaId) || {}).vsk_prosenta)) + '</b><small>' + L.varaFl + ' · ' + kr(L.verd) + ' án vsk</small>' +
+        ? '<div class="' + AUÐK + '-vl">' + (L.verd > 0
+            ? '<b>' + esc(krVsk(L.verd, (vara(L.varaId) || {}).vsk_prosenta)) + '</b><small>' + L.varaFl + ' · ' + kr(L.verd) + ' án vsk</small>'
+            : '<b style="color:#b91c1c">verð óákveðið</b><small>' + L.varaFl + ' · settu verðið á vöruna</small>') +
           '<button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(L.varaId) + '" title="Opna „' + esc(L.vara) + '“ í Vörur og þjónusta — þar breytirðu verðinu">✎ Vara</button></div>'
         : '';
       return '<div class="' + AUÐK + '-hl">' + valHtml(L.valinn, 'slokkvitaeki|' + L.lyk, L.vantar) + verd + '<div class="' + AUÐK + '-hl-st">' + merki + stadfesta + '</div></div>';

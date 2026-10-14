@@ -71,6 +71,29 @@
     if (window.ThjonustuTengingar && ThjonustuTengingar.opna) ThjonustuTengingar.opna('slokkvitaeki', m ? { tegund: m[1], staerd: m[2] } : null);
     else location.hash = '#vorur';
   });
+  // 14.10.2026 (Agnar: „takki/linkur til að komast alltaf í að breyta"): hver þjónustulína ber ✎ á tenginguna
+  // (410, með línuna valda) og „Verð vantar"-lína ✎ beint á vöruna þar sem verðið er sett.
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('[data-ctc-teng],[data-ctc-vara]');
+    if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.hasAttribute('data-ctc-vara')) {
+      if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(t.getAttribute('data-ctc-vara'));
+      else location.hash = '#vorur';
+      return;
+    }
+    const p = String(t.getAttribute('data-ctc-teng') || '').split('|');
+    if (window.ThjonustuTengingar && ThjonustuTengingar.opna) ThjonustuTengingar.opna('slokkvitaeki', { tegund: p[0], staerd: p[1] || '' });
+    else location.hash = '#vorur';
+  });
+  function tengHnappur(type, size) {
+    return ' <a href="#" data-ctc-teng="' + esc(type + '|' + (size || '')) + '" title="Breyta hvaða þjónustulína rukkast fyrir ' + esc(type) + (size ? ' / ' + esc(size) : '') + ' (🧯 Slökkvit. verð)" ' +
+      'style="color:#94a3b8;text-decoration:none;font-size:11px;margin-left:4px">✎</a>';
+  }
+  function verdVantar(product) {
+    return ' <span style="color:#b91c1c;font-weight:600">⚠ Verð vantar</span> <a href="#" data-ctc-vara="' + esc(product.id) + '" ' +
+      'title="Opna „' + esc(product.nafn) + '“ í Vörur og þjónusta og setja verðið" style="color:#b91c1c;font-size:11px;text-decoration:underline">✎ setja verð</a>';
+  }
   window.addEventListener('thjonustu-tengingar-breytt', () => {
     _tengingar = null; _tengingarPromise = null;
     try { _lastKey = ''; if (document.getElementById('_ctc-section')) render(); } catch (_) {}
@@ -976,7 +999,7 @@
           if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + (g.size ? ' / ' + esc(g.size) : '') +
-              '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + '</div></td>' +
+              '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + tengHnappur(g.type, g.size) + (!(effUnit > 0) ? verdVantar(reykP) : '') + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3">Reykskynjari</span></td>' +
             priceCell(dKey, unitPrice, override || tierMark) +
@@ -1084,7 +1107,8 @@
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
             '<div style="font-size:11px;color:#64748b">' + (skrad ? SKRAD_PUNKTUR : '') + esc(product.nafn) +
-              (kindKey === 'onytt' ? esc(ONYTT_SKYRING) : '') + '</div></td>' +
+              (kindKey === 'onytt' ? esc(ONYTT_SKYRING) : '') + tengHnappur(g.type, g.size) +
+              (!(effUnit > 0) ? verdVantar(product) : '') + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
             (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534'
@@ -1122,7 +1146,7 @@
           if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
-              '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
+              '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + ' <a href="#" data-ctc-vara="' + esc(newProduct.id) + '" title="Opna vöruna í Vörur og þjónusta" style="color:#94a3b8;text-decoration:none;font-size:11px">✎</a>' + (!(effUnit > 0) ? verdVantar(newProduct) : '') + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
             priceCell(dKey, unitPrice, override || tierMark) +
