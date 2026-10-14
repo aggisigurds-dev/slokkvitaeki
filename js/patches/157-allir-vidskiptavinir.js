@@ -1190,6 +1190,19 @@
     const SB = (window.DB && window.DB.sb);
     const company = (window.Companies && Companies.list || []).find(c => +c.id === +coId);
     if (!company) return;
+    // 14.10.2026: Companies.list getur verið MJÓR (114) — þá vantar review_flag/review_note, flaggað félag sýndist
+    // óflaggað og nótan sem var til var skrifuð yfir (mælt á 1463: review_note:null yfir Cowork-nótu). Lesið ferskt
+    // áður en ákveðið er; náist það ekki er hætt (sama og sameiningin) frekar en að giska.
+    if (SB && !('review_flag' in company && 'review_note' in company)) {
+      let f = null;
+      try { f = await SB.from('fyrirtaeki').select('review_flag,review_note').eq('id', coId).maybeSingle(); } catch (e) { f = { error: e }; }
+      if (!f || f.error || !f.data) {
+        try { if (window.logProblem) window.logProblem('skodun-merki-brast', 'fyrirtaeki ' + coId + ': review_flag náðist ekki — ' + ((f && f.error && f.error.message) || 'engin röð')); } catch (_) {}
+        if (window.Toast && Toast.show) Toast.show('Náði ekki stöðu merkisins — reyndu aftur');
+        return;
+      }
+      company.review_flag = f.data.review_flag; company.review_note = f.data.review_note;
+    }
     const turningOn = !company.review_flag;
     if (turningOn) {
       const inp = prompt('Til skoðunar — ástæða / nóta (valfrjálst):', company.review_note || '');
@@ -1353,6 +1366,19 @@
       console.warn('[Sameining] ' + hvad, villa);
     };
     const kanna = (r) => { if (r && r.error) throw r.error; return r; };
+    // 14.10.2026: raðirnar koma úr Companies.list, sem getur verið MJÓR (114: 12 leitarsúlur). Þá vantar
+    // customer_base_id og skref 2 (skjöl + beiðnir) sleppti sér hljóðlaust, og skref 3 fyllti „tóma" reiti haldarans
+    // sem voru í raun bara ólesnir. Báðar raðir lesnar ferskar áður en nokkru er breytt; náist það ekki er hætt.
+    try {
+      const f = kanna(await SB.from('fyrirtaeki').select('*').in('id', [keeper.id, loser.id]));
+      const eftirId = new Map((f.data || []).map(r => [+r.id, r]));
+      if (!eftirId.has(+keeper.id) || !eftirId.has(+loser.id)) throw new Error('röð fannst ekki');
+      Object.assign(keeper, eftirId.get(+keeper.id));
+      Object.assign(loser, eftirId.get(+loser.id));
+    } catch (e) {
+      try { if (window.logProblem) window.logProblem('sameining-hluti-brast', 'ferskar raðir náðust ekki: ' + ((e && e.message) || e)); } catch (_) {}
+      return { error: 'náði ekki ferskum röðum úr grunni — ekkert var fært, reyndu aftur' };
+    }
     try {
       let units = 0;
       // 1) Equipment + name-based history → keeper's name.
