@@ -3,8 +3,12 @@
  * Valið lifir í localStorage á vinnutölvunni (slokk_uppfærslur).
  *
  * allow(id) — má bakgrunnssókn fyrir þetta verk keyra núna?
- *   af        nei
+ *   af        nei (nema fyrsta fylling — sjá hand)
  *   hand      nei (aðeins Hlaða / Endurnýja, og fyrsta fylling ef gildi vantar)
+ *             14.10.2026: MJÓR Companies.list (114 fyllir 12 leitarsúlur í tóman lista) telst EKKI fullur — sama og
+ *             tómur, í hand- OG af-ham (viljandi: ein full sókn á lotu, sú sama og ræsing gerir). Áður hleypti
+ *             róðurinn select('*') aldrei í gegn og listinn hélst mjór alla lotuna: afsláttarhópur féll af úttekt
+ *             (129), STAÐA-pillur röngar (174), Vista í 14 þurrkaði reiti út. Vörður: audit-uttekt-afslattarhopur.
  *   auto      já, þegar bilið er liðið
  *
  * Hlaða (407) setur depth svo fyrirtæki + öll tæki fari í gegn nema róðurinn sé Af.
@@ -276,12 +280,21 @@
     window.fetch = wrapped;
   }
 
+  // Breiður = flestar raðir bera súlur sem aðeins select('*') skilar. Hlutfall, ekki [0]: _primeCompany getur sett
+  // eina breiða röð fremst áður en 114 sameinar mjóu raðirnar (mælt í prófunarumhverfi netvarðar, 14.10.2026).
+  // __sydar-raðir (451 SYND) eru ekki úr grunninum og teljast ekki með.
+  function breidurListi(L) {
+    let n = 0, b = 0;
+    for (let i = 0; i < L.length; i++) { const r = L[i]; if (!r || r.__sydar) continue; n++; if ('discount_tier_id' in r && 'status' in r) b++; }
+    return n > 0 && b >= n * 0.9;
+  }
+
   function vefjaLoad() {
     const C = window.Companies;
     if (!C || typeof C.load !== 'function' || C.load.__ub431) return;
     const orig = C.load;
     function wrapped() {
-      const full = Array.isArray(this.list) && this.list.length > 0;
+      const full = Array.isArray(this.list) && this.list.length > 0 && breidurListi(this.list);
       if (full && this.list.length >= 100) _listiHeil = true;
       if (full && !allow('fyrirtaeki')) {
         // 14.10.2026 (mælt í úttekt): 141 hreinsar #companies-main („Hleður fyrirtækjum…") og kallar load() til að fá
@@ -298,7 +311,7 @@
       note('fyrirtaeki');
       const p = orig.apply(this, arguments);
       return Promise.resolve(p).then((r) => {
-        if (Array.isArray(this.list) && this.list.length >= 100) _listiHeil = true;
+        if (Array.isArray(this.list) && this.list.length >= 100 && breidurListi(this.list)) _listiHeil = true;
         try { if (document.getElementById('ub-tafla')) uppfaeraVidvoranir(); } catch (_) {}
         return r;
       });
