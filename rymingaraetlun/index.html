@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Rýmingaráætlun</title>
+<style>
+:root{--ink:#1d2329;--mut:#66717c;--line:#dfe3e8;--bg:#eef0f3;--paper:#fff;--acc:#c8321e;--ok:#1f7a4a;--warn:#a8670f;--bad:#c8321e}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+.bar{position:sticky;top:0;z-index:20;background:#1d2329;color:#fff;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:9px 16px}
+.bar .brand{font-weight:700;margin-right:6px;letter-spacing:.01em}
+.bar .brand b{color:#ff7a62}
+.bar select,.bar button{font-size:14px;border:0;border-radius:6px;padding:7px 11px;background:#2f3942;color:#fff;cursor:pointer}
+.bar select{max-width:260px}
+.bar button:hover,.bar select:hover{background:#3d4954}
+.bar button.save{background:#1f7a4a;font-weight:600}
+.bar button.save:hover{background:#18633c}
+.bar button.save.dirty{background:#c98a12}
+.fab{position:fixed;right:18px;bottom:18px;z-index:30;border:0;border-radius:999px;background:#1f7a4a;color:#fff;font-weight:700;padding:12px 20px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;font-size:15px}
+.fab.dirty{background:#c98a12}
+.bar button.pri{background:var(--acc)}
+.bar button.pri:hover{background:#b02a17}
+.bar .coname{font-size:14px;color:#cfd6dd;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar a.barlink{font-size:14px;border-radius:6px;padding:7px 11px;background:#2f3942;color:#fff;text-decoration:none}
+.bar a.barlink:hover{background:#3d4954}
+.bar .sep{width:1px;height:22px;background:#3d4954;margin:0 4px}
+.bar .sp{flex:1}
+.bar .status{font-size:13px;color:#aab4bd}
+.wrap{max-width:900px;margin:20px auto 60px;padding:0 12px}
+.missing{background:#fff;border-left:4px solid var(--acc);border-radius:6px;padding:12px 16px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.missing.done{border-left-color:var(--ok)}
+.missing h3{margin:0 0 8px;font-size:14px}
+.missing .chips{display:flex;flex-wrap:wrap;gap:6px}
+.missing .chip{border:1px solid #f0c9c2;background:#fdf1ef;color:#8c2414;border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.missing .chip:hover{background:#fbe2dd}
+.page{background:var(--paper);padding:40px 48px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kicker{color:var(--acc);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+input,textarea{width:100%;border:1px solid transparent;border-radius:5px;background:transparent;padding:6px 8px;outline:none}
+input:hover,textarea:hover{border-color:var(--line)}
+input:focus,textarea:focus{border-color:var(--acc);background:#fffaf9}
+textarea{resize:none;overflow:hidden;display:block}
+::placeholder{color:#b3bac1}
+.h1{font-size:28px;font-weight:750;padding:2px 6px;margin-left:-6px;letter-spacing:-.01em}
+.hsub{font-size:18px;color:var(--mut);padding:2px 6px;margin-left:-6px}
+.metaline{display:flex;gap:16px;color:var(--mut);font-size:13px;margin:4px 0 6px}
+section{margin-top:30px}
+h2{display:flex;align-items:center;gap:10px;font-size:18px;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink)}
+h2 .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-size:13px}
+h4{margin:14px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px}
+.f{display:block}
+.f>span{display:block;font-size:12px;color:var(--mut);padding:0 8px;margin-top:6px}
+.f input{font-weight:600}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600}
+td{border-bottom:1px solid var(--line);padding:2px;vertical-align:top}
+td.c{width:120px;padding-top:5px}
+td.x{width:30px;text-align:center}
+.rowdel{border:0;background:none;color:#b3bac1;cursor:pointer;font-size:18px;line-height:1;padding:6px}
+.rowdel:hover{color:var(--bad)}
+select.st{border:0;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;cursor:pointer;width:100%}
+.st-til{background:#e4f3ea;color:var(--ok)}
+.st-vinnsla{background:#fcf0dc;color:var(--warn)}
+.st-vantar{background:#fbe6e2;color:var(--bad)}
+.add{margin-top:8px;border:1px dashed #c5ccd3;background:none;border-radius:6px;padding:6px 12px;color:var(--mut);cursor:pointer;font-size:13px}
+.add:hover{border-color:var(--acc);color:var(--acc)}
+.adds{display:flex;gap:8px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--mut);margin:0 0 8px}
+.draw{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.slot{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
+.slot.over,.addslot.over{outline:2px solid var(--acc);outline-offset:2px}
+.slot .ttl{font-weight:600}
+.box{aspect-ratio:4/3;border-radius:6px;display:grid;place-items:center;overflow:hidden;background:#f7f8fa}
+.box img{width:100%;height:100%;object-fit:contain;background:#fff;cursor:zoom-in}
+.empty{border:2px dashed #c5ccd3;cursor:pointer;color:var(--mut);text-align:center;font-size:13px;padding:10px}
+.empty:hover{border-color:var(--acc);color:var(--acc)}
+.plus{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 8px;border-radius:50%;border:2px solid currentColor;font-size:32px;font-weight:300;line-height:1}
+.tools{display:flex;gap:6px;margin-top:6px}
+.tools button{flex:1;border:1px solid var(--line);background:#fff;border-radius:5px;padding:4px;font-size:12px;cursor:pointer;color:var(--mut)}
+.tools button:hover{border-color:var(--acc);color:var(--acc)}
+.addslot{border:2px dashed #c5ccd3;border-radius:8px;display:grid;place-items:center;min-height:230px;cursor:pointer;color:var(--mut);text-align:center;font-size:14px;background:none}
+.addslot:hover{border-color:var(--acc);color:var(--acc)}
+.cover{background:#fff;aspect-ratio:210/297;display:flex;flex-direction:column;margin-bottom:14px;overflow:hidden;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cv-top{display:flex;align-items:center;justify-content:space-between;padding:30px 44px}
+.cv-logo{position:relative;min-height:56px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:6px}
+.cv-logo img{max-height:72px;max-width:260px;display:block}
+.cv-logo small{color:var(--mut);border:1px dashed #c5ccd3;border-radius:5px;padding:2px 8px}
+.cv-logo:hover small{border-color:var(--acc);color:var(--acc)}
+.cv-word{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:.16em}
+.cv-word i{width:16px;height:30px;background:var(--acc);border-radius:2px;display:block;transform:skewX(-12deg)}
+.cv-toplabel{color:var(--mut);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.cv-hero{position:relative;background:#1d2329;color:#fff;padding:46px 44px 40px;border-bottom:8px solid var(--acc)}
+.cv-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:22px}
+.cv-row .cv-addr{margin-top:0}
+.cv-year{font-size:56px;font-weight:800;line-height:.9;color:#ff7a62;letter-spacing:-.02em}
+.cv-kicker{color:#ff7a62;font-weight:700;font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+.cv-h1{font-size:54px;line-height:1.05;margin:10px 0 12px;font-weight:800;letter-spacing:-.02em}
+.cv-sub{color:#aab4bd;font-size:16px}
+.cv-addr{font-size:30px;font-weight:700;margin-top:22px}
+.cv-photo{position:relative;flex:1 1 auto;margin:28px 44px 0;border-radius:8px;overflow:hidden;min-height:120px;cursor:pointer;display:grid;place-items:center}
+.cv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cv-photo.noimg{border:2px dashed #c5ccd3;color:var(--mut);text-align:center;font-size:13px;background:#f7f8fa}
+.cv-photo.noimg:hover{border-color:var(--acc);color:var(--acc)}
+.cv-x{position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;font-size:16px;line-height:1}
+.cv-logo .cv-x{top:-8px;right:-14px}
+.cv-info{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 24px;padding:28px 44px}
+.cv-info div span{display:block}
+.cv-info .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.cv-info .v{font-size:16px;font-weight:650;margin-top:3px}
+.cv-info .v.red{color:var(--acc);font-size:20px}
+.cv-toc{padding:4px 44px 24px}
+.cv-toc .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;padding-top:16px;border-top:1px solid var(--line)}
+.cv-toc ol{columns:2;column-gap:24px;margin:10px 0 0;padding-left:22px;font-size:14px;line-height:1.9}
+.cv-toc li::marker{color:var(--acc);font-weight:700}
+.cv-foot{margin-top:auto;border-top:1px solid var(--line);padding:14px 44px;display:flex;justify-content:space-between;align-items:center;color:var(--mut);font-size:13px;gap:12px}
+.cv-foot input{width:230px;display:inline-block;font-weight:600;color:var(--ink);padding:3px 6px}
+.cv-logo img{max-height:84px}
+@media (max-width:640px){.cv-year{font-size:36px}.cv-top,.cv-hero,.cv-info,.cv-foot{padding-left:18px;padding-right:18px}.cv-photo{margin:18px 18px 0}.cv-h1{font-size:34px}.cv-addr{font-size:22px}.cv-info{grid-template-columns:1fr 1fr}.cover{aspect-ratio:auto}}
+.foot{color:var(--mut);font-size:12px;text-align:center;margin-top:14px}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;place-items:center;z-index:50;cursor:zoom-out;padding:20px}
+.zoom img{max-width:100%;max-height:100%;background:#fff}
+.busy{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1d2329;color:#fff;padding:9px 16px;border-radius:999px;font-size:14px;display:none;z-index:40}
+@media (max-width:640px){.page{padding:22px 16px}.grid{grid-template-columns:1fr}.h1{font-size:22px}}
+@media print{
+  @page{size:A4;margin:14mm}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cover{aspect-ratio:auto;height:268mm;box-shadow:none;margin:0;border-radius:0;break-after:page}
+  .cv-photo.noimg,.cv-x,.cv-logo small{display:none!important}
+  .cv-foot input{border:0!important;padding:0!important}
+  body{background:#fff;font-size:12.5px}
+  .bar,.fab,.missing,.foot,.rowdel,.add,.adds,.addslot,.tools,.hint,.slot.noimg,td.x,th.x,.zoom,.busy{display:none!important}
+  .wrap{max-width:none;margin:0;padding:0}
+  .page{box-shadow:none;padding:0;border-radius:0}
+  input,textarea,select{border:0!important;background:none!important;padding:3px 4px!important;-webkit-appearance:none;appearance:none}
+  ::placeholder{color:transparent}
+  select.st{background:none!important;padding:3px 0!important}
+  section{break-inside:avoid}
+  section.long{break-inside:auto}
+  .draw{display:block}
+  .drawsec{break-before:page}
+  .slot{border:0;padding:0;break-before:page}
+  .slot:first-child{break-before:auto}
+  .box{aspect-ratio:auto;background:none}
+  .box img{height:auto;max-height:245mm}
+  .slot .ttl{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <span class="brand">🔥 Rýmingar<b>áætlun</b></span>
+  <span class="coname" id="coname"></span>
+  <a class="barlink" id="profill" href="/" target="_blank" rel="noopener">Prófíll</a>
+  <span class="sep"></span>
+  <button class="save" data-act="save">💾 Vista</button>
+  <button class="pri" data-act="print">Prenta / PDF</button>
+  <span class="sp"></span>
+  <span class="status" id="status"></span>
+</div>
+
+<div class="wrap">
+  <div class="missing" id="missing"></div>
+  <div class="cover" id="cover"></div>
+  <div class="page" id="doc"></div>
+  <div class="foot">Vistast í gagnagrunni Slökkvitækja — sama áætlun á öllum tölvum og í síma. Vistast sjálfkrafa og með Vista-takkanum.</div>
+</div>
+
+<input type="file" id="fimg" accept="image/*,application/pdf" multiple hidden>
+<button class="fab" data-act="save" id="fab">💾 Vista</button>
+<div class="zoom" id="zoom"><img alt=""></div>
+<div class="busy" id="busy"></div>
+
+<script src="/js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const BRUNA_LOGO='/rymingaraetlun/brunaholf-slokkvitaeki-logo.png';
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const today=()=>{const d=new Date();return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear()};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const blank=v=>!String(v??'').trim();
+const ST={til:'Til',vinnsla:'Í vinnslu',vantar:'Vantar'};
+const META=[['heimilisfang','Heimilisfang'],['rekstraradili','Rekstraraðili'],['abyrgdaradili','Ábyrgðaraðili'],['simi','Símanúmer ábyrgðaraðila'],['herbergi','Fjöldi herbergja'],['gestir','Hámarksfjöldi gesta']];
+
+const ROW={
+  gogn:()=>({t:'',s:'vantar',n:''}),
+  vidbrogd:()=>({h:'',a:''}),
+  vidhald:()=>({t:'',a:'',s:'vantar'}),
+  herb:()=>({nr:'',haed:'',adal:'',vara:''})
+};
+
+function template(){return{
+  id:uid(),updated:Date.now(),
+  titill:'Brunavarna- og rýmingaráætlun',
+  meta:{heimilisfang:'',rekstraradili:'',abyrgdaradili:'',simi:'',herbergi:'',gestir:'',dags:today(),utgafa:'1.0'},
+  gogn:[
+    {t:'Grunnteikning af hverri hæð með merktum flóttaleiðum, stigum utandyra og söfnunarstað utandyra',s:'vantar',n:''},
+    {t:'Staðsetning brunaviðvörunarkerfis og brunaboða',s:'vantar',n:''},
+    {t:'Staðsetning slökkvitækja, brunaslanga og eldvarnarteppa',s:'vantar',n:''},
+    {t:'Herbergjalisti með aðal- og varaflóttaleið úr hverju herbergi',s:'vantar',n:''}],
+  vidbrogd:[{h:'Hver ræsir viðvörun',a:''},{h:'Hver hringir í 112',a:''},{h:'Hver tekur á móti slökkviliði',a:''}],
+  ryming:{regla:'Gestir fyrst, eftir nálægð við eld, síðan aðrir.',gestalisti:'',simi:''},
+  vidhald:[
+    {t:'Æfingar og þjálfun starfsfólks',a:'',s:'vantar'},
+    {t:'Leiðbeiningar til gesta á íslensku og ensku í herbergjum og á göngum',a:'',s:'vantar'},
+    {t:'Slökkvitæki og brunaslöngur – árleg skoðun',a:'',s:'vantar'},
+    {t:'Brunaviðvörunarkerfi – prófanir og þjónusta',a:'',s:'vantar'},
+    {t:'Neyðarlýsing og flóttaleiðamerkingar – prófun',a:'',s:'vantar'}],
+  herb:[],
+  teikn:[{title:'Grunnteikning – 1. hæð',img:null},{title:'Grunnteikning – 2. hæð',img:null},{title:'Brunakerfi og brunaboðar',img:null}],
+  ath:'',
+  cover:{logo:BRUNA_LOGO,photo:null,vinna:'Brunahólf Slökkvitæki ehf'}
+}}
+function norm(p){if(!p.cover)p.cover={logo:BRUNA_LOGO,photo:null,vinna:'Brunahólf Slökkvitæki ehf'};return p}
+const yearOf=d=>((String(d||'').match(/(19|20)\d{2}/)||[])[0])||String(new Date().getFullYear());
+
+
+/* ---------- gagnagrunnur (Supabase: tafla rymingaraetlun, ein röð á fyrirtæki) ---------- */
+let sb=null;try{sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_KEY)}catch(e){}
+const CID=Number(new URLSearchParams(location.search).get('fyrirtaeki'))||0;
+let P=null,timer=null,uppfaert=null,vistar=false,aftur=false,fyr=null;
+const label=p=>p.meta.heimilisfang||p.titill||'Rýmingaráætlun';
+function setStatus(t){$('#status').textContent=t}
+function dirty(on){document.querySelectorAll('[data-act="save"]').forEach(b=>{b.classList.toggle('dirty',on);b.textContent=on?'💾 Vista breytingar':'💾 Vista'})}
+function touch(){clearTimeout(timer);setStatus('Óvistað…');dirty(true);timer=setTimeout(save,1500)}
+async function save(){
+  clearTimeout(timer);timer=null;
+  if(!sb||!CID)return;
+  if(vistar){aftur=true;return}
+  vistar=true;setStatus('Vistar…');
+  const nu=new Date().toISOString();let r;
+  try{
+    if(!uppfaert) r=await sb.from('rymingaraetlun').insert({company_id:CID,efni:P,updated_at:nu,updated_by:'rymingaraetlun'}).select('updated_at');
+    else r=await sb.from('rymingaraetlun').update({efni:P,updated_at:nu,updated_by:'rymingaraetlun'}).eq('company_id',CID).eq('updated_at',uppfaert).select('updated_at');
+    if(r.error){ if(/duplicate|23505/i.test((r.error.message||'')+(r.error.code||''))) setStatus('⚠ Breytt á annarri vél — endurhlaðið síðuna'); else setStatus('⚠ Vistaðist ekki: '+r.error.message); }
+    else if(!r.data||!r.data.length) setStatus('⚠ Breytt á annarri vél — endurhlaðið síðuna');
+    else{uppfaert=r.data[0].updated_at;const d=new Date();setStatus('Vistað '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));dirty(false)}
+  }catch(e){setStatus('⚠ Vistaðist ekki')}
+  vistar=false;if(aftur){aftur=false;save()}
+}
+window.addEventListener('beforeunload',e=>{if(timer||vistar){e.preventDefault();e.returnValue=''}});
+/* myndir í storage (sama fata og teikningar appsins) */
+async function hladaUpp(dataUrl,png){
+  if(!sb||!CID)throw new Error('engin tenging');
+  const blob=await (await fetch(dataUrl)).blob();
+  const slod='rymingaraetlun/'+CID+'/'+uid()+(png?'.png':'.jpg');
+  const up=await sb.storage.from('turbopaint').upload(slod,blob,{contentType:png?'image/png':'image/jpeg',upsert:false,cacheControl:'31536000'});
+  if(up.error)throw up.error;
+  return sb.storage.from('turbopaint').getPublicUrl(slod).data.publicUrl;
+}
+
+/* ---------- paths ---------- */
+function getPath(path){return path.split('.').reduce((o,k)=>o?.[k],P)}
+function setPath(path,v){const ks=path.split('.');let o=P;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks.at(-1)]=v}
+
+/* ---------- render ---------- */
+const inp=(p,ph='',cls='')=>`<input class="${cls}" data-p="${p}" value="${esc(getPath(p))}" placeholder="${esc(ph)}">`;
+const ta=(p,ph='',cls='')=>`<textarea rows="1" class="${cls}" data-p="${p}" placeholder="${esc(ph)}">${esc(getPath(p))}</textarea>`;
+const sel=p=>{const v=getPath(p);return `<select class="st st-${v}" data-p="${p}">${Object.entries(ST).map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`};
+const del=(list,i)=>`<td class="x"><button class="rowdel" title="Eyða línu" data-act="del" data-list="${list}" data-i="${i}">×</button></td>`;
+
+function render(){
+  const p=P;
+  $('#doc').innerHTML=`
+  <header>
+    <div class="kicker">Brunavarnir · Rýming</div>
+    ${ta('titill','Titill','h1')}
+    ${inp('meta.heimilisfang','Heimilisfang','hsub')}
+    <div class="metaline"><label>Dags. <input style="width:110px;display:inline-block" data-p="meta.dags" value="${esc(p.meta.dags)}"></label><label>Útgáfa <input style="width:70px;display:inline-block" data-p="meta.utgafa" value="${esc(p.meta.utgafa)}"></label></div>
+  </header>
+
+  <section><h2><span class="n">1</span>Almennar upplýsingar</h2>
+    <div class="grid">${META.map(([k,l])=>`<label class="f"><span>${l}</span>${inp('meta.'+k,'—')}</label>`).join('')}</div>
+  </section>
+
+  <section><h2><span class="n">2</span>Teikningar og gögn</h2>
+    <p class="hint">Teikningarnar sjálfar eru settar inn í kafla 8.</p>
+    <div class="tw"><table><thead><tr><th>Atriði</th><th>Staða</th><th>Athugasemd</th><th class="x"></th></tr></thead><tbody>
+    ${p.gogn.map((r,i)=>`<tr><td>${ta(`gogn.${i}.t`,'Atriði')}</td><td class="c">${sel(`gogn.${i}.s`)}</td><td>${ta(`gogn.${i}.n`,'Athugasemd')}</td>${del('gogn',i)}</tr>`).join('')}
+    </tbody></table></div>
+    <button class="add" data-act="add" data-list="gogn">+ Bæta við atriði</button>
+  </section>
+
+  <section><h2><span class="n">3</span>Viðbrögð við eldsvoða</h2>
+    <div class="tw"><table><thead><tr><th style="width:34%">Hlutverk</th><th>Ábyrgð</th><th class="x"></th></tr></thead><tbody>
+    ${p.vidbrogd.map((r,i)=>`<tr><td>${ta(`vidbrogd.${i}.h`,'Hlutverk')}</td><td>${ta(`vidbrogd.${i}.a`,'Hver / hvernig')}</td>${del('vidbrogd',i)}</tr>`).join('')}
+    </tbody></table></div>
+    <button class="add" data-act="add" data-list="vidbrogd">+ Bæta við hlutverki</button>
+  </section>
+
+  <section><h2><span class="n">4</span>Rýmingarregla hússins</h2>
+    <h4>Röð rýmingar</h4>${ta('ryming.regla','Hvernig er rýmt?')}
+    <h4>Hvernig er staðfest að allir séu komnir út</h4>${ta('ryming.gestalisti','T.d. gestalisti borinn saman við fólk á söfnunarstað')}
+    <label class="f"><span>Símanúmer vegna gestalista</span>${inp('ryming.simi','—')}</label>
+  </section>
+
+  <section><h2><span class="n">5</span>Eldvarnir, viðhald og prófanir</h2>
+    <div class="tw"><table><thead><tr><th style="width:38%">Atriði</th><th>Ábyrgð / athugasemd</th><th>Staða</th><th class="x"></th></tr></thead><tbody>
+    ${p.vidhald.map((r,i)=>`<tr><td>${ta(`vidhald.${i}.t`,'Atriði')}</td><td>${ta(`vidhald.${i}.a`,'Hver sér um / hve oft')}</td><td class="c">${sel(`vidhald.${i}.s`)}</td>${del('vidhald',i)}</tr>`).join('')}
+    </tbody></table></div>
+    <button class="add" data-act="add" data-list="vidhald">+ Bæta við atriði</button>
+  </section>
+
+  <section class="long"><h2><span class="n">6</span>Herbergjalisti og flóttaleiðir</h2>
+    ${p.herb.length?`<div class="tw"><table><thead><tr><th style="width:90px">Herbergi</th><th style="width:70px">Hæð</th><th>Aðalflóttaleið</th><th>Varaflóttaleið</th><th class="x"></th></tr></thead><tbody>
+    ${p.herb.map((r,i)=>`<tr><td>${inp(`herb.${i}.nr`,'Nr.')}</td><td>${inp(`herb.${i}.haed`,'Hæð')}</td><td>${ta(`herb.${i}.adal`,'Aðalleið')}</td><td>${ta(`herb.${i}.vara`,'Varaleið')}</td>${del('herb',i)}</tr>`).join('')}
+    </tbody></table></div>`:`<p class="hint">Engin herbergi skráð. Ef listinn er til sem sér skjal má líka setja hann inn sem mynd/PDF í kafla 8.</p>`}
+    <div class="adds"><button class="add" data-act="add" data-list="herb">+ Bæta við herbergi</button><button class="add" data-act="addrooms">+ Bæta við mörgum (t.d. 101-112)</button></div>
+  </section>
+
+  <section><h2><span class="n">7</span>Aðrar athugasemdir</h2>${ta('ath','Annað sem skiptir máli…')}</section>
+
+  <section class="long drawsec"><h2><span class="n">8</span>Teikningar</h2>
+    <p class="hint">Smelltu á <b>+</b> eða dragðu mynd (PNG/JPG) eða PDF inn í reit. PDF með mörgum blaðsíðum verður að einum reit á hverja síðu.</p>
+    <div class="draw">
+      ${p.teikn.map((t,i)=>`<div class="slot${t.img?'':' noimg'}" data-drop="${i}">
+        ${inp(`teikn.${i}.title`,'Heiti teikningar','ttl')}
+        ${t.img?`<div class="box"><img src="${t.img}" data-act="zoom" alt=""></div>
+          <div class="tools"><button data-act="pick" data-i="${i}">Skipta út</button><button data-act="rmimg" data-i="${i}">Fjarlægja</button><button data-act="del" data-list="teikn" data-i="${i}">Eyða reit</button></div>`
+        :`<div class="box empty" data-act="pick" data-i="${i}"><div><div class="plus">+</div>Bæta við teikningu<br><small>mynd eða PDF</small></div></div>
+          <div class="tools"><button data-act="del" data-list="teikn" data-i="${i}">Eyða reit</button></div>`}
+      </div>`).join('')}
+      <button class="addslot" data-act="pick" data-i="new" data-drop="new"><div><div class="plus">+</div>Ný teikning</div></button>
+    </div>
+  </section>
+
+  `;
+  document.querySelectorAll('#doc textarea').forEach(grow);
+  renderCover();
+  refreshMissing();
+}
+const show=p=>`<span data-show="${p}">${esc(getPath(p))||'—'}</span>`;
+function renderCover(){const c=P.cover;
+  const info=[['Rekstraraðili','meta.rekstraradili'],['Ábyrgðaraðili','meta.abyrgdaradili'],['Sími ábyrgðaraðila','meta.simi'],['Fjöldi herbergja','meta.herbergi'],['Hámarksfjöldi gesta','meta.gestir']];
+  $('#cover').innerHTML=`
+  <div class="cv-top">
+    <div class="cv-logo" data-act="pick" data-i="logo" data-drop="logo" title="Smelltu til að setja inn merki">
+      ${c.logo?`<img src="${c.logo}" alt="Merki"><button class="cv-x" data-act="rmcover" data-k="logo" title="Fjarlægja merki">×</button>`:`<span class="cv-word"><i></i>BRUNAHÓLF</span><small>+ merki</small>`}
+    </div>
+    <div class="cv-toplabel">Brunavarnir · Rýming</div>
+  </div>
+  <div class="cv-hero">
+    <div class="cv-kicker">Brunahólf · <span data-year>${yearOf(P.meta.dags)}</span></div>
+    <div class="cv-h1">Brunaeftirlit og Rýming</div>
+    <div class="cv-sub">${show('titill')}</div>
+    <div class="cv-row"><div class="cv-addr">${show('meta.heimilisfang')}</div><div class="cv-year" data-year>${yearOf(P.meta.dags)}</div></div>
+  </div>
+  <div class="cv-photo${c.photo?'':' noimg'}" data-act="pick" data-i="photo" data-drop="photo">
+    ${c.photo?`<img src="${c.photo}" alt=""><button class="cv-x" data-act="rmcover" data-k="photo" title="Fjarlægja mynd">×</button>`:`<div><div class="plus">+</div>Mynd af húsinu<br><small>má sleppa</small></div>`}
+  </div>
+  <div class="cv-info">
+    ${info.map(([l,p])=>`<div><span class="l">${l}</span><span class="v">${show(p)}</span></div>`).join('')}
+    <div><span class="l">Neyðarnúmer</span><span class="v red">112</span></div>
+  </div>
+  <div class="cv-toc"><div class="l">Efni áætlunar</div><ol>${['Almennar upplýsingar','Teikningar og gögn','Viðbrögð við eldsvoða','Rýmingarregla hússins','Eldvarnir, viðhald og prófanir','Herbergjalisti og flóttaleiðir','Aðrar athugasemdir','Teikningar'].map(t=>`<li>${t}</li>`).join('')}</ol></div>
+  <div class="cv-foot">
+    <span>Dags. ${show('meta.dags')} · Útgáfa ${show('meta.utgafa')}</span>
+    <span>Unnið af <input data-p="cover.vinna" value="${esc(c.vinna)}" placeholder="—"></span>
+  </div>`}
+function grow(t){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
+
+function missing(){const m=[],p=P;
+  META.forEach(([k,l])=>{if(blank(p.meta[k]))m.push([l,'meta.'+k])});
+  p.gogn.forEach((g,i)=>{if(g.s!=='til')m.push([(g.t||'Atriði').slice(0,48)+(g.t.length>48?'…':'')+' – '+ST[g.s].toLowerCase(),`gogn.${i}.s`])});
+  p.vidbrogd.forEach((r,i)=>{if(blank(r.a))m.push([r.h||'Viðbragðshlutverk',`vidbrogd.${i}.a`])});
+  if(blank(p.ryming.simi))m.push(['Símanúmer vegna gestalista','ryming.simi']);
+  p.vidhald.forEach((r,i)=>{if(r.s!=='til')m.push([(r.t||'Atriði').slice(0,48)+' – '+ST[r.s].toLowerCase(),`vidhald.${i}.s`])});
+  p.teikn.forEach((t,i)=>{if(!t.img)m.push(['Teikning: '+(t.title||'án heitis'),`teikn.${i}.title`])});
+  return m}
+function refreshMissing(){const m=missing(),el=$('#missing');
+  el.classList.toggle('done',!m.length);
+  el.innerHTML=m.length?`<h3>Vantar til að klára (${m.length})</h3><div class="chips">${m.map(([l,p])=>`<button class="chip" data-act="goto" data-p="${p}">${esc(l)}</button>`).join('')}</div>`:`<h3>✓ Allt komið – tilbúið til prentunar</h3>`}
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{const t=e.target,p=t.dataset.p;if(!p||!t.closest('#doc,#cover'))return;
+  setPath(p,t.value);
+  document.querySelectorAll(`#doc [data-p="${p}"],#cover [data-p="${p}"]`).forEach(o=>{if(o!==t)o.value=t.value});
+  document.querySelectorAll(`[data-show="${p}"]`).forEach(o=>{o.textContent=t.value||'—'});
+  if(p==='meta.dags')document.querySelectorAll('[data-year]').forEach(o=>{o.textContent=yearOf(t.value)});
+  if(t.tagName==='TEXTAREA')grow(t);
+  if(t.classList.contains('st'))t.className='st st-'+t.value;
+  refreshMissing();touch()});
+
+let pickTarget=null;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='add'){P[b.dataset.list].push(ROW[b.dataset.list]());render();touch()}
+  else if(a==='del'){const l=b.dataset.list,i=+b.dataset.i;const r=P[l][i];
+    const hasData=l==='teikn'?r.img:Object.values(r).some(v=>!blank(v)&&!(v in ST));
+    if(hasData&&!confirm('Eyða þessari línu?'))return;P[l].splice(i,1);render();touch()}
+  else if(a==='addrooms'){const s=prompt('Herbergisnúmer, t.d. „101-112“ eða „1,2,3,201-205“');if(!s)return;
+    const hae=prompt('Hæð (má sleppa)')||'';
+    s.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{const m=x.match(/^(\d+)\s*-\s*(\d+)$/);
+      if(m){for(let n=+m[1];n<=+m[2];n++)P.herb.push({nr:String(n),haed:hae,adal:'',vara:''})}else P.herb.push({nr:x,haed:hae,adal:'',vara:''})});
+    render();touch()}
+  else if(a==='pick'){pickTarget=b.dataset.i;$('#fimg').value='';$('#fimg').click()}
+  else if(a==='save'){await save();if(/^Vistað/.test($('#status').textContent)){document.querySelectorAll('[data-act="save"]').forEach(x=>x.textContent='✓ Vistað');setTimeout(()=>dirty(false),1200)}}
+  else if(a==='rmcover'){P.cover[b.dataset.k]=null;render();touch()}
+  else if(a==='rmimg'){P.teikn[+b.dataset.i].img=null;render();touch()}
+  else if(a==='zoom'){$('#zoom img').src=b.src;$('#zoom').style.display='grid'}
+  else if(a==='goto'){const el=document.querySelector(`#doc [data-p="${b.dataset.p}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.focus(),300)}}
+  else if(a==='print'){document.querySelectorAll('#doc textarea').forEach(grow);window.print()}
+});
+$('#zoom').onclick=()=>{$('#zoom').style.display='none'};
+
+
+$('#fimg').onchange=e=>{addFiles([...e.target.files],pickTarget)};
+document.addEventListener('dragover',e=>{const s=e.target.closest('[data-drop]');if(e.dataTransfer?.types?.includes('Files')){e.preventDefault();document.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));if(s)s.classList.add('over')}});
+document.addEventListener('dragleave',e=>{const s=e.target.closest('[data-drop]');if(s&&!s.contains(e.relatedTarget))s.classList.remove('over')});
+document.addEventListener('drop',e=>{const s=e.target.closest('[data-drop]');if(!e.dataTransfer?.files?.length)return;e.preventDefault();
+  document.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));addFiles([...e.dataTransfer.files],s?s.dataset.drop:'new')});
+
+/* ---------- drawings ---------- */
+function busy(t){const b=$('#busy');b.textContent=t||'';b.style.display=t?'block':'none'}
+const MAXPX=3000;
+function imgToData(file,png){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const sc=Math.min(1,MAXPX/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');
+    c.width=Math.round(im.naturalWidth*sc);c.height=Math.round(im.naturalHeight*sc);const x=c.getContext('2d');if(!png){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}x.drawImage(im,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);res(png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.9))};
+  im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
+let pdfjsP=null;
+function loadPdfjs(){if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+  return pdfjsP||(pdfjsP=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(window.pdfjsLib)};
+    s.onerror=()=>{pdfjsP=null;rej()};document.head.appendChild(s)}))}
+async function pdfToImages(file){const lib=await loadPdfjs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;const out=[];
+  for(let i=1;i<=doc.numPages;i++){busy(`Les PDF… bls. ${i} af ${doc.numPages}`);const pg=await doc.getPage(i);const v0=pg.getViewport({scale:1});
+    const v=pg.getViewport({scale:Math.min(4,MAXPX/Math.max(v0.width,v0.height))});const c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);await pg.render({canvasContext:x,viewport:v}).promise;out.push(c.toDataURL('image/jpeg',.9))}
+  return out}
+async function addFiles(files,target){if(!files.length)return;const items=[];
+  for(const f of files){const base=f.name.replace(/\.[^.]+$/,'');
+    try{if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){busy('Les PDF…');const pages=await pdfToImages(f);pages.forEach((img,i)=>items.push({title:pages.length>1?`${base} – bls. ${i+1}`:base,img}))}
+      else if(f.type.startsWith('image/')){busy('Les mynd…');items.push({title:base,img:await imgToData(f,target==='logo')})}
+      else alert('„'+f.name+'“ er hvorki mynd né PDF.')}
+    catch(err){alert(/pdf$/i.test(f.name)?'Gat ekki lesið PDF-skrána „'+f.name+'“. Til að lesa PDF þarf tölvan að vera nettengd (í fyrsta skipti). Annars má vista teikninguna sem mynd (PNG/JPG) og setja hana inn.':'Gat ekki lesið „'+f.name+'“.')}}
+  if(items.length){busy('Vista mynd…');try{for(const it of items){it.img=await hladaUpp(it.img,target==='logo')}}catch(e){busy('');alert('Myndin vistaðist ekki: '+(e.message||e));return}}
+  busy('');if(!items.length)return;
+  if(target==='logo'||target==='photo'){P.cover[target]=items[0].img}
+  else if(target!=null&&target!=='new'&&P.teikn[+target]){const i=+target,s=P.teikn[i];s.img=items[0].img;if(blank(s.title))s.title=items[0].title;P.teikn.splice(i+1,0,...items.slice(1))}
+  else P.teikn.push(...items);
+  render();touch()}
+
+/* ---------- ræsing ---------- */
+(async()=>{
+  if(!sb){$('#doc').innerHTML='<p>Engin tenging við gagnagrunn.</p>';return}
+  if(!CID){
+    $('#missing').style.display='none';
+    $('#doc').innerHTML='<h2 style="border:0">Rýmingaráætlun</h2><p class="hint">Opnaðu áætlun frá fyrirtækjaprófíl (reiturinn „Rýmingaráætlun"), eða leitaðu:</p><input id="leit" placeholder="Nafn eða heimilisfang" style="border:1px solid var(--line);margin:8px 0"><div id="nid"></div><h4>Áætlanir í vinnslu</h4><div id="ivinnslu" class="hint">Sæki…</div>';
+    const rod=f=>'<p style="margin:4px 0"><a href="?fyrirtaeki='+f.id+'">'+esc(f.nafn||'')+'</a> <span class="hint">'+esc(f.heimilisfang||'')+'</span></p>';
+    const r=await sb.from('rymingaraetlun').select('company_id,updated_at,fyrirtaeki(id,nafn,heimilisfang)').order('updated_at',{ascending:false}).limit(60);
+    $('#ivinnslu').innerHTML=(r.data||[]).map(x=>x.fyrirtaeki?rod(x.fyrirtaeki):'').join('')||'Engin enn.';
+    let t=0;$('#leit').addEventListener('input',e=>{clearTimeout(t);const q=e.target.value.trim();t=setTimeout(async()=>{if(q.length<2){$('#nid').innerHTML='';return}
+      const s=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').is('deleted_at',null).or('nafn.ilike.%'+q.replace(/[,()]/g,' ')+'%,heimilisfang.ilike.%'+q.replace(/[,()]/g,' ')+'%').limit(20);
+      $('#nid').innerHTML=(s.data||[]).map(rod).join('')||'<p class="hint">Ekkert fannst.</p>'},250)});
+    return;
+  }
+  setStatus('Sæki…');
+  const [f,r]=await Promise.all([
+    sb.from('fyrirtaeki').select('id,nafn,heimilisfang,simi,netfang').eq('id',CID).maybeSingle(),
+    sb.from('rymingaraetlun').select('efni,updated_at').eq('company_id',CID).maybeSingle()]);
+  if(f.error||r.error){setStatus('⚠ Gat ekki sótt');$('#doc').innerHTML='<p>Gat ekki sótt gögnin: '+esc((f.error||r.error).message)+'</p>';return}
+  fyr=f.data||{};
+  $('#coname').textContent=fyr.nafn||'';$('#profill').href='/#company/'+CID;
+  if(r.data){P=norm(Object.assign(template(),r.data.efni||{}));uppfaert=r.data.updated_at;setStatus('Vistað')}
+  else{P=template();P.meta.heimilisfang=fyr.heimilisfang||'';setStatus('Ný áætlun — vistast við fyrstu breytingu')}
+  document.title='Rýmingaráætlun – '+(fyr.nafn||label(P));
+  render();
+})();
+
+</script>
+</body>
+</html>

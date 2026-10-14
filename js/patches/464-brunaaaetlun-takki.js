@@ -46,6 +46,10 @@
     heim.appendChild(b);
   }
 
+  // Reiturinn opnar Rýmingaráætlun-formið (/rymingaraetlun/, tafla rymingaraetlun) — ekki smiðinn. Agnar 14.10.2026:
+  // „have only what we just made in a button and have the other version just as it was". Táknhnappurinn að ofan
+  // opnar áfram smiðinn óbreyttan.
+  function opnaForm(coId) { window.open('/rymingaraetlun/?fyrirtaeki=' + encodeURIComponent(coId), '_blank', 'noopener'); }
   // ── Rýmingaráætlun-reitur í upplýsingagrindinni (Agnar 14.10.2026: „takki hægra megin við Hús og undir Teikningum
   // sem heitir Rýmingaráætlun … og sé þá til fyrir öll fyrirtæki í þjónustu á sama stað"). Bein .co-bupp > ._bupp-lina
   // tekur tvo af fjórum dálkum (411), og sest beint á eftir Hús-hópnum (._fasteign, display:contents) eða Teikningum.
@@ -69,7 +73,7 @@
     _stada.set(k, 'saeki');
     const sb = window.DB && DB.sb;
     if (!sb) return;
-    Promise.resolve(sb.from('brunaaaetlun').select('updated_at').eq('company_id', +coId).maybeSingle()).then(r => {
+    Promise.resolve(sb.from('rymingaraetlun').select('updated_at').eq('company_id', +coId).maybeSingle()).then(r => {
       if (r && r.error) { _stada.delete(k); return; }
       _stada.set(k, r && r.data && r.data.updated_at ? r.data.updated_at : 'engin');
       const t = document.querySelector('.co-bupp .' + LINA + '[data-co="' + k + '"] ._ba-lina-takki');
@@ -86,8 +90,8 @@
       el = document.createElement('div');
       el.className = '_bupp-lina ' + LINA;
       el.dataset.co = String(coId);
-      el.innerHTML = '<span class="_bupp-merki">Rýmingaráætlun</span><button type="button" class="_ba-lina-takki" title="Opnar Brunaáætlunar-smiðinn í nýjum flipa: rýmingaráætlun, eigið eldvarnaeftirlit og flóttaáætlanir">' + textiFyrir(coId) + '</button>';
-      el.querySelector('button').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); opna(coId); });
+      el.innerHTML = '<span class="_bupp-merki">Rýmingaráætlun</span><button type="button" class="_ba-lina-takki" title="Opnar Rýmingaráætlun (brunaeftirlit og rýming) í nýjum flipa">' + textiFyrir(coId) + '</button>';
+      el.querySelector('button').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); opnaForm(coId); });
     }
     const fyrir = box.querySelector(':scope > ._fasteign') || box.querySelector(':scope > ._serupp') || box.querySelector(':scope > ._bupp-teikn-lina');
     if (fyrir) { if (fyrir.nextElementSibling !== el) fyrir.insertAdjacentElement('afterend', el); }

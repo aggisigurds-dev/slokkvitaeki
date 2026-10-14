@@ -28,8 +28,6 @@
       ['flottaleidir_haedir', 'Flóttaleiðir hverrar hæðar („1. hæð: …“, ein lína á hæð)', 1], ['sofnunarsvaedi', 'Söfnunarsvæði'],
       ['skjol', 'Skjól í vondu veðri'], ['starfsfolk_nott', 'Þegar ekkert starfsfólk er í húsinu', 1], ['hreyfihamladir', 'Hreyfihamlaðir og þeir sem þurfa aðstoð', 1],
       ['umgengni', 'Umgengnisreglur', 1], ['fyrsta_aefing', 'Fyrsta rýmingaræfing (dags.)'],
-      ['herbergi_fjoldi', 'Fjöldi herbergja'], ['gestir_hamark', 'Hámarksfjöldi gesta'],
-      ['rymingarrod', 'Röð rýmingar', 1], ['gestalisti', 'Hvernig er staðfest að allir séu komnir út', 1], ['gestalisti_simi', 'Sími vegna gestalista (t.d. rekstraraðili)'],
     ] },
     { h: 'Útgáfa', reitir: [
       ['shs_mal', 'Mál hjá slökkviliði'], ['utgafa', 'Útgáfa'], ['dags', 'Dagsetning'], ['teiknad_af', 'Unnið af'], ['ryni', 'Rýnt af'],
@@ -75,7 +73,6 @@
     d.hreyfihamladir = '- Við innritun eða komu er spurt hvort viðkomandi þurfi aðstoð við rýmingu og merkt við á gestalista.\n' +
       '- Þeim sem þurfa aðstoð er boðið rými á jarðhæð ef kostur er.\n' +
       '- Á efri hæðum bíður sá sem kemst ekki niður stiga í stigahúsi (sér brunahólf) eða í eigin rými með lokaða hurð, og 112 er strax látið vita hvar hann bíður.';
-    d.rymingarrod = 'Gestir fyrst, eftir nálægð við eld, síðan aðrir.';
     d.umgengni = 'Reykingar og opinn eldur, svo sem kerti, eru bannaðar í öllu húsinu (723/2017, 13. gr.).';
     d.urbaetur = 'Skilti F001 yfir öll slökkvitæki ; Slökkvitæki ehf. ; ; \nViðbragðs- og rýmingaráætlun samþykkt og undirrituð ; Eigandi / rekstraraðili ; ; \nEldvarnafulltrúi tilnefndur ; Rekstraraðili ; ; \nFyrsta mánaðarlega skoðun og kynning fyrir starfsfólki ; Eldvarnafulltrúi ; ; \nRýmingaræfing ; Rekstraraðili ; ; ';
     return d;
@@ -85,7 +82,7 @@
   var KAFLAR = {
     ryming: [
       ['hus', '1. Húsið og brunavarnir þess',
-        '| Heimilisfang | {{heimilisfang}} |\n| Notkun | {{notkun}}, notkunarflokkur {{notkunarflokkur}} (byggingarreglugerð 112/2012, tafla 9.01) |\n| Stærð og skipulag | {{staerd}} |\n| Hæðir og rými | {{haedir}} |\n| Brunahólfun | {{brunaholfun}} |\n| Brunaviðvörunarkerfi | {{brunavidvorun}} Tengt vaktstöð: {{vaktstod}}. |\n| Handslökkvibúnaður | {{slokkvibunadur}} |\n| Út- og neyðarlýsing | {{neydarlysing}} |\n| Flóttaleiðir | {{flottaleidir}} |\n| Reykræsing | {{reykraesing}} |\n|? Fjöldi herbergja | {{herbergi_fjoldi}} |\n|? Hámarksfjöldi gesta | {{gestir_hamark}} |\n|? Annar búnaður | {{annad}} |'],
+        '| Heimilisfang | {{heimilisfang}} |\n| Notkun | {{notkun}}, notkunarflokkur {{notkunarflokkur}} (byggingarreglugerð 112/2012, tafla 9.01) |\n| Stærð og skipulag | {{staerd}} |\n| Hæðir og rými | {{haedir}} |\n| Brunahólfun | {{brunaholfun}} |\n| Brunaviðvörunarkerfi | {{brunavidvorun}} Tengt vaktstöð: {{vaktstod}}. |\n| Handslökkvibúnaður | {{slokkvibunadur}} |\n| Út- og neyðarlýsing | {{neydarlysing}} |\n| Flóttaleiðir | {{flottaleidir}} |\n| Reykræsing | {{reykraesing}} |\n|? Annar búnaður | {{annad}} |'],
       ['hlutverk', '2. Hlutverk og ábyrgð',
         '| Hver | Ábyrgð og verkefni |\n|---|---|\n| **Eigandi**<br>{{eigandi}} | Ber ábyrgð á að brunavarnir hússins séu virkar og reglulega yfirfarnar (723/2017, 3. gr.) og heldur þjónustusamningum um brunavarnakerfi hússins. |\n| **Rekstraraðili / umsjón**<br>{{rekstur}} | Framfylgir áætluninni, kynnir hana starfsfólki og þeim sem dvelja í húsinu, heldur flóttaleiðum greiðfærum og tilkynnir eiganda tafarlaust um galla á brunavörnum (723/2017, 4. og 13. gr.). |\n| **Eldvarnafulltrúi**<br>{{eldvarnafulltrui}} | Annast mánaðarlegt og árlegt eftirlit skv. gátlistum, varðveitir eldvarnamöppuna, skipuleggur æfingar og kynningu og er tengiliður við eldvarnaeftirlit slökkviliðs (723/2017, 11. gr.). |\n| **Starfsfólk á staðnum** | Þekkir áætlunina, flóttaleiðir, staðsetningu slökkvibúnaðar og stjórnstöðvar og bregst við skv. kafla 3. |\n| **Vaktstöð**<br>{{vaktstod}} | Tekur við brunaboði allan sólarhringinn og hringir í tengiliði skv. útkallslista. |\n| **Aðrir í húsinu** | Kynna sér flóttaleiðauppdráttinn og fara strax út þegar viðvörun heyrist. |\n\n> **Þegar ekkert starfsfólk er í húsinu:** {{starfsfolk_nott}}'],
       ['vidbrogd', '3. Viðbrögð starfsfólks þegar brunaviðvörun fer í gang',
@@ -93,7 +90,7 @@
       ['gestir', '4. Viðbrögð þeirra sem dvelja í húsinu',
         'Þessi texti er á flóttaleiðauppdrættinum, á íslensku og ensku.\n\n| Ef þú verður var/vör við eld | Ef brunaviðvörun heyrist | Ef reykur er á ganginum |\n|---|---|---|\n| Kallaðu „ELDUR!“ og láttu aðra vita.<br>Lokaðu hurðinni að rýminu sem brennur.<br>Farðu út um næsta útgang.<br>Hringdu í 112.<br>Farðu á söfnunarsvæðið. | Farðu strax út um næsta útgang.<br>Lokaðu hurðinni á eftir þér.<br>Notaðu ekki lyftuna.<br>Farðu á söfnunarsvæðið og bíddu þar. | Vertu í herberginu, sem er sér brunahólf.<br>Lokaðu hurðinni og þéttu rifur með blautum handklæðum.<br>Hringdu í 112 og gefðu upp herbergisnúmer.<br>Gefðu merki út um glugga. |'],
       ['flotti', '5. Flóttaleiðir og söfnunarsvæði',
-        '[[haedalinur:flottaleidir_haedir]]\n| Lyfta | Ekki notuð í eldsvoða. Merkt með skilti við lyftudyr. |\n| Söfnunarsvæði | {{sofnunarsvaedi}}. Merkt með skilti (ISO 7010 E007) og á uppdrætti. |\n|? Skjól | {{skjol}} |\n|? Röð rýmingar | {{rymingarrod}} |\n|? Allir komnir út? | {{gestalisti}} |\n|? Sími vegna gestalista | {{gestalisti_simi}} |\n| Aðkoma slökkviliðs | Aðkoma að aðalinngangi og bílastæði skal vera greiðfær. |'],
+        '[[haedalinur:flottaleidir_haedir]]\n| Lyfta | Ekki notuð í eldsvoða. Merkt með skilti við lyftudyr. |\n| Söfnunarsvæði | {{sofnunarsvaedi}}. Merkt með skilti (ISO 7010 E007) og á uppdrætti. |\n|? Skjól | {{skjol}} |\n| Aðkoma slökkviliðs | Aðkoma að aðalinngangi og bílastæði skal vera greiðfær. |'],
       ['hreyfi', '6. Hreyfihamlaðir og þeir sem þurfa aðstoð', '{{hreyfihamladir}}'],
       ['upplysingar', '7. Upplýsingar til þeirra sem dvelja í húsinu',
         '- Flóttaleiðauppdráttur á íslensku og ensku, þar sem stendur „Þú ert hér“.\n- Veggspjald um eldvarnir og þessi áætlun eru í eldvarnamöppunni.\n- Skilti við lyftu: „Notið ekki lyftu í eldsvoða / Do not use the lift in case of fire“.\n- Umgengnisreglur: {{umgengni}}'],
@@ -226,16 +223,6 @@
     '.skyr{width:62mm;font-size:8.4pt}.skyr h3{margin-top:0}.tak{display:flex;align-items:center;gap:6pt;margin:3.5pt 0}' +
     '.titill{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4pt}.titill h1{font-size:15pt}' +
     '.fot{position:fixed;bottom:-11mm;left:0;right:0;font-size:7.5pt;color:#6b7684;display:flex;justify-content:space-between}' +
-    '.forsida{height:258mm;display:flex;flex-direction:column;break-after:page;margin:-2mm 0 0}.fs-topp{display:flex;justify-content:space-between;align-items:center;padding:0 0 10mm}' +
-    '.fs-topp img{height:24mm;width:auto}.fs-topp span{font-size:8pt;letter-spacing:1.4pt;text-transform:uppercase;color:#6b7684;font-weight:600}' +
-    '.fs-hero{background:#1b2a41;color:#fff;padding:12mm 11mm 10mm;border-bottom:3mm solid #c8102e}.fs-kick{color:#ff8a78;font-weight:700;font-size:9pt;letter-spacing:1.8pt;text-transform:uppercase}' +
-    '.fs-hero h1{color:#fff;font-size:34pt;line-height:1.05;margin:3mm 0 3mm}.fs-sub{color:#b9c3d0;font-size:11.5pt}' +
-    '.fs-rod{display:flex;justify-content:space-between;align-items:flex-end;gap:8mm;margin-top:8mm}.fs-heim{font-size:19pt;font-weight:700}.fs-ar{font-size:36pt;font-weight:800;line-height:.9;color:#ff8a78}' +
-    '.fs-uppl{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm 7mm;padding:10mm 2mm 7mm}.fs-uppl .l{font-size:7.4pt;letter-spacing:1pt;text-transform:uppercase;color:#6b7684;font-weight:600}' +
-    '.fs-uppl .v{font-size:11pt;font-weight:600;margin-top:1mm}.fs-uppl .v.r{color:#c8102e;font-size:14pt;font-weight:800}' +
-    '.fs-efni{padding:5mm 2mm 0;border-top:.6pt solid #c9d0d8}.fs-efni .l{font-size:7.4pt;letter-spacing:1pt;text-transform:uppercase;color:#6b7684;font-weight:600}' +
-    '.fs-efni ol{columns:2;column-gap:8mm;margin:3mm 0 0 5mm;font-size:9.6pt;line-height:1.7}.fs-efni li::marker{color:#c8102e;font-weight:700}' +
-    '.fs-fot{margin-top:auto;border-top:.6pt solid #c9d0d8;padding-top:3mm;display:flex;justify-content:space-between;font-size:8.3pt;color:#6b7684}.fs-fot b{color:#1d232b}' +
     '.brot{break-before:page}@media screen{body{background:#7d848e;padding:14px}.sida{background:#fff;max-width:210mm;margin:0 auto 14px;padding:15mm;box-shadow:0 4px 18px rgba(0,0,0,.35)}.fot{display:none}}';
 
   function uppl(st) {
@@ -259,22 +246,6 @@
       '<div class="fot"><span>' + esc(gildi(st, 'heiti')) + ' · ' + esc(titill) + ' · útgáfa ' + esc(gildi(st, 'utgafa')) + ', ' + esc(gildi(st, 'dags')) + '</span><span>' + esc(gildi(st, 'teiknad_af')) + '</span></div>' +
       (uppkast ? '<span class="merki">UPPKAST – TIL YFIRFERÐAR</span>' : '');
   }
-  // Forsíða: merki Brunahólfs Slökkvitækja ehf., ártal og lykilupplýsingar úr reitunum (Agnar 14.10.2026)
-  var MERKI_SLOD = '/brunaaaetlun/brunaholf-slokkvitaeki-logo.png';
-  function forsida(st, skjal, uppkast) {
-    var ar = (gildi(st, 'dags').match(/(19|20)\d{2}/) || [String(new Date().getFullYear())])[0];
-    var reitur = function (l, k) { return '<div><div class="l">' + esc(l) + '</div><div class="v">' + inline(fylla(st, '{{' + k + '}}')) + '</div></div>'; };
-    var efni = kaflar(st, skjal).map(function (k) { return '<li>' + inline(fylla(st, k.titill.replace(/^\d+\.\s*/, ''))) + '</li>'; }).join('');
-    var base = (typeof location !== 'undefined' && /^https?:/.test(location.origin)) ? location.origin : '';
-    return '<section class="forsida"><div class="fs-topp"><img src="' + base + MERKI_SLOD + '" alt="Brunahólf Slökkvitæki ehf."><span>' + (uppkast ? '<b style="color:#c8102e">Uppkast</b> · ' : '') + 'Brunavarnir · Rýming</span></div>' +
-      '<div class="fs-hero"><div class="fs-kick">Brunahólf · ' + ar + '</div><h1>Brunaeftirlit og Rýming</h1><div class="fs-sub">' + esc(SKJOL[skjal]) + '</div>' +
-      '<div class="fs-rod"><div class="fs-heim">' + inline(fylla(st, '{{heimilisfang}}')) + '</div><div class="fs-ar">' + ar + '</div></div></div>' +
-      '<div class="fs-uppl">' + reitur('Rekstraraðili', 'rekstur') + reitur('Ábyrgðarmaður', 'abyrgdarmadur') + reitur('Sími ábyrgðarmanns', 'abyrgdarmadur_simi') +
-      reitur('Eldvarnafulltrúi', 'eldvarnafulltrui') + reitur('Fjöldi herbergja', 'herbergi_fjoldi') + reitur('Hámarksfjöldi gesta', 'gestir_hamark') +
-      '<div><div class="l">Neyðarnúmer</div><div class="v r">112</div></div></div>' +
-      '<div class="fs-efni"><div class="l">Efni</div><ol>' + efni + '</ol></div>' +
-      '<div class="fs-fot"><span>Útgáfa ' + inline(fylla(st, '{{utgafa}}')) + ' · ' + inline(fylla(st, '{{dags}}')) + '</span><span>Unnið af <b>' + inline(fylla(st, '{{teiknad_af}}')) + '</b></span></div></section>';
-  }
   function kaflaHtml(st, skjal) {
     return kaflar(st, skjal).map(function (k) { return '<h2>' + inline(fylla(st, k.titill)) + '</h2>' + md(st, k.texti); }).join('');
   }
@@ -287,7 +258,7 @@
   }
 
   function skjalRyming(st, uppkast) {
-    var h = haus(st, 'Viðbragðs- og rýmingaráætlun', false) + forsida(st, 'ryming', uppkast) + (uppkast ? '<span class="merki">UPPKAST – TIL YFIRFERÐAR</span>' : '') +
+    var h = haus(st, 'Viðbragðs- og rýmingaráætlun', uppkast) +
       '<h1 style="margin-top:8pt">Viðbragðs- og rýmingaráætlun</h1><div class="undir">' + inline(fylla(st, '{{heiti}}, {{heimilisfang}}')) + '</div>' + uppl(st) + neyd(st) +
       '<p class="heim">Áætlunin byggir á ' + inline(fylla(st, '{{brunahonnun}}')) + ', reglugerð um eldvarnir og eldvarnaeftirlit nr. 723/2017 (einkum 5., 12. og 13. gr.) og leiðbeiningum Eldvarnabandalagsins um eigið eldvarnaeftirlit (kafli 7).</p>' +
       kaflaHtml(st, 'ryming');
@@ -309,7 +280,7 @@
   }
 
   function skjalEftirlit(st, uppkast) {
-    return haus(st, 'Eigið eldvarnaeftirlit', false) + forsida(st, 'eftirlit', uppkast) + (uppkast ? '<span class="merki">UPPKAST – TIL YFIRFERÐAR</span>' : '') +
+    return haus(st, 'Eigið eldvarnaeftirlit', uppkast) +
       '<h1 style="margin-top:8pt">Eigið eldvarnaeftirlit</h1><div class="undir">Skrifleg lýsing og handbók um eldvarnir · ' + inline(fylla(st, '{{heiti}}')) + '</div>' + uppl(st) +
       kaflaHtml(st, 'eftirlit') +
       '<section class="brot"><h1 style="font-size:15pt">Dagbók brunaviðvörunarkerfis og atvikaskrá</h1><p>Skrá skal öll brunaboð, falsboð, bilanir, prófanir og viðhald.</p>' +

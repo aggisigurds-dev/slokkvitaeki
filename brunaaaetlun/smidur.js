@@ -157,8 +157,7 @@
     if (_aftur) { _aftur = false; vista(); }
   }
   function stada(txt, lit, arekstur) {
-    var p = document.getElementById('ba-stada'), vb = document.getElementById('ba-vista');
-    if (vb) { vb.className = 'ba-btn' + (lit === 'y' || lit === 'r' ? ' r' : ''); vb.textContent = lit === 'y' || lit === 'r' ? 'Vista breytingar' : 'Vista'; }
+    var p = document.getElementById('ba-stada');
     if (p) p.innerHTML = '<span class="ba-p ' + (lit || '') + '"><i></i>' + esc(txt) + '</span>' + (arekstur ? ' <button class="ba-btn s" data-a="saekja">Sækja nýjustu</button>' : '');
   }
   window.addEventListener('beforeunload', function (e) { if (_breytt || _vistar) { e.preventDefault(); e.returnValue = ''; } });
@@ -169,7 +168,7 @@
     var vant = S.vantar(st).length;
     app.innerHTML =
       '<header class="ba-haus"><div><h1>Brunaáætlun</h1><div class="ba-undir">' + esc(st.fyr.nafn) + (st.fyr.heimilisfang ? ' · ' + esc(st.fyr.heimilisfang) : '') + '</div></div><div class="ba-bil"></div>' +
-      '<div class="ba-takkar"><span id="ba-stada"></span><button class="ba-btn" data-a="vista" id="ba-vista" title="Vista núna (vistast líka sjálfkrafa)">Vista</button><label class="ba-p" style="cursor:pointer"><input type="checkbox" data-a="uppkast"' + (st.efni.uppkast !== false ? ' checked' : '') + ' style="margin:0"> Uppkast</label>' +
+      '<div class="ba-takkar"><span id="ba-stada"></span><label class="ba-p" style="cursor:pointer"><input type="checkbox" data-a="uppkast"' + (st.efni.uppkast !== false ? ' checked' : '') + ' style="margin:0"> Uppkast</label>' +
       '<a class="ba-btn m" href="?">Allar áætlanir</a><a class="ba-btn m" href="/#company/' + cid + '" target="_blank" rel="noopener">Prófíll</a><button class="ba-btn r" data-a="flipi" data-f="skjol">Prenta skjöl</button></div></header>' +
       '<nav class="ba-flipar" role="tablist">' + FLIPAR.map(function (f) { return '<button class="ba-flipi" role="tab" data-a="flipi" data-f="' + f[0] + '" aria-selected="' + (st.flipi === f[0]) + '">' + f[1] + (f[0] === 'uppl' && vant ? ' <span class="ba-tala" id="ba-vant">' + vant + '</span>' : '') + '</button>'; }).join('') + '</nav>' +
       '<main class="ba-svid" id="ba-svid"></main>';
@@ -469,7 +468,6 @@
     if (a === 'flipi') { st.flipi = b.dataset.f; teiknaFlipa(); return; }
     if (a === 'uppkast') { st.efni.uppkast = b.checked; breytt(); return; }
     if (a === 'saekja') { location.reload(); return; }
-    if (a === 'vista') { clearTimeout(_vistTimi); vista(); return; }
     if (a === 'haed') { st.haed = b.dataset.h; st.val = -1; st.leidNy = null; document.querySelectorAll('[data-a="haed"]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); teiknaKort(true); teiknaEiginleika(); return; }
     if (a === 'tol') { velja(b.dataset.t); return; }
     if (a === 'zoom') { var z = +b.dataset.z; st.zoom = z === 0 ? 1 : Math.max(0.5, Math.min(5, st.zoom * (z > 0 ? 1.4 : 1 / 1.4))); stillaZoom(); return; }
