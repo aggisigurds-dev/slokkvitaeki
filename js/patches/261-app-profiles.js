@@ -949,7 +949,15 @@
       synaUppsettHjalp();
       return;
     }
-    if (deferredPrompt) { _promptSynt = true; deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
+    if (deferredPrompt) {
+      // 14.10.2026: prompt() krefst notenda-bendingar — sjálfvirka kallið úr beforeinstallprompt (…?install=1, 300 ms)
+      // kastaði NotAllowedError 46 sinnum í villuskrá (#9). Sé því hafnað höldum við boðinu og biðjum um smell.
+      try { await deferredPrompt.prompt(); }
+      catch (err) { segja('Ýttu á „Setja upp" einu sinni enn til að setja appið upp'); refreshInstallBtns(); return; }
+      _promptSynt = true;
+      try { await deferredPrompt.userChoice; } catch (_) {}
+      deferredPrompt = null; refreshInstallBtns(); return;
+    }
     // No native prompt yet. If we haven't tried a fresh page load, navigate to
     // ?install=1 so Chrome gets a clean shot at beforeinstallprompt on load.
     // The beforeinstallprompt listener will auto-call doInstall() if it fires.

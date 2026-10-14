@@ -1131,7 +1131,9 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
   function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
   function enterFs() {
     const el = document.documentElement;
-    try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (_) {}
+    // 14.10.2026: requestFullscreen skilar loforði sem FELLUR („Permissions check failed", 23× í villuskrá #58) þegar
+    // vafrinn hafnar — try/catch grípur það ekki. Höfnun er eðlileg (iframe, engin bending, uppsett app) og þögguð.
+    try { var p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (p && p.catch) p.catch(function () {}); } catch (_) {}
   }
   function toggleFullscreen() {
     const d = document;

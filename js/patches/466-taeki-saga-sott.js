@@ -31,7 +31,9 @@
  */
 (() => {
   'use strict';
-  if (window.TaekiSaga) return;
+  // 14.10.2026: 460-taeki-saga.js á sama hlut (saekja, linaHtml …) — sameina, ekki yfirtaka, og aldrei hætta við
+  // þótt hinn sé kominn (sjá villuskrá #1212: „TaekiSaga.saekja is not a function" þegar þessi hlóðst fyrst).
+  if (window.TaekiSaga && window.TaekiSaga.skraSott) return;
 
   const HLEDSLA = /hle[ðd]sl|áfylling|afylling|CO₂ 100|CO2 100/i;
   const SKODUN = /yfirfer|skoð|skod/i;
@@ -140,5 +142,5 @@
     return nid;
   }
 
-  window.TaekiSaga = { skraSott, radir, vidburdir, notandi };
+  window.TaekiSaga = Object.assign(window.TaekiSaga || {}, { skraSott, radir, vidburdir, notandi });
 })();

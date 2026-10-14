@@ -32,7 +32,10 @@
  * ekkert — röðin heldur sínu `uttaeki_id`.
  */
 (() => {
-  if (window.TaekiSaga) return;
+  // 14.10.2026: 466-taeki-saga-sott.js á líka window.TaekiSaga (skraSott o.fl.) og hleðst á UNDAN þessum pappa.
+  // „if (window.TaekiSaga) return" hér sleppti þá öllu — saekja/linaHtml urðu aldrei til og 430 verkspjald hrundi
+  // með „TaekiSaga.saekja is not a function" (villuskrá #1212/#1213). Nú sameina báðir pappar í sama hlutinn.
+  if (window.TaekiSaga && window.TaekiSaga.saekja) return;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -449,5 +452,5 @@
     opnaRitil(b.getAttribute('data-tsg-ritill'), b.getAttribute('data-tsg-heiti'), b.getAttribute('data-tsg-ser'));
   }, true);
 
-  window.TaekiSaga = { saekja, linaHtml, faerslur, skra, skraNytt, baetaVid, eyda, opnaRitil, lykill, LITIR, _minni: minni };
+  window.TaekiSaga = Object.assign(window.TaekiSaga || {}, { saekja, linaHtml, faerslur, skra, skraNytt, baetaVid, eyda, opnaRitil, lykill, LITIR, _minni: minni });
 })();

@@ -128,6 +128,12 @@
       // raunverulegu myndavillunum — helmingur allra skráðra villna var þetta.
       var iDom = true;
       try { iDom = e.target.isConnected !== false; } catch (_) {}
+      // 14.10.2026 (Agnar: „hvernig á ég að vita hvað þetta er"): myndir af ÖÐRUM lénum — kortaflísar arcgisonline,
+      // vörumyndir eldvarnamidstodin.is o.fl. — eru ekki okkar bilun og drekktu listanum (hundruð „Náði ekki í img").
+      // Þær fara ekki í villuskrána; sama um deploy-preview lén. Okkar eigin skrár skrást áfram.
+      var ytri = false;
+      try { var h = new URL(String(s), location.href).host; ytri = h !== location.host || /^deploy-preview-/.test(location.host); } catch (_) {}
+      if (ytri && /^(img|link)$/i.test(e.target.tagName)) return;
       if (s) {
         senda('audlind', (iDom ? 'Náði ekki í ' : 'Aflýst beiðni (hnútur farinn úr DOM) — ')
           + e.target.tagName.toLowerCase(), String(s).slice(0, 300), null);
