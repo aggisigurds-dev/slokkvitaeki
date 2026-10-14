@@ -27,7 +27,7 @@ const path = require('path');
 const vm = require('vm');
 
 const rot = path.join(__dirname, '..');
-const lesa = f => fs.readFileSync(path.join(rot, f), 'utf8');
+const lesa = f => fs.readFileSync(path.join(rot, f), 'utf8').replace(/\r/g, '');   // CRLF-útsjekk á Windows (autocrlf) braut regex-in — sama og audit-app-sidulisti
 const rautt = [];
 const fail = m => rautt.push(m);
 
