@@ -1100,6 +1100,9 @@
         _skraVillu('sott-verklidur', 'verkliður ' + (s.unit.serial || s.unit.id) + ' var EKKI merktur ' + newStatus, e);
       }
     }
+    // 2026-10-14 (466): tækjasaga — ein röð per afhentan verklið í taeki_saga (skodad/hladid/thjonustad) svo Afköst
+    // telji úr raunverulegum atburðum. Fire-and-forget: ekkert await, bilun stöðvar aldrei söluna (466 skráir sjálft).
+    try { if (window.TaekiSaga && TaekiSaga.skraSott) TaekiSaga.skraSott(allJobs, unitState, { sala: parentSaleNum(job.num) }); } catch (_) {}
 
     // 2b. (2026-05-10) For verklidur with a uttaeki_id link (created by
     // patch 122's "Sækja inn" flow), auto-update the uttaeki row:
