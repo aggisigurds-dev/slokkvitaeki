@@ -340,4 +340,84 @@ body.vv-ritill-a .vv-falid{display:revert!important;opacity:.35;outline:2px dash
 .vv-kort-b .vv-btn{position:relative;z-index:1}
 body.vv-ritill-a .vv-kort h3 a::after{display:none}
 .vv-fotur .vv-logo{padding:8px 0}
+/* ── Sími (14.10.2026) ── Dálkar, rammahæðir og padding eru víða sett beint á hnútinn (ritillinn og sniðmátin),
+   og það ræður yfir venjulegum @media-reglum. Hér er því !important þar sem inline-gildið verður að víkja á síma,
+   og max-height (ekki height) á myndarömmum svo minni hæð úr ritlinum gildi áfram. */
+@media (max-width:980px){
+  .vv-ef-rod{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .vv-tveir,.vv-tveir.jafnt,.vv-tveir.taekni,.vv-reikn{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  /* Haus: merki og takkar í einni línu, leitin undir — 178 → um 125 px */
+  .vv-haus .vv-wrap{gap:12px;padding-block:12px 14px;min-height:0}
+  .vv-logo{width:118px}
+  .vv-leit{order:3;flex:1 1 100%;max-width:none;height:42px}
+  .vv-haus-h{gap:8px}
+  .vv-haus-h .vv-btn.sm{padding:9px 14px}
+  .vv-flipar .vv-wrap{padding-top:6px;gap:2px}
+  .vv-flipi{padding:10px 14px;font-size:14px}
+
+  .vv-adal{padding-block:20px 48px;gap:20px}
+  .vv-wrap{padding-inline:16px}
+  .vv-mola{font-size:13.5px}
+
+  /* Forsíða: flokkarnir í einni láréttri röð í stað fjögurra lína */
+  .vv-titilrod h2{font-size:30px}
+  .vv-flokkar[aria-label="Flokkar"]{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:2px 16px 4px;scroll-padding-inline:16px}
+  .vv-flokkar[aria-label="Flokkar"]::-webkit-scrollbar{display:none}
+  .vv-flokk{flex:none}
+  .vv-traust .vv-wrap{gap:10px 20px;font-size:14px;padding-block:16px}
+  .vv-cta{padding:26px 22px}
+  .vv-cta h3{font-size:24px}
+
+  /* Vörukort: verðið í einni línu, „án vsk" undir */
+  .vv-verd{flex-direction:column;align-items:flex-start;gap:3px;padding-top:8px}
+  .vv-verd b{font-size:18px;white-space:nowrap}
+  .vv-verd small{font-size:12px}
+  .vv-kort .vv-btn{margin-top:10px}
+
+  /* Vörusíða */
+  .vv-vara-haus{gap:22px}
+  .vv-vara-h{gap:16px}
+  .vv-vara-h h1{font-size:30px}
+  .vv-inng{font-size:16px}
+  .vv-galleri .vv-m{max-height:min(92vw,400px)}
+  .vv-galleri-merki{left:12px;top:12px;font-size:12px}
+  .vv-stort-verd{padding-top:18px}
+  .vv-stort-verd b{font-size:32px}
+  .vv-kaflar{gap:34px;margin-top:34px}
+  .vv-yfir{font-size:26px}
+  .vv-yfir-inng{font-size:15px}
+  .vv-blad,.vv-blad[style]{padding:22px 20px!important}
+  .vv-tolur{gap:10px}
+  .vv-tala{padding:16px 16px 18px;gap:4px}
+  .vv-tala b{font-size:22px}
+  .vv-tala span{font-size:13.5px}
+
+  /* „Á hvað virkar tækið best?": ein í röð, myndin sem borði efst sem dofnar inn í spjaldið */
+  .vv-ef-rod{grid-template-columns:minmax(0,1fr)!important;gap:14px}
+  .vv-ef{flex-direction:column;min-height:0}
+  .vv-ef>.vv-m{position:relative;width:100%;height:150px!important;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
+  .vv-ef-i{width:auto;padding:0 20px 22px;margin-top:-30px}
+  .vv-ef-tafla{width:50px;height:50px}
+  .vv-ef h3{font-size:19px}
+
+  .vv-ekki-rod{padding:12px;gap:12px}
+  .vv-not-b{padding:16px 18px 20px}
+  .vv-bordi{padding:20px;gap:16px}
+  .vv-bordi .vv-skjoldur{width:44px;height:44px}
+  .vv-bordi p{font-size:17px}
+  .vv-galleri-texti{padding:16px 18px 20px}
+
+  /* Staðsetningarmyndin var 460 px há og skornum skammti af myndefni */
+  .vv-m[data-m$=".veggur.mynd"]{max-height:260px}
+  .vv-reikn{gap:20px}
+  .vv-reikn-svar{padding:22px 20px}
+  .vv-stk{padding:9px 14px;white-space:nowrap;font-size:14.5px}
+  .vv-reikn-svar b{font-size:40px}
+  .vv-spurn{padding:20px}
+  .vv-spurn h3{font-size:17px}
+  .vv-regla{grid-template-columns:32px minmax(0,1fr);gap:12px}
+  .vv-regla .n{width:32px;height:32px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

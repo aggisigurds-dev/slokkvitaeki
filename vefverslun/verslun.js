@@ -468,7 +468,7 @@ ${B('forsida.cta', `<div>${E('h3', 'cta.titill', 'Fyrirtæki, húsfélag eða b�
       },
       reikn: { skynjarar: 80 },
       bordi: { k: 'reyk', x: 'Reykskynjari sem virkar vekur heimilið áður en reykurinn verður hættulegur.' },
-      hentar: { yfir: 'Hvaða skynjari hentar?', x: '**Reykskynjari 2** gengur fyrir 9V rafhlöðu sem skipt er um árlega. **Reykskynjari** er með 10 ára rafhlöðu. **Reykskynjari 3** er líka með 10 ára rafhlöðu og samtengist þráðlaust.', takkar: [['Reykskynjari 2', 13], ['Reykskynjari', 3], ['Reykskynjari 3', 14]] },
+      hentar: { yfir: 'Hvaða skynjari hentar?', x: '**9V skynjarinn** gengur fyrir rafhlöðu sem skipt er um árlega. **10 ára skynjarinn** er með innbyggðri rafhlöðu sem endist allan líftímann. **Þráðlausi skynjarinn** er líka með 10 ára rafhlöðu og samtengist hinum, svo allir fara í gang í einu.', takkar: [['9V', 13], ['10 ára', 3], ['Þráðlaus', 14]] },
       spurn: () => [
         ['Af hverju pípir skynjarinn stutt á mínútu fresti?', 'Rafhlaðan er að klárast. Skiptu um hana strax, eða um allan skynjarann ef hann er með innbyggðri 10 ára rafhlöðu.'],
         ['Hvað þýðir samtengdur?', 'Þegar einn skynjari nemur reyk fara allir í gang, svo þú heyrir viðvörunina þó eldurinn sé á annarri hæð eða í hinum enda hússins.'],
@@ -783,7 +783,9 @@ ${Pr ? `<div class="vv-pillur">${(S.pillur || Pr.pillur).map((d, i) => E('span',
 ${s.tilk ? `<div class="vv-tilk" role="status"><span>${esc(s.tilk)}</span><a class="vv-btn ljos sm" href="#/karfa">${E('span', 'vara.skoda-korfu', 'Skoða körfu')}</a></div>` : ''}
 <a class="vv-btn ghost" href="${OPINBER}"${UT} style="align-self:flex-start">${E('span', 'vara.tilbod', 'Fleiri en 10 stykki? Fá tilboð')}</a>`;
 
-    const venjulegt = Pr ? '' : B(`${P}.um`, `<div class="vv-blad" style="padding:40px;gap:16px">${E('h2', 'vara.um.yfir', 'Um vöruna', 'vv-yfir')}${E('p', `${P}.lysing`, String(v.lysing || '').trim() || 'Lýsing kemur fljótlega.', 'vv-txt')}</div>`, '', 'div');
+    // Ein málsgrein = sami texti og inngangurinn efst; kassinn birtist þá aðeins hafi ritillinn gefið honum eigin texta
+    const lysingTvitekin = !!fyrstaMalsgrein && !/\n\s*\n/.test(String(v.lysing || '').trim()) && !(VV.efni.t && VV.efni.t[`${P}.lysing`]);
+    const venjulegt = Pr || lysingTvitekin ? '' : B(`${P}.um`, `<div class="vv-blad" style="padding:40px;gap:16px">${E('h2', 'vara.um.yfir', 'Um vöruna', 'vv-yfir')}${E('p', `${P}.lysing`, String(v.lysing || '').trim() || 'Lýsing kemur fljótlega.', 'vv-txt')}</div>`, '', 'div');
     const oft = B('vara.oft', `${yfirHaus('vara.oft', 'Oft keypt með', null)}<div class="vv-grind">${tengdar(v).map(kort).join('')}</div>`, 'vv-kafli');
 
     return `<main class="vv-wrap vv-adal" style="padding-top:28px">
@@ -843,6 +845,8 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     const midja = r.s === 'vara' ? sidaVara(r.id) : r.s === 'karfa' ? sidaKarfa() : sidaForsida();
     app.innerHTML = haus() + midja + fotur();
     if (efst) window.scrollTo(0, 0); else window.scrollTo(0, y);
+    const fl = app.querySelector('.vv-flipar .vv-wrap'), virkur = fl && fl.querySelector('[aria-current]');
+    if (virkur && fl.scrollWidth > fl.clientWidth) fl.scrollLeft = Math.max(0, virkur.getBoundingClientRect().left - fl.getBoundingClientRect().left + fl.scrollLeft - 16);
     const v = r.s === 'vara' && vara(r.id);
     document.title = (v ? varaNafn(v) + ' · ' : r.s === 'karfa' ? 'Karfa · ' : '') + 'Vefverslun Brunahólfs';
     if (VV.eftirTeikningu) VV.eftirTeikningu();
