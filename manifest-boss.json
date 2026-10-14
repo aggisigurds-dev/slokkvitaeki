@@ -6,7 +6,7 @@
   "start_url": "/app/boss/",
   "scope": "/app/boss/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#0a0a0b",
   "lang": "is",

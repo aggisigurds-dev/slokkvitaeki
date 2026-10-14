@@ -6,7 +6,7 @@
   "start_url": "/app/bilstjori/",
   "scope": "/app/bilstjori/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "landscape",
   "background_color": "#000000",
   "theme_color": "#0b0b0d",
   "lang": "is",

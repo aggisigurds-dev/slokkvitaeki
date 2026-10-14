@@ -48,7 +48,9 @@ export default async (req) => {
     start_url: path,
     scope: path,
     display: 'standalone',
-    orientation: 'portrait',
+    // 14.10.2026 (Agnar: „öppin virka ekki í landscape spjaldtölvu, virka bara í portrait"): snúningurinn er opinn.
+    // Aðeins Bílstjóri (manifest-bilstjori.json) læsir í landscape — hann er spjaldtölvuapp í bílnum.
+    orientation: 'any',
     background_color: dark,
     theme_color: color,
     lang: 'is',

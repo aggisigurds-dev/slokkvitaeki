@@ -6,7 +6,7 @@
   "start_url": "/app/threedwork/",
   "scope": "/app/threedwork/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#000000",
   "theme_color": "#0b0b0d",
   "lang": "is",
