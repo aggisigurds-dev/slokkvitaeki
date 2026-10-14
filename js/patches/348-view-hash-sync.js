@@ -139,12 +139,22 @@
       // þær er switchView SJÁLFUR smiðurinn, svo eftir stutta bið (svo venjuleg
       // ræsing 218/154 fái fyrsta orðið) prófum við hann EINU SINNI og
       // staðfestum svo að hann hafi raunverulega landað.
+      // 14.10.2026 (mælt í úttekt): sumar lattar sýnir (#kerfi 221, #minar-sidur 302) smíðar switchView EKKI — aðeins
+      // onclick hliðarstikutakkans. Grunn-switchView tók þá .active af öllum sýnum og fann ekkert: F5 skilaði AUÐUM skjá
+      // (2 af 2 keyrslum). Nú: takkinn fyrst (sama leið og notandinn fer), switchView sem varaleið, og verði sýnin samt
+      // ekki til er fyrra borð sett aftur í stað þess að skilja eftir autt.
       if (tries === 5 && window.App && typeof App.switchView === 'function') {
+        const fyrri = document.querySelector('.view.active');
         try {
-          App.switchView(view);
+          const takki = document.querySelector('.vnav-btn[data-view="' + String(view).replace(/["\\]/g, '') + '"]');
+          if (takki && typeof takki.click === 'function') takki.click(); else App.switchView(view);
           if (document.getElementById('view-' + view)) {
             try { if (window.UrlRouting && UrlRouting.applyHash) UrlRouting.applyHash(); } catch (_) {}
             return;
+          }
+          if (!document.querySelector('.view.active')) {
+            const aftur = fyrri && fyrri.id ? fyrri.id.replace(/^view-/, '') : 'verkbord';
+            App.switchView(aftur);
           }
         } catch (_) { /* óþekkt sýn — þegjum og skilum venjulegri lendingu */ }
       }

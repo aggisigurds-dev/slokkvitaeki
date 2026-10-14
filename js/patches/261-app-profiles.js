@@ -1921,6 +1921,10 @@
     var proto = document.querySelector('.vnav-btn'); if (!proto) { setTimeout(addNavButton, 300); return; }
     var btn = proto.cloneNode(true);
     btn.id = '_app-navbtn'; btn.removeAttribute('data-view'); btn.setAttribute('data-view', NAV_KEY);
+    // 14.10.2026 (mælt í úttekt): fyrsti .vnav-btn er nú Vefverslun-TENGILL (<a href target>), og klóninn erfði href,
+    // target, rel og title — miðsmellur á Öpp opnaði Vefverslun og músarbendillinn sýndi rangan titil. Fjarlægt; staðan óbreytt.
+    ['href', 'target', 'rel', 'title'].forEach(function (a) { btn.removeAttribute(a); });
+    if (btn.tagName === 'A') { btn.setAttribute('role', 'button'); btn.tabIndex = 0; }   // <a> án href næst annars ekki með lyklaborði
     if (btn.hasAttribute('onclick')) btn.setAttribute('onclick', "App.switchView('" + NAV_KEY + "')");
     btn.classList.remove('active');
     btn.textContent = NAV_LABEL;

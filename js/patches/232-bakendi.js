@@ -498,8 +498,13 @@
       const g = el.getAttribute('data-goto'); if (!g) return;
       el.addEventListener('click', () => { state.tab = g; render(); });
     });
+    // 14.10.2026 (mælt í úttekt): „Rekstrarfélög-síðunni →" skilaði AUÐUM skjá — view-rekstrarfelog er aðeins smíðað
+    // í onclick hliðarstikutakkans (175), og grunn-switchView tók .active af öllum sýnum. Takkinn fyrst, svo switchView.
     main.querySelectorAll('[data-goto-view]').forEach(el => el.addEventListener('click', e => {
-      e.preventDefault(); const v = el.getAttribute('data-goto-view'); if (window.App && App.switchView) App.switchView(v);
+      e.preventDefault(); const v = el.getAttribute('data-goto-view');
+      const takki = document.querySelector('.vnav-btn[data-view="' + String(v).replace(/["\\]/g, '') + '"]');
+      if (takki && typeof takki.click === 'function') { takki.click(); return; }
+      if (window.App && App.switchView) App.switchView(v);
     }));
     main.querySelectorAll('[data-filt]').forEach(b => b.addEventListener('click', () => { state.clientFilter = b.dataset.filt; render(); }));
     const uq = main.querySelector('#_bk-utt-q');
