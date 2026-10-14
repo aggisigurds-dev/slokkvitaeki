@@ -21,6 +21,22 @@ button,input,select,textarea{font:inherit;color:inherit}
 .bar button.save.dirty{background:#c98a12}
 .fab{position:fixed;right:18px;bottom:18px;z-index:30;border:0;border-radius:999px;background:#1f7a4a;color:#fff;font-weight:700;padding:12px 20px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;font-size:15px}
 .fab.dirty{background:#c98a12}
+.bar button.send{background:#2f3942;border:1px solid #5b6875}
+.bar button.send:hover{background:#3d4954}
+.sendt{font-size:12px;color:var(--mut);margin-top:6px}
+.sd-bak{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.sd{background:#fff;border-radius:12px;width:min(520px,100%);box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.sd-h{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);background:#f7f8fa;font-weight:700}
+.sd-h small{font:700 9.5px/1.5 ui-monospace,monospace;border:1px solid currentColor;border-radius:3px;padding:0 5px;margin-left:8px;opacity:.6}
+.sd-b{padding:14px 18px}
+.sd-b label{display:block;font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px}
+.sd-b input,.sd-b select,.sd-b textarea{width:100%;border:1px solid #cbd5e1;border-radius:7px;padding:8px 10px;font-size:14px;background:#fff}
+.sd-b textarea{resize:vertical;overflow:auto;min-height:120px}
+.sd-f{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--line);background:#f7f8fa}
+.sd-f button{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:8px 14px;cursor:pointer;font-size:13px}
+.sd-f button.go{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+.sd-f button:disabled{opacity:.6;cursor:default}
+.sd-msg{font-size:12px;margin-top:10px;color:var(--mut)}
 .bar button.pri{background:var(--acc)}
 .bar button.pri:hover{background:#b02a17}
 .bar .coname{font-size:14px;color:#cfd6dd;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -132,7 +148,7 @@ select.st{border:0;border-radius:999px;padding:4px 10px;font-size:13px;font-weig
   .cv-photo.noimg,.cv-x,.cv-logo small{display:none!important}
   .cv-foot input{border:0!important;padding:0!important}
   body{background:#fff;font-size:12.5px}
-  .bar,.fab,.missing,.foot,.rowdel,.add,.adds,.addslot,.tools,.hint,.slot.noimg,td.x,th.x,.zoom,.busy{display:none!important}
+  .bar,.fab,.missing,.foot,.sendt,.sd-bak,.rowdel,.add,.adds,.addslot,.tools,.hint,.slot.noimg,td.x,th.x,.zoom,.busy{display:none!important}
   .wrap{max-width:none;margin:0;padding:0}
   .page{box-shadow:none;padding:0;border-radius:0}
   input,textarea,select{border:0!important;background:none!important;padding:3px 4px!important;-webkit-appearance:none;appearance:none}
@@ -158,6 +174,7 @@ select.st{border:0;border-radius:999px;padding:4px 10px;font-size:13px;font-weig
   <span class="sep"></span>
   <button class="save" data-act="save">💾 Vista</button>
   <button class="pri" data-act="print">Prenta / PDF</button>
+  <button class="send" data-act="senda">📧 Senda</button>
   <span class="sp"></span>
   <span class="status" id="status"></span>
 </div>
@@ -371,9 +388,11 @@ function missing(){const m=[],p=P;
   p.vidhald.forEach((r,i)=>{if(r.s!=='til')m.push([(r.t||'Atriði').slice(0,48)+' – '+ST[r.s].toLowerCase(),`vidhald.${i}.s`])});
   p.teikn.forEach((t,i)=>{if(!t.img)m.push(['Teikning: '+(t.title||'án heitis'),`teikn.${i}.title`])});
   return m}
+function sendtHtml(){const s=(P&&P.sendingar)||[];if(!s.length)return'';const x=s[s.length-1];return '<div class="sendt">📧 Síðast sent '+esc(dagsTimi(x.dags))+' til '+esc(x.til)+(s.length>1?' · '+s.length+' sendingar alls':'')+'</div>'}
+function dagsTimi(iso){const d=new Date(iso);if(isNaN(d))return'';const z=n=>String(n).padStart(2,'0');return z(d.getDate())+'.'+z(d.getMonth()+1)+'.'+d.getFullYear()+' kl. '+z(d.getHours())+':'+z(d.getMinutes())}
 function refreshMissing(){const m=missing(),el=$('#missing');
   el.classList.toggle('done',!m.length);
-  el.innerHTML=m.length?`<h3>Vantar til að klára (${m.length})</h3><div class="chips">${m.map(([l,p])=>`<button class="chip" data-act="goto" data-p="${p}">${esc(l)}</button>`).join('')}</div>`:`<h3>✓ Allt komið – tilbúið til prentunar</h3>`}
+  el.innerHTML=(m.length?`<h3>Vantar til að klára (${m.length})</h3><div class="chips">${m.map(([l,p])=>`<button class="chip" data-act="goto" data-p="${p}">${esc(l)}</button>`).join('')}</div>`:`<h3>✓ Allt komið – tilbúið til prentunar</h3>`)+sendtHtml()}
 
 /* ---------- events ---------- */
 document.addEventListener('input',e=>{const t=e.target,p=t.dataset.p;if(!p||!t.closest('#doc,#cover'))return;
@@ -402,6 +421,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]
   else if(a==='rmimg'){P.teikn[+b.dataset.i].img=null;render();touch()}
   else if(a==='zoom'){$('#zoom img').src=b.src;$('#zoom').style.display='grid'}
   else if(a==='goto'){const el=document.querySelector(`#doc [data-p="${b.dataset.p}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>el.focus(),300)}}
+  else if(a==='senda'){opnaSenda()}
   else if(a==='print'){document.querySelectorAll('#doc textarea').forEach(grow);window.print()}
 });
 $('#zoom').onclick=()=>{$('#zoom').style.display='none'};
@@ -443,6 +463,100 @@ async function addFiles(files,target){if(!files.length)return;const items=[];
   else if(target!=null&&target!=='new'&&P.teikn[+target]){const i=+target,s=P.teikn[i];s.img=items[0].img;if(blank(s.title))s.title=items[0].title;P.teikn.splice(i+1,0,...items.slice(1))}
   else P.teikn.push(...items);
   render();touch()}
+
+/* ---------- senda í tölvupósti (sama leið og reikningar/skýrslur: Gmail /api/gmail-send hjá brunahólfi, SV-28) ---------- */
+const GMAIL_SEND_API='https://brunaholf.netlify.app/api/gmail-send';
+const SENDENDUR=['eldklar@eldklar.is','bokhald@eldklar.is'];
+function pdfHtml(){
+  const p=P,m=p.meta,yr=yearOf(m.dags);
+  const v=s=>String(s||'').trim()?esc(s).replace(/\n/g,'<br>'):'<span style="color:#9ca3af">—</span>';
+  const st=s=>'<span style="font-weight:700;color:'+({til:'#1f7a4a',vinnsla:'#a8670f',vantar:'#c8321e'}[s]||'#333')+'">'+esc(ST[s]||s)+'</span>';
+  const H=(n,t)=>'<h2 style="display:flex;align-items:center;gap:8px;font-size:15px;margin:18px 0 8px;padding-bottom:5px;border-bottom:2px solid #1d2329"><span style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:#c8321e;color:#fff;font-size:11px">'+n+'</span>'+t+'</h2>';
+  const T=(head,rows)=>'<table style="width:100%;border-collapse:collapse;font-size:11.5px"><tr>'+head.map(x=>'<th style="text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#66717c;padding:5px 6px;border-bottom:1px solid #dfe3e8">'+x+'</th>').join('')+'</tr>'+rows.map(r=>'<tr class="avoid">'+r.map(c=>'<td style="padding:5px 6px;border-bottom:1px solid #dfe3e8;vertical-align:top">'+c+'</td>').join('')+'</tr>').join('')+'</table>';
+  const info=[['Rekstraraðili',m.rekstraradili],['Ábyrgðaraðili',m.abyrgdaradili],['Sími ábyrgðaraðila',m.simi],['Fjöldi herbergja',m.herbergi],['Hámarksfjöldi gesta',m.gestir]];
+  const efni=['Almennar upplýsingar','Teikningar og gögn','Viðbrögð við eldsvoða','Rýmingarregla hússins','Eldvarnir, viðhald og prófanir','Herbergjalisti og flóttaleiðir','Aðrar athugasemdir','Teikningar'];
+  const logo=p.cover.logo?'<img src="'+esc(new URL(p.cover.logo,location.href).href)+'" style="max-height:70px;max-width:260px">':'<b style="font-size:20px;letter-spacing:.16em">BRUNAHÓLF</b>';
+  let h='<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d2329;width:718px">';
+  // forsíða
+  h+='<div style="height:1000px;display:flex;flex-direction:column">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px 24px">'+logo+'<span style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#66717c;font-weight:600">Brunavarnir · Rýming</span></div>'+
+    '<div style="background:#1d2329;color:#fff;padding:36px 32px 30px;border-bottom:7px solid #c8321e">'+
+      '<div style="color:#ff7a62;font-weight:700;font-size:11px;letter-spacing:.18em;text-transform:uppercase">Brunahólf · '+yr+'</div>'+
+      '<div style="font-size:42px;font-weight:800;line-height:1.05;margin:8px 0 10px">Brunaeftirlit og Rýming</div>'+
+      '<div style="color:#aab4bd;font-size:14px">'+esc(p.titill||'')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px"><div style="font-size:24px;font-weight:700">'+esc(m.heimilisfang||'')+'</div><div style="font-size:46px;font-weight:800;line-height:.9;color:#ff7a62">'+yr+'</div></div></div>'+
+    (p.cover.photo?'<div style="flex:1;margin:22px 0 0;border-radius:8px;overflow:hidden;background:url('+esc(p.cover.photo)+') center/cover"></div>':'')+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px 20px;padding:24px 4px">'+info.map(([l,x])=>'<div><div style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#66717c;font-weight:600">'+l+'</div><div style="font-size:14px;font-weight:650;margin-top:3px">'+v(x)+'</div></div>').join('')+
+      '<div><div style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#66717c;font-weight:600">Neyðarnúmer</div><div style="font-size:18px;font-weight:800;margin-top:3px;color:#c8321e">112</div></div></div>'+
+    '<div style="padding:4px 4px 0;border-top:1px solid #dfe3e8"><div style="font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#66717c;font-weight:600;padding-top:12px">Efni áætlunar</div><ol style="columns:2;column-gap:24px;margin:8px 0 0;padding-left:20px;font-size:12.5px;line-height:1.9">'+efni.map(t=>'<li>'+t+'</li>').join('')+'</ol></div>'+
+    '<div style="margin-top:auto;border-top:1px solid #dfe3e8;padding:10px 4px 0;display:flex;justify-content:space-between;font-size:11px;color:#66717c"><span>Dags. '+esc(m.dags||'')+' · Útgáfa '+esc(m.utgafa||'')+'</span><span>Unnið af <b style="color:#1d2329">'+esc(p.cover.vinna||'')+'</b></span></div></div>';
+  // efni
+  h+='<div class="pb"></div><div style="font-size:12px;line-height:1.45">'+
+    '<div style="color:#c8321e;font-weight:700;font-size:10px;letter-spacing:.12em;text-transform:uppercase">Brunavarnir · Rýming</div>'+
+    '<div style="font-size:22px;font-weight:750">'+esc(p.titill||'')+'</div><div style="font-size:15px;color:#66717c">'+esc(m.heimilisfang||'')+'</div>'+
+    H(1,'Almennar upplýsingar')+T(['',''],[['Heimilisfang',v(m.heimilisfang)]].concat(info.map(([l,x])=>[l,v(x)])))+
+    H(2,'Teikningar og gögn')+T(['Atriði','Staða','Athugasemd'],p.gogn.map(r=>[v(r.t),st(r.s),v(r.n)]))+
+    H(3,'Viðbrögð við eldsvoða')+T(['Hlutverk','Ábyrgð'],p.vidbrogd.map(r=>[v(r.h),v(r.a)]))+
+    H(4,'Rýmingarregla hússins')+'<p><b>Röð rýmingar:</b> '+v(p.ryming.regla)+'</p><p><b>Hvernig er staðfest að allir séu komnir út:</b> '+v(p.ryming.gestalisti)+'</p><p><b>Símanúmer vegna gestalista:</b> '+v(p.ryming.simi)+'</p>'+
+    H(5,'Eldvarnir, viðhald og prófanir')+T(['Atriði','Ábyrgð / athugasemd','Staða'],p.vidhald.map(r=>[v(r.t),v(r.a),st(r.s)]))+
+    H(6,'Herbergjalisti og flóttaleiðir')+(p.herb.length?T(['Herbergi','Hæð','Aðalflóttaleið','Varaflóttaleið'],p.herb.map(r=>[v(r.nr),v(r.haed),v(r.adal),v(r.vara)])):'<p style="color:#66717c">Engin herbergi skráð.</p>')+
+    H(7,'Aðrar athugasemdir')+'<p>'+v(p.ath)+'</p></div>';
+  // teikningar
+  p.teikn.filter(t=>t.img).forEach((t,i)=>{h+='<div class="pb"></div><div>'+(i===0?H(8,'Teikningar'):'')+'<div style="font-weight:700;font-size:14px;margin:4px 0 8px">'+esc(t.title||'')+'</div><img src="'+esc(t.img)+'" style="width:100%;max-height:900px;object-fit:contain"></div>'});
+  return h+'</div>';
+}
+let _h2p=null;
+function loadH2P(){if(window.html2pdf)return Promise.resolve();return _h2p||(_h2p=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';s.onload=res;s.onerror=()=>{_h2p=null;rej(new Error('Gat ekki hlaðið PDF-einingu'))};document.head.appendChild(s)}))}
+function skraarnafn(){return ('Rymingaraetlun-'+(label(P)||'')).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[ðÐ]/g,'d').replace(/[þÞ]/g,'th').replace(/[æÆ]/g,'ae').replace(/[^\w-]+/g,'-').replace(/-+/g,'-').replace(/-$/,'')+'.pdf'}
+async function pdfBase64(){
+  await loadH2P();
+  const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-10000px;top:0;background:#fff';holder.innerHTML=pdfHtml();document.body.appendChild(holder);
+  try{
+    await Promise.all([...holder.querySelectorAll('img')].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r})));
+    const uri=await window.html2pdf().set({margin:[10,10,10,10],filename:skraarnafn(),image:{type:'jpeg',quality:.88},html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid']}}).from(holder.firstChild).outputPdf('datauristring');
+    return String(uri).split(',')[1]||'';
+  }finally{holder.remove()}
+}
+function sjalfgefidEfni(){return 'Brunaeftirlit og rýmingaráætlun'+(P.meta.heimilisfang?' — '+P.meta.heimilisfang:'')}
+function sjalfgefinSkilabod(){return 'Góðan dag,\n\nMeðfylgjandi er brunaeftirlits- og rýmingaráætlun'+(P.meta.heimilisfang?' fyrir '+P.meta.heimilisfang:'')+' sem PDF-skjal.\n\nEndilega hafið samband ef eitthvað þarf að laga eða bæta við.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf\nHelluhrauni 10, 220 Hafnarfjörður · Sími 565 4080'}
+function opnaSenda(){
+  const old=document.querySelector('.sd-bak');if(old)old.remove();
+  let fra='eldklar@eldklar.is';try{const s=localStorage.getItem('slokk_send_from');const mm=s&&s.match(/<([^>]+)>/);if(mm&&SENDENDUR.includes(mm[1]))fra=mm[1]}catch(_){}
+  const d=document.createElement('div');d.className='sd-bak';
+  d.innerHTML='<div class="sd" role="dialog" aria-label="Senda áætlun"><div class="sd-h"><span>📧 Senda rýmingaráætlun<small title="Svar-stöð SV-28 — hvaðan textinn kemur">SV-28</small></span><button type="button" data-x style="border:0;background:none;font-size:18px;cursor:pointer;color:#94a3b8">✕</button></div>'+
+    '<div class="sd-b"><label>Til</label><input id="sd-til" type="email" value="'+esc((fyr&&fyr.netfang)||'')+'" placeholder="netfang@daemi.is">'+
+    '<label>Frá</label><select id="sd-fra">'+SENDENDUR.map(x=>'<option'+(x===fra?' selected':'')+'>'+x+'</option>').join('')+'</select>'+
+    '<label>Efni</label><input id="sd-efni" value="'+esc(sjalfgefidEfni())+'">'+
+    '<label>Skilaboð</label><textarea id="sd-texti" rows="8">'+esc(sjalfgefinSkilabod())+'</textarea>'+
+    '<div class="sd-msg">Áætlunin fer með sem PDF-viðhengi ('+esc(skraarnafn())+'): forsíða, allir kaflar og teikningar. Hún er vistuð fyrst.</div><div class="sd-msg" id="sd-stada"></div></div>'+
+    '<div class="sd-f"><button type="button" data-dl>⬇ Sækja PDF</button><div style="display:flex;gap:8px"><button type="button" data-x>Hætta við</button><button type="button" class="go" data-go>📤 Senda</button></div></div></div>';
+  document.body.appendChild(d);
+  const loka=()=>d.remove(),stada=t=>{d.querySelector('#sd-stada').textContent=t};
+  d.querySelectorAll('[data-x]').forEach(b=>b.onclick=loka);d.addEventListener('click',e=>{if(e.target===d)loka()});
+  d.querySelector('[data-dl]').onclick=async e=>{const b=e.target;b.disabled=true;stada('Bý til PDF…');
+    try{const b64=await pdfBase64();const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+      const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));const a=document.createElement('a');a.href=url;a.download=skraarnafn();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);stada('')}
+    catch(err){stada('⚠ '+(err.message||err))}b.disabled=false};
+  d.querySelector('[data-go]').onclick=async e=>{
+    const b=e.target,til=d.querySelector('#sd-til').value.trim(),fra=d.querySelector('#sd-fra').value;
+    if(!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(til)){stada('⚠ Sláðu inn gilt netfang.');return}
+    b.disabled=true;b.textContent='Sendir…';
+    try{
+      stada('Vista áætlunina…');await save();if(!/^Vistað/.test($('#status').textContent))throw new Error('Áætlunin vistaðist ekki — ekkert var sent.');
+      stada('Bý til PDF…');const b64=await pdfBase64();if(!b64)throw new Error('Tókst ekki að búa til PDF.');
+      stada('Sendi…');
+      const html='<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#1d2329">'+esc(d.querySelector('#sd-texti').value).replace(/\n/g,'<br>')+'</div>';
+      const r=await fetch(GMAIL_SEND_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:fra,from:'Brunahólf slökkvitæki ehf <'+fra+'>',to:[til],subject:d.querySelector('#sd-efni').value,html,attachments:[{filename:skraarnafn(),content:b64}]})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||j.error||j.ok===false)throw new Error((j.message||j.error||('HTTP '+r.status))+(/NOT_CONNECTED/i.test(JSON.stringify(j))?' (pósthólfið þarf að tengja aftur)':''));
+      try{localStorage.setItem('slokk_send_from','Brunahólf slökkvitæki ehf <'+fra+'>')}catch(_){}
+      (P.sendingar=P.sendingar||[]).push({dags:new Date().toISOString(),til,fra,efni:d.querySelector('#sd-efni').value});
+      await save();refreshMissing();
+      loka();alert('✓ Rýmingaráætlun send á '+til);
+    }catch(err){stada('⚠ '+(err.message||err));b.disabled=false;b.textContent='📤 Senda'}
+  };
+  setTimeout(()=>{const i=d.querySelector('#sd-til');if(i&&!i.value)i.focus()},60);
+}
 
 /* ---------- ræsing ---------- */
 (async()=>{
