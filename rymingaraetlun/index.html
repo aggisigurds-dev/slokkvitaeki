@@ -156,13 +156,12 @@ select.st{border:0;border-radius:999px;padding:4px 10px;font-size:13px;font-weig
   select.st{background:none!important;padding:3px 0!important}
   section{break-inside:avoid}
   section.long{break-inside:auto}
-  .draw{display:block}
   .drawsec{break-before:page}
-  .slot{border:0;padding:0;break-before:page}
-  .slot:first-child{break-before:auto}
-  .box{aspect-ratio:auto;background:none}
-  .box img{height:auto;max-height:245mm}
-  .slot .ttl{font-size:16px}
+  .draw{display:grid;grid-template-columns:1fr 1fr;gap:5mm}
+  .slot{border:0;padding:0;break-inside:avoid}
+  .box{aspect-ratio:auto;background:none;height:118mm;display:flex;align-items:center;justify-content:center}
+  .box img{width:100%;height:100%;max-height:118mm;object-fit:contain}
+  .slot .ttl{font-size:12px}
 }
 </style>
 </head>
@@ -501,20 +500,67 @@ function pdfHtml(){
     H(5,'Eldvarnir, viðhald og prófanir')+T(['Atriði','Ábyrgð / athugasemd','Staða'],p.vidhald.map(r=>[v(r.t),v(r.a),st(r.s)]))+
     H(6,'Herbergjalisti og flóttaleiðir')+(p.herb.length?T(['Herbergi','Hæð','Aðalflóttaleið','Varaflóttaleið'],p.herb.map(r=>[v(r.nr),v(r.haed),v(r.adal),v(r.vara)])):'<p style="color:#66717c">Engin herbergi skráð.</p>')+
     H(7,'Aðrar athugasemdir')+'<p>'+v(p.ath)+'</p></div>';
-  // teikningar
-  p.teikn.filter(t=>t.img).forEach((t,i)=>{h+='<div class="pb"></div><div>'+(i===0?H(8,'Teikningar'):'')+'<div style="font-weight:700;font-size:14px;margin:4px 0 8px">'+esc(t.title||'')+'</div><img src="'+esc(t.img)+'" style="width:100%;max-height:900px;object-fit:contain"></div>'});
+  // teikningar: teiknaðar beint í PDF-ið síðu fyrir síðu (teiknaTeikningar) — aldrei skornar á milli síðna
   return h+'</div>';
 }
 let _h2p=null;
 function loadH2P(){if(window.html2pdf)return Promise.resolve();return _h2p||(_h2p=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';s.onload=res;s.onerror=()=>{_h2p=null;rej(new Error('Gat ekki hlaðið PDF-einingu'))};document.head.appendChild(s)}))}
 function skraarnafn(){return ('Rymingaraetlun-'+(label(P)||'')).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[ðÐ]/g,'d').replace(/[þÞ]/g,'th').replace(/[æÆ]/g,'ae').replace(/[^\w-]+/g,'-').replace(/-+/g,'-').replace(/-$/,'')+'.pdf'}
-async function pdfBase64(){
+function myndSem(url){
+  return fetch(url,{mode:'cors',cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.blob()}).then(bl=>new Promise((res,rej)=>{
+    const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{
+      // Minnkað í prentgæði (lengsta hlið 1500 px, JPEG 0,75) svo PDF-ið komist í póst (~6 MB hámark sendingarþjónustunnar).
+      const k=Math.min(1,1500/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));
+      const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      res({data:c.toDataURL('image/jpeg',.75),w:c.width,h:c.height,fmt:'JPEG'})};im.onerror=()=>rej(new Error('mynd las ekki'));im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(bl)}));
+}
+// Raðar teikningum á síður svo hver sjáist ALLTAF heil (object-fit: contain):
+//  liggjandi (b/h ≥ 1,15) → tvær á síðu, hvor undir annarri · mjög há (b/h < 0,55) → ein á síðu · annað → fjórar (2×2).
+function rodaTeikningum(myndir){
+  const teg=m=>{const a=m.w/m.h;return a>=1.15?'half':a<0.55?'full':'quarter'};
+  const per={half:2,quarter:4,full:1},sidur=[];let nu=null;
+  myndir.forEach(m=>{const t=teg(m);if(!nu||nu.teg!==t||nu.items.length>=per[t]){nu={teg:t,items:[]};sidur.push(nu)}nu.items.push(m)});
+  return sidur;
+}
+function hlutar(teg,i,top){
+  const L=10,B=190,H=287-top,g=5;           // mm: vinstri spássía, breidd, hæð sem er eftir á síðunni, bil
+  if(teg==='full')return{x:L,y:top,w:B,h:H};
+  if(teg==='half'){const hh=(H-g)/2;return{x:L,y:top+i*(hh+g),w:B,h:hh}}
+  const ww=(B-g)/2,hh=(H-g)/2;return{x:L+(i%2)*(ww+g),y:top+Math.floor(i/2)*(hh+g),w:ww,h:hh};
+}
+async function teiknaTeikningar(pdf,stada){
+  const lis=P.teikn.filter(t=>t.img);if(!lis.length)return;
+  const myndir=[];
+  for(let i=0;i<lis.length;i++){if(stada)stada('Sæki teikningu '+(i+1)+' af '+lis.length+'…');
+    try{const m=await myndSem(lis[i].img);m.title=lis[i].title||'';myndir.push(m)}catch(e){myndir.push({villa:true,title:(lis[i].title||'')+' (mynd náðist ekki)',w:4,h:3})}}
+  rodaTeikningum(myndir).forEach((sida,si)=>{
+    pdf.addPage('a4','portrait');
+    let top=10;
+    if(si===0){pdf.setFillColor(200,50,30);pdf.circle(13.5,15,3.6,'F');pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.text('8',13.5,16.3,{align:'center'});
+      pdf.setTextColor(29,35,41);pdf.setFontSize(14);pdf.text('Teikningar',19.5,17);pdf.setDrawColor(29,35,41);pdf.setLineWidth(.6);pdf.line(10,21,200,21);top=26}
+    sida.items.forEach((m,i)=>{
+      const c=hlutar(sida.teg,i,top);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(sida.teg==='quarter'?9:11);pdf.setTextColor(29,35,41);
+      pdf.text(pdf.splitTextToSize(m.title,c.w)[0]||'',c.x,c.y+4);
+      const by=c.y+6.5,bh=c.h-6.5;
+      if(m.villa){pdf.setDrawColor(200,50,30);pdf.rect(c.x,by,c.w,bh);return}
+      const s=Math.min(c.w/m.w,bh/m.h),dw=m.w*s,dh=m.h*s;
+      pdf.addImage(m.data,m.fmt,c.x+(c.w-dw)/2,by+(bh-dh)/2,dw,dh,undefined,'FAST');
+    });
+  });
+}
+async function pdfBase64(stada){
   await loadH2P();
   const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-10000px;top:0;background:#fff';holder.innerHTML=pdfHtml();document.body.appendChild(holder);
   try{
     await Promise.all([...holder.querySelectorAll('img')].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r})));
-    const uri=await window.html2pdf().set({margin:[10,10,10,10],filename:skraarnafn(),image:{type:'jpeg',quality:.88},html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid']}}).from(holder.firstChild).outputPdf('datauristring');
-    return String(uri).split(',')[1]||'';
+    if(stada)stada('Bý til forsíðu og kafla…');
+    const pdf=await window.html2pdf().set({margin:[10,10,10,10],filename:skraarnafn(),image:{type:'jpeg',quality:.88},html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid']}}).from(holder.firstChild).toPdf().get('pdf');
+    // auð síða sem html2pdf skilur stundum eftir í lokin
+    const n=pdf.internal.getNumberOfPages();if(n>1){try{const ops=pdf.internal.pages[n];if(ops&&ops.filter(x=>/\bDo\b|Tj|TJ/.test(x)).length===0)pdf.deletePage(n)}catch(_){}}
+    await teiknaTeikningar(pdf,stada);
+    return String(pdf.output('datauristring')).split(',')[1]||'';
   }finally{holder.remove()}
 }
 function sjalfgefidEfni(){return 'Brunaeftirlit og rýmingaráætlun'+(P.meta.heimilisfang?' — '+P.meta.heimilisfang:'')}
@@ -534,7 +580,7 @@ function opnaSenda(){
   const loka=()=>d.remove(),stada=t=>{d.querySelector('#sd-stada').textContent=t};
   d.querySelectorAll('[data-x]').forEach(b=>b.onclick=loka);d.addEventListener('click',e=>{if(e.target===d)loka()});
   d.querySelector('[data-dl]').onclick=async e=>{const b=e.target;b.disabled=true;stada('Bý til PDF…');
-    try{const b64=await pdfBase64();const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    try{const b64=await pdfBase64(stada);const bin=atob(b64),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
       const url=URL.createObjectURL(new Blob([u8],{type:'application/pdf'}));const a=document.createElement('a');a.href=url;a.download=skraarnafn();document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);stada('')}
     catch(err){stada('⚠ '+(err.message||err))}b.disabled=false};
   d.querySelector('[data-go]').onclick=async e=>{
@@ -543,7 +589,8 @@ function opnaSenda(){
     b.disabled=true;b.textContent='Sendir…';
     try{
       stada('Vista áætlunina…');await save();if(!/^Vistað/.test($('#status').textContent))throw new Error('Áætlunin vistaðist ekki — ekkert var sent.');
-      stada('Bý til PDF…');const b64=await pdfBase64();if(!b64)throw new Error('Tókst ekki að búa til PDF.');
+      stada('Bý til PDF…');const b64=await pdfBase64(stada);if(!b64)throw new Error('Tókst ekki að búa til PDF.');
+      if(b64.length>5.6e6)throw new Error('PDF-ið er of stórt til að senda ('+Math.round(b64.length*0.75/1048576)+' MB, hámark um 4 MB). Notaðu „Sækja PDF“ og sendu það sjálf(ur), eða fækkaðu teikningum.');
       stada('Sendi…');
       const html='<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#1d2329">'+esc(d.querySelector('#sd-texti').value).replace(/\n/g,'<br>')+'</div>';
       const r=await fetch(GMAIL_SEND_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:fra,from:'Brunahólf slökkvitæki ehf <'+fra+'>',to:[til],subject:d.querySelector('#sd-efni').value,html,attachments:[{filename:skraarnafn(),content:b64}]})});
