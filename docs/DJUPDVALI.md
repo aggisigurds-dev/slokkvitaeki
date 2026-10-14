@@ -18,6 +18,7 @@ Ekkert var eytt.
 | Leiðbeiningar | `124-leidbeiningar` | — | vísaði á skrá sem er ekki til (404 í hvert sinn) |
 | Móttaka | `179-mottaka-arrival` | (`taeki_events` hefur engan tímastimpil) | gæti verið árstíðabundið |
 | Vertíð | `210-vertid-mottaka` | sama | gæti verið árstíðabundið — vekja fyrir vertíð |
+| Lánstæki | inline-blokk í `index.html` (`var Lanstaeki`) | lánstæki skráð síðast 28.04.2026 | Agnar 13.10.2026: „ekkert notuð" — sjá neðar |
 
 Samtals ~360 KB af kóða sem þarf ekki lengur að þátta í hverri ræsingu.
 
@@ -27,6 +28,19 @@ Samtals ~360 KB af kóða sem þarf ekki lengur að þátta í hverri ræsingu.
   á varinn hátt (`window.X && …`): 16 (Verkdagbok.refresh), 61 (AgingReport.open), 211 (Vertid.reload).
 - **`App.switchView`-umbúðir** (345, 172, 178, 179, 210) sjá aðeins um sitt eigið borð — keðjan helst heil án þeirra.
 - **Audit-próf** sem nefna 09, 178 og 210 lesa innihald skránna, ekki merkin í `index.html` — óbreytt.
+
+## Lánstæki — öðruvísi svæft
+
+Lánstæki er ekki sérstök skrá heldur inline-blokk í `index.html` (`var Lanstaeki = {…}`, með `switchView`-umbúðum).
+Hún er svæfð með `type="text/x-djupdvali"` (vafrinn keyrir ekki skriftu af óþekktri tegund; kommentun er ótrygg því
+JS-kóði getur innihaldið `--`). `view-lanstaeki` og gluggarnir tveir eru áfram stöðugt HTML og gera ekkert.
+Varnir þar sem kóði keyrði fyrir Lánstæki þótt borðið væri aldrei opnað — allar vakna sjálfar þegar `Lanstaeki` er til:
+- `v9.js` inject(): sótti `lanstaeki` og skannaði `.dtbl`-raðir á 5 s fresti.
+- `15-sidebar-counts.js`: talning útlánaðra fyrir hliðarstikutakkann (Geymslu-talningin úr sömu töflu er óbreytt).
+- `scanmode.js` og 00-legacy (Geymsla-dálkur) hætta strax nema borðið sé virkt — óbreytt.
+
+**Vekja Lánstæki:** setja `<script>` í stað `<script type="text/x-djupdvali" data-djupdvali="lanstaeki">` og fjarlægja
+`lanstaeki` úr `SVEFN` í 465.
 
 ## Vörðurinn: `465-djupdvali.js`
 
