@@ -107,7 +107,14 @@
     // padding-top sýnarinnar (bilið sem appið tekur frá fyrir fasta bannerinn, mælt 148 px) — stikan lenti í top:0,
     // undir #bstal-banner (z-index 40), hvorki sýnileg né smellanleg (elementFromPoint gaf .bb-logo). Hún les nú
     // sama bil og appið reiknar sjálft, svo hún sest rétt neðan við bannerinn líka í símaappinu (mjórri haus).
-    const stillaBil = () => { try { bar.style.marginTop = (parseFloat(getComputedStyle(v).paddingTop) || 0) + 'px'; } catch (_) {} };
+    // 13.10.2026 (afköst): vaktirnar hér að neðan kalla þetta við hverja klasa-/stílbreytingu borðsins — switchView snertir
+    // ÖLL borð — og getComputedStyle þvingaði stílútreikning í hvert sinn: 233 ms í ræsingu (CPU-prófíll), fyrir borð sem
+    // var ekki opið. Falið borð þarf ekkert bil; þegar það birtist breytist klasinn/stíllinn og vaktin reiknar það þá.
+    const stillaBil = () => { try {
+      const sd = v.style.display;
+      if (sd === 'none' || (!sd && !v.classList.contains('active'))) return;
+      bar.style.marginTop = (parseFloat(getComputedStyle(v).paddingTop) || 0) + 'px';
+    } catch (_) {} };
     stillaBil();
     window.addEventListener('resize', stillaBil);
     new MutationObserver(stillaBil).observe(v, { attributes: true, attributeFilter: ['style', 'class'] });

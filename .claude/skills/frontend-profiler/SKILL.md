@@ -16,6 +16,12 @@ ranga dependency-fylkingu, heldur:
 | **Debounce sem hleypur aldrei** af því síðan er aldrei róleg | 358 (150 ms debounce) — síðan mældist með ~2.500 breytingar/s | Reiturinn birtist aldrei; „virkar ekki" |
 | **Observer sem skrifar það sem hann horfir á** án marks/undirskriftar | 295 var með þetta 2026-08 (lagað með `dataset.sig`) | 150 ms endurteikning að eilífu |
 | `setInterval` < 1 s sem skrifar DOM án þess að athuga hvort nokkuð breyttist | 00-legacy á 17 interval | Stöðugt flökt, rafhlaða |
+| **Útlitslestur í vakt** (`getComputedStyle`, `offsetParent`, `getBoundingClientRect`, `getClientRects`, að lesa *eða skrifa* `scrollTop`) sem keyrir við hverja breytingu, líka fyrir falið borð | 13.10.2026, ræsing: 73 (`getClientRects` 368 ms), 368 (`scrollTop` 205 ms), 409 (`view.getBoundingClientRect` 123 ms), 376/234/00-legacy (stíll falins borðs 215–252 ms) | Hver lestur þvingar stíl/útlit ofan á það sem ramminn reiknar hvort eð er. **Kostnaðurinn FÆRIST á næsta lesanda** þegar einn er lagaður — mældu heildina, ekki bara skrána |
+
+**Falið borð án útlitslesturs:** `.view` er `display:none` í app.css nema `.active` eða stílað beint, svo
+`const sd = v.style.display; if (sd === 'none' || (!sd && !v.classList.contains('active'))) return;` svarar
+„falið" án þess að snerta útlit. Borðin eru bein börn `<body>`: í „sýnilegar rætur"-leit dugar `classList.contains('view')`
+í stað `getClientRects()`. Skrunstaða: merktu stök sem fá `scroll`-atburð og lestu aðeins þau (368 `vaktaSkrun`).
 
 ## 1. Mæla FYRST — aldrei giska
 

@@ -325,7 +325,10 @@
     const ut = [v];
     for (const c of document.body.children) {
       if (c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
-      if (c.getClientRects().length) ut.push(c);
+      // Önnur borð (.view, bein börn body) eru falin nema stílað sé beint á þau. Áður var getClientRects() hér — það
+      // þvingar útlitsútreikning í hverri umferð (mælt í ræsingu 13.10.2026). Hin börnin (gluggar, toppstika) eru smá.
+      if (c.classList.contains('view') && !(c.style.display && c.style.display !== 'none')) continue;
+      ut.push(c);
     }
     return ut;
   }

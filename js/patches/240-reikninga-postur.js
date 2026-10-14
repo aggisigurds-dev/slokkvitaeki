@@ -2065,6 +2065,8 @@
   window.ReikningaPostur = {
     open: () => { if (window.App && App.switchView) App.switchView(NAV_KEY); },
     reload: load,
+    // 13.10.2026: satt þegar listinn hefur verið sóttur eða er að sækjast — 381 vekur hann aðeins þá (sjá þar).
+    hladid: () => !!(state.loaded || state.loading),
     // 19.09.2026: sendi-glugginn fluttur út svo Þjónustuborðið geti kallað í hann
     // í stað þess að afrita hann. `m` þarf { cust } og/eða { sale }; án hvorugs
     // hefur hann enga reikninga til að bjóða.
