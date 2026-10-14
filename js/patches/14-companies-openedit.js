@@ -174,8 +174,16 @@
     let origOnclick = null;
     let origText = null;
     if (saveBtn) {
-      origOnclick = saveBtn.getAttribute('onclick');
-      origText = saveBtn.textContent;
+      // 14.10.2026 (netvörður mældi): tvö openEdit-köll í röð lásu `onclick` sem null í seinna skiptið (fyrra kallið
+      // hafði fjarlægt hann), svo eftir vistun stóð „Nýtt fyrirtæki"-takkinn dauður með „Vista breytingar". Upprunalegu
+      // gildin eru geymd á takkanum í FYRSTA skipti og lesin þaðan.
+      if (!saveBtn.dataset.upprOnclickVistad) {
+        saveBtn.dataset.upprOnclick = saveBtn.getAttribute('onclick') || '';
+        saveBtn.dataset.upprTexti = saveBtn.textContent;
+        saveBtn.dataset.upprOnclickVistad = '1';
+      }
+      origOnclick = saveBtn.dataset.upprOnclick || null;
+      origText = saveBtn.dataset.upprTexti || null;
       saveBtn.removeAttribute('onclick');
       saveBtn.textContent = 'Vista breytingar';
       // 14.10.2026 (mælt í úttekt): vel heppnuð vistun skildi takkann eftir `disabled` (aðeins villuleiðin virkjaði hann

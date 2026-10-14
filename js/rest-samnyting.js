@@ -229,6 +229,11 @@
             else for (var di = 0; di < d.length; di++) hlutur[d[di]] = (d[di] in raud) ? raud[d[di]] : null;
             var vantarDalk = false;
             if (d) for (var dk = 0; dk < d.length; dk++) if (!(d[dk] in raud)) vantarDalk = true;
+            // 14.10.2026 (mælt): select('*') svaraði MJÓRRI röð (12 leitarsúlur úr 114) sem heilli — `d` er null
+            // fyrir '*', svo athugunin að ofan keyrði aldrei. „Breyta"-glugginn (00-legacy) fékk þá tómt
+            // `tengiliður` og Vista skrifaði "" yfir „Melissa" (fyrirtaeki 193, opnað úr POS-leit). '*' er aðeins
+            // svarað úr minni þegar röðin ber súlur sem eingöngu select('*') skilar.
+            if (d === null && !raud.__sydar && !(('discount_tier_id' in raud) && ('status' in raud))) vantarDalk = true;   // SYND-röð 451 er ekki í grunninum
             if (!vantarDalk) {
               var stakur = String(haus(h, 'Accept') || '').indexOf('pgrst.object') > -1;
               tolur.urMinni = (tolur.urMinni || 0) + 1;

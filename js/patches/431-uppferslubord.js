@@ -319,6 +319,38 @@
     wrapped.__ub431 = true;
     C.load = wrapped;
   }
+  // 14.10.2026 (variant-greining eftir #921): Companies.load() er EKKI kallað þegar ræst er á Verkborði/POS og prófíll
+  // opnaður um _openCompanySafe (POS-leit, Kröfuyfirlit, Hreyfingalisti) eða unnið í 157 — þá stóð MJÓI listinn (114,
+  // 12 leitarsúlur) alla lotuna og allt sem las aðra súlu fékk undefined: sameining í 157 sleppti skjölum
+  // (customer_base_id), ⚑ skrifaði yfir nótu, Póstafrits-pillan (199) og skýrslupunktar (features) sýndu rangt.
+  // Mjór listi = „gildi vantar" → EIN breikkun á lotu (fyrsta fylling — sama sókn og ræsing beint á Ársskoðun gerir),
+  // í bakgrunni og ÁN teikningar: aðeins súlur sem vantar eru lagðar á SÖMU hlutina, svo engar tilvísanir rofna og
+  // ekkert sem hefur breyst í lotunni er skrifað yfir. Gildir í öllum hömum, líka af (sama rök og fyrir tóman lista).
+  let _breikkun = 0;   // 0 = ekki reynt / brást, 1 = í gangi, 2 = búið
+  function breikkaListann() {
+    const C = window.Companies;
+    if (_breikkun || !C || !Array.isArray(C.list) || C.list.length < 100 || breidurListi(C.list)) return;
+    if (!window.DB || !DB.sb || typeof DB.fetchAll !== 'function') return;
+    _breikkun = 1;
+    note('fyrirtaeki');
+    Promise.resolve(DB.fetchAll((fra, til) => DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').order('id').range(fra, til)))
+      .then((nyr) => {
+        const L = C.list;
+        if (!Array.isArray(nyr) || !nyr.length || !Array.isArray(L)) { _breikkun = 0; return; }
+        const eftirId = new Map(nyr.map((r) => [+r.id, r]));
+        for (let i = 0; i < L.length; i++) {
+          const r = L[i]; if (!r || r.__sydar) continue;
+          const w = eftirId.get(+r.id); if (!w) continue;
+          for (const k in w) if (!(k in r)) r[k] = w[k];
+        }
+        _breikkun = 2;
+        if (L.length >= 100 && breidurListi(L)) _listiHeil = true;
+      }, () => { _breikkun = 0; });
+  }
+  [8000, 20000, 60000].forEach((ms) => setTimeout(() => {
+    try { if (typeof requestIdleCallback === 'function') requestIdleCallback(breikkaListann, { timeout: 3000 }); else breikkaListann(); } catch (_) {}
+  }, ms));
+
   function vefjaHlada() {
     const H = window.Hledslutakki;
     if (!H || typeof H.saekja !== 'function' || H.saekja.__ub431) return;

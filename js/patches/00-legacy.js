@@ -2728,8 +2728,11 @@ console.log('[patch-master] loaded with all fixes');
       document.body.appendChild(m);
       m.querySelector('._pm_cancel').onclick=function(){m.remove();};
       m.onclick=function(e){if(e.target===m)m.remove();};
-      m.querySelector('._pm_save').onclick=function(){
-        var update={
+      // 14.10.2026 (mælt): röðin gat komið MJÓ (rest-samnyting svaraði select('*') úr 12 súlna lista 114) — þá stóð
+      // Tengiliður tómur og Vista skrifaði "" yfir það sem var í grunninum. Nú fara aðeins reitir sem notandinn
+      // BREYTTI — sama regla og upplýsingaformið í 153. Nafnið líka aðeins ef það breyttist (annars gat gömul mynd
+      // fært til baka endurnefningu af annarri vél án þess að tækin fylgdu). Engu breytt → glugginn lokast, ekkert skrif.
+      var lesa=function(){ return {
           nafn:document.getElementById('_ed_nafn').value.trim(),
           kennitala:document.getElementById('_ed_kt').value.trim(),
           simi:document.getElementById('_ed_simi').value.trim(),
@@ -2737,7 +2740,12 @@ console.log('[patch-master] loaded with all fixes');
           heimilisfang:document.getElementById('_ed_addr').value.trim(),
           tengiliður:document.getElementById('_ed_contact').value.trim(),
           athugasemdir:document.getElementById('_ed_notes').value.trim()
-        };
+        }; };
+      var upphaf=lesa();
+      m.querySelector('._pm_save').onclick=function(){
+        var update=lesa();
+        Object.keys(update).forEach(function(k){ if(update[k]===upphaf[k]) delete update[k]; });
+        if(!Object.keys(update).length){ m.remove(); return; }
         window.DB.sb.from('fyrirtaeki').update(update).eq('id',companyId).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
           // 2026-07-30 — nafnbreyting VERÐUR að fylgja tækjunum. `uttaeki` á engan
