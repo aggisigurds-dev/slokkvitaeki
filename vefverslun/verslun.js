@@ -177,9 +177,19 @@
     else if (VV.sia.rada === 'nafn') l.sort((a, b) => varaNafn(a).localeCompare(varaNafn(b), 'is'));
     return l;
   }
+  // Leitin þolir broddstafaleysi og CO2/CO₂ ("slokkvitaeki", "co2"), og hvert orð verður að finnast einhvers staðar
+  // í heiti, innra heiti, flokki eða lýsingu ("reyk 10" finnur 10 ára skynjarann)
+  const leitHreint = (t) => String(t || '').toLowerCase().replace(/₂/g, '2').replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/ð/g, 'd').replace(/ö/g, 'o')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
   function sjanlegar() {
-    const q = VV.sia.leit.trim().toLowerCase();
-    return radad(synilegar().filter((v) => (!VV.sia.flokkur || flokkSlod(v.flokkur) === VV.sia.flokkur) && (!q || (varaNafn(v) + ' ' + v.flokkur).toLowerCase().includes(q))));
+    const ord = leitHreint(VV.sia.leit).split(/\s+/).filter(Boolean);
+    const hey = (v) => leitHreint([varaNafn(v), v.innraNafn, v.flokkur, flokkHeiti(v.flokkur), v.lysing].join(' '));
+    return radad(synilegar().filter((v) => (!VV.sia.flokkur || flokkSlod(v.flokkur) === VV.sia.flokkur) && (!ord.length || ord.every((o) => hey(v).includes(o)))));
+  }
+  // „27 vörur" — eða „3 af 27 vörum" þegar leit eða flokkur þrengir listann
+  function talnTexti() {
+    const alls = synilegar().length, n = sjanlegar().length;
+    return n === alls ? `${alls} ${texti('forsida.vorur-ord', 'vörur · verð með vsk')}` : `${n} af ${alls} vörum · verð með vsk`;
   }
 
   // ── Sameiginlegt: haus, fótur, vörukort ──────────────────────────────────
@@ -226,7 +236,7 @@ ${uppselt ? `<a class="vv-btn ghost sm" href="#/vara/${v.id}">${E('span', 'kort.
     const traust = B('forsida.traust', `<div class="vv-wrap">${[['innsigli', 'Starfsleyfi frá HMS'], ['bill', 'Sótt eða sent heim'], ['spjall', 'Ráðgjöf frá fagfólki'], ['hringhak', 'Skoðun og áfylling á tækjum']].map(([i, d], k) => `<span>${ico(i)}${E('span', 'traust.' + (k + 1), d)}</span>`).join('')}</div>`, 'vv-traust');
     const rada = [['vinsaelt', 'Vinsælast'], ['lagt', 'Verð: lægst fyrst'], ['haett', 'Verð: hæst fyrst'], ['nafn', 'Nafn (A–Ö)']];
     return `${hetja}${traust}<main class="vv-wrap vv-adal">
-<div class="vv-titilrod"><div>${E('h2', 'forsida.titill', 'Allar vörur')}<span class="vv-undir" id="vv-taln">${syn.length} ${esc(texti('forsida.vorur-ord', 'vörur · verð með vsk'))}</span></div>
+<div class="vv-titilrod"><div>${E('h2', 'forsida.titill', 'Allar vörur')}<span class="vv-undir" id="vv-taln">${esc(talnTexti())}</span></div>
 <label class="vv-rada">${E('span', 'forsida.rada', 'Raða')}<select data-act="rada">${rada.map(([k, d]) => `<option value="${k}"${VV.sia.rada === k ? ' selected' : ''}>${d}</option>`).join('')}</select></label></div>
 <div class="vv-flokkar" role="group" aria-label="Flokkar"><button type="button" class="vv-flokk" data-act="flokkur" data-v="" aria-pressed="${!VV.sia.flokkur}">${E('span', 'flokkur.allt', 'Allt')}<small>${syn.length}</small></button>${flokkar.map((f) => `<button type="button" class="vv-flokk" data-act="flokkur" data-v="${flokkSlod(f.f)}" aria-pressed="${VV.sia.flokkur === flokkSlod(f.f)}">${E('span', 'flokkur.' + flokkSlod(f.f), FLOKKAR[f.f] || f.f)}<small>${f.n}</small></button>`).join('')}</div>
 ${grind()}
@@ -933,6 +943,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     if (leid().s !== 'forsida') { location.hash = '#/'; return; }
     const g = document.getElementById('vv-grind');
     if (g) g.outerHTML = grind();
+    const tl = document.getElementById('vv-taln'); if (tl) tl.textContent = talnTexti();
     if (VV.eftirTeikningu) VV.eftirTeikningu();
   });
   window.addEventListener('hashchange', () => { VV.vara.mynd = 0; VV.vara.fjoldi = 1; VV.vara.tilk = ''; render(true); });
@@ -1002,6 +1013,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
       return;
     }
     VV.breytaLeyft = breyta || VV.stada !== 'virk';
+    if (VV.breytaLeyft) document.body.classList.add('vvr-bidur');
     beitaThema();
     render(false);
     if (VV.breytaLeyft) {

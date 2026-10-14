@@ -299,6 +299,9 @@ button{font-family:inherit}
 /* Tilkynning (toast) */
 .vv-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--c-navy-deep);color:#fff;padding:12px 18px;border-radius:12px;font-size:14.5px;box-shadow:0 12px 30px -10px rgba(0,0,0,.4);max-width:calc(100vw - 32px)}
 
+/* Pláss fyrir prufuslá ritilsins frá fyrstu teikningu (ritill.js setur sjálfur vvr-a með sömu 52 px) */
+body.vvr-bidur{padding-top:52px}
+
 /* Falinn hlutur (sést aðeins í breytingaham, dofinn) */
 .vv-falid{display:none!important}
 body.vv-ritill-a .vv-falid{display:revert!important;opacity:.35;outline:2px dashed #94a3b8;outline-offset:2px}
