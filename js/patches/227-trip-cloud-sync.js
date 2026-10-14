@@ -283,9 +283,13 @@
    */
   async function athugaKlukku() {
     try {
-      var cfgUrl = (window.SUPABASE_URL || '') + '/rest/v1/';
+      // 14.10.2026 (mælt í úttekt): HEAD á rót REST-API (/rest/v1/) fær 401 með anon-lyklinum — rauð villa í console og
+      // netflipanum við hverja ræsingu (4 af 4). Taflan sem appið les hvort sem er svarar 200 (prófað með curl), og
+      // Date-hausinn fylgir eins.
+      var cfgUrl = (window.SUPABASE_URL || '') + '/rest/v1/app_settings?select=id&limit=1';
       if (!window.SUPABASE_URL) return;
-      var r = await fetch(cfgUrl, { method: 'HEAD', headers: { apikey: window.SUPABASE_KEY || '' } });
+      var k = window.SUPABASE_KEY || '';
+      var r = await fetch(cfgUrl, { method: 'HEAD', headers: { apikey: k, Authorization: 'Bearer ' + k } });
       var d = r.headers.get('date');
       if (!d) return;
       var skekkja = Math.abs(Date.now() - new Date(d).getTime());

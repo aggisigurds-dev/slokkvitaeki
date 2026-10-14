@@ -317,6 +317,10 @@
       panel = document.createElement('div');
       panel.id = 'mip-panel';
       container.prepend(panel);
+    } else if (panel.parentNode !== container) {
+      // 14.10.2026 (mælt í úttekt): spjaldið er eitt fyrir Tekjur og Bókhalds yfirlit. Það var búið til í fyrsta borðinu
+      // sem var opnað og síðan endurteiknað í FALDA borðinu — hitt borðið fékk það aldrei alla lotuna. Fært á virka borðið.
+      container.prepend(panel);
     }
     if (!_unpaid.length) {
       panel.innerHTML = '';
@@ -409,7 +413,7 @@
           const MO0 = window.__NativeMutationObserver || MutationObserver;
           new MO0(() => {
             if (!_unpaidLoaded || !_unpaid.length || !v0.classList.contains('active')) return;
-            if (document.getElementById('mip-panel')) return;
+            if (v0.querySelector('#mip-panel')) return;   // í ÞESSU borði — ekki hvar sem er í skjalinu (sjá renderUnpaidPanel)
             const m1 = v0.querySelector('.main-panel, main') || v0;
             if (m1.children.length) renderUnpaidPanel(m1);
           }).observe(v0, { childList: true, subtree: true });

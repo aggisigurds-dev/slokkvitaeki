@@ -283,7 +283,18 @@
     function wrapped() {
       const full = Array.isArray(this.list) && this.list.length > 0;
       if (full && this.list.length >= 100) _listiHeil = true;
-      if (full && !allow('fyrirtaeki')) return Promise.resolve(this.list);
+      if (full && !allow('fyrirtaeki')) {
+        // 14.10.2026 (mælt í úttekt): 141 hreinsar #companies-main („Hleður fyrirtækjum…") og kallar load() til að fá
+        // listann teiknaðan. Hér var þá skilað úr minni án teikningar — textinn stóð óbreyttur eftir 12 s (2 af 2
+        // keyrslum). Listinn er teiknaður úr minni ef borðið er opið, enginn prófíll og ekkert rúðunet á skjánum; annars
+        // ekkert (ekkert aukaflökt þegar netið sést þegar).
+        try {
+          const v = document.getElementById('view-companies'), m = document.getElementById('companies-main');
+          if (v && v.classList.contains('active') && m && !m.querySelector('.company-grid') &&
+              typeof this.render === 'function' && !(typeof this._detailOpen === 'function' && this._detailOpen()) && this.currentId == null) this.render();
+        } catch (_) {}
+        return Promise.resolve(this.list);
+      }
       note('fyrirtaeki');
       const p = orig.apply(this, arguments);
       return Promise.resolve(p).then((r) => {
