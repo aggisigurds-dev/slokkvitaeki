@@ -517,6 +517,48 @@
     });
   }
 
+  // ── 14.10.2026 — T=S=I: ÚTTEKTIN ER TALNINGIN ───────────────────────────
+  // `arsskodun_customers[<id>].equipment` (S) er afrit sem 224 hækkar við staðfestingu
+  // tækjalistans en lækkar ALDREI (svo ⚠ yfir tæki sem vantar á prófílinn verði ekki
+  // máð út með einum smelli). Þegar tæknimaður fjarlægir tæki í úttekt stóð S því hátt
+  // og audit-t-s-i varð rautt. Mælt 14.10.2026: SEX félög (414, 463, 465, 660, 1142, 1366),
+  // öll eftir úttektir 12.–13.10. Prófíllinn (T) var í öllum sex tilvikum NÁKVÆMLEGA það
+  // sem var rukkað (I) og það sem véllesna skýrslan segir — aðeins afritið sat eftir.
+  //
+  // Hér fylgir afritið úttektinni, en aðeins þegar hún taldi ALLT:
+  //   • reikningurinn varð til (kallað aðeins með saleId, á eftir prentglugganum),
+  //   • hvert virkt tæki á prófílnum var þjónustað — ekkert „Sleppa" (servicedIds = units),
+  //   • öll tækin hanga á fyrirtaeki_id (T telur ekki nafna-tæki — þá stemmir talan ekki),
+  //   • engin handvirk tala (equipment_manual vinnur yfir allt).
+  // Sé einu tæki sleppt er úttektin ekki talning og afritið stendur óhreyft.
+  // Vörður: tools/audit-t-s-i.cjs (kóða-leggurinn festir skilyrðin).
+  const AFRIT_FLOKKAR = ['lettvatn', 'duft2', 'duft6_12', 'co2_2', 'co2_5', 'brunaslongur', 'reykskynjarar', 'eldvarnarteppi', 'annad'];
+  async function afritEftirUttekt(coId, visit, saleNum) {
+    if (coId == null || !visit || !window.AppSettings || !AppSettings.save) return;
+    const cat = window.Arsskodun && Arsskodun.categoryOf;
+    if (!cat) return;
+    const units = visit.units || [];
+    if (!units.length || visit.servicedIds.length !== units.length) return;
+    if (units.some(u => Number(u.fyrirtaeki_id) !== Number(coId))) return;
+    const cur = ((AppSettings.path('arsskodun_customers') || {})[String(coId)]) || {};
+    if (cur.equipment_manual) return;
+    // Allir flokkar sendir, líka 0: app_settings_merge sameinar hluti og eyðir aldrei lykli,
+    // svo flokkur sem úttektin fann ekki stæði annars eftir með gömlu töluna.
+    const eq = {};
+    AFRIT_FLOKKAR.forEach(k => { eq[k] = 0; });
+    // Gamlir hópalyklar (slt/bsl/rs úr eldri afritum — mælt: Pitstop 543 ber {slt:4,bsl:0,rs:0}) fá
+    // null, ekki 0: eqGroups (153) tekur slt/bsl/rs fram yfir fínflokkana ef einhver þeirra er != null,
+    // og 0 myndi sýna 0 tæki. Án þessa yrði S = gamla summan + nýja (8 á móti T = 4 á Pitstop).
+    Object.keys(cur.equipment || {}).forEach(k => { if (AFRIT_FLOKKAR.indexOf(k) < 0) eq[k] = null; });
+    units.forEach(u => { const k = cat(u.type, u.size); eq[k] = (eq[k] || 0) + 1; });
+    let ok = false, villa = '';
+    try { ok = await AppSettings.save({ arsskodun_customers: { [String(coId)]: { equipment: eq } } }); }
+    catch (e) { villa = String((e && e.message) || e); }
+    if (ok !== true && window.logProblem) {
+      try { window.logProblem('uttekt_afrit_brast', 'co ' + coId + ' ' + (saleNum || '') + (villa ? ': ' + villa.slice(0, 120) : ' — save skilaði false')); } catch (_) {}
+    }
+  }
+
   // ── Actual save — runs only after the user confirms in the preview ─────
   async function finalizeVisit({ coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd }) {
     // 0. TVÍTÖKUVÖRN (2026-08-01) — rótin að BGT/Rafha tvítökunum: „Klára heimsókn"
@@ -656,6 +698,14 @@
           }
         }
       } catch (_) {}
+    }
+
+    // 4b. (14.10.2026) T=S=I — úttekt sem tók HVERT tæki prófílsins er talningin.
+    //     Á eftir prentglugganum: window.open þarf að koma meðan smellurinn er enn „virkur"
+    //     í vafranum, og hvert kall á þjón á undan honum eykur líkur á að hann sé hindraður.
+    if (saleId) {
+      try { await afritEftirUttekt(coId, visit, saleNum); }
+      catch (e) { try { window.logProblem && window.logProblem('uttekt_afrit_brast', 'co ' + coId + ' ' + (saleNum || '') + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
     }
 
     // 5. Refresh company detail.

@@ -297,6 +297,43 @@ segir „er þegar afturkallað" er áreiðanlegasta heimildin um að það sé 
 bókhaldi viðskiptavinar sem er ekki brotið. Ég var skrefi frá því að „laga" færslu sem
 var í lagi — og hefði þá skilið eftir mig skýringu á borðinu um vandamál sem var aldrei til.
 
+## 17. Hleruð skrif leka við lokun — og grunur um leka er ekki sönnun
+
+**Mælt 14.10.2026 á staðbundinni prófsíðu** (`tools/maelingar/leki-vid-lokun.cjs`). Mæliskriftin hlera öll skrif með
+`context.route('**/*')` og falsa svarið. Það heldur á meðan síðan lifir. En `fetch(…, {keepalive:true})`
+og `navigator.sendBeacon` sem fara af stað við `pagehide`/`visibilitychange` þegar síðunni er lokað
+(`page.close`, `context.close`, `page.reload`, `page.goto`) **fara framhjá hleruninni og ná á þjóninn**.
+Prófsíðan staðfesti það: beacon og keepalive-POST komu inn á staðbundinn þjón þótt route-ið
+svaraði öllu öðru með fölsun. Appið vistar biðröð `AppSettings` einmitt þannig við lokun
+(`saveVidLokun`), svo mæling sem breytir einhverju og lokar svo getur skrifað í lifandi gögn.
+
+**Vörnin — mæld, ekki gisk** (`tools/maelingar/leki-vid-lokun.cjs`, þrjár lokunarleiðir × þrjár
+varnir, tvær keyrslur — tölurnar flökta milli keyrslna, núllin ekki):
+
+| vörn | page.close | context.close | reload |
+|---|---|---|---|
+| engin (bara route) | 1–2 láku | 3 láku | 2–3 láku |
+| `context.setOffline(true)` á undan | 1 lak | 1 lak | **3 láku** |
+| `addInitScript`: `sendBeacon` → no-op, `fetch` með `keepalive` → falsað svar | **0** | **0** | **0** |
+
+`setOffline` virðist augljósa svarið og **ver ekki** — keepalive-beiðnir fóru samt út. Það eina sem
+hélt var að gera leiðirnar sjálfar óvirkar í síðunni áður en hún hleðst:
+
+```js
+await context.addInitScript(() => {
+  navigator.sendBeacon = () => true;
+  const f = window.fetch;
+  window.fetch = function (u, o) { return (o && o.keepalive) ? Promise.resolve(new Response('lokað')) : f.apply(this, arguments); };
+});
+```
+
+**Og hin hliðin, sama dag:** þegar tveir gagnaverðir urðu rauðir (T=S á sex félögum, vara 140
+á legsteinalista) var fyrsti grunur minn að mæliskriftirnar hefðu lekið. `audit_vernd` sagði
+annað: tækjum var eytt í raunverulegum úttektum 12.–13.10. (reikningar R-001123/1125/1126/1151/1156
+rukkuðu nákvæmlega það sem eftir stóð), og legsteinninn kom með eyðingu tvítaks kl. 15:02 13.10.
+Hvort tveggja var raunveruleg vinna sem kóðinn höndlaði rangt, ekki leki. **Lestu `audit_vernd`
+(og `solur` fyrir sama dag) áður en þú kennir prófunum um** — sá sem kennir lekanum um lagar ekkert.
+
 ## Gátlisti áður en sagt er „mælt"
 
 1. Hvaða útgáfa svaraði? (`build.json` / `?v=`)
@@ -311,3 +348,4 @@ var í lagi — og hefði þá skilið eftir mig skýringu á borðinu um vandam
 10. Gat lykillinn átt fleiri en eina röð — taldi ég þær, eða tók ég þá fyrstu?
 11. Prófaði ég útdráttinn á sama hráefni og framleiðslukóðinn fær?
 12. Nær biðin yfir heila lotu biðraðarinnar / tímamælisins?
+13. Gerði ég `sendBeacon` og `keepalive` óvirk (`addInitScript`) áður en síðunni var lokað eða hún endurhlaðin? (`setOffline` ver EKKI — kafli 17)

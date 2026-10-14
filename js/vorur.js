@@ -555,11 +555,30 @@
       if(!await Confirm.show('Viltu virkilega eyða "'+p.nafn+'"?')) return;
       delBtn.disabled = true; delBtn.textContent = 'Eyði...';
       try {
-        var dr = await DB.sb.from('vorur').delete().eq('id',product.id);
+        var dr = await DB.sb.from('vorur').delete().eq('id',product.id).select('id');
         if(dr.error) throw dr.error;
         // Tombstone the name so seed-patches (66 pricelist-seed, 80 aux-products)
         // don't re-insert it on next page load.
-        try{
+        //
+        // 14.10.2026 — LEGSTEINN Á NAFN SEM ER ENN Í NOTKUN. „Skilti Flöt - Slökkvitæki -
+        // Sjálflýsandi -150x150mm" fór á legsteinalistann 13.10. kl. 15:02 þótt varan (id 140,
+        // seld samdægurs á R-001152) stæði áfram. Líklegast eyðing tvítaks: id 441 varð til
+        // milli 12.10. og 13.10. og er horfið. Legsteinninn er á NAFNI, svo hann lenti á
+        // frumritinu. audit-eyddar-vorur varð rautt og sáningin hefði hafnað vörunni ef
+        // hún hyrfi einhvern tíma. Legsteinn
+        // á aðeins við þegar engin röð ber nafnið lengur, og aðeins ef eyðingin tók
+        // raunverulega röð (`.select('id')` — tómt svar er ekki eyðing).
+        var nafnLifir = false;
+        try {
+          var lr = await DB.sb.from('vorur').select('id').ilike('nafn', String(p.nafn||'').trim().replace(/[\\%_]/g, '\\$&')).limit(1);
+          nafnLifir = !lr.error && Array.isArray(lr.data) && lr.data.length > 0;
+        } catch(_){}
+        var eyddRod = Array.isArray(dr.data) && dr.data.length > 0;
+        if(!eyddRod){
+          window.logProblem && window.logProblem('vorur_eyding_tom', 'id ' + product.id + ' — engin röð eyddist: ' + String(p.nafn||'').slice(0,120));
+          if(window.Toast && Toast.show) Toast.show('⚠ Varan fannst ekki á þjóninum — engu var eytt');
+        }
+        if(eyddRod && !nafnLifir) try{
           if(window.AppSettings && typeof window.AppSettings.save==='function'){
             // 21.09.2026 (úttekt): legsteinn lagður ofan á FERSKAN lista af þjóni (fylki fer upp
             // í heilu lagi — skyndiminni flipans gat þurrkað út legsteina annarra véla), og
