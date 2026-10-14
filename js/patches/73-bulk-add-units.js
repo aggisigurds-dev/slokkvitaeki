@@ -210,8 +210,11 @@
 
   function inject(scope) {
     const addBtn = findAddButton(scope);
-    if (!addBtn) return;
-    if (addBtn.parentNode.querySelector('._bulkadd_btn')) return;
+    if (addBtn) injectVid(addBtn);
+  }
+
+  function injectVid(addBtn) {
+    if (!addBtn.parentNode || addBtn.parentNode.querySelector('._bulkadd_btn')) return;
 
     // Determine if button is on vidsk-main or companies-main, then look up
     // the customer/company name from the right place. Two channels:
@@ -271,20 +274,33 @@
   }
 
   // Watch the whole document for the "+ Bæta við tæki" button to appear (on company/customer detail open)
-  // 13.10.2026 (afköst): findAddButton les textContent hvers einasta takka. Falin borð haldast í DOM-inu, svo eftir að
-  // mörg borð höfðu verið opnuð (~100 þús. hnútar) tók hver umferð 63 ms (CPU-prófíll) við hverja DOM-breytingu. Takkinn
-  // birtist á prófíl (virka borðið) eða í glugga beint undir body (Verkstæði, 104) — aðeins þau eru skoðuð.
-  function synilegt() {
-    const v = document.querySelector('.view.active');
-    if (!v || !document.body) return [document];
-    const ut = [v];
-    for (const c of document.body.children) {
-      if (c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
-      if (c.getClientRects().length) ut.push(c);
+  // 13.10.2026 (afköst): findAddButton las textContent hvers einasta takka í skjalinu við hverja DOM-breytingu (63 ms
+  // á umferð með ~100 þús. hnúta). Fyrsta lagfæring takmarkaði leitina við sýnileg svæði með getClientRects() — en það
+  // þvingar útreikning á útliti í hverri umferð og kostaði 368 ms í ræsingu (CPU-prófíll, sama dag). Nú: aðeins takkar
+  // í NÝJUM hnútum, og takki sem fær nýjan texta (textContent = … bætir við textahnút með takkann sem target).
+  const ER_TAKKI = /^\+\s*Bæta við tæki\b/i;
+  function nyirTakkar(skr) {
+    const ut = new Set();
+    for (const r of skr) {
+      if (r.target && r.target.nodeType === 1 && r.target.closest) {
+        const b = r.target.closest('button');
+        if (b) ut.add(b);
+      }
+      for (const n of r.addedNodes || []) {
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === 'BUTTON') ut.add(n);
+        else if (n.firstElementChild) n.querySelectorAll('button').forEach(b => ut.add(b));
+      }
     }
     return ut;
   }
-  new MutationObserver(() => { for (const r of synilegt()) inject(r); }).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver((skr) => {
+    if (!Array.isArray(skr)) { inject(document); return; }
+    for (const b of nyirTakkar(skr)) {
+      if (!b.isConnected || b.classList.contains('_bulkadd_btn')) continue;
+      if (ER_TAKKI.test((b.textContent || '').trim())) injectVid(b);
+    }
+  }).observe(document.body, { childList: true, subtree: true });
   inject(document);
 
   console.log('[bulk-add-units] installed');

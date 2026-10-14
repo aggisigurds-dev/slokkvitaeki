@@ -1686,6 +1686,12 @@ console.log('[patch-master] loaded with all fixes');
   function tryInject(){
     var view = document.getElementById('view-field');
     if(!view) return;
+    // 13.10.2026 (afköst): getComputedStyle þvingar stílútreikning, og vaktin hér að neðan kallar þetta við hverja
+    // klasa-/stílbreytingu á borðinu (switchView snertir öll borð) — 252 ms í ræsingu (CPU-prófíll). Ódýru svörin fyrst:
+    // þegar sett inn, eða borðið er hvorki virkt né stílað beint (.view er display:none í app.css).
+    if(document.getElementById('_pm_map_filter')) return;
+    var sd = view.style.display;
+    if(sd === 'none' || (!sd && !view.classList.contains('active'))) return;
     if(getComputedStyle(view).display === 'none') return;
     injectFilterUI();
   }
@@ -2630,7 +2636,10 @@ console.log('[patch-master] loaded with all fixes');
     for(var i = 0; i < b.length; i++){
       var c = b[i];
       if(c.contains(v) || /^(SCRIPT|STYLE|LINK|TEMPLATE)$/.test(c.tagName)) continue;
-      if(c.getClientRects().length) ut.push(c);
+      // Önnur borð (.view, bein börn body) eru falin nema stílað sé beint á þau. Áður var getClientRects() hér — það
+      // þvingar útlitsútreikning í hverri umferð (mælt í ræsingu 13.10.2026). Hin börnin (gluggar, toppstika) eru smá.
+      if(c.classList.contains('view') && !(c.style.display && c.style.display !== 'none')) continue;
+      ut.push(c);
     }
     return ut;
   }

@@ -85,7 +85,12 @@
 
     function augment() {
       const view = document.getElementById('view-workshop');
-      if (!view || view.offsetParent === null) return; // only when Verkstæði is visible
+      if (!view) return;
+      // 13.10.2026 (afköst): offsetParent þvingar útlitsútreikning, og Workshop.render keyrir líka í ræsingu þegar Verkstæði
+      // er falið — 215 ms (CPU-prófíll). Falið borð (.view er display:none nema virkt eða stílað beint) svarast án útlits.
+      const sd = view.style.display;
+      if (sd === 'none' || (!sd && !view.classList.contains('active'))) return;
+      if (view.offsetParent === null) return; // only when Verkstæði is visible
 
       // 1) Add a 🗑 button to each customer-group's action row (reads the job
       //    ids from the existing "Senda í afgreiðslu" button's onclick).

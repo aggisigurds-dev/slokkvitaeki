@@ -72,7 +72,11 @@
     Array.from(el.children).forEach(c => { if (c.tagName === 'SPAN' && !c.textContent.trim() && !c.querySelector('svg,img')) c.style.display = 'none'; });
   }
   function finnaTitil(view) {
-    const vr = view.getBoundingClientRect();
+    // 13.10.2026 (afköst): view.getBoundingClientRect() stóð hér fremst og þvingaði útlitsútreikning í HVERJU tifi —
+    // líka þar sem enginn frambjóðandi er til. Þjónustuborðið (368) teiknar í skuggarót, svo querySelectorAll hér finnur
+    // þar ekkert og titill er aldrei merktur — leitað var í hverjum ramma: 123 ms í ræsingu (CPU-prófíll). Nú er útlitið
+    // fyrst lesið þegar stak hefur staðist ódýru skilyrðin. Sama niðurstaða.
+    let vr = null;
     const cands = Array.from(view.querySelectorAll('h1,h2')).concat(Array.from(view.querySelectorAll('h3,div,span,b,strong')));
     for (let i = 0; i < cands.length; i++) {
       const el = cands[i];
@@ -82,6 +86,7 @@
       // beinn textahnútur þarf að vera í stakinu sjálfu (ekki bara í börnum)
       if (!Array.from(el.childNodes).some(n => n.nodeType === 3 && n.nodeValue.trim().length > 1)) continue;
       const t = (el.textContent || '').replace(EMOJI, '').trim(); if (t.length < 3 || t.length > 60) continue;
+      if (!vr) vr = view.getBoundingClientRect();
       const r = el.getBoundingClientRect(); if (!r.height) continue;
       let sy = 0, pe = el.parentElement; while (pe && pe !== view.parentElement) { sy += pe.scrollTop || 0; pe = pe.parentElement; }   // staða í ÓSKRUNUÐU efni
       const y = r.top - vr.top + sy; if (y > 320 || y < -10) continue;

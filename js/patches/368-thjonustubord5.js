@@ -4771,6 +4771,16 @@
     render();
   }
 
+  // Stök sem hafa skrunast (scroll-atburður) — aðeins þau þarf render() að lesa og skila skruni til. Sjá render().
+  const _skrunad = new WeakSet();
+  function vaktaSkrun(v, root) {
+    if (v.__t5SkrunVakt) return;
+    v.__t5SkrunVakt = true;
+    const merkja = e => { const x = e.target; if (x && x.nodeType === 1) _skrunad.add(x); };
+    v.addEventListener('scroll', merkja, { passive: true });
+    root.addEventListener('scroll', merkja, { capture: true, passive: true });
+  }
+
   let _frestad = 0;
   function render() {
     try { ((window.Samthykkja && Samthykkja._eftir) || []).forEach(f => f()); } catch (_) {}   // 446 teiknar með
@@ -4962,19 +4972,27 @@
     const DROG_SEL = 'input[data-k]:not([data-k^="hm_"]), textarea[data-k], select[data-k]';
     root.querySelectorAll(DROG_SEL).forEach(i => { drog[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value; });
     // Skrun innan pósts og vikunnar heldur sér ef sama mál er enn valið.
+    // 13.10.2026 (afköst): að LESA scrollTop þvingar útreikning á útliti, og hér var það lesið af hverjum skrunreit og
+    // hýslinum í hverri teikningu — 205 ms í ræsingu (CPU-prófíll; 9 teikningar á fyrstu 7 s, hver með þvingað útlit
+    // ofan á það sem ramminn reiknar hvort eð er). Nú er aðeins lesið (og skrifað til baka) af stökum sem hafa
+    // raunverulega skrunast — það veit scroll-atburðurinn (vaktaSkrun). Ný stök byrja á 0, svo hin þurfa ekkert.
+    vaktaSkrun(v, root);
     const SKRUN = '.well p, .nt textarea, .week, .seg.modeseg, .vbr-items';
     const skrunSel = v.dataset.t5sel === String(selId);
-    const skrun = [...root.querySelectorAll(SKRUN)].map(x => [x.scrollTop, x.scrollLeft]);
+    const skrun = skrunSel ? [...root.querySelectorAll(SKRUN)].map(x => _skrunad.has(x) ? [x.scrollTop, x.scrollLeft] : null) : [];
     // Hýsillinn #view-bord er skrunarinn (overflow:auto). Stodugt.vernda nær
     // honum ekki: .t5-mount er bein barn skuggarótar og parentElement gengur
     // ekki út á hýsilinn. Án þessa hoppar borðið á topp við hvert render().
-    const hostTop = v.scrollTop, hostLeft = v.scrollLeft;
+    const hostSkr = _skrunad.has(v);
+    const hostTop = hostSkr ? v.scrollTop : 0, hostLeft = hostSkr ? v.scrollLeft : 0;
     mount.innerHTML = html;
     v.dataset.t5sel = String(selId);
-    v.scrollTop = hostTop;
-    v.scrollLeft = hostLeft;
+    if (hostSkr) {
+      v.scrollTop = hostTop;
+      v.scrollLeft = hostLeft;
+    }
     if (skrunSel) root.querySelectorAll(SKRUN).forEach((x, i) => { if (skrun[i]) { x.scrollTop = skrun[i][0]; x.scrollLeft = skrun[i][1]; } });
-    requestAnimationFrame(() => {
+    if (hostSkr) requestAnimationFrame(() => {
       if (document.getElementById(VIEW_ID) === v) { v.scrollTop = hostTop; v.scrollLeft = hostLeft; }
     });
     root.querySelectorAll(DROG_SEL).forEach(i => {

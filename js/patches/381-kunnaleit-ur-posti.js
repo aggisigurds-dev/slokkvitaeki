@@ -107,9 +107,14 @@
       Object.keys(domTal).forEach(d => { if (domTal[d].length === 1) byDom[d] = domTal[d][0]; });
       // Lengstu nöfnin fyrst: „Vélrás Sléttuhraun" á að vinna yfir „Vélrás".
       nofn.sort((a, b) => b.leit.length - a.leit.length);
+      // 13.10.2026 (afköst): nafnaleitin bar hvert ~1800 nafna saman við hvern póst (indexOf) — mælt 84 ms í ræsingu
+      // fyrir Tölvupósta-listann einan. Nú: nöfnin flokkuð eftir fyrstu þremur stöfum; aðeins nöfn sem byrja á
+      // þrístafa sem kemur fyrir í textanum eru prófuð — í SÖMU röð (lengstu fyrst), svo sama nafn vinnur og áður.
+      const byTri = new Map();
+      nofn.forEach((x, i) => { const k = x.leit.slice(0, 3); let a = byTri.get(k); if (!a) byTri.set(k, a = []); a.push(i); });
       (sl.data || []).forEach(s => { if (s.num) bySale[String(s.num).toUpperCase()] = s; });
 
-      _g = { byKt, byMail, byDom, nofn, bySale };
+      _g = { byKt, byMail, byDom, nofn, byTri, bySale };
       return _g;
     })();
     try { return await _bid; } finally { _bid = null; }
@@ -146,6 +151,43 @@
     return null;
   }
 
+  // Fyrsta nafn í `g.nofn`-röð sem kemur fyrir í h — sama svar og g.nofn.find(x => h.indexOf(x.leit) >= 0).
+  // Nafn sem kemur fyrir í h byrjar á þrístafa sem kemur fyrir í h, svo frambjóðendurnir eru yfirmengi smellanna.
+  function fyrstaNafn(g, h) {
+    if (!g.byTri) return g.nofn.find(x => h.indexOf(x.leit) >= 0);
+    const fr = [];
+    const sed = new Set();
+    for (let i = 0; i + 3 <= h.length; i++) {
+      const k = h.substr(i, 3);
+      if (sed.has(k)) continue;
+      sed.add(k);
+      const a = g.byTri.get(k);
+      if (a) for (const j of a) fr.push(j);
+    }
+    if (!fr.length) return undefined;
+    fr.sort((a, b) => a - b);
+    for (const j of fr) if (h.indexOf(g.nofn[j].leit) >= 0) return g.nofn[j];
+    return undefined;
+  }
+
+  // ÞRÁÐUR — póstarnir í `allir` flokkaðir eftir þráðarlykli, einu sinni per lista (áður: thrad() á hvern póst
+  // listans fyrir hvern póst sem leitað var að — n² reglulegar segðir, mælt 27 ms). Röðin innan þráðar helst.
+  const _thrIdx = new WeakMap();
+  function thradHopur(allir, t) {
+    let c = _thrIdx.get(allir);
+    if (!c || c.n !== allir.length) {
+      const idx = new Map();
+      for (const x of allir) {
+        const k = x ? thrad(x.subject) : '';
+        if (!k) continue;
+        let a = idx.get(k); if (!a) idx.set(k, a = []); a.push(x);
+      }
+      c = { n: allir.length, idx };
+      _thrIdx.set(allir, c);
+    }
+    return c.idx.get(t) || [];
+  }
+
   function finna(m, allir) {
     if (!_g || !m) return null;
     const g = _g;
@@ -155,7 +197,7 @@
 
     // NAFN — lengstu nöfnin fyrst (sjá röðun að ofan).
     const h = hey(m);
-    const hit = g.nofn.find(x => h.indexOf(x.leit) >= 0);
+    const hit = fyrstaNafn(g, h);
     if (hit && !erOkkar(hit.rec)) return { ...hit.rec, hvernig: 'nafn' };
 
     // LÉN — aðeins einkvæmt.
@@ -166,8 +208,8 @@
     if (Array.isArray(allir) && allir.length) {
       const t = thrad(m.subject);
       if (t) {
-        for (const x of allir) {
-          if (x === m || thrad(x.subject) !== t) continue;
+        for (const x of thradHopur(allir, t)) {
+          if (x === m) continue;
           const s = beint(g, x);
           if (s) return { ...s, hvernig: 'þráður (' + s.hvernig + ')' };
         }
@@ -204,6 +246,11 @@
           return;
         }
         _vakti = true;
+        // 13.10.2026 (afköst): hér var 240 ALLTAF látið hlaða — líka þegar borðið hafði aldrei verið opnað. Þá sótti
+        // hver ræsing allan póstinn, öll fyrirtæki, customers_base, vidskiptavinir og allar sölur (blaðsíðuflett) og
+        // flokkaði hvern póst, fyrir borð sem enginn horfði á. Vakningin á aðeins við lista sem ER til (hlaðinn eða að
+        // hlaðast); óopnað borð hleður sjálft við opnun, og þá er leitin þegar tilbúin.
+        if (typeof RP.hladid === 'function' && !RP.hladid()) return;
         try { RP.reload(); } catch (_) {}
       };
       vekja();
