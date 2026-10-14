@@ -428,7 +428,15 @@
       hvadan: 'Sjálfvirkt kl. 07:10 — aðeins ef eitthvað er að', hvert: 'brunaholf@brunaholf.is', sendir: 'Brunahólf <eldklar@eldklar.is>',
       breytur: '{fjöldi} {ábendingar}',
       textar: [{ heiti: 'Efni', t: 'Brunahólf — dagleg heilsa: {fjöldi} ábending(ar)' }],
-      skrar: ['brunaholf/netlify/functions/daily-health.js:29-32, 129-131, 223-243'] }
+      skrar: ['brunaholf/netlify/functions/daily-health.js:29-32, 129-131, 223-243'] },
+    { id: 'rymingaraetlun-senda', kodi: 'SV-28', gluggi: '„📧 Senda" á Rýmingaráætlun (/rymingaraetlun/)', ras: 'postur', stada: 'stillanlegt', felag: 'Brunahólf',
+      heiti: 'Rýmingaráætlun — Senda í tölvupósti',
+      hvadan: 'Fyrirtækjaborði → reiturinn „Rýmingaráætlun" → „📧 Senda"', hvert: 'Netfang fyrirtækis (fyllt inn, má breyta), áætlunin sem PDF',
+      sendir: 'eldklar@eldklar.is eða bokhald@eldklar.is (val í glugganum) — Gmail /api/gmail-send', breytur: '{heimilisfang}',
+      textar: [{ heiti: 'Efni (má breyta)', t: 'Brunaeftirlit og rýmingaráætlun — {heimilisfang}' },
+               { heiti: 'Meginmál (má breyta)', t: 'Góðan dag,\n\nMeðfylgjandi er brunaeftirlits- og rýmingaráætlun fyrir {heimilisfang} sem PDF-skjal.\n\nEndilega hafið samband ef eitthvað þarf að laga eða bæta við.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf\nHelluhrauni 10, 220 Hafnarfjörður · Sími 565 4080' }],
+      skrar: ['rymingaraetlun/index.html — sjalfgefidEfni(), sjalfgefinSkilabod()'],
+      athuga: ['Hver sending er skráð í rymingaraetlun.efni.sendingar (dags, til, frá, efni) og sést á síðunni.'] }
   ];
 })();
 /* === END SVAR-STÖÐ — GÖGNIN === */
