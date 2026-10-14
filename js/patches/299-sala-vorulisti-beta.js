@@ -278,6 +278,13 @@
         }
       }, 300);
     }).observe(view, { childList: true, subtree: true });
+    // 13.10.2026 (hopp, mælt á lifandi síðu): vaktin hér að ofan skilar sér í rAF (252). Teiknist Sala INNI í rAF-kalli
+    // kemur hún ramma of seint og rofinn (32 px) ýtti öllu niður í annarri hverri opnun. Óinngjöfuð vakt (örverk, fyrir
+    // málun) setur hann inn í sama verki og flísarnar — hún gerir ekkert annað en tvær getElementById-uppflettingar.
+    const NMO = window.__NativeMutationObserver;
+    if (NMO) new NMO(() => {
+      if (view.classList.contains('active') && !document.getElementById('_vlb-wrap') && document.getElementById('pos-services')) { try { mount(); } catch (_) {} }
+    }).observe(view, { childList: true, subtree: true });
     setTimeout(mount, 1200);
   }
   attach();

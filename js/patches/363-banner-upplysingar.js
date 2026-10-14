@@ -987,7 +987,10 @@
   }
 
   function haldaVid() {
-    const banner = document.querySelector('#companies-main .co-banner') || document.querySelector('.co-banner');
+    // 13.10.2026 (afköst í kyrrstöðu): keyrir á 1,2 s fresti; án opins prófíls fann leitin ekkert og gekk í gegnum allt
+    // skjalið (~92 þús. hnúta) í hvert sinn. Svarið geymt þar til DOM-ið breytist (252 DomKynslod).
+    const qs = window.DomKynslod ? (s) => DomKynslod.qs(s) : (s) => document.querySelector(s);
+    const banner = qs('#companies-main .co-banner') || qs('.co-banner');
     if (!banner) return;
     const coId = coIdNu();
     if (!coId) return;

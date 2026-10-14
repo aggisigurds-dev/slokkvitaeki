@@ -117,7 +117,8 @@
     if (p.textContent !== text) p.textContent = text;
   }
   function spegla() {
-    var box = document.querySelector('._afsl-box'); if (!box) return;
+    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
+    var box = window.DomKynslod ? DomKynslod.qs('._afsl-box') : document.querySelector('._afsl-box'); if (!box) return;
     var head = box.querySelector('._afsl-head');
     var inp = box.querySelector('._cad-inp');
     var pct = inp ? (String(inp.value || '').trim() || '0') : '0';

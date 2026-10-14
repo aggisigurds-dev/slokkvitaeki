@@ -204,7 +204,8 @@
     document.querySelectorAll('.vnav-btn').forEach(b=>{ if(b===btn) return; b.addEventListener('click',()=>{ const vv=viewEl(); if(vv){vv.style.display='none';vv.classList.remove('active');} btn.classList.remove('active'); }); });
     console.log('[kerfi] tab injected');
   }
-  setInterval(injectTab,1200); setTimeout(injectTab,800); setTimeout(applyHidden,1500);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('221:flipi')) return; injectTab(); },1200); setTimeout(injectTab,800); setTimeout(applyHidden,1500);
   // Þögnin rétt (17.09.2026): skráir aðeins áheyrn svo faldir flipar uppfærist
   // þegar önnur vél breytir listanum. Bregðist skráningin sést það á næstu
   // endurhleðslu — ekkert tapast og engin staða verður ósönn.

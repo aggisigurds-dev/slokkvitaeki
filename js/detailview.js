@@ -349,6 +349,7 @@
   }
 
   setInterval(injectLookupBtn, 2000);
-  setInterval(makeSerialsClickable, 2500);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(function(){ if (window.DomKynslod && !DomKynslod.breytt('detailview:radnr')) return; makeSerialsClickable(); }, 2500);
   console.log('[Detail] module loaded');
 })();

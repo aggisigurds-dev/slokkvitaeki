@@ -186,7 +186,9 @@
     // Find the Logo URL input by its data-bk attribute.
     // HT-3.10 (03.10.2026): reiturinn fyrst — hann er aðeins til þegar Stillingar eru opnar, svo dýra leitin hér fyrir
     // neðan ([class*="settings"] yfir allt skjalið, mælt 29–35 ms í hverri umferð) keyrir ekki lengur á 800 ms fresti.
-    const urlInp = document.querySelector('input[data-bk="logo_url"]');
+    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — reiturinn er ekki til
+    // nema Stillingar séu opnar, og leit sem finnur ekkert gengur í gegnum allt skjalið (~92 þús. hnúta) á 2,5 s fresti.
+    const urlInp = window.DomKynslod ? DomKynslod.qs('input[data-bk="logo_url"]') : document.querySelector('input[data-bk="logo_url"]');
     if (!urlInp) return;
     // 13.10.2026 (afköst): athugað FYRST hvort hlaðarinn sé kominn — eftir að Stillingar hafa verið opnaðar er reiturinn í
     // DOM-inu og dýra leitin hér fyrir neðan keyrði áfram á 2,5 s fresti að eilífu (154 ms á 20 s í kyrrstöðu). Sama niðurstaða.

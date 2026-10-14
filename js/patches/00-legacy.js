@@ -1413,7 +1413,8 @@ console.log('[patch-master] loaded with all fixes');
       else el.removeAttribute('data-zero');
     });
   }
-  setInterval(tagZeros, 1500);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:tagZeros')) return; tagZeros(); }, 1500);
   setTimeout(tagZeros, 200);
   console.log('[pm] orange-dot fix active');
 })();
@@ -2692,7 +2693,7 @@ console.log('[patch-master] loaded with all fixes');
       });
     });
   }
-  setInterval(function(){hideGaedakerfi();fixGeymsla();}, 1000);
+  setInterval(function(){ if(!(window.DomKynslod && !DomKynslod.breytt('00:gaedakerfi'))) hideGaedakerfi(); fixGeymsla(); }, 1000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] gaedakerfi hidden + geymsla simi fix active');
 })();
 
@@ -2841,7 +2842,7 @@ console.log('[patch-master] loaded with all fixes');
       }
     });
   }
-  setInterval(hookBreytaButtons,1000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:breyta')) return; hookBreytaButtons(); },1000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] company edit modal active');
 })();
 
@@ -2957,7 +2958,7 @@ console.log('[patch-master] loaded with all fixes');
       });
     });
   }
-  setInterval(enhanceStatusCells, 2000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:stada')) return; enhanceStatusCells(); }, 2000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] onytt status feature active');
 })();
 
@@ -3093,7 +3094,7 @@ console.log('[patch-master] loaded with all fixes');
       });
     });
   }
-  setInterval(hookDeviceRows, 2000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:taekirodir')) return; hookDeviceRows(); }, 2000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] device detail modal active');
 })();
 
@@ -3228,7 +3229,7 @@ console.log('[patch-master] loaded with all fixes');
       ta.addEventListener('blur', saveMemo);
     });
   }
-  setInterval(addMemoBox,2000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:minnisbox')) return; addMemoBox(); },2000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] company memo box active');
 })();
 
@@ -3365,7 +3366,7 @@ console.log('[patch-master] loaded with all fixes');
     };
     bar.querySelector('._pm_b_close').onclick=function(){t.querySelectorAll('._pm_cb').forEach(function(c){c.checked=false;});bar.remove();};
   }
-  setInterval(addCB,2000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:hak')) return; addCB(); },2000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] batch select active');
 })();
 
@@ -3394,7 +3395,7 @@ console.log('[patch-master] loaded with all fixes');
       });
     });
   }
-  setInterval(enhance,2000);
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('00:upplysingar')) return; enhance(); },2000);   // 13.10.2026: sjá 252 DomKynslod
   console.log('[pm] enhanced company info active');
 })();
 })();

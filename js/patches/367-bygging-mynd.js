@@ -600,7 +600,10 @@
 
   // ── Festing í bannerinn ─────────────────────────────────────────────────
   function endurteikna(thvinga) {
-    var banner = document.querySelector('#companies-main .co-banner') || document.querySelector('.co-banner');
+    // 13.10.2026 (afköst í kyrrstöðu): keyrir á 1,2 s fresti; án opins prófíls fann leitin ekkert og gekk í gegnum allt
+    // skjalið (~92 þús. hnúta) í hvert sinn. Svarið geymt þar til DOM-ið breytist (252 DomKynslod).
+    var qs = window.DomKynslod ? function (s) { return DomKynslod.qs(s); } : function (s) { return document.querySelector(s); };
+    var banner = qs('#companies-main .co-banner') || qs('.co-banner');
     if (!banner) return;
     var coId = coIdNu(); if (!coId) return;
     stilar();

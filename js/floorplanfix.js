@@ -134,6 +134,8 @@
 
   function cleanupOldThumbs(){
     setInterval(function(){
+      // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+      if (window.DomKynslod && !DomKynslod.breytt('floorplanfix:thumb')) return;
       Array.from(document.querySelectorAll('.fpfix-thumb')).forEach(function(el){
         el.parentNode && el.parentNode.removeChild(el);
       });

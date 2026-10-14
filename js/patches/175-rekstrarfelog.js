@@ -2695,7 +2695,8 @@
     document.querySelectorAll('.vnav-btn').forEach(function(b){ if(b===btn) return; b.addEventListener('click', function(){ var v=viewEl(); if(v){ v.style.display='none'; v.classList.remove('active'); } btn.classList.remove('active'); }); });
     console.log('[Rekstrarfélög] tab injected');
   }
-  setInterval(injectTab, 1200);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(function(){ if(window.DomKynslod && !DomKynslod.breytt('175:flipi')) return; injectTab(); }, 1200);
   setTimeout(injectTab, 600);
   window.openRekstrarfelog=function(){ injectTab(); var b=document.querySelector('[data-view="rekstrarfelog"]'); if(b) b.click(); };
 

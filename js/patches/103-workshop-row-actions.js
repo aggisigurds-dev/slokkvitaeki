@@ -573,7 +573,14 @@
   setTimeout(decorateAllRows, 1200);
   setTimeout(decorateAllRows, 3000);
   // Periodic light refresh in case modals open without firing observers we listen to
-  setInterval(decorateAllRows, 1500);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  // Raðir eru aðeins skreyttar ef tækið finnst í DB.cache.units, svo fjöldi tækjanna fer í lykilinn: komi gögnin
+  // seinna en raðirnar er umferð keyrð þótt DOM-ið sé óbreytt.
+  setInterval(() => {
+    const n = ((window.DB && DB.cache && DB.cache.units) || []).length;
+    if (window.DomKynslod && !DomKynslod.breytt('103:' + n)) return;
+    decorateAllRows();
+  }, 1500);
 
   console.log('[workshop-row-actions] installed — ✏️ Breyta + 📝 Athugasemd hnappar á tækjarúðum');
 })();
