@@ -52,7 +52,16 @@
     brunakerfi:   { tákn: '🚨', titill: 'Brunak. þjónusta — verð',
       undir: 'Verðlisti brunakerfisskýrslunnar og hvaða búnaðarlínu hver liður telur' },
     slokkvikerfi: { tákn: '🍳', titill: 'Slökkvikerfis þjónusta — verð',
-      undir: 'Sjálfgefin verð á línurnar í slökkvikerfisskýrslunni' }
+      undir: 'Sjálfgefin verð á línurnar í slökkvikerfisskýrslunni' },
+    // 14.10.2026 (Agnar: „setja verðlista fyrir verkstæði varahlutirnir í dökk metal gráu"): vörurnar í flokknum
+    // Varahlutir — þær sem verkstæðið setur á verk (78/430) — með verði, birgðum og ✎ Vara. Takkinn er í 469.
+    verkstaedi:   { tákn: '🔧', titill: 'Verkstæði · varahlutir — verð',
+      undir: 'Varahlutirnir sem verkstæðið setur á verk — verð, birgðir og ✎ beint á vöruna' },
+    // 14.10.2026 12:29 (Agnar: „nýjan lista þarna fyrir vinnuliði … eigum eftir að ákveða verð þar almennilega.
+    // Uppsetning á slökkvitæki, upps. á skilti. Síðan bara bæta við línum. Tengjum það síðar"): frjáls listi,
+    // heiti + verð án vsk, býr í app_settings.vinnulidir_verdlisti — tengist engu enn.
+    vinnulidir:   { tákn: '🛠', titill: 'Vinnuliðir — verð',
+      undir: 'Vinna sem er ekki vara: uppsetning, vinna á staðnum. Verð ákveðin hér, tengingar koma síðar' }
   };
 
   // ── gögn ────────────────────────────────────────────────────────────────
@@ -336,7 +345,7 @@
       // 129 leitar í ÖLLUM virkum vörum, ekki bara flokknum Þjónusta (t.d.
       // Eldvarnarteppi undir „Eldvarnir" — þar er rukkað endurnýjunarverð).
       // Hermunin hér verður að hafa sama mengi, annars lýgur hún.
-      sb.from('vorur').select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,virkt')
+      sb.from('vorur').select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,virkt,birgdir')
         .eq('virkt', true).order('nafn'),
       sb.from('thjonustu_tengingar').select('*'),
       sb.from('v_taeki_tegundir').select('*').order('fjoldi', { ascending: false }),
@@ -447,6 +456,10 @@
       '.' + AUÐK + '-nyr select{height:30px;padding:0 8px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px}',
       '#' + AUÐK + '-nyr-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-nyr-baeta[disabled]{opacity:.38;pointer-events:none}',
+      '.' + AUÐK + '-vl-nafn{width:100%;min-width:220px;height:30px;box-sizing:border-box;padding:0 10px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:13px;font-weight:600;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
+      '.' + AUÐK + '-vl-nafn.ok{border-color:#1f9d57}.' + AUÐK + '-vl-nafn.villa{border-color:#e0453c}',
+      '#' + AUÐK + '-vl-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-ny-vara{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(52,168,98,.55);background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.35);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '.' + AUÐK + '-nyr-ath{flex:1 1 100%;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483;line-height:1.5}',
       // Verð-dálkurinn í slökkvitækja-glugganum: verð m. vsk feitt, undir því þjónusta/vara · án vsk, svo ✎ Vara
       '.' + AUÐK + '-verdd{text-align:right;white-space:nowrap}',
@@ -831,12 +844,99 @@
   // ── opna / teikna ───────────────────────────────────────────────────────
   var _flokkur = 'slokkvitaeki';
 
+  // ── gluggi 4: verkstæði · varahlutir ─────────────────────────────────────
+  function htmlVerkstaedi() {
+    var listi = G.vorur.filter(function (p) { return p.flokkur === 'Varahlutir' && p.virkt !== false; })
+      .sort(function (a, b) { return String(a.nafn).localeCompare(String(b.nafn), 'is'); });
+    var h = '<div class="' + AUÐK + '-h3">Varahlutir — flokkurinn „Varahlutir" í vörulistanum</div>';
+    h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
+      'Sömu vörur og verkstæðið velur á verk. Verðið býr á vörunni sjálfri — <b>✎ Vara</b> opnar hana í ritlinum; ' +
+      'birgðirnar eru úr Birgðum.</p>';
+    if (!listi.length) { h += '<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12.5px;color:#92400e">Engin virk vara í flokknum Varahlutir.</div>'; }
+    else {
+      h += '<table class="' + AUÐK + '-tafla"><thead><tr><th>Vara</th><th style="text-align:right">Verð m. vsk</th><th style="text-align:right">Án vsk</th><th style="text-align:right">Birgðir</th><th></th></tr></thead><tbody>';
+      listi.forEach(function (p) {
+        h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(p.nafn) + '</td>' +
+          '<td style="text-align:right;font-family:\'JetBrains Mono\',ui-monospace,monospace">' + esc(krVsk(p.verd_an_vsk, p.vsk_prosenta)) + '</td>' +
+          '<td style="text-align:right;font-family:\'JetBrains Mono\',ui-monospace,monospace;color:#5b6573">' + esc(kr(p.verd_an_vsk)) + '</td>' +
+          '<td style="text-align:right;font-family:\'JetBrains Mono\',ui-monospace,monospace;color:#5b6573">' + (p.birgdir != null ? esc(String(p.birgdir)) : '<span style="color:#cbd5e1">—</span>') + '</td>' +
+          '<td style="text-align:right;white-space:nowrap"><button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(p.id) + '" title="Opna „' + esc(p.nafn) + '“ í Vörur og þjónusta — þar breytirðu verði og birgðum">✎ Vara</button></td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    h += '<div class="' + AUÐK + '-nyr" style="justify-content:flex-end"><span class="' + AUÐK + '-nyr-ath" style="flex:1 1 auto">Nýr varahlutur: stofnaðu vöru í flokknum Varahlutir — hún birtist hér og á verkstæðinu.</span>' +
+      '<button type="button" id="' + AUÐK + '-ny-vara" data-ny-vara="Varahlutir">+ Ný vara</button></div>';
+    return h;
+  }
+
+  // ── gluggi 5: vinnuliðir (app_settings.vinnulidir_verdlisti) ─────────────
+  var VINNULIDIR_SEED = [{ name: 'Uppsetning á slökkvitæki', price: 0 }, { name: 'Uppsetning á skilti', price: 0 }];
+  // Listinn í minni lotunnar eftir vistun — AppSettings.path getur verið á eftir þjóninum þar til næsta load() (mælt
+  // 14.10 í forskoðun: nýr liður vistaðist en hvarf við endurteikningu). Núllað við opnun gluggans (ferskt af þjóni).
+  var VL = { items: null };
+  function vinnulidir() {
+    if (VL.items) return VL.items.map(function (x) { return { name: x.name, price: x.price }; });
+    var g = null;
+    try { g = window.AppSettings && AppSettings.path && AppSettings.path('vinnulidir_verdlisti'); } catch (_) {}
+    var items = g && Array.isArray(g.items) ? g.items : VINNULIDIR_SEED;
+    return items.map(function (x) { return { name: String(x.name || ''), price: Number(x.price) || 0 }; });
+  }
+  async function vistaVinnulidi(items) {
+    if (!(window.AppSettings && AppSettings.save)) throw new Error('AppSettings ekki tiltækt');
+    if (typeof AppSettings.load === 'function') { try { await AppSettings.load(); } catch (_) {} }   // ferskt af þjóni, ekki úr ræsiminni
+    var ok = await AppSettings.save({ vinnulidir_verdlisti: { items: items, updated_at: new Date().toISOString() } });
+    if (!ok) throw new Error('vistun skilaði ósatt');
+    VL.items = items.map(function (x) { return { name: x.name, price: x.price }; });
+  }
+  function htmlVinnulidir() {
+    var items = vinnulidir();
+    var h = '<div class="' + AUÐK + '-h3">Vinnuliðir — heiti og verð án vsk</div>';
+    h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
+      'Listi fyrir vinnu sem er ekki vara (uppsetning, vinna á staðnum). <b>Verð vistast um leið og farið er úr reitnum</b>, fyrir allar vélar. ' +
+      '0 kr = verð óákveðið. Tengingar við skýrslur og reikninga koma síðar.</p>';
+    h += '<table class="' + AUÐK + '-tafla"><thead><tr><th>Liður</th><th style="text-align:right">Verð (án vsk)</th><th></th></tr></thead><tbody>';
+    items.forEach(function (it, i) {
+      h += '<tr><td><input class="' + AUÐK + '-vl-nafn" type="text" data-vi="' + i + '" value="' + esc(it.name) + '" aria-label="Heiti vinnuliðar"></td>' +
+        '<td style="text-align:right"><input class="' + AUÐK + '-verd ' + AUÐK + '-vl-verd" type="text" inputmode="decimal" data-vi="' + i + '" value="' + esc(it.price ? verdInn(it.price) : '') + '" placeholder="óákveðið" aria-label="Verð án vsk"> <span class="' + AUÐK + '-kr">kr</span></td>' +
+        '<td style="text-align:right"><button type="button" class="' + AUÐK + '-eyda" data-vl-eyda="' + i + '" title="Fjarlægja liðinn">✕</button></td></tr>';
+    });
+    h += '</tbody></table>';
+    h += '<div class="' + AUÐK + '-nyr" id="' + AUÐK + '-vl-nyr">' +
+      '<input id="' + AUÐK + '-vl-nyr-nafn" type="text" placeholder="Nýr vinnuliður, t.d. Uppsetning á slöngukefli" aria-label="Heiti nýs vinnuliðar">' +
+      '<input id="' + AUÐK + '-vl-nyr-verd" class="' + AUÐK + '-verd" type="text" inputmode="decimal" placeholder="verð" aria-label="Verð án vsk"> <span class="' + AUÐK + '-kr">kr án vsk</span>' +
+      '<button type="button" id="' + AUÐK + '-vl-baeta">+ Bæta við neðst</button>' +
+      '<span class="' + AUÐK + '-nyr-ath">Vistast strax. Verðið má skilja eftir autt þar til það er ákveðið.</span></div>';
+    return h;
+  }
+  async function vinnulidurBreyting(rot, hvad, el) {
+    var items = vinnulidir();
+    if (hvad === 'eyda') { var i = +el.dataset.vlEyda; if (!(i >= 0 && i < items.length)) return; var fjarl = items.splice(i, 1)[0]; }
+    else if (hvad === 'baeta') {
+      var nafnEl = rot.querySelector('#' + AUÐK + '-vl-nyr-nafn'), verdEl = rot.querySelector('#' + AUÐK + '-vl-nyr-verd');
+      var nafn = String(nafnEl.value || '').trim(); if (!nafn) { nafnEl.focus(); segja('Skrifaðu heiti liðarins', true); return; }
+      var n = verdEl.value.trim() ? verdTala(verdEl.value) : 0; if (n == null || n < 0) { verdEl.classList.add('villa'); segja('Ógilt verð', true); return; }
+      if (items.some(function (x) { return x.name.trim().toLowerCase() === nafn.toLowerCase(); })) { nafnEl.classList.add('villa'); segja('„' + nafn + '“ er þegar í listanum', true); return; }
+      items.push({ name: nafn, price: n });
+    } else {   // reitur breytt
+      var k = +el.dataset.vi; if (!(k >= 0 && k < items.length)) return;
+      if (hvad === 'nafn') { var nn = String(el.value || '').trim(); if (!nn) { el.classList.add('villa'); segja('Heiti má ekki vera autt', true); return; } items[k].name = nn; }
+      else { var nv = el.value.trim() ? verdTala(el.value) : 0; if (nv == null || nv < 0) { el.classList.add('villa'); segja('Ógilt verð', true); return; } if (items[k].price === nv) { el.classList.remove('villa'); return; } items[k].price = nv; }
+      el.disabled = true;
+    }
+    try {
+      await vistaVinnulidi(items);
+      if (hvad === 'eyda') segja('„' + fjarl.name + '“ fjarlægt'); else if (hvad === 'baeta') segja('Bætt við ✓'); else segja('Vistað ✓');
+      if (hvad === 'nafn' || hvad === 'verd') { el.disabled = false; el.classList.remove('villa'); el.classList.add('ok'); setTimeout(function () { el.classList.remove('ok'); }, 1800); if (hvad === 'verd') el.value = items[+el.dataset.vi].price ? verdInn(items[+el.dataset.vi].price) : ''; }
+      else teikna();
+    } catch (e) { if (el && el.disabled) el.disabled = false; if (el && el.classList) el.classList.add('villa'); segja('Vistun brást: ' + String((e && e.message) || e), true); }
+  }
+
   function teikna() {
     var efni = document.getElementById(AUÐK + '-efni');
     if (!efni) return;
     var aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(efni) : null;
     efni.innerHTML = _flokkur === 'slokkvitaeki' ? htmlSlokkvitaeki()
-      : _flokkur === 'brunakerfi' ? htmlBrunakerfi() : htmlSlokkvikerfi();
+      : _flokkur === 'brunakerfi' ? htmlBrunakerfi() : _flokkur === 'verkstaedi' ? htmlVerkstaedi() : _flokkur === 'vinnulidir' ? htmlVinnulidir() : htmlSlokkvikerfi();
     if (aftur) aftur();
   }
 
@@ -990,6 +1090,7 @@
   // `fokus` = { tegund, staerd } — línan sem sendandinn var að skoða lýsist upp.
   async function opna(flokkur, fokus) {
     _flokkur = FLOKKAR[flokkur] ? flokkur : 'slokkvitaeki';
+    VL.items = null;   // vinnuliðir: lesa ferskt af þjóni við hverja opnun
     stilar();
     loka();
     var f = FLOKKAR[_flokkur];
@@ -1021,14 +1122,25 @@
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
-    bak.addEventListener('change', function (e) { var inp = e.target && e.target.closest && e.target.closest('.' + AUÐK + '-verd'); if (inp) vistaVerd(inp); });
+    bak.addEventListener('change', function (e) {
+      var t = e.target; if (!t || !t.classList) return;
+      if (t.classList.contains(AUÐK + '-vl-nafn')) { vinnulidurBreyting(bak, 'nafn', t); return; }
+      if (t.classList.contains(AUÐK + '-vl-verd')) { vinnulidurBreyting(bak, 'verd', t); return; }
+      if (t.id === AUÐK + '-vl-nyr-nafn' || t.id === AUÐK + '-vl-nyr-verd') return;   // nýi liðurinn vistast með takkanum / Enter
+      var inp = t.closest && t.closest('.' + AUÐK + '-verd'); if (inp) vistaVerd(inp);
+    });
     bak.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' || !e.target || !e.target.classList) return;
+      if (e.target.closest && e.target.closest('#' + AUÐK + '-vl-nyr')) { e.preventDefault(); vinnulidurBreyting(bak, 'baeta'); return; }
       if (e.target.closest && e.target.closest('#' + AUÐK + '-nyr')) { e.preventDefault(); baetaVidLid(bak); return; }   // Enter í nýja liðnum = Bæta við
       if (e.target.classList.contains(AUÐK + '-verd')) { e.preventDefault(); e.target.blur(); }
     });
     bak.addEventListener('click', function (e) {
       var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) { baetaVidLid(bak); return; }
+      var vlb = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-vl-baeta'); if (vlb) { vinnulidurBreyting(bak, 'baeta'); return; }
+      var vle = e.target && e.target.closest && e.target.closest('[data-vl-eyda]'); if (vle) { vinnulidurBreyting(bak, 'eyda', vle); return; }
+      var ny = e.target && e.target.closest && e.target.closest('[data-ny-vara]');
+      if (ny) { loka(); if (window.VorurOgThjonusta && VorurOgThjonusta.ny) VorurOgThjonusta.ny(); else segja('Vöruritillinn er ekki hlaðinn', true); return; }
       var v = e.target && e.target.closest && e.target.closest('[data-vara-opna]');
       if (v) {   // ✎ Vara: loka glugganum og opna vöruna í ritlinum á Vörur og þjónusta (vorur.js VorurOgThjonusta.opna)
         var id = v.getAttribute('data-vara-opna'); loka();
