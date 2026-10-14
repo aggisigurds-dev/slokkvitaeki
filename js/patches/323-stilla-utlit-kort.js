@@ -150,7 +150,11 @@
     if (app || !mobile) { window.__peBannerPad = null; return; }
     const pad = c.h === 'falinn' ? '16px' : c.h === 'mjor' ? (HEIGHTS.mjor + 12) + 'px' : null;
     window.__peBannerPad = pad;               // null ⇒ 314/mobilenav nota 86px
-    const want = pad || '86px';
+    // 14.10.2026 (hopp á síma, mælt): hér stóð `pad || '86px'` — hrágildið. 353 sveigir __peBannerPad í getter sem
+    // skilar MÆLDU fyllingunni (raunhæð borðans / síðuzoom), og 314/mobilenav stimpla þá tölu. Á síðu með vistaða stærð
+    // ≠ 100 % stimpluðu 323 og 314/353 sitt hvort gildið til skiptis (86 ↔ 108/123/143 px) á ~1 s fresti, og allt efnið
+    // hoppaði upp og niður (21–23 skipti á 20 s). Nú er lesið í gegnum getterinn eins og hinir gera.
+    const want = window.__peBannerPad || '86px';
     document.querySelectorAll('.view').forEach(v => {
       if (v.style.getPropertyValue('padding-top') !== want) v.style.setProperty('padding-top', want, 'important');
     });

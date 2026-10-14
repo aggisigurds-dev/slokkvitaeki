@@ -190,6 +190,12 @@
     }
   });
 
+  // 14.10.2026 (hopp, mælt á síma og í Skjár-ham): vaktin hér að ofan skilar sér í rAF (252), svo reiturinn kom
+  // ~200 ms eftir að hausinn var málaður. Á mjóum skjá brotnar hausinn þá öðruvísi um og flísarnar færðust (CLS allt
+  // að 0,37 í Skjár-ham, 0,09 í Sími-ham). pos.js sendir 'sala-catalog-rendered' strax eftir teikningu — reiturinn er
+  // settur inn þar, í sama verki. Vaktin og tímamælarnir standa áfram sem bakvörður. pos.js er ósnert.
+  document.addEventListener('sala-catalog-rendered', () => { try { mountCss(); festa(); if (q.trim()) sia(); } catch (_) {} });
+
   function boot() { mountCss(); vakta(); festa(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
