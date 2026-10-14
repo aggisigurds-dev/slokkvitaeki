@@ -58,6 +58,7 @@ input,textarea{width:100%;border:1px solid transparent;border-radius:5px;backgro
 input:hover,textarea:hover{border-color:var(--line)}
 input:focus,textarea:focus{border-color:var(--acc);background:#fffaf9}
 textarea{resize:none;overflow:hidden;display:block}
+textarea.herbtexti{min-height:110px;border:1px solid var(--line);background:#fafbfc}
 ::placeholder{color:#b3bac1}
 .h1{font-size:28px;font-weight:750;padding:2px 6px;margin-left:-6px;letter-spacing:-.01em}
 .hsub{font-size:18px;color:var(--mut);padding:2px 6px;margin-left:-6px}
@@ -227,11 +228,12 @@ function template(){return{
     {t:'Brunaviðvörunarkerfi – prófanir og þjónusta',a:'',s:'vantar'},
     {t:'Neyðarlýsing og flóttaleiðamerkingar – prófun',a:'',s:'vantar'}],
   herb:[],
+  herbTexti:'',
   teikn:[{title:'Grunnteikning – 1. hæð',img:null},{title:'Grunnteikning – 2. hæð',img:null},{title:'Brunakerfi og brunaboðar',img:null}],
   ath:'',
   cover:{logo:BRUNA_LOGO,photo:null,vinna:'Brunahólf Slökkvitæki ehf'}
 }}
-function norm(p){if(!p.cover)p.cover={logo:BRUNA_LOGO,photo:null,vinna:'Brunahólf Slökkvitæki ehf'};return p}
+function norm(p){if(!p.cover)p.cover={logo:BRUNA_LOGO,photo:null,vinna:'Brunahólf Slökkvitæki ehf'};if(p.herbTexti==null)p.herbTexti='';return p}
 const yearOf=d=>((String(d||'').match(/(19|20)\d{2}/)||[])[0])||String(new Date().getFullYear());
 
 
@@ -322,9 +324,12 @@ function render(){
   </section>
 
   <section class="long"><h2><span class="n">6</span>Herbergjalisti og flóttaleiðir</h2>
+    <h4>Almennt um flóttaleiðir</h4>
+    ${ta('herbTexti','T.d. „Úr öllum herbergjum á 1. hæð er aðalleið út um aðalinngang og varaleið um glugga. Á 2. hæð er aðalleið um stigagang og varaleið um útistiga að norðan.“','herbtexti')}
+    <h4>Herbergi${p.herb.length?' ('+p.herb.length+')':''}</h4>
     ${p.herb.length?`<div class="tw"><table><thead><tr><th style="width:90px">Herbergi</th><th style="width:70px">Hæð</th><th>Aðalflóttaleið</th><th>Varaflóttaleið</th><th class="x"></th></tr></thead><tbody>
     ${p.herb.map((r,i)=>`<tr><td>${inp(`herb.${i}.nr`,'Nr.')}</td><td>${inp(`herb.${i}.haed`,'Hæð')}</td><td>${ta(`herb.${i}.adal`,'Aðalleið')}</td><td>${ta(`herb.${i}.vara`,'Varaleið')}</td>${del('herb',i)}</tr>`).join('')}
-    </tbody></table></div>`:`<p class="hint">Engin herbergi skráð. Ef listinn er til sem sér skjal má líka setja hann inn sem mynd/PDF í kafla 8.</p>`}
+    </tbody></table></div>`:`<p class="hint">Valfrjálst — skráðu herbergi stök ef þarf. Ef listinn er til sem sér skjal má setja hann inn sem mynd/PDF í kafla 8.</p>`}
     <div class="adds"><button class="add" data-act="add" data-list="herb">+ Bæta við herbergi</button><button class="add" data-act="addrooms">+ Bæta við mörgum (t.d. 101-112)</button></div>
   </section>
 
@@ -498,7 +503,7 @@ function pdfHtml(){
     H(3,'Viðbrögð við eldsvoða')+T(['Hlutverk','Ábyrgð'],p.vidbrogd.map(r=>[v(r.h),v(r.a)]))+
     H(4,'Rýmingarregla hússins')+'<p><b>Röð rýmingar:</b> '+v(p.ryming.regla)+'</p><p><b>Hvernig er staðfest að allir séu komnir út:</b> '+v(p.ryming.gestalisti)+'</p><p><b>Símanúmer vegna gestalista:</b> '+v(p.ryming.simi)+'</p>'+
     H(5,'Eldvarnir, viðhald og prófanir')+T(['Atriði','Ábyrgð / athugasemd','Staða'],p.vidhald.map(r=>[v(r.t),v(r.a),st(r.s)]))+
-    H(6,'Herbergjalisti og flóttaleiðir')+(p.herb.length?T(['Herbergi','Hæð','Aðalflóttaleið','Varaflóttaleið'],p.herb.map(r=>[v(r.nr),v(r.haed),v(r.adal),v(r.vara)])):'<p style="color:#66717c">Engin herbergi skráð.</p>')+
+    H(6,'Herbergjalisti og flóttaleiðir')+(String(p.herbTexti||'').trim()?'<p>'+v(p.herbTexti)+'</p>':'')+(p.herb.length?T(['Herbergi','Hæð','Aðalflóttaleið','Varaflóttaleið'],p.herb.map(r=>[v(r.nr),v(r.haed),v(r.adal),v(r.vara)])):(String(p.herbTexti||'').trim()?'':'<p style="color:#66717c">Engin herbergi skráð.</p>'))+
     H(7,'Aðrar athugasemdir')+'<p>'+v(p.ath)+'</p></div>';
   // teikningar: teiknaðar beint í PDF-ið síðu fyrir síðu (teiknaTeikningar) — aldrei skornar á milli síðna
   return h+'</div>';
@@ -553,15 +558,18 @@ async function teiknaTeikningar(pdf,stada){
 async function pdfBase64(stada){
   await loadH2P();
   const holder=document.createElement('div');holder.style.cssText='position:fixed;left:-10000px;top:0;background:#fff';holder.innerHTML=pdfHtml();document.body.appendChild(holder);
+  // html2canvas teiknar autt ef síðunni hefur verið skrunað (forsíða og kaflar urðu auðir, mælt 14.10.2026) — skruna efst á meðan.
+  const sx=window.scrollX,sy=window.scrollY;
   try{
+    window.scrollTo(0,0);
     await Promise.all([...holder.querySelectorAll('img')].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r})));
     if(stada)stada('Bý til forsíðu og kafla…');
-    const pdf=await window.html2pdf().set({margin:[10,10,10,10],filename:skraarnafn(),image:{type:'jpeg',quality:.88},html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid']}}).from(holder.firstChild).toPdf().get('pdf');
+    const pdf=await window.html2pdf().set({margin:[10,10,10,10],filename:skraarnafn(),image:{type:'jpeg',quality:.88},html2canvas:{scale:1.6,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid']}}).from(holder.firstChild).toPdf().get('pdf');
     // auð síða sem html2pdf skilur stundum eftir í lokin
     const n=pdf.internal.getNumberOfPages();if(n>1){try{const ops=pdf.internal.pages[n];if(ops&&ops.filter(x=>/\bDo\b|Tj|TJ/.test(x)).length===0)pdf.deletePage(n)}catch(_){}}
     await teiknaTeikningar(pdf,stada);
     return String(pdf.output('datauristring')).split(',')[1]||'';
-  }finally{holder.remove()}
+  }finally{holder.remove();window.scrollTo(sx,sy)}
 }
 function sjalfgefidEfni(){return 'Brunaeftirlit og rýmingaráætlun'+(P.meta.heimilisfang?' — '+P.meta.heimilisfang:'')}
 function sjalfgefinSkilabod(){return 'Góðan dag,\n\nMeðfylgjandi er brunaeftirlits- og rýmingaráætlun'+(P.meta.heimilisfang?' fyrir '+P.meta.heimilisfang:'')+' sem PDF-skjal.\n\nEndilega hafið samband ef eitthvað þarf að laga eða bæta við.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf\nHelluhrauni 10, 220 Hafnarfjörður · Sími 565 4080'}
