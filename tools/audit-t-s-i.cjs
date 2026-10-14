@@ -103,6 +103,31 @@ function kodaVordur() {
   if (!/_ars\._blobStutt\s*=\s*units\.length/.test(ars))
     fail('153: SKAMMUR prófíll (0 < T < S) er ekki lengur merktur (_blobStutt). Hann sást hvergi '
        + 'fyrir 23.09.2026 — níu lifandi félög, þar á meðal 5 tæki á móti 54.');
+
+  // ── 14.10.2026: ÚTTEKTIN ER TALNINGIN ────────────────────────────────────────
+  // Þriðja áttin sem hvorug braut að ofan náði: tæki FJARLÆGT í úttekt. 224 lækkar
+  // afritið aldrei, svo sex félög (414, 463, 465, 660, 1142, 1366) urðu NÝ brot eftir
+  // úttektir 12.–13.10. þótt prófíll = reikningur = véllesin skýrsla í öllum sex.
+  // 165 lætur afritið nú fylgja úttekt sem tók HVERT tæki prófílsins. Skilyrðin eru
+  // það sem gerir lækkunina örugga — hverfi eitt þeirra gæti ein úttekt með „Sleppa"
+  // máð út tæki sem vantar á prófílinn, sem er nákvæmlega það sem 224 ver.
+  const vw = fs.readFileSync(path.join(rot, 'js/patches/165-visit-workflow.js'), 'utf8');
+  if (!/if \(saleId\) \{\s*try \{ await afritEftirUttekt\(coId, visit, saleNum\)/.test(vw))
+    fail('165: úttekt uppfærir ekki lengur skýrslu-afritið eftir reikning (afritEftirUttekt). '
+       + 'Þá stendur S hátt eftir hverja úttekt sem fjarlægir tæki og vörðurinn verður hávaði.');
+  if (!/visit\.servicedIds\.length !== units\.length\) return/.test(vw))
+    fail('165: afritEftirUttekt krefst ekki lengur að HVERT tæki hafi verið þjónustað. '
+       + 'Úttekt með „Sleppa" er ekki talning og má aldrei lækka afritið.');
+  if (!/Number\(u\.fyrirtaeki_id\) !== Number\(coId\)\)\) return/.test(vw))
+    fail('165: afritEftirUttekt telur nafna-tæki (fyrirtaeki_id null) með — T gerir það ekki, svo S og T fara í sundur.');
+  if (!/if \(cur\.equipment_manual\) return/.test(vw))
+    fail('165: afritEftirUttekt virðir ekki handvirku töluna (equipment_manual) — hún á að vinna yfir allt.');
+  // Gamlir hópalyklar (slt/bsl/rs) í afritinu: eqGroups tekur þá fram yfir fínflokkana. Fái þeir ekki
+  // null þegar fínflokkar eru skrifaðir ofan á, verður S = gamla summan + nýja (Pitstop 543: 8 á móti 4).
+  for (const [skra, txt] of [['165', vw], ['224', ut]]) {
+    if (!/AFRIT_FLOKKAR\.indexOf\(k\) < 0\) eq\[k\] = null|_FLOKKAR\.indexOf\(k\)\s*<\s*0\)\s*_eq\[k\]\s*=\s*null/.test(txt))
+      fail(skra + ': gamlir hópalyklar (slt/bsl/rs) í skýrslu-afritinu eru ekki núllaðir (null) þegar fínflokkar eru skrifaðir — S tvítelur.');
+  }
 }
 
 (async () => {

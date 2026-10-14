@@ -28,6 +28,18 @@ async function get(pathAndQuery) {
 }
 const norm = s => String(s == null ? '' : s).trim().toLowerCase();
 
+// 14.10.2026 — kóða-leggurinn. Legsteinn er á NAFNI: eyðing tvítaks lagði nafn vöru 140
+// (seld samdægurs) á listann 13.10. og þessi vörður varð rauður á lifandi vöru. js/vorur.js
+// leggur legstein nú aðeins ef eyðingin tók raunverulega röð OG engin röð ber nafnið lengur.
+{
+  const fs = require('fs'), path = require('path');
+  const v = fs.readFileSync(path.join(__dirname, '..', 'js/vorur.js'), 'utf8');
+  if (!/from\('vorur'\)\.delete\(\)\.eq\('id',product\.id\)\.select\('id'\)/.test(v) || !/if\(eyddRod && !nafnLifir\) try\{/.test(v)) {
+    console.log('❌ RAUTT  js/vorur.js leggur legstein án þess að athuga hvort eyðingin tók röð og hvort nafnið lifi á annarri vöru — tvítaki eytt = frumritið á legsteinalista.');
+    process.exit(1);
+  }
+}
+
 (async () => {
   const cfg = await get('app_settings?id=eq.1&select=settings');
   const sala = (cfg && cfg[0] && cfg[0].settings && cfg[0].settings.sala) || {};

@@ -407,6 +407,12 @@
           var _cat = window.Arsskodun && Arsskodun.categoryOf;
           if(_cat && !cur.equipment_manual){
             var _u = unitsFor(coId), _eq = {};
+            // 14.10.2026: allir fínflokkar sendir (0 líka) — app_settings_merge eyðir aldrei lykli, svo
+            // flokkur sem prófíllinn ber ekki lengur stæði annars eftir með gömlu töluna og S > T. Gamlir
+            // hópalyklar (slt/bsl/rs) fá null: eqGroups (153) tekur þá fram yfir fínflokkana (Pitstop 543).
+            var _FLOKKAR = ['lettvatn','duft2','duft6_12','co2_2','co2_5','brunaslongur','reykskynjarar','eldvarnarteppi','annad'];
+            _FLOKKAR.forEach(function(k){ _eq[k] = 0; });
+            Object.keys(cur.equipment||{}).forEach(function(k){ if(_FLOKKAR.indexOf(k) < 0) _eq[k] = null; });
             _u.forEach(function(x){ var k=_cat(x.type, x.size); _eq[k]=(_eq[k]||0)+1; });
             var _afrit = Object.keys(cur.equipment||{}).reduce(function(s,k){ return s + (+cur.equipment[k]||0); }, 0);
             if(_u.length >= _afrit) patch.equipment = _eq;
