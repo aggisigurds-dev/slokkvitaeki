@@ -450,6 +450,13 @@
       '.' + AUÐK + '-nyr-ath{flex:1 1 100%;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483;line-height:1.5}',
       // Verð-dálkurinn í slökkvitækja-glugganum: verð m. vsk feitt, undir því þjónusta/vara · án vsk, svo ✎ Vara
       '.' + AUÐK + '-verdd{text-align:right;white-space:nowrap}',
+      '.' + AUÐK + '-tvi td.' + AUÐK + '-kind{vertical-align:top;min-width:250px}',
+      '.' + AUÐK + '-hl{display:flex;flex-direction:column;gap:5px}',
+      '.' + AUÐK + '-hl .' + AUÐK + '-leit{max-width:none}',
+      '.' + AUÐK + '-vl{display:flex;align-items:center;gap:8px;white-space:nowrap}',
+      '.' + AUÐK + '-vl b{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822}',
+      '.' + AUÐK + '-vl small{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;color:#6b7483}',
+      '.' + AUÐK + '-hl-st{white-space:nowrap}',
       '.' + AUÐK + '-verdd b{display:block;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822}',
       '.' + AUÐK + '-verdd small{display:block;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;color:#6b7483;margin:1px 0 4px}',
       '.' + AUÐK + '-vara-takki{height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:11px;font-weight:700;cursor:pointer}',
@@ -598,7 +605,7 @@
   // Sjálfgefið: flest tæki efst — það sem er mest í húfi. Smellur á haus
   // raðar; sami haus aftur snýr röðinni. Stærð raðast eftir tölunni fremst
   // („2 kg" < „6 kg" < „12 kg"), ekki stafrófsröð.
-  var RODUN = { dalkur: 'taeki', upp: false };
+  var RODUN = { dalkur: 'tegund', upp: true };   // 14.10.2026 (Agnar): sjálfgefið eftir tegund (var: flest tæki efst)
   function stTala(s) { var m = String(s || '').match(/\d+([.,]\d+)?/); return m ? parseFloat(m[0].replace(',', '.')) : NaN; }
   function bera(a, b, dalkur) {
     if (dalkur === 'taeki') return a.fjoldi - b.fjoldi;
@@ -673,7 +680,7 @@
       var r = bera(a, b, RODUN.dalkur);
       if (r) return RODUN.upp ? r : -r;
       // jafntefli: flest tæki efst, svo tegund/stærð/þjónusta — óháð stefnu
-      return (b.fjoldi - a.fjoldi) || bera(a, b, 'tegund') || bera(a, b, 'staerd') || bera(a, b, 'thjonusta');
+      return bera(a, b, 'tegund') || bera(a, b, 'staerd') || (b.fjoldi - a.fjoldi) || bera(a, b, 'thjonusta');
     });
 
     function haus(dalkur, heiti, still) {
@@ -682,37 +689,45 @@
         (still ? ' style="' + still + '"' : '') + ' title="Raða eftir ' + esc(heiti.toLowerCase()) + '">' +
         heiti + '<span class="' + AUÐK + '-or">' + (virk ? (RODUN.upp ? '▲' : '▼') : '⇅') + '</span></th>';
     }
-    h += '<table class="' + AUÐK + '-tafla"><thead><tr>' +
-      haus('tegund', 'Tegund') + haus('staerd', 'Stærð') + haus('taeki', 'Tæki', 'text-align:right') +
-      haus('thjonusta', 'Þjónusta') + haus('vara', 'Tengd vara') + haus('verd', 'Verð', 'text-align:right') + haus('stada', 'Staða') + '</tr></thead><tbody>';
-
+    // 14.10.2026 (Agnar: „default sort eftir tegundum … einhverjar tvítalningar"): EIN röð per tegund + stærð með
+    // Yfirferð og Hleðslu hlið við hlið — áður tvær raðir fyrir hverja tegund, sem las eins og tvítalning. Innihald
+    // hvorrar þjónustu er óbreytt: leitarreitur (tenging vistast strax), verð með ✎ Vara, staða og ✓ Staðfesta.
+    var hopar = new Map();
     linur.forEach(function (L) {
+      var k = L.tegund + '|' + L.staerd;
+      if (!hopar.has(k)) hopar.set(k, { t: L.t, tegund: L.tegund, staerd: L.staerd, fjoldi: L.fjoldi, k: k, kinds: {} });
+      hopar.get(k).kinds[L.kind[0]] = L;
+    });
+    function hluti(L) {
+      if (!L) return '<span style="color:#cbd5e1">—</span>';
       var merki = '<span class="' + AUÐK + '-merki ' + AUÐK + '-m-' + L.fl + '" title="' + esc(L.titl) + '">' + L.txt + '</span>';
-      // „✓ Staðfesta" — Agnar: „hvernig staðfesti ég?". Val í listanum vistast
-      // strax, en sé ágiskunin RÉTT kviknar enginn atburður við að velja það
-      // sem þegar stendur. Takkinn vistar það sem sést sem skráða tengingu.
+      // „✓ Staðfesta" — Agnar: „hvernig staðfesti ég?". Val í listanum vistast strax, en sé ágiskunin RÉTT kviknar
+      // enginn atburður við að velja það sem þegar stendur. Takkinn vistar það sem sést sem skráða tengingu.
       var stadfesta = (!L.tg || !L.tg.vara_id) && L.valinn
         ? ' <button type="button" class="' + AUÐK + '-stadfesta" data-teng="' + esc('slokkvitaeki|' + L.lyk) + '" ' +
           'data-vara="' + esc(L.valinn) + '" title="Vista það sem stendur í reitnum sem skráða tengingu">✓ Staðfesta</button>'
         : '';
-      var hra = L.t.hra && L.t.hra.length
-        ? '<div style="font-size:10.5px;font-weight:400;color:#94a3b8">' + esc(L.t.hra.join(' · ')) + '</div>' : '';
+      // Verð tengdu línunnar + þjónusta/vara + „✎ Vara" sem fer á vöruna til að breyta verðinu (Agnar 14.10). Verðið býr í vorur.
+      var verd = L.varaId
+        ? '<div class="' + AUÐK + '-vl"><b>' + esc(krVsk(L.verd, (vara(L.varaId) || {}).vsk_prosenta)) + '</b><small>' + L.varaFl + ' · ' + kr(L.verd) + ' án vsk</small>' +
+          '<button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(L.varaId) + '" title="Opna „' + esc(L.vara) + '“ í Vörur og þjónusta — þar breytirðu verðinu">✎ Vara</button></div>'
+        : '';
+      return '<div class="' + AUÐK + '-hl">' + valHtml(L.valinn, 'slokkvitaeki|' + L.lyk, L.vantar) + verd + '<div class="' + AUÐK + '-hl-st">' + merki + stadfesta + '</div></div>';
+    }
+    h += '<table class="' + AUÐK + '-tafla ' + AUÐK + '-tvi"><thead><tr>' +
+      haus('tegund', 'Tegund') + haus('staerd', 'Stærð') + haus('taeki', 'Tæki', 'text-align:right') +
+      '<th>Yfirferð — tengd lína · verð · staða</th><th>Hleðsla — tengd lína · verð · staða</th></tr></thead><tbody>';
+    hopar.forEach(function (H) {
+      var hra = H.t.hra && H.t.hra.length
+        ? '<div style="font-size:10.5px;font-weight:400;color:#94a3b8">' + esc(H.t.hra.join(' · ')) + '</div>' : '';
       // Lína sem engin tæki bera (bara skráð) má hverfa — ✕ við fjöldann.
-      var eyda = L.fjoldi === 0 && L.kind[0] === SVAR_KIND[0][0]
-        ? ' <button type="button" class="' + AUÐK + '-eyda" data-linu="' + esc(L.tegund + '|' + L.staerd) + '" ' +
-          'title="Fjarlægja þessa tegund/stærð úr skránni (engin tæki bera hana)">✕</button>' : '';
-      h += '<tr data-linu="' + esc(L.tegund + '|' + L.staerd) + '"><td style="font-weight:700;color:#0f172a">' + esc(L.tegund) + hra + '</td>' +
-        '<td>' + esc(L.staerd || '—') + '</td>' +
-        '<td style="text-align:right;color:#5b6573;white-space:nowrap">' + (L.fjoldi || '<span style="color:#cbd5e1">0</span>') + eyda + '</td>' +
-        '<td>' + L.thjonusta + '</td>' +
-        '<td>' + valHtml(L.valinn, 'slokkvitaeki|' + L.lyk, L.vantar) + '</td>' +
-        // Verð tengdu línunnar + hvort hún er þjónusta eða vara + „✎ Vara" sem fer á vöruna til að breyta verðinu
-        // (Agnar 14.10: „bæta þar við takka sem sendir mann á þá vöru til að breyta verði"). Verðið sjálft býr í vorur.
-        '<td class="' + AUÐK + '-verdd">' + (L.varaId
-          ? '<b>' + esc(krVsk(L.verd, (vara(L.varaId) || {}).vsk_prosenta)) + '</b><small>' + L.varaFl + ' · ' + kr(L.verd) + ' án vsk</small>' +
-            '<button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(L.varaId) + '" title="Opna „' + esc(L.vara) + '“ í Vörur og þjónusta — þar breytirðu verðinu">✎ Vara</button>'
-          : '<span style="color:#cbd5e1">—</span>') + '</td>' +
-        '<td style="white-space:nowrap">' + merki + stadfesta + '</td></tr>';
+      var eyda = H.fjoldi === 0
+        ? ' <button type="button" class="' + AUÐK + '-eyda" data-linu="' + esc(H.k) + '" title="Fjarlægja þessa tegund/stærð úr skránni (engin tæki bera hana)">✕</button>' : '';
+      h += '<tr data-linu="' + esc(H.k) + '"><td style="font-weight:700;color:#0f172a">' + esc(H.tegund) + hra + '</td>' +
+        '<td>' + esc(H.staerd || '—') + '</td>' +
+        '<td style="text-align:right;color:#5b6573;white-space:nowrap">' + (H.fjoldi || '<span style="color:#cbd5e1">0</span>') + eyda + '</td>' +
+        '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[0][0]]) + '</td>' +
+        '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[1][0]]) + '</td></tr>';
     });
     h += '</tbody></table>';
     // + Bæta við tegund/stærð (Agnar 24.09: „ég geti bætt við t.d. öðrum stærðum,
