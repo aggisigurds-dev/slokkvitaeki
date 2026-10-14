@@ -23,6 +23,7 @@ create table if not exists public.thjonustusaga (
   tilvisun        text,                 -- R-000804 / 107397 / doc 1234 — hvaðan talan kemur
   sundurlidun     jsonb,                -- {"duft6":4,"duft2":1} / {"co2_5":2} — fína skiptingin
   texti           text,                 -- setningin úr skýrslunni sem talan var lesin úr
+  taeki           integer,              -- tæki þessarar tegundar á staðnum þetta ár skv. skýrslu (sama tala á öllum heimildaröðum árs/tegundar; null = engin skýrsla) — bætt við 14.10 (apply_migration thjonustusaga_taeki)
   skrad_at        timestamptz not null default now(),
   unique (fyrirtaeki_id, ar, tegund, heimild)
 );

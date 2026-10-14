@@ -118,7 +118,7 @@ function lesaTexta(annad, oll) {
   const bæta = (fid, ar, tegund, heimild, adgerd, magn, tilv, fin, texti) => {
     if (!fid || !ar || !magn) return;
     const k = [fid, ar, tegund, heimild].join('|');
-    const r = rows.get(k) || { fyrirtaeki_id: fid, ar, tegund, heimild, yfirfarin: 0, hladin: 0, ny: 0, _tilv: new Set(), _fin: {}, _texti: new Set() };
+    const r = rows.get(k) || { fyrirtaeki_id: fid, ar, tegund, heimild, yfirfarin: 0, hladin: 0, ny: 0, taeki: null, _tilv: new Set(), _fin: {}, _texti: new Set() };
     r[adgerd === 'yf' ? 'yfirfarin' : adgerd === 'hl' ? 'hladin' : 'ny'] += magn;
     if (tilv) r._tilv.add(String(tilv)); if (fin) { const fk = adgerd + ':' + fin; r._fin[fk] = (r._fin[fk] || 0) + magn; } if (texti) r._texti.add(texti.slice(0, 200));
     rows.set(k, r);
@@ -166,7 +166,11 @@ function lesaTexta(annad, oll) {
     }
   });
 
-  const ut = Array.from(rows.values()).map(r => ({ fyrirtaeki_id: r.fyrirtaeki_id, ar: r.ar, tegund: r.tegund, yfirfarin: r.yfirfarin, hladin: r.hladin, ny: r.ny, heimild: r.heimild, tilvisun: Array.from(r._tilv).sort().join(', ').slice(0, 300) || null, sundurlidun: Object.keys(r._fin).length ? r._fin : null, texti: r._texti.size ? Array.from(r._texti).join(' | ').slice(0, 600) : null }))
+  // HEILDARFJÖLDI PER ÁR (Agnar 14.10: „hafa líka heildarfjöldann per ár"): tæki á staðnum það ár skv. skýrslunni,
+  // stimplað á allar heimildaraðir sama árs/tegundar (spjaldið tekur max per tegund, ekki summu). Tegund sem skýrslan telur en
+  // enginn reikningur nefnir fær núllröð með taeki — svo heildin sjáist þótt ekkert hafi verið gert við þá tegund.
+  skyrslur.forEach(s => { TEG.forEach(tg => { const n = s.v[tg]; if (!n) return; let hit = false; rows.forEach(r => { if (r.fyrirtaeki_id === s.fid && r.ar === s.ar && r.tegund === tg) { r.taeki = n; hit = true; } }); if (!hit) { bæta(s.fid, s.ar, tg, 'skyrsla', 'yf', 0.0001, s.tilv); const r = rows.get([s.fid, s.ar, tg, 'skyrsla'].join('|')); if (r) { r.yfirfarin = 0; r.taeki = n; } } }); });
+  const ut = Array.from(rows.values()).map(r => ({ fyrirtaeki_id: r.fyrirtaeki_id, ar: r.ar, tegund: r.tegund, yfirfarin: r.yfirfarin, hladin: r.hladin, ny: r.ny, taeki: r.taeki, heimild: r.heimild, tilvisun: Array.from(r._tilv).sort().join(', ').slice(0, 300) || null, sundurlidun: Object.keys(r._fin).length ? r._fin : null, texti: r._texti.size ? Array.from(r._texti).join(' | ').slice(0, 600) : null }))
     .sort((a, b) => a.fyrirtaeki_id - b.fyrirtaeki_id || a.ar - b.ar || a.tegund.localeCompare(b.tegund));
 
   const tala = (h, f) => ut.filter(r => r.heimild === h).reduce((s, r) => s + r[f], 0);
@@ -177,7 +181,7 @@ function lesaTexta(annad, oll) {
   console.log('  per ár: ' + Object.keys(perAr).sort().map(a => a + ' yf ' + perAr[a].yf + '/hl ' + perAr[a].hl + '/ný ' + perAr[a].ny).join(' · '));
   if (ostadsettir.length) console.log('  óstaðsettir (án fyrirtaeki_id og án pars): ' + ostadsettir.slice(0, 12).map(o => o.heimild + ' ' + o.nr + ' kt ' + (o.kt || '?') + ' ' + o.ar).join(' | ') + (ostadsettir.length > 12 ? ' …' : ''));
 
-  if (FID) { console.log('\n' + FID + ' ' + (nafn[FID] || '')); ut.filter(r => r.fyrirtaeki_id === FID).forEach(r => console.log('  ' + r.ar + ' ' + r.tegund.padEnd(12) + ' yf ' + String(r.yfirfarin).padStart(3) + ' hl ' + String(r.hladin).padStart(3) + ' ný ' + String(r.ny).padStart(3) + '  ' + r.heimild.padEnd(12) + ' ' + (r.tilvisun || '') + (r.sundurlidun ? '  ' + JSON.stringify(r.sundurlidun) : '') + (r.texti ? '\n        „' + r.texti.slice(0, 160) + '“' : ''))); }
+  if (FID) { console.log('\n' + FID + ' ' + (nafn[FID] || '')); ut.filter(r => r.fyrirtaeki_id === FID).forEach(r => console.log('  ' + r.ar + ' ' + r.tegund.padEnd(12) + ' tæki ' + String(r.taeki == null ? '—' : r.taeki).padStart(3) + ' yf ' + String(r.yfirfarin).padStart(3) + ' hl ' + String(r.hladin).padStart(3) + ' ný ' + String(r.ny).padStart(3) + '  ' + r.heimild.padEnd(12) + ' ' + (r.tilvisun || '') + (r.sundurlidun ? '  ' + JSON.stringify(r.sundurlidun) : '') + (r.texti ? '\n        „' + r.texti.slice(0, 160) + '“' : ''))); }
 
   if (!SKRIFA) { console.log('\nÞURRKEYRSLA — ekkert skrifað. --skrifa skrifar töfluna.'); return; }
   const del = await fetch(U + '/rest/v1/thjonustusaga?id=gt.0', { method: 'DELETE', headers: H }); if (!del.ok) throw new Error('DELETE ' + del.status + ' ' + (await del.text()).slice(0, 200));

@@ -9,7 +9,7 @@
  *
  * Gögnin: viewið `v_hledsluspa` (ein röð per stað: virk tæki per tegund úr uttaeki, hlaðin/ný síðustu 5 ár úr
  * `thjonustusaga`, til_hledslu = mismunurinn, elsta_heimild) og `thjonustusaga` (ár fyrir ár: yfirfarin · hlaðin ·
- * ný · heimild · tilvísun). Hvort tveggja fyllt af tools/thjonustusaga.cjs — sjá sql/2026-10-13_thjonustusaga.sql.
+ * ný · tæki á staðnum skv. skýrslu · heimild · tilvísun). Hvort tveggja fyllt af tools/thjonustusaga.cjs — sjá sql/2026-10-13_thjonustusaga.sql.
  * Þetta spjald LES AÐEINS.
  *
  * Staðsetning: eitt stálspjald í fullri breidd beint fyrir ofan tækjadálkana (.uttekt-cols) — þar sem tækin sjálf
@@ -61,6 +61,7 @@
     '.hsp-tb tbody tr:last-child td{border-bottom:0}',
     '.hsp-tb tbody td:first-child{text-align:left;font-family:' + SANS + ';font-weight:700;font-size:12px}',
     '.hsp-tb tbody td.hsp-dauft{color:#aab1bb}',
+    '.hsp-tb tbody td b{font-weight:700}',
     '.hsp-tb tbody tr.hsp-nu td{background:#f3f5f8}',
     '.hsp-tb tbody tr.hsp-alls td{font-weight:700;border-top:1px solid rgba(20,24,34,.16);background:#f7f8fa}',
     '.hsp-tb tbody td.hsp-stor{font-family:' + DISPLAY + ';font-size:17px;font-weight:800;line-height:1}',
@@ -88,7 +89,7 @@
       try {
         const [a, b] = await Promise.all([
           SB.from('v_hledsluspa').select('*').eq('fyrirtaeki_id', fid).limit(1),
-          SB.from('thjonustusaga').select('ar,tegund,yfirfarin,hladin,ny,heimild,tilvisun').eq('fyrirtaeki_id', fid).order('ar')
+          SB.from('thjonustusaga').select('ar,tegund,yfirfarin,hladin,ny,taeki,heimild,tilvisun').eq('fyrirtaeki_id', fid).order('ar')
         ]);
         if (a.error || b.error) throw new Error((a.error || b.error).message);
         const r = { spa: (a.data && a.data[0]) || null, saga: b.data || [] };
@@ -105,11 +106,13 @@
   function arin(saga) {
     const o = {};
     (saga || []).forEach(r => {
-      const a = o[r.ar] = o[r.ar] || { ar: r.ar, yf: 0, hl: 0, ny: 0, heimild: null, tilv: null };
+      const a = o[r.ar] = o[r.ar] || { ar: r.ar, yf: 0, hl: 0, ny: 0, heimild: null, tilv: null, _taeki: {} };
       a.yf += +r.yfirfarin || 0; a.hl += +r.hladin || 0; a.ny += +r.ny || 0;
+      // heildarfjöldi: skýrslutalan er stimpluð á allar heimildaraðir sama árs/tegundar → max per tegund, ekki summa
+      if (r.taeki != null) a._taeki[r.tegund] = Math.max(a._taeki[r.tegund] || 0, +r.taeki);
       if (a.heimild == null || HEIMILD_RD[r.heimild] < HEIMILD_RD[a.heimild]) { a.heimild = r.heimild; a.tilv = r.tilvisun; }
     });
-    return Object.values(o).sort((x, y) => x.ar - y.ar);
+    return Object.values(o).map(a => { const k = Object.keys(a._taeki); a.taeki = k.length ? k.reduce((s, t) => s + a._taeki[t], 0) : null; a.taekiAaetlad = a.taeki == null ? a.yf + a.hl + a.ny : null; return a; }).sort((x, y) => x.ar - y.ar);
   }
   // heimildin á mannamáli: reikningsnúmer þegar það er til, annars „skýrsla"
   function heimildTexti(a) {
@@ -133,7 +136,7 @@
         '<span class="hsp-plata hsp-mork" data-t="gult" hidden></span>' +
         '<div class="hsp-tala"><b>—</b><small>til hleðslu</small></div></div>' +
       '<div class="hsp-buk">' +
-        '<div class="hsp-tb hsp-saga"><table><thead><tr><th>Ár</th><th>Yfirfarin</th><th>Hlaðin</th><th>Ný</th><th>Heimild</th></tr></thead><tbody></tbody></table></div>' +
+        '<div class="hsp-tb hsp-saga"><table><thead><tr><th>Ár</th><th>Tæki</th><th>Yfirfarin</th><th>Hlaðin</th><th>Ný</th><th>Heimild</th></tr></thead><tbody></tbody></table></div>' +
         '<div class="hsp-tb hsp-teg-tb"><table><thead><tr><th>Næsta heimsókn</th><th>Tæki</th><th>Hlaðin/ný 5 ár</th><th>Til hleðslu</th></tr></thead><tbody></tbody></table></div>' +
         '<div class="hsp-ath"></div>' +
       '</div>';
@@ -160,8 +163,8 @@
     // SAGA — ein röð per ár (yfirstandandi ár grátt), heimildin aftast
     const ar = arin(r.saga);
     setB(el, '.hsp-saga tbody', ar.length
-      ? ar.map(a => '<tr' + (a.ar === AR ? ' class="hsp-nu"' : '') + '><td>' + a.ar + '</td>' + tala(a.yf) + tala(a.hl) + tala(a.ny) + '<td class="hsp-heim" title="' + esc(a.tilv || '') + '">' + esc(heimildTexti(a)) + '</td></tr>').join('')
-      : '<tr><td colspan="5" class="hsp-tomt">Engin þjónustusaga skráð — reikningar og skýrslur ólesnar.</td></tr>');
+      ? ar.map(a => '<tr' + (a.ar === AR ? ' class="hsp-nu"' : '') + '><td>' + a.ar + '</td>' + (a.taeki != null ? '<td title="Tæki á staðnum skv. úttektarskýrslu ' + a.ar + '"><b>' + a.taeki + '</b></td>' : '<td class="hsp-dauft" title="Engin skýrsla lesin ' + a.ar + ' — yfirfarin + hlaðin + ný af reikningi">' + (a.taekiAaetlad || '—') + '</td>') + tala(a.yf) + tala(a.hl) + tala(a.ny) + '<td class="hsp-heim" title="' + esc(a.tilv || '') + '">' + esc(heimildTexti(a)) + '</td></tr>').join('')
+      : '<tr><td colspan="6" class="hsp-tomt">Engin þjónustusaga skráð — reikningar og skýrslur ólesnar.</td></tr>');
     // NÆSTA HEIMSÓKN — ein röð per tegund + Alls; til hleðslu í Playfair
     const teg = [['lettvatn', 'Léttvatn', s.taeki_lettvatn, s.nyleg_lettvatn, s.til_hledslu_lettvatn], ['duft', 'Duft', s.taeki_duft, s.nyleg_duft, s.til_hledslu_duft], ['co2', 'Kolsýra', s.taeki_co2, s.nyleg_co2, s.til_hledslu_co2]];
     setB(el, '.hsp-teg-tb tbody',
