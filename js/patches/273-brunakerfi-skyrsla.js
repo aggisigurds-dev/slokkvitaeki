@@ -2052,7 +2052,9 @@
     const prev = S; S = st;
     try { return samraemaNyttS(!!medSkodun); } finally { S = prev; }
   }
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum };
+  // 14.10.2026: priceItems + savePriceItems opin svo 410 (Brunak. verð-glugginn í Vörur og þjónusta) geti breytt
+  // verðum beint í listanum — sama geymsla, sami úreldingarvörður (Agnar: „fyrri listinn ætti að geta breytt verðunum").
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum, priceItems, savePriceItems };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */

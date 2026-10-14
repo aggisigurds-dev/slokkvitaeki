@@ -65,6 +65,46 @@
     });
   }
   function kr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
+  // verðreitir brunakerfis-listans: „16.670" ↔ 16670 (þúsundapunktur), „1,5" ↔ 1.5 — sama lesning og 273 num()
+  function verdTala(v) { var s = String(v == null ? '' : v).replace(/\s/g, '').replace(/\.(?=\d{3}(?:[.,]|$))/g, '').replace(',', '.'); var n = parseFloat(s); return isFinite(n) ? n : null; }
+  function verdInn(v) { var n = verdTala(v); if (n == null) return ''; return Number.isInteger(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : String(n).replace('.', ','); }
+  // Nýr liður neðst í brunakerfis-listann — sama vistun og verðin (savePriceItems í 273)
+  async function baetaVidLid(rot) {
+    var BK = window.BrunakerfiSkyrsla; if (!BK || !BK.priceItems || !BK.savePriceItems) return;
+    var nafnEl = rot.querySelector('#' + AUÐK + '-nyr-nafn'), verdEl = rot.querySelector('#' + AUÐK + '-nyr-verd'), tegEl = rot.querySelector('#' + AUÐK + '-nyr-teg'), takki = rot.querySelector('#' + AUÐK + '-nyr-baeta');
+    var nafn = String(nafnEl.value || '').trim(), n = verdTala(verdEl.value);
+    if (!nafn) { nafnEl.focus(); segja('Skrifaðu heiti liðarins', true); return; }
+    if (n == null || n < 0) { verdEl.classList.add('villa'); verdEl.focus(); segja('Ógilt verð — skrifaðu tölu, t.d. 14.500', true); return; }
+    var items = BK.priceItems().map(function (x) { return { name: x.name, price: x.price, link: x.link, teg: x.teg }; });
+    if (items.some(function (x) { return String(x.name).trim().toLowerCase() === nafn.toLowerCase(); })) { nafnEl.classList.add('villa'); segja('„' + nafn + '“ er þegar í listanum — breyttu verðinu í röðinni', true); return; }
+    items.push({ name: nafn, price: n, link: '', teg: tegEl.value === 'vara' ? 'vara' : 'thjonusta' });
+    takki.disabled = true;
+    try {
+      var ok = await BK.savePriceItems(items);
+      if (ok) { segja(nafn + ': ' + kr(n) + ' bætt við ✓'); try { await hlada(true); } catch (_) {} teikna(); var r = document.querySelector('#' + AUÐK + '-nyr-nafn'); if (r) r.focus(); }
+      else { try { await hlada(true); } catch (_) {} teikna(); }   // úrelt / net — 273 sýndi skilaboðin, listinn endurlesinn (innslátturinn stendur ekki eftir; sjá skilaboðin)
+    } catch (e) { segja('Vistun brást: ' + String((e && e.message) || e), true); }
+    finally { if (takki.isConnected) takki.disabled = false; }
+  }
+  // Eitt verð breytt í 410 → allur listinn vistaður um 273 (úreldingarvörðurinn þar ræður). Reiturinn segir satt:
+  // grænn rammi = vistað, rauður = ekki vistað (gildið stendur í reitnum þar til listinn er endurlesinn).
+  async function vistaVerd(inp) {
+    var BK = window.BrunakerfiSkyrsla; if (!BK || !BK.priceItems || !BK.savePriceItems) return;
+    var n = verdTala(inp.value);
+    if (n == null || n < 0) { inp.classList.add('villa'); segja('Ógilt verð — skrifaðu tölu, t.d. 14.500', true); return; }
+    var items = BK.priceItems().map(function (x) { return { name: x.name, price: x.price, link: x.link, teg: x.teg }; });
+    var it = items[+inp.dataset.vi];
+    if (!it || it.name !== inp.dataset.nafn) it = items.filter(function (x) { return x.name === inp.dataset.nafn; })[0];
+    if (!it) { inp.classList.add('villa'); segja('Fann ekki liðinn „' + inp.dataset.nafn + '“ í listanum — endurhlaða gluggann', true); return; }
+    if (it.price === n) { inp.classList.remove('villa'); inp.value = verdInn(n); return; }
+    inp.disabled = true;
+    try {
+      var ok = await BK.savePriceItems(items.map(function (x) { return x === it ? { name: x.name, price: n, link: x.link, teg: x.teg } : x; }));
+      if (ok) { inp.classList.remove('villa'); inp.classList.add('ok'); inp.value = verdInn(n); segja(it.name + ': ' + kr(n) + ' vistað ✓'); setTimeout(function () { inp.classList.remove('ok'); }, 1800); }
+      else { inp.classList.add('villa'); try { await hlada(true); } catch (_) {} teikna(); }   // úrelt / net: 273 sýndi skilaboðin — listinn endurlesinn
+    } catch (e) { inp.classList.add('villa'); segja('Vistun brást: ' + String((e && e.message) || e), true); }
+    finally { inp.disabled = false; }
+  }
   function krVsk(n, vsk) { return kr((Number(n) || 0) * (1 + (Number(vsk) || 24) / 100)); }
 
   // ── nafnaleitin úr 129, orðrétt, svo glugginn sýni það sem GERIST í dag ──
@@ -393,6 +433,21 @@
       '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-breyta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka{margin-left:8px}',
+      // verðreitir brunakerfis-listans (442 .reitur): 96px, hægri-jafnað mono, grænt/rautt eftir vistun
+      '.' + AUÐK + '-verd{width:96px;height:30px;box-sizing:border-box;padding:0 8px;text-align:right;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
+      '.' + AUÐK + '-verd:focus{outline:none;border-color:rgba(201,42,42,.55);box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(201,42,42,.18)}',
+      '.' + AUÐK + '-verd.ok{border-color:#1f9d57;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(31,157,87,.25)}',
+      '.' + AUÐK + '-verd.villa{border-color:#e0453c;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(224,69,60,.25)}',
+      '.' + AUÐK + '-verd[disabled]{opacity:.6}',
+      '.' + AUÐK + '-kr{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11.5px;color:#6b7483;margin-left:4px}',
+      // nýr liður neðst: hvít röð undir töflunni (sama bakki og línur töflunnar)
+      '.' + AUÐK + '-nyr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:#fff;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
+      '.' + AUÐK + '-nyr input[type=text]:not(.' + AUÐK + '-verd){flex:1 1 220px;min-width:0;height:30px;box-sizing:border-box;padding:0 10px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:13px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
+      '.' + AUÐK + '-nyr input.villa{border-color:#e0453c}',
+      '.' + AUÐK + '-nyr select{height:30px;padding:0 8px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px}',
+      '#' + AUÐK + '-nyr-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-nyr-baeta[disabled]{opacity:.38;pointer-events:none}',
+      '.' + AUÐK + '-nyr-ath{flex:1 1 100%;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483;line-height:1.5}',
       '#' + AUÐK + '-efni{padding:18px 22px 22px;max-height:calc(100vh - 150px);overflow:auto;background:#f4f6f9}',
       '.' + AUÐK + '-h3{margin:20px 0 8px;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;font-weight:700;color:#3a4250;',
       '  text-transform:uppercase;letter-spacing:.14em}',
@@ -666,31 +721,43 @@
 
   // ── gluggi 2: brunakerfi ────────────────────────────────────────────────
   function htmlBrunakerfi() {
-    var listi = (G.bkListi && Array.isArray(G.bkListi.items)) ? G.bkListi.items : null;
+    // 14.10.2026 (Agnar: „fyrri listinn ætti að geta breytt verðunum, og verðlistinn sé meira hvernig tengist"):
+    // verðin eru reitir hér og vistast um savePriceItems í 273 — sama geymsla (app_settings.brunakerfi_verdlisti),
+    // sami úreldingarvörður (önnur vél breytti listanum → ekkert vistað, listinn endurlesinn). Tengingar og nýir
+    // liðir fara áfram í ritilinn (✎ Breyta verðlista í hausnum).
+    var BK = window.BrunakerfiSkyrsla;
+    var listi = (BK && BK.priceItems) ? BK.priceItems() : ((G.bkListi && Array.isArray(G.bkListi.items)) ? G.bkListi.items : null);
     var h = '<div class="' + AUÐK + '-h3">Verðlisti brunakerfisskýrslunnar</div>';
     h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
-      'Þetta er sami listi og 🏷-takkinn inni í brunakerfisskýrslunni sýnir — ' +
-      'hann býr í <code>app_settings.brunakerfi_verdlisti</code>, ekki í vörulistanum. ' +
-      'Breytingar hér fara á sama stað.</p>';
+      'Sami listi og brunakerfisskýrslan sækir verðin í — býr í <code>app_settings.brunakerfi_verdlisti</code>, ekki í vörulistanum. ' +
+      '<b>Verð má breyta beint hér</b> (vistast um leið og farið er úr reitnum, fyrir allar vélar). ' +
+      'Tengingar, heiti og nýir liðir: <b>✎ Breyta verðlista</b> í hausnum.</p>';
     if (!listi || !listi.length) {
       h += '<div style="padding:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12.5px;color:#92400e">' +
-        'Enginn vistaður verðlisti fannst — skýrslan notar þá innbyggða grunnlistann. ' +
-        'Opnaðu 🏷 í brunakerfisskýrslu til að vista hann fyrst.</div>';
+        'Enginn verðlisti fannst — opnaðu ✎ Breyta verðlista til að vista hann fyrst.</div>';
       return h;
     }
     h += '<table class="' + AUÐK + '-tafla"><thead><tr>' +
       '<th>Liður</th><th style="text-align:right">Verð (án vsk)</th><th>Telur búnaðarlínu</th>' +
       '</tr></thead><tbody>';
-    listi.forEach(function (it) {
-      h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(it.name) + '</td>' +
-        '<td style="text-align:right">' + kr(it.price) + '</td>' +
+    listi.forEach(function (it, i) {
+      h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(it.name) + (it.teg === 'vara' ? ' <small style="font-weight:500;color:#845400">vara</small>' : '') + '</td>' +
+        '<td style="text-align:right">' + (BK && BK.savePriceItems
+          ? '<input class="' + AUÐK + '-verd" type="text" inputmode="decimal" data-vi="' + i + '" data-nafn="' + esc(it.name) + '" value="' + esc(verdInn(it.price)) + '" aria-label="Verð án vsk: ' + esc(it.name) + '"> <span class="' + AUÐK + '-kr">kr</span>'
+          : kr(it.price)) + '</td>' +
         '<td style="color:#5b6573">' + (it.link ? esc(it.link) : '<em style="color:#94a3b8">— ekki talið —</em>') + '</td></tr>';
     });
     h += '</tbody></table>';
-    h += '<p style="margin:12px 0 0;font-size:12px;color:#5b6573">' +
-      'Ritstýring þessa lista fer enn fram í 🏷-glugganum inni í skýrslunni. ' +
-      'Hann hefur úreldingarvörð sem stöðvar vistun ef önnur vél breytti listanum á meðan — ' +
-      'sá vörður á að eiga listann einn, svo hér er hann aðeins sýndur.</p>';
+    // nýr liður neðst (Agnar 14.10: „og bætt við línu neðst") — heiti · verð · þjónusta/vara; tengingin er valin í ritlinum
+    if (BK && BK.savePriceItems) {
+      h += '<div class="' + AUÐK + '-nyr" id="' + AUÐK + '-nyr">' +
+        '<input id="' + AUÐK + '-nyr-nafn" type="text" placeholder="Nýr liður, t.d. Vinna rafvirkja" aria-label="Heiti nýs liðar">' +
+        '<input id="' + AUÐK + '-nyr-verd" class="' + AUÐK + '-verd" type="text" inputmode="decimal" placeholder="14.500" aria-label="Verð án vsk"> <span class="' + AUÐK + '-kr">kr án vsk</span>' +
+        '<select id="' + AUÐK + '-nyr-teg" aria-label="Tegund liðar"><option value="thjonusta">Þjónusta</option><option value="vara">Vara</option></select>' +
+        '<button type="button" id="' + AUÐK + '-nyr-baeta">+ Bæta við neðst</button>' +
+        '<span class="' + AUÐK + '-nyr-ath">Vistast strax í sama lista — liðurinn er þá valkostur í brunakerfisskýrslunni. Tengingu við búnaðarlínu velurðu í ✎ Breyta verðlista.</span>' +
+        '</div>';
+    }
     return h;
   }
 
@@ -923,6 +990,14 @@
     });
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
+    // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
+    bak.addEventListener('change', function (e) { var inp = e.target && e.target.closest && e.target.closest('.' + AUÐK + '-verd'); if (inp) vistaVerd(inp); });
+    bak.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || !e.target || !e.target.classList) return;
+      if (e.target.closest && e.target.closest('#' + AUÐK + '-nyr')) { e.preventDefault(); baetaVidLid(bak); return; }   // Enter í nýja liðnum = Bæta við
+      if (e.target.classList.contains(AUÐK + '-verd')) { e.preventDefault(); e.target.blur(); }
+    });
+    bak.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) baetaVidLid(bak); });
     try {
       await hlada(true);
       teikna();
