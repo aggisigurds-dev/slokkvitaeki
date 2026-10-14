@@ -1,4 +1,4 @@
-/* === 465 — HLEÐSLUSPÁ-SPJALDIÐ á fyrirtækjasíðunni (14.10.2026) ==============
+/* === 467 — HLEÐSLUSPÁ-SPJALDIÐ (var 465 til 14.10 kl. 01 — 465-djupdvali.js kom sama kvöld úr annarri lotu, númerið gefið eftir) á fyrirtækjasíðunni (14.10.2026) ==============
  *
  * Agnar 13.10.2026: „register how many tæki was yfirfarin, hlaðin, ný í duft og léttvatn og kolsýru per year so we
  * can determine when and how many we need to hlaða each visit.. but hlaða is every 5 years" — og svo: „try to make
@@ -74,7 +74,7 @@
     // sími / app (980 px): spjaldið er sjálft ílát — töflurnar stafla sér undir 640 px
     '@container (max-width:640px){.hsp-buk{grid-template-columns:minmax(0,1fr)}.hsp-t{font-size:13.5px}.hsp-tala b{font-size:24px}}'
   ].join('\n');
-  const st = document.createElement('style'); st.id = 'hledsluspa-465'; st.textContent = css;
+  const st = document.createElement('style'); st.id = 'hledsluspa-467'; st.textContent = css;
   (document.head || document.documentElement).appendChild(st);
 
   // ---------------------------------------------------------------- gögn
@@ -119,9 +119,27 @@
     if (a.heimild === 'sala' || a.heimild === 'reikningur') { const m = String(a.tilv || '').match(/R-\d+|\b\d{5,6}\b/); return m ? m[0] : (a.heimild === 'sala' ? 'sala' : 'reikningur'); }
     return a.heimild === 'skyrslutexti' ? 'skýrsla (texti)' : 'skýrsla';
   }
+  // LISTAR (bílstjóra-appið, 466): spáin ein fyrir marga staði í einu — ein sókn per 200 staði, aðskilið minni svo
+  // prófílspjaldið (sem þarf líka söguna) rugli ekki saman „spá án sögu" og „engin saga".
+  const spar = new Map(); const sparBid = new Set();
+  async function saekjaSpar(ids) {
+    ids = Array.from(new Set((ids || []).map(Number).filter(i => i && !spar.has(i) && !sparBid.has(i))));
+    if (!ids.length) return; const SB = sb(); if (!SB) return;
+    ids.forEach(i => sparBid.add(i));
+    try {
+      for (let i = 0; i < ids.length; i += 200) {
+        const b = ids.slice(i, i + 200);
+        const r = await SB.from('v_hledsluspa').select('fyrirtaeki_id,stada,naesta_heimsokn,taeki,taeki_lettvatn,taeki_duft,taeki_co2,nyleg_lettvatn,nyleg_duft,nyleg_co2,nyleg_oskilgreint,til_hledslu,til_hledslu_lettvatn,til_hledslu_duft,til_hledslu_co2,sidasta_hledsla,elsta_heimild,ath').in('fyrirtaeki_id', b);
+        if (r.error) throw new Error(r.error.message);
+        (r.data || []).forEach(s => spar.set(+s.fyrirtaeki_id, s));
+        b.forEach(i => { if (!spar.has(i)) spar.set(i, null); });   // staður án raðar í viewinu = engin gögn (ekki villa)
+      }
+    } catch (_) { /* villa festist ekki — næsta kall reynir aftur */ } finally { ids.forEach(i => sparBid.delete(i)); }
+  }
+  // spáin fyrir einn stað úr hvoru minninu sem er: undefined = ekki sótt enn, null = engin gögn
+  function spa(fid) { fid = +fid; const r = minni.get(fid); if (r && r.spa) return r.spa; return spar.has(fid) ? spar.get(fid) : undefined; }
   function lina(fid) {
-    const r = minni.get(+fid); if (!r || !r.spa) return '';
-    const s = r.spa;
+    const s = spa(fid); if (!s) return '';
     return s.til_hledslu + ' til hleðslu · L ' + s.til_hledslu_lettvatn + ' · D ' + s.til_hledslu_duft + ' · CO₂ ' + s.til_hledslu_co2 + (s.sidasta_hledsla ? ' · síðast hlaðið ' + s.sidasta_hledsla : ' · aldrei skráð hleðsla');
   }
 
@@ -197,7 +215,7 @@
         fylla(el, fid, r || null);
         if (r) el.dataset.fyllt = '1'; else { delete el.dataset.fyllt; saekja(fid).then(() => schedule()); }
       }
-    } catch (e) { console.error('[465]', e); } finally { inni = false; }
+    } catch (e) { console.error('[467]', e); } finally { inni = false; }
   }
   function schedule() { if (schedule.q) return; schedule.q = true; requestAnimationFrame(() => { schedule.q = false; tick(); }); }
   (function watch() {
@@ -213,5 +231,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
 
   // tick er opið svo 462 (stöðug opnun) geti teiknað beinagrindina í SAMA tifi og borðann — ekki á eigin tifi seinna
-  window.Hledsluspa = { saekja, lina, tick, gleyma: fid => { minni.delete(+fid); const el = document.getElementById('_hsp-spjald'); if (el) delete el.dataset.fyllt; schedule(); } };
+  window.Hledsluspa = { saekja, saekjaSpar, spa, arin, lina, tick, gleyma: fid => { minni.delete(+fid); const el = document.getElementById('_hsp-spjald'); if (el) delete el.dataset.fyllt; schedule(); } };
 })();

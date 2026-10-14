@@ -36,7 +36,7 @@
     ['370', function () { if (window.HreyfingaryfirlitTakki) HreyfingaryfirlitTakki.setja(); }],
     ['464', function () { if (window.BrunaaaetlunTakki) BrunaaaetlunTakki.setja(); }],      // Brunaáætlun (13.10.2026)
     ['286', function () { if (window.SamskiptiPanel && SamskiptiPanel.forbua) SamskiptiPanel.forbua(); }],
-    ['465', function () { if (window.Hledsluspa) Hledsluspa.tick(); }],                     // Hleðsluspá-spjaldið yfir tækjadálkunum (14.10.2026)
+    ['467', function () { if (window.Hledsluspa) Hledsluspa.tick(); }],                     // Hleðsluspá-spjaldið yfir tækjadálkunum (14.10.2026, var 465 — 465-djupdvali tók númerið sama kvöld)
     ['405b', function () { if (window.Efsta405) Efsta405.tick(); }]                        // það sem ofantalið færði inn
   ];
 
