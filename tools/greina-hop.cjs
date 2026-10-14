@@ -19,6 +19,12 @@
  *   node tools/greina-hop.cjs --fid 205,1483        aðeins þessir staðir
  *   node tools/greina-hop.cjs --hopur heimaleiga    aðeins annar hópurinn (brunakerfi | heimaleiga)
  *   --json <skrá>   skrifar niðurstöðuna líka sem JSON
+ *   --dreypa        DREYPING (með --ocr): brúin (watcher.js) hendir beiðni sem enginn tók innan 30 mín („úrelt") og les
+ *                   eina í einu (~4 mín). 28 beiðnir í einu → 7 lesnar, 21 úreltar (mælt 14.10 02:04). Dreyping heldur
+ *                   aðeins --samtimis (3) beiðnum í röð, sækir bygging-uppl aftur fyrir hvern stað þegar röðin losnar
+ *                   (ný ólesin skjöl, eign-röðin endurskrifuð með nýjustu tölum → prófílspjaldið 468 uppfærist) og
+ *                   heldur áfram þar til ekkert ólesið er eftir eða --klst (3) eru liðnar. Keyra aftengt:
+ *                   powershell Start-Process node -ArgumentList 'tools/greina-hop.cjs','--skrifa','--ocr','--dreypa' -WindowStyle Hidden
  */
 const fs = require('fs');
 const path = require('path');
@@ -33,6 +39,10 @@ const SKRIFA = args.includes('--skrifa'), OCR = args.includes('--ocr');
 const FIDS = args.includes('--fid') ? args[args.indexOf('--fid') + 1].split(',').map(Number) : null;
 const HOPUR = args.includes('--hopur') ? args[args.indexOf('--hopur') + 1] : null;
 const JSON_UT = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
+const DREYPA = args.includes('--dreypa');
+const SAMTIMIS = args.includes('--samtimis') ? +args[args.indexOf('--samtimis') + 1] : 3;
+const KLST = args.includes('--klst') ? +args[args.indexOf('--klst') + 1] : 3;
+const stimpill = () => new Date().toISOString().slice(11, 19);
 
 const get = async (q) => { const r = await fetch(U + '/rest/v1/' + q, { headers: H }); if (!r.ok) throw new Error(q.slice(0, 80) + ' → ' + r.status + ' ' + (await r.text()).slice(0, 200)); return r.json(); };
 const bid = ms => new Promise(r => setTimeout(r, ms));
@@ -70,11 +80,13 @@ async function byggingUppl(adr) {
   const bidaLandnr = new Map(); bida.forEach(t => { const l = t.gogn && t.gogn.landnr; if (l) bidaLandnr.set(String(l), t); });
 
   const ut = [];
-  for (const [adr, felog] of eftirAdr) {
+  const pendingNu = async () => (await get('automation_triggers?workflow=eq.bygging-ocr&status=in.(bida,pending,running)&select=id')).length;
+  const bidlisti = [];   // dreyping: staðir sem eiga ólesin skjöl en fengu ekki beiðni strax
+  async function vinnaStad(adr, felog, ocrLeyft) {
     const heiti = felog.map(f => f.nafn).join(' / ');
     const j = await byggingUppl(adr);
     const lina = { adr, felog: felog.map(f => ({ id: f.id, nafn: f.nafn, hopur: f.hopur })) };
-    if (!j || (j.error && !j.eign)) { lina.stada = 'fannst ekki'; lina.villa = j && j.error; ut.push(lina); console.log('  ✗ ' + adr.padEnd(44) + ' ' + heiti.slice(0, 40).padEnd(40) + ' fannst ekki: ' + (j && j.error)); await bid(800); continue; }
+    if (!j || (j.error && !j.eign)) { lina.stada = 'fannst ekki'; lina.villa = j && j.error; ut.push(lina); console.log('  ✗ ' + adr.padEnd(44) + ' ' + heiti.slice(0, 40).padEnd(40) + ' fannst ekki: ' + (j && j.error)); return lina; }
     const e = j.eign || {}; lina.landnr = e.landnr; lina.heitinr = e.heitinr; lina.safn = e.safn; lina.oviss = !!(j.oviss || e.oviss);
     lina.m2 = j.m2; lina.haedir = j.haedir && j.haedir.listi ? j.haedir.listi.length : null; lina.eignir = j.eignir; lina.byggingarar = j.byggingarar;
     lina.skjol = (j.heimildir || []).length; lina.olesin = (j.olesin || []).length; lina.lesin = (j.heimildir || []).filter(h => h.lesin).length;
@@ -96,17 +108,38 @@ async function byggingUppl(adr) {
     if (lina.olesin && !lina.oviss) {
       const fyrir = bidaLandnr.get(String(e.landnr));
       if (fyrir) lina.ocr = 'beiðni ' + fyrir.id + ' þegar ' + fyrir.status;
+      else if (OCR && DREYPA && !ocrLeyft) { lina.ocr = 'bíður dreypingar (' + lina.olesin + ' ólesin)'; bidlisti.push({ adr, felog }); }
       else if (OCR) {
         const skjol = (j.olesin || []).slice(0, 6).map(s => ({ slod: s.slod, tegund: s.tegund, dags: s.dags || null, lysing: s.lysing || '' }));
         const r = await fetch(U + '/rest/v1/automation_triggers', { method: 'POST', headers: Object.assign({ Prefer: 'return=representation' }, H), body: JSON.stringify({ workflow: 'bygging-ocr', status: 'bida', requested_by: 'greining-hop', gogn: { landnr: e.landnr, heitinr: e.heitinr || null, svf: e.svf || null, heimilisfang: e.label ? e.label + (e.postnr ? ', ' + e.postnr : '') : adr, skjol } }) });
         const d = r.ok ? await r.json() : null;
         lina.ocr = d && d[0] ? 'beiðni ' + d[0].id + ' (' + skjol.length + ' skjöl)' : 'beiðni brást ' + r.status;
-        if (d && d[0]) bidaLandnr.set(String(e.landnr), { id: d[0].id, status: 'bida' });
+        if (d && d[0]) { bidaLandnr.set(String(e.landnr), { id: d[0].id, status: 'bida' }); if (DREYPA && lina.olesin > 6) bidlisti.push({ adr, felog }); }   // fleiri en 6 → aftur í röðina þegar þessi lýkur
       } else lina.ocr = lina.olesin + ' ólesin' + (lina.olesin > 6 ? ' (6 í einu)' : '');
     } else if (!lina.olesin) lina.ocr = lina.skjol ? 'allt lesið' : 'engin skjöl';
     ut.push(lina);
     console.log('  ' + (lina.oviss ? '?' : '✓') + ' ' + adr.padEnd(44).slice(0, 44) + ' ' + heiti.slice(0, 40).padEnd(40) + ' L' + String(e.landnr || '').padEnd(7) + ' ' + String(e.safn || '').slice(0, 22).padEnd(22) + ' m² ' + String(j.m2 == null ? '—' : j.m2).padStart(8) + '  skjöl ' + String(lina.skjol).padStart(2) + ' (lesin ' + lina.lesin + ')  ' + lina.stada + ' · ' + (lina.ocr || ''));
-    await bid(800);
+    return lina;
+  }
+  let laus = OCR && DREYPA ? Math.max(0, SAMTIMIS - await pendingNu()) : Infinity;
+  for (const [adr, felog] of eftirAdr) { const l = await vinnaStad(adr, felog, laus > 0); if (l && /^beiðni \d+ \(/.test(l.ocr || '')) laus--; await bid(800); }
+  // DREYPING — halda röðinni stuttri þar til allt er lesið eða tíminn búinn
+  if (OCR && DREYPA && bidlisti.length) {
+    const lok = Date.now() + KLST * 3600000;
+    console.log('\nDREYPING: ' + bidlisti.length + ' staðir bíða · mest ' + SAMTIMIS + ' beiðnir í röð · hætti ' + new Date(lok).toISOString().slice(11, 16) + ' UTC');
+    let kyrr = 0;
+    while (bidlisti.length && Date.now() < lok) {
+      await bid(60000);
+      let p; try { p = await pendingNu(); } catch (e) { console.log('  ' + stimpill() + ' villa við talningu: ' + e.message); continue; }
+      if (p >= SAMTIMIS) { if (++kyrr % 5 === 0) console.log('  ' + stimpill() + ' ' + p + ' í röð, ' + bidlisti.length + ' bíða'); continue; }
+      kyrr = 0;
+      const n = bidlisti.shift();
+      bidaLandnr.clear(); (await get('automation_triggers?workflow=eq.bygging-ocr&status=in.(bida,pending,running)&select=id,status,gogn')).forEach(t => { const l = t.gogn && t.gogn.landnr; if (l) bidaLandnr.set(String(l), t); });
+      console.log('  ' + stimpill() + ' röð ' + p + '/' + SAMTIMIS + ' → ' + n.adr);
+      const l = await vinnaStad(n.adr, n.felog, true);
+      if (l && /þegar (bida|pending|running)/.test(l.ocr || '')) bidlisti.push(n);   // beiðni enn í vinnslu fyrir landnúmerið — aftur í röðina
+    }
+    console.log('DREYPINGU LOKIÐ ' + stimpill() + ' — ' + (bidlisti.length ? bidlisti.length + ' staðir enn með ólesin skjöl (keyra aftur)' : 'ekkert ólesið eftir'));
   }
   const n = k => ut.filter(x => x.stada && x.stada.startsWith(k)).length;
   console.log('\nSAMANTEKT: ' + ut.length + ' heimilisföng · eign fundin ' + ut.filter(x => x.landnr && !x.oviss).length + ' · óviss ' + ut.filter(x => x.oviss).length + ' · fannst ekki ' + n('fannst') + ' · með lesnar tölur (m²) ' + ut.filter(x => x.m2 != null).length + ' · með ólesin skjöl ' + ut.filter(x => x.olesin).length + ' · OCR-beiðnir settar ' + ut.filter(x => /^beiðni \d+ \(/.test(x.ocr || '')).length);
