@@ -130,12 +130,21 @@
         + 'font-size:16px!important}',
       both('#companies-main .co-banner-right' + P)
         + '{width:100%!important}',
-      both('#companies-main.co-opid>div:first-child' + P)
+      // 14.10.2026 (hopp á síma, mælt á 1853): 228 setur „Óklárað úttekt"-kassann (._sr-box) FREMST í #companies-main
+      // í sama tifi og borðinn (462). Þá var hausröðin ekki lengur :first-child — reglan sleppti, hnapparnir runnu úr
+      // 13 í 16 px (transition), röðin brotnaði um og prófíllinn hoppaði 34 px (CLS 0,059 við aðra opnun). Reglan nær nú
+      // hausnum líka á eftir kassanum, og aldrei kassanum sjálfum (hann er líka div).
+      both('#companies-main.co-opid>div:first-child:not(._sr-box)' + P) + ','
+        + both('#companies-main.co-opid>._sr-box:first-child+div' + P)
         + strip.slice(0, -1) + ';margin-bottom:8px!important}',
-      both('#companies-main.co-opid>div:first-child .btn' + P) + ','
-        + both('#companies-main.co-opid>div:first-child button' + P)
+      both('#companies-main.co-opid>div:first-child:not(._sr-box) .btn' + P) + ','
+        + both('#companies-main.co-opid>div:first-child:not(._sr-box) button' + P) + ','
+        + both('#companies-main.co-opid>._sr-box:first-child+div .btn' + P) + ','
+        + both('#companies-main.co-opid>._sr-box:first-child+div button' + P)
         + '{flex:0 0 auto!important;min-height:36px!important;height:36px!important;'
-        + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important}',
+        // transition:none — .btn rennur (0,15 s) yfir allar breytingar; lesi einhver stíl áður en co-opid kemst á (440, í
+        // sama verki) byrjaði hnappurinn í fullri stærð og rann svo niður fyrir framan notandann (mælt 31 → 25 px).
+        + 'padding:0 10px!important;font-size:13px!important;white-space:nowrap!important;transition:none!important}',
       // 06.09.2026: [data-co-id] er lika a spjoldum 111/199/311/307 (Skjol, Stada eftir ari, Samningur) - thau urdu
       // nowrap-flex-rod med 3.500px innihaldi (tomt spjald + Samningur ut fyrir brun a sima). Adeins adgerdastikan.
       both('#companies-main [data-co-id]' + NOTSEC + P)
