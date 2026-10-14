@@ -262,6 +262,9 @@
     let t = 0;
     new MutationObserver(() => {
       if (!view.classList.contains('active')) return;
+      // 13.10.2026 (hopp): rofinn (32 px) kom 300 ms eftir að Sala teiknaðist og ýtti öllu niður (CLS 0,011, mælt). Vanti
+      // hann er hann settur inn strax, í sama ramma og flísarnar; biðin hér að neðan á aðeins við endurteikningu listans.
+      if (!document.getElementById('_vlb-wrap') && document.getElementById('pos-services')) { try { mount(); } catch (_) {} }
       clearTimeout(t);
       t = setTimeout(() => {
         if (!document.getElementById('pos-services')) return;

@@ -87,7 +87,9 @@
       #${VIEW_ID} .krafa-chk{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1d4ed8;cursor:pointer;margin-right:8px;white-space:nowrap}
       #${VIEW_ID} .krafa-chk input{cursor:pointer;margin:0}
       #${VIEW_ID} .ab.armed{background:#dc2626;color:#fff;border-color:#dc2626}
-      #${VIEW_ID} .skel{padding:30px;text-align:center;color:#94a3b8}`;
+      #${VIEW_ID} .skel{padding:30px;text-align:center;color:#94a3b8}
+      #${VIEW_ID} section:not(.bky-teiknad) > .bar, #${VIEW_ID} section:not(.bky-teiknad) > [id^="bky-app"]{display:none}
+      #${VIEW_ID} section:not(.bky-teiknad)::before{content:attr(data-saekir);display:block;padding:30px;text-align:center;color:#94a3b8}`;
     document.head.appendChild(s);
   }
 
@@ -130,7 +132,7 @@
           <div class="tab active" data-tab="sala">Sölur</div>
           <div class="tab" data-tab="verk">Verkbeiðnir / afgreiðsla</div>
         </div>
-        <section data-sec="sala">
+        <section data-sec="sala" data-saekir="Sæki sölur…">
           <div class="alerts" id="bky-alertsS"></div>
           <div class="tiles" id="bky-tilesS"></div>
           <div class="bar">
@@ -144,7 +146,7 @@
           </div>
           <div id="bky-appS"><div class="skel">Sæki sölur…</div></div>
         </section>
-        <section data-sec="verk" style="display:none">
+        <section data-sec="verk" data-saekir="Sæki verkbeiðnir…" style="display:none">
           <div class="alerts" id="bky-alertsV"></div>
           <div class="tiles" id="bky-tilesV"></div>
           <div class="bar">
@@ -400,7 +402,7 @@
   async function load() {
     const SB = getSB();
     const appS = document.getElementById('bky-appS');
-    if (!SB) { if (appS) appS.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; return; }
+    if (!SB) { if (appS) { synaStiku(appS); appS.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; } return; }
     // notes
     const n = await SB.from('cowork_review_notes').select('kind,sale_id,note,resolved');
     NOTES = { sala: {}, verk: {} }; RESOLVED = { sala: {}, verk: {} };
@@ -411,7 +413,7 @@
       .select('id,num,created_at,customer_nafn,greitt_med,greitt_med_prev,status,samtals,customer_base_id,paid_at,is_credit,krafa_sent_at,hidden')
       .order('created_at', { ascending: false }).order('id').range(from, to))
       .then(data => ({ data, error: null }), error => ({ data: null, error }));
-    if (r.error) { if (appS) appS.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
+    if (r.error) { if (appS) { synaStiku(appS); appS.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; } return; }
     ROWS = (r.data || []).map(s => ({
       id: s.id, num: s.num || '', dags: (s.created_at || '').slice(0, 10),
       kunni: (s.customer_nafn && s.customer_nafn.trim()) || '(óþekktur)',
@@ -436,7 +438,7 @@
     _verkLoaded = true;
     const r = await SB.from('verkbeidnir').select('id,num,customer,phone,dropoff,pickup,status,verd').order('dropoff', { ascending: false });
     const appV = document.getElementById('bky-appV');
-    if (r.error) { if (appV) appV.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
+    if (r.error) { if (appV) { synaStiku(appV); appV.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; } return; }
     VROWS = (r.data || []).map(v => {
       const dates = _saleDatesByCust[normName(v.customer)] || [];
       const picked_up = !!v.dropoff && dates.some(d => d && d >= v.dropoff);
@@ -515,8 +517,13 @@
     set.forEach(r => { if (r.amt > 0 && r.stada !== 'void') { const k = r.kunni + '|' + r.amt; (m[k] = m[k] || []).push(r); } });
     Object.values(m).forEach(g => { if (g.length > 1) g.forEach(r => r._dup = g.length); });
   }
+  // 13.10.2026 (hopp): síustikan og „Sæki sölur…" stóðu efst meðan sótt var, og reitirnir + viðvaranirnar sem teiknast
+  // OFAN við þau komu með gögnunum — stikan og listinn hrukku 230 px niður (CLS 0,057 við opnun, mælt). Nú sýnir kaflinn
+  // aðeins hleðslutextann (::before, data-saekir) þar til fyrsta teikning eða villa, og þá birtist allt í sama ramma.
+  const synaStiku = (app) => { const sec = app.closest('section'); if (sec && !sec.classList.contains('bky-teiknad')) sec.classList.add('bky-teiknad'); };
   function renderSala() {
     const app = document.getElementById('bky-appS'); if (!app) return;
+    synaStiku(app);
     const base = sBase();
     computeDups(base);
     // tiles
@@ -577,6 +584,7 @@
   // ── render: VERKBEIÐNIR ───────────────────────────────────────────────────
   function renderVerk() {
     const app = document.getElementById('bky-appV'); if (!app) return;
+    synaStiku(app);
     const counts = {}; VORDER.forEach(c => counts[c] = 0);
     VROWS.forEach(v => counts[v._cat] = (counts[v._cat] || 0) + 1);
     const tilesEl = document.getElementById('bky-tilesV');

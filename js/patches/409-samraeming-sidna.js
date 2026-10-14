@@ -30,6 +30,8 @@
   const RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
   const TS = 'text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)';
   const P = ':not(#_p409a):not(#_p409b):not(#_p409c)';   // þrjú gervi-auðkenni: vinna inline-!important-lausar reglur pappanna
+  // Titlar sem eru alltaf merktir og teiknast oft upp á nýtt — fá útlitið án þess að bíða eftir merkingunni (sjá 1).
+  const TITILL_STRAX = 'html body #view-workshop > .bw-page-hdr .bw-page-h1' + P;
 
   const BLUE = ['#2563eb', '#1d4ed8', '#0d6efd', '#3b82f6', '#2a78d6'];
   const blueSel = BLUE.map(c => 'html body .view button[style*="background:' + c + '"], html body .view button[style*="background: ' + c + '"], html body .view a[style*="background:' + c + '"]').join(',')
@@ -37,8 +39,11 @@
 
   const css = [
     // 1) síðutitill + undirlína
-    'html body .view ._s409-titill' + P + '{font-family:' + DISPLAY + '!important;font-weight:800!important;color:#fff!important;' + TS + '!important;letter-spacing:-.01em!important;background:transparent!important;-webkit-text-fill-color:#fff!important}',
-    'html body .view ._s409-titill' + P + '{font-size:max(26px,1em)!important;line-height:1.1!important}',
+    // 13.10.2026 (hopp): Verkstæði teiknar hausinn upp á nýtt við hver gögn, og nýi titillinn stóð 35 px hár einn ramma
+    // áður en hann var merktur (29 px) — allt borðið hoppaði 7 px niður og upp (CLS 0,022 við opnun, mælt). Hann fær
+    // titilútlitið beint, svo merkingin breytir engu.
+    'html body .view ._s409-titill' + P + ',' + TITILL_STRAX + '{font-family:' + DISPLAY + '!important;font-weight:800!important;color:#fff!important;' + TS + '!important;letter-spacing:-.01em!important;background:transparent!important;-webkit-text-fill-color:#fff!important}',
+    'html body .view ._s409-titill' + P + ',' + TITILL_STRAX + '{font-size:max(26px,1em)!important;line-height:1.1!important}',
     'html body .view ._s409-undir' + P + '{color:#c9d0da!important;-webkit-text-fill-color:#c9d0da!important;font-family:' + MONO + '!important;font-size:12px!important;letter-spacing:.04em!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
     // 2) bláir takkar → málmur (grænir/rauðir ósnertir)
     blueSel + '{background:' + METAL_BTN + '!important;border:1px solid #000!important;color:#eef1f4!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important;font-family:' + SANS + '!important;font-weight:600!important}',

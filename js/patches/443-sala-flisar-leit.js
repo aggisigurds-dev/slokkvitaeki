@@ -48,6 +48,10 @@
       + 'box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;font:13.5px/1.2 ' + SANS + '!important;color:#141822!important;outline:none}',
     '#' + ID + K + ':focus{border-color:rgba(20,24,34,.38)!important}',
     '#' + TALA + K + '{flex:none!important;font:600 11px ' + MONO + '!important;color:#5b6573!important;white-space:nowrap!important;margin-right:8px!important}',
+    // 13.10.2026 (hopp): hausinn „Þjónusta" teiknast 21 px hár (pos.js) og stækkar í 36 px þegar reiturinn hér bætist við —
+    // allar flísarnar hoppuðu 10–15 px niður (CLS 0,044 við hverja opnun á Sölu, mælt). Hakið er í hausnum frá fyrstu
+    // teikningu, svo það heldur 36 px frá byrjun. Í Lista-ham (299) er allt spjaldið falið, svo þetta sést ekki þar.
+    '#pos-showall-wrap' + K + '{min-height:36px}',
     '#' + TALA + ':empty{display:none!important}',
     '._sl-ekkert{grid-column:1 / -1;padding:10px 4px;font:500 12.5px ' + SANS + ';color:#6b7483}'
   ].join('\n');
