@@ -2285,8 +2285,25 @@
     }
   }
 
+  // 14.10.2026 (hopp á síma, mælt): svæðisstillingarnar voru aðeins settar í næstu umferð á eftir borðaskiptum
+  // (hashchange + 140 ms eða 1,5 s púlsinn). Vafrinn málaði borðið fyrst í sjálfgefnu útliti — Afgreiðslan í Skjár/
+  // Tafla-ham á síma endurraðaði dálkunum eftir fyrsta ramma (CLS 0,57). Nú í sama verki og borðið skiptir; hinar
+  // leiðirnar standa áfram sem bakvörður. Einingarbreyta, svo vafningur annarra yfir þennan veldur ekki tvöföldun.
+  let _svVafid = false;
+  function vefjaSwitchView() {
+    if (_svVafid) return;
+    if (!window.App || typeof App.switchView !== 'function') { if ((vefjaSwitchView._n = (vefjaSwitchView._n || 0) + 1) < 40) setTimeout(vefjaSwitchView, 250); return; }
+    _svVafid = true;
+    const o = App.switchView;
+    const w = function () { const r = o.apply(this, arguments); try { applyZones(); } catch (_) {} return r; };
+    // Merki innri vafninga (__appZoom333, __djupdvali465 …) fylgja með — annars vefja þeir aftur í næstu tilraun.
+    Object.keys(o).forEach(k => { try { w[k] = o[k]; } catch (_) {} });
+    App.switchView = w;
+  }
+
   function boot() {
     loadState(); applyCss();
+    vefjaSwitchView();
     if (IN_DEVFRAME) {
       applyZones();
       // 17.09.2026 yfirferð: þögnin er RÉTT — þetta er skráning á áhorfanda.

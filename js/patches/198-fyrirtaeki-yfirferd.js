@@ -84,6 +84,9 @@
     if (anchor.parentNode) anchor.parentNode.insertBefore(btn, anchor.nextSibling); else nav.appendChild(btn);
   }
 
+  // 14.10.2026 (hopp, mælt): síuflögurnar og talningin voru tóm í sniðmátinu og fylltust fyrst þegar gögnin lentu
+  // (~2 s) — leitarstikan og taflan hrukku 55 px niður á tölvu og 211 px á síma (CLS 0,13). FILTERS-listinn er fastur,
+  // svo flögurnar eru teiknaðar strax með „–" í stað fjöldans; renderFyr skrifar yfir eins og áður (regla 5 í CLAUDE.md).
   function ensureView() {
     if (document.getElementById(VIEW_ID)) return;
     const sample = document.getElementById('view-counter') || document.getElementById('view-sala');
@@ -102,11 +105,11 @@
           <div class="tab" data-tab="vid">Viðskiptavinir / einstaklingar</div>
         </div>
         <section data-sec="fyr">
-          <div class="chips" id="fyr-chips"></div>
+          <div class="chips" id="fyr-chips">${FILTERS.map(f => `<div class="chip ${f.k === fFilter ? 'sel' : ''}" data-f="${f.k}">${esc(f.label)}<span class="c-n">–</span></div>`).join('')}</div>
           <div class="bar">
             <input id="fyr-q" type="search" placeholder="Leita: nafn, kt…">
             <button class="merge-btn" id="fyr-merge" disabled>🔗 Sameina valin (0)</button>
-            <span class="meta" id="fyr-count"></span>
+            <span class="meta" id="fyr-count">– / – fyrirtæki</span>
             <button class="merge-btn" id="fyr-reload" type="button" title="Sækir ALLT upp á nýtt af þjóninum: fyrirtækin, tækin, myndirnar, stillingarnar og póst-tengslin" style="margin-left:auto">↻ Endurhlaða allt</button>
           </div>
           <div id="fyr-app"><div class="skel">Sæki fyrirtæki…</div></div>

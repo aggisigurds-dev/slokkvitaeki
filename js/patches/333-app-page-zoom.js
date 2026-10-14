@@ -650,10 +650,32 @@
     try {
       if (window.App && typeof App.switchView === 'function' && !App.switchView.__appZoom333) {
         const orig = App.switchView;
-        App.switchView = function () { const r = orig.apply(this, arguments); seinna(0); setTimeout(apply, 120); return r; };
+        // 14.10.2026 (hopp á síma, mælt): stærðin var aðeins sett í setTimeout(0)/120 ms. Vafrinn málaði á milli, svo
+        // nýja borðið birtist fyrst í stærð þess fyrra og skalaðist svo allt (CLS 0,26–0,89 milli borða með ólíka vistaða
+        // stærð). Nú er apply() kallað samstundis — siduLykill sér nýja borðið (DomKynslod.qs tekur breytinguna með);
+        // tímamælarnir standa áfram sem bakvörður.
+        App.switchView = function () { const r = orig.apply(this, arguments); try { apply(); } catch (_) {} seinna(0); setTimeout(apply, 120); return r; };
         App.switchView.__appZoom333 = true;
       }
     } catch (_) { ok = false; }
+    try {
+      // Prófíll skiptir aðeins um slóð (history-API) — beið áður eftir 700 ms púlsinum hér að ofan.
+      // Einingarbreyta, ekki merki á fallinu: aðrir pappar (18, 24, 235, 451 …) vefja openDetail og skoða aðeins sitt
+      // eigið merki á ysta laginu — merki hér myndi hverfa undir þeirra lagi og 333 vefja aftur í næstu umferð.
+      if (!vefja._od && window.Companies && typeof Companies.openDetail === 'function') {
+        vefja._od = 1;
+        const od = Companies.openDetail;
+        const w = function () {
+          const r = od.apply(this, arguments);
+          try { apply(); } catch (_) {}
+          if (r && typeof r.then === 'function') r.then(() => { try { apply(); } catch (_) {} }, () => {});
+          setTimeout(apply, 120);
+          return r;
+        };
+        Object.keys(od).forEach(k => { try { w[k] = od[k]; } catch (_) {} });   // merki innri vafninga fylgja (18, 24, 235, 451)
+        Companies.openDetail = w;
+      }
+    } catch (_) {}
     try {
       if (window.Modal && typeof Modal.open === 'function' && !Modal.open.__sz333) {
         const o = Modal.open, c = Modal.close;
