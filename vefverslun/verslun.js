@@ -13,6 +13,8 @@
   // Kassahamur: Sala (js/patches/133) sýnir vörusíðuna í glugga. Karfan þar er kassans — „Setja í körfu“ sendir boð
   // til Sölu í stað þess að fara í körfu búðarinnar, og haus, fótur, afhending og tilboð búðarinnar eru falin.
   const KASSI = new URLSearchParams(location.search).has('kassi');
+  // Skoðunarhamur (?kassi=1&skoda=1): Vörur og þjónusta sýnir síðuna sem nánari lýsingu — engin karfa yfirleitt
+  const SKODA = KASSI && new URLSearchParams(location.search).has('skoda');
   const sendaKassa = (bod) => { try { if (window.parent !== window) window.parent.postMessage(bod, location.origin); } catch (_) {} };
   const KASSI_TAKKI = 'Setja í körfu á Sölu';
   const KARFA_LYKILL = 'bh_vefverslun_karfa';
@@ -1026,6 +1028,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     VV.breytaLeyft = !KASSI && (breyta || VV.stada !== 'virk');
     if (VV.breytaLeyft) document.body.classList.add('vvr-bidur');
     if (KASSI) document.body.classList.add('vv-kassi');
+    if (SKODA) document.body.classList.add('vv-skoda');
     beitaThema();
     render(false);
     if (KASSI) sendaKassa({ vvKassi: 'tilbuin' });

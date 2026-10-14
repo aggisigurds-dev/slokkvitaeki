@@ -312,6 +312,67 @@
     }
   }
 
+  // ── Nánari lýsing úr vefversluninni (Agnar 14.10.2026) ─────────────────────
+  // Grunnstýringarnar standa efst eins og áður. Undir þeim opnast vörusíða vefverslunarinnar í skoðunarham
+  // (/vefverslun/?kassi=1&skoda=1 — engin karfa, enginn ritill): sami texti, tölur og myndir og viðskiptavinir sjá.
+  // Textunum er breytt í ritli vefverslunarinnar ("Breyta texta" opnar hann á vörunni). Lokað sjálfgefið.
+  var _vvIdsP = null, _vvIdsT = 0;
+  function vvIds(){
+    if(!_vvIdsP || Date.now() - _vvIdsT > 60000){
+      _vvIdsT = Date.now();
+      _vvIdsP = fetch('/api/vefverslun',{cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : {vorur:[]}; })
+        .then(function(d){ return (d.vorur||[]).map(function(v){ return v.id; }); })
+        .catch(function(){ _vvIdsP = null; return null; });
+    }
+    return _vvIdsP;
+  }
+  var VV_CHEV = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;transition:transform .15s"><path d="m9 6 6 6-6 6"/></svg>';
+  var VV_HLEKKUR = 'display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:8px;background:#fff;border:1px solid #cbd5e1;color:#334155;font-size:13px;font-weight:600;text-decoration:none';
+  function vvKafli(p){
+    return '<div id="vorur-vv" style="margin:0 0 20px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:6px 10px 6px 12px;background:#f8fafc">' +
+        '<button id="vorur-vv-opna" type="button" aria-expanded="false" aria-controls="vorur-vv-inni" style="display:flex;align-items:center;gap:8px;background:none;border:none;padding:6px 2px;min-height:40px;cursor:pointer;font-size:14px;font-weight:700;color:#0f172a;text-align:left">' +
+          VV_CHEV + '<span>Nánari lýsing</span><span id="vorur-vv-stada" style="font-weight:500;color:#64748b;font-size:12px">· athuga vefverslun…</span>' +
+        '</button>' +
+        '<div id="vorur-vv-hlekkir" style="display:none;gap:6px;flex-wrap:wrap">' +
+          '<a href="/vefverslun/#/vara/'+p.id+'" target="_blank" rel="noopener" title="Vörusíðan eins og viðskiptavinir sjá hana" style="'+VV_HLEKKUR+'">Opna síðuna</a>' +
+          '<a href="/vefverslun/?breyta=1#/vara/'+p.id+'" target="_blank" rel="noopener" title="Ritill vefverslunarinnar, opinn á þessari vöru" style="'+VV_HLEKKUR+'">Breyta texta</a>' +
+        '</div>' +
+      '</div>' +
+      '<div id="vorur-vv-inni" hidden style="border-top:1px solid #e2e8f0;background:#eef1f6"></div>' +
+    '</div>';
+  }
+  function tengjaVvKafla(m, p){
+    var takki = m.querySelector('#vorur-vv-opna');
+    if(!takki) return;
+    var inni = m.querySelector('#vorur-vv-inni'), stada = m.querySelector('#vorur-vv-stada'), hlekkir = m.querySelector('#vorur-vv-hlekkir');
+    var iBud = null;
+    function teikna(){
+      var opid = takki.getAttribute('aria-expanded') === 'true';
+      takki.querySelector('svg').style.transform = opid ? 'rotate(90deg)' : '';
+      inni.hidden = !opid;
+      if(!opid || iBud === null) return;
+      if(iBud && !inni.querySelector('iframe')){
+        inni.innerHTML = '<iframe src="/vefverslun/?kassi=1&skoda=1#/vara/'+p.id+'" title="Nánari lýsing úr vefversluninni" style="display:block;border:0;width:100%;height:min(70vh,720px)"></iframe>';
+      } else if(!iBud && !inni.firstChild){
+        inni.innerHTML = '<div style="padding:14px 16px;font-size:13px;color:#475569;line-height:1.55">Þessi vara er ekki í vefversluninni, svo þar er engin nánari lýsing. ' +
+          'Vörum er bætt í búðina í ritli vefverslunarinnar (Vörur). <a href="/vefverslun/?breyta=1" target="_blank" rel="noopener">Opna ritilinn</a></div>';
+      }
+    }
+    takki.addEventListener('click', function(){
+      takki.setAttribute('aria-expanded', takki.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+      teikna();
+    });
+    vvIds().then(function(ids){
+      if(!ids){ stada.textContent = '· náðist ekki í vefverslunina'; return; }
+      iBud = ids.indexOf(p.id) >= 0;
+      stada.textContent = iBud ? '· eins og í vefversluninni' : '· ekki í vefversluninni';
+      hlekkir.style.display = iBud ? 'flex' : 'none';
+      teikna();
+    });
+  }
+
   function openEditor(id){
     var product = id ? _products.find(function(p){return p.id===id;}) : null;
     var isNew = !product;
@@ -403,6 +464,7 @@
         '<input id="f-sja-adrar" type="checkbox" '+(p.sja_adrar_vorur===true?'checked':'')+' style="width:18px;height:18px">' +
         '<span style="font-size:14px;color:#334155">Sýna undir aðrar vörur</span>' +
       '</label>' +
+      (isNew ? '' : vvKafli(p)) +
       '<div style="display:flex;gap:8px;justify-content:space-between;padding-top:16px;border-top:1px solid #e2e8f0">' +
         (isNew ? '<div></div>' : '<button id="vorur-del" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px">Eyða</button>') +
         '<div style="display:flex;gap:8px">' +
@@ -412,6 +474,7 @@
       '</div>' +
     '</div>';
     document.body.appendChild(m);
+    if(!isNew) tengjaVvKafla(m, p);
     // Track image state
     var imgDataUrl = p.mynd || null;
     // Events

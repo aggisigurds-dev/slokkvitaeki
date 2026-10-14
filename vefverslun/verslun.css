@@ -347,6 +347,7 @@ body.vv-ritill-a .vv-kort h3 a::after{display:none}
    birgðir sjálfur), tilboð og „Oft keypt með" búðarinnar eru falin. */
 .vv-kassi .vv-haus,.vv-kassi .vv-flipar,.vv-kassi [data-b="fotur"],.vv-kassi .vv-mola,.vv-kassi .vv-afh,.vv-kassi .vv-lager,
 .vv-kassi .vv-tilk,.vv-kassi .vv-tilbod,.vv-kassi [data-b="vara.oft"]{display:none!important}
+.vv-skoda .vv-kaupa,.vv-skoda [data-act="setja-fjolda"]{display:none!important}
 .vv-kassi .vv-adal{padding-top:18px!important;padding-bottom:36px}
 /* Myndin var 600 px: á 768 px fartölvuskjá lenti Setja í körfu undir brún gluggans (vh = hæð gluggans í kassanum) */
 .vv-kassi .vv-galleri .vv-m{max-height:min(58vh,480px)}
