@@ -116,6 +116,11 @@
     /* iframe-síður (Boss-heimasíðan = Brunahólf) fylgja síðuzoominu eins og .view.
        Sama bragð og 333: zoom deilir containing-block, svo left/right:0 fylla áfram. */
     'html.app-page-zoomed ' + A + '#_app-frame' + P4 + '{zoom:var(--app-page-zoom)!important}',
+    /* 14.10.2026: snertisíður (261 PAGES touch:true — TurboPaint, 3dwork) eiga sitt eigið símaútlit. Ramminn þeirra
+       fylgir KRÓMZOOMINU svo viðmót iframe-sins verði nákvæmlega skjárbreiddin (980 / 2,38 = 412 px) — ekki
+       síðuzoominu, sem gaf 633 px tölvuútlit í smáu letri (1,55) eða klippti botnstikuna og hnappana af (2,6+).
+       Stendur á eftir síðuzoom-reglunni með sömu sérhæfni, svo hún vinni. */
+    K + A + '#_app-frame._app-frame-touch' + P4 + '{zoom:var(--app-krom-zoom)!important}',
     /* 04.10.2026: fljótandi zoom-stikan (#_app-zoom) er farin — 333 opnar „Stærð og útlit"-blaðið (#_sz-pnl) úr
        🎨 í app-hausnum eða „Aa"-hnappnum (#_sz-aa) utan apps. Bæði krómskalast hér að ofan. */
     /* 🎨 (262) er position:absolute við hægri brún borðans á síma og lá ofan á 📱▦🖥-rofanum (166) */

@@ -168,8 +168,12 @@
     // svo AÐEINS stöðin birtist í appinu, ekki allur Bakendinn. Tengja skýrslu/reikning
     // við réttan stað + ár beint úr símanum.
     { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
-    { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint' },
-    { k: '3dwork',          label: '3dwork — merkja/CAD-bekkur',     short: '3dwork', emoji: '🛠️', url: 'https://kjarni-3dwork.vercel.app/3dwork' },
+    // 14.10.2026 (Agnar: „TurboPaint layoutið er ekki að virka vel í öpp … vantar botnstikuna og alla aðgerðarhnappana"):
+    // `touch: true` = síðan á sitt eigið símaútlit og ramminn hennar fylgir KRÓM-zoominu (353), ekki síðuzoominu (333).
+    // Síðuzoom 1,55 gaf rammanum 633 px viðmót (tölvuútlit í smáu letri); 2,6+ gaf 377 px og klippti stikurnar af.
+    // Með krómzoominu er viðmótið nákvæmlega skjárbreiddin (412 px) og TurboPaint teiknar símaútlitið sitt 1:1.
+    { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint', touch: true },
+    { k: '3dwork',          label: '3dwork — merkja/CAD-bekkur',     short: '3dwork', emoji: '🛠️', url: 'https://kjarni-3dwork.vercel.app/3dwork', touch: true },
     // 13.10.2026 (Agnar: „setja þetta tól inn á öpp og síðan inn á brunakerfi appið“): Brunaáætlun-smiðurinn (464,
     // /brunaaaetlun/) — án ?fyrirtaeki sýnir hann leit og áætlanir í vinnslu, svo hann virkar sem síða í hvaða appi sem er.
     { k: 'brunaaaetlun',    label: 'Brunaáætlun — rýmingaráætlun, eigið eftirlit, flóttaáætlanir', short: 'Brunaáætlun', emoji: '🗺️', url: '/brunaaaetlun/' },
@@ -1860,7 +1864,10 @@
   function showFrame(p) {
     var f = frameEl(), ifr = f.querySelector('iframe');
     if (ifr.getAttribute('data-src') !== p.url) { ifr.src = p.url; ifr.setAttribute('data-src', p.url); }
+    // Snertisíður (touch: true) fá krómzoomið á rammann — 353 les klasann. Sjá PAGES.
+    f.classList.toggle('_app-frame-touch', !!p.touch);
     f.style.display = 'block';
+    try { syncFrameBottom(); } catch (_) {}
   }
   function hideFrame() { var f = document.getElementById('_app-frame'); if (f) f.style.display = 'none'; }
 
