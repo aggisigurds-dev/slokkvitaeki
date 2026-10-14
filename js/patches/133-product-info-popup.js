@@ -10,6 +10,9 @@
  *   • Lysing (lýsing) ef til staðar
  *   • Birgðastaða (vörur) eða VSK% (þjónustur)
  *
+ * Vara sem er í vefversluninni opnast í stærri glugga með vörusíðu búðarinnar (kassahamur,
+ * 14.10.2026) — sjá „Vefverslunarsýn" hér að neðan; „Setja í körfu á Sölu" þar setur í körfu kassans.
+ *
  * Smelltu utan popup eða X til að loka.
  *
  * Smellur á stækkunarglerinn fer EKKI í gegnum tile-smell — varið með
@@ -44,19 +47,133 @@
     return data;
   }
 
+  // ── Vefverslunarsýn (14.10.2026, Agnar: „aðeins stærri og innihaldi sömu upplýsingar og er í netversluninni") ──
+  // Vara sem er í vefversluninni opnast í stærri glugga sem sýnir vörusíðu búðarinnar sjálfrar í kassaham
+  // (/vefverslun/?kassi=1#/vara/ID) — sömu textar, tölur og myndir, líka það sem er lagað í ritli búðarinnar.
+  // „Setja í körfu á Sölu" þar sendir boð hingað (postMessage) og varan fer í körfu kassans með fjöldanum sem var valinn.
+  // Glugginn er falinn milli opnana, ekki fjarlægður: iframe sem er tekið úr DOM hleður búðina upp á nýtt.
+  let _vvIds = null;
+  function vefverslunIds() {
+    if (!_vvIds) {
+      _vvIds = fetch('/api/vefverslun', { cache: 'no-store' })
+        .then(r => (r.ok ? r.json() : { vorur: [] }))
+        .then(d => new Set((d.vorur || []).map(v => v.id)))
+        .catch(() => { _vvIds = null; return new Set(); });
+    }
+    return _vvIds;
+  }
+
+  let _vv = null;
+  function vvGluggi() {
+    if (_vv) return _vv;
+    const ov = document.createElement('div');
+    ov.id = '_pip-vv';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML =
+      '<div role="dialog" aria-modal="true" aria-labelledby="_pip-vv-haus" style="background:#fff;border-radius:16px;width:min(1100px,100%);height:min(92vh,1040px);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+        '<div style="padding:12px 18px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#f8fafc">' +
+          '<div id="_pip-vv-haus" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>' +
+          '<button id="_pip-vv-x" type="button" aria-label="Loka" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;line-height:1;padding:0 4px;min-width:40px;min-height:40px">×</button>' +
+        '</div>' +
+        '<div style="position:relative;flex:1;min-height:0;background:#eef1f6">' +
+          '<iframe id="_pip-vv-frame" title="Varan í vefversluninni" style="border:0;width:100%;height:100%;display:block"></iframe>' +
+          '<div id="_pip-vv-hledur" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#eef1f6;color:#64748b;font-size:14px">Sæki vöruna úr vefversluninni…</div>' +
+        '</div>' +
+        '<div style="padding:10px 18px;border-top:1px solid #e5e7eb;display:flex;gap:10px;align-items:center;justify-content:space-between;background:#f8fafc">' +
+          '<span id="_pip-vv-birgdir"></span>' +
+          '<button id="_pip-vv-loka" type="button" style="background:#f3f4f6;color:#374151;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:14px;min-height:40px">Loka</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    _vv = { ov, frame: ov.querySelector('#_pip-vv-frame'), hledur: ov.querySelector('#_pip-vv-hledur'), haus: ov.querySelector('#_pip-vv-haus'), birgdir: ov.querySelector('#_pip-vv-birgdir'), id: null };
+    ov.addEventListener('click', e => { if (e.target === ov) lokaVv(); });
+    ov.querySelector('#_pip-vv-x').onclick = lokaVv;
+    ov.querySelector('#_pip-vv-loka').onclick = lokaVv;
+    return _vv;
+  }
+  // Haus: flokkur · heiti kassans (búðin sýnir sitt heiti fyrir viðskiptavini). Fótur: raunbirgðir, sem búðin sýnir ekki.
+  function vvHaus(product) {
+    const g = vvGluggi();
+    g.id = product.id;
+    g.haus.textContent = (product.flokkur || 'Vara') + ' · ' + product.nafn;
+    const b = product.birgdir;
+    g.birgdir.innerHTML = b == null ? '' :
+      '<span style="padding:7px 12px;background:' + (b > 0 ? '#dcfce7' : '#fee2e2') + ';color:' + (b > 0 ? '#166534' : '#991b1b') + ';border-radius:8px;font-size:13px;font-weight:600;display:inline-block">' +
+        'Birgðir: ' + esc(b) + (b > 0 ? ' í geymslu' : ' — ekki á lager') + '</span>';
+  }
+  function opnaVefverslun(product) {
+    const g = vvGluggi();
+    vvHaus(product);
+    g.ov.style.display = 'flex';
+    document.addEventListener('keydown', escVv);
+    const slod = '#/vara/' + product.id;
+    if (!g.frame.getAttribute('src')) {
+      g.hledur.style.display = 'flex';
+      g.frame.src = '/vefverslun/?kassi=1' + slod;
+      return;
+    }
+    try {
+      const w = g.frame.contentWindow;
+      if (w.location.hash !== slod) w.location.hash = slod; else w.scrollTo(0, 0);
+    } catch (_) { g.frame.src = '/vefverslun/?kassi=1' + slod; }
+  }
+  function escVv(e) { if (e.key === 'Escape') lokaVv(); }
+  function lokaVv() {
+    if (_vv) _vv.ov.style.display = 'none';
+    document.removeEventListener('keydown', escVv);
+  }
+  window.addEventListener('message', async e => {
+    if (!_vv || e.source !== _vv.frame.contentWindow || e.origin !== location.origin) return;
+    const d = e.data || {};
+    if (d.vvKassi === 'tilbuin') _vv.hledur.style.display = 'none';
+    else if (d.vvKassi === 'loka') lokaVv();
+    else if (d.vvKassi === 'vara' && d.id && d.id !== _vv.id) {
+      const p = await fetchProduct(Number(d.id));
+      if (p) vvHaus(p);
+    } else if (d.vvKassi === 'setja') {
+      const p = await fetchProduct(Number(d.id));
+      if (!p) { if (window.Toast && Toast.show) Toast.show('Vara fannst ekki'); return; }
+      setjaIKorfu(p, Math.max(1, Math.min(99, Number(d.n) || 1)));
+      lokaVv();
+    }
+  });
+
+  // Í körfu kassans eins og smellur á flísina: flísin er sótt upp á nýtt fyrir hvert stykki, því körfuteikningin getur
+  // skipt flísunum út; vanti flísina er búin til falin flís sem fjarlægist strax á eftir.
+  function setjaIKorfu(product, n) {
+    const isService = String(product.flokkur || '').toLowerCase().includes('þjón');
+    const grid = isService ? document.getElementById('pos-services') : document.getElementById('pos-products');
+    if (!grid) return;
+    const fals = [];
+    for (let i = 0; i < n; i++) {
+      let tile = grid.querySelector('[data-id="' + product.id + '"]');
+      if (!tile) {
+        tile = document.createElement('button');
+        tile.className = isService ? 'pos-svc' : 'pos-prod';
+        tile.setAttribute('data-id', product.id);
+        tile.style.display = 'none';
+        grid.appendChild(tile);
+        fals.push(tile);
+      }
+      tile.click();
+    }
+    setTimeout(() => fals.forEach(t => t.remove()), 100);
+    if (window.Toast && Toast.show) Toast.show('+ ' + (n > 1 ? n + ' × ' : '') + product.nafn);
+  }
+
   function openPopup(product) {
     closePopup();
     const incVat = (+product.verd_an_vsk || 0) * (1 + (+product.vsk_prosenta || 24) / 100);
     const isService = String(product.flokkur || '').toLowerCase().includes('þjón');
     const imgHtml = product.mynd
-      ? '<img src="' + esc(product.mynd) + '" style="display:block;width:100%;max-height:340px;object-fit:contain;background:#f8fafc;border-radius:10px" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div style="display:none;width:100%;height:200px;background:#f1f5f9;border-radius:10px;align-items:center;justify-content:center;color:#94a3b8;font-size:48px">📦</div>'
+      ? '<img src="' + esc(product.mynd) + '" style="display:block;width:100%;max-height:420px;object-fit:contain;background:#f8fafc;border-radius:10px" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div style="display:none;width:100%;height:200px;background:#f1f5f9;border-radius:10px;align-items:center;justify-content:center;color:#94a3b8;font-size:48px">📦</div>'
       : '<div style="width:100%;height:200px;background:#f1f5f9;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:48px">' + (isService ? '🔧' : '📦') + '</div>';
 
     const overlay = document.createElement('div');
     overlay.id = '_pip-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.innerHTML =
-      '<div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
         '<div style="padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;background:#f8fafc">' +
           '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">' + esc(product.flokkur || (isService ? 'Þjónusta' : 'Vara')) + '</div>' +
           '<button id="_pip-close" type="button" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b;line-height:1;padding:0 4px">×</button>' +
@@ -88,23 +205,8 @@
     document.getElementById('_pip-close').onclick = closePopup;
     document.getElementById('_pip-ok').onclick = closePopup;
     document.getElementById('_pip-add').onclick = () => {
-      const grid = isService ? document.getElementById('pos-services') : document.getElementById('pos-products');
-      if (grid) {
-        let tile = grid.querySelector('[data-id="' + product.id + '"]');
-        if (!tile) {
-          tile = document.createElement('button');
-          tile.className = isService ? 'pos-svc' : 'pos-prod';
-          tile.setAttribute('data-id', product.id);
-          tile.style.display = 'none';
-          grid.appendChild(tile);
-          tile.click();
-          setTimeout(() => tile.remove(), 100);
-        } else {
-          tile.click();
-        }
-      }
+      setjaIKorfu(product, 1);
       closePopup();
-      if (window.Toast && Toast.show) Toast.show('+ ' + product.nafn);
     };
     document.addEventListener('keydown', escClose);
   }
@@ -137,13 +239,14 @@
       const id = parseInt(tile.getAttribute('data-id'), 10);
       if (!id) return;
       btn.style.background = '#dbeafe';
-      const product = await fetchProduct(id);
+      const [product, iBud] = await Promise.all([fetchProduct(id), vefverslunIds()]);
       btn.style.background = 'rgba(255,255,255,.92)';
       if (!product) {
         if (window.Toast && Toast.show) Toast.show('⚠ Vara fannst ekki');
         return;
       }
-      openPopup(product);
+      // Vara í vefversluninni → vörusíða búðarinnar; annað (þjónusta, vörur utan búðar) → gamli glugginn
+      if (iBud.has(product.id)) opnaVefverslun(product); else openPopup(product);
     });
     btn.addEventListener('mouseenter', () => {
       btn.style.background = '#dbeafe';

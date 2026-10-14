@@ -10,6 +10,11 @@
 (() => {
   'use strict';
   const API = '/api/vefverslun';
+  // Kassahamur: Sala (js/patches/133) sýnir vörusíðuna í glugga. Karfan þar er kassans — „Setja í körfu“ sendir boð
+  // til Sölu í stað þess að fara í körfu búðarinnar, og haus, fótur, afhending og tilboð búðarinnar eru falin.
+  const KASSI = new URLSearchParams(location.search).has('kassi');
+  const sendaKassa = (bod) => { try { if (window.parent !== window) window.parent.postMessage(bod, location.origin); } catch (_) {} };
+  const KASSI_TAKKI = 'Setja í körfu á Sölu';
   const KARFA_LYKILL = 'bh_vefverslun_karfa';
   const OPINBER = 'https://brunaholf-preview.pages.dev/';
   const UT = ' target="_blank" rel="noopener"';   // upprunalega heimasíðan opnast í nýjum glugga (Agnar 13.10.2026: „erfitt að komast til baka")
@@ -743,7 +748,7 @@ ${E('p', `${P}.stadur.heimild`, Pr.stadur.heimild || HEIMILD, 'vv-heimild')}</di
 ${E('p', `${P}.reikn.fyrirvari`, 'Auk þess þarf hljóðið að ná 75 dB inni í hverju svefnherbergi. Oftast þýðir það skynjara í hvert svefnherbergi, eða samtengda skynjara.', 'vv-heimild')}</div>
 <div class="vv-reikn-svar"><span style="font-size:14px;font-weight:500;color:var(--c-muted)">${esc(texti(`${P}.reikn.haed`, 'Hæð upp á'))} ${tala(m2)} m²</span><b>${fj} ${esc(fj === 1 ? texti('reikn.skynjari', 'skynjari') : texti('reikn.skynjarar', 'skynjarar'))}</b>
 <span style="font-size:15px">${E('span', `${P}.reikn.lysing`, 'á hverri hæð, minnst')}</span>
-<button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${fj}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${E('span', 'reikn.takki', 'Setja í körfu')} · ${fj}</button></div></div>`, '', 'div');
+<button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${fj}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${KASSI ? KASSI_TAKKI : E('span', 'reikn.takki', 'Setja í körfu')} · ${fj}</button></div></div>`, '', 'div');
     } else if (Pr.reikn) {
       const geta = Math.round(Math.min(200, Math.max(1, nGildi(`${P}.reikn.geta`, S.A || Pr.reikn.geta))));
       const krafa = Math.max(26, Math.round(0.065 * VV.vara.m2));
@@ -753,7 +758,7 @@ ${E('p', `${P}.reikn.fyrirvari`, 'Auk þess þarf hljóðið að ná 75 dB inni 
 ${E('p', `${P}.reikn.fyrirvari`, 'Leiðbeinandi útreikningur fyrir eina hæð í atvinnuhúsnæði. Í stórum eða skiptum rýmum ræður 25 metra reglan oft fjöldanum. Við komum og metum þörfina.', 'vv-heimild')}</div>
 <div class="vv-reikn-svar"><span style="font-size:14px;font-weight:500;color:var(--c-muted)">${esc(texti(`${P}.reikn.haed`, 'Hæð upp á'))} ${tala(VV.vara.m2)} m²</span><b>${taeki} ${esc(texti('reikn.taeki', 'tæki'))}</b>
 <span style="font-size:15px">${E('span', `${P}.reikn.lysing`, 'Hvert tæki gefur')} <b style="font:inherit;font-weight:600;color:inherit" data-n="${P}.reikn.geta" data-max="200" data-min="1" data-sjg="${S.A || Pr.reikn.geta}">${geta}A</b> · þarf minnst <b style="font:inherit;font-weight:600;color:inherit">${krafa}A</b></span>
-<button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${taeki}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${E('span', 'reikn.takki', 'Setja í körfu')} · ${taeki}</button></div></div>`, '', 'div');
+<button type="button" class="vv-btn navy" data-act="setja-fjolda" data-n="${taeki}" style="align-self:flex-start;margin-top:8px">${ico('karfa')}${KASSI ? KASSI_TAKKI : E('span', 'reikn.takki', 'Setja í körfu')} · ${taeki}</button></div></div>`, '', 'div');
     } else {
       const rt = Pr.reiknTexti || { yfir: 'Kolsýrutæki og slökkvigeta hæðar', x: 'Kolsýrutæki fá ekkert A-gildi, svo þau teljast ekki með í slökkvigetu hæðarinnar. Hafðu duft- eða léttvatnstæki fyrir hæðina, og kolsýrutæki við rafbúnaðinn.', takki: ['Skoða dufttækið', 1] };
       reikn = B(`${P}.reikn`, `<div class="vv-blad" style="padding:36px 40px;gap:10px">${E('h2', `${P}.reikn.yfir`, rt.yfir, 'vv-yfir')}${E('p', `${P}.reikn.inng`, rt.x, 'vv-yfir-inng')}<a class="vv-btn navy sm" href="#/vara/${rt.takki[1]}" style="align-self:flex-start;margin-top:6px">${E('span', `${P}.reikn.takki`, rt.takki[0])}</a></div>`, '', 'div');
@@ -789,9 +794,9 @@ ${Pr ? `<div class="vv-pillur">${(S.pillur || Pr.pillur).map((d, i) => E('span',
 <button type="button" class="vv-val" data-act="afh" data-v="saekja" aria-pressed="${s.afhending === 'saekja'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.saekja.t', 'Sækja hjá okkur')}${E('small', 'afh.saekja.x', 'Helluhrauni 10, Hafnarfirði · virka daga 8 til 16')}</span>${E('b', 'afh.saekja.verd', '0 kr')}</button>
 <button type="button" class="vv-val" data-act="afh" data-v="senda" aria-pressed="${s.afhending === 'senda'}"><span class="punktur"></span><span style="flex:1">${E('b', 'afh.senda.t', 'Fá sent heim')}${E('small', 'afh.senda.x', 'Póstsending um land allt')}</span>${E('b', 'afh.senda.verd', 'Bætist við')}</button></fieldset>
 <div class="vv-kaupa"><div class="vv-fj" role="group" aria-label="Fjöldi"><button type="button" class="vv-stp" data-act="faerri" aria-label="Fækka">${ico('minus')}</button><span>${s.fjoldi}</span><button type="button" class="vv-stp" data-act="fleiri" aria-label="Fjölga">${ico('plus')}</button></div>
-<button type="button" class="vv-btn navy" data-act="setja" data-id="${v.id}">${ico('karfa')}${E('span', 'vara.takki', 'Setja í körfu')} · ${kr(v.verd * s.fjoldi)}</button></div>
+<button type="button" class="vv-btn navy" data-act="setja" data-id="${v.id}">${ico('karfa')}${KASSI ? KASSI_TAKKI : E('span', 'vara.takki', 'Setja í körfu')} · ${kr(v.verd * s.fjoldi)}</button></div>
 ${s.tilk ? `<div class="vv-tilk" role="status"><span>${esc(s.tilk)}</span><a class="vv-btn ljos sm" href="#/karfa">${E('span', 'vara.skoda-korfu', 'Skoða körfu')}</a></div>` : ''}
-<a class="vv-btn ghost" href="${OPINBER}"${UT} style="align-self:flex-start">${E('span', 'vara.tilbod', 'Fleiri en 10 stykki? Fá tilboð')}</a>`;
+<a class="vv-btn ghost vv-tilbod" href="${OPINBER}"${UT} style="align-self:flex-start">${E('span', 'vara.tilbod', 'Fleiri en 10 stykki? Fá tilboð')}</a>`;
 
     // Ein málsgrein = sami texti og inngangurinn efst; kassinn birtist þá aðeins hafi ritillinn gefið honum eigin texta
     const lysingTvitekin = !!fyrstaMalsgrein && !/\n\s*\n/.test(String(v.lysing || '').trim()) && !(VV.efni.t && VV.efni.t[`${P}.lysing`]);
@@ -911,6 +916,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     else if (act === 'afh') { s.afhending = a.dataset.v; render(false); }
     else if (act === 'k-afh') { VV.karfaAfh = a.dataset.v; render(false); }
     else if (act === 'setja') {
+      if (KASSI) { sendaKassa({ vvKassi: 'setja', id, n: s.fjoldi }); return; }
       baetaVid(id, s.fjoldi);
       const v = vara(id);
       s.tilk = `${s.fjoldi} × ${v ? varaNafn(v) : ''} ${texti('kort.sett', 'sett í körfu')}`;
@@ -919,6 +925,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     else if (act === 'setja-fjolda') {
       const r = leid();
       const n = Number(a.dataset.n) || 1;
+      if (KASSI && r.s === 'vara') { sendaKassa({ vvKassi: 'setja', id: r.id, n }); return; }
       if (r.s === 'vara') { baetaVid(r.id, n); s.tilk = `${n} × ${varaNafn(vara(r.id))} ${texti('kort.sett', 'sett í körfu')}`; render(false); }
     } else if (act === 'k-faerri' || act === 'k-fleiri' || act === 'k-fjarlaegja') {
       const n = VV.karfa[id] || 0;
@@ -946,7 +953,11 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
     const tl = document.getElementById('vv-taln'); if (tl) tl.textContent = talnTexti();
     if (VV.eftirTeikningu) VV.eftirTeikningu();
   });
-  window.addEventListener('hashchange', () => { VV.vara.mynd = 0; VV.vara.fjoldi = 1; VV.vara.tilk = ''; render(true); });
+  window.addEventListener('hashchange', () => {
+    VV.vara.mynd = 0; VV.vara.fjoldi = 1; VV.vara.tilk = ''; render(true);
+    if (KASSI) { const r = leid(); sendaKassa({ vvKassi: 'vara', id: r.s === 'vara' ? r.id : null }); }   // Sala uppfærir haus og birgðir
+  });
+  if (KASSI) document.addEventListener('keydown', (e) => { if (e.key === 'Escape') sendaKassa({ vvKassi: 'loka' }); });
   window.addEventListener('storage', (e) => { if (e.key === KARFA_LYKILL) { VV.karfa = lesaKorfu(); render(false); } });
 
   // ── Hleðsla ────────────────────────────────────────────────────────────
@@ -1012,10 +1023,12 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
       document.getElementById('vv-app').innerHTML = `<div class="vv-hledur">Ekki tókst að sækja verslunina (${esc(e.message)}). <a href="">Reyna aftur</a></div>`;
       return;
     }
-    VV.breytaLeyft = breyta || VV.stada !== 'virk';
+    VV.breytaLeyft = !KASSI && (breyta || VV.stada !== 'virk');
     if (VV.breytaLeyft) document.body.classList.add('vvr-bidur');
+    if (KASSI) document.body.classList.add('vv-kassi');
     beitaThema();
     render(false);
+    if (KASSI) sendaKassa({ vvKassi: 'tilbuin' });
     if (VV.breytaLeyft) {
       const s = document.createElement('script');
       s.src = 'ritill.js?v=' + (document.querySelector('meta[name="vv-utgafa"]') || {}).content;
