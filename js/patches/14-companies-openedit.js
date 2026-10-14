@@ -33,6 +33,17 @@
       if (window.Toast && Toast.show) Toast.show('Fyrirtæki fannst ekki');
       return;
     }
+    // 14.10.2026 (fundið af netverði í úttekt): eyðublaðið var fyllt úr röðinni í Companies.list og Vista skrifar ALLA
+    // reitina til baka. Sé listinn MJÓR (114: 12 leitarsúlur; hélst mjór alla lotuna í hand-ham 431) voru reitirnir tómir
+    // og Vista þurrkaði út payday_delivery (79 félög), postnumer (1029), tengiliður og bokunarnumer, og setti
+    // skyrsla_med_krofu=true. Nú: fersk röð sótt áður en fyllt er (og röðin í listanum breikkuð um leið).
+    try {
+      if (window.DB && DB.sb) {
+        const r = await DB.sb.from('fyrirtaeki').select('*').eq('id', id).maybeSingle();
+        if (!r.error && r.data) Object.assign(co, r.data);
+        else if (r.error && window.logProblem) window.logProblem('breyta_fyrirtaeki_ferskt_brast', 'fyrirtaeki ' + id + ': ' + ((r.error && r.error.message) || ''));
+      }
+    } catch (_) {}
     const modal = document.getElementById('modal-nyfyrirtaeki');
     if (!modal) {
       alert('Edit-form not found');
@@ -127,6 +138,34 @@
       }
     })();
 
+    // Vistunargögnin lesin úr eyðublaðinu — eitt fall fyrir skyndimyndina hér og Vista að neðan.
+    function lesaForm() {
+      const get = id => ((document.getElementById(id) || {}).value || '').trim();
+      return {
+        nafn: get('nf-nafn'),
+        kennitala: get('nf-kt'),
+        simi: get('nf-simi'),
+        netfang: get('nf-netfang'),
+        tengiliður: get('nf-tengiliður'),
+        heimilisfang: get('nf-heimilisfang'),
+        athugasemdir: get('nf-athugasemdir'),
+        payday_delivery: get('nf-payday-delivery') || null,
+        skyrsla_med_krofu: !!((document.getElementById('nf-skyrsla-med') || { checked: true }).checked),
+        bokunarnumer: get('nf-bokunarnumer') || null,
+        stadur_nr: (function () {
+          const v = get('nf-stadur-nr');
+          if (!v) return null;
+          const n = parseInt(v, 10);
+          return Number.isFinite(n) ? n : null;
+        })(),
+        postnumer: get('nf-postnumer') || null
+      };
+    }
+    // Vörn þótt ferska sóknin bregðist: reitur sem röðin bar EKKI við opnun og notandinn breytti ekki er ekki sendur —
+    // annars yrði tómt gildi skrifað yfir það sem er í grunninum.
+    const thekktir = new Set(Object.keys(co));
+    const upphaf = lesaForm();
+
     const titleEl = modal.querySelector('h2');
     const origTitle = titleEl ? titleEl.textContent : null;
     if (titleEl) titleEl.textContent = 'Breyta fyrirtæki';
@@ -139,11 +178,15 @@
       origText = saveBtn.textContent;
       saveBtn.removeAttribute('onclick');
       saveBtn.textContent = 'Vista breytingar';
+      // 14.10.2026 (mælt í úttekt): vel heppnuð vistun skildi takkann eftir `disabled` (aðeins villuleiðin virkjaði hann
+      // aftur) — næsta fyrirtæki sem var breytt í sömu lotu fékk óvirkan Vista-takka. ALLTAF LEYFA VISTUN.
+      saveBtn.disabled = false;
     }
 
     function restore() {
       if (titleEl && origTitle != null) titleEl.textContent = origTitle;
       if (saveBtn) {
+        saveBtn.disabled = false;
         if (origOnclick) saveBtn.setAttribute('onclick', origOnclick);
         if (origText) saveBtn.textContent = origText;
         saveBtn.onclick = null;
@@ -158,25 +201,10 @@
           if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn');
           return;
         }
-        const data = {
-          nafn,
-          kennitala: get('nf-kt'),
-          simi: get('nf-simi'),
-          netfang: get('nf-netfang'),
-          tengiliður: get('nf-tengiliður'),
-          heimilisfang: get('nf-heimilisfang'),
-          athugasemdir: get('nf-athugasemdir'),
-          payday_delivery: get('nf-payday-delivery') || null,
-          skyrsla_med_krofu: !!((document.getElementById('nf-skyrsla-med') || { checked: true }).checked),
-          bokunarnumer: get('nf-bokunarnumer') || null,
-          stadur_nr: (function () {
-            const v = get('nf-stadur-nr');
-            if (!v) return null;
-            const n = parseInt(v, 10);
-            return Number.isFinite(n) ? n : null;
-          })(),
-          postnumer: get('nf-postnumer') || null
-        };
+        const data = lesaForm();
+        Object.keys(data).forEach(k => {
+          if (k !== 'nafn' && !thekktir.has(k) && JSON.stringify(data[k]) === JSON.stringify(upphaf[k])) delete data[k];
+        });
         const sb = (window.DB && DB.sb) || null;
         if (!sb) {
           if (window.Toast && Toast.show) Toast.show('Engin nettenging');

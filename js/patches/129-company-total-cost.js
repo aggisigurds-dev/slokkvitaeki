@@ -621,19 +621,33 @@
   // vsk) verður sjálfgefna línuverðið — handvirk yfirskrift á ferðinni trompar
   // áfram — og telst „endanlegt verð" eins og tilboðsverð: almenni afslátturinn
   // leggst ekki ofan á.
+  //
+  // 14.10.2026 (mælt í úttekt, CUTS-A-WIRE → SAFE hjá netverði): Companies.list gat verið MJÓR (12 leitarsúlur úr 114,
+  // haldið mjóum af hand-ham 431) — þá var discount_tier_id `undefined`, tier=null var geymt, og úttektin fór út án
+  // hópsafsláttar (Center Hótel 192: 160.878 kr í stað 145.931 kr). Nú: vanti lykilinn á röðina er hann sóttur beint;
+  // bregðist sókn er kallað á logProblem, EKKERT sett í skyndiminnið, og taflan fær gráa viðvörunarlínu (_tierVilla).
   let _tierCache = { coId: null, tier: null };
+  let _tierVilla = null;
   async function loadTierFor(coId) {
     if (_tierCache.coId === coId) return _tierCache.tier;
-    let tier = null;
+    let tier = null, viss = false;
     try {
       const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
-      const tid = c && c.discount_tier_id;
-      if (tid && window.DB && DB.sb) {
-        const r = await DB.sb.from('discount_tiers').select('*').eq('id', tid).maybeSingle();
-        if (!r.error && r.data && r.data.virkt !== false) tier = r.data;
+      let tid = null;
+      if (c && ('discount_tier_id' in c)) { tid = c.discount_tier_id; viss = true; }
+      else if (window.DB && DB.sb) {
+        const r0 = await DB.sb.from('fyrirtaeki').select('discount_tier_id').eq('id', coId).maybeSingle();
+        if (!r0.error) { tid = r0.data ? r0.data.discount_tier_id : null; viss = true; }
+        else if (window.logProblem) window.logProblem('uttekt_tier_saekja_brast', 'fyrirtaeki ' + coId + ': discount_tier_id náðist ekki — ' + ((r0.error && r0.error.message) || ''));
       }
-    } catch (_) {}
-    _tierCache = { coId: coId, tier: tier };
+      if (viss && tid && window.DB && DB.sb) {
+        const r = await DB.sb.from('discount_tiers').select('*').eq('id', tid).maybeSingle();
+        if (!r.error) { if (r.data && r.data.virkt !== false) tier = r.data; }
+        else { viss = false; if (window.logProblem) window.logProblem('uttekt_tier_saekja_brast', 'fyrirtaeki ' + coId + ': discount_tiers ' + tid + ' náðist ekki'); }
+      }
+    } catch (e) { viss = false; }
+    if (viss) { _tierCache = { coId: coId, tier: tier }; if (_tierVilla === coId) _tierVilla = null; }
+    else _tierVilla = coId;
     return tier;
   }
 
@@ -1169,6 +1183,9 @@
 
     // 29.09.2026: skýringarlínan um tæki sem rukkast á verkbeiðni (sjá _averk efst í renderImpl).
     if (_averk.length) rows.push(_averkLina());
+    // Ein reitur (colspan) — færri en 6 reitir, svo 165 scrapeCostRows sleppir línunni í reikningnum.
+    if (_tierVilla === coId) rows.push('<tr><td colspan="7" style="padding:6px 10px;font-size:12px;color:#5b6472;font-style:italic;border-top:1px dashed #cbd5e1">' +
+      'Afsláttarhópur náðist ekki — endurhlaða áður en reikningur er gerður</td></tr>');
 
     // Skýrslugerð + Akstur eru EKKI lengur línur í töflunni — þær eru færðar niður
     // í heildartölu-blokkina sem flex-raðir (reitirnir línast þá upp við Afslátt).
