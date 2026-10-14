@@ -27,6 +27,9 @@
   var NMO = window.__NativeMutationObserver || window.MutationObserver;
   // Röðin skiptir máli: 405 setur staðreyndirnar á undan húsmyndinni ef hún er komin (sama DOM-röð og áður).
   var SKREF = [
+    // 14.10.2026: „Óklárað úttekt vistuð"-kassinn (228) fer EFST í #companies-main — kom áður 0,7–3 s eftir opnun
+    // (vakt + 350 ms bið) og ýtti öllum prófílnum 62+14 px niður. Fyrstur, því allt annað liggur fyrir neðan hann.
+    ['228', function () { if (window.SavedReports && SavedReports.inject) SavedReports.inject(); }],
     ['367', function () { if (window.ByggingMynd) ByggingMynd.endurteikna(false); }],       // húsmyndin (190 px flís)
     ['363', function () { if (window.BannerUpplysingar) BannerUpplysingar.haldaVid(); }],   // upplýsingalínurnar
     ['405', function () { if (window.Efsta405) Efsta405.tick(); }],                        // staðreyndir, knappar, valmynd

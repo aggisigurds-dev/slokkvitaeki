@@ -356,6 +356,9 @@
     btn.id = '_sc_openbtn_g';
     btn.innerHTML = '📷 Skanna nýtt tæki';
     btn.style.cssText = 'background:#7c3aed;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;margin-left:8px;box-shadow:0 2px 6px rgba(124,58,237,.3);';
+    // 14.10.2026 (hopp, mælt í úttekt): 00-legacy fixGeymsla felur „nýtt tæki"-takkann í Geymslu alltaf (innan 1 s).
+    // Hann sást því í 80–1000 ms og hvarf — „+ Skrá tæki" hoppaði fram og til baka. Búinn til falinn: sama lokastaða.
+    btn.style.setProperty('display', 'none');
     btn.onclick = function(){ openScan('geymsla'); };
     headerRow.appendChild(btn);
   }

@@ -71,7 +71,10 @@
   window.SavedReports = {
     get: tripFor,
     summary: openSummary,
-    has: function(coId){ return !!openSummary(coId); }
+    has: function(coId){ return !!openSummary(coId); },
+    // 14.10.2026: 462 kallar þetta í sama tifi og borðinn teiknast (sjá SKREF þar) — áður kom kassinn 0,7–3 s síðar
+    // og ýtti öllum prófílnum 76 px niður (CLS 0,035 á tölvu, 0,08 á síma, mælt á félagi 1853).
+    inject: function(){ inject(); }
   };
 
   // ── company-page special box ──────────────────────────────────────────────

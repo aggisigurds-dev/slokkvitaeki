@@ -181,6 +181,13 @@
         if (m.addedNodes && m.addedNodes.length) { schedule(); return; }
       }
     }).observe(v, { childList: true, subtree: true });
+    // 14.10.2026 (hopp, mælt í úttekt): reiturinn (32–44 px) fór í kortin 220 ms eftir að vaktin hér að ofan (252: næsti
+    // rammi) sá listann — hvert kort stækkaði eftir málun (CLS 0,007 á tölvu, 0,009 á síma). Óinngjöfuð vakt setur hann
+    // inn í sama verki og listinn teiknast; hún ber aðeins saman fjölda korta og reita. Nótugildin fyllast áfram ósamstillt.
+    new (window.__NativeMutationObserver || MutationObserver)(() => {
+      const list = v.querySelector('#_bs-list, ._bs-list'); if (!list) return;
+      if (list.querySelectorAll('.stop[data-co-id]').length !== list.querySelectorAll('._bsnota').length) mala();
+    }).observe(v, { childList: true, subtree: true });
 
     // Samstilling: þegar appið kemur úr bakgrunni og á 90 sek fresti í forgrunni.
     document.addEventListener('visibilitychange', () => {

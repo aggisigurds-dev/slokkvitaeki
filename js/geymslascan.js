@@ -62,6 +62,15 @@ function ensureBtn(){
   if(skra.parentNode){skra.parentNode.insertBefore(btn,skra.nextSibling);}
   console.log('[GeymslaScan] button injected');
 }
+// 14.10.2026 (hopp, mælt í úttekt): takkinn kom 0,8–1,5 s eftir að Geymsla teiknaðist (tímamælarnir einir) og hausinn
+// endurraðaðist (CLS 0,012 á tölvu, allt að 0,055 á síma). Óinngjöfuð vakt á Geymslu (örverk, fyrir málun) setur hann inn
+// í sama verki; hún gerir ekkert þegar takkinn er kominn. Tímamælarnir standa áfram sem bakvörður.
+(function vakta(){
+  var view=document.getElementById('view-geymsla');
+  if(!view){ setTimeout(vakta,700); return; }
+  var NMO=window.__NativeMutationObserver||window.MutationObserver;
+  try { new NMO(function(){ if(!view.querySelector('#_gys_btn')) ensureBtn(); }).observe(view,{childList:true,subtree:true}); } catch(_){}
+})();
 setInterval(ensureBtn,1500);
 setTimeout(ensureBtn,800);
 })();
