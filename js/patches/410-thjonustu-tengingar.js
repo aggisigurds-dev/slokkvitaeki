@@ -456,6 +456,15 @@
       '.' + AUÐK + '-nyr select{height:30px;padding:0 8px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px}',
       '#' + AUÐK + '-nyr-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-nyr-baeta[disabled]{opacity:.38;pointer-events:none}',
+      '.' + AUÐK + '-sia-rod{display:flex;align-items:center;gap:10px;margin:0 0 8px}',
+      '.' + AUÐK + '-sia{flex:1 1 260px;max-width:360px;height:32px;box-sizing:border-box;padding:0 12px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:13px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
+      '.' + AUÐK + '-sia:focus{outline:none;border-color:rgba(201,42,42,.55);box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(201,42,42,.18);background:#fff}',
+      '.' + AUÐK + '-fjoldi{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#3a4250;height:24px;padding:0 9px;display:inline-flex;align-items:center;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);white-space:nowrap}',
+      '.' + AUÐK + '-nytt input.' + AUÐK + '-inp:not(.' + AUÐK + '-verd){flex:1 1 240px;min-width:0;height:30px;box-sizing:border-box;padding:0 10px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:13px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
+      '.' + AUÐK + '-nytt input.' + AUÐK + '-verd{width:96px}',
+      '.' + AUÐK + '-nyr.' + AUÐK + '-nytt{margin:8px 0 0;padding:10px 12px;background:#fff;background-image:none;border:0;border-radius:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}',
+      '.' + AUÐK + '-nyr.' + AUÐK + '-nytt label{display:none}',
+      '.' + AUÐK + '-nytt .' + AUÐK + '-takki{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '.' + AUÐK + '-vl-nafn{width:100%;min-width:220px;height:30px;box-sizing:border-box;padding:0 10px;font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:13px;font-weight:600;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
       '.' + AUÐK + '-vl-nafn.ok{border-color:#1f9d57}.' + AUÐK + '-vl-nafn.villa{border-color:#e0453c}',
       '#' + AUÐK + '-vl-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
@@ -811,34 +820,34 @@
       'Í dag er verðið slegið inn í hverja skýrslu fyrir sig. Tengirðu línu við þjónustulínu ' +
       'kemur verð hennar sjálfkrafa inn sem uppástunga — handslegið verð í skýrslunni gengur ' +
       'alltaf fyrir.</p>';
+    // 14.10.2026 (Agnar: „samræma uppröðunina milli listanna"): sömu dálkar og slökkvitækja-glugginn — Liður ·
+    // Tengd vara · Verð (m. vsk feitt, þjónusta/vara · án vsk, ✎ Vara) — og „Ný þjónustulína" neðst í sama formi.
     h += '<table class="' + AUÐK + '-tafla"><thead><tr>' +
-      '<th>Lína</th><th>Eining</th><th>Tengd vara</th><th>Verð</th></tr></thead><tbody>';
+      '<th>Liður</th><th>Eining</th><th>Tengd vara</th><th style="text-align:right">Verð</th></tr></thead><tbody>';
     SVAR_LINUR.forEach(function (L) {
       var tg = teng('slokkvikerfi', L[0]);
       var v = tg && tg.vara_id ? vara(tg.vara_id) : null;
       h += '<tr><td style="font-weight:700;color:#0f172a">' + L[1] + '</td>' +
         '<td style="color:#5b6573">' + L[2] + '</td>' +
         '<td>' + valHtml(tg ? tg.vara_id : '', 'slokkvikerfi|' + L[0], false) + '</td>' +
-        '<td>' + (v ? krVsk(v.verd_an_vsk, v.vsk_prosenta) + ' m/vsk' : '<em style="color:#94a3b8">handslegið</em>') + '</td></tr>';
+        '<td class="' + AUÐK + '-verdd">' + (v
+          ? '<div class="' + AUÐK + '-vl" style="justify-content:flex-end"><b>' + esc(krVsk(v.verd_an_vsk, v.vsk_prosenta)) + '</b><small>' + (v.flokkur === 'Þjónusta' ? 'þjónusta' : 'vara') + ' · ' + kr(v.verd_an_vsk) + ' án vsk</small>' +
+            '<button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(v.id) + '" title="Opna „' + esc(v.nafn) + '“ í Vörur og þjónusta — þar breytirðu verðinu">✎ Vara</button></div>'
+          : '<em style="color:#94a3b8">handslegið í skýrsluna</em>') + '</td></tr>';
     });
     h += '</tbody></table>';
     return h + nyttSvaediHtml();
   }
 
   function nyttSvaediHtml() {
-    return '<div class="' + AUÐK + '-h3">Ný þjónustulína</div>' +
-      '<div class="' + AUÐK + '-nytt">' +
-        '<div style="flex:1 1 240px"><label>Heiti</label>' +
-          '<input id="' + AUÐK + '-n-nafn" class="' + AUÐK + '-inp" style="width:100%" ' +
-          'placeholder="t.d. Léttvatnstæki 9L. yfirferð"></div>' +
-        '<div style="flex:0 0 130px"><label>Verð m/vsk</label>' +
-          '<input id="' + AUÐK + '-n-verd" class="' + AUÐK + '-inp" style="width:100%" type="number" min="0" step="1"></div>' +
-        '<div style="flex:0 0 90px"><label>VSK %</label>' +
-          '<input id="' + AUÐK + '-n-vsk" class="' + AUÐK + '-inp" style="width:100%" type="number" value="24"></div>' +
-        '<button id="' + AUÐK + '-n-vista" class="' + AUÐK + '-takki">+ Stofna og bæta í listana</button>' +
-      '</div>' +
-      '<p style="margin:8px 0 0;font-size:11.5px;color:#94a3b8">' +
-      'Fer í vörulistann sem þjónusta og birtist samstundis í öllum tengi-listunum hér að ofan.</p>';
+    // sama „+ Bæta við neðst"-röð og í brunakerfi/vinnuliðum (14.10): heiti · verð m/vsk · vsk % · takki · skýring
+    return '<div class="' + AUÐK + '-nyr ' + AUÐK + '-nytt">' +
+        '<input id="' + AUÐK + '-n-nafn" class="' + AUÐK + '-inp" type="text" placeholder="Ný þjónustulína, t.d. Léttvatnstæki 9L. yfirferð" aria-label="Heiti nýrrar þjónustulínu">' +
+        '<input id="' + AUÐK + '-n-verd" class="' + AUÐK + '-inp ' + AUÐK + '-verd" type="number" min="0" step="1" placeholder="verð" aria-label="Verð m/vsk"> <span class="' + AUÐK + '-kr">kr m/vsk</span>' +
+        '<input id="' + AUÐK + '-n-vsk" class="' + AUÐK + '-inp ' + AUÐK + '-verd" type="number" value="24" style="width:64px" aria-label="VSK %"> <span class="' + AUÐK + '-kr">% vsk</span>' +
+        '<button id="' + AUÐK + '-n-vista" class="' + AUÐK + '-takki" type="button">+ Stofna og bæta neðst</button>' +
+        '<span class="' + AUÐK + '-nyr-ath">Fer í vörulistann sem þjónusta og birtist samstundis í tengi-listunum.</span>' +
+      '</div>';
   }
 
   // ── opna / teikna ───────────────────────────────────────────────────────
@@ -931,12 +940,35 @@
     } catch (e) { if (el && el.disabled) el.disabled = false; if (el && el.classList) el.classList.add('villa'); segja('Vistun brást: ' + String((e && e.message) || e), true); }
   }
 
+  // Sía efst í hverjum lista (14.10, samræming): sami reitur alls staðar, síar raðir töflunnar á texta; textinn lifir
+  // endurteikningar (vistun teiknar listann aftur) og núllast við opnun annars lista.
+  var _sia = '';
+  function siaHtml() {
+    return '<div class="' + AUÐK + '-sia-rod"><input class="' + AUÐK + '-sia" type="search" placeholder="Sía listann…" value="' + esc(_sia) + '" aria-label="Sía listann">' +
+      '<span class="' + AUÐK + '-fjoldi" aria-live="polite"></span></div>';
+  }
+  function beitaSiu(efni) {
+    var q = _sia.trim().toLowerCase();
+    var tafla = efni.querySelector('.' + AUÐK + '-tafla'); if (!tafla) return;
+    var alls = 0, synd = 0;
+    tafla.querySelectorAll('tbody tr').forEach(function (tr) {
+      alls++;
+      var inn = !q || tr.textContent.toLowerCase().indexOf(q) >= 0 || Array.prototype.some.call(tr.querySelectorAll('input'), function (i) { return String(i.value || '').toLowerCase().indexOf(q) >= 0; });
+      tr.hidden = !inn; if (inn) synd++;
+    });
+    var f = efni.querySelector('.' + AUÐK + '-fjoldi');
+    if (f) f.textContent = q ? synd + ' af ' + alls : alls + (alls === 1 ? ' röð' : ' raðir');
+  }
   function teikna() {
     var efni = document.getElementById(AUÐK + '-efni');
     if (!efni) return;
     var aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(efni) : null;
     efni.innerHTML = _flokkur === 'slokkvitaeki' ? htmlSlokkvitaeki()
       : _flokkur === 'brunakerfi' ? htmlBrunakerfi() : _flokkur === 'verkstaedi' ? htmlVerkstaedi() : _flokkur === 'vinnulidir' ? htmlVinnulidir() : htmlSlokkvikerfi();
+    // sían fer á undan fyrstu töflunni — sama staðsetning í öllum listunum
+    var fyrstaTafla = efni.querySelector('.' + AUÐK + '-tafla');
+    if (fyrstaTafla) fyrstaTafla.insertAdjacentHTML('beforebegin', siaHtml());
+    beitaSiu(efni);
     if (aftur) aftur();
   }
 
@@ -1091,6 +1123,7 @@
   async function opna(flokkur, fokus) {
     _flokkur = FLOKKAR[flokkur] ? flokkur : 'slokkvitaeki';
     VL.items = null;   // vinnuliðir: lesa ferskt af þjóni við hverja opnun
+    _sia = '';
     stilar();
     loka();
     var f = FLOKKAR[_flokkur];
@@ -1122,6 +1155,9 @@
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
+    bak.addEventListener('input', function (e) {
+      var t = e.target; if (t && t.classList && t.classList.contains(AUÐK + '-sia')) { _sia = t.value; var ef = document.getElementById(AUÐK + '-efni'); if (ef) beitaSiu(ef); }
+    });
     bak.addEventListener('change', function (e) {
       var t = e.target; if (!t || !t.classList) return;
       if (t.classList.contains(AUÐK + '-vl-nafn')) { vinnulidurBreyting(bak, 'nafn', t); return; }
