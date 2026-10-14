@@ -46,7 +46,7 @@ async function keyrsla(stadbundid, thjonn) {
   return vistad.map(p => { try { return JSON.parse(p.app_profiles_json); } catch (_) { return { ogilt: true }; } });
 }
 
-const FLOGG = { __brky1: 1, __brtv1: 1, __tvk1: 1, __vkp1: 1, __rf2: 1, __jv2: 1, __jv2b: 1, __tvks1: 1, __yfd1: 1, __ds1: 1, __efk1: 1, __efk2: 1, __kst1: 1, __kst2: 1, __bksl1: 1, __tp1: 1, __tp1b: 1, __bord1: 1, __ba1: 1 };   // __ba1 (13.10.2026): Brunaáætlun í Brunakerfi-appið
+const FLOGG = { __brky1: 1, __brtv1: 1, __tvk1: 1, __vkp1: 1, __rf2: 1, __jv2: 1, __jv2b: 1, __tvks1: 1, __yfd1: 1, __ds1: 1, __efk1: 1, __efk2: 1, __kst1: 1, __kst2: 1, __bksl1: 1, __tp1: 1, __tp1b: 1, __bord1: 1, __ba1: 1, __dl1: 1, __pl1: 1, __dl2: 1, __pl2: 1 };   // __ba1 (13.10.2026): Brunaáætlun í Brunakerfi-appið · __dl/__pl (14.10.2026): Drive-leit + Póstleit í Brunahólf og The Box
 const THJONN = Object.assign({
   fjarmal: ['krofu-yfirlit', 'sala', 'arsskodun', 'br-gerdreikninga', 'br-efniskostnadur', 'kostnadur'],
   brunaholf: ['br-maeting', 'turbopaint', 'br-dagurinn'],

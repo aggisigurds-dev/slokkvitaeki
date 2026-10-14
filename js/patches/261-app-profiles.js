@@ -60,6 +60,7 @@
     doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
     chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    search: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',
     list: '<path d="M4 7h16M4 12h16M4 17h10"/>',
     building: '<path d="M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.1 2.3 3.5 5.2"/>',
@@ -90,7 +91,8 @@
     brunayfirlit: 'flame', brunaskra: 'flame', slokkvikerfi: 'bell',
     'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
     'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
-    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube', brunaaaetlun: 'flame'
+    'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube', brunaaaetlun: 'flame',
+    'br-driveleit': 'search', 'br-postleit': 'mail'
   };
   function pgIcon(p) {
     var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
@@ -168,6 +170,11 @@
     // svo AÐEINS stöðin birtist í appinu, ekki allur Bakendinn. Tengja skýrslu/reikning
     // við réttan stað + ár beint úr símanum.
     { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
+    // 14.10.2026 (Agnar: „póstleit og drive-leit eru ekki komin í öpp og The Box"): leitartólin tvö úr Brunahólfi sem
+    // app-síður — einangraðir flipar (?embed=1#…) eins og Skýrslu-stöðin. Drive-leit leitar í Drive beggja félaga,
+    // Póstleit í öllum vinnupósthólfum + póstsaga eftir kennitölu.
+    { k: 'br-driveleit',    label: 'Drive-leit (Brunahólf)',          short: 'Drive-leit', emoji: '🔎', url: 'https://brunaholf.netlify.app/?embed=1#driveleit' },
+    { k: 'br-postleit',     label: 'Póstleit (Brunahólf)',            short: 'Póstleit',   emoji: '✉️', url: 'https://brunaholf.netlify.app/?embed=1#postleit' },
     // 14.10.2026 (Agnar: „TurboPaint layoutið er ekki að virka vel í öpp … vantar botnstikuna og alla aðgerðarhnappana"):
     // `touch: true` = síðan á sitt eigið símaútlit og ramminn hennar fylgir KRÓM-zoominu (353), ekki síðuzoominu (333).
     // Síðuzoom 1,55 gaf rammanum 633 px viðmót (tölvuútlit í smáu letri); 2,6+ gaf 377 px og klippti stikurnar af.
@@ -222,7 +229,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
+      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-driveleit', 'br-postleit', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
     // Skýrslu-stöðin sem sitt eigið app (Agnar 23.09.2026: „Can you make a app page
     // for skýrslustod. For öpp page"). Hún er þegar til sem síða (br-skyrslustod →
     // brunaholf /?embed=1#skyrslustod); hér fær hún eigin skel svo hún opnist beint
@@ -798,6 +805,11 @@
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
         insertOnce('__ba1',   'brunaaaetlun', 'turbopaint', 'brunakerfi');   // Brunaáætlun í Brunakerfi-appið (13.10.2026)
+        // Drive-leit + Póstleit úr Brunahólfi í Brunahólf-appið og í notendabúna appið „The Box" (14.10.2026)
+        insertOnce('__dl1',   'br-driveleit', 'br-skyrslustod', 'brunaholf');
+        insertOnce('__pl1',   'br-postleit',  'br-driveleit',   'brunaholf');
+        insertOnce('__dl2',   'br-driveleit', 'br-skyrslustod', 'xthebox');
+        insertOnce('__pl2',   'br-postleit',  'br-driveleit',   'xthebox');
         // __bord1 (11.09.2026): Þjónustuborð 2 ('bord', patch 368) kemur í stað gamla mobíl-borðsins
         // ('thjonustubord', 306) í öllum vistuðum öppum og fer á undan 'verkbord' í Verkefni og Boss.
         // Flaggið brennur aðeins ef einhver vistuð app-stilling er til (annars sjá `defaults` um það).
