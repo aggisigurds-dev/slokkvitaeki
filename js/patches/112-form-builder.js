@@ -444,6 +444,10 @@
     }
   }
 
+  // 14.10.2026 (hopp, mælt í úttekt): kaflarnir 94/96/97 (þ.m.t. Skjalasniðmát) eru settir inn á 'view-shown' í
+  // switchView-vafningi 50, en takkinn hér kom á 1 s púlsinum á eftir — skjalahlutinn féll 52 px (CLS 0,026 á síma).
+  // Hlustarar keyra í skráningarröð og 94/96/97 hlaðast á undan, svo takkinn fer inn í sama verki.
+  document.addEventListener('view-shown', function (e) { if (e && e.detail && e.detail.name === 'samningar') { try { injectButton(); } catch (_) {} } });
   // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
   setInterval(function () { if (window.DomKynslod && !DomKynslod.breytt('112:hnappur')) return; injectButton(); }, 1000);
 

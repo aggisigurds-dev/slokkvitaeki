@@ -53,8 +53,11 @@
          Hér: 3 dálkar, styttri flís, chippa-röð á körfutökkum. */
       both('#view-sala' + P)
         + '{overflow-x:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}',
+      // 14.10.2026 (mælt í úttekt): `1fr` er minmax(auto,1fr) — lágmarksbreidd innihaldsins (flísar + körfuhnappar
+      // með nowrap) ýtti brautinni í 570 px þótt dálkurinn væri 491 px: þriðji flísadálkurinn og körfuhnappar klipptust
+      // og grindin skrunaði lárétt. minmax(0,1fr) heldur brautinni innan dálksins (mælt: scrollWidth = clientWidth).
       both('#view-sala .pos-grid' + P)
-        + '{grid-template-columns:1fr!important;gap:8px!important;padding:0 8px 88px!important;'
+        + '{grid-template-columns:minmax(0,1fr)!important;gap:8px!important;padding:0 8px 88px!important;'
         + 'min-height:0!important;width:100%!important;max-width:none!important;'
         + 'box-sizing:border-box!important}',
       both('#view-sala .pos-banner' + P)

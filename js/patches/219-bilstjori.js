@@ -226,9 +226,25 @@
     if (s < 3600) return Math.round(s / 60) + ' mín';
     return Math.round(s / 3600) + ' klst';
   }
+  // 14.10.2026 (hopp, mælt í úttekt): hausröðin („📊 DAGURINN Í DAG" + starfsmannaflísin) teiknaðist fyrst eftir að
+  // bilstjori_vakt-sóknin skilaði sér — listinn fyrir neðan féll 28 px eftir málun. Hausinn veltur ekki á sókninni,
+  // svo hann er teiknaður strax í tómt hólfið; spjöldin bætast við þegar gögnin koma (sama HTML og áður).
+  function vaktHaus(me) {
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
+        '<span style="font-size:11.5px;font-weight:800;color:rgba(255,255,255,.85);letter-spacing:.05em">📊 DAGURINN Í DAG</span>' +
+        '<button id="_bs-empchip" type="button" style="margin-left:auto;border:1px solid ' + (me ? empColor(me) : '#3a3f48') + ';background:' + (me ? empColor(me) : 'transparent') + ';color:#fff;border-radius:99px;padding:4px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">👤 ' + esc(me || 'Velja nafn') + '</button>' +
+      '</div>';
+  }
   async function renderVakt() {
     const box = document.getElementById('_bs-vakt');
     if (!box || !(window.DB && DB.sb)) return;
+    if (!box.firstChild) {
+      try {
+        box.innerHTML = vaktHaus(getEmp());
+        const c0 = document.getElementById('_bs-empchip');
+        if (c0) c0.addEventListener('click', () => pickEmp(false));   // smellanleg strax, eins og eftir sóknina
+      } catch (_) {}
+    }
     const start = new Date(); start.setHours(0, 0, 0, 0);
     let rows = [];
     try {
@@ -265,11 +281,7 @@
         '<div style="font-size:10px;color:#8a93a5;margin-top:5px">' + (active ? 'síðast ' + relTime(a.last) : 'engin virkni í dag') + '</div>' +
       '</div>';
     };
-    box.innerHTML =
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
-        '<span style="font-size:11.5px;font-weight:800;color:rgba(255,255,255,.85);letter-spacing:.05em">📊 DAGURINN Í DAG</span>' +
-        '<button id="_bs-empchip" type="button" style="margin-left:auto;border:1px solid ' + (me ? empColor(me) : '#3a3f48') + ';background:' + (me ? empColor(me) : 'transparent') + ';color:#fff;border-radius:99px;padding:4px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">👤 ' + esc(me || 'Velja nafn') + '</button>' +
-      '</div>' +
+    box.innerHTML = vaktHaus(me) +
       '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">' +
         Object.keys(agg).filter(n => agg[n].last || n === me).map(n => card(agg[n])).join('') +
       '</div>';

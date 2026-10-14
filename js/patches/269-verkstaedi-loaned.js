@@ -473,6 +473,27 @@
     } finally { _busy = false; }
   }
 
+  // 14.10.2026 (hopp, mælt í úttekt): kaflinn var aðeins settur inn EFTIR netsókn (loadShop/loadSott, og view-shown
+  // þvingar endursókn við hverja opnun) — Workshop.render var þá búið að mála dálkinn án hans og allt fyrir neðan
+  // hoppaði (0,0096 við hverja opnun). Séu gögnin þegar í minni er kaflinn settur inn úr þeim í SAMA verki og dálkurinn
+  // teiknast (óinngjöfuð vakt á verkstæðinu); sóknin á eftir uppfærir hann á staðnum eins og áður. Fyrsta opnun lotunnar
+  // bíður áfram eftir gögnunum — ekki sótt fyrirfram (01.10.2026: ekki sækja lánuð tæki meðan verkstæðið er lokað).
+  function setjaUrMinni() {
+    if (!_loadedAt || _injecting) return;
+    const vw = document.getElementById('view-workshop');
+    if (!vw || !vw.classList.contains('active')) return;
+    vw.querySelectorAll('.bw-sh-body').forEach(body => {
+      if (body.querySelector('#_vk-loaned')) return;
+      _injecting = true;
+      try { body.insertAdjacentHTML('afterbegin', sectionHtml()); } finally { _injecting = false; }
+    });
+  }
+  (function vaktaVerkstaedi() {
+    const vw = document.getElementById('view-workshop');
+    if (!vw) { setTimeout(vaktaVerkstaedi, 700); return; }
+    try { new (window.__NativeMutationObserver || MutationObserver)(setjaUrMinni).observe(vw, { childList: true, subtree: true }); } catch (_) {}
+  })();
+
   // fylgjast með view-workshop: þegar Workshop.render() endurbyggir → sprauta aftur
   function watch() {
     let t = null;

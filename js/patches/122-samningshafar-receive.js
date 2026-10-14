@@ -143,6 +143,7 @@
   function injectButton() {
     const view = document.getElementById('view-workshop');
     if (!view || !view.classList.contains('active')) return;
+    if (view.querySelector('._sr-btn')) return;   // 14.10.2026: þegar kominn — ódýrt svar fyrir óinngjöfuðu vaktina hér að neðan
     // Find the Samningshafar column by its title text
     const titles = view.querySelectorAll('div[style*="text-transform:uppercase"]');
     let header = null;
@@ -174,7 +175,9 @@
   function attach() {
     const view = document.getElementById('view-workshop');
     if (!view) { setTimeout(attach, 800); return; }
-    new MutationObserver(() => {
+    // 14.10.2026 (hopp, mælt í úttekt): vaktin fór gegnum 252 (næsti rammi), svo þegar Workshop.render endurbyggði
+    // hausinn sást einn rammi án takkans og hausinn blikkaði 56↔110 px. Óinngjöfuð vakt (örverk, fyrir málun).
+    new (window.__NativeMutationObserver || MutationObserver)(() => {
       // Only act when active to avoid background CPU
       if (view.classList.contains('active')) injectButton();
     }).observe(view, { childList: true, subtree: true });
