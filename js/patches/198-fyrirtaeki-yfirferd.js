@@ -278,7 +278,13 @@
     { key: 'customer_base_id', label: 'Grunnur', type: 'num', get: v => v.customer_base_id == null ? -1 : v.customer_base_id },
     { label: '', sortable: false }
   ];
-  function buildTable(rows, cols, st, rowFn) {
+  // 14.10.2026 (Agnar: „3 og 4" — frost við opnun): 1.234 raðir í einni töflu = 39.500 útlitshlutir, 0,7–0,95 s samfellt
+  // verk við hverja opnun (stíll 211 ms + útlit 309 ms + málun ~290 ms, trace). Innri töfluhlutir taka ekki við
+  // content-visibility, svo fyrstu SYNA raðirnar (eftir röðun og síu) eru teiknaðar og hnappur sýnir allar. Leit sýnir
+  // alltaf allar samsvaranir; síur og talning ná áfram yfir allt mengið.
+  const SYNA = 150;
+  let fAllar = false;
+  function buildTable(rows, cols, st, rowFn, hamark) {
     const c = cols.find(x => x.key === st.key) || cols.find(x => x.sortable !== false);
     let sorted = rows;
     if (c) sorted = rows.slice().sort((a, b) => {
@@ -292,7 +298,13 @@
       const ar = st.key === col.key ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
       return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}<span style="color:#1d4ed8;font-size:10px">${ar}</span></th>`;
     }).join('') + '</tr></thead>';
-    return '<table>' + thead + '<tbody>' + sorted.map(rowFn).join('') + '</tbody></table>';
+    const synd = (hamark && sorted.length > hamark) ? sorted.slice(0, hamark) : sorted;
+    const fleiri = synd.length < sorted.length
+      ? '<div class="fyr-fleiri" style="padding:12px 4px 4px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:#64748b">' +
+        '<button type="button" class="ab fyr-allar">Sýna allar ' + sorted.length.toLocaleString('is-IS') + '</button>' +
+        '<span>sýni ' + synd.length + ' fyrstu — leitin hér að ofan nær yfir allar</span></div>'
+      : '';
+    return '<table>' + thead + '<tbody>' + synd.map(rowFn).join('') + '</tbody></table>' + fleiri;
   }
   function bindSort(scope, st, rerender) {
     scope.querySelectorAll('.th-sort').forEach(th => th.onclick = () => {
@@ -326,13 +338,15 @@
       const n = (f.k === 'all') ? live.length : live.filter(x => f.test(x)).length;
       return `<div class="chip ${fFilter === f.k ? 'sel' : ''}" data-f="${f.k}">${esc(f.label)}<span class="c-n">${n}</span></div>`;
     }).join('');
-    chipsEl.querySelectorAll('.chip').forEach(c => c.onclick = () => { fFilter = c.dataset.f; renderFyr(); });
+    chipsEl.querySelectorAll('.chip').forEach(c => c.onclick = () => { fFilter = c.dataset.f; fAllar = false; renderFyr(); });
     const flt = FILTERS.find(x => x.k === fFilter) || FILTERS[0];
     const q = (document.getElementById('fyr-q')?.value || '').toLowerCase().trim();
     let rows = live.filter(f => flt.test(f) && (!q || (f.nafn || '').toLowerCase().includes(q) || (f.kennitala || '').includes(q)));
     document.getElementById('fyr-count').textContent = rows.length + ' / ' + live.length + (fScope === 'ars' ? ' fyrirtæki í ársskoðun' : ' fyrirtæki');
     if (!rows.length) { app.innerHTML = '<div class="skel">Engin fyrirtæki í þessari síu.</div>'; return; }
-    app.innerHTML = buildTable(rows, COLS_FYR, fSort, rowFyr);
+    app.innerHTML = buildTable(rows, COLS_FYR, fSort, rowFyr, (fAllar || q) ? 0 : SYNA);
+    const allar = app.querySelector('.fyr-allar');
+    if (allar) allar.onclick = () => { fAllar = true; renderFyr(); };
     bindFyrRows(app);
     bindSort(app, fSort, renderFyr);
     bindSel(app, fSel, 'fyr');

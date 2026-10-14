@@ -543,26 +543,37 @@ var Companies = {
         // borðinn sýndi „Skýrsla 2023: 8× Léttvatn …" við beina hleðslu en ekki þegar prófíllinn var opnaður úr listanum.
         // Sé listinn ekki heill er spurt grunninn; bregðist það er gert ráð fyrir fleiri stöðum (aldrei sýna skýrslu
         // systurstaðar). Sama slóð og 286 sækir hvort eð er, svo þetta er ekki aukakall.
+        // 14.10.2026 (Agnar: „3" — hopp í síma): línan kom ~0,5 s eftir teikningu, líka við endurkomu á sama prófíl
+        // (sótt upp á nýtt í hvert sinn), og hausinn stækkaði um eina línu (CLS 0,013–0,016). Allar línurnar (~1.080)
+        // eru nú sóttar EINU sinni í bakgrunni; sé minnið komið er línan teiknuð í SAMA tifi og borðinn. Ferska sóknin
+        // fyrir félagið keyrir áfram og uppfærir línuna á sama hnút ef eitthvað breyttist (ný skýrsla á meðan).
+        var SL = Companies._saekjaSkyrslulinur();
+        var DALKAR = Companies._SKYRSLU_DALKAR;
         var teikna = function (systkini) {
         var sia = 'fyrirtaeki_id.eq.' + fid + (base && systkini <= 1 ? ',customer_base_id.eq.' + base : '');
-        DB.sb.from('uttekt_skyrsla_lines')
-          .select('year,category,category_label,cnt,in_order,fyrirtaeki_id,customer_base_id')
-          .or(sia).order('year', { ascending: false }).limit(80)
-          .then(function (r) {
-            var radir = (r && r.data) || [];
-            if (!radir.length || !rot.isConnected || rot.querySelector('.co-banner-skyrsla')) return;
+        var byggja = function (radir) {
+            if (!radir.length || !rot.isConnected) return;
             var ar = Math.max.apply(null, radir.map(function (x) { return +x.year || 0; }));
             var nu = radir.filter(function (x) { return +x.year === ar && (x.fyrirtaeki_id === fid || !x.fyrirtaeki_id); });
             if (!nu.length) return;
             var hlutar = nu.map(function (x) { return (x.cnt ? x.cnt + '× ' : '') + (x.category_label || x.category || '?'); });
             var ekki = nu.filter(function (x) { return String(x.in_order).toLowerCase() === 'no' || x.in_order === false; }).length;
+            var texti = '📋 Skýrsla ' + ar + ': ' + hlutar.join(' · ');
+            var flaggTexti = ekki ? '⚠ ' + ekki + ' ekki í lagi' : '✓ allt í lagi';
+            var til = rot.querySelector('.co-banner-skyrsla');
+            if (til) {
+              // Sama hnútur — aðeins uppfærður ef textinn breyttist (STÖÐUGT VIÐMÓT, regla 3).
+              if (til.dataset.sig !== texti + '|' + flaggTexti) { til.firstChild.nodeValue = texti; til.lastChild.textContent = flaggTexti; til.dataset.sig = texti + '|' + flaggTexti; }
+              return;
+            }
             var lina = document.createElement('div');
             lina.className = 'co-banner-skyrsla';
             lina.style.cssText = 'margin-top:5px;font-size:11.5px;color:rgba(255,255,255,.72);' +
               'display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center';
-            lina.textContent = '📋 Skýrsla ' + ar + ': ' + hlutar.join(' · ');
+            lina.textContent = texti;
+            lina.dataset.sig = texti + '|' + flaggTexti;
             var flagg = document.createElement('span');
-            flagg.textContent = ekki ? '⚠ ' + ekki + ' ekki í lagi' : '✓ allt í lagi';
+            flagg.textContent = flaggTexti;
             flagg.style.cssText = 'border-radius:999px;padding:1px 8px;font-weight:600;' + (ekki
               ? 'background:rgba(251,191,36,.18);color:#fde68a;border:1px solid rgba(251,191,36,.35)'
               : 'background:rgba(34,197,94,.16);color:#bbf7d0;border:1px solid rgba(34,197,94,.3)');
@@ -572,15 +583,39 @@ var Companies = {
             // 12.10.2026 (hopp): 405 flytur línuna í haus borðans — strax, ekki í næsta tifi (línan stóð ~80 ms í
             // staðreyndunum og ýtti öllu 49 px niður og upp aftur).
             if (window.Efsta405 && Efsta405.scope()) { try { Efsta405.tick(); } catch (_) {} }
-          }, function () {});
+        };
+        if (SL.allar) {
+          byggja(SL.allar.filter(function (x) { return x.fyrirtaeki_id === fid || (base && systkini <= 1 && x.customer_base_id === base); })
+            .sort(function (a, b) { return (+b.year || 0) - (+a.year || 0); }).slice(0, 80));
+        }
+        DB.sb.from('uttekt_skyrsla_lines')
+          .select(DALKAR)
+          .or(sia).order('year', { ascending: false }).limit(80)
+          .then(function (r) { byggja((r && r.data) || []); }, function () {});
         };
         var listi = Companies.list || [];
+        // 14.10.2026: mjór listi (114) ber ekki customer_base_id — þá taldist 0 systkini og skýrsla systurstaðar gat
+        // lent á þessum prófíl. Listinn er aðeins notaður sé röðin hér breið.
+        var rodHer = listi.find(function (x) { return +x.id === +fid; });
         if (!base) teikna(1);
-        else if (listi.length >= 100) teikna(listi.filter(function (x) { return x.customer_base_id === base; }).length);
+        else if (listi.length >= 100 && rodHer && ('customer_base_id' in rodHer)) teikna(listi.filter(function (x) { return x.customer_base_id === base; }).length);
         else DB.sb.from('fyrirtaeki').select('id').eq('customer_base_id', base).is('deleted_at', null)
           .then(function (r) { teikna((r && !r.error && r.data) ? r.data.length : 2); }, function () { teikna(2); });
       } catch (_) {}
     })(c, el);
+  },
+  // 14.10.2026: allar skýrslulínur (uttekt_skyrsla_lines, ~1.080 raðir) í minni — sjá Skýrslupunkta í openDetail.
+  // Sótt einu sinni (í bakgrunni eftir ræsingu eða við fyrstu opnun prófíls); brestur sóknin er reynt aftur næst.
+  _SKYRSLU_DALKAR: 'year,category,category_label,cnt,in_order,fyrirtaeki_id,customer_base_id',
+  _skyrslulinur: null,
+  _saekjaSkyrslulinur: function () {
+    var SL = this._skyrslulinur || (this._skyrslulinur = { allar: null, p: null });
+    var D = this._SKYRSLU_DALKAR;
+    if (!SL.p && window.DB && DB.sb && typeof DB.fetchAll === 'function') {
+      SL.p = Promise.resolve(DB.fetchAll(function (fra, til) { return DB.sb.from('uttekt_skyrsla_lines').select(D).order('id').range(fra, til); }))
+        .then(function (allar) { SL.allar = Array.isArray(allar) ? allar : null; if (!SL.allar) SL.p = null; }, function () { SL.p = null; });
+    }
+    return SL;
   },
   // Banner note (the black box in the company header) — saves immediately.
   // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note
@@ -863,3 +898,12 @@ function _bnFlush() {
 }
 window.addEventListener('pagehide', _bnFlush);
 document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') _bnFlush(); });
+
+// 14.10.2026: skýrslulínur prófílsins sóttar í bakgrunni eftir ræsingu, svo línan „📋 Skýrsla …" teiknist í sama tifi og
+// borðinn strax við fyrstu opnun (annars bættist hún við ~0,5 s síðar og hausinn stækkaði — hopp í síma).
+setTimeout(function () {
+  try {
+    var k = function () { try { if (window.Companies && Companies._saekjaSkyrslulinur) Companies._saekjaSkyrslulinur(); } catch (_) {} };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(k, { timeout: 3000 }); else k();
+  } catch (_) {}
+}, 9000);

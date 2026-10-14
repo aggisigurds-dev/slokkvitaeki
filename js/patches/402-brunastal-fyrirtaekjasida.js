@@ -595,7 +595,17 @@
       p('.co-bupp ._serupp ._bupp-merki,.co-bupp ._fasteign ._bupp-merki', 'flex:0 0 112px!important;width:112px!important'),
       // app-hamurinn blés textareitina (Tengiliður, Aðkoma nánar, Kóði) upp í 52 px / 16 px
       p('.co-bupp input.co-bupp-reitur', 'height:36px!important;min-height:36px!important;font-size:13.5px!important;padding:0 8px!important'),
-      p('.co-bupp ._bupp-innri,.co-bupp ._bupp-teikn-inn', 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-width:0!important;width:auto!important')
+      p('.co-bupp ._bupp-innri,.co-bupp ._bupp-teikn-inn', 'display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;min-width:0!important;width:auto!important'),
+      // 14.10.2026 (Agnar: „3" — hopp við fyrstu opnun í síma): Teikningar, Séruppdrættir, Hús og Tillaga komu sem einnar
+      // línu „Sæki…" en svarið brotnaði í 2–3 línur (mælt 153 → 282 px á 226) og ýtti öllu niður. Í síma er hver þeirra nú
+      // EIN lína sem rennur til hliðar með fingri; undirlínur Séruppdrátta og Húss standa hlið við hlið í sömu línu.
+      // Staðgengill og svar eru jafnhá. Ekkert falið — allt næst með því að strjúka. Tölva óbreytt.
+      p('.co-bupp ._bupp-teikn-inn,.co-bupp ._serupp-inn,.co-bupp ._bupp-till-lina ._bupp-innri', 'flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;overscroll-behavior-x:contain'),
+      p('.co-bupp ._bupp-teikn-inn > *,.co-bupp ._serupp-inn > *,.co-bupp ._bupp-till-lina ._bupp-innri > *', 'flex:none!important;white-space:nowrap!important'),
+      p('.co-bupp ._serupp,.co-bupp ._fasteign', 'display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;overscroll-behavior-x:contain;gap:0!important'),
+      p('.co-bupp ._serupp > ._bupp-lina,.co-bupp ._fasteign > ._bupp-lina', 'flex:none!important;grid-template-columns:112px max-content!important'),
+      p('.co-bupp ._bupp-teikn-lina,.co-bupp ._serupp > ._bupp-lina,.co-bupp ._fasteign > ._bupp-lina,.co-bupp ._bupp-till-lina', 'height:42px!important;min-height:42px!important;max-height:42px!important;box-sizing:border-box!important'),
+      p('.co-bupp ._bupp-teikn-inn button,.co-bupp ._serupp-inn button,.co-bupp ._bupp-till-lina button', 'height:28px!important;min-height:0!important;line-height:28px!important;padding-top:0!important;padding-bottom:0!important')
     ].join('') + '}',
     p('.co-mynd .co-mynd-vefja img', 'object-fit:cover!important'),
     /* „Yfirferðin á ekki að vera þarna megin": Yfirfarið-flísin fylgir nafninu/raðnúmerinu, aðgerðirnar sitja hægra megin */
