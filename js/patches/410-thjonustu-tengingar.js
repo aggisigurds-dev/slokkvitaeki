@@ -448,6 +448,12 @@
       '#' + AUÐK + '-nyr-baeta{height:30px;padding:0 12px;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-nyr-baeta[disabled]{opacity:.38;pointer-events:none}',
       '.' + AUÐK + '-nyr-ath{flex:1 1 100%;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483;line-height:1.5}',
+      // Verð-dálkurinn í slökkvitækja-glugganum: verð m. vsk feitt, undir því þjónusta/vara · án vsk, svo ✎ Vara
+      '.' + AUÐK + '-verdd{text-align:right;white-space:nowrap}',
+      '.' + AUÐK + '-verdd b{display:block;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822}',
+      '.' + AUÐK + '-verdd small{display:block;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;color:#6b7483;margin:1px 0 4px}',
+      '.' + AUÐK + '-vara-takki{height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:11px;font-weight:700;cursor:pointer}',
+      '.' + AUÐK + '-vara-takki:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.14)}',
       '#' + AUÐK + '-efni{padding:18px 22px 22px;max-height:calc(100vh - 150px);overflow:auto;background:#f4f6f9}',
       '.' + AUÐK + '-h3{margin:20px 0 8px;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;font-weight:700;color:#3a4250;',
       '  text-transform:uppercase;letter-spacing:.14em}',
@@ -596,6 +602,7 @@
   function stTala(s) { var m = String(s || '').match(/\d+([.,]\d+)?/); return m ? parseFloat(m[0].replace(',', '.')) : NaN; }
   function bera(a, b, dalkur) {
     if (dalkur === 'taeki') return a.fjoldi - b.fjoldi;
+    if (dalkur === 'verd') return (a.verd || 0) - (b.verd || 0);
     if (dalkur === 'staerd') {
       var x = stTala(a.staerd), y = stTala(b.staerd);
       if (!isNaN(x) && !isNaN(y) && x !== y) return x - y;
@@ -656,7 +663,9 @@
           t: t, kind: kind, lyk: lyk, tg: tg, valinn: valinn, vantar: vantar,
           fl: fl, txt: txt, titl: titl,
           tegund: t.tegund, staerd: t.staerd, fjoldi: t.fjoldi, thjonusta: kind[1],
-          vara: v ? v.nafn : '', stada: txt
+          vara: v ? v.nafn : '', stada: txt,
+          // 14.10.2026 (Agnar): verðið sýnilegt í eigin dálki + hvort tengda línan er þjónusta eða vara
+          verd: v ? (Number(v.verd_an_vsk) || 0) : 0, varaId: v ? v.id : '', varaFl: v ? (v.flokkur === 'Þjónusta' ? 'þjónusta' : 'vara') : ''
         });
       });
     });
@@ -675,7 +684,7 @@
     }
     h += '<table class="' + AUÐK + '-tafla"><thead><tr>' +
       haus('tegund', 'Tegund') + haus('staerd', 'Stærð') + haus('taeki', 'Tæki', 'text-align:right') +
-      haus('thjonusta', 'Þjónusta') + haus('vara', 'Tengd vara') + haus('stada', 'Staða') + '</tr></thead><tbody>';
+      haus('thjonusta', 'Þjónusta') + haus('vara', 'Tengd vara') + haus('verd', 'Verð', 'text-align:right') + haus('stada', 'Staða') + '</tr></thead><tbody>';
 
     linur.forEach(function (L) {
       var merki = '<span class="' + AUÐK + '-merki ' + AUÐK + '-m-' + L.fl + '" title="' + esc(L.titl) + '">' + L.txt + '</span>';
@@ -697,6 +706,12 @@
         '<td style="text-align:right;color:#5b6573;white-space:nowrap">' + (L.fjoldi || '<span style="color:#cbd5e1">0</span>') + eyda + '</td>' +
         '<td>' + L.thjonusta + '</td>' +
         '<td>' + valHtml(L.valinn, 'slokkvitaeki|' + L.lyk, L.vantar) + '</td>' +
+        // Verð tengdu línunnar + hvort hún er þjónusta eða vara + „✎ Vara" sem fer á vöruna til að breyta verðinu
+        // (Agnar 14.10: „bæta þar við takka sem sendir mann á þá vöru til að breyta verði"). Verðið sjálft býr í vorur.
+        '<td class="' + AUÐK + '-verdd">' + (L.varaId
+          ? '<b>' + esc(krVsk(L.verd, (vara(L.varaId) || {}).vsk_prosenta)) + '</b><small>' + L.varaFl + ' · ' + kr(L.verd) + ' án vsk</small>' +
+            '<button type="button" class="' + AUÐK + '-vara-takki" data-vara-opna="' + esc(L.varaId) + '" title="Opna „' + esc(L.vara) + '“ í Vörur og þjónusta — þar breytirðu verðinu">✎ Vara</button>'
+          : '<span style="color:#cbd5e1">—</span>') + '</td>' +
         '<td style="white-space:nowrap">' + merki + stadfesta + '</td></tr>';
     });
     h += '</tbody></table>';
@@ -997,7 +1012,15 @@
       if (e.target.closest && e.target.closest('#' + AUÐK + '-nyr')) { e.preventDefault(); baetaVidLid(bak); return; }   // Enter í nýja liðnum = Bæta við
       if (e.target.classList.contains(AUÐK + '-verd')) { e.preventDefault(); e.target.blur(); }
     });
-    bak.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) baetaVidLid(bak); });
+    bak.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) { baetaVidLid(bak); return; }
+      var v = e.target && e.target.closest && e.target.closest('[data-vara-opna]');
+      if (v) {   // ✎ Vara: loka glugganum og opna vöruna í ritlinum á Vörur og þjónusta (vorur.js VorurOgThjonusta.opna)
+        var id = v.getAttribute('data-vara-opna'); loka();
+        if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id);
+        else segja('Vöruritillinn er ekki hlaðinn', true);
+      }
+    });
     try {
       await hlada(true);
       teikna();
