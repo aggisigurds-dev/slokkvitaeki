@@ -426,9 +426,11 @@
     st.textContent = [
       '#' + AUÐK + '-bak{position:fixed;inset:0;z-index:12000;background:rgba(8,10,14,.66);',
       '  display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow:auto;font-family:\"IBM Plex Sans\",system-ui,-apple-system,sans-serif}',
+      // overflow:clip (ekki hidden) svo hausinn geti staðið fastur efst meðan bakgrunnurinn skrunar — 14.10.2026, sími:
+      // langi listinn ýtti ✕ upp undir app-hausinn og ekki var hægt að loka glugganum.
       '#' + AUÐK + '-gluggi{width:min(1120px,100%);background:#fff;border:1px solid #000;border-radius:12px;',
-      '  box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);overflow:hidden;font:inherit}',
-      '#' + AUÐK + '-haus{position:relative;display:flex;align-items:center;gap:14px;padding:12px 26px;',
+      '  box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);overflow:hidden;overflow:clip;font:inherit}',
+      '#' + AUÐK + '-haus{position:sticky;top:-28px;z-index:3;display:flex;align-items:center;gap:14px;padding:12px 26px;',
       '  background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
       '#' + AUÐK + '-haus::before,#' + AUÐK + '-haus::after{content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none}',
       '#' + AUÐK + '-haus::before{left:9px}#' + AUÐK + '-haus::after{right:9px}',
@@ -436,7 +438,7 @@
         + 'color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)}',
       '#' + AUÐK + '-haus p{margin:3px 0 0;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#d5dbe6}',
       '#' + AUÐK + '-loka{margin-left:auto;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#eef1f4;border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);',
-      '  width:32px;height:32px;border-radius:4px;font-size:15px;cursor:pointer;line-height:1}',
+      '  flex:none;width:32px;height:32px;border-radius:4px;font-size:15px;cursor:pointer;line-height:1}',
       '#' + AUÐK + '-loka:hover{filter:brightness(1.25)}',
       // ✎ Breyta verðlista — silfurtakki í horninu við hlið ✕ (sami málmur og 442 .ssp-btn)
       '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
@@ -804,7 +806,7 @@
         '<td style="text-align:right">' + (BK && BK.savePriceItems
           ? '<input class="' + AUÐK + '-verd" type="text" inputmode="decimal" data-vi="' + i + '" data-nafn="' + esc(it.name) + '" value="' + esc(verdInn(it.price)) + '" aria-label="Verð án vsk: ' + esc(it.name) + '"> <span class="' + AUÐK + '-kr">kr</span>'
           : kr(it.price)) + '</td>' +
-        '<td style="color:#5b6573">' + (it.link ? esc(it.link) : '<em style="color:#94a3b8">— ekki talið —</em>') + '</td></tr>';
+        '<td style="color:#5b6573;overflow-wrap:anywhere">' + (it.link ? esc(it.link) : '<em style="color:#94a3b8">— ekki talið —</em>') + '</td></tr>';
     });
     h += '</tbody></table>';
     // nýr liður neðst (Agnar 14.10: „og bætt við línu neðst") — heiti · verð · þjónusta/vara; tengingin er valin í ritlinum
@@ -1151,6 +1153,8 @@
         '<div id="' + AUÐK + '-efni"><div style="padding:40px;text-align:center;color:#94a3b8">Sæki…</div></div>' +
       '</div>';
     document.body.appendChild(bak);
+    // Sími/öpp: 333 gefur glugganum eigin stærð og ramma milli app-hauss og botnstiku — strax, ekki eftir 700 ms vaktina
+    if (window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta();
     bak.addEventListener('click', function (e) { if (e.target === bak) loka(); });
     document.getElementById(AUÐK + '-loka').addEventListener('click', loka);
     var breyta = document.getElementById(AUÐK + '-breyta');
@@ -1214,6 +1218,7 @@
     var b = document.getElementById(AUÐK + '-bak');
     if (b) b.remove();
     document.removeEventListener('keydown', escLoka);
+    if (b && window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta();
   }
 
   // ── opinbert API — `vorur.js` á takkana, þessi pappi á gluggana ──────────

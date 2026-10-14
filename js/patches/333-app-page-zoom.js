@@ -52,7 +52,7 @@
   // (króm > 1,2). Valið með yfirferð í S26-hermun (42/60/80/100 %): miðgildi leturs ≈ 10–11 dp án útflæðis.
   // Kröfuyfirlit („nokkuð fínt"), Ársskoðun (eigin Sími-hamur) og Brunahólf-iframe-síður halda gömlu stærðinni.
   const BYRJUN = {
-    company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.75, 'm:_bkc-overlay': 0.75,
+    company: 0.7, 'm:modal-floorplan': 0.7, 'm:_bks-overlay': 0.75, 'm:_bkc-overlay': 0.75, 'm:p410-bak': 0.8,
     // 05.10.2026 (yfirferð appa): miðgildi leturs ~7 dp á gömlu stærðinni — of smátt
     brunaskra: 0.8, slokkvikerfi: 0.8, rekstrarfelog: 0.8,
     // 06.10.2026 (öpp-prófun): Pósthólfið í Verkefni-appinu var án stærðar — letur ~5 dp, 13 takkar undir 30 px.
@@ -69,7 +69,7 @@
   // og titillinn flæða út. Vistuð 100 % (05.10) gerði síðuna ónothæfa í öllum öppum. Þessar síður halda alltaf
   // upprunalegri stærð (virkt zoom 1) — sleðinn og vistun snerta þær ekki.
   const LAEST = { arsskodun: 'Ársskoðun á eigin símaham (980 px) — stærðin er læst' };
-  const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar', 'm:_bks-overlay': 'Skoðunarskýrsla · brunakerfi', 'm:_bkc-overlay': 'Brunakerfi · vinnuhamur' };
+  const NOFN = { company: 'Fyrirtækjasíða', 'm:modal-floorplan': 'Teikningar', 'm:_bks-overlay': 'Skoðunarskýrsla · brunakerfi', 'm:_bkc-overlay': 'Brunakerfi · vinnuhamur', 'm:p410-bak': 'Verðlistar · Vörur og þjónusta' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const r2 = n => Math.round(n * 100) / 100;
   const klemma = s => { s = +s; if (!isFinite(s)) s = 1; return r2(Math.min(SMAX, Math.max(SMIN, s))); };
@@ -107,6 +107,10 @@
   // aðeins en það virkar ekki zoom stillingin"): skoðunarskýrsla brunakerfis (273) og brunakerfis-yfirlagið (274) þegar
   // það er ekki hýst inni í prófílnum (386 setur ._sks-inni). Stillingin breytti áður síðunni UNDIR yfirlaginu.
   const YFIRLOG = ['_bks-overlay', '_bkc-overlay'];
+  // 14.10.2026 (Agnar, The Box › Vörur: „Brunakerfi verð of lítið, virkar ekki að stækka" · „Kemst ekki úr því heldur"):
+  // verðlistagluggi 410 er settur í <body> aðeins meðan hann er opinn (engin inline display) — án zooms var letrið
+  // örsmátt og app-hausinn lá yfir ✕. Hér fær hann eigin stærð og ramma milli króms eins og hin yfirlögin.
+  const YFIRLOG_OPIN = ['p410-bak'];
   function zVisir(el) { const z = parseInt(getComputedStyle(el).zIndex, 10); return isFinite(z) ? z : 0; }
   function gluggi() {
     try {
@@ -125,6 +129,11 @@
         const el = document.getElementById(id);
         if (!el || el.style.display !== 'block' || el.classList.contains('_sks-inni') || !synilegt(el)) return;
         if (getComputedStyle(el).position !== 'fixed') return;
+        if (!best || zVisir(el) > zVisir(best)) best = el;
+      });
+      YFIRLOG_OPIN.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || !synilegt(el) || getComputedStyle(el).position !== 'fixed') return;
         if (!best || zVisir(el) > zVisir(best)) best = el;
       });
       return best;
@@ -723,6 +732,8 @@
     stillingar: () => stillingar()[flokkur()],
     opna, loka, vixla,
     prufa: s => { prufaS = (s == null) ? null : klemma(s); apply(); return prufaS; },
+    // Yfirlag sem opnast/lokast utan Modal (410) kallar hér svo stærðin gildi strax, ekki eftir 700 ms vaktina
+    endurmeta: () => { try { apply(); } catch (_) {} },
     MIN: SMIN,
     version: '333-sidustaerd'
   };
