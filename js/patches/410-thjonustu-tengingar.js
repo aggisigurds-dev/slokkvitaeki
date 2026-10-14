@@ -389,6 +389,10 @@
       '#' + AUÐK + '-loka{margin-left:auto;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#eef1f4;border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14);',
       '  width:32px;height:32px;border-radius:4px;font-size:15px;cursor:pointer;line-height:1}',
       '#' + AUÐK + '-loka:hover{filter:brightness(1.25)}',
+      // ✎ Breyta verðlista — silfurtakki í horninu við hlið ✕ (sami málmur og 442 .ssp-btn)
+      '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-breyta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
+      '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka{margin-left:8px}',
       '#' + AUÐK + '-efni{padding:18px 22px 22px;max-height:calc(100vh - 150px);overflow:auto;background:#f4f6f9}',
       '.' + AUÐK + '-h3{margin:20px 0 8px;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;font-weight:700;color:#3a4250;',
       '  text-transform:uppercase;letter-spacing:.14em}',
@@ -899,6 +903,10 @@
         '<div id="' + AUÐK + '-haus">' +
           '<span style="font-size:24px;line-height:1">' + f.tákn + '</span>' +
           '<div><h2>' + esc(f.titill) + '</h2><p>' + esc(f.undir) + '</p></div>' +
+          // 14.10.2026 (Agnar: „Það er eitthvað þar. En get ekki breytt neinu þar" · „setja hann bara efst í hornið á
+          // núverandi lista"): brunakerfis-glugginn SÝNIR verðlistann; ritillinn er í 273 (sami og í Brunakerfis skoðun).
+          // Ekkert spjald má vera blindgata — takkinn í horninu fer beint í ritilinn.
+          (_flokkur === 'brunakerfi' ? '<button id="' + AUÐK + '-breyta" type="button" title="Breyta verðlistanum — heiti, verð og tengingar, vistast fyrir allar vélar">✎ Breyta verðlista</button>' : '') +
           '<button id="' + AUÐK + '-loka" type="button" aria-label="Loka">✕</button>' +
         '</div>' +
         '<div id="' + AUÐK + '-stada"></div>' +
@@ -907,6 +915,12 @@
     document.body.appendChild(bak);
     bak.addEventListener('click', function (e) { if (e.target === bak) loka(); });
     document.getElementById(AUÐK + '-loka').addEventListener('click', loka);
+    var breyta = document.getElementById(AUÐK + '-breyta');
+    if (breyta) breyta.addEventListener('click', function () {
+      loka();
+      if (window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.openPriceEditor) BrunakerfiSkyrsla.openPriceEditor(null);
+      else if (window.Toast && Toast.show) Toast.show('Verðlistaritillinn (273) er ekki hlaðinn');
+    });
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
     try {

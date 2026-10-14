@@ -343,6 +343,17 @@ body.vv-ritill-a .vv-falid{display:revert!important;opacity:.35;outline:2px dash
 .vv-kort-b .vv-btn{position:relative;z-index:1}
 body.vv-ritill-a .vv-kort h3 a::after{display:none}
 .vv-fotur .vv-logo{padding:8px 0}
+/* Kassahamur (?kassi=1): Sala sýnir vörusíðuna í glugga — haus, fótur, brauðmolar, afhending, lagerlína (kassinn sýnir
+   birgðir sjálfur), tilboð og „Oft keypt með" búðarinnar eru falin. */
+.vv-kassi .vv-haus,.vv-kassi .vv-flipar,.vv-kassi [data-b="fotur"],.vv-kassi .vv-mola,.vv-kassi .vv-afh,.vv-kassi .vv-lager,
+.vv-kassi .vv-tilk,.vv-kassi .vv-tilbod,.vv-kassi [data-b="vara.oft"]{display:none!important}
+.vv-kassi .vv-adal{padding-top:18px!important;padding-bottom:36px}
+/* Myndin var 600 px: á 768 px fartölvuskjá lenti Setja í körfu undir brún gluggans (vh = hæð gluggans í kassanum) */
+.vv-kassi .vv-galleri .vv-m{max-height:min(58vh,480px)}
+.vv-kassi .vv-vara-h{gap:14px}
+.vv-kassi .vv-vara-h h1{font-size:36px}
+.vv-kassi .vv-stort-verd{padding-top:16px}
+
 /* ── Sími (14.10.2026) ── Dálkar, rammahæðir og padding eru víða sett beint á hnútinn (ritillinn og sniðmátin),
    og það ræður yfir venjulegum @media-reglum. Hér er því !important þar sem inline-gildið verður að víkja á síma,
    og max-height (ekki height) á myndarömmum svo minni hæð úr ritlinum gildi áfram. */
