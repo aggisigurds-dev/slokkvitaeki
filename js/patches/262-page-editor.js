@@ -53,7 +53,8 @@
         if (v) return v;
       }
     } catch (_) {}
-    try { return document.querySelector('.view.active'); } catch (_) { return null; }
+    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
+    try { return window.DomKynslod ? DomKynslod.qs('.view.active') : document.querySelector('.view.active'); } catch (_) { return null; }
   }
 
   const KEY = 'page_editor_v1_json';
@@ -2297,7 +2298,8 @@
     document.addEventListener('slokk-viewmode', ev => {
       try { syncPeViewModeSeg(ev && ev.detail); } catch (_) {}
     });
-      setInterval(applyZones, 1500);
+      // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod). Stillingabreyting kallar beint.
+      setInterval(() => { if (window.DomKynslod && !DomKynslod.breytt('262:svaedi')) return; applyZones(); }, 1500);
       // 🎨 stays in the phone banner; click asks the parent to open 262
       // beside the device instead of filling the iframe.
       ensureBtn();
@@ -2340,7 +2342,8 @@
     applyZones();
     window.addEventListener('hashchange', () => setTimeout(applyZones, 140));
     document.addEventListener('slokk-viewmode', () => setTimeout(applyZones, 60));
-    setInterval(applyZones, 1500);
+    // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod). Stillingabreyting kallar beint.
+    setInterval(() => { if (window.DomKynslod && !DomKynslod.breytt('262:svaedi')) return; applyZones(); }, 1500);
     window.addEventListener('scroll', () => { if (picking) hideHighlight(); }, true);
     // link-takkar á síðum: teikna við ræsingu og elta síðu-skipti
     renderPageLinks(true);

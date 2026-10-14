@@ -872,7 +872,8 @@
 
   async function decorate() {
     // fid af openEdit-hnappnum á opnum prófíl
-    const btn = document.querySelector('button[onclick^="Companies.openEdit"]');
+    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
+    const btn = window.DomKynslod ? DomKynslod.qs('button[onclick^="Companies.openEdit"]') : document.querySelector('button[onclick^="Companies.openEdit"]');
     if (!btn) return;
     const m = btn.getAttribute("onclick").match(/openEdit\((\d+)\)/);
     if (!m) return;

@@ -181,13 +181,16 @@
     const body = document.body; if (!body) return;
     const app = body.classList.contains('appmode');
     const phone = document.documentElement.classList.contains('slokk-phone-nav');
-    const views = document.querySelectorAll('.view');
-    const active = document.querySelector('.view.active');
+    // 13.10.2026 (afköst í kyrrstöðu): leitað þegar fyrst þarf — á tölvu notar hvorug greinin hér fyrir neðan borðin, en
+    // leitirnar tvær gengu í gegnum allt skjalið (~92 þús. hnúta) á 2 s fresti (40–52 ms á 20 s, CPU-prófíll).
+    let _views = null, _active;
+    const views = () => _views || (_views = document.querySelectorAll('.view'));
+    const active = () => (_active !== undefined ? _active : (_active = document.querySelector('.view.active')));
     // HT-3.10 (03.10.2026, afköst): Z var mælt hér í HVERRI umferð — getComputedStyle þvingar fulla stílumferð — líka á
     // tölvu, þar sem hvorug greinin hér fyrir neðan notar það (mælt: 181 ms við hvert „til baka", 1.088 ms við
     // endurhleðslu á Fyrirtæki í þjónustu). Nú mælt þegar fyrst þarf á því að halda: í appham og símaham.
     let _z = 0;
-    const Z = () => (_z || (_z = active ? elZoom(active) : 1));   // .view.active er sjálft zoomað (333)
+    const Z = () => (_z || (_z = active() ? elZoom(active()) : 1));   // .view.active er sjálft zoomað (333)
 
     if (app) {
       const hr = rect(document.getElementById('_app-hdr'));
@@ -196,7 +199,7 @@
       const bot = nr ? Math.round(nr.height + 8) : 24;
       window.__appHdrPad = Math.round(top / Z()) + 'px';        // 314 pinPad les þetta
       const padBot = Math.round(bot / Z()) + 'px';
-      views.forEach(v => { stamp(v, 'padding-top', window.__appHdrPad); stamp(v, 'padding-bottom', padBot); });
+      views().forEach(v => { stamp(v, 'padding-top', window.__appHdrPad); stamp(v, 'padding-bottom', padBot); });
       const f = document.getElementById('_app-frame');
       if (f) stamp(f, 'top', Math.round((hr ? hr.bottom : 48) / elZoom(f)) + 'px');   // bottom: 261 syncFrameBottom
       // zoom-stikan situr ofan við botnstikuna (í eigin zoom-hnitum: raunhæð ÷ C)
@@ -211,7 +214,7 @@
       const br = rect(document.getElementById('bstal-banner'));
       bannerPad = br ? Math.round((br.bottom + 12) / Z()) + 'px' : null;
       const pad = window.__peBannerPad;                 // getter: mæld eða hrá (323)
-      if (pad) views.forEach(v => stamp(v, 'padding-top', pad));
+      if (pad) views().forEach(v => stamp(v, 'padding-top', pad));
       // Skúffan: mobilenav.js stimplar height:100vh !important — vh deilist ekki
       // með zoom, svo neðstu valmyndar-liðirnir yrðu óaðgengilegir. Deilt hér.
       const tb = document.querySelector('.topbar');

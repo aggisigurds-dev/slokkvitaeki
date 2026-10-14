@@ -341,6 +341,8 @@
       const keyra = () => {
         scheduled = false; sidast = Date.now();
         if (document.hidden) return;
+        // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+        if (window.DomKynslod && !DomKynslod.breytt('317:stimplar')) return;
         try { sjaanlegt().forEach(scan); } catch (e) { console.warn('[elon-trace]', e); }
       };
       if (window.requestIdleCallback) requestIdleCallback(keyra, { timeout: 1500 }); else keyra();

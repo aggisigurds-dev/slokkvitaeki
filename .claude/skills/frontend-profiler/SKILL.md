@@ -23,6 +23,18 @@ ranga dependency-fylkingu, heldur:
 „falið" án þess að snerta útlit. Borðin eru bein börn `<body>`: í „sýnilegar rætur"-leit dugar `classList.contains('view')`
 í stað `getClientRects()`. Skrunstaða: merktu stök sem fá `scroll`-atburð og lestu aðeins þau (368 `vaktaSkrun`).
 
+**Skönnun á tímamæli — `DomKynslod` (252, 13.10.2026).** Í kyrrstöðu breytist DOM-ið nær aldrei (mælt: 1 breyting á 10 s,
+klukkan), en tugir `setInterval`-skanna gengu í gegnum ~92 þús. hnúta hver: 2,1 s örgjörvi á 20 s. Ein óinngjöfuð vakt telur
+breytingar (hnútar, eigindir, texti):
+- `if (window.DomKynslod && !DomKynslod.breytt('skrá:verk')) return;` fremst í tímamælinum — umferð sleppt ef ekkert breyttist.
+  Velti niðurstaðan líka á gögnum í JS, settu útgáfu þeirra í lykilinn (`'103:' + DB.cache.units.length`) eða athugaðu hliðið
+  EFTIR gagnaskilyrðin (222).
+- `DomKynslod.qs(sel)` í stað `document.querySelector(sel)` fyrir stak sem er oftast ekki til — leit sem finnur ekkert gengur í
+  gegnum allt skjalið.
+- Aldrei fyrir `.value`, `:focus`/`:checked`, `location`, gluggastærð eða skuggarætur (vaktin sér ekki þangað).
+- `requestAnimationFrame`-lykkja sem keyrir alla ævi síðunnar á að sofa þegar hún hefur ekkert að gera (438: vaknar við opnun
+  gluggans — vakt á beinum börnum body, því `FloorPlan.open` býr til NÝJAN glugga í hvert sinn).
+
 ## 1. Mæla FYRST — aldrei giska
 
 Í Browser-pane (eða DevTools) á lifandi síðunni. **0–5 breytingar/s í kyrrstöðu er eðlilegt;

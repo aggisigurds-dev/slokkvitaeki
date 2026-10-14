@@ -100,7 +100,8 @@ krefst('js/patches/174-fyrirtaeki-stada.js', /const verk = \[\];[\s\S]{0,900}ver
 
 // ── 4 · útlitslestur ekki í hverjum ramma ──────────────────────────────────────────────────────────────────────────
 krefst('js/patches/409-samraeming-sidna.js', /if \(cur && nu - sidastMat < 300\) cand = cur;/, '409 endurmetur merktan titil aftur í HVERJUM ramma (getBoundingClientRect → þvinguð stílumferð)');
-krefst('js/patches/353-simi-krom-zoom.js', /const Z = \(\) => \(_z \|\| \(_z = active \? elZoom\(active\) : 1\)\);/, '353 mælir zoom aftur í hverri umferð, líka á tölvu þar sem það er ekki notað');
+// 13.10.2026: `active` varð latt fall (`active()`, borðin sótt þegar fyrst þarf) — zoom er áfram reiknað latt, sama trygging.
+krefst('js/patches/353-simi-krom-zoom.js', /const Z = \(\) => \(_z \|\| \(_z = active(\(\))? \? elZoom\(active(\(\))?\) : 1\)\);/, '353 mælir zoom aftur í hverri umferð, líka á tölvu þar sem það er ekki notað');
 krefst('js/patches/341-ars-skjar-scroll-left.js', /if \(lykill === _railLykill && nu - _railT < 2000\) return _railW;/, '341 mælir breidd hliðarstikunnar aftur eftir hverja DOM-breytingu');
 
 // ── 5 · púlsar sem skrifa: aðeins þegar gildið breytist ────────────────────────────────────────────────────────────

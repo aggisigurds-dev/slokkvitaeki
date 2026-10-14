@@ -419,7 +419,37 @@
     }
   }
 
-  function lykkja() { try { tikk(); hledsla(); } catch (e) { console.warn('[438]', e); } requestAnimationFrame(lykkja); }
-  requestAnimationFrame(lykkja);
+  // 13.10.2026 (afköst í kyrrstöðu): lykkjan keyrði í HVERJUM ramma alla ævi síðunnar, líka með teikningagluggann lokaðan
+  // (64 ms á 20 s í kyrrstöðu, CPU-prófíll; og beðinn rammi heldur myndlotu vafrans vakandi). Nú sefur hún meðan glugginn
+  // er lokaður og vaknar í sama verki og hann opnast (óinngjöfuð vakt á class-eigind gluggans) — 1 s púls til vara, og hann
+  // keyrir tikk() áfram svo forteikningunni sé sleppt eftir 60 s eins og áður.
+  // FloorPlan.open (scanner.js) fjarlægir gluggann og býr til NÝJAN í hvert sinn — því er líka vakt á beinum börnum body.
+  let _vakir = false, _vaktM = null, _svefnT = 0, _bodyVakt = false;
+  const VaktMO = window.__NativeMutationObserver || MutationObserver;
+  const opid = () => { const m = document.getElementById('modal-floorplan'); return !!(m && m.classList.contains('open')); };
+  const athuga = () => { if (_vakir) return; if (opid()) vekja(); else fylgjaGlugga(); };
+  function fylgjaGlugga() {
+    const m = document.getElementById('modal-floorplan');
+    if (m && m !== _vaktM) { _vaktM = m; new VaktMO(athuga).observe(m, { attributes: true, attributeFilter: ['class'] }); }
+  }
+  function vekja() { if (_vakir) return; _vakir = true; clearTimeout(_svefnT); requestAnimationFrame(lykkja); }
+  function sofa() {
+    if (!_bodyVakt && document.body) { _bodyVakt = true; new VaktMO(athuga).observe(document.body, { childList: true }); }
+    fylgjaGlugga();
+    clearTimeout(_svefnT);
+    _svefnT = setTimeout(() => {
+      if (_vakir) return;
+      if (opid()) { vekja(); return; }
+      if (T.verk) { try { tikk(); } catch (_) {} }
+      sofa();
+    }, 1000);
+  }
+  function lykkja() {
+    try { tikk(); hledsla(); } catch (e) { console.warn('[438]', e); }
+    if (opid()) { requestAnimationFrame(lykkja); return; }
+    _vakir = false;
+    sofa();
+  }
+  vekja();
   window.TeiknSkarpt = { tikk, stada: () => S };
 })();

@@ -139,7 +139,8 @@
       }
     }
     const h = (location.hash || '').replace(/^#\/?/, '').split(/[\/?&=]/)[0];
-    const v = document.querySelector('.view.active');
+    // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
+    const v = window.DomKynslod ? DomKynslod.qs('.view.active') : document.querySelector('.view.active');
     const vid = v ? v.id.replace(/^view-/, '') : '';
     if (h) {
       // 05.10.2026 (yfirferð appa): sumir app-flipar (Rekstrarfélög) skipta um sýn án þess að breyta slóðinni — þá

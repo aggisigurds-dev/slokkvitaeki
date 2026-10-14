@@ -444,7 +444,8 @@
     }
   }
 
-  setInterval(injectButton, 1000);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(function () { if (window.DomKynslod && !DomKynslod.breytt('112:hnappur')) return; injectButton(); }, 1000);
 
   window.FormBuilder = { open: openBuilder };
 

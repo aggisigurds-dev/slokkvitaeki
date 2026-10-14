@@ -1336,7 +1336,8 @@
     document.querySelectorAll('.vnav-btn').forEach(b => { if (b === btn) return; b.addEventListener('click', () => { const vv = viewEl(); if (vv) { vv.style.display = 'none'; vv.classList.remove('active'); } btn.classList.remove('active'); }); });
     console.log('[þjónustuverkstæði] tab injected');
   }
-  setInterval(injectTab, 1200);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(() => { if (window.DomKynslod && !DomKynslod.breytt('190:flipi')) return; injectTab(); }, 1200);
   setTimeout(injectTab, 600);
 
   // ── Deep-link lagfæring (2026-07-30, Verkefnalisti 56b9c9c6) ──────────────

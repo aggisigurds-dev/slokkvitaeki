@@ -646,7 +646,8 @@
       });
     });
   }
-  setInterval(setjaHnapp, 1200);
+  // 13.10.2026 (afköst í kyrrstöðu): umferð sleppt ef DOM-ið hefur ekkert breyst síðan síðast (252 DomKynslod).
+  setInterval(() => { if (window.DomKynslod && !DomKynslod.breytt('302:hnappur')) return; setjaHnapp(); }, 1200);
   setTimeout(setjaHnapp, 700);
 
   window.MinarSidur = {

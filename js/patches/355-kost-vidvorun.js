@@ -145,7 +145,8 @@
   }
   wrapBk(); [500, 1500, 4000].forEach(ms => setTimeout(wrapBk, ms));
   // formið endurteiknar sig (renderWork) — borðinn settur inn aftur meðan það er opið
-  setInterval(() => { try { const wrap = document.querySelector('._bks-wrap'); if (wrap && bkData && !wrap.querySelector('._bks-kost')) bkRender(); } catch (_) {} }, 1500);
+  // 13.10.2026 (afköst í kyrrstöðu): leitin geymd þar til DOM-ið breytist (252 DomKynslod) — leit sem finnur ekkert gengur í gegnum allt skjalið.
+  setInterval(() => { try { const wrap = window.DomKynslod ? DomKynslod.qs('._bks-wrap') : document.querySelector('._bks-wrap'); if (wrap && bkData && !wrap.querySelector('._bks-kost')) bkRender(); } catch (_) {} }, 1500);
 
   window.KostVidvorun = { bidur, saekja, athuga, gleyma, version: '355' };
   console.log('[patch-355] kostnaðarreikningar: borði í Sölu + viðvörun í brunakerfisskýrslu');

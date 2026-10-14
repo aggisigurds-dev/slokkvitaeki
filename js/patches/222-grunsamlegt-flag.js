@@ -107,6 +107,9 @@
     if (!_idx) return;
     var cos = (window.Companies && Companies.list) || [];
     if (!cos.length) return;
+    // 13.10.2026 (afköst í kyrrstöðu): hver röð er merkt (data-grun) í fyrstu umferð eftir að gögnin eru komin, svo
+    // ný umferð finnur aðeins eitthvað ef DOM-ið hefur breyst (252 DomKynslod). Athugað EFTIR gagnaskilyrðin.
+    if (window.DomKynslod && !DomKynslod.breytt('222:grun')) return;
     var byId = {}; cos.forEach(function (c) { byId[String(c.id)] = c; });
     document.querySelectorAll('tr._ars-row:not([data-grun]), ._ars-card:not([data-grun])').forEach(function (el) {
       el.setAttribute('data-grun', '1');
