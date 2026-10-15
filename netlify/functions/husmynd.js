@@ -58,13 +58,34 @@ function isn93TilWgs84(x, y) {
   return { lat: lat / d2r, lng: lon / d2r };
 }
 
+// Stefna (gráður) frá myndatökustað að húsinu — myndavélin á að horfa á húsið, ekki niður götuna.
+function stefna(lat1, lng1, lat2, lng2) {
+  const d2r = Math.PI / 180;
+  const y = Math.sin((lng2 - lng1) * d2r) * Math.cos(lat2 * d2r);
+  const x = Math.cos(lat1 * d2r) * Math.sin(lat2 * d2r) - Math.sin(lat1 * d2r) * Math.cos(lat2 * d2r) * Math.cos((lng2 - lng1) * d2r);
+  return (Math.atan2(y, x) / d2r + 360) % 360;
+}
+
+// Fyrsta prófun (Lokastígur 28A, 15.10.2026) skilaði INNANHÚSS-ljóshvolfi frá notanda (© Sigursteinn …) þótt
+// source=outdoor væri sett. Aðeins opinberar Google-myndir (copyright „© Google") eru teknar; finnist engin á
+// punktinum er leitað í hringi (20 og 40 m) — metadata-köllin eru ókeypis — og myndin svo sótt með pano-auðkenni
+// og stefnu að húsinu.
+const SV_HLIDRANIR = [[0, 0], [20, 0], [-20, 0], [0, 20], [0, -20], [40, 0], [-40, 0], [0, 40], [0, -40], [28, 28], [-28, 28], [28, -28], [-28, -28]];
+
 async function streetView(lat, lng, signal, key) {
-  const loc = lat.toFixed(6) + ',' + lng.toFixed(6);
-  const q = 'location=' + loc + '&radius=60&source=outdoor&key=' + encodeURIComponent(key);
-  const meta = await fetch('https://maps.googleapis.com/maps/api/streetview/metadata?' + q, { signal });
-  const md = await meta.json().catch(() => null);
-  if (!md || md.status !== 'OK') return null;
-  const r = await fetch('https://maps.googleapis.com/maps/api/streetview?size=640x400&fov=80&pitch=4&return_error_code=true&' + q, { signal });
+  const k = '&key=' + encodeURIComponent(key);
+  let md = null;
+  for (const [de, dn] of SV_HLIDRANIR) {
+    const la = lat + dn / 111320;
+    const lo = lng + de / (111320 * Math.cos(lat * Math.PI / 180));
+    const meta = await fetch('https://maps.googleapis.com/maps/api/streetview/metadata?location=' + la.toFixed(6) + ',' + lo.toFixed(6) + '&radius=50&source=outdoor' + k, { signal });
+    const m = await meta.json().catch(() => null);
+    if (m && m.status === 'OK' && m.pano_id && /google/i.test(String(m.copyright || '')) && m.location) { md = m; break; }
+  }
+  if (!md) return null;
+  const h = stefna(+md.location.lat, +md.location.lng, lat, lng);
+  const r = await fetch('https://maps.googleapis.com/maps/api/streetview?size=640x400&pano=' + encodeURIComponent(md.pano_id)
+    + '&heading=' + h.toFixed(1) + '&fov=80&pitch=4&return_error_code=true' + k, { signal });
   const tegund = (r.headers.get('content-type') || '').toLowerCase();
   const bytes = new Uint8Array(await r.arrayBuffer());
   if (!r.ok || tegund.indexOf('image/') !== 0 || bytes.length < SV_MIN_BYTES) return null;
