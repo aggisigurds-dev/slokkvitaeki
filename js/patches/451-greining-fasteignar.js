@@ -1982,7 +1982,7 @@
     const i = S.fskSafn.length;
     const lys = x.titill && x.titill !== heiti ? x.titill : '';
     const tpTitill = [(S.g && S.g.adr) || '', heiti + (lys ? ': ' + lys : '')].filter(Boolean).join(' — ') + (d.dags ? ' (' + dags(d.dags) + ')' : '');
-    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
+    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, stor: d.stor || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
     // litla TurboPaint-táknið aðeins á smámyndum „Úr skjalasafni“ (Teikningar-spjaldið); stóri skoðarinn sýnir takkann alls staðar
     const tu = S.fskK === 'teikn' ? tpSlod({ slod: d.infoUrl, tpTitill }) : null;
     const buid = pdf ? FSK_BUID.get(d.infoUrl + '|380') : null;
@@ -2262,7 +2262,7 @@
   }
   async function safnSaekja(landnr) {
     if (!landnr || !sb()) return { landnr: landnr || null, listi: [] };
-    const r = await sb().from(SAFN_TAFLA).select('id,svaedi,slod,titill,undir,mynd,tegund,dags,athugasemd,created_at')
+    const r = await sb().from(SAFN_TAFLA).select('id,svaedi,slod,titill,undir,mynd,stor,tegund,dags,athugasemd,created_at')
       .eq('landnr', landnr).is('fjarlaegt_at', null).order('created_at', { ascending: true });
     if (r.error) throw new Error(r.error.message);
     return { landnr, listi: r.data || [] };
@@ -2314,10 +2314,10 @@
       const ath = f.querySelector('[name="ath"]').value.trim();
       const vb = f.querySelector('[type="submit"]'), villa = f.querySelector('.gr-lsafn-villa');
       vb.disabled = true; vb.textContent = 'Vista…'; villa.hidden = true;
-      const mynd = it.smamynd || null;   // smámynd skjalasafnsins; PDF-blöð teiknast aftur úr frumslóðinni
+      const mynd = it.smamynd || null;   // smámynd skjalasafnsins (flísin); stor = forskoðunarmynd hennar (stóra myndin) — PDF-blöð teiknast aftur úr frumslóðinni
       let r;
       try {
-        r = await sb().from('fasteign_teikningasafn').insert({ landnr: ln, svaedi, slod: it.slod, titill: it.titill || null, undir: it.undir || null, mynd, tegund: it.tegund || null, dags: it.dags || null, athugasemd: ath || null, heimilisfang: g.adr || null, vistad_af: 'Greining fasteignar' }).select('id');
+        r = await sb().from('fasteign_teikningasafn').insert({ landnr: ln, svaedi, slod: it.slod, titill: it.titill || null, undir: it.undir || null, mynd, stor: it.stor || null, tegund: it.tegund || null, dags: it.dags || null, athugasemd: ath || null, heimilisfang: g.adr || null, vistad_af: 'Greining fasteignar' }).select('id');
       } catch (x) { r = { error: { message: (x && x.message) || String(x) } }; }
       if (r.error) {
         vb.disabled = false; vb.textContent = 'Vista';
@@ -2360,7 +2360,7 @@
     safnByrja('safn');
     const rod = [...hopar.keys()].sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'is', { numeric: true })));
     const flis = (r) => '<div class="gr-safn-flis">' +
-      fskFlis({ d: { infoUrl: r.slod, thumb: r.mynd || null, dags: r.dags || '', tegund: r.tegund || '' }, titill: '' }, r.titill || 'Blað', false, { undir: r.undir || '', hopur: 'safn' }) +
+      fskFlis({ d: { infoUrl: r.slod, thumb: r.mynd || null, stor: r.stor || null, dags: r.dags || '', tegund: r.tegund || '' }, titill: '' }, r.titill || 'Blað', false, { undir: r.undir || '', hopur: 'safn' }) +
       (r.athugasemd ? '<span class="gr-safn-ath">' + esc(r.athugasemd) + '</span>' : '') +
       '<button type="button" class="gr-safn-x" data-gr-a="safn-burt" data-id="' + +r.id + '" title="Fjarlægja úr safninu — blaðið sjálft er óbreytt í skjalasafninu">Fjarlægja</button></div>';
     setjaBuk('safn', rod.map((k) => '<div class="ssp-skilti" style="margin-top:0">' + esc(k || 'Óflokkað') + ' — ' + hopar.get(k).length + '</div>' +

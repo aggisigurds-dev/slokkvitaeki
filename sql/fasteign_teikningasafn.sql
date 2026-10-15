@@ -18,6 +18,7 @@ create table if not exists public.fasteign_teikningasafn (
   titill        text,
   undir         text,                                -- undirlína flísarinnar (dags · lýsing)
   mynd          text,                                -- smámynd skjalasafnsins ef til (annars teiknuð úr PDF)
+  stor          text,                                -- forskoðunarmynd skjalasafnsins (stóra myndin) — bætt við með migration fasteign_teikningasafn_stor
   tegund        text,
   dags          text,
   athugasemd    text,
