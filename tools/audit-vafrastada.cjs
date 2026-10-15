@@ -73,7 +73,10 @@ const BANN = [
 // getur ekki verið annars staðar — og hún er staða eins vafra eins og í hverri vefverslun. Það sem fjórar tölvurnar deila
 // (textar, myndir, þema, vöruval, virkjun) fer allt á þjóninn í töflunni `vefverslun` gegnum /api/vefverslun.
 // Hækkað af því lykillinn stenst regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 58, ui: 51 }, slokkvitaeki: { ls: 158, ui: 0 } };
+// 15.10.2026: brunaholf ui 51 -> 52. Nyi lykillinn er state.ui.layout_ts (hub 30f8962): timastimpill a utlitsvali
+// hlidarstikunnar svo nyjasti smellur radi a ollum fimm velunum (regla Agnars 15.10: engar per-taekis stillingar).
+// Byr i hub_state a thjoninum eins og layout sjalft - stenst regluna.
+const GRUNNLINA = { brunaholf: { ls: 58, ui: 52 }, slokkvitaeki: { ls: 158, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

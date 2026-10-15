@@ -669,9 +669,9 @@
     // (AppSettings brunakerfi_customers, sami lykill og 388 les). opts.oll = öll félög með heimilisfang.
     var bk = {}; try { bk = AppSettings.path('brunakerfi_customers') || {}; } catch (_) {}
     var bkIds = Object.keys(bk).filter(function (k) { return bk[k]; }).map(Number).filter(Boolean);
-    var q = s.from('fyrirtaeki').select('id,nafn,heimilisfang,er_i_thjonustu').not('heimilisfang', 'is', null).order('id').range(0, 2999);
-    var r = await q; if (r.error) throw r.error;
-    var rows = (r.data || []).filter(function (c) {
+    // Blaðsíðað (audit-pagination): PostgREST sker hljóðlaust við 1000 raðir — fyrirtaeki eru 1.100.
+    var data = await DB.fetchAll(function (from, to) { return s.from('fyrirtaeki').select('id,nafn,heimilisfang,er_i_thjonustu').not('heimilisfang', 'is', null).order('id').range(from, to); });
+    var rows = (data || []).filter(function (c) {
       if (!c.heimilisfang || !/\d/.test(c.heimilisfang)) return false;
       if (opts.id) return +c.id === +opts.id;
       return opts.oll || c.er_i_thjonustu || bkIds.indexOf(+c.id) >= 0;
