@@ -1063,6 +1063,11 @@
       '.mres::after{content:"";position:absolute;top:34%;bottom:34%;left:5px;width:4px;border-radius:2px;background:var(--edge2)}',
       '.mres:hover::after,.mres.virk::after{background:var(--g5)}',
       '.samt-ef{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}',
+      '.sacts-meira{margin:6px 0 0}',
+      '.sacts-meira>summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;list-style:none;padding:4px 9px;border:1px solid var(--rule2);border-radius:4px;font-size:11.5px;color:var(--gmut);user-select:none}',
+      '.sacts-meira>summary::-webkit-details-marker{display:none}',
+      '.sacts-meira>summary:hover{color:var(--gink);border-color:var(--rule)}',
+      '.sacts-meira[open]>summary{margin-bottom:6px}',
       '.samt .vbr-item{position:relative;padding-right:38px}',
       '.samt-stj{position:absolute;top:7px;right:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:15px;line-height:1;color:var(--gmut);cursor:pointer;z-index:2}',
       '.samt-stj:hover{background:var(--rule2);color:#c9a54a}',
@@ -1578,7 +1583,7 @@
     return '<div class="naesta' + (s.buid ? ' buid' : s.liklega ? ' lik' : '') + '">' + (s.buid ? '✓ ' : '') +
       (s.texti ? '<b>' + esc(s.texti) + '</b>' : '') + (s.naesta && !s.buid ? (s.texti ? ' — ' : '') + esc(s.naesta) : '') + '</div>';
   }
-  function stadaHtml(r) {
+  function stadaHtml(r, opt) {
     const s = sonn(r);
     if (!s || (!s.texti && !s.naesta)) return '';
     /* 368ab — ENGIN ENDURTEKNING. Á samþykktar-máli ber „Þetta gerist"-blokkin fyrir ofan
@@ -1586,13 +1591,24 @@
      * Þá stóð sami texti tvisvar á sama spjaldi — nákvæmlega það sem Agnar bað um að losna
      * við (09.10.2026: „endalausum texta sem ég þarf að lesa yfir aftur og aftur").
      * Hér stendur þá AÐEINS næsta skref, sem blokkin segir ekki. */
+    /* 15.10.2026 — Agnar: „mikið tvítekið og óþarfi þarna".
+     * MÆLT á Atlas-málinu: „Bíður svars" stóð í merkjalínunni OG hér
+     * („Bíður svars síðan 13.10."), og „Svara í sama þræði" stóð bæði sem
+     * „Næsta skref" og á gula aðaltakkanum beint fyrir neðan. Þrjár línur
+     * sögðu sama hlutinn.
+     * Næsta skref er sleppt þegar það ER aðaltakkinn — hann stendur þar
+     * sýnilegur og segir það sjálfur. Samanburðurinn er á stöfum einum
+     * (hástafir og greinarmerki burt) svo orðalagsmunur felli hann ekki. */
+    const stafir = x => String(x || '').toLowerCase().replace(/[^a-záðéíóúýþæö]+/g, '');
+    const adal = stafir(opt && opt.adalAdgerd);
+    const naestaErAdal = !!adal && !!s.naesta && stafir(s.naesta).indexOf(adal) >= 0;
     const stutt = erSamthykki(r) && !!adgerdirUrNotu(r.notes);
-    if (stutt && !s.naesta) return '';
-    return '<div class="aisum stada' + (s.buid ? ' buid' : '') + '"><span class="slabel">' +
+    if (stutt && (!s.naesta || naestaErAdal)) return '';
+    const maelt = r.sonnun_at ? ' title="Staðan breyttist síðast ' + esc(fmtD(r.sonnun_at)) + ' kl. ' + klukka(new Date(r.sonnun_at)) + ' — metin sjálfkrafa"' : '';
+    return '<div class="aisum stada' + (s.buid ? ' buid' : '') + '"' + maelt + '><span class="slabel">' +
       (stutt ? 'Næsta skref' : 'Staða úr gögnum') + '</span>' +
       (stutt ? esc(s.naesta) : (s.texti ? (s.buid ? '✓ ' : '') + esc(s.texti) : '') +
-        (s.naesta ? '<span class="nsk">Næsta skref: ' + esc(s.naesta) + '</span>' : '') +
-        (r.sonnun_at ? '<span class="nsk m">Staðan breyttist síðast ' + esc(fmtD(r.sonnun_at)) + ' kl. ' + klukka(new Date(r.sonnun_at)) + ' · metin sjálfkrafa</span>' : '')) +
+        (s.naesta && !naestaErAdal ? '<span class="nsk">Næsta skref: ' + esc(s.naesta) + '</span>' : '')) +
     '</div>';
   }
   const kr = x => Math.round(Number(x) || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr.';
@@ -1613,7 +1629,9 @@
         (eftir ? '<span class="sg-buid">✓ Líklega afgreitt — ' + esc(eftir.join(' og ')) + ' eftir að málið varð til</span>' : '') +
         '<span class="grow"></span><button type="button" class="sg-r" data-t5="virkni-uppf"' + (S.virkniBid ? ' disabled' : '') + ' title="Reikna sölur, reikninga og skýrslur upp á nýtt">' + (S.virkniBid ? 'Uppfæri…' : '↻ Uppfæra') + '</button></div>' +
       '<div class="sg-l">' + linur.join('') + '</div>' +
-      (v && v.reiknad_at ? '<div class="sg-m">Uppfært ' + esc(fmtD(v.reiknad_at)) + ' kl. ' + klukka(new Date(v.reiknad_at)) + ' · uppfærist sjálfkrafa á hverjum morgni</div>' : '') +
+      /* 15.10.2026: stóð sem eigin lína beint undir hinum stimplinum. Tveir */
+      /* tímastimplar hlið við hlið segja ekkert — hann lifir í hjálpartextanum. */
+      '' +
     '</div>';
   }
   // ✨ Tillaga — sami endapunktur og gamla borðið (/api/tv-summary, Haiku): ein stutt lína um næsta skref,
@@ -2091,7 +2109,10 @@
     const svara = getaSvarad ? b(minn ? 'gold lg' : 'iv', 'reply', '↩ Svara í sama þræði') : '';
     const lokid = minn && !getaSvarad ? b('gold lg', 'done', '✓ Merkja lokið') : b('iv', 'done', '✓ Lokið');
     const skila = minn ? b('iv', 'giveback', '↩ Skila á Master') : '';
-    const fyr = whereOf(r) ? b('iv', 'fyr', '🏢 Opna fyrirtæki ›') : '';
+    /* 15.10.2026: fjarlægt. fyrLink() gerir nafnið efst á spjaldinu að hlekk
+     * með NÁKVÆMLEGA sömu aðgerð (data-t5 „fyr"), svo takkinn bætti engu —
+     * hann var bara enn einn hlutur í röð sem var þegar of löng. */
+    const fyr = '';
     // 18.09.2026 — BEINT Í SKÝRSLU OG REIKNING.
     // Hnappurinn birtist aðeins þegar fyrirtækið stendur sannanlega í
     // `v_gleymt_ad_rukka_uttekt`; annars fyndi vinnuglugginn ekkert og hnappurinn
@@ -2113,7 +2134,13 @@
       (canonW(r.assigned_to) && !folk().some(x => lagt(x) === lagt(canonW(r.assigned_to))) ? '<option selected>' + esc(canonW(r.assigned_to)) + '</option>' : '') +
       '</select></label>';
     const stada = minn ? 'Á þínu borði' : laust ? 'Á Master' : 'Á borði ' + eigandi;
-    const meta = [tegMals(r), erSamthykki(r) ? 'Bíður samþykkis' : svarBidur(r) ? SVOR[svarMals(r)].merki : '', stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '', post ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : ''].filter(Boolean).join(' · ');
+    const meta = [tegMals(r), erSamthykki(r) ? 'Bíður samþykkis' : svarBidur(r) ? SVOR[svarMals(r)].merki : '', stada, r.due_at ? 'Frestur ' + fmtD(r.due_at) : '', r.important ? 'Áríðandi' : '',
+      /* 15.10.2026: póst-staðan stóð HÉR sem bert merki („Bíður svars") og AFTUR
+       * í stöðublokkinni rétt fyrir neðan, þar sem hún ber líka dagsetninguna
+       * („Bíður svars síðan 13.10."). Ríkari línan ræður; merkið víkur fyrir
+       * henni en stendur áfram þegar engin mæling er til. */
+      (post && !(sonn(r) && sonn(r).texti) ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : '')
+    ].filter(Boolean).join(' · ');
     const w = fyrLink(r, 'dk');
     return '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
         '<span class="age ' + ageCls(a) + '">' + a + 'D</span>' + (opt.rymi ? '' : '<button type="button" class="sx" data-t5="sel-close" aria-label="Loka málinu">✕</button>') + '</div>' +
@@ -2122,13 +2149,21 @@
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
       adgerdirHtml(r) +
-      stadaHtml(r) +
+      /* Aðeins svar-málin: aðaltakkinn ber þá sama texta og næsta skref. */
+      stadaHtml(r, { adalAdgerd: getaSvarad ? 'svara' : '' }) +
       sagaHtml(r) + skjolHtml(r) + well +
       // póstmál: málið SJÁLFT er staðurinn (↩ Svara í sama þræði) — enginn „Opna" takki sem vísar á sig sjálft
-      '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + b('iv', 'mal-ari', r.important ? '★ Áríðandi af' : '☆ Áríðandi') + b('iv', 'mal-eyda', '🗑 Eyða máli') + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
-      '<div class="sacts sm2">' + setja + aksturVal(r) + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
+      '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
+      '<div class="sacts sm2">' + setja + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
-          ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' + hamirHtml(r) + breytaHtml(r);
+          ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' +
+      /* 15.10.2026 — Agnar vildi takkana í tvær raðir. Ellefu takkar í þremur
+       * röðum gera aðalaðgerðina jafn áberandi og þá sem eyðir málinu. Hér
+       * standa tvær raðir eftir; áríðandi-merkið (sem er nú á spjaldinu í
+       * Samþykkja-listanum), akstur og EYÐING fara undir fellilista. */
+      '<details class="sacts-meira"><summary>⋯ Meira</summary><div class="sacts sm2">' +
+        b('iv', 'mal-ari', r.important ? '★ Áríðandi af' : '☆ Áríðandi') + aksturVal(r) +
+        b('iv', 'mal-eyda', '🗑 Eyða máli') + '</div></details>' + hamirHtml(r) + breytaHtml(r);
   }
 
   /* ── 368aa: SAMÞYKKJA — vinnusvæði (hamurinn samthykkja) ── */
