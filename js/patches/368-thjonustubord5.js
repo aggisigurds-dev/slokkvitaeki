@@ -1063,6 +1063,10 @@
       '.mres::after{content:"";position:absolute;top:34%;bottom:34%;left:5px;width:4px;border-radius:2px;background:var(--edge2)}',
       '.mres:hover::after,.mres.virk::after{background:var(--g5)}',
       '.samt-ef{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere;color:var(--ink)}',
+      '.samt .vbr-item{position:relative;padding-right:38px}',
+      '.samt-stj{position:absolute;top:7px;right:8px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:15px;line-height:1;color:var(--gmut);cursor:pointer;z-index:2}',
+      '.samt-stj:hover{background:var(--rule2);color:#c9a54a}',
+      '.samt-stj.on{color:#c9a54a}',
       '.samt-kr{display:inline-block;margin:0 0 3px;padding:1px 6px;border-radius:3px;background:var(--rule2);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--gink)}',
       '.board{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"master mine" "master sel";gap:18px;align-items:start}',
       '.colmaster{grid-area:master}.colmine{grid-area:mine}.colsel{grid-area:sel}',
@@ -1518,6 +1522,12 @@
   const plate = n => '<span class="plate">' + n + '</span>';
   const emptyHtml = t => '<div class="empty"><span class="coin" aria-hidden="true"></span>' + t + '</div>';
   const wellHtml = (label, text) => '<div class="well"><div class="slabel">' + esc(label) + '</div><p>' + esc(text) + '</p></div>';
+  /* 15.10.2026 — Agnar: „myndi vilja dagsetningu hvenær þessi samþykkt varð
+   * til í kerfinu". Spjaldið bar aðeins aldur („6 d."), sem segir hve lengi
+   * málið hefur beðið en ekki HVENÆR það varð til. Full dagsetning með ári,
+   * svo gömul mál séu ótvíræð. */
+  const fmtDags = iso => { const d = new Date(iso); return isNaN(d.getTime()) ? '' :
+    String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear(); };
   const fmtD = iso => { const d = new Date(iso); return isNaN(d.getTime()) ? '' : d.getDate() + '. ' + MAN[d.getMonth()].slice(0, 3) + '.'; };
   const klukka = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   const dis = id => (S.busy[id] ? ' disabled' : '');
@@ -2153,7 +2163,7 @@
     switch (samtRodun) {
       case 'nyjast': return ts(b.created_at) - ts(a.created_at);
       case 'elst': return ts(a.created_at) - ts(b.created_at);
-      case 'mikilv': return (b.important ? 1 : 0) - (a.important ? 1 : 0);
+      case 'mikilv': return ((b.important ? 1 : 0) - (a.important ? 1 : 0)) || (ts(b.created_at) - ts(a.created_at));
       case 'verdm': return upphaedMals(b) - upphaedMals(a);
       // Sían sjálf er í `samtListi`; hér er aðeins röðun innan hennar — nýjasti pósturinn efst.
       case 'postur': return ts(b.created_at) - ts(a.created_at);
@@ -2220,11 +2230,21 @@
     const nr = listi.indexOf(val);
     const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1]), h[1]]);
     const item = r => {
-      const ef = aiLine(r), undir = [whereOf(r), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      const ef = aiLine(r), undir = [whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      /* ★ á spjaldinu sjálfu (Agnar: „að geta merkt stjörnu sem byrtist þá efst í
+       * mikilvægast"). Sama aðgerð og „☆ Áríðandi" í málglugganum — data-t5
+       * „mal-ari", sem skrifar á þjóninn og býður afturköllun. Hún stýrir
+       * röðuninni Mikilvægast.
+       * SPAN en ekki BUTTON: spjaldið ER <button>, og hnappur inni í hnappi er
+       * ógilt og brotnar í vafranum. Smellarinn notar closest("[data-t5]"), svo
+       * innsta merkið vinnur og spjaldið opnast ekki í leiðinni. */
+      const stj = '<span class="samt-stj' + (r.important ? ' on' : '') + '" data-t5="mal-ari" data-id="' + r.id + '" role="button" tabindex="-1" title="' +
+        (r.important ? 'Taka áríðandi-merkið af' : 'Merkja áríðandi — fer efst í Mikilvægast') + '">' + (r.important ? '★' : '☆') + '</span>';
       // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
       // úr textanum og getur verið áætlun — hún er vísbending, ekki bókhald.
       const u = upphaedMals(r);
       return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
+        stj +
         (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
         '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
         (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erBuid(r) ? ' ok' : '') + '">' + (erBuid(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
