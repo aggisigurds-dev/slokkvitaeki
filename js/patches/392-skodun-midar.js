@@ -104,7 +104,8 @@
       R('table._sk-tbl colgroup col:nth-child(1)', 'width:240px!important'),
       R('table._sk-tbl colgroup col:nth-child(2)', 'width:250px!important'),
       R('table._sk-tbl colgroup col:nth-child(3)', 'width:190px!important'),
-      R('table._sk-tbl colgroup col:nth-child(4)', 'width:86px!important'),
+      // 15.10.2026: Skoðun-dálkurinn (86px) færðist aftur fyrir Skref — er nú 6. dálkur (Ár 4, Skref 5).
+      R('table._sk-tbl colgroup col:nth-child(6)', 'width:86px!important'),
       R('table._sk-tbl colgroup col:nth-child(7)', 'width:100px!important'),
       R('table._sk-tbl colgroup col:nth-child(8)', 'width:auto!important'),
       R('table._sk-tbl td textarea._sk-nota', 'max-width:none'),
