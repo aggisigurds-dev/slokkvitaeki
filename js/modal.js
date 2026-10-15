@@ -38,7 +38,7 @@ var Counter = {
     var el=document.getElementById('counter-main'); if(!el) return;
     var html='<div class="jd-header"><div><div class="jd-title">'+U.e(job.customer)+' <span style="font-family:var(--mono);font-size:15px;color:var(--ink3)">'+U.e(job.num)+'</span></div><div class="jd-sub">Móttekið '+U.fd(job.dropoff)+'</div></div>';
     html+='<div class="jd-actions">'+U.badge(job.status)+'<span id="jd-pay-badge" style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#64748b">… greiðslustaða …</span>';
-    if(job.status!=='collected') html+='<button class="btn btn-outline btn-sm" onclick="Print.showJob(DB.getJob('+job.id+'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Prenta</button>';
+    if(job.status!=='collected') html+='<button class="btn btn-outline btn-sm" onclick="Counter.printAll('+job.id+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Prenta</button>';
     if(job.status==='ready') html+='<button class="btn btn-success btn-sm" onclick="Counter.markCollected('+job.id+')">Sótt ✓</button>';
     html+='</div></div>';
     html+='<div class="info-grid"><div class="ic"><div class="ic-lbl">Sími</div><div class="ic-val">'+U.e(job.phone)+'</div></div><div class="ic"><div class="ic-lbl">Móttökudagur</div><div class="ic-val">'+U.fd(job.dropoff)+'</div></div>';
@@ -88,9 +88,27 @@ var Counter = {
     badge.textContent=label;
     badge.style.cssText='display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:700;background:'+bg+';color:'+fg;
   },
+  // 15.10.2026 (Agnar, R-001168: „QR-prentunin telur þetta bara 1 verkefni og 1 miða"): salan býr til EINA
+  // verkbeiðni á hverja þjónustulínu (R-001168-V1, -V2 …) og þessi gluggi sá aðeins þá sem valin var. Miðarnir,
+  // tækjalistinn og kvittunin telja nú ÖLL systkinaverk sömu sölu (sama regla og verkspjaldið 430: verkin()).
+  _systkin: function(job) {
+    var m=/^([RK]-\d+)-V\d+$/i.exec(String((job&&job.num)||'')); if(!m) return [job];
+    var n=m[1].toUpperCase(), l=((DB.cache&&DB.cache.jobs)||[]).filter(function(j){ var k=/^([RK]-\d+)-V\d+$/i.exec(String(j.num||'')); return k&&k[1].toUpperCase()===n&&j.status!=='eytt'&&j.status!=='cancelled'; });
+    if(!l.some(function(j){return j.id===job.id;})) l.push(job);
+    return l.sort(function(a,b){return String(a.num).localeCompare(String(b.num),'is',{numeric:true});});
+  },
+  _systkinaTaeki: function(job) {
+    var ut=[]; Counter._systkin(job).forEach(function(j){ (j.units||[]).forEach(function(u){ if(u&&u.status!=='eytt') ut.push(u); }); }); return ut;
+  },
+  printAll: function(id) {
+    var job=DB.getJob(id); if(!job) return;
+    var ut=Counter._systkinaTaeki(job);
+    Print.showJob({ id: job.id, num: job.num, customer: job.customer||'', phone: job.phone||'', units: ut.length?ut:(job.units||[]) });
+  },
   renderPrintAside: function(job) {
     var el=document.getElementById('print-aside'); if(!el) return;
-    var u=job.units[0];
+    var systkin=Counter._systkin(job), allU=Counter._systkinaTaeki(job);
+    var u=allU[0]||job.units[0]||{};
     // 2026-05-12: Redesigned to better match what actually prints:
     //   • Miðar = 17×54mm label with QR + name + phone (Brother PT-P750W)
     //   • Kvittun = total receipt with all line items + total amount
@@ -113,25 +131,26 @@ var Counter = {
     // from the actual print layout.
     html += '<div class="pa-block"><div class="pa-hd">' +
       '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg>' +
-      '<span class="pa-hd-title">Miðar (×'+job.units.length+')</span></div>' +
+      '<span class="pa-hd-title">Miðar (×'+allU.length+')</span>' + (systkin.length>1 ? '<span style="margin-left:6px;font-size:10px;color:#94a3b8;font-weight:500">'+systkin.length+' verk</span>' : '') + '</div>' +
       '<div class="pa-body">' +
         '<div style="text-align:center;color:#64748b;font-size:11px;padding:4px 6px 8px">Miðasnið er valið við greiðslu</div>' +
-        '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="Print.showJob(DB.getJob('+job.id+'))">' +
+        '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="Counter.printAll('+job.id+')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>' +
-          'Prenta '+job.units.length+' miða' +
+          'Prenta '+allU.length+' miða' +
         '</button>' +
       '</div></div>';
 
     // ── Kvittun (total receipt preview) ─────────────────────────────
-    // Sum the total cost using verkbeidnir.verd if available, else parsed
-    // from the units' service descriptions × estimate.
+    // Sum the total cost across ALL sibling verk (R-NNN-V1..Vn): verkbeidnir.verd
+    // per verk if available, else the units' own verd.
     var totalKr = 0;
-    if (job.verd) totalKr = +job.verd * (job.units.length || 1);
-    else {
-      job.units.forEach(function(u2){ totalKr += (+u2.verd || 0); });
-    }
+    systkin.forEach(function(j2){
+      var lif=(j2.units||[]).filter(function(x){return x&&x.status!=='eytt';});
+      if (j2.verd) totalKr += +j2.verd * (lif.length || 1);
+      else lif.forEach(function(u2){ totalKr += (+u2.verd || 0); });
+    });
     var fmtKr = function(n){ return Math.round(+n||0).toLocaleString('is-IS') + ' kr'; };
-    var unitRows = job.units.map(function(u2){
+    var unitRows = allU.map(function(u2){
       var serDisp = String(u2.serial||'').replace(/^TMP-/, '').slice(-8);
       return '<div style="display:flex;justify-content:space-between;gap:6px;padding:3px 0;font-size:11px;border-bottom:1px dotted #e2e8f0">' +
         '<span style="color:#64748b;font-family:monospace;flex-shrink:0">'+serDisp+'</span>' +
@@ -157,7 +176,7 @@ var Counter = {
           '<span style="color:#64748b">Móttekið</span>' +
           '<span>'+U.fd(job.dropoff)+'</span>' +
         '</div>' +
-        '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin:6px 0 3px">Tæki ('+job.units.length+')</div>' +
+        '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin:6px 0 3px">Tæki ('+allU.length+')</div>' +
         '<div style="background:#f8fafc;border-radius:6px;padding:6px 8px;max-height:120px;overflow-y:auto">' + unitRows + '</div>' +
         (totalKr > 0
           ? '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px 4px;margin-top:6px;border-top:2px solid #0f172a">' +

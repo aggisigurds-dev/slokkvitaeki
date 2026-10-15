@@ -477,13 +477,24 @@
     if (!items.length) {
       list = '<div style="padding:14px 16px;color:#525b6b;font-size:12px;text-align:center">Engin eydd tæki.</div>';
     } else {
+      // 15.10.2026 (Agnar): „hvenær stofnað, hvenær eytt — nýjast eytt efst". verklidur.eytt_at er til frá 15.10.2026;
+      // eldri eyðingar bera enga dagsetningu og raðast aftast (eftir stofndegi tækisins).
+      const ts = v => { const d = v ? new Date(v) : null; return d && !isNaN(d) ? d.getTime() : 0; };
+      const dags = v => { const d = v ? new Date(v) : null; if (!d || isNaN(d)) return ''; const p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
+      const klukk = v => { const d = v ? new Date(v) : null; if (!d || isNaN(d)) return ''; const p = n => String(n).padStart(2, '0'); return dags(d) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+      items.sort((a, b) => (ts(b.unit.eytt_at) - ts(a.unit.eytt_at)) || (ts(b.unit.created_at || b.job.created_at) - ts(a.unit.created_at || a.job.created_at)) || ((+b.unit.id || 0) - (+a.unit.id || 0)));
       list = items.map(({ job, unit }) => {
         const t = [unit.type, unit.size].filter(Boolean).join(' · ');
         const cust = job.customer || job.num || '';
+        const stofnad = dags(unit.created_at || job.created_at || job.dropoff), eytt = klukk(unit.eytt_at);
         return '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #f1f5f9">' +
             '<span style="font-size:13px;color:#475569;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
               '<span style="font-weight:600;color:#0f172a">' + esc(t || 'Tæki') + '</span>' +
               '<span style="color:#525b6b"> — ' + esc(cust) + '</span>' +
+              (unit.serial ? '<span style="color:#94a3b8;font-family:var(--mono,monospace);font-size:11px"> · ' + esc(unit.serial) + '</span>' : '') +
+            '</span>' +
+            '<span style="font-size:11px;color:#64748b;font-family:var(--mono,monospace);white-space:nowrap">' +
+              (stofnad ? 'stofnað ' + stofnad : '') + (eytt ? ' · <b style="color:#b91c1c;font-weight:600">eytt ' + eytt + '</b>' : ' · eytt —') +
             '</span>' +
             '<button onclick="Workshop.restoreUnit(' + job.id + ',' + jsv(unit.id) + ')" ' +
               'style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;white-space:nowrap;color:#0f172a">↩ Endurheimta</button>' +
@@ -1389,19 +1400,21 @@
       var wsDelMsg = 'Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)';
       var wsDelOk = (window.Confirm && Confirm.show) ? await Confirm.show(wsDelMsg) : window.confirm(wsDelMsg);
       if (!wsDelOk) return false;
-      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt' }).eq('id', unitId); }
+      // 15.10.2026 (Agnar): eytt_at skráð svo „Eydd tæki" sýni hvenær var eytt og raðist nýjast efst.
+      const eyttAt = new Date().toISOString();
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt', eytt_at: eyttAt }).eq('id', unitId); }
       catch (e) { console.warn('[deleteUnit]', e); }
       const job = DB.getJob(jobId);
-      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) u.status = 'eytt'; }
+      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) { u.status = 'eytt'; u.eytt_at = eyttAt; } }
       if (window.Toast && Toast.show) Toast.show('🗑 Tæki sett í „Eydd tæki"');
       Workshop.render();
       return true;
     };
     Workshop.restoreUnit = async function(jobId, unitId) {
-      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'received' }).eq('id', unitId); }
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'received', eytt_at: null }).eq('id', unitId); }
       catch (e) { console.warn('[restoreUnit]', e); }
       const job = DB.getJob(jobId);
-      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) u.status = 'received'; }
+      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) { u.status = 'received'; u.eytt_at = null; } }
       if (window.Toast && Toast.show) Toast.show('↩ Tæki endurheimt');
       Workshop.render();
     };

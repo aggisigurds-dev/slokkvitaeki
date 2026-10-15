@@ -140,7 +140,11 @@
 
       // Taflan: ferkantaður rammi, málmhaus, mono-dálkaheiti
       V + '.data-table-wrap,' + V + '._ars-tblscroll{border-radius:2px!important}',
-      V + 'table.data-table thead th{background:' + METAL + '!important;color:#aeb6c4!important;font-family:' + MONO + '!important;font-size:10px!important;letter-spacing:.12em!important;text-transform:uppercase!important;border:0!important}',
+      // 15.10.2026 (Agnar: „liturinn meira samfelldur yfir eins og hjá Brunakerfis skoðun"): málmhallinn liggur á
+      // LÍNUNNI (eitt samfellt band, eins og 392 gerir í Kerfin) — ekki á hverjum <th>, þar sem hann endurtók sig
+      // reit fyrir reit og hausinn sást sem röð af kubbum.
+      V + 'table.data-table thead tr{background:' + METAL + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 #000!important}',
+      V + 'table.data-table thead th{background:transparent!important;color:#aeb6c4!important;font-family:' + MONO + '!important;font-size:10px!important;letter-spacing:.12em!important;text-transform:uppercase!important;border:0!important}',
       V + 'table.data-table tbody td{border-top:1px solid #f1f3f7!important}',
       V + '._ars-namecell ._co{font-family:' + SANS + '!important;font-weight:600!important}',
       V + '._ars-namecell ._kt,' + V + '._ars-addrcell ._post,' + V + '._ars-addrcell ._addr,' + V + '._mo,' + V + '._devs{font-family:' + MONO + '!important;font-variant-numeric:tabular-nums lining-nums}',

@@ -1054,7 +1054,10 @@
     });
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
-    document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});rerenderDynamic();});
+    // 15.10.2026: byrjunargjaldið má aðeins vera EINU SINNI í körfunni — 138 setur það sjálfkrafa inn með CO₂ 100 gr,
+    // og smellur á það í þjónustuflísunum á eftir tvítók það (R-001168: 10.664 kr í stað 9.424).
+    function erByrjunargjaldTvitekid(nafn){ if(!/byrjunargjald/i.test(nafn||''))return false; var til=state.lines.some(function(l){return /byrjunargjald/i.test(l.desc||'');}); if(til&&window.Toast&&Toast.show)Toast.show('Byrjunargjaldið er þegar í körfunni'); return til; }
+    document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;if(erByrjunargjaldTvitekid(s.nafn))return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     var adrarToggle = document.getElementById('pos-adrar-toggle');
     if (adrarToggle) adrarToggle.addEventListener('click', function(){
@@ -1069,6 +1072,7 @@
         var sid = parseInt(svc.getAttribute('data-id'), 10);
         var s = state.services.find(function(x){ return x.id === sid; });
         if (!s) return;
+        if (erByrjunargjaldTvitekid(s.nafn)) return;
         state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});
         rerenderDynamic();
         return;
@@ -1596,7 +1600,10 @@
       // 2026-08-13 (Agnar): verkbeiðni stofnast AÐEINS fyrir línur þar sem varan
       // er merkt „fer á verkstæði" (vorur.krefst_verkbeidni) — ekki lengur fyrir
       // hverja þjónustulínu. Reykskynjari yfir borðið á ekki að fá verkbeiðnis-QR.
-      var svc=state.lines.filter(function(l){return l.krefst_verkbeidni===true;});
+      // 15.10.2026 (R-001168, Agnar: „komu inn 2 kútar en verkstæðið tekur 3"): byrjunargjaldið er gjald, ekki
+      // tæki — það er brotið inn í CO₂-verkið hér að neðan (_bgInc) og fær ALDREI eigin verkbeiðni, þótt varan
+      // væri merkt krefst_verkbeidni (vara 40 var það). Annars varð V3 „CO₂ byrjunargjald" með TMP-raðnúmeri.
+      var svc=state.lines.filter(function(l){return l.krefst_verkbeidni===true && !/byrjunargjald/i.test(l.desc||'');});
       // The checkout dialog's "Sleppa að búa til verkbeiðnir" checkbox sets
       // window._pendingSkipVerk = true. Useful when a refill/hleðsla
       // happens on the spot and no follow-up work request is needed.

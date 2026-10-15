@@ -39,10 +39,12 @@
 
     // Soft-delete a whole verk → status 'eytt'. Reversible.
     async function softDelete(id) {
-      try { if (DB.online && DB.sb) await DB.sb.from('verkbeidnir').update({ status: 'eytt' }).eq('id', id); }
+      // 15.10.2026 (Agnar): eytt_at skráð svo „Eydd verk" sýni hvenær var eytt og raðist nýjast efst.
+      const eyttAt = new Date().toISOString();
+      try { if (DB.online && DB.sb) await DB.sb.from('verkbeidnir').update({ status: 'eytt', eytt_at: eyttAt }).eq('id', id); }
       catch (e) { console.warn('[verk-soft-delete]', e); alert('Villa við að eyða verki: ' + (e.message || e)); return false; }
       const j = (DB.cache.jobs || []).find(x => x.id === id);
-      if (j) j.status = 'eytt';
+      if (j) { j.status = 'eytt'; j.eytt_at = eyttAt; }
       return true;
     }
 
@@ -66,10 +68,10 @@
     };
 
     Workshop.restoreVerk = async function (id) {
-      try { if (DB.online && DB.sb) await DB.sb.from('verkbeidnir').update({ status: 'received' }).eq('id', id); }
+      try { if (DB.online && DB.sb) await DB.sb.from('verkbeidnir').update({ status: 'received', eytt_at: null }).eq('id', id); }
       catch (e) { console.warn('[verk-soft-delete restore]', e); alert('Villa: ' + (e.message || e)); return; }
       const j = (DB.cache.jobs || []).find(x => x.id === id);
-      if (j) j.status = 'received';
+      if (j) { j.status = 'received'; j.eytt_at = null; }
       if (window.Toast && Toast.show) Toast.show('↩ Verk endurheimt');
       try { Workshop.render(); } catch (_) {}
       try { if (window.Counter && Counter.render) Counter.render(); } catch (_) {}
@@ -120,15 +122,25 @@
       if (!items.length) {
         list = '<div style="padding:13px 16px;color:#94a3b8;font-size:12px;text-align:center">Engin eydd verk.</div>';
       } else {
+        // 15.10.2026 (Agnar): „hvenær stofnað, hvenær eytt — nýjast eytt efst". eytt_at er til frá 15.10.2026;
+        // eldri eyðingar bera enga dagsetningu og raðast aftast (eftir stofndegi).
+        const ts = v => { const d = v ? new Date(v) : null; return d && !isNaN(d) ? d.getTime() : 0; };
+        const dags = v => { const d = v ? new Date(v) : null; if (!d || isNaN(d)) return ''; const p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); };
+        const klukk = v => { const d = v ? new Date(v) : null; if (!d || isNaN(d)) return ''; const p = n => String(n).padStart(2, '0'); return dags(d) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+        items.sort((a, b) => (ts(b.eytt_at) - ts(a.eytt_at)) || (ts(b.created_at) - ts(a.created_at)) || ((b.id || 0) - (a.id || 0)));
         list = items.map(j => {
           const cust = esc(j.customer || j.num || ('verk #' + j.id));
           const nUnits = (j.units || []).filter(u => u && u.status !== 'eytt').length;
           const num = j.num ? esc(String(j.num).replace(/-V\d+$/, '')) : '';
+          const stofnad = dags(j.created_at || j.dropoff), eytt = klukk(j.eytt_at);
           return '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #f1f5f9">' +
               '<span style="font-size:13px;color:#475569;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
                 '<span style="font-weight:600;color:#0f172a">' + cust + '</span>' +
                 (num ? '<span style="color:#94a3b8;font-family:var(--mono,monospace);font-size:11px"> · ' + num + '</span>' : '') +
                 '<span style="color:#94a3b8"> · ' + nUnits + ' tæki</span>' +
+              '</span>' +
+              '<span class="_vsd-dags" style="font-size:11px;color:#64748b;font-family:var(--mono,monospace);white-space:nowrap">' +
+                (stofnad ? 'stofnað ' + stofnad : '') + (eytt ? ' · <b style="color:#b91c1c;font-weight:600">eytt ' + eytt + '</b>' : ' · eytt —') +
               '</span>' +
               '<button onclick="Workshop.restoreVerk(' + j.id + ')" style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;white-space:nowrap;color:#0f172a">↩ Endurheimta</button>' +
             '</div>';

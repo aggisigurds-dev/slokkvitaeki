@@ -239,10 +239,12 @@
     // stöðuplöturnar mattar (392 á formið og díóðuna)
     // 03.10.2026 (samræming við Fyrirtæki í þjónustu): sama stærð á stöðuplötunni og þar (415) — 26 px há, 128 px lágmark
     r('table._sk-tbl ._sk-st', 'font-size:11.5px!important;font-weight:600!important;text-shadow:0 1px 0 rgba(0,0,0,.35)!important;min-width:128px!important;height:26px!important;min-height:26px!important'),
-    r('table._sk-tbl ._sk-st--done', 'background:linear-gradient(180deg,#17663a 0%,#0e4d2b 100%)!important;border:1px solid #0a3a1e!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
-    r('table._sk-tbl ._sk-st--work', 'background:linear-gradient(180deg,#24508f 0%,#173a6d 100%)!important;border:1px solid #0d2547!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important'),
-    r('table._sk-tbl ._sk-st--late', 'background:linear-gradient(180deg,#8f1d1d 0%,#6b1212 100%)!important;border:1px solid #3d0607!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
-    r('table._sk-tbl ._sk-st--skip', 'background:linear-gradient(180deg,#a9842c 0%,#7d5f17 100%)!important;border:1px solid #4d3a0a!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)!important'),
+    // 15.10.2026 (Agnar: „sömu dark metal litina í Stöðu eins og í Ár-gluggunum"): plöturnar bera SAMA 145° málmhalla
+    // og Ár-flísarnar (392 GREEN/BLUE/RED/GOLD) — flötu 180° hallarnir sem stóðu hér yfirskrifuðu málminn úr 392.
+    r('table._sk-tbl ._sk-st--done', 'background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border:1px solid rgba(52,168,98,.45)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('table._sk-tbl ._sk-st--work', 'background:linear-gradient(145deg,#040d18 0%,#0b2440 20%,#154a7d 43%,#2f7fc9 53%,#0d2b4c 74%,#040d18 100%)!important;border:1px solid rgba(60,120,200,.45)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('table._sk-tbl ._sk-st--late', 'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)!important;border:1px solid rgba(190,32,28,.55)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
+    r('table._sk-tbl ._sk-st--skip', 'background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;border:1px solid rgba(190,150,60,.5)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)!important'),
     r('._sk-lbl', 'color:#c9d0da;font:500 12.5px ' + SANS + '!important'),
     r('._sk-sia ._sk-sp + ._sk-lbl', 'background:' + SILVER + '!important;color:#1f2530;border:1px solid rgba(20,24,34,.12)!important;height:24px;padding:0 9px;border-radius:3px;font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important'),
     // ── taflan: hólfið eins og 415 ──
