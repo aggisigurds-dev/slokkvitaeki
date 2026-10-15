@@ -630,9 +630,9 @@
       .${HOLF}{display:flex;flex-direction:column;gap:2px;margin-left:auto;min-width:0;flex:0 1 300px;align-self:flex-start;padding-top:2px}
       ${R('button._bupp-flis._till._skra', 'border-color:rgba(96,165,250,.85)!important;color:#93c5fd!important')}
       ${R('button._bupp-flis._till._skra:hover', 'border-color:#93c5fd!important;color:#dbeafe!important')}
-      ${R('._bupp-teikn', 'font-size:11.5px;color:#93c5fd;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0')}
+      ${R('._bupp-teikn', 'font-size:11.5px;color:#1d4ed8;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0')}
       ${R('button._bupp-teikn', 'margin:0;padding:0;border:0;background:none;background-color:transparent;box-shadow:none;font:inherit;font-size:11.5px;line-height:19px;cursor:pointer;text-align:left')}
-      ${R('._bupp-teikn:hover', 'color:#fff;text-decoration:underline')}
+      ${R('._bupp-teikn:hover', 'color:#1e3a8a;text-decoration:underline')}
       ${R('._bupp-teikn-inn', 'display:flex;flex-wrap:wrap;gap:1px 10px;min-width:0')}
       ${R('._bupp-teikn-miss', 'font-size:11.5px;color:rgba(255,255,255,.72)')}
       ${R('._bupp-lina', 'display:flex;align-items:center;gap:8px;min-width:0')}

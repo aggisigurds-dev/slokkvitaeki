@@ -65,11 +65,12 @@
     s.textContent =
       '._serupp-inn{display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;align-items:baseline}' +
       'a._serupp-l,button._serupp-l{margin:0!important;padding:0!important;border:0!important;background:none!important;' +
-      'background-color:transparent!important;box-shadow:none!important;color:#93c5fd!important;font:inherit!important;' +
+      // 15.10.2026 (Agnar: „ljósbláu stafina frekar dekkri bláa"): línurnar standa á hvítu, ekki á dökka borðanum — dekkri blár og hover ekki hvítur.
+      'background-color:transparent!important;box-shadow:none!important;color:#1d4ed8!important;font:inherit!important;' +
       'font-size:11.5px!important;font-weight:400!important;line-height:19px!important;text-decoration:none!important;' +
       'cursor:pointer!important;white-space:nowrap!important}' +
       '._serupp ._bupp-merki{width:118px!important}' +
-      'a._serupp-l:hover,button._serupp-l:hover{color:#fff!important;text-decoration:underline!important}' +
+      'a._serupp-l:hover,button._serupp-l:hover{color:#1e3a8a!important;text-decoration:underline!important}' +
       'button._serupp-l:disabled{opacity:.55!important;cursor:default!important}';
     (document.head || document.documentElement).appendChild(s);
   }
