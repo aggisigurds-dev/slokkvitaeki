@@ -14,7 +14,7 @@
  * State storage:
  *   • `fyrirtaeki.status` column in DB (added in migration
  *     `fyrirtaeki_stada`).
- *   • Filter chip preference: localStorage `_slokk_fyr_filter`.
+ *   • Filter chip preference: Vidmot `fyrirtaeki.filter` (472 — eitt val fyrir allar vélar; var localStorage `_slokk_fyr_filter`).
  *
  * DB writes go through DB.sb directly — Companies.list is patched in-place
  * after a successful update.
@@ -23,13 +23,19 @@
   if (window.__fyrirtaekiStadaInstalled) return;
   window.__fyrirtaekiStadaInstalled = true;
 
-  const FILTER_LS = '_slokk_fyr_filter';   // 'all' | 'virk' | 'ovirk'
+  // 15.10.2026 (regla Agnars: eitt val fyrir allar vélar): sían býr í Vidmot ('fyrirtaeki.filter'), ekki localStorage.
+  // 174 hleðst Á UNDAN 472-vidmot.js, svo Vidmot er sótt við kall (render), ekki við hleðslu. Gamli lykillinn
+  // `_slokk_fyr_filter` er fluttur einu sinni sem upphafsgildi.
+  const FILTER_KEY = 'fyrirtaeki.filter';   // 'all' | 'virk' | 'ovirk'
+  let _flutt = false;
+  function vm() { const V = window.Vidmot; if (V && !_flutt) { _flutt = true; try { V.flytja(FILTER_KEY, '_slokk_fyr_filter', v => (['all', 'virk', 'ovirk'].indexOf(v) >= 0 ? v : undefined)); } catch (_) {} } return V || null; }
 
   function getFilter() {
-    return localStorage.getItem(FILTER_LS) || 'virk';
+    const V = vm(); const v = V ? V.lesa(FILTER_KEY, 'virk') : 'virk';
+    return ['all', 'virk', 'ovirk'].indexOf(v) >= 0 ? v : 'virk';
   }
   function setFilter(v) {
-    localStorage.setItem(FILTER_LS, v);
+    const V = vm(); if (V) V.setja(FILTER_KEY, v);
   }
   function isOvirk(c) {
     const s = (c && c.status || '').toString().toLowerCase();

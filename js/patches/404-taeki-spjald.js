@@ -158,11 +158,13 @@
     bulk.classList.add('b404-valstika');
     // B42 (Agnar 30.09: „valstikan … samanfelld sjálfgefið, hægt að opna"): aðgerðirnar (Yfirferð · Hleðsla · Ónýtt · Breyta stærð ·
     // Síðasta/Næsta skoðun · Prenta QR · Eyða) eru faldar þar til opnað er með „Aðgerðir" eða tæki er valið (val = ætlun um aðgerð).
-    // Valið er munað í localStorage (valstika_opin) — útlitsval, ekki gagnastaða. 224 endurteiknar stikuna → takkinn kemur aftur hér.
+    // Valið er munað í Vidmot ('profill.valstika', 472 — eitt val fyrir allar vélar, 15.10.2026; var localStorage valstika_opin).
+    // 224 endurteiknar stikuna → takkinn kemur aftur hér.
     (function () {
-      var LYK = 'valstika_opin';
-      function opin() { try { return localStorage.getItem(LYK) === '1'; } catch (_) { return false; } }
-      function setja(v) { try { v ? localStorage.setItem(LYK, '1') : localStorage.removeItem(LYK); } catch (_) {} }
+      var LYK = 'profill.valstika';
+      try { if (window.Vidmot) Vidmot.flytja(LYK, 'valstika_opin', function (v) { return (v === 1 || v === '1') ? true : undefined; }); } catch (_) {}
+      function opin() { try { return !!(window.Vidmot && Vidmot.lesa(LYK, false) === true); } catch (_) { return false; } }
+      function setja(v) { try { if (window.Vidmot) Vidmot.setja(LYK, !!v); } catch (_) {} }
       var valin = !bulk.classList.contains('ut-bulk-tom');
       var t = el('button', 'b404-valtoggle', ''); t.type = 'button';
       function mala() { var o = opin() || valin; bulk.classList.toggle('b404-samanfelld', !o); t.innerHTML = (o ? 'Fela aðgerðir' : 'Aðgerðir') + ICON.chev; t.classList.toggle('opin', o); t.title = o ? 'Fela aðgerðir á völdum tækjum' : 'Sýna aðgerðir á völdum tækjum (Yfirferð · Hleðsla · Ónýtt · stærð · dagsetningar · QR · Eyða)'; }

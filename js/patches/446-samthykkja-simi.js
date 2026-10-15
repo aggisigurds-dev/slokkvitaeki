@@ -32,8 +32,9 @@
 
   const opin = new Set();          // opnuð spjöld (lifir milli teikninga — ekki í DOM)
   // 08.10.2026 (Agnar: „4 sort stillingar — allavega nýjast, mikilvægast, verðmætast og 1–2 í viðbót"): röðun innan
-  // hvers hluta. „Sjálfgefið" er röð borðsins (áríðandi → upphæð → frestur → elst). Val eins vafra → localStorage.
-  const ROD_LYKILL = 'samthykkja_rodun';
+  // hvers hluta. „Sjálfgefið" er röð borðsins (áríðandi → upphæð → frestur → elst). Valið í Vidmot ('samthykkja.rodun', 472) —
+  // SAMI lykill sem 368 notar, eitt val fyrir allar vélar (15.10.2026; var localStorage samthykkja_rodun, flutt einu sinni).
+  const ROD_LYKILL = 'samthykkja.rodun';
   const RADANIR = [
     ['sjalf', 'Sjálfgefið', 'Eins og á borðinu: áríðandi, svo upphæð, svo frestur'],
     ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
@@ -47,7 +48,11 @@
     ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']
   ];
   let rodun = 'sjalf';
-  try { const v = localStorage.getItem(ROD_LYKILL); if (RADANIR.some(x => x[0] === v)) rodun = v; } catch (_) {}
+  const rodLes = () => { try { const v = window.Vidmot ? Vidmot.lesa(ROD_LYKILL, 'sjalf') : 'sjalf'; return RADANIR.some(x => x[0] === v) ? v : 'sjalf'; } catch (_) { return 'sjalf'; } };
+  try { if (window.Vidmot) Vidmot.flytja(ROD_LYKILL, 'samthykkja_rodun', v => (RADANIR.some(x => x[0] === v) ? v : undefined)); } catch (_) {}
+  rodun = rodLes();
+  // Val frá annarri vél (eða borðinu 368 á sömu vél) tekur gildi við næstu teikningu — breytan uppfærð, ekkert render().
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === ROD_LYKILL) rodun = rodLes(); } catch (_) {} });
   const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
   function rada(listi, A) {
     // „Svara pósti" er sía, ekki röðun — og hún er framkvæmd FYRST, svo teljarar og hlutar telji
@@ -285,7 +290,7 @@
     const a = b.dataset.sm, id = +b.dataset.id;
     if (a === 'uppf') { saekja(A, true); return; }
     if (a === 'hoppa') { const h = document.getElementById('_sm-h' + b.dataset.v); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
-    if (a === 'rod') { rodun = b.dataset.v; try { localStorage.setItem(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
+    if (a === 'rod') { rodun = b.dataset.v; try { if (window.Vidmot) Vidmot.setja(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }
     e.preventDefault();
     const mal = b.closest('[data-sm-mal]');

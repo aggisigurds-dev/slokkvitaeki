@@ -9,7 +9,7 @@
  *  · ＋ : velja hvaða merki eru á borðinu (falin merki hverfa úr röðinni, ekki af teikningunni).
  *  · Toppur (aðeins sími): ▴ fellir takkaraðirnar — titill og ✕ standa eftir.
  *
- * Allt þetta er útlitsval þessa tækis (localStorage), ekki gögn — sbr. CLAUDE.md.
+ * Allt þetta er viðmótsval, ekki gögn — í Vidmot per tækjaflokk (472), eitt gildi fyrir allar vélar (regla 15.10.2026).
  * 433 teiknar #fp-stimpil sjálft upp á nýtt; hér er AÐEINS bætt við haus fyrir framan
  * það og falið með CSS, svo endurteikning 433 þurrkar ekkert út.
  *
@@ -27,11 +27,22 @@
   if (window.__teiknSimastjorn) return;
   window.__teiknSimastjorn = true;
 
-  const LS_HD = 'fp_hd_lokad', LS_MERKI = 'fp_merki_lokad', LS_FALIN = 'fp_merki_falin';
+  // 15.10.2026: símalæsingarnar búa í Vidmot per tækjaflokk (lesaTaeki/setjaTaeki, 472) — eitt gildi fyrir allar vélar; þær eru
+  // eðlislægt símaval (hæðaval læst, merki læst, falin merki). Gömlu localStorage-lyklarnir fp_hd_lokad/fp_merki_lokad/fp_merki_falin
+  // eru fluttir einu sinni sem upphafsgildi.
+  const LS_HD = 'teikning.hdLokad', LS_MERKI = 'teikning.merkiLokad', LS_FALIN = 'teikning.merkiFalin';
+  try {
+    if (window.Vidmot) {
+      const t = '@' + Vidmot.taeki();
+      Vidmot.flytja(LS_HD + t, 'fp_hd_lokad', v => (typeof v === 'boolean' ? v : undefined));
+      Vidmot.flytja(LS_MERKI + t, 'fp_merki_lokad', v => (typeof v === 'boolean' ? v : undefined));
+      Vidmot.flytja(LS_FALIN + t, 'fp_merki_falin', v => (Array.isArray(v) && v.length ? v : undefined));
+    }
+  } catch (_) {}
   // Breidd þysjunarhópsins á síma (− · 100% · + · ⤢ á 36 px, sbr. 383/445): flipalínan endar fyrir framan hann.
   const ZOOM_B = 170;
-  const les = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } };
-  const skr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+  const les = (k, d) => { try { if (!window.Vidmot) return d; const v = Vidmot.lesaTaeki(k, d); return v == null ? d : v; } catch (_) { return d; } };
+  const skr = (k, v) => { try { if (window.Vidmot) Vidmot.setjaTaeki(k, v); } catch (_) {} };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const stimplar = () => (window.TeiknMerking && TeiknMerking.stimplar) || [];
 

@@ -59,14 +59,17 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
   // Default collapsed: the 12-slot grid eats Þjónustuborð and is still rough
-  // (Agnar 2026-08-31). Missing localStorage pref = collapsed. Explicit Víkka
-  // writes '1' and is honoured on later visits; Fela writes '0'.
-  const OPEN_KEY = 'vb_skipulag_open';
+  // (Agnar 2026-08-31). Missing pref = collapsed. Explicit Víkka writes true and is
+  // honoured on later visits; Fela writes false.
+  // 15.10.2026: valið býr í Vidmot ('bord.skipulagOpid', 472) — eitt val fyrir allar vélar; gamli
+  // localStorage-lykillinn `vb_skipulag_open` er fluttur einu sinni sem upphafsgildi.
+  const OPEN_KEY = 'bord.skipulagOpid';
+  try { if (window.Vidmot) Vidmot.flytja(OPEN_KEY, 'vb_skipulag_open', v => (v === 1 || v === '1' ? true : v === 0 || v === '0' ? false : undefined)); } catch (_) {}
   function readOpenPref() {
-    try { return localStorage.getItem(OPEN_KEY) === '1'; } catch (_) { return false; }
+    try { return window.Vidmot ? Vidmot.lesa(OPEN_KEY, false) === true : false; } catch (_) { return false; }
   }
   function writeOpenPref(open) {
-    try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setja(OPEN_KEY, !!open); } catch (_) {}
   }
   const state = { cards: [], rows: ROWS_DEF, collapsed: !readOpenPref() };
   let _drag = null;         // id of card being dragged from the board

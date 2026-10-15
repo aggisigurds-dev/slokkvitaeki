@@ -24,27 +24,29 @@
    að keppa við þær allar með sérvirkni væri brothætt, en innlínustíll vinnur
    þær allar og hverfur um leið og breiddin er núllstillt.
 
-   GEYMSLA: localStorage. Þetta er útlitsval EINS vafra (eins og sía, röðun og
-   samanbrot) — ekki vinnustaða — svo samstillingarreglan á ekki við. 461
-   (geymsluvörður) ver setItem fyrir fullum kvóta.
+   GEYMSLA: Vidmot (472) per tækjaflokk — lesaTaeki/setjaTaeki('bord.railBreidd'),
+   því dregin breidd er eðlislægt ólík á síma og tölvu, en EITT gildi fyrir allar
+   vélarnar (regla Agnars 15.10.2026). Skrifað aðeins við sleppingu (pointerup) eða
+   tvísmell. Gamli localStorage-lykillinn `tb_rail_w` er fluttur einu sinni.
 */
 (function () {
   'use strict';
   if (window.__bordVinnusvaedi471) return;
   window.__bordVinnusvaedi471 = true;
 
-  var LYKILL = 'tb_rail_w';
+  var LYKILL = 'bord.railBreidd';
+  try { if (window.Vidmot) Vidmot.flytja(LYKILL + '@' + Vidmot.taeki(), 'tb_rail_w', function (v) { v = parseInt(v, 10); return v > 0 ? v : undefined; }); } catch (_) {}
   var MIN_SUL = 320;      // hægri súlan má ekki verða ólæsileg
   var MIN_MEGIN = 460;    // meginsúlan heldur alltaf lestrarbreidd
   var VINSTRI = 'minmax(280px,320px)';
 
   function lesBreidd() {
-    try { var v = parseInt(localStorage.getItem(LYKILL), 10); return v > 0 ? v : 0; }
+    try { var v = parseInt(window.Vidmot ? Vidmot.lesaTaeki(LYKILL, 0) : 0, 10); return v > 0 ? v : 0; }
     catch (_) { return 0; }
   }
   function skrifaBreidd(v) {
-    try { if (v) localStorage.setItem(LYKILL, String(v)); else localStorage.removeItem(LYKILL); }
-    catch (_) { /* fullur kvóti — 461 reynir að rýma; breiddin lifir samt í lotunni */ }
+    try { if (window.Vidmot) Vidmot.setjaTaeki(LYKILL, v ? v : null); }   // null = „ekkert" → sjálfgefin breidd úr 368
+    catch (_) { /* breiddin lifir samt í lotunni */ }
   }
 
   var CSS = [

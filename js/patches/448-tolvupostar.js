@@ -27,7 +27,7 @@
  * Skrifleiðir (allar á þjóninn): thjonustubeidni (insert/patch tags·status·notes·svarad_at), reikninga_postur_activity (insert),
  * reikninga_postur_hidden (upsert/delete, sama tafla og 240 — felur í BÁÐUM). Sending: AppMail.send (254 → brunaholf gmail-send,
  * `from` = hólfið sem tók við póstinum, inReplyTo = message_id). Uppkast: POST /api/postur-reply (SV-19 í Svar-stöð).
- * Útlitsval eins vafra í localStorage `tolvupostar_sia` (hólf · röðun · sía) — leyfilegt skv. CLAUDE.md (sía/röðun).
+ * Viðmótsval (hólf · röðun) í Vidmot `tolvupostar.sia` (472 — eitt val fyrir allar vélar, 15.10.2026; var localStorage `tolvupostar_sia`).
  * ========================================================================== */
 (() => {
   if (window.__tolvupostar448) return;
@@ -36,7 +36,7 @@
   const HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
   const DAGAR = 60;
   const BH = 'https://brunaholf.netlify.app';
-  const SIA_LYKILL = 'tolvupostar_sia';
+  const SIA_LYKILL = 'tolvupostar.sia';
   const LOKID = '🟢 Lokið';
   const sb = () => (window.DB && DB.sb) || null;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -66,8 +66,13 @@
     sia: { holf: 'baedi', rodun: 'nyjast', osvarad: false, beidnir: false, vidhengi: false, merki: '' },
     _eftir: []
   };
-  try { const v = JSON.parse(localStorage.getItem(SIA_LYKILL) || '{}'); ['holf', 'rodun'].forEach(k => { if (v[k]) S.sia[k] = v[k]; }); } catch (_) {}
-  const vistaSiu = () => { try { localStorage.setItem(SIA_LYKILL, JSON.stringify({ holf: S.sia.holf, rodun: S.sia.rodun })); } catch (_) {} };
+  // Hólf og röðun lifa í Vidmot; aðrar síur (ósvarað, beiðnir, viðhengi, merki) eru vinnustaða lotunnar og eru EKKI vistaðar.
+  const siaLes = () => { try { const v = window.Vidmot ? Vidmot.lesa(SIA_LYKILL, null) : null; if (v && typeof v === 'object') ['holf', 'rodun'].forEach(k => { if (v[k]) S.sia[k] = v[k]; }); } catch (_) {} };
+  try { if (window.Vidmot) Vidmot.flytja(SIA_LYKILL, 'tolvupostar_sia', v => (v && typeof v === 'object' && (v.holf || v.rodun) ? { holf: v.holf, rodun: v.rodun } : undefined)); } catch (_) {}
+  siaLes();
+  const vistaSiu = () => { try { if (window.Vidmot) Vidmot.setja(SIA_LYKILL, { holf: S.sia.holf, rodun: S.sia.rodun }); } catch (_) {} };
+  // Val frá annarri vél tekur gildi við næstu teikningu — S.sia uppfært, ekkert render().
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SIA_LYKILL) siaLes(); } catch (_) {} });
   const notify = () => { try { if (window.Bord368 && Bord368.render) Bord368.render(); } catch (_) {} S._eftir.forEach(f => { try { f(); } catch (_) {} }); };
 
   /* ── GÖGN ─────────────────────────────────────────────────────────── */
@@ -350,7 +355,7 @@
   }
   function rymiHtml() {
     tryggjaStil();
-    let w = 0; try { const v = Number(localStorage.getItem('thjonustubord_vbr_breidd')); w = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}
+    let w = 0; try { const v = Number(window.Vidmot ? Vidmot.lesaTaeki('bord.vbrBreidd', 0) : 0); w = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}   // sami lykill sem 368 skrifar við sleppingu
     const s = S.sia, l = siad(), val = valinn();
     const n = h => hlutaListi(l, h).length;
     const hausTala = (S.loaded ? [n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★'].join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');

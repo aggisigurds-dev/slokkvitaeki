@@ -27,7 +27,10 @@
   if (window.__arsPhoneSkjar331) return;
   window.__arsPhoneSkjar331 = true;
 
-  const LS = 'arsskodun_viewmode';
+  const LS = 'arsskodun_viewmode';     // gamall localStorage-lykill — aðeins einskiptis flutningur (Vidmot.flytja)
+  // 15.10.2026 (regla Agnars): valið býr í Vidmot (472), per TÆKJAFLOKK (sími|tölva) — Sími/Tafla/Skjár er eðlislægt
+  // ólíkt á síma og tölvu, en eitt gildi fyrir allar vélar í sama flokki; nýjasta ræður.
+  const VKEY = 'arsskodun.viewmode';
   const LSZ = 'arsskodun_skjar_zoom';
   const STYLE_ID = 'ars-phone-skjar-331';
   const BAR_ID = '_ars-sjon';
@@ -54,11 +57,19 @@
     return MAP[k] || null;
   }
   function readStored() {
-    try { return parse(localStorage.getItem(LS)); } catch (_) { return null; }
+    try { return parse(window.Vidmot ? Vidmot.lesaTaeki(VKEY, null) : null); } catch (_) { return null; }
   }
+  // Aðeins við raunverulegt val notandans (rofinn / ArsSjon.set / banner-rofinn með valNotanda).
   function writeStored(mode) {
-    try { localStorage.setItem(LS, STORE[mode] || 'sími'); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setjaTaeki(VKEY, STORE[mode] || 'sími'); } catch (_) {}
   }
+  (function flytjaGamla() {
+    try {
+      if (!window.Vidmot || !Vidmot.flytja) return;
+      Vidmot.flytja(VKEY + '@' + Vidmot.taeki(), LS, v => parse(v) ? STORE[parse(v)] : undefined);
+      localStorage.removeItem(LS);
+    } catch (_) {}
+  })();
   function get() {
     const stored = readStored();
     if (stored) return stored;
@@ -632,12 +643,13 @@
     else resetCssZoom();
   }
 
-  /* Banner-rofinn: samstilla LS aðeins þegar notandi velur sjálfur og
+  /* Banner-rofinn: samstilla valið aðeins þegar notandi velur sjálfur (166 merkir
+     atburðinn valNotanda=true; endur-beiting við hleðslu/flakk ber það ekki) og
      appmode er ekki að þvinga mobile. */
   document.addEventListener('slokk-viewmode', ev => {
     const inApp = !!(document.body && document.body.classList.contains('appmode'));
     const detail = ev && ev.detail;
-    if (!inApp && parse(detail)) {
+    if (!inApp && ev && ev.valNotanda && parse(detail) && parse(detail) !== readStored()) {
       writeStored(parse(detail));
     }
     applyNow(false);

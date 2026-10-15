@@ -1290,14 +1290,25 @@
   // ---- view rendering ----
   // sortKey/'sortDir': röðun yfirlitstöflunnar — '' = sjálfgefin (félag+bygging)
   // svc = hvaða þjónusta sést í byggingatöflunni: 'both' | 'sl' | 'br' (vistað)
-  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1,
-    svc:(function(){ try{ var v=localStorage.getItem('_rf_svc_view'); return (v==='sl'||v==='br'||v==='both')?v:'both'; }catch(e){ return 'both'; } })() };
-  function setSvc(v){ _state.svc=v; try{ localStorage.setItem('_rf_svc_view',v); }catch(e){} }
+  // 15.10.2026 (regla Agnars): svc býr í Vidmot (472) undir 'rf.svc' — eitt gildi fyrir allar vélar; gamli
+  // lykillinn '_rf_svc_view' er aðeins einskiptis upphafsgildi. Skráin hleðst á undan 472 → latur lestur í renderView.
+  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1, svc:'both' };
+  function lesaSvc(){
+    try{
+      if(!window.Vidmot) return;
+      Vidmot.flytja('rf.svc','_rf_svc_view');
+      var v=Vidmot.lesa('rf.svc','both');
+      _state.svc=(v==='sl'||v==='br'||v==='both')?v:'both';
+    }catch(e){}
+  }
+  // Skrifað aðeins við smell á þjónustu-takka.
+  function setSvc(v){ _state.svc=v; try{ if(window.Vidmot) Vidmot.setja('rf.svc',v); }catch(e){} }
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
   // 23.09.2026: öll sýnin er endurbyggð hér (haus + listi) — skrun og fókus mega ekki tapast við það. Sjá 388.
   async function renderView(){
     var v=viewEl(); if(!v) return;
+    lesaSvc();   // val frá annarri vél tekur gildi við næstu teikningu (Vidmot)
     var _afturV=(window.Stodugt&&Stodugt.vernda)?Stodugt.vernda(v):null;
     injectStyles();
     // Sækjum lifandi rekstrarfélög fyrir fyrstu málun; ef þau eru ekki komin

@@ -118,11 +118,13 @@
   // ── B27 (Agnar 30.09: „færa þennan bara í tákn á Teikningum í efri hluta sem bara collapsed default, en hægt að expanda") ──
   // Teikningarborðinn (#co-fp-section, newfeatures/109/362) og Viðbóta upplýsingar (#vbu-section, vbu.js) sitja undir
   // miðjunni og taka pláss þótt erindið komi teikningunni ekki við. Nú eru þau FALIN sjálfgefið og opnast með litlum
-  // takka við hlið „Teikning" í borðanum; valið er munað í localStorage (teikning_syna) — útlitsval, ekki gagnastaða.
+  // takka við hlið „Teikning" í borðanum; valið er munað í Vidmot ('profill.teikningSyna', 472 — eitt val fyrir allar vélar,
+  // 15.10.2026; var localStorage teikning_syna, flutt einu sinni).
   // Falið = hæð 0 + overflow hidden (EKKI display:none — breiddin þarf að mælast fyrir grunnkvarða myndarinnar, sjá 362).
-  var FP_LYKILL = 'teikning_syna';
-  function fpOpid() { try { return localStorage.getItem(FP_LYKILL) === '1'; } catch (_) { return false; } }
-  function fpSetja(v) { try { v ? localStorage.setItem(FP_LYKILL, '1') : localStorage.removeItem(FP_LYKILL); } catch (_) {} }
+  var FP_LYKILL = 'profill.teikningSyna';
+  try { if (window.Vidmot) Vidmot.flytja(FP_LYKILL, 'teikning_syna', function (v) { return (v === 1 || v === '1') ? true : undefined; }); } catch (_) {}
+  function fpOpid() { try { return !!(window.Vidmot && Vidmot.lesa(FP_LYKILL, false) === true); } catch (_) { return false; } }
+  function fpSetja(v) { try { if (window.Vidmot) Vidmot.setja(FP_LYKILL, !!v); } catch (_) {} }
   function fpEndurmaela() { try { window.dispatchEvent(new Event('resize')); } catch (_) {} setTimeout(function () { try { window.dispatchEvent(new Event('resize')); } catch (_) {} }, 350); }
   function ensureTeikning(main) {
     var sec = document.getElementById('co-fp-section');
@@ -146,7 +148,7 @@
         var nu = !fpOpid(); fpSetja(nu); main.classList.toggle('b405-fp-open', nu);
         if (nu) {
           // 362 gæti hafa fellt borðann sjálfan saman (teikning_fellt) — opna hann líka, annars stendur hausinn einn eftir
-          try { if (localStorage.getItem('teikning_fellt') === '1') { var b = document.getElementById('_tf-btn'); if (b) b.click(); } } catch (_) {}
+          try { if (window.Vidmot && Vidmot.lesa('profill.teikningFellt', false) === true) { var b = document.getElementById('_tf-btn'); if (b) b.click(); } } catch (_) {}
           requestAnimationFrame(fpEndurmaela);
           var s2 = document.getElementById('co-fp-section'); if (s2) setTimeout(function () { s2.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
         }

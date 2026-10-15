@@ -8,9 +8,11 @@
 (() => {
   if (typeof window !== 'undefined' && window.TeiknGaedi) return;
 
-  const LS = 'teikn_gaedi';
+  // 15.10.2026: gæðavalið býr í Vidmot ('teikning.gaedi', 472) — eitt val fyrir allar vélar; var localStorage teikn_gaedi, flutt einu sinni.
+  const LS = 'teikning.gaedi';
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
   const VAL = ['forskodun', 'midlungs', 'fullt'];
+  try { if (window.Vidmot) Vidmot.flytja(LS, 'teikn_gaedi', v => (VAL.indexOf(v) >= 0 ? v : undefined)); } catch (_) {}
   const NOFN = { forskodun: 'Forskoðun', midlungs: 'Miðlungs', fullt: 'Full gæði' };
   const HLID = { forskodun: 2000, midlungs: 4000, fullt: 7200 };
   const VINNU = { forskodun: 1600, midlungs: 2200, fullt: 5200 };
@@ -20,7 +22,7 @@
 
   function gildi() {
     try {
-      const v = localStorage.getItem(LS);
+      const v = window.Vidmot ? Vidmot.lesa(LS, 'midlungs') : 'midlungs';
       if (VAL.indexOf(v) >= 0) return v;
     } catch (_) {}
     return 'midlungs';
@@ -205,11 +207,11 @@
 
   function setja(id) {
     if (VAL.indexOf(id) < 0) return gildi();
-    try { localStorage.setItem(LS, id); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setja(LS, id); } catch (_) {}
     malaTakka();
     endurhlada().then(() => {
       const n = NOFN[id] || id;
-      segja(id === 'fullt' ? n + ' — PDF í hárri upplausn (þunnir veggir).' : n + ' vistað á þessu tæki.');
+      segja(id === 'fullt' ? n + ' — PDF í hárri upplausn (þunnir veggir).' : n + ' vistað — gildir á öllum vélum.');
     }).catch(() => {});
     return id;
   }

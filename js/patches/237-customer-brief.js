@@ -370,18 +370,23 @@ html[data-cb-hidden="1"] .cb-dot{display:none}
   }
 
   // Dot-visibility state — controlled by patch 238 Aðstoðar-spjald
-  const TOGGLE_KEY = 'cb_hidden_v1';
+  // 15.10.2026: valið býr í Vidmot ('adstod.punktarFaldir', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
+  // `cb_hidden_v1` er fluttur einu sinni sem upphafsgildi. (adstod_watchlist_v1 er GÖGN og óbreytt.)
+  const TOGGLE_KEY = 'adstod.punktarFaldir';
+  try { if (window.Vidmot) Vidmot.flytja(TOGGLE_KEY, 'cb_hidden_v1', v => ((v === 1 || v === '1') ? true : (v === 0 || v === '0') ? false : undefined)); } catch (_) {}
+  function getDotsHidden() {
+    try { return !!(window.Vidmot && Vidmot.lesa(TOGGLE_KEY, false) === true); } catch (_) { return false; }
+  }
   function applyToggleState() {
-    const hidden = localStorage.getItem(TOGGLE_KEY) === '1';
-    document.documentElement.setAttribute('data-cb-hidden', hidden ? '1' : '0');
+    const hidden = getDotsHidden();
+    if (document.documentElement.getAttribute('data-cb-hidden') !== (hidden ? '1' : '0')) document.documentElement.setAttribute('data-cb-hidden', hidden ? '1' : '0');
   }
   function setDotsHidden(hidden) {
-    localStorage.setItem(TOGGLE_KEY, hidden ? '1' : '0');
+    try { if (window.Vidmot) Vidmot.setja(TOGGLE_KEY, !!hidden); } catch (_) {}
     applyToggleState();
   }
-  function getDotsHidden() {
-    return localStorage.getItem(TOGGLE_KEY) === '1';
-  }
+  // Val frá annarri vél: aðeins sýnileiki punktanna (CSS-eigind á <html>) — beitt strax, ekkert endurteiknað.
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === TOGGLE_KEY && !e.detail.heima) applyToggleState(); } catch (_) {} });
 
   // boot
   if (document.readyState === 'loading') {

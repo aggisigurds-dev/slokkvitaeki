@@ -10,7 +10,7 @@
  * neðan) svo hægt sé að opna aftur, og smellur á titilinn „TEIKNING" gerir það
  * sama.
  *
- * MUNAÐ MILLI HEIMSÓKNA í `localStorage` (`teikning_fellt`). Það brýtur ekki
+ * MUNAÐ MILLI HEIMSÓKNA í Vidmot (`profill.teikningFellt`, 472 — allar vélar). Það brýtur ekki
  * samstillingar-regluna frá 05.09.2026: þetta lýsir engri STÖÐU GAGNA, þetta er
  * útlitsval eins vafra — nákvæmlega það sem sú regla telur upp sem leyfilegt
  * („sía, röðun, samanbrot, þema").
@@ -62,7 +62,10 @@
   if (window.__teikningFellaInstalled) return;
   window.__teikningFellaInstalled = true;
 
-  const LYKILL = 'teikning_fellt';
+  // 15.10.2026: valið býr í Vidmot ('profill.teikningFellt', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
+  // `teikning_fellt` er fluttur einu sinni sem upphafsgildi. 405 les sama lykil.
+  const LYKILL = 'profill.teikningFellt';
+  try { if (window.Vidmot) Vidmot.flytja(LYKILL, 'teikning_fellt', v => ((v === 1 || v === '1') ? true : undefined)); } catch (_) {}
   const ATTR = 'data-teikning';      // á <html>: "fellt" eða ekkert
   const KL_HAUS = '_tf-haus';
   const BTN = '_tf-btn';
@@ -72,10 +75,10 @@
   const TXT_SYNA = '⌄ Sýna';
 
   function fellt() {
-    try { return localStorage.getItem(LYKILL) === '1'; } catch (_) { return false; }
+    try { return !!(window.Vidmot && Vidmot.lesa(LYKILL, false) === true); } catch (_) { return false; }
   }
   function vista(v) {
-    try { v ? localStorage.setItem(LYKILL, '1') : localStorage.removeItem(LYKILL); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setja(LYKILL, !!v); } catch (_) {}
   }
   function setjaAstand(v) {
     if (v) document.documentElement.setAttribute(ATTR, 'fellt');
@@ -185,5 +188,5 @@
   // grípur ef athugandinn missir af eða hýsillinn er endurnýjaður undir honum.
   setInterval(skreyta, 1500);
 
-  console.log('[teikning-fella] uppsett — collapse-takki á Teikning-borðann, ástand munað í localStorage(' + LYKILL + ')');
+  console.log('[teikning-fella] uppsett — collapse-takki á Teikning-borðann, ástand munað í Vidmot(' + LYKILL + ')');
 })();

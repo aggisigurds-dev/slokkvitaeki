@@ -33,7 +33,9 @@
   if (window.TeiknMerking) return;
 
   const TAFLA = 'teikning_bord';
-  const STAERD_LS = 'fp_stimpil_staerd';
+  // Varaleið stimpilstærðar (aðalgildið er haedir[].stimpilStaerd á þjóni): Vidmot 'teikning.stimpilStaerd' (472 — allar vélar,
+  // 15.10.2026; var localStorage fp_stimpil_staerd, flutt einu sinni).
+  const STAERD_LS = 'teikning.stimpilStaerd';
   // 06.10.2026 (Agnar: „breyta stærðarstillunni svo ég geti minnkað meira“): lágmark 24 → 10 px.
   const STAERD_MIN = 10;
   const STAERD_MAX = 160;
@@ -121,7 +123,7 @@
     const fraHaed = hs && hs[v] && klemmaStaerd(hs[v].stimpilStaerd);
     if (fraHaed) return fraHaed;
     try {
-      const ls = klemmaStaerd(localStorage.getItem(STAERD_LS));
+      const ls = klemmaStaerd(window.Vidmot ? Vidmot.lesa(STAERD_LS, null) : null);
       if (ls) return ls;
     } catch (_) {}
     return autoStaerd(crW);
@@ -770,7 +772,7 @@
       const hs = p.haedir;
       const i = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
       if (hs && hs[i]) hs[i].stimpilStaerd = v;
-      try { localStorage.setItem(STAERD_LS, String(v)); } catch (_) {}
+      try { if (window.Vidmot) Vidmot.setja(STAERD_LS, v); } catch (_) {}
     }
     try { if (FP() && FP()._renderCanvas) FP()._renderCanvas(); } catch (_) {}
     try { const y = document.getElementById('fp-yfirlag'); if (y) y._t433 = ''; } catch (_) {}

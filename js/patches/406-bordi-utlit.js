@@ -15,7 +15,7 @@
  *   hreinn 3 · HREINN nærri svartur, logarnir í 12% ógagnsæi, gullrönd neðst.
  *   eldur  0 · ELDUR  upprunalegi bálborðinn — engar yfirskriftir.
  *
- * Valið er staðbundið (localStorage `bordi_utlit`) og sett á <html> ÁÐUR en
+ * Valið býr í Vidmot (`bordi.utlit`, 472 — allar vélar) og er sett á <html> ÁÐUR en
  * borðinn er teiknaður, svo ekkert blossi milli útlita við hleðslu.
  *
  * SKIPTIRINN er lítill hnappur við klukkuna sem hringar útlitin fjögur og
@@ -33,19 +33,27 @@
   if (window.__bordiUtlitInstalled) return;
   window.__bordiUtlitInstalled = true;
 
-  const LYK = 'bordi_utlit';
+  // 15.10.2026: valið býr í Vidmot ('bordi.utlit', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
+  // `bordi_utlit` er fluttur einu sinni sem upphafsgildi. Skrifað AÐEINS við smell á skiptinn (áður skrifaði hleðslan líka).
+  const LYK = 'bordi.utlit';
   const ROD = ['glod', 'stal', 'hreinn', 'eldur'];
   const HEITI = { glod: '1 · Glóð', stal: '2 · Stál', hreinn: '3 · Hreinn', eldur: '0 · Eldur (upprunalegi)' };
+  try { if (window.Vidmot) Vidmot.flytja(LYK, 'bordi_utlit', v => (ROD.indexOf(v) >= 0 ? v : undefined)); } catch (_) {}
 
   function lesa() {
-    try { const v = localStorage.getItem(LYK); if (ROD.indexOf(v) >= 0) return v; } catch (_) {}
+    try { const v = window.Vidmot ? Vidmot.lesa(LYK, 'glod') : 'glod'; if (ROD.indexOf(v) >= 0) return v; } catch (_) {}
     return 'glod';
   }
-  function setja(v) {
-    document.documentElement.setAttribute('data-bordi', v);
-    try { localStorage.setItem(LYK, v); } catch (_) {}
+  function beita(v) {
+    if (document.documentElement.getAttribute('data-bordi') !== v) document.documentElement.setAttribute('data-bordi', v);
   }
-  setja(lesa());   // strax, á undan teikningu borðans
+  function setja(v) {
+    beita(v);
+    try { if (window.Vidmot) Vidmot.setja(LYK, v); } catch (_) {}
+  }
+  beita(lesa());   // strax, á undan teikningu borðans — ekkert skrif við hleðslu
+  // Val frá annarri vél (eða þjónninn nýrri en skyndiminnið við ræsingu): aðeins litir borðans, ekkert hopp — beitt strax.
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === LYK && !e.detail.heima) beita(lesa()); } catch (_) {} });
 
   const B = '#bstal-banner';
   const H = (v) => 'html[data-bordi="' + v + '"] ';

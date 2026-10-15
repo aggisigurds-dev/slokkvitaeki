@@ -229,9 +229,11 @@
     fit(ta);
   }
 
-  // ── 5) Samskipti-spjaldið: þétt sjálfgefið, „Meira" opnar allt (staðan lifir í vafranum — útlitsval) ──
-  var SAMSK_LYKILL = 'samsk_opid';
-  function samskOpid() { try { return localStorage.getItem(SAMSK_LYKILL) === '1'; } catch (_) { return false; } }
+  // ── 5) Samskipti-spjaldið: þétt sjálfgefið, „Meira" opnar allt (valið í Vidmot 'profill.samskOpid', 472 — eitt val fyrir
+  //       allar vélar, 15.10.2026; var localStorage samsk_opid, flutt einu sinni) ──
+  var SAMSK_LYKILL = 'profill.samskOpid';
+  try { if (window.Vidmot) Vidmot.flytja(SAMSK_LYKILL, 'samsk_opid', function (v) { return (v === 1 || v === '1') ? true : (v === 0 || v === '0') ? false : undefined; }); } catch (_) {}
+  function samskOpid() { try { return !!(window.Vidmot && Vidmot.lesa(SAMSK_LYKILL, false) === true); } catch (_) { return false; } }
   function samsk(card) {
     var opid = samskOpid();
     // 24.09.2026: þétta útlitið er sjálfgefið í CSS (:not(.b411-opid)) svo kortið málast ALDREI fyrst í fullri hæð (371 px) og
@@ -241,7 +243,7 @@
     var b = card.querySelector('.b411-samsk-meira');
     if (!b && acts) {
       b = document.createElement('button'); b.type = 'button'; b.className = 'b411-samsk-meira';
-      b.addEventListener('click', function () { try { localStorage.setItem(SAMSK_LYKILL, samskOpid() ? '0' : '1'); } catch (_) {} tick(); });
+      b.addEventListener('click', function () { try { if (window.Vidmot) Vidmot.setja(SAMSK_LYKILL, !samskOpid()); } catch (_) {} tick(); });
       acts.appendChild(b);
     }
     if (b) { var t = opid ? '⌃ Minna' : '⌄ Meira'; if (b.textContent !== t) b.textContent = t; if (acts && b.parentElement !== acts) acts.appendChild(b); }

@@ -39,30 +39,56 @@
 
   const VIEW_ID  = 'view-allir-vidsk';
   const NAV_KEY  = 'allir-vidsk';
-  const LS_FILT  = 'allir_vidsk_filter';
   const LS_SRCH  = 'allir_vidsk_search';
-  const LS_VIEW  = 'allir_vidsk_view2';    // 'card' | 'list' (default list)
-  const LS_SORT  = 'allir_vidsk_sort';     // 'nafn' | 'nafn-desc' | 'kt' | 'newest' | 'units'
-  const LS_XFILT = 'allir_vidsk_xfilter';  // extra filter — comma-separated of:
-                                           //   has-email | has-gps | no-address
+  // 15.10.2026 (regla Agnars: engin stilling má gilda bara í einu tæki): sía, sýn, röðun og
+  // viðbótarsía búa í Vidmot (472) — eitt gildi fyrir allar vélar, nýjasta ræður. Gömlu
+  // localStorage-lyklarnir (allir_vidsk_filter/_view2/_sort/_xfilter) eru aðeins einskiptis
+  // upphafsgildi (Vidmot.flytja) og eru ekki skrifaðir framar.
+  const VM = {
+    filter:  ['allir.filter',  'allir_vidsk_filter'],
+    view:    ['allir.view',    'allir_vidsk_view2'],   // 'card' | 'list' (default list)
+    sort:    ['allir.sort',    'allir_vidsk_sort'],    // 'nafn' | 'nafn-desc' | 'kt' | 'newest' | 'units'
+    xfilter: ['allir.xfilter', 'allir_vidsk_xfilter']  // fylki: has-email | has-gps | no-address
+  };
+  const vmLesa = (k, d) => { try { return (window.Vidmot && Vidmot.lesa) ? Vidmot.lesa(k, d) : d; } catch (_) { return d; } };
+  const vmSetja = (k, v) => { try { if (window.Vidmot && Vidmot.setja) Vidmot.setja(k, v); } catch (_) {} };
+  const vmFlytja = (k, g, f) => { try { if (window.Vidmot && Vidmot.flytja) Vidmot.flytja(k, g, f); } catch (_) {} };
 
   // 2026-05-29: search term is no longer persisted — always start blank.
   try { localStorage.removeItem(LS_SRCH); } catch (_) {}
   const state = {
-    filter:  localStorage.getItem(LS_FILT)  || 'all',
+    filter:  'all',
     search:  '',
-    view:    localStorage.getItem(LS_VIEW)  || 'list',
-    sort:    localStorage.getItem(LS_SORT)  || 'nafn',
-    xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean),
+    view:    'list',
+    sort:    'nafn',
+    xfilter: [],
     editId:  null,           // transient: company row currently in inline-edit mode
     selectMode: false,       // transient: bulk-select toolbar on/off
     selected: new Set()      // transient: ids picked in select mode
   };
+  // Síðast skrifuðu gildin — saveState skrifar AÐEINS það sem breyttist, svo leit (sem snertir
+  // aðeins state.search) ræsir engin skrif á þjón.
+  const _sidast = {};
+  // Lesið úr Vidmot við hverja opnun/teikningu: val frá annarri vél tekur gildi við næstu opnun.
+  function lesaVal() {
+    vmFlytja(VM.filter[0], VM.filter[1]);
+    vmFlytja(VM.view[0], VM.view[1]);
+    vmFlytja(VM.sort[0], VM.sort[1]);
+    vmFlytja(VM.xfilter[0], VM.xfilter[1], v => String(v || '').split(',').filter(Boolean));
+    state.filter = String(vmLesa(VM.filter[0], 'all') || 'all');
+    state.view   = String(vmLesa(VM.view[0], 'list') || 'list');
+    state.sort   = String(vmLesa(VM.sort[0], 'nafn') || 'nafn');
+    const xf = vmLesa(VM.xfilter[0], []);
+    state.xfilter = Array.isArray(xf) ? xf.slice() : String(xf || '').split(',').filter(Boolean);
+    _sidast.filter = state.filter; _sidast.view = state.view; _sidast.sort = state.sort; _sidast.xfilter = state.xfilter.join(',');
+  }
+  lesaVal();
   function saveState() {
-    localStorage.setItem(LS_FILT,  state.filter);
-    localStorage.setItem(LS_VIEW,  state.view);
-    localStorage.setItem(LS_SORT,  state.sort);
-    localStorage.setItem(LS_XFILT, state.xfilter.join(','));
+    const xf = state.xfilter.join(',');
+    if (state.filter !== _sidast.filter) { _sidast.filter = state.filter; vmSetja(VM.filter[0], state.filter); }
+    if (state.view   !== _sidast.view)   { _sidast.view   = state.view;   vmSetja(VM.view[0], state.view); }
+    if (state.sort   !== _sidast.sort)   { _sidast.sort   = state.sort;   vmSetja(VM.sort[0], state.sort); }
+    if (xf !== _sidast.xfilter)          { _sidast.xfilter = xf;          vmSetja(VM.xfilter[0], state.xfilter.slice()); }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
@@ -539,6 +565,7 @@
     ensureView();
     const main = document.getElementById('_av-main');
     if (!main) { setTimeout(show, 200); return; }
+    lesaVal();   // val frá annarri vél tekur gildi við opnun (Vidmot)
     render(main);
     // Load the document counter once, then refresh so the badges fill in.
     if (!_docLoaded) loadDocStatus().then(() => {
@@ -631,32 +658,32 @@
           </div>
         </div>
 
-        <!-- B39 (Agnar 30.09: „sama þema og Fyrirtæki í þjónustu, nema ekki með súluritinu“): fjögur stálspjöld með skornum
-             hornum og hnoðum eins og 414 teiknar á Fyrirtæki í þjónustu — smellur síar (var dauður cursor:pointer). CSS í 425. -->
-        ${(() => {
-          const HN = '<span class="hn" style="top:9px;left:9px"></span><span class="hn" style="top:9px;right:26px"></span><span class="hn" style="bottom:9px;left:26px"></span><span class="hn" style="bottom:9px;right:9px"></span>';
-          const pct = (n, d) => d ? Math.max(0, Math.min(100, Math.round(n * 100 / d))) : 0;
-          const bar = (parts, stor) => '<div class="b425-s' + (stor ? ' stor' : '') + '">' + parts.filter(p => p[1] > 0).map(p => '<span class="' + p[0] + '" style="width:' + p[1] + '%"></span>').join('') + '</div>';
-          const kort = (cls, kpi, title, merki, tala, eining, midja) =>
-            '<div class="b425-k ' + cls + ' _kpi" data-kpi="' + kpi + '" title="' + esc(title) + '" role="button" tabindex="0"><div class="b425-i">' + HN +
-              '<div class="b425-m"><i class="led"></i>' + merki + '</div>' +
-              '<div class="b425-t">' + tala + (eining ? '<small>' + eining + '</small>' : '') + '</div>' + midja + '</div></div>';
-          return '<div class="b425-grid">' +
-            kort('gull', 'all', 'Sýna alla', 'Viðskiptavinir · allir', cntAll, 'skráðir',
-              bar([['ra', pct(cntArs, cntAll)], ['bl', pct(cntBru, cntAll)], ['gu', pct(cntFerda, cntAll)], ['st', pct(cntOne, cntAll)]], true) +
-              '<div class="b425-l"><span><i class="ra"></i><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><i class="bl"></i><b>' + cntBru + '</b><small>brunakerfi</small></span><span><i class="gu"></i><b>' + cntFerda + '</b><small>ferðaþj.</small></span><span><i class="st"></i><b>' + cntOne + '</b><small>án samnings</small></span></div>') +
-            kort('graent', 'fyrirt', 'Sía: fyrirtækjaþjónusta', 'Í þjónustu', cntInService, '',
-              bar([['gr', pct(cntInService, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><b>' + cntBru + '</b><small>brunakerfi</small></span></div>') +
-            kort('stal', 'has-units', 'Sía: hefur tæki', 'Með tæki', cntWithUnits, '',
-              bar([['st', pct(cntWithUnits, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + pct(cntWithUnits, cntAll) + '%</b><small>skráð slökkvitæki</small></span></div>') +
-            kort('rautt', 'no-email', 'Sía: vantar netfang', 'Án netfangs', cntNoEmail, '',
-              bar([['ra', pct(cntNoEmail, cntAll)]]) +
-              '<div class="b425-l"><span><b>' + pct(cntNoEmail, cntAll) + '%</b><small>vantar tölvupóst</small></span></div>') +
-          '</div>';
-        })()}
-
+        <!-- B39 (Agnar 30.09: „sama þema og Fyrirtæki í þjónustu, nema ekki með súluritinu“): fjögur stálspjöld með skornum
+             hornum og hnoðum eins og 414 teiknar á Fyrirtæki í þjónustu — smellur síar (var dauður cursor:pointer). CSS í 425. -->
+        ${(() => {
+          const HN = '<span class="hn" style="top:9px;left:9px"></span><span class="hn" style="top:9px;right:26px"></span><span class="hn" style="bottom:9px;left:26px"></span><span class="hn" style="bottom:9px;right:9px"></span>';
+          const pct = (n, d) => d ? Math.max(0, Math.min(100, Math.round(n * 100 / d))) : 0;
+          const bar = (parts, stor) => '<div class="b425-s' + (stor ? ' stor' : '') + '">' + parts.filter(p => p[1] > 0).map(p => '<span class="' + p[0] + '" style="width:' + p[1] + '%"></span>').join('') + '</div>';
+          const kort = (cls, kpi, title, merki, tala, eining, midja) =>
+            '<div class="b425-k ' + cls + ' _kpi" data-kpi="' + kpi + '" title="' + esc(title) + '" role="button" tabindex="0"><div class="b425-i">' + HN +
+              '<div class="b425-m"><i class="led"></i>' + merki + '</div>' +
+              '<div class="b425-t">' + tala + (eining ? '<small>' + eining + '</small>' : '') + '</div>' + midja + '</div></div>';
+          return '<div class="b425-grid">' +
+            kort('gull', 'all', 'Sýna alla', 'Viðskiptavinir · allir', cntAll, 'skráðir',
+              bar([['ra', pct(cntArs, cntAll)], ['bl', pct(cntBru, cntAll)], ['gu', pct(cntFerda, cntAll)], ['st', pct(cntOne, cntAll)]], true) +
+              '<div class="b425-l"><span><i class="ra"></i><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><i class="bl"></i><b>' + cntBru + '</b><small>brunakerfi</small></span><span><i class="gu"></i><b>' + cntFerda + '</b><small>ferðaþj.</small></span><span><i class="st"></i><b>' + cntOne + '</b><small>án samnings</small></span></div>') +
+            kort('graent', 'fyrirt', 'Sía: fyrirtækjaþjónusta', 'Í þjónustu', cntInService, '',
+              bar([['gr', pct(cntInService, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + cntArs + '</b><small>fyrirtækjaþj.</small></span><span><b>' + cntBru + '</b><small>brunakerfi</small></span></div>') +
+            kort('stal', 'has-units', 'Sía: hefur tæki', 'Með tæki', cntWithUnits, '',
+              bar([['st', pct(cntWithUnits, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntWithUnits, cntAll) + '%</b><small>skráð slökkvitæki</small></span></div>') +
+            kort('rautt', 'no-email', 'Sía: vantar netfang', 'Án netfangs', cntNoEmail, '',
+              bar([['ra', pct(cntNoEmail, cntAll)]]) +
+              '<div class="b425-l"><span><b>' + pct(cntNoEmail, cntAll) + '%</b><small>vantar tölvupóst</small></span></div>') +
+          '</div>';
+        })()}
+
         <!-- Síurnar (02.10.2026, Agnar: „can you redesign the filters in allir viðskiptavinir"): sama röð og á Fyrirtæki í
              þjónustu og skoðunarsíðunum (394/418) — tegundarstikan · „Fleiri síur" (aukasíurnar með fjölda) · leitin sem
              fyllir línuna · Velja margar. Virkar aukasíur sem flísar með ✕ undir. Sömu klasar og data-eigindi og áður
@@ -841,7 +868,8 @@
     let _searchTimer = null;
     main.querySelector('#_av-search')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
-      _searchTimer = setTimeout(() => { state.search = e.target.value; saveState(); render(main); }, 200);
+      // 15.10.2026: leitin skrifar EKKERT á þjón — leitarorðið er ekki geymt (sbr. 2026-05-29).
+      _searchTimer = setTimeout(() => { state.search = e.target.value; render(main); }, 200);
     });
     main.querySelectorAll('._av-card, ._av-row').forEach(el => {
       el.addEventListener('click', e => {

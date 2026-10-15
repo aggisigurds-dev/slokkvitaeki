@@ -36,8 +36,10 @@
   window.__arsBilstjori317 = true;
 
   const VIEW_ID = 'view-arsskodun';
-  const LS_ON   = 'arsskodun_bilstjori_v1';
+  const LS_ON   = 'arsskodun_bilstjori_v1';       // gamlir localStorage-lyklar — aðeins einskiptis flutningur
   const LS_AK   = 'arsskodun_bilstjori_akstur';
+  const V_ON    = 'arsskodun.bilstjori';          // Vidmot (472): eitt val fyrir allar vélar (15.10.2026)
+  const V_AK    = 'arsskodun.bilstjoriAkstur';
   const MONTHS  = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
 
   const esc = s => String(s == null ? '' : s)
@@ -76,14 +78,20 @@
   const on = () => {
     const o = previewOverride();
     if (o !== null) return o;
-    try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; }
+    try { return !!window.Vidmot && Vidmot.lesa(V_ON, false) === true; } catch (_) { return false; }
   };
-  const setOn = v => { try { localStorage.setItem(LS_ON, v ? '1' : '0'); } catch (_) {} };
+  try { if (window.Vidmot && Vidmot.flytja) {
+    Vidmot.flytja(V_ON, LS_ON, v => (v === 1 || v === '1') ? true : undefined);
+    Vidmot.flytja(V_AK, LS_AK, v => (v && v !== 'allir') ? String(v) : undefined);
+    localStorage.removeItem(LS_ON); localStorage.removeItem(LS_AK);
+  } } catch (_) {}
+  // Aðeins úr smelli (🚚/▦-takkinn, „listi"-takkinn) — skrifar ekki óbreytt gildi.
+  const setOn = v => { try { if (window.Vidmot && (Vidmot.lesa(V_ON, false) === true) !== !!v) Vidmot.setja(V_ON, !!v); } catch (_) {} };
   function merkiBilstjori(virkt) {
     try { document.documentElement.classList.toggle('slokk-bilstjori', !!virkt); } catch (_) {}
   }
-  const akFilter = () => { try { return localStorage.getItem(LS_AK) || 'allir'; } catch (_) { return 'allir'; } };
-  const setAkFilter = v => { try { localStorage.setItem(LS_AK, v); } catch (_) {} };
+  const akFilter = () => { try { return (window.Vidmot && Vidmot.lesa(V_AK, null)) || 'allir'; } catch (_) { return 'allir'; } };
+  const setAkFilter = v => { try { if (window.Vidmot) Vidmot.setja(V_AK, v); } catch (_) {} };
 
   /* ── Stílar — arsskodun-app.html (Agnar 29.08, upprunalega málmútlitið) ──
      Handoff v2.1 vildi hljóðlát 2a-spjöld. Agnar hlóð svo inn

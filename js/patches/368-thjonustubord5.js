@@ -326,6 +326,16 @@
     'Afgreiðsla': { dagskra: [1, 1], akstur: [1, 0] }
   };
 
+  // 15.10.2026 (regla Agnars: „engin stilling má virka bara í einhverju ákveðnu tæki"): viðmótsval borðsins býr í Vidmot (472)
+  // — eitt val fyrir allar vélar, nýjasta ræður. Gömlu localStorage-lyklarnir eru fluttir einu sinni sem upphafsgildi. Val frá
+  // annarri vél tekur gildi við NÆSTU teikningu: breyturnar hér eru uppfærðar í `vidmot-breytt`, ekkert render() kallað.
+  const vmLesa = (k, d) => { try { return window.Vidmot ? Vidmot.lesa(k, d) : d; } catch (_) { return d; } };
+  const vmSetja = (k, v) => { try { if (window.Vidmot) Vidmot.setja(k, v); } catch (_) {} };
+  const vmFlytja = (k, g, f) => { try { if (window.Vidmot) Vidmot.flytja(k, g, f); } catch (_) {} };
+  const MITT_FELLT_LYKILL = 'bord.mittFellt';   // 368x „Mitt borð" fellt saman (var localStorage t5_mitt_samanbrotid)
+  vmFlytja(MITT_FELLT_LYKILL, 't5_mitt_samanbrotid', v => ((v === 1 || v === '1') ? true : (v === 0 || v === '0') ? false : undefined));
+  const mittFellt = () => vmLesa(MITT_FELLT_LYKILL, false) === true;
+
   const S = {
     rows: [], names: {}, loaded: false, loading: false, err: '', loadedAt: null,
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
@@ -344,8 +354,7 @@
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
     skyrOpid: null,    // opinn skýringarritill (einn í einu): { l, e, d, texti, upphaf, vistar, villa }
-    // 368x (Agnar 13.09.2026): „Mitt borð" má fella saman — 75 mála listinn fyllti skjáinn. Útlitsval vafrans, ekki staða gagna.
-    mittSamanbrotid: (() => { try { return localStorage.getItem('t5_mitt_samanbrotid') === '1'; } catch (_) { return false; } })(),
+    // 368x (Agnar 13.09.2026): „Mitt borð" má fella saman — 75 mála listinn fyllti skjáinn. Valið er lesið úr Vidmot í render (mittFellt()).
     synaHluta: {}      // „Sýna" falin atriði / Stólpa-hlutann — val á skjánum, ekki staða gagna
   };
 
@@ -2173,9 +2182,9 @@
   const SPURNING = 'spurning';
   // 368z4: mál sem gögnin sýna afgreitt (greitt / sent / klárað / svarað) fara efst — þau þarf aðeins að loka.
   /* 09.10.2026 (Agnar: „put those filters, sorters and such in the webpage as well"): sama röðun og á símasíðunni (446),
-   * SAMI localStorage-lykill svo sími og tölva raði eins. Röðun er innan hvers hluta; „Sjálfgefið" = rodunSamt. Útlitsval
-   * eins vafra → localStorage er leyfilegt (CLAUDE.md: Samstillt milli véla). */
-  const SAMT_ROD_LYKILL = 'samthykkja_rodun';
+   * SAMI Vidmot-lykill ('samthykkja.rodun', 472) svo sími og tölva — og allar vélarnar — raði eins. Röðun er innan hvers
+   * hluta; „Sjálfgefið" = rodunSamt. 15.10.2026: var localStorage `samthykkja_rodun`, flutt einu sinni. */
+  const SAMT_ROD_LYKILL = 'samthykkja.rodun';
   const SAMT_RADANIR = [['sjalf', 'Sjálfgefið', 'Áríðandi, svo upphæð, svo frestur'], ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
     ['mikilv', 'Mikilvægast', 'Áríðandi mál efst'], ['verdm', 'Verðmætast', 'Hæsta upphæð efst'], ['elst', 'Lengst beðið', 'Elsta málið efst'],
     /* 09.10.2026 (Agnar: „geturðu látið svara tölvupóstum í samþykktir bara sýna tölvupósta sem ég á eftir að svara").
@@ -2192,7 +2201,10 @@
   const postSvarad = r => !!r.svarad_at || !!(sonn(r) && sonn(r).styrkur === 'svarad');
   const postOsvarad = r => isPost(r) && !postSvarad(r);
   let samtRodun = 'sjalf';
-  try { const v = localStorage.getItem(SAMT_ROD_LYKILL); if (SAMT_RADANIR.some(x => x[0] === v)) samtRodun = v; } catch (_) {}
+  const samtRodLes = () => { const v = vmLesa(SAMT_ROD_LYKILL, 'sjalf'); return SAMT_RADANIR.some(x => x[0] === v) ? v : 'sjalf'; };
+  vmFlytja(SAMT_ROD_LYKILL, 'samthykkja_rodun', v => (SAMT_RADANIR.some(x => x[0] === v) ? v : undefined));
+  samtRodun = samtRodLes();
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SAMT_ROD_LYKILL) samtRodun = samtRodLes(); } catch (_) {} });
   const samtRada = (a, b) => {
     const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
     switch (samtRodun) {
@@ -2216,10 +2228,16 @@
     return '<div class="samt-teljari">' + b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
       b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + (n(-1) ? b(-1, '_ok', 'Afgreitt', 'bara loka') : '') + '</div>';
   }
-  // Breidd listans (Agnar: „drag the list to the side so more text will fit"): handfang í hægri brún, px í localStorage.
-  const VBR_BREIDD_LYKILL = 'thjonustubord_vbr_breidd';
-  let vbrBreidd = 0;
-  try { const v = Number(localStorage.getItem(VBR_BREIDD_LYKILL)); vbrBreidd = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}   // ekkert vistað → sjálfgefin 290
+  // Breidd listans (Agnar: „drag the list to the side so more text will fit"): handfang í hægri brún, px í Vidmot per tækjaflokk
+  // (lesaTaeki/setjaTaeki 'bord.vbrBreidd' — dregin breidd er eðlislægt ólík á síma og tölvu; 448 les sama lykil).
+  // 15.10.2026: var localStorage `thjonustubord_vbr_breidd`, flutt einu sinni. Skrifað aðeins við sleppingu (pointerup).
+  const VBR_BREIDD_LYKILL = 'bord.vbrBreidd';
+  const vbrKlemma = v => { v = Number(v); return v > 0 ? Math.min(760, Math.max(230, v)) : 0; };
+  let vbrBreidd = 0;   // ekkert vistað → sjálfgefin 290
+  const vbrLes = () => { try { return window.Vidmot ? vbrKlemma(Vidmot.lesaTaeki(VBR_BREIDD_LYKILL, 0)) : 0; } catch (_) { return 0; } };
+  try { if (window.Vidmot) Vidmot.flytja(VBR_BREIDD_LYKILL + '@' + Vidmot.taeki(), 'thjonustubord_vbr_breidd', v => (vbrKlemma(v) || undefined)); } catch (_) {}
+  vbrBreidd = vbrLes();
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && window.Vidmot && e.detail.lykill === VBR_BREIDD_LYKILL + '@' + Vidmot.taeki()) vbrBreidd = vbrLes(); } catch (_) {} });
   function onVbrGrip(e) {
     const h = e.target && e.target.closest ? e.target.closest('[data-vbr-grip]') : null;
     if (!h) return;
@@ -2237,7 +2255,7 @@
     const sleppa = () => {
       h.classList.remove('virk');
       h.removeEventListener('pointermove', hreyfa); h.removeEventListener('pointerup', sleppa); h.removeEventListener('pointercancel', sleppa);
-      try { localStorage.setItem(VBR_BREIDD_LYKILL, String(vbrBreidd)); } catch (_) {}
+      try { if (window.Vidmot) Vidmot.setjaTaeki(VBR_BREIDD_LYKILL, vbrBreidd); } catch (_) {}
     };
     h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
   }
@@ -4932,7 +4950,7 @@
     // Á síma: mál til skoðunar sem er ekki í sýnilega listanum (t.d. opnað úr leit) birtist efst.
     const selUtan = selRow && !selMinn && !visible.slice(0, S.synd).some(r => r.id === selId) ? '<div class="sel inline">' + selMarkup + '</div>' : '';
     // 368x: „Mitt borð" samanbrjótanlegt, eins og einingarnar (modPanel) — haus og talning standa, listinn víkur.
-    const mittSb = !!S.mittSamanbrotid;
+    const mittSb = mittFellt();
     const mineHtml = '<section class="panel colmine' + (mittSb ? ' samanbrotid' : '') + '" aria-label="Mitt borð">' +
         '<header class="phead">' + plate('03') + '<h2 class="ptitle">Mitt borð</h2><span class="sum">' + mine.length + ' mál</span>' +
           // 368aa: „+ N í öðrum hömum" farið — samþykkismál eru í Samþykkja, vinnublöð í Vinnublöðum, allt annað er hér.
@@ -5710,7 +5728,7 @@
         return;
       }
       case 'samt-velja': S.samtVal = id; render(); vbrTilBaka(); return;
-      case 'samt-rod': samtRodun = el.dataset.v; try { localStorage.setItem(SAMT_ROD_LYKILL, samtRodun); } catch (_) {} render(); return;
+      case 'samt-rod': samtRodun = el.dataset.v; vmSetja(SAMT_ROD_LYKILL, samtRodun); render(); return;
       case 'samt-hoppa': { const s = root.querySelector('.vbr-sect[data-h="' + el.dataset.v + '"]'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       case 'samt-fara': {
         const listi = samtListi(nu()), i = listi.findIndex(r => r.id === S.samtVal);
@@ -5767,8 +5785,7 @@
         return;
       case 'mod-open': S.open[openKey(m)] = !isOpen(m); render(); return;
       case 'mitt-fella':
-        S.mittSamanbrotid = !S.mittSamanbrotid;
-        try { localStorage.setItem('t5_mitt_samanbrotid', S.mittSamanbrotid ? '1' : '0'); } catch (_) {}
+        vmSetja(MITT_FELLT_LYKILL, !mittFellt());
         render();
         return;
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;

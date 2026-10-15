@@ -54,8 +54,8 @@
   const P = 'html[data-thm-preset="'+PRESET+'"] ';
   const ON = 'html[data-bstal-banner="on"][data-thm-preset="'+PRESET+'"] ';
   // 25.09.2026 (Agnar): „pinku lítill takki … sem fellur upp bannerinn í bara eitt
-  // lítið merki". Samanbrot er útlitsval EINS vafra (sbr. sía/röðun/þema), svo það
-  // býr í localStorage — ekki á þjóninum.
+  // lítið merki". Samanbrotið er viðmótsval og býr í Vidmot ('bordi.mini', 472) —
+  // eitt val fyrir allar vélar (regla Agnars 15.10.2026).
   const MINI = 'html[data-bstal-banner="on"][data-bstal-mini="1"][data-thm-preset="'+PRESET+'"] ';
   const MQ   = 'html[data-bstal-mini="1"] ';
   const METAL_BLACK = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
@@ -405,9 +405,12 @@
   // Stöðunni er slegið á <html> STRAX við hleðslu (sjá kallið neðst í ræsingunni),
   // áður en borðinn er byggður — annars sæist fullur borði í einn ramma og efnið
   // hoppaði upp á eftir. Sama regla og í [Stöðugt viðmót].
-  const MINI_KEY = 'bstal_bordi_mini';
+  // 15.10.2026: valið býr í Vidmot ('bordi.mini', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
+  // `bstal_bordi_mini` er fluttur einu sinni sem upphafsgildi. Val frá annarri vél tekur gildi í næsta refresh().
+  const MINI_KEY = 'bordi.mini';
+  try { if (window.Vidmot) Vidmot.flytja(MINI_KEY, 'bstal_bordi_mini', v => ((v === 1 || v === '1') ? true : (v === 0 || v === '0') ? false : undefined)); } catch (_) {}
   function erMini() {
-    try { return localStorage.getItem(MINI_KEY) === '1'; } catch (_) { return false; }
+    try { return !!(window.Vidmot && Vidmot.lesa(MINI_KEY, false) === true); } catch (_) { return false; }
   }
   function merkjaMini(a) {
     const r = document.documentElement;
@@ -422,7 +425,7 @@
     }
   }
   function setjaMini(a) {
-    try { localStorage.setItem(MINI_KEY, a ? '1' : '0'); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setja(MINI_KEY, !!a); } catch (_) {}
     merkjaMini(a);
   }
 

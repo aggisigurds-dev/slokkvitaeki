@@ -38,8 +38,17 @@
   let searchQuery = '';
   let _pendingPhoto = null; // staged file for legacy import (before record exists)
   // 2026-07-11: samningalistinn fellanlegur — sjálfgefið FELLDUR (verkefnalisti-ósk).
-  // Leit opnar hann sjálfkrafa; valið er munað per tæki.
-  let _listOpen = localStorage.getItem('ct_list_open') === '1';
+  // Leit opnar hann sjálfkrafa. 15.10.2026 (regla Agnars): valið býr í Vidmot (472) undir
+  // 'samningar.listiOpinn' — eitt gildi fyrir allar vélar; 'ct_list_open' er aðeins einskiptis upphafsgildi.
+  // Skráin hleðst á undan 472 → lesið latt í render(); skrifað aðeins við smell á fella/opna-takkann.
+  let _listOpen = false;
+  function lesaListiOpinn() {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja('samningar.listiOpinn', 'ct_list_open', v => v === 1 || v === '1' || v === true);
+      _listOpen = Vidmot.lesa('samningar.listiOpinn', false) === true;
+    } catch (_) {}
+  }
 
   if (!document.getElementById('contract-style')) {
     const s = document.createElement('style');
@@ -185,6 +194,7 @@
   function render() {
     const main = document.querySelector('#view-samningar #ct-main');
     if (!main) return;
+    lesaListiOpinn();   // val frá annarri vél tekur gildi við næstu teikningu (Vidmot)
     const totalRev = contracts.filter(c=>c.status==='virkur').reduce((s,c)=>s+(parseFloat(c.upphaed_an_vsk)||0)*(12/(c.tidni_man||12)),0);
     const filtered = filterContracts();
     const showList = _listOpen || !!searchQuery;

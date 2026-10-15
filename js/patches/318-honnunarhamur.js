@@ -28,7 +28,8 @@
   if (window.__honnunarhamur318) return;
   window.__honnunarhamur318 = true;
 
-  const LS_ON  = 'ars_honnunarhamur_v1';
+  const LS_ON  = 'ars_honnunarhamur_v1';   // gamall localStorage-lykill — aðeins einskiptis flutningur
+  const V_ON   = 'arsskodun.honnun';       // Vidmot (472): eitt val fyrir allar vélar (15.10.2026)
   const AS_KEY = 'ars_simi_stillingar';
   const IN_DEVFRAME = !!(new URLSearchParams(location.search).get('devframe'));
 
@@ -128,8 +129,11 @@
   const erLitur = b => b && b.tegund === 'litur';
   const erFontur = b => b && b.tegund === 'fontur';
 
-  const on = () => { try { return localStorage.getItem(LS_ON) === '1'; } catch (_) { return false; } };
-  const setOn = v => { try { localStorage.setItem(LS_ON, v ? '1' : '0'); } catch (_) {} };
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(V_ON, LS_ON, v => (v === 1 || v === '1') ? true : undefined); localStorage.removeItem(LS_ON); } } catch (_) {}
+  const on = () => { try { return !!window.Vidmot && Vidmot.lesa(V_ON, false) === true; } catch (_) { return false; } };
+  // Skrifar AÐEINS þegar gildið breytist — loka() kallar setOn(false) líka þegar hamurinn var aldrei kveiktur
+  // (rammi lokar o.fl.) og það má ekki verða skrif á þjóninn.
+  const setOn = v => { try { if (window.Vidmot && on() !== !!v) Vidmot.setja(V_ON, !!v); } catch (_) {} };
 
   /* <input type="color"> tekur aðeins #rrggbb. */
   function tilHex(s) {

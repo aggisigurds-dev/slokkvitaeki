@@ -105,12 +105,18 @@
 
   let _count = 0;
   let _items = [];
-  // 2026-05-21: persisted sort mode.
-  const DROG_SORT_KEY = '_drog_sort_v1';
+  // 2026-05-21: persisted sort mode. 15.10.2026 (regla Agnars): röðunin býr í Vidmot (472) undir
+  // 'drog.sort' — eitt gildi fyrir allar vélar; gamli lykillinn '_drog_sort_v1' er aðeins einskiptis upphafsgildi.
+  const DROG_SORT_VM = 'drog.sort';
   function loadSort() {
-    try { return localStorage.getItem(DROG_SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
+    try {
+      if (!window.Vidmot) return _sortMode || 'updated_desc';
+      Vidmot.flytja(DROG_SORT_VM, '_drog_sort_v1');
+      return String(Vidmot.lesa(DROG_SORT_VM, 'updated_desc') || 'updated_desc');
+    } catch (_) { return 'updated_desc'; }
   }
-  function saveSort(v) { try { localStorage.setItem(DROG_SORT_KEY, v); } catch (_) {} }
+  // Skrifað aðeins við raunverulegt val í fellilistanum.
+  function saveSort(v) { try { if (window.Vidmot) Vidmot.setja(DROG_SORT_VM, v); } catch (_) {} }
   let _sortMode = loadSort();
   let _showDeleted = false;   // 2026-06-24: reveal soft-deleted (hidden) drög
 
@@ -375,6 +381,7 @@
     if (v) { v.style.display = 'block'; v.classList.add('active'); }
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
     try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+    _sortMode = loadSort();   // röðun frá annarri vél tekur gildi við opnun (Vidmot)
     renderList();
     loadDrog().then(renderList).catch(() => {});
   }

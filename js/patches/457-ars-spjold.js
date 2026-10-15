@@ -244,10 +244,12 @@
   }
 
   var IC_SPJOLD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>';
-  var LYKILL_HEIL = 'spj_mynd_heil_v1';
-  function lesaHeil() { try { return localStorage.getItem(LYKILL_HEIL) !== '0'; } catch (_) { return true; } }
-  function setjaHeil(on) {
-    try { localStorage.setItem(LYKILL_HEIL, on ? '1' : '0'); } catch (_) {}
+  var LYKILL_HEIL = 'spj_mynd_heil_v1';   // gamall localStorage-lykill — aðeins einskiptis flutningur
+  var V_HEIL = 'arsskodun.spjHeil';       // Vidmot (472): eitt val fyrir allar vélar (15.10.2026)
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(V_HEIL, LYKILL_HEIL, function (v) { return (v === 0 || v === '0') ? false : undefined; }); localStorage.removeItem(LYKILL_HEIL); } } catch (_) {}
+  function lesaHeil() { try { return window.Vidmot ? Vidmot.lesa(V_HEIL, true) !== false : true; } catch (_) { return true; } }
+  function setjaHeil(on) {   // aðeins úr rofanum (smellur)
+    try { if (window.Vidmot) Vidmot.setja(V_HEIL, !!on); } catch (_) {}
     document.documentElement.classList.toggle('spj-heil', on);
     takki();
   }

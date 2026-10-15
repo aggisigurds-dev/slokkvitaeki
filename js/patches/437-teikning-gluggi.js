@@ -19,10 +19,13 @@
 (() => {
   if (window.TeiknGluggi) return;
 
-  const LS = 'fp_panel_breidd';
+  // 15.10.2026: dregin breidd býr í Vidmot per tækjaflokk (lesaTaeki/setjaTaeki 'teikning.panelBreidd', 472) — eitt gildi fyrir
+  // allar vélarnar; var localStorage fp_panel_breidd, flutt einu sinni. Skrifað aðeins við sleppingu (vista=true).
+  const LS = 'teikning.panelBreidd';
   const SJALF = 168;
   const MIN = 148;
   const MAX = 520;
+  try { if (window.Vidmot) Vidmot.flytja(LS + '@' + Vidmot.taeki(), 'fp_panel_breidd', v => { const n = parseInt(v, 10); return n >= MIN && n <= MAX ? n : undefined; }); } catch (_) {}
 
   const CSS =
     '#modal-floorplan.modal.open{padding:10px!important;align-items:stretch!important;justify-content:stretch!important}' +
@@ -69,7 +72,7 @@
 
   function lesaBreidd() {
     try {
-      const n = parseInt(localStorage.getItem(LS), 10);
+      const n = parseInt(window.Vidmot ? Vidmot.lesaTaeki(LS, SJALF) : SJALF, 10);
       if (n >= MIN && n <= MAX) return n;
     } catch (_) {}
     return SJALF;
@@ -94,7 +97,7 @@
       setImp(panel, 'max-width', w + 'px');
     }
     if (vista) {
-      try { localStorage.setItem(LS, String(w)); } catch (_) {}
+      try { if (window.Vidmot) Vidmot.setjaTaeki(LS, w); } catch (_) {}
     }
     return w;
   }

@@ -50,16 +50,28 @@
   function nowIso() { return new Date().toISOString(); }
 
   // ── State ───────────────────────────────────────────────────────────────
-  const VIEW_KEY = '_tv_view_v1';
-  const TAGS_KEY = '_tv_tags_v1';
+  // 15.10.2026 (regla Agnars): sýn og merkjasía búa í Vidmot (472) — 'thjonustuverk.view' /
+  // 'thjonustuverk.tags' — eitt gildi fyrir allar vélar. Gömlu lyklarnir (_tv_view_v1/_tv_tags_v1) eru
+  // aðeins einskiptis upphafsgildi (flytja). Skrifað aðeins við smell á sýnar-takka / merki.
+  const VIEW_VM = 'thjonustuverk.view';
+  const TAGS_VM = 'thjonustuverk.tags';
   function loadView() {
-    try { return localStorage.getItem(VIEW_KEY) || 'list'; } catch (_) { return 'list'; }
+    try {
+      if (!window.Vidmot) return 'list';
+      Vidmot.flytja(VIEW_VM, '_tv_view_v1');
+      return String(Vidmot.lesa(VIEW_VM, 'list') || 'list');
+    } catch (_) { return 'list'; }
   }
-  function saveView(v) { try { localStorage.setItem(VIEW_KEY, v); } catch (_) {} }
+  function saveView(v) { try { if (window.Vidmot) Vidmot.setja(VIEW_VM, v); } catch (_) {} }
   function loadTagFilter() {
-    try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '[]'); } catch (_) { return []; }
+    try {
+      if (!window.Vidmot) return [];
+      Vidmot.flytja(TAGS_VM, '_tv_tags_v1', v => Array.isArray(v) ? v : []);
+      const a = Vidmot.lesa(TAGS_VM, []);
+      return Array.isArray(a) ? a.slice() : [];
+    } catch (_) { return []; }
   }
-  function saveTagFilter(arr) { try { localStorage.setItem(TAGS_KEY, JSON.stringify(arr)); } catch (_) {} }
+  function saveTagFilter(arr) { try { if (window.Vidmot) Vidmot.setja(TAGS_VM, Array.from(arr || [])); } catch (_) {} }
   let _state = { cases: [], filter: 'all', view: loadView(), tagFilter: new Set(loadTagFilter()) };
   function load() {
     const v = (window.AppSettings && AppSettings.path && AppSettings.path(STORAGE_KEY)) || {};
@@ -1202,6 +1214,8 @@
 
   function show() {
     ensureView();
+    // Val frá annarri vél tekur gildi við opnun (Vidmot).
+    _state.view = loadView(); _state.tagFilter = new Set(loadTagFilter());
     if (window.App && App.switchView) App.switchView(NAV_KEY);
     else { load(); render(); }
   }

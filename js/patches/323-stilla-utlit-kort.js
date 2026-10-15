@@ -347,11 +347,17 @@
       monthDropdown(mr, cfg.man === 'dropdown');
     }
     // „Muna valdar síur" af ⇒ hreinsa vistaða valið þegar síðan er opnuð, svo
-    // næsta heimsókn byrji á hreinu borði. 153 heldur áfram að skrifa í
-    // localStorage — við tökum bara ekki við því.
+    // næsta heimsókn byrji á hreinu borði. 15.10.2026: valið býr í Vidmot (472),
+    // ekki localStorage — hreinsað með null (= sjálfgefið), AÐEINS ef eitthvað er
+    // vistað, svo stillingin skrifi ekki að óþörfu. 153 les við næstu opnun síðunnar.
     if (cfg.muna === false && !siurApply._cleared) {
       siurApply._cleared = true;
       try {
+        if (window.Vidmot) {
+          if (Vidmot.lesa('arsskodun.status', 'all') !== 'all') Vidmot.setja('arsskodun.status', null);
+          if ((Vidmot.lesa('arsskodun.months', []) || []).length) Vidmot.setja('arsskodun.months', null);
+        }
+        // leifar gömlu localStorage-lyklanna (153 skrifar þá ekki framar)
         localStorage.removeItem('arsskodun_status');
         localStorage.removeItem('arsskodun_month');
         localStorage.removeItem('arsskodun_months');

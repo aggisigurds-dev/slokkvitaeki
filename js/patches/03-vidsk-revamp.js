@@ -142,22 +142,31 @@
   let searchTerm = '';
   let sortKey = 'name';
   let sortDir = 1;
-  try {
-    const saved = localStorage.getItem('vidsk_sort');
-    const preset = SORT_PRESETS.find(p => p.id === saved);
-    if (preset) { sortKey = preset.key; sortDir = preset.dir; }
-  } catch (_) { /* no localStorage */ }
+  // 15.10.2026 (regla Agnars): röðunin býr í Vidmot (472) undir 'vidsk.sort' — eitt gildi fyrir allar
+  // vélar. Gamli lykillinn 'vidsk_sort' er aðeins einskiptis upphafsgildi (flytja). Þessi skrá hleðst
+  // á undan 472, svo lesturinn er latur: við hverja opnun síðunnar (showVidskiptaviniView) og teikningu.
+  const VM_SORT = 'vidsk.sort';
+  function lesaSort() {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja(VM_SORT, 'vidsk_sort');
+      const saved = Vidmot.lesa(VM_SORT, null);
+      const preset = SORT_PRESETS.find(p => p.id === saved);
+      if (preset) { sortKey = preset.key; sortDir = preset.dir; }
+    } catch (_) { /* Vidmot ekki tilbúið */ }
+  }
   let view = 'list';       // 'list' | 'detail'
   let detailCustomer = null;
   let detailUnits = [];
   let isLoading = false;
   const selectedIds = new Set();
 
+  // Skrifað AÐEINS við raunverulegt val (smell á röðunarhaus / fellilista).
   function persistSort() {
     try {
+      if (!window.Vidmot) return;
       const p = SORT_PRESETS.find(x => x.key === sortKey && x.dir === sortDir);
-      if (p) localStorage.setItem('vidsk_sort', p.id);
-      else localStorage.removeItem('vidsk_sort');
+      Vidmot.setja(VM_SORT, p ? p.id : null);
     } catch (_) {}
   }
 
@@ -308,6 +317,7 @@
   function renderList() {
     const m = ensureMain();
     if (!m) return;
+    lesaSort();   // Vidmot-skyndiminnið er samstundis; eftir smell er gildið þegar það sama
     if (isLoading && !customers.length) {
       m.innerHTML = '<div class="loading-state">Hleður viðskiptavinum…</div>';
       return;
@@ -940,6 +950,7 @@
     if (b) b.classList.add('active');
     // Reset to list view when re-entering
     view = 'list'; detailCustomer = null;
+    lesaSort();   // röðun frá annarri vél tekur gildi við opnun (Vidmot)
     refresh();
     document.querySelectorAll('.vnav, [class*="drawer"], [class*="menu-open"]').forEach(el => {
       el.classList.remove('open', 'active', 'menu-open');

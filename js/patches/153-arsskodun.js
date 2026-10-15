@@ -66,6 +66,16 @@
   // 2026-08-12 (ósk Agnars): póstnúmera-sían — 'all' = engin sía (öll númer),
   // annars JSON-fylki af völdum númerum ('' = fyrirtæki án skráðs póstnúmers).
   const LS_POSTNR = 'arsskodun_postnr';
+  // 15.10.2026 (regla Agnars: „engin stilling má virka bara í einhverju ákveðnu tæki"): síðuvalið hér að ofan býr nú í
+  // Vidmot (472) — EITT gildi fyrir allar fimm vélarnar, nýjasta ræður. LS_*-lyklarnir eru aðeins einskiptis upphafsgildi
+  // (Vidmot.flytja) og eru fjarlægðir úr localStorage um leið; þeir eru aldrei skrifaðir framar.
+  const V = {
+    view: 'arsskodun.view', sort: 'arsskodun.sort', sortCol: 'arsskodun.sortCol', sortDir: 'arsskodun.sortDir',
+    months: 'arsskodun.months', postnr: 'arsskodun.postnr', status: 'arsskodun.status',
+    hideSkipped: 'arsskodun.hideSkipped', skipRaw: 'arsskodun.skipRaw'
+  };
+  const vLesa = (k, d) => { try { return window.Vidmot ? Vidmot.lesa(k, d) : d; } catch (_) { return d; } };
+  const vSetja = (k, v) => { try { if (window.Vidmot) Vidmot.setja(k, v); } catch (_) {} };
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
   // 25.09.2026 (Agnar: „sami texti á báðum stöðum, samstillt, vistast alltaf"): ferðanótan ER athugasemd fyrirtækisins
@@ -1230,38 +1240,61 @@
   // ── Filters / sort state ────────────────────────────────────────────────
   // 2026-05-29: search term is no longer persisted — always start blank.
   try { localStorage.removeItem(LS_SEARCH); } catch (_) {}
-  const state = {
-    view: localStorage.getItem(LS_VIEW) || 'list',          // 'card' | 'list' (default list)
-    sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest' (legacy)
-    sortCol: localStorage.getItem(LS_SORTCOL) || '',         // name|address|email|month|tools|estimate|priority|status|lastYr
-    sortDir: localStorage.getItem(LS_SORTDIR) || 'asc',      // asc | desc
-    // 2026-07-31: mánaðar-sían er nú FJÖL-VAL (fylki). 0 = „Án mánaðar" (ekkert
-    // skoðunarmánuður skráður). Tómt fylki = allir mánuðir. Flyst yfir úr gamla
-    // eins-mánaðar LS_MONTH svo vistað val glatist ekki.
-    months: (() => {
-      try { const raw = localStorage.getItem(LS_MONTHS); if (raw != null) { const a = JSON.parse(raw); if (Array.isArray(a)) return a; } } catch (_) {}
-      const legacy = parseInt(localStorage.getItem(LS_MONTH) || '0', 10);
-      return (legacy >= 1 && legacy <= 12) ? [legacy] : [];
-    })(),
-    // null = engin póstnúmera-sía (öll númer með). Fylki = AÐEINS þessi númer
-    // sjást ('' stendur fyrir „án skráðs númers"). Sjálfgefið er allt með og
-    // notandinn „tekur af" í Númer-glugganum — eða hreinsar allt og velur 1+.
-    postnr: (() => {
-      try {
-        const raw = localStorage.getItem(LS_POSTNR);
-        if (raw != null && raw !== 'all') { const a = JSON.parse(raw); if (Array.isArray(a)) return a.map(String); }
-      } catch (_) {}
-      return null;
-    })(),
-    status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
-    // Sjálfgefið AF (=sýna þá) svo ekkert hverfi óumbeðið hjá þeim sem þekkja
-    // listann eins og hann var. Gátreiturinn í „🟡 Slepptir í fyrra" kveikir.
-    hideSkipped: localStorage.getItem(LS_SKIPHIDE) === '1',
-    // 23.09.2026: hrái stjórnborðs-hamurinn í 🟡 Slepptir (sýnir líka handvirkt
-    // virkjaða aftur + afskráð félög). ÚTLITSVAL eins og hinar — staðbundið.
-    skipRaw: localStorage.getItem(LS_SKIPRAW) === '1',
-    search: ''
-  };
+  // Einskiptis flutningur gömlu localStorage-lyklanna í Vidmot (aðeins ef ekkert er til í Vidmot fyrir lykilinn).
+  // Sjálfgefin gildi eru ekki flutt — ekkert skrif fyrir „ekkert val".
+  (function flytjaGomluLyklana() {
+    if (!window.Vidmot || !Vidmot.flytja) return;
+    const strNema = d => v => (v == null || String(v) === d) ? undefined : String(v);
+    const kveikt = v => (v === 1 || v === '1' || v === true) ? true : undefined;
+    try {
+      Vidmot.flytja(V.view, LS_VIEW, strNema('list'));
+      Vidmot.flytja(V.sort, LS_SORT, strNema('alpha'));
+      Vidmot.flytja(V.sortCol, LS_SORTCOL, strNema(''));
+      Vidmot.flytja(V.sortDir, LS_SORTDIR, strNema('asc'));
+      // 2026-07-31: mánaðar-sían er FJÖL-VAL (fylki). 0 = „Án mánaðar". Tómt = allir. Gamla eins-mánaðar LS_MONTH flyst líka.
+      if (!Vidmot.flytja(V.months, LS_MONTHS, v => (Array.isArray(v) && v.length) ? v : undefined))
+        Vidmot.flytja(V.months, LS_MONTH, v => { const n = parseInt(v, 10); return (n >= 1 && n <= 12) ? [n] : undefined; });
+      Vidmot.flytja(V.postnr, LS_POSTNR, v => Array.isArray(v) ? v.map(String) : undefined);   // 'all' = engin sía = sjálfgefið
+      Vidmot.flytja(V.status, LS_STATUS, strNema('all'));
+      Vidmot.flytja(V.hideSkipped, LS_SKIPHIDE, kveikt);
+      Vidmot.flytja(V.skipRaw, LS_SKIPRAW, kveikt);
+    } catch (_) {}
+    [LS_VIEW, LS_SORT, LS_SORTCOL, LS_SORTDIR, LS_MONTH, LS_MONTHS, LS_POSTNR, LS_STATUS, LS_SKIPHIDE, LS_SKIPRAW]
+      .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+  })();
+  // Síðuvalið eins og það stendur í Vidmot (allar vélar). Lesið við ræsingu og aftur við hverja opnun síðunnar (show).
+  function lesaVal() {
+    const months = vLesa(V.months, []);
+    const postnr = vLesa(V.postnr, null);
+    return {
+      view: vLesa(V.view, 'list'),          // 'card' | 'list' (default list)
+      sort: vLesa(V.sort, 'alpha'),         // 'alpha' | 'month' | 'oldest' (legacy)
+      sortCol: vLesa(V.sortCol, ''),         // name|address|email|month|tools|estimate|priority|status|lastYr
+      sortDir: vLesa(V.sortDir, 'asc'),      // asc | desc
+      // 2026-07-31: mánaðar-sían er nú FJÖL-VAL (fylki). 0 = „Án mánaðar" (ekkert
+      // skoðunarmánuður skráður). Tómt fylki = allir mánuðir.
+      months: Array.isArray(months) ? months.slice() : [],
+      // null = engin póstnúmera-sía (öll númer með). Fylki = AÐEINS þessi númer
+      // sjást ('' stendur fyrir „án skráðs númers"). Sjálfgefið er allt með og
+      // notandinn „tekur af" í Númer-glugganum — eða hreinsar allt og velur 1+.
+      postnr: Array.isArray(postnr) ? postnr.map(String) : null,
+      status: vLesa(V.status, 'all'),        // 'all' | 'done' | 'pending' | 'never'
+      // Sjálfgefið AF (=sýna þá) svo ekkert hverfi óumbeðið hjá þeim sem þekkja
+      // listann eins og hann var. Gátreiturinn í „🟡 Slepptir í fyrra" kveikir.
+      hideSkipped: vLesa(V.hideSkipped, false) === true,
+      // 23.09.2026: hrái stjórnborðs-hamurinn í 🟡 Slepptir (sýnir líka handvirkt
+      // virkjaða aftur + afskráð félög). ÚTLITSVAL eins og hinar.
+      skipRaw: vLesa(V.skipRaw, false) === true
+    };
+  }
+  const state = Object.assign(lesaVal(), { search: '' });
+  // Val sem barst frá annarri vél tekur gildi við NÆSTU opnun síðunnar — ekki í miðri vinnu. Skilar true ef eitthvað breyttist.
+  function lesaValIState() {
+    const n = lesaVal();
+    let breytt = false;
+    Object.keys(n).forEach(k => { if (JSON.stringify(n[k]) !== JSON.stringify(state[k])) { state[k] = n[k]; breytt = true; } });
+    return breytt;
+  }
   // „Númer"-glugginn opinn/lokaður — bara fyrir þessa setu, ekki vistað.
   let _pnrOpen = false;
 
@@ -1464,20 +1497,19 @@
     },
   };
 
+  // Kallað AÐEINS úr smell-/change-hlustara (raunverulegt val notandans) — aldrei í teikningu, hleðslu eða leit.
+  // Skrifar aðeins lyklana sem BREYTTUST frá því sem stendur í Vidmot: óbreytt val fær ekki nýjan tímastimpil og étur
+  // því ekki nýrra val annarrar vélar á þeim lykli. `arsskodun.status` er útlitsval (hvaða sía er valin), ekki staða
+  // gagna — staða ársskoðunar býr í arsskodun_customers á þjóninum. Leitin (state.search) er aldrei vistuð.
   function saveState() {
-    localStorage.setItem(LS_VIEW, state.view);
-    localStorage.setItem(LS_SORT, state.sort);
-    localStorage.setItem(LS_SORTCOL, state.sortCol || '');
-    localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
-    localStorage.setItem(LS_MONTHS, JSON.stringify(state.months || []));
-    localStorage.setItem(LS_POSTNR, state.postnr === null ? 'all' : JSON.stringify(state.postnr));
-    // 18.09.2026 (yfirferð): ÚTLITSVAL, ekki staða. `arsskodun_status` geymir hvaða
-    // sía er valin í flipanum ('all' | 'done' | 'pending' | 'never' | 'akstur' …) —
-    // hún lýsir því hvað ÞESSI vafri sýnir, ekki stöðu gagna. Staða ársskoðunar býr
-    // í arsskodun_customers á þjóninum. Má því vera staðbundið.
-    localStorage.setItem(LS_STATUS, state.status);
-    localStorage.setItem(LS_SKIPHIDE, state.hideSkipped ? '1' : '0');
-    localStorage.setItem(LS_SKIPRAW, state.skipRaw ? '1' : '0');
+    const n = {
+      view: state.view, sort: state.sort, sortCol: state.sortCol || '', sortDir: state.sortDir || 'asc',
+      months: (state.months || []).slice(),
+      postnr: state.postnr === null ? null : (state.postnr || []).map(String),
+      status: state.status, hideSkipped: !!state.hideSkipped, skipRaw: !!state.skipRaw
+    };
+    const g = lesaVal();
+    Object.keys(n).forEach(k => { if (JSON.stringify(n[k]) !== JSON.stringify(g[k])) vSetja(V[k], n[k]); });
   }
   // Póstnúmer fyrirtækis, samræmt: alltaf strengur, '' = ekkert skráð.
   const pnrOf = c => String(c.postnumer == null ? '' : c.postnumer).trim();
@@ -1895,10 +1927,14 @@
     ensureView();
     const main = document.getElementById('ars-main');
     if (!main) return;
+    // 15.10.2026: síðuval sem barst frá annarri vél (Vidmot) tekur gildi HÉR, við opnun — teiknað einu sinni ef eitthvað
+    // breyttist, aldrei í miðri vinnu.
+    const valBreytt = lesaValIState();
     // Fast path: already rendered (toolbar present) and DOM intact → show it
     // instantly and refresh in the background. No "Hleður…" flash, no blocking
     // rebuild of 743 rows.
     if (_rendered && document.getElementById('_ars-search')) {
+      if (valBreytt) { try { render(); } catch (_) {} }
       fyrstaBordHledsla();
       return;
     }
@@ -1952,12 +1988,14 @@
   }
 
   // ── ⚡ Lagfæringar-hamur (override mode, 2026-07-16) ──────────────────────
-  // Kveikt/slökkt með ⚡-hnappnum í tólastikunni; geymt í localStorage svo
-  // stillingin lifi milli heimsókna. Í hamnum verða Mánuður/Tæki/Ár-reitirnir
-  // í listanum smellanlegir svo eigandinn geti lagað augljóslega ranga tölu
-  // beint — án þess að opna fyrirtækið.
-  const OVR_LS = 'ars_override_mode';
-  function overrideOn() { try { return localStorage.getItem(OVR_LS) === '1'; } catch (_) { return false; } }
+  // Kveikt/slökkt með ⚡-hnappnum í tólastikunni; geymt í Vidmot (472, eitt gildi
+  // fyrir allar vélar — 15.10.2026) svo stillingin lifi milli heimsókna. Í hamnum
+  // verða Mánuður/Tæki/Ár-reitirnir í listanum smellanlegir svo eigandinn geti
+  // lagað augljóslega ranga tölu beint — án þess að opna fyrirtækið.
+  const OVR_LS = 'ars_override_mode';   // gamall localStorage-lykill — aðeins einskiptis flutningur
+  const OVR_V = 'arsskodun.override';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(OVR_V, OVR_LS, v => (v === 1 || v === '1') ? true : undefined); localStorage.removeItem(OVR_LS); } } catch (_) {}
+  function overrideOn() { return vLesa(OVR_V, false) === true; }
   // Breytingaskrá (2026-07-16, ósk Agnars): HVER handvirk yfirskrift skráist í
   // Supabase-töfluna override_log (co, reitur, gamalt→nýtt, hvenær) svo Claude
   // geti síðar lagað RÓTINA (ranga skýrslu/tengingu) og merkt resolved.
@@ -2836,7 +2874,7 @@
       });
     })();
     main.querySelector('#_ars-ovr')?.addEventListener('click', () => {
-      try { localStorage.setItem(OVR_LS, overrideOn() ? '0' : '1'); } catch (_) {}
+      vSetja(OVR_V, !overrideOn());
       render();
     });
     // ⚡ Lagfæringar-hamur: smellanlegir reitir í listanum
@@ -3036,12 +3074,13 @@
     let _searchTimer = null;
     main.querySelector('#_ars-search')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
-      _searchTimer = setTimeout(() => { state.search = e.target.value; saveState(); render(); }, 200);
+      // Leitin er ekki vistuð og má EKKI skrifa á þjóninn (saveState → Vidmot/AppSettings) — aðeins teikna.
+      _searchTimer = setTimeout(() => { state.search = e.target.value; render(); }, 200);
     });
     // ✕ á „Leit yfir allt"-merkinu: hreinsar leitina svo síurnar taki aftur gildi
     main.querySelector('#_ars-clearsearch')?.addEventListener('click', () => {
       clearTimeout(_searchTimer);
-      state.search = ''; saveState(); render();
+      state.search = ''; render();
     });
     main.querySelectorAll('._ars-row, ._ars-card').forEach(el => {
       el.addEventListener('click', e => {
@@ -4101,10 +4140,10 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
   // html[data-viewmode] and fires a `slokk-viewmode` event. Here we only READ
   // that attribute and restyle. Fallback 'desktop'.
   function arsViewMode() {
-    // Page-local Sími/Tafla/Skjár (localStorage.arsskodun_viewmode) gildir
-    // fyrst — svo Skjár á raunsíma/í appmode haldist eftir endurhleðslu og
-    // 166 geti ekki þvingað mrows til baka. Bannerinn (slokk_viewmode) er
-    // varaleið. Gildi: sími|simi|mobile · tafla|table · skjár|skjar|desktop.
+    // Page-local Sími/Tafla/Skjár (Vidmot 'arsskodun.viewmode', per tækjaflokk
+    // sími|tölva — 331 skrifar) gildir fyrst — svo Skjár á raunsíma/í appmode
+    // haldist eftir endurhleðslu og 166 geti ekki þvingað mrows til baka.
+    // Bannerinn er varaleið. Gildi: sími|simi|mobile · tafla|table · skjár|skjar|desktop.
     try {
       if (window.ArsSjon && typeof window.ArsSjon.get === 'function') {
         const g = window.ArsSjon.get();
@@ -4112,7 +4151,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       }
     } catch (_) {}
     try {
-      const raw = String(localStorage.getItem('arsskodun_viewmode') || '');
+      const raw = String((window.Vidmot ? Vidmot.lesaTaeki('arsskodun.viewmode', '') : '') || '');
       const m = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       if (m === 'simi' || m === 'mobile') return 'mobile';
       if (m === 'tafla' || m === 'table') return 'table';

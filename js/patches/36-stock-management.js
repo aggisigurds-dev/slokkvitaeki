@@ -177,11 +177,27 @@
   // ── State ─────────────────────────────────────────────────────────────────
   let _items = [];
   let _filter = '';
-  // Flokkur og stöðusía eru útlitsval þessa tækis (localStorage, sbr. CLAUDE.md) — ekki gögn.
-  const LS_SIA = 'birgdir_sia';
+  // Flokkur, stöðusía og hamur eru viðmótsval — 15.10.2026 (regla Agnars: engin stilling má gilda bara í einu
+  // tæki) búa þau í Vidmot (472) undir 'birgdir.sia' = { f, s, h }, eitt gildi fyrir allar vélar. Gamli lykillinn
+  // 'birgdir_sia' er aðeins einskiptis upphafsgildi (flytja). Þessi skrá hleðst á undan 472, svo lesið er latt
+  // við hverja teikningu; skrifað aðeins við smell á flís/ham.
+  const VM_SIA = 'birgdir.sia';
   let _catFilter = '', _stada = '', _hamur = 'slokkvitaeki', _bidDB = 0;
-  try { const v = JSON.parse(localStorage.getItem(LS_SIA) || '{}'); _catFilter = v.f || ''; _stada = v.s || ''; if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM) _hamur = v.h; } catch (_) {}
-  const geymaSiu = () => { try { localStorage.setItem(LS_SIA, JSON.stringify({ f: _catFilter, s: _stada, h: _hamur })); } catch (_) {} };
+  let _siaLesin = '';
+  const lesaSiu = () => {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja(VM_SIA, 'birgdir_sia', v => (v && typeof v === 'object') ? v : undefined);
+      const v = Vidmot.lesa(VM_SIA, null);
+      const m = JSON.stringify(v || null);
+      if (m === _siaLesin) return;   // ekkert nýtt — hreyfum ekki við vali sem er þegar á skjánum
+      _siaLesin = m;
+      if (!v || typeof v !== 'object') return;
+      _catFilter = v.f || ''; _stada = v.s || '';
+      if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM) _hamur = v.h;
+    } catch (_) {}
+  };
+  const geymaSiu = () => { try { if (!window.Vidmot) return; const v = { f: _catFilter, s: _stada, h: _hamur }; _siaLesin = JSON.stringify(v); Vidmot.setja(VM_SIA, v); } catch (_) {} };
   // Myndir söluvara (vorur.mynd — oft data-URL, ~34 KB) sóttar EFTIR að listinn birtist og fylltar í þær myndir
   // sem eru á skjánum, svo listinn bíði ekki eftir 2–3 MB. Sölu-skyndiminnið (POS) er notað ef það er til.
   const _myndir = {};
@@ -313,6 +329,7 @@
   function render() {
     const el = document.getElementById('birgdir-main');
     if (!el) return;
+    lesaSiu();   // val frá annarri vél tekur gildi við næstu teikningu (Vidmot)
     const q = (_filter || '').trim().toLowerCase();
     const passarLeit = i => !q || (i.nafn||'').toLowerCase().includes(q) || (i.flokkur||'').toLowerCase().includes(q) || (i.birgi||'').toLowerCase().includes(q) || (i.notes||'').toLowerCase().includes(q);
     // Leitin leitar í ÖLLUM hömum (Agnar 12.10: „hafðu leitina að hún leiti í öllum hömum") — hamurinn ræður aðeins þegar ekkert er slegið inn.

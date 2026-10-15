@@ -33,7 +33,8 @@
   if (window.__arsMapEmbedInstalled) return;
   window.__arsMapEmbedInstalled = true;
 
-  const LS_VISIBLE   = 'ars_map_visible';
+  const LS_VISIBLE   = 'ars_map_visible';   // gamall localStorage-lykill — aðeins einskiptis flutningur í Vidmot
+  const V_KORT       = 'arsskodun.kort';    // Vidmot (472): kort sýnt/falið — eitt val fyrir allar vélar (15.10.2026)
   const GC_CACHE_KEY = '_slokk_gc';  // SHARED with mapfix.js
 
   let _map        = null;
@@ -43,9 +44,11 @@
   let _queueAbort = null;  // function to cancel running geocode queue
   let _queueState = null;  // { done, total, current } while running
 
-  // ── localStorage helpers ────────────────────────────────────────────
-  const isVisible = () => localStorage.getItem(LS_VISIBLE) === '1';
-  const setVisible = v => localStorage.setItem(LS_VISIBLE, v ? '1' : '0');
+  // ── Vidmot / localStorage helpers ───────────────────────────────────
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(V_KORT, LS_VISIBLE, v => (v === 1 || v === '1') ? true : undefined); localStorage.removeItem(LS_VISIBLE); } } catch (_) {}
+  const isVisible = () => { try { return !!window.Vidmot && Vidmot.lesa(V_KORT, false) === true; } catch (_) { return false; } };
+  // Aðeins úr smelli (🗺️-takkinn / „sýna á korti" úr röð eða glugga) — aldrei við hleðslu.
+  const setVisible = v => { try { if (window.Vidmot && isVisible() !== !!v) Vidmot.setja(V_KORT, !!v); } catch (_) {} };
   const readGc  = () => { try { return JSON.parse(localStorage.getItem(GC_CACHE_KEY) || '{}'); } catch(e) { return {}; } };
   const writeGc = c  => { try { localStorage.setItem(GC_CACHE_KEY, JSON.stringify(c)); } catch(e) {} };
 

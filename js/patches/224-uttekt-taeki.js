@@ -474,7 +474,7 @@
     if(bulk){
       bulk.classList.toggle('ut-bulk-tom', !n);
       var opinStika = false;
-      try{ opinStika = localStorage.getItem('valstika_opin')==='1'; }catch(_){}
+      try{ opinStika = !!(window.Vidmot && Vidmot.lesa('profill.valstika', false)===true); }catch(_){}   // 15.10.2026: sami lykill sem 404 skrifar (var localStorage valstika_opin)
       bulk.classList.toggle('b404-samanfelld', !n && !opinStika);
       var cnt = bulk.querySelector('.ut-bulk-cnt');
       if(cnt) cnt.textContent = n ? (n+' valin') : 'Veldu tæki';

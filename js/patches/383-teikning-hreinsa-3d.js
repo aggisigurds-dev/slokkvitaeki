@@ -1566,12 +1566,14 @@
   // GRÁTT ÚTLIT (Agnar 06.10.2026, eftir Blender-myndina: „use the grey one in slökkvitæki company profile layout,
   // easier to see the fire extinguishers"): ljósgráir veggir, sól og mjúkir skuggar, daufur grunnur, engir eldlitir á
   // veggjum og engin lituð brunahólf — rauðu tækin standa út. „Brunahólf" skiptir í litaða útlitið (eldveggir, hólf).
-  // Engin SSAO/korn — Agnar hafnaði því. Val vafrans: localStorage (útlitsval, ekki gögn).
-  const UTLIT_LS = 'teikn3d_utlit';
+  // Engin SSAO/korn — Agnar hafnaði því. Valið í Vidmot ('teikning.utlit3d', 472 — eitt val fyrir allar vélar, 15.10.2026;
+  // var localStorage teikn3d_utlit, flutt einu sinni).
+  const UTLIT_LS = 'teikning.utlit3d';
+  try { if (window.Vidmot) Vidmot.flytja(UTLIT_LS, 'teikn3d_utlit', v => (v === 'eld' || v === 'gratt' ? v : undefined)); } catch (_) {}
   // utveggur: örlítill tan-blær á útveggjum og svölum, innveggir hvítir (Agnar 10.10.2026: „Hvítir innri veggir. Bara smá
   // tan litur á útveggjunum" — eins og ChatGPT-myndin): utHlidar() finnur hlið hvers útveggjar sem snýr út.
   const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xf3f2ef, utveggur: 0xe9dfd0, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
-  const lesaUtlit = () => { try { return localStorage.getItem(UTLIT_LS) === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
+  const lesaUtlit = () => { try { return window.Vidmot && Vidmot.lesa(UTLIT_LS, 'gratt') === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
   const HOLFALITIR_3D = [[66, 133, 244], [52, 168, 83], [251, 188, 5], [171, 71, 188], [0, 172, 193], [255, 112, 67], [124, 179, 66], [92, 107, 192]];
@@ -3019,7 +3021,7 @@
       haedIds: () => lag.map(q => q.hd.haedId || null),
       synilegar: () => lag.filter(q => q.hopur.visible).map(q => q.hd.haedId || null),
       // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
-      utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { localStorage.setItem(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
+      utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { if (window.Vidmot) Vidmot.setja(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
       // MYND AF SÝNINNI (Agnar 07.10.2026: „This view would be absolutely perfect as the image we put the fire extinguisher
       // in its places"): sviðið teiknað k-falt skarpar (sömu CSS-stærð, svo miðar og tæki halda hlutföllum) → PNG.
       mynd(k) {
@@ -4937,13 +4939,15 @@
   const blTakki = (bakgr, litur) => 'display:inline-flex!important;align-items:center;justify-content:center;height:32px!important;padding:0 14px!important;border-radius:8px!important;border:1px solid ' + (litur === '#fff' ? '#000' : 'rgba(20,24,34,.28)') + '!important;background:' + bakgr + '!important;color:' + litur + '!important;font:700 12.5px system-ui,sans-serif!important;text-decoration:none!important;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,' + (litur === '#fff' ? '.12' : '.85') + '),0 1px 2px rgba(0,0,0,.18)!important';
   const blHnod = h => '<span style="position:absolute;top:7px;' + h + ':7px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)"></span>';
   const blTimi = ms => { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-  const BL_UTLIT_LS = 'teikn_designer_utlit';
+  // Valið útlit Blender-myndar í Vidmot ('teikning.utlitDesigner', 472 — allar vélar, 15.10.2026; var localStorage teikn_designer_utlit).
+  const BL_UTLIT_LS = 'teikning.utlitDesigner';
+  try { if (window.Vidmot) Vidmot.flytja(BL_UTLIT_LS, 'teikn_designer_utlit', v => (v === 'einfalt' || v === 'qa' || v === 'raunsaett' ? v : undefined)); } catch (_) {}
   const BL_UTLIT = {
     raunsaett: { heiti: 'Raunsætt', lysing: 'Yfirlit á ská og vinnuskjal ofan frá með táknum', timi: 'um 10 mín (2 myndir)', ekkert: 'Engin raunsæ mynd til af þessu húsi enn.' },
     qa: { heiti: 'QA-stíll', lysing: 'Hvítt og hreint, rými lituð eftir gerð', timi: 'um 5 mín á hæð', ekkert: 'Engin QA-mynd til af þessu húsi enn.' },
     einfalt: { heiti: 'Einfalt', lysing: 'Gráa útlitið: sjónarhornið þitt og yfirlit', timi: 'um 4 mín', ekkert: 'Engin einföld mynd til af þessu húsi enn.' }
   };
-  const blUtlit = () => { try { const v = localStorage.getItem(BL_UTLIT_LS); return v === 'einfalt' || v === 'qa' ? v : 'raunsaett'; } catch (_) { return 'raunsaett'; } };
+  const blUtlit = () => { try { const v = window.Vidmot ? Vidmot.lesa(BL_UTLIT_LS, 'raunsaett') : 'raunsaett'; return v === 'einfalt' || v === 'qa' ? v : 'raunsaett'; } catch (_) { return 'raunsaett'; } };
   const blMedHerbergjum = ul => ul === 'raunsaett' || ul === 'qa';   // lesa herbergi og stiga úr PDF, vinnuskjal ofan frá
   const BLU = {};          // útlit → staða síðustu / yfirstandandi myndar þess; G.blender = sú sem er sýnd
   const blLokid = B => !!B && (B.stada === 'done' || B.stada === 'error' || B.stada === 'timi' || B.stada === 'tomt');
@@ -4995,7 +4999,7 @@
         else if (bl === 'utlit') {
           const u = t.dataset.utlit;
           if (!BL_UTLIT[u] || (G.blender && G.blender.utlit === u)) return;
-          try { localStorage.setItem(BL_UTLIT_LS, u); } catch (_) {}
+          try { if (window.Vidmot) Vidmot.setja(BL_UTLIT_LS, u); } catch (_) {}
           blBidja(false, u, true).catch(villa);
         } else if (bl === 'vinnumynd') blNotaVinnumynd(G.blender, +t.dataset.i).catch(villa);
       });
