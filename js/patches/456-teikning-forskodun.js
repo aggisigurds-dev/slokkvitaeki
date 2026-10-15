@@ -42,9 +42,16 @@
     '#' + ID + ' .cfh-f button[aria-pressed="true"]{background:#2b2a27;border-color:#2b2a27;color:#fff}',
     // Fimm jafnbreiðir dálkar sem fylla breiddina — auto-fill bjó til tóma dálka og spjöldin urðu mjó
     '#co-fp-section{container-type:inline-size}',
-    '#' + ID + '{grid-template-columns:repeat(5,minmax(0,1fr))!important}',
-    '@container (max-width:900px){#' + ID + '{grid-template-columns:repeat(3,minmax(0,1fr))!important}}',
-    '@container (max-width:560px){#' + ID + '{grid-template-columns:repeat(2,minmax(0,1fr))!important}}',
+    // Fyrirtækjaprófíll: teikningin fær heila eigin röð, þrjár stækkanlegar myndir hlið við hlið.
+    '#co-fp-section.cfh-virkt{width:100%!important;max-width:100%!important;min-width:0;grid-column:1/-1;flex:0 0 100%;clear:both;box-sizing:border-box}',
+    '#' + ID + '{grid-template-columns:repeat(3,minmax(0,1fr))!important;box-sizing:border-box}',
+    '@container (max-width:560px){#' + ID + '{gap:4px;padding:5px}#' + ID + ' .cfh-h{padding:5px 4px;font-size:10px;flex-wrap:wrap}#' + ID + ' .cfh-h small{display:none}#' + ID + ' .cfh-f button{height:20px;padding:0 4px;font-size:9px}}',
+    '#' + ID + ' .cfh-samsett{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}',
+    '#' + ID + ' .cfh-samsett img{position:static!important;width:100%!important;height:50%!important;object-fit:contain!important;min-height:0}',
+    '#' + ID + ' .cfh-samsett-note{position:absolute;bottom:3px;left:3px;right:3px;font:600 9px system-ui,sans-serif;text-align:center;background:rgba(255,255,255,.85);color:#48443d;border-radius:3px;padding:2px}',
+    '#cfh-stort .cfh-samsett{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}',
+    '#cfh-stort .cfh-samsett img{position:static!important;width:100%!important;height:50%!important;object-fit:contain!important;min-height:0}',
+    '#cfh-stort .cfh-samsett-note{position:absolute;bottom:4px;left:10px;right:10px;text-align:center;background:rgba(255,255,255,.9);color:#48443d;font:600 12px system-ui,sans-serif;padding:4px}',
     '#' + ID + ':not(.cfh-allar) .cfh-k.cfh-umfram{display:none}',
     '#' + ID + ' .cfh-fleiri{grid-column:1/-1;justify-self:center;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 18px;border:1px solid #d6d3cc;border-radius:8px;background:#fff;font:600 12.5px system-ui,sans-serif;color:#2b2a27;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}',
     '#' + ID + ' .cfh-fleiri:hover{border-color:#2b2a27}',
@@ -130,6 +137,35 @@
 
   function syna(kort, h, ham, hamark) {
     var m = kort.querySelector('.cfh-m, .cfh-s-m');
+    if (h.samsett && h.samsett.length === 2) {
+      // Yfirlit tveggja vistaðra 3D/2D forsýninga, EKKI rúmfræðilega samsett 3D-líkan.
+      m.innerHTML = '<div class="cfh-samsett"><div class="cfh-t">Sæki báðar hæðir…</div></div>';
+      var box = m.querySelector('.cfh-samsett');
+      Promise.all(h.samsett.map(function (floor) {
+        if (floor.vinnumynd && floor.vinnumynd.url) return Promise.resolve(floor.vinnumynd.url);
+        if (!floor.image_url) return Promise.resolve(null);
+        var c = document.createElement('canvas');
+        return teiknaTeikningu(floor, c, hamark || 1100).then(function () { return c.toDataURL('image/png'); }, function () { return null; });
+      })).then(function (images) {
+        if (!m.isConnected || m.querySelector('.cfh-samsett') !== box) return;
+        box.innerHTML = '';
+        images.forEach(function (src, j) {
+          if (!src) return;
+          var img = document.createElement('img');
+          img.alt = h.samsett[j].nafn || (j + 1) + '. hæð';
+          img.src = src;
+          box.appendChild(img);
+        });
+        if (!box.children.length) box.textContent = 'Engar forsýningar tiltækar';
+        else {
+          var note = document.createElement('div');
+          note.className = 'cfh-samsett-note';
+          note.textContent = 'Tvær myndir · ekki sameinað 3D-líkan';
+          box.appendChild(note);
+        }
+      });
+      return;
+    }
     kort.querySelectorAll('.cfh-f button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.ham === ham ? 'true' : 'false'); });
     if (ham === '3d' && h.vinnumynd && h.vinnumynd.url) {
       m.innerHTML = '<img alt="3D · ' + esc(h.nafn) + '" src="' + esc(h.vinnumynd.url) + '">';
@@ -152,15 +188,15 @@
     var vm = !!(h.vinnumynd && h.vinnumynd.url), n = (h.markers || []).length;
     var o = document.createElement('div');
     o.id = 'cfh-stort';
-    o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-label="' + esc(h.nafn || 'Hæð') + '"><div class="cfh-s-h"><strong>' + esc(h.nafn || (i + 1) + '. hæð') + '</strong><small>' + n + ' tæki</small>' +
+    o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(h.nafn || 'Hæð') + '"><div class="cfh-s-h"><strong>' + esc(h.nafn || (i + 1) + '. hæð') + '</strong>' + (h.samsett ? '<small>Samsett forsýning</small>' : '<small>' + n + ' tæki</small>') +
       (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
-      '<span style="flex:1"></span><button type="button" class="cfh-s-opna">Opna í Teikningu</button><button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
+      '<span style="flex:1"></span>' + (h.samsett ? '' : '<button type="button" class="cfh-s-opna">Opna í Teikningu</button>') + '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
       '<div class="cfh-s-m"><div class="cfh-t">…</div></div></div>';
     document.body.appendChild(o);
     var k = o.querySelector('.cfh-s-k');
     o.addEventListener('click', function (e) { if (e.target === o) lokaStort(); });
     o.querySelector('.cfh-s-x').addEventListener('click', lokaStort);
-    o.querySelector('.cfh-s-opna').addEventListener('click', function () { lokaStort(); opnaHaed(cid, i); });
+    if (!h.samsett) o.querySelector('.cfh-s-opna').addEventListener('click', function () { lokaStort(); opnaHaed(cid, i); });
     k.querySelectorAll('.cfh-f button').forEach(function (b) { b.addEventListener('click', function () { syna(k, h, b.dataset.ham, 2600); }); });
     syna(k, h, ham, 2600);
   }
@@ -181,9 +217,14 @@
     var hs = Array.isArray(row.haedir) && row.haedir.length ? row.haedir : [{ nafn: 'Teikning', image_url: row.image_url, markers: row.markers || [] }];
     var synd = hs.map(function (h, i) { return { h: h, i: i }; }).filter(function (x) { return x.h && (x.h.image_url || (x.h.vinnumynd && x.h.vinnumynd.url)); });
     if (!synd.length) return;
+    // Sérstakt þriðja spjald á tveggja hæða prófíl: tvær óbreyttar forsýningar,
+    // ekki búa til ímyndað 3D-líkan eða breyta gögnunum.
+    if (synd.length === 2) {
+      synd.push({ h: { nafn: 'Báðar hæðir', samsett: [synd[0].h, synd[1].h], markers: [] }, i: -1 });
+    }
     var g = document.createElement('div');
     g.id = ID;
-    var SYNILEG = 5;
+    var SYNILEG = 3;
     synd.forEach(function (x, j) {
       var h = x.h, vm = !!(h.vinnumynd && h.vinnumynd.url), n = (h.markers || []).length;
       var k = document.createElement('div');
@@ -191,7 +232,7 @@
       k.innerHTML = '<div class="cfh-h"><span>' + esc(h.nafn || (x.i + 1) + '. hæð') + '<small>' + n + ' ' + (n === 1 ? 'tæki' : 'tæki') + '</small></span>' +
         (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
         '</div><div class="cfh-m" title="Stækka ' + esc(h.nafn || 'hæðina') + '"><div class="cfh-t">…</div></div>';
-      k._cfh = { h: h, ham: vm ? '3d' : 'teikning' };
+      k._cfh = { h: h, ham: h.samsett ? 'samsett' : vm ? '3d' : 'teikning' };
       k.querySelector('.cfh-m').addEventListener('click', function () { opnaStort(cid, x.i, h, k._cfh.ham); });
       k.querySelectorAll('.cfh-f button').forEach(function (b) {
         b.addEventListener('click', function (e) { e.stopPropagation(); k._cfh.ham = b.dataset.ham; syna(k, h, b.dataset.ham); });
@@ -199,7 +240,7 @@
       g.appendChild(k);
       if (syn) syn.observe(k); else syna(k, h, k._cfh.ham);
     });
-    // Fimm sýnilegar í einni röð; restin á bak við heilbreiðan takka (Agnar 11.10.2026)
+    // Fyrstu þrjú spjöldin í einni röð; restin á bak við heilbreiðan takka.
     if (synd.length > SYNILEG) {
       var fl = document.createElement('button'); fl.type = 'button'; fl.className = 'cfh-fleiri';
       var umfram = synd.length - SYNILEG;
