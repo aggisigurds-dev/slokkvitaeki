@@ -1355,7 +1355,23 @@
   }
 
   // ── shared modal shell ────────────────────────────────────────────────────
+  /* 15.10.2026 — Agnar: „að senda gögn valmyndin er gersamlega hræðileg".
+   *
+   * MÆLT á #bord: `_rp-styles` var EKKI til. Glugginn opnaðist því með
+   * `rpm-*` klösum og engum stíl — innfæddir hakreitir, bláir tenglar,
+   * ekkert umbrot. Þetta leit út eins og hönnunarklúður en var vöntun.
+   *
+   * ÁSTÆÐAN: `styles()` var kallað í `render()` (Pósthólfs-síðunni) og í
+   * `replyTo` — en EKKI í `sendaReikning`, sem er leiðin sem Þjónustuborðið
+   * notar. Hefðirðu heimsótt Pósthólfið fyrst í sömu lotu leit glugginn vel
+   * út; annars ekki. Þess vegna var þetta „stundum".
+   *
+   * Stíllinn á heima hjá SKELINNI, ekki hjá köllurunum: hver nýr inngangur
+   * erfir hann sjálfkrafa og enginn getur gleymt honum. `styles()` hættir
+   * strax ef taggið er til, svo þetta kostar ekkert.
+   */
   function modalEl() {
+    try { styles(); } catch (_) {}
     let el = document.getElementById('_rp-modal');
     if (el) return el;
     el = document.createElement('div');
