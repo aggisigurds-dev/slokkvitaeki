@@ -438,8 +438,13 @@
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new Blob([bytes], { type: tegund || 'image/jpeg' });
   }
-  async function vistaUtan(coId, adr, svar) {
-    if (erVerndud(lesaMynd(coId))) return false;
+  // 15.10.2026: `yfir` = skipta út sjálfsóttri mynd (loftmynd/„engin") fyrir götumynd — bakfyllingin (fyllaStreetView).
+  // Myndir Agnars (handvirkt) eru ALDREI yfirskrifaðar, líka með yfir=true. Sjálfsóttu Google Maps-skjámyndirnar
+  // (05.10, „mjóu myndirnar") víkja fyrir götumynd þegar hún er til — annars halda þær sér (Agnar 15.10).
+  var EIGIN_MYND = /^handvirkt/;
+  function erEigin(m) { return !!(m && m.url && EIGIN_MYND.test(String(m.uppspretta || ''))); }
+  async function vistaUtan(coId, adr, svar, yfir) {
+    if (yfir ? erEigin(lesaMynd(coId)) : erVerndud(lesaMynd(coId))) return false;
     var s = sbKlient();
     if (!s) return false;
     var blob = b64Blob(svar.image, svar.contentType || 'image/jpeg');
@@ -450,7 +455,7 @@
     var pub = s.storage.from(BUCKET).getPublicUrl(slod);
     var url = pub && pub.data && pub.data.publicUrl;
     if (!url) return false;
-    if (erVerndud(lesaMynd(coId))) return false;
+    if (yfir ? erEigin(lesaMynd(coId)) : erVerndud(lesaMynd(coId))) return false;
     url += (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();
     await skrifaMynd(coId, {
       url: url, slod: BUCKET + '/' + slod, ts: new Date().toISOString(),
@@ -540,13 +545,16 @@
       // kemur upp og setja inn"): fyrsta mynd fyrirtækisins (eða nágranna á sama heimilisfangi) af Google Maps, sótt í
       // lotu (E:/pascal-profun/maps-mynd.cjs + maps-setja.cjs). Sjálfsótt → ber merki, eins og loftmyndirnar.
       var googleMynd = src.indexOf('google-maps') === 0;
-      var merki = (mapisLoft || borgarLoft || googleMynd)
-        ? '<span class="co-mynd-loftmerki" title="' + esc(googleMynd
+      var svMynd = src.indexOf('google-streetview') === 0;   // 15.10.2026: götumynd af Google Street View (husmynd.js)
+      var merki = (mapisLoft || borgarLoft || googleMynd || svMynd)
+        ? '<span class="co-mynd-loftmerki" title="' + esc(svMynd
+          ? ('Götumynd af Google Street View' + (m.attribution ? ' (' + m.attribution.replace(/^Google Street View\s*·?\s*/, '') + ')' : '') + '. Sjálfsótt — límdu þína eigin yfir ef hún er betri.')
+          : googleMynd
           ? ('Fyrsta mynd af Google Maps' + (m.stadur ? ' — ' + m.stadur : '') + '. Sjálfsótt, ekki mynd sem þú settir inn — límdu þína eigin yfir.')
           : mapisLoft
           ? 'Loftmynd úr map.is (Loftmyndir). Húsið sést að ofan. Þetta er ekki götumynd og ekki mynd sem þú settir inn.'
           : 'Loftmynd úr Borgarvefsjá 2018. Ekki mynd sem þú settir inn.') + '">' +
-          (googleMynd ? 'Google Maps' : mapisLoft ? 'Loftmynd' : 'Borgarvefsjá') + '</span>'
+          (svMynd ? 'Street View' : googleMynd ? 'Google Maps' : mapisLoft ? 'Loftmynd' : 'Borgarvefsjá') + '</span>'
         : '';
       flis.innerHTML = '<div class="co-mynd-vefja"><img alt="Bygging"></div>' + merki +
         '<button type="button" class="co-mynd-x" title="Fjarlægja myndina">×</button>' + UPP + hlekkir;
@@ -647,6 +655,49 @@
   document.addEventListener('DOMContentLoaded', function () { endurteikna(false); });
   endurteikna(false);
 
-  window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd, opnaLjos: opnaLjos };
+  // ── Bakfylling götumynda (15.10.2026, Agnar: „setja myndir á allt sem er tómt og sem er loftmyndir, geyma hitt
+  //    sem ég er búinn að setja myndir af") ────────────────────────────────────────────────────────────────────
+  // Keyrt handvirkt úr stjórnborði vafrans á lifandi síðu: ByggingMynd.fyllaStreetView({ max: 50, bid: 300 }).
+  // Fer yfir öll félög í þjónustu með heimilisfang. Sleppir myndum Agnars (handvirkt) og því sem þegar er götumynd.
+  // Loftmyndir, Google Maps-skjámyndir og „engin mynd" fá götumynd ef hún er til; sé engin götumynd heldur fyrri
+  // myndin sér og tóm færsla fær engin:true (heimild engin-sv) svo næsta keyrsla sleppi henni (aftur:true prófar á ný).
+  async function fyllaStreetView(opts) {
+    opts = opts || {};
+    var s = sbKlient(); if (!s) throw new Error('Enginn gagnagrunnsbiðlari');
+    if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) throw new Error('AppSettings ekki hlaðið');
+    var q = s.from('fyrirtaeki').select('id,nafn,heimilisfang').not('heimilisfang', 'is', null).order('id').range(0, 2999);
+    if (!opts.oll) q = q.eq('er_i_thjonustu', true);
+    var r = await q; if (r.error) throw r.error;
+    var rows = (r.data || []).filter(function (c) { return c.heimilisfang && /\d/.test(c.heimilisfang) && (!opts.id || +c.id === +opts.id); });
+    var ut = { skodud: 0, sleppt_eigin: 0, sleppt_sv: 0, sett: 0, engin: 0, villa: 0, villur: [] };
+    for (var i = 0; i < rows.length; i++) {
+      var c = rows[i];
+      if (opts.max && (ut.sett + ut.engin + ut.villa) >= opts.max) break;
+      var m = lesaMynd(c.id); ut.skodud++;
+      var src = String((m && m.uppspretta) || '');
+      if (erEigin(m)) { ut.sleppt_eigin++; continue; }
+      if (m && m.url && src === 'google-streetview') { ut.sleppt_sv++; continue; }
+      if (m && m.engin && m.heimild === 'engin-sv' && !opts.aftur) { ut.sleppt_sv++; continue; }
+      try {
+        var resp = await fetch('/api/husmynd', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: c.heimilisfang, vilja: 'streetview' }) });
+        var svar = null; try { svar = await resp.json(); } catch (_) { svar = null; }
+        if (svar && svar.ok && svar.image && svar.heimild === 'google-streetview') {
+          if (await vistaUtan(c.id, c.heimilisfang, svar, true)) ut.sett++; else ut.sleppt_eigin++;
+        } else if (svar && svar.error === 'timi') {
+          ut.villa++; ut.villur.push(c.id + ' ' + c.nafn + ': tími');
+        } else {
+          if (!(m && m.url)) await vistaEngin(c.id, c.heimilisfang, 'engin-sv', svar);
+          ut.engin++;
+        }
+      } catch (e) { ut.villa++; ut.villur.push(c.id + ' ' + c.nafn + ': ' + ((e && e.message) || e)); }
+      if (opts.bid) await new Promise(function (res) { setTimeout(res, opts.bid); });
+      if (opts.log !== false && (i % 25 === 0)) console.log(TAG, 'fyllaStreetView', i + 1, '/', rows.length, ut);
+    }
+    try { endurteikna(true); } catch (_) {}
+    console.log(TAG, 'fyllaStreetView lokið', ut);
+    return ut;
+  }
+
+  window.ByggingMynd = { endurteikna: endurteikna, lesaMynd: lesaMynd, opnaLjos: opnaLjos, fyllaStreetView: fyllaStreetView };
   console.log(TAG, 'virkt — vistuð mynd, annars ein Borgarvefsjá-tilraun');
 })();

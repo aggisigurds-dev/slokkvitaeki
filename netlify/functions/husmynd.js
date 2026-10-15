@@ -6,7 +6,8 @@
  *   → { ok:true, image:<base64>, contentType, attribution, heimild:'borgarvefsja-2018' }
  *   → { ok:false, error:'engin-mynd'|'timi', message }
  *
- * GOOGLE_MAPS_API_KEY er ekki til. Places og Street View eru ekki kallað.
+ * 15.10.2026: sé Netlify-env GOOGLE_MAPS_API_KEY sett er Google Street View reynt FYRST
+ * (heimild 'google-streetview'); loftmyndin hér að neðan er varaleiðin. Places er ekki kallað.
  * Já.is er ekki skrapað. Reykjavík: Borgarvefsjá, loftmynd 17.7.2018.
  * Kópavogur, Garðabær og Hafnarfjörður: loftmynd af map.is (Loftmyndir,
  * WMS án lykils). Hún sýnir húsið að ofan. Hún er ekki götumynd.
@@ -27,6 +28,48 @@ const MAPIS_POST = new Set([200, 201, 202, 203, 210, 211, 212, 225, 220, 221]);
 // fullExtent á Loftmynd-þjónustunni, mælt 2026-10-01.
 const EXTENT = { xmin: 344000, ymin: 392000, xmax: 384000, ymax: 427000 };
 const MIN_BYTES = 12000;
+
+// ── Google Street View (15.10.2026, Agnar: „setja myndir á allt sem er tómt og sem er loftmyndir") ──
+// Lykillinn er Netlify-env GOOGLE_MAPS_API_KEY (Street View Static API eitt, enginn referrer — þjónn).
+// Vanti hann er allt eins og áður: loftmynd. Metadata-kallið er ókeypis og segir hvort götumynd sé til
+// áður en myndin (gjaldfærð) er sótt. Staðsetningin er hnit Staðfangaskrár (EPSG:3057 → WGS84), ekki
+// textinn — Google miðar myndavélina sjálft á punktinn frá næsta myndatökustað.
+const SV_HEIMILD = 'google-streetview';
+const SV_ATTR = 'Google Street View';
+const SV_MIN_BYTES = 6000;
+
+// ISN93 / EPSG:3057 (Lambert conformal conic 2SP á GRS80) → WGS84. EPSG:9802 andhverfa.
+function isn93TilWgs84(x, y) {
+  const a = 6378137, f = 1 / 298.257222101, e = Math.sqrt(2 * f - f * f);
+  const d2r = Math.PI / 180;
+  const lat0 = 65 * d2r, lon0 = -19 * d2r, lat1 = 64.25 * d2r, lat2 = 65.75 * d2r, x0 = 500000, y0 = 500000;
+  const m = (p) => Math.cos(p) / Math.sqrt(1 - e * e * Math.sin(p) * Math.sin(p));
+  const t = (p) => Math.tan(Math.PI / 4 - p / 2) / Math.pow((1 - e * Math.sin(p)) / (1 + e * Math.sin(p)), e / 2);
+  const n = (Math.log(m(lat1)) - Math.log(m(lat2))) / (Math.log(t(lat1)) - Math.log(t(lat2)));
+  const F = m(lat1) / (n * Math.pow(t(lat1), n));
+  const r0 = a * F * Math.pow(t(lat0), n);
+  const dx = x - x0, dy = r0 - (y - y0);
+  const r = Math.sign(n) * Math.sqrt(dx * dx + dy * dy);
+  const tt = Math.pow(r / (a * F), 1 / n);
+  const theta = Math.atan2(dx, dy);
+  const lon = theta / n + lon0;
+  let lat = Math.PI / 2 - 2 * Math.atan(tt);
+  for (let i = 0; i < 8; i++) lat = Math.PI / 2 - 2 * Math.atan(tt * Math.pow((1 - e * Math.sin(lat)) / (1 + e * Math.sin(lat)), e / 2));
+  return { lat: lat / d2r, lng: lon / d2r };
+}
+
+async function streetView(lat, lng, signal, key) {
+  const loc = lat.toFixed(6) + ',' + lng.toFixed(6);
+  const q = 'location=' + loc + '&radius=60&source=outdoor&key=' + encodeURIComponent(key);
+  const meta = await fetch('https://maps.googleapis.com/maps/api/streetview/metadata?' + q, { signal });
+  const md = await meta.json().catch(() => null);
+  if (!md || md.status !== 'OK') return null;
+  const r = await fetch('https://maps.googleapis.com/maps/api/streetview?size=640x400&fov=80&pitch=4&return_error_code=true&' + q, { signal });
+  const tegund = (r.headers.get('content-type') || '').toLowerCase();
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  if (!r.ok || tegund.indexOf('image/') !== 0 || bytes.length < SV_MIN_BYTES) return null;
+  return { bytes, contentType: tegund.split(';')[0] || 'image/jpeg', date: String(md.date || ''), pano: String(md.pano_id || '') };
+}
 
 function cors() {
   return {
@@ -179,12 +222,32 @@ export default async (req) => {
     return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi' });
   }
 
-  const signal = AbortSignal.timeout(8000);
+  const svKey = String(process.env.GOOGLE_MAPS_API_KEY || '').trim();
+  const vilja = String((body && body.vilja) || '');   // 'streetview' = aðeins götumynd, engin loftmynd til vara (bakfylling 367)
+  const signal = AbortSignal.timeout(svKey ? 12000 : 8000);
   const mapis = MAPIS_POST.has(postnrUr(address));
   try {
     const p = await stadfang(address, signal);
     if (!p) {
-      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: mapis ? MAPIS_HEIMILD : HEIMILD });
+      return j(200, { ok: false, error: 'engin-mynd', message: 'Engin mynd af húsi', heimild: vilja === 'streetview' ? SV_HEIMILD : (mapis ? MAPIS_HEIMILD : HEIMILD) });
+    }
+    if (svKey) {
+      const w = isn93TilWgs84(p.x, p.y);
+      const sv = await streetView(w.lat, w.lng, signal, svKey).catch(() => null);
+      if (sv) {
+        return j(200, {
+          ok: true,
+          image: tilB64(sv.bytes),
+          contentType: sv.contentType,
+          attribution: SV_ATTR + (sv.date ? ' · ' + sv.date : ''),
+          heimild: SV_HEIMILD,
+          dags: sv.date,
+          hnit: { lat: w.lat, lng: w.lng },
+        });
+      }
+    }
+    if (vilja === 'streetview') {
+      return j(200, { ok: false, error: 'engin-mynd', message: svKey ? 'Engin götumynd á þessum stað' : 'GOOGLE_MAPS_API_KEY vantar á Netlify', heimild: SV_HEIMILD });
     }
     if (mapis) {
       const loft = await mapisLoftmynd(p.x, p.y, signal);
