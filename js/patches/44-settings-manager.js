@@ -105,7 +105,7 @@
       if (p) {
         setjaSlod(st, p, val);
         // Sömu speglanir og gömlu legacy-lyklarnir: 43 les stillingar.timagjald, 33/37 lesa stillingar.sms.simi.
-        if (key === 'cfg_hourly_rate') st.timagjald = parseInt(val, 10) || 12000;
+        if (key === 'cfg_hourly_rate') st.timagjald = parseInt(val, 10) > 0 ? parseInt(val, 10) : null;   // tómt = ekkert gildi (43 notar sitt sjálfgefna)
         if (key === 'cfg_company_phone') setjaSlod(st, 'sms.simi', val);
       } else {
         // Per vél (hver er við vélina) — localStorage eins og áður.
@@ -205,7 +205,7 @@
           const p = stSlod(k);
           if (p) {
             setjaSlod(st, p, String(v == null ? '' : v));
-            if (k === 'cfg_hourly_rate') st.timagjald = parseInt(v, 10) || 12000;
+            if (k === 'cfg_hourly_rate') st.timagjald = parseInt(v, 10) > 0 ? parseInt(v, 10) : null;
             if (k === 'cfg_company_phone') setjaSlod(st, 'sms.simi', String(v == null ? '' : v));
           } else { try { localStorage.setItem(k, v); } catch (_) {} }
         });

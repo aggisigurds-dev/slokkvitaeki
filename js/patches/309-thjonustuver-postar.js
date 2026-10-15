@@ -58,7 +58,7 @@
   }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const me = () => { try { return localStorage.getItem('bh_me') || localStorage.getItem('me') || localStorage.getItem('slokk_me') || 'Slökkvitæki'; } catch (_) { return 'Slökkvitæki'; } };
-  const emailFrom = () => { try { return localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } catch (_) { return 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } };
+  const emailFrom = () => { try { return ((window.AppSettings && AppSettings.path && AppSettings.path('stillingar.postur.sendandi')) || localStorage.getItem('email_from') /* 15.10.2026: sendandinn býr í AppSettings stillingar.postur (29); gamli lykillinn aðeins varagildi */) || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } catch (_) { return 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } };
   const nowIso = () => new Date().toISOString();
   const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
   const dtime = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/); return m ? (m[3] + '/' + m[2] + ' ' + m[4] + ':' + m[5]) : dt(s); };

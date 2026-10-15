@@ -1401,7 +1401,7 @@
   const TENGD_HOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
   const SJALFGEFID_FRA = 'Brunahólf slökkvitæki ehf <eldklar@eldklar.is>';
   function emailFrom() {
-    const geymt = localStorage.getItem('email_from') || '';
+    const geymt = ((window.AppSettings && AppSettings.path && AppSettings.path('stillingar.postur.sendandi')) || localStorage.getItem('email_from') /* 15.10.2026: sendandinn býr í AppSettings stillingar.postur (29); gamli lykillinn aðeins varagildi */) || '';
     const netfang = (geymt.match(/<([^>]+)>/) || [null, geymt.trim()])[1] || '';
     return TENGD_HOLF.test(netfang) ? geymt : SJALFGEFID_FRA;
   }

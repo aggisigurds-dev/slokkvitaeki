@@ -78,7 +78,8 @@ const BANN = [
 // Byr i hub_state a thjoninum eins og layout sjalft - stenst regluna.
 // 15.10.2026 (regla Agnars: engar per-taekis stillingar): brunaholf ls 58 -> 35 (23 lyklar fluttir i state.ui.vidmot),
 // ui 52 -> 53 (nyi lykillinn vidmot = { <lykill>: {v, ts} }, nyjasta raedur per undirlykil i _mergeIn).
-const GRUNNLINA = { brunaholf: { ls: 35, ui: 53 }, slokkvitaeki: { ls: 158, ui: 0 } };
+// 15.10.2026 (regla Agnars): slokkvitaeki ls 158 -> 91 — ~100 vidmotsval flutt i AppSettings vidmot (472) og stillingar.
+const GRUNNLINA = { brunaholf: { ls: 35, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
