@@ -19,7 +19,7 @@ var SUPABASE_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 // Google Maps Embed API — leiðin inni í Bílstjóra á spjaldtölvu (396). Lykill með
 // HTTP-referrer-takmörkun á slokkvitaeki.netlify.app/* (console.cloud.google.com →
 // APIs & Services → Credentials). Tómur = Leaflet-pinnarnir einir, engin villa.
-window.GOOGLE_MAPS_EMBED_KEY = '';
+window.GOOGLE_MAPS_EMBED_KEY = 'AIzaSyD5KZMhcG2anGbXkQSvmXAUMDjeYNRSAEg';
 
 // ============================================================
 //  Þegar þú hefur sett inn gildin að ofan skaltu fara í
