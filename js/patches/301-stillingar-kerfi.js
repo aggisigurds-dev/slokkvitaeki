@@ -168,16 +168,18 @@
   }
 
   // ── 3) PRUFUFÍDUSAR ───────────────────────────────────────────────────────
+  // 15.10.2026 (regla Agnars): prufufídusar eru Vidmot-lyklar (472) — eitt gildi fyrir allar vélar.
+  // [vidmot-lykill, nafn, lýsing]. 'vp_listi_beta' fjarlægt: enginn kóði les hann lengur (dauður lykill).
   const BETA = [
-    ['pos_vorulisti_beta', 'Sala: listi í stað flísa', 'Leitar-listi með fellilistum eftir vöruflokki á vörusvæði Sölu.'],
-    ['vp_listi_beta',      'Vörutíningur: listaútlit', 'Leitin fremst og flokkar samanbrotnir í „Velja vöru / þjónustu“.']
+    ['sala.vorulisti', 'Sala: listi í stað flísa', 'Leitar-listi með fellilistum eftir vöruflokki á vörusvæði Sölu.']
   ];
+  const betaKveikt = k => { try { return !!(window.Vidmot && Vidmot.lesa(k, false) === true); } catch (_) { return false; } };
   function betaHTML() {
     return '<p style="margin:0 0 12px;font-size:12.5px;color:var(--ink3);line-height:1.55">' +
-        'Nýir fídusar sem eru í prófun. Þeir eru <b>slökktir sjálfgefið</b> og gilda aðeins í þessari tölvu — þú getur slökkt aftur hvenær sem er.' +
+        'Nýir fídusar sem eru í prófun. Þeir eru <b>slökktir sjálfgefið</b> og valið gildir á öllum vélunum — þú getur slökkt aftur hvenær sem er.' +
       '</p>' +
       '<div style="display:flex;flex-direction:column;gap:7px">' + BETA.map(([k, nafn, lysing]) => {
-        const a = lesa(k) === '1';
+        const a = betaKveikt(k);
         return '<div style="' + stilltur + ';display:flex;align-items:center;gap:12px">' +
           '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--ink1)">' + esc(nafn) + '</div>' +
           '<div style="font-size:11px;color:var(--ink3);margin-top:1px">' + esc(lysing) + '</div></div>' +
@@ -207,8 +209,8 @@
     const beta = e.target.closest('._sk-beta');
     if (beta) {
       const k = beta.dataset.k;
-      const a = lesa(k) === '1';
-      try { localStorage.setItem(k, a ? '0' : '1'); } catch (_) {}
+      const a = betaKveikt(k);
+      try { if (window.Vidmot) Vidmot.setja(k, !a); } catch (_) {}   // raunverulegur smellur → Vidmot (allar vélar)
       toast(a ? 'Slökkt á prufufídus' : 'Kveikt á prufufídus — endurhlaða til að sjá breytinguna');
       opnaAftur('beta');
       return;

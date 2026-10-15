@@ -12,8 +12,16 @@
 
   const ENDPOINT = 'https://brunaholf.netlify.app/api/cg-entries';
 
-  function active() { try { return localStorage.getItem('cg_capture_sk') === '1'; } catch (_) { return false; } }
-  function setActive(v) { try { v ? localStorage.setItem('cg_capture_sk', '1') : localStorage.removeItem('cg_capture_sk'); } catch (_) {} }
+  // 15.10.2026 (regla Agnars): skráningarhamurinn býr í Vidmot (472) undir 'cg.skraning' — eitt gildi fyrir allar
+  // vélar; gamli lykillinn 'cg_capture_sk' er aðeins einskiptis upphafsgildi. Skrifað aðeins við smell á takkann.
+  function active() {
+    try {
+      if (!window.Vidmot) return false;
+      Vidmot.flytja('cg.skraning', 'cg_capture_sk', v => v === 1 || v === '1' || v === true);
+      return Vidmot.lesa('cg.skraning', false) === true;
+    } catch (_) { return false; }
+  }
+  function setActive(v) { try { if (window.Vidmot) Vidmot.setja('cg.skraning', !!v); } catch (_) {} }
 
   function currentTab() {
     try { return (window.App && App.currentView) || location.hash.replace('#', '') || 'slokkvitaeki'; }

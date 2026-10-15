@@ -332,12 +332,25 @@
   // ── View-mode (Sími / Tafla / Skjár) ───────────────────────────────────────
   // A 3-segment control in the banner switches the Kröfu-yfirlit layout between
   // 📱 mobile (stacked, big taps, no overlap) · ▦ table (dense) · 🖥 desktop
-  // (the current card look). Persisted in localStorage.slokk_viewmode and mirrored
-  // onto html[data-viewmode] so the render() branch + any CSS can read it. For now
-  // ONLY this page reacts; the toggle itself is app-wide.
-  const VM_KEY = 'slokk_viewmode';
+  // (the current card look). 15.10.2026 (regla Agnars): vistað í Vidmot (472) per
+  // TÆKJAFLOKK — lesaTaeki/setjaTaeki('viewmode') → 'viewmode@simi' | 'viewmode@tolva';
+  // Sími/Tafla/Skjár er eðlislægt ólíkt á síma og tölvu, en eitt gildi fyrir allar
+  // vélar í sama flokki og nýjasta ræður. Speglað á html[data-viewmode] svo render()
+  // og CSS lesi það. For now ONLY this page reacts; the toggle itself is app-wide.
+  const VM_KEY = 'slokk_viewmode';   // gamall localStorage-lykill — aðeins einskiptis flutningur
+  const VM_V = 'viewmode';
   const VM_ID = '_ky-vm-toggle';
   const VM_MODES = ['mobile', 'table', 'desktop'];
+  (function flytjaGamla() {
+    try {
+      if (!window.Vidmot || !Vidmot.flytja) return;
+      // Gamalt sjálfvistað 'mobile' á tölvu (án valmerkisins slokk_viewmode_valid_v1, sjá b5bb83da) er EKKI val
+      // notandans og flyst ekki; allt sem Vidmot geymir hér eftir er raunverulegt val.
+      let valid = false; try { valid = !!localStorage.getItem('slokk_viewmode_valid_v1'); } catch (_) {}
+      Vidmot.flytja(VM_V + '@' + Vidmot.taeki(), VM_KEY, v => (VM_MODES.indexOf(v) >= 0 && (valid || v !== 'mobile' || isPhoneDevice())) ? v : undefined);
+      ['slokk_viewmode', 'slokk_viewmode_valid_v1', 'slokk_viewmode_phone_v1'].forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+  })();
   // Phone vs viewport: Chrome "Request desktop site" on a Samsung makes
   // innerWidth ~980px so matchMedia(max-width:640px) lies. screen.width is
   // the real CSS-pixel short side (~412 on S26).
@@ -373,31 +386,15 @@
     return getViewMode() === 'desktop';
   }
   function loadViewMode() {
-    // App-ham þvingar 'mobile' — en snertir EKKI vistaða vafra-valið (applyViewMode
-    // sleppir localStorage í app-ham) svo Sími/Tafla/Skjár í hubbinu helst óbreytt.
+    // App-ham þvingar 'mobile' — en snertir EKKI vistaða valið (applyViewMode
+    // sleppir vistun í app-ham) svo Sími/Tafla/Skjár í hubbinu helst óbreytt.
     if (inAppMode()) return 'mobile';
     let m = null;
-    try { m = localStorage.getItem(VM_KEY); } catch (_) {}
-    // 2026-08-25: sími lenti í 🖥 Skjár (hvítir nav-textar á gráu, þrjár
-    // Afgreiðslu-dálkar klemmdir) því Chrome „desktop site" vistaði desktop.
-    // Einu-sinni reset — notandi getur ýtt á Skjár aftur ef hann vill.
-    if (isPhoneDevice()) {
-      try {
-        if (!localStorage.getItem('slokk_viewmode_phone_v1')) {
-          localStorage.setItem('slokk_viewmode_phone_v1', '1');
-          if (m === 'desktop' || m === 'table') { m = 'mobile'; localStorage.setItem(VM_KEY, m); }
-        }
-      } catch (_) {}
-    }
-    // 2026-09-11 (Verkefnalisti b5bb83da): sjálfvalin sýn var VISTUÐ við hverja
-    // ræsingu, svo gluggi sem var mjórri en 640 px eitt augnablik festi Síma-ham á
-    // tölvunni (mælt: 1289 px skjár í símaham). Nú vistast aðeins val notandans
-    // (applyViewMode(…, save)). Gamalt 'mobile' á tölvu án valmerkisins er líklegast
-    // sjálfvistað og víkur fyrir sjálfvali; eitt smell á Sími vistar það aftur.
-    try {
-      if (m === 'mobile' && !isPhoneDevice() && !localStorage.getItem('slokk_viewmode_valid_v1') &&
-          !(window.matchMedia && window.matchMedia('(max-width:640px)').matches)) m = null;
-    } catch (_) {}
+    // 2026-09-11 (Verkefnalisti b5bb83da): sjálfvalin sýn var VISTUÐ við hverja ræsingu, svo gluggi sem var mjórri en
+    // 640 px eitt augnablik festi Síma-ham á tölvunni. Nú vistast aðeins val notandans (applyViewMode(…, save)) — og
+    // síðan 15.10.2026 í Vidmot per tækjaflokk, svo „desktop site" á síma (2026-08-25) og sjálfvistað 'mobile' á tölvu
+    // geta ekki orðið til; endurstillingarnar sem voru hér eru því farnar. Lestur hér skrifar ALDREI.
+    try { m = window.Vidmot ? Vidmot.lesaTaeki(VM_V, null) : null; } catch (_) {}
     if (VM_MODES.indexOf(m) < 0) {
       m = (isPhoneDevice() || (window.matchMedia && window.matchMedia('(max-width:640px)').matches)) ? 'mobile' : 'desktop';
     }
@@ -432,10 +429,11 @@
     // Broadcast an app-wide signal so ANY page (not just Kröfu yfirlit) can
     // listen and re-render its own layout for the chosen mode. Kröfu yfirlit's
     // own re-render below stays intact — this is purely additive.
-    try { document.dispatchEvent(new CustomEvent('slokk-viewmode', { detail: mode })); } catch (_) {}
+    // valNotanda = true AÐEINS þegar notandinn valdi sjálfur (save) — hlustendur (331) mega þá vista sitt, aldrei annars.
+    try { const ev = new CustomEvent('slokk-viewmode', { detail: mode }); ev.valNotanda = !!save; document.dispatchEvent(ev); } catch (_) {}
     // Í app-ham vistum við EKKI — annars skrifaði þvingaða 'mobile' yfir raunverulegt
     // Sími/Tafla/Skjár val notandans í vafranum/hubbinu.
-    if (save && !inAppMode()) { try { localStorage.setItem(VM_KEY, mode); localStorage.setItem('slokk_viewmode_valid_v1', '1'); } catch (_) {} }
+    if (save && !inAppMode()) { try { if (window.Vidmot) Vidmot.setjaTaeki(VM_V, mode); } catch (_) {} }
     const wrap = document.getElementById(VM_ID);
     if (wrap) wrap.querySelectorAll('[data-vm]').forEach(b => b.classList.toggle('on', b.dataset.vm === mode));
     if (rerender) {
@@ -584,13 +582,15 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  // 2026-05-21: _state.sort persists the current sort across reloads via
-  // localStorage so the choice survives view-switches.
-  const SORT_KEY = '_ky_sort_v1';
+  // 2026-05-21: _state.sort persists the current sort across reloads so the choice
+  // survives view-switches — 15.10.2026 í Vidmot (472): eitt val fyrir allar vélar.
+  const SORT_KEY = '_ky_sort_v1';   // gamall localStorage-lykill — aðeins einskiptis flutningur
+  const SORT_V = 'krofur.sort';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(SORT_V, SORT_KEY, v => (v && v !== 'updated_desc') ? String(v) : undefined); localStorage.removeItem(SORT_KEY); } } catch (_) {}
   function loadSort() {
-    try { return localStorage.getItem(SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
+    try { return (window.Vidmot && Vidmot.lesa(SORT_V, null)) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
   }
-  function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
+  function saveSort(v) { try { if (window.Vidmot) Vidmot.setja(SORT_V, v); } catch (_) {} }   // aðeins úr change-hlustara
 
   // Sýnarsíu-flipar. Fyrstu FJÓRIR eru óbreyttir og keyra allir undir hörðu
   // síunni `greitt_med = 'reikningur'` í load(). FIMMTI — 'sesthvergi'

@@ -3,7 +3,18 @@
   if (typeof DB === 'undefined' || typeof App === 'undefined') return setTimeout(init, 300);
 
   /* ── TRANSLATIONS ───────────────────────────────────────────── */
-  var _lang = localStorage.getItem('_slokk_lang') || 'is';
+  // 15.10.2026 (regla Agnars): tungumálið býr í Vidmot (472) undir 'lang' — eitt gildi fyrir allar vélar;
+  // gamli lykillinn '_slokk_lang' er aðeins einskiptis upphafsgildi. Þessi skrá hleðst á undan 472: lesið
+  // hér ef Vidmot er komið, annars 'is' og síðan tekið við 'vidmot-breytt' (sjá buildLangBtn).
+  function lesaLang() {
+    try {
+      if (!window.Vidmot) return 'is';
+      Vidmot.flytja('lang', '_slokk_lang');
+      var v = Vidmot.lesa('lang', 'is');
+      return v === 'en' ? 'en' : 'is';
+    } catch (_) { return 'is'; }
+  }
+  var _lang = lesaLang();
   var T = {
     is: { edit:'Breyta', save:'Vista', cancel:'Hætta við', del:'Eyða',
       serial:'Raðnúmer', type:'Tegund', size:'Stærð', loc:'Staðsetning',
@@ -51,17 +62,31 @@
     btn.id = '_slokk_langbtn';
     btn.textContent = t('lang');
     btn.title = 'Switch language / Skipta um tungumál';
-    btn.onclick = function() {
-      _lang = _lang==='is' ? 'en' : 'is';
-      localStorage.setItem('_slokk_lang', _lang);
+    function birtaLang() {
       btn.textContent = t('lang');
       document.querySelectorAll('._slokk_edit_btn').forEach(function(b){ b.textContent=t('edit'); });
       // Update dashboard button label
       var db = document.getElementById('_dash_nav');
       if (db) { var sp = db.querySelector('span'); if(sp) sp.textContent = t('dashboard'); }
       applyNav();
+    }
+    btn.onclick = function() {
+      _lang = _lang==='is' ? 'en' : 'is';
+      try { if (window.Vidmot) Vidmot.setja('lang', _lang); } catch (_) {}   // raunverulegur smellur → allar vélar
+      birtaLang();
     };
+    // Val frá annarri vél (eða þjóninum eftir ræsingu): taka við því um leið og það berst.
+    document.addEventListener('vidmot-breytt', function (e) {
+      var d = e && e.detail; if (!d || d.lykill !== 'lang' || d.heima) return;
+      var v = d.gildi === 'en' ? 'en' : 'is';
+      if (v !== _lang) { _lang = v; birtaLang(); }
+    });
     document.body.appendChild(btn);
+    // Hafi 472 ekki verið komið þegar _lang var lesið: lesa einu sinni þegar það birtist (ræsibið, engin skrif).
+    (function bida(n) {
+      if (window.Vidmot) { var v = lesaLang(); if (v !== _lang) { _lang = v; birtaLang(); } return; }
+      if (n > 0) setTimeout(function () { bida(n - 1); }, 250);
+    })(60);
   }
 
   /* ── DASHBOARD ──────────────────────────────────────────────── */

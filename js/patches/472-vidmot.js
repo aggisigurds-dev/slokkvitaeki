@@ -42,7 +42,20 @@
       return m && typeof m === 'object' && !Array.isArray(m) ? m : null;
     } catch (_) { return null; }
   }
-  function gild(f) { return f && typeof f === 'object' && 'v' in f; }
+  // Hlutgildi (ekki fylki) eru geymd sem JSON-strengur í `j` í stað `v`: deepMerge þjónsins (85 / jsonb_deep_merge)
+  // sameinar hluti reit fyrir reit, svo reitur sem notandi fjarlægði hyrfi aldrei — strengur skiptist út í heilu lagi.
+  function gild(f) { return f && typeof f === 'object' && ('v' in f || 'j' in f); }
+  function gildi(f) {
+    if (!gild(f)) return undefined;
+    if (typeof f.j === 'string') { try { return JSON.parse(f.j); } catch (_) { return undefined; } }
+    return f.v;
+  }
+  function pakka(v) {
+    // Báðir reitir alltaf með (deepMerge þjónsins skrifar null en eyðir aldrei): annars sæti gamli `j`-strengurinn eftir
+    // þegar hlutur er leystur af hólmi með skalara eða null.
+    if (v && typeof v === 'object' && !Array.isArray(v)) return { j: JSON.stringify(v), v: null, ts: Date.now() };
+    return { v: v, j: null, ts: Date.now() };
+  }
   function faersla(k) {
     var s = serverMap(), sv = s ? s[k] : null, cv = cache[k];
     if (!gild(sv)) sv = null;
@@ -52,12 +65,13 @@
   }
   function lesa(k, sjalfgefid) {
     var f = faersla(k);
-    return (f && f.v !== undefined && f.v !== null) ? f.v : sjalfgefid;
+    var g = gildi(f);
+    return (g !== undefined && g !== null) ? g : sjalfgefid;
   }
   function vistaCache() { try { localStorage.setItem(CACHE, JSON.stringify(cache)); } catch (_) {} }
   function setja(k, v) {
     if (v === undefined) v = null;
-    var f = { v: v, ts: Date.now() };
+    var f = pakka(v);
     cache[k] = f; vistaCache();
     pending[k] = f; skedula();
     try { document.dispatchEvent(new CustomEvent('vidmot-breytt', { detail: { lykill: k, gildi: v, heima: true } })); } catch (_) {}
@@ -107,11 +121,11 @@
     Object.keys(s).forEach(function (k) {
       var sv = s[k], cv = cache[k];
       if (!gild(sv)) return;
-      if (!cv || (+sv.ts || 0) > (+cv.ts || 0)) { if (!cv || JSON.stringify(cv.v) !== JSON.stringify(sv.v)) breytt.push(k); cache[k] = sv; }
+      if (!cv || (+sv.ts || 0) > (+cv.ts || 0)) { if (!cv || JSON.stringify(gildi(cv)) !== JSON.stringify(gildi(sv))) breytt.push(k); cache[k] = sv; }
     });
     if (breytt.length) {
       vistaCache();
-      breytt.forEach(function (k) { try { document.dispatchEvent(new CustomEvent('vidmot-breytt', { detail: { lykill: k, gildi: s[k].v, heima: false } })); } catch (_) {} });
+      breytt.forEach(function (k) { try { document.dispatchEvent(new CustomEvent('vidmot-breytt', { detail: { lykill: k, gildi: gildi(s[k]), heima: false } })); } catch (_) {} });
     }
   }
   function tengja() {
@@ -130,6 +144,8 @@
     } catch (_) {}
   });
 
-  window.Vidmot = { lesa: lesa, setja: setja, lesaTaeki: lesaTaeki, setjaTaeki: setjaTaeki, flytja: flytja, taeki: taeki, _skola: skola, _cache: function () { return cache; } };
+  function flytjaTaeki(k, gamall, umbreyta) { return flytja(k + '@' + taeki(), gamall, umbreyta); }
+
+  window.Vidmot = { lesa: lesa, setja: setja, lesaTaeki: lesaTaeki, setjaTaeki: setjaTaeki, flytja: flytja, flytjaTaeki: flytjaTaeki, taeki: taeki, _skola: skola, _cache: function () { return cache; } };
   try { console.log(TAG, 'virkt — eitt val fyrir allar vélar, nýjasta ræður'); } catch (_) {}
 })();

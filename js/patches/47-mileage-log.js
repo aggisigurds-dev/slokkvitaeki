@@ -29,7 +29,15 @@
   function fmtKr(n) { if(!n&&n!==0)return'—'; const s=Math.round(n).toString(); const r=[]; let t=s; while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr'; }
   function fmtKm(n) { return (n||0).toFixed(1)+' km'; }
 
-  function getKmRate() { return parseInt(localStorage.getItem('cfg_km_rate')||'130')||130; }
+  // 15.10.2026 (regla Agnars): km-gjaldið er rekstrarstilling → AppSettings 'stillingar.kmGjald' (eitt gildi fyrir
+  // allar vélar). Gamli 'cfg_km_rate' er aðeins LESINN sem varagildi þar til fyrst er vistað; aldrei skrifaður framar.
+  // cfg_default_tech/insp_tech = „hver er við vélina" — má vera í localStorage áfram.
+  function getKmRate() {
+    let v = null;
+    try { v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.kmGjald'); } catch (_) { v = null; }
+    if (v === undefined || v === null || v === '') { try { v = localStorage.getItem('cfg_km_rate'); } catch (_) { v = null; } }
+    return parseInt(v || '130') || 130;
+  }
   function getDefaultTech() { return localStorage.getItem('cfg_default_tech')||localStorage.getItem('insp_tech')||''; }
 
   let entries = [];
@@ -285,8 +293,10 @@
     const v = prompt('Km-gjald (kr/km):', cur);
     if (v===null) return;
     const n = parseInt(v)||130;
-    localStorage.setItem('cfg_km_rate', n);
-    render();
+    // Raunveruleg vistun (prompt → OK) → þjónninn (allar vélar); teiknað eftir að gildið er sameinað í AppSettings.
+    let p = null;
+    try { if (window.AppSettings && AppSettings.save) p = AppSettings.save({ stillingar: { kmGjald: n } }); } catch (_) {}
+    Promise.resolve(p).then(render, render);
   }
 
   function _exportCsv() {

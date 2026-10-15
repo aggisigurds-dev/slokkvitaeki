@@ -22,6 +22,12 @@
 
   function getSB() { return window.DB && window.DB.sb; }
   function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  // 15.10.2026 (regla Agnars): sími fyrirtækis kemur af þjóninum (AppSettings 'stillingar.sms.simi', skrifað af 33/44
+  // við Vista); gamli localStorage-lykillinn 'sms_company_phone' er aðeins lesinn sem varagildi þar til fyrst er vistað.
+  function simiFyrirtaekis() {
+    try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.sms.simi'); if (v) return String(v); } catch (_) {}
+    try { return localStorage.getItem('sms_company_phone') || ''; } catch (_) { return ''; }
+  }
   function fmtDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -174,7 +180,7 @@
     const unitList = group.units.map(u =>
       `  • ${u.serial||'?'} — ${u.type||u.tegund||''} — skoðun: ${fmtDate(u.next_insp)}`
     ).join('\n');
-    return `Góðan dag,\n\nSlökkvitæki ehf hér með áminningu um að eftirfarandi slökkvitæki eru á gjalddaga skoðunar:\n\n${unitList}\n\nVinsamlegast hafðu samband við okkur til að bóka tíma.\n\nSlökkvitæki ehf\n${localStorage.getItem('sms_company_phone')||''}`;
+    return `Góðan dag,\n\nSlökkvitæki ehf hér með áminningu um að eftirfarandi slökkvitæki eru á gjalddaga skoðunar:\n\n${unitList}\n\nVinsamlegast hafðu samband við okkur til að bóka tíma.\n\nSlökkvitæki ehf\n${simiFyrirtaekis()}`;
   }
 
   function buildEmailSubject(group) {
@@ -327,7 +333,7 @@
       return;
     }
     sel.forEach(g => {
-      const msg = `Slökkvitæki ehf: ${g.units.length} tæki hjá ${g.name} eru á gjalddaga skoðunar (${g.units.map(u=>fmtDate(u.next_insp)).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}). Hafðu samband til að bóka tíma. ${localStorage.getItem('sms_company_phone')||''}`;
+      const msg = `Slökkvitæki ehf: ${g.units.length} tæki hjá ${g.name} eru á gjalddaga skoðunar (${g.units.map(u=>fmtDate(u.next_insp)).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}). Hafðu samband til að bóka tíma. ${simiFyrirtaekis()}`;
       window.open('sms:' + g.phone + '?body=' + encodeURIComponent(msg), '_blank');
     });
     markSent(sel.map(g=>g.name));

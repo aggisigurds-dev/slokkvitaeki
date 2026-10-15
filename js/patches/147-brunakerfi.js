@@ -28,14 +28,17 @@
 
   const STORAGE_KEY = 'brunakerfi_customers';
   const NOTES_KEY = 'brunakerfi_notes';
-  const VIEW_KEY = 'bk_view_mode2';  // localStorage: 'card' | 'list' (default)
+  const VIEW_KEY = 'bk_view_mode2';  // gamall localStorage-lykill — aðeins einskiptis flutningur
+  // 15.10.2026 (regla Agnars): 'card' | 'list' (default) býr í Vidmot (472, 'brunakerfi.view') — eitt val fyrir allar vélar.
+  const VIEW_V = 'brunakerfi.view';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(VIEW_V, VIEW_KEY, v => v === 'card' ? 'card' : undefined); localStorage.removeItem(VIEW_KEY); } } catch (_) {}
 
   function getViewMode() {
-    try { return localStorage.getItem(VIEW_KEY) === 'card' ? 'card' : 'list'; }
+    try { return (window.Vidmot && Vidmot.lesa(VIEW_V, 'list')) === 'card' ? 'card' : 'list'; }
     catch (_) { return 'list'; }
   }
-  function setViewMode(m) {
-    try { localStorage.setItem(VIEW_KEY, m === 'list' ? 'list' : 'card'); } catch (_) {}
+  function setViewMode(m) {   // aðeins úr smelli á ._bk-vm
+    try { if (window.Vidmot) Vidmot.setja(VIEW_V, m === 'list' ? 'list' : 'card'); } catch (_) {}
   }
 
   function getSB() { return (window.DB && window.DB.sb) || null; }

@@ -128,24 +128,38 @@
     ['reikn_adur',    'Reikningur sendur áður',  '#eceff4', '#4f5d76', '#d3dae5']
   ];
 
+  // 15.10.2026 (regla Agnars): sýn, skref-sía og röðun búa í Vidmot (472) — eitt val fyrir allar vélar, nýjasta ræður.
+  // Gömlu localStorage-lyklarnir (sv_mode, sv_stepf, sv_sort) eru aðeins einskiptis upphafsgildi og eru fjarlægðir.
+  const vL = (k, d) => { try { return window.Vidmot ? Vidmot.lesa(k, d) : d; } catch (_) { return d; } };
+  const vS = (k, v) => { try { if (window.Vidmot) Vidmot.setja(k, v); } catch (_) {} };   // aðeins úr smell-/change-hlustara
+  try { if (window.Vidmot && Vidmot.flytja) {
+    Vidmot.flytja('verkstaedi.mode', 'sv_mode', v => (v && v !== 'list') ? String(v) : undefined);
+    Vidmot.flytja('verkstaedi.stepf', 'sv_stepf', v => (v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length) ? Object.keys(v).map(k => [k, v[k]]) : undefined);
+    Vidmot.flytja('verkstaedi.sort', 'sv_sort', v => (v && v !== 'name') ? String(v) : undefined);
+    ['sv_mode', 'sv_stepf', 'sv_sort'].forEach(k => localStorage.removeItem(k));
+  } } catch (_) {}
   // View mode — "list" (gamla miðjan, sjálfgefið / uppáhald) eða "cards".
-  let _mode = (function () { try { return localStorage.getItem('sv_mode') || 'list'; } catch (_) { return 'list'; } })();
-  function setMode(m) { _mode = m; try { localStorage.setItem('sv_mode', m); } catch (_) {} render(); }
+  let _mode = vL('verkstaedi.mode', 'list');
+  function setMode(m) { _mode = m; vS('verkstaedi.mode', m); render(); }
   // Skref-sía (2026-07-30, ósk Agnars: „sjá alla sem eru með það hakað — og hina
   // líka"). Þrjár stöður per skref: '' (engin sía) → 'on' (✓ búið) → 'off'
   // (⧗ vantar). Geymt svo sían haldist milli heimsókna á síðuna.
-  let _stepF = (function () { try { return JSON.parse(localStorage.getItem('sv_stepf') || '{}') || {}; } catch (_) { return {}; } })();
+  // Geymt sem FYLKI para [[skref, 'on'|'off'], …] — hlutur myndi SAMEINAST á þjóninum (deepMerge) og skref sem var
+  // tekið úr síunni lifði þar áfram; fylki er skipt út í heilu lagi.
+  const stepfLesa = () => { const a = vL('verkstaedi.stepf', []); const o = {}; (Array.isArray(a) ? a : []).forEach(p => { if (p && p[0] && (p[1] === 'on' || p[1] === 'off')) o[p[0]] = p[1]; }); return o; };
+  const stepfVista = () => vS('verkstaedi.stepf', Object.keys(_stepF).map(k => [k, _stepF[k]]));
+  let _stepF = stepfLesa();
   function cycleStepF(k) {
     const cur = _stepF[k] || '';
     const next = cur === '' ? 'on' : (cur === 'on' ? 'off' : '');
     if (next) _stepF[k] = next; else delete _stepF[k];
-    try { localStorage.setItem('sv_stepf', JSON.stringify(_stepF)); } catch (_) {}
+    stepfVista();
     render();
   }
-  function clearStepF() { _stepF = {}; try { localStorage.removeItem('sv_stepf'); } catch (_) {} render(); }
+  function clearStepF() { _stepF = {}; stepfVista(); render(); }
   // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
-  let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
-  function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
+  let _sort = vL('verkstaedi.sort', 'name');
+  function setSort(s) { _sort = s; vS('verkstaedi.sort', s); render(); }
   // Leit í Í-vinnslu listanum
   let _search = '';
   function setSearch(s) { _search = s.trim().toLowerCase(); render(); }

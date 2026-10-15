@@ -41,7 +41,20 @@
       .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function get(key, fallback) { return localStorage.getItem(key) || fallback || ''; }
+  // 15.10.2026 (regla Agnars): sniðmát, sími og seinkunardagar snerta rukkun/samskipti → AppSettings
+  // 'stillingar.sms.{snid,simi,seinnDagar}' (eitt gildi fyrir allar vélar), skrifað AÐEINS við „Vista stillingar".
+  // Gömlu localStorage-lyklarnir eru aðeins LESNIR sem varagildi þar til fyrst er vistað. Twilio-lyklarnir
+  // (sms_twilio_sid/token/from) eru LEYNDARMÁL og fara EKKI í app_settings — þeir sitja áfram í localStorage
+  // (eiga heima í Netlify env, sjá skýrslu 15.10.2026).
+  const ST_SLOD = { sms_template: 'sms.snid', sms_company_phone: 'sms.simi', sms_overdue_days: 'sms.seinnDagar' };
+  function get(key, fallback) {
+    try {
+      const p = ST_SLOD[key];
+      const v = p && window.AppSettings && AppSettings.path && AppSettings.path('stillingar.' + p);
+      if (v !== undefined && v !== null && v !== '') return String(v);
+    } catch (_) {}
+    try { return localStorage.getItem(key) || fallback || ''; } catch (_) { return fallback || ''; }
+  }
 
   function getTemplate() { return get(K.TEMPLATE) || DEFAULT_TEMPLATE; }
   function getOverdueDays() { return parseInt(get(K.OVERDUE_DAYS, '2')) || 2; }
@@ -429,9 +442,14 @@
 
     var smsSaveBtn = document.getElementById('sms-save-btn');
     if (smsSaveBtn) smsSaveBtn.onclick = () => {
-      localStorage.setItem(K.CO_PHONE, (document.getElementById('sms-co-phone')?.value || '').trim());
-      localStorage.setItem(K.OVERDUE_DAYS, document.getElementById('sms-days')?.value || '2');
-      localStorage.setItem(K.TEMPLATE, document.getElementById('sms-tpl')?.value || '');
+      // Vista-smellur = eina skrifið á þjóninn (allar vélar). Síminn speglaður í fyrirtaeki.simi (44 sýnir hann).
+      const simi = (document.getElementById('sms-co-phone')?.value || '').trim();
+      try {
+        if (window.AppSettings && AppSettings.save) AppSettings.save({ stillingar: {
+          sms: { simi, seinnDagar: document.getElementById('sms-days')?.value || '2', snid: document.getElementById('sms-tpl')?.value || '' },
+          fyrirtaeki: { simi } } });
+      } catch (_) {}
+      // Twilio = leyndarmál → ekki í app_settings; óbreytt í localStorage þessarar vélar.
       localStorage.setItem(K.TW_SID,   (document.getElementById('sms-tw-sid')?.value || '').trim());
       localStorage.setItem(K.TW_TOKEN, (document.getElementById('sms-tw-tok')?.value || '').trim());
       localStorage.setItem(K.TW_FROM,  (document.getElementById('sms-tw-from')?.value || '').trim());

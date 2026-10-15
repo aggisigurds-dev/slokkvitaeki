@@ -24,8 +24,17 @@
   const state = { sortCol: 'name', sortDir: 'asc', search: '', month: 0, filter: 'all',
     // ☰ þétt / ▤ ítarlegt (ósk Agnars 2026-07-21 — símarnir sýndu ~8 raðir)
     // Sjálfgefið ÞÉTT á síma-breidd (uppsetta Brunakerfi-appið opnast í símaham),
-    // ÍTARLEGT á tölvu — vistað val (bky_view) yfirskrifar alltaf.
-    view: (function () { var d = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768) ? 'thett' : 'full'; try { return localStorage.getItem('bky_view') || d; } catch (_) { return d; } })() };
+    // ÍTARLEGT á tölvu — vistað val yfirskrifar alltaf. 15.10.2026 (regla Agnars): valið býr í Vidmot (472,
+    // 'brunayfirlit.view') — eitt val fyrir allar vélar; gamli localStorage-lykillinn bky_view er aðeins einskiptis
+    // upphafsgildi og er fjarlægður.
+    view: (function () {
+      var d = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768) ? 'thett' : 'full';
+      try {
+        if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja('brunayfirlit.view', 'bky_view', function (v) { return (v === 'thett' || v === 'full') ? v : undefined; }); localStorage.removeItem('bky_view'); }
+        var v = window.Vidmot ? Vidmot.lesa('brunayfirlit.view', null) : null;
+        return (v === 'thett' || v === 'full') ? v : d;
+      } catch (_) { return d; }
+    })() };
   let _rows = null, _loading = false;
 
   function SB() { return (window.DB && DB.sb) || null; }
@@ -341,7 +350,7 @@
     root.querySelectorAll('._bky-month').forEach(b => b.addEventListener('click', () => { state.month = +b.dataset.m; render(); }));
     root.querySelectorAll('._bky-viewbtn').forEach(b => b.addEventListener('click', () => {
       state.view = b.dataset.v;
-      try { localStorage.setItem('bky_view', state.view); } catch (_) {}
+      try { if (window.Vidmot) Vidmot.setja('brunayfirlit.view', state.view); } catch (_) {}   // raunsmellur
       render();
     }));
     const s = root.querySelector('._bky-search');

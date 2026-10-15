@@ -23,9 +23,17 @@
   if (window.__salaVorulistiBeta) return;
   window.__salaVorulistiBeta = true;
 
-  const KEY = 'pos_vorulisti_beta';
-  const on = () => { try { return localStorage.getItem(KEY) === '1'; } catch (_) { return false; } };
-  const setOn = v => { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (_) {} };
+  // 15.10.2026 (regla Agnars): valið býr í Vidmot (472) undir 'sala.vorulisti' — eitt gildi fyrir allar vélar;
+  // gamli lykillinn 'pos_vorulisti_beta' er aðeins einskiptis upphafsgildi. Skrifað aðeins við smell (Listi/Flísar, 301).
+  const VM = 'sala.vorulisti';
+  const on = () => {
+    try {
+      if (!window.Vidmot) return false;
+      Vidmot.flytja(VM, 'pos_vorulisti_beta', v => v === 1 || v === '1' || v === true);
+      return Vidmot.lesa(VM, false) === true;
+    } catch (_) { return false; }
+  };
+  const setOn = v => { try { if (window.Vidmot) Vidmot.setja(VM, !!v); } catch (_) {} };
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

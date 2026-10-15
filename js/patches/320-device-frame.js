@@ -4,9 +4,10 @@
  * tækinu (ósk Agnars 2026-08-26). Sama mynstur og brunaholf js/viewmode.js.
  *
  * Rammaða eintakið keyrir ?devframe=simi|tafla:
- *   - localStorage er SHIMMAÐ fyrir slokk_viewmode (get skilar ramma-ham,
- *     set hunsað) svo ramminn þvingar Sími/Tafla án þess að KRUKKA í
- *     raunverulegu sýnar-vali tækisins.
+ *   - Vidmot.lesaTaeki/setjaTaeki('viewmode') er VAFIÐ (lestur skilar ramma-ham,
+ *     skrif hunsað) svo ramminn þvingar Sími/Tafla án þess að KRUKKA í
+ *     raunverulegu sýnar-vali tækisins (15.10.2026: valið býr í Vidmot/472, ekki
+ *     localStorage.slokk_viewmode).
  *   - Stílstjórinn situr UTAN við rammann (panel í overlay, vinnur á
  *     iframe.contentDocument). Barnið felur 🎨 / panel / 📐 svo síminn sýni
  *     bara appið. ↻ endurhleður rammann.
@@ -26,11 +27,15 @@
     // Sniðin eru fjögur en sýnarhamirnir tveir — landscape-afbrigðin þvinga
     // SAMA ham og hæðarsniðin, aðeins útsýnisstærðin er önnur.
     const vm = /^tafla/.test(CHILD_MODE) ? 'table' : 'mobile';
-    try {
-      const realGet = Storage.prototype.getItem, realSet = Storage.prototype.setItem;
-      Storage.prototype.getItem = function (k) { return k === 'slokk_viewmode' ? vm : realGet.call(this, k); };
-      Storage.prototype.setItem = function (k, v) { if (k === 'slokk_viewmode') return; return realSet.call(this, k, v); };
-    } catch (_) {}
+    (function vefjaVidmot() {
+      const V = window.Vidmot;
+      if (!V || !V.lesaTaeki) { setTimeout(vefjaVidmot, 50); return; }
+      if (V.__devframe320) return;
+      V.__devframe320 = true;
+      const rl = V.lesaTaeki, rs = V.setjaTaeki;
+      V.lesaTaeki = function (k, d) { return k === 'viewmode' ? vm : rl.call(V, k, d); };
+      V.setjaTaeki = function (k, v) { if (k === 'viewmode') return; return rs.call(V, k, v); };
+    })();
     const enforce = () => {
       try {
         if (document.documentElement.dataset.viewmode !== vm) {

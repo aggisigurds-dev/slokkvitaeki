@@ -34,8 +34,18 @@
     { id: 'white', name: '⬜ Hvítt', dark: '#52525b', primary: '#71717a', accent: '#d4d4d8', tint: '#fafafa', tintb: '#e4e4e7' },
     { id: 'grey', name: '◻️ Grátt', dark: '#374151', primary: '#475569', accent: '#94a3b8', tint: '#f1f5f9', tintb: '#94a3b8' },
   ];
+  // 15.10.2026 (regla Agnars): þemað býr í Vidmot (472) undir 'tilbod.theme' — eitt gildi fyrir allar vélar;
+  // gamli lykillinn 'th_theme' er aðeins einskiptis upphafsgildi. Lesið við hverja teikningu (val frá annarri
+  // vél tekur gildi þá); skrifað aðeins við smell á þema-takkann.
   let themeIdx = 0;
-  try { const s = localStorage.getItem('th_theme'); const i = THEMES.findIndex(t => t.id === s); if (i >= 0) themeIdx = i; } catch (e) {}
+  function lesaTheme() {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja('tilbod.theme', 'th_theme');
+      const s = Vidmot.lesa('tilbod.theme', null); const i = THEMES.findIndex(t => t.id === s); if (i >= 0) themeIdx = i;
+    } catch (e) {}
+  }
+  lesaTheme();
   const theme = () => THEMES[themeIdx];
   function applyTheme() {
     const t = theme(), r = document.documentElement.style;
@@ -44,7 +54,7 @@
     r.setProperty('--th-gh', 'linear-gradient(95deg,' + t.dark + ' 0%,' + t.primary + ' 130%)');
     r.setProperty('--th-gb', 'linear-gradient(95deg,' + t.primary + ',' + t.accent + ')');
   }
-  function cycleTheme() { themeIdx = (themeIdx + 1) % THEMES.length; try { localStorage.setItem('th_theme', theme().id); } catch (e) {} applyTheme(); render(); toast(theme().name); }
+  function cycleTheme() { themeIdx = (themeIdx + 1) % THEMES.length; try { if (window.Vidmot) Vidmot.setja('tilbod.theme', theme().id); } catch (e) {} applyTheme(); render(); toast(theme().name); }
 
   const getHub = () => { const a = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(KEY)) || []; return Array.isArray(a) ? a.slice() : []; };
   const getBk = () => { const a = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(BK_KEY)) || []; return Array.isArray(a) ? a.slice() : []; };
@@ -617,6 +627,7 @@
   }
   function render() {
     const main = document.getElementById('tilbodhub-main'); if (!main) return;
+    lesaTheme();   // þema frá annarri vél tekur gildi við næstu teikningu (Vidmot)
     applyTheme(); thStil();
     const forms = allForms();
     // teljarar: fjöldi + samtala m. vsk per tegund (sérverð hefur enga upphæð)

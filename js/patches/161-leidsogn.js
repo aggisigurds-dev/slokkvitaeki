@@ -21,30 +21,47 @@
 
   const VIEW_ID = 'view-leidsogn';
   const NAV_KEY = 'leidsogn';
-  const ROUTE_KEY = '_slokk_route';   // shared with navfix.js
-  const GC_KEY    = '_slokk_gc';      // shared geocode cache
+  // 15.10.2026 (regla Agnars: engin stilling má gilda bara í einu tæki): leiðin ('leidsogn.leid', deilt með
+  // navfix.js), ár/mánuðir/flokkur og „sleppa skoðuðum" búa í Vidmot (472) — eitt gildi fyrir allar vélar, nýjasta
+  // ræður. Leið skipulögð á tölvu er þá ekin á símanum. Gömlu localStorage-lyklarnir (_slokk_route, leidsogn_year/
+  // _months/_flokkur/_ak_opin) eru aðeins einskiptis upphafsgildi (Vidmot.flytja) og eru ekki skrifaðir framar.
+  const VM_ROUTE  = 'leidsogn.leid';
+  const GC_KEY    = '_slokk_gc';      // shared geocode cache (skyndiminni — má vera í localStorage)
   // 2026-06-12: status-chips skipt út fyrir ÁR-chips (Allt / 2024 / 2025 /
   // 2026 = hvenær síðast var skoðað) og mánuðirnir urðu FJÖLVAL — hægt að
   // haka við marga mánuði í einu. Gömlu lyklarnir (leidsogn_filter /
   // leidsogn_month) eru ekki lesnir lengur.
-  const LS_YEAR   = 'leidsogn_year';   // 'all' | '2024' | '2025' | '2026'
-  const LS_MONTHS = 'leidsogn_months'; // csv: "2,3,5" — tómt = allir
-  const LS_FLOKK  = 'leidsogn_flokkur'; // all | klarad | oklarad | aridandi
+  const VM_YEAR   = 'leidsogn.year';    // 'all' | '2024' | '2025' | '2026'
+  const VM_MONTHS = 'leidsogn.months';  // fylki [2,3,5] — tómt = allir
+  const VM_FLOKK  = 'leidsogn.flokkur'; // all | klarad | oklarad | aridandi
+  const vmLesa = (k, d) => { try { return (window.Vidmot && Vidmot.lesa) ? Vidmot.lesa(k, d) : d; } catch (_) { return d; } };
+  const vmSetja = (k, v) => { try { if (window.Vidmot && Vidmot.setja) Vidmot.setja(k, v); } catch (_) {} };
+  const vmFlytja = (k, g, f) => { try { if (window.Vidmot && Vidmot.flytja) Vidmot.flytja(k, g, f); } catch (_) {} };
 
   // ── State ───────────────────────────────────────────────────────────────
   let _map = null;
   let _markers = {};
   let _leafletLP = null;
-  let _state = {
-    year: localStorage.getItem(LS_YEAR) || 'all',
-    months: String(localStorage.getItem(LS_MONTHS) || '')
-      .split(',').map(n => +n).filter(n => n >= 1 && n <= 12),
-    flokkur: localStorage.getItem(LS_FLOKK) || 'all'
-  };
+  let _state = { year: 'all', months: [], flokkur: 'all' };
+  const _sidast = {};   // síðast lesin/skrifuð gildi — saveState skrifar aðeins það sem breyttist
+  // Lesið úr Vidmot við ræsingu og hverja opnun: val frá annarri vél tekur gildi við næstu opnun.
+  function lesaVal() {
+    vmFlytja(VM_YEAR, 'leidsogn_year');
+    vmFlytja(VM_MONTHS, 'leidsogn_months', v => String(v || '').split(',').map(n => +n).filter(n => n >= 1 && n <= 12));
+    vmFlytja(VM_FLOKK, 'leidsogn_flokkur');
+    _state.year = String(vmLesa(VM_YEAR, 'all') || 'all');
+    const m = vmLesa(VM_MONTHS, []);
+    _state.months = (Array.isArray(m) ? m : String(m || '').split(',')).map(n => +n).filter(n => n >= 1 && n <= 12);
+    _state.flokkur = String(vmLesa(VM_FLOKK, 'all') || 'all');
+    _sidast.year = _state.year; _sidast.months = _state.months.join(','); _sidast.flokkur = _state.flokkur;
+  }
+  lesaVal();
+  // Kallað aðeins úr smell-höndlurum (ár-chips, mánaða-hök, flokkur).
   function saveState() {
-    localStorage.setItem(LS_YEAR, _state.year);
-    localStorage.setItem(LS_MONTHS, _state.months.join(','));
-    localStorage.setItem(LS_FLOKK, _state.flokkur);
+    const m = _state.months.join(',');
+    if (_state.year !== _sidast.year)       { _sidast.year = _state.year;       vmSetja(VM_YEAR, _state.year); }
+    if (m !== _sidast.months)               { _sidast.months = m;               vmSetja(VM_MONTHS, _state.months.slice()); }
+    if (_state.flokkur !== _sidast.flokkur) { _sidast.flokkur = _state.flokkur; vmSetja(VM_FLOKK, _state.flokkur); }
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -63,12 +80,16 @@
   function readGc() {
     try { return JSON.parse(localStorage.getItem(GC_KEY) || '{}'); } catch (_) { return {}; }
   }
+  // Leiðin: Vidmot 'leidsogn.leid' (fylki stoppa {id,name,addr,lat,lng}) — sama lykil les navfix.js.
   function readRoute() {
-    try { return JSON.parse(localStorage.getItem(ROUTE_KEY) || '[]'); } catch (_) { return []; }
+    try {
+      vmFlytja(VM_ROUTE, '_slokk_route', v => Array.isArray(v) ? v : undefined);
+      const r = vmLesa(VM_ROUTE, []);
+      return Array.isArray(r) ? r.slice() : [];
+    } catch (_) { return []; }
   }
-  function saveRoute(r) {
-    try { localStorage.setItem(ROUTE_KEY, JSON.stringify(r)); } catch (_) {}
-  }
+  // Kallað aðeins við raunverulega aðgerð (bæta við / fjarlægja / raða / hreinsa / Akstur-takki).
+  function saveRoute(r) { vmSetja(VM_ROUTE, Array.isArray(r) ? r : []); }
 
   // ── Leaflet loader (on demand, shared with patch 155) ───────────────────
   function ensureLeaflet() {
@@ -831,7 +852,12 @@
   // með þótt tækjaskrá vanti — hann var settur þar handvirkt. „Sleppa skoðuðum"
   // fylgir Bílstjóra (219): bæði „Í lagi <ár>" og „Tekið út — skjöl eftir"
   // teljast afgreidd heimsókn. Staðir án hnita eru nefndir með 📍 Setja.
-  const LS_AK_OPIN = 'leidsogn_ak_opin';   // útlitsval vafrans: '0' = taka skoðaða með
+  // „Sleppa skoðuðum í ár": Vidmot 'leidsogn.akOpin' (false = taka skoðaða með) — gamli 'leidsogn_ak_opin' aðeins upphafsgildi.
+  const VM_AK_OPIN = 'leidsogn.akOpin';
+  function lesaAkOpin() {
+    vmFlytja(VM_AK_OPIN, 'leidsogn_ak_opin', v => !(v === 0 || v === '0' || v === false));
+    return vmLesa(VM_AK_OPIN, true) !== false;
+  }
   function aksturAf(c, ars) {
     let v = +((ars || {}).akstur) || 0;
     try { if (window.ArsAkstur && ArsAkstur.of) v = +ArsAkstur.of(c.id) || 0; } catch (_) {}
@@ -858,7 +884,7 @@
     const row = document.getElementById('_lds-akstur-row');
     if (!row) return;
     let sleppa = true;
-    try { sleppa = localStorage.getItem(LS_AK_OPIN) !== '0'; } catch (_) {}
+    try { sleppa = lesaAkOpin(); } catch (_) {}
     const listar = [1, 2, 3].map(n => aksturStops(n, sleppa));
     const anHnita = [];
     listar.forEach((x, i) => x.anHnita.forEach(c => anHnita.push({ c, n: i + 1 })));
@@ -887,7 +913,7 @@
           '</div>'
         : '');
     row.querySelector('._lds-ak-opin').addEventListener('change', e => {
-      try { localStorage.setItem(LS_AK_OPIN, e.target.checked ? '1' : '0'); } catch (_) {}
+      vmSetja(VM_AK_OPIN, !!e.target.checked);   // raunverulegt hak
       renderAksturRow();
     });
     row.querySelectorAll('._lds-ak-go').forEach(b => b.addEventListener('click', () => {
@@ -1088,6 +1114,7 @@
     ensureView();
     const main = document.getElementById('_lds-main');
     if (!main) { setTimeout(show, 200); return; }
+    lesaVal();   // ár/mánuðir/flokkur frá annarri vél taka gildi við opnun (Vidmot)
     if (!main.querySelector('#_lds-mapcanvas')) {
       main.innerHTML =
         '<div style="max-width:1200px;margin:0 auto;padding:18px 20px 40px">' +

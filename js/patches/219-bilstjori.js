@@ -1125,9 +1125,14 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
   // á fyrstu snertingu og förum þá í fullan skjá. Í uppsettu appi
   // (/app/bilstjori/, display:standalone) er stikan þegar falin — þá gerir þetta
   // ekkert sýnilegt og er meinlaust.
+  // 15.10.2026 (regla Agnars): í Vidmot (472) per TÆKJAFLOKK — fullur skjár er eðlislægt símans/spjaldsins, ekki
+  // tölvunnar; eitt gildi fyrir allar vélar í sama flokki. Gamli lykillinn bs_fullscreen_default er aðeins einskiptis
+  // upphafsgildi og er fjarlægður. Sjálfgefið: viljað.
   const FS_KEY = 'bs_fullscreen_default';
-  function fsWanted() { try { return localStorage.getItem(FS_KEY) !== '0'; } catch (_) { return true; } }
-  function fsSet(on) { try { localStorage.setItem(FS_KEY, on ? '1' : '0'); } catch (_) {} }
+  const FS_V = 'bilstjori.fullskjar';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(FS_V + '@' + Vidmot.taeki(), FS_KEY, v => (v === 0 || v === '0') ? false : undefined); localStorage.removeItem(FS_KEY); } } catch (_) {}
+  function fsWanted() { try { return window.Vidmot ? Vidmot.lesaTaeki(FS_V, true) !== false : true; } catch (_) { return true; } }
+  function fsSet(on) { try { if (window.Vidmot) Vidmot.setjaTaeki(FS_V, !!on); } catch (_) {} }   // aðeins úr ⛶-smelli (toggleFullscreen)
   function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
   function enterFs() {
     const el = document.documentElement;

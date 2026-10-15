@@ -92,19 +92,22 @@
   // „Uppáhald" — handvalið af notanda (ekki sjálfvirkt eins og „Mest notað").
   // Geymt sem listi af vöru-ID (strengir). Sýnt EINGÖNGU þegar tíninn er opnaður
   // með { favorites:true } — í dag aðeins úr Verkstæði (78 → „Laga/varahlutur").
-  // Geymt í localStorage (per-tæki). Ósk Agnars 2026-08-21.
+  // Ósk Agnars 2026-08-21. 15.10.2026 (regla Agnars): geymt í Vidmot (472) — sama uppáhald á öllum vélum,
+  // nýjasta ræður. Gamli localStorage-lykillinn vp_fav_v1 er aðeins einskiptis upphafsgildi og er fjarlægður.
   const FAV_KEY = 'vp_fav_v1';
+  const FAV_V = 'vorur.fav';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(FAV_V, FAV_KEY, v => (Array.isArray(v) && v.length) ? v.map(String) : undefined); localStorage.removeItem(FAV_KEY); } } catch (_) {}
   function getFavs() {
-    try { const a = JSON.parse(localStorage.getItem(FAV_KEY)); return Array.isArray(a) ? a.map(String) : []; }
+    try { const a = window.Vidmot ? Vidmot.lesa(FAV_V, []) : []; return Array.isArray(a) ? a.map(String) : []; }
     catch (_) { return []; }
   }
   function isFav(id) { return getFavs().indexOf(String(id)) >= 0; }
-  function toggleFav(id) {
+  function toggleFav(id) {   // aðeins úr ★-smelli
     const sid = String(id);
     try {
       let a = getFavs();
       if (a.indexOf(sid) >= 0) a = a.filter(x => x !== sid); else a.push(sid);
-      localStorage.setItem(FAV_KEY, JSON.stringify(a));
+      if (window.Vidmot) Vidmot.setja(FAV_V, a);
     } catch (_) {}
   }
 

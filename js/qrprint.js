@@ -15,8 +15,17 @@
     });
   }
 
-  function getQRMode(){ return localStorage.getItem('_qr_mode') || 'qr_only'; }
-  function setQRMode(m){ localStorage.setItem('_qr_mode', m); }
+  // 15.10.2026 (regla Agnars): prentsniðið býr í Vidmot (472) undir 'qr.mode' — eitt gildi fyrir allar vélar;
+  // gamli lykillinn '_qr_mode' er aðeins einskiptis upphafsgildi. Skrifað aðeins við „Vista stillingu".
+  function getQRMode(){
+    try {
+      if (!window.Vidmot) return 'qr_only';
+      Vidmot.flytja('qr.mode', '_qr_mode');
+      var m = Vidmot.lesa('qr.mode', 'qr_only');
+      return (m === 'qr_text' || m === 'qr_only') ? m : 'qr_only';
+    } catch (_) { return 'qr_only'; }
+  }
+  function setQRMode(m){ try { if (window.Vidmot) Vidmot.setja('qr.mode', m); } catch (_) {} }
 
   async function genQRDataUrl(payload, sizePx){
     await loadQrLib();

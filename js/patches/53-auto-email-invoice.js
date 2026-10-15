@@ -15,7 +15,19 @@
   function fmtKr(n){if(!n&&n!==0)return'—';const s=Math.round(n).toString();const r=[];let t=s;while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr';}
   function fmtDate(d){if(!d)return'';const x=new Date(d);return String(x.getDate()).padStart(2, '0')+'/'+String(x.getMonth() + 1).padStart(2, '0')+'/'+x.getFullYear();}
 
-  function getSetting(k, def) { return localStorage.getItem('cfg_'+k) || localStorage.getItem(k) || def || ''; }
+  // 15.10.2026 (regla Agnars): fyrirtækis-stillingarnar búa á þjóninum — AppSettings 'stillingar.fyrirtaeki.*'
+  // (skrifað af 44 við Vista). Gömlu cfg_*-lyklarnir eru aðeins LESNIR sem varagildi þar til fyrst er vistað.
+  const ST_SLOD = { company_name: 'fyrirtaeki.nafn', company_phone: 'fyrirtaeki.simi', kennitala: 'fyrirtaeki.kt',
+    email_subject: 'fyrirtaeki.postEfni', email_intro: 'fyrirtaeki.postInngangur', company_address: 'fyrirtaeki.heimilisfang',
+    company_email: 'fyrirtaeki.netfang', vsk_number: 'fyrirtaeki.vsk' };
+  function getSetting(k, def) {
+    try {
+      const p = ST_SLOD[k];
+      const v = p && window.AppSettings && AppSettings.path && AppSettings.path('stillingar.' + p);
+      if (v !== undefined && v !== null && v !== '') return String(v);
+    } catch (_) {}
+    try { return localStorage.getItem('cfg_'+k) || localStorage.getItem(k) || def || ''; } catch (_) { return def || ''; }
+  }
 
   function buildEmailBody(invoice) {
     const co = getSetting('company_name', 'Slökkvitæki ehf');

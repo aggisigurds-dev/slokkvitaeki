@@ -27,7 +27,15 @@
   function fmtKr(n) { if(!n&&n!==0)return'—'; const s=Math.round(n).toString(); const r=[]; let t=s; while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr'; }
   function fmtHours(min) { const h=Math.floor((min||0)/60); const m=(min||0)%60; return h?`${h} klst${m?` ${m} mín`:''}`:m+' mín'; }
 
-  function getHourlyRate() { return parseInt(localStorage.getItem('job_hourly_rate')||'12000')||12000; }
+  // 15.10.2026 (regla Agnars): tímagjaldið er rekstrarstilling → AppSettings 'stillingar.timagjald' (eitt gildi fyrir
+  // allar vélar). Gamli localStorage-lykillinn 'job_hourly_rate' er aðeins LESINN sem varagildi þar til fyrst er vistað
+  // (Vista-smellur) — hann er aldrei skrifaður framar. 44 (Stillingar) skrifar sama lykil.
+  function stLesa(p) { try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.' + p); return (v === undefined || v === null || v === '') ? null : v; } catch (_) { return null; } }
+  function getHourlyRate() {
+    let v = stLesa('timagjald');
+    if (v == null) { try { v = localStorage.getItem('job_hourly_rate'); } catch (_) { v = null; } }
+    return parseInt(v || '12000') || 12000;
+  }
 
   // ── CSS ───────────────────────────────────────────────────────────────────
   if (!document.getElementById('jprofit-style')) {
@@ -161,9 +169,11 @@
     const val = prompt('Tímagjald tæknimanns (kr/klst):', cur);
     if (val===null) return;
     const n = parseInt(val)||12000;
-    localStorage.setItem('job_hourly_rate', n);
-    // Re-open by triggering recalc with new rate
-    _recalc();
+    // Raunveruleg vistun (prompt → OK) → þjónninn; speglað í fyrirtaeki.timagjald sem Stillingar (44) sýna.
+    let p = null;
+    try { if (window.AppSettings && AppSettings.save) p = AppSettings.save({ stillingar: { timagjald: n, fyrirtaeki: { timagjald: n } } }); } catch (_) {}
+    // Re-open by triggering recalc with new rate (eftir að vistun hefur sameinað gildið í AppSettings)
+    Promise.resolve(p).then(_recalc, _recalc);
   }
 
   // ── Inject "📈 Arðsemi" button into job detail panels ────────────────────

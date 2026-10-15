@@ -258,7 +258,7 @@
 
   function _toggleList() {
     _listOpen = !_listOpen;
-    try { localStorage.setItem('ct_list_open', _listOpen ? '1' : '0'); } catch(_){}
+    try { if (window.Vidmot) Vidmot.setja('samningar.listiOpinn', _listOpen); } catch(_){}   // raunverulegur smellur
     render();
   }
 

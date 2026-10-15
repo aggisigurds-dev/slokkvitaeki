@@ -89,8 +89,20 @@
   // Vistast per tæki. 2026-08-29 (Agnar: „útlitssstýrikerfið er eiginlega
   // hræðilegt á desktop"): á Skjá/breiðum skjá er hlið sjálfgefið — botn-
   // sheetið varð að stóru tómu hvítu vinnusvæði sem huldi töfluna.
+  // 15.10.2026 (regla Agnars): dokkun og dregin breidd eru EÐLISLÆGT ólík á síma og tölvu → Vidmot.lesaTaeki/
+  // setjaTaeki ('pe.dock', 'pe.sideW') — eitt gildi fyrir allar tölvurnar fimm, annað fyrir síma. Gömlu lyklarnir
+  // 'pe_dock'/'pe_side_w' eru aðeins einskiptis upphafsgildi. Skrifað aðeins við smell á Botn/Hlið og við lok
+  // dráttar — ALDREI sjálfkrafa við hleðslu (gamla preferDesktopDock skrifaði 'side' við hleðslu; hætt því).
   let dock = 'side';
-  try { dock = localStorage.getItem('pe_dock') || 'side'; } catch (_) {}
+  function lesaDock() {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja('pe.dock@' + Vidmot.taeki(), 'pe_dock', v => (v === 'side' || v === 'bottom') ? v : undefined);
+      const d = Vidmot.lesaTaeki('pe.dock', 'side');
+      dock = (d === 'bottom') ? 'bottom' : 'side';
+    } catch (_) {}
+  }
+  lesaDock();
   let _saveT = null;
   // Skjár-hamur (data-viewmode=desktop) eða breiður gluggi — ekki sími/tafla.
   // Agnar 23.09 20:55 (skjámynd úr Fjármál-appinu): síminn leggur út 980 px (Tölvusíðu-hamur) svo innerWidth ≥ 900
@@ -113,14 +125,13 @@
     } catch (_) { return window.innerWidth >= 900; }
   }
   function preferDesktopDock() {
+    // Nýjasta val (líka frá annarri vél) tekur gildi við opnun ritilsins. Hafi ekkert verið valið á tölvu
+    // er hlið sjálfgefið — aðeins í minni, EKKERT skrifað á þjón við hleðslu (regla 15.10.2026).
+    lesaDock();
+    try { lesaSideW(); } catch (_) {}
     if (!isDesktopUi()) return;
-    // Einu sinni: færa desktop úr botn-sheeti yfir í hliðarpanel. Eftir það
-    // virðir Botn/Hlið-takkinn val notandans.
     try {
-      if (localStorage.getItem('pe_dock_desk_v2') === '1') return;
-      dock = 'side';
-      localStorage.setItem('pe_dock', 'side');
-      localStorage.setItem('pe_dock_desk_v2', '1');
+      if (window.Vidmot && Vidmot.lesaTaeki('pe.dock', null) == null) dock = 'side';
     } catch (_) { dock = 'side'; }
   }
   let undoStack = [];       // snapshot() before each mutation → ↩ Afturkalla pops the last one
@@ -1818,9 +1829,17 @@
     setDecl('background', 'linear-gradient(' + ang + 'deg,' + c1 + ',' + c2 + ')');
   }
 
-  // Draganleg panel-breidd (Agnar 26.08) — handfang á hægri brún, vistast á tækinu.
+  // Draganleg panel-breidd (Agnar 26.08) — handfang á hægri brún. 15.10.2026: Vidmot.lesaTaeki('pe.sideW')
+  // (per tækjaflokk, eitt gildi fyrir allar tölvur); 'pe_side_w' aðeins einskiptis upphafsgildi.
   let _sideW = 320;
-  try { _sideW = Math.max(260, parseInt(localStorage.getItem('pe_side_w'), 10) || 320); } catch (_) {}
+  function lesaSideW() {
+    try {
+      if (!window.Vidmot) return;
+      Vidmot.flytja('pe.sideW@' + Vidmot.taeki(), 'pe_side_w', v => { const n = parseInt(v, 10); return n > 0 ? n : undefined; });
+      _sideW = Math.max(260, parseInt(Vidmot.lesaTaeki('pe.sideW', 320), 10) || 320);
+    } catch (_) {}
+  }
+  lesaSideW();
   function syncDeskChrome(p) {
     const desk = isDesktopUi();
     if (p) {
@@ -1852,7 +1871,7 @@
       const up = () => {
         document.removeEventListener('pointermove', mv);
         document.removeEventListener('pointerup', up);
-        try { localStorage.setItem('pe_side_w', String(_sideW)); } catch (_) {}
+        try { if (window.Vidmot) Vidmot.setjaTaeki('pe.sideW', _sideW); } catch (_) {}   // lok dráttar = raunverulegt val
       };
       document.addEventListener('pointermove', mv);
       document.addEventListener('pointerup', up);
@@ -1876,10 +1895,7 @@
     }
     const dk = q('#pe-dock'); if (dk) dk.onclick = () => {
       dock = dock === 'side' ? 'bottom' : 'side';
-      try {
-        localStorage.setItem('pe_dock', dock);
-        localStorage.setItem('pe_dock_desk_v2', '1');
-      } catch (_) {}
+      try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
     qa('[data-bgg]').forEach(b => b.onclick = () => applyGalleryBg(+b.dataset.bgg));

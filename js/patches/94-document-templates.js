@@ -815,10 +815,18 @@
     }
   }
 
-  // 2026-07-11 (verkefnalisti): listinn fellanlegur — valið munað per tæki.
-  function filledOpen(){ try { return localStorage.getItem('dt_filled_open') !== '0'; } catch(_){ return true; } }
+  // 2026-07-11 (verkefnalisti): listinn fellanlegur. 15.10.2026 (regla Agnars): valið býr í Vidmot (472) undir
+  // 'skjol.fylltOpid' — eitt gildi fyrir allar vélar; 'dt_filled_open' er aðeins einskiptis upphafsgildi.
+  // Lesið við hverja teikningu (val frá annarri vél tekur gildi þá); skrifað aðeins við smell á fella/opna.
+  function filledOpen(){
+    try {
+      if (!window.Vidmot) return true;
+      Vidmot.flytja('skjol.fylltOpid', 'dt_filled_open', v => !(v === 0 || v === '0' || v === false));
+      return Vidmot.lesa('skjol.fylltOpid', true) !== false;
+    } catch(_){ return true; }
+  }
   function toggleFilled(){
-    try { localStorage.setItem('dt_filled_open', filledOpen() ? '0' : '1'); } catch(_){}
+    try { if (window.Vidmot) Vidmot.setja('skjol.fylltOpid', !filledOpen()); } catch(_){}
     refreshFilledSection();
   }
 

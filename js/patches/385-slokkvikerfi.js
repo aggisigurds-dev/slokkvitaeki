@@ -38,7 +38,14 @@
   const MON_FULL = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
   const SKREF = FLOKKUR.skref || [['skodad_at', 'Skoðað'], ['skyrsla_at', 'Skýrsla'], ['send_at', 'Send'], ['reikningur_at', 'Reikningur']];
   const ROOT = '_sk-root-' + FLOKKUR.key;
-  const LS = FLOKKUR.key + '_sia_v1';   // AÐEINS sía/röðun þessa vafra — staða gagna býr á þjóninum
+  const LS = FLOKKUR.key + '_sia_v1';   // gamall localStorage-lykill — aðeins einskiptis flutningur (Vidmot.flytja)
+  // 15.10.2026 (regla Agnars): sía/röðun býr í Vidmot (472) — eitt val fyrir allar vélar, nýjasta ræður. Staða gagna
+  // býr áfram á þjóninum í töflunum. Tafla/spjöld (state.utlit) er viljandi EKKI vistað (sjá hér að neðan).
+  const V_SIA = 'skodun.' + FLOKKUR.key + '.sia';
+  try { if (window.Vidmot && Vidmot.flytja) {
+    Vidmot.flytja(V_SIA, LS, v => { if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined; const o = Object.assign({}, v); delete o.utlit; return Object.keys(o).length ? o : undefined; });
+    localStorage.removeItem(LS);
+  } } catch (_) {}
 
   const state = Object.assign({ stada: 'allt', man: 0, leit: '', postnr: '', felaUr: FLOKKUR.felaSjalfgefid !== false, sort: 'man', dir: 1 }, lesaSiu());
   // 11.10.2026 (Agnar: „hafa samt lista default á báðum stöðum"): taflan er alltaf sjálfgefin við opnun — spjaldavalið
@@ -55,8 +62,9 @@
   // sjálfgefin, líka í app-ham (þar er html[data-viewmode] alltaf 'mobile', svo hann má ekki ráða). Spjöld aðeins
   // þegar glugginn er í raun mjór (≤ 900 px útlitsbreidd) eða þegar þau eru valin með rofanum.
   function utlit() { return state.utlit === 'spjold' || state.utlit === 'tafla' ? state.utlit : ((window.innerWidth || 1200) <= 900 ? 'spjold' : 'tafla'); }
-  function lesaSiu() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (_) { return {}; } }
-  function vistaSiu() { try { localStorage.setItem(LS, JSON.stringify({ stada: state.stada, man: state.man, postnr: state.postnr, felaUr: state.felaUr, sort: state.sort, dir: state.dir })); } catch (_) {} }
+  function lesaSiu() { try { const s = window.Vidmot ? Vidmot.lesa(V_SIA, null) : null; return (s && typeof s === 'object' && !Array.isArray(s)) ? s : {}; } catch (_) { return {}; } }
+  // Aðeins úr smell-/change-hlustara. Alltaf allir sex reitirnir — hluturinn sameinast á þjóninum (deepMerge).
+  function vistaSiu() { try { if (window.Vidmot) Vidmot.setja(V_SIA, { stada: state.stada, man: state.man, postnr: state.postnr, felaUr: state.felaUr, sort: state.sort, dir: state.dir }); } catch (_) {} }
   function dm(iso) { if (!iso) return '—'; const p = String(iso).slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   function fmtKt(kt) { const t = String(kt || '').replace(/\D/g, ''); return t.length === 10 ? t.slice(0, 6) + '-' + t.slice(6) : String(kt || ''); }
   function kr(n) { return Math.round(n).toLocaleString('is-IS') + ' kr'; }

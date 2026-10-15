@@ -8,10 +8,11 @@
  *   3. SMS / Tölvupóstur — reminder templates, sender phone
  *   4. Kerfið    — version info, cache clear, export all settings
  *
- * All settings stored in localStorage (key prefix: 'cfg_').
- * Values are read by other patches via localStorage.getItem('cfg_*').
+ * 15.10.2026: settings live on the server — AppSettings 'stillingar.fyrirtaeki.*' (+ 'stillingar.timagjald',
+ * 'stillingar.sms.simi' mirrors) — one value for all machines, written ONLY on "Vista". The old localStorage
+ * 'cfg_*' keys are read as a fallback until the first save and never written again (except cfg_default_tech).
  *
- * Legacy keys supported (backwards-compatible):
+ * Legacy keys (read-only fallback):
  *   sms_company_phone  → same as cfg_company_phone
  *   insp_tech          → same as cfg_default_tech
  *   job_hourly_rate    → same as cfg_hourly_rate
@@ -23,22 +24,27 @@
 
   function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  // 15.10.2026 (regla Agnars: engin stilling má gilda bara í einu tæki): þessar stillingar snerta reikninga, SMS og
+  // póst → þær búa í AppSettings undir 'stillingar.fyrirtaeki.<reitur>' (eitt gildi fyrir allar vélar) og eru
+  // skrifaðar AÐEINS við „Vista stillingar"-smell. Gömlu localStorage-lyklarnir (cfg_*, sms_company_phone,
+  // job_hourly_rate) eru aðeins LESNIR sem varagildi þar til fyrst er vistað — aldrei skrifaðir framar.
+  // cfg_default_tech (= hver er við vélina) er undantekningin og situr áfram í localStorage þessarar vélar.
   const FIELDS = [
-    // [storageKey, label, type, placeholder, section, legacyKey?]
-    ['cfg_company_name',    'Nafn fyrirtækis',         'text',   'Slökkvitæki ehf',       'company', null],
-    ['cfg_company_address', 'Heimilisfang',             'text',   'Hafnargata 1, 101 Reykjavík', 'company', null],
-    ['cfg_company_phone',   'Símanúmer fyrirtækis',     'tel',    '+354 xxx xxxx',         'company', 'sms_company_phone'],
-    ['cfg_company_email',   'Tölvupóstfang',            'email',  'info@slokkvitaeki.is',  'company', null],
-    ['cfg_kennitala',       'Kennitala',                'text',   '000000-0000',           'company', null],
-    ['cfg_vsk_number',      'VSK-númer',                'text',   '00000',                 'company', null],
+    // [storageKey, label, type, placeholder, section, legacyKey?, stillingar-slóð (null = per vél)]
+    ['cfg_company_name',    'Nafn fyrirtækis',         'text',   'Slökkvitæki ehf',       'company', null, 'fyrirtaeki.nafn'],
+    ['cfg_company_address', 'Heimilisfang',             'text',   'Hafnargata 1, 101 Reykjavík', 'company', null, 'fyrirtaeki.heimilisfang'],
+    ['cfg_company_phone',   'Símanúmer fyrirtækis',     'tel',    '+354 xxx xxxx',         'company', 'sms_company_phone', 'fyrirtaeki.simi'],
+    ['cfg_company_email',   'Tölvupóstfang',            'email',  'info@slokkvitaeki.is',  'company', null, 'fyrirtaeki.netfang'],
+    ['cfg_kennitala',       'Kennitala',                'text',   '000000-0000',           'company', null, 'fyrirtaeki.kt'],
+    ['cfg_vsk_number',      'VSK-númer',                'text',   '00000',                 'company', null, 'fyrirtaeki.vsk'],
 
-    ['cfg_insp_interval',   'Sjálfgefið skoðunarbil (mánuðir)', 'number', '12',           'service',  null],
-    ['cfg_hourly_rate',     'Tímagjald tæknimanns (kr/klst)',    'number', '12000',        'service',  'job_hourly_rate'],
-    ['cfg_default_tech',    'Sjálfgefið nafn tæknimanns',        'text',   '',             'service',  'insp_tech'],
+    ['cfg_insp_interval',   'Sjálfgefið skoðunarbil (mánuðir)', 'number', '12',           'service',  null, 'fyrirtaeki.skodunarbil'],
+    ['cfg_hourly_rate',     'Tímagjald tæknimanns (kr/klst)',    'number', '12000',        'service',  'job_hourly_rate', 'fyrirtaeki.timagjald'],
+    ['cfg_default_tech',    'Sjálfgefið nafn tæknimanns',        'text',   '',             'service',  'insp_tech', null],
 
-    ['cfg_sms_template',    'SMS sniðmát (áminning)',   'textarea','Slökkvitæki ehf: Tæki hjá {nafn} eru á gjalddaga skoðunar. Hafðu samband.','sms', null],
-    ['cfg_email_subject',   'Efni tölvupósts (áminning)','text',  'Áminning — skoðun slökkvitækja hjá {nafn}', 'sms', null],
-    ['cfg_email_intro',     'Inngangssetning tölvupósts', 'textarea','Góðan dag,\n\nSlökkvitæki ehf hér með áminningu um að eftirfarandi slökkvitæki eru á gjalddaga skoðunar:', 'sms', null],
+    ['cfg_sms_template',    'SMS sniðmát (áminning)',   'textarea','Slökkvitæki ehf: Tæki hjá {nafn} eru á gjalddaga skoðunar. Hafðu samband.','sms', null, 'fyrirtaeki.smsSnid'],
+    ['cfg_email_subject',   'Efni tölvupósts (áminning)','text',  'Áminning — skoðun slökkvitækja hjá {nafn}', 'sms', null, 'fyrirtaeki.postEfni'],
+    ['cfg_email_intro',     'Inngangssetning tölvupósts', 'textarea','Góðan dag,\n\nSlökkvitæki ehf hér með áminningu um að eftirfarandi slökkvitæki eru á gjalddaga skoðunar:', 'sms', null, 'fyrirtaeki.postInngangur'],
   ];
 
   const SECTIONS = {
@@ -76,21 +82,39 @@
   }
 
   // ── Read / write helpers ──────────────────────────────────────────────────
-  function get(key, legacyKey) {
-    return localStorage.getItem(key) || (legacyKey ? localStorage.getItem(legacyKey) : '') || '';
+  function stLesa(p) {
+    try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.' + p); return (v === undefined || v === null || v === '') ? null : String(v); } catch (_) { return null; }
   }
+  const stSlod = key => { const f = FIELDS.find(x => x[0] === key); return f ? f[6] : null; };
+  function get(key, legacyKey) {
+    const p = stSlod(key);
+    if (p) { const v = stLesa(p); if (v != null) return v; }
+    // Varagildi þar til fyrst er vistað (aðeins lesið).
+    try { return localStorage.getItem(key) || (legacyKey ? localStorage.getItem(legacyKey) : '') || ''; } catch (_) { return ''; }
+  }
+  // Setur gildi á punktaslóð inn í patch-hlut: 'fyrirtaeki.nafn' → { fyrirtaeki: { nafn } }.
+  function setjaSlod(obj, p, val) { const h = p.split('.'); let o = obj; for (let i = 0; i < h.length - 1; i++) o = o[h[i]] = o[h[i]] || {}; o[h[h.length - 1]] = val; }
 
   function save() {
     let changed = 0;
-    FIELDS.forEach(([key,,,,,legacyKey]) => {
+    const st = {};
+    FIELDS.forEach(([key,,,,,legacyKey, p]) => {
       const el = document.getElementById('sm-field-'+key);
       if (!el) return;
       const val = el.value;
-      localStorage.setItem(key, val);
-      // Keep legacy key in sync
-      if (legacyKey) localStorage.setItem(legacyKey, val);
+      if (p) {
+        setjaSlod(st, p, val);
+        // Sömu speglanir og gömlu legacy-lyklarnir: 43 les stillingar.timagjald, 33/37 lesa stillingar.sms.simi.
+        if (key === 'cfg_hourly_rate') st.timagjald = parseInt(val, 10) || 12000;
+        if (key === 'cfg_company_phone') setjaSlod(st, 'sms.simi', val);
+      } else {
+        // Per vél (hver er við vélina) — localStorage eins og áður.
+        try { localStorage.setItem(key, val); if (legacyKey) localStorage.setItem(legacyKey, val); } catch (_) {}
+      }
       changed++;
     });
+    // Skrifað AÐEINS hér — við „Vista stillingar"-smell — á þjóninn (allar vélar).
+    try { if (window.AppSettings && AppSettings.save) AppSettings.save({ stillingar: st }); } catch (_) {}
     if (window.Toast) Toast.show('✓ Stillingar vistaðar');
     // Animate saved dot
     const title = document.querySelector('.sm-modal-hd .sm-modal-title');
@@ -159,7 +183,7 @@
   // ── Export / import settings ──────────────────────────────────────────────
   function _exportSettings() {
     const out = {};
-    FIELDS.forEach(([key]) => { out[key] = localStorage.getItem(key)||''; });
+    FIELDS.forEach(([key,,,,,legacyKey]) => { out[key] = get(key, legacyKey) || ''; });
     const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -173,9 +197,22 @@
     reader.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        Object.entries(data).forEach(([k,v]) => { if(k.startsWith('cfg_')) localStorage.setItem(k,v); });
+        // Innflutningur er raunveruleg aðgerð notandans (skrá valin) → sömu leið og Vista: þjónninn fyrir
+        // fyrirtækis-reitina, localStorage aðeins fyrir per-vélar reitinn.
+        const st = {};
+        Object.entries(data).forEach(([k,v]) => {
+          if (!k.startsWith('cfg_')) return;
+          const p = stSlod(k);
+          if (p) {
+            setjaSlod(st, p, String(v == null ? '' : v));
+            if (k === 'cfg_hourly_rate') st.timagjald = parseInt(v, 10) || 12000;
+            if (k === 'cfg_company_phone') setjaSlod(st, 'sms.simi', String(v == null ? '' : v));
+          } else { try { localStorage.setItem(k, v); } catch (_) {} }
+        });
+        let p = null;
+        try { if (Object.keys(st).length && window.AppSettings && AppSettings.save) p = AppSettings.save({ stillingar: st }); } catch (_) {}
         if(window.Toast) Toast.show('✓ Stillingar fluttar inn');
-        open(); // Re-open to show updated values
+        Promise.resolve(p).then(open, open); // Re-open to show updated values
       } catch { if(window.Toast) Toast.show('Villa við innflutning'); }
     };
     reader.readAsText(file);
@@ -244,19 +281,12 @@
   // ── Expose + provide company info helper ──────────────────────────────────
   window.SettingsMgr = {
     open, save, _exportSettings, _importSettings, _clearLog,
-    get: (key, fallback) => localStorage.getItem('cfg_'+key) || fallback || '',
+    // Les af þjóninum (stillingar.fyrirtaeki.*) með gamla localStorage-gildinu sem varagildi.
+    get: (key, fallback) => { const f = FIELDS.find(x => x[0] === 'cfg_' + key); return get('cfg_' + key, f ? f[5] : null) || fallback || ''; },
   };
 
-  // Convenience: patch 35/37 use localStorage.getItem('sms_company_phone')
-  // Ensure cfg_ values always sync to legacy keys on page load
-  FIELDS.forEach(([key,,,,, legacyKey]) => {
-    if (legacyKey && !localStorage.getItem(legacyKey) && localStorage.getItem(key)) {
-      localStorage.setItem(legacyKey, localStorage.getItem(key));
-    }
-    if (legacyKey && localStorage.getItem(legacyKey) && !localStorage.getItem(key)) {
-      localStorage.setItem(key, localStorage.getItem(legacyKey));
-    }
-  });
+  // 15.10.2026: gamla „samstilling legacy-lykla við hleðslu" (skrifaði í localStorage við hverja ræsingu) er farin —
+  // 33/37/43 lesa nú stillingar.sms.simi / stillingar.timagjald af þjóninum, speglað í save() hér að ofan.
 
   console.log('[settings-manager] installed');
 })();

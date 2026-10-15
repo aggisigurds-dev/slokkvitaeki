@@ -1,14 +1,24 @@
 // NavFix v2: route planner using Leaflet popupopen event (reliable)
 (function(){
   'use strict';
-  var STORAGE_KEY = '_slokk_route';
+  // 15.10.2026 (regla Agnars): leiðin býr í Vidmot (472) undir 'leidsogn.leid' — sama lykil og 161-leidsogn.js,
+  // eitt gildi fyrir allar vélar (skipulögð á tölvu, ekin á síma). Gamli '_slokk_route' er aðeins einskiptis
+  // upphafsgildi. Skrifað aðeins við smell (bæta við / fjarlægja / hreinsa). Sé 472 ekki komið: tóm leið í minni.
+  var VM_ROUTE = 'leidsogn.leid';
+  var _minni = [];
   var hookedMap = null;
 
   function readRoute(){
-    try { var v = localStorage.getItem(STORAGE_KEY); return v ? JSON.parse(v) : []; } catch(e){ return []; }
+    try {
+      if (!window.Vidmot) return _minni.slice();
+      Vidmot.flytja(VM_ROUTE, '_slokk_route', function(v){ return Array.isArray(v) ? v : undefined; });
+      var r = Vidmot.lesa(VM_ROUTE, []);
+      return Array.isArray(r) ? r.slice() : [];
+    } catch(e){ return []; }
   }
   function saveRoute(r){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch(e){}
+    _minni = Array.isArray(r) ? r.slice() : [];
+    try { if (window.Vidmot) Vidmot.setja(VM_ROUTE, _minni.slice()); } catch(e){}
   }
   function addToRoute(coId, name, addr, lat, lng){
     var r = readRoute();

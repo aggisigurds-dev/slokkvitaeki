@@ -661,13 +661,20 @@
   // það sem hann bað um var að KOMAST Í hinar, ekki að fá þær allar upp.
   // Sjálfgefið er því AF (stjörnusían ræður eins og áður) og hakið er leiðin til
   // að sjá allt þegar maður vill.
-  var SHOWALL_KEY = 'pos_syna_allar_vorur';
+  // 15.10.2026 (regla Agnars: engin stilling má gilda bara í einu tæki): hakið býr í Vidmot (472) undir
+  // 'sala.allarVorur' — eitt gildi fyrir allar vélar; gamli lykillinn 'pos_syna_allar_vorur' er aðeins
+  // einskiptis upphafsgildi (flytja). Skrifað aðeins við raunverulegt hak (change-atburður).
+  var SHOWALL_VM = 'sala.allarVorur';
   var _adrarOpen = false;
   function showAllTiles(){
-    try { return localStorage.getItem(SHOWALL_KEY) === '1'; } catch (_) { return false; }
+    try {
+      if (!window.Vidmot) return false;
+      Vidmot.flytja(SHOWALL_VM, 'pos_syna_allar_vorur', function (v) { return v === 1 || v === '1' || v === true; });
+      return Vidmot.lesa(SHOWALL_VM, false) === true;
+    } catch (_) { return false; }
   }
   function setShowAllTiles(v){
-    try { localStorage.setItem(SHOWALL_KEY, v ? '1' : '0'); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setja(SHOWALL_VM, !!v); } catch (_) {}
   }
   // vorur.sja_adrar_vorur: falið af aðalrúðunni, sýnt undir „Sjá aðrar vörur".
   function isAdraVara(p){ return !!(p && p.sja_adrar_vorur === true); }

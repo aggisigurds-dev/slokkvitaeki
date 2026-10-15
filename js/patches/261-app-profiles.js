@@ -1420,8 +1420,15 @@
     // síðuvalið standa. Teljarinn að neðan skilar þeim til baka.
     var faldirLyklar = APPS.map(function (b) { return effectiveApp(b.key); })
       .filter(function (a) { return a && a.falid; }).map(function (a) { return a.key; });
+    // 15.10.2026 (regla Agnars): „sýna falin" býr í Vidmot (472) undir 'opp.synaFalin' — eitt gildi fyrir allar
+    // vélar; 'op_syna_falin' er aðeins einskiptis upphafsgildi. Lesið við hverja teikningu.
     var synaFalin = false;
-    try { synaFalin = localStorage.getItem('op_syna_falin') === '1'; } catch (_) {}
+    try {
+      if (window.Vidmot) {
+        Vidmot.flytja('opp.synaFalin', 'op_syna_falin', function (v) { return v === 1 || v === '1' || v === true; });
+        synaFalin = Vidmot.lesa('opp.synaFalin', false) === true;
+      }
+    } catch (_) {}
     var cards = APPS.filter(function (base) {
       if (synaFalin) return true;
       return faldirLyklar.indexOf(base.key) < 0;
@@ -1503,7 +1510,7 @@
     v.querySelectorAll('._op-synafalin').forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault();
-        try { localStorage.setItem('op_syna_falin', localStorage.getItem('op_syna_falin') === '1' ? '0' : '1'); } catch (_) {}
+        try { if (window.Vidmot) Vidmot.setja('opp.synaFalin', Vidmot.lesa('opp.synaFalin', false) !== true); } catch (_) {}   // raunverulegur smellur
         render();
       });
     });

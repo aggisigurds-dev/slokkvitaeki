@@ -77,23 +77,29 @@
     watch: [],
     snoozed: new Set(),
   };
-  const SNOOZE_KEY = 'adstod_snoozed_v1';
-
-  function loadSnoozed() {
+  // 15.10.2026 (regla Agnars): „fresta" býr í Vidmot (472) undir 'adstod.snoozed' = { <id>: <rennur út, ms> } —
+  // eitt gildi fyrir allar vélar; gamli lykillinn 'adstod_snoozed_v1' er aðeins einskiptis upphafsgildi.
+  // Útrunnar færslur eru hreinsaðar Í MINNI við hleðslu — EKKERT skrifað á þjón þá; skrif aðeins við smell á „Fresta",
+  // og þá fer hreinsaða kortið með.
+  const SNOOZE_VM = 'adstod.snoozed';
+  function lesaSnoozeKort() {
     try {
-      const raw = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}');
-      const now = Date.now();
-      const next = {};
-      for (const k in raw) if (raw[k] > now) next[k] = raw[k];
-      localStorage.setItem(SNOOZE_KEY, JSON.stringify(next));
-      state.snoozed = new Set(Object.keys(next));
-    } catch (_) { state.snoozed = new Set(); }
+      if (!window.Vidmot) return {};
+      Vidmot.flytja(SNOOZE_VM, 'adstod_snoozed_v1', v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : undefined);
+      const raw = Vidmot.lesa(SNOOZE_VM, {});
+      const now = Date.now(), next = {};
+      if (raw && typeof raw === 'object') for (const k in raw) if (+raw[k] > now) next[k] = +raw[k];
+      return next;
+    } catch (_) { return {}; }
+  }
+  function loadSnoozed() {
+    try { state.snoozed = new Set(Object.keys(lesaSnoozeKort())); } catch (_) { state.snoozed = new Set(); }
   }
   function snooze(id, hours) {
     try {
-      const raw = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}');
-      raw[id] = Date.now() + hours * 3600000;
-      localStorage.setItem(SNOOZE_KEY, JSON.stringify(raw));
+      const next = lesaSnoozeKort();
+      next[id] = Date.now() + hours * 3600000;
+      if (window.Vidmot) Vidmot.setja(SNOOZE_VM, next);   // raunverulegur smellur
       state.snoozed.add(id);
       render();
     } catch (_) {}

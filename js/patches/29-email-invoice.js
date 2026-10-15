@@ -30,6 +30,20 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function fmtKr(n) { return Math.round(n).toLocaleString('is-IS') + ' kr'; }
+  // 15.10.2026 (regla Agnars): sendingarleið og sendandi snerta reikninga → AppSettings 'stillingar.postur.{hamur,
+  // sendandi}' (eitt gildi fyrir allar vélar), skrifað AÐEINS við „Vista stillingar". Gömlu lyklarnir email_mode/
+  // email_from eru aðeins LESNIR sem varagildi þar til fyrst er vistað. resend_api_key er LEYNDARMÁL og fer EKKI í
+  // app_settings — óbreytt í localStorage (á heima í Netlify env, þjónninn kýs hana þegar).
+  function postStilling(slod, gamall, sjalfgefid) {
+    try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.postur.' + slod); if (v !== undefined && v !== null && v !== '') return String(v); } catch (_) {}
+    try { return localStorage.getItem(gamall) || sjalfgefid; } catch (_) { return sjalfgefid; }
+  }
+  window.__eiVistaPostStillingar = function () {
+    try {
+      const hamur = document.getElementById('ei-mode-sel').value, sendandi = document.getElementById('ei-from-email').value.trim();
+      if (window.AppSettings && AppSettings.save) AppSettings.save({ stillingar: { postur: { hamur, sendandi } } });
+    } catch (_) {}
+  };
 
   // ── CSS ───────────────────────────────────────────────────────────────────
   if (!document.getElementById('ei-style')) {
@@ -162,7 +176,7 @@
     // (eldklar.is). Resend rejects any send from a domain without verified
     // SPF/DKIM records, so this MUST match the domain verified in the Resend
     // dashboard. A value set in Stillingar (localStorage) still overrides this.
-    const from = localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <noreply@eldklar.is>';
+    const from = postStilling('sendandi', 'email_from', 'Brunahólf Slökkvitæki ehf <noreply@eldklar.is>');
     const payload = {
       from,
       to: [toEmail],
@@ -184,7 +198,7 @@
   // ── Open send modal ───────────────────────────────────────────────────────
   function openSendModal(sale) {
     buildModal();
-    const mode = localStorage.getItem('email_mode') || 'mailto';
+    const mode = postStilling('hamur', 'email_mode', 'mailto');
     const defaultEmail = sale.customerEmail || '';
 
     document.getElementById('ei-body').innerHTML = `
@@ -287,9 +301,9 @@
     const div = document.createElement('div');
     div.id = 'ei-settings-section';
     div.style.cssText = 'padding:16px 20px;border-top:1px solid #e2e8f0;';
-    const curMode = localStorage.getItem('email_mode') || 'mailto';
+    const curMode = postStilling('hamur', 'email_mode', 'mailto');
     const curKey = localStorage.getItem('resend_api_key') || '';
-    const curFrom = localStorage.getItem('email_from') || '';
+    const curFrom = postStilling('sendandi', 'email_from', '');
     div.innerHTML = `
       <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:10px;">Tölvupóstur (reikningssendir)</div>
       <div style="margin-bottom:10px;">
@@ -313,9 +327,8 @@
           style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;">
       </div>
       <button onclick="
-        localStorage.setItem('email_mode', document.getElementById('ei-mode-sel').value);
+        window.__eiVistaPostStillingar();
         localStorage.setItem('resend_api_key', document.getElementById('ei-resend-key').value.trim());
-        localStorage.setItem('email_from', document.getElementById('ei-from-email').value.trim());
         if(window.Toast&&Toast.show)Toast.show('✓ Stillingar vistaðar');
       " style="padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;">Vista stillingar</button>`;
     container.appendChild(div);

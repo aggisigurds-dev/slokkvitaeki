@@ -52,16 +52,26 @@
     'Brunahólf slökkvitæki ehf <eldklar@eldklar.is>',
     'Brunahólf slökkvitæki ehf <bokhald@eldklar.is>',
   ];
+  // 15.10.2026 (regla Agnars): valinn sendandi býr á þjóninum — AppSettings 'stillingar.postur.kvittunSendandi'
+  // (eitt gildi fyrir allar vélar), skrifað AÐEINS þegar sent er (raunverulegt val). Gamli 'slokk_send_from' er
+  // aðeins LESINN sem varagildi þar til fyrst er sent. Sama gildisvörn og áður: dautt pósthólf er aldrei gilt.
   function fromAddr() {
     try {
-      const saved = localStorage.getItem('slokk_send_from');
-      // Dautt pósthólf er aldrei gilt, líka þótt það sitji í localStorage.
+      let saved = null;
+      try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.postur.kvittunSendandi'); if (v) saved = String(v); } catch (_) {}
+      if (!saved) saved = localStorage.getItem('slokk_send_from');
+      // Dautt pósthólf er aldrei gilt, líka þótt það sitji í vistun.
       // Gamalt vistað „Slökkvitæki ehf <…>" víkur fyrir nýja félagsnafninu.
       if (saved && /@eldklar\.is>?\s*$/.test(saved) && !/reikningar@/.test(saved) && /Brunahólf/i.test(saved)) return saved;
     } catch (_) {}
     return FROM_CHOICES[0];
   }
-  function rememberFrom(v) { try { localStorage.setItem('slokk_send_from', v); } catch (_) {} }
+  function rememberFrom(v) {
+    try {
+      if (!v || v === fromAddr()) return;   // óbreytt val → ekkert skrif
+      if (window.AppSettings && AppSettings.save) AppSettings.save({ stillingar: { postur: { kvittunSendandi: v } } });
+    } catch (_) {}
+  }
 
   function blobToBase64(blob) {
     return new Promise((res, rej) => {
