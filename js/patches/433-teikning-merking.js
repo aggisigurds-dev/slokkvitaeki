@@ -48,13 +48,32 @@
     { id: 'reykskynjari', nafn: 'Reykskynjari', stutt: 'RS', litur: '#c93c1d', glyff: 'detector' },
     { id: 'hitaskynjari', nafn: 'Hitaskynjari', stutt: 'HS', litur: '#c93c1d', glyff: 'detector' },
     { id: 'bjalla', nafn: 'Viðvörunarbjalla', stutt: 'BJ', litur: '#c93c1d', glyff: 'alarm' },
-    { id: 'segull', nafn: 'Segulloki', stutt: 'SG', litur: '#c93c1d', glyff: 'magnet' }
+    { id: 'segull', nafn: 'Segulloki', stutt: 'SG', litur: '#c93c1d', glyff: 'magnet' },
+    // Agnar 15.10.2026 (skýringar Trönuhrauns 10): BO = björgunarop — opnanlegur gluggi sem flóttaleið.
+    { id: 'bjorgunarop', nafn: 'Björgunarop', stutt: 'BO', litur: '#15803d', glyff: 'window' }
   ];
   const TAEKI_TAKN = [
     { id: 'lettvatn', nafn: 'Léttvatn', stutt: 'LÉ', litur: '#e11d2e', glyff: 'extinguisher' },
     { id: 'duft', nafn: 'Duft', stutt: 'DF', litur: '#e11d2e', glyff: 'extinguisher' },
     { id: 'co2', nafn: 'CO₂', stutt: 'CO', litur: '#e11d2e', glyff: 'extinguisher' },
     { id: 'slanga', nafn: 'Slanga', stutt: 'SL', litur: '#c93c1d', glyff: 'hose' }
+  ];
+  // BÚNAÐUR (Agnar 15.10.2026: „bætt við þarna við hliðina á Merki — bara búnað: slökkvitæki, reykskynjarar, brunaslöngur,
+  // segulloki … þetta sé svoldið bara hvar tæki og búnaður á að vera, síðan getur maður tengt hann eftirá"): staðgengill
+  // tækis sem er ekki skráð (enn) — sama snið og „Nýtt"-merki TurboPaint, { unitId: 'n:<lykill>:<id>', nytt: true,
+  // tegund, stada: 'bid' } — telst aldrei tæki. „Tengja við tæki" í ræmunni gerir það að skráðu tæki (unitId = uttaeki.id);
+  // TurboPaint tengir það sjálfkrafa við óstaðsett tæki sömu tegundar við „Vista í úttekt". `tegund` = heiti tegundar eins
+  // og tækin eru skráð (uttaeki.type), sama og TEGUND_HEITI í kjarni sjalftenging.ts.
+  const BUNADUR = [
+    { id: 'lettvatn', nafn: 'Slökkvitæki — léttvatn', stutt: 'LÉ', tegund: 'Léttvatn' },
+    { id: 'duft', nafn: 'Slökkvitæki — duft', stutt: 'DF', tegund: 'ABC Duft' },
+    { id: 'co2', nafn: 'Slökkvitæki — CO₂', stutt: 'CO', tegund: 'CO2' },
+    { id: 'slanga', nafn: 'Brunaslanga', stutt: 'SL', tegund: 'Brunaslanga' },
+    { id: 'reykskynjari', nafn: 'Reykskynjari', stutt: 'RS', tegund: 'Reykskynjari' },
+    { id: 'hitaskynjari', nafn: 'Hitaskynjari', stutt: 'HS', tegund: 'Hitaskynjari' },
+    { id: 'bjalla', nafn: 'Viðvörunarbjalla', stutt: 'BJ', tegund: 'Viðvörunarbjalla' },
+    { id: 'segull', nafn: 'Segulloki', stutt: 'SG', tegund: 'Segulloki' },
+    { id: 'annad', nafn: 'Annað tæki', stutt: 'TÆ', tegund: 'Annað tæki' }
   ];
 
   const S = {
@@ -202,6 +221,11 @@
     } else if (a.teg === 'faera' && a.merki) {
       const m = (p.markers || []).find(x => x.unitId === a.merki.unitId);
       if (m) { m.x = a.fraX; m.y = a.fraY; }
+    } else if (a.teg === 'tengja' && a.merki) {
+      // búnaður sem var tengdur við tæki (eða breytt um tegund): tækismerkið / nýja merkið fer, búnaðurinn kemur aftur
+      p.markers = (p.markers || []).filter(x => (a.unitId == null || x.unitId !== a.unitId) && x.unitId !== a.merki.unitId && !(erNytt(x) && S.valinnMerki === x));
+      p.markers.push(a.merki);
+      S.valinnMerki = a.merki;
     } else if (a.teg === 'eyda' && a.merki) {
       p.markers.push(a.merki);
     } else if (a.teg === 'snua' && a.merki) {
@@ -295,11 +319,89 @@
   }
 
   function setjaEitt(signId, x, y) {
-    const m = setjaStimpil(signId, x, y);
+    // 'b:<lykill>' = búnaður af Búnaður-stikunni (staðgengill tækis), annars stimpill
+    const m = (typeof signId === 'string' && signId.indexOf('b:') === 0) ? setjaBunad(signId.slice(2), x, y) : setjaStimpil(signId, x, y);
     S.valinn = null;
     S.valinnMerki = m;
     stikaValid();
     return m;
+  }
+
+  /* ── BÚNAÐUR (15.10.2026) ─────────────────────────────────────────────────────────────────────────── */
+  const bunadurDef = lyk => BUNADUR.find(b => b.id === lyk) || null;
+  /** Lykill Nýtt-merkis: miðhluti unitId (`n:<lykill>:<id>`), annars úr tegundinni (fjold 434). */
+  function lykillNytts(m) {
+    const u = m && typeof m.unitId === 'string' ? m.unitId.split(':')[1] : '';
+    if (u && bunadurDef(u)) return u;
+    const f = window.TeiknTakn && TeiknTakn.fjold ? TeiknTakn.fjold({ tegund: m && m.tegund }) : 'annad';
+    return bunadurDef(f) ? f : 'annad';
+  }
+  function setjaBunad(lyk, x, y) {
+    const p = plan();
+    const def = bunadurDef(lyk);
+    if (!p || !def) return null;
+    const id = 'n:' + def.id + ':' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const m = { unitId: id, x, y, nytt: true, tegund: def.tegund, stada: 'bid' };
+    p.markers.push(m);
+    skraUndo({ teg: 'stimpill', merki: afritMerki(m) });
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    return m;
+  }
+  /** Öll merki allra hæða (virka hæðin úr p.markers, hinar úr haedir[]). */
+  function ollMerki() {
+    const p = plan();
+    if (!p) return [];
+    const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+    const hs = Array.isArray(p.haedir) && p.haedir.length ? p.haedir : null;
+    return hs ? hs.reduce((a, h, i) => a.concat(i === v ? (p.markers || []) : (h && h.markers) || []), []) : (p.markers || []);
+  }
+  /** Óstaðsett tæki félagsins (ekki merki á neinni hæð), sömu tegundar fyrst (fjold 434), svo hin. Úrelt aldrei. */
+  function ostadsettTaeki(lyk) {
+    const F = FP();
+    const units = (F && F.units) || [];
+    const stadsett = new Set(ollMerki().filter(m => !erStimpil(m) && !erNytt(m)).map(m => String(m.unitId)));
+    const fj = u => (window.TeiknTakn && TeiknTakn.fjold ? TeiknTakn.fjold(u) : 'annad');
+    const laus = units.filter(u => u && u.id != null && !stadsett.has(String(u.id)) && !/úrelt|urelt|retired|obsolete/i.test(String(u.status || '')));
+    return { somu: laus.filter(u => fj(u) === lyk), onnur: laus.filter(u => fj(u) !== lyk) };
+  }
+  /** Búnaður → skráð tæki: merkið heldur staðnum, snúningi og stærð en fær unitId tækisins (nytt / tegund / stada fara).
+   * Tækið var hvergi á teikningu (ostadsettTaeki), svo ekkert tvítekst. Afturkalla skilar búnaðinum. */
+  function tengjaBunad(m, unitId) {
+    const p = plan();
+    if (!p || !m || !erNytt(m) || unitId == null) return false;
+    skraUndo({ teg: 'tengja', merki: afritMerki(m), unitId });
+    p.markers = p.markers.filter(x => x !== m && x.unitId !== m.unitId && x.unitId !== unitId);
+    const ny = { unitId, x: m.x, y: m.y };
+    if (m.rot) ny.rot = m.rot;
+    if (m.staerd) ny.staerd = m.staerd;
+    if (m.takn) ny.takn = m.takn;
+    p.markers.push(ny);
+    S.valinnMerki = ny;
+    const F = FP(); if (F) F._selectedUnitId = unitId;
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    vistaAdThjoni();
+    const u = F && F.units && F.units.find(q => q && q.id === unitId);
+    segja('Tengt við ' + (u ? (String(u.type || 'tæki') + (u.serial ? ' · ' + u.serial : '')) : 'tæki') + ' — Afturkalla skilar búnaðinum');
+    return true;
+  }
+  /** Breyta tegund búnaðar (Nýtt-merkis): nýr lykill í unitId og tegundin með. */
+  function breytaBunad(m, lyk) {
+    const p = plan();
+    const def = bunadurDef(lyk);
+    if (!p || !m || !erNytt(m) || !def || lykillNytts(m) === def.id) return false;
+    skraUndo({ teg: 'tengja', merki: afritMerki(m), unitId: null });
+    const halinn = String(m.unitId).split(':').slice(2).join(':') || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+    p.markers = p.markers.filter(x => x !== m && x.unitId !== m.unitId);
+    const ny = Object.assign({}, m, { unitId: 'n:' + def.id + ':' + halinn, nytt: true, tegund: def.tegund, stada: 'bid' });
+    delete ny.takn;
+    p.markers.push(ny);
+    S.valinnMerki = ny;
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    endurteikna();
+    vistaAdThjoni();
+    return true;
   }
 
   function eydaMerki(m) {
@@ -328,11 +430,14 @@
   }
 
   function afritaMerki(m) {
-    if (!m || !erStimpil(m)) return null;
+    if (!m || !(erStimpil(m) || erNytt(m))) return null;
     const c = document.getElementById('fp-canvas');
     const r = c ? c.getBoundingClientRect() : { width: 200 };
     const hopp = Math.round(merkiStaerd(m, r.width) * ((c && c.width && r.width) ? (c.width / r.width) : 1) * 1.15);
-    const ny = setjaStimpil(m.sign, Math.round(m.x) + hopp, Math.round(m.y) + hopp, null, m.rot || 0);
+    const ny = erNytt(m)
+      ? setjaBunad(lykillNytts(m), Math.round(m.x) + hopp, Math.round(m.y) + hopp)
+      : setjaStimpil(m.sign, Math.round(m.x) + hopp, Math.round(m.y) + hopp, null, m.rot || 0);
+    if (ny && m.rot && erNytt(m)) ny.rot = m.rot;
     if (ny && m.staerd) ny.staerd = m.staerd;
     return ny;
   }
@@ -423,10 +528,16 @@
     ).join('') + '</div>';
   }
 
+  function bunadurRod(virkur) {
+    return '<div class="fp-vm-stimp">' + BUNADUR.map(s =>
+      '<button type="button" class="fp-vm-ico' + (virkur === s.id ? ' on' : '') + '" data-act="bunadur" data-bunadur="' + s.id + '" title="' + esc(s.nafn) + '"></button>'
+    ).join('') + '</div>';
+  }
+
   function malaValmyndIkon(el) {
     el.querySelectorAll('.fp-vm-ico').forEach(b => {
-      const id = b.getAttribute('data-takn') || b.getAttribute('data-sign');
-      const def = STIMPLAR.find(s => s.id === id) || TAEKI_TAKN.find(s => s.id === id);
+      const id = b.getAttribute('data-takn') || b.getAttribute('data-sign') || b.getAttribute('data-bunadur');
+      const def = STIMPLAR.find(s => s.id === id) || TAEKI_TAKN.find(s => s.id === id) || (b.getAttribute('data-bunadur') ? { id, stutt: (bunadurDef(id) || {}).stutt } : null);
       if (!def) return;
       if (window.TeiknTakn && TeiknTakn.teiknaISpan) TeiknTakn.teiknaISpan(b, def);
       else { b.style.background = def.litur; b.textContent = def.stutt; }
@@ -676,9 +787,55 @@
     }
     if (el.hidden) el.hidden = false;
     const tegundir = Object.keys(t.eftir).map(k => k + ' ' + t.eftir[k]).join(', ');
-    const texti = 'Nýtt (óskráð): ' + t.n + ' — ' + t.n + ' ný tæki í biðstöðu, bíða samþykkis: ' + tegundir;
+    const texti = 'Nýtt (óskráð): ' + t.n + ' — ' + t.n + ' ný tæki í biðstöðu, bíða samþykkis: ' + tegundir + ' · veldu merkið og „Tengja við tæki“ í ræmunni, eða láttu TurboPaint tengja við „Vista í úttekt“';
     // aðeins skrifað ef það breyttist (annars lykkjar MutationObserver-inn — audit-teikning-merking)
     if (el.textContent !== texti) el.textContent = texti;
+  }
+
+  /** Búnaður-stikan (15.10.2026) — ofan við Merki: staðgenglar tækja sem tengjast skráðum tækjum eftirá. */
+  function stikaBunadar() {
+    const panel = document.getElementById('fp-panel');
+    if (!panel) return;
+    let rod = document.getElementById('fp-bunadur');
+    if (!rod) {
+      rod = document.createElement('div'); rod.id = 'fp-bunadur';
+      const stimpil = document.getElementById('fp-stimpil');
+      const listi = document.getElementById('fp-unit-list');
+      if (stimpil && stimpil.parentNode === panel) panel.insertBefore(rod, stimpil);
+      else if (listi && listi.parentNode === panel) panel.insertBefore(rod, listi);
+      else panel.appendChild(rod);
+    }
+    const fingur = BUNADUR.map(s => s.id).join(',') + ((window.TeiknTakn && TeiknTakn.fingrafar) ? TeiknTakn.fingrafar() : '');
+    if (rod.dataset.ok === fingur && rod.querySelector('.fp-stimpill')) return;
+    rod.dataset.ok = fingur;
+    rod.title = 'Hvar tæki og búnaður á að vera — óskráð þar til það er tengt við tæki (Tengja við tæki í ræmunni, eða sjálfkrafa í TurboPaint við „Vista í úttekt“).';
+    rod.innerHTML = '<div class="fp-stimpil-lbl">Búnaður</div>' + BUNADUR.map(s =>
+      '<button type="button" class="fp-stimpill" draggable="true" data-sign="b:' + s.id + '" title="' + esc(s.nafn) + ' — dragðu á teikninguna; tengist tæki eftirá">' +
+      '<span class="fp-stimpill-ico"></span>' + esc(s.nafn) + '</button>'
+    ).join('');
+    rod.querySelectorAll('.fp-stimpill').forEach(b => {
+      const id = b.getAttribute('data-sign');
+      const def = bunadurDef(id.slice(2));
+      const ico = b.querySelector('.fp-stimpill-ico');
+      if (ico && window.TeiknTakn && TeiknTakn.teiknaISpan) TeiknTakn.teiknaISpan(ico, { id: def.id, stutt: def.stutt });
+      else if (ico) { ico.textContent = def.stutt; ico.style.background = '#e11d2e'; }
+      b.addEventListener('pointerdown', e => {
+        if (e.button != null && e.button !== 0) return;
+        S.valinn = id;
+        S.valinnMerki = null;
+        hefjaFraLista(e, 'stimpill', { sign: id, stutt: def.stutt, litur: '#e11d2e' });
+        stikaValid();
+      });
+      b.addEventListener('dragstart', e => { e.preventDefault(); });
+      b.addEventListener('click', e => {
+        e.preventDefault();
+        S.valinn = id;
+        S.valinnMerki = null;
+        const info = document.getElementById('fp-info');
+        if (info) info.textContent = 'Valið: ' + def.nafn + ' (búnaður) — smelltu á teikninguna þar sem það á að vera; tengdu við tæki eftirá.';
+        stikaValid();
+      });
+    });
   }
 
   function stikaStimpla() {
@@ -827,7 +984,7 @@
     if (S._stika) return;
     S._stika = true;
     try {
-      document.querySelectorAll('#fp-stimpil .fp-stimpill').forEach(b => {
+      document.querySelectorAll('#fp-stimpil .fp-stimpill, #fp-bunadur .fp-stimpill').forEach(b => {
         b.classList.toggle('on', !!S.valinn && b.getAttribute('data-sign') === S.valinn);
       });
       const main = document.getElementById('fp-main');
@@ -835,8 +992,9 @@
       const info = document.getElementById('fp-info');
       let msg = null;
       if (S.valinn) {
-        const def = STIMPLAR.find(s => s.id === S.valinn);
-        if (def) msg = 'Valið: ' + def.nafn + ' — smelltu á teikninguna eða dragðu merkið þangað.';
+        const bdef = String(S.valinn).indexOf('b:') === 0 ? bunadurDef(String(S.valinn).slice(2)) : null;
+        const def = bdef || STIMPLAR.find(s => s.id === S.valinn);
+        if (def) msg = 'Valið: ' + def.nafn + (bdef ? ' (búnaður)' : '') + ' — smelltu á teikninguna eða dragðu merkið þangað.';
       } else if (S.valinnMerki) {
         msg = 'Valið á teikningu: ' + nafnMerkis(S.valinnMerki) + ' — snúðu, breyttu eða eyddu í ræmunni.';
       }
@@ -845,7 +1003,7 @@
       if (!panel) return;
       let box = document.getElementById('fp-merki-adgerd');
       const m = S.valinnMerki;
-      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.takn || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '') + ':' + (erStimpil(m) ? 's' : 't') : '') + '|' + (S.valinn || '');
+      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.takn || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '') + ':' + (erStimpil(m) ? 's' : erNytt(m) ? 'n' + ((FP() && FP().units) || []).length : 't') : '') + '|' + (S.valinn || '');
       if (!m) {
         if (box && !box.hidden) { box.hidden = true; box.dataset.ok = lyk; }
         return;
@@ -870,21 +1028,45 @@
           } else if (act === 'eyda') eydaMerki(S.valinnMerki);
           else if (act === 'skipta' && sign) breytaStimpil(S.valinnMerki, sign);
           else if (act === 'takn' && takn) breytaTakn(S.valinnMerki, takn);
+          else if (act === 'bunadur' && b.getAttribute('data-bunadur')) breytaBunad(S.valinnMerki, b.getAttribute('data-bunadur'));
           stikaValid();
         });
+        // Búnaður → tæki: valið úr óstaðsettum tækjum félagsins (sömu tegundar fyrst)
+        box.addEventListener('change', ev => {
+          const s = ev.target.closest('select[data-tengja]');
+          if (!s || !S.valinnMerki || !s.value) return;
+          const v = s.value;
+          tengjaBunad(S.valinnMerki, isNaN(+v) ? v : +v);
+          stikaValid();
+        });
+        box.addEventListener('pointerdown', ev => { if (ev.target.closest('select')) ev.stopPropagation(); });
       }
       if (box.dataset.ok === lyk && !box.hidden) return;
       box.hidden = false;
       box.dataset.ok = lyk;
-      const stimp = erStimpil(m);
+      const stimp = erStimpil(m), nytt = erNytt(m);
+      let tengja = '';
+      if (nytt) {
+        const lykN = lykillNytts(m);
+        const laus = ostadsettTaeki(lykN);
+        const kostur = u => '<option value="' + esc(u.id) + '">' + esc(String(u.type || 'Tæki') + (u.serial ? ' · ' + u.serial : '')) + '</option>';
+        tengja = '<div class="fp-stimpil-lbl">Tengja við tæki</div>' +
+          (laus.somu.length || laus.onnur.length
+            ? '<select data-tengja class="fp-tengja"><option value="">— veldu óstaðsett tæki —</option>' +
+              (laus.somu.length ? '<optgroup label="Sömu tegundar">' + laus.somu.map(kostur).join('') + '</optgroup>' : '') +
+              (laus.onnur.length ? '<optgroup label="Önnur óstaðsett tæki">' + laus.onnur.map(kostur).join('') + '</optgroup>' : '') +
+              '</select>'
+            : '<div class="fp-tengja-tomt">Engin óstaðsett tæki á félaginu — skráðu tækið (+ Bæta við tæki) og tengdu svo, eða láttu TurboPaint tengja við „Vista í úttekt“.</div>');
+      }
       box.innerHTML = '<div class="fp-stimpil-lbl">Valið</div>' +
         '<div class="fp-merki-nafn">' + esc(nafnMerkis(m)) + '</div>' +
         '<div class="fp-merki-acts">' +
           '<button type="button" data-act="snua">Snúa</button>' +
-          (stimp ? '<button type="button" data-act="afrita">Afrita</button>' : '') +
-          '<button type="button" class="fp-vm-hætta" data-act="eyda">' + (stimp ? 'Eyða' : 'Fjarlægja af teikningu') + '</button></div>' +
+          (stimp || nytt ? '<button type="button" data-act="afrita">Afrita</button>' : '') +
+          '<button type="button" class="fp-vm-hætta" data-act="eyda">' + (stimp || nytt ? 'Eyða' : 'Fjarlægja af teikningu') + '</button></div>' +
+        tengja +
         '<div class="fp-stimpil-lbl">Breyta í</div>' +
-        (stimp ? stimpilRod(m.sign, 'skipta') : taknRod(m.takn || ''));
+        (stimp ? stimpilRod(m.sign, 'skipta') : nytt ? bunadurRod(lykillNytts(m)) : taknRod(m.takn || ''));
       malaValmyndIkon(box);
     } finally {
       try { stikaStaerdHvarfa(); } catch (_) {}
@@ -923,11 +1105,11 @@
   function still() {
     let st = document.getElementById('fp-merking-css');
     const css =
-      '#fp-stimpil{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;align-items:center}' +
-      '#fp-stimpil .fp-stimpil-lbl,#fp-merki-adgerd .fp-stimpil-lbl,#fp-stimpil-staerd-wrap .fp-stimpil-lbl{width:100%;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}' +
-      '#fp-stimpil .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab;flex:1 1 140px;min-width:0;max-width:100%;-webkit-user-drag:none;user-select:none}' +
-      '#fp-stimpil .fp-stimpill.on{border-color:#c9a54a;box-shadow:0 0 0 2px rgba(201,165,74,.45);background:rgba(201,165,74,.12)}' +
-      '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
+      '#fp-stimpil,#fp-bunadur{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;align-items:center}' +
+      '#fp-stimpil .fp-stimpil-lbl,#fp-bunadur .fp-stimpil-lbl,#fp-merki-adgerd .fp-stimpil-lbl,#fp-stimpil-staerd-wrap .fp-stimpil-lbl{width:100%;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}' +
+      '#fp-stimpil .fp-stimpill,#fp-bunadur .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab;flex:1 1 140px;min-width:0;max-width:100%;-webkit-user-drag:none;user-select:none}' +
+      '#fp-stimpil .fp-stimpill.on,#fp-bunadur .fp-stimpill.on{border-color:#c9a54a;box-shadow:0 0 0 2px rgba(201,165,74,.45);background:rgba(201,165,74,.12)}' +
+      '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico,#fp-bunadur .fp-stimpill span,#fp-bunadur .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
       '#fp-stimpil-staerd-wrap{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}' +
       '#fp-stimpil-staerd-wrap .fp-staerd-rod{display:flex;align-items:center;gap:8px}' +
       '#fp-stimpil-staerd{flex:1 1 auto;min-width:0;accent-color:#c9a54a;height:28px;cursor:pointer}' +
@@ -938,6 +1120,8 @@
       '#fp-merki-adgerd .fp-merki-acts{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}' +
       '#fp-merki-adgerd .fp-merki-acts button{flex:1 1 auto;min-height:32px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(20,18,15,.55);color:#f1ede4;font:600 11px system-ui,sans-serif;cursor:pointer}' +
       '#fp-merki-adgerd .fp-vm-hætta{color:#fecaca}' +
+      '#fp-merki-adgerd .fp-tengja{width:100%;margin:0 0 8px;padding:6px 8px;border-radius:8px;border:1px solid rgba(201,165,74,.45);background:#1c1916;color:#f1ede4;font:600 12px system-ui,sans-serif}' +
+      '#fp-merki-adgerd .fp-tengja-tomt{margin:0 0 8px;font:500 11px/1.35 system-ui,sans-serif;color:rgba(241,237,228,.7)}' +
       '#fp-merki-adgerd .fp-vm-stimp{display:flex;flex-wrap:wrap;gap:6px}' +
       '#fp-merki-adgerd .fp-vm-ico{width:36px;height:36px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}' +
       '#fp-merki-adgerd .fp-vm-ico.on{box-shadow:0 0 0 2px #c9a54a}' +
@@ -968,7 +1152,7 @@
     const panel = F._renderPanel.bind(F);
     F._renderPanel = function () {
       panel();
-      try { stikaStimpla(); geraDraggandi(); stikaValid(); } catch (_) {}
+      try { stikaStimpla(); stikaBunadar(); geraDraggandi(); stikaValid(); } catch (_) {}
       try { nyttLina(); } catch (_) {}
     };
     if (typeof F.selectUnit === 'function' && !F.__merkingSelect) {
@@ -1056,7 +1240,7 @@
   }, true);
 
   window.TeiknMerking = {
-    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, vistaAdThjoni, erStimpil, erNytt, nyttTalning, stimplar: STIMPLAR,
+    grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, setjaBunad, tengjaBunad, breytaBunad, ostadsettTaeki, vistaAdThjoni, erStimpil, erNytt, nyttTalning, stimplar: STIMPLAR, bunadur: BUNADUR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
     stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn,
     velja: m => { S.valinnMerki = m || null; stikaValid(); },
