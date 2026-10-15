@@ -665,10 +665,17 @@
     opts = opts || {};
     var s = sbKlient(); if (!s) throw new Error('Enginn gagnagrunnsbiðlari');
     if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) throw new Error('AppSettings ekki hlaðið');
-    var q = s.from('fyrirtaeki').select('id,nafn,heimilisfang').not('heimilisfang', 'is', null).order('id').range(0, 2999);
-    if (!opts.oll) q = q.eq('er_i_thjonustu', true);
+    // Agnar 15.10: „bara sem eru í ársskoðun og brunakerfis skoðun" — er_i_thjonustu EÐA á brunakerfis-áskriftarlistanum
+    // (AppSettings brunakerfi_customers, sami lykill og 388 les). opts.oll = öll félög með heimilisfang.
+    var bk = {}; try { bk = AppSettings.path('brunakerfi_customers') || {}; } catch (_) {}
+    var bkIds = Object.keys(bk).filter(function (k) { return bk[k]; }).map(Number).filter(Boolean);
+    var q = s.from('fyrirtaeki').select('id,nafn,heimilisfang,er_i_thjonustu').not('heimilisfang', 'is', null).order('id').range(0, 2999);
     var r = await q; if (r.error) throw r.error;
-    var rows = (r.data || []).filter(function (c) { return c.heimilisfang && /\d/.test(c.heimilisfang) && (!opts.id || +c.id === +opts.id); });
+    var rows = (r.data || []).filter(function (c) {
+      if (!c.heimilisfang || !/\d/.test(c.heimilisfang)) return false;
+      if (opts.id) return +c.id === +opts.id;
+      return opts.oll || c.er_i_thjonustu || bkIds.indexOf(+c.id) >= 0;
+    });
     var ut = { skodud: 0, sleppt_eigin: 0, sleppt_sv: 0, sett: 0, engin: 0, villa: 0, villur: [] };
     for (var i = 0; i < rows.length; i++) {
       var c = rows[i];
