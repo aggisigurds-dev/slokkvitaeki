@@ -4333,7 +4333,8 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
             <col style="width:284px">
             <col style="width:64px"><col style="width:64px"><col style="width:64px"><col style="width:64px">
             <col style="width:62px"><col style="width:158px">
-            <col style="width:74px"><col style="width:66px"><col style="width:150px"><col style="width:44px">
+            <col style="width:64px"><col style="width:56px"><col style="width:52px"><col style="width:184px"><col style="width:40px">
+            <!-- 15.10.2026 (Agnar: jafna Akstur/Forg./GÓ/hak, bil við Staða): GÓ-dálkurinn átti enga <col> og stal breiddinni af Staða (150→111), svo 128 px platan flæddi út á ♻-reitinn og hakið sat 128 px frá GÓ. Nú: GÓ 52, Staða 176 (8+30+5+128+5). -->
           </colgroup>
           <thead>
             <tr>

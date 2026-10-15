@@ -600,6 +600,7 @@
   const VF_TABS = [
     ['krofur',     '📋 Kröfur'],
     ['osendar',    '📤 Ósendar'],
+    ['ogreiddar',  '⏳ Ógreiddar'],   // 15.10.2026 (Agnar): sendar í banka/Payday en ógreiddar — hitt hvolfið af Ósendar
     ['greiddar',   '✅ Greiddar'],
     ['allt',       '📚 Allt'],
     ['sesthvergi', '🔍 Sést hvergi'],
@@ -710,6 +711,9 @@
         .eq('greitt_med', 'reikningur');
       if (vf === 'krofur')        q = q.is('paid_at', null).neq('status', 'void'); // útistandandi — void telst ALDREI skuld (2026-08-14, R-000232)
       else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null).neq('status', 'void'); // ósendar — ógild sala er aldrei krafa (13.09.2026: prufan R-000597 sat hér)
+      // 15.10.2026 (Agnar: „bæta við í filter ógreiddar"): SENDAR kröfur sem bíða greiðslu — krafa_sent_at, invoiced_at eða
+      // dk_invoice_id sett, paid_at autt. „Kröfur" = allt útistandandi (sendar + ósendar); „Ósendar" + „Ógreiddar" skipta því í tvennt.
+      else if (vf === 'ogreiddar') q = q.is('paid_at', null).neq('status', 'void').or('krafa_sent_at.not.is.null,invoiced_at.not.is.null,dk_invoice_id.not.is.null');
       else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
       // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
       return q.order('updated_at', { ascending: false }).order('id').range(from, to);

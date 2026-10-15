@@ -72,6 +72,26 @@
     r(T + '._st', 'min-height:24px!important;height:24px;border-radius:3px!important;font:700 11px/1 ' + SANS + '!important;padding:0 9px!important'),
     // ♻️-reiturinn og ✉ þrengri svo textadálkarnir fái plássið
     r(T + 'thead th:last-child,' + T + 'tbody td:last-child', 'width:44px!important;padding-left:4px!important;padding-right:4px!important'),
+    // 15.10.2026 (Agnar: „jafna bilið á milli Akstur, Forg., GÓ og Staða-hakið … Staða 2026 alveg klest upp við töfluna"):
+    // taflan er fest í 100 % breidd með table-layout:fixed, svo <colgroup>-breiddirnar skalast allar niður og Staða-dálkurinn
+    // (nú 14. dálkur, á eftir GÓ) fékk 111 px fyrir 30 px hak + 128 px plötu — platan flæddi út á ♻-reitinn. min-width á
+    // hausreitnum er það eina sem fixed-útreikningurinn virðir (sama bragð og 394 notar á Ferðanótu). Akstur/Forg./GÓ fá
+    // jafnar breiddir og innihaldið miðjað; Staða fær 14 px frá hægri brún og hakið 10 px frá plötunni.
+    // Hausreitirnir Skoðun/Akstur/Forg. réðu breiddinni með textanum + 12 px hliðarfyllingu (81/81/74) — 6 px fylling þar.
+    r(T + 'thead th:nth-child(6),' + T + 'thead th:nth-last-child(5),' + T + 'thead th:nth-last-child(4),' + T + 'thead th:nth-last-child(3)', 'padding-left:6px!important;padding-right:6px!important'),
+    r(T + 'thead th:nth-last-child(5)', 'min-width:64px!important'),
+    r(T + 'thead th:nth-last-child(4)', 'min-width:56px!important'),
+    r(T + 'thead th:nth-last-child(3)', 'min-width:52px!important'),
+    r(T + 'thead th:nth-last-child(2)', 'min-width:188px!important;padding-right:14px!important'),
+    r(T + 'tbody td:nth-last-child(2)', 'padding-right:14px!important'),
+    // Breiddin sem Staða fékk kemur af Ferðanótu (236 → 204, enn 73 % breiðari en upphaflegu 118) og Tæki (168 → 150;
+    // fjórar tölur + merki rúmast) svo taflan vaxi ekki út fyrir hólfið og platan klippist af hægra megin.
+    r(T + 'colgroup col:nth-child(3)', 'width:190px!important'),
+    r(T + '._ars-notacell', 'min-width:190px!important;width:190px!important'),
+    r(T + 'thead th:nth-child(3)', 'min-width:190px!important'),
+    r(T + 'colgroup col:nth-child(10)', 'width:150px!important;min-width:150px!important'),
+    r(T + 'tbody td.center:nth-last-child(5),' + T + 'tbody td.center:nth-last-child(4),' + T + 'tbody td.center:nth-last-child(3)', 'text-align:center!important'),
+    r(T + '._stcell', 'gap:10px!important'),
   ];
   var inni = rules.join('\n');
   var css = '@media (min-width:901px){' + simalaus(inni) + '}\n' + vitt(inni) + '\n';
