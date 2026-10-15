@@ -353,6 +353,11 @@
       R + ' .gr-tp{display:flex;flex-direction:column;gap:2px;padding:8px 10px;background:#fff;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.14),0 2px 4px rgba(10,14,22,.12)}',
       R + ' .gr-tp b{font:700 13px ' + SANS + ';color:#141822}', R + ' .gr-tp span{font:500 11px ' + MONO + ';color:#525b6b}',
       R + ' .gr-fsk{position:relative}',
+      R + ' .gr-safn-flis{display:flex;flex-direction:column;gap:4px;min-width:0}',
+      R + ' .gr-safn-flis > .gr-fsk{width:100%}',
+      R + ' .gr-safn-ath{font:500 11.5px ' + SANS + ';color:#3d424c;padding:0 2px;overflow-wrap:anywhere}',
+      R + ' .gr-safn-x{align-self:flex-start;height:22px;padding:0 8px;border-radius:6px;border:1px solid rgba(20,24,34,.22);background:#fff;color:#5b616d;font:600 11px ' + SANS + ';cursor:pointer}',
+      R + ' .gr-safn-x[data-stadfesta="1"]{background:#a3161a;border-color:#a3161a;color:#fff}',
       R + ' .gr-fsk-tp{position:absolute;top:6px;right:6px;z-index:2;padding:2px 7px;border-radius:6px;background:' + METAL + ';color:#fff!important;font:700 10px ' + MONO + ';text-decoration:none!important}',
       // ── Brunavarnir á teikningu (5h): föst hæð sviðs, skýringa og stöðulína — ekkert ýtist þegar teikningin kemur
       R + ' .gr-bat{--bat-h:600px;margin:14px 0 6px}', R + ' .gr-bat > .gr-hluti-haus{margin-top:0}',
@@ -443,6 +448,16 @@
       '#gr-ljos .gr-lor[disabled]{opacity:.28;cursor:default}',
       '@media (max-width: 700px){#gr-ljos .gr-lor{width:38px;height:56px;margin-top:-28px;font-size:24px}#gr-ljos .gr-lor.v{left:4px}#gr-ljos .gr-lor.h{right:4px}#gr-ljos .gr-lundir{max-width:100%;flex-basis:100%;order:5}}',
       '#gr-ljos{touch-action:none;overscroll-behavior:contain}',
+      // 5j teikningasafn: vistunarform ofan á stóru myndinni (stálplata, hægra megin undir hausnum)
+      '#gr-ljos .gr-lsafn{position:absolute;top:58px;right:14px;z-index:4;width:min(380px,calc(100vw - 28px));display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:10px;background:#f4f5f7;color:#16181d;box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(20,24,34,.18);font:500 12.5px ' + SANS + ';touch-action:auto}',
+      '#gr-ljos .gr-lsafn b{font:700 14px ' + SANS + '}',
+      '#gr-ljos .gr-lsafn-ut{font:500 11px ' + MONO + ';color:#5b616d;overflow-wrap:anywhere}',
+      '#gr-ljos .gr-lsafn-ath{font:600 11.5px ' + SANS + ';color:#7a5a12}',
+      '#gr-ljos .gr-lsafn label{display:flex;flex-direction:column;gap:3px;font:700 10.5px ' + MONO + ';letter-spacing:.04em;text-transform:uppercase;color:#4a505b}',
+      '#gr-ljos .gr-lsafn input{height:34px;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.28);background:#fff;font:500 14px ' + SANS + ';color:#16181d;text-transform:none;letter-spacing:0}',
+      '#gr-ljos .gr-lsafn-takkar{display:flex;gap:8px;justify-content:flex-end}',
+      '#gr-ljos .gr-lsafn-villa{font:600 12px ' + SANS + ';color:#a3161a}',
+      '#gr-ljos .gr-lsafn-villa[hidden]{display:none}',
       '#gr-ljos .gr-lb{flex:1;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:zoom-in}',
       '#gr-ljos .gr-lb.zm{cursor:grab}', '#gr-ljos .gr-lb.drag{cursor:grabbing}',
       '#gr-ljos .gr-lb img{position:absolute;left:0;top:0;max-width:none!important;max-height:none!important;background:#fff;pointer-events:none;-webkit-user-drag:none;user-select:none;box-shadow:0 6px 30px rgba(0,0,0,.5)}',
@@ -810,6 +825,7 @@
     ['bruna', 'Brunavarnir úr byggingarlýsingu', 96],
     ['krofur', 'Kröfur eftir tegund', 180],
     ['teikn', 'Teikningar', 190],
+    ['safn', 'Teikningasafn', 90],
     ['rekstur', 'Rekstur og fyrirtækið', 80],
     ['heimildir', 'Heimildir og hömlur', 120],
   ];
@@ -841,7 +857,7 @@
   // BIRTING Í RÖÐ (Stöðugt viðmót): spjald sýnir efni sitt aðeins þegar SÍN gögn eru komin OG öll spjöld fyrir ofan eru
   // birt. Þá ýtir spjald sem stækkar aðeins frátekinni hæð (staðgenglum) niður — aldrei efni sem notandinn er þegar að lesa.
   // Samantektin efst er föst að stærð og birtist strax. Hausinn (staða) uppfærist alltaf — hann er fastur á hæð.
-  const KORT_HLUTAR = { samantekt: [], eign: ['opin', 'bygg'], hja: ['hja'], bygg: ['bygg', 'opin'], bruna: ['bygg', 'teikn'], krofur: ['krofur', 'bygg', 'hja', 'opin', 'rekstur', 'teikn'], teikn: ['teikn', 'bygg'], rekstur: ['rekstur', 'opin', 'teikn'], heimildir: ['heimildir'] };
+  const KORT_HLUTAR = { samantekt: [], eign: ['opin', 'bygg'], hja: ['hja'], bygg: ['bygg', 'opin'], bruna: ['bygg', 'teikn'], krofur: ['krofur', 'bygg', 'hja', 'opin', 'rekstur', 'teikn'], teikn: ['teikn', 'bygg'], safn: ['safn'], rekstur: ['rekstur', 'opin', 'teikn'], heimildir: ['heimildir'] };
   function hlutiLokid(g, l) {
     const p = g.parts[l];
     if (!p) return !g.adr;                          // án heimilisfangs eru hlutarnir ekki sóttir
@@ -904,14 +920,17 @@
       }).then(() => { if (S.g === g) { teikna(lyk); teikna('samantekt'); afleidd(lyk); } });
     };
     if (!g.adr) {
-      ['bygg', 'teikn', 'rekstur', 'hja'].forEach((l) => { g.parts[l] = { stada: g.villa ? 'villa' : 'tomt', villa: g.villa }; });
+      ['bygg', 'teikn', 'rekstur', 'hja', 'safn'].forEach((l) => { g.parts[l] = { stada: g.villa ? 'villa' : 'tomt', villa: g.villa }; });
       fyllaAllt();
       eftir('heimildir', heimildirSkra());
       eftir('krofur', krofurGogn());
       return;
     }
     eftir('hja', hjaOkkur(g));
-    eftir('bygg', byggingGogn(g));
+    const byggP = byggingGogn(g);
+    eftir('bygg', byggP);
+    // Teikningasafnið er lyklað á landnúmer lóðarinnar (úr Staðfanga-/Landeignaskrá byggingarhlutans)
+    eftir('safn', byggP.then((b) => safnSaekja(safnLandnr(b))));
     eftir('opin', opinGogn(g));
     eftir('krofur', krofurGogn());
     eftir('heimildir', heimildirSkra());
@@ -1963,7 +1982,7 @@
     const i = S.fskSafn.length;
     const lys = x.titill && x.titill !== heiti ? x.titill : '';
     const tpTitill = [(S.g && S.g.adr) || '', heiti + (lys ? ': ' + lys : '')].filter(Boolean).join(' — ') + (d.dags ? ' (' + dags(d.dags) + ')' : '');
-    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal') });
+    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
     // litla TurboPaint-táknið aðeins á smámyndum „Úr skjalasafni“ (Teikningar-spjaldið); stóri skoðarinn sýnir takkann alls staðar
     const tu = S.fskK === 'teikn' ? tpSlod({ slod: d.infoUrl, tpTitill }) : null;
     const buid = pdf ? FSK_BUID.get(d.infoUrl + '|380') : null;
@@ -2043,6 +2062,7 @@
       (fjoldi > 1 ? '<span class="gr-lteljari"></span>' : '') +
       '<span class="gr-lz" role="group" aria-label="Aðdráttur"><button type="button" class="ssp-btn" data-gr-lz="-1" title="Minnka (−)" aria-label="Minnka">−</button><span class="gr-lzt">100 %</span>' +
       '<button type="button" class="ssp-btn" data-gr-lz="1" title="Stækka (+) — líka skrunhjól og tvísmellur" aria-label="Stækka">+</button><button type="button" class="ssp-btn" data-gr-lz="0" title="Passa í glugga (0)">Passa</button></span>' +
+      '<button type="button" class="ssp-btn" data-gr-lsafn hidden>Vista í safn</button>' +
       '<a class="ssp-btn" data-gr-ltp hidden target="_blank" rel="noopener">Skoða í TurboPaint</a>' +
       '<button type="button" class="ssp-btn" data-gr-lfsk hidden title="Opnar forskoðun teikninganna (384): þysja, prenta, sækja í fullum gæðum">Forskoðun</button><button type="button" class="ssp-btn" data-gr-loka>Loka</button></div>' +
       '<div class="gr-lb"><span class="gr-lbid">Sæki mynd…</span><img alt="" hidden draggable="false"><span class="gr-lhr" hidden>Hleð skarpri útgáfu…</span></div>' +
@@ -2109,6 +2129,16 @@
       V.syntNr = nr; V.ar = img.naturalWidth / Math.max(1, img.naturalHeight);
       passa(); midja(); beita();
     });
+    // Teikningasafnið (5j): „Vista í safn“ á hverju blaði með frumslóð, þegar lóðin er viss
+    const safnTakki = (it) => {
+      const b = o.querySelector('[data-gr-lsafn]'); if (!b) return;
+      const fm = o.querySelector('.gr-lsafn'); if (fm) fm.remove();
+      const ok = !!(it && it.slod && S.g && safnLandnr(S.g.bygg) && sb());
+      b.hidden = !ok; if (!ok) return;
+      const inni = safnInni(it.slod);
+      b.textContent = inni.length ? '✓ Í safni' : 'Vista í safn';
+      b.title = inni.length ? 'Í teikningasafni: ' + inni.join(', ') + ' — smelltu til að vista líka á annað svæði' : 'Vista blaðið í teikningasafn fasteignarinnar — á svæði, t.d. „Asparfell 12 · 1. hæð“';
+    };
     const syna = (n) => {
       if (n < 0 || n >= fjoldi || n === nr) return;
       nr = n; const it = safn[n], k = ++kall;
@@ -2119,6 +2149,7 @@
       o.querySelectorAll('[data-gr-lor]').forEach((b) => { const s = n + +b.getAttribute('data-gr-lor'); b.disabled = s < 0 || s >= fjoldi; });
       const fb = o.querySelector('[data-gr-lfsk]'); if (fb) fb.hidden = !it.forsk;
       const tp = o.querySelector('[data-gr-ltp]'), tu = tpSlod(it); if (tp) { tp.hidden = !tu; if (tu) tp.href = tu; else tp.removeAttribute('href'); }
+      safnTakki(it);
       // nýtt blað: aðdráttur endurstilltur
       Object.assign(V, { z: 1, syntNr: -1, hr: false, hrBid: false }); hrM.hidden = true; delete img.dataset.hr;
       lb.classList.remove('zm'); if (zt) zt.textContent = '100 %';
@@ -2187,6 +2218,9 @@
     const nyStaerd = () => { if (!V.ar) return; passa(); midja(); beita(); };
     window.addEventListener('resize', nyStaerd);
     const lykill = (e) => {
+      // vistunarformið (5j): stafir og tölur í reitunum mega ekki þysja eða fletta; Esc lokar aðeins forminu
+      const fm = e.target && e.target.closest ? e.target.closest('.gr-lsafn') : null;
+      if (fm) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fm.remove(); } return; }
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); loka(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); syna(nr + 1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); syna(nr - 1); }
@@ -2199,6 +2233,7 @@
       const t = e.target;
       if (t.closest('[data-gr-loka]')) { loka(); return; }
       const lor = t.closest('[data-gr-lor]'); if (lor) { syna(nr + +lor.getAttribute('data-gr-lor')); return; }
+      if (t.closest('[data-gr-lsafn]')) { const it = safn[nr]; safnForm(o, it, () => safnTakki(it)); return; }
       const lz = t.closest('[data-gr-lz]'); if (lz) { const v = +lz.getAttribute('data-gr-lz'); if (!v) { if (V.bw) { midja(); beita(); } } else iMidju(v > 0 ? 1.25 : 0.8); return; }
       if (t.closest('[data-gr-lfsk]')) { loka(); opnaForskodun(); return; }
       // smellur á auðan flöt utan myndarinnar lokar — ekki eftir drátt, og aldrei á myndina sjálfa
@@ -2212,6 +2247,125 @@
     o.__skodari = { V, zoom, beita, midja };   // prófin lesa stöðuna
     syna(Math.max(0, safn.indexOf(byrjun)));
   }
+
+  /* 5j · TEIKNINGASAFN FASTEIGNARINNAR ───────────────────────────────────────────────────────────────────────────
+   * Agnar 15.10.2026 (Asparfell 2-12): „geturðu heimilað að ég geti vistað í teikningasafn fasteignarinnar. og síðan
+   * líka heimilað að ég geti vistað á ákveðið svæði byggingar. asparfell 12 1 hæð td" — „bara svona auka safn ótengt
+   * til að byrja með". Uppflettiblöð lykluð á LANDNÚMER lóðarinnar, hvert með frjálsu svæðisheiti (tillögur: hús
+   * lóðarinnar × hæðir hennar). ÓTENGT Teikningu, 3D og TurboPaint — teikning_bord er aldrei snert.
+   * Tafla fasteign_teikningasafn (sql/fasteign_teikningasafn.sql): insert („Vista í safn" í stóru myndinni) og update
+   * („Fjarlægja" setur fjarlaegt_at) — aldrei delete; RLS leyfir enga eyðingu. Óviss lóð → ekkert vistað. */
+  const SAFN_TAFLA = 'fasteign_teikningasafn';
+  function safnLandnr(b) {
+    if (!b || !b.eign || b.oviss || b.eign.oviss) return null;   // ágiskuð lóð: ekkert vistað á rangt hús
+    return +b.eign.landnr > 0 ? +b.eign.landnr : null;
+  }
+  async function safnSaekja(landnr) {
+    if (!landnr || !sb()) return { landnr: landnr || null, listi: [] };
+    const r = await sb().from(SAFN_TAFLA).select('id,svaedi,slod,titill,undir,mynd,tegund,dags,athugasemd,created_at')
+      .eq('landnr', landnr).is('fjarlaegt_at', null).order('created_at', { ascending: true });
+    if (r.error) throw new Error(r.error.message);
+    return { landnr, listi: r.data || [] };
+  }
+  async function safnEndurhlada() {
+    const g = S.g; if (!g) return;
+    try { g.safn = await safnSaekja(safnLandnr(g.bygg)); g.parts.safn = { stada: 'komid', t: Date.now() }; }
+    catch (e) { g.parts.safn = { stada: 'villa', villa: (e && e.message) || String(e) }; }
+    if (S.g === g) teikna('safn');
+  }
+  const safnHaed = (k) => (k === '00' ? 'Kjallari' : /^\d\d$/.test(k) ? (+k) + '. hæð' : k);
+  // Tillögur að svæði: þau sem þegar eru í safninu, „Allt húsið", og hús × hæð („Asparfell 2-12" → 2, 4, … 12)
+  function svaediTillogur(g) {
+    const ut = [];
+    ((g && g.safn && g.safn.listi) || []).forEach((r) => { if (r.svaedi && !ut.includes(r.svaedi)) ut.push(r.svaedi); });
+    ut.push('Allt húsið');
+    const adr = String((g && g.adr) || '').split(',')[0].trim();
+    const m = /^(.*?)\s+(\d+)\s*[-–]\s*(\d+)\s*$/.exec(adr);
+    let hus = [];
+    if (m && +m[3] > +m[2] && +m[3] - +m[2] <= 40) { const skref = (+m[2] % 2) === (+m[3] % 2) ? 2 : 1; for (let n = +m[2]; n <= +m[3]; n += skref) hus.push(m[1] + ' ' + n); }
+    else if (adr) hus = [adr];
+    const ein = g && g.opin && g.opin.einingar;
+    const haedir = (ein && ein.haedir && ein.haedir.length ? ein.haedir : ['00', '01', '02', '03']).map(safnHaed);
+    hus.forEach((h) => { if (hus.length > 1) ut.push(h); haedir.forEach((hd) => ut.push(h + ' · ' + hd)); });
+    return [...new Set(ut)];
+  }
+  const safnInni = (slod) => ((S.g && S.g.safn && S.g.safn.listi) || []).filter((r) => r.slod === slod).map((r) => r.svaedi || 'Óflokkað');
+  // Vistunarform ofan á stóru myndinni (o = #gr-ljos). eftir() uppfærir takkann þar.
+  function safnForm(o, it, eftir) {
+    const g = S.g, ln = g && safnLandnr(g.bygg);
+    const fyrra = o.querySelector('.gr-lsafn'); if (fyrra) { fyrra.remove(); return; }
+    if (!ln || !it || !it.slod || !sb()) return;
+    const til = svaediTillogur(g), inni = safnInni(it.slod);
+    const f = document.createElement('form'); f.className = 'gr-lsafn'; f.setAttribute('aria-label', 'Vista í teikningasafn');
+    f.innerHTML = '<b>Vista í teikningasafn</b><span class="gr-lsafn-ut">' + esc(it.titill || 'Blað') + (it.undir ? ' · ' + esc(it.undir) : '') + ' · L' + ln + '</span>' +
+      (inni.length ? '<span class="gr-lsafn-ath">Þegar í safninu á: ' + esc(inni.join(', ')) + '</span>' : '') +
+      '<label>Svæði<input name="svaedi" list="gr-lsafn-til" autocomplete="off" placeholder="t.d. ' + esc(til[til.length > 2 ? 2 : 0] || 'Allt húsið') + '" value="' + esc(S.safnSidasta || '') + '"></label>' +
+      '<datalist id="gr-lsafn-til">' + til.map((t) => '<option value="' + esc(t) + '">').join('') + '</datalist>' +
+      '<label>Athugasemd<input name="ath" autocomplete="off" maxlength="300" placeholder="valkvætt — t.d. brunaslanga (BS) við snyrtingu"></label>' +
+      '<span class="gr-lsafn-takkar"><button type="submit" class="ssp-btn malm">Vista</button><button type="button" class="ssp-btn" data-gr-lsafn-haetta>Hætta</button></span>' +
+      '<span class="gr-lsafn-villa" role="alert" hidden></span>';
+    o.appendChild(f);
+    const inp = f.querySelector('[name="svaedi"]');
+    setTimeout(() => { try { inp.focus(); inp.select(); } catch (_) {} }, 0);
+    f.addEventListener('click', (e) => { if (e.target.closest('[data-gr-lsafn-haetta]')) f.remove(); });
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const svaedi = inp.value.trim().replace(/\s+/g, ' ').slice(0, 120);
+      const ath = f.querySelector('[name="ath"]').value.trim();
+      const vb = f.querySelector('[type="submit"]'), villa = f.querySelector('.gr-lsafn-villa');
+      vb.disabled = true; vb.textContent = 'Vista…'; villa.hidden = true;
+      const mynd = it.smamynd || null;   // smámynd skjalasafnsins; PDF-blöð teiknast aftur úr frumslóðinni
+      let r;
+      try {
+        r = await sb().from('fasteign_teikningasafn').insert({ landnr: ln, svaedi, slod: it.slod, titill: it.titill || null, undir: it.undir || null, mynd, tegund: it.tegund || null, dags: it.dags || null, athugasemd: ath || null, heimilisfang: g.adr || null, vistad_af: 'Greining fasteignar' }).select('id');
+      } catch (x) { r = { error: { message: (x && x.message) || String(x) } }; }
+      if (r.error) {
+        vb.disabled = false; vb.textContent = 'Vista';
+        villa.hidden = false;
+        villa.textContent = r.error.code === '23505' ? 'Blaðið er þegar í safninu á svæðinu „' + (svaedi || 'Óflokkað') + '“.' : 'Vistaðist ekki: ' + r.error.message;
+        return;
+      }
+      S.safnSidasta = svaedi;
+      f.remove();
+      segja('Vistað í teikningasafn' + (svaedi ? ' — ' + svaedi : ''));
+      await safnEndurhlada();
+      if (eftir) eftir();
+    });
+  }
+  TEIKNA.safn = (g) => {
+    const p = g.parts.safn || {};
+    if (!g.adr) { setjaStodu('safn', 'tomt', 'bíður'); setjaBuk('safn', '<div class="gr-tomt">Ekkert heimilisfang.</div>'); return; }
+    if (p.stada === 'saeki' || !p.stada) { setjaStodu('safn', 'saeki', 'sæki…'); return; }
+    if (p.stada === 'villa') {
+      setjaStodu('safn', 'villa', 'villa');
+      setjaBuk('safn', '<div class="gr-villa">Náði ekki í teikningasafnið: ' + esc(p.villa) + '</div><div class="gr-takkar"><button type="button" class="ssp-btn" data-gr-a="safn-aftur">Reyna aftur</button></div>');
+      return;
+    }
+    const sf = g.safn || {};
+    if (!sf.landnr) {
+      setjaStodu('safn', 'tomt', 'engin lóð');
+      setjaBuk('safn', '<div class="gr-tomt">Teikningasafnið er lyklað á landnúmer lóðarinnar — það fæst ekki fyrir óvíst staðfang. Veldu rétta lóð í hausnum.</div>');
+      return;
+    }
+    const L = sf.listi || [];
+    setjaStodu('safn', L.length ? 'komid' : 'tomt', L.length ? L.length + (L.length === 1 ? ' blað' : ' blöð') : 'tómt');
+    const hopar = new Map();
+    L.forEach((r) => { const k = r.svaedi || ''; if (!hopar.has(k)) hopar.set(k, []); hopar.get(k).push(r); });
+    setjaUndir('safn', (L.length ? hopar.size + ' svæði · ' : '') + 'L' + sf.landnr);
+    const uppruni = '<div class="gr-uppruni">Sér safn fyrir lóðina (L' + sf.landnr + ') — ótengt hæðunum í Teikningu, 3D og TurboPaint · „Vista í safn“ efst í stóru myndinni bætir blaði við</div>';
+    if (!L.length) {
+      setjaBuk('safn', '<div class="gr-tomt">Ekkert vistað enn. Opnaðu blað í Teikningum hér fyrir ofan og ýttu á „Vista í safn“ efst í stóru myndinni — veldu svæði, t.d. „' + esc(svaediTillogur(g)[2] || 'Allt húsið') + '“.</div>' + uppruni);
+      return;
+    }
+    safnByrja('safn');
+    const rod = [...hopar.keys()].sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b, 'is', { numeric: true })));
+    const flis = (r) => '<div class="gr-safn-flis">' +
+      fskFlis({ d: { infoUrl: r.slod, thumb: r.mynd || null, dags: r.dags || '', tegund: r.tegund || '' }, titill: '' }, r.titill || 'Blað', false, { undir: r.undir || '', hopur: 'safn' }) +
+      (r.athugasemd ? '<span class="gr-safn-ath">' + esc(r.athugasemd) + '</span>' : '') +
+      '<button type="button" class="gr-safn-x" data-gr-a="safn-burt" data-id="' + +r.id + '" title="Fjarlægja úr safninu — blaðið sjálft er óbreytt í skjalasafninu">Fjarlægja</button></div>';
+    setjaBuk('safn', rod.map((k) => '<div class="ssp-skilti" style="margin-top:0">' + esc(k || 'Óflokkað') + ' — ' + hopar.get(k).length + '</div>' +
+      '<div class="gr-fsk-grind">' + hopar.get(k).map(flis).join('') + '</div>').join('') + uppruni);
+  };
 
   /* 5d · HÆÐIR VIÐSKIPTAVINAR ÚR TEIKNINGU (skurður, tæki, vinnumynd 445) */
   function haedHtml(co, h, i) {
@@ -3358,6 +3512,22 @@
     } else if (a === 'stofna') {
       e.preventDefault();
       if (window.GreiningFaera && g) GreiningFaera.stofna(g);
+    }
+    else if (a === 'safn-aftur') { e.preventDefault(); safnEndurhlada(); }
+    else if (a === 'safn-burt') {
+      e.preventDefault();
+      // tvö skref (enginn gluggi): fyrri smellur spyr, sá seinni fjarlægir — fjarlaegt_at, ekkert harðeytt
+      if (el.dataset.stadfesta !== '1') {
+        el.dataset.stadfesta = '1'; el.textContent = 'Fjarlægja? Smelltu aftur';
+        setTimeout(() => { if (el.isConnected && !el.disabled) { el.dataset.stadfesta = ''; el.textContent = 'Fjarlægja'; } }, 3500);
+        return;
+      }
+      el.disabled = true; el.textContent = 'Fjarlægi…';
+      const id = +el.getAttribute('data-id');
+      sb().from('fasteign_teikningasafn').update({ fjarlaegt_at: new Date().toISOString(), fjarlaegt_af: 'Greining fasteignar' }).eq('id', id).is('fjarlaegt_at', null).select('id').then((r) => {
+        if (r.error || !(r.data || []).length) { el.disabled = false; el.dataset.stadfesta = ''; el.textContent = 'Fjarlægðist ekki — reyna aftur'; return; }
+        segja('Fjarlægt úr teikningasafni'); safnEndurhlada();
+      }, () => { el.disabled = false; el.dataset.stadfesta = ''; el.textContent = 'Fjarlægðist ekki — reyna aftur'; });
     }
     else if (a === 'fsk') {
       e.preventDefault();

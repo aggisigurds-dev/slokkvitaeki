@@ -8,7 +8,8 @@
  * Þessi vörður sér til þess að hún standi — og að síðan sjálf fari ekki aðrar leiðir:
  *   1. sydarvordur.js er hlaðin í index.html Á UNDAN rest-samnyting.js og db.js (supabase-js grípur fetch við createClient)
  *   2. vörðurinn vefur fetch, XMLHttpRequest og sendBeacon og stöðvar allt sem ber 987654321 — og 451 notar SAMA auðkenni
- *   3. 451 skrifar AÐEINS: fasteign_greining (tegund 'eign') og automation_triggers (workflow 'bygging-ocr') — aldrei
+ *   3. 451 skrifar AÐEINS: fasteign_greining (tegund 'eign'), automation_triggers (workflow 'bygging-ocr') og
+ *      fasteign_teikningasafn (insert + update á fjarlaegt_at, 15.10.2026 — aldrei delete) — aldrei
  *      teikning_bord (Teikning á eina skrifleið: TeiknVistun 375), aldrei fyrirtaeki / uttaeki / stadur_*
  *   4. Kaupskrá HMS er hvergi notuð (Agnar hefur ekki farið yfir skilmálana) og engar OSM-kortaflísar
  *   5. töflur 451 bera data-_pm-status-done (00-legacy setur annars tækja-fellilista í hverja töflu með „Staða"-haus)
@@ -48,9 +49,14 @@ const g = les('js/patches/451-greining-fasteignar.js');
 krefst(/const SYND = \(window\.Sydarvordur && Sydarvordur\.ID\) \|\| -987654321;/.test(g), '451: SYND verður að vera auðkenni sýndarvarðarins (Sydarvordur.ID)');
 // skrif 451: aðeins þessi tvö
 const skrif = [...g.matchAll(/\.from\('([a-z_]+)'\)\s*\.(insert|upsert|update|delete)\(/g)].map((m) => m[1] + '.' + m[2]);
-const leyfd = new Set(['fasteign_greining.upsert', 'automation_triggers.insert']);
+// 15.10.2026 (Agnar: „vistað í teikningasafn fasteignarinnar … á ákveðið svæði byggingar"): fasteign_teikningasafn —
+// insert (Vista í safn í stóru myndinni) og update (Fjarlægja = fjarlaegt_at). Aldrei delete; ótengt teikning_bord.
+const leyfd = new Set(['fasteign_greining.upsert', 'automation_triggers.insert', 'fasteign_teikningasafn.insert', 'fasteign_teikningasafn.update']);
 const ologleg = skrif.filter((s) => !leyfd.has(s));
-krefst(!ologleg.length, '451: óleyfð skrif — ' + ologleg.join(', ') + ' (aðeins fasteign_greining.upsert og automation_triggers.insert)');
+krefst(!ologleg.length, '451: óleyfð skrif — ' + ologleg.join(', ') + ' (aðeins fasteign_greining.upsert, automation_triggers.insert og fasteign_teikningasafn.insert/update)');
+// skrif um breytu (from(SAFN_TAFLA)) færu framhjá talningunni hér að ofan — töfluheitið skal standa beint í skrifkallinu
+krefst(!/\.from\(SAFN_TAFLA\)\s*\.(insert|upsert|update|delete)\(/.test(g), '451: teikningasafnið skrifar um breytu — skrifaðu töfluheitið beint (vörðurinn telur aðeins bein heiti)');
+krefst(/\.from\('fasteign_teikningasafn'\)\.update\(\{ fjarlaegt_at:/.test(g), '451: „Fjarlægja" í teikningasafni verður að setja fjarlaegt_at — ekkert harðeytt');
 krefst(/upsert\(\{ lykill: lyk, tegund: 'eign'/.test(g), '451: skyndiminnisröðin verður að vera tegund \'eign\' (RLS leyfir vafranum ekki annað)');
 krefst(/insert\(\{ workflow: 'bygging-ocr', status: 'bida'/.test(g), '451: OCR-beiðnin verður að vera workflow \'bygging-ocr\' með status \'bida\'');
 krefst(!/teikning_bord'\)\s*\.(insert|upsert|update)/.test(g), '451: skrifar í teikning_bord — eina skrifleiðin er TeiknVistun (375)');
