@@ -362,6 +362,13 @@ curl -X POST \
   paid/note), `invoice_drafts`, `reikningspunktar.karfa`, `app_kv` (`ky_settings`).
   Úttekt á vafra-lyklum: `docs/UTTEKT-VAFRASTADA-20260905.txt` (brunaholf).
 
+  **REGLA 15.10.2026 (Agnar: „ég vill ekki sjá neinstaðar neina slíka stillingu að það virki bara í einhverju
+  ákveðnu tæki … regla bannað að það sé slíkt"):** undanþágan hér að ofan um „útlitsval eins vafra" er FALLIN ÚR
+  GILDI. Hvert val notandans — sía, röðun, samanbrot, þema, sýn (tafla/spjöld), hamur, kveikt/slökkt, dálkabreidd
+  sem hann dregur — fer á þjóninn (AppSettings) og er eins á öllum fimm vélunum; nýjasta valið ræður. Í localStorage
+  mega aðeins vera: skyndiminni sem þjónninn endurhleður, tímabundin staða (opinn flipi, bakk, ósend drög, „reynt
+  einu sinni"), og „hver er við vélina". Skrif á þjón aðeins við raunverulegan smell — aldrei í lykkju eða vakt.
+
 
 - **UI language**: Icelandic. Don't translate to English unless asked.
 - **Currency formatting**: `1.234 kr` (Icelandic uses period as thousands separator)
