@@ -64,11 +64,14 @@
   // ── reglur (ein heimild hver) ────────────────────────────────────────────────
   // Síðasta skoðun: OKKAR lokaða skoðun ræður; annars skoðun fyrri þjónustuaðila.
   function sidast(r) { return r.sidast_okkar || r.fyrri_skodun || null; }
-  // Næsta skoðun: 12 mánuðum eftir síðustu; hafi aldrei verið skoðað → skoðunarmánuður þessa árs.
+  // Næsta skoðun: SKOÐUNARMÁNUÐURINN ræður þegar hann er skráður (sami mánuður og Skoðun-dálkurinn sýnir);
+  // vanti hann → 12 mánuðum eftir síðustu skoðun. 15.10.2026 (Agnar: Center Hótel með Skoðun NÓV og „síðast
+  // 01/10/2025" bar „Þessi mánuður" í október) — áður réð síðasta dagsetning og staðan stangaðist á við dálkinn.
   function naest(r) {
+    if (r.skodunarmanudur) return new Date(r.ar_nu, r.skodunarmanudur - 1, 1);
     const s = sidast(r);
     if (s) { const d = new Date(s); return new Date(d.getFullYear() + 1, d.getMonth(), 1); }
-    return r.skodunarmanudur ? new Date(r.ar_nu, r.skodunarmanudur - 1, 1) : null;
+    return null;
   }
   // ── „Í vinnslu"-hakið (02.10.2026, Agnar: „það vantar líka hökin þarna sem setur stöðuna í vinnslu eins og er í
   //    fyrirtæki í ársskoðun") — sama merking og _ars-tu-toggle í 153: skoðað á staðnum, skýrsla/reikningur eftir.
