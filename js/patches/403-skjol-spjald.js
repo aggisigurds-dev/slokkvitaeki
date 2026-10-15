@@ -585,7 +585,7 @@
       r('.b403-btn-litill', 'all:unset;cursor:pointer;height:32px;padding:0 10px 0 8px;border-radius:7px;border:1px solid rgba(20,24,34,.14);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);color:#1f2530;font-family:' + SANS + ';font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box'),
       r('.b403-btn-malmur', 'all:unset;cursor:pointer;height:34px;padding:0 12px;border-radius:9px;border:1px solid #000;background:' + METAL_BTN + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4;font-family:' + SANS + ';font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px;box-sizing:border-box;margin-left:8px'),
       // samningar
-      r('.b403-samn-rod', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px'),
+      r('.b403-samn-rod', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px 24px;padding:0 10px'),
       r('.b403-samn', 'display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;min-height:48px;font-size:13px;font-weight:600;color:#1f2530;background:#fff;border-radius:12px;border:1px solid #000;box-shadow:0 12px 30px -16px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.9)'),
       r('.b403-samn > svg', 'padding:7px;border-radius:7px;background:' + METAL_BTN + ';color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.35);flex:none'),
       r('.b403-samn-nafn .lys', 'font-weight:400;color:#5b6472;font-size:12px'),
@@ -622,7 +622,10 @@
       r('.b403-skjal-lina .dags', 'background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.14);padding:0 8px;height:28px;display:inline-flex;align-items:center;color:#141822!important'),
       r('.b403-tengill', 'margin-left:12px;font-family:' + SANS + ';font-size:12px!important;font-weight:500!important;color:#ff9d95!important;text-decoration:none;display:inline-flex;align-items:center;gap:5px'),
       // spjöld
-      r('.b403-rod3', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px'),
+      // 15.10.2026 (Agnar: „auka bilið milli slökkvitækjaþjónustu og brunakerfisþjónustu og draga það inn svo þetta renni
+      // ekki saman"): 24 px milli spjaldanna og 10 px inndráttur frá ársbandinu beggja vegna; minmax lækkað svo tvö spjöld
+      // rúmist enn hlið við hlið í sömu breidd.
+      r('.b403-rod3', 'display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px 24px;padding:0 10px'),
       r('.b403-spjald', 'display:flex;flex-direction:column;background:#eef1f6;background-image:' + INNER_IMG + ';border:1px solid #000;border-radius:12px;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12);position:relative;min-height:72px'),
       r('.b403-spjald.tomt', 'background:rgba(255,255,255,.35);border:1.5px dashed rgba(20,24,34,.24);box-shadow:inset 0 2px 5px rgba(0,0,0,.06)'),
       r('.b403-nafn', 'position:relative;display:flex;align-items:center;gap:8px;background:' + METAL + ';color:#fff;min-height:46px;padding:5px 12px 5px 20px;border-bottom:1px solid #000;border-radius:11px 11px 0 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)'),
