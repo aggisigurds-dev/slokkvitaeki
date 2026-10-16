@@ -36,6 +36,7 @@
     ['432s', function () { if (window.Seruppdrattir) Seruppdrattir.syna(); }],              // „Séruppdrættir · Sæki…"
     ['432f', function () { if (window.FasteignFacts) FasteignFacts.syna(); }],              // hús-línurnar
     ['411', function () { if (window.Thett411) Thett411.tick(); }],                         // Óskráð-línan, athugasemdin
+    ['473', function () { if (window.Aukanetfong) Aukanetfong.setja(); }],                  // +N-platan á Netfang-línunni (16.10.2026)
     ['370', function () { if (window.HreyfingaryfirlitTakki) HreyfingaryfirlitTakki.setja(); }],
     ['464', function () { if (window.BrunaaaetlunTakki) BrunaaaetlunTakki.setja(); }],      // Brunaáætlun (13.10.2026)
     ['286', function () { if (window.SamskiptiPanel && SamskiptiPanel.forbua) SamskiptiPanel.forbua(); }],
