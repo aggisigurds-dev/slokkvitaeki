@@ -322,3 +322,7 @@ hverfur ekki þaðan fyrr en einhver stendur á staðnum.
 
 **Alltaf:** afrit af fyrri stöðu áður en skrifað er, og lestu til baka úr
 grunni eftir á. „Vistað" án lesturs er ekki sannreynt.
+
+## Lærdómur
+
+- **16.10.2026** — Áminningar (arsskodun_customers.aminning) 27.08.2026: innflutningurinn skrifaði sömu athugasemd tvisvar aðskilda með `---` (35 athugasemdir, 17 nákvæm tvítök). cleanAminning() í js/patches/153-arsskodun.js:156 dedupe-ar við BIRTINGU (heldur lengri helming) og er birt svo 190 Verkstæði noti sömu hreinsun — gagnagrunnurinn geymir enn tvítekna textann. Ekki „laga“ gögnin án Agnars; birtingin er rétt.

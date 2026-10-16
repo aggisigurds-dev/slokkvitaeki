@@ -97,3 +97,7 @@ Og `QR.svg()` í `js/utils.js:107` er **FALSKUR QR** (hash+LCG random-fylling,
 4. Titill patch-08 gluggans segir enn „24 × 100 mm" en nav-takkinn „18×70mm" (:515).
 5. Ekkert `qr_*` dálkur í `uttaeki` — QR er ALDREI geymdur, alltaf endurgerður
    úr `serial`/`id`.
+
+## Lærdómur
+
+- **16.10.2026** — Per-tækis reglan 15.10.2026: localStorage._qr_mode (qr_only/qr_text) fluttist í Vidmot í qrprint.js. OPIÐ: nextSerialBlock-villan í qrbulkprint.js (leitar NEW-% en skrifar NEW0001 → hver lota byrjar á 0001, tvítekin raðnúmer) er ENN í kóðanum (skráin óbreytt síðan 01.07.2026) — sett sem samþykkismál á Þjónustuborðið 16.10. (js/qrprint.js, js/qrbulkprint.js)

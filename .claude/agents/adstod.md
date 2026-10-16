@@ -71,3 +71,6 @@ Wiring eins og 236/232: nýr view-div, klónaður hliðarstiku-hnappur frá Bake
 
 **Þegar Fasi 2 kemur**: AI-tips bætast við sem fyrsta section efst (þvert á reglu-byggðu sectionirnar). Reglu-byggðu sectionirnar verða áfram til staðar sem öryggisnet ef AI-keyrslan fellur.
 
+## Lærdómur
+
+- **16.10.2026** — Per-tækis reglan 15.10.2026: adstod_snoozed_v1 og adstod_watchlist_v1 lesast nú um Vidmot/AppSettings (sama val á öllum vélum), ekki localStorage — kaflarnir hér að ofan segja enn localStorage; Vidmot.flytja() flutti gömlu gildin einu sinni. Fasi 2 (AI-tips) enn óunninn, /api/adstod-run er ekki til. (js/patches/238-adstod-banner.js, js/patches/239-adstodarmidstod.js)
