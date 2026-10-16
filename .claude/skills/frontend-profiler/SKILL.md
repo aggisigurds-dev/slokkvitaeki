@@ -134,3 +134,8 @@ Mælt 12.10.2026 (Center Hótel 80 tæki, Brynja 92, Aðalskoðun 6): eftir 409/
 stílútreikning 2.500–3.200 staka (~100–250 ms), ~25 eldri pappar skanna DOM-ið í hverju tifi (60–300 ms hver),
 og opinn prófíll heldur ~18% CPU í kyrrstöðu (tímamælar). Ein samsett teikning (sjá haus 195) er lausnin þar.
 
+## Mælingagildrur úr Beiðnaskóginum 18.09.2026 (skráð 16.10)
+- `el.innerHTML !== html` er ALLTAF satt (vafri skilar stöðluðu markup: bil, rgb(), !important) → sjálfkveikjandi MutationObserver-lykkjur (307 ↔ 328, 204 hreyfingar/8 s) sem drápu 271-tvírukkunarvörnina; bera saman við eigin streng Á HNÚTNUM (`el.__html`) og para við hlustara-merki.
+- AÐ FÆRA hnút ER breyting: placeSection án skilyrðis endurræsti eigin 500 ms-debounce (7 pappar á #companies-main) → borðar 1,5 s of seint, pappi 265 birtist aldrei; lagað 311/199/361 (1.695→38 ms).
+- Mælitækið `Arekstrar.kyrrd()` telur DOM-hreyfingar á óhreyfðri síðu og nefnir staðinn — keyra fyrir og eftir.
+- companieslist.js decorate() á fremstu brún mældist 2,7× hægari og var bakkað — mæla, ekki álykta.

@@ -101,3 +101,8 @@ Afritaðu töfluna fyrst (`create table backup_… as select * from …`), keyr�
 3. **Búðarsala** (`vidskiptategund='bud'`, R-000531 JDÓ) getur verið úttektin sjálf.
 Auk þess: 139 `uttaeki`-raðir bera status „Í lagi" og teljast ekki með í Ársskoðun
 (`status='active'` er eina sían) — tækjatala úr `uttaeki` getur því verið of lág.
+
+## Úrskurðir Agnars sem gilda (uppgjör lota 16.10.2026)
+- 07.09.2026: „ef uttektarskyrsla eda invoice stemma ekki þá er annahvort ekki a rettum stad" — frávik = mislagt skjal á systkinastað/annarri kt, ekki mæliskekkja. 14 hópar „sami staður, margar kt" (Armar/Armar Vinnulyftur, Hagvagnar hf/þjónusta, Hringdu/SAFÍR, BJB, Glitur/Rafha, Skipholt 50d); pósthólf umsjónarfélags (Þangbakki) er FALSKUR hópur.
+- 08.09.2026 blár punktur (reikningur til, engin skýrsla): skrá tækjafjölda úr reikningnum (`tools/uttekt-graen-af-reikningi.cjs`) og merkja klarad — BÚA ALDREI TIL skýrslu („má ekki þykjast"); tækjatala er tala, ekki saga (generera EINU sinni).
+- Skoðunarsaga liggur á þremur lögum (customer_documents, arsskodun_report_facts, Ársskoðunar-blob) auk uttaeki; PDF-hausinn ræður, ekki skráarnafn (Charlize #850). uttaeki.status „Í lagi"/ok (171 raðir) teljast ekki í Ársskoðun (#849).

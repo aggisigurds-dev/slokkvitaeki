@@ -80,3 +80,9 @@ hinum vélunum. Sjá Charlize `references/agentar.md`.
 Engin opinber Cursor/MCP-viðbót gerir „4 tölvur + sími" fyrir þennan hub.
 Community-CLI (skillcp, mcpx) afrita local `~/.cursor` ↔ `~/.claude` — þær
 leysa ekki síma né vélar Agnars. Ekki setja þær upp nema hann biðji.
+
+## Falskar bilanir í vafraprófum (uppgjör lota 16.10.2026)
+- Sjálfvirkni-vafrinn HAFNAR `confirm()`-gluggum sjálfkrafa → takki með confirm lítur dauður út („🗑 Hreinsa" 18.09); fjórar „bilanir" á Leiðsögn voru allar mæliaðferð (sía enn virk, rangur class, tveir eins takkar, confirm).
+- `grep -r` segir „Binary file matches" og felur línur ef skrá hefur NUL-bæti (265-utfyllt-skjol.js) — Node-verðir lesa hana.
+- Trigger sem ÁLYKTAR (set_vidskiptategund BEFORE UPDATE) má ekki yfirskrifa handvirka ÁKVÖRÐUN — skýr breyting á reitnum gildir (20.09).
+- Sjá líka Charlize #893 og skill frontend-profiler.

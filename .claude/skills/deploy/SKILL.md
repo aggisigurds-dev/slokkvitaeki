@@ -69,3 +69,10 @@ node build-dist.js
 npx netlify-cli@latest deploy --prod --dir=dist --functions=netlify/functions \
   --site=d22039b2-75f2-4206-b543-7c6176f2d181
 ```
+
+## Vöktun eftir birtingu — gildrur (uppgjör lota 16.10.2026)
+- Leita að **ASCII-streng** í live-búntinu, ekki íslenskum staf — búntið umritar stafina og vöktunin sagði „ekki lifandi" þótt það væri lifandi (12.10).
+- `<script>`-tag sést ekki í index.html því build-dist bundlar patch-skrár → staðfesta með /build.json-stimpli eða lifandi bundle-grep, ekki Actions-lista (22.08, 25.09).
+- Netlify 503 „Service Temporarily Unavailable" fellir birtingu (#1503, 21.09) → endurtaka með tómu `[deploy]`-commiti.
+- Mynd af „lifandi" síðu getur sýnt gamla útgáfu — sannreyna build-stimpil áður en sagt er „lifandi".
+- Sjálfvirka samstillingin (wip `[skip ci]` á 15 mín) getur gleypt varðaða/stöðvaða WIP-breytingu og ÖNNUR lota birt hana með sínu `[deploy]` (05.10, lifandi ~3 mín) — tvær lotur í sama tré semja um hvor birtir.
