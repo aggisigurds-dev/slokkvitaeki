@@ -226,11 +226,11 @@ einu INSERT í `solur` — gikkirnir sjá um restina:
 - `solur_set_num` gefur næsta R-númer (senda `num` ekki með).
 - `trg_vidskiptategund` → `uttekt`; `trg_solur_fill_base_id` fyllir `customer_base_id`.
 - Línur: `[{"qty":n,"desc":"<heiti úr SARA.linur>","vsk_pct":24,"unit_price_ex_vat":v}]`
-  + `Akstur` × `sara.akstur` (3.600) + `Skýrslugerð` (5.600). 0-kr hleðslulínur sleppast.
+  + `Akstur` × `sara.akstur` (3.600) + `Skýrslugerð` (5.600). **0 kr í SARA-línu þýðir ÓVERÐLAGT, ekki ókeypis** — línan fer með (verð úr verðskrá/tilboði) eða málið stoppar; sleppt 0-kr lína kostaði Duft 6 kg hleðslu (6.782 kr án vsk) á Tjarnarból 2 12.10.2026.
 - `upphaed_an_vsk` = Σ qty×v · `vsk_upphaed` = round(×0,24) · `samtals` = summa.
 - `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null
   → birtist ÓSENT í Kröfuyfirliti; Agnar sendir.
-- Innri texti (hvaða blað, hvað er óvíst) í `athugasemdir`. ALDREI `krafa_note` — það prentast.
+- Innri texti (hvaða blað, hvað er óvíst) í **`krafa_note`** (innri reiturinn, sést í Kröfuyfirliti 🗒/368/369). **ALDREI í `athugasemdir` — það prentast á reikninginn sem „vegna"-texti** (hér stóð öfugt til 16.10.2026; sex drög 09.10 fengu texta á prentaða reitinn, sjá minni feedback_innri_texti_krafa_note).
 - Á eftir: `sara_yfirferd.stada='klarad'`, `samthykkt_at`, athugasemd með R-númerinu.
 - Tæki sem blaðið nefnir með raðnúmeri: leita FYRST að FC-/TMP-röðum sem eru þegar til á
   staðnum og setja raðnúmerið á þær (Veghús 1: FC139-lettvatn-1/2 → 326/2566) — ekki stofna
