@@ -53,6 +53,10 @@
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
       if (ly === curYear) return;                 // búið í ár → ekki í vinnslu
       if (!(fy === curYear || hasDraft)) return;  // hvorki byrjað né drög
+      // 16.10.2026 (Agnar: „Örkin veitingar á ekki að vera þarna"): „Afmerkja" í Þjónustuverkstæðinu setur sv_force_unstarted og
+      // borðið (190 buckets) sleppir þá fyrirtækinu þótt vistuð drög séu til. Þessi regla SPEGLAR 190 en gleymdi þessu — listinn á
+      // Fjármála-yfirlitinu taldi 270.710 kr sem borðið sýndi ekki.
+      if (a.sv_force_unstarted) return;
       rows.push({ label: co.nafn || ('#' + co.id), kr: Math.round(+arsInfo(co.id).estimated_yearly || 0) });
     });
     rows.sort((x, y) => y.kr - x.kr);

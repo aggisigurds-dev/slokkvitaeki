@@ -791,6 +791,13 @@
       try { if (window.logProblem) window.logProblem('thjonustu_setflag_failed', 'co:' + coId); } catch (_) {}
     }
     if (!(opts && opts.silent)) render();   // note edits save silently (keep focus)
+    // 16.10.2026: „Skýrslur í vinnslu" á Fjármála-yfirlitinu uppfærðist aldrei — ekkert kallaði á FjarmalLive.publish eftir að
+    // sjálfvirka birtingin var tekin burt (01.10). Nú birtist talan aftur þegar notandinn breytir stöðu (smellur, ekki vakt),
+    // dregin saman í eitt kall þó margir smellir komi í röð.
+    if (ok && !(opts && opts.silent) && window.FjarmalLive && FjarmalLive.publish) {
+      clearTimeout(window.__fjLiveT);
+      window.__fjLiveT = setTimeout(() => { try { FjarmalLive.publish(true); } catch (_) {} }, 2500);
+    }
     return ok;
   }
   // NB: AppSettings.save() DEEP-MERGES — deleting a key does NOT propagate to
@@ -1032,6 +1039,9 @@
     ensureView(); injectStyles();
     const v = viewEl(); if (!v) return;
     if (!_reik2026Loaded) { _reik2026Loaded = true; loadReik2026(); }   // once → re-renders with reikningur-badges
+    // 16.10.2026: fyrsta opnun borðsins í þessari lotu birtir „Skýrslur í vinnslu" á Fjármála-yfirlitinu ef talan á þjóninum er eldri
+    // en 25 mín (publish() sér um þröskuldinn). Ársskoðunar-mengið er þegar komið hér, svo útreikningurinn kostar ekkert aukalega.
+    if (!window.__fjLiveOpnad && window.FjarmalLive && FjarmalLive.publish) { window.__fjLiveOpnad = true; setTimeout(() => { try { FjarmalLive.publish(); } catch (_) {} }, 6000); }
     // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
     const b = buckets();
