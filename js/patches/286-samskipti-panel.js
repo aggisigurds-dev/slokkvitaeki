@@ -964,7 +964,14 @@
     hledsla(host);
     tengja(host, fid).catch(e => console.warn("[samskipti-panel] forbúa", e));
   }
-  window.SamskiptiPanel = Object.assign(window.SamskiptiPanel || {}, { forbua });
+  // 16.10.2026 (473 viðbótarnetföng): netfang bætt við eða tekið af félaginu → v_kunni_postur breytist
+  // strax, en kortið héldi gömlu sögunni í 60 s (cache). Sækja ferskt á opna kortið.
+  function endurnyja(fid) {
+    delete cache[fid]; delete _isokn[fid];
+    const host = document.querySelector('._samskipti-host[data-fid="' + fid + '"]');
+    if (host && document.contains(host)) uppfaera(host, fid, null).catch(e => console.warn("[samskipti-panel] endurnýja", e));
+  }
+  window.SamskiptiPanel = Object.assign(window.SamskiptiPanel || {}, { forbua, endurnyja });
 
   // ── Rekstrarfélags-síðan (#view-rekstrarfelog, patch 175) ─────────────────
   // Sama spjald þar: netföng lesin úr „Upplýsingar um rekstrarfélag"-kassanum,
