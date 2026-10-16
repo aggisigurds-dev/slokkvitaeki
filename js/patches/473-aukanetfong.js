@@ -319,7 +319,11 @@
       else if (t && t.annad) skyr.push('Netfangið eða lénið tilheyrir öðru félagi');
       else if (baseId == null) skyr.push('Félagið er ekki tengt kúnnagrunni (customers_base) — póstsagan les ekki netföng þess');
       else if (t === undefined) skyr.push('Tenging ekki staðfest — reyndu aftur');
-      else skyr.push('Sameiginlegt lén (umsjónaraðili, banki eða ókeypis póstþjónn) — tengist eftir götu eða á aðalnetfangi');
+      // 16.10.2026 (mælt á lifandi Heimaleigu): aðalnetfangið er skráð á tveimur félögum (Heimaleiga +
+      // Mannheimar) og fellur því úr viewinu — „sameiginlegt lén" eitt og sér var röng skýring þar.
+      else skyr.push(x.adal
+        ? 'Netfangið er líka skráð á öðru félagi (t.d. systurfélagi), svo pósturinn er ekki eignaður neinu þeirra — viðbótarnetföngin tengjast samt'
+        : 'Netfangið eða lén þess er skráð á fleiri en eitt félag, eða er lén umsjónaraðila eða banka — pósturinn er ekki eignaður neinu þeirra');
     }
     var takkar = '';
     if (!x.adal && x.status === 'pending' && x.id) takkar += '<button type="button" class="_anf-btn" data-anf-samthykkja="' + x.id + '">Samþykkja</button>';
