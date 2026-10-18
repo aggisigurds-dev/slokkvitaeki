@@ -40,23 +40,63 @@ exports.handler = async () => {
     // félög án afhendingarleiðar. Frávik → póstur á Agnar. Villa í eftirlitinu
     // sjálfu fellir ALDREI greiðslusamstillinguna (try/catch, best-effort).
     let eftirlit = null;
+    let eftirlitTegund = 'gamli';
     try {
-      const er = await fetch(process.env.SUPABASE_URL + '/rest/v1/rpc/rukkun_eftirlit', {
-        method: 'POST',
-        headers: {
-          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: '{}',
-      });
+      const SB = process.env.SUPABASE_URL, SKEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const sbH = { apikey: SKEY, Authorization: 'Bearer ' + SKEY, 'Content-Type': 'application/json' };
+      // 18.10.2026 (Agnar: „Fæ þetta bara alltaf. Fullt gamallt bull. Veit ekki hvað er nýtt"): pósturinn berst nú saman við síðasta
+      // samanburð (app_kv.rukkun_eftirlit_sidast) og segir aðeins frá NÝJUM fráviksatriðum. rukkun_eftirlit_allt() skilar öllum atriðum
+      // (rukkun_eftirlit() aðeins 8 óröðuðum). Bregðist eitthvað hér er gamla leiðin (full póstur) notuð — aldrei þögn vegna villu.
+      let er = await fetch(SB + '/rest/v1/rpc/rukkun_eftirlit_allt', { method: 'POST', headers: sbH, body: '{}' });
+      let allt = er.ok;
+      if (!allt) er = await fetch(SB + '/rest/v1/rpc/rukkun_eftirlit', { method: 'POST', headers: sbH, body: '{}' });
       eftirlit = await er.json().catch(() => null);
+      const sendaPost = async (efni, html) => {
+        const dagsIso = new Date().toISOString().slice(0, 10);
+        try {
+          const pr = await fetch(base + '/api/email-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: 'onboarding@resend.dev', to: ['aggisigurds@gmail.com'], subject: efni, html }),
+          });
+          // 18.09.2026: fetch kastar EKKI á 4xx/5xx — staðan og svartextinn fara í loggið. Eftirlitið fellir aldrei greiðslusamstillinguna.
+          const psvar = await pr.text().catch(() => '');
+          if (!pr.ok) { console.error('[payday-sync-cron] eftirlit-póstur HAFNAÐ', pr.status, psvar.slice(0, 500)); return false; }
+          console.log('[payday-sync-cron] eftirlit-póstur sendur', pr.status, dagsIso);
+          return true;
+        } catch (e4) { console.error('[payday-sync-cron] eftirlit-póstur brást', e4); return false; }
+      };
+      if (eftirlit && allt) {
+        let prev = null, prevOk = false;
+        try {
+          const p0 = await fetch(SB + '/rest/v1/app_kv?key=eq.rukkun_eftirlit_sidast&select=value', { headers: sbH });
+          if (p0.ok) { const rows = await p0.json(); prev = (rows && rows[0] && rows[0].value) || null; prevOk = true; }
+        } catch (e6) { console.error('[payday-sync-cron] eftirlit: gat ekki lesið síðasta samanburð', e6); }
+        if (prevOk) {
+          const K = require('./_rukkun-eftirlit-diff.cjs');
+          const nu = new Date();
+          const cur = K.mynd(eftirlit);
+          const post = K.buaTilPost(prev, cur, nu, { vikulegt: nu.getUTCDay() === 1 && nu.getUTCHours() < 12 });
+          eftirlitTegund = post.tegund;
+          // Síðasti samanburður er aðeins uppfærður þegar pósturinn komst til skila (eða þarf engan) — annars birtast nýju
+          // atriðin aftur í næstu keyrslu í stað þess að tapast.
+          const skilad = post.senda ? await sendaPost(post.efni, post.html) : true;
+          if (skilad) {
+            try {
+              await fetch(SB + '/rest/v1/app_kv?on_conflict=key', {
+                method: 'POST',
+                headers: Object.assign({}, sbH, { Prefer: 'resolution=merge-duplicates,return=minimal' }),
+                body: JSON.stringify([{ key: 'rukkun_eftirlit_sidast', value: { t: nu.getTime(), lyklar: cur.lyklar, lysing: cur.lysing, tolur: cur.tolur }, updated_at: nu.toISOString() }]),
+              });
+            } catch (e7) { console.error('[payday-sync-cron] eftirlit: gat ekki vistað samanburð', e7); }
+          }
+          console.log('[payday-sync-cron] eftirlit', post.tegund, post.senda ? '(póstur)' : '(enginn póstur)');
+          eftirlit = null; // gamla leiðin hér að neðan á ekki að keyra
+        }
+      }
       if (eftirlit) {
+        // ── Gamla leiðin (fallbak): fullur póstur með öllum frávikum, eins og fyrir 18.10.2026 ─────────────────────────────
         const issues = [];
-        // 2026-08-14 (Agnar — „talan á aldrei að vera lægri en veruleikinn"):
-        // gátlistarnir bera nú { alls, daemi } — pósturinn segir HEILDARTÖLUNA
-        // og merkir „(sýni N)" þegar dæmin ná ekki yfir allt. Gamla hreina
-        // fylkja-formið er stutt áfram til öryggis.
         const lst = (k) => {
           const v = eftirlit[k];
           if (v && Array.isArray(v.daemi)) return { alls: Number(v.alls) || v.daemi.length, daemi: v.daemi };
@@ -73,36 +113,16 @@ exports.handler = async () => {
         if (Number(eftirlit.rukkad_an_kt) > 0) issues.push('🟡 Rukkað án customer_base_id: ' + eftirlit.rukkad_an_kt + ' sölur');
         push(lst('rukkad_an_netfangs'), '🟡', 'Rukkað á félag án netfangs', x => x.num);
         if (Number(eftirlit.felog_an_afhendingar) > 0) issues.push('⚪ Félög í þjónustu án payday_delivery: ' + eftirlit.felog_an_afhendingar);
-        // Verkstæðis-vöktunin (14.08): óútkljáð „greitt síðar" + sótt án final sölu.
         push(lst('greitt_sidar_gamalt'), '🟡', '„Greitt síðar" eldra en 14 daga (óútkljáð uppgjör)', x => x.num + ' ' + (x.customer_nafn || '') + ' (' + x.dagar + 'd)');
         push(lst('sott_ekki_final'), '🔴', 'Sótt verk með sölu sem er EKKI final', x => x.verk + ' → ' + x.sala + ' (' + x.status + ')');
         if (issues.length) {
-          console.warn('[payday-sync-cron] eftirlit frávik:', issues.length);
-          // 18.09.2026: efnislínan er NOTANDATEXTI — Agnar les hana í pósthólfinu —
-          // svo dagsetningin birtist DD/MM/YYYY (../brunaholf/docs/DAGSETNINGAR.md).
-          // ISO-gildið er aðeins uppsprettan; ekkert geymt gildi breytist.
+          console.warn('[payday-sync-cron] eftirlit frávik (gamla leiðin):', issues.length);
+          // 18.09.2026: efnislínan er NOTANDATEXTI — dagsetningin birtist DD/MM/YYYY (../brunaholf/docs/DAGSETNINGAR.md).
           const dagsIso = new Date().toISOString().slice(0, 10);
           const dagsBirt = dagsIso.slice(8, 10) + '/' + dagsIso.slice(5, 7) + '/' + dagsIso.slice(0, 4);
-          try {
-            const pr = await fetch(base + '/api/email-send', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                from: 'onboarding@resend.dev',
-                to: ['aggisigurds@gmail.com'],
-                subject: '⚠ Rukkunar-eftirlit: ' + issues.length + ' frávik (' + dagsBirt + ')',
-                html: '<h3>Rukkunar-eftirlit Slökkvitækja</h3><ul>' + issues.map(i => '<li>' + i + '</li>').join('') + '</ul>'
-                  + '<p style="color:#64748b;font-size:12px">Full sundurliðun: SELECT jsonb_pretty(rukkun_eftirlit()); — sjá docs/RUKKUNARKEDJAN.md í slokkvitaeki-repo.</p>',
-              }),
-            });
-            // 18.09.2026: fetch kastar EKKI á 4xx/5xx. Hafnaður póstur (t.d. 500 frá
-            // email-send) leit því út eins og sendur póstur og frávikin hefðu þagnað.
-            // Staðan og svartextinn fara nú í loggið. Eftirlitið má aldrei fella
-            // greiðslusamstillinguna, svo hér er ekki kastað áfram — aðeins sagt frá.
-            const psvar = await pr.text().catch(() => '');
-            if (!pr.ok) console.error('[payday-sync-cron] eftirlit-póstur HAFNAÐ', pr.status, psvar.slice(0, 500));
-            else console.log('[payday-sync-cron] eftirlit-póstur sendur', pr.status);
-          } catch (e4) { console.error('[payday-sync-cron] eftirlit-póstur brást', e4); }
+          await sendaPost('⚠ Rukkunar-eftirlit: ' + issues.length + ' frávik (' + dagsBirt + ')',
+            '<h3>Rukkunar-eftirlit Slökkvitækja</h3><ul>' + issues.map(i => '<li>' + i + '</li>').join('') + '</ul>'
+            + '<p style="color:#64748b;font-size:12px">Full sundurliðun: SELECT jsonb_pretty(rukkun_eftirlit()); — sjá docs/RUKKUNARKEDJAN.md í slokkvitaeki-repo.</p>');
         }
       }
     } catch (e3) { console.error('[payday-sync-cron] eftirlit error', e3); }
@@ -117,7 +137,7 @@ exports.handler = async () => {
         method: 'POST',
         headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
         body: JSON.stringify([{ job_name: 'payday-sync-cron', status: syncOk && mirrorOk ? 'success' : 'error', source: 'netlify:slokkvitaeki',
-          detail: (syncOk ? 'greidslur OK' : 'greidslur BRUGDUST: ' + String((data && data.error) || ('HTTP ' + r.status)).slice(0, 160)) + ' | ' + (mirrorOk ? 'spegill OK' : 'spegill BRAST: ' + String((mirror && mirror.error) || 'ekkert svar').slice(0, 120)),
+          detail: (syncOk ? 'greidslur OK' : 'greidslur BRUGDUST: ' + String((data && data.error) || ('HTTP ' + r.status)).slice(0, 160)) + ' | ' + (mirrorOk ? 'spegill OK' : 'spegill BRAST: ' + String((mirror && mirror.error) || 'ekkert svar').slice(0, 120)) + ' | eftirlit: ' + eftirlitTegund,
           started_at: new Date().toISOString(), finished_at: new Date().toISOString() }]),
       });
     } catch (e5) { console.error('[payday-sync-cron] automation_runs skraning brast', e5); }

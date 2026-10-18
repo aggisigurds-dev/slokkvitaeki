@@ -202,3 +202,13 @@ WHERE coalesce(er_i_thjonustu,false) AND payday_delivery IS NULL;
 - Byte-eins parið Ferðafélag R-000017/528 lítur út eins og tvö raunveruleg
   verk (2 mánuðir á milli) — samhljóða mati Agnars.
 - Nýfundið í eftirliti: Glymur ehf. þrefalt byte-eins par (R-000590/593/617).
+
+## Pósturinn „Rukkunar-eftirlit" sýnir aðeins það NÝJA (18.10.2026)
+
+Agnar: „Fæ þetta bara alltaf. Fullt gamallt bull. Veit ekki hvað er nýtt." `payday-sync-cron.cjs` (10:00 og 15:00 UTC) sendi ALLAR niðurstöður gátlistanna í hvert sinn. Nú:
+
+- `rukkun_eftirlit_allt()` (sql/2026-10-18_rukkun_eftirlit_allt.sql, aðeins service_role) skilar ÖLLUM atriðum; `rukkun_eftirlit()` skilar áfram 8 óröðuðum dæmum og er óbreytt.
+- Síðasti samanburður er geymdur í `app_kv.rukkun_eftirlit_sidast`. Pósturinn segir frá atriðum sem eru ný síðan þá (með númerum), leystum atriðum sem fjölda, og óbreyttum sem fjölda per gátlista.
+- Enginn póstur þegar ekkert nýtt hefur bæst við; vikuleg staða á mánudögum fyrir hádegi. Fyrsta keyrsla sendir einn „grunnlínu"-póst.
+- Samanburðurinn er aðeins vistaður þegar pósturinn komst til skila, svo ný atriði tapast aldrei. Bregðist nýja fallið eða app_kv er gamla leiðin (full póstur) notuð — aldrei þögn vegna villu. Niðurstaðan er skráð í `automation_runs.detail` (`eftirlit: nytt | ekkert | grunnlina | vikulegt | gamli`).
+- Prófað: `node tools/_test-rukkun-eftirlit-diff.cjs` (9) og `node tools/_test-payday-sync-cron-eftirlit.cjs` (6).
