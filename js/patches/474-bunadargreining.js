@@ -69,6 +69,9 @@
     '#' + ID + ' .bgr-km{position:relative;aspect-ratio:4/3;background:#f1f0ec}',
     '#' + ID + ' .bgr-km canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}',
     '#' + ID + ' .bgr-km .cfh-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11.5px system-ui,sans-serif;color:#8a857b}',
+    '#' + ID + ' .bgr-s b.bgr-fl{border-color:#a5d6a7;background:#f1f8f1}',
+    '#' + ID + ' .bgr-s b.bgr-bk{border-color:#ce93d8;background:#f8f1fa}',
+    '#cfh-stort .cfh-s-l h4.bgr-fh{padding-top:14px}',
     '#' + ID + ' .bgr-m{padding:10px 12px;color:#4a4740}',
     '#' + ID + ' .bgr-m.bgr-villa{color:#a3261a}'
   ].join('\n');
@@ -96,8 +99,20 @@
       return p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
     };
     var hus = (s.mhl || []).map(function (m) { return '<b>Mhl ' + esc(m.mhl) + ' <strong>' + m2(m.m2) + '</strong> m² · ' + esc(m.haedir || '') + '</b>'; }).join('');
-    return '<div class="bgr-s"><b><strong>' + sl + '</strong> handslökkvitæki</b><b><strong>' + bs + '</strong> slöngukefli</b>' +
+    // útgangar (ÚT) og brunaviðvörunarkerfi (Agnar 19.10.2026: „merkja inn neyðarútganga … brunakerfisteikningar/upplýsingar")
+    var fl = s.utgangar != null ? '<b class="bgr-fl"><strong>' + s.utgangar + '</strong> útidyr' + (s.flottaleidir ? ' · ' + s.flottaleidir + ' flóttaleiðir innanhúss' : '') + '</b>' : '';
+    var bk = [[s.reykskynjarar, 'reykskynjarar'], [s.hitaskynjarar, 'hitaskynjarar'], [s.handbodar, 'handboðar']].filter(function (x) { return x[0]; })
+      .map(function (x) { return '<b class="bgr-bk"><strong>' + x[0] + '</strong> ' + x[1] + '</b>'; }).join('');
+    return '<div class="bgr-s"><b><strong>' + sl + '</strong> handslökkvitæki</b><b><strong>' + bs + '</strong> slöngukefli</b>' + fl + bk +
       (utan ? '<b><strong>' + utan + '</strong> utan teikningar — staðsetja á staðnum</b>' : '') + hus + '</div>';
+  }
+
+  // flokkar staða: slökkvibúnaður (sjálfgefið), flotti (ÚT-merki), brunakerfi (skynjarar, handboðar, stjórnstöð)
+  var FLOKKAR = [['slokkvibunadur', 'Slökkvibúnaður'], ['flotti', 'Útgangar (ÚT)'], ['brunakerfi', 'Brunaviðvörunarkerfi']];
+  function flokkur(t) { return t.flokkur || 'slokkvibunadur'; }
+  function litur(t) {
+    var f = flokkur(t);
+    return f === 'flotti' ? '#2e7d32' : f === 'brunakerfi' ? (/hita/i.test(t.bunadur || '') ? '#e65100' : '#8e24aa') : /slang|kefli/i.test(t.bunadur || '') ? '#1f5fbf' : '#c93c1d';
   }
 
   function textiHtml(r) {
@@ -139,23 +154,27 @@
    * búnaðargreining sé svoldið sér, úr því sem stendur í gögnum/teikningum"). Blöðin sem greiningin las (r.teikningar:
    * {id, nafn, mynd, frum, skurdur}) með ÖLLUM stöðum hennar (tki[].blad + bx/by) — óháð því hvað er á Teikningu staðarins.
    * Teiknað með sama falli og hæðaspjöldin (456 TeiknForskodun.teikna). */
-  function blodin(r) {
+  // merkimidar: auðkenni brunakerfis (R1, HB3 …) teiknuð — aðeins í stóru sýninni (tugir skynjara kaffæra lítið spjald)
+  function blodin(r, merkimidar) {
     return (r.teikningar || []).filter(function (b) { return b && b.mynd; }).map(function (b) {
+      var tki = (r.tki || []).filter(function (t) { return t.blad === b.id && t.bx != null && isFinite(+t.bx); });
       return {
-        id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur,
-        tki: (r.tki || []).filter(function (t) { return t.blad === b.id && isFinite(+t.bx) && t.bx !== null; }),
-        markers: (r.tki || []).filter(function (t) { return t.blad === b.id && t.bx != null && isFinite(+t.bx); }).map(function (t) {
-          return { x: +t.bx, y: +t.by, audkenni: t.audkenni, tegund: t.bunadur,
-            litur: t.upplysingar ? '#8e24aa' : /slang|kefli/i.test(t.bunadur || '') ? '#1f5fbf' : '#c93c1d' };
+        id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur, tki: tki,
+        markers: tki.map(function (t) {
+          return { x: +t.bx, y: +t.by, audkenni: flokkur(t) === 'brunakerfi' && !merkimidar ? null : t.audkenni, tegund: t.bunadur, litur: litur(t) };
         })
       };
     });
+  }
+  function fjoldiTexti(tki) {
+    var n = {}; tki.forEach(function (t) { n[flokkur(t)] = (n[flokkur(t)] || 0) + 1; });
+    return [[n.slokkvibunadur, 'tæki'], [n.flotti, 'ÚT'], [n.brunakerfi, 'brunakerfi']].filter(function (x) { return x[0]; }).map(function (x) { return x[0] + ' ' + x[1]; }).join(' · ');
   }
   function blodHtml(r) {
     var bl = blodin(r);
     if (!bl.length) return '';
     return '<div class="bgr-bl"><h5>Teikning greiningarinnar — það sem gögnin segja</h5><div class="bgr-bl-g">' + bl.map(function (b, i) {
-      return '<div class="bgr-k" data-bl="' + i + '" title="Stækka"><div class="bgr-kh"><b>' + esc(b.nafn) + '</b><small>' + b.tki.length + ' staðir</small></div>' +
+      return '<div class="bgr-k" data-bl="' + i + '" title="Stækka"><div class="bgr-kh"><b>' + esc(b.nafn) + '</b><small>' + fjoldiTexti(b.tki) + '</small></div>' +
         '<div class="bgr-km"><div class="cfh-t">…</div></div></div>';
     }).join('') + '</div></div>';
   }
@@ -171,10 +190,14 @@
     });
   }
   function listiBlads(b) {
-    return '<ul class="cfh-l">' + b.tki.map(function (t) {
-      return '<li><strong' + (/slang|kefli/i.test(t.bunadur || '') ? ' class="cfh-bs"' : '') + (t.upplysingar ? ' style="background:#8e24aa"' : '') + '>' + esc(t.audkenni || '•') + '</strong><small>' +
-        esc(t.stadur || '') + ' <em>' + esc(t.tegund || t.bunadur || '') + (t.unitId ? ' · á Teikningu' : '') + '</em></small></li>';
-    }).join('') + '</ul>';
+    return FLOKKAR.map(function (f, i) {
+      var tki = b.tki.filter(function (t) { return flokkur(t) === f[0]; });
+      if (!tki.length) return '';
+      return (i ? '<h4 class="bgr-fh">' + esc(f[1]) + ' (' + tki.length + ')</h4>' : '') + '<ul class="cfh-l">' + tki.map(function (t) {
+        return '<li><strong style="background:' + litur(t) + '">' + esc(t.audkenni || '•') + '</strong><small>' +
+          (t.stadur ? esc(t.stadur) + ' <em>' + esc(t.tegund || t.bunadur || '') + (t.unitId ? ' · á Teikningu' : '') + '</em>' : esc(t.bunadur || t.tegund || '')) + '</small></li>';
+      }).join('') + '</ul>';
+    }).join('');
   }
   // stór sýn — sama umgjörð og stóra sýn hæðaspjaldanna (456 #cfh-stort; Esc lokar þar)
   function stortBlad(b) {
@@ -183,7 +206,7 @@
     o.id = 'cfh-stort';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
       '<span style="flex:1"></span><button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
-      '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div><div class="cfh-s-l"><h4>Búnaður skv. gögnum (' + b.tki.length + ')</h4>' + listiBlads(b) + '</div></div></div>';
+      '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div><div class="cfh-s-l"><h4>Skv. gögnum — ' + esc(fjoldiTexti(b.tki)) + '</h4>' + listiBlads(b) + '</div></div></div>';
     document.body.appendChild(o);
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     o.querySelector('.cfh-s-x').addEventListener('click', function () { o.remove(); });
@@ -210,7 +233,7 @@
     if (!w) { alert('Vafrinn lokaði glugganum — leyfðu sprettiglugga fyrir síðuna.'); return; }
     w.document.write('<!doctype html><meta charset="utf-8"><title>Búnaðargreining</title><p style="font:14px system-ui;padding:20px">Teikna hæðirnar…</p>');
     // blöð greiningarinnar sjálfrar ef til (sér teikning), annars hæðir Teikningar
-    var bl = blodin(r);
+    var bl = blodin(r, true);
     (bl.length ? Promise.resolve({ data: [{ haedir: bl }] }) : SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1)).then(function (q) {
       var hs = (q && q.data && q.data[0] && q.data[0].haedir) || [];
       var tf = window.TeiknForskodun;
@@ -221,9 +244,22 @@
       }));
     }).then(function (myndir) {
       var tki = (r.tki || []);
-      var rod = tki.map(function (t) {
-        return '<tr' + (t.upplysingar ? ' style="color:#888;font-style:italic"' : '') + '><td><b>' + esc(t.audkenni || '') + '</b></td><td>' + esc(t.bunadur || '') + '</td><td>' + esc(t.haed || '') + '</td><td>' + esc(t.stadur || '') + '</td><td>' + esc(t.tegund || '') + '</td><td style="text-align:center">' + (t.upplysingar ? '' : '☐') + '</td></tr>';
-      }).join('');
+      var linur = function (L) {
+        return L.map(function (t) {
+          return '<tr' + (t.upplysingar && flokkur(t) === 'slokkvibunadur' ? ' style="color:#888;font-style:italic"' : '') + '><td><b style="color:' + litur(t) + '">' + esc(t.audkenni || '') + '</b></td><td>' + esc(t.bunadur || '') + '</td><td>' + esc(t.haed || '') + '</td><td>' + esc(t.stadur || '') + '</td><td>' + esc(t.tegund || '') + '</td><td style="text-align:center">' + (t.upplysingar ? '' : '☐') + '</td></tr>';
+        }).join('');
+      };
+      var haus = '<table><thead><tr><th>Merki</th><th>Búnaður</th><th>Hæð</th><th>Staðsetning</th><th>Tegund</th><th>Uppsett</th></tr></thead><tbody>';
+      var rod = linur(tki.filter(function (t) { return flokkur(t) === 'slokkvibunadur'; }));
+      var ut = tki.filter(function (t) { return flokkur(t) === 'flotti'; });
+      var bk = tki.filter(function (t) { return flokkur(t) === 'brunakerfi'; });
+      var SKYNJ = /^(Reykskynjari|Hitaskynjari|Brunahandboði)$/;
+      // brunakerfið: stakir hlutir (stjórnstöð, útstöð …) í línum, skynjarar/handboðar talin eftir hæð — ekki 70 línur
+      var bkTal = {}; bk.filter(function (t) { return SKYNJ.test(t.bunadur || ''); }).forEach(function (t) { var k = t.haed + '|' + t.bunadur; bkTal[k] = (bkTal[k] || 0) + 1; });
+      var bkHtml = bk.length ? '<h2>Brunaviðvörunarkerfi</h2>' + (bk.some(function (t) { return !SKYNJ.test(t.bunadur || ''); }) ? haus + linur(bk.filter(function (t) { return !SKYNJ.test(t.bunadur || ''); })) + '</tbody></table>' : '') +
+        (Object.keys(bkTal).length ? '<table style="margin-top:6px"><thead><tr><th>Hæð</th><th>Búnaður</th><th>Fjöldi á teikningu</th></tr></thead><tbody>' + Object.keys(bkTal).sort().map(function (k) {
+          return '<tr><td>' + esc(k.split('|')[0]) + '</td><td>' + esc(k.split('|')[1]) + '</td><td>' + bkTal[k] + '</td></tr>';
+        }).join('') + '</tbody></table><small>' + esc((bk.find(function (t) { return SKYNJ.test(t.bunadur || ''); }) || {}).heimild || '') + '</small>' : '') : '';
       var html = '<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Búnaðargreining — ' + esc(r.heimilisfang || '') + '</title><style>' +
         '@page{size:A4;margin:14mm}body{font:10pt/1.4 system-ui,Segoe UI,Arial,sans-serif;color:#1a1a1a;margin:0}h1{font:700 18pt Georgia,serif;margin:0}' +
         '.y{color:#b71c1c;font:600 8.5pt system-ui;letter-spacing:.08em;text-transform:uppercase}.haus{border-bottom:2.5px solid #b71c1c;padding-bottom:6px;margin-bottom:10px}' +
@@ -232,8 +268,9 @@
         '.mynd{break-inside:avoid;margin:10px 0}.mynd img{width:100%;border:1px solid #ccc}small{color:#666}.dalkar{column-count:2;column-gap:7mm}' +
         '</style></head><body><div class="haus"><div class="y">Búnaðargreining · brunavarnir og staðsetning búnaðar</div><h1>' + esc(r.heimilisfang || '') + '</h1><small>' +
         esc(dags(r.created_at)) + ' · ' + esc(r.af || '') + ' · ' + (r.stada === 'yfirfarin' ? 'Yfirfarin' : 'Tillaga') + '</small></div>' +
-        samantektHtml(r).replace(/<\/?b>/g, ' ').replace(/class="bgr-s"/, 'style="margin:6px 0 10px"') +
-        '<table><thead><tr><th>Merki</th><th>Búnaður</th><th>Hæð</th><th>Staðsetning</th><th>Tegund</th><th>Uppsett</th></tr></thead><tbody>' + rod + '</tbody></table>' +
+        samantektHtml(r).replace(/<\/?b[^>]*>/g, ' ').replace(/class="bgr-s"/, 'style="margin:6px 0 10px"') +
+        haus + rod + '</tbody></table>' +
+        (ut.length ? '<h2>Útgangar (ÚT-merki)</h2>' + haus + linur(ut) + '</tbody></table>' : '') + bkHtml +
         ((r.athugasemdir || []).length ? '<h2>Athugasemdir</h2><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') +
         (myndir || []).filter(Boolean).map(function (m) { return '<div class="mynd"><h2>' + esc(m.nafn) + '</h2><img src="' + m.src + '"></div>'; }).join('') +
         (r.texti || []).map(function (t) {
@@ -395,7 +432,7 @@
     var rod = null;
     el.addEventListener('click', function (e) {
       var kort = e.target.closest && e.target.closest('.bgr-k[data-bl]');
-      if (kort && el.contains(kort) && rod) { var bl = blodin(rod)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
+      if (kort && el.contains(kort) && rod) { var bl = blodin(rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
       var b = e.target.closest && e.target.closest('[data-a]');
       if (!b || !el.contains(b)) return;
       var a = b.getAttribute('data-a');
