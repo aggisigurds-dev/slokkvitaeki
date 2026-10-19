@@ -16,7 +16,8 @@ const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
 krefst(html, /437-teikning-gluggi\.js\?v=20261002opna/, 'index.html: 437 vantar ?v=20261002opna');
-krefst(html, /384-teikninga-forskodun\.js\?v=20261002syn/, 'index.html: 384 vantar ?v=20261002syn');
+// 19.10.2026: 20261019tif (TIF-vélin — bein .tif kortasjár afkóðuð með UTIF og sýnd sem myndir) ber syn-pdf-hegðunina líka
+krefst(html, /384-teikninga-forskodun\.js\?v=(20261002syn|20261019tif)/, 'index.html: 384 vantar ?v=20261019tif (eða 20261002syn)');
 // 09.10.2026: 20261009faera (452 — vistaReit opið, Stærð/Byggingarár/Eignir, 🏛) ber festTakka-lagfæringuna líka
 // 09.10.2026: 20261009grein („Greining“ í Óskráð-línunni á undan „+ Fleiri upplýsingar“) — sama festTakka
 // 13.10.2026: 20261013kyn (bannerinn sóttur með DomKynslod.qs í kyrrstöðu) — hæða-takkarnir óbreyttir, sjá kröfurnar hér að neðan.
