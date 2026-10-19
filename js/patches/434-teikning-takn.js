@@ -8,17 +8,18 @@
 (() => {
   if (typeof window !== 'undefined' && window.TeiknTakn) return;
 
-  const GLYFF = ['extinguisher', 'hose', 'sign-extinguisher', 'sign-hose', 'exit', 'electric', 'hydrant', 'pin', 'alarm', 'detector', 'magnet'];
+  const GLYFF = ['extinguisher', 'hose', 'sign-extinguisher', 'sign-hose', 'exit', 'electric', 'hydrant', 'pin', 'alarm', 'detector', 'magnet', 'window'];
   const GLYFF_NOFN = {
     extinguisher: 'Slökkvitæki', hose: 'Slanga', 'sign-extinguisher': 'Skilti SLT',
     'sign-hose': 'Skilti slanga', exit: 'Útgangur', electric: 'Rafmagn',
-    hydrant: 'Hani', pin: 'Pinni', alarm: 'Hnappur', detector: 'Skynjari', magnet: 'Segull'
+    hydrant: 'Hani', pin: 'Pinni', alarm: 'Hnappur', detector: 'Skynjari', magnet: 'Segull', window: 'Björgunarop'
   };
   const SJALF = {
     lettvatn: 'extinguisher', duft: 'extinguisher', co2: 'extinguisher', slanga: 'hose',
     neydarutgangur: 'exit', ut: 'exit', hose: 'hose',
     rafmagn: 'electric', skilti_slt: 'sign-extinguisher', skilti_slanga: 'sign-hose',
-    reykskynjari: 'detector', hitaskynjari: 'detector', bjalla: 'alarm', segull: 'magnet'
+    reykskynjari: 'detector', hitaskynjari: 'detector', bjalla: 'alarm', segull: 'magnet',
+    bjorgunarop: 'window'
   };
   const LITIR = {
     // 05.10.2026 (Agnar: „fallegri útgáfu af slökkvitækjamerkingunum með sínum þemalit"): kúturinn er hvítur á rauðri
@@ -38,12 +39,14 @@
     bjalla: { bg: '#e11d2e', fg: '#fff' },
     segull: { bg: '#e11d2e', fg: '#fff' },
     hitaskynjari: { bg: '#e11d2e', fg: '#fff' },
+    bjorgunarop: { bg: '#15803d', fg: '#fff' },
     annad: { bg: '#e11d2e', fg: '#fff' }
   };
   const STIMPIL_LYKILL = {
     'neyðarútgangur': 'neydarutgangur', ut: 'ut', hose: 'hose',
     rafmagn: 'rafmagn', skilti_slt: 'skilti_slt', skilti_slanga: 'skilti_slanga',
-    reykskynjari: 'reykskynjari', hitaskynjari: 'hitaskynjari', bjalla: 'bjalla', segull: 'segull'
+    reykskynjari: 'reykskynjari', hitaskynjari: 'hitaskynjari', bjalla: 'bjalla', segull: 'segull',
+    bjorgunarop: 'bjorgunarop'
   };
 
   const SKIP_EI = /AREIM|REIM|REI.?M/;
@@ -157,6 +160,13 @@
     if (/duft|abc|pfc/.test(t)) return 'duft';
     if (/slang|slong/.test(t)) return 'slanga';
     if (/lettvatn|vatn|abf|frod/.test(t)) return 'lettvatn';
+    // 15.10.2026 (Agnar: „búnaður … síðan getur maður tengt það við tækin sjálf"): brunakerfisbúnaður er líka tæki
+    // (uttaeki geymir 92 reykskynjara) — fær sitt tákn í stað rauða kútsins, og „Nýtt"-merki af þeim tegundum
+    // (Búnaður-stikan 433, OCR-lesturinn í TurboPaint) tengjast skráðum tækjum. Sama regla í kjarni merkjasafn.ts.
+    if (/reyksk/.test(t)) return 'reykskynjari';
+    if (/hitask/.test(t)) return 'hitaskynjari';
+    if (/bjall|siren/.test(t)) return 'bjalla';
+    if (/segul/.test(t)) return 'segull';
     return 'annad';
   }
   function lykillFyrir(m, units) {
@@ -243,6 +253,13 @@
       case 'detector':
         ctx.beginPath(); ctx.arc(12, 12, 7, 0, 7); strok();
         ctx.beginPath(); ctx.arc(12, 12, 2.4, 0, 7); fyll();
+        break;
+      case 'window':
+        // Björgunarop (15.10.2026): gluggi með krosspósti og ör út um hann
+        box(4, 5, 11, 13, 0); ctx.strokeStyle = fg; ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(9.5, 5); ctx.lineTo(9.5, 18); ctx.moveTo(4, 11.5); ctx.lineTo(15, 11.5); strok();
+        ctx.beginPath(); ctx.moveTo(13, 15); ctx.lineTo(20, 15); strok();
+        ctx.beginPath(); ctx.moveTo(17, 12); ctx.lineTo(20, 15); ctx.lineTo(17, 18); strok();
         break;
       default: {
         // Slökkvitæki: kútur með ávölum öxlum, borði í lit tegundar, háls, handfang, þrýstimælir og slanga (CO₂: trekt).
