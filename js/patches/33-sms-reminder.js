@@ -60,11 +60,49 @@
   function getTemplate() { return get(K.TEMPLATE) || DEFAULT_TEMPLATE; }
   function getOverdueDays() { return parseInt(get(K.OVERDUE_DAYS, '2')) || 2; }
 
-  function buildMsg(job) {
-    return getTemplate()
-      .replace(/{nafn}/g, job.customer || '')
-      .replace(/{num}/g,  job.num || String(job.id))
+  // 19.10.2026 — TEGUNDIR SKILABOÐA. 'tilbuid' er sniðmátið sem var fyrir (stillingar.sms.snid); hinar
+  // eru nýjar. Breytingar Agnars geymast á þjóni (AppSettings 'stillingar.sms.tegundir', VARPA id → {heiti,
+  // texti, eytt}) og eru eins á öllum vélum. Sjálfgildin búa hér í kóðanum svo ný tegund týnist aldrei.
+  const SJALFGILDI = {
+    tilbuid: { heiti: 'Tæki tilbúið til afhendingar', texti: null },   // null = sniðmát stillingar.sms.snid
+    osott:   { heiti: 'Áminning: tæki enn ósótt',
+               texti: 'Góðan dag {nafn}! Slökkvitæki ehf hér. Tæki þitt (verk #{num}) bíður enn eftir þér. Vinsamlegast sæktu það sem fyrst. Sími: {phone}.' },
+    skodun:  { heiti: 'Skoðun á næsta leiti',
+               texti: 'Góðan dag {nafn}! Slökkvitæki ehf hér. Árleg skoðun slökkvitækja og brunabúnaðar er framundan hjá ykkur. Hafið samband til að bóka tíma. Sími: {phone}.' },
+    frjals:  { heiti: 'Frjáls texti', texti: '' }
+  };
+  function tegundirVarpa() {
+    try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.sms.tegundir'); return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; }
+    catch (_) { return {}; }
+  }
+  // Skilar röðuðum lista: [{id, heiti, texti, innbyggd}] — eyddar tegundir sleppt.
+  function getTegundir() {
+    const v = tegundirVarpa(), ut = [];
+    Object.keys(SJALFGILDI).forEach(id => {
+      const o = v[id] || {};
+      ut.push({
+        id, innbyggd: true,
+        heiti: (typeof o.heiti === 'string' && o.heiti.trim()) ? o.heiti : SJALFGILDI[id].heiti,
+        texti: id === 'tilbuid' ? getTemplate()
+          : (typeof o.texti === 'string' ? o.texti : SJALFGILDI[id].texti)
+      });
+    });
+    Object.keys(v).filter(id => !SJALFGILDI[id] && v[id] && !v[id].eytt && typeof v[id].texti === 'string')
+      .sort().forEach(id => ut.push({ id, innbyggd: false, heiti: v[id].heiti || id, texti: v[id].texti }));
+    return ut;
+  }
+  function tegundTexti(id) {
+    const t = getTegundir().find(x => x.id === id);
+    return t ? t.texti : getTemplate();
+  }
+  function fyllaSnid(snid, job) {
+    return String(snid || '')
+      .replace(/{nafn}/g, job.customer || job.nafn || '')
+      .replace(/{num}/g,  job.num || (job.id != null ? String(job.id) : ''))
       .replace(/{phone}/g, get(K.CO_PHONE));
+  }
+  function buildMsg(job, tegundId) {
+    return fyllaSnid(tegundId ? tegundTexti(tegundId) : getTemplate(), job);
   }
 
   function normalizePhone(raw) {
@@ -309,12 +347,65 @@
     return (data || []).filter(j => j.phone && j.phone.trim());
   }
 
+  // ── Sending gegnum þjóninn (Twilio) ────────────────────────────────────────
+  let _stadaCache = null, _stadaTs = 0;
+  async function stadaCached(ferskt) {
+    if (!ferskt && _stadaCache && Date.now() - _stadaTs < 60000) return _stadaCache;
+    _stadaCache = await twilioStada(); _stadaTs = Date.now();
+    return _stadaCache;
+  }
+  function toast(t) { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} }
+  async function jaNei(texti, ok) {
+    try {
+      return (window.Confirm && typeof window.Confirm.show === 'function')
+        ? await window.Confirm.show(texti, { okText: ok || 'Senda', cancelText: 'Hætta við' })
+        : window.confirm(texti);
+    } catch (_) { return false; }
+  }
+  // Ein sending: þjónninn skráir söguna (sms_saga) hvort sem hún tekst eða ekki. Sendir 'sms:sent' atburð.
+  async function sendaSms(o) {
+    const j = await sendTwilio(o.to, o.body, { tegund: o.tegund, nafn: o.nafn, jobId: o.jobId, uppruni: o.uppruni || 'stjornbord' });
+    try { document.dispatchEvent(new CustomEvent('sms:sent', { detail: o })); } catch (_) {}
+    return j;
+  }
+  // Frá Afgreiðslu-borðinu: tvítékk á sögu → staðfesting með texta → sending → rauður punktur.
+  const _verkIFlugi = {};
+  async function sendaVerk(jobId, tegundId, job) {
+    if (_verkIFlugi[jobId]) return;
+    _verkIFlugi[jobId] = true;
+    try {
+      const st = await stadaCached(true);
+      if (!st || !st.stillt) { toast('Twilio er ekki stillt á þjóni — notaðu SMS-hlekkinn'); return; }
+      let annar = null;
+      try {
+        const th = await saga.saekjaFerskt(4000);
+        if (th) annar = saga.annarVel(jobId, th);
+      } catch (_) {}
+      const sentAt = getSmsLog()[jobId];
+      const tegund = tegundId || (sentAt ? 'osott' : 'tilbuid');
+      const texti = buildMsg(job, tegund);
+      let spurn = 'Senda SMS á ' + (job.customer || '') + ' (' + normalizePhone(job.phone) + ')?\n\n' + texti;
+      if (annar || sentAt) spurn = 'Áminning var þegar send ' + dagsTimi(annar || sentAt) + '.\n\n' + spurn;
+      if (!(await jaNei(spurn, 'Senda'))) return;
+      try {
+        await sendaSms({ to: job.phone, body: texti, tegund, nafn: job.customer, jobId, uppruni: 'afgreidsla' });
+      } catch (e) { toast('SMS mistókst: ' + (e.message || e)); return; }
+      markSent(jobId);
+      toast('✓ SMS sent á ' + (job.customer || job.phone));
+      setTimeout(renderPanel, 400);
+    } finally { delete _verkIFlugi[jobId]; }
+  }
+  const _jobsCache = {};
+
   // ── Render the sidebar panel ───────────────────────────────────────────────
   async function renderPanel() {
     const sidebar = document.getElementById('counter-sidebar');
     if (!sidebar) return;
 
     const jobs = await loadReadyJobs();
+    const _st = await stadaCached(false);
+    const servStillt = !!(_st && _st.stillt);
+    jobs.forEach(j => { _jobsCache[j.id] = j; });
 
     // Update / remove nav badge
     let navBadge = document.getElementById('sms-nav-badge');
@@ -359,7 +450,10 @@
               ${isOverdue ? `<span class="sms-job-overdue"> · ${days} dagar</span>` : ''}
             </div>
           </div>
-          <a href="${href}" class="sms-open-btn" onclick="return window.__SmsReminder.onOpen(${j.id}, this, event)">📱 SMS</a>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${servStillt ? `<button type="button" class="sms-open-btn" onclick="window.__SmsReminder.senda(${j.id})">Senda</button>` : ''}
+            <a href="${href}" class="sms-open-btn"${servStillt ? ' style="background:#94a3b8"' : ''} onclick="return window.__SmsReminder.onOpen(${j.id}, this, event)">${servStillt ? 'Opna í síma' : '📱 SMS'}</a>
+          </div>
         </div>`;
     }).join('');
 
@@ -369,7 +463,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .82h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
           ${jobs.length} tæki tilbúin${overdueCount ? ` · <span style="color:#dc2626">${overdueCount} seinn</span>` : ''}
         </div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button type="button" class="sms-open-btn" style="background:#92400e;padding:3px 8px" onclick="event.stopPropagation();window.SmsStjorn&&window.SmsStjorn.opna()">Stjórnborð</button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
       </div>
       <div class="sms-panel-body">${rows}</div>`;
 
@@ -379,11 +476,12 @@
   }
 
   // ── Twilio send — gegnum /api/sms-send á þjóninum (auðkenni í Netlify env) ──
-  async function sendTwilio(to, body) {
+  async function sendTwilio(to, body, meta) {
+    meta = meta || {};
     const resp = await fetch('/api/sms-send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: normalizePhone(to), body: body })
+      body: JSON.stringify({ to: normalizePhone(to), body: body, tegund: meta.tegund, nafn: meta.nafn, jobId: meta.jobId, uppruni: meta.uppruni })
     });
     const j = await resp.json().catch(() => ({}));
     if (!resp.ok || j.error) {
@@ -508,6 +606,7 @@
 
   // Expose for inline onclick
   window.__SmsReminder = {
+    senda(jobId) { const j = _jobsCache[jobId]; if (j) return sendaVerk(jobId, null, j); },
     onOpen(jobId, el, ev) {
       const href = el && el.getAttribute && el.getAttribute('href');
       const nyleyft = _leyft[jobId] && (Date.now() - _leyft[jobId]) < 60000;
@@ -524,7 +623,12 @@
     }
   };
 
-  window.SmsReminder = { renderPanel, loadReadyJobs, sendTwilio, buildMsg };
+  window.SmsReminder = {
+    renderPanel, loadReadyJobs, sendTwilio, buildMsg,
+    // fyrir stjórnborðið (33a)
+    getTegundir, SJALFGILDI, fyllaSnid, sendaSms, sendaVerk, stadaCached, normalizePhone, jaNei, toast, esc, dagsTimi, getSB,
+    get coPhone() { return get(K.CO_PHONE); }
+  };
   console.log('[sms-reminder] installed');
 })();
 /* === END SMS REMINDER === */

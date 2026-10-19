@@ -14,8 +14,9 @@
  * Endapunktar:
  *   GET  /api/sms-send              → { stillt: bool, sid: bool, token: bool, from: bool }
  *                                     (aðeins HVORT breyturnar séu til — aldrei gildin)
- *   POST /api/sms-send              Body: { to, body }
- *                                   → Twilio-svarið (sid, status …) eða { error, message }
+ *   POST /api/sms-send              Body: { to, body, tegund?, nafn?, jobId?, uppruni? }
+ *                                   → { ok, sid, status, to } eða { error, message }
+ *                                   Hver tilraun (líka misheppnuð) er skráð í töfluna sms_saga.
  *
  * Gátt: sama default-open EDGE_SHARED_KEY-gáttin og email-send.js — þvinguð AÐEINS
  * þegar EDGE_SHARED_KEY er sett (290-api-key-header.js setur hausinn sjálfkrafa).
@@ -45,6 +46,22 @@ function normalizePhone(raw) {
     return '+354' + p;
   }
   return p;
+}
+
+// Saga: ein röð per tilraun í sms_saga. Skrifað með service-lykli þjónsins (taflan er aðeins lesanleg
+// úr appinu). Kastar ALDREI — sagan má ekki breyta niðurstöðu sendingarinnar.
+async function skraSogu(r) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return false;
+  try {
+    const x = await fetch(`${url}/rest/v1/sms_saga`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(r),
+      signal: AbortSignal.timeout(4000),
+    });
+    return x.ok;
+  } catch (_) { return false; }
 }
 
 export default async (req) => {
@@ -80,6 +97,12 @@ export default async (req) => {
   if (!texti) return svar({ error: 'Missing body', message: 'Tóm skilaboð' }, 400);
   if (texti.length > 1600) return svar({ error: 'Body too long', message: 'Skilaboð of löng (>1600 stafir)' }, 400);
 
+  const tegund = String((body && body.tegund) || '').slice(0, 40) || null;
+  const nafn = String((body && body.nafn) || '').slice(0, 120) || null;
+  const uppruni = String((body && body.uppruni) || '').slice(0, 40) || null;
+  const jobId = Number.isFinite(Number(body && body.jobId)) && body.jobId !== '' && body.jobId != null ? Number(body.jobId) : null;
+  const grunnur = { tegund, til: to, nafn, texti, job_id: jobId, uppruni };
+
   try {
     const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, {
       method: 'POST',
@@ -92,11 +115,15 @@ export default async (req) => {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {
-      return svar({ error: 'TWILIO_' + r.status, message: (j && j.message) || ('Twilio villa ' + r.status) }, r.status >= 500 ? 502 : r.status);
+      const msg = (j && j.message) || ('Twilio villa ' + r.status);
+      await skraSogu({ ...grunnur, status: 'failed', villa: String(msg).slice(0, 300) });
+      return svar({ error: 'TWILIO_' + r.status, message: msg }, r.status >= 500 ? 502 : r.status);
     }
+    const sagaOk = await skraSogu({ ...grunnur, status: 'sent', twilio_sid: j.sid || null });
     // Aldrei skila auðkennum til baka — aðeins það sem vafrinn þarf.
-    return svar({ ok: true, sid: j.sid || null, status: j.status || null, to: j.to || to });
+    return svar({ ok: true, sid: j.sid || null, status: j.status || null, to: j.to || to, saga: sagaOk });
   } catch (e) {
+    await skraSogu({ ...grunnur, status: 'failed', villa: String((e && e.message) || e).slice(0, 300) });
     return svar({ error: 'NETWORK', message: String((e && e.message) || e) }, 502);
   }
 };
