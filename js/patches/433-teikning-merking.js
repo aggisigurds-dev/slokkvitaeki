@@ -278,6 +278,8 @@
 
   function nafnMerkis(m) {
     if (!m) return 'Merki';
+    // auðkenni + staður (Álfhella 9, 19.10.2026: lesið af aðaluppdrætti) fremst, svo það sem merkið er
+    if (m.audkenni || m.stadur) return [m.audkenni, m.stadur].filter(Boolean).join(' — ') + ' · ' + nafnMerkis(Object.assign({}, m, { audkenni: null, stadur: null }));
     if (erNytt(m)) return 'Nýtt · ' + (m.tegund || 'tæki') + ' (í bið — bíður samþykkis eiganda)';
     if (erStimpil(m)) {
       const def = STIMPLAR.find(s => s.id === m.sign);
@@ -378,6 +380,9 @@
     if (m.rot) ny.rot = m.rot;
     if (m.staerd) ny.staerd = m.staerd;
     if (m.takn) ny.takn = m.takn;
+    // auðkenni (S1, BS1 …) og staður úr byggingarlýsingu fylgja tækinu — listinn við forskoðun prófílsins (456)
+    if (m.audkenni) ny.audkenni = m.audkenni;
+    if (m.stadur) ny.stadur = m.stadur;
     p.markers.push(ny);
     S.valinnMerki = ny;
     const F = FP(); if (F) F._selectedUnitId = unitId;

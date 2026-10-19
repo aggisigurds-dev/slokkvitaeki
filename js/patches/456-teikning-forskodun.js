@@ -68,7 +68,20 @@
     '#cfh-stort .cfh-f button{height:26px;padding:0 10px;border:1px solid #d6d3cc;border-radius:6px;background:#fff;font:600 12px system-ui,sans-serif;color:#4a4740;cursor:pointer}',
     '#cfh-stort .cfh-f button[aria-pressed="true"]{background:#2b2a27;border-color:#2b2a27;color:#fff}',
     '#cfh-stort .cfh-s-opna{height:32px;padding:0 14px;border-radius:8px;border:1px solid #2b2a27;background:#2b2a27;color:#fff;font:700 12.5px system-ui,sans-serif;cursor:pointer}',
-    '#cfh-stort .cfh-s-x{height:32px;width:34px;border-radius:8px;border:1px solid #d6d3cc;background:#fff;color:#2b2a27;font:600 14px system-ui,sans-serif;cursor:pointer}'
+    '#cfh-stort .cfh-s-x{height:32px;width:34px;border-radius:8px;border:1px solid #d6d3cc;background:#fff;color:#2b2a27;font:600 14px system-ui,sans-serif;cursor:pointer}',
+    // Búnaðarlistinn (Agnar 19.10.2026, Álfhella 9): auðkenni + staður merkjanna við hlið myndarinnar
+    '#' + ID + ' .cfh-l,#cfh-stort .cfh-l{list-style:none;margin:0;display:flex;flex-direction:column;color:#2b2a27}',
+    '#' + ID + ' .cfh-l{padding:7px 9px 9px;gap:3px;border-top:1px solid #efede8;font:500 11px/1.35 system-ui,sans-serif}',
+    '#cfh-stort .cfh-l{padding:10px 12px 14px;gap:6px;font:500 12.5px/1.4 system-ui,sans-serif}',
+    '#' + ID + ' .cfh-l li,#cfh-stort .cfh-l li{display:flex;gap:7px;align-items:baseline;min-width:0}',
+    '#' + ID + ' .cfh-l strong,#cfh-stort .cfh-l strong{flex:none;min-width:34px;padding:0 4px;border-radius:4px;background:#c93c1d;color:#fff;font:700 10px/17px system-ui,sans-serif;text-align:center}',
+    '#' + ID + ' .cfh-l strong.cfh-bs,#cfh-stort .cfh-l strong.cfh-bs{background:#1f5fbf}',
+    '#' + ID + ' .cfh-l small,#cfh-stort .cfh-l small{min-width:0;font:inherit;color:inherit}',
+    '#' + ID + ' .cfh-l em,#cfh-stort .cfh-l em{font-style:normal;color:#7a766d}',
+    '#cfh-stort .cfh-s-b{flex:1;display:flex;min-height:0}',
+    '#cfh-stort .cfh-s-l{width:320px;flex:none;overflow:auto;border-left:1px solid #e3e1dc;background:#fff}',
+    '#cfh-stort .cfh-s-l h4{margin:0;padding:12px 12px 2px;font:700 11px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7a766d}',
+    '@media (max-width:760px){#cfh-stort .cfh-s-b{flex-direction:column}#cfh-stort .cfh-s-l{width:auto;max-height:40%;border-left:0;border-top:1px solid #e3e1dc}}'
   ].join('\n');
   document.head.appendChild(st);
 
@@ -117,10 +130,30 @@
         if (mx <= 1 && my <= 1) { mx = mx * nb / f; my = my * nh / f; }   // eldri hlutfallsmerki
         var px = (mx - sk.x) * f * k, py = (my - sk.y) * f * k;
         if (px < -r || py < -r || px > c.width + r || py > c.height + r) return;
+        var litur = erSlanga(m) ? '#1f5fbf' : '#c93c1d';
         x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
-        x.fillStyle = '#c93c1d'; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
+        x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
+        // auðkennið (S1, BS1 …) við punktinn — sama og í listanum við hliðina
+        if (m.audkenni) {
+          x.font = '700 ' + Math.round(r * 2.4) + 'px system-ui,sans-serif'; x.textBaseline = 'middle';
+          x.lineWidth = Math.max(2, r * 0.7); x.strokeStyle = '#fff'; x.strokeText(String(m.audkenni), px + r * 1.5, py);
+          x.fillStyle = litur; x.fillText(String(m.audkenni), px + r * 1.5, py);
+        }
       });
     });
+  }
+
+  // Merki með auðkenni eða stað (lesið af aðaluppdrætti, t.d. Álfhella 9) birtast sem listi við myndina. Hæð án þeirra
+  // fær engan lista — óbreytt frá því sem var.
+  function erSlanga(m) { return /slang/i.test(String(m.tegund || '')) || /^n:slanga:/.test(String(m.unitId || '')); }
+  function listiHaedar(h) {
+    var lyst = (h.markers || []).filter(function (m) { return m && (m.audkenni || m.stadur); });
+    if (!lyst.length) return '';
+    return '<ul class="cfh-l">' + lyst.map(function (m) {
+      var teg = m.nytt ? (m.tegund || 'Nýtt') + ' · í bið' : m.kind === 'sign' ? 'Merki' : 'Skráð tæki';
+      return '<li><strong' + (erSlanga(m) ? ' class="cfh-bs"' : '') + '>' + esc(m.audkenni || '•') + '</strong><small>' + esc(m.stadur || '') +
+        ' <em>' + esc(teg) + '</em></small></li>';
+    }).join('') + '</ul>';
   }
 
   function opnaHaed(cid, i) {
@@ -191,7 +224,8 @@
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(h.nafn || 'Hæð') + '"><div class="cfh-s-h"><strong>' + esc(h.nafn || (i + 1) + '. hæð') + '</strong>' + (h.samsett ? '<small>Samsett forsýning</small>' : '<small>' + n + ' tæki</small>') +
       (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
       '<span style="flex:1"></span>' + (h.samsett ? '' : '<button type="button" class="cfh-s-opna">Opna í Teikningu</button>') + '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
-      '<div class="cfh-s-m"><div class="cfh-t">…</div></div></div>';
+      '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div>' +
+      (h.samsett || !listiHaedar(h) ? '' : '<div class="cfh-s-l"><h4>Búnaður á hæðinni</h4>' + listiHaedar(h) + '</div>') + '</div></div>';
     document.body.appendChild(o);
     var k = o.querySelector('.cfh-s-k');
     o.addEventListener('click', function (e) { if (e.target === o) lokaStort(); });
@@ -231,7 +265,8 @@
       k.className = 'cfh-k' + (j >= SYNILEG ? ' cfh-umfram' : '');
       k.innerHTML = '<div class="cfh-h"><span>' + esc(h.nafn || (x.i + 1) + '. hæð') + '<small>' + n + ' ' + (n === 1 ? 'tæki' : 'tæki') + '</small></span>' +
         (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
-        '</div><div class="cfh-m" title="Stækka ' + esc(h.nafn || 'hæðina') + '"><div class="cfh-t">…</div></div>';
+        '</div><div class="cfh-m" title="Stækka ' + esc(h.nafn || 'hæðina') + '"><div class="cfh-t">…</div></div>' +
+        (h.samsett ? '' : listiHaedar(h));
       k._cfh = { h: h, ham: h.samsett ? 'samsett' : vm ? '3d' : 'teikning' };
       k.querySelector('.cfh-m').addEventListener('click', function () { opnaStort(cid, x.i, h, k._cfh.ham); });
       k.querySelectorAll('.cfh-f button').forEach(function (b) {
