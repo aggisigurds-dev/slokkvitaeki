@@ -30,7 +30,7 @@ Athugið: gjaldkeri@ og bokari@ eru ekki á netfangalista félagsins (`reikninga
 
 ## 3. Opið núna (staðfest í gögnum, nema annað sé tekið fram)
 
-1. **Eindagi, 19.10:** Lydia biður um að færa eindagann „á þessum líka" — óafgreitt. Fjórir reikningar ógreiddir, 1.206.646 kr.: R-001107 Laugavegur 469.010 · R-001082 Arnarhvoll 285.209 · R-001084 Þingholt 271.719 · R-001085 Þingholt Apartments 180.708. Gjalddagar R-001084/085 færðir til 22.10 (16.10).
+1. **Eindagi, 19.10:** Lydia bað um að færa eindagann „á þessum líka" — **afgreitt**: Agnar svaraði 19.10 kl. 14:59 („færði dagsetninguna um viku") og Lydia þakkaði 15:24 (gagnagrunnur var á eftir þegar þetta var fyrst skrifað). Fjórir reikningar ógreiddir, 1.206.646 kr.: R-001107 Laugavegur 469.010 · R-001082 Arnarhvoll 285.209 · R-001084 Þingholt 271.719 · R-001085 Þingholt Apartments 180.708. Gjalddagar R-001084/085 færðir til 22.10 (16.10).
 2. **Reikningar sem vantaði í gáttina:** R-001082 og R-001107 voru *final* í sölukerfinu en án skjals, svo gáttin sýndi þá ekki. **Lagað** (sjá 5).
 3. **Reyklosun:** uppfærðar skýrslur fyrir „öll hótelin" — aðeins Arnarhvoll sent (13.05). Melissa bað 15.05 um fundarboð (Elías hafði boðið kynningarfund 11.05). Ég finn ekkert svar frá okkur eftir það. Verkið fór til undirverktaka (Reyklosun framsent á larus@jlraf.is 29.04 og 05.05, og á annan aðila 07.05 og 11.05).
 4. **Miðgarður, háfakerfi:** prófað 24.03; Steingrímur bað um skýrsluna 25.03. Ég finn ekki útsendan póst með henni.
