@@ -64,7 +64,7 @@ hönnuðar orðrétt, heimildaskrá (hvaða blöð gilda, hver eru eldri útgáf
 7. **Sannreyndu á lifandi síðu með skrif lokuð** (prófunaraðferðin í SKILL.md): hæðirnar opnast, merkin á réttum
    stað, listinn og spjaldið birtast, ekkert skrifað.
 
-Skriftur Álfhellu 9 (fyrirmynd): scratchpad `alfhella/` — `merkja.py` (hnit → 6000-rammi + merktar myndir),
+Skriftur (fyrirmyndir, allir staðirnir): `../scripts/bunadargreining/` (README þar). Álfhella 9 (`alfhella-9/`) — `merkja.py` (hnit → 6000-rammi + merktar myndir),
 `vista_bord.cjs`, `merkja_texta.cjs` (audkenni/stadur á merki, skilyrt), `bua_pdf.cjs` (HTML → PDF í Chromium),
 `vista_vidhengi.cjs` (PDF í Viðhengi um appið), `vista_greiningu.cjs` (röðin).
 
@@ -129,7 +129,7 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
   `audkenni`/`stadur` (skilyrt á `updated_at`); hin fá ekkert og eru nefnd í athugasemdum.
 - **Dulkóðað textalag:** 2025-blöðin nota letur sem hliðrar ASCII um +29 („6N~WXYRJXU" = „Skútuvogur"), íslenskir stafir á
   eigin sætum (0xe8 ð, 0x69 á, 0xa0 æ, 0x74 í, 0x79 ó, 0x7e ú, 0x7c ö, 0xec þ, 0xea ý, 0x70 é, 0xcb Í …). Afkóðunin er í
-  scratchpad `alfaborg/afkoda.py`; brunavarnatextinn og rauðu táknstafirnir lásust þannig nákvæmt.
+  `../scripts/bunadargreining/skutuvogur-4/afkoda.py`; brunavarnatextinn og rauðu táknstafirnir lásust þannig nákvæmt.
 
 ## Viðmiðunarstaðir
 
@@ -137,3 +137,4 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 |---|---|---|---|
 | Kvarnir ehf., Álfhella 9 | 1871 | id 1, 19.10.2026, handlesin | mhl 01 (2020-skönnun, [S]/[BS]) 7+2 tæki, mhl 02 (2026 vigur, slt) 4; CO2 utan teikningar; 2012-útgáfan eldri |
 | Álfaborg, Skútuvogur 4 | 661 | id 2, 19.10.2026, handlesin | sett 2025 (vigur, dulkóðað textalag): 15 slökkvitæki (12 „L" + 3 HST) + 5 BRSL; skráð 11 + 5; 3 af 7 merkjum á hönnunarstað; Teikning enn á 2022-blöðum |
+| Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
