@@ -25,7 +25,7 @@
 
 [functions]
   directory = "netlify/functions"
-  included_files = ["netlify/functions/_verkbord-sync.cjs"]
+  included_files = ["netlify/functions/_verkbord-sync.cjs", "netlify/functions/_sms-sjalfvirkt.cjs"]
 
 # --- ÖRYGGI: innri skrár ALDREI birtar --------------------------------------
 # dist/ inniheldur hvorki *.md, *.sql né _*-skrár (build-dist síar), en þessar
@@ -226,6 +226,11 @@
 # tríó rofnar. Einu sinni á sólarhring, 06:00 UTC — Agnar 01.09.2026:
 # „óþarfi að checka tugi skipta á dag“. Keyrslan tekur 2,4 s og skrifar ekkert
 # þegar ekkert hefur breyst.
+# Sjálfvirkar SMS-áminningar um tilbúin tæki kl. 10:00 (19.10.2026). Sendir aðeins ef kveikt er á því í
+# SMS-stjórnborðinu (sjálfgefið SLÖKKT) og Twilio er stillt; forskoðun: GET /api/sms-sjalfvirkt (sendir ekkert).
+[functions."sms-sjalfvirkt-cron"]
+  schedule = "0 10 * * *"
+
 [functions."trio-cron"]
   schedule = "0 6 * * *"
 

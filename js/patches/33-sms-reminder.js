@@ -277,7 +277,24 @@
   setTimeout(() => saga.flytjaUpp(0), 6000);
 
   // Sameining þjóns og localStorage (nýrri tími vinnur) — samstillt, úr render.
-  function getSmsLog() { return saga.lesa(); }
+  // 19.10.2026: sendingar gegnum þjóninn (Twilio, líka sjálfvirkar) eru í töflunni sms_saga — þær bætast við
+  // handvirku söguna svo punkturinn og tvítékkið sjái þær. Fyllt í renderPanel (sbr. _sagaSms).
+  let _sagaSms = {};
+  function getSmsLog() {
+    const ut = Object.assign({}, saga.lesa());
+    Object.keys(_sagaSms).forEach(k => { if (!ut[k] || Date.parse(_sagaSms[k]) > Date.parse(ut[k])) ut[k] = _sagaSms[k]; });
+    return ut;
+  }
+  async function saekjaSmsSogu(ids) {
+    _sagaSms = {};
+    try {
+      const SB = getSB();
+      if (!SB || !ids.length) return;
+      const r = await SB.from('sms_saga').select('job_id,created_at').eq('status', 'sent').in('job_id', ids);
+      if (r.error) return;
+      (r.data || []).forEach(x => { if (!_sagaSms[x.job_id] || Date.parse(x.created_at) > Date.parse(_sagaSms[x.job_id])) _sagaSms[x.job_id] = x.created_at; });
+    } catch (_) {}
+  }
   function markSent(jobId) {
     try { saga.skra([jobId]); } catch (e) { console.warn('[sms-reminder] markSent:', e); }
   }
@@ -406,6 +423,7 @@
     const _st = await stadaCached(false);
     const servStillt = !!(_st && _st.stillt);
     jobs.forEach(j => { _jobsCache[j.id] = j; });
+    await saekjaSmsSogu(jobs.map(j => j.id));
 
     // Update / remove nav badge
     let navBadge = document.getElementById('sms-nav-badge');
