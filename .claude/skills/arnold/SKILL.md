@@ -21,7 +21,11 @@ description: >-
   eldvarnaeftirlit, þjónustusamningur, löggilding, byggingarlýsing,
   brunahönnun, skráningartafla, sameign, stigagangur, fjölbýli, húsfélag,
   hvar á tækið að vera, teikning, aðaluppdráttur, skera að húsinu, festa
-  útlit, teikningagluggi.
+  útlit, teikningagluggi. Líka BÚNAÐARGREINING: lesa slökkvitæki/slöngur af
+  aðaluppdráttum (SLT, [S], BS, BRSL, HSL — skýringarnar ráða), gefa þeim
+  auðkenni og stað, og vista fast á staðnum (tafla bunadargreining, merki
+  Teikningar, PDF í Viðhengi). Kveikjuorð: búnaðargreining, greina búnað,
+  lesa teikninguna, staðsetja slökkvitækin, hvar eru tækin á teikningunni.
 ---
 
 # Arnold — staðsetning og kröfur brunavarnabúnaðar
@@ -41,6 +45,7 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 | `references/byggingargogn.md` | Skráningartafla (m², hæðir, eignir) og **byggingarlýsing (HVAR búnaður á að vera)** úr skjalasafni — hvernig á að finna, lesa og treysta; dæmi Fiskislóð 41 |
 | `references/fjolbyli.md` | Húsfélög: búnaður í sameign (stigagangar + kjallari), neyðarlýsing í fjölbýli, Sameign-greiningin í appinu |
 | `references/flokkar.md` / `flokkar.json` | **Kröfur eftir tegund fasteignar/rekstrar** (28 tegundir × 13 kerfi: skylt / skilyrt / ekki, eftirlit, þjónusta, óvissa). Sama efni í töflunni `flokkar_krofur` (Supabase). Flokkun staðanna: `v_stadur_flokkun` (tegund = handval ef til, annars sjálfvirkt); kerfaskrá stað × kerfi: `v_stadur_kerfi` (til staðar, þjónustuaðili, verð, samningur, tækifæri a–d). Sjálfvirk flokkun skrifar aldrei yfir handval; röð í `stadur_kerfi` sem manneskja breytir verður `uppruni='handvirkt'` |
+| `references/bunadargreining.md` | **Búnaðargreining** (19.10.2026): búnaður lesinn af aðaluppdráttum → auðkenni + staður → vistað fast (tafla `bunadargreining`, merki Teikningar, PDF í Viðhengi); táknatafla (sami bókstafur ≠ sama merking milli hönnuða); takkinn „Greina búnað" (474) og hvað TurboPaint les / les ekki |
 | `references/kaflar.json` | Kaflaskrá **Reglur-síðunnar** í appinu (`#reglur`, patch 449) — síðan birtir references-skrárnar beint; ný skrá verður kafli með einni línu þar |
 
 **Reglan um heimildir:** samþykkt **byggingarlýsing / brunahönnun hússins ræður** þar sem hún nefnir staði (hún er
@@ -224,6 +229,22 @@ Viðmiðunarbyggingar (04.10.2026):
 | E Fasteignafélag, Norðurhella 17 | 1626 | 1.–2. | Hafnarfjörður 2016, skönnun | skurður 1. hæð `{1075,600,2800,2150}` á 6000×4075 |
 | Álfaborg, Skútuvogur 4 | 661 | 1.–2. | Reykjavík 2022, skönnun 10 MB | 2. hæð er aðeins skrifstofuhlutinn (rest „opið niður") |
 | Center Hótel Miðgarður, Laugavegur 120 | 192 | Kj., 1.–5. | Reykjavík 2015/2017, TIF | sami rammi á 1.–5. hæð `{644,300,3796,3580}` |
+
+## Verkferli: Búnaðargreining — tækin af teikningunni, vistuð fast
+
+Agnar 19.10.2026: „alveg nýr feature — Búnaðargreining". Allt ferlið, táknataflan og hvað sjálfvirki takkinn gerir:
+**`references/bunadargreining.md`**. Kjarninn:
+1. Öll aðaluppdráttarblöð — **útgáfur** sama matshluta (nýjasta samþykkta gildir; staðfest með skráningartöflu) og
+   **matshlutar** (tvö hús á lóð) aðgreind.
+2. **Skýringarnar fyrst** — `[S]` er slökkvitæki hjá einum hönnuði en segulloki hjá öðrum.
+3. Hvert tæki: auðkenni (S1/BS1/SLT1), hæð, staður í orðum, tegund (úr texta hönnuðar, annars merkt tillaga);
+   textinn nefnir tæki sem teikningin sýnir ekki → án hnita, „staðsetja á staðnum".
+4. Vistað: merki Teikningar (`audkenni`, `stadur`), PDF í Viðhengi, `bunadargreining`-röð. Prófíllinn sýnir listann
+   við hverja hæð (456) og spjaldið „Búnaðargreining" (474).
+
+| Staður | company_id | Hæðir | Athugasemd |
+|---|---|---|---|
+| Kvarnir ehf., Álfhella 9 | 1871 | 1. hæð, 2. hæð (milliloft), Mhl. 02 | 2020-skönnun mhl 01 (2012 eldri útgáfa), 2026 vigur mhl 02; 13 merki + CO2 utan teikningar |
 
 ## Prófunaraðferð — sannreyna án þess að snerta gögn
 

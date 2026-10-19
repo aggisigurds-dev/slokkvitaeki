@@ -51,6 +51,13 @@
     '#' + ID + ' .bgr-tx p{margin:0 0 3px;white-space:pre-line}',
     '#' + ID + ' .bgr-tx p.bgr-lyk{background:#fff3e0;border-left:3px solid #e65100;padding:3px 7px}',
     '#' + ID + ' .bgr-tx small{color:#7a766d}',
+    '#' + ID + ' .bgr-ut{grid-column:1/-1}',
+    '#' + ID + ' .bgr-ut ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:3px 18px}',
+    '#' + ID + ' .bgr-ut li{display:flex;gap:7px;align-items:baseline;min-width:0;margin:0}',
+    '#' + ID + ' .bgr-ut strong{flex:none;min-width:34px;padding:0 4px;border-radius:4px;background:#fff;border:1.5px solid #c93c1d;color:#c93c1d;font:700 10px/15px system-ui,sans-serif;text-align:center}',
+    '#' + ID + ' .bgr-ut strong.bgr-bs{border-color:#1f5fbf;color:#1f5fbf}',
+    '#' + ID + ' .bgr-ut small{font:inherit;min-width:0}',
+    '#' + ID + ' .bgr-ut em{font-style:normal;color:#7a766d}',
     '#' + ID + ' .bgr-m{padding:10px 12px;color:#4a4740}',
     '#' + ID + ' .bgr-m.bgr-villa{color:#a3261a}'
   ].join('\n');
@@ -107,7 +114,20 @@
         return '<li' + (h.gildir === false ? ' class="bgr-urelt"' : '') + '>' + (h.slod ? '<a href="' + esc(h.slod) + '" target="_blank" rel="noopener">' + esc(h.titill) + '</a>' : esc(h.titill)) +
           (h.dags ? ' · ' + esc(dagsTexti(h.dags)) : '') + (h.athugasemd ? '<small>' + esc(h.athugasemd) + '</small>' : '') + '</li>';
       }).join('') + '</ul></div>' : '') +
+      utanHtml(r) +
       '<div class="bgr-tx" hidden>' + textiHtml(r) + '</div></div>';
+  }
+
+  // Búnaður greiningarinnar sem er EKKI á Teikningu (enginn unitId): hönnunarstaðir án tækis, eða tæki sem textinn nefnir
+  // en teikningin sýnir ekki. Það sem er á Teikningu sést í listanum við hverja hæð (456).
+  function utanHtml(r) {
+    var ut = (r.tki || []).filter(function (t) { return !t.unitId && !t.upplysingar; });
+    if (!ut.length) return '';
+    var allt = (r.tki || []).filter(function (t) { return !t.upplysingar; }).length;
+    return '<div class="bgr-ut"><h5>Ekki á Teikningu — ' + ut.length + ' af ' + allt + (ut.length === allt ? ' (enginn búnaður kominn á teikninguna)' : '') + '</h5><ol>' + ut.map(function (t) {
+      return '<li><strong' + (/slang|kefli/i.test(t.bunadur || '') ? ' class="bgr-bs"' : '') + '>' + esc(t.audkenni || '•') + '</strong><small>' +
+        esc(t.stadur || '') + ' <em>' + esc([t.haed, t.tegund].filter(Boolean).join(' · ')) + '</em></small></li>';
+    }).join('') + '</ol></div>';
   }
 
   /* ── PRENTA: sama efni og vistaða skýrslan — tafla, hæðirnar með auðkennum, textinn ──────────────────────────── */
