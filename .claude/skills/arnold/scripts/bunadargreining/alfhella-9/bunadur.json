@@ -1,0 +1,138 @@
+{
+ "frum01": {
+  "b": 6000,
+  "h": 4375
+ },
+ "frum02": {
+  "b": 6000,
+  "h": 4238
+ },
+ "tki": [
+  {
+   "id": "S1",
+   "tegund": "Slökkvitæki",
+   "haed": "1. hæð",
+   "stadur": "Kaffistofa (0103), við flóttahurð",
+   "x": 1152,
+   "y": 2731,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S2",
+   "tegund": "Slökkvitæki",
+   "haed": "1. hæð",
+   "stadur": "Við ræstingu (inntök), ofan við brunaslöngu BS1",
+   "x": 1129,
+   "y": 3327,
+   "blad": "mhl01"
+  },
+  {
+   "id": "BS1",
+   "tegund": "Brunaslanga",
+   "haed": "1. hæð",
+   "stadur": "Í ræstingu (inntök), við útgang",
+   "x": 1124,
+   "y": 3435,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S3",
+   "tegund": "Slökkvitæki",
+   "haed": "1. hæð",
+   "stadur": "Atvinnu-/iðnaðarhúsnæði (0101), við útgang, undir stjórnstöð BV",
+   "x": 984,
+   "y": 3458,
+   "blad": "mhl01"
+  },
+  {
+   "id": "BV",
+   "tegund": "Brunaviðvörunarkerfi",
+   "haed": "1. hæð",
+   "stadur": "Stjórnstöð brunaviðvörunarkerfis, í 0101 við útgang",
+   "x": 976,
+   "y": 3359,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S4",
+   "tegund": "Slökkvitæki",
+   "haed": "1. hæð",
+   "stadur": "Lager/geymsla (0102), gafl við útgang — ofan við dyr, við BS2",
+   "x": 3339,
+   "y": 2749,
+   "blad": "mhl01"
+  },
+  {
+   "id": "BS2",
+   "tegund": "Brunaslanga",
+   "haed": "1. hæð",
+   "stadur": "Lager/geymsla (0102), gafl ofan við útgang",
+   "x": 3342,
+   "y": 2785,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S5",
+   "tegund": "Slökkvitæki",
+   "haed": "1. hæð",
+   "stadur": "Lager/geymsla (0102), gafl — neðan við útgang",
+   "x": 3339,
+   "y": 3130,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S6",
+   "tegund": "Slökkvitæki",
+   "haed": "2. hæð",
+   "stadur": "Milliloft, við dyr geymslu 0105 á stigapalli",
+   "x": 1158,
+   "y": 771,
+   "blad": "mhl01"
+  },
+  {
+   "id": "S7",
+   "tegund": "Slökkvitæki",
+   "haed": "2. hæð",
+   "stadur": "Milliloft, við stiga og útgang (REI60-veggur við 0104)",
+   "x": 988,
+   "y": 930,
+   "blad": "mhl01"
+  },
+  {
+   "id": "SLT1",
+   "tegund": "Slökkvitæki",
+   "haed": "Mhl. 02",
+   "stadur": "Gafl við útgang milli smiðju og verkstæðis/geymslu",
+   "x": 1404,
+   "y": 1963,
+   "blad": "mhl02"
+  },
+  {
+   "id": "SLT2",
+   "tegund": "Slökkvitæki",
+   "haed": "Mhl. 02",
+   "stadur": "Gafl við útgang úr þvottarými",
+   "x": 1404,
+   "y": 2635,
+   "blad": "mhl02"
+  },
+  {
+   "id": "SLT3",
+   "tegund": "Slökkvitæki",
+   "haed": "Mhl. 02",
+   "stadur": "Verkstæði/geymsla, við útgang (hinum megin)",
+   "x": 420,
+   "y": 2502,
+   "blad": "mhl02"
+  },
+  {
+   "id": "SLT4",
+   "tegund": "Slökkvitæki",
+   "haed": "Mhl. 02",
+   "stadur": "Smiðja, horn við útgang",
+   "x": 476,
+   "y": 1201,
+   "blad": "mhl02"
+  }
+ ]
+}

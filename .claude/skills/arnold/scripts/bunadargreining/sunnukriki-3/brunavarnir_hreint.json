@@ -1,0 +1,52 @@
+[
+ {
+  "fyrirsogn": "Notkunarskilmálar vegna brunavarna",
+  "texti": "Um er að ræða líkamsræktaraðstöðu í notkunarflokki 2. Fólksfjöldi undir 50 manns. Brunaálag undir 800 MJ/m2.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Brunaviðvörun",
+  "texti": "Brunaviðvörun skal að lágmarki vera með sambyggðu bruna og innbrotakerfi (firmakerfi), staðsetning reykskynjara er sýnd á aðaluppdrætti.",
+  "lykill": true
+ },
+ {
+  "fyrirsogn": "Handslökkvibúnaður",
+  "texti": "Handslökkvitæki skulu vera skv. ÍST EN 3, 6 lítra léttvatnstæki (2 stk) staðsett skv. aðaluppdrætti.",
+  "lykill": true
+ },
+ {
+  "fyrirsogn": "Neyðarlýsing og leiðarmerkingar",
+  "texti": "Leiðarmerkingar og neyðarlýsing vera skv. leiðbeiningum HMS, ÍST EN 1838 og ÍST EN 50172. Neyðarlýsing í sal, búningsklefum og salerni hreyfihamlaðra 0,5 lúx. Neyðarlýsing á gangi og í afgreiðslu/anddyri 1 lúx. Utanhúss skal lágmark 10 lúx almenn lýsing (t.d. götulýsing) tryggð við útganga eða þá 5 lúx neyðarlýsing.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Rýming við eldsvoða",
+  "texti": "Flóttaleiðir eru sýndar á aðaluppdráttum og leiðamerkingar með ÚT merkingum. Frá notkunareiningunni eru tvær óháðar flóttaleiðir annarsvegar um aðalinngang og hinsvegar útistiga. Ekki er pláss fyrir öruggt biðsvæði á stigapalli útistiga og er það óbreytt frá eldri hönnun, fatlaðir þarfnast aðstoðar við rýmingu um þá flóttaleið. Rennihurð milli afgreiðslu og salar er handvirk. Opnunarbúnaður hurða skal vera lágmark húnn og snerill. Hámarksvegalengd flóttaleiðar reiknast 33 metrar (frá búningsklefa) sem er 3 metra yfir viðmiðunarmörkum reglugerðar, til mótvægis er samtengd sjálfvirk brunaviðvörun sem er umfram kröfur viðmiðunarreglna fyrir notkunareiningum með undir 50 manns.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Klæðningar",
+  "texti": "Flokkun klæðninga er skv. ÍST EN 13501-1. Klæðningar innanhúss eru K210 B-s1, d0 (flokkur 1). Afmarkaðir veggfletir mega vera í flokki 2.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Brunahólfun",
+  "texti": "Notkunareiningin myndar sérstakt brunahólf með ýmist EI90 eða EI60/EI230-CS200 skilum að aðliggjandi rýmum. Brunahólfun að útistiga er EW30.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Aðkoma og aðgerðir slökkviliðs",
+  "texti": "Viðbragðstími slökkviliðs er metinn undir 10 mínútum. Rýmið er ekki ráðandi fyrir slökkvivatnsþörf hússins og hún er því ekki reiknuð.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Burðarvirki við bruna",
+  "texti": "Breytingar hafa ekki áhrif á burðarvirki eða brunamótstöðukröfu þess sem er R60 en R90 í EI90 brunaskilum.",
+  "lykill": false
+ },
+ {
+  "fyrirsogn": "Viðhald brunavarna",
+  "texti": "Skylt er að gera þjónustusamning við viðurkenndan aðila um viðhald og eftirlit á brunaviðvörunarkerfi og handslökkvibúnaði. Jafnframt skal gera þjónustusamning um viðhald á neyðarlýsingu.",
+  "lykill": true
+ }
+]

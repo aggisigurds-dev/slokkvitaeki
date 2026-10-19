@@ -1,0 +1,36 @@
+Eftirfarandi greinargerð brunavarna er frá Brunahönnun slf (mál nr. 26-116) í júlí 2026 fyrir Álfhellu 9 (mhl2), Hafnarfirði. Til grundvallar lausnum brunavarna er byggingarreglugerð nr. 112/2012 og 350/2013 með síðari breytingum, grein 9.2.2. liður a.
+## Flokkun og notkun byggingar
+Matshluti 2 er í notkunarflokki 1 samkvæmt byggingarreglugerð. Um er að ræða málmsmiðju, viðgerðarverkstæði og þvottarými fyrir byggingarbúnað á lóð Álfhellu 9.
+## Brunaálag
+Brunaálag í matshluta 2 er metið undir 800 MJ/m². Ekki er gert ráð fyrir umfangsmikilli geymslu brennanlegra efna í matshlutanum.
+## Brunahólfun
+Meginbrunahólf: Matsluti 2 er eitt sér meginbrunahólf og eitt brunahólf, um 420 m2.
+## Burðarvirki
+Aðalburðarvirki hússins eru úr steinsteypu og hafa brunamótstöðu a.m.k. R60.
+Burðarvirki þaks (steinsteypt) hafa brunamótstöðu a.m.k. R60.
+## Klæðningar
+Klæðningar eru skv. ÍST EN 13501-1.
+Innanhúsklæðningar eru í flokki 1 (K10 B,s1-d0).
+Gólfefni er steypt gólfplata í flokki Afl-s1.
+Utanhúsklæðningar eru í flokki 1 (K10 B,s1-d0).
+Veðurkápa er í flokki A2,s1-d0.
+Frágangur þakplötu er með viðsnúnu þaki með rakavarinni pappalögn og einangruð með plasteinangrun sem er varin með dúk og þakmöl. Frágangur þarf að uppfyllir grein 9.6.10.
+## Flóttaleiðir
+Frá engum stað er lengra en 45 m í næsta útgang.
+Tvær óháðar flóttaleiðir eru frá smiðju, tvær frá verkstæði og tvær frá þvotti.
+Flóttahurðir skulu að lágmarki vera húnn og snerill.
+## Reykskynjarar
+Reykskynjarar eru í matshlutanum, a.m.k. einn fyrir hverja 80 m2.
+## Reyklosun
+Reyklosun er um vöruhurðar, glugga og hurðir.
+## Slökkvitæki
+!Handslökkvitæki eru sett upp skv. teikningum, t.d. 6 L léttvatn en 5 kg kolsýra við aðalrafmagnstöflu. Slökkvitæki skulu vera skv. ÍST EN 3-7. Staðsetning slökkvitækja skal merkt með til þess gerðum skiltum.
+## Leiðar- og neyðarlýsing
+Leiðar- og neyðarlýsing er í húsinu skv. byggingarreglugerð, ÍST EN 1838, ÍST EN 50172 og öðrum tengdum stöðlum.
+Neyðarlýsing skv. „opnum svæðum” (0,5 lux) er í smiðju, verkstæði og þvotti.
+Leiðarljós verða við alla útganga hússins.
+## Aðkoma slökkviliðs og slökkvivatn
+Aðkoma slökkviliðs er frá Álfhellu. Slökkvivatnsþörf hefur verið metin skv. leiðbeiningum HMS og er um 1100 L/mín. Brunahani er á lóðinni beint á móti, sveitarfélagið þarf að tryggja umrætt slökkvivatn sé í brunahana sem annar þessu slökkvivatni.
+## Eftirlit og viðhald brunavarnakerfa
+!Matshluti 2 skal felldur undir þjónustusamning um eftirlit og viðhald brunavarnabúnaðar sem er í gildi fyrir matshluta 1. Samningurinn skal m.a. ná til handslökkvitækja, reykskynjara og leiðar- og neyðarlýsingar.
+Sett skal upp eigið eftirlitskerfi brunavarna fyrir matshluta 2 að Álfhellu 9 (mhl2), Hafnarfirði. Sjá t.d. gátlista á eldvarnarbandalagid.is.

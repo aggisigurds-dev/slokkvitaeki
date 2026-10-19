@@ -1,0 +1,27 @@
+## Almennt um brunavarnir
+Um er að ræða atvinnuhúsnæði að hluta til á tveimur hæðum við Álfhellu 9. Í húsinu eru vörugeymslur með tilheyrandi skrifstofum og starfsmannaaðstöðu. Brunavarnir hússins verða í samræmi við ákvæði byggingarreglugerðar nr. 112/2012 með síðari breytingum. Húsið fellur allt undir notkunarflokk 1 samkvæmt gr. 9.1.3. í byggingarreglugerð. Starfsemin í húsinu er sala og leiga á byggingartengdum vörum eins og steypumótum, vinnupöllum og byggingarkrönum. Á milliloftum eru samskonar efni og vörur geymdar og á aðalgólfi hússins. Brunaálag í húsinu er áætlað undir 800MJ/m². Verði breyting á starfsemi í húsinu sem veldur auknu brunaálagi eða eldhættu skal sækja um leyfi fyrir slíku til byggingarfulltrúa.
+Brunavarnir eru ákvarðaðar í samræmi við staflið „b“ í gr. 9.2.2. í byggingarreglugerðinni það er að segja í samræmi við ákvæði reglugerðarinnar með tilgreindum frávikum frá viðmiðunarreglum sem sýnt er fram á að uppfylli meginmarkmið.
+## Brunaviðvörunarkerfi
+Í öllu húsinu er samtengt innbrota- og brunaviðvörunarkerfi tengt inn á viðurkennda vaktstöð. Kerfið er hannað og uppsett í samræmi við reglur og leiðbeiningar Mannvirkjastofnunar. Við stjórnstöð er yfirlitsmynd og þjónustubók. Kerfið er þjónustað af aðila viðurkenndum af Mannvirkjastofnun.
+## Slökkvitæki og slöngukefli
+!Í húsinu verða tvö slöngukefli sem ná um allt húsið. Slöngukeflin skulu vera í samræmi við gr. 9.4.5 í byggingarreglugerð og leiðbeiningar Mannvirkjastofnunar og ÍST EN 671-1. Reglulegt viðhald skal haft með slöngukeflunum. Sett verða handslökkvitæki við slöngukeflin og á öðrum völdum stöðum. Handslökkvitæki skulu vera í samræmi við gr. 9.4.4. í byggingarreglugerð og skv. leiðbeiningum 165.BR1 og ÍST EN 3. Staðsetning tækjanna er sýnd á teikningum.
+## Neyðarlýsing og ÚT-ljós
+Neyðarlýsing, sjálflýsandi merkingar og ÚT-ljós verða í húsinu í samræmi við byggingarreglugerð 112/2012, ÍST EN1838:2013, ÍST EN 50172:2004, leiðbeiningar Mannvirkjastofnunar og ISO 16069:2017. Staðsetning ÚT-ljósa er sýnd á grunnmyndum. Neyðarlýsing skal vera 1 lux í miðlínu flóttaleiða og 0,5 lux í opnum skrifstofurýmum og annarsstaðar þar sem þörf er.
+## Flóttaleiðir
+Frá öllum rýmum þar sem fólk dvelur verða tvær flóttaleiðir. Á 2. hæð þar sem eingöngu eru geymslur er aðalflóttaleiðin niður stiga og síðan beint út eða inn í afgreiðslu og þaðan út. Ekki er um algilda hönnun að ræða á 2. hæð og eru því björgunarop og fellistigar á 2. hæð sem önnur flóttaleið. Á 1. hæð eru þrjár óháðar flóttaleiðir beint út undir bert loft.
+Fjarlægð í næsta útgang/brunahólf, mælt samkvæmt aðferðum byggingarreglugerðar eru alltaf styttri en 45m. Allar hurðir í flóttaleiðum skal vera hægt að opna í flóttaáttina án þess að nota þurfi lykil eða önnur verkfæri.
+## Klæðningar
+Loft og veggir verða klædd með klæðningu í flokki 1 sem uppfyllir að vera K10 B-s1,d0. Almennt skulu gólfefni vera í flokki Dfl-s1.
+Yfirborð þaks er húðað með Rocathaan hotspray PA 260-FR ofan á einangrun þaksins og uppfyllir að vera B-s1,d0Broof (t2) samkvæmt ÍST EN 13501-1 og 5 þegar það er notað ofan á polyurethan einangrun. Þykktin á að vera 2,5mm. Efnið er CE-merktur. vottað til þessarar notkunar.
+## Brunahólf
+Meginhluti 2. hæðar er í sérstöku brunahólfi. Afgreiðsla á 1. hæð er í sérstöku brunahólfi einnig kaffistofa og búningsherbergi starfsfólks. Lager/geymsla er í sérstöku brunahólfi.
+Brunahólfandi veggir eru með EI 60 brunakröfu og með EI2 30-CSm hurðum. Ef gler er í eldvarnarveggjum og hurðum er það EW30 gler og EW30-CSm hurðir. Brunahólfun er sýnd á grunnmyndum.
+## Brunaþéttingar
+Lagnagöt og önnur göt á milli brunahólfa eru þétt með sérstökum þéttiefnum á viðurkenndan hátt. Þéttiefni sem notuð eru til verksins skulu vera notuð í samræmi við leiðbeiningar framleiðanda eða seljanda efnanna og vera með viðurkenningu sem gildir hér á landi.
+## Reyklosun
+Hægt er að reyklosa lager/geymslu um stórar keyrsludyr. Reyklosun út úr öðrum hlutum hússins er í gegnum dyr og opnanlega glugga á byggingunni.
+Gerðir voru útreikningar á reykútbreiðslu og hitamyndun í lager/geymslu til að skoða möguleika á rýmingu og hitamyndun í reyklagi vegna stálburðarvirkis. Í ljós kom miðað við 40MW meðalhraðan bruna að hiti fer ekki yfir 400°C og reykur hamlar ekki rýmingu fyrr en eftir 13 mínútur.
+## Viðhald
+Um eldvarnir og eldvarnareftirlit í húsinu gildir reglugerð nr. 723/2017. Skráð eftirlit skal haft með öllum öryggiskerfum hússins.
+## Burðarvirki
+Burðarveggir eru úr járnbentri steinsteypu og þak úr holplötum. Brunaþol meginburðarvirkis er að minnsta kosti R60 og brunaþol þaks er að minnsta kosti R30.
