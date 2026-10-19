@@ -61,6 +61,7 @@
     birgdir: 0.75, aksturslisti: 0.75, vorur: 0.8,
     samthykkja: 1,   // 446 — símasíða, teiknuð fyrir 375 px
     tolvupostar: 1,  // 449 — símasíða, teiknuð fyrir 375 px
+    erindi: 1,       // 449c — símasíða, teiknuð fyrir 375 px
     hreyfingarlisti: 0.85, thjonustuverk: 0.85, sala: 0.85,
     'thjonustu-verkstaedi': 0.6, kostnadur: 0.75
   };
