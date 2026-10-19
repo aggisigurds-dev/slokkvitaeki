@@ -20,6 +20,9 @@
   window.__teiknSaekjaSett = true;
 
   var LISTI = '/.netlify/functions/teikn-listi';
+  // 19.10.2026: útgáfa staðfangaleitar í slóðinni — svör frá því áður en sveitarfélagi var bætt við (Reykjanesbær 2000)
+  // lágu í varanlegu skyndiminni Netlify sem „óþekkt" í allt að viku; ný útgáfa = ný slóð = fersk svör.
+  var STADF_V = '&sv=20261019';
   var MYND = '/.netlify/functions/teikn-mynd';
 
   function esc(s) {
@@ -218,7 +221,7 @@
     }
     spinna('Leita að húsinu…');
     try {
-      var d1 = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(28000) })).json();
+      var d1 = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(addr) + STADF_V, { signal: AbortSignal.timeout(28000) })).json();
       var results = (d1 && d1.results) || [];
       // 03.10.2026: heimilisfang félags er oft í ÞÁGUFALLI („Hátúni 10c, 105 Reykjavík") og Landeignaskrá finnur
       // aðeins nefnifall („Hátún 10C") — glugginn sagði „Fann ekki húsið" meðan prófíllinn (363) fann teikningarnar
@@ -230,7 +233,7 @@
           var nefnifall = hu && hu.eign && hu.eign.label;
           if (nefnifall) {
             addr = nefnifall + (hu.eign.postnr ? ', ' + hu.eign.postnr : '');
-            var d1b = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(nefnifall), { signal: AbortSignal.timeout(28000) })).json();
+            var d1b = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(nefnifall) + STADF_V, { signal: AbortSignal.timeout(28000) })).json();
             results = (d1b && d1b.results) || [];
           }
         } catch (_) {}

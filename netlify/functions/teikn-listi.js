@@ -189,7 +189,13 @@ export default async (req) => {
     const headers = { ...cors, 'Content-Type': 'application/json; charset=utf-8' };
     if (r.ok) {
       let d = null; try { d = JSON.parse(txt); } catch (_) {}
-      if (d && !d.error && Array.isArray(d.results) && d.results.length) {
+      // 19.10.2026 (Reykjanesbær): staðfang með heimild 'óþekkt' (sveitarfélag sem leitin þekkir ekki enn) fór í vikulangt
+      // varanlegt skyndiminni og hélt „óþekkt" eftir að sveitarfélaginu var bætt við. Slíkt svar geymist nú aðeins klst.
+      const othekkt = d && Array.isArray(d.results) && d.results.some((x) => x && x.heimild === 'óþekkt');
+      if (othekkt) {
+        headers['Cache-Control'] = 'public, max-age=600';
+        headers['Netlify-CDN-Cache-Control'] = 'public, s-maxage=3600';
+      } else if (d && !d.error && Array.isArray(d.results) && d.results.length) {
         headers['Cache-Control'] = 'public, max-age=3600';
         headers['Netlify-CDN-Cache-Control'] = 'public, durable, s-maxage=604800, stale-while-revalidate=2592000';
         headers['Netlify-Cache-ID'] = 'teikn-listi';   // lifir birtingar; hreinsað með merkinu ef úttakið breytist
