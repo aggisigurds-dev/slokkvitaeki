@@ -202,7 +202,7 @@ export default async (req) => {
   // ?staerdir=1&u=<pdf>&u=… — stærð PDF-blaða teikningasafna (HEAD) svo skemmd blöð sjáist án þess að sækja þau.
   // Mælt 09.10.2026: þrjár loftræsiteikningar Dalshrauns 10 hjá Hafnarfirði eru 742 bæti (tómar). Aðeins söfnin fjögur.
   if (sp.get('staerdir') === '1') {
-    const HYSLAR = new Set(['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is']);
+    const HYSLAR = new Set(['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is']);
     const urls = [...new Set(sp.getAll('u'))].filter((x) => { try { const u = new URL(x); return u.protocol === 'https:' && HYSLAR.has(u.hostname); } catch (_) { return false; } }).slice(0, 120);
     const ut = {};
     await Promise.all(urls.map(async (x) => {

@@ -987,7 +987,7 @@
     }
     const landnr = (o && o.landnr) || e.landnr, heitinr = (o && o.heitinr) || e.heitinr;
     const svfnr = (o && o.svfnr) || '';
-    const svf = SVF[svfnr] || (e.svf ? ({ 1000: 'Kópavogur', 1100: 'Seltjarnarnes', 1300: 'Garðabær', 1400: 'Hafnarfjörður', 1604: 'Mosfellsbær' })[e.svf] : '') || (svfnr ? 'svf. ' + svfnr : '—');
+    const svf = SVF[svfnr] || (e.svf ? ({ 1000: 'Kópavogur', 1100: 'Seltjarnarnes', 1300: 'Garðabær', 1400: 'Hafnarfjörður', 1604: 'Mosfellsbær', 2000: 'Reykjanesbær' })[e.svf] : '') || (svfnr ? 'svf. ' + svfnr : '—');
     const st = g.bygg && g.bygg.skraningartafla;
     const mhl = [...new Set([].concat(st && st.matshluti ? [st.matshluti] : [], (g.opin && g.opin.einingar && g.opin.einingar.mhl) || []))];
     const lod = g.opin && g.opin.lod;

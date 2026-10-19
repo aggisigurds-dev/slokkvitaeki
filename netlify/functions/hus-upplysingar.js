@@ -35,7 +35,7 @@
  *   map.is-kallið queryTeiknigrunn (landnúmer + heitinúmer + sveitarfélag). Kjarni
  *   skilar þeim bæjum aðeins djúptengli, svo listinn er sóttur beint. Skrárnar liggja á
  *   gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is,
- *   luks.seltjarnarnes.is og luks.mos.is (Mosfellsbær: nær allt .tif).
+ *   luks.seltjarnarnes.is, luks.mos.is (Mosfellsbær: nær allt .tif) og teikningar.rnb.is (Reykjanesbær).
  *
  * ÞREP 3 — teikningar → tillögur. Hæsta hæðarnúmer grunnmyndanna = hæðir ofan
  *   jarðar; „kjallari"/„jarðhæð"/„ris" í lýsingum = já. Þetta eru TILLÖGUR
@@ -77,6 +77,8 @@ const MAPIS = [
   // 19.10.2026: Mosfellsbær (SVFNR 1604, 270/271). Sama queryTeiknigrunn; skrárnar á luks.mos.is (510 af 515 á
   // Sunnukrika 3 eru .tif). Húsateikningar krefjast heitinr hússins — heitinumer=0 skilar „Engar niðurstöður".
   { svf: 1604, nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], slug: 'moso', bein: true },
+  // 19.10.2026: Reykjanesbær (SVFNR 2000; 230/232/233/260/262 — Keflavík, Hafnir, Njarðvík, Ásbrú). PDF á teikningar.rnb.is.
+  { svf: 2000, nafn: 'Reykjanesbær', kort: 'Kortasjá Reykjanesbæjar', postnr: [230, 232, 233, 260, 262], slug: 'reykjanesbaer', bein: true },
 ];
 
 const cors = {
@@ -101,7 +103,7 @@ const minni = new Map();
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-const UTGAFA = '2026-10-19';   // Mosfellsbær bættist við (bein kortasjá); tóm 270/271-svör frá 2026-10-02 detta út
+const UTGAFA = '2026-10-19b';   // Mosfellsbær bættist við (bein kortasjá); tóm 270/271-svör frá 2026-10-02 detta út
 
 function hefurBlod(svar) {
   if (!svar || typeof svar !== 'object') return false;

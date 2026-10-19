@@ -26,8 +26,11 @@ const MAPIS_SVF = {
   1400: { slug: 'hafnarfjordur', nafn: 'Hafnarfjörður' },
   1100: { slug: 'seltjarnarnes', nafn: 'Seltjarnarnes', kort: 'Kortasjá Seltjarnarness', postnr: [170], bein: true },
   1604: { slug: 'moso', nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], bein: true },
+  // 19.10.2026 (Agnar: „Keilisbraut 745, 262 … tengja við kortakerfið í Keflavík líka"): Reykjanesbær (SVFNR 2000,
+  // map.is/reykjanesbaer). PDF-in á teikningar.rnb.is; húsateikningar á heitinr hússins (Keilisbraut 745: 7, lóðin: 0).
+  2000: { slug: 'reykjanesbaer', nafn: 'Reykjanesbær', kort: 'Kortasjá Reykjanesbæjar', postnr: [230, 232, 233, 260, 262], bein: true },
 };
-const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is'];
+const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is'];
 const beinSvf = svf => !!(MAPIS_SVF[svf] && MAPIS_SVF[svf].bein);
 const svfFyrirPostnr = pn => Object.keys(MAPIS_SVF).find(k => (MAPIS_SVF[k].postnr || []).includes(Number(pn))) || null;
 
@@ -63,6 +66,8 @@ function haedir(lysing, gerd) {
   for (const m of t.matchAll(/(\d+)\.\s*h[æa][eð]?ð/g)) { const n = Number(m[1]); if (n && !haed.includes(n)) haed.push(n); }
   // „2Á4 hæð" = 2–4: Hafnarfjarðarskráin skilar bandstriki milli talna sem „Á" (lágstafað hér)
   for (const m of t.matchAll(/(\d+)\.?\s*[-–á]\s*(\d+)\.?\s*h[æa][eð]?ð/g)) { const a = Number(m[1]), b = Number(m[2]); if (a && b && b >= a && b - a <= 30) for (let n = a; n <= b; n++) if (!haed.includes(n)) haed.push(n); }
+  // „Grunnmynd 2. og 3. hæð" (Reykjanesbær, Keilisbraut 745) — báðar hæðirnar, ekki aðeins sú síðari
+  for (const m of t.matchAll(/(\d+)\.?\s*og\s*(\d+)\.\s*h[æa][eð]?ð/g)) for (const n of [Number(m[1]), Number(m[2])]) if (n && n <= 60 && !haed.includes(n)) haed.push(n);
   const kjallari = /kjallar/.test(t), ris = /\bris\b|ris\.|rish[æa]ð/.test(t), stig = [];
   if (kjallari) stig.push('Kjallari');
   if (/milligólf|milligolf/.test(t)) stig.push('Milligólf');
