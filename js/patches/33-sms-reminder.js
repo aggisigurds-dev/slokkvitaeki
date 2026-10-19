@@ -290,7 +290,7 @@
     try {
       const SB = getSB();
       if (!SB || !ids.length) return;
-      const r = await SB.from('sms_saga').select('job_id,created_at').eq('status', 'sent').in('job_id', ids);
+      const r = await SB.from('sms_saga').select('job_id,created_at').in('status', ['sent', 'pending']).in('job_id', ids);
       if (r.error) return;
       (r.data || []).forEach(x => { if (!_sagaSms[x.job_id] || Date.parse(x.created_at) > Date.parse(_sagaSms[x.job_id])) _sagaSms[x.job_id] = x.created_at; });
     } catch (_) {}

@@ -356,13 +356,13 @@
     const rodir = saga.map(r => {
       const d = new Date(r.created_at);
       const tm = isNaN(d) ? '' : R().dagsTimi(r.created_at);
-      const ok = r.status === 'sent';
+      const ok = r.status === 'sent', bid = r.status === 'pending';
       return `<tr>
         <td style="white-space:nowrap">${esc(tm)}</td>
         <td>${esc(r.nafn || '')}<div class="ss-note">${esc(r.til)}</div></td>
         <td>${esc(heitiTegundar(r.tegund))}${r.uppruni ? `<div class="ss-note">${esc(r.uppruni)}</div>` : ''}</td>
         <td title="${esc(r.texti)}">${esc(String(r.texti).length > 80 ? String(r.texti).slice(0, 80) + '…' : r.texti)}</td>
-        <td class="${ok ? 'ss-st-ok' : 'ss-st-bad'}">${ok ? 'Sent' : 'Mistókst'}${!ok && r.villa ? `<div class="ss-note" style="font-weight:400">${esc(r.villa)}</div>` : ''}</td>
+        <td class="${ok ? 'ss-st-ok' : bid ? '' : 'ss-st-bad'}">${ok ? 'Sent' : bid ? 'Óvíst (sent eða í gangi)' : 'Mistókst'}${!ok && r.villa ? `<div class="ss-note" style="font-weight:400">${esc(r.villa)}</div>` : ''}</td>
       </tr>`;
     }).join('');
     return `

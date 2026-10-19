@@ -64,6 +64,29 @@ async function skraSogu(r) {
   } catch (_) { return false; }
 }
 
+// VÖRN GEGN MISNOTKUN (19.10.2026). Endapunkturinn sendir SMS á hvaða númer sem er á reikning Agnars, og
+// EDGE_SHARED_KEY-gáttin er ekki virk í framleiðslu (enginn lykill í Netlify env), svo hver sem er gat kallað á hann.
+//   · Upprunaathugun: POST verður að koma úr appinu (Origin/Referer = slokkvitaeki.netlify.app) — stöðvar vefsíður
+//     annarra; stöðvar EKKI skriftu sem falsar haus, þess vegna líka:
+//   · Þak: mest 10 SMS á mínútu og 150 á sólarhring (talið í sms_saga). Fail-closed ef talning mistekst.
+const LEYFDUR_UPPRUNI = /^https:\/\/slokkvitaeki\.netlify\.app(\/|$)|^http:\/\/localhost(:\d+)?(\/|$)/;
+async function utanThaks() {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return 'ekki hægt að telja sendingar (Supabase stillt vantar)';
+  const h = { apikey: key, Authorization: `Bearer ${key}` };
+  const fra = (ms) => new Date(Date.now() - ms).toISOString();
+  try {
+    const q = async (ms, n) => {
+      const r = await fetch(`${url}/rest/v1/sms_saga?select=id&status=in.(sent,pending)&created_at=gte.${encodeURIComponent(fra(ms))}&limit=${n}`, { headers: h, signal: AbortSignal.timeout(4000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return (await r.json()).length;
+    };
+    if (await q(60 * 1000, 10) >= 10) return 'of mörg SMS á stuttum tíma (mest 10 á mínútu)';
+    if (await q(24 * 3600 * 1000, 150) >= 150) return 'sólarhringsþaki náð (150 SMS)';
+    return null;
+  } catch (e) { return 'ekki hægt að telja sendingar: ' + String((e && e.message) || e); }
+}
+
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
 
@@ -87,6 +110,11 @@ export default async (req) => {
   if (!stillt) {
     return svar({ error: 'TWILIO_NOT_CONFIGURED', message: 'Twilio ekki stillt á þjóni (TWILIO_SID / TWILIO_TOKEN / TWILIO_FROM vantar í Netlify env)' }, 400);
   }
+
+  const uppruni_ = String(req.headers.get('origin') || req.headers.get('referer') || '');
+  if (!LEYFDUR_UPPRUNI.test(uppruni_)) return svar({ error: 'FORBIDDEN_ORIGIN', message: 'SMS má aðeins senda úr appinu' }, 403);
+  const thak = await utanThaks();
+  if (thak) return svar({ error: 'RATE_LIMITED', message: 'SMS stöðvað: ' + thak }, 429);
 
   let body;
   try { body = await req.json(); } catch (_) { return svar({ error: 'Invalid JSON body' }, 400); }
