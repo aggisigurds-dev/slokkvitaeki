@@ -79,7 +79,12 @@
     var sl = s.slokkvitaeki != null ? s.slokkvitaeki : tki.filter(function (t) { return !/slang|kefli/i.test(t.bunadur || ''); }).length;
     var bs = s.slongur != null ? s.slongur : tki.filter(function (t) { return /slang|kefli/i.test(t.bunadur || ''); }).length;
     var utan = tki.filter(function (t) { return t.x == null; }).length;
-    var hus = (s.mhl || []).map(function (m) { return '<b>Mhl ' + esc(m.mhl) + ' <strong>' + esc(m.m2) + '</strong> m² · ' + esc(m.haedir || '') + '</b>'; }).join('');
+    var m2 = function (v) {   // 3381.7 → 3.381,7 (íslenskt snið, án toLocaleString-gildrunnar)
+      var n = Number(v); if (!isFinite(n)) return esc(v);
+      var p = (Math.round(n * 10) / 10).toFixed(n % 1 ? 1 : 0).split('.');
+      return p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+    };
+    var hus = (s.mhl || []).map(function (m) { return '<b>Mhl ' + esc(m.mhl) + ' <strong>' + m2(m.m2) + '</strong> m² · ' + esc(m.haedir || '') + '</b>'; }).join('');
     return '<div class="bgr-s"><b><strong>' + sl + '</strong> handslökkvitæki</b><b><strong>' + bs + '</strong> slöngukefli</b>' +
       (utan ? '<b><strong>' + utan + '</strong> utan teikningar — staðsetja á staðnum</b>' : '') + hus + '</div>';
   }

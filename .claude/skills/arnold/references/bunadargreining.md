@@ -36,6 +36,8 @@ hönnuðar orðrétt, heimildaskrá (hvaða blöð gilda, hver eru eldri útgáf
    | `[BS]` / `BS` + spírall | brunaslanga / slöngukefli | Álfhella 9 |
    | `SLT` (oft lágstafir `slt`) | slökkvitæki | Álfhella mhl 02 (2026), Skútuvogur 4 |
    | `HSL` | handslökkvitæki | DRA ehf |
+   | `HST` (rauður texti, ekkert tákn, ekki í skýringum) | handslökkvitæki — „sama og ST" (Agnar 19.10.2026) | Skútuvogur 4 (2025); við rafmagnstöflu = 5 kg kolsýra skv. brunahönnun |
+   | rautt slökkvitækistákn með **`L`** inni í | slökkvitæki, léttvatn | Skútuvogur 4 (2025) — stafurinn er í textalaginu, rauður (#ed1f24) |
    | `BRSL` + spírall | brunaslanga; `BRSL SLT` = hvort tveggja á sama stað | Skútuvogur 4 |
    | `[R]` | reykskynjari | flest blöð — aðeins skráð, ekki okkar búnaður nema samningur nái til |
    | `[BV]` | stjórnstöð brunaviðvörunarkerfis | Álfhella 9 — upplýsingapunktur |
@@ -88,8 +90,25 @@ Engin merki → tenglar „Lesa búnað í TurboPaint · <hæð>" (`?uttekt=<cid
 
 Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýringarnar og orðar staðinn.
 
+## Þegar Teikningin notar ekki gildandi blað (Skútuvogur 4)
+
+- **Athugaðu alltaf hvort til er nýrra samþykkt sett** en það sem Teikning staðarins notar. Skútuvogur 4: Teikningin var á
+  blöðum 11.10.2022 (fyrri notkun: verkstæði, þrif á bílum), en „Teikningasett" samþykkt 09.12.2025 (USK25050395) breytti
+  MHL 2 í verslun Álfaborgar. Stimpill byggingarfulltrúa á blaðinu („Aðaluppdrættir Samþykkt …") sker úr.
+- **Skiptu ekki um blað undir merkjum Agnars** — merkin hans eru í frumdílum gamla blaðsins. Varpaðu hönnunarstöðunum á
+  gamla blaðið í staðinn: bæði 1:100, svo kvarði ≈ 1 og hliðrun; `matchTemplate` á Canny-brúnum (30 dpi, kvarði 0,90–1,10)
+  gaf s = 1,015 / 0,995. **Sannreyndu stillinguna** á táknum sem eru á sama stað á báðum blöðum (BRSL-staðirnir voru
+  óbreyttir milli 2022 og 2025 og lentu hver ofan á öðrum).
+- **Skráð tæki = ENGIN Nýtt-merki.** Álfaborg á 16 skráð tæki; hönnunarstaður án tækis á teikningu er „Ekki á Teikningu"
+  í greiningunni (474 sýnir listann), ekki nýtt tæki — annars tvítalning. Merki sem stendur ≤ 2,5 m frá hönnunarstað fær
+  `audkenni`/`stadur` (skilyrt á `updated_at`); hin fá ekkert og eru nefnd í athugasemdum.
+- **Dulkóðað textalag:** 2025-blöðin nota letur sem hliðrar ASCII um +29 („6N~WXYRJXU" = „Skútuvogur"), íslenskir stafir á
+  eigin sætum (0xe8 ð, 0x69 á, 0xa0 æ, 0x74 í, 0x79 ó, 0x7e ú, 0x7c ö, 0xec þ, 0xea ý, 0x70 é, 0xcb Í …). Afkóðunin er í
+  scratchpad `alfaborg/afkoda.py`; brunavarnatextinn og rauðu táknstafirnir lásust þannig nákvæmt.
+
 ## Viðmiðunarstaðir
 
 | Staður | company_id | Greining | Athugasemd |
 |---|---|---|---|
 | Kvarnir ehf., Álfhella 9 | 1871 | id 1, 19.10.2026, handlesin | mhl 01 (2020-skönnun, [S]/[BS]) 7+2 tæki, mhl 02 (2026 vigur, slt) 4; CO2 utan teikningar; 2012-útgáfan eldri |
+| Álfaborg, Skútuvogur 4 | 661 | id 2, 19.10.2026, handlesin | sett 2025 (vigur, dulkóðað textalag): 15 slökkvitæki (12 „L" + 3 HST) + 5 BRSL; skráð 11 + 5; 3 af 7 merkjum á hönnunarstað; Teikning enn á 2022-blöðum |
