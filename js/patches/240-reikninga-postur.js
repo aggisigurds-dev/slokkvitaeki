@@ -1645,7 +1645,6 @@
         // með, svo svarið lendi undir fyrirspurninni hjá viðtakanda í stað þess
         // að birtast sem ótengt erindi frá eldklar@eldklar.is.
         inReplyTo: m.message_id || undefined,
-        apiKey: localStorage.getItem('resend_api_key') || undefined,
       };
       synaStadfestingu(m, payload, note);
     } catch (e) {

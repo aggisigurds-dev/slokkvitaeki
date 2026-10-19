@@ -9,14 +9,14 @@
  *     pre-filled body containing invoice details + link to the web app.
  *     Works without any configuration. No PDF attachment.
  *
- *  2. Resend API — if user provides a Resend.com API key and a "from"
- *     address, sends a nicely formatted HTML email with invoice details.
- *     Resend free tier: 100 emails/day. Key stored in localStorage.
- *     URL: https://api.resend.com/emails
+ *  2. Resend API — sends a nicely formatted HTML email with invoice details
+ *     gegnum Netlify-fallið /api/email-send (eða AppMail → Gmail þegar 254 er
+ *     hlaðið). 19.10.2026: Resend-lykillinn býr EINGÖNGU í Netlify env
+ *     (RESEND_API_KEY) — vafrinn les hann hvorki né skrifar. Stillingar sýna
+ *     aðeins „stillt á þjóni: já/nei" (GET /api/email-send).
  *
  * Settings keys:
  *   email_mode: "mailto" | "resend"
- *   resend_api_key: "re_..."
  *   email_from: "Brunahólf Slökkvitæki ehf <noreply@yourdomain.is>"
  *   email_from_name: "Brunahólf Slökkvitæki ehf"
  */
@@ -32,8 +32,11 @@
   function fmtKr(n) { return Math.round(n).toLocaleString('is-IS') + ' kr'; }
   // 15.10.2026 (regla Agnars): sendingarleið og sendandi snerta reikninga → AppSettings 'stillingar.postur.{hamur,
   // sendandi}' (eitt gildi fyrir allar vélar), skrifað AÐEINS við „Vista stillingar". Gömlu lyklarnir email_mode/
-  // email_from eru aðeins LESNIR sem varagildi þar til fyrst er vistað. resend_api_key er LEYNDARMÁL og fer EKKI í
-  // app_settings — óbreytt í localStorage (á heima í Netlify env, þjónninn kýs hana þegar).
+  // email_from eru aðeins LESNIR sem varagildi þar til fyrst er vistað.
+  // 19.10.2026: Resend-lykillinn er HVERGI í vafranum lengur — hann býr í Netlify env (RESEND_API_KEY) og
+  // email-send.js les hann þar. Gamla localStorage-gildið er hreinsað einu sinni hér svo leyndarmál sitji ekki
+  // eftir í vöfrum vélanna fimm.
+  try { localStorage.removeItem('resend_api_key'); } catch (_) {}
   function postStilling(slod, gamall, sjalfgefid) {
     try { const v = window.AppSettings && AppSettings.path && AppSettings.path('stillingar.postur.' + slod); if (v !== undefined && v !== null && v !== '') return String(v); } catch (_) {}
     try { return localStorage.getItem(gamall) || sjalfgefid; } catch (_) { return sjalfgefid; }
@@ -169,9 +172,8 @@
 
   // ── Send via Resend API ───────────────────────────────────────────────────
   async function sendResend(toEmail, sale) {
-    // Browser can't hit Resend directly (no CORS). Proxy via /api/email-send.
-    // The proxy reads RESEND_API_KEY env var on Netlify; falls back to apiKey in body for legacy.
-    const apiKey = localStorage.getItem('resend_api_key') || '';
+    // Browser can't hit Resend directly (no CORS). Proxy via /api/email-send,
+    // sem les RESEND_API_KEY úr Netlify env — enginn lykill fer úr vafranum.
     // 2026-05-31: default sender aligned to the company's real, mailable domain
     // (eldklar.is). Resend rejects any send from a domain without verified
     // SPF/DKIM records, so this MUST match the domain verified in the Resend
@@ -181,8 +183,7 @@
       from,
       to: [toEmail],
       subject: 'Reikningur ' + (sale.num || '') + ' frá Brunahólf Slökkvitæki ehf',
-      html: buildHtmlEmail(sale),
-      apiKey: apiKey || undefined  // server prefers env var; this is legacy fallback
+      html: buildHtmlEmail(sale)
     };
     // 2026-07-20: sent gegnum Gmail (AppMail → /api/gmail-send) í stað Resend,
     // sem er dautt fyrir eldklar.is. AppMail skilar Response-líkum hlut.
@@ -302,7 +303,6 @@
     div.id = 'ei-settings-section';
     div.style.cssText = 'padding:16px 20px;border-top:1px solid #e2e8f0;';
     const curMode = postStilling('hamur', 'email_mode', 'mailto');
-    const curKey = localStorage.getItem('resend_api_key') || '';
     const curFrom = postStilling('sendandi', 'email_from', '');
     div.innerHTML = `
       <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:10px;">Tölvupóstur (reikningssendir)</div>
@@ -315,11 +315,8 @@
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Resend API lykill</label>
-        <div style="display:flex;gap:8px;">
-          <input id="ei-resend-key" type="text" placeholder="re_..." value="${esc(curKey)}"
-            style="flex:1;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;">
-        </div>
-        <div style="font-size:11px;color:#64748b;margin-top:4px;">Fáðu lykil á <a href="https://resend.com" target="_blank" style="color:#2563eb;">resend.com</a> (100 tölvupóstar/dag ókeypis)</div>
+        <div id="ei-resend-stada" style="font-size:13px;color:#334155;">Stillt á þjóni: <strong>athuga…</strong></div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px;">Lykillinn býr í Netlify env (<code>RESEND_API_KEY</code>) — ekki í vafranum.</div>
       </div>
       <div style="margin-bottom:12px;">
         <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Sendandi netfang (Resend)</label>
@@ -328,10 +325,15 @@
       </div>
       <button onclick="
         window.__eiVistaPostStillingar();
-        localStorage.setItem('resend_api_key', document.getElementById('ei-resend-key').value.trim());
         if(window.Toast&&Toast.show)Toast.show('✓ Stillingar vistaðar');
       " style="padding:7px 16px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;">Vista stillingar</button>`;
     container.appendChild(div);
+    // Staða lykilsins af þjóninum — aðeins já/nei, gildið kemur aldrei í vafrann.
+    fetch('/api/email-send', { method: 'GET' }).then(r => r.ok ? r.json() : null).then(j => {
+      const el = document.getElementById('ei-resend-stada');
+      if (!el) return;
+      el.innerHTML = 'Stillt á þjóni: <strong style="color:' + (j && j.stillt ? '#166534' : '#991b1b') + '">' + (j ? (j.stillt ? 'já' : 'nei') : 'óþekkt') + '</strong>';
+    }).catch(() => {});
   }
 
   document.addEventListener('view-shown', e => {

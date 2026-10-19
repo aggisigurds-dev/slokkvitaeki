@@ -5,18 +5,19 @@
  *   Resend's REST API (api.resend.com/emails) doesn't send CORS headers,
  *   so the browser blocks direct calls.
  *
- * Endpoint:
- *   POST /api/email-send
- *   Body: { from, to: [...], subject, html, apiKey?: string }
+ * Endpoints:
+ *   GET  /api/email-send   → { stillt: bool }  — aðeins HVORT RESEND_API_KEY sé til í env, aldrei gildið
+ *   POST /api/email-send   Body: { from, to: [...], subject, html, attachments? }
  *
- * Auth:
- *   Pass apiKey in the body (client-stored in localStorage, legacy)
- *   OR set RESEND_API_KEY in Netlify env vars (preferred — key stays server-side).
- *   The function prefers the env var if set.
+ * Auth (19.10.2026):
+ *   RESEND_API_KEY er lesinn EINGÖNGU úr Netlify env. Gamla varaleiðin — `apiKey` í body,
+ *   lesinn úr localStorage vafrans — er HORFIN: leyndarmál búa á þjóninum, ekki í vafra
+ *   (regla Agnars 15.10.2026). Berist `apiKey` samt í body er honum hent, aldrei notaður.
  */
 export default async (req) => {
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'POST only' }), {
+  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'GET or POST only' }), {
       status: 405,
       headers: cors(),
     });
@@ -32,6 +33,14 @@ export default async (req) => {
       });
     }
   }
+  const apiKey = String((process && process.env && process.env.RESEND_API_KEY) || '').trim();
+  if (req.method === 'GET') {
+    // Staða fyrir Stillingar-síðuna (29): „stillt á þjóni: já/nei".
+    return new Response(JSON.stringify({ stillt: !!apiKey }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...cors() },
+    });
+  }
   let body;
   try {
     body = await req.json();
@@ -41,14 +50,13 @@ export default async (req) => {
       headers: cors(),
     });
   }
-  const apiKey = (process && process.env && process.env.RESEND_API_KEY) || body.apiKey || '';
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API_KEY_MISSING', message: 'Resend API lykill ekki stilltur' }), {
+    return new Response(JSON.stringify({ error: 'API_KEY_MISSING', message: 'Resend API lykill ekki stilltur á þjóni (RESEND_API_KEY í Netlify env)' }), {
       status: 400,
       headers: cors(),
     });
   }
-  // Don't forward apiKey upstream
+  // Legacy `apiKey` úr vafra er hent — aldrei notaður, aldrei sendur áfram.
   const { apiKey: _stripped, ...payload } = body;
   if (!payload.from || !payload.to || !payload.subject) {
     return new Response(JSON.stringify({ error: 'Missing from/to/subject' }), {
@@ -116,7 +124,7 @@ export default async (req) => {
 function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
   };
 }

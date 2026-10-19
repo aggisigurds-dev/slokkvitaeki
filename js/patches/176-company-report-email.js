@@ -150,7 +150,7 @@
     // dedicated `report_email_from` override, NOT the invoice mailer's
     // `email_from`, so the report sender can't be changed by accident.
     const from = localStorage.getItem('report_email_from') || DEFAULT_FROM;
-    const apiKey = localStorage.getItem('resend_api_key') || ''; // server prefers env var
+    // 19.10.2026: enginn Resend-lykill úr vafra — /api/email-send les RESEND_API_KEY úr Netlify env.
     const filename = safeFileName(co && co.nafn);
     const base64 = await reportPdfBase64(html, filename, reportCtx);
     if (!base64) throw new Error('Tókst ekki að búa til PDF.');
@@ -159,8 +159,7 @@
       to: [to],
       subject: 'Úttektarskýrsla' + (co && co.nafn ? ' — ' + co.nafn : ''),
       html: coverHtml(co),
-      attachments: [{ filename, content: base64 }],
-      apiKey: apiKey || undefined
+      attachments: [{ filename, content: base64 }]
     };
     // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
     const r = await (window.AppMail ? AppMail.send(payload)
