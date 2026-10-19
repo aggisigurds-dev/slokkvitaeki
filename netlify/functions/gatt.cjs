@@ -1029,6 +1029,35 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
+    // 19.10.2026 (Center Hótel gjaldkeri bað þrisvar um færslu á eindaga af því krafan „kom ekki" og var ekki til
+    // samþykktar): reikningur sem er FINAL í sölukerfinu en á ekkert skjal (PDF) átti sér engan stað hér, og enginn
+    // reikningur sýndi stöðu. Nú bætast þeir við (án PDF-hlekks) og hver reikningur ber stöðuna úr solur:
+    //   greitt = paid_at er til · ogreitt = krafa send fyrir ≤ 75 dögum og engin greiðsla skráð.
+    // Eldri ógreiddir fá EKKERT merki — paid_at dregst á eftir raunveruleikanum (Payday-afstemming), og rangt
+    // „ógreitt" gagnvart kúnna er verra en autt merki.
+    try {
+      const sr2 = await P.sbGet(`solur?customer_base_id=eq.${baseId}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`);
+      if (sr2.ok) {
+        const rows2 = await sr2.json();
+        const nuMs = Date.now(), kraftur = 75 * 864e5, fra = nuMs - 730 * 864e5;
+        const stadaAf = (s) => (s.paid_at ? 'greitt' : (s.krafa_sent_at && nuMs - Date.parse(s.krafa_sent_at) <= kraftur ? 'ogreitt' : null));
+        const byNr2 = {};
+        rows2.forEach((s) => { if (s && s.num) byNr2[normNr(s.num)] = s; });
+        invoices.forEach((i) => { const s = i.nr && byNr2[normNr(i.nr)]; i.stada = s ? stadaAf(s) : null; });
+        const til = new Set(invoices.map((i) => normNr(i.nr)).filter(Boolean));
+        rows2.forEach((s) => {
+          const n = normNr(s.num);
+          if (!n || til.has(n) || s.is_credit) return;
+          if (leyfd && !(s.customer_id != null && leyfd.has(Number(s.customer_id)))) return;
+          if (Date.parse(s.created_at) < fra) return;
+          invoices.push({ docId: null, nr: s.num, dags: String(s.created_at).slice(0, 10), ar: null,
+            bygging: nafnById[s.customer_id] || s.customer_nafn || '', upphaed: s.samtals != null && s.samtals !== '' ? Number(s.samtals) : null,
+            lysing: ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', pos: 'Sala' })[s.source] || '', tegund: ({ uttekt: 'uttekt', brunakerfi: 'brunakerfi' })[s.source] || null, stada: stadaAf(s) });
+        });
+        invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
+      }
+    } catch (_) {}
+
     // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
     // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
     const onBoard = buildings.filter((b) => b.i_thjonustu || b.bru_i_thjonustu);

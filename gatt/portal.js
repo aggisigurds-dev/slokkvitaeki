@@ -99,7 +99,8 @@
       { dags: '2025-09-01', bygging: 'Þingholt', heimilisfang: 'Þingholtsstræti 3–5', tegund: 'Brunakerfi', magn: null, ar: 2025 },
     ],
     invoices: [
-      { nr: 'R-000668', dags: '2026-08-03', bygging: 'Klöpp', lysing: 'Úttekt — slökkvitæki og brunaslöngur', upphaed: 174747, tegund: 'Slökkvitæki' },
+      { nr: 'R-001107', dags: '2026-10-08', bygging: 'Laugavegur', lysing: 'Brunakerfi', upphaed: 469010, tegund: 'Brunakerfi', stada: 'ogreitt' },
+      { nr: 'R-000668', dags: '2026-08-03', bygging: 'Klöpp', lysing: 'Úttekt — slökkvitæki og brunaslöngur', upphaed: 174747, tegund: 'Slökkvitæki', stada: 'greitt' },
       { nr: 'R-000670', dags: '2026-08-03', bygging: 'Skjaldbreið', lysing: 'Úttekt — slökkvitæki', upphaed: 19778, tegund: 'Slökkvitæki' },
       { nr: 'R-107802', dags: '2026', bygging: 'Plaza', lysing: 'Þjónusta', upphaed: null, tegund: 'Slökkvitæki' },
       { nr: 'R-108001', dags: '2026', bygging: 'Grandi', lysing: 'Þjónusta', upphaed: null, tegund: 'Brunakerfi' },
@@ -256,7 +257,7 @@
         return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar };
       }),
       invoices: (d.invoices || []).map(function (i) {
-        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '' };
+        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
       }),
       messages: d.messages || [],
       erindi: d.erindi || [],
@@ -460,6 +461,23 @@
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
   }
 
+  // Staða reiknings úr sölukerfinu (greitt / ógreitt). Ógreitt fær „Biðja um frestun" sem opnar Skilaboð með forútfylltri beiðni —
+  // ekkert fer frá kúnnanum fyrr en hann ýtir sjálfur á „Senda fyrirspurn".
+  function stadaPilla(r) {
+    if (r.stada === 'greitt') return '<span class="tb gr">Greitt</span>';
+    if (r.stada === 'ogreitt') return '<span class="tb og">Ógreitt</span> <a href="#" class="frest" data-frest="' + esc(r.nr || '') + '" data-frest-b="' + esc(r.bygging || '') + '" data-frest-u="' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '') + '">Biðja um frestun</a>';
+    return '';
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-frest]'); if (!a) return;
+    e.preventDefault();
+    var nr = a.getAttribute('data-frest'), b = a.getAttribute('data-frest-b'), u = a.getAttribute('data-frest-u');
+    goView('skilabod'); window.scrollTo(0, 0);
+    var inp = $('#msg-input'); if (!inp) return;
+    inp.value = 'Beiðni um frestun á eindaga: reikningur ' + nr + (b ? ' (' + b + ')' : '') + (u ? ', ' + u.replace(/\.$/, '') : '') + '. Óskað er eftir að eindagi verði færður til ____.';
+    inp.focus();
+  });
+
   function renderReikningar(filter) {
     var rows = (state.data.invoices || []).filter(function (r) { return !filter || r.bygging === filter; });
     $('#re-body').innerHTML = rows.map(function (r) {
@@ -469,8 +487,9 @@
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="dim">' + esc(r.lysing || '') + '</td>' +
         '<td class="r num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td>' +
-        '<td class="r">' + docLink('PDF', r.docId) + '</td></tr>';
-    }).join('') || '<tr><td colspan="7" class="empty">Engir reikningar skráðir</td></tr>';
+        '<td>' + stadaPilla(r) + '</td>' +
+        '<td class="r">' + (r.docId || state.demo ? docLink('PDF', r.docId) : '<span class="dim" title="Reikningurinn berst með kröfunni í netbanka. Við sendum afrit ef óskað er.">í netbanka</span>') + '</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">Engir reikningar skráðir</td></tr>';
     foot('#re-foot', rows.length, (state.data.invoices || []).length, ['reikningur', 'reikningar'], ['reikningi', 'reikningum'], filter);
   }
 
@@ -788,7 +807,7 @@
         html += '<section class="dsec"><h4>Reikningar <span class="cnt">' + tala(invs.length, 'reikningur', 'reikningar') + '</span></h4><div class="dpanel">' +
           invs.map(function (r) {
             return '<div class="drow"><span class="dd">' + esc(fmtDate(r.dags)) + '</span><span class="grow"><span class="kt">' + esc(r.nr || '—') + '</span> <span class="dim">' + esc(r.lysing || '') + '</span></span>' +
-              '<span class="num" style="font-weight:600;color:var(--ink)">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
+              '<span class="num" style="font-weight:600;color:var(--ink)">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '') + '</span>' + stadaPilla(r) + (r.docId || state.demo ? docLink('PDF', r.docId) : '') + '</div>';
           }).join('') + '</div></section>';
       }
     }
