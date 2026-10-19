@@ -108,7 +108,12 @@ Sami texti birtist á Reglur-síðunni í appinu (`#reglur`, patch 449), svo bre
 
 ## Teikningar utan Reykjavíkur — og hraðleiðin fyrir öll sveitarfélög
 
-Ein uppfletting dugar fyrir Reykjavík, Hafnarfjörð, Kópavog og Garðabæ (mælt 04.10.2026):
+Ein uppfletting dugar fyrir Reykjavík, Hafnarfjörð, Kópavog og Garðabæ (mælt 04.10.2026) — og síðan 19.10.2026 líka
+Seltjarnarnes (1100), Mosfellsbæ (1604, skrár að mestu .tif → niðurhal) og Reykjanesbæ (2000, map.is/reykjanesbaer,
+PDF á teikningar.rnb.is). Þessi þrjú eru „bein kortasjá": Kjarni þekkir ekki sveitarfélagsnúmerið, teikn-listi spyr
+map.is beint með heitinr HÚSSINS (heitinumer=0 skilar engu þar). Nýtt sveitarfélag á map.is = ein færsla í `MAPIS_SVF`
+(teikn-listi) og `MAPIS` (hus-upplysingar) + hýsill skránna í BEINIR/HYSLAR (teikn-pdf, teikn-blad, fasteign-opin) —
+sjá f3b4dc07 (Reykjanesbær) sem fyrirmynd.
 
 1. **Heimilisfang → eign:** `GET slokkvitaeki.netlify.app/.netlify/functions/teikn-listi?heimilisfang=<heimilisfang>`
    (eða kjarni beint: `slokkvitaeki.vercel.app/api/turbopaint/teikningar?heimilisfang=…`).
