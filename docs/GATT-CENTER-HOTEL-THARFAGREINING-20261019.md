@@ -61,3 +61,31 @@ Forgangur eftir því hvað kostar þau mest í dag.
 - `netlify/functions/gatt.cjs`: reikningar úr `solur` (final, greitt_med `reikningur`, síðustu 24 mánuði) sem eiga ekkert skjal bætast við; hver reikningur fær stöðu. *Greitt* = `paid_at`. *Ógreitt* aðeins ef krafa var send fyrir ≤ 75 dögum — eldri ógreidd fá ekkert merki því `paid_at` dregst á eftir raunveruleikanum (Payday-afstemming) og rangt „ógreitt" gagnvart kúnna er verra en autt.
 - `gatt/portal.js` + `gatt/index.html`: dálkurinn **Staða**, „í netbanka" í stað PDF-hnapps þegar skjal vantar, „Biðja um frestun" opnar Skilaboð með forútfylltri beiðni (ekkert fer fyrr en kúnninn ýtir á Senda). Sýnisham (`?demo=1`) uppfærður.
 - `stadur_kerfi` (handvirkt, `heimild = tölvupóstur`): Miðgarður og Arnarhvoll **slökkvikerfi í eldhúsi = já, Öryggismiðstöðin**; Hlaðvarpinn **brunakerfi = já, okkar**. Afturkalla: `til_stadar='ovitad', thjonustuadili=null, heimild=null, uppruni='sjalfvirkt'` á þessum þremur röðum.
+
+## 6. Reyklosun í skýrslum Center Hótels (athugað 19.10.2026)
+
+**Bakgrunnur:** Melissa (17.04.2026): reyklosun „vantar á öllum hótelunum", vill uppfærðar skýrslur „þegar þetta hefur verið prófað og virkni staðfest". Haukur svaraði sama dag: „við skoðum líka reyklúgur … það hefði átt að vera á skýrslunum". Aðeins Arnarhvoll (Árleg prófun, Lárus Einarsson, 05.2026) hefur verið sent.
+
+**Aðferð:** sótti 15 brunakerfisskýrslur (2025–2026) úr gáttinni og las þær með `pdftotext -raw` (hakreitir: ☒ / x = prófað, - = á ekki við, autt = ekkert merkt).
+
+| Skýrsla | Lína „Stýribúnaður (loftræsting, reyklúgur, sprinkler)" |
+|---|---|
+| Miðgarður 09.2025 | **autt** (byggingarlýsing segir reyklosun um glugga/svalir + op í kjallara) |
+| Plaza 12.2025 | x prófað |
+| Arnarhvoll 09.2025 | - á ekki við |
+| Arnarhvoll 05.2026 (Lárus) | ☒ prófað — **stangast á við 09.2025** |
+| Arnarhvoll 02.10.2026 (26-0007, appið) | **engin lína** |
+| Klöpp 10.2025 | - á ekki við |
+| Grandi 03.2025 / 03.2026 | x prófað / - á ekki við — **stangast á** |
+| Skjaldbreið 09.2025 | **autt** |
+| Þingholt 09.2025 / 05.10.2026 (26-0009) | **autt** / **engin lína** |
+| Þingholt Apartments 09.2025 / 02.10.2026 (26-0008) | **autt** / **engin lína** |
+| Laugavegur 09.2025 | x prófað |
+| Laugavegur 08.10.2026 (26-0011) | „Skoðun á reyksogsstöð" (sérlína, 1 í lagi) og reyksogsop á reikningi R-001107 — **eina nýja skýrslan með reyklosun** |
+
+**Niðurstaða:**
+1. Reyklosun kemur *ekki* skýrt fram í nýju skýrslunum nema Laugavegi. Appsniðmátið (`273-brunakerfi-skyrsla.js`) hefur enga sjálfgefna línu fyrir reyklúgur — gamla Drive-sniðið hafði eina almenna línu. Þetta er sniðgalli, ekki bara gleymska.
+2. Gömlu skýrslurnar eru ósamkvæmar (autt / á ekki við / prófað sitt á hvað eftir hóteli og ári), svo þær sanna ekkert um reyklosun nema þar sem hakað er.
+3. Hvaða hótel *eru* með reyklúgur/reyksog er óstaðfest nema Miðgarður og Laugavegur (`stadur_kerfi`, byggingarlýsing og R-001107). Hin átta þarf að staðfesta á staðnum eða hjá Lárusi/undirverktaka.
+
+**Til að uppfæra skýrslur þarf:** (a) sjálfgefna línu „Reyklúgur / reyklosun — í lagi · ólagi · á ekki við" í appsniðmátið; (b) staðfestingu á því hvort reyklúgur voru prófaðar í heimsóknunum 02.–08.10 (Arnarhvoll, Þingholt, Þingholt Apartments); (c) prófun hjá hótelum sem eru með þær og hafa ekki verið prófaðar; (d) viðauka eða endurútgáfu — ekki fyrr en virkni er staðfest, því Melissa biður um skýrslur *eftir* prófun.
