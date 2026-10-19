@@ -265,7 +265,7 @@
         '.y{color:#b71c1c;font:600 8.5pt system-ui;letter-spacing:.08em;text-transform:uppercase}.haus{border-bottom:2.5px solid #b71c1c;padding-bottom:6px;margin-bottom:10px}' +
         'table{width:100%;border-collapse:collapse;font-size:9pt}th{background:#263238;color:#fff;text-align:left;padding:4px}td{border-bottom:1px solid #ddd;padding:3px 4px;vertical-align:top}' +
         'h2{font:700 13pt Georgia,serif;margin:14px 0 6px}h3{font-size:10pt;color:#7f0000;margin:8px 0 2px}p{margin:0 0 4px}.lyk{background:#fff3e0;border-left:3px solid #e65100;padding:3px 6px}' +
-        '.mynd{break-inside:avoid;margin:10px 0}.mynd img{width:100%;border:1px solid #ccc}small{color:#666}.dalkar{column-count:2;column-gap:7mm}' +
+        '.mynd{break-inside:avoid;margin:10px 0;text-align:center}.mynd h2{text-align:left}.mynd img{max-width:100%;max-height:230mm;width:auto;height:auto;border:1px solid #ccc}small{color:#666}.dalkar{column-count:2;column-gap:7mm}' +
         '</style></head><body><div class="haus"><div class="y">Búnaðargreining · brunavarnir og staðsetning búnaðar</div><h1>' + esc(r.heimilisfang || '') + '</h1><small>' +
         esc(dags(r.created_at)) + ' · ' + esc(r.af || '') + ' · ' + (r.stada === 'yfirfarin' ? 'Yfirfarin' : 'Tillaga') + '</small></div>' +
         samantektHtml(r).replace(/<\/?b[^>]*>/g, ' ').replace(/class="bgr-s"/, 'style="margin:6px 0 10px"') +
