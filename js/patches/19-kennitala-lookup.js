@@ -3,13 +3,13 @@
  * forms. When clicked (or auto-triggered after 10 digits), it queries the
  * já.is public search API and fills in nafn, heimilisfang, sími, netfang.
  *
- * API key: stored in localStorage key "ja_is_api_key".
- * Set it once via Settings → já.is lykill. Without a key the request is
- * still sent — já.is allows a small number of anonymous requests.
+ * 19.10.2026: já.is-lykillinn er HVERGI í vafranum lengur. Hann býr í Netlify env
+ * (JA_IS_API_KEY, valfrjáls) og /api/kt-lookup spyr já.is sjálft þegar Skatturinn
+ * finnur ekki kennitöluna. Stillingar sýna aðeins „stillt á þjóni: já/nei".
  *
  * Endpoints tried in order:
- *  1. https://api.ja.is/v1/companies/{kennitala}  (companies)
- *  2. https://leit.is/api/v1/einstaklingar/{kennitala}  (individuals, fallback)
+ *  1. /api/kt-lookup (Skatturinn → já.is á þjóni ef lykill er til)
+ *  2. Public CORS proxies → skatturinn.is, parsað hér
  *
  * The button is injected next to any input with id/name matching /kennitala|kt/
  * inside the company-new modal and any other form that opens after load.
@@ -19,7 +19,8 @@
   if (window.__ktLookupInstalled) return;
   window.__ktLookupInstalled = true;
 
-  const LS_KEY = 'ja_is_api_key';
+  // Gamla leyndarmálið hreinsað einu sinni úr vafranum — það er aldrei lesið aftur.
+  try { localStorage.removeItem('ja_is_api_key'); } catch (_) {}
 
   // ── Styles ──────────────────────────────────────────────────────────────
   const STYLE_ID = 'kt-lookup-style';
@@ -127,26 +128,8 @@
       throw new Error('Engin CORS-proxy svaraði — netvandamál eða allir blokkaðir.');
     }
 
-    // 3) já.is API — ef notandi hefur sett lykil í Stillingar (paid service).
-    const apiKey = localStorage.getItem(LS_KEY) || '';
-    if (apiKey) {
-      try {
-        const r = await fetch(`https://api.ja.is/v1/companies/${clean}`, {
-          headers: { 'X-API-KEY': apiKey },
-        });
-        if (r.ok) {
-          const d = await r.json();
-          if (d && (d.nafn || d.name)) {
-            return {
-              nafn: d.nafn || d.name || '',
-              heimilisfang: [d.heimilisfang || d.address || '', d.postnumer || d.postalCode || '', d.sveitarfelag || d.city || ''].filter(Boolean).join(', '),
-              simi: d.simi || d.phone || '',
-              netfang: d.netfang || d.email || ''
-            };
-          }
-        }
-      } catch (_) { /* fall through */ }
-    }
+    // 3) já.is — var áður kallað HÉR með lykli úr localStorage. Nú gerir /api/kt-lookup það
+    //    á þjóninum (JA_IS_API_KEY í env) í þrepi 1; vafrinn ber engan lykil.
 
     throw new Error('Kennitala fannst ekki í fyrirtækjaskrá RSK.');
   }
@@ -347,14 +330,11 @@
   });
   mo.observe(document.body, { childList: true, subtree: true });
 
-  // ── Expose API key setting ───────────────────────────────────────────────
   window.KtLookup = {
-    setApiKey: k => { localStorage.setItem(LS_KEY, k); Toast && Toast.show && Toast.show('já.is lykill vistaður'); },
-    getApiKey: () => localStorage.getItem(LS_KEY) || '',
     lookup: fetchKt
   };
 
-  // Hook into Settings view to surface the API key field
+  // Stillingar: sýna aðeins hvort já.is-lykillinn sé til á þjóni (aldrei gildið)
   function injectSettingsField() {
     const settingsView = document.getElementById('view-settings');
     if (!settingsView || document.getElementById('kt-api-key-field')) return;
@@ -367,20 +347,17 @@
       <div style="font-weight:600;font-size:13px;color:#0f172a;margin-bottom:8px;">
         já.is API lykill (Kennitala uppfletting)
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input id="kt-api-key-input" type="text" placeholder="Slærðu inn lykil frá api.ja.is (valfrjálst)"
-          style="flex:1;padding:8px 12px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;"
-          value="${(localStorage.getItem(LS_KEY)||'').replace(/"/g,'&quot;')}">
-        <button onclick="KtLookup.setApiKey(document.getElementById('kt-api-key-input').value.trim())"
-          style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;">
-          Vista
-        </button>
-      </div>
+      <div id="kt-api-key-stada" style="font-size:13px;color:#334155;">Stillt á þjóni: <strong>athuga…</strong></div>
       <div style="font-size:11px;color:#64748b;margin-top:6px;">
-        Skráðu þig á <a href="https://api.ja.is" target="_blank" style="color:#2563eb;">api.ja.is</a> til að fá ókeypis lykil.
-        Án lykils virka ~5 uppflettingar á dag.
+        Valfrjáls varaleið þegar Skatturinn finnur ekki kennitöluna. Lykillinn býr í Netlify env
+        (<code>JA_IS_API_KEY</code>) — ekki í vafranum.
       </div>`;
     container.appendChild(div);
+    fetch('/api/kt-lookup?stada=1').then(r => r.ok ? r.json() : null).then(j => {
+      const el = document.getElementById('kt-api-key-stada');
+      if (!el) return;
+      el.innerHTML = 'Stillt á þjóni: <strong style="color:' + (j && j.ja_is_stillt ? '#166534' : '#64748b') + '">' + (j ? (j.ja_is_stillt ? 'já' : 'nei (valfrjálst)') : 'óþekkt') + '</strong>';
+    }).catch(() => { const el = document.getElementById('kt-api-key-stada'); if (el) el.innerHTML = 'Stillt á þjóni: <strong>óþekkt</strong>'; });
   }
 
   document.addEventListener('view-shown', e => {

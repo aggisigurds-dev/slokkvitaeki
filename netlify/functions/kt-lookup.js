@@ -11,7 +11,38 @@
  *      404 if not found
  *
  * Source: Skatturinn (RSK) Fyrirtækjaskrá public registry.
+ *
+ * 19.10.2026 — já.is sem VARALEIÐ Á ÞJÓNI: 19-kennitala-lookup.js kallaði áður á api.ja.is beint úr
+ * vafranum með lykli úr localStorage. Leyndarmál búa ekki í vafra (regla Agnars 15.10.2026), svo
+ * lykillinn er nú Netlify env `JA_IS_API_KEY` (valfrjáls) og já.is er spurt HÉR — aðeins þegar
+ * Skatturinn finnur ekki kennitöluna og lykillinn er til. `?stada=1` segir Stillingum hvort lykillinn
+ * sé til (já/nei), aldrei gildið.
  */
+const JA_IS_KEY = String(process.env.JA_IS_API_KEY || '').trim();
+
+async function lesaJaIs(kt) {
+  if (!JA_IS_KEY) return null;
+  try {
+    const r = await fetch(`https://api.ja.is/v1/companies/${encodeURIComponent(kt)}`, {
+      headers: { 'X-API-KEY': JA_IS_KEY, Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(() => null);
+    const nafn = d && (d.nafn || d.name) || '';
+    if (!nafn) return null;
+    const heimilisfang = String(d.heimilisfang || d.address || '').trim();
+    const postnumer = String(d.postnumer || d.postalCode || '').trim();
+    const stadur = String(d.sveitarfelag || d.city || '').trim();
+    return {
+      kennitala: kt, nafn, heimilisfang, postnumer, stadur,
+      heimilisfang_full: [heimilisfang, postnumer && stadur ? `${postnumer} ${stadur}` : (postnumer || stadur)].filter(Boolean).join(', '),
+      simi: String(d.simi || d.phone || ''), netfang: String(d.netfang || d.email || ''),
+      stofnad: '', rekstrarform: '', forradamenn: [], isat: [], stada: [], bt_adili: '',
+      source: 'ja.is',
+    };
+  } catch (_) { return null; }
+}
 // 25.09.2026 — skyndiminni fyrir kt-haminn (Agnar: „algjör óþarfi að vera alltaf að sækja það").
 // Fallið skrapaði skatturinn.is í HVERT sinn. Mælt á fyrirtækjasíðu við kuldaræsingu: 8.696 ms —
 // langhægasta kallið á síðunni. `Cache-Control: max-age=86400` hjálpar aðeins þeim vafra sem
@@ -54,6 +85,12 @@ async function skrifaKt(kt, svar) {
 
 export default async (req) => {
   const url = new URL(req.url);
+  if (url.searchParams.get('stada')) {
+    // Staða fyrir Stillingar (19): aðeins HVORT já.is-lykill sé til á þjóni.
+    return new Response(JSON.stringify({ ja_is_stillt: !!JA_IS_KEY }), {
+      status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+    });
+  }
   const kt = (url.searchParams.get('kt') || '').replace(/[^0-9]/g, '');
   const nafn = (url.searchParams.get('nafn') || '').trim();
 
@@ -140,6 +177,12 @@ export default async (req) => {
       },
     });
     if (!r.ok) {
+      const ja = await lesaJaIs(kt);   // varaleið á þjóni (JA_IS_API_KEY) — null ef enginn lykill
+      if (ja) {
+        // Ekki skrifað í skyndiminnið: já.is ber hvorki stöðu (gjaldþrot/afskráning) né forráðamenn,
+        // og 30 daga skyndiminni má ekki fela slíkt.
+        return new Response(JSON.stringify(ja), { status: 200, headers: { 'Content-Type': 'application/json', ...cors() } });
+      }
       return new Response(JSON.stringify({ error: `RSK ${r.status}` }), {
         status: 404,
         headers: cors(),
@@ -197,6 +240,12 @@ export default async (req) => {
     const isat = listiUndir('ÍSAT Atvinnugreina');   // full fyrirsögn — „ÍSAT nr." stendur líka í VSK-töflunni
 
     if (!nafn) {
+      const ja = await lesaJaIs(kt);   // varaleið á þjóni (JA_IS_API_KEY) — null ef enginn lykill
+      if (ja) {
+        // Ekki skrifað í skyndiminnið: já.is ber hvorki stöðu (gjaldþrot/afskráning) né forráðamenn,
+        // og 30 daga skyndiminni má ekki fela slíkt.
+        return new Response(JSON.stringify(ja), { status: 200, headers: { 'Content-Type': 'application/json', ...cors() } });
+      }
       return new Response(JSON.stringify({ error: 'not-found', kt }), {
         status: 404,
         headers: cors(),

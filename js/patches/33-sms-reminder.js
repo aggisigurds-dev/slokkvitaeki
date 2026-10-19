@@ -2,7 +2,9 @@
 /* Shows a panel in Afgreiðsla sidebar when jobs are ready for pickup.
  * Each job gets an "Opna SMS" button that opens the native SMS app
  * with a pre-filled Icelandic message — works on iOS and Android.
- * Optional Twilio integration for desktop sending (requires proxy for CORS).
+ * Optional Twilio integration for desktop sending — 19.10.2026 gegnum
+ * /api/sms-send (netlify/functions/sms-send.js) sem les TWILIO_SID/TOKEN/FROM
+ * úr Netlify env. Vafrinn ber engin Twilio-auðkenni.
  *
  * verkbeidnir columns used: id, num, customer, phone, status, dropoff
  * Trigger status: 'Tilbúið'
@@ -14,7 +16,6 @@
  *   sms_sent_log      — JSON map of {jobId: isoTimestamp} — 21.09.2026 (úttekt):
  *                       aðeins skyndiminni; sannleikurinn er á þjóninum í
  *                       AppSettings-lyklinum `sms_aminningar_log` (sama lögun)
- *   sms_twilio_sid / sms_twilio_token / sms_twilio_from — Twilio (optional)
  */
 (() => {
   if (window.__smsReminderInstalled) return;
@@ -24,11 +25,11 @@
     TEMPLATE:     'sms_template',
     CO_PHONE:     'sms_company_phone',
     OVERDUE_DAYS: 'sms_overdue_days',
-    LOG:          'sms_sent_log',
-    TW_SID:       'sms_twilio_sid',
-    TW_TOKEN:     'sms_twilio_token',
-    TW_FROM:      'sms_twilio_from'
+    LOG:          'sms_sent_log'
   };
+  // 19.10.2026: Twilio-auðkennin (sid/token/from) voru í localStorage hverrar vélar. Þau búa nú í
+  // Netlify env og eru hreinsuð einu sinni úr vafranum hér — aldrei lesin eða skrifuð aftur.
+  try { ['sms_twilio_sid', 'sms_twilio_token', 'sms_twilio_from'].forEach(k => localStorage.removeItem(k)); } catch (_) {}
 
   const DEFAULT_TEMPLATE =
     'Góðan dag {nafn}! Slökkvitæki ehf hér. Tæki þitt (verk #{num}) er tilbúið til afhendingar. ' +
@@ -43,9 +44,9 @@
 
   // 15.10.2026 (regla Agnars): sniðmát, sími og seinkunardagar snerta rukkun/samskipti → AppSettings
   // 'stillingar.sms.{snid,simi,seinnDagar}' (eitt gildi fyrir allar vélar), skrifað AÐEINS við „Vista stillingar".
-  // Gömlu localStorage-lyklarnir eru aðeins LESNIR sem varagildi þar til fyrst er vistað. Twilio-lyklarnir
-  // (sms_twilio_sid/token/from) eru LEYNDARMÁL og fara EKKI í app_settings — þeir sitja áfram í localStorage
-  // (eiga heima í Netlify env, sjá skýrslu 15.10.2026).
+  // Gömlu localStorage-lyklarnir eru aðeins LESNIR sem varagildi þar til fyrst er vistað. Twilio-auðkennin
+  // eru LEYNDARMÁL: hvorki í app_settings né í vafra — þau eru Netlify env (TWILIO_SID/TWILIO_TOKEN/TWILIO_FROM)
+  // og /api/sms-send notar þau á þjóninum.
   const ST_SLOD = { sms_template: 'sms.snid', sms_company_phone: 'sms.simi', sms_overdue_days: 'sms.seinnDagar' };
   function get(key, fallback) {
     try {
@@ -377,24 +378,28 @@
     hd ? hd.after(panel) : sidebar.prepend(panel);
   }
 
-  // ── Twilio send (optional — needs CORS proxy in prod) ─────────────────────
+  // ── Twilio send — gegnum /api/sms-send á þjóninum (auðkenni í Netlify env) ──
   async function sendTwilio(to, body) {
-    const sid   = get(K.TW_SID);
-    const token = get(K.TW_TOKEN);
-    const from  = get(K.TW_FROM);
-    if (!sid || !token || !from) throw new Error('Twilio ekki stillt');
-    const resp = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: 'Basic ' + btoa(sid + ':' + token),
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({ To: normalizePhone(to), From: from, Body: body })
-      }
-    );
-    if (!resp.ok) { const e = await resp.json().catch(() => ({})); throw new Error(e.message || 'Twilio villa ' + resp.status); }
+    const resp = await fetch('/api/sms-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: normalizePhone(to), body: body })
+    });
+    const j = await resp.json().catch(() => ({}));
+    if (!resp.ok || j.error) {
+      const msg = j.message || j.error || ('Twilio villa ' + resp.status);
+      try { if (window.logProblem) window.logProblem('sms_send_failed', 'sms-send HTTP ' + resp.status + ' — ' + msg, { fingerprint: 'sms_send_failed' }); } catch (_) {}
+      throw new Error(msg);
+    }
+    return j;
+  }
+
+  // Staða Twilio á þjóni — aðeins já/nei per breytu, gildin koma aldrei í vafrann.
+  async function twilioStada() {
+    try {
+      const r = await fetch('/api/sms-send', { method: 'GET' });
+      return r.ok ? await r.json() : null;
+    } catch (_) { return null; }
   }
 
   // ── Settings injection ─────────────────────────────────────────────────────
@@ -424,14 +429,10 @@
         <details style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px">
           <summary style="font-size:13px;font-weight:600;color:#475569;cursor:pointer">⚡ Twilio (valfrjálst)</summary>
           <div style="display:grid;gap:10px;margin-top:12px">
-            <div><label class="fl">Account SID</label>
-              <input id="sms-tw-sid" class="fi" placeholder="ACxxxxxxxx" value="${esc(get(K.TW_SID))}"></div>
-            <div><label class="fl">Auth Token</label>
-              <input id="sms-tw-tok" class="fi" type="password" placeholder="••••••••" value="${esc(get(K.TW_TOKEN))}"></div>
-            <div><label class="fl">Frá-númer</label>
-              <input id="sms-tw-from" class="fi" placeholder="+15551234567" value="${esc(get(K.TW_FROM))}"></div>
-            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;font-size:11px;color:#92400e">
-              ⚠ Twilio krefst CORS proxy. "Opna SMS app" hnappur virkar alltaf án Twilio.
+            <div id="sms-tw-stada" style="font-size:13px;color:#334155">Stillt á þjóni: <strong>athuga…</strong></div>
+            <div style="font-size:11px;color:#64748b">
+              Auðkennin búa í Netlify env (<code>TWILIO_SID</code>, <code>TWILIO_TOKEN</code>, <code>TWILIO_FROM</code>) —
+              ekki í vafranum. „Opna SMS app" hnappurinn virkar alltaf án Twilio.
             </div>
           </div>
         </details>
@@ -439,6 +440,14 @@
       </div>`;
 
     sm.appendChild(sec);
+    twilioStada().then(j => {
+      const el = document.getElementById('sms-tw-stada');
+      if (!el) return;
+      if (!j) { el.innerHTML = 'Stillt á þjóni: <strong>óþekkt</strong>'; return; }
+      const vantar = ['sid', 'token', 'from'].filter(k => !j[k]).map(k => 'TWILIO_' + k.toUpperCase());
+      el.innerHTML = 'Stillt á þjóni: <strong style="color:' + (j.stillt ? '#166534' : '#991b1b') + '">' + (j.stillt ? 'já' : 'nei') + '</strong>' +
+        (vantar.length ? ' <span style="color:#64748b">(vantar: ' + esc(vantar.join(', ')) + ')</span>' : '');
+    });
 
     var smsSaveBtn = document.getElementById('sms-save-btn');
     if (smsSaveBtn) smsSaveBtn.onclick = () => {
@@ -449,10 +458,6 @@
           sms: { simi, seinnDagar: document.getElementById('sms-days')?.value || '2', snid: document.getElementById('sms-tpl')?.value || '' },
           fyrirtaeki: { simi } } });
       } catch (_) {}
-      // Twilio = leyndarmál → ekki í app_settings; óbreytt í localStorage þessarar vélar.
-      localStorage.setItem(K.TW_SID,   (document.getElementById('sms-tw-sid')?.value || '').trim());
-      localStorage.setItem(K.TW_TOKEN, (document.getElementById('sms-tw-tok')?.value || '').trim());
-      localStorage.setItem(K.TW_FROM,  (document.getElementById('sms-tw-from')?.value || '').trim());
       if (window.Toast && Toast.show) Toast.show('✓ SMS stillingar vistaðar');
     };
   }
