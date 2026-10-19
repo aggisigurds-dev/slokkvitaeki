@@ -156,6 +156,18 @@
     }).join('') + '</ul>';
   }
 
+  // Búnaðargreining (474) prentar hæðirnar eins og spjöldin sýna þær
+  window.TeiknForskodun = {
+    teikna: teiknaTeikningu, listi: listiHaedar,
+    // eftir að merkin fengu auðkenni/stað: spjöldin smíðuð aftur úr ferskri röð
+    endurnyja: function () {
+      var sec = document.getElementById('co-fp-section'), g = sec && sec.querySelector('#' + ID);
+      if (!sec) return;
+      if (g) g.remove();
+      unnid.delete(sec); athuga();
+    }
+  };
+
   function opnaHaed(cid, i) {
     if (!window.Companies || typeof Companies.opnaTeikningu !== 'function') return;
     Companies.opnaTeikningu(cid);
