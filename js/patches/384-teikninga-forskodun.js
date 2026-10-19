@@ -13,7 +13,8 @@
  * gamla hlekkinn í nýjum flipa.
  *
  * Ekkert er vistað hér. Myndin kemur um teikn-mynd (6006 px JPEG af sömu rót), frumritið um teikn-pdf (vigur-PDF).
- * TIF-frumrit eru 50–300 MB og fara ekki gegnum fall með 10 sek þak — þar opnast skjalið í skjalasafninu sjálfu.
+ * TIF-frumrit skjalasafnsins eru 50–300 MB og fara ekki gegnum fall með 10 sek þak — þar opnast skjalið í skjalasafninu
+ * sjálfu. Beinar .tif kortasjár (Mosfellsbær, 0,1–1,5 MB) eru hins vegar afkóðaðar hér (TIF-vélin, 19.10.2026) og sýndar.
  *
  * Agnar 02.10.2026: 1.–4. hæð á spjaldinu opnaðist ekki. hus-upplysingar skilar
  * hæðum án `results`; hnappurinn bar aðeins data-co. Nú fer landnúmer með og
@@ -33,7 +34,8 @@
   // prentun og „Nota í úttektarteikningu" virka eins og fyrir Reykjavík. Myndirnar eru geymdar á meðan glugginn er opinn.
   const beintPdf = d => /\.pdf$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
   // 19.10.2026: Mosfellsbær (luks.mos.is) afhendir skannanir sem .tif BEINT (510 af 515 á Sunnukrika 3). Vafrinn birtir ekki
-  // TIFF og teikn-mynd kann aðeins FotoWeb — slíkt blað fær skýr skilaboð og ⬇ sækir skrána um teikn-pdf (sama rót, rétt nafn).
+  // TIFF og teikn-mynd kann aðeins FotoWeb — blaðið er sótt um teikn-pdf (sama rót) og afkóðað hér með TIF-vélinni (UTIF í
+  // vinnuþræði, sjá neðar), svo það birtist sem mynd eins og PDF-blöð Kópavogs. ⬇ sækir skrána sjálfa (?nidurhal=1, rétt nafn).
   const beintTif = d => /\.tiff?$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
   const _myndir = new Map();
@@ -49,6 +51,117 @@
     }
     return _pdf.get(d.infoUrl);
   }
+
+  /* ── TIF-VÉLIN (19.10.2026) — bein .tif kortasjár sem mynd ──────────────────────────────────────────────────────
+   * Skönnun Mosfellsbæjar er 1 bita CCITT G4, 9364 × 6621 dílar í 135 kB skrá (Reykjabyggð 10, 4871.TIF): sem RGBA væri
+   * hún 248 MB, svo hún er ALDREI afkóðuð í fulla stærð á aðalþræði. Vinnuþráðurinn (sama UTIF-útgáfa og 438 notar, pako
+   * fyrir Deflate-skannanir) afkóðar skrána einu sinni og geymir hrá gögnin (1 bita = 7,7 MB), teiknar svo mynd af
+   * umbeðinni stærð (lengri hlið = px) með kassasíun beint úr hráu gögnunum — þunn lína í 25× smækkun hverfur ekki. Hér
+   * verður svarið blob-slóð (JPEG) sem lifir meðan síðan er opin, ein per blað og stærð. Skrá > 25 MB fær villu með
+   * stærðinni og ⬇ sækir hana í staðinn. 451 Greining notar sömu vél (window.TeiknTif) — eitt afkóðað eintak.
+   * Bætin fara um teikn-pdf án ?nidurhal, svo 463 deilir sókninni með öðrum köllurum. */
+  const TeiknTif = (() => {
+    const HAMARK = 25 * 1024 * 1024, HRA_HAMARK = 96 * 1024 * 1024;
+    const VERK = [
+      "importScripts('https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js','https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js');",
+      'const G=new Map();let heild=0;',
+      // díll (x,y) → 0xAABBGGRR, beint úr hráu gögnunum (sama lesari og 438): 1/4/8 bita grátt, litaspjald, RGB(A); annars UTIF
+      'function lesari(f){const d=f.data,w=f.width,ip=f.t262?f.t262[0]:2,bps=f.t258?f.t258[0]:1,spp=f.t258?f.t258.length:1,bpl=Math.ceil(w*bps*spp/8),A=0xff000000;',
+      ' if((ip===0||ip===1)&&spp===1&&(bps===1||bps===4||bps===8)){const mx=(1<<bps)-1,lut=new Uint32Array(mx+1);for(let v=0;v<=mx;v++){let g=Math.round(v*255/mx);if(ip===0)g=255-g;lut[v]=A|g<<16|g<<8|g;}',
+      '  if(bps===8)return(x,y)=>lut[d[y*bpl+x]];if(bps===4)return(x,y)=>lut[(d[y*bpl+(x>>1)]>>(4-4*(x&1)))&15];return(x,y)=>lut[(d[y*bpl+(x>>3)]>>(7-(x&7)))&1];}',
+      ' if(ip===3&&spp===1&&(bps===4||bps===8)&&f.t320){const n=1<<bps,m=f.t320,lut=new Uint32Array(n);for(let v=0;v<n;v++)lut[v]=A|(m[2*n+v]>>8)<<16|(m[n+v]>>8)<<8|(m[v]>>8);',
+      '  if(bps===8)return(x,y)=>lut[d[y*bpl+x]];return(x,y)=>lut[(d[y*bpl+(x>>1)]>>(4-4*(x&1)))&15];}',
+      ' if(ip===2&&bps===8&&(spp===3||spp===4))return(x,y)=>{const i=y*bpl+x*spp;return A|d[i+2]<<16|d[i+1]<<8|d[i];};',
+      ' const r=new Uint32Array(UTIF.toRGBA8(f).buffer);return(x,y)=>r[y*w+x]|A;}',
+      // birtingar-díll → hrár díll fyrir snúningana átta (TIFF Orientation)
+      'function varp(o,W,H){switch(o){case 2:return(x,y)=>[W-1-x,y];case 3:return(x,y)=>[W-1-x,H-1-y];case 4:return(x,y)=>[x,H-1-y];',
+      ' case 5:return(x,y)=>[y,x];case 6:return(x,y)=>[y,H-1-x];case 7:return(x,y)=>[W-1-y,H-1-x];case 8:return(x,y)=>[W-1-y,x];default:return null;}}',
+      'onmessage=e=>{const q=e.data;try{',
+      ' let m=G.get(q.slod);',
+      ' if(!m){if(!q.buf){postMessage({id:q.id,vantar:true});return;}',
+      '  const ifds=UTIF.decode(q.buf).filter(f=>f.t256&&f.t257).sort((a,c)=>c.t256[0]*c.t257[0]-a.t256[0]*a.t257[0]);if(!ifds.length)throw new Error("Engin mynd í TIF-skránni");',
+      '  const f=ifds[0];UTIF.decodeImage(q.buf,f);const o=f.t274?f.t274[0]:1,sn=o>=5;',
+      '  m={W:f.width,H:f.height,dW:sn?f.height:f.width,dH:sn?f.width:f.height,v:varp(o,f.width,f.height),les:lesari(f),b:f.data?f.data.length:0,bil:!!(f.t258&&f.t258.length===1&&f.t258[0]===1)};',
+      '  G.set(q.slod,m);heild+=m.b;while(G.size>1&&heild>' + HRA_HAMARK + '){const k=G.keys().next().value;heild-=G.get(k).b;G.delete(k);}}',
+      ' G.delete(q.slod);G.set(q.slod,m);',   // nýjast aftast — elsta fýkur fyrst
+      ' const k=Math.min(1,q.px/Math.max(m.dW,m.dH)),w=Math.max(1,Math.round(m.dW*k)),h=Math.max(1,Math.round(m.dH*k));',
+      // 1 bita línuteikning: hrein kassasíun gerir 1 díls línu að ljósgráu (4 % dökkva í 25×25 kassa — mælt 248 dökkir dílar
+      // af 102.220 á Reykjabyggð 10). Dökkvinn er því margfaldaður með hliðarlengd kassans (lína í gegnum kassann = svart);
+      // grátóna-/litaskannanir halda hreinu meðaltali, annars yrði ljósgrár bakgrunnur þeirra svartur.
+      ' const sx=m.dW/w,sy=m.dH/h,nx=Math.min(32,Math.max(1,Math.round(sx))),ny=Math.min(32,Math.max(1,Math.round(sy))),n=nx*ny,bk=m.bil?Math.sqrt(n):1,v=m.v,les=m.les,ut=new Uint32Array(w*h);',
+      ' for(let j=0;j<h;j++){const y0=j*sy;for(let i=0;i<w;i++){const x0=i*sx;let r=0,g=0,b=0;',
+      '  for(let a=0;a<ny;a++){const y=Math.min(m.dH-1,Math.floor(y0+(a+.5)*sy/ny));for(let c=0;c<nx;c++){const x=Math.min(m.dW-1,Math.floor(x0+(c+.5)*sx/nx));',
+      '   let u;if(v){const p=v(x,y);u=les(p[0],p[1]);}else u=les(x,y);r+=u&255;g+=u>>8&255;b+=u>>16&255;}}',
+      '  if(bk>1){const L=255-Math.min(255,Math.round((255-(r+g+b)/(3*n))*bk));ut[j*w+i]=0xff000000|L<<16|L<<8|L;}',
+      '  else ut[j*w+i]=0xff000000|((b/n)|0)<<16|((g/n)|0)<<8|((r/n)|0);}}',
+      ' postMessage({id:q.id,w,h,W:m.dW,H:m.dH,rgba:ut.buffer},[ut.buffer]);',
+      '}catch(err){postMessage({id:q.id,villa:(err&&err.message)||String(err)});}};',
+    ];
+    let w = null, nr = 0;
+    const bid = new Map();      // id → { res, rej }
+    const baeti = new Map();    // frumslóð → Promise<ArrayBuffer>
+    const myndir = new Map();   // frumslóð|px → Promise<blob-slóð>
+    const staerd = new Map();   // frumslóð → { W, H } (dílar eftir snúning)
+    const iThraedi = new Set(); // frumslóðir sem þráðurinn á afkóðaðar
+    function thradur() {
+      if (w) return w;
+      w = new Worker(URL.createObjectURL(new Blob([VERK.join('\n')], { type: 'text/javascript' })));
+      w.onmessage = (e) => { const m = e.data, p = bid.get(m.id); if (!p) return; bid.delete(m.id); if (m.villa) p.rej(new Error(m.villa)); else p.res(m); };
+      w.onerror = (e) => {
+        const v = new Error('TIF-þráðurinn stöðvaðist' + (e && e.message ? ': ' + e.message : ''));
+        bid.forEach((p) => p.rej(v)); bid.clear(); iThraedi.clear();
+        try { w.terminate(); } catch (_) {} w = null;
+      };
+      return w;
+    }
+    const kalla = (msg, flytja) => new Promise((res, rej) => { const id = ++nr; bid.set(id, { res, rej }); thradur().postMessage(Object.assign({ id }, msg), flytja || []); });
+    const mb = (n) => (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace('.', ',') + ' MB';
+    function ofStor(n) { const e = new Error('TIF-skráin er ' + mb(n) + ' — of stór til að birta hér. Sæktu hana með ⬇ og opnaðu í myndaforriti'); e.ofStor = n; return e; }
+    function saekjaBaeti(slod) {
+      if (!baeti.has(slod)) {
+        const p = (async () => {
+          const r = await fetch(PDF + '?url=' + encodeURIComponent(slod), { signal: AbortSignal.timeout(60000) });
+          if (!r.ok) { let v = ''; try { v = (await r.json()).error || ''; } catch (_) {} throw new Error(v || ('TIF-skráin fékkst ekki (' + r.status + ')')); }
+          const lengd = Number(r.headers.get('content-length') || 0);
+          if (lengd > HAMARK) throw ofStor(lengd);   // 463 sleppir hausnum — þá er stærðin mæld á bætunum sjálfum
+          const b = await r.arrayBuffer();
+          if (b.byteLength > HAMARK) throw ofStor(b.byteLength);
+          if (b.byteLength < 8) throw new Error('TIF-skráin er tóm (' + b.byteLength + ' bæti)');
+          return b;
+        })();
+        baeti.set(slod, p); p.catch(() => baeti.delete(slod));
+      }
+      return baeti.get(slod);
+    }
+    // Mynd blaðsins, lengri hlið = px (aldrei stærri en frumritið) → blob-slóð; sama blað og stærð = sama slóð
+    function mynd(slod, px) {
+      const k = slod + '|' + px;
+      if (!myndir.has(k)) {
+        const p = (async () => {
+          let svar = null;
+          for (let t = 0; t < 2 && !svar; t++) {
+            if (iThraedi.has(slod)) { const s = await kalla({ slod, px }); if (s.vantar) iThraedi.delete(slod); else svar = s; continue; }
+            const b = await saekjaBaeti(slod), afrit = b.slice(0);   // afritið flyst yfir; bætin hér lifa fyrir næstu sendingu
+            iThraedi.add(slod);
+            const s = await kalla({ slod, px, buf: afrit }, [afrit]);
+            if (s.vantar) iThraedi.delete(slod); else svar = s;
+          }
+          if (!svar) throw new Error('TIF-þráðurinn skilaði engri mynd');
+          staerd.set(slod, { W: svar.W, H: svar.H });
+          const cv = document.createElement('canvas'); cv.width = svar.w; cv.height = svar.h;
+          cv.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(svar.rgba), svar.w, svar.h), 0, 0);
+          const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.86));
+          if (!blob) throw new Error('mynd varð ekki til');
+          return URL.createObjectURL(blob);
+        })();
+        myndir.set(k, p); p.catch(() => myndir.delete(k));
+      }
+      return myndir.get(k);
+    }
+    const nidurhal = (slod) => PDF + '?nidurhal=1&url=' + encodeURIComponent(slod);
+    return { mynd, nidurhal, saekjaBaeti, staerd: (slod) => staerd.get(slod) || null, HAMARK, mb, er: (u) => /\.tiff?$/i.test(String(u || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(u || '')) };
+  })();
+  window.TeiknTif = TeiknTif;
   function hladaPdfJs() {
     if (window.pdfjsLib) return Promise.resolve();
     return new Promise((res, rej) => {
@@ -58,7 +171,13 @@
     });
   }
   async function myndSlod(d) {
-    if (beintTif(d)) throw new Error('TIF-skönnun úr kortasjá sveitarfélagsins — vafrinn birtir ekki TIFF. Sæktu skrána með ⬇ og opnaðu í myndaforriti');
+    if (beintTif(d)) {
+      // TIF kortasjár: afkóðað í vinnuþræði, lengri hlið ~4200 px eins og PDF-blöðin; blob-slóðin lifir með síðunni
+      if (_myndir.has(d.infoUrl)) return _myndir.get(d.infoUrl);
+      const url = await TeiknTif.mynd(d.infoUrl, 4200);
+      _myndir.set(d.infoUrl, url);
+      return url;
+    }
     if (!beintPdf(d)) return MYND + '?url=' + encodeURIComponent(d.infoUrl);
     if (_myndir.has(d.infoUrl)) return _myndir.get(d.infoUrl);
     await hladaPdfJs();
@@ -79,6 +198,7 @@
     if (!d) return '';
     if (d.thumb) return d.thumb;
     if (_thumbs.has(d.infoUrl)) return _thumbs.get(d.infoUrl);
+    if (beintTif(d)) { const u = await TeiknTif.mynd(d.infoUrl, 320); _thumbs.set(d.infoUrl, u); return u; }
     if (!beintPdf(d)) return '';
     await hladaPdfJs();
     const gogn = await pdfGogn(d);
@@ -417,7 +537,7 @@
     txt.hidden = false;
     txt.innerHTML = '<b>' + esc(d.lysing || d.tegund || 'Teikning') + '</b> · ' + esc([d.dags, d.stada, d.bnnr].filter(Boolean).join(' · '));
     document.getElementById('tfs-skra').textContent = d.filename || '';
-    document.querySelector('#tfs [data-a="saekja"]').textContent = erPdf(d) ? '⬇ Sækja í fullum gæðum (PDF)' : '⬇ Sækja frumrit í skjalasafni (TIF)';
+    document.querySelector('#tfs [data-a="saekja"]').textContent = erPdf(d) ? '⬇ Sækja í fullum gæðum (PDF)' : beintTif(d) ? '⬇ Sækja TIF-skrána' : '⬇ Sækja frumrit í skjalasafni (TIF)';
     const im = new Image();
     im.alt = d.lysing || 'Teikning'; im.draggable = false;
     im.style.visibility = 'hidden';
@@ -431,6 +551,7 @@
     };
     im.onerror = () => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna. Prófaðu aðra, eða opnaðu hana í skjalasafninu með ⬇.'; };
     if (beintPdf(d)) bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki PDF og teikna fyrstu síðu…';
+    else if (beintTif(d)) bid.innerHTML = '<div style="width:26px;height:26px;border:3px solid rgba(255,255,255,.18);border-top-color:#c9a54a;border-radius:50%;animation:bvr .9s linear infinite"></div>Sæki TIF-skönnun og afkóða…';
     myndSlod(d).then(u => { if (S.valin !== d) return; im.src = u; if (d._sidur > 1) txt.innerHTML += ' · <span style="color:#e8cb7a">síða 1 af ' + d._sidur + ' — allar síður í ⬇ / 🖨</span>'; })
       .catch(e => { if (S.valin !== d) return; bid.innerHTML = '⚠ Náði ekki í teikninguna: ' + esc((e && e.message) || e) + '. Prófaðu aðra, eða sæktu skjalið með ⬇.'; });
   }
@@ -515,9 +636,9 @@
           segja('📌 ' + (d.lysing || 'Teikningin') + ' er komin í úttektarteikninguna — merktu tækin og ýttu á Vista.');
         };
         im.onerror = () => segja('⚠ Náði ekki í teikninguna fyrir úttektina.');
-        // Beint PDF: blob-slóðin lifir aðeins í þessum flipa og má EKKI vistast sem imageUrl á þjóninn — þar fer gagnaslóð.
+        // Beint PDF / TIF: blob-slóðin lifir aðeins í þessum flipa og má EKKI vistast sem imageUrl á þjóninn — þar fer gagnaslóð.
         myndSlod(d).then(async u => {
-          if (beintPdf(d)) { try { const b = await (await fetch(u)).blob(); u = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); }); } catch (_) {} }
+          if (beintPdf(d) || beintTif(d)) { try { const b = await (await fetch(u)).blob(); u = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); }); } catch (_) {} }
           url = u;
           if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(im, u);
           else if (window.TeiknSja && TeiknSja.bindSrc) TeiknSja.bindSrc(im, u);

@@ -323,7 +323,7 @@
       R + ' .gr-skjal-rod > .gr-fsk{flex:0 0 172px;width:172px}',
       R + ' .gr-fsk-bida{cursor:default}',
       R + ' .gr-fsk-skemmt{cursor:not-allowed;box-shadow:inset 0 0 0 1px rgba(180,35,24,.45)!important}',
-      R + ' .gr-fsk-tif .gr-fsk-mynd > .gr-fsk-bid{background:repeating-linear-gradient(135deg,#f4f6f9 0 10px,#eceff4 10px 20px);color:#5e6672}',
+      R + ' .gr-fsk-dl{right:auto;left:6px}',
       R + ' .gr-fsk-skemmt .gr-fsk-bid{color:#b42318}',
       R + ' .gr-krofu-haus{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}',
       R + ' .gr-krofu-haus > label{flex:1 1 auto;min-width:0}',
@@ -1784,7 +1784,8 @@
   const myndSlod = (u) => MYND + '?url=' + encodeURIComponent(u);
   const erBeintPdf = (u) => /\.pdf$/i.test(String(u || '')) && !/skjalasafn\.reykjavik/i.test(String(u || ''));
   // 19.10.2026: bein .tif kortasjár (Mosfellsbær, luks.mos.is — 510 af 515 blöðum Sunnukrika 3). Vafrinn birtir ekki TIFF og
-  // teikn-mynd kann aðeins FotoWeb: flísin segir það og smellur sækir skrána um teikn-pdf (sama rót, nafn skjalsins).
+  // teikn-mynd kann aðeins FotoWeb: blaðið er afkóðað í TIF-vél 384 (tifSmamynd) og sýnt eins og PDF-blöð Kópavogs; ⬇ á
+  // flísinni og í skoðaranum sækir skrána um teikn-pdf?nidurhal=1 (sama rót, nafn skjalsins).
   const erBeintTif = (u) => /\.tiff?$/i.test(String(u || '')) && !/skjalasafn\.reykjavik/i.test(String(u || ''));
   const tifNidurhal = (u) => PDFF + '?nidurhal=1&url=' + encodeURIComponent(u);
   /* 5a · HEITI HÆÐA OG FLOKKUN BLAÐA (Agnar 09.10.2026: „geturðu líka sett preview á hæðirnar og mikilvægar teikningar
@@ -1941,10 +1942,26 @@
     }
     rot.querySelectorAll('[data-gr-fskm]:not([data-fsk-ath])').forEach((el) => { el.setAttribute('data-fsk-ath', '1'); if (FSK.io) FSK.io.observe(el); else fskHlada(el); });
   }
+  // 19.10.2026: bein .tif kortasjár (Mosfellsbær) — sama leið og pdfSmamynd, en afkóðað í TIF-vél 384 (window.TeiknTif:
+  // UTIF í vinnuþræði, eitt afkóðað eintak fyrir Greiningu OG skoðarann). Skrá > 25 MB → villa með stærð, flísin segir það.
+  function tifSmamynd(slod, px) {
+    const k = slod + '|' + px;
+    if (!FSK_MYND.has(k)) {
+      const p = (async () => {
+        if (!window.TeiknTif) throw new Error('TIF-vélin (384) er ekki hlaðin');
+        const url = await TeiknTif.mynd(slod, px);
+        FSK_BUID.set(k, url);
+        return url;
+      })();
+      FSK_MYND.set(k, p);
+      p.catch(() => FSK_MYND.delete(k));
+    }
+    return FSK_MYND.get(k);
+  }
   function fskHlada(el) {
     const beint = el.getAttribute('data-th') || el.getAttribute('data-mynd');
     if (beint) { fskSetja(el, beint); return; }   // smámynd skjalasafnsins — vafrinn sækir hana sjálfur
-    if (el.getAttribute('data-pdf')) { FSK.bid.push(el); fskNaesta(); }
+    if (el.getAttribute('data-pdf') || el.getAttribute('data-tif')) { FSK.bid.push(el); fskNaesta(); }
   }
   function fskNaesta() {
     while (FSK.virk < FSK.HAMARK && FSK.bid.length) {
@@ -1952,7 +1969,8 @@
       if (!el.isConnected) continue;
       FSK.virk++; FSK.byrjad++; if (FSK.virk > FSK.mest) FSK.mest = FSK.virk;
       el.setAttribute("data-fsk-byrjad", "1");   // prófin sjá hvaða reitir fóru af stað (aðeins þeir sem sáust)
-      pdfSmamynd(el.getAttribute('data-pdf'), +(el.getAttribute('data-px') || 380))
+      const px = +(el.getAttribute('data-px') || 380), tif = el.getAttribute('data-tif');
+      (tif ? tifSmamynd(tif, px) : pdfSmamynd(el.getAttribute('data-pdf'), px))
         .then((u) => { FSK.lokid++; fskSetja(el, u); }, (e) => { FSK.villur++; fskVilla(el, e); })
         .finally(() => { FSK.virk--; fskNaesta(); });
     }
@@ -1967,7 +1985,8 @@
     el.insertBefore(im, el.firstChild);
   }
   function fskVilla(el, e) {
-    const b = el.querySelector(':scope > .gr-fsk-bid'); if (b) b.textContent = e && e.skemmt ? 'Skemmt hjá sveitarfélagi (' + e.skemmt + ' bæti)' : 'Engin forskoðun — smelltu til að opna';
+    const b = el.querySelector(':scope > .gr-fsk-bid');
+    if (b) b.textContent = e && e.skemmt ? 'Skemmt hjá sveitarfélagi (' + e.skemmt + ' bæti)' : e && e.ofStor ? 'TIF ' + TeiknTif.mb(e.ofStor) + ' — of stór til að birta, ⬇ sækir' : 'Engin forskoðun — smelltu til að opna';
   }
   // Bein <img> í smámynd sem brást (skjalasafnið niðri) → staðgengill segir það, engin brotin mynd
   document.addEventListener('error', (e) => {
@@ -1987,22 +2006,19 @@
     const i = S.fskSafn.length;
     const lys = x.titill && x.titill !== heiti ? x.titill : '';
     const tpTitill = [(S.g && S.g.adr) || '', heiti + (lys ? ': ' + lys : '')].filter(Boolean).join(' — ') + (d.dags ? ' (' + dags(d.dags) + ')' : '');
-    if (erBeintTif(d.infoUrl)) {
-      S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: null, mynd: null, tif: tifNidurhal(d.infoUrl), skra: d.filename || 'teikning.tif', forsk: false, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), dags: d.dags || '', tegund: d.tegund || x.titill || '' });
-      return '<button type="button" class="gr-fsk gr-fsk-tif" data-gr-a="fsk" data-k="' + S.fskK + '" data-i="' + i + '" title="' + esc(heiti + ' — ' + undir + ' · TIF-skönnun, smelltu til að sækja skrána') + '">' +
-        '<span class="gr-fsk-mynd"><span class="gr-fsk-bid">TIF-skönnun · sækja ⬇</span></span>' +
-        '<span class="gr-fsk-heiti">' + esc(heiti) + '</span><span class="gr-fsk-undir">' + esc(undir) + '</span></button>';
-    }
-    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, stor: d.stor || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
+    // TIF kortasjár (Mosfellsbær): venjuleg flís með forskoðun um TIF-vélina; ⬇ í horninu og í skoðaranum sækir skrána
+    const tif = erBeintTif(d.infoUrl);
+    S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, tif: tif ? d.infoUrl : null, skra: tif ? (d.filename || 'teikning.tif') : null, mynd: pdf || tif ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, stor: d.stor || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
     // litla TurboPaint-táknið aðeins á smámyndum „Úr skjalasafni“ (Teikningar-spjaldið); stóri skoðarinn sýnir takkann alls staðar
-    const tu = S.fskK === 'teikn' ? tpSlod({ slod: d.infoUrl, tpTitill }) : null;
-    const buid = pdf ? FSK_BUID.get(d.infoUrl + '|380') : null;
+    const tu = S.fskK === 'teikn' && !tif ? tpSlod({ slod: d.infoUrl, tpTitill }) : null;
+    const buid = pdf || tif ? FSK_BUID.get(d.infoUrl + '|380') : null;
     const src = d.thumb || buid;
-    const m = src ? ' data-fsk-ath="1"' : (pdf ? ' data-pdf="' + esc(d.infoUrl) + '"' : ' data-mynd="' + esc(myndSlod(d.infoUrl)) + '"');
-    return '<button type="button" class="gr-fsk" data-gr-a="fsk" data-k="' + S.fskK + '" data-i="' + i + '" title="' + esc(heiti + ' — ' + undir) + '">' +
-      '<span class="gr-fsk-mynd" data-gr-fskm' + m + '>' + (src ? '<img alt="" loading="lazy" decoding="async" src="' + esc(src) + '">' : '') + '<span class="gr-fsk-bid">' + (pdf ? 'Teikna forskoðun…' : 'Sæki forskoðun…') + '</span></span>' +
+    const m = src ? ' data-fsk-ath="1"' : (pdf ? ' data-pdf="' + esc(d.infoUrl) + '"' : tif ? ' data-tif="' + esc(d.infoUrl) + '"' : ' data-mynd="' + esc(myndSlod(d.infoUrl)) + '"');
+    return '<button type="button" class="gr-fsk' + (tif ? ' gr-fsk-tif' : '') + '" data-gr-a="fsk" data-k="' + S.fskK + '" data-i="' + i + '" title="' + esc(heiti + ' — ' + undir + (tif ? ' · TIF-skönnun úr kortasjá' : '')) + '">' +
+      '<span class="gr-fsk-mynd" data-gr-fskm' + m + '>' + (src ? '<img alt="" loading="lazy" decoding="async" src="' + esc(src) + '">' : '') + '<span class="gr-fsk-bid">' + (pdf ? 'Teikna forskoðun…' : tif ? 'Afkóða TIF-skönnun…' : 'Sæki forskoðun…') + '</span></span>' +
       '<span class="gr-fsk-heiti">' + esc(heiti) + '</span><span class="gr-fsk-undir">' + esc(undir) + '</span>' +
-      (tu ? '<span class="gr-fsk-tp" role="link" data-tp="' + esc(tu) + '" title="Skoða í TurboPaint í hæstu gæðum — ekkert borð búið til">TurboPaint</span>' : '') + '</button>';
+      (tu ? '<span class="gr-fsk-tp" role="link" data-tp="' + esc(tu) + '" title="Skoða í TurboPaint í hæstu gæðum — ekkert borð búið til">TurboPaint</span>' : '') +
+      (tif ? '<span class="gr-fsk-tp gr-fsk-dl" role="link" data-nidurhal="' + esc(tifNidurhal(d.infoUrl)) + '" data-skra="' + esc(d.filename || 'teikning.tif') + '" title="Sækja TIF-skrána úr kortasjánni (' + esc(d.filename || 'teikning.tif') + ')">⬇ TIF</span>' : '') + '</button>';
   }
 
   /* 5c · STÓR MYND MEÐ ÖRVUM (← → milli hæða og blaða, Esc lokar) */
@@ -2027,10 +2043,10 @@
     });
   }
   function storMynd(it) {
-    const lyk = (it.pdf || it.mynd || '') + (it.skurdur ? '#' + [it.skurdur.x, it.skurdur.y, it.skurdur.w, it.skurdur.h].join(',') : '');
+    const lyk = (it.pdf || it.tif || it.mynd || '') + (it.skurdur ? '#' + [it.skurdur.x, it.skurdur.y, it.skurdur.w, it.skurdur.h].join(',') : '');
     if (!STOR.has(lyk)) {
       const p = (async () => {
-        const src = it.pdf ? await pdfSmamynd(it.pdf, 2600) : it.mynd;
+        const src = it.pdf ? await pdfSmamynd(it.pdf, 2600) : it.tif ? await tifSmamynd(it.tif, 2600) : it.mynd;
         if (!it.skurdur || !it.frum) return src;
         try { return await skeraMynd(src, it.skurdur, it.frum); } catch (_) { return src; }   // menguð mynd → allt blaðið
       })();
@@ -2052,6 +2068,7 @@
     const pdfSlod = it.pdf || (/\.pdf(\.info)?$/i.test(frum) ? frum : '');
     let p = null;
     if (pdfSlod) p = pdfSmamynd(pdfSlod, PX);
+    else if (it.tif) p = tifSmamynd(it.tif, PX);   // TIF kortasjár: sama afkóðun, stærri mynd (aldrei yfir frumritið)
     else if (frum && /^https:\/\/(skjalasafn\.reykjavik\.is|teikningar\.hafnarfjordur\.is)\//.test(frum)) p = Promise.resolve(myndSlod(frum));
     else if (it.mynd && it.skurdur && it.frum) p = Promise.resolve(it.mynd);
     else return null;
@@ -2075,6 +2092,7 @@
       '<button type="button" class="ssp-btn" data-gr-lz="1" title="Stækka (+) — líka skrunhjól og tvísmellur" aria-label="Stækka">+</button><button type="button" class="ssp-btn" data-gr-lz="0" title="Passa í glugga (0)">Passa</button></span>' +
       '<button type="button" class="ssp-btn" data-gr-lsafn hidden>Vista í safn</button>' +
       '<a class="ssp-btn" data-gr-ltp hidden target="_blank" rel="noopener">Skoða í TurboPaint</a>' +
+      '<a class="ssp-btn" data-gr-lnidurhal hidden title="Sækja TIF-skrána úr kortasjánni með nafni skjalsins">⬇ Sækja TIF</a>' +
       '<button type="button" class="ssp-btn" data-gr-lfsk hidden title="Opnar forskoðun teikninganna (384): þysja, prenta, sækja í fullum gæðum">Forskoðun</button><button type="button" class="ssp-btn" data-gr-loka>Loka</button></div>' +
       '<div class="gr-lb"><span class="gr-lbid">Sæki mynd…</span><img alt="" hidden draggable="false"><span class="gr-lhr" hidden>Hleð skarpri útgáfu…</span></div>' +
       (fjoldi > 1 ? '<button type="button" class="gr-lor v" data-gr-lor="-1" aria-label="Fyrri teikning">‹</button><button type="button" class="gr-lor h" data-gr-lor="1" aria-label="Næsta teikning">›</button>' : '');
@@ -2159,18 +2177,19 @@
       o.setAttribute('aria-label', it.titill || 'Mynd');
       o.querySelectorAll('[data-gr-lor]').forEach((b) => { const s = n + +b.getAttribute('data-gr-lor'); b.disabled = s < 0 || s >= fjoldi; });
       const fb = o.querySelector('[data-gr-lfsk]'); if (fb) fb.hidden = !it.forsk;
-      const tp = o.querySelector('[data-gr-ltp]'), tu = tpSlod(it); if (tp) { tp.hidden = !tu; if (tu) tp.href = tu; else tp.removeAttribute('href'); }
+      const tp = o.querySelector('[data-gr-ltp]'), tu = it.tif ? null : tpSlod(it); if (tp) { tp.hidden = !tu; if (tu) tp.href = tu; else tp.removeAttribute('href'); }   // TurboPaint les ekki .tif kortasjár
+      const nh = o.querySelector('[data-gr-lnidurhal]'); if (nh) { nh.hidden = !it.tif; if (it.tif) { nh.href = tifNidurhal(it.tif); nh.setAttribute('download', it.skra || 'teikning.tif'); } else { nh.removeAttribute('href'); nh.removeAttribute('download'); } }
       safnTakki(it);
       // nýtt blað: aðdráttur endurstilltur
       Object.assign(V, { z: 1, syntNr: -1, hr: false, hrBid: false }); hrM.hidden = true; delete img.dataset.hr;
       lb.classList.remove('zm'); if (zt) zt.textContent = '100 %';
-      img.hidden = true; bid.hidden = false; bid.textContent = it.pdf ? 'Teikna PDF-teikninguna…' : 'Sæki mynd…';
+      img.hidden = true; bid.hidden = false; bid.textContent = it.pdf ? 'Teikna PDF-teikninguna…' : it.tif ? 'Afkóða TIF-skönnunina…' : 'Sæki mynd…';
       storMynd(it).then((src) => {
         if (k !== kall) return;
         img.onload = () => { if (k === kall) { img.hidden = false; bid.hidden = true; } };
         img.onerror = () => { if (k === kall) bid.textContent = 'Myndin fékkst ekki.'; };
         img.removeAttribute('src'); img.src = src;
-      }, (e) => { if (k === kall) bid.textContent = 'Myndin fékkst ekki (' + ((e && e.message) || e) + ').'; });
+      }, (e) => { if (k === kall) bid.textContent = e && e.ofStor ? (e.message || 'Of stór') + '.' : 'Myndin fékkst ekki (' + ((e && e.message) || e) + ').'; });
     };
     // ── skrunhjól: aðdráttur um bendilinn; síðan sjálf skrunar aldrei meðan skoðarinn er opinn
     o.addEventListener('wheel', (e) => {
@@ -2712,7 +2731,7 @@
     }));
     if (!ut.length && t.dr) {
       flokkaBlod(t.dr, g.bygg).haedir.forEach(({ x, keys }) => {
-        const d = x.d; if (!d || d.skemmt || erBeintTif(d.infoUrl)) return;   // TIF kortasjár verður ekki mynd
+        const d = x.d; if (!d || d.skemmt || erBeintTif(d.infoUrl)) return;   // TIF kortasjár: enginn texti að lesa (batOrd les vigur-PDF)
         const pdf = /\.pdf(\.info)?$/i.test(String(d.infoUrl || '')) ? d.infoUrl : null;
         ut.push({ lykill: 's' + d.infoUrl, heiti: haedaHeiti(keys, x.ris), undir: (dags(d.dags) || 'án dags.') + ' · skjalasafn', kind: 'safn', d, pdf, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)) });
       });
@@ -3481,6 +3500,15 @@
   function smellur(e) {
     const tpEl = e.target.closest && e.target.closest('.gr-fsk-tp[data-tp]');
     if (tpEl) { e.preventDefault(); e.stopPropagation(); window.open(tpEl.getAttribute('data-tp'), '_blank', 'noopener'); return; }
+    const dlEl = e.target.closest && e.target.closest('.gr-fsk-dl[data-nidurhal]');
+    if (dlEl) {
+      // ⬇ í horni TIF-flísar: skráin sótt um teikn-pdf?nidurhal=1 (sama rót, nafn skjalsins) — opnar ekki skoðarann
+      e.preventDefault(); e.stopPropagation();
+      const a2 = document.createElement('a'); a2.href = dlEl.getAttribute('data-nidurhal'); a2.download = dlEl.getAttribute('data-skra') || 'teikning.tif';
+      document.body.appendChild(a2); a2.click(); a2.remove();
+      segja('⬇ Sæki ' + (dlEl.getAttribute('data-skra') || 'TIF') + ' úr kortasjánni…');
+      return;
+    }
     const el = e.target.closest('[data-gr-a],[data-gr-ljos]');
     if (!el) return;
     const a = el.getAttribute('data-gr-a');
@@ -3543,12 +3571,7 @@
     else if (a === 'fsk') {
       e.preventDefault();
       const i = +el.getAttribute('data-i'), L = SAFN[el.getAttribute('data-k') || 'teikn'];
-      if (L && L[i] && L[i].tif) {
-        // TIF-skönnun kortasjár: ekkert að birta — skráin sótt (teikn-pdf streymir hana sem niðurhal)
-        const a2 = document.createElement('a'); a2.href = L[i].tif; a2.download = L[i].skra || 'teikning.tif';
-        document.body.appendChild(a2); a2.click(); a2.remove();
-        segja('⬇ Sæki ' + (L[i].skra || 'TIF') + ' úr kortasjánni…');
-      } else if (L && L[i]) ljosSafn(L, i);
+      if (L && L[i]) ljosSafn(L, i);   // TIF kortasjár líka — afkóðað í stóru myndina, ⬇ í skoðaranum sækir skrána
     }
     else if (a === 'teikning' || a === '3d') {
       e.preventDefault();

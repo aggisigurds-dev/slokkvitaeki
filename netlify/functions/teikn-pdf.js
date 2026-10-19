@@ -13,7 +13,8 @@ const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
 // 21.09.2026: teikningasöfn Kópavogs, Hafnarfjarðar og Garðabæjar afhenda PDF-ið BEINT (engin .info / rendition).
 // Þau senda enga CORS-hausa, svo forskoðunin (384) getur ekki lesið þau úr vafranum — hér eru þau streymd af sömu rót.
 // 19.10.2026: luks.mos.is (Mosfellsbær) — 510 af 515 skrám Sunnukrika 3 eru .tif (1–1,5 MB, image/tiff). Vafrinn birtir
-// ekki TIFF, svo .tif af beinum hýsli er streymt sem NIÐURHAL (attachment) með nafni skjalsins; .pdf fer áfram í forskoðun.
+// ekki TIFF sjálfur, svo .tif af beinum hýsli er streymd hingað (image/tiff) og 384/451 afkóða hana með UTIF í vafranum;
+// með ?nidurhal=1 fer hún sem niðurhal (attachment) með nafni skjalsins. .pdf fer áfram í forskoðun eins og áður.
 const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is']);
 const HAMARK = 40 * 1024 * 1024;
 
@@ -67,7 +68,9 @@ export default async (req) => {
       if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
       const headers = new Headers(cors);
       headers.set('Content-Type', beinTif ? 'image/tiff' : 'application/pdf');
-      if (beinTif || new URL(req.url).searchParams.get('nidurhal')) {
+      // 19.10.2026 (síðar sama dag): .tif er ekki lengur sjálfkrafa niðurhal — 384/451 afkóða hana í vafranum (UTIF) og
+      // birta sem mynd. ?nidurhal=1 gildir áfram fyrir ⬇ Sækja, með nafni skjalsins.
+      if (new URL(req.url).searchParams.get('nidurhal')) {
         const nafn = decodeURIComponent(target.pathname.split('/').pop() || 'teikning.pdf').replace(/[^\w.\-]+/g, '_');
         headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
       }
