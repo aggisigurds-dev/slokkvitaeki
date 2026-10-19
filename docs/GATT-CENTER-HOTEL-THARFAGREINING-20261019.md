@@ -32,9 +32,9 @@ Athugið: gjaldkeri@ og bokari@ eru ekki á netfangalista félagsins (`reikninga
 
 1. **Eindagi, 19.10:** Lydia biður um að færa eindagann „á þessum líka" — óafgreitt. Fjórir reikningar ógreiddir, 1.206.646 kr.: R-001107 Laugavegur 469.010 · R-001082 Arnarhvoll 285.209 · R-001084 Þingholt 271.719 · R-001085 Þingholt Apartments 180.708. Gjalddagar R-001084/085 færðir til 22.10 (16.10).
 2. **Reikningar sem vantaði í gáttina:** R-001082 og R-001107 voru *final* í sölukerfinu en án skjals, svo gáttin sýndi þá ekki. **Lagað** (sjá 5).
-3. **Reyklosun:** uppfærðar skýrslur fyrir „öll hótelin" — aðeins Arnarhvoll sent (13.05). Melissa bað 15.05 um fundarboð (Elías hafði boðið kynningarfund 11.05). Ég finn ekkert svar frá okkur eftir það.
+3. **Reyklosun:** uppfærðar skýrslur fyrir „öll hótelin" — aðeins Arnarhvoll sent (13.05). Melissa bað 15.05 um fundarboð (Elías hafði boðið kynningarfund 11.05). Ég finn ekkert svar frá okkur eftir það. Verkið fór til undirverktaka (Reyklosun framsent á larus@jlraf.is 29.04 og 05.05, og á annan aðila 07.05 og 11.05).
 4. **Miðgarður, háfakerfi:** prófað 24.03; Steingrímur bað um skýrsluna 25.03. Ég finn ekki útsendan póst með henni.
-5. **„Yfirlýsingar" 21.08:** Melissa „þarf þetta í dag"; við svöruðum „skal fara í þetta". Efni póstsins er ekki í `email_digest`, og ég finn ekkert framhald. Staðfesta hvort þetta fór.
+5. **„Yfirlýsingar" 21.08:** Melissa „þarf þetta í dag"; við svöruðum „skal fara í þetta". Leiðrétt eftir lestur á SENT: við svöruðum aftur kl. 15:09 sama dag og Melissa ítrekaði ekki eftir það — líklega afgreitt. Efni póstsins er ekki í `email_digest` (aðeins ~200 stafir geymdir), svo þetta er ósannreynt.
 6. **Hlaðvarpinn:** engin tæki og engar skýrslur í gagnagrunni þótt brunakerfisskýrsla hafi verið send 15.05.2024 (kerfið fór í gang í prófunarham 10.2024; 09.2025 „Plaza/Hlaðvarpinn eftir"). Gæti verið skráð undir Plaza (Aðalstræti 4–6).
 7. **Aðgangur án lykilorðs:** `portal_users` hjá Center Hótel hefur `pass_hash = null` — vefurinn er opinn öllum sem þekkja slóðina (reikningar, upphæðir, skýrslur). Opnunarborðinn segir það sjálfur.
 8. **Þverholt 14** (höfuðstöðvar) birtist sem bygging með engum gögnum.
