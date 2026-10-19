@@ -57,7 +57,7 @@
     var ut = m.querySelector('#_nu-ut'), inn = m.querySelector('#_nu-inn');
     if (ut) { ut.addEventListener('click', function () { ut.disabled = true; fetch('/api/hub-adgangar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ action: 'logout' }) }).catch(function () {}).then(function () { location.href = '/innskraning.html'; }); }); }
     if (inn) inn.addEventListener('click', function () { location.href = '/innskraning.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash); });
-    var first = m.querySelector('._nu-it'); if (first) first.focus();
+    var fyrsta = m.querySelector('._nu-it'); if (fyrsta) fyrsta.focus();
   }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 

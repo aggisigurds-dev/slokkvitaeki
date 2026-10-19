@@ -5,6 +5,23 @@
      og í patch-skránum. Skýrslan fer á /api/villur hjá Brunahólfi (CORS *) —
      EITT borð yfir bæði öppin, ekki tvö sem enginn les. -->
 <script src="/js/villuvakt.js?v=20261014a"></script>
+<!-- Innskráningarkrafa (19.10.2026, Agnar: „hafa það að þurfi alltaf að skrá sig inn … rofi á meðan allir eru að aðlagast").
+     Rofinn (krefjast_slokk) býr á brunaholf.netlify.app/adgangar.html og er SLÖKKT sjálfgefið. Kveikt + óinnskráð(ur) → sendur á
+     /innskraning.html?next=… og aftur hingað eftir innskráningu. Bilar OPIÐ: svari þjónninn ekki innan 3,5 s eða villa komi upp opnast
+     appið eins og áður — hliðið má aldrei loka afgreiðsluna úti. Viðmótshlið (ekki API-vörn). Fyrst í <head>, svo síðan blikki ekki. -->
+<style>html.hub-gate-pending body{visibility:hidden}</style>
+<script>
+(function(){try{
+  var d=document.documentElement; d.classList.add('hub-gate-pending');
+  var done=false, open=function(){ if(done)return; done=true; d.classList.remove('hub-gate-pending'); };
+  var t=setTimeout(open,3500);
+  fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(s){
+    clearTimeout(t);
+    if(s && s.gate && !s.authed){ location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.search+location.hash)); }
+    else open();
+  }).catch(function(){ clearTimeout(t); open(); });
+}catch(e){ document.documentElement.classList.remove('hub-gate-pending'); }})();
+</script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, viewport-fit=cover"/>
 <script>
@@ -547,8 +564,8 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/30-recurring-service.js?v=20260510f-nyir"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 31-route-optimizer.js -->
 <!-- hibernated 2026-06-21 (sign-in unused + the "Skrá inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
-<script defer src="/js/patches/33-sms-reminder.js?v=20261019sms"></script>
-<script defer src="/js/patches/33a-sms-stjornbord.js?v=20261019sms"></script>
+<script defer src="/js/patches/33-sms-reminder.js?v=20261019sms2"></script>
+<script defer src="/js/patches/33a-sms-stjornbord.js?v=20261019sms2"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 34-dashboard.js -->
 <script defer src="/js/patches/35-service-certificate.js?v=20261012vakt-nyir"></script>
 <script defer src="/js/patches/36-stock-management.js?v=20261012tafla"></script>
@@ -1375,6 +1392,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/389-tilbuin-midar.js?v=20260922b"></script>
 <script defer src="/js/patches/390-verkstaedi-midar.js?v=20261004breidd"></script>
 <script defer src="/js/patches/391-hlidarstika-midar.js?v=20261008sv"></script>
+<script defer src="/js/patches/475-notandi-innskraning.js?v=20261019a"></script>
 <script defer src="/js/patches/392-skodun-midar.js?v=20260926a"></script>
 <script defer src="/js/patches/393-ars-midar.js?v=20260922ae"></script>
 <script defer src="/js/patches/401-fljotandi-rod.js?v=20260923c"></script>
