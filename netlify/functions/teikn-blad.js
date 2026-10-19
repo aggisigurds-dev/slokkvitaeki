@@ -7,7 +7,7 @@
 // Skilar { b_mm, h_mm, heimild } eða { villa } — biðlarinn notar þá gömlu forsenduna. Ekkert er vistað.
 
 const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
-const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is']);
+const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is']);
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {

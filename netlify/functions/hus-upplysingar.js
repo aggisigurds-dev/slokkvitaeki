@@ -31,11 +31,11 @@
  *   póstnúmeralistinn er aðeins varaleið.
  *
  * ÞREP 2 — lóð → teikningar. FotoWeb-safn Reykjavíkur á landnúmeri (kjarni).
- *   Kópavogur, Garðabær, Hafnarfjörður og Seltjarnarnes eru sama map.is-kallið
- *   queryTeiknigrunn (landnúmer + heitinúmer + sveitarfélag). Kjarni skilar
- *   þeim bæjum aðeins djúptengli, svo listinn er sóttur beint. PDF-in liggja á
- *   gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is
- *   og luks.seltjarnarnes.is.
+ *   Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes og Mosfellsbær eru sama
+ *   map.is-kallið queryTeiknigrunn (landnúmer + heitinúmer + sveitarfélag). Kjarni
+ *   skilar þeim bæjum aðeins djúptengli, svo listinn er sóttur beint. Skrárnar liggja á
+ *   gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is,
+ *   luks.seltjarnarnes.is og luks.mos.is (Mosfellsbær: nær allt .tif).
  *
  * ÞREP 3 — teikningar → tillögur. Hæsta hæðarnúmer grunnmyndanna = hæðir ofan
  *   jarðar; „kjallari"/„jarðhæð"/„ris" í lýsingum = já. Þetta eru TILLÖGUR
@@ -74,6 +74,9 @@ const MAPIS = [
   { svf: 1400, nafn: 'Hafnarfjörður', kort: 'Kortasjá Hafnarfjarðar', postnr: [220, 221], slug: 'hafnarfjordur', bein: true },
   // 170 er Seltjarnarnes (SVFNR 1100), ekki Reykjavík. Kortasjáin er opin á map.is.
   { svf: 1100, nafn: 'Seltjarnarnes', kort: 'Kortasjá Seltjarnarness', postnr: [170], slug: 'seltjarnarnes', bein: true },
+  // 19.10.2026: Mosfellsbær (SVFNR 1604, 270/271). Sama queryTeiknigrunn; skrárnar á luks.mos.is (510 af 515 á
+  // Sunnukrika 3 eru .tif). Húsateikningar krefjast heitinr hússins — heitinumer=0 skilar „Engar niðurstöður".
+  { svf: 1604, nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], slug: 'moso', bein: true },
 ];
 
 const cors = {
@@ -98,7 +101,7 @@ const minni = new Map();
 const SB_URL = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const SB_KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 const SB_HAUS = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
-const UTGAFA = '2026-10-02';   // map.is-bæirnir þrír sækja listann beint; eldri raðir detta út
+const UTGAFA = '2026-10-19';   // Mosfellsbær bættist við (bein kortasjá); tóm 270/271-svör frá 2026-10-02 detta út
 
 function hefurBlod(svar) {
   if (!svar || typeof svar !== 'object') return false;
@@ -356,7 +359,7 @@ async function mapisSeta(slug) {
   return { cookie, token };
 }
 
-/** Bein kortasjá (Seltjarnarnes). Kjarni þekkir ekki SVFNR 1100. */
+/** Bein kortasjá (Seltjarnarnes, Mosfellsbær). Kjarni þekkir ekki SVFNR 1100 né 1604 — spurt er með heitinr hússins. */
 async function mapisTeikningarBeint(landnr, heitinr, hm, deadline) {
   const s = await mapisSeta(hm.slug);
   const url = `${MAPIS_BASE}/webservice/queryTeiknigrunn.php?landnumer=${landnr}`

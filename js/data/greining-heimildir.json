@@ -84,7 +84,7 @@
     },
     {
       "id": "skjalasafn-teikningar",
-      "heiti": "Teikningasöfn sveitarfélaga (Reykjavík FotoWeb · Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes um map.is)",
+      "heiti": "Teikningasöfn sveitarfélaga (Reykjavík FotoWeb · Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes, Mosfellsbær um map.is)",
       "slod": "https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/",
       "gefur": [
         "grunnmyndir",
@@ -104,10 +104,10 @@
     {
       "kannad": "2026-10-09",
       "id": "mapis-teiknigrunn",
-      "heiti": "map.is queryTeiknigrunn (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes)",
+      "heiti": "map.is queryTeiknigrunn (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes, Mosfellsbær)",
       "slod": "https://www.map.is/",
       "gefur": [
-        "teikningar (PDF)",
+        "teikningar (PDF; Mosfellsbær .tif)",
         "útlit",
         "skráningartöflur"
       ],
@@ -115,7 +115,7 @@
       "homlur": "Notkun samþykkt af Agnari 09.10.2026 — hófleg notkun: stakar sóknir á uppflettingu, skyndiminni, engin fjöldasókn. Til upplýsingar: robots.txt map.is bannar /webservice/ fyrir vélmenni; þjónustan þarf setu og token (teikn-listi sækir þau).",
       "laga": "—",
       "lykill_fer": "—",
-      "i_appinu": "teikn-listi, hus-upplysingar, teikn-pdf → 374 TeiknSaekja → 451 Teikningar (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes)"
+      "i_appinu": "teikn-listi, hus-upplysingar, teikn-pdf → 374 TeiknSaekja → 451 Teikningar (Kópavogur, Garðabær, Hafnarfjörður, Seltjarnarnes, Mosfellsbær — luks.mos.is, nær allt .tif → niðurhal)"
     },
     {
       "id": "skraningartafla",

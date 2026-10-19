@@ -12,7 +12,9 @@
 const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
 // 21.09.2026: teikningasöfn Kópavogs, Hafnarfjarðar og Garðabæjar afhenda PDF-ið BEINT (engin .info / rendition).
 // Þau senda enga CORS-hausa, svo forskoðunin (384) getur ekki lesið þau úr vafranum — hér eru þau streymd af sömu rót.
-const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is']);
+// 19.10.2026: luks.mos.is (Mosfellsbær) — 510 af 515 skrám Sunnukrika 3 eru .tif (1–1,5 MB, image/tiff). Vafrinn birtir
+// ekki TIFF, svo .tif af beinum hýsli er streymt sem NIÐURHAL (attachment) með nafni skjalsins; .pdf fer áfram í forskoðun.
+const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is']);
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {
@@ -56,15 +58,16 @@ export default async (req) => {
   let target;
   try { target = new URL(raw); } catch { return villa(400, 'Ógild slóð'); }
   if (target.protocol === 'https:' && BEINIR.has(target.hostname)) {
-    if (!/\.pdf$/i.test(target.pathname)) return villa(415, 'Skjalið er ekki PDF');
+    const beinTif = /\.tiff?$/i.test(target.pathname);
+    if (!beinTif && !/\.pdf$/i.test(target.pathname)) return villa(415, 'Skjalið er ekki PDF');
     try {
       const r = await saekjaMedThaki(target.href, 9000, { redirect: 'follow' });
       if (r.status !== 200 || !r.body) return villa(502, 'Teikningasafnið svaraði ' + r.status);
       const lengd = Number(r.headers.get('content-length') || 0);
       if (lengd > HAMARK) return villa(413, 'Skjalið er stærra en 40 MB');
       const headers = new Headers(cors);
-      headers.set('Content-Type', 'application/pdf');
-      if (new URL(req.url).searchParams.get('nidurhal')) {
+      headers.set('Content-Type', beinTif ? 'image/tiff' : 'application/pdf');
+      if (beinTif || new URL(req.url).searchParams.get('nidurhal')) {
         const nafn = decodeURIComponent(target.pathname.split('/').pop() || 'teikning.pdf').replace(/[^\w.\-]+/g, '_');
         headers.set('Content-Disposition', 'attachment; filename="' + nafn + '"');
       }

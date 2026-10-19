@@ -32,6 +32,9 @@
   // Þar er fyrsta síða skjalsins teiknuð með pdf.js (sama útgáfa og 383 / FloorPlan) og sýnd sem mynd, svo þysjun,
   // prentun og „Nota í úttektarteikningu" virka eins og fyrir Reykjavík. Myndirnar eru geymdar á meðan glugginn er opinn.
   const beintPdf = d => /\.pdf$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
+  // 19.10.2026: Mosfellsbær (luks.mos.is) afhendir skannanir sem .tif BEINT (510 af 515 á Sunnukrika 3). Vafrinn birtir ekki
+  // TIFF og teikn-mynd kann aðeins FotoWeb — slíkt blað fær skýr skilaboð og ⬇ sækir skrána um teikn-pdf (sama rót, rétt nafn).
+  const beintTif = d => /\.tiff?$/i.test(String(d.infoUrl || '')) && !/skjalasafn\.reykjavik\.is/i.test(String(d.infoUrl || ''));
   const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
   const _myndir = new Map();
   const _pdf = new Map();
@@ -55,6 +58,7 @@
     });
   }
   async function myndSlod(d) {
+    if (beintTif(d)) throw new Error('TIF-skönnun úr kortasjá sveitarfélagsins — vafrinn birtir ekki TIFF. Sæktu skrána með ⬇ og opnaðu í myndaforriti');
     if (!beintPdf(d)) return MYND + '?url=' + encodeURIComponent(d.infoUrl);
     if (_myndir.has(d.infoUrl)) return _myndir.get(d.infoUrl);
     await hladaPdfJs();
@@ -450,6 +454,12 @@
       a.href = PDF + '?nidurhal=1&url=' + encodeURIComponent(d.infoUrl); a.download = d.filename || 'teikning.pdf';
       document.body.appendChild(a); a.click(); a.remove();
       segja('⬇ Sæki ' + (d.filename || 'PDF') + ' úr skjalasafninu…');
+    } else if (beintTif(d)) {
+      // Bein .tif kortasjár (Mosfellsbær: 1–1,5 MB) — streymd af sömu rót sem niðurhal með nafni skjalsins.
+      const a = document.createElement('a');
+      a.href = PDF + '?nidurhal=1&url=' + encodeURIComponent(d.infoUrl); a.download = d.filename || 'teikning.tif';
+      document.body.appendChild(a); a.click(); a.remove();
+      segja('⬇ Sæki ' + (d.filename || 'TIF') + ' úr kortasjánni…');
     } else {
       // TIF-frumrit eru 50–300 MB — of stór til að streyma gegnum fall. Síða skjalsins í safninu á „Download".
       window.open(String(d.infoUrl), '_blank', 'noopener');

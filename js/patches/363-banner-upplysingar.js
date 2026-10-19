@@ -235,8 +235,8 @@
     if (!svar || hefurBlod(svar) || svar.error || svar.reynaAftur) return false;
     return !!(svar.eign || svar.mapisBeint || (svar.teikningar && Number(svar.teikningar.fjoldi) === 0));
   }
-  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes) og Reykjavík eru
-  // þegar leyst á þjóninum: Seltjarnarnes er bein map.is-leið, Reykjavík FotoWeb.
+  // Kópavogur, Garðabær, Hafnarfjörður. 170 (Seltjarnarnes), 270/271 (Mosfellsbær, 19.10.2026) og Reykjavík
+  // eru þegar leyst á þjóninum: Seltjarnarnes og Mosfellsbær eru bein map.is-leið, Reykjavík FotoWeb.
   function erMapisBaer(adr) {
     const t = String(adr || '');
     const eftir = t.split(',').slice(1).join(' ');

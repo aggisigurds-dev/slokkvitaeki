@@ -323,6 +323,7 @@
       R + ' .gr-skjal-rod > .gr-fsk{flex:0 0 172px;width:172px}',
       R + ' .gr-fsk-bida{cursor:default}',
       R + ' .gr-fsk-skemmt{cursor:not-allowed;box-shadow:inset 0 0 0 1px rgba(180,35,24,.45)!important}',
+      R + ' .gr-fsk-tif .gr-fsk-mynd > .gr-fsk-bid{background:repeating-linear-gradient(135deg,#f4f6f9 0 10px,#eceff4 10px 20px);color:#5e6672}',
       R + ' .gr-fsk-skemmt .gr-fsk-bid{color:#b42318}',
       R + ' .gr-krofu-haus{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:8px}',
       R + ' .gr-krofu-haus > label{flex:1 1 auto;min-width:0}',
@@ -986,7 +987,7 @@
     }
     const landnr = (o && o.landnr) || e.landnr, heitinr = (o && o.heitinr) || e.heitinr;
     const svfnr = (o && o.svfnr) || '';
-    const svf = SVF[svfnr] || (e.svf ? ({ 1000: 'Kópavogur', 1100: 'Seltjarnarnes', 1300: 'Garðabær', 1400: 'Hafnarfjörður' })[e.svf] : '') || (svfnr ? 'svf. ' + svfnr : '—');
+    const svf = SVF[svfnr] || (e.svf ? ({ 1000: 'Kópavogur', 1100: 'Seltjarnarnes', 1300: 'Garðabær', 1400: 'Hafnarfjörður', 1604: 'Mosfellsbær' })[e.svf] : '') || (svfnr ? 'svf. ' + svfnr : '—');
     const st = g.bygg && g.bygg.skraningartafla;
     const mhl = [...new Set([].concat(st && st.matshluti ? [st.matshluti] : [], (g.opin && g.opin.einingar && g.opin.einingar.mhl) || []))];
     const lod = g.opin && g.opin.lod;
@@ -1782,6 +1783,10 @@
   }
   const myndSlod = (u) => MYND + '?url=' + encodeURIComponent(u);
   const erBeintPdf = (u) => /\.pdf$/i.test(String(u || '')) && !/skjalasafn\.reykjavik/i.test(String(u || ''));
+  // 19.10.2026: bein .tif kortasjár (Mosfellsbær, luks.mos.is — 510 af 515 blöðum Sunnukrika 3). Vafrinn birtir ekki TIFF og
+  // teikn-mynd kann aðeins FotoWeb: flísin segir það og smellur sækir skrána um teikn-pdf (sama rót, nafn skjalsins).
+  const erBeintTif = (u) => /\.tiff?$/i.test(String(u || '')) && !/skjalasafn\.reykjavik/i.test(String(u || ''));
+  const tifNidurhal = (u) => PDFF + '?nidurhal=1&url=' + encodeURIComponent(u);
   /* 5a · HEITI HÆÐA OG FLOKKUN BLAÐA (Agnar 09.10.2026: „geturðu líka sett preview á hæðirnar og mikilvægar teikningar
    * með heitunum 1. hæð, 2. hæð og framvegis"). Hæðagreiningin er sú sama og „Finna allt húsið“ (383 fahLykill /
    * fahNafn / fahRod ofan á 374 TeiknSaekja.flokka); þak telst með risi og milligólf fær sitt heiti. */
@@ -1982,6 +1987,12 @@
     const i = S.fskSafn.length;
     const lys = x.titill && x.titill !== heiti ? x.titill : '';
     const tpTitill = [(S.g && S.g.adr) || '', heiti + (lys ? ': ' + lys : '')].filter(Boolean).join(' — ') + (d.dags ? ' (' + dags(d.dags) + ')' : '');
+    if (erBeintTif(d.infoUrl)) {
+      S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: null, mynd: null, tif: tifNidurhal(d.infoUrl), skra: d.filename || 'teikning.tif', forsk: false, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), dags: d.dags || '', tegund: d.tegund || x.titill || '' });
+      return '<button type="button" class="gr-fsk gr-fsk-tif" data-gr-a="fsk" data-k="' + S.fskK + '" data-i="' + i + '" title="' + esc(heiti + ' — ' + undir + ' · TIF-skönnun, smelltu til að sækja skrána') + '">' +
+        '<span class="gr-fsk-mynd"><span class="gr-fsk-bid">TIF-skönnun · sækja ⬇</span></span>' +
+        '<span class="gr-fsk-heiti">' + esc(heiti) + '</span><span class="gr-fsk-undir">' + esc(undir) + '</span></button>';
+    }
     S.fskSafn.push({ titill: heiti, undir, slod: d.infoUrl, tpTitill, pdf: pdf ? d.infoUrl : null, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)), forsk: !d.ser5004, eldri: !!eldri, hopur: opt.hopur || (eldri ? 'eldri' : 'adal'), smamynd: d.thumb || null, stor: d.stor || null, dags: d.dags || '', tegund: d.tegund || x.titill || '' });
     // litla TurboPaint-táknið aðeins á smámyndum „Úr skjalasafni“ (Teikningar-spjaldið); stóri skoðarinn sýnir takkann alls staðar
     const tu = S.fskK === 'teikn' ? tpSlod({ slod: d.infoUrl, tpTitill }) : null;
@@ -2701,7 +2712,7 @@
     }));
     if (!ut.length && t.dr) {
       flokkaBlod(t.dr, g.bygg).haedir.forEach(({ x, keys }) => {
-        const d = x.d; if (!d || d.skemmt) return;
+        const d = x.d; if (!d || d.skemmt || erBeintTif(d.infoUrl)) return;   // TIF kortasjár verður ekki mynd
         const pdf = /\.pdf(\.info)?$/i.test(String(d.infoUrl || '')) ? d.infoUrl : null;
         ut.push({ lykill: 's' + d.infoUrl, heiti: haedaHeiti(keys, x.ris), undir: (dags(d.dags) || 'án dags.') + ' · skjalasafn', kind: 'safn', d, pdf, mynd: pdf ? null : (d.stor || myndSlod(d.infoUrl)) });
       });
@@ -3532,7 +3543,12 @@
     else if (a === 'fsk') {
       e.preventDefault();
       const i = +el.getAttribute('data-i'), L = SAFN[el.getAttribute('data-k') || 'teikn'];
-      if (L && L[i]) ljosSafn(L, i);
+      if (L && L[i] && L[i].tif) {
+        // TIF-skönnun kortasjár: ekkert að birta — skráin sótt (teikn-pdf streymir hana sem niðurhal)
+        const a2 = document.createElement('a'); a2.href = L[i].tif; a2.download = L[i].skra || 'teikning.tif';
+        document.body.appendChild(a2); a2.click(); a2.remove();
+        segja('⬇ Sæki ' + (L[i].skra || 'TIF') + ' úr kortasjánni…');
+      } else if (L && L[i]) ljosSafn(L, i);
     }
     else if (a === 'teikning' || a === '3d') {
       e.preventDefault();

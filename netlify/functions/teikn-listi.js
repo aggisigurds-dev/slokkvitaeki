@@ -15,8 +15,21 @@
 
 const KJARNI = process.env.KJARNI_TEIKNINGAR_API || 'https://slokkvitaeki.vercel.app/api/turbopaint/teikningar';
 const MAPIS = 'https://www.map.is';
-const MAPIS_SVF = { 1000: { slug: 'kopavogur', nafn: 'Kópavogur' }, 1300: { slug: 'gardabaer', nafn: 'Garðabær' }, 1400: { slug: 'hafnarfjordur', nafn: 'Hafnarfjörður' } };
-const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is'];
+// 19.10.2026 — BEIN KORTASJÁ (Seltjarnarnes 1100, Mosfellsbær 1604): Kjarni þekkir ekki þessi sveitarfélagsnúmer
+// („Óþekkt sveitarfélagsnúmer", 400) og merkir staðföngin þar heimild 'óþekkt' án svf. Hér er því (a) staðfangalistinn
+// auðgaður eftir póstnúmeri (170 → 1100, 270/271 → 1604) svo 374 TeiknSaekja sjái map.is-eign með svf + heitinr, og (b)
+// listinn sóttur BEINT af map.is með heitinr HÚSSINS — heitinumer=0 skilar „Engar niðurstöður" þar (Sunnukriki 3: 515
+// raðir á heitinr 1119092, 0 á lóðinni). Sama mynstur og hus-upplysingar hefur haft fyrir Seltjarnarnes síðan 02.10.
+const MAPIS_SVF = {
+  1000: { slug: 'kopavogur', nafn: 'Kópavogur' },
+  1300: { slug: 'gardabaer', nafn: 'Garðabær' },
+  1400: { slug: 'hafnarfjordur', nafn: 'Hafnarfjörður' },
+  1100: { slug: 'seltjarnarnes', nafn: 'Seltjarnarnes', kort: 'Kortasjá Seltjarnarness', postnr: [170], bein: true },
+  1604: { slug: 'moso', nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], bein: true },
+};
+const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is'];
+const beinSvf = svf => !!(MAPIS_SVF[svf] && MAPIS_SVF[svf].bein);
+const svfFyrirPostnr = pn => Object.keys(MAPIS_SVF).find(k => (MAPIS_SVF[k].postnr || []).includes(Number(pn))) || null;
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -72,9 +85,10 @@ function teikning(row) {
     bnnr: texti(row.teikninganumer), gata: null, urelt: urelt(stada),
   }, haedir(lysing, gerd));
 }
-async function lodarTeikningar(landnr, svf) {
+// heitinr = 0 → teikningar LÓÐARINNAR; heitinr hússins → teikningar hússins (bein kortasjá). null = bilun, [] = tómt.
+async function mapisTeikningar(landnr, svf, heitinr) {
   const sv = MAPIS_SVF[svf]; if (!sv) return null;
-  const spyrja = s => fetch(MAPIS + '/webservice/queryTeiknigrunn.php?landnumer=' + landnr + '&svfnr=' + svf + '&heitinumer=0&t=' + s.token, {
+  const spyrja = s => fetch(MAPIS + '/webservice/queryTeiknigrunn.php?landnumer=' + landnr + '&svfnr=' + svf + '&heitinumer=' + (Number(heitinr) || 0) + '&t=' + s.token, {
     headers: { Cookie: s.cookie, Referer: MAPIS + '/' + sv.slug + '/', 'User-Agent': 'Mozilla/5.0 Slokkvitaeki-Teikning/1.0', 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json, text/plain, */*' },
     signal: AbortSignal.timeout(15000),
   });
@@ -85,6 +99,28 @@ async function lodarTeikningar(landnr, svf) {
   if (!t.startsWith('[')) return [];
   let rows; try { rows = JSON.parse(t); } catch (_) { return null; }
   return rows.map(teikning).filter(Boolean).sort((a, b) => (a.urelt !== b.urelt ? (a.urelt ? 1 : -1) : (b.dags || '').localeCompare(a.dags || '')));
+}
+const lodarTeikningar = (landnr, svf) => mapisTeikningar(landnr, svf, 0);
+function mapisSvar(d, landnr, heitinr, svf, dr, lod) {
+  return {
+    utgafa: (d && d.utgafa) || null, heimild: 'map.is', heimildNafn: MAPIS_SVF[svf].nafn, landnr: Number(landnr),
+    heitinr: Number(heitinr) || 0, svf: Number(svf), ...(lod ? { lod: true } : {}), fjoldi: dr.length,
+    gildandi: dr.filter(x => !x.urelt).length, hrar: dr.length, results: dr,
+  };
+}
+// Staðföng Kjarna í beinni kortasjá: 'óþekkt' → map.is með svf, nafni kortasjár og djúptengli (sama snið og Kjarni gefur
+// Kópavogi/Garðabæ/Hafnarfirði). Skilar null þegar engu var breytt, svo texti Kjarna fari óbreyttur áfram.
+function audgaStadfong(d) {
+  if (!d || !Array.isArray(d.results)) return null;
+  let breytt = false;
+  for (const x of d.results) {
+    if (!x || (x.svf && x.heimild === 'map.is')) continue;
+    const svf = svfFyrirPostnr(x.postnr); if (!svf || !beinSvf(svf)) continue;
+    const sv = MAPIS_SVF[svf];
+    Object.assign(x, { heimild: 'map.is', heimildNafn: sv.kort || sv.nafn, svf: Number(svf), ytriSlod: x.ytriSlod || (MAPIS + '/' + sv.slug + '/') });
+    breytt = true;
+  }
+  return breytt ? d : null;
 }
 
 export default async (req) => {
@@ -104,13 +140,32 @@ export default async (req) => {
     ? 'landnr=' + encodeURIComponent(landnr) + (svf ? '&heitinr=' + (heitinr || '0') + '&svf=' + svf : '')
     : 'heimilisfang=' + encodeURIComponent(heimilisfang);
 
+  // Bein kortasjá (Seltjarnarnes, Mosfellsbær): Kjarni er ekki spurður — hann svarar 400 á svf. Húsið fyrst, lóðin til vara.
+  if (landnr && svf && beinSvf(svf)) {
+    try {
+      let dr = Number(heitinr) ? await mapisTeikningar(Number(landnr), Number(svf), Number(heitinr)) : null;
+      let lod = false;
+      if (!dr || !dr.length) { const l = await lodarTeikningar(Number(landnr), Number(svf)); if (l && l.length) { dr = l; lod = true; } }
+      if (dr === null) return json({ error: 'Kortasjáin svaraði ekki.' }, 502);
+      const headers = { ...cors, 'Content-Type': 'application/json; charset=utf-8' };
+      if (dr.length) { headers['Cache-Control'] = 'public, max-age=3600'; headers['Netlify-CDN-Cache-Control'] = 'public, durable, s-maxage=604800, stale-while-revalidate=2592000'; headers['Netlify-Cache-ID'] = 'teikn-listi'; }
+      return new Response(JSON.stringify(mapisSvar(null, landnr, heitinr, svf, dr, lod)), { status: 200, headers });
+    } catch (_) { return json({ error: 'Náði ekki í kortasjána.' }, 502); }
+  }
+
   try {
     const r = await fetch(KJARNI + '?' + qs, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(28000),
     });
     // Skila svari Kjarna-APIsins óbreyttu (sama JSON-snið) af SÖMU rót.
-    const txt = await r.text();
+    let txt = await r.text();
+    // Staðfangaleit: staðföng í beinni kortasjá fá svf + heimild hér (Kjarni segir 'óþekkt').
+    if (!landnr && r.ok) {
+      let d = null; try { d = JSON.parse(txt); } catch (_) {}
+      const a = audgaStadfong(d);
+      if (a) txt = JSON.stringify(a);
+    }
     // map.is-staðfang án teikninga (eða heitinr vantar) → lóðarteikningarnar sjálfar
     if (landnr && svf && MAPIS_SVF[svf]) {
       let d = null; try { d = JSON.parse(txt); } catch (_) {}
@@ -118,13 +173,7 @@ export default async (req) => {
       if (tomt) {
         try {
           const lod = await lodarTeikningar(Number(landnr), Number(svf));
-          if (lod && lod.length) {
-            return json({
-              utgafa: (d && d.utgafa) || null, heimild: 'map.is', heimildNafn: MAPIS_SVF[svf].nafn, landnr: Number(landnr),
-              heitinr: Number(heitinr) || 0, svf: Number(svf), lod: true, fjoldi: lod.length,
-              gildandi: lod.filter(x => !x.urelt).length, hrar: lod.length, results: lod,
-            });
-          }
+          if (lod && lod.length) return json(mapisSvar(d, landnr, heitinr, svf, lod, true));
         } catch (_) { /* svar Kjarna stendur */ }
       }
     }
