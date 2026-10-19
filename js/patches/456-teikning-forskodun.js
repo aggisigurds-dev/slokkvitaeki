@@ -101,6 +101,9 @@
       if (hreintPdf(url) && window.TeiknGaedi && TeiknGaedi.rasterPdf && pdfSlod(url)) p = TeiknGaedi.rasterPdf(pdfSlod(url), 2200);
       else p = new Promise(function (res, rej) {
         var i = new Image();
+        // opinberar myndir í Supabase-geymslu (blöð Búnaðargreiningar, 474) leyfa CORS — án þessa verður striginn
+        // „tainted" og prentun (toDataURL) bregst
+        if (/\.supabase\.co\/storage\//.test(url)) i.crossOrigin = 'anonymous';
         i.onload = function () { res(i); };
         i.onerror = function () { rej(new Error('mynd fannst ekki')); };
         i.src = url;
@@ -130,7 +133,7 @@
         if (mx <= 1 && my <= 1) { mx = mx * nb / f; my = my * nh / f; }   // eldri hlutfallsmerki
         var px = (mx - sk.x) * f * k, py = (my - sk.y) * f * k;
         if (px < -r || py < -r || px > c.width + r || py > c.height + r) return;
-        var litur = erSlanga(m) ? '#1f5fbf' : '#c93c1d';
+        var litur = m.litur || (erSlanga(m) ? '#1f5fbf' : '#c93c1d');
         x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
         x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
         // auðkennið (S1, BS1 …) við punktinn — sama og í listanum við hliðina

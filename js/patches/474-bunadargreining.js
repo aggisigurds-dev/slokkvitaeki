@@ -58,6 +58,17 @@
     '#' + ID + ' .bgr-ut strong.bgr-bs{border-color:#1f5fbf;color:#1f5fbf}',
     '#' + ID + ' .bgr-ut small{font:inherit;min-width:0}',
     '#' + ID + ' .bgr-ut em{font-style:normal;color:#7a766d}',
+    // Teikning greiningarinnar („sér teikning", Agnar 19.10.2026): blöðin sem greiningin las, merkt — aðskilið Teikningu
+    '#' + ID + ' .bgr-bl{grid-column:1/-1}',
+    '#' + ID + ' .bgr-bl-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}',
+    '@container (max-width:700px){#' + ID + ' .bgr-bl-g{grid-template-columns:minmax(0,1fr)}}',
+    '#' + ID + ' .bgr-k{border:1px solid #e3e1dc;border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;min-width:0}',
+    '#' + ID + ' .bgr-k:hover{border-color:#2b2a27}',
+    '#' + ID + ' .bgr-kh{display:flex;justify-content:space-between;gap:6px;padding:6px 9px;border-bottom:1px solid #efede8;font:600 11.5px system-ui,sans-serif}',
+    '#' + ID + ' .bgr-kh small{font-weight:500;color:#7a766d;white-space:nowrap}',
+    '#' + ID + ' .bgr-km{position:relative;aspect-ratio:4/3;background:#f1f0ec}',
+    '#' + ID + ' .bgr-km canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}',
+    '#' + ID + ' .bgr-km .cfh-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11.5px system-ui,sans-serif;color:#8a857b}',
     '#' + ID + ' .bgr-m{padding:10px 12px;color:#4a4740}',
     '#' + ID + ' .bgr-m.bgr-villa{color:#a3261a}'
   ].join('\n');
@@ -113,7 +124,7 @@
       ((r.texti || []).length ? '<button type="button" class="bgr-t" data-a="texti">Brunavarnatexti</button>' : '') +
       '<button type="button" class="bgr-t" data-a="prenta">Prenta</button>' +
       '<button type="button" class="bgr-t" data-a="greina" title="Ný greining úr merkjum Teikningar — sú vistaða geymist í sögunni">Greina aftur</button></div>' +
-      '<div class="bgr-b">' + samantektHtml(r) +
+      '<div class="bgr-b">' + samantektHtml(r) + blodHtml(r) +
       ((r.athugasemdir || []).length ? '<div><h5>Athugasemdir</h5><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div>' : '') +
       ((r.heimildir || []).length ? '<div class="bgr-hf"><h5>Heimildir</h5><ul>' + r.heimildir.map(function (h) {
         return '<li' + (h.gildir === false ? ' class="bgr-urelt"' : '') + '>' + (h.slod ? '<a href="' + esc(h.slod) + '" target="_blank" rel="noopener">' + esc(h.titill) + '</a>' : esc(h.titill)) +
@@ -121,6 +132,64 @@
       }).join('') + '</ul></div>' : '') +
       utanHtml(r) +
       '<div class="bgr-tx" hidden>' + textiHtml(r) + '</div></div>';
+    teiknaBlod(el, r);
+  }
+
+  /* ── TEIKNING GREININGARINNAR — sér teikning (Agnar 19.10.2026: „að það merkist líka inn á sér teikningu" og „að svona
+   * búnaðargreining sé svoldið sér, úr því sem stendur í gögnum/teikningum"). Blöðin sem greiningin las (r.teikningar:
+   * {id, nafn, mynd, frum, skurdur}) með ÖLLUM stöðum hennar (tki[].blad + bx/by) — óháð því hvað er á Teikningu staðarins.
+   * Teiknað með sama falli og hæðaspjöldin (456 TeiknForskodun.teikna). */
+  function blodin(r) {
+    return (r.teikningar || []).filter(function (b) { return b && b.mynd; }).map(function (b) {
+      return {
+        id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur,
+        tki: (r.tki || []).filter(function (t) { return t.blad === b.id && isFinite(+t.bx) && t.bx !== null; }),
+        markers: (r.tki || []).filter(function (t) { return t.blad === b.id && t.bx != null && isFinite(+t.bx); }).map(function (t) {
+          return { x: +t.bx, y: +t.by, audkenni: t.audkenni, tegund: t.bunadur,
+            litur: t.upplysingar ? '#8e24aa' : /slang|kefli/i.test(t.bunadur || '') ? '#1f5fbf' : '#c93c1d' };
+        })
+      };
+    });
+  }
+  function blodHtml(r) {
+    var bl = blodin(r);
+    if (!bl.length) return '';
+    return '<div class="bgr-bl"><h5>Teikning greiningarinnar — það sem gögnin segja</h5><div class="bgr-bl-g">' + bl.map(function (b, i) {
+      return '<div class="bgr-k" data-bl="' + i + '" title="Stækka"><div class="bgr-kh"><b>' + esc(b.nafn) + '</b><small>' + b.tki.length + ' staðir</small></div>' +
+        '<div class="bgr-km"><div class="cfh-t">…</div></div></div>';
+    }).join('') + '</div></div>';
+  }
+  function teiknaBlod(el, r) {
+    var tf = window.TeiknForskodun, bl = blodin(r);
+    el.querySelectorAll('.bgr-k').forEach(function (k) {
+      var b = bl[+k.getAttribute('data-bl')], m = k.querySelector('.bgr-km');
+      if (!b || !m) return;
+      if (!tf) { m.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; return; }
+      var c = document.createElement('canvas');
+      tf.teikna(b, c, 1100).then(function () { if (m.isConnected) { m.innerHTML = ''; m.appendChild(c); } },
+        function () { if (m.isConnected) m.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
+    });
+  }
+  function listiBlads(b) {
+    return '<ul class="cfh-l">' + b.tki.map(function (t) {
+      return '<li><strong' + (/slang|kefli/i.test(t.bunadur || '') ? ' class="cfh-bs"' : '') + (t.upplysingar ? ' style="background:#8e24aa"' : '') + '>' + esc(t.audkenni || '•') + '</strong><small>' +
+        esc(t.stadur || '') + ' <em>' + esc(t.tegund || t.bunadur || '') + (t.unitId ? ' · á Teikningu' : '') + '</em></small></li>';
+    }).join('') + '</ul>';
+  }
+  // stór sýn — sama umgjörð og stóra sýn hæðaspjaldanna (456 #cfh-stort; Esc lokar þar)
+  function stortBlad(b) {
+    var gamalt = document.getElementById('cfh-stort'); if (gamalt) gamalt.remove();
+    var o = document.createElement('div');
+    o.id = 'cfh-stort';
+    o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
+      '<span style="flex:1"></span><button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
+      '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div><div class="cfh-s-l"><h4>Búnaður skv. gögnum (' + b.tki.length + ')</h4>' + listiBlads(b) + '</div></div></div>';
+    document.body.appendChild(o);
+    o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
+    o.querySelector('.cfh-s-x').addEventListener('click', function () { o.remove(); });
+    var m = o.querySelector('.cfh-s-m'), c = document.createElement('canvas');
+    if (window.TeiknForskodun) TeiknForskodun.teikna(b, c, 2600).then(function () { if (m.isConnected) { m.innerHTML = ''; m.appendChild(c); } },
+      function () { if (m.isConnected) m.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
   }
 
   // Búnaður greiningarinnar sem er EKKI á Teikningu (enginn unitId): hönnunarstaðir án tækis, eða tæki sem textinn nefnir
@@ -140,7 +209,9 @@
     var w = window.open('', '_blank');
     if (!w) { alert('Vafrinn lokaði glugganum — leyfðu sprettiglugga fyrir síðuna.'); return; }
     w.document.write('<!doctype html><meta charset="utf-8"><title>Búnaðargreining</title><p style="font:14px system-ui;padding:20px">Teikna hæðirnar…</p>');
-    SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1).then(function (q) {
+    // blöð greiningarinnar sjálfrar ef til (sér teikning), annars hæðir Teikningar
+    var bl = blodin(r);
+    (bl.length ? Promise.resolve({ data: [{ haedir: bl }] }) : SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1)).then(function (q) {
       var hs = (q && q.data && q.data[0] && q.data[0].haedir) || [];
       var tf = window.TeiknForskodun;
       return Promise.all(hs.map(function (h) {
@@ -323,6 +394,8 @@
     if (g && g.parentNode === sec) sec.insertBefore(el, g.nextSibling); else sec.appendChild(el);
     var rod = null;
     el.addEventListener('click', function (e) {
+      var kort = e.target.closest && e.target.closest('.bgr-k[data-bl]');
+      if (kort && el.contains(kort) && rod) { var bl = blodin(rod)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
       var b = e.target.closest && e.target.closest('[data-a]');
       if (!b || !el.contains(b)) return;
       var a = b.getAttribute('data-a');

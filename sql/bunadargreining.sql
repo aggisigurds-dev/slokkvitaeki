@@ -21,6 +21,7 @@ create table if not exists public.bunadargreining (
   athugasemdir  jsonb  not null default '[]'::jsonb, -- [texti]
   samantekt     jsonb  not null default '{}'::jsonb, -- {slokkvitaeki, slongur, mhl:[{mhl, m2, haedir}]}
   skyrsla       jsonb,                               -- {id, name, path} í company_attachments (111)
+  teikningar    jsonb  not null default '[]'::jsonb, -- blöð greiningarinnar: [{id, nafn, mynd, frum:{b,h}, skurdur, heimild}]; tki[].blad + bx/by (migration bunadargreining_teikningar)
   af            text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
