@@ -68,6 +68,31 @@ Skriftur Álfhellu 9 (fyrirmynd): scratchpad `alfhella/` — `merkja.py` (hnit �
 `vista_bord.cjs`, `merkja_texta.cjs` (audkenni/stadur á merki, skilyrt), `bua_pdf.cjs` (HTML → PDF í Chromium),
 `vista_vidhengi.cjs` (PDF í Viðhengi um appið), `vista_greiningu.cjs` (röðin).
 
+## Sér teikning, útgangar og brunakerfi (Agnar 19.10.2026)
+
+„Að það merkist líka inn á sér teikningu" · „að svona búnaðargreining sé svoldið sér, úr því sem stendur í
+gögnum/teikningum" · „merkja inn neyðarútganga … ef það eru brunakerfisteikningar/upplýsingar að merkja það allt inn".
+
+- **Teikning greiningarinnar** = blöðin sem greiningin las, ÓHÁÐ Teikningu staðarins: `bunadargreining.teikningar`
+  `[{id, nafn, mynd, frum:{b,h}, skurdur, heimild}]`, hver staður `tki[].blad` + `bx/by` (dílar þess blaðs). `mynd` = teikn-mynd
+  (PDF Teikningar) eða hrein JPEG í opinberu fötunni `turbopaint/bunadargreining/<cid>/…` (CORS * → 456 setur
+  `crossOrigin` svo prentun virki). 474 sýnir spjald á blað, stóra sýn með flokkuðum lista, og Prenta notar þau.
+- **Flokkar** `tki[].flokkur`: (tómt) = slökkvibúnaður (rautt / slanga blátt), `flotti` = ÚT (grænt; `tegund` Útidyr /
+  Flóttaleið innanhúss), `brunakerfi` = skynjarar, handboðar, stjórnstöð/útstöð (fjólublátt, hitaskynjari appelsínugult).
+  ÚT og brunakerfi eru `upplysingar:true` — teljast ekki með slökkvitækjum og fara ekki í „Ekki á Teikningu".
+  `samantekt` fær `utgangar, flottaleidir, reykskynjarar, hitaskynjarar, handbodar`.
+- **ÚT úr vigur-PDF:** orðið „ÚT" í textalagi (dulkóðað letur → afkóða). Útidyr = nærri útvegg (mörk mæld á blaðinu),
+  annars flóttaleið innanhúss; staðurinn = næsta rýmisheiti (sía tölur, „m²", BRSL/SLT, athugasemdir).
+- **ÚT/R úr 1-bita skönnun:** sniðmát klippt úr skýringum blaðsins (0/90/270°, þröskuldur ≈ 0,62, NMS). **[S] passar við
+  R-sniðmátið** (Álfhella: 2 „R" voru slökkvitæki) — staðfestu alltaf með augunum; ÚT getur tvíteljast (sameina ≤ 70 dílar).
+- **Brunakerfisteikningar** eru séruppdrættir rafhönnuðar (Reykjavík: `seruppdrattir?listi=1&landnr=` flokkur `raf`, titill
+  í titilreit t.d. „Brunakerfi og neyðarlýsing 1.h"). Skútuvogur 4: Voltorka BN055104 bl. 13–16 (02.03.2020), 1:50, hver hæð
+  á tveimur blöðum (norður/suður) sem skarast. Aðferð: sniðmát R/H/HB úr skýringunum (þröskuldur 0,70/0,74/0,70, 0/90/270°),
+  skýringareitur felldur (H+R+HB í lóðréttri röð), blöðin **skeytt** (hliðrun milli para með matchTemplate á Canny-brúnum,
+  ≈1800 dílar lóðrétt) og tvítekningar í skörun felldar (≤ 60 dílar). Bjöllur/neyðarljós/ÚT-ljós: sniðmát of almenn →
+  ekki talin. **Varpa EKKI á nýrra aðaluppdrátt** þegar innrétting breyttist (stilling á daufum skönnunum gaf kvarða
+  0,72–1,29 — ónothæf); sýndu blaðið sjálft sem eigið spjald, merkt „innrétting FYRIR breytingu".
+
 ## Sjálfvirki takkinn („Greina búnað" í 474)
 
 Les **ekki** táknin sjálfur — lesturinn býr í TurboPaint (kjarni, `kjarni.vercel.app/kjarni/turbopaint`):
