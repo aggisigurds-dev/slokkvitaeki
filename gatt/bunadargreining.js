@@ -12,7 +12,7 @@
   'use strict';
   var G = function () { return window.Gatt; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
-  var FL = [['sl', 'Slökkvitæki', '#e11d2e'], ['bs', 'Brunaslöngur', '#2563eb'], ['ut', 'Útgangar (ÚT)', '#15803d'], ['bk', 'Brunakerfi', '#7c3aed'], ['hiti', 'Hitaskynjarar', '#ea580c']];
+  var FL = [['sl', 'Slökkvitæki', '#e11d2e'], ['bs', 'Brunaslöngur', '#2563eb'], ['ut', 'Útgangar (ÚT)', '#15803d'], ['r', 'Reykskynjarar', '#9333ea'], ['bk', 'Brunakerfi', '#6d28d9'], ['hiti', 'Hitaskynjarar', '#ea580c']];
   var AF = {};   // eign (b.id) → { flokkur: true } — flokkar sem kúnninn slökkti á; aðeins meðan drawer-inn er opinn
   var MAXSYN = 6;
 

@@ -39,6 +39,14 @@
     ROT + ' .bgr-t:hover{border-color:#2b2a27}',
     ROT + ' .bgr-t.bgr-adal{background:#2b2a27!important;border-color:#2b2a27;color:#fff!important}',
     ROT + ' .bgr-t[disabled]{opacity:.55;cursor:default}',
+    ROT + ' .bgr-t.bgr-turbo-t{border-color:#b71c1c!important;color:#b71c1c!important}',
+    ROT + ' .bgr-turbo{margin:0;padding:9px 12px;border-bottom:1px solid #efede8;background:#fffaf5}',
+    ROT + ' .bgr-turbo b{font:700 12px system-ui,sans-serif;color:#b71c1c}',
+    ROT + ' .bgr-turbo ol{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 4px;padding:0;list-style:none;font:600 11px system-ui,sans-serif;color:#a29d92}',
+    ROT + ' .bgr-turbo ol li.gert{color:#2e6b34}',
+    ROT + ' .bgr-turbo ol li.nuna{color:#b71c1c;text-decoration:underline}',
+    ROT + ' .bgr-turbo small{display:block;color:#7a766d}',
+    ROT + ' .bgr-turbo.bgr-villa b{color:#a00}',
     ROT + ' .bgr-b{padding:10px 12px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 18px}',
     '@container (max-width:700px){' + ROT + ' .bgr-b{grid-template-columns:minmax(0,1fr)}}',
     ROT + ' .bgr-s{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}',
@@ -133,6 +141,7 @@
   function teikna(el, cid, r) {
     if (!r) {
       el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>engin vistuð greining</small><i></i>' +
+        '<button type="button" class="bgr-t bgr-turbo-t" data-a="turbo" title="Kerfið sækir teikningarnar, les táknin, vistar greininguna og býr til skýrsluna — allt ferlið, í bakgrunni">Turbo</button>' +
         '<button type="button" class="bgr-t bgr-adal" data-a="greina">Greina búnað</button></div>' +
         '<div class="bgr-m">Les búnaðinn sjálfvirkt úr textalagi samþykkts aðaluppdráttar hæða Teikningar (SL / SLT / HSL / HST, BS / BRSL, R, ÚT — skýringarnar á blaðinu ráða merkingunni) eða úr merkjum sem eru þegar á hæðunum. Gefur hverju tæki auðkenni og stað og vistar með brunavörnum úr byggingarlýsingu — fast á staðnum.</div>';
       return;
@@ -144,6 +153,7 @@
       ((r.texti || []).length ? '<button type="button" class="bgr-t" data-a="texti">Brunavarnatexti</button>' : '') +
       '<button type="button" class="bgr-t" data-a="prenta" title="Samantekt, húsmynd og allar hæðir á einni síðu">Prenta · ein síða</button>' +
       '<button type="button" class="bgr-t" data-a="prenta-haedir" title="Samantekt á fyrstu síðu, svo hver hæð á sér blaði (stór hús)">Prenta · hver hæð sér</button>' +
+      '<button type="button" class="bgr-t bgr-turbo-t" data-a="turbo" title="Kerfið les teikningarnar upp á nýtt og býr til nýja greiningu og skýrslu — sú vistaða geymist í sögunni">Turbo</button>' +
       '<button type="button" class="bgr-t" data-a="greina" title="Ný greining úr merkjum Teikningar — sú vistaða geymist í sögunni">Greina aftur</button></div>' +
       '<div class="bgr-b">' + samantektHtml(r) + blodHtml(r) +
       ((r.athugasemdir || []).length ? '<div><h5>Athugasemdir</h5><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div>' : '') +
@@ -769,6 +779,59 @@
       else if (a === 'prenta' && S.rod) prenta(cid, S.rod, 'ein');
       else if (a === 'prenta-haedir' && S.rod) prenta(cid, S.rod, 'haedir');
       else if (a === 'greina') greina(el, cid, S.rod, function (ny) { S.rod = ny; uppfaert(cid, ny, el); });
+      else if (a === 'turbo') turbo(el, cid, S);
+    });
+  }
+
+  /* ── TURBO (21.10.2026, Agnar: „turbo takka sem setur bara allt heildar ferlið í gang") ─────────────────────────────────
+   * Setur verk í biðröðina bunadargreining_verk (sql/bunadargreining_verk.sql). Verkhringrás Arnolds (tímasett verk / hvaða
+   * Claude-lota sem er, scripts/bunadargreining/verk/bgr_verk.cjs) tekur það: finnur og sækir teikningarnar, les táknin,
+   * sannreynir með yfirlagi, vistar greininguna og býr til PDF-skýrslurnar í Viðhengi. Takkinn sýnir hvar verkið er og
+   * endurhleður spjaldið þegar því er lokið. Eitt opið verk á félag (einkvæm vísitala), svo tvíýtingar eru skaðlausar. */
+  var TURBO_STIG = [['bida', 'Biðröð'], ['undirbuningur', 'Teikningar sóttar'], ['lestur', 'Tákn lesin'], ['sannreyning', 'Sannreynt'], ['vistun', 'Greining vistuð'], ['skyrsla', 'Skýrsla'], ['lokid', 'Lokið']];
+  function turboPanel(el, v) {
+    var p = el.querySelector('.bgr-turbo');
+    if (!v) { if (p) p.remove(); return; }
+    if (!p) { p = document.createElement('div'); var h = el.querySelector('.bgr-h'); if (h && h.nextSibling) el.insertBefore(p, h.nextSibling); else el.appendChild(p); }
+    var i = 0; TURBO_STIG.forEach(function (x, k) { if (x[0] === v.stig) i = k; });
+    var villa = v.status === 'villa', lokid = v.status === 'lokid';
+    p.className = 'bgr-turbo' + (villa ? ' bgr-villa' : '');
+    p.innerHTML = '<b>' + (villa ? 'Turbo stöðvaðist' : lokid ? 'Turbo lokið' : 'Turbo í gangi') + '</b>' +
+      '<ol>' + TURBO_STIG.map(function (x, k) { return '<li class="' + (k < i || lokid ? 'gert' : k === i && !villa ? 'nuna' : '') + '">' + (k < i || lokid ? '✓ ' : '') + esc(x[1]) + '</li>'; }).join('') + '</ol>' +
+      '<small>' + esc(v.skilabod || '') + (v.status === 'bida' ? ' — bíður þess að vél taki verkið (Arnold-vaktin)' : '') + '</small>';
+  }
+  function turboFylgja(el, cid, S) {
+    if (el._turbo) return;
+    var tick = function () {
+      if (!el.isConnected) { clearInterval(el._turbo); el._turbo = null; return; }
+      SB().from('bunadargreining_verk').select('id,status,stig,skilabod,updated_at').eq('company_id', cid).order('id', { ascending: false }).limit(1).then(function (q) {
+        var v = q && q.data && q.data[0];
+        if (!v || v.status === 'afturkallad') { turboPanel(el, null); clearInterval(el._turbo); el._turbo = null; return; }
+        turboPanel(el, v);
+        var t = el.querySelector('[data-a="turbo"]'); if (t) { t.disabled = v.status === 'bida' || v.status === 'i_vinnslu'; }
+        if (v.status === 'lokid' || v.status === 'villa') {
+          clearInterval(el._turbo); el._turbo = null;
+          if (v.status === 'lokid') saekja(cid).then(function (r) { S.rod = r; teikna(el, cid, r); turboPanel(el, v); merkjaTakka(cid, r); uppfaert(cid, r, el); });
+        }
+      });
+    };
+    el._turbo = setInterval(tick, 6000); tick();
+  }
+  function turbo(el, cid, S) {
+    var t = el.querySelector('[data-a="turbo"]'); if (t) { t.disabled = true; t.textContent = 'Set í biðröð…'; }
+    SB().from('bunadargreining_verk').insert({ company_id: +cid, status: 'bida', stig: 'bida', beidandi: 'Turbo-takki', skilabod: 'Sett í biðröð', framvinda: [{ at: new Date().toISOString(), stig: 'bida', texti: 'Sett í biðröð (Turbo-takki)' }] }).then(function (q) {
+      if (q.error && !/duplicate|unique|23505/i.test((q.error.message || '') + (q.error.code || ''))) throw q.error;
+      if (t) t.textContent = 'Turbo';
+      turboFylgja(el, cid, S);
+    }).catch(function (e) {
+      if (t) { t.disabled = false; t.textContent = 'Turbo'; }
+      var m = el.querySelector('.bgr-m') || el.appendChild(document.createElement('div')); m.className = 'bgr-m bgr-villa'; m.textContent = 'Villa: ' + ((e && e.message) || e);
+    });
+  }
+  // spjaldið eða glugginn opnast meðan verk er í gangi → fylgja því áfram
+  function turboAthuga(el, cid, S) {
+    SB().from('bunadargreining_verk').select('id,status').eq('company_id', cid).in('status', ['bida', 'i_vinnslu']).limit(1).then(function (q) {
+      if (q && q.data && q.data.length && el.isConnected) turboFylgja(el, cid, S);
     });
   }
   // greining varð til/breyttist (úr spjaldinu eða glugganum) → hitt og takkinn fylgja með
@@ -788,7 +851,7 @@
     tengja(el, cid, S);
     saekja(cid).then(function (r) {
       if (String(window._currentCompanyId) !== String(cid) || !el.isConnected) return;
-      S.rod = r; teikna(el, cid, r); merkjaTakka(cid, r);
+      S.rod = r; teikna(el, cid, r); merkjaTakka(cid, r); turboAthuga(el, cid, S);
     }, function () { el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>náðist ekki að sækja</small></div>'; });
   }
 
@@ -851,7 +914,7 @@
     saekja(cid).then(function (r) {
       if (!o.isConnected) return;
       S.rod = r; merkjaTakka(cid, r);
-      teikna(m, cid, r);
+      teikna(m, cid, r); turboAthuga(m, cid, S);
       // engin greining enn → kerfið setur hana af stað strax (lesið úr teikningunni), glugginn sýnir svo útkomuna
       if (!r) { var t = m.querySelector('[data-a="greina"]'); if (t) t.click(); }
     }, function () { m.innerHTML = '<div class="bgr-m bgr-villa">Náðist ekki að sækja greininguna.</div>'; });

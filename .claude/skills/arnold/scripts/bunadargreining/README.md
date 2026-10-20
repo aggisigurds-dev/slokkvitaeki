@@ -34,6 +34,8 @@ Bash-tólinu — skrifaðu skriftu með Write og keyrðu hana.
 | `sidumuli-1/` (1198) | `ser_allt.cjs`, `pv.cjs`, `hent.cjs` | **séruppdrættir Reykjavíkur**: fotoweb `/fotoweb/archives/5004-Séruppdrættir/?q=<landnr>` (Accept: application/json; síður `&p=`; metadata 205 = Raflagnir/Lagnir/Burður/Sérteikningar), forskoðanir og aðaluppdrættir um teikn-pdf |
 | | `tokn.py`, `gogn.py` | tákn á SKÖNNUN (ÚT-kassar, „!“): sniðmátsþáttun er hávaðasöm → lesið af gridded nærmyndum, sannreynt með yfirlagi; `gogn.json` = hnit í 6006-ramma |
 | | `vista.cjs` | 3 hæðir af einu blaði (skurðir) + 6 „Nýtt“-tillögur + greining (ÚT 15, „!“ 2, tillögur S1–S6) |
+| `verk/` (**verkhringrásin**, 21.10.2026) | `bgr_verk.cjs` | ALLT ferlið sem skipanir: `bida · naest · stada · undirbua · bord · vigur · yfirlag · vista · skyrsla · stig · loka · villa · afturkalla` — biðröð `bunadargreining_verk`, Turbo-takkinn í 474, lýsing í `../../references/verkhringras.md` |
+| | `crops.py`, `vigur.py`, `yfirlag.py` | gridded nærmyndir (rammahnit, 200 díla rist) + vigur/skönnun-flokkun · tákn úr textalagi + allur textinn · yfirlag til sannreynslu (öll með UTF-8 stdout) |
 | `laugavegur-18/` (869) | `saekja.cjs`, `rut.py` | blöðin 2018-04-2401574/5 (teikn-mynd, 6006) og **gridded nærmyndir** (rist á 200 rammadíla fresti) af hæðarskurðum — ÚT handlesin af skönnun |
 | | `gogn.py`, `vista.cjs` | `gogn.json` (UTF-8!) + yfirlag til sannreynslu; `vista.cjs` skrifar aðeins `bunadargreining` (teikning_bord ósnert; `--prufa`, `--uppfaera` lagar tki í virkri röð) |
 | `almennt/` | `vista_vidhengi.cjs` | PDF í Viðhengi félags um appið sjálft (111), aðeins þau skrif hleypt út; ekkert ártal í nafni |

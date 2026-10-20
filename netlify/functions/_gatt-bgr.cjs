@@ -1,13 +1,13 @@
 // _gatt-bgr.cjs — Búnaðargreining (tafla bunadargreining) → kúnna-örugg gögn fyrir Þjónustugáttina (gatt/bunadargreining.js).
 // Aðeins það sem má sjást: hæðirnar sem greiningin las (mynd, skurður, merki), fjöldi, brunavarnatexti úr byggingarlýsingu og
 // heimildir. ALDREI `athugasemdir` (innri), `af`, `skyrsla` eða verð. Flokkun merkja = sama og 474 (flokkur/bunadur).
-const LITIR = { sl: '#e11d2e', bs: '#2563eb', ut: '#15803d', bk: '#7c3aed', hiti: '#ea580c' };
+const LITIR = { sl: '#e11d2e', bs: '#2563eb', ut: '#15803d', r: '#9333ea', bk: '#6d28d9', hiti: '#ea580c' };
 
 function flokkurTki(t) {
   const fl = String(t && t.flokkur || '');
   const bun = String(t && t.bunadur || '');
   if (fl === 'flotti') return 'ut';
-  if (fl === 'brunakerfi') return /hita/i.test(bun) ? 'hiti' : 'bk';
+  if (fl === 'brunakerfi') return /hita/i.test(bun) ? 'hiti' : /reykskynj/i.test(bun) ? 'r' : 'bk';
   return /slang|kefli/i.test(bun) ? 'bs' : 'sl';
 }
 
@@ -23,7 +23,7 @@ function bgrSnid(r, bord) {
     if (!id || !mynd || kort[id]) return kort[id] || null;
     kort[id] = { id, nafn: nafn || '', mynd, frum: frum && frum.b > 0 ? { b: frum.b, h: frum.h } : null,
       skurdur: skurdur && skurdur.w > 8 && skurdur.h > 8 ? { x: skurdur.x, y: skurdur.y, w: skurdur.w, h: skurdur.h } : null,
-      merki: [], tel: { sl: 0, bs: 0, ut: 0, bk: 0, hiti: 0 } };
+      merki: [], tel: { sl: 0, bs: 0, ut: 0, r: 0, bk: 0, hiti: 0 } };
     haedir.push(kort[id]);
     return kort[id];
   };
@@ -42,7 +42,7 @@ function bgrSnid(r, bord) {
     h.tel[fl]++;
     const x = +t.bx, y = +t.by;
     if (t.bx != null && t.by != null && isFinite(x) && isFinite(y)) {
-      const merki = fl === 'bk' || fl === 'hiti' ? '' : String(t.audkenni || '');
+      const merki = fl === 'bk' || fl === 'hiti' || fl === 'r' ? '' : String(t.audkenni || '');
       h.merki.push([Math.round(x), Math.round(y), LITIR[fl], merki, fl, String(t.stadur || '').slice(0, 120)]);
     }
   });
