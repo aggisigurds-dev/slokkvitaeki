@@ -36,7 +36,6 @@ Files that set inline `!important`:
 
 - `js/mobilenav.js`
 - `js/patches/212-langbtn-dock.js`
-- `js/patches/231-verkbord.js`
 - `js/patches/262-sidebar-polish.js`
 - `js/patches/281-nytt-badge.js`
 - `js/patches/313-contrast-clarity.js`
