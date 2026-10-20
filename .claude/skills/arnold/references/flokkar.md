@@ -184,7 +184,7 @@ Aðeins skyldur og skilyrtar kröfur sýndar; brunaþéttingar gilda alls staða
 
 **Þjónusta sem Slökkvitæki getur selt:** Árleg yfirferð slökkvitækja [skylt]; Sala og uppsetning slökkvitækja + skilta (útreikningur 165.BR1) [tilbod]; Merkingar: F001/F002, E001/E002 (eftirálýsandi), fjöldaskilti [skylt]; Árleg skoðun slöngukefla, þrýstipróf á 5 ára fresti (ÍST EN 671-3) [skilyrt]; Eftirlit og prófanir neyðarlýsingar og útljósa (EN 50172) [skylt]; Þjónusta brunaviðvörunarkerfa (þjónustusamningur) [skilyrt]; Þjónusta slökkvikerfa (eldhúsháfar, vatnsúðakerfi) [skilyrt]; Brunaþéttingar (Brunahólf ehf) [tilbod].
 
-**Óvissa:** Brunaálag og m² ráða slöngukeflum, úðakerfi og reyklosun — sjaldnast skráð hjá okkur. Sérstök eldhætta (2. mgr. b) gerir hús skoðunarskylt árlega — slökkviliðsstjóri metur.
+**Óvissa:** Brunaálag og m² ráða slöngukeflum, úðakerfi og reyklosun — sjaldnast skráð hjá okkur. Sérstök eldhætta (2. mgr. b) gerir hús skoðunarskylt árlega — slökkviliðsstjóri metur. **Kaffikrókur / eldunaraðstaða** (t.d. undir millilofti): eldvarnarteppi er EKKI krafa í lager og iðnaði — aðeins ráðlegging 165.BR1 (eldhús); SHS krefst þess í veitingaeldhúsum (7g). Bjóða sem tillögu, ekki sem skyldu.
 
 ### Bílaverkstæði / dekkja- og sprautuverkstæði — `bilaverkstaedi` · notkunarflokkur 1
 
@@ -230,7 +230,7 @@ Aðeins skyldur og skilyrtar kröfur sýndar; brunaþéttingar gilda alls staða
 
 **Þjónusta sem Slökkvitæki getur selt:** Árleg yfirferð slökkvitækja [skylt]; Sala og uppsetning slökkvitækja + skilta (útreikningur 165.BR1) [tilbod]; Merkingar: F001/F002, E001/E002 (eftirálýsandi), fjöldaskilti [skylt]; Árleg skoðun slöngukefla, þrýstipróf á 5 ára fresti (ÍST EN 671-3) [skilyrt]; Eftirlit og prófanir neyðarlýsingar og útljósa (EN 50172) [skylt]; Þjónusta brunaviðvörunarkerfa (þjónustusamningur) [skilyrt]; Þjónusta slökkvikerfa (eldhúsháfar, vatnsúðakerfi) [skilyrt].
 
-**Óvissa:** Lager er fl. 1 en „vöruhús“ opið almenningi er í fl. 2 (tafla 9.01). Hátt brunaálag (> 800 MJ/m²): 40 l/mín slöngukefli.
+**Óvissa:** Lager er fl. 1 en „vöruhús“ opið almenningi er í fl. 2 (tafla 9.01). Hátt brunaálag (> 800 MJ/m²): 40 l/mín slöngukefli. **Kaffikrókur / eldunaraðstaða** (t.d. undir millilofti): eldvarnarteppi er EKKI krafa í lager og iðnaði — aðeins ráðlegging 165.BR1 (eldhús); SHS krefst þess í veitingaeldhúsum (7g). Bjóða sem tillögu, ekki sem skyldu.
 
 ### Veitingastaður / kaffihús — `veitingastadur` · notkunarflokkur 2
 

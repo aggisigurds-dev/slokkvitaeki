@@ -26,6 +26,8 @@ ekki í SKILL.md og ekki í kóða síðunnar. Kaflar síðunnar eru taldir upp 
   froða/CO2 + eldvarnarteppi; verkstæði/lager = duft + kefli; duft innandyra
   byrgir sýn og skemmir rafeindabúnað — léttvatn frekar í verslunarrými;
   duft aldrei minna en 6 kg sem aðaltæki, aukatæki minnst 2 kg.
+  **Kaffikrókur / eldunaraðstaða í lager eða iðnaðarhúsnæði** (t.d. undir millilofti): ekkert aukalega skylt — handslökkvitæki innan gönguleiðar (≤ 20–25 m) dugar; eldvarnarteppi upphengt
+  við eldunartækið er ráðlegging (165.BR1), ekki skylda (sbr. flokkar.md `idnadur`/`lager`). Skylt aðeins í íbúðagistingu/heimagistingu (1277/2016 13. gr.); SHS biður um það í veitingaeldhúsum.
 
 ## Slöngukefli / brunaslöngur (gr. 9.4.5 · HMS-leiðbeining um slöngukefli)
 
