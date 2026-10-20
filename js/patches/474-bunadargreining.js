@@ -311,7 +311,8 @@
       ['Útgangar (ÚT)', '#2e7d32', function (t) { return flokkur(t) === 'flotti'; }],
       ['Reykskynjarar', '#8e24aa', function (t) { return /reykskynjari/i.test(t.bunadur || ''); }],
       ['Hitaskynjarar', '#e65100', function (t) { return /hitaskynjari/i.test(t.bunadur || ''); }],
-      ['Handboðar', '#6a1b9a', function (t) { return /handboði/i.test(t.bunadur || ''); }]
+      ['Handboðar', '#6a1b9a', function (t) { return /handboði/i.test(t.bunadur || ''); }],
+      ['Stjórnstöð / útstöð („!“)', '#6a1b9a', function (t) { return flokkur(t) === 'brunakerfi' && /stjórnstöð|útstöð|„!“/i.test(t.bunadur || ''); }]
     ];
     var rod = FL.map(function (f) {
       var tal = haedir.map(function (h) { return tki.filter(function (t) { return (t.haed || '') === h && f[2](t); }).length; });
@@ -330,12 +331,20 @@
     // brunakerfið er oft af öðru blaði en aðaluppdrættinum (séruppdráttur rafhönnuðar, jafnvel eldri) — heimildin stendur þá á forsíðunni
     var bkH = (r.tki || []).filter(function (t) { return flokkur(t) === 'brunakerfi' && t.heimild && !/aðaluppdr/i.test(t.heimild); })[0];
     var bkLina = bkH ? '<p class="ath">Skynjarar og handboðar: ' + esc(String(bkH.heimild).replace(/.$/, '')) + '.</p>' : '';
+    var till = (r.tki || []).filter(function (t) { return !t.upplysingar && /^Tillaga/i.test(t.heimild || ''); }).length;
+    var tillLina = till ? '<p class="ath" style="color:#b71c1c"><b>' + till + ' handslökkvitæki eru TILLAGA</b> — ekki teiknuð á gildandi teikningu; staðfesta á staðnum.</p>' : '';
     var ath = (r.athugasemdir || []).filter(function (a) { return String(a).length <= 170; }).slice(0, 2).map(function (a) { return esc(a); }).join(' ');
-    var adal = (myndir || []).filter(function (m) { return m && !m.bk; }), haer = adal.length > 1 && adal.every(function (m) { return m.ar > 0.7; });
-    var fl = ham === 'haedir' ? '' : (haer ? '<div class="fl-g" style="grid-template-columns:repeat(' + Math.min(adal.length, 3) + ',minmax(0,1fr))">' : '') + adal.map(function (m) { return '<div class="fl"><img src="' + m.src + '" alt="' + esc(m.nafn) + '"></div>'; }).join('') + (haer ? '</div>' : '');
+    var adal = (myndir || []).filter(function (m) { return m && !m.bk; });
+    var mynd1 = function (m) { return '<div class="fl"><img src="' + m.src + '" alt="' + esc(m.nafn) + '"></div>'; };
+    var radir = [], k = 0;
+    while (k < adal.length) {   // tvö há blöð (hlutfall > 0,7) hlið við hlið, breið blöð hvert undir öðru
+      if (adal[k].ar > 0.7 && adal[k + 1] && adal[k + 1].ar > 0.7) { radir.push('<div class="fl-g" style="grid-template-columns:repeat(2,minmax(0,1fr))">' + mynd1(adal[k]) + mynd1(adal[k + 1]) + '</div>'); k += 2; }
+      else { radir.push(mynd1(adal[k])); k++; }
+    }
+    var fl = ham === 'haedir' ? '' : radir.join('');
     return '<section class="fors"><div class="fors-h"><div class="fors-t"><h1>' + esc(r.heimilisfang || '') + ' — búnaður</h1>' +
       '<div class="und">Samantekt' + (gild && gild.dags ? ' úr gildandi teikningu (' + esc(dagsTexti(gild.dags)) + ')' : '') + ' — lesið úr skjalinu sjálfu · ' + esc(dags(r.created_at)) + '</div>' + tafla +
-      (ath ? '<p class="ath">' + ath + '</p>' : '') + bkLina + '</div>' + (hus ? '<div class="fors-m"><img src="' + esc(hus) + '" alt="Húsið"></div>' : '') + '</div>' + fl + '</section>' +
+      tillLina + (ath ? '<p class="ath">' + ath + '</p>' : '') + bkLina + '</div>' + (hus ? '<div class="fors-m"><img src="' + esc(hus) + '" alt="Húsið"></div>' : '') + '</div>' + fl + '</section>' +
       (ham === 'haedir' ? adal.map(function (m) {
         return '<section class="hae"><h2>' + esc(r.heimilisfang || '') + ' — ' + esc(m.nafn) + (m.fj ? ' <small>' + esc(m.fj) + '</small>' : '') + '</h2><img src="' + m.src + '" alt="' + esc(m.nafn) + '"></section>';
       }).join('') : '');

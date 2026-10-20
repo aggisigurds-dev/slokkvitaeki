@@ -152,6 +152,7 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 | Kvarnir ehf., Álfhella 9 | 1871 | id 1, 19.10.2026, handlesin | mhl 01 (2020-skönnun, [S]/[BS]) 7+2 tæki, mhl 02 (2026 vigur, slt) 4; CO2 utan teikningar; 2012-útgáfan eldri |
 | Álfaborg, Skútuvogur 4 | 661 | id 2, 19.10.2026, handlesin | sett 2025 (vigur, dulkóðað textalag): 15 slökkvitæki (12 „L" + 3 HST) + 5 BRSL; skráð 11 + 5; 3 af 7 merkjum á hönnunarstað; Teikning enn á 2022-blöðum |
 | ProLan - Suðurhella 5 | 1875 | id 4, 20.10.2026, **sjálfvirkt úr textalagi** (staðfest handtalið) | aðaluppdráttur 15 023 samþ. 17.09.2025 (útg. F/E): 17 SL (11 + 6 á millilofti) + 6 BS (20 m) + 12 ÚT + 19 R; bil 0104 aðeins eitt SL; tegund tillaga (duft 6 kg); engin tæki skráð → 23 Nýtt-merki á Teikningu; ein-síðu PDF í Viðhengi |
+| Garðyrkjufélag Íslands, Síðumúli 1 | 1198 | id 5, 20.10.2026 | aðaluppdráttur 08.12.2020 (skönnun, 3 hæðir á einu blaði): **ÚT 15** (6+5+4) + 2 „!“ (stjórnstöð/útstöð, engin skýring); **slökkvitæki EKKI teiknuð** („staðsett í samráði við SHS“) → 6 TILLÖGUR (2 á hæð við stigagang/útgang, 165.BR1); skráð 3 tæki án staðar; brunakerfisteikning finnst ekki í skjalasafni; hvaða hæðir félagið notar óstaðfest; séruppdrættir (5004) = lagnir/raf/burður 1981–2022 |
 | Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
 
 ## Í Brunahólfi (20.10.2026)

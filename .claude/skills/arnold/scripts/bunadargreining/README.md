@@ -31,6 +31,9 @@ Bash-tólinu — skrifaðu skriftu með Write og keyrðu hana.
 | | `jpeg.py`, `vista.cjs` | síðurnar sem 6000-px JPEG í turbopaint-fötuna, `teikning_bord` (Nýtt-merki S/BS) + `bunadargreining`-röð (skilyrt á `updated_at`) |
 | | `pdf_ein.py`, `samantekt.py` | **ein síða** (A4 lóðrétt, engin blaðaskipti): samantekt + húsmynd (verkbord-files/bygging/<cid>) + báðar hæðir; `husmynd.cjs` finnur slóðina |
 | | `greining_uppf.cjs`, `staerd.cjs` | greining lagfærð eftir á (BO út, skýrsla tengd); `stimpilStaerd` 26 á hæðir þar sem merkin voru of stór |
+| `sidumuli-1/` (1198) | `ser_allt.cjs`, `pv.cjs`, `hent.cjs` | **séruppdrættir Reykjavíkur**: fotoweb `/fotoweb/archives/5004-Séruppdrættir/?q=<landnr>` (Accept: application/json; síður `&p=`; metadata 205 = Raflagnir/Lagnir/Burður/Sérteikningar), forskoðanir og aðaluppdrættir um teikn-pdf |
+| | `tokn.py`, `gogn.py` | tákn á SKÖNNUN (ÚT-kassar, „!“): sniðmátsþáttun er hávaðasöm → lesið af gridded nærmyndum, sannreynt með yfirlagi; `gogn.json` = hnit í 6006-ramma |
+| | `vista.cjs` | 3 hæðir af einu blaði (skurðir) + 6 „Nýtt“-tillögur + greining (ÚT 15, „!“ 2, tillögur S1–S6) |
 | `almennt/` | `vista_vidhengi.cjs` | PDF í Viðhengi félags um appið sjálft (111), aðeins þau skrif hleypt út; ekkert ártal í nafni |
 | | `skipta_skyrslu.cjs` | ný skýrsla í stað gamallar: færslan af listanum, skráin KYRR í geymslunni (ekkert harðeytt) |
 | | `pdf_ur_appinu.cjs` | PDF úr „Prenta" Búnaðargreiningar (474) á lifandi síðu eða localhost |
