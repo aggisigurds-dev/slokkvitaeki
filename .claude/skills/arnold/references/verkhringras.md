@@ -46,6 +46,8 @@ Forsendur: Node, Python með `pymupdf` + `Pillow` (`python -m pip install --user
 6. **Sannreyning er skylda:** `yfirlag <id>` og SKOÐAÐU myndirnar. Hver hringur á að sitja á tákni, ekkert tákn má vera án hrings. Aldrei „vista"
    án þessa — falskar tölur í brunavörnum eru verri en engar.
 
+7. **Ertu á NÝJUSTU blöðunum?** Blöð Teikningar eru ekki alltaf þau nýjustu: Grandi var á 04/2024-blöðum en 12/2024-sett (kjallari + 1. hæð) var gildandi; Þingholt 1. hæð var á 2006-blaði en 2021-blað (veitingastaður) var nýrra. Berðu blöð borðsins saman við `teikn-listi` (nýjasta gildandi aðaluppdráttur á hæð, `urelt:false`) og notaðu nýrra blaðið í greininguna sem **sér blað** (`teikningar`) — Teikningin sjálf er ekki yfirskrifuð; segðu frá því í `athugasemdir`.
+
 ## lestur.json (skrifaðu með Write-tólinu — UTF-8; aldrei Python `open(f,'w')` án `encoding='utf-8'`, það skemmdi íslenska stafi 20.10.2026)
 
 ```json

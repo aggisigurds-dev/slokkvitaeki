@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 Image.MAX_IMAGE_PIXELS = None
 D = sys.argv[1]
 M = json.load(open(os.path.join(D, 'manifest.json'), encoding='utf-8'))
-TAK = ('SL', 'SLT', 'HSL', 'HST', 'BS', 'BRSL', 'R', 'ÚT', 'UT', 'BO', 'NF', 'LR', '!', '20m')
+TAK = ('SL', 'SLT', 'HSL', 'HST', 'BS', 'BSL', 'BRSL', 'R', 'ÚT', 'UT', 'BO', 'NF', 'LR', '!', '20m')
 LIT = {'SL': (220, 30, 30), 'SLT': (220, 30, 30), 'HSL': (220, 30, 30), 'HST': (220, 30, 30), 'BS': (20, 80, 220), 'BRSL': (20, 80, 220), '20m': (20, 80, 220), 'R': (150, 0, 200), 'ÚT': (0, 150, 60), 'UT': (0, 150, 60), 'BO': (240, 130, 0), '!': (150, 0, 200)}
 ut = {}
 for nafn, b in M['blod'].items():
@@ -25,7 +25,11 @@ for nafn, b in M['blod'].items():
     for w in pg.get_text('words'):
         if w[4] in TAK:
             r = pymupdf.Rect(w[:4]) * Rm
-            ords.append({'t': w[4], 'x': round((r.x0 + r.x1) / 2 * k, 1), 'y': round((r.y0 + r.y1) / 2 * k, 1), 'w': round(r.width * k, 1), 'h': round(r.height * k, 1)})
+            o = {'t': w[4], 'x': round((r.x0 + r.x1) / 2 * k, 1), 'y': round((r.y0 + r.y1) / 2 * k, 1), 'w': round(r.width * k, 1), 'h': round(r.height * k, 1)}
+            if w[4] == 'ÚT' and max(o['w'], o['h']) < 8.0 * k:   # smátt „ÚT“ í máltölum/hæðarkótum, ekki tákn (Grandi)
+                continue
+            if not any(q['t'] == o['t'] and abs(q['x'] - o['x']) <= 12 and abs(q['y'] - o['y']) <= 12 for q in ords):   # texti yfirprentaður = sama tákn tvisvar
+                ords.append(o)
     # allur textinn í lestrarröð (skýringar + byggingarlýsing)
     lines = [l[4].strip() for l in sorted(pg.get_text('blocks'), key=lambda t: (round(t[1] / 12), t[0])) if len(l) > 4 and l[4].strip()]
     open(os.path.join(D, 'texti_%s.txt' % nafn), 'w', encoding='utf-8').write('\n'.join(lines))
