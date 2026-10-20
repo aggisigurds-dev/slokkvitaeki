@@ -122,7 +122,11 @@
     const ser = box.querySelector(':scope > ._serupp');
     const teikn = box.querySelector(':scope > ._bupp-teikn-lina');
     if (ser || teikn) { const a = ser || teikn; if (a.nextElementSibling !== el) a.insertAdjacentElement('afterend', el); return; }
-    const fyrir = box.querySelector(':scope > .b411-oskrad') || box.querySelector(':scope > ._bupp-vixl');
+    // 20.10.2026 (Agnar: „þessir takkar eru að blikka stanslaust", 12–15 breytingar/s): án Teikninga/Séruppdrátta setti 432 Hús-línuna
+    // beint á undan Óskráð, en 464 setur Rýmingaráætlun-línuna (._ba-lina) á EFTIR Hús-línunni — þá stóð hún á milli þeirra, 432 færði
+    // Hús framhjá henni, 464 færði sína til baka, og svo koll af kolli. Röðin er nú Hús · Rýmingaráætlun · Óskráð: Hús ankrast á
+    // Rýmingaráætlun ef hún er til, annars á Óskráð. Sama staðsetning og 464 reiknar, því ekkert reiptog.
+    const fyrir = box.querySelector(':scope > ._ba-lina') || box.querySelector(':scope > .b411-oskrad') || box.querySelector(':scope > ._bupp-vixl');
     if (fyrir) { if (fyrir.previousElementSibling !== el) fyrir.insertAdjacentElement('beforebegin', el); return; }
     if (el.parentElement !== box) box.appendChild(el);
   }
