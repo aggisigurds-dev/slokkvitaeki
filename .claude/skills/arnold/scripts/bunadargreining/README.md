@@ -27,6 +27,10 @@ Bash-tólinu — skrifaðu skriftu með Write og keyrðu hana.
 | `sunnukriki-3/` | `greina_einingu.py` | snúinn brunavarnatexti settur saman + tákn einingar af vigur-PDF |
 | | `merkja.py`, `bua_pdf.cjs` | merkt blöð og PDF |
 | | `greining_sunnukriki.json` | **bíður vistunar** — ekkert félag á Sunnukrika 3 í kerfinu (tki + blöð í `bunadargreining`-sniði) |
+| `sudurhella-5/` (1875) | `lesa.py`, `bua.py` | **textalag vigur-PDF** (PyMuPDF `get_text('words')` × `rotation_matrix`): SL/BS/R/ÚT → rými → `items.json` (6000-rammi) + merktar myndir |
+| | `jpeg.py`, `vista.cjs` | síðurnar sem 6000-px JPEG í turbopaint-fötuna, `teikning_bord` (Nýtt-merki S/BS) + `bunadargreining`-röð (skilyrt á `updated_at`) |
+| | `pdf_ein.py`, `samantekt.py` | **ein síða** (A4 lóðrétt, engin blaðaskipti): samantekt + húsmynd (verkbord-files/bygging/<cid>) + báðar hæðir; `husmynd.cjs` finnur slóðina |
+| | `greining_uppf.cjs`, `staerd.cjs` | greining lagfærð eftir á (BO út, skýrsla tengd); `stimpilStaerd` 26 á hæðir þar sem merkin voru of stór |
 | `almennt/` | `vista_vidhengi.cjs` | PDF í Viðhengi félags um appið sjálft (111), aðeins þau skrif hleypt út; ekkert ártal í nafni |
 | | `skipta_skyrslu.cjs` | ný skýrsla í stað gamallar: færslan af listanum, skráin KYRR í geymslunni (ekkert harðeytt) |
 | | `pdf_ur_appinu.cjs` | PDF úr „Prenta" Búnaðargreiningar (474) á lifandi síðu eða localhost |

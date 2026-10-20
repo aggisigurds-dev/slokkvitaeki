@@ -93,6 +93,18 @@ gögnum/teikningum" · „merkja inn neyðarútganga … ef það eru brunakerfi
   ekki talin. **Varpa EKKI á nýrra aðaluppdrátt** þegar innrétting breyttist (stilling á daufum skönnunum gaf kvarða
   0,72–1,29 — ónothæf); sýndu blaðið sjálft sem eigið spjald, merkt „innrétting FYRIR breytingu".
 
+## Takkinn „Búnaðargreining" í takkaröð prófílsins (Agnar 20.10.2026)
+
+Fyrir framan Teikning-takkann (í stað Þjónustusamnings, sem er nú í ⋯-valmyndinni, 405). **Ýtt á hann: er greining til → hún opnast í glugga** (Skýrsla · Brunavarnatexti · **Prenta** · Greina aftur) — **annars setur kerfið hana af stað** og glugginn sýnir útkomuna. Grænt hak á takkanum þegar greining er til. Sami takki er í Brunahólfi (prófíllinn er innfelldur).
+
+**Lesturinn sjálfur (474 `lesaUrTeikningu`):** þegar engin merki eru á hæðum Teikningar les takkinn táknin úr TEXTALAGI aðaluppdráttarins með pdf.js (snúningur síðunnar meðtalinn): `SLT`/`HSL`/`HST` = handslökkvitæki, `BRSL` = slanga, `ÚT`, og — aðeins ef **skýringin stendur á sama blaði** („Handslökkvitæki", „Brunaslanga", „Reykskynjari") — `SL`, `BS`, `R`. Skýringarlínur (tákn með lýsingu hægra megin) eru ekki taldar; `ÚT` aðeins ef allur textahnúturinn er „ÚT" (ekki orð í setningu); **björgunarop (BO) eru EKKI lesin** (Agnar: „þarf ekki að vera þarna"). Rými: sú lárétta röð rýmisnúmera (≥ 3) sem er næst miðgildi táknanna, nálægasta númer í x (nálægasta númer í tvívídd valdi tæknirými í horni). Hæð verður að eiga PDF-heimild: `image_url` = teikn-mynd-slóð PDF (`&sida=N` fyrir síðu í setti) eða `haedir[].pdf = {url, sida}` á hreinni JPEG-hæð. Skráð tæki á staðnum → engin Nýtt-merki (tvítalning), hönnunarstaðirnir fara aðeins í greininguna. Skönnun án textalags → tenglar á TurboPaint eins og áður. „Greina aftur" heldur nú ÚT/brunakerfi, hönnunarstöðum utan Teikningar, texta, heimildum, blöðum og skýrslu.
+
+**Besta blaðið:** nýjasti **[INNSIGLAÐ] aðaluppdráttur** með eigin skýringum (Suðurhella 5: SL/BS/R/ÚT/BO, REI/EI, „Skýringar" + byggingarlýsing á blaði 3) segir allt — vigur með textalagi, einn skjal í setti (síða 1 = 1. hæð, síða 2 = 2. hæð/milliloft). Leitaðu hans FYRST í teikn-listi (`tegund: Bygginganefndarteikning`, nýjasta `dags`); 2016–2018-blöð (skönnuð, engin textalög) eru eldri útgáfa.
+
+**Prentanlegt skjal:** ein síða án blaðaskiptingar (sími + prentun): samantekt (fjöldi á hæð og í heild) efst, húsmynd prófílsins í hægra horni, báðar hæðir fyrir neðan (`sudurhella-5/pdf_ein.py`) → Viðhengi.
+
+**Merkjastærð:** Nýtt-merki á 50 m löngu húsi urðu of stór (sjálfvirkt 56 px á 3.951 px breiðum skurði) → `haedir[].stimpilStaerd` 26.
+
 ## Sjálfvirki takkinn („Greina búnað" í 474)
 
 Les **ekki** táknin sjálfur — lesturinn býr í TurboPaint (kjarni, `kjarni.vercel.app/kjarni/turbopaint`):
@@ -137,6 +149,7 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 |---|---|---|---|
 | Kvarnir ehf., Álfhella 9 | 1871 | id 1, 19.10.2026, handlesin | mhl 01 (2020-skönnun, [S]/[BS]) 7+2 tæki, mhl 02 (2026 vigur, slt) 4; CO2 utan teikningar; 2012-útgáfan eldri |
 | Álfaborg, Skútuvogur 4 | 661 | id 2, 19.10.2026, handlesin | sett 2025 (vigur, dulkóðað textalag): 15 slökkvitæki (12 „L" + 3 HST) + 5 BRSL; skráð 11 + 5; 3 af 7 merkjum á hönnunarstað; Teikning enn á 2022-blöðum |
+| ProLan - Suðurhella 5 | 1875 | id 4, 20.10.2026, **sjálfvirkt úr textalagi** (staðfest handtalið) | aðaluppdráttur 15 023 samþ. 17.09.2025 (útg. F/E): 17 SL (11 + 6 á millilofti) + 6 BS (20 m) + 12 ÚT + 19 R; bil 0104 aðeins eitt SL; tegund tillaga (duft 6 kg); engin tæki skráð → 23 Nýtt-merki á Teikningu; ein-síðu PDF í Viðhengi |
 | Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
 
 ## Í Brunahólfi (20.10.2026)

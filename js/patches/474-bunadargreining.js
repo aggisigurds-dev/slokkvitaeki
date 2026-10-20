@@ -134,7 +134,7 @@
     if (!r) {
       el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>engin vistuð greining</small><i></i>' +
         '<button type="button" class="bgr-t bgr-adal" data-a="greina">Greina búnað</button></div>' +
-        '<div class="bgr-m">Les búnaðinn sjálfvirkt úr textalagi samþykkts aðaluppdráttar hæða Teikningar (SL / SLT / HSL / HST, BS / BRSL, R, ÚT, BO — skýringarnar á blaðinu ráða merkingunni) eða úr merkjum sem eru þegar á hæðunum. Gefur hverju tæki auðkenni og stað og vistar með brunavörnum úr byggingarlýsingu — fast á staðnum.</div>';
+        '<div class="bgr-m">Les búnaðinn sjálfvirkt úr textalagi samþykkts aðaluppdráttar hæða Teikningar (SL / SLT / HSL / HST, BS / BRSL, R, ÚT — skýringarnar á blaðinu ráða merkingunni) eða úr merkjum sem eru þegar á hæðunum. Gefur hverju tæki auðkenni og stað og vistar með brunavörnum úr byggingarlýsingu — fast á staðnum.</div>';
       return;
     }
     var ok = r.stada === 'yfirfarin';
@@ -319,8 +319,8 @@
 
   /* ── LESA ÚR TEIKNINGUNNI (Agnar 20.10.2026, Suðurhella 5: „geturðu sett takka á profile sem gerir búnaðargreininguna") ──
    * Þegar engin tæki eru á hæðum Teikningar les takkinn táknin sjálf úr TEXTALAGI vigur-PDF aðaluppdráttarins (pdf.js):
-   * SL/SLT/HSL/HST = handslökkvitæki, BS/BRSL = brunaslanga, R = reykskynjari, ÚT, BO = björgunarop. Tákn sem skýringarnar
-   * (legend) skilgreina ekki — SL, BS, R, BO — eru aðeins lesin ef skýringin stendur á sama blaði („Handslökkvitæki",
+   * SL/SLT/HSL/HST = handslökkvitæki, BS/BRSL = brunaslanga, R = reykskynjari, ÚT. Tákn sem skýringarnar
+   * (legend) skilgreina ekki — SL, BS, R — eru aðeins lesin ef skýringin stendur á sama blaði („Handslökkvitæki",
    * „Brunaslanga" …), því sami stafur þýðir sitthvað eftir hönnuði (S = segulloki á sumum blöðum). Skýringarlínur sjálfar
    * (tákn með lýsingu hægra megin) eru ekki taldar. Skönnun án textalags skilar engu → tenglar á TurboPaint eins og áður.
    * Hæð án PDF-slóðar í image_url (hrein JPEG) fær h.pdf = {url, sida} svo textinn finnist. */
@@ -366,11 +366,11 @@
       });
     });
   }
-  var KODI = /^(SLT|HSL|HST|SL|BRSL|BS|BO|R|ÚT)$/;
+  var KODI = /^(SLT|HSL|HST|SL|BRSL|BS|R|ÚT)$/;   // BO (björgunarop) ekki lesið — Agnar 20.10.2026: „þarf ekki að vera þarna“
   var RYMI_NAFN = /^(geymsla|lager|verkst|skrifst|smiðja|eldhús|kaffi|verslun|sýning|vörumót|þvotta|tækni|anddyri|gangur|salerni|snyrting|búnings|mötuneyti|fundar|móttaka|stigahús|bílageymsla|ræsting|smávörulager|vinnu)/i;
   function taknUrOrdum(ord) {
     var txt = ord.map(function (o) { return o.t; }).join(' ');
-    var leg = { sl: /slökkvitæki/i.test(txt), slanga: /brunaslang|slöngukefli/i.test(txt), r: /reykskynjar/i.test(txt), bo: /björgunarop/i.test(txt) };
+    var leg = { sl: /slökkvitæki/i.test(txt), slanga: /brunaslang|slöngukefli/i.test(txt), r: /reykskynjar/i.test(txt) };
     var lysing = ord.filter(function (o) { return /^(handslökkvitæki|slökkvitæki|brunaslanga|björgunarop|reykskynjari|merktur|útgangur)$/i.test(o.t); });
     var iSkyringu = function (o) { return lysing.some(function (l) { return Math.abs(l.y - o.y) < 22 && l.x > o.x && l.x - o.x < 600; }); };
     var rym = ord.filter(function (o) { return /^0\d{3}$/.test(o.t) || /^\d\d[.\-]\d\d$/.test(o.t); });
@@ -387,7 +387,7 @@
     ord.forEach(function (o) {
       if (!KODI.test(o.t) || !o.heil.split(/\s+/).every(function (w) { return KODI.test(w); }) || iSkyringu(o)) return;
       var f = /^(SLT|HSL|HST)$/.test(o.t) ? 'sl' : o.t === 'SL' ? (leg.sl ? 'sl' : null) : o.t === 'BRSL' ? 'slanga' : o.t === 'BS' ? (leg.slanga ? 'slanga' : null)
-        : o.t === 'R' ? (leg.r ? 'r' : null) : o.t === 'BO' ? (leg.bo ? 'bo' : null) : 'ut';
+        : o.t === 'R' ? (leg.r ? 'r' : null) : 'ut';
       if (!f || ut.some(function (q) { return q.f === f && Math.hypot(q.x - o.x, q.y - o.y) < 12; })) return;
       ut.push({ f: f, kodi: o.t, x: o.x, y: o.y, stadur: stadurFyrir(o) });
     });
@@ -436,7 +436,7 @@
       lesid = rs;
       var fj = rs.reduce(function (n, r) { return n + r.takn.length; }, 0);
       if (!fj) {
-        var e = new Error('Fann engin tákn (SL, BS, R, ÚT, BO …) í textalagi teikningarinnar — hún er líklega skönnun. Lestu búnaðinn af henni í TurboPaint („Búnaður af teikningu" → „Vista í úttekt") eða dragðu tækin inn í Teikningu, og ýttu svo aftur á Greina búnað.');
+        var e = new Error('Fann engin tákn (SL, BS, R, ÚT …) í textalagi teikningarinnar — hún er líklega skönnun. Lestu búnaðinn af henni í TurboPaint („Búnaður af teikningu" → „Vista í úttekt") eða dragðu tækin inn í Teikningu, og ýttu svo aftur á Greina búnað.');
         e.notanda = true;
         e.tenglar = hs.filter(function (h) { return h && h.id && h.image_url && !/^(blob|data):/.test(h.image_url); }).map(function (h) {
           var q = ['uttekt=' + encodeURIComponent(cid), 'haed=' + encodeURIComponent(h.id)];
@@ -461,7 +461,7 @@
           (o.h.markers = o.h.markers || []).push(o.m);
         });
       }
-      // auðkenni: S / BS í röð hæða og ofan frá; ÚT, R, BO sér
+      // auðkenni: S / BS í röð hæða og ofan frá; ÚT, R sér
       var tel = { sl: 0, slanga: 0, ut: 0, r: 0, bo: 0 }, FORSK = { sl: 'S', slanga: 'BS', ut: 'ÚT', r: 'R', bo: 'BO' };
       raun.slice().sort(function (a, b) { return a.i - b.i || a.t.y - b.t.y || a.t.x - b.t.x; }).forEach(function (o) { tel[o.t.f]++; o.audkenni = FORSK[o.t.f] + tel[o.t.f]; if (o.m) o.m.audkenni = o.audkenni; });
       var vistaBord = skrad ? Promise.resolve() : SB().from('teikning_bord').update({ haedir: hs, markers: (hs[0] && hs[0].markers) || [], updated_at: new Date().toISOString(), updated_by: 'Búnaðargreining' })
@@ -499,7 +499,7 @@
         heimildir: bv && bv.slod ? [{ titill: 'Byggingarlýsing', dags: bv.dags || null, slod: bv.slod, gildir: true, athugasemd: 'Brunavarnatextinn' }] : [],
         athugasemdir: ['Táknin lesin sjálfvirkt úr textalagi teikningarinnar — yfirfara á teikningunni. Teikningin tilgreinir ekki tegund handslökkvitækja; tegundin er tillaga.']
           .concat(x.skrad ? ['Tæki eru skráð á staðinn (' + x.skrad + ') — hönnunarstaðirnir eru því ekki settir sem Nýtt-merki á Teikningu (tvítalning) heldur í greininguna („Ekki á Teikningu").'] : []),
-        samantekt: { slokkvitaeki: x.tel.sl, slongur: x.tel.slanga, utgangar: x.tel.ut, reykskynjarar: x.tel.r, bjorgunarop: x.tel.bo, mhl: [] },
+        samantekt: { slokkvitaeki: x.tel.sl, slongur: x.tel.slanga, utgangar: x.tel.ut, reykskynjarar: x.tel.r, mhl: [] },
         teikningar: hs.filter(function (h, i) { return med[i] && h.image_url; }).map(function (h) {
           return { id: h.id, nafn: (h.nafn || 'Hæð') + ' — aðaluppdráttur', mynd: h.image_url, frum: h.frum, skurdur: h.skurdur, heimild: 'Textalag PDF' };
         })
