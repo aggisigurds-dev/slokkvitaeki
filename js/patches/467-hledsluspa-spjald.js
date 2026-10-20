@@ -34,10 +34,25 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sb = () => (window.DB && DB.sb) || null;
   const AR = new Date().getFullYear();
+  const OPIN_LYKILL = 'profill.hledsluspaOpin';
+  const erOpin = () => { try { return !!(window.Vidmot && Vidmot.lesa(OPIN_LYKILL, false) === true); } catch (_) { return false; } };
+  const stillaOpin = (el) => {
+    const o = erOpin() ? '1' : '0'; if (el.dataset.opin !== o) el.dataset.opin = o;
+    const b = el.querySelector('.hsp-hnapp'); if (b) { b.setAttribute('aria-expanded', o === '1' ? 'true' : 'false'); b.title = o === '1' ? 'Loka Hleðsluspá' : 'Opna Hleðsluspá'; }
+  };
 
   const css = [
     '.hsp{background:#fff;border:1px solid #000;border-radius:12px;overflow:hidden;box-shadow:0 12px 30px -16px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.25);margin:0 0 16px;min-height:150px;font-family:' + SANS + ';color:#141822;box-sizing:border-box;container-type:inline-size}',
     '.hsp[hidden]{display:none}',
+    // 20.10.2026 (Agnar: „hafa hleðsluspá bara default collapsed"): lokað sjálfgefið — hausinn (heimsókn, til hleðslu) sést,
+    // taflan opnast með smelli; valið fer á þjóninn (Vidmot, ekki tækið)
+    '.hsp[data-opin="0"]{min-height:0}',
+    '.hsp[data-opin="0"] .hsp-buk{display:none}',
+    '.hsp[data-opin="0"] .hsp-haus{border-bottom:0}',
+    '.hsp-haus{cursor:pointer}',
+    '.hsp-hnapp{flex:none;width:26px;height:26px;margin-left:2px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid rgba(255,255,255,.22)!important;background:rgba(255,255,255,.08)!important;color:#fff!important;cursor:pointer;box-shadow:none!important}',
+    '.hsp-hnapp svg{transition:transform .15s}',
+    '.hsp[data-opin="1"] .hsp-hnapp svg{transform:rotate(180deg)}',
     '.hsp-haus{position:relative;background:' + METAL + ';min-height:46px;padding:5px 16px 5px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);border-bottom:1px solid #000;box-sizing:border-box}',
     '.hsp-haus::before,.hsp-haus::after{content:"";position:absolute;top:50%;margin-top:-3px;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.6);pointer-events:none}',
     '.hsp-haus::before{left:7px}.hsp-haus::after{right:7px}',
@@ -152,12 +167,18 @@
         '<span class="hsp-plata hsp-heimsokn" title="Hlaðið á 5 ára fresti: tæki sem var hlaðið eða selt nýtt árið Y kemur í hleðslu árið Y+5"></span>' +
         '<span class="hsp-plata hsp-sidast" hidden></span>' +
         '<span class="hsp-plata hsp-mork" data-t="gult" hidden></span>' +
-        '<div class="hsp-tala"><b>—</b><small>til hleðslu</small></div></div>' +
+        '<div class="hsp-tala"><b>—</b><small>til hleðslu</small></div>' +
+        '<button type="button" class="hsp-hnapp" aria-label="Opna eða loka Hleðsluspá"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>' +
       '<div class="hsp-buk">' +
         '<div class="hsp-tb hsp-saga"><table><thead><tr><th>Ár</th><th>Tæki</th><th>Yfirfarin</th><th>Hlaðin</th><th>Ný</th><th>Heimild</th></tr></thead><tbody></tbody></table></div>' +
         '<div class="hsp-tb hsp-teg-tb"><table><thead><tr><th>Næsta heimsókn</th><th>Tæki</th><th>Hlaðin/ný 5 ár</th><th>Til hleðslu</th></tr></thead><tbody></tbody></table></div>' +
         '<div class="hsp-ath"></div>' +
       '</div>';
+    stillaOpin(el);
+    el.querySelector('.hsp-haus').addEventListener('click', () => {
+      try { if (window.Vidmot) Vidmot.setja(OPIN_LYKILL, !erOpin()); } catch (_) {}
+      stillaOpin(el);
+    });
     return el;
   }
   const setT = (el, sel, v) => { const n = el.querySelector(sel); if (n && n.textContent !== String(v)) n.textContent = String(v); };
@@ -209,6 +230,7 @@
       if (!el) { el = skel(); cols.parentNode.insertBefore(el, cols); }
       else if (el.nextElementSibling !== cols) cols.parentNode.insertBefore(el, cols);   // .uttekt-cols endurgerð → sami hnútur, réttur staður
       if (el.hidden) el.hidden = false;
+      stillaOpin(el);                                                 // önnur vél gæti hafa opnað/lokað — þjónninn ræður, nýjasta valið
       const fid = fidNu(main); if (!fid) return;
       const r = minni.get(fid);
       if (el.dataset.fid !== String(fid) || !el.dataset.fyllt) {

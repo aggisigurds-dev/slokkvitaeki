@@ -45,6 +45,21 @@
 
   function labelFor(orig) { var t = stripEmoji(txt(orig)); return t.charAt(0).toUpperCase() + t.slice(1); }
 
+  // 20.10.2026 (Agnar: „færa bara þjónustusamninginn upp" í ⋯-valmyndina, og „setja búnaðargreininguna í staðinn" í takkaröðinni
+  // undir loftmyndinni — sá takki er smíðaður í 474): Þjónustusamningur-hnappurinn (DocTemplates.openForCompany) fer í valmyndina
+  // eins og hinir (orig-hnappurinn felldur inni í valmyndaratriðinu, smellur áframsendur).
+  function ensureSamningur(main, row) {
+    var menu = row && row.querySelector(':scope > .b405-vm .b405-menu'); if (!menu || menu.querySelector('.b405-mi-samn')) return;
+    var orig = Array.prototype.slice.call(main.querySelectorAll('div[data-co-id] > button[onclick], .b405-knappar > button[onclick]'))
+      .filter(function (b) { return /DocTemplates\.openForCompany/.test(b.getAttribute('onclick') || ''); })[0];
+    if (!orig) return;
+    var mi = el('button', 'b405-mi b405-mi-samn'); mi.type = 'button'; mi.setAttribute('role', 'menuitem');
+    mi.innerHTML = svg('<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>') + '<span>Þjónustusamningur</span>';
+    orig.classList.remove('b405-knappur'); orig.classList.add('b405-orig'); mi.appendChild(orig);
+    mi.addEventListener('click', function (ev) { if (orig === ev.target || orig.contains(ev.target)) return; ev.preventDefault(); ev.stopPropagation(); closeAll(); orig.click(); });
+    menu.insertBefore(mi, menu.firstChild);
+  }
+
   function ensureMenu(row) {
     var vm = row.querySelector(':scope > .b405-vm');
     if (!vm) {
@@ -218,7 +233,7 @@
     try {
       var editBtn = main.querySelector('button[onclick^="Companies.openEdit"]');
       var row = editBtn && editBtn.parentElement;
-      if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensurePlate(main, row); ensureFaera(main, row); }
+      if (row && row.parentElement && row.parentElement.parentElement === main) { row.classList.add('b405-rod'); ensureMenu(row); ensureSamningur(main, row); ensurePlate(main, row); ensureFaera(main, row); }
       ensureSamskipti(main);
       ensureBanner(main);
       ensureTeikning(main);

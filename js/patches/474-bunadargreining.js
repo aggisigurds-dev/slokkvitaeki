@@ -8,6 +8,10 @@
  * (456, #co-fp-hdir) og sýnir: samantekt, athugasemdir, heimildir (gildandi / eldri útgáfa), brunavarnatextann orðrétt,
  * Skýrslu (PDF í Viðhengi, 111) og Prenta. Listinn yfir búnað hverrar hæðar er í 456 (merkin bera audkenni + stadur).
  *
+ * TAKKI Í TAKKARÖÐINNI (20.10.2026): „Búnaðargreining" fyrir framan Teikning (Þjónustusamningur fór í ⋯-valmyndina, 405) — opnar greininguna í
+ * glugga (prentun, skýrsla) eða setur hana af stað sé hún ekki til; grænt hak þegar hún er tilbúin. Greina búnað les táknin (SL/BS/R/ÚT/BO)
+ * úr textalagi aðaluppdráttar hæðanna þegar engin merki eru komin (lesaUrTeikningu).
+ *
  * „Greina búnað" (ekkert vistað) / „Greina aftur": tekur merkin sem eru á hæðum Teikningar (Nýtt-tillögur úr
  * SLT/BRSL-lestri TurboPaint, skráð tæki), gefur þeim auðkenni (S1…, BS1…) og stað (næsta rýmisheiti úr textalagi
  * vigur-PDF), dregur brunavarnir úr byggingarlýsingu (fasteign_greining, 468) og vistar nýja röð — sú gamla fær
@@ -19,61 +23,62 @@
   window.__bunadargreining474 = true;
 
   var ID = 'co-bgr';
+  var ROT = '.bgr-rot';     // sama útlit á spjaldinu undir hæðunum (#co-bgr) og í glugganum (#bgr-glugga)
   var st = document.createElement('style');
   st.id = 'bunadargreining-474';
   st.textContent = [
-    '#' + ID + '{margin:0 12px 12px;background:#fff;border:1px solid #e3e1dc;border-radius:10px;font:500 12.5px/1.45 system-ui,sans-serif;color:#2b2a27}',
+    ROT + '{margin:0 12px 12px;background:#fff;border:1px solid #e3e1dc;border-radius:10px;font:500 12.5px/1.45 system-ui,sans-serif;color:#2b2a27}',
     'html[data-teikning="fellt"] #co-fp-section #' + ID + '{display:none!important}',
-    '#' + ID + ' .bgr-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid #efede8}',
-    '#' + ID + ' .bgr-h strong{font:700 13px system-ui,sans-serif;letter-spacing:.02em}',
-    '#' + ID + ' .bgr-h small{color:#7a766d}',
-    '#' + ID + ' .bgr-h em{font-style:normal;font:700 10px/18px system-ui,sans-serif;padding:0 7px;border-radius:9px;background:#fff3e0;color:#9a4a00;border:1px solid #f3c99a}',
-    '#' + ID + ' .bgr-h em.bgr-ok{background:#e8f5e9;color:#2e6b34;border-color:#a5d6a7}',
-    '#' + ID + ' .bgr-h i{flex:1}',
-    '#' + ID + ' .bgr-t{height:28px;padding:0 11px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important;text-shadow:none!important}',
-    '#' + ID + ' .bgr-t:hover{border-color:#2b2a27}',
-    '#' + ID + ' .bgr-t.bgr-adal{background:#2b2a27!important;border-color:#2b2a27;color:#fff!important}',
-    '#' + ID + ' .bgr-t[disabled]{opacity:.55;cursor:default}',
-    '#' + ID + ' .bgr-b{padding:10px 12px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 18px}',
-    '@container (max-width:700px){#' + ID + ' .bgr-b{grid-template-columns:minmax(0,1fr)}}',
-    '#' + ID + ' .bgr-s{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}',
-    '#' + ID + ' .bgr-s b{display:inline-flex;align-items:baseline;gap:5px;padding:5px 10px;border:1px solid #e3e1dc;border-radius:8px;background:#faf9f6;font-weight:500}',
-    '#' + ID + ' .bgr-s b strong{font:700 17px/1 Georgia,serif}',
-    '#' + ID + ' h5{margin:0 0 4px;font:700 10.5px system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#7a766d}',
-    '#' + ID + ' ul{margin:0;padding-left:17px}',
-    '#' + ID + ' li{margin:0 0 3px}',
-    '#' + ID + ' .bgr-hf li.bgr-urelt{color:#8a857b;text-decoration:line-through;text-decoration-color:#c9c4ba}',
-    '#' + ID + ' .bgr-hf li small{display:block;color:#7a766d;text-decoration:none}',
-    '#' + ID + ' .bgr-tx{grid-column:1/-1;border-top:1px solid #efede8;padding-top:8px}',
-    '#' + ID + ' .bgr-tx[hidden]{display:none}',
-    '#' + ID + ' .bgr-tx section{margin:0 0 10px}',
-    '#' + ID + ' .bgr-tx h6{margin:8px 0 1px;font:700 12px system-ui,sans-serif;color:#7f0000}',
-    '#' + ID + ' .bgr-tx p{margin:0 0 3px;white-space:pre-line}',
-    '#' + ID + ' .bgr-tx p.bgr-lyk{background:#fff3e0;border-left:3px solid #e65100;padding:3px 7px}',
-    '#' + ID + ' .bgr-tx small{color:#7a766d}',
-    '#' + ID + ' .bgr-ut{grid-column:1/-1}',
-    '#' + ID + ' .bgr-ut ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:3px 18px}',
-    '#' + ID + ' .bgr-ut li{display:flex;gap:7px;align-items:baseline;min-width:0;margin:0}',
-    '#' + ID + ' .bgr-ut strong{flex:none;min-width:34px;padding:0 4px;border-radius:4px;background:#fff;border:1.5px solid #c93c1d;color:#c93c1d;font:700 10px/15px system-ui,sans-serif;text-align:center}',
-    '#' + ID + ' .bgr-ut strong.bgr-bs{border-color:#1f5fbf;color:#1f5fbf}',
-    '#' + ID + ' .bgr-ut small{font:inherit;min-width:0}',
-    '#' + ID + ' .bgr-ut em{font-style:normal;color:#7a766d}',
+    ROT + ' .bgr-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid #efede8}',
+    ROT + ' .bgr-h strong{font:700 13px system-ui,sans-serif;letter-spacing:.02em}',
+    ROT + ' .bgr-h small{color:#7a766d}',
+    ROT + ' .bgr-h em{font-style:normal;font:700 10px/18px system-ui,sans-serif;padding:0 7px;border-radius:9px;background:#fff3e0;color:#9a4a00;border:1px solid #f3c99a}',
+    ROT + ' .bgr-h em.bgr-ok{background:#e8f5e9;color:#2e6b34;border-color:#a5d6a7}',
+    ROT + ' .bgr-h i{flex:1}',
+    ROT + ' .bgr-t{height:28px;padding:0 11px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important;text-shadow:none!important}',
+    ROT + ' .bgr-t:hover{border-color:#2b2a27}',
+    ROT + ' .bgr-t.bgr-adal{background:#2b2a27!important;border-color:#2b2a27;color:#fff!important}',
+    ROT + ' .bgr-t[disabled]{opacity:.55;cursor:default}',
+    ROT + ' .bgr-b{padding:10px 12px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 18px}',
+    '@container (max-width:700px){' + ROT + ' .bgr-b{grid-template-columns:minmax(0,1fr)}}',
+    ROT + ' .bgr-s{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}',
+    ROT + ' .bgr-s b{display:inline-flex;align-items:baseline;gap:5px;padding:5px 10px;border:1px solid #e3e1dc;border-radius:8px;background:#faf9f6;font-weight:500}',
+    ROT + ' .bgr-s b strong{font:700 17px/1 Georgia,serif}',
+    ROT + ' h5{margin:0 0 4px;font:700 10.5px system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#7a766d}',
+    ROT + ' ul{margin:0;padding-left:17px}',
+    ROT + ' li{margin:0 0 3px}',
+    ROT + ' .bgr-hf li.bgr-urelt{color:#8a857b;text-decoration:line-through;text-decoration-color:#c9c4ba}',
+    ROT + ' .bgr-hf li small{display:block;color:#7a766d;text-decoration:none}',
+    ROT + ' .bgr-tx{grid-column:1/-1;border-top:1px solid #efede8;padding-top:8px}',
+    ROT + ' .bgr-tx[hidden]{display:none}',
+    ROT + ' .bgr-tx section{margin:0 0 10px}',
+    ROT + ' .bgr-tx h6{margin:8px 0 1px;font:700 12px system-ui,sans-serif;color:#7f0000}',
+    ROT + ' .bgr-tx p{margin:0 0 3px;white-space:pre-line}',
+    ROT + ' .bgr-tx p.bgr-lyk{background:#fff3e0;border-left:3px solid #e65100;padding:3px 7px}',
+    ROT + ' .bgr-tx small{color:#7a766d}',
+    ROT + ' .bgr-ut{grid-column:1/-1}',
+    ROT + ' .bgr-ut ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:3px 18px}',
+    ROT + ' .bgr-ut li{display:flex;gap:7px;align-items:baseline;min-width:0;margin:0}',
+    ROT + ' .bgr-ut strong{flex:none;min-width:34px;padding:0 4px;border-radius:4px;background:#fff;border:1.5px solid #c93c1d;color:#c93c1d;font:700 10px/15px system-ui,sans-serif;text-align:center}',
+    ROT + ' .bgr-ut strong.bgr-bs{border-color:#1f5fbf;color:#1f5fbf}',
+    ROT + ' .bgr-ut small{font:inherit;min-width:0}',
+    ROT + ' .bgr-ut em{font-style:normal;color:#7a766d}',
     // Teikning greiningarinnar („sér teikning", Agnar 19.10.2026): blöðin sem greiningin las, merkt — aðskilið Teikningu
-    '#' + ID + ' .bgr-bl{grid-column:1/-1}',
-    '#' + ID + ' .bgr-bl-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}',
-    '@container (max-width:700px){#' + ID + ' .bgr-bl-g{grid-template-columns:minmax(0,1fr)}}',
-    '#' + ID + ' .bgr-k{border:1px solid #e3e1dc;border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;min-width:0}',
-    '#' + ID + ' .bgr-k:hover{border-color:#2b2a27}',
-    '#' + ID + ' .bgr-kh{display:flex;justify-content:space-between;gap:6px;padding:6px 9px;border-bottom:1px solid #efede8;font:600 11.5px system-ui,sans-serif}',
-    '#' + ID + ' .bgr-kh small{font-weight:500;color:#7a766d;white-space:nowrap}',
-    '#' + ID + ' .bgr-km{position:relative;aspect-ratio:4/3;background:#f1f0ec}',
-    '#' + ID + ' .bgr-km canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}',
-    '#' + ID + ' .bgr-km .cfh-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11.5px system-ui,sans-serif;color:#8a857b}',
-    '#' + ID + ' .bgr-s b.bgr-fl{border-color:#a5d6a7;background:#f1f8f1}',
-    '#' + ID + ' .bgr-s b.bgr-bk{border-color:#ce93d8;background:#f8f1fa}',
+    ROT + ' .bgr-bl{grid-column:1/-1}',
+    ROT + ' .bgr-bl-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}',
+    '@container (max-width:700px){' + ROT + ' .bgr-bl-g{grid-template-columns:minmax(0,1fr)}}',
+    ROT + ' .bgr-k{border:1px solid #e3e1dc;border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;min-width:0}',
+    ROT + ' .bgr-k:hover{border-color:#2b2a27}',
+    ROT + ' .bgr-kh{display:flex;justify-content:space-between;gap:6px;padding:6px 9px;border-bottom:1px solid #efede8;font:600 11.5px system-ui,sans-serif}',
+    ROT + ' .bgr-kh small{font-weight:500;color:#7a766d;white-space:nowrap}',
+    ROT + ' .bgr-km{position:relative;aspect-ratio:4/3;background:#f1f0ec}',
+    ROT + ' .bgr-km canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}',
+    ROT + ' .bgr-km .cfh-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 11.5px system-ui,sans-serif;color:#8a857b}',
+    ROT + ' .bgr-s b.bgr-fl{border-color:#a5d6a7;background:#f1f8f1}',
+    ROT + ' .bgr-s b.bgr-bk{border-color:#ce93d8;background:#f8f1fa}',
     '#cfh-stort .cfh-s-l h4.bgr-fh{padding-top:14px}',
-    '#' + ID + ' .bgr-m{padding:10px 12px;color:#4a4740}',
-    '#' + ID + ' .bgr-m.bgr-villa{color:#a3261a}'
+    ROT + ' .bgr-m{padding:10px 12px;color:#4a4740}',
+    ROT + ' .bgr-m.bgr-villa{color:#a3261a}'
   ].join('\n');
   document.head.appendChild(st);
 
@@ -386,6 +391,24 @@
       if (!f || ut.some(function (q) { return q.f === f && Math.hypot(q.x - o.x, q.y - o.y) < 12; })) return;
       ut.push({ f: f, kodi: o.t, x: o.x, y: o.y, stadur: stadurFyrir(o) });
     });
+    // Rými: bilin eru jafnbreið og rýmisnúmerin standa í EINNI láréttri röð — taktu þá röð (≥ 3 númer) sem er næst miðgildi táknanna
+    // og veldu númerið sem er næst í x. (Nálægasta númer í tvívídd valdi tæknirými í horni fyrir slöngu í öðru bili.)
+    var rader = [];
+    rym.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (q) {
+      var r = rader[rader.length - 1];
+      if (r && Math.abs(r.y - q.y) < 130) { r.l.push(q); r.y = (r.y * (r.l.length - 1) + q.y) / r.l.length; } else rader.push({ y: q.y, l: [q] });
+    });
+    var yMed = ut.length ? ut.map(function (t) { return t.y; }).sort(function (a, b) { return a - b; })[Math.floor(ut.length / 2)] : 0;
+    var rod = null;
+    rader.filter(function (r) { return r.l.length >= 3; }).forEach(function (r) { if (!rod || Math.abs(r.y - yMed) < Math.abs(rod.y - yMed)) rod = r; });
+    if (rod) ut.forEach(function (t) {
+      var q = null, bd = 1e9, n = null, nd = 1e9, p = [];
+      rod.l.forEach(function (c) { var d = Math.abs(c.x - t.x); if (d < bd) { bd = d; q = c; } });
+      nofn.forEach(function (c) { var d = Math.hypot(c.x - q.x, c.y - q.y); if (d < nd) { nd = d; n = c; } });
+      p.push('rými ' + q.t);
+      if (n && nd < 250) p.push(n.t.charAt(0).toUpperCase() + n.t.slice(1).toLowerCase());
+      t.stadur = 'Nálægt: ' + p.join(' · ');
+    });
     return { takn: ut, idnadur: /geymsl|lager|verkstæð|iðnað/i.test(txt) };
   }
   // tákn per hæð; sama síða á fleiri hæðum (t.d. tvær hæðir með ólíkan skurð) → táknið tilheyrir fyrstu hæð sem skurðurinn nær yfir
@@ -607,32 +630,126 @@
     });
   }
 
-  function smida(sec, cid) {
-    var el = document.createElement('div');
-    el.id = ID;
-    el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>sæki…</small></div>';
-    var g = sec.querySelector('#co-fp-hdir');
-    if (g && g.parentNode === sec) sec.insertBefore(el, g.nextSibling); else sec.appendChild(el);
-    var rod = null;
+  /* ── SAMEIGINLEG TENGING spjalds og glugga ─────────────────────────────────────────────────────────────────── */
+  function tengja(el, cid, S) {   // S.rod = núverandi vistuð greining (eða null)
     el.addEventListener('click', function (e) {
       var kort = e.target.closest && e.target.closest('.bgr-k[data-bl]');
-      if (kort && el.contains(kort) && rod) { var bl = blodin(rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
+      if (kort && el.contains(kort) && S.rod) { var bl = blodin(S.rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
       var b = e.target.closest && e.target.closest('[data-a]');
       if (!b || !el.contains(b)) return;
       var a = b.getAttribute('data-a');
       if (a === 'texti') { var t = el.querySelector('.bgr-tx'); if (t) { t.hidden = !t.hidden; b.setAttribute('aria-pressed', String(!t.hidden)); } }
-      else if (a === 'skyrsla' && rod && rod.skyrsla && window.CompanyAttachments) CompanyAttachments.openPreview(Object.assign({ content_type: 'application/pdf' }, rod.skyrsla));
-      else if (a === 'prenta' && rod) prenta(cid, rod);
-      else if (a === 'greina') greina(el, cid, rod, function (ny) { rod = ny; });
+      else if (a === 'skyrsla' && S.rod && S.rod.skyrsla && window.CompanyAttachments) CompanyAttachments.openPreview(Object.assign({ content_type: 'application/pdf' }, S.rod.skyrsla));
+      else if (a === 'prenta' && S.rod) prenta(cid, S.rod);
+      else if (a === 'greina') greina(el, cid, S.rod, function (ny) { S.rod = ny; uppfaert(cid, ny, el); });
     });
+  }
+  // greining varð til/breyttist (úr spjaldinu eða glugganum) → hitt og takkinn fylgja með
+  function uppfaert(cid, ny, fra) {
+    var inl = document.getElementById(ID);
+    if (inl && inl !== fra && inl._cid === String(cid) && inl._S) { inl._S.rod = ny; teikna(inl, cid, ny); }
+    merkjaTakka(cid, ny);
+  }
+
+  function smida(sec, cid) {
+    var el = document.createElement('div');
+    el.id = ID; el.className = 'bgr-rot';
+    el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>sæki…</small></div>';
+    var g = sec.querySelector('#co-fp-hdir');
+    if (g && g.parentNode === sec) sec.insertBefore(el, g.nextSibling); else sec.appendChild(el);
+    var S = { rod: null }; el._S = S;
+    tengja(el, cid, S);
     saekja(cid).then(function (r) {
       if (String(window._currentCompanyId) !== String(cid) || !el.isConnected) return;
-      rod = r; teikna(el, cid, r);
+      S.rod = r; teikna(el, cid, r); merkjaTakka(cid, r);
     }, function () { el.innerHTML = '<div class="bgr-h"><strong>Búnaðargreining</strong><small>náðist ekki að sækja</small></div>'; });
   }
 
+  /* ── TAKKI Í TAKKARÖÐ PRÓFÍLSINS + GLUGGI (Agnar 20.10.2026: „setja búnaðargreininguna í staðinn" fyrir Þjónustusamning,
+   * „annaðhvort setur þá kerfið greininguna af stað eða opnar hana ef hún er til, grænt checkmark ef hún er tilbúin, síðan
+   * opnast glugginn með þessu og maður getur prentað út"). Takkinn situr fyrir framan Teikning-takkann; Þjónustusamningur
+   * er kominn í ⋯-valmyndina (405). Glugginn hýsir sama spjald og undir hæðunum (Skýrsla · Brunavarnatexti · Prenta · Greina aftur). */
+  var TAKKI = 'bgr-takki', GLUGGI = 'bgr-glugga';
+  var vitad = {};   // cid → true/false: er virk greining til (fyllist þegar spjaldið eða takkinn hefur spurt)
+  function merkjaTakka(cid, r) {
+    vitad[String(cid)] = !!r;
+    var b = document.getElementById(TAKKI);
+    if (b && b._cid === String(cid)) stillaTakka(b);
+  }
+  function stillaTakka(b) {
+    var til = vitad[b._cid];
+    var hak = b.querySelector('.bgr-hak'); if (hak) hak.hidden = !til;
+    b.title = til ? 'Búnaðargreining tilbúin — opna (skoða, prenta)' : 'Búnaðargreining — lesa búnaðinn úr teikningunni og vista';
+    b.setAttribute('data-til', til ? '1' : '0');
+  }
+  function ensureTakki() {
+    var cid = window._currentCompanyId, main = document.getElementById('companies-main');
+    if (!main || !cid || !window.DB || !DB.sb) return;
+    var gamall = document.getElementById(TAKKI);
+    if (gamall && gamall._cid === String(cid) && gamall.isConnected) return;
+    if (gamall) gamall.remove();
+    var teikn = Array.prototype.slice.call(main.querySelectorAll('button[onclick]')).filter(function (b) {
+      var on = b.getAttribute('onclick') || '';
+      return /FloorPlan\.open|opnaTeikningu/.test(on) && /^\s*\S*\s*Teikning\s*$/.test((b.textContent || '').replace(/\s+/g, ' ').trim());
+    })[0];
+    if (!teikn || !teikn.parentNode) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.id = TAKKI; b._cid = String(cid);
+    b.className = teikn.className.replace(/\bb405-orig\b/, '').trim();
+    var stil = teikn.getAttribute('style'); if (stil) b.setAttribute('style', stil);
+    b.innerHTML = '<span class="bgr-tk-t">Búnaðargreining</span><i class="bgr-hak" hidden aria-label="tilbúin"></i>';
+    b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); glugga(b._cid); });
+    teikn.parentNode.insertBefore(b, teikn);
+    stillaTakka(b);
+    if (vitad[b._cid] === undefined) {
+      SB().from('bunadargreining').select('id').eq('company_id', cid).is('fjarlaegt_at', null).limit(1).then(function (q) {
+        if (!q.error) merkjaTakka(cid, (q.data && q.data[0]) || null);
+      });
+    }
+  }
+
+  function glugga(cid) {
+    var gamalt = document.getElementById(GLUGGI); if (gamalt) gamalt.remove();
+    var o = document.createElement('div'); o.id = GLUGGI;
+    o.innerHTML = '<div class="bgr-g-k" role="dialog" aria-modal="true" aria-label="Búnaðargreining"><div class="bgr-g-h"><strong>Búnaðargreining</strong><span style="flex:1"></span>' +
+      '<button type="button" class="bgr-g-x" aria-label="Loka" title="Loka (Esc)">Loka</button></div><div class="bgr-g-b"><div class="bgr-rot bgr-g-m"><div class="bgr-m">Sæki…</div></div></div></div>';
+    document.body.appendChild(o);
+    var loka = function () { o.remove(); document.removeEventListener('keydown', esc, true); };
+    var esc = function (e) { if (e.key === 'Escape' && !document.getElementById('cfh-stort')) { e.stopPropagation(); loka(); } };
+    document.addEventListener('keydown', esc, true);
+    o.addEventListener('click', function (e) { if (e.target === o) loka(); });
+    o.querySelector('.bgr-g-x').addEventListener('click', loka);
+    var m = o.querySelector('.bgr-g-m'), S = { rod: null };
+    tengja(m, cid, S);
+    saekja(cid).then(function (r) {
+      if (!o.isConnected) return;
+      S.rod = r; merkjaTakka(cid, r);
+      teikna(m, cid, r);
+      // engin greining enn → kerfið setur hana af stað strax (lesið úr teikningunni), glugginn sýnir svo útkomuna
+      if (!r) { var t = m.querySelector('[data-a="greina"]'); if (t) t.click(); }
+    }, function () { m.innerHTML = '<div class="bgr-m bgr-villa">Náðist ekki að sækja greininguna.</div>'; });
+  }
+
+  // CSS: takki + gluggi
+  (function () {
+    var s2 = document.createElement('style'); s2.id = 'bunadargreining-474-glugga';
+    s2.textContent = [
+      '#' + TAKKI + ' .bgr-hak{display:inline-block;width:14px;height:14px;border-radius:50%;background:#2e9d4f;margin-left:7px;position:relative;vertical-align:-2px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}',
+      '#' + TAKKI + ' .bgr-hak[hidden]{display:none}',
+      '#' + TAKKI + ' .bgr-hak::after{content:"";position:absolute;left:4.5px;top:2px;width:3px;height:6px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}',
+      '#' + GLUGGI + '{position:fixed;inset:0;z-index:9000;background:rgba(20,18,15,.72);display:flex;align-items:center;justify-content:center;padding:16px}',
+      '#' + GLUGGI + ' .bgr-g-k{background:#fff;border-radius:12px;width:min(1180px,100%);max-height:min(94vh,1100px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}',
+      '#' + GLUGGI + ' .bgr-g-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #e3e1dc;font:700 14px system-ui,sans-serif;color:#2b2a27}',
+      '#' + GLUGGI + ' .bgr-g-x{height:28px;padding:0 12px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important}',
+      '#' + GLUGGI + ' .bgr-g-b{overflow:auto;container-type:inline-size;padding:12px}',
+      '#' + GLUGGI + ' .bgr-g-m{margin:0!important;border:0!important;border-radius:0!important}'
+    ].join('\n');
+    document.head.appendChild(s2);
+  })();
+
   // Spjaldið fer undir hæðaspjöldin (456) — bíður þess að þau séu komin; endursmíðað með borðanum
   function athuga() {
+    try { ensureTakki(); } catch (e) { console.error('[474 takki]', e); }
     var sec = document.getElementById('co-fp-section');
     var cid = window._currentCompanyId;
     var g = sec && sec.querySelector('#co-fp-hdir');
