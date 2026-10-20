@@ -1101,6 +1101,7 @@
     } catch (e) {
       showSyncSummary({ error: String(e.message || e) });
     } finally {
+      try { saekjaGreidslur(true); } catch (_) {}   // nýjar greiðslur eftir samstillingu
       const b = document.querySelector('#ky-main ._ky-sync');
       if (b) { b.disabled = false; b.style.opacity = ''; b.textContent = orig; }
     }
@@ -1323,7 +1324,43 @@
           <button class="_ky-sync kym-sync" type="button" title="Uppfæra úr Payday: sækja stöðu reikninga (drög / send / greitt) og merkja greiddar kröfur sjálfkrafa">${MIC.sync}<span>Sækja stöðu úr Payday</span></button>
           <label class="kym-search">${MIC.search}<input class="_ky-search" type="search" aria-label="Leita" placeholder="Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}"></label>
         </div>
-        <div class="kym-hint">${MIC.info}<span>Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann. Merktu greitt með „Greitt" — eða „Sækja stöðu úr Payday" merkir greiddar sjálfkrafa.</span></div>`;
+        <div class="kym-hintrow">
+          <div class="kym-hint">${MIC.info}<span>Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann. Merktu greitt með „Greitt" — eða „Sækja stöðu úr Payday" merkir greiddar sjálfkrafa.</span></div>
+          <aside class="kym-greidslur" aria-label="Síðustu greiðslur í Payday">${greidslurHtml()}</aside>
+        </div>`;
+  }
+  // 20.10.2026 (Agnar: „sýnir síðustu greiddu payday kröfur — eins og Brunahólf gerir"): lítill dálkur til hægri við skýringarlínuna,
+  // fimm fastar raðir (sama hæð fyrir og eftir sókn, ekkert hopp). Heimild: payday_invoices_slokk (spegill Payday, 372) með status PAID
+  // og paid_date — nýjasta fyrst. Kreditreikningar eru ekki greiðslur og koma ekki hingað. Aðeins lestur; bilar hljóðlega (dálkurinn helst).
+  const _gr = { rows: [], ts: 0, seq: 0 };
+  function greidslurHtml() {
+    const raðir = [0, 1, 2, 3, 4].map(i => {
+      const x = _gr.rows[i];
+      if (!x) return '<div class="kg-r"><span class="kg-d">—</span><span class="kg-n">&nbsp;</span><span class="kg-a">—</span></div>';
+      const nafn = x.customer_name || '';
+      const tit = (x.number ? 'Payday nr. ' + x.number + ' · ' : '') + nafn + ' · greitt ' + fmtDate(x.paid_date) + ' · ' + fmtKr(x.amount_total);
+      return '<div class="kg-r" title="' + esc(tit) + '"><span class="kg-d">' + esc(fmtDate(x.paid_date)) + '</span><span class="kg-n">' + esc(nafn) + '</span><span class="kg-a">' + esc(fmtKr(x.amount_total)) + '</span></div>';
+    }).join('');
+    return '<div class="kg-h">Síðustu greiðslur · Payday</div>' + raðir;
+  }
+  async function saekjaGreidslur(force) {
+    const SB = getSB(); if (!SB) return;
+    if (!document.querySelector('#ky-main .kym-greidslur')) return;
+    if (!force && Date.now() - _gr.ts < 20000) return;
+    _gr.ts = Date.now();
+    const seq = ++_gr.seq;
+    try {
+      const r = await SB.from('payday_invoices_slokk').select('number,customer_name,amount_total,paid_date')
+        .eq('status', 'PAID').not('paid_date', 'is', null).not('amount_total', 'is', null)
+        .order('paid_date', { ascending: false }).limit(40);
+      if (seq !== _gr.seq) return;
+      if (r.error) throw r.error;
+      _gr.rows = (r.data || []).slice().sort((a, b) => String(b.paid_date).localeCompare(String(a.paid_date)) || (parseInt(b.number, 10) || 0) - (parseInt(a.number, 10) || 0)).slice(0, 5);
+      const live = document.querySelector('#ky-main .kym-greidslur'); if (!live) return;
+      const html = greidslurHtml();
+      if (live.dataset.sig === html) return;       // ekkert breyttist → engin DOM-skrif
+      live.dataset.sig = html; live.innerHTML = html;
+    } catch (_) { _gr.ts = 0; }
   }
   const MID_SORT_LBL = { updated_desc: 'nýlega breytt efst', created_desc: 'nýjast stofnað efst', created_asc: 'elst stofnað efst', amount_desc: 'hæsta upphæð efst', amount_asc: 'lægsta upphæð efst' };
   function midarSectionHtml(shownLen, coLen, q, shownTotal) {
@@ -1558,6 +1595,16 @@
       V + '.kym-search input{flex:1;min-width:0;height:auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;font:400 13px "IBM Plex Sans",system-ui,sans-serif!important;color:#11141c!important;outline:none}',
       V + '.kym-hint{display:flex!important;align-items:center;gap:8px;margin:0 2px 16px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;font-size:12.5px!important;color:#1f2530!important}',
       V + '.kym-hint svg{flex:none;color:#3a4250}',
+      // síðustu greiðslur úr Payday — dálkur hægra megin við skýringarlínuna (20.10.2026)
+      V + '.kym-hintrow{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:0 2px 16px}',
+      V + '.kym-hintrow .kym-hint{flex:1 1 300px;min-width:0;margin:0!important}',
+      V + '.kym-greidslur{flex:0 0 372px;max-width:100%;box-sizing:border-box;overflow:hidden;padding-bottom:4px;background:#fff;border:1px solid rgba(20,24,34,.16);border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.06)}',
+      V + '.kym-greidslur .kg-h{padding:8px 12px 5px;font:700 9.5px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#525b6b}',
+      V + '.kym-greidslur .kg-r{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:2px 12px;min-height:19px;box-sizing:border-box;border-top:1px solid rgba(20,24,34,.08);font-size:11.5px;line-height:15px;color:#2b313c}',
+      V + '.kym-greidslur .kg-d{font-family:' + MONO + ';font-size:10.5px;color:#525b6b;white-space:nowrap}',
+      V + '.kym-greidslur .kg-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + '.kym-greidslur .kg-a{font-family:' + MONO + ';font-weight:600;color:#1f7a4a;text-align:right;white-space:nowrap}',
+      '@media(max-width:900px){' + V + '.kym-greidslur{flex:1 1 100%}}',
       // fyrirtækin
       V + '.kym-co{margin-bottom:10px;background:#fff;border-top:3px solid var(--kym-rule,#8a93a3);border-radius:2px;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45);container-type:inline-size}',
       // Græn rönd tekin af (Agnar 02.10.2026) — nýjar kröfur fá hlutlausa stálrönd; gult/rautt eru einu merkin.
@@ -1867,6 +1914,7 @@
       <div id="ky-bulkbar"></div>`;
 
     if (_aftur) _aftur();   // skrun + fókus aftur á sinn stað, í sama tifi og teikningin
+    saekjaGreidslur(false); // síðustu greiðslur úr Payday (20 s þak; aðeins dálkurinn uppfærist)
 
     main.querySelector('._ky-sort')?.addEventListener('change', e => {
       _state.sort = e.target.value;
