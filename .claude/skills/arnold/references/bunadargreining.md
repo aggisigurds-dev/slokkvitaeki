@@ -138,3 +138,7 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 | Kvarnir ehf., Álfhella 9 | 1871 | id 1, 19.10.2026, handlesin | mhl 01 (2020-skönnun, [S]/[BS]) 7+2 tæki, mhl 02 (2026 vigur, slt) 4; CO2 utan teikningar; 2012-útgáfan eldri |
 | Álfaborg, Skútuvogur 4 | 661 | id 2, 19.10.2026, handlesin | sett 2025 (vigur, dulkóðað textalag): 15 slökkvitæki (12 „L" + 3 HST) + 5 BRSL; skráð 11 + 5; 3 af 7 merkjum á hönnunarstað; Teikning enn á 2022-blöðum |
 | Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
+
+## Í Brunahólfi (20.10.2026)
+
+Viðskiptavinir-síða hubbans (brunaholf.netlify.app) fellir prófílinn og Greininguna inn (flipar „Staðir & teikningar" og „Greining", iframe `https://slokkvitaeki.netlify.app/?bh=1#company/<id>` / `#greining/<heimilisfang>`). **Sama vélin** — Búnaðargreining, Teikning og Greining vista í sömu töflur á STAÐINN (fyrirtaeki á kennitölu greiðandans); "＋ Stofna stað" í hubbanum býr hann til. Greiðandi án staðar → stofna fyrst, svo vista greininguna á hann. Dæmi: Uppspil ehf. (kt 470922-2060) → fyrirtæki 1873, verkstaður Sunnukriki 3 (Mosfellsbær).
