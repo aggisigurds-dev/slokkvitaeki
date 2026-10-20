@@ -5217,11 +5217,26 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
             <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Netfang<input data-f="netfang" type="email" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           </div>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Tengiliður<input data-f="tengiliður" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:9px 11px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface2,transparent)">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink1);cursor:pointer"><input type="checkbox" class="_ars-new-nytt"/> 🆕 Nýtt í þjónustu</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink1)">Skoðunarmánuður
+              <select class="_ars-new-manudur" style="padding:5px 8px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface)"><option value="0">— ekki valinn —</option>${MONTHS_IS.map((m, i) => '<option value="' + (i + 1) + '">' + esc(m) + '</option>').join('')}</select>
+            </label>
+          </div>
           <div class="_ars-new-err" style="color:#dc2626;font-size:12px;display:none"></div>
           <div style="display:flex;gap:8px;margin-top:6px">
             <button class="_ars-new-save" type="button" style="flex:1;padding:9px 14px;background:#15803d;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista</button>
             <button class="_ars-new-cancel" type="button" style="padding:9px 14px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hætta við</button>
           </div>
+          ${prefill.hint ? `<div style="border-top:1px solid var(--brd);padding-top:10px;font-size:12px;line-height:1.55;color:var(--ink3)">
+            <b style="color:var(--ink2)">Svona bætir þú við stað:</b>
+            <ul style="margin:4px 0 0;padding-left:18px">
+              <li>Nafnið er „félag - heimilisfang“, t.d. <i>ProLan ehf. - Suðurhella 5</i> — svo staðirnir þekkist í sundur.</li>
+              <li><b>Láttu kennitöluna vera</b> óbreytta. Þá tengist staðurinn sama greiðanda og fær sjálfkrafa næsta staðarnúmer (nr. 2, 3 …).</li>
+              <li>Ekki búa til nýtt fyrirtæki með aðra kennitölu — þá tvískráist staðurinn og tæki tvítelst.</li>
+              <li>Eftir vistun opnast fyrirtækjaprófíll staðarins svo þú getir fyllt inn tæki, tengiliði og aðrar upplýsingar.</li>
+              <li>„Nýtt í þjónustu“ og skoðunarmánuður eru valkvæð — hægt að setja síðar á staðnum.</li>
+            </ul></div>` : ''}
         </div>
       </div>
     `;
@@ -5309,18 +5324,68 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       // í listanum. (customer_base_id tengist sjálfkrafa í gagnagrunni gegnum
       // trigger `fyrirtaeki_autolink_base` — eftir kt, býr til base ef vantar.)
       data.er_i_thjonustu = true;
+      // 20.10.2026 (Agnar: ProLan Suðurhella 5): staður á kt sem er þegar til fær næsta staðarnúmer innan kennitölunnar
+      // (hæsta nr + 1, sama regla og 175 við „nýr staður"). Án þess fékk hann ekkert númer (106 af 122 nýjum félögum eru
+      // númerslaus) og birtist sem „nr. —" í Sölu og leit. Fyrsti staður á kt fær EKKERT númer — hann er ekki „annar" staður.
+      // Villa í uppflettingu stoppar aldrei vistun. Einkvæmt (kt, nr) fellir tvöfalda tölu — þá kemur villan hér að neðan.
+      try {
+        const kd = String(data.kennitala || '').replace(/\D/g, '');
+        if (kd.length === 10) {
+          const dash = kd.slice(0, 6) + '-' + kd.slice(6);
+          const q = await SB.from('fyrirtaeki').select('stadur_nr').or('kennitala.eq.' + dash + ',kennitala.eq.' + kd);
+          const fyrri = (q && q.data) || [];
+          if (fyrri.length) {
+            let maxN = 0;
+            fyrri.forEach(x => { const n = parseInt(x.stadur_nr, 10); if (Number.isFinite(n) && n > maxN) maxN = n; });
+            data.stadur_nr = maxN + 1;
+          }
+        }
+      } catch (_) {}
       const { data: rows, error } = await SB.from('fyrirtaeki').insert(data).select();
       if (error) {
         errEl.textContent = 'Vista mistókst: ' + error.message;
         errEl.style.display = 'block';
         return;
       }
+      // 🆕 Nýtt og skoðunarmánuður — valkvæð, sama vistun og í upplýsingaglugga staðarins (nytt_manual / inspect_month).
+      // Félagið er þegar stofnað hér að ofan: mistakist þetta er sagt frá því í stað þess að þegja.
+      const nyttOn = !!(bg.querySelector('._ars-new-nytt') || {}).checked;
+      const mv = parseInt((bg.querySelector('._ars-new-manudur') || {}).value, 10) || 0;
+      let arsVilla = '';
+      if ((nyttOn || mv) && rows && rows[0] && rows[0].id != null) {
+        try {
+          const patch = {};
+          if (nyttOn) patch.nytt_manual = true;
+          if (mv) { patch.inspect_month = mv; patch.inspect_month_manual = true; }
+          const ok = await window.AppSettings.save({ arsskodun_customers: { [String(rows[0].id)]: patch } });
+          if (!ok) arsVilla = 'vistun skilaði ósönnu';
+        } catch (err) { arsVilla = (err && err.message) || String(err); }
+      }
       bg.remove();
+      // 20.10.2026 (Agnar: „þarf að forceresetta"): nýi staðurinn á að sjást STRAX í Ársskoðun. Tvær samnýtingar gátu skilað
+      // sókn sem hófst FYRIR vistunina: `_loadP` hér (bakgrunnssókn í gangi) og `Companies.load()` (deilir sókn < 800 ms).
+      // Bíðum eftir þeirri fyrri, losum hina og setjum röðina beint í listann — sækjum svo ferskt og athugum að hún sé komin.
+      const nyttId = rows && rows[0] ? rows[0].id : null;
+      try {
+        if (window.Companies) {
+          Companies._loadP = null; Companies._loadHofst = 0;
+          if (nyttId != null && Array.isArray(Companies.list) && !Companies.list.some(x => x && x.id === nyttId)) Companies.list.push(rows[0]);
+        }
+      } catch (_) {}
+      try { if (_loadP) await _loadP; } catch (_) {}
       await loadAll();
+      if (nyttId != null && !(_cache && _cache.byId && _cache.byId[nyttId])) { await new Promise(r => setTimeout(r, 700)); try { Companies._loadP = null; Companies._loadHofst = 0; } catch (_) {} await loadAll(); }
       render();
+      if (arsVilla) alert('Staðurinn var stofnaður, en „Nýtt“/skoðunarmánuður vistaðist ekki (' + arsVilla + '). Settu það á staðnum sjálfum.');
       // Open the newly-created row's detail modal so user can keep editing
+      // 20.10.2026 (Agnar: „byrja inn í nýja company profilnum til að filla inn auka upplýsingar"): fyrirtækjaprófíllinn
+      // opnast á nýja staðnum (ekki aðeins upplýsingagluggi Ársskoðunar). Fallbakkinn er sá gamli.
       if (rows && rows[0]) {
-        setTimeout(() => openDetail(rows[0].id), 100);
+        const nyId = rows[0].id;
+        setTimeout(() => {
+          try { if (typeof window._openCompanySafe === 'function') { window._openCompanySafe(nyId); return; } } catch (_) {}
+          openDetail(nyId);
+        }, 100);
       }
     });
     document.body.appendChild(bg);
