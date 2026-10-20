@@ -174,6 +174,20 @@
     });
   }
 
+  // Sýnishorn Búnaðargreiningar: sömu hæðir og Teikningar-sýnishornið, merkin flokkuð (gatt/bunadargreining.js)
+  function demoBgr(b) {
+    var haedir = (b.teikning || []).map(function (f, n) {
+      var merki = [], tel = { sl: 0, bs: 0, ut: 0, bk: 0, hiti: 0 };
+      (f.merki || []).forEach(function (m, i) {
+        var fl = m[2] === '#15803d' ? 'ut' : m[2] === '#be123c' ? 'bs' : 'sl';
+        tel[fl]++; merki.push([m[0], m[1], fl === 'ut' ? '#15803d' : fl === 'bs' ? '#2563eb' : '#e11d2e', (fl === 'ut' ? 'ÚT' : fl === 'bs' ? 'BS' : 'S') + (i + 1), fl, '']);
+      });
+      return { id: 'demo' + n, nafn: f.nafn, mynd: f.mynd, frum: f.frum, skurdur: null, merki: merki, tel: tel };
+    });
+    return { dags: new Date().toISOString(), yfirfarin: false, haedir: haedir, utan: 0, heimildir: [{ titill: 'Aðaluppdráttur (sýnishorn)', dags: '2025-09-17' }],
+      texti: [{ titill: '', heimild: 'Byggingarlýsing (sýnishorn)', kaflar: [{ fyrirsogn: 'Slökkvitæki', texti: 'Handslökkvitæki skulu vera á hverri hæð við stigahús og útganga.', lykill: true }, { fyrirsogn: 'Brunaviðvörun', texti: 'Sjálfvirkt brunaviðvörunarkerfi er í öllu húsinu.', lykill: false }] }] };
+  }
+
   var SLUG = (function () { var m = /[?&]c=([^&]+)/.exec(location.search); return m ? decodeURIComponent(m[1]) : ''; })();
   var state = { data: null, demo: false, open: false };
 
@@ -186,7 +200,7 @@
       if (qt) DEMO.account.theme = qt[1];
       // Sýnishornið sýnir „nánari upplýsingar“ (?details=0 slekkur)
       DEMO.account.details = !/[?&]details=0/.test(location.search);
-      if (DEMO.account.details) DEMO.buildings.forEach(function (b, bi) { b.equipment = demoEquipment(b); b.teikning = demoTeikning(b, bi); });
+      if (DEMO.account.details) DEMO.buildings.forEach(function (b, bi) { b.equipment = demoEquipment(b); b.teikning = demoTeikning(b, bi); b.bgr = demoBgr(b); });
       DEMO.account.syn = {}; Object.keys(SYN_DEF).forEach(function (k) { DEMO.account.syn[k] = SYN_DEF[k]; });
       demoEignagatt();
       if (window.GattVinnusvaedi) GattVinnusvaedi.demo(DEMO);
@@ -246,7 +260,7 @@
         return { nafn: b.nafn, heimilisfang: b.heimilisfang, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
-          teikning: Array.isArray(b.teikning) ? b.teikning : null,
+          teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
           eign: b.eign || null, beidni: !!b.beidni, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
           i_thjonustu: b.i_thjonustu, skodun_manudur: b.skodun_manudur, bru_skodun_manudur: b.bru_skodun_manudur,
           ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar,
@@ -637,7 +651,7 @@
       var x = c.getContext('2d');
       x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
       x.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
-      var r = Math.max(3.5, c.width / 130);
+      var r = f._bgr ? Math.max(5, Math.max(c.width, c.height) / 90) : Math.max(3.5, c.width / 130);
       (f.merki || []).forEach(function (m) {
         var mx = +m[0], my = +m[1];
         if (!isFinite(mx) || !isFinite(my)) return;
@@ -647,6 +661,11 @@
         x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
         x.fillStyle = m[2] || '#e11d2e'; x.fill();
         x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
+        // Búnaðargreining: auðkenni (ÚT3, S1 …) við merkið í stækkaðri teikningu og niðurhali
+        if (f._bgr && m[3] && (hamark || 0) >= 2000) {
+          x.font = '700 ' + Math.round(r * 1.25) + 'px ' + (getComputedStyle(document.body).getPropertyValue('--ui') || 'sans-serif'); x.textAlign = 'left'; x.textBaseline = 'middle';
+          x.lineWidth = Math.max(2.5, r * 0.5); x.strokeStyle = '#fff'; x.lineJoin = 'round'; x.strokeText(String(m[3]), px + r * 1.35, py); x.fillStyle = '#111827'; x.fillText(String(m[3]), px + r * 1.35, py);
+        }
       });
       // Verkbeiðnapunktar ofan á (eignagatt.js) — sami kvarði og merkin, svo smellur reiknast til baka í frumdíla
       if (window.GattPunktar) GattPunktar.teikna(c, f, { k0: k0, k: k, sk: sk, nb: nb, nh: nh });
@@ -753,6 +772,8 @@
         (Object.keys(lit).length ? '<div class="legend">' + Object.keys(lit).map(function (l) { return '<span><i class="gdot" style="background:' + esc(lit[l]) + '"></i>' + esc(l) + '</span>'; }).join('') + '</div>' : '') +
         '</section>';
     }
+    // Búnaðargreining (gatt/bunadargreining.js)
+    html += (window.GattBgr ? GattBgr.eignHtml(b) : '');
     // Greining teikninga
     if (gf.length) {
       var tot = {}, ei60 = 0, ei30 = 0;
@@ -813,6 +834,7 @@
     }
     $('#dr-body').innerHTML = html;
     if (window.GattGreining) GattGreining.lifga(b);
+    if (window.GattBgr) GattBgr.lifga(b);
     var g = $('#dr-tk');
     if (g) {
       tk.forEach(function (f, j) { g.appendChild(haedarSpjald(b, f, j, syn)); });
@@ -1697,7 +1719,7 @@
     state: state, svgIc: svgIc, toast: toast, synOf: synOf, eignAfId: eignAfId, vistaBlob: vistaBlob,
     renderYfirlit: renderYfirlit, renderEgYfir: renderEgYfir, renderEignasafn: renderEignasafn,
     openDrawer: openDrawer, openUtan: openUtan, closeDrawer: closeDrawer, drB: function () { return drB; },
-    synaHaed: synaHaed, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; }, haedarSpjald: haedarSpjald, erindiRod: erindiRod,
+    synaHaed: synaHaed, saekja: saekja, opnaLb: opnaLb, lokaLb: lokaLb, lbS: function () { return lbS; }, haedarSpjald: haedarSpjald, erindiRod: erindiRod,
     skodanirEignar: skodanirEignar, ebManudir: ebManudir, ebRod: ebRod, MAN_STUTT: MAN_STUTT, MAN_LANGT: MAN_LANGT,
     SLUG: function () { return SLUG; }, KERFI_ROD: KERFI_ROD, KERFI_HEITI: KERFI_HEITI,
   };

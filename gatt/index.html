@@ -491,6 +491,29 @@
   .gchip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line2);border-radius:99px;background:var(--key);box-shadow:var(--key-sh);font-size:12px;color:var(--ink2)}
   .gchip b{font-family:var(--serif);font-size:19px;font-weight:600;line-height:1;color:var(--ink);font-variant-numeric:lining-nums}
   .gnote{font-size:11.5px;color:var(--dim);margin-top:8px}
+  /* ── BÚNAÐARGREINING (bunadargreining.js): flokkasía, tafla, hæðarspjöld, brunavarnatexti ── */
+  .bgr-lead{margin:0 0 12px;font-size:13px;line-height:1.55;color:var(--ink2);max-width:74ch}
+  .bgr-chips{margin-bottom:12px}
+  .bgr-chip{font-family:inherit;cursor:pointer;transition:opacity .15s,border-color .15s,filter .15s}
+  .bgr-chip:hover{border-color:var(--accent)}
+  .bgr-chip.off{opacity:.45;filter:grayscale(.7)}
+  .bgr-chip.off b{text-decoration:line-through;text-decoration-thickness:1px}
+  .bgr-tafla{margin-bottom:14px}
+  .bgr-tafla tr.bgr-sam td{border-top:2px solid var(--line2);font-weight:700;color:var(--ink);background:var(--strip)}
+  .bgr-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  .bgr-k .fm{aspect-ratio:4/3;min-height:150px}
+  .bgr-texti{margin-top:16px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh)}
+  .bgr-texti summary{cursor:pointer;padding:11px 14px;font-size:12.5px;font-weight:600;color:var(--ink);list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .bgr-texti summary::-webkit-details-marker{display:none}
+  .bgr-texti summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(45deg);transition:transform .2s;flex:none;margin-top:-3px}
+  .bgr-texti[open] summary::after{transform:rotate(-135deg);margin-top:3px}
+  .bgr-tx{padding:2px 14px 12px;border-top:1px solid var(--line)}
+  .bgr-tx h5{margin:12px 0 4px;font-size:12px;color:var(--ink)}
+  .bgr-kafli{margin:10px 0 0;padding:6px 10px;border-left:3px solid var(--line2);font-size:12.5px;line-height:1.5;color:var(--ink2)}
+  .bgr-kafli.lyk{border-left-color:var(--accent);background:rgba(var(--glow),.06)}
+  .bgr-kafli b{display:block;font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+  .bgr-kafli p{margin:0}
+  .bgr-tx small{display:block;margin-top:10px;color:var(--dim);font-size:11px}
   .lb{position:fixed;inset:0;z-index:48;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(10,10,12,.78);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:fade .2s both}
   .lb-k{width:min(1500px,100%);height:min(94vh,1100px);display:flex;flex-direction:column;border-radius:6px;overflow:hidden;background:#fff;box-shadow:0 30px 80px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.08);animation:pop .22s both}
   .lb-h{position:relative;display:flex;align-items:center;gap:10px;padding:12px 14px 12px 18px;background:var(--hdr-grain),var(--hdr)}
@@ -1533,9 +1556,10 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/gatt/verkfaeri.js?v=20261012i"></script>
-<script src="/gatt/eignagatt.js?v=20261012j"></script>
+<script src="/gatt/verkfaeri.js?v=20261021a"></script>
+<script src="/gatt/eignagatt.js?v=20261021a"></script>
+<script src="/gatt/bunadargreining.js?v=20261021a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261012j"></script>
+<script src="/gatt/portal.js?v=20261021a"></script>
 </body>
 </html>

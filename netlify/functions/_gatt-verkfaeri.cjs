@@ -1,7 +1,7 @@
 // _gatt-verkfaeri.cjs — þjónsútgáfa verkfæraskrárinnar (sjá gatt/verkfaeri.js — SÖMU lyklar, vörður audit-gatt-verkfaeri).
 // Aðeins lyklar, sjálfgefin gildi og hvort tólið sé tilbúið: textarnir búa í gatt/verkfaeri.js.
 const VERKFAERI = [
-  ['teikningar', true, true], ['threed', true, true], ['nidurhal', true, true], ['greining', true, true], ['taeki', true, true], ['skjol', true, true],
+  ['teikningar', true, true], ['threed', true, true], ['nidurhal', true, true], ['greining', true, true], ['bunadargreining', true, true], ['taeki', true, true], ['skjol', true, true],
   ['kerfi', true, true], ['fasteign', true, true], ['saga', true, true],
   ['erindi', true, true], ['verkbeidni', true, true], ['punktar', true, true], ['qr', true, true], ['eldvarnabok', true, true], ['vinnusvaedi', true, true],
   ['checklisti', true, true], ['verkefni', true, true], ['dagatal', true, true], ['vidhald', true, true], ['kort', true, true], ['baeta_eign', true, true],

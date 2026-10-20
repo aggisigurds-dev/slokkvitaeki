@@ -18,6 +18,7 @@ const { pickHose, slokkMinusHose } = require('./_gatt-eq.cjs');
 const GY = require('./_gatt-years.cjs');
 const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
+const BGR = require('./_gatt-bgr.cjs');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -862,6 +863,20 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
 
+    // 2e2) Búnaðargreining per byggingu (bunadargreining, virk röð) — aðeins kúnna-örugg snið (_gatt-bgr.cjs), aldrei athugasemdir
+    const bgrById = {};
+    if (showDetails && syn.bunadargreining && siteIds.length) {
+      try {
+        const [gr, br] = await Promise.all([
+          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar&order=created_at.desc`),
+          P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir`),
+        ]);
+        const bord = {};
+        if (br.ok) (await br.json()).forEach((t) => { bord[t.company_id] = Array.isArray(t.haedir) ? t.haedir : []; });
+        if (gr.ok) (await gr.json()).forEach((r) => { if (!bgrById[r.company_id]) { const o = BGR.bgrSnid(r, bord[r.company_id]); if (o) bgrById[r.company_id] = o; } });
+      } catch (_) {}
+    }
+
     // 2f) Opnar beiðnir af þjónustuvef per eign (Þjónustuborð, source 'gatt') → „Beiðni í vinnslu"
     const beidniById = {};
     try {
@@ -954,6 +969,7 @@ exports.handler = async (event) => {
         eldvarnabok: syn.eldvarnabok ? (ebById[s.id] || []) : null,
         ...(showDetails && syn.taeki ? { equipment: eqById[s.id] || [] } : {}),
         ...(showDetails && tkById[s.id] ? { teikning: tkById[s.id] } : {}),
+        ...(showDetails && bgrById[s.id] ? { bgr: bgrById[s.id] } : {}),
       };
     });
 

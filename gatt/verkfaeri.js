@@ -15,6 +15,7 @@ window.GATT_VERKFAERI = [
   { k: 'threed', heiti: '3D-mynd', lysing: 'Vistuð 3D-mynd hæðar', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   { k: 'nidurhal', heiti: 'Niðurhal teikninga', lysing: 'Kúnni getur sótt teikningu og 3D', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   { k: 'greining', heiti: 'Greining teikninga', lysing: 'Samantekt tækja, merkja og eldveggja af teikningum', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
+  { k: 'bunadargreining', heiti: 'Búnaðargreining', lysing: 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera — lesið úr samþykktum teikningum, með mynd af hverri hæð og merkjum sem hægt er að sía', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   { k: 'taeki', heiti: 'Tækjaskrá', lysing: 'Tegund, staðsetning, skoðunardagar', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   { k: 'skjol', heiti: 'Skýrslur og reikningar', lysing: 'Skjöl eignarinnar', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   { k: 'kerfi', heiti: 'Kerfi og kröfur', lysing: 'Kerfi hverrar eignar: skylt, til staðar, okkar', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
