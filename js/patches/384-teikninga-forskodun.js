@@ -832,5 +832,6 @@
     }
   });
 
-  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt, festTakka, nyskraFyrirtaeki };
+  // 20.10.2026: smámyndir og PDF-gögn (skyndiminni hér) eru nú líka notuð af „Veldu teikningu" (374) svo kortin sjáist.
+  window.TeikningaForskodun = { opna, loka, opnaHeimilisfang, opnaGeymt, festTakka, nyskraFyrirtaeki, thumbAf, pdfGogn, hladaPdfJs, beintPdf, beintTif, myndSlod };
 })();

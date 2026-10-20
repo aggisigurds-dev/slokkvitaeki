@@ -117,6 +117,91 @@
     o.querySelector('.fp-teikn-aftur').onclick = function () { var L = window.__teiknSidastiListi; if (L) synaLista(L.dr, L.allar); else lokaYfir(); };
   }
 
+  /* ── smámyndir á kortunum + forskoðun áður en blað er valið (20.10.2026) ─────────────────────────────────────────────
+   * Agnar (ProLan Suðurhella 5): „ég þarf að geta séð hvað ég er að velja. eins og ef ég vel bara hæð". Kort beinna PDF-blaða
+   * (Hafnarfjörður/Kópavogur/Garðabær) höfðu enga smámynd (📄) og smellur sótti blaðið strax — og þá alltaf FYRSTU síðu, þótt
+   * settið (t.d. „Grunnmyndir 1. og 2. hæð, snið, útlit") sé margar síður. Nú: smámynd á hverju korti (sama pdf.js-vél og 384),
+   * og smellur opnar forskoðun með stórri mynd, síðuröndinni til hliðar og „✓ Nota þessa" — valin síða fer á borðið. */
+  function erBeintPdf(d) { var F = window.TeikningaForskodun; return !!(F && F.beintPdf && F.beintPdf(d)); }
+  function fyllaKortThumbs(o, syna) {
+    var F = window.TeikningaForskodun; if (!F || !F.thumbAf) return;
+    var kedja = Promise.resolve();
+    o.querySelectorAll('.fp-teikn-th[data-url]').forEach(function (el) {
+      var d = syna.find(function (x) { return x.infoUrl === el.getAttribute('data-url'); });
+      if (!d || d.thumb || !(F.beintPdf(d) || F.beintTif(d))) return;
+      kedja = kedja.then(function () { return F.thumbAf(d); }).then(function (src) {
+        if (!src || !el.isConnected) return;
+        el.style.cssText = 'height:120px;background:#fff url(\'' + src + '\') center/contain no-repeat';
+        el.textContent = '';
+      }).catch(function () {});
+    });
+  }
+  function forskodun(d, titill) {
+    var o = overlay(); if (!o) return;
+    var F = window.TeikningaForskodun, pdf = erBeintPdf(d), val = { sida: 1, fjoldi: 1, doc: null }, bid = 0;
+    o.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1)">' +
+        '<button class="fp-fs-aftur btn btn-outline btn-sm" style="color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.25)">‹ Til baka</button>' +
+        '<div style="min-width:0"><div style="font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(titill || 'Teikning') + '</div><div>' + merkiHtml(d) + '</div></div>' +
+        '<div style="flex:1"></div><div class="fp-fs-val" style="font-size:12.5px;color:#f0d48a;white-space:nowrap"></div>' +
+        '<button class="fp-fs-nota btn btn-sm" style="background:#c9a54a;color:#1c1608;border:1px solid #8a6218;font-weight:700;cursor:pointer" disabled>✓ Nota þessa</button></div>' +
+      '<div style="flex:1;display:flex;min-height:0">' +
+        '<div class="fp-fs-sidur" style="display:none;width:150px;flex:none;overflow-y:auto;padding:10px;border-right:1px solid rgba(255,255,255,.1)"></div>' +
+        '<div class="fp-fs-stor" style="flex:1;min-width:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px;color:rgba(255,255,255,.6)">Sæki teikningu…</div></div>';
+    var stor = o.querySelector('.fp-fs-stor'), valEl = o.querySelector('.fp-fs-val'), nota = o.querySelector('.fp-fs-nota'), rond = o.querySelector('.fp-fs-sidur');
+    o.querySelector('.fp-fs-aftur').onclick = function () { var L = window.__teiknSidastiListi; if (L) synaLista(L.dr, L.allar); else lokaYfir(); };
+    nota.onclick = function () { hladaMynd(d.infoUrl, titill, val.sida); };
+    function setjaVal() { valEl.textContent = val.fjoldi > 1 ? 'Valin: síða ' + val.sida + ' af ' + val.fjoldi : ''; }
+    async function teiknaSidu(n, px) {
+      var p = await val.doc.getPage(n), v0 = p.getViewport({ scale: 1 }), vp = p.getViewport({ scale: px / Math.max(v0.width, v0.height, 1) });
+      var cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(vp.width)); cv.height = Math.max(1, Math.round(vp.height));
+      var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+      await p.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
+      return cv.toDataURL('image/jpeg', px > 600 ? 0.85 : 0.7);
+    }
+    async function teiknaStor() {
+      var mitt = ++bid;
+      stor.textContent = 'Sæki teikningu…';
+      var im = new Image(); im.alt = titill || ''; im.style.cssText = 'max-width:100%;max-height:100%;background:#fff;object-fit:contain';
+      if (pdf) { var src = await teiknaSidu(val.sida, 1800); if (mitt !== bid) return; im.src = src; }
+      else if (F && F.beintTif && F.beintTif(d)) { var u = await F.myndSlod(d); if (mitt !== bid) return; im.src = u; }
+      else { var u2 = MYND + '?url=' + encodeURIComponent(d.infoUrl); if (window.TeiknGaedi && TeiknGaedi.bindSrc) TeiknGaedi.bindSrc(im, u2); else im.src = u2; }
+      im.onerror = function () { if (mitt === bid) stor.textContent = '⚠ Náði ekki í myndina — prófaðu „Nota þessa" samt eða aðra teikningu.'; };
+      stor.textContent = ''; stor.appendChild(im);
+    }
+    function byggjaRond() {
+      rond.style.display = 'block'; rond.innerHTML = '';
+      var kedja = Promise.resolve();
+      for (var i = 1; i <= val.fjoldi; i++) (function (n) {
+        var b = document.createElement('button'); b.type = 'button'; b.dataset.n = String(n);
+        b.style.cssText = 'display:block;width:100%;margin:0 0 10px;padding:4px;border-radius:8px;background:rgba(255,255,255,.05);border:2px solid transparent;color:rgba(255,255,255,.75);font:600 11px system-ui,sans-serif;cursor:pointer;text-align:center';
+        b.innerHTML = '<div class="fp-fs-th" style="height:84px;display:flex;align-items:center;justify-content:center;background:#fff1;border-radius:4px;color:rgba(255,255,255,.3)">📄</div>Síða ' + n;
+        b.onclick = function () { val.sida = n; merkja(); setjaVal(); teiknaStor().catch(function (e) { stor.textContent = '⚠ ' + ((e && e.message) || e); }); };
+        rond.appendChild(b);
+        kedja = kedja.then(function () { return teiknaSidu(n, 260); }).then(function (src) {
+          var th = b.querySelector('.fp-fs-th'); if (!th || !b.isConnected) return;
+          th.style.cssText = 'height:84px;background:#fff url(\'' + src + '\') center/contain no-repeat'; th.textContent = '';
+        }).catch(function () {});
+      })(i);
+      merkja();
+    }
+    function merkja() { rond.querySelectorAll('button[data-n]').forEach(function (b) { b.style.borderColor = (+b.dataset.n === val.sida) ? '#c9a54a' : 'transparent'; }); }
+    (async function () {
+      try {
+        if (pdf) {
+          await F.hladaPdfJs();
+          var gogn = await F.pdfGogn(d);
+          val.doc = await window.pdfjsLib.getDocument({ data: gogn.slice() }).promise;
+          val.fjoldi = val.doc.numPages;
+          if (val.fjoldi > 1) byggjaRond();
+        }
+        setjaVal();
+        await teiknaStor();
+      } catch (e) { stor.textContent = '⚠ Náði ekki í teikninguna: ' + ((e && e.message) || e); }
+      nota.disabled = false;
+    })();
+  }
+
   function synaLista(dr, allarSyndar) {
     var o = overlay(); if (!o) return;
     window.__teiknSidastiListi = { dr: dr, allar: !!allarSyndar };
@@ -141,7 +226,7 @@
         : 'display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.25);font-size:30px';
       return '<div class="fp-teikn-kort" data-url="' + esc(d.infoUrl) + '" data-label="' + esc(titill) + '" ' +
         'style="cursor:pointer;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);display:flex;flex-direction:column">' +
-        '<div style="height:120px;' + thumbCss + '">' + (d.thumb ? '' : '📄') + '</div>' +
+        '<div class="fp-teikn-th" data-url="' + esc(d.infoUrl) + '" style="height:120px;' + thumbCss + '">' + (d.thumb ? '' : '📄') + '</div>' +
         '<div style="padding:8px 10px">' +
         '<div style="font-weight:600;font-size:13px;margin-bottom:2px;color:#fff">' + esc(titill) +
         (d.urelt ? ' <span style="color:#e0a05f;font-size:10px;font-weight:400">(úrelt)</span>' : '') + '</div>' +
@@ -171,16 +256,20 @@
         var d = syna.find(function (x) { return x.infoUrl === k.getAttribute('data-url'); });
         // snið / útlit (engin grunnmynd á blaðinu) verða ekki hæð — aðeins skoðuð
         if (d && flokkaBlad(d).adeinsSnidUtlit) { synaSkodun(k.getAttribute('data-url'), k.getAttribute('data-label')); return; }
+        // 20.10.2026: forskoðun fyrst — sjá hvað er valið (og velja síðu í settum) áður en blaðið fer á borðið
+        if (d) { forskodun(d, k.getAttribute('data-label')); return; }
         hladaMynd(k.getAttribute('data-url'), k.getAttribute('data-label'));
       };
     });
+    fyllaKortThumbs(o, syna);
   }
 
   /* ── mynd á canvas (eigin hleðsla með villu/tímaþaki svo spinner frjósi ekki) */
-  function hladaMynd(infoUrl, label) {
+  function hladaMynd(infoUrl, label, sidaNr) {
     if (!infoUrl) { toast('Þessa teikningu er ekki hægt að sækja'); return; }
-    spinna('Sæki teikningu' + (label ? (' – ' + label) : '') + '…');
-    var url = MYND + '?url=' + encodeURIComponent(infoUrl);
+    spinna('Sæki teikningu' + (label ? (' – ' + label) : '') + (sidaNr > 1 ? ' (síða ' + sidaNr + ')' : '') + '…');
+    // &sida=N: valin síða í PDF-setti (435 les hana); síða 1 er óbreytt slóð svo vistaðar hæðir passi enn
+    var url = MYND + '?url=' + encodeURIComponent(infoUrl) + (sidaNr > 1 ? '&sida=' + (sidaNr | 0) : '');
     var img = new Image();
     var klarad = false;
     var thak = setTimeout(function () {
@@ -347,6 +436,7 @@
   // „Finna allt húsið" (383): listinn án yfirlags — { dr, eign } eða { villa }
   window.TeiknSaekja = {
     flokka: flokkaBlad,
+    listi: function (dr, allar) { synaLista(dr || [], !!allar); },   // sýnir valglugga með gefnum blöðum (próf / 383)
     finna: function (coId) {
       return new Promise(function (res) {
         var buid = false, lok = function (v) { if (!buid) { buid = true; res(v); } };

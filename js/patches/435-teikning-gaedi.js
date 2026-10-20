@@ -72,7 +72,9 @@
     });
   }
 
-  async function rasterPdf(pdfUrl, hlið, matchW, matchH) {
+  // 20.10.2026: 5. færibreyta `sidaNr` — hvaða SÍÐA skjalsins (sjálfgefið 1). Hafnarfjarðar-skjöl eru oft sett (1. og 2. hæð, snið, útlit á
+  // sitthvorri síðu) og „Veldu teikningu" (374) lætur nú velja síðuna. Önnur köll (4 færibreytur) eru óbreytt: síða 1.
+  async function rasterPdf(pdfUrl, hlið, matchW, matchH, sidaNr) {
     await saekjaPdfJs();
     const r = await fetch(pdfUrl, { signal: AbortSignal.timeout(60000) });
     if (!r.ok) {
@@ -80,7 +82,7 @@
       throw new Error(v || ('PDF fékkst ekki (' + r.status + ')'));
     }
     const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await r.arrayBuffer()) }).promise;
-    const sida = await doc.getPage(1);
+    const sida = await doc.getPage(Math.min(doc.numPages, Math.max(1, parseInt(sidaNr, 10) || 1)));
     const v0 = sida.getViewport({ scale: 1 });
     let kv;
     if (matchW && matchH) kv = Math.max(matchW, matchH) / Math.max(v0.width, v0.height, 1);
@@ -115,7 +117,8 @@
   }
   function hreintPdfMynd(url) {
     if (!_pdfMynd[url]) {
-      _pdfMynd[url] = rasterPdf(pdfSlodUrMynd(url), PDF_HLID).then(cv => new Promise(res => {
+      let sidaNr = 1; try { sidaNr = parseInt(new URL(url, location.href).searchParams.get('sida'), 10) || 1; } catch (_) {}   // &sida=N: valin síða skjals
+      _pdfMynd[url] = rasterPdf(pdfSlodUrMynd(url), PDF_HLID, null, null, sidaNr).then(cv => new Promise(res => {
         // ekki í geymaBlob: sú slóð má aldrei afturkallast á meðan hæðin getur opnast aftur
         cv.toBlob(b => { const s = b ? URL.createObjectURL(b) : cv.toDataURL('image/jpeg', 0.92); cv.width = 0; cv.height = 0; res(s); }, 'image/jpeg', 0.92);
       })).catch(e => { delete _pdfMynd[url]; throw e; });
