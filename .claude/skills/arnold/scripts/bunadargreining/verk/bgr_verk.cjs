@@ -5,7 +5,7 @@
 // (sql/bunadargreining_verk.sql); Turbo-takkinn í Búnaðargreiningu (474) setur þar röð. Lýsing: ../../../references/verkhringras.md
 //
 //   node bgr_verk.cjs bida <cid> [beidandi]        setja verk í biðröð (eitt opið á félag)
-//   node bgr_verk.cjs naest [vel]                  taka næsta (bida → i_vinnslu, atómískt); prentar verkið sem JSON; tómt = ekkert að gera
+//   node bgr_verk.cjs naest [vel] [cid]            taka næsta (bida → i_vinnslu, atómískt; með cid aðeins verk þess félags); prentar verkið sem JSON; tómt = ekkert að gera
 //   node bgr_verk.cjs stada [id|cid]               staða verks (eða síðustu verka)
 //   node bgr_verk.cjs undirbua <id>                gögn félags, borð, blöðin sótt, vigur/skönnun flokkað, gridded nærmyndir → vinnumappa
 //   node bgr_verk.cjs bord <id> <bord.json>        BÚA TIL teikning_bord þegar félag á ekkert (hæðir + skurðir valdir af þér), aldrei yfirskrifa
@@ -60,14 +60,14 @@ async function bida(cid, beidandi) {
   if (!r.ok) { log('VILLA', r.status, JSON.stringify(r.j).slice(0, 200)); process.exit(1); }
   log(JSON.stringify({ id: r.j[0].id, company_id: r.j[0].company_id }));
 }
-async function naest(vel) {
+async function naest(vel, cid) {
   vel = vel || (os.hostname() + ' · ' + (process.env.CLAUDE_SESSION || 'claude'));
   // verk sem lota skildi eftir í i_vinnslu (hrunin lota) og hefur ekki hreyfst í 3 klst fer aftur í biðröðina
   const gamalt = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
   const fost = await sg('bunadargreining_verk?status=eq.i_vinnslu&updated_at=lt.' + encodeURIComponent(gamalt) + '&select=id,framvinda');
   for (const f of fost) await sp('bunadargreining_verk?id=eq.' + f.id + '&status=eq.i_vinnslu', 'PATCH', { status: 'bida', stig: 'bida', skilabod: 'Fast í vinnslu > 3 klst — aftur í biðröð', updated_at: new Date().toISOString(), framvinda: (f.framvinda || []).concat([{ at: new Date().toISOString(), stig: 'bida', texti: 'Fast í vinnslu > 3 klst — aftur í biðröð' }]) });
   for (let i = 0; i < 4; i++) {
-    const [n] = await sg('bunadargreining_verk?status=eq.bida&order=created_at.asc&limit=1&select=*');
+    const [n] = await sg('bunadargreining_verk?status=eq.bida' + (cid ? '&company_id=eq.' + (+cid) : '') + '&order=created_at.asc&limit=1&select=*');
     if (!n) { log('{}'); return; }
     const r = await sp('bunadargreining_verk?id=eq.' + n.id + '&status=eq.bida', 'PATCH', { status: 'i_vinnslu', stig: 'undirbuningur', vel, tekid_at: new Date().toISOString(), updated_at: new Date().toISOString(), skilabod: 'Tekið til vinnslu',
       framvinda: (n.framvinda || []).concat([{ at: new Date().toISOString(), stig: 'undirbuningur', texti: 'Tekið til vinnslu — ' + vel }]) });
@@ -217,7 +217,7 @@ async function afturkalla(id) { await skrifaStig(id, 'bida', 'Afturkallað', { s
 
 (async () => {
   const [cmd, a, b, c] = process.argv.slice(2);
-  const falla = { bida: () => bida(a, b), naest: () => naest(a), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), skyrsla: () => skyrsla(a),
+  const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), skyrsla: () => skyrsla(a),
     stig: () => skrifaStig(a, b, c), loka: () => loka(a, b), villa: () => villa(a, b), afturkalla: () => afturkalla(a) };
   if (!falla[cmd]) { console.error(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 22).join('\n')); process.exit(2); }
   await falla[cmd]();
