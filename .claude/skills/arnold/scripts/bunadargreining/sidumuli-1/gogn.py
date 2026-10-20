@@ -28,7 +28,7 @@ for h, k, x, y, st in BK: items.append(dict(haed=h, flokkur='brunakerfi', kodi=k
 for h, x, y, st in SL: items.append(dict(haed=h, flokkur='sl', kodi='SL', sx=x, sy=y, stadur=st))
 for it in items: it['bx'], it['by'] = ramma(it['sx'], it['sy'])
 skurdur = {h: dict(x=round(b[0] * KV), y=round(b[1] * KV), w=round((b[2] - b[0]) * KV), h=round((b[3] - b[1]) * KV)) for h, b in CROP.items()}
-json.dump(dict(items=items, skurdur=skurdur, KV=KV), open(os.path.join(HER, 'gogn.json'), 'w'), ensure_ascii=False, indent=1)
+json.dump(dict(items=items, skurdur=skurdur, KV=KV), open(os.path.join(HER, 'gogn.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print({h: sum(1 for i in items if i['haed'] == h) for h in (1, 2, 3)}, skurdur)
 # sannreyndarmynd — yfirlag á skönnunina
 I = Image.open(os.path.join(HER, 'adal403.jpg')).convert('RGB')

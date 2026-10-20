@@ -1,0 +1,116 @@
+{
+ "items": [
+  {
+   "haed": 3,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1981,
+   "by": 2627,
+   "stadur": "Stigagangur — norðurhluti, við flóttaleið"
+  },
+  {
+   "haed": 3,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1794,
+   "by": 2788,
+   "stadur": "Gangur — við hurð að stigagangi"
+  },
+  {
+   "haed": 3,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1999,
+   "by": 3505,
+   "stadur": "Stigahús — hringstigi"
+  },
+  {
+   "haed": 4,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3863,
+   "by": 2633,
+   "stadur": "Stigagangur — norðurhluti, við flóttaleið"
+  },
+  {
+   "haed": 4,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3672,
+   "by": 2761,
+   "stadur": "Gangur — við hurð að stigagangi"
+  },
+  {
+   "haed": 4,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3683,
+   "by": 3377,
+   "stadur": "Gangur — við hurð að stigahúsi"
+  },
+  {
+   "haed": 4,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3875,
+   "by": 3479,
+   "stadur": "Stigahús — hringstigi"
+  },
+  {
+   "haed": 5,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1984,
+   "by": 2626,
+   "stadur": "Stigagangur — norðurhluti, við flóttaleið"
+  },
+  {
+   "haed": 5,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1797,
+   "by": 2777,
+   "stadur": "Gangur — við hurð að stigagangi"
+  },
+  {
+   "haed": 5,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1889,
+   "by": 3475,
+   "stadur": "Stigahús — hjá hringstiga"
+  },
+  {
+   "haed": 5,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 1800,
+   "by": 3548,
+   "stadur": "Stigahús — við hringstiga"
+  },
+  {
+   "haed": 6,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3854,
+   "by": 2604,
+   "stadur": "Stigagangur — norðurhluti, við flóttaleið"
+  },
+  {
+   "haed": 6,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3664,
+   "by": 2755,
+   "stadur": "Gangur — við hurð að stigagangi"
+  },
+  {
+   "haed": 6,
+   "flokkur": "flotti",
+   "kodi": "ÚT",
+   "bx": 3665,
+   "by": 3560,
+   "stadur": "Stigahús — við hringstiga"
+  }
+ ]
+}
