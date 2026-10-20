@@ -259,11 +259,15 @@
     var tafla = '<table class="sam"><thead><tr><th>Búnaður</th>' + th + '<th>Samtals</th></tr></thead><tbody>' + ft.rod.map(function (x) {
       return '<tr><td><i style="background:' + x.litur + '"></i>' + esc(x.nafn) + '</td>' + (ft.haedir.length > 1 ? x.tal.map(function (n) { return '<td>' + (n || '–') + '</td>'; }).join('') : '') + '<td><b>' + x.sam + '</b></td></tr>';
     }).join('') + '<tr class="sl"><td>Slökkvibúnaður (tæki + slöngur)</td>' + (ft.haedir.length > 1 ? ft.sl.map(function (n) { return '<td>' + n + '</td>'; }).join('') : '') + '<td>' + slSam + '</td></tr></tbody></table>';
+    // brunakerfið er oft af öðru blaði en aðaluppdrættinum (séruppdráttur rafhönnuðar, jafnvel eldri) — heimildin stendur þá á forsíðunni
+    var bkH = (r.tki || []).filter(function (t) { return flokkur(t) === 'brunakerfi' && t.heimild && !/aðaluppdr/i.test(t.heimild); })[0];
+    var bkLina = bkH ? '<p class="ath">Skynjarar og handboðar: ' + esc(String(bkH.heimild).replace(/.$/, '')) + '.</p>' : '';
     var ath = (r.athugasemdir || []).filter(function (a) { return String(a).length <= 170; }).slice(0, 2).map(function (a) { return esc(a); }).join(' ');
-    var fl = (myndir || []).filter(Boolean).map(function (m) { return '<div class="fl"><img src="' + m.src + '" alt="' + esc(m.nafn) + '"></div>'; }).join('');
+    var adal = (myndir || []).filter(function (m) { return m && !m.bk; }), haer = adal.length > 1 && adal.every(function (m) { return m.ar > 0.7; });
+    var fl = (haer ? '<div class="fl-g" style="grid-template-columns:repeat(' + Math.min(adal.length, 3) + ',minmax(0,1fr))">' : '') + adal.map(function (m) { return '<div class="fl"><img src="' + m.src + '" alt="' + esc(m.nafn) + '"></div>'; }).join('') + (haer ? '</div>' : '');
     return '<section class="fors"><div class="fors-h"><div class="fors-t"><h1>' + esc(r.heimilisfang || '') + ' — búnaður</h1>' +
       '<div class="und">Samantekt' + (gild && gild.dags ? ' úr gildandi teikningu (' + esc(dagsTexti(gild.dags)) + ')' : '') + ' — lesið úr skjalinu sjálfu · ' + esc(dags(r.created_at)) + '</div>' + tafla +
-      (ath ? '<p class="ath">' + ath + '</p>' : '') + '</div>' + (hus ? '<div class="fors-m"><img src="' + esc(hus) + '" alt="Húsið"></div>' : '') + '</div>' + fl + '</section>';
+      (ath ? '<p class="ath">' + ath + '</p>' : '') + bkLina + '</div>' + (hus ? '<div class="fors-m"><img src="' + esc(hus) + '" alt="Húsið"></div>' : '') + '</div>' + fl + '</section>';
   }
 
   /* ── PRENTA: sama efni og vistaða skýrslan — tafla, hæðirnar með auðkennum, textinn ──────────────────────────── */
@@ -284,7 +288,7 @@
       return Promise.all(hs.map(function (h) {
         if (!tf || !h.image_url) return null;
         var c = document.createElement('canvas');
-        return tf.teikna(h, c, 2400).then(function () { return { nafn: h.nafn, src: c.toDataURL('image/png') }; }, function () { return null; });
+        return tf.teikna(h, c, 2400).then(function () { return { nafn: h.nafn, src: c.toDataURL('image/png'), ar: c.height / (c.width || 1), bk: /brunakerfi/i.test(h.nafn || '') }; }, function () { return null; });
       })).then(function (m) { return husP.then(function () { return m; }); });
     }).then(function (myndir) {
       var tki = (r.tki || []);
@@ -311,12 +315,13 @@
         'h2{font:700 13pt Georgia,serif;margin:14px 0 6px}h3{font-size:10pt;color:#7f0000;margin:8px 0 2px}p{margin:0 0 4px}.lyk{background:#fff3e0;border-left:3px solid #e65100;padding:3px 6px}' +
         '.mynd{break-inside:avoid;margin:10px 0;text-align:center}.mynd h2{text-align:left}.mynd img{max-width:100%;max-height:230mm;width:auto;height:auto;border:1px solid #ccc}small{color:#666}.dalkar{column-count:2;column-gap:7mm}' +
         '.fors{break-after:page}.fors-h{display:flex;gap:7mm;align-items:flex-start}.fors-t{flex:1 1 0;min-width:0}.fors-m{flex:0 0 35%}.fors-m img{width:100%;border:1px solid #888;display:block}' +
-        '.fors h1{font:800 17pt system-ui,Segoe UI,Arial,sans-serif;margin:0 0 1mm}.fors .und{color:#666;font-size:8.5pt;margin-bottom:3mm}.sam{font-size:10pt;width:100%}.sam th{background:none;color:#111;border-bottom:2px solid #888;font-size:10pt;white-space:nowrap}.sam td{border:0;padding:2px 4px}.sam td:first-child{white-space:nowrap}.sam td i{display:inline-block;width:3.4mm;height:3.4mm;border-radius:50%;margin-right:2.2mm;vertical-align:-0.5mm}.sam tr.sl td{border-top:2px solid #888;font-weight:700;color:#b71c1c;font-size:10.5pt;padding-top:3px;white-space:nowrap}.sam td b{font-size:10.5pt}.fors .ath{font-size:8pt;color:#555;margin:2mm 0 0}.fl{break-inside:avoid;margin-top:3mm}.fl img{width:100%;border:1px solid #bbb;display:block}' +
+        '.fors h1{font:800 17pt system-ui,Segoe UI,Arial,sans-serif;margin:0 0 1mm}.fors .und{color:#666;font-size:8.5pt;margin-bottom:3mm}.sam{font-size:10pt;width:100%}.sam th{background:none;color:#111;border-bottom:2px solid #888;font-size:10pt;white-space:nowrap}.sam td{border:0;padding:2px 4px}.sam td:first-child{white-space:nowrap}.sam td i{display:inline-block;width:3.4mm;height:3.4mm;border-radius:50%;margin-right:2.2mm;vertical-align:-0.5mm}.sam tr.sl td{border-top:2px solid #888;font-weight:700;color:#b71c1c;font-size:10.5pt;padding-top:3px;white-space:nowrap}.sam td b{font-size:10.5pt}.fors .ath{font-size:8pt;color:#555;margin:2mm 0 0}.fl{break-inside:avoid;margin-top:3mm}.fl-g{display:grid;gap:3mm;margin-top:3mm}.fl-g .fl{margin-top:0}.fl img{width:100%;border:1px solid #bbb;display:block}' +
         '</style></head><body>' + forsidaHtml(r, myndir, husData) + '<div class="haus"><div class="y">Búnaðargreining · brunavarnir og staðsetning búnaðar</div><h1>' + esc(r.heimilisfang || '') + '</h1><small>' +
         esc(dags(r.created_at)) + ' · ' + esc(r.af || '') + ' · ' + (r.stada === 'yfirfarin' ? 'Yfirfarin' : 'Tillaga') + '</small></div>' +
         haus + rod + '</tbody></table>' +
         (ut.length ? '<h2>Útgangar (ÚT-merki)</h2>' + haus + linur(ut) + '</tbody></table>' : '') + bkHtml +
         ((r.athugasemdir || []).length ? '<h2>Athugasemdir</h2><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') +
+        (myndir || []).filter(function (m) { return m && m.bk; }).map(function (m) { return '<div class="mynd"><h2>' + esc(m.nafn) + '</h2><img src="' + m.src + '"></div>'; }).join('') +
         (r.texti || []).map(function (t) {
           return '<h2>' + esc(t.titill || '') + '</h2><div class="dalkar">' + (t.kaflar || []).map(function (k) {
             return (k.fyrirsogn ? '<h3>' + esc(k.fyrirsogn) + '</h3>' : '') + String(k.texti || '').split('\n').map(function (p) { return '<p' + (k.lykill ? ' class="lyk"' : '') + '>' + esc(p) + '</p>'; }).join('');
