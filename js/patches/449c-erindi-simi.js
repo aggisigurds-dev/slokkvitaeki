@@ -100,8 +100,8 @@
   async function load() {
     if (S.loading && S._p) return S._p;
     const c = sb();
-    if (!c) { S.villa = 'Engin tenging við gagnagrunn'; render(); return; }
-    S.loading = true; S.villa = null; render();
+    if (!c) { S.villa = 'Engin tenging við gagnagrunn'; endurteikna(); return; }
+    S.loading = true; S.villa = null; endurteikna();
     S._p = (async () => {
       try {
         const cols = 'id,title,status,type,tags,notes,channel_ref,assigned_to,svarad_at,fyrirtaeki_id,customer_nafn,updated_at,created_at';
@@ -125,7 +125,7 @@
       } catch (e) {
         S.villa = (e && e.message) || String(e);
       } finally {
-        S.loading = false; S._p = null; render();
+        S.loading = false; S._p = null; endurteikna();
       }
     })();
     return S._p;
@@ -134,7 +134,7 @@
   /* ── Skrif — aðeins við smell ─────────────────────────────────────────── */
   async function adgerd(r, fn) {
     if (S.busy[r.id]) return;
-    S.busy[r.id] = 1; render();
+    S.busy[r.id] = 1; endurteikna();
     try { await fn(); } catch (e) { toast('Vistaðist ekki: ' + ((e && e.message) || e), true); }
     delete S.busy[r.id];
     await load();
@@ -287,12 +287,13 @@
     const t = l.find(x => /^(Tillaga|Vantar)/i.test(x)) || l[0] || '';
     return t.replace(/^(✓|✕|▶|💬)\s*(Samþykkja|Hafna|Í vinnslu|Skýring):\s*/, '');
   }
-  function spjald(r) {
-    const h = hluti(r), op = S.opin.has(r.id), b = !!S.busy[r.id], d = digOf(r);
+  // Innihald opins erindis — sama á símanum (undir spjaldinu) og tölvunni (hægra megin). Takkar bera `data-er="…"`; tölvan fær
+  // þeim breytt í `data-t5="er-…"` (368 sér um smelli í skuggarótinni) í rymiHtml().
+  function inniHtml(r, h, d) {
+    const b = !!S.busy[r.id];
     let inni = '';
-    if (op) {
+    {
       const e = eydur(draft(r)), t = draft(r);
-      inni = '<div class="er-inni">';
       if (d) inni += '<div class="er-kassi _erindi"><b>Erindið · ' + esc(d.sender_name || d.sender_email || '') + ' · ' + esc(dags(d.received_at)) + '</b><div class="er-texti">' + (() => { const x = nyttSkeyti(d.body_preview || d.snippet); return esc(x.texti || '(ekkert meginmál sótt)') + (x.stytt ? '\n\n— fyrri skeyti í þræðinum falin —' : ''); })() + '</div>' +
         ((Array.isArray(d.attachment_names) && d.attachment_names.length) ? '<div class="er-vidh">📎 ' + esc(d.attachment_names.join(' · ')) + '</div>' : '') + '</div>';
       else if (r.channel_ref) inni += '<div class="er-kassi _erindi"><b>Erindið</b><span class="s">Upprunalega skeytið (' + esc(r.channel_ref) + ') fannst ekki í póstsafninu — svarið fer ekki í þráð nema þú sendir það úr Gmail.</span></div>';
@@ -315,8 +316,12 @@
         '<textarea class="er-ta" style="min-height:90px" data-er-in="sky" data-v="' + r.id + '" rows="3" placeholder="' + (h === 'vantar' ? 'T.d. „Reyklúgur eru á Hótel Plaza og Arnarhvoli“' : 'T.d. „bæta við verði og senda í dag“ — má vera autt') + '">' + esc(S.sky[r.id] || '') + '</textarea>' +
         '<div class="er-takkar"><button type="button" data-er="claude" data-v="' + (h === 'vantar' ? 'endurmeta' : 'vinnsla') + '" data-k="' + r.id + '"' + (b ? ' disabled' : '') + '>' + (h === 'vantar' ? '▶ Senda svar til Claude' : '▶ Í vinnslu') + '</button>' +
         (h === 'vantar' ? '<span></span>' : '<button type="button" class="_gull" data-er="claude" data-v="samthykkt" data-k="' + r.id + '"' + (b ? ' disabled' : '') + '>✓ Samþykkt</button>') + '</div></div>';
-      inni += '</div>';
     }
+    return inni;
+  }
+  function spjald(r) {
+    const h = hluti(r), op = S.opin.has(r.id);
+    const inni = op ? '<div class="er-inni">' + inniHtml(r, h, digOf(r)) + '</div>' : '';
     return '<div class="er-mal' + (h === 'buid' ? ' _buid' : '') + '" data-k="' + r.id + '"><button type="button" class="opna" data-er="opna" data-v="' + r.id + '" aria-expanded="' + op + '">' +
       '<span class="er-l1"><span class="er-fra">' + esc(kunniNafn(r)) + '</span><time>' + esc(dags(r.created_at).slice(0, 5)) + ' · ' + dagarSidan(r.created_at) + ' d.</time></span>' +
       '<span class="er-efni">' + esc(String(r.title || '').replace(/^✉\s*/, '')) + '</span>' + (op ? '' : '<span class="er-snip">' + esc(fyrstaLina(r).slice(0, 170)) + '</span>') +
@@ -355,12 +360,13 @@
   }
   // Skrifað í reit → geymt í minni, EKKI endurteiknað (fókus og bendill haldast); aðeins eyðulínan og Senda uppfærð.
   function innslattur(e) {
-    const el = e.target;
+    const el = e && e.target ? e.target : e;
     if (!el || !el.dataset || !el.dataset.erIn) return;
     const id = +el.dataset.v, k = el.dataset.erIn;
     if (k === 'drog') {
       S.drog[id] = el.value;
-      const ey = document.getElementById('_er-ey-' + id), sd = document.getElementById('_er-sd-' + id), em = eydur(el.value);
+      const rt = (el.getRootNode && el.getRootNode()) || document;   // á tölvunni býr reiturinn í skuggarót 368
+      const ey = rt.getElementById('_er-ey-' + id), sd = rt.getElementById('_er-sd-' + id), em = eydur(el.value);
       if (ey) ey.innerHTML = eydaHtml(id, em);
       if (sd) sd.disabled = !!S.busy[id] || em.length > 0 || !el.value.trim();
       const root = document.getElementById(ROOT_ID); if (root) root._h = null;   // næsta teikning má ekki halda að DOM sé óbreytt
@@ -369,29 +375,134 @@
     else if (k === 'efni') S.efni[id] = el.value;
     else if (k === 'sky') S.sky[id] = el.value;
   }
+  // Síminn: smellur á [data-er]. Tölvan: 368 sendir [data-t5="er-…"] í smellurT5(). Báðir enda í framkvaema().
   function smellur(e) {
     const b = e.target && e.target.closest ? e.target.closest('[data-er]') : null;
     if (!b || b.tagName === 'TEXTAREA' || b.tagName === 'INPUT') return;
-    const a = b.dataset.er, v = b.dataset.v || '', k = b.dataset.k || v;
+    framkvaema(b.dataset.er, b.dataset.v || '', b.dataset.k || b.dataset.v || '', b);
+  }
+  function smellurT5(el) {
+    const a = String(el.dataset.t5 || '');
+    if (a.indexOf('er-') !== 0) return false;
+    framkvaema(a.slice(3), el.dataset.v || '', el.dataset.k || el.dataset.v || '', el);
+    return true;
+  }
+  function framkvaema(a, v, k, b) {
     const r = S.rows.find(x => String(x.id) === String(k));
+    const rt = (b.getRootNode && b.getRootNode()) || document;
     switch (a) {
-      case 'opna': { const id = +v; if (S.opin.has(id)) S.opin.delete(id); else S.opin.add(id); S.lokaSpurt = null; render(); return; }
-      case 'kunni': S.kunni = v; render(); return;
-      case 'syna-buid': S.synaBuid = !S.synaBuid; render(); return;
-      case 'hoppa': { const h = document.getElementById('_er-h-' + v); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      case 'opna': { const id = +v; if (S.opin.has(id)) S.opin.delete(id); else S.opin.add(id); S.lokaSpurt = null; endurteikna(); return; }
+      case 'velja': S.valinn = +v; S.claudeOpid = null; S.lokaSpurt = null; endurteikna(); return;
+      case 'kunni': S.kunni = v; endurteikna(); return;
+      case 'syna-buid': S.synaBuid = !S.synaBuid; endurteikna(); return;
+      case 'hoppa': { const h = rt.getElementById ? rt.getElementById('_er-h-' + v) : null; if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
       case 'uppf': load(); return;
-      case 'eyda': { const ta = document.getElementById('_er-ta-' + v), i = +b.dataset.i; if (!ta) return; const m = []; let x; const re = new RegExp(EYDA_RE.source, 'g'); while ((x = re.exec(ta.value))) m.push([x.index, x.index + x[0].length]); if (m[i]) { ta.focus(); ta.setSelectionRange(m[i][0], m[i][1]); } return; }
-      case 'claude-opna': S.claudeOpid = S.claudeOpid === +v ? null : +v; render(); return;
+      case 'eyda': { const ta = rt.getElementById('_er-ta-' + v), i = +b.dataset.i; if (!ta) return; const m = []; let x; const re = new RegExp(EYDA_RE.source, 'g'); while ((x = re.exec(ta.value))) m.push([x.index, x.index + x[0].length]); if (m[i]) { ta.focus(); ta.setSelectionRange(m[i][0], m[i][1]); } return; }
+      case 'claude-opna': S.claudeOpid = S.claudeOpid === +v ? null : +v; endurteikna(); return;
       case 'vista': if (r) adgerd(r, () => vista(r)); return;
       case 'senda': if (r) adgerd(r, () => senda(r)); return;
       case 'claude': if (r) adgerd(r, async () => { await tilClaude(r, v, S.sky[r.id] || ''); S.claudeOpid = null; }); return;
       case 'loka':
         if (!r) return;
-        if (S.lokaSpurt !== r.id) { S.lokaSpurt = r.id; render(); return; }
+        if (S.lokaSpurt !== r.id) { S.lokaSpurt = r.id; endurteikna(); return; }
         S.lokaSpurt = null; adgerd(r, () => loka(r)); return;
-      case 'bord': if (r && window.Samthykkja && Samthykkja.velja) { Samthykkja.velja(r.id); if (window.App && App.switchView) App.switchView('bord'); } return;
+      case 'bord':
+        if (!r) return;
+        if (window.Bord368 && Bord368.opnaMal && rt !== document) { try { Bord368.opnaMal(r.id); return; } catch (_) {} }
+        if (window.Samthykkja && Samthykkja.velja) { Samthykkja.velja(r.id); if (window.App && App.switchView) App.switchView('bord'); }
+        return;
     }
   }
+
+  /* ── TÖLVAN — Erindi-hamur á Þjónustuborði (rými í 368, eins og Tölvupóstar 448) ───────────────────────── */
+  function endurteikna() {
+    render();
+    try { const rt = window.Bord368 && Bord368.root && Bord368.root(); if (rt && rt.querySelector('.er') && Bord368.render) Bord368.render(); } catch (_) {}
+  }
+  function tryggjaStil() {
+    try {
+      const root = window.Bord368 && Bord368.root && Bord368.root();
+      if (!root || root.getElementById('er449c-css')) return;
+      const st = document.createElement('style'); st.id = 'er449c-css';
+      st.textContent = [
+        '.er .er-rod{display:flex;flex-direction:column;align-items:stretch;gap:2px}.er .er-l1{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;color:var(--mute)}.er .er-fra{font:600 12px var(--body);color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.er .er-l1 time{margin-left:auto;white-space:nowrap}',
+        '.er .er-merki{display:flex;flex-wrap:wrap;gap:3px 4px;margin-top:3px}.er .er-m{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;padding:1px 5px;border-radius:2px;border:1px solid var(--edge);color:var(--ink2);background:rgba(255,255,255,.5);white-space:nowrap}',
+        '.er .er-m._eyda{border-color:rgba(184,137,46,.9);color:#8a6218;background:rgba(232,203,122,.28)}.er .er-m._graen{border-color:#145229;color:#fff;background:#1f6b3c}.er .er-m._raut{border-color:#a8321f;color:#fff;background:#a8321f}.er .er-m._ok{border-color:rgba(47,122,74,.5);color:#2f7a4a}',
+        '.er .er-sel{padding:18px 20px}.er .er-undir{font-size:13px;color:var(--ink2);margin:4px 0 8px}.er .er-link{background:none;border:0;padding:0;font:inherit;color:var(--ink);text-decoration:underline;cursor:pointer}.er .vbr-sect .er-link{font:inherit;color:var(--mute);text-transform:none;letter-spacing:0;margin-left:6px}',
+        '.er .er-kassi{margin-top:12px;padding:12px 14px;border:1px solid var(--rule3);border-radius:6px;background:rgba(255,255,255,.55)}.er .er-kassi>b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}.er .er-kassi .s{font-size:11.5px;color:var(--mute)}',
+        '.er .er-kassi._erindi{background:#fff;border-left:3px solid #2f6fb3}.er .er-kassi._svar{background:rgba(232,203,122,.16);border-color:rgba(184,137,46,.45)}',
+        '.er .er-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere;max-height:300px;overflow:auto}.er .er-vidh{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
+        '.er .er-inp,.er .er-ta{display:block;width:100%;box-sizing:border-box;margin:4px 0 8px;padding:8px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;color:var(--ink);font:13.5px/1.5 var(--body)}.er .er-ta{resize:vertical;min-height:220px}',
+        '.er .er-lbl{display:block;margin-top:4px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}',
+        '.er .er-eydur{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.er .er-eydur button{padding:3px 10px;border-radius:4px;border:1px solid #b8892e;background:#f6ebcc;color:#6b4a0c;font:600 12px var(--body);cursor:pointer}.er .er-eydur ._ok{font-size:12px;color:#2f7a4a}',
+        '.er .er-takkar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.er .er-takkar button,.er .er-takkar a{padding:7px 12px;border-radius:5px;border:1px solid var(--edge);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:var(--ink);font:600 12.5px var(--body);cursor:pointer;text-decoration:none}',
+        '.er .er-takkar ._gull{background:linear-gradient(180deg,#e8cb7a,#c9a24a);border-color:#8a6218;color:#1c1608}.er .er-takkar ._graen{background:linear-gradient(180deg,#2d8a4e,#1f6b3c);border-color:#0b3519;color:#fff}.er .er-takkar ._on{background:#1f2530;color:#fff;border-color:#000}.er .er-takkar ._raut{background:linear-gradient(180deg,#c4452f,#a8321f);border-color:#6e1c10;color:#fff}.er .er-takkar button:disabled{opacity:.45;cursor:not-allowed}.er .er-takkar ._breid{flex:1 1 100%}',
+        '.er .samt-teljari button._gull{grid-column:1 / -1}.er .phead .sum{white-space:normal}.er .er-uppf{margin-left:auto}'
+      ].join('\n');
+      root.appendChild(st);
+    } catch (_) {}
+  }
+  const dChip = (a, v, on, texti) => '<button type="button" data-t5="er-' + a + '" data-v="' + esc(v) + '" aria-pressed="' + !!on + '">' + texti + '</button>';
+  function rodHtml(r, val) {
+    const h = hluti(r);
+    return '<button type="button" class="vbr-item er-rod' + (h === 'buid' ? ' svarad' : '') + '" data-t5="er-velja" data-v="' + r.id + '" aria-current="' + !!(val && val.id === r.id) + '">' +
+      '<span class="er-l1"><span class="er-fra">' + esc(kunniNafn(r)) + '</span><time>' + esc(dags(r.created_at).slice(0, 5)) + ' · ' + dagarSidan(r.created_at) + ' d.</time></span>' +
+      '<b>' + esc(String(r.title || '').replace(/^✉\s*/, '')) + '</b><span class="s">' + esc(fyrstaLina(r).slice(0, 130)) + '</span>' +
+      '<span class="er-merki">' + merki(r, h) + '</span></button>';
+  }
+  function valinnErindi(l) {
+    let v = S.valinn && l.find(x => x.id === S.valinn);
+    if (!v) { for (const h of HLUTAR) { if (h[0] === 'buid' && !S.synaBuid) continue; v = hlutaListi(l, h[0])[0]; if (v) break; } v = v || l[0] || null; S.valinn = v ? v.id : null; }
+    return v;
+  }
+  function rymiHtml() {
+    tryggjaStil();
+    if (!S.loaded && !S.loading && !S.villa) load();   // villan stöðvar sjálfvirka sókn — annars færi load → teikning → load í hring
+    startaVakt();
+    const l = siad(), n = h => hlutaListi(l, h).length, val = valinnErindi(l);
+    let w = 0; try { const x = Number(window.Vidmot ? Vidmot.lesaTaeki('bord.vbrBreidd', 0) : 0); w = x > 0 ? Math.min(760, Math.max(230, x)) : 0; } catch (_) {}
+    const haus = (S.loaded ? [n('undirbuid') + ' tilbúin', n('vantar') + ' vantar', n('claude') + ' hjá Claude'].join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
+    const kt = kunnaTalning();
+    const listi = !S.loaded ? '<div class="empty"><span class="coin" aria-hidden="true"></span>' + (S.villa ? esc(S.villa) : 'Sæki erindin…') + '</div>'
+      : !l.length ? '<div class="empty"><span class="coin" aria-hidden="true"></span>Engin erindi á listanum. Biddu Claude: „safna erindum úr pósti“.</div>'
+      : HLUTAR.map(h => { const m = hlutaListi(l, h[0]); if (!m.length) return ''; const fellt = h[0] === 'buid' && !S.synaBuid;
+          return '<div class="vbr-sect" id="_er-h-' + h[0] + '" data-h="' + h[0] + '">' + esc(h[1]) + ' · ' + m.length + (h[0] === 'buid' ? ' <button type="button" class="er-link" data-t5="er-syna-buid" data-v="1">' + (fellt ? 'sýna' : 'fela') + '</button>' : '') + '</div>' + (fellt ? '' : m.map(x => rodHtml(x, val)).join(''));
+        }).join('');
+    let detail;
+    if (!val) detail = '<div class="empty"><span class="coin" aria-hidden="true"></span>Veldu erindi til vinstri.</div>';
+    else {
+      const h = hluti(val), d = digOf(val);
+      detail = '<div class="vbr-meta">' + esc(HLUTAR.find(x => x[0] === h)[1].replace(/ — .*/, '')) + ' · ' + esc(dags(val.created_at)) + ' · ' + dagarSidan(val.created_at) + ' d. · mál #' + val.id + '</div>' +
+        '<h1 class="vbr-titill">' + esc(String(val.title || '').replace(/^✉\s*/, '')) + '</h1>' +
+        '<div class="er-undir"><b>' + esc(kunniNafn(val)) + '</b>' + (d ? ' &lt;' + esc(d.sender_email || '') + '&gt;' : '') + '</div>' +
+        '<div class="er-merki">' + merki(val, h) + '</div>' + inniHtml(val, h, d);
+    }
+    const html = '<div class="vbr samt er"' + (w ? ' style="--vbr-w:' + w + 'px"' : '') + '>' +
+      '<aside class="panel vbr-list" aria-label="Erindi">' +
+        '<header class="phead"><span class="plate">📨</span><h2 class="ptitle">Erindi</h2><span class="sum">' + esc(haus) + '</span>' +
+          '<button type="button" class="btn iv sm er-uppf" data-t5="er-uppf" title="Sækja aftur"' + (S.loading ? ' disabled' : '') + '>↻</button></header>' +
+        (kt.length > 1 ? '<div class="samt-rod">' + dChip('kunni', '', !S.kunni, 'Öll') + kt.slice(0, 10).map(([nf, c]) => dChip('kunni', nf, S.kunni === nf, esc(nf) + ' <small>' + c + '</small>')).join('') + '</div>' : '') +
+        '<div class="samt-teljari"><button type="button" data-t5="er-hoppa" data-v="undirbuid" class="_gull"><b>' + n('undirbuid') + '</b><span>★ Svar tilbúið<small>Claude undirbjó — þú yfirferð og sendir</small></span></button>' +
+          '<button type="button" data-t5="er-hoppa" data-v="vantar"><b>' + n('vantar') + '</b><span>Vantar frá þér<small>gögn sem aðeins þú átt</small></span></button>' +
+          '<button type="button" data-t5="er-hoppa" data-v="claude" class="_claude"><b>' + n('claude') + '</b><span>Hjá Claude<small>í vinnslu · samþykkt</small></span></button></div>' +
+        '<div class="vbr-items">' + listi + '</div>' +
+      '</aside>' +
+      '<div class="vbr-main"><section class="panel er-sel" aria-live="polite">' + detail.replace(/data-er="/g, 'data-t5="er-') + '</section></div></div>';
+    return html;
+  }
+  // Tölvu-hamurinn endurhleður á 2 mín. fresti meðan hann er sýnilegur og enginn er að skrifa (sama regla og síminn).
+  let _vaktD = 0;
+  function startaVakt() {
+    if (_vaktD) return;
+    _vaktD = setInterval(() => {
+      try {
+        const rt = window.Bord368 && Bord368.root && Bord368.root();
+        if (!rt || !rt.querySelector('.er') || document.hidden || erAdSkrifa() || S.loading) return;
+        load();
+      } catch (_) {}
+    }, 120000);
+  }
+  const talning = () => S.loaded ? S.rows.filter(r => { const h = hluti(r); return h === 'undirbuid' || h === 'vantar'; }).length : '';
 
   function open() {
     injectCss(); ensureView();
@@ -409,7 +520,11 @@
   }
   const erVirk = () => { const vv = document.getElementById(VIEW_ID); return !!(vv && vv.classList.contains('active')); };
   // Endurhleðsla má aldrei kippa reitnum undan þeim sem er að skrifa (STÖÐUGT VIÐMÓT, regla 1).
-  const erAdSkrifa = () => { const a = document.activeElement, vv = document.getElementById(VIEW_ID); return !!(a && vv && vv.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName)); };
+  const erAdSkrifa = () => {
+    const a = document.activeElement, vv = document.getElementById(VIEW_ID);
+    if (a && vv && vv.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName)) return true;
+    try { const rt = window.Bord368 && Bord368.root && Bord368.root(), b = rt && rt.activeElement; return !!(b && rt.querySelector('.er') && /^(INPUT|TEXTAREA)$/.test(b.tagName)); } catch (_) { return false; }
+  };
   function hide() { try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } } catch (_) {} clearInterval(_poll); _poll = 0; }
   function patchSwitchView() {
     if (!window.App) { setTimeout(patchSwitchView, 150); return; }
@@ -430,6 +545,6 @@
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.ErindiSimi = { open, render, load, S, hluti, eydur, version: '449c' };
+  window.ErindiSimi = { open, render, load, S, hluti, eydur, rymiHtml, smellurT5, innslattur, talning, loaded: () => S.loaded, loading: () => S.loading, version: '449c' };
   console.log('[449c] Erindi — símasíða');
 })();
