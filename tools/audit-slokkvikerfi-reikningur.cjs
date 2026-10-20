@@ -28,8 +28,9 @@ const fall = (src, nafn) => {
 
 // (1) payday-push
 const pp = lesa('netlify/functions/payday-push.cjs');
+// 20.10.2026: gáttin hleypir líka 'vinnublad' í gegn (SARA-drög = úttektarreikningur) og vörðurinn KREFST þess núna — annars kæmi „skýrslu vantar á vinnublaðskröfur“ aftur án þess að nokkuð yrði rautt.
 // 05.10.2026: gáttin hleypir líka 'brunakerfi' í gegn — sá fær AÐEINS findBrunakerfiPdf (skýrslan úr sínu kerfi)
-if (!/if \(sale\.source !== 'uttekt' && sale\.source !== 'slokkvikerfi'(?: && sale\.source !== 'brunakerfi')?\) \{\s*attachSkipReason/.test(pp)) brot.push('payday-push: skýrslugáttin hleypir öðru en uttekt/slokkvikerfi/brunakerfi í gegn (eða finnst ekki)');
+if (!/if \(sale\.source !== 'uttekt' && sale\.source !== 'slokkvikerfi' && sale\.source !== 'brunakerfi' && sale\.source !== 'vinnublad'\) \{\s*attachSkipReason/.test(pp)) brot.push('payday-push: skýrslugáttin hleypir öðru en uttekt/slokkvikerfi/brunakerfi í gegn (eða finnst ekki)');
 if (!/sale\.source === 'slokkvikerfi'\s*\?\s*await findSlokkvikerfiPdf\(sale\)\s*:\s*sale\.source === 'brunakerfi'\s*\?\s*await findBrunakerfiPdf\(sale\)\s*:\s*await findReportPdf\(sale, body\.report_storage_path\)/.test(pp)) brot.push('payday-push: slökkvikerfis-/brunakerfissala sækir ekki skýrslu um sitt eigið fall (findSlokkvikerfiPdf / findBrunakerfiPdf)');
 const fbk = fall(pp, 'findBrunakerfiPdf');
 if (!fbk) brot.push('payday-push: findBrunakerfiPdf finnst ekki');

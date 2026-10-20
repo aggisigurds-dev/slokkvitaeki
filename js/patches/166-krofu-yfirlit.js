@@ -2749,8 +2749,8 @@
       const wrap = document.createElement('div');
       wrap.id = '_ky-send-modal';
       wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif';
-      // payday-push festir skýrslu á úttektar- OG slökkvikerfiskröfur (05.10.2026); aðrar sölur aldrei
-      const isUttekt = !!(sale && (sale.source === 'uttekt' || sale.source === 'slokkvikerfi'));
+      // payday-push festir skýrslu á úttektar-, slökkvikerfis-, brunakerfis- OG vinnublaðskröfur (vinnublað 20.10.2026); aðrar sölur aldrei
+      const isUttekt = !!(sale && (sale.source === 'uttekt' || sale.source === 'slokkvikerfi' || sale.source === 'brunakerfi' || sale.source === 'vinnublad'));
       const skNafn = skyrslaNafn(sale);
       let reportHtml;
       if (res.found) {

@@ -194,7 +194,10 @@ exports.handler = async (event) => {
     if (attachReport) {
       // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): source 'brunakerfi' (273/291) fær
       // AÐEINS brunakerfisskýrsluna sem úttektin vísar á (findBrunakerfiPdf) — áður fór hann án skýrslu.
-      if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi' && sale.source !== 'brunakerfi') {
+      // 20.10.2026 (Agnar: „vantaði skýrslurnar við einhverjar“): sala úr samþykktu vinnublaði (source 'vinnublad', SARA-drög,
+      // vidskiptategund 'uttekt') ER úttektarreikningur — hún fór til Payday ÁN skýrslu þótt skýrslan væri til og Kröfu yfirlit segði
+      // „fylgir kröfunni“. Fær nú úttektarskýrsluna eins og 'uttekt' (findReportPdf: viðhengi staðar og árs). 'pos' fær hana enn aldrei.
+      if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi' && sale.source !== 'brunakerfi' && sale.source !== 'vinnublad') {
         attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
       } else if (site && site.skyrsla_med_krofu === false) {
         // Per-fyrirtæki hak í prófílnum (patch 14): sum félög vilja EKKI
@@ -928,7 +931,7 @@ async function createInvoice(token, payload, attachment) {
 
 // ── Report (úttektarskýrsla) PDF lookup + download ───────────────────────────
 // Resolves the inspection report PDF for a sale and returns its bytes. Caller
-// MUST have already verified sale.source==='uttekt' (safety gate). Source order:
+// MUST have already verified sale.source is 'uttekt' or 'vinnublad' (safety gate). Source order:
 //   1. explicit storage_path (test / client-provided)
 //   2. AppSettings.company_attachments[customer_id] — kind='skyrsla', matching year
 //   3. customer_documents.storage_path (Drive-indexed rows that were mirrored)
