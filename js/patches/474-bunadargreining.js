@@ -204,20 +204,87 @@
       }).join('') + '</ul>';
     }).join('');
   }
-  // stór sýn — sama umgjörð og stóra sýn hæðaspjaldanna (456 #cfh-stort; Esc lokar þar)
+  // stór sýn — sama umgjörð og stóra sýn hæðaspjaldanna (456 #cfh-stort; Esc lokar þar).
+  // 20.10.2026 (Agnar: „enable zoom á scroll á músinni … filter til að slökkva á útgöngum merkingunum, default kveikt á öllum"):
+  // músarhjól þysjar að bendlinum, dráttur færir (einnig tveir fingur á snertiskjá), tvísmellur núllstillir; sía á hvern flokk
+  // (Slökkvibúnaður · ÚT · Brunakerfi) — sýnin er tímabundin (ekkert vistað), allt kveikt í hvert sinn sem glugginn opnast.
   function stortBlad(b) {
     var gamalt = document.getElementById('cfh-stort'); if (gamalt) gamalt.remove();
     var o = document.createElement('div');
     o.id = 'cfh-stort';
+    var SIA = FLOKKAR.filter(function (f) { return b.tki.some(function (t) { return flokkur(t) === f[0]; }); });
+    var kveikt = {}; SIA.forEach(function (f) { kveikt[f[0]] = true; });
+    var sjaTki = function () { return b.tki.filter(function (t) { return kveikt[flokkur(t)] !== false; }); };
+    var sjaB = function () {
+      return Object.assign({}, b, { tki: sjaTki(), markers: b.markers.filter(function (m, i) { return kveikt[flokkur(b.tki[i])] !== false; }) });
+    };
+    var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía">' + SIA.map(function (f) {
+      return '<label><input type="checkbox" data-sia="' + f[0] + '" checked><i style="background:' + litur({ flokkur: f[0] }) + '"></i>' + esc(f[0] === 'slokkvibunadur' ? 'Slökkvibúnaður' : f[0] === 'flotti' ? 'ÚT' : 'Brunakerfi') + '</label>';
+    }).join('') + '</span>' : '';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
-      '<span style="flex:1"></span><button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
-      '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div><div class="cfh-s-l"><h4>Skv. gögnum — ' + esc(fjoldiTexti(b.tki)) + '</h4>' + listiBlads(b) + '</div></div></div>';
+      siuHtml + '<span style="flex:1"></span><span class="bgr-zk" aria-label="Aðdráttur"><button type="button" data-z="-" title="Minnka (músarhjól niður)">−</button><button type="button" data-z="0" title="Núllstilla (tvísmella)">100%</button><button type="button" data-z="+" title="Stækka (músarhjól upp)">+</button></span>' +
+      '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
+      '<div class="cfh-s-b"><div class="cfh-s-m bgr-zm"><div class="bgr-zl"><div class="cfh-t">…</div></div></div><div class="cfh-s-l"></div></div></div>';
     document.body.appendChild(o);
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     o.querySelector('.cfh-s-x').addEventListener('click', function () { o.remove(); });
-    var m = o.querySelector('.cfh-s-m'), c = document.createElement('canvas');
-    if (window.TeiknForskodun) TeiknForskodun.teikna(b, c, 2600).then(function () { if (m.isConnected) { m.innerHTML = ''; m.appendChild(c); } },
-      function () { if (m.isConnected) m.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
+    var m = o.querySelector('.cfh-s-m'), zl = o.querySelector('.bgr-zl'), lis = o.querySelector('.cfh-s-l');
+    var Z = { s: 1, x: 0, y: 0 };
+    var beita = function () {
+      var r = m.getBoundingClientRect();
+      Z.x = Math.min(0, Math.max(r.width - r.width * Z.s, Z.x)); Z.y = Math.min(0, Math.max(r.height - r.height * Z.s, Z.y));
+      if (Z.s <= 1.0001) { Z.s = 1; Z.x = 0; Z.y = 0; }
+      zl.style.transform = 'translate(' + Z.x + 'px,' + Z.y + 'px) scale(' + Z.s + ')';
+      var nu = o.querySelector('[data-z="0"]'); if (nu) nu.textContent = Math.round(Z.s * 100) + '%';
+    };
+    var thysja = function (f, px, py) {   // þysja um f að punkti (px, py) í m
+      var ns = Math.min(12, Math.max(1, Z.s * f)); if (ns === Z.s) return;
+      Z.x = px - (px - Z.x) * (ns / Z.s); Z.y = py - (py - Z.y) * (ns / Z.s); Z.s = ns; beita();
+    };
+    m.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var r = m.getBoundingClientRect();
+      thysja(e.deltaY < 0 ? 1.18 : 1 / 1.18, e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    m.addEventListener('dblclick', function () { Z.s = 1; Z.x = 0; Z.y = 0; beita(); });
+    o.querySelector('.bgr-zk').addEventListener('click', function (e) {
+      var b2 = e.target.closest && e.target.closest('[data-z]'); if (!b2) return;
+      var r = m.getBoundingClientRect(), z = b2.getAttribute('data-z');
+      if (z === '0') { Z.s = 1; Z.x = 0; Z.y = 0; beita(); } else thysja(z === '+' ? 1.4 : 1 / 1.4, r.width / 2, r.height / 2);
+    });
+    // dráttur (ein hönd) + klípa (tveir fingur)
+    var bendlar = {}, fyrriDist = 0;
+    m.addEventListener('pointerdown', function (e) { bendlar[e.pointerId] = { x: e.clientX, y: e.clientY }; try { m.setPointerCapture(e.pointerId); } catch (_) {} fyrriDist = 0; m.classList.add('bgr-dregur'); });
+    m.addEventListener('pointermove', function (e) {
+      var p = bendlar[e.pointerId]; if (!p) return;
+      var ids = Object.keys(bendlar);
+      if (ids.length >= 2) {
+        var a = bendlar[ids[0]], c = bendlar[ids[1]];
+        if (e.pointerId == ids[0]) a = { x: e.clientX, y: e.clientY }; else if (e.pointerId == ids[1]) c = { x: e.clientX, y: e.clientY };
+        var d = Math.hypot(a.x - c.x, a.y - c.y), r = m.getBoundingClientRect();
+        if (fyrriDist) thysja(d / fyrriDist, (a.x + c.x) / 2 - r.left, (a.y + c.y) / 2 - r.top);
+        fyrriDist = d;
+      } else if (Z.s > 1) { Z.x += e.clientX - p.x; Z.y += e.clientY - p.y; beita(); }
+      bendlar[e.pointerId] = { x: e.clientX, y: e.clientY };
+    });
+    var sleppa = function (e) { delete bendlar[e.pointerId]; fyrriDist = 0; if (!Object.keys(bendlar).length) m.classList.remove('bgr-dregur'); };
+    m.addEventListener('pointerup', sleppa); m.addEventListener('pointercancel', sleppa);
+    // teikning + listi (endurteiknað við síubreytingu; þysjunin helst)
+    var seinast = 0;
+    var teiknaAftur = function () {
+      var bb = sjaB(), stefna = ++seinast;
+      o.querySelector('.cfh-s-h strong').nextElementSibling.textContent = (b.heimild || '') + ' · teikning greiningarinnar';
+      lis.innerHTML = '<h4>Skv. gögnum — ' + esc(fjoldiTexti(bb.tki)) + '</h4>' + listiBlads(bb);
+      if (!window.TeiknForskodun) { zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; return; }
+      var c = document.createElement('canvas');
+      TeiknForskodun.teikna(bb, c, 2600).then(function () { if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); } },
+        function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
+    };
+    o.addEventListener('change', function (e) {
+      var k = e.target && e.target.getAttribute && e.target.getAttribute('data-sia'); if (!k) return;
+      kveikt[k] = !!e.target.checked; teiknaAftur();
+    });
+    teiknaAftur();
   }
 
   // Búnaður greiningarinnar sem er EKKI á Teikningu (enginn unitId): hönnunarstaðir án tækis, eða tæki sem textinn nefnir
@@ -786,7 +853,16 @@
       '#' + GLUGGI + ' .bgr-g-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #e3e1dc;font:700 14px system-ui,sans-serif;color:#2b2a27}',
       '#' + GLUGGI + ' .bgr-g-x{height:28px;padding:0 12px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important}',
       '#' + GLUGGI + ' .bgr-g-b{overflow:auto;container-type:inline-size;padding:12px}',
-      '#' + GLUGGI + ' .bgr-g-m{margin:0!important;border:0!important;border-radius:0!important}'
+      '#' + GLUGGI + ' .bgr-g-m{margin:0!important;border:0!important;border-radius:0!important}',
+      // stór sýn teikningar greiningarinnar: þysjun, dráttur, sía
+      '#cfh-stort .cfh-s-m.bgr-zm{overflow:hidden;cursor:grab;touch-action:none;user-select:none}',
+      '#cfh-stort .cfh-s-m.bgr-dregur{cursor:grabbing}',
+      '#cfh-stort .bgr-zl{position:absolute;inset:0;transform-origin:0 0;will-change:transform}',
+      '#cfh-stort .bgr-sia{display:inline-flex;gap:12px;margin-left:12px;flex-wrap:wrap}',
+      '#cfh-stort .bgr-sia label{display:inline-flex;align-items:center;gap:5px;font:600 12px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
+      '#cfh-stort .bgr-sia i{width:10px;height:10px;border-radius:50%;display:inline-block}',
+      '#cfh-stort .bgr-zk{display:inline-flex;gap:4px}',
+      '#cfh-stort .bgr-zk button{min-width:30px;height:26px;padding:0 8px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important}'
     ].join('\n');
     document.head.appendChild(s2);
   })();

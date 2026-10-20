@@ -103,6 +103,8 @@ Fyrir framan Teikning-takkann (í stað Þjónustusamnings, sem er nú í ⋯-va
 
 **Prentanlegt skjal:** ein síða án blaðaskiptingar (sími + prentun): samantekt (fjöldi á hæð og í heild) efst, húsmynd prófílsins í hægra horni, báðar hæðir fyrir neðan (`sudurhella-5/pdf_ein.py`) → Viðhengi.
 
+**Stór sýn blaðs greiningarinnar:** músarhjól þysjar að bendlinum, dráttur færir (klípa á snertiskjá), tvísmellur núllstillir; sía á Slökkvibúnað / ÚT / Brunakerfi (allt kveikt sjálfgefið, ekkert vistað). **Prenta:** há blöð (hlutfall > 0,7, t.d. Skútuvogur 4) standa hlið við hlið á forsíðunni, brunakerfisblöð aftast; heimild skynjara (séruppdráttur) í línu á forsíðu. Skútuvogur 4 (661) fékk sömu ein-síðu skýrslu 20.10.2026.
+
 **Merkjastærð:** Nýtt-merki á 50 m löngu húsi urðu of stór (sjálfvirkt 56 px á 3.951 px breiðum skurði) → `haedir[].stimpilStaerd` 26.
 
 ## Sjálfvirki takkinn („Greina búnað" í 474)
