@@ -161,13 +161,17 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 </script>
 <!-- 20.10.2026: INNFELLT Í BRUNAHÓLF (?bh=1) — Viðskiptavinir-síða hubbans fellir prófílinn (#company/<id>) og Greininguna (#greining/<heimilisfang>)
      inn í iframe. Eigindið er á <html> því appið endurskrifar className. Aðeins útlit: engin virkni breytist, ekkert skrifast hér. -->
-<script>try{if(new URLSearchParams(location.search).get("bh")==="1")document.documentElement.setAttribute("data-bh","1");}catch(_){}</script>
+<script>try{if(new URLSearchParams(location.search).get("bh")==="1"){document.documentElement.setAttribute("data-bh","1");
+/* síma-útlitið (314) setur padding-top:86px INLINE með !important — CSS nær ekki yfir það, svo það er núllað hér */
+document.addEventListener("DOMContentLoaded",function(){var v=document.getElementById("view-companies");if(!v)return;var f=function(){if(v.style.getPropertyValue("padding-top")!=="0px")v.style.setProperty("padding-top","0","important");};f();new MutationObserver(f).observe(v,{attributes:true,attributeFilter:["style"]});});}}catch(_){}</script>
 <style id="bh-embed-css">
 html[data-bh="1"] .topbar,html[data-bh="1"] ._build-stamp,html[data-bh="1"] #bstal-banner,html[data-bh="1"] #bstal-ember,
 html[data-bh="1"] #_ad-fab,html[data-bh="1"] #_slokk_langbtn,html[data-bh="1"] #cg-sk-trigger,html[data-bh="1"] #_app-nav,
+html[data-bh="1"] #_mnav_btn,html[data-bh="1"] #_mnav_bd,html[data-bh="1"] #_sz-aa,html[data-bh="1"] #qr-fab,html[data-bh="1"] #_pe-btn,
 html[data-bh="1"] #companies-main button[onclick*="switchView('arsskodun')"]{display:none!important}
 html[data-bh="1"] .view{left:0!important;margin-left:0!important;width:100%!important}
-html[data-bh="1"] #view-companies{padding-top:0!important}
+/* þemað setur padding-top:148px (230) og síminn 86px (314) með !important á .view.active:not(#…)x3 — fjögur auðkenni slá það; síminn setur auk þess inline (sjá skriftu) */
+html[data-bh="1"] body #view-companies.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:0!important}
 html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 </style>
 </head>
