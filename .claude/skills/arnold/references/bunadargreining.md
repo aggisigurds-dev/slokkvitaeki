@@ -157,6 +157,23 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 | Heimaleiga - Ice Apartments, Laugavegur 1 (bakhús MHL 04) | 1484 | id 10, 21.10.2026 — **fyrsta verkið úr verkhringrásinni** (`bgr_verk.cjs`) | aðaluppdrættir 1.02 (08.09.2015) og 1.03 (01.03.2016), skönnun, engin skýring á blaði: **20 ÚT** (6+6+6+2, líka við björgunarop) + **15 R** (túlkað reykskynjari, skýring vantar) á kjallara (jarðhæð bakhúss) og 1.–3. hæð; engin SL/BS; 8 skráð tæki án staðar → greining-only; 2 PDF í Viðhengi |
 | Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
 
+## 3D-mynd af greiningu (21.10.2026, Skútuvogur 4 — Agnar: „settu búnaðargreininguna inn á svona" = Blender-myndin með gráu steypugólfi)
+
+Tvær leiðir, báðar í `scripts/bunadargreining/skutuvogur-4/`:
+
+1. **Blender (mælt með):** `sena_greining.py <hæð> [flokkar sem eru síaðir burt, t.d. r,ut] [úttak.json]` tekur VISTAÐA Blender-senu hæðarinnar (veggir, hurðir, gler úr `automation_triggers` workflow
+   `blender`, `gogn`; Skútuvogur: trigger 67, raunsætt útlit) og skiptir tækjunum út fyrir atriði greiningarinnar (`taeki`: gerd/stimpill — slökkvitæki `lettvatn`, slanga `slanga`, ÚT `ut`, reykskynjari,
+   handboði = `bjalla`, stjórnstöð = `rafmagn`; hnit: rammahnit borðsins → metrar með `vinnumynd.S`/`kort` senunnar; festing á vegg + hlið snýr að opnara rými). Blender (`node luna-bridge/blender-mynd.js --skra
+   sena.json --samples 64 --ut mappa`, ~3 mín/mynd, `prof_myndir:["vinnuskjal"]` fyrir toppmyndina) gefur „Vinnuskjal" með táknum; `samsetja.py` setur haus + skýringu (sömu tákn) utan um.
+   **Fyrst þarf blöð greiningarinnar á SAMA ramma:** blað frá öðrum aðila (Voltorka 2020) var skráð á 2025-blaðið með FFT-krosssamsvörun á línumyndum (`skra.py`, kvarði + hliðrun) — veggir
+   féllu saman; hnit skynjara eru samt aðeins nálgun.
+2. **Vistaða 3D-vinnumyndin (án tækja)** + prik með táknum: `teikna3d.py` varpar atriðum með sömu `varpa()` og 445 (rammahnit → heimur → `cam` → mynd). Gólfið er flatt grátt og plan-línur skína í gegn
+   (reynt að hreinsa það í 2D með inmálun og steypuáferð — náði ekki Blender-gæðum; Blender-leiðin er rétta svarið).
+
+**Lagaskipti í appinu:** stóra sýnin á blaði greiningarinnar (474 `stortBlad`) hefur nú lag — Búnaðargreining · Raunveruleg tæki (merki hæðarinnar á Teikningu) · Bæði — og síu á hverja gerð (slökkvitæki,
+slöngur, ÚT, reykskynjarar, handboðar, hitaskynjarar, stjórnstöð). Raunveruleg tæki eru varpað á blað greiningarinnar með hnitum sem bæði kerfin eiga (x,y ↔ bx,by); listinn merkir hvert tæki ✓ við
+hönnunarstað eða ⚠ víkur frá hönnunarstað (næst S#, mörk 4 % af breidd skurðar).
+
 ## Í Brunahólfi (20.10.2026)
 
 Viðskiptavinir-síða hubbans (brunaholf.netlify.app) fellir prófílinn og Greininguna inn (flipar „Staðir & teikningar" og „Greining", iframe `https://slokkvitaeki.netlify.app/?bh=1#company/<id>` / `#greining/<heimilisfang>`). **Sama vélin** — Búnaðargreining, Teikning og Greining vista í sömu töflur á STAÐINN (fyrirtaeki á kennitölu greiðandans); "＋ Stofna stað" í hubbanum býr hann til. Greiðandi án staðar → stofna fyrst, svo vista greininguna á hann. Dæmi: Uppspil ehf. (kt 470922-2060) → fyrirtæki 1873, verkstaður Sunnukriki 3 (Mosfellsbær).

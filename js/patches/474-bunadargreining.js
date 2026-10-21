@@ -219,21 +219,32 @@
   // 20.10.2026 (Agnar: „enable zoom á scroll á músinni … filter til að slökkva á útgöngum merkingunum, default kveikt á öllum"):
   // músarhjól þysjar að bendlinum, dráttur færir (einnig tveir fingur á snertiskjá), tvísmellur núllstillir; sía á hvern flokk
   // (Slökkvibúnaður · ÚT · Brunakerfi) — sýnin er tímabundin (ekkert vistað), allt kveikt í hvert sinn sem glugginn opnast.
-  function stortBlad(b) {
+  function stortBlad(b, cid) {
     var gamalt = document.getElementById('cfh-stort'); if (gamalt) gamalt.remove();
     var o = document.createElement('div');
     o.id = 'cfh-stort';
-    var SIA = FLOKKAR.filter(function (f) { return b.tki.some(function (t) { return flokkur(t) === f[0]; }); });
-    var kveikt = {}; SIA.forEach(function (f) { kveikt[f[0]] = true; });
-    var sjaTki = function () { return b.tki.filter(function (t) { return kveikt[flokkur(t)] !== false; }); };
-    var sjaB = function () {
-      return Object.assign({}, b, { tki: sjaTki(), markers: b.markers.filter(function (m, i) { return kveikt[flokkur(b.tki[i])] !== false; }) });
+    // 21.10.2026 (Agnar: „semi filterað/svissað milli búnaðargreiningarinnar og raunverulegra tækja sem við setjum inn — eru stundum ekki
+    // á sama stað eða eftir að færa"): lag (Búnaðargreining · Raunveruleg tæki á Teikningu · Bæði) og sía á hverja gerð (t.d. án reykskynjara
+    // og ÚT). Raunveruleg tæki = merki hæðarinnar á Teikningu, varpað á blað greiningarinnar með hnitum sem bæði kerfin eiga (x,y ↔ bx,by).
+    var SIA_H = { sl: 'Slökkvitæki', bs: 'Slöngukefli', ut: 'ÚT', r: 'Reykskynjarar', hb: 'Handboðar', hiti: 'Hitaskynjarar', st: 'Stjórnstöð' };
+    var SIA_L = { sl: '#c93c1d', bs: '#1f5fbf', ut: '#2e7d32', r: '#8e24aa', hb: '#6a1b9a', hiti: '#e65100', st: '#4527a0' };
+    var kindAf = function (t) {
+      var f = flokkur(t), n = t.bunadur || '';
+      return f === 'flotti' ? 'ut' : f === 'brunakerfi' ? (/reykskynjari/i.test(n) ? 'r' : /hita/i.test(n) ? 'hiti' : /handbo/i.test(n) ? 'hb' : 'st') : /slang|kefli/i.test(n) ? 'bs' : 'sl';
     };
-    var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía">' + SIA.map(function (f) {
-      return '<label><input type="checkbox" data-sia="' + f[0] + '" checked><i style="background:' + litur({ flokkur: f[0] }) + '"></i>' + esc(f[0] === 'slokkvibunadur' ? 'Slökkvibúnaður' : f[0] === 'flotti' ? 'ÚT' : 'Brunakerfi') + '</label>';
+    var SIA = Object.keys(SIA_H).filter(function (k) { return b.tki.some(function (t) { return kindAf(t) === k; }); });
+    var kveikt = {}; Object.keys(SIA_H).forEach(function (k) { kveikt[k] = true; });
+    var lag = 'greining', raun = null, raunVilla = '';
+    var sjaTki = function () { return b.tki.filter(function (t) { return kveikt[kindAf(t)] !== false; }); };
+    var sjaB = function () {
+      return Object.assign({}, b, { tki: sjaTki(), markers: b.markers.filter(function (m, i) { return kveikt[kindAf(b.tki[i])] !== false; }) });
+    };
+    var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía">' + SIA.map(function (k) {
+      return '<label><input type="checkbox" data-sia="' + k + '" checked><i style="background:' + SIA_L[k] + '"></i>' + esc(SIA_H[k]) + '</label>';
     }).join('') + '</span>' : '';
+    var lagHtml = cid ? '<span class="bgr-lag" role="radiogroup" aria-label="Lag"><label><input type="radio" name="bgr-lag" value="greining" checked>Búnaðargreining</label><label><input type="radio" name="bgr-lag" value="raun">Raunveruleg tæki</label><label><input type="radio" name="bgr-lag" value="bada">Bæði</label></span>' : '';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
-      siuHtml + '<span style="flex:1"></span><span class="bgr-zk" aria-label="Aðdráttur"><button type="button" data-z="-" title="Minnka (músarhjól niður)">−</button><button type="button" data-z="0" title="Núllstilla (tvísmella)">100%</button><button type="button" data-z="+" title="Stækka (músarhjól upp)">+</button></span>' +
+      lagHtml + siuHtml + '<span style="flex:1"></span><span class="bgr-zk" aria-label="Aðdráttur"><button type="button" data-z="-" title="Minnka (músarhjól niður)">−</button><button type="button" data-z="0" title="Núllstilla (tvísmella)">100%</button><button type="button" data-z="+" title="Stækka (músarhjól upp)">+</button></span>' +
       '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
       '<div class="cfh-s-b"><div class="cfh-s-m bgr-zm"><div class="bgr-zl"><div class="cfh-t">…</div></div></div><div class="cfh-s-l"></div></div></div>';
     document.body.appendChild(o);
@@ -282,16 +293,70 @@
     m.addEventListener('pointerup', sleppa); m.addEventListener('pointercancel', sleppa);
     // teikning + listi (endurteiknað við síubreytingu; þysjunin helst)
     var seinast = 0;
+    // Raunveruleg tæki hæðarinnar (merki á Teikningu) á blaði greiningarinnar. Sama blað → óbreytt hnit; annars aðhvarf
+    // (kvarði + hliðrun á ás) úr atriðum sem eiga bæði hnitin (x,y á Teikningu ↔ bx,by á blaðinu).
+    var haedId = (b.tki[0] && b.tki[0].haed_id) || b.id;
+    var bladuVarpa = (function () {
+      if (b.id === haedId) return { fx: { k: 1, c: 0 }, fy: { k: 1, c: 0 } };
+      var pr = b.tki.filter(function (t) { return t.x != null && t.bx != null && isFinite(+t.x) && isFinite(+t.bx); });
+      if (pr.length < 3) return null;
+      var ft = function (a, c) {
+        var n = a.length, ma = a.reduce(function (x, y) { return x + y; }, 0) / n, mc = c.reduce(function (x, y) { return x + y; }, 0) / n, sxx = 0, sxy = 0;
+        a.forEach(function (v, i) { sxx += (v - ma) * (v - ma); sxy += (v - ma) * (c[i] - mc); });
+        if (!sxx) return null; var k2 = sxy / sxx; return { k: k2, c: mc - k2 * ma };
+      };
+      var fx = ft(pr.map(function (t) { return +t.x; }), pr.map(function (t) { return +t.bx; })), fy = ft(pr.map(function (t) { return +t.y; }), pr.map(function (t) { return +t.by; }));
+      return fx && fy ? { fx: fx, fy: fy } : null;
+    })();
+    var raunMerki = function () {
+      if (!raun || !raun.fl || !bladuVarpa) return [];
+      var skurW = (b.skurdur && b.skurdur.w) || 2000, mork = 0.04 * skurW, ut = [];
+      (raun.fl.markers || []).forEach(function (m) {
+        if (!isFinite(+m.x) || !isFinite(+m.y)) return;
+        var k, typ = raun.ut[String(m.unitId)] || m.tegund || '';
+        if (m.kind === 'sign' || (typeof m.unitId === 'string' && m.unitId.indexOf('s:') === 0)) { if (/^(ut|neydarutgangur)$/i.test(m.sign || '')) k = 'ut'; else return; }
+        else k = /slang|kefli/i.test(typ) ? 'bs' : /skynjar/i.test(typ) ? 'r' : 'sl';
+        if (kveikt[k] === false) return;
+        var x = bladuVarpa.fx.k * +m.x + bladuVarpa.fx.c, y = bladuVarpa.fy.k * +m.y + bladuVarpa.fy.c, naest = null;
+        b.tki.forEach(function (t) {
+          if (kindAf(t) !== k) return;
+          var d = Math.hypot(+t.bx - x, +t.by - y); if (naest === null || d < naest.d) naest = { d: d, t: t };
+        });
+        ut.push({ x: x, y: y, audkenni: m.audkenni || null, tegund: typ || SIA_H[k], litur: '#111827', k: k, stadur: m.stadur || '', frav: naest ? naest.d > mork : null, naest: naest && naest.t.audkenni });
+      });
+      return ut;
+    };
+    var raunListi = function (rm) {
+      if (!cid) return '';
+      if (raunVilla) return '<h4>Raunveruleg tæki</h4><p class="bgr-m">' + esc(raunVilla) + '</p>';
+      if (!raun) return '<h4>Raunveruleg tæki</h4><p class="bgr-m">Sæki tækin…</p>';
+      if (!bladuVarpa) return '<h4>Raunveruleg tæki</h4><p class="bgr-m">Blað greiningarinnar og Teikning staðarins eru ekki á sama blaði og engin sameiginleg hnit til að varpa á milli — tækin sjást ekki hér.</p>';
+      var fj = rm.filter(function (m) { return m.frav; }).length;
+      return '<h4 class="bgr-fh">Raunveruleg tæki á Teikningu (' + rm.length + (fj ? ' · ' + fj + ' víkja frá hönnun' : '') + ')</h4>' + (rm.length ? '<ul class="cfh-l">' + rm.map(function (m) {
+        return '<li><strong style="background:#111827">' + esc(m.audkenni || '•') + '</strong><small>' + esc(m.stadur || SIA_H[m.k]) + ' <em>' + esc(SIA_H[m.k]) + (m.frav === true ? ' · ⚠ víkur frá hönnunarstað' + (m.naest ? ' (næst ' + esc(m.naest) + ')' : '') : m.frav === false ? ' · ✓ við hönnunarstað' : ' · enginn hönnunarstaður') + '</em></small></li>';
+      }).join('') + '</ul>' : '<p class="bgr-m">Engin tæki af þessari gerð á Teikningu þessarar hæðar.</p>');
+    };
     var teiknaAftur = function () {
-      var bb = sjaB(), stefna = ++seinast;
-      o.querySelector('.cfh-s-h strong').nextElementSibling.textContent = (b.heimild || '') + ' · teikning greiningarinnar';
-      lis.innerHTML = '<h4>Skv. gögnum — ' + esc(fjoldiTexti(bb.tki)) + '</h4>' + listiBlads(bb);
+      var bb = sjaB(), stefna = ++seinast, rm = lag === 'greining' ? [] : raunMerki(), sjaGr = lag !== 'raun';
+      var tb = Object.assign({}, bb, { markers: (sjaGr ? bb.markers : []).concat(rm) });
+      o.querySelector('.cfh-s-h strong').nextElementSibling.textContent = (b.heimild || '') + (lag === 'greining' ? ' · teikning greiningarinnar' : lag === 'raun' ? ' · raunveruleg tæki á Teikningu' : ' · greining og raunveruleg tæki');
+      lis.innerHTML = (sjaGr ? '<h4>Skv. gögnum — ' + esc(fjoldiTexti(bb.tki)) + '</h4>' + listiBlads(bb) : '') + (lag === 'greining' ? '' : raunListi(rm));
       if (!window.TeiknForskodun) { zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; return; }
       var c = document.createElement('canvas');
-      TeiknForskodun.teikna(bb, c, 2600).then(function () { if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); } },
+      TeiknForskodun.teikna(tb, c, 2600).then(function () { if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); } },
         function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
     };
+    if (cid) {
+      Promise.all([SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1), SB().from('uttaeki').select('id,type').eq('fyrirtaeki_id', cid).limit(2000)]).then(function (rs) {
+        var hs = (rs[0].data && rs[0].data[0] && rs[0].data[0].haedir) || [], u = {};
+        ((rs[1] && rs[1].data) || []).forEach(function (x) { u[String(x.id)] = x.type || ''; });
+        raun = { fl: hs.filter(function (h) { return h.id === haedId; })[0] || null, ut: u };
+        if (!raun.fl) raunVilla = 'Hæðin fannst ekki á Teikningu staðarins.';
+        if (lag !== 'greining' && o.isConnected) teiknaAftur();
+      }, function () { raunVilla = 'Náði ekki í tækin á Teikningu.'; if (lag !== 'greining' && o.isConnected) teiknaAftur(); });
+    }
     o.addEventListener('change', function (e) {
+      if (e.target && e.target.name === 'bgr-lag') { lag = e.target.value; teiknaAftur(); return; }
       var k = e.target && e.target.getAttribute && e.target.getAttribute('data-sia'); if (!k) return;
       kveikt[k] = !!e.target.checked; teiknaAftur();
     });
@@ -770,7 +835,7 @@
   function tengja(el, cid, S) {   // S.rod = núverandi vistuð greining (eða null)
     el.addEventListener('click', function (e) {
       var kort = e.target.closest && e.target.closest('.bgr-k[data-bl]');
-      if (kort && el.contains(kort) && S.rod) { var bl = blodin(S.rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl); return; }
+      if (kort && el.contains(kort) && S.rod) { var bl = blodin(S.rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl, cid); return; }
       var b = e.target.closest && e.target.closest('[data-a]');
       if (!b || !el.contains(b)) return;
       var a = b.getAttribute('data-a');
@@ -940,6 +1005,10 @@
       '#cfh-stort .bgr-sia{display:inline-flex;gap:12px;margin-left:12px;flex-wrap:wrap}',
       '#cfh-stort .bgr-sia label{display:inline-flex;align-items:center;gap:5px;font:600 12px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
       '#cfh-stort .bgr-sia i{width:10px;height:10px;border-radius:50%;display:inline-block}',
+      '#cfh-stort .bgr-lag{display:inline-flex;gap:2px;margin-left:12px;padding:2px;border:1px solid #d6d3cc;border-radius:7px;background:#f4f2ee}',
+      '#cfh-stort .bgr-lag label{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font:600 12px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
+      '#cfh-stort .bgr-lag input{position:absolute;opacity:0;pointer-events:none}',
+      '#cfh-stort .bgr-lag label:has(input:checked){background:#2b2a27;color:#fff}',
       '#cfh-stort .bgr-zk{display:inline-flex;gap:4px}',
       '#cfh-stort .bgr-zk button{min-width:30px;height:26px;padding:0 8px;border:1px solid #d6d3cc!important;border-radius:6px!important;background:#fff!important;color:#2b2a27!important;font:600 12px system-ui,sans-serif!important;cursor:pointer;box-shadow:none!important}'
     ].join('\n');
