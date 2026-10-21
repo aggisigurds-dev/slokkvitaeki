@@ -101,7 +101,8 @@ async function undirbua(id) {
   if (!man.bord) { man.athugasemd = 'Félagið á enga teikning_bord-röð. Finndu aðaluppdrætti (teikn-listi), veldu hæðir + skurði, skrifaðu bord.json og keyrðu `bord`.'; skrifaJson(path.join(D, 'manifest.json'), man); await skrifaStig(id, 'undirbuningur', 'Vantar teikningaborð — velja hæðir og skurði'); log(JSON.stringify(man, null, 1)); return; }
   for (const h of bord.haedir) {
     if (!h.image_url) continue;
-    const inn = innri(h.image_url), erPdf = /\.pdf(\.info)?$/i.test(new URL(inn || 'http://x/y.pdf').pathname), nafnBlad = createId(inn);
+    const beint = !innri(h.image_url) && /^https?:/i.test(h.image_url);   // mynd í geymslu (t.d. turbopaint/bunadargreining/<cid>/…jpg) í stað teikn-mynd
+    const inn = beint ? h.image_url : innri(h.image_url), erPdf = !beint && /\.pdf(\.info)?$/i.test(new URL(inn || 'http://x/y.pdf').pathname), nafnBlad = createId(inn);
     const skra = path.join(D, nafnBlad + (erPdf ? '.pdf' : '.jpg'));
     if (!man.blod[nafnBlad]) {
       await sotta(erPdf ? '/.netlify/functions/teikn-pdf?url=' + encodeURIComponent(inn) : h.image_url, skra);
