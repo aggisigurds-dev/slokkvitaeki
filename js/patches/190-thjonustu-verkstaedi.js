@@ -1256,11 +1256,11 @@
     // Skref-sían gildir á ÖLL þrjú hólfin svo talan á pillunni og listinn segi
     // það sama. Margar síur = OG (öll skilyrðin þurfa að standast).
     const stepKeys = Object.keys(_stepF);
-    const vinnslaAlls = b.vinnsla.length;
     const _vinnslaRaw = b.vinnsla.slice();   // óhreyfð verk í vinnslu — skrefa-strimillinn telur aðeins þau (26.09: „bara í vinnslu")
     // Talan á hverjum síu-hnappi á ALLTAF að miðast við óhreyft þýði — annars
     // rýrnuðu tölurnar við hverja síu og hnappurinn gæti aldrei sagt satt um
     // hvað liggur að baki honum.
+    const _dagskraRaw = b.dagskra.slice(), _buidRaw = b.buid.slice();
     const _allRaw = b.dagskra.concat(b.vinnsla, b.buid);
     if (stepKeys.length) {
       const pass = r => stepKeys.every(k => (_stepF[k] === 'on' ? !!r.steps[k] : !r.steps[k]));
@@ -1273,16 +1273,34 @@
       b.vinnsla = b.vinnsla.filter(match);
     }
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
-    const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    /* 21.10.2026 — Agnar benti með örvum á VERK 23 og SKÝRSLA EFTIR 23 á gull-
+     * spjaldinu og á 25 undir „✗ Skýrsla" í strimlinum beint fyrir neðan:
+     * „þetta ætti því að stemma alltsaman".
+     *
+     * Þau töldu SITT HVORT ÞÝÐIÐ. Strimillinn telur `_vinnslaRaw` (öll verk í
+     * vinnslu, óháð síu — skráð 26.09 og er rétt: annars gæti síuhnappur aldrei
+     * sagt satt um hvað liggur að baki honum). Gull-spjaldið taldi `b.vinnsla`,
+     * sem er BÚIÐ að sía. Með tvær síur á („vantar skýrslu" OG „vantar
+     * reikning") sagði spjaldið því 23 vanta skýrslu meðan strimillinn sagði 25
+     * — báðir um sama hlut, hvorugur rangur í sjálfu sér, en þeir stemmdu ekki.
+     * Sama galli át „0 búin í ár" í undirlínunni meðan 418 voru búin.
+     *
+     * REGLAN HÉR EFTIR: efri hlutinn lýsir ÁRINU, ekki síunni. Allar tölur í
+     * hausnum og á spjöldunum fjórum eru reiknaðar úr óhreyfða þýðinu, nákvæmlega
+     * eins og strimillinn gerir. Niðurstaða síunnar á sinn eigin stað og hvergi
+     * annars staðar: „N af M í vinnslu · Hreinsa síu" á strimlinum og „N af M
+     * verkum" á bláa spjaldinu. Listinn fyrir neðan er áfram síaður.
+     */
+    const vinnslaSum = _vinnslaRaw.reduce((s, r) => s + (+r.tekjur || 0), 0);
     // Yfirlitsband ársins — reiknað úr sömu gögnum og þegar eru hlaðin (skref +
     // customer_documents): N í þjónustu · úttekt búin · skýrsla send · reikn. sendur.
-    const _all = b.dagskra.concat(b.vinnsla, b.buid);
+    const _all = _allRaw;   // árið, ekki sían
     const ovN     = b.serviceTotal || _all.length;
     const ovUttekt = _all.filter(r => r.steps.uttekt).length;
     const ovSend   = _all.filter(r => r.steps.send || (r.docs && r.docs.skyrsla)).length;
     const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
     // Peningaboxið og tölu-flísarnar (2026-07-28) eru nú í gull-spjaldinu efst (26.09.2026, Brunastál C).
-    const dagskraSum = b.dagskra.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    const dagskraSum = _dagskraRaw.reduce((s, r) => s + (+r.tekjur || 0), 0);
 
     // Collapsible side drawers (collapsed by default).
     function drawerRows(list, withStart) {
@@ -1324,14 +1342,16 @@
     const pctOf = (a, t) => (t > 0 ? Math.max(0, Math.min(100, a / t * 100)) : 0).toFixed(1) + '%';
     const krUnit = n => n >= 1e6 ? [(n / 1e6).toFixed(1).replace('.', ','), 'm.kr'] : (n > 0 ? [String(Math.round(n / 1000)), 'þ.kr'] : ['—', '']);
     const HN = '<span class="hn" style="top:9px;left:9px" aria-hidden="true"></span><span class="hn" style="top:9px;right:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;left:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;right:9px" aria-hidden="true"></span>';
-    const vn = b.vinnsla.length, dn = b.dagskra.length, bn = b.buid.length;
-    const vCnt = k => b.vinnsla.filter(r => r.steps && r.steps[k]).length;
+    // Sían hreyfir EKKI þessar tölur — sjá regluna við vinnslaSum hér að ofan.
+    const vn = _vinnslaRaw.length, dn = _dagskraRaw.length, bn = _buidRaw.length;
+    const vSiad = b.vinnsla.length;   // niðurstaða síunnar — aðeins á „N af M"
+    const vCnt = k => _vinnslaRaw.filter(r => r.steps && r.steps[k]).length;
     const tikk = (lbl, n, tot, cls) => '<div class="r"><span>' + esc(lbl) + '</span><div class="bar"><span class="' + cls + '" style="width:' + pctOf(n, tot) + '"></span></div><b>' + n + '</b></div>';
     const flis = (lbl, val, sm) => '<div class="b190-f"><span class="l">' + esc(lbl) + '</span><span class="v">' + val + (sm ? '<small>' + esc(sm) + '</small>' : '') + '</span></div>';
     const [vNum, vUnit] = krUnit(vinnslaSum);
     const vUttektSum = b.vinnsla.filter(r => r.steps && r.steps.uttekt).reduce((t, r) => t + (+r.tekjur || 0), 0);
     const dSum = fmtSum(dagskraSum) || '—';
-    const totAll = _vinnslaRaw.length;
+    const totAll = vn;   // sama þýði og spjöldin — ein tala, einn uppruni
     const skrefSulur = STEP_DEFS.map(([k, lbl, short]) => {
       const st = _stepF[k] || '';
       const n = _vinnslaRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
@@ -1379,7 +1399,8 @@
           // Í vinnslu (blátt) — hvar verkin á borðinu standa
           '<div class="b190-k blatt"><div class="b190-i">' + HN +
             '<div class="b190-m"><span class="led" aria-hidden="true"></span>Í vinnslu</div>' +
-            '<div class="b190-t">' + vn + '<small>' + (stepKeys.length ? 'af ' + vinnslaAlls + ' verkum' : 'verk') + '</small></div>' +
+            '<div class="b190-t">' + vn + '<small>verk</small></div>' +
+            (stepKeys.length ? '<div class="b190-l"><span>sía: <b>' + vSiad + '</b> af ' + vn + '</span></div>' : '') +
             '<div class="b190-tikk">' + tikk('Úttekt búin', vCnt('uttekt'), vn, 'bl') + tikk('Skýrsla tilbúin', vCnt('skyrsla'), vn, 'gu') + tikk('Reikningur', vCnt('reikningur'), vn, 'gr') + '</div>' +
           '</div></div>' +
           // Á dagskrá (dökkrautt) — opnar listann „hefja næsta"
@@ -1403,7 +1424,7 @@
         '<div class="b190-strim">' +
           '<div class="hd"><span class="dl" aria-hidden="true"></span>Skref í vinnslu' +
             '<span class="r">' + (stepKeys.length
-              ? '<b>' + vn + '</b> af ' + vinnslaAlls + ' í vinnslu <button type="button" class="sv-stepf-clear">Hreinsa síu</button>'
+              ? '<b>' + vSiad + '</b> af ' + vn + ' í vinnslu <button type="button" class="sv-stepf-clear">Hreinsa síu</button>'
               : '<b>' + totAll + '</b> verk · smelltu á súlu: ✓ búið → ⧗ vantar') + '</span></div>' +
           '<div class="b190-man" role="group" aria-label="Sía eftir skrefi">' + skrefSulur + '</div>' +
         '</div>' +
