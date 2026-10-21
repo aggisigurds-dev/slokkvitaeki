@@ -982,7 +982,7 @@
    * Claude-lota sem er, scripts/bunadargreining/verk/bgr_verk.cjs) tekur það: finnur og sækir teikningarnar, les táknin,
    * sannreynir með yfirlagi, vistar greininguna og býr til PDF-skýrslurnar í Viðhengi. Takkinn sýnir hvar verkið er og
    * endurhleður spjaldið þegar því er lokið. Eitt opið verk á félag (einkvæm vísitala), svo tvíýtingar eru skaðlausar. */
-  var TURBO_STIG = [['bida', 'Biðröð'], ['undirbuningur', 'Teikningar sóttar'], ['lestur', 'Tákn lesin'], ['sannreyning', 'Sannreynt'], ['vistun', 'Greining vistuð'], ['skyrsla', 'Skýrsla'], ['render', '3D-myndir'], ['lokid', 'Lokið']];
+  var TURBO_STIG = [['bida', 'Biðröð'], ['undirbuningur', 'Teikningar sóttar'], ['lestur', 'Tákn lesin'], ['sannreyning', 'Sannreynt'], ['vistun', 'Greining vistuð'], ['skyrsla', 'Skýrsla'], ['lokid', 'Lokið']];
   function turboPanel(el, v) {
     var p = el.querySelector('.bgr-turbo');
     if (!v) { if (p) p.remove(); return; }

@@ -16,7 +16,7 @@ bgr_verk.cjs bida <cid> ────┴→ bunadargreining_verk (status bida)
  3 SANNREYNA  yfirlag <id>    sann_h*_*.png — hver hringur á tákni, ekkert tákn án hrings → leiðrétta lestur.json
  4 VISTA      vista <id>      bunadargreining-röð (UTF-8, auðkenni, texti, teikningar); virk röð fyrir fer í sögu (aldrei eytt)
  5 SKÝRSLA    skyrsla <id>    2 PDF (ein síða · hver hæð á sér blaði), 1,3 MB hvor, í Viðhengi félagsins
- 6 3D-MYND     render <id>     blöð skráð á ramma borðsins (FFT) → sena úr appinu (hausalaus Chromium, blenderSena) → tæki GREININGAR inn í senuna → Blender-beiðni (automation_triggers) → mynd á hverja hæð með
+ 6 3D-MYND     (VALKVÆTT — ekki hluti af venjulegum Turbo; aðeins hús sem hafa veggjavinnu í Teikningu. Agnar 21.10: „láta venjulega Turbo vera búnaðargreininguna, fyrst þarf að þjálfa veggjagreininguna betur“) render <id>     blöð skráð á ramma borðsins (FFT) → sena úr appinu (hausalaus Chromium, blenderSena) → tæki GREININGAR inn í senuna → Blender-beiðni (automation_triggers) → mynd á hverja hæð með
                                veggjavinnu → bunadargreining.render (sýnt á spjaldinu). Hæð án veggjavinnu er sleppt. Valkostir: --vh 3.9 (hærri veggir) · --utan r,ut (sía burt gerðir) · --ekki-myndir (tákn í stað ljósmynda)
  7 LOKA       loka <id> "<yfirlit>"   (villa <id> "<ástæða>" ef þú getur ekki klárað — aldrei þegja um það)
 ```
