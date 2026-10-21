@@ -324,6 +324,15 @@
       (st.on ? '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:340px">' + kinds.map(k => '<button type="button" data-gr-k="' + k + '" aria-pressed="' + !af.has(k) + '" style="' + hnappur + ';height:26px;padding:0 9px;font-size:11.5px;opacity:' + (af.has(k) ? '.45' : '1') + '"><i style="width:9px;height:9px;border-radius:50%;background:' + GR_L[k] + ';display:inline-block"></i>' + GR_H[k] + ' ' + at.filter(a => a.k === k).length + '</button>').join('') + '</div>' : '');
   }
   const grFingur = () => { const st = GRV(); return st.on && V.gr ? 'g' + (st.af || []).join(',') + ':' + (V.gr.tki || []).length + ':' + V.haedId : ''; };
+  // Myndir af tækjunum (img/taeki, 21.10.2026): ótengt tæki úr greiningu = rauða slökkvitækið án texta / rauða slöngukeflið / skynjarinn; aðrar gerðir (ÚT, handboði, stjórnstöð) halda hringnum
+  const GR_MYND = { sl: ['slett', 0.52], bs: ['slanga_rod', 1.0], r: ['reykskynjari', 1.25], hiti: ['hitaskynjari', 1.25] };   // [skrá, breidd/hæð]
+  const GR_IMG = {};
+  function grMynd(k) {
+    const d = GR_MYND[k]; if (!d) return null;
+    let i = GR_IMG[d[0]];
+    if (!i) { i = GR_IMG[d[0]] = new Image(); i.onload = () => { V.teiknad = ''; vekja(); }; i.src = '/img/taeki/' + d[0] + '.png'; }
+    return i.complete && i.naturalWidth ? i : null;
+  }
   function teiknaGreiningu(x, M, aStad, staerd) {
     const st = GRV(); if (!st.on || !V.gr) return;
     const at = grAtridi(); if (!at.length) return;
@@ -336,6 +345,21 @@
       const sp = aStad(a.u, a.v); if (!isFinite(sp[0]) || !isFinite(sp[1])) return;
       const komid = raun.some(r => Math.hypot(r[0] - a.u, r[1] - a.v) < tol);
       x.save(); x.globalAlpha = komid ? 0.42 : 0.96;
+      const mynd = grMynd(a.k);
+      if (mynd) {
+        // mynd af tækinu með mjúkum skugga á gólfi; auðkennið (S3, BS2) við hlið. Hvar tækið STENDUR = botn myndar á punktinum.
+        const d = GR_MYND[a.k], h = s * (a.k === 'sl' ? 2.1 : a.k === 'bs' ? 1.55 : 1.0), w = h * d[1] * (mynd.naturalWidth / mynd.naturalHeight) / d[1];
+        x.fillStyle = 'rgba(0,0,0,.22)'; x.beginPath(); x.ellipse(sp[0], sp[1], w * 0.5, w * 0.16, 0, 0, Math.PI * 2); x.fill();
+        x.shadowColor = 'rgba(0,0,0,.35)'; x.shadowBlur = Math.max(2, s * 0.12); x.shadowOffsetY = Math.max(1, s * 0.05);
+        x.drawImage(mynd, sp[0] - w / 2, sp[1] - h + h * 0.06, w, h);
+        x.shadowColor = 'transparent';
+        const m = a.id; if (m && (a.k === 'sl' || a.k === 'bs')) {
+          x.font = '800 ' + Math.max(9, s * 0.34) + 'px system-ui,sans-serif'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.lineWidth = Math.max(2.5, s * 0.1); x.strokeStyle = '#fff'; x.lineJoin = 'round';
+          x.strokeText(m, sp[0] + w * 0.55, sp[1] - h * 0.42); x.fillStyle = GR_L[a.k]; x.fillText(m, sp[0] + w * 0.55, sp[1] - h * 0.42);
+        }
+        if (komid) { x.lineWidth = Math.max(2, s * 0.16); x.strokeStyle = '#2e9d4f'; x.beginPath(); x.moveTo(sp[0] + w * 0.4, sp[1] - h * 0.9); x.lineTo(sp[0] + w * 0.62, sp[1] - h * 0.74); x.lineTo(sp[0] + w * 1.0, sp[1] - h * 1.1); x.stroke(); }
+        x.restore(); return;
+      }
       x.beginPath(); x.arc(sp[0], sp[1], s / 2, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.62)'; x.fill();
       x.lineWidth = Math.max(1.6, s * 0.13); x.setLineDash([s * 0.3, s * 0.2]); x.strokeStyle = GR_L[a.k]; x.stroke(); x.setLineDash([]);
       x.fillStyle = GR_L[a.k]; x.font = '800 ' + Math.max(8, s * 0.36) + 'px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
