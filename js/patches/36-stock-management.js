@@ -568,9 +568,34 @@
       V + '.dtbl thead th:nth-child(2){left:52px;z-index:6}',
       // Yfirsveimur má ekki éta bakgrunninn undan föstu sellunum.
       V + '.dtbl tbody tr.stk-rod:hover>td:nth-child(1),' + V + '.dtbl tbody tr.stk-rod:hover>td:nth-child(2){background:var(--surface2)}',
-      V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(1),' + V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(2){background:#fdf2d0}',
-      // Hæðin sem gerir lóðrétta skrunið að raunverulegu skruni innan töflunnar.
-      V + '.tcard{max-height:calc(100vh - 230px);overflow:auto}'
+      V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(1),' + V + '.dtbl tbody tr.stk-rod[data-panta]:hover>td:nth-child(2){background:#fdf2d0}'
+      /* 21.10.2026 — Agnar: „ég get ekki skrollað í birgði page". MITT VERK.
+       *
+       * Hér stóð `.tcard{max-height:calc(100vh - 230px);overflow:auto}`, sett til
+       * að láta listann skruna innan spjaldsins svo fasti hausinn héldi. Tvennt
+       * fór úrskeiðis í einu:
+       *   1. `#birgdir-main` ER þegar skrunarinn (`overflow-y:auto`, 752 px).
+       *      Þakið klemmdi spjaldið NIÐUR í 670 px — inni í honum — svo hvorugur
+       *      hafði nóg til að skruna.
+       *   2. Brunastáls-húðin (`bstal-content-skin-css`) setur
+       *      `.view .tcard{overflow:hidden !important}`, sem sló út `overflow:auto`
+       *      hér. Eftir stóð 8.160 px af efni í 664 px kassa, klipptur og læstur.
+       *
+       *
+       * MÆLT á 1600×900 með 103 röðum, þrjár leiðir bornar saman:
+       *   A overflow:visible → main skrunar, haus festist (8 px), EN taflan
+       *                        sleppur út úr rúnnaða spjaldinu.
+       *   B þessi           → spjaldið fyllir main og skrunar, haus festist
+       *                        (1 px), hornin haldast.
+       *   C bara þakið af   → skrunar, en hausinn festist EKKI (−1.314 px):
+       *                        overflow:hidden gerir spjaldið að sticky-umgjörð
+       *                        sem skrunar aldrei.
+       *
+       * Þess vegna 100% en ekki pixlatala: spjaldið mælir sig við main og getur
+       * ekki mis-stillst eins og calc(100vh - 230px) gerði. !important er hér
+       * nauðsyn en ekki leti — húðin setur overflow:hidden með !important, og án
+       * þess fæst hvorki skrun né fastur haus. */
+      , V + '.tcard{max-height:100% !important;overflow-y:auto !important}'
     ].join('');
     document.head.appendChild(st);
   }
