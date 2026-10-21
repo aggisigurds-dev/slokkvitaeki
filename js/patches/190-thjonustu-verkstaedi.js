@@ -478,7 +478,77 @@
       r('.sv-drawer', 'margin-bottom:14px'),
       // mjórra hólf (appið, sími, þröngur gluggi): tveir dálkar, hetjan yfir báða — svo einn dálkur
       '@container b190 (max-width: 1000px){' + r('.b190-grid', 'grid-template-columns:1fr 1fr') + r('.b190-k.gull,.b190-k.blatt', 'grid-column:1 / -1') + r('.b190-haus', 'align-items:flex-start') + r('.b190-verk', 'justify-content:flex-start') + '}',
-      '@container b190 (max-width: 540px){' + r('.b190-grid', 'grid-template-columns:1fr') + r('.b190-f4', 'grid-template-columns:1fr 1fr') + r('.b190-f', 'height:46px') + r('.b190-verk .sv-search', 'flex:1;width:auto;min-width:140px') + r('.b190-man em', 'font-size:9px') + '}'
+      '@container b190 (max-width: 540px){' + r('.b190-grid', 'grid-template-columns:1fr') + r('.b190-f4', 'grid-template-columns:1fr 1fr') + r('.b190-f', 'height:46px') + r('.b190-verk .sv-search', 'flex:1;width:auto;min-width:140px') + r('.b190-man em', 'font-size:9px') + '}',
+      // ── Spjöld-hamurinn: stálspjald með málmhaus og húsmynd (21.10.2026) — sjá gridCard(). Yfirskrifar
+      // gömlu .sv-card/_sv-theme reglurnar (blá vinstri rönd, 16px horn, 18/20 fylling) með !important.
+      r('.sv-grid', 'grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start'),
+      r('.sv-card.sv-spj', 'padding:0!important;gap:0!important;border:1px solid #000!important;border-left:1px solid #000!important;border-radius:12px!important;background:#fff!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)!important;overflow:hidden;opacity:1!important;font-family:' + SANS),
+      r('.sv-card.sv-spj.haett', 'opacity:1!important;border-color:#000!important'),
+      r('.sv-card.sv-spj.haett .sv-spj-bukur', 'opacity:.62'),
+      r('.sv-spj-haus', 'position:relative;min-height:46px;box-sizing:border-box;padding:5px 16px 5px 20px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14);border-bottom:1px solid #000;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#fff'),
+      r('.sv-spj-hnod', 'position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7);pointer-events:none'),
+      r('.sv-spj-hnod:nth-child(1)', 'left:7px;top:7px'), r('.sv-spj-hnod:nth-child(2)', 'right:7px;top:7px'), r('.sv-spj-hnod:nth-child(3)', 'left:7px;bottom:7px'), r('.sv-spj-hnod:nth-child(4)', 'right:7px;bottom:7px'),
+      // nafn yfir kennitölu (tvær línur í 46px haus) svo plöturnar hægra megin komist fyrir á einni línu í 556px spjaldi
+      r('.sv-spj-nafn', 'display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 120px'),
+      r('.sv-spj-nafn .sv-nm', 'margin:0!important;font:600 15px/18px ' + SANS + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0!important'),
+      r('.sv-spj-nafn .sv-kt', 'margin:0!important;font:400 11px/13px ' + MONO + '!important;color:#d9dee6!important;white-space:nowrap'),
+      r('.sv-spj-pilla', 'display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:99px;background:linear-gradient(150deg,#e0a93e,#9a6a14);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);font:700 10.5px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.4);white-space:nowrap'),
+      r('.sv-spj-plata', 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:3px;background:' + SILVER + ';border:1px solid rgba(20,24,34,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:700 10.5px ' + MONO + ';color:#11141c;white-space:nowrap'),
+      r('.sv-spj-aetl', 'font:500 11.5px ' + MONO + ';color:#d9dee6;white-space:nowrap'),
+      r('.sv-spj-bukur', 'padding:12px 16px;display:flex;flex-direction:column;gap:10px'),
+      r('.sv-spj .sv-docsline', 'margin:0'),
+      r('.sv-spj .sv-docmuted', 'font:italic 400 12px/1.3 ' + SANS + ';color:#5b6472'),
+      // skref: 7 jafnir dálkar, lína á milli, grænt hak = lokið, dökkur málmur = næsta skref
+      r('.sv-spj .sv-steps', 'display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;background:none!important;border:0!important;padding:0!important;border-radius:0!important'),
+      r('.sv-spj .sv-step', 'min-height:0!important;padding:0!important;gap:6px!important'),
+      r('.sv-spj .sv-step .ln', 'top:11px!important;left:-50%!important;width:100%!important;height:2px!important;background:#dfe3ea!important'),
+      r('.sv-spj .sv-step.prevon .ln', 'background:#16783f!important'),
+      r('.sv-spj .sv-step .nd', 'width:24px!important;height:24px!important;box-sizing:border-box;border:1px solid rgba(20,24,34,.16)!important;background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;color:#3a4250!important;font:700 11px ' + MONO + '!important'),
+      r('.sv-spj .sv-step.next .nd', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25)!important;color:#fff!important'),
+      r('.sv-spj .sv-step.on .nd', 'background:#16783f!important;border-color:#16783f!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.25)!important;color:#fff!important'),
+      r('.sv-spj .sv-step .lb', 'font:500 11px/1 ' + SANS + '!important;color:#5b6472!important;white-space:nowrap'),
+      r('.sv-spj .sv-step.next .lb', 'font-weight:600!important;color:#1f2530!important'),
+      r('.sv-spj .sv-step.on .lb', 'color:#0b6b3a!important'),
+      // merki + nóta vinstra megin, húsmynd hægra megin
+      r('.sv-spj-rod', 'display:flex;gap:14px;align-items:stretch'),
+      r('.sv-spj-v', 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px'),
+      r('.sv-spj .sv-marks', 'gap:6px'),
+      r('.sv-spj .sv-mark', 'display:inline-flex;align-items:center;height:24px!important;min-height:24px!important;padding:0 9px!important;border-radius:6px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:500 11.5px ' + SANS + '!important;color:#2b313c!important;white-space:nowrap;cursor:pointer;line-height:1!important'),
+      r('.sv-spj .sv-mark[style]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25)'),
+      r('.sv-spj .sv-note', 'flex:1 1 auto;min-height:64px!important;margin:0!important;padding:8px 10px!important;resize:none!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:8px!important;background:#eef1f6!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;font:400 13px/1.4 ' + SANS + '!important;color:#141822!important'),
+      r('.sv-spj .sv-note:focus', 'outline:none!important;border-color:rgba(20,24,34,.14)!important;background:#eef1f6!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18),0 0 0 3px rgba(143,152,168,.45)!important'),
+      r('.sv-spj-mynd', 'margin:0;flex:0 0 200px;width:200px;display:flex;flex-direction:column;gap:5px'),
+      r('.sv-spj-mynd img', 'display:block;width:200px;height:134px;object-fit:cover;border-radius:6px;border:1px solid rgba(20,24,34,.16);box-shadow:0 2px 4px rgba(10,14,22,.14);background:#eef1f6'),
+      r('.sv-spj-tomt', 'box-sizing:border-box;width:200px;height:134px;border-radius:6px;border:1.5px dashed #c3cad5;background:#eef1f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6b7483'),
+      r('.sv-spj-tomt span', 'font:400 12px ' + SANS + ';color:#5b6472'),
+      r('.sv-spj-mynd figcaption', 'display:flex;align-items:center;justify-content:space-between;gap:6px;font:400 11px ' + MONO + ';color:#5b6472;white-space:nowrap;overflow:hidden'),
+      r('.sv-spj-mynd figcaption .adr', 'overflow:hidden;text-overflow:ellipsis;min-width:0'),
+      r('.sv-spj-mynd figcaption .hint', 'color:#6b7483;font-style:italic;flex:0 0 auto'),
+      r('.sv-spj-mynd figcaption a', 'font:500 11px ' + MONO + ';color:#3a4250;text-decoration:underline;text-underline-offset:2px;flex:0 0 auto'),
+      r('.sv-spj-mynd figcaption a:hover', 'color:#c92a2a'),
+      // takkar: Opna silfur · Skýrsla málmsvart · Búið grænn · Afmerkja rauð textaaðgerð
+      r('.sv-spj-acts', 'display:flex!important;align-items:center;gap:8px!important;flex-wrap:wrap;border-top:0!important;padding-top:0!important'),
+      r('.sv-spj-bil', 'flex:1 1 auto'),
+      r('.sv-spj-acts ._sv-act', 'display:inline-flex!important;align-items:center;gap:7px;height:40px!important;min-height:40px!important;padding:0 14px!important;border-radius:9px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)!important;font:700 13px ' + SANS + '!important;color:#1f2530!important;line-height:1!important;cursor:pointer;flex:0 0 auto!important;order:0!important;width:auto!important'),
+      r('.sv-spj-acts ._sv-act[data-act="report"]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45)!important;font-weight:600!important;color:#eef1f4!important'),
+      r('.sv-spj-acts ._sv-act[data-act="buid"]', 'padding:0 16px!important;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)!important;border-color:rgba(52,168,98,.55)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)!important;font-size:14px!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.55)'),
+      r('.sv-spj-acts ._sv-act[data-act="unstart"]', 'padding:0 10px!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;font-weight:600!important;color:#b42318!important'),
+      r('.sv-spj-acts ._sv-act:hover', 'filter:brightness(1.2)'),
+      r('.sv-spj-acts ._sv-act:active', 'filter:brightness(.95)'),
+      r('.sv-spj ._sv-act:focus-visible,.sv-spj ._sv-step:focus-visible,.sv-spj .sv-mark:focus-visible', 'outline:none;box-shadow:0 0 0 3px rgba(190,32,28,.55)!important'),
+      // sími / þröngt: einn dálkur, myndin verður borði efst í búknum, Búið fyllir, Afmerkja í eigin röð
+      '@container b190 (max-width: 1000px){' + r('.sv-grid', 'grid-template-columns:1fr') + '}',
+      '@media(max-width:720px){' +
+        r('.sv-grid', 'grid-template-columns:1fr') +
+        r('.sv-spj-rod', 'flex-direction:column;gap:10px') +
+        r('.sv-spj-mynd', 'order:-1;flex:0 0 auto;width:100%') +
+        r('.sv-spj-mynd img,.sv-spj-tomt', 'width:100%;height:150px') +
+        r('.sv-spj .sv-step .lb', 'font-size:10px!important') +
+        r('.sv-spj-acts ._sv-act', 'height:44px!important;min-height:44px!important;border-radius:10px!important') +
+        r('.sv-spj-acts ._sv-act[data-act="buid"]', 'flex:1 1 auto!important;justify-content:center') +
+        r('.sv-spj-bil', 'display:none') +
+        r('.sv-spj-acts ._sv-act[data-act="unstart"]', 'flex:1 1 100%!important;justify-content:center') +
+      '}'
     );
     const st = document.createElement('style');
     st.id = '_sv-b190';
@@ -998,12 +1068,93 @@
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
       docAlert(r) + reikAlert(r) + nameBlock(r, false) + metaChips(r) + docsLine(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
   }
-  // Í-vinnslu kort — cards mode (nýi stíllinn með stiku)
+  // ── Spjöld-hamurinn í Brunastáli C með húsmynd (21.10.2026, Agnar: „hannað Spjöld stílinn inn á
+  // þjónustuverkstæði svo að myndin komi inn þarna líka"). Hönnun: Design-strigi „Þjónustuverkstæði spjöld"
+  // (Miðakerfi — Brunastál · Stálspjald). Málmhaus með hnoðum: nafn · kt · Óklárað vistað · N einingar · áætl.
+  // Búkur: skjalalína, skref 1–7 (grænt hak = lokið, dökkt = næsta), merki + nóta vinstra megin og húsmyndin
+  // hægra megin (sama mynd og bannerinn á fyrirtækjasíðunni: AppSettings co_bygging_mynd (367), annars
+  // fyrirtaeki.eign.mynd — sama uppflettiröð og Ársskoðunar-spjöldin 457). Án myndar: strikaður reitur
+  // „Engin húsmynd" — hún sækist sjálf þegar prófíllinn er opnaður (367 einUtanMynd). Takkar: Opna silfur,
+  // Skýrsla málmsvart, Búið grænn „áfram"-takki, Afmerkja rauð textaaðgerð. Sömu klasar og hlustanir og áður
+  // (_sv-act/data-act, _sv-step, .sv-mark, .sv-note) — aðeins útlitið breyttist.
+  function husmyndSlod(coId) {
+    let u = '';
+    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('co_bygging_mynd')) || {}; const e = m[String(coId)]; if (e && e.url) u = String(e.url); } catch (_) {}
+    if (!u) { try { const L = (window.Arsskodun && Arsskodun._cache && Arsskodun._cache.list) || []; const c = L.find(x => String(x.id) === String(coId)); if (c && c.eign && c.eign.mynd) u = String(c.eign.mynd); } catch (_) {} }
+    u = u.trim();
+    if (!/^https:\/\//i.test(u)) return '';
+    if (u.indexOf('/storage/v1/object/public/') > -1) {
+      u = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=480&quality=72';
+    }
+    return u;
+  }
+  const SPJ_IKON = {
+    hak: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>',
+    opna: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"></path></svg>',
+    skyrsla: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>',
+    x: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>',
+    hus: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-5h6v5"></path><path d="M9 10h.01M15 10h.01M9 14h.01M15 14h.01"></path></svg>'
+  };
+  function spjHaus(r) {
+    return '<div class="sv-spj-haus">' +
+      '<i class="sv-spj-hnod" aria-hidden="true"></i><i class="sv-spj-hnod" aria-hidden="true"></i><i class="sv-spj-hnod" aria-hidden="true"></i><i class="sv-spj-hnod" aria-hidden="true"></i>' +
+      '<div class="sv-spj-nafn"><h3 class="sv-nm">' + esc(r.nafn) + '</h3>' +
+        (r.kennitala ? '<span class="sv-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '</div>' +
+      (r.hasDraft ? '<span class="sv-spj-pilla" title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni">Óklárað vistað</span>' : '') +
+      (r.units > 0 ? '<span class="sv-spj-plata">' + r.units + ' einingar</span>' : '') +
+      (r.tekjur > 0 ? '<span class="sv-spj-aetl" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
+    '</div>';
+  }
+  function spjStepper(r) {
+    let nextSeen = false;
+    return '<div class="sv-steps" role="group" aria-label="Skref verksins">' +
+      STEP_DEFS.map(([k, full, short], i) => {
+        const on = !!r.steps[k];
+        const prevOn = i === 0 || !!r.steps[STEP_DEFS[i - 1][0]];
+        const next = !on && !nextSeen; if (next) nextSeen = true;
+        const st = stampText((r.stepsMeta || {})[k]);
+        return '<button class="_sv-step sv-step' + (on ? ' on' : '') + (next ? ' next' : '') + (prevOn ? ' prevon' : '') + '" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(full) + (st ? ' — ' + esc(st) : '') + (on ? ' — smelltu til að afhaka' : '') + '">' +
+          '<span class="ln"></span><span class="nd">' + (on ? SPJ_IKON.hak : (i + 1)) + '</span><span class="lb">' + esc(short) + '</span></button>';
+      }).join('') + '</div>';
+  }
+  function spjMynd(r) {
+    const u = husmyndSlod(r.id);
+    const adr = r.adr ? esc(r.adr) : '';
+    const maps = r.adr ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.adr) : '';
+    return '<figure class="sv-spj-mynd' + (u ? '' : ' tom') + '">' +
+      (u ? '<img src="' + esc(u) + '" alt="Húsmynd: ' + esc(r.nafn) + '" loading="lazy" decoding="async">'
+         : '<div class="sv-spj-tomt" role="img" aria-label="Engin húsmynd skráð">' + SPJ_IKON.hus + '<span>Engin húsmynd</span></div>') +
+      '<figcaption>' +
+        '<span class="adr" title="' + adr + '">' + (adr || '<em>ekkert heimilisfang</em>') + '</span>' +
+        (u && maps ? '<a href="' + esc(maps) + '" target="_blank" rel="noopener">Google Maps</a>' : (u ? '' : '<span class="hint">sækist við opnun</span>')) +
+      '</figcaption>' +
+    '</figure>';
+  }
+  function spjActs(r) {
+    return '<div class="sv-acts sv-spj-acts">' +
+      '<button class="_sv-act" data-act="open" data-id="' + r.id + '" title="Opna fyrirtækjasíðuna">' + SPJ_IKON.opna + 'Opna</button>' +
+      '<button class="_sv-act" data-act="report" data-id="' + r.id + '" title="Opna úttektarskýrsluna">' + SPJ_IKON.skyrsla + 'Skýrsla</button>' +
+      '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Merkja verkið búið í ár">' + SPJ_IKON.hak + 'Búið</button>' +
+      '<span class="sv-spj-bil"></span>' +
+      '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">' + SPJ_IKON.x + 'Afmerkja</button>' +
+      '</div>';
+  }
+  // Í-vinnslu kort — cards mode (Brunastál C: málmhaus + húsmynd)
   function gridCard(r) {
-    return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
-      docAlert(r) + reikAlert(r) +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
-      docsLine(r) + stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
+    return '<div class="sv-card sv-spj' + (r.mark === 'haett' ? ' haett' : '') + '">' +
+      spjHaus(r) +
+      '<div class="sv-spj-bukur">' +
+        docAlert(r) + reikAlert(r) +
+        docsLine(r) +
+        spjStepper(r) +
+        '<div class="sv-spj-rod">' +
+          '<div class="sv-spj-v">' + marks(r) + note(r) + aminningLine(r, 90) + '</div>' +
+          spjMynd(r) +
+        '</div>' +
+        spjActs(r) +
+      '</div>' +
+    '</div>';
   }
   // Í-vinnslu kort — wide mode (comp-útlitið: nafn+chips, full-label stika í
   // gráum borða, merkingar undir; hægra megin nóta → [Opna|Skýrsla|Búið|✕ Afmerkja] í einum samtengdum hópi)
