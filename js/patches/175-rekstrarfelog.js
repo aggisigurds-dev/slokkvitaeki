@@ -230,6 +230,11 @@
       P+'.rf-cellinner{display:flex;align-items:center;gap:4px;min-height:44px}',
       P+'.rf-nameid{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}',
       P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
+      // „Með myndum" (21.10.2026): húsmynd 112×74 lengst til vinstri í nafnfrumunni, heil (contain) á hvítu — eins og í Þjónustugátt
+      P+'.rf-bmynd{flex:none;width:112px;height:74px;box-sizing:border-box;margin:3px 6px 3px 0;border-radius:6px;border:1px solid rgba(20,24,34,.16);background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(10,14,22,.1)}',
+      P+'.rf-bmynd img{display:block;width:100%;height:100%;object-fit:contain}',
+      P+'.rf-bmynd--tom{background:#eef1f6;border-style:dashed;border-color:#c3cad5;color:#8a93a3}',
+      '@media(max-width:900px){'+P+'.rf-bmynd{width:84px;height:56px}}',
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
       P+'.rf-rail--none{background:#dbe0e9}',
@@ -1292,17 +1297,40 @@
   // svc = hvaða þjónusta sést í byggingatöflunni: 'both' | 'sl' | 'br' (vistað)
   // 15.10.2026 (regla Agnars): svc býr í Vidmot (472) undir 'rf.svc' — eitt gildi fyrir allar vélar; gamli
   // lykillinn '_rf_svc_view' er aðeins einskiptis upphafsgildi. Skráin hleðst á undan 472 → latur lestur í renderView.
-  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1, svc:'both' };
+  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1, svc:'both', myndir:false };
   function lesaSvc(){
     try{
       if(!window.Vidmot) return;
       Vidmot.flytja('rf.svc','_rf_svc_view');
       var v=Vidmot.lesa('rf.svc','both');
       _state.svc=(v==='sl'||v==='br'||v==='both')?v:'both';
+      _state.myndir = Vidmot.lesa('rf.myndir', false) === true;   // „Með myndum" (21.10.2026) — eitt val fyrir allar vélar
     }catch(e){}
   }
   // Skrifað aðeins við smell á þjónustu-takka.
   function setSvc(v){ _state.svc=v; try{ if(window.Vidmot) Vidmot.setja('rf.svc',v); }catch(e){} }
+  function setMyndir(v){ _state.myndir=!!v; try{ if(window.Vidmot) Vidmot.setja('rf.myndir',!!v); }catch(e){} }
+  // 21.10.2026 (Agnar: „make another view Með myndum … put the image just to the far left, like in þjónustugátt"):
+  // húsmynd byggingarinnar — sama heimild og bannerinn á fyrirtækjasíðunni (AppSettings co_bygging_mynd, 367), annars
+  // fyrirtaeki.eign.mynd (457). Smækkuð í 320 px með resize=contain — myndaþjónustan SKER annars (sjá 190/457).
+  function husmyndSlod(coId){
+    var u='';
+    try{ var m=(window.AppSettings&&AppSettings.path&&AppSettings.path('co_bygging_mynd'))||{}; var e=m[String(coId)]; if(e&&e.url) u=String(e.url); }catch(_){}
+    if(!u){ try{ var L=(window.Arsskodun&&Arsskodun._cache&&Arsskodun._cache.list)||[]; var c=L.find(function(x){ return String(x.id)===String(coId); }); if(c&&c.eign&&c.eign.mynd) u=String(c.eign.mynd); }catch(_){} }
+    u=u.trim();
+    if(!/^https:\/\//i.test(u)) return '';
+    if(u.indexOf('/storage/v1/object/public/')>-1){
+      u=u.replace('/storage/v1/object/public/','/storage/v1/render/image/public/');
+      u+=(u.indexOf('?')>-1?'&':'?')+'width=320&quality=72&resize=contain';
+    }
+    return u;
+  }
+  function husmyndHtml(co, nafn){
+    var u = co ? husmyndSlod(co.id) : '';
+    if(u) return '<span class="rf-bmynd"><img src="'+esc(u)+'" alt="Húsmynd: '+esc(nafn||'')+'" loading="lazy" decoding="async"></span>';
+    return '<span class="rf-bmynd rf-bmynd--tom" title="'+(co?'Engin húsmynd — sækist þegar fyrirtækjasíðan er opnuð':'Byggingin er ekki tengd fyrirtæki í þjónustu')+'" aria-hidden="true">'+
+      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l7-4 7 4v14"></path><path d="M9 21v-5h6v5"></path></svg></span>';
+  }
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
   // 23.09.2026: öll sýnin er endurbyggð hér (haus + listi) — skrun og fókus mega ekki tapast við það. Sjá 388.
@@ -2094,6 +2122,7 @@
       return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<div class="rf-cellinner">'+
+               (_state.myndir ? husmyndHtml(co, b.nafn) : '')+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-nameid">'+
                '<span class="rf-bname" title="'+esc(b.nafn||'')+'">'+link+'</span>'+
@@ -2111,7 +2140,8 @@
                  var bits=[];
                  if (!b.kt && nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan kennitölunnar — sama kt á fleiri stöðum fær nr. 1, 2, 3 …; hver kennitala byrjar á 1">nr. '+esc(String(nr))+'</span>');
                  if (bok) bits.push('<span class="rf-bnr" title="Bókunarnúmer / kostnaðarstöð í Payday">'+esc(bok)+'</span>');
-                 if (pd) bits.push('<span class="rf-bpd'+(pd.paid?' is-paid':'')+'" title="Nýjasta krafa ÞESSARAR byggingar (solur.customer_id='+esc(String(co.id))+') — ekki allar kröfur kennitölunnar">'+esc(pd.r)+(pd.pd?' · PD '+esc(pd.pd):'')+(pd.paid?' ✓':'')+'</span>');
+                 // Með myndum: reikningsnúmerið víkur fyrir myndinni (Agnar 21.10: „remove the invoice number if you have to")
+                 if (pd && !_state.myndir) bits.push('<span class="rf-bpd'+(pd.paid?' is-paid':'')+'" title="Nýjasta krafa ÞESSARAR byggingar (solur.customer_id='+esc(String(co.id))+') — ekki allar kröfur kennitölunnar">'+esc(pd.r)+(pd.pd?' · PD '+esc(pd.pd):'')+(pd.paid?' ✓':'')+'</span>');
                  return bits.join('');
                })()+
                '</span>'+
@@ -2177,6 +2207,7 @@
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
       '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▸ Fela allar</button>'+
       '<button type="button" class="rf-svcbtn _rf_printco" title="Prenta skýrslu fyrir þetta rekstrarfélag">🖨 Prenta</button>'+
+      '<button type="button" class="rf-svcbtn _rf_myndir'+(_state.myndir?' is-on':'')+'" aria-pressed="'+(_state.myndir?'true':'false')+'" title="Sýna húsmynd hverrar byggingar lengst til vinstri (eins og í Þjónustugátt)">Með myndum</button>'+
       '<span class="rf-bsearch">'+
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
         '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
@@ -2267,7 +2298,7 @@
           // fastar súlubreiddir (table-layout:fixed) — jafnar raðir, nöfn styttast
           // með „…" í stað þess að vefjast. Summa = 1210px (sbr. min-width).
           '<colgroup>'+
-            '<col style="width:236px">'+   // Bygging (nafn + kt)
+            '<col style="width:'+(_state.myndir?360:236)+'px">'+   // Bygging (nafn + kt) — +124 px fyrir húsmyndina í „Með myndum"
             '<col style="width:184px">'+   // Heimilisfang
             '<col style="width:122px">'+   // Nóta
             '<col style="width:130px">'+   // Tæki (48px pilla + 8 + 66px yfirlit + 8 fylling)
@@ -2376,6 +2407,13 @@
         setSvc(k);
         fillBody(body, name, info);
       });
+    });
+    // „Með myndum" — húsmynd lengst til vinstri í hverri röð; valið fer á þjóninn (rf.myndir) og gildir á öllum vélum
+    var myndBtn=body.querySelector('._rf_myndir');
+    if(myndBtn) myndBtn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      setMyndir(!_state.myndir);
+      fillBody(body, name, info);
     });
     // leit að byggingu innan félagsins — síar raðirnar beint í DOM-inu
     // (engin ný gagnasókn, svarar strax).
