@@ -33,6 +33,8 @@
   if (window.TeiknVinnumynd) return;
 
   const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
+  // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir)
+  const UTLIT = 3;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
@@ -547,7 +549,7 @@
   // Ný föst mynd úr 3D (fyrsta mynd sjálfkrafa, eða „Festa"): sýnd STRAX úr striganum, svo í fötuna og á þjóninn.
   async function nyFestMynd(h, r, hvernig) {
     const cid = FP().companyId, hid = h.id, url0 = h.image_url, lyk = lykillHaedar(h);
-    const vm = { utgafa: UTGAFA, lykill: lyk, cam: r.cam, heild: r.heild, rammi: r.rammi, b: r.b, h: r.h, kort: r.kort, veggH: r.veggH, sjalfg: r.sjalfg,
+    const vm = { utgafa: UTGAFA, utlit: UTLIT, lykill: lyk, cam: r.cam, heild: r.heild, rammi: r.rammi, b: r.b, h: r.h, kort: r.kort, veggH: r.veggH, sjalfg: r.sjalfg,
       frum: r.frum || h.frum || null, fest: hvernig, t: new Date().toISOString() };
     geymaIMinni(vmLykill(vm), { img: r.strigi, vm, b: r.b, h: r.h });
     V.nyjar[hid] = vm;
@@ -555,7 +557,7 @@
     catch (e) { console.warn('[445] vinnumyndin vistaðist ekki á þjóninn', e); segja('Vinnumyndin sést hér en vistaðist ekki á þjóninn (' + ((e && e.message) || e) + ')'); return false; }
   }
   // FYRSTA mynd tilbúinnar hæðar: smíðuð í huldu 3D (383) og fest sjálfkrafa — einu sinni á hvern lykil í lotunni.
-  async function smida(h) {
+  async function smida(h, o) {
     const hid = h.id, lyk = V.lykill, t0 = performance.now();
     V.smidar[hid] = true; V.sjalfReynt[hid + '|' + lyk] = true;
     try {
@@ -566,6 +568,7 @@
       await nyFestMynd(hNu, r, 'sjalfvirkt');
     } catch (e) {
       delete V.smidar[hid];
+      if (o && o.mjuk) { console.warn('[445] útlitsuppfærsla vinnumyndar tókst ekki — gamla myndin er áfram', e); return; }   // gamla myndin stendur
       if (!V.nyjar[hid]) { V.villa[hid + '|' + lyk] = (e && e.message) || String(e); console.warn('[445] vinnumynd', e); segja('Vinnumyndin tókst ekki (' + V.villa[hid + '|' + lyk] + ') — 2D sýnd.'); }
     }
   }
@@ -650,6 +653,11 @@
       // ekki (Agnar 07.10: „Endurteikna" ræður þar).
       if (V.urelt && h.leidrett && h.leidrett.af === 'sjalfvirkt' && (Date.parse(h.leidrett.kl || '') || 0) > (Date.parse(vm.t || '') || 0) &&
           !V.smidar[h.id] && !V.sjalfReynt[h.id + '|' + V.lykill]) smida(h);
+      // ÚTLITSUPPFÆRSLA: mynd með eldra útliti en UTLIT (og sjálfsmíðuð / fest úr 3D hér) endursmíðast einu sinni í lotu; gamla myndin sést á meðan
+      if (!V.urelt && (vm.utlit || 0) < UTLIT && (vm.fest === 'sjalfvirkt' || vm.fest === 'festa') && tilbuin(h) && !V.smidar[h.id] && !V.sjalfReynt[h.id + '|utlit']) {
+        V.sjalfReynt[h.id + '|utlit'] = true;
+        smida(h, { mjuk: true });
+      }
       const til = V.myndir[key]; if (til) return til;
       if (!V.brotin[key]) {
         if (V.sokn[key]) { V.stadaTexti = 'Opna vinnumynd…'; return null; }
