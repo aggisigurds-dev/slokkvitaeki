@@ -174,6 +174,12 @@ Tvær leiðir, báðar í `scripts/bunadargreining/skutuvogur-4/`:
 slöngur, ÚT, reykskynjarar, handboðar, hitaskynjarar, stjórnstöð). Raunveruleg tæki eru varpað á blað greiningarinnar með hnitum sem bæði kerfin eiga (x,y ↔ bx,by); listinn merkir hvert tæki ✓ við
 hönnunarstað eða ⚠ víkur frá hönnunarstað (næst S#, mörk 4 % af breidd skurðar).
 
+**Eitt hnitakerfi (21.10.2026, Agnar: „ekkert er syncað saman, flókið að hoppa á milli glugga og forrita"):** veggir (Teikning/vinnumynd), greining og raunveruleg tæki deila RAMMA TEIKNINGAR (rammadílar blaðsins sem
+borðið notar). Blað greiningarinnar sem er ekki sama blað og borðið ber `teikningar[].varpa = {fx:{k,c}, fy:{k,c}}` (borð = k·blað + c; `skra.py`/`varpa_vista.cjs` — FFT-krosssamsvörun á línumyndum, svo aðhvarf á
+atriðum sem eiga bæði hnitin). Þrír notendur: (1) stóra sýnin á blaði greiningarinnar (474): Teikning | 3D (vistaða 3D-vinnumyndin + prik) og lag Búnaðargreining · Raunveruleg tæki · Bæði;
+(2) **Teikning sjálf (445, vinnumynd): lag „Búnaðargreining"** — hönnunarstaðir sem strikaðir hringir undir tækjunum meðan þau eru sett, tæki sem er komið á staðinn dofnar og fær ✓, sía á gerð (kveikt/slökkt og
+sía í Vidmot `teikning.greining`, eins á öllum vélum); (3) Blender-myndin (`sena_greining.py`). **Næsta skref í verkhringrásinni:** skrá `varpa` sjálfkrafa í `bgr_verk.cjs vista` (nú handvirkt fyrir Skútuvog 4).
+
 ## Í Brunahólfi (20.10.2026)
 
 Viðskiptavinir-síða hubbans (brunaholf.netlify.app) fellir prófílinn og Greininguna inn (flipar „Staðir & teikningar" og „Greining", iframe `https://slokkvitaeki.netlify.app/?bh=1#company/<id>` / `#greining/<heimilisfang>`). **Sama vélin** — Búnaðargreining, Teikning og Greining vista í sömu töflur á STAÐINN (fyrirtaeki á kennitölu greiðandans); "＋ Stofna stað" í hubbanum býr hann til. Greiðandi án staðar → stofna fyrst, svo vista greininguna á hann. Dæmi: Uppspil ehf. (kt 470922-2060) → fyrirtæki 1873, verkstaður Sunnukriki 3 (Mosfellsbær).

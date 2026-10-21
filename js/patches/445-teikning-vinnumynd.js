@@ -40,7 +40,8 @@
     myndir: {}, sokn: {}, smidar: {}, villa: {}, brotin: {}, veggir: {}, nyjar: {}, sjalfReynt: {}, urelt: false, festir: false,
     mynd: null, synilegur: false, stadaTexti: '',
     s: 1, x: 0, y: 0, teiknad: '', p: null, fingur: new Map(), klipa: 0, midja: null,
-    opnad: 0, synt: 0, smidadMs: 0, raf: 0, hint: 0
+    opnad: 0, synt: 0, smidadMs: 0, raf: 0, hint: 0,
+    gr: null, grCid: null, grSokn: false
   };
   const FP = () => window.FloorPlan;
   const TB = () => window.TeiknBord;
@@ -189,9 +190,18 @@
         '<div id="fp-vm-urelt" role="status" style="position:absolute;left:50%;transform:translateX(-50%);top:60px;z-index:3;display:none;align-items:center;gap:10px;max-width:calc(100% - 20px);padding:6px 6px 6px 12px;border-radius:10px;background:rgba(20,18,15,.9);color:#ffd27a;font:600 12.5px system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35)">' +
           '<span>Veggjum breytt síðan myndin var fest</span>' +
           '<button type="button" data-a="endurteikna" style="height:30px;padding:0 12px;border-radius:8px;border:1px solid ' + GULL + ';background:' + GULL + ';color:#14120f;font:700 12.5px system-ui,sans-serif;cursor:pointer;white-space:nowrap">Endurteikna</button></div>' +
+        '<div id="fp-vm-gr" style="position:absolute;left:10px;top:10px;z-index:3;display:none;flex-direction:column;align-items:flex-start;gap:6px;font:700 12px system-ui,sans-serif"></div>' +
         '<div id="fp-vm-hint" style="position:absolute;left:10px;bottom:10px;z-index:2;max-width:calc(100% - 330px);min-width:180px;padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 12px system-ui,sans-serif;line-height:1.35;pointer-events:none;display:none"></div>';
       main.appendChild(g);
       tengja(g);
+      const grEl = g.querySelector('#fp-vm-gr');
+      ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(ev => grEl.addEventListener(ev, e => e.stopPropagation(), { passive: true }));
+      grEl.addEventListener('click', e => {
+        const b = e.target.closest('[data-gr],[data-gr-k]'); if (!b) return; e.stopPropagation();
+        const st = Object.assign({ on: false, af: [] }, GRV());
+        if (b.dataset.gr) st.on = !st.on; else { const k = b.dataset.grK, q = new Set(st.af || []); if (q.has(k)) q.delete(k); else q.add(k); st.af = Array.from(q); }
+        grVista(st); grUi(); V.teiknad = ''; vekja();
+      });
     }
     V.gamur = g; V.strigi = g.querySelector('#fp-vm-strigi');
     let s = main.querySelector('#fp-synval');
@@ -267,17 +277,85 @@
       }
     });
   }
+  /* ── BÚNAÐARGREINING SEM LAG ──────────────────────────────────────────────────────────────────────────────────────────────── */
+  const GR_H = { sl: 'Slökkvitæki', bs: 'Slöngukefli', ut: 'ÚT', r: 'Reykskynjarar', hb: 'Handboðar', hiti: 'Hitaskynjarar', st: 'Stjórnstöð' };
+  const GR_L = { sl: '#c93c1d', bs: '#1f5fbf', ut: '#2e7d32', r: '#8e24aa', hb: '#6a1b9a', hiti: '#e65100', st: '#4527a0' };
+  const GR_T = { sl: 'S', bs: 'BS', ut: 'ÚT', r: 'R', hb: 'HB', hiti: 'H', st: '!' };
+  const grKind = t => {
+    const f = t.flokkur || 'slokkvibunadur', n = t.bunadur || '';
+    return f === 'flotti' ? 'ut' : f === 'brunakerfi' ? (/reykskynjari/i.test(n) ? 'r' : /hita/i.test(n) ? 'hiti' : /handbo/i.test(n) ? 'hb' : 'st') : /slang|kefli/i.test(n) ? 'bs' : 'sl';
+  };
+  const GRV = () => { try { const v = window.Vidmot ? Vidmot.lesa('teikning.greining', null) : null; return v && typeof v === 'object' ? v : { on: false, af: [] }; } catch (_) { return { on: false, af: [] }; } };
+  function grVista(v) { try { if (window.Vidmot) Vidmot.setja('teikning.greining', v); } catch (_) {} }
+  function grHlada(cid) {
+    if (V.grSokn || V.grCid === cid) return;
+    const db = window.DB && DB.sb; if (!db) return;
+    V.grSokn = true;
+    db.from('bunadargreining').select('tki,teikningar').eq('company_id', cid).is('fjarlaegt_at', null).limit(1).then(q => {
+      V.grSokn = false; V.grCid = cid; V.gr = (q && q.data && q.data[0]) || null; grUi(); V.teiknad = ''; vekja();
+    }, () => { V.grSokn = false; V.grCid = cid; V.gr = null; grUi(); });
+  }
+  // atriði núverandi hæðar í ramma borðsins (sömu hnit og merki Teikningar)
+  function grAtridi() {
+    const G = V.gr; if (!G || !V.haedId) return [];
+    const hh = virkHaed(), nafn = hh && hh.nafn;   // eldri atriði bera aðeins heiti hæðar (haed), ekki auðkenni
+    const blod = {}; (G.teikningar || []).forEach(b => { if (b && b.id) blod[b.id] = b; });
+    const ut = [];
+    (G.tki || []).forEach(t => {
+      if (!t || (t.haed_id ? t.haed_id !== V.haedId : t.haed !== nafn)) return;
+      let uv = null;
+      if (t.x != null && t.y != null && isFinite(+t.x) && isFinite(+t.y)) uv = [+t.x, +t.y];
+      else if (t.bx != null && isFinite(+t.bx)) {
+        const sh = blod[t.blad], vp = sh && sh.varpa;
+        if (vp && vp.fx && vp.fy) uv = [vp.fx.k * +t.bx + vp.fx.c, vp.fy.k * +t.by + vp.fy.c]; else if (t.blad === t.haed_id) uv = [+t.bx, +t.by];
+      }
+      if (uv) ut.push({ u: uv[0], v: uv[1], k: grKind(t), id: t.audkenni || '' });
+    });
+    return ut;
+  }
+  function grUi() {
+    const el = V.gamur && V.gamur.querySelector('#fp-vm-gr'); if (!el) return;
+    const at = V.gr ? grAtridi() : [];
+    if (!at.length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+    const st = GRV(), af = new Set(st.af || []), kinds = Object.keys(GR_H).filter(k => at.some(a => a.k === k));
+    const hnappur = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + DOKKT + ';color:#f1ede4;font:700 12px system-ui,sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px';
+    el.style.display = 'flex';
+    el.innerHTML = '<button type="button" data-gr="1" aria-pressed="' + !!st.on + '" title="Sýna hönnunarstaði búnaðargreiningarinnar (strikaðir hringir) á meðan tækin eru sett — tæki sem er komið á staðinn dofnar" style="' + hnappur + (st.on ? ';background:' + GULL + ';color:#14120f;border-color:' + GULL : '') + '">Búnaðargreining · ' + at.length + '</button>' +
+      (st.on ? '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:340px">' + kinds.map(k => '<button type="button" data-gr-k="' + k + '" aria-pressed="' + !af.has(k) + '" style="' + hnappur + ';height:26px;padding:0 9px;font-size:11.5px;opacity:' + (af.has(k) ? '.45' : '1') + '"><i style="width:9px;height:9px;border-radius:50%;background:' + GR_L[k] + ';display:inline-block"></i>' + GR_H[k] + ' ' + at.filter(a => a.k === k).length + '</button>').join('') + '</div>' : '');
+  }
+  const grFingur = () => { const st = GRV(); return st.on && V.gr ? 'g' + (st.af || []).join(',') + ':' + (V.gr.tki || []).length + ':' + V.haedId : ''; };
+  function teiknaGreiningu(x, M, aStad, staerd) {
+    const st = GRV(); if (!st.on || !V.gr) return;
+    const at = grAtridi(); if (!at.length) return;
+    const af = new Set(st.af || []), p = plan(), rymi = TB().rymi ? TB().rymi() : { x: 0, y: 0 };
+    const raun = ((p && p.markers) || []).filter(m => m && !erStimpil(m)).map(m => frumHnit(m, M, rymi));
+    const tol = Math.max(40, 0.022 * ((M.vm.kort && M.vm.kort.sw) || 4000)), grunnBreidd = V.gamur ? grunnur().bs * M.b : 600;
+    const s = staerd(staerd100({}, grunnBreidd)) * 0.62;
+    at.forEach(a => {
+      if (af.has(a.k)) return;
+      const sp = aStad(a.u, a.v); if (!isFinite(sp[0]) || !isFinite(sp[1])) return;
+      const komid = raun.some(r => Math.hypot(r[0] - a.u, r[1] - a.v) < tol);
+      x.save(); x.globalAlpha = komid ? 0.42 : 0.96;
+      x.beginPath(); x.arc(sp[0], sp[1], s / 2, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.62)'; x.fill();
+      x.lineWidth = Math.max(1.6, s * 0.13); x.setLineDash([s * 0.3, s * 0.2]); x.strokeStyle = GR_L[a.k]; x.stroke(); x.setLineDash([]);
+      x.fillStyle = GR_L[a.k]; x.font = '800 ' + Math.max(8, s * 0.36) + 'px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText((a.k === 'sl' || a.k === 'bs') && a.id ? a.id : GR_T[a.k], sp[0], sp[1] + s * 0.02);
+      if (komid) { x.lineWidth = Math.max(2, s * 0.16); x.strokeStyle = '#2e9d4f'; x.beginPath(); x.moveTo(sp[0] + s * 0.22, sp[1] - s * 0.42); x.lineTo(sp[0] + s * 0.36, sp[1] - s * 0.28); x.lineTo(sp[0] + s * 0.62, sp[1] - s * 0.62); x.stroke(); }
+      x.restore();
+    });
+  }
   function teikna(force) {
     const c = V.strigi, g = V.gamur; if (!c || !g || !V.synilegur) return;
     const cw = g.offsetWidth, ch = g.offsetHeight; if (cw < 2 || ch < 2) return;
     const M = V.mynd, F = FP(), p = plan(), T = TB(), rymi = T && T.rymi ? T.rymi() : { x: 0, y: 0 };
     const r = g.getBoundingClientRect(), dpr = Math.min(3, (window.devicePixelRatio || 1) * (r.width / cw || 1));
     const valid = TM() && TM().valid ? TM().valid() : null;
+    const cidG = F && F.companyId; if (cidG && V.grCid !== cidG) grHlada(cidG);
     const ry = V.rymi || { efst: 0, nedst: 0 };
     const fingur = [cw, ch, dpr, V.s, V.x, V.y, M ? vmLykill(M.vm) : '-', rymi.x, rymi.y, ry.efst, ry.nedst, F && F._selectedUnitId, valid && valid.unitId,
       M ? staerd100({}, grunnur().bs * M.b) : 0, window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '',
       ((p && p.markers) || []).map(m => m ? [m.unitId, m.x, m.y, m.rot || 0, m.staerd || '', m.sign || '', m.takn || '', m.color || ''].join(':') : '').join('|'),
-      T && T.sameign && T.sameign(V.haedId) ? 'sameign' : ''].join(';');
+      T && T.sameign && T.sameign(V.haedId) ? 'sameign' : '', grFingur()].join(';');
     if (!force && fingur === V.teiknad) return;
     V.teiknad = fingur;
     const W = Math.round(cw * dpr), H = Math.round(ch * dpr);
@@ -298,6 +376,7 @@
         x.restore();
       } catch (e) { console.warn('[445] sameign', e); }
     }
+    teiknaGreiningu(x, M, (u, v) => { const q = varpa(M.vm, u, v); return aSkja(gr, q[0], q[1]); }, s => s * V.s);
     teiknaMerkin(x, M, (u, v) => { const q = varpa(M.vm, u, v); return aSkja(gr, q[0], q[1]); }, s => s * V.s, valid || (F && F._selectedUnitId != null ? {} : null));
     const pct = V.gamur.querySelector('#fp-vm-pct'), t = Math.round(V.s * 100) + '%'; if (pct && pct.textContent !== t) pct.textContent = t;
     if (!V.synt) V.synt = performance.now();
@@ -590,7 +669,7 @@
     if (V.modal !== m) {
       // nýr gluggi: sýnin sjálfgefin aftur (valið er ekki vistað), og myndavalið hreint
       V.modal = m; V.val = null; V.hRef = null; V.sig = null; V.haedId = null; V.s = 1; V.x = 0; V.y = 0; V.p = null; V.fingur.clear();
-      V.villa = {}; V.brotin = {}; V.sjalfReynt = {}; V.teiknad = ''; V.opnad = performance.now(); V.synt = 0; V.hint = 0; V.gamur = null; V.synval = null;
+      V.villa = {}; V.brotin = {}; V.sjalfReynt = {}; V.teiknad = ''; V.opnad = performance.now(); V.synt = 0; V.hint = 0; V.gamur = null; V.synval = null; V.gr = null; V.grCid = null;
     }
     tryggjaDom(main);
     // Rými stýringanna (442) — lesið einu sinni í ramma; teikna() endurteiknar ef það breytist

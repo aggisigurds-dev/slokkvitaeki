@@ -175,7 +175,7 @@
     return (r.teikningar || []).filter(function (b) { return b && b.mynd; }).map(function (b) {
       var tki = (r.tki || []).filter(function (t) { return t.blad === b.id && t.bx != null && isFinite(+t.bx); });
       return {
-        id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur, tki: tki,
+        id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur, varpa: b.varpa || null, tki: tki,
         markers: tki.map(function (t) {
           return { x: +t.bx, y: +t.by, audkenni: flokkur(t) === 'brunakerfi' && !merkimidar ? null : t.audkenni, tegund: t.bunadur, litur: litur(t) };
         })
@@ -242,9 +242,11 @@
     var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía">' + SIA.map(function (k) {
       return '<label><input type="checkbox" data-sia="' + k + '" checked><i style="background:' + SIA_L[k] + '"></i>' + esc(SIA_H[k]) + '</label>';
     }).join('') + '</span>' : '';
+    var hamHtml = cid ? '<span class="bgr-lag bgr-ham" role="radiogroup" aria-label="Sýn"><label><input type="radio" name="bgr-ham" value="2d" checked>Teikning</label><label><input type="radio" name="bgr-ham" value="3d">3D</label></span>' : '';
+    var ham = '2d';
     var lagHtml = cid ? '<span class="bgr-lag" role="radiogroup" aria-label="Lag"><label><input type="radio" name="bgr-lag" value="greining" checked>Búnaðargreining</label><label><input type="radio" name="bgr-lag" value="raun">Raunveruleg tæki</label><label><input type="radio" name="bgr-lag" value="bada">Bæði</label></span>' : '';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
-      lagHtml + siuHtml + '<span style="flex:1"></span><span class="bgr-zk" aria-label="Aðdráttur"><button type="button" data-z="-" title="Minnka (músarhjól niður)">−</button><button type="button" data-z="0" title="Núllstilla (tvísmella)">100%</button><button type="button" data-z="+" title="Stækka (músarhjól upp)">+</button></span>' +
+      hamHtml + lagHtml + siuHtml + '<span style="flex:1"></span><span class="bgr-zk" aria-label="Aðdráttur"><button type="button" data-z="-" title="Minnka (músarhjól niður)">−</button><button type="button" data-z="0" title="Núllstilla (tvísmella)">100%</button><button type="button" data-z="+" title="Stækka (músarhjól upp)">+</button></span>' +
       '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
       '<div class="cfh-s-b"><div class="cfh-s-m bgr-zm"><div class="bgr-zl"><div class="cfh-t">…</div></div></div><div class="cfh-s-l"></div></div></div>';
     document.body.appendChild(o);
@@ -297,6 +299,8 @@
     // (kvarði + hliðrun á ás) úr atriðum sem eiga bæði hnitin (x,y á Teikningu ↔ bx,by á blaðinu).
     var haedId = (b.tki[0] && b.tki[0].haed_id) || b.id;
     var bladuVarpa = (function () {
+      var v0 = b.varpa;   // blað → borð (borð = k·blað + c); hér þarf borð → blað
+      if (v0 && v0.fx && v0.fy && v0.fx.k && v0.fy.k) return { fx: { k: 1 / v0.fx.k, c: -v0.fx.c / v0.fx.k }, fy: { k: 1 / v0.fy.k, c: -v0.fy.c / v0.fy.k } };
       if (b.id === haedId) return { fx: { k: 1, c: 0 }, fy: { k: 1, c: 0 } };
       var pr = b.tki.filter(function (t) { return t.x != null && t.bx != null && isFinite(+t.x) && isFinite(+t.bx); });
       if (pr.length < 3) return null;
@@ -322,7 +326,7 @@
           if (kindAf(t) !== k) return;
           var d = Math.hypot(+t.bx - x, +t.by - y); if (naest === null || d < naest.d) naest = { d: d, t: t };
         });
-        ut.push({ x: x, y: y, audkenni: m.audkenni || null, tegund: typ || SIA_H[k], litur: '#111827', k: k, stadur: m.stadur || '', frav: naest ? naest.d > mork : null, naest: naest && naest.t.audkenni });
+        ut.push({ x: x, y: y, u: +m.x, v: +m.y, audkenni: m.audkenni || null, tegund: typ || SIA_H[k], litur: '#111827', k: k, stadur: m.stadur || '', frav: naest ? naest.d > mork : null, naest: naest && naest.t.audkenni });
       });
       return ut;
     };
@@ -336,11 +340,56 @@
         return '<li><strong style="background:#111827">' + esc(m.audkenni || '•') + '</strong><small>' + esc(m.stadur || SIA_H[m.k]) + ' <em>' + esc(SIA_H[m.k]) + (m.frav === true ? ' · ⚠ víkur frá hönnunarstað' + (m.naest ? ' (næst ' + esc(m.naest) + ')' : '') : m.frav === false ? ' · ✓ við hönnunarstað' : ' · enginn hönnunarstaður') + '</em></small></li>';
       }).join('') + '</ul>' : '<p class="bgr-m">Engin tæki af þessari gerð á Teikningu þessarar hæðar.</p>');
     };
+    // 3D-sýn: vistaða 3D-vinnumynd hæðarinnar (veggir · hurðir · gler, Blender) + merkin sem upprétt prik — sama vörpun og 445 varpa
+    // (rammahnit borðsins → heimur → cam → mynd). Greining: litað eftir gerð · raunveruleg tæki: svört. Lagaskipti og sía virka eins og á teikningunni.
+    var teikna3D = function (stefna, rm, sjaGr) {
+      var vm = raun && raun.fl && raun.fl.vinnumynd;
+      if (!raun && cid) { zl.innerHTML = '<div class="cfh-t">Sæki 3D-myndina…</div>'; return; }
+      if (!(vm && Array.isArray(vm.cam) && vm.cam.length === 16 && vm.url && vm.kort && Array.isArray(vm.heild) && Array.isArray(vm.rammi) && vm.b > 0)) { zl.innerHTML = '<div class="cfh-t">Engin vistuð 3D-mynd er til af þessari hæð (Teikning → 3D → Festa).</div>'; return; }
+      if (!bladuVarpa) { zl.innerHTML = '<div class="cfh-t">Blað greiningarinnar er ekki skráð á ramma Teikningar (engin vörpun) — 3D-sýnin getur ekki staðsett merkin.</div>'; return; }
+      var img = new Image();
+      img.onload = function () {
+        if (stefna !== seinast || !zl.isConnected) return;
+        var k = Math.min(1, 2600 / Math.max(vm.b, vm.h)), c = document.createElement('canvas'); c.width = Math.round(vm.b * k); c.height = Math.round(vm.h * k);
+        var x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+        var e = vm.cam, kk = vm.kort, M = (vm.veggH || 18) / 3, sc = c.width / 2187 * 1.45;
+        var varp = function (u, v, hh) {
+          var wx = (u - kk.sx) * kk.f - kk.gw / 2, wz = (v - kk.sy) * kk.f - kk.gh / 2, y = hh || 0;
+          var cx = e[0] * wx + e[4] * y + e[8] * wz + e[12], cy = e[1] * wx + e[5] * y + e[9] * wz + e[13], cw = e[3] * wx + e[7] * y + e[11] * wz + e[15];
+          return [((cx / cw + 1) / 2 * vm.heild[0] - vm.rammi[0]) * k, ((1 - cy / cw) / 2 * vm.heild[1] - vm.rammi[1]) * k];
+        };
+        var HM = { sl: 1.45, bs: 1.3, ut: 2.35, r: 2.9, hb: 1.4, hiti: 2.9, st: 1.5 }, pts = [];
+        if (sjaGr) sjaTki().forEach(function (t) {
+          if (t.bx == null || !isFinite(+t.bx)) return;
+          var uv = [(+t.bx - bladuVarpa.fx.c) / bladuVarpa.fx.k, (+t.by - bladuVarpa.fy.c) / bladuVarpa.fy.k], kd = kindAf(t);
+          pts.push({ u: uv[0], v: uv[1], k: kd, lit: SIA_L[kd], id: (kd === 'sl' || kd === 'bs') ? t.audkenni : '', raun: false });
+        });
+        rm.forEach(function (m) { pts.push({ u: m.u, v: m.v, k: m.k, lit: '#111827', id: m.audkenni || '', raun: true }); });
+        pts.forEach(function (q) { q.f = varp(q.u, q.v, 0); q.h = varp(q.u, q.v, (HM[q.k] || 1.5) * M * (q.raun ? 1.12 : 1)); });
+        pts.sort(function (a, c2) { return a.f[1] - c2.f[1]; });
+        pts.forEach(function (q) {
+          x.fillStyle = 'rgba(0,0,0,.28)'; x.beginPath(); x.ellipse(q.f[0], q.f[1], 8 * sc, 3.2 * sc, 0, 0, 6.2832); x.fill();
+          x.strokeStyle = 'rgba(70,70,76,.9)'; x.lineWidth = 1.6 * sc; x.beginPath(); x.moveTo(q.f[0], q.f[1]); x.lineTo(q.h[0], q.h[1]); x.stroke();
+          var X = q.h[0], Y = q.h[1], r = (q.raun ? 7.5 : q.k === 'ut' ? 0 : q.k === 'r' || q.k === 'hiti' ? 4.8 : 6.5) * sc;
+          x.fillStyle = q.lit; x.strokeStyle = '#fff'; x.lineWidth = 1.5 * sc;
+          if (q.k === 'ut' && !q.raun) { x.beginPath(); x.rect(X - 9 * sc, Y - 5.5 * sc, 18 * sc, 11 * sc); x.fill(); x.stroke(); x.fillStyle = '#fff'; x.font = '700 ' + (7.5 * sc) + 'px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ÚT', X, Y + 0.5 * sc); }
+          else if (q.k === 'hb' && !q.raun) { x.beginPath(); x.rect(X - r, Y - r, r * 2, r * 2); x.fill(); x.stroke(); }
+          else if (q.k === 'st' && !q.raun) { x.beginPath(); x.moveTo(X, Y - r * 1.5); x.lineTo(X + r * 1.5, Y); x.lineTo(X, Y + r * 1.5); x.lineTo(X - r * 1.5, Y); x.closePath(); x.fill(); x.stroke(); }
+          else if (q.k === 'sl') { x.beginPath(); if (x.roundRect) x.roundRect(X - 5 * sc, Y - 12 * sc, 10 * sc, 15 * sc, 3.5 * sc); else x.rect(X - 5 * sc, Y - 12 * sc, 10 * sc, 15 * sc); x.fill(); x.stroke(); }
+          else { x.beginPath(); x.arc(X, Y, r, 0, 6.2832); x.fill(); x.stroke(); }
+          if (q.id) { x.font = '700 ' + (11 * sc) + 'px system-ui'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.lineWidth = 3 * sc; x.strokeStyle = '#1b1b1f'; x.strokeText(q.id, X + 10 * sc, Y - 3 * sc); x.fillStyle = '#fff'; x.fillText(q.id, X + 10 * sc, Y - 3 * sc); }
+        });
+        zl.innerHTML = ''; zl.appendChild(c);
+      };
+      img.onerror = function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">3D-myndin náðist ekki</div>'; };
+      img.src = vm.url;
+    };
     var teiknaAftur = function () {
       var bb = sjaB(), stefna = ++seinast, rm = lag === 'greining' ? [] : raunMerki(), sjaGr = lag !== 'raun';
       var tb = Object.assign({}, bb, { markers: (sjaGr ? bb.markers : []).concat(rm) });
       o.querySelector('.cfh-s-h strong').nextElementSibling.textContent = (b.heimild || '') + (lag === 'greining' ? ' · teikning greiningarinnar' : lag === 'raun' ? ' · raunveruleg tæki á Teikningu' : ' · greining og raunveruleg tæki');
       lis.innerHTML = (sjaGr ? '<h4>Skv. gögnum — ' + esc(fjoldiTexti(bb.tki)) + '</h4>' + listiBlads(bb) : '') + (lag === 'greining' ? '' : raunListi(rm));
+      if (ham === '3d') { teikna3D(stefna, rm, sjaGr); return; }
       if (!window.TeiknForskodun) { zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; return; }
       var c = document.createElement('canvas');
       TeiknForskodun.teikna(tb, c, 2600).then(function () { if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); } },
@@ -350,13 +399,14 @@
       Promise.all([SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1), SB().from('uttaeki').select('id,type').eq('fyrirtaeki_id', cid).limit(2000)]).then(function (rs) {
         var hs = (rs[0].data && rs[0].data[0] && rs[0].data[0].haedir) || [], u = {};
         ((rs[1] && rs[1].data) || []).forEach(function (x) { u[String(x.id)] = x.type || ''; });
-        raun = { fl: hs.filter(function (h) { return h.id === haedId; })[0] || null, ut: u };
+        raun = { fl: hs.filter(function (h) { return h.id === haedId; })[0] || hs.filter(function (h) { return b.tki[0] && h.nafn === b.tki[0].haed; })[0] || null, ut: u };   // brunakerfisblöð bera aðeins heiti hæðar
         if (!raun.fl) raunVilla = 'Hæðin fannst ekki á Teikningu staðarins.';
-        if (lag !== 'greining' && o.isConnected) teiknaAftur();
+        if ((lag !== 'greining' || ham === '3d') && o.isConnected) teiknaAftur();
       }, function () { raunVilla = 'Náði ekki í tækin á Teikningu.'; if (lag !== 'greining' && o.isConnected) teiknaAftur(); });
     }
     o.addEventListener('change', function (e) {
       if (e.target && e.target.name === 'bgr-lag') { lag = e.target.value; teiknaAftur(); return; }
+      if (e.target && e.target.name === 'bgr-ham') { ham = e.target.value; teiknaAftur(); return; }
       var k = e.target && e.target.getAttribute && e.target.getAttribute('data-sia'); if (!k) return;
       kveikt[k] = !!e.target.checked; teiknaAftur();
     });
