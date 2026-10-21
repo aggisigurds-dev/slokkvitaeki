@@ -23,12 +23,12 @@ blod = {b['id']: b for b in (G.get('teikningar') or []) if b.get('id')}
 
 def ur_ramma(t):
     """(u, v) í ramma borðsins eða None"""
+    if t.get('x') is not None and t.get('y') is not None:        # eigin hnit borðsins ganga fyrir (sama og Teikning, 445)
+        return float(t['x']), float(t['y'])
     bl = blod.get(t.get('blad'))
     vp = bl and bl.get('varpa')
     if vp and t.get('bx') is not None:
         return vp['fx']['k'] * float(t['bx']) + vp['fx']['c'], vp['fy']['k'] * float(t['by']) + vp['fy']['c']
-    if t.get('x') is not None and t.get('y') is not None:
-        return float(t['x']), float(t['y'])
     if t.get('bx') is not None and t.get('blad') in (t.get('haed_id'), HAED_ID):
         return float(t['bx']), float(t['by'])
     return None

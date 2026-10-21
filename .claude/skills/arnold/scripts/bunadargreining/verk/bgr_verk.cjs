@@ -13,6 +13,9 @@
 //   node bgr_verk.cjs yfirlag <id>                 yfirlagsmyndir úr lestur.json til sannreynslu (sann_*.png)
 //   node bgr_verk.cjs vista <id>                   lestur.json → bunadargreining-röð (UTF-8, auðkenni, texti, teikningar); skiptir virkri röð út (saga helst)
 //   node bgr_verk.cjs skyrsla <id>                 PDF „ein síða“ + „hver hæð á sér blaði“ → Viðhengi félagsins
+//   node bgr_verk.cjs render <id> [--vh 3.9] [--utan r,ut] [--ekki-myndir]   3D-mynd (Blender) af hverri hæð með veggjavinnu: blöð skráð á ramma borðsins (FFT), sena úr appinu,
+//                                                  tæki greiningar inn í senuna, beiðni í biðröð Blender-vélarinnar, beðið eftir myndunum → bunadargreining.render
+//   node bgr_verk.cjs render-saekja <id>           sækir myndir beiðna sem voru sendar en ekki bárust (Blender-vélin var upptekin)
 //   node bgr_verk.cjs stig <id> <stig> "<texti>"   framvinda (sést á Turbo-takkanum)
 //   node bgr_verk.cjs loka <id> ["<texti>"]        verk lokið · node bgr_verk.cjs villa <id> "<texti>" · node bgr_verk.cjs afturkalla <id>
 //
@@ -212,13 +215,93 @@ async function skyrsla(id) {
   log('Viðhengi:', ut.join(' | '));
 }
 
+
+/* ── 3D-MYND (Blender) ───────────────────────────────────────────────────────────────────────────────────────────────── */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function trigSvar(ids) {
+  const rows = await sg('automation_triggers?id=in.(' + ids.join(',') + ')&select=id,status,result');
+  return rows.map((x) => { let res = x.result; try { if (typeof res === 'string') res = JSON.parse(res); } catch (_) {} return { id: x.id, status: x.status, res }; });
+}
+async function skraBlod(v, G, M, D) {
+  // blöð greiningarinnar sem eru ekki mynd borðsins fá vörpun á ramma borðsins (FFT-krosssamsvörun) — svo veggir, greining og raunveruleg tæki deili hnitum
+  const haedir = {}; M.haedir.forEach((h) => { haedir[h.id] = h; });
+  const T = (G.teikningar || []).map((t) => Object.assign({}, t)); let breytt = false; const sagt = [];
+  for (const t of T) {
+    if (t.varpa || haedir[t.id]) continue;                                   // þegar skráð, eða blaðið ER mynd borðsins
+    const it = (G.tki || []).find((x) => x.blad === t.id && x.haed_id); const h = it && haedir[it.haed_id];
+    if (!h || !t.mynd || !t.skurdur || !h.skurdur) { sagt.push(t.id + ': vantar hæð/skurð'); continue; }
+    const bm = M.blod[h.blad]; const refSkra = path.join(D, bm.render || bm.skra);
+    if (!fs.existsSync(refSkra) || /\.pdf$/i.test(refSkra)) { sagt.push(t.id + ': borðmynd ekki rastermynd'); continue; }
+    const blSkra = path.join(D, 'blad_' + t.id + '.jpg'); await sotta(t.mynd, blSkra);
+    const est = h.skurdur.w / t.skurdur.w, utF = path.join(D, 'skra_' + t.id + '.json');
+    const p = spawnSync(PY, [path.join(HER, 'skra_blad.py'), refSkra, [h.skurdur.x, h.skurdur.y, h.skurdur.w, h.skurdur.h].join(','), blSkra, [t.skurdur.x, t.skurdur.y, t.skurdur.w, t.skurdur.h].join(','), (est * 0.72).toFixed(3), (est * 1.18).toFixed(3), utF], { encoding: 'utf8', env: PYENV, timeout: 1800000 });
+    if (p.status !== 0 || !fs.existsSync(utF)) { sagt.push(t.id + ': skráning brást ' + (p.stderr || '').slice(-120)); continue; }
+    const r = lesaJson(utF);
+    if (r.skor < 0.25) { sagt.push(t.id + ': lágt skor ' + r.skor + ' — ekki skráð'); continue; }
+    t.varpa = { fx: r.fx, fy: r.fy, af: 'krosssamsvörun á línumyndum (FFT) beint á mynd borðsins, skor ' + r.skor }; breytt = true; sagt.push(t.id + ': skráð, skor ' + r.skor);
+  }
+  if (breytt) { const r = await sp('bunadargreining?id=eq.' + G.id + '&fjarlaegt_at=is.null', 'PATCH', { teikningar: T }); if (!r.ok) throw new Error('varpa vistast ekki: ' + r.status); G.teikningar = T; }
+  return sagt;
+}
+async function render(id, saekjaAftur) {
+  const v = await verk(id), D = dir(id), cid = v.company_id;
+  const opt = (n, d) => { const i = process.argv.indexOf(n); return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : d; };
+  if (!fs.existsSync(path.join(D, 'manifest.json'))) await undirbua(id);
+  const M = lesaJson(path.join(D, 'manifest.json'));
+  const [G] = await sg('bunadargreining?company_id=eq.' + cid + '&fjarlaegt_at=is.null&select=*'); if (!G) throw new Error('engin virk greining — keyrðu vista fyrst');
+  let ids = [];
+  if (saekjaAftur) ids = ((v.nidurstada || {}).render_beidnir || []).map((x) => x.id);
+  else {
+    await skrifaStig(id, 'render', 'Skrái blöð á ramma borðsins…');
+    const skra = await skraBlod(v, G, M, D); log('skráning:', skra.join(' · '));
+    await skrifaStig(id, 'render', 'Sæki 3D-senu hverrar hæðar úr appinu…');
+    const SD = path.join(D, 'sena_app'); fs.rmSync(SD, { recursive: true, force: true });
+    const r0 = spawnSync('node', [path.join(HER, 'sena_ur_appi.cjs'), String(cid), SD, VEFUR], { encoding: 'utf8', timeout: 900000 });
+    if (r0.status !== 0) throw new Error('sena_ur_appi: ' + (r0.stderr || r0.stdout || '').slice(-300));
+    const Y = lesaJson(path.join(SD, 'yfirlit.json')), bordF = path.join(D, 'bord_full.json'), greinF = path.join(D, 'greining.json');
+    skrifaJson(bordF, M.haedir.map((h) => ({ id: h.id, nafn: h.nafn, frum: h.frum, skurdur: h.skurdur }))); skrifaJson(greinF, G);
+    const beidnir = [], ohaefar = [];
+    for (const h of Y.haedir) {
+      if (!h.sena) { ohaefar.push(h.nafn + ': ' + h.astaeda); continue; }
+      const hSkra = path.join(D, 'sena_' + h.id + '.json');
+      const a = [path.join(HER, 'render_sena.py'), path.join(SD, h.skra), greinF, bordF, h.id, hSkra].concat(opt('--vh') ? ['--vh', opt('--vh')] : [], opt('--utan') ? ['--utan', opt('--utan')] : [], process.argv.includes('--ekki-myndir') ? ['--ekki-myndir'] : []);
+      const p = spawnSync(PY, a, { encoding: 'utf8', env: PYENV }); if (p.status !== 0) { ohaefar.push(h.nafn + ': ' + (p.stderr || '').slice(-120)); continue; }
+      const info = JSON.parse(p.stdout.trim().split('\n').pop());
+      if (!info.alls) { ohaefar.push(h.nafn + ': engin tæki úr greiningu á hæðinni'); continue; }
+      const gogn = Object.assign({ company_id: +cid }, lesaJson(hSkra));
+      const r = await sp('automation_triggers', 'POST', { workflow: 'blender', status: 'bida', requested_by: 'bgr-verk', gogn });
+      if (!r.ok) { ohaefar.push(h.nafn + ': beiðni vistaðist ekki ' + r.status); continue; }
+      beidnir.push({ id: r.j[0].id, haed: h.id, nafn: h.nafn, tak: info.alls }); log('beiðni', r.j[0].id, h.nafn, info.alls, 'tæki');
+    }
+    ids = beidnir.map((x) => x.id);
+    await sp('bunadargreining_verk?id=eq.' + id, 'PATCH', { nidurstada: Object.assign({}, v.nidurstada || {}, { render_beidnir: beidnir, render_sleppt: ohaefar }) });
+    if (ohaefar.length) log('sleppt:', ohaefar.join(' · '));
+    if (!ids.length) { await skrifaStig(id, 'render', 'Engin hæð með veggjavinnu og tæki — 3D-mynd ekki gerð' + (ohaefar.length ? ' (' + ohaefar.join('; ').slice(0, 160) + ')' : '')); return; }
+  }
+  const t0 = Date.now(), nofn = {}; (((await verk(id)).nidurstada || {}).render_beidnir || []).forEach((b) => { nofn[b.id] = b; });
+  while (Date.now() - t0 < 40 * 60 * 1000) {
+    const sv = await trigSvar(ids), kl = sv.filter((x) => ['done', 'error'].includes(x.status));
+    await skrifaStig(id, 'render', '3D-myndir: ' + kl.length + ' af ' + sv.length + ' tilbúnar' + (sv.some((x) => x.status === 'running') ? ' (Blender vinnur)' : sv.every((x) => x.status === 'bida') ? ' (bíður Blender-vélarinnar)' : ''));
+    if (kl.length === sv.length) {
+      const R = [];
+      sv.forEach((x) => { const m = x.res && x.res.myndir && (x.res.myndir.find((q) => /vinnuskjal/i.test(q.heiti)) || x.res.myndir[0]); if (x.status === 'done' && m && m.url) R.push({ haed: nofn[x.id].haed, nafn: nofn[x.id].nafn, url: m.url, trigger_id: x.id, at: new Date().toISOString() }); });
+      const r = await sp('bunadargreining?id=eq.' + G.id + '&fjarlaegt_at=is.null', 'PATCH', { render: R }); if (!r.ok) throw new Error('render vistast ekki ' + r.status);
+      await skrifaStig(id, 'render', '3D-myndir vistaðar: ' + R.length + ' af ' + sv.length + (R.length < sv.length ? ' (sumar brugðust)' : ''), { nidurstada: Object.assign({}, (await verk(id)).nidurstada || {}, { render: R.map((x) => x.nafn) }) });
+      log('3D-myndir:', R.map((x) => x.nafn + ' ' + x.url).join(' | ')); return;
+    }
+    await sleep(20000);
+  }
+  await skrifaStig(id, 'render', 'Blender-vélin svaraði ekki innan 40 mín — keyrðu render-saekja ' + id + ' síðar');
+  log('tímamörk — beiðnir eru enn í biðröð (render-saekja ' + id + ')');
+}
+
 async function loka(id, texti) { const v = await verk(id); await skrifaStig(id, 'lokid', texti || 'Lokið', { status: 'lokid', lokid_at: new Date().toISOString() }); log('lokið', id, v.company_id); }
 async function villa(id, texti) { await skrifaStig(id, 'villa', texti, { status: 'villa', lokid_at: new Date().toISOString() }); log('villa skráð', id); }
 async function afturkalla(id) { await skrifaStig(id, 'bida', 'Afturkallað', { status: 'afturkallad', lokid_at: new Date().toISOString() }); log('afturkallað', id); }
 
 (async () => {
   const [cmd, a, b, c] = process.argv.slice(2);
-  const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), skyrsla: () => skyrsla(a),
+  const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), skyrsla: () => skyrsla(a), render: () => render(a, false), 'render-saekja': () => render(a, true),
     stig: () => skrifaStig(a, b, c), loka: () => loka(a, b), villa: () => villa(a, b), afturkalla: () => afturkalla(a) };
   if (!falla[cmd]) { console.error(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 22).join('\n')); process.exit(2); }
   await falla[cmd]();

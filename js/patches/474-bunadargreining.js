@@ -73,6 +73,13 @@
     ROT + ' .bgr-ut em{font-style:normal;color:#7a766d}',
     // Teikning greiningarinnar („sér teikning", Agnar 19.10.2026): blöðin sem greiningin las, merkt — aðskilið Teikningu
     ROT + ' .bgr-bl{grid-column:1/-1}',
+    ROT + ' .bgr-3d{grid-column:1/-1}',
+    ROT + ' .bgr-3d h5{margin:0 0 6px;font:700 12px system-ui,sans-serif}',
+    ROT + ' .bgr-3d-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}',
+    ROT + ' .bgr-3d a{display:block;border:1px solid #d6d3cc;border-radius:8px;overflow:hidden;background:#e9ebee;text-decoration:none;color:#2b2a27}',
+    ROT + ' .bgr-3d a:hover{border-color:#2b2a27}',
+    ROT + ' .bgr-3d img{display:block;width:100%;height:auto}',
+    ROT + ' .bgr-3d b{display:block;padding:5px 9px;font:700 11.5px system-ui,sans-serif;background:#fff;border-top:1px solid #e3e1dc}',
     ROT + ' .bgr-bl-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}',
     '@container (max-width:700px){' + ROT + ' .bgr-bl-g{grid-template-columns:minmax(0,1fr)}}',
     ROT + ' .bgr-k{border:1px solid #e3e1dc;border-radius:9px;overflow:hidden;background:#fff;cursor:pointer;min-width:0}',
@@ -101,6 +108,14 @@
       .then(function (r) { if (r.error) throw r.error; return (r.data && r.data[0]) || null; });
   }
 
+  // 3D-myndir af greiningunni (Blender, Turbo → stigið „3D-myndir"): ein á hverja hæð með veggjavinnu; smellur opnar myndina í fullri stærð
+  function render3dHtml(r) {
+    var L = (r.render || []).filter(function (x) { return x && x.url; });
+    if (!L.length) return '';
+    return '<div class="bgr-3d"><h5>3D-mynd af greiningunni</h5><div class="bgr-3d-g">' + L.map(function (x) {
+      return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð"><img loading="lazy" src="' + esc(x.url) + '" alt="' + esc(x.nafn || '') + '"><b>' + esc(x.nafn || '') + '</b></a>';
+    }).join('') + '</div></div>';
+  }
   function samantektHtml(r) {
     var s = r.samantekt || {}, tki = (r.tki || []).filter(function (t) { return !t.upplysingar; });
     var sl = s.slokkvitaeki != null ? s.slokkvitaeki : tki.filter(function (t) { return !/slang|kefli/i.test(t.bunadur || ''); }).length;
@@ -155,7 +170,7 @@
       '<button type="button" class="bgr-t" data-a="prenta-haedir" title="Samantekt á fyrstu síðu, svo hver hæð á sér blaði (stór hús)">Prenta · hver hæð sér</button>' +
       '<button type="button" class="bgr-t bgr-turbo-t" data-a="turbo" title="Kerfið les teikningarnar upp á nýtt og býr til nýja greiningu og skýrslu — sú vistaða geymist í sögunni">Turbo</button>' +
       '<button type="button" class="bgr-t" data-a="greina" title="Ný greining úr merkjum Teikningar — sú vistaða geymist í sögunni">Greina aftur</button></div>' +
-      '<div class="bgr-b">' + samantektHtml(r) + blodHtml(r) +
+      '<div class="bgr-b">' + samantektHtml(r) + blodHtml(r) + render3dHtml(r) +
       ((r.athugasemdir || []).length ? '<div><h5>Athugasemdir</h5><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div>' : '') +
       ((r.heimildir || []).length ? '<div class="bgr-hf"><h5>Heimildir</h5><ul>' + r.heimildir.map(function (h) {
         return '<li' + (h.gildir === false ? ' class="bgr-urelt"' : '') + '>' + (h.slod ? '<a href="' + esc(h.slod) + '" target="_blank" rel="noopener">' + esc(h.titill) + '</a>' : esc(h.titill)) +
@@ -903,7 +918,7 @@
    * Claude-lota sem er, scripts/bunadargreining/verk/bgr_verk.cjs) tekur það: finnur og sækir teikningarnar, les táknin,
    * sannreynir með yfirlagi, vistar greininguna og býr til PDF-skýrslurnar í Viðhengi. Takkinn sýnir hvar verkið er og
    * endurhleður spjaldið þegar því er lokið. Eitt opið verk á félag (einkvæm vísitala), svo tvíýtingar eru skaðlausar. */
-  var TURBO_STIG = [['bida', 'Biðröð'], ['undirbuningur', 'Teikningar sóttar'], ['lestur', 'Tákn lesin'], ['sannreyning', 'Sannreynt'], ['vistun', 'Greining vistuð'], ['skyrsla', 'Skýrsla'], ['lokid', 'Lokið']];
+  var TURBO_STIG = [['bida', 'Biðröð'], ['undirbuningur', 'Teikningar sóttar'], ['lestur', 'Tákn lesin'], ['sannreyning', 'Sannreynt'], ['vistun', 'Greining vistuð'], ['skyrsla', 'Skýrsla'], ['render', '3D-myndir'], ['lokid', 'Lokið']];
   function turboPanel(el, v) {
     var p = el.querySelector('.bgr-turbo');
     if (!v) { if (p) p.remove(); return; }
