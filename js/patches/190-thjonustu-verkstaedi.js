@@ -482,7 +482,7 @@
       // ── Spjöld-hamurinn: stálspjald með málmhaus og húsmynd (21.10.2026) — sjá gridCard(). Yfirskrifar
       // gömlu .sv-card/_sv-theme reglurnar (blá vinstri rönd, 16px horn, 18/20 fylling) með !important.
       r('.sv-grid', 'grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start'),
-      r('.sv-card.sv-spj', 'padding:0!important;gap:0!important;border:1px solid #000!important;border-left:1px solid #000!important;border-radius:12px!important;background:#fff!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)!important;overflow:hidden;opacity:1!important;font-family:' + SANS),
+      r('.sv-card.sv-spj', 'padding:0!important;gap:0!important;border:1px solid #000!important;border-left:1px solid #000!important;border-radius:12px!important;background:#fff!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)!important;overflow:hidden;opacity:1!important;font-family:' + SANS + ';container-type:inline-size;container-name:spj'),
       r('.sv-card.sv-spj.haett', 'opacity:1!important;border-color:#000!important'),
       r('.sv-card.sv-spj.haett .sv-spj-bukur', 'opacity:.62'),
       r('.sv-spj-haus', 'position:relative;min-height:46px;box-sizing:border-box;padding:5px 16px 5px 20px;background:' + METAL + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.14);border-bottom:1px solid #000;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#fff'),
@@ -539,13 +539,17 @@
       r('.sv-spj-acts ._sv-act:hover', 'filter:brightness(1.2)'),
       r('.sv-spj-acts ._sv-act:active', 'filter:brightness(.95)'),
       r('.sv-spj ._sv-act:focus-visible,.sv-spj ._sv-step:focus-visible,.sv-spj .sv-mark:focus-visible', 'outline:none;box-shadow:0 0 0 3px rgba(190,32,28,.55)!important'),
-      // sími / þröngt: einn dálkur, myndin verður borði efst í búknum, Búið fyllir, Afmerkja í eigin röð
-      '@container b190 (max-width: 1000px){' + r('.sv-grid', 'grid-template-columns:1fr') + '}',
-      '@media(max-width:720px){' +
-        r('.sv-grid', 'grid-template-columns:1fr') +
+      // mjótt spjald (undir 560 px, hvort sem það er sími eða tveir dálkar í þröngum glugga): myndin verður borði
+      // efst í búknum — spurt um breidd SPJALDSINS (container spj), ekki gluggans
+      '@container spj (max-width: 560px){' +
         r('.sv-spj-rod', 'flex-direction:column;gap:10px') +
         r('.sv-spj-mynd', 'order:-1;flex:0 0 auto;width:100%') +
         r('.sv-spj-mynd img,.sv-spj-tomt', 'width:100%;aspect-ratio:auto;height:170px') +
+      '}',
+      // sími / þröngt: einn dálkur, Búið fyllir, Afmerkja í eigin röð
+      '@container b190 (max-width: 1000px){' + r('.sv-grid', 'grid-template-columns:1fr') + '}',
+      '@media(max-width:720px){' +
+        r('.sv-grid', 'grid-template-columns:1fr') +
         r('.sv-spj .sv-step .lb', 'font-size:10px!important') +
         r('.sv-spj-acts ._sv-act', 'height:44px!important;min-height:44px!important;border-radius:10px!important') +
         r('.sv-spj-acts ._sv-act[data-act="buid"]', 'flex:1 1 auto!important;justify-content:center') +
