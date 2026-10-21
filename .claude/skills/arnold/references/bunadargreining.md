@@ -180,6 +180,11 @@ atriðum sem eiga bæði hnitin). Þrír notendur: (1) stóra sýnin á blaði g
 (2) **Teikning sjálf (445, vinnumynd): lag „Búnaðargreining"** — hönnunarstaðir sem strikaðir hringir undir tækjunum meðan þau eru sett, tæki sem er komið á staðinn dofnar og fær ✓, sía á gerð (kveikt/slökkt og
 sía í Vidmot `teikning.greining`, eins á öllum vélum); (3) Blender-myndin (`sena_greining.py`). **Næsta skref í verkhringrásinni:** skrá `varpa` sjálfkrafa í `bgr_verk.cjs vista` (nú handvirkt fyrir Skútuvog 4).
 
+**Ljósmyndir af tækjum (21.10.2026, Agnar: „merkin og skiltin eru svo lík að erfitt að spotta strax"):** `img/taeki/*.png` (12 gegnsæjar myndir: slökkvitæki rauða án texta, L / ABF / Duft / ABC / CO₂, slöngukefli rautt og svart,
+reykskynjari, hitaskynjari, bjalla, segulloki). Notkun: (1) Teikning (445) teiknar ÓTENGD tæki úr greiningu sem myndir (rauða slökkvitækið, rauða keflið, skynjarar); (2) Blender: `sena.taekjamyndir = true` →
+`luna-bridge/blender/raunsaett.py` leggur myndirnar á vinnuskjalið í stað tákna (`takn/ljosm/`), skilti (ÚT, slöngumerki, rafmagn, handboði) halda táknunum — `sena_greining.py` setur flaggið og velur mynd eftir tegund
+(„6 L léttvatn" → L, kolsýra → CO₂, annars rauða án texta).
+
 ## Í Brunahólfi (20.10.2026)
 
 Viðskiptavinir-síða hubbans (brunaholf.netlify.app) fellir prófílinn og Greininguna inn (flipar „Staðir & teikningar" og „Greining", iframe `https://slokkvitaeki.netlify.app/?bh=1#company/<id>` / `#greining/<heimilisfang>`). **Sama vélin** — Búnaðargreining, Teikning og Greining vista í sömu töflur á STAÐINN (fyrirtaeki á kennitölu greiðandans); "＋ Stofna stað" í hubbanum býr hann til. Greiðandi án staðar → stofna fyrst, svo vista greininguna á hann. Dæmi: Uppspil ehf. (kt 470922-2060) → fyrirtæki 1873, verkstaður Sunnukriki 3 (Mosfellsbær).

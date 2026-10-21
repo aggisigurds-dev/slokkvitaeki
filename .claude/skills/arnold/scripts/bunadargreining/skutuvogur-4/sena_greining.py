@@ -59,6 +59,9 @@ for t in G['tki']:
     kind = 'ut' if t.get('flokkur') == 'flotti' else 'bs' if ('löng' in b.lower() or 'kefli' in b.lower()) else 'sl' if t.get('flokkur') is None else 'r' if 'Reyk' in b else 'hiti' if 'Hita' in b else 'hb' if 'handb' in b.lower() else 'st'
     if kind in UTAN: continue
     gerd, stimpill, tegund, avegg = GERD[kind]
+    if kind == 'sl':   # tegund slökkvitækis úr greiningunni: ræður myndinni (L · ABF · Duft · ABC · CO2 · annars rauða án texta)
+        tt = (t.get('tegund') or '').lower().replace('₂', '2'); tegund = t.get('tegund') or 'Slökkvitæki'
+        stimpill = 'co2' if ('co2' in tt or 'kolsýr' in tt) else 'duft' if ('duft' in tt or 'abc' in tt) else 'lettvatn' if ('léttvatn' in tt or 'lettvatn' in tt or ' l ' in (' ' + tt + ' ')) else ''
     x, z = metrar(u, v)
     nx, nz, vegg = stefna(x, z) if avegg else (0.0, 1.0, False)
     e = {'x': round(x, 3), 'z': round(z, 3), 'nx': round(nx, 4), 'nz': round(nz, 4), 'aVegg': bool(vegg), 'gerd': gerd, 'stimpill': stimpill, 'litur': '', 'tegund': tegund}
@@ -68,5 +71,6 @@ S = json.loads(json.dumps(S0))
 S['haedir'][0]['taeki'] = taeki
 S.pop('vinnumynd', None); S.pop('company_id', None)
 S['prof_myndir'] = ['vinnuskjal']
+S['taekjamyndir'] = True            # raunsaett.py: ljósmyndir af tækjum í stað tákna (21.10.2026)
 json.dump(S, open(os.path.join(HER, NAFN_UT), 'w', encoding='utf-8'), ensure_ascii=False)
 print('vistað', NAFN_UT, 'veggir', len(veggir))
