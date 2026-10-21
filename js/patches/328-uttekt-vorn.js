@@ -118,6 +118,27 @@
           if (p.data && p.data.length) out.reikningur.payday = p.data[0];
         } catch (_) {}
       }
+      // 21.10.2026 (Agnar, skjáskot Húsfélagið Bæjarholt 3: „Indicator broken, doesent see if the reikningur is here or
+      // not"): platan las AÐEINS solur (reikninga gerða í appinu). Úttektarreikningar úr Stólpa (fyrir yfirtöku) og
+      // reikningar skráðir úr Drive búa bara í customer_documents — sama uppspretta og „Staða eftir ári" (199), sem sýndi
+      // R-108014 KOMINN á meðan platan sagði „enginn". Mælt 21.10: 171 staður með 2026-úttektarreikning í customer_documents en
+      // engan í solur. Nú: ef solur á engan, er spurt customer_documents með sömu síu og 199 (staður + ár, ekki tvítak,
+      // vidskiptategund uttekt, kredit-raðir Stólpa útilokaðar). Platan og vörnin í LAGI 2 sjá þá sama reikning og árið.
+      if (!out.reikningur) {
+        const d = await s.from('customer_documents')
+          .select('id,invoice_number,amount,doc_date,found_at,drive_file_id,stolpi_stada')
+          .eq('fyrirtaeki_id', coId).eq('year', year)
+          .eq('doc_type', 'reikningur').eq('vidskiptategund', 'uttekt')
+          .or('is_duplicate.is.null,is_duplicate.eq.false')
+          .or('stolpi_stada.is.null,stolpi_stada.not.in.(kreditfaert,kreditreikningur)')
+          .order('id', { ascending: false }).limit(1);
+        if (d.data && d.data.length) {
+          const v = d.data[0];
+          out.reikningur = { num: v.invoice_number || ('skjal #' + v.id), dags: v.doc_date || null, samtals: v.amount,
+                             krafa_sent: null, greitt: null, payday: null,
+                             skjal: { id: v.id, drive: v.drive_file_id || null, stolpi: v.stolpi_stada || null } };
+        }
+      }
     } catch (_) {} })();
     out.kt = await ktP;
     await skyrslaP;
@@ -169,6 +190,13 @@
       const r = st.reikningur;
       const pd = (r.payday && r.payday.status) || '';
       const greitt = r.greitt || pd === 'PAID';
+      if (r.skjal) {   // 21.10.2026: reikningur úr customer_documents (Stólpi / Drive) — sama orðalag og 199
+        const sp = r.skjal.stolpi;
+        const st2 = sp === 'greitt' ? 'Stólpi · greitt' : sp === 'opid_vid_yfirtoku' ? 'Stólpi · fyrri eig.' : 'skráður';
+        parts.push(pill('🧾 Reikningur ' + year + ' — ' + esc(r.num) + (r.samtals != null ? ' · ' + kr(r.samtals) : '') + ' · ' + st2,
+                        sp === 'greitt' ? 'raudt' : 'gult'));
+        return parts.concat(ktPills(st)).join(' ');
+      }
       const stada = greitt ? 'GREITT' + (dmy(r.greitt) ? ' ' + dmy(r.greitt) : '')
                   : (r.krafa_sent || pd === 'SENT') ? 'krafa send' + (dmy(r.krafa_sent) ? ' ' + dmy(r.krafa_sent) : '')
                   : 'krafa ekki send';
@@ -177,14 +205,16 @@
     } else {
       parts.push(pill('🧾 Reikningur ' + year + ' — enginn', 'hlutlaust'));
     }
-    // Kennitalan — sýnd ÁÐUR en nokkur snertir takkann (regla 2).
+    return parts.concat(ktPills(st)).join(' ');
+  }
+  // Kennitalan — sýnd ÁÐUR en nokkur snertir takkann (regla 2).
+  function ktPills(st) {
     if (st.kt && st.kt.staða === 'stangast á') {
-      parts.push(pill('⚠ Kennitala á reiki: staður ' + esc(st.kt.kt_stadar || '—') +
-                      ' · grunnur ' + esc(st.kt.kt_grunns || '—'), 'raudt'));
-    } else if (st.kt && st.kt.staða === 'ótengd') {
-      parts.push(pill('⚠ Engin grunntenging — kt óstaðfest', 'gult'));
+      return [pill('⚠ Kennitala á reiki: staður ' + esc(st.kt.kt_stadar || '—') +
+                   ' · grunnur ' + esc(st.kt.kt_grunns || '—'), 'raudt')];
     }
-    return parts.join(' ');
+    if (st.kt && st.kt.staða === 'ótengd') return [pill('⚠ Engin grunntenging — kt óstaðfest', 'gult')];
+    return [];
   }
 
   function paintStrip(coId, year) {
@@ -316,7 +346,11 @@
       wrap.querySelector('#_uv-cancel').addEventListener('click', () => done(null));
       wrap.querySelector('#_uv-open').addEventListener('click', () => {
         done(null);
-        try { if (window.Sala && Sala.openByNum) Sala.openByNum(r.num); else location.hash = '#bokhald'; } catch (_) {}
+        try {
+          // 21.10.2026: reikningur úr customer_documents (Stólpi/Drive) er ekki sala í appinu — opna skjalið sjálft.
+          if (r.skjal) { if (r.skjal.drive) window.open('https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(r.skjal.drive), '_blank'); return; }
+          if (window.Sala && Sala.openByNum) Sala.openByNum(r.num); else location.hash = '#bokhald';
+        } catch (_) {}
       });
       go.addEventListener('click', () => { if (!go.disabled) done({ why: why.value.trim() }); });
       wrap.addEventListener('keydown', e => { if (e.key === 'Escape') done(null); });

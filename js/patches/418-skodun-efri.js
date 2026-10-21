@@ -139,6 +139,9 @@
     r('.b418-man button.on i', 'box-shadow:0 0 0 2px #f3d98a,0 0 14px rgba(230,190,90,.5),inset 0 1px 0 rgba(255,255,255,.3)'),
     r('.b418-man button.tom i', 'opacity:.35'),
     r('.b418-man button.all i', 'background:transparent;border:1px dashed rgba(255,255,255,.35);box-shadow:none;box-sizing:border-box'),
+    // 21.10.2026 (Agnar: „put the golden glowing ring around Allir when it is chosen"): .all i hér að ofan setti box-shadow:none
+    // og kom Á EFTIR .on i, svo valið Allir fékk aldrei hringinn. Sami gyllti hringur og valinn mánuður; strikin víkja.
+    r('.b418-man button.all.on i', 'border:1px solid #f3d98a;box-shadow:0 0 0 2px #f3d98a,0 0 14px rgba(230,190,90,.5),inset 0 1px 0 rgba(255,255,255,.3)'),
     r('.b418-man button em', 'font-family:' + MONO + ';font-size:10px;font-weight:700;font-style:normal;color:#d5dbe6;letter-spacing:.04em;white-space:nowrap;line-height:15px'),
     r('.b418-man button u', 'font-family:' + MONO + ';font-size:10px;color:#8e97a6;text-decoration:none;line-height:15px'),
     r('.b418-man button.nu em,.b418-man button.on em', 'color:#f3d98a'),
