@@ -1088,7 +1088,10 @@
     if (!/^https:\/\//i.test(u)) return '';
     if (u.indexOf('/storage/v1/object/public/') > -1) {
       u = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=480&quality=72';
+      // 21.10.2026 (Agnar: „your images is still cut of even with enough space"): myndaþjónusta Supabase SKER með
+      // `width` einu sér (resize=cover sjálfgefið — Hellishólar 813×440 → 480×440, miðjan ein eftir). `resize=contain`
+      // minnkar alla myndina (→ 480×260). Mælt í vafra með Image().naturalWidth/Height.
+      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=480&quality=72&resize=contain';
     }
     return u;
   }
