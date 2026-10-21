@@ -271,7 +271,7 @@ async function render(id, saekjaAftur) {
       const gogn = Object.assign({ company_id: +cid }, lesaJson(hSkra));
       const r = await sp('automation_triggers', 'POST', { workflow: 'blender', status: 'bida', requested_by: 'bgr-verk', gogn });
       if (!r.ok) { ohaefar.push(h.nafn + ': beiðni vistaðist ekki ' + r.status); continue; }
-      beidnir.push({ id: r.j[0].id, haed: h.id, nafn: h.nafn, tak: info.alls }); log('beiðni', r.j[0].id, h.nafn, info.alls, 'tæki');
+      beidnir.push({ id: r.j[0].id, haed: h.id, nafn: h.nafn, tak: info.alls, items: path.basename(hSkra) + '.items.json' }); log('beiðni', r.j[0].id, h.nafn, info.alls, 'tæki');
     }
     ids = beidnir.map((x) => x.id);
     await sp('bunadargreining_verk?id=eq.' + id, 'PATCH', { nidurstada: Object.assign({}, v.nidurstada || {}, { render_beidnir: beidnir, render_sleppt: ohaefar }) });
@@ -284,7 +284,12 @@ async function render(id, saekjaAftur) {
     await skrifaStig(id, 'render', '3D-myndir: ' + kl.length + ' af ' + sv.length + ' tilbúnar' + (sv.some((x) => x.status === 'running') ? ' (Blender vinnur)' : sv.every((x) => x.status === 'bida') ? ' (bíður Blender-vélarinnar)' : ''));
     if (kl.length === sv.length) {
       const R = [];
-      sv.forEach((x) => { const m = x.res && x.res.myndir && (x.res.myndir.find((q) => /vinnuskjal/i.test(q.heiti)) || x.res.myndir[0]); if (x.status === 'done' && m && m.url) R.push({ haed: nofn[x.id].haed, nafn: nofn[x.id].nafn, url: m.url, trigger_id: x.id, at: new Date().toISOString() }); });
+      sv.forEach((x) => {
+        const m = x.res && x.res.myndir && (x.res.myndir.find((q) => /vinnuskjal/i.test(q.heiti)) || x.res.myndir[0]); if (x.status !== 'done' || !m || !m.url) return;
+        let it = null; try { it = lesaJson(path.join(D, nofn[x.id].items)); } catch (_) {}
+        // hrein = myndin án tákna; varpa = P·V (metrar senunnar → mynd); kort + taeki = ALLT sem má sía í viðmótinu (sama vörpun og Blender)
+        R.push({ haed: nofn[x.id].haed, nafn: nofn[x.id].nafn, url: m.url, hrein: m.hrein || null, upplausn: m.upplausn || null, varpa: m.varpa || null, kort: it && it.kort, taeki: it && it.taeki, trigger_id: x.id, at: new Date().toISOString() });
+      });
       const r = await sp('bunadargreining?id=eq.' + G.id + '&fjarlaegt_at=is.null', 'PATCH', { render: R }); if (!r.ok) throw new Error('render vistast ekki ' + r.status);
       await skrifaStig(id, 'render', '3D-myndir vistaðar: ' + R.length + ' af ' + sv.length + (R.length < sv.length ? ' (sumar brugðust)' : ''), { nidurstada: Object.assign({}, (await verk(id)).nidurstada || {}, { render: R.map((x) => x.nafn) }) });
       log('3D-myndir:', R.map((x) => x.nafn + ' ' + x.url).join(' | ')); return;

@@ -70,20 +70,22 @@ def kind_af(t):
 def re_reyk(b): return 'reykskynj' in b.lower()
 
 nafn = h['nafn']
-taeki, tel, vantar = [], Counter(), 0
+taeki, tel, vantar, allt = [], Counter(), 0, []
 for t in G['tki']:
     if t.get('haed_id') != HAED_ID and not (not t.get('haed_id') and t.get('haed') == nafn): continue
     uv = ur_ramma(t)
     if not uv: vantar += 1; continue
     kind = kind_af(t)
-    if kind in UTAN: continue
     gerd, stimpill, tegund, avegg = GERD[kind]
     if kind == 'sl':
         tt = (t.get('tegund') or '').lower().replace('₂', '2'); tegund = t.get('tegund') or 'Slökkvitæki'
         stimpill = 'co2' if ('co2' in tt or 'kolsýr' in tt) else 'duft' if ('duft' in tt or 'abc' in tt) else 'lettvatn' if ('léttvatn' in tt or 'lettvatn' in tt or ' l ' in (' ' + tt + ' ')) else ''
     x, z = metrar(*uv)
     nx, nz, vegg = stefna(x, z) if avegg else (0.0, 1.0, False)
-    taeki.append({'x': round(x, 3), 'z': round(z, 3), 'nx': round(nx, 4), 'nz': round(nz, 4), 'aVegg': bool(vegg), 'gerd': gerd, 'stimpill': stimpill, 'litur': '', 'tegund': tegund})
+    e = {'x': round(x, 3), 'z': round(z, 3), 'nx': round(nx, 4), 'nz': round(nz, 4), 'aVegg': bool(vegg), 'gerd': gerd, 'stimpill': stimpill, 'litur': '', 'tegund': tegund}
+    allt.append({'k': kind, 'x': e['x'], 'z': e['z'], 'id': t.get('audkenni') or '', 'stimpill': stimpill, 'tegund': tegund, 'stadur': (t.get('stadur') or '')[:100]})
+    if kind in UTAN: continue
+    taeki.append(e)
     tel[kind] += 1
 sc['taeki'] = taeki
 if VH:
@@ -92,4 +94,5 @@ S.pop('vinnumynd', None); S.pop('vinnumyndir', None)
 S['prof_myndir'] = ['vinnuskjal']
 S['taekjamyndir'] = '--ekki-myndir' not in sys.argv
 json.dump(S, open(UT_F, 'w', encoding='utf-8'), ensure_ascii=False)
+json.dump({'haed': nafn, 'kort': {'golf': golf, 'skurdur': sk, 'vh': float(VH) if VH else S.get('lofthaed')}, 'taeki': allt}, open(UT_F + '.items.json', 'w', encoding='utf-8'), ensure_ascii=False)
 print(json.dumps({'haed': nafn, 'tæki': dict(tel), 'alls': len(taeki), 'án_vörpunar': vantar, 'veggir': len(veggir)}, ensure_ascii=False))

@@ -185,6 +185,15 @@ reykskynjari, hitaskynjari, bjalla, segulloki). Notkun: (1) Teikning (445) teikn
 `luna-bridge/blender/raunsaett.py` leggur myndirnar á vinnuskjalið í stað tákna (`takn/ljosm/`), skilti (ÚT, slöngumerki, rafmagn, handboði) halda táknunum — `sena_greining.py` setur flaggið og velur mynd eftir tegund
 („6 L léttvatn" → L, kolsýra → CO₂, annars rauða án texta).
 
+**3D-mynd úr Turbo (21.10.2026, `bgr_verk.cjs render <id>`):** Turbo gerir nú sjálft 3D-mynd (Blender) af hverri hæð með veggjavinnu: (1) blöð greiningarinnar sem eru ekki mynd borðsins eru skráð á ramma borðsins
+(`skra_blad.py`: FFT-krosssamsvörun á línumyndum, grófleit + fínleit, skor < 0,25 = ekki skráð) og vörpunin geymd í `teikningar[].varpa`; (2) `sena_ur_appi.cjs` opnar Teikningu í hausalausum Chromium og kallar á
+`blenderSena()` (383) — sama sena og „Blender-mynd" takkinn; (3) `render_sena.py` setur TÆKI GREININGAR í stað tækja Teikningar (hnit: rammi borðsins → metrar: `golf.x + ((u − skurdur.x)/skurdur.w − ½)·golf.w`),
+`taekjamyndir` (ljósmyndir) og `--vh` (vegghæð, t.d. 3,9) / `--utan r,hiti,hb,st,ut` (sía burt gerðir úr BÖKUÐU myndinni); (4) beiðni í `automation_triggers` (workflow `blender`, requested_by `bgr-verk`) — Blender-vélin
+tekur hana (~3,5 mín á hæð); (5) niðurstaðan fer í `bunadargreining.render[]`: `url` (bökuð með tækjum), `hrein` (án tákna), `varpa` (P·V, metrar senunnar → mynd), `kort` (golf/skurður/vegghæð) og `taeki` (ÖLL tæki, líka þau
+sem voru síuð úr bökuðu myndinni). Spjaldið sýnir þær undir „3D-mynd af greiningunni". **Síukerfið:** stóra sýnin á blaði greiningarinnar hefur sýnina „Blender" — hrein mynd + tækin teiknuð í vafranum með sömu vörpun
+(sprite-myndir úr `img/taeki`), kveikt/slökkt á hverri gerð (forstillingar „Slökkvibúnaður"/„Allt") og lag Búnaðargreining · Raunveruleg tæki · Bæði. Afturkalla beiðni sem hefur fests: `automation_triggers` er aðeins
+skrifanlegt með service-lykli (RLS) — `luna-bridge/.env`, aldrei prenta lykilinn.
+
 ## Í Brunahólfi (20.10.2026)
 
 Viðskiptavinir-síða hubbans (brunaholf.netlify.app) fellir prófílinn og Greininguna inn (flipar „Staðir & teikningar" og „Greining", iframe `https://slokkvitaeki.netlify.app/?bh=1#company/<id>` / `#greining/<heimilisfang>`). **Sama vélin** — Búnaðargreining, Teikning og Greining vista í sömu töflur á STAÐINN (fyrirtaeki á kennitölu greiðandans); "＋ Stofna stað" í hubbanum býr hann til. Greiðandi án staðar → stofna fyrst, svo vista greininguna á hann. Dæmi: Uppspil ehf. (kt 470922-2060) → fyrirtæki 1873, verkstaður Sunnukriki 3 (Mosfellsbær).

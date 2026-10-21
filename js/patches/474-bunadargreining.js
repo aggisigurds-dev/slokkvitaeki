@@ -234,7 +234,7 @@
   // 20.10.2026 (Agnar: „enable zoom á scroll á músinni … filter til að slökkva á útgöngum merkingunum, default kveikt á öllum"):
   // músarhjól þysjar að bendlinum, dráttur færir (einnig tveir fingur á snertiskjá), tvísmellur núllstillir; sía á hvern flokk
   // (Slökkvibúnaður · ÚT · Brunakerfi) — sýnin er tímabundin (ekkert vistað), allt kveikt í hvert sinn sem glugginn opnast.
-  function stortBlad(b, cid) {
+  function stortBlad(b, cid, rod) {
     var gamalt = document.getElementById('cfh-stort'); if (gamalt) gamalt.remove();
     var o = document.createElement('div');
     o.id = 'cfh-stort';
@@ -254,10 +254,14 @@
     var sjaB = function () {
       return Object.assign({}, b, { tki: sjaTki(), markers: b.markers.filter(function (m, i) { return kveikt[kindAf(b.tki[i])] !== false; }) });
     };
-    var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía">' + SIA.map(function (k) {
+    if (bln) Object.keys(SIA_H).forEach(function (k) { if (SIA.indexOf(k) < 0 && bln.taeki.some(function (q) { return q.k === k; })) SIA.push(k); });
+    var siuHtml = SIA.length > 1 ? '<span class="bgr-sia" role="group" aria-label="Sía"><span class="bgr-pre"><button type="button" data-sia-pre="slokk">Slökkvibúnaður</button><button type="button" data-sia-pre="allt">Allt</button></span>' + SIA.map(function (k) {
       return '<label><input type="checkbox" data-sia="' + k + '" checked><i style="background:' + SIA_L[k] + '"></i>' + esc(SIA_H[k]) + '</label>';
     }).join('') + '</span>' : '';
-    var hamHtml = cid ? '<span class="bgr-lag bgr-ham" role="radiogroup" aria-label="Sýn"><label><input type="radio" name="bgr-ham" value="2d" checked>Teikning</label><label><input type="radio" name="bgr-ham" value="3d">3D</label></span>' : '';
+    // Blender-mynd þessarar hæðar (Turbo → 3D-myndir): hrein mynd + varpa + öll tæki — síað og teiknað hér
+    var haedNafn0 = (b.tki[0] && b.tki[0].haed) || '', haedId0 = (b.tki[0] && b.tki[0].haed_id) || b.id;
+    var bln = ((rod && rod.render) || []).filter(function (x) { return x && (x.hrein || x.url) && x.varpa && x.varpa.length === 16 && x.kort && x.taeki && (x.haed === haedId0 || x.nafn === haedNafn0); })[0] || null;
+    var hamHtml = cid ? '<span class="bgr-lag bgr-ham" role="radiogroup" aria-label="Sýn"><label><input type="radio" name="bgr-ham" value="2d" checked>Teikning</label><label><input type="radio" name="bgr-ham" value="3d">3D</label>' + (bln ? '<label><input type="radio" name="bgr-ham" value="blender">Blender</label>' : '') + '</span>' : '';
     var ham = '2d';
     var lagHtml = cid ? '<span class="bgr-lag" role="radiogroup" aria-label="Lag"><label><input type="radio" name="bgr-lag" value="greining" checked>Búnaðargreining</label><label><input type="radio" name="bgr-lag" value="raun">Raunveruleg tæki</label><label><input type="radio" name="bgr-lag" value="bada">Bæði</label></span>' : '';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(b.nafn) + '"><div class="cfh-s-h"><strong>' + esc(b.nafn) + '</strong><small>' + esc(b.heimild || '') + ' · teikning greiningarinnar</small>' +
@@ -399,12 +403,66 @@
       img.onerror = function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">3D-myndin náðist ekki</div>'; };
       img.src = vm.url;
     };
+    // ── Blender-sýn ──
+    var BL_SP = { sl: ['slett', 1.95], bs: ['slanga_rod', 1.45], r: ['reykskynjari', 0.95], hiti: ['hitaskynjari', 0.95], ut: ['skilti_ut', 0], hb: ['skilti_bjalla', 0], st: ['skilti_rafmagn', 0] };
+    var BL_IMG = {};
+    var blMynd = function (nafn) {
+      if (!BL_IMG[nafn]) BL_IMG[nafn] = new Promise(function (res) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = function () { res(null); }; i.src = '/img/taeki/' + nafn + '.png'; });
+      return BL_IMG[nafn];
+    };
+    var blSkra = function (q) {
+      if (q.k !== 'sl') return BL_SP[q.k][0];
+      var tt = String(q.tegund || '').toLowerCase().replace('₂', '2');
+      return q.stimpill === 'co2' || /co2|kolsýr/.test(tt) ? 'co2' : /abc/.test(tt) ? 'abc' : q.stimpill === 'duft' || /duft/.test(tt) ? 'duft' : q.stimpill === 'lettvatn' ? 'l' : 'slett';
+    };
+    var teiknaBlender = function (stefna, rm, sjaGr) {
+      var slod = bln.hrein || bln.url, img = new Image();
+      img.onload = function () {
+        if (stefna !== seinast || !zl.isConnected) return;
+        var W = img.naturalWidth, H = img.naturalHeight, c = document.createElement('canvas'); c.width = W; c.height = H;
+        var x = c.getContext('2d'); x.drawImage(img, 0, 0);
+        var M = bln.varpa, kt = bln.kort, g = kt.golf, sk = kt.skurdur, vh = kt.vh || 3, plata = Math.max(26, Math.round(0.026 * Math.max(W, H)));
+        var pr = function (px, py, pz) {
+          var cx = M[0] * px + M[4] * py + M[8] * pz + M[12], cy = M[1] * px + M[5] * py + M[9] * pz + M[13], cw = M[3] * px + M[7] * py + M[11] * pz + M[15];
+          return [(cx / cw + 1) / 2 * W, (1 - cy / cw) / 2 * H];
+        };
+        var pts = [];
+        if (sjaGr) bln.taeki.forEach(function (q) { if (kveikt[q.k] !== false) pts.push({ k: q.k, X: q.x, Z: q.z, id: q.id, q: q, raun: false }); });
+        // raunveruleg tæki (merki Teikningar, ramma borðsins) → metrar senunnar með sömu golf/skurð og Blender-senan
+        rm.forEach(function (m2) { pts.push({ k: m2.k, X: g.x + ((m2.u - sk.x) / sk.w - 0.5) * g.w, Z: g.z + ((m2.v - sk.y) / sk.h - 0.5) * g.h, id: m2.audkenni || '', q: { k: m2.k, tegund: m2.tegund, stimpill: '' }, raun: true }); });
+        pts.forEach(function (q) { q.f = pr(q.X, 0, q.Z); });
+        pts.sort(function (a, c2) { return a.f[1] - c2.f[1]; });
+        var lykill = function (q) { return q.k === 'sl' ? blSkra(q.q) : BL_SP[q.k][0]; };
+        Promise.all(pts.map(function (q) { return blMynd(lykill(q)); })).then(function (imgs) {
+          pts.forEach(function (q, i) {
+            var im = imgs[i], sp = BL_SP[q.k], fl = q.f[0], fy = q.f[1], aOpp = (q.raun || lag !== 'bada') ? 1 : 0.55;
+            x.save(); x.globalAlpha = aOpp;
+            if (q.raun) { x.lineWidth = Math.max(2, plata * 0.07); x.strokeStyle = '#111827'; x.setLineDash([plata * 0.14, plata * 0.1]); x.beginPath(); x.ellipse(fl, fy, plata * 0.46, plata * 0.17, 0, 0, 6.2832); x.stroke(); x.setLineDash([]); }
+            if (!im) { x.restore(); return; }
+            if (sp[1] > 0) {                                  // slökkvitæki / slöngukefli / skynjari: mynd með skugga og pinna
+              var hpx = sp[1] * plata, wpx = hpx * im.naturalWidth / im.naturalHeight, skynj = q.k === 'r' || q.k === 'hiti';
+              var hm = skynj ? Math.max(1.8, vh - 0.55) : q.k === 'sl' ? 0.75 : 0.85, b2 = pr(q.X, hm, q.Z);
+              if (!skynj) { x.fillStyle = 'rgba(0,0,0,.22)'; x.beginPath(); x.ellipse(fl, fy, plata * 0.34, plata * 0.12, 0, 0, 6.2832); x.fill(); }
+              var yb = skynj ? b2[1] + hpx * 0.5 : b2[1];
+              x.strokeStyle = 'rgba(70,70,76,.85)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(fl, fy); x.lineTo(b2[0], skynj ? yb - hpx * 0.5 : yb - hpx * 0.04); x.stroke();
+              x.drawImage(im, b2[0] - wpx / 2, yb - hpx, wpx, hpx);
+              if (q.id && (q.k === 'sl' || q.k === 'bs')) { x.font = '800 ' + Math.round(plata * 0.3) + 'px system-ui,sans-serif'; x.textAlign = 'left'; x.textBaseline = 'middle'; x.lineWidth = 3; x.strokeStyle = '#fff'; x.lineJoin = 'round'; x.strokeText(q.id, b2[0] + wpx * 0.55, yb - hpx * 0.5); x.fillStyle = SIA_L[q.k]; x.fillText(q.id, b2[0] + wpx * 0.55, yb - hpx * 0.5); }
+            } else { var sz = plata * 224 / 160 * 0.8; x.drawImage(im, fl - sz / 2, fy - sz / 2, sz, sz); }   // skilti: tákn á gólfpunktinum
+            x.restore();
+          });
+          if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); }
+        });
+      };
+      img.onerror = function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">Blender-myndin náðist ekki</div>'; };
+      img.src = slod;
+    };
     var teiknaAftur = function () {
       var bb = sjaB(), stefna = ++seinast, rm = lag === 'greining' ? [] : raunMerki(), sjaGr = lag !== 'raun';
       var tb = Object.assign({}, bb, { markers: (sjaGr ? bb.markers : []).concat(rm) });
       o.querySelector('.cfh-s-h strong').nextElementSibling.textContent = (b.heimild || '') + (lag === 'greining' ? ' · teikning greiningarinnar' : lag === 'raun' ? ' · raunveruleg tæki á Teikningu' : ' · greining og raunveruleg tæki');
       lis.innerHTML = (sjaGr ? '<h4>Skv. gögnum — ' + esc(fjoldiTexti(bb.tki)) + '</h4>' + listiBlads(bb) : '') + (lag === 'greining' ? '' : raunListi(rm));
       if (ham === '3d') { teikna3D(stefna, rm, sjaGr); return; }
+      if (ham === 'blender' && bln) { teiknaBlender(stefna, rm, sjaGr); return; }
       if (!window.TeiknForskodun) { zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; return; }
       var c = document.createElement('canvas');
       TeiknForskodun.teikna(tb, c, 2600).then(function () { if (stefna === seinast && zl.isConnected) { zl.innerHTML = ''; zl.appendChild(c); } },
@@ -419,6 +477,12 @@
         if ((lag !== 'greining' || ham === '3d') && o.isConnected) teiknaAftur();
       }, function () { raunVilla = 'Náði ekki í tækin á Teikningu.'; if (lag !== 'greining' && o.isConnected) teiknaAftur(); });
     }
+    o.addEventListener('click', function (e) {
+      var pre = e.target && e.target.getAttribute && e.target.getAttribute('data-sia-pre'); if (!pre) return;
+      Object.keys(SIA_H).forEach(function (k) { kveikt[k] = pre === 'allt' || k === 'sl' || k === 'bs'; });
+      o.querySelectorAll('input[data-sia]').forEach(function (i) { i.checked = kveikt[i.getAttribute('data-sia')] !== false; });
+      teiknaAftur();
+    });
     o.addEventListener('change', function (e) {
       if (e.target && e.target.name === 'bgr-lag') { lag = e.target.value; teiknaAftur(); return; }
       if (e.target && e.target.name === 'bgr-ham') { ham = e.target.value; teiknaAftur(); return; }
@@ -900,7 +964,7 @@
   function tengja(el, cid, S) {   // S.rod = núverandi vistuð greining (eða null)
     el.addEventListener('click', function (e) {
       var kort = e.target.closest && e.target.closest('.bgr-k[data-bl]');
-      if (kort && el.contains(kort) && S.rod) { var bl = blodin(S.rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl, cid); return; }
+      if (kort && el.contains(kort) && S.rod) { var bl = blodin(S.rod, true)[+kort.getAttribute('data-bl')]; if (bl) stortBlad(bl, cid, S.rod); return; }
       var b = e.target.closest && e.target.closest('[data-a]');
       if (!b || !el.contains(b)) return;
       var a = b.getAttribute('data-a');
@@ -1070,6 +1134,8 @@
       '#cfh-stort .bgr-sia{display:inline-flex;gap:12px;margin-left:12px;flex-wrap:wrap}',
       '#cfh-stort .bgr-sia label{display:inline-flex;align-items:center;gap:5px;font:600 12px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
       '#cfh-stort .bgr-sia i{width:10px;height:10px;border-radius:50%;display:inline-block}',
+      '#cfh-stort .bgr-pre{display:inline-flex;gap:4px;margin-right:6px}',
+      '#cfh-stort .bgr-pre button{height:24px;padding:0 9px;border:1px solid #d6d3cc;border-radius:6px;background:#fff;font:600 11.5px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
       '#cfh-stort .bgr-lag{display:inline-flex;gap:2px;margin-left:12px;padding:2px;border:1px solid #d6d3cc;border-radius:7px;background:#f4f2ee}',
       '#cfh-stort .bgr-lag label{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font:600 12px system-ui,sans-serif;cursor:pointer;color:#2b2a27}',
       '#cfh-stort .bgr-lag input{position:absolute;opacity:0;pointer-events:none}',
