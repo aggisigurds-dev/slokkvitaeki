@@ -3015,8 +3015,62 @@
       hurdaEfni.forEach(e => { if (e.userData.hurd === 'eld') e.color.setHex(g ? 0xa58a6a : 0xe08a3c); });
     };
     beitaUtliti();
+    // ── STIGAR Í 3D (Agnar 21.10.2026: „síðan þarf einhvernveginn að læra að búa til stigana í 3D vinnuham") ──
+    // Sömu stigar og blender/raunsaett.py smíðar: armur úr teikningunni (miðlína a → b, breidd, þrepafjöldi) upp um hálfa
+    // hæð, pallur og — sé pláss til hliðar (hlid) — bakarmur samsíða (U-stigi) upp í fulla hæð. Gögnin koma úr raunAukagogn
+    // (blenderSena skilar þeim í metrum senunnar; hér eru þau færð aftur í hnit hæðarinnar) og hanga á hæðinni sjálfri.
+    const stigaEfni = {};
+    const teiknaStigana = pdf => {
+      lag.forEach(lg => { if (lg.stigar) { lg.hopur.remove(lg.stigar); lg.stigar = null; } });
+      if (!pdf || !Object.keys(pdf).length) return 0;
+      const sen = handfang.blenderSena({ utlit: 'raunsaett', pdf, myndHamark: 0, sameign: false, allarHaedir: true });
+      if (!sen) return 0;
+      const u0 = (lag[0] && lag[0].metri) || 1;
+      const E = stigaEfni.skref || (stigaEfni.skref = (losa.push(new T.MeshLambertMaterial({ color: 0xa3a9b1 })), losa[losa.length - 1]));
+      const NEF = stigaEfni.nef || (stigaEfni.nef = (losa.push(new T.MeshLambertMaterial({ color: 0x6f757d })), losa[losa.length - 1]));
+      let fj = 0;
+      (sen.haedir || []).forEach(h => {
+        const lg = lag.find(q => q.nr === h.nr);
+        if (!lg || !(h.stigar && h.stigar.length)) return;
+        const P = lg.hopur.position, kv = lg.hopur.scale.x || 1, VH = lg.veggH, halfH = VH / 2;
+        const lx = m => (m * u0 - P.x) / kv, lz = m => (m * u0 - P.z) / kv, lm = v => v * u0 / kv;       // metrar senunnar → hnit hæðarinnar
+        const grp = new T.Group(); lg.stigar = grp; lg.hopur.add(grp);
+        h.stigar.forEach(st => {
+          try {
+            const a = st.a, b = st.b, w = +st.breidd || 1, n = Math.max(2, +st.threp || 8), hlid = st.hlid || 0;
+            const L0 = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L0 < 0.5) return;
+            const bil = L0 / Math.max(1, n - 1), ux = (b[0] - a[0]) / L0, uz = (b[1] - a[1]) / L0, nx = -uz, nz = ux, horn = Math.atan2(-uz, ux);
+            const kassi = (cx, cz, y0, y1, lengd, breidd, efni2) => {
+              const geo = new T.BoxGeometry(lm(lengd), Math.max(0.001, y1 - y0), lm(breidd));
+              const ms = new T.Mesh(geo, efni2 || E); ms.position.set(lx(cx), (y0 + y1) / 2, lz(cz)); ms.rotation.y = horn; grp.add(ms); losa.push(geo);
+            };
+            for (let k = 0; k < n - 1; k++) {       // n þrepalínur = n−1 þrep milli línanna, upp um hálfa hæð
+              const s = (k + 0.5) * bil, top = (k + 1) * halfH / n, cx = a[0] + ux * s, cz = a[1] + uz * s;
+              kassi(cx, cz, 0, top, bil, w);
+              kassi(cx - ux * (bil / 2 - 0.02), cz - uz * (bil / 2 - 0.02), top, top + VH * 0.004, 0.04, w, NEF);
+            }
+            const sP = L0 + w / 2, off = hlid ? hlid * (w / 2 + 0.03) : 0;
+            kassi(a[0] + ux * sP + nx * off, a[1] + uz * sP + nz * off, 0, halfH, w, w * (hlid ? 2 : 1) + (hlid ? 0.06 : 0));
+            if (hlid) {                              // bakarmur samsíða, frá pallinum aftur upp í fulla hæð (plötuþrep)
+              for (let k = 0; k < n - 1; k++) {
+                const s = L0 - (k + 0.5) * bil, top = halfH + (k + 1) * (VH - halfH) / n;
+                const cx = a[0] + ux * s + nx * hlid * (w + 0.06), cz = a[1] + uz * s + nz * hlid * (w + 0.06);
+                kassi(cx, cz, Math.max(0, top - VH * 0.4 / LOFTH), top, bil, w);
+                kassi(cx + ux * (bil / 2 - 0.02), cz + uz * (bil / 2 - 0.02), top, top + VH * 0.004, 0.04, w, NEF);
+              }
+            }
+            fj++;
+          } catch (e) { console.warn('[383] stigi', e); }
+        });
+      });
+      if (fj) console.info('[383] stigar í 3D: ' + fj);
+      return fj;
+    };
     handfang = {
       kassar: haedir.length,
+      // stigar úr textalagi/vigrum PDF-uppdráttarins (raunUrSidu → raunAukagogn): { haedId: gögn }; kallað aftur ef gögn berast seinna
+      stigar: pdf => teiknaStigana(pdf),
+      stigaFjoldi: () => lag.map(q => (q.stigar ? q.stigar.children.length : 0)),
       // auðkenni hæðanna í sviðinu, í röð (445: hvaða hæð „Festa" á við)
       haedIds: () => lag.map(q => q.hd.haedId || null),
       synilegar: () => lag.filter(q => q.hopur.visible).map(q => q.hd.haedId || null),
@@ -3267,7 +3321,7 @@
         // sneiðmynd (3+ sýnilegar hæðir): aðeins þá fylgir sameignin — einnar og tveggja hæða myndir haldast óbreyttar
         const snid = raun && (o.snid || lag.filter(lg => lg.hopur.visible).length >= 3) ? (o.snid || 'snidmynd') : '';
         lag.forEach(lg => {
-          if (!lg.hopur.visible) return;
+          if (!o.allarHaedir && !lg.hopur.visible) return;
           const hd = lg.hd, f = lg.f, kv = lg.hopur.scale.x || 1, P = lg.hopur.position, gw2 = lg.gw / 2, gh2 = lg.gh / 2;
           const sj = lg.sjalfg || Math.max(lg.gw, lg.gh) * 0.004;
           const X = x => M(P.x + x * kv), Z = z => M(P.z + z * kv), L = v => M(v * kv);
@@ -3371,6 +3425,7 @@
         if (el.parentNode) el.parentNode.removeChild(el);
       }
     };
+    if (!husH && gogn && gogn.raunPdf) { try { teiknaStigana(gogn.raunPdf); } catch (e) { console.warn('[383] stigar í 3D', e); } }
     if (samOn) { try { synaSameign(true); } catch (e) { console.warn('[383] sameign 3D', e); } }
     return handfang;
   }
@@ -3420,6 +3475,13 @@
       nn.sort((a, b) => Math.hypot(b.x - f.x, b.y - f.y) - Math.hypot(a.x - f.x, a.y - f.y));
       const n0 = nn[0], numer = naest(n0, nr, n0.fs * 2.6);
       herbergi.push(Object.assign({ texti: nn.map(n => n.t).join(' ').slice(0, 60) }, numer ? { nr: numer.t } : {}, { u: n0.x / B, v: n0.y / H }));
+    });
+    // stigahús án flatarmáls: „Stigahús" stendur stundum á þrepunum sjálfum án „m²" (Fiskislóð 41, 2. hæð) — heitið eitt
+    // nægir til að stigi finnist. Aðeins ef ekkert herbergi með flatarmáli er þegar á staðnum.
+    nofn.forEach(n => {
+      if (!/^(stigah[uú]s|stigi)$/i.test(String(n.t).trim())) return;
+      if (herbergi.some(r => Math.hypot(r.u * B - n.x, r.v * H - n.y) < Math.max(n.fs * 8, 80))) return;
+      herbergi.push({ texti: n.t, u: n.x / B, v: n.y / H });
     });
     // bein lárétt/lóðrétt strik (öll þykkt): reitir utan um „umfelgun" og stigaþrep
     const fl = ops && window.pdfjsLib ? flokkaPdfLinur(window.pdfjsLib.OPS, ops.fnArray, ops.argsArray, vt) : {};
@@ -3547,6 +3609,7 @@
       const stigar = [];
       stigaHerb.forEach(r => {
         const m = R.herbergi(r.x, r.z); if (!m) return;
+        const i0 = stigar.length;
         ['x', 'z'].forEach(ax => {
           const hop = new Map();
           linurM.forEach(([x1, z1, x2, z2]) => {
@@ -3565,9 +3628,32 @@
           hh.filter(g => g.length >= 4).forEach(g => {
             const s0 = g.reduce((s, q) => s + q[1], 0) / g.length, s1 = g.reduce((s, q) => s + q[2], 0) / g.length, mid = (s0 + s1) / 2;
             const a = ax === 'x' ? [mid, g[0][0]] : [g[0][0], mid], b = ax === 'x' ? [mid, g[g.length - 1][0]] : [g[g.length - 1][0], mid];
-            stigar.push({ a: a.map(r3), b: b.map(r3), breidd: r3(s1 - s0), threp: g.length });
+            // neðsta þrep nær hurð (eins og blender/raunsaett.py) og hlid = hlið þar sem pláss er fyrir bakarm (U-stigi): ±1 / 0
+            const dyrFj = q => hurdir.reduce((d, h2) => Math.min(d, Math.hypot(q[0] - (h2[0] + h2[2]) / 2, q[1] - (h2[1] + h2[3]) / 2)), 99);
+            const pa = dyrFj(b) < dyrFj(a) ? b : a, pb = pa === a ? b : a, w = s1 - s0;
+            const L0 = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) || 1, ux = (pb[0] - pa[0]) / L0, uz = (pb[1] - pa[1]) / L0;
+            let hlid = 0;
+            [1, -1].some(sg => { if (R.inni(m, (pa[0] + pb[0]) / 2 - uz * sg * (w + 0.1), (pa[1] + pb[1]) / 2 + ux * sg * (w + 0.1))) { hlid = sg; return true; } return false; });
+            stigar.push({ a: pa.map(r3), b: pb.map(r3), breidd: r3(w), threp: g.length, hlid });
           });
         });
+        // samsíða armar hlið við hlið í sama stigahúsi (Fiskislóð 2. hæð: 11 og 7 þrep) eru tveir armar SAMA U-stiga, ekki tveir
+        // stigar: lengri armurinn heldur sér, hinn fellur inn í hann (hlid vísar á hann) — annars lenda tveir stigar ofan í öðrum
+        const mina = stigar.splice(i0).sort((p, q) => q.threp - p.threp), halda = [];
+        mina.forEach(st => {
+          const ust = halda.find(k => {
+            const ka = Math.hypot(k.b[0] - k.a[0], k.b[1] - k.a[1]) || 1, sa = Math.hypot(st.b[0] - st.a[0], st.b[1] - st.a[1]) || 1;
+            const kx = (k.b[0] - k.a[0]) / ka, kz = (k.b[1] - k.a[1]) / ka, sx = (st.b[0] - st.a[0]) / sa, sz = (st.b[1] - st.a[1]) / sa;
+            if (Math.abs(kx * sx + kz * sz) < 0.95) return false;
+            const dx = (st.a[0] + st.b[0]) / 2 - (k.a[0] + k.b[0]) / 2, dz = (st.a[1] + st.b[1]) / 2 - (k.a[1] + k.b[1]) / 2;
+            const pr = -dx * kz + dz * kx, al = dx * kx + dz * kz;       // þvert á og eftir armi k
+            if (!(Math.abs(pr) >= 0.6 * k.breidd && Math.abs(pr) <= 2.6 * k.breidd) || Math.abs(al) > (ka + sa) / 2 * 0.6) return false;
+            if (!k.hlid) k.hlid = pr > 0 ? 1 : -1;
+            return true;
+          });
+          if (!ust) halda.push(st);
+        });
+        halda.forEach(st => stigar.push(st));
       });
       if (stigar.length) ut.stigar = stigar;
     }
@@ -5764,11 +5850,16 @@
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
     // HEITI HERBERGJA úr textalagi vigur-PDF fyrir gólfefnin (Bað → flísar, Svalir, Gangur …): lesið einu sinni í lotunni
     // (sameignin hefur oftast þegar lesið það); mest 4 s — annars opnast 3D án þeirra og rýmin flokkast eftir lögun.
+    const pdfKort = {};     // { haedId: raunUrSidu } — stigarnir í 3D (syna3d → teiknaStigana) lesa þetta, líka það sem berst eftir 4 s
     await Promise.race([Promise.all(ut.map(async u => {
       const h = hs.find(x => x && x.id === u.haedId); if (!h || !pdfSlod(h) || !(u.frumB > 0)) return;
       try {
         const pg = await raunGognUrPdf(h), sk = u.sk || { x: 0, y: 0 };
         u.heitiTexta = ((pg && pg.herbergi) || []).map(r => ({ texti: r.texti, x: r.u * u.frumB - (sk.x || 0), y: r.v * u.frumH - (sk.y || 0) }));
+        if (pg) {
+          pdfKort[u.haedId] = pg;
+          if (G.syn3d && G.syn3d.stigar && G.syn3d.haedIds().indexOf(u.haedId) >= 0 && document.getElementById('fp-3d')) { try { G.syn3d.stigar(pdfKort); } catch (_) {} }
+        }
       } catch (_) {}
     })), new Promise(r => setTimeout(r, 4000))]);
     let husEl = null, adal = gamur;
@@ -5795,7 +5886,7 @@
         // takkar og skýringar hægra megin við húsið
         [gamur.querySelector('#fp-3d-haedir'), gamur.querySelector('#fp-3d-skyr')].forEach(x => { const w = x && x.parentElement; if (w) w.style.left = 'calc(25% + 10px)'; });
       }
-      G.syn3d = await syna3d(adal, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn });
+      G.syn3d = await syna3d(adal, { haedir: ut, stigaStafli: ut.length >= 3, sameign: SAM.syn, raunPdf: pdfKort });
       skyr.textContent = 'Draga = snúa · hjól / klípa = aðdráttur · shift-draga eða tveir fingur = færa' + (ut.length > 1 ? ' · ' + ut.length + ' hæðir' : '') + (sleppt.length ? ' · sleppt: ' + sleppt.join(', ') : '');
       const b = document.querySelector('#modal-floorplan .fp-3d-btn'); if (b) b.setAttribute('aria-pressed', 'true');
       // Skýring lita — fylgir því sem er á skjánum: valin hæð ein, eða allar. Litirnir byggja á EI-merkjum sem voru lesin
