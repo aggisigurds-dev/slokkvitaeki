@@ -219,7 +219,20 @@
       V + '._ars-nota3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font:500 11.5px/1.35 ' + SANS + ';color:#2b313c;white-space:normal;word-break:break-word;cursor:text;min-height:15px}',
       // Reiturinn sjálfur er ósýnilegur ofan á textanum þar til smellt er í hann.
       // Engin gullrönd (Agnar 23.09: „taka kannski bara burtu þessa rönd").
-      W + '._ars-notacell ._ars-plannote{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:4px 6px!important;border:0!important;background:transparent!important;color:transparent!important;caret-color:#1f2530;box-shadow:none!important}',
+      /* 21.10.2026 — Agnar: „The text goes missing when I apply filter í vinnslu."
+       *
+       * Reiturinn er gegnsær og `._ars-nota3` ber textann. Það er rétt hönnun —
+       * en hún hvílir á því að yfirlagið SÉ til. Sé það ekki (taflan endurteiknuð
+       * og `notur()` ekki búið að keyra, eða hún stöðvaðist) verður dálkurinn
+       * auður: raðir MEÐ nótu sýna ekkert, raðir ÁN nótu sýna „···" því
+       * staðgengilstextinn hefur sinn eigin lit. Nákvæmlega það sést á skjáskoti
+       * Agnars — Aspafell, Jarðboranir, Bílabúð Benna og Álfaborg auð (allar með
+       * nótu), Iðnó og Tjarnarból með „···" (báðar án nótu).
+       *
+       * Gegnsæið er því bundið við `._ars-nota-lag`, sem `notur()` setur um leið
+       * og það býr lagið til. Vanti lagið sýnir reiturinn sinn eigin texta —
+       * dálkurinn getur ekki orðið auður. Venjulega leiðin er óbreytt. */
+      W + '._ars-notacell._ars-nota-lag ._ars-plannote{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:4px 6px!important;border:0!important;background:transparent!important;color:transparent!important;caret-color:#1f2530;box-shadow:none!important}',
       W + '._ars-notacell.arsm-ritar ._ars-plannote{background:#fff!important;color:#1f2530!important;border:1px solid #b8912f!important;z-index:3!important}',
       V + '._ars-notacell.arsm-ritar ._ars-nota3{visibility:hidden}',
 
@@ -888,6 +901,8 @@
       }
       if (document.activeElement !== inp) lag.textContent = inp.value || '';
       td.classList.toggle('_er-med', !!inp.value);
+      // Merkið sem CSS-reglan hvílir á: lagið er til, svo reiturinn má hverfa.
+      td.classList.add('_ars-nota-lag');
     });
   }
 
