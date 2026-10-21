@@ -823,7 +823,16 @@
     hreinsaDb(coId);
   }
 
+  /* 21.10.2026 — reglan sjálf flutt í 476 (sjá hausinn þar). Hér stóð eitt af
+   * fjórum eintökum hennar. Fallið er áfram til því tugir kallara vísa í það,
+   * en það hugsar ekki lengur sjálft. Varaleiðin er ÞRÖNG viljandi: finnist 476
+   * ekki er lesið beint úr geymda flagginu og verkstæðið sleppt — betra að
+   * vísirinn vanmeti en að hann segi eitthvað sem enginn annar staður segir. */
   function erIVinnslu(coId) {
+    try { if (window.IVinnslu) return IVinnslu.er(coId); } catch (_) {}
+    return erIVinnsluVaraleid(coId);
+  }
+  function erIVinnsluVaraleid(coId) {
     const AS = window.AppSettings; if (!AS || !AS.path || !coId) return false;
     const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
     const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
@@ -842,14 +851,16 @@
      * `field_inspected_year`. Lokið ár stendur óhaggað í gögnunum; aðeins
      * vísirinn logar. Og hann segir satt — tækið ER hjá okkur.
      * Staðan slokknar sjálf þegar tækið fer heim (sjá `taekiAVerkstaedi`). */
-    return geymt || taekiAVerkstaedi(coId);
+    return geymt;
   }
   // Satt AÐEINS vegna verkstæðisins — þá er ekkert geymt flagg til að slökkva á.
+  // Fjöldinn kemur úr 476 (eitt batch-kall); `taekiAVerkstaedi` er varaleið.
   function vinnslaAfVerkstaedi(coId) {
     const AS = window.AppSettings; if (!AS || !AS.path || !coId) return false;
     const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
     const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
     const geymt = +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
+    try { if (window.IVinnslu && IVinnslu.verkstaediVitad()) return !geymt && IVinnslu.verkstaedi(coId) > 0; } catch (_) {}
     return !geymt && taekiAVerkstaedi(coId) === true;
   }
   // Aðeins snert þegar staðan breytist — vaktin á companies-main myndi annars vekja sig sjálf (classList/attr skrá breytingu).
@@ -874,6 +885,9 @@
       return;
     }
     const varA = erIVinnslu(coId);
+    // Á leiðinni ÚT: spyrja fyrst hvað heldur félaginu opnu (476) og bjóða að
+    // merkja tækin sótt. Á leiðinni INN er ekkert að vara við.
+    if (varA) { try { if (window.IVinnslu && !(await IVinnslu.spyrjaAdurEnTekidAf(coId))) return; } catch (_) {} }
     b.disabled = true;
     let ok = false;
     if (varA) {

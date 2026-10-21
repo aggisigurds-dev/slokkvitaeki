@@ -1650,11 +1650,17 @@
       // 2026-05-26: damage-control filter — show only flagged priority cases.
       arr = arr.filter(c => +(c._ars.priority || 0) > 0);
     } else if (state.status === 'ivinnslu') {
-      // „Í vinnslu" = úttekt hafin á árinu en árið ekki klárað. Sama regla og
-      // dökkbláa „Í vinnslu"-pillan í töflunni notar (field_inspected_year), svo
-      // sían og merkið á röðinni segja ALLTAF það sama.
-      arr = arr.filter(c => +(c._ars.field_inspected_year || 0) === curYear &&
-                            !isDoneYear(c, curYear));
+      /* 21.10.2026 — Agnar: „þetta á allt að fylgjast saman".
+       *
+       * Hér stóð þriðja eintakið af „í vinnslu"-reglunni og það var ÞRENGRA en
+       * hin: það taldi aðeins geymda flaggið. Borðið og prófíllinn töldu líka
+       * vistuð drög og tæki á verkstæðinu, svo félag gat borið blátt merki á
+       * prófílnum en vantað í þessa síu. Nú les hún sama fall og þau — 476.
+       * Flagan efst telur með countByStatus, sem keyrir ÞESSA síu, svo talan og
+       * listinn geta ekki sagt sitt hvað. */
+      arr = arr.filter(c => (window.IVinnslu && IVinnslu.er)
+        ? IVinnslu.er(c.id)
+        : (+(c._ars.field_inspected_year || 0) === curYear && !isDoneYear(c, curYear)));
     } else if (state.status === 'akstur') {
       // Allir sem eru á akstursleið (1/2/3). Lesið gegnum ArsAkstur eins og
       // 🚗-chippinn í töflunni — ekki beint úr blobbinu, svo leiðin sem patch
@@ -2374,7 +2380,10 @@
     // flöguna gefur (yfir allt árið). Undirlínan segir HVAÐ er talið. Rauða spjaldið las
     // áður v_thjonustu_tolur.eftir_2026 (= í ársskoðun − 2026-skýrsla skráð), allt önnur
     // skilgreining en ⏳ Eftir-flagan.
-    const countByStatus = (v) => {
+      // Verkstæðis-mengið (476) er forsenda þess að talan hér að neðan sé rétt.
+    // Ein fyrirspurn, aðeins meðan hún er ófersk; svarið vekur endurteikningu.
+    try { if (window.IVinnslu) IVinnslu.hlada(); } catch (_) {}
+  const countByStatus = (v) => {
       const keepS = state.status, keepQ = state.search;
       state.status = v; state.search = '';
       try { return filteredSorted({ ignoreMonths: true, ignorePostnr: true }).length; }
@@ -2398,6 +2407,21 @@
        * ósýnilegur hópur. countByStatus keyrir SÖMU síu og flagan sjálf, svo
        * talan og listinn geta ekki sagt sitt hvað. */
       ivinnslu: countByStatus('ivinnslu') };
+    /* 21.10.2026 — MÆLT: flagan sagði 31 og ÞjónustuVerkstæðið 32 á sama
+     * augnabliki, og reglan var þó sú SAMA á báðum stöðum (476). Munurinn var
+     * eitt falið félag: Rentur Fagraberg 18. Faldir (🕶) hverfa úr öllum sýnum
+     * Ársskoðunar nema sinni eigin — það er viljandi og á að standa.
+     *
+     * En ósýnilegur munur er nákvæmlega það sem lét Agnar hætta að treysta
+     * tölunum. Því er hann TALINN og sagður í titli flögunnar. Tvær tölur sem
+     * skýra hvor aðra eru ekki ósamræmi; tvær tölur án skýringar eru það.
+     */
+    const ivinnsluFalid = (() => {
+      try {
+        if (!(window.IVinnslu && IVinnslu.er)) return 0;
+        return (_cache.list || []).filter(c => c && c._ovisst && IVinnslu.er(c.id)).length;
+      } catch (_) { return 0; }
+    })();
     // 23.09.2026: hvað hreina bakstaðan SKILUR EFTIR — talan á „sýna líka"-rofanum,
     // svo undanskildi hópurinn sé sýnilegur en ekki talinn með. Sama regla og sían.
     const skipUndan = (() => {
@@ -2657,12 +2681,17 @@
               { v: 'nytt', label: '🆕 Nýtt' },
               // 2026-07-30 (ósk Agnars): tvær síur í viðbót — vinnan sem er
               // hafin en óklárðuð, og allir sem eru á akstursleið.
-              { v: 'ivinnslu', label: '🔧 Í vinnslu' + (cnt.ivinnslu ? ' ' + cnt.ivinnslu : '') },
+              { v: 'ivinnslu', label: '🔧 Í vinnslu' + (cnt.ivinnslu ? ' ' + cnt.ivinnslu : ''),
+                t: 'Úttekt hafin á árinu, óklárað drög vistuð, eða tæki félagsins á verkstæðinu hjá okkur.'
+                 + ' Sama regla og ÞjónustuVerkstæðið og „Í vinnslu"-takkinn á fyrirtækjasíðunni nota.'
+                 + (ivinnsluFalid ? ('\n\n' + ivinnsluFalid + (ivinnsluFalid === 1 ? ' falið félag er í vinnslu en ekki talið hér' : ' falin félög eru í vinnslu en ekki talin hér')
+                     + ' (🕶 faldir sjást aðeins á ♻️ Endurheimt).'
+                     + ' ÞjónustuVerkstæðið telur þau með, svo talan þar er ' + (cnt.ivinnslu + ivinnsluFalid) + '.') : '') },
               { v: 'akstur', label: '🚗 Aksturslisti' },
               // 2026-09-08: faldir — endurskoðunarhólfið. Sama merki og 157.
               { v: 'ovisst', label: '♻️ Endurheimt' + (endurCount ? ' ' + endurCount : '') }
             ].map(s => `
-              <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
+              <button data-status="${s.v}" class="_ars-st"${s.t ? ` title="${esc(s.t)}"` : ''} style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
               ${s.v !== 'skipped2025' ? '' : `
               <span id="_ars-skiphide" role="checkbox" tabindex="0" aria-checked="${state.hideSkipped ? 'true' : 'false'}"
                 title="${state.hideSkipped
@@ -3210,6 +3239,13 @@
       // sjálfvirka merkið hefði kveikt aftur við næstu hleðslu — notandinn hefði ekki
       // getað slökkt á því.
       const newVal = isCurrentlyMarked ? -1 : curYear;
+      /* 21.10.2026 — Agnar: „ef maður ætlar að taka af í vinnslu … þá ætti að koma
+       * viðvörun … að það séu ennþá tæki á verkstæði … og hlekkur á þann stað".
+       * Sama fall og takkinn á prófílnum og ✕ Afmerkja á borðinu kalla — eitt
+       * orðalag, einn hlekkur, ein leið til að merkja tækin sótt. */
+      if (isCurrentlyMarked) {
+        try { if (window.IVinnslu && !(await IVinnslu.spyrjaAdurEnTekidAf(coId))) return; } catch (_) {}
+      }
       btn.disabled = true;
       // RACE-LAGFÆRING (2026-07-15): áður var ÖLL arsskodun_customers taflan skrifuð
       // úr gömlum lestri (`allMap`) → hak á einni röð gat yfirskrifað nýlega breytingu

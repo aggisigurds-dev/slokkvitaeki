@@ -69,6 +69,7 @@
       return;
     }
     try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
+    try { if (window.IVinnslu) IVinnslu.gleyma(); } catch(_){}
     await loadSott(true); await loadShop(true); inject(true);
   }
 
@@ -76,7 +77,7 @@
     if (!(window.DB && DB.sb)) { _shop = []; return; }
     if (!force && Date.now() - _loadedAt < 8000) return;
     try {
-      _shop = await DB.fetchAll((from, to) => DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice').eq('status', 'loaned').order('id').range(from, to));
+      _shop = await DB.fetchAll((from, to) => DB.sb.from('uttaeki').select('id,client,type,size,serial,status,custody_status,service_choice,fyrirtaeki_id,last_insp,next_insp').eq('status', 'loaned').order('id').range(from, to));
       _loadedAt = Date.now();
     } catch (_) {}
     // 29.09.2026 (422, Agnar: „aðeins í verkbeiðninni"): hvaða tæki eiga opna verkbeiðni (122 Sækja inn)?
@@ -380,6 +381,7 @@
     // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
     // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
     try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
+    try { if (window.IVinnslu) IVinnslu.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
 
@@ -430,8 +432,36 @@
     // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
     // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
     try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
+    try { if (window.IVinnslu) IVinnslu.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
+  /* 21.10.2026 — Agnar: „Á að merkja tækin sem voru á verkstæði sem sótt og
+   * sett á sinn stað" … „then mark it as picked up in the Verkstæði
+   * automatically".
+   *
+   * Spurningin kemur frá 476 þegar félag er tekið úr vinnslu og tæki þess
+   * standa enn hér. Lokunin sjálf má EKKI verða ný skrifleið: hún fer um
+   * `close` eins og „Sækja"-takkinn, svo þjónustuvalið skráist á tækið,
+   * next_insp færist fram um ár og `uttaeki_sott_log` geri afturköllun mögulega.
+   *
+   * `loadShop(true)` fyrst er skilyrði, ekki kurteisi: `close` les tækið úr
+   * `_shop` til að geyma fyrra ástandið (`adur`). Væri borðið ósótt — sem það
+   * er alltaf þegar kallað er af Ársskoðun eða fyrirtækjasíðu — fyndist tækið
+   * ekki, `adur` yrði null og afhendingin yrði ÓAFTURKALLANLEG. Örið eftir
+   * nákvæmlega þá hættu er skráð í `close` sjálfu (12.10.2026).
+   *
+   * Skilar fjölda tækja sem voru merkt sótt (0 ef ekkert fannst).
+   */
+  async function sottFyrirFelag(coId) {
+    if (!coId) return 0;
+    await loadShop(true);
+    const minir = _shop.filter(u => String(u.fyrirtaeki_id) === String(coId));
+    if (!minir.length) return 0;
+    let n = 0;
+    for (const u of minir) { try { await close(u.id); n++; } catch (_) {} }
+    return n;
+  }
+
   async function del(id) {
     const delMsg = 'Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)';
     const delOk = (window.Confirm && Confirm.show) ? await Confirm.show(delMsg) : window.confirm(delMsg);
@@ -442,6 +472,7 @@
     // Leidda „i vinnslu"-stadan a felaginu (165) hvilir a thvi hvort TAEKI se a
     // verkstaedinu — hun verdur ad gleyma thegar thad breytist.
     try { if (window.VisitWorkflowVerkst) VisitWorkflowVerkst.gleyma(); } catch(_){}
+    try { if (window.IVinnslu) IVinnslu.gleyma(); } catch(_){}
     await loadShop(true); inject(true);
   }
 
@@ -521,7 +552,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti, prenta: prenta, afturkalla: afturkalla };
+  window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close, hluti: hluti, prenta: prenta, afturkalla: afturkalla, sottFyrirFelag: sottFyrirFelag };
   console.log('[verkstaedi-loaned] v7 installed (+ rólegur stíll eins og VERK-súlan)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */

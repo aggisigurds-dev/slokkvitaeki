@@ -842,6 +842,10 @@
       const info = arsInfo(co.id);
       // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
+      // 21.10.2026: hólfið les EINU regluna (476) — áður stóð hér eitt af fjórum
+      // eintökum hennar og þau voru þegar farin að reka í sundur.
+      const iVinnslu = (window.IVinnslu && IVinnslu.er) ? IVinnslu.er(co.id)
+        : ((fy === curYear || hasDraft) && !a.sv_force_unstarted);
       const docs = _yearDocs ? (_yearDocs.get(String(co.id)) || null) : null;
       const hasSkyrsla = !!(docs && docs.skyrsla);
       const hasReikDoc = _reikStadir.has(co.id) || !!(docs && docs.reik);   // staður, ekki kt
@@ -873,8 +877,13 @@
         pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null,   // krafa ársins á þessum stað
         verkst: _verkstByCo ? (_verkstByCo.get(String(co.id)) || 0) : 0   // óskiluð tæki á verkstæðinu
       };
-      if (ly === curYear) out.buid.push(card);
-      else if ((fy === curYear || hasDraft) && !a.sv_force_unstarted) out.vinnsla.push(card);   // started OR has a saved draft (unless force-removed by Afmerkja)
+      /* Röðin skiptir máli: „í vinnslu" gengur FRAMAR „búið í ár". Tæki félagsins
+       * á verkstæðinu hjá okkur heldur verkinu opnu þótt árið sé merkt búið
+       * (Agnar 21.10). MÆLT: 4 félög færast hingað. Takið eftir að `last_year_
+       * inspected` er ÓHREYFT — árslásinn og reikningsstaðan breytast ekki,
+       * aðeins hvar kortið stendur á borðinu. Tækið fer heim → kortið fer í Búið. */
+      if (iVinnslu) out.vinnsla.push(card);
+      else if (ly === curYear) out.buid.push(card);
       else if (m > 0 && m <= curMonth) out.dagskra.push(card);   // due/overdue, not started
     });
     const byName = (x, y) => String(x.nafn).localeCompare(y.nafn, 'is');
@@ -925,7 +934,12 @@
   const reopen       = id => setFlag(id, { field_inspected_year: 0, last_year_inspected: 0 });
   // Afmerkja: andhverfan á bláa hnappnum — núllar vinnslu-flaggið svo kortið
   // dettur úr 🔵 (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn, annars af borðinu).
-  const unVinnsla = id => setFlag(id, { field_inspected_year: 0, sv_force_unstarted: true }).then(ok => {
+  const unVinnsla = async id => {
+    // Sama viðvörun og í Ársskoðun og á prófílnum — ein leið, eitt orðalag.
+    try { if (window.IVinnslu && !(await IVinnslu.spyrjaAdurEnTekidAf(id))) return false; } catch (_) {}
+    return _unVinnslaSkrif(id);
+  };
+  const _unVinnslaSkrif = id => setFlag(id, { field_inspected_year: 0, sv_force_unstarted: true }).then(ok => {
     if (!ok) return ok;
     try {
       if (window.Arsskodun && Arsskodun._cache) {

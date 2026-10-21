@@ -50,13 +50,17 @@
       const a = map[String(co.id)] || {};
       const ly = +a.last_year_inspected || 0;
       const fy = +a.field_inspected_year || 0;
-      const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
-      if (ly === curYear) return;                 // búið í ár → ekki í vinnslu
-      if (!(fy === curYear || hasDraft)) return;  // hvorki byrjað né drög
-      // 16.10.2026 (Agnar: „Örkin veitingar á ekki að vera þarna"): „Afmerkja" í Þjónustuverkstæðinu setur sv_force_unstarted og
-      // borðið (190 buckets) sleppir þá fyrirtækinu þótt vistuð drög séu til. Þessi regla SPEGLAR 190 en gleymdi þessu — listinn á
-      // Fjármála-yfirlitinu taldi 270.710 kr sem borðið sýndi ekki.
-      if (a.sv_force_unstarted) return;
+      /* 21.10.2026 — reglan er nú á EINUM stað (476). Athugasemdin hér að neðan
+       * frá 16.10 lýsir einmitt kostnaðinum af því að hafa hana á mörgum: þetta
+       * eintak gleymdi `sv_force_unstarted` og taldi 270.710 kr sem borðið sýndi
+       * ekki. Nú getur það ekki gerst — borðið og þessi tala lesa sama fallið. */
+      if (window.IVinnslu && IVinnslu.er) { if (!IVinnslu.er(co.id)) return; }
+      else {
+        const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
+        if (ly === curYear) return;
+        if (!(fy === curYear || hasDraft)) return;
+        if (a.sv_force_unstarted) return;
+      }
       rows.push({ label: co.nafn || ('#' + co.id), kr: Math.round(+arsInfo(co.id).estimated_yearly || 0) });
     });
     rows.sort((x, y) => y.kr - x.kr);

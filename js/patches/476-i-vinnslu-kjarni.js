@@ -58,7 +58,7 @@
    * félögum, mælt 21.10.2026) — PostgREST klippir þegjandi við 1000.
    */
   var _verkst = null;        // Map<String(coId), fjöldi> — null = ekki sótt enn
-  var _sottAt = 0, _iGangi = null;
+  var _sottAt = 0, _iGangi = null, _fingrafar = null;
   var FERSKT_MS = 60 * 1000;
 
   function hlada(force) {
@@ -77,8 +77,13 @@
           if (!k || k === 'null' || k === 'undefined') return;
           m.set(k, (m.get(k) || 0) + 1);
         });
+        /* Aðeins tilkynnt þegar mengið BREYTTIST. Óskilyrt tilkynning myndi vekja
+         * endurteikningu á hverri mínútu og það er einmitt hoppið sem reglan um
+         * stöðugt viðmót bannar. */
+        var adur = _fingrafar;
+        _fingrafar = Array.from(m.entries()).sort().map(function (p) { return p[0] + ':' + p[1]; }).join(',');
         _verkst = m; _sottAt = Date.now();
-        try { window.dispatchEvent(new CustomEvent('ivinnslu:breytt')); } catch (_) {}
+        if (adur !== _fingrafar) { try { window.dispatchEvent(new CustomEvent('ivinnslu:breytt')); } catch (_) {} }
       } catch (_) {
         /* Sóknarvilla skilur `_verkst` eftir eins og það var. Tómt svar er ekki
          * staðreynd: hefðum við sett tómt kort hér myndi hvert einasta félag
@@ -100,9 +105,20 @@
   function drog(coId) {
     try { return !!(window.SavedReports && SavedReports.has && SavedReports.has(coId)); } catch (_) { return false; }
   }
+  function buid(coId, a) {
+    a = a || ars(coId) || {};
+    return +a.last_year_inspected === ar();
+  }
+  /* MÆLT 21.10.2026: `&& !buid` er ekki skraut. Án þess töldust 52 félög í vinnslu
+   * í stað 25 — 27 þeirra voru fullkláruð og rukkuð. Ástæðan er að 266 stimplar
+   * `field_inspected_year = curYear` þegar skýrsla eða reikningur er merktur, og
+   * sá stimpill stendur eftir sem leifar þegar árinu er lokað. Flaggið eitt og sér
+   * segir því ekki „í vinnslu" — það segir „úttekt var hafin á þessu ári".
+   * Verkstæðið og lifandi drögin ganga hins vegar FRAMAR lokuðu ári viljandi:
+   * verkinu er ekki lokið meðan við geymum búnaðinn þeirra. */
   function flagg(coId, a) {
     a = a || ars(coId) || {};
-    return +a.field_inspected_year === ar();
+    return +a.field_inspected_year === ar() && !buid(coId, a);
   }
   function afmerkt(coId, a) {
     a = a || ars(coId) || {};
@@ -195,5 +211,31 @@
     bond: bond,
     spyrjaAdurEnTekidAf: spyrjaAdurEnTekidAf
   };
+  /* ── Mengið sótt STRAX, ekki við fyrstu teikningu ────────────────────────
+   * MÆLT 21.10.2026: án þessa sagði Ársskoðun 30 og ÞjónustuVerkstæðið 32 á sama
+   * augnabliki. Hvorugt var rangt reiknað — kortið var einfaldlega ekki komið
+   * þegar Ársskoðun taldi, svo tvö félög með tæki á verkstæðinu vantaði. Vörður
+   * sem krefst þess að tölurnar stemmi er marklaus ef önnur þeirra telur á undan
+   * gögnunum. Sóknin er ein og hún kemur á undan fyrstu teikningu í nær öllum
+   * tilvikum; berist svarið samt seinna vekur `ivinnslu:breytt` teikninguna. */
+  (function raesa(reynt) {
+    if (window.DB && DB.sb) { hlada(); return; }
+    if ((reynt || 0) > 40) return;            // ~28 s og svo hættum við — engin endalaus lykkja
+    setTimeout(function () { raesa((reynt || 0) + 1); }, 700);
+  })(0);
+
+  window.addEventListener('ivinnslu:breytt', function () {
+    // Aðeins sýnin sem er OPIN er teiknuð aftur — hinar lesa nýja gildið hvort eð er
+    // næst þegar þær teikna, og óumbeðin teikning á falinni síðu er bara vinna.
+    try {
+      var v = document.getElementById('view-thjonustu-verkstaedi');
+      if (v && v.classList.contains('active') && window.ThjonustuVerkstaedi) ThjonustuVerkstaedi.render();
+    } catch (_) {}
+    try {
+      var a = document.getElementById('view-arsskodun');
+      if (a && a.classList.contains('active') && window.Arsskodun && Arsskodun.render) Arsskodun.render();
+    } catch (_) {}
+  });
+
   console.log('[patch-476] IVinnslu — ein regla um „í vinnslu" installed');
 })();
