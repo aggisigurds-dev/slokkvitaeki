@@ -96,6 +96,7 @@
       '<div class="_sr-tx"><div class="_sr-h">Óklárað úttekt vistuð'+(s.ts?(' · '+relTime(s.ts)):'')+'</div>'+
         '<div class="_sr-s">'+sum+'</div></div>'+
       '<button type="button" class="_sr-go">Halda áfram ↓</button>'+
+      '<button type="button" class="_sr-kasta" title="Henda óklárðu úttektinni — hún hverfur af ÞjónustuVerkstæðinu">✕ Henda</button>'+
     '</div>';
   }
   function inject(){
@@ -116,6 +117,80 @@
     box.innerHTML=boxHtml(s);
     main.insertBefore(box, main.firstChild);
   }
+  /* ── Henda óklárðu úttektinni ───────────────────────────────────────────
+   * 21.10.2026 — Agnar: „það var þá eitthvað óvart, en ég þarf að geta hent
+   * þessu út einhvernstaðar."
+   *
+   * Hér var engin útgönguleið. Óvart-vistuð úttekt hékk á fyrirtækjasíðunni
+   * OG dró félagið inn á ÞjónustuVerkstæðið (190 setur `hasDraft` í „í
+   * vinnslu"), og eina leiðin út var „Afmerkja", sem setur `sv_force_unstarted`
+   * — felur félagið af borðinu en skilur drögin eftir.
+   *
+   * HVERNIG HREINSUNIN VERÐUR AÐ LÍTA ÚT — þrjár leiðir, tvær rangar:
+   *  ✗ `{}` á þjóninn. MÆLT 21.10.2026: ferðin stóð óhreyfð eftir. Djúp-merge
+   *    af tómum hlut breytir engu; `deepMerge` fjarlægir aldrei lykil.
+   *  ✗ `removeItem` einn og sér (legsteinn 227). 165 ber örið: „removeItem-
+   *    legsteinninn dugði ekki — keep-skrif á eftir honum (eða computed-skrif
+   *    129) af-legsteinaði hann og skýja-mergið hélt gamla búknum."
+   *  ✓ NÚLLA HVERN LYKIL sem ferðin á. Núll yfirskrifar í merge, aðgerðin er
+   *    idempotent og hún virkar eins á öllum fimm vélunum — sama leið og
+   *    `clearTrip` í 165 notar. Lyklarnir eru lesnir úr ferðinni SJÁLFRI (bæði
+   *    skýja- og vafra-eintakinu) svo enginn reitur sleppi: fast CLEAR_BODY í
+   *    165 nefnir hvorki `skodunaradili` né `skodun_manudur`, og hefði skilið
+   *    kassann eftir á skjánum.
+   *
+   * Og röðin: ÞJÓNNINN FYRST, vafrinn á eftir. Mistakist skrifið stendur allt
+   * óhaggað og sagt er frá — annars hyrfi úttektin af ÞESSARI vél og kæmi
+   * aftur af hinum við næstu samstillingu.
+   *
+   * Þetta eru GÖGN (461 telur `slokk_trip_*` til gagna), svo spurt er fyrst og
+   * talið upp hverju er hent — ekki þögult hreinsiverk.
+   */
+  var TRIP_KEY = 'slokk_trip_';   // sama og CHOICE_KEY í 165
+  function tomurBukur(coId){
+    var lyklar = {};
+    try { var sky = (window.AppSettings && AppSettings.path) ? (AppSettings.path('inspection_trips') || {}) : {};
+          var c = sky[String(coId)]; if (c && typeof c === 'object') Object.keys(c).forEach(function(k){ lyklar[k] = 1; }); } catch(_){}
+    try { var l = JSON.parse(localStorage.getItem(TRIP_KEY + coId) || 'null');
+          if (l && typeof l === 'object') Object.keys(l).forEach(function(k){ lyklar[k] = 1; }); } catch(_){}
+    var body = {};
+    Object.keys(lyklar).forEach(function(k){ if (k !== '_ts' && k !== '_deleted') body[k] = null; });
+    body._locked = false; body._doneIds = [];
+    return body;
+  }
+  async function hendaDrogum(coId){
+    var s = openSummary(coId); if(!s) return;
+    var lysing=[];
+    if (s.unitCount) lysing.push(s.unitCount+' tæki valin');
+    if (s.extras) lysing.push(s.extras+' aukalínur');
+    if (s.insp) lysing.push('skoðunaraðili: '+s.insp);
+    if (s.manudur) lysing.push('mánuður: '+s.manudur);
+    if (s.notes) lysing.push('minnispunktur');
+    var sp = 'Henda óklárðu úttektinni?' +
+      (lysing.length ? ('\n\nÞetta fer: ' + lysing.join(' · ')) : '') +
+      '\n\nÞetta er ekki hægt að afturkalla.';
+    var ja = false;
+    try { ja = (window.Confirm && Confirm.show) ? await Confirm.show(sp, { danger: true, okText: 'Henda' }) : window.confirm(sp); } catch(_){ return; }
+    if (!ja) return;
+    var body = tomurBukur(coId);
+    var ok = false;
+    try { if (window.AppSettings && AppSettings.save) ok = await AppSettings.save({ inspection_trips: { [String(coId)]: body } }); } catch(_){}
+    if (!ok) { if (window.Toast && Toast.show) Toast.show('⚠️ Ekki tókst að henda — úttektin stendur óbreytt'); return; }
+    // Vafra-eintakið með sama búk (227 speglar setItem í skýið — idempotent).
+    try { localStorage.setItem(TRIP_KEY + coId, JSON.stringify(body)); } catch(_){}
+    inject();
+    // Borðið les `SavedReports.has` → félagið dettur út úr „í vinnslu".
+    try { if (window.ThjonustuVerkstaedi && ThjonustuVerkstaedi.render) ThjonustuVerkstaedi.render(); } catch(_){}
+    if (window.Toast && Toast.show) Toast.show('🗑️ Óklárðu úttektinni hent');
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target && e.target.closest && e.target.closest('._sr-kasta');
+    if(!b) return;
+    var coId=getCoId(); if(!coId) return;
+    b.disabled=true;
+    hendaDrogum(coId).catch(function(){}).then(function(){ try{ b.disabled=false; }catch(_){} });
+  });
+
   // delegated "Halda áfram" → scroll to the calculator / tæki list
   document.addEventListener('click', function(e){
     if(e.target && e.target.classList && e.target.classList.contains('_sr-go')){
@@ -140,7 +215,9 @@
       '._sr-tx{flex:1;min-width:0}',
       '._sr-h{font-size:12.5px;font-weight:800;color:var(--amb,#b45309)}',
       '._sr-s{font-size:12px;color:var(--ink2);margin-top:1px;overflow:hidden;text-overflow:ellipsis}',
-      '._sr-go{flex:none;border:0;background:var(--amb,#b45309);color:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}'
+      '._sr-go{flex:none;border:0;background:var(--amb,#b45309);color:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}',
+      '._sr-kasta{flex:none;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;border-radius:9px;padding:8px 11px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}',
+      '._sr-kasta:disabled{opacity:.5;cursor:default}'
     ].join('\n');
     var st=document.createElement('style'); st.id='_sr-css'; st.textContent=css; document.head.appendChild(st);
   }

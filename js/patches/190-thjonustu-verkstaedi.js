@@ -350,6 +350,40 @@
     } catch (_) {}
     render();
   }
+  /* ── Tæki á verkstæðinu sem er EKKI búið að skila ────────────────────────
+   * 21.10.2026 — Agnar: „geturðu látið verkstæðis fjöldan byrtast þarna inn á
+   * þjónustuverkstæði sem er ekki búið að skila".
+   *
+   * 165 á þegar `taekiAVerkstaedi(coId)`, en það svarar JÁ/NEI fyrir EITT
+   * félag í einu og sækir með `limit(1)` — fjöldinn er þar ekki til, og á
+   * borði með öllum þjónustukúnnum yrði það ein fyrirspurn á hverja röð.
+   * Hér er sama staðreynd sótt eins og hinar á borðinu: EIN fyrirspurn yfir
+   * allt, lyklað á fyrirtaeki_id (staðinn). MÆLT 21.10.2026: 13 raðir á 7
+   * félögum — allt mengið kemst í eina síðu, en blaðsíðurnar standa samt svo
+   * talan geti ekki klippst þegjandi við 1000 eins og 21.09 kenndi okkur.
+   *
+   * `status = loaned` ER óskilað: 269 setur röðina í `returned` um leið og
+   * tækið fer heim, svo talan núllast sjálf. Ekkert er skrifað hér.
+   */
+  let _verkstByCo = null;   // Map<String(co.id), fjöldi óskilaðra tækja>
+  let _verkstLoaded = false;
+  async function loadVerkst() {
+    try {
+      const sb = (window.DB && DB.sb); if (!sb) return;
+      const rows = await DB.fetchAll((from, to) => sb.from('uttaeki')
+        .select('fyrirtaeki_id').eq('status', 'loaned')
+        .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
+      const m = new Map();
+      (rows || []).forEach(u => {
+        const k = String(u.fyrirtaeki_id);
+        if (!k || k === 'null' || k === 'undefined') return;
+        m.set(k, (m.get(k) || 0) + 1);
+      });
+      _verkstByCo = m;
+    } catch (_) { return; }   // sóknarvilla → engin tala, ENGIN núll-fullyrðing
+    render();
+  }
+
   // Greiðslustaða payday-raðar → { txt, paid } (rólegur litur á pillunni).
   function pdStatus(p) {
     const s = String((p && p.status) || '').toLowerCase();
@@ -493,6 +527,10 @@
       r('.sv-spj-nafn .sv-nm', 'margin:0!important;font:600 15px/18px ' + SANS + '!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0!important'),
       r('.sv-spj-nafn .sv-kt', 'margin:0!important;font:400 11px/13px ' + MONO + '!important;color:#d9dee6!important;white-space:nowrap'),
       r('.sv-spj-pilla', 'display:inline-flex;align-items:center;height:22px;padding:0 10px;border-radius:99px;background:linear-gradient(150deg,#e0a93e,#9a6a14);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);font:700 10.5px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.4);white-space:nowrap'),
+      // 21.10.2026 — sama smíði og .sv-spj-plata (plata, ekki takki: Brunastál C bannar
+      // bláa TAKKA, en þetta er merki). Blátt af því að það er sami vísir og „í vinnslu“
+      // á prófílnum — tækið er hjá okkur, þess vegna er verkið opið.
+      r('.sv-spj-verkst', 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:3px;background:linear-gradient(180deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.08);font:700 10.5px ' + MONO + ';color:#1d4ed8;white-space:nowrap'),
       r('.sv-spj-plata', 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:3px;background:' + SILVER + ';border:1px solid rgba(20,24,34,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:700 10.5px ' + MONO + ';color:#11141c;white-space:nowrap'),
       r('.sv-spj-aetl', 'font:500 11.5px ' + MONO + ';color:#d9dee6;white-space:nowrap'),
       r('.sv-spj-bukur', 'padding:12px 16px;display:flex;flex-direction:column;gap:10px'),
@@ -832,7 +870,8 @@
         netfang: co.netfang || '',   // fyrir ✉️ senda-glugga
         adr: co.heimilisfang || co.heimilisFang || '',   // undir húsmyndinni á Spjöld (21.10.2026)
         docs: docs,   // {skyrsla,reik} ársins, fyrirtaeki_id
-        pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null   // krafa ársins á þessum stað
+        pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null,   // krafa ársins á þessum stað
+        verkst: _verkstByCo ? (_verkstByCo.get(String(co.id)) || 0) : 0   // óskiluð tæki á verkstæðinu
       };
       if (ly === curYear) out.buid.push(card);
       else if ((fy === curYear || hasDraft) && !a.sv_force_unstarted) out.vinnsla.push(card);   // started OR has a saved draft (unless force-removed by Afmerkja)
@@ -944,9 +983,13 @@
   // ── Shared card pieces (used by both list + cards mode) ──────────────────
   function metaChips(r) {
     const draftChip = r.hasDraft ? '<span title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni" style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;white-space:nowrap">📝 óklárað vistað</span>' : '';
-    if (!(r.units > 0 || r.tekjur > 0 || draftChip)) return '';
+    // Talan er aðeins sýnd þegar hún er raunverulega > 0: sóknarvilla skilur
+    // _verkstByCo eftir null og þá segir kortið EKKERT — ekki „0 á verkstæði".
+    const verkstChip = r.verkst > 0 ? '<span title="Tæki hjá okkur á verkstæðinu sem er ekki búið að skila" style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;white-space:nowrap">🔧 ' + r.verkst + ' á verkstæði</span>' : '';
+    if (!(r.units > 0 || r.tekjur > 0 || draftChip || verkstChip)) return '';
     return '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
       draftChip +
+      verkstChip +
       (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef1f6;color:#475569;border:1px solid #cbd5e1;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
       (r.tekjur > 0 ? '<span style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
@@ -1112,6 +1155,7 @@
       '<div class="sv-spj-nafn"><h3 class="sv-nm">' + esc(r.nafn) + '</h3>' +
         (r.kennitala ? '<span class="sv-kt">kt. ' + esc(fmtKt(r.kennitala)) + '</span>' : '') + '</div>' +
       (r.hasDraft ? '<span class="sv-spj-pilla" title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni">Óklárað vistað</span>' : '') +
+      (r.verkst > 0 ? '<span class="sv-spj-verkst" title="Tæki hjá okkur á verkstæðinu sem er ekki búið að skila">🔧 ' + r.verkst + ' á verkstæði</span>' : '') +
       (r.units > 0 ? '<span class="sv-spj-plata">' + r.units + ' einingar</span>' : '') +
       (r.tekjur > 0 ? '<span class="sv-spj-aetl" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
     '</div>';
@@ -1206,6 +1250,7 @@
     if (!window.__fjLiveOpnad && window.FjarmalLive && FjarmalLive.publish) { window.__fjLiveOpnad = true; setTimeout(() => { try { FjarmalLive.publish(); } catch (_) {} }, 6000); }
     // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
+    if (!_verkstLoaded) { _verkstLoaded = true; loadVerkst(); }   // óskiluð tæki á verkstæðinu → ein fyrirspurn, endurteiknar
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
     // Skref-sían gildir á ÖLL þrjú hólfin svo talan á pillunni og listinn segi
