@@ -265,6 +265,14 @@
   // 2026-05-20: scrape priced rows from the green Heildarkostnaður table.
   // Uses the visible product name + per-stk price + vsk% so the previewed
   // invoice lines match the cost table EXACTLY (instead of zero-price stubs).
+  // Texti töflureits án stjórntækja: hlekkir (✎ tenging / ✎ setja verð), viðvaranir og táknspann falla
+  // burt, og það sem eftir stendur er hreinsað af táknum sem reikningsletur eiga ekki (✎ ⚠ ● o.fl.).
+  function hreinnTexti(el) {
+    const k = el.cloneNode(true);
+    k.querySelectorAll('a,button,[data-ctc-teng],[data-ctc-vara],[title^="Skráð verðtenging"]').forEach(x => x.remove());
+    k.querySelectorAll('span').forEach(x => { if (/verð vantar/i.test(x.textContent || '')) x.remove(); });
+    return String(k.textContent || '').replace(/[☀-➿️]/g, '').replace(/\s+/g, ' ').trim();
+  }
   function scrapeCostRows() {
     const section = document.getElementById('_ctc-section');
     if (!section) return [];
@@ -279,7 +287,11 @@
       if (/sleppt/i.test(tds[2] && tds[2].textContent || '')) return;
       const firstTd = tds[0];
       const sub = firstTd.querySelector('div');
-      const productName = sub ? sub.textContent.trim() : '';
+      // 21.10.2026 (Agnar, R-001186: „Yfirferð · Léttvatnstæki 6L. yfirferð ✎" á reikningi — Payday-letrið á
+      // ekki ✎ svo öll línan féll í varaletur): vöruheitið er lesið úr undirlínunni sem síðan 14.10 ber líka
+      // ✎-hlekkinn á tenginguna (129 tengHnappur), „⚠ Verð vantar ✎ setja verð" og skráð-punktinn. Hlekkir og
+      // viðvaranir eru stjórntæki töflunnar, ekki texti reikningsins — lesum heitið án þeirra.
+      const productName = sub ? hreinnTexti(sub) : '';
       const headLine = firstTd.firstChild && firstTd.firstChild.textContent
         ? firstTd.firstChild.textContent.trim()
         : firstTd.textContent.replace(productName, '').trim();
