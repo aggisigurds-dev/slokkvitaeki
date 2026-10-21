@@ -828,8 +828,20 @@
     const e = (AS.path('arsskodun_customers') || {})[String(coId)] || {};
     const ar = (window.ArsWorkflow && ArsWorkflow.curYear) || new Date().getFullYear();
     const geymt = +e.field_inspected_year === ar && +e.last_year_inspected !== ar;
-    // Lokið ár stendur: tæki á verkstæði á ekki að rífa klárað ár upp aftur.
-    if (+e.last_year_inspected === ar) return geymt;
+    /* 21.10.2026 — Agnar: „í vinnslu is not syncing" og „can you also conect to
+     * when It sækja inn úr fyrirtæki the company goes into í Vinnslu as well".
+     *
+     * Hér stóð `if (+e.last_year_inspected === ar) return geymt;` — lokið ár
+     * hunsaði verkstæðið. MÆLT 21.10.2026: sjö félög áttu tæki á verkstæðinu og
+     * FJÖGUR þeirra sýndu ekki „í vinnslu" af þessari ástæðu einni (Álfaskeiði
+     * 86-88, Heimaleiga Dalbrekka 4-6, Bílasprautun Íslands, Japanskar vélar) —
+     * tækin stóðu á borðinu en merkið var grátt.
+     *
+     * Upphaflegi ótinn var að verkstæðið „rifi klárað ár upp aftur". Hann á ekki
+     * við: þetta fall LES aðeins, það skrifar hvorki `last_year_inspected` né
+     * `field_inspected_year`. Lokið ár stendur óhaggað í gögnunum; aðeins
+     * vísirinn logar. Og hann segir satt — tækið ER hjá okkur.
+     * Staðan slokknar sjálf þegar tækið fer heim (sjá `taekiAVerkstaedi`). */
     return geymt || taekiAVerkstaedi(coId);
   }
   // Satt AÐEINS vegna verkstæðisins — þá er ekkert geymt flagg til að slökkva á.
