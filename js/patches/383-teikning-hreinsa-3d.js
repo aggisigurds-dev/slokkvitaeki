@@ -6017,7 +6017,7 @@
       setTimeout(() => { if (!breyta && skyr.isConnected) skyr.style.display = 'none'; }, 7000);    // bendingarnar: aðeins fyrst
       const lokaVali = () => { if (sprettur) sprettur.style.display = 'none'; if (G.syn3d && G.syn3d.merkja) G.syn3d.merkja(null, null); };
       if (bb && sprettur && ut.some(u => u.butar)) {
-        bb.style.display = '';
+        // Hnappurinn „Breyta eldveggjum" er FALINN (Agnar 21.10.2026: rauðir eldveggir aðeins í sér ham í TurboPaint); kóðinn og handvalið í gögnunum haldast
         bb.addEventListener('click', () => {
           breyta = !breyta;
           if (breyta && G.syn3d && G.syn3d.utlit && G.syn3d.utlit() !== 'eld') { G.syn3d.utlit('eld'); utlitLit(); skyring(valin); }
