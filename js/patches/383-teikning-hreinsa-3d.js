@@ -3035,38 +3035,49 @@
       const sen = handfang.blenderSena({ utlit: 'raunsaett', pdf, myndHamark: 0, sameign: false, allarHaedir: true });
       if (!sen) return 0;
       const u0 = (lag[0] && lag[0].metri) || 1;
-      const E = stigaEfni.skref || (stigaEfni.skref = (losa.push(new T.MeshLambertMaterial({ color: 0xa3a9b1 })), losa[losa.length - 1]));
-      const NEF = stigaEfni.nef || (stigaEfni.nef = (losa.push(new T.MeshLambertMaterial({ color: 0x6f757d })), losa[losa.length - 1]));
+      const mat = (lykill, litur) => stigaEfni[lykill] || (stigaEfni[lykill] = (losa.push(new T.MeshLambertMaterial({ color: litur })), losa[losa.length - 1]));
+      const E = mat('skref', 0x9a9894), NEF = mat('nef', 0x6b6a67), PALL = mat('pallur', 0xb3b1ac), RAID = mat('handrid', 0x4b5056);
       let fj = 0;
       (sen.haedir || []).forEach(h => {
         const lg = lag.find(q => q.nr === h.nr);
         if (!lg || !(h.stigar && h.stigar.length)) return;
         const P = lg.hopur.position, kv = lg.hopur.scale.x || 1, VH = lg.veggH, halfH = VH / 2;
-        const lx = m => (m * u0 - P.x) / kv, lz = m => (m * u0 - P.z) / kv, lm = v => v * u0 / kv;       // metrar senunnar → hnit hæðarinnar
+        const lx = m => (m * u0 - P.x) / kv, lz = m => (m * u0 - P.z) / kv, sh = u0 / kv, hm = VH / LOFTH;   // metrar senunnar → hnit hæðarinnar
         const grp = new T.Group(); lg.stigar = grp; lg.hopur.add(grp);
         h.stigar.forEach(st => {
           try {
             const a = st.a, b = st.b, w = +st.breidd || 1, n = Math.max(2, +st.threp || 8), hlid = st.hlid || 0;
             const L0 = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L0 < 0.5) return;
-            const bil = L0 / Math.max(1, n - 1), ux = (b[0] - a[0]) / L0, uz = (b[1] - a[1]) / L0, nx = -uz, nz = ux, horn = Math.atan2(-uz, ux);
-            const kassi = (cx, cz, y0, y1, lengd, breidd, efni2) => {
-              const geo = new T.BoxGeometry(lm(lengd), Math.max(0.001, y1 - y0), lm(breidd));
-              const ms = new T.Mesh(geo, efni2 || E); ms.position.set(lx(cx), (y0 + y1) / 2, lz(cz)); ms.rotation.y = horn; grp.add(ms); losa.push(geo);
+            const bil = L0 / Math.max(1, n - 1), horn = Math.atan2(-(b[1] - a[1]) / L0, (b[0] - a[0]) / L0);
+            const g2 = new T.Group(); g2.position.set(lx(a[0]), 0, lz(a[1])); g2.rotation.y = horn; grp.add(g2);   // x eftir stiga, +z = hlið þar sem bakarmur er
+            // kassi í hnitum stigans: x, z í metrum, y í hnitum hæðarinnar
+            const kass = (x0, x1, y0, y1, z0, z1, efni2) => {
+              const geo = new T.BoxGeometry((x1 - x0) * sh, Math.max(0.001, y1 - y0), (z1 - z0) * sh);
+              const ms = new T.Mesh(geo, efni2 || E); ms.position.set((x0 + x1) / 2 * sh, (y0 + y1) / 2, (z0 + z1) / 2 * sh); g2.add(ms); losa.push(geo); return ms;
             };
-            for (let k = 0; k < n - 1; k++) {       // n þrepalínur = n−1 þrep milli línanna, upp um hálfa hæð
-              const s = (k + 0.5) * bil, top = (k + 1) * halfH / n, cx = a[0] + ux * s, cz = a[1] + uz * s;
-              kassi(cx, cz, 0, top, bil, w);
-              kassi(cx - ux * (bil / 2 - 0.02), cz - uz * (bil / 2 - 0.02), top, top + VH * 0.004, 0.04, w, NEF);
+            const rise = halfH / n, rise2 = (VH - halfH) / n, plata = 0.2 * hm, pallH = 0.25 * hm, z1c = hlid ? hlid * (w + 0.06) : 0, neb = VH * 0.004;
+            for (let k = 0; k < n - 1; k++) {       // n þrepalínur = n−1 þrep milli línanna, upp um hálfa hæð; sagtannaundirhlið eins og steypt stigaplata
+              const x0 = k * bil, top = (k + 1) * rise;
+              kass(x0, x0 + bil, Math.max(0, top - rise - plata), top, -w / 2, w / 2);
+              kass(x0, x0 + 0.04, top, top + neb, -w / 2, w / 2, NEF);
             }
-            const sP = L0 + w / 2, off = hlid ? hlid * (w / 2 + 0.03) : 0;
-            kassi(a[0] + ux * sP + nx * off, a[1] + uz * sP + nz * off, 0, halfH, w, w * (hlid ? 2 : 1) + (hlid ? 0.06 : 0));
-            if (hlid) {                              // bakarmur samsíða, frá pallinum aftur upp í fulla hæð (plötuþrep)
+            // pallurinn: þunn plata í hálfri hæð yfir báða arma (ekki massífur kubbur niður á gólf)
+            const zlo = Math.min(-w / 2, z1c - w / 2), zhi = Math.max(w / 2, z1c + w / 2);
+            kass(L0, L0 + w, halfH - pallH, halfH, zlo, zhi, PALL);
+            if (hlid) {                              // bakarmur samsíða, frá pallinum aftur upp í fulla hæð
               for (let k = 0; k < n - 1; k++) {
-                const s = L0 - (k + 0.5) * bil, top = halfH + (k + 1) * (VH - halfH) / n;
-                const cx = a[0] + ux * s + nx * hlid * (w + 0.06), cz = a[1] + uz * s + nz * hlid * (w + 0.06);
-                kassi(cx, cz, Math.max(0, top - VH * 0.4 / LOFTH), top, bil, w);
-                kassi(cx + ux * (bil / 2 - 0.02), cz + uz * (bil / 2 - 0.02), top, top + VH * 0.004, 0.04, w, NEF);
+                const x1 = L0 - k * bil, top = halfH + (k + 1) * rise2;
+                kass(x1 - bil, x1, top - rise2 - plata, top, z1c - w / 2, z1c + w / 2);
+                kass(x1 - 0.04, x1, top, top + neb, z1c - w / 2, z1c + w / 2, NEF);
               }
+              // handrið á milli armanna: hallandi slá eftir hvorum armi + stólpar á endum
+              const zg = z1c / 2, sla = (xa, ya, xb, yb) => {
+                const len = Math.hypot((xb - xa) * sh, yb - ya), geo = new T.BoxGeometry(len, 0.05 * hm, 0.05 * sh);
+                const ms = new T.Mesh(geo, RAID); ms.position.set((xa + xb) / 2 * sh, (ya + yb) / 2, zg * sh); ms.rotation.z = Math.atan2(yb - ya, (xb - xa) * sh); g2.add(ms); losa.push(geo);
+              }, stolpi = (x, yf, yt) => kass(x - 0.025, x + 0.025, yf, yt, zg - 0.025, zg + 0.025, RAID);
+              const hh = 0.9 * hm;
+              sla(0, rise + hh, L0, halfH + hh); stolpi(0, rise, rise + hh); stolpi(L0, halfH, halfH + hh);
+              sla(L0, halfH + rise2 + hh, 0, VH + hh); stolpi(L0, halfH + rise2, halfH + rise2 + hh); stolpi(0, VH, VH + hh);
             }
             fj++;
           } catch (e) { console.warn('[383] stigi', e); }
