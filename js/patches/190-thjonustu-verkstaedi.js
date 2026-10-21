@@ -517,9 +517,12 @@
       r('.sv-spj .sv-mark[style]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25)'),
       r('.sv-spj .sv-note', 'flex:1 1 auto;min-height:64px!important;margin:0!important;padding:8px 10px!important;resize:none!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:8px!important;background:#eef1f6!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18)!important;font:400 13px/1.4 ' + SANS + '!important;color:#141822!important'),
       r('.sv-spj .sv-note:focus', 'outline:none!important;border-color:rgba(20,24,34,.14)!important;background:#eef1f6!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.18),0 0 0 3px rgba(143,152,168,.45)!important'),
-      r('.sv-spj-mynd', 'margin:0;flex:0 0 200px;width:200px;display:flex;flex-direction:column;gap:5px'),
-      r('.sv-spj-mynd img', 'display:block;width:200px;height:134px;object-fit:cover;border-radius:6px;border:1px solid rgba(20,24,34,.16);box-shadow:0 2px 4px rgba(10,14,22,.14);background:#eef1f6'),
-      r('.sv-spj-tomt', 'box-sizing:border-box;width:200px;height:134px;border-radius:6px;border:1.5px dashed #c3cad5;background:#eef1f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6b7483'),
+      // 21.10.2026 (Agnar: „make the image a bit bigger, and wider like in the ársskoðun"): 300×200 (3:2) á breiðum skjá,
+      // 240×160 undir 1500 px; nótan teygir sig í sömu hæð. Myndin sést HEIL (object-fit: contain, hvítt fyllir) — Agnar: „I cant see most of the buildings … fill up with white". Myndin er smækkuð í 480 px (husmyndSlod), nóg fyrir 300 px.
+      r('.sv-spj-mynd', 'margin:0;flex:0 0 300px;width:300px;display:flex;flex-direction:column;gap:5px'),
+      r('.sv-spj-mynd img', 'display:block;width:100%;aspect-ratio:3/2;height:auto;object-fit:contain;border-radius:6px;border:1px solid rgba(20,24,34,.16);box-shadow:0 2px 4px rgba(10,14,22,.14);background:#fff'),
+      r('.sv-spj-tomt', 'box-sizing:border-box;width:100%;aspect-ratio:3/2;border-radius:6px;border:1.5px dashed #c3cad5;background:#eef1f6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#6b7483'),
+      '@media(max-width:1500px){' + r('.sv-spj-mynd', 'flex-basis:240px;width:240px') + '}',
       r('.sv-spj-tomt span', 'font:400 12px ' + SANS + ';color:#5b6472'),
       r('.sv-spj-mynd figcaption', 'display:flex;align-items:center;justify-content:space-between;gap:6px;font:400 11px ' + MONO + ';color:#5b6472;white-space:nowrap;overflow:hidden'),
       r('.sv-spj-mynd figcaption .adr', 'overflow:hidden;text-overflow:ellipsis;min-width:0'),
@@ -542,7 +545,7 @@
         r('.sv-grid', 'grid-template-columns:1fr') +
         r('.sv-spj-rod', 'flex-direction:column;gap:10px') +
         r('.sv-spj-mynd', 'order:-1;flex:0 0 auto;width:100%') +
-        r('.sv-spj-mynd img,.sv-spj-tomt', 'width:100%;height:150px') +
+        r('.sv-spj-mynd img,.sv-spj-tomt', 'width:100%;aspect-ratio:auto;height:170px') +
         r('.sv-spj .sv-step .lb', 'font-size:10px!important') +
         r('.sv-spj-acts ._sv-act', 'height:44px!important;min-height:44px!important;border-radius:10px!important') +
         r('.sv-spj-acts ._sv-act[data-act="buid"]', 'flex:1 1 auto!important;justify-content:center') +
