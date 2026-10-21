@@ -12,6 +12,7 @@
 //   node bgr_verk.cjs vigur <id>                   tákn úr textalagi vigur-blaða → vigur_tokn.json (+ yfirlagsmyndir) — frambjóðendur, ekki lokaniðurstaða
 //   node bgr_verk.cjs yfirlag <id>                 yfirlagsmyndir úr lestur.json til sannreynslu (sann_*.png)
 //   node bgr_verk.cjs vista <id>                   lestur.json → bunadargreining-röð (UTF-8, auðkenni, texti, teikningar); skiptir virkri röð út (saga helst)
+//   node bgr_verk.cjs vegghjalp <id>               EI-merki (textalag) + hurðarop (bogar í vigurteikningu) úr vigur_tokn.json → bunadargreining.vegghjalp á virkri röð (vista gerir þetta sjálft)
 //   node bgr_verk.cjs skyrsla <id>                 PDF „ein síða“ + „hver hæð á sér blaði“ → Viðhengi félagsins
 //   node bgr_verk.cjs render <id> [--vh 3.9] [--utan r,ut] [--ekki-myndir]   3D-mynd (Blender) af hverri hæð með veggjavinnu: blöð skráð á ramma borðsins (FFT), sena úr appinu,
 //                                                  tæki greiningar inn í senuna, beiðni í biðröð Blender-vélarinnar, beðið eftir myndunum → bunadargreining.render
@@ -149,6 +150,33 @@ function yfirlag(id) {
   log((p.stdout || '').trim()); if (p.status !== 0) throw new Error('yfirlag.py: ' + (p.stderr || '').slice(-400));
 }
 
+/* ── vegghjalp: EI-merki + hurðarop lesin í leiðinni (Agnar 21.10.2026) ──────────────────────────────────────────────── */
+// lestur.json.vegghjalp ræður ef það er til (handyfirfarið); annars vigur_tokn.json (textalag: EI-merki · hurðarbogar úr vigurteikningunni).
+// Snið: { "<haed_id>": { nafn, uppruni, pxm, ei: [{t,typ,min,x,y,w,h,ori}], hurdir: [{hjor,a,b,breidd_m,blad,x,y,x2,y2}] } } — rammahnit eins og tki.
+function vegghjalpUr(D, hb) {
+  let L = {}; try { L = lesaJson(path.join(D, 'lestur.json')); } catch (_) {}
+  if (L.vegghjalp) return L.vegghjalp;
+  let T; try { T = lesaJson(path.join(D, 'vigur_tokn.json')); } catch (_) { return null; }
+  const ut = {};
+  Object.values(T).forEach((bl) => Object.entries(bl.haedir || {}).forEach(([nafn, h]) => {
+    const hd = hb[nafn]; if (!hd || (!(h.ei || []).length && !(h.hurdir || []).length)) return;
+    // aðeins bogar MEÐ staðfestu hurðarblaði teljast (Fiskislóð 41 mælt við hurðir Agnars: 32/32 rétt, 32 af 41 fundin — hinir 20 bogar án blaðs voru allir rangir)
+    const hu = (h.hurdir || []).filter((o) => o.blad);
+    ut[hd.id] = { nafn, uppruni: 'vigur', pxm: h.pxm || null, ei: h.ei || [], hurdir: hu, hurdir_an_blads: (h.hurdir || []).length - hu.length };
+  }));
+  return Object.keys(ut).length ? ut : null;
+}
+async function vegghjalp(id) {
+  const v = await verk(id), D = dir(id), cid = v.company_id;
+  const [bd] = await sg('teikning_bord?company_id=eq.' + cid + '&select=haedir'); if (!bd) throw new Error('ekkert teikningaborð');
+  const hb = {}; bd.haedir.forEach((h) => { hb[h.nafn] = h; hb[h.id] = h; });
+  const vh = vegghjalpUr(D, hb); if (!vh) throw new Error('engin EI-merki eða hurðarop (keyrðu vigur fyrst — aðeins vigur-blöð)');
+  const [G] = await sg('bunadargreining?company_id=eq.' + cid + '&fjarlaegt_at=is.null&select=id'); if (!G) throw new Error('engin virk greining — keyrðu vista fyrst');
+  const r = await sp('bunadargreining?id=eq.' + G.id + '&fjarlaegt_at=is.null', 'PATCH', { vegghjalp: vh }); if (!r.ok) throw new Error('vegghjalp vistast ekki: ' + r.status);
+  const tel = Object.values(vh).reduce((a, h) => ({ ei: a.ei + h.ei.length, hurdir: a.hurdir + h.hurdir.length }), { ei: 0, hurdir: 0 });
+  log('vegghjalp vistað á greiningu ' + G.id + ': ' + tel.ei + ' EI-merki · ' + tel.hurdir + ' hurðarop á ' + Object.keys(vh).length + ' hæðum');
+}
+
 /* ── vistun: lestur.json → bunadargreining ───────────────────────────────────────────────────────────────────────── */
 async function vista(id) {
   const v = await verk(id), D = dir(id), L = lesaJson(path.join(D, 'lestur.json')), M = lesaJson(path.join(D, 'manifest.json'));
@@ -175,6 +203,7 @@ async function vista(id) {
   const teikningar = bd.haedir.filter((h) => notad[h.id]).map((h) => ({ id: h.id, nafn: h.nafn + ' — ' + (L.blad_heiti && L.blad_heiti[h.nafn] || 'aðaluppdráttur'), mynd: h.image_url, frum: h.frum, skurdur: h.skurdur, heimild: L.heimild_stutt || '' }));
   const grein = { company_id: cid, landnr: L.landnr || null, heimilisfang: L.heimilisfang || M.heimilisfang, stada: L.stada || 'tillaga', af: L.af || 'Claude (Arnold) — verkhringrás: tákn lesin af nærmyndum, staðfest með yfirlagi',
     tki, texti: L.texti || [], heimildir: L.heimildir || [], athugasemdir: L.athugasemdir || [], samantekt, teikningar, skyrsla: null };
+  const vh = vegghjalpUr(D, hb); if (vh) grein.vegghjalp = vh;      // EI-merki + hurðarop lesin í leiðinni — hjálp fyrir veggjagreininguna
   // sama félag, virk röð til → fjarlægð (saga helst), aldrei eytt
   const virk = await sg('bunadargreining?company_id=eq.' + cid + '&fjarlaegt_at=is.null&select=id');
   for (const g of virk) { const r = await sp('bunadargreining?id=eq.' + g.id, 'PATCH', { fjarlaegt_at: new Date().toISOString(), fjarlaegt_af: 'bgr_verk #' + id }); if (!r.ok) throw new Error('fjarlægja gamla: ' + r.status); }
@@ -306,7 +335,7 @@ async function afturkalla(id) { await skrifaStig(id, 'bida', 'Afturkallað', { s
 
 (async () => {
   const [cmd, a, b, c] = process.argv.slice(2);
-  const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), skyrsla: () => skyrsla(a), render: () => render(a, false), 'render-saekja': () => render(a, true),
+  const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), vegghjalp: () => vegghjalp(a), skyrsla: () => skyrsla(a), render: () => render(a, false), 'render-saekja': () => render(a, true),
     stig: () => skrifaStig(a, b, c), loka: () => loka(a, b), villa: () => villa(a, b), afturkalla: () => afturkalla(a) };
   if (!falla[cmd]) { console.error(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 22).join('\n')); process.exit(2); }
   await falla[cmd]();

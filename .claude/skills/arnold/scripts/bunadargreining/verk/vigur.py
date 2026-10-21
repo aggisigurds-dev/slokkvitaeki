@@ -64,8 +64,41 @@ def hurdarop(pg, k, Rm, pxm):
         return []
     kand = []                      # (miðja pt, radíus pt, bogaendar [a, b] pt)
     leifar = []                    # bein strik / rétthyrningar til að staðfesta hurðarblað
+    import numpy as np
+
+    def boginn(pts):
+        f = _hringur(pts)
+        if not f:
+            return
+        (cx, cy), r, rms, P = f
+        if not (0.55 <= r * k / pxm <= 1.5) or rms > 0.05 * r:
+            return
+        ang = np.arctan2(P[:, 1] - cy, P[:, 0] - cx)
+        mid = math.atan2(np.sin(ang).mean(), np.cos(ang).mean())
+        rel = (ang - mid + math.pi) % (2 * math.pi) - math.pi
+        sponn = math.degrees(rel.max() - rel.min())
+        if not (55 <= sponn <= 125):
+            return
+        i0, i1 = int(rel.argmin()), int(rel.argmax())
+        kand.append(((cx, cy), r, [pymupdf.Point(P[i0, 0], P[i0, 1]), pymupdf.Point(P[i1, 0], P[i1, 1])]))
+
+    keda, sidast = [], None        # keðja stuttra teikninga (strikaður bogi)
     for d in drs:
         its = d['items']
+        stutt = bool(its) and all(it[0] == 'l' for it in its) and len(its) <= 3 and d['rect'].width + d['rect'].height < 12 and d.get('dashes') in (None, '', '[] 0')
+        if stutt:
+            pp = [(it[1].x, it[1].y) for it in its] + [(its[-1][2].x, its[-1][2].y)]
+            if keda and sidast is not None and min(math.hypot(a[0] - b[0], a[1] - b[1]) for a in pp for b in sidast) <= 9:
+                keda.append(pp)
+            else:
+                if len(keda) >= 6:
+                    boginn([q for c_ in keda for q in c_])
+                keda = [pp]
+            sidast = pp
+        elif keda:
+            if len(keda) >= 6:
+                boginn([q for c_ in keda for q in c_])
+            keda, sidast = [], None
         for it in its:
             if it[0] == 'l':
                 L = math.hypot(it[2].x - it[1].x, it[2].y - it[1].y)
@@ -88,27 +121,12 @@ def hurdarop(pg, k, Rm, pxm):
                 q = pymupdf.Point(p1.x + (p2.x - p1.x) / K_BOGI, p1.y + (p2.y - p1.y) / K_BOGI)
                 c = pymupdf.Point(p1.x + p4.x - q.x, p1.y + p4.y - q.y)
                 kand.append(((c.x, c.y), rad, [p1, p4]))
-        # strikaður (eða brotalínu-) bogi: allar línur + nógu margir bútar → hringfelling
+        # heil brotalína í einni teikningu (≥ 5 bútar) → hringfelling
         ls = [it for it in its if it[0] == 'l']
         if len(ls) >= 5 and len(ls) == len(its):
-            pts = []
-            for it in ls:
-                pts += [(it[1].x, it[1].y), (it[2].x, it[2].y)]
-            f = _hringur(pts)
-            if not f:
-                continue
-            (cx, cy), r, rms, P = f
-            if not (0.55 <= r * k / pxm <= 1.5) or rms > 0.04 * r:
-                continue
-            import numpy as np
-            ang = np.arctan2(P[:, 1] - cy, P[:, 0] - cx)
-            mid = math.atan2(np.sin(ang).mean(), np.cos(ang).mean())
-            rel = (ang - mid + math.pi) % (2 * math.pi) - math.pi
-            sponn = math.degrees(rel.max() - rel.min())
-            if not (55 <= sponn <= 125):
-                continue
-            i0, i1 = int(rel.argmin()), int(rel.argmax())
-            kand.append(((cx, cy), r, [pymupdf.Point(P[i0, 0], P[i0, 1]), pymupdf.Point(P[i1, 0], P[i1, 1])]))
+            boginn([q for it in ls for q in ((it[1].x, it[1].y), (it[2].x, it[2].y))])
+    if len(keda) >= 6:
+        boginn([q for c_ in keda for q in c_])
     ut_ = []
     for (cx, cy), rad, ends in kand:
         blad = False

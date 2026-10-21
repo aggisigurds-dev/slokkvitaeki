@@ -45,6 +45,14 @@ Forsendur: Node, Python með `pymupdf` + `Pillow` (`python -m pip install --user
 5. **Vigur-PDF (textalag):** `vigur <id>` gefur frambjóðendur (`vigur_tokn.json`, `texti_<blað>.txt` með ÖLLUM textanum í lestrarröð —
    byggingarlýsing og skýringar) og `sann_vigur_h*.png`. Þú ræður samt merkingunni af skýringunni. Textalagið er stundum dulkóðað/tómt
    (Skútuvogur 2022) → þá er blaðið skönnun og `crops.py` flokkar það sem slíkt (`tegund`).
+5b. **EI-merki og hurðarop í leiðinni (vegghjalp, 21.10.2026 — Agnar: „lesi EI60 í leiðinni og hurðarop, þá auðveldara að fara síðan í veggjagreiningu"):**
+   `vigur <id>` les líka (vigur-blöð) **EI-merki** úr textalaginu (EI60, EI30-CS, REI60 … — `ei[]` með rammahnitum og stefnu texta) og **hurðarop** úr
+   vigurteikningunni (`hurdir[]`: bogi hurðarblaðsins — strikaður (hver strik í sérteikningu, keðjuð) eða Bézier — hringur felldur að honum, radíus 0,55–1,5 m,
+   spönn 55–125°; hjörin = miðja, `breidd_m` = radíus, `blad:true` = hurðarblaðið (strik/rétthyrningur frá hjörunni) fannst). `yfirlag`-myndirnar sýna EI appelsínugult
+   og hurðir blágrænt. **Mælt á Fiskislóð 41 við hurðir Agnars: aðeins bogar MEÐ blaði (32 af 32 réttir; 19/27 á 1. hæð — bílahurðir hafa engan boga — og 13/14 á 2. hæð);
+   bogar án blaðs voru allir rangir** — `vista` / `vegghjalp <id>` geyma því aðeins þá (`hurdir_an_blads` telur hina). Þetta fer í `bunadargreining.vegghjalp`
+   (jsonb, hæð → `{ei[], hurdir[], pxm}`, rammahnit eins og `tki`) og er EKKI búnaður (kemur ekki í samantekt/skýrslu/gátt). Veggjagreiningin má nota það sem festipunkta:
+   EI-merki liggur á vegg (stefna = `ori`), hurðarop er gat í vegg (hjör + enda boga). Skönnun: ekkert textalag/vigur → skrifaðu `vegghjalp` í `lestur.json` í höndunum eða slepptu.
 6. **Sannreyning er skylda:** `yfirlag <id>` og SKOÐAÐU myndirnar. Hver hringur á að sitja á tákni, ekkert tákn má vera án hrings. Aldrei „vista"
    án þessa — falskar tölur í brunavörnum eru verri en engar.
 
