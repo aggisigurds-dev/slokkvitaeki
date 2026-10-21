@@ -203,7 +203,10 @@
     if (!/^https:\/\//i.test(u)) return '';
     if (u.indexOf('/storage/v1/object/public/') > -1) {
       u = u.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=720&quality=72';
+      // 21.10.2026 (sama villa og á Verkstæðis-spjöldunum, 190): myndaþjónustan SKER með width einu sér (resize=cover
+      // sjálfgefið — 813×440 varð 720×440). resize=contain minnkar alla myndina; „Fylla ramma"/„Heil mynd" (--spj-str)
+      // klippa svo í vafranum á réttum forsendum.
+      u += (u.indexOf('?') > -1 ? '&' : '?') + 'width=720&quality=72&resize=contain';
     } else if (/images\.prismic\.io/i.test(u)) {
       u += (u.indexOf('?') > -1 ? '&' : '?') + 'w=720';
     }
