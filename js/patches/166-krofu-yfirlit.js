@@ -1293,7 +1293,7 @@
         'Allir mánuðir' + (_state.forskodun ? ' · þar af úttektir ' + fmtKr(o.osendarRows.filter(s => (_state.forskodun.get(String(s.id)) || {}).source === 'uttekt').reduce((a, s) => a + (parseFloat(s.samtals) || 0), 0)) + ' (CG-S04)' : ''), 'CG-S02'),
     ].filter(Boolean);
     return `
-        <div class="kym-kpis kym-kpis--${cards.length}">
+        <div class="kym-kpis kym-kpis--${cards.length + 1}">
           <section class="kym-hero" aria-label="Heildarkröfur í þessari sýn">
             <div class="kym-lbl">Heildarkröfur í sýn · ${o.allLen} sölur · ${o.coLen} fyrirtæki</div>
             <div class="kym-big">${midarNum(o.grandTotal)} <small>kr</small></div>
@@ -1306,6 +1306,7 @@
             </div>
           </section>
           ${cards.join('')}
+          <aside class="kym-greidslur" aria-label="Síðustu greiðslur í Payday">${greidslurHtml()}</aside>
         </div>`;
   }
   // Sýnar-flipar sem samfelldur hnappaborði (sömu _ky-vf / data-vf og áður).
@@ -1324,13 +1325,12 @@
           <button class="_ky-sync kym-sync" type="button" title="Uppfæra úr Payday: sækja stöðu reikninga (drög / send / greitt) og merkja greiddar kröfur sjálfkrafa">${MIC.sync}<span>Sækja stöðu úr Payday</span></button>
           <label class="kym-search">${MIC.search}<input class="_ky-search" type="search" aria-label="Leita" placeholder="Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}"></label>
         </div>
-        <div class="kym-hintrow">
-          <div class="kym-hint">${MIC.info}<span>Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann. Merktu greitt með „Greitt" — eða „Sækja stöðu úr Payday" merkir greiddar sjálfkrafa.</span></div>
-          <aside class="kym-greidslur" aria-label="Síðustu greiðslur í Payday">${greidslurHtml()}</aside>
-        </div>`;
+        <div class="kym-hint">${MIC.info}<span>Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann. Merktu greitt með „Greitt" — eða „Sækja stöðu úr Payday" merkir greiddar sjálfkrafa.</span></div>`;
   }
-  // 20.10.2026 (Agnar: „sýnir síðustu greiddu payday kröfur — eins og Brunahólf gerir"): lítill dálkur til hægri við skýringarlínuna,
-  // fimm fastar raðir (sama hæð fyrir og eftir sókn, ekkert hopp). Heimild: payday_invoices_slokk (spegill Payday, 372) með status PAID
+  // 20.10.2026 (Agnar: „sýnir síðustu greiddu payday kröfur — eins og Brunahólf gerir"): fimm fastar raðir (sama hæð fyrir
+  // og eftir sókn, ekkert hopp). 21.10.2026 (Agnar: „rosalega ljótt stórt bil þarna"): dálkurinn stóð hægra megin við
+  // skýringarlínuna og ýtti „Per fyrirtæki" niður um sína hæð — nú er hann fjórða spjaldið í KPI-röðinni (midarKpiHtml),
+  // sama hvíta spjald og Ógreiddar/Ósendar með grænni toppbrún, og skýringarlínan stendur ein í fullri breidd. Heimild: payday_invoices_slokk (spegill Payday, 372) með status PAID
   // og paid_date — nýjasta fyrst. Kreditreikningar eru ekki greiðslur og koma ekki hingað. Aðeins lestur; bilar hljóðlega (dálkurinn helst).
   const _gr = { rows: [], ts: 0, seq: 0 };
   function greidslurHtml() {
@@ -1596,15 +1596,15 @@
       V + '.kym-hint{display:flex!important;align-items:center;gap:8px;margin:0 2px 16px!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;font-size:12.5px!important;color:#1f2530!important}',
       V + '.kym-hint svg{flex:none;color:#3a4250}',
       // síðustu greiðslur úr Payday — dálkur hægra megin við skýringarlínuna (20.10.2026)
-      V + '.kym-hintrow{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:0 2px 16px}',
-      V + '.kym-hintrow .kym-hint{flex:1 1 300px;min-width:0;margin:0!important}',
-      V + '.kym-greidslur{flex:0 0 372px;max-width:100%;box-sizing:border-box;overflow:hidden;padding-bottom:4px;background:#fff;border:1px solid rgba(20,24,34,.16);border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.06)}',
-      V + '.kym-greidslur .kg-h{padding:8px 12px 5px;font:700 9.5px/1 ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#525b6b}',
-      V + '.kym-greidslur .kg-r{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:2px 12px;min-height:19px;box-sizing:border-box;border-top:1px solid rgba(20,24,34,.08);font-size:11.5px;line-height:15px;color:#2b313c}',
-      V + '.kym-greidslur .kg-d{font-family:' + MONO + ';font-size:10.5px;color:#525b6b;white-space:nowrap}',
+      // síðustu greiðslur úr Payday — fjórða spjaldið í KPI-röðinni (21.10.2026), sama umgjörð og .kym-exp með grænni toppbrún
+      V + '.kym-kpis--4{grid-template-columns:minmax(0,2fr) repeat(4,minmax(0,1fr))}',
+      V + '.kym-greidslur{display:flex;flex-direction:column;min-width:0;box-sizing:border-box;overflow:hidden;padding:16px 18px 10px;background:#fff;border-top:3px solid #16783f;border-radius:2px;box-shadow:0 10px 24px -16px rgba(0,0,0,.5)}',
+      V + '.kym-greidslur .kg-h{margin:0 0 8px;font:700 10.5px/1.2 ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#0b6b3a}',
+      V + '.kym-greidslur .kg-r{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:4px 0;min-height:22px;box-sizing:border-box;border-top:1px solid rgba(20,24,34,.08);font-size:12px;line-height:14px;color:#2b313c}',
+      V + '.kym-greidslur .kg-r:first-of-type{border-top:0}',
+      V + '.kym-greidslur .kg-d{font-family:' + MONO + ';font-size:11px;color:#525b6b;white-space:nowrap}',
       V + '.kym-greidslur .kg-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      V + '.kym-greidslur .kg-a{font-family:' + MONO + ';font-weight:600;color:#1f7a4a;text-align:right;white-space:nowrap}',
-      '@media(max-width:900px){' + V + '.kym-greidslur{flex:1 1 100%}}',
+      V + '.kym-greidslur .kg-a{font-family:' + MONO + ';font-weight:600;color:#0b6b3a;text-align:right;white-space:nowrap}',
       // fyrirtækin
       V + '.kym-co{margin-bottom:10px;background:#fff;border-top:3px solid var(--kym-rule,#8a93a3);border-radius:2px;box-shadow:0 1px 1px rgba(15,20,30,.2),0 10px 22px -14px rgba(15,20,30,.45);container-type:inline-size}',
       // Græn rönd tekin af (Agnar 02.10.2026) — nýjar kröfur fá hlutlausa stálrönd; gult/rautt eru einu merkin.
@@ -1696,8 +1696,8 @@
       V + '.kym-section b small{font-size:13px;color:#3a4250}',
       // mjórra: minnispunkturinn í eigin línu; lykiltölur í tvær/eina röð
       '@container (max-width: 1080px){' + V + '.kym-row{flex-wrap:wrap}' + V + '.kym-note{order:9;flex:1 1 100%;margin-left:29px}' + V + '.kym-amt{margin-left:auto}}',
-      '@media (max-width: 1280px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.kym-hero{grid-column:1/-1}}',
-      '@media (max-width: 760px){' + V + '.kym-kpis,' + V + '.kym-kpis--3{grid-template-columns:minmax(0,1fr)}}',
+      '@media (max-width: 1280px){' + V + '.kym-kpis,' + V + '.kym-kpis--3,' + V + '.kym-kpis--4{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.kym-hero,' + V + '.kym-greidslur{grid-column:1/-1}}',
+      '@media (max-width: 760px){' + V + '.kym-kpis,' + V + '.kym-kpis--3,' + V + '.kym-kpis--4{grid-template-columns:minmax(0,1fr)}}',
     ].join('\n');
     const st = document.createElement('style');
     st.id = 'ky-midar-css';
