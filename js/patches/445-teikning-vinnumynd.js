@@ -341,7 +341,18 @@
       const b = e.target.closest('[data-z]'); if (!b) return; e.stopPropagation();
       if (b.dataset.z === 'passa') { V.s = 1; V.x = 0; V.y = 0; } else thysja(b.dataset.z === 'inn' ? 1.35 : 1 / 1.35);
     });
-    c.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); const p = skjaHnit(e); thysja(e.deltaY < 0 ? 1.15 : 0.87, p.x, p.y); }, { passive: false });
+    // Músarhjól = eitt þysjunarskref; klípa á snertifleti (ctrl+hjól) í hlutfalli við hreyfinguna; renna á snertifleti FÆRIR
+    // (21.10.2026: hver smáatburður margfaldaði áður með 1,15 / 0,87 — sama regla og í 383 hjolAdgerd).
+    c.addEventListener('wheel', e => {
+      e.preventDefault(); e.stopPropagation();
+      const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1, dx = e.deltaX * k, dy = e.deltaY * k;
+      const wd = typeof e.wheelDeltaY === 'number' ? e.wheelDeltaY : null;
+      const skref = e.deltaMode !== 0 || (dx === 0 && Math.abs(dy) >= 50 && (wd === null ? Number.isInteger(dy) : wd !== 0 && Math.abs(wd) % 120 === 0));
+      const p = skjaHnit(e);
+      if (skref) thysja(dy < 0 ? 1.15 : 0.87, p.x, p.y);
+      else if (e.ctrlKey) thysja(Math.min(1.25, Math.max(0.8, Math.exp(-dy * 0.01))), p.x, p.y);
+      else { V.x -= dx / p.zk; V.y -= dy / p.zk; }
+    }, { passive: false });
     c.addEventListener('contextmenu', e => {
       e.preventDefault(); e.stopPropagation();
       const hit = finna(e), T = TM();
@@ -351,6 +362,7 @@
       if (e.button === 2 || !V.mynd) return;
       e.preventDefault();
       try { c.setPointerCapture(e.pointerId); } catch (_) {}
+      if (e.pointerType === 'mouse') V.fingur.clear();
       V.fingur.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (V.fingur.size >= 2) {
         const q = V.p; if (q) { clearTimeout(q.lp); if (q.hit && q.dregid) { q.hit.x = q.fraX; q.hit.y = q.fraY; } }

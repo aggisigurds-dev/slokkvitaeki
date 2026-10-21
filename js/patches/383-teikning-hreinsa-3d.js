@@ -4385,6 +4385,23 @@
     // Prósentan miðast við grunnstöðuna (síma: smækkuð í svæðið undir flipunum) — „Passa" sýnir 100 %
     const m = document.getElementById('fp-zoom-pct'); if (m) m.textContent = Math.round(Z.s / (Z.gs || 1) * 100) + '%';
   }
+  // Hjól og snertiflötur (Agnar 21.10.2026: „þysjar út fyrir kortið og ég get ekki dregið"): hver hjólaatburður margfaldaði
+  // með 1,15 / 0,87 sama hve lítill hann var — snertiflötur sendir tugi atburða í einni sveiflu (25 litlir = 1200 %,
+  // mælt á lifandi síðu) og tveggja fingra renna, sem á að FÆRA, þysjaði. Nú: músarhjól (heil skref) = eitt þysjunarskref;
+  // ctrl+hjól (klípa á snertifleti) þysjar í hlutfalli við hreyfinguna; öll önnur renna færir teikninguna.
+  // Sama regla í 445 (vinnumyndin).
+  function hjolAdgerd(e) {
+    const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1, dx = e.deltaX * k, dy = e.deltaY * k;
+    const wd = typeof e.wheelDeltaY === 'number' ? e.wheelDeltaY : null;
+    const skref = e.deltaMode !== 0 || (dx === 0 && Math.abs(dy) >= 50 && (wd === null ? Number.isInteger(dy) : wd !== 0 && Math.abs(wd) % 120 === 0));
+    if (skref) return { f: dy < 0 ? 1.15 : 0.87 };
+    if (e.ctrlKey) return { f: Math.min(1.25, Math.max(0.8, Math.exp(-dy * 0.01))) };
+    return { dx: -dx, dy: -dy };
+  }
+  function zFaera(dx, dy) {
+    const zk = zKv(fpEl('fp-main'));
+    Z.x += dx / zk; Z.y += dy / zk; Z.sjalf = false; zBeita();
+  }
   function zThysja(f, cx, cy) {
     const main = fpEl('fp-main'); if (!main) return;
     const r = main.getBoundingClientRect(), zk = zKv(main);
@@ -4473,13 +4490,14 @@
     // Gamla stýringin er ALLTAF stöðvuð (mousedown + wheel) — annars toga tvær stýringar í sama strigann.
     const aStriga = e => e.target === main || e.target.id === 'fp-canvas' || e.target.id === 'fp-drop-msg';
     main.addEventListener('mousedown', e => { if (aStriga(e)) e.stopPropagation(); }, true);
-    main.addEventListener('wheel', e => { if (document.getElementById('fp-3d') || vinnumyndSynd()) return; e.stopPropagation(); e.preventDefault(); zThysja(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY); }, { capture: true, passive: false });
+    main.addEventListener('wheel', e => { if (document.getElementById('fp-3d') || vinnumyndSynd()) return; e.stopPropagation(); e.preventDefault(); const a = hjolAdgerd(e); if (a.f) zThysja(a.f, e.clientX, e.clientY); else zFaera(a.dx, a.dy); }, { capture: true, passive: false });
     main.style.touchAction = 'none';
     const fingur = new Map(); let klipa = 0, midja = null, hreyft = 0;
     main.addEventListener('pointerdown', e => {
       if (!aStriga(e) || document.getElementById('fp-3d')) return;
       // Núllstilla áður en grip tekur yfir — annars át fyrri pönnun (hreyft>6) næsta smell,
       // t.d. að setja stimpil eða velja merki eftir að teikningin var færð.
+      if (e.pointerType === 'mouse') fingur.clear();   // mús er einn benditoppur — leifar eftir slepp utan striga mega ekki gera hana að „klípu"
       if (fingur.size === 0) hreyft = 0;
       if (window.TeiknMerking && TeiknMerking.grip && TeiknMerking.grip(e)) return;
       fingur.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (fingur.size === 1) hreyft = 0;
@@ -4503,6 +4521,14 @@
     }, true);
     const sleppa = e => { fingur.delete(e.pointerId); klipa = 0; midja = null; main.style.cursor = ''; };
     main.addEventListener('pointerup', sleppa, true); main.addEventListener('pointercancel', sleppa, true);
+    // Sleppt utan við strigann (yfir hliðarspjaldinu, út úr glugganum) — annars helst fingurinn í listanum og næsta dráttur
+    // verður „klípa" sem þysjar í stað þess að færa.
+    if (!window._t383w) {
+      window._t383w = 1;
+      const hreinsa = e => { if (fingur.has(e.pointerId)) { fingur.delete(e.pointerId); klipa = 0; midja = null; } };
+      window.addEventListener('pointerup', hreinsa, true); window.addEventListener('pointercancel', hreinsa, true);
+      window.addEventListener('blur', () => { fingur.clear(); klipa = 0; midja = null; });
+    }
     // Dráttur er ekki smellur: án þessa setti færsla teikningarinnar niður merki (eða vegg) þar sem sleppt var.
     main.addEventListener('click', e => { if (hreyft > 6 && e.target.id === 'fp-canvas') { e.stopPropagation(); e.preventDefault(); hreyft = 0; } }, true);
     main.addEventListener('pointerdown', e => {
