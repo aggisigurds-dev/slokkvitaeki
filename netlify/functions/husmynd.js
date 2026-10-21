@@ -74,15 +74,23 @@ const SV_HLIDRANIR = [[0, 0], [20, 0], [-20, 0], [0, 20], [0, -20], [40, 0], [-4
 
 async function streetView(lat, lng, signal, key) {
   const k = '&key=' + encodeURIComponent(key);
-  let md = null;
+  // 21.10.2026 (Agnar: „Reyna finna betri myndir af center hotels af húsnæðinu sjálfu"): fyrsta myndin sem fannst var
+  // tekin. Í miðbænum er hún oft gömul INNImynd úr verslun á jarðhæð, merkt © Google þrátt fyrir source=outdoor
+  // (Center Laugavegur 2018-07 og Þingholt Apartments 2016-10: fataslár), á meðan götubíllinn fór um 2024-07 og gaf
+  // réttar útimyndir á Arnarhvoli, Granda og Klöpp. Nú eru ALLIR punktarnir skoðaðir (metadata er ókeypis) og valin
+  // næsta mynd af nýjasta árinu — götubíllinn er alltaf nýrri en verslunarhvolfin, og nálægðin heldur stefnunni á húsið.
+  const fundnar = [];
   for (const [de, dn] of SV_HLIDRANIR) {
     const la = lat + dn / 111320;
     const lo = lng + de / (111320 * Math.cos(lat * Math.PI / 180));
     const meta = await fetch('https://maps.googleapis.com/maps/api/streetview/metadata?location=' + la.toFixed(6) + ',' + lo.toFixed(6) + '&radius=50&source=outdoor' + k, { signal });
     const m = await meta.json().catch(() => null);
-    if (m && m.status === 'OK' && m.pano_id && /google/i.test(String(m.copyright || '')) && m.location) { md = m; break; }
+    if (m && m.status === 'OK' && m.pano_id && /google/i.test(String(m.copyright || '')) && m.location) fundnar.push(m);
   }
-  if (!md) return null;
+  if (!fundnar.length) return null;
+  const ar = m => parseInt(String(m.date || '').slice(0, 4), 10) || 0;
+  const nyjast = Math.max.apply(null, fundnar.map(ar));
+  const md = fundnar.find(m => ar(m) === nyjast);   // röðin er eftir fjarlægð — fyrsta af nýjasta árinu er næst
   const h = stefna(+md.location.lat, +md.location.lng, lat, lng);
   const r = await fetch('https://maps.googleapis.com/maps/api/streetview?size=640x400&pano=' + encodeURIComponent(md.pano_id)
     + '&heading=' + h.toFixed(1) + '&fov=80&pitch=4&return_error_code=true' + k, { signal });
