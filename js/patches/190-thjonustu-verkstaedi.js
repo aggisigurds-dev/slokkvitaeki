@@ -753,6 +753,7 @@
         doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
         reik2026: hasReikDoc,   // customer_documents á ÞESSUM stað — ekki kt-payday
         netfang: co.netfang || '',   // fyrir ✉️ senda-glugga
+        adr: co.heimilisfang || co.heimilisFang || '',   // undir húsmyndinni á Spjöld (21.10.2026)
         docs: docs,   // {skyrsla,reik} ársins, fyrirtaeki_id
         pd: _pdByCo ? (_pdByCo.get(String(co.id)) || null) : null   // krafa ársins á þessum stað
       };
