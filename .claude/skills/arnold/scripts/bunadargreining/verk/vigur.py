@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 
 Image.MAX_IMAGE_PIXELS = None
 D = sys.argv[1]
+MINUT = float(os.environ.get('BGR_UT_MIN', '0') or 0)
 M = json.load(open(os.path.join(D, 'manifest.json'), encoding='utf-8'))
 TAK = ('SL', 'SLT', 'HSL', 'HST', 'BS', 'BSL', 'BRSL', 'R', 'ÚT', 'UT', 'BO', 'NF', 'LR', '!', '20m')
 LIT = {'SL': (220, 30, 30), 'SLT': (220, 30, 30), 'HSL': (220, 30, 30), 'HST': (220, 30, 30), 'BS': (20, 80, 220), 'BRSL': (20, 80, 220), '20m': (20, 80, 220), 'R': (150, 0, 200), 'ÚT': (0, 150, 60), 'UT': (0, 150, 60), 'BO': (240, 130, 0), '!': (150, 0, 200)}
@@ -26,7 +27,7 @@ for nafn, b in M['blod'].items():
         if w[4] in TAK:
             r = pymupdf.Rect(w[:4]) * Rm
             o = {'t': w[4], 'x': round((r.x0 + r.x1) / 2 * k, 1), 'y': round((r.y0 + r.y1) / 2 * k, 1), 'w': round(r.width * k, 1), 'h': round(r.height * k, 1)}
-            if w[4] == 'ÚT' and max(o['w'], o['h']) < 8.0 * k:   # smátt „ÚT“ í máltölum/hæðarkótum, ekki tákn (Grandi)
+            if w[4] == 'ÚT' and MINUT and max(o['w'], o['h']) < MINUT * k:   # smátt „ÚT“ í máltölum/hæðarkótum, ekki tákn (Grandi: BGR_UT_MIN=8) — sjálfgefið engin sía
                 continue
             if not any(q['t'] == o['t'] and abs(q['x'] - o['x']) <= 12 and abs(q['y'] - o['y']) <= 12 for q in ords):   # texti yfirprentaður = sama tákn tvisvar
                 ords.append(o)
