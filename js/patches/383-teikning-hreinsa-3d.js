@@ -4985,6 +4985,28 @@
     eiSkyndi.set(slod, ut);
     return ut;
   }
+  /* ── EIN LEIÐ: heiti herbergja og stigar í 3D-gögn hæðar ──
+   * Lifandi 3D (hér neðar) og huldi vinnumyndar-smiðurinn (smidaVinnumynd → 445) fylla gögn hæðarinnar með SÖMU hlutum — heiti herbergja úr
+   * textalagi vigur-PDF (eða OCR skrifstofutölvunnar á skönnun) og stigum úr þrepalínum PDF-teikningarinnar (pdfKort → syna3d raunPdf) — svo vistuð
+   * vinnumynd, 3D-sýnin og Blender-senan sýni sama hús. thak = hámarksbið (ms) áður en haldið er áfram án þeirra; seint(u) kallað þegar PDF-gögn
+   * berast. */
+  async function fyllaHeitiOgStiga(ut, hs, samHlutir, pdfKort, o) {
+    const thak = (o && o.thak) || 4000, bid = pr => Promise.race([pr, new Promise(r => setTimeout(r, thak))]);
+    await bid(Promise.all(ut.map(async u => {
+      const h = hs.find(x => x && x.id === u.haedId); if (!h || !pdfSlod(h) || !(u.frumB > 0)) return;
+      try {
+        const pg = await raunGognUrPdf(h), sk = u.sk || { x: 0, y: 0 };
+        u.heitiTexta = ((pg && pg.herbergi) || []).map(r => ({ texti: r.texti, x: r.u * u.frumB - (sk.x || 0), y: r.v * u.frumH - (sk.y || 0) }));
+        if (pg) { pdfKort[u.haedId] = pg; if (o && o.seint) o.seint(u); }
+      } catch (_) {}
+    })));
+    // skannaðar teikningar: heiti sem skrifstofutölvan hefur þegar lesið (skyndiminni) — sama þak
+    await bid(Promise.all(ut.map(async u => {
+      if (u.heitiTexta && u.heitiTexta.length) return;
+      const sh = (samHlutir || []).find(x => x.h.id === u.haedId); if (!sh) return;
+      try { const v = await heitiOcrLesid(sh.h, u.sk && u.sk.w, u.sk && u.sk.h); if (v && v.length) u.heitiOcr = v; } catch (_) {}
+    })));
+  }
   /* ── VINNUMYND (Agnar 07.10.2026) — sýnin sjálf býr í 445-teikning-vinnumynd.js ──
    * smidaVinnumynd: föst mynd EINNAR hæðar ofan frá, smíðuð EINU SINNI í huldum 3D-gámi utan skjás og lokuð strax:
    * gráa útlitið, engin tæki, merki né pinnar (merkiFrum = []), aðeins gólf, veggir, hurðir og gler. Sama leið og 3D
@@ -5007,12 +5029,16 @@
     u.nafn = h.nafn; u.haedId = h.id;
     u.dilarAMetra = (await metrar) || await dilarAMetra(h, fb, fh);
     tima.metrar = Math.round(t() - t0); t0 = t();
+    // heiti herbergja + stigar: SÖMU gögn og lifandi 3D (fyllaHeitiOgStiga) — annars sýndi vistaða vinnumyndin parket alls staðar og enga stiga
+    const pdfKort = {};
+    await fyllaHeitiOgStiga([u], hs, [{ h, frum, stig1 }], pdfKort, { thak: 20000 });
+    tima.heiti = Math.round(t() - t0); t0 = t();
     const gamur = document.createElement('div');
     gamur.style.cssText = 'position:fixed;left:-30000px;top:0;width:1200px;height:900px;pointer-events:none;opacity:0';
     document.body.appendChild(gamur);
     let syn = null;
     try {
-      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt', anHellna: true });
+      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt', anHellna: true, raunPdf: pdfKort });
       tima.svid = Math.round(t() - t0); t0 = t();
       const r = syn.fastMynd(o);
       if (!r) throw new Error('myndin teiknaðist ekki');
@@ -5858,27 +5884,13 @@
       if (!document.getElementById('fp-3d')) return;
     }
     if (!ut.length) { loka3d(); segja('Sjálfvirk veggagreining náði ekki. ' + sleppt.join(' · ') + '.' + (hs.some(x => pdfSlod(x)) ? ' Engir vigrar í PDF.' : '') + ' Fyrir 3D: teiknaðu með Veggir.'); return; }
-    // HEITI HERBERGJA úr textalagi vigur-PDF fyrir gólfefnin (Bað → flísar, Svalir, Gangur …): lesið einu sinni í lotunni
-    // (sameignin hefur oftast þegar lesið það); mest 4 s — annars opnast 3D án þeirra og rýmin flokkast eftir lögun.
+    // HEITI HERBERGJA og STIGAR (fyllaHeitiOgStiga — sama leið og huldi vinnumyndar-smiðurinn): textalag vigur-PDF fyrir gólfefnin (Bað → flísar,
+    // verkstæði → steypa …) og stigana; skönnun: heiti skrifstofutölvunnar. Mest 4 s — annars opnast 3D án þeirra og rýmin flokkast eftir lögun.
     const pdfKort = {};     // { haedId: raunUrSidu } — stigarnir í 3D (syna3d → teiknaStigana) lesa þetta, líka það sem berst eftir 4 s
-    await Promise.race([Promise.all(ut.map(async u => {
-      const h = hs.find(x => x && x.id === u.haedId); if (!h || !pdfSlod(h) || !(u.frumB > 0)) return;
-      try {
-        const pg = await raunGognUrPdf(h), sk = u.sk || { x: 0, y: 0 };
-        u.heitiTexta = ((pg && pg.herbergi) || []).map(r => ({ texti: r.texti, x: r.u * u.frumB - (sk.x || 0), y: r.v * u.frumH - (sk.y || 0) }));
-        if (pg) {
-          pdfKort[u.haedId] = pg;
-          if (G.syn3d && G.syn3d.stigar && G.syn3d.haedIds().indexOf(u.haedId) >= 0 && document.getElementById('fp-3d')) { try { G.syn3d.stigar(pdfKort); } catch (_) {} }
-        }
-      } catch (_) {}
-    })), new Promise(r => setTimeout(r, 4000))]);
     let husEl = null, adal = gamur;
-    // skannaðar teikningar: heiti sem skrifstofutölvan hefur þegar lesið (skyndiminni) — sama 4 s þak
-    await Promise.race([Promise.all(ut.map(async u => {
-      if (u.heitiTexta && u.heitiTexta.length) return;
-      const sh = samHlutir.find(x => x.h.id === u.haedId); if (!sh) return;
-      try { const v = await heitiOcrLesid(sh.h, u.sk && u.sk.w, u.sk && u.sk.h); if (v && v.length) u.heitiOcr = v; } catch (_) {}
-    })), new Promise(r => setTimeout(r, 4000))]);
+    await fyllaHeitiOgStiga(ut, hs, samHlutir, pdfKort, { thak: 4000, seint: u => {
+      if (G.syn3d && G.syn3d.stigar && G.syn3d.haedIds().indexOf(u.haedId) >= 0 && document.getElementById('fp-3d')) { try { G.syn3d.stigar(pdfKort); } catch (_) {} }
+    } });
     if (!document.getElementById('fp-3d')) return;
     try {
       // SKIPT SÝN (Agnar 11.10.2026: „mynd af allri byggingunni vinstra megin á skjánum, 1/4 af breidd skjás … hægra
