@@ -1710,7 +1710,8 @@
     parket: ['#ecdcc0', '#e6d5b6', '#e9d9bc', '#e1cfae', '#e8d7b9'],   // 21.10.2026 (Agnar: „parketið svolítið ljósara, alveg ljós brúnt")
     bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
-    sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 }
+    sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 },
+    steypa: { lit: [184, 188, 192], fuga: '#a9adb2', m: 3.2, v: 1.2 }      // verkstæði / lager: grá steypa, stórar plötur, varla sýnileg skil
   };
   // RÝMISTEGUNDIR (rýmishamurinn): litur og hópur — sameign hússins eða íbúðir (séreign). Röðin = röð skýringarinnar.
   const RYMI_TEG = [
@@ -1724,6 +1725,7 @@
     { k: 'geymsla', nafn: 'Geymsla / föt', lit: '#c7b8a2', hopur: 'ibud' },
     { k: 'svalir', nafn: 'Svalir', lit: '#a4d59b', hopur: 'ibud' },
     { k: 'vinnurymi', nafn: 'Vinnustofa / skrifstofa', lit: '#d6c58c', hopur: 'ibud' },
+    { k: 'verkstaedi', nafn: 'Verkstæði / lager', lit: '#aeb4bb', hopur: 'ibud' },
     { k: 'stigahus', nafn: 'Stigahús', lit: '#e47d68', hopur: 'sameign' },
     { k: 'gangur', nafn: 'Gangur', lit: '#f0a78b', hopur: 'sameign' },
     { k: 'lyfta', nafn: 'Lyfta', lit: '#b9614f', hopur: 'sameign' },
@@ -1746,7 +1748,8 @@
     if (/(^| )bad|badh|(^| )wc|snyrt|salern|sturt/.test(t)) return { teg: 'bad' };
     if (/sval|sergard/.test(t)) return { teg: 'svalir' };
     // á undan stofu: „Vinnustofa“ og „Skrifstofa“ enda á -stofa
-    if (/vinnust|skrifst|verkst|versl|lager|fundar|mottak/.test(t)) return { teg: 'vinnurymi' };
+    if (/verkst|lager|vorumott|atvinnur|dekk|bilask|idnad|vinnusal/.test(t)) return { teg: 'verkstaedi' };
+    if (/vinnust|skrifst|versl|fundar|mottak/.test(t)) return { teg: 'vinnurymi' };
     if (/stof[a-z]*\/ *eld/.test(t)) return { teg: 'eldhus', lika: 'stofa' };
     if (/eldh|eldun|kaffi|motuneyt/.test(t)) return { teg: 'eldhus' };
     if (/stof|bordst|setust/.test(t)) return { teg: 'stofa' };
@@ -1755,7 +1758,7 @@
     if (/geyms|(^| )fot|fatah/.test(t)) return { teg: 'geymsla' };
     return null;
   }
-  const EFNI_AF_TEG = t => t === 'bad' || t === 'thvottur' ? 'bad' : t === 'svalir' ? 'svalir' : t === 'stigahus' || t === 'gangur' || t === 'lyfta' || t === 'sameign' ? 'sameign' : 'parket';
+  const EFNI_AF_TEG = t => t === 'bad' || t === 'thvottur' ? 'bad' : t === 'svalir' ? 'svalir' : t === 'stigahus' || t === 'gangur' || t === 'lyfta' || t === 'sameign' ? 'sameign' : t === 'verkstaedi' ? 'steypa' : 'parket';
   // bað án heitis: 2–9,5 m², blek hreinlætistækja yfir meðallagi hæðarinnar (miðgildi rýma 6–40 m²) og minnst 2,7 %
   const BAD_M2 = [2.0, 9.5], BAD_BLEK = 0.027;
   function golfEfni(hd, k, metri, golfStr) {
@@ -1917,6 +1920,11 @@
       const nb = q => { if (vA[q] && !uA[q] && merki[q] < 0) { merki[q] = id; nafn[q] = ix; st[hd1++] = q; } };
       if (px > 0) nb(p - 1); if (px < RW - 1) nb(p + 1); if (p >= RW) nb(p - RW); if (p < N - RW) nb(p + RW);
     }
+    // hæð sem er mestmegnis verkstæði / lager (Fiskislóð 41, 1. hæð: bílaverkstæði): nafnlaus rými eru þá líka steypa, ekki parket
+    let vkM = 0, alM = 0;
+    for (let p = 0; p < N; p++) { const id = merki[p]; if (id < 0) continue; alM++; if ((nafn[p] >= 0 ? heitin[nafn[p]].teg : rymi[id].teg) === 'verkstaedi') vkM++; }
+    const steypuHaed = alM > 0 && vkM / alM >= 0.5;
+    if (steypuHaed) rymi.forEach(r => { if (r.efni === 'parket') r.efni = 'steypa'; });
     // tegund hvers díls (rýmishamurinn) — 255 = utan húss
     const tegR = new Uint8Array(N).fill(255);
     for (let p = 0; p < N; p++) {
@@ -1930,7 +1938,7 @@
     if (!heitin.length) rymi.forEach(r => { if (r.m2 >= 1.5 && r.teg) fjoldi[r.teg] = (fjoldi[r.teg] || 0) + 1; });
     // ÍBÚÐIR: íbúðarmerki („Íbúð 02-01"), eldhús, eða íbúðanúmer sem standa í íbúðarrými (ekki svalir, geymsla,
     // vinnustofa, sameign). Númer á hverju herbergi (fleiri en ~1,6 × stofur + eldhús) eru herbergjanúmer — þá ekki talin.
-    const EKKI_IBUD = { stigahus: 1, lyfta: 1, sameign: 1, svalir: 1, geymsla: 1, vinnurymi: 1 };
+    const EKKI_IBUD = { stigahus: 1, lyfta: 1, sameign: 1, svalir: 1, geymsla: 1, vinnurymi: 1, verkstaedi: 1 };
     // 1 = íbúð, 0 = annað, null = óvíst. Gangur getur verið innan íbúðar — þá ræður næsta heiti þar á eftir.
     const numerMat = q => {
       const naer = heitin.map(hh => ({ teg: hh.teg, d: Math.hypot(hh.cx - q.cx, hh.cy - q.cy) })).filter(hh => hh.d <= 3.5 * pxm).sort((a, b) => a.d - b.d);
@@ -1996,7 +2004,8 @@
     const grimur = {}, alla = new ImageData(RW, RH);
     for (let p = 0; p < N; p++) {
       const id = merki[p]; if (id < 0) continue;
-      const e = nafn[p] >= 0 ? EFNI_AF_TEG(heitin[nafn[p]].teg) : rymi[id].efni;
+      let e = nafn[p] >= 0 ? EFNI_AF_TEG(heitin[nafn[p]].teg) : rymi[id].efni;
+      if (steypuHaed && e === 'parket') e = 'steypa';
       const l = e === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e;
       const g = grimur[l] || (grimur[l] = new ImageData(RW, RH));
       g.data[p * 4 + 3] = 255; alla.data[p * 4 + 3] = 255;
@@ -2026,7 +2035,7 @@
       const x = c.getContext('2d'), g = Math.max(1, Math.round(pxmG * 0.006));
       x.fillStyle = e.fuga; x.fillRect(0, 0, t * 2, t * 2);
       for (let r = 0; r < 2; r++) for (let q = 0; q < 2; q++) {
-        const d = ((r * 2 + q) % 3 - 1) * 4, [cr, cg, cb] = e.lit;
+        const d = Math.round(((r * 2 + q) % 3 - 1) * (e.v == null ? 4 : e.v)), [cr, cg, cb] = e.lit;
         x.fillStyle = 'rgb(' + (cr + d) + ',' + (cg + d) + ',' + (cb + d) + ')'; x.fillRect(q * t + g, r * t + g, t - g, t - g);
       }
       return c;
