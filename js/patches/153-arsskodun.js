@@ -2390,7 +2390,14 @@
       // síðustu 2025, 2024"): 🟡 Slepptir í fyrra var SÍÐASTA flagan án tölu — sama
       // rökvilla og lagfærð var 10.09: ótalinn hópur er ósýnilegur hópur. Talan er
       // AÐEINS BIRT; countByStatus keyrir sömu síu og flaggan sjálf, engin rök breytast.
-      skipped2025: countByStatus('skipped2025') };
+      skipped2025: countByStatus('skipped2025'),
+      /* 21.10.2026 — Agnar bað um töluna („can you put the number of how many is
+       * in vinnsla í ársskoðun"), og hún vantaði: 🔧 Í vinnslu var eina flagan í
+       * aðalröðinni án tölu meðan Búið/Eftir/Á eftir áætlun báru sína.
+       * Sama rökvilla og skráð er hér fyrir ofan frá 23.09: ótalinn hópur er
+       * ósýnilegur hópur. countByStatus keyrir SÖMU síu og flagan sjálf, svo
+       * talan og listinn geta ekki sagt sitt hvað. */
+      ivinnslu: countByStatus('ivinnslu') };
     // 23.09.2026: hvað hreina bakstaðan SKILUR EFTIR — talan á „sýna líka"-rofanum,
     // svo undanskildi hópurinn sé sýnilegur en ekki talinn með. Sama regla og sían.
     const skipUndan = (() => {
@@ -2650,7 +2657,7 @@
               { v: 'nytt', label: '🆕 Nýtt' },
               // 2026-07-30 (ósk Agnars): tvær síur í viðbót — vinnan sem er
               // hafin en óklárðuð, og allir sem eru á akstursleið.
-              { v: 'ivinnslu', label: '🔧 Í vinnslu' },
+              { v: 'ivinnslu', label: '🔧 Í vinnslu' + (cnt.ivinnslu ? ' ' + cnt.ivinnslu : '') },
               { v: 'akstur', label: '🚗 Aksturslisti' },
               // 2026-09-08: faldir — endurskoðunarhólfið. Sama merki og 157.
               { v: 'ovisst', label: '♻️ Endurheimt' + (endurCount ? ' ' + endurCount : '') }
