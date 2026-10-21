@@ -1707,7 +1707,7 @@
   // hreinlætistækjum bað. Teikningin dauf ofan á (margfölduð) svo heiti og tæki sjáist. Utan útveggja: gegnsætt (hellur
   // sjást). null ef útveggirnir loka ekki húsinu (flóðið lak inn) — þá helst teikningin.
   const GOLF_EFNI = {
-    parket: ['#dcc4a0', '#d3b98f', '#d8bf98', '#ceb38a', '#dac29c'],
+    parket: ['#ecdcc0', '#e6d5b6', '#e9d9bc', '#e1cfae', '#e8d7b9'],   // 21.10.2026 (Agnar: „parketið svolítið ljósara, alveg ljós brúnt")
     bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
     sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 }
@@ -2015,9 +2015,9 @@
           const x0 = ofs + i * TW / 2;
           x.fillStyle = L[(r * 2 + (((i % 2) + 2) % 2) * 3) % L.length]; x.fillRect(x0, y, TW / 2, h);
           x.fillStyle = 'rgba(255,248,235,.10)'; x.fillRect(x0, y + h * 0.2, TW / 2, Math.max(1, h * 0.12));   // æð
-          x.fillStyle = 'rgba(96,66,36,.30)'; x.fillRect(x0, y, sk, h);                                           // endasamskeyti
+          x.fillStyle = 'rgba(120,86,52,.22)'; x.fillRect(x0, y, sk, h);                                          // endasamskeyti
         }
-        x.fillStyle = 'rgba(96,66,36,.24)'; x.fillRect(0, y, TW, sk);                                              // langsamskeyti
+        x.fillStyle = 'rgba(120,86,52,.18)'; x.fillRect(0, y, TW, sk);                                              // langsamskeyti
       }
       return c;
     };
