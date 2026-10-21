@@ -1560,7 +1560,8 @@
     return u;
   }
 
-  // Litir: EI-60 rauður, EI-30 ljósrauður (veggir). Hurðir sjást ofan frá á litaðri rönd: brunahurð appelsínugul, önnur brún.
+  // Veggir eru ALLIR EINS (Agnar 21.10.2026: rauðir eldveggir bara í sér ham í TurboPaint, ekki í 3D eða neinni mynd). Hurðir sjást
+  // ofan frá á litaðri rönd: brunahurð appelsínugul, önnur brún.
   // TOPPLITUR_3D: dökk efri brún veggja svo grunnmyndin lesist ofan frá (Agnar 06.10.2026, úr samanburði þrívíddarteiknara).
   const TOPPLITUR_3D = 0x5c574f;
   // GRÁTT ÚTLIT (Agnar 06.10.2026, eftir Blender-myndina: „use the grey one in slökkvitæki company profile layout,
@@ -2247,11 +2248,11 @@
       if (!lg.heilir) return;
       const grtt = utlit === 'gratt';
       const samV = samOn && lg.samV;      // sameignarsýn: veggir íbúða ljósir og daufir, veggir sameignar halda lit sínum
-      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : samV && !samV[i] ? SAMEIGN_DAUFT_3D : grtt ? GRATT_3D.veggur : (hd.eld && ELDLITIR_3D[hd.eld[i]]) || (hd.holf && hd.holf.alyktad[i] ? ALYKTAD_3D : VEGGLITUR_3D)));
+      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : samV && !samV[i] ? SAMEIGN_DAUFT_3D : grtt ? GRATT_3D.veggur : VEGGLITUR_3D));
       lg.veggir.instanceColor.needsUpdate = true;
       if (lg.karmar) {
         for (let i = 0; i < hd.hurdir.length; i++) {
-          lg.karmar.setColorAt(i, lit.setHex(grtt ? GRATT_3D.veggur : (hd.hurdEld && ELDLITIR_3D[hd.hurdEld[i]]) || VEGGLITUR_3D));
+          lg.karmar.setColorAt(i, lit.setHex(grtt ? GRATT_3D.veggur : VEGGLITUR_3D));
           lg.rendur.setColorAt(i, lit.setHex(hd.hurdEld && hd.hurdEld[i] ? ELDHURD_3D : HURDALITUR_3D));   // hurðir sjást líka í gráu útliti
         }
         lg.karmar.instanceColor.needsUpdate = true; lg.rendur.instanceColor.needsUpdate = true;
@@ -4389,18 +4390,7 @@
     }
     x.strokeStyle = G.hamur === 'veggir' ? '#1d4ed8' : '#26221e'; x.lineWidth = bt;
     h.veggir.forEach(v => { x.beginPath(); x.moveTo(sx(v[0]), sy(v[1])); x.lineTo(sx(v[2]), sy(v[3])); x.stroke(); });
-    // Eldveggir úr TurboPaint (veggjaLinur[].eld): EI-60 rauður, EI-30 ljósrauður — hálfgegnsæir svo teikningin sjáist.
-    const eldL = eldveggjaLinur(h);
-    if (eldL.length) {
-      x.save(); x.globalAlpha = 0.72; x.lineCap = 'butt'; x.lineJoin = 'miter';
-      eldL.forEach(v => {
-        x.strokeStyle = v.e === 60 ? '#d32f2f' : '#ef5350'; x.lineWidth = Math.max(3, v.t * k);
-        x.beginPath();
-        for (let i = 0; i + 1 < v.p.length; i += 2) { const px = sx(v.p[i]), py = sy(v.p[i + 1]); if (i) x.lineTo(px, py); else x.moveTo(px, py); }
-        x.stroke();
-      });
-      x.restore();
-    }
+    // (Eldveggir úr TurboPaint eru ekki lengur dregnir rauðir hér — Agnar 21.10.2026: rauðir veggir aðeins í sér ham í TurboPaint.)
     if (G.hamur === 'veggir' && G.kedja) {
       if (G.bendill) { x.strokeStyle = 'rgba(29,78,216,.55)'; x.setLineDash([8, 6]); x.beginPath(); x.moveTo(sx(G.kedja[0]), sy(G.kedja[1])); x.lineTo(sx(G.bendill[0]), sy(G.bendill[1])); x.stroke(); x.setLineDash([]); }
       x.fillStyle = '#1d4ed8'; x.beginPath(); x.arc(sx(G.kedja[0]), sy(G.kedja[1]), bt * 0.9, 0, 6.3); x.fill();
@@ -5961,12 +5951,11 @@
           nH += (u.hurdir || []).length; (u.hurdEld || []).forEach(e => { if (e) nEH++; });
         });
         const kubbur = (l, t) => '<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap"><i style="width:12px;height:12px;border-radius:3px;background:' + l + ';display:inline-block"></i>' + t + '</span>';
-        const html = (e60 ? kubbur('#d32f2f', 'EI-60') : '') + (e30 ? kubbur('#e57373', 'EI-30') : '') + (nAl ? kubbur('#f2a9a9', 'ályktað (lokar hólfi)') : '') +
-          (nEH ? kubbur('#f57c00', 'Brunahurð') : '') + (nH > nEH ? kubbur('#8d6e63', 'Hurð') : '') +
+        const html = (nEH ? kubbur('#f57c00', 'Brunahurð') : '') + (nH > nEH ? kubbur('#8d6e63', 'Hurð') : '') +
           (nHolf > 1 ? '<span style="white-space:nowrap">' + nHolf + ' brunahólf' + (hl.length > 1 ? ' alls' : '') + '</span>' : '') +
           (nHand ? '<span style="white-space:nowrap">' + nHand + (nHand === 1 ? ' veggur handvalinn' : ' veggir handvaldir') + '</span>' : '') +
           (nUti ? '<span style="white-space:nowrap;color:#ffd27a">' + nUti + (nUti === 1 ? ' tæki staðsett' : ' tæki staðsett') + ' utan teikningar — færðu ' + (nUti === 1 ? 'það' : 'þau') + ' inn í 2D</span>' : '') +
-          (e60 || e30 ? '<span style="flex-basis:100%;font-weight:500;opacity:.75">' + (nTp >= e60 + e30 ? 'Eldveggir merktir í TurboPaint. Leiðrétt þar eða með „Breyta eldveggjum".' : 'EI-merki lesin sjálfvirkt — sannreyndu á teikningu. Leiðrétt með „Breyta eldveggjum".') + '</span>' : '');
+          '';
         const graUtlit = G.syn3d && G.syn3d.utlit && G.syn3d.utlit() === 'gratt';
         eb.innerHTML = html; eb.style.display = html && !graUtlit ? 'flex' : 'none'; eb.style.flexWrap = 'wrap'; eb.style.maxWidth = 'calc(100% - 20px)'; eb.style.rowGap = '4px';
       };

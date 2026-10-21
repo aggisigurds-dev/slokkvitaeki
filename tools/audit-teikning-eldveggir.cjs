@@ -9,7 +9,8 @@
  *   • klippaButa heldur eldflokknum (bútur[5]) þegar veggurinn er klipptur við skurðinn
  *   • reiknaEld: TurboPaint-eldveggur ræður flokknum, handval („Breyta eldveggjum", eldVal) gengur fyrir
  *   • eldri hæðir (engin eld á veggjaLinur) — nákvæmlega sama útkoma og áður
- *   • 2D-yfirlagið teiknar eldveggina og fingrafarið breytist með þeim
+ *   • fingrafar 2D-yfirlagsins fylgir eldveggjunum (gögnin eru óbreytt) — EN (Agnar 21.10.2026: „Rauðir veggir eiga ekki að vera í neinu
+ *     render … bara í sér ham í TurboPaint. Annars bara alla eins."): hvorki 2D-yfirlagið né 3D / myndirnar lita veggi eftir EI-flokki
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +23,8 @@ const krefst = (re, skilabod) => { if (!re.test(skra)) villur.push(skilabod); };
 
 krefst(/const tpVeggir = tp\.filter\(v => !v\.tegund \|\| v\.tegund === 'veggur' \|\| v\.tegund === 'ei60' \|\| v\.tegund === 'ei30'\)/, 'eldveggir (ei60/ei30) verða að vera veggir í 3D');
 krefst(/e = eldflokkurVeggs\(v\)/, 'tpButar á að bera eldflokk veggjarins (bútur[5])');
-krefst(/const eldL = eldveggjaLinur\(h\)/, '2D-yfirlagið á að teikna eldveggi TurboPaint');
+if (/const eldL = eldveggjaLinur\(h\)/.test(skra)) villur.push('2D-yfirlagið má ekki teikna rauða eldveggi — þeir eru aðeins í sér ham í TurboPaint (Agnar 21.10.2026)');
+if (/ELDLITIR_3D\[hd\.(eld|hurdEld)/.test(skra)) villur.push('3D og myndir mega ekki lita veggi eða karma eftir EI-flokki — allir veggir eins (Agnar 21.10.2026)');
 krefst(/eldveggjaLinur\(h\)\.map\(v => v\.e \+ ':'/, 'fingrafar 2D-yfirlagsins á að fylgja eldveggjunum');
 
 function hlaða() {
@@ -98,4 +100,4 @@ if (villur.length) {
   villur.forEach(v => console.log('  · ' + v));
   process.exit(1);
 }
-console.log('TEIKNING ELDVEGGIR GRAENT — eld á veggjaLinur → rauðir veggir í 2D/3D, handval gengur fyrir, eldri hæðir óbreyttar');
+console.log('TEIKNING ELDVEGGIR GRAENT — eldgögn á veggjaLinur lesin rétt, handval gengur fyrir, eldri hæðir óbreyttar, engir rauðir veggir í 2D/3D/myndum');
