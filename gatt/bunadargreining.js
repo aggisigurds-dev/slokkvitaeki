@@ -14,7 +14,9 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
   var FL = [['sl', 'Slökkvitæki', '#e11d2e'], ['bs', 'Brunaslöngur', '#2563eb'], ['ut', 'Útgangar (ÚT)', '#15803d'], ['r', 'Reykskynjarar', '#9333ea'], ['bk', 'Brunakerfi', '#6d28d9'], ['hiti', 'Hitaskynjarar', '#ea580c']];
   var AF = {};   // eign (b.id) → { flokkur: true } — flokkar sem kúnninn slökkti á; aðeins meðan drawer-inn er opinn
-  var MAXSYN = 6;
+  var MAXSYN = 3;   // ein röð af þremur; „Sjá fleiri hæðir“ ef þær eru fleiri (Agnar 22.10.2026)
+  // á símanum eru dálkarnir tveir (CSS ≤720 px) — ein röð þar eru tvær hæðir, svo engin stök mynd sitji ein í annarri röð
+  function maxSyn() { return window.matchMedia && window.matchMedia('(max-width:720px)').matches ? 2 : MAXSYN; }
 
   function dags(d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
   function tala(n, et, ft) { return n + ' ' + (n === 1 ? et : ft); }
@@ -22,6 +24,12 @@
     var t = {}; FL.forEach(function (f) { t[f[0]] = 0; });
     (r.haedir || []).forEach(function (h) { FL.forEach(function (f) { t[f[0]] += (h.tel && h.tel[f[0]]) || 0; }); });
     return t;
+  }
+  var STUTT = { sl: ['slökkvitæki', 'slökkvitæki'], bs: ['slanga', 'slöngur'], ut: ['ÚT', 'ÚT'], r: ['reykskynjari', 'reykskynjarar'], bk: ['brunakerfi', 'brunakerfi'], hiti: ['hitaskynjari', 'hitaskynjarar'] };
+  // „1 slanga · 2 ÚT" — fjöldi hvers flokks á einni hæð (undir fastri mynd hæðarinnar)
+  function telTexti(h) {
+    var o = FL.filter(function (f) { return h.tel && h.tel[f[0]] > 0; }).map(function (f) { var n = h.tel[f[0]], st = STUTT[f[0]] || [f[1], f[1]]; return n + ' ' + (n === 1 ? st[0] : st[1]); });
+    return o.length ? o.join(' · ') : 'engin merki';
   }
   function virkir(r) { var t = totals(r); return FL.filter(function (f) { return t[f[0]] > 0; }); }
 
@@ -40,6 +48,9 @@
     var r = b && b.bgr; if (!r || !(r.haedir || []).length) return '';
     var vf = virkir(r); if (!vf.length) return '';
     var t = totals(r), st = AF[b.id] || {}, sam = vf.reduce(function (n, f) { return n + t[f[0]]; }, 0);
+    var fastar = (r.haedir || []).every(function (h) { return !!h.yl; });   // allar hæðir með fasta mynd: flokkasían á ekki við (myndin er tilbúin með öllum merkjum)
+    // HEILDARTÖLUR EFST: slökkvitæki, brunaslöngur, útgangar … á allri eigninni
+    var efst = '<div class="bgr-top">' + vf.map(function (f) { return '<div class="bt"><b><i class="gdot" style="background:' + f[2] + '"></i>' + esc(f[1]) + '</b><strong>' + t[f[0]] + '</strong></div>'; }).join('') + '</div>';
     var chips = vf.map(function (f) {
       return '<button type="button" class="gchip bgr-chip' + (st[f[0]] ? ' off' : '') + '" data-bgr-fl="' + f[0] + '" aria-pressed="' + (st[f[0]] ? 'false' : 'true') + '" title="Sýna / fela á teikningunum"><i class="gdot" style="background:' + f[2] + '"></i><b>' + t[f[0]] + '</b>' + esc(f[1]) + '</button>';
     }).join('');
@@ -48,12 +59,14 @@
         return '<tr><td style="font-weight:600;color:var(--ink)">' + esc(h.nafn) + '</td>' + vf.map(function (f) { var n = (h.tel && h.tel[f[0]]) || 0; return '<td class="num r">' + (n || '—') + '</td>'; }).join('') + '</tr>';
       }).join('') +
       '<tr class="bgr-sam"><td>Samtals</td>' + vf.map(function (f) { return '<td class="num r">' + t[f[0]] + '</td>'; }).join('') + '</tr></tbody></table></div>';
+    var leidbeining = fastar ? 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á mynd til að stækka.'
+      : 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á hæð til að stækka; flokkana má kveikja og slökkva.';
     var heim = (r.heimildir || []).map(function (h) { return esc(h.titill) + (h.dags ? ' (' + esc(dags(h.dags)) + ')' : ''); }).join(' · ');
     var nota = (heim ? 'Heimild: ' + heim + '. ' : '') + (r.yfirfarin ? 'Yfirfarið af Slökkvitækjum ehf. ' : 'Lesið úr samþykktum teikningum og staðfest á staðnum við næstu skoðun. ') +
       'Staðsetning er leiðbeinandi — endanleg staðfesting er hjá hönnuði og slökkviliði.' + (r.utan ? ' ' + tala(r.utan, 'atriði er', 'atriði eru') + ' án staðsetningar á teikningu.' : '');
     return '<section class="dsec" id="bgr-sec" data-bgr-fid="' + esc(b.id) + '"><h4>Búnaðargreining <span class="cnt">' + tala(r.haedir.length, 'hæð', 'hæðir') + ' · ' + tala(sam, 'atriði', 'atriði') + '</span></h4>' +
-      '<p class="bgr-lead">Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á hæð til að stækka; flokkana má kveikja og slökkva.</p>' +
-      '<div class="gsum bgr-chips">' + chips + '</div>' + tafla +
+      '<p class="bgr-lead">' + leidbeining + '</p>' +
+      efst + (fastar ? '' : '<div class="gsum bgr-chips">' + chips + '</div>' + tafla) +
       '<div class="tgrid bgr-grid" id="bgr-grid"></div>' + textaHtml(r) + '<div class="gnote">' + esc(nota) + '</div></section>';
   }
 
@@ -66,7 +79,17 @@
   }
   function kort(b, h, j, syn) {
     var f = stilla(b, h), n = (h.merki || []).length;
-    var k = document.createElement('div'); k.className = 'fcard bgr-k' + (j >= MAXSYN ? ' umfram' : '');
+    var k = document.createElement('div'); k.className = 'fcard bgr-k' + (j >= maxSyn() ? ' umfram' : '');
+    if (h.yl) {   // föst mynd hæðarinnar með greiningunni (bunadargreining.yfirlag) — hleðst strax, stækkar í sama glugga og hin spjöldin
+      var f2 = { nafn: h.nafn + ' · búnaðargreining', threed: { url: h.yl, ending: ' (búnaðargreining).jpg' } };
+      k.innerHTML = '<div class="fcard-h"><span>' + esc(h.nafn) + '<small>' + esc(telTexti(h)) + '</small></span></div>' +
+        '<div class="fm" title="Stækka"><img loading="lazy" alt="' + esc(h.nafn) + '" src="' + esc(h.yl) + '"></div>' +
+        (syn.nidurhal ? '<div class="fcard-f"><button type="button" class="dl">' + G().svgIc('pdf', 1.8) + 'Sækja</button></div>' : '');
+      k._h = h; k._fast = true;
+      k.querySelector('.fm').onclick = function () { G().opnaLb(b, f2, '3d'); };
+      var dl2 = k.querySelector('.dl'); if (dl2) dl2.onclick = function () { G().saekja(b, f2, '3d'); };
+      return k;
+    }
     var sk = h.skurdur, ar = sk && sk.w > 0 && sk.h > 0 ? Math.max(0.42, Math.min(1.7, sk.w / sk.h)) : 1.33;
     k.innerHTML = '<div class="fcard-h"><span>' + esc(h.nafn) + '<small>' + (n ? tala(n, 'merki', 'merki') : 'engin merki') + '</small></span></div>' +
       '<div class="fm" title="Stækka" style="aspect-ratio:' + ar.toFixed(3) + '"><div class="ft">…</div></div>' +
@@ -76,7 +99,7 @@
     var dl = k.querySelector('.dl'); if (dl) dl.onclick = function () { G().saekja(b, stilla(b, h), 'teikning'); };
     return k;
   }
-  function teikna(k, b) { var h = k._h; G().synaHaed(k.querySelector('.fm'), stilla(b, h), 'teikning'); }
+  function teikna(k, b) { if (k._fast) return; var h = k._h; G().synaHaed(k.querySelector('.fm'), stilla(b, h), 'teikning'); }
 
   function lifga(b) {
     var g = G(), grid = document.getElementById('bgr-grid'); if (!g || !grid || !b || !b.bgr) return;
@@ -85,9 +108,10 @@
       es.forEach(function (e) { if (!e.isIntersecting) return; sjon.unobserve(e.target); teikna(e.target, b); });
     }, { rootMargin: '200px' }) : null;
     hs.forEach(function (h, j) { var k = kort(b, h, j, syn); grid.appendChild(k); if (sjon) sjon.observe(k); else teikna(k, b); });
-    if (hs.length > MAXSYN) {
+    var lim = maxSyn();
+    if (hs.length > lim) {
       var fl = document.createElement('button'); fl.type = 'button'; fl.className = 'kbtn';
-      var lokad = 'Sjá fleiri hæðir (' + (hs.length - MAXSYN) + ')'; fl.textContent = lokad;
+      var lokad = 'Sjá fleiri hæðir (' + (hs.length - lim) + ')'; fl.textContent = lokad;
       fl.onclick = function () { var a = grid.classList.toggle('allar'); fl.textContent = a ? 'Sýna færri' : lokad; if (a) grid.querySelectorAll('.bgr-k').forEach(function (k) { if (!k.querySelector('canvas')) teikna(k, b); }); };
       grid.appendChild(fl);
     }

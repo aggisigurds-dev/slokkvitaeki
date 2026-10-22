@@ -744,7 +744,7 @@
   function saekja(b, f, ham) {
     if (ham === '3d' && f.threed) {
       fetch(f.threed.url).then(function (r) { if (!r.ok) throw 0; return r.blob(); })
-        .then(function (bl) { vistaBlob(bl, nafnSkrar(b, f, ' (3D).jpg')); }, function () { window.open(f.threed.url, '_blank', 'noopener'); });
+        .then(function (bl) { vistaBlob(bl, nafnSkrar(b, f, f.threed.ending || ' (3D).jpg')); }, function () { window.open(f.threed.url, '_blank', 'noopener'); });
       return;
     }
     if (!f.mynd) return;

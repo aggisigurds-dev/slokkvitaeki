@@ -1,6 +1,7 @@
 // _gatt-bgr.cjs — Búnaðargreining (tafla bunadargreining) → kúnna-örugg gögn fyrir Þjónustugáttina (gatt/bunadargreining.js).
 // Aðeins það sem má sjást: hæðirnar sem greiningin las (mynd, skurður, merki), fjöldi, brunavarnatexti úr byggingarlýsingu og
 // heimildir. ALDREI `athugasemdir` (innri), `af`, `skyrsla` eða verð. Flokkun merkja = sama og 474 (flokkur/bunadur).
+const YL_SLOD = /^https:\/\/osfdzskyvisifcwyjkuk\.supabase\.co\/storage\/v1\/object\/public\/turbopaint\/bgr-yfirlag\//;
 const LITIR = { sl: '#e11d2e', bs: '#2563eb', ut: '#15803d', r: '#9333ea', bk: '#6d28d9', hiti: '#ea580c' };
 
 function flokkurTki(t) {
@@ -47,6 +48,9 @@ function bgrSnid(r, bord) {
     }
   });
   haedir.forEach((h) => { if (!h.nafn) h.nafn = 'Hæð'; });
+  // mynd hæðarinnar með greiningunni teiknaðri ofan á (bunadargreining.yfirlag → turbopaint/bgr-yfirlag): aðeins slóðir úr okkar eigin möppu
+  const yl = (Array.isArray(r.yfirlag) ? r.yfirlag : []).filter((x) => x && typeof x.url === 'string' && YL_SLOD.test(x.url));
+  haedir.forEach((h) => { const m = yl.find((x) => x.haed_id && x.haed_id === h.id) || yl.find((x) => x.haed && h.nafn && x.haed === h.nafn); if (m) h.yl = m.url; });
   const texti = (Array.isArray(r.texti) ? r.texti : []).map((t) => ({
     titill: String(t && t.titill || ''), heimild: String(t && t.heimild || ''),
     kaflar: (Array.isArray(t && t.kaflar) ? t.kaflar : []).filter((k) => k && k.texti).map((k) => ({ fyrirsogn: String(k.fyrirsogn || ''), texti: String(k.texti), lykill: !!k.lykill })),

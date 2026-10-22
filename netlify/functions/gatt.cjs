@@ -152,7 +152,8 @@ exports.handler = async (event) => {
       if (ar0.ok) acct = (await ar0.json())[0] || null;
     } catch (_) {}
   }
-  const showDetails = !!(acct && acct.show_details);
+  // 22.10.2026 (Agnar: „mátt setja hann default allstaðar“): eignasíðan er opin öllum aðgöngum nema stjórnsíðan slökkvi á henni (show_details = false)
+  const showDetails = !!(acct && acct.show_details !== false);
   const syn = lesaSyn(acct);
   // ── Hlutverk og eignir notanda (12.10.2026): stjórnandi sér allt; eldvarnarfulltrúi sér sínar eignir og skrifar;
   //    skoðandi les allt en skrifar ekkert; leigutaki sér sínar eignir, sendir verkbeiðnir, sér hvorki skilaboð
@@ -868,7 +869,7 @@ exports.handler = async (event) => {
     if (showDetails && syn.bunadargreining && siteIds.length) {
       try {
         const [gr, br] = await Promise.all([
-          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar&order=created_at.desc`),
+          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar,yfirlag&order=created_at.desc`),
           P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir`),
         ]);
         const bord = {};
