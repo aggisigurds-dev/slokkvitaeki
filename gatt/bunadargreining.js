@@ -29,7 +29,14 @@
   // „1 slanga · 2 ÚT" — fjöldi hvers flokks á einni hæð (undir fastri mynd hæðarinnar)
   function telTexti(h) {
     var o = FL.filter(function (f) { return h.tel && h.tel[f[0]] > 0; }).map(function (f) { var n = h.tel[f[0]], st = STUTT[f[0]] || [f[1], f[1]]; return n + ' ' + (n === 1 ? st[0] : st[1]); });
+    ['sl', 'bs'].forEach(function (k) { var n = h.tel && h.tel['till_' + k]; if (n > 0) { var st = STUTT[k]; o.push(n + ' ' + (n === 1 ? st[0] : st[1]) + ' (tillaga)'); } });
     return o.length ? o.join(' · ') : 'engin merki';
+  }
+  // TILLÖGUR ARNOLDS (b.bgr.haedir[].tel.till_sl / till_bs): áætluð þörf þar sem teikningin tilgreinir engin slökkvitæki/slöngur — talið sér
+  function tillTotals(r) {
+    var t = { sl: 0, bs: 0 };
+    (r.haedir || []).forEach(function (h) { t.sl += (h.tel && h.tel.till_sl) || 0; t.bs += (h.tel && h.tel.till_bs) || 0; });
+    return t;
   }
   function virkir(r) { var t = totals(r); return FL.filter(function (f) { return t[f[0]] > 0; }); }
 
@@ -51,10 +58,12 @@
     var fastar = (r.haedir || []).every(function (h) { return !!h.yl; });   // allar hæðir með fasta mynd: flokkasían á ekki við (myndin er tilbúin með öllum merkjum)
     // HEILDARTÖLUR EFST: slökkvitæki, brunaslöngur, útgangar … á allri eigninni
     // slökkvitæki og slöngur: hvað er skráð í þjónustu við hliðina á því sem teikningin segir að eigi að vera (Agnar 22.10.2026: „hvað þau eru með mörg slökkvitæki og slöngur")
-    var skrad = { sl: +b.sl || 0, bs: +b.slo || 0 };
-    var efst = '<div class="bgr-top">' + FL.filter(function (f) { return t[f[0]] > 0 || skrad[f[0]] > 0; }).map(function (f) {
-      var s = skrad[f[0]] || 0, sub = s > 0 ? '<small>' + s + ' skráð í þjónustu' + (t[f[0]] ? '' : ' · ekki merkt á teikningu') + '</small>' : '';
-      return '<div class="bt"><b><i class="gdot" style="background:' + f[2] + '"></i>' + esc(f[1]) + '</b><strong>' + (t[f[0]] || '—') + '</strong>' + sub + '</div>';
+    var skrad = { sl: +b.sl || 0, bs: +b.slo || 0 }, till = tillTotals(r);
+    var efst = '<div class="bgr-top">' + FL.filter(function (f) { return t[f[0]] > 0 || skrad[f[0]] > 0 || till[f[0]] > 0; }).map(function (f) {
+      var k = f[0], s = skrad[k] || 0, tl = till[k] || 0, alls = t[k] + tl, subs = [];
+      if (s > 0) subs.push(s + ' skráð í þjónustu' + (alls ? '' : ' · ekki merkt á teikningu'));
+      if (tl > 0) subs.push(t[k] > 0 ? 'þar af ' + tl + ' tillaga Arnolds' : 'tillaga Arnolds (áætluð þörf)');
+      return '<div class="bt' + (tl > 0 && !t[k] ? ' till' : '') + '"><b><i class="gdot" style="background:' + f[2] + '"></i>' + esc(f[1]) + '</b><strong>' + (alls || '—') + '</strong>' + subs.map(function (x) { return '<small>' + x + '</small>'; }).join('') + '</div>';
     }).join('') + '</div>';
     var chips = vf.map(function (f) {
       return '<button type="button" class="gchip bgr-chip' + (st[f[0]] ? ' off' : '') + '" data-bgr-fl="' + f[0] + '" aria-pressed="' + (st[f[0]] ? 'false' : 'true') + '" title="Sýna / fela á teikningunum"><i class="gdot" style="background:' + f[2] + '"></i><b>' + t[f[0]] + '</b>' + esc(f[1]) + '</button>';
@@ -67,7 +76,8 @@
     var leidbeining = fastar ? 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á mynd til að stækka.'
       : 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á hæð til að stækka; flokkana má kveikja og slökkva.';
     var heim = (r.heimildir || []).map(function (h) { return esc(h.titill) + (h.dags ? ' (' + esc(dags(h.dags)) + ')' : ''); }).join(' · ');
-    var nota = (heim ? 'Heimild: ' + heim + '. ' : '') + (r.yfirfarin ? 'Yfirfarið af Slökkvitækjum ehf. ' : 'Lesið úr samþykktum teikningum og staðfest á staðnum við næstu skoðun. ') +
+    var tillNota = r.till ? 'Tillögur Arnolds' + (r.till.at ? ' (' + dags(r.till.at) + ')' : '') + ' eru áætlun út frá reglum um slökkvibúnað (byggingarreglugerð gr. 9.4.4–9.4.5, 165.BR1) — teikningin tilgreinir engin slökkvitæki eða slöngukefli á þessum hæðum. Þær eru ekki hönnun og eru staðfestar á staðnum við næstu skoðun. ' : '';
+    var nota = tillNota + (heim ? 'Heimild: ' + heim + '. ' : '') + (r.yfirfarin ? 'Yfirfarið af Slökkvitækjum ehf. ' : 'Lesið úr samþykktum teikningum og staðfest á staðnum við næstu skoðun. ') +
       'Staðsetning er leiðbeinandi — endanleg staðfesting er hjá hönnuði og slökkviliði.' + (r.utan ? ' ' + tala(r.utan, 'atriði er', 'atriði eru') + ' án staðsetningar á teikningu.' : '');
     return '<section class="dsec" id="bgr-sec" data-bgr-fid="' + esc(b.id) + '"><h4>Búnaðargreining <span class="cnt">' + tala(r.haedir.length, 'hæð', 'hæðir') + ' · ' + tala(sam, 'atriði', 'atriði') + '</span></h4>' +
       '<p class="bgr-lead">' + leidbeining + '</p>' +

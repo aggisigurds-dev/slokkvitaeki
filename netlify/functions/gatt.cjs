@@ -869,7 +869,7 @@ exports.handler = async (event) => {
     if (showDetails && syn.bunadargreining && siteIds.length) {
       try {
         const [gr, br] = await Promise.all([
-          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar,yfirlag&order=created_at.desc`),
+          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar,yfirlag,tillogur&order=created_at.desc`),
           P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir`),
         ]);
         const bord = {};

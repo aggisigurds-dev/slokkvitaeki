@@ -48,6 +48,20 @@ function bgrSnid(r, bord) {
     }
   });
   haedir.forEach((h) => { if (!h.nafn) h.nafn = 'Hæð'; });
+  // TILLÖGUR ARNOLDS (bunadargreining.tillogur): áætluð þörf + staðsetning slökkvitækja/slöngukefla þar sem teikningin tilgreinir engin.
+  // Aldrei blandað í tki/tel — eigin teljarar (till_sl/till_bs) og eigið merkjalag, svo kúnninn sjái hvað er hannað og hvað er áætlað.
+  const tl = r.tillogur && typeof r.tillogur === 'object' ? r.tillogur : null;
+  if (tl && Array.isArray(tl.tki)) {
+    const byId = {}; haedir.forEach((h) => { byId[h.id] = h; });
+    tl.tki.forEach((t) => {
+      const h = t && byId[t.blad]; const x = t && +t.bx, y = t && +t.by;
+      if (!h || (t.flokkur !== 'sl' && t.flokkur !== 'bs') || !isFinite(x) || !isFinite(y)) return;
+      (h.till = h.till || []).push([Math.round(x), Math.round(y), LITIR[t.flokkur], t.flokkur, String(t.stadur || '').slice(0, 120)]);
+      h.tel['till_' + t.flokkur] = (h.tel['till_' + t.flokkur] || 0) + 1;
+    });
+    const kr = tl.krofur && typeof tl.krofur === 'object' ? tl.krofur : {};
+    haedir.forEach((h) => { const k = kr[h.id]; if (k && typeof k === 'object') h.krafa = { m2: +k.m2 > 0 ? Math.round(+k.m2) : null, sl: +k.sl || 0, bs: +k.bs || 0 }; });
+  }
   // mynd hæðarinnar með greiningunni teiknaðri ofan á (bunadargreining.yfirlag → turbopaint/bgr-yfirlag): aðeins slóðir úr okkar eigin möppu
   const yl = (Array.isArray(r.yfirlag) ? r.yfirlag : []).filter((x) => x && typeof x.url === 'string' && YL_SLOD.test(x.url));
   haedir.forEach((h) => { const m = yl.find((x) => x.haed_id && x.haed_id === h.id) || yl.find((x) => x.haed && h.nafn && x.haed === h.nafn); if (m) { h.yl = m.url; if (h.nafn && m.haed && m.haed !== h.nafn && m.haed.indexOf(h.nafn) === 0) h.nafn = String(m.haed).slice(0, 80); } });   // „1. hæð, Þingholtsstræti 5“ þegar tvö blöð heita „1. hæð“
@@ -57,7 +71,8 @@ function bgrSnid(r, bord) {
   })).filter((t) => t.kaflar.length);
   const heimildir = (Array.isArray(r.heimildir) ? r.heimildir : []).filter((h) => h && h.titill && h.gildir !== false)
     .map((h) => ({ titill: String(h.titill), dags: h.dags || null })).slice(0, 8);
-  return { dags: r.created_at || null, yfirfarin: r.stada === 'yfirfarin', haedir, utan, texti, heimildir };
+  const till = tl && haedir.some((h) => h.till && h.till.length) ? { at: String(tl.at || '').slice(0, 10), nota: String(tl.nota || '').slice(0, 400) } : null;
+  return { dags: r.created_at || null, yfirfarin: r.stada === 'yfirfarin', haedir, utan, texti, heimildir, till };
 }
 
 module.exports = { bgrSnid, flokkurTki, LITIR };
