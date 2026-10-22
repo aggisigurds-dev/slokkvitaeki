@@ -1746,7 +1746,7 @@
     if (/gang/.test(t)) return { teg: 'gangur' };
     if (/hjola|vagna|sorp|taekni|inntak|lagna|toflu|thurrk|sameign|rafm/.test(t)) return { teg: 'sameign' };
     if (/thvott|(^| )thvo( |$)/.test(t)) return { teg: 'thvottur' };
-    if (/(^| )bad|badh|(^| )wc|snyrt|salern|sturt/.test(t)) return { teg: 'bad' };
+    if (/(^| )bad|badh|(^| )wc|snyrt|salern|sturt|^vs( |\.|\d|$)/.test(t)) return { teg: 'bad' };   // „VS 2,8 m²“ / „Vs.“ = vatnssalerni: heiti baðherbergja á hótelteikningum (Midtown, S30, Þingholt)
     if (/sval|sergard/.test(t)) return { teg: 'svalir' };
     // á undan stofu: „Vinnustofa“ og „Skrifstofa“ enda á -stofa
     if (/verkst|lager|vorumott|atvinnur|dekk|bilask|idnad|vinnusal/.test(t)) return { teg: 'verkstaedi' };
@@ -2056,9 +2056,18 @@
     ux.globalCompositeOperation = 'multiply'; ux.globalAlpha = 0.3; ux.drawImage(golfStr, 0, 0, GW, GH);
     ux.globalAlpha = 1; ux.globalCompositeOperation = 'destination-in'; ux.drawImage(iStriga(alla), 0, 0, GW, GH);
     ux.globalCompositeOperation = 'source-over';
+    // BAÐ ÁN HEITIS (lögunin segir bað, heitið ólæsilegt eða vantar): fær sömu staðlaða innréttingu (Agnar 22.10.2026: „eldhúsinnréttingu
+    // og baðherbergi … eitthvað standard eins allstaðar"). Aðeins í útflutningnum til innréttinga — talningar (heiti, íbúðir) óbreyttar.
+    const nafnX = Int16Array.from(nafn), heitinX = heitin.map(q => ({ teg: q.teg, x: q.cx / (kv * s), y: q.cy / (kv * s) }));
+    rymi.forEach((r, id) => {
+      if (r.teg !== 'bad' || (r.heiti || []).length || r.m2 < 2) return;
+      const k = heitinX.length; let nn = 0;
+      for (let p = 0; p < N; p++) if (merki[p] === id && nafn[p] < 0) { nafnX[p] = k; nn++; }
+      if (nn) heitinX.push({ teg: 'bad', x: r.sx / r.n / (kv * s), y: r.sy / r.n / (kv * s) });
+    });
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
-    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: Int16Array.from(nafn), ibudR, ibudListi, pxm,
-      heitin: heitin.map(q => ({ teg: q.teg, x: q.cx / (kv * s), y: q.cy / (kv * s) })),
+    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm,
+      heitin: heitinX,
       rymi: rymi.map(r => ({ efni: r.efni, teg: r.teg, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })) };
   }
   // RÝMISHAMURINN: hver tegund í sínum lit (RYMI_TEG), teikningin dauf ofan á. umfang 'sameign' / 'ibudir' deyfir hinn

@@ -33,8 +33,8 @@
   if (window.TeiknVinnumynd) return;
 
   const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
-  // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir)
-  const UTLIT = 7;
+  // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir), 8 = 22.10.2026 (staðlaðar innréttingar líka í „VS“ og baðrýmum án heitis)
+  const UTLIT = 8;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
