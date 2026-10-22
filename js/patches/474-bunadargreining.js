@@ -73,6 +73,20 @@
     ROT + ' .bgr-ut em{font-style:normal;color:#7a766d}',
     // Teikning greiningarinnar („sér teikning", Agnar 19.10.2026): blöðin sem greiningin las, merkt — aðskilið Teikningu
     ROT + ' .bgr-bl{grid-column:1/-1}',
+    ROT + ' .bgr-yl{grid-column:1/-1}',
+    ROT + ' .bgr-yl h5{margin:0 0 6px;font:700 12px system-ui,sans-serif}',
+    ROT + ' .bgr-yl-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}',
+    '@container (max-width:900px){' + ROT + ' .bgr-yl-g{grid-template-columns:repeat(3,minmax(0,1fr))}}',
+    '@container (max-width:640px){' + ROT + ' .bgr-yl-g{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+    '@container (max-width:300px){' + ROT + ' .bgr-yl-g{grid-template-columns:minmax(0,1fr)}}',
+    ROT + ' .bgr-yl a{display:block;border:1px solid #d6d3cc;border-radius:8px;overflow:hidden;background:#fff;text-decoration:none;color:#2b2a27;min-width:0}',
+    ROT + ' .bgr-yl a:hover{border-color:#2b2a27}',
+    ROT + ' .bgr-yl .im{aspect-ratio:4/3;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}',
+    ROT + ' .bgr-yl img{display:block;width:100%;height:100%;object-fit:contain}',
+    ROT + ' .bgr-yl b{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:5px 9px;font:700 11.5px system-ui,sans-serif;background:#fff;border-top:1px solid #e3e1dc}',
+    ROT + ' .bgr-yl b small{font-weight:600;color:#7a766d;text-align:right}',
+    ROT + ' .bgr-bl-d{grid-column:1/-1}',
+    ROT + ' .bgr-bl-d>summary{margin:0 0 6px;font:700 12px system-ui,sans-serif;cursor:pointer}',
     ROT + ' .bgr-3d{grid-column:1/-1}',
     ROT + ' .bgr-3d h5{margin:0 0 6px;font:700 12px system-ui,sans-serif}',
     ROT + ' .bgr-3d-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}',
@@ -114,6 +128,16 @@
     if (!L.length) return '';
     return '<div class="bgr-3d"><h5>3D-mynd af greiningunni</h5><div class="bgr-3d-g">' + L.map(function (x) {
       return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð"><img loading="lazy" src="' + esc(x.url) + '" alt="' + esc(x.nafn || '') + '"><b>' + esc(x.nafn || '') + '</b></a>';
+    }).join('') + '</div></div>';
+  }
+  // HÆÐIR MEÐ GREININGUNNI (22.10.2026, Agnar: „setja allar þessar myndir inn á company profiles … mest 4 í röð"): ein mynd á hæð, greiningin teiknuð
+  // ofan á (bunadargreining.yfirlag, vistað í turbopaint/bgr-yfirlag) — hlaðast strax, óháð því hvort PDF-ið náist í vafranum. Smellur opnar í fullri stærð.
+  function yfirlagHtml(r) {
+    var L = (r.yfirlag || []).filter(function (x) { return x && x.url; });
+    if (!L.length) return '';
+    return '<div class="bgr-yl"><h5>Hæðir með greiningunni</h5><div class="bgr-yl-g">' + L.map(function (x) {
+      var t = [x.sl ? x.sl + ' tæki' : '', x.bs ? x.bs + ' slöngur' : '', x.ut ? x.ut + ' ÚT' : '', x.r ? x.r + ' R' : ''].filter(Boolean).join(' · ');
+      return '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð"><div class="im"><img loading="lazy" src="' + esc(x.url) + '" alt="' + esc(x.haed || '') + '"></div><b>' + esc(x.haed || '') + '<small>' + esc(t) + '</small></b></a>';
     }).join('') + '</div></div>';
   }
   function samantektHtml(r) {
@@ -170,7 +194,7 @@
       '<button type="button" class="bgr-t" data-a="prenta-haedir" title="Samantekt á fyrstu síðu, svo hver hæð á sér blaði (stór hús)">Prenta · hver hæð sér</button>' +
       '<button type="button" class="bgr-t bgr-turbo-t" data-a="turbo" title="Kerfið les teikningarnar upp á nýtt og býr til nýja greiningu og skýrslu — sú vistaða geymist í sögunni">Turbo</button>' +
       '<button type="button" class="bgr-t" data-a="greina" title="Ný greining úr merkjum Teikningar — sú vistaða geymist í sögunni">Greina aftur</button></div>' +
-      '<div class="bgr-b">' + samantektHtml(r) + blodHtml(r) + render3dHtml(r) +
+      '<div class="bgr-b">' + samantektHtml(r) + yfirlagHtml(r) + blodHtml(r) + render3dHtml(r) +
       ((r.athugasemdir || []).length ? '<div><h5>Athugasemdir</h5><ul>' + r.athugasemdir.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div>' : '') +
       ((r.heimildir || []).length ? '<div class="bgr-hf"><h5>Heimildir</h5><ul>' + r.heimildir.map(function (h) {
         return '<li' + (h.gildir === false ? ' class="bgr-urelt"' : '') + '>' + (h.slod ? '<a href="' + esc(h.slod) + '" target="_blank" rel="noopener">' + esc(h.titill) + '</a>' : esc(h.titill)) +
@@ -178,7 +202,9 @@
       }).join('') + '</ul></div>' : '') +
       utanHtml(r) +
       '<div class="bgr-tx" hidden>' + textiHtml(r) + '</div></div>';
-    teiknaBlod(el, r);
+    var dl = (r.yfirlag || []).length ? el.querySelector('.bgr-bl-d') : null;
+    if (dl) dl.addEventListener('toggle', function () { if (dl.open && !dl._teiknad) { dl._teiknad = 1; teiknaBlod(el, r); } });
+    else teiknaBlod(el, r);
   }
 
   /* ── TEIKNING GREININGARINNAR — sér teikning (Agnar 19.10.2026: „að það merkist líka inn á sér teikningu" og „að svona
@@ -204,10 +230,13 @@
   function blodHtml(r) {
     var bl = blodin(r);
     if (!bl.length) return '';
-    return '<div class="bgr-bl"><h5>Teikning greiningarinnar — það sem gögnin segja</h5><div class="bgr-bl-g">' + bl.map(function (b, i) {
+    var grid = '<div class="bgr-bl-g">' + bl.map(function (b, i) {
       return '<div class="bgr-k" data-bl="' + i + '" title="Stækka"><div class="bgr-kh"><b>' + esc(b.nafn) + '</b><small>' + fjoldiTexti(b.tki) + '</small></div>' +
         '<div class="bgr-km"><div class="cfh-t">…</div></div></div>';
-    }).join('') + '</div></div>';
+    }).join('') + '</div>';
+    // myndasafn hæða til: lifandi teikningarnar (blöð, aðdráttur, síur) fella sig saman og teiknast ekki fyrr en þær eru opnaðar
+    if ((r.yfirlag || []).length) return '<details class="bgr-bl bgr-bl-d"><summary>Teikning greiningarinnar — blöðin í fullri stærð, með aðdrætti og síum</summary>' + grid + '</details>';
+    return '<div class="bgr-bl"><h5>Teikning greiningarinnar — það sem gögnin segja</h5>' + grid + '</div>';
   }
   function teiknaBlod(el, r) {
     var tf = window.TeiknForskodun, bl = blodin(r);
