@@ -103,6 +103,15 @@ function visunHreint(v) {
   return (Array.isArray(v) ? v : []).filter((x) => x && VISUN_T.includes(x.t)).slice(0, 6).map((x) => ({
     t: x.t, nr: x.nr != null ? String(x.nr).slice(0, 24) : null, docId: Number.isFinite(+x.docId) && +x.docId > 0 ? +x.docId : null, txt: x.txt != null ? String(x.txt).slice(0, 90) : null }));
 }
+// Viðbótarupplýsingar skýrslu (22.10.2026): tæki í skýrslu, það sem var unnið (úr reikningi) og athugasemdir af vinnublaði.
+// Aðeins hvítlistaðir reitir og stuttir strengir — gáttin er kúnna-sýnileg.
+function vidbotHreint(v) {
+  if (!v || typeof v !== 'object') return null;
+  const par = (L) => (Array.isArray(L) ? L : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(+x[1])).slice(0, 14).map((x) => [String(x[0]).slice(0, 80), Math.round(+x[1])]);
+  const out = { reikn: typeof v.reikn === 'string' ? v.reikn.slice(0, 24) : null, taeki: par(v.taeki), unnid: par(v.unnid),
+    vinnublad: (Array.isArray(v.vinnublad) ? v.vinnublad : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 400)) };
+  return (out.taeki.length || out.unnid.length || out.vinnublad.length) ? out : null;
+}
 function erindiRod(r, slod) {
   const tags = Array.isArray(r.tags) ? r.tags : [];
   const mynd = (L) => (Array.isArray(L) ? L : []).map((m) => m && m.path && slod[m.path] ? { url: slod[m.path], w: m.w || null, h: m.h || null, at: m.at || null } : null).filter(Boolean);
@@ -788,7 +797,7 @@ exports.handler = async (event) => {
       const filt = siteIds.length
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_texti`);
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_texti,skyrsla_vidbot`);
       if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
     } catch (_) {}
 
@@ -1027,7 +1036,7 @@ exports.handler = async (event) => {
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
       (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${d.year == null ? '' : d.year}`,
     )
-      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: d.skodun_ar_man || null, texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null,
+      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: d.skodun_ar_man || null, texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
         bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.amount != null ? d.amount : null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 

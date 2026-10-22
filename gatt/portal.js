@@ -268,7 +268,7 @@
           eldvarnabok: Array.isArray(b.eldvarnabok) ? b.eldvarnabok : null };
       }),
       reports: (d.reports || []).map(function (r) {
-        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null };
+        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
@@ -518,7 +518,7 @@
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="num">' + (r.magn != null ? esc(r.magn) : '<span class="dim">—</span>') + '</td>' +
         '<td class="num">' + esc(r.ar || '') + '</td>' +
-        '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + '</td>' +
+        '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + vidbotHtml(r) + '</td>' +
         '<td class="r">' + docLink('PDF', r.docId) + (r.docId ? '<a href="#" class="frest sk-bidja" data-sk-gogn="' + r.docId + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">Biðja um uppfærða</a>' : '') + '</td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">Engar skýrslur skráðar</td></tr>';
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
@@ -717,10 +717,32 @@
     }
   });
 
-  // Texti úr skýrslunni (Annað / athugasemdir / ábendingar) undir síðustu skoðun
+  // Viðbótarupplýsingar skýrslu: tæki í skýrslu, það sem var unnið (úr reikningi) og athugasemdir af vinnublaði. Opnast með „Nánar“.
+  function vidbotPanel(v) {
+    if (!v) return '';
+    function lst(L) { return L.map(function (x) { return '<li><span>' + esc(x[0]) + '</span><b>' + esc(x[1]) + '</b></li>'; }).join(''); }
+    return '<div class="vb-panel hidden">' +
+      (v.taeki && v.taeki.length ? '<h5>Tæki í skýrslunni</h5><ul class="vb-l">' + lst(v.taeki) + '</ul>' : '') +
+      (v.unnid && v.unnid.length ? '<h5>Unnið' + (v.reikn ? ' · reikningur <a href="#" data-vis-reikn="1">' + esc(v.reikn) + '</a>' : '') + '</h5><ul class="vb-l">' + lst(v.unnid) + '</ul>' : '') +
+      (v.vinnublad && v.vinnublad.length ? '<h5>Af vinnublaðinu</h5><ul class="vb-n">' + v.vinnublad.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') + '</div>';
+  }
+  function vidbotHtml(r) {
+    if (!r || !r.vidbot) return '';
+    return '<div class="vb-wrap"><button type="button" class="vb-open" aria-expanded="false">Nánar</button>' + vidbotPanel(r.vidbot) + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var rv = e.target.closest && e.target.closest('.vb-panel [data-vis-reikn]');
+    if (rv) { e.preventDefault(); e.stopPropagation(); goView('reikningar'); window.scrollTo(0, 0); return; }
+    var b = e.target.closest && e.target.closest('.vb-open'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var p = b.parentNode.querySelector('.vb-panel'); if (!p) return;
+    var open = p.classList.toggle('hidden') === false;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.textContent = open ? 'Fela' : 'Nánar';
+  }, true);
+  // Texti úr skýrslunni (Annað / athugasemdir / ábendingar) undir síðustu skoðun, með „Nánar“ þegar til er meira
   function skTextiHtml(b, lbl) {
     var r = sidastaSkyrsla(b, lbl === 'Kerfi' ? 'Brunakerfi' : 'Slökkvitæki');
-    return r && r.texti ? '<div class="skt" title="' + esc(r.texti) + '">' + esc(r.texti) + '</div>' : '';
+    return r && (r.texti || r.vidbot) ? (r.texti ? '<div class="skt" title="' + esc(r.texti) + '">' + esc(r.texti) + '</div>' : '') + vidbotHtml(r) : '';
   }
 
   /* ── nav / lang / logout ── */
