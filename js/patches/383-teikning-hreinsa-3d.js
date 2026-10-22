@@ -3159,6 +3159,9 @@
         // aðeins þessi hæð, og án tækja, merkja og pinna (o.anTaekja !== false)
         const sjonir = lag.map(q => q.hopur.visible), taekiSjon = taekiHlutir.map(q => q.visible);
         lag.forEach(q => { q.hopur.visible = q === lg; });
+        // efri hæð í fjölhæða-senu er hálfgagnsæ (0,42) svo hún hylji ekki hinar — vinnumynd hennar á að sýna gólfið heilt eins og neðsta hæð
+        const golfGeymt = { o: lg.golfE.opacity, d: lg.golfE.depthWrite, a: lg.dauf && lg.dauf.material.opacity };
+        lg.golfE.opacity = 1; lg.golfE.depthWrite = true; if (lg.dauf) lg.dauf.material.opacity = GRATT_3D.daufur;
         if (o.anTaekja !== false) taekiHlutir.forEach(q => { q.visible = false; });
         const geymt = { theta, phi, fjarl, mid: mid.clone(), aspect: vel.aspect, pr: teiknari.getPixelRatio(), w: el.clientWidth || b, h: el.clientHeight || h };
         const pv = new T.Vector3(), haegri = new T.Vector3(), upp = new T.Vector3();
@@ -3214,6 +3217,7 @@
         } finally {
           teiknari.setPixelRatio(geymt.pr); teiknari.setSize(geymt.w, geymt.h, false);
           lag.forEach((q, i) => { q.hopur.visible = sjonir[i]; }); taekiHlutir.forEach((q, i) => { q.visible = taekiSjon[i]; });
+          lg.golfE.opacity = golfGeymt.o; lg.golfE.depthWrite = golfGeymt.d; if (lg.dauf && golfGeymt.a != null) lg.dauf.material.opacity = golfGeymt.a;
           theta = geymt.theta; phi = geymt.phi; fjarl = geymt.fjarl; mid.copy(geymt.mid);
           vel.aspect = geymt.aspect; vel.updateProjectionMatrix(); stillaVel();
         }
