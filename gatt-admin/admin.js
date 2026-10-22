@@ -113,7 +113,7 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.error) { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">' + esc(d.error) + '</td></tr>'; return; }
-        state.access = d.access || []; state.messages = d.messages || []; state.verk = d.verk || []; state.notendur = d.notendur || []; state.stadir = d.stadir || [];
+        state.access = d.access || []; state.messages = d.messages || []; state.mal = d.mal || []; state.verk = d.verk || []; state.notendur = d.notendur || []; state.stadir = d.stadir || [];
         renderStats(); renderAccess(); renderMessages(); renderVerk();
       })
       .catch(function () { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">Villa við að sækja gögn</td></tr>'; });
@@ -293,10 +293,42 @@
     };
   }
 
+  // Erindi úr gáttinni: flokkur, eign, lýsing, vísanir — svara (kúnni sér svarið á erindinu) eða svara og loka.
+  var MAL_TEG = { verkbeidni: 'Verkbeiðni', gogn: 'Gagnabeiðni', fyrirspurn: 'Fyrirspurn', annad: 'Annað', thjonusta: 'Þjónusta', reikningur: 'Reikningur', verkefni: 'Verkefni', eldvarnabok: 'Eldvarnabók' };
+  var MAL_ST = { nytt: 'Móttekið', i_vinnslu: 'Í vinnslu', klarad: 'Lokið', lokad: 'Lokið' };
+  function malHtml() {
+    var L = state.mal || [];
+    if (!L.length) return '';
+    var opin = L.filter(function (m) { return m.status === 'nytt' || m.status === 'i_vinnslu'; });
+    return '<div class="msg" style="display:block"><div class="top" style="margin-bottom:8px"><b>Erindi úr gáttinni</b> <span class="t">' + opin.length + ' opin · ' + (L.length - opin.length) + ' lokið</span></div>' +
+      L.map(function (m) {
+        var tg = (m.tags || []).filter(function (t) { return MAL_TEG[t] && t !== 'gatt'; })[0] || 'fyrirspurn';
+        var lokad = m.status === 'klarad' || m.status === 'lokad';
+        var vis = (m.visun || []).map(function (v) { return (v.t === 'reikningur' ? 'reikningur ' : v.t === 'skyrsla' ? 'skýrsla ' : 'samningur ') + (v.nr || v.docId || ''); }).join(', ');
+        return '<div class="msg' + (lokad ? '' : ' unread') + '" style="margin:0 0 8px"><div class="body">' +
+          '<div class="top"><span class="from">' + esc(m.base_nafn) + ' · ' + esc(MAL_TEG[tg]) + ' · ' + esc(lokad ? 'Lokið' : (m.svarad ? 'Svarað' : MAL_ST[m.status] || m.status)) + '</span><span class="t">' + esc(fmtDate(m.dags)) + ' · #' + m.id + '</span></div>' +
+          '<div class="txt"><b>' + esc(m.titill) + '</b>' + (m.lysing ? '<br>' + esc(m.lysing) : '') + (vis ? '<br><i>Vísun: ' + esc(vis) + '</i>' : '') + (m.svar ? '<br><span style="color:var(--good,#1f7a44)">Svar: ' + esc(m.svar) + '</span>' : '') + '</div>' +
+          (lokad ? '' : '<div class="reply"><input placeholder="Svar til kúnnans…" data-mal="' + m.id + '"><button class="btn btn--sm" data-mal-svara="' + m.id + '">Svara</button><button class="btn btn--sm btn--accent" data-mal-loka="' + m.id + '">Svara og loka</button></div>') +
+          '</div></div>';
+      }).join('') + '</div>';
+  }
+  function malWire(el) {
+    el.querySelectorAll('[data-mal-svara],[data-mal-loka]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute('data-mal-svara') || btn.getAttribute('data-mal-loka'), loka = !!btn.getAttribute('data-mal-loka');
+        var inp = el.querySelector('input[data-mal="' + id + '"]'); var text = inp.value.trim(); if (!text) { inp.focus(); return; }
+        btn.disabled = true;
+        api({ action: 'svara-mal', id: parseInt(id, 10), svar: text, loka: loka }).then(function (res) {
+          if (res.ok) { toast(loka ? 'Svarað og lokað' : 'Svar sent'); load(); } else { toast(res.error || 'Villa'); btn.disabled = false; }
+        });
+      };
+    });
+  }
+
   function renderMessages() {
     var el = $('#msgPanel');
-    if (!state.messages.length) { el.innerHTML = '<div class="empty">Engin skilaboð.</div>'; return; }
-    el.innerHTML = state.messages.map(function (m) {
+    if (!state.messages.length && !(state.mal || []).length) { el.innerHTML = '<div class="empty">Engin skilaboð.</div>'; return; }
+    el.innerHTML = malHtml() + state.messages.map(function (m) {
       var unread = m.sender === 'kunni' && !m.read_by_staff;
       var replyHtml = m.sender === 'kunni'
         ? '<div class="reply"><input placeholder="Svara…" data-base="' + m.base_id + '"><button class="btn btn--sm btn--accent" data-reply="' + m.base_id + '">Svara</button></div>' : '';
@@ -305,6 +337,7 @@
         '<div class="body"><div class="top"><span class="from">' + esc(m.base_nafn) + (m.sender === 'starf' ? ' · svar' : '') + '</span><span class="t">' + esc(fmtDate(m.created_at)) + '</span></div>' +
         '<div class="txt">' + esc(m.body) + '</div>' + replyHtml + '</div></div>';
     }).join('');
+    malWire(el);
     el.querySelectorAll('[data-reply]').forEach(function (btn) {
       btn.onclick = function () {
         var base = btn.getAttribute('data-reply');
