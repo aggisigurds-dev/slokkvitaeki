@@ -398,16 +398,20 @@
     }).join('');
   }
 
-  function markCell(pair) {
+  // 22.10.2026 (Agnar, Heimaleiga: „hafa bara eitt checkmark … þau eru bara með slökkvitæki"): bygging án brunakerfis fær EITT merki á ár (slökkvitæki) í stað tveggja
+  function markCell(pair, solo) {
     function m(v) { return v === 'ok' ? '<span class="ok">✓</span>' : v === 'due' ? '<span class="due">!</span>' : '<span class="no">—</span>'; }
-    return '<div class="mk">' + m(pair[0]) + ' ' + m(pair[1]) + '</div>';
+    return '<div class="mk">' + m(pair[0]) + (solo ? '' : ' ' + m(pair[1])) + '</div>';
   }
+  // eingöngu slökkvitæki: ekkert brunakerfi í þjónustu og ekkert skráð á brunakerfi neitt árið
+  function bareSlokkvitaeki(b) { return !b.br && (b.y || []).every(function (p) { return !p || (p[1] !== 'ok' && p[1] !== 'due'); }); }
   function renderYfirlit(bldgs) {
     var yrs = ["'23", "'24", "'25", "'26"];
     var det = !!(state.data && state.data.account && state.data.account.details);
     $('#yf-body').innerHTML = (bldgs || []).map(function (b, bi) {
+      var solo = bareSlokkvitaeki(b);
       var boxes = (b.y || []).map(function (p, i) {
-        return '<div class="yb"><div class="yy">' + yrs[i] + '</div>' + markCell(p) + '</div>';
+        return '<div class="yb"><div class="yy">' + yrs[i] + '</div>' + markCell(p, solo) + '</div>';
       }).join('');
       var next = '';
       if (b.nt) {
@@ -753,7 +757,8 @@
       return '<div><span class="lbl">' + esc(lbl) + ':</span> ' + esc(val) + '</div>';
     }).join('');
     var yrs = ["'23", "'24", "'25", "'26"];
-    var boxes = (b.y || []).map(function (p, k) { return '<div class="yb"><div class="yy">' + yrs[k] + '</div>' + markCell(p) + '</div>'; }).join('');
+    var soloE = bareSlokkvitaeki(b);
+    var boxes = (b.y || []).map(function (p, k) { return '<div class="yb"><div class="yy">' + yrs[k] + '</div>' + markCell(p, soloE) + '</div>'; }).join('');
     html += '<section class="dsec"><h4>Yfirlit</h4><div class="dkpis">' +
       '<div class="dk"><div class="k">Slökkvitæki</div><div class="v">' + (b.sl != null ? b.sl : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
