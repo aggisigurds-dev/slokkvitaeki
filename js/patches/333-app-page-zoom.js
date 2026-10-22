@@ -286,7 +286,8 @@
     const fl = flokkur();
     const n = nafn(k, k === nu.k ? nu.el : null);
     const fyrri = (stillingar()[fl] || {})[k];
-    const rod = { s, n, t: Date.now(), f: (fast || (fyrri && fyrri.f)) ? 1 : 0 };
+    // fast: true = festa · false = losa festinguna (stærðin helst vistuð) · undefined = halda því sem var
+    const rod = { s, n, t: Date.now(), f: (fast === true || (fast !== false && fyrri && fyrri.f)) ? 1 : 0 };
     bida[fl][k] = rod;
     _vbid[fl + '\u0001' + k] = rod;
     apply();
@@ -496,7 +497,7 @@
         + '<span class="sz-tala" title="Hlutfall af raunstærð — 100 % = letur eins og í venjulegu síma-appi"><span class="sz-pct"></span><span class="sz-pc">%</span></span></div>'
         + '<div class="sz-for">' + FORSTILLT.map(v => '<button type="button" data-sz-for="' + v + '">' + Math.round(v * 100) + '</button>').join('') + '</div>'
         + '<div class="sz-st"></div>'
-        + '<label class="sz-festa"><input type="checkbox" data-sz-festa> Festa þessa stærð sem sjálfgefna fyrir þessa síðu</label>'
+        + '<label class="sz-festa"><input type="checkbox" data-sz-festa> Festa þessa stærð sem sjálfgefna fyrir þessa síðu — klípa út breytir henni ekki</label>'
         + '<div class="sz-ak"><button type="button" data-sz="upphafl">Upprunaleg</button>'
         + (window.PageEditor && PageEditor.toggle ? '<button type="button" class="sz-dokk" data-sz="utlit">Litir og letur…</button>' : '') + '</div>'
         + '<details class="sz-listi"></details>'
@@ -504,8 +505,13 @@
       const rng = p.querySelector('input[type=range]');
       // 08.10.2026 (Agnar: „bæta við haki að ég geti fest ákveðið zoom, hafa það fast sem default, miðast við hverja síðu og
       // haldist þannig“): hakið vistar NÚVERANDI stærð — líka klipna, tímabundna stærð — sem vistaða stærð síðunnar, með f:1.
-      // Fest síða svarar ekki klípu út (sjá touchstart). Afhak = Upprunaleg (vistun fjarlægð).
-      p.querySelector('[data-sz-festa]').addEventListener('change', e => { if (e.target.checked) setS(nu.s, nu.k, true); else endurstilla(); });
+      // Fest síða svarar ekki klípu út (sjá touchstart).
+      // 22.10.2026 (Agnar, Teikning í 30 % með hakið „hakað": „láta þennan læsingartakka hindra að maður zoomi of langt
+      // út"): hakið sýndi sig HAKAÐ um leið og síða átti vistaða stærð (nu.uppruni === 'vistad'), þótt f væri 0 — svo
+      // síðan leit út fyrir að vera fest en klípan minnkaði hana samt, og eina leiðin til að festa í raun var að afhaka
+      // (sem fjarlægði vistunina!) og haka aftur. Nú: hakið = f-flaggið sjálft; afhak losar aðeins festinguna og heldur
+      // vistuðu stærðinni („Upprunaleg" fjarlægir hana áfram).
+      p.querySelector('[data-sz-festa]').addEventListener('change', e => { setS(nu.s, nu.k, !!e.target.checked); });
       rng.addEventListener('input', () => {
         p.querySelector('.sz-pct').textContent = rng.value;
         setS(+rng.value / 100);
@@ -518,7 +524,7 @@
     p.querySelectorAll('[data-sz-for]').forEach(b => b.classList.toggle('on', Math.round(+b.dataset.szFor * 100) === pct));
     p.querySelector('.sz-st').innerHTML = stadaHtml();
     const fx = p.querySelector('[data-sz-festa]');
-    if (fx) { const fest = nu.uppruni === 'vistad'; if (fx.checked !== fest) fx.checked = fest; }
+    if (fx) { const fest = nu.uppruni === 'vistad' && !!(((stillingar()[flokkur()] || {})[nu.k] || {}).f); if (fx.checked !== fest) fx.checked = fest; }
     const up = p.querySelector('[data-sz="upphafl"]');
     if (up) up.disabled = nu.uppruni !== 'vistad';
     const li = p.querySelector('.sz-listi');
