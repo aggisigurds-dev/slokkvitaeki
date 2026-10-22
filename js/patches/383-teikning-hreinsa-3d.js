@@ -3030,8 +3030,15 @@
     // hæð, pallur og — sé pláss til hliðar (hlid) — bakarmur samsíða (U-stigi) upp í fulla hæð. Gögnin koma úr raunAukagogn
     // (blenderSena skilar þeim í metrum senunnar; hér eru þau færð aftur í hnit hæðarinnar) og hanga á hæðinni sjálfri.
     const stigaEfni = {};
+    // GÓLFLÖGIN (lg.golfG): teikningin, gráa slæðan, gólfefni, skuggar … — öll sama plata. Gat fyrir stiga á efstu hæð: stencil-gríma (aðeins stencil, enginn litur)
+    // teiknuð fyrst, gólflögin sleppa reitunum þar sem hún er (three r128 — stencil er í sjálfgefnum teiknara).
+    const golfLog = lg => lg.hopur.children.filter(ch => ch.isMesh && ch.geometry === lg.golfG && ch.material);
+    const stilltGat = (lg, on) => golfLog(lg).forEach(ch => {
+      const mt = ch.material; if (!!mt.stencilWrite === on) return;
+      mt.stencilWrite = on; mt.stencilRef = 1; mt.stencilFunc = T.NotEqualStencilFunc; mt.stencilFail = mt.stencilZFail = mt.stencilZPass = T.KeepStencilOp; mt.needsUpdate = true;
+    });
     const teiknaStigana = pdf => {
-      lag.forEach(lg => { if (lg.stigar) { lg.hopur.remove(lg.stigar); lg.stigar = null; } });
+      lag.forEach(lg => { if (lg.stigar) { lg.hopur.remove(lg.stigar); lg.stigar = null; } stilltGat(lg, false); });
       if (!pdf || !Object.keys(pdf).length) return 0;
       const sen = handfang.blenderSena({ utlit: 'raunsaett', pdf, myndHamark: 0, sameign: false, allarHaedir: true });
       if (!sen) return 0;
@@ -3045,12 +3052,16 @@
         const P = lg.hopur.position, kv = lg.hopur.scale.x || 1, VH = lg.veggH, halfH = VH / 2;
         const lx = m => (m * u0 - P.x) / kv, lz = m => (m * u0 - P.z) / kv, sh = u0 / kv, hm = VH / LOFTH;   // metrar senunnar → hnit hæðarinnar
         const grp = new T.Group(); lg.stigar = grp; lg.hopur.add(grp);
+        // EFSTA hæð hússins (Agnar 22.10.2026: „1. hæð rís hann upp, en 2. rís hann niður“): stiginn kemur upp úr gólfinu og efsta þrepið endar í
+        // gólfhæð — þar er teikningin að sýna stigann sem liggur niður á hæðina fyrir neðan, ekki upp í loft. Aðeins sé hæð fyrir neðan.
+        const hsB = haedirBordsins().filter(x => x && x.image_url), idxB = hsB.findIndex(x => x.id === lg.hd.haedId), nidur = hsB.length >= 2 && idxB === hsB.length - 1 && lag.length >= 1;
+        let gat = 0;
         h.stigar.forEach(st => {
           try {
             const a = st.a, b = st.b, w = +st.breidd || 1, n = Math.max(2, +st.threp || 8), hlid = st.hlid || 0;
             const L0 = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L0 < 0.5) return;
             const bil = L0 / Math.max(1, n - 1), horn = Math.atan2(-(b[1] - a[1]) / L0, (b[0] - a[0]) / L0);
-            const g2 = new T.Group(); g2.position.set(lx(a[0]), 0, lz(a[1])); g2.rotation.y = horn; grp.add(g2);   // x eftir stiga, +z = hlið þar sem bakarmur er
+            const g2 = new T.Group(); g2.position.set(lx(a[0]), nidur ? -VH : 0, lz(a[1])); g2.rotation.y = horn; grp.add(g2);   // x eftir stiga, +z = hlið þar sem bakarmur er
             // kassi í hnitum stigans: x, z í metrum, y í hnitum hæðarinnar
             const kass = (x0, x1, y0, y1, z0, z1, efni2) => {
               const geo = new T.BoxGeometry((x1 - x0) * sh, Math.max(0.001, y1 - y0), (z1 - z0) * sh);
@@ -3080,9 +3091,23 @@
               sla(0, rise + hh, L0, halfH + hh); stolpi(0, rise, rise + hh); stolpi(L0, halfH, halfH + hh);
               sla(L0, halfH + rise2 + hh, 0, VH + hh); stolpi(L0, halfH + rise2, halfH + rise2 + hh); stolpi(0, VH, VH + hh);
             }
+            if (nidur) {
+              // gatið í gólfinu yfir stiganum (arma, pall og bakarm) + gryfjan: fjórir veggir og botn á hæðinni fyrir neðan
+              const ex = 0.04, xa = -ex, xb = L0 + w + ex, za = zlo - ex, zb = zhi + ex, wx = (xb - xa) * sh, wz = (zb - za) * sh, tj = 0.05 * sh;
+              const gm = new T.Group(); gm.position.set(lx(a[0]), 0, lz(a[1])); gm.rotation.y = horn; grp.add(gm);
+              const mg = new T.PlaneGeometry(wx, wz), mm = new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false, transparent: true, side: T.DoubleSide, stencilWrite: true, stencilRef: 1, stencilFunc: T.AlwaysStencilFunc, stencilZPass: T.ReplaceStencilOp });
+              const mask = new T.Mesh(mg, mm); mask.rotation.x = -Math.PI / 2; mask.position.set((xa + xb) / 2 * sh, 0.02, (za + zb) / 2 * sh); mask.renderOrder = -5; gm.add(mask); losa.push(mg, mm);
+              const gE = mat('gryfja', 0x7c8088), gB = mat('gryfjubotn', 0x9a9ea5);
+              const veggur = (cx, cz, bx, bz) => { const g3 = new T.BoxGeometry(bx, VH, bz), m3 = new T.Mesh(g3, gE); m3.position.set(cx, -VH / 2, cz); gm.add(m3); losa.push(g3); };
+              veggur((xa + xb) / 2 * sh, (za - tj / sh / 2) * sh, wx + 2 * tj, tj); veggur((xa + xb) / 2 * sh, (zb + tj / sh / 2) * sh, wx + 2 * tj, tj);
+              veggur((xa - tj / sh / 2) * sh, (za + zb) / 2 * sh, tj, wz); veggur((xb + tj / sh / 2) * sh, (za + zb) / 2 * sh, tj, wz);
+              const bg = new T.PlaneGeometry(wx, wz), bm = new T.Mesh(bg, gB); bm.rotation.x = -Math.PI / 2; bm.position.set((xa + xb) / 2 * sh, -VH + 0.02, (za + zb) / 2 * sh); gm.add(bm); losa.push(bg);
+              gat++;
+            }
             fj++;
           } catch (e) { console.warn('[383] stigi', e); }
         });
+        if (gat) stilltGat(lg, true);
       });
       if (fj) console.info('[383] stigar í 3D: ' + fj);
       return fj;
@@ -3861,6 +3886,8 @@
     if (z && !m.contains(z)) z.remove();
   }
   function plan() { const FP = FPx(); if (!FP.plans[FP.companyId]) FP.plans[FP.companyId] = { markers: [] }; return FP.plans[FP.companyId]; }
+  // hæðir borðsins fyrir syna3d — þar skyggir staðbundið `haedir` (gögn sviðsins) á fallið
+  function haedirBordsins() { return haedir(); }
   function haedir() {
     const p = plan();
     if (!Array.isArray(p.haedir) || !p.haedir.length) {
