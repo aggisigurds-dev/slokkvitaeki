@@ -4969,19 +4969,20 @@
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
         const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s => s.id === mk.sign);
         const txt = (def && (def.nafn || def.stutt)) || 'Merki';
-        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti', sia: siaFl(mk, einingar) };
+        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti' };
       }
       // „Nýtt"-tæki (TurboPaint: tillaga sem bíður samþykkis eiganda, ekkert skráð tæki): hlutlaus indígó-miði
       // „Nýtt · <tegund>" — aldrei grænn (tengt) né rauður (komið fram yfir).
       if (mk.nytt === true || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('n:') === 0)) {
-        return { x: px, y: py, litur: '#4f46e5', texti: 'Nýtt · ' + (mk.tegund || 'tæki'), gerd: gerdTaekis(mk.tegund), nytt: true, sia: siaFl(mk, einingar) };
+        return { x: px, y: py, litur: '#4f46e5', texti: 'Nýtt · ' + (mk.tegund || 'tæki'), gerd: gerdTaekis(mk.tegund), nytt: true };
       }
       const u = einingar.find(q => q.id === mk.unitId);
       // Á miðanum stendur TEGUNDIN (Léttvatn, Brunaslanga …) — Agnar 04.10.2026: „mjög flott … grænu pinnarnir sýndu
       // slökkvitæki eða brunaslöngur". Raðnúmerið sést í 2D-glugganum; það stendur hér aðeins ef tegund vantar.
       const radnr = u ? String(u.serial || '') : '';
-      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? (u.type ? String(u.type) : radnr.slice(-6)) : '', gerd: gerdTaekis(u && u.type), sia: siaFl(mk, einingar) };
+      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? (u.type ? String(u.type) : radnr.slice(-6)) : '', gerd: gerdTaekis(u && u.type) };
     });
+    merkiOll.forEach((o, i) => { o.sia = siaFl(merkiFrum[i], einingar); });   // SÍA (478)
     // Merki sem lendir UTAN myndarinnar (utan skurðar eða utan blaðsins — gömul staðsetning úr síma með rangri stærð)
     // sveif í lausu lofti við hlið hússins (Agnar 05.10.2026: „Tækin eru fyrir utan húsið"). Þau eru ekki teiknuð í 3D;
     // skýringin segir hve mörg þau eru svo þau gleymist ekki.

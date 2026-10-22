@@ -333,10 +333,9 @@
     span.innerHTML = ''; span.style.background = 'transparent'; span.appendChild(c);
   }
 
-  /* ── RAUNSÆ TÁKN (Agnar 22.10.2026: „og síðan realistic tækjunum"): myndir af tækjunum sjálfum (img/taeki) í stað málmplötutáknsins.
+  /* ── RAUNSÆ TÁKN (Agnar 22.10.2026: „og síðan realistic tækjunum" → „bara slökkvitækin og brunaslöngur"): myndir af slökkvitækjum og slöngum (img/taeki) í stað málmplötutáknsins.
    * Gildir í 2D og á vinnumyndinni; valið „Raunsæ tákn" (TeiknSia 478, Vidmot 'teikning.raunsaett', sjálfgefið kveikt). ── */
-  const RAUN = { lettvatn: 'l', duft: 'duft', co2: 'co2', slanga: 'slanga_rod', hose: 'slanga_rod', reykskynjari: 'reykskynjari', hitaskynjari: 'hitaskynjari',
-    bjalla: 'bjalla', segull: 'segull', ut: 'skilti_ut', neydarutgangur: 'skilti_ut', rafmagn: 'skilti_rafmagn' };
+  const RAUN = { lettvatn: 'l', duft: 'duft', co2: 'co2', slanga: 'slanga_rod', hose: 'slanga_rod' };   // aðeins slökkvitæki og slöngur (Agnar: „bara slökkvitækin og brunaslöngur í realistic“)
   const RAUN_IMG = {};
   let raunTel = 0;
   const raunOn = () => !(window.TeiknSia && TeiknSia.raunsaett && TeiknSia.raunsaett() === false);
