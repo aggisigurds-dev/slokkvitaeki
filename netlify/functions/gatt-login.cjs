@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     const r = await P.sbGet(`portal_users?id=eq.${encodeURIComponent(String(t.imp))}&select=*&limit=1`);
     const u = r.ok ? (await r.json())[0] : null;
     if (!u || !u.active) return fail('Aðgangur fannst ekki eða er afvirkjaður.');
-    const token = P.signToken({ base_id: u.base_id, email: u.email || '', theme: u.theme || 'steel', name: u.display_name || '', staff: true });
+    const token = P.signToken({ base_id: u.base_id, email: u.email || '', theme: u.theme || 'boss', name: u.display_name || '', staff: true });
     return { statusCode: 302, headers: P.secHeaders({ 'Set-Cookie': P.sessionCookie(token), Location: '/gatt/?c=' + encodeURIComponent(u.slug || '') }), body: '' };
   }
   if (event.httpMethod !== 'POST') return P.json(405, { error: 'POST only' });
@@ -91,11 +91,11 @@ exports.handler = async (event) => {
       // þema og heiti félagsins úr félagsaðganginum
       let felag = null;
       try { const fr = await P.sbGet(`portal_users?base_id=eq.${notandi.base_id}&active=eq.true&select=theme,display_name&limit=1`); felag = fr.ok ? ((await fr.json())[0] || null) : null; } catch (_) {}
-      theme = (felag && felag.theme) || 'steel'; nafn = notandi.nafn || (felag && felag.display_name) || '';
+      theme = (felag && felag.theme) || 'boss'; nafn = notandi.nafn || (felag && felag.display_name) || '';
       token = P.signToken({ base_id: notandi.base_id, email: notandi.email, theme, name: nafn, uid: notandi.id, hlutverk: notandi.hlutverk,
         eignir: Array.isArray(notandi.eignir) && notandi.eignir.length ? notandi.eignir : null });
     } else {
-      theme = user.theme || 'steel'; nafn = user.display_name || '';
+      theme = user.theme || 'boss'; nafn = user.display_name || '';
       token = P.signToken({ base_id: user.base_id, email: user.email, theme, name: nafn, hlutverk: 'stjornandi' });
     }
     return P.json(200, { ok: true, name: nafn, theme }, { 'Set-Cookie': P.sessionCookie(token) });

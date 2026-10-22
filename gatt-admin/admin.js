@@ -75,7 +75,7 @@
       }).join('');
     }).join('') + '</div>';
   }
-  function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES[0]; }
+  function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES.filter(function (t) { return t.k === 'boss'; })[0] || THEMES[0]; }
   // Línutákn (engin emoji)
   var IC = {
     copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',

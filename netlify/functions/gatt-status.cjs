@@ -27,7 +27,7 @@ exports.handler = async (event) => {
       // Um leið og lykilorð (pass_hash) er sett → læsist, krefst innskráningar.
       open: !!(u.active && !u.pass_hash),
       name: u.display_name || '',
-      theme: u.theme || 'steel',
+      theme: u.theme || 'boss',
     });
   } catch (e) {
     return P.json(200, { exists: false, active: false });

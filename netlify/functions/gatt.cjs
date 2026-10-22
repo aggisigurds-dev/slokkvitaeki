@@ -1104,7 +1104,7 @@ exports.handler = async (event) => {
     // heiti félags úr customers_base (fyrir hausinn) ef ekki í tokeni/opnum aðgangi
     let name = session ? session.name : (openAcct && openAcct.display_name);
     if (!name) { try { const br = await P.sbGet(`customers_base?id=eq.${baseId}&select=nafn&limit=1`); if (br.ok) name = ((await br.json())[0] || {}).nafn || ''; } catch (_) {} }
-    const theme = (acct && acct.theme) || (session && session.theme) || 'steel';
+    const theme = (acct && acct.theme) || (session && session.theme) || 'boss';
 
     return P.json(200, {
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
