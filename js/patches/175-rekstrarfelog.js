@@ -436,7 +436,11 @@
       // wrap og hnapparnir fulla breidd í röðinni.
       '@media(max-width:560px){'+
         P+'.rfa__pills{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;max-width:55%}'+
-        P+'.rfa__name{min-width:120px}'+
+        // 22.10.2026 (verk a125f4ba, mælt 21.10 á 390 px: nafnið nær að 178 px en pillurnar byrja 85–135 px á öllum 16
+        // félögum): min-width sat á .rfa__name, en foreldrið .rfa__id er flex:1;min-width:0 og minnkaði samt — nafnið
+        // flæddi út yfir „N byggingar". Lágmarkið fer á flex-atriðið sjálft (.rfa__id); nafnið styttist með … innan þess.
+        P+'.rfa__id{min-width:120px;flex:1 1 0}'+
+        P+'.rfa__name{min-width:0;max-width:100%}'+
         P+'.rf-phead>*{min-width:0}'+
         P+'.rf-phead .rf-btn{flex:1 1 auto;justify-content:center}'+
         // Hnappa-spanið í hausnum ber INLINE margin-left:auto;display:inline-flex

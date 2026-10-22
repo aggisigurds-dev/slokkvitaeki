@@ -521,7 +521,14 @@
     main.style.display = 'none';
     box.style.display = '';
     merkiBilstjori(true);
-    box.innerHTML = html();
+    // 22.10.2026 (Agnar: „blinking í bílstjóra í ársskoðun"): vakta() hangir á body-vakt (childList+subtree), svo
+    // eigin innerHTML-skrif vöktu hana aftur — og 295 stimplar póst-depil (._mail-badge) framan við hvert ._ars-open,
+    // sem vakti hana líka. Spjöldin voru rifin og byggð á ~440 ms fresti (mælt: 18 endurbyggingar á 8 s, depillinn
+    // horfinn í 179 af 483 römmum). Skrifa aðeins þegar teikningin hefur breyst — eins og __uvHtml í 328.
+    const h = html();
+    if (box.__bilHtml === h && box.firstChild) return;
+    box.__bilHtml = h;
+    box.innerHTML = h;
     tengja(box);
   }
 

@@ -143,7 +143,9 @@
 
       // 4 · ferðanóta — röðin fyllir afganginn (1fr) svo fóturinn er neðst í öllum spjöldum; reiturinn heldur eigin hæð
       r(T + 'tbody tr._ars-row > td._ars-notacell', 'grid-row:4;grid-column:1/-1;align-items:flex-start;align-self:start;margin-top:8px;min-height:20px;padding:3px 7px;border-radius:6px;border:1px dashed rgba(20,24,34,.16);background:#fbfcfd'),
-      r(T + 'tbody tr._ars-row > td._ars-notacell._er-med', 'border-style:solid;border-color:rgba(184,145,47,.4);background:#fffbf0'),
+      // 22.10.2026 (verk 98f68a77, Agnar 21.10: „Það mætti gera textaboxin bara ljósgrá í staðin"): útfyllt nótubox var
+      // gult/kremlitað með gulri brún. Nú ljósgrátt — bakgrunnur og brún — sama gráskali og stálflöturinn.
+      r(T + 'tbody tr._ars-row > td._ars-notacell._er-med', 'border-style:solid;border-color:rgba(20,24,34,.14);background:#f1f3f6'),
       r(T + 'tbody tr._ars-row > td._ars-notacell ._ars-nota3', '-webkit-line-clamp:3;font:400 11.5px/1.4 ' + SANS + ';color:#3a4250'),
 
       // 5 · '23 '24 '25 '26 — sjálfvirk röðun í dálka 1–4 (sama röð og í töflunni)

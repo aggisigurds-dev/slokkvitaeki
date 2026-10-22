@@ -80,7 +80,8 @@ kerfið um restina.
 Ekki allar samsetningar tegundar og stærðar eiga sér þjónustulínu. Velji maður ranga stærð
 kemur viðvörun í „Bæta við tæki"-glugganum og línan verðleggst ekki.
 
-- **Duft yfirferð:** aðeins 6 kg og 9 kg. `2 kg yfirferð` verðlagast ekki.
+- **Duft yfirferð:** 1, 2, 6, 9 og 12 kg verðleggjast öll (vorur, mælt 22.10.2026 — 1 og 2 kg 2.903 kr án vsk,
+  6 kg 3.387, 9 kg 4.194, 12 kg 5.927). Eldri lína sagði að 2 kg verðlegðist ekki — röng, sbr. R-000848.
 - **Brunaslanga:** það er **AÐEINS EITT verð** á yfirferð, hver sem lengdin er. „30 m" er
   bara sjálfgefna merkingin. Agnar 09.09.2026: *„við erum bara með eitt verð á yfirferð á
   brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina."*

@@ -30,7 +30,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 
 ---
 
-## 25 agentar
+## 26 agentar
 
 `Heim` = kanóníska skráin. `kj` = afrit í `kjarni/.claude/agents` (stale vs heim). Dual-home: `joker` og `kunnaskra` eiga raunverulega skrá í **báðum** rekstrar-repo (hub vs app).
 
@@ -48,6 +48,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `hradi` | 💥 Willis | brunaholf | `.claude/agents/hradi.md` (kj afrit) | `hraði` · `hægt` · `polling` · `bundle` | Fullyrða um bata án mælingar fyrir og eftir. Hamra á DB á meðan mælt er. |
 | `tengingar` | 😤 Samuel L. J. | brunaholf | `.claude/agents/tengingar.md` (kj afrit) | `lykill` · `tengingar` · `gult` · `rautt` | Falskt grænt. Skila lyklum. Setja lykil í kóða eða skjal. |
 | `kerfisheilsa` | 🩺 Dr. House | brunaholf | `.claude/agents/kerfisheilsa.md` (kj afrit) | `bilað` · `niðri` · `timeout` · `eitthvað skrítið` | Úrskurða af status-síðu. Afturkalla deploy til að „prófa". |
+| `rambo` | 🪖 Rambo | brunaholf | `.claude/agents/rambo.md` (22.10.2026) | `er óhætt að keyra` · `forskoða` · `hvað getur farið úrskeiðis` · `áður en ég ýti` · `Rambo` | Framkvæma aðgerðina sjálfur. Segja GO án þess að telja raðirnar. Samþykkja sendingu út úr húsi. |
 | `hype` | 🇺🇸 Trump | brunaholf | `.claude/agents/hype.md` (kj afrit) | `hype` · `hvernig gengur` | Finna upp tölur. |
 | `oryggi` | 💪 Arnold (RLS-rödd) | brunaholf | `.claude/agents/oryggi.md` (kj afrit) | `RLS` · `policy` · `lekt` · `anon` · `bucket` | Enable RLS án policy. Lyklar í frontend/repo. |
 | `framendi` | *(ekkert sæti)* | brunaholf | `.claude/agents/framendi.md` (kj afrit) | hub-flipi, hvar eitthvað í `index.html` býr | Lesta `index.html` í heilu lagi. |

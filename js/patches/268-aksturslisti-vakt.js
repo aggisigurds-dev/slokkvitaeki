@@ -87,7 +87,7 @@
       if (v < 1 || v > 3) return;
       const co = _cos && _cos[id];
       const done = Math.max(+a.last_year_inspected || 0, +a.field_inspected_year || 0) === cy;
-      L3[v].push({ id: id, nafn: co ? (co.nafn || ('#' + id)) : ('#' + id), done: done });
+      L3[v].push({ id: id, nafn: co ? (co.nafn || ('#' + id)) : ('#' + id), adr: co ? (co.heimilisfang || '') : '', done: done });
     });
     [1, 2, 3].forEach(k => L3[k].sort((a, b) => (a.done - b.done) || String(a.nafn).localeCompare(String(b.nafn), 'is')));
     return L3;
@@ -344,7 +344,10 @@
               (rows.length ? '<div style="display:flex;flex-direction:column;gap:5px;max-height:230px;overflow:auto">' + rows.map(r =>
                 '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px">' +
                   '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + (r.done ? '#16a34a' : '#cbd5e1') + '"></span>' +
-                  '<span style="color:' + (r.done ? '#94a3b8' : INK) + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (r.done ? ';text-decoration:line-through' : '') + '">' + esc(r.nafn) + '</span>' +
+                  '<span style="color:' + (r.done ? '#94a3b8' : INK) + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0' + (r.done ? ';text-decoration:line-through' : '') + '">' + esc(r.nafn) + '</span>' +
+                  // 22.10.2026 (verk b880be11, Agnar 27.08: „doesent have a go drive feature"): leiðsögn á HVERJA stoppröð,
+                  // sama slóð og navTo í 219 (Google Maps dir, akstur). Heimilisfang ef til, annars nafnið.
+                  ((r.adr || r.nafn) ? '<a class="_al-nav" href="https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent([r.nafn, r.adr].filter(Boolean).join(', ')) + '" target="_blank" rel="noopener" title="Keyra þangað: ' + esc(r.adr || r.nafn) + '" style="flex:none;' + METAL + ';border-radius:7px;padding:3px 8px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap">↗ Keyra</a>' : '') +
                 '</div>').join('') + '</div>'
               : '<div style="color:' + INK3 + ';font-size:12px;padding:6px 0">Engin fyrirtæki á þessari leið.</div>') +
             '</div>';

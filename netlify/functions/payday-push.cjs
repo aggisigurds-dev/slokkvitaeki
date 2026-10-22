@@ -441,8 +441,14 @@ function buildPayload(sale, customer, opts) {
       phone,
     },
     lines: (() => {
+      // 22.10.2026 (verk 3dfd2867, Agnar 27.08: „font madness in some invoices made from úttektir"): Payday-letrið á
+      // ekki U+2212 „−". Línan fellur þá í varaletur og stafabilin brenglast. Sannað á R-000644: eina brenglaða línan,
+      // „Nýtt · Léttvatn 6 kg. AB Slökkvitæki · −15% afsl.", er eina línan sem ber „−"; hinar bera „·" og prentast rétt.
+      // Sama orsök og ✎ í 4521c31. Skipt í venjulegt „-" HÉR, við landamærin, svo það nái líka ósendum sölum;
+      // allir lesarar markersins (10, 142, 233, 430, afkost) taka [−-], svo ekkert annað breytist.
+      const paydayTexti = (t) => String(t).replace(/\u2212/g, '-');
       const mapLine = (l, discPct) => ({
-        description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
+        description: paydayTexti(l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara'),
         quantity: num(l.qty || l.fjoldi || l.quantity || 1),
         unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
         vatPercentage: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
