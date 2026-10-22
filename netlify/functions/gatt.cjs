@@ -108,9 +108,11 @@ function visunHreint(v) {
 function vidbotHreint(v) {
   if (!v || typeof v !== 'object') return null;
   const par = (L) => (Array.isArray(L) ? L : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(+x[1])).slice(0, 14).map((x) => [String(x[0]).slice(0, 80), Math.round(+x[1])]);
+  const txt = (L) => (Array.isArray(L) ? L : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 400));
+  // munur: hvað var öðruvísi en í síðustu skoðun (skýrir verðmun milli ára)
   const out = { reikn: typeof v.reikn === 'string' ? v.reikn.slice(0, 24) : null, taeki: par(v.taeki), unnid: par(v.unnid),
-    vinnublad: (Array.isArray(v.vinnublad) ? v.vinnublad : []).filter((x) => typeof x === 'string').slice(0, 6).map((x) => x.slice(0, 400)) };
-  return (out.taeki.length || out.unnid.length || out.vinnublad.length) ? out : null;
+    vinnublad: txt(v.vinnublad), munur: txt(v.munur) };
+  return (out.taeki.length || out.unnid.length || out.vinnublad.length || out.munur.length) ? out : null;
 }
 function erindiRod(r, slod) {
   const tags = Array.isArray(r.tags) ? r.tags : [];
@@ -926,12 +928,13 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
 
-    // 2h) Erindi síðustu 12 mánuði: af þjónustuvef (source gatt) eða merkt kúnnanum (tags ∋ gatt) — titill, staða,
+    // 2h) Erindi síðustu 4 ár: af þjónustuvef (source gatt) eða merkt kúnnanum (tags ∋ gatt) — titill, staða,
     //     punktur, myndir (undirritaðar 10 mín), ábyrgð. Aldrei innri nótur (notes); summary er texti kúnnans.
+    //     4 ár (22.10.2026): eldri samskipti úr pósti eru skráð eftir á sem lokuð erindi (tag saga-eftir-a).
     let erindi = [];
     if (syn.erindi) {
       try {
-        const since = new Date(Date.now() - 365 * 864e5).toISOString();
+        const since = new Date(Date.now() - 4 * 365 * 864e5).toISOString();
         let er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
         // Varaleið þar til migration 2026-10-11_verkbeidnapunktar.sql er beitt (nýju dálkarnir vantar → 400): gamla valið
         if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
