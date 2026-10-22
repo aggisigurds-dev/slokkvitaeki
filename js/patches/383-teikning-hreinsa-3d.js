@@ -1762,6 +1762,8 @@
   const EFNI_AF_TEG = t => t === 'bad' || t === 'thvottur' ? 'bad' : t === 'svalir' ? 'svalir' : t === 'stigahus' || t === 'gangur' || t === 'lyfta' || t === 'sameign' ? 'sameign' : t === 'verkstaedi' ? 'steypa' : 'parket';
   // bað án heitis: 2–9,5 m², blek hreinlætistækja yfir meðallagi hæðarinnar (miðgildi rýma 6–40 m²) og minnst 2,7 %
   const BAD_M2 = [2.0, 9.5], BAD_BLEK = 0.027;
+  // lítið (≤ 4,2 m²) þétt rými með minna blek hreinlætistækja er samt bað (22.10.2026: Midtown — „VS“ með fá tákn); lyftur og skápar eru undir 0,018
+  const BAD_BLEK_LAG = 0.018;
   function golfEfni(hd, k, metri, golfStr) {
     const W = hd.W, H = hd.H, kv = hd.kvardi, f = kv / k.c;
     if (!(W > 0 && H > 0 && kv > 0 && metri > 0) || !golfStr || !golfStr.width || !hd.butar || !hd.butar.length) return null;
@@ -1895,7 +1897,7 @@
       if (h.length) { r.teg = h[0]; r.efni = EFNI_AF_TEG(h[0]); }
       else if (svalGeo) { r.teg = 'svalir'; r.efni = 'svalir'; }
       else if ((sv = svaediTeg(mx, my))) { r.teg = sv; r.efni = 'sameign'; }
-      else if (r.m2 >= BAD_M2[0] && r.m2 <= BAD_M2[1] && Math.min(bw, bh) >= 1.0 && Math.max(bw, bh) <= 4.6 && r.blekH >= badBlek) { r.teg = 'bad'; r.efni = 'bad'; }
+      else if (r.m2 >= BAD_M2[0] && r.m2 <= BAD_M2[1] && Math.min(bw, bh) >= 1.0 && Math.max(bw, bh) <= 4.6 && (r.blekH >= badBlek || (r.m2 <= 4.2 && r.blekH >= BAD_BLEK_LAG))) { r.teg = 'bad'; r.efni = 'bad'; }
       else { r.teg = ''; r.efni = 'parket'; }
     });
     // lekavörn: svalir án heitis yfir 45 % gólfsins = útveggur opinn, ekki svalir
@@ -2065,7 +2067,6 @@
       for (let p = 0; p < N; p++) if (merki[p] === id && nafn[p] < 0) { nafnX[p] = k; nn++; }
       if (nn) heitinX.push({ teg: 'bad', x: r.sx / r.n / (kv * s), y: r.sy / r.n / (kv * s) });
     });
-    if (window.__golfDebug) console.info('[383] RYMI ' + (hd.nafn || '') + ' ' + JSON.stringify(rymi.filter(r => r.m2 >= 1).map(r => [Math.round(r.m2 * 10) / 10, Math.round(r.blekH * 1000), r.teg, Math.round(Math.min((r.x1 - r.x0 + 1), (r.y1 - r.y0 + 1)) / pxm * 10) / 10, Math.round(Math.max((r.x1 - r.x0 + 1), (r.y1 - r.y0 + 1)) / pxm * 10) / 10])));   // TÍMABUNDIÐ
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
     return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm,
       heitin: heitinX,
