@@ -60,7 +60,10 @@
     // HEILDARTÖLUR EFST: slökkvitæki, brunaslöngur, útgangar … á allri eigninni
     // slökkvitæki og slöngur: hvað er skráð í þjónustu við hliðina á því sem teikningin segir að eigi að vera (Agnar 22.10.2026: „hvað þau eru með mörg slökkvitæki og slöngur")
     var skrad = { sl: +b.sl || 0, bs: +b.slo || 0 }, till = tillTotals(r);
-    var efst = '<div class="bgr-top">' + FL.filter(function (f) { return t[f[0]] > 0 || skrad[f[0]] > 0 || till[f[0]] > 0; }).map(function (f) {
+    // HEILDARFJÖLDI tækja skráð í þjónustu (slökkvitæki + slöngur) fyrst — Agnar 22.10: „vantar heildarfjöldann"
+    var heild = skrad.sl + skrad.bs;
+    var heildReitur = heild > 0 ? '<div class="bt alls"><b>Tæki alls</b><strong>' + heild + '</strong><small>' + skrad.sl + ' slökkvitæki · ' + skrad.bs + (skrad.bs === 1 ? ' slanga' : ' slöngur') + ' skráð í þjónustu</small></div>' : '';
+    var efst = '<div class="bgr-top">' + heildReitur + FL.filter(function (f) { return t[f[0]] > 0 || skrad[f[0]] > 0 || till[f[0]] > 0; }).map(function (f) {
       var k = f[0], s = skrad[k] || 0, tl = till[k] || 0, alls = t[k] + tl, subs = [];
       if (s > 0) subs.push(s + ' skráð í þjónustu' + (alls ? '' : ' · ekki merkt á teikningu'));
       if (tl > 0) subs.push(t[k] > 0 ? 'þar af ' + tl + ' tillaga Arnolds' : 'tillaga Arnolds (áætluð þörf)');
