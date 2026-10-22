@@ -36,6 +36,7 @@ hönnuðar orðrétt, heimildaskrá (hvaða blöð gilda, hver eru eldri útgáf
    | `[BS]` / `BS` + spírall | brunaslanga / slöngukefli | Álfhella 9 |
    | `SLT` (oft lágstafir `slt`) | slökkvitæki | Álfhella mhl 02 (2026), Skútuvogur 4 |
    | `HSL` | handslökkvitæki | DRA ehf |
+   | `HL` | **handlaug** (EKKI slökkvitæki) — lítill ferhyrningur með krana við baðherbergi gistiherbergja; sama blað: `HST` = handslökkvitæki, `GN` gólfniðurfall, `LR` loftræsing, `BO` björgunarop | Skjaldbreið 2019 (skýringartexti blaðsins), Plaza, Miðgarður |
    | `HST` (rauður texti, ekkert tákn, ekki í skýringum) | handslökkvitæki — „sama og ST" (Agnar 19.10.2026) | Skútuvogur 4 (2025); við rafmagnstöflu = 5 kg kolsýra skv. brunahönnun |
    | rautt slökkvitækistákn með **`L`** inni í | slökkvitæki, léttvatn | Skútuvogur 4 (2025) — stafurinn er í textalaginu, rauður (#ed1f24) |
    | `BRSL` + spírall | brunaslanga; `BRSL SLT` = hvort tveggja á sama stað | Skútuvogur 4 |

@@ -268,7 +268,7 @@
           eldvarnabok: Array.isArray(b.eldvarnabok) ? b.eldvarnabok : null };
       }),
       reports: (d.reports || []).map(function (r) {
-        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null };
+        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
@@ -315,7 +315,7 @@
       for (var j = i + 1; j < Ls.length; j++) if (Ls[j].t === e.t) { prev = Ls[j]; break; }
       var gap = prev ? sagaMilli(prev.m, e.m) : null;
       return '<div class="drow"><span class="dd">' + esc(sagaMerki(e.m)) + '</span><span class="grow">' + esc(sagaTxt(e.m)) + ' · ' + (e.t === 'bru' ? 'Brunakerfi' : 'Slökkvitæki') +
-        (gap != null ? ' <span class="dim">· ' + gap + ' mán. frá skoðuninni á undan</span>' : '') + '</span>' + (medSkjol ? docLink('PDF', e.docId) : '') + '</div>';
+        (gap != null ? ' <span class="dim">· ' + gap + ' mán. frá skoðuninni á undan</span>' : '') + '</span>' + (medSkjol ? docLink('PDF', e.docId) : '') + '</div>' + (e.x ? '<div class="sg-x">' + esc(e.x) + '</div>' : '');
     }).join('');
     return '<section class="dsec"><h4>Skoðanasaga <span class="cnt">' + tala(Ls.length, 'skoðun', 'skoðanir') + '</span></h4><div class="dpanel">' + rows + '</div>' +
       '<p class="dim" style="font-size:12px;margin:8px 2px 0">Mánuðirnir eru þeir sem koma fram í skýrslunum sjálfum.</p></section>';
@@ -326,7 +326,7 @@
     return sidastaSkodunLinur(b).map(function (x) {
       var tp = x[0] === 'Kerfi' ? 'bru' : 'slokk';
       var eldri = sg.filter(function (e) { return e.t === tp; }).slice(1, 4).map(function (e) { return sagaMerki(e.m); });
-      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' +
+      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' + skTextiHtml(b, x[0]) +
         (eldri.length ? '<div class="dim" style="font-size:11px;line-height:1.3;margin:-2px 0 4px">áður ' + esc(eldri.join(' · ')) + '</div>' : '');
     }).join('');
   }
@@ -518,27 +518,20 @@
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="num">' + (r.magn != null ? esc(r.magn) : '<span class="dim">—</span>') + '</td>' +
         '<td class="num">' + esc(r.ar || '') + '</td>' +
-        '<td class="r">' + docLink('PDF', r.docId) + '</td></tr>';
-    }).join('') || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
+        '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + '</td>' +
+        '<td class="r">' + docLink('PDF', r.docId) + (r.docId ? '<a href="#" class="frest sk-bidja" data-sk-gogn="' + r.docId + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">Biðja um uppfærða</a>' : '') + '</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">Engar skýrslur skráðar</td></tr>';
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
   }
 
   // Staða reiknings úr sölukerfinu (greitt / ógreitt). Ógreitt fær „Biðja um frestun" sem opnar Skilaboð með forútfylltri beiðni —
   // ekkert fer frá kúnnanum fyrr en hann ýtir sjálfur á „Senda fyrirspurn".
   function stadaPilla(r) {
-    if (r.stada === 'greitt') return '<span class="tb gr">Greitt</span>';
-    if (r.stada === 'ogreitt') return '<span class="tb og">Ógreitt</span> <a href="#" class="frest" data-frest="' + esc(r.nr || '') + '" data-frest-b="' + esc(r.bygging || '') + '" data-frest-u="' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '') + '">Biðja um frestun</a>';
-    return '';
+    var sp = r.nr ? ' <a href="#" class="frest" data-spyrja="' + esc(r.nr) + '" data-spyrja-b="' + esc(r.bygging || '') + '">Spyrja</a>' : '';
+    if (r.stada === 'greitt') return '<span class="tb gr">Greitt</span>' + sp;
+    if (r.stada === 'ogreitt') return '<span class="tb og">Ógreitt</span> <a href="#" class="frest" data-frest="' + esc(r.nr || '') + '" data-frest-b="' + esc(r.bygging || '') + '" data-frest-u="' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '') + '">Biðja um frestun</a>' + sp;
+    return sp.trim();
   }
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('[data-frest]'); if (!a) return;
-    e.preventDefault();
-    var nr = a.getAttribute('data-frest'), b = a.getAttribute('data-frest-b'), u = a.getAttribute('data-frest-u');
-    goView('skilabod'); window.scrollTo(0, 0);
-    var inp = $('#msg-input'); if (!inp) return;
-    inp.value = 'Beiðni um frestun á eindaga: reikningur ' + nr + (b ? ' (' + b + ')' : '') + (u ? ', ' + u.replace(/\.$/, '') : '') + '. Óskað er eftir að eindagi verði færður til ____.';
-    inp.focus();
-  });
 
   function renderReikningar(filter) {
     var rows = (state.data.invoices || []).filter(function (r) { return !filter || r.bygging === filter; });
@@ -555,8 +548,183 @@
     foot('#re-foot', rows.length, (state.data.invoices || []).length, ['reikningur', 'reikningar'], ['reikningi', 'reikningum'], filter);
   }
 
+  /* ══ ERINDI 22.10.2026 (generalprufa Center Hótel) ══════════════════════════
+     Forsíðan fær „Senda erindi“ hægra megin: Verkbeiðni · Gagnabeiðni · Fyrirspurn · Annað. Hvert erindi verður mál með stöðu
+     (Móttekið → Í vinnslu → Svarað → Lokið), eign, lýsingu og vísun í reikning/skýrslu. Allt birtist undir flipanum Erindi. */
+  var RAIL_TEG = [['verkbeidni', 'Verkbeiðni'], ['gogn', 'Gagnabeiðni'], ['fyrirspurn', 'Fyrirspurn'], ['annad', 'Annað']];
+  var VB_LIDIR = ['Auka herbergi / viðbót við kerfi', 'Áfylling / endurhleðsla', 'Tæki notað eða bilað', 'Vantar tæki', 'Skipta um tæki', 'Brunaslanga', 'Skilti og merkingar', 'Brunakerfi — bilun eða boð', 'Annað'];
+  var GOGN_LIDIR = ['Úttektarskýrslur (slökkvitæki)', 'Brunakerfisskýrslur', 'Staðfesting á reyklosun', 'Reikningar / afrit', 'Þjónustusamningur', 'Skýrsla fyrir byggingarfulltrúa eða slökkvilið', 'Annað'];
+  var RAIL_LBL = { verkbeidni: 'Lýsing (valfrjálst)', gogn: 'Nánar (valfrjálst)', fyrirspurn: 'Fyrirspurn', annad: 'Erindi' };
+  var RAIL_PH = { verkbeidni: 'T.d. hvaða herbergi, hvenær hentar að koma…', gogn: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…', fyrirspurn: 'Skrifaðu fyrirspurnina hér…', annad: 'Skrifaðu erindið hér…' };
+  var KIND_HEAD = { fyrirspurn: 'Fyrirspurn', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur' };
+  var KIND_TOAST = { verkbeidni: 'Verkbeiðnin er móttekin — við höfum samband', gogn: 'Gagnabeiðnin er móttekin', fyrirspurn: 'Fyrirspurnin er send', annad: 'Erindið er sent', thjonusta: 'Beiðnin er send — við höfum samband', reikningur: 'Erindið er sent' };
+  var railKind = 'fyrirspurn', erVisun = null;
+  var erFilt = { s: '', t: '', e: '' };
+
+  function railKinds() { return RAIL_TEG.filter(function (t) { return t[0] !== 'verkbeidni' || synOf().verkbeidni; }); }
+  function bldgById(id) {
+    var L = (state.data && state.data.buildings) || [];
+    for (var i = 0; i < L.length; i++) if (String(L[i].id) === String(id)) return L[i];
+    return null;
+  }
+  function bldgByName(n) {
+    var L = (state.data && state.data.buildings) || [];
+    for (var i = 0; i < L.length; i++) if (L[i].nafn === n) return L[i];
+    return null;
+  }
+  function erOpin() { return ((state.data && state.data.erindi) || []).filter(function (e) { return e.stada !== 'lokid'; }).length; }
+  function erBadge() {
+    var tab = document.querySelector('nav .tab[data-view="erindi"]'), bd = $('#erBadge');
+    if (tab) tab.classList.toggle('hidden', !synOf().erindi);
+    if (bd) { var n = erOpin(); bd.textContent = n; bd.classList.toggle('hidden', !n); }
+  }
+
+  // Sameiginleg sending: sama leið fyrir hægri dálkinn og gluggann (eign, tegund, lýsing, vísun → mál á Þjónustuborði)
+  function submitErindi(o, cb) {
+    var k = o.kind, msg = o.msg || '', val = o.val || [], b = o.b;
+    if (!val.length && !msg) { toast(k === 'verkbeidni' ? 'Veldu verk eða skrifaðu lýsingu' : k === 'gogn' ? 'Veldu gögn eða skrifaðu lýsingu' : k === 'thjonusta' ? 'Veldu þjónustu eða skrifaðu lýsingu' : 'Skrifaðu erindið'); cb(false); return; }
+    if (k === 'verkbeidni' && !b) { toast('Veldu eign fyrir verkbeiðni'); cb(false); return; }
+    var where = b ? (b.nafn + (b.heimilisfang ? ' (' + b.heimilisfang + ')' : '')) : '';
+    var head = (KIND_HEAD[k] || 'Fyrirspurn') + (where ? ' — ' + where : '');
+    var text = head +
+      (val.length ? '\n' + (k === 'verkbeidni' ? 'Verk: ' : k === 'gogn' ? 'Gögn: ' : 'Þjónusta: ') + val.join(', ') : '') +
+      (k === 'verkbeidni' && o.stad ? '\nStaðsetning: ' + o.stad : '') + (msg ? '\n\n' + msg : '');
+    var lysing = [val.join(', '), o.stad ? 'Staðsetning: ' + o.stad : '', msg].filter(Boolean).join('\n');
+    var titill = val.length ? val.join(', ').slice(0, 90) : msg.split('\n')[0].slice(0, 60);
+    sendErindi(text, k, b && b.id, { titill: titill, lysing: lysing, visun: o.visun || null }).then(function (ok) {
+      toast(ok ? (KIND_TOAST[k] || 'Erindið er sent') : 'Sending tókst ekki — reyndu aftur');
+      cb(ok);
+    });
+  }
+
+  function visunHtml(v) {
+    if (!v) return '';
+    if (v.t === 'skyrsla') return '<span class="er-vis">' + docLink('Skýrsla' + (v.txt ? ' · ' + esc(v.txt) : ''), v.docId) + '</span>';
+    if (v.t === 'reikningur') {
+      var inv = null;
+      ((state.data && state.data.invoices) || []).forEach(function (i) { if (i.nr && v.nr && String(i.nr).replace(/^R-?/i, '') === String(v.nr).replace(/^R-?/i, '')) inv = i; });
+      return '<span class="er-vis">' + (inv && inv.docId ? docLink('Reikningur ' + esc(v.nr), inv.docId) : '<a class="pdf" href="#" data-vis-reikn="1">Reikningur ' + esc(v.nr || '') + '</a>') + '</span>';
+    }
+    return '<span class="er-vis"><a class="pdf" href="#" onclick="return false">' + esc(v.txt || 'Samningur') + '</a></span>';
+  }
+  function erStepDags(e, key) {
+    var d = key === 'mottekid' ? e.dags : key === 'svarad' ? e.svarad : key === 'lokid' ? (e.lokid || (e.stada === 'lokid' ? e.uppf : null)) : null;
+    return d ? '<small>' + esc(fmtDate(d)) + '</small>' : '';
+  }
+
+  function renderRail() {
+    var box = $('#yf-rail'); if (!box || !state.data) return;
+    var syn = synOf();
+    if (!syn.erindi) { box.innerHTML = ''; erBadge(); return; }
+    // varðveita það sem notandinn er að skrifa
+    var old = { eign: ($('#rl-eign') || {}).value || '', text: ($('#rl-text') || {}).value || '', stad: ($('#rl-stad') || {}).value || '' };
+    var kinds = railKinds();
+    if (!kinds.some(function (k) { return k[0] === railKind; })) railKind = kinds[0][0];
+    var bl = (state.data.buildings || []);
+    var sel = '<option value="">Almennt erindi (allar eignir)</option>' + bl.map(function (b) { return '<option value="' + b.id + '"' + (String(b.id) === String(old.eign) ? ' selected' : '') + '>' + esc(b.nafn) + '</option>'; }).join('');
+    var lid = railKind === 'verkbeidni' ? VB_LIDIR : railKind === 'gogn' ? GOGN_LIDIR : null;
+    var er = ((state.data.erindi) || []).slice().sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
+    box.innerHTML =
+      '<section class="rl-card"><div class="kicker">Senda erindi</div>' +
+      '<div class="seg" id="rl-seg">' + kinds.map(function (k) { return '<button type="button" data-rk="' + k[0] + '"' + (k[0] === railKind ? ' class="on"' : '') + '>' + k[1] + '</button>'; }).join('') + '</div>' +
+      '<label class="flabel" for="rl-eign">Eign</label><select class="svc-in" id="rl-eign">' + sel + '</select>' +
+      (lid ? '<div class="svc" id="rl-lid">' + lid.map(function (x) { return '<label><input type="checkbox" value="' + esc(x) + '">' + esc(x) + '</label>'; }).join('') + '</div>' : '') +
+      (railKind === 'verkbeidni' ? '<input class="svc-in" id="rl-stad" placeholder="Staðsetning — t.d. 7. hæð, herbergi 701–706" autocomplete="off" value="' + esc(old.stad) + '">' : '') +
+      '<label class="flabel" for="rl-text">' + RAIL_LBL[railKind] + '</label>' +
+      '<textarea id="rl-text" rows="4" placeholder="' + esc(RAIL_PH[railKind]) + '">' + esc(old.text) + '</textarea>' +
+      '<button type="button" class="gbtn" id="rl-send">' + svgIc('hak', 2) + 'Senda erindi</button>' +
+      '<div class="rl-note">Staðan birtist undir Erindi: Móttekið · Í vinnslu · Svarað · Lokið.</div></section>' +
+      '<section class="rl-card rl-list"><div class="kicker">Mín erindi</div>' +
+      (er.length ? '<div class="elist">' + er.slice(0, 4).map(function (e) { return erindiRod(e, true); }).join('') + '</div>' +
+        '<a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>'
+        : '<div class="rl-empty">Engin erindi enn. Það sem þú sendir hér birtist með stöðu.</div>') + '</section>';
+    erBadge();
+  }
+  document.addEventListener('click', function (e) {
+    var rk = e.target.closest && e.target.closest('[data-rk]');
+    if (rk && rk.closest('#yf-rail')) { railKind = rk.getAttribute('data-rk'); renderRail(); return; }
+    if (e.target.closest && e.target.closest('[data-rl-all]')) { e.preventDefault(); goView('erindi'); window.scrollTo(0, 0); return; }
+    var sb = e.target.closest && e.target.closest('#rl-send');
+    if (sb) {
+      var eid = $('#rl-eign').value, b = eid ? bldgById(eid) : null, val = [];
+      document.querySelectorAll('#rl-lid input:checked').forEach(function (c) { val.push(c.value); });
+      sb.disabled = true;
+      submitErindi({ kind: railKind, b: b, val: val, stad: ($('#rl-stad') || {}).value || '', msg: $('#rl-text').value.trim(), visun: null }, function (ok) {
+        var s2 = $('#rl-send'); if (s2) s2.disabled = false;
+        if (ok) { var t = $('#rl-text'); if (t) t.value = ''; var st = $('#rl-stad'); if (st) st.value = ''; document.querySelectorAll('#rl-lid input').forEach(function (c) { c.checked = false; }); }
+      });
+    }
+  });
+
+  // ── Erindi-yfirlit (flipi): allt sem send hefur verið, með stöðu, svari og vísunum ──
+  function renderErindiView() {
+    var box = $('#er-view-list'); if (!box || !state.data) { erBadge(); return; }
+    erBadge();
+    var all = (state.data.erindi || []);
+    var chips = $('#er-chips');
+    var cnt = { '': all.length, opid: 0, svarad: 0, lokid: 0 };
+    all.forEach(function (e) { if (e.stada !== 'lokid') cnt.opid++; if (e.stada === 'svarad') cnt.svarad++; if (e.stada === 'lokid') cnt.lokid++; });
+    var ST = [['', 'Allt'], ['opid', 'Opið'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
+    var tegs = {}; all.forEach(function (e) { tegs[e.tegund] = 1; });
+    var teg = Object.keys(tegs);
+    var eignir = {}; all.forEach(function (e) { if (e.fid) { var b = eignAfId(e.fid); if (b) eignir[e.fid] = b.nafn; } });
+    if (chips) {
+      chips.innerHTML = ST.map(function (s) { return '<button type="button" class="chip' + (erFilt.s === s[0] ? ' on' : '') + '" data-ef-s="' + s[0] + '">' + s[1] + ' · ' + cnt[s[0]] + '</button>'; }).join('') +
+        (teg.length > 1 ? '<span class="ef-sep"></span>' + '<button type="button" class="chip' + (erFilt.t === '' ? ' on' : '') + '" data-ef-t="">Allar tegundir</button>' +
+          teg.map(function (t) { return '<button type="button" class="chip' + (erFilt.t === t ? ' on' : '') + '" data-ef-t="' + esc(t) + '">' + esc(ER_TEG[t] || t) + '</button>'; }).join('') : '') +
+        (Object.keys(eignir).length > 1 ? '<select class="svc-in ef-sel" id="ef-eign"><option value="">Allar eignir</option>' + Object.keys(eignir).map(function (k) { return '<option value="' + k + '"' + (String(erFilt.e) === k ? ' selected' : '') + '>' + esc(eignir[k]) + '</option>'; }).join('') + '</select>' : '');
+    }
+    var L = all.filter(function (e) {
+      if (erFilt.s === 'opid' && e.stada === 'lokid') return false;
+      if (erFilt.s === 'svarad' && e.stada !== 'svarad') return false;
+      if (erFilt.s === 'lokid' && e.stada !== 'lokid') return false;
+      if (erFilt.t && e.tegund !== erFilt.t) return false;
+      if (erFilt.e && String(e.fid) !== String(erFilt.e)) return false;
+      return true;
+    }).sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
+    box.innerHTML = L.length ? '<div class="dpanel elist">' + L.map(function (e) { return erindiRod(e, true); }).join('') + '</div>'
+      : '<div class="dpanel"><div class="dempty">' + (all.length ? 'Ekkert erindi passar við valið.' : 'Engin erindi enn. Notaðu „Senda erindi“ á forsíðunni — hér sérðu stöðu, svar og vísanir.') + '</div></div>';
+  }
+  document.addEventListener('click', function (e) {
+    var s = e.target.closest && e.target.closest('[data-ef-s]'), t = e.target.closest && e.target.closest('[data-ef-t]');
+    if (s) { erFilt.s = s.getAttribute('data-ef-s'); renderErindiView(); }
+    else if (t) { erFilt.t = t.getAttribute('data-ef-t'); renderErindiView(); }
+    var v = e.target.closest && e.target.closest('[data-vis-reikn]');
+    if (v) { e.preventDefault(); goView('reikningar'); window.scrollTo(0, 0); }
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'ef-eign') { erFilt.e = e.target.value; renderErindiView(); }
+  });
+
+  // Reikningur / skýrsla → erindi með vísun (opnar gluggann forútfylltan; ekkert fer fyrr en ýtt er á Senda)
+  function openErindiVisun(kind, b, text, visun) {
+    openErindiB(b, kind);
+    $('#er-text').value = text;
+    erVisun = visun;
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-frest],[data-spyrja],[data-sk-gogn]'); if (!a) return;
+    e.preventDefault();
+    if (a.hasAttribute('data-frest')) {
+      var nr = a.getAttribute('data-frest'), bn = a.getAttribute('data-frest-b'), u = a.getAttribute('data-frest-u');
+      openErindiVisun('reikningur', bldgByName(bn), 'Beiðni um frestun á eindaga: reikningur ' + nr + (bn ? ' (' + bn + ')' : '') + (u ? ', ' + u.replace(/\.$/, '') : '') + '. Óskað er eftir að eindagi verði færður til ____.', [{ t: 'reikningur', nr: nr, txt: bn || null }]);
+    } else if (a.hasAttribute('data-spyrja')) {
+      var nr2 = a.getAttribute('data-spyrja'), bn2 = a.getAttribute('data-spyrja-b');
+      openErindiVisun('fyrirspurn', bldgByName(bn2), 'Spurning um reikning ' + nr2 + (bn2 ? ' (' + bn2 + ')' : '') + ': ', [{ t: 'reikningur', nr: nr2, txt: bn2 || null }]);
+    } else {
+      var did = parseInt(a.getAttribute('data-sk-gogn'), 10), sb = a.getAttribute('data-sk-b'), st = a.getAttribute('data-sk-t'), sd = a.getAttribute('data-sk-d');
+      openErindiVisun('gogn', bldgByName(sb), 'Óska eftir uppfærðri skýrslu: ' + (st || 'skýrsla') + (sd ? ' frá ' + sd : '') + (sb ? ' — ' + sb : '') + '. ', [{ t: 'skyrsla', docId: did || null, txt: [st, sd].filter(Boolean).join(' ') || null }]);
+    }
+  });
+
+  // Texti úr skýrslunni (Annað / athugasemdir / ábendingar) undir síðustu skoðun
+  function skTextiHtml(b, lbl) {
+    var r = sidastaSkyrsla(b, lbl === 'Kerfi' ? 'Brunakerfi' : 'Slökkvitæki');
+    return r && r.texti ? '<div class="skt" title="' + esc(r.texti) + '">' + esc(r.texti) + '</div>' : '';
+  }
+
   /* ── nav / lang / logout ── */
-  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'skilabod'];
+  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'erindi', 'skilabod'];
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
@@ -942,6 +1110,9 @@
     fyrirspurn: { lbl: 'Fyrirspurn', ph: 'Skrifaðu fyrirspurnina hér…' },
     verkbeidni: { lbl: 'Lýsing (valfrjálst)', ph: 'T.d. hvaða tæki, hvenær hentar að koma…' },
     thjonusta: { lbl: 'Nánari lýsing (valfrjálst)', ph: 'T.d. fjöldi tækja, hæð, hvenær hentar…' },
+    gogn: { lbl: 'Nánar (valfrjálst)', ph: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…' },
+    annad: { lbl: 'Erindi', ph: 'Skrifaðu erindið hér…' },
+    reikningur: { lbl: 'Erindi um reikning', ph: 'Skrifaðu erindið hér…' },
   };
   function setErKind(k) {
     if (k === 'verkbeidni' && (!synOf().verkbeidni || erUtan)) k = 'fyrirspurn';
@@ -949,19 +1120,20 @@
     document.querySelectorAll('#er-seg button').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-k') === k); });
     $('#er-svc').classList.toggle('hidden', k !== 'thjonusta');
     $('#er-vb').classList.toggle('hidden', k !== 'verkbeidni');
+    $('#er-gogn').classList.toggle('hidden', k !== 'gogn');
     $('#er-stad').classList.toggle('hidden', k !== 'verkbeidni');
     $('#er-lbl').textContent = ER_TXT[k].lbl;
     $('#er-text').placeholder = ER_TXT[k].ph;
   }
   function openErindi(i, kind) { openErindiB(bldgAt(i), kind); }
   function openErindiB(b, kind) {
-    erB = b;
+    erB = b; erVisun = null;
     erUtan = !!(b && ((state.data && state.data.eignir_utan) || []).indexOf(b) > -1);
     $('#er-kick').textContent = erUtan ? 'Skrá eign í þjónustu' : 'Erindi til Slökkvitækja ehf.';
     $('#er-title').textContent = erB ? erB.nafn : 'Almennt erindi';
     $('#er-addr').textContent = erB ? (erB.heimilisfang || '') : '';
     $('#er-text').value = ''; $('#er-stad').value = '';
-    document.querySelectorAll('#er-svc input, #er-vb input').forEach(function (c) { c.checked = false; });
+    document.querySelectorAll('#er-svc input, #er-vb input, #er-gogn input').forEach(function (c) { c.checked = false; });
     $('#er-vb-k').classList.toggle('hidden', erUtan || !synOf().verkbeidni);
     setErKind(kind || 'fyrirspurn');
     $('#er-modal').classList.remove('hidden');
@@ -977,19 +1149,20 @@
     clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 2800);
   }
   // Sendir erindi (sama leið og Skilaboð-formið, líka í opnum ham). Skilar Promise<bool>.
-  function sendErindi(text, kind, siteId) {
+  function sendErindi(text, kind, siteId, extra) {
+    extra = extra || {};
     if (state.demo) {
       state.data.messages.push({ sender: 'kunni', author_name: 'Þú', body: text, created_at: new Date().toISOString() });
-      renderMessages(state.data.messages); return Promise.resolve(true);
+      (state.data.erindi = state.data.erindi || []).unshift({ id: Date.now(), fid: siteId || null, titill: KIND_HEAD[kind] || 'Erindi', lysing: extra.lysing || null, stada: 'mottekid', tegund: kind, dags: new Date().toISOString(), visun: extra.visun || [] });
+      renderMessages(state.data.messages); renderEgYfir(); return Promise.resolve(true);
     }
     var purl = state.open ? ('/api/gatt?c=' + encodeURIComponent(SLUG)) : '/api/gatt';
-    return fetch(purl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text, kind: kind, site_id: siteId || null }) })
+    return fetch(purl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text, kind: kind, site_id: siteId || null, titill: extra.titill || null, lysing: extra.lysing || null, visun: extra.visun || null }) })
       .then(function (r) { return r.ok ? r.json().catch(function () { return {}; }) : null; })
       .then(function (j) {
         var ok = !!j;
-        if (ok && j.mal) {
-          (state.data.erindi = state.data.erindi || []).unshift({ id: j.mal, fid: siteId || null, titill: kind === 'verkbeidni' ? 'Verkbeiðni' : 'Beiðni um þjónustu',
-            stada: 'mottekid', tegund: kind, dags: new Date().toISOString() });
+        if (ok && (j.erindi || j.mal)) {
+          (state.data.erindi = state.data.erindi || []).unshift(j.erindi || { id: j.mal, fid: siteId || null, titill: KIND_HEAD[kind] || 'Erindi', stada: 'mottekid', tegund: kind, dags: new Date().toISOString() });
           renderYfirlit(state.data.buildings); renderEgYfir();
         }
         if (ok) {
@@ -1006,18 +1179,10 @@
   $('#er-form').onsubmit = function (e) {
     e.preventDefault();
     var msg = $('#er-text').value.trim(), stad = $('#er-stad').value.trim();
-    var listi = erKind === 'thjonusta' ? '#er-svc' : erKind === 'verkbeidni' ? '#er-vb' : null;
+    var listi = erKind === 'thjonusta' ? '#er-svc' : erKind === 'verkbeidni' ? '#er-vb' : erKind === 'gogn' ? '#er-gogn' : null;
     var val = []; if (listi) document.querySelectorAll(listi + ' input:checked').forEach(function (c) { val.push(c.value); });
-    if (erKind === 'fyrirspurn' && !msg) { $('#er-text').focus(); return; }
-    if (erKind !== 'fyrirspurn' && !val.length && !msg) { toast(erKind === 'verkbeidni' ? 'Veldu verk eða skrifaðu lýsingu' : 'Veldu þjónustu eða skrifaðu lýsingu'); return; }
-    var where = erB ? (erB.nafn + (erB.heimilisfang ? ' (' + erB.heimilisfang + ')' : '')) : '';
-    var head = (erKind === 'thjonusta' ? 'Beiðni um þjónustu' : erKind === 'verkbeidni' ? 'Verkbeiðni' : 'Fyrirspurn') + (where ? ' — ' + where : '');
-    var text = head +
-      (val.length ? '\n' + (erKind === 'verkbeidni' ? 'Verk: ' : 'Þjónusta: ') + val.join(', ') : '') +
-      (erKind === 'verkbeidni' && stad ? '\nStaðsetning: ' + stad : '') +
-      (msg ? '\n\n' + msg : '');
     var btn = $('#er-send'); btn.disabled = true;
-    sendErindi(text, erKind, erB && erB.id).then(function (ok) {
+    submitErindi({ kind: erKind, b: erB, val: val, stad: stad, msg: msg, visun: erVisun }, function (ok) {
       btn.disabled = false;
       if (ok) {
         closeErindi();
@@ -1025,8 +1190,7 @@
           erB.beidni = true; renderEignasafn();
           if (drB === erB && !$('#drawer').classList.contains('hidden')) openUtan(state.data.eignir_utan.indexOf(erB));
         }
-        toast(erKind === 'verkbeidni' ? 'Verkbeiðnin er móttekin — við höfum samband' : erKind === 'thjonusta' ? 'Beiðnin er send — við höfum samband' : 'Fyrirspurnin er send');
-      } else toast('Sending tókst ekki — reyndu aftur');
+      }
     });
   };
   $('#dr-close').onclick = closeDrawer;
@@ -1273,8 +1437,8 @@
     rymingaruppdrattur: 'Rýmingaruppdráttur', fjoldaskilti: 'Fjöldaskilti' };
   var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };
   var MAN_STUTT = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
-  var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók' };
-  var ER_SKREF = [['mottekid', 'Móttekið'], ['i_vinnslu', 'Í vinnslu'], ['lokid', 'Lokið']];
+  var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni' };
+  var ER_SKREF = [['mottekid', 'Móttekið'], ['i_vinnslu', 'Í vinnslu'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
 
   function kerfiStada(k) {
     if (k.adili === 'okkar') return 'okkar';
@@ -1381,10 +1545,15 @@
   function erindiRod(e, medEign) {
     var i = 0; ER_SKREF.forEach(function (s, j) { if (s[0] === e.stada) i = j; });
     var eign = medEign ? eignAfId(e.fid) : null;
+    var vis = (e.visun || []).map(visunHtml).join('');
     return '<div class="erow"><div class="er-h"><span class="tb plain">' + esc(ER_TEG[e.tegund] || 'Erindi') + '</span>' +
       '<b>' + esc(e.titill || '') + '</b>' + (eign ? '<span class="er-e">' + esc(eign.nafn) + '</span>' : '') +
       '<span class="dd">' + esc(fmtDate(e.dags)) + '</span></div>' +
-      '<div class="erstep">' + ER_SKREF.map(function (s, j) { return '<span class="' + (j < i ? 'buid' : j === i ? 'nu' : '') + '">' + esc(s[1]) + '</span>'; }).join('') + '</div>' +
+      (e.lysing ? '<div class="er-l">' + esc(e.lysing) + '</div>' : '') +
+      (vis ? '<div class="er-v">' + vis + '</div>' : '') +
+      '<div class="erstep">' + ER_SKREF.map(function (s, j) { return '<span class="' + (j < i ? 'buid' : j === i ? 'nu' : '') + '">' + esc(s[1]) + (j <= i ? erStepDags(e, s[0]) : '') + '</span>'; }).join('') + '</div>' +
+      (e.svar ? '<div class="er-svar"><b>Svar frá Slökkvitækjum ehf.</b>' + esc(e.svar) + '</div>' : '') +
+      (e.lokid_lysing && e.lokid_lysing !== e.svar ? '<div class="er-svar"><b>Lokið</b>' + esc(e.lokid_lysing) + '</div>' : '') +
       (window.GattPunktar ? GattPunktar.erindiAuki(e) : '') + '</div>';
   }
   function erindiHtml(b) {
@@ -1494,6 +1663,7 @@
     }
     box.className = 'eg-grid n' + panels.length;
     box.innerHTML = panels.join('');
+    renderRail(); renderErindiView();
   }
 
   // ══ ELDVARNABÓK — mánaðarlegt eigið eftirlit ══
@@ -1766,6 +1936,7 @@
 
   // Innri föll fyrir eignagatt.js (verkbeiðnapunktar, Mitt vinnusvæði) — hleðst á undan og kallar aðeins eftir boot
   window.Gatt = {
+    renderRail: renderRail, renderErindiView: renderErindiView,
     state: state, svgIc: svgIc, toast: toast, synOf: synOf, eignAfId: eignAfId, vistaBlob: vistaBlob,
     renderYfirlit: renderYfirlit, renderEgYfir: renderEgYfir, renderEignasafn: renderEignasafn,
     openDrawer: openDrawer, openUtan: openUtan, closeDrawer: closeDrawer, drB: function () { return drB; },

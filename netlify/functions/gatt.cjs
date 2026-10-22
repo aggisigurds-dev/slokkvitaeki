@@ -1097,6 +1097,42 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
+    // 22.10.2026 (generalprufa Center Hótel): reikningar úr gamla kerfinu (Stólpi, til apríl 2026) sem eiga ekkert skjal í gáttinni
+    // (R-107606, R-107802, R-108001, R-108134) sáust ekki og eldri reikningar sýndu enga stöðu. Nú bætast þeir við (án PDF-hlekks)
+    // með stöðu úr Stólpa; eignin kemur úr reikningslestri þar sem hann er til. Aðeins reikningar félagsins (kennitala), aldrei kredit.
+    // Staðan „greitt" er sönn í Stólpa; „ógreitt" er EKKI sýnt úr gamla kerfinu (sama regla og hér að ofan).
+    try {
+      if (!leigutaki) {
+        const bk = await P.sbGet(`customers_base?id=eq.${baseId}&select=kennitala&limit=1`);
+        let kt = bk.ok ? String(((await bk.json())[0] || {}).kennitala || '').replace(/\D/g, '') : '';
+        if (kt.length === 10) {
+          kt = kt.slice(0, 6) + '-' + kt.slice(6);
+          const fra3 = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10);
+          const sr3 = await P.sbGet(`stolpi_reikningar?kt=eq.${kt}&tegund=eq.reikningur&dags=gte.${fra3}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`);
+          if (sr3.ok) {
+            const rows3 = await sr3.json();
+            const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
+            const nyjar = rows3.filter((x) => !byNr3[normNr(x.reikn_nr)]);
+            const rl = {};
+            if (nyjar.length) {
+              const lst = nyjar.map((x) => '"R-' + String(x.reikn_nr).replace(/"/g, '') + '"').join(',');
+              const rr = await P.sbGet(`reikningslestur?reikningur_nr=in.(${lst})&select=reikningur_nr,fyrirtaeki_id,vegna`);
+              if (rr.ok) (await rr.json()).forEach((x) => { rl[normNr(x.reikningur_nr)] = x; });
+            }
+            rows3.forEach((x) => {
+              const n = normNr(x.reikn_nr), ex = byNr3[n], greitt = x.stada === 'greitt' || !!x.greitt_dags, dags = String(x.dags).slice(0, 10);
+              if (ex) { if (!ex.stada && greitt) ex.stada = 'greitt'; if (dags && ex.dags !== dags) ex.dags = dags; return; }
+              const y = rl[n];
+              if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
+              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
+                upphaed: x.upphaed != null ? Number(x.upphaed) : null, lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: null, stada: greitt ? 'greitt' : null });
+            });
+            invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
+          }
+        }
+      }
+    } catch (_) {}
+
     // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
     // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
     const onBoard = buildings.filter((b) => b.i_thjonustu || b.bru_i_thjonustu);
