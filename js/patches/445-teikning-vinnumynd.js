@@ -167,6 +167,7 @@
     const st = document.createElement('style'); st.id = 't445-css';
     st.textContent =
       // 2D-stýringar undir myndinni sjást ekki á meðan (þysjun 2D, stika skurðar, merki utan teikningar)
+      '#modal-floorplan.fp-synval-sest .fp-3d-btn{display:none!important}' +
       '#fp-main.fp-vm-virk>#fp-zoom,#fp-main.fp-vm-virk>#fp-hreinsa-stika,#fp-main.fp-vm-virk>#fp-merki-uti{visibility:hidden!important}' +
       '.fp-simi #fp-vm-zoom button{width:36px!important;height:36px!important}.fp-simi #fp-vm-zoom span{height:36px!important;line-height:36px!important;min-width:46px!important}' +
       // Endurteikna vinstra megin við þysjunina; á síma í næstu línu undir henni (rekst ekki á hæðaflipana)
@@ -759,6 +760,8 @@
     const sv = V.synval, virkt = opid3d ? '3d' : ham;
     const svSyn = V.tilbuin ? 'flex' : 'none';
     if (sv.style.display !== svSyn) sv.style.display = svSyn;
+    // „🧊 3D“ í hausnum er óþarfur meðan sýnarvalið (Vinnumynd · 2D · 3D) sést — Agnar 22.10.2026: „2 3D takkar ???“
+    { const mdl = document.getElementById('modal-floorplan'), sest = svSyn === 'flex'; if (mdl && mdl.classList.contains('fp-synval-sest') !== sest) mdl.classList.toggle('fp-synval-sest', sest); }
     sv.querySelectorAll('[data-syn]').forEach(b => {
       const a = b.dataset.syn === virkt;
       if (b.getAttribute('aria-pressed') !== String(a)) {

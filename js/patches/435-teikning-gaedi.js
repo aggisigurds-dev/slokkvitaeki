@@ -22,13 +22,13 @@
 
   function gildi() {
     try {
-      const v = window.Vidmot ? Vidmot.lesa(LS, 'midlungs') : 'midlungs';
+      const v = window.Vidmot ? Vidmot.lesa(LS, 'fullt') : 'fullt';
       if (VAL.indexOf(v) >= 0) return v;
     } catch (_) {}
-    return 'midlungs';
+    return 'fullt';   // 22.10.2026 (Agnar): „helst bara hafa default full gæði“ — sjálfgefið Full gæði, valið áfram til á tölvu
   }
-  function hlid() { return HLID[gildi()] || HLID.midlungs; }
-  function vinnuPx() { return VINNU[gildi()] || VINNU.midlungs; }
+  function hlid() { return HLID[gildi()] || HLID.fullt; }
+  function vinnuPx() { return VINNU[gildi()] || VINNU.fullt; }
 
   let _lastPdf = null;
   let _bindBid = 0;

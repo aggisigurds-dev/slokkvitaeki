@@ -22,6 +22,16 @@
  *    383 2D-teikninguna í svæðið á milli, svo ekkert hylji hana. Aðeins sími; tölvan óbreytt.
  *  · Meðan glugginn er opinn á síma: html.fp-simi-opid felur 📷 / 💬 / EN / Aa (sama og 327 gerir á Sölu). Þeir
  *    koma aftur um leið og glugganum er lokað.
+ *
+ * HAMIR (22.10.2026, S26). Agnar: „Ég myndi helst vilja að kortið fengi tvöfalt pláss … helling sem yrði hægt að þjappa í
+ * opnanlega valmynd“ · „maður gerir bara eitt í einu. Ná teikningu inn. Síðan næsta ham: raða inn tækjum. Og næsta ham:
+ * raða inn merkingum. Kannski skipta upp í 3–4 hami.“ Á síma er nú ein lína af hömum efst yfir kortinu og aðeins það sem
+ * hamurinn þarf er sýnt:
+ *    Teikning — takkaraðirnar efst (sækja teikningu, skýrari veggir, finna húsið, hlaða upp …), ekkert fyrir neðan kortið
+ *    Tæki     — toppurinn felldur; búnaðurinn í EINNI skrunröð + stærð tákna + tækjalistinn (tækin sem á að setja)
+ *    Merki    — toppurinn felldur; merkin (+ velja hver) og stærð tákna
+ *    Skoða    — allt fellt: kortið fyllir gluggann (Vinnumynd · 2D · 3D og Búnaðargreining-lagið eru á kortinu sjálfu)
+ *  Hamurinn er viðmótsval símans (Vidmot per tækjaflokk, eins og aðrar símalæsingar hér) — aldrei gögn. Tölvan óbreytt.
  * ========================================================================== */
 (() => {
   if (window.__teiknSimastjorn) return;
@@ -30,7 +40,8 @@
   // 15.10.2026: símalæsingarnar búa í Vidmot per tækjaflokk (lesaTaeki/setjaTaeki, 472) — eitt gildi fyrir allar vélar; þær eru
   // eðlislægt símaval (hæðaval læst, merki læst, falin merki). Gömlu localStorage-lyklarnir fp_hd_lokad/fp_merki_lokad/fp_merki_falin
   // eru fluttir einu sinni sem upphafsgildi.
-  const LS_HD = 'teikning.hdLokad', LS_MERKI = 'teikning.merkiLokad', LS_FALIN = 'teikning.merkiFalin';
+  const LS_HD = 'teikning.hdLokad', LS_MERKI = 'teikning.merkiLokad', LS_FALIN = 'teikning.merkiFalin', LS_HAM = 'teikning.ham';
+  const HAMIR = [['teikn', 'Teikning'], ['taeki', 'Tæki'], ['merki', 'Merki'], ['skoda', 'Skoða']];
   try {
     if (window.Vidmot) {
       const t = '@' + Vidmot.taeki();
@@ -95,6 +106,29 @@
       // Fljótandi takkar appsins meðan Teikning-glugginn er opinn á síma: þeir lágu á „Vista", tækjaræmunni og
       // leiðbeiningunni — og „Aa" (333, síðustærð) á ⤢ þegar toppurinn er felldur. html.fp-simi-opid er sett hér að neðan (aldrei :has() á rótinni — sbr. 327).
       'html.fp-simi-opid:not(#_h) body #qr-fab:not(#_p1),html.fp-simi-opid:not(#_h) body #_ad-fab:not(#_p1),html.fp-simi-opid:not(#_h) body #_sz-aa:not(#_p1),html.fp-simi-opid:not(#_h) body #_slokk_langbtn:not(#_p1):not(#_p2):not(#_p3){display:none!important}' +
+      // HAMIR (sími): ein lína efst yfir kortinu; ▴ toppsins víkur (hamurinn fellir toppinn); gæðavalið er ekki á síma (sjálfgefið Full gæði)
+      '#t442-hamir{display:none}' +
+      '#modal-floorplan.fp-simi #t442-hamir{display:flex;flex:none;margin:0 0 6px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.25)}' +
+      '#modal-floorplan.fp-simi #t442-hamir button{flex:1 1 0;min-width:0;height:38px!important;padding:0 6px!important;margin:0!important;border:0!important;border-left:1px solid rgba(255,255,255,.18)!important;border-radius:0!important;background:#14120f!important;color:#fff!important;font:700 13px system-ui,sans-serif!important;cursor:pointer;white-space:nowrap;box-shadow:none!important}' +
+      '#modal-floorplan.fp-simi #t442-hamir button:first-child{border-left:0!important}' +
+      '#modal-floorplan.fp-simi #t442-hamir button[aria-pressed="true"]{background:#c9a54a!important;color:#14120f!important}' +
+      '#modal-floorplan.fp-simi.t442-ham #t442-hd,#modal-floorplan.fp-simi #fp-gaedi{display:none!important}' +
+      // Teikning: takkahópurinn byrjar við vinstri brún (383 sótti hann 54 px til vinstri fyrir gamla 64 px spássíu — 437 minnkaði hana í 14 og fyrsti takki klipptist) og ✕ fer upp í titillínuna í stað þess að taka heila línu
+      '#modal-floorplan.fp-simi.t442-h-teikn .fp-hd-grp{margin-left:0!important;margin-top:12px}' +
+      // titillinn víkur fyrir valmyndartakka appsins (#_mnav_btn, fastur 44×44 efst til vinstri) — 437 minnkaði vinstri spássíuna og takkinn lá yfir titlinum og fyrsta takka
+      '#modal-floorplan.fp-simi.t442-ham .modal-hd h2{padding-left:50px}' +
+      '#modal-floorplan.fp-simi.t442-h-teikn .fp-hd-grp .modal-x{position:absolute!important;top:6px;right:10px;box-shadow:none!important}' +
+      // Teikning / Skoða: ekkert fyrir neðan kortið
+      '#modal-floorplan.fp-simi.t442-h-teikn #fp-panel,#modal-floorplan.fp-simi.t442-h-skoda #fp-panel{display:none!important}' +
+      // Tæki: búnaðurinn í einni skrunröð (eins og merkin) — merkin sjálf falin
+      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:5px;margin:0 0 6px;padding-bottom:2px}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur>.fp-stimpil-lbl{display:none}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur .fp-stimpill{flex:none!important;width:auto!important;padding:3px 8px 3px 3px;font-size:11px;white-space:nowrap}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur .fp-stimpill-ico{width:20px!important;height:20px!important}' +
+      // Merki: búnaður og tækjalisti falin; merkin alltaf opin (samanbrot merkjanna er óþarft þegar hamurinn velur þau)
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur,#modal-floorplan.fp-simi.t442-h-merki #fp-unit-list{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-ham .t442-fella{pointer-events:none}#modal-floorplan.fp-simi.t442-ham .t442-fella i{display:none}' +
       '';
     document.head.appendChild(st);
   }
@@ -116,8 +150,13 @@
     if (!m || !m.classList.contains('open')) return;
     still(); falinStill();
     m.classList.add('t442-virkt');
-    m.classList.toggle('t442-merki-lokad', !!les(LS_MERKI, false));
-    m.classList.toggle('t442-hd-lokad', !!les(LS_HD, false) && m.classList.contains('fp-simi'));
+    // Á síma ræður hamurinn hvað er fellt (toppur felldur nema í Teikning, merkin alltaf opin); á tölvu eins og áður
+    const simi = m.classList.contains('fp-simi'), ham = simi ? hamNu() : '';
+    m.classList.toggle('t442-ham', simi);
+    HAMIR.forEach(x => m.classList.toggle('t442-h-' + x[0], simi && ham === x[0]));
+    m.classList.toggle('t442-merki-lokad', !simi && !!les(LS_MERKI, false));
+    m.classList.toggle('t442-hd-lokad', simi ? ham !== 'teikn' : false);
+    if (simi) tryggjaHamir(m, ham);
 
     // merkja-haus fyrir framan #fp-stimpil
     const rod = document.getElementById('fp-stimpil');
@@ -179,6 +218,28 @@
       else if (grp && t.nextSibling !== grp) hd.insertBefore(t, grp);
       uppfaeraHd();
     }
+    m.__t442k = m.className;
+  }
+  function hamNu() {
+    const v = les(LS_HAM, null);
+    return HAMIR.some(x => x[0] === v) ? v : 'taeki';
+  }
+  // Hamalínan er fyrsta barn .modal-bd (yfir kortinu). Aðeins þetta fall snertir hana — færð aðeins þegar hún er á röngum stað.
+  function tryggjaHamir(m, ham) {
+    const bd = m.querySelector(':scope > .modal-bd'); if (!bd) return;
+    let b = document.getElementById('t442-hamir');
+    if (!b) {
+      b = document.createElement('div'); b.id = 't442-hamir'; b.setAttribute('role', 'group'); b.setAttribute('aria-label', 'Hamur');
+      b.innerHTML = HAMIR.map(x => '<button type="button" data-ham="' + x[0] + '" aria-pressed="false">' + x[1] + '</button>').join('');
+      b.addEventListener('click', e => {
+        const t = e.target.closest('button[data-ham]'); if (!t) return;
+        e.preventDefault(); e.stopPropagation();
+        if (hamNu() === t.dataset.ham) return;
+        skr(LS_HAM, t.dataset.ham); tryggja(); endurteikna(); setTimeout(endurteikna, 300);
+      });
+    }
+    if (b.parentNode !== bd || bd.firstElementChild !== b) bd.insertBefore(b, bd.firstChild);
+    b.querySelectorAll('button[data-ham]').forEach(x => { const on = String(x.dataset.ham === ham); if (x.getAttribute('aria-pressed') !== on) x.setAttribute('aria-pressed', on); });
   }
   function uppfaeraHd() {
     const t = document.getElementById('t442-hd'); if (!t) return;
@@ -232,10 +293,10 @@
     if (!m || vakt === m) return;
     // Opnun / lokun / síma-klasi gluggans → strax, ekki eftir næsta púls (annars sást 📷 hálfa sekúndu yfir „Vista")
     vakt = m;
-    try { new MutationObserver(fljotandi).observe(m, { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
+    try { new MutationObserver(() => { fljotandi(); if (m.className !== m.__t442k) tryggja(); }).observe(m, { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
   }
 
   // Ódýr púls á meðan glugginn er opinn (tryggja() hættir strax þegar allt er á sínum stað).
   setInterval(() => { try { vakaGlugga(); fljotandi(); tryggja(); } catch (e) { console.warn('[442]', e); } }, 500);
-  window.TeiknSimastjorn = { tryggja, rymi };
+  window.TeiknSimastjorn = { tryggja, rymi, ham: hamNu };
 })();
