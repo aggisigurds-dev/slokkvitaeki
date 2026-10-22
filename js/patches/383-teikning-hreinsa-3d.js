@@ -3585,6 +3585,12 @@
         return m;
       },
       inni(m, x, z) { const p = reitur(x, z); return p >= 0 && !!m[p]; },
+      // umgjörð herbergis (reitamengi m) í metrum senunnar: [x0, z0, x1, z1]
+      umgjord(m) {
+        let i0 = nx, i1 = -1, j0 = nz, j1 = -1;
+        for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) if (m[j * nx + i]) { if (i < i0) i0 = i; if (i > i1) i1 = i; if (j < j0) j0 = j; if (j > j1) j1 = j; }
+        return i1 < 0 ? null : [x0 + i0 * rs, z0 + j0 * rs, x0 + (i1 + 1) * rs, z0 + (j1 + 1) * rs];
+      },
       nx, nz, rs
     };
   }
@@ -3632,6 +3638,7 @@
       stigaHerb.forEach(r => {
         const m = R.herbergi(r.x, r.z); if (!m) return;
         const i0 = stigar.length;
+        let herbUmg = null;
         ['x', 'z'].forEach(ax => {
           const hop = new Map();
           linurM.forEach(([x1, z1, x2, z2]) => {
@@ -3656,7 +3663,7 @@
             const L0 = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) || 1, ux = (pb[0] - pa[0]) / L0, uz = (pb[1] - pa[1]) / L0;
             let hlid = 0;
             [1, -1].some(sg => { if (R.inni(m, (pa[0] + pb[0]) / 2 - uz * sg * (w + 0.1), (pa[1] + pb[1]) / 2 + ux * sg * (w + 0.1))) { hlid = sg; return true; } return false; });
-            stigar.push({ a: pa.map(r3), b: pb.map(r3), breidd: r3(w), threp: g.length, hlid });
+            stigar.push({ a: pa.map(r3), b: pb.map(r3), breidd: r3(w), threp: g.length, hlid, herb: herbUmg || (herbUmg = (R.umgjord(m) || []).map(r3)) });
           });
         });
         // samsíða armar hlið við hlið í sama stigahúsi (Fiskislóð 2. hæð: 11 og 7 þrep) eru tveir armar SAMA U-stiga, ekki tveir
@@ -3683,29 +3690,42 @@
   }
 
   /* STIGAR Á MILLI HÆÐA (Agnar 22.10.2026: „Efri hæðin á myndinni er með réttu stiga layout“ — 1. hæð fékk styttri arma og tóman pall):
-   * sama stigahús á tveimur hæðum er EINN stigi. Á neðri hæðinni sýnir teikningin aðeins fyrstu þrepin heil (restin er strikuð fyrir
-   * ofan skurðlínu) og þrepaleitin finnur því færri þrep og styttri arma. Pari hún stiga á annarri hæð (samsíða, miðjur — með bakarmi —
-   * innan 2 m í hnitum senunnar, hæðirnar liggja á sömu miðju) heldur sá sem hefur lengri arminn og hinn fær nákvæmlega sömu arma.
+   * sama stigahús á tveimur hæðum er EINN stigi. Á neðri hæðinni sýnir teikningin aðeins fyrstu þrepin heil (restin er strikuð fyrir ofan
+   * skurðlínu: maður horfir á gólfið og sér ekki enda stigans) og þrepaleitin finnur því færri þrep og styttri arma. Pari hún stigaherbergi á
+   * annarri hæð (samsíða stigar, herbergi jafnstór ±0,4 m, miðjur innan 3,5 m — hæðirnar liggja ekki á alveg sömu hnitum, 1–2 m skeikar) fær
+   * stiginn með styttri arminn SAMA stiga og hin hæðin: færður svo hann liggi eins miðað við veggi stigaherbergisins (að nálægasta vegg á hvorum ás).
    * Kallað í blenderSena, svo lifandi 3D, vinnumyndin og Blender sýni sama stiga. Skilar fjölda stiga sem voru samræmdir. */
   function samraemaStiga(ut) {
     const hh = (ut || []).filter(h => h && h.stigar && h.stigar.length);
-    if (window.__stigaDebug) console.info('[383][dbg] stigar fyrir samræmingu ' + JSON.stringify((ut || []).map(h => ({ nr: h.nr, golf: h.golf && [h.golf.x, h.golf.z, h.golf.w, h.golf.h], stigar: h.stigar }))));
     if (hh.length < 2) return 0;
-    const geo = st => {
-      const dx = st.b[0] - st.a[0], dz = st.b[1] - st.a[1], L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L, w = +st.breidd || 1, sd = (st.hlid || 0) * (w + 0.06) / 2;
-      return { L, ux, uz, cx: (st.a[0] + st.b[0]) / 2 - uz * sd, cz: (st.a[1] + st.b[1]) / 2 + ux * sd };
+    const r3 = n => Math.round(n * 1000) / 1000;
+    const ein = st => { const dx = st.b[0] - st.a[0], dz = st.b[1] - st.a[1], L = Math.hypot(dx, dz) || 1; return { L, ux: dx / L, uz: dz / L }; };
+    // umgjörð stigans (armur + pallur + bakarmur) í metrum senunnar: [x0, z0, x1, z1]
+    const fp = st => {
+      const { ux, uz } = ein(st), w = +st.breidd || 1, px = -uz, pz = ux, sd = (st.hlid || 0) * (w + 0.06), e = [st.b[0] + ux * w, st.b[1] + uz * w], xs = [], zs = [];
+      [0, sd].forEach(o => [[st.a, -w / 2], [st.a, w / 2], [e, -w / 2], [e, w / 2]].forEach(([q, k]) => { xs.push(q[0] + px * (k + o)); zs.push(q[1] + pz * (k + o)); }));
+      return [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)];
     };
     let fj = 0;
     for (let i = 0; i < hh.length; i++) for (let j = i + 1; j < hh.length; j++) {
       hh[i].stigar.forEach((sa, ia) => {
-        const ga = geo(sa);
         hh[j].stigar.forEach((sb, ib) => {
-          const gb = geo(sb);
-          if (Math.abs(ga.ux * gb.ux + ga.uz * gb.uz) < 0.9 || Math.hypot(ga.cx - gb.cx, ga.cz - gb.cz) > 2) return;
-          if (sa.threp === sb.threp && Math.abs(ga.L - gb.L) < 0.2) return;                  // þegar eins
+          const A = sa.herb, B = sb.herb; if (!(A && A.length === 4 && B && B.length === 4)) return;
+          const ga = ein(sa), gb = ein(sb);
+          if (Math.abs(ga.ux * gb.ux + ga.uz * gb.uz) < 0.9) return;
+          if (Math.abs((A[2] - A[0]) - (B[2] - B[0])) > 0.4 || Math.abs((A[3] - A[1]) - (B[3] - B[1])) > 0.4) return;
+          if (Math.hypot((A[0] + A[2]) / 2 - (B[0] + B[2]) / 2, (A[1] + A[3]) / 2 - (B[1] + B[3]) / 2) > 3.5) return;
+          if (sa.threp === sb.threp && Math.abs(ga.L - gb.L) < 0.2) return;                          // þegar eins
           const bFrekar = gb.L > ga.L + 0.05 || (Math.abs(gb.L - ga.L) <= 0.05 && sb.threp > sa.threp);
-          const fra = bFrekar ? sb : sa, til = bFrekar ? hh[i].stigar : hh[j].stigar, idx = bFrekar ? ia : ib;
-          til[idx] = { a: fra.a.slice(), b: fra.b.slice(), breidd: fra.breidd, threp: fra.threp, hlid: fra.hlid };
+          const fra = bFrekar ? sb : sa, S = bFrekar ? B : A, til = bFrekar ? hh[i].stigar : hh[j].stigar, idx = bFrekar ? ia : ib, T = bFrekar ? A : B;
+          const F = fp(fra), sh = [0, 0];
+          [0, 1].forEach(ax => {                              // á hvorum ás: sama fjarlægð frá nálægari vegg stigaherbergisins
+            const dl = F[ax] - S[ax], dr = S[ax + 2] - F[ax + 2];
+            sh[ax] = dl <= dr ? T[ax] - S[ax] : T[ax + 2] - S[ax + 2];
+          });
+          const nf = [F[0] + sh[0], F[1] + sh[1], F[2] + sh[0], F[3] + sh[1]];
+          if (nf[0] < T[0] - 0.2 || nf[1] < T[1] - 0.2 || nf[2] > T[2] + 0.2 || nf[3] > T[3] + 0.2) return;   // passar ekki í herbergið — látum það vera
+          til[idx] = { a: [r3(fra.a[0] + sh[0]), r3(fra.a[1] + sh[1])], b: [r3(fra.b[0] + sh[0]), r3(fra.b[1] + sh[1])], breidd: fra.breidd, threp: fra.threp, hlid: fra.hlid, herb: til[idx].herb };
           fj++;
         });
       });
@@ -5067,7 +5087,8 @@
     // á neðri hæðinni (strikuð þrep) fái sömu arma og heili stiginn á þeirri efri. Aðeins ÞESSI hæð er mynduð (fastMynd haedId); bregðist hinar
     // hæðirnar halda stigarnir sér eins og þeir eru.
     const einingar = [{ i: hs.indexOf(h), u, hl: { h, frum, stig1 } }];
-    for (let i = 0; i < hs.length && einingar.length < 5; i++) {
+    const i0 = hs.indexOf(h);
+    for (let i = Math.max(0, i0 - 1); i <= Math.min(hs.length - 1, i0 + 1); i++) {       // aðeins hæðin undir og yfir (stigi tengir hæðir sem liggja saman)
       const h2 = hs[i]; if (!h2 || h2.id === h.id || !h2.image_url) continue;
       try {
         const fr2 = await hladaMynd(h2.image_url), s2 = h2.skurdur ? skera(fr2, h2.skurdur) : fr2;
