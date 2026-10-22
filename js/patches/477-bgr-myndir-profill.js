@@ -89,6 +89,7 @@
     const hlutar = [];
     [['sl', 'SL'], ['bs', 'BS'], ['ut', 'ÚT'], ['r', 'R']].forEach((k) => { const n = +x[k[0]] || 0; if (n) hlutar.push('<span>' + punktur(LITIR[k[0]]) + n + ' ' + k[1] + '</span>'); });
     [['till_sl', 'sl', 'SL'], ['till_bs', 'bs', 'BS']].forEach((k) => { const n = +x[k[0]] || 0; if (n) hlutar.push('<span class="bgm-till">' + punktur(LITIR[k[1]], true) + n + ' ' + k[2] + ' tillaga</span>'); });
+    if (+x.skrad > 0) hlutar.push('<span><i class="bgm-p" style="background:#1c1e23"></i>' + x.skrad + ' skráð á stað</span>');
     return hlutar.join('') || '<span class="bgm-daufur">engin merki</span>';
   }
 

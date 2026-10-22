@@ -71,8 +71,20 @@ function bgrSnid(r, bord) {
   })).filter((t) => t.kaflar.length);
   const heimildir = (Array.isArray(r.heimildir) ? r.heimildir : []).filter((h) => h && h.titill && h.gildir !== false)
     .map((h) => ({ titill: String(h.titill), dags: h.dags || null })).slice(0, 8);
+  // SKRÁÐAR STAÐSETNINGAR (bunadargreining.stadsetningar): raunstaðir tækja úr vinnublöðum — hvorki hönnun (tki) né tillaga; eigin teljari tel.skrad
+  const sk = r.stadsetningar && typeof r.stadsetningar === 'object' ? r.stadsetningar : null;
+  if (sk && Array.isArray(sk.tki)) {
+    const byId2 = {}; haedir.forEach((h) => { byId2[h.id] = h; });
+    sk.tki.forEach((t) => {
+      const h = t && byId2[t.blad]; const x = t && +t.bx, y = t && +t.by;
+      if (!h || !isFinite(x) || !isFinite(y)) return;
+      (h.skrad = h.skrad || []).push([Math.round(x), Math.round(y), '#1c1e23', 'sk', String(t.stadur || '').slice(0, 120)]);
+      h.tel.skrad = (h.tel.skrad || 0) + 1;
+    });
+  }
+  const skrad = sk && haedir.some((h) => h.skrad && h.skrad.length) ? { at: String(sk.at || '').slice(0, 10), heimild: String(sk.heimild || '').slice(0, 160) } : null;
   const till = tl && haedir.some((h) => h.till && h.till.length) ? { at: String(tl.at || '').slice(0, 10), nota: String(tl.nota || '').slice(0, 400) } : null;
-  return { dags: r.created_at || null, yfirfarin: r.stada === 'yfirfarin', haedir, utan, texti, heimildir, till };
+  return { dags: r.created_at || null, yfirfarin: r.stada === 'yfirfarin', haedir, utan, texti, heimildir, till, skrad };
 }
 
 module.exports = { bgrSnid, flokkurTki, LITIR };

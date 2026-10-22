@@ -49,7 +49,7 @@ def gera(bl, titill, ut):
     else:
         x0, y0, x1, y1 = 0, 0, im.width, im.height
     m = 45
-    for t in bl['tki'] + bl.get('till', []):   # merki utan skurðar fá að vera með (annars vantar þau á myndina en eru talin)
+    for t in bl['tki'] + bl.get('till', []) + bl.get('skrad', []):   # merki utan skurðar fá að vera með (annars vantar þau á myndina en eru talin)
         x0, y0 = min(x0, t['bx'] - m), min(y0, t['by'] - m); x1, y1 = max(x1, t['bx'] + m), max(y1, t['by'] + m)
     x0, y0, x1, y1 = max(0, int(x0)), max(0, int(y0)), min(im.width, int(x1)), min(im.height, int(y1))
     im = im.crop((x0, y0, x1, y1))
@@ -60,7 +60,7 @@ def gera(bl, titill, ut):
     r = max(12, int(W * 0.0105))
     d = ImageDraw.Draw(im, 'RGBA')
     f = font(int(r * 1.05))
-    talid, till = {}, {}
+    talid, till, skrad = {}, {}, 0
     for t in bl['tki']:
         k = flokkur(t)
         x, y = (t['bx'] - x0) * sc, (t['by'] - y0) * sc
@@ -79,6 +79,13 @@ def gera(bl, titill, ut):
         d.ellipse((x - r, y - r, x + r, y + r), fill=(255, 255, 255, 245), outline=lit + (255,), width=max(3, r // 4))
         tw = d.textlength(txt, font=f)
         d.text((x - tw / 2, y - r * 0.55), txt, fill=lit + (255,), font=f)
+    for t in bl.get('skrad', []):   # RAUNSTAÐIR úr vinnublöðum: svartur hringur með hvítum ramma og gylltu V
+        x, y = (t['bx'] - x0) * sc, (t['by'] - y0) * sc
+        if not (-r < x < W + r and -r < y < H + r): continue
+        skrad += 1
+        d.ellipse((x - r, y - r, x + r, y + r), fill=(28, 30, 35, 245), outline=(255, 255, 255, 255), width=max(2, r // 6))
+        tw = d.textlength('V', font=f)
+        d.text((x - tw / 2, y - r * 0.55), 'V', fill=(231, 196, 106, 255), font=f)
     ff = font(26)
     bar = Image.new('RGB', (im.width, 78), (28, 34, 40))
     bd = ImageDraw.Draw(bar)
@@ -98,28 +105,33 @@ def gera(bl, titill, ut):
             s2 = '%s (tillaga) %d' % (NAFN[k], till[k])
             bd.text((x + 28, 44), s2, fill=(235, 238, 240), font=ff)
             x += 28 + int(bd.textlength(s2, font=ff)) + 26
+    if skrad:
+        bd.ellipse((x, 46, x + 22, 68), fill=(28, 30, 35), outline=(255, 255, 255), width=2)
+        s2 = 'Skráð á stað (vinnublað) %d' % skrad
+        bd.text((x + 28, 44), s2, fill=(235, 238, 240), font=ff)
     out = Image.new('RGB', (im.width, im.height + bar.height), 'white')
     out.paste(bar, (0, 0)); out.paste(im, (0, bar.height))
     out.save(ut, quality=84, optimize=True, progressive=True)
-    return out.size, talid, till
+    return out.size, talid, till, skrad
 
 
 res = []
 for bl in B:
     if not os.path.exists(bl['f']):
         print('BLAÐ VANTAR', bl['cid'], bl['id']); continue
-    if not bl['tki'] and not bl.get('till'):
+    if not bl['tki'] and not bl.get('till') and not bl.get('skrad'):
         print('ENGIN merki', bl['cid'], bl['id']); continue
     ut = 'yfirlag/%d_%s.jpg' % (bl['cid'], bl['id'])
     try:
-        sz, tal, til = gera(bl, '%s · %s — búnaðargreining' % (bl['bygging'], bl['label']), ut)
+        sz, tal, til, skr = gera(bl, '%s · %s — búnaðargreining' % (bl['bygging'], bl['label']), ut)
         alls = {}
         for t in bl['tki']:
             k = flokkur(t); alls[k] = alls.get(k, 0) + 1
         tilalls = {}
         for t in bl.get('till', []): tilalls[t['flokkur']] = tilalls.get(t['flokkur'], 0) + 1
+        if skr != len(bl.get('skrad', [])): print('  <<< skráð teiknað', skr, 'af', len(bl.get('skrad', [])))
         ok = '' if (alls == tal and tilalls == til) else '  <<< teiknað ' + str(tal) + '/' + str(til) + ' af ' + str(alls) + '/' + str(tilalls)
-        res.append({'cid': bl['cid'], 'id': bl['id'], 'haed': bl['haed'], 'label': bl['label'], 'f': ut, 'tel': alls, 'till': tilalls})
+        res.append({'cid': bl['cid'], 'id': bl['id'], 'haed': bl['haed'], 'label': bl['label'], 'f': ut, 'tel': alls, 'till': tilalls, 'skrad': skr})
         print(bl['cid'], bl['id'], sz, alls, tilalls or '', ok)
     except Exception as e:
         print('VILLA', bl['cid'], bl['id'], e)

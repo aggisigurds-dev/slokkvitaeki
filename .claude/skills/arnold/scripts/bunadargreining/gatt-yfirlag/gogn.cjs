@@ -11,11 +11,12 @@ if (!ids.length) { console.error('notkun: node gogn.cjs <cid,cid,…>'); process
 fs.mkdirSync('blod', { recursive: true });
 (async () => {
   const f = await g(`fyrirtaeki?select=id,nafn&id=in.(${ids.join(',')})`);
-  const bg = await g(`bunadargreining?select=company_id,teikningar,tki,tillogur&fjarlaegt_at=is.null&company_id=in.(${ids.join(',')})`);
+  const bg = await g(`bunadargreining?select=company_id,teikningar,tki,tillogur,stadsetningar&fjarlaegt_at=is.null&company_id=in.(${ids.join(',')})`);
   const lysing = [], verk = new Map();
   for (const b of bg) {
     const c = f.find((x) => x.id === b.company_id);
     const tl = b.tillogur && Array.isArray(b.tillogur.tki) ? b.tillogur : null;
+    const sk = b.stadsetningar && Array.isArray(b.stadsetningar.tki) ? b.stadsetningar : null;   // raunstaðir úr vinnublöðum
     for (const t of (b.teikningar || [])) {
       if (!t || !t.id || !t.mynd) continue;
       const tk = (b.tki || []).filter((x) => (x.blad || x.haed_id) === t.id);
@@ -25,6 +26,7 @@ fs.mkdirSync('blod', { recursive: true });
       const fn = `blod/${hash}.jpg`;
       const till = tl ? tl.tki.filter((x) => x.blad === t.id && isFinite(+x.bx) && isFinite(+x.by) && (x.flokkur === 'sl' || x.flokkur === 'bs')).map((x) => ({ bx: +x.bx, by: +x.by, flokkur: x.flokkur })) : [];
       lysing.push({ cid: c.id, bygging: c.nafn.replace(/^(Center Hótel|Heimaleiga) - /, ''), id: t.id, haed, label: String(t.nafn || haed).split(' — ')[0], mynd: t.mynd, sk: t.skurdur || null, f: fn,
+        skrad: sk ? sk.tki.filter((x) => x.blad === t.id && isFinite(+x.bx) && isFinite(+x.by)).map((x) => ({ bx: +x.bx, by: +x.by })) : [],
         tki: tk.filter((x) => x.bx != null && x.by != null && isFinite(+x.bx) && isFinite(+x.by)).map((x) => ({ bx: +x.bx, by: +x.by, flokkur: x.flokkur, bunadur: x.bunadur })), alls: tk.length, till });
       if (!fs.existsSync(fn)) verk.set(fn, t.mynd);
     }

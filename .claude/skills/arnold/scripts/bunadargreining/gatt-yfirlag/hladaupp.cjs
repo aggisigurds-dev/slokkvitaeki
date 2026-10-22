@@ -12,7 +12,7 @@ const H = { apikey: K, Authorization: 'Bearer ' + K };
     const path = `bgr-yfirlag/${o.cid}/${o.id}-${hash}.jpg`;
     const r = await fetch(`${U}/storage/v1/object/turbopaint/${path}`, { method: 'POST', headers: Object.assign({ 'Content-Type': 'image/jpeg', 'x-upsert': 'true' }, H), body: buf });
     if (!r.ok) { console.log('UPPHLEÐSLA MISTÓKST', path, r.status, (await r.text()).slice(0, 100)); process.exit(1); }
-    (perC[o.cid] = perC[o.cid] || []).push({ haed: o.label, haed_id: o.id, url: `${U}/storage/v1/object/public/turbopaint/${path}`, sl: o.tel.sl || 0, bs: o.tel.bs || 0, ut: o.tel.ut || 0, r: o.tel.r || 0, till_sl: (o.till && o.till.sl) || 0, till_bs: (o.till && o.till.bs) || 0, at: new Date().toISOString().slice(0, 10) });
+    (perC[o.cid] = perC[o.cid] || []).push({ haed: o.label, haed_id: o.id, url: `${U}/storage/v1/object/public/turbopaint/${path}`, sl: o.tel.sl || 0, bs: o.tel.bs || 0, ut: o.tel.ut || 0, r: o.tel.r || 0, till_sl: (o.till && o.till.sl) || 0, till_bs: (o.till && o.till.bs) || 0, skrad: o.skrad || 0, at: new Date().toISOString().slice(0, 10) });
     process.stdout.write('.');
   }
   console.log();

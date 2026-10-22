@@ -30,6 +30,7 @@
   function telTexti(h) {
     var o = FL.filter(function (f) { return h.tel && h.tel[f[0]] > 0; }).map(function (f) { var n = h.tel[f[0]], st = STUTT[f[0]] || [f[1], f[1]]; return n + ' ' + (n === 1 ? st[0] : st[1]); });
     ['sl', 'bs'].forEach(function (k) { var n = h.tel && h.tel['till_' + k]; if (n > 0) { var st = STUTT[k]; o.push(n + ' ' + (n === 1 ? st[0] : st[1]) + ' (tillaga)'); } });
+    if (h.tel && h.tel.skrad > 0) o.push(h.tel.skrad + ' skráð á stað');
     return o.length ? o.join(' · ') : 'engin merki';
   }
   // TILLÖGUR ARNOLDS (b.bgr.haedir[].tel.till_sl / till_bs): áætluð þörf þar sem teikningin tilgreinir engin slökkvitæki/slöngur — talið sér
@@ -76,7 +77,8 @@
     var leidbeining = fastar ? 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á mynd til að stækka.'
       : 'Hvar slökkvitæki, brunaslöngur, útgangar og brunakerfi eiga að vera í húsinu — lesið úr samþykktum aðaluppdráttum. Smelltu á hæð til að stækka; flokkana má kveikja og slökkva.';
     var heim = (r.heimildir || []).map(function (h) { return esc(h.titill) + (h.dags ? ' (' + esc(dags(h.dags)) + ')' : ''); }).join(' · ');
-    var tillNota = r.till ? 'Tillögur Arnolds' + (r.till.at ? ' (' + dags(r.till.at) + ')' : '') + ' eru áætlun út frá reglum um slökkvibúnað (byggingarreglugerð gr. 9.4.4–9.4.5, 165.BR1) — teikningin tilgreinir engin slökkvitæki eða slöngukefli á þessum hæðum. Þær eru ekki hönnun og eru staðfestar á staðnum við næstu skoðun. ' : '';
+    var skradNota = r.skrad ? 'Svört merki á myndunum sýna hvar tæki voru skráð á vinnublaði skoðunar' + (r.skrad.heimild ? ' (' + esc(r.skrad.heimild) + ')' : '') + ' — raunstaðir, ekki hönnun. ' : '';
+    var tillNota = skradNota + (r.till ? 'Tillögur Arnolds' + (r.till.at ? ' (' + dags(r.till.at) + ')' : '') + ' eru áætlun út frá reglum um slökkvibúnað (byggingarreglugerð gr. 9.4.4–9.4.5, 165.BR1) — teikningin tilgreinir engin slökkvitæki eða slöngukefli á þessum hæðum. Þær eru ekki hönnun og eru staðfestar á staðnum við næstu skoðun. ' : '');
     var nota = tillNota + (heim ? 'Heimild: ' + heim + '. ' : '') + (r.yfirfarin ? 'Yfirfarið af Slökkvitækjum ehf. ' : 'Lesið úr samþykktum teikningum og staðfest á staðnum við næstu skoðun. ') +
       'Staðsetning er leiðbeinandi — endanleg staðfesting er hjá hönnuði og slökkviliði.' + (r.utan ? ' ' + tala(r.utan, 'atriði er', 'atriði eru') + ' án staðsetningar á teikningu.' : '');
     return '<section class="dsec" id="bgr-sec" data-bgr-fid="' + esc(b.id) + '"><h4>Búnaðargreining <span class="cnt">' + tala(r.haedir.length, 'hæð', 'hæðir') + ' · ' + tala(sam, 'atriði', 'atriði') + '</span></h4>' +
