@@ -1577,9 +1577,11 @@
   try { if (window.Vidmot) Vidmot.flytja(UTLIT_LS, 'teikn3d_utlit', v => (v === 'eld' || v === 'gratt' ? v : undefined)); } catch (_) {}
   // utveggur: örlítill tan-blær á útveggjum og svölum, innveggir hvítir (Agnar 10.10.2026: „Hvítir innri veggir. Bara smá
   // tan litur á útveggjunum" — eins og ChatGPT-myndin): utHlidar() finnur hlið hvers útveggjar sem snýr út.
-  const GRATT_3D = { bakgrunnur: 0xe6e9ec, veggur: 0xf3f2ef, utveggur: 0xe9dfd0, toppur: 0x2b2e33, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
+  // 22.10.2026 (Agnar: „Can we try this color combination for hotels, homes and officespaces" — viðmiðunarmynd): ljósir veggir #ededec, kolgráir veggtoppar #303434,
+  // bakgrunnur kalt blágrár halli (#ced8e1 → #8f9caa, svid.background hér neðar), ljós eik á gólfi, fölblátt gler, eikarhurðir — eins fyrir hótel, heimili og skrifstofur
+  const GRATT_3D = { bakgrunnur: 0xb6c2ce, veggur: 0xf0efec, utveggur: 0xe9dfd0, toppur: 0x303434, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
   const lesaUtlit = () => { try { return window.Vidmot && Vidmot.lesa(UTLIT_LS, 'gratt') === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
-  const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0x8d6e63, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
+  const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0xb98e5c, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
   const HOLFALITIR_3D = [[66, 133, 244], [52, 168, 83], [251, 188, 5], [171, 71, 188], [0, 172, 193], [255, 112, 67], [124, 179, 66], [92, 107, 192]];
 
@@ -1712,7 +1714,7 @@
   // hreinlætistækjum bað. Teikningin dauf ofan á (margfölduð) svo heiti og tæki sjáist. Utan útveggja: gegnsætt (hellur
   // sjást). null ef útveggirnir loka ekki húsinu (flóðið lak inn) — þá helst teikningin.
   const GOLF_EFNI = {
-    parket: ['#ecdcc0', '#e6d5b6', '#e9d9bc', '#e1cfae', '#e8d7b9'],   // 21.10.2026 (Agnar: „parketið svolítið ljósara, alveg ljós brúnt")
+    parket: ['#d3bd98', '#cbb590', '#d0ba95', '#c7b08b', '#cfb893'],   // 22.10.2026: ljós eik úr viðmiðunarmynd Agnars (hótel/heimili/skrifstofur) — áður ljósara (21.10: „alveg ljós brúnt")
     bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
     sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 },
@@ -2147,11 +2149,19 @@
     teiknari.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;cursor:grab';
     gamur.appendChild(teiknari.domElement);
     const svid = new T.Scene();
+    // Kaldur blágrár bakgrunnshalli (viðmiðunarmynd 22.10.2026): ljósast efst til hægri, dekkst neðst til vinstri
+    const bakHalli = (() => {
+      const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d');
+      const g = x.createLinearGradient(512, 0, 0, 512); g.addColorStop(0, '#d3dde6'); g.addColorStop(0.5, '#b4c0cc'); g.addColorStop(1, '#8d9aa8');
+      x.fillStyle = g; x.fillRect(0, 0, 512, 512);
+      const t = new T.CanvasTexture(c); if (T.SRGBColorSpace) t.colorSpace = T.SRGBColorSpace; return t;
+    })();
     const himinn = new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8); svid.add(himinn);
     const sol = new T.DirectionalLight(0xffffff, 0.6); svid.add(sol); svid.add(sol.target);
     let utlit = (gogn && gogn.utlit) || lesaUtlit();
     const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
+    losa.push(bakHalli);
     const taekiHlutir = [];     // líkön, stangir, kúlur og miðar tækjanna — falin þegar föst vinnumynd er tekin (fastMynd)
     // SÍA (478): merki í falinni flokk (userData.sia) eru ekki sýnd; engu eytt
     const siaBeita = () => { taekiHlutir.forEach(o => { const f = o.userData && o.userData.sia; if (f) o.visible = !(window.TeiknSia && TeiknSia.erFalinn(f)); }); };
@@ -2510,7 +2520,7 @@
           // eigið toppefni: kTopp veggjanna er teiknað með lit á hvert eintak (instanceColor) og three r128 skiptir ekki um forrit
           const svT = new T.MeshLambertMaterial({ color: kTopp.color.getHex() }); svT.userData.toppur = true;
           const svM = new T.InstancedMesh(kG, [svE, svE, svT, svE, svE, svE], hd.svalir.length);
-          const sgE = new T.MeshLambertMaterial({ color: 0x9fcbe8, transparent: true, opacity: 0.38, depthWrite: false });
+          const sgE = new T.MeshLambertMaterial({ color: 0xa6c1d8, transparent: true, opacity: 0.42, depthWrite: false });
           const svG = new T.InstancedMesh(kG, sgE, hd.svalir.length);
           const shE = new T.MeshLambertMaterial({ color: 0x8a8f96 });
           const svR = new T.InstancedMesh(kG, shE, hd.svalir.length);
@@ -3045,7 +3055,7 @@
     });
     const beitaUtliti = () => {
       const g = utlit === 'gratt';
-      teiknari.setClearColor(g ? GRATT_3D.bakgrunnur : BAKGRUNNUR_3D);
+      teiknari.setClearColor(g ? GRATT_3D.bakgrunnur : BAKGRUNNUR_3D); svid.background = g ? bakHalli : null;
       himinn.color.setHex(g ? GRATT_3D.himinn[0] : 0xffffff); himinn.groundColor.setHex(g ? GRATT_3D.himinn[1] : 0xbdb8ae); himinn.intensity = g ? GRATT_3D.himinn[2] : 0.8;
       sol.intensity = g ? GRATT_3D.sol : 0.6;
       daufLog.forEach(m => { m.visible = g; });

@@ -1,0 +1,342 @@
+{
+ "heimild": "Viðmiðunarmynd Agnars 22.10.2026 (hlutir klipptir úr safnmynd)",
+ "flokkar": {
+  "slokkvitaeki": "Slökkvitæki og slöngur",
+  "skilti": "Skilti",
+  "eldhus": "Eldhús",
+  "badherbergi": "Baðherbergi",
+  "husgogn": "Húsgögn",
+  "skrifstofa": "Skrifstofa",
+  "hurdir": "Hurðir og gler"
+ },
+ "hlutir": [
+  {
+   "id": "slokk_a_vatn",
+   "nafn": "Slökkvitæki — vatn (A)",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_a_vatn.png",
+   "b": 83,
+   "h": 166
+  },
+  {
+   "id": "slokk_l_froda",
+   "nafn": "Slökkvitæki — L (froða)",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_l_froda.png",
+   "b": 76,
+   "h": 158
+  },
+  {
+   "id": "slokk_duft",
+   "nafn": "Slökkvitæki — duft",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_duft.png",
+   "b": 72,
+   "h": 169
+  },
+  {
+   "id": "slokk_abc",
+   "nafn": "Slökkvitæki — ABC",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_abc.png",
+   "b": 68,
+   "h": 168
+  },
+  {
+   "id": "slokk_co2",
+   "nafn": "Slökkvitæki — CO₂",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_co2.png",
+   "b": 69,
+   "h": 167
+  },
+  {
+   "id": "slokk_hjola_50kg",
+   "nafn": "Slökkvitæki — á hjólum 50 kg",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_hjola_50kg.png",
+   "b": 84,
+   "h": 172
+  },
+  {
+   "id": "slokk_hjola",
+   "nafn": "Slökkvitæki — á hjólum",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_hjola.png",
+   "b": 81,
+   "h": 176
+  },
+  {
+   "id": "slokk_2kg",
+   "nafn": "Slökkvitæki — 2 kg",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slokk_2kg.png",
+   "b": 52,
+   "h": 142
+  },
+  {
+   "id": "slongukerfi",
+   "nafn": "Slöngukefli í skáp",
+   "flokkur": "slokkvitaeki",
+   "skra": "slokkvitaeki/slongukerfi.png",
+   "b": 144,
+   "h": 156
+  },
+  {
+   "id": "skilti_utgangur",
+   "nafn": "Skilti — útgangur",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_utgangur.png",
+   "b": 109,
+   "h": 76
+  },
+  {
+   "id": "skilti_utgangur_vinstri",
+   "nafn": "Skilti — útgangur (vinstri)",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_utgangur_vinstri.png",
+   "b": 96,
+   "h": 74
+  },
+  {
+   "id": "skilti_utgangur_haegri",
+   "nafn": "Skilti — útgangur (hægri)",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_utgangur_haegri.png",
+   "b": 71,
+   "h": 71
+  },
+  {
+   "id": "skilti_slokkvitaeki",
+   "nafn": "Skilti — slökkvitæki",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_slokkvitaeki.png",
+   "b": 88,
+   "h": 85
+  },
+  {
+   "id": "skilti_slongukerfi",
+   "nafn": "Skilti — slöngukerfi",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_slongukerfi.png",
+   "b": 93,
+   "h": 90
+  },
+  {
+   "id": "skilti_handbodi",
+   "nafn": "Skilti — handboði",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_handbodi.png",
+   "b": 83,
+   "h": 94
+  },
+  {
+   "id": "skilti_eldteppi",
+   "nafn": "Skilti — eldteppi",
+   "flokkur": "skilti",
+   "skra": "skilti/skilti_eldteppi.png",
+   "b": 72,
+   "h": 91
+  },
+  {
+   "id": "eldhus_1",
+   "nafn": "Eldhús — L-laga með ísskáp",
+   "flokkur": "eldhus",
+   "skra": "eldhus/eldhus_1.png",
+   "b": 306,
+   "h": 193
+  },
+  {
+   "id": "eldhus_2",
+   "nafn": "Eldhús — bein röð með ofni",
+   "flokkur": "eldhus",
+   "skra": "eldhus/eldhus_2.png",
+   "b": 216,
+   "h": 178
+  },
+  {
+   "id": "eldhus_3",
+   "nafn": "Eldhús — með eyju og stólum",
+   "flokkur": "eldhus",
+   "skra": "eldhus/eldhus_3.png",
+   "b": 221,
+   "h": 196
+  },
+  {
+   "id": "eldhus_4",
+   "nafn": "Eldhús — lítill krókur",
+   "flokkur": "eldhus",
+   "skra": "eldhus/eldhus_4.png",
+   "b": 152,
+   "h": 195
+  },
+  {
+   "id": "bad_1",
+   "nafn": "Baðherbergi — sturta, salerni og vaskur",
+   "flokkur": "badherbergi",
+   "skra": "badherbergi/bad_1.png",
+   "b": 295,
+   "h": 175
+  },
+  {
+   "id": "bad_2",
+   "nafn": "Baðherbergi — sturtuklefi, salerni og vaskur",
+   "flokkur": "badherbergi",
+   "skra": "badherbergi/bad_2.png",
+   "b": 193,
+   "h": 167
+  },
+  {
+   "id": "bord_langt",
+   "nafn": "Borð — langt með 10 stólum",
+   "flokkur": "husgogn",
+   "skra": "husgogn/bord_langt.png",
+   "b": 251,
+   "h": 164
+  },
+  {
+   "id": "bord_ferkantad",
+   "nafn": "Borð — ferkantað með 4 stólum",
+   "flokkur": "husgogn",
+   "skra": "husgogn/bord_ferkantad.png",
+   "b": 144,
+   "h": 100
+  },
+  {
+   "id": "bord_hringlaga",
+   "nafn": "Borð — hringlaga með 4 stólum",
+   "flokkur": "husgogn",
+   "skra": "husgogn/bord_hringlaga.png",
+   "b": 177,
+   "h": 149
+  },
+  {
+   "id": "sofi_horn",
+   "nafn": "Sófi — horn með borði",
+   "flokkur": "husgogn",
+   "skra": "husgogn/sofi_horn.png",
+   "b": 295,
+   "h": 146
+  },
+  {
+   "id": "sofi",
+   "nafn": "Sófi — tveggja sæta",
+   "flokkur": "husgogn",
+   "skra": "husgogn/sofi.png",
+   "b": 144,
+   "h": 111
+  },
+  {
+   "id": "stoll_hvild",
+   "nafn": "Hægindastóll",
+   "flokkur": "husgogn",
+   "skra": "husgogn/stoll_hvild.png",
+   "b": 106,
+   "h": 100
+  },
+  {
+   "id": "rum_tvibreitt",
+   "nafn": "Rúm — tvíbreitt með náttborðum",
+   "flokkur": "husgogn",
+   "skra": "husgogn/rum_tvibreitt.png",
+   "b": 184,
+   "h": 120
+  },
+  {
+   "id": "rum_einbreitt",
+   "nafn": "Rúm — einbreitt",
+   "flokkur": "husgogn",
+   "skra": "husgogn/rum_einbreitt.png",
+   "b": 174,
+   "h": 132
+  },
+  {
+   "id": "skapur",
+   "nafn": "Fataskápur",
+   "flokkur": "husgogn",
+   "skra": "husgogn/skapur.png",
+   "b": 108,
+   "h": 154
+  },
+  {
+   "id": "kommoda",
+   "nafn": "Kommóða",
+   "flokkur": "husgogn",
+   "skra": "husgogn/kommoda.png",
+   "b": 119,
+   "h": 95
+  },
+  {
+   "id": "skrifstofa_fundarbord",
+   "nafn": "Fundarborð með 8 stólum",
+   "flokkur": "skrifstofa",
+   "skra": "skrifstofa/skrifstofa_fundarbord.png",
+   "b": 208,
+   "h": 105
+  },
+  {
+   "id": "skrifstofa_skrifbord",
+   "nafn": "Skrifborð með tölvu og stól",
+   "flokkur": "skrifstofa",
+   "skra": "skrifstofa/skrifstofa_skrifbord.png",
+   "b": 185,
+   "h": 130
+  },
+  {
+   "id": "skrifstofa_skrifbord_2",
+   "nafn": "Skrifborð með tölvu (hvíldarstóll)",
+   "flokkur": "skrifstofa",
+   "skra": "skrifstofa/skrifstofa_skrifbord_2.png",
+   "b": 187,
+   "h": 112
+  },
+  {
+   "id": "hurd_opin",
+   "nafn": "Hurð — opin",
+   "flokkur": "hurdir",
+   "skra": "hurdir/hurd_opin.png",
+   "b": 63,
+   "h": 103
+  },
+  {
+   "id": "hurd_hlid",
+   "nafn": "Hurð — hlið",
+   "flokkur": "hurdir",
+   "skra": "hurdir/hurd_hlid.png",
+   "b": 36,
+   "h": 110
+  },
+  {
+   "id": "hurd_lokud",
+   "nafn": "Hurð — lokuð",
+   "flokkur": "hurdir",
+   "skra": "hurdir/hurd_lokud.png",
+   "b": 60,
+   "h": 118
+  },
+  {
+   "id": "gler_renni",
+   "nafn": "Glerrennihurð",
+   "flokkur": "hurdir",
+   "skra": "hurdir/gler_renni.png",
+   "b": 118,
+   "h": 124
+  },
+  {
+   "id": "sturtuklefi",
+   "nafn": "Sturtuklefi í horni",
+   "flokkur": "badherbergi",
+   "skra": "badherbergi/sturtuklefi.png",
+   "b": 123,
+   "h": 136
+  },
+  {
+   "id": "planta",
+   "nafn": "Planta",
+   "flokkur": "husgogn",
+   "skra": "husgogn/planta.png",
+   "b": 61,
+   "h": 104
+  }
+ ]
+}

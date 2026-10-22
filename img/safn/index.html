@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Safn — tæki og innréttingar</title>
+<style>
+  :root { --bg:#cfd7df; --fg:#1c2530; --kort:#e6ebf0; --lina:#9aa7b4; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui,sans-serif; padding:16px max(16px,env(safe-area-inset-left,0px)); }
+  h1 { font:700 20px Georgia,serif; margin:0 0 4px; }
+  p { margin:0 0 14px; color:#46525f; }
+  h2 { font:700 12px ui-monospace,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; margin:22px 0 8px; }
+  .rist { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  figure { margin:0; background:var(--kort); border:1px solid var(--lina); border-radius:10px; padding:8px; text-align:center; }
+  figure img { max-width:100%; height:110px; object-fit:contain; display:block; margin:0 auto 6px; }
+  figcaption { font-size:12px; }
+  code { font-size:11px; color:#46525f; }
+</style>
+</head>
+<body>
+<h1>Safn — tæki og innréttingar</h1>
+<p>Hlutir klipptir úr viðmiðunarmynd Agnars (22.10.2026), gegnsæ PNG. Skráin <code>safn.json</code> lýsir hverjum hlut: id, heiti, flokkur, slóð.</p>
+<div id="rot"></div>
+<script>
+fetch('safn.json').then(r => r.json()).then(j => {
+  const rot = document.getElementById('rot');
+  Object.keys(j.flokkar).forEach(k => {
+    const hl = j.hlutir.filter(h => h.flokkur === k); if (!hl.length) return;
+    rot.insertAdjacentHTML('beforeend', '<h2>' + j.flokkar[k] + ' · ' + hl.length + '</h2><div class="rist">' + hl.map(h =>
+      '<figure><img loading="lazy" src="' + h.skra + '" alt=""><figcaption>' + h.nafn + '<br><code>' + h.id + '</code></figcaption></figure>').join('') + '</div>');
+  });
+});
+</script>
+</body>
+</html>
