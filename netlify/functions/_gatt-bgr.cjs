@@ -50,7 +50,7 @@ function bgrSnid(r, bord) {
   haedir.forEach((h) => { if (!h.nafn) h.nafn = 'Hæð'; });
   // mynd hæðarinnar með greiningunni teiknaðri ofan á (bunadargreining.yfirlag → turbopaint/bgr-yfirlag): aðeins slóðir úr okkar eigin möppu
   const yl = (Array.isArray(r.yfirlag) ? r.yfirlag : []).filter((x) => x && typeof x.url === 'string' && YL_SLOD.test(x.url));
-  haedir.forEach((h) => { const m = yl.find((x) => x.haed_id && x.haed_id === h.id) || yl.find((x) => x.haed && h.nafn && x.haed === h.nafn); if (m) h.yl = m.url; });
+  haedir.forEach((h) => { const m = yl.find((x) => x.haed_id && x.haed_id === h.id) || yl.find((x) => x.haed && h.nafn && x.haed === h.nafn); if (m) { h.yl = m.url; if (h.nafn && m.haed && m.haed !== h.nafn && m.haed.indexOf(h.nafn) === 0) h.nafn = String(m.haed).slice(0, 80); } });   // „1. hæð, Þingholtsstræti 5“ þegar tvö blöð heita „1. hæð“
   const texti = (Array.isArray(r.texti) ? r.texti : []).map((t) => ({
     titill: String(t && t.titill || ''), heimild: String(t && t.heimild || ''),
     kaflar: (Array.isArray(t && t.kaflar) ? t.kaflar : []).filter((k) => k && k.texti).map((k) => ({ fyrirsogn: String(k.fyrirsogn || ''), texti: String(k.texti), lykill: !!k.lykill })),
