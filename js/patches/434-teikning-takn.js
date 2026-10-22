@@ -149,7 +149,7 @@
     Object.keys(SJALF).forEach(k => { ut[k] = (GLYFF.indexOf(s[k]) >= 0) ? s[k] : SJALF[k]; });
     return ut;
   }
-  function fingrafar() { return JSON.stringify(val()); }
+  function fingrafar() { return JSON.stringify(val()) + '|r' + raunTel + (raunOn() ? 1 : 0); }
 
   // 06.10.2026: NFKD (ekki NFD) svo lækkaða 2-an í „CO₂" verði 2 — 39 kolsýrutæki lentu annars í „Annað";
   // „Slönguskápur" (slöng-) er slanga. Sama regla í TurboPaint (kjarni merkjasafn.ts) — prófið þar ber þær saman.
@@ -333,8 +333,40 @@
     span.innerHTML = ''; span.style.background = 'transparent'; span.appendChild(c);
   }
 
+  /* ── RAUNSÆ TÁKN (Agnar 22.10.2026: „og síðan realistic tækjunum"): myndir af tækjunum sjálfum (img/taeki) í stað málmplötutáknsins.
+   * Gildir í 2D og á vinnumyndinni; valið „Raunsæ tákn" (TeiknSia 478, Vidmot 'teikning.raunsaett', sjálfgefið kveikt). ── */
+  const RAUN = { lettvatn: 'l', duft: 'duft', co2: 'co2', slanga: 'slanga_rod', hose: 'slanga_rod', reykskynjari: 'reykskynjari', hitaskynjari: 'hitaskynjari',
+    bjalla: 'bjalla', segull: 'segull', ut: 'skilti_ut', neydarutgangur: 'skilti_ut', rafmagn: 'skilti_rafmagn' };
+  const RAUN_IMG = {};
+  let raunTel = 0;
+  const raunOn = () => !(window.TeiknSia && TeiknSia.raunsaett && TeiknSia.raunsaett() === false);
+  function raunMynd(n) {
+    let i = RAUN_IMG[n];
+    if (!i) {
+      i = RAUN_IMG[n] = new Image();
+      i.onload = () => {
+        raunTel++;
+        try { const F = window.FloorPlan; if (F && F._renderCanvas) F._renderCanvas(); } catch (_) {}
+        try { const y = document.getElementById('fp-yfirlag'); if (y) y._t433 = ''; } catch (_) {}
+      };
+      i.src = '/img/taeki/' + n + '.png';
+    }
+    return i.complete && i.naturalWidth ? i : null;
+  }
+  function teiknaRaun(ctx, lyk, mx, my, s) {
+    const n = RAUN[lyk]; if (!n) return false;
+    const i = raunMynd(n); if (!i) return false;
+    const kassi = s * 1.15, k = kassi / Math.max(i.naturalWidth, i.naturalHeight), w = i.naturalWidth * k, h = i.naturalHeight * k;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = Math.max(3, s * 0.22); ctx.shadowOffsetY = Math.max(1, s * 0.06);
+    ctx.drawImage(i, mx - w / 2, my - h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
   function teiknaMerki(ctx, m, mx, my, s, units) {
     const lyk = lykillFyrir(m, units);
+    if (raunOn() && teiknaRaun(ctx, lyk, mx, my, s)) return;
     const litur = Object.assign({}, LITIR[lyk] || LITIR.annad, m.color && lyk !== 'lettvatn' && lyk !== 'duft' && lyk !== 'co2' ? { bg: m.color } : {});
     teiknaTakn(ctx, val()[lyk] || SJALF[lyk] || 'extinguisher', litur, mx, my, s, m && m.rot);
   }

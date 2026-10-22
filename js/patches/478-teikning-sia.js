@@ -56,6 +56,9 @@
     if (/reyk|hita/.test(t)) return 'skyn';
     return 'slt';
   }
+  // RAUNSÆ TÁKN (434): myndir af tækjunum í stað málmplötutákns — sjálfgefið kveikt, eitt val fyrir allar vélar
+  const raunsaett = () => { try { const v = window.Vidmot ? Vidmot.lesa('teikning.raunsaett', null) : null; return v === false ? false : true; } catch (_) { return true; } };
+  function skiptaRaun() { try { if (window.Vidmot) Vidmot.setja('teikning.raunsaett', !raunsaett()); } catch (_) {} beita(); }
   const erFalinn = k => stada().af.indexOf(k) >= 0;
   const falid = (m, units) => { const af = stada().af; return !!af.length && af.indexOf(flokkur(m, units)) >= 0; };
   const lykill = () => stada().af.join(',');
@@ -92,7 +95,7 @@
   function teiknaStiku(el, allar, fela) {
     const n = talning(allar), af = stada().af;
     const fl = FL.filter(f => n[f.k]);
-    const fingur = (allar ? 'a' : 'e') + (fela ? 'f' : '') + '|' + fl.map(f => f.k + n[f.k]).join(',') + '|' + af.join(',');
+    const fingur = (allar ? 'a' : 'e') + (fela ? 'f' : '') + '|' + fl.map(f => f.k + n[f.k]).join(',') + '|' + af.join(',') + '|' + raunsaett();
     if (el._fp === fingur) return;
     el._fp = fingur;
     if (!fl.length || fela) { el.style.display = 'none'; el.innerHTML = ''; return; }
@@ -103,7 +106,12 @@
         return '<button type="button" data-sia="' + f.k + '" aria-pressed="' + syn + '" title="' + (syn ? 'Fela ' : 'Sýna ') + f.nafn.toLowerCase() + ' á teikningunni (merkin eyðast ekki)" style="' + hnappur +
           'background:' + (syn ? DOKKT : 'transparent') + ';color:' + (syn ? '#f1ede4' : '#8d887c') + ';' + (syn ? 'border-color:' + GULL + ';' : '') + (syn ? '' : 'text-decoration:line-through;') + '">' +
           '<i style="width:9px;height:9px;border-radius:50%;background:' + f.lit + ';display:inline-block;opacity:' + (syn ? 1 : .35) + '"></i>' + f.nafn + ' <b style="font-weight:700;opacity:.8">' + n[f.k] + '</b></button>';
-      }).join('');
+      }).join('') +
+      (function () {
+        const r = raunsaett();
+        return '<button type="button" data-raun="1" aria-pressed="' + r + '" title="Myndir af tækjunum sjálfum í stað tákna" style="' + hnappur +
+          'background:' + (r ? DOKKT : 'transparent') + ';color:' + (r ? '#f1ede4' : '#8d887c') + ';' + (r ? 'border-color:' + GULL + ';' : '') + '">Raunsæ tákn</button>';
+      })();
   }
   function festa(host, id, css, allar, fela) {
     if (!host) return;
@@ -111,7 +119,10 @@
     if (!el) {
       el = document.createElement('div'); el.id = id;
       el.style.cssText = 'position:absolute;z-index:12;display:none;flex-wrap:wrap;gap:6px;align-items:center;pointer-events:auto;' + css;
-      el.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-sia]'); if (b) { e.preventDefault(); e.stopPropagation(); skipta(b.getAttribute('data-sia')); } });
+      el.addEventListener('click', e => {
+        const r = e.target.closest && e.target.closest('[data-raun]'); if (r) { e.preventDefault(); e.stopPropagation(); skiptaRaun(); return; }
+        const b = e.target.closest && e.target.closest('[data-sia]'); if (b) { e.preventDefault(); e.stopPropagation(); skipta(b.getAttribute('data-sia')); }
+      });
       el.addEventListener('mousedown', e => e.stopPropagation());
       el.addEventListener('pointerdown', e => e.stopPropagation());
       host.appendChild(el);
@@ -126,7 +137,7 @@
     festa(d3, 'fp-sia3', 'right:10px;bottom:64px;max-width:calc(100% - 20px);justify-content:flex-end', true);
   }
 
-  window.TeiknSia = { flokkur, falid, erFalinn, lykill, beita, skipta, flokkar: FL, stada };
+  window.TeiknSia = { flokkur, falid, erFalinn, lykill, beita, skipta, flokkar: FL, stada, raunsaett };
   setInterval(tikk, 400);
   try { new MutationObserver(() => tikk()).observe(document.body, { childList: true }); } catch (_) {}
 })();

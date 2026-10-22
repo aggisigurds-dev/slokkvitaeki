@@ -2071,6 +2071,16 @@
       for (let p = 0; p < N; p++) if (merki[p] === id && nafn[p] < 0) { nafnX[p] = k; nn++; }
       if (nn) heitinX.push({ teg: 'bad', x: r.sx / r.n / (kv * s), y: r.sy / r.n / (kv * s) });
     });
+    // ELDHÚS ÁN HEITIS (Agnar 22.10.2026: „bæta við baðherbergjum og eldhúsum, standard sama“): stofa sem hefur ekkert eldhús-heiti
+    // innan 7 m (ekki „Stofa/Eldhús“ — það er þegar eldhús) fær sömu staðlaða eldhúsinnréttingu eftir lengsta vegg sínum.
+    heitin.forEach((q, ix) => {
+      if (q.teg !== 'stofa' || q.lika || q.p < 0) return;
+      if (heitin.some(e => e.teg === 'eldhus' && Math.hypot(e.cx - q.cx, e.cy - q.cy) < 7 * pxm)) return;
+      const k = heitinX.length; let nn = 0;
+      for (let p = 0; p < N; p++) if (nafn[p] === ix && nafnX[p] === ix) { nafnX[p] = k; nn++; }
+      if (nn > 0.5 * pxm * pxm) heitinX.push({ teg: 'eldhus', x: q.cx / (kv * s), y: q.cy / (kv * s) });
+      else for (let p = 0; p < N; p++) if (nafnX[p] === k) nafnX[p] = ix;
+    });
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
     return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm,
       heitin: heitinX,
