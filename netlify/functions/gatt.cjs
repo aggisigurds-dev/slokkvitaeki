@@ -774,7 +774,7 @@ exports.handler = async (event) => {
       const filt = siteIds.length
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund`);
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man`);
       if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
     } catch (_) {}
 
@@ -938,6 +938,14 @@ exports.handler = async (event) => {
       } catch (_) {}
     }
 
+    // Skoðanasaga: mánuður hverrar skýrslu eins og hann stendur í skýrslunni sjálfri (customer_documents.skodun_ar_man, YYYY-MM).
+    const sagaById = {};
+    docs.forEach((d) => {
+      if (d.is_duplicate || d.fyrirtaeki_id == null || !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(d.skodun_ar_man || ''))) return;
+      if (d.doc_type !== 'uttektarskyrsla' && d.doc_type !== 'brunakerfi') return;
+      (sagaById[d.fyrirtaeki_id] = sagaById[d.fyrirtaeki_id] || []).push({ t: d.doc_type === 'brunakerfi' ? 'bru' : 'slokk', m: d.skodun_ar_man, docId: d.id });
+    });
+    Object.keys(sagaById).forEach((k) => sagaById[k].sort((a, b) => String(b.m).localeCompare(String(a.m))));
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
       const slo = pickHose(factSloById[s.id], liveBslById[s.id]);
@@ -956,6 +964,7 @@ exports.handler = async (event) => {
         sidasta_ar: GY.lastYear(arSlokk) || st.report_year || null,
         ar_slokk: arSlokk,
         ar_bru: arBru,
+        saga: sagaById[s.id] || [],
         // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
         skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
         bru_skodun_manudur: bruEntry && bruEntry.inspect_month != null ? Number(bruEntry.inspect_month) : null,
@@ -1004,7 +1013,7 @@ exports.handler = async (event) => {
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
       (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${d.year == null ? '' : d.year}`,
     )
-      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type,
+      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: d.skodun_ar_man || null,
         bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.amount != null ? d.amount : null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 

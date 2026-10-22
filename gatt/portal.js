@@ -263,12 +263,12 @@
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
           eign: b.eign || null, beidni: !!b.beidni, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
           i_thjonustu: b.i_thjonustu, skodun_manudur: b.skodun_manudur, bru_skodun_manudur: b.bru_skodun_manudur,
-          ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar,
+          ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar, saga: Array.isArray(b.saga) ? b.saga : [],
           kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null,
           eldvarnabok: Array.isArray(b.eldvarnabok) ? b.eldvarnabok : null };
       }),
       reports: (d.reports || []).map(function (r) {
-        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar };
+        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
@@ -303,6 +303,23 @@
     return m || null;
   }
   // 22.10.2026: SÍÐASTA skoðun (mánuður-ár, t.d. 08-25) — mánuðurinn úr skýrslunni, árið úr nýjustu skýrslu hvorrar þjónustu.
+  function sagaMerki(m) { var p = String(m).split('-'); return p[1] + '-' + String(p[0]).slice(-2); }
+  function sagaTxt(m) { var p = String(m).split('-'), n = MONTHS_IS[Number(p[1]) - 1] || ''; return n.charAt(0).toUpperCase() + n.slice(1) + ' ' + p[0]; }
+  function sagaMilli(a, b) { var x = String(a).split('-'), y = String(b).split('-'); return (Number(y[0]) - Number(x[0])) * 12 + (Number(y[1]) - Number(x[1])); }
+  // Skoðanasaga eignar: hver skoðun, mánuður-ár úr skýrslunni, og bilið frá næstu skoðun á undan.
+  function skodanasagaHtml(b, medSkjol) {
+    var Ls = b.saga || [];
+    if (!Ls.length) return '';
+    var rows = Ls.map(function (e, i) {
+      var prev = null;
+      for (var j = i + 1; j < Ls.length; j++) if (Ls[j].t === e.t) { prev = Ls[j]; break; }
+      var gap = prev ? sagaMilli(prev.m, e.m) : null;
+      return '<div class="drow"><span class="dd">' + esc(sagaMerki(e.m)) + '</span><span class="grow">' + esc(sagaTxt(e.m)) + ' · ' + (e.t === 'bru' ? 'Brunakerfi' : 'Slökkvitæki') +
+        (gap != null ? ' <span class="dim">· ' + gap + ' mán. frá skoðuninni á undan</span>' : '') + '</span>' + (medSkjol ? docLink('PDF', e.docId) : '') + '</div>';
+    }).join('');
+    return '<section class="dsec"><h4>Skoðanasaga <span class="cnt">' + tala(Ls.length, 'skoðun', 'skoðanir') + '</span></h4><div class="dpanel">' + rows + '</div>' +
+      '<p class="dim" style="font-size:12px;margin:8px 2px 0">Mánuðirnir eru þeir sem koma fram í skýrslunum sjálfum.</p></section>';
+  }
   function sidastaSkodunLinur(b) {
     var out = [];
     function add(lbl, month, yr) {
@@ -310,8 +327,12 @@
       if (!(month >= 1 && month <= 12) || !yr) return;
       out.push([lbl, (month < 10 ? '0' : '') + month + '-' + String(yr).slice(-2)]);
     }
-    if (b.i_thjonustu !== false) add('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
-    if (b.br) add('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+    var sg = b.saga || [], sgS = null, sgB = null;
+    sg.forEach(function (e) { if (e.t === 'slokk' && !sgS) sgS = e; if (e.t === 'bru' && !sgB) sgB = e; });
+    if (sgS) out.push(['Tæki', sagaMerki(sgS.m)]);
+    else if (b.i_thjonustu !== false) add('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
+    if (sgB) out.push(['Kerfi', sagaMerki(sgB.m)]);
+    else if (b.br) add('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
     return out;
   }
   // Tvær línur þegar húsið er í báðum þjónustum — slökk og brunakerfi ráða
@@ -834,12 +855,13 @@
       }
       html += '</section>';
     }
+    html += skodanasagaHtml(b, !!syn.skjol);
     // Skýrslur og reikningar eignarinnar
     if (syn.skjol) {
       var reps = (state.data.reports || []).filter(function (r) { return r.bygging === b.nafn; });
       html += '<section class="dsec"><h4>Skýrslur <span class="cnt">' + (reps.length ? tala(reps.length, 'skýrsla', 'skýrslur') : '') + '</span></h4><div class="dpanel">' +
         (reps.length ? reps.map(function (r) {
-          return '<div class="drow"><span class="dd">' + esc(fmtDate(r.dags)) + '</span><span class="grow">' + tegundPilla(r.tegund) + '</span>' + docLink('PDF', r.docId) + '</div>';
+          return '<div class="drow"><span class="dd">' + esc(r.skodun ? sagaMerki(r.skodun) : fmtDate(r.dags)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.skodun ? ' <span class="dim">skoðað ' + esc(sagaTxt(r.skodun).toLowerCase()) + '</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
         }).join('') : '<div class="dempty">Engar skýrslur skráðar.</div>') + '</div></section>';
       var invs = (state.data.invoices || []).filter(function (r) { return r.bygging === b.nafn; });
       if (invs.length) {
