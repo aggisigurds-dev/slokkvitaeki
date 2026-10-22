@@ -34,7 +34,7 @@
 
   const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
   // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir)
-  const UTLIT = 6;
+  const UTLIT = 7;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
@@ -563,6 +563,7 @@
   async function nyFestMynd(h, r, hvernig) {
     const cid = FP().companyId, hid = h.id, url0 = h.image_url, lyk = lykillHaedar(h);
     const vm = { utgafa: UTGAFA, utlit: UTLIT, lykill: lyk, cam: r.cam, heild: r.heild, rammi: r.rammi, b: r.b, h: r.h, kort: r.kort, veggH: r.veggH, sjalfg: r.sjalfg,
+      stigar: r.stigar && r.stigar.length ? r.stigar : (h.vinnumynd && h.vinnumynd.stigar) || undefined,
       frum: r.frum || h.frum || null, fest: hvernig, t: new Date().toISOString() };
     geymaIMinni(vmLykill(vm), { img: r.strigi, vm, b: r.b, h: r.h });
     V.nyjar[hid] = vm;

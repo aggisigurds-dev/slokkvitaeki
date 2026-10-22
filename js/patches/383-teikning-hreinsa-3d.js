@@ -3052,6 +3052,7 @@
         const P = lg.hopur.position, kv = lg.hopur.scale.x || 1, VH = lg.veggH, halfH = VH / 2;
         const lx = m => (m * u0 - P.x) / kv, lz = m => (m * u0 - P.z) / kv, sh = u0 / kv, hm = VH / LOFTH;   // metrar senunnar → hnit hæðarinnar
         const grp = new T.Group(); lg.stigar = grp; lg.hopur.add(grp);
+        lg.stigarGogn = h.stigar.map(q => ({ a: q.a.slice(), b: q.b.slice(), breidd: q.breidd, threp: q.threp, hlid: q.hlid, herb: q.herb ? q.herb.slice() : undefined }));
         // EFSTA hæð hússins (Agnar 22.10.2026: „1. hæð rís hann upp, en 2. rís hann niður“): stiginn kemur upp úr gólfinu og efsta þrepið endar í
         // gólfhæð — þar er teikningin að sýna stigann sem liggur niður á hæðina fyrir neðan, ekki upp í loft. Aðeins sé hæð fyrir neðan.
         const hsB = haedirBordsins().filter(x => x && x.image_url), idxB = hsB.findIndex(x => x.id === lg.hd.haedId), nidur = hsB.length >= 2 && idxB === hsB.length - 1 && lag.length >= 1;
@@ -3212,6 +3213,7 @@
             strigi: ut, cam, heild: [W, H], rammi, b: rammi[2], h: rammi[3],
             kort: { f: +f.toPrecision(10), gw: +lg.gw.toPrecision(10), gh: +lg.gh.toPrecision(10), sx: hd.sk.x, sy: hd.sk.y, sw: hd.sk.w, sh: hd.sk.h },
             veggH: +lg.veggH.toPrecision(8), sjalfg: +(lg.sjalfg || Math.max(lg.gw, lg.gh) * 0.004).toPrecision(8),
+            stigar: lg.stigarGogn || null,       // samræmdir stigar hæðarinnar (445 vistar þá í vinnumynd.stigar)
             bakgrunnur: [r0, g0, b0]
           };
         } finally {
@@ -3428,7 +3430,7 @@
           mork.z0 = Math.min(mork.z0, golf.z - golf.h / 2); mork.z1 = Math.max(mork.z1, golf.z + golf.h / 2); mork.y1 = Math.max(mork.y1, y + lg.lofth);
         });
         if (!ut.length) return null;
-        if (raun) { try { samraemaStiga(ut); } catch (e) { console.warn('[383] stigar milli hæða', e); } }
+        if (raun) { try { samraemaStiga(ut.concat(geymdarStigar())); } catch (e) { console.warn('[383] stigar milli hæða', e); } }
         const rnd = v => Math.round(v * 1000) / 1000;
         // Sjónarhorn: vélin eins og hún stendur (í gönguham: augun + það sem horft er á).
         const stefna = new T.Vector3(); vel.getWorldDirection(stefna);
@@ -3761,6 +3763,15 @@
     }
     if (fj) console.info('[383] stigar samræmdir milli hæða: ' + fj);
     return fj;
+  }
+
+  // Vistaðir stigar hæðanna (vinnumynd.stigar — samræmdir stigar síðustu smíði, með umgjörð stigaherbergis): nágrannar fyrir samraemaStiga þegar aðeins ÞESSI hæð er
+  // í senunni (lifandi 3D af einni hæð, Blender-beiðni) — án þeirra fengi 1. hæð stubbana aftur. Afrit, aldrei borðið sjálft.
+  function geymdarStigar() {
+    try {
+      return haedirBordsins().filter(x => x && x.vinnumynd && Array.isArray(x.vinnumynd.stigar) && x.vinnumynd.stigar.length && (x.vinnumynd.utlit || 0) >= 7)
+        .map(x => ({ haedId: x.id, geymt: true, stigar: x.vinnumynd.stigar.filter(q => q && q.a && q.b).map(q => ({ a: q.a.slice(), b: q.b.slice(), breidd: q.breidd, threp: q.threp, hlid: q.hlid, herb: q.herb ? q.herb.slice() : undefined })) }));
+    } catch (_) { return []; }
   }
 
   window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi, eldveggjaLinur, reiknaEld, klippaButa, festaAVegg, raun: { urSidu: raunUrSidu, aukagogn: raunAukagogn, rist: rymiRist, flokkur: flokkurHerb } };
