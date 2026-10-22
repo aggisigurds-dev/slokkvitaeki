@@ -166,6 +166,7 @@
     const r = c.getBoundingClientRect();
     let best = null, bd = 1e9;
     (p.markers || []).forEach(m => {
+      if (window.TeiknSia && TeiknSia.falid(m, FP() && FP().units)) return;   // falið með síunni (478) — ekki hægt að grípa
       const mx = (m.x > 1 || m.y > 1) ? m.x : m.x * c.width;
       const my = (m.x > 1 || m.y > 1) ? m.y : m.y * c.height;
       const sx = r.left + mx * (r.width / c.width);

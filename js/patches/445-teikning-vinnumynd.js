@@ -267,6 +267,7 @@
     const grunnBreidd = V.gamur ? grunnur().bs * M.b : 600;
     ((p && p.markers) || []).forEach(m => {
       if (!m) return;
+      if (window.TeiknSia && TeiknSia.falid(m, units)) return;   // falið með síunni (478)
       const fr = frumHnit(m, M, rymi), sp = aStad(fr[0], fr[1]), s = staerd(staerd100(m, grunnBreidd));
       if (!isFinite(sp[0]) || !isFinite(sp[1])) return;
       if (window.TeiknTakn && TeiknTakn.teiknaMerki) {
@@ -394,7 +395,7 @@
     const fingur = [cw, ch, dpr, V.s, V.x, V.y, M ? vmLykill(M.vm) : '-', rymi.x, rymi.y, ry.efst, ry.nedst, F && F._selectedUnitId, valid && valid.unitId,
       M ? staerd100({}, grunnur().bs * M.b) : 0, window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '',
       ((p && p.markers) || []).map(m => m ? [m.unitId, m.x, m.y, m.rot || 0, m.staerd || '', m.sign || '', m.takn || '', m.color || ''].join(':') : '').join('|'),
-      T && T.sameign && T.sameign(V.haedId) ? 'sameign' : '', grFingur()].join(';');
+      T && T.sameign && T.sameign(V.haedId) ? 'sameign' : '', grFingur(), window.TeiknSia ? 'sia:' + TeiknSia.lykill() : ''].join(';');
     if (!force && fingur === V.teiknad) return;
     V.teiknad = fingur;
     const W = Math.round(cw * dpr), H = Math.round(ch * dpr);

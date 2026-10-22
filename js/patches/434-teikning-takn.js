@@ -357,6 +357,7 @@
     const units = F.units || [];
     plan.markers.forEach(mk => {
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) return;
+      if (window.TeiknSia && TeiknSia.falid(mk, units)) return;   // falið með síunni (478)
       const x = mk.x || 0, y = mk.y || 0;
       const mx = (x > 1 || y > 1) ? x : x * cw;
       const my = (x > 1 || y > 1) ? y : y * ch;

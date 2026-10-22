@@ -33,6 +33,10 @@
   if (window.__teiknHreinsa3d) return;
   window.__teiknHreinsa3d = true;
 
+  // SÍA Á MERKI (478): flokkur merkis fyrir 3D og krókur sem sían kallar á þegar valið breytist
+  const siaFl = (mk, units) => (window.TeiknSia ? TeiknSia.flokkur(mk, units) : '');
+  window.TeiknSia3d = () => { try { if (G.syn3d && G.syn3d.siaBeita) G.syn3d.siaBeita(); } catch (_) {} };
+
   /* ───────────────────────── 1) HREINSUN — hrein gagnavinnsla ───────────────────────── */
 
   // Summutafla (integral image) yfir 0/1-grímu: kassasumma í O(1) → formfræði (erode/dilate) í O(W·H)
@@ -2139,6 +2143,8 @@
     const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     const taekiHlutir = [];     // líkön, stangir, kúlur og miðar tækjanna — falin þegar föst vinnumynd er tekin (fastMynd)
+    // SÍA (478): merki í falinni flokk (userData.sia) eru ekki sýnd; engu eytt
+    const siaBeita = () => { taekiHlutir.forEach(o => { const f = o.userData && o.userData.sia; if (f) o.visible = !(window.TeiknSia && TeiknSia.erFalinn(f)); }); };
     let staerst = 1, haedY = 0, haedYX = 0, vidmid = null, heilir = 0;
     const lg0StigaHlidrun = [];
     // LÍKAN TÆKIS: hópur með upphaf á gólfi við yfirborð veggjar, +z snýr út frá veggnum. e = vegghæðin (mælieining
@@ -2605,15 +2611,15 @@
         const litur = new T.Color(mk.litur || '#c93c1d'), rad = Math.max(k.gw, k.gh) * 0.012;
         if (mk.gerd) {
           const lk = taekjalikan(mk.gerd, 3 * metri, litur);     // tækin í raunstærð óháð lofthæð
-          lk.position.set(gx, 0, gz); lk.rotation.y = Math.atan2(fest.nx, fest.ny); hopur.add(lk); taekiHlutir.push(lk);
+          lk.position.set(gx, 0, gz); lk.rotation.y = Math.atan2(fest.nx, fest.ny); lk.userData.sia = mk.sia; hopur.add(lk); taekiHlutir.push(lk);
         }
         let grannar = 0;
         for (let j = 0; j < nrM; j++) if (Math.hypot(merki[j].x - mk.x, merki[j].y - mk.y) * f < naerri) grannar++;
         const toppur = 3 * metri * (1.55 + grannar * 0.85);
         const sG = new T.CylinderGeometry(rad * 0.1, rad * 0.1, toppur, 8), sE = new T.MeshLambertMaterial({ color: litur });
-        const stong = new T.Mesh(sG, sE); stong.position.set(gx, toppur / 2, gz); hopur.add(stong); taekiHlutir.push(stong);
+        const stong = new T.Mesh(sG, sE); stong.position.set(gx, toppur / 2, gz); stong.userData.sia = mk.sia; hopur.add(stong); taekiHlutir.push(stong);
         const kG2 = new T.SphereGeometry(rad * 0.7, 18, 12), kE2 = new T.MeshLambertMaterial({ color: litur, emissive: litur, emissiveIntensity: 0.35 });
-        const kula = new T.Mesh(kG2, kE2); kula.position.set(gx, toppur + rad, gz); kula.castShadow = true; hopur.add(kula); taekiHlutir.push(kula);
+        const kula = new T.Mesh(kG2, kE2); kula.position.set(gx, toppur + rad, gz); kula.castShadow = true; kula.userData.sia = mk.sia; hopur.add(kula); taekiHlutir.push(kula);
         losa.push(sG, sE, kG2, kE2);
         if (mk.texti) {
           const txt = String(mk.texti).slice(0, 18), letur = '700 34px system-ui,sans-serif';
@@ -2637,7 +2643,7 @@
           const mA = new T.CanvasTexture(ms), mE = new T.SpriteMaterial({ map: mA, depthTest: false, sizeAttenuation: false });
           const midi = new T.Sprite(mE);
           midi.center.set(0.5, -0.2); midi.renderOrder = 10;
-          midi.position.set(gx, toppur + rad * 2, gz); hopur.add(midi); taekiHlutir.push(midi);
+          midi.position.set(gx, toppur + rad * 2, gz); midi.userData.sia = mk.sia; hopur.add(midi); taekiHlutir.push(midi);
           losa.push(mA, mE); midar.push({ midi, hlutfall: ms.width / ms.height });
         }
       });
@@ -2754,6 +2760,7 @@
       if (nE + nB + nS) console.info('[383] innréttingar ' + (hd.nafn || lg.nr) + ': ' + nE + ' eldhús, ' + nB + ' böð' + (nS ? ', ' + nS + ' án veggjar' : ''));
     };
     lag.forEach(lg => { try { innretta(lg); } catch (e) { console.warn('[383] innréttingar', e); } });
+    siaBeita();
     // HÚSSÝNIN: þak á efstu hæð (útlína hússins úr gólfefnunum — án þeirra ekkert þak, ekki blað í fullri stærð) og engin tæki
     let thak = null, husA = 0, husAnim = null, husMerki = null;
     if (husH && lag.length) {
@@ -3355,6 +3362,7 @@
         return { x: r.left + (pt.x + 1) / 2 * r.width, y: r.top + (1 - pt.y) / 2 * r.height };
       },
       // Gegnsæir veggir: tækin og teikningin sjást í gegnum húsið.
+      siaBeita,
       gegnsaett(a) {
         veggEfni.forEach(e => { e.transparent = !!a; e.opacity = a ? 0.4 : 1; e.depthWrite = !a; e.color.setHex(e.userData.toppur ? (a ? 0x8a847a : utlit === 'gratt' ? GRATT_3D.toppur : TOPPLITUR_3D) : e.userData.litad ? (a ? 0xb4b0a8 : 0xffffff) : (a ? 0x9d978c : (e.userData.litur || VEGGLITUR_3D))); e.needsUpdate = true; });
         sporEfni.forEach(o => { o.visible = !!a; });
@@ -4464,7 +4472,7 @@
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
     const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + ((plan().stimpilStaerd) || '') + '|z' + Z.s;
-    const takn = window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '';
+    const takn = (window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '') + (window.TeiknSia ? '|sia:' + TeiknSia.lykill() : '');
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
       G.hamur, JSON.stringify(h.veggir), h.pdfVeggir.length + ':' + (h.pdfFlokkar || []).join(','), eldveggjaLinur(h).map(v => v.e + ':' + v.p.slice(0, 2).join(',')).join(';'), JSON.stringify(G.kedja), JSON.stringify(G.bendill), JSON.stringify(G.drag), mr.width, mr.height, stimpil, takn, ei,
@@ -4514,6 +4522,7 @@
     const units = (FP && FP.units) || [];
     (plan().markers || []).forEach(m => {
       if (!m || m.kind !== 'sign') return;
+      if (window.TeiknSia && TeiknSia.falid(m, units)) return;   // falið með síunni (478)
       const mx = ox + ((m.x > 1 || m.y > 1) ? m.x : m.x * c.width) * k;
       const my = oy + ((m.x > 1 || m.y > 1) ? m.y : m.y * c.height) * k;
       const s = (window.TeiknMerking && TeiknMerking.skjaStaerd)
@@ -4950,18 +4959,18 @@
       if (mk.kind === 'sign' || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('s:') === 0)) {
         const def = window.TeiknMerking && TeiknMerking.stimplar && TeiknMerking.stimplar.find(s => s.id === mk.sign);
         const txt = (def && (def.nafn || def.stutt)) || 'Merki';
-        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti' };
+        return { x: px, y: py, litur: mk.color || (def && def.litur) || '#c93c1d', texti: txt, gerd: gerdTaekis(null, mk.sign || 'skilti'), stimpill: mk.sign || 'skilti', sia: siaFl(mk, einingar) };
       }
       // „Nýtt"-tæki (TurboPaint: tillaga sem bíður samþykkis eiganda, ekkert skráð tæki): hlutlaus indígó-miði
       // „Nýtt · <tegund>" — aldrei grænn (tengt) né rauður (komið fram yfir).
       if (mk.nytt === true || (typeof mk.unitId === 'string' && String(mk.unitId).indexOf('n:') === 0)) {
-        return { x: px, y: py, litur: '#4f46e5', texti: 'Nýtt · ' + (mk.tegund || 'tæki'), gerd: gerdTaekis(mk.tegund), nytt: true };
+        return { x: px, y: py, litur: '#4f46e5', texti: 'Nýtt · ' + (mk.tegund || 'tæki'), gerd: gerdTaekis(mk.tegund), nytt: true, sia: siaFl(mk, einingar) };
       }
       const u = einingar.find(q => q.id === mk.unitId);
       // Á miðanum stendur TEGUNDIN (Léttvatn, Brunaslanga …) — Agnar 04.10.2026: „mjög flott … grænu pinnarnir sýndu
       // slökkvitæki eða brunaslöngur". Raðnúmerið sést í 2D-glugganum; það stendur hér aðeins ef tegund vantar.
       const radnr = u ? String(u.serial || '') : '';
-      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? (u.type ? String(u.type) : radnr.slice(-6)) : '', gerd: gerdTaekis(u && u.type) };
+      return { x: px, y: py, litur: u && u.status === 'overdue' ? '#c93c1d' : '#2f9e55', texti: u ? (u.type ? String(u.type) : radnr.slice(-6)) : '', gerd: gerdTaekis(u && u.type), sia: siaFl(mk, einingar) };
     });
     // Merki sem lendir UTAN myndarinnar (utan skurðar eða utan blaðsins — gömul staðsetning úr síma með rangri stærð)
     // sveif í lausu lofti við hlið hússins (Agnar 05.10.2026: „Tækin eru fyrir utan húsið"). Þau eru ekki teiknuð í 3D;
