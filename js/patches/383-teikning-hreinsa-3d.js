@@ -2065,6 +2065,7 @@
       for (let p = 0; p < N; p++) if (merki[p] === id && nafn[p] < 0) { nafnX[p] = k; nn++; }
       if (nn) heitinX.push({ teg: 'bad', x: r.sx / r.n / (kv * s), y: r.sy / r.n / (kv * s) });
     });
+    if (window.__golfDebug) console.info('[383] RYMI ' + (hd.nafn || '') + ' ' + JSON.stringify(rymi.filter(r => r.m2 >= 1).map(r => [Math.round(r.m2 * 10) / 10, Math.round(r.blekH * 1000), r.teg, Math.round(Math.min((r.x1 - r.x0 + 1), (r.y1 - r.y0 + 1)) / pxm * 10) / 10, Math.round(Math.max((r.x1 - r.x0 + 1), (r.y1 - r.y0 + 1)) / pxm * 10) / 10])));   // TÍMABUNDIÐ
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
     return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm,
       heitin: heitinX,
@@ -5381,7 +5382,7 @@
    * teikning er lesin einu sinni. Heitin fara í golfEfni (gólfefni, rýmishamur, talning). Ekkert skrifað í teikning_bord. */
   const HEITI_OCR = new Map();          // lykill → Promise<heiti | null>
   const heitiLykill = h => {
-    const t = String(h.image_url || '') + '|' + JSON.stringify(h.skurdur || {});
+    const t = String(h.image_url || '') + '|' + JSON.stringify(h.skurdur || {}) + '|v2';   // v2 = 22.10.2026: lesarinn les líka „VS“ (baðherbergi) — eldri lestrar náðu ekki þeim heitum
     let a = 2166136261; for (let i = 0; i < t.length; i++) { a ^= t.charCodeAt(i); a = Math.imul(a, 16777619); }
     return 'h' + (a >>> 0).toString(36);
   };
