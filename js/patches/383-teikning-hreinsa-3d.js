@@ -2648,7 +2648,10 @@
       const hT = new T.CanvasTexture(hs); hT.wrapS = hT.wrapT = T.RepeatWrapping; hT.anisotropy = 4;
       hT.repeat.set(w / (1.6 * m0), d / (1.6 * m0));
       const hE = new T.MeshBasicMaterial({ map: hT }), hG = new T.PlaneGeometry(w, d);   // óupplýst eins og gólfin (lárétt verður annars hvítt)
-      const hM = new T.Mesh(hG, hE); hM.rotation.x = -Math.PI / 2; hM.position.y = -0.04 * m0; lg0.hopur.add(hM);
+      // Neðsta hæð senunnar ER efsta hæð hússins (3D / vinnumynd af efri hæð einni): stiginn liggur niður úr gólfinu — hellurnar fara niður fyrir gryfjuna, annars hylja þær stigann
+      let jordNidur = 0;
+      try { const hsJ = haedirBordsins().filter(x => x && x.image_url), iJ = hsJ.findIndex(x => x.id === lg0.hd.haedId); if (hsJ.length >= 2 && iJ === hsJ.length - 1) jordNidur = (lg0.veggH || 0) + 0.1 * m0; } catch (_) {}
+      const hM = new T.Mesh(hG, hE); hM.rotation.x = -Math.PI / 2; hM.position.y = -0.04 * m0 - jordNidur; lg0.hopur.add(hM);
       losa.push(hT, hE, hG); lg0.hellur = hM;
     }
     // INNRÉTTINGAR (Agnar 11.10.2026: „eina fína týpu af eldhúsinnréttingu og klósett og vask"): við heitin Eldhús og Bað.
@@ -3409,6 +3412,8 @@
           const y = M(P.y);
           const haed = { nr: lg.nr, nafn: hd.nafn || (lg.nr + 1) + '. hæð', 'hæð': y, veggH: lg.lofth, golf, veggir, gler, hurdir, taeki };
           if (hd.haedId) haed.haedId = hd.haedId;        // raunsaett.py skilar því aftur með vinnuskjali hæðarinnar
+          // efsta hæð hússins (aðeins sé hæð fyrir neðan): blender/raunsaett.py lætur stigann liggja NIÐUR úr gólfinu (gat í plötuna + gryfja), eins og 3D-sýnin
+          if (raun) { try { const hsN = haedirBordsins().filter(x => x && x.image_url); if (hsN.length >= 2 && hd.haedId && hsN[hsN.length - 1].id === hd.haedId) haed.stigaNidur = true; } catch (_) {} }
           if (svalir.length) { haed.svalir = svalir; haed.svalirH = SVALIR_M; }   // sena.py: lágir veggir
           const pg = raun && o.pdf && hd.haedId && o.pdf[hd.haedId];
           if (pg && hd.frumB > 0 && hd.frumH > 0 && hd.sk) {
