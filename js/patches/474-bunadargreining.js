@@ -469,7 +469,7 @@
         function () { if (stefna === seinast && zl.isConnected) zl.innerHTML = '<div class="cfh-t">Teikningin náðist ekki</div>'; });
     };
     if (cid) {
-      Promise.all([SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1), SB().from('uttaeki').select('id,type').eq('fyrirtaeki_id', cid).limit(2000)]).then(function (rs) {
+      Promise.all([SB().from('teikning_bord').select('haedir').eq('company_id', cid).limit(1), DB.fetchAll(function (from, to) { return SB().from('uttaeki').select('id,type').eq('fyrirtaeki_id', cid).order('id').range(from, to); }).then(function (d) { return { data: d }; })]).then(function (rs) {
         var hs = (rs[0].data && rs[0].data[0] && rs[0].data[0].haedir) || [], u = {};
         ((rs[1] && rs[1].data) || []).forEach(function (x) { u[String(x.id)] = x.type || ''; });
         raun = { fl: hs.filter(function (h) { return h.id === haedId; })[0] || hs.filter(function (h) { return b.tki[0] && h.nafn === b.tki[0].haed; })[0] || null, ut: u };   // brunakerfisblöð bera aðeins heiti hæðar

@@ -323,7 +323,19 @@
     const hnappur = 'height:30px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + DOKKT + ';color:#f1ede4;font:700 12px system-ui,sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px';
     el.style.display = 'flex';
     el.innerHTML = '<button type="button" data-gr="1" aria-pressed="' + !!st.on + '" title="Sýna hönnunarstaði búnaðargreiningarinnar (strikaðir hringir) á meðan tækin eru sett — tæki sem er komið á staðinn dofnar" style="' + hnappur + (st.on ? ';background:' + GULL + ';color:#14120f;border-color:' + GULL : '') + '">Búnaðargreining · ' + at.length + '</button>' +
-      (st.on ? '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:340px">' + kinds.map(k => '<button type="button" data-gr-k="' + k + '" aria-pressed="' + !af.has(k) + '" style="' + hnappur + ';height:26px;padding:0 9px;font-size:11.5px;opacity:' + (af.has(k) ? '.45' : '1') + '"><i style="width:9px;height:9px;border-radius:50%;background:' + GR_L[k] + ';display:inline-block"></i>' + GR_H[k] + ' ' + at.filter(a => a.k === k).length + '</button>').join('') + '</div>' : '');
+      (st.on ? '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:100%">' + kinds.map(k => '<button type="button" data-gr-k="' + k + '" aria-pressed="' + !af.has(k) + '" style="' + hnappur + ';height:26px;padding:0 9px;font-size:11.5px;opacity:' + (af.has(k) ? '.45' : '1') + '"><i style="width:9px;height:9px;border-radius:50%;background:' + GR_L[k] + ';display:inline-block"></i>' + GR_H[k] + ' ' + at.filter(a => a.k === k).length + '</button>').join('') + '</div>' : '');
+    grStada();
+  }
+  // stýringin liggur undir hæðaflipunum (þeir sitja yfir efra vinstra horninu) og undir „Veggjum breytt"-línunni; á mjóum glugga víkur hún fyrir þysjuninni til hægri
+  function grStada() {
+    const g = V.gamur, el = g && g.querySelector('#fp-vm-gr'); if (!el || el.style.display === 'none') return;
+    const main = g.parentNode, fl = main && main.querySelector('#fp-haedir'), ur = g.querySelector('#fp-vm-urelt'), mr = main.getBoundingClientRect(), zk = main.offsetWidth ? mr.width / main.offsetWidth : 1;
+    let y = 10;
+    if (fl && fl.offsetParent) y = Math.max(y, (fl.getBoundingClientRect().bottom - mr.top) / zk + 8);
+    if (ur && ur.style.display !== 'none') y = Math.max(y, (ur.getBoundingClientRect().bottom - mr.top) / zk + 6);
+    const t = Math.round(y) + 'px', w = main.offsetWidth < 640 ? 'calc(100% - 232px)' : '340px';
+    if (el.style.top !== t) el.style.top = t;
+    if (el.style.maxWidth !== w) el.style.maxWidth = w;
   }
   const grFingur = () => { const st = GRV(); return st.on && V.gr ? 'g' + (st.af || []).join(',') + ':' + (V.gr.tki || []).length + ':' + V.haedId : ''; };
   // Myndir af tækjunum (img/taeki, 21.10.2026): ótengt tæki úr greiningu = rauða slökkvitækið án texta / rauða slöngukeflið / skynjarinn; aðrar gerðir (ÚT, handboði, stjórnstöð) halda hringnum
@@ -734,6 +746,7 @@
       ur.style.display = urSyn;
       if (urSyn === 'flex') { const fl = main.querySelector('#fp-haedir'), mr = main.getBoundingClientRect(), zk = main.offsetWidth ? mr.width / main.offsetWidth : 1; ur.style.top = Math.max(60, fl ? (fl.getBoundingClientRect().bottom - mr.top) / zk + 8 : 60) + 'px'; }
     }
+    grStada();
     // leiðsögn í 8 s þegar myndin sést fyrst í glugganum
     const hint = V.gamur.querySelector('#fp-vm-hint');
     if (synilegur && V.mynd && !V.hint) {
