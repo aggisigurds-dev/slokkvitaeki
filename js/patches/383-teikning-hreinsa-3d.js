@@ -3399,6 +3399,7 @@
           mork.z0 = Math.min(mork.z0, golf.z - golf.h / 2); mork.z1 = Math.max(mork.z1, golf.z + golf.h / 2); mork.y1 = Math.max(mork.y1, y + lg.lofth);
         });
         if (!ut.length) return null;
+        if (raun) { try { samraemaStiga(ut); } catch (e) { console.warn('[383] stigar milli hæða', e); } }
         const rnd = v => Math.round(v * 1000) / 1000;
         // Sjónarhorn: vélin eins og hún stendur (í gönguham: augun + það sem horft er á).
         const stefna = new T.Vector3(); vel.getWorldDirection(stefna);
@@ -3679,6 +3680,38 @@
       if (stigar.length) ut.stigar = stigar;
     }
     return ut;
+  }
+
+  /* STIGAR Á MILLI HÆÐA (Agnar 22.10.2026: „Efri hæðin á myndinni er með réttu stiga layout“ — 1. hæð fékk styttri arma og tóman pall):
+   * sama stigahús á tveimur hæðum er EINN stigi. Á neðri hæðinni sýnir teikningin aðeins fyrstu þrepin heil (restin er strikuð fyrir
+   * ofan skurðlínu) og þrepaleitin finnur því færri þrep og styttri arma. Pari hún stiga á annarri hæð (samsíða, miðjur — með bakarmi —
+   * innan 2 m í hnitum senunnar, hæðirnar liggja á sömu miðju) heldur sá sem hefur lengri arminn og hinn fær nákvæmlega sömu arma.
+   * Kallað í blenderSena, svo lifandi 3D, vinnumyndin og Blender sýni sama stiga. Skilar fjölda stiga sem voru samræmdir. */
+  function samraemaStiga(ut) {
+    const hh = (ut || []).filter(h => h && h.stigar && h.stigar.length);
+    if (window.__stigaDebug) console.info('[383][dbg] stigar fyrir samræmingu ' + JSON.stringify((ut || []).map(h => ({ nr: h.nr, golf: h.golf && [h.golf.x, h.golf.z, h.golf.w, h.golf.h], stigar: h.stigar }))));
+    if (hh.length < 2) return 0;
+    const geo = st => {
+      const dx = st.b[0] - st.a[0], dz = st.b[1] - st.a[1], L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L, w = +st.breidd || 1, sd = (st.hlid || 0) * (w + 0.06) / 2;
+      return { L, ux, uz, cx: (st.a[0] + st.b[0]) / 2 - uz * sd, cz: (st.a[1] + st.b[1]) / 2 + ux * sd };
+    };
+    let fj = 0;
+    for (let i = 0; i < hh.length; i++) for (let j = i + 1; j < hh.length; j++) {
+      hh[i].stigar.forEach((sa, ia) => {
+        const ga = geo(sa);
+        hh[j].stigar.forEach((sb, ib) => {
+          const gb = geo(sb);
+          if (Math.abs(ga.ux * gb.ux + ga.uz * gb.uz) < 0.9 || Math.hypot(ga.cx - gb.cx, ga.cz - gb.cz) > 2) return;
+          if (sa.threp === sb.threp && Math.abs(ga.L - gb.L) < 0.2) return;                  // þegar eins
+          const bFrekar = gb.L > ga.L + 0.05 || (Math.abs(gb.L - ga.L) <= 0.05 && sb.threp > sa.threp);
+          const fra = bFrekar ? sb : sa, til = bFrekar ? hh[i].stigar : hh[j].stigar, idx = bFrekar ? ia : ib;
+          til[idx] = { a: fra.a.slice(), b: fra.b.slice(), breidd: fra.breidd, threp: fra.threp, hlid: fra.hlid };
+          fj++;
+        });
+      });
+    }
+    if (fj) console.info('[383] stigar samræmdir milli hæða: ' + fj);
+    return fj;
   }
 
   window.Teikn3D = { syna: syna3d, kassarUrGrimu, heilirVeggir, husRammi, greiningarkvardi, eldveggjaLinur, reiknaEld, klippaButa, festaAVegg, raun: { urSidu: raunUrSidu, aukagogn: raunAukagogn, rist: rymiRist, flokkur: flokkurHerb } };
@@ -5030,17 +5063,33 @@
     u.dilarAMetra = (await metrar) || await dilarAMetra(h, fb, fh);
     tima.metrar = Math.round(t() - t0); t0 = t();
     // heiti herbergja + stigar: SÖMU gögn og lifandi 3D (fyllaHeitiOgStiga) — annars sýndi vistaða vinnumyndin parket alls staðar og enga stiga
-    const pdfKort = {};
-    await fyllaHeitiOgStiga([u], hs, [{ h, frum, stig1 }], pdfKort, { thak: 20000 });
+    // HINAR HÆÐIR HÚSSINS MEÐ (22.10.2026): sami stigi á báðum hæðum — samraemaStiga (blenderSena) þarf stiga beggja í sömu senu til að stubbarnir
+    // á neðri hæðinni (strikuð þrep) fái sömu arma og heili stiginn á þeirri efri. Aðeins ÞESSI hæð er mynduð (fastMynd haedId); bregðist hinar
+    // hæðirnar halda stigarnir sér eins og þeir eru.
+    const einingar = [{ i: hs.indexOf(h), u, hl: { h, frum, stig1 } }];
+    for (let i = 0; i < hs.length && einingar.length < 5; i++) {
+      const h2 = hs[i]; if (!h2 || h2.id === h.id || !h2.image_url) continue;
+      try {
+        const fr2 = await hladaMynd(h2.image_url), s2 = h2.skurdur ? skera(fr2, h2.skurdur) : fr2;
+        const u2 = undirbua(h2, s2, [], lesaVal(FP.companyId), [], fr2, []);
+        if (!u2.veggjaPx) continue;
+        u2.nafn = h2.nafn; u2.haedId = h2.id;
+        u2.dilarAMetra = await dilarAMetra(h2, fr2.naturalWidth || fr2.width, fr2.naturalHeight || fr2.height);
+        einingar.push({ i, u: u2, hl: { h: h2, frum: fr2, stig1: s2 } });
+      } catch (e) { console.warn('[383] vinnumynd: nágrannahæð ' + (h2.nafn || i), e); }
+    }
+    einingar.sort((p, q) => p.i - q.i);
+    const allarU = einingar.map(e => e.u), pdfKort = {};
+    await fyllaHeitiOgStiga(allarU, hs, einingar.map(e => e.hl), pdfKort, { thak: 20000 });
     tima.heiti = Math.round(t() - t0); t0 = t();
     const gamur = document.createElement('div');
     gamur.style.cssText = 'position:fixed;left:-30000px;top:0;width:1200px;height:900px;pointer-events:none;opacity:0';
     document.body.appendChild(gamur);
     let syn = null;
     try {
-      syn = await syna3d(gamur, { haedir: [u], utlit: 'gratt', anHellna: true, raunPdf: pdfKort });
+      syn = await syna3d(gamur, { haedir: allarU, utlit: 'gratt', anHellna: true, raunPdf: pdfKort });
       tima.svid = Math.round(t() - t0); t0 = t();
-      const r = syn.fastMynd(o);
+      const r = syn.fastMynd(Object.assign({ haedId: h.id }, o));
       if (!r) throw new Error('myndin teiknaðist ekki');
       tima.mynd3d = Math.round(t() - t0);
       r.frum = { b: fb, h: fh }; r.tima = tima;

@@ -34,7 +34,7 @@
 
   const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
   // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir)
-  const UTLIT = 3;
+  const UTLIT = 4;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
