@@ -998,8 +998,18 @@
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
-    html += umEignina(b) + (window.GattGreining ? GattGreining.eignHtml(b) : '') + kerfiHtml(b, false) + (window.GattVidhald ? GattVidhald.eignHtml(b) : '') + erindiHtml(b) + ebMinni(b) + (window.GattVidbot ? GattVidbot.eignHtml(b) : '') + (window.GattSaga ? GattSaga.eignHtml(b) : '') + (window.GattSkyrsla ? GattSkyrsla.eignHtml(b) : '');
-    // Teikningar
+    // Hlutarnir eru merktir (seg) og raðast í lokin: TEIKNINGAR efst, allar GREININGAR neðst (Agnar 22.10.2026)
+    function seg(n) { html += '\u0001' + n + '\u0001'; }
+    seg('um'); html += umEignina(b);
+    seg('grfast'); html += (window.GattGreining ? GattGreining.eignHtml(b) : '');
+    seg('kerfi'); html += kerfiHtml(b, false);
+    seg('vidhald'); html += (window.GattVidhald ? GattVidhald.eignHtml(b) : '');
+    seg('erindi'); html += erindiHtml(b);
+    seg('eb'); html += ebMinni(b);
+    seg('vidbot'); html += (window.GattVidbot ? GattVidbot.eignHtml(b) : '');
+    seg('saga'); html += (window.GattSaga ? GattSaga.eignHtml(b) : '');
+    seg('skyrsla'); html += (window.GattSkyrsla ? GattSkyrsla.eignHtml(b) : '');
+    seg('teikn');   // Teikningar
     var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
     var gf = syn.greining ? (b.teikning || []).filter(function (f) { return f && f.greining; }) : [];
     // Greining birtist aðeins þegar eitthvað er merkt á teikningarnar (annars tafla full af núllum)
@@ -1012,8 +1022,8 @@
         '</section>';
     }
     // Búnaðargreining (gatt/bunadargreining.js)
-    html += (window.GattBgr ? GattBgr.eignHtml(b) : '');
-    // Greining teikninga
+    seg('bgr'); html += (window.GattBgr ? GattBgr.eignHtml(b) : '');
+    seg('gf');   // Greining teikninga
     if (gf.length) {
       var tot = {}, ei60 = 0, ei30 = 0;
       gf.forEach(function (f) {
@@ -1034,8 +1044,8 @@
         }).join('') + '</tbody></table></div>' +
         '<div class="gnote">Samantekt úr merkingum Slökkvitækja ehf. á teikningum hússins.</div></section>';
     }
-    html += thorfHtml(b, syn);
-    // Búnaður
+    seg('thorf'); html += thorfHtml(b, syn);
+    seg('bunadur');   // Búnaður
     if (syn.taeki && Array.isArray(b.equipment)) {
       var eq = b.equipment;
       var groups = {}, order = [];
@@ -1055,8 +1065,8 @@
       }
       html += '</section>';
     }
-    html += skodanasagaHtml(b, !!syn.skjol);
-    // Skýrslur og reikningar eignarinnar
+    seg('sodsaga'); html += skodanasagaHtml(b, !!syn.skjol);
+    seg('skre');   // Skýrslur og reikningar eignarinnar
     if (syn.skjol) {
       var reps = (state.data.reports || []).filter(function (r) { return r.bygging === b.nafn; });
       html += '<section class="dsec"><h4>Skýrslur <span class="cnt">' + (reps.length ? tala(reps.length, 'skýrsla', 'skýrslur') : '') + '</span></h4><div class="dpanel">' +
@@ -1072,6 +1082,13 @@
           }).join('') + '</div></section>';
       }
     }
+    // RÖÐ (Agnar 22.10): mikilvægast fyrst — tækjastaða (yfirlit), erindi + senda erindi, eldvarnabók → teikningar → slökkvitækjayfirlit (búnaður, saga, skýrslur) → GREININGAR neðst
+    var segs = {}, nm = 'yfirlit';
+    html.split(/\u0001(\w+)\u0001/).forEach(function (x, i) { if (i % 2) nm = x; else segs[nm] = (segs[nm] || '') + x; });
+    var ROD = ['yfirlit', 'erindi', 'eb', 'bgr', 'teikn', 'bunadur', 'sodsaga', 'skre', 'saga', 'skyrsla', 'vidhald', 'vidbot', 'um'];
+    var GREININGAR = ['grfast', 'kerfi', 'gf', 'thorf'];
+    var grHtml = GREININGAR.map(function (k) { return segs[k] || ''; }).join('');
+    html = ROD.map(function (k) { return segs[k] || ''; }).join('') + (grHtml.replace(/\s+/g, '') ? '<div class="dgrp">Greiningar</div>' + grHtml : '');
     $('#dr-body').innerHTML = html;
     if (window.GattGreining) GattGreining.lifga(b);
     if (window.GattBgr) GattBgr.lifga(b);
