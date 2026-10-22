@@ -114,19 +114,25 @@ exports.handler = async (event) => {
       // Verkbeiðnir og verkefni af þjónustuvef (11.10.2026): opin mál + þau sem lokað var síðustu 30 daga, með myndum
       // (undirritaðar úr einkamáls-bucketinu gatt) og hæðinni sem punkturinn situr á, svo starfsmaður sjái staðinn.
       const verk = await verkListi();
+      // Erindi úr gáttinni (22.10.2026): öll mál með source 'gatt' — opin + lokuð síðustu 30 daga — svo starfsmaður geti svarað/lokað og kúnninn sjái svarið á erindinu.
+      const fra30 = new Date(Date.now() - 30 * 864e5).toISOString();
+      const er = await P.sbGet(`thjonustubeidni?source=eq.gatt&deleted_at=is.null&or=(status.in.(nytt,i_vinnslu),updated_at.gte.${encodeURIComponent(fra30)})&select=id,customer_base_id,fyrirtaeki_id,customer_nafn,title,summary,status,tags,svar,svarad_at,visun,created_at,abyrgd&order=created_at.desc&limit=150`);
+      const mal = er.ok ? await er.json() : [];
       // Notendur félaga (12.10.2026) + staðir hvers félags (til að afmarka notanda við eignir)
       const nr = await P.sbGet('portal_notendur?select=id,base_id,email,nafn,hlutverk,eignir,active,last_login,created_at,pass_hash&order=created_at.asc');
       const notendur = (nr.ok ? await nr.json() : []).map((n) => ({ id: n.id, base_id: n.base_id, email: n.email, nafn: n.nafn || '', hlutverk: n.hlutverk, eignir: n.eignir || null, active: n.active, last_login: n.last_login, hasPassword: !!n.pass_hash }));
       const bases = [...new Set(access.map((a) => a.base_id))];
       let stadir = [];
       if (bases.length) { const sr = await P.sbGet(`fyrirtaeki?customer_base_id=in.(${bases.join(',')})&deleted_at=is.null&select=id,customer_base_id,nafn,heimilisfang,er_i_thjonustu&order=nafn`); if (sr.ok) stadir = await sr.json(); }
-      const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id)]);
+      const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id), ...mal.map((m) => m.customer_base_id)]);
       verk.forEach((v) => { v.base_nafn = (names[v.base_id] || {}).nafn || ('#' + v.base_id); });
       return P.json(200, {
         access: access.map((a) => Object.assign(pubRow(a), { base_nafn: (names[a.base_id] || {}).nafn || ('#' + a.base_id) })),
         messages: messages.map((m) => ({ id: m.id, base_id: m.base_id, base_nafn: (names[m.base_id] || {}).nafn || ('#' + m.base_id),
           sender: m.sender, body: m.body, author_name: m.author_name, created_at: m.created_at, read_by_staff: m.read_by_staff })),
         verk, notendur, stadir,
+        mal: mal.map((m) => ({ id: m.id, base_id: m.customer_base_id, base_nafn: (names[m.customer_base_id] || {}).nafn || ('#' + m.customer_base_id), fid: m.fyrirtaeki_id,
+          af: m.customer_nafn || '', titill: String(m.title || '').replace(/\s+af þjónustuvef/i, ''), lysing: m.summary || '', status: m.status, tags: m.tags || [], svar: m.svar || null, svarad: m.svarad_at || null, visun: m.visun || [], dags: m.created_at, abyrgd: m.abyrgd || 'okkar' })),
       });
     }
 
@@ -357,6 +363,22 @@ exports.handler = async (event) => {
       const r = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=id,status`, { status, updated_at: new Date().toISOString() });
       if (!r.ok) return P.json(r.status, { error: 'Villa', detail: await r.text() });
       return P.json(200, { ok: true });
+    }
+
+    // Svara erindi úr gáttinni: svarið birtist á erindinu sjálfu hjá kúnnanum (Svarað), valfrjálst lokað (Lokið). Fer líka í skilaboðaþráðinn.
+    if (action === 'svara-mal') {
+      const id = parseInt(body.id, 10), svar = String(body.svar || '').trim().slice(0, 2000), loka = !!body.loka;
+      if (!id || !svar) return P.json(400, { error: 'id/svar vantar' });
+      const nu = new Date().toISOString();
+      const af = String(body.af || 'Slökkvitæki').slice(0, 60);
+      const patch = { svar, svarad_at: nu, updated_at: nu };
+      if (loka) Object.assign(patch, { status: 'klarad', lokid_at: nu, lokid_af: af, lokid_lysing: svar });
+      const pr = await P.sbPatch(`thjonustubeidni?id=eq.${id}&source=eq.gatt&deleted_at=is.null&select=id,customer_base_id,title,status`, patch);
+      if (!pr.ok) return P.json(pr.status, { error: 'Villa', detail: (await pr.text()).slice(0, 200) });
+      const rows = await pr.json(); const m = rows && rows[0];
+      if (!m) return P.json(404, { error: 'Mál fannst ekki' });
+      try { await P.sbPost('portal_messages', { base_id: m.customer_base_id, sender: 'starf', body: 'Svar við erindi: ' + String(m.title || '').replace(/\s+af þjónustuvef.*$/i, '') + '\n' + svar, author_name: af, read_by_staff: true }); } catch (_) {}
+      return P.json(200, { ok: true, status: m.status });
     }
 
     if (action === 'reply-msg') {
