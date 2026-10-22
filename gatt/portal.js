@@ -302,6 +302,18 @@
     (arr || []).forEach(function (y) { var n = Number(y); if (n > m) m = n; });
     return m || null;
   }
+  // 22.10.2026: SÍÐASTA skoðun (mánuður-ár, t.d. 08-25) — mánuðurinn úr skýrslunni, árið úr nýjustu skýrslu hvorrar þjónustu.
+  function sidastaSkodunLinur(b) {
+    var out = [];
+    function add(lbl, month, yr) {
+      month = Number(month); yr = Number(yr);
+      if (!(month >= 1 && month <= 12) || !yr) return;
+      out.push([lbl, (month < 10 ? '0' : '') + month + '-' + String(yr).slice(-2)]);
+    }
+    if (b.i_thjonustu !== false) add('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
+    if (b.br) add('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+    return out;
+  }
   // Tvær línur þegar húsið er í báðum þjónustum — slökk og brunakerfi ráða
   // hvor sinni dagsetningu. Aldrei eitt „næsta skoðun" fyrir báðar.
   function nextInspText(b) {
@@ -430,11 +442,12 @@
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         '<td>' + kerfiCell(b) + '</td>' +
         '<td><div class="yrs">' + boxes + '</div></td>' +
+        '<td><div class="next">' + (sidastaSkodunLinur(b).map(function (p) { return '<div><span class="lbl">' + esc(p[0]) + ':</span> <span class="num">' + esc(p[1]) + '</span></div>'; }).join('') || '<span class="dim">—</span>') + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
         '<td class="r"><div class="ract"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">' + svgIc('mappa') + 'Skjöl</a>' +
         '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="Senda fyrirspurn eða bæta við þjónustu">' + svgIc('erindi') + 'Erindi' + (opinErindi(b) ? '<i class="nb">' + opinErindi(b) + '</i>' : '') + '</button></div></td></tr>';
-    }).join('') || '<tr><td colspan="7" class="empty">Engar byggingar skráðar</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">Engar byggingar skráðar</td></tr>';
     foot('#yf-foot', (bldgs || []).length, (bldgs || []).length, ['bygging', 'byggingar'], ['byggingu', 'byggingum'], '');
     if (yfSia.q || yfSia.s) yfSiaBeita();
   }
@@ -1400,10 +1413,10 @@
   function yfCsv() {
     var bl = ((state.data && state.data.buildings) || []).filter(yfPassar);
     var M = ebManudir(), key = M[M.length - 1].key;
-    var h = ['Eign', 'Heimilisfang', 'Slökkvitæki', 'Brunaslöngur', 'Brunakerfi', 'Næsta skoðun', 'Kerfi skráð', 'Opin erindi', 'Eldvarnabók ' + M[M.length - 1].heiti];
+    var h = ['Eign', 'Heimilisfang', 'Slökkvitæki', 'Brunaslöngur', 'Brunakerfi', 'Síðasta skoðun', 'Næsta skoðun', 'Kerfi skráð', 'Opin erindi', 'Eldvarnabók ' + M[M.length - 1].heiti];
     var rows = bl.map(function (b) {
       var L = b.kerfi || [], sk = L.filter(function (k) { return kerfiStada(k) !== 'oskrad'; }).length;
-      return [b.nafn, b.heimilisfang, b.sl == null ? '' : b.sl, b.slo == null ? '' : b.slo, b.br ? 'Já' : 'Nei', String(b.nt || '').replace(/\|/g, ' / '),
+      return [b.nafn, b.heimilisfang, b.sl == null ? '' : b.sl, b.slo == null ? '' : b.slo, b.br ? 'Já' : 'Nei', sidastaSkodunLinur(b).map(function (p) { return p[0] + ' ' + p[1]; }).join(' / '), String(b.nt || '').replace(/\|/g, ' / '),
         L.length ? sk + ' af ' + L.length : '', opinErindi(b), Array.isArray(b.eldvarnabok) ? ebStadaTxt(b, ebRod(b, key)) : ''];
     });
     var csv = '﻿' + [h].concat(rows).map(function (r) { return r.map(function (v) { v = String(v == null ? '' : v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(';'); }).join('\r\n');
