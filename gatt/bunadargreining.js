@@ -50,7 +50,12 @@
     var t = totals(r), st = AF[b.id] || {}, sam = vf.reduce(function (n, f) { return n + t[f[0]]; }, 0);
     var fastar = (r.haedir || []).every(function (h) { return !!h.yl; });   // allar hæðir með fasta mynd: flokkasían á ekki við (myndin er tilbúin með öllum merkjum)
     // HEILDARTÖLUR EFST: slökkvitæki, brunaslöngur, útgangar … á allri eigninni
-    var efst = '<div class="bgr-top">' + vf.map(function (f) { return '<div class="bt"><b><i class="gdot" style="background:' + f[2] + '"></i>' + esc(f[1]) + '</b><strong>' + t[f[0]] + '</strong></div>'; }).join('') + '</div>';
+    // slökkvitæki og slöngur: hvað er skráð í þjónustu við hliðina á því sem teikningin segir að eigi að vera (Agnar 22.10.2026: „hvað þau eru með mörg slökkvitæki og slöngur")
+    var skrad = { sl: +b.sl || 0, bs: +b.slo || 0 };
+    var efst = '<div class="bgr-top">' + FL.filter(function (f) { return t[f[0]] > 0 || skrad[f[0]] > 0; }).map(function (f) {
+      var s = skrad[f[0]] || 0, sub = s > 0 ? '<small>' + s + ' skráð í þjónustu' + (t[f[0]] ? '' : ' · ekki merkt á teikningu') + '</small>' : '';
+      return '<div class="bt"><b><i class="gdot" style="background:' + f[2] + '"></i>' + esc(f[1]) + '</b><strong>' + (t[f[0]] || '—') + '</strong>' + sub + '</div>';
+    }).join('') + '</div>';
     var chips = vf.map(function (f) {
       return '<button type="button" class="gchip bgr-chip' + (st[f[0]] ? ' off' : '') + '" data-bgr-fl="' + f[0] + '" aria-pressed="' + (st[f[0]] ? 'false' : 'true') + '" title="Sýna / fela á teikningunum"><i class="gdot" style="background:' + f[2] + '"></i><b>' + t[f[0]] + '</b>' + esc(f[1]) + '</button>';
     }).join('');
