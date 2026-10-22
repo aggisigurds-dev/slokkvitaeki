@@ -320,6 +320,16 @@
     return '<section class="dsec"><h4>Skoðanasaga <span class="cnt">' + tala(Ls.length, 'skoðun', 'skoðanir') + '</span></h4><div class="dpanel">' + rows + '</div>' +
       '<p class="dim" style="font-size:12px;margin:8px 2px 0">Mánuðirnir eru þeir sem koma fram í skýrslunum sjálfum.</p></section>';
   }
+  // Dálkurinn „Síðasta skoðun“ í yfirlitinu: nýjasta skoðun hvorrar þjónustu + þær þrjár næstu á undan (skoðanasaga).
+  function sidastaSkodunHtml(b) {
+    var sg = b.saga || [];
+    return sidastaSkodunLinur(b).map(function (x) {
+      var tp = x[0] === 'Kerfi' ? 'bru' : 'slokk';
+      var eldri = sg.filter(function (e) { return e.t === tp; }).slice(1, 4).map(function (e) { return sagaMerki(e.m); });
+      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' +
+        (eldri.length ? '<div class="dim" style="font-size:11px;line-height:1.3;margin:-2px 0 4px">áður ' + esc(eldri.join(' · ')) + '</div>' : '');
+    }).join('');
+  }
   function sidastaSkodunLinur(b) {
     var out = [];
     function add(lbl, month, yr) {
@@ -463,7 +473,7 @@
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         '<td>' + kerfiCell(b) + '</td>' +
         '<td><div class="yrs">' + boxes + '</div></td>' +
-        '<td><div class="next">' + (sidastaSkodunLinur(b).map(function (p) { return '<div><span class="lbl">' + esc(p[0]) + ':</span> <span class="num">' + esc(p[1]) + '</span></div>'; }).join('') || '<span class="dim">—</span>') + '</div></td>' +
+        '<td><div class="next">' + (sidastaSkodunHtml(b) || '<span class="dim">—</span>') + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
         '<td class="r"><div class="ract"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">' + svgIc('mappa') + 'Skjöl</a>' +
