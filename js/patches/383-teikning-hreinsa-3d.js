@@ -2697,7 +2697,10 @@
       skapur: new T.MeshLambertMaterial({ color: 0xf3f2ee }), bordplata: new T.MeshLambertMaterial({ color: 0x45474b }),
       stal: new T.MeshLambertMaterial({ color: 0xc3c7cb }), svart: new T.MeshLambertMaterial({ color: 0x1d1e21 }),
       postulin: new T.MeshLambertMaterial({ color: 0xffffff }), vidur: new T.MeshLambertMaterial({ color: 0xb48c62 }),
-      kaeli: new T.MeshLambertMaterial({ color: 0xe6e7e8 }), spegill: new T.MeshLambertMaterial({ color: 0xc9d6de })
+      kaeli: new T.MeshLambertMaterial({ color: 0xe6e7e8 }), spegill: new T.MeshLambertMaterial({ color: 0xc9d6de }),
+      // húsgögn (Agnar 22.10.2026: „rúm í hótelherbergjum, borð og skrifborð í skrifstofum, sófa í stofum") — sömu litir og viðmiðunarmyndin
+      eik: new T.MeshLambertMaterial({ color: 0xcdaa78 }), hvitt: new T.MeshLambertMaterial({ color: 0xf3f1ec }), grar: new T.MeshLambertMaterial({ color: 0x9b948a }),
+      sofi: new T.MeshLambertMaterial({ color: 0xb3aa9d }), dokkt: new T.MeshLambertMaterial({ color: 0x3d4146 }), teppi: new T.MeshLambertMaterial({ color: 0x8a8f96 })
     };
     const innKassi = new T.BoxGeometry(1, 1, 1), innSivalingur = new T.CylinderGeometry(0.5, 0.5, 1, 22);
     losa.push(innKassi, innSivalingur); Object.values(INN).forEach(e => losa.push(e));
@@ -2776,6 +2779,89 @@
           }
         }
       });
+      // HÚSGÖGN eftir tegund rýmis (heiti): rúm í herbergjum, sófi + sófaborð í stofum, fundarborð með stólum eða skrifborð í vinnurýmum.
+      // Hvert húsgagn stendur í rétthyrningi rýmisins (úr nafnR) og er aðeins sett ef allt fótspor þess er inni í rýminu. Aðeins samsíða ásum.
+      try {
+        const kv = ge.kvs * bpm, bb = {};              // kv = reitir rýmisgrindar á metra
+        for (let p = 0; p < ge.nafnR.length; p++) {
+          const ix = ge.nafnR[p]; if (ix < 0) continue;
+          const px = p % ge.RW, py = (p / ge.RW) | 0, b = bb[ix] || (bb[ix] = { x0: 1e9, y0: 1e9, x1: -1, y1: -1, n: 0, sx: 0, sy: 0 });
+          if (px < b.x0) b.x0 = px; if (px > b.x1) b.x1 = px; if (py < b.y0) b.y0 = py; if (py > b.y1) b.y1 = py; b.n++; b.sx += px; b.sy += py;
+        }
+        const kassiM = (cx, cy, langsX, su, u, v, ln, wd, hh, y0, ef) => {
+          const uu = u * su, X = cx + (langsX ? uu : v) * bpm, Y = cy + (langsX ? v : uu) * bpm;
+          const me = new T.Mesh(innKassi, ef);
+          me.scale.set((langsX ? ln : wd) * m, hh * m, (langsX ? wd : ln) * m); me.position.set(X * f - gw2, (y0 + hh / 2) * m, Y * f - gh2);
+          g.add(me);
+        };
+        const stoll = (cx, cy, langsX, su, u, v) => { kassiM(cx, cy, langsX, su, u, v, 0.44, 0.44, 0.05, 0.43, INN.dokkt); kassiM(cx, cy, langsX, su, u, v, 0.08, 0.08, 0.4, 0, INN.dokkt); };
+        const bord = (cx, cy, langsX, su, u, v, ln, wd) => {
+          kassiM(cx, cy, langsX, su, u, v, ln, wd, 0.05, 0.72, INN.eik);
+          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(a => kassiM(cx, cy, langsX, su, u + a[0] * (ln / 2 - 0.08), v + a[1] * (wd / 2 - 0.08), 0.05, 0.05, 0.72, 0, INN.eik));
+        };
+        let nMub = 0; const hafn = { fyll: 0, staerd: 0, fot: 0, fotl: [] };
+        ge.heitin.forEach((q, ix) => {
+          if (q.teg !== 'svefn' && q.teg !== 'stofa' && q.teg !== 'vinnurymi') return;
+          const b = bb[ix]; if (!b || b.n < 30) { hafn.staerd++; return; }
+          const wX = (b.x1 - b.x0 + 1) / kv, wY = (b.y1 - b.y0 + 1) / kv, flatm = b.n / (kv * kv), fylling = b.n / ((b.x1 - b.x0 + 1) * (b.y1 - b.y0 + 1));
+          if (fylling < 0.5) { hafn.fyll++; hafn.fotl.push('f' + fylling.toFixed(2)); return; }
+          if (Math.min(wX, wY) < 2.0 || flatm < 6.5 || flatm > 70) { hafn.staerd++; hafn.fotl.push('s' + wX.toFixed(1) + 'x' + wY.toFixed(1)); return; }
+          const langsX = wX >= wY, L = Math.max(wX, wY), W = Math.min(wX, wY);
+          const cx = (b.x0 + b.x1 + 1) / 2 / ge.kvs, cy = (b.y0 + b.y1 + 1) / 2 / ge.kvs;
+          const mx = (b.sx / b.n + 0.5) / ge.kvs, my = (b.sy / b.n + 0.5) / ge.kvs;
+          const su0 = (langsX ? mx - cx : my - cy) >= 0 ? 1 : -1;      // hausinn / bakið að þeim enda sem hefur meira rými (hurðargat veikir hinn)
+          // fótspor (u langs, v þvers) miðað við miðju rétthyrnings rýmisins; hornin og miðjan verða að vera inni í rýminu
+          const innaf = (lx, sg, u0, v0, l0, w0) => [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]].every(a => { const uu = (u0 + a[0] * l0 / 2) * sg, vv = v0 + a[1] * w0 / 2; return iCellu(cx + (lx ? uu : vv) * bpm, cy + (lx ? vv : uu) * bpm, ix); });
+          // leitar að stað: fyrst sem næst enda/vegg (höfuðgafl að vegg), með aðgangsrými til hliðanna (kl), svo þrengra
+          const finna = (l0, w0, kl, endi) => {
+            for (const k of kl) for (const lx of [langsX, !langsX]) for (const sg of [su0, -su0]) {
+              const Lx = lx ? wX : wY;
+              for (let du = 0; du <= 1.8; du += 0.1) for (const dv of [0, 0.25, -0.25, 0.5, -0.5, 0.75, -0.75, 1.0, -1.0]) {
+                const u0 = endi ? -Lx / 2 + l0 / 2 + 0.12 + du : du - 0.9, v0 = dv;
+                if (innaf(lx, sg, u0, v0, l0, w0 + 2 * k)) return { lx, sg, u0, v0 };
+              }
+            }
+            return null;
+          };
+          if (q.teg === 'svefn') {
+            const tvi = flatm >= 10, bw = tvi ? 1.6 : 0.95, bl = 2.05;
+            const pl = finna(bl, bw, tvi ? [0.45, 0.22, 0] : [0.2, 0], true); if (!pl) { hafn.fot++; return; }
+            const { lx, sg, u0, v0 } = pl, k = (u, v, l, w, h, y0, ef) => kassiM(cx, cy, lx, sg, u0 + u, v0 + v, l, w, h, y0, ef);
+            k(0, 0, bl + 0.1, bw + 0.1, 0.25, 0, INN.eik);                       // grind
+            k(0.04, 0, bl - 0.1, bw, 0.2, 0.25, INN.hvitt);                      // dýna
+            k(bl * 0.2, 0, bl * 0.6, bw + 0.02, 0.05, 0.45, INN.grar);           // teppi
+            k(-bl / 2 + 0.05, 0, 0.08, bw + 0.1, 0.9, 0, INN.grar);              // höfuðgafl
+            (tvi ? [-bw / 4, bw / 4] : [0]).forEach(vv => k(-bl / 2 + 0.4, vv, 0.35, 0.55, 0.12, 0.45, INN.hvitt));   // koddar
+            if (tvi) [-1, 1].forEach(a => k(-bl / 2 + 0.25, a * (bw / 2 + 0.32), 0.42, 0.42, 0.42, 0, INN.eik));     // náttborð
+            nMub++;
+          } else if (q.teg === 'stofa') {
+            if (W < 2.4 || flatm < 10) { hafn.staerd++; return; }
+            const pl = finna(2.0, 0.9, [0.9, 0.5, 0.2], true); if (!pl) { hafn.fot++; return; }
+            const { lx, sg, u0, v0 } = pl, k = (u, v, l, w, h, y0, ef) => kassiM(cx, cy, lx, sg, u0 + u, v0 + v, l, w, h, y0, ef);
+            k(0, 0, 2.0, 0.9, 0.45, 0, INN.sofi); k(0, -0.34, 2.0, 0.22, 0.4, 0.45, INN.sofi);                      // sæti + bak
+            [-1, 1].forEach(a => k(a * 0.95, 0, 0.2, 0.9, 0.25, 0.45, INN.sofi));                                   // armar
+            k(0, 1.15, 1.0, 0.55, 0.04, 0.38, INN.eik); k(0, 1.15, 0.8, 0.35, 0.36, 0, INN.eik);                    // sófaborð
+            nMub++;
+          } else if (flatm >= 16 && W >= 3.0) {
+            const ln = Math.max(1.8, Math.min(3.6, L - 1.8)), wd = 1.0;
+            const pl = finna(ln + 0.8, wd + 0.8, [0, 0], false); if (!pl) { hafn.fot++; return; }
+            const { lx, sg, u0, v0 } = pl;
+            bord(cx, cy, lx, sg, u0, v0, ln, wd);
+            const nS = Math.max(2, Math.floor(ln / 0.7));
+            for (let i = 0; i < nS; i++) { const uu = u0 - ln / 2 + (i + 0.5) * ln / nS; stoll(cx, cy, lx, sg, uu, v0 - wd / 2 - 0.35); stoll(cx, cy, lx, sg, uu, v0 + wd / 2 + 0.35); }
+            nMub++;
+          } else {
+            const pl = finna(1.4, 0.7, [0.55, 0.3, 0], true); if (!pl) { hafn.fot++; return; }
+            const { lx, sg, u0, v0 } = pl, k = (u, v, l, w, h, y0, ef) => kassiM(cx, cy, lx, sg, u0 + u, v0 + v, l, w, h, y0, ef);
+            bord(cx, cy, lx, sg, u0, v0, 1.4, 0.7);
+            k(0.45, 0, 0.4, 0.5, 0.6, 0, INN.dokkt);          // skúffueining
+            k(0, -0.1, 0.5, 0.04, 0.3, 0.77, INN.dokkt);      // skjár
+            stoll(cx, cy, lx, sg, u0, v0 + 0.75);
+            nMub++;
+          }
+        });
+        if (nMub || hafn.fyll || hafn.staerd || hafn.fot) console.info('[383] húsgögn ' + (hd.nafn || lg.nr) + ': ' + nMub + ' rými (hafnað: fylling ' + hafn.fyll + ', stærð ' + hafn.staerd + ', fótspor ' + hafn.fot + ') ' + hafn.fotl.join(' '));
+      } catch (e) { console.warn('[383] húsgögn', e); }
       if (g.children.length) { lg.hopur.add(g); lg.innr = g; }
       if (nE + nB + nS) console.info('[383] innréttingar ' + (hd.nafn || lg.nr) + ': ' + nE + ' eldhús, ' + nB + ' böð' + (nS ? ', ' + nS + ' án veggjar' : ''));
     };
