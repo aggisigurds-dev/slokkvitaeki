@@ -193,6 +193,11 @@
       V + '.hl2-fot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;padding:11px 20px;background:#f4f6f9;border-top:1px solid #e3e7ee;font:500 11.5px/1.3 ' + MONO + ';color:#3a4250}',
       // 📱 Sími — spjöld á stálplötu
       V + '.hl2-mlist{display:flex;flex-direction:column;gap:10px;padding:12px;background-color:#e2e6ec;background-image:' + STAL + '}',
+      // 23.10.2026 (mál #1127, samþykkt): „Raða eftir“ efst í símalistanum — sömu raðanlegu dálkar og í tölvunni.
+      V + '.hl2-rada{display:flex;align-items:center;gap:8px}',
+      V + '.hl2-rada label{font:700 10px/1 ' + MONO + ';letter-spacing:.11em;text-transform:uppercase;color:#3a4250;flex:none}',
+      V + '.hl2-rada select' + K + '{flex:1;min-width:0;min-height:44px!important;padding:0 12px!important;border-radius:10px!important;border:1px solid #b8c0cc!important;background:#fff!important;color:#11141c!important;font-size:14px!important;font-weight:600!important}',
+      V + '.hl2-rada button' + K + '{flex:none;width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;border-radius:10px!important;border:1px solid #b8c0cc!important;background:#fff!important;color:#11141c!important}',
       V + '.hl2-mcard{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 1px rgba(10,14,22,.18),0 4px 10px rgba(10,14,22,.1)}',
       V + '.hl2-mtop{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;padding:12px 14px 4px}',
       V + '.hl2-mtop .hl2-kr{margin-left:auto;font-size:16px}',
@@ -813,6 +818,16 @@ ${''/* 08.10.2026 (Agnar: „i dont think i need a sumary of kreditfært"): Kred
         render();
       });
     });
+    // 23.10.2026 (mál #1127): „Raða eftir“ í símalistanum — sama staða og dálkahausarnir.
+    main.querySelector('._hr-rada')?.addEventListener('change', e => {
+      const k = e.target.value;
+      _state.sortKey = k; _state.sortDir = (k === 'created_at' || k === 'greitt' || k === 'samtals') ? 'desc' : 'asc';
+      render();
+    });
+    main.querySelector('._hr-rada-att')?.addEventListener('click', () => {
+      _state.sortDir = _state.sortDir === 'asc' ? 'desc' : 'asc';
+      render();
+    });
     // 23.09.2026 (afköst): síureiturinn kallaði á render() við HVERN staf — og render() byggir alla töfluna upp á nýtt.
     // Mælt á lifandi síðu: sýnin er 28.203 hnútar, svo hver áslátt reif þá alla út og byggði aftur. Nú er teikningin
     // dregin saman í eina umferð 180 ms eftir síðasta staf; sá sem skrifar hratt fær EINA teikningu í stað tíu.
@@ -1072,9 +1087,22 @@ ${''/* 08.10.2026 (Agnar: „i dont think i need a sumary of kreditfært"): Kred
   }
 
   // 📱 Sími — spjöld á stálplötu, ≥40px takkar, allar aðgerðir sýnilegar (lárétt skrun).
+  // 23.10.2026 (mál #1127): í símanum eru engir dálkahausar, svo röðunin kemur sem val efst — sömu lyklar og dálkarnir í
+  // tölvunni (sortRows). Sama staða (_state.sortKey/sortDir) og dálkahausarnir nota, svo valið fylgir yfir í töfluna.
+  const RADA_VAL = [['created_at', 'Skráð'], ['greitt', 'Greitt síðast'], ['samtals', 'Upphæð'], ['customer_nafn', 'Viðskiptavinur'], ['stada', 'Staða'], ['uppruni', 'Uppruni']];
+  const RADA_AUKA = { num: 'Skjal', greitt_med: 'Greiðslumáti', tegund: 'Tegund' };
+  function radaBarHtml() {
+    const val = RADA_VAL.slice();
+    if (!val.some(v => v[0] === _state.sortKey) && RADA_AUKA[_state.sortKey]) val.push([_state.sortKey, RADA_AUKA[_state.sortKey]]);
+    const opts = val.map(v => '<option value="' + v[0] + '"' + (v[0] === _state.sortKey ? ' selected' : '') + '>' + esc(v[1]) + '</option>').join('');
+    const asc = _state.sortDir === 'asc';
+    return '<div class="hl2-rada"><label for="_hr-rada-val">Raða eftir</label>' +
+      '<select id="_hr-rada-val" class="_hr-rada" aria-label="Raða eftir">' + opts + '</select>' +
+      '<button type="button" class="_hr-rada-att" aria-label="Röðun: ' + (asc ? 'hækkandi' : 'lækkandi') + ' — smelltu til að snúa við" title="' + (asc ? 'Hækkandi' : 'Lækkandi') + '">' + sortArrow(_state.sortKey) + '</button></div>';
+  }
   function mobileCardsHtml(rows) {
-    if (!rows.length) return '<div class="hl2-tomt">Engar hreyfingar</div>';
-    return '<div class="hl2-mlist">' + rows.map(cardMobileHtml).join('') + '</div>';
+    if (!rows.length) return '<div class="hl2-mlist">' + radaBarHtml() + '<div class="hl2-tomt">Engar hreyfingar</div></div>';
+    return '<div class="hl2-mlist">' + radaBarHtml() + rows.map(cardMobileHtml).join('') + '</div>';
   }
   function cardMobileHtml(s) {
     const k = ktCell(s.customer_kt);

@@ -16,9 +16,12 @@ function qrPNG(text,size){
 }
 async function nextSerialBlock(count,prefix){
   var pf=prefix||'NEW';
-  var r=await DB.sb.from('uttaeki').select('serial').like('serial',pf+'-%');
+  /* 23.10.2026 (samþykkt mál #1235): leitin gerði ráð fyrir bandstriki (NEW-0001) en miðarnir eru prentaðir ÁN bandstriks
+   * (NEW0001) — hún fann því aldrei neitt og hver lota byrjaði aftur á 0001 (tvítekin raðnúmer; VI0016–VI0019 voru þegar til).
+   * Nú finnast bæði form (SL-0206 og VI0019) og talið heldur áfram frá hæsta númeri. */
+  var r=await DB.sb.from('uttaeki').select('serial').like('serial',pf+'%').limit(5000);
   var maxN=0;
-  if(r.data){r.data.forEach(function(u){var m=u.serial.match(new RegExp('^'+pf+'-(\\d+)$'));if(m){var n=parseInt(m[1],10);if(n>maxN)maxN=n;}});}
+  if(r.data){r.data.forEach(function(u){var m=String(u.serial||'').match(new RegExp('^'+pf+'-?(\\d+)$'));if(m){var n=parseInt(m[1],10);if(n>maxN)maxN=n;}});}
   var serials=[];
   for(var i=0;i<count;i++){serials.push(pf+String(maxN+1+i).padStart(4,'0'));}
   return serials;
