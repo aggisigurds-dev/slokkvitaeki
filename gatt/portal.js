@@ -481,7 +481,7 @@
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
         '<td class="r"><div class="ract"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">' + svgIc('mappa') + 'Skjöl</a>' +
-        '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="Senda fyrirspurn eða bæta við þjónustu">' + svgIc('erindi') + 'Erindi' + (opinErindi(b) ? '<i class="nb">' + opinErindi(b) + '</i>' : '') + '</button></div></td></tr>';
+        '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (opinErindi(b) ? '<i class="nb">' + opinErindi(b) + '</i>' : '') + '</button></div></td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">Engar byggingar skráðar</td></tr>';
     foot('#yf-foot', (bldgs || []).length, (bldgs || []).length, ['bygging', 'byggingar'], ['byggingu', 'byggingum'], '');
     if (yfSia.q || yfSia.s) yfSiaBeita();
@@ -636,11 +636,10 @@
       '<label class="flabel" for="rl-text">' + RAIL_LBL[railKind] + '</label>' +
       '<textarea id="rl-text" rows="4" placeholder="' + esc(RAIL_PH[railKind]) + '">' + esc(old.text) + '</textarea>' +
       '<button type="button" class="gbtn" id="rl-send">' + svgIc('hak', 2) + 'Senda erindi</button>' +
-      '<div class="rl-note">Staðan birtist undir Erindi: Móttekið · Í vinnslu · Svarað · Lokið.</div></section>' +
-      '<section class="rl-card rl-list"><div class="kicker">Mín erindi</div>' +
-      (er.length ? '<div class="elist">' + er.slice(0, 4).map(function (e) { return erindiRod(e, true); }).join('') + '</div>' +
-        '<a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>'
-        : '<div class="rl-empty">Engin erindi enn. Það sem þú sendir hér birtist með stöðu.</div>') + '</section>';
+      // 23.10.2026 (Agnar: „óþarfi að hafa 2 eins útgáfur af erindi á forsíðunni"): „Mín erindi"-listinn undir forminu
+      // var sama efni og Erindi-spjaldið í yfirlitinu. Hér stendur nú aðeins skýringin og tengill á listann.
+      '<div class="rl-note">Staðan birtist undir Erindi: Móttekið · Í vinnslu · Svarað · Lokið.' +
+        (er.length ? ' <a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>' : '') + '</div></section>';
     erBadge();
   }
   document.addEventListener('click', function (e) {
@@ -1524,6 +1523,21 @@
   }
   function erindiEignar(b) { return ((state.data && state.data.erindi) || []).filter(function (e) { return b && e.fid === b.id; }); }
   function opinErindi(b) { return erindiEignar(b).filter(function (e) { return e.stada !== 'lokid'; }).length; }
+  // 23.10.2026 (Agnar: „mátt setja skýringu af hverju þetta erindi er opið"): opið erindi segir í einni línu hvar það
+  // stendur og hjá hverjum boltinn er — annars sést aðeins að það sé opið.
+  function erDagar(d) { if (!d) return 0; var n = Math.floor((Date.now() - new Date(d).getTime()) / 864e5); return n > 0 ? n : 0; }
+  function erOpidSkyring(e) {
+    if (!e || e.stada === 'lokid') return '';
+    var n = erDagar(e.dags), aldur = n ? ' · ' + n + (n === 1 ? ' dagur' : ' dagar') + ' síðan það var sent' : '';
+    if (e.stada === 'i_vinnslu') return 'Opið — í vinnslu hjá Slökkvitækjum ehf.' + aldur;
+    if (e.stada === 'svarad') return 'Opið — svarað' + (e.svarad ? ' ' + fmtDate(e.svarad) : '') + '; lokast þegar við ljúkum málinu' + aldur;
+    return 'Opið — móttekið' + (e.dags ? ' ' + fmtDate(e.dags) : '') + ', bíður þess að Slökkvitæki ehf. taki það til vinnslu' + aldur;
+  }
+  function opinErindiTitill(b) {
+    var L = erindiEignar(b).filter(function (e) { return e.stada !== 'lokid'; });
+    if (!L.length) return 'Senda fyrirspurn eða bæta við þjónustu';
+    return L.map(function (e) { return (ER_TEG[e.tegund] || 'Erindi') + ': ' + (e.titill || '') + ' — ' + erOpidSkyring(e); }).join('\n');
+  }
 
   // ── Kerfi á yfirliti: ein rönd per kerfi (litur = staða) + „x af y skráð" ──
   function kerfiCell(b) {
@@ -1596,6 +1610,7 @@
       (e.lysing ? '<div class="er-l">' + esc(e.lysing) + '</div>' : '') +
       (vis ? '<div class="er-v">' + vis + '</div>' : '') +
       '<div class="erstep">' + ER_SKREF.map(function (s, j) { return '<span class="' + (j < i ? 'buid' : j === i ? 'nu' : '') + '">' + esc(s[1]) + (j <= i ? erStepDags(e, s[0]) : '') + '</span>'; }).join('') + '</div>' +
+      (e.stada !== 'lokid' ? '<div class="er-why">' + esc(erOpidSkyring(e)) + '</div>' : '') +
       (e.svar ? '<div class="er-svar"><b>Svar frá Slökkvitækjum ehf.</b>' + esc(e.svar) + '</div>' : '') +
       (e.lokid_lysing && e.lokid_lysing !== e.svar ? '<div class="er-svar"><b>Lokið</b>' + esc(e.lokid_lysing) + '</div>' : '') +
       (window.GattPunktar ? GattPunktar.erindiAuki(e) : '') + '</div>';
