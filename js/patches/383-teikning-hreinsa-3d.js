@@ -1763,6 +1763,7 @@
     if (/herb|hjon|svefn|barnah/.test(t)) return { teg: 'svefn' };
     if (/forst|(^| )hol( |$|\.)|andyr|andd|skali|inng/.test(t)) return { teg: 'forstofa' };
     if (/geyms|(^| )fot|fatah/.test(t)) return { teg: 'geymsla' };
+    if (/^(rymi|rvmi|rym[il1])( |\d|$)/.test(t)) return { teg: 'rymi' };   // „Rými 15,3 m²“ — heiti gistiherbergja á sumum hótelteikningum (S30); verður herbergi hér neðar ef húsið er hótel
     return null;
   }
   const EFNI_AF_TEG = t => t === 'bad' || t === 'thvottur' ? 'bad' : t === 'svalir' ? 'svalir' : t === 'stigahus' || t === 'gangur' || t === 'lyfta' || t === 'sameign' ? 'sameign' : t === 'verkstaedi' ? 'steypa' : 'parket';
@@ -1880,6 +1881,12 @@
     });
     // anddyri / forstofa inni í greindri sameign (446) = anddyri hússins, ekki íbúðar
     if (TS && sm && ((sm.svaedi || []).length || sm.heil)) heitin.forEach(q => { if (q.teg === 'forstofa' && TS.iSameign(sm, q.cx / (kv * s), q.cy / (kv * s), 0)) q.teg = 'sameign'; });
+    // „Rými“ er aðeins herbergi þar sem húsið er greinilega hótel: ≥ 3 „Rými“ og ≥ 2 bað á hæðinni og færri nefnd herbergi en „Rými“
+    {
+      const nR = heitin.filter(q => q.teg === 'rymi').length, nB = heitin.filter(q => q.teg === 'bad').length, nS = heitin.filter(q => q.teg === 'svefn').length;
+      heitin.forEach(q => { if (q.teg === 'rymi') q.teg = (nR >= 3 && nB >= 2 && nS < nR) ? 'svefn' : ''; });
+      for (let i = heitin.length - 1; i >= 0; i--) if (!heitin[i].teg) heitin.splice(i, 1);
+    }
     heitin.forEach(q => { if (q.p >= 0) { const r = rymi[merki[q.p]]; (r.heiti = r.heiti || []).push(q.teg); } });
     rymi.forEach(r => { r.m2 = r.n / (pxm * pxm); r.blekH = r.blek / r.n; });
     const midB = rymi.filter(r => r.m2 >= 6 && r.m2 <= 40).map(r => r.blekH).sort((a, b) => a - b);
@@ -5499,7 +5506,7 @@
    * teikning er lesin einu sinni. Heitin fara í golfEfni (gólfefni, rýmishamur, talning). Ekkert skrifað í teikning_bord. */
   const HEITI_OCR = new Map();          // lykill → Promise<heiti | null>
   const heitiLykill = h => {
-    const t = String(h.image_url || '') + '|' + JSON.stringify(h.skurdur || {}) + '|v2';   // v2 = 22.10.2026: lesarinn les líka „VS“ (baðherbergi) — eldri lestrar náðu ekki þeim heitum
+    const t = String(h.image_url || '') + '|' + JSON.stringify(h.skurdur || {}) + '|v3';   // v2 = 22.10.2026: lesarinn les líka „VS“ (baðherbergi); v3: líka „Rými“ (gistiherbergi á S30) — eldri lestrar náðu ekki þeim heitum
     let a = 2166136261; for (let i = 0; i < t.length; i++) { a ^= t.charCodeAt(i); a = Math.imul(a, 16777619); }
     return 'h' + (a >>> 0).toString(36);
   };
