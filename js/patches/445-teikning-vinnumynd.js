@@ -125,14 +125,14 @@
   }
   /* Dílar myndarinnar → staður í dílum FRUMMYNDAR. Geislinn sker fyrst vegg (kassi) eða gólfið (y = 0). Á vegg: tækið
    * fer á flöt hans þeim megin sem smellt var — sama regla og festaAVegg í 3D (fjarlægð = hálf þykkt + 1,5 díll). */
-  function afvarpa(lyk, vm, px, py) {
+  function afvarpa(lyk, vm, px, py, golf) {
     const G = veggjaGogn(lyk, vm); if (!G.inv) return null;
     const nx = (px + vm.rammi[0]) / vm.heild[0] * 2 - 1, ny = 1 - (py + vm.rammi[1]) / vm.heild[1] * 2;
     const o = margf(G.inv, nx, ny, -1), b = margf(G.inv, nx, ny, 1), d = [b[0] - o[0], b[1] - o[1], b[2] - o[2]];
     if (!(d[1] < -1e-12)) return null;
     let t = -o[1] / d[1], vegg = -1;
     const hH = vm.veggH / 2;
-    for (const q of G.kassar) {
+    for (const q of (golf ? [] : G.kassar)) {
       const ox = o[0] - q.cx, oz = o[2] - q.cz;
       const lo = [ox * q.ux + oz * q.uz, o[1] - hH, -ox * q.uz + oz * q.ux], ld = [d[0] * q.ux + d[2] * q.uz, d[1], -d[0] * q.uz + d[2] * q.ux];
       const ext = [q.hl, hH, q.ht];
@@ -440,12 +440,14 @@
     return best;
   }
   // Pointer → hnit ritilsins (dílar frummyndar − hliðrun skurðar), eða null utan myndar.
-  function hnitUr(e) {
+  // golf = satt: aðeins gólffletinum (veggjakassar hunsaðir). Tæki eru teiknuð á gólfhæð — dráttur verður að nota SÖMU vörpun, annars hoppar tækið
+  // þegar bendillinn fer yfir vegg (geislinn lendir á veggkassanum og tækið er fest á vegghlið langt frá gólfpunktinum; Agnar 23.10.2026).
+  function hnitUr(e, golf) {
     const M = V.mynd; if (!M || !V.gamur) return null;
     const p = skjaHnit(e); if (!p.inni) return null;
     const gr = grunnur(), q = aMynd(gr, p.x, p.y);
     if (q[0] < -2 || q[1] < -2 || q[0] > M.b + 2 || q[1] > M.h + 2) return null;
-    const a = afvarpa(vmLykill(M.vm), M.vm, q[0], q[1]); if (!a || !isFinite(a.u) || !isFinite(a.v)) return null;
+    const a = afvarpa(vmLykill(M.vm), M.vm, q[0], q[1], golf); if (!a || !isFinite(a.u) || !isFinite(a.v)) return null;
     const r = TB().rymi ? TB().rymi() : { x: 0, y: 0 };
     return { x: Math.round(a.u - r.x), y: Math.round(a.v - r.y), vegg: a.vegg };
   }
@@ -511,7 +513,7 @@
       const q = V.p; if (!q || q.id !== e.pointerId) return;
       if (!q.dregid && Math.hypot(e.clientX - q.x0, e.clientY - q.y0) > 5) { q.dregid = true; clearTimeout(q.lp); }
       if (!q.dregid) return;
-      if (q.hit) { const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }); if (t) { q.hit.x = t.x; q.hit.y = t.y; } }
+      if (q.hit) { const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }, true); if (t) { q.hit.x = t.x; q.hit.y = t.y; } }
       else { V.x += dx; V.y += dy; }
     });
     const upp = e => {
@@ -522,7 +524,7 @@
       if (e.type === 'pointercancel') { if (q.hit && q.dregid) { q.hit.x = q.fraX; q.hit.y = q.fraY; } return; }
       if (q.dregid) {
         if (!q.hit) return;
-        const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }); if (t) { q.hit.x = t.x; q.hit.y = t.y; }
+        const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }, true); if (t) { q.hit.x = t.x; q.hit.y = t.y; }
         const T = TM();
         if (T && T.faert) T.faert(q.hit, q.fraX, q.fraY);
         else if (T) { try { TB().samstilla(); } catch (_) {} T.vistaAdThjoni(); }
