@@ -192,7 +192,7 @@
       if (res.j.erindi) Object.assign(e0, res.j.erindi); else { e0.einkunn = body.stjornur; if (ath !== undefined) e0.einkunn_ath = ath; }
       var holf = hnappur && hnappur.closest('.vb-auki');
       if (holf) { var ny = document.createElement('div'); ny.innerHTML = erindiAuki(e0, !!hnappur.closest('#vb-pop')); if (ny.firstChild) holf.replaceWith(ny.firstChild); }
-      toast(ath !== undefined ? 'Takk — athugasemdin er komin til okkar' : 'Takk fyrir einkunnina');
+      toast(ath !== undefined ? 'Takk — athugasemdin er komin til Brunahólfs' : 'Takk fyrir einkunnina');
     });
   }
   document.addEventListener('click', function (ev) {
@@ -435,13 +435,15 @@
         (e.punktur ? '<button type="button" class="kbtn sm" data-vb-syna="' + e.id + '" title="Sjá á teikningu">' + ic('teikning', 1.8) + '</button>' : '') +
         '<span class="vb-ab ' + esc(e.abyrgd || 'okkar') + '">' + esc(ABYRGD[e.abyrgd] || ABYRGD.okkar) + '</span></div>';
     }
-    var opM = min.filter(function (e) { return e.stada !== 'lokid'; }).length, opO = okkar.filter(function (e) { return e.stada !== 'lokid'; }).length;
-    return '<div class="egp-h"><b>Verkefni</b><span>' + opM + ' mín · ' + opO + ' hjá okkur</span></div>' +
+    // 23.10.2026 (Agnar: „Taka allt sem stendur til okkar … setja frekar + Verkbeiðni til Brunahólf"): verkbeiðnir til
+    // Brunahólfs eiga heima undir Erindi (með stöðu og skýringu) — hér standa aðeins verkefni kúnnans sjálfs og annarra
+    // verktaka, og takkinn býr til verkbeiðni til Brunahólfs.
+    var opM = min.filter(function (e) { return e.stada !== 'lokid'; }).length;
+    return '<div class="egp-h"><b>Verkefni</b><span>' + opM + ' opin · ' + (min.length - opM) + ' lokið</span></div>' +
       '<div class="vs-sub">Mín verkefni og annarra verktaka</div>' +
       (min.length ? min.slice(0, 12).map(rod).join('') : '<div class="egp-e">Engin verkefni enn — „Nýtt verkefni" setur verk á borðið þitt, með mynd og punkti á teikningu ef vill.</div>') +
-      '<div class="vs-sub">Verkbeiðnir til Slökkvitækja ehf.</div>' +
-      (okkar.length ? okkar.slice(0, 12).map(rod).join('') : '<div class="egp-e">Engar verkbeiðnir enn.</div>') +
-      '<div class="vs-foot"><button type="button" class="gbtn sm" data-vs-nytt>' + ic('plus', 2.2) + 'Nýtt verkefni</button><button type="button" class="kbtn sm" data-vs-nytt-okkar>' + ic('plus', 2.2) + 'Verkbeiðni til okkar</button></div>';
+      (okkar.length ? '<div class="vs-sub">' + okkar.filter(function (e) { return e.stada !== 'lokid'; }).length + ' verkbeiðnir hjá Brunahólfi í vinnslu — sjá Erindi</div>' : '') +
+      '<div class="vs-foot"><button type="button" class="gbtn sm" data-vs-nytt>' + ic('plus', 2.2) + 'Nýtt verkefni</button><button type="button" class="kbtn sm" data-vs-nytt-okkar>' + ic('plus', 2.2) + 'Verkbeiðni til Brunahólfs</button></div>';
   }
   /* Tenglastika (12.10.2026, Agnar: „auka stika við hliðina á vinnusvæði … bætt við þínum eigin linkum … textinn
      hverfur þegar fyrsti hlekkurinn er kominn"). Vistuð í portal_users.stillingar.hlekkir = [{h, u}]. */
@@ -1445,7 +1447,7 @@
   });
   window.GattSkyrsla = { opna: opnaSk, eignHtml: skEignHtml };
 
-  window.GattVinnusvaedi = { render: renderVinnusvaedi, demo: demo };
+  window.GattVinnusvaedi = { render: renderVinnusvaedi, demo: demo, verkefniHtml: verkefniHtml };
   window.GattVidhald = { eignHtml: eignHtml, render: renderVidhald };
   window.GattGreining = { eignHtml: grEignHtml, lifga: grLifga };
   window.GattSaga = { eignHtml: sagaHtml };

@@ -29,7 +29,7 @@ window.GATT_VERKFAERI = [
   { k: 'eldvarnabok', heiti: 'Eldvarnabók', lysing: 'Mánaðarlegt eigið eftirlit, undirritað í gáttinni', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'vinnusvaedi', heiti: 'Mitt vinnusvæði', lysing: 'Flipinn sjálfur — einingarnar hér fyrir neðan eru hver með sinn rofa', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'checklisti', heiti: 'Checklisti', lysing: 'Frjáls atriði kúnnans með stjörnu og hökum', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
-  { k: 'verkefni', heiti: 'Verkefni', lysing: 'Mín verkefni og verkbeiðnir til okkar sem gátlisti', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
+  { k: 'verkefni', heiti: 'Verkefni', lysing: 'Mín verkefni sem gátlisti — og verkbeiðnir til Brunahólfs', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'dagatal', heiti: 'Dagatal', lysing: 'Skoðanir, viðhald, skírteini, frestir og erindi á mánaðardagatali', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'vidhald', heiti: 'Viðhaldsáætlun og skírteini', lysing: 'Tíðni per kerfi, næsta dagsetning, áminning, skírteini með gildistíma', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'kort', heiti: 'Kort og leit í Landeignaskrá', lysing: 'Allar eignir á korti; leit og „Bæta við eign"', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },

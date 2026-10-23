@@ -837,6 +837,7 @@ exports.handler = async (event) => {
     // „196 einingar í kerfinu" í 274: iLagi + ekki per búnaðarlínu), annars unit_count áskriftarkortsins. Arnarhvoll:
     // kortið sagði 0, skýrslan 196 — gáttin sýndi aðeins „Já".
     const bruEinById = {};
+    const bruEinByIdAr = {};   // fid → { ár → einingar } fyrir skýrslulistann (Agnar 23.10: „tækjafjöldi og einingafjöldi má koma hérna")
     try {
       if (siteIds.length) {
         const br = await P.sbGet(`brunakerfi_skyrslur?fyrirtaeki_id=in.(${siteIds.join(',')})&select=fyrirtaeki_id,year,status,bunadur:data->bunadur&order=year.desc`);
@@ -844,11 +845,17 @@ exports.handler = async (event) => {
           const best = {};
           (await br.json()).forEach((r) => {
             if (r.fyrirtaeki_id == null || !r.year) return;
-            const cur = best[r.fyrirtaeki_id];
+            const bun = Array.isArray(r.bunadur) ? r.bunadur : [];
+            const nAr = bun.reduce((t, x) => t + (+(x && x.iLagi) || 0) + (+(x && x.ekki) || 0), 0);
             const fin = r.status === 'final';
+            if (nAr > 0) {
+              const m = bruEinByIdAr[r.fyrirtaeki_id] = bruEinByIdAr[r.fyrirtaeki_id] || {};
+              if (m[+r.year] == null || (fin && !m[+r.year].fin)) m[+r.year] = { n: nAr, fin };
+            }
+            const cur = best[r.fyrirtaeki_id];
             if (cur && (cur.fin && !fin || cur.year > +r.year && cur.fin === fin)) return;
             if (cur && cur.year === +r.year && cur.fin && !fin) return;
-            best[r.fyrirtaeki_id] = { year: +r.year, fin, bunadur: Array.isArray(r.bunadur) ? r.bunadur : [] };
+            best[r.fyrirtaeki_id] = { year: +r.year, fin, bunadur: bun };
           });
           Object.keys(best).forEach((id) => {
             const n = best[id].bunadur.reduce((t, x) => t + (+(x && x.iLagi) || 0) + (+(x && x.ekki) || 0), 0);
@@ -1084,6 +1091,17 @@ exports.handler = async (event) => {
       }
     });
 
+    // 23.10.2026 (Agnar: „Tækjafjöldi og einingafjöldi má koma hérna" — dálkurinn „Tæki í skýrslunni" stóð „—"):
+    // slökkvitækjaskýrsla = skyrsla_taeki_alls, annars summa „Tæki í skýrslunni" úr skyrsla_vidbot; brunakerfisskýrsla =
+    // einingar skoðunar sama árs (brunakerfi_skyrslur, iLagi+ekki — sama tala og í appinu). Aldrei upphæð reiknings.
+    const skyrsluMagn = (d) => {
+      if (d.doc_type === 'brunakerfi') { const m = bruEinByIdAr[d.fyrirtaeki_id]; const e = m && d.year != null ? m[+d.year] : null; return e ? e.n : null; }
+      if (d.skyrsla_taeki_alls != null) return d.skyrsla_taeki_alls;
+      const v = d.skyrsla_vidbot && typeof d.skyrsla_vidbot === 'object' ? d.skyrsla_vidbot : null;
+      const t = v && Array.isArray(v.taeki) ? v.taeki : null;
+      if (t && t.length) { const n = t.reduce((s, x) => s + (Array.isArray(x) ? (+x[1] || 0) : (+(x && x.fj) || 0)), 0); if (n > 0) return n; }
+      return null;
+    };
     // Ein skýrsla per (bygging, tegund, ár) — sama regla og aðal-yfirlitin.
     const reports = dedupeDocs(
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
@@ -1091,7 +1109,7 @@ exports.handler = async (event) => {
     )
       // 23.10.2026 (Agnar: „sýna … heimilisfang, heildarfjölda tækja, mánuð skoðunar"): heimilisfang staðarins og tækjafjöldi úr skýrslunni
       .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: skMan(d), heimilisfang: adrById[d.fyrirtaeki_id] || '', texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
-        bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.skyrsla_taeki_alls != null ? d.skyrsla_taeki_alls : (d.amount != null ? d.amount : null) }))
+        bygging: nafnById[d.fyrirtaeki_id] || '', magn: skyrsluMagn(d), eining: d.doc_type === 'brunakerfi' ? 'einingar' : 'tæki' }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
     // Einn reikningur per reikningsnúmer (ver gegn tvítekningum úr fleiri heimildum).

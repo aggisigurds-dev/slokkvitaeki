@@ -269,7 +269,7 @@
           eldvarnabok: Array.isArray(b.eldvarnabok) ? b.eldvarnabok : null };
       }),
       reports: (d.reports || []).map(function (r) {
-        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: r.heimilisfang || '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
+        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: r.heimilisfang || '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, eining: r.eining || (r.tegund === 'brunakerfi' ? 'einingar' : 'tæki'), ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
@@ -520,7 +520,7 @@
         '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
         '<td class="dim">' + (r.heimilisfang ? esc(r.heimilisfang) : '<span class="dim">—</span>') + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
-        '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">tæki</span>' : '<span class="dim">—</span>') + '</td>' +
+        '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">' + esc(r.eining || 'tæki') + '</span>' : '<span class="dim">—</span>') + '</td>' +
         '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + vidbotHtml(r) + '</td>' +
         '<td class="r">' + docLink('PDF', r.docId) + (r.docId ? '<a href="#" class="frest sk-bidja" data-sk-gogn="' + r.docId + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">Biðja um uppfærða</a>' : '') + '</td></tr>';
     }).join('') || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
@@ -1073,7 +1073,7 @@
       var reps = (state.data.reports || []).filter(function (r) { return r.bygging === b.nafn; });
       html += '<section class="dsec"><h4>Skýrslur <span class="cnt">' + (reps.length ? tala(reps.length, 'skýrsla', 'skýrslur') : '') + '</span></h4><div class="dpanel">' +
         (reps.length ? reps.map(function (r) {
-          return '<div class="drow"><span class="dd">' + esc(skManTxt(r)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.magn != null ? ' <span class="dim">' + esc(r.magn) + ' tæki</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
+          return '<div class="drow"><span class="dd">' + esc(skManTxt(r)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.magn != null ? ' <span class="dim">' + esc(r.magn) + ' ' + esc(r.eining || 'tæki') + '</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
         }).join('') : '<div class="dempty">Engar skýrslur skráðar.</div>') + '</div></section>';
       var invs = (state.data.invoices || []).filter(function (r) { return r.bygging === b.nafn; });
       if (invs.length) {
@@ -1707,9 +1707,15 @@
         (er.length ? '<div class="elist">' + er.slice(0, 5).map(function (e) { return erindiRod(e, true); }).join('') + '</div>'
           : '<div class="egp-e">Engin erindi enn. Fyrirspurnir, verkbeiðnir og beiðnir um þjónustu birtast hér með stöðu.</div>') + '</div>');
     }
-    // Eldvarnabók mánaðarins
+    // 23.10.2026 (Agnar: „Setja kannski verkefni inn á yfirlitssíðuna í staðinn fyrir Eldvarnabók"): þriðja spjaldið er
+    // Verkefni kúnnans (sami listi og á Vinnusvæði, eignagatt.js verkefniHtml) — Eldvarnabókin á sinn flipa áfram.
+    var verkefniSpjald = window.GattVinnusvaedi && GattVinnusvaedi.verkefniHtml;
+    if (verkefniSpjald) {
+      try { panels.push('<div class="egp egp-verkefni">' + verkefniSpjald() + '</div>'); } catch (_) {}
+    }
+    // Eldvarnabók mánaðarins — aðeins þegar Verkefni-spjaldið er ekki til (eldra bundle)
     var ebl = bl.filter(function (b) { return Array.isArray(b.eldvarnabok) && b.i_thjonustu !== false; });
-    if (syn.eldvarnabok && ebl.length) {
+    if (!verkefniSpjald && syn.eldvarnabok && ebl.length) {
       var M = ebManudir(), key = M[M.length - 1].key;
       var und = ebl.filter(function (b) { var r = ebRod(b, key); return r && r.stada === 'undirritad'; }).length;
       panels.push('<div class="egp"><div class="egp-h"><b>Eldvarnabók</b><span>' + esc(M[M.length - 1].heiti) + ' · ' + und + ' af ' + ebl.length + ' undirritaðar</span></div>' +
