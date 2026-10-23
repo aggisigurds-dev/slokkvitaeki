@@ -37,7 +37,7 @@ window.GATT_VERKFAERI = [
   { k: 'csv', heiti: 'Niðurhal (CSV, prenta)', lysing: 'Eignasafn, heimilisföng, erindi og verkefni í Excel', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'skjol_hlekkir', heiti: 'Skjöl og hlekkir', lysing: 'Borð kúnnans fyrir eigin skjöl og hlekki', hopur: 'stadall', sjalfgefid: true, tilbuid: true, fela: true },
   { k: 'leit', heiti: 'Leit yfir allt', lysing: 'Einn leitarreitur: eignir, verk, skjöl, checklisti', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
-  { k: 'einkunn', heiti: 'Ánægjukönnun eftir verk', lysing: 'Ein spurning þegar verki lýkur, stjörnur 1–5', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
+  { k: 'einkunn', heiti: 'Ánægjukönnun eftir verk', lysing: 'Ein spurning þegar verki lýkur, stjörnur 1–5 (slökkt nema valið — Agnar 23.10.2026)', hopur: 'stadall', sjalfgefid: false, tilbuid: true },
   { k: 'skyrsla', heiti: 'Eignarskýrsla og safnskýrsla (PDF)', lysing: 'Ein síða per eign eða allt safnið; skjalfesting 10. gr. fyrir eldvarnareftirlit', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'vikupostur', heiti: 'Vikuleg samantekt í pósti', lysing: 'Mánudagsmorgun: á eftir, næstu skoðanir, opin verk, skírteini sem renna út', hopur: 'stadall', sjalfgefid: false, tilbuid: true },
   // ── Viðbótartól (12.10.2026: verktakar, kostnaður, rými, lyklar, orkumælar tilbúin; api + snjallkerfi væntanleg) ──

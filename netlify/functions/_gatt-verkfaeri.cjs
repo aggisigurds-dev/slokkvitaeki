@@ -5,7 +5,7 @@ const VERKFAERI = [
   ['kerfi', true, true], ['fasteign', true, true], ['saga', true, true],
   ['erindi', true, true], ['verkbeidni', true, true], ['punktar', true, true], ['qr', true, true], ['eldvarnabok', true, true], ['vinnusvaedi', true, true],
   ['checklisti', true, true], ['verkefni', true, true], ['dagatal', true, true], ['vidhald', true, true], ['kort', true, true], ['baeta_eign', true, true],
-  ['csv', true, true], ['skjol_hlekkir', true, true], ['leit', true, true], ['einkunn', true, true], ['skyrsla', true, true], ['vikupostur', false, true],
+  ['csv', true, true], ['skjol_hlekkir', true, true], ['leit', true, true], ['einkunn', false, true], ['skyrsla', true, true], ['vikupostur', false, true],
   ['verktakar', true, true], ['kostnadur', true, true], ['rymi', true, true], ['lyklar', true, true], ['orkumaelar', true, true], ['api', false, false], ['snjallkerfi', false, false],
 ];
 const LYKLAR = VERKFAERI.map((v) => v[0]);

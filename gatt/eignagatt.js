@@ -215,7 +215,8 @@
     var acts = [];
     if (e.punktur && !iPop) acts.push('<button type="button" class="kbtn sm" data-vb-syna="' + e.id + '">' + ic('teikning', 1.8) + 'Sjá á teikningu</button>');
     if (e.abyrgd && e.abyrgd !== 'okkar' && e.stada !== 'lokid') acts.push('<button type="button" class="gbtn sm" data-vb-loka="' + e.id + '">' + ic('hak', 2.2) + 'Merkja lokið</button>');
-    var lok = e.stada === 'lokid' && (e.lokid || e.lokid_lysing) ? '<div class="vb-lok">' + ic('hak', 2.2) + '<span><b>Lokið ' + esc(fmtDate(e.lokid)) + '</b>' + (e.lokid_lysing ? ' — ' + esc(e.lokid_lysing) : '') + '</span></div>' : '';
+    // Í erindalistanum stendur „Lokið" sem merki í haus röðarinnar (portal.js erindiRod) — kassinn aðeins í sprettiglugganum (23.10.2026)
+    var lok = iPop && e.stada === 'lokid' && (e.lokid || e.lokid_lysing) ? '<div class="vb-lok">' + ic('hak', 2.2) + '<span><b>Lokið ' + esc(fmtDate(e.lokid)) + '</b>' + (e.lokid_lysing ? ' — ' + esc(e.lokid_lysing) : '') + '</span></div>' : '';
     return '<div class="vb-auki"><div class="vb-bits">' + bits.join('') + '</div>' + myndaRod(e.myndir) + myndaRod(e.eftirmyndir, true) + lok + einkunnHtml(e) + (acts.length ? '<div class="vb-acts">' + acts.join('') + '</div>' : '') + '</div>';
   }
 

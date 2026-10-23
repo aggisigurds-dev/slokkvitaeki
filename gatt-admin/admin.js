@@ -140,14 +140,15 @@
     $('#accBody').innerHTML = state.access.map(function (a) {
       var st = statusOf(a);
       return '<tr class="rowline" data-id="' + a.id + '">' +
-        '<td><div class="co">' + esc(a.base_nafn) + '</div><div class="kt">' + esc(a.slug || '') + '</div></td>' +
+        '<td class="cocell"><div class="co">' + esc(a.base_nafn) + '</div><div class="kt" title="' + esc(a.slug || '') + '">' + esc(a.slug || '') + '</div></td>' +
         '<td><span class="pill ' + st.c + '"><span class="dot"></span>' + st.t + '</span></td>' +
-        '<td class="hide-sm"><div class="look">' + themeChip(a.theme) + (a.show_details ? '<span class="det" title="Kúnni getur opnað eignasíðu">' + ic('eye') + 'Eignasíða</span>' : '') + '</div></td>' +
+        // 23.10.2026 (Agnar: „einu sinni einhver þemastjórnun þarna … sé ekkert af því"): útlitið er takki sem opnar þemavalið
+        '<td class="hide-sm"><button type="button" class="look" data-act="look" title="Breyta þema og eignasíðu">' + themeChip(a.theme) + (a.show_details ? '<span class="det" title="Kúnni getur opnað eignasíðu">' + ic('eye') + 'Eignasíða</span>' : '') + '</button></td>' +
         '<td class="hide-sm acc ' + (a.email ? '' : 'none') + '">' + esc(a.email || '—') + '</td>' +
         '<td><div class="actions">' +
           '<button class="btn btn--sm btn--accent" data-act="imp" title="Opna vef kúnnans án lykilorðs">' + ic('open') + 'Opna sem kúnni</button>' +
           '<button class="btn btn--sm" data-act="copy">' + ic('copy') + 'Hlekkur</button>' +
-          '<button class="btn btn--sm" data-act="edit">' + ic('key') + 'Aðgangur</button>' +
+          '<button class="btn btn--sm" data-act="edit" title="Aðgangur, lykilorð, þema, eignasíða og notendur">' + ic('gear') + 'Stillingar</button>' +
         '</div></td></tr>' +
         '<tr class="edrow hidden" data-edit="' + a.id + '"><td colspan="5" style="padding:0"></td></tr>';
     }).join('');
@@ -164,6 +165,12 @@
         }).catch(function () { toast('Netvilla'); });
       };
       tr.querySelector('[data-act="edit"]').onclick = function () { toggleEditor(a); };
+      var lk = tr.querySelector('[data-act="look"]');
+      if (lk) lk.onclick = function () {
+        var row = $('#accBody [data-edit="' + a.id + '"]');
+        if (row && row.classList.contains('hidden')) toggleEditor(a);
+        var t = row && row.querySelector('.themes'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
     });
   }
 
@@ -181,7 +188,7 @@
 
   function editorHtml(a) {
     return '<div class="editor"><div class="editor-in">' +
-      '<div><h3>Aðgangur — ' + esc(a.base_nafn) + '</h3>' +
+      '<div><h3>Stillingar — ' + esc(a.base_nafn) + ' · aðgangur</h3>' +
         '<div class="fld"><label>Aðgangsorð (netfang)</label><input class="inp" data-f="email" value="' + esc(a.email || '') + '" placeholder="nafn@fyrirtaeki.is"></div>' +
         '<div class="fld"><label>Lykilorð</label><div class="inrow">' +
           '<input class="inp mono" data-f="pw" placeholder="' + (a.hasPassword ? '•••••••• (sett — skrifaðu nýtt til að breyta)' : 'ekkert lykilorð enn') + '">' +
@@ -204,7 +211,7 @@
       '<div class="efull"><h3>Notendur</h3>' + notendurHtml(a) + '</div>' +
       '<div class="efull"><h3>Greining fasteigna — lesa skjölin áður en opnað er</h3>' + greiningHtml(a) + '</div>' +
       // Útlit og upplýsingar — full breidd svo þemaspjöldin fimm komist í eina röð
-      '<div class="efull"><h3>Útlit og upplýsingar</h3>' +
+      '<div class="efull"><h3>Útlit (þema) og eignasíða</h3>' +
         '<input type="hidden" data-f="theme" value="' + esc(themeOf(a.theme).k) + '">' +
         '<div class="themes" role="radiogroup" aria-label="Þema vefsins">' + themeCards(themeOf(a.theme).k) + '</div>' +
         '<label class="tgl"><input type="checkbox" data-f="details"' + (a.show_details ? ' checked' : '') + '><span class="sw"></span>' +

@@ -1584,6 +1584,8 @@
     var vis = (e.visun || []).map(visunHtml).join('');
     return '<div class="erow"><div class="er-h"><span class="tb plain">' + esc(ER_TEG[e.tegund] || 'Erindi') + '</span>' +
       '<b>' + esc(e.titill || '') + '</b>' + (eign ? '<span class="er-e">' + esc(eign.nafn) + '</span>' : '') +
+      // 23.10.2026 (Agnar: „rennur allt of mikið saman … fært check/done merkið til hægri"): Lokið er merki í hausnum
+      (e.stada === 'lokid' ? '<span class="er-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Lokið' + (e.lokid ? ' ' + esc(fmtDate(e.lokid)) : '') + '</span>' : '') +
       '<span class="dd">' + esc(fmtDate(e.dags)) + '</span></div>' +
       (e.lysing ? '<div class="er-l">' + esc(e.lysing) + '</div>' : '') +
       (vis ? '<div class="er-v">' + vis + '</div>' : '') +
