@@ -393,6 +393,10 @@
       P+'.rf-cnt em{font-style:normal;font-size:9px}',
       P+'.rf-cnt--sl{background:linear-gradient(145deg,#2a4c8f,#12296b 55%,#060f2e);border:1px solid #060f2e}',
       P+'.rf-cnt--br{background:linear-gradient(145deg,#8a1c22,#560c10 55%,#1a0304);border:1px solid #1a0304}',
+      // Búnaðargreining: lítil „pera“ fremst í pillunni — GRÆN og lýsandi þegar greining er til, annars dauf og slökkt (Agnar 23.10.2026)
+      P+'.rf-cnt{position:relative}',
+      P+'.rf-cnt::before{content:"";position:absolute;left:3px;top:50%;margin-top:-3px;width:6px;height:6px;border-radius:50%;box-sizing:border-box;border:1px solid rgba(200,210,225,.55);opacity:.3;pointer-events:none}',
+      P+'.rf-cnt.rf-bgr::before{background:radial-gradient(circle at 35% 30%,#b6ffd6,#2fc973 55%,#0f7a3e);border-color:#0b5a2c;opacity:1;box-shadow:0 0 4px rgba(60,225,135,.8)}',
       P+'.rf-cnt.is-zero{color:rgba(255,255,255,.42)}',
       P+'.rf-yh__k{display:flex;flex-direction:column;gap:2px;margin-top:5px}',
       P+'.rf-yh__k i{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.06em}',
@@ -1069,9 +1073,12 @@
         fetchAllRows(SB, 'uttaeki', 'worksite_id,last_insp,next_insp',
                      function(q){ return q.not('worksite_id','is',null); }),
         fetchAllRows(SB, 'v_uttaeki_fid_rollup',
-                     'fyrirtaeki_id,units,slt,bsl,rs,other_units')
+                     'fyrirtaeki_id,units,slt,bsl,rs,other_units'),
+        // 23.10.2026 (Agnar): ljómi á 🧯/🚨 þar sem Búnaðargreining er til — aðeins talningar (v_bgr_yfirlit); bili má aldrei brjóta síðuna
+        fetchAllRows(SB, 'v_bgr_yfirlit', 'company_id,blod,slokkvibunadur,brunakerfi,ut,tillogur,raunstadir').catch(function(){ return []; })
       ]);
-      var rows=_res[0], factRows=_res[1], wsRows=_res[2], fidRows=_res[3]||[];
+      var rows=_res[0], factRows=_res[1], wsRows=_res[2], fidRows=_res[3]||[], bgrRows=_res[4]||[];
+      var bgrMap={}; bgrRows.forEach(function(r){ if(r&&r.company_id!=null) bgrMap[String(r.company_id)]=r; });
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
@@ -1096,6 +1103,7 @@
         wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
         factOf:function(id){ return id==null?null:(facts[String(id)]||null); },
         grpOf:function(id){ return id==null?null:(fidGrp[String(id)]||null); },
+        bgrOf:function(id){ return id==null?null:(bgrMap[String(id)]||null); },
         canonOf:function(id){ return (id!=null&&window.CanonStadur)?CanonStadur.rowOf(id):null; } };
       _equipAt=Date.now();
       return _equip;
@@ -2065,9 +2073,14 @@
                  Arsskodun.eqTrioHtml(grp, 'screen') +
                '</span>';
       }
+      // BÚNAÐARGREINING (23.10.2026, Agnar: „merkið lýsist aðeins upp … smá glow"): daufur gulllitaður ljómi á 🧯 þegar greiningin hefur slökkvitæki
+      // (teiknuð, tillaga eða raunstaðir) og á 🚨 þegar hún hefur brunakerfi (reyk-/hitaskynjara, handboða). Aðeins fyrir mig að sjá hvað er komið.
+      var bgrI = (co && equip && equip.bgrOf) ? equip.bgrOf(co.id) : null;
+      var bgrSl = !!(bgrI && (+bgrI.slokkvibunadur>0 || +bgrI.tillogur>0 || +bgrI.raunstadir>0)), bgrBr = !!(bgrI && +bgrI.brunakerfi>0);
+      var bgrTxt = bgrI ? ' · Búnaðargreining til: '+bgrI.blod+(+bgrI.blod===1?' blað':' blöð')+', '+bgrI.slokkvibunadur+' slökkvitæki/slöngur teiknuð, '+bgrI.tillogur+' tillögur, '+bgrI.raunstadir+' raunstaðir, '+bgrI.brunakerfi+' brunakerfi, '+bgrI.ut+' ÚT' : '';
       var unitCell = stackTd(
-        '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>'+trio,
-        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
+        '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+(bgrSl?' rf-bgr':'')+'" title="Slökkvitæki á staðnum'+(bgrSl?esc(bgrTxt):'')+'"><em>🧯</em>'+slCntTxt+'</span>'+trio,
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+(bgrBr?' rf-bgr':'')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+(bgrBr?esc(bgrTxt):'')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
       var bldBaseId = (co && co.customer_base_id != null) ? co.customer_base_id
                     : (b.customer_base_id != null ? b.customer_base_id : baseByKt[digits(b.kt)]);
       var bldPairs = {};
@@ -2093,8 +2106,8 @@
       // 🧯/🚨-táknið er ALLTAF með (líka á byggingum með aðeins eina þjónustu) svo
       // 15px táknsúlan sé frátekin á hverri röð → pillurnar standa í beinum súlum.
       var _yStrips='';
-      if(showSl) _yStrips += '<div class="rf-yrs" title="🧯 Slökkvitæki"><b class="rf-yrs__ic">🧯</b>'+slPills+'</div>';
-      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs" title="🚨 Brunakerfi"><b class="rf-yrs__ic">🚨</b>'+brPills+'</div>';
+      if(showSl) _yStrips += '<div class="rf-yrs" title="🧯 Slökkvitæki'+(bgrSl?esc(bgrTxt):'')+'"><b class="rf-yrs__ic'+(bgrSl?' rf-bgr':'')+'">🧯</b>'+slPills+'</div>';
+      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs" title="🚨 Brunakerfi'+(bgrBr?esc(bgrTxt):'')+'"><b class="rf-yrs__ic'+(bgrBr?' rf-bgr':'')+'">🚨</b>'+brPills+'</div>';
       var yTds = '<td class="c rf-yh-cell rf-yrs-cell">'+_yStrips+'</td>';
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
