@@ -220,6 +220,7 @@ leiðrétt fyrir NÆSTU úttekt).
 
 | Regla | Af hverju |
 |---|---|
+| **Samþykki á Þjónustuborðinu nægir** fyrir það sem ✓ lofar — líka óafturkræfar Payday-aðgerðir. Ekki biðja um „já“ aftur í spjalli. Gildir aðeins um það sem ✓ nefnir nákvæmlega; forsendan er endurmæld fyrst. | Agnar 22.10.2026 (mál #1242): tvöföld staðfesting var regla sem aðstoðarmaðurinn setti sér sjálfur og Agnar pirraðist á henni 14.09 („afhverju aftur“). |
 | **Aldrei `node deploy.js`** | Þurrkar út öll serverless-föllin þögult. Ýttu með git. |
 | **Raunstaða fer aldrei í `app_settings`-blobb eða `localStorage`** | Það samstillist ekki milli vélanna fjögurra og heil-skrif éta vinnu annarra véla. |
 | **Aldrei senda `stada` á `verkefnalisti`-API-ið** | Reiturinn heitir `status`. API-ið þegir yfir óþekktum reitum og skilar `ok:true` án þess að nokkuð gerist. |

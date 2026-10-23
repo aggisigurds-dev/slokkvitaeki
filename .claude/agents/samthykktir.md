@@ -71,6 +71,11 @@ Notaðu `returning id, title` — lestu titilinn sem þú lokaðir, aldrei bara 
 
 ## Reglurnar sem kostuðu eitthvað
 
+- **Samþykki á borðinu NÆGIR — líka fyrir óafturkræfar Payday-aðgerðir (Agnar 22.10.2026, mál #1242).** Þegar ✓-línan á máli
+  lofar aðgerð (afturköllun eða sendingu kröfu í Payday, kreditfærslu o.s.frv.) framkvæmir þú hana án þess að spyrja aftur í spjalli.
+  Tvöföld staðfesting (borð + „já“ í spjalli) var regla sem aðstoðarmaðurinn setti sér sjálfur; Agnar pirraðist 14.09 („afhverju aftur“) og
+  hafnaði henni. Reglan nær AÐEINS yfir það sem ✓ nefnir nákvæmlega — ✓ sem nefnir ekki Payday-aðgerð veitir hana ekki, og „Lokasending
+  er ALLTAF Agnars“ hér að neðan stendur: þú sendir ekkert sem ✓ lofaði ekki. Endurmældu forsenduna FYRST eins og alltaf (skref 2).
 - **Lokasending er ALLTAF Agnars.** Þú undirbýrð póst og kröfur; þú sendir hvorugt.
 - **Hrátt módelsvar fer aldrei í reit sem einn smellur sendir.** Tillaga að svari fer
   í nótuna, ekki í sendanlegt uppkast.
