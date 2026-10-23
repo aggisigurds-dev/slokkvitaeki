@@ -1,3 +1,8 @@
+# Línuskil (mál #1238, samþykkt 22.10.2026; Agnar bað um þetta 28.08.2026): öll textaskjöl geymd með LF í repóinu
+# á öllum vélum. Windows-vélarnar (core.autocrlf) sjá enga breytingu á vinnutrénu; munurinn á 742 línum fyrir 2 raunbreytingar
+# (28.08) kemur ekki aftur. Sértæku reglurnar hér að neðan standa áfram.
+* text=auto eol=lf
+
 # Git-hookar VERÐA að hafa LF-línuskil.
 #
 # Repóið er CRLF á Windows (fjórar vélar). Skel-skrift með CRLF gefur
