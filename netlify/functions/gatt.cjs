@@ -1104,6 +1104,29 @@ exports.handler = async (event) => {
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
+    // 23.10.2026 (Agnar: „skrá lýsingu"): skjal úr Stólpa-tímanum á enga solur-röð, svo Lýsing stóð auð þótt
+    // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
+    // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
+    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' };
+    invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
+    try {
+      const vant = invoices.filter((i) => i.nr && (!i.lysing || !i.bygging));
+      if (vant.length) {
+        const lst = [...new Set(vant.map((i) => '"' + String(i.nr).replace(/"/g, '') + '"'))].join(',');
+        const rr = await P.sbGet(`reikningslestur?reikningur_nr=in.(${lst})&select=reikningur_nr,fyrirtaeki_id,vegna`);
+        if (rr.ok) {
+          const rl = {};
+          (await rr.json()).forEach((x) => { rl[normNr(x.reikningur_nr)] = x; });
+          vant.forEach((i) => {
+            const y = rl[normNr(i.nr)];
+            if (!y) return;
+            if (!i.bygging && y.fyrirtaeki_id != null && nafnById[y.fyrirtaeki_id]) i.bygging = nafnById[y.fyrirtaeki_id];
+            if (!i.lysing && y.vegna) i.lysing = String(y.vegna).slice(0, 90);
+          });
+        }
+      }
+    } catch (_) {}
+
     // Drive-einn Stolpi-class docs often have PDF + year but no kr / full date.
     // Fill from solur when the R-númer matches — never invent amounts.
     try {
