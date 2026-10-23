@@ -34,7 +34,7 @@
   window.__teiknHreinsa3d = true;
 
   // SÍA Á MERKI (478): flokkur merkis fyrir 3D og krókur sem sían kallar á þegar valið breytist
-  const siaFl = (mk, units) => (window.TeiknSia ? TeiknSia.flokkur(mk, units) : '');
+  const siaFl = (mk, units) => (window.TeiknSia ? (TeiknSia.flokkur3 || TeiknSia.flokkur)(mk, units) : '');
   window.TeiknSia3d = () => { try { if (G.syn3d && G.syn3d.siaBeita) G.syn3d.siaBeita(); } catch (_) {} };
 
   /* ───────────────────────── 1) HREINSUN — hrein gagnavinnsla ───────────────────────── */

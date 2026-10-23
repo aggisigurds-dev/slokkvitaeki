@@ -15,6 +15,7 @@
 
   const KEY = 'teikning.sia';
   const FL = [
+    { k: 'greining', nafn: 'Greining', lit: '#a16207' },   // aukaflokkur: merki sem búnaðargreiningin setti (innflutt, unitId …:g…) — ofan á flokk merkisins
     { k: 'ut', nafn: 'ÚT-skilti', lit: '#15803d' },
     { k: 'skyn', nafn: 'Skynjarar', lit: '#c93c1d' },
     { k: 'slt', nafn: 'Slökkvitæki', lit: '#e11d2e' },
@@ -59,8 +60,12 @@
   // RAUNSÆ TÁKN (434): myndir af tækjunum í stað málmplötutákns — sjálfgefið kveikt, eitt val fyrir allar vélar
   const raunsaett = () => { try { const v = window.Vidmot ? Vidmot.lesa('teikning.raunsaett', null) : null; return v === false ? false : true; } catch (_) { return true; } };
   function skiptaRaun() { try { if (window.Vidmot) Vidmot.setja('teikning.raunsaett', !raunsaett()); } catch (_) {} beita(); }
-  const erFalinn = k => stada().af.indexOf(k) >= 0;
-  const falid = (m, units) => { const af = stada().af; return !!af.length && af.indexOf(flokkur(m, units)) >= 0; };
+  // Innflutt greiningarmerki (greining_merki_inn / Greining ▸ Teikning): unitId s:ut:g… · n:<tegund>:g… · n:<tegund>:gt… — Agnar 23.10.2026: „fá teikninguna með filter til að taka greininguna í burtu“
+  const erGreining = m => !!m && /^(s|n):[a-z0-9]+:gt?[A-Za-z0-9]/.test(typeof m.unitId === 'string' ? m.unitId : '');
+  // 3D: flokkur + '+g' þegar merkið er greiningarmerki (erFalinn skilur samsetta lykilinn)
+  const flokkur3 = (m, units) => flokkur(m, units) + (erGreining(m) ? '+g' : '');
+  const erFalinn = k => { const af = stada().af, p = String(k || '').split('+'); return af.indexOf(p[0]) >= 0 || (p[1] === 'g' && af.indexOf('greining') >= 0); };
+  const falid = (m, units) => { const af = stada().af; return !!af.length && (af.indexOf(flokkur(m, units)) >= 0 || (af.indexOf('greining') >= 0 && erGreining(m))); };
   const lykill = () => stada().af.join(',');
 
   /* ── endurteikning eftir val ── */
@@ -86,7 +91,7 @@
     }
     if (!ml.length) { const p = F && F.companyId && F.plans && F.plans[F.companyId]; ml = (p && p.markers) || []; }
     const units = (F && F.units) || [];
-    ml.forEach(m => { if (m) { const k = flokkur(m, units); n[k] = (n[k] || 0) + 1; } });
+    ml.forEach(m => { if (m) { const k = flokkur(m, units); n[k] = (n[k] || 0) + 1; if (erGreining(m)) n.greining = (n.greining || 0) + 1; } });
     return n;
   }
 
@@ -137,7 +142,7 @@
     festa(d3, 'fp-sia3', 'right:10px;bottom:64px;max-width:calc(100% - 20px);justify-content:flex-end', true);
   }
 
-  window.TeiknSia = { flokkur, falid, erFalinn, lykill, beita, skipta, flokkar: FL, stada, raunsaett };
+  window.TeiknSia = { flokkur, flokkur3, erGreining, falid, erFalinn, lykill, beita, skipta, flokkar: FL, stada, raunsaett };
   setInterval(tikk, 400);
   try { new MutationObserver(() => tikk()).observe(document.body, { childList: true }); } catch (_) {}
 })();
