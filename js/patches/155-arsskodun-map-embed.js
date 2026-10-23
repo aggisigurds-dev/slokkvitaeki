@@ -52,6 +52,17 @@
   const readGc  = () => { try { return JSON.parse(localStorage.getItem(GC_CACHE_KEY) || '{}'); } catch(e) { return {}; } };
   const writeGc = c  => { try { localStorage.setItem(GC_CACHE_KEY, JSON.stringify(c)); } catch(e) {} };
 
+  /* 23.10.2026 (verk 4fcf523d, Agnar 21.10: „geo not working in Ársskoðun" — kortið sýndi 1 pinna af 24).
+   * Kortið flettaði hnitum aðeins upp á NAFNI eða HEIMILISFANGI. Fastir punktar félaganna (app_settings, lyklar
+   * `__co__:<id>`, sama og Leiðsögn og Bílstjóri nota) lentu í _slokk_gc undir id-lyklinum og voru aldrei lesnir hér:
+   * mælt á lifandi síðu — 629 af 653 félögum áttu punkt undir id, en aðeins 37 hittust á nafni og 144 á heimilisfangi.
+   * Hin fóru í Nominatim-biðröðina (1,1 s hvert) í stað þess að fá pinnann strax.
+   * Id-lykillinn gildir fyrst (handsett hnit vinnur), svo nafn, svo heimilisfang. */
+  const coordOf = (gc, co) => {
+    const c = (co && co.id != null && gc['__co__:' + co.id]) || (co && (gc[co.nafn] || gc[co.heimilisfang || ''])) || null;
+    return (c && typeof c.lat === 'number' && typeof c.lng === 'number') ? c : null;
+  };
+
   // ── Geocode one address via the Netlify proxy (same as mapfix.js) ──
   async function geocodeOne(address) {
     if (!address || address.length < 3) return null;
@@ -235,6 +246,7 @@
           _markers[co.id] = m;
         }
       }
+      taldu2();
       // Throttle: 1.1s to be polite to Nominatim
       if (i < missing.length - 1 && !cancelled) {
         await new Promise(r => setTimeout(r, 1100));
@@ -243,6 +255,7 @@
     _queueAbort = null;
     _queueState = null;
     hideProgress();
+    taldu2();
     // After full sweep, fit bounds to new set
     if (!cancelled && _map) {
       const pts = Object.values(_markers).map(m => m.getLatLng());
@@ -300,7 +313,7 @@
       }
       const co = byId[coId];
       if (!co) return;
-      const coord = gc[co.nafn] || gc[co.heimilisfang || ''] || null;
+      const coord = coordOf(gc, co);
       if (!coord) return;
       const status = statusFor(co);
       const m = L.marker([coord.lat, coord.lng], { icon: makeIcon(status.color) }).addTo(_map);
@@ -314,6 +327,8 @@
     } else if (placed.length === 1) {
       _map.setView(placed[0], 14);
     }
+
+    taldu(ids);
 
     // Identify missing-coord visible customers and queue them for background geocode.
     // Only triggers if not already running. Filter changes will cancel old queue and start a new one.
@@ -333,6 +348,23 @@
       setTimeout(() => { if (!_queueAbort && _map && isVisible()) runGeocodeQueue(missing); }, 200);
     }
   }
+
+  // ── Talan á kortinu stemmir við listann (verk 4fcf523d) ───────────────
+  // „24 → 24 pinnar, eða sýna N án hnita": línan segir hve margir staðir í síunni eru á kortinu og hve margir vantar hnit.
+  function taldu(ids) {
+    const el = document.getElementById('_arsmap-count');
+    if (!el) return;
+    const alls = new Set();
+    document.querySelectorAll('#ars-main [data-co-id]').forEach(n => { const i = parseInt(n.dataset.coId, 10); if (i) alls.add(i); });
+    const nPin = ids.filter(id => _markers[id]).length;
+    const nVant = ids.length - nPin;
+    const nUtan = Math.max(0, alls.size - ids.length);
+    let t = '<b>' + nPin + '</b> af ' + ids.length + ' stöðum í síunni á kortinu';
+    if (nVant > 0) t += ' · <span style="color:#b45309;font-weight:700">' + nVant + ' án hnita' + (_queueAbort ? ' (sæki…)' : '') + '</span>';
+    if (nUtan > 0) t += ' · <span style="color:#64748b">' + nUtan + ' án samnings eru ekki á kortinu</span>';
+    el.innerHTML = t;
+  }
+  function taldu2() { try { taldu(getVisibleCoIds()); } catch (_) {} }
 
   // ── Highlight row in the list ──────────────────────────────────────
   function highlightRow(coId) {
@@ -364,6 +396,24 @@
     // Need to geocode this one
     const co = (window.Arsskodun && window.Arsskodun._cache && window.Arsskodun._cache.byId && window.Arsskodun._cache.byId[coId]);
     if (!co) return;
+    // Fastur punktur til? Þá enginn Nominatim-biðtími (sjá coordOf).
+    const fastur = coordOf(readGc(), co);
+    if (fastur) {
+      if (!_map) await openPanel();
+      if (!_markers[coId] && _map) {
+        const st = statusFor(co);
+        const mk = L.marker([fastur.lat, fastur.lng], { icon: makeIcon(st.color) }).addTo(_map);
+        mk.bindPopup(popupHtml(co, st));
+        _markers[coId] = mk;
+      }
+      const mk2 = _markers[coId];
+      if (_map && mk2) {
+        _map.setView(mk2.getLatLng(), 16, { animate: true });
+        setTimeout(() => { try { mk2.openPopup(); } catch(e) {} }, 350);
+      }
+      taldu2();
+      return;
+    }
     const addr = co.heimilisfang || co.nafn;
     if (!addr) {
       toast('Þetta fyrirtæki er ekki með heimilisfang skráð.');
@@ -445,6 +495,7 @@
         '<button id="_arsmap-toggle" type="button" style="padding:5px 12px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">' + (isVisible() ? '🗺️ Fela kort' : '🗺️ Sýna kort') + '</button>' +
       '</div>' +
       '<div id="_arsmap-panel" style="display:' + (isVisible() ? 'block' : 'none') + ';background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' +
+        '<div id="_arsmap-count" style="padding:6px 12px;font:12px/1.4 system-ui,sans-serif;color:#0f172a;background:#f8fafc;border-bottom:1px solid #e2e8f0"></div>' +
         '<div id="_arsmap-container" style="width:100%;height:380px;background:#f1f5f9"></div>' +
       '</div>';
     chipRow.parentNode.insertBefore(wrap, chipRow.nextSibling);
