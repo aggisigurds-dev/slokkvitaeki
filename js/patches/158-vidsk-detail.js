@@ -1216,7 +1216,7 @@
     const docsBody = document.getElementById('_vd-docs-body');
     if (docsBody && sb) {
       sb.from('customer_documents')
-        .select('id,doc_type,year,doc_date,customer_name,amount,file_name,drive_file_id,source,vidskiptategund')
+        .select('id,doc_type,year,doc_date,customer_name,amount,file_name,drive_file_id,storage_path,source,vidskiptategund')
         .eq('fyrirtaeki_id', coId)
         .order('year', { ascending: false, nullsFirst: false })
         .order('doc_date', { ascending: false, nullsFirst: false })
@@ -1246,8 +1246,16 @@
             data.map(d => {
               const docDate = (d.doc_date || '').split('-').reverse().join('/');
               const amt = d.amount ? fmtKr(+d.amount) : '—';
-              const fileCell = d.drive_file_id
-                ? '<a href="https://drive.google.com/file/d/' + esc(d.drive_file_id) + '/view" target="_blank" rel="noopener" style="color:var(--blu);text-decoration:none;font-weight:600" title="' + esc(d.file_name || 'Opna í Drive') + '">↗ Drive</a>'
+              // 23.10.2026 (Agnar: „Drive-afritið er oft glitchy … fella niður sýnileikann á Drive-afritinu"): Storage fyrst
+              // (opinber, stöðug slóð), hub-leiðin /api/skjal til vara — aldrei beinn drive.google.com-hlekkur sem rotnar.
+              const skjalUrl = (function () {
+                const sp = String(d.storage_path || '').replace(/^\/+/, ''); const i = sp.indexOf('/');
+                if (sp && i > 0 && window.SUPABASE_URL) return String(window.SUPABASE_URL).replace(/\/+$/, '') + '/storage/v1/object/public/' + sp.slice(0, i) + '/' + sp.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+                if (d.drive_file_id && String(d.drive_file_id).indexOf('sb:') !== 0) return 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(d.drive_file_id);
+                return '';
+              })();
+              const fileCell = skjalUrl
+                ? '<a href="' + esc(skjalUrl) + '" target="_blank" rel="noopener" style="color:var(--blu);text-decoration:none;font-weight:600" title="' + esc(d.file_name || 'Opna skjal') + '">↗ Skjal</a>'
                 : (d.file_name ? '<span style="color:var(--ink3);font-size:10.5px;max-width:140px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(d.file_name) + '">' + esc(d.file_name) + '</span>' : '—');
               return '<tr style="border-top:1px solid var(--brd)">' +
                 '<td style="padding:6px 8px;white-space:nowrap">' + typeLabel(d.doc_type) + '</td>' +
