@@ -643,7 +643,15 @@
       S.valinnMerki = hit;
       S.valinn = null;
       S.stadsetja = null;
-      S.drag = { teg: 'faera', merki: hit, pointerId: e.pointerId, fraX: hit.x, fraY: hit.y, x0: e.clientX, y0: e.clientY };
+      S.drag = { teg: 'faera', merki: hit, pointerId: e.pointerId, fraX: hit.x, fraY: hit.y, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0 };
+      // Gripið er sjaldnast í miðju merkisins: án þessa munar hoppar miðjan undir bendilinn í fyrsta hreyfingarskrefi (Agnar 23.10.2026: „helv hopp á tækjunum")
+      try {
+        const p0 = strigaHnit(e), cv = document.getElementById('fp-canvas'), rc = cv && cv.getBoundingClientRect();
+        if (p0 && rc && rc.width > 1) {
+          const lim = (gripPx(hit, rc.width) + 4) * (cv.width / rc.width), ox = hit.x - p0.x, oy = hit.y - p0.y;
+          if (hit.x > 1 || hit.y > 1) { if (Math.hypot(ox, oy) <= lim) { S.drag.dx = ox; S.drag.dy = oy; } }
+        }
+      } catch (_) {}
       S.slepptSmellur = true;
       clearTimeout(S.lp);
       S.lp = setTimeout(() => {
@@ -696,7 +704,7 @@
       if (S.lp) return;
       const p = strigaHnit(e);
       if (!p) return;
-      S.drag.merki.x = p.x; S.drag.merki.y = p.y;
+      S.drag.merki.x = Math.round(p.x + (S.drag.dx || 0)); S.drag.merki.y = Math.round(p.y + (S.drag.dy || 0));
       try { FP()._renderCanvas(); } catch (_) {}
       return;
     }
@@ -713,7 +721,7 @@
     const p = strigaHnit(e);
     if (d && d.teg === 'faera') {
       S.slepptSmellur = true;
-      if (p && d.merki) { d.merki.x = p.x; d.merki.y = p.y; }
+      if (p && d.merki) { d.merki.x = Math.round(p.x + (d.dx || 0)); d.merki.y = Math.round(p.y + (d.dy || 0)); }
       if (d.merki && (d.merki.x !== d.fraX || d.merki.y !== d.fraY)) {
         skraUndo({ teg: 'faera', merki: afritMerki(d.merki), fraX: d.fraX, fraY: d.fraY });
       }

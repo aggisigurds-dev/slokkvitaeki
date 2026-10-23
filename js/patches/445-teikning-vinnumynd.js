@@ -488,7 +488,10 @@
         V.p = null; V.klipa = 0; V.midja = null; return;
       }
       const hit = finna(e);
-      V.p = { id: e.pointerId, x0: e.clientX, y0: e.clientY, hit, fraX: hit ? hit.x : 0, fraY: hit ? hit.y : 0, dregid: false, lp: 0 };
+      // Gripið er sjaldnast í miðju tækisins: geymum bilið milli bendils og miðju (í skjá-px) svo tækið hoppi ekki undir bendilinn í fyrsta skrefi (Agnar 23.10.2026)
+      let gox = 0, goy = 0;
+      if (hit) { try { const M = V.mynd, rymi = TB().rymi ? TB().rymi() : { x: 0, y: 0 }, fr = frumHnit(hit, M, rymi), q0 = varpa(M.vm, fr[0], fr[1]), s0 = aSkja(grunnur(), q0[0], q0[1]), p0 = skjaHnit(e); gox = (s0[0] - p0.x) * p0.zk; goy = (s0[1] - p0.y) * p0.zk; if (!isFinite(gox + goy) || Math.hypot(gox, goy) > 90 * p0.zk) gox = goy = 0; } catch (_) { gox = goy = 0; } }
+      V.p = { id: e.pointerId, x0: e.clientX, y0: e.clientY, hit, fraX: hit ? hit.x : 0, fraY: hit ? hit.y : 0, dregid: false, lp: 0, gox, goy };
       // löng ýting á tæki = valmyndin (Snúa · Breyta í · Fjarlægja), eins og í 2D
       if (hit) V.p.lp = setTimeout(() => { const q = V.p; if (!q || q.dregid || q.hit !== hit) return; V.p = null; const T = TM(); if (T && T.opnaValmynd) T.opnaValmynd({ clientX: q.x0, clientY: q.y0 }, hit); }, 480);
       c.style.cursor = 'grabbing';
@@ -508,7 +511,7 @@
       const q = V.p; if (!q || q.id !== e.pointerId) return;
       if (!q.dregid && Math.hypot(e.clientX - q.x0, e.clientY - q.y0) > 5) { q.dregid = true; clearTimeout(q.lp); }
       if (!q.dregid) return;
-      if (q.hit) { const t = hnitUr(e); if (t) { q.hit.x = t.x; q.hit.y = t.y; } }
+      if (q.hit) { const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }); if (t) { q.hit.x = t.x; q.hit.y = t.y; } }
       else { V.x += dx; V.y += dy; }
     });
     const upp = e => {
@@ -519,7 +522,7 @@
       if (e.type === 'pointercancel') { if (q.hit && q.dregid) { q.hit.x = q.fraX; q.hit.y = q.fraY; } return; }
       if (q.dregid) {
         if (!q.hit) return;
-        const t = hnitUr(e); if (t) { q.hit.x = t.x; q.hit.y = t.y; }
+        const t = hnitUr({ clientX: e.clientX + (q.gox || 0), clientY: e.clientY + (q.goy || 0) }); if (t) { q.hit.x = t.x; q.hit.y = t.y; }
         const T = TM();
         if (T && T.faert) T.faert(q.hit, q.fraX, q.fraY);
         else if (T) { try { TB().samstilla(); } catch (_) {} T.vistaAdThjoni(); }
