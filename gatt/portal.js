@@ -326,7 +326,8 @@
     return sidastaSkodunLinur(b).map(function (x) {
       var tp = x[0] === 'Kerfi' ? 'bru' : 'slokk';
       var eldri = sg.filter(function (e) { return e.t === tp; }).slice(1, 4).map(function (e) { return sagaMerki(e.m); });
-      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' + skTextiHtml(b, x[0]) +
+      // Skýrslutextinn og „Nánar“ eru undir Skýrslum og á eignasíðunni, ekki hér (22.10.2026: of fyrirferðarmikið í töflunni).
+      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' +
         (eldri.length ? '<div class="dim" style="font-size:11px;line-height:1.3;margin:-2px 0 4px">áður ' + esc(eldri.join(' · ')) + '</div>' : '');
     }).join('');
   }
@@ -740,11 +741,6 @@
     var open = p.classList.toggle('hidden') === false;
     b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.textContent = open ? 'Fela' : 'Nánar';
   }, true);
-  // Texti úr skýrslunni (Annað / athugasemdir / ábendingar) undir síðustu skoðun, með „Nánar“ þegar til er meira
-  function skTextiHtml(b, lbl) {
-    var r = sidastaSkyrsla(b, lbl === 'Kerfi' ? 'Brunakerfi' : 'Slökkvitæki');
-    return r && (r.texti || r.vidbot) ? (r.texti ? '<div class="skt" title="' + esc(r.texti) + '">' + esc(r.texti) + '</div>' : '') + vidbotHtml(r) : '';
-  }
 
   /* ── nav / lang / logout ── */
   var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'erindi', 'skilabod'];
