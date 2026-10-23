@@ -263,6 +263,7 @@
     box-shadow:0 0 14px rgba(var(--glow),.45),0 1px 0 rgba(0,0,0,.45)}
   .hin{max-width:1680px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;flex-wrap:wrap;gap:12px 26px}   /* 12.10.2026: hærri borði, breiðari skjár */
   .brandrow{display:flex;align-items:center;gap:13px}
+  .brandrow>.crest{display:none}   /* 23.10.2026 (Agnar: „taka út gullhringinn í bili") — merkið í hausnum falið, markup stendur */
   .brand b{font-family:var(--serif);font-weight:700;font-size:26px;letter-spacing:.16em;display:block;line-height:1;
     background:var(--m-text);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.7))}
   .brand .s{display:block;font-size:10.5px;letter-spacing:2.8px;color:var(--on-dark-dim);text-transform:uppercase;margin-top:4px}
@@ -708,7 +709,7 @@
   /* Senda erindi — hægri dálkur á forsíðu */
   .yf-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
   .yf-main{min-width:0}
-  .yf-rail{position:sticky;top:14px;display:flex;flex-direction:column;gap:18px;min-width:0}
+  .yf-rail{position:static;display:flex;flex-direction:column;gap:18px;min-width:0}   /* 23.10.2026 (Agnar: „Senda erindi dregst alltaf upp"): stikan eltir ekki skrunið lengur */
   .rl-card{border:1px solid var(--line2);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--panel-sh);padding:20px 20px 18px}
   .rl-card .kicker{margin-bottom:14px}
   .rl-card .seg{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;margin-bottom:14px}.rl-card .seg button{justify-content:center;padding:10px 4px;letter-spacing:.8px;font-size:10.5px}
