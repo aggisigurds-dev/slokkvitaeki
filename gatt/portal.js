@@ -628,8 +628,10 @@
     var sel = '<option value="">Almennt erindi (allar eignir)</option>' + bl.map(function (b) { return '<option value="' + b.id + '"' + (String(b.id) === String(old.eign) ? ' selected' : '') + '>' + esc(b.nafn) + '</option>'; }).join('');
     var lid = railKind === 'verkbeidni' ? VB_LIDIR : railKind === 'gogn' ? GOGN_LIDIR : null;
     var er = ((state.data.erindi) || []).slice().sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
-    box.innerHTML =
-      '<section class="rl-card"><div class="kicker">Senda erindi</div>' +
+    // 23.10.2026 (Agnar: „svissa gluggunum … þegar hann kemur að senda erindi þá helst hann með niður"):
+    // Næstu skoðanir efst, Senda erindi þar undir — og formið festist (sticky) þegar skrunið nær því.
+    box.innerHTML = _naestuHtml +
+      '<section class="rl-card rl-sticky"><div class="kicker">Senda erindi</div>' +
       '<div class="seg" id="rl-seg">' + kinds.map(function (k) { return '<button type="button" data-rk="' + k[0] + '"' + (k[0] === railKind ? ' class="on"' : '') + '>' + k[1] + '</button>'; }).join('') + '</div>' +
       '<label class="flabel" for="rl-eign">Eign</label><select class="svc-in" id="rl-eign">' + sel + '</select>' +
       (lid ? '<div class="svc" id="rl-lid">' + lid.map(function (x) { return '<label><input type="checkbox" value="' + esc(x) + '">' + esc(x) + '</label>'; }).join('') + '</div>' : '') +
@@ -640,8 +642,7 @@
       // 23.10.2026 (Agnar: „óþarfi að hafa 2 eins útgáfur af erindi á forsíðunni"): „Mín erindi"-listinn undir forminu
       // var sama efni og Erindi-spjaldið í yfirlitinu. Hér stendur nú aðeins skýringin og tengill á listann.
       '<div class="rl-note">Staðan birtist undir Erindi: Móttekið · Í vinnslu · Svarað · Lokið.' +
-        (er.length ? ' <a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>' : '') + '</div></section>' +
-      _naestuHtml;
+        (er.length ? ' <a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>' : '') + '</div></section>';
     erBadge();
   }
   document.addEventListener('click', function (e) {

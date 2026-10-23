@@ -787,7 +787,7 @@
     .yf-layout #yf-tbl .baddr{display:none}
     .yf-layout .skt{max-width:140px}
   }
-  @media(max-width:1499px){.yf-layout{grid-template-columns:minmax(0,1fr)}.yf-rail{position:static;order:-1}.yf-rail .rl-list{display:none}}
+  @media(max-width:1499px){.yf-layout{grid-template-columns:minmax(0,1fr)}.yf-rail{position:static;order:-1}.yf-rail .rl-list{display:none}.yf-rail .rl-card.rl-sticky{position:static}}
   /* Erindi-síða */
   #er-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px}
   #er-chips .ef-sep{width:1px;height:22px;background:var(--line2);margin:0 4px}
@@ -819,6 +819,9 @@
   .eg-grid.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .eg-grid.erindi-wide{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}   /* 23.10.2026: Erindi tvöfalt, Verkefni við hlið; Næstu skoðanir í hægri dálknum */
   .yf-rail .egp-naestu{margin-top:0}
+  /* 23.10.2026: Senda erindi er neðar en Næstu skoðanir og festist undir hausnum þegar skrunið nær því */
+  .yf-rail .rl-card.rl-sticky{position:sticky;top:104px}
+  .yf-layout>.yf-rail{align-self:stretch}   /* stikan nær alla röðina svo sticky-formið hafi eitthvað til að festast í */
   .egp{border:1px solid var(--line2);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--panel-sh);overflow:hidden;align-self:start}
   .egp-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:15px 16px 12px;margin-top:2px;background:var(--strip);border-bottom:1px solid var(--line2)}
   .egp-h b{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);line-height:1}
@@ -836,7 +839,10 @@
   .egd.seint b{color:#b3261e}
   .egp-e{padding:16px;font-size:12.5px;color:var(--dim);line-height:1.5}
   .egp-n{padding:10px 16px 13px;font-size:11.5px;line-height:1.5;color:var(--dim);border-top:1px solid var(--line);background:var(--strip)}
-  .egp .elist .erow{padding:11px 16px}
+  /* 23.10.2026 (Agnar: „setja smá bil þarna eins og er í vinnusvæði, rennur svolítið saman"): hvert erindi á forsíðunni
+     er eigið spjald með bili á milli, eins og í eignar- og erindasýn (.dpanel.elist). */
+  .egp .elist{display:flex;flex-direction:column;gap:12px;padding:12px;background:var(--strip)}
+  .egp .elist .erow,.egp .elist .erow:last-child{padding:14px 16px 16px;border:1px solid var(--line2);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--panel-sh)}
   .ebbar{height:6px;margin:12px 16px 6px;border-radius:3px;background:var(--well);border:1px solid var(--line);overflow:hidden}
   .ebbar i{display:block;height:100%;background:var(--m-line)}
   .ebnr{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#b3261e;color:#fff;font-size:11px;font-weight:600}
@@ -1710,9 +1716,9 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/gatt/verkfaeri.js?v=20261023b"></script>
-<script src="/gatt/eignagatt.js?v=20261023d"></script>
+<script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261023h"></script>
+<script src="/gatt/portal.js?v=20261023i"></script>
 </body>
 </html>

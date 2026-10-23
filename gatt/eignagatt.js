@@ -207,9 +207,11 @@
   });
   // Viðbót við erindi-röð (portal.js erindiRod) og í sprettiglugga: ábyrgð, punktur, myndir, aðgerðir
   function erindiAuki(e, iPop) {
-    if (!e || (!e.abyrgd && !e.punktur && !(e.myndir && e.myndir.length))) return '';
+    if (!e) return '';
     var bits = [];
-    bits.push('<span class="vb-ab ' + esc(e.abyrgd || 'okkar') + '">' + esc(ABYRGD[e.abyrgd] || ABYRGD.okkar) + '</span>');
+    // 23.10.2026 (Agnar: „taka brunaholf burtu þarna, óþarfi"): Brunahólfs-pillan sleppt í erindalistanum — aðeins
+    // „Eigandi sjálfur" / „Annar verktaki" segja eitthvað. Verkefna-spjaldið (vbRod) sýnir ábyrgðina áfram.
+    if (e.abyrgd && e.abyrgd !== 'okkar') bits.push('<span class="vb-ab ' + esc(e.abyrgd) + '">' + esc(ABYRGD[e.abyrgd] || ABYRGD.okkar) + '</span>');
     if (e.punktur) bits.push('<span class="vb-pk">' + ic('teikning', 1.8) + esc(e.punktur.nafn || 'Teikning') + '</span>');
     if (e.frestur) bits.push('<span class="vb-fr">Frestur ' + esc(fmtDate(e.frestur)) + '</span>');
     var acts = [];
@@ -217,7 +219,8 @@
     if (e.abyrgd && e.abyrgd !== 'okkar' && e.stada !== 'lokid') acts.push('<button type="button" class="gbtn sm" data-vb-loka="' + e.id + '">' + ic('hak', 2.2) + 'Merkja lokið</button>');
     // Í erindalistanum stendur „Lokið" sem merki í haus röðarinnar (portal.js erindiRod) — kassinn aðeins í sprettiglugganum (23.10.2026)
     var lok = iPop && e.stada === 'lokid' && (e.lokid || e.lokid_lysing) ? '<div class="vb-lok">' + ic('hak', 2.2) + '<span><b>Lokið ' + esc(fmtDate(e.lokid)) + '</b>' + (e.lokid_lysing ? ' — ' + esc(e.lokid_lysing) : '') + '</span></div>' : '';
-    return '<div class="vb-auki"><div class="vb-bits">' + bits.join('') + '</div>' + myndaRod(e.myndir) + myndaRod(e.eftirmyndir, true) + lok + einkunnHtml(e) + (acts.length ? '<div class="vb-acts">' + acts.join('') + '</div>' : '') + '</div>';
+    var inni = (bits.length ? '<div class="vb-bits">' + bits.join('') + '</div>' : '') + myndaRod(e.myndir) + myndaRod(e.eftirmyndir, true) + lok + einkunnHtml(e) + (acts.length ? '<div class="vb-acts">' + acts.join('') + '</div>' : '');
+    return inni ? '<div class="vb-auki">' + inni + '</div>' : '';
   }
 
   /* ── Glugginn: ný verkbeiðni / verkefni ── */
