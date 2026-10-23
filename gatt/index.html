@@ -731,6 +731,28 @@
   .yf-layout .skt{max-width:228px}
   .yf-layout #yf-tbl .bic.ph{width:200px;height:134px}
   .yf-layout #yf-tbl .ract{flex-direction:column;align-items:flex-end;gap:6px}
+  /* 23.10.2026 (Agnar: „Skjala dálkurinn er að fara þarna bakvið … gera innri hlutann adaptable"): taflan er ~1340 px með
+     raungögnum en dálkurinn við hlið hægri stikunnar 1100–1300 px í 1500–1700 px glugga — Skjöl · Erindi klipptist af.
+     Spurt um breidd DÁLKSINS (container), ekki gluggans: undir 1320 px þéttist taflan (minni mynd, minni fylling, mjórri
+     ártalsreitir, „áður …"-línurnar víkja) svo allir átta dálkarnir sjáist án lárétts skruns. */
+  .yf-main{container-type:inline-size;container-name:yfmain}
+  @container yfmain (max-width:1320px){
+    .yf-layout #yf-tbl thead th{padding:12px 7px 10px;letter-spacing:.8px}
+    .yf-layout #yf-tbl tbody td{padding:10px 7px}
+    .yf-layout #yf-tbl .bic.ph{width:130px;height:88px}
+    .yf-layout #yf-tbl .bcell{gap:10px}
+    .yf-layout #yf-tbl .bname{font-size:16px}
+    .yf-layout #yf-tbl .baddr{font-size:11.5px}
+    .yf-layout .yb{width:33px}.yf-layout .yrs{gap:3px}
+    .yf-layout .skt{max-width:170px}
+    .yf-layout #yf-tbl .next .dim{display:none}
+  }
+  @container yfmain (max-width:1180px){
+    .yf-layout #yf-tbl .bic.ph{width:100px;height:68px}
+    .yf-layout #yf-tbl .bname{font-size:15px}
+    .yf-layout #yf-tbl .baddr{display:none}
+    .yf-layout .skt{max-width:140px}
+  }
   @media(max-width:1499px){.yf-layout{grid-template-columns:minmax(0,1fr)}.yf-rail{position:static;order:-1}.yf-rail .rl-list{display:none}}
   /* Erindi-síða */
   #er-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px}
