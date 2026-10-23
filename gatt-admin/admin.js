@@ -58,7 +58,7 @@
     { k: 'cream', n: 'Rjómi', d: 'Rjómi · gull · svart', hdr: '#22170e', paper: '#efe7db', card: '#fffdf8', metal: GOLD, dot: '#c9a54a' },
     { k: 'boss', n: 'Boss', d: 'Svart stál · gull', hdr: '#141312', paper: '#f4f1ea', card: '#ffffff', metal: GOLD, dot: '#c9a54a' },
     { k: 'grafit', n: 'Grafít', d: 'Grátt · silfur', hdr: '#27292d', paper: '#e3e4e6', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
-    { k: 'blar', n: 'Blátt', d: 'Dökkblátt · silfur', hdr: '#132036', paper: '#e6ebf2', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
+    { k: 'blar', n: 'Brunahólf', d: 'Dökkblátt · appelsínugult (vefverslunin)', hdr: '#222f47', paper: '#f0f2f7', card: '#ffffff', metal: 'linear-gradient(90deg,#ff4001,#ff4001)', dot: '#ff4001' },
   ];
   // Hlutar eignasíðunnar sem kveikt/slökkt er á per félag (portal_users.syn; vantar = á)
   // Verkfæraskráin er í gatt/verkfaeri.js (hlaðin á undan) — sömu lyklar og á þjóninum (_gatt-verkfaeri.cjs)

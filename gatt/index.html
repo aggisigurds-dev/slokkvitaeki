@@ -13,7 +13,7 @@
 <meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600&family=Playfair+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600&family=Playfair+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Poppins:wght@400;500;600;700&display=swap">
 <style>
   /* ── Útlit 10.10.2026: dýpt eftir Boss-uppskriftunum (brunaholf .claude/skills/boss-theme —
      gold.css + elevation.css). Hver flötur er einn hlutur: plata (panel), lykill
@@ -23,7 +23,7 @@
      ÞEMU per fyrirtæki (portal_users.theme → data-theme á <html>, valið á gatt-admin):
        steel  = Stál · kopar (sjálfgefið)      cream = Rjómi · gull · svart (Center)
        boss   = Boss · svart stál · gull        grafit = Grafít · grátt · silfur
-       blar   = Blátt · dökkblátt · silfur
+       blar   = Brunahólf · dökkblátt · appelsínugult (eftir vefversluninni, vefverslun/verslun.css 23.10.2026)
      --accent = áhersla á LJÓSUM fleti; --accent-hd = áhersla á DÖKKUM fleti. */
   :root{
     --bg:#e9eaec; --bg-hi:#f8f9fa; --card:#f7f7f7; --white:#fff;
@@ -80,7 +80,7 @@
       linear-gradient(90deg,#5a4410 0%,#c9a54a 12%,#f5d76e 24%,#fff3b0 30%,#d4a92a 44%,#f5d76e 60%,#fff3b0 68%,#c9a54a 84%,#5a4410 100%);
   }
   /* málmur: silfur */
-  :root[data-theme="grafit"],:root[data-theme="blar"]{
+  :root[data-theme="grafit"]{
     --m-edge:#4a5059; --m-ink:#14181d; --coin-ink:rgba(18,22,28,.85);
     --ic-hi:#d9dee5; --ic-mid:#8f98a4; --ic-lo:#4a525d;
     --m-line:linear-gradient(90deg,#4a5059 0%,#9aa2ad 18%,#dde2e8 38%,#ffffff 47%,#dde2e8 56%,#9aa2ad 78%,#4a5059 100%);
@@ -151,24 +151,39 @@
     --bubble:linear-gradient(180deg,#f2f3f5,#e5e7ea); --bubble-edge:#cdd1d6;
     --row-hover:rgba(90,100,115,.05); --sheet:#f0f1f2; --sheet2:#e7e8ea;
   }
+  /* Brunahólf: litir, letur og form úr vefversluninni (vefverslun/verslun.css :root — --c-navy #222f47,
+     --c-navy-deep #18213a, --c-orange #ff4001, --c-orange-ink #d13300, --c-mist #f0f2f7, --c-ink #1b2338,
+     --c-muted #515d78, --c-line #d5dae6, Poppins, --r 16px, --r-btn 999px). Málmurinn er hér flatur
+     appelsínugulur hreimur (strikið ofan á spjöldum = virki flipinn í vefversluninni). Hreimur á ljósum
+     fleti er #cc3200 (≥4,5:1 á hvítu og mist), á dökkum fleti #ff7044 (≥4,5:1 á navy). */
   :root[data-theme="blar"]{
-    --bg:#e6ebf2; --bg-hi:#f5f8fc; --card:#f6f8fb;
-    --ink:#0f1a2b; --ink2:#33415a; --dim:#5a677c; --faint:#93a0b3;
-    --dark:#0f1a2b; --dark2:#1c2a42;
-    --accent:#265a92; --accent-hd:#a8c8ef; --accent-soft:#7fa6d6; --ontime:#e2ebf7; --deep:#173a63;
-    --line:#dbe2ec; --line2:#c6d0de; --good:#1f7a44;
-    --on-dark-dim:#9eb0ca; --sh:15,26,43; --glow:80,135,205;
-    --ic-hi:#aecaee; --ic-mid:#5684bd; --ic-lo:#1f4a82;
-    --hdr:linear-gradient(180deg,#1f2e49 0%,#132036 48%,#0b1424 52%,#111c30 100%);
-    --night:linear-gradient(180deg,#1a2843 0%,#09101c 100%);
-    --slab:linear-gradient(160deg,#243656 0%,#142139 40%,#0a1222 100%);
-    --panel:linear-gradient(180deg,#ffffff 0%,#f5f8fb 100%);
-    --strip:linear-gradient(180deg,#f9fbfd,#e9eef5);
-    --well:linear-gradient(180deg,#e8edf4,#ffffff 55%);
-    --key:linear-gradient(180deg,#ffffff,#e8edf4);
-    --obsidian:linear-gradient(180deg,#2c3f60 0%,#1b2a45 50%,#101c31 51%,#16243c 100%);
-    --bubble:linear-gradient(180deg,#edf3fc,#dde8f6); --bubble-edge:#bfd2ea;
-    --row-hover:rgba(60,110,180,.05); --sheet:#f0f4f9; --sheet2:#e6ecf4;
+    --bg:#f0f2f7; --bg-hi:#ffffff; --card:#ffffff;
+    --ink:#1b2338; --ink2:#2c3650; --dim:#515d78; --faint:#7d89a3;
+    --dark:#18213a; --dark2:#222f47;
+    --accent:#cc3200; --accent-hd:#ff7044; --accent-soft:#ff4001; --ontime:#ffe9e1; --deep:#a32800;
+    --line:#d5dae6; --line2:#c3cad9; --good:#1f7a44;
+    --on-dark-dim:#b6c0d6; --sh:24,33,58; --glow:255,64,1;
+    --serif:"Poppins",system-ui,sans-serif; --ui:"Poppins",system-ui,sans-serif; --lbl:"Poppins",system-ui,sans-serif;
+    --ic-hi:#ffb199; --ic-mid:#ff4001; --ic-lo:#a32800;
+    --m-edge:#d13300; --m-ink:#ffffff; --coin-ink:#ffffff;
+    --m-line:linear-gradient(90deg,#ff4001,#ff4001);
+    --m-face:linear-gradient(180deg,#d13300,#d13300);
+    --m-text:linear-gradient(180deg,#ffffff,#ffffff);
+    --m-coin:radial-gradient(circle at 32% 28%,#ff8a62 0%,#ff4001 55%,#d13300 100%);
+    --m-band:linear-gradient(90deg,#ff4001,#ff4001);
+    --hdr:linear-gradient(180deg,#222f47,#222f47); --hdr-grain:linear-gradient(0deg,rgba(0,0,0,0),rgba(0,0,0,0));
+    --night:linear-gradient(180deg,#222f47 0%,#18213a 100%);
+    --slab:linear-gradient(160deg,#222f47 0%,#18213a 100%);
+    --panel:linear-gradient(180deg,#ffffff,#ffffff);
+    --strip:linear-gradient(180deg,#f0f2f7,#f0f2f7);
+    --well:linear-gradient(180deg,#ffffff,#ffffff);
+    --key:linear-gradient(180deg,#ffffff,#ffffff);
+    --obsidian:linear-gradient(180deg,#18213a,#18213a);
+    --bubble:linear-gradient(180deg,#f0f2f7,#f0f2f7); --bubble-edge:#d5dae6;
+    --row-hover:rgba(34,47,71,.05); --sheet:#f0f2f7; --sheet2:#e6eaf2;
+    --face-sh:0 1px 2px rgba(24,33,58,.18); --slab-sh:0 14px 30px -18px rgba(24,33,58,.45);
+    --well-sh:inset 0 0 0 1px rgba(255,255,255,0); --key-sh:0 1px 2px rgba(24,33,58,.08);
+    --obsidian-sh:0 1px 2px rgba(0,0,0,.25);
   }
   :root{
     --panel-sh:
@@ -203,6 +218,24 @@
   }
   /* Á dökkum flötum (haus, dökk spjöld, dökkir takkar) → nota haus-áhersluna. */
   header, #login button, .sc.dark, .chip.on, .msg-compose button, .dr-head, .seg button.on, .toast, .lb-h{ --accent: var(--accent-hd); }
+  /* Brunahólf: horn eins og í vefversluninni (--r 16px á spjöld, 12px á reiti, 999px á takka) og engir svartir kantar. */
+  :root[data-theme="blar"] .lcard,:root[data-theme="blar"] .sc,:root[data-theme="blar"] .tbl-wrap,:root[data-theme="blar"] .dpanel,:root[data-theme="blar"] .fcard,
+  :root[data-theme="blar"] .kcard,:root[data-theme="blar"] .ecard,:root[data-theme="blar"] .mcard,:root[data-theme="blar"] .rl-card,:root[data-theme="blar"] .eb-card,
+  :root[data-theme="blar"] .dk,:root[data-theme="blar"] .dnext,:root[data-theme="blar"] .vb-panel{border-radius:16px}
+  :root[data-theme="blar"] .fld input,:root[data-theme="blar"] .msg-compose textarea,:root[data-theme="blar"] .mcard textarea,:root[data-theme="blar"] .seg,
+  :root[data-theme="blar"] .eb-seg,:root[data-theme="blar"] .fseg,:root[data-theme="blar"] .eb-a,:root[data-theme="blar"] .svc label,:root[data-theme="blar"] .yb{border-radius:12px}
+  :root[data-theme="blar"] #login button,:root[data-theme="blar"] .hbtn,:root[data-theme="blar"] .chip,:root[data-theme="blar"] .msg-compose button,:root[data-theme="blar"] .kbtn,
+  :root[data-theme="blar"] .gbtn,:root[data-theme="blar"] .xbtn,:root[data-theme="blar"] .pdf,:root[data-theme="blar"] .dl,:root[data-theme="blar"] .tb{border-radius:999px}
+  :root[data-theme="blar"] .hbtn,:root[data-theme="blar"] .xbtn,:root[data-theme="blar"] .sc.dark,:root[data-theme="blar"] #login button,:root[data-theme="blar"] .msg-compose button{border-color:transparent;text-shadow:none}
+  :root[data-theme="blar"] .hbtn{color:#ffffff}
+  :root[data-theme="blar"] .seg button.on,:root[data-theme="blar"] .chip.on{color:#ffffff;text-shadow:none;border-radius:9px}
+  :root[data-theme="blar"] .chip.on{border-radius:999px}
+  :root[data-theme="blar"] .seg button{border-radius:9px}
+  :root[data-theme="blar"] header{box-shadow:0 1px 0 rgba(255,255,255,.06)}
+  :root[data-theme="blar"] .lcard{box-shadow:0 24px 60px -20px rgba(0,0,0,.55)}
+  :root[data-theme="blar"] nav a.tab{color:var(--on-dark-dim)}
+  :root[data-theme="blar"] nav a.tab.on,:root[data-theme="blar"] h2.page,:root[data-theme="blar"] .sc .v{text-shadow:none}
+  :root[data-theme="blar"] .brand b{filter:none;letter-spacing:.06em}
   *{box-sizing:border-box}
   html,body{margin:0}
   body{
