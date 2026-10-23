@@ -1720,13 +1720,13 @@
     bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
     sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 },
-    steypa: { lit: [184, 176, 165], fuga: '#a79f94', m: 3.2, v: 1.2 }      // verkstæði / lager: hlý grá steypa (mæld á viðmiðunarmynd Agnars 23.10.2026: #b8b2aa · #bdb7af; „örlítill brúnn tónn í viðbót“ sama kvöld), stórar plötur, varla sýnileg skil
+    steypa: { lit: [196, 189, 180], fuga: '#b6afa5', m: 3.2, v: 1.2 }      // verkstæði / lager: hlý grá steypa (mæld á viðmiðunarmynd Agnars 23.10.2026: #b8b2aa · #bdb7af; „örlítill brúnn tónn í viðbót“ sama kvöld), stórar plötur, varla sýnileg skil
   };
   // GÓLFLITIR (Agnar 23.10.2026: „væri gaman að geta skipt um lit á gólfinu sjálfur — eða að hluta“): litur á tré og steypu á öllum hæðum (Vidmot
   // 'teikning.golflitir', eins á öllum vélum) og máluð stök rými (haedir[].golfRymi = [{ x, y, litur }] í hnitum frummyndar, vistast á hæðina).
   const GOLFLITIR_KEY = 'teikning.golflitir';
   const erHex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
-  const golfLitir = () => { try { const v = window.Vidmot ? Vidmot.lesa(GOLFLITIR_KEY, null) : null; return { parket: v && erHex(v.parket) ? v.parket : '', steypa: v && erHex(v.steypa) ? v.steypa : '' }; } catch (_) { return { parket: '', steypa: '' }; } };
+  const golfLitir = () => { try { const v = window.Vidmot ? Vidmot.lesa(GOLFLITIR_KEY, null) : null; return { parket: v && erHex(v.parket) ? v.parket : '', steypa: v && erHex(v.steypa) ? v.steypa : '', eitt: !(v && v.eitt === false) }; } catch (_) { return { parket: '', steypa: '', eitt: true }; } };
   const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const rgbHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
   const parketUrLit = h => { const c = hexRgb(h); return [1.02, 0.985, 1, 0.97, 1.03].map(m => rgbHex(c.map(v => v * m))); };
@@ -1734,6 +1734,9 @@
     const L = golfLitir(), E = Object.assign({}, GOLF_EFNI);
     if (L.parket) E.parket = parketUrLit(L.parket);
     if (L.steypa) { const c = hexRgb(L.steypa); E.steypa = Object.assign({}, GOLF_EFNI.steypa, { lit: c, fuga: rgbHex(c.map(v => v * 0.92)) }); }
+    // EITT GÓLF (sjálfgefið, 23.10.2026): öll rými sama steypan — nánast engin skil; blandað efni (tré / flísar / steypa eftir heitum) aftur með „Blanda eftir rýmum“
+    E.eitt = L.eitt;
+    if (L.eitt) { const cE = L.steypa ? hexRgb(L.steypa) : GOLF_EFNI.steypa.lit; E.steypa = Object.assign({}, GOLF_EFNI.steypa, { lit: cE, fuga: rgbHex(cE.map(v => v * 0.97)), m: 6, v: 1 }); }
     return E;
   };
   const golfLykill = hd => JSON.stringify([golfLitir(), (hd && hd.golfRymi) || []]);
@@ -2034,6 +2037,7 @@
       // röðin í ibudR fylgir ibudNumer — vísar listans breytast við röðun, svo litur fer eftir númerinu (lit = nr)
       ibudListi.forEach(a => { a.ix = ibudNumer.findIndex(q => q.t === a.nr); });
     }
+    const GE = golfEfniVirk();
     // Máluð rými (hd.golfRymi): punktur í frummynd → rými; litur rýmisins fer ofan á efni þess (3D „Gólf“ ▸ Mála rými)
     const rymiIdAf = (x, y) => {
       const sk0 = hd.sk || { x: 0, y: 0 }, cx = Math.round((x - sk0.x) * kv * s), cy = Math.round((y - sk0.y) * kv * s);
@@ -2050,12 +2054,13 @@
       const id = merki[p]; if (id < 0) continue;
       let e = nafn[p] >= 0 ? EFNI_AF_TEG(heitin[nafn[p]].teg) : rymi[id].efni;
       if (steypuHaed && e === 'parket') e = 'steypa';
-      const grunn = e === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e, litM = rymiLit.get(id), l = litM ? 'sk|' + grunn + '|' + litM : grunn;
+      const e0 = e; if (GE.eitt) e = 'steypa';                      // eitt gólf: allt steypa nema máluð rými
+      const grunn0 = e0 === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e0, litM = rymiLit.get(id);
+      const grunn = e === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e, l = litM ? 'sk|' + grunn0 + '|' + litM : grunn;
       const g = grimur[l] || (grimur[l] = new ImageData(RW, RH));
       g.data[p * 4 + 3] = 255; alla.data[p * 4 + 3] = 255;
     }
     const iStriga = d => { const c = document.createElement('canvas'); c.width = RW; c.height = RH; c.getContext('2d').putImageData(d, 0, 0); return c; };
-    const GE = golfEfniVirk();
     const GW = golfStr.width, GH = golfStr.height, pxmG = metri * k.c * GW / W;
     const parket = (lodrett, pal) => {
       const pw = Math.max(3, 0.19 * pxmG), rad = 6, TH = Math.round(pw * rad), TW = Math.max(16, Math.round(2.8 * pxmG));
@@ -6306,7 +6311,8 @@
           const teikna = () => {
             const L = golfLitir();
             gp.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:12.5px">Gólf</b><button type="button" data-g="loka" style="' + hnapp + '">✕</button></div>' +
-              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>Allt tré</span>' + litInnsl('parket', L.parket || '#d3b38b') + '<span>Öll steypa</span>' + litInnsl('steypa', L.steypa || '#b8b0a5') + '<button type="button" data-g="upprunalegt" style="' + hnapp + '">Upprunalegt</button></div>' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button type="button" data-g="eitt" style="' + hnapp + (L.eitt ? gul : '') + '">' + (L.eitt ? 'Eitt gólf alls staðar' : 'Blandað eftir rýmum') + '</button><button type="button" data-g="upprunalegt" style="' + hnapp + '">Upprunalegt</button></div>' +
+              (L.eitt ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>Litur gólfsins</span>' + litInnsl('steypa', L.steypa || '#c4bdb4') + '</div>' : '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>Allt tré</span>' + litInnsl('parket', L.parket || '#d3b38b') + '<span>Öll steypa</span>' + litInnsl('steypa', L.steypa || '#c4bdb4') + '</div>') +
               '<div style="opacity:.75;font-weight:500">Eða mála stök rými:</div>' +
               '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' + LITIR.map(c => '<button type="button" data-g="litur" data-l="' + c[0] + '" title="' + c[1] + '" style="width:24px;height:24px;border-radius:6px;border:2px solid ' + (penni === c[0] ? '#fff' : 'rgba(255,255,255,.25)') + ';background:' + c[0] + ';cursor:pointer;padding:0"></button>').join('') + litInnsl('penni', penni) + '</div>' +
               '<div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" data-g="mala" style="' + hnapp + (hamur === 'mala' ? gul : '') + '">Mála rými</button><button type="button" data-g="hreinsa" style="' + hnapp + (hamur === 'hreinsa' ? gul : '') + '">Fjarlægja lit af rými</button></div>' +
@@ -6326,7 +6332,8 @@
           gp.addEventListener('click', e => {
             const b = e.target.closest('[data-g]'); if (!b) return; const g = b.getAttribute('data-g');
             if (g === 'loka') { gp.style.display = 'none'; hamur = 'af'; virkja(); return; }
-            if (g === 'upprunalegt') { try { if (window.Vidmot) Vidmot.setja(GOLFLITIR_KEY, { parket: '', steypa: '' }); } catch (_) {} if (G.syn3d && G.syn3d.endurgeraGolf) G.syn3d.endurgeraGolf(null); teikna(); return; }
+            if (g === 'eitt') { try { if (window.Vidmot) Vidmot.setja(GOLFLITIR_KEY, Object.assign(golfLitir(), { eitt: !golfLitir().eitt })); } catch (_) {} if (G.syn3d && G.syn3d.endurgeraGolf) G.syn3d.endurgeraGolf(null); teikna(); return; }
+            if (g === 'upprunalegt') { try { if (window.Vidmot) Vidmot.setja(GOLFLITIR_KEY, { parket: '', steypa: '', eitt: true }); } catch (_) {} if (G.syn3d && G.syn3d.endurgeraGolf) G.syn3d.endurgeraGolf(null); teikna(); return; }
             if (g === 'litur') { penni = b.getAttribute('data-l'); hamur = 'mala'; virkja(); return; }
             if (g === 'mala') { hamur = hamur === 'mala' ? 'af' : 'mala'; virkja(); return; }
             if (g === 'hreinsa') { hamur = hamur === 'hreinsa' ? 'af' : 'hreinsa'; virkja(); return; }
