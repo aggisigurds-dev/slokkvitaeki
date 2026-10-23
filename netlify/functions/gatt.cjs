@@ -1111,7 +1111,9 @@ exports.handler = async (event) => {
     // Ein skýrsla per (bygging, tegund, ár) — sama regla og aðal-yfirlitin.
     const reports = dedupeDocs(
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
-      (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${d.year == null ? '' : d.year}`,
+      // 23.10.2026 (samræmingarpróf gáttar ↔ apps): lykillinn var ár, svo tvær raunverulegar skýrslur sama árs
+      // (Arnarhvoll brunakerfi maí + okt 2026) runnu í eina. Nú mánuður skoðunar (skodun_ar_man / doc_date), ár til vara.
+      (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${skMan(d) || (d.year == null ? '' : d.year)}`,
     )
       // 23.10.2026 (Agnar: „sýna … heimilisfang, heildarfjölda tækja, mánuð skoðunar"): heimilisfang staðarins og tækjafjöldi úr skýrslunni
       .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: skMan(d), heimilisfang: adrById[d.fyrirtaeki_id] || '', texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
