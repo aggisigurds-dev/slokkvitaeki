@@ -15,7 +15,7 @@ const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
 // 19.10.2026: luks.mos.is (Mosfellsbær) — 510 af 515 skrám Sunnukrika 3 eru .tif (1–1,5 MB, image/tiff). Vafrinn birtir
 // ekki TIFF sjálfur, svo .tif af beinum hýsli er streymd hingað (image/tiff) og 384/451 afkóða hana með UTIF í vafranum;
 // með ?nidurhal=1 fer hún sem niðurhal (attachment) með nafni skjalsins. .pdf fer áfram í forskoðun eins og áður.
-const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is']);
+const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is', 'snorri.borgarbyggd.is']);
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {

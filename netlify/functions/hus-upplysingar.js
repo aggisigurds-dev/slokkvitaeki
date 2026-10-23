@@ -79,6 +79,9 @@ const MAPIS = [
   { svf: 1604, nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], slug: 'moso', bein: true },
   // 19.10.2026: Reykjanesbær (SVFNR 2000; 230/232/233/260/262 — Keflavík, Hafnir, Njarðvík, Ásbrú). PDF á teikningar.rnb.is.
   { svf: 2000, nafn: 'Reykjanesbær', kort: 'Kortasjá Reykjanesbæjar', postnr: [230, 232, 233, 260, 262], slug: 'reykjanesbaer', bein: true },
+  // 23.10.2026: Borgarbyggð (SVFNR 3609; 310 Borgarnes, 311 dreifbýli/Hvanneyri/Bifröst, 320 Reykholt).
+  // Skrárnar á snorri.borgarbyggd.is. Sjá mælinguna í teikn-listi.js.
+  { svf: 3609, nafn: 'Borgarbyggð', kort: 'Kortasjá Borgarbyggðar', postnr: [310, 311, 320], slug: 'borgarbyggd', bein: true },
 ];
 
 const cors = {

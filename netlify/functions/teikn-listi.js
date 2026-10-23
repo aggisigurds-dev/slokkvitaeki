@@ -28,9 +28,20 @@ const MAPIS_SVF = {
   1604: { slug: 'moso', nafn: 'Mosfellsbær', kort: 'Kortasjá Mosfellsbæjar', postnr: [270, 271], bein: true },
   // 19.10.2026 (Agnar: „Keilisbraut 745, 262 … tengja við kortakerfið í Keflavík líka"): Reykjanesbær (SVFNR 2000,
   // map.is/reykjanesbaer). PDF-in á teikningar.rnb.is; húsateikningar á heitinr hússins (Keilisbraut 745: 7, lóðin: 0).
+  /* 23.10.2026 (Agnar, Steypustöðin Borgarnesi): Borgarbyggð — SVFNR 3609, map.is/borgarbyggd.
+   * Póstnúmerin þrjú eru Borgarnes (310), dreifbýlið og Hvanneyri/Bifröst/Varmaland (311) og
+   * Reykholtsdalur (320). Skrárnar liggja á snorri.borgarbyggd.is.
+   *
+   * MÆLT þennan dag áður en þetta var skrifað: Kveldúlfsgata 30 (L237596) skilar NÍU teikningum,
+   * þar af aðaluppdráttum frá 21.01.2025 og 22.12.2025. Lóðirnar fjórar við Engjaás — þar sem
+   * Steypustöðin stendur — skila hins vegar „Engar niðurstöður". Það er ekki bilun í þessari
+   * tengingu heldur gat í skjalasafninu: verksmiðjan er frá 1998 og safnið á netinu geymir
+   * aðallega nýrra efni. Tengingin stendur samt, því hún þjónar öllum Borgarnes-kúnnum og
+   * safnið fyllist. */
   2000: { slug: 'reykjanesbaer', nafn: 'Reykjanesbær', kort: 'Kortasjá Reykjanesbæjar', postnr: [230, 232, 233, 260, 262], bein: true },
+  3609: { slug: 'borgarbyggd', nafn: 'Borgarbyggð', kort: 'Kortasjá Borgarbyggðar', postnr: [310, 311, 320], bein: true },
 };
-const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is'];
+const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is', 'snorri.borgarbyggd.is'];
 const beinSvf = svf => !!(MAPIS_SVF[svf] && MAPIS_SVF[svf].bein);
 const svfFyrirPostnr = pn => Object.keys(MAPIS_SVF).find(k => (MAPIS_SVF[k].postnr || []).includes(Number(pn))) || null;
 
