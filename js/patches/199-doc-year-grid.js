@@ -96,7 +96,8 @@
       if(a.path && getUrl){ var u=await CompanyAttachments.getPublicUrl(a.path); if(u) return { filename:nm, url:u }; }
       return null;
     }
-    if(x.drive_file_id) return { filename: fallbackName, driveId: x.drive_file_id };
+    // 23.10.2026: Storage FYRST líka í póstviðhengi (Drive-hlekkir rotna); Drive aðeins þegar ekkert Storage-afrit er til.
+    if(x.drive_file_id && !x.storage_path) return { filename: fallbackName, driveId: x.drive_file_id };
     if(x.storage_path){
       // storage_path getur verið bucket-prefixed ('samningar/…' úr customer_documents,
       // t.d. brunakerfis-skýrslur) EÐA bucket-relative. getPublicUrl (patch 111) væntir
@@ -1162,11 +1163,21 @@
     // yfirlitin + viðhengi fyrir skjalaspjaldið, sjá patch 273). Nú þegar báðar
     // lenda í sama dálki þarf að fella afritið burt: raunverulega skjalaröðin
     // er kanónísk, viðhengið víkur fyrir henni innan ársins.
-    Object.keys(bruByY).forEach(function(y){
-      var arr = bruByY[y] || [];
-      if (arr.some(function(x){ return !x._att; })) {
-        bruByY[y] = arr.filter(function(x){ return !x._att; });
-      }
+    // 23.10.2026 (Agnar: „hálf villandi … bæði Drive og Supabase afrit hjá skýrslunum"): sama regla fyrir
+    // slökkvitækja-skýrslurnar (🧯) — upphlaðin skýrsla (viðhengi í Storage) er brúuð í customer_documents + Drive
+    // (111 bridgeReportToTracker) og sýndist því tvisvar. Skjalaröðin er kanónísk; viðhengið víkur, en slóð þess
+    // fylgir röðinni svo flísin opni Storage-afritið (hratt, rotnar ekki) í stað Drive-hlekksins.
+    [bruByY, repByY].forEach(function(byY){
+      Object.keys(byY).forEach(function(y){
+        var arr = byY[y] || [];
+        var docs = arr.filter(function(x){ return !x._att; });
+        if (!docs.length) return;
+        var atts = arr.filter(function(x){ return x._att && x._att.path; });
+        docs.forEach(function(d, i){
+          if (!d.storage_path && atts[i] && atts[i]._att.path) d.storage_path = 'samningar/' + String(atts[i]._att.path).replace(/^samningar\//, '');
+        });
+        byY[y] = docs;
+      });
     });
 
     // ── hlaða skjala-factcheck fyrir öll skjöl félagsins (skýrslur + reikningar) ──
