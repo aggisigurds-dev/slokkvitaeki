@@ -885,14 +885,17 @@ exports.handler = async (event) => {
     //     sem eigin dálk; total_devices inniheldur þær. Skýrsla fyrst, tækjaskrá
     //     sem vara (óvirkar slöngur á Arnarhvoll eru samt á skýrslunni).
     const factSloById = {};
+    const factTotById = {};
     const liveBslById = {};
     try {
       if (siteIds.length) {
         const ids = siteIds.join(',');
-        const ar = await P.sbGet(`arsskodun_report_facts?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,report_year,equipment&order=report_year.desc`);
+        const ar = await P.sbGet(`arsskodun_report_facts?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,report_year,equipment,total_devices&order=report_year.desc`);
         if (ar.ok) {
           (await ar.json()).forEach((r) => {
             if (factSloById[r.fyrirtaeki_id] !== undefined) return;
+            // 23.10.2026: tækjafjöldi nýjustu skýrslu (appið uppfærir röðina við hverja vistun, patch 270) — Skýrslur → Tæki
+            if (r.total_devices != null && r.report_year != null) factTotById[r.fyrirtaeki_id] = { y: Number(r.report_year), n: Number(r.total_devices) };
             let eq = r.equipment || {};
             if (typeof eq === 'string') { try { eq = JSON.parse(eq); } catch (_) { eq = {}; } }
             factSloById[r.fyrirtaeki_id] = eq.brunaslongur != null ? Number(eq.brunaslongur) : null;
@@ -1100,6 +1103,9 @@ exports.handler = async (event) => {
       const v = d.skyrsla_vidbot && typeof d.skyrsla_vidbot === 'object' ? d.skyrsla_vidbot : null;
       const t = v && Array.isArray(v.taeki) ? v.taeki : null;
       if (t && t.length) { const n = t.reduce((s, x) => s + (Array.isArray(x) ? (+x[1] || 0) : (+(x && x.fj) || 0)), 0); if (n > 0) return n; }
+      // ný skýrsla úr appinu: fjöldinn í staðreyndaröð staðarins ef hún á við sama ár (patch 270 uppfærir hana við hverja vistun;
+      // source_doc_id þar er ekki uppfært, svo það er ekki notað til pörunar)
+      const ft = factTotById[d.fyrirtaeki_id]; if (ft && ft.y === Number(d.year)) return ft.n;
       return null;
     };
     // Ein skýrsla per (bygging, tegund, ár) — sama regla og aðal-yfirlitin.
