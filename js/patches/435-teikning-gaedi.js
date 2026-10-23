@@ -128,6 +128,8 @@
 
   function bindSrc(img, url) {
     if (!img || !url) return;
+    // Mynd úr Supabase Storage (greiningarblöð, upphlaðnar teikningar) er annars uppruna: án CORS-beiðni mengast strigi (getImageData) og 3D/Vinnumynd/Hreinsa gefast upp (23.10.2026, Álfaborg)
+    try { const su = String(url); if (!img.crossOrigin && su.indexOf('https://') === 0 && su.indexOf('.supabase.co/storage/') > 0) img.crossOrigin = 'anonymous'; } catch (_) {}
     if (erHreintPdf(url)) {
       const bid = ++_bindBid;
       img._gaediBid = bid; img._gaedi = 'pdf:' + url;

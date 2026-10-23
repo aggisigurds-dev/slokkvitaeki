@@ -407,7 +407,15 @@
     if (!F || typeof F._renderCanvas !== 'function') return false;
     if (F._renderCanvas.__takn) return true;
     const orig = F._renderCanvas.bind(F);
-    const wrap = function () { orig(); try { teiknaOfan(this); } catch (_) {} };
+    // Sían (478): grunnteiknarinn (newfeatures/floorplanfix) teiknar einfaldan punkt fyrir ÖLL merki á striganum — falin merki mega ekki eiga punkt þar,
+    // svo grunnteikningin fær síaðan lista (grunn-afrit af planinu, aðeins á meðan teiknað er; gögnin sjálf ósnert).
+    const wrap = function () {
+      const F2 = this, cid = F2 && F2.companyId, pl = F2 && F2.plans && F2.plans[cid], sia = window.TeiknSia;
+      let sidad = null;
+      try { if (pl && Array.isArray(pl.markers) && sia && sia.lykill && sia.lykill()) { const syn = pl.markers.filter(m => !sia.falid(m, F2.units)); if (syn.length !== pl.markers.length) sidad = syn; } } catch (_) {}
+      if (sidad) { F2.plans[cid] = Object.assign({}, pl, { markers: sidad }); try { orig(); } finally { F2.plans[cid] = pl; } } else orig();
+      try { teiknaOfan(this); } catch (_) {}
+    };
     wrap.__takn = 1;
     F._renderCanvas = wrap;
     return true;
