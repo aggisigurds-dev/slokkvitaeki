@@ -16,7 +16,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
   var fmtDate = function (d) { if (!d) return '—'; var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d)); return m ? (m[3] + '/' + m[2] + '/' + m[1]) : String(d); };
   var LIT = { mottekid: '#c0392b', i_vinnslu: '#c48a1a', lokid: '#1f7a44' };
-  var ABYRGD = { okkar: 'Slökkvitæki ehf.', eigandi: 'Eigandi sjálfur', annar: 'Annar verktaki' };
+  var ABYRGD = { okkar: 'Brunahólf', eigandi: 'Eigandi sjálfur', annar: 'Annar verktaki' };   // 23.10.2026: merkið segir Brunahólf, eins og takkinn
   var STADA = { mottekid: 'Móttekið', i_vinnslu: 'Í vinnslu', lokid: 'Lokið' };
   function ic(k, w) { return G().svgIc(k, w); }
   function toast(m) { G().toast(m); }
@@ -435,14 +435,15 @@
         (e.punktur ? '<button type="button" class="kbtn sm" data-vb-syna="' + e.id + '" title="Sjá á teikningu">' + ic('teikning', 1.8) + '</button>' : '') +
         '<span class="vb-ab ' + esc(e.abyrgd || 'okkar') + '">' + esc(ABYRGD[e.abyrgd] || ABYRGD.okkar) + '</span></div>';
     }
-    // 23.10.2026 (Agnar: „Taka allt sem stendur til okkar … setja frekar + Verkbeiðni til Brunahólf"): verkbeiðnir til
-    // Brunahólfs eiga heima undir Erindi (með stöðu og skýringu) — hér standa aðeins verkefni kúnnans sjálfs og annarra
-    // verktaka, og takkinn býr til verkbeiðni til Brunahólfs.
-    var opM = min.filter(function (e) { return e.stada !== 'lokid'; }).length;
-    return '<div class="egp-h"><b>Verkefni</b><span>' + opM + ' opin · ' + (min.length - opM) + ' lokið</span></div>' +
+    // 23.10.2026 (Agnar: „Taka allt sem stendur til okkar … setja frekar + Verkbeiðni til Brunahólf" — og síðan „Það fór
+    // allt út úr verkefnalistanum"): orðalagið breytist, listinn ekki. Verkbeiðnir til Brunahólfs standa áfram hér með
+    // sinni stöðu; aðeins „til okkar"/„hjá okkur" víkur fyrir Brunahólfi, gáttin er kúnna-sýnileg.
+    var opM = min.filter(function (e) { return e.stada !== 'lokid'; }).length, opO = okkar.filter(function (e) { return e.stada !== 'lokid'; }).length;
+    return '<div class="egp-h"><b>Verkefni</b><span>' + opM + ' mín · ' + opO + ' hjá Brunahólfi</span></div>' +
       '<div class="vs-sub">Mín verkefni og annarra verktaka</div>' +
       (min.length ? min.slice(0, 12).map(rod).join('') : '<div class="egp-e">Engin verkefni enn — „Nýtt verkefni" setur verk á borðið þitt, með mynd og punkti á teikningu ef vill.</div>') +
-      (okkar.length ? '<div class="vs-sub">' + okkar.filter(function (e) { return e.stada !== 'lokid'; }).length + ' verkbeiðnir hjá Brunahólfi í vinnslu — sjá Erindi</div>' : '') +
+      '<div class="vs-sub">Verkbeiðnir til Brunahólfs</div>' +
+      (okkar.length ? okkar.slice(0, 12).map(rod).join('') : '<div class="egp-e">Engar verkbeiðnir enn.</div>') +
       '<div class="vs-foot"><button type="button" class="gbtn sm" data-vs-nytt>' + ic('plus', 2.2) + 'Nýtt verkefni</button><button type="button" class="kbtn sm" data-vs-nytt-okkar>' + ic('plus', 2.2) + 'Verkbeiðni til Brunahólfs</button></div>';
   }
   /* Tenglastika (12.10.2026, Agnar: „auka stika við hliðina á vinnusvæði … bætt við þínum eigin linkum … textinn
