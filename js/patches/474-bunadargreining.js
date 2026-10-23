@@ -204,7 +204,32 @@
       '<div class="bgr-tx" hidden>' + textiHtml(r) + '</div></div>';
     var dl = (r.yfirlag || []).length ? el.querySelector('.bgr-bl-d') : null;
     if (dl) dl.addEventListener('toggle', function () { if (dl.open && !dl._teiknad) { dl._teiknad = 1; teiknaBlod(el, r); } });
-    else teiknaBlod(el, r);
+    else { teiknaBlod(el, r); if (cid) saman(el, cid, r); }
+  }
+
+  /* ── EIN GREINING Á PRÓFÍLNUM (Agnar 23.10.2026, ProLan Suðurhella 5: „virðist vera með 2 mismunandi greiningar … geturðu kannski bara haft eina greiningu"):
+   * Teikning-spjaldið (456, hæðirnar með staðsetningum) og „Teikning greiningarinnar" hér undir sýndu SÖMU blöðin tvisvar, með mismunandi merkjum
+   * (annað S/B-staðsetningar, hitt líka ÚT og skynjarar). Séu allar hæðir greiningarinnar þegar á Teikningu staðarins (sama mynd) fellur seinni
+   * útgáfan saman í „details" — opnast með smelli, teiknuð eins og áður, engu eytt. */
+  var BORD_SKYNDI = {};
+  function bordMyndir(cid) {
+    if (!BORD_SKYNDI[cid]) BORD_SKYNDI[cid] = Promise.resolve(SB().from('teikning_bord').select('haedir,image_url').eq('company_id', cid).limit(1)).then(function (q) {
+      var row = q && q.data && q.data[0], u = {};
+      ((row && row.haedir) || []).forEach(function (h) { if (h && h.image_url && (h.markers || []).length) u[String(h.image_url).split('?')[0]] = 1; });
+      return u;
+    }, function () { return {}; });
+    return BORD_SKYNDI[cid];
+  }
+  function saman(el, cid, r) {
+    var bl = (r.teikningar || []).filter(function (b) { return b && b.mynd; });
+    if (!bl.length) return;
+    bordMyndir(cid).then(function (u) {
+      if (!el.isConnected || !bl.every(function (b) { return u[String(b.mynd).split('?')[0]]; })) return;
+      var d = el.querySelector('.bgr-bl:not(.bgr-bl-d)'), g = d && d.querySelector('.bgr-bl-g'); if (!d || !g) return;
+      var det = document.createElement('details'); det.className = 'bgr-bl bgr-bl-d';
+      var sm = document.createElement('summary'); sm.textContent = 'Teikning greiningarinnar — sömu blöð og hér að ofan, með ÚT-skiltum og brunakerfi'; det.appendChild(sm); det.appendChild(g);
+      d.parentNode.replaceChild(det, d);
+    });
   }
 
   /* ── TEIKNING GREININGARINNAR — sér teikning (Agnar 19.10.2026: „að það merkist líka inn á sér teikningu" og „að svona
