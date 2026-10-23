@@ -80,10 +80,40 @@
       beitaAServer(cid, row);
     } catch (e) { console.warn('[375] uppfæra ritil', e && e.message); }
   }
+  /* 23.10.2026 — Agnar vistaði teikningu á Steypustöðina Borgarnesi og slóðin sem
+   * fór á þjóninn var `blob:https://slokkvitaeki.netlify.app/4f306091-…`.
+   *
+   * Blob-slóð lifir AÐEINS í þeim vafraflipa sem bjó hana til. Hún var því dauð um
+   * leið og hún var vistuð: teikningin hefði verið auð við næstu opnun og var auð
+   * hjá hinum vélunum frá fyrstu stundu. Merkin sem sett voru ofan á hana héngu á
+   * engu — og ekkert af þessu sést fyrr en borðið er opnað aftur.
+   *
+   * 383 BAR ÞESSA VÖRN FYRIR en aðeins á TurboPaint-leiðinni
+   * (`vistaHaedirFyrirTurboPaint`). Agnar ýtti á 💾 Vista, sem fer hér um, og þar
+   * var engin vörn. Hún á heima HÉR því þetta er eina leiðin sem öll skrif fara um.
+   *
+   * Gagnagrunnurinn hafnar þessu líka (trigger `teikning_bord_bannadar_slodir`,
+   * sett sama dag) — það er endanlega vörnin, því sjö skrár skrifa í töfluna og sú
+   * áttunda myndi ekki vita af reglunni. Þessi hér er til svo notandinn fái
+   * læsilega skýringu í stað gagnagrunnsvillu. */
+  var BONNUD = /^(blob|data):/i;
+  function blobSlodir(row) {
+    var ut = [];
+    if (row && typeof row.image_url === 'string' && BONNUD.test(row.image_url)) ut.push('efsta myndin');
+    if (row && Array.isArray(row.haedir)) row.haedir.forEach(function (h, i) {
+      if (h && typeof h.image_url === 'string' && BONNUD.test(h.image_url)) ut.push((h.nafn || ('hæð ' + (i + 1))));
+    });
+    return ut;
+  }
   // Skilar loforði um { error, sameinad }. row = { company_id, markers, image_url, updated_at, haedir? }.
   function skrifa(cid, row) {
     return new Promise(function (res) {
       if (!cid || !row || !window.DB || !DB.sb) { res({ error: new Error('engin tenging') }); return; }
+      var blob = blobSlodir(row);
+      if (blob.length) {
+        res({ error: new Error('Teikningin er enn aðeins til í þessum vafra (' + blob.join(', ') + ') — hún myndi birtast auð hjá öllum öðrum. Sæktu teikninguna af sveitarfélaginu eða hlaðið henni upp áður en þú vistar.') });
+        return;
+      }
       var senda = function (sameinad) {
         DB.sb.from(TAFLA).upsert(row, { onConflict: 'company_id' }).then(function (r) {
           var villa = r && r.error;
