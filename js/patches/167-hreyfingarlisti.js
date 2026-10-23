@@ -742,7 +742,7 @@
             <h1>Hreyfingarlisti</h1>
             ${kt
               ? `<div class="hl2-undir kt"><b>${esc(kt.nafn)}</b>${kt.ktFmt ? ' · kt. ' + esc(kt.ktFmt) : ''} · ${esc(ft(_state.all.length, 'færsla', 'færslur'))}${kt.locs > 1 ? ' · ' + kt.locs + ' staðsetningar' : ''}</div>`
-              : `<div class="hl2-undir">${esc(scopeLabel)} · ${esc(ft(all.length, 'færsla', 'færslur'))} · smelltu á dálk til að raða</div>`}
+              : `<div class="hl2-undir">${esc(scopeLabel)} · ${esc(ft(all.length, 'færsla', 'færslur'))} · ${getViewMode() === 'mobile' ? 'veldu röðun fyrir ofan listann' : 'smelltu á dálk til að raða'}</div>`}
           </div>
           <div class="hl2-tol">
             ${kt

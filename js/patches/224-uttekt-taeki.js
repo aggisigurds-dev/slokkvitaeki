@@ -402,6 +402,11 @@
       // ⚠-merkið í Ársskoðun (153 `_blobMisraemi`) haldi áfram að sýna að tæki vanti. Það er
       // einkennið sem Agnar bað um að sjá; staðfesting á aldrei að má það út.
       // Handvirk tala (equipment_manual) er aldrei snert — hún vinnur yfir allt.
+      // 23.10.2026 (mál #1222, samþykkt): afritið má líka fara NIÐUR — en AÐEINS þegar véllesin skýrsla ársins
+      // (arsskodun_report_facts, parse_ok) stemmir NÁKVÆMLEGA við prófílinn, tegund fyrir tegund. Þá vantar ekkert og
+      // ⚠ í Ársskoðun er rangt; í öllum öðrum tilvikum helst „aðeins upp á við“ og ⚠ sést áfram (þín ósk). Dæmin:
+      // sex félög 12.–13.10. (#1216–#1221) þar sem tæki voru tekin úr notkun og afritið sat á gömlu tölunni.
+      var _nidur = null;
       if(on){
         try{
           var _cat = window.Arsskodun && Arsskodun.categoryOf;
@@ -416,6 +421,7 @@
             _u.forEach(function(x){ var k=_cat(x.type, x.size); _eq[k]=(_eq[k]||0)+1; });
             var _afrit = Object.keys(cur.equipment||{}).reduce(function(s,k){ return s + (+cur.equipment[k]||0); }, 0);
             if(_u.length >= _afrit) patch.equipment = _eq;
+            else _nidur = _eq;   // prófíllinn er skemmri: afritið fer NIÐUR aðeins ef skýrsla ársins stemmir (sjá neðar)
           }
         }catch(e){ try{ console.warn('[uttekt-taeki] afrit ekki uppfært', e); }catch(_){} }
       }
@@ -427,8 +433,29 @@
         try{ if(window.logProblem) window.logProblem('listi_stadfest_sync_failed', 'co ' + coId + (e ? (': ' + String((e&&e.message)||e)) : ' — save skilaði false')); }catch(_){}
         if(window.Toast&&Toast.show) Toast.show('⚠ Staðfesting tækjalistans komst EKKI á þjóninn — hún sést aðeins í þessu tæki. Reyndu aftur.');
       };
-      Promise.resolve(AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } }))
-        .then(function(ok){ if(!ok) _fail(null); }, function(e){ _fail(e); });
+      var _vista = function(){
+        Promise.resolve(AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } }))
+          .then(function(ok){ if(!ok) _fail(null); }, function(e){ _fail(e); });
+      };
+      if(_nidur){
+        // Tegund fyrir tegund: sömu fínflokkar báðum megin, vantandi = 0. Skýrslan ber ekki „annad“ og gömlu hópalyklarnir
+        // (slt/bsl/rs) eru null í _eq — hvort tveggja telst 0, svo prófíll með „annað“ stemmir EKKI við skýrslu án þess.
+        var _stemmir = function(rep){
+          var ks = {}; Object.keys(rep||{}).forEach(function(k){ ks[k]=1; }); Object.keys(_nidur).forEach(function(k){ ks[k]=1; });
+          return Object.keys(ks).every(function(k){ return (+(rep||{})[k]||0) === (+_nidur[k]||0); });
+        };
+        var _sb = window.DB && DB.sb;
+        if(!_sb){ _vista(); }
+        else {
+          Promise.resolve(_sb.from('arsskodun_report_facts').select('equipment,report_year,parse_ok').eq('fyrirtaeki_id', coId).eq('report_year', ar).limit(1))
+            .then(function(r){
+              var f = r && r.data && r.data[0];
+              if(f && f.parse_ok === true && _stemmir(f.equipment)) patch.equipment = _nidur;
+            })
+            .catch(function(){ /* lestur brást → afritið helst óhreyft, eins og áður */ })
+            .then(_vista);
+        }
+      } else { _vista(); }
     }catch(e){
       try{ console.warn('[uttekt-taeki] listi-staðfesting', e); }catch(_){}
       try{ if(window.logProblem) window.logProblem('listi_stadfest_sync_failed', 'co ' + coId + ': ' + String((e&&e.message)||e)); }catch(_){}

@@ -84,7 +84,7 @@ agent-skrárnar heita eftir **sviði**, svo verk merkt „Samantha" fann ekkert.
 | 💥 Willis | `hradi` | bh · kj |
 | 🤬 Samuel L. J. | `tengingar` | bh · kj |
 | 🩺 Dr. House | `kerfisheilsa` | bh · kj |
-| 🇺🇸 Trump | `hype` | bh · kj |
+| 🇺🇸 Trump | `hype` (nú kafli í `jarvis`) | bh · kj |
 | 💪 Arnold | skill `arnold` (brunavarnir, **öll laga- og reglumál**, staðsetning búnaðar, TurboPaint) · agent `oryggi` (RLS/lyklar) | slokk · bh/kj |
 | 🏷️ DeVito | `prentun` | slokk · kj |
 | 🗺️ Ramsay | `kort` | slokk · kj |

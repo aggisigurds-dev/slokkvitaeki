@@ -36,6 +36,11 @@
   if (window.Vinnutolva) return;
 
   const LYKILL = 'vinnutolva_ultra';
+  // 23.10.2026 (mál #1240, samþykkt; regla Agnars 15.10): rofinn var í localStorage einnar vélar. Nú í Vidmot (472),
+  // EITT gildi fyrir allar tölvurnar og annað fyrir síma (tækjaflokkur — 14 MB minni er þungt á síma í 4G, svo
+  // „kveikt á tölvunum" kveikir ekki á símanum). Gamli lykillinn er einskiptis upphafsgildi og er fjarlægður.
+  const V_LYKILL = 'vinnutolva';
+  try { if (window.Vidmot && Vidmot.flytjaTaeki) { Vidmot.flytjaTaeki(V_LYKILL, LYKILL, v => (v === 1 || v === '1' || v === true) ? true : (v === 0 || v === '0' || v === false) ? false : undefined); localStorage.removeItem(LYKILL); } } catch (_) {}
   // 17.09.2026 — MÆLT: fyrsta útgáfa endurnýjaði ALLTAF í bakgrunni, svo
   // endurkoma á fyrirtæki kostaði 55 netköll áfram. Það var ekki það sem beðið
   // var um („fer fram og til baka og alltaf svo mikið reload"). Þess vegna tvö þrep:
@@ -50,9 +55,13 @@
   const minni = new Map();               // slóð -> { t, status, headers, texti }
   let uppfLotu = 0, uppfTimer = 0;
 
-  const a = () => { try { return localStorage.getItem(LYKILL) === '1'; } catch (_) { return false; } };
+  // a() er kallað á HVERJU fetch-i: lesið úr Vidmot í mesta lagi á 3 s fresti (og strax eftir kveikja()), ekki á hverju kalli.
+  let _kv = false, _kvT = 0;
+  const lesaVal = () => { try { return !!(window.Vidmot && Vidmot.lesaTaeki(V_LYKILL, false) === true); } catch (_) { return false; } };
+  const a = () => { const n = Date.now(); if (n - _kvT > 3000) { _kvT = n; _kv = lesaVal(); } return _kv; };
   const kveikja = (v) => {
-    try { localStorage.setItem(LYKILL, v ? '1' : '0'); } catch (_) {}
+    try { if (window.Vidmot) Vidmot.setjaTaeki(V_LYKILL, !!v); } catch (_) {}   // aðeins úr smelli á rofann / hleðslutakkanum
+    _kv = !!v; _kvT = Date.now();
     if (!v) minni.clear();
     merki();
     return a();

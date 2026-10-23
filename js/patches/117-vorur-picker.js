@@ -68,7 +68,11 @@
 
   // „Mest notað" — nýjustu val notandans (localStorage) fyrst, svo sjálfgefnir
   // skýrslu-þjónustuliðir svo reiturinn er aldrei tómur í fyrsta skipti.
+  // 23.10.2026 (mál #1240, samþykkt): „Mest notað" var enn í vafra einnar vélar (vp_recent_v1). Nú í Vidmot (472) eins og
+  // uppáhaldið (15.10): sama listi á öllum vélum, nýjasta ræður. Gamli lykillinn er einskiptis upphafsgildi og er fjarlægður.
   const RECENT_KEY = 'vp_recent_v1';
+  const RECENT_V = 'vorur.nylega';
+  try { if (window.Vidmot && Vidmot.flytja) { Vidmot.flytja(RECENT_V, RECENT_KEY, v => (Array.isArray(v) && v.length) ? v.map(String) : undefined); localStorage.removeItem(RECENT_KEY); } } catch (_) {}
   const DEFAULT_RECENT = [
     'Samantekt og gerð skoðunarskýrslu',
     'Skoðun á aðalstöð brunaviðvörunarkerfis',
@@ -76,7 +80,7 @@
     'Skoðun á aðalafli og varaafli'
   ];
   function getRecents() {
-    try { const a = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(a) ? a : []; }
+    try { const a = window.Vidmot ? Vidmot.lesa(RECENT_V, []) : []; return Array.isArray(a) ? a : []; }
     catch (_) { return []; }
   }
   function pushRecent(nafn) {
@@ -85,7 +89,7 @@
       let a = getRecents().filter(n => n !== nafn);
       a.unshift(nafn);
       if (a.length > 12) a = a.slice(0, 12);
-      localStorage.setItem(RECENT_KEY, JSON.stringify(a));
+      if (window.Vidmot) Vidmot.setja(RECENT_V, a);   // aðeins úr raunverulegu vali á vöru
     } catch (_) {}
   }
 

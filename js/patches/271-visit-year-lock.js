@@ -107,9 +107,16 @@
     document.head.appendChild(s);
   })();
 
+  // 23.10.2026 (mál #1241, samþykkt): græna yfirlagið „Búið <ár>“ yfir reikningsútfyllingunni er SLÖKKT. Agnar bað um það
+  // 12.10 („þegar ég klára skýrsluna og ýti á útbúa skýrslu, þá kemur grænt yfir reikninga útfyllinguna“): yfirlagið kviknar
+  // þegar skýrsla og reikningur ársins finnast á kennitölunni, líka reikningur sem tilheyrir annarri úttekt, og lokar þá
+  // útfyllingunni. Allur annar kóði (isComplete fyrir 228, mælingar 307) er óbreyttur. Til að kveikja aftur: false.
+  const YFIRLAG_SLOKKT = true;
+
   function apply() {
     const section = document.getElementById('_ctc-section');
     if (!section) return;
+    if (YFIRLAG_SLOKKT) { const eldra = section.querySelector('._vyl-overlay'); if (eldra) eldra.remove(); return; }
     const coId = getCompanyId();
     if (!coId) return;
     const year = new Date().getFullYear();
