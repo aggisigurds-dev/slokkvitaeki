@@ -65,11 +65,14 @@ async function allar(q) {
   const lifandi = [];
   for (let i = 0; i < ids.length; i += 80) {
     const hopur = ids.slice(i, i + 80).map(s => '"' + s.replace(/"/g, '') + '"').join(',');
-    lifandi.push(...await allar('customer_documents?select=id,drive_file_id,invoice_number,created_at&drive_file_id=in.(' + encodeURIComponent(hopur) + ')&order=id'));
+    lifandi.push(...await allar('customer_documents?select=id,drive_file_id,invoice_number,created_at,notes&drive_file_id=in.(' + encodeURIComponent(hopur) + ')&order=id'));
   }
+  // 23.10.2026: endurkoma sem var SKOÐUÐ og skráð hvers vegna (hausinn: „skráningin — og þá skrá hvers vegna") telst
+  // leyst — merkið „endurkoma-leyfð" í notes með rökstuðningi (t.d. 10225 R-107802: skjalið lesið, tölurnar passa
+  // Granda; fyrri eyðingar voru vegna Plaza). Óskráð endurkoma telur áfram; grunnlínan er aldrei hækkuð.
   const B = lifandi.filter(c => {
     const x = perSkra.get(c.drive_file_id);
-    return x && Date.parse(c.created_at) > x.fyrsta;
+    return x && Date.parse(c.created_at) > x.fyrsta && !/endurkoma-leyf[ðd]/i.test(String(c.notes || ''));
   });
 
   if (LISTI) {
