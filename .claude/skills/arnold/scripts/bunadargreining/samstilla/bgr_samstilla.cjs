@@ -6,7 +6,7 @@
 //   --cid=1621,198    aðeins þessi félög          --afl   hunsa vistað ástand (athuga allt)          --an-mynda   sleppa endurgerð mynda
 //
 // REGLUR (hver er óhagganleg):
-//  · Aðeins hæðir þar sem haed.id = blað-id greiningarinnar (sama blað og borðið) og aðeins flokkarnir ÚT-stimpill, „Nýtt"-merki (reyk-/hitaskynjari,
+//  · Aðeins hæðir þar sem haed.id = blað-id greiningarinnar (sama blað og borðið) — eða hæðir með merki n:…:g<4><blað>_<auðkenni> (samraemaGolf, t.d. Álfaborg 661) og aðeins flokkarnir ÚT-stimpill, „Nýtt"-merki (reyk-/hitaskynjari,
 //    slökkvitæki, slanga) og tillögur Arnolds (unitId n:…:gt…). Skráð tæki (unitId = uttaeki) og aðrir stimplar eru ekki greiningin.
 //  · Vörn: tómt merkjasett á hæð sem hefur færslur → hæðin er SKILIN EFTIR (t.d. „Hreinsa" ýtt fyrir slysni); eyðing > 50 % af ≥ 4 færslum → skilin eftir
 //    og skráð til yfirferðar. Færsla sem varð skráð tæki (merki í ≤ 90 px) telst ekki eydd.
@@ -115,6 +115,52 @@ function samraemaHaed(bg, blad, h) {
   return { breytt, tki: nyttTki, till: nyttTill, eldriIds: new Set(eldri), eldriTillIds: new Set(eldriTill), lysing };
 }
 
+// ── HÆÐIR SEM ERU EKKI 1:1 VIÐ BLAÐ (Álfaborg 661: borðið er 2022-teikningin, greiningin notar aðaluppdrætti 2025 + brunakerfisblöð með varpa) ──────────────
+// Flutt inn með import661.cjs: merki n:<tegund>:g<4 síðustu stafir hæðar><blað>_<auðkenni> / s:ut:… — tki tengjast hæð um haed_id (eða hæðarheiti) og bera x,y í ramma
+// borðsins; bx,by (blaðhnit) eru reiknuð til baka með varpa blaðsins. Skráð tæki (unitId ≠ null) eru ekki hluti af þessu; handboðar/stjórnstöðvar ekki heldur.
+const GOLF_MERKI = /^(s|n):[a-z0-9]+:g[A-Za-z0-9]{4}[A-Za-z0-9]+_/;
+const tilBord = (blad, bx, by) => { const vp = blad && blad.varpa; return vp && vp.fx && vp.fy ? [vp.fx.k * +bx + vp.fx.c, vp.fy.k * +by + vp.fy.c] : [+bx, +by]; };
+const fraBord = (blad, x, y) => { const vp = blad && blad.varpa; return vp && vp.fx && vp.fy && vp.fx.k && vp.fy.k ? [Math.round((x - vp.fx.c) / vp.fx.k), Math.round((y - vp.fy.c) / vp.fy.k)] : [x, y]; };
+function samraemaGolf(bg, h) {
+  const lysing = [], nafn = String(h.nafn || h.id);
+  if (!(h.markers || []).some((m) => GOLF_MERKI.test(String(m.unitId || '')))) return { skipt: true, lysing };
+  const blod = {}; (bg.teikningar || []).forEach((b) => { if (b && b.id) blod[b.id] = b; });
+  const eigin = (bg.tki || []).filter((x) => (x.haed_id ? x.haed_id === h.id : x.haed === h.nafn));
+  const lyk = (e, i) => 'g' + h.id.slice(-4) + (e.blad || 'b') + '_' + String(e.audkenni || i).replace(/[^A-Za-z0-9]/g, '');
+  const eldri = []; eigin.forEach((e, i) => { if (e.unitId == null && flokkurFærslu(e)) eldri.push({ e, k: lyk(e, i) }); });
+  const bord = merkiBords(h), skrad = skraðTæki(h);
+  // staða færslu í ramma borðsins: x,y ef til, annars blaðhnit (bx,by) varpað með varpa blaðsins (ÚT og brunakerfi hafa aðeins þau)
+  const stada = (e) => (isFinite(+e.x) && e.x != null && isFinite(+e.y) && e.y != null) ? [+e.x, +e.y] : (e.bx != null && e.by != null ? tilBord(blod[e.blad], e.bx, e.by) : [NaN, NaN]);
+  const nær = (o, e) => { const q = stada(e); return Math.hypot(o.x - q[0], o.y - q[1]); };
+  // PÖRUN: á lykli úr unitId (sfx = það sem er á eftir síðasta „:“), svo á nálægð í sama flokki (≤ 25 px)
+  const notad = new Set(), par = [];
+  bord.forEach((o) => { const sfx = String(o.id).split(':').pop(); const i = eldri.findIndex((q, j) => !notad.has(j) && q.k === sfx); if (i >= 0) { notad.add(i); par.push([o, eldri[i].e]); } else par.push([o, null]); });
+  par.forEach((pr) => {
+    if (pr[1]) return;
+    let bi = -1, bd = 25;
+    eldri.forEach((q, j) => { if (!notad.has(j) && flokkurFærslu(q.e) === pr[0].k && nær(pr[0], q.e) < bd) { bd = nær(pr[0], q.e); bi = j; } });
+    if (bi >= 0) { notad.add(bi); pr[1] = eldri[bi].e; }
+  });
+  const eydd = eldri.filter((q, j) => !notad.has(j)).map((q) => q.e).filter((e) => !skrad.some((pt) => { const q = stada(e); return Math.hypot(pt[0] - q[0], pt[1] - q[1]) <= 90; }));
+  if (!bord.length && eldri.length) { lysing.push(nafn + ': borðið hefur engin greiningarmerki en greiningin ' + eldri.length + ' — SKILIÐ EFTIR'); return { skipt: true, lysing }; }
+  if (eldri.length >= 4 && eydd.length > 0.5 * eldri.length) { lysing.push(nafn + ': ' + eydd.length + ' af ' + eldri.length + ' færslum myndu eyðast — SKILIÐ EFTIR (yfirfara)'); return { skipt: true, lysing }; }
+  const adalBlad = (k) => { const hit = eldri.find((q) => flokkurFærslu(q.e) === k || (k === 'hiti' && flokkurFærslu(q.e) === 'r')); return hit ? hit.e.blad : ((eigin[0] && eigin[0].blad) || ''); };
+  const nyttTki = []; let nytt = 0, faert = 0;
+  par.forEach(([o, e]) => {
+    const [bx, by] = fraBord(e ? blod[e.blad] : blod[adalBlad(o.k)], o.x, o.y);
+    if (e) {
+      const f = !(nær(o, e) <= 2);
+      if (f) { faert++; nyttTki.push(Object.assign({}, e, { x: o.x, y: o.y, bx, by })); } else nyttTki.push(e);
+    } else {
+      nytt++; const n = NY[o.k], b = adalBlad(o.k);
+      nyttTki.push({ x: o.x, y: o.y, bx, by, mhl: '', blad: b, haed: h.nafn, stadur: 'Bætt við í Teikningu', tegund: '', unitId: null, bunadur: n.bunadur, flokkur: n.flokkur, haed_id: h.id, heimild: 'Teikning (leiðrétt af starfsmanni)', audkenni: 'T' + String(o.id).slice(-5), upplysingar: false });
+    }
+  });
+  const breytt = nytt > 0 || faert > 0 || eydd.length > 0;
+  if (breytt) lysing.push(nafn + ': ' + nytt + ' ný, ' + faert + ' færð, ' + eydd.length + ' eydd (hæð án blaðs-id)');
+  return { breytt, tki: nyttTki, eldriIds: new Set(eldri.map((q) => q.e)), lysing };
+}
+
 async function vinnaFelag(bg, row) {
   const utkoma = { breytt: false, lysing: [] };
   let tkiNy = (bg.tki || []).slice(), tillNy = ((bg.tillogur && bg.tillogur.tki) || []).slice(), eitthvad = false;
@@ -127,6 +173,14 @@ async function vinnaFelag(bg, row) {
     eitthvad = true;
     tkiNy = tkiNy.filter((t) => !r.eldriIds.has(t)).concat(r.tki);
     tillNy = tillNy.filter((t) => !r.eldriTillIds.has(t)).concat(r.till);
+  }
+  for (const h of row.haedir || []) {
+    if ((bg.teikningar || []).some((b) => b && b.id === h.id)) continue;       // blað-id = hæð: gamla leiðin hér að ofan
+    const r = samraemaGolf(bg, h);
+    utkoma.lysing.push(...r.lysing);
+    if (r.skipt || !r.breytt) continue;
+    eitthvad = true;
+    tkiNy = tkiNy.filter((t) => !r.eldriIds.has(t)).concat(r.tki);
   }
   utkoma.breytt = eitthvad; utkoma.tki = tkiNy; utkoma.till = tillNy;
   return utkoma;
