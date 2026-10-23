@@ -30,7 +30,9 @@
       var paint = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
       // Already in memory: no uttaeki request. First visit of this company:
       // one fyrirtaeki_id fetch. Never the full table.
-      if (window.DB && typeof DB._primeCompany === 'function' && !(DB._companyFetched && DB._companyFetched[coId]) && !DB._unitsComplete) {
+      // 23.10.2026: sé heildarmyndin úr IndexedDB (360) verður þetta félag samt
+      // að sækjast ferskt — annars opnast prófíllinn tómur. Sjá 153 heilTaekiIMinni.
+      if (window.DB && typeof DB._primeCompany === 'function' && !(DB._companyFetched && DB._companyFetched[coId]) && !(DB._unitsComplete && !DB._unitsFromSnapshot)) {
         Promise.resolve(DB._primeCompany(coId)).then(paint).catch(paint);
       } else paint();
     };

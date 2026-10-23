@@ -71,6 +71,35 @@ function kodaVordur() {
   if (!/\} else if \(!manual\.equipment_manual && manual\.equipment\) \{/.test(ars))
     fail('153: TÓMUR prófíll fellur aftur á skýrslu-afritið (arsskodun_customers.equipment). '
        + 'else-greinin sem lætur lifandi töluna gilda þótt hún sé 0 er farin — T=S brotið.');
+  /* 23.10.2026 — Agnar: „sérðu afhverju sum af nýju fyrirtækjunum sýna 0 í
+   * tækjalista". Rótin var EKKI í afleiðslunni hér að ofan heldur í því hvaðan
+   * tækin voru lesin: ræsi-skyndiminnið (360) hýðir DB.cache.units úr IndexedDB
+   * og setur `_unitsComplete`, þótt myndin geti verið daga gömul. Fyrirtæki sem
+   * fékk tækin sín eftir að myndin var tekin á engar raðir í henni.
+   *
+   * MÆLT á lifandi síðu þennan dag: 6.466 raðir í minni, NÚLL fyrir Lýsi (1872,
+   * 13 tæki í grunni) og ProLan Suðurhellu 5 (1875, 7), réttar 10 fyrir Nesdekk
+   * Dalshraun (1853). Skilin lágu nákvæmlega við aldur myndarinnar. Hermt í
+   * vafra: með merkinu lesnu 13/7/10, án þess 0/0/10 með „⚠ afrit 13"/„afrit 7"
+   * — nákvæmlega skjáskot Agnars.
+   *
+   * `_unitsFromSnapshot` greinir afritið frá alvöru heildarsókn og db.js hreinsar
+   * það um leið og sóknin lendir. Fjórir staðir urðu að lesa það; hyrfi skilyrðið
+   * aftur myndi borðið mála 0 á hvert nýtt félag þar til myndin endurnýjast. */
+  if (!/DB\._unitsComplete && !DB\._unitsFromSnapshot/.test(ars))
+    fail('153 heilTaekiIMinni: les ekki `_unitsFromSnapshot`. Þá gildir daga gamalt '
+       + 'ræsi-skyndiminni sem heildarmynd og hvert félag sem varð til eftir hana '
+       + 'sýnir 0 SLT/BSL/RS með „⚠ afrit N" — mælt 23.10.2026 á Lýsi og ProLan.');
+  for (const [p, heiti] of [
+    ['js/patches/15-sidebar-counts.js', '15 (hliðarstiku-merkið)'],
+    ['js/patches/431-uppferslubord.js', '431 (uppfærsluborðið)'],
+    ['js/mapfix.js', 'mapfix (opnun prófíls af korti)']
+  ]) {
+    if (!/_unitsFromSnapshot/.test(fs.readFileSync(path.join(rot, p), 'utf8')))
+      fail(heiti + ': les ekki `_unitsFromSnapshot` — treystir afrits-myndinni sem '
+         + 'heildarmynd, sama villa og 153 bar. Hún er ein rót, ekki fjórar.');
+  }
+
   if (!/_ars\._blobMisraemi\s*=\s*true/.test(ars))
     fail('153: misræmið milli tóms prófíls og afritsins er ekki lengur merkt (_blobMisraemi) — það á að SJÁST.');
   if (!/_ars\._blobEq\s*=\s*manual\.equipment/.test(ars))

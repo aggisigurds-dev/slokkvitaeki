@@ -122,7 +122,8 @@
 
   function unitsHome() {
     const db = window.DB;
-    return !!(db && db._unitsComplete && db.cache && db.cache.units && db.cache.units.length);
+    // 23.10.2026: afrits-myndin telst ekki „heima" — sjá 153 heilTaekiIMinni.
+    return !!(db && db._unitsComplete && !db._unitsFromSnapshot && db.cache && db.cache.units && db.cache.units.length);
   }
   function skipFullUnits(forceUnits) {
     const mode = modeOf('taeki');
@@ -454,7 +455,8 @@
     if (!id) return false;
     const db = window.DB;
     if (!db) return false;
-    if (db._unitsComplete) return true;
+    // 23.10.2026: afrits-mynd segir ekki satt um félag sem varð til eftir hana.
+    if (db._unitsComplete && !db._unitsFromSnapshot) return true;
     if (db._companyFetched && db._companyFetched[id]) return true;
     const units = db.cache && db.cache.units;
     if (!units) return false;

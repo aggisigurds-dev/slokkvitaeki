@@ -88,9 +88,16 @@
       var profill = false;
       try { profill = !!(window.Companies && Companies._detailOpen && Companies._detailOpen()); } catch (_) {}
       try { if (!profill && window.DB && DB._bootCompanyId && DB._bootCompanyId()) profill = true; } catch (_) {}
-      if (profill && !(window.DB && DB._unitsComplete)) {
+  /* 23.10.2026 — sama rót og lagfærð var í 153 þennan dag (sjá heilTaekiIMinni þar).
+   * `_unitsComplete` segir „heildarsókn", en ræsi-skyndiminnið (360) setur það líka
+   * þegar myndin kemur úr IndexedDB og getur verið daga gömul. MÆLT á lifandi síðu:
+   * 6.466 raðir í minni og NÚLL fyrir Lýsi (1872) og ProLan Suðurhellu 5 (1875) sem
+   * fengu tækin sín eftir að myndin var tekin. `_unitsFromSnapshot` (12.10) greinir
+   * þetta tvennt að; db.js hreinsar það um leið og alvöru sóknin lendir. */
+      var minniGilt = !!(window.DB && DB._unitsComplete && !DB._unitsFromSnapshot);
+      if (profill && !minniGilt) {
         /* engin uttaeki-talning út á netið */
-      } else if (window.DB && DB._unitsComplete && DB.cache && Array.isArray(DB.cache.units)) {
+      } else if (minniGilt && DB.cache && Array.isArray(DB.cache.units)) {
         var ovN = 0, dueN = 0;
         DB.cache.units.forEach(function (u) {
           if (!u || String(u.status) === 'urelt' || !u.next_insp) return;

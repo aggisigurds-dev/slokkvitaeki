@@ -997,9 +997,31 @@
   // Þá taldi borðið aðeins þau og allar aðrar raðir urðu 0 SLT / 0 BSL / 0 RS
   // með ⚠ afrit / brunakerfi. Aðeins `DB._unitsComplete` (Hlaða eða heildar-
   // sókn) má lesa minnið. Annars fer netskönnunin af stað strax — einu sinni.
+  /* 23.10.2026 — Agnar: „sérðu afhverju sum af nýju fyrirtækjunum sýna 0 í
+   * tækjalista" … „ætlaði ég að bæta við til að laga, þá poppuðu upp tækin sem
+   * áttu að vera þarna".
+   *
+   * `_unitsComplete` eitt dugði ekki. Ræsi-skyndiminnið (360) hýðir DB.cache.units
+   * úr IndexedDB og setur `_unitsComplete = true` af því að myndin VAR heildarsókn
+   * — en hún getur verið daga gömul. Fyrirtæki sem fékk tækin sín EFTIR að myndin
+   * var tekin á engar raðir í henni, og borðið málar 0 SLT / 0 BSL / 0 RS með
+   * „⚠ afrit N" þótt grunnurinn sé réttur.
+   *
+   * MÆLT á lifandi síðu 23.10.2026: DB.cache.units bar 6.466 raðir, hæsta
+   * uttaeki-id 25840 — og NÚLL raðir fyrir Lýsi (1872, stofnað 19.10, 13 tæki í
+   * grunni) og ProLan Suðurhellu 5 (1875, 20.10, 7 tæki), en réttar 10 fyrir
+   * Nesdekk Dalshraun (1853, 09.10). Skilin liggja nákvæmlega við aldur myndarinnar.
+   * Þess vegna „poppuðu tækin upp" þegar hann opnaði félagið: db.js sækir þá ÞAÐ
+   * félag ferskt, einmitt út af `_unitsFromSnapshot`.
+   *
+   * Það merki var sett 12.10 af nákvæmlega þessari ástæðu — en aðeins db.js las
+   * það. Hér er það lesið líka. Meðan myndin er úr IndexedDB keyrir netskönnunin
+   * (ein umferð, blaðsíðuskipt); um leið og alvöru heildarsóknin lendir hreinsar
+   * db.js merkið og minnið gildir aftur. Enginn aukakostnaður í kyrrstöðu. */
   function heilTaekiIMinni() {
     try {
-      return !!(window.DB && DB._unitsComplete && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length);
+      return !!(window.DB && DB._unitsComplete && !DB._unitsFromSnapshot
+        && DB.cache && Array.isArray(DB.cache.units) && DB.cache.units.length);
     } catch (_) { return false; }
   }
   async function urMinni() {
