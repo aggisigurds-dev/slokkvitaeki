@@ -415,6 +415,14 @@
         if (firstRest) { b.classList.add('nav-grp-start'); firstRest = false; }
       });
       if (qlinks && !qlinksUsed) qlinks.style.order = String(restPos++);
+
+      // 23.10.2026 (Agnar: „vefverslunarflipinn er farinn … hún á að vera alveg efst í side banner"): Vefverslun er FÖST efst.
+      // Vistaða röðin (sidebar_order) var með „#vefverslun" aftast — modalinn „Aðlaga hliðarstiku" vistar tengla án data-view
+      // sem „#heiti" — svo hnappurinn fékk order 410, lenti á eftir Öpp og „Sjá meira" (391) faldi hann. Röð notandans má
+      // ekki geta sent hann neðar: order 1 er undir fyrsta hnappi (order 10) og fyrir framan Öpp, svo hann er aldrei í „Sjá meira".
+      // Sé hann viljandi falinn í sidebar_hidden er það virt (hiddenButtons).
+      const vefverslun = buttons.find(b => /\/vefverslun\//.test(b.getAttribute('href') || ''));
+      if (vefverslun && !hiddenButtons.has(vefverslun) && vefverslun.style.order !== '1') vefverslun.style.order = '1';
     } finally {
       inProgress = false;
     }

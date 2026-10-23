@@ -1020,7 +1020,7 @@ ${E('p', 'karfa.greidsluleidir', 'Greiðsluleiðir: kort, millifærsla eða reik
 
   (async () => {
     const q = new URLSearchParams(location.search);
-    const breyta = q.has('breyta');
+    const breyta = q.has('breyta') || q.has('ritill');   // ?ritill=1 hleður ritlinum en kveikir EKKI á breytingahamnum (ritill.js: aðeins ?breyta kveikir) — hliðarstikan (23.10.2026)
     try { await saekja(breyta); } catch (e) {
       document.getElementById('vv-app').innerHTML = `<div class="vv-hledur">Ekki tókst að sækja verslunina (${esc(e.message)}). <a href="">Reyna aftur</a></div>`;
       return;
