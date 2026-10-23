@@ -1697,7 +1697,8 @@
       (sk.length ? sk.slice(0, 6).map(function (s) {
         return '<div class="egp-r"><span class="egd' + (s.n.seint ? ' seint' : '') + '"><b>' + esc(MAN_STUTT[s.n.m - 1]) + '</b>' + s.n.y + '</span>' +
           '<div class="egt"><b>' + esc(s.b.nafn) + '</b><span>' + esc(s.heiti) + '</span></div>' +
-          (s.n.seint ? '<span class="kst vantar">Á eftir</span>' : '<span class="kst okkar">Okkar</span>') + '</div>';
+          // 23.10.2026 (Agnar: „Breyta okkar í Með skoðun"): pillan segir hvað gerist, ekki hver á það
+          (s.n.seint ? '<span class="kst vantar">Á eftir</span>' : '<span class="kst okkar">Með skoðun</span>') + '</div>';
       }).join('') : '<div class="egp-e">Engin skoðun á dagskrá næstu 12 mánuði. Skoðunarmánuður er settur við fyrstu úttekt.</div>') + '</div>');
     // Erindi
     if (syn.erindi) {
