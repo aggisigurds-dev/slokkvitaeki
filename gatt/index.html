@@ -441,7 +441,8 @@
   .dsec h4{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;color:var(--accent);font-weight:600}
   .dsec h4::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--glow),.55),rgba(var(--glow),0))}
   .dsec h4 .cnt{color:var(--dim);font-weight:500;letter-spacing:1.2px}
-  .dkpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .dkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .dk[hidden]{display:none}
   .dk{border:1px solid var(--line);border-radius:5px;padding:13px 15px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--key-sh)}
   .dk .k{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim);font-weight:500}
   .dk .v{font-family:var(--serif);font-size:32px;font-weight:600;line-height:1;margin-top:6px;color:var(--ink);font-variant-numeric:lining-nums}
@@ -1253,7 +1254,7 @@
     .dr-foot{gap:6px;flex-wrap:nowrap}
     .dr-foot .kbtn,.dr-foot .gbtn{flex:1 1 0;min-width:0;height:46px;padding:0 6px;font-size:10px;letter-spacing:.5px;white-space:normal;line-height:1.15;text-align:center}
     .dr-foot .kbtn svg,.dr-foot .gbtn svg{display:none}
-    .dkpis{grid-template-columns:repeat(3,1fr);gap:8px}
+    .dkpis{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
     .tgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
     .egrid{grid-template-columns:1fr}
     .es-h{flex-direction:column;align-items:flex-start}
@@ -1424,7 +1425,7 @@
       <h2 class="page">Úttektarskýrslur</h2>
       <div class="chips" id="sk-chips"></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Dagsetning</th><th>Bygging</th><th>Heimilisfang</th><th>Tegund</th><th>Magn</th><th>Ár</th><th>Úr skýrslunni<span class="thsub">Annað · athugasemdir · ábendingar</span></th><th class="r">Skýrsla</th></tr></thead>
+        <thead><tr><th>Skoðun<span class="thsub">mánuður</span></th><th>Bygging</th><th>Heimilisfang</th><th>Tegund</th><th>Tæki<span class="thsub">í skýrslunni</span></th><th>Úr skýrslunni<span class="thsub">Annað · athugasemdir · ábendingar</span></th><th class="r">Skýrsla</th></tr></thead>
         <tbody id="sk-body"></tbody>
       </table><div class="tbl-foot" id="sk-foot"></div></div>
     </section>
@@ -1646,9 +1647,9 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/gatt/verkfaeri.js?v=20261023a"></script>
-<script src="/gatt/eignagatt.js?v=20261023a"></script>
-<script src="/gatt/bunadargreining.js?v=20261022i"></script>
+<script src="/gatt/eignagatt.js?v=20261023b"></script>
+<script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261023b"></script>
+<script src="/gatt/portal.js?v=20261023c"></script>
 </body>
 </html>

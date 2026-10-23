@@ -776,7 +776,7 @@ exports.handler = async (event) => {
     const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr&order=nafn`);
     const sites = (fr.ok ? await fr.json() : []).filter((s) => !leyfd || leyfd.has(Number(s.id)));
     const siteIds = sites.map((s) => s.id);
-    const nafnById = {}, nrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; });
+    const nafnById = {}, nrById = {}, adrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; adrById[s.id] = s.heimilisfang || ''; });
 
     // 2) Skoðanastaða per byggingu (view)
     const stById = {};
@@ -799,7 +799,7 @@ exports.handler = async (event) => {
       const filt = siteIds.length
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_texti,skyrsla_vidbot`);
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot`);
       if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
     } catch (_) {}
 
@@ -965,11 +965,13 @@ exports.handler = async (event) => {
     }
 
     // Skoðanasaga: mánuður hverrar skýrslu eins og hann stendur í skýrslunni sjálfri (customer_documents.skodun_ar_man, YYYY-MM).
+    // 23.10.2026: annars mánuður skjalsins (doc_date) — brunakerfisskýrslur bera hann þar.
+    const skMan = (d) => { const m = String(d.skodun_ar_man || '') || (d.doc_date ? String(d.doc_date).slice(0, 7) : ''); return /^\d{4}-(0[1-9]|1[0-2])$/.test(m) ? m : null; };
     const sagaById = {};
     docs.forEach((d) => {
-      if (d.is_duplicate || d.fyrirtaeki_id == null || !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(d.skodun_ar_man || ''))) return;
+      if (d.is_duplicate || d.fyrirtaeki_id == null || !skMan(d)) return;
       if (d.doc_type !== 'uttektarskyrsla' && d.doc_type !== 'brunakerfi') return;
-      (sagaById[d.fyrirtaeki_id] = sagaById[d.fyrirtaeki_id] || []).push({ t: d.doc_type === 'brunakerfi' ? 'bru' : 'slokk', m: d.skodun_ar_man, docId: d.id, x: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null });
+      (sagaById[d.fyrirtaeki_id] = sagaById[d.fyrirtaeki_id] || []).push({ t: d.doc_type === 'brunakerfi' ? 'bru' : 'slokk', m: skMan(d), docId: d.id, x: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null });
     });
     Object.keys(sagaById).forEach((k) => sagaById[k].sort((a, b) => String(b.m).localeCompare(String(a.m))));
     const buildings = sites.map((s) => {
@@ -1039,8 +1041,9 @@ exports.handler = async (event) => {
       docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
       (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${d.year == null ? '' : d.year}`,
     )
-      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: d.skodun_ar_man || null, texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
-        bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.amount != null ? d.amount : null }))
+      // 23.10.2026 (Agnar: „sýna … heimilisfang, heildarfjölda tækja, mánuð skoðunar"): heimilisfang staðarins og tækjafjöldi úr skýrslunni
+      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: skMan(d), heimilisfang: adrById[d.fyrirtaeki_id] || '', texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
+        bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.skyrsla_taeki_alls != null ? d.skyrsla_taeki_alls : (d.amount != null ? d.amount : null) }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
     // Einn reikningur per reikningsnúmer (ver gegn tvítekningum úr fleiri heimildum).

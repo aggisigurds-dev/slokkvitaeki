@@ -268,7 +268,7 @@
           eldvarnabok: Array.isArray(b.eldvarnabok) ? b.eldvarnabok : null };
       }),
       reports: (d.reports || []).map(function (r) {
-        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
+        return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: r.heimilisfang || '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
@@ -303,7 +303,9 @@
     return m || null;
   }
   // 22.10.2026: SÍÐASTA skoðun (mánuður-ár, t.d. 08-25) — mánuðurinn úr skýrslunni, árið úr nýjustu skýrslu hvorrar þjónustu.
-  function sagaMerki(m) { var p = String(m).split('-'); return p[1] + '-' + String(p[0]).slice(-2); }
+  // Mánuður skoðunar sem MM/ÁÁÁÁ alls staðar (23.10.2026: „Hafa allt í sama stíl. dagsetningu ofl." — áður 08-26 á einum stað, 01/09/2025 á öðrum)
+  function sagaMerki(m) { var p = String(m).split('-'); return p[1] + '/' + p[0]; }
+  function skManTxt(r) { if (r.skodun) return sagaMerki(r.skodun); var m = /^(\d{4})-(\d{2})/.exec(String(r.dags || '')); return m ? m[2] + '/' + m[1] : String(r.ar || r.dags || ''); }
   function sagaTxt(m) { var p = String(m).split('-'), n = MONTHS_IS[Number(p[1]) - 1] || ''; return n.charAt(0).toUpperCase() + n.slice(1) + ' ' + p[0]; }
   function sagaMilli(a, b) { var x = String(a).split('-'), y = String(b).split('-'); return (Number(y[0]) - Number(x[0])) * 12 + (Number(y[1]) - Number(x[1])); }
   // Skoðanasaga eignar: hver skoðun, mánuður-ár úr skýrslunni, og bilið frá næstu skoðun á undan.
@@ -336,7 +338,7 @@
     function add(lbl, month, yr) {
       month = Number(month); yr = Number(yr);
       if (!(month >= 1 && month <= 12) || !yr) return;
-      out.push([lbl, (month < 10 ? '0' : '') + month + '-' + String(yr).slice(-2)]);
+      out.push([lbl, (month < 10 ? '0' : '') + month + '/' + yr]);
     }
     var sg = b.saga || [], sgS = null, sgB = null;
     sg.forEach(function (e) { if (e.t === 'slokk' && !sgS) sgS = e; if (e.t === 'bru' && !sgB) sgB = e; });
@@ -513,15 +515,14 @@
   function renderSkyrslur(filter) {
     var rows = (state.data.reports || []).filter(function (r) { return !filter || r.bygging === filter; });
     $('#sk-body').innerHTML = rows.map(function (r) {
-      return '<tr><td class="num">' + esc(fmtDate(r.dags)) + '</td>' +
+      return '<tr><td class="num">' + esc(skManTxt(r)) + '</td>' +
         '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
-        '<td class="dim">' + esc(r.heimilisfang || '') + '</td>' +
+        '<td class="dim">' + (r.heimilisfang ? esc(r.heimilisfang) : '<span class="dim">—</span>') + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
-        '<td class="num">' + (r.magn != null ? esc(r.magn) : '<span class="dim">—</span>') + '</td>' +
-        '<td class="num">' + esc(r.ar || '') + '</td>' +
+        '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">tæki</span>' : '<span class="dim">—</span>') + '</td>' +
         '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + vidbotHtml(r) + '</td>' +
         '<td class="r">' + docLink('PDF', r.docId) + (r.docId ? '<a href="#" class="frest sk-bidja" data-sk-gogn="' + r.docId + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">Biðja um uppfærða</a>' : '') + '</td></tr>';
-    }).join('') || '<tr><td colspan="8" class="empty">Engar skýrslur skráðar</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
   }
 
@@ -993,7 +994,9 @@
     html += '<section class="dsec"><h4>Yfirlit</h4><div class="dkpis">' +
       '<div class="dk"><div class="k">Slökkvitæki</div><div class="v">' + (b.sl != null ? b.sl : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
-      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div></div>' +
+      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div>' +
+      // 23.10.2026 (Agnar: „hafa fjölda eininga líka ef það eru til tölur"): eignarhlutar úr fasteignaskrá HMS
+      '<div class="dk" id="dk-ein"' + (b.eign && b.eign.einingar ? '' : ' hidden') + '><div class="k">Einingar</div><div class="v">' + esc(b.eign && b.eign.einingar ? b.eign.einingar : '—') + '</div><div class="k" style="margin-top:6px">eignarhlutar · fasteignaskrá</div></div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';
     // Hlutarnir eru merktir (seg) og raðast í lokin: TEIKNINGAR efst, allar GREININGAR neðst (Agnar 22.10.2026)
     function seg(n) { html += '\u0001' + n + '\u0001'; }
@@ -1068,7 +1071,7 @@
       var reps = (state.data.reports || []).filter(function (r) { return r.bygging === b.nafn; });
       html += '<section class="dsec"><h4>Skýrslur <span class="cnt">' + (reps.length ? tala(reps.length, 'skýrsla', 'skýrslur') : '') + '</span></h4><div class="dpanel">' +
         (reps.length ? reps.map(function (r) {
-          return '<div class="drow"><span class="dd">' + esc(r.skodun ? sagaMerki(r.skodun) : fmtDate(r.dags)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.skodun ? ' <span class="dim">skoðað ' + esc(sagaTxt(r.skodun).toLowerCase()) + '</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
+          return '<div class="drow"><span class="dd">' + esc(skManTxt(r)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.magn != null ? ' <span class="dim">' + esc(r.magn) + ' tæki</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
         }).join('') : '<div class="dempty">Engar skýrslur skráðar.</div>') + '</div></section>';
       var invs = (state.data.invoices || []).filter(function (r) { return r.bygging === b.nafn; });
       if (invs.length) {

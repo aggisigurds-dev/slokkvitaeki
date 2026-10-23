@@ -974,6 +974,7 @@
           '<dt>Landnúmer</dt><dd>' + (e && e.landnr ? '<a href="https://geo.fasteignaskra.is/landeignaskra/' + esc(e.landnr) + '" target="_blank" rel="noopener">L' + esc(e.landnr) + '</a>' : '—') + '</dd>' +
           '<dt>Heitinúmer</dt><dd>' + esc(e && e.heitinr ? e.heitinr : '—') + '</dd>' +
           '<dt>Sveitarfélag</dt><dd>' + esc(e && e.postnr ? e.postnr : '') + (e && e.svfnr ? ' <small>svf. ' + esc(e.svfnr) + '</small>' : '') + '</dd>' +
+          (function () { var n = o.einingar && o.einingar.fjoldi; var de = document.getElementById('dk-ein'); if (de && n) { de.hidden = false; de.querySelector('.v').textContent = n; } return ''; })() +
           (o.einingar ? '<dt>Matshlutar</dt><dd>' + esc(o.einingar.mhl != null ? o.einingar.mhl : '—') + (o.einingar.fjoldi ? ' <small>· ' + o.einingar.fjoldi + ' eignarhlutar</small>' : '') + '</dd>' : '') +
           (o.lod ? '<dt>Lóð</dt><dd>' + grTala(o.lod.skrad_m2 || o.lod.maeld_m2) + ' m² <small>Landeignaskrá</small></dd>' : '') + '</dl>' +
           (hn ? '<div class="gr-kort" id="gr-kort"></div>' : '') +
@@ -992,6 +993,7 @@
           '<div class="gr-t"><div class="k">Hæðir</div><div class="v">' + (hd != null && typeof hd !== 'object' ? esc(hd) : '—<small> ekki lesið</small>') + '</div></div>' +
           '<div class="gr-t"><div class="k">Byggt</div><div class="v">' + (g.byggingarar ? esc(g.byggingarar) : (b.eign && b.eign.byggingarar ? esc(b.eign.byggingarar) : '—')) + '</div></div>' +
           '<div class="gr-t"><div class="k">Eignarhlutar</div><div class="v">' + (g.eignir != null ? esc(g.eignir) : '—') + '</div></div></div>' +
+          (function () { var de = document.getElementById('dk-ein'); if (de && g.eignir != null && de.hidden) { de.hidden = false; de.querySelector('.v').textContent = g.eignir; } return ''; })() +
           (g.notkunarflokkur_lysing ? '<div>Byggingarlýsingin segir notkunarflokk <b>' + esc(g.notkunarflokkur_lysing) + '</b></div>' : '') +
           (heim.length ? '<div class="lbl" style="margin-top:8px">Skjöl í safninu</div><ul class="gr-skjol" style="list-style:none;margin:4px 0 0;padding:0">' + heim.slice(0, 8).map(function (x) {
             return '<li><i class="' + (x.lesin ? 'on' : '') + '"></i><span>' + esc(x.tegund === 'skraningartafla' ? 'Skráningartafla' : x.tegund === 'byggingarlysing' ? 'Byggingarlýsing' : (x.tegund || 'Skjal')) + '</span><span class="dd">' + esc(fmtDate(x.dags)) + '</span>' + (x.matshluti ? '<small class="dim">mhl. ' + esc(x.matshluti) + '</small>' : '') + (x.slod ? '<a href="' + esc(x.slod) + '" target="_blank" rel="noopener">opna</a>' : '') + (x.lesin ? '' : '<small class="dim">ólesið</small>') + '</li>';
