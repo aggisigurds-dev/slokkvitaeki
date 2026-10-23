@@ -350,7 +350,7 @@
   }
 
   // ── Talan á kortinu stemmir við listann (verk 4fcf523d) ───────────────
-  // „24 → 24 pinnar, eða sýna N án hnita": línan segir hve margir staðir í síunni eru á kortinu og hve margir vantar hnit.
+  // „24 → 24 pinnar, eða sýna N án hnita": línan segir hve margir staðir í listanum (síðunni sem sést) eru á kortinu og hve margir vantar hnit.
   function taldu(ids) {
     const el = document.getElementById('_arsmap-count');
     if (!el) return;
@@ -359,7 +359,7 @@
     const nPin = ids.filter(id => _markers[id]).length;
     const nVant = ids.length - nPin;
     const nUtan = Math.max(0, alls.size - ids.length);
-    let t = '<b>' + nPin + '</b> af ' + ids.length + ' stöðum í síunni á kortinu';
+    let t = '<b>' + nPin + '</b> af ' + ids.length + ' stöðum í listanum á kortinu';
     if (nVant > 0) t += ' · <span style="color:#b45309;font-weight:700">' + nVant + ' án hnita' + (_queueAbort ? ' (sæki…)' : '') + '</span>';
     if (nUtan > 0) t += ' · <span style="color:#64748b">' + nUtan + ' án samnings eru ekki á kortinu</span>';
     el.innerHTML = t;
