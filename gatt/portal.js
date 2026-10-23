@@ -615,6 +615,7 @@
     return d ? '<small>' + esc(fmtDate(d)) + '</small>' : '';
   }
 
+  var _naestuHtml = '';   // Næstu skoðanir-spjaldið, teiknað í renderEgYfir og sett undir Senda erindi (23.10.2026)
   function renderRail() {
     var box = $('#yf-rail'); if (!box || !state.data) return;
     var syn = synOf();
@@ -639,7 +640,8 @@
       // 23.10.2026 (Agnar: „óþarfi að hafa 2 eins útgáfur af erindi á forsíðunni"): „Mín erindi"-listinn undir forminu
       // var sama efni og Erindi-spjaldið í yfirlitinu. Hér stendur nú aðeins skýringin og tengill á listann.
       '<div class="rl-note">Staðan birtist undir Erindi: Móttekið · Í vinnslu · Svarað · Lokið.' +
-        (er.length ? ' <a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>' : '') + '</div></section>';
+        (er.length ? ' <a href="#" class="rl-all" data-rl-all="1">Sjá öll erindi (' + er.length + ')</a>' : '') + '</div></section>' +
+      _naestuHtml;
     erBadge();
   }
   document.addEventListener('click', function (e) {
@@ -1693,19 +1695,23 @@
     bl.forEach(function (b) { skodanirEignar(b).forEach(function (s) { sk.push(s); }); });
     var d = new Date(), nuIdx = d.getFullYear() * 12 + d.getMonth() + 1;
     sk = sk.filter(function (s) { return s.n.idx <= nuIdx + 12; }).sort(function (a, c) { return a.n.idx - c.n.idx; });
-    panels.push('<div class="egp"><div class="egp-h"><b>Næstu skoðanir</b><span>' + (sk.length ? '12 mánuðir · ' + sk.length : '12 mánuðir') + '</span></div>' +
+    // 23.10.2026 (Agnar: „make Erindi double size, move næstu skoðanir undir the senda erindi"): Næstu skoðanir fer í hægri
+    // dálkinn undir Senda erindi (renderRail les _naestuHtml) og Erindi fær tvo dálka af þremur; Verkefni þann þriðja.
+    var naestuHtml = ('<div class="egp egp-naestu"><div class="egp-h"><b>Næstu skoðanir</b><span>' + (sk.length ? '12 mánuðir · ' + sk.length : '12 mánuðir') + '</span></div>' +
       (sk.length ? sk.slice(0, 6).map(function (s) {
         return '<div class="egp-r"><span class="egd' + (s.n.seint ? ' seint' : '') + '"><b>' + esc(MAN_STUTT[s.n.m - 1]) + '</b>' + s.n.y + '</span>' +
           '<div class="egt"><b>' + esc(s.b.nafn) + '</b><span>' + esc(s.heiti) + '</span></div>' +
           // 23.10.2026 (Agnar: „Breyta okkar í Með skoðun"): pillan segir hvað gerist, ekki hver á það
           (s.n.seint ? '<span class="kst vantar">Á eftir</span>' : '<span class="kst okkar">Með skoðun</span>') + '</div>';
       }).join('') : '<div class="egp-e">Engin skoðun á dagskrá næstu 12 mánuði. Skoðunarmánuður er settur við fyrstu úttekt.</div>') + '</div>');
-    // Erindi
+    _naestuHtml = syn.erindi ? naestuHtml : '';
+    if (!syn.erindi) panels.push(naestuHtml);   // án Senda erindi-dálks: Næstu skoðanir helst í aðalgrindinni
+    // Erindi — tvöfalt breitt þegar Næstu skoðanir er í hægri dálknum
     if (syn.erindi) {
       var er = ((state.data && state.data.erindi) || []).slice().sort(function (a, c) { return (a.stada === 'lokid') - (c.stada === 'lokid') || String(c.dags).localeCompare(String(a.dags)); });
       var op = er.filter(function (e) { return e.stada !== 'lokid'; }).length;
-      panels.push('<div class="egp"><div class="egp-h"><b>Erindi</b><span>' + (er.length ? op + ' opin · ' + (er.length - op) + ' lokið' : 'síðustu 12 mánuði') + '</span></div>' +
-        (er.length ? '<div class="elist">' + er.slice(0, 5).map(function (e) { return erindiRod(e, true); }).join('') + '</div>'
+      panels.push('<div class="egp egp-wide"><div class="egp-h"><b>Erindi</b><span>' + (er.length ? op + ' opin · ' + (er.length - op) + ' lokið' : 'síðustu 12 mánuði') + '</span></div>' +
+        (er.length ? '<div class="elist">' + er.slice(0, 6).map(function (e) { return erindiRod(e, true); }).join('') + '</div>'
           : '<div class="egp-e">Engin erindi enn. Fyrirspurnir, verkbeiðnir og beiðnir um þjónustu birtast hér með stöðu.</div>') + '</div>');
     }
     // 23.10.2026 (Agnar: „Setja kannski verkefni inn á yfirlitssíðuna í staðinn fyrir Eldvarnabók"): þriðja spjaldið er
@@ -1727,7 +1733,7 @@
             '<span class="kst ' + (r && r.stada === 'undirritad' ? 'okkar' : r ? 'til' : 'oskrad') + '">' + (r && r.stada === 'undirritad' ? 'Undirritað' : r ? 'Drög' : 'Ekki hafið') + '</span></div>';
         }).join('') + '</div>');
     }
-    box.className = 'eg-grid n' + panels.length;
+    box.className = 'eg-grid n' + panels.length + (syn.erindi && panels.length === 2 ? ' erindi-wide' : '');
     box.innerHTML = panels.join('');
     renderRail(); renderErindiView();
   }

@@ -817,6 +817,8 @@
   .eg-grid.n1{grid-template-columns:minmax(0,1fr)}
   .eg-grid.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
   .eg-grid.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .eg-grid.erindi-wide{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}   /* 23.10.2026: Erindi tvöfalt, Verkefni við hlið; Næstu skoðanir í hægri dálknum */
+  .yf-rail .egp-naestu{margin-top:0}
   .egp{border:1px solid var(--line2);border-radius:5px;background:var(--m-line) top/100% 2px no-repeat,var(--panel);box-shadow:var(--panel-sh);overflow:hidden;align-self:start}
   .egp-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:15px 16px 12px;margin-top:2px;background:var(--strip);border-bottom:1px solid var(--line2)}
   .egp-h b{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);line-height:1}
@@ -886,7 +888,7 @@
   #eb-eignir:empty{display:none}
   @media(max-width:1000px){ .eb-grid{grid-template-columns:minmax(0,1fr)} .eg-grid.n3{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media(max-width:760px){
-    .eg-grid.n2,.eg-grid.n3{grid-template-columns:minmax(0,1fr)}
+    .eg-grid.n2,.eg-grid.n3,.eg-grid.erindi-wide{grid-template-columns:minmax(0,1fr)}
     .eb-man{grid-template-columns:repeat(6,minmax(0,1fr))}
     .yf-s{width:100%;overflow-x:auto}
     .eb-foot .gbtn,.eb-foot .kbtn{flex:1}
@@ -1708,6 +1710,6 @@
 <script src="/gatt/eignagatt.js?v=20261023d"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261023g"></script>
+<script src="/gatt/portal.js?v=20261023h"></script>
 </body>
 </html>
