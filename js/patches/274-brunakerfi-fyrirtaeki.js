@@ -922,7 +922,9 @@
         vistaSidar(r);
       });
     } catch (_) {}
-    const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0);
+    // 23.10.2026: óloki drög þessa árs sýna línuritilinn þótt engar línur séu komnar — „＋ Byrja skoðun" stofnar nú tóm drög án þess að
+    // opna formið, og ritillinn (fastar línur, ＋ Vara/Þjónusta/Vinna) er þá eina leiðin til að setja verð á keyptan hlut héðan.
+    const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0 || (x.r.status !== 'final' && +x.r.year === NOW));
     const verdSum = verds.reduce((a, x) => a + x.v.total, 0);
     // 30.09.2026 (Agnar: „þetta er hræðileg samantektar reikningagerð"). Spjaldið
     // sýndi EINA tölu per úttekt og ekkert annað — hvorki hvað var rukkað né hvað
@@ -1352,8 +1354,23 @@
       if (window._openCompanySafe) window._openCompanySafe(+co.id);
       else if (window.App && App.switchView) App.switchView('companies');
     });
-    w.querySelector('#_bkc-new').addEventListener('click', () => {
-      if (window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.openForm) BrunakerfiSkyrsla.openForm(co, null);
+    w.querySelector('#_bkc-new').addEventListener('click', async (e) => {
+      const B = window.BrunakerfiSkyrsla;
+      // 23.10.2026 (Agnar: byrja skoðun opnaðist alltaf í vinnuham og „sloknaði" ef farið var til baka): drögin stofnuð strax og
+      // prófíllinn endurhlaðinn — línur reiknings (fastar línur, ＋ Vara/Þjónusta/Vinna) birtast hér; vinnuhamurinn er á „Halda áfram".
+      if (B && B.stofnaDrog) {
+        const b = e.currentTarget; if (b.disabled) return; b.disabled = true;
+        try {
+          const r = await B.stofnaDrog(co);
+          toast(r.nytt ? 'Skoðun hafin — bættu við línum reiknings hér, eða opnaðu skýrsluna með „Halda áfram"' : 'Skoðun ársins er þegar hafin — drögin eru hér fyrir neðan');
+          await reload();
+        } catch (err) {
+          b.disabled = false;
+          toast('Gat ekki hafið skoðunina: ' + ((err && err.message) || err), true);
+        }
+        return;
+      }
+      if (B && B.openForm) B.openForm(co, null);
     });
     // 30.09.2026: haus- og fótaðgerðir hægra spjaldsins — sömu leiðir og hnapparnir sem fyrir voru
     const vistaNu = w.querySelector('#_bkc-vista');

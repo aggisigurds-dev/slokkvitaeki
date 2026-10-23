@@ -1860,7 +1860,31 @@
     document.body.style.overflow = 'hidden';
     const go = () => { renderTop(); renderWork(); setMode('work'); savedNote(''); };
     if (S.data) go();
-    else nextNr().then(nr => { S.data = blank(co, nr); go(); });
+    else nextNr().then(nr => {
+      S.data = blank(co, nr); go();
+      // 23.10.2026 (Agnar: „ef ég fer til baka úr vinnuham þá sloknar á … þarf að velja eitthvað og ýta á reikna"): ný skýrsla var
+      // aðeins til í minni þar til eitthvað breyttist (_dirty) — „Til baka" án breytingar týndi henni og spjaldið sagði aftur
+      // „engin skoðun enn". Skoðun sem er HAFIN er vistuð strax sem drög; mistakist það tekur sjálfvistunin við.
+      saveDraft().then(() => savedNote('· drög stofnuð ✓')).catch(() => { _dirty = true; scheduleAutosave(); });
+    });
+  }
+
+  // 23.10.2026: „＋ Byrja skoðun" á fyrirtækjaprófílnum (274) stofnar drögin og FER EKKI inn í vinnuhaminn — prófíllinn sýnir þá
+  // línur reiknings strax (fastar línur, ＋ Vara / Þjónusta / Vinna) svo hægt sé að setja verð á keyptan hlut án þess að opna formið.
+  // Til er óloki skýrsla ársins → engin ný (tvísmellur, endurtekið „Byrja skoðun"). Vinnuhaminn er áfram á „Halda áfram".
+  async function stofnaDrog(co) {
+    const sb = SB(); if (!sb) throw new Error('engin gagnabankatenging');
+    const ar = new Date().getFullYear();
+    const eldri = await sb.from('brunakerfi_skyrslur').select('id,status').eq('fyrirtaeki_id', co.id).eq('year', ar).neq('status', 'final').limit(1);
+    if (eldri.error) throw eldri.error;
+    if (eldri.data && eldri.data[0]) return { id: eldri.data[0].id, nytt: false };
+    const nr = await nextNr();
+    const data = blank(co, nr);
+    const m = String(data.meta.dags || '').match(/^(\d{4})/);
+    const r = await sb.from('brunakerfi_skyrslur').insert({ fyrirtaeki_id: co.id, year: m ? +m[1] : ar, uttekt_nr: nr, status: 'draft', data, updated_at: new Date().toISOString() }).select('id').single();
+    if (r.error) throw r.error;
+    _reports = null;
+    return { id: r.data.id, nytt: true };
   }
 
   async function openFlow(coId) {
@@ -2054,7 +2078,7 @@
   }
   // 14.10.2026: priceItems + savePriceItems opin svo 410 (Brunak. verð-glugginn í Vörur og þjónusta) geti breytt
   // verðum beint í listanum — sama geymsla, sami úreldingarvörður (Agnar: „fyrri listinn ætti að geta breytt verðunum").
-  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum, priceItems, savePriceItems };
+  window.BrunakerfiSkyrsla = { openFlow, openForm, stofnaDrog, openPriceEditor, renderSheet, rebuildPdf, pdfBlob, verdlistiMedTegund, nyttLinur, tegAgiskun, samraemaNytt, radaLinum, priceItems, savePriceItems };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
