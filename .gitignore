@@ -106,3 +106,8 @@ tools/opp-skjaskot/
 
 # úttak greiningartóla (para-rekstrarfelag --tillogur, renna-rekstrarfelag)
 ut/
+
+# 23.10.2026: log + villuskrá Drive→Storage keyrslunnar (breytist í hverri keyrslu)
+tools/_drive-til-storage*.log
+tools/_drive-til-storage*.out
+tools/_drive-til-storage-villur.json
