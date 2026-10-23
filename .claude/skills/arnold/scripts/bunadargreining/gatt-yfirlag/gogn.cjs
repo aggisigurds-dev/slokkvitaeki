@@ -28,14 +28,14 @@ fs.mkdirSync('blod', { recursive: true });
       lysing.push({ cid: c.id, bygging: c.nafn.replace(/^(Center Hótel|Heimaleiga) - /, ''), id: t.id, haed, label: String(t.nafn || haed).split(' — ')[0], mynd: t.mynd, sk: t.skurdur || null, f: fn,
         skrad: sk ? sk.tki.filter((x) => x.blad === t.id && isFinite(+x.bx) && isFinite(+x.by)).map((x) => ({ bx: +x.bx, by: +x.by })) : [],
         tki: tk.filter((x) => x.bx != null && x.by != null && isFinite(+x.bx) && isFinite(+x.by)).map((x) => ({ bx: +x.bx, by: +x.by, flokkur: x.flokkur, bunadur: x.bunadur })), alls: tk.length, till });
-      if (!fs.existsSync(fn)) verk.set(fn, t.mynd);
+      if (!fs.existsSync(fn)) verk.set(fn, { m: t.mynd, vara: `${url}/storage/v1/object/public/turbopaint/veggjavel-inn/${c.id}/${t.id}.jpg` });   // vara: Kópavogs-blöð (teikn-mynd 403) liggja í geymslunni undir félagi/blaði
     }
   }
   fs.writeFileSync('blod.json', JSON.stringify(lysing, null, 1));
   console.log('blöð', lysing.length, 'á eftir að sækja', verk.size);
   const q = [...verk.entries()]; let i = 0;
-  const vinna = async () => { while (i < q.length) { const [fn, m] = q[i++];
-    try { const u = /^http/.test(m) ? m : 'https://slokkvitaeki.netlify.app' + m; const r = await fetch(u, { signal: AbortSignal.timeout(170000) }); if (!r.ok) throw new Error(r.status); fs.writeFileSync(fn, Buffer.from(await r.arrayBuffer())); process.stdout.write('.'); }
+  const vinna = async () => { while (i < q.length) { const [fn, v] = q[i++], m = v.m;
+    try { const u = /^http/.test(m) ? m : 'https://slokkvitaeki.netlify.app' + m; let r = await fetch(u, { signal: AbortSignal.timeout(170000) }); if (!r.ok && v.vara) r = await fetch(v.vara, { signal: AbortSignal.timeout(170000) }); if (!r.ok) throw new Error(r.status); fs.writeFileSync(fn, Buffer.from(await r.arrayBuffer())); process.stdout.write('.'); }
     catch (e) { process.stdout.write('x'); console.log('\nvilla', fn, e.message, '— blaðið vantar'); } } };
   await Promise.all([vinna(), vinna(), vinna()]);
   console.log('\nlokið');
