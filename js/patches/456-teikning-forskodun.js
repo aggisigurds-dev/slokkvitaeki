@@ -266,11 +266,8 @@
     var hs = Array.isArray(row.haedir) && row.haedir.length ? row.haedir : [{ nafn: 'Teikning', image_url: row.image_url, markers: row.markers || [] }];
     var synd = hs.map(function (h, i) { return { h: h, i: i }; }).filter(function (x) { return x.h && (x.h.image_url || (x.h.vinnumynd && x.h.vinnumynd.url)); });
     if (!synd.length) return;
-    // Sérstakt þriðja spjald á tveggja hæða prófíl: tvær óbreyttar forsýningar,
-    // ekki búa til ímyndað 3D-líkan eða breyta gögnunum.
-    if (synd.length === 2) {
-      synd.push({ h: { nafn: 'Báðar hæðir', samsett: [synd[0].h, synd[1].h], markers: [] }, i: -1 });
-    }
+    // „Báðar hæðir“ (þriðja spjald á tveggja hæða prófíl) var tekið út 23.10.2026 (Agnar: „báðar hæðir saman er óþarfi“) — það var aðeins afrit
+    // af hinum tveimur forsýningunum með „0 tæki“. Kóðinn fyrir h.samsett hér að neðan stendur óhreyfður en er ekki lengur notaður.
     var g = document.createElement('div');
     g.id = ID;
     var SYNILEG = 3;
