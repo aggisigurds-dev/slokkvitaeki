@@ -1713,13 +1713,31 @@
   // parket langs lengri hliðar rýmisins. Heiti teikningarinnar (446) ráða þar sem þau eru; annars er lítið rými með þéttum
   // hreinlætistækjum bað. Teikningin dauf ofan á (margfölduð) svo heiti og tæki sjáist. Utan útveggja: gegnsætt (hellur
   // sjást). null ef útveggirnir loka ekki húsinu (flóðið lak inn) — þá helst teikningin.
+  // Hellulögnin kringum bygginguna (10.10) tekin burt 23.10.2026 (Agnar: „perhaps remove the tiles around the building“) — bakgrunnurinn er flatur blágrár halli eins og á viðmiðunarmyndinni
+  const HELLULOGN = false;
   const GOLF_EFNI = {
-    parket: ['#d3bd98', '#cbb590', '#d0ba95', '#c7b08b', '#cfb893'],   // 22.10.2026: ljós eik úr viðmiðunarmynd Agnars (hótel/heimili/skrifstofur) — áður ljósara (21.10: „alveg ljós brúnt")
+    parket: ['#d8b992', '#d3b38b', '#d6b690', '#cead87', '#d9bc97'],   // 23.10.2026: ljós eik, mæld á viðmiðunarmynd Agnars (#d9ba95 · #dbbd99 · #c2a584) — hótel/skrifstofur/íbúðir; 22.10: #d3bd98 …
     bad: { lit: [171, 175, 179], fuga: '#868b90', m: 0.3 },
     svalir: { lit: [160, 164, 168], fuga: '#7d8186', m: 0.5 },
     sameign: { lit: [198, 200, 202], fuga: '#a5a8ab', m: 0.6 },
-    steypa: { lit: [184, 188, 192], fuga: '#a9adb2', m: 3.2, v: 1.2 }      // verkstæði / lager: grá steypa, stórar plötur, varla sýnileg skil
+    steypa: { lit: [184, 176, 165], fuga: '#a79f94', m: 3.2, v: 1.2 }      // verkstæði / lager: hlý grá steypa (mæld á viðmiðunarmynd Agnars 23.10.2026: #b8b2aa · #bdb7af; „örlítill brúnn tónn í viðbót“ sama kvöld), stórar plötur, varla sýnileg skil
   };
+  // GÓLFLITIR (Agnar 23.10.2026: „væri gaman að geta skipt um lit á gólfinu sjálfur — eða að hluta“): litur á tré og steypu á öllum hæðum (Vidmot
+  // 'teikning.golflitir', eins á öllum vélum) og máluð stök rými (haedir[].golfRymi = [{ x, y, litur }] í hnitum frummyndar, vistast á hæðina).
+  const GOLFLITIR_KEY = 'teikning.golflitir';
+  const erHex = v => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
+  const golfLitir = () => { try { const v = window.Vidmot ? Vidmot.lesa(GOLFLITIR_KEY, null) : null; return { parket: v && erHex(v.parket) ? v.parket : '', steypa: v && erHex(v.steypa) ? v.steypa : '' }; } catch (_) { return { parket: '', steypa: '' }; } };
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const rgbHex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const parketUrLit = h => { const c = hexRgb(h); return [1.02, 0.985, 1, 0.97, 1.03].map(m => rgbHex(c.map(v => v * m))); };
+  const golfEfniVirk = () => {
+    const L = golfLitir(), E = Object.assign({}, GOLF_EFNI);
+    if (L.parket) E.parket = parketUrLit(L.parket);
+    if (L.steypa) { const c = hexRgb(L.steypa); E.steypa = Object.assign({}, GOLF_EFNI.steypa, { lit: c, fuga: rgbHex(c.map(v => v * 0.92)) }); }
+    return E;
+  };
+  const golfLykill = hd => JSON.stringify([golfLitir(), (hd && hd.golfRymi) || []]);
+
   // RÝMISTEGUNDIR (rýmishamurinn): litur og hópur — sameign hússins eða íbúðir (séreign). Röðin = röð skýringarinnar.
   const RYMI_TEG = [
     { k: '', nafn: 'Óflokkað', lit: '#d9d6d0', hopur: 'ibud' },
@@ -2016,24 +2034,35 @@
       // röðin í ibudR fylgir ibudNumer — vísar listans breytast við röðun, svo litur fer eftir númerinu (lit = nr)
       ibudListi.forEach(a => { a.ix = ibudNumer.findIndex(q => q.t === a.nr); });
     }
+    // Máluð rými (hd.golfRymi): punktur í frummynd → rými; litur rýmisins fer ofan á efni þess (3D „Gólf“ ▸ Mála rými)
+    const rymiIdAf = (x, y) => {
+      const sk0 = hd.sk || { x: 0, y: 0 }, cx = Math.round((x - sk0.x) * kv * s), cy = Math.round((y - sk0.y) * kv * s);
+      if (!(cx >= 0 && cy >= 0 && cx < RW && cy < RH)) return -1;
+      let id0 = merki[cy * RW + cx];
+      if (id0 < 0) { const pp = naestaRymi(cx, cy); id0 = pp >= 0 ? merki[pp] : -1; }
+      return id0;
+    };
+    const rymiLit = new Map();
+    (hd.golfRymi || []).forEach(o => { if (o && erHex(o.litur)) { const id0 = rymiIdAf(+o.x, +o.y); if (id0 >= 0) rymiLit.set(id0, o.litur); } });
     // grímur á hvern flokk
     const grimur = {}, alla = new ImageData(RW, RH);
     for (let p = 0; p < N; p++) {
       const id = merki[p]; if (id < 0) continue;
       let e = nafn[p] >= 0 ? EFNI_AF_TEG(heitin[nafn[p]].teg) : rymi[id].efni;
       if (steypuHaed && e === 'parket') e = 'steypa';
-      const l = e === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e;
+      const grunn = e === 'parket' ? (rymi[id].lodrett ? 'parketV' : 'parketH') : e, litM = rymiLit.get(id), l = litM ? 'sk|' + grunn + '|' + litM : grunn;
       const g = grimur[l] || (grimur[l] = new ImageData(RW, RH));
       g.data[p * 4 + 3] = 255; alla.data[p * 4 + 3] = 255;
     }
     const iStriga = d => { const c = document.createElement('canvas'); c.width = RW; c.height = RH; c.getContext('2d').putImageData(d, 0, 0); return c; };
+    const GE = golfEfniVirk();
     const GW = golfStr.width, GH = golfStr.height, pxmG = metri * k.c * GW / W;
-    const parket = lodrett => {
+    const parket = (lodrett, pal) => {
       const pw = Math.max(3, 0.19 * pxmG), rad = 6, TH = Math.round(pw * rad), TW = Math.max(16, Math.round(2.8 * pxmG));
       const c = document.createElement('canvas'); c.width = lodrett ? TH : TW; c.height = lodrett ? TW : TH;
       const x = c.getContext('2d');
       if (lodrett) { x.translate(TH, 0); x.rotate(Math.PI / 2); }
-      const L = GOLF_EFNI.parket, sk = Math.max(1, pxmG * 0.008);
+      const L = pal || GE.parket, sk = Math.max(1, pxmG * 0.008);
       for (let r = 0; r < rad; r++) {
         const y = r * TH / rad, h = TH / rad, ofs = ((r * 0.37) % 1) * TW;
         for (let i = -2; i < 3; i++) {
@@ -2061,7 +2090,11 @@
     const tmp = document.createElement('canvas'); tmp.width = GW; tmp.height = GH;
     const tx = tmp.getContext('2d');
     Object.keys(grimur).forEach(l => {
-      const mynstur = l === 'parketH' ? parket(false) : l === 'parketV' ? parket(true) : flisar(GOLF_EFNI[l]);
+      let mynstur;
+      if (l.indexOf('sk|') === 0) {
+        const [, gr, lt] = l.split('|'), c = hexRgb(lt);
+        mynstur = gr === 'parketH' ? parket(false, parketUrLit(lt)) : gr === 'parketV' ? parket(true, parketUrLit(lt)) : flisar(Object.assign({}, GE[gr] || GE.steypa, { lit: c, fuga: rgbHex(c.map(v => v * 0.92)) }));
+      } else mynstur = l === 'parketH' ? parket(false) : l === 'parketV' ? parket(true) : flisar(GE[l]);
       tx.globalCompositeOperation = 'source-over'; tx.clearRect(0, 0, GW, GH);
       tx.fillStyle = tx.createPattern(mynstur, 'repeat'); tx.fillRect(0, 0, GW, GH);
       tx.globalCompositeOperation = 'destination-in'; tx.drawImage(iStriga(grimur[l]), 0, 0, GW, GH);
@@ -2091,7 +2124,7 @@
       else for (let p = 0; p < N; p++) if (nafnX[p] === k) nafnX[p] = ix;
     });
     const talning = { heiti: heitin.length, ibudir, badBlek: Math.round(badBlek * 1000) }; rymi.forEach(r => { if (r.m2 >= 1) talning[r.efni] = (talning[r.efni] || 0) + 1; });
-    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm,
+    return { strigi: ut, tegR, RW, RH, fjoldi, ibudir, nHeiti: heitin.length, talning, kvs: kv * s, nafnR: nafnX, ibudR, ibudListi, pxm, rymiId: rymiIdAf,
       heitin: heitinX,
       rymi: rymi.map(r => ({ efni: r.efni, teg: r.teg, m2: Math.round(r.m2 * 10) / 10, blek: Math.round(r.blekH * 1000) / 1000, heiti: r.heiti || null, x: Math.round(r.sx / r.n / s), y: Math.round(r.sy / r.n / s) })) };
   }
@@ -2428,7 +2461,7 @@
       // GÓLFEFNI: parket og flísar eftir rýmum (gráa útlitið; Brunahólf-útlitið sýnir teikninguna eins og áður)
       if (hd.butar && hd.butar.length && !(gogn && gogn.anGolfefna)) {
         try {
-          const geL = (hd.heitiTexta || []).length + '|' + (hd.heitiOcr || []).length + '|' + golfStr.width + '|' + golfStr.height;
+          const geL = (hd.heitiTexta || []).length + '|' + (hd.heitiOcr || []).length + '|' + golfStr.width + '|' + golfStr.height + '|' + golfLykill(hd);
           const ge = hd._ge && hd._geL === geL ? hd._ge : golfEfni(hd, k, metri, golfStr);
           hd._ge = ge; hd._geL = geL;
           if (ge) { lg.efniAf = new T.CanvasTexture(ge.strigi); lg.efniAf.anisotropy = 4; losa.push(lg.efniAf); lg.golfefni = ge; (syna3d._golfefni = syna3d._golfefni || {})[hd.nafn || nr] = ge.rymi; console.info("[383] gólfefni " + (hd.nafn || nr) + ": " + JSON.stringify(ge.talning)); }
@@ -2678,7 +2711,7 @@
     });
     // HELLULÖGN (Agnar 10.10.2026: „hellulagningamynstur á jörðina kringum bygginguna"): gráar 40 × 40 cm hellur undir
     // neðstu hæðinni, 8 m út fyrir teikninguna. Sést þar sem gólfið er gegnsætt utan húss. Ekki á fastri vinnumynd.
-    if (lag[0] && !(gogn && gogn.anHellna)) {
+    if (HELLULOGN && lag[0] && !(gogn && gogn.anHellna)) {
       const lg0 = lag[0], m0 = lg0.metri || 1, ut = 8 * m0, w = lg0.gw + 2 * ut, d = lg0.gh + 2 * ut;
       const hs = document.createElement('canvas'); hs.width = hs.height = 256;
       const hx = hs.getContext('2d');
@@ -3005,7 +3038,7 @@
     };
     // Smellur (ekki dráttur, ekki klípa) á vegg: handfangið fær hæð og vegg undir bendlinum (aSmell) — notað í handvali eldveggja.
     const geisli = new T.Raycaster(), ndc = new T.Vector2();
-    let fjolsnert = false, handfang = null;
+    let fjolsnert = false, handfang = null, golfHandfang = null;
     const veggurUndir = (cx, cy) => {
       const r = el.getBoundingClientRect();
       ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
@@ -3038,6 +3071,24 @@
       else { theta -= dx * 0.006; phi -= dy * 0.006; }
       stillaVel();
     };
+    // Gólfið undir bendlinum (Mála rými): hæð + punktur í hnitum frummyndar. Veggur sem er nær myndavélinni en gólfið skyggir á það.
+    const golfUndir = (cx, cy) => {
+      const r = el.getBoundingClientRect();
+      ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+      geisli.setFromCamera(ndc, vel);
+      let best = null;
+      lag.forEach(lg => {
+        if (!lg.hopur.visible || !lg.golfM) return;
+        const hit = geisli.intersectObject(lg.golfM, false)[0];
+        if (!hit || !hit.uv) return;
+        const vh = lg.veggir ? geisli.intersectObject(lg.veggir, false)[0] : null;
+        if (vh && vh.distance < hit.distance - 1e-4) return;
+        if (!best || hit.distance < best.d) best = { d: hit.distance, lg, uv: hit.uv };
+      });
+      if (!best) return null;
+      const hd = best.lg.hd, sk = hd.sk || { x: 0, y: 0 };
+      return { haedId: hd.haedId, nr: best.lg.nr, x: Math.round(sk.x + best.uv.x * hd.W / hd.kvardi), y: Math.round(sk.y + (1 - best.uv.y) * hd.H / hd.kvardi) };
+    };
     const upp = e => {
       const p = bendlar.get(e.pointerId);
       bendlar.delete(e.pointerId); klipa = 0; el.style.cursor = 'grab';
@@ -3055,6 +3106,7 @@
         });
         if (best) { try { gogn.aHaed(best.nr); } catch (err) { console.warn('[383] aHaed', err); } }
       }
+      if (smellur && golfHandfang) { try { const gh = golfUndir(e.clientX, e.clientY); if (gh) golfHandfang(gh, e); } catch (err) { console.warn('[383] gólf pensill', err); } }
       if (smellur && handfang && handfang.aSmell) { try { handfang.aSmell(veggurUndir(e.clientX, e.clientY), e.clientX, e.clientY); } catch (err) { console.warn('[383] aSmell', err); } }
     };
     const hjol = e => { e.preventDefault(); if (ganga) { gangaFaera((e.deltaY < 0 ? 1 : -1) * 0.8 * ganga.metri, 0); gangaVel(); return; } fjarl *= e.deltaY > 0 ? 1.12 : 0.89; stillaVel(); };
@@ -3427,7 +3479,7 @@
           if (lg.hd.haedId !== hid || !lg.golfStr || !lg.hd.butar || !lg.hd.butar.length) return;
           lg.hd.heitiOcr = heiti;
           let ge = null;
-          const geL = (lg.hd.heitiTexta || []).length + '|' + heiti.length + '|' + lg.golfStr.width + '|' + lg.golfStr.height;
+          const geL = (lg.hd.heitiTexta || []).length + '|' + heiti.length + '|' + lg.golfStr.width + '|' + lg.golfStr.height + '|' + golfLykill(lg.hd);
           if (lg.hd._ge && lg.hd._geL === geL) ge = lg.hd._ge;
           else { try { ge = golfEfni(lg.hd, lg.k, lg.metri, lg.golfStr); } catch (e) { console.warn('[383] gólfefni (heiti)', e); } lg.hd._ge = ge; lg.hd._geL = geL; }
           if (!ge) return;
@@ -3441,6 +3493,15 @@
         if (breytt) beitaGolfi();
         return breytt;
       },
+      // GÓLFLITIR: gólfefni hæðar (eða allra) reiknuð aftur þegar litir eða máluð rými breytast
+      endurgeraGolf(hid, golfRymi) {
+        lag.forEach(lg => { if (golfRymi && (!hid || lg.hd.haedId === hid)) lg.hd.golfRymi = golfRymi; });
+        let breytt = false;
+        lag.forEach(lg => { if (!hid || lg.hd.haedId === hid) breytt = this.setjaHeiti(lg.hd.haedId, lg.hd.heitiOcr || []) || breytt; });
+        return breytt;
+      },
+      golfRymiId(hid, x, y) { const lg = lag.find(q => q.hd.haedId === hid); return lg && lg.golfefni && lg.golfefni.rymiId ? lg.golfefni.rymiId(x, y) : -1; },
+      golfPensill(fn) { golfHandfang = fn || null; el.style.cursor = fn ? 'crosshair' : 'grab'; },
       setjaSameign(fn) { lag.forEach(lg => { try { samHaed(lg, false); } catch (_) {} lg.hd.sameign = fn(lg.hd.haedId) || null; if (lg.samM) { lg.hopur.remove(lg.samM); lg.samM = null; } lg.samV = null; lg.samUpph = null; }); synaSameign(samOn); },
       stigaStafli: () => lg0StigaHlidrun.slice(),
       // Bakaðir skuggar hverrar hæðar (prófanir): hlutfall skyggðra díla á striganum, ógegnsæi, sýnileiki.
@@ -5197,7 +5258,7 @@
       talning.metrar = Math.round(butar.reduce((s0, v) => s0 + Math.hypot(v[2] - v[0], v[3] - v[1]), 0) * mpx);
     }
     try { console.info('[383] 3D ' + (h.nafn || '') + ': ' + JSON.stringify(talning)); } catch (_) {}
-    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, svalir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
+    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, golfRymi: Array.isArray(h.golfRymi) ? h.golfRymi : [], merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, svalir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
   }
   // EI-merki fyrir 3D: það sem teikningin geymir, annars TEXTALAG vigur-PDF-sins (ódýrt, engin myndgreining). Aðeins í
   // minni — ekkert er skrifað í teikninguna og 2D-glugginn sýnir merkin ekki (Agnar 03.10.2026: sú sýn býr í TurboPaint).
@@ -6054,6 +6115,7 @@
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
       '<button type="button" id="fp-3d-sameign" aria-pressed="' + (SAM.syn ? 'true' : 'false') + '" title="Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða)" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + (SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)') + ';color:' + (SAM.syn ? '#14120f' : '#fff') + ';font:700 13px system-ui;cursor:pointer">Sameign</button>' +
       // RÝMI (Agnar 11.10.2026): tegundir rýma í lit og talning — sameign, íbúðir eða bæði
+      '<button type="button" id="fp-3d-golf" aria-pressed="false" title="Gólf: skiptu um lit á tré og steypu, eða málaðu stök rými" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gólf</button>' +
       '<button type="button" id="fp-3d-rymi" aria-pressed="false" title="Rýmishamur: hvert rými í lit eftir tegund (stofa, herbergi, bað, svalir, stigahús, gangur …) og talning — íbúðir, herbergi, böð. Heitin eru lesin af teikningunni; skannaðar teikningar les skrifstofutölvan." style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Rými</button>' +
       // VEGGJAVÉL (Agnar 11.10.2026): sést aðeins þegar hæð á enga vistaða veggi — sjá veggjavelAHaedir()
       '<button type="button" id="fp-3d-vel" style="display:none;height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Veggjavél</button>' +
@@ -6063,6 +6125,7 @@
       '<div id="fp-3d-haedir" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;pointer-events:auto"></div></div>' +
       '<div style="position:absolute;left:10px;bottom:10px;z-index:2;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 20px);pointer-events:none">' +
       '<div id="fp-3d-rymi-p" style="display:none;flex-direction:column;gap:6px;min-width:250px;max-width:340px;padding:9px 11px;border-radius:11px;background:rgba(20,18,15,.9);color:#f1ede4;font:600 12px system-ui,sans-serif;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.3)"></div>' +
+      '<div id="fp-3d-golf-p" style="display:none;flex-direction:column;gap:8px;min-width:260px;max-width:340px;padding:9px 11px;border-radius:11px;background:rgba(20,18,15,.92);color:#f1ede4;font:600 12px system-ui,sans-serif;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.3)"></div>' +
       '<div id="fp-3d-eld" style="display:none;gap:10px;align-items:center;padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 12px system-ui,sans-serif;pointer-events:none;font-weight:600"></div>' +
       '<div id="fp-3d-skyr" style="padding:6px 10px;border-radius:9px;background:rgba(20,18,15,.85);color:#f1ede4;font:500 12px system-ui,sans-serif;pointer-events:none">Undirbý hæðir…</div></div>' +
       '<div id="fp-3d-val" style="position:absolute;z-index:4;display:none;flex-direction:column;gap:6px;width:190px;padding:9px;border-radius:11px;background:rgba(20,18,15,.94);box-shadow:0 6px 22px rgba(0,0,0,.4);font:600 12px system-ui,sans-serif;color:#f1ede4"></div>';
@@ -6231,6 +6294,51 @@
       const rymiLit = () => { if (!rb || !G.syn3d || !G.syn3d.rymiStada) return; const a = G.syn3d.rymiStada().on; rb.setAttribute('aria-pressed', a ? 'true' : 'false'); rb.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; rb.style.color = a ? '#14120f' : '#fff'; };
       if (rb) rb.addEventListener('click', () => { if (!G.syn3d || !G.syn3d.rymi) return; G.syn3d.rymi(!G.syn3d.rymiStada().on); rymiLit(); rymiSkyring(valin); });
       if (rp) rp.addEventListener('click', e => { const b = e.target.closest('[data-umfang]'); if (!b || !G.syn3d || !G.syn3d.rymi) return; G.syn3d.rymi(true, b.getAttribute('data-umfang')); rymiSkyring(valin); });
+      // GÓLF: litir á tré og steypu (allar hæðir) og „Mála rými“ — smellt á rými í 3D. Föst vinnumynd (445) tekur litina við næsta „Festa“.
+      {
+        const gb = gamur.querySelector('#fp-3d-golf'), gp = gamur.querySelector('#fp-3d-golf-p');
+        if (gb && gp) {
+          const LITIR = [['#e2c7a2', 'Ljós eik'], ['#d3b38b', 'Eik'], ['#b78d5e', 'Dökk eik'], ['#7a5a40', 'Hnota'], ['#cfc9c0', 'Ljós steypa'], ['#b4aca2', 'Steypa'], ['#8d9096', 'Dökk steypa'], ['#ebebe8', 'Hvítar flísar'], ['#5d636c', 'Dökkar flísar'], ['#a9c8a0', 'Grænt'], ['#9ec3e6', 'Blátt']];
+          let penni = '#d3b38b', hamur = 'af', tmr = 0;
+          const hnapp = 'height:26px;padding:0 9px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#f1ede4;font:700 11.5px system-ui;cursor:pointer';
+          const gul = ';background:#d9b45a;color:#14120f;border-color:#d9b45a';
+          const litInnsl = (g, v) => '<input type="color" data-g="' + g + '" value="' + v + '" style="width:34px;height:26px;padding:0;border:0;background:none;cursor:pointer">';
+          const teikna = () => {
+            const L = golfLitir();
+            gp.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:12.5px">Gólf</b><button type="button" data-g="loka" style="' + hnapp + '">✕</button></div>' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>Allt tré</span>' + litInnsl('parket', L.parket || '#d3b38b') + '<span>Öll steypa</span>' + litInnsl('steypa', L.steypa || '#b8b0a5') + '<button type="button" data-g="upprunalegt" style="' + hnapp + '">Upprunalegt</button></div>' +
+              '<div style="opacity:.75;font-weight:500">Eða mála stök rými:</div>' +
+              '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' + LITIR.map(c => '<button type="button" data-g="litur" data-l="' + c[0] + '" title="' + c[1] + '" style="width:24px;height:24px;border-radius:6px;border:2px solid ' + (penni === c[0] ? '#fff' : 'rgba(255,255,255,.25)') + ';background:' + c[0] + ';cursor:pointer;padding:0"></button>').join('') + litInnsl('penni', penni) + '</div>' +
+              '<div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" data-g="mala" style="' + hnapp + (hamur === 'mala' ? gul : '') + '">Mála rými</button><button type="button" data-g="hreinsa" style="' + hnapp + (hamur === 'hreinsa' ? gul : '') + '">Fjarlægja lit af rými</button></div>' +
+              '<div style="opacity:.7;font-weight:500;line-height:1.35">' + (hamur === 'mala' ? 'Smelltu á rými í 3D — það fær litinn.' : hamur === 'hreinsa' ? 'Smelltu á rými sem á að fá upprunalega gólfið aftur.' : 'Litirnir vistast á hæðina. „Festa“ bakar þá í vinnumyndina.') + '</div>';
+          };
+          const vista = () => { clearTimeout(tmr); tmr = setTimeout(() => { vistaGolfRymi().catch(e => segja('⚠ Náði ekki að vista gólflitina: ' + ((e && e.message) || e))); }, 900); };
+          const pensill = (hit) => {
+            const h = haedir().find(x => x.id === hit.haedId); if (!h || !G.syn3d || !G.syn3d.golfRymiId) return;
+            const id = G.syn3d.golfRymiId(hit.haedId, hit.x, hit.y); if (id < 0) return;
+            let listi = (Array.isArray(h.golfRymi) ? h.golfRymi : []).filter(o => G.syn3d.golfRymiId(hit.haedId, o.x, o.y) !== id);
+            if (hamur === 'mala') listi.push({ x: hit.x, y: hit.y, litur: penni });
+            if (listi.length > 400) listi = listi.slice(-400);
+            h.golfRymi = listi; G.syn3d.endurgeraGolf(hit.haedId, listi); vista();
+          };
+          const virkja = () => { if (G.syn3d && G.syn3d.golfPensill) G.syn3d.golfPensill(hamur === 'af' ? null : pensill); teikna(); const a = gp.style.display !== 'none'; gb.setAttribute('aria-pressed', a ? 'true' : 'false'); gb.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; gb.style.color = a ? '#14120f' : '#fff'; };
+          gb.addEventListener('click', () => { const opna = gp.style.display === 'none'; gp.style.display = opna ? 'flex' : 'none'; if (!opna) hamur = 'af'; virkja(); });
+          gp.addEventListener('click', e => {
+            const b = e.target.closest('[data-g]'); if (!b) return; const g = b.getAttribute('data-g');
+            if (g === 'loka') { gp.style.display = 'none'; hamur = 'af'; virkja(); return; }
+            if (g === 'upprunalegt') { try { if (window.Vidmot) Vidmot.setja(GOLFLITIR_KEY, { parket: '', steypa: '' }); } catch (_) {} if (G.syn3d && G.syn3d.endurgeraGolf) G.syn3d.endurgeraGolf(null); teikna(); return; }
+            if (g === 'litur') { penni = b.getAttribute('data-l'); hamur = 'mala'; virkja(); return; }
+            if (g === 'mala') { hamur = hamur === 'mala' ? 'af' : 'mala'; virkja(); return; }
+            if (g === 'hreinsa') { hamur = hamur === 'hreinsa' ? 'af' : 'hreinsa'; virkja(); return; }
+          });
+          gp.addEventListener('change', e => {
+            const t = e.target; if (!t || !t.getAttribute) return; const g = t.getAttribute('data-g');
+            if (g === 'parket' || g === 'steypa') { try { if (window.Vidmot) Vidmot.setja(GOLFLITIR_KEY, Object.assign(golfLitir(), { [g]: t.value })); } catch (_) {} if (G.syn3d && G.syn3d.endurgeraGolf) G.syn3d.endurgeraGolf(null); }
+            else if (g === 'penni') { penni = t.value; hamur = 'mala'; virkja(); }
+          });
+          ["pointerdown", "mousedown", "wheel"].forEach(ev => gp.addEventListener(ev, e => e.stopPropagation(), { passive: true }));
+        }
+      }
       // HEITI ÚR SKANNAÐRI TEIKNINGU: hæðir án heita fara í lestur á skrifstofutölvunni (einu sinni á teikningu; svarið
       // liggur í automation_triggers). Gólfefni og rýmishamur uppfærast þegar svarið kemur.
       G.heitiBida = G.heitiBida || new Set();
@@ -6482,6 +6590,16 @@
     const u = String((h && h.image_url) || '');
     if (!u || u.indexOf('blob:') === 0 || u.indexOf('data:') === 0) return false;
     return /teikn-mynd\?/.test(u) || /^https?:/i.test(u);
+  }
+  // Máluð gólf (golfRymi) vistast á hæðina — Agnar 23.10.2026
+  async function vistaGolfRymi() {
+    const FP = FPx(), cid = FP && FP.companyId;
+    if (!cid || !window.DB || !DB.sb) throw new Error('engin tenging');
+    samstillaVirka();
+    const hs = haedir(), gogn = JSON.parse(JSON.stringify(hs)); gogn.forEach(x => { delete x.pdfReynt; });
+    const rodin = { company_id: cid, markers: gogn[0].markers, image_url: gogn[0].image_url || null, haedir: gogn, updated_at: new Date().toISOString() };
+    const r = window.TeiknVistun && TeiknVistun.skrifa ? await TeiknVistun.skrifa(cid, rodin) : { error: new Error('vistun vantar') };
+    if (r && r.error) throw new Error(r.error.message || 'ekkert skrifað');
   }
   async function vistaHaedirFyrirTurboPaint(nr) {
     const FP = FPx(), cid = FP && FP.companyId;

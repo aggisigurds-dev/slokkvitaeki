@@ -57,6 +57,7 @@
       n.nafn = l.nafn;
       if (l.frum) n.frum = l.frum;
       if (l.stimpilStaerd !== undefined) n.stimpilStaerd = l.stimpilStaerd;
+      if (l.golfRymi !== undefined) n.golfRymi = l.golfRymi;                  // máluð gólf (383 „Gólf“) — annars kæmi gildi þjónsins í staðinn
       // Föst vinnumynd hæðarinnar (445): sú nýrri gildir, hvorum megin sem hún var smíðuð.
       if (l.vinnumynd && (!f.vinnumynd || String(l.vinnumynd.t || '') > String(f.vinnumynd.t || ''))) n.vinnumynd = l.vinnumynd;
       return n;

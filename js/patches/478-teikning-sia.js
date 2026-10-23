@@ -26,8 +26,10 @@
   const FP = () => window.FloorPlan;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.86)';
 
+  // Sjálfgefið (Agnar 23.10.2026: „slepptu bara reykskynjurunum og ÚT-skiltunum sem default“): skynjarar og ÚT-skilti falin þar til valið er skráð — merkin eyðast aldrei, flísarnar kveikja á þeim aftur
+  const SJALFGEFID_AF = ['skyn', 'ut'];
   const stada = () => {
-    try { const v = window.Vidmot ? Vidmot.lesa(KEY, null) : null; return v && Array.isArray(v.af) ? v : { af: [] }; } catch (_) { return { af: [] }; }
+    try { const v = window.Vidmot ? Vidmot.lesa(KEY, null) : null; return v && Array.isArray(v.af) ? v : { af: SJALFGEFID_AF.slice() }; } catch (_) { return { af: SJALFGEFID_AF.slice() }; }
   };
   const vista = af => { try { if (window.Vidmot) Vidmot.setja(KEY, { af }); } catch (_) {} };
 
