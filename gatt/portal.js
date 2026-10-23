@@ -262,6 +262,7 @@
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
           eign: b.eign || null, beidni: !!b.beidni, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
+          bru_ein: b.bru_einingar != null && +b.bru_einingar > 0 ? +b.bru_einingar : null, bru_ein_heimild: b.bru_einingar_heimild || null,
           i_thjonustu: b.i_thjonustu, skodun_manudur: b.skodun_manudur, bru_skodun_manudur: b.bru_skodun_manudur,
           ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar, saga: Array.isArray(b.saga) ? b.saga : [],
           kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null,
@@ -994,7 +995,9 @@
     html += '<section class="dsec"><h4>Yfirlit</h4><div class="dkpis">' +
       '<div class="dk"><div class="k">Slökkvitæki</div><div class="v">' + (b.sl != null ? b.sl : '—') + '</div></div>' +
       '<div class="dk"><div class="k">Brunaslöngur</div><div class="v">' + (b.slo != null ? b.slo : '—') + '</div></div>' +
-      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? 'Já' : '—') + '</div>' + (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '') + '</div>' +
+      // 23.10.2026: einingafjöldi kerfisins (skýrslan ræður, áskriftarkortið varaleið — sama tala og í appinu) í stað bara „Já"
+      '<div class="dk"><div class="k">Brunakerfi</div><div class="v">' + (b.br ? (b.bru_ein ? String(b.bru_ein) : 'Já') : '—') + '</div>' +
+        (b.br && b.bru_ein ? '<div class="k" style="margin-top:6px">einingar í kerfinu · ' + (b.bru_ein_heimild === 'skyrsla' ? 'skoðun' : 'áskrift') + '</div>' : (b.br && b.bru_lysing ? '<div class="k" style="margin-top:6px">' + esc(b.bru_lysing) + '</div>' : '')) + '</div>' +
       // 23.10.2026 (Agnar: „hafa fjölda eininga líka ef það eru til tölur"): eignarhlutar úr fasteignaskrá HMS
       '<div class="dk" id="dk-ein"' + (b.eign && b.eign.einingar ? '' : ' hidden') + '><div class="k">Einingar</div><div class="v">' + esc(b.eign && b.eign.einingar ? b.eign.einingar : '—') + '</div><div class="k" style="margin-top:6px">eignarhlutar · fasteignaskrá</div></div></div>' +
       '<div class="dnext"><div class="next">' + (nextHtml || '<span class="dim">Næsta skoðun ekki skráð</span>') + '</div><div class="yrs">' + boxes + '</div></div></section>';

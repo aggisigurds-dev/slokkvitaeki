@@ -832,6 +832,38 @@ exports.handler = async (event) => {
         bmMap = (row && row.settings && row.settings.co_bygging_mynd) || {};
       }
     } catch (_) {}
+    // 23.10.2026 (Agnar: „þjónustugáttin og rekstrarfélög eru ekki að sýna heildar einingafjöldann í brunakerfisþjónustunni"):
+    // einingafjöldi brunakerfis = SKÝRSLAN (brunakerfi_skyrslur, nýjasta ár, final fremur en drög — sama summa og
+    // „196 einingar í kerfinu" í 274: iLagi + ekki per búnaðarlínu), annars unit_count áskriftarkortsins. Arnarhvoll:
+    // kortið sagði 0, skýrslan 196 — gáttin sýndi aðeins „Já".
+    const bruEinById = {};
+    try {
+      if (siteIds.length) {
+        const br = await P.sbGet(`brunakerfi_skyrslur?fyrirtaeki_id=in.(${siteIds.join(',')})&select=fyrirtaeki_id,year,status,bunadur:data->bunadur&order=year.desc`);
+        if (br.ok) {
+          const best = {};
+          (await br.json()).forEach((r) => {
+            if (r.fyrirtaeki_id == null || !r.year) return;
+            const cur = best[r.fyrirtaeki_id];
+            const fin = r.status === 'final';
+            if (cur && (cur.fin && !fin || cur.year > +r.year && cur.fin === fin)) return;
+            if (cur && cur.year === +r.year && cur.fin && !fin) return;
+            best[r.fyrirtaeki_id] = { year: +r.year, fin, bunadur: Array.isArray(r.bunadur) ? r.bunadur : [] };
+          });
+          Object.keys(best).forEach((id) => {
+            const n = best[id].bunadur.reduce((t, x) => t + (+(x && x.iLagi) || 0) + (+(x && x.ekki) || 0), 0);
+            if (n > 0) bruEinById[id] = { n, ar: best[id].year };
+          });
+        }
+      }
+    } catch (_) {}
+    const bruEiningar = (id) => {
+      const r = bruEinById[String(id)];
+      if (r) return { n: r.n, heimild: 'skyrsla', ar: r.ar };
+      const bm = bruMap[id] || bruMap[String(id)];
+      const n = bm && typeof bm === 'object' ? (+bm.unit_count || 0) : 0;
+      return n > 0 ? { n, heimild: 'askrift', ar: null } : null;
+    };
     const husmyndUr = (s) => {
       const e = s.eign && typeof s.eign === 'object' ? s.eign : null;
       if (e && e.mynd) return e;
@@ -1010,6 +1042,8 @@ exports.handler = async (event) => {
         // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
         skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
         bru_skodun_manudur: bruEntry && bruEntry.inspect_month != null ? Number(bruEntry.inspect_month) : null,
+        bru_einingar: (() => { const e = bruOn ? bruEiningar(s.id) : null; return e ? e.n : null; })(),
+        bru_einingar_heimild: (() => { const e = bruOn ? bruEiningar(s.id) : null; return e ? e.heimild : null; })(),
         taeki: slokkMinusHose(rawTotal, slo),
         slo: slo,
         // Upplýsingar um fasteignina (mynd, stærð, ár, tegund, lýsing) — opinberar upplýsingar

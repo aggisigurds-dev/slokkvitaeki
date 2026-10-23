@@ -1230,7 +1230,11 @@
           }
         }catch(e){ console.warn('[rekstrarfelog] brunakerfi skjöl', e); }
         try{
-          var rs=await SB.from('brunakerfi_skyrslur').select('fyrirtaeki_id,year,status');
+          // 23.10.2026 (Agnar: „rekstrarfélög eru ekki að sýna heildar einingafjöldann í brunakerfisþjónustunni"):
+          // einingar = SKÝRSLAN (nýjasta ár, final fremur en drög; iLagi+ekki per línu — sama summa og „einingar í
+          // kerfinu" í 274), annars unit_count kortsins. Arnarhvoll: kort 0, skýrsla 196 → sýndi „–".
+          var rs=await SB.from('brunakerfi_skyrslur').select('fyrirtaeki_id,year,status,bunadur:data->bunadur');
+          var best={};
           (rs.data||[]).forEach(function(s){
             if(s.fyrirtaeki_id==null||!s.year) return;
             var e=rec(s.fyrirtaeki_id), y=String(s.year);
@@ -1238,6 +1242,13 @@
             if(!e.years[y]) e.years[y]={url:'',kind:(s.status==='final'?'rep':'hist')};
             else if(s.status==='final') e.years[y].kind='rep';   // uppfærir drög í „á skrá"
             if(+y>e.latest) e.latest=+y;
+            var fin=s.status==='final', k=String(s.fyrirtaeki_id), cur=best[k];
+            if(cur && ((cur.fin&&!fin) || (cur.fin===fin && cur.year>=+s.year))) return;
+            best[k]={year:+s.year,fin:fin,bunadur:Array.isArray(s.bunadur)?s.bunadur:[]};
+          });
+          Object.keys(best).forEach(function(k){
+            var n=best[k].bunadur.reduce(function(t,x){ return t+(+(x&&x.iLagi)||0)+(+(x&&x.ekki)||0); },0);
+            if(n>0){ var e=rec(k); e.units=n; e.unitsHeimild='skyrsla'; }
           });
         }catch(e){ console.warn('[rekstrarfelog] brunakerfi skýrslur', e); }
       }
