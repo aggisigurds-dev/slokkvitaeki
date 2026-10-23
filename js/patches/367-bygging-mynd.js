@@ -441,7 +441,9 @@
   // 15.10.2026: `yfir` = skipta út sjálfsóttri mynd (loftmynd/„engin") fyrir götumynd — bakfyllingin (fyllaStreetView).
   // Myndir Agnars (handvirkt) eru ALDREI yfirskrifaðar, líka með yfir=true. Sjálfsóttu Google Maps-skjámyndirnar
   // (05.10, „mjóu myndirnar") víkja fyrir götumynd þegar hún er til — annars halda þær sér (Agnar 15.10).
-  var EIGIN_MYND = /^handvirkt/;
+  // 23.10.2026: myndir Þjónustugáttarinnar (uppspretta 'gatt', fluttar úr fyrirtaeki.eign.mynd að ósk Agnars: „myndirnar á
+  // center hotel gáttinni eru flottari") eru líka friðhelgar — bakfyllingin skiptir þeim ekki út fyrir götumynd.
+  var EIGIN_MYND = /^(handvirkt|gatt)/;
   function erEigin(m) { return !!(m && m.url && EIGIN_MYND.test(String(m.uppspretta || ''))); }
   async function vistaUtan(coId, adr, svar, yfir) {
     if (yfir ? erEigin(lesaMynd(coId)) : erVerndud(lesaMynd(coId))) return false;

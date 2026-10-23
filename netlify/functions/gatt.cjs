@@ -820,13 +820,27 @@ exports.handler = async (event) => {
     // Brunakerfisþjónusta = AppSettings.brunakerfi_customers[fid], EKKI slökk
     // er_i_thjonustu (það málaði „Brunak. Já" á Hlaðvarpinn).
     let bruMap = {};
+    // 23.10.2026 (Agnar: „myndirnar eru ekki að synca saman, vantar myndir 2 á Þjónustugátt"): húsmynd appsins
+    // (AppSettings co_bygging_mynd — sama mynd og bannerinn á fyrirtækjasíðunni, Verkstæði, Ársskoðun, Rekstrarfélög)
+    // er varaleið gáttarinnar þegar eign.mynd vantar. Ein heimild báðum megin: gáttarmyndirnar fara í co_bygging_mynd.
+    let bmMap = {};
     try {
       const ar = await P.sbGet('app_settings?id=eq.1&select=settings');
       if (ar.ok) {
         const row = (await ar.json())[0];
         bruMap = (row && row.settings && row.settings.brunakerfi_customers) || {};
+        bmMap = (row && row.settings && row.settings.co_bygging_mynd) || {};
       }
     } catch (_) {}
+    const husmyndUr = (s) => {
+      const e = s.eign && typeof s.eign === 'object' ? s.eign : null;
+      if (e && e.mynd) return e;
+      const bm = bmMap[String(s.id)];
+      const url = bm && !bm.engin && bm.url && /^https:\/\//.test(String(bm.url)) ? String(bm.url) : '';
+      // aðeins bætt við eign sem er til eða stað í þjónustu — eignirUtan-listinn (b.eign) má ekki fyllast af húsmyndum einum
+      if (!url || (!e && s.er_i_thjonustu === false)) return e;
+      return Object.assign({}, e || {}, { mynd: url, mynd_heimild: 'app' });
+    };
 
     // 2c) Brunaslöngur per byggingu. Sýnishornið (Center Hótel) sýnir slöngur
     //     sem eigin dálk; total_devices inniheldur þær. Skýrsla fyrst, tækjaskrá
@@ -999,7 +1013,7 @@ exports.handler = async (event) => {
         taeki: slokkMinusHose(rawTotal, slo),
         slo: slo,
         // Upplýsingar um fasteignina (mynd, stærð, ár, tegund, lýsing) — opinberar upplýsingar
-        eign: s.eign && typeof s.eign === 'object' ? s.eign : null,
+        eign: husmyndUr(s),
         beidni: !!beidniById[s.id],
         kerfi: kerfiById[s.id] || [],
         flokkun: flokkunById[s.id] || null,
