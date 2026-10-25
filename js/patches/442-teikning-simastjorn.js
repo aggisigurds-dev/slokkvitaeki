@@ -120,14 +120,18 @@
       '#modal-floorplan.fp-simi.t442-h-teikn .fp-hd-grp .modal-x{position:absolute!important;top:6px;right:10px;box-shadow:none!important}' +
       // Teikning / Skoða: ekkert fyrir neðan kortið
       '#modal-floorplan.fp-simi.t442-h-teikn #fp-panel,#modal-floorplan.fp-simi.t442-h-skoda #fp-panel{display:none!important}' +
-      // Tæki: búnaðurinn í einni skrunröð (eins og merkin) — merkin sjálf falin
-      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil{display:none!important}' +
-      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:5px;margin:0 0 6px;padding-bottom:2px}' +
-      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur>.fp-stimpil-lbl{display:none}' +
-      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur .fp-stimpill{flex:none!important;width:auto!important;padding:3px 8px 3px 3px;font-size:11px;white-space:nowrap}' +
-      '#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur .fp-stimpill-ico{width:20px!important;height:20px!important}' +
+      // Tæki (Agnar 25.10.2026: „alllt of mikið af óþarfa doti … færa öll merki í merkingar“): AÐEINS tækjaspjöldin — búnaðarröðin, merkin, stærðarsleðinn og „Nýtt“-línan fara í Merki-flipann; valið merki sýnir bara nafn og Snúa / Fjarlægja
+      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil,#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil-staerd-wrap,#modal-floorplan.fp-simi.t442-h-taeki #fp-nytt{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-stimpil-lbl,#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-vm-stimp{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd{padding:4px 8px!important;margin:0 0 4px!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-merki-nafn{font-size:13px!important;margin:0 0 4px!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-merki-acts button{height:36px!important}' +
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:5px;margin:0 0 6px;padding-bottom:2px}' +
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur>.fp-stimpil-lbl{display:none}' +
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur .fp-stimpill{flex:none!important;width:auto!important;padding:3px 8px 3px 3px;font-size:11px;white-space:nowrap}' +
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur .fp-stimpill-ico{width:20px!important;height:20px!important}' +
       // Merki: búnaður og tækjalisti falin; merkin alltaf opin (samanbrot merkjanna er óþarft þegar hamurinn velur þau)
-      '#modal-floorplan.fp-simi.t442-h-merki #fp-bunadur,#modal-floorplan.fp-simi.t442-h-merki #fp-unit-list{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-merki #fp-unit-list{display:none!important}' +
       '#modal-floorplan.fp-simi.t442-ham .t442-fella{pointer-events:none}#modal-floorplan.fp-simi.t442-ham .t442-fella i{display:none}' +
       '';
     document.head.appendChild(st);
