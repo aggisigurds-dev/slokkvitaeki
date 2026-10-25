@@ -103,7 +103,7 @@
     lokaPop();
     const m = modal(); if (!m) return null;
     const p = document.createElement('div'); p.id = 'fp-t484-pop'; p.innerHTML = html;
-    document.body.appendChild(p);
+    m.appendChild(p);
     const r = festaVid.getBoundingClientRect(), pw = p.offsetWidth;
     p.style.top = Math.min(window.innerHeight - 60, r.bottom + 6) + 'px';
     p.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.right - pw)) + 'px';

@@ -6082,6 +6082,37 @@
       x.fillStyle = '#fff'; x.fillRect(0, 0, 150, 96);
       try { x.drawImage(t.mynd, sk.x, sk.y, sk.w, sk.h, (150 - sk.w * k) / 2, (96 - sk.h * k) / 2, sk.w * k, sk.h * k); } catch (_) {}
     });
+    // STÆRRI FORSKOÐUN (Agnar 25.10.2026: „væri gott að geta fengið stærra preview áður en ég set hæðarnar inn“): smellt á smámynd opnar hana stóra
+    // (húsið eins og það yrði skorið; „Sýna allt blaðið“ sýnir blaðið heilt) — ekkert vistast, hakið á hæðinni breytist ekki.
+    const fahStor = (t, sjaAllt) => {
+      const e0 = y.querySelector('.fah-stor'); if (e0) e0.remove();
+      if (!t.mynd) return;
+      const iw = t.mynd.naturalWidth || t.mynd.width, ih = t.mynd.naturalHeight || t.mynd.height;
+      const sk = t.skurdur && !sjaAllt ? t.skurdur : { x: 0, y: 0, w: iw, h: ih };
+      const ov = document.createElement('div'); ov.className = 'fah-stor';
+      ov.style.cssText = 'position:absolute;inset:0;z-index:5;background:rgba(10,9,8,.95);display:flex;flex-direction:column;gap:10px;padding:12px 16px';
+      const takkaStill = 'height:32px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#f1ede4;font:700 12.5px system-ui;cursor:pointer';
+      ov.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#fff"><b style="font-size:15px">' + esc(t.nafn) + '</b><span style="color:rgba(255,255,255,.6);font-size:12px">' + esc(t.blad.lysing) + (t.blad.dags ? ' · ' + esc(t.blad.dags) : '') + (t.skurdur && !sjaAllt ? ' · húsið skorið út' : '') + '</span><div style="flex:1"></div>' +
+        (t.skurdur ? '<button type="button" data-s="allt" style="' + takkaStill + '">' + (sjaAllt ? 'Sýna húsið' : 'Sýna allt blaðið') + '</button>' : '') +
+        '<button type="button" data-s="loka" style="' + takkaStill + '">✕ Loka</button></div>' +
+        '<div class="fah-stor-r" style="flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center"></div>';
+      const maxW = Math.max(320, y.clientWidth - 40), maxH = Math.max(240, y.clientHeight - 110), k = Math.min(maxW / sk.w, maxH / sk.h, 2);
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sk.w * k)); c.height = Math.max(1, Math.round(sk.h * k));
+      c.style.cssText = 'background:#fff;border-radius:6px;max-width:100%';
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      try { x.drawImage(t.mynd, sk.x, sk.y, sk.w, sk.h, 0, 0, c.width, c.height); } catch (_) {}
+      ov.querySelector('.fah-stor-r').appendChild(c);
+      ov.addEventListener('click', e => {
+        const b = e.target.closest('button[data-s]');
+        if (b) { if (b.dataset.s === 'loka') ov.remove(); else fahStor(t, !sjaAllt); } else if (e.target === ov) ov.remove();
+      });
+      y.appendChild(ov);
+    };
+    tl.tillaga.forEach((t, i) => {
+      const c = y.querySelector('canvas[data-th="' + i + '"]'); if (!c || !t.mynd) return;
+      c.style.cursor = 'zoom-in'; c.title = 'Smelltu til að stækka';
+      c.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fahStor(t, false); });
+    });
     const takki = y.querySelector('[data-fah="baeta"]');
     const lita = () => { const n = valdar.filter((v, i) => v && !tl.tillaga[i].til).length; takki.textContent = n ? 'Bæta ' + n + (n === 1 ? ' hæð' : ' hæðum') + ' við' : 'Engin ný hæð valin'; takki.disabled = !n; takki.style.opacity = n ? '1' : '.5'; };
     lita();
