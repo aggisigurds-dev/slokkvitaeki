@@ -522,7 +522,9 @@
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">' + esc(r.eining || 'tæki') + '</span>' : '<span class="dim">—</span>') + '</td>' +
         '<td class="sk-txt">' + (r.texti ? esc(r.texti) : '<span class="dim">—</span>') + vidbotHtml(r) + '</td>' +
-        '<td class="r">' + docLink('PDF', r.docId) + (r.docId ? '<a href="#" class="frest sk-bidja" data-sk-gogn="' + r.docId + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">Biðja um uppfærða</a>' : '') + '</td></tr>';
+        // 25.10.2026: skýrsla án skjals (docId null) sýnir „skjal vantar" í stað dauðs PDF-hlekks; má samt biðja um skýrsluna.
+        '<td class="r">' + (r.docId || state.demo ? docLink('PDF', r.docId) : '<span class="dim" title="Skjalið er ekki í skjalasafninu — biddu um það hér til hliðar.">skjal vantar</span>') +
+          '<a href="#" class="frest sk-bidja" data-sk-gogn="' + (r.docId || '') + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">' + (r.docId ? 'Biðja um uppfærða' : 'Biðja um skýrsluna') + '</a></td></tr>';
     }).join('') || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
   }

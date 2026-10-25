@@ -1116,7 +1116,8 @@ exports.handler = async (event) => {
       (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${skMan(d) || (d.year == null ? '' : d.year)}`,
     )
       // 23.10.2026 (Agnar: „sýna … heimilisfang, heildarfjölda tækja, mánuð skoðunar"): heimilisfang staðarins og tækjafjöldi úr skýrslunni
-      .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: skMan(d), heimilisfang: adrById[d.fyrirtaeki_id] || '', texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
+      // 25.10.2026 (Heimaleiga-greining): röð án skrár (hvorki Storage né Drive, t.d. 859) fékk PDF-hlekk sem svaraði 404 → docId null
+      .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type, skodun: skMan(d), heimilisfang: adrById[d.fyrirtaeki_id] || '', texti: d.skyrsla_texti ? String(d.skyrsla_texti).slice(0, 420) : null, vidbot: vidbotHreint(d.skyrsla_vidbot),
         bygging: nafnById[d.fyrirtaeki_id] || '', magn: skyrsluMagn(d), eining: d.doc_type === 'brunakerfi' ? 'einingar' : 'tæki' }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
@@ -1125,7 +1126,7 @@ exports.handler = async (event) => {
       docs.filter((d) => d.doc_type === 'reikningur' && !d.is_duplicate),
       (d) => normNr(d.invoice_number) || ('id:' + d.id),
     )
-      .map((d) => ({ docId: d.id, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
+      .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
         bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null,
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
@@ -1233,7 +1234,11 @@ exports.handler = async (event) => {
             }
             rows3.forEach((x) => {
               const n = normNr(x.reikn_nr), ex = byNr3[n], greitt = x.stada === 'greitt' || !!x.greitt_dags, dags = String(x.dags).slice(0, 10);
-              if (ex) { if (!ex.stada && greitt) ex.stada = 'greitt'; if (dags && ex.dags !== dags) ex.dags = dags; return; }
+              // 25.10.2026 (Heimaleiga: R-107254 og R-107758 „kreditfært" í Stólpa sáust sem reikningar): kreditfærður
+              // reikningur er ekki krafa — hvorki sýndur úr Stólpa né úr skjalaröð sem ber sama númer.
+              const kredit = /kredit/i.test(String(x.stada || ''));
+              if (ex) { if (kredit) ex._kredit = true; if (!ex.stada && greitt) ex.stada = 'greitt'; if (dags && ex.dags !== dags) ex.dags = dags; return; }
+              if (kredit) return;
               const y = rl[n];
               if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
               invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
@@ -1244,6 +1249,26 @@ exports.handler = async (event) => {
         }
       }
     } catch (_) {}
+
+    // 25.10.2026 (Heimaleiga-greining: R-001029 var ógiltur (void) í sölukerfinu en sást í gáttinni af því skjalaröðin
+    // lifði; kreditnótan R-001108 núllaði hann): reikningur sem er void, er kreditnóta, eða á kreditnótu sem vísar á
+    // hann (credit_of) er ekki krafa og á ekki heima fyrir augum kúnnans. Stólpa-kreditfærslur merktar hér að ofan.
+    try {
+      const nrs = [...new Set(invoices.map((i) => i.nr && String(i.nr).replace(/"/g, '')).filter(Boolean))];
+      if (nrs.length) {
+        const quoted = nrs.map((n) => `"${n}"`).join(',');
+        const sv = await P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of`);
+        if (sv.ok) {
+          const rows = await sv.json();
+          const ut = new Set(), idByNr = {};
+          rows.forEach((s) => { idByNr[normNr(s.num)] = s.id; if (s.status === 'void' || s.is_credit) ut.add(normNr(s.num)); });
+          const kreditud = new Set(rows.filter((s) => s.credit_of != null).map((s) => s.credit_of));
+          Object.keys(idByNr).forEach((n) => { if (kreditud.has(idByNr[n])) ut.add(n); });
+          for (let i = invoices.length - 1; i >= 0; i--) { if (invoices[i]._kredit || ut.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
+        }
+      }
+    } catch (_) {}
+    invoices.forEach((i) => { delete i._kredit; });
 
     // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
     // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
