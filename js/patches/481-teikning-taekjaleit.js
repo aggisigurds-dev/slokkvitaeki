@@ -30,7 +30,7 @@
       '#fp-tl-sia{position:sticky;top:-12px;z-index:5;margin:-2px -12px 8px;padding:8px 12px 8px;background:rgba(26,24,20,.99);border-bottom:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:6px}' +
       '#fp-tl-sia .tl-leit{position:relative}' +
       '#fp-tl-sia input{width:100%!important;box-sizing:border-box!important;height:30px!important;padding:0 26px 0 9px!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.16)!important;background:rgba(255,255,255,.06)!important;color:#f1ece2!important;box-shadow:none!important;font:500 12px/1 var(--font,system-ui)!important}' +
-      '#fp-tl-sia input::placeholder{color:rgba(255,255,255,.38)}' +
+      '#fp-tl-sia input::placeholder{color:rgba(255,255,255,.6)}' +
       '#fp-tl-sia input:focus{outline:none!important;border-color:#d9b45a!important;background:rgba(255,255,255,.09)!important}' +
       '#fp-tl-sia .tl-x{position:absolute;right:4px;top:4px;width:22px;height:22px;border:0;border-radius:5px;background:transparent;color:rgba(255,255,255,.5);font-size:15px;line-height:22px;cursor:pointer;padding:0;display:none}' +
       '#fp-tl-sia .tl-x:hover{color:#fff;background:rgba(255,255,255,.1)}' +
@@ -42,7 +42,25 @@
       '#fp-tl-sia select{width:100%!important;height:26px!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.16)!important;background-color:#26231d!important;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2710%27 height=%276%27%3E%3Cpath d=%27M1 1l4 4 4-4%27 fill=%27none%27 stroke=%27%23d9b45a%27 stroke-width=%271.6%27/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 9px center!important;-webkit-appearance:none!important;appearance:none!important;color:#e8e2d4!important;font:500 11.5px/1 var(--font,system-ui)!important;padding:0 24px 0 8px!important;box-shadow:none!important}' +
       '#fp-tl-sia .tl-tal{font:600 10px/1.2 var(--mono,monospace);color:rgba(255,255,255,.42);letter-spacing:.03em}' +
       '#fp-unit-list>.tl-tomt{color:rgba(255,255,255,.4);font-size:12px;padding:10px 4px}' +
-      '#modal-floorplan.fp-simi #fp-tl-sia{position:static;margin:0 0 6px;padding:6px 0;border-bottom:0;background:transparent}' +
+      '#modal-floorplan.fp-simi #fp-tl-sia{position:static;margin:0 0 4px;padding:3px 0;border-bottom:0;background:transparent;flex-direction:row!important;align-items:center;flex-wrap:nowrap!important;gap:6px}' +
+      '#modal-floorplan.fp-simi #fp-tl-sia .tl-leit{flex:0 0 38%}' +
+      '#modal-floorplan.fp-simi #fp-tl-sia .tl-fl{flex:1;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}' +
+      '#modal-floorplan.fp-simi #fp-tl-sia select,#modal-floorplan.fp-simi #fp-tl-sia .tl-tal{display:none!important}' +
+      '#fp-nytt{color:#c9ccff!important;border-color:rgba(170,170,255,.5)!important}' +
+      '#modal-floorplan.fp-simi #fp-nytt{font-size:11px!important;line-height:1.25!important;padding:3px 7px!important;margin:3px 6px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}' +
+      // Tækjaspjöldin: mynd af tækinu hægra megin og skýrari stafir (Agnar 25.10.2026: „sést illa“)
+      '#fp-unit-list>div[data-tt]{background-repeat:no-repeat!important;background-position:right 8px center!important;background-size:auto 62%!important;padding-right:44px!important}' +
+      '#fp-unit-list>div[data-tt="l"]{background-image:url(/img/taeki/l.png)!important}' +
+      '#fp-unit-list>div[data-tt="duft"]{background-image:url(/img/taeki/duft.png)!important}' +
+      '#fp-unit-list>div[data-tt="co2"]{background-image:url(/img/taeki/co2.png)!important}' +
+      '#fp-unit-list>div[data-tt="slanga_rod"]{background-image:url(/img/taeki/slanga_rod.png)!important}' +
+      '#fp-unit-list>div>div:nth-child(1):not([style*="ff6b4a"]){color:rgba(255,255,255,.84)!important;font-size:11.5px!important;letter-spacing:.02em}' +
+      '#fp-unit-list>div>div:nth-child(2){color:#fff!important;font-size:14px!important;font-weight:700!important}' +
+      '#fp-unit-list>div>div:nth-child(3){font-size:11.5px!important;font-weight:600}' +
+      '#fp-unit-list>div>div:nth-child(3)[style*="255,255,255,.3)"]{color:rgba(255,255,255,.68)!important}' +
+      '#fp-unit-list>div>div:nth-child(3)[style*="3fb87e"]{color:#62e6a3!important}' +
+      '#modal-floorplan.fp-simi #fp-unit-list>div{flex:0 0 158px!important}' +
+
       '#modal-floorplan.fp-simi.t442-h-merki #fp-tl-sia{display:none!important}';
     (document.head || document.documentElement).appendChild(st);
   }
@@ -55,6 +73,8 @@
   }
 
   function stadur() { return document.getElementById('fp-unit-list'); }
+  // mynd af tækinu á spjaldinu: léttvatn · duft · CO2 · slanga (img/taeki)
+  const ikon = u => { const t = norm(u && u.type); return /co2/.test(t) ? 'co2' : /duft|abc/.test(t) ? 'duft' : /slang|kefli/.test(t) ? 'slanga_rod' : 'l'; };
 
   function smida(el) {
     let bar = document.getElementById('fp-tl-sia');
@@ -110,6 +130,7 @@
     let synd = 0;
     kort.forEach((rod, i) => {
       const o = eftirTegund[i]; if (!o) return;
+      const tt = ikon(o.u); if (rod.getAttribute('data-tt') !== tt) rod.setAttribute('data-tt', tt);
       const sja = o.u.id === valid || (o.passar && (!v.s || o.st === v.s) && (!v.t || o.teg === v.t));
       const d = sja ? '' : 'none';
       if (rod.style.display !== d) rod.style.display = d;
