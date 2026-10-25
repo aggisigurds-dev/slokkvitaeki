@@ -50,6 +50,8 @@
       // greiningarspjaldið (Prenta · Turbo · Greina aftur · athugasemdir · heimildir) er allt „Nánari greining“ — línan 2 hér að ofan segir það helsta
       S + ':not(.t485-nanar) > #co-bgr{display:none!important}' +
       '#co-fp-section.t485.t485-n2 > #co-fp-hdir{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
+      // á breiðum skjá fylla tvær hæðir ekki 700 px hvor — forskoðunin helst ~420 px breið (Agnar: „preview glugga“, ekki heil síða)
+      '@container (min-width:900px){#co-fp-section.t485.t485 > #co-fp-hdir,#co-fp-section.t485.t485.t485-n2 > #co-fp-hdir{grid-template-columns:repeat(3,minmax(0,430px))!important;justify-content:start}}' +
       S + ' #co-fp-hdir{padding:10px!important}' +
       // TVÍTALNINGAR BURT: Teikningar-röðin og Hæðir-röðin í banner (HÚS-línan og Teikning-glugginn sýna það sama), „Sýna teikningu“-takki 405 (línan hefur sinn), flísar greiningarinnar (komnar uppi), Greining fasteignar í Byggingarupplýsingum (er í Óskráð-línunni), Tengiliður-flís Samskipta (er í banner)
       'html body #companies-main .co-banner .co-bupp ._bupp-lina._bupp-teikn-lina,html body #companies-main .co-banner ._bupp-teikn-lina,html body #companies-main .co-banner ._fasteign.t485-fal{display:none!important}' +
