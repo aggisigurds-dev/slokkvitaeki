@@ -202,7 +202,17 @@
     })();
   }
 
+  // Smámynd sem er enn að hlaðast: hreyfður rammi með „Hleð forskoðun…“ (áður svartur reitur — leit út eins og engin forskoðun; Agnar 25.10.2026)
+  function skeletonStill() {
+    if (document.getElementById('_t374-skel')) return;
+    var st = document.createElement('style'); st.id = '_t374-skel';
+    st.textContent = '.fp-th-hladar{background:linear-gradient(110deg,#26231f 30%,#37332d 50%,#26231f 70%)!important;background-size:200% 100%;animation:fpThSkel 1.2s linear infinite}' +
+      '.fp-th-hladar::after{content:"Hleð forskoðun…";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 11px system-ui,sans-serif;color:rgba(255,255,255,.5)}' +
+      '.fp-teikn-th:empty{display:flex;align-items:center;justify-content:center}@keyframes fpThSkel{to{background-position:-200% 0}}';
+    (document.head || document.documentElement).appendChild(st);
+  }
   function synaLista(dr, allarSyndar) {
+    skeletonStill();
     var o = overlay(); if (!o) return;
     window.__teiknSidastiListi = { dr: dr, allar: !!allarSyndar };
     // 04.10.2026: aðaluppdrættir fyrst (Reykjavík „Aðaluppdrættir", Hafnarfjörður „Bygginganefndarteikning") — á
@@ -222,11 +232,12 @@
       var titill = d.lysing || d.tegund || d.filename || 'Teikning';
       var undir = [d.tegund, d.dags].filter(Boolean).join(' · ');
       var thumbCss = d.thumb
-        ? 'background:#000 url(\'' + esc(d.thumb) + '\') center/contain no-repeat'
+        ? 'background:#26231f;position:relative;overflow:hidden'
         : 'display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.25);font-size:30px';
       return '<div class="fp-teikn-kort" data-url="' + esc(d.infoUrl) + '" data-label="' + esc(titill) + '" ' +
         'style="cursor:pointer;border:1px solid rgba(255,255,255,.12);border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);display:flex;flex-direction:column">' +
-        '<div class="fp-teikn-th" data-url="' + esc(d.infoUrl) + '" style="height:120px;' + thumbCss + '">' + (d.thumb ? '' : '📄') + '</div>' +
+        '<div class="fp-teikn-th' + (d.thumb ? ' fp-th-hladar' : '') + '" data-url="' + esc(d.infoUrl) + '" style="height:120px;' + thumbCss + '">' +
+        (d.thumb ? '<img src="' + esc(d.thumb) + '" alt="" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.parentNode.classList.remove(\'fp-th-hladar\')" onerror="this.remove();this.parentNode.classList.remove(\'fp-th-hladar\');this.parentNode.textContent=\'📄\'">' : '📄') + '</div>' +
         '<div style="padding:8px 10px">' +
         '<div style="font-weight:600;font-size:13px;margin-bottom:2px;color:#fff">' + esc(titill) +
         (d.urelt ? ' <span style="color:#e0a05f;font-size:10px;font-weight:400">(úrelt)</span>' : '') + '</div>' +

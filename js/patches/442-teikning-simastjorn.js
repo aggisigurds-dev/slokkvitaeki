@@ -121,7 +121,7 @@
       // Teikning / Skoða: ekkert fyrir neðan kortið
       '#modal-floorplan.fp-simi.t442-h-teikn #fp-panel,#modal-floorplan.fp-simi.t442-h-skoda #fp-panel{display:none!important}' +
       // Tæki (Agnar 25.10.2026: „alllt of mikið af óþarfa doti … færa öll merki í merkingar“): AÐEINS tækjaspjöldin — búnaðarröðin, merkin, stærðarsleðinn og „Nýtt“-línan fara í Merki-flipann; valið merki sýnir bara nafn og Snúa / Fjarlægja
-      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil,#modal-floorplan.fp-simi.t442-h-taeki #fp-bunadur,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil-staerd-wrap,#modal-floorplan.fp-simi.t442-h-taeki #fp-nytt{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil-staerd-wrap,#modal-floorplan.fp-simi.t442-h-taeki #fp-nytt{display:none!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-stimpil-lbl,#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-vm-stimp{display:none!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd{padding:4px 8px!important;margin:0 0 4px!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-merki-nafn{font-size:13px!important;margin:0 0 4px!important}' +
