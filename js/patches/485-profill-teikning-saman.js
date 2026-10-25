@@ -100,7 +100,8 @@
       const s = b.querySelector('strong'), tala = s ? txt(s) : '', rest = txt(b).replace(tala, '').trim();
       return '<span class="t"><strong>' + esc(tala) + '</strong>' + esc(rest) + '</span>';
     }).join('') : '';
-    return { stad, haedir, bgr: !!bgr, stada: em ? txt(em) : '', dags, t };
+    const tx = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => txt(b)).filter(Boolean) : [];
+    return { stad, haedir, bgr: !!bgr, stada: em ? txt(em) : '', dags, t, tx };
   }
 
   function bua(sec) {
@@ -124,12 +125,12 @@
     const d = hnitaTolur(sec), o = sec.classList.contains('t485-opid');
     const l1 = '<div class="l l1"><span class="lb">Teikningar</span><span>' + (d.haedir ? d.haedir + (d.haedir === 1 ? ' hæð' : ' hæðir') : '') + (d.haedir && d.stad != null ? ' · ' : '') + (d.stad != null ? d.stad + ' staðsetningar' : '') + '</span><span class="sp"></span>' +
       '<button type="button" class="v">' + (o ? 'Fella' : 'Sýna') + ' <i>▾</i></button></div>';
-    const l2 = d.bgr ? '<div class="l l2"><span class="lb">Búnaðargreining</span>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + '<span class="sp"></span>' +
+    const l2 = d.bgr ? '<div class="l l2"><span class="lb">Búnaðargreining</span>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + (!o && d.t ? d.t : '') + '<span class="sp"></span>' +
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const stm = fmLesa(), kort = sec.querySelectorAll('#co-fp-hdir > .cfh-k').length;
     const l3 = o && kort ? '<div class="l l3"><span class="lb">Merki á myndum</span>' +
       '<button type="button" class="tg" data-a="nu" aria-pressed="' + stm.nu + '" title="Búnaðurinn sem er á borðinu núna (vistaður í Teikningu)"><span class="pt nu"></span>Búnaður núna <i>' + fmN.nu + '</i></button>' +
-      '<button type="button" class="tg" data-a="gr" aria-pressed="' + stm.gr + '" title="Búnaður sbr. búnaðargreiningu — strikaðir hringir sem hverfa þar sem tækið er komið á staðinn"><span class="pt gr"></span>Sbr. greiningu <i>' + fmN.gr + '</i></button></div>' : '';
+      '<button type="button" class="tg" data-a="gr" aria-pressed="' + stm.gr + '" title="Búnaður sbr. búnaðargreiningu — strikaðir hringir sem hverfa þar sem tækið er komið á staðinn"><span class="pt gr"></span>Sbr. greiningu <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + '</i></button></div>' : '';
     const h = l1 + l2 + l3 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2 + l3; }
   }
@@ -179,7 +180,7 @@
     const dags = sm ? txt(sm).split(' · ')[0] : '';
     const l1 = bygg ? '<div class="r"><span class="lb">Bygging</span>' + bygg + '</div>' : '';
     const l2 = chips ? '<div class="r"><span class="lb">Búnaður sbr. teikningum</span>' + chips + '</div>' : '';
-    const h = l1 + l2;
+    const h = l1;   // l2 (Búnaður sbr. teikningum) flutt í „Sbr. greiningu“-hnappinn í Teikninga-glugganum
     if (el._h !== h) { el._h = h; el.innerHTML = h; }
     el.style.display = h ? '' : 'none';
   }
