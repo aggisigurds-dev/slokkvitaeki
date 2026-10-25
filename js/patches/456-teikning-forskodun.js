@@ -134,8 +134,12 @@
         var px = (mx - sk.x) * f * k, py = (my - sk.y) * f * k;
         if (px < -r || py < -r || px > c.width + r || py > c.height + r) return;
         var litur = m.litur || (erSlanga(m) ? '#1f5fbf' : '#c93c1d');
-        x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
-        x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke();
+        // SAMA ÚTLIT OG Í TEIKNINGU (Agnar 25.10.2026: „afhverju geturðu ekki bara notað sama útlitið allstaðar“): raunsæ tákn úr 434 og síunni (478) virt; einfaldur punktur til vara
+        try { if (window.TeiknSia && TeiknSia.falid && TeiknSia.falid(m, [])) return; } catch (_) {}
+        var teiknad = false;
+        try { var T = window.TeiknTakn, tk = window.ProfTeiknSaman && ProfTeiknSaman.taeki && ProfTeiknSaman.taeki(); if (T && T.teiknaMerki) { T.teiknaMerki(x, m, px, py, r * 5.2, tk ? Object.keys(tk).map(function (i) { return { id: +i, type: tk[i] }; }) : []); teiknad = true; if (T.erNytt && T.erNytt(m) && T.nyttMidi && c.width > 700) T.nyttMidi(x, m, px, py, r * 5.2); } } catch (_) {}
+        if (!teiknad) { x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
+        x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke(); }
         // auðkennið (S1, BS1 …) við punktinn — sama og í listanum við hliðina
         if (m.audkenni) {
           x.font = '700 ' + Math.round(r * 2.4) + 'px system-ui,sans-serif'; x.textBaseline = 'middle';
@@ -242,11 +246,11 @@
       '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div>' +
       (h.samsett || !listiHaedar(h) ? '' : '<div class="cfh-s-l"><h4>Búnaður á hæðinni</h4>' + listiHaedar(h) + '</div>') + '</div></div>';
     document.body.appendChild(o);
-    var k = o.querySelector('.cfh-s-k');
+    var k = o.querySelector('.cfh-s-k'); k._cfh = { h: h, ham: ham };   // 485 teiknar merkin ofan á stóru myndina líka (sama lag og á spjöldunum)
     o.addEventListener('click', function (e) { if (e.target === o) lokaStort(); });
     o.querySelector('.cfh-s-x').addEventListener('click', lokaStort);
     if (!h.samsett) o.querySelector('.cfh-s-opna').addEventListener('click', function () { lokaStort(); opnaHaed(cid, i); });
-    k.querySelectorAll('.cfh-f button').forEach(function (b) { b.addEventListener('click', function () { syna(k, h, b.dataset.ham, 2600); }); });
+    k.querySelectorAll('.cfh-f button').forEach(function (b) { b.addEventListener('click', function () { k._cfh.ham = b.dataset.ham; syna(k, h, b.dataset.ham, 2600); }); });
     syna(k, h, ham, 2600);
   }
   function lokaStort() { var o = document.getElementById('cfh-stort'); if (o) o.remove(); }

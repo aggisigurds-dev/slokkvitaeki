@@ -265,6 +265,27 @@
     if (/reyk|hita/.test(t)) return 'sk';
     return 'sl';
   }
+  // tegund skráðra tækja (uttaeki.type) — merkin á borðinu bera aðeins unitId, en myndin (slökkvitæki / slanga) fer eftir tegundinni
+  let fmTaeki = null, fmTaekiSokn = 0;
+  function saekjaTaeki(cid) {
+    if (fmTaeki && fmTaeki.cid === cid) return fmTaeki.m;
+    if (fmTaekiSokn === cid) return null;
+    const sb = window.DB && DB.sb; if (!sb || !cid || !DB.fetchAll) return null;
+    fmTaekiSokn = cid;
+    DB.fetchAll((from, to) => sb.from('uttaeki').select('id,type').eq('fyrirtaeki_id', cid).order('id').range(from, to)).then(d => {
+      const m = {}; (d || []).forEach(u => { if (u) m[u.id] = String(u.type || ''); }); fmTaeki = { cid, m }; fmTaekiSokn = 0; seinka();
+    }, () => { fmTaeki = { cid, m: {} }; fmTaekiSokn = 0; });
+    return null;
+  }
+  // mynd tækis í img/taeki: léttvatn / duft / CO₂ / slanga / skynjarar / ÚT-skilti; null = einfaldur hringur
+  function ikonTexta(t) { const n = String(t || '').toLowerCase(); return /co2|co₂/.test(n) ? 'co2' : /slang|kefli/.test(n) ? 'slanga_rod' : /duft|abc/.test(n) ? 'duft' : /hitask/.test(n) ? 'hitaskynjari' : /reyk/.test(n) ? 'reykskynjari' : /vatn|slökk|slokk/.test(n) ? 'l' : ''; }
+  function ikonMerkis(m, taeki) {
+    const id = typeof m.unitId === 'string' ? m.unitId : '';
+    if (m.kind === 'sign' || id.indexOf('s:') === 0) return /^(ut|neyðarútgangur|bjorgunarop)$/.test(String(m.sign || '')) ? 'skilti_ut' : '';
+    const a = ikonTexta(m.tegund) || ikonTexta(m.takn) || (id.indexOf('n:') === 0 ? ikonTexta(id.split(':')[1]) : '') || (typeof m.unitId === 'number' && taeki ? ikonTexta(taeki[m.unitId]) : '');
+    return a || (typeof m.unitId === 'number' ? 'l' : '');
+  }
+
   function saekjaGrFm(cid) {
     if (fmGr && fmGr.cid === cid) return fmGr;
     if (fmGrSokn === cid) return null;
@@ -288,50 +309,74 @@
       if (!uv) return;
       const f = String(t.flokkur || ''), n = String(t.bunadur || '');
       const k = (f === 'flotti' || /^Útgangur/.test(n)) ? 'ut' : f === 'brunakerfi' ? null : (/lang|efli/i.test(n) ? 'bs' : 'sl');
-      if (k) ut.push({ x: uv[0], y: uv[1], k });
+      if (k) ut.push({ x: uv[0], y: uv[1], k, ik: k === 'ut' ? 'skilti_ut' : k === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
     });
     ((row.tillogur && row.tillogur.tki) || []).forEach(t => {
       if (!t || (t.blad !== h.id && t.haed !== h.nafn)) return;
       const x = +(t.x != null ? t.x : t.bx), y = +(t.y != null ? t.y : t.by);
-      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl' });
+      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl', ik: t.flokkur === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
     });
     return ut;
   }
+  // Sama teiknivél og í Teikningu (434 TeiknTakn.teiknaMerki): raunsæ tákn, stærð, „Nýtt · <tegund>“-miði — útlitið er alls staðar eins (Agnar 25.10.2026: „afhverju geturðu ekki bara notað sama útlitið allstaðar“)
+  ['l', 'duft', 'co2', 'slanga_rod', 'reykskynjari', 'hitaskynjari', 'skilti_ut'].forEach(n => { try { const i = new Image(); i.src = '/img/taeki/' + n + '.png'; } catch (_) {} });
+  const TAKN_AF_IK = { l: 'lettvatn', duft: 'duft', co2: 'co2', slanga_rod: 'slanga' };
+  function gervimerki(p) { return p.ik === 'skilti_ut' ? { kind: 'sign', sign: 'ut', unitId: 's:ut:x' } : p.ik === 'reykskynjari' ? { nytt: true, unitId: 'n:reykskynjari:x', tegund: 'Reykskynjari' } : p.ik === 'hitaskynjari' ? { nytt: true, unitId: 'n:hitaskynjari:x', tegund: 'Hitaskynjari' } : { takn: TAKN_AF_IK[p.ik] || 'lettvatn', unitId: 'g:x' }; }
+  function yfirlagKort(k, mk, c, d) {
+    const h = c.h, st = d.st, sia = window.TeiknSia, V = window.TeiknVinnumynd, T = window.TeiknTakn, row = d.row;
+    const vm = h.vinnumynd && h.vinnumynd.cam ? h.vinnumynd : null;
+    const ham = c.ham === '3d' && vm && V && V.varpa ? '3d' : c.ham === 'teikning' && h.frum && h.frum.b > 0 ? 'teikn' : '';
+    const frum = h.frum && h.frum.b > 0 ? h.frum : null;
+    const tol = (frum ? frum.b : 4000) * 0.022;
+    const falid = m => { try { return !!(sia && sia.falid && sia.falid(m, [])); } catch (_) { return false; } };
+    const nu = [], grm = [];
+    (h.markers || []).forEach(m => { if (!m || !isFinite(+m.x) || !isFinite(+m.y) || +m.x <= 1 && +m.y <= 1 || falid(m)) return; (erGr(m) ? grm : nu).push({ x: +m.x, y: +m.y, k: flokkurMerkis(m), ik: ikonMerkis(m, d.tk), m }); });
+    grAtridiHaedar(h, row).forEach(a => {
+      if (nu.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol) || grm.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol * 0.4)) return;
+      if (!(sia && sia.erFalinn && sia.erFalinn(a.k === 'ut' ? 'ut' : a.k === 'bs' ? 'slanga' : 'slt'))) grm.push(a);
+    });
+    const sig = [ham, st.nu, st.gr, nu.length, grm.length, d.tk ? 1 : 0, vm ? vm.t : '', h.skurdur ? h.skurdur.x + ',' + h.skurdur.w : '', d.tick].join('|');
+    let cv = mk.querySelector(':scope > canvas.t485-ov');
+    if (!ham) { if (cv) cv.remove(); return { nu: nu.length, gr: grm.length }; }
+    if (cv && cv._sig === sig) return { nu: nu.length, gr: grm.length };
+    let W, H, P;
+    if (ham === '3d') { W = vm.b || (vm.rammi && vm.rammi[2]) || 0; H = vm.h || (vm.rammi && vm.rammi[3]) || 0; P = p => { try { const q = V.varpa(vm, p.x, p.y); return q && isFinite(q[0]) && isFinite(q[1]) ? q : null; } catch (_) { return null; } }; }
+    else { const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : { x: 0, y: 0, w: frum.b, h: frum.h }; W = sk.w; H = sk.h; P = p => [p.x - sk.x, p.y - sk.y]; }
+    if (!(W > 0 && H > 0)) return { nu: nu.length, gr: grm.length };
+    if (!cv) { cv = document.createElement('canvas'); cv.className = 't485-ov'; cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:3'; mk.appendChild(cv); }
+    const f = Math.min(1, 1800 / Math.max(W, H)), cw = Math.max(1, Math.round(W * f)), ch = Math.max(1, Math.round(H * f));
+    if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; } else cv.getContext('2d').clearRect(0, 0, cw, ch);
+    const x = cv.getContext('2d'), s = Math.max(cw, ch) * (ham === '3d' ? 0.05 : 0.04), units = d.tk ? Object.keys(d.tk).map(i => ({ id: +i, type: d.tk[i] })) : [];
+    const teikna = (p, mrk, alfa) => {
+      const q = P(p); if (!q) return; const px = q[0] * f, py = q[1] * f;
+      x.save(); x.globalAlpha = alfa;
+      try { if (T && T.teiknaMerki) { T.teiknaMerki(x, mrk, px, py, s, units); if (alfa === 1 && T.erNytt && T.erNytt(mrk) && T.nyttMidi) T.nyttMidi(x, mrk, px, py, s); } else { x.beginPath(); x.arc(px, py, s / 2, 0, Math.PI * 2); x.fillStyle = LIT[p.k] || LIT.an; x.fill(); } } catch (_) {}
+      x.restore();
+    };
+    if (st.gr) grm.forEach(p => {
+      const q = P(p); if (!q) return;
+      x.save(); x.beginPath(); x.arc(q[0] * f, q[1] * f, s * 0.72, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.55)'; x.fill(); x.setLineDash([s * 0.2, s * 0.14]); x.lineWidth = Math.max(1.5, s * 0.09); x.strokeStyle = LIT[p.k] || LIT.an; x.stroke(); x.restore();
+      teikna(p, p.m || gervimerki(p), 0.75);
+    });
+    // núverandi merkin teiknast aðeins á 3D-mynd — í 2D-forskoðun teiknar 456 þau sjálft (með auðkennum)
+    if (st.nu && ham === '3d') nu.forEach(p => teikna(p, p.m, 1));
+    cv._sig = sig;
+    if (!d.tick) setTimeout(() => { fmTick++; seinka(); }, 900);   // raunsæju myndirnar hlaðast ósamstillt (434) — teiknað aftur þegar þær eru komnar
+    return { nu: nu.length, gr: grm.length };
+  }
+  let fmTick = 0;
   function teiknaYfirlag(sec) {
+    const cid = +window._currentCompanyId || 0, st = fmLesa(), gr = saekjaGrFm(cid), row = gr && gr.row, tk = saekjaTaeki(cid);
+    const d = { cid, st, row, tk, tick: fmTick };
+    // stóra forskoðunin (456 opnaStort) — sama lag, sömu gögn
+    const st2 = document.querySelector('#cfh-stort .cfh-s-k');
+    if (st2 && st2._cfh) { const m2 = st2.querySelector('.cfh-s-m'); if (m2) yfirlagKort(st2, m2, st2._cfh, d); }
     const g = sec.querySelector(':scope > #co-fp-hdir'); if (!g) return;
-    const cid = +window._currentCompanyId || 0, st = fmLesa(), gr = saekjaGrFm(cid), row = gr && gr.row;
-    const sia = window.TeiknSia, V = window.TeiknVinnumynd;
     let nN = 0, gN = 0;
     g.querySelectorAll(':scope > .cfh-k').forEach(k => {
       const c = k._cfh; if (!c || !c.h) return;
-      const h = c.h, mk = k.querySelector('.cfh-m'); if (!mk) return;
-      const vm = h.vinnumynd && h.vinnumynd.cam ? h.vinnumynd : null;
-      const ham = c.ham === '3d' && vm && V && V.varpa ? '3d' : c.ham === 'teikning' && h.frum && h.frum.b > 0 ? 'teikn' : '';
-      const frum = h.frum && h.frum.b > 0 ? h.frum : null;
-      const tol = (frum ? frum.b : 4000) * 0.022;
-      const falid = m => { try { return !!(sia && sia.falid && sia.falid(m, [])); } catch (_) { return false; } };
-      const nu = [], grm = [];
-      (h.markers || []).forEach(m => { if (!m || !isFinite(+m.x) || !isFinite(+m.y) || +m.x <= 1 && +m.y <= 1 || falid(m)) return; (erGr(m) ? grm : nu).push({ x: +m.x, y: +m.y, k: flokkurMerkis(m) }); });
-      grAtridiHaedar(h, row).forEach(a => {
-        if (nu.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol) || grm.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol * 0.4)) return;
-        if (!(sia && sia.erFalinn && sia.erFalinn(a.k === 'ut' ? 'ut' : a.k === 'bs' ? 'slanga' : 'slt'))) grm.push(a);
-      });
-      nN += nu.length; gN += grm.length;
-      const sig = [ham, st.nu, st.gr, nu.length, grm.length, vm ? vm.t : '', h.skurdur ? h.skurdur.x + ',' + h.skurdur.w : ''].join('|');
-      let sv = mk.querySelector(':scope > .t485-ov');
-      if (!ham) { if (sv) { sv.remove(); } return; }
-      if (sv && sv._sig === sig) return;
-      let W, H, P;
-      if (ham === '3d') { W = vm.b || (vm.rammi && vm.rammi[2]) || 0; H = vm.h || (vm.rammi && vm.rammi[3]) || 0; P = p => { try { const q = V.varpa(vm, p.x, p.y); return q && isFinite(q[0]) && isFinite(q[1]) ? q : null; } catch (_) { return null; } }; }
-      else { const sk = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? h.skurdur : { x: 0, y: 0, w: frum.b, h: frum.h }; W = sk.w; H = sk.h; P = p => [p.x - sk.x, p.y - sk.y]; }
-      if (!(W > 0 && H > 0)) return;
-      const r = Math.max(W, H) * (ham === '3d' ? 0.0155 : 0.0105);
-      let s = '';
-      if (st.gr) grm.forEach(p => { const q = P(p); if (!q) return; s += '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="' + (r * 1.25).toFixed(1) + '" fill="rgba(255,255,255,.55)" stroke="' + (LIT[p.k] || LIT.an) + '" stroke-width="' + (r * 0.3).toFixed(1) + '" stroke-dasharray="' + (r * 0.7).toFixed(1) + ' ' + (r * 0.45).toFixed(1) + '"/>'; });
-      // í 2D-forskoðun teiknar 456 núverandi merkin sjálft (með auðkennum)
-      if (st.nu && ham === '3d') nu.forEach(p => { const q = P(p); if (!q) return; s += '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + (LIT[p.k] || LIT.an) + '" stroke="#fff" stroke-width="' + (r * 0.32).toFixed(1) + '"/>'; });
-      if (!sv) { sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.setAttribute('class', 't485-ov'); sv.setAttribute('preserveAspectRatio', 'xMidYMid meet'); sv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3'; mk.appendChild(sv); }
-      sv.setAttribute('viewBox', '0 0 ' + W + ' ' + H); sv.innerHTML = s; sv._sig = sig;
+      const mk = k.querySelector('.cfh-m'); if (!mk) return;
+      const r = yfirlagKort(k, mk, c, d); nN += r.nu; gN += r.gr;
     });
     if (fmN.nu !== nN || fmN.gr !== gN) { fmN = { nu: nN, gr: gN }; const bar = sec.querySelector(':scope > #t485-sam'); if (bar) { bar._h = ''; fylla(sec, bar); } }
   }
@@ -354,5 +399,5 @@
   function seinka() { if (bid) return; bid = setTimeout(() => { bid = 0; try { tikk(); } catch (e) { console.warn('[485]', e && e.message); } }, 120); }
   try { new MutationObserver(seinka).observe(document.getElementById('companies-main') || document.body, { childList: true, subtree: true }); } catch (_) {}
   setInterval(seinka, 1500);
-  window.ProfTeiknSaman = { tikk };
+  window.ProfTeiknSaman = { tikk, taeki: () => (fmTaeki && fmTaeki.m) || null };
 })();
