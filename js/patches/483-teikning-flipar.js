@@ -133,7 +133,9 @@
       });
     }
     // óskráðu efst: rétt á undan tækjalistanum (leitin liggur þar á undan)
-    if (listi && (osk.parentNode !== p || listi.previousElementSibling !== osk)) p.insertBefore(osk, listi);
+    // 481 festir leitarlínuna (#fp-tl-sia) rétt á undan listanum — við stöndum á undan HENNI, annars togast pappar á um sama stað og blokkin hoppar (mælt 25.10.2026: 9 skipti á 6 s)
+    const akk = document.getElementById('fp-tl-sia') || listi;
+    if (akk && akk.parentNode === p && (osk.parentNode !== p || akk.previousElementSibling !== osk)) p.insertBefore(osk, akk);
     return true;
   }
 
