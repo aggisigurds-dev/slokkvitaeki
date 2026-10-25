@@ -106,8 +106,9 @@
       R + ' .bgm-buk{min-height:96px}',
       R + ' .bgm-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}',
       R + ':not(.alt) .bgm-t:nth-child(n+5){display:none}',
-      '@container (max-width:900px){' + R + ' .bgm-g{grid-template-columns:repeat(3,minmax(0,1fr))}' + R + ':not(.alt) .bgm-t:nth-child(n+4){display:none}}',
-      '@container (max-width:560px){' + R + ' .bgm-g{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ':not(.alt) .bgm-t:nth-child(n+3){display:none}}',
+      // 25.10.2026 (Agnar: „á síma má gera ráð fyrir 2 teikningum á breidd · ekki sóa plássi“): tveir dálkar, fjórar myndir (tvær raðir) í mjórri gámi
+      '@container (max-width:900px){' + R + ' .bgm-g{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ':not(.alt) .bgm-t:nth-child(n+5){display:none}}',
+      '@container (max-width:560px){' + R + ' .bgm-g{grid-template-columns:repeat(2,minmax(0,1fr))}' + R + ':not(.alt) .bgm-t:nth-child(n+5){display:none}}',
       R + ' .bgm-t{display:flex;flex-direction:column;min-width:0;background:#fff;border-radius:8px;overflow:hidden;text-decoration:none!important;color:#141822!important;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
       R + ' .bgm-t:hover{box-shadow:inset 0 0 0 1px rgba(20,24,34,.34),0 3px 8px rgba(10,14,22,.2)}',
       R + ' .bgm-t:focus-visible{outline:2px solid #1f5fbf;outline-offset:2px}',
