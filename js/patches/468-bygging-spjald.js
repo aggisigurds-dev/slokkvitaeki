@@ -112,7 +112,7 @@
     const el = document.createElement('section'); el.className = 'ssp'; el.id = ID; el.setAttribute('aria-label', 'Byggingarupplýsingar');
     el.innerHTML = '<header class="ssp-haus"><span class="ssp-titill">Byggingarupplýsingar</span><span class="ssp-undir" data-bs="undir"></span>' +
       '<span class="ssp-hlid"><span class="ssp-plata" data-bs="skjol" hidden></span><span class="ssp-plata" data-bs="ocr" hidden></span>' +
-      '<button type="button" class="ssp-btn" data-bs="greining" title="Opna Greiningu fasteignar fyrir heimilisfangið">Greining</button>' +
+      '<button type="button" class="ssp-btn" data-bs="greining" title="Opna Greiningu fasteignar fyrir heimilisfangið">Greining fasteignar</button>' +
       '<button type="button" class="ssp-btn malm" data-bs="uppfaera" title="Sækja nýjustu tölur úr skjalasafninu og geyma á þjóni">Uppfæra</button></span></header>' +
       '<div class="ssp-buk" data-bs="buk"><div class="bs-tomt">Sæki…</div></div>';
     el.addEventListener('click', async ev => {

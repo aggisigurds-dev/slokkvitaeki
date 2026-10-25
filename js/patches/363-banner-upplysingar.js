@@ -875,7 +875,7 @@
       // „Greining" (Agnar 09.10.2026, skjámynd: „beint fyrir framan + Fleiri upplýsingar") — 452 opnar gluggann (delegated),
       // 411 færir hann með víxltakkanum inn í Óskráð-línuna. Aldrei á sýndarfyrirtækinu (Greining fasteignar, neikvætt id).
       (+coId > 0 ? '<button type="button" class="_gr-profil-takki" data-co="' + (+coId) + '" title="Greining fasteignar — sækir skráningartöflu, byggingarlýsingu, Staðfangaskrá og OpenStreetMap og sýnir hvað má bæta á síðuna">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.6 15.6 5 5"/></svg>Greining</button>' : '') +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.6 15.6 5 5"/></svg>Greining fasteignar</button>' : '') +
       '<button type="button" class="_bupp-vixl">' + (opid(coId) ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     uppfaeraTomt(box, coId);
     merkjaSjalf(box, coId);

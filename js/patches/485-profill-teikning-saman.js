@@ -28,6 +28,8 @@
     const S = '#co-fp-section.t485';
     st.textContent = '' +
       S + ' > ._tf-haus{display:none!important}' +
+      // 405 (B27) felur borðann með hæð 0 þar til „Teikning“-takkinn í banner er notaður — línurnar tvær eiga alltaf að sjást (líka á síma og í Öppum)
+      'html #companies-main #co-fp-section.t485.t485{height:auto!important;min-height:0!important;overflow:visible!important;opacity:1!important;pointer-events:auto!important;margin:8px 0!important;padding:0!important;border:1px solid #e3e1dc!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}' +
       '#t485-sam{display:flex;flex-direction:column;gap:2px;padding:8px 12px;background:#faf9f6;border-bottom:1px solid #e3e1dc;font:500 13px/1.35 system-ui,sans-serif;color:#2b2a27;cursor:pointer}' +
       '#t485-sam .l{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}' +
       '#t485-sam .l1 b{font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#4a4740}' +
@@ -94,7 +96,7 @@
     const d = hnitaTolur(sec), o = sec.classList.contains('t485-opid');
     const l1 = '<div class="l l1"><b>Teikning</b><span>' + (d.haedir ? d.haedir + (d.haedir === 1 ? ' hæð' : ' hæðir') : '') + (d.haedir && d.stad != null ? ' · ' : '') + (d.stad != null ? d.stad + ' staðsetningar' : '') + '</span><span class="sp"></span>' +
       '<button type="button" data-a="teikn">Opna Teikningu</button><button type="button" class="v">' + (o ? 'Fella' : 'Sýna') + ' <i>▾</i></button></div>';
-    const l2 = d.bgr ? '<div class="l l2"><b>Búnaðargreining</b>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + d.t + '<span class="sp"></span>' +
+    const l2 = d.bgr ? '<div class="l l2"><b>Búnaðargreining</b>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + '<span class="sp"></span>' +
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const h = l1 + l2 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2; }
@@ -106,7 +108,75 @@
     if (sec.previousElementSibling !== sam) sam.parentNode.insertBefore(sec, sam.nextSibling);
   }
 
+  /* ── LÍNAN UPPI Í AÐALGLUGGANUM: helstu upplýsingar úr greiningunni + magn búnaðar sbr. teikningum (Agnar 25.10.2026) ── */
+  function toppurStill() {
+    if (document.getElementById('_t485-top-css')) return;
+    const st = document.createElement('style'); st.id = '_t485-top-css';
+    st.textContent = '' +
+      '.co-banner > #t485-top{grid-area:top!important;margin:2px 12px 4px 12px;display:flex;flex-direction:column;gap:3px;padding:7px 10px;border:1px solid #e3e1dc;border-radius:10px;background:#faf9f6;font:500 12.5px/1.35 system-ui,sans-serif;color:#2b2a27;min-width:0}' +
+      '#t485-top .r{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;min-width:0}' +
+      '#t485-top .r>b{flex:none;min-width:84px;font:700 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b665b}' +
+      '#t485-top .k{display:inline-flex;align-items:baseline;gap:5px;padding:1px 8px;border:1px solid #e3e1dc;border-radius:7px;background:#fff;white-space:nowrap}' +
+      '#t485-top .k i{font-style:normal;font:600 10.5px system-ui;color:#7a766d}' +
+      '#t485-top .k strong{font:700 14px/1 Georgia,serif}' +
+      '#t485-top em{font-style:normal;font:700 10.5px system-ui;padding:1px 7px;border-radius:999px;background:#fff3d6;border:1px solid #e0b95a;color:#7a5a0f}' +
+      '#t485-top small{color:#7a766d;font:500 11.5px system-ui}' +
+      '#t485-top .sp{flex:1}' +
+      '#t485-top button{height:24px;padding:0 9px;border:1px solid #cfccc4;border-radius:7px;background:#fff;color:#2b2a27;font:600 11.5px system-ui;cursor:pointer}' +
+      '@media (max-width:700px){.co-banner > #t485-top{margin:4px 0;padding:6px 8px;font-size:12px}#t485-top .r>b{min-width:0;width:100%}}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function toppur() {
+    const ban = document.querySelector('#companies-main > .co-banner'); if (!ban) return;
+    toppurStill();
+    let el = ban.querySelector(':scope > #t485-top');
+    if (!el) { el = document.createElement('div'); el.id = 't485-top'; el.addEventListener('click', e => { const b = e.target.closest('button[data-a="teikn"]'); if (!b) return; const s = document.getElementById('co-fp-section'); if (s) { if (!s.classList.contains('t485-opid')) { s.classList.add('t485-opid'); setjaOpid(true); } s.scrollIntoView({ block: 'start', behavior: 'smooth' }); try { window.dispatchEvent(new Event('resize')); } catch (_) {} } }); ban.appendChild(el); }
+    const bs = document.getElementById('_bs468');
+    const reitir = bs ? [...bs.querySelectorAll('.bs-reitir .ssp-lina')].map(l => ({ n: txt(l.querySelector('.ssp-merki')), v: txt(l.querySelector('.ssp-gildi')) })).filter(x => x.n && x.v && !/^[–—-]$/.test(x.v)) : [];
+    const VELJA = ['Brúttó', 'Birt flatarmál', 'Rúmmál', 'Hæðir', 'Eignir', 'Byggingarár'];
+    const bygg = VELJA.map(n => reitir.find(x => x.n === n)).filter(Boolean).map(x => '<span class="k"><i>' + esc(x.n) + '</i>' + esc(x.v) + '</span>').join('');
+    const bgr = document.getElementById('co-bgr');
+    const chips = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => { const s = b.querySelector('strong'), tala = s ? txt(s) : '', rest = txt(b).replace(tala, '').trim(); return '<span class="k"><strong>' + esc(tala) + '</strong>' + esc(rest) + '</span>'; }).join('') : '';
+    const em = bgr && bgr.querySelector('.bgr-h em'), sm = bgr && bgr.querySelector('.bgr-h small');
+    const dags = sm ? txt(sm).split(' · ')[0] : '';
+    const l1 = bygg ? '<div class="r"><b>Bygging</b>' + bygg + '</div>' : '';
+    const l2 = chips ? '<div class="r"><b>Búnaður sbr. teikningum</b>' + chips + (em ? '<em>' + esc(txt(em)) + '</em>' : '') + (dags ? '<small>' + esc(dags) + '</small>' : '') + '<span class="sp"></span><button type="button" data-a="teikn">Greining ▾</button></div>' : '';
+    const h = l1 + l2;
+    if (el._h !== h) { el._h = h; el.innerHTML = h; }
+    el.style.display = h ? '' : 'none';
+  }
+
+  /* ── BYGGINGARUPPLÝSINGAR (468): fellt saman sjálfgefið — helstu tölurnar eru komnar upp í aðalgluggann; haus + smellur opnar ── */
+  const BKEY = 'profill.byggingOpid';
+  function byggingStill() {
+    if (document.getElementById('_t485-bs-css')) return;
+    const st = document.createElement('style'); st.id = '_t485-bs-css';
+    st.textContent = '#_bs468:not(.t485-bopid) > .ssp-buk{display:none!important}' +
+      '#_bs468:not(.t485-bopid){min-height:0!important}' +
+      '#_bs468 > .ssp-haus{cursor:pointer}' +
+      '#_bs468 > .ssp-haus::after{content:"▾";margin-left:10px;color:#e8e2d4;font-size:13px;transition:transform .2s;flex:none}' +
+      '#_bs468.t485-bopid > .ssp-haus::after{transform:rotate(180deg)}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  function bygging() {
+    const bs = document.getElementById('_bs468'); if (!bs) return;
+    byggingStill();
+    let o = false; try { o = !!(window.Vidmot && Vidmot.lesa(BKEY, false) === true); } catch (_) {}
+    if (bs.classList.contains('t485-bopid') !== o && !bs._t485klikk) bs.classList.toggle('t485-bopid', o);
+    const hd = bs.querySelector(':scope > .ssp-haus');
+    if (hd && !hd._t485) {
+      hd._t485 = true;
+      hd.addEventListener('click', e => {
+        if (e.target.closest('button,a,input,label,select')) return;
+        const nu = !bs.classList.contains('t485-bopid'); bs.classList.toggle('t485-bopid', nu);
+        try { if (window.Vidmot) Vidmot.setja(BKEY, nu); } catch (_) {}
+      });
+    }
+  }
+
   function tikk() {
+    try { toppur(); } catch (e) { console.warn('[485] topp', e && e.message); }
+    try { bygging(); } catch (e) { console.warn('[485] bygging', e && e.message); }
     const sec = document.getElementById('co-fp-section'); if (!sec) return;
     still(); flytja();
     if (!sec.classList.contains('t485')) { sec.classList.add('t485'); sec.classList.toggle('t485-opid', opid()); }
