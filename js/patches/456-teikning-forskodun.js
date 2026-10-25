@@ -237,7 +237,7 @@
     var o = document.createElement('div');
     o.id = 'cfh-stort';
     o.innerHTML = '<div class="cfh-s-k" role="dialog" aria-modal="true" aria-label="' + esc(h.nafn || 'Hæð') + '"><div class="cfh-s-h"><strong>' + esc(h.nafn || (i + 1) + '. hæð') + '</strong>' + (h.samsett ? '<small>Samsett forsýning</small>' : '<small>' + n + ' tæki</small>') +
-      (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
+      (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">2D</button><button type="button" data-ham="3d">3D</button></span>' : '') +
       '<span style="flex:1"></span>' + (h.samsett ? '' : '<button type="button" class="cfh-s-opna">Opna í Teikningu</button>') + '<button type="button" class="cfh-s-x" aria-label="Loka" title="Loka (Esc)">✕</button></div>' +
       '<div class="cfh-s-b"><div class="cfh-s-m"><div class="cfh-t">…</div></div>' +
       (h.samsett || !listiHaedar(h) ? '' : '<div class="cfh-s-l"><h4>Búnaður á hæðinni</h4>' + listiHaedar(h) + '</div>') + '</div></div>';
@@ -276,7 +276,7 @@
       var k = document.createElement('div');
       k.className = 'cfh-k' + (j >= SYNILEG ? ' cfh-umfram' : '');
       k.innerHTML = '<div class="cfh-h"><span>' + esc(h.nafn || (x.i + 1) + '. hæð') + '<small>' + n + ' ' + (n === 1 ? 'tæki' : 'tæki') + '</small></span>' +
-        (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">Teikning</button><button type="button" data-ham="3d">3D</button></span>' : '') +
+        (vm && h.image_url ? '<span class="cfh-f"><button type="button" data-ham="teikning">2D</button><button type="button" data-ham="3d">3D</button></span>' : '') +
         '</div><div class="cfh-m" title="Stækka ' + esc(h.nafn || 'hæðina') + '"><div class="cfh-t">…</div></div>' +
         (h.samsett ? '' : listiHaedar(h));
       k._cfh = { h: h, ham: h.samsett ? 'samsett' : vm ? '3d' : 'teikning' };

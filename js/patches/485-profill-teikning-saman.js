@@ -19,7 +19,8 @@
   const txt = e => String((e && e.textContent) || '').replace(/\s+/g, ' ').trim();
   let nanar = false, bid = 0;
 
-  const opid = () => { try { return !!(window.Vidmot && Vidmot.lesa(KEY, false) === true); } catch (_) { return false; } };
+  // sjálfgefið OPIÐ (Agnar 25.10.2026: „sýna 2 hæðir í preview glugga“) — hæðaspjöldin sjást; „Nánari greining“ er fellt. Valið vistast um leið og skipt er.
+  const opid = () => { try { const v = window.Vidmot ? Vidmot.lesa(KEY, null) : null; return v === null || v === undefined ? true : v === true; } catch (_) { return true; } };
   const setjaOpid = v => { try { if (window.Vidmot) Vidmot.setja(KEY, !!v); } catch (_) {} };
 
   function still() {
@@ -32,8 +33,7 @@
       'html #companies-main #co-fp-section.t485.t485{height:auto!important;min-height:0!important;overflow:visible!important;opacity:1!important;pointer-events:auto!important;margin:8px 0!important;padding:0!important;border:1px solid #e3e1dc!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}' +
       '#t485-sam{display:flex;flex-direction:column;gap:2px;padding:8px 12px;background:#faf9f6;border-bottom:1px solid #e3e1dc;font:500 13px/1.35 system-ui,sans-serif;color:#2b2a27;cursor:pointer}' +
       '#t485-sam .l{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}' +
-      '#t485-sam .l1 b{font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#4a4740}' +
-      '#t485-sam .l2 b{font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#4a4740}' +
+      '#t485-sam .lb{font:700 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#4a4740;flex:none}' +
       '#t485-sam em{font-style:normal;font:700 10.5px system-ui;padding:1px 7px;border-radius:999px;background:#fff3d6;border:1px solid #e0b95a;color:#7a5a0f}' +
       '#t485-sam small{color:#7a766d;font:500 11.5px system-ui}' +
       '#t485-sam .t{display:inline-flex;gap:4px;align-items:baseline;padding:1px 8px;border:1px solid #e3e1dc;border-radius:7px;background:#fff;font:600 12px system-ui}' +
@@ -47,7 +47,9 @@
       // allt annað fellt þar til opnað
       S + ':not(.t485-opid) > #co-fp-hdir,' + S + ':not(.t485-opid) > #co-bgr{display:none!important}' +
       // nánari greining (athugasemdir, heimildir, óteiknuð tæki) fellt nema um hana sé beðið
-      S + ':not(.t485-nanar) #co-bgr .bgr-b>*:not(.bgr-s):not(.bgr-bl){display:none!important}' +
+      // greiningarspjaldið (Prenta · Turbo · Greina aftur · athugasemdir · heimildir) er allt „Nánari greining“ — línan 2 hér að ofan segir það helsta
+      S + ':not(.t485-nanar) > #co-bgr{display:none!important}' +
+      '#co-fp-section.t485.t485-n2 > #co-fp-hdir{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
       S + ' #co-fp-hdir{padding:10px!important}' +
       // TVÍTALNINGAR BURT: Teikningar-röðin og Hæðir-röðin í banner (HÚS-línan og Teikning-glugginn sýna það sama), „Sýna teikningu“-takki 405 (línan hefur sinn), flísar greiningarinnar (komnar uppi), Greining fasteignar í Byggingarupplýsingum (er í Óskráð-línunni), Tengiliður-flís Samskipta (er í banner)
       'html body #companies-main .co-banner .co-bupp ._bupp-lina._bupp-teikn-lina,html body #companies-main .co-banner ._bupp-teikn-lina,html body #companies-main .co-banner ._fasteign.t485-fal{display:none!important}' +
@@ -57,6 +59,8 @@
       S + ' #co-bgr .bgr-h strong,' + S + ' #co-bgr .bgr-h em{display:none!important}' +
       '#_bs468 [data-bs="greining"]{display:none!important}' +
       'html body #companies-main ._samskipti-card ._skx-tile.t485-fal{display:none!important}' +
+      // spjöldin fyrir neðan banner sitja þétt saman (Agnar: „allt of dreift“)
+      'html body #companies-main > #co-fp-section.t485,html body #companies-main > #_kt450,html body #companies-main > #_bs468{margin-top:6px!important;margin-bottom:0!important}' +
       '@media (max-width:700px){#t485-sam{padding:7px 9px;font-size:12.5px}#t485-sam .t{padding:1px 6px}}';
     (document.head || document.documentElement).appendChild(st);
   }
@@ -102,9 +106,9 @@
 
   function fylla(sec, bar) {
     const d = hnitaTolur(sec), o = sec.classList.contains('t485-opid');
-    const l1 = '<div class="l l1"><b>Teikning</b><span>' + (d.haedir ? d.haedir + (d.haedir === 1 ? ' hæð' : ' hæðir') : '') + (d.haedir && d.stad != null ? ' · ' : '') + (d.stad != null ? d.stad + ' staðsetningar' : '') + '</span><span class="sp"></span>' +
+    const l1 = '<div class="l l1"><span class="lb">Teikningar</span><span>' + (d.haedir ? d.haedir + (d.haedir === 1 ? ' hæð' : ' hæðir') : '') + (d.haedir && d.stad != null ? ' · ' : '') + (d.stad != null ? d.stad + ' staðsetningar' : '') + '</span><span class="sp"></span>' +
       '<button type="button" class="v">' + (o ? 'Fella' : 'Sýna') + ' <i>▾</i></button></div>';
-    const l2 = d.bgr ? '<div class="l l2"><b>Búnaðargreining</b>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + '<span class="sp"></span>' +
+    const l2 = d.bgr ? '<div class="l l2"><span class="lb">Búnaðargreining</span>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + '<span class="sp"></span>' +
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const h = l1 + l2 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2; }
@@ -123,7 +127,7 @@
     st.textContent = '' +
       '.co-banner > #t485-top{grid-area:top!important;margin:2px 12px 4px 12px;display:flex;flex-direction:column;gap:3px;padding:7px 10px;border:1px solid #e3e1dc;border-radius:10px;background:#faf9f6;font:500 12.5px/1.35 system-ui,sans-serif;color:#2b2a27;min-width:0}' +
       '#t485-top .r{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;min-width:0}' +
-      '#t485-top .r>b{flex:none;min-width:84px;font:700 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b665b}' +
+      '#t485-top .r>.lb{flex:none;min-width:84px;font:700 10.5px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6b665b}' +
       '#t485-top .k{display:inline-flex;align-items:baseline;gap:5px;padding:1px 8px;border:1px solid #e3e1dc;border-radius:7px;background:#fff;white-space:nowrap}' +
       '#t485-top .k i{font-style:normal;font:600 10.5px system-ui;color:#7a766d}' +
       '#t485-top .k strong{font:700 14px/1 Georgia,serif}' +
@@ -131,7 +135,7 @@
       '#t485-top small{color:#7a766d;font:500 11.5px system-ui}' +
       '#t485-top .sp{flex:1}' +
       '#t485-top button{height:24px;padding:0 9px;border:1px solid #cfccc4;border-radius:7px;background:#fff;color:#2b2a27;font:600 11.5px system-ui;cursor:pointer}' +
-      '@media (max-width:700px){.co-banner > #t485-top{margin:4px 0;padding:6px 8px;font-size:12px}#t485-top .r>b{min-width:0;width:100%}}';
+      '@media (max-width:700px){.co-banner > #t485-top{margin:4px 0;padding:6px 8px;font-size:12px}#t485-top .r>.lb{min-width:0;width:100%}}';
     (document.head || document.documentElement).appendChild(st);
   }
   function toppur() {
@@ -153,8 +157,8 @@
     const chips = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => { const s = b.querySelector('strong'), tala = s ? txt(s) : '', rest = txt(b).replace(tala, '').trim(); return '<span class="k"><strong>' + esc(tala) + '</strong>' + esc(rest) + '</span>'; }).join('') : '';
     const em = bgr && bgr.querySelector('.bgr-h em'), sm = bgr && bgr.querySelector('.bgr-h small');
     const dags = sm ? txt(sm).split(' · ')[0] : '';
-    const l1 = bygg ? '<div class="r"><b>Bygging</b>' + bygg + '</div>' : '';
-    const l2 = chips ? '<div class="r"><b>Búnaður sbr. teikningum</b>' + chips + '</div>' : '';
+    const l1 = bygg ? '<div class="r"><span class="lb">Bygging</span>' + bygg + '</div>' : '';
+    const l2 = chips ? '<div class="r"><span class="lb">Búnaður sbr. teikningum</span>' + chips + '</div>' : '';
     const h = l1 + l2;
     if (el._h !== h) { el._h = h; el.innerHTML = h; }
     el.style.display = h ? '' : 'none';
@@ -203,6 +207,22 @@
       fal(ban.querySelector('._fasteign'), !!(inp && String(inp.value || '').trim()));
     }
     document.querySelectorAll('._samskipti-card ._skx-tile').forEach(t => fal(t, /^tengili/i.test(txt(t))));
+    const main = document.getElementById('companies-main');
+    if (main) {
+      // „+ Bæta við tæki“ tvisvar (Agnar 25.10.2026: „2 bæta við tækjum“): 73 setur bulk-takka með sama nafni og upprunalegi takkinn átti að fara — hann sést enn í sumum hömum
+      const bulk = main.querySelector('._bulkadd_btn');
+      main.querySelectorAll('button.btn-primary').forEach(b => { if (/^Companies[.]addUnit/.test(b.getAttribute('onclick') || '') && /^[+]? *Bæta við tæki/.test(txt(b))) fal(b, !!(bulk && bulk.getBoundingClientRect().width > 0)); });
+      // tómur hnappur í hausnum á Byggingarupplýsingum (OCR-takki án texta) — hvít ferningur sem ekkert gerir sýnilegt
+      main.querySelectorAll('#_bs468 [data-bs="ocr"]').forEach(b => fal(b, !txt(b)));
+      main.querySelectorAll('#_bs468 [data-bs="greining"]').forEach(b => fal(b, true));   // „Greining fasteignar“ er í Óskráð-línunni — ekki tvisvar
+      // „Greining fasteignar“ á síma: hvítur texti á ljósum bakgrunni sást ekki
+      main.querySelectorAll('._gr-profil-takki').forEach(b => {
+        const m = (getComputedStyle(b).color.match(/[0-9.]+/g) || []).map(Number);
+        if (m.length >= 3 && m[0] + m[1] + m[2] > 560 && !b._t485) { b._t485 = 1; b.style.setProperty('color', '#2b3140', 'important'); b.style.setProperty('opacity', '1', 'important'); b.style.setProperty('background', '#fff', 'important'); b.style.setProperty('border', '1px solid #cfccc4', 'important'); b.style.setProperty('border-radius', '8px', 'important'); b.style.setProperty('padding', '6px 10px', 'important'); b.style.setProperty('text-decoration', 'none', 'important'); }
+      });
+    }
+    // 362 („Fella“ í gamla hausnum) vistaði fellt ástand sem felur spjöldin þótt línan segi opið — línan í 485 ræður nú
+    try { if (document.documentElement.getAttribute('data-teikning') === 'fellt') { document.documentElement.removeAttribute('data-teikning'); if (window.Vidmot && Vidmot.lesa('profill.teikningFellt', false) === true) Vidmot.setja('profill.teikningFellt', false); } } catch (_) {}
   }
 
   function tikk() {
@@ -213,6 +233,7 @@
     still(); flytja();
     if (!sec.classList.contains('t485')) { sec.classList.add('t485'); sec.classList.toggle('t485-opid', opid()); }
     const o = opid(); if (sec.classList.contains('t485-opid') !== o) sec.classList.toggle('t485-opid', o);
+    const n2 = sec.querySelectorAll('#co-fp-hdir > .cfh-k').length === 2; if (sec.classList.contains('t485-n2') !== n2) sec.classList.toggle('t485-n2', n2);
     stadsetja(sec);
     fylla(sec, bua(sec));
   }
