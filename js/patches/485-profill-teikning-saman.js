@@ -49,6 +49,14 @@
       // nánari greining (athugasemdir, heimildir, óteiknuð tæki) fellt nema um hana sé beðið
       S + ':not(.t485-nanar) #co-bgr .bgr-b>*:not(.bgr-s):not(.bgr-bl){display:none!important}' +
       S + ' #co-fp-hdir{padding:10px!important}' +
+      // TVÍTALNINGAR BURT: Teikningar-röðin og Hæðir-röðin í banner (HÚS-línan og Teikning-glugginn sýna það sama), „Sýna teikningu“-takki 405 (línan hefur sinn), flísar greiningarinnar (komnar uppi), Greining fasteignar í Byggingarupplýsingum (er í Óskráð-línunni), Tengiliður-flís Samskipta (er í banner)
+      'html body #companies-main .co-banner .co-bupp ._bupp-lina._bupp-teikn-lina,html body #companies-main .co-banner ._bupp-teikn-lina,html body #companies-main .co-banner ._fasteign.t485-fal{display:none!important}' +
+      '#b405-fpt{display:none!important}' +
+      S + ' #co-bgr .bgr-s{display:none!important}' +
+      '@media (max-width:700px){html body #companies-main ._gr-profil-takki{color:#2b3140!important;opacity:1!important;text-decoration:none!important;border:1px solid #cfccc4;border-radius:8px;padding:6px 10px;background:#fff}}' +
+      S + ' #co-bgr .bgr-h strong,' + S + ' #co-bgr .bgr-h em{display:none!important}' +
+      '#_bs468 [data-bs="greining"]{display:none!important}' +
+      'html body #companies-main ._samskipti-card ._skx-tile.t485-fal{display:none!important}' +
       '@media (max-width:700px){#t485-sam{padding:7px 9px;font-size:12.5px}#t485-sam .t{padding:1px 6px}}';
     (document.head || document.documentElement).appendChild(st);
   }
@@ -95,7 +103,7 @@
   function fylla(sec, bar) {
     const d = hnitaTolur(sec), o = sec.classList.contains('t485-opid');
     const l1 = '<div class="l l1"><b>Teikning</b><span>' + (d.haedir ? d.haedir + (d.haedir === 1 ? ' hæð' : ' hæðir') : '') + (d.haedir && d.stad != null ? ' · ' : '') + (d.stad != null ? d.stad + ' staðsetningar' : '') + '</span><span class="sp"></span>' +
-      '<button type="button" data-a="teikn">Opna Teikningu</button><button type="button" class="v">' + (o ? 'Fella' : 'Sýna') + ' <i>▾</i></button></div>';
+      '<button type="button" class="v">' + (o ? 'Fella' : 'Sýna') + ' <i>▾</i></button></div>';
     const l2 = d.bgr ? '<div class="l l2"><b>Búnaðargreining</b>' + (d.stada ? '<em>' + esc(d.stada) + '</em>' : '') + (d.dags ? '<small>' + esc(d.dags) + '</small>' : '') + '<span class="sp"></span>' +
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const h = l1 + l2 + '|' + o;
@@ -133,14 +141,20 @@
     if (!el) { el = document.createElement('div'); el.id = 't485-top'; el.addEventListener('click', e => { const b = e.target.closest('button[data-a="teikn"]'); if (!b) return; const s = document.getElementById('co-fp-section'); if (s) { if (!s.classList.contains('t485-opid')) { s.classList.add('t485-opid'); setjaOpid(true); } s.scrollIntoView({ block: 'start', behavior: 'smooth' }); try { window.dispatchEvent(new Event('resize')); } catch (_) {} } }); ban.appendChild(el); }
     const bs = document.getElementById('_bs468');
     const reitir = bs ? [...bs.querySelectorAll('.bs-reitir .ssp-lina')].map(l => ({ n: txt(l.querySelector('.ssp-merki')), v: txt(l.querySelector('.ssp-gildi')) })).filter(x => x.n && x.v && !/^[–—-]$/.test(x.v)) : [];
+    // HÚS-línan (reitir banner) sýnir þegar hæðir og m² — sama tala er ekki sýnd tvisvar (Agnar 25.10.2026: „allt of mikið af tvítalningum“)
+    const talur = v => String(v || '').split('').filter(ch => ch >= '0' && ch <= '9').join('');
+    const husInp = [...ban.querySelectorAll('._bupp-lina:not(._bupp-tomt) input')].slice(0, 2).map(i => talur(i.value));
+    const tal = talur;
     const VELJA = ['Brúttó', 'Birt flatarmál', 'Rúmmál', 'Hæðir', 'Eignir', 'Byggingarár'];
-    const bygg = VELJA.map(n => reitir.find(x => x.n === n)).filter(Boolean).map(x => '<span class="k"><i>' + esc(x.n) + '</i>' + esc(x.v) + '</span>').join('');
+    const bygg = VELJA.map(n => reitir.find(x => x.n === n)).filter(Boolean)
+      .filter(x => !(x.n === 'Brúttó' && husInp[1] && tal(String(x.v).split(',')[0]) === husInp[1]))
+      .filter(x => !(x.n === 'Hæðir' && husInp[0] && talur(String(x.v).split(' ')[0]) === husInp[0])).map(x => '<span class="k"><i>' + esc(x.n) + '</i>' + esc(x.v) + '</span>').join('');
     const bgr = document.getElementById('co-bgr');
     const chips = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => { const s = b.querySelector('strong'), tala = s ? txt(s) : '', rest = txt(b).replace(tala, '').trim(); return '<span class="k"><strong>' + esc(tala) + '</strong>' + esc(rest) + '</span>'; }).join('') : '';
     const em = bgr && bgr.querySelector('.bgr-h em'), sm = bgr && bgr.querySelector('.bgr-h small');
     const dags = sm ? txt(sm).split(' · ')[0] : '';
     const l1 = bygg ? '<div class="r"><b>Bygging</b>' + bygg + '</div>' : '';
-    const l2 = chips ? '<div class="r"><b>Búnaður sbr. teikningum</b>' + chips + (em ? '<em>' + esc(txt(em)) + '</em>' : '') + (dags ? '<small>' + esc(dags) + '</small>' : '') + '<span class="sp"></span><button type="button" data-a="teikn">Greining ▾</button></div>' : '';
+    const l2 = chips ? '<div class="r"><b>Búnaður sbr. teikningum</b>' + chips + '</div>' : '';
     const h = l1 + l2;
     if (el._h !== h) { el._h = h; el.innerHTML = h; }
     el.style.display = h ? '' : 'none';
@@ -174,7 +188,25 @@
     }
   }
 
+  // inline !important: stílblöð Brunastáls (411/363) setja display með !important og meiri sérhæfni en nokkur regla héðan
+  function fal(e, on) {
+    if (!e) return;
+    const er = e.getAttribute('data-t485-fal') === '1';
+    if (on && !er) { e.setAttribute('data-t485-fal', '1'); e.style.setProperty('display', 'none', 'important'); }
+    else if (!on && er) { e.removeAttribute('data-t485-fal'); e.style.removeProperty('display'); }
+  }
+  function fela() {
+    const ban = document.querySelector('#companies-main > .co-banner');
+    if (ban) {
+      fal(ban.querySelector('._bupp-teikn-lina'), !!document.getElementById('co-fp-section'));
+      const inp = ban.querySelector('._bupp-lina:not(._bupp-tomt) input');
+      fal(ban.querySelector('._fasteign'), !!(inp && String(inp.value || '').trim()));
+    }
+    document.querySelectorAll('._samskipti-card ._skx-tile').forEach(t => fal(t, /^tengili/i.test(txt(t))));
+  }
+
   function tikk() {
+    try { fela(); } catch (e) { console.warn('[485] fela', e && e.message); }
     try { toppur(); } catch (e) { console.warn('[485] topp', e && e.message); }
     try { bygging(); } catch (e) { console.warn('[485] bygging', e && e.message); }
     const sec = document.getElementById('co-fp-section'); if (!sec) return;
