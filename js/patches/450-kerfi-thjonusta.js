@@ -564,7 +564,8 @@
     // Staður: á eftir Samskiptum ef þau eru komin, annars á eftir borðanum. Aðeins hreyft ef hann er rangur.
     const sam = main.querySelector(':scope > ._samskipti-host');
     const mynd = main.querySelector(':scope > #_bgm477');   // 477: myndir búnaðargreiningar — Agnar 22.10: teikningarnar ofan við Kerfi og þjónustu
-    const akkeri = mynd || sam || banner;
+    const teikn = main.querySelector(':scope > #co-fp-section.t485');   // 485: Teikning + Búnaðargreining í einum glugga rétt undir Samskiptum — akkeri keðjunnar (annars togast þau á um sama stað)
+    const akkeri = mynd || teikn || sam || banner;
     if (kort.previousElementSibling !== akkeri || kort.parentNode !== main) akkeri.after(kort);
     const m = _minni.get(fid);
     if (fylla_) fylla(kort, fid);

@@ -197,7 +197,8 @@
     if (kort && kort.dataset.cid !== cid) { kort.remove(); kort = null; }
     if (!kort) kort = smida(cid);
     const sam = main.querySelector(':scope > ._samskipti-host');
-    const akkeri = sam || banner;
+    const teikn = main.querySelector(':scope > #co-fp-section.t485');   // 485: Teikning + Búnaðargreining í einum glugga rétt undir Samskiptum — akkeri keðjunnar (annars togast þau á um sama stað)
+    const akkeri = teikn || sam || banner;
     if (kort.previousElementSibling !== akkeri || kort.parentNode !== main) akkeri.after(kort);
     if (m) fylla(kort, cid);
     if (!m || Date.now() - m.t > FERSKT_MS) {

@@ -208,7 +208,8 @@
       if (!el) el = skel();
       if (el.hidden) el.hidden = false;
       const kt = main.querySelector(':scope > #_kt450'), sam = main.querySelector(':scope > ._samskipti-host');
-      const akkeri = kt || sam || banner;
+      const teikn = main.querySelector(':scope > #co-fp-section.t485');   // 485: Teikning + Búnaðargreining í einum glugga rétt undir Samskiptum — akkeri keðjunnar (annars togast þau á um sama stað)
+      const akkeri = kt || teikn || sam || banner;
       if (el.previousElementSibling !== akkeri || el.parentNode !== main) akkeri.after(el);
       if (el.dataset.fid === String(fid) && el.dataset.fyllt) return;
       const f = felog.get(fid);
