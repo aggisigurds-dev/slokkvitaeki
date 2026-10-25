@@ -96,11 +96,12 @@
     const bgr = sec.querySelector('#co-bgr');
     const em = bgr && bgr.querySelector('.bgr-h em'), sm = bgr && bgr.querySelector('.bgr-h small');
     const dags = sm ? txt(sm).split(' · ')[0] : '';
-    const t = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => {
+    const t = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].filter(b => { const x = txt(b); return /slökkvi|slöngu|útidyr|reykskynj|hitaskynj|handbo|stjórnst|útljós|neyðarlýs/i.test(x) && !/m²|mhl/i.test(x); }).map(b => {
       const s = b.querySelector('strong'), tala = s ? txt(s) : '', rest = txt(b).replace(tala, '').trim();
       return '<span class="t"><strong>' + esc(tala) + '</strong>' + esc(rest) + '</span>';
     }).join('') : '';
-    const tx = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => txt(b)).filter(Boolean) : [];
+    const BUN = /slökkvi|slöngu|útidyr|reykskynj|hitaskynj|handbo|stjórnst|útljós|neyðarlýs/i;
+    const tx = bgr ? [...bgr.querySelectorAll('.bgr-s > b')].map(b => txt(b)).filter(x => x && BUN.test(x) && !/m²|mhl/i.test(x)) : [];
     return { stad, haedir, bgr: !!bgr, stada: em ? txt(em) : '', dags, t, tx };
   }
 
@@ -129,7 +130,7 @@
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const stm = fmLesa(), kort = sec.querySelectorAll('#co-fp-hdir > .cfh-k').length;
     const l3 = o && kort ? '<div class="l l3"><span class="lb">Merki á myndum</span>' +
-      '<button type="button" class="tg" data-a="nu" aria-pressed="' + stm.nu + '" title="Búnaðurinn sem er á borðinu núna (vistaður í Teikningu)"><span class="pt nu"></span>Búnaður núna <i>' + fmN.nu + '</i></button>' +
+      '<button type="button" class="tg" data-a="nu" aria-pressed="' + stm.nu + '" title="Búnaðurinn sem er á borðinu núna (vistaður í Teikningu) — skráð tæki eru sett á teikninguna í Teikningar-glugganum (dragðu tækið úr listanum)" ' + (fmN.nu ? '' : 'style="opacity:.6"') + '><span class="pt nu"></span>' + (fmN.nu ? 'Búnaður núna <i>' + fmN.nu + '</i>' : 'Engin skráð tæki sett á teikningu') + '</button>' +
       '<button type="button" class="tg" data-a="gr" aria-pressed="' + stm.gr + '" title="Búnaður sbr. búnaðargreiningu — strikaðir hringir sem hverfa þar sem tækið er komið á staðinn"><span class="pt gr"></span>Sbr. greiningu <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + '</i></button></div>' : '';
     const h = l1 + l2 + l3 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2 + l3; }
