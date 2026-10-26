@@ -269,6 +269,9 @@
     if (!sec.isConnected || sec.querySelector('#' + ID)) return;
     var hs = Array.isArray(row.haedir) && row.haedir.length ? row.haedir : [{ nafn: 'Teikning', image_url: row.image_url, markers: row.markers || [] }];
     var synd = hs.map(function (h, i) { return { h: h, i: i }; }).filter(function (x) { return x.h && (x.h.image_url || (x.h.vinnumynd && x.h.vinnumynd.url)); });
+    // Fyrstu þrjú spjöldin eru forskoðunin (Agnar 26.10.2026: „áhersla á fyrstu 3 hæðirnar fyrir preview“): hæðir með merki/búnað fyrst (í hæðaröð), tómar á eftir —
+    // annars ýta nýfundnar hæðir (kjallari, 1., 2. hæð án merkja) hæðunum sem skipta máli út úr forskoðuninni (Máni: 3.–6. hæð)
+    synd = synd.map(function (x) { return { h: x.h, i: x.i, t: (x.h.markers || []).length > 0 ? 0 : 1 }; }).sort(function (a, b) { return (a.t - b.t) || (a.i - b.i); });
     if (!synd.length) return;
     // „Báðar hæðir“ (þriðja spjald á tveggja hæða prófíl) var tekið út 23.10.2026 (Agnar: „báðar hæðir saman er óþarfi“) — það var aðeins afrit
     // af hinum tveimur forsýningunum með „0 tæki“. Kóðinn fyrir h.samsett hér að neðan stendur óhreyfður en er ekki lengur notaður.
