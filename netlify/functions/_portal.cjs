@@ -207,6 +207,8 @@ function requireStaff(event) {
 //    rekstrarfélög"). Heimildin er merkið customers_base.rekstrarfelag — SAMA merki og Rekstrarfélög-flipinn í appinu
 //    (175) les; enginn sér-listi í gáttinni. Gáttin á base_id sínu sér því líka staði systkinafélaganna (Heimaleiga ehf
 //    → S30, S&H Invest, G14, húsfélag Bríetartúns, Mannheimar, EA Law, Aegina, Eldsalir). Skilar alltaf baseId sjálfu.
+// 26.10.2026: svæði fallsins (Netlify Functions region) færist aðeins á föll sem fá NÝJAN bundle — þessi lína breytir
+//   checksum allra gáttarfallanna (gatt, gatt-status, gatt-doc, gatt-slug, gatt-login …) svo eu-west-1 taki gildi.
 async function baseHopur(baseId) {
   const ut = { ids: [Number(baseId)], nofn: {}, kt: [], merki: null };
   try {
