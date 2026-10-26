@@ -1291,6 +1291,12 @@ exports.handler = async (event) => {
     // Yfirlit: aðeins staðir í annarri hvorri þjónustunni. Þverholt 14 er
     // lögheimili/samningur, ekki hótel á slökk- eða brunakerfisborði.
     const onBoard = buildings.filter((b) => b.i_thjonustu || b.bru_i_thjonustu);
+    // 26.10.2026 (Agnar: „láttu það ekki sjást á gáttinni í bili"): reikningar sem stjórnsíðan/stillingar fela —
+    //    portal_users.stillingar.falin_reikningar = ["R-107909", …]. Ekkert eytt; takist listinn úr sést reikningurinn aftur.
+    try {
+      const falin = new Set(((acct && acct.stillingar && Array.isArray(acct.stillingar.falin_reikningar)) ? acct.stillingar.falin_reikningar : []).map((x) => normNr(x)).filter(Boolean));
+      if (falin.size) for (let i = invoices.length - 1; i >= 0; i--) { if (falin.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
+    } catch (_) {}
     // Eignasafn: eignir félagsins UTAN þjónustu sem bera eign-upplýsingar (skráðar viljandi sem
     // fasteignir, t.d. Reitir 11.10.2026) — kúnninn getur skráð þær í þjónustu í gáttinni.
     // Lögheimilis-/samningsstaðir án eign-gildis (Þverholt 14) birtast ekki.
