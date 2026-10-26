@@ -1,4 +1,9 @@
--- v_next_inspection — handvirkur skoðunarmánuður úr app_settings, ekki app_kv.   ÓBEITT 14.09.2026.
+-- v_next_inspection — handvirkur skoðunarmánuður úr app_settings, ekki app_kv.   BEITT 26.10.2026.
+--
+-- Skrifað 14.09.2026 og stóð ÓBEITT í sex vikur. Villan lifði þann tíma: 26.10.2026 mældist
+-- hún enn — af 628 stöðum með mánuð í app_settings hvarf hann hjá 26 í gáttinni og 30 sýndu
+-- annan, þar af 18 sem Agnar hafði valið handvirkt. Beitt með migration
+-- `v_next_inspection_app_settings`; staðfestingarfyrirspurnin neðst skilaði 0 röðum á eftir.
 --
 -- VILLAN. Viewið las handvirka/blob-mánuðinn úr app_kv (key 'arsskodun_customers'), en appið
 -- vistar hann ekki þar: 153-arsskodun.js (📅-takkinn, „⬇ Úr þjónustu") skrifar gegnum
