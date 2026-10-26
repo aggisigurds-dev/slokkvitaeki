@@ -58,6 +58,8 @@
       S + ':not(.t485-nanar) > #co-bgr{display:none!important}' +
       // myndir greiningarblaðanna (477) sýna sömu hæðir og forskoðunin hér að ofan — undir „Nánari greining“ (Agnar: „ekki sóa plássi“)
       S + ':not(.t485-nanar) ~ #_bgm477{display:none!important}' +
+      // tækjalistinn undir hverju hæðarspjaldi (S1 Samlag svefnálma … · í bið) — Agnar 26.10.2026: „ekki sýna þetta nema bara í nánar“
+      S + ':not(.t485-nanar) #co-fp-hdir .cfh-k .cfh-l{display:none!important}' +
       '#co-fp-section.t485.t485-n2 > #co-fp-hdir{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
       // á breiðum skjá fylla tvær hæðir ekki 700 px hvor — forskoðunin helst ~420 px breið (Agnar: „preview glugga“, ekki heil síða)
       // SÍMI (Agnar 25.10.2026: „á síma má gera ráð fyrir 2 teikningum á breidd · ekki sóa plássi“): tveir dálkar alltaf, fjórða spjaldið líka sýnilegt (tvær raðir) og hnappar án 44 px lágmarksins
