@@ -1179,10 +1179,13 @@
     $('#dr-addr').textContent = b.heimilisfang || '';
     var html = '';
     // Yfirlit
+    // 26.10.2026 (Agnar: „Tæki: 12/2026 … smá óljóst — hafa Tæki skoðað síðast 12/2025, skoðað næst 12/2026"): hver lína ber
+    // bæði síðustu skoðun (sidastaSkodunLinur) og næstu (nt), merkt skýrt.
     var ntParts = (b.nt || '').split('|').filter(Boolean);
+    var sidast = {}; sidastaSkodunLinur(b).forEach(function (p) { if (!sidast[p[0]]) sidast[p[0]] = p[1]; });
     var nextHtml = ntParts.map(function (line) {
-      var kv = line.split(':'); var lbl = kv.shift(), val = kv.join(':').trim();
-      return '<div>' + (ntParts.length > 1 ? '<span class="lbl">' + esc(lbl) + ':</span> ' : '') + esc(val) + '</div>';
+      var kv = line.split(':'); var lbl = kv.shift().trim(), val = kv.join(':').trim();
+      return '<div><span class="lbl">' + esc(lbl) + ':</span> skoðað síðast <b>' + esc(sidast[lbl] || '—') + '</b> <span class="dim">·</span> skoðað næst <b>' + esc(val) + '</b></div>';
     }).join('');
     var yrs = ["'23", "'24", "'25", "'26"];
     var soloE = bareSlokkvitaeki(b);
