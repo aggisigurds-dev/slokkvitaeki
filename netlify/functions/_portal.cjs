@@ -217,6 +217,11 @@ async function baseHopur(baseId) {
     const merki = String(b0.rekstrarfelag || '').trim();
     if (!merki) return ut;
     ut.merki = merki;
+    // AÐEINS höfuðfélagið sér hópinn — félagið sem BER nafn merkisins („Heimaleiga ehf" fyrir merkið „Heimaleiga").
+    // S&H Invest og S30 eru líka merkt Heimaleiga og eiga eigin gáttir; þær sýna áfram aðeins sitt (sjálfstæðir lögaðilar
+    // mega ekki sjá reikninga hvor annars). Hópur án höfuðfélags (Eignaumsjón: 66 húsfélög) víkkar ekkert.
+    const fold = (x) => String(x || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (fold(b0.nafn).indexOf(fold(merki)) !== 0) return ut;
     const r1 = await sbGet(`customers_base?rekstrarfelag=eq.${encodeURIComponent(merki)}&select=id,nafn,kennitala&order=id`);
     if (r1.ok) (await r1.json()).forEach((b) => {
       const id = Number(b.id); if (!id || ut.ids.includes(id)) return;
