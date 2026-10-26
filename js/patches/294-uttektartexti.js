@@ -208,7 +208,7 @@
     ta.value = txt;
     // Vista gegnum SAMA veg og reiturinn sjálfur — annars glatast textinn við
     // endurhleðslu því 129 les úr tripState, ekki úr DOM-inu.
-    var st = loadTrip(coId); st.notes = txt; saveTrip(coId, st);
+    var st = loadTrip(coId); st.notes = txt; st.notesAuto = txt; saveTrip(coId, st);
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.dispatchEvent(new Event('change', { bubbles: true }));
     console.log(TAG, 'texti settur:', txt);
@@ -227,6 +227,53 @@
     var el = main.querySelector('[data-co-id]:not(._cat-section)');
     var v = el && el.getAttribute('data-co-id');
     return (v && /^\d+$/.test(v)) ? +v : 0;
+  }
+
+  /* ÚRELTUR TEXTI (verkefnalisti 4831174d): textinn er skrifaður þegar listinn er
+     staðfestur, en tækjastaða breytist stundum eftir það („Fjögur tæki fengu
+     hleðslu" stóð eftir að duftið fór á yfirferð). Við vistum ÞANN texta sem
+     við sjálf sömdum (trip.notesAuto). Er reiturinn enn NÁKVÆMLEGA sá texti en
+     tækjalistinn myndi nú gefa annan → gulur rammi + lína undir reitnum með
+     takka. Handskrifaður/breyttur texti fær enga viðvörun (við vitum ekki
+     hvað er rétt) og ekkert er skrifað yfir — takkinn spyr eins og áður. */
+  var _uruTimer = 0;
+  function athugaUrelt() {
+    var ta = document.getElementById('_ctc-notes-ta');
+    if (!ta || !ta.parentNode) return;
+    var nu = ta.nextElementSibling;
+    var lina = (nu && nu.classList && nu.classList.contains('ut-urelt')) ? nu : null;
+    var urelt = false;
+    var coId = currentCoId();
+    if (coId) {
+      var auto = String(loadTrip(coId).notesAuto || '').trim();
+      if (auto && String(ta.value || '').trim() === auto) {
+        var nytt = smida(coId);
+        urelt = !!nytt && nytt.trim() !== auto;
+      }
+    }
+    if (urelt && !lina) {
+      if (!document.getElementById('ut-urelt-css')) {
+        var css = document.createElement('style');
+        css.id = 'ut-urelt-css';
+        css.textContent = '#_ctc-notes-ta.ut-urelt-ta{border-color:#d97706!important;background:#fffbeb!important}' +
+          '.ut-urelt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:12px;color:#92400e}';
+        document.head.appendChild(css);
+      }
+      var d = document.createElement('div');
+      d.className = 'ut-urelt';
+      d.innerHTML = '<span>⚠ Stöður tækja hafa breyst síðan textinn var skrifaður.</span>' +
+        '<button type="button" class="ut-txtgen" style="padding:2px 9px;border:1px solid #d97706;border-radius:99px;' +
+        'background:#fff;color:#92400e;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer">↻ Uppfæra textann</button>';
+      ta.insertAdjacentElement('afterend', d);
+      ta.classList.add('ut-urelt-ta');
+    } else if (!urelt && lina) {
+      lina.remove();
+      ta.classList.remove('ut-urelt-ta');
+    }
+  }
+  function athugaUreltSeinna(bid) {
+    clearTimeout(_uruTimer);
+    _uruTimer = setTimeout(athugaUrelt, bid || 400);
   }
 
   function haus() {
@@ -267,6 +314,7 @@
       var gamalt = b.textContent;
       b.textContent = '✓ Texti settur';
       setTimeout(function () { b.textContent = gamalt; }, 1600);
+      athugaUreltSeinna(60);
     }
   }, false);
 
@@ -280,6 +328,7 @@
     new MutationObserver(function () {
       clearTimeout(t);
       t = setTimeout(settaTakka, 80);
+      athugaUreltSeinna(400);
     }).observe(main, { childList: true, subtree: true });
     settaTakka();
   })();
@@ -295,12 +344,12 @@
     setTimeout(function () {
       var laest = false;
       try { laest = localStorage.getItem('sk_ut_lock_' + coId) === '1'; } catch (_) {}
-      if (laest) fylla(coId);
+      if (laest) { fylla(coId); athugaUreltSeinna(60); }
     }, 150);
   }, true);
 
   // Handvirkt fyrir prófanir: Uttektartexti.forskoda(coId) skilar textanum án
   // þess að skrifa neitt; .fylla(coId) skrifar (virðir tóma-reit regluna).
-  window.Uttektartexti = { forskoda: smida, fylla: fylla, skanna: skanna, hausar: hausar, takki: settaTakka };
+  window.Uttektartexti = { forskoda: smida, fylla: fylla, skanna: skanna, hausar: hausar, takki: settaTakka, urelt: athugaUrelt };
   console.log(TAG, 'hlaðinn');
 })();
