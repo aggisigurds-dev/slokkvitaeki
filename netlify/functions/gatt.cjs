@@ -1189,6 +1189,14 @@ exports.handler = async (event) => {
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
     const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' };
     invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
+    // 26.10.2026 (hraði): solur-fyllingin hér að neðan fer af stað NÚNA, samhliða reikningslestrinum. Mengið er
+    //    yfirmengi þess sem stæði eftir (lesturinn fyllir aðeins lýsingu/byggingu, fyllingin aðeins tóma reiti) → sama svar.
+    const needP = (() => {
+      const need0 = invoices.filter((i) => i.nr && (i.upphaed == null || !i.dags || !i.lysing));
+      if (!need0.length) return null;
+      const quoted = [...new Set(need0.map((i) => String(i.nr).replace(/"/g, '')))].map((n) => `"${n}"`).join(',');
+      return P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source`).catch(() => ({ ok: false }));
+    })();
     try {
       const vant = invoices.filter((i) => i.nr && (!i.lysing || !i.bygging));
       if (vant.length) {
@@ -1210,11 +1218,8 @@ exports.handler = async (event) => {
     // Drive-einn Stolpi-class docs often have PDF + year but no kr / full date.
     // Fill from solur when the R-númer matches — never invent amounts.
     try {
-      const need = invoices.filter((i) => i.nr && (i.upphaed == null || !i.dags || !i.lysing));
-      if (need.length) {
-        const quoted = [...new Set(need.map((i) => String(i.nr).replace(/"/g, '')))]
-          .map((n) => `"${n}"`).join(',');
-        const sr = await P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source`);
+      if (needP) {
+        const sr = await needP;
         if (sr.ok) {
           const byNr = {};
           (await sr.json()).forEach((s) => { if (s && s.num) byNr[normNr(s.num)] = s; });
@@ -1240,6 +1245,13 @@ exports.handler = async (event) => {
     //   greitt = paid_at er til · ogreitt = krafa send fyrir ≤ 75 dögum og engin greiðsla skráð.
     // Eldri ógreiddir fá EKKERT merki — paid_at dregst á eftir raunveruleikanum (Payday-afstemming), og rangt
     // „ógreitt" gagnvart kúnna er verra en autt merki.
+    const voidQuery = (nrsIn) => {
+      const nrs = [...new Set(nrsIn.map((n) => n && String(n).replace(/"/g, '')).filter(Boolean))];
+      if (!nrs.length) return null;
+      const quoted = nrs.map((n) => `"${n}"`).join(',');
+      return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of`).catch(() => ({ ok: false }));
+    };
+    let voidP = null;
     try {
       const sr2 = await Q.solur;
       if (sr2.ok) {
@@ -1276,6 +1288,7 @@ exports.handler = async (event) => {
           const sr3 = Q.stolpi ? await Q.stolpi : { ok: false };
           if (sr3.ok) {
             const rows3 = await sr3.json();
+            voidP = voidQuery(invoices.map((i) => i.nr).concat(rows3.map((x) => 'R-' + String(x.reikn_nr))));
             const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
             const nyjar = rows3.filter((x) => !byNr3[normNr(x.reikn_nr)]);
             const rl = {};
@@ -1306,10 +1319,9 @@ exports.handler = async (event) => {
     // lifði; kreditnótan R-001108 núllaði hann): reikningur sem er void, er kreditnóta, eða á kreditnótu sem vísar á
     // hann (credit_of) er ekki krafa og á ekki heima fyrir augum kúnnans. Stólpa-kreditfærslur merktar hér að ofan.
     try {
-      const nrs = [...new Set(invoices.map((i) => i.nr && String(i.nr).replace(/"/g, '')).filter(Boolean))];
-      if (nrs.length) {
-        const quoted = nrs.map((n) => `"${n}"`).join(',');
-        const sv = await P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of`);
+      const svP = voidP || voidQuery(invoices.map((i) => i.nr));
+      if (svP) {
+        const sv = await svP;
         if (sv.ok) {
           const rows = await sv.json();
           const ut = new Set(), idByNr = {};

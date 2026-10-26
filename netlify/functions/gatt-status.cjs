@@ -28,7 +28,7 @@ exports.handler = async (event) => {
       open: !!(u.active && !u.pass_hash),
       name: u.display_name || '',
       theme: u.theme || 'boss',
-    });
+    }, { 'x-fn-region': String(process.env.AWS_REGION || '') });
   } catch (e) {
     return P.json(200, { exists: false, active: false });
   }
