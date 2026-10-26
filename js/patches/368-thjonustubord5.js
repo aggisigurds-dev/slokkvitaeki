@@ -344,7 +344,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, chkCache: {}, chkDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
@@ -4255,7 +4255,7 @@
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
       const cards = spjold(n);
       const kort = cards.map((cd, i) => {
-        const d = S.skDrog[cd.id] || {}, id = esc(cd.id);
+        const d = drogFyrir(cd), id = esc(cd.id);
         const nafn = d.name != null ? d.name : (cd.name || ''), texti = d.title != null ? d.title : (cd.title || '');
         const row = cd.verkbord_id != null ? S.rows.find(x => String(x.id) === String(cd.verkbord_id)) : null;
         const t = cd.type != null && SB_TEG[cd.type] ? SB_TEG[cd.type] : null;
@@ -5124,6 +5124,18 @@
   /* ── skipulagsborð: vistun ── */
   // Spjöldin eru skrifuð sem heilt fylki, svo hver breyting er reiknuð á NÝJASTA lista stillinganna og vistanir
   // fara í röð. Texti í ritun lifir í S.skDrog þar til þjónninn hefur tekið við honum og fer með í hverja vistun.
+  // 26.10.2026 (Agnar: „ég er að reyna setja 1. 2. 3. það dettur alltaf út"): texti sem var vistaður á þjón kl. 13:51
+  // („1.Kvarnir … 2. 3.") var yfirskrifaður kl. 13:53 með eldri texta („Kvarnir … 1"). Orsök: S.skDrog (uppkast í ritun) lifði áfram í
+  // MINNI annars tækis/flipa — og fór með í HVERJA vistun þess tækis (jafnvel stærðarbreytingu eða merki) ofan á nýrri texta annars
+  // tækis. Nú ber hvert uppkast tíma síðasta innsláttar (S.skTs) og spjaldið ber upd = sá tími þegar uppkastið komst inn; uppkast sem
+  // er ekki nýrra en upd er hent, og þjónninn vinnur. Sama tækið tapar engu: innsláttur eftir vistunina er alltaf nýrri en upd.
+  function drogFyrir(cd) {
+    const id = cd && cd.id, d = id != null ? S.skDrog[id] : null;
+    if (!d) return {};
+    const ts = S.skTs[id] || 0;
+    if (cd.upd && ts && ts <= +cd.upd && !_skBid[id]) { delete S.skDrog[id]; delete S.skTs[id]; return {}; }
+    return d;
+  }
   const nyttSkId = () => 'sb' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const naestaSlot = l => l.reduce((m, x) => Math.max(m, Number(x.slot) || 0), -1) + 1;
   // 21.09.2026 (úttekt): „NÝJASTI listi stillinganna" var skyndiminni FLIPANS — sami starfsmaður á tveimur tækjum (tölva +
@@ -5145,7 +5157,10 @@
       // 01.10.2026: `eigandi` = spjald á borði ANNARS (merkt á mig → „✓ Búið"). Drögin mín fylgja aðeins mínu borði.
       const n = eigandi || nu(), minn = n === nu();
       const grunnlisti = (await ferskSpjold(n)) || cardsFor(n);
-      const nyr = breyta(grunnlisti.map(x => Object.assign({}, x, minn ? (S.skDrog[x.id] || {}) : {})));
+      const nyr = breyta(grunnlisti.map(x => {
+        const d = minn ? drogFyrir(x) : {};
+        return Object.keys(d).length ? Object.assign({}, x, d, { upd: S.skTs[x.id] || Date.now() }) : x;
+      }));
       _vistar++;
       S.skStada = 'Vista…';
       stimplaSk();
@@ -5213,7 +5228,7 @@
       if (document.hidden) return;
       const v = document.getElementById(VIEW_ID);
       if (!v || !v.classList.contains('active')) return;
-      if (_vistar || Object.keys(S.skDrog).length || Object.keys(_skBid).length) return;
+      if (_vistar || Object.keys(_skBid).length || Object.keys(S.skDrog).some(k => Date.now() - (S.skTs[k] || 0) < 8000)) return;
       const ae = document.activeElement;
       if (ae && ae.closest && ae.closest('.skc')) return;
       const n = nu(), fersk = await ferskSpjold(n);
@@ -5249,6 +5264,7 @@
     const n = nu(), reitur = el.dataset.sk, id = el.dataset.skid;
     if (!id) return;
     (S.skDrog[id] = S.skDrog[id] || {})[reitur] = el.value;
+    S.skTs[id] = Date.now();
     bida(id, async () => {
       const drog = Object.assign({}, S.skDrog[id]);
       const ok = await vistaSpjold(l => {
