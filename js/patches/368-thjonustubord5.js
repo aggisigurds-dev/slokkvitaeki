@@ -2208,8 +2208,8 @@
    * búið að svara en að fela eitt sem bíður. */
   const postSvarad = r => !!r.svarad_at || !!(sonn(r) && sonn(r).styrkur === 'svarad');
   const postOsvarad = r => isPost(r) && !postSvarad(r);
-  let samtRodun = 'sjalf';
-  const samtRodLes = () => { const v = vmLesa(SAMT_ROD_LYKILL, 'sjalf'); return SAMT_RADANIR.some(x => x[0] === v) ? v : 'sjalf'; };
+  let samtRodun = 'nyjast';
+  const samtRodLes = () => { const v = vmLesa(SAMT_ROD_LYKILL, 'nyjast'); return SAMT_RADANIR.some(x => x[0] === v) ? v : 'nyjast'; };
   vmFlytja(SAMT_ROD_LYKILL, 'samthykkja_rodun', v => (SAMT_RADANIR.some(x => x[0] === v) ? v : undefined));
   samtRodun = samtRodLes();
   document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SAMT_ROD_LYKILL) samtRodun = samtRodLes(); } catch (_) {} });

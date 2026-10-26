@@ -47,8 +47,8 @@
      * tölvan séu sammála; hún hvílir á mælingu þjónsins á útsendum pósti, ekki merki. */
     ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']
   ];
-  let rodun = 'sjalf';
-  const rodLes = () => { try { const v = window.Vidmot ? Vidmot.lesa(ROD_LYKILL, 'sjalf') : 'sjalf'; return RADANIR.some(x => x[0] === v) ? v : 'sjalf'; } catch (_) { return 'sjalf'; } };
+  let rodun = 'nyjast';
+  const rodLes = () => { try { const v = window.Vidmot ? Vidmot.lesa(ROD_LYKILL, 'nyjast') : 'nyjast'; return RADANIR.some(x => x[0] === v) ? v : 'nyjast'; } catch (_) { return 'nyjast'; } };
   try { if (window.Vidmot) Vidmot.flytja(ROD_LYKILL, 'samthykkja_rodun', v => (RADANIR.some(x => x[0] === v) ? v : undefined)); } catch (_) {}
   rodun = rodLes();
   // Val frá annarri vél (eða borðinu 368 á sömu vél) tekur gildi við næstu teikningu — breytan uppfærð, ekkert render().
