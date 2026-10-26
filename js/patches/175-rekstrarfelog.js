@@ -595,6 +595,35 @@
               er_i_thjonustu: f.er_i_thjonustu !== false
             });
           });
+          // 26.10.2026 (Agnar: „allar kennitölurnar eru á þeirra vegum, þeir eru að sjá um öll málin tengt fasteignunum"):
+          // handskráðu kennitölurnar í skránni (AppSettings.rekstrarfelog[nafn].buildings) telja LÍKA með sem lifandi staðir
+          // félagsins — húsfélagið Laugavegi 42 (base merkt Eignaumsjón) birtist þá undir Heimaleigu líka, með sömu
+          // fyrirtaeki-röð (co_id) og hjá hinu félaginu. Sama regla og gáttin (baseHopur í _portal.cjs). Merkt _umsjon.
+          try {
+            var raw = getRawData(), cur = {};
+            Object.keys(raw).forEach(function(nm){ (((raw[nm]||{}).buildings)||[]).forEach(function(b){ var d = digits(b && b.kt); if (d && d.length === 10 && !cur[d]) cur[d] = nm; }); });
+            var curKts = Object.keys(cur);
+            if (curKts.length) {
+              var ktAll = []; curKts.forEach(function(d){ ktAll.push(d, d.slice(0,6)+'-'+d.slice(6)); });
+              var curBases = await fetchAllIn(SB, 'customers_base', 'id,nafn,kennitala', 'kennitala', ktAll, null);
+              var curById = {}; curBases.forEach(function(b){ var d = digits(b.kennitala); if (cur[d] && bases[b.id] !== cur[d]) curById[b.id] = cur[d]; });
+              var curIds = Object.keys(curById).map(function(x){ return parseInt(x,10); });
+              if (curIds.length) {
+                var have = siteRows.filter(function(f){ return f && curById[f.customer_base_id]; });
+                var vantar = curIds.filter(function(id){ return !bases[id]; });
+                if (vantar.length) have = have.concat(await fetchAllIn(SB, 'fyrirtaeki', siteCols, 'customer_base_id', vantar, alive));
+                have.forEach(function(f){
+                  if (!f || f.id == null) return;
+                  var nm = curById[f.customer_base_id]; if (!nm) return;
+                  var L = out[nm] || (out[nm] = []);
+                  if (L.some(function(s){ return s.co_id === f.id; })) return;
+                  L.push({ co_id: f.id, kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'', netfang: f.netfang||'', simi: f.simi||'',
+                    customer_base_id: f.customer_base_id, bokunarnumer: f.bokunarnumer||'', stadur_nr: f.stadur_nr, plan_note: f.plan_note||'',
+                    er_i_thjonustu: f.er_i_thjonustu !== false, _umsjon: true });
+                });
+              }
+            }
+          } catch(e){ console.warn('[rekstrarfelog] umsjon-kt', e); }
           // Base tagged as rekstrarfélag but with no fyrirtaeki row yet (SAB ehf
           // / Naustavör 18) — still list it so the Heimaleiga set is complete.
           baseRows.forEach(function(b){
@@ -1584,6 +1613,8 @@
     var data=getData(); var q=_state.q.toLowerCase().trim();
     var names=Object.keys(data);
     box.innerHTML='';
+    // 26.10.2026: merkið á fyrirtækjasíðu (298) biður um að kort félagsins opnist (window.__rfOpna)
+    var vilOpna = window.__rfOpna || null; if (vilOpna) _opin[vilOpna] = 1;
     var shown=0;
     // Hero-yfirferðartölur (⚠ liðin skoðun per félag) — sama status-lógík og
     // yfirlitið, reiknað einu sinni fyrir öll félög.
@@ -1674,6 +1705,11 @@
       box.appendChild(card);
     });
     if(_aftur) _aftur();
+    if (vilOpna && data[vilOpna]) {
+      window.__rfOpna = null;
+      var kortid = Array.prototype.filter.call(box.querySelectorAll('._rf_card'), function(x){ var n = x.querySelector('.rfa__name'); return n && n.textContent === vilOpna; })[0];
+      if (kortid) setTimeout(function(){ try { kortid.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch(_) {} }, 60);
+    }
     if(!shown) box.innerHTML='<div style="color:#3a4250;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px -22px rgba(10,20,50,.65)">Ekkert fannst.</div>';
   }
 
