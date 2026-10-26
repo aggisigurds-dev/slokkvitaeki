@@ -144,6 +144,7 @@
     ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
     ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
+    ['Hunter'],  // 26.10.2026: 🎯 Hunter — sölulistar (487), í viðskiptavinaklasanum; þekktur hér svo hann lendi hjá Allir undir vistaðri röð en ekki aftast (9000)
     ['Viðskiptavinavefir'],  // 2026-08-23: static <a> → /gatt-admin/ (customer-portal admin, standalone page). Placed by the customer cluster; self-heals here even under a saved custom order.
     SEP,
     // 2026-05-20: Bill-and-claim cluster — grouped together below the
