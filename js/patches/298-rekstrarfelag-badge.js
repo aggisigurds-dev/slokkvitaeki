@@ -119,9 +119,14 @@
     // 175 les window.__rfOpna við næstu teikningu og opnar kort félagsins.
     return '<a href="#rekstrarfelog" data-rf-opna="' + esc(firm) + '" title="Rekstrarfélag — opna yfirlit félagsins í Rekstrarfélög" style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;background:#ede9fe;color:#6d28d9;padding:1px 7px;border-radius:99px;border:1px solid #ddd6fe;white-space:nowrap;text-decoration:none;cursor:pointer">🏢 ' + esc(firm) + '</a>';
   }
+  // Flipinn opnast um nav-takkann (175 showOurView) — hash-breyting ein og sér skiptir ekki um sýn í appinu.
   document.addEventListener('click', function (ev) {
     const a = ev.target && ev.target.closest && ev.target.closest('a[data-rf-opna]');
-    if (a) window.__rfOpna = a.getAttribute('data-rf-opna');
+    if (!a) return;
+    ev.preventDefault(); ev.stopPropagation();
+    window.__rfOpna = a.getAttribute('data-rf-opna');
+    const btn = document.querySelector('.vnav-btn[data-view="rekstrarfelog"]');
+    if (btn) btn.click(); else location.hash = '#rekstrarfelog';
   }, true);
 
   window.RekstrarfelagBadge = { forKt, forBase, html };
