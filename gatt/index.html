@@ -1096,12 +1096,16 @@
   .vbt-q{max-width:560px}
   .vbt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}
   .vbt-list:empty{display:none}
-  .vbt-c{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh);cursor:pointer;text-align:left;font-family:var(--ui);color:var(--ink)}
+  /* 26.10.2026 (Agnar: „færa Í þjónustu-merkið fyrir ofan myndina svo myndin gæti orðið stærri — of þjappað"): spjaldið er
+     lóðrétt — merkið efst til hægri, myndin breið undir, heiti og heimilisfang neðst. */
+  .vbt-c{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px 12px;border:1px solid var(--line2);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh);cursor:pointer;text-align:left;font-family:var(--ui);color:var(--ink)}
   .vbt-c:hover{border-color:var(--accent)}
-  .vbt-c i{flex:none;width:64px;height:44px;border-radius:4px;background:#ccc center/cover no-repeat;border:1px solid rgba(0,0,0,.15)}
-  .vbt-c b{display:block;font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.1}
+  .vbt-c i{display:block;order:2;width:100%;height:118px;border-radius:4px;background:#ccc center/cover no-repeat;border:1px solid rgba(0,0,0,.15)}
+  .vbt-c span{order:3;min-width:0}
+  .vbt-c b{display:block;font-family:var(--serif);font-size:17px;font-weight:600;line-height:1.15}
   .vbt-c small{display:block;font-size:11.5px;color:var(--dim);margin-top:2px}
-  .vbt-c .kst{margin-left:auto}
+  .vbt-c .kst{order:1;align-self:flex-end;margin-left:0}
+  .vbt-c:not(:has(.kst))::before{content:"";order:1;height:22px}
   .vbt-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
   .vbt-h h3{margin:6px 0 2px;font-family:var(--serif);font-size:30px;font-weight:600;color:var(--ink);line-height:1.05}
   .vbt-acts{display:flex;gap:8px;flex-wrap:wrap}
@@ -1792,6 +1796,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261026p"></script>
+<script src="/gatt/portal.js?v=20261026q"></script>
 </body>
 </html>
