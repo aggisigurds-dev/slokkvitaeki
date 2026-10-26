@@ -301,7 +301,9 @@
     p.markers = p.markers.filter(m => m.unitId !== unitId);
     const m = { unitId, x, y };
     p.markers.push(m);
-    if (F) F._selectedUnitId = unitId;
+    // 26.10.2026 (Agnar: „þegar ég vel tæki er ég fastur með það … færist ef ég ýti annars staðar“): tækið helst EKKI valið eftir að
+    // það er sett — annars færði hver smellur á teikninguna það aftur (og eytt tæki skaut upp kollinum þar sem smellt var).
+    if (F) F._selectedUnitId = null;
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     // fjölbýli (446): hógvær athugasemd ef tækið lendir utan greindrar sameignar — ekkert stöðvað
     try { if (window.TeiknBord && TeiknBord.sameignAthuga) TeiknBord.sameignAthuga(x, y); } catch (_) {}
@@ -418,6 +420,7 @@
     skraUndo({ teg: 'eyda', merki: afritMerki(m) });
     p.markers = p.markers.filter(x => x !== m && x.unitId !== m.unitId);
     if (S.valinnMerki && S.valinnMerki.unitId === m.unitId) S.valinnMerki = null;
+    { const F0 = FP(); if (F0 && F0._selectedUnitId === m.unitId) F0._selectedUnitId = null; }   // valið tæki sem er eytt má ekki setjast aftur við næsta smell
     try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
     endurteikna();
     vistaAdThjoni();
@@ -909,6 +912,8 @@
         if (e.target && e.target.closest && e.target.closest('button')) return;
         S.valinn = null;
         S.valinnMerki = null;
+        S.varValid = F._selectedUnitId === u.id ? u.id : null;   // ítrekaður smellur á valið tæki sleppir því (selectUnit hér að neðan)
+        S.varValidT = Date.now();
         F._selectedUnitId = u.id;
         hefjaFraLista(e, 'taeki', { unitId: u.id, stutt: String(u.type || 'SLT').slice(0, 3).toUpperCase() });
         stikaValid();
@@ -1173,7 +1178,19 @@
     };
     if (typeof F.selectUnit === 'function' && !F.__merkingSelect) {
       const velja = F.selectUnit.bind(F);
-      F.selectUnit = function (id) { S.valinn = null; return velja(id); };
+      F.selectUnit = function (id) {
+        S.valinn = null;
+        if (S.varValid != null && S.varValid === id && Date.now() - (S.varValidT || 0) < 1500) {
+          // Agnar 26.10.2026: „þegar ég ýti aftur á td CO₂ tæki þá er ég ekki lengur fastur með það“
+          S.varValid = null; this._selectedUnitId = null;
+          const inf = document.getElementById('fp-info'); if (inf) inf.textContent = 'Smelltu á tæki í listanum, svo á teikninguna — eitt tæki í einu.';
+          try { this._renderPanel(); this._renderCanvas(); } catch (_) {}
+          stikaValid();
+          return;
+        }
+        S.varValid = null;
+        return velja(id);
+      };
       F.__merkingSelect = true;
     }
     const smell = F.onCanvasClick.bind(F);
@@ -1196,7 +1213,10 @@
       const uid = this._selectedUnitId;
       smell(e);
       try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
-      if (uid) vistaAdThjoni();
+      if (uid) {
+        vistaAdThjoni();
+        if (this._selectedUnitId === uid) { this._selectedUnitId = null; try { this._renderPanel(); } catch (_) {} }   // eitt tæki í einu
+      }
     };
     const info = document.getElementById('fp-info');
     if (info && /Veldu tæki/i.test(info.textContent || '')) info.textContent = 'Smelltu á merki, svo á teikninguna — eitt merki í einu. Smelltu á merkið til að snúa, breyta eða eyða.';
@@ -1240,6 +1260,7 @@
       lokaValmynd();
       S.valinn = null;
       S.valinnMerki = null;
+      { const F1 = FP(); if (F1 && F1._selectedUnitId != null) { F1._selectedUnitId = null; try { F1._renderPanel(); F1._renderCanvas(); } catch (_) {} } }
       stikaValid();
       return;
     }

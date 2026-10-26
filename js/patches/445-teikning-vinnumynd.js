@@ -545,7 +545,8 @@
     if (T.valid && T.valid()) T.velja(null);
     const uid = F._selectedUnitId;
     if (uid == null) return;
-    T.setjaTaeki(uid, p.x, p.y);
+    const nytt = T.setjaTaeki(uid, p.x, p.y);   // setjaTaeki sleppir valinu: eitt tæki í einu, næsti smellur setur ekkert
+    if (nytt && T.velja) T.velja(nytt);
     T.vistaAdThjoni();
     segja('Staðsetning merkt ✓' + (p.vegg >= 0 ? ' — á vegg' : ''));
   }
