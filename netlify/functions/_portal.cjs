@@ -226,13 +226,16 @@ async function baseHopur(baseId) {
       const id = Number(b.id); if (!id || ut.ids.includes(id)) return;
       ut.ids.push(id); ut.nofn[id] = b.nafn || ''; if (b.kennitala) ut.kt.push(String(b.kennitala));
     };
-    const r1 = await sbGet(`customers_base?rekstrarfelag=eq.${encodeURIComponent(merki)}&select=id,nafn,kennitala&order=id`);
+    // 26.10.2026: lifandi merkið og handskráða listinn sóttir samhliða (gáttin var ~0,6 s í þessu falli einu, raðbundið).
+    const [r1, r2] = await Promise.all([
+      sbGet(`customers_base?rekstrarfelag=eq.${encodeURIComponent(merki)}&select=id,nafn,kennitala&order=id`),
+      sbGet('app_settings?id=eq.1&select=settings->rekstrarfelog').catch(() => ({ ok: false })),
+    ]);
     if (r1.ok) (await r1.json()).forEach(baeta);
     // Seinni helmingur Rekstrarfélags-skrárinnar (Agnar 26.10.2026: „Laugavegur 42 inn hjá Heimaleigu"): handskráðu
     // byggingarnar í AppSettings.rekstrarfelog[merki].buildings (kennitölur) — félag sem ber ANNAÐ lifandi merki
     // (húsfélagið Laugavegi 42 er Eignaumsjónar) kemur samt inn þegar það er skráð á rekstrarfélagið.
     try {
-      const r2 = await sbGet('app_settings?id=eq.1&select=settings->rekstrarfelog');
       const rf = r2.ok ? ((await r2.json())[0] || {}).rekstrarfelog : null;
       const blds = rf && rf[merki] && Array.isArray(rf[merki].buildings) ? rf[merki].buildings : [];
       const kts = [...new Set(blds.map((b) => String((b && b.kt) || '').replace(/\D/g, '')).filter((k) => k.length === 10))];

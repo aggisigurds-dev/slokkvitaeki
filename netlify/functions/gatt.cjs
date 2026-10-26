@@ -781,12 +781,52 @@ exports.handler = async (event) => {
     const fr = await P.sbGet(`fyrirtaeki?${BF('customer_base_id')}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr,customer_base_id&order=nafn`);
     const sites = (fr.ok ? await fr.json() : []).filter((s) => !leyfd || leyfd.has(Number(s.id)));
     const siteIds = sites.map((s) => s.id);
+    // ── 26.10.2026 (Agnar: „gáttin er leiðinlega lengi að opnast"): mælt 28 raðbundnar fyrirspurnir, 3,2 s af 4,0 s, þótt
+    //    22 þeirra þurfi aðeins base/sites. Þær fara nú af stað SAMHLIÐA hér og hver kafli bíður síns loforðs (Q.*).
+    //    Strengirnir eru óbreyttir — aðeins tímasetningin. Ekkert loforð er lesið tvisvar.
+    const Q = (() => {
+      const idsQ = siteIds.join(',');
+      const filtQ = siteIds.length ? `or=(customer_base_id.in.(${baseIds.join(',')}),fyrirtaeki_id.in.(${siteIds.join(',')}))` : `${BF('customer_base_id')}`;
+      const sinceQ = new Date(Date.now() - 4 * 365 * 864e5).toISOString();
+      const d0q = new Date(); d0q.setUTCDate(1); d0q.setUTCMonth(d0q.getUTCMonth() - 12);
+      const fraQ = d0q.toISOString().slice(0, 8) + '01';
+      const fra3Q = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10);
+      const ktsQ = hopur.kt.map((k) => String(k).replace(/\D/g, '')).filter((k) => k.length === 10).map((k) => k.slice(0, 6) + '-' + k.slice(6));
+      const g = (qs) => P.sbGet(qs).catch((e) => ({ ok: false, _err: e }));
+      return {
+        stada: g(`v_stadir_skyrslu_stada?${BF('base_id')}&select=site_id,report_year,inspect_month,stada,total_devices`),
+        naest: g(`v_next_inspection?${BF('base_id')}&select=site_id,inspect_month`),
+        docs: g(`customer_documents?${filtQ}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot,notes`),
+        app: g('app_settings?id=eq.1&select=settings'),
+        bru: siteIds.length ? g(`brunakerfi_skyrslur?fyrirtaeki_id=in.(${siteIds.join(',')})&select=fyrirtaeki_id,year,status,bunadur:data->bunadur&order=year.desc`) : null,
+        facts: siteIds.length ? g(`arsskodun_report_facts?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,report_year,equipment,total_devices&order=report_year.desc`) : null,
+        rollup: siteIds.length ? g(`v_uttaeki_fid_rollup?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,bsl`) : null,
+        taeki: siteIds.length ? g(`uttaeki?fyrirtaeki_id=in.(${siteIds.join(',')})&status=neq.urelt&select=fyrirtaeki_id,type,size,location,serial,last_insp,next_insp,status&order=type.asc,size.asc,location.asc&limit=5000`) : null,
+        teikn: siteIds.length ? g(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir,image_url,markers`) : null,
+        beidni: g(`thjonustubeidni?source=eq.gatt&${BF('customer_base_id')}&status=in.(nytt,i_vinnslu)&deleted_at=is.null&select=fyrirtaeki_id`),
+        kerfi: siteIds.length ? g(`v_stadur_kerfi?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,kerfi,til_stadar,skylt,krafa_heimild,krafa_url,skilyrdi,thjonustuadili`) : null,
+        flokkun: siteIds.length ? g(`v_stadur_flokkun?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,tegund_heiti,notkunarflokkur,m2,haedir`) : null,
+        erindi: g(`thjonustubeidni?${ERINDI_FILT}&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(sinceQ)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`),
+        eb: siteIds.length ? g(`eldvarnabok?fyrirtaeki_id=in.(${siteIds.join(',')})&manudur=gte.${fraQ}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`) : null,
+        solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
+        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`) : null,
+        messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
+        items: syn.vinnusvaedi ? itemsFelags().catch(() => null) : null,
+        checklist: syn.vinnusvaedi ? checklistFelags().catch(() => null) : null,
+        vidhald: syn.vinnusvaedi ? vidhaldFelags().catch(() => null) : null,
+        skrar: ['verktakar', 'rymi', 'lyklar', 'orkumaelar', 'kostnadur'].some((k) => syn[k]) ? skrarFelags().catch(() => null) : null,
+        bgr: (showDetails && syn.bunadargreining && siteIds.length) ? Promise.all([
+          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar,yfirlag,tillogur,stadsetningar&order=created_at.desc`),
+          P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir`),
+        ]).catch(() => null) : null,
+      };
+    })();
     const nafnById = {}, nrById = {}, adrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; adrById[s.id] = s.heimilisfang || ''; });
 
     // 2) Skoðanastaða per byggingu (view)
     const stById = {};
     try {
-      const sr = await P.sbGet(`v_stadir_skyrslu_stada?${BF('base_id')}&select=site_id,report_year,inspect_month,stada,total_devices`);
+      const sr = await Q.stada;
       if (sr.ok) (await sr.json()).forEach((r) => { stById[r.site_id] = r; });
     } catch (_) {}
 
@@ -794,17 +834,14 @@ exports.handler = async (event) => {
     //     appinu (v_next_inspection: handvirkt/blob > skýrsla > reikningur).
     const imById = {};
     try {
-      const nr = await P.sbGet(`v_next_inspection?${BF('base_id')}&select=site_id,inspect_month`);
+      const nr = await Q.naest;
       if (nr.ok) (await nr.json()).forEach((r) => { imById[r.site_id] = r.inspect_month; });
     } catch (_) {}
 
     // 3) Skjöl (skýrslur + reikningar) — bundin base_id EÐA byggingu félagsins
     let docs = [];
     try {
-      const filt = siteIds.length
-        ? `or=(customer_base_id.in.(${baseIds.join(',')}),fyrirtaeki_id.in.(${siteIds.join(',')}))`
-        : `${BF('customer_base_id')}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot,notes`);
+      const dr = await Q.docs;
       if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
     } catch (_) {}
     // 26.10.2026 (rekstrarfélög): skjal félagsins getur vísað á stað sem er EKKI í gáttinni (R-107909: Heimaleiga greiddi
@@ -839,7 +876,7 @@ exports.handler = async (event) => {
     // er varaleið gáttarinnar þegar eign.mynd vantar. Ein heimild báðum megin: gáttarmyndirnar fara í co_bygging_mynd.
     let bmMap = {};
     try {
-      const ar = await P.sbGet('app_settings?id=eq.1&select=settings');
+      const ar = await Q.app;
       if (ar.ok) {
         const row = (await ar.json())[0];
         bruMap = (row && row.settings && row.settings.brunakerfi_customers) || {};
@@ -854,7 +891,7 @@ exports.handler = async (event) => {
     const bruEinByIdAr = {};   // fid → { ár → einingar } fyrir skýrslulistann (Agnar 23.10: „tækjafjöldi og einingafjöldi má koma hérna")
     try {
       if (siteIds.length) {
-        const br = await P.sbGet(`brunakerfi_skyrslur?fyrirtaeki_id=in.(${siteIds.join(',')})&select=fyrirtaeki_id,year,status,bunadur:data->bunadur&order=year.desc`);
+        const br = await Q.bru;
         if (br.ok) {
           const best = {};
           (await br.json()).forEach((r) => {
@@ -904,7 +941,7 @@ exports.handler = async (event) => {
     try {
       if (siteIds.length) {
         const ids = siteIds.join(',');
-        const ar = await P.sbGet(`arsskodun_report_facts?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,report_year,equipment,total_devices&order=report_year.desc`);
+        const ar = await Q.facts;
         if (ar.ok) {
           (await ar.json()).forEach((r) => {
             if (factSloById[r.fyrirtaeki_id] !== undefined) return;
@@ -915,7 +952,7 @@ exports.handler = async (event) => {
             factSloById[r.fyrirtaeki_id] = eq.brunaslongur != null ? Number(eq.brunaslongur) : null;
           });
         }
-        const rr = await P.sbGet(`v_uttaeki_fid_rollup?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,bsl`);
+        const rr = await Q.rollup;
         if (rr.ok) {
           (await rr.json()).forEach((r) => { liveBslById[r.fyrirtaeki_id] = Number(r.bsl) || 0; });
         }
@@ -928,7 +965,7 @@ exports.handler = async (event) => {
     const eqById = {};
     if (showDetails && syn.taeki && siteIds.length) {
       try {
-        const er = await P.sbGet(`uttaeki?fyrirtaeki_id=in.(${siteIds.join(',')})&status=neq.urelt&select=fyrirtaeki_id,type,size,location,serial,last_insp,next_insp,status&order=type.asc,size.asc,location.asc&limit=5000`);
+        const er = await Q.taeki;
         if (er.ok) {
           const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9áéíóúýþæöð]+/g, '');
           const addrById = {}; sites.forEach((s) => { addrById[s.id] = norm(s.heimilisfang); });
@@ -947,7 +984,7 @@ exports.handler = async (event) => {
     const tkById = {};
     if (showDetails && (syn.teikningar || syn.threed || syn.greining) && siteIds.length) {
       try {
-        const tr = await P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir,image_url,markers`);
+        const tr = await Q.teikn;
         if (tr.ok) {
           (await tr.json()).forEach((t) => {
             const hs = Array.isArray(t.haedir) && t.haedir.length ? t.haedir : (t.image_url ? [{ nafn: 'Teikning', image_url: t.image_url, markers: t.markers || [] }] : []);
@@ -962,10 +999,7 @@ exports.handler = async (event) => {
     const bgrById = {};
     if (showDetails && syn.bunadargreining && siteIds.length) {
       try {
-        const [gr, br] = await Promise.all([
-          P.sbGet(`bunadargreining?company_id=in.(${siteIds.join(',')})&fjarlaegt_at=is.null&select=company_id,created_at,stada,tki,texti,heimildir,teikningar,yfirlag,tillogur,stadsetningar&order=created_at.desc`),
-          P.sbGet(`teikning_bord?company_id=in.(${siteIds.join(',')})&select=company_id,haedir`),
-        ]);
+        const [gr, br] = (await Q.bgr) || [{ ok: false }, { ok: false }];
         const bord = {};
         if (br.ok) (await br.json()).forEach((t) => { bord[t.company_id] = Array.isArray(t.haedir) ? t.haedir : []; });
         if (gr.ok) (await gr.json()).forEach((r) => { if (!bgrById[r.company_id]) { const o = BGR.bgrSnid(r, bord[r.company_id]); if (o) bgrById[r.company_id] = o; } });
@@ -975,7 +1009,7 @@ exports.handler = async (event) => {
     // 2f) Opnar beiðnir af þjónustuvef per eign (Þjónustuborð, source 'gatt') → „Beiðni í vinnslu"
     const beidniById = {};
     try {
-      const br0 = await P.sbGet(`thjonustubeidni?source=eq.gatt&${BF('customer_base_id')}&status=in.(nytt,i_vinnslu)&deleted_at=is.null&select=fyrirtaeki_id`);
+      const br0 = await Q.beidni;
       if (br0.ok) (await br0.json()).forEach((r) => { if (r.fyrirtaeki_id != null) beidniById[r.fyrirtaeki_id] = true; });
     } catch (_) {}
 
@@ -985,7 +1019,7 @@ exports.handler = async (event) => {
     if (syn.kerfi && siteIds.length) {
       try {
         const ids = siteIds.join(',');
-        const kr = await P.sbGet(`v_stadur_kerfi?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,kerfi,til_stadar,skylt,krafa_heimild,krafa_url,skilyrdi,thjonustuadili`);
+        const kr = await Q.kerfi;
         if (kr.ok) (await kr.json()).forEach((k) => {
           if (k.skylt === 'nei' && k.til_stadar !== 'ja') return;
           const ta = String(k.thjonustuadili || '');
@@ -993,7 +1027,7 @@ exports.handler = async (event) => {
             k: k.kerfi, skylt: k.skylt || null, til: k.til_stadar || 'ovitad',
             adili: /^okkar/i.test(ta) ? 'okkar' : (ta ? 'annar' : null), heimild: k.krafa_heimild || null, skilyrdi: k.skilyrdi || null, url: k.krafa_url || null });
         });
-        const fl = await P.sbGet(`v_stadur_flokkun?fyrirtaeki_id=in.(${ids})&select=fyrirtaeki_id,tegund_heiti,notkunarflokkur,m2,haedir`);
+        const fl = await Q.flokkun;
         if (fl.ok) (await fl.json()).forEach((f) => { flokkunById[f.fyrirtaeki_id] = { tegund: f.tegund_heiti || null, flokkur: f.notkunarflokkur || null, m2: f.m2 != null ? Number(f.m2) : null, haedir: f.haedir || null }; });
       } catch (_) {}
     }
@@ -1005,7 +1039,7 @@ exports.handler = async (event) => {
     if (syn.erindi) {
       try {
         const since = new Date(Date.now() - 4 * 365 * 864e5).toISOString();
-        let er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
+        let er = await Q.erindi;
         // Varaleið þar til migration 2026-10-11_verkbeidnapunktar.sql er beitt (nýju dálkarnir vantar → 400): gamla valið
         if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
         if (er.ok) {
@@ -1017,8 +1051,8 @@ exports.handler = async (event) => {
     }
     // 2j) Vinnusvæði: skjöl og hlekkir félagsins
     let items = [], checklist = [], vidhald = [], skrar = [];
-    if (syn.vinnusvaedi) { try { items = await itemsFelags(); checklist = await checklistFelags(); vidhald = (await vidhaldFelags()).filter((x) => !leyfd || leyfd.has(Number(x.fid))); } catch (_) {} }
-    if (['verktakar', 'rymi', 'lyklar', 'orkumaelar', 'kostnadur'].some((k) => syn[k])) { try { skrar = skrarSia(await skrarFelags()); } catch (_) {} }
+    if (syn.vinnusvaedi) { try { items = (await Q.items) || []; checklist = (await Q.checklist) || []; vidhald = ((await Q.vidhald) || []).filter((x) => !leyfd || leyfd.has(Number(x.fid))); } catch (_) {} }
+    if (Q.skrar) { try { skrar = skrarSia((await Q.skrar) || []); } catch (_) {} }
 
     // 2i) Eldvarnabók síðustu 13 mánuði per eign
     const ebById = {};
@@ -1026,7 +1060,7 @@ exports.handler = async (event) => {
       try {
         const d0 = new Date(); d0.setUTCDate(1); d0.setUTCMonth(d0.getUTCMonth() - 12);
         const fra = d0.toISOString().slice(0, 8) + '01';
-        const eb = siteIds.length ? await P.sbGet(`eldvarnabok?fyrirtaeki_id=in.(${siteIds.join(',')})&manudur=gte.${fra}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`) : { ok: false };
+        const eb = Q.eb ? await Q.eb : { ok: false };
         if (eb.ok) (await eb.json()).forEach((r) => {
           (ebById[r.fyrirtaeki_id] = ebById[r.fyrirtaeki_id] || []).push({ manudur: String(r.manudur).slice(0, 7), svor: r.svor || {}, stada: r.stada,
             undirritad_af: r.undirritad_af || null, undirritad_at: r.undirritad_at || null, uppf: r.updated_at, erindi: r.erindi_id || null });
@@ -1207,7 +1241,7 @@ exports.handler = async (event) => {
     // Eldri ógreiddir fá EKKERT merki — paid_at dregst á eftir raunveruleikanum (Payday-afstemming), og rangt
     // „ógreitt" gagnvart kúnna er verra en autt merki.
     try {
-      const sr2 = await P.sbGet(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`);
+      const sr2 = await Q.solur;
       if (sr2.ok) {
         const rows2 = await sr2.json();
         const nuMs = Date.now(), kraftur = 75 * 864e5, fra = nuMs - 730 * 864e5;
@@ -1239,7 +1273,7 @@ exports.handler = async (event) => {
         const kts = hopur.kt.map((k) => String(k).replace(/\D/g, '')).filter((k) => k.length === 10).map((k) => k.slice(0, 6) + '-' + k.slice(6));
         if (kts.length) {
           const fra3 = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10);
-          const sr3 = await P.sbGet(`stolpi_reikningar?kt=in.(${kts.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`);
+          const sr3 = Q.stolpi ? await Q.stolpi : { ok: false };
           if (sr3.ok) {
             const rows3 = await sr3.json();
             const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
@@ -1316,7 +1350,7 @@ exports.handler = async (event) => {
     // 4) Skilaboð + merkja starfs-skilaboð lesin
     let messages = [];
     if (!leigutaki) try {
-      const mr = await P.sbGet(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`);
+      const mr = await Q.messages;
       if (mr.ok) messages = await mr.json();
       await P.sbPatch(`portal_messages?base_id=eq.${baseId}&sender=eq.starf`, { read_by_customer: true });
     } catch (_) {}

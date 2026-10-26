@@ -190,6 +190,7 @@
 
   var SLUG = (function () { var m = /[?&]c=([^&]+)/.exec(location.search); return m ? decodeURIComponent(m[1]) : ''; })();
   var state = { data: null, demo: false, open: false };
+  var PRE = { status: null, open: null };   // fyrirfram sótt svör (boot með ?c=), notuð einu sinni
 
   /* ── boot ── */
   function boot() {
@@ -209,6 +210,13 @@
     // 26.10.2026 (Agnar: „gáttartakkinn kemur bara tómur"): síðan var auð í 4–7 sek á meðan gögnin sóttust (401 → status → 340 KB).
     // Hleðsluplata þar til renderPortal/showLogin/showNotReady taka við.
     hledurSyna();
+    // 26.10.2026 (Agnar: „leiðinlega lengi að opnast"): áður þrjú köll í RÖÐ — lotu-könnun (401) → gatt-status → gögnin.
+    // Með ?c= fara öll þrjú af stað í einu; svörin bíða í PRE og gateBySlug/openBoot nota þau í stað nýrra kalla.
+    if (SLUG) {
+      PRE.status = fetch('/api/gatt-status?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); });
+      PRE.open = fetch('/api/gatt?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) throw 0; return r.json(); });
+      PRE.open.catch(function () {}); PRE.status.catch(function () {});
+    }
     fetch('/api/gatt', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) {
         if (r.ok) return r.json().then(function (d) { renderPortal(normalize(d)); });
@@ -221,8 +229,9 @@
   // (aðgangsorð+lykilorð sett). Annars „vefurinn ekki virkur enn".
   function gateBySlug() {
     if (!SLUG) { showLogin(); return; }
-    return fetch('/api/gatt-status?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.json(); })
+    var sp = PRE.status || fetch('/api/gatt-status?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); });
+    PRE.status = null;
+    return sp
       .then(function (s) {
         if (s && s.theme) document.documentElement.setAttribute('data-theme', s.theme);
         if (s && s.active) showLogin();       // lykilorð virkt → innskráning
@@ -235,8 +244,9 @@
   // Opinn aðgangur (virkur + ekkert lykilorð): sækir raungögn félagsins um
   // slug ÁN innskráningar. Læsist um leið og lykilorð er sett.
   function openBoot() {
-    fetch('/api/gatt?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } })
-      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+    var op = PRE.open || fetch('/api/gatt?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) throw 0; return r.json(); });
+    PRE.open = null;
+    op
       .then(function (d) { state.open = true; renderPortal(normalize(d)); showOpenRibbon(); })
       .catch(function () { showNotReady(); });
   }
