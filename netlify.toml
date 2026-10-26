@@ -25,6 +25,22 @@
 
 [functions]
   directory = "netlify/functions"
+
+# 26.10.2026 (Agnar: gáttin opnast hægt): Supabase er í eu-west-1 (Írland) en föllin keyrðu í us-east-1 — hver
+# raðbundin fyrirspurn ~250 ms yfir hafið. Svæðisstillingin í Netlify-viðmótinu skilaði sér ekki (deploy sýndi
+# functions_region "iad" áfram), svo svæðið er sett hér per fall („dub" = EU Ireland) fyrir gáttarföllin.
+[functions.gatt]
+  region = "dub"
+[functions.gatt-status]
+  region = "dub"
+[functions.gatt-doc]
+  region = "dub"
+[functions.gatt-slug]
+  region = "dub"
+[functions.gatt-login]
+  region = "dub"
+[functions.hreyfingaryfirlit]
+  region = "dub"
   included_files = ["netlify/functions/_verkbord-sync.cjs", "netlify/functions/_sms-sjalfvirkt.cjs"]
 
 # --- ÖRYGGI: innri skrár ALDREI birtar --------------------------------------
