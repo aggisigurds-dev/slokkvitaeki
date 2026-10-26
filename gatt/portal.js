@@ -419,6 +419,16 @@
     if (data.account && data.account.name) $('#htag').innerHTML = 'Þjónustuvefur · <b>' + esc(data.account.name) + '</b>';
     renderCards(data.stats);
     renderYfirlit(data.buildings);
+    // 26.10.2026: djúptenging ?eign=<fyrirtaeki.id> úr fyrirtækjasíðu appsins (486) — opnar eignasíðuna beint
+    try {
+      var eignQ = parseInt(new URLSearchParams(location.search).get('eign'), 10);
+      if (eignQ && !state._eignOpnad) {
+        state._eignOpnad = true;
+        var bi0 = (data.buildings || []).findIndex(function (b) { return Number(b.id) === eignQ; });
+        var ui0 = (data.eignir_utan || []).findIndex(function (b) { return Number(b.id) === eignQ; });
+        setTimeout(function () { if (bi0 > -1) openDrawer(bi0); else if (ui0 > -1) openUtan(ui0); }, 250);
+      }
+    } catch (_) {}
     renderChips('#sk-chips', data.reports, renderSkyrslur);
     renderChips('#re-chips', data.invoices, renderReikningar);
     renderSkyrslur('');
