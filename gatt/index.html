@@ -258,6 +258,8 @@
   :root[data-theme="blar"] nav a.tab{color:var(--on-dark-dim)}
   :root[data-theme="blar"] nav a.tab.on,:root[data-theme="blar"] h2.page,:root[data-theme="blar"] .sc .v{text-shadow:none}
   :root[data-theme="blar"] .brand b{filter:none;letter-spacing:.06em}
+  :root[data-theme="blar"] .sc .k{letter-spacing:1px;word-break:keep-all;overflow-wrap:normal;hyphens:manual}   /* 26.10.2026: Poppins er breiðara en Jost — „BYGGINGAR" brotnaði í miðju orði í þröngum glugga */
+  @media(min-width:761px) and (max-width:1100px){ :root[data-theme="blar"] .cards{grid-template-columns:repeat(3,1fr)} }   /* fimm spjöld rúmast ekki með Poppins undir 1100 px */
   *{box-sizing:border-box}
   html,body{margin:0}
   body{
