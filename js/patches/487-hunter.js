@@ -128,6 +128,17 @@
       '.hu2-flis' + K + '{' + TAKKI + 'height:26px!important;width:auto!important;display:inline-flex!important;align-items:center;padding:0 8px!important;border-radius:3px!important;border:1px solid rgba(20,24,34,.12)!important;background:' + SILVER + '!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12)!important;font:700 10.5px ' + MONO + '!important;letter-spacing:.06em;text-transform:uppercase;color:#2b313c!important;white-space:nowrap}',
       '.hu2-flis.is-on' + K + '{background:' + MALM + '!important;border-color:#000!important;color:#fff!important}',
       '.hu2-flis.dauf' + K + '{cursor:default;background:#eceff4!important;box-shadow:none!important}',
+      // hugmyndablað: hvítt blað með línum, þrír dálkar, fjórar línur (28 px hver), stækkar lóðrétt ef þarf
+      V + '.hu2-blad{position:relative;padding:10px 20px 14px;border-radius:14px;border:1px solid rgba(0,0,0,.55);background:#fff;box-shadow:0 18px 40px -16px rgba(0,0,0,.6)}',
+      V + '.hu2-blad-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}',
+      V + '.hu2-blad-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px}',
+      V + '.hu2-blad-d{display:flex;flex-direction:column;gap:2px;min-width:0;margin:0;padding:0 0 0 12px;border-left:1px solid rgba(20,24,34,.12)}' + V + '.hu2-blad-d:first-child{padding-left:0;border-left:0}',
+      V + '.hu2-blad-l{font:700 10.5px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#845400;line-height:22px}',
+      V + '.hu2-blad-t' + K + '{display:block;width:100%!important;min-width:0!important;height:auto!important;min-height:116px!important;margin:0!important;padding:0 4px!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:none!important;resize:vertical;font:500 14px/28px ' + SANS + '!important;color:#141822!important;background:repeating-linear-gradient(transparent 0 27px,rgba(20,24,34,.22) 27px 28px) local!important;background-color:transparent!important}',
+      V + '.hu2-blad-t::placeholder{color:#a1a9b6!important;opacity:1}',
+      V + '.hu2-blad-t:focus' + K + '{background-color:#fffdf6!important}',
+      V + '.hu2-blad-t[data-save="pending"]' + K + '{box-shadow:inset 0 -2px 0 #e0a93e!important}' + V + '.hu2-blad-t[data-save="saved"]' + K + '{box-shadow:inset 0 -2px 0 #16783f!important}' + V + '.hu2-blad-t[data-save="error"]' + K + '{box-shadow:inset 0 -2px 0 #c92a2a!important;background-color:#fff5f4!important}',
+      '@container hu2 (max-width: 760px){' + V + '.hu2-blad-g{grid-template-columns:minmax(0,1fr);gap:8px}' + V + '.hu2-blad-d{padding-left:0;border-left:0}}',
       // listaskel
       V + '.hu2-skel{border-radius:14px;border:1px solid rgba(0,0,0,.55);background:#fff;overflow:hidden;box-shadow:0 18px 40px -16px rgba(0,0,0,.6)}',
       V + '.hu2-skel-haus{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px 10px 24px;background:' + METAL + ';border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
@@ -303,12 +314,14 @@
     if (S.hledur) return;
     S.hledur = true;
     try {
-      const [a, f] = await Promise.all([
+      const [a, f, bl] = await Promise.all([
         sb.from('hunter_adilar').select('*').is('fjarlaegt_at', null).order('id'),
-        sb.from('hunter_fasteignir').select('*').is('fjarlaegt_at', null).order('id')
+        sb.from('hunter_fasteignir').select('*').is('fjarlaegt_at', null).order('id'),
+        sb.from('hunter_blad').select('*').order('dalkur')
       ]);
       if (a.error) throw a.error;
       S.rows = a.data || [];
+      if (!bl.error) { S.blad = {}; (bl.data || []).forEach(b => { S.blad[b.dalkur] = b; }); }
       S.fast = {};
       (f.data || []).forEach(x => { (S.fast[x.adili_id] = S.fast[x.adili_id] || []).push(x); });
       S.hladid = true;
@@ -366,7 +379,7 @@
     const main = document.getElementById('hu-main'); if (!main) return;
     // Punktalína í skrifum: endurteiknun bíður (Stöðugt viðmót, regla 7) — annars týnist textinn. Tekin upp við focusout.
     const virk = document.activeElement;
-    if (virk && virk.classList && virk.classList.contains('hu2-nota') && main.contains(virk)) { S.renderPending = true; return; }
+    if (virk && virk.classList && (virk.classList.contains('hu2-nota') || virk.classList.contains('hu2-blad-t')) && main.contains(virk)) { S.renderPending = true; return; }
     S.renderPending = false;
     const alla = S.rows, af = alla.map(afleitt);
     const n = k => alla.filter(a => a.stada === k).length;
@@ -409,6 +422,13 @@
           '<div class="hu2-flisar"><span class="hu2-merki">Herferðir</span>' +
             Object.keys(herferdir).sort().map(h => '<button type="button" class="hu2-flis' + (S.herferd === h ? ' is-on' : '') + '" data-act="herferd" data-h="' + esc(h) + '">' + esc(h) + ' · ' + herferdir[h] + '</button>').join('') +
             '<span class="hu2-skyr" style="margin-left:auto">Smellur á flís síar listann; smellur aftur sýnir allt</span>' +
+          '</div>' +
+        '</section>' +
+        // Hugmyndablað (Agnar 26.10): þrír dálkar, fjórar línur, deilt milli véla (hunter_blad), vistast eins og punktalínan
+        '<section class="hu2-blad" aria-label="Hugmyndablað">' + hnod('vh') +
+          '<div class="hu2-blad-h"><span class="hu2-merki">Hugmyndablað</span><span class="hu2-skyr">hvert sendum við næst, að hverju leitum við — vistast sjálfkrafa, allar vélar sjá það sama</span></div>' +
+          '<div class="hu2-blad-g">' + [1, 2, 3].map(d => { const b = (S.blad && S.blad[d]) || { heiti: ['Senda næst', 'Leita að', 'Pælingar'][d - 1], texti: '' };
+            return '<label class="hu2-blad-d"><span class="hu2-blad-l">' + esc(b.heiti) + '</span><textarea class="hu2-blad-t" data-blad="' + d + '" rows="4" placeholder="…" spellcheck="false" aria-label="' + esc(b.heiti) + '">' + esc(b.texti || '') + '</textarea></label>'; }).join('') +
           '</div>' +
         '</section>' +
         '<section class="hu2-skel" aria-label="Aðilar í Hunter">' +
@@ -876,12 +896,45 @@
     el.setAttribute('data-save', 'error');
     toast('Pælingin vistaðist EKKI (' + villa + ') — textinn stendur í reitnum; reyndu aftur', true);
   }
-  function notaFlush() { Object.keys(_notaBid).forEach(id => notaVista(+id)); }
+  // ── Hugmyndablaðið: sama vistunarmynstur, einn dálkur í einu (hunter_blad.dalkur) ──
+  const _bladT = {}, _bladBid = {};
+  function bladSkra(el) {
+    const d = +el.getAttribute('data-blad'); if (!d) return;
+    clearTimeout(_bladT[d]); el.setAttribute('data-save', 'pending'); _bladBid[d] = el;
+    _bladT[d] = setTimeout(() => bladVista(d), 800);
+  }
+  async function bladVista(d, tilraun) {
+    clearTimeout(_bladT[d]);
+    const el = _bladBid[d] || document.querySelector('.hu2-blad-t[data-blad="' + d + '"]'); if (!el) return;
+    const v = el.value.replace(/\s+$/, '') || null;
+    const nu = (S.blad && S.blad[d] && S.blad[d].texti) || null;
+    const lokid = () => { delete _bladBid[d]; el.setAttribute('data-save', 'saved'); setTimeout(() => { if (el.getAttribute('data-save') === 'saved') el.removeAttribute('data-save'); }, 1500); };
+    if (nu === v) { lokid(); return; }
+    const sb = SB(); let ok = false, villa = '';
+    try {
+      if (!sb) throw new Error('enginn gagnagrunnur');
+      const r = await sb.from('hunter_blad').update({ texti: v, updated_at: new Date().toISOString() }).eq('dalkur', d).select('dalkur,texti');
+      if (r.error) throw r.error;
+      if (!r.data || !r.data.length) throw new Error('engin lína uppfærð');
+      ok = (r.data[0].texti || null) === v; if (!ok) villa = 'þjónninn ber annað gildi';
+    } catch (e) { villa = (e && e.message) || String(e); }
+    if (ok) {
+      S.blad = S.blad || {}; S.blad[d] = Object.assign(S.blad[d] || { dalkur: d, heiti: '' }, { texti: v });
+      if (el.value.replace(/\s+$/, '') === (v || '')) lokid(); else bladSkra(el);
+      return;
+    }
+    tilraun = (tilraun || 0) + 1;
+    if (tilraun < 3) { _bladT[d] = setTimeout(() => bladVista(d, tilraun), 1500 * tilraun); return; }
+    el.setAttribute('data-save', 'error');
+    toast('Hugmyndablaðið vistaðist EKKI (' + villa + ') — textinn stendur í reitnum; reyndu aftur', true);
+  }
+  function notaFlush() { Object.keys(_notaBid).forEach(id => notaVista(+id)); Object.keys(_bladBid).forEach(d => bladVista(+d)); }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') notaFlush(); });
   window.addEventListener('pagehide', notaFlush);
 
   function listaInnslattur(e) {
     if (e.target && e.target.classList && e.target.classList.contains('hu2-nota')) { notaSkra(e.target); return; }
+    if (e.target && e.target.classList && e.target.classList.contains('hu2-blad-t')) { bladSkra(e.target); return; }
     if (e.target && e.target.id === 'hu2-leit') { S.leit = e.target.value; clearTimeout(_leitT); _leitT = setTimeout(() => { const el = document.getElementById('hu2-leit'); const pos = el ? el.selectionStart : null; render(); const n = document.getElementById('hu2-leit'); if (n && document.activeElement !== n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } }, 250); } }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (_bak) return lokaBak(); if (_pop) return lokaValmynd(); if (S.opinn != null && document.getElementById('hu2-spjald')) lokaSpjald(); } });
 
@@ -910,7 +963,9 @@
     v.addEventListener('click', listaSmell); v.addEventListener('input', listaInnslattur);
     v.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('hu2-nota')) { e.preventDefault(); notaVista(+e.target.getAttribute('data-nota')); } });
     v.addEventListener('focusout', e => {
-      if (!(e.target.classList && e.target.classList.contains('hu2-nota'))) return;
+      const cl = e.target.classList; if (!cl) return;
+      if (cl.contains('hu2-blad-t')) { const d = +e.target.getAttribute('data-blad'); if (_bladBid[d]) bladVista(d); if (S.renderPending) setTimeout(() => { if (S.renderPending) render(); }, 50); return; }
+      if (!cl.contains('hu2-nota')) return;
       const id = +e.target.getAttribute('data-nota'); if (_notaBid[id]) notaVista(id);
       if (S.renderPending) setTimeout(() => { if (S.renderPending) render(); }, 50);
     });
