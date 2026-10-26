@@ -503,7 +503,8 @@
     '</article>';
   }
   async function hladaPost(id) {
-    const a = adili(id), sb = SB(); if (!a || !sb) return;
+    const sb = SB();
+    const a = adili(id); if (!a || !sb) return;
     if (S.postHl[id]) return; S.postHl[id] = true;
     try {
       const ors = ['sender_email.eq.' + a.netfang, 'to_addresses.ilike.%' + a.netfang + '%', 'body_preview.ilike.%' + a.netfang + '%'];
