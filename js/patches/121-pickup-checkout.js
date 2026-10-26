@@ -123,6 +123,13 @@
   // finalizePickup so the two together can never exceed what's left to
   // discount.
   let pickupDiscountKr = 0;
+  // 26.10.2026 (ósk Agnars): afslátturinn sem settur var í SÖLUNNI (solur.afslattur)
+  // birtist nú í %/kr-reitunum sjálfum („þar sem hann var settur fyrst“) í stað
+  // þess að standa sem sér lína sem ekki mátti hreyfa. Á meðan reitirnir eru
+  // ósnertir gildir upprunalega kr-talan ÓBREYTT (engin endurröndun um 1 kr);
+  // um leið og reit er breytt (pickupDiscReplace=true) KEMUR nýi afslátturinn
+  // Í STAÐ sölu-afsláttarins — leggst ekki ofan á hann eins og áður.
+  let pickupDiscReplace = false;
   let pickupNote = '';         // free-text athugasemd appended to audit trail
   // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
   // nr 9847265"). Surfaced in the Sótt window so the operator can edit it and
@@ -183,6 +190,22 @@
     // Lines from existing sale, if any
     const saleLinur = (sale && Array.isArray(sale.linur)) ? sale.linur : [];
 
+    // 26.10.2026 (ósk Agnars): sölu-afslátturinn sýnist í reitunum sjálfum. solur
+    // geymir aðeins kr-töluna (afslattur, m. vsk) og samtals = brúttó − afslattur,
+    // svo %-ið er reiknað til baka: afsl / (samtals + afsl). Sé það heil tala (±0,06,
+    // t.d. 1.173 / 5.332 = 22,0 %) var slegin inn prósenta í kassanum → %-reiturinn;
+    // annars var það föst kr-tala → kr-reiturinn. Reitirnir eru aðeins forfylltir
+    // þegar þeir eru tómir (ekki yfir það sem starfsmaður sló inn fyrr í sömu opnun).
+    pickupDiscReplace = false;
+    const origAfslKr = Math.max(0, Math.round(+(sale && sale.afslattur) || 0));
+    const origGross = Math.round(+(sale && sale.samtals) || 0) + origAfslKr;
+    const origPctRaw = (origAfslKr && origGross > 0) ? 100 * origAfslKr / origGross : 0;
+    const origPctClean = origPctRaw && Math.abs(origPctRaw - Math.round(origPctRaw)) < 0.06 ? Math.round(origPctRaw) : 0;
+    if (origAfslKr && !pickupDiscountPct && !pickupDiscountKr) {
+      if (origPctClean) pickupDiscountPct = origPctClean;
+      else pickupDiscountKr = origAfslKr;
+    }
+
     dlg.innerHTML =
       '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);width:min(920px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
         '<div style="padding:14px 22px;background:linear-gradient(135deg,#059669,#047857);color:#fff;display:flex;justify-content:space-between;align-items:center">' +
@@ -240,6 +263,7 @@
       // next pickup starts with a clean slate (no leaked discount/note).
       pickupDiscountPct = 0;
       pickupDiscountKr = 0;
+      pickupDiscReplace = false;
       pickupNote = '';
       pickupSaleNote = '';
       pickupPrintNote = true;
@@ -421,7 +445,7 @@
             '<span style="font-size:12px;color:#78350f;font-weight:600">kr</span>' +
           '</div>' +
           '<div id="_pkc-disc-hint" style="font-size:11.5px;color:#92400e;font-style:italic">' +
-            ((pickupDiscountPct || pickupDiscountKr) ? '' : 'má nota % og/eða fasta kr-upphæð saman') +
+            ((pickupDiscountPct || pickupDiscountKr) ? (pickupDiscReplace ? '' : 'úr sölunni · breyttu ef þarf') : 'má nota % og/eða fasta kr-upphæð saman') +
           '</div>' +
           '<label style="font-size:12px;font-weight:600;color:#78350f;align-self:start;padding-top:5px">Athugasemd:</label>' +
           '<textarea id="_pkc-note" rows="2" placeholder="t.d. afsláttur — fastur kúnni · kennitala send eftir á · annað" ' +
@@ -567,6 +591,7 @@
         discInp.addEventListener('input', () => {
           const v = parseFloat(discInp.value);
           pickupDiscountPct = Number.isFinite(v) && v >= 0 ? Math.min(100, v) : 0;
+          pickupDiscReplace = true;   // 26.10: nýr afsláttur kemur Í STAÐ sölu-afsláttarins
           renderTotals();
         });
       }
@@ -575,6 +600,7 @@
         discKrInp.addEventListener('input', () => {
           const v = parseFloat(discKrInp.value);
           pickupDiscountKr = Number.isFinite(v) && v >= 0 ? v : 0;
+          pickupDiscReplace = true;
           renderTotals();
         });
       }
@@ -618,14 +644,16 @@
       // 2026-07-08: carry the draft's existing POS discount (gross kr) so the
       // preview matches finalizePickup — before, a "greitt síðar" draft with a
       // kassa-afslátt was silently previewed AND charged at full price.
-      const origDisc = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), subTotal);
+      // 26.10.2026: sé reitunum BREYTT (pickupDiscReplace) fellur sölu-afslátturinn
+      // niður og nýi afslátturinn reiknast af öllu; ósnertir reitir = gamla kr-talan óbreytt.
+      const origDisc = pickupDiscReplace ? 0 : Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), subTotal);
       // 2026-05-24: Apply optional pickup-time discount (0–100 %) on the rest.
       const remainder = subTotal - origDisc;
-      const discPct = Math.max(0, Math.min(100, +pickupDiscountPct || 0));
+      const discPct = pickupDiscReplace ? Math.max(0, Math.min(100, +pickupDiscountPct || 0)) : 0;
       const pctDiscountKr = remainder * discPct / 100;
       // 2026-08-10 (ósk Agnars): manual fixed-kr discount, stacks on top of
       // the % one — clamped so the two together never exceed the remainder.
-      const manualDiscKr = Math.max(0, Math.min(remainder - pctDiscountKr, +pickupDiscountKr || 0));
+      const manualDiscKr = pickupDiscReplace ? Math.max(0, Math.min(remainder - pctDiscountKr, +pickupDiscountKr || 0)) : 0;
       const discountKr = pctDiscountKr + manualDiscKr;
       const grand = subTotal - origDisc - discountKr;
       return {
@@ -653,7 +681,7 @@
           '<div style="color:#475569;text-align:right">' + esc(fmtKr(t.unitsTotal)) + '</div>' +
           (t.extrasTotal ? '<div style="color:#475569">+ Aukalega:</div><div style="color:#475569;text-align:right">' + esc(fmtKr(t.extrasTotal)) + '</div>' : '') +
           (t.origDisc
-            ? '<div style="color:#b45309">− Afsláttur úr sölu:</div>' +
+            ? '<div style="color:#b45309">− Afsláttur úr sölu' + (origPctClean ? ' (' + origPctClean + '%)' : '') + ':</div>' +
               '<div style="color:#b45309;text-align:right">−' + esc(fmtKr(t.origDisc)) + '</div>'
             : ''
           ) +
@@ -676,7 +704,7 @@
       if (hintEl) {
         hintEl.textContent = t.discountKr
           ? '(samtals −' + fmtKr(t.discountKr) + ' afsláttur)'
-          : '';
+          : (t.origDisc && !pickupDiscReplace ? 'úr sölunni · breyttu ef þarf' : '');
       }
     }
 
@@ -711,11 +739,15 @@
         // captured in the modal. finalizePickup keeps line prices FULL and
         // stores draft-discount + pickup-discount combined in `afslattur`
         // (samtals = gross − afslattur); note is appended to the audit trail.
-        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo, pickupDiscountPct, pickupDiscountKr, pickupNote);
+        // 26.10: ósnertir reitir spegla bara sölu-afsláttinn → senda 0 svo hann
+        // leggist ekki ofan á sjálfan sig; breyttir reitir koma í hans stað.
+        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo,
+          pickupDiscReplace ? pickupDiscountPct : 0, pickupDiscReplace ? pickupDiscountKr : 0, pickupNote, pickupDiscReplace);
         // Reset extras + final-adjustments state for next pickup
         pickupExtras.length = 0;
         pickupDiscountPct = 0;
         pickupDiscountKr = 0;
+        pickupDiscReplace = false;
         pickupNote = '';
         const saleNumForPrint = parentSaleNum(job.num);
         // 2026-06-23: capture the printable sale-note + checkbox BEFORE close()
@@ -824,7 +856,7 @@
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
-  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
+  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote, replaceOrigDisc) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
     // 2026-08-20: prepaid = greitt fyrirfram (í lockstep við isAlreadyPaid, línu 156).
@@ -941,7 +973,10 @@
     const preVsk = newLinur.reduce(
       (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 24) / 100), 0);
     const preSamtals = preEx + preVsk;
-    const origAfsl = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), Math.round(preSamtals));
+    // 26.10.2026: replaceOrigDisc = starfsmaður breytti afsláttarreitunum í glugganum →
+    // sölu-afslátturinn fellur niður og nýi kemur í hans stað (sama og calcTotals).
+    const saleAfsl = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), Math.round(preSamtals));
+    const origAfsl = replaceOrigDisc ? 0 : saleAfsl;
     const remainderAfterOrig = Math.round(preSamtals) - origAfsl;
     const pctKr = Math.round(remainderAfterOrig * discPct / 100);
     // 2026-08-10 (ósk Agnars): manual fixed-kr discount, stacks on top of the
@@ -969,6 +1004,8 @@
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
       (origAfsl ? '\nAfsláttur úr sölu: −' + origAfsl + ' kr' : '') +
       (pickupKr ? '\nAfsláttur við afhendingu: ' + pickupDiscParts.join(' + ') + ' (−' + pickupKr + ' kr)' : '') +
+      (replaceOrigDisc && saleAfsl && !pickupKr ? '\nAfsláttur úr sölu felldur niður (var −' + saleAfsl + ' kr)' : '') +
+      (replaceOrigDisc && saleAfsl && pickupKr ? ' — kom í stað −' + saleAfsl + ' kr úr sölu' : '') +
       (trimmedNote ? '\nAthugasemd: ' + trimmedNote : '') +
       '\nGreiðsla: ' + payMethod;
 

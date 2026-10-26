@@ -161,11 +161,17 @@
   r(PK + ' #_pkc-finalize', GREEN_BTN + ';height:38px;padding:0 18px;font-size:13.5px');
   // sími (netvörður 30.09): fóturinn í eina dálkröð undir 700 px svo hann flæði ekki út fyrir 351 px glugga
   out.push('@media (max-width:700px){html body #_pkc-dialog #_pkc-foot{grid-template-columns:1fr!important}html body #_pkc-dialog #_pkc-loka{border-right:0!important;border-bottom:1px solid rgba(20,24,34,.12)!important}}');
-  // fyrirframgreitt-borðinn (GREITT): dökkmálmsgrænn í stað #16a34a
-  r(PK + ' > div > div[style*="background:#16a34a"]', 'background:' + SAEKJA + ';border-top:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)');
-  r(PK + ' > div > div[style*="background:#16a34a"] > div:first-child > div:last-child > div:first-child', 'font-family:' + MONO + ';letter-spacing:.2em');
-  r(PK + ' > div > div[style*="background:#16a34a"] #_pkc-finalize', 'background:' + SILVER + ';color:#0e5a2e;border:1px solid rgba(20,24,34,.14);text-shadow:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1)');
-  r(PK + ' > div > div[style*="background:#16a34a"] #_pkc-cancel', 'background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)');
+  // fyrirframgreitt-borðinn (GREITT). 26.10.2026 (Agnar: „sé ekkert þarna"): takkaraðar-reglan hér
+  // að ofan (:last-child:not(#…):not(#…) = þrjú ídenti) vann dökkgræna bakgrunninn, svo borðinn
+  // varð HVÍTUR með hvítum og ljósgrænum texta úr innlínustílnum. Nú er hann ljósgræn plata með
+  // SVÖRTUM og DÖKKGRÆNUM texta — og valararnir bera sömu :not()-ídenti svo þeir vinni örugglega.
+  var PAID = PK + ' > div > div[style*="background:#16a34a"]:not(#_pkc-foot):not(#_pkc-body)';
+  r(PAID, 'background:linear-gradient(180deg,#eef7f0 0%,#dcefe2 100%);color:#0e5a2e;border-top:1px solid rgba(14,90,46,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)');
+  r(PAID + ' > div:first-child > div:first-child', 'color:#0e5a2e');
+  r(PAID + ' > div:first-child > div:last-child > div:first-child', 'font-family:' + MONO + ';letter-spacing:.2em;color:#0e5a2e');
+  r(PAID + ' > div:first-child > div:last-child > div:last-child', 'color:#141822;font-family:' + MONO + ';font-size:11px');
+  r(PAID + ' #_pkc-finalize', GREEN_BTN + ';height:38px;padding:0 18px;font-size:13.5px');
+  r(PAID + ' #_pkc-cancel', SILVER_BTN + ';height:38px;padding:0 16px;font-size:13px;color:#1f2530');
   // aukavöru-glugginn og prent-spurningin úr sama pappa
   r('html body #_pkc-qty-dialog > div,html body #_pkc-print-prompt > div', SHELL);
   r('html body #_pkc-qty-dialog > div > div:first-child,html body #_pkc-print-prompt > div > div:first-child', HEAD);
