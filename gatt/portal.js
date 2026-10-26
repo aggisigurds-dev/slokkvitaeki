@@ -513,7 +513,9 @@
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
         // 09.10.2026: byggingin á engin eitt skjal (docId alltaf null) — „Skjöl" opnar Skýrslur síaðar á bygginguna.
         '<td class="r"><div class="ract"><a class="pdf" href="#" data-skjol="' + esc(b.nafn) + '">' + svgIc('mappa') + 'Skjöl</a>' +
-        '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (opinErindi(b) ? '<i class="nb">' + opinErindi(b) + '</i>' : '') + '</button></div></td></tr>';
+        // 26.10.2026 (Agnar: „maður á að geta ýtt á hverja eign í forsíðunni og séð erindin þar"): talan er öll erindi eignarinnar,
+        // smellur opnar eignasíðuna á erindakaflanum (sendingarglugginn aðeins þegar engin erindi eru til).
+        '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(erindiEignar(b).length ? erindiEignar(b).length + ' erindi · ' + opinErindi(b) + ' opin — opna eignasíðuna' : opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (erindiEignar(b).length ? '<i class="nb' + (opinErindi(b) ? '' : ' nb-lokid') + '">' + erindiEignar(b).length + '</i>' : '') + '</button></div></td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">Engar byggingar skráðar</td></tr>';
     foot('#yf-foot', (bldgs || []).length, (bldgs || []).length, ['bygging', 'byggingar'], ['byggingu', 'byggingum'], '');
     if (yfSia.q || yfSia.s) yfSiaBeita();
@@ -738,7 +740,7 @@
       rod.sort(function (a, c) { if (a === '') return 1; if (c === '') return -1; return hop[c].nyjast.localeCompare(hop[a].nyjast); });
       box.innerHTML = rod.map(function (k) {
         var g = hop[k];
-        return '<section class="eg-hopur"><div class="eg-head"><div><b>' + esc(g.nafn) + '</b>' + (g.adr ? '<small>' + esc(g.adr) + '</small>' : '') + '</div>' +
+        return '<section class="eg-hopur"><div class="eg-head"><div>' + (k ? '<a href="#" class="eg-opna" data-eg-opna="' + esc(k) + '" title="Opna eignasíðuna">' : '') + '<b>' + esc(g.nafn) + '</b>' + (k ? '</a>' : '') + (g.adr ? '<small>' + esc(g.adr) + '</small>' : '') + '</div>' +
           '<span class="eg-n">' + tala(g.L.length, 'erindi', 'erindi') + (g.opid ? ' · <i>' + g.opid + ' opi' + (g.opid === 1 ? 'ð' : 'n') + '</i>' : '') + '</span></div>' +
           '<div class="dpanel elist">' + g.L.map(function (e) { return erindiRod(e, false); }).join('') + '</div></section>';
       }).join('');
@@ -752,6 +754,23 @@
     else if (t) { erFilt.t = t.getAttribute('data-ef-t'); renderErindiView(); }
     var hh = e.target.closest && e.target.closest('[data-ef-h]');
     if (hh) { erFilt.h = !erFilt.h; renderErindiView(); }
+    // Hóphaus → eignasíðan; „Öll erindi eignarinnar" á eignasíðu → Erindi-flipinn síaður á eignina (26.10.2026: forsíða, eignasíða og Erindi fylgjast að)
+    var eo = e.target.closest && e.target.closest('[data-eg-opna]');
+    if (eo) {
+      e.preventDefault();
+      var fid0 = Number(eo.getAttribute('data-eg-opna'));
+      var bi0 = ((state.data && state.data.buildings) || []).findIndex(function (b) { return Number(b.id) === fid0; });
+      var ui0 = ((state.data && state.data.eignir_utan) || []).findIndex(function (b) { return Number(b.id) === fid0; });
+      if (bi0 > -1) { openDrawer(bi0); skrunaAdErindum(); } else if (ui0 > -1) openUtan(ui0);
+      return;
+    }
+    var ee = e.target.closest && e.target.closest('[data-er-eign]');
+    if (ee) {
+      e.preventDefault();
+      erFilt.e = String(ee.getAttribute('data-er-eign')); erFilt.s = ''; erFilt.t = '';
+      closeDrawer(); goView('erindi'); renderErindiView(); window.scrollTo(0, 0);
+      return;
+    }
     var v = e.target.closest && e.target.closest('[data-vis-reikn]');
     if (v) { e.preventDefault(); goView('reikningar'); window.scrollTo(0, 0); }
   });
@@ -1312,7 +1331,12 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     var er = t.closest && t.closest('[data-erindi-b]');
-    if (er) { e.preventDefault(); openErindi(Number(er.getAttribute('data-erindi-b')), 'fyrirspurn'); return; }
+    if (er) {
+      e.preventDefault();
+      var ebi = Number(er.getAttribute('data-erindi-b')), ebb = bldgAt(ebi);
+      if (ebb && erindiEignar(ebb).length) { openDrawer(ebi); skrunaAdErindum(); } else openErindi(ebi, 'fyrirspurn');
+      return;
+    }
     var ut = t.closest && t.closest('[data-utan]'); if (ut) { openUtan(+ut.getAttribute('data-utan')); return; }
     var sk = t.closest && t.closest('[data-skra]'); if (sk) { openErindiB(utanAt(+sk.getAttribute('data-skra')), 'thjonusta'); return; }
     if (t.closest && t.closest('#es-skra')) { openSkra(); return; }
@@ -1680,10 +1704,14 @@
   function erindiHtml(b) {
     if (!synOf().erindi) return '';
     var L = erindiEignar(b), op = L.filter(function (e) { return e.stada !== 'lokid'; }).length;
-    return '<section class="dsec"><h4>Erindi <span class="cnt">' + (L.length ? op + ' opin · ' + (L.length - op) + ' lokið' : '') + '</span></h4>' +
+    return '<section class="dsec dsec-erindi"><h4>Erindi <span class="cnt">' + (L.length ? op + ' opin · ' + (L.length - op) + ' lokið' : '') + '</span>' +
+      (L.length ? '<a href="#" class="dsec-meira" data-er-eign="' + b.id + '">Öll erindi eignarinnar í Erindi →</a>' : '') + '</h4>' +
       (L.length ? '<div class="dpanel elist">' + L.slice(0, 8).map(function (e) { return erindiRod(e, false); }).join('') + '</div>'
         : '<div class="dpanel"><div class="dempty">Engin erindi enn — sendu fyrirspurn eða verkbeiðni hér að neðan og fylgstu með stöðunni hér.</div></div>') +
       '</section>';
+  }
+  function skrunaAdErindum() {
+    setTimeout(function () { var k = document.querySelector('#drawer .dsec-erindi'); if (k) k.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 220);
   }
   function ebMinni(b) {
     if (!synOf().eldvarnabok || !Array.isArray(b.eldvarnabok) || b.i_thjonustu === false) return '';
