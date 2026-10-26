@@ -203,12 +203,35 @@ function requireStaff(event) {
   return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true });
 }
 
+// ── Rekstrarfélag = hópur félaga (26.10.2026, Agnar: „settu allar eignir tengt Heimaleigu inn í þeirra gátt … ath
+//    rekstrarfélög"). Heimildin er merkið customers_base.rekstrarfelag — SAMA merki og Rekstrarfélög-flipinn í appinu
+//    (175) les; enginn sér-listi í gáttinni. Gáttin á base_id sínu sér því líka staði systkinafélaganna (Heimaleiga ehf
+//    → S30, S&H Invest, G14, húsfélag Bríetartúns, Mannheimar, EA Law, Aegina, Eldsalir). Skilar alltaf baseId sjálfu.
+async function baseHopur(baseId) {
+  const ut = { ids: [Number(baseId)], nofn: {}, kt: [], merki: null };
+  try {
+    const r0 = await sbGet(`customers_base?id=eq.${Number(baseId)}&select=id,nafn,kennitala,rekstrarfelag&limit=1`);
+    const b0 = r0.ok ? (await r0.json())[0] : null;
+    if (!b0) return ut;
+    ut.nofn[b0.id] = b0.nafn || ''; if (b0.kennitala) ut.kt.push(String(b0.kennitala));
+    const merki = String(b0.rekstrarfelag || '').trim();
+    if (!merki) return ut;
+    ut.merki = merki;
+    const r1 = await sbGet(`customers_base?rekstrarfelag=eq.${encodeURIComponent(merki)}&select=id,nafn,kennitala&order=id`);
+    if (r1.ok) (await r1.json()).forEach((b) => {
+      const id = Number(b.id); if (!id || ut.ids.includes(id)) return;
+      ut.ids.push(id); ut.nofn[id] = b.nafn || ''; if (b.kennitala) ut.kt.push(String(b.kennitala));
+    });
+  } catch (_) {}
+  return ut;
+}
+
 module.exports = {
   hubConfigured, signStaff, verifyStaff, staffFromEvent, staffCookie, clearStaffCookie, checkStaffPassword, requireStaff, STAFF_COOKIE,
   COOKIE, TTL_SECONDS,
   signToken, verifyToken, hashPassword, verifyPassword,
   parseCookies, sessionCookie, clearCookie, getSession,
-  sbGet, sbPatch, sbPost, json, secHeaders, envReady, dbReady,
+  sbGet, sbPatch, sbPost, json, secHeaders, envReady, dbReady, baseHopur,
   signQr, verifyQr,
   SUPABASE_URL, SUPABASE_KEY,
 };

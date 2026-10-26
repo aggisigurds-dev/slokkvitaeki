@@ -257,7 +257,7 @@
         { k: 'Skoðun á tíma', v: s.i_lagi != null ? String(s.i_lagi) : '—', s: 'hús', dark: true },
       ],
       buildings: (d.buildings || []).map(function (b) {
-        return { nafn: b.nafn, heimilisfang: b.heimilisfang, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
+        return { nafn: b.nafn, heimilisfang: b.heimilisfang, eigandi: b.eigandi || null, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
@@ -472,7 +472,7 @@
       }
       var cls = (b.ontime ? 'ontime' : '') + (det ? ' clk' : '');
       return '<tr data-i="' + bi + '"' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + (det ? ' title="Opna eignasíðu"' : '') + '>' +
-        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + '</div></div></div></td>' +
+        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + (b.eigandi ? ' <span class="bown" title="Eigandi / greiðandi eignarinnar">· ' + esc(b.eigandi) + '</span>' : '') + '</div></div></div></td>' +
         '<td class="num">' + (b.sl != null ? b.sl : '—') + '</td>' +
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         '<td>' + kerfiCell(b) + '</td>' +

@@ -45,11 +45,14 @@ exports.handler = async (event) => {
     if (!doc) return P.json(404, { error: 'Skjal finnst ekki' });
 
     // ── Eignarhald: skjalið verður að tilheyra base_id (session eða opnum aðgangi) ──
-    let owns = doc.customer_base_id != null && Number(doc.customer_base_id) === Number(baseId);
+    //    Rekstrarfélag (26.10.2026): skjal systkinafélags (sama customers_base.rekstrarfelag) er líka heimilt — sami hópur
+    //    og gatt.cjs sýnir.
+    const hopur = await P.baseHopur(baseId);
+    let owns = doc.customer_base_id != null && hopur.ids.includes(Number(doc.customer_base_id));
     if (!owns && doc.fyrirtaeki_id != null) {
       const fr = await P.sbGet(`fyrirtaeki?id=eq.${doc.fyrirtaeki_id}&select=customer_base_id&limit=1`);
       const frows = fr.ok ? await fr.json() : [];
-      owns = frows[0] && Number(frows[0].customer_base_id) === Number(baseId);
+      owns = !!(frows[0] && hopur.ids.includes(Number(frows[0].customer_base_id)));
     }
     if (!owns) return P.json(403, { error: 'Óheimill aðgangur' });
     // Notandi með afmarkaðar eignir (leigutaki, eldvarnarfulltrúi einnar eignar): aðeins skjöl þeirra eigna

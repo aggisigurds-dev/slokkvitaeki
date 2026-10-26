@@ -183,6 +183,11 @@ exports.handler = async (event) => {
   const leyfd = session && Array.isArray(session.eignir) && session.eignir.length ? new Set(session.eignir.map(Number)) : null;
   const lesEingongu = hlutverk === 'skodandi', leigutaki = hlutverk === 'leigutaki';
   if (leigutaki) { syn.vinnusvaedi = false; syn.eldvarnabok = false; syn.baeta_eign = false; }
+  // ── Rekstrarfélag (26.10.2026): félögin sem bera sama rekstrarfélags-merki og þetta base_id — eignir þeirra,
+  //    skjöl, erindi, reikningar og eldvarnabók birtast í SÖMU gátt. BF(dálkur) = in.(öll base_id hópsins).
+  const hopur = await P.baseHopur(baseId);
+  const baseIds = hopur.ids;
+  const BF = (col) => `${col}=in.(${baseIds.join(',')})`;
 
   // ── Eldvarnabók: vista drög eða undirrita mánuð ───────────────────────────
   // Eignin verður að vera eign félagsins; mánuðurinn í mesta lagi 12 mánuðum aftur og ekki fram í tímann;
@@ -196,7 +201,7 @@ exports.handler = async (event) => {
     const nu = new Date(), idx = ar * 12 + mn - 1, nuIdx = nu.getUTCFullYear() * 12 + nu.getUTCMonth();
     if (mn < 1 || mn > 12 || idx > nuIdx || idx < nuIdx - 12) return P.json(400, { error: 'Mánuður utan leyfilegs bils' });
     const manudur = m[1] + '-' + m[2] + '-01';
-    const fr0 = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn&limit=1`);
+    const fr0 = await P.sbGet(`fyrirtaeki?id=eq.${sid}&${BF('customer_base_id')}&deleted_at=is.null&select=id,nafn&limit=1`);
     const f0 = fr0.ok ? (await fr0.json())[0] : null;
     if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
     const svor = {};
@@ -263,7 +268,7 @@ exports.handler = async (event) => {
   async function eignFelags(sid, sel) {
     if (!sid) return null;
     if (leyfd && !leyfd.has(Number(sid))) return null;
-    const r = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${sel || 'id,nafn,heimilisfang'}&limit=1`);
+    const r = await P.sbGet(`fyrirtaeki?id=eq.${sid}&${BF('customer_base_id')}&deleted_at=is.null&select=${sel || 'id,nafn,heimilisfang'}&limit=1`);
     return r.ok ? ((await r.json())[0] || null) : null;
   }
   async function malAKlst() {
@@ -326,7 +331,7 @@ exports.handler = async (event) => {
   async function lokaVerki(b) {
     const id = parseInt(b.id, 10);
     if (!id) return P.json(400, { error: 'id vantar' });
-    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
+    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&${BF('customer_base_id')}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
     const row0 = r0.ok ? (await r0.json())[0] : null;
     if (!row0) return P.json(404, { error: 'Verkið fannst ekki' });
     if (row0.abyrgd === 'okkar') return P.json(403, { error: 'Þetta verk lokar Slökkvitæki ehf. þegar því er lokið' });
@@ -354,7 +359,7 @@ exports.handler = async (event) => {
     if (!syn.einkunn) return P.json(403, { error: 'Ánægjukönnun er ekki opin á þessum aðgangi' });
     const id = parseInt(b.id, 10), st = parseInt(b.stjornur, 10);
     if (!id || !(st >= 1 && st <= 5)) return P.json(400, { error: 'Stjörnur 1–5 vantar' });
-    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&customer_base_id=eq.${baseId}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
+    const r0 = await P.sbGet(`thjonustubeidni?id=eq.${id}&${BF('customer_base_id')}&deleted_at=is.null&select=${ERINDI_SEL}&limit=1`);
     const row0 = r0.ok ? (await r0.json())[0] : null;
     if (!row0) return P.json(404, { error: 'Verkið fannst ekki' });
     if ((row0.abyrgd || 'okkar') !== 'okkar') return P.json(403, { error: 'Einkunn er aðeins gefin fyrir verk Slökkvitækja ehf.' });
@@ -390,7 +395,7 @@ exports.handler = async (event) => {
     const lm = /^(.*?)\s*\((\d{3})\)/.exec(label);
     const heiti = (lm ? lm[1] : label.replace(/\s*-\s*L\s*\d+$/, '')).trim();
     const postnr = lm ? lm[2] : (String(b.postnr || '').match(/^\d{3}$/) || [])[0] || null;
-    const allir = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,stadur_nr,eign`);
+    const allir = await P.sbGet(`fyrirtaeki?${BF('customer_base_id')}&deleted_at=is.null&select=id,nafn,heimilisfang,stadur_nr,eign`);
     const L = allir.ok ? await allir.json() : [];
     const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
     const tvi = L.find((f) => (f.eign && +f.eign.landnr === landnr) || norm(f.heimilisfang).indexOf(norm(heiti)) === 0);
@@ -746,7 +751,7 @@ exports.handler = async (event) => {
           let fyId = null, fyNafn = '';
           const sid = parseInt(b.site_id, 10);
           if (sid) {
-            const fr0 = await P.sbGet(`fyrirtaeki?id=eq.${sid}&customer_base_id=eq.${baseId}&select=id,nafn&limit=1`);
+            const fr0 = await P.sbGet(`fyrirtaeki?id=eq.${sid}&${BF('customer_base_id')}&select=id,nafn&limit=1`);
             const f0 = fr0.ok ? (await fr0.json())[0] : null;
             if (f0 && (!leyfd || leyfd.has(Number(f0.id)))) { fyId = f0.id; fyNafn = f0.nafn || ''; }
           }
@@ -773,7 +778,7 @@ exports.handler = async (event) => {
 
   try {
     // 1) Byggingar félagsins (í þjónustu) beint úr fyrirtaeki
-    const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr&order=nafn`);
+    const fr = await P.sbGet(`fyrirtaeki?${BF('customer_base_id')}&deleted_at=is.null&select=id,nafn,heimilisfang,er_i_thjonustu,status,eign,stadur_nr,customer_base_id&order=nafn`);
     const sites = (fr.ok ? await fr.json() : []).filter((s) => !leyfd || leyfd.has(Number(s.id)));
     const siteIds = sites.map((s) => s.id);
     const nafnById = {}, nrById = {}, adrById = {}; sites.forEach((s) => { nafnById[s.id] = s.nafn; nrById[s.id] = s.stadur_nr; adrById[s.id] = s.heimilisfang || ''; });
@@ -781,7 +786,7 @@ exports.handler = async (event) => {
     // 2) Skoðanastaða per byggingu (view)
     const stById = {};
     try {
-      const sr = await P.sbGet(`v_stadir_skyrslu_stada?base_id=eq.${baseId}&select=site_id,report_year,inspect_month,stada,total_devices`);
+      const sr = await P.sbGet(`v_stadir_skyrslu_stada?${BF('base_id')}&select=site_id,report_year,inspect_month,stada,total_devices`);
       if (sr.ok) (await sr.json()).forEach((r) => { stById[r.site_id] = r; });
     } catch (_) {}
 
@@ -789,7 +794,7 @@ exports.handler = async (event) => {
     //     appinu (v_next_inspection: handvirkt/blob > skýrsla > reikningur).
     const imById = {};
     try {
-      const nr = await P.sbGet(`v_next_inspection?base_id=eq.${baseId}&select=site_id,inspect_month`);
+      const nr = await P.sbGet(`v_next_inspection?${BF('base_id')}&select=site_id,inspect_month`);
       if (nr.ok) (await nr.json()).forEach((r) => { imById[r.site_id] = r.inspect_month; });
     } catch (_) {}
 
@@ -797,10 +802,19 @@ exports.handler = async (event) => {
     let docs = [];
     try {
       const filt = siteIds.length
-        ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
-        : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot`);
+        ? `or=(customer_base_id.in.(${baseIds.join(',')}),fyrirtaeki_id.in.(${siteIds.join(',')}))`
+        : `${BF('customer_base_id')}`;
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund,skodun_ar_man,skyrsla_taeki_alls,skyrsla_texti,skyrsla_vidbot,notes`);
       if (dr.ok) docs = (await dr.json()).filter((d) => !leyfd || (d.fyrirtaeki_id != null && leyfd.has(Number(d.fyrirtaeki_id))));
+    } catch (_) {}
+    // 26.10.2026 (rekstrarfélög): skjal félagsins getur vísað á stað sem er EKKI í gáttinni (R-107909: Heimaleiga greiddi
+    //    úttekt á Laugavegi 42, stað húsfélags undir Eignaumsjón). Nafnið fylgir reikningnum — staðurinn kemur ekki inn.
+    try {
+      const vantar = [...new Set(docs.map((d) => d.fyrirtaeki_id).filter((f) => f != null && nafnById[f] === undefined))];
+      if (vantar.length) {
+        const nr0 = await P.sbGet(`fyrirtaeki?id=in.(${vantar.join(',')})&select=id,nafn,heimilisfang`);
+        if (nr0.ok) (await nr0.json()).forEach((f) => { nafnById[f.id] = f.nafn || ''; if (adrById[f.id] === undefined) adrById[f.id] = f.heimilisfang || ''; });
+      }
     } catch (_) {}
 
     // Ár per byggingu úr RAUNVERULEGUM skjölum á ÞESSU fyrirtaeki_id.
@@ -961,7 +975,7 @@ exports.handler = async (event) => {
     // 2f) Opnar beiðnir af þjónustuvef per eign (Þjónustuborð, source 'gatt') → „Beiðni í vinnslu"
     const beidniById = {};
     try {
-      const br0 = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&status=in.(nytt,i_vinnslu)&deleted_at=is.null&select=fyrirtaeki_id`);
+      const br0 = await P.sbGet(`thjonustubeidni?source=eq.gatt&${BF('customer_base_id')}&status=in.(nytt,i_vinnslu)&deleted_at=is.null&select=fyrirtaeki_id`);
       if (br0.ok) (await br0.json()).forEach((r) => { if (r.fyrirtaeki_id != null) beidniById[r.fyrirtaeki_id] = true; });
     } catch (_) {}
 
@@ -991,9 +1005,9 @@ exports.handler = async (event) => {
     if (syn.erindi) {
       try {
         const since = new Date(Date.now() - 4 * 365 * 864e5).toISOString();
-        let er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
+        let er = await P.sbGet(`thjonustubeidni?${ERINDI_FILT}&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`);
         // Varaleið þar til migration 2026-10-11_verkbeidnapunktar.sql er beitt (nýju dálkarnir vantar → 400): gamla valið
-        if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&customer_base_id=eq.${baseId}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
+        if (!er.ok) er = await P.sbGet(`thjonustubeidni?source=eq.gatt&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(since)}&select=id,fyrirtaeki_id,title,status,created_at,updated_at,tags&order=created_at.desc&limit=200`);
         if (er.ok) {
           const rows = (await er.json()).filter((r) => !leyfd || (r.fyrirtaeki_id != null && leyfd.has(Number(r.fyrirtaeki_id))));
           const slod = await M.undirrita(myndaSlodir(rows), 600);
@@ -1012,7 +1026,7 @@ exports.handler = async (event) => {
       try {
         const d0 = new Date(); d0.setUTCDate(1); d0.setUTCMonth(d0.getUTCMonth() - 12);
         const fra = d0.toISOString().slice(0, 8) + '01';
-        const eb = await P.sbGet(`eldvarnabok?customer_base_id=eq.${baseId}&manudur=gte.${fra}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`);
+        const eb = siteIds.length ? await P.sbGet(`eldvarnabok?fyrirtaeki_id=in.(${siteIds.join(',')})&manudur=gte.${fra}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`) : { ok: false };
         if (eb.ok) (await eb.json()).forEach((r) => {
           (ebById[r.fyrirtaeki_id] = ebById[r.fyrirtaeki_id] || []).push({ manudur: String(r.manudur).slice(0, 7), svor: r.svor || {}, stada: r.stada,
             undirritad_af: r.undirritad_af || null, undirritad_at: r.undirritad_at || null, uppf: r.updated_at, erindi: r.erindi_id || null });
@@ -1040,6 +1054,8 @@ exports.handler = async (event) => {
       const bruOn = GY.bruInService(bruMap, s.id);
       return {
         id: s.id, nafn: s.nafn, heimilisfang: s.heimilisfang || '',
+        // Eign systkinafélags í rekstrarfélaginu (annað base_id) → nafn eiganda/greiðanda; null fyrir eigin eignir
+        eigandi: s.customer_base_id != null && Number(s.customer_base_id) !== Number(baseId) ? (hopur.nofn[s.customer_base_id] || null) : null,
         // Óvirkur staður (status 'óvirkur', t.d. Reitir 11.10.2026: skráðir í þjónustu en óvirkir svo
         // allt kerfið nái til þeirra) telst EKKI í þjónustu í gáttinni.
         i_thjonustu: s.er_i_thjonustu !== false && !/^(óvirkur|ovirkur|inactive)$/i.test(String(s.status || '')),
@@ -1123,7 +1139,10 @@ exports.handler = async (event) => {
 
     // Einn reikningur per reikningsnúmer (ver gegn tvítekningum úr fleiri heimildum).
     const invoices = dedupeDocs(
-      docs.filter((d) => d.doc_type === 'reikningur' && !d.is_duplicate),
+      // 26.10.2026 (rekstrarfélög — Bríetartún-húsfélag/Aegina komu inn): kreditreikningar í skjalaskránni (R-107757 −193.600,
+      // R-107299 −236.889, þrjár númerslausar raðir merktar KREDITREIKNINGUR) eru ekki reikningar kúnnans í gáttinni.
+      docs.filter((d) => d.doc_type === 'reikningur' && !d.is_duplicate && !(d.amount != null && Number(d.amount) < 0)
+        && !(/kreditreikn/i.test(String(d.notes || '')) && (!d.invoice_number || d.amount == null || Number(d.amount) < 0))),
       (d) => normNr(d.invoice_number) || ('id:' + d.id),
     )
       .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
@@ -1188,7 +1207,7 @@ exports.handler = async (event) => {
     // Eldri ógreiddir fá EKKERT merki — paid_at dregst á eftir raunveruleikanum (Payday-afstemming), og rangt
     // „ógreitt" gagnvart kúnna er verra en autt merki.
     try {
-      const sr2 = await P.sbGet(`solur?customer_base_id=eq.${baseId}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`);
+      const sr2 = await P.sbGet(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`);
       if (sr2.ok) {
         const rows2 = await sr2.json();
         const nuMs = Date.now(), kraftur = 75 * 864e5, fra = nuMs - 730 * 864e5;
@@ -1216,12 +1235,11 @@ exports.handler = async (event) => {
     // Staðan „greitt" er sönn í Stólpa; „ógreitt" er EKKI sýnt úr gamla kerfinu (sama regla og hér að ofan).
     try {
       if (!leigutaki) {
-        const bk = await P.sbGet(`customers_base?id=eq.${baseId}&select=kennitala&limit=1`);
-        let kt = bk.ok ? String(((await bk.json())[0] || {}).kennitala || '').replace(/\D/g, '') : '';
-        if (kt.length === 10) {
-          kt = kt.slice(0, 6) + '-' + kt.slice(6);
+        // Rekstrarfélag: kennitölur ALLRA félaga hópsins (Heimaleiga + S30 + Aegina …), ekki aðeins þessa base_id
+        const kts = hopur.kt.map((k) => String(k).replace(/\D/g, '')).filter((k) => k.length === 10).map((k) => k.slice(0, 6) + '-' + k.slice(6));
+        if (kts.length) {
           const fra3 = new Date(Date.now() - 730 * 864e5).toISOString().slice(0, 10);
-          const sr3 = await P.sbGet(`stolpi_reikningar?kt=eq.${kt}&tegund=eq.reikningur&dags=gte.${fra3}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`);
+          const sr3 = await P.sbGet(`stolpi_reikningar?kt=in.(${kts.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`);
           if (sr3.ok) {
             const rows3 = await sr3.json();
             const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
