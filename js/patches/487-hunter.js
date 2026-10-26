@@ -149,6 +149,13 @@
       V + '.hu2-tafla td:first-child{box-shadow:inset 3px 0 0 #dfe3ea}',
       V + '.hu2-tafla tr.r-gull td:first-child{box-shadow:inset 3px 0 0 #8a6410}' + V + '.hu2-tafla tr.r-stal td:first-child{box-shadow:inset 3px 0 0 #3a3a41}' + V + '.hu2-tafla tr.r-blatt td:first-child{box-shadow:inset 3px 0 0 rgba(60,120,200,.6)}' + V + '.hu2-tafla tr.r-graent td:first-child{box-shadow:inset 3px 0 0 #16783f}' + V + '.hu2-tafla tr.r-rautt td:first-child{box-shadow:inset 3px 0 0 #971515}',
       V + '.hu2-nafn{font-weight:700;color:#11141c;display:flex;align-items:center;gap:6px}' + V + '.hu2-nafn svg{width:13px;height:13px;color:#e0a93e}',
+      // dálkabreiddir: engin prósentubreidd á nafn/tengilið (dautt pláss á breiðum skjá, Agnar 26.10) — Samskipti tekur afganginn
+      V + '.hu2-tafla .hu2-c-nafn{width:1%;min-width:150px;max-width:230px}' + V + '.hu2-tafla .hu2-c-teng{width:1%;min-width:150px;max-width:230px}' + V + '.hu2-tafla .hu2-c-sk{min-width:300px}' + V + '.hu2-tafla .hu2-c-st{width:1%;white-space:nowrap}' + V + '.hu2-tafla .hu2-c-naesta{width:1%;min-width:150px;max-width:220px}' + V + '.hu2-tafla .hu2-c-adg{width:48px}',
+      '.hu2-chip-sm{height:18px;padding:0 6px;font-size:9.5px;margin-top:4px}',
+      '.hu2-chip.gull{background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
+      '.hu2-sk-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hu2-sk-h .hu2-chip-sm{margin-top:0}',
+      '.hu2-sk-e{display:block;margin-top:3px;font-weight:700;font-size:12.5px;color:#1f2530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}',
+      '.hu2-sk-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;font-size:12px;line-height:1.4;color:#3a4250;max-width:520px}',
       '.hu2-sub{font-size:11px;color:#5b6472;display:block;margin-top:2px}',
       '.hu2-mono{font:11.5px ' + MONO + ';color:#3a4250;white-space:nowrap}' + '.hu2-mono.dauf{color:#a1a9b6}',
       '.hu2-sidast{display:flex;align-items:center;gap:8px;white-space:nowrap}',
@@ -327,6 +334,25 @@
   // ── Listasíðan ───────────────────────────────────────────────────────────────────────────────────────
   function hnod(k) { return k.split('').map(c => '<span class="hu2-hnod ' + c + '" aria-hidden="true"></span>').join(''); }
   function plata(a) { const st = STODUR[a.stada] || STODUR.bidur; return '<span class="hu2-pl ' + st.cls + '"><i aria-hidden="true"></i>' + esc(st.t) + '</span>'; }
+  // Síðasti póstur í samskiptunum (sidast_post_* úr innsoginu): hver sendi, hvenær, efni og upphaf textans.
+  // Svartexti er klipptur á undan tilvitnun í fyrri póst („On … wrote:", „skrifaði …:", „From:").
+  function samskiptiHtml(a, x) {
+    if (!a.sidast_post_at) return '<span class="hu2-sk-h"><span class="hu2-dot ' + x.dot + '"></span><span class="hu2-skyr">' + esc(x.sidastT) + '</span></span>';
+    const fra = a.sidast_post_fra || 'okkur';
+    const chip = fra === 'skil' ? '<span class="hu2-chip hu2-chip-sm raud">Skil</span>' : fra === 'okkur' ? '<span class="hu2-chip hu2-chip-sm dokk">Frá okkur</span>' : fra === 'sjalfvirkt' ? '<span class="hu2-chip hu2-chip-sm">Sjálfvirkt</span>' : '<span class="hu2-chip hu2-chip-sm gull">Frá þeim</span>';
+    let t = String(a.sidast_post_texti || '');
+    const k = t.search(/(\bOn .{5,80} wrote:|\b(mán|þri|mið|fim|fös|lau|sun)\.,? \d{1,2}\. \w+\.? \d{4} kl\.|skrifaði [^:]{2,80}:|\bFrom: |\bFrá: |-----\s*(Original|Forwarded|Upprunaleg)|________)/i);
+    if (k > 20) t = t.slice(0, k);
+    t = t.replace(/\s+/g, ' ').trim();
+    if (fra === 'okkur') {
+      // ávarpið burt: „Góðan dag Berglind og Gunnar," (nafn + greinarmerki innan 40 stafa), annars aðeins ávarpsorðið sjálft
+      const m1 = /^(Góðan dag(?:inn)?|Sæl(?:l|ar|ir)?)\s+([^,.!\n]{1,40})\s*[,.!]\s*/i.exec(t);
+      t = m1 ? t.slice(m1[0].length) : t.replace(/^(Góðan dag(?:inn)?|Sæl(?:l|ar|ir)?)\s*[,.!]?\s*/i, '');
+    }
+    return '<div class="hu2-sk-h">' + chip + '<span class="hu2-mono">' + esc(fmtD(a.sidast_post_at)) + '</span>' + (x.d != null && a.stada === 'bidur' ? '<span class="hu2-skyr">· ósvarað í ' + esc(dagaOrd(x.d)) + '</span>' : '') + '<span class="hu2-dot ' + x.dot + '" title="' + esc(x.sidastT) + '" style="margin-left:auto"></span></div>' +
+      '<span class="hu2-sk-e">' + esc(a.sidast_post_efni || '(ekkert efni)') + '</span>' +
+      (t ? '<span class="hu2-sk-t">' + esc(t) + '</span>' : '');
+  }
   function render() {
     const main = document.getElementById('hu-main'); if (!main) return;
     const alla = S.rows, af = alla.map(afleitt);
@@ -377,20 +403,17 @@
             siur.map(x => '<button type="button" class="' + (S.sia === x[0] ? 'is-on' : '') + '" data-act="sia" data-k="' + x[0] + '"' + (x[0] === 'stjarna' ? ' aria-label="Eftirlæti"' : '') + '>' + (x[0] === 'stjarna' ? IK.stjarna + 'Eftirlæti' : esc(x[1])) + ' <span>' + x[2] + '</span></button>').join('') +
           '</div><span class="hu2-skel-rod">Röðun: eftirfylgni fyrst · ' + listi.length + ' af ' + K.alls + '</span></div>' +
           (listi.length ? '<div class="hu2-tbw"><table class="hu2-tafla"><thead><tr>' +
-            '<th style="width:26%">Fyrirtæki</th><th style="width:20%">Tengiliður</th><th class="fela">Sími</th><th class="fela">Herferð</th><th class="fela">Sent</th><th>Síðast</th><th>Staða</th><th>Næsta skref</th><th class="fela">Fasteignir</th><th style="width:48px"><span style="position:absolute;width:1px;height:1px;overflow:hidden">Aðgerðir</span></th>' +
+            '<th class="hu2-c-nafn">Fyrirtæki</th><th class="hu2-c-teng">Tengiliður</th><th class="hu2-c-sk">Samskipti · síðasti póstur</th><th class="hu2-c-st">Staða</th><th class="hu2-c-naesta">Næsta skref</th><th class="hu2-c-adg"><span style="position:absolute;width:1px;height:1px;overflow:hidden">Aðgerðir</span></th>' +
             '</tr></thead><tbody>' + listi.map(a => {
               const x = afleitt(a);
               return '<tr class="r-' + x.st.cls + (S.opinn === a.id ? ' is-open' : '') + '" data-id="' + a.id + '">' +
-                '<td><span class="hu2-nafn">' + (a.stjarna ? IK.stjarna : '') + esc(a.nafn) + '</span><span class="hu2-sub">' + esc(a.len || '') + '</span></td>' +
-                '<td><span style="display:block;font-weight:500">' + esc(a.tengilidur || '—') + '</span><span class="hu2-mono" style="font-size:11px">' + esc(a.netfang) + '</span></td>' +
-                '<td class="fela"><span class="hu2-mono' + (a.simi ? '' : ' dauf') + '">' + esc(a.simi || '[vantar]') + '</span></td>' +
-                '<td class="fela">' + (a.herferd ? '<span class="hu2-chip">' + esc(a.herferd) + '</span>' : '') + '</td>' +
-                '<td class="fela"><span class="hu2-mono">' + esc(fmtD(a.fyrst_sent_at)) + '</span></td>' +
-                '<td><span class="hu2-sidast" title="' + esc(x.sidastT) + '"><span class="hu2-dot ' + x.dot + '"></span><span class="hu2-mono">' + esc(fmtD(x.sidast) || '—') + '</span></span></td>' +
-                '<td>' + plata(a) + '</td>' +
-                '<td><span class="hu2-naesta ' + x.ncls + '">' + esc(x.naesta) + '</span></td>' +
-                '<td class="fela"><span class="hu2-mono' + (x.fjFast ? '' : ' dauf') + '">' + (x.fjFast ? x.fjFast + (x.taeki ? ' · ~' + x.taeki + ' tæki' : '') : '—') + '</span></td>' +
-                '<td><button type="button" class="hu2-silfur hu2-ib" data-act="meira" data-id="' + a.id + '" aria-label="Fleiri aðgerðir" aria-haspopup="menu" aria-expanded="false">' + IK.meira + '</button></td>' +
+                '<td class="hu2-c-nafn"><span class="hu2-nafn">' + (a.stjarna ? IK.stjarna : '') + esc(a.nafn) + '</span><span class="hu2-sub">' + esc(a.len || '') + (x.fjFast ? ' · ' + x.fjFast + ' fasteign' + (x.fjFast === 1 ? '' : 'ir') + (x.taeki ? ' · ~' + x.taeki + ' tæki' : '') : '') + '</span>' +
+                  (a.herferd ? '<span class="hu2-chip hu2-chip-sm">' + esc(a.herferd) + '</span>' : '') + '</td>' +
+                '<td class="hu2-c-teng"><span style="display:block;font-weight:500">' + esc(a.tengilidur || '—') + '</span><span class="hu2-mono" style="font-size:11px;white-space:normal;word-break:break-all">' + esc(a.netfang) + '</span><span class="hu2-mono' + (a.simi ? '' : ' dauf') + '" style="display:block;font-size:11px">' + esc(a.simi || '[sími vantar]') + '</span></td>' +
+                '<td class="hu2-c-sk">' + samskiptiHtml(a, x) + '</td>' +
+                '<td class="hu2-c-st">' + plata(a) + '</td>' +
+                '<td class="hu2-c-naesta"><span class="hu2-naesta ' + x.ncls + '">' + esc(x.naesta) + '</span></td>' +
+                '<td class="hu2-c-adg"><button type="button" class="hu2-silfur hu2-ib" data-act="meira" data-id="' + a.id + '" aria-label="Fleiri aðgerðir" aria-haspopup="menu" aria-expanded="false">' + IK.meira + '</button></td>' +
               '</tr>';
             }).join('') + '</tbody></table></div>'
           : '<div class="hu2-tomt">' + (S.hladid ? 'Enginn aðili passar við síuna.' : 'Sæki listann…') + '</div>') +
@@ -647,7 +670,8 @@
     const mm = { message_id: m.message_id, account: 'eldklar@eldklar.is', sender_name: m.sender_name || a.tengilidur || a.nafn, from: m.sender_email, subject: m.subject || '', body_preview: m.body_preview || '', snippet: m.snippet || '' };
     mm._onSent = async () => {
       const g = gatlistiAf(a); const s = g.find(x => x.k === 'svar'); if (s && !s.done) { s.done = true; s.dags = fmtD(new Date()); }
-      await vista(a.id, { sidast_fra_okkur_at: new Date().toISOString(), gatlisti: g.map(x => ({ k: x.k, t: x.t, done: x.done, dags: x.dags })) });
+      const nu = new Date().toISOString();
+      await vista(a.id, { sidast_fra_okkur_at: nu, sidast_post_at: nu, sidast_post_fra: 'okkur', sidast_post_efni: 'Re: ' + String(m.subject || '').replace(/^((re|sv|svar|fw|fwd)\s*:\s*)+/i, ''), sidast_post_texti: 'Svarað í þræði úr eldklar@', gatlisti: g.map(x => ({ k: x.k, t: x.t, done: x.done, dags: x.dags })) });
       toast('Svarið sent úr eldklar@ · birtist í samskiptum eftir næsta innsog'); teiknaSpjald(); render();
     };
     try { ReikningaPostur.replyTo(mm); } catch (e) { toast('Svar-glugginn opnaðist ekki: ' + ((e && e.message) || e), true); }
@@ -695,7 +719,7 @@
       try { r = await AppMail.send({ from: FRA, to: [til], subject: ef, html, inReplyTo: iThraedi ? okkar.message_id : undefined }); j = await r.json(); } catch (e2) { r = { ok: false }; j = { error: String((e2 && e2.message) || e2) }; }
       if (!r.ok) { b.disabled = false; st.textContent = 'Sending mistókst: ' + esc(j.error || j.message || ('HTTP ' + r.status)) + ' — ekkert var sent.'; st.className = 'hu2-stada-l villa'; return; }
       const nu = new Date().toISOString();
-      const br = { sidast_fra_okkur_at: nu };
+      const br = { sidast_fra_okkur_at: nu, sidast_post_at: nu, sidast_post_fra: 'okkur', sidast_post_efni: ef, sidast_post_texti: tx.replace(/\s+/g, ' ').slice(0, 400) };
       if (til !== a.netfang) { br.netfang = til; br.len = til.split('@')[1]; }
       if (a.stada === 'rangt') { br.stada = 'bidur'; br.skiladist_ekki = false; }
       const g = gatlistiAf(a); const s = g.find(x => x.k === 'sent'); if (s && !s.done) { s.done = true; s.dags = fmtD(new Date()); } br.gatlisti = g.map(x => ({ k: x.k, t: x.t, done: x.done, dags: x.dags }));

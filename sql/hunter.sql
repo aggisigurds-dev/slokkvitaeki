@@ -189,3 +189,6 @@ grant execute on function public.hunter_innsog(int) to anon, authenticated;
 -- pg_cron: á 15 mín fresti, 7 daga gluggi
 select cron.schedule('hunter-innsog', '7,22,37,52 * * * *', $$select count(*) from public.hunter_innsog(7)$$)
 where not exists (select 1 from cron.job where jobname = 'hunter-innsog');
+
+-- 26.10.2026 (seinna): nýjasti póstur geymdur á aðilanum fyrir listann — sjá migration hunter_sidasti_postur í Supabase
+-- (dálkar sidast_post_at, sidast_post_fra okkur|theim|sjalfvirkt|skil, sidast_post_efni, sidast_post_texti; hunter_innsog() fyllir þá).
