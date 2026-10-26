@@ -357,11 +357,12 @@
      */
     let eftir = null, tilraun = 0;
     const sent = fingrafar({ o: order, h: hidden });
-    while (ok === true && tilraun < 3) {
+    /* 26.10.2026 (Agnar: „get aldrei stjórnað þessu almennilega"): vistun lá á þjóni 14:34:02 (audit_vernd) en þrír lestrar á ~1 s sáu enn gömlu röðina → „ber EKKI sömu röð"; seinni Vista-smellur tókst. Nú allt að 8 lestrar á 600 ms. */
+    while (ok === true && tilraun < 8) {
       eftir = await lesaAfThjoni();
       if (eftir && fingrafar(eftir) === sent) break;
       tilraun++;
-      if (tilraun < 3) await new Promise(r => setTimeout(r, 300));
+      if (tilraun < 8) await new Promise(r => setTimeout(r, 600));
     }
     const stadfest = !!eftir && fingrafar(eftir) === sent;
     if (!stadfest) {
