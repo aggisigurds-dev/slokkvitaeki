@@ -14,3 +14,10 @@ update stolpi_hreyfingar
    set heimild = coalesce(heimild,'') || ' | 26.10.2026: merkt villa (var ' || tegund || ') — Agnar: „tvígreiðslan í feb er örugglega villa"; tekin út af hreyfingaryfirliti',
        tegund = 'villa'
  where id in (545,546,547,548) and kt10 = '5101170690' and dags = '2026-02-11';
+
+-- Síðar sama dag (Agnar: „mátt taka mismuninn frá 2025 út líka, það hefur örugglega verið frágengið"):
+-- greiðsla á kröfu 104095 (19.09.2025, 32.868 kr) var fyrir R-107256 sem hafði verið kreditfærður (107266).
+update stolpi_hreyfingar
+   set heimild = coalesce(heimild,'') || ' | 26.10.2026: merkt villa (var ' || tegund || ') — greiðsla á kröfu 104095 fyrir R-107256 sem var kreditfærður (107266); Agnar: „mismunurinn frá 2025 hefur örugglega verið frágenginn"',
+       tegund = 'villa'
+ where id in (1908,1909) and kt10 = '5101170690' and krafa_nr = '104095';
