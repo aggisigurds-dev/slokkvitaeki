@@ -2717,7 +2717,7 @@
     }));
   }
   function batHaedir(g) {
-    const t = (g && g.teikn) || {}, ut = [];
+    const t = (g && g.teikn) || {}, ut = [], saman = new Set();
     (t.bord || []).forEach((b) => (b.bord.haedir || []).map((h, i) => ({ h, i })).sort((a, z) => (HL.rod(HL.lykill(a.h.nafn)) - HL.rod(HL.lykill(z.h.nafn))) || (a.i - z.i)).forEach(({ h, i }) => {
       const url = h.image_url || '';
       if (!url || /^data:/.test(url)) return;
@@ -2725,6 +2725,10 @@
       const pdf = /\.pdf(\.info)?(\?|#|$)/i.test(innri) ? innri : null;
       const fr = h.frum && h.frum.b > 0 && h.frum.h > 0 ? h.frum : null;
       const sk = fr && h.skurdur && h.skurdur.w > 0 && h.skurdur.h > 0 ? h.skurdur : (fr ? { x: 0, y: 0, w: fr.b, h: fr.h } : null);
+      // sama blað og sami skurður á tveimur borðum sama staðfangs (húsfélag + íbúðir í sama húsi) = ein hæð, ekki tveir flipar
+      const eins = url + '|' + JSON.stringify(sk);
+      if (saman.has(eins)) return;
+      saman.add(eins);
       const tp = [];
       (t.tp || []).filter((x) => x.co && +x.co.id === +b.co.id).forEach((x) => (x.haedir || []).forEach((hh) => { if (hh.haedId === String(h.id)) tp.push.apply(tp, hh.takn); }));
       ut.push({ lykill: 'b' + b.co.id + ':' + (h.id || i), heiti: h.nafn || ('Hæð ' + (i + 1)), undir: b.co.nafn + ' · Teikning', kind: 'bord', h, pdf, mynd: pdf ? null : url, fr, sk, tp });
