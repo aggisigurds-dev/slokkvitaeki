@@ -472,21 +472,40 @@
      pöntunina sem erindi (kind pontun) um sömu leið og önnur erindi, svo hún birtist undir Erindi og á Þjónustuborðinu. */
   var karfa = [];
   function kjSyn() { return !!(synOf().serkjor && state.data && state.data.serkjor && state.data.serkjor.lidir && state.data.serkjor.lidir.length); }
+  var kjAllar = false;   // „Sýna allar stærðir og gerðir" — annars aðeins fulltrúalínurnar (adal)
+  function kjPct(l) { var p = l.fullt_an ? (1 - l.verd_an / l.fullt_an) * 100 : 0; return p > 0.05 ? p.toFixed(1).replace('.', ',') + '%' : '0%'; }
   function kjRow(l) {
-    var pct = l.afsl_pct > 0 ? '<span class="pct on">−' + l.afsl_pct + ' %</span>' : '<span class="pct">—</span>';
-    return '<tr><td><span class="bname" style="font-size:16px">' + esc(l.heiti) + '</span>' + (l.kjor === 'listaverd' ? ' <span class="dim">listaverð</span>' : '') + '</td>' +
-      '<td class="r num">' + esc(fmtKr(l.fullt_an)) + '</td><td class="r num dim">' + esc(fmtKr(l.fullt_med)) + '</td>' +
+    var p = kjPct(l), pct = p !== '0%' ? '<span class="pct on">−' + p + '</span>' : '<span class="pct">0%</span>';
+    return '<tr' + (l.adal ? '' : ' class="kj-auka"') + '><td><span class="bname" style="font-size:16px">' + esc(l.heiti) + '</span></td>' +
+      '<td class="r num dim">' + esc(fmtKr(l.fullt_med)) + '</td><td class="r num">' + esc(fmtKr(l.fullt_an)) + '</td>' +
       '<td class="r">' + pct + '</td>' +
-      '<td class="r num verd">' + esc(fmtKr(l.verd_an)) + '</td><td class="r num">' + esc(fmtKr(l.verd_med)) + '</td>' +
+      '<td class="r num verd">' + esc(fmtKr(l.verd_an)) + '</td>' +
       '<td class="r"><button type="button" class="pdf" data-kj-panta="' + l.vara_id + '" title="Bæta í pöntun">Panta</button></td></tr>';
+  }
+  function kjLead(s) {
+    var L = s.lidir, nafn = ((state.data.account && state.data.account.name) || 'Félagið').replace(/\s+(ehf\.?|hf\.?|slf\.?)$/i, '');
+    var yf = L.filter(function (l) { return l.flokkur === 'yfirferd' && l.kjor === 'samningsverd'; })[0];
+    var hl = L.filter(function (l) { return l.flokkur === 'hledsla' && l.kjor === 'samningsverd'; })[0];
+    var sl = L.filter(function (l) { return l.flokkur === 'slanga' && l.kjor === 'samningsverd'; })[0];
+    var t = [];
+    if (yf) t.push('Yfirferð slökkvitækis kostar <b>' + esc(fmtKr(yf.verd_an)) + '</b> án vsk');
+    if (hl) t.push((yf ? 'og hleðsla ' : 'Hleðsla kostar ') + '<b>' + esc(fmtKr(hl.verd_an)) + '</b> án vsk');
+    var thj = t.length ? t.join(' ') + ', á hvert tæki.' : 'Þjónustan er á verðskrárverði.';
+    if (sl) thj += ' Yfirferð brunaslöngu <b>' + esc(fmtKr(sl.verd_an)) + '</b> án vsk.';
+    $('#kj-lead-thj').innerHTML = thj;
+    $('#kj-lead-taeki').innerHTML = s.ny_taeki_pct ? esc(nafn) + ' fær <b>' + esc(String(s.ny_taeki_pct).replace('.', ',')) + '% afslátt af verðskrárverði</b> allra nýrra slökkvitækja.' : 'Ný slökkvitæki eru á verðskrárverði.';
   }
   function renderSerkjor() {
     var tab = document.querySelector('nav .tab[data-view="serkjor"]'); if (tab) tab.classList.toggle('hidden', !kjSyn());
     if (!kjSyn()) return;
     var s = state.data.serkjor, L = s.lidir;
     $('#kj-intro').textContent = s.heimild || '';
-    $('#kj-thj').innerHTML = L.filter(function (l) { return l.flokkur !== 'taeki'; }).map(kjRow).join('') || '<tr><td colspan="7" class="empty">Engin þjónustuverð skráð</td></tr>';
-    $('#kj-taeki').innerHTML = L.filter(function (l) { return l.flokkur === 'taeki'; }).map(kjRow).join('') || '<tr><td colspan="7" class="empty">Engin tæki skráð</td></tr>';
+    kjLead(s);
+    var thj = L.filter(function (l) { return l.flokkur !== 'taeki' && (kjAllar || l.adal); });
+    $('#kj-thj').innerHTML = thj.map(kjRow).join('') || '<tr><td colspan="6" class="empty">Engin þjónustuverð skráð</td></tr>';
+    var auka = L.filter(function (l) { return l.flokkur !== 'taeki' && !l.adal; }).length;
+    var meira = $('#kj-meira'); if (meira) { meira.classList.toggle('hidden', !auka); meira.textContent = kjAllar ? 'Sýna aðeins helstu línur' : 'Sýna allar stærðir og gerðir (' + auka + ' til viðbótar)'; }
+    $('#kj-taeki').innerHTML = L.filter(function (l) { return l.flokkur === 'taeki'; }).map(kjRow).join('') || '<tr><td colspan="6" class="empty">Engin tæki skráð</td></tr>';
     $('#kj-fot').textContent = (s.ath ? s.ath + ' ' : '') + 'Verð í íslenskum krónum, virðisaukaskattur 24 %. „Listaverð" merkir lið án sérkjara. Pöntun af þessari síðu berst okkur sem erindi; við staðfestum verð og afhendingu áður en reikningur er gerður.';
     $('#kj-eign').innerHTML = '<option value="">Eign — veldu (valfrjálst)</option>' + (state.data.buildings || []).map(function (b) { return '<option value="' + b.id + '">' + esc(b.nafn) + '</option>'; }).join('');
     renderKarfa();
@@ -509,8 +528,9 @@
     $('#kj-samtals').textContent = 'Samtals ' + fmtKr(an) + ' án vsk · ' + fmtKr(medv) + ' m/vsk';
   }
   document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('[data-kj-panta],[data-kj-fjar],#kj-senda'); if (!a) return;
+    var a = e.target.closest && e.target.closest('[data-kj-panta],[data-kj-fjar],#kj-senda,#kj-meira'); if (!a) return;
     e.preventDefault();
+    if (a.id === 'kj-meira') { kjAllar = !kjAllar; renderSerkjor(); return; }
     if (a.hasAttribute('data-kj-panta')) {
       var l = kjLidur(a.getAttribute('data-kj-panta')); if (!l) return;
       var ex = karfa.filter(function (k) { return k.vara_id === l.vara_id; })[0];

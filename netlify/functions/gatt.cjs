@@ -1391,7 +1391,9 @@ exports.handler = async (event) => {
           // Kúnninn borgar aldrei meira en listaverð: fast samningsverð (t.d. hleðsla 4.400) gildir aðeins þar sem það er lægra
           // en listaverð tegundarinnar (CO₂ 2 kg hleðsla er 3.400 á lista → listaverð ræður).
           const va = verdAn == null ? fulltAn : Math.min(fulltAn, Math.round(verdAn));
-          lidir.push({ vara_id: v.id, heiti: String(v.nafn).replace(/yfirferd$/i, 'yfirferð'), flokkur, fullt_an: fulltAn, fullt_med: med(fulltAn, v.vsk_prosenta),
+          // adal = fulltrúalínan sem sést fyrst (6 L / 6 kg / CO₂ 5 kg, slanga, skýrsla, akstur, öll tæki); hinar undir „Sýna allar stærðir"
+          const adal = flokkur === 'taeki' || ['slanga', 'skyrsla', 'akstur'].includes(flokkur) || [27, 28, 30, 19, 6, 38].includes(Number(v.id));
+          lidir.push({ vara_id: v.id, heiti: String(v.nafn).replace(/yfirferd$/i, 'yfirferð'), flokkur, adal, fullt_an: fulltAn, fullt_med: med(fulltAn, v.vsk_prosenta),
             afsl_pct: Math.max(0, Math.round((1 - va / fulltAn) * 100)), verd_an: va, verd_med: med(va, v.vsk_prosenta),
             kjor: (verdAn == null || va >= fulltAn) ? 'listaverd' : (kjor || 'samningsverd') });
         };

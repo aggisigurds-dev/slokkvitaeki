@@ -24,6 +24,10 @@
   .kj-lina .x{border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px}
   .kj-row{margin-top:12px}
   .kj-row select,.kj-row textarea{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:4px;background:var(--well);box-shadow:var(--well-sh);font-family:var(--ui);font-size:14px;color:var(--ink)}
+  .kj-lead{font-size:15px;line-height:1.55;color:var(--ink);margin:-2px 0 12px;max-width:760px}
+  .kj-lead b{font-weight:700}
+  .kj-meira{display:inline-block;margin:8px 0 2px;font-size:13px;color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line2)}
+  .kj-meira:hover{border-color:var(--accent)}
   .kj-fot{margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.55;max-width:760px}
 </style>
 <title>Þjónustuvefur — Brunahólf / Slökkvitæki ehf.</title>
@@ -1549,14 +1553,17 @@
       <div class="kicker">Samningskjör ykkar hjá Slökkvitækjum ehf.</div>
       <h2 class="page">Sérkjör og verðskrá</h2>
       <p class="kj-intro" id="kj-intro"></p>
-      <h3 class="kj-h">Skoðun, hleðsla og þjónusta</h3>
+      <h3 class="kj-h">Þjónusta</h3>
+      <p class="kj-lead" id="kj-lead-thj"></p>
       <div class="tbl-wrap"><table class="kj-tbl">
-        <thead><tr><th>Liður</th><th class="r">Fullt verð án vsk</th><th class="r">Fullt verð m/vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r">Ykkar verð m/vsk</th><th class="r"></th></tr></thead>
+        <thead><tr><th>Þjónusta</th><th class="r">Fullt verð m/vsk</th><th class="r">Fullt verð án vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r"></th></tr></thead>
         <tbody id="kj-thj"></tbody>
       </table></div>
-      <h3 class="kj-h">Ný slökkvitæki — svona koma þau út á ykkar kjörum</h3>
+      <a href="#" class="kj-meira" id="kj-meira">Sýna allar stærðir og gerðir</a>
+      <h3 class="kj-h">Ný tæki</h3>
+      <p class="kj-lead" id="kj-lead-taeki"></p>
       <div class="tbl-wrap"><table class="kj-tbl">
-        <thead><tr><th>Liður</th><th class="r">Fullt verð án vsk</th><th class="r">Fullt verð m/vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r">Ykkar verð m/vsk</th><th class="r"></th></tr></thead>
+        <thead><tr><th>Nýtt tæki</th><th class="r">Verðskrá m/vsk</th><th class="r">Verðskrá án vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r"></th></tr></thead>
         <tbody id="kj-taeki"></tbody>
       </table></div>
       <div class="kj-karfa hidden" id="kj-karfa">
@@ -1782,6 +1789,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261026j"></script>
+<script src="/gatt/portal.js?v=20261026k"></script>
 </body>
 </html>
