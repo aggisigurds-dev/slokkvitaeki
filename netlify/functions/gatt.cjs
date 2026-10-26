@@ -1397,14 +1397,22 @@ exports.handler = async (event) => {
             afsl_pct: Math.max(0, Math.round((1 - va / fulltAn) * 100)), verd_an: va, verd_med: med(va, v.vsk_prosenta),
             kjor: (verdAn == null || va >= fulltAn) ? 'listaverd' : (kjor || 'samningsverd') });
         };
+        // Flatur samningsafsláttur (26.10.2026, Steypustöðin): sumir samningar nefna ENGIN föst verð heldur
+        // „X% afsláttur af öllum einingarverðum" (þjónustusamningur 06.05.2021 — 25%). Fast verð myndi frysta
+        // töluna gagnvart verðskránni; `pct` reiknast af LIFANDI listaverði svo hækkun verðskrár skili sér.
+        // Fast verð á einstakan lið (t.d. akstur) gengur framar prósentunni.
+        const pct = fast(cfg.pct);
+        const kjorVerd = (fastV, v) => (fastV != null ? { verd: fastV, kjor: 'samningsverd' }
+          : pct ? { verd: Number(v.verd_an_vsk) * (1 - pct / 100), kjor: 'afslattur' } : { verd: null, kjor: 'listaverd' });
         const ROD = { yfirferd: 1, hledsla: 2, slanga: 3, skyrsla: 4, akstur: 5, taeki: 6 };
         const THJ = /^(Duft \d+ kg\. ABC (yfirferð|hleðsla)|Léttvatnstækis? \d+L\. (yfirferð|hleðsla)|CO₂ [25] kg\. (yfirferð|yfirferd|hleðsla)|Slökkvitæki 9L léttvatn yfirferð)$/i;
         vorur.forEach((v) => {
           const n = String(v.nafn || '').trim();
-          if (v.flokkur === 'Þjónusta' && THJ.test(n)) { const hl = /hleðsla/i.test(n); baeta(v, hl ? 'hledsla' : 'yfirferd', fast(hl ? cfg.hledsla : cfg.yfirferd)); }
-          else if (v.flokkur === 'Þjónusta' && /^Yfirferð Brunaslanga$/i.test(n)) baeta(v, 'slanga', fast(cfg.slanga));
-          else if (v.flokkur === 'Vinna og akstur' && /^Skýrslugerð/i.test(n)) baeta(v, 'skyrsla', fast(cfg.skyrsla));
-          else if (v.flokkur === 'Vinna og akstur' && /^Akstur$/i.test(n)) baeta(v, 'akstur', fast(cfg.akstur));
+          const leggja = (flokkur, fastV) => { const k = kjorVerd(fastV, v); baeta(v, flokkur, k.verd, k.kjor); };
+          if (v.flokkur === 'Þjónusta' && THJ.test(n)) { const hl = /hleðsla/i.test(n); leggja(hl ? 'hledsla' : 'yfirferd', fast(hl ? cfg.hledsla : cfg.yfirferd)); }
+          else if (v.flokkur === 'Þjónusta' && /^Yfirferð Brunaslanga$/i.test(n)) leggja('slanga', fast(cfg.slanga));
+          else if (v.flokkur === 'Vinna og akstur' && /^Skýrslugerð/i.test(n)) leggja('skyrsla', fast(cfg.skyrsla));
+          else if (v.flokkur === 'Vinna og akstur' && /^Akstur$/i.test(n)) leggja('akstur', fast(cfg.akstur));
           else if (v.flokkur === 'Slökkvitæki' && (v.forsida === true || Number(v.id) === 24)) { const p = fast(cfg.ny_taeki_pct); baeta(v, 'taeki', p ? Number(v.verd_an_vsk) * (1 - p / 100) : null, p ? 'afslattur' : 'listaverd'); }
         });
         // Röð innan skoðunar/hleðslu: léttvatn → duft → CO₂, svo eftir stærð; tækin halda vörulistaröðinni (rodun)
