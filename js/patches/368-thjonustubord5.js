@@ -1309,7 +1309,12 @@
       '@container rail (min-width: 1240px){.skgrid{grid-template-columns:repeat(5,minmax(0,1fr))}}',
       // Þak á textareitinn svo eitt langt spjald teygi ekki alla röðina — raðirnar
       // standast á og 2–3 sjást í einu. Handfangið í horninu stækkar það áfram.
-      '.skgrid .skc .skt{max-height:120px}',
+      '.skgrid .skc:not([data-h]) .skt{max-height:120px}',
+      // 26.10.2026 (Agnar: „I want to be able to pull the box up, down and to the side"): handfangið er á SPJALDINU, ekki
+      // textareitnum (þakið 120 px stoppaði það). Stærðin (dálkar + hæð) er vistuð á spjaldinu svo hún fylgi milli tækja.
+      '.skc{resize:both;overflow:auto;min-height:96px;min-width:0}',
+      '.skc[data-h]{height:var(--skh)}.skc[data-h] .skt{flex:1 1 auto;min-height:0;max-height:none;height:auto}',
+      '.skc .skt{resize:none}',
       '.skc{display:flex;flex-direction:column;gap:4px;padding:6px 8px 8px;border:1px solid var(--rule);border-top:4px solid var(--rule3);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
       '.skc.yfir{outline:2px dashed var(--g6);outline-offset:2px}.skh{display:flex;align-items:center;gap:4px}',
       '.skgrip{cursor:grab;color:var(--mute);font-size:15px;padding:0 4px 0 0;user-select:none}',
@@ -1328,7 +1333,7 @@
       '.skc.skjalyfir::after{content:"Slepptu til að hengja við";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,253,247,.88);font:700 12.5px var(--body);color:#7a4e06;pointer-events:none;z-index:2}',
       '.skla.skbid{border-style:dashed;background:#fffdf7;color:#7a4e06;animation:skpuls 1.2s ease-in-out infinite}.skla.skvilla{animation:none;border-color:var(--terra);color:var(--terra)}',
       '@keyframes skpuls{0%,100%{opacity:1}50%{opacity:.55}}@media (prefers-reduced-motion: reduce){.skla.skbid{animation:none}}',
-      '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}',
+      '.skf{font-size:11.5px;color:var(--mute)}.skstada{font-size:11.5px;color:var(--mute)}.skstadarod{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
       '.sknew{min-height:96px;border:1px dashed var(--edge2);border-radius:4px;background:transparent;font:600 13px var(--body);color:var(--mute);cursor:pointer}.sknew:hover{background:#fffdf7;color:var(--ink)}',
       // 17.09.2026 (Agnar: „svolítið chaoslegt"): færri hnappar, meiri andrými,
       // sterkari texti — og leiðbeinandi stafirnir næstum ósýnilegir.
@@ -4257,7 +4262,9 @@
         // 17.09.2026: punktaröðin (6 hnappar) og örvarnar tvær fóru — liturinn er nú
         // ein ræma efst sem smellt er á til að skipta, og fært er með því að draga
         // hausinn sjálfan (ekki bara ⠿). Það tók fjóra hnappa af hverju spjaldi.
-        return '<div class="skc' + (cd.mynd ? ' harmynd' : '') + '" data-skid="' + id + '">' +
+        return '<div class="skc' + (cd.mynd ? ' harmynd' : '') + '" data-skid="' + id + '"' +
+          (cd.h > 0 ? ' data-h="' + (+cd.h | 0) + '"' : '') +
+          ((cd.cols > 1 || cd.h > 0) ? ' style="' + (cd.h > 0 ? '--skh:' + (+cd.h | 0) + 'px;' : '') + (cd.cols > 1 ? 'grid-column:span ' + (+cd.cols | 0) + ';' : '') + '"' : '') + '>' +
           '<button type="button" class="skstrip" data-t5="sk-type" data-skid="' + id + '" style="background:' + (t ? t[1] : 'var(--rule3)') + '" title="' + (t ? esc(t[0]) : 'Enginn litur') + ' — smelltu til að skipta um lit" aria-label="Litur spjalds"></button>' +
           '<div class="skh" draggable="true" data-skdrag="' + id + '" title="Dragðu spjaldið til að færa það">' +
             '<span class="skgrip" aria-hidden="true">⠿</span><span class="grow"></span>' +
@@ -4276,7 +4283,8 @@
       // 19.09.2026 (Agnar: „það á bara að vera taflan"): áríðandi-listinn er farinn héðan í sína eigin einingu (25 Áríðandi).
       const body = '<div class="skwrap">' +
         '<div class="skgrid">' + kort + '<button type="button" class="sknew" data-t5="sk-ny" draggable="true" data-skdrag="__ny" title="Smelltu — eða dragðu autt spjald þangað sem þú vilt hafa það">+ Nýtt spjald</button></div>' +
-        '<div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div>' +
+        '<div class="skstadarod"><div class="skstada">' + esc(S.skStada || 'Allt vistast sjálfkrafa. Límdu skjáskot í spjald, eða dragðu skjal eða tengil á það.') + '</div>' +
+          '<button type="button" class="btn sm" data-t5="sk-vista" title="Vistar það sem er í ritun og sækir nýjustu spjöldin af þjóninum (fyrir önnur tæki)">Vista og sækja</button></div>' +
         merktHtml(n) + '</div>';
       const nMerkt = merktAMig(n).length;
       return modPanel(k, cards.length + ' spjöld' + (nMerkt ? ' · ' + nMerkt + ' merkt á þig' : ''), body, '<button type="button" class="btn gold sm" data-t5="sk-ny">+ Nýtt spjald</button>');
@@ -5153,6 +5161,68 @@
     _skRod = verk.catch(() => false);
     return verk;
   }
+  // 26.10.2026 — stærð spjalds: þegar sleppt er handfanginu er mæld breidd → dálkar (grid-column: span) og hæð → px, vistað á
+  // SPJALDINU (lifir milli tækja eins og textinn). Inline-stærð vafrans er hreinsuð svo grindin ræður.
+  function skStaerdVista(el) {
+    const id = el.dataset.skid, grind = el.closest('.skgrid');
+    if (!id || !grind) return;
+    const stBreidd = el.style.width, stHaed = el.style.height;
+    if (!stBreidd && !stHaed) return;
+    const r = el.getBoundingClientRect();
+    const gap = 10, nd = Math.max(1, getComputedStyle(grind).gridTemplateColumns.split(' ').length);
+    const eining = (grind.clientWidth + gap) / nd;
+    const cols = Math.max(1, Math.min(nd, Math.round((r.width + gap) / eining)));
+    const haed = Math.max(96, Math.round(r.height));
+    el.style.width = ''; el.style.height = '';
+    const cd = cardsFor(nu()).find(x => x.id === id);
+    if (!cd) { skBeitaStaerd(); return; }   // spjald á borði annars (merkt á mig): stærð þess er ekki mín að vista
+    const nyCols = stBreidd ? cols : (cd.cols || 1), nyH = stHaed ? haed : (cd.h || 0);
+    if (nyH) { el.setAttribute('data-h', nyH); el.style.setProperty('--skh', nyH + 'px'); }
+    el.style.gridColumn = nyCols > 1 ? 'span ' + nyCols : '';
+    if (nyCols === (cd.cols || 1) && nyH === (cd.h || 0)) return;
+    vistaSpjold(l => l.map(x => x.id === id ? Object.assign({}, x, { cols: nyCols, h: nyH || undefined }) : x)).then(() => skBeitaStaerd());
+  }
+  // Stærð spjalda (cols/h) beitt á hnútana eftir hverja teikningu — samruninn í render heldur hnútum og uppfærir ekki eigindi þeirra,
+  // svo stærð sem kemur frá öðru tæki (eða úr vistun) sést ekki án þessa.
+  function skBeitaStaerd() {
+    const root = rot(); if (!root) return;
+    const m = {}; cardsFor(nu()).forEach(c => { m[c.id] = c; });
+    root.querySelectorAll('.skc[data-skid]').forEach(el => {
+      if (el.style.width || el.style.height) return;   // dráttur í gangi
+      const cd = m[el.dataset.skid]; if (!cd) return;
+      const h = +cd.h > 0 ? (+cd.h | 0) : 0, cols = +cd.cols > 1 ? (+cd.cols | 0) : 1;
+      if (h) { el.setAttribute('data-h', h); el.style.setProperty('--skh', h + 'px'); } else { el.removeAttribute('data-h'); el.style.removeProperty('--skh'); }
+      el.style.gridColumn = cols > 1 ? 'span ' + cols : '';
+    });
+  }
+  // „Vista og sækja": texti í ritun fer á þjóninn NÚNA, svo eru nýjustu stillingarnar sóttar (önnur tæki) og borðið teiknað.
+  async function skVistaOgSaekja() {
+    try { skolaAllt(); await _skRod; } catch (_) {}
+    S.skStada = 'Sæki nýjast…'; stimplaSk();
+    try {
+      await AppSettings.load();
+      S.skStada = 'Vistað og sótt kl. ' + klukka(new Date());
+    } catch (_) { S.skStada = '⚠ Náði ekki sambandi við þjóninn — textinn er enn á skjánum.'; }
+    stimplaSk(); render();
+  }
+  // Samstilling milli tækja: önnur vél breytir spjöldunum og þessi sér það ekki fyrr en síðan er endurhlaðin. Hér er lesin
+  // AÐEINS grein starfsmannsins (nokkur kB, ekki 1,4 MB blobbinn); sé hún önnur en sú sem er í minni eru stillingarnar sóttar
+  // og borðið teiknað. Aldrei á meðan verið er að skrifa (drög, fókus í reit, vistun í gangi). Aðeins LESTUR, engin skrif.
+  async function skSamstilla() {
+    try {
+      if (document.hidden) return;
+      const v = document.getElementById(VIEW_ID);
+      if (!v || !v.classList.contains('active')) return;
+      if (_vistar || Object.keys(S.skDrog).length || Object.keys(_skBid).length) return;
+      const ae = document.activeElement;
+      if (ae && ae.closest && ae.closest('.skc')) return;
+      const n = nu(), fersk = await ferskSpjold(n);
+      if (!fersk) return;
+      const sig = x => JSON.stringify((x || []).map(c => [c.id, c.slot, c.name, c.title, c.type, c.mynd, c.cols, c.h, c.verkbord_id, c.merki]));
+      if (sig(fersk) === sig(cardsFor(n))) return;
+      await AppSettings.load();
+    } catch (_) {}
+  }
   function stimplaSk() {
     const root = rot();
     if (!root) return;
@@ -5903,6 +5973,7 @@
         });
         return;
       }
+      case 'sk-vista': { skVistaOgSaekja(); return; }
       case 'sk-ny': {
         const nid = nyttSkId();
         S.open[openKey('skipulag')] = true;
@@ -6467,6 +6538,7 @@
   }
   let _stSig = '';
   const stillingaSig = () => { const n = nu(); try { return JSON.stringify([n, P(CFG_KEY + '.by_staff.' + n), jobsFor(n), cardsFor(n), folk(), P(CFG_KEY + '.hamir')]); } catch (_) { return String(Date.now()); } };
+  { const _render0 = render; render = function () { const r = _render0.apply(this, arguments); try { skBeitaStaerd(); } catch (_) {} return r; }; }
   function boot() {
     patchSwitchView();
     ensureView();
@@ -6475,8 +6547,15 @@
     window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(render, 200); });
     document.addEventListener('visibilitychange', () => {
       const v = document.getElementById(VIEW_ID);
-      if (!document.hidden && v && v.classList.contains('active')) { ferskaEiningar(); render(); }
+      if (!document.hidden && v && v.classList.contains('active')) { ferskaEiningar(); skSamstilla(); render(); }
     });
+    window.addEventListener('focus', () => { skSamstilla(); });
+    // 26.10.2026: spjald teygt með handfanginu → stærðin vistuð á þjón (pointerup er eina leiðin til að vita að dráttur endaði).
+    document.addEventListener('pointerup', e => {
+      const root = rot(); if (!root) return;
+      root.querySelectorAll('.skc').forEach(c => { if (c.style.width || c.style.height) skStaerdVista(c); });
+    });
+    setInterval(skSamstilla, 30000);
     // Stillingar breytast þegar HVAÐ SEM ER í appinu vistar — teiknað aðeins ef það snertir þetta borð.
     try {
       if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => {
