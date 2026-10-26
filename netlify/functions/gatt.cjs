@@ -121,7 +121,7 @@ function erindiRod(r, slod) {
   const lokad = ERINDI_SKREF[r.status] === 'lokid';
   const stada = lokad ? 'lokid' : (r.svarad_at ? 'svarad' : (ERINDI_SKREF[r.status] || 'mottekid'));
   const tegund = tags.includes('eldvarnabok') ? 'eldvarnabok' : tags.includes('verkbeidni') ? 'verkbeidni' : tags.includes('verkefni') ? 'verkefni'
-    : tags.includes('thjonusta') ? 'thjonusta' : tags.includes('gogn') ? 'gogn' : tags.includes('reikningur') ? 'reikningur' : tags.includes('annad') ? 'annad' : 'fyrirspurn';
+    : tags.includes('thjonusta') ? 'thjonusta' : tags.includes('gogn') ? 'gogn' : tags.includes('reikningur') ? 'reikningur' : tags.includes('pontun') ? 'pontun' : tags.includes('annad') ? 'annad' : 'fyrirspurn';
   return { id: r.id, fid: r.fyrirtaeki_id, titill: erindiTitill(r.title), lysing: r.summary || null, stada, rstada: r.status, tegund,
     dags: r.created_at, uppf: r.updated_at, frestur: r.due_at || null,
     abyrgd: ABYRGD.includes(r.abyrgd) ? r.abyrgd : 'okkar', punktur: r.punktur && typeof r.punktur === 'object' ? r.punktur : null,

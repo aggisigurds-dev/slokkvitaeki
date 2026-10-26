@@ -270,6 +270,7 @@
     var s = d.stats || {};
     var out = {
       account: d.account || {},
+      serkjor: d.serkjor || null,   // 26.10.2026: Sérkjör-flipinn (normalize sleppti lyklinum → flipinn var falinn)
       stats: [
         { k: 'Byggingar', v: s.byggingar != null ? String(s.byggingar) : '—' },
         { k: 'Slökkvitæki', v: s.taeki_alls != null ? String(s.taeki_alls) : '—' },
