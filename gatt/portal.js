@@ -481,7 +481,7 @@
       }
       var cls = (b.ontime ? 'ontime' : '') + (det ? ' clk' : '');
       return '<tr data-i="' + bi + '"' + (cls.trim() ? ' class="' + cls.trim() + '"' : '') + (det ? ' title="Opna eignasíðu"' : '') + '>' +
-        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + (b.eigandi ? ' <span class="bown" title="Eigandi / greiðandi eignarinnar">· ' + esc(b.eigandi) + '</span>' : '') + '</div></div></div></td>' +
+        '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + (b.eigandi && String(b.nafn || '').indexOf(b.eigandi) !== 0 ? ' <span class="bown" title="Eigandi / greiðandi eignarinnar">· ' + esc(b.eigandi) + '</span>' : '') + '</div></div></div></td>' +
         '<td class="num">' + (b.sl != null ? b.sl : '—') + '</td>' +
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
         '<td>' + kerfiCell(b) + '</td>' +
