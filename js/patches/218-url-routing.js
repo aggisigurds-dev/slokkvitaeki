@@ -69,7 +69,8 @@
     'thjonustu-verkstaedi': 'thjonustu-verkstaedi', thjonustuverkstaedi: 'thjonustu-verkstaedi',
     opp: 'opp',   // 📱 Öpp launcher (patch 261)
     thjonustubord: 'thjonustubord',  // 🔧 Þjónustuborð (mobíl, patch 306)
-    uppferslubord: 'uppferslubord', 'uppfærslubord': 'uppferslubord'  // Uppfærsluborð (431)
+    uppferslubord: 'uppferslubord', 'uppfærslubord': 'uppferslubord',  // Uppfærsluborð (431)
+    hunter: 'hunter', solulistar: 'hunter'   // 🎯 Hunter — sölulistar (487)
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
