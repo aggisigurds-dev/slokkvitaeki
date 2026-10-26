@@ -484,9 +484,12 @@
   }
   function kjLead(s) {
     var L = s.lidir, nafn = ((state.data.account && state.data.account.name) || 'Félagið').replace(/\s+(ehf\.?|hf\.?|slf\.?)$/i, '');
-    var yf = L.filter(function (l) { return l.flokkur === 'yfirferd' && l.kjor === 'samningsverd'; })[0];
-    var hl = L.filter(function (l) { return l.flokkur === 'hledsla' && l.kjor === 'samningsverd'; })[0];
-    var sl = L.filter(function (l) { return l.flokkur === 'slanga' && l.kjor === 'samningsverd'; })[0];
+    // 26.10.2026: samningur sem gefur FLATAN afslátt (Steypustöðin, 25% af öllum einingarverðum)
+    // merkir línurnar `afslattur`, ekki `samningsverd`. Leitin að `samningsverd` einu fann þá ekkert
+    // og spjaldið sagði „Þjónustan er á verðskrárverði" beint ofan á töflu sem sýndi −25% á hverri
+    // línu. Hér er spurt hvort liðurinn beri YFIRLEITT sérkjör — verðið kemur úr línunni sjálfri.
+    var kjarni = function (f) { return L.filter(function (l) { return l.flokkur === f && l.kjor !== 'listaverd'; })[0]; };
+    var yf = kjarni('yfirferd'), hl = kjarni('hledsla'), sl = kjarni('slanga');
     var t = [];
     if (yf) t.push('Yfirferð slökkvitækis kostar <b>' + esc(fmtKr(yf.verd_an)) + '</b> án vsk');
     if (hl) t.push((yf ? 'og hleðsla ' : 'Hleðsla kostar ') + '<b>' + esc(fmtKr(hl.verd_an)) + '</b> án vsk');
