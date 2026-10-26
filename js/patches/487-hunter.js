@@ -849,16 +849,35 @@
     window.App._huSwitchPatched = true;
   }
   function show() { ensureView(); stillar(); if (window.App && App.switchView) App.switchView(NAV_KEY); else load(); }
-  function slod() {
-    const m = /^#hunter(?:\/(\d+))?$/.exec(location.hash || ''); if (!m) return;
+  // Ræsislóðin er gripin ÞEGAR skriftan hleðst (og úr navigation-færslunni): App.init lendir á Sölu og 218 speglar
+  // #sala í slóðina áður en þessi defer-skrifta sér hana — sama gildra og 357 lýsir fyrir #company/<id>.
+  const RAESI_HASH = (() => {
+    const er = h => /^#hunter(?:\/\d+)?$/.test(h || '');
+    if (er(location.hash)) return location.hash;
+    try { const n = performance.getEntriesByType('navigation')[0]; const u = n && n.name ? new URL(n.name).hash : ''; if (er(u)) return u; } catch (_) {}
+    return '';
+  })();
+  let _raesiBeitt = false;
+  function slod(hash) {
+    const h = typeof hash === 'string' ? hash : (location.hash || '');
+    const m = /^#hunter(?:\/(\d+))?$/.exec(h); if (!m) return;
     const v = document.getElementById(VIEW_ID);
     if (!v || !v.classList.contains('active')) { try { if (window.App && App.switchView) App.switchView(NAV_KEY); } catch (_) {} }
+    try { if (location.hash !== h) history.replaceState(null, '', h); } catch (_) {}
     if (m[1]) { let n = 0; (function bid() { if (S.hladid) { if (S.opinn !== +m[1]) opnaSpjald(+m[1]); return; } if (n++ < 60) setTimeout(bid, 200); })(); }
+  }
+  function raesiSlod() {
+    if (!RAESI_HASH || _raesiBeitt) return;
+    try { if (window.UrlRouting && UrlRouting.userTouched && UrlRouting.userTouched()) { _raesiBeitt = true; return; } } catch (_) {}
+    if (/^#hunter/.test(location.hash) && document.getElementById(VIEW_ID) && document.getElementById(VIEW_ID).classList.contains('active')) { _raesiBeitt = true; slod(RAESI_HASH); return; }
+    slod(RAESI_HASH);
   }
 
   injectNav(); setTimeout(injectNav, 1000); setTimeout(injectNav, 3000);
   ensureView(); patchSwitchView();
-  window.addEventListener('hashchange', slod); setTimeout(slod, 1400);
+  window.addEventListener('hashchange', () => slod());
+  setTimeout(() => slod(), 1400);
+  [1600, 2600, 4200].forEach(ms => setTimeout(raesiSlod, ms));
   document.addEventListener('slokk-viewmode', () => { const v = document.getElementById(VIEW_ID); if (v && v.classList.contains('active')) { try { render(); } catch (_) {} } });
 
   window.Hunter = { show, load, open: opnaSpjald, saekja: () => saekjaPost(null), state: S };
