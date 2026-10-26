@@ -179,6 +179,7 @@ function reikna(gogn, stillingar) {
   const stolpi = [];
   for (const h of hreyf) {
     if (h.tegund === 'opnunarlina') continue;                      // 0 kr, birtist ekki
+    if (h.tegund === 'villa') continue;                            // 26.10.2026: lína sem Agnar hefur merkt villu (t.d. tvígreiðsla Heimaleigu 11.02.2026) — birtist ekki, telst ekki
     const T = STOLPI[h.tegund] || STOLPI.annad;
     const nr = T.nr === 'reikn' ? String(h.reikn_nr || '') : T.nr === 'krafa' ? String(h.krafa_nr || '') : '';
     const r = h.reikn_nr != null ? reiknMap.get(String(h.reikn_nr)) : null;
