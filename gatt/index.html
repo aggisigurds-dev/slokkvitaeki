@@ -7,7 +7,25 @@
      síður ólæsilegar í síma Agnars. `only light` er opt-out Blink.
      Þessi síða er ljós að hönnun — dökkir fletir hér eru stök spjöld.
      Verk 58ddf148. -->
-<style>html{color-scheme:light}html,body{color-scheme:only light}</style>
+<style>html{color-scheme:light}html,body{color-scheme:only light}
+  /* ── Sérkjör (26.10.2026) ── */
+  .kj-intro{max-width:760px;font-size:15px;line-height:1.6;color:var(--ink2);margin:0 0 18px}
+  .kj-h{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);margin:26px 0 10px}
+  .kj-tbl .pct{display:inline-block;min-width:44px;text-align:center;padding:2px 7px;border-radius:3px;border:1px solid var(--line2);background:var(--well);font-size:12px;font-weight:600;color:var(--ink)}
+  .kj-tbl .pct.on{background:var(--obsidian);color:var(--accent);border-color:#000;text-shadow:0 -1px 0 rgba(0,0,0,.9)}
+  .kj-tbl td.verd{font-weight:700;color:var(--ink)}
+  .kj-tbl .pdf.on{filter:brightness(1.18)}
+  .kj-karfa{margin-top:22px;padding:18px 20px 16px;border:1px solid var(--line);border-radius:5px;background:var(--panel);box-shadow:var(--key-sh)}
+  .kj-karfa h3{margin:4px 0 12px;font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink)}
+  .kj-lina{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .kj-lina .n{flex:1;min-width:0;font-size:14px;color:var(--ink)}
+  .kj-lina .v{font-size:13px;color:var(--ink2);white-space:nowrap}
+  .kj-lina input{width:58px;padding:6px 8px;border:1px solid var(--line2);border-radius:4px;background:var(--well);font-family:var(--ui);font-size:14px;color:var(--ink);text-align:center}
+  .kj-lina .x{border:0;background:transparent;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px}
+  .kj-row{margin-top:12px}
+  .kj-row select,.kj-row textarea{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:4px;background:var(--well);box-shadow:var(--well-sh);font-family:var(--ui);font-size:14px;color:var(--ink)}
+  .kj-fot{margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.55;max-width:760px}
+</style>
 <title>Þjónustuvefur — Brunahólf / Slökkvitæki ehf.</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
@@ -1410,6 +1428,7 @@
         <a class="tab" data-view="reikningar">Reikningar</a>
         <a class="tab hidden" data-view="verkbeidnir">Verkbeiðnir</a>
         <a class="tab hidden" data-view="erindi">Erindi<span class="nbadge hidden" id="erBadge"></span></a>
+        <a class="tab hidden" data-view="serkjor">Sérkjör</a>
         <a class="tab" data-view="skilabod">Skilaboð<span class="nbadge hidden" id="msgBadge"></span></a>
         <div class="leit hidden" id="leit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="leit-q" type="search" placeholder="Leita í eignum, verkum, skjölum…" autocomplete="off" aria-label="Leita yfir allt"><div class="leit-res hidden" id="leit-res"></div></div>
         <span class="hbtn en" id="langBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>EN</span>
@@ -1525,6 +1544,31 @@
       <div id="er-view-list"></div>
     </section>
     <!-- SKILABOÐ -->
+    <!-- ══ SÉRKJÖR 26.10.2026 — samningskjör félagsins og pöntun með beiðni (gögn: gatt.cjs serkjor) ══ -->
+    <section id="v-serkjor" class="hidden">
+      <div class="kicker">Samningskjör ykkar hjá Slökkvitækjum ehf.</div>
+      <h2 class="page">Sérkjör og verðskrá</h2>
+      <p class="kj-intro" id="kj-intro"></p>
+      <h3 class="kj-h">Skoðun, hleðsla og þjónusta</h3>
+      <div class="tbl-wrap"><table class="kj-tbl">
+        <thead><tr><th>Liður</th><th class="r">Fullt verð án vsk</th><th class="r">Fullt verð m/vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r">Ykkar verð m/vsk</th><th class="r"></th></tr></thead>
+        <tbody id="kj-thj"></tbody>
+      </table></div>
+      <h3 class="kj-h">Ný slökkvitæki — svona koma þau út á ykkar kjörum</h3>
+      <div class="tbl-wrap"><table class="kj-tbl">
+        <thead><tr><th>Liður</th><th class="r">Fullt verð án vsk</th><th class="r">Fullt verð m/vsk</th><th class="r">Afsláttur</th><th class="r">Ykkar verð án vsk</th><th class="r">Ykkar verð m/vsk</th><th class="r"></th></tr></thead>
+        <tbody id="kj-taeki"></tbody>
+      </table></div>
+      <div class="kj-karfa hidden" id="kj-karfa">
+        <div class="kicker">Pöntun með beiðni</div>
+        <h3>Pöntun</h3>
+        <div id="kj-linur"></div>
+        <div class="kj-row"><label class="flabel" for="kj-eign">Eign sem fær vörurnar</label><select id="kj-eign"></select></div>
+        <div class="kj-row"><label class="flabel" for="kj-text">Athugasemd (valfrjálst)</label><textarea id="kj-text" rows="3" placeholder="T.d. hvar á að afhenda, hvenær hentar, hver tekur á móti…"></textarea></div>
+        <div class="m-foot"><span class="m-note" id="kj-samtals"></span><button type="button" class="gbtn" id="kj-senda">Senda pöntun</button></div>
+      </div>
+      <p class="kj-fot" id="kj-fot"></p>
+    </section>
     <section id="v-skilabod" class="hidden">
       <div class="kicker">Fyrirspurnir til Slökkvitækja ehf.</div>
       <h2 class="page">Skilaboð</h2>
@@ -1738,6 +1782,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261026h"></script>
+<script src="/gatt/portal.js?v=20261026i"></script>
 </body>
 </html>

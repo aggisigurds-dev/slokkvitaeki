@@ -736,7 +736,7 @@ exports.handler = async (event) => {
     if (!text) return P.json(400, { error: 'Tómt skeyti' });
     if (text.length > 4000) return P.json(400, { error: 'Skeyti of langt' });
     const hofundur = (session ? session.name : (openAcct && openAcct.display_name)) || '';
-    const kind = ['verkbeidni', 'thjonusta', 'gogn', 'reikningur', 'annad'].includes(b.kind) ? b.kind : 'fyrirspurn';
+    const kind = ['verkbeidni', 'thjonusta', 'gogn', 'reikningur', 'annad', 'pontun'].includes(b.kind) ? b.kind : 'fyrirspurn';
     try {
       const ins = await P.sbPost('portal_messages', { base_id: baseId, sender: 'kunni', body: text, author_name: hofundur });
       if (!ins.ok) return P.json(ins.status, { error: 'Villa', detail: await ins.text() });
@@ -756,7 +756,7 @@ exports.handler = async (event) => {
             if (f0 && (!leyfd || leyfd.has(Number(f0.id)))) { fyId = f0.id; fyNafn = f0.nafn || ''; }
           }
           if ((await malAKlst()) < 25) {
-            const KT = { fyrirspurn: 'Fyrirspurn', gogn: 'Gagnabeiðni', reikningur: 'Reikningur', annad: 'Annað', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu' };
+            const KT = { fyrirspurn: 'Fyrirspurn', gogn: 'Gagnabeiðni', reikningur: 'Reikningur', annad: 'Annað', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu', pontun: 'Pöntun' };
             const titillIn = String(b.titill || '').replace(/[\u2014\n]/g, ' ').trim().slice(0, 90);
             const lysing = String(b.lysing || '').trim().slice(0, 1500);
             const visun = visunHreint(b.visun);
@@ -811,6 +811,7 @@ exports.handler = async (event) => {
         solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
         stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
+        vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
         items: syn.vinnusvaedi ? itemsFelags().catch(() => null) : null,
         checklist: syn.vinnusvaedi ? checklistFelags().catch(() => null) : null,
         vidhald: syn.vinnusvaedi ? vidhaldFelags().catch(() => null) : null,
@@ -1372,7 +1373,48 @@ exports.handler = async (event) => {
     if (!name) { try { const br = await P.sbGet(`customers_base?id=eq.${baseId}&select=nafn&limit=1`); if (br.ok) name = ((await br.json())[0] || {}).nafn || ''; } catch (_) {} }
     const theme = (acct && acct.theme) || (session && session.theme) || 'boss';
 
+    // ── Sérkjör (26.10.2026, Agnar: „tab/page um sérkjör … fullt verð með vsk, fullt án vsk, afsláttarkjör og verð án vsk, og
+    //    hvað slökkvitækin koma út"): kjörin búa í portal_users.stillingar.serkjor — yfirferd/hledsla/slanga/skyrsla/akstur eru
+    //    föst samningsverð án vsk (null = listaverð), ny_taeki_pct afsláttur af nýjum tækjum. Listaverðin koma úr vorur, svo
+    //    breytist verðskráin breytist „fullt verð" hér um leið. Aðeins kúnna-sýnilegir textar (heimild, ath) fara út.
+    let serkjor = null;
+    try {
+      const cfg = acct && acct.stillingar && acct.stillingar.serkjor;
+      if (syn.serkjor && cfg && typeof cfg === 'object') {
+        const vr = Q.vorur ? await Q.vorur : { ok: false };
+        const vorur = vr.ok ? await vr.json() : [];
+        const med = (an, vsk) => Math.round(Number(an) * (1 + (Number(vsk) || 24) / 100));
+        const fast = (v) => (v == null || v === '' || isNaN(Number(v)) ? null : Number(v));
+        const lidir = [];
+        const baeta = (v, flokkur, verdAn, kjor) => {
+          const fulltAn = Math.round(Number(v.verd_an_vsk) || 0); if (!fulltAn) return;
+          // Kúnninn borgar aldrei meira en listaverð: fast samningsverð (t.d. hleðsla 4.400) gildir aðeins þar sem það er lægra
+          // en listaverð tegundarinnar (CO₂ 2 kg hleðsla er 3.400 á lista → listaverð ræður).
+          const va = verdAn == null ? fulltAn : Math.min(fulltAn, Math.round(verdAn));
+          lidir.push({ vara_id: v.id, heiti: String(v.nafn).replace(/yfirferd$/i, 'yfirferð'), flokkur, fullt_an: fulltAn, fullt_med: med(fulltAn, v.vsk_prosenta),
+            afsl_pct: Math.max(0, Math.round((1 - va / fulltAn) * 100)), verd_an: va, verd_med: med(va, v.vsk_prosenta),
+            kjor: (verdAn == null || va >= fulltAn) ? 'listaverd' : (kjor || 'samningsverd') });
+        };
+        const ROD = { yfirferd: 1, hledsla: 2, slanga: 3, skyrsla: 4, akstur: 5, taeki: 6 };
+        const THJ = /^(Duft \d+ kg\. ABC (yfirferð|hleðsla)|Léttvatnstækis? \d+L\. (yfirferð|hleðsla)|CO₂ [25] kg\. (yfirferð|yfirferd|hleðsla)|Slökkvitæki 9L léttvatn yfirferð)$/i;
+        vorur.forEach((v) => {
+          const n = String(v.nafn || '').trim();
+          if (v.flokkur === 'Þjónusta' && THJ.test(n)) { const hl = /hleðsla/i.test(n); baeta(v, hl ? 'hledsla' : 'yfirferd', fast(hl ? cfg.hledsla : cfg.yfirferd)); }
+          else if (v.flokkur === 'Þjónusta' && /^Yfirferð Brunaslanga$/i.test(n)) baeta(v, 'slanga', fast(cfg.slanga));
+          else if (v.flokkur === 'Vinna og akstur' && /^Skýrslugerð/i.test(n)) baeta(v, 'skyrsla', fast(cfg.skyrsla));
+          else if (v.flokkur === 'Vinna og akstur' && /^Akstur$/i.test(n)) baeta(v, 'akstur', fast(cfg.akstur));
+          else if (v.flokkur === 'Slökkvitæki' && (v.forsida === true || Number(v.id) === 24)) { const p = fast(cfg.ny_taeki_pct); baeta(v, 'taeki', p ? Number(v.verd_an_vsk) * (1 - p / 100) : null, p ? 'afslattur' : 'listaverd'); }
+        });
+        // Röð innan skoðunar/hleðslu: léttvatn → duft → CO₂, svo eftir stærð; tækin halda vörulistaröðinni (rodun)
+        const teg = (h) => (/léttvatn/i.test(h) ? 1 : /duft/i.test(h) ? 2 : /co₂|co2/i.test(h) ? 3 : 4);
+        const st = (h) => { const m = /(\d+(?:[.,]\d+)?)\s*(kg|l)/i.exec(h); return m ? Number(m[1].replace(',', '.')) : 99; };
+        lidir.sort((a, b) => (ROD[a.flokkur] - ROD[b.flokkur]) || (a.flokkur === 'taeki' ? 0 : (teg(a.heiti) - teg(b.heiti)) || (st(a.heiti) - st(b.heiti))));
+        serkjor = { heimild: String(cfg.heimild || ''), ath: String(cfg.ath || ''), ny_taeki_pct: fast(cfg.ny_taeki_pct), lidir };
+      }
+    } catch (_) {}
+
     return P.json(200, {
+      serkjor,
       account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
       stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald, skrar,

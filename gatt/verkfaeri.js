@@ -23,6 +23,7 @@ window.GATT_VERKFAERI = [
   { k: 'saga', heiti: 'Saga eignar', lysing: 'Tímalína: skoðanir, verk, skírteini, eldvarnabók', hopur: 'grunnur', sjalfgefid: true, tilbuid: true },
   // ── Staðalbúnaður ──
   { k: 'erindi', heiti: 'Erindi með stöðu', lysing: 'Móttekið → í vinnslu → lokið, með myndum', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
+  { k: 'serkjor', heiti: 'Sérkjör og verðskrá', lysing: 'Samningskjör félagsins: fullt verð, afsláttur og ykkar verð á skoðun, hleðslu og nýjum tækjum — með pöntun beint af síðunni (kjörin skráð í stillingar.serkjor)', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'verkbeidni', heiti: 'Verkbeiðnir', lysing: 'Kúnni sendir verkbeiðni → Þjónustuborð; flipinn Verkbeiðnir', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'punktar', heiti: 'Verkbeiðnapunktar', lysing: 'Verkbeiðni sem punktur á teikningu með mynd; grænn þegar lagað', hopur: 'stadall', sjalfgefid: true, tilbuid: true },
   { k: 'qr', heiti: 'QR-merki eignar', lysing: 'Leigutaki skannar og tilkynnir með mynd án innskráningar', hopur: 'stadall', sjalfgefid: true, tilbuid: true },

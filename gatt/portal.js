@@ -462,7 +462,79 @@
     renderEldvarnabok();
     if (window.GattVinnusvaedi) GattVinnusvaedi.render();
     renderMessages(data.messages);
+    renderSerkjor();
     wireNav();
+  }
+
+  /* ══ SÉRKJÖR 26.10.2026 (Agnar: „tab/page um sérkjör … fullt verð með vsk, fullt án vsk, afsláttarkjör og verð án vsk, og hvað
+     slökkvitækin koma út … og panta með beiðni þaðan") — línurnar koma tilbúnar úr gatt.cjs (serkjor.lidir); karfan sendir
+     pöntunina sem erindi (kind pontun) um sömu leið og önnur erindi, svo hún birtist undir Erindi og á Þjónustuborðinu. */
+  var karfa = [];
+  function kjSyn() { return !!(synOf().serkjor && state.data && state.data.serkjor && state.data.serkjor.lidir && state.data.serkjor.lidir.length); }
+  function kjRow(l) {
+    var pct = l.afsl_pct > 0 ? '<span class="pct on">−' + l.afsl_pct + ' %</span>' : '<span class="pct">—</span>';
+    return '<tr><td><span class="bname" style="font-size:16px">' + esc(l.heiti) + '</span>' + (l.kjor === 'listaverd' ? ' <span class="dim">listaverð</span>' : '') + '</td>' +
+      '<td class="r num">' + esc(fmtKr(l.fullt_an)) + '</td><td class="r num dim">' + esc(fmtKr(l.fullt_med)) + '</td>' +
+      '<td class="r">' + pct + '</td>' +
+      '<td class="r num verd">' + esc(fmtKr(l.verd_an)) + '</td><td class="r num">' + esc(fmtKr(l.verd_med)) + '</td>' +
+      '<td class="r"><button type="button" class="pdf" data-kj-panta="' + l.vara_id + '" title="Bæta í pöntun">Panta</button></td></tr>';
+  }
+  function renderSerkjor() {
+    var tab = document.querySelector('nav .tab[data-view="serkjor"]'); if (tab) tab.classList.toggle('hidden', !kjSyn());
+    if (!kjSyn()) return;
+    var s = state.data.serkjor, L = s.lidir;
+    $('#kj-intro').textContent = s.heimild || '';
+    $('#kj-thj').innerHTML = L.filter(function (l) { return l.flokkur !== 'taeki'; }).map(kjRow).join('') || '<tr><td colspan="7" class="empty">Engin þjónustuverð skráð</td></tr>';
+    $('#kj-taeki').innerHTML = L.filter(function (l) { return l.flokkur === 'taeki'; }).map(kjRow).join('') || '<tr><td colspan="7" class="empty">Engin tæki skráð</td></tr>';
+    $('#kj-fot').textContent = (s.ath ? s.ath + ' ' : '') + 'Verð í íslenskum krónum, virðisaukaskattur 24 %. „Listaverð" merkir lið án sérkjara. Pöntun af þessari síðu berst okkur sem erindi; við staðfestum verð og afhendingu áður en reikningur er gerður.';
+    $('#kj-eign').innerHTML = '<option value="">Eign — veldu (valfrjálst)</option>' + (state.data.buildings || []).map(function (b) { return '<option value="' + b.id + '">' + esc(b.nafn) + '</option>'; }).join('');
+    renderKarfa();
+  }
+  function kjLidur(id) { var L = (state.data && state.data.serkjor && state.data.serkjor.lidir) || []; for (var i = 0; i < L.length; i++) if (String(L[i].vara_id) === String(id)) return L[i]; return null; }
+  function renderKarfa() {
+    var box = $('#kj-karfa'); if (!box) return;
+    box.classList.toggle('hidden', !karfa.length);
+    document.querySelectorAll('[data-kj-panta]').forEach(function (b) {
+      var inn = karfa.some(function (k) { return String(k.vara_id) === b.getAttribute('data-kj-panta'); });
+      b.classList.toggle('on', inn); b.textContent = inn ? 'Í pöntun +' : 'Panta';
+    });
+    if (!karfa.length) return;
+    $('#kj-linur').innerHTML = karfa.map(function (k, i) {
+      return '<div class="kj-lina"><span class="n">' + esc(k.heiti) + '</span><span class="v">' + esc(fmtKr(k.verd_an)) + ' án vsk</span>' +
+        '<input type="number" min="1" max="99" value="' + k.magn + '" data-kj-magn="' + i + '" aria-label="Magn">' +
+        '<button type="button" class="x" data-kj-fjar="' + i + '" aria-label="Taka úr pöntun">×</button></div>';
+    }).join('');
+    var an = 0, medv = 0; karfa.forEach(function (k) { an += k.verd_an * k.magn; medv += k.verd_med * k.magn; });
+    $('#kj-samtals').textContent = 'Samtals ' + fmtKr(an) + ' án vsk · ' + fmtKr(medv) + ' m/vsk';
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-kj-panta],[data-kj-fjar],#kj-senda'); if (!a) return;
+    e.preventDefault();
+    if (a.hasAttribute('data-kj-panta')) {
+      var l = kjLidur(a.getAttribute('data-kj-panta')); if (!l) return;
+      var ex = karfa.filter(function (k) { return k.vara_id === l.vara_id; })[0];
+      if (ex) ex.magn += 1; else karfa.push({ vara_id: l.vara_id, heiti: l.heiti, verd_an: l.verd_an, verd_med: l.verd_med, magn: 1 });
+      renderKarfa(); if (!ex) toast('Bætt í pöntun'); return;
+    }
+    if (a.hasAttribute('data-kj-fjar')) { karfa.splice(Number(a.getAttribute('data-kj-fjar')), 1); renderKarfa(); return; }
+    if (a.id === 'kj-senda') sendaPontun();
+  });
+  document.addEventListener('change', function (e) {
+    var inp = e.target.closest && e.target.closest('[data-kj-magn]'); if (!inp) return;
+    var i = Number(inp.getAttribute('data-kj-magn')), m = Math.max(1, Math.min(99, parseInt(inp.value, 10) || 1));
+    if (karfa[i]) { karfa[i].magn = m; renderKarfa(); }
+  });
+  function sendaPontun() {
+    if (!karfa.length) return;
+    var b = bldgById($('#kj-eign').value), ath = $('#kj-text').value.trim(), an = 0, medv = 0, n = 0;
+    var linur = karfa.map(function (k) { an += k.verd_an * k.magn; medv += k.verd_med * k.magn; n += k.magn; return k.magn + ' × ' + k.heiti + ' — ' + fmtKr(k.verd_an * k.magn) + ' án vsk (' + fmtKr(k.verd_med * k.magn) + ' m/vsk)'; });
+    var text = 'Pöntun' + (b ? ' — ' + b.nafn + (b.heimilisfang ? ' (' + b.heimilisfang + ')' : '') : '') + '\nVörur:\n• ' + linur.join('\n• ') + '\nSamtals ' + fmtKr(an) + ' án vsk · ' + fmtKr(medv) + ' m/vsk' + (ath ? '\n\n' + ath : '');
+    var btn = $('#kj-senda'); btn.disabled = true;
+    sendErindi(text, 'pontun', b ? b.id : null, { titill: n + (n === 1 ? ' tæki' : ' tæki') + ' · ' + fmtKr(an) + ' án vsk', lysing: linur.join('; ') }).then(function (ok) {
+      btn.disabled = false;
+      if (ok) { karfa = []; $('#kj-text').value = ''; renderKarfa(); toast(KIND_TOAST.pontun); }
+      else toast('Sending mistókst — reyndu aftur');
+    });
   }
 
   function renderMessages(msgs) {
@@ -605,8 +677,8 @@
   var GOGN_LIDIR = ['Úttektarskýrslur (slökkvitæki)', 'Brunakerfisskýrslur', 'Staðfesting á reyklosun', 'Reikningar / afrit', 'Þjónustusamningur', 'Skýrsla fyrir byggingarfulltrúa eða slökkvilið', 'Annað'];
   var RAIL_LBL = { verkbeidni: 'Lýsing (valfrjálst)', gogn: 'Nánar (valfrjálst)', fyrirspurn: 'Fyrirspurn', annad: 'Erindi' };
   var RAIL_PH = { verkbeidni: 'T.d. hvaða herbergi, hvenær hentar að koma…', gogn: 'T.d. hvaða ár, hvaða eignir, hver þarf gögnin…', fyrirspurn: 'Skrifaðu fyrirspurnina hér…', annad: 'Skrifaðu erindið hér…' };
-  var KIND_HEAD = { fyrirspurn: 'Fyrirspurn', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur' };
-  var KIND_TOAST = { verkbeidni: 'Verkbeiðnin er móttekin — við höfum samband', gogn: 'Gagnabeiðnin er móttekin', fyrirspurn: 'Fyrirspurnin er send', annad: 'Erindið er sent', thjonusta: 'Beiðnin er send — við höfum samband', reikningur: 'Erindið er sent' };
+  var KIND_HEAD = { fyrirspurn: 'Fyrirspurn', verkbeidni: 'Verkbeiðni', thjonusta: 'Beiðni um þjónustu', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', pontun: 'Pöntun' };
+  var KIND_TOAST = { verkbeidni: 'Verkbeiðnin er móttekin — við höfum samband', gogn: 'Gagnabeiðnin er móttekin', fyrirspurn: 'Fyrirspurnin er send', annad: 'Erindið er sent', thjonusta: 'Beiðnin er send — við höfum samband', reikningur: 'Erindið er sent', pontun: 'Pöntunin er móttekin — við staðfestum verð og afhendingu' };
   var railKind = 'fyrirspurn', erVisun = null;
   var erFilt = { s: '', t: '', e: '', h: true };   // h: flokkað eftir eign (26.10.2026, Agnar: „vill sjá erindin flokkuð eftir hverri eign")
 
@@ -834,7 +906,7 @@
   }, true);
 
   /* ── nav / lang / logout ── */
-  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'erindi', 'skilabod'];
+  var VIEWS = ['yfirlit', 'vinnusvaedi', 'eldvarnabok', 'skyrslur', 'reikningar', 'verkbeidnir', 'erindi', 'serkjor', 'skilabod'];
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
@@ -1574,7 +1646,7 @@
     rymingaruppdrattur: 'Rýmingaruppdráttur', fjoldaskilti: 'Fjöldaskilti' };
   var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };
   var MAN_STUTT = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
-  var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni' };
+  var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni', pontun: 'Pöntun' };
   var ER_SKREF = [['mottekid', 'Móttekið'], ['i_vinnslu', 'Í vinnslu'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
 
   function kerfiStada(k) {

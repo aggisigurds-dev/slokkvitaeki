@@ -3,7 +3,7 @@
 const VERKFAERI = [
   ['teikningar', true, true], ['threed', true, true], ['nidurhal', true, true], ['greining', true, true], ['bunadargreining', true, true], ['taeki', true, true], ['skjol', true, true],
   ['kerfi', true, true], ['fasteign', true, true], ['saga', true, true],
-  ['erindi', true, true], ['verkbeidni', true, true], ['punktar', true, true], ['qr', true, true], ['eldvarnabok', true, true], ['vinnusvaedi', true, true],
+  ['erindi', true, true], ['serkjor', true, true], ['verkbeidni', true, true], ['punktar', true, true], ['qr', true, true], ['eldvarnabok', true, true], ['vinnusvaedi', true, true],
   ['checklisti', true, true], ['verkefni', true, true], ['dagatal', true, true], ['vidhald', true, true], ['kort', true, true], ['baeta_eign', true, true],
   ['csv', true, true], ['skjol_hlekkir', true, true], ['leit', true, true], ['einkunn', false, true], ['skyrsla', true, true], ['vikupostur', false, true],
   ['verktakar', true, true], ['kostnadur', true, true], ['rymi', true, true], ['lyklar', true, true], ['orkumaelar', true, true], ['api', false, false], ['snjallkerfi', false, false],
