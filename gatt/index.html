@@ -247,6 +247,13 @@
     -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;min-height:100vh}
   a{color:var(--accent);text-decoration:none}
   .hidden{display:none!important}
+  #gatt-hledur{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg,#f3efe6);z-index:50}
+  #gatt-hledur .gh-plata{min-width:260px;padding:22px 28px;border-radius:14px;background:linear-gradient(180deg,#2a2622,#17140f);color:#e9dcb6;box-shadow:0 18px 40px -18px rgba(0,0,0,.6);text-align:center}
+  #gatt-hledur .gh-k{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#b9a26a}
+  #gatt-hledur .gh-t{font-family:'Playfair Display',Georgia,serif;font-size:19px;margin:6px 0 14px}
+  #gatt-hledur .gh-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  #gatt-hledur .gh-bar i{display:block;height:100%;width:40%;background:#c9a94a;border-radius:2px;animation:gh-run 1.3s ease-in-out infinite}
+  @keyframes gh-run{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
   ::selection{background:rgba(var(--glow),.28)}
 
   /* ── MERKI (medalía) ── */
@@ -1720,6 +1727,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261026d"></script>
+<script src="/gatt/portal.js?v=20261026e"></script>
 </body>
 </html>

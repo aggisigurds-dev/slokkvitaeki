@@ -206,6 +206,9 @@
       if (window.GattVinnusvaedi) GattVinnusvaedi.demo(DEMO);
       renderPortal(DEMO); showDemoRibbon(); return;
     }
+    // 26.10.2026 (Agnar: „gáttartakkinn kemur bara tómur"): síðan var auð í 4–7 sek á meðan gögnin sóttust (401 → status → 340 KB).
+    // Hleðsluplata þar til renderPortal/showLogin/showNotReady taka við.
+    hledurSyna();
     fetch('/api/gatt', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) {
         if (r.ok) return r.json().then(function (d) { renderPortal(normalize(d)); });
@@ -237,7 +240,15 @@
       .then(function (d) { state.open = true; renderPortal(normalize(d)); showOpenRibbon(); })
       .catch(function () { showNotReady(); });
   }
+  function hledurSyna() {
+    if (document.getElementById('gatt-hledur')) return;
+    var h = document.createElement('div'); h.id = 'gatt-hledur';
+    h.innerHTML = '<div class="gh-plata"><div class="gh-k">Þjónustuvefur</div><div class="gh-t">Sæki gögn félagsins…</div><div class="gh-bar"><i></i></div></div>';
+    document.body.appendChild(h);
+  }
+  function hledurFela() { var h = document.getElementById('gatt-hledur'); if (h) h.remove(); }
   function showNotReady(name) {
+    hledurFela();
     $('#login').classList.add('hidden');
     $('#portal').classList.add('hidden');
     if (name) $('#notready-name').textContent = 'Aðgangur fyrir ' + name + ' hefur ekki verið virkjaður enn.';
@@ -385,6 +396,7 @@
 
   /* ── LOGIN ── */
   function showLogin(msg) {
+    hledurFela();
     $('#portal').classList.add('hidden');
     $('#notready').classList.add('hidden');
     $('#login').classList.remove('hidden');
@@ -409,6 +421,7 @@
   /* ── PORTAL ── */
   function renderPortal(data) {
     state.data = data;
+    hledurFela();
     document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'boss');
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
