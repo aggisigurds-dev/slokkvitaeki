@@ -476,11 +476,12 @@
   function kjPct(l) { var p = l.fullt_an ? (1 - l.verd_an / l.fullt_an) * 100 : 0; return p > 0.05 ? p.toFixed(1).replace('.', ',') + '%' : '0%'; }
   function kjRow(l) {
     var p = kjPct(l), pct = p !== '0%' ? '<span class="pct on">−' + p + '</span>' : '<span class="pct">0%</span>';
+    var panta = l.flokkur === 'taeki';   // 26.10.2026 (Agnar): Panta aðeins á nýjum tækjum, ekki á þjónustulínunum
     return '<tr' + (l.adal ? '' : ' class="kj-auka"') + '><td><span class="bname" style="font-size:16px">' + esc(l.heiti) + '</span></td>' +
       '<td class="r num dim">' + esc(fmtKr(l.fullt_med)) + '</td><td class="r num">' + esc(fmtKr(l.fullt_an)) + '</td>' +
       '<td class="r">' + pct + '</td>' +
       '<td class="r num verd">' + esc(fmtKr(l.verd_an)) + '</td>' +
-      '<td class="r"><button type="button" class="pdf" data-kj-panta="' + l.vara_id + '" title="Bæta í pöntun">Panta</button></td></tr>';
+      '<td class="r">' + (panta ? '<button type="button" class="pdf" data-kj-panta="' + l.vara_id + '" title="Bæta í pöntun — smelltu aftur til að taka úr">Panta</button>' : '') + '</td></tr>';
   }
   function kjLead(s) {
     var L = s.lidir, nafn = ((state.data.account && state.data.account.name) || 'Félagið').replace(/\s+(ehf\.?|hf\.?|slf\.?)$/i, '');
@@ -528,7 +529,7 @@
     box.classList.toggle('hidden', !karfa.length);
     document.querySelectorAll('[data-kj-panta]').forEach(function (b) {
       var inn = karfa.some(function (k) { return String(k.vara_id) === b.getAttribute('data-kj-panta'); });
-      b.classList.toggle('on', inn); b.textContent = inn ? 'Í pöntun +' : 'Panta';
+      b.classList.toggle('on', inn); b.textContent = inn ? '✓ Í pöntun' : 'Panta'; b.title = inn ? 'Smelltu til að taka úr pöntun' : 'Bæta í pöntun';
     });
     if (!karfa.length) return;
     $('#kj-linur').innerHTML = karfa.map(function (k, i) {
@@ -545,9 +546,11 @@
     if (a.id === 'kj-meira') { kjAllar = !kjAllar; renderSerkjor(); return; }
     if (a.hasAttribute('data-kj-panta')) {
       var l = kjLidur(a.getAttribute('data-kj-panta')); if (!l) return;
-      var ex = karfa.filter(function (k) { return k.vara_id === l.vara_id; })[0];
-      if (ex) ex.magn += 1; else karfa.push({ vara_id: l.vara_id, heiti: l.heiti, verd_an: l.verd_an, verd_med: l.verd_med, magn: 1 });
-      renderKarfa(); if (!ex) toast('Bætt í pöntun'); return;
+      // Rofi (26.10.2026, Agnar: „þetta festist og ég losna ekki við það"): annar smellur tekur línuna úr pöntuninni; magn er stillt í körfunni
+      var ix = karfa.findIndex(function (k) { return k.vara_id === l.vara_id; });
+      if (ix > -1) { karfa.splice(ix, 1); renderKarfa(); toast('Tekið úr pöntun'); return; }
+      karfa.push({ vara_id: l.vara_id, heiti: l.heiti, verd_an: l.verd_an, verd_med: l.verd_med, magn: 1 });
+      renderKarfa(); toast('Bætt í pöntun — magn og eign neðst á síðunni'); return;
     }
     if (a.hasAttribute('data-kj-fjar')) { karfa.splice(Number(a.getAttribute('data-kj-fjar')), 1); renderKarfa(); return; }
     if (a.id === 'kj-senda') sendaPontun();
