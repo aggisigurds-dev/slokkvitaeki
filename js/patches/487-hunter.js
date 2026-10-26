@@ -154,6 +154,15 @@
       '.hu2-chip-sm{height:18px;padding:0 6px;font-size:9.5px;margin-top:4px}',
       '.hu2-chip.gull{background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%);border-color:rgba(190,150,60,.5);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
       '.hu2-sk-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hu2-sk-h .hu2-chip-sm{margin-top:0}',
+      // punktalínan (Agnar 26.10): ein-lína athugasemd við hvern aðila, hægra megin við póstinn; vistast sjálfkrafa (sjá notaVista)
+      '.hu2-sk-w{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}.hu2-sk-p{flex:1 1 320px;min-width:0}',
+      '.hu2-nota-w{flex:1 1 220px;min-width:180px;display:block;margin:0;padding:0;position:relative;align-self:stretch}',
+      '.hu2-nota' + K + '{width:100%!important;min-width:0!important;height:auto!important;min-height:30px!important;margin:0!important;padding:4px 2px!important;border:0!important;border-bottom:1px dotted rgba(20,24,34,.45)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;font:500 13px/1.4 ' + SANS + '!important;color:#141822!important}',
+      '.hu2-nota::placeholder{color:#8e97a6!important;opacity:1;font-weight:400}',
+      '.hu2-nota:focus' + K + '{border-bottom:1px solid #141822!important;background:#fff!important}',
+      '.hu2-nota[data-save="pending"]' + K + '{border-bottom-color:#e0a93e!important;border-bottom-style:solid!important}',
+      '.hu2-nota[data-save="saved"]' + K + '{border-bottom-color:#16783f!important;border-bottom-style:solid!important}',
+      '.hu2-nota[data-save="error"]' + K + '{border-bottom:2px solid #c92a2a!important;background:#fff5f4!important}',
       '.hu2-sk-e{display:block;margin-top:3px;font-weight:700;font-size:12.5px;color:#1f2530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}',
       '.hu2-sk-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px;font-size:12px;line-height:1.4;color:#3a4250;max-width:520px}',
       '.hu2-sub{font-size:11px;color:#5b6472;display:block;margin-top:2px}',
@@ -355,6 +364,10 @@
   }
   function render() {
     const main = document.getElementById('hu-main'); if (!main) return;
+    // Punktalína í skrifum: endurteiknun bíður (Stöðugt viðmót, regla 7) — annars týnist textinn. Tekin upp við focusout.
+    const virk = document.activeElement;
+    if (virk && virk.classList && virk.classList.contains('hu2-nota') && main.contains(virk)) { S.renderPending = true; return; }
+    S.renderPending = false;
     const alla = S.rows, af = alla.map(afleitt);
     const n = k => alla.filter(a => a.stada === k).length;
     const K = { alls: alla.length, sendir: alla.filter(a => a.fyrst_sent_at).length, bidur: n('bidur'), lengi: af.filter(x => x.lengi).length, svar: n('svar'), rangt: n('rangt'), sidar: n('sidar'), fundur: n('fundur'), unnid: n('unnid'), hafnad: n('hafnad'), stjarna: alla.filter(a => a.stjarna).length };
@@ -410,7 +423,8 @@
                 '<td class="hu2-c-nafn"><span class="hu2-nafn">' + (a.stjarna ? IK.stjarna : '') + esc(a.nafn) + '</span><span class="hu2-sub">' + esc(a.len || '') + (x.fjFast ? ' · ' + x.fjFast + ' fasteign' + (x.fjFast === 1 ? '' : 'ir') + (x.taeki ? ' · ~' + x.taeki + ' tæki' : '') : '') + '</span>' +
                   (a.herferd ? '<span class="hu2-chip hu2-chip-sm">' + esc(a.herferd) + '</span>' : '') + '</td>' +
                 '<td class="hu2-c-teng"><span style="display:block;font-weight:500">' + esc(a.tengilidur || '—') + '</span><span class="hu2-mono" style="font-size:11px;white-space:normal;word-break:break-all">' + esc(a.netfang) + '</span><span class="hu2-mono' + (a.simi ? '' : ' dauf') + '" style="display:block;font-size:11px">' + esc(a.simi || '[sími vantar]') + '</span></td>' +
-                '<td class="hu2-c-sk">' + samskiptiHtml(a, x) + '</td>' +
+                '<td class="hu2-c-sk"><div class="hu2-sk-w"><div class="hu2-sk-p">' + samskiptiHtml(a, x) + '</div>' +
+                  '<label class="hu2-nota-w"><span style="position:absolute;width:1px;height:1px;overflow:hidden">Pælingar um ' + esc(a.nafn) + '</span><input type="text" class="hu2-nota" data-nota="' + a.id + '" value="' + esc(a.athugasemd || '') + '" placeholder="Pælingar, næsta skref, hvað var sagt…" autocomplete="off" title="Vistast sjálfkrafa"></label></div></td>' +
                 '<td class="hu2-c-st">' + plata(a) + '</td>' +
                 '<td class="hu2-c-naesta"><span class="hu2-naesta ' + x.ncls + '">' + esc(x.naesta) + '</span></td>' +
                 '<td class="hu2-c-adg"><button type="button" class="hu2-silfur hu2-ib" data-act="meira" data-id="' + a.id + '" aria-label="Fleiri aðgerðir" aria-haspopup="menu" aria-expanded="false">' + IK.meira + '</button></td>' +
@@ -463,6 +477,7 @@
         (a.stada === 'rangt' && a.skil_villa ? '<div class="hu2-line" style="padding:8px 12px;box-shadow:inset 0 0 0 1px rgba(190,32,28,.45)"><span class="hu2-merki" style="color:#b42318">Skilaðist ekki ' + esc(fmtD(a.skil_at)) + '</span><span class="hu2-skyr" style="white-space:normal;margin-top:4px">' + esc(String(a.skil_villa).replace(/\s+/g, ' ').slice(0, 220)) + '</span></div>' : '') +
         '<section class="hu2-kafli" aria-label="Tengiliður"><div class="hu2-grid2">' +
           reit('Fyrirtæki', 'nafn', a.nafn, '', 'grid-column:1/-1') +
+          reit('Pæling', 'athugasemd', a.athugasemd, 'Stutt athugasemd — sést líka í listanum', 'grid-column:1/-1') +
           reit('Tengiliður', 'tengilidur', a.tengilidur, 'Nafn tengiliðar') +
           reit('Sími', 'simi', a.simi, '[vantar]', '', 'mono') +
           reit('Netfang', 'netfang', a.netfang, '', '', 'mono') +
@@ -795,8 +810,8 @@
 
   // ── CSV og hringilisti ──────────────────────────────────────────────────────────────────────────────
   function csv() {
-    const l = siad(); const h = ['Fyrirtæki', 'Lén', 'Tengiliður', 'Netfang', 'Sími', 'Kennitala', 'Herferð', 'Sent', 'Síðast', 'Staða', 'Næsta skref', 'Næst dags', 'Ábyrgð', 'Fasteignir', 'Tæki áætluð', 'Minnispunktar'];
-    const rows = [h].concat(l.map(a => { const x = afleitt(a); return [a.nafn, a.len, a.tengilidur, a.netfang, a.simi, a.kennitala, a.herferd, fmtD(a.fyrst_sent_at), fmtD(x.sidast), x.st.t, x.naesta, fmtD(a.naesta_dags), a.abyrgd, (S.fast[a.id] || []).map(f => f.heimilisfang).join(' | '), x.taeki || '', a.minnispunktar]; }));
+    const l = siad(); const h = ['Fyrirtæki', 'Lén', 'Tengiliður', 'Netfang', 'Sími', 'Kennitala', 'Herferð', 'Sent', 'Síðast', 'Staða', 'Næsta skref', 'Næst dags', 'Ábyrgð', 'Pæling', 'Fasteignir', 'Tæki áætluð', 'Minnispunktar'];
+    const rows = [h].concat(l.map(a => { const x = afleitt(a); return [a.nafn, a.len, a.tengilidur, a.netfang, a.simi, a.kennitala, a.herferd, fmtD(a.fyrst_sent_at), fmtD(x.sidast), x.st.t, x.naesta, fmtD(a.naesta_dags), a.abyrgd, a.athugasemd, (S.fast[a.id] || []).map(f => f.heimilisfang).join(' | '), x.taeki || '', a.minnispunktar]; }));
     const s = '﻿' + rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
     const u = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' })); const el = document.createElement('a'); el.href = u; el.download = 'Hunter_' + isoDag(new Date()) + '.csv'; document.body.appendChild(el); el.click(); setTimeout(() => { URL.revokeObjectURL(u); el.remove(); }, 200);
   }
@@ -823,9 +838,51 @@
       if (act === 'hringilisti') return hringilisti();
       if (act === 'meira') { e.stopPropagation(); const a = adili(+b.getAttribute('data-id')); if (a) opnaValmynd(b, a); return; }
     }
-    const tr = e.target.closest('tr[data-id]'); if (tr && !e.target.closest('a,button')) opnaSpjald(+tr.getAttribute('data-id'));
+    const tr = e.target.closest('tr[data-id]'); if (tr && !e.target.closest('a,button,input,label')) opnaSpjald(+tr.getAttribute('data-id'));
   }
-  function listaInnslattur(e) { if (e.target && e.target.id === 'hu2-leit') { S.leit = e.target.value; clearTimeout(_leitT); _leitT = setTimeout(() => { const el = document.getElementById('hu2-leit'); const pos = el ? el.selectionStart : null; render(); const n = document.getElementById('hu2-leit'); if (n && document.activeElement !== n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } }, 250); } }
+  // ── Punktalínan: vistast 800 ms eftir síðasta staf, strax við Enter / focusout / falinn flipa; aldrei þögul villa ──
+  const _notaT = {}, _notaBid = {};
+  function notaSkra(el) {
+    const id = +el.getAttribute('data-nota'); if (!id) return;
+    clearTimeout(_notaT[id]);
+    el.setAttribute('data-save', 'pending');
+    _notaBid[id] = el;
+    _notaT[id] = setTimeout(() => notaVista(id), 800);
+  }
+  async function notaVista(id, tilraun) {
+    clearTimeout(_notaT[id]);
+    const el = _notaBid[id] || document.querySelector('.hu2-nota[data-nota="' + id + '"]'); if (!el) return;
+    const a = adili(id); if (!a) return;
+    const v = el.value.trim() || null;
+    if ((a.athugasemd || null) === v) { delete _notaBid[id]; el.setAttribute('data-save', 'saved'); setTimeout(() => { if (el.getAttribute('data-save') === 'saved') el.removeAttribute('data-save'); }, 1500); return; }
+    const sb = SB();
+    let ok = false, villa = '';
+    try {
+      if (!sb) throw new Error('enginn gagnagrunnur');
+      const r = await sb.from('hunter_adilar').update({ athugasemd: v, updated_at: new Date().toISOString() }).eq('id', id).select('id,athugasemd');
+      if (r.error) throw r.error;
+      if (!r.data || !r.data.length) throw new Error('engin lína uppfærð');
+      ok = (r.data[0].athugasemd || null) === v;
+      if (!ok) villa = 'þjónninn ber annað gildi';
+    } catch (e) { villa = (e && e.message) || String(e); }
+    if (ok) {
+      a.athugasemd = v;
+      if (el.value.trim() === (v || '')) { delete _notaBid[id]; el.setAttribute('data-save', 'saved'); setTimeout(() => { if (el.getAttribute('data-save') === 'saved') el.removeAttribute('data-save'); }, 1500); }
+      else notaSkra(el);   // skrifað áfram meðan vistað var → vista aftur
+      return;
+    }
+    tilraun = (tilraun || 0) + 1;
+    if (tilraun < 3) { _notaT[id] = setTimeout(() => notaVista(id, tilraun), 1500 * tilraun); return; }
+    el.setAttribute('data-save', 'error');
+    toast('Pælingin vistaðist EKKI (' + villa + ') — textinn stendur í reitnum; reyndu aftur', true);
+  }
+  function notaFlush() { Object.keys(_notaBid).forEach(id => notaVista(+id)); }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') notaFlush(); });
+  window.addEventListener('pagehide', notaFlush);
+
+  function listaInnslattur(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('hu2-nota')) { notaSkra(e.target); return; }
+    if (e.target && e.target.id === 'hu2-leit') { S.leit = e.target.value; clearTimeout(_leitT); _leitT = setTimeout(() => { const el = document.getElementById('hu2-leit'); const pos = el ? el.selectionStart : null; render(); const n = document.getElementById('hu2-leit'); if (n && document.activeElement !== n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} } }, 250); } }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (_bak) return lokaBak(); if (_pop) return lokaValmynd(); if (S.opinn != null && document.getElementById('hu2-spjald')) lokaSpjald(); } });
 
   // ── Grind: nav, view, switchView, slóð ───────────────────────────────────────────────────────────────
@@ -851,6 +908,12 @@
     v.innerHTML = '<main id="hu-main" class="main-panel"></main>';
     sample.parentElement.appendChild(v);
     v.addEventListener('click', listaSmell); v.addEventListener('input', listaInnslattur);
+    v.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('hu2-nota')) { e.preventDefault(); notaVista(+e.target.getAttribute('data-nota')); } });
+    v.addEventListener('focusout', e => {
+      if (!(e.target.classList && e.target.classList.contains('hu2-nota'))) return;
+      const id = +e.target.getAttribute('data-nota'); if (_notaBid[id]) notaVista(id);
+      if (S.renderPending) setTimeout(() => { if (S.renderPending) render(); }, 50);
+    });
   }
   function patchSwitchView() {
     if (!window.App || window.App._huSwitchPatched) return;
