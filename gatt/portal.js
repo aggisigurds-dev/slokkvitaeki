@@ -1681,7 +1681,8 @@
     brunathettingar: 'Brunaþéttingar', eldvarnaeftirlit: 'Eldvarnaeftirlit (árlegt)', slokkvikerfi_eldhus: 'Slökkvikerfi í eldhúsháfi',
     rymingaruppdrattur: 'Rýmingaruppdráttur', fjoldaskilti: 'Fjöldaskilti' };
   var KST_HEITI = { okkar: 'Í þjónustu hjá okkur', til: 'Til staðar', vantar: 'Skylt — vantar', ekki: 'Ekki til staðar', oskrad: 'Óskráð' };
-  var MAN_STUTT = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
+  // 26.10.2026 (Agnar: „hafa stóran staf fyrst alltaf — Nóv, Des, Sep"): stuttu mánaðarheitin með stórum staf
+  var MAN_STUTT = ['Jan', 'Feb', 'Mar', 'Apr', 'Maí', 'Jún', 'Júl', 'Ágú', 'Sep', 'Okt', 'Nóv', 'Des'];
   var ER_TEG = { verkbeidni: 'Verkbeiðni', thjonusta: 'Þjónusta', fyrirspurn: 'Fyrirspurn', eldvarnabok: 'Eldvarnabók', gogn: 'Gagnabeiðni', annad: 'Annað', reikningur: 'Reikningur', verkefni: 'Verkefni', pontun: 'Pöntun' };
   var ER_SKREF = [['mottekid', 'Móttekið'], ['i_vinnslu', 'Í vinnslu'], ['svarad', 'Svarað'], ['lokid', 'Lokið']];
 
