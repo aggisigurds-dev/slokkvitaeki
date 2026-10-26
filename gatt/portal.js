@@ -285,15 +285,21 @@
     return out;
   }
 
-  // „Reitir - Kringlan" → „Kringlan": félagsforskeytið fer þegar ALLAR eignir bera það
+  // „Reitir - Kringlan" → „Kringlan": félagsforskeytið fer. 26.10.2026 (Agnar: „óþarfi að skrifa Heimaleiga … inn á
+  // gáttum"): áður þurftu ALLAR eignir að bera það — með eignum systkinafélaga (Eldsalir, húsfélagið Laugavegi 42) bar
+  // engin regla lengur, og „Heimaleiga - " sat á 15 af 18. Nú dugar að meirihlutinn beri forskeytið; eigandanafn
+  // missir svigann („S&H Invest ehf. (Heimaleiga - Laugavegur 46)" → „S&H Invest ehf.").
   // (skýrslur/reikningar fá sömu meðferð svo síun eftir eign haldist rétt).
   function afskeyta(o) {
-    var nofn = (o.buildings || []).concat(o.eignir_utan || []).map(function (b) { return b.nafn || ''; });
-    if (!nofn.length || nofn[0].indexOf(' - ') < 0) return;
-    var pre = nofn[0].split(' - ')[0] + ' - ';
-    if (!nofn.every(function (n) { return n.indexOf(pre) === 0; })) return;
+    var alls = (o.buildings || []).concat(o.eignir_utan || []);
+    var nofn = alls.map(function (b) { return b.nafn || ''; });
+    var cnt = {}, pre = null, best = 0;
+    nofn.forEach(function (n) { var i = n.indexOf(' - '); if (i > 0) { var p = n.slice(0, i + 3); cnt[p] = (cnt[p] || 0) + 1; } });
+    Object.keys(cnt).forEach(function (p) { if (cnt[p] > best) { best = cnt[p]; pre = p; } });
+    alls.forEach(function (b) { if (b.eigandi) b.eigandi = String(b.eigandi).replace(/\s*\([^)]*\)\s*$/, '').trim(); });
+    if (!pre || best * 2 < nofn.length) return;
     function kl(x) { return (x && String(x).indexOf(pre) === 0) ? String(x).slice(pre.length) : x; }
-    (o.buildings || []).concat(o.eignir_utan || []).forEach(function (b) { b.nafn = kl(b.nafn); });
+    alls.forEach(function (b) { b.nafn = kl(b.nafn); });
     (o.reports || []).forEach(function (r) { r.bygging = kl(r.bygging); });
     (o.invoices || []).forEach(function (r) { r.bygging = kl(r.bygging); });
   }
@@ -326,11 +332,13 @@
   // Dálkurinn „Síðasta skoðun“ í yfirlitinu: nýjasta skoðun hvorrar þjónustu + þær þrjár næstu á undan (skoðanasaga).
   function sidastaSkodunHtml(b) {
     var sg = b.saga || [];
-    return sidastaSkodunLinur(b).map(function (x) {
+    var linur = sidastaSkodunLinur(b);
+    // 26.10.2026 (Agnar: „burt með Tæki þegar bara tæki og ekki slökkvikerfi"): merkið aðeins þegar línurnar eru tvær
+    return linur.map(function (x) {
       var tp = x[0] === 'Kerfi' ? 'bru' : 'slokk';
       var eldri = sg.filter(function (e) { return e.t === tp; }).slice(1, 4).map(function (e) { return sagaMerki(e.m); });
       // Skýrslutextinn og „Nánar“ eru undir Skýrslum og á eignasíðunni, ekki hér (22.10.2026: of fyrirferðarmikið í töflunni).
-      return '<div><span class="lbl">' + esc(x[0]) + ':</span> <span class="num">' + esc(x[1]) + '</span></div>' +
+      return '<div>' + (linur.length > 1 ? '<span class="lbl">' + esc(x[0]) + ':</span> ' : '') + '<span class="num">' + esc(x[1]) + '</span></div>' +
         (eldri.length ? '<div class="dim" style="font-size:11px;line-height:1.3;margin:-2px 0 4px">áður ' + esc(eldri.join(' · ')) + '</div>' : '');
     }).join('');
   }
@@ -356,7 +364,8 @@
     function line(lbl, month, last) {
       if (!month || month < 1 || month > 12) return;
       var yr = last ? (Number(last) + 1) : null;
-      lines.push(lbl + ': ' + MONTHS_IS[month - 1] + (yr ? ' ' + yr : ''));
+      // 26.10.2026 (Agnar: „samræma format dagsetninga"): sama MM/ÁÁÁÁ-snið og Síðasta skoðun — áður „september 2027" við hlið „09/2026"
+      lines.push(lbl + ': ' + (yr ? (month < 10 ? '0' : '') + month + '/' + yr : MONTHS_IS[month - 1]));
     }
     if (b.i_thjonustu !== false) line('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
     if (b.bru_i_thjonustu) line('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
@@ -467,7 +476,7 @@
           var kv = line.split(':');
           var lbl = kv.shift(), val = kv.join(':').trim();
           var isOn = b.ontime && val.indexOf(b.ontime) > -1;
-          return '<div><span class="lbl">' + esc(lbl) + ':</span> ' + (isOn ? '<b>' + esc(val) + '</b><span class="badge">Á tíma</span>' : esc(val)) + '</div>';
+          return '<div>' + (parts.length > 1 ? '<span class="lbl">' + esc(lbl) + ':</span> ' : '') + (isOn ? '<b>' + esc(val) + '</b><span class="badge">Á tíma</span>' : esc(val)) + '</div>';
         }).join('');
       }
       var cls = (b.ontime ? 'ontime' : '') + (det ? ' clk' : '');
@@ -989,9 +998,10 @@
     $('#dr-addr').textContent = b.heimilisfang || '';
     var html = '';
     // Yfirlit
-    var nextHtml = (b.nt || '').split('|').filter(Boolean).map(function (line) {
+    var ntParts = (b.nt || '').split('|').filter(Boolean);
+    var nextHtml = ntParts.map(function (line) {
       var kv = line.split(':'); var lbl = kv.shift(), val = kv.join(':').trim();
-      return '<div><span class="lbl">' + esc(lbl) + ':</span> ' + esc(val) + '</div>';
+      return '<div>' + (ntParts.length > 1 ? '<span class="lbl">' + esc(lbl) + ':</span> ' : '') + esc(val) + '</div>';
     }).join('');
     var yrs = ["'23", "'24", "'25", "'26"];
     var soloE = bareSlokkvitaeki(b);
