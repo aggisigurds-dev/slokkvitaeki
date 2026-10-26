@@ -1,0 +1,5 @@
+-- 26.10.2026: "daudir" í v_factcheck_2026 telur ekki lengur raðir sem eru merktar tvítak (is_duplicate).
+-- Tvítak án skráar er ekki dauður hlekkur; rétta skjalið er á dup_of-röðinni.
+-- Afrit af öllum 189 röðunum áður en nokkru var breytt: backup_20261026_daudir.
+-- Sama dag voru 65 raðir merktar tvítak (notes enda á "2026-10-26 (Claude)"); 29 eftir -> samþykkismál #1330.
+-- Viewið sjálft var sett með apply_migration "factcheck_daudir_utan_tvitaka" (sjá pg_get_viewdef).
