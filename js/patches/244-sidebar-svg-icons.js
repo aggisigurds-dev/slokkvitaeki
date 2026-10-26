@@ -93,6 +93,8 @@
     'Kreditreikningur':      { d: '<path d="M3 11l4-8 14 14-4 8z"/><path d="m7 3 14 14"/>' },
     'Leiðbeiningar':         { d: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>' },
     'Reikningar':            { d: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>' },
+    // 26.10.2026: Hunter — sölulistar (487): skotmark í gulli, sama tónn og Aðlaga hliðarstiku
+    'Hunter':                { d: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', color: '#d9af52' },
   };
 
   // EMOJI character (single codepoint, possibly with VS16/ZWJ/skin-tone
