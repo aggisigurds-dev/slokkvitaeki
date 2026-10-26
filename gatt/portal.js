@@ -490,11 +490,20 @@
     // línu. Hér er spurt hvort liðurinn beri YFIRLEITT sérkjör — verðið kemur úr línunni sjálfri.
     var kjarni = function (f) { return L.filter(function (l) { return l.flokkur === f && l.kjor !== 'listaverd'; })[0]; };
     var yf = kjarni('yfirferd'), hl = kjarni('hledsla'), sl = kjarni('slanga');
-    var t = [];
-    if (yf) t.push('Yfirferð slökkvitækis kostar <b>' + esc(fmtKr(yf.verd_an)) + '</b> án vsk');
-    if (hl) t.push((yf ? 'og hleðsla ' : 'Hleðsla kostar ') + '<b>' + esc(fmtKr(hl.verd_an)) + '</b> án vsk');
-    var thj = t.length ? t.join(' ') + ', á hvert tæki.' : 'Þjónustan er á verðskrárverði.';
-    if (sl) thj += ' Yfirferð brunaslöngu <b>' + esc(fmtKr(sl.verd_an)) + '</b> án vsk.';
+    var thj;
+    if (s.pct) {
+      // Flatur afsláttur hefur EKKERT eitt verð: hver stærð á sitt listaverð. Að taka fyrsta
+      // liðinn og segja „yfirferð kostar X" nefndi ódýrustu stærðina sem verð allra (mælt:
+      // 2.177 kr. þótt taflan sýndi 2.363 / 2.540 / 2.453). Prósentan er það sem er satt um allt.
+      thj = esc(nafn) + ' fær <b>' + esc(String(s.pct).replace('.', ',')) + '% afslátt af verðskrárverði</b> allrar þjónustu'
+          + (sl ? ' — yfirferðar, hleðslu og brunaslangna' : '') + '. Verð hvers liðar er í töflunni hér fyrir neðan.';
+    } else {
+      var t = [];
+      if (yf) t.push('Yfirferð slökkvitækis kostar <b>' + esc(fmtKr(yf.verd_an)) + '</b> án vsk');
+      if (hl) t.push((yf ? 'og hleðsla ' : 'Hleðsla kostar ') + '<b>' + esc(fmtKr(hl.verd_an)) + '</b> án vsk');
+      thj = t.length ? t.join(' ') + ', á hvert tæki.' : 'Þjónustan er á verðskrárverði.';
+      if (sl) thj += ' Yfirferð brunaslöngu <b>' + esc(fmtKr(sl.verd_an)) + '</b> án vsk.';
+    }
     $('#kj-lead-thj').innerHTML = thj;
     $('#kj-lead-taeki').innerHTML = s.ny_taeki_pct ? esc(nafn) + ' fær <b>' + esc(String(s.ny_taeki_pct).replace('.', ',')) + '% afslátt af verðskrárverði</b> allra nýrra slökkvitækja.' : 'Ný slökkvitæki eru á verðskrárverði.';
   }

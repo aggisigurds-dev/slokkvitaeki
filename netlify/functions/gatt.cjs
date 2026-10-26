@@ -1419,7 +1419,7 @@ exports.handler = async (event) => {
         const teg = (h) => (/léttvatn/i.test(h) ? 1 : /duft/i.test(h) ? 2 : /co₂|co2/i.test(h) ? 3 : 4);
         const st = (h) => { const m = /(\d+(?:[.,]\d+)?)\s*(kg|l)/i.exec(h); return m ? Number(m[1].replace(',', '.')) : 99; };
         lidir.sort((a, b) => (ROD[a.flokkur] - ROD[b.flokkur]) || (a.flokkur === 'taeki' ? 0 : (teg(a.heiti) - teg(b.heiti)) || (st(a.heiti) - st(b.heiti))));
-        serkjor = { heimild: String(cfg.heimild || ''), ath: String(cfg.ath || ''), ny_taeki_pct: fast(cfg.ny_taeki_pct), lidir };
+        serkjor = { heimild: String(cfg.heimild || ''), ath: String(cfg.ath || ''), pct, ny_taeki_pct: fast(cfg.ny_taeki_pct), lidir };
       }
     } catch (_) {}
 
