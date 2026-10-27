@@ -817,7 +817,7 @@ exports.handler = async (event) => {
       const sinceQ = new Date(Date.now() - 4 * 365 * 864e5).toISOString();
       const d0q = new Date(); d0q.setUTCDate(1); d0q.setUTCMonth(d0q.getUTCMonth() - 12);
       const fraQ = d0q.toISOString().slice(0, 8) + '01';
-      const fra3Q = "2023-01-01"; // 27.10.2026: áður 730 d — 2024-reikningar fyrir okt 2024 (Stólpi) vantaði og eldri sýndu enga stöðu
+      const fra3Q = "2024-01-01"; // 27.10.2026: áður 730 d — 2024-reikningar fyrir okt 2024 (Stólpi) vantaði og eldri sýndu enga stöðu (2023 bíður pörunar við hótel)
       const ktsQ = hopur.kt.map((k) => String(k).replace(/\D/g, '')).filter((k) => k.length === 10).map((k) => k.slice(0, 6) + '-' + k.slice(6));
       const g = (qs) => P.sbGet(qs).catch((e) => ({ ok: false, _err: e }));
       return {
@@ -1312,7 +1312,7 @@ exports.handler = async (event) => {
         // Rekstrarfélag: kennitölur ALLRA félaga hópsins (Heimaleiga + S30 + Aegina …), ekki aðeins þessa base_id
         const kts = hopur.kt.map((k) => String(k).replace(/\D/g, '')).filter((k) => k.length === 10).map((k) => k.slice(0, 6) + '-' + k.slice(6));
         if (kts.length) {
-          const fra3 = "2023-01-01"; // sama gluggi og Q.stolpi
+          const fra3 = "2024-01-01"; // sama gluggi og Q.stolpi
           const sr3 = Q.stolpi ? await Q.stolpi : { ok: false };
           if (sr3.ok) {
             const rows3 = await sr3.json();
