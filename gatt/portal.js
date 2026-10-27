@@ -669,7 +669,7 @@
         '<td><div class="bcell">' + (b.eign && b.eign.mynd ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(b.eign.mynd, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(b.nafn) + '</div><div class="baddr">' + esc(b.heimilisfang) + (b.eigandi && String(b.nafn || '').indexOf(b.eigandi) !== 0 ? ' <span class="bown" title="Eigandi / greiðandi eignarinnar">· ' + esc(b.eigandi) + '</span>' : '') + '</div></div></div></td>' +
         '<td class="num">' + (b.sl != null ? b.sl : '—') + '</td>' +
         '<td class="num">' + (b.slo != null ? b.slo : '—') + '</td>' +
-        '<td>' + kerfiCell(b) + '</td>' +
+        // 27.10.2026 (Agnar): Kerfi-dálkurinn tekinn úr eignasafninu til að þjappa listanum — kerfin sjást áfram á eignasíðunni
         '<td><div class="yrs">' + boxes + '</div></td>' +
         '<td><div class="next">' + (sidastaSkodunHtml(b) || '<span class="dim">—</span>') + '</div></td>' +
         '<td><div class="next">' + (next || '<span class="dim">—</span>') + '</div></td>' +
@@ -678,7 +678,7 @@
         // 26.10.2026 (Agnar: „maður á að geta ýtt á hverja eign í forsíðunni og séð erindin þar"): talan er öll erindi eignarinnar,
         // smellur opnar eignasíðuna á erindakaflanum (sendingarglugginn aðeins þegar engin erindi eru til).
         '<button type="button" class="pdf" data-erindi-b="' + bi + '" title="' + esc(erindiEignar(b).length ? erindiEignar(b).length + ' erindi · ' + opinErindi(b) + ' opin — opna eignasíðuna' : opinErindiTitill(b)) + '">' + svgIc('erindi') + 'Erindi' + (erindiEignar(b).length ? '<i class="nb' + (opinErindi(b) ? '' : ' nb-lokid') + '">' + erindiEignar(b).length + '</i>' : '') + '</button></div></td></tr>';
-    }).join('') || '<tr><td colspan="8" class="empty">Engar byggingar skráðar</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="empty">Engar byggingar skráðar</td></tr>';
     foot('#yf-foot', (bldgs || []).length, (bldgs || []).length, ['bygging', 'byggingar'], ['byggingu', 'byggingum'], '');
     if (yfSia.q || yfSia.s) yfSiaBeita();
   }
@@ -1923,7 +1923,6 @@
     var siur = [['', 'Allar eignir']];
     if (syn.erindi) siur.push(['erindi', 'Opin erindi']);
     if (syn.eldvarnabok && bl.some(function (b) { return Array.isArray(b.eldvarnabok); })) siur.push(['eldvarnabok', 'Eldvarnabók óundirrituð']);
-    if (syn.kerfi && bl.some(function (b) { return (b.kerfi || []).length; })) siur.push(['oskrad', 'Óskráð kerfi']);
     box.innerHTML = '<label class="yf-q">' + svgIc('leit', 1.8) + '<input id="yf-q" type="search" placeholder="Leita eftir eign eða heimilisfangi" value="' + esc(yfSia.q) + '"></label>' +
       '<div class="yf-s">' + siur.map(function (s) { return '<button type="button" class="ysia' + (yfSia.s === s[0] ? ' on' : '') + '" data-ysia="' + s[0] + '">' + esc(s[1]) + '</button>'; }).join('') + '</div>' +
       '<button type="button" class="kbtn sm" id="yf-csv">' + svgIc('pdf', 1.8) + 'Flytja út CSV</button>';
