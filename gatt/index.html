@@ -521,6 +521,11 @@
   .dpanel tbody td{padding:10px 12px}
   .dpanel tbody tr:hover td:first-child{box-shadow:none}
   .eqsum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .eq-fold summary{cursor:pointer;list-style:none;margin:0 0 10px;width:max-content}
+  .eq-fold summary::-webkit-details-marker{display:none}
+  .eq-fold summary::before{content:"▸ ";font-size:11px}
+  .eq-fold[open] summary::before{content:"▾ "}
+  .eq-fold[open] summary{margin-bottom:12px}
   .eqsum .tb b{font-weight:600;color:var(--ink);letter-spacing:.4px}
   .eq-loc{color:var(--dim)}
   .eq-nr{font-size:11px;color:var(--dim);letter-spacing:.3px}
@@ -1817,6 +1822,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261027c"></script>
+<script src="/gatt/portal.js?v=20261027d"></script>
 </body>
 </html>

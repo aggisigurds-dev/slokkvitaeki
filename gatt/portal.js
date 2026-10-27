@@ -1302,14 +1302,16 @@
       if (!eq.length) html += '<div class="dpanel"><div class="dempty">Engin tæki skráð á þessa eign.</div></div>';
       else {
         html += '<div class="eqsum">' + order.map(function (k) { return tegundPilla(k).replace('</span>', ' <b>× ' + groups[k] + '</b></span>'); }).join('') + '</div>';
-        html += '<div class="dpanel"><table><thead><tr><th>Tegund</th><th>Staðsetning</th><th>Síðast skoðað</th><th>Næsta skoðun</th></tr></thead><tbody>' +
+        // Listinn er samanbrotinn sjálfgefið (Agnar 27.10): samantektarpillurnar segja söguna, listinn opnast við smell
+        html += '<details class="eq-fold"><summary class="kj-meira">Sýna tækjalistann (' + eq.length + ')</summary>' +
+          '<div class="dpanel"><table><thead><tr><th>Tegund</th><th>Staðsetning</th><th>Síðast skoðað</th><th>Næsta skoðun</th></tr></thead><tbody>' +
           eq.map(function (e) {
             return '<tr><td><div style="font-weight:600;color:var(--ink)">' + esc(e.tegund || '—') + (e.staerd ? ' <span class="dim" style="font-weight:500">' + esc(e.staerd) + '</span>' : '') + '</div>' +
               (e.nr ? '<div class="eq-nr">Nr. ' + esc(e.nr) + '</div>' : '') + (e.lan ? '<div class="eq-nr">Lánstæki</div>' : '') + '</td>' +
               '<td class="eq-loc">' + (e.stadsetning ? esc(e.stadsetning) : '—') + '</td>' +
               '<td class="num">' + esc(fmtDate(e.sidast)) + '</td>' +
               '<td class="num">' + esc(fmtDate(e.naest)) + '</td></tr>';
-          }).join('') + '</tbody></table></div>';
+          }).join('') + '</tbody></table></div></details>';
       }
       html += '</section>';
     }
