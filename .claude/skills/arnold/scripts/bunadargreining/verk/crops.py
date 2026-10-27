@@ -25,9 +25,20 @@ def mynd_blads(nafn, b, frum):
     im = Image.open(p).convert('RGB')
     return im, 'skonnun', 0
 
+def frum_ur_bladi(b):
+    """Vara-rammi þegar hæð borðsins hefur ekkert frum (hæðir úr „Finna allt húsið“, 25.10.2026): 6006 á lengri hlið (verk 30 hrundi á KeyError 'frum')."""
+    p = os.path.join(D, b['skra'])
+    if b['pdf']:
+        r = pymupdf.open(p)[0].rect; w, hh = r.width, r.height
+    else:
+        w, hh = Image.open(p).size
+    return {'b': 6006, 'h': int(round(6006 * hh / w))} if w >= hh else {'b': int(round(6006 * w / hh)), 'h': 6006}
+
 myndir = {}
 for h in M['haedir']:
     b = M['blod'][h['blad']]
+    if not h.get('frum'):
+        h['frum'] = frum_ur_bladi(b); h['frum_vara'] = True
     if h['blad'] not in myndir:
         im, teg, orð = mynd_blads(h['blad'], b, h['frum'])
         myndir[h['blad']] = im; b['tegund'] = teg; b['ord_i_textalagi'] = orð; b['stærð'] = list(im.size)
