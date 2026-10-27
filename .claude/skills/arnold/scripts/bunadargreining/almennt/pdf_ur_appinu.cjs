@@ -16,7 +16,7 @@ const CID = process.argv[2], UT = process.argv[3], BASE = process.argv[4] || 'ht
   await p.goto(BASE + '/#company/' + CID, { waitUntil: 'domcontentloaded' });
   await p.waitForFunction((s) => document.querySelector(s), SEL, { timeout: 90000 });
   await p.waitForTimeout(3000);
-  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 60000 }), p.click(SEL)]);
+  const [pop] = await Promise.all([ctx.waitForEvent('page', { timeout: 60000 }), p.evaluate((s) => document.querySelector(s).click(), SEL)]);   // JS-smellur: spjaldið getur verid samanbrotid (takkinn 'not visible' 27.10.2026)
   await pop.waitForFunction(() => document.querySelector('table') && [...document.images].every((i) => i.complete), null, { timeout: 180000 });
   await pop.waitForTimeout(1500);
   const uppl = await pop.evaluate(() => ({ titill: document.title, myndir: document.querySelectorAll('.mynd img').length, toflur: document.querySelectorAll('table').length, h2: [...document.querySelectorAll('h2')].map((h) => h.textContent).slice(0, 12) }));
