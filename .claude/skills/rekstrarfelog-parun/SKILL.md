@@ -14,6 +14,9 @@ description: >
 
 # Rekstrarfélög — pörun eftir tækjafjölda
 
+**Fact sheets per félag** (lesið aðeins þegar spurt er um það félag; haldið við í lok hverrar lotu):
+`references/center-hotel.md` · `references/heimaleiga.md`. Nýtt félag = ný skrá hér + lína í þessum lista.
+
 Agnar 06.10.2026: „para burtséð frá heitum / heimilisföngum" · „Invoice = skýrsla =
 tækjalisti" · „ekki alltaf að marka eldri skjöl". Skráarheiti á Drive ljúga (öll blöð
 Steypustöðvarinnar heita „Malarhöfða 38"); tölurnar 17/20/1/2 eru Borgarnes hvað sem
@@ -65,6 +68,11 @@ Talið per tegund: léttvatn · duft 6–12 · duft 2 · CO₂ 2 · CO₂ 5 · s
    ↔ R-000804 frávik 0) en Agnar ákveður; hann lét tengja tvö aftur 06.10.2026.
 8. **Skýrslur ≥ 2 ára fá ⚠ eldri heimild** og ráða engu um stöðu ársins.
 9. **Fjölstaða-kúnna má aldrei para á kennitölu** — lykill er `fyrirtaeki.id`.
+
+10. **Upphæð ein sker ekki úr þegar tveir staðir deila tölum (27.10.2026).** Center Hótel 2023: R-103896 og R-104043
+    pöruðust „nákvæmt" á öfug hótel; póstur 21.09.2023 snéri þeim við. Póstur/vegna/dagsetning skýrslu ræður, upphæðin
+    er vísbending — merktu „Staðfest" eða „LÍKLEG". Full aðferð fyrir Stólpa-reikninga án PDF, innlestur skýrslna úr
+    Gmail-viðhengjum og systurfélög án staðar (SAB ehf. → Blue Montain): `.claude/agents/sara-coworker.md` kafli 7.
 
 ## Lestrargildrur sem bitu
 

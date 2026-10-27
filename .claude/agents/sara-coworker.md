@@ -210,6 +210,52 @@ farið hafi verið á staðinn. Fyrri reglan leit aðeins á skýrslugerð og fl
 `tools/bera-saman-reikninga.cjs` (samanburður, `--listi --einstada`),
 `tools/skra-reikninga-facts.cjs` (skrifar, þurrkeyrsla sjálfgefin).
 
+## 7 · Stólpa-reikningar án PDF (2023–2024), skýrslur úr Gmail og gáttin — mælt 27.10.2026
+
+Fundur Center Hótel 5.11 og Heimaleigu 28.10 kröfðust þess að gáttin sýndi ALLT frá 2023. Aðferðin sem dugði:
+
+**Hvað gáttin sýnir.** `gatt.cjs` sækir Stólpa-reikninga frá `2023-01-01` (áður 730 dagar) á kennitölur hópsins
+(`baseHopur`: allir í `customers_base.rekstrarfelag`). Reikningur sem á ekkert skjal birtist án PDF með stöðu úr Stólpa.
+`opid_vid_yfirtoku` = fyrri eigandi tók við greiðslunni → telst **greitt** (Agnar 27.10). Kreditfærður reikningur +
+kreditnóta (`kreditfaert`/`kreditreikningur`) sjást aldrei sem krafa.
+
+**Para Stólpa-reikning við hótel (engin PDF, engin vegna-lína).** Útilokun: hvert hótel á einn slökkvitækjareikning og
+einn brunakerfisreikning á ári. Verðlíkan 2023–24 án vsk: brunakerfi = einingar × 1.000 + skýrslugerð 8.000 + akstur 3.000;
+slökkvitæki = 2.600 × yfirferð + slanga 2.500 + hleðsla 4.100 + skýrslugerð 3.500 + akstur 3.000 (2.500 árið 2023).
+**Tveir staðir með sömu tölur → upphæð ein sker ekki úr.** R-103896/R-104043 komu „nákvæmir" út á öfugum hótelum;
+póstur 21.09.2023 snéri þeim við. Dagsetning pósts með skýrslunni og reikningur sama dag er sönnunin, upphæðin vísbending.
+Merktu í notes **Staðfest** (póstur/vegna) eða **LÍKLEG**, aldrei „nákvæm" nema allt stemmi.
+
+**Skrá Stólpa-reikning á stað:** ný `customer_documents`-röð `doc_type='reikningur'`, `invoice_number`, `amount`, `doc_date`,
+`year`, `vidskiptategund`, `fyrirtaeki_id`, `found_by='claude-<efni>-<dags>'`, **`source='other'`** (check-skorða hafnar
+'drive'). Multi-statement SQL í MCP skilar aðeins síðasta niðurstöðusetti og velti eldri skrifum við villu → keyrðu hverja setningu sér.
+
+**Skýrslur sem eru aðeins viðhengi í pósti (Gmail eldklar@, `u/1`, aðeins gegnum Chrome):** sæktu viðhengið, lestu texta með
+`pdftotext -layout` (hótel, heimilisfang, dagsetning — skráarheitið má ekki treysta), settu röð `doc_type='brunakerfi'` (eða
+`uttektarskyrsla`) með `link_ok=true`, `link_status='200'`, og skrána í `samningar/drive-afrit/<tegund>/<fid>/<id>_<öruggt-nafn>.pdf`
+(service-lykill úr `luna-bridge/.env`, Node-skrifta; sjá `tmp`-fordæmi 27.10). Staðfestu í lifandi gátt (`/api/gatt?c=<slug>`
+→ `reports`). 27.10: Hlaðvarpinn/Plaza/Arnarhvoll/Miðgarður (22.08.2023) og Laugavegur 95-99 (08.09.2023) → 10337–10341;
+allar 9 brunakerfisskýrslur 2023 nú í gátt Center Hótel.
+
+**Reikningur á systurfélag án staðar** (R-104473, SAB ehf. kt 510496-2489, base 303, `rekstrarfelag='Heimaleiga'`, enginn
+`fyrirtaeki`): birtist án hótels. Leitaðu í `email_digest` að kennitölunni og nafni tengiliðar; 17.11.2023 spyr Slökkvitæki
+Albert Sveinsson (tengiliður Urðarhvarfs 2) hvort skýrsla/reikningur hafi farið á SAB-kt → LÍKLEG pörun við Blue Montain
+(1483, skjal 10342, 159.820 kr í efri kanti líkans, ekki á krónu).
+
+**Gáttin sjálf:** ekki læsa gátt kúnna án þess að Agnar biðji (Heimaleiga var læst af aðgangsstillinga-útgáfu 27.10 og
+opnuð aftur). Starfsmaður skoðar sem kúnni: `/gatt-admin/` → „Opna sem kúnni".
+
+**Tölur sem Agnar vissi ekki:** Center Hótel hefur fengið brunakerfisreikninga frá 2023: 2023 9 stk 2.259.501 kr; 2024 9 stk
+2.450.213; 2025 9 stk 2.556.207; 2026 5 stk 1.786.070 (≈ þrefalt slökkvitækjaveltan) — hvergi í samningi. Segja það
+hreint út í fundargögnum.
+
+Lærdómur: **mæla á hráu skjali áður en „nákvæm" er sagt** og **lesa innihald viðhengis, ekki skráarheiti**.
+
 ## Lærdómur
 
+- **27.10.2026** — kafli 7: Stólpa-gluggi í gátt, pörun án PDF, skýrslur úr Gmail, SAB/R-104473, brunakerfisvelta Center Hótel.
 - **16.10.2026** — Uppgjör lota 16.10.2026: (1) Agnar 20.05: „no prices should be in the Úttektarskýrslu,, it should look exactly like this" — úttektarskýrsla (patch 168) er nákvæm eftirmynd IKEA-2025-PDF: 8 fastir flokkar Fjöldi/Í lagi, „Annað", „Athugasemdir", „Fyrir hönd Slökkvitæki ehf", ENGIN verð, merkið óbreytt (SlokkLogo 169). (2) Agnar 07.09: „ef uttektarskyrsla eda invoice stemma ekki þá er annahvort ekki a rettum stad" — frávik í fact-check = mislagt skjal á systkinastað/annarri kt, ekki mæliskekkja; 14 hópar „sami staður, margar kt" (Armar/Armar Vinnulyftur Kaplahraun 2-4; Hagvagnar hf vs þjónusta Melabraut 18; Hringdu/SAFÍR Ármúli 27; BJB Flatahraun 7; Glitur/Rafha Suðurlandsbraut 16; Skipholt 50d); pósthólf umsjónarfélags (Þangbakki) er FALSKUR hópur; Vélsmiðja Orms og Víglundar R-000411 (33 tæki) rukkað á einn stað fyrir tvo. (3) Blár punktur = reikningur til, engin skýrsla → skrá tækjafjölda úr reikningnum (tools/uttekt-graen-af-reikningi.cjs) og merkja klarad, BÚA ALDREI TIL skýrslu (Charlize #866). (4) 0 kr í SARA-línu = óverðlagt, ekki ókeypis; INSERT-drög skrá enga heimsókn; innri texti í krafa_note (sara/SKILL.md leiðrétt 16.10). (5) Áður en drög eru kynnt: bera hverja línu saman við vinnublaðið/SARA-skannann og sýna skannann (Agnar 12.10 „geturðu fundið sönnun fyrir því að þetta sé rétt").
+
+## Lærdómur
+
+- **27.10.2026** — 27.10.2026: kafli 7 — Stólpa-reikningar án PDF, skýrslur úr Gmail-viðhengjum, SAB/R-104473 → Blue Montain, brunakerfisvelta Center Hótel 2023–26; engin 'nákvæm' pörun þegar tveir staðir deila tölum
