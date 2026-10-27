@@ -113,6 +113,17 @@
   to = "https://kjarni.vercel.app/kjarni/:splat"
   status = 302
 
+# Stuttar innskraningarslodir gattarinnar (27.10.2026): /heimaleiga og almennt /g/<slug> -> /gatt/?c=<slug>
+[[redirects]]
+  from = "/heimaleiga"
+  to = "/gatt/?c=heimaleiga-ehf"
+  status = 302
+
+[[redirects]]
+  from = "/g/:slug"
+  to = "/gatt/?c=:slug"
+  status = 302
+
 # Route /api/* to the Netlify Functions under netlify/functions/*.js
 # e.g. /api/geocode -> /.netlify/functions/geocode
 # Clean alias for the bulk-geocode background function (must precede the wildcard).
