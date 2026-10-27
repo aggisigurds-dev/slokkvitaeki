@@ -169,13 +169,13 @@
     var sum = function (a) { return L.reduce(function (s, e) { return s + (a === 'aetlun' ? e.aetlun : (e.ar[a] || 0)); }, 0); };
     var F = skrar('kostnadur').filter(function (r) { return !b || r.fid === b.id; }).sort(function (a, c) { return String(c.gogn.dags || '').localeCompare(String(a.gogn.dags || '')); });
     return (b ? '' : '<div class="egp-h"><b>Kostnaðaryfirlit</b><span>' + L.length + ' eignir · ' + fmtKr(sum(ar[2])) + ' á þessu ári</span></div>') +
-      (L.length ? '<div class="vb-tw"><table class="vb-t"><thead><tr><th>Eign</th><th>' + ar[0] + '</th><th>' + ar[1] + '</th><th>' + ar[2] + '</th><th>Áætlun ' + (ar[2] + 1) + '</th></tr></thead><tbody>' +
-        L.map(function (e) { return '<tr><td>' + esc(e.nafn) + '</td><td>' + (e.ar[ar[0]] ? fmtKr(e.ar[ar[0]]) : '—') + '</td><td>' + (e.ar[ar[1]] ? fmtKr(e.ar[ar[1]]) : '—') + '</td><td><b>' + (e.ar[ar[2]] ? fmtKr(e.ar[ar[2]]) : '—') + '</b></td><td>' + (e.aetlun ? fmtKr(e.aetlun) : '—') + '</td></tr>'; }).join('') +
-        (L.length > 1 ? '<tr class="vb-sum"><td>Samtals</td><td>' + fmtKr(sum(ar[0])) + '</td><td>' + fmtKr(sum(ar[1])) + '</td><td><b>' + fmtKr(sum(ar[2])) + '</b></td><td>' + fmtKr(sum('aetlun')) + '</td></tr>' : '') + '</tbody></table></div>'
+      (L.length ? '<div class="vb-tw"><table class="vb-t"><thead><tr><th>Eign</th><th>' + ar[0] + '</th><th>' + ar[1] + '</th><th>' + ar[2] + '</th></tr></thead><tbody>' +
+        L.map(function (e) { return '<tr><td>' + esc(e.nafn) + '</td><td>' + (e.ar[ar[0]] ? fmtKr(e.ar[ar[0]]) : '—') + '</td><td>' + (e.ar[ar[1]] ? fmtKr(e.ar[ar[1]]) : '—') + '</td><td><b>' + (e.ar[ar[2]] ? fmtKr(e.ar[ar[2]]) : '—') + '</b></td></tr>'; }).join('') +
+        (L.length > 1 ? '<tr class="vb-sum"><td>Samtals</td><td>' + fmtKr(sum(ar[0])) + '</td><td>' + fmtKr(sum(ar[1])) + '</td><td><b>' + fmtKr(sum(ar[2])) + '</b></td></tr>' : '') + '</tbody></table></div>'
         : '<div class="egp-e">Reikningar Slökkvitækja ehf. birtast hér sjálfkrafa per eign og ár. Skráðu eigin kostnað (aðra verktaka, búnað, rekstur) til að fá heildarmyndina og áætlun næsta árs.</div>') +
       (F.length ? '<div class="vb-eign">Eigin færslur</div>' + F.slice(0, b ? 6 : 10).map(function (r) { var g = r.gogn, e0 = eignAfId(r.fid); return '<div class="egp-r vb-r"><span class="egd"><b>' + esc(fmtDate(g.dags).slice(0, 2)) + '</b>' + esc(fmtDate(g.dags).slice(3, 5)) + '/' + esc(String(g.dags || '').slice(2, 4)) + '</span><div class="egt"><b>' + esc(g.lysing) + '</b><span>' + [b ? '' : (e0 ? e0.nafn : ''), g.flokkur, g.verktaki].filter(Boolean).join(' · ') + '</span></div><span class="vb-kr">' + fmtKr(g.upphaed) + '</span><button type="button" class="kbtn sm" data-sr-edit="' + r.id + '" aria-label="Breyta" title="Breyta">' + BLY + '</button></div>'; }).join('') : '') +
       '<div class="vs-dl"><button type="button" class="gbtn sm" data-sr-new="kostnadur"' + (b ? ' data-sr-fid="' + b.id + '"' : '') + '>' + ic('plus', 2.2) + 'Skrá kostnað</button>' + (L.length && !b ? '<button type="button" class="kbtn sm" data-sr-csv="kostnadur">' + ic('pdf', 1.8) + 'CSV</button>' : '') + '</div>' +
-      (b ? '' : '<div class="egp-n">Reikningar okkar koma úr skjalasafninu (upphæð með vsk þegar hún er skráð). Áætlun = meðaltal tveggja síðustu ára + 4 %.</div>');
+      (b ? '' : '<div class="egp-n">Reikningar okkar koma úr skjalasafninu (upphæð með vsk þegar hún er skráð).</div>');
   }
 
   /* ── Vinnusvæðið og eignasíðan ── */
