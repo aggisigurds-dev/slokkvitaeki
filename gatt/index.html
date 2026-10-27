@@ -1443,6 +1443,7 @@
         <a class="tab" data-view="skilabod">Skilaboð<span class="nbadge hidden" id="msgBadge"></span></a>
         <div class="leit hidden" id="leit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="leit-q" type="search" placeholder="Leita í eignum, verkum, skjölum…" autocomplete="off" aria-label="Leita yfir allt"><div class="leit-res hidden" id="leit-res"></div></div>
         <span class="hbtn en" id="langBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>EN</span>
+        <span class="hbtn hidden" id="adgBtn" title="Lykilorð og netfang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Aðgangur</span>
         <span class="hbtn" id="logoutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="m15 8 4 4-4 4M19 12H9"/></svg>Útskrá</span>
       </nav>
     </div>
@@ -1682,6 +1683,22 @@
     </div>
   </form>
 </div>
+<!-- ══ AÐGANGUR 27.10.2026 — notandinn velur eigið lykilorð og staðfestir netfangið; fyrsta innskráning með bráðabirgðalykilorði opnar þetta sjálfkrafa ══ -->
+<div class="modal hidden" id="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-title">
+  <form class="mcard" id="ad-form" autocomplete="off">
+    <div class="m-head">
+      <div class="grow"><div class="kicker" id="ad-kick">Aðgangur</div><h3 id="ad-title">Lykilorð og netfang</h3><div class="baddr" id="ad-sub"></div></div>
+      <button type="button" class="xbtn" id="ad-close" aria-label="Loka"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="fld"><label for="ad-email">Netfang — notandanafnið við innskráningu</label><input type="email" id="ad-email" placeholder="nafn@fyrirtaeki.is" autocomplete="username"></div>
+    <div class="fld"><label for="ad-pw1">Nýtt lykilorð (minnst 8 stafir)</label><input type="password" id="ad-pw1" autocomplete="new-password"></div>
+    <div class="fld"><label for="ad-pw2">Staðfesta lykilorð</label><input type="password" id="ad-pw2" autocomplete="new-password"></div>
+    <div class="m-foot">
+      <span class="m-note" id="ad-err">Breytingin tekur gildi strax við næstu innskráningu.</span>
+      <button type="submit" class="gbtn" id="ad-save">Vista</button>
+    </div>
+  </form>
+</div>
 <!-- ══ TEIKNING Í FULLRI STÆRÐ ══ -->
 <div class="lb hidden" id="lb" role="dialog" aria-modal="true" aria-labelledby="lb-name"><div class="lb-k">
   <div class="lb-h"><div class="grow"><div class="kicker" id="lb-kick">Teikning</div><b id="lb-name"></b></div>
@@ -1796,6 +1813,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261026q"></script>
+<script src="/gatt/portal.js?v=20261027a"></script>
 </body>
 </html>

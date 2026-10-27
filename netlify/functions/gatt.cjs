@@ -692,8 +692,35 @@ exports.handler = async (event) => {
   }
 
   // POST → viðskiptavinur sendir fyrirspurn / aðgerð
+  // ── Aðgangur (27.10.2026, Agnar: bæklingur — „skrá sig inn með bráðabirgðalykilorði, skrá sitt lykilorð og sinn tölvupóst"):
+  //    innskráður notandi breytir eigin lykilorði og netfangi. Stjórnandi (portal_users) eða undirnotandi (portal_notendur,
+  //    session.uid). Opinn hamur og starfsmanna-token breyta engu. brabirgda-merkið í stillingum fellur um leið og vistað er.
+  async function vistaAdgang(b) {
+    if (!session || openMode) return P.json(401, { error: 'Innskráningu vantar' });
+    if (session.staff) return P.json(403, { error: 'Starfsmannaaðgangur breytir ekki aðgangi kúnnans' });
+    const nytt = String(b.nytt_lykilord || '');
+    const netfang = String(b.netfang || '').trim().toLowerCase();
+    if (netfang && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(netfang)) return P.json(400, { error: 'Netfangið lítur ekki rétt út' });
+    if (nytt && nytt.length < 8) return P.json(400, { error: 'Lykilorð þarf að vera minnst 8 stafir' });
+    if (!nytt && !netfang) return P.json(400, { error: 'Ekkert að vista' });
+    const patch = {};
+    if (nytt) patch.pass_hash = P.hashPassword(nytt);
+    if (netfang) patch.email = netfang;
+    let r;
+    if (session.uid) r = await P.sbPatch(`portal_notendur?id=eq.${encodeURIComponent(session.uid)}&base_id=eq.${baseId}&select=id,email`, patch);
+    else {
+      const st = Object.assign({}, (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {}); delete st.brabirgda;
+      patch.stillingar = st;
+      r = await P.sbPatch(`portal_users?base_id=eq.${baseId}&select=id,email`, patch);
+    }
+    if (!r.ok) return P.json(r.status === 409 ? 409 : 500, { error: r.status === 409 ? 'Netfangið er þegar í notkun á öðrum aðgangi' : 'Vistun mistókst', detail: (await r.text()).slice(0, 200) });
+    const row = (await r.json())[0] || {};
+    return P.json(200, { ok: true, email: row.email || netfang || session.email || '' });
+  }
+
   if (event.httpMethod === 'POST') {
     let b; try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
+    if (b.action === 'adgangur') return vistaAdgang(b);
     if (lesEingongu) return P.json(403, { error: 'Aðgangurinn er lesaðgangur — engar breytingar' });
     if (leigutaki && !['punktur', 'lokid', 'qr', undefined, ''].includes(b.action)) return P.json(403, { error: 'Ekki í boði fyrir leigutaka' });
     if (b.action === 'eldvarnabok') return vistaEldvarnabok(b);
@@ -1299,7 +1326,8 @@ exports.handler = async (event) => {
               if (rr.ok) (await rr.json()).forEach((x) => { rl[normNr(x.reikningur_nr)] = x; });
             }
             rows3.forEach((x) => {
-              const n = normNr(x.reikn_nr), ex = byNr3[n], greitt = x.stada === 'greitt' || !!x.greitt_dags, dags = String(x.dags).slice(0, 10);
+              // 27.10.2026: „opið við yfirtöku“ (G14, gert upp við fyrri eigendur) sýnist kúnnanum sem greitt, ekki auður reitur
+              const n = normNr(x.reikn_nr), ex = byNr3[n], greitt = x.stada === 'greitt' || x.stada === 'opid_vid_yfirtoku' || !!x.greitt_dags, dags = String(x.dags).slice(0, 10);
               // 25.10.2026 (Heimaleiga: R-107254 og R-107758 „kreditfært" í Stólpa sáust sem reikningar): kreditfærður
               // reikningur er ekki krafa — hvorki sýndur úr Stólpa né úr skjalaröð sem ber sama númer.
               const kredit = /kredit/i.test(String(x.stada || ''));
@@ -1425,7 +1453,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       serkjor,
-      account: { name: name || '', theme: theme, open: openMode, details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
+      account: { name: name || '', theme: theme, open: openMode, netfang: session ? (session.email || '') : '', details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
       stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald, skrar,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar

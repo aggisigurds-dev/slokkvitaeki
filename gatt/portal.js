@@ -437,6 +437,7 @@
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
+    var ab = $('#adgBtn'); if (ab) ab.classList.toggle('hidden', !!state.open || !!(data.account && data.account.notandi && data.account.notandi.staff));
     var d = new Date();
     var today = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
@@ -465,6 +466,13 @@
     renderMessages(data.messages);
     renderSerkjor();
     wireNav();
+    // 27.10.2026: ?flipi=<view> opnar flipa beint (bæklingur, póstar, skjámyndir) — aðeins sýnilega flipa
+    try {
+      var fl = new URLSearchParams(location.search).get('flipi');
+      if (fl && VIEWS.indexOf(fl) > -1 && !state._flipiOpnad) { state._flipiOpnad = true; var ft = document.querySelector('nav .tab[data-view="' + fl + '"]'); if (ft && !ft.classList.contains('hidden')) ft.click(); }
+    } catch (_) {}
+    // Fyrsta innskráning með bráðabirgðalykilorði (stillingar.brabirgda) → notandinn velur sitt eigið strax
+    if (!state.open && data.account && data.account.stillingar && data.account.stillingar.brabirgda && !state._adOpnad) { state._adOpnad = true; setTimeout(function () { openAdgangur(true); }, 600); }
   }
 
   /* ══ SÉRKJÖR 26.10.2026 (Agnar: „tab/page um sérkjör … fullt verð með vsk, fullt án vsk, afsláttarkjör og verð án vsk, og hvað
@@ -572,6 +580,42 @@
       else toast('Sending mistókst — reyndu aftur');
     });
   }
+
+  /* ══ AÐGANGUR 27.10.2026 — lykilorð og netfang notandans (POST action 'adgangur') ══ */
+  function openAdgangur(fyrsta) {
+    var a = (state.data && state.data.account) || {};
+    $('#ad-kick').textContent = fyrsta ? 'Fyrsta innskráning' : 'Aðgangur';
+    $('#ad-sub').textContent = fyrsta ? 'Veldu þitt eigið lykilorð og staðfestu netfangið sem þú skráir þig inn með.' : 'Breyttu lykilorði eða netfangi aðgangsins.';
+    $('#ad-email').value = a.netfang || '';
+    $('#ad-pw1').value = ''; $('#ad-pw2').value = '';
+    $('#ad-err').textContent = 'Breytingin tekur gildi strax við næstu innskráningu.';
+    $('#ad-modal').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+    setTimeout(function () { $(fyrsta ? '#ad-pw1' : '#ad-email').focus(); }, 40);
+  }
+  function closeAdgangur() {
+    $('#ad-modal').classList.add('hidden');
+    if ($('#drawer').classList.contains('hidden') && $('#er-modal').classList.contains('hidden')) document.body.style.overflow = '';
+  }
+  $('#adgBtn').onclick = function () { openAdgangur(false); };
+  $('#ad-close').onclick = closeAdgangur;
+  $('#ad-modal').addEventListener('mousedown', function (e) { if (e.target === this) closeAdgangur(); });
+  $('#ad-form').onsubmit = function (e) {
+    e.preventDefault();
+    var netfang = $('#ad-email').value.trim(), p1 = $('#ad-pw1').value, p2 = $('#ad-pw2').value, err = $('#ad-err');
+    if (p1 && p1.length < 8) { err.textContent = 'Lykilorðið þarf að vera minnst 8 stafir.'; return; }
+    if (p1 !== p2) { err.textContent = 'Lykilorðin eru ekki eins.'; return; }
+    if (!p1 && !netfang) { err.textContent = 'Skrifaðu nýtt lykilorð eða netfang.'; return; }
+    var btn = $('#ad-save'); btn.disabled = true;
+    fetch('/api/gatt', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'adgangur', netfang: netfang, nytt_lykilord: p1 }) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        btn.disabled = false;
+        if (!res.ok) { err.textContent = (res.j && res.j.error) || 'Vistun mistókst'; return; }
+        if (state.data && state.data.account) { state.data.account.netfang = res.j.email || netfang; if (state.data.account.stillingar) delete state.data.account.stillingar.brabirgda; }
+        closeAdgangur(); toast(p1 ? 'Lykilorðið er vistað' : 'Netfangið er vistað');
+      })
+      .catch(function () { btn.disabled = false; err.textContent = 'Sending mistókst — reyndu aftur'; });
+  };
 
   function renderMessages(msgs) {
     msgs = msgs || [];
