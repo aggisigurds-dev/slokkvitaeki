@@ -1,6 +1,6 @@
 # Heimaleiga — fact sheet (staða 27.10.2026)
 
-Fundur **28.10.2026**. Gátt: `?c=heimaleiga-ehf` (opin; var læst fyrir mistök 27.10 og opnuð aftur — læsa ekki án Agnars).
+Fundur **28.10.2026 kl. 9:30** (færður úr 10 að ósk Evu 26.10; Grensásvegur 7, 3. hæð; Eva + Erna). Undirbúningsgögn: `ut/heimaleiga-fundur-20261028/` (varnarblad, fundarprepp, baeklingur, ef-thau-spyrja). Gátt: `?c=heimaleiga-ehf` (opin; var læst fyrir mistök 27.10 og opnuð aftur — læsa ekki án Agnars).
 
 ## Grunnur
 - Höfuðfélag `customers_base.id` 293, kt **510117-0690** (`rekstrarfelag='Heimaleiga'`). Hópurinn (`baseHopur`):
@@ -16,7 +16,7 @@ Fundur **28.10.2026**. Gátt: `?c=heimaleiga-ehf` (opin; var læst fyrir mistök
 - 28 reikningar í gátt (2023 3 · 2024 2 · 2025 9 · 2026 14), allir greiddir. Stólpi-saga kt 510117-0690 hefst 18.06.2025 (R-106967).
 - Falið viljandi: **R-107909** (Laugavegur 42, #1289, kredit-mál). Kreditpör R-107254/107299, R-107256/107266, R-107758/108129 sýnd ekki.
 - G14 „opið við yfirtöku" = greitt (fyrri eigandi tók við).
-- 2023: G14 R-104402/104403 · **R-104473 SAB ehf. 159.820 kr → líklega Blue Montain** (skjal 10342; póstur 17.11.2023 við Albert Sveinsson; upphæð í efri kanti líkans, ekki sönnuð).
+- 2023: G14 R-104402/104403 · **R-104473 SAB ehf. 159.820 kr → Blue Montain** (skjal 10342). Kt 510496-2489 er eigandi Urðarhvarfs 2 (erindi #1323 kallar hann U2 ehf, grunnurinn SAB ehf.); póstur 17.11.2023 við Albert Sveinsson; skýrsla des 2023. Upphæðin í efri kanti líkans, ekki sönnuð á krónu. Athuga: reikningurinn er til EIGANDA hússins, ekki Heimaleigu.
 - Skýrslur: 2023 Blue Montain (36 tæki + 5 slöngur, des 2023), Icelandic Apartments (51 tæki, jún 2023), G14 (brunakerfi nóv 2023), Höfuðstöðvar 859 (er í raun G14-brunakerfisskrá); aðrar byggingar frá 2025/2026.
 
 ## Opið
