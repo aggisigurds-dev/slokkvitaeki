@@ -1346,6 +1346,8 @@
   @media(max-width:760px){ .leit{display:none} }
   /* 27.10.2026 (simi 375 px): Naestu skodanir var 415 px breitt flex-barn i #yf-rail (min-width:auto + nowrap nofn) og togadi alla forsiduna ut fyrir gluggann - stadfest i iframe 372 px: scrollWidth 431 -> 357 */
   .yf-rail .egp{min-width:0;max-width:100%}
+  /* 27.10.2026 (simi 375 px): visunarflogur i erindum (Skyrsla - uttektarskyrsla desember 2025) voru 366 px nowrap og toguðu Erindi-flipann ut; a mjoum skjam brotna thaer */
+  @media(max-width:480px){ .er-vis{max-width:100%} .er-vis .pdf{white-space:normal;height:auto;min-height:30px;padding:5px 10px;max-width:100%;text-align:left;line-height:1.3} }
   @media (prefers-reduced-motion:reduce){ .sc,.drawer,.mcard,.scrim,.modal{animation:none} *{transition:none!important} }
   @media(max-width:760px){
     .cards{grid-template-columns:repeat(2,1fr);gap:12px}
@@ -1815,6 +1817,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012j"></script>
-<script src="/gatt/portal.js?v=20261027b"></script>
+<script src="/gatt/portal.js?v=20261027c"></script>
 </body>
 </html>
