@@ -70,6 +70,7 @@ function grisjaHaed(h, syn) {
   const vm = h.vinnumynd && h.vinnumynd.url ? h.vinnumynd : null;
   const mk = Array.isArray(h.markers) ? h.markers : [];
   const out = { nafn: h.nafn || '', fjoldi: mk.length };
+  if (h.id) out._id = String(h.id);   // aðeins til samsetningar við búnaðargreininguna (fjarlægt áður en svarið fer út)
   if (syn.teikningar && h.image_url) {
     out.mynd = h.image_url;
     out.frum = h.frum && h.frum.b > 0 ? { b: h.frum.b, h: h.frum.h } : null;
@@ -1033,6 +1034,18 @@ exports.handler = async (event) => {
         if (gr.ok) (await gr.json()).forEach((r) => { if (!bgrById[r.company_id]) { const o = BGR.bgrSnid(r, bord[r.company_id]); if (o) bgrById[r.company_id] = o; } });
       } catch (_) {}
     }
+
+    // 2e3) Teikningar án merkja á borðinu fá punkta búnaðargreiningarinnar (Agnar 27.10.2026: „hafa búnaðargreiningarpunktana inná sem er til af“):
+    //      sama blað (hæðin og greiningin deila blað-id), sömu hnit (frummyndardílar), sömu litir og í Búnaðargreiningar-hlutanum.
+    Object.keys(tkById).forEach((cid) => {
+      const g = bgrById[cid];
+      tkById[cid].forEach((f) => {
+        const id = f._id; delete f._id;
+        if (!g || !id || !f.mynd || (f.merki && f.merki.length)) return;
+        const bh = (g.haedir || []).find((x) => x.id === id);
+        if (bh && Array.isArray(bh.merki) && bh.merki.length) { f.merki = bh.merki.map((m) => [m[0], m[1], m[2]]); f.fjoldi = f.merki.length; }
+      });
+    });
 
     // 2f) Opnar beiðnir af þjónustuvef per eign (Þjónustuborð, source 'gatt') → „Beiðni í vinnslu"
     const beidniById = {};
