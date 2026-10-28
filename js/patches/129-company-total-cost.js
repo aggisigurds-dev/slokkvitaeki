@@ -135,6 +135,8 @@
     // Unknown — keep original label so it still shows in the table.
     return t || '—';
   }
+  // 28.10.2026: viðbótarúttekt (488) les verð nýrra tækja úr þessari töflu og þarf SAMA tegundarlykil og taflan.
+  window.CtcPricing = Object.assign(window.CtcPricing || {}, { normalizeTypeFamily });
 
   // 2026-07-14 (verkefni 69b1ad35): sami tegundar-litur og á Vörur-spjöldunum
   // (js/vorur.js typeColor) — vinstri rammi á kostnaðarröðum svo tegundir

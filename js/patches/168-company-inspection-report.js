@@ -441,7 +441,11 @@
       }
       // Sjálfvirk vistun: sleppa ef úttektarskýrsla þessa árs er þegar til (svo
       // endurteknar forskoðanir tvírita ekki). Handvirki takkinn vistar samt.
-      if (auto) {
+      // 28.10.2026 (viðbótarúttekt, 488): eftir viðbótarreikning á þessi skýrsla að TAKA VIÐ af þeirri sem fyrir er —
+      // sjálfvirka vistunin sleppir því ekki þótt skýrsla ársins sé til, og eldri skýrsla ársins er fjarlægð eftir vistun
+      // (payday-push festir fyrstu skýrslu ársins við kröfuna, svo tvær sama árs þýddu að sú gamla færi út).
+      const _vb = !!(window.CIR_VIDBOT && String(window.CIR_VIDBOT.coId) === String(co.id) && Date.now() < window.CIR_VIDBOT.until);
+      if (auto && !_vb) {
         try {
           const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
           if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar)) {
@@ -475,6 +479,17 @@
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) {
+          if (_vb) {
+            try {
+              const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
+              const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id);
+              let eftir = 0;
+              for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
+              if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
+              window.CIR_VIDBOT = null;
+            } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
+          }
           _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
           // ── 2026-07-29 (Agnar: „reyna láta skýrsluna haldast betur … og hún á
           //    að vera sýnileg í kröfuyfirliti líka") ─────────────────────────
@@ -500,7 +515,7 @@
             if (sb && co.id != null && ar) {
               const rec = {
                 doc_type: 'uttektarskyrsla', fyrirtaeki_id: co.id, year: +ar,
-                storage_path: meta.storage_path || null,
+                storage_path: meta.storage_path || (_vb && meta.path ? 'samningar/' + meta.path : null),   // 28.10: viðbótarskýrslan skráir slóðina (annars null — handvirk lagfæring 26.10)
                 doc_date: new Date().toISOString().slice(0, 10),
                 customer_name: n || null, source: 'app', found_by: 'uttektarskyrsla-app',
                 notes: fname
