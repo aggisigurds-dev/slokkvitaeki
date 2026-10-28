@@ -7,8 +7,10 @@ description: >
   RLS-open tables), when to add a server-side Netlify function (AI/secret work),
   and how to verify the bundle before pushing. Use when adding any new view, board,
   button, or behavior to the app, or a new /api endpoint.
-  Kveikjuorð: nýr flipi, nýtt borð, nýtt API, patch, add-feature.
+  Kveikjuorð: nýr flipi, nýtt borð, nýtt API, patch, add-feature, nýr hnappur, ný síða, nýtt view.
 ---
+
+> Charlize: `select topic, fact from v_charlize_active where scope in ('slokkvitaeki','baedi','kerfi') and topic in ('kerfi','bord-flettur');` áður en þú breytir — tómt = óskráð. Lærdómur í lok lotu → skill `charlize`.
 
 # Add a feature — Slökkvitæki app
 

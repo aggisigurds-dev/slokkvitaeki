@@ -1,8 +1,12 @@
 ---
 name: adstod
-description: AI-aðstoðarmaðurinn — Customer brief (237), 🤖 banner-spjald (238), Aðstoðarmiðstöð (239). Notaðu þegar unnið er með watchlist, tips eða reglu-analyzera. Kveikjuorð: watchlist, banner, aðstoð, tips.
+description: AI-aðstoðarmaðurinn í Slökkvitæki-appinu — Customer brief (237), 🤖 banner-spjald (238), Aðstoðarmiðstöð (239) og forsíðu-aðstoðarmaðurinn (344). Notaðu þegar unnið er með watchlist, dots á kúnnum, tips, snooze eða reglu-analyzera; kallaðu á hann sjálfur þegar spurt er hvað „þurfi athygli“ hjá kúnna. Kveikjuorð: watchlist, banner, aðstoð, tips, Aðstoðarmiðstöð, customer brief, dot á kúnna, snooze, áríðandi, útrunnin tæki, líklegir tvítekningar.
 tools: Bash, Read, Grep, Glob, Edit
 ---
+
+## Charlize — lestu fyrst
+
+Áður en þú breytir kerfi eða fullyrðir um það: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','baedi') and topic in ('variant','stillingar','thjonustulisti','bord','kerfi') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
 
 Þú kannt **aðstoðarmanns-lögin** — dots á kúnnum, watchlist og reglu-byggða analyzera. Fasi 2 (AI-tips gegnum brunaholf) er óunninn.
 
@@ -74,3 +78,14 @@ Wiring eins og 236/232: nýr view-div, klónaður hliðarstiku-hnappur frá Bake
 ## Lærdómur
 
 - **16.10.2026** — Per-tækis reglan 15.10.2026: adstod_snoozed_v1 og adstod_watchlist_v1 lesast nú um Vidmot/AppSettings (sama val á öllum vélum), ekki localStorage — kaflarnir hér að ofan segja enn localStorage; Vidmot.flytja() flutti gömlu gildin einu sinni. Fasi 2 (AI-tips) enn óunninn, /api/adstod-run er ekki til. (js/patches/238-adstod-banner.js, js/patches/239-adstodarmidstod.js)
+
+## Nýtt úr Charlize og lotum (28.10.2026)
+
+- Forsíðu-aðstoðarmaðurinn (patch 344 + `/api/assistant`) var KVEIKTUR 03.09.2026 að beiðni Agnars (migration assistant_memory_fasi1 — þrjár töflur voru aldrei til frá 31.08 svo hann skilaði alltaf 500) og svarar á íslensku í texta; þetta er ANNAÐ en Fasi 2 hér að ofan. [C#363]
+- Watchlist (`adstod_watchlist_v1`) og snooze (`adstod_snoozed_v1`) liggja í localStorage — staða sem býr aðeins í vafra samstillist aldrei milli véla og Agnar vinnur á 3–4 tölvum; ábending, ekki breytt hér. [C#406 (MYNSTUR 1); lotur 532a8e1d, 9b70f49c]
+- AppSettings er skyndiminni fyrstu sekúndurnar (allt að 30 daga gamalt): `quickFlag()` má lesa það en kóði má aldrei skrifa í app_settings út frá AppSettings.get(). [C#751]
+- „Í þjónustu“ þýðir `fyrirtaeki.er_i_thjonustu = true` EÐA `AppSettings.arsskodun_customers[id].subscribed = true` (eða skráður búnaður); að taka fyrirtæki úr þjónustu krefst TVEGGJA skrifa (er_i_thjonustu=false OG blobbinn subscribed:false + removed_from_service_at). [C#454; lota 7576079c (líklega)]
+- Lifandi tæki ein og sér setja fyrirtæki ekki á Fyrirtæki í þjónustu — flaggið, blob subscribed eða skráður búnaður ræður (08.09.2026); hafðu það í huga í analyzerum um útrunnin tæki. [C#465]
+- „Sala á kúnnann eftir að málið varð til“ er EKKI sönnun um að mál sé afgreitt (búðarsala ≠ úttekt) — analyzerar mega ekki fullyrða „búið“ af seinni sölu einni saman (Agnar: „ég þori ekkert að loka neinu, svo mikið af false facts“). [C#425]
+- Bakfærðir reikningar (kredit í appi eða CANCELLED í Payday) telja ekki þegar reiknað er hvort reikningur sé til á stað; reikningur telst aðeins á sama stað (`solur.customer_id`). [C#581]
+- `uttaeki.status` er eitt af: active, i_vinnslu, geymsla, urelt, onytt. [lota 7576079c (líklega)]

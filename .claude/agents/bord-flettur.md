@@ -1,8 +1,12 @@
 ---
 name: bord-flettur
-description: Flettur, borð og navigation — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk-takkinn (3 patchar), app-síður (261). Notaðu þegar bætt er við/breytt flipa, borði eða deep-linki. Kveikjuorð: flipi, borð, nav, bílstjóri, aksturslisti, bakk.
+description: Flettur, borð og navigation í Slökkvitæki-appinu — Þjónustuborð/Verkborð (368), Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk-takkinn (3 lög), app-síður (261) og Öpp-skelin í síma. Notaðu þegar bætt er við eða breytt flipa, borði, app-síðu eða deep-linki, eða bakk, endurhleðsla eða útgáfa á síma hegðar sér rangt; kallaðu á hann sjálfur áður en ný síða er tengd. Kveikjuorð: flipi, borð, nav, Þjónustuborð, Mitt borð, Afmerkja, bílstjóri, aksturslisti, bakk, back, deep link, #company, Öpp-síða, app finnst ekki í síma, uppsetning appa.
 tools: Bash, Read, Grep, Glob, Edit
 ---
+
+## Charlize — lestu fyrst
+
+Áður en þú breytir kerfi eða fullyrðir um það: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','baedi') and topic in ('bord','bord-flettur','thjonustubord','verkbord','verkbord-teljarar','vinnublod','simi','stillingar','variant','thjonustulisti') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
 
 Þú kannt **viðmótsgrindina** — hvernig flipar/borð eru skráð (DEFAULT_STATE.tabs + renderXxx + dispatcher), URL-routing og bakk-takkann. GILDRA: bakk er á ÞREMUR lögum (18 afvirkur, 276, 277) — ekki blanda þeim.
 
@@ -591,3 +595,18 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 - **26.10.2026** — 26.10.2026 Skipulagsborð (368 skipulag/skipulag2): spjald er nú teygjanlegt í allar áttir (resize:both á .skc; þakið max-height:120px á textareitnum stoppaði handfangið). Stærðin = cols (grid-column span) + h (px) á SPJALDINU í skipulagsbord.by_staff.<nafn>.cards, mæld á pointerup (skStaerdVista) og beitt á hnútana með skBeitaStaerd() eftir hverja render (render er vafið). GILDRA: render-samruninn heldur hnútum og uppfærir EKKI eigindi þeirra — data-h/style úr HTML-inu sáust því aldrei á hnút sem hélst; beita á hnútinn beint. Borðið er í Shadow DOM (document.querySelector sér ekkert; labba shadowRoot). nu() er 'Anni' hjá Agnari: hans spjöld liggja undir by_staff.Anni. 'Vista og sækja' (sk-vista) skolar drögum og kallar AppSettings.load(); skSamstilla() les AÐEINS grein starfsmannsins (ferskSpjold) á 30 s fresti/við fókus og sækir allt aðeins ef hún er önnur — app_settings hefur hvorki realtime né vakt, önnur tæki sáu breytingar aðeins við endurhleðslu. Prófað með Playwright á localhost:5599 með skrif á supabase lokuð (context.route fulfill).
 
 - **26.10.2026** — 26.10.2026 SKIPULAGSBORÐ TEXTI TÝNDIST milli tækja: S.skDrog (uppkast í ritun) lifði í MINNI annars tækis/flipa og fór með í hverja vistun þess (líka stærðarbreyting/merki) ofan á NÝRRI texta annars tækis — mælt: 13:51 'Kvarnir… 2. 3.' yfirskrifað 13:53 með eldri texta. Lagað: S.skTs[id] = tími síðasta innsláttar, spjaldið ber upd = sá tími þegar uppkastið komst inn; drogFyrir(cd) hendir uppkasti sem er ekki nýrra en cd.upd (nema það sé í biðröð). Ferskur lestur (ferskSpjold) á undan hverri vistun var þegar til; vandinn var uppkastið, ekki grunnlistinn. Önnur regla: samstilling (skSamstilla) bíður aðeins eftir innslætti síðustu 8 s, ekki eftir öllum uppköstum.
+
+## Nýtt úr Charlize og lotum (28.10.2026)
+
+- Bakk-takki fer nákvæmlega eitt skref til baka — aldrei á upphafs- eða Ársskoðunarsíðuna — og bakk á síma lokar aldrei appinu eða hendir notanda út; reglan gildir um allt appið. [lota 17c4cd7a, 20.09.2026; lotur 9b70f49c, f9bb2316, 7957a4ea]
+- Spjald eða yfirlit má aldrei vera blindgata: hver færsla á Þjónustuborði sendir Agnar „áfram á þann stað sem ég get klárað málið“, og sýni spjald gögn sem má breyta verður takki eða tengill þangað. [C#831; lotur 731f63e0, 17c4cd7a]
+- Hver starfsmaður á að geta valið eigið vinnuborð (hamur „Mitt“, MITT_HAM í patch 368, `by_staff.<nafn>.mitt`) svo master-borðið flæði ekki yfir alla; VARÚÐ: M(id) í 368 byggir haminn upp úr geymslunni og tekur AÐEINS reiti sem eru nefndir þar — reitur sem gleymist vistast en birtist aldrei. [lota 17c4cd7a, 19.09.2026; C#602]
+- „✕ Afmerkja“ á Verkstæðisborði tekur fyrirtækið af borðinu OG afhakar bláa „í vinnslu“ hakið í Ársskoðun-töflunni; takkinn er í samtengdum takkahóp og aðeins virkur þegar fyrirtækið er „Í vinnslu“ (á bak við var flaggið `sv_force_unstarted` í `arsskodun_customers`). [lota 17c4cd7a, 26.–27.09.2026]
+- Ný verkfæri (t.d. 3dwork) eiga að vera færsla á Öpp-síðunni í Slökkvitæki sem opnast í síma, ekki sidebar-borð. [lota 14b698a2, 23.09.2026]
+- Mánuður úttektar er EINN reitur (`inspect_month`) sem Ársskoðun og mánaðartakkinn við ártölin á fyrirtækjaprófíl lesa og skrifa; skoðunarmánuður er sóttur í röðinni inspect_month í blobbinu → arsskodun_report_facts → v_skodunar_manudur → elsta next_insp. [lota e9205308, 06.10.2026; lota 7576079c (líklega)]
+- Þjónustuborð 2 (368) er á falinni slóð `#bord` frá 11.09.2026 (`#verkbord` og `#verkefni` opna það); Master = opin mál án starfsmanns EÐA á Charlize (claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). [C#505, C#518]
+- Þjónustuborð 368: hvert atriði á EINN ham — mál birtist í Samþykkja aðeins ef það ber merkið samthykki (og spurning ef það þarf svar); mál með eigin merki (t.d. klara-heimsokn) sitja á Master. [C#580, C#601]
+- Drög-stöðin er EKKI „Drög (38)“ í valstikunni: Drög (38) = ókláraðar sölur (`solur` með status=drog, sýn #drog, patch 143) en Drög-stöðin = `reikningspunktar` í Brunahólfs-hubbnum (📱 Öpp → The Big Boss → 🛒 Drög-stöð) — lofaðu aldrei Agnari að setja eitthvað í hana á máli á Þjónustuborði. [C#599]
+- Að samþykkja vinnublað skrifar AÐEINS stöðu og býr ekki til sölu (368): þrjú vinnublöð samþykkt 13.09.2026 áttu enga sölu; vörðurinn er `tools/audit-vinnublad-an-solu.cjs`. [C#600]
+- AppSettings: ræsikóði má aldrei SKRIFA í app_settings út frá AppSettings.get() eða localStorage (fyrstu sekúndurnar er það skyndiminni, allt að 30 daga gamalt) — 05.10.2026 fór app_profiles_json úr 1204 í 608 stafi og allir fengu defaults; og AppSettings.save sameinar djúpt: fylki eru skrifuð yfir og lykla er ekki hægt að eyða — settu 0, false eða vörð í staðinn. [C#751, C#750, C#408; lota 17c4cd7a (líklega)]
+- Fyrirtækið er lokað um helgar — í vikudagskrá (patch 303) birtast laugardagur og sunnudagur sem hálfir dálkar ofan á hvor öðrum. [lota fe668f62, 06.08.2026]

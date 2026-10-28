@@ -1,10 +1,27 @@
 ---
 name: sala-reikningar
-description: Sala/POS, reikningagerð, dkPlus/Payday, afslættir, sjálfvirk PDF-vistun, reikninga-póstur og úttektartexti. Notaðu fyrir allt sem snýr að sölu, reikningum, verði og afslætti. Kveikjuorð: reikningur, sala, POS, Payday, dkPlus, afsláttur, krafa, útistandandi.
+description: Sala/POS, reikningagerð og -sending, Payday/dkPlus, afslættir, verðlistar og vörur, PDF-vistun, reikninga-póstur og úttektartexti í Slökkvitæki-appinu. Notaðu þegar eitthvað snertir reikning, sölu, verð eða afslátt, eða þegar tala á reikningi stemmir ekki við skjáinn; kallaðu á hann sjálfur áður en krafa er send, kreditfærð eða bakfærð. Kveikjuorð: reikningur, sala, POS, söluborð, Payday, dkPlus, afsláttur, afsláttarhópar, krafa, kredit, Hreyfingarlisti, verðlisti, birgðir, Teya
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
+## Charlize — lestu fyrst
+Áður en þú breytir sölu, reikningi, verði eða afslætti eða fullyrðir um greiðslustöðu: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki', 'baedi') and topic in ('solur', 'payday', 'reikningar', 'verd', 'verdlisti', 'vorur', 'afslattarhopar', 'sala', 'teya', 'krofur', 'rukkun', 'postur') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
+
 Þú kannt **sölu- og reikningahliðina** — POS-inn, dkPlus/Payday, afsláttar-konvensjónina og PDF-vistun. Grunnregla: **ALLTAF LEYFA VISTUN** (engin form-vörn má blokka), og afsláttur er ANNAÐHVORT bakaður í línu EÐA geymdur í `afslattur` — ALDREI hvort tveggja.
+
+## Nýtt úr Charlize og lotum (28.10.2026)
+- Kláruð úttekt með reikningi er „ritað í stein“: ekkert í kerfinu (endurteikning, endurhleðsla gagna, opna eða loka staðfestum lista, græni takkinn aftur) má snerta hana nema Agnar breyti sjálfur (yfirregla 30.08.2026) [lota 2b47ca79].
+- Engar ósýnilegar breytingar: hver skrift (nýtt tæki, breytt staða, núllstillt val, breytt upphæð) á að skilja eftir spor sem notandinn sér (yfirregla 30.08.2026) [lota 2b47ca79].
+- Einn staður og hann er skjárinn: reikningur telur nákvæmlega þær raðir sem eru teiknaðar, úr sömu uppsprettu og sömu síu — stemma tölurnar ekki er verkið ekki búið (yfirregla 30.08.2026) [lota 2b47ca79].
+- Reikningsupphæð er reiknuð á fjórum stöðum sem geta rekið í sundur (`pos.js`, `142-sale-editor.js`, `10-sala-receipt-redesign.js`, `payday-push.js`) — öll verða að reikna nettó línu = qty·unit·(1−disc/100) órúnnað eins [C#114].
+- Kreditnóta af afsláttaðri sölu má aldrei bera `discount_pct` á línunum — verðið er þegar skalað í nettó og Payday myndi tvöfalda afsláttinn [C#116].
+- `payday-push` tekur sölu frá (`krafa_sendir_at`) áður en Payday er kallað; `502 gate:writeback` þýðir að reikningurinn varð til í Payday — EKKI senda aftur [C#623, C#624].
+- Hafni Payday rafrænum reikningi (XML) fellur `payday-push` hljóðlaust í póst-aðeins; frá 14.09.2026 er höfnunin skráð í `app_problems` (kind `payday_xml_hafnad`) [C#573, C#576].
+- Ógreitt (Hreyfingarlisti 167) = Kröfu yfirlit (ógreitt, ekki void, ekki kreditfært) + til að rukka (greitt_sidar) + drög sem bíða í afgreiðslu — kreditfærður reikningur telst aldrei ógreiddur [C#766; lota 6db7868a].
+- Úttekt með skýrslu en engum reikningi þar sem skoðunin var jan.–apr. 2026 (fyrir yfirtöku 07.05.) telst greidd fyrri eigendum og á ekki að rukka [C#582].
+- Allur útsendur póstur fer frá eldklar@eldklar.is gegnum Gmail (`/api/gmail-send`) — ekki Resend og ekki Microsoft Graph (Agnar 03.08.2026; nýrra en Resend-textinn í kaflanum „Reikninga-póstur“) [lota 177227fe; C#507].
+- Sala birtist ekki í Kröfu yfirliti nema `greitt_med`, `customer_base_id`, `upphaed_an_vsk` OG `vsk_upphaed` séu öll sett — algengasta orsök „salan er til en sést hvergi“ [C#3].
+- Það má aldrei breyta dagsetningunni á eldri reikning (Agnar 14.08.2026): endurprentun vistaðrar sölu prentar `created_at`; sérdagsetning aðeins úr heimsóknarflæði [C#875].
 
 
 ---

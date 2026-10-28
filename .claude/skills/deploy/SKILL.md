@@ -7,8 +7,10 @@ description: >
   equal production, and how to revert a bad deploy. Use whenever you are about to
   commit/push/deploy the Slökkvitæki app, when a deploy looks wrong or stale, or
   when onboarding a machine to the deploy flow.
-  Kveikjuorð: deploy, ýta, git push, deploy.js (bannað), revert.
+  Kveikjuorð: deploy, ýta, git push, deploy.js (bannað), revert, merge, keyra deploy merge, [deploy], backup fyrst, er deployið komið.
 ---
+
+> Charlize: `select topic, fact from v_charlize_active where scope in ('slokkvitaeki','baedi','kerfi') and topic in ('deploy','git');` áður en þú breytir — tómt = óskráð. Lærdómur í lok lotu → skill `charlize`.
 
 # Deploy — Slökkvitæki ehf web app
 
@@ -29,6 +31,7 @@ haus-commit ýtingar ber `[deploy]`, handvirkt (Run workflow), eða í morgunkey
 → `netlify-cli` og birtir **static-síðuna og föllin saman, atómískt**. Netlify's own Git
 build is switched off for production (`[context.production] ignore = "exit 0"`), so PR
 deploy-previews still build there but production comes only from Actions.
+Morgunkeyrslan getur seinkað um klukkustundir hjá GitHub (14.09.2026 keyrði hún 12:37 og birti wip-haus 0a3f978): hálfkláruð breyting í sameiginlega vinnutrénu getur farið í loftið án `[deploy]`. [C#579]
 
 ## ⚠️ NEVER run `node deploy.js`
 It uploads only the *static* files from one machine and **silently deletes every
