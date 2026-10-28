@@ -213,7 +213,9 @@ exports.handler = async (event) => {
                 // Slóð úr skyndiminni vafrans getur vísað á skrá sem var skipt út (ný skýrsla) — fall þá á nýjustu skýrslu ársins
                 // í stað þess að senda kröfuna án skýrslu.
                 if (!body.report_storage_path) throw e;
-                return await findReportPdf(sale, null);
+                const _a = await findReportPdf(sale, null);
+                if (_a && String(_a.name || '').indexOf(String(new Date(sale.created_at).getFullYear())) >= 0) return _a;   // aldrei skýrsla annars árs
+                throw e;
               });
           if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
             ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'

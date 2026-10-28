@@ -41,7 +41,7 @@
   }
   window.VidbotUttekt = Object.assign(window.VidbotUttekt || {}, { erVidbot });
 
-  const ST = { coId: null, open: false, akstur: false, akQty: 1, akVerd: null, skyrsla: false, skVerd: null, busy: false, sig: '' };
+  const ST = { coId: null, open: false, akstur: false, akQty: 1, akVerd: null, skyrsla: false, skVerd: null, busy: false, sig: '', manudur: null };
   let _cache = {};          // coId -> { at, data }
   let _bus = false, _aftur = false, _t = 0;
 
@@ -380,6 +380,19 @@
       return haetta('Gat ekki lesið stöðuna: ' + (e.message || e) + '\nEkkert var búið til.');
     }
 
+    // Skoðunarmánuðurinn ERFIST úr upprunalegu skýrslunni (facts) — hann má aldrei færast í „október" (regla Agnars). Lesinn FYRIR sölu:
+    // finnist hann ekki (engin skýrsla ársins í facts) er spurt, í stað þess að 168 reikni hann hljóðlaust úr vélinni eða núverandi mánuði.
+    let manudur = null;
+    try {
+      const f = await sb.from('arsskodun_report_facts').select('inspect_month,report_year').eq('fyrirtaeki_id', coId).maybeSingle();
+      if (f.error) throw f.error;
+      if (f.data && +f.data.report_year === new Date().getFullYear() && +f.data.inspect_month >= 1 && +f.data.inspect_month <= 12) manudur = +f.data.inspect_month;
+    } catch (e) { skra('vidbot_manudur_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100)); }
+    if (manudur == null) {
+      skra('vidbot_manudur_brast', 'co ' + coId + ': enginn skoðunarmánuður í facts');
+      if (!confirm('Skoðunarmánuður upprunalegu skýrslunnar fannst ekki. Nýja skýrslan fær þá mánuðinn úr vélinni/núverandi mánuð (' + (new Date().getMonth() + 1) + '. mánuður) — hann á helst ekki að færast.\n\nHalda samt áfram?')) return haetta();
+    }
+    ST.manudur = manudur;
     const trip = loadTrip(coId);
     let kt = null, baseId = null, nafn = '';
     try {
@@ -431,15 +444,7 @@
     } catch (e) { skra('vidbot_dagsetning_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); toast('⚠ Skoðunardagsetningar tækjanna uppfærðust ekki'); }
     try { if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) UttektInvoicePdf.saveForSale(coId, sala).catch(() => {}); } catch (_) {}
     // Ný aðalúttektarskýrsla (168 tekur við af þeirri fyrri) — og beðið eftir að hún sé raunverulega vistuð.
-    // Skoðunarmánuðurinn ERFIST úr upprunalegu skýrslunni (facts) — hann má aldrei færast í „október" (regla Agnars). Annars
-    // reiknar 168 mánuðinn úr trip-stöðu vélarinnar eða núverandi mánuði.
-    let manudur = null;
-    try {
-      const f = await sb.from('arsskodun_report_facts').select('inspect_month,report_year').eq('fyrirtaeki_id', coId).maybeSingle();
-      if (f.error) throw f.error;
-      if (f.data && +f.data.report_year === new Date().getFullYear() && +f.data.inspect_month >= 1 && +f.data.inspect_month <= 12) manudur = +f.data.inspect_month;
-    } catch (e) { skra('vidbot_manudur_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100)); }
-    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: manudur, year: new Date().getFullYear() };
+    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || null, year: new Date().getFullYear() };
     let opnadist = true;
     try { if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar'); await CompanyInspectionReport.open(coId); }
     catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); opnaAftur(coId, sala, 'Skýrslan opnaðist ekki: ' + (e.message || e)); }
@@ -457,7 +462,7 @@
   // advanceInspectionDates (129) sem færir næstu skoðun allra tækja sem eru ekki stimpluð í dag.
   function opnaAftur(coId, sala, astaeda) {
     if (confirm('Viðbótarreikningur ' + sala.num + ' er búinn til. ' + astaeda + '\n\nNý skýrsla verður að vera vistuð áður en krafan fer út (kerfið stöðvar hana annars).\n\nOpna skýrsluna núna?')) {
-      window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear() };
+      window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear() };
       try { CompanyInspectionReport.open(coId); } catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80)); }
       bidaSkyrslu(coId, sala);
     }
@@ -468,8 +473,12 @@
   async function afritTolur(coId, sala) {
     try {
       if (!(window.VisitWorkflowReikn && VisitWorkflowReikn.afritEftirUttekt)) return;
-      const all = ((window.DB && DB.cache && DB.cache.units) || []).filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[normSt(u.status)]);
-      if (!all.length) return;
+      // Ferskur lestur (ekki DB.cache — hann getur verið gamalt ræsiafrit) og SAMA sía og T í audit-t-s-i/165: aðeins 'urelt' fellur út.
+      // Brestur lesturinn er afritinu sleppt (S lækkar aldrei á gamalli mynd).
+      const r = await DB.sb.from('uttaeki').select('id,type,size,status,fyrirtaeki_id').eq('fyrirtaeki_id', coId).range(0, 999);
+      if (r.error) throw r.error;
+      const all = (r.data || []).filter(u => String(u.status) !== 'urelt');
+      if (!all.length || (r.data || []).length >= 1000) return;
       await VisitWorkflowReikn.afritEftirUttekt(coId, { units: all, servicedIds: all.map(u => u.id) }, sala.num);
     } catch (e) { skra('vidbot_afrit_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); }
   }
