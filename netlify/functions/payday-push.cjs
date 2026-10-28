@@ -234,7 +234,7 @@ exports.handler = async (event) => {
     // er sendingin stöðvuð (409) í stað þess að senda gömlu skýrsluna með nýrri kröfu. Slóðin ber tímastimpil
     // (company_attachments/<id>/<ms>_nafn.pdf) — sá er upphleðslutíminn. Hak fyrirtækis „án skýrslu með kröfu" er virt.
     let _vbSala = /^Viðbótarúttekt við /.test(String(sale.krafa_note || ''));
-    if (!_vbSala && attachReport && sale.source === 'uttekt' && sale.customer_id) {
+    if (!_vbSala && sale.source === 'uttekt' && sale.customer_id) {
       // krafa_note er ritanlegt í Kröfu yfirliti — 488 skráir líka númer viðbótarsölunnar í app_settings (vidbot_uttekt.<fyrirtæki>.sala_nums).
       try {
         const _st = await fetchAppSettings();
@@ -242,8 +242,9 @@ exports.handler = async (event) => {
         _vbSala = Array.isArray(_lst) && _lst.map(String).indexOf(String(sale.num)) >= 0;
       } catch (_) { /* hliðið er viðbót — brestur hér má ekki fella venjulega sendingu */ }
     }
-    if (attachReport && sale.source === 'uttekt' && _vbSala &&
+    if (sale.source === 'uttekt' && _vbSala &&
         !(site && site.skyrsla_med_krofu === false)) {
+      if (!attachReport) return json(409, { gate: 'vidbot_skyrsla', error: 'Viðbótarreikningur fer aðeins út með nýrri úttektarskýrslu — „án skýrslu" er læst fyrir hann. Hakaðu við „fylgir skýrsla" og sendu aftur.' });
       const _ts = attachment && /\/(\d{10,13})_[^/]*$/.exec(String(attachment.path || ''));
       const _fra = Date.parse(sale.created_at) - 120000;
       if (!attachment || !_ts || +_ts[1] < _fra) {
@@ -448,6 +449,10 @@ function buildPayload(sale, customer, opts) {
   };
   /* hreinsaNotu:endir */
   const _notes = hreinsaNotu(sale.athugasemdir);
+  // Viðbótarúttekt (488, 28.10.2026): kúnninn fær tvær kröfur með sömu skýrslu — stutt lína segir hvað seinni er. Aðeins númerið úr
+  // krafa_note (innri texti) fer út, aldrei restin.
+  const _vbM = /^Viðbótarúttekt við (R-d+)/.exec(String(sale.krafa_note || ''));
+  const _vbLina = _vbM ? ('Viðbót við ' + _vbM[1] + ' (ný tæki)') : '';
   // Afhending (sjálfgefið, 2026-08-13 — Center Hótel-lexían): rafræn krafa OG
   // póstafrit þegar hvort tveggja er hægt. Áður drap rafrænt póstafritið
   // (emailSend = !electronic && email) — rafræni reikningurinn „fór" en enginn
@@ -528,7 +533,7 @@ function buildPayload(sale, customer, opts) {
     // Sölunótan (m.a. „Beiðni nr: …" sem beiðni-gate 264 skrifar fyrir Colas o.fl.)
     // fylgir á Payday-kröfuna svo kúnninn sjái sitt pöntunar-/beiðninúmer á
     // reikningnum eins og á kvittuninni (2026-07-13). Tómt → sleppt.
-    description: [_vegna, _notes].filter(Boolean).join(' · ') || null,
+    description: [_vegna, _vbLina, _notes].filter(Boolean).join(' · ') || null,
     sendEmail: emailSend,
     createClaim: true,
     createElectronicInvoice: electronic,

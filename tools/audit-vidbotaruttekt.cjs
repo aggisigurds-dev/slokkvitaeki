@@ -62,6 +62,7 @@ if (!/utanVerkbeidna\(.*,\s*true\)/.test(klaraKodi)) brot.push('klara() athugar 
 if (!/await CompanyInspectionReport\.open\(coId\)/.test(klaraKodi) || !/bidaSkyrslu\(coId, sala\)/.test(klaraKodi)) brot.push('klara() bíður ekki eftir að ný skýrsla vistist (bidaSkyrslu)');
 if (!/rk\.vantar \|\| rk\.hopur/.test(kodi)) brot.push('Klára er ekki læst þegar afsláttarhópur náðist ekki (rk.hopur)');
 if (!/gate:\s*'vidbot_skyrsla'/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push stöðvar ekki viðbótarkröfu með gamalli/engri skýrslu (gate vidbot_skyrsla)');
+if (!/if \(!attachReport\) return json\(409, \{ gate: 'vidbot_skyrsla'/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push leyfir attach_report=false á viðbótarkröfu (gamla gatið: hliðið var hunsað)');
 if (!p168.includes("' - úttektarskýrsla - #' + co.id +")) brot.push('168 eyðir fleiru en nákvæmlega úttektarskýrslunni sem appið bjó til (… - úttektarskýrsla - #<id>.pdf) — handinnhlaðin skjöl eiga að vera í friði');
 if (!/sala_nums/.test(kodi) || !/vidbot_merking_brast/.test(kodi)) brot.push('488 skráir ekki númer viðbótarsölunnar (vidbot_uttekt.<fyrirtæki>.sala_nums) — krafa_note er ritanlegt í Kröfu yfirliti og hliðið má ekki hvíla á því einu');
 if (!/sala_nums/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push les ekki sala_nums — hliðið hvílir á ritanlegum krafa_note');

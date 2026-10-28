@@ -25,7 +25,9 @@ const brot = [];
 
 // 1) description byggð úr hreinsuðu nótunni
 if (!/const\s+_notes\s*=\s*hreinsaNotu\(\s*sale\.athugasemdir\s*\)/.test(skra)) brot.push('_notes er ekki hreinsaNotu(sale.athugasemdir)');
-if (!/description:\s*\[_vegna,\s*_notes\]/.test(skra)) brot.push('description er ekki lengur [_vegna, _notes] — athugaðu hvaðan nótan kemur');
+// 28.10.2026: viðbótarúttekt (488) bætir einni stuttri línu á milli — aðeins númerið úr krafa_note fer út („Viðbót við R-xxxxx (ný tæki)"), aldrei innri textinn.
+if (/_vbLina/.test(skra) && !/const _vbLina = _vbM \? \('Viðbót við ' \+ _vbM\[1\] \+ ' \(ný tæki\)'\) : '';/.test(skra)) brot.push('_vbLina má aðeins innihalda númerið úr krafa_note (Viðbót við R-xxxxx), ekki innri texta');
+if (!/description:\s*\[_vegna,\s*(?:_vbLina,\s*)?_notes\]/.test(skra)) brot.push('description er ekki lengur [_vegna, _notes] — athugaðu hvaðan nótan kemur');
 
 // 2) fallið sjálft, tekið úr skránni
 const m = skra.match(/\/\*\s*hreinsaNotu:byrjun\s*\*\/([\s\S]*?)\/\*\s*hreinsaNotu:endir\s*\*\//);
