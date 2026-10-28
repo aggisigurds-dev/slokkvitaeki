@@ -163,8 +163,12 @@ async function pageAll(pathAndQuery) {
   });
   const arnarTicks = GY.yearsFromDocs({ ar_slokk: years(195, 'uttektarskyrsla'), ar_bru: years(195, 'brunakerfi') });
   if (arnarTicks[3][1] !== 'ok') fail('Live Arnarhvoll 2026 brunakerfi report missing from ar_bru.');
-  const hladDocs = years(1750, 'brunakerfi').concat(years(1750, 'uttektarskyrsla'));
-  if (hladDocs.length) fail('Hlaðvarpinn unexpectedly has service docs — check before treating it as empty.');
+  // 28.10.2026: Hlaðvarpinn (1750) fékk raunveruleg skjöl 27.10 (brunakerfisskýrsla 2023 + reikningur R-104072, tengd úr Drive) — fastinn
+  // „hefur engin skjöl“ varð rangur þótt ekkert væri að. Reglan er sú sama og fyrir Plaza/Arnarhvol hér að ofan: slökk-tikkið fylgir
+  // ÚTTEKTARSKÝRSLU, ekki brunakerfisskýrslu systurstaðar eða eigin brunakerfisskýrslu — svo hann er prófaður á reglunni, ekki á tómu.
+  const hladSlokk = years(1750, 'uttektarskyrsla');
+  const hladTicks = GY.yearsFromDocs({ ar_slokk: hladSlokk, ar_bru: years(1750, 'brunakerfi') });
+  if (hladTicks.some((t) => t[0] === 'ok') !== (hladSlokk.length > 0)) fail('Hlaðvarpinn slökk tick must follow its own úttektarskýrsla only (brunakerfi report must not light it).');
 
   const grandiInv = await pageAll('customer_documents?fyrirtaeki_id=eq.197&doc_type=eq.reikningur&year=eq.2026&select=invoice_number,vidskiptategund');
   const r108 = grandiInv.find((d) => /108001/.test(String(d.invoice_number || '')));
