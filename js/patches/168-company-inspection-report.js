@@ -435,6 +435,7 @@
       const ar = String((ctx && ctx.ar) || new Date().getFullYear());
       // 21.09.2026 (úttekt): sjálfvirka leiðin þagði líka hér — nú segir hún frá.
       if (!window.CompanyAttachments || !CompanyAttachments.upload) {
+        if (window.CIR_VIDBOT && window.logProblem) window.logProblem('vidbot_skyrsla_vistun_brast', 'co ' + co.id + ': skjalaeining ekki tiltæk');
         if (!auto) alert('Skjalaeining ekki tiltæk.');
         else if (window.Toast && Toast.show) Toast.show('⚠ Skýrslan vistaðist ekki sjálfkrafa — ýttu á Vista');
         return;
@@ -443,7 +444,7 @@
       // endurteknar forskoðanir tvírita ekki). Handvirki takkinn vistar samt.
       // 28.10.2026 (viðbótarúttekt, 488): eftir viðbótarreikning á þessi skýrsla að TAKA VIÐ af þeirri sem fyrir er —
       // sjálfvirka vistunin sleppir því ekki þótt skýrsla ársins sé til, og eldri skýrsla ársins er fjarlægð eftir vistun
-      // (payday-push festir fyrstu skýrslu ársins við kröfuna, svo tvær sama árs þýddu að sú gamla færi út).
+      // (eldri ÚTTEKTARSKÝRSLA ársins, búin til af appinu, er fjarlægð svo ekki sitji tvær hlið við hlið; handinnhlaðin skjöl eru látin í friði).
       const _vb = !!(window.CIR_VIDBOT && String(window.CIR_VIDBOT.coId) === String(co.id) && Date.now() < window.CIR_VIDBOT.until);
       if (auto && !_vb) {
         try {
@@ -483,7 +484,7 @@
             try {
               const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
               const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
-                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id);
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
               let eftir = 0;
               for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
               if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
@@ -570,9 +571,11 @@
         // Notandinn hélt að skýrslan væri vistuð. Nú sést það; handvirka leiðin óbreytt.
         else {
           if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
+          if (_vb && window.logProblem) window.logProblem('vidbot_skyrsla_vistun_brast', 'co ' + co.id + ': upphleðsla skilaði engu');
           if (auto && window.Toast && Toast.show) Toast.show('⚠ Skýrslan vistaðist ekki sjálfkrafa — ýttu á Vista');
         }
       } catch (e) {
+        if (_vb && window.logProblem) window.logProblem('vidbot_skyrsla_vistun_brast', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120));
         if (!auto) alert('Villa við vistun: ' + (e.message || e));
         else {
           console.warn('[uttektarskyrsla] sjálfvirk vistun mistókst', e);

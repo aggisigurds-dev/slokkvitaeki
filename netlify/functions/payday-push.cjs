@@ -221,6 +221,29 @@ exports.handler = async (event) => {
       attachSkipReason = 'attach_report=false';
     }
 
+    // ── Viðbótarúttekt (patch 488, 28.10.2026) ──────────────────────────────
+    // Viðbótarreikningur (krafa_note „Viðbótarúttekt við R-…") á að fara út með NÝRRI aðalskýrslu — þeirri sem var
+    // búin til eftir að viðbótin varð til og telur ÖLL tæki. Finnist engin skýrsla, eða sú nýjasta er eldri en salan,
+    // er sendingin stöðvuð (409) í stað þess að senda gömlu skýrsluna með nýrri kröfu. Slóðin ber tímastimpil
+    // (company_attachments/<id>/<ms>_nafn.pdf) — sá er upphleðslutíminn. Hak fyrirtækis „án skýrslu með kröfu" er virt.
+    let _vbSala = /^Viðbótarúttekt við /.test(String(sale.krafa_note || ''));
+    if (!_vbSala && attachReport && sale.source === 'uttekt' && sale.customer_id) {
+      // krafa_note er ritanlegt í Kröfu yfirliti — 488 skráir líka númer viðbótarsölunnar í app_settings (vidbot_uttekt.<fyrirtæki>.sala_nums).
+      try {
+        const _st = await fetchAppSettings();
+        const _lst = _st && _st.vidbot_uttekt && _st.vidbot_uttekt[String(sale.customer_id)] && _st.vidbot_uttekt[String(sale.customer_id)].sala_nums;
+        _vbSala = Array.isArray(_lst) && _lst.map(String).indexOf(String(sale.num)) >= 0;
+      } catch (_) { /* hliðið er viðbót — brestur hér má ekki fella venjulega sendingu */ }
+    }
+    if (attachReport && sale.source === 'uttekt' && _vbSala &&
+        !(site && site.skyrsla_med_krofu === false)) {
+      const _ts = attachment && /\/(\d{10,13})_[^/]*$/.exec(String(attachment.path || ''));
+      const _fra = Date.parse(sale.created_at) - 120000;
+      if (!attachment || !_ts || +_ts[1] < _fra) {
+        return json(409, { gate: 'vidbot_skyrsla', error: 'Viðbótarreikningur má ekki fara út fyrr en NÝ úttektarskýrsla ársins (með öllum tækjum) er vistuð — nýjasta skýrslan er eldri en viðbótin eða finnst ekki. Opnaðu fyrirtækið, ýttu á Skýrsla og Vista, og sendu svo aftur.' });
+      }
+    }
+
     // ── Delivery method ────────────────────────────────────────────────────
     // Priority: explicit body.delivery (tests) > the customer's saved preference
     // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > buildPayload's

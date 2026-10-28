@@ -84,25 +84,35 @@
     } catch (_) { return []; }
   }
 
+  function normSt(s) {
+    if (window.Companies && Companies._normStatus) return Companies._normStatus(s);
+    const c = String(s == null ? '' : s).toLowerCase();
+    if (c === 'onytt' || c === 'ónýtt') return 'onytt';
+    if (/geymsl/.test(c)) return 'geymsla';
+    if (c === 'urelt' || c === 'úrelt') return 'urelt';
+    if (/vinnsl/.test(c)) return 'i_vinnslu';
+    return 'active';
+  }
+
   function nyTaeki(coId, t0) {
     const all = (window.DB && DB.cache && DB.cache.units) || [];
-    const norm = (window.Companies && Companies._normStatus) ? Companies._normStatus : (s => {
-      const c = String(s == null ? '' : s).toLowerCase();
-      if (c === 'onytt' || c === 'ónýtt') return 'onytt';
-      if (/geymsl/.test(c)) return 'geymsla';
-      if (c === 'urelt' || c === 'úrelt') return 'urelt';
-      if (/vinnsl/.test(c)) return 'i_vinnslu';
-      return 'active';
-    });
     const af = new Set(afgreidd(coId));
-    return all.filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[norm(u.status)] &&
+    return all.filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[normSt(u.status)] &&
       u.created_at && new Date(u.created_at).getTime() > t0 && !af.has(String(u.id)));
   }
 
-  async function utanVerkbeidna(units) {
-    if (!(window.VerkTenging && VerkTenging.ensure && VerkTenging.rukkadA) || !units.length) return units;
+  // strict (í klara): brestur lokað og skráir — tæki á verkbeiðni eru rukkuð þar og mega ekki tvírukkast hér.
+  async function utanVerkbeidna(units, strict) {
+    if (!units.length) return units;
+    if (!(window.VerkTenging && VerkTenging.ensure && VerkTenging.rukkadA)) {
+      if (strict) { skra('vidbot_verkbeidna_brast', 'VerkTenging vantar'); return null; }
+      return units;
+    }
     try { await VerkTenging.ensure(units.map(u => u.id)); return units.filter(u => !VerkTenging.rukkadA(u.id)); }
-    catch (_) { return units; }
+    catch (e) {
+      if (strict) { skra('vidbot_verkbeidna_brast', String((e && e.message) || e).slice(0, 100)); return null; }
+      return units;
+    }
   }
 
   function val(coId, u) {
@@ -238,8 +248,9 @@
         '<input type="number" min="0" step="1" data-vb="skv" value="' + Math.round(ST.skVerd != null ? ST.skVerd : d.skyrslugerd) + '" ' + (ST.skyrsla ? '' : 'disabled') + '><span style="font-weight:400">kr án vsk</span></div>' +
         '<div class="vb-step"><span class="vb-n">④</span>Samantekt</div><div class="vb-tot" id="_vb-tot"></div>' +
         '<div class="vb-aths">Þegar þú klárar: viðbótarreikningur (<b>ósendur</b>, bara nýju tækin) og ný aðalúttektarskýrsla með öllum tækjum. Báðar sendast saman úr Kröfuyfirliti.</div>' +
+        (rk.hopur ? '<div class="vb-var">⚠ Afsláttarhópur náðist ekki — endurhlaðaðu síðuna áður en þú klárar, annars fer viðbótin út á fullu verði.</div>' : '') +
         (rk.vantar ? '<div class="vb-var">⚠ Verð vantar á línu — lagaðu verðið í töflunni að ofan eða veldu „Sleppa" á tækinu áður en þú klárar.</div>' : '') +
-        '<div class="vb-btns"><button type="button" class="vb-p" data-vb="klara" ' + (rk.vantar || ST.busy ? 'disabled' : '') + '>' + (ST.busy ? '⏳ Bý til…' : '✓ Klára viðbótarúttekt') + '</button>' +
+        '<div class="vb-btns"><button type="button" class="vb-p" data-vb="klara" ' + (rk.vantar || rk.hopur || ST.busy ? 'disabled' : '') + '>' + (ST.busy ? '⏳ Bý til…' : '✓ Klára viðbótarúttekt') + '</button>' +
         '<button type="button" data-vb="hætta" ' + (ST.busy ? 'disabled' : '') + '>Hætta við</button></div>';
     }
     b.innerHTML = h;
@@ -275,7 +286,8 @@
       if (!units.length) { fjarlaeg(); return; }
       const verd = lesaVerd(section);
       const rk = reikna(coId, units, verd);
-      const sig = JSON.stringify([coId, data.latest.num, rk.taeki.map(x => [x.u.id, x.val, x.verd, x.vantar ? 1 : 0]), ST.open, ST.busy, ST.akstur, ST.skyrsla]);
+      rk.hopur = /Afsláttarhópur náðist ekki/.test(section.textContent || '');
+      const sig = JSON.stringify([coId, data.latest.num, rk.taeki.map(x => [x.u.id, x.val, x.verd, x.vantar ? 1 : 0]), rk.hopur ? 1 : 0, ST.open, ST.busy, ST.akstur, ST.skyrsla]);
       const b = document.getElementById(BOX);
       if (b && sig === ST.sig && b.previousElementSibling === section) { b._rk = rk; b._data = data; samtolur(coId); return; }
       ST.sig = sig;
@@ -294,11 +306,12 @@
     const b = document.getElementById(BOX);
     if (!b || !b._rk) return;
     const ids = b._rk.taeki.map(x => String(x.u.id));
+    try { await AppSettings.load(); } catch (_) {}   // annað tæki getur hafa afgreitt önnur tæki — merging á fylki skiptir því út
     const gamalt = afgreidd(coId);
     let ok = false;
     try { ok = await AppSettings.save({ vidbot_uttekt: { [String(coId)]: { dismissed: gamalt.concat(ids.filter(i => gamalt.indexOf(i) < 0)) } } }); }
     catch (e) { skra('vidbot_nei_brast', String((e && e.message) || e).slice(0, 120)); }
-    if (ok !== true) { alert('Vistun mistókst — svarið skráðist ekki. Reyndu aftur.'); return; }
+    if (ok !== true) { skra('vidbot_nei_brast', 'co ' + coId + ': vistun skilaði ekki true'); alert('Vistun mistókst — svarið skráðist ekki. Reyndu aftur.'); return; }
     toast('✓ Skráin leiðrétt — engin viðbótarúttekt');
     ST.sig = ''; fjarlaeg();
   }
@@ -307,23 +320,39 @@
     const b = document.getElementById(BOX);
     if (!b || !b._rk || ST.busy) return;
     const sb = DB.sb;
-    // Ferskur lestur: er einhver búinn að gera viðbótina (annað tæki)? Tækin verða að vera enn ný.
-    ST.busy = true; ST.sig = ''; await uppfaera();
-    let data, units;
-    try {
-      data = await saekja(coId, true);
-      units = data ? await utanVerkbeidna(nyTaeki(coId, data.t0)) : [];
-    } catch (e) { ST.busy = false; alert('Gat ekki lesið stöðuna: ' + (e.message || e)); await uppfaera(); return; }
+    ST.busy = true; ST.sig = '';
+    const haetta = async texti => { ST.busy = false; ST.sig = ''; if (texti) alert(texti); await uppfaera(); };
+    await uppfaera();   // teiknar „Bý til…" og les verðin ferskt úr töflunni
     const bb = document.getElementById(BOX);
-    const rk = bb && bb._rk;
-    if (!data || !units.length || !rk) { ST.busy = false; toast('Engin ný tæki eftir — viðbótin er þegar gerð'); ST.sig = ''; await uppfaera(); return; }
+    const rk = bb && bb._rk, data0 = bb && bb._data;
+    if (!rk || !data0) return haetta();
+    if (rk.vantar || rk.hopur) return haetta('Verð vantar eða afsláttarhópur náðist ekki — lagaðu töfluna fyrst. Ekkert var búið til.');
     const serviced = rk.taeki.filter(x => KIND_VAL[x.val]);
     const a = allarLinur(coId, rk);
-    if (!serviced.length || !a.linur.length) { ST.busy = false; alert('Engin tæki með þjónustu valin — veldu Hleðsla, Yfirferð eða Nýtt á tækjunum.'); await uppfaera(); return; }
+    if (!serviced.length || !a.linur.length) return haetta('Engin tæki með þjónustu valin — veldu Hleðsla, Yfirferð eða Nýtt á tækjunum.');
     if (!confirm('Búa til viðbótarreikning?\n\n' + serviced.length + ' ný tæki' + (ST.akstur ? ' + akstur' : '') + (ST.skyrsla ? ' + skýrslugerð' : '') +
-      '\nAlls ' + kr(a.tot.total) + ' með vsk (ósendur — þú sendir úr Kröfuyfirliti).\n\nNý aðalúttektarskýrsla með öllum tækjum verður búin til og tekur við af þeirri fyrri.')) {
-      ST.busy = false; ST.sig = ''; await uppfaera(); return;
+      '\nAlls ' + kr(a.tot.total) + ' með vsk (ósendur — þú sendir úr Kröfuyfirliti).\n\nNý aðalúttektarskýrsla með öllum tækjum verður búin til og tekur við af þeirri fyrri; ' +
+      'eldri úttektarskýrsla ársins (sem appið bjó til) verður fjarlægð. Krafan fer ekki út með gömlu skýrslunni.')) return haetta();
+
+    // Ferskur lestur EFTIR staðfestingu (ekki áður en glugginn opnast): annað tæki getur hafa gert viðbótina, og tæki
+    // geta hafa orðið úrelt/ónýt/færð á meðan glugginn var opinn. Allt sem víkur stöðvar — ekkert er rukkað af gamalli mynd.
+    let data;
+    try {
+      data = await saekja(coId, true);
+      if (!data || data.latest.num !== data0.latest.num) return haetta('Annar úttektarreikningur kom inn á meðan (' + (data ? data.latest.num : '—') + ') — opnaðu fyrirtækið aftur og athugaðu stöðuna. Ekkert var búið til.');
+      const ids = serviced.map(x => x.u.id);
+      const r = await sb.from('uttaeki').select('id,status,fyrirtaeki_id,created_at').in('id', ids);
+      if (r.error) throw r.error;
+      const lif = new Map((r.data || []).map(u => [u.id, u]));
+      const brotid = ids.filter(id => { const u = lif.get(id); return !u || Number(u.fyrirtaeki_id) !== Number(coId) || NON[normSt(u.status)] || new Date(u.created_at).getTime() <= data.t0; });
+      if (brotid.length) return haetta('Tækjalistinn breyttist á meðan (' + brotid.length + ' tæki eru ekki lengur ný/virk). Opnaðu fyrirtækið aftur. Ekkert var búið til.');
+      const vt = await utanVerkbeidna(serviced.map(x => x.u), true);
+      if (vt === null || vt.length !== ids.length) return haetta('Tæki á verkbeiðni eða staða verkbeiðna ófáanleg — þau eru rukkuð þar. Veldu „Sleppa" á þeim eða reyndu aftur. Ekkert var búið til.');
+    } catch (e) {
+      skra('vidbot_lestur_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100));
+      return haetta('Gat ekki lesið stöðuna: ' + (e.message || e) + '\nEkkert var búið til.');
     }
+
     const trip = loadTrip(coId);
     let kt = null, baseId = null, nafn = '';
     try {
@@ -332,8 +361,7 @@
       if (cr.data) { kt = cr.data.kennitala || null; baseId = cr.data.customer_base_id || null; nafn = cr.data.nafn || ''; }
     } catch (e) {
       skra('vidbot_fyrirtaeki_lestur_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100));
-      alert('Gat ekki lesið fyrirtækið — viðbótarreikningur var ekki búinn til. Reyndu aftur.');
-      ST.busy = false; ST.sig = ''; await uppfaera(); return;
+      return haetta('Gat ekki lesið fyrirtækið — viðbótarreikningur var ekki búinn til. Reyndu aftur.');
     }
     if (!nafn) { const h = document.querySelector('#companies-main h1, #companies-main h2'); nafn = h ? h.textContent.trim() : ''; }
     const taekiTexti = serviced.map(x => x.u.serial || ('#' + x.u.id)).join(', ').slice(0, 160);
@@ -350,8 +378,18 @@
       sala = ins.data;
     } catch (e) {
       skra('vidbot_sala_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 120));
-      alert('Viðbótarreikningur vistaðist ekki: ' + (e.message || e) + '\n\nEkkert var breytt.');
-      ST.busy = false; ST.sig = ''; await uppfaera(); return;
+      return haetta('Viðbótarreikningur vistaðist ekki: ' + (e.message || e) + '\n\nEkkert var breytt.');
+    }
+    // Merking sem notandinn nær ekki til: krafa_note er ritanlegur reitur í Kröfu yfirliti (166 _ky-note) og „Viðbótarúttekt við"
+    // getur horfið þar. payday-push les þennan lista (vidbot_uttekt.<fyrirtæki>.sala_nums) og stöðvar viðbótarkröfu með gamla skýrslu.
+    try {
+      try { await AppSettings.load(); } catch (_) {}
+      const gamlar = (AppSettings.path('vidbot_uttekt.' + coId + '.sala_nums') || []).map(String);
+      const ok = await AppSettings.save({ vidbot_uttekt: { [String(coId)]: { sala_nums: gamlar.concat([String(sala.num)]) } } });
+      if (ok !== true) throw new Error('save skilaði ekki true');
+    } catch (e) {
+      skra('vidbot_merking_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100));
+      alert('Viðbótarreikningur ' + sala.num + ' er búinn til en merkingin sem varnar því að hann fari út með gömlu skýrslunni vistaðist ekki. Sendu hann EKKI fyrr en nýja skýrslan er vistuð.');
     }
     // Skoðunardagsetning tækjanna (eins og 165: í dag, næsta eftir 12 mánuði).
     try {
@@ -363,15 +401,34 @@
       ((DB.cache && DB.cache.units) || []).forEach(u => { if (ids.indexOf(u.id) >= 0) { u.last_insp = dags; u.next_insp = nesta; } });
     } catch (e) { skra('vidbot_dagsetning_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); toast('⚠ Skoðunardagsetningar tækjanna uppfærðust ekki'); }
     try { if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) UttektInvoicePdf.saveForSale(coId, sala).catch(() => {}); } catch (_) {}
-    // Ný aðalúttektarskýrsla (168 tekur við af þeirri fyrri).
+    // Ný aðalúttektarskýrsla (168 tekur við af þeirri fyrri) — og beðið eftir að hún sé raunverulega vistuð.
     window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num };
-    try { if (window.CompanyInspectionReport) CompanyInspectionReport.open(coId); else throw new Error('CompanyInspectionReport vantar'); }
-    catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); alert('Viðbótarreikningur ' + sala.num + ' er búinn til en skýrslan opnaðist ekki: ' + (e.message || e) + '\nOpnaðu hana með Skýrsla-takkanum.'); }
-    toast('✓ Viðbótarreikningur ' + sala.num + ' búinn til (ósendur) — send úr Kröfuyfirliti með nýju skýrslunni');
+    let opnadist = true;
+    try { if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar'); await CompanyInspectionReport.open(coId); }
+    catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); alert('Viðbótarreikningur ' + sala.num + ' er búinn til en skýrslan opnaðist ekki: ' + (e.message || e) + '\nOpnaðu hana með Skýrsla-takkanum og ýttu á Vista — krafan fer ekki út fyrr en ný skýrsla er til.'); }
+    toast('✓ Viðbótarreikningur ' + sala.num + ' búinn til (ósendur) — beðið eftir nýju skýrslunni');
     ST.busy = false; ST.open = false; ST.akstur = false; ST.skyrsla = false; ST.sig = '';
     delete _cache[coId];
     try { if (window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); } catch (_) {}
     sidar(800);
+    if (opnadist) bidaSkyrslu(coId, sala);
+  }
+
+  // Bíður (án þess að læsa viðmótinu) eftir að ný úttektarskýrsla ársins sé vistuð EFTIR að salan varð til. Vistist hún ekki
+  // á 45 sek. er það sagt berum orðum og skráð; payday-push stöðvar svo viðbótarkröfuna þar til skýrslan er til.
+  async function bidaSkyrslu(coId, sala) {
+    const fra = (Date.parse(sala.created_at) || Date.now()) - 120000, ar = String(new Date().getFullYear());
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      let l = [];
+      try { l = (window.CompanyAttachments && CompanyAttachments.list(coId)) || []; } catch (_) {}
+      if (l.some(x => x && x.kind === 'skyrsla' && String(x.year) === ar && Date.parse(x.uploaded_at) >= fra && /úttektarskýrsla/i.test(String(x.name || '')))) {
+        toast('✓ Ný úttektarskýrsla vistuð — viðbótarreikningur ' + sala.num + ' er tilbúinn í Kröfuyfirliti');
+        return;
+      }
+    }
+    skra('vidbot_skyrsla_vistun_brast', 'co ' + coId + ' ' + sala.num + ': ný skýrsla vistaðist ekki á 45 sek.');
+    alert('Viðbótarreikningur ' + sala.num + ' er búinn til, en nýja skýrslan hefur EKKI vistast. Ýttu á „Vista" í skýrslunni (opnaðu hana með Skýrsla-takkanum). Krafan fer ekki út með gömlu skýrslunni — kerfið stöðvar hana.');
   }
 
   document.addEventListener('click', e => {

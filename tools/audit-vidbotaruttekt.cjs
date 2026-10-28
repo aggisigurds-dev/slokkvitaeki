@@ -51,6 +51,22 @@ if (!/CompanyAttachments\.delete\(co\.id, a\)/.test(p168)) brot.push('168 fjarl�
 if (!/window\.CtcPricing\s*=/.test(lesa('js/patches/129-company-total-cost.js'))) brot.push('129 flytur ekki út CtcPricing.normalizeTypeFamily');
 if (!/window\.VisitWorkflowReikn\s*=\s*\{[^}]*totalsFromLinur/.test(lesa('js/patches/165-visit-workflow.js'))) brot.push('165 flytur ekki út VisitWorkflowReikn.totalsFromLinur');
 
+// Endurskoðun netvarðar 28.10.2026 (CUTS-A-WIRE → lagað):
+const iKl = kodi.indexOf('async function klara');
+const klaraKodi = iKl >= 0 ? kodi.slice(iKl, kodi.indexOf('async function bidaSkyrslu', iKl)) : '';
+const iConf = klaraKodi.indexOf('confirm(');
+const iFersk = klaraKodi.indexOf('saekja(coId, true)');
+if (iConf < 0 || iFersk < iConf) brot.push('klara() les ekki stöðuna ferskt EFTIR confirm() — annað tæki getur hafa gert viðbótina');
+if (!/from\('uttaeki'\)\.select\('id,status,fyrirtaeki_id,created_at'\)\.in\('id'/.test(klaraKodi)) brot.push('klara() endurles ekki tækin eftir staðfestingu — reikningur byggður úr gamalli mynd');
+if (!/utanVerkbeidna\(.*,\s*true\)/.test(klaraKodi)) brot.push('klara() athugar ekki verkbeiðnir LOKAÐ (strict) — tæki á verkbeiðni gætu tvírukkast');
+if (!/await CompanyInspectionReport\.open\(coId\)/.test(klaraKodi) || !/bidaSkyrslu\(coId, sala\)/.test(klaraKodi)) brot.push('klara() bíður ekki eftir að ný skýrsla vistist (bidaSkyrslu)');
+if (!/rk\.vantar \|\| rk\.hopur/.test(kodi)) brot.push('Klára er ekki læst þegar afsláttarhópur náðist ekki (rk.hopur)');
+if (!/gate:\s*'vidbot_skyrsla'/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push stöðvar ekki viðbótarkröfu með gamalli/engri skýrslu (gate vidbot_skyrsla)');
+if (!p168.includes("' - úttektarskýrsla - #' + co.id +")) brot.push('168 eyðir fleiru en nákvæmlega úttektarskýrslunni sem appið bjó til (… - úttektarskýrsla - #<id>.pdf) — handinnhlaðin skjöl eiga að vera í friði');
+if (!/sala_nums/.test(kodi) || !/vidbot_merking_brast/.test(kodi)) brot.push('488 skráir ekki númer viðbótarsölunnar (vidbot_uttekt.<fyrirtæki>.sala_nums) — krafa_note er ritanlegt í Kröfu yfirliti og hliðið má ekki hvíla á því einu');
+if (!/sala_nums/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push les ekki sala_nums — hliðið hvílir á ritanlegum krafa_note');
+if (!/vidbot_skyrsla_vistun_brast/.test(p168)) brot.push('168 skráir ekki bilaða vistun viðbótarskýrslu (logProblem)');
+
 const idx = lesa('index.html');
 const iS = idx.indexOf('488-vidbotar-uttekt.js');
 if (iS < 0) brot.push('index.html hleður ekki 488-vidbotar-uttekt.js');
