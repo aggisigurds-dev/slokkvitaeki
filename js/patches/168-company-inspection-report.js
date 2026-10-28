@@ -270,8 +270,11 @@
     const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
     const vd = (window.SlokkVisitDate && window.SlokkVisitDate.get)
       ? window.SlokkVisitDate.get(coId) : null;
-    const manudur = (vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()];
-    const arYear  = (vd && vd.year)    ? vd.year    : now.getFullYear();
+    // 28.10.2026 (viðbótarúttekt, 488): endurgerð eftir viðbót ERFIR skoðunarmánuðinn úr upprunalegu skýrslunni (facts).
+    const _vb0 = (window.CIR_VIDBOT && String(window.CIR_VIDBOT.coId) === String(coId) && Date.now() < window.CIR_VIDBOT.until &&
+      +window.CIR_VIDBOT.month >= 1 && +window.CIR_VIDBOT.month <= 12) ? window.CIR_VIDBOT : null;
+    const manudur = _vb0 ? MONTHS_IS[_vb0.month - 1] : ((vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()]);
+    const arYear  = _vb0 ? _vb0.year : ((vd && vd.year) ? vd.year : now.getFullYear());
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
     // 2026-07-16: mánaðar-index (1-12) fyrir ReportFactsSync (patch 270).
     const _mi = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudur).toLowerCase());
@@ -480,17 +483,6 @@
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) {
-          if (_vb) {
-            try {
-              const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
-              const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
-                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
-              let eftir = 0;
-              for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
-              if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
-              window.CIR_VIDBOT = null;
-            } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
-          }
           _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
           // ── 2026-07-29 (Agnar: „reyna láta skýrsluna haldast betur … og hún á
           //    að vera sýnileg í kröfuyfirliti líka") ─────────────────────────
@@ -525,6 +517,9 @@
                 .select('id').eq('fyrirtaeki_id', co.id).eq('year', +ar)
                 .eq('doc_type', 'uttektarskyrsla').limit(1);
               if (ex && ex.error) throw ex.error;
+              // Viðbótarskýrsla: dagsetning skýrslunnar (skoðunardagurinn) breytist ekki við endurgerð, og tækjatalan sem handverkfæri
+              // skráðu (skyrsla_taeki_alls, notuð í Gátt) er úrelt — null svo Gátt fallist á facts.
+              if (_vb && ex && ex.data && ex.data[0]) { delete rec.doc_date; rec.skyrsla_taeki_alls = null; }
               const w = (ex && ex.data && ex.data[0])
                 ? await sb.from('customer_documents').update(rec).eq('id', ex.data[0].id)
                 : await sb.from('customer_documents').insert(rec);
@@ -537,6 +532,19 @@
             _docRowOk = false;
             console.warn('[uttektarskyrsla] customer_documents', e);
             try { if (window.logProblem) window.logProblem('uttektarskyrsla_docrow_failed', 'co ' + co.id + ' ár ' + ar + ': ' + String((e && e.message) || e)); } catch (_) {}
+          }
+          // Viðbótarúttekt (488): eldri úttektarskýrsla ársins (sú sem appið bjó til) er fjarlægð EFTIR að skjalaröðin vísar á nýju
+          // skýrsluna — annars gæti hún bent á eydda skrá. Mistakist skjalaröðin er ekkert eytt og CIR_VIDBOT helst (Vista aftur).
+          if (_vb && _docRowOk) {
+            try {
+              const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
+              const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
+              let eftir = 0;
+              for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
+              if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
+            } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
+            finally { window.CIR_VIDBOT = null; }
           }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +

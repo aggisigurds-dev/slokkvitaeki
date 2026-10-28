@@ -636,6 +636,7 @@
   function markWorkflowSent(sale, resp) {
     try {
       if (!sale || sale.source !== 'uttekt' || !sale.customer_id) return;
+      if (window.VidbotUttekt && VidbotUttekt.erVidbot(sale.num, sale.krafa_note)) return;   // viðbót (488) merkir hvorki „reikningur sendur“ né „skýrsla send“ á meðan aðalreikningur er ósendur
       if (!window.ArsWorkflow || !ArsWorkflow._write) return;
       const patch = { uttekt: true, reikningur: true };
       if (resp && resp.attached_report) patch.send = true;

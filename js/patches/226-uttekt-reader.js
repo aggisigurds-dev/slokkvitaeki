@@ -216,12 +216,13 @@
     var sibs=sibsPre || await siblingLocations(co);
     var multiloc=sibs.length>0;
     try{
-      var r=await sb.from('solur').select('num,created_at,linur,customer_kt,customer_id,customer_nafn')
+      var r=await sb.from('solur').select('num,created_at,linur,customer_kt,customer_id,customer_nafn,krafa_note')
         .eq('source','uttekt').not('linur','is',null)
         .or('customer_kt.eq.'+d+',customer_kt.eq.'+dashed)
         .order('created_at',{ascending:false}).limit(24);
       var own=[], siblings=[];
       (r.data||[]).forEach(function(s){
+        if(window.VidbotUttekt && VidbotUttekt.erVidbot(s.num, s.krafa_note)) return;   // viðbótarreikningur (488): tæki hans eru þegar á skýrslunni
         var iv=parseInvLinur(s); if(!iv.lines.length) return;
         var cid=(s.customer_id==null?null:+s.customer_id);
         if(cid===co.id){ own.push(iv); return; }

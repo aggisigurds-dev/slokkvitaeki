@@ -29,6 +29,18 @@
   // (mælt 28.10 — leiðréttingar á tækjaskrá, ekki viðbætur) og spurningin átti ekki að dynja á þeim öllum í einu.
   const FRA = typeof window.VIDBOT_FRA === 'number' ? window.VIDBOT_FRA : Date.parse('2026-10-28T00:00:00');   // prófun má setja VIDBOT_FRA
 
+  // Þekkir viðbótarreikning: forskeyti í krafa_note EÐA númerið á listanum (krafa_note er ritanlegt í Kröfu yfirliti, 166 _ky-note).
+  // Notað af 166/175/199/226/253/311/328 svo viðbótin verði aldrei „reikningur ársins" í stað aðalreikningsins.
+  function erVidbot(num, note) {
+    if (/^Viðbótarúttekt við /.test(String(note || ''))) return true;
+    try {
+      const all = (window.AppSettings && AppSettings.path && AppSettings.path('vidbot_uttekt')) || {};
+      for (const k in all) { const l = all[k] && all[k].sala_nums; if (Array.isArray(l) && l.indexOf(String(num)) >= 0) return true; }
+    } catch (_) {}
+    return false;
+  }
+  window.VidbotUttekt = Object.assign(window.VidbotUttekt || {}, { erVidbot });
+
   const ST = { coId: null, open: false, akstur: false, akQty: 1, akVerd: null, skyrsla: false, skVerd: null, busy: false, sig: '' };
   let _cache = {};          // coId -> { at, data }
   let _bus = false, _aftur = false, _t = 0;
@@ -62,11 +74,11 @@
     if (!sb) return null;
     const ar = new Date().getFullYear();
     const r = await sb.from('solur')
-      .select('id,num,created_at,samtals,status,krafa_note,is_credit')
+      .select('id,num,created_at,samtals,status,krafa_note,is_credit,hidden,athugasemdir')
       .eq('customer_id', coId).eq('source', 'uttekt')
       .gte('created_at', ar + '-01-01T00:00:00').order('created_at', { ascending: false }).limit(30);
     if (r.error) throw r.error;
-    const rows = (r.data || []).filter(s => s.status !== 'void' && !s.is_credit);
+    const rows = (r.data || []).filter(s => s.status !== 'void' && !s.is_credit && !s.hidden);
     let data = null;
     if (rows.length) {
       const latest = rows[0];
@@ -94,10 +106,16 @@
     return 'active';
   }
 
+  // Tæki sem kerfið býr sjálft til við að samræma tækjaskrá að skýrslu (270: serial AER…, notes „Auto: samræmt…"; tools/generera-taeki-ur-skyrslu:
+  // „Generað …"; SQL-leiðréttingar: „Stofnað … mál #…") eru leiðréttingar á skránni, ekki viðbætur — þau kveikja ekki spurninguna.
+  function sjalfgert(u) {
+    return /^AER/.test(String(u.serial || '')) || /^(Auto: samræmt|Generað\b|Stofnað\b.*mál #)/.test(String(u.notes || ''));
+  }
+
   function nyTaeki(coId, t0) {
     const all = (window.DB && DB.cache && DB.cache.units) || [];
     const af = new Set(afgreidd(coId));
-    return all.filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[normSt(u.status)] &&
+    return all.filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[normSt(u.status)] && !sjalfgert(u) &&
       u.created_at && new Date(u.created_at).getTime() > t0 && !af.has(String(u.id)));
   }
 
@@ -113,6 +131,12 @@
       if (strict) { skra('vidbot_verkbeidna_brast', String((e && e.message) || e).slice(0, 100)); return null; }
       return units;
     }
+  }
+
+  // Beiðni nr (Colas o.fl.) er kúnnatexti sem 165 skrifar á aðalreikninginn — viðbótin fær sömu línu (ekki annar innri texti).
+  function beidniNr(sala) {
+    const m = /Beiðni nr:[^\n]*/.exec(String((sala && sala.athugasemdir) || ''));
+    return m ? m[0].trim() : '';
   }
 
   function val(coId, u) {
@@ -188,12 +212,12 @@
     const s = document.createElement('style');
     s.id = '_vb-css';
     s.textContent =
-      '#_vb-box{margin:0 0 26px;padding:14px 18px 16px;background:var(--surface2);border:1px solid var(--brd);border-left:5px solid #b8860b;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}' +
+      '#_vb-box{order:11;grid-column:1/-1;margin:0 0 26px;padding:14px 18px 16px;background:var(--surface2);border:1px solid var(--brd);border-left:5px solid #b8860b;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}' +
       '#_vb-box h4{margin:0 0 4px;font-size:14px;font-weight:800;color:var(--ink,#0f172a)}' +
       '#_vb-box .vb-sub{font-size:13px;color:var(--ink2,#475569);margin:0 0 10px}' +
       '#_vb-box .vb-wrap{overflow-x:auto}' +
       // div-grind, EKKI <table>: 131/75/170 skreyta hverja töflu með „Raðnúmer“-haus (gátreitir, Breyta, Umfylling, Minnó-reitur).
-      '#_vb-box .vb-r{display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(110px,1.4fr) minmax(80px,.9fr) minmax(100px,.9fr);gap:8px;padding:6px 8px;border-bottom:1px solid var(--brd);font-size:13px;align-items:center}' +
+      '#_vb-box .vb-r{min-width:420px;display:grid;grid-template-columns:minmax(90px,1.1fr) minmax(110px,1.4fr) minmax(80px,.9fr) minmax(100px,.9fr);gap:8px;padding:6px 8px;border-bottom:1px solid var(--brd);font-size:13px;align-items:center}' +
       '#_vb-box .vb-r span{font-size:13px;font-weight:400}' +
       '#_vb-box .vb-h span{font-size:11px;color:#64748b;font-weight:700}' +
       '#_vb-box .vb-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#b8860b;color:#fff;font-size:12px;font-weight:800;margin-right:8px;flex:none}' +
@@ -235,7 +259,7 @@
     let h = '<h4>➕ ' + n + (n === 1 ? ' tæki' : ' tæki') + ' bættust við eftir reikning ' + esc(data.latest.num) + ' (' + esc(dagur(data.latest.created_at)) + ')</h4>' +
       '<p class="vb-sub">Þessi tæki eru á tækjalistanum en ekki á reikningnum. <b>Viltu gera viðbótarúttekt?</b> Svarirðu nei er skráin bara leiðrétt og ekkert er rukkað.</p>' +
       '<div class="vb-wrap"><div class="vb-r vb-h"><span>Auðkenni</span><span>Tæki</span><span>Þjónusta</span><span style="text-align:right">Verð án vsk</span></div>' + rows + '</div>' +
-      '<div class="vb-aths">Þjónustuna og verðið breytir þú eins og venjulega — valið á tækinu og taflan hér fyrir ofan; þessi kassi fylgir þeim.</div>';
+      '<div class="vb-aths">Þjónustuna og verðið breytir þú eins og venjulega — valið á tækinu (opnaðu listann 🔒 ef hann er læstur) og taflan hér fyrir ofan; þessi kassi fylgir þeim. Nýtt tæki er sjálfgefið „Yfirferð" — veldu „Nýtt" ef það er nýtt tæki. Græna taflan hér fyrir ofan telur þessi tæki líka.</div>';
     if (!ST.open) {
       h += '<div class="vb-btns"><button type="button" class="vb-p" data-vb="ja">Já, gera viðbótarúttekt</button>' +
         '<button type="button" data-vb="nei">Nei, bara leiðrétta skrána</button></div>';
@@ -249,11 +273,13 @@
         '<div class="vb-step"><span class="vb-n">④</span>Samantekt</div><div class="vb-tot" id="_vb-tot"></div>' +
         '<div class="vb-aths">Þegar þú klárar: viðbótarreikningur (<b>ósendur</b>, bara nýju tækin) og ný aðalúttektarskýrsla með öllum tækjum. Báðar sendast saman úr Kröfuyfirliti.</div>' +
         (rk.hopur ? '<div class="vb-var">⚠ Afsláttarhópur náðist ekki — endurhlaðaðu síðuna áður en þú klárar, annars fer viðbótin út á fullu verði.</div>' : '') +
-        (rk.vantar ? '<div class="vb-var">⚠ Verð vantar á línu — lagaðu verðið í töflunni að ofan eða veldu „Sleppa" á tækinu áður en þú klárar.</div>' : '') +
+        (rk.vantar ? '<div class="vb-var">⚠ Verð vantar á línu (eða tækið er skráð „ekki rukka" í verðtengingu) — lagaðu verðið í töflunni að ofan eða veldu „Sleppa" á tækinu áður en þú klárar.</div>' : '') +
         '<div class="vb-btns"><button type="button" class="vb-p" data-vb="klara" ' + (rk.vantar || rk.hopur || ST.busy ? 'disabled' : '') + '>' + (ST.busy ? '⏳ Bý til…' : '✓ Klára viðbótarúttekt') + '</button>' +
         '<button type="button" data-vb="hætta" ' + (ST.busy ? 'disabled' : '') + '>Hætta við</button></div>';
     }
+    const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(b) : null;   // regla 23.09: skrun og fókus lifa teikningu
     b.innerHTML = h;
+    if (aftur) aftur();
     b._rk = rk; b._data = data;
     samtolur(coId);
   }
@@ -338,6 +364,7 @@
     // geta hafa orðið úrelt/ónýt/færð á meðan glugginn var opinn. Allt sem víkur stöðvar — ekkert er rukkað af gamalli mynd.
     let data;
     try {
+      try { await AppSettings.load(); } catch (_) {}   // afgreidd tæki frá öðru tæki
       data = await saekja(coId, true);
       if (!data || data.latest.num !== data0.latest.num) return haetta('Annar úttektarreikningur kom inn á meðan (' + (data ? data.latest.num : '—') + ') — opnaðu fyrirtækið aftur og athugaðu stöðuna. Ekkert var búið til.');
       const ids = serviced.map(x => x.u.id);
@@ -371,7 +398,7 @@
         customer_nafn: nafn, customer_kt: kt, customer_id: coId, customer_base_id: baseId,
         starfsmadur: (trip.skodunaradili || '').trim() || 'Kassi',
         linur: a.linur, upphaed_an_vsk: a.tot.subEx, vsk_upphaed: a.tot.vsk, samtals: a.tot.total, afslattur: a.tot.afslattur,
-        greitt_med: 'reikningur', source: 'uttekt', athugasemdir: '',
+        greitt_med: 'reikningur', source: 'uttekt', athugasemdir: beidniNr(data.rot),
         krafa_note: MARKI + data.rot.num + ' · ' + serviced.length + ' tæki bættust við eftir reikning ' + data.latest.num + ' (' + taekiTexti + ')'
       }).select('*').single();
       if (ins.error) throw ins.error;
@@ -394,7 +421,9 @@
     // Skoðunardagsetning tækjanna (eins og 165: í dag, næsta eftir 12 mánuði).
     try {
       const nu = new Date(), dags = nu.getFullYear() + '-' + String(nu.getMonth() + 1).padStart(2, '0') + '-' + String(nu.getDate()).padStart(2, '0');
-      const nesta = (nu.getFullYear() + 1) + dags.slice(4);
+      const nx = new Date(nu.getFullYear() + 1, nu.getMonth(), nu.getDate());
+      if (nx.getMonth() !== nu.getMonth()) nx.setDate(0);   // 29. feb → 28. feb
+      const nesta = nx.getFullYear() + '-' + String(nx.getMonth() + 1).padStart(2, '0') + '-' + String(nx.getDate()).padStart(2, '0');
       const ids = serviced.map(x => x.u.id);
       const up = await sb.from('uttaeki').update({ last_insp: dags, next_insp: nesta }).in('id', ids);
       if (up.error) throw up.error;
@@ -402,10 +431,18 @@
     } catch (e) { skra('vidbot_dagsetning_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); toast('⚠ Skoðunardagsetningar tækjanna uppfærðust ekki'); }
     try { if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) UttektInvoicePdf.saveForSale(coId, sala).catch(() => {}); } catch (_) {}
     // Ný aðalúttektarskýrsla (168 tekur við af þeirri fyrri) — og beðið eftir að hún sé raunverulega vistuð.
-    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num };
+    // Skoðunarmánuðurinn ERFIST úr upprunalegu skýrslunni (facts) — hann má aldrei færast í „október" (regla Agnars). Annars
+    // reiknar 168 mánuðinn úr trip-stöðu vélarinnar eða núverandi mánuði.
+    let manudur = null;
+    try {
+      const f = await sb.from('arsskodun_report_facts').select('inspect_month,report_year').eq('fyrirtaeki_id', coId).maybeSingle();
+      if (f.error) throw f.error;
+      if (f.data && +f.data.report_year === new Date().getFullYear() && +f.data.inspect_month >= 1 && +f.data.inspect_month <= 12) manudur = +f.data.inspect_month;
+    } catch (e) { skra('vidbot_manudur_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100)); }
+    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: manudur, year: new Date().getFullYear() };
     let opnadist = true;
     try { if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar'); await CompanyInspectionReport.open(coId); }
-    catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); alert('Viðbótarreikningur ' + sala.num + ' er búinn til en skýrslan opnaðist ekki: ' + (e.message || e) + '\nOpnaðu hana með Skýrsla-takkanum og ýttu á Vista — krafan fer ekki út fyrr en ný skýrsla er til.'); }
+    catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); opnaAftur(coId, sala, 'Skýrslan opnaðist ekki: ' + (e.message || e)); }
     toast('✓ Viðbótarreikningur ' + sala.num + ' búinn til (ósendur) — beðið eftir nýju skýrslunni');
     ST.busy = false; ST.open = false; ST.akstur = false; ST.skyrsla = false; ST.sig = '';
     delete _cache[coId];
@@ -416,6 +453,27 @@
 
   // Bíður (án þess að læsa viðmótinu) eftir að ný úttektarskýrsla ársins sé vistuð EFTIR að salan varð til. Vistist hún ekki
   // á 45 sek. er það sagt berum orðum og skráð; payday-push stöðvar svo viðbótarkröfuna þar til skýrslan er til.
+  // Býður að opna skýrsluna aftur (CIR_VIDBOT endurnýjað). Ekki vísað á „Skýrsla"-takkann í Heildarkostnaði: hann kallar á
+  // advanceInspectionDates (129) sem færir næstu skoðun allra tækja sem eru ekki stimpluð í dag.
+  function opnaAftur(coId, sala, astaeda) {
+    if (confirm('Viðbótarreikningur ' + sala.num + ' er búinn til. ' + astaeda + '\n\nNý skýrsla verður að vera vistuð áður en krafan fer út (kerfið stöðvar hana annars).\n\nOpna skýrsluna núna?')) {
+      window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear() };
+      try { CompanyInspectionReport.open(coId); } catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80)); }
+      bidaSkyrslu(coId, sala);
+    }
+  }
+
+  // T=S=I: eftir að nýja skýrslan er vistuð fylgir afrit tækjatalna (S) með, eins og eftir aðalúttekt (165 afritEftirUttekt;
+  // equipment_manual virt). Skýrslan telur ÖLL tæki prófílsins, svo afritið gerir það líka.
+  async function afritTolur(coId, sala) {
+    try {
+      if (!(window.VisitWorkflowReikn && VisitWorkflowReikn.afritEftirUttekt)) return;
+      const all = ((window.DB && DB.cache && DB.cache.units) || []).filter(u => u && Number(u.fyrirtaeki_id) === Number(coId) && !NON[normSt(u.status)]);
+      if (!all.length) return;
+      await VisitWorkflowReikn.afritEftirUttekt(coId, { units: all, servicedIds: all.map(u => u.id) }, sala.num);
+    } catch (e) { skra('vidbot_afrit_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); }
+  }
+
   async function bidaSkyrslu(coId, sala) {
     const fra = (Date.parse(sala.created_at) || Date.now()) - 120000, ar = String(new Date().getFullYear());
     for (let i = 0; i < 30; i++) {
@@ -424,11 +482,12 @@
       try { l = (window.CompanyAttachments && CompanyAttachments.list(coId)) || []; } catch (_) {}
       if (l.some(x => x && x.kind === 'skyrsla' && String(x.year) === ar && Date.parse(x.uploaded_at) >= fra && /úttektarskýrsla/i.test(String(x.name || '')))) {
         toast('✓ Ný úttektarskýrsla vistuð — viðbótarreikningur ' + sala.num + ' er tilbúinn í Kröfuyfirliti');
+        afritTolur(coId, sala);
         return;
       }
     }
     skra('vidbot_skyrsla_vistun_brast', 'co ' + coId + ' ' + sala.num + ': ný skýrsla vistaðist ekki á 45 sek.');
-    alert('Viðbótarreikningur ' + sala.num + ' er búinn til, en nýja skýrslan hefur EKKI vistast. Ýttu á „Vista" í skýrslunni (opnaðu hana með Skýrsla-takkanum). Krafan fer ekki út með gömlu skýrslunni — kerfið stöðvar hana.');
+    opnaAftur(coId, sala, 'Nýja skýrslan hefur EKKI vistast.');
   }
 
   document.addEventListener('click', e => {
@@ -466,6 +525,20 @@
   }
   attach();
 
-  window.VidbotUttekt = { uppfaera, saekja, nyTaeki };
+  // Fyrir 328 („Klára heimsókn" eftir aðalreikning): hversu mörg ný tæki bíða og opna kassann í stað annars heils reiknings.
+  async function bidur(coId) {
+    try {
+      const d = await saekja(coId);
+      if (!d) return 0;
+      const u = await utanVerkbeidna(nyTaeki(coId, d.t0));
+      return u.length;
+    } catch (_) { return 0; }
+  }
+  function opna(coId) {
+    if (getCoId() !== coId) return;
+    ST.open = true; ST.sig = '';
+    uppfaera().then(() => { const b = document.getElementById(BOX); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+  }
+  Object.assign(window.VidbotUttekt, { uppfaera, saekja, nyTaeki, bidur, opna });
   console.log('[patch-488] viðbótarúttekt tilbúin');
 })();

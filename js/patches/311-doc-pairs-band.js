@@ -280,15 +280,16 @@
     try {
       let sr = null;
       if (siteLocked && coIds.length) {
-        sr = await sb.from('solur').select('id,num,source,samtals,created_at,customer_id')
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at,customer_id,krafa_note')
           .in('customer_id', coIds)
           .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       } else if (ktd.length === 10 && ktd !== '9999999999') {
-        sr = await sb.from('solur').select('id,num,source,samtals,created_at')
+        sr = await sb.from('solur').select('id,num,source,samtals,created_at,krafa_note')
           .or('customer_kt.eq.' + ktd + ',customer_kt.eq.' + ktDashed(ktd))
           .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       }
       (sr && sr.data || []).forEach(s => {
+        if (s.source === 'uttekt' && window.VidbotUttekt && VidbotUttekt.erVidbot(s.num, s.krafa_note)) return;   // viðbótarreikningur (488) er ekki aðalreikningur ársins
         const y = String(s.created_at || '').slice(0, 4);
         const k = (s.source || '') + '|' + y;
         if (!solBySrc[k]) solBySrc[k] = s;

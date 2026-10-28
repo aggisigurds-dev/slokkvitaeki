@@ -101,14 +101,18 @@
     } catch (_) {} })();
     const reikningurP = (async () => { try {
       const r = await s.from('solur')
-        .select('num,created_at,samtals,krafa_sent_at,paid_at')
+        .select('num,created_at,samtals,krafa_sent_at,paid_at,krafa_note')
         .eq('source', 'uttekt').eq('customer_id', coId)
         .gte('created_at', year + '-01-01').lt('created_at', (year + 1) + '-01-01')
         .or('hidden.is.null,hidden.eq.false')
         .or('is_credit.is.null,is_credit.eq.false')
-        .order('created_at', { ascending: false }).limit(1);
+        .order('created_at', { ascending: false }).limit(20);
       if (r.data && r.data.length) {
-        const v = r.data[0];
+        // 28.10.2026 (viðbótarúttekt, 488): aðalreikningur ársins ræður — viðbótin (aðeins ný tæki) má ekki taka sæti hans, því þá
+        // hyrfi „Þessi reikningur er GREIDDUR" úr blokkarglugganum (tvígreiðsluvörnin, Stóragerði 20).
+        const adal = r.data.filter(x => !(window.VidbotUttekt && VidbotUttekt.erVidbot(x.num, x.krafa_note)));
+        const v = (adal.length ? adal[0] : r.data[0]);
+        out.vidbot = r.data.filter(x => x !== v && window.VidbotUttekt && VidbotUttekt.erVidbot(x.num, x.krafa_note)).map(x => x.num);
         out.reikningur = { num: v.num, dags: v.created_at, samtals: v.samtals,
                            krafa_sent: v.krafa_sent_at, greitt: v.paid_at, payday: null };
         // Greiðslustaðan kemur úr Payday-speglinum (reference heldur R-númerinu).
@@ -312,7 +316,7 @@
           '<div style="font-size:17px;font-weight:800;color:#7f1d1d;margin-bottom:6px">' +
             '⚠ Reikningur ' + year + ' er ÞEGAR TIL</div>' +
           '<div style="font-size:13.5px;color:#334155;line-height:1.6;margin-bottom:14px">' +
-            '<b>' + esc(r.num) + '</b> · ' + kr(r.samtals) + (dmy(r.dags) ? ' · ' + dmy(r.dags) : '') +
+            '<b>' + esc(r.num) + '</b> · ' + kr(r.samtals) + (dmy(r.dags) ? ' · ' + dmy(r.dags) : '') + ((st.vidbot && st.vidbot.length) ? ' <span style="color:#64748b">(+ viðbót ' + esc(st.vidbot.join(', ')) + ')</span>' : '') +
             (greitt ? '<br><b style="color:#7f1d1d">Þessi reikningur er GREIDDUR.</b>' : '') +
             '<br>Að búa til annan reikning þýðir að viðskiptavinurinn fær tvo reikninga fyrir sömu úttekt.' +
             (greitt ? ' Það hefur áður leitt til tvígreiðslu sem þurfti að endurgreiða.' : '') +
@@ -393,6 +397,15 @@
       delete btn.dataset.uvOk;
       return;
     }
+    // 28.10.2026 (viðbótarúttekt, 488): bættust tæki við eftir reikninginn? Þá er rétta leiðin viðbótarkassinn (aðeins nýju tækin),
+    // ekki annar heill reikningur með ÖLLUM tækjum (tvírukkun). Aðalvalið er viðbótin; „NÝR"-leiðin er áfram til sem aukaval.
+    try {
+      const nyjar = (window.VidbotUttekt && VidbotUttekt.bidur) ? await VidbotUttekt.bidur(coId) : 0;
+      if (nyjar > 0 && confirm('⚠ ' + nyjar + ' ný tæki bættust við eftir reikning ' + st.reikningur.num + '.\n\nRétta leiðin er VIÐBÓTARÚTTEKT (aðeins nýju tækin + ný skýrsla), ekki annar heill reikningur með öllum tækjunum.\n\nOK = fara í viðbótarúttekt (mælt með)\nHætta við = halda áfram í „annar reikningur" valmyndina')) {
+        VidbotUttekt.opna(coId);
+        return;
+      }
+    } catch (_) { /* brestur má ekki stöðva venjulega vörn */ }
     const res = await confirmSecond(st, year);
     if (!res) return;                             // Hætta við — sjálfgefið
     // 165 skráir ástæðuna í solur.krafa_note (2026-09-12) — bundin við staðinn og 30 mínútur.

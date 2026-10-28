@@ -977,7 +977,7 @@
   // „í vinnslu"-staðan spyrji upp á nýtt í stað þess að sitja á gömlu svari.
   window.VisitWorkflowVerkst = { gleyma: gleymaVerkstaedi, erAVerkstaedi: taekiAVerkstaedi };
   // 28.10.2026: viðbótarúttekt (488) reiknar samtölur og hreinsar töflutexta með SÖMU föllum og reikningurinn.
-  window.VisitWorkflowReikn = { totalsFromLinur, hreinnTexti };
+  window.VisitWorkflowReikn = { totalsFromLinur, hreinnTexti, afritEftirUttekt };
   console.log('[visit-workflow] installed');
 })();
 /* === END VISIT WORKFLOW v1 === */

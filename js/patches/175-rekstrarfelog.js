@@ -1972,10 +1972,11 @@
     var pdByCo = {};
     try {
       if (coIds.length && window.DB && DB.sb) {
-        var sr = await DB.sb.from('solur').select('num,customer_id,created_at').in('customer_id', coIds).order('created_at', { ascending: false }).limit(800);
+        var sr = await DB.sb.from('solur').select('num,customer_id,created_at,source,krafa_note').in('customer_id', coIds).order('created_at', { ascending: false }).limit(800);
         var latest = {};
         (sr.data||[]).forEach(function(s){
           if (s.customer_id==null || !s.num) return;
+          if (s.source==='uttekt' && window.VidbotUttekt && VidbotUttekt.erVidbot(s.num, s.krafa_note)) return;   // viðbótarreikningur (488)
           var k = String(s.customer_id);
           if (!latest[k]) latest[k] = s.num;
         });

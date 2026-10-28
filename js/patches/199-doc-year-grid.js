@@ -1411,7 +1411,7 @@
         // reikningar hennar fara aldrei í þeirra fötur, svo hún gerir þeirra val ekki tvírætt.
         var otherArr=[]; SERVICES.forEach(function(o){ if(o.kind!==svc.kind && !o.ekkiVista) otherArr=otherArr.concat(o.repMap[y]||[]); });
         if(svc.ekkiVista) otherArr=[];
-        var invArr=svc.invMap[y]||[];
+        var invArr=(svc.invMap[y]||[]).filter(function(x){ return !(svc.kind==='uttekt' && x && x.invoice_number && window.VidbotUttekt && VidbotUttekt.erVidbot(x.invoice_number,'')); });   // viðbótarreikningur (488) er ekki aðalreikningur ársins
         var stored=pairsByYear[y]&&pairsByYear[y][svc.kind];
         // Reikningur sem er ÞEGAR tengdur HINNI þjónustunni er FRÁTEKINN —
         // en AÐEINS ef hann tilheyrir raunverulega þeirri þjónustu. Rangparað

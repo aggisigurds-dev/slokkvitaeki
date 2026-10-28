@@ -209,7 +209,12 @@ exports.handler = async (event) => {
             ? await findSlokkvikerfiPdf(sale)
             : sale.source === 'brunakerfi'
               ? await findBrunakerfiPdf(sale)
-              : await findReportPdf(sale, body.report_storage_path);
+              : await findReportPdf(sale, body.report_storage_path).catch(async function (e) {
+                // Slóð úr skyndiminni vafrans getur vísað á skrá sem var skipt út (ný skýrsla) — fall þá á nýjustu skýrslu ársins
+                // í stað þess að senda kröfuna án skýrslu.
+                if (!body.report_storage_path) throw e;
+                return await findReportPdf(sale, null);
+              });
           if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
             ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'
             : sale.source === 'brunakerfi'

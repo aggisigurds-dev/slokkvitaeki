@@ -67,6 +67,14 @@ if (!/sala_nums/.test(kodi) || !/vidbot_merking_brast/.test(kodi)) brot.push('48
 if (!/sala_nums/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push les ekki sala_nums — hliðið hvílir á ritanlegum krafa_note');
 if (!/vidbot_skyrsla_vistun_brast/.test(p168)) brot.push('168 skráir ekki bilaða vistun viðbótarskýrslu (logProblem)');
 
+// Allir sem völdu „nýjasta/fyrsta úttektarreikning ársins" verða að þekkja viðbótina (annars tekur hún sæti aðalreikningsins).
+for (const f of ['166-krofu-yfirlit', '175-rekstrarfelog', '199-doc-year-grid', '226-uttekt-reader', '253-sala-customer-history', '311-doc-pairs-band', '328-uttekt-vorn']) {
+  if (!/VidbotUttekt\s*&&\s*VidbotUttekt\.erVidbot/.test(lesa('js/patches/' + f + '.js'))) brot.push(f + ' þekkir ekki viðbótarreikning (VidbotUttekt.erVidbot) — viðbótin gæti tekið sæti aðalreikningsins');
+}
+if (!/window\.VidbotUttekt\s*=\s*Object\.assign\(window\.VidbotUttekt\s*\|\|\s*\{\},\s*\{\s*erVidbot/.test(kodi)) brot.push('488 flytur ekki erVidbot út snemma (window.VidbotUttekt)');
+if (!/CIR_VIDBOT\.month/.test(kodi) && !/month:\s*manudur/.test(kodi)) brot.push('488 sendir ekki skoðunarmánuð upprunalegu skýrslunnar til 168 (mánuður má aldrei færast)');
+if (!/_vb0/.test(p168)) brot.push('168 erfir ekki skoðunarmánuðinn við viðbótarskýrslu (_vb0)');
+
 const idx = lesa('index.html');
 const iS = idx.indexOf('488-vidbotar-uttekt.js');
 if (iS < 0) brot.push('index.html hleður ekki 488-vidbotar-uttekt.js');
