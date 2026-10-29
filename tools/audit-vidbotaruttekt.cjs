@@ -68,6 +68,8 @@ for (const f of ['tools/trio.cjs', 'netlify/functions/trio.js']) {
 }
 if (!/addUnitsOnSite\(c\.nafn \|\| '', type, size, count, c\.id\)/.test(lesa('js/patches/219-bilstjori.js')) || !/fyrirtaeki_id: \+coId/.test(lesa('js/patches/219-bilstjori.js'))) brot.push('219 Bílstjóri býr til tæki án fyrirtaeki_id — viðbótarkassinn (488) sér þau ekki');
 if (!/not like ''Viðbótarúttekt við %''/.test(lesa('sql/2026-10-29_heilsucheck_vidbot_uttekt.sql'))) brot.push('sql/2026-10-29_heilsucheck_vidbot_uttekt.sql vantar (heilsucheck telur viðbót sem tvítekna úttekt)');
+if (!/async function parReikningur/.test(kodi) || !/from\('document_pairs'\)/.test(kodi) || !/vidbot_par_brast/.test(kodi)) brot.push('488 sér ekki reikning ársins gegnum document_pairs (samreikningar / Payday-skjöl) — staðir án eigin sölu fá aldrei kassann');
+if (/parReikningur[\s\S]{0,2500}\.insert\(/.test(kodi.slice(kodi.indexOf('async function parReikningur'), kodi.indexOf('async function parReikningur') + 3500))) brot.push('parReikningur má aðeins LESA (engin skrif í document_pairs/solur)');
 if (!p168.includes("' - úttektarskýrsla - #' + co.id +")) brot.push('168 eyðir fleiru en nákvæmlega úttektarskýrslunni sem appið bjó til (… - úttektarskýrsla - #<id>.pdf) — handinnhlaðin skjöl eiga að vera í friði');
 if (!/sala_nums/.test(kodi) || !/vidbot_merking_brast/.test(kodi)) brot.push('488 skráir ekki númer viðbótarsölunnar (vidbot_uttekt.<fyrirtæki>.sala_nums) — krafa_note er ritanlegt í Kröfu yfirliti og hliðið má ekki hvíla á því einu');
 if (!/sala_nums/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push les ekki sala_nums — hliðið hvílir á ritanlegum krafa_note');

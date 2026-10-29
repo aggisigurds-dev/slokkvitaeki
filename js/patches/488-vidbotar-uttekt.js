@@ -109,10 +109,23 @@
           if (x && x.status !== 'void' && !x.is_credit && !x.hidden && x.num && !String(x.krafa_note || '').startsWith(MARKI)) cand = Object.assign({}, x, { samr: true });
         }
         if (!cand && p.invoice_doc_id != null) {
-          const q = await sb.from('customer_documents').select('id,invoice_number,doc_date,amount,is_duplicate').eq('id', p.invoice_doc_id).maybeSingle();
+          let q = await sb.from('customer_documents').select('id,invoice_number,doc_date,amount,is_duplicate,dup_of').eq('id', p.invoice_doc_id).maybeSingle();
           if (q.error) throw q.error;
-          const x = q.data;
-          if (x && !x.is_duplicate && x.invoice_number) cand = { id: 'doc' + x.id, num: String(x.invoice_number), created_at: x.doc_date || null, samtals: x.amount, athugasemdir: '', samr: true };
+          let x = q.data;
+          if (x && x.is_duplicate && x.dup_of != null) {   // parað við afrit — fylgjum í upprunalega skjalið
+            q = await sb.from('customer_documents').select('id,invoice_number,doc_date,amount,is_duplicate,dup_of').eq('id', x.dup_of).maybeSingle();
+            if (q.error) throw q.error;
+            x = q.data;
+          }
+          if (x && !x.is_duplicate && x.invoice_number) {
+            cand = { id: 'doc' + x.id, num: String(x.invoice_number), created_at: x.doc_date || null, samtals: x.amount, athugasemdir: '', samr: true };
+            // Skjal án dagsetningar en númer úr okkar kerfi (R-00xxxx): salan ber dagsetninguna (og er aldrei viðbót).
+            if (!cand.created_at && /^R-0d{5}$/.test(cand.num)) {
+              const sq = await sb.from('solur').select('num,created_at,samtals,krafa_note,status,is_credit').eq('num', cand.num).maybeSingle();
+              if (sq.error) throw sq.error;
+              if (sq.data && sq.data.status !== 'void' && !sq.data.is_credit && !String(sq.data.krafa_note || '').startsWith(MARKI)) { cand.created_at = sq.data.created_at; if (cand.samtals == null) cand.samtals = sq.data.samtals; }
+            }
+          }
         }
         if (cand && (!besti || String(cand.created_at || '') > String(besti.created_at || ''))) besti = cand;
       }
