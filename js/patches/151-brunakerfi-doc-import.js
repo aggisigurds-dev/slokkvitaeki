@@ -649,7 +649,7 @@
               if (lk.cancel) return;
               matches = lk.rows || [];
             } else {
-              const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').or('kennitala.eq.' + ktCleanFinal.slice(0, 6) + '-' + ktCleanFinal.slice(6) + ',kennitala.eq.' + ktCleanFinal).is('deleted_at', null);
+              const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').or('kennitala.eq.' + ktCleanFinal.slice(0, 6) + '-' + ktCleanFinal.slice(6) + ',kennitala.eq.' + ktCleanFinal).is('deleted_at', null).limit(1000);
               matches = (r && r.data) || [];
             }
             const normNew = normalizeName(nafn);

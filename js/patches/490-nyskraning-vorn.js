@@ -57,7 +57,8 @@
     const c = SB();
     if (!c) return { error: 'Engin gagnagrunnstenging' };
     try {
-      const r = await c.from('fyrirtaeki').select(COLS).or(ktOr(d)).is('deleted_at', null).order('id', { ascending: true });
+      // .limit(1000): afmörkun (audit-pagination) — fleiri en 1000 staðir á EINNI kennitölu eru ekki til (mesti rekstrarfélagshópur er ~70).
+      const r = await c.from('fyrirtaeki').select(COLS).or(ktOr(d)).is('deleted_at', null).order('id', { ascending: true }).limit(1000);
       if (r.error) return { error: r.error.message || String(r.error) };
       return { rows: r.data || [] };
     } catch (e) {
@@ -257,7 +258,7 @@
   // ── Gluggi 2: nýr staður á sömu kennitölu ────────────────────────────────
   async function naestaNr(c, d) {
     // Engin deleted_at sía: einkvæmi vísirinn (kt, stadur_nr) nær líka yfir eyddar raðir.
-    const q = await c.from('fyrirtaeki').select('stadur_nr').or(ktOr(d));
+    const q = await c.from('fyrirtaeki').select('stadur_nr').or(ktOr(d)).limit(1000);   // afmörkun (audit-pagination): <1000 staðir á kt
     if (q.error) throw q.error;
     const radir = q.data || [];
     let mx = 0;

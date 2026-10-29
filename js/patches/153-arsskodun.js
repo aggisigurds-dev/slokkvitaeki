@@ -5566,7 +5566,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     } finally { state.status = keepS; state.search = keepQ; }
     return out;
   }
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, talningar, categoryOf, state, saveState, openNewCompanyDialog, version: 'v1' };
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, talningar, state, saveState, openNewCompanyDialog, categoryOf, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
