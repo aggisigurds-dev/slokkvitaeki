@@ -5030,6 +5030,8 @@
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
         sannanirHtml() +
+        // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
+        (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
@@ -5741,6 +5743,7 @@
     if (!el || el.tagName === 'SELECT') return;
     const a = el.dataset.t5, id = el.dataset.id ? Number(el.dataset.id) : null, m = el.dataset.m;
     if (a && a.indexOf('tp-') === 0 && window.Tolvupostar) { if (Tolvupostar.smellur(el, e)) return; }   // 448 Tölvupóstar
+    if (a && a.indexOf('vs-') === 0 && window.Vinnusamantekt) { if (Vinnusamantekt.smellur(el, e)) return; }   // 489 Vinnusamantekt
     if (a && a.indexOf('er-') === 0 && window.ErindiSimi) { if (ErindiSimi.smellurT5(el)) return; }   // 449c Erindi
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
@@ -6450,6 +6453,8 @@
   // 09.10.2026 — það sem 448 (Tölvupóstar) þarf frá borðinu: teikna, toast, skuggarótin (fyrir eigið stílblað) og að opna mál.
   window.Bord368 = {
     render, toast,
+    // 489 Vinnusamantekt endurnýtir Fela/Skýring-kerfið: sama geymsla (thjonustubord_falid), sömu smellir, sömu takkar.
+    felaApi: { felaTakki, skyrLina, erFalid, falinHtml },
     root: () => { const v = document.getElementById(VIEW_ID); return v && v.shadowRoot; },
     opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); }
   };
