@@ -91,6 +91,17 @@
  * „hringja í 8623425") birtist sem gul flís með brotalínu í línunni „Tillaga"
  * — ALDREI vistað sjálfkrafa; smellur = nota. Aðgangskóðar eru ekki lagðir til:
  * þeir standa þegar í ✍ athugasemdaboxinu (banner_note).
+ *
+ * ── v4 29.10.2026: LÁNSTÆKI (Agnar 12.09.2026: „reikna út hvað við þurfum að taka með okkur
+ * mörg lánstæki í verkin — hleðsla á 5 ára fresti en tækin með misjafnan tíma. T.d. 50 tæki í
+ * eign: 10 hlaðin 2025, 15 hlaðin 2024, 15 hlaðin 2023, 5 hlaðin 2022 → mest 5 lánstæki
+ * tilbúin í bílnum, ekki 50.") ──────────────────────────────────────────────────
+ * Útreikningurinn er til og er EINN: `v_hledsluspa.til_hledslu` (virk tæki − hlaðin/ný síðustu
+ * 5 ár fyrir næstu heimsókn, per tegund) — sama tala og Hleðsluspá-spjaldið (467) sýnir. Línan
+ * „Lánstæki" LES hana þaðan (Hledsluspa.spa/saekja — sóknin er sameiginleg með spjaldinu),
+ * reiknar ekkert sjálf, geymir ekkert og notar engan vafra-lykil. Hún er LESTAKA eins og
+ * Afsláttur-línan. „mest N" þegar sagan nær ekki 5 ár aftur (efri mörk, sama próf og 467).
+ * Aðkomureitirnir (hæðir, sameign/inni, mæta/bóka, aðkoma nánar) eru þegar hér að ofan (v2).
  */
 (() => {
   if (window.__bannerUpplysingarInstalled) return;
@@ -600,6 +611,58 @@
     return { texti, pct: pm ? +pm[1] : null };
   }
 
+  // ── Lánstæki (v4 29.10.2026) — lesið úr Hleðsluspá (467), sjá hausinn ─────
+  const LANST_ENDURTILRAUN = 30000;              // villa → reynt aftur eftir 30 s (textinn stendur sem „—" á meðan)
+  const _lanst = new Map();                      // coId -> { st: 'bid' | 'lokid' | 'villa', t }
+  /** Staða línunnar úr því sem er til í minni 467. `saekja` = ekkert reynt enn (eða villa sem má reyna aftur). */
+  function lanstStada(coId) {
+    const H = window.Hledsluspa;
+    if (!H || typeof H.spa !== 'function') return { texti: '—', titill: 'Hleðsluspá er ekki hlaðin', tomt: true };
+    const s = H.spa(coId), m = _lanst.get(String(coId));
+    if (s === undefined) {
+      if (m && m.st === 'villa') return { texti: '—', titill: 'Náði ekki í hleðsluspá — reyni aftur', tomt: true, saekja: Date.now() - m.t >= LANST_ENDURTILRAUN };
+      // Sótt en ekkert svar fyrir félagið (á ekki röð í viewinu) → ekki sæki-staðgengill að eilífu.
+      if (m && m.st === 'lokid') return { texti: '—', titill: 'Engin hleðsluspá fyrir þetta félag', tomt: true };
+      // Staðgengillinn tekur sömu línuhæð og svarið, svo línan hoppar ekki þegar gögnin koma.
+      return { texti: 'Sæki…', titill: '', tomt: false, saekja: !m };
+    }
+    if (!s || !(+s.taeki > 0)) return { texti: '—', titill: 'Engin virk tæki skráð — engin hleðsluspá', tomt: true };
+    const til = +s.til_hledslu || 0;
+    const efri = !!(s.ath && /efri mörk|engin saga/.test(s.ath));          // sama próf og 467
+    const hlutar = [['L', 'Léttvatn', s.til_hledslu_lettvatn], ['D', 'Duft', s.til_hledslu_duft], ['CO₂', 'CO₂', s.til_hledslu_co2]]
+      .filter(x => +x[2] > 0);
+    // Tegundirnar sjást í línunni aðeins þegar þær ganga upp í heildina. Hleðsla án tegundar (skýrslutexti) dregst aðeins frá
+    // HEILDINNI í viewinu — þá gætu hlutarnir samtals farið yfir töluna og línan mótmælt sjálfri sér („46 · CO₂ 52"). Titillinn ber þá alltaf.
+    const ganga = hlutar.reduce((a, x) => a + (+x[2]), 0) === til;
+    const texti = til === 0 ? 'engin þörf' : (efri ? 'mest ' : '') + til + (ganga && hlutar.length ? ' · ' + hlutar.map(x => x[0] + ' ' + x[2]).join(' · ') : '');
+    const titill = 'Lánstæki sem þarf í bílinn: ' + til + ' af ' + (+s.taeki) + ' tækjum þarf að hlaða í heimsókn ' + (s.naesta_heimsokn || '') +
+      ' (hlaðin eða ný síðustu 5 ár dregin frá)' + (hlutar.length ? ' — ' + hlutar.map(x => x[1] + ' ' + x[2]).join(' · ') + (ganga ? '' : ' (tegundirnar eru hver um sig; hleðsla án tegundar dregst aðeins frá heildinni)') : '') +
+      (efri ? '. ' + (s.ath || 'Efri mörk — saga nær ekki 5 ár aftur') : '') + '. Sama tala og í Hleðsluspá neðar á síðunni.';
+    return { texti, titill, tomt: false };
+  }
+  /** Sækir spána EINU sinni á félag (deilt með spjaldinu í 467) og uppfærir línuna á sínum stað — aldrei endurteiknun. */
+  function saekjaLanst(coId, st) {
+    const H = window.Hledsluspa, k = String(coId);
+    if (!st.saekja || !H || typeof H.saekja !== 'function') return;
+    _lanst.set(k, { st: 'bid', t: Date.now() });
+    Promise.resolve().then(() => H.saekja(+coId)).then(
+      r => _lanst.set(k, { st: (!r || r.villa) ? 'villa' : 'lokid', t: Date.now() }),
+      () => _lanst.set(k, { st: 'villa', t: Date.now() })
+    ).then(() => {
+      document.querySelectorAll('.' + HOLF + '[data-co="' + k + '"]').forEach(b => uppfaeraLanst(b, coId));
+    });
+  }
+  function uppfaeraLanst(box, coId) {
+    const el = box && box.querySelector('._bupp-lanst');
+    if (!el) return;
+    const st = lanstStada(coId);
+    if (el.textContent !== st.texti) el.textContent = st.texti;
+    if (el.title !== st.titill) el.title = st.titill;
+    const lina = el.closest('._bupp-lina');
+    if (lina && lina.classList.contains('_bupp-tomt') !== st.tomt) lina.classList.toggle('_bupp-tomt', st.tomt);
+    saekjaLanst(coId, st);
+  }
+
   // ── Stílar: DAUFT — hvítur texti með lágri ógegnsæi, þunn undirstrikun.
   // Sama hugsun og .rf-plannote (patch 175), bara á dökkum grunni. Enginn
   // rammi, enginn kassi — þetta má ekki keppa við nafnið.
@@ -852,6 +915,7 @@
     box.dataset.tillSig = tillSig(coId, till);
     const sk = skrarSvar(coId);
     const teikn = teiknHtml(sk, coId);
+    const ls = lanstStada(coId);
     box.innerHTML =
       TOLUR.map(t => linaHtml(t.merki,
         t.reitir.map(r => r.reitur).concat((t.flisar || []).map(f => f.reitur)),
@@ -864,6 +928,11 @@
       '<div class="_bupp-lina' + (a.texti === '—' ? ' _bupp-tomt' : '') + '">' +
         '<span class="_bupp-merki">Afsláttur</span>' +
         '<span class="_bupp-afsl" title="' + esc(a.titill) + '">' + esc(a.texti) + '</span>' +
+      '</div>' +
+      // v4: Lánstæki — LESTAKA úr Hleðsluspá (467). Stendur EFTIR Afsláttur-línunni því samstilla() finnur fyrsta ._bupp-afsl.
+      '<div class="_bupp-lina' + (ls.tomt ? ' _bupp-tomt' : '') + '">' +
+        '<span class="_bupp-merki" title="Lánstæki — hvað þarf að hafa með í bílnum">Lánstæki</span>' +
+        '<span class="_bupp-afsl _bupp-lanst" title="' + esc(ls.titill) + '">' + esc(ls.texti) + '</span>' +
       '</div>' +
       (st
         ? '<div class="_bupp-lina">' +
@@ -879,6 +948,7 @@
       '<button type="button" class="_bupp-vixl">' + (opid(coId) ? '− Fela auðar línur' : '+ Fleiri upplýsingar') + '</button>';
     uppfaeraTomt(box, coId);
     merkjaSjalf(box, coId);
+    uppfaeraLanst(box, coId);                     // v4: ræsir sókn á spánni ef hún er ekki til í minni 467
     thjappa(box);
     if (box.isConnected) fylgjendur();
 
@@ -951,6 +1021,7 @@
     merkjaFlisar(box, coId);
     uppfaeraTomt(box, coId);
     merkjaSjalf(box, coId);
+    uppfaeraLanst(box, coId);                     // v4: spáin getur komið frá spjaldinu (467) á eftir bannernum
     thjappa(box);
     // Tillögurnar breytast þegar reitur fyllist (hér eða á annarri vél) eða
     // athugasemd breytist — teiknum þá upp á nýtt, en aldrei ofan í innslátt.
