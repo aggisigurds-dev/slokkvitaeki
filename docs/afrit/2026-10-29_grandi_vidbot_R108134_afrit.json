@@ -1,0 +1,22 @@
+{
+  "lysing": "Center Hótel Grandi (fyrirtaeki 197): R-108134 (08.04.2026, 12 ný léttvatnstæki í nýju álmuna) skráð sem viðbótarúttekt EFTIR Á, án nýrrar kröfu (reikningurinn er þegar gefinn út og greiddur). Agnar já 29.10.2026.",
+  "skref_1_taeki": {
+    "innsett": "uttaeki id 25966-25977, serial TMP-R108134-01..12, Léttvatn 6 L, created_at 2026-04-08, last_insp 2026-04-08, next_insp 2027-01-01 (skoðunarmánuður Grandi = janúar, færist ekki)",
+    "endurheimta_sql": "delete from uttaeki where id between 25966 and 25977 and serial like 'TMP-R108134-%';"
+  },
+  "skref_2_skyrsla": {
+    "athugasemd": "168 (CIR_VIDBOT) UPPFÆRIR röð 1869 á sinn stað: storage_path/drive_file_id vísa nú á nýju app-skýrsluna. Upprunalega skráin (Drive-innflutt janúarskýrsla, 25 tæki) er EKKI eydd — hún liggur enn í storage og Drive.",
+    "fyrir_customer_documents_1869": {
+      "storage_path": "samningar/drive-afrit/uttektarskyrsla/197/1869_Center_H_tel_Seljavegi_-_Seljavegi_2_101_Reykjav_k_-_450905-1430_-__ttektarsk_rs.pdf",
+      "drive_file_id": "1jDiCeWSDRg-eu-rcqveadUnpHOxX80z3",
+      "notes": "Center Hótel Seljavegi - Seljavegi 2, 101 Reykjavík - 450905-1430 - úttektarskýrsla - 2026.pdf",
+      "skyrsla_texti": "Öll slökkvitæki yfirfarin og vottuð í lagi. 12 slökkvitæki endurhlaðin (skipt um innihald) og vottuð í lagi Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi.",
+      "skyrsla_vidbot": {
+        "munur": ["2025: 12 léttvatnstæki, 1 CO₂ tæki og 11 brunaslöngur yfirfarin. Reikningur 67.800 kr án vsk.", "2026: 14 léttvatnstæki, þar af 12 endurhlaðin, og 11 brunaslöngur. Hleðslurnar eru stærsti munurinn.", "Reikningur 2026: 92.508 kr án vsk."],
+        "reikn": "R-107802",
+        "taeki": [["Léttvatnstæki", 14], ["Brunaslöngur", 11]],
+        "unnid": [["Endurhleðsla slökkvitækja (úr texta skýrslu)", 12]]
+      }
+    }
+  }
+}
