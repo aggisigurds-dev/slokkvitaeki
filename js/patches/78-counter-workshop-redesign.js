@@ -71,6 +71,12 @@
   function custKey(j) {
     const name = String(j && j.customer || '').trim().toLowerCase();
     const ph = digitsOnly(j && j.phone);
+    // 2026-10-29 (ósk Agnars): „Staðgreitt" er sjálfgefið heiti á lausasölum án
+    // kennitölu — ÓLÍKUR göngukúnni í hverri sölu. Áður runnu þær allar saman í
+    // einn „Staðgreitt · N sölur" miða á Afgreiðslunni (svarta klessan í MÓTTEKIN).
+    // Meðhöndlum lausasölu-sjálfgildið eins og nafnlausan dropoff: hver R-númera-
+    // grunnur fær sinn miða, en -V afbrigði sömu sölu hópast áfram saman.
+    if (name === 'staðgreitt' && !ph) return 'b|' + baseNum(j && j.num);
     if (ph) return 'p|' + name + '|' + ph;        // named walk-in / customer with a phone
     if (name) return 'n|' + name;                 // named, no phone → merge by name (companies)
     return 'b|' + baseNum(j && j.num);            // truly anonymous → keep each drop-off apart
