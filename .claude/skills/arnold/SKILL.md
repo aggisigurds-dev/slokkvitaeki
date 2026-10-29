@@ -26,6 +26,9 @@ description: >-
   auðkenni og stað, og vista fast á staðnum (tafla bunadargreining, merki
   Teikningar, PDF í Viðhengi). Kveikjuorð: búnaðargreining, greina búnað,
   lesa teikninguna, staðsetja slökkvitækin, hvar eru tækin á teikningunni.
+  Líka TURBOPAINT og 3D-VEGGJATEIKNINGAR (Agnar 29.10.2026: Arnold er í
+  TurboPaint, staðsetningu slökkvitækja og 3D-veggjateikningum). Kveikjuorð:
+  TurboPaint, Turbo, 3D, 3D-mynd, veggjateikning, veggir á teikningu, Blender.
 ---
 
 # Arnold — staðsetning og kröfur brunavarnabúnaðar

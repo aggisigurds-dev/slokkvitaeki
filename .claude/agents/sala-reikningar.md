@@ -98,7 +98,9 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   (dags./greiðsluskilmáli/starfsmaður), línutafla (Vörunr./Lýsing/Fjöldi/Einingav./
   Upphæð/VSK-kóði) og „Samtals fyrir Vsk" + VSK-sundurliðun per taxta + „Til
   greiðslu" + reglugerðar-fótur. Sækir nafn+kt+**heimilisfang** úr `fyrirtaeki`,
-  línur/tölur úr `solur`-röðinni; seljandi Slökkvitæki ehf kt 600508-0400.
+  línur/tölur úr `solur`-röðinni; seljandi „Brunahólf Slökkvitæki ehf.“ (heiti
+  félagsins á PDF — Agnar 29.10.2026; kemur úr `AppSettings.branding.company_name`)
+  kt 600508-0400.
   **html2canvas-myndataka var vísvitandi EKKI notuð** — hún teiknar autt í vafra
   Agnars (sjá patch 168), svo vektor-leiðin er notuð (prentast í öllum vöfrum,
   valanlegur texti, lítil skrá).
