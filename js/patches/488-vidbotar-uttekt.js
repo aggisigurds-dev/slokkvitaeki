@@ -84,9 +84,45 @@
       const latest = rows[0];
       const rot = rows.slice().reverse().find(s => !String(s.krafa_note || '').startsWith(MARKI)) || rows[rows.length - 1];
       data = { latest, rot, t0: Math.max(new Date(latest.created_at).getTime(), FRA) };
+    } else {
+      data = await parReikningur(sb, coId, ar);
     }
     _cache[coId] = { at: Date.now(), data };
     return data;
+  }
+
+  // Staður í rekstrarfélagi á oft engan EIGIN úttektarreikning: reikningur ársins er samreikningur (sala á systkinastað, eða
+  // Payday-reikningur sem er aðeins til sem skjal). Pörunin (document_pairs, skrifuð af pörunartólinu/Agnari) segir hvaða reikningur
+  // nær yfir staðinn. Viðbótin verður samt sala á STAÐINN sjálfan (sama kt) — þá finnur payday-push skýrslu staðarins án breytinga.
+  // Brestur hér skilar null (kassinn sést þá ekki) en er skráður; hann fellir aldrei prófílinn.
+  async function parReikningur(sb, coId, ar) {
+    try {
+      const pr = await sb.from('document_pairs').select('invoice_doc_id,solur_id').eq('fyrirtaeki_id', coId).eq('year', ar).eq('service_type', 'uttekt');
+      if (pr.error) throw pr.error;
+      let besti = null;
+      for (const p of (pr.data || [])) {
+        let cand = null;
+        if (p.solur_id != null) {
+          const q = await sb.from('solur').select('id,num,created_at,samtals,status,krafa_note,is_credit,hidden,athugasemdir').eq('id', p.solur_id).maybeSingle();
+          if (q.error) throw q.error;
+          const x = q.data;
+          if (x && x.status !== 'void' && !x.is_credit && !x.hidden && x.num && !String(x.krafa_note || '').startsWith(MARKI)) cand = Object.assign({}, x, { samr: true });
+        }
+        if (!cand && p.invoice_doc_id != null) {
+          const q = await sb.from('customer_documents').select('id,invoice_number,doc_date,amount,is_duplicate').eq('id', p.invoice_doc_id).maybeSingle();
+          if (q.error) throw q.error;
+          const x = q.data;
+          if (x && !x.is_duplicate && x.invoice_number) cand = { id: 'doc' + x.id, num: String(x.invoice_number), created_at: x.doc_date || null, samtals: x.amount, athugasemdir: '', samr: true };
+        }
+        if (cand && (!besti || String(cand.created_at || '') > String(besti.created_at || ''))) besti = cand;
+      }
+      if (!besti) return null;
+      // Skjal án dagsetningar: aðeins gildistökumörkin (FRA) afmarka hvað telst viðbót.
+      return { latest: besti, rot: besti, samr: true, t0: Math.max(besti.created_at ? new Date(besti.created_at).getTime() : 0, FRA) };
+    } catch (e) {
+      skra('vidbot_par_brast', 'co ' + coId + ': ' + String((e && e.message) || e).slice(0, 100));
+      return null;
+    }
   }
 
   function afgreidd(coId) {
@@ -256,7 +292,7 @@
       const verd = x.val === 'skip' ? '—' : (x.vantar ? '<span style="color:#b91c1c">⚠ verð vantar</span>' : kr(x.verd));
       return '<div class="vb-r"><span>' + esc(u.serial || '#' + u.id) + '</span><span>' + esc(u.type || '') + (u.size ? ' / ' + esc(u.size) : '') + '</span><span>' + merki + '</span><span style="text-align:right;white-space:nowrap">' + verd + '</span></div>';
     }).join('');
-    let h = '<h4>➕ ' + n + (n === 1 ? ' tæki' : ' tæki') + ' bættust við eftir reikning ' + esc(data.latest.num) + ' (' + esc(dagur(data.latest.created_at)) + ')</h4>' +
+    let h = '<h4>➕ ' + n + (n === 1 ? ' tæki' : ' tæki') + ' bættust við eftir reikning ' + esc(data.latest.num) + (dagur(data.latest.created_at) ? ' (' + esc(dagur(data.latest.created_at)) + ')' : '') + (data.samr ? ' <span style="font-weight:400;color:#64748b">(samreikningur)</span>' : '') + '</h4>' +
       '<p class="vb-sub">Þessi tæki eru á tækjalistanum en ekki á reikningnum. <b>Viltu gera viðbótarúttekt?</b> Svarirðu nei er skráin bara leiðrétt og ekkert er rukkað.</p>' +
       '<div class="vb-wrap"><div class="vb-r vb-h"><span>Auðkenni</span><span>Tæki</span><span>Þjónusta</span><span style="text-align:right">Verð án vsk</span></div>' + rows + '</div>' +
       '<div class="vb-aths">Þjónustuna og verðið breytir þú eins og venjulega — valið á tækinu (opnaðu listann 🔒 ef hann er læstur) og taflan hér fyrir ofan; þessi kassi fylgir þeim. Nýtt tæki er sjálfgefið „Yfirferð" — veldu „Nýtt" ef það er nýtt tæki. Græna taflan hér fyrir ofan telur þessi tæki líka.</div>';
@@ -291,7 +327,9 @@
     const orig = Number(b._data.rot.samtals) || 0;
     t.innerHTML = 'Viðbótarreikningur: <b>' + kr(a.tot.subEx) + '</b> án vsk · vsk ' + kr(a.tot.vsk) + ' · <b>alls ' + kr(a.tot.total) + '</b>' +
       (a.pct > 0 ? ' <span style="color:#b91c1c">(−' + a.pct + '% afsláttur)</span>' : '') +
-      '<br><span style="color:#64748b">Upprunalegur reikningur ' + esc(b._data.rot.num) + ' ' + kr(orig) + ' + viðbót ' + kr(a.tot.total) + ' = ' + kr(orig + a.tot.total) + '</span>';
+      (b._data.samr
+        ? '<br><span style="color:#64748b">Samreikningur ' + esc(b._data.rot.num) + (orig ? ' (' + kr(orig) + ' fyrir alla staðina)' : '') + ' — viðbótin er sérstakur reikningur fyrir þennan stað.</span>'
+        : '<br><span style="color:#64748b">Upprunalegur reikningur ' + esc(b._data.rot.num) + ' ' + kr(orig) + ' + viðbót ' + kr(a.tot.total) + ' = ' + kr(orig + a.tot.total) + '</span>');
   }
 
   // ── 4. Uppfærsla kassans ─────────────────────────────────────────────────────
