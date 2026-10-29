@@ -71,19 +71,21 @@
   };
   const fyrirspurn = async p => { const r = await p; if (r.error) throw r.error; return r.data || []; };
   const telja = async p => { const r = await p; if (r.error) throw r.error; return r.count || 0; };
+  // PostgREST sker allt í 1000 röðum án viðvörunar (vörðurinn audit-pagination) — fyrirspurnir sem geta farið yfir 1000 raðir fara um DB.fetchAll
+  // með einkvæmri röðun og .range(), eins og aðrir patchar.
 
   /* ── sameiginleg gögn: sótt einu sinni í hverri hleðslu og deilt milli mælinga ───────────────── */
   async function saekjaGogn(c) {
     const g = {};
     const verk = {
-      solur: () => fyrirspurn(c.from('solur').select('id,samtals,created_at,paid_at,krafa_sent_at,dk_invoice_id,vidskiptategund,status,is_credit,hidden,greitt_med,linur')
-        .gte('created_at', manudur(-1).toISOString()).neq('status', 'void').limit(2000)),
-      opnarKrofur: () => fyrirspurn(c.from('solur').select('id,samtals,created_at,krafa_sent_at,dk_invoice_id,status,is_credit,hidden')
-        .eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void').limit(2000)),
-      greitt: () => fyrirspurn(c.from('solur').select('samtals,paid_at,is_credit,status,greitt_med').gte('paid_at', vika(-1).toISOString()).limit(2000)),
+      solur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,created_at,paid_at,krafa_sent_at,dk_invoice_id,vidskiptategund,status,is_credit,hidden,greitt_med,linur')
+        .gte('created_at', manudur(-1).toISOString()).neq('status', 'void').order('id').range(a, b)),
+      opnarKrofur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,created_at,krafa_sent_at,dk_invoice_id,status,is_credit,hidden')
+        .eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void').order('id').range(a, b)),
+      greitt: () => DB.fetchAll((a, b) => c.from('solur').select('samtals,paid_at,is_credit,status,greitt_med').gte('paid_at', vika(-1).toISOString()).order('id').range(a, b)),
       bhGreitt: () => bhGet('/api/krofu-greidslur?n=20'),
       slokkvitaekiVorur: () => fyrirspurn(c.from('vorur').select('id').eq('flokkur', 'Slökkvitæki')),
-      plan: () => fyrirspurn(c.from('v_uttektarplan').select('man,stada').limit(3000)),
+      plan: () => DB.fetchAll((a, b) => c.from('v_uttektarplan').select('man,stada').order('fid').order('man').range(a, b)),
       postur: () => saekjaPost(c),
       bord: () => telja(c.from('thjonustubeidni').select('id', { count: 'exact', head: true }).is('deleted_at', null).is('archived_at', null).or('status.is.null,status.neq.lokad')),
       villur: () => bhGet('/api/villur?dagar=14&allt=1&limit=200'),   // villur er RLS-varin án anon-reglna — aðeins þetta fall les hana
@@ -103,7 +105,7 @@
       nlsh: () => bhGet('/api/nlsh-dashboard'),
       heilsa: () => bhGet('/api/kerfisheilsa'),
       veidin: () => bhGet('/api/veidin?tolur=1'),
-      verkefni: () => fyrirspurn(c.from('verkefnalisti').select('status,assigned_agent,flag,priority').limit(3000)),
+      verkefni: () => DB.fetchAll((a, b) => c.from('verkefnalisti').select('status,assigned_agent,flag,priority').order('id').range(a, b)),
       artifactListar: () => fyrirspurn(c.from('artifact_listar').select('url,titill,tegund,dags,fjoldi_opin,fjoldi_claude,fjoldi_agnar,athugasemd,skrad_at').limit(100))
     };
     await Promise.all(Object.keys(verk).map(async k => {
