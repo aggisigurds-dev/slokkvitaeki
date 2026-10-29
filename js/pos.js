@@ -1434,6 +1434,31 @@
       if(sr.error)throw sr.error;
       checkout._lastSig=_dupSig; checkout._lastTs=Date.now();   // muna síðustu sölu fyrir tvítöku-vörnina
 
+      // 29.10.2026 — NAFN-TAPAÐ SKRÁNING. Agnar hefur reynslu af því að slá inn
+      // nafn á lausasölu en salan endaði samt sem "Staðgreitt" í grunninum. Við
+      // vitum ekki ennþá hvar í flæðinu nafnið tapast (race, UI-reitur eða annað).
+      // Þessi skráning kveikir AÐEINS þegar vistað nafn er "Staðgreitt" en UI
+      // hefur nafn í reitnum — þá veiðast nákvæmar aðstæður næsta tilviks.
+      // Þegar ákveðið er að orsökin sé fundin má fjarlægja þennan reitur.
+      try{
+        if(cust==='Staðgreitt'){
+          var _wn=(document.getElementById('walkin-name')||{}).value||'';
+          var _mn=(document.getElementById('pos-nafn')||{}).value||'';
+          var _wnT=String(_wn).trim();
+          var _mnT=String(_mn).trim();
+          var _mismatch=(_wnT!==''&&_wnT.toLowerCase()!=='staðgreitt')||
+                         (_mnT!==''&&_mnT.toLowerCase()!=='staðgreitt');
+          if(_mismatch&&window.logProblem){
+            var _foc=(document.activeElement&&document.activeElement.id)||'';
+            var _mode=(state.customer&&state.customer.mode)||'';
+            var _stNm=(state.customer&&state.customer.nafn)||'';
+            window.logProblem('sala_nafn_tapad',
+              'sala '+sr.data.id+' — walkin:"'+_wnT+'", manual:"'+_mnT+
+              '", state:"'+_stNm+'", mode:'+_mode+', focus:'+_foc+', pm:'+pmCode);
+          }
+        }
+      }catch(_){ }
+
       // 19.09.2026 — KRAFA Á EINHVERN SEM KERFIÐ ÞEKKIR EKKI.
       // „reikningur" og „greitt síðar" eru loforð um að rukka SÍÐAR, og þau er
       // ekki hægt að efna án kennitölu: engin krafa, enginn reikningur, enginn
