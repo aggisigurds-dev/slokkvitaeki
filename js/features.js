@@ -378,6 +378,9 @@ var Companies = {
         // it here without showing a duplicate visible button.
         '<button class="_co-edit-anchor" type="button" onclick="Companies.openEdit(' + c.id + ')" style="display:none">edit anchor</button>' +
         '<button class="btn btn-primary btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0 t\u00e6ki</button>' +
+        // 29.10.2026 (patch 490): sk\u00fdr lei\u00f0 til a\u00f0 b\u00e6ta vi\u00f0 n\u00fdjum sta\u00f0 (verksta\u00f0) \u00e1 S\u00d6MU kennit\u00f6lu \u2014 \u00ed sta\u00f0 \u00feess a\u00f0
+        // stofna n\u00fdtt fyrirt\u00e6ki. S\u00fdnir sta\u00f0ina sem eru til og varar vi\u00f0 heimilisfangi sem er \u00feegar skr\u00e1\u00f0.
+        (c.kennitala ? '<button class="btn btn-outline btn-sm" type="button" title="B\u00e6ta vi\u00f0 n\u00fdjum sta\u00f0 (verksta\u00f0) \u00e1 s\u00f6mu kennit\u00f6lu" onclick="window.Companies&&Companies.nyrStadur&&Companies.nyrStadur(' + c.id + ')">\uff0b N\u00fdr sta\u00f0ur</button>' : '') +
         // 2026-05-31: opens the main "\u00dej\u00f3nustusamningur" template (patch 94)
         // pre-filled with this company's nafn/kt/heimilisfang.
         '<button class="btn btn-outline btn-sm" onclick="window.DocTemplates&&DocTemplates.openForCompany(' + c.id + ')">\ud83d\udcd1 \u00dej\u00f3nustusamningur</button>' +

@@ -544,7 +544,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <!-- DJÚPDVALI 13.10.2026 (docs/DJUPDVALI.md): <script defer src="/js/patches/172-thjonustuverk.js?v=20260921b"></script> -->
 <script defer src="/js/patches/173-geocode-cache-from-appsettings.js?v=20261008yf"></script>
 <script defer src="/js/patches/174-fyrirtaeki-stada.js?v=20261003ht"></script>
-  <script defer src="/js/patches/175-rekstrarfelog.js?v=20261026rf"></script>
+  <script defer src="/js/patches/175-rekstrarfelog.js?v=20261029a"></script>
 <script defer src="/js/patches/01-sala-suite.js?v=20260914pg2"></script>
 <script defer src="/js/patches/02-vidsk-tab.js?v=20260817rodun"></script>
 <script defer src="/js/patches/03-vidsk-revamp.js?v=20260921a"></script>
@@ -685,7 +685,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/134-job-notes-display.js?v=20261001a"></script>
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
-<script src="/js/features.js?v=20261014l6"></script>
+<script src="/js/features.js?v=20261029a"></script>
 <!-- jsQR er nú hlaðið EFTIR-PÖNTUN (lazy) þegar myndavélar-skanninn opnar — sjá js/scanner.js
      (._loadJsQR) og js/qrscan.js. Áður var þetta render-blocking <script> á HVERRI síðuhleðslu
      (~257 KB) þó það þurfi bara í QR-skönnun. -->
@@ -1153,13 +1153,13 @@ var Lanstaeki = {
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 144-kunnareikningur.js -->
 <script defer src="/js/patches/145-todo-board.js?v=20260921h"></script>
 <script defer src="/js/patches/146-companies-click-fix.js?v=20261001saek"></script>
-<script defer src="/js/patches/147-brunakerfi.js?v=20261001hopp"></script>
+<script defer src="/js/patches/147-brunakerfi.js?v=20261029a"></script>
 <script defer src="/js/patches/149-dd-mm-yyyy-date-inputs.js?v=20260515a"></script>
 <script defer src="/js/patches/150-brunakerfi-pricelist.js?v=20260515b"></script>
-<script defer src="/js/patches/151-brunakerfi-doc-import.js?v=20260515f"></script>
+<script defer src="/js/patches/151-brunakerfi-doc-import.js?v=20261029a"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 152-til-rukkun.js -->
 <script defer src="/js/patches/476-i-vinnslu-kjarni.js?v=20261021a"></script>
-<script defer src="/js/patches/153-arsskodun.js?v=20261020a"></script>
+<script defer src="/js/patches/153-arsskodun.js?v=20261029a"></script>
 <script defer src="/js/patches/154-last-view-memory.js?v=20260912dagskratm"></script>
 <script defer src="/js/patches/155-arsskodun-map-embed.js?v=20261023kort"></script>
 <script defer src="/js/patches/177-inservice-clients.js?v=20260921d"></script>
@@ -1364,7 +1364,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/356-arsgrind-simi.js?v=20261005yf"></script>
 <script defer src="/js/patches/357-fyrirtaeki-djuptenging.js?v=20261001endur"></script>
 <script defer src="/js/patches/359-samskipti-eitt-box.js?v=20261003ht"></script>
-<script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261020a"></script>
+<script defer src="/js/patches/360-raesi-skyndiminni.js?v=20261029a"></script>
 <script defer src="/js/patches/361-vettvangsathuganir.js?v=20260921i"></script>
 <script defer src="/js/patches/362-teikning-fella.js?v=20260909a"></script>
 <script defer src="/js/patches/363-banner-upplysingar.js?v=20261029a"></script>
@@ -1445,7 +1445,7 @@ var Lanstaeki = {
 <!-- 09.10.2026: Greining fasteignar — #greining/<heimilisfang>: tómur prófíll (sýndarfyrirtæki) + byggingarupplýsingar, brunavarnir, kröfur, teikningar -->
 <script defer src="/js/patches/451-greining-fasteignar.js?v=20261026dup"></script>
 <!-- 09.10.2026: Greining → prófíll — „Færa í prófíl“ (aðeins tómir reitir, 🏛 + uppruni), „Greining“-takki á prófílnum, „Stofna sem viðskiptavin“ um Nýtt fyrirtæki -->
-<script defer src="/js/patches/452-greining-faera.js?v=20261009d"></script>
+<script defer src="/js/patches/452-greining-faera.js?v=20261029a"></script>
 <!-- 12.10.2026: Stöðug opnun prófíls — húsmynd, upplýsingalínur, Samskipti o.fl. teiknuð í sama tifi og borðinn (minna hopp efst) -->
 <!-- 473: viðbótarnetföng félags — plata á Netfang-línu borðans (16.10.2026). Á undan 462 svo hún teiknist í sama tifi og borðinn. -->
 <script defer src="/js/patches/473-aukanetfong.js?v=20261016b"></script>
@@ -1469,6 +1469,8 @@ var Lanstaeki = {
 <script defer src="/js/patches/488-vidbotar-uttekt.js?v=20261028a"></script>
 <!-- 29.10.2026: Vinnusamantekt — ein samantekt með ljósum eftir alvarleika efst á Þjónustuborði (aðeins hjá Agnari), allt linkast á staðinn þar sem það er unnið; Fela/Skýring úr 368 -->
 <script defer src="/js/patches/489-vinnusamantekt.js?v=20261029d"></script>
+<!-- 29.10.2026: Nýskráning — kennitala sem er til er notuð (aldrei tvískráð) + skýr „Nýr staður"-leið á sömu kennitölu (Krókur 77: Nýtt fyrirtæki + Nýr í þjónustu bjuggu til tvær raðir) -->
+<script defer src="/js/patches/490-nyskraning-vorn.js?v=20261029e"></script>
 <!-- 11.10.2026: Ársskoðun — Staðirnir sem spjöld (rofi „Spjöld / Listi“ í hlutahausnum; aðeins CSS ofan á töflu 153) -->
 <script defer src="/js/patches/457-ars-spjold.js?v=20261022gra"></script>
 <!-- 11.10.2026: Brunakerfis/Slökkvikerfis skoðun — spjöldin (385 ☰ Spjöld) með húsmynd eins og Ársskoðun; tölva, listi sjálfgefinn -->

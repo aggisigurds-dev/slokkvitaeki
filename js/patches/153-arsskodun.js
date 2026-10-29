@@ -2343,6 +2343,12 @@
     } catch (_) {}
     const all = _cache.list;
     const filtered = filteredSorted();
+    // 29.10.2026 (Krókur 77): fyrirtæki sem er ekki í þjónustu eða er falið af síu sást ekki og leitin sagði bara „ekkert". Kassinn
+    // (patch 490) segir hvers vegna og gefur hnapp. Hluti af sniðmátinu (ekki sprautað á eftir) svo hann lifir sameiningu DOM í render().
+    let nvKassi = '';
+    if (window.NyskraningVorn && typeof NyskraningVorn.arsFelaKassi === 'function') {
+      try { nvKassi = NyskraningVorn.arsFelaKassi({ query: state.search, visible: filtered, cacheList: _cache.list, all: _cache.allCompanies, state, loading: _loadingAll }); } catch (_) { nvKassi = ''; }
+    }
     // 2026-07-06: the app-wide view-mode toggle (Sími / Tafla / Skjár,
     // lives in the Brunastál banner — patch 166) drives this page.
     // 2026-08-26: Sími/app notaði SÖMU skjáborðstöfluna og patch 314 kramdi
@@ -2802,6 +2808,7 @@
           ` : ''}
         </div>
 
+        ${nvKassi}
         ${filtered.length === 0 ? (all.length === 0 && _loadingAll ? `
           <div style="background:var(--surface);border:2px dashed var(--brd2);border-radius:12px;padding:38px;text-align:center;color:var(--ink3)">
             <div style="font-size:30px;margin-bottom:8px">⏳</div>
@@ -4857,9 +4864,25 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     });
     // „🏢 + Staðsetning" — nýr staður á SÖMU kt (rekstrarfélag). Forfyllir kt+nafn
     // svo hann tengist sömu base sjálfkrafa (gegnum trigger) og geti ekki misritast.
-    bg.querySelector('._ars-add-site')?.addEventListener('click', () => {
+    bg.querySelector('._ars-add-site')?.addEventListener('click', async () => {
       const baseNafn = String(c.nafn || '').replace(/\s*[-–—].*$/, '').trim() || c.nafn || '';
       bg.remove();
+      // 29.10.2026: skýr leið fyrir nýjan stað (patch 490) — sýnir staðina sem eru til og varar við heimilisfangi sem er þegar skráð.
+      // Vanti patch 490 helst gamli glugginn að neðan óbreyttur.
+      if (window.NyskraningVorn && typeof NyskraningVorn.nyrStadur === 'function') {
+        let nyr = null;
+        try { nyr = await NyskraningVorn.nyrStadur({ kennitala: c.kennitala, felagsnafn: c.nafn, customer_base_id: c.customer_base_id, thjonusta: true }); } catch (_) { nyr = null; }
+        if (nyr) {
+          try { if (window.Companies && Array.isArray(Companies.list) && !Companies.list.some(x => x && x.id === nyr.id)) Companies.list.push(nyr); } catch (_) {}
+          try { Companies._loadP = null; Companies._loadHofst = 0; } catch (_) {}
+          try { await loadAll(); render(); } catch (_) {}
+          setTimeout(() => {
+            try { if (typeof window._openCompanySafe === 'function') { window._openCompanySafe(nyr.id); return; } } catch (_) {}
+            openDetail(nyr.id);
+          }, 100);
+        }
+        return;
+      }
       openNewCompanyDialog({
         title: '🏢 Bæta við staðsetningu',
         hint: 'Nýr staður undir <b>' + esc(c.nafn || '') + '</b> (sama kennitala → sama rekstrarfélag). Sláðu bara inn heimilisfangið; kt+nafn eru forfyllt og staðurinn tengist sjálfkrafa.',
@@ -5370,6 +5393,11 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       });
       bg.addEventListener('click', e => { if (!e.target.closest('._ars-rsk-q') && !e.target.closest('._ars-rsk-res')) res.style.display = 'none'; });
     })();
+    // 29.10.2026: lifandi athugasemd undir kennitölu-reitnum — fyrirtæki sem er til sést um leið og kennitalan er slegin inn
+    // (ekki aðeins við vistun). Hnappurinn keyrir sömu spurningu og „Vista" (patch 490). „Bæta við staðsetningu" sleppir henni.
+    if (!prefill.hint && window.NyskraningVorn && typeof NyskraningVorn.festaKtNote === 'function') {
+      try { NyskraningVorn.festaKtNote(bg.querySelector('input[data-f="kennitala"]'), { onSkoda: () => bg.querySelector('._ars-new-save').click() }); } catch (_) {}
+    }
     bg.querySelector('._ars-new-save').addEventListener('click', async () => {
       const errEl = bg.querySelector('._ars-new-err');
       errEl.style.display = 'none';
@@ -5389,12 +5417,23 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       // í listanum. (customer_base_id tengist sjálfkrafa í gagnagrunni gegnum
       // trigger `fyrirtaeki_autolink_base` — eftir kt, býr til base ef vantar.)
       data.er_i_thjonustu = true;
+      // 29.10.2026 (Krókur 77): kennitala sem er þegar til er NOTUÐ — hér var aðeins reiknað næsta staðarnúmer, svo röð sem
+      // „Nýtt fyrirtæki" hafði stofnað (ekki í þjónustu, sést ekki hér) fékk tvífara á sama nafni og kennitölu. Patch 490 spyr:
+      // nota röðina sem er til / bæta við nýjum stað á kt / hætta við. „Bæta við staðsetningu" (prefill.hint) er þegar skýr
+      // ákvörðun um nýjan stað og sleppir spurningunni. Villa í vörninni stoppar aldrei vistun.
+      let vornRes = null;
+      if (!prefill.hint && window.NyskraningVorn && typeof NyskraningVorn.athuga === 'function') {
+        try {
+          vornRes = await NyskraningVorn.athuga({ kt: data.kennitala, nafn: data.nafn, heimilisfang: data.heimilisfang, simi: data.simi, netfang: data.netfang, tengilidur: data['tengiliður'], mode: 'thjonusta' });
+        } catch (_) { vornRes = null; }
+      }
+      if (vornRes && vornRes.cancel) return;
       // 20.10.2026 (Agnar: ProLan Suðurhella 5): staður á kt sem er þegar til fær næsta staðarnúmer innan kennitölunnar
       // (hæsta nr + 1, sama regla og 175 við „nýr staður"). Án þess fékk hann ekkert númer (106 af 122 nýjum félögum eru
       // númerslaus) og birtist sem „nr. —" í Sölu og leit. Fyrsti staður á kt fær EKKERT númer — hann er ekki „annar" staður.
       // Villa í uppflettingu stoppar aldrei vistun. Einkvæmt (kt, nr) fellir tvöfalda tölu — þá kemur villan hér að neðan.
       try {
-        const kd = String(data.kennitala || '').replace(/\D/g, '');
+        const kd = (vornRes && vornRes.row) ? '' : String(data.kennitala || '').replace(/\D/g, '');
         if (kd.length === 10) {
           const dash = kd.slice(0, 6) + '-' + kd.slice(6);
           const q = await SB.from('fyrirtaeki').select('stadur_nr').or('kennitala.eq.' + dash + ',kennitala.eq.' + kd);
@@ -5406,7 +5445,13 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           }
         }
       } catch (_) {}
-      const { data: rows, error } = await SB.from('fyrirtaeki').insert(data).select();
+      let rows, error;
+      if (vornRes && vornRes.row) {
+        rows = [vornRes.row];   // röð sem var til (eða nýr staður) — þegar vistuð af patch 490, ekki setja inn aðra
+      } else {
+        const ins = await SB.from('fyrirtaeki').insert(data).select();
+        rows = ins.data; error = ins.error;
+      }
       if (error) {
         errEl.textContent = 'Vista mistókst: ' + error.message;
         errEl.style.display = 'block';
@@ -5521,7 +5566,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     } finally { state.status = keepS; state.search = keepQ; }
     return out;
   }
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, talningar, categoryOf, version: 'v1' };
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, eqGroups, eqTrioHtml, arsPerur, arsViewMode, talningar, categoryOf, state, saveState, openNewCompanyDialog, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no

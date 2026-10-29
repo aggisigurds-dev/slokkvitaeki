@@ -409,6 +409,10 @@
     const setja = (id, v) => { const el = document.getElementById(id); if (el) { el.value = v || ''; el.dispatchEvent(new Event('input', { bubbles: true })); } };
     setja('nf-nafn', form.nafn); setja('nf-kt', form.kt); setja('nf-heimilisfang', form.adr);
     await Companies.submitNew();
+    // 29.10.2026: patch 490 endurnýtir röð sem er til (eða stofnar nýjan stað) í stað nýrrar raðar — þá er hún ekki „ný" í listanum.
+    const vorn = Companies._sidastaVornNidurstada; Companies._sidastaVornNidurstada = null;
+    if (vorn && vorn.row) return +vorn.row.id;
+    if (vorn && vorn.cancel) return null;
     for (let i = 0; i < 40; i++) {
       const nyr = ((Companies.list) || []).find((c) => c && !fyrir.has(+c.id) && String(c.nafn || '').trim() === form.nafn);
       if (nyr) return +nyr.id;

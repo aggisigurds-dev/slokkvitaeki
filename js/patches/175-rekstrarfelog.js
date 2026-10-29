@@ -922,6 +922,15 @@
         baseId = ins.data ? ins.data.id : null;
       }
     } catch(e){ throw new Error('base: '+(e.message||e)); }
+    // 29.10.2026 (Krókur 77): sama regla og aðrar skráningarleiðir (patch 490) — sama nafn eða sama heimilisfang á kennitölunni
+    // er röðin sem er til (sett í þjónustu); annars NÝR staður með staðarnúmeri sem tekur líka tillit til EYDDRA staða
+    // (einkvæmi vísirinn (kt, nr) nær yfir þá, svo gamla `deleted_at is null` talningin gat rekist á). Vanti patch 490 stendur gamla leiðin.
+    if (window.NyskraningVorn && typeof NyskraningVorn.finnaEdaStofnaStad === 'function') {
+      var fs = await NyskraningVorn.finnaEdaStofnaStad({ kt: ktDash, nafn: nafn, heimilisfang: heim, thjonusta: true, baseId: baseId });
+      var co0 = fs.row;
+      try { if (window.Companies && Array.isArray(Companies.list) && !Companies.list.some(function(x){ return x && +x.id === +co0.id; })) Companies.list.push(co0); } catch(_){}
+      return co0;
+    }
     var row = { nafn: nafn, kennitala: ktDash, status:'virkur', er_i_thjonustu:true, customer_base_id: baseId };
     if(heim) row.heimilisfang = heim;
     try {

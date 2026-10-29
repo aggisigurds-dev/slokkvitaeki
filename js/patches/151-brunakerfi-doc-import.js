@@ -641,8 +641,17 @@
         let coId = null;
         if (ktCleanFinal) {
           try {
-            const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').eq('kennitala', ktCleanFinal);
-            const matches = (r && r.data) || [];
+            // 29.10.2026: `.eq('kennitala', ktCleanFinal)` bar hreinar tölur saman við dálk sem geymir BANDSTRIK — vörnin fann ALDREI
+            // röð. Nú sameiginleg leið (patch 490): bandstrik OG hrein tala, eyddar raðir útilokaðar, leitarvilla gefur val.
+            let matches = [];
+            if (window.NyskraningVorn && NyskraningVorn.leitaKt) {
+              const lk = await NyskraningVorn.leitaKt(ktCleanFinal);
+              if (lk.cancel) return;
+              matches = lk.rows || [];
+            } else {
+              const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').or('kennitala.eq.' + ktCleanFinal.slice(0, 6) + '-' + ktCleanFinal.slice(6) + ',kennitala.eq.' + ktCleanFinal).is('deleted_at', null);
+              matches = (r && r.data) || [];
+            }
             const normNew = normalizeName(nafn);
             const exactHit = matches.find(m => normalizeName(m.nafn) === normNew);
             if (exactHit) {

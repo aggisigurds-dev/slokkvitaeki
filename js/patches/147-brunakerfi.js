@@ -756,8 +756,18 @@
       // we ask the user with a disambiguation dialog (patch 151).
       if (ktClean) {
         try {
-          const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').eq('kennitala', ktClean);
-          const matches = (r && r.data) || [];
+          // 29.10.2026: `.eq('kennitala', ktClean)` bar hreinar tölur saman við dálk sem geymir BANDSTRIK — varnaraðgerðin fann
+          // ALDREI röð (sama gildra og 114 lagaði 10.09), svo þessi gluggi bjó til tvífara án nokkurrar spurningar. Nú ein
+          // sameiginleg leið (patch 490): bandstrik OG hrein tala, eyddar raðir útilokaðar, leitarvilla gefur val (ekki þögn).
+          let matches = [];
+          if (window.NyskraningVorn && NyskraningVorn.leitaKt) {
+            const lk = await NyskraningVorn.leitaKt(ktClean);
+            if (lk.cancel) return;
+            matches = lk.rows || [];
+          } else {
+            const r = await SB.from('fyrirtaeki').select('id,nafn,heimilisfang,simi').or('kennitala.eq.' + ktClean.slice(0, 6) + '-' + ktClean.slice(6) + ',kennitala.eq.' + ktClean).is('deleted_at', null);
+            matches = (r && r.data) || [];
+          }
           const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
           const exact = matches.find(m => norm(m.nafn) === norm(nafn));
           if (exact) {
