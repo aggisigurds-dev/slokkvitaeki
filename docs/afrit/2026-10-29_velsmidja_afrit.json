@@ -1,0 +1,13 @@
+{
+  "lysing": "Vélsmiðja Orms og Víglundar (kt 480998-2789, base 240): R-107981 (06.03.2026) fært af Kaplahrauni á Skútuhraun (innihald PDF: 2 léttvatn, 2 duft6, 1 nýtt duft6, 2 slöngur = febrúarskýrsla Skútuhrauns). R-000411 (Vesturhraun 1 = Slippurinn, FACTCHECK 13.08) tekið af Skútuhrauni. Kaplahraun án 2026-reiknings (úttekt hennar var nóv 2025, R-107515). Agnar já 29.10.2026.",
+  "fyrir": {
+    "document_pairs_987": { "id": 987, "customer_base_id": 240, "year": 2026, "service_type": "uttekt", "report_doc_id": 1465, "invoice_doc_id": 9205, "solur_id": 459, "status": "klarad", "matched_by": "exact+cowork_ar_kt_20260814", "notes": "FACTCHECK 13.08: R-000411 segir „Vesturhrauni 1\" í PDF — fluttur á fyrirtaeki_id 165", "fyrirtaeki_id": 288 },
+    "document_pairs_1321": { "id": 1321, "customer_base_id": 240, "year": 2026, "service_type": "uttekt", "report_doc_id": null, "invoice_doc_id": 9476, "solur_id": null, "status": "vantar_skyrslu", "matched_by": "auto_trigger", "notes": null, "fyrirtaeki_id": 1629 },
+    "customer_documents_9476": { "id": 9476, "invoice_number": "R-107981", "doc_date": null }
+  },
+  "endurheimta_sql": [
+    "update document_pairs set invoice_doc_id = 9205, solur_id = 459, matched_by = 'exact+cowork_ar_kt_20260814', notes = 'FACTCHECK 13.08: R-000411 segir „Vesturhrauni 1\" í PDF — fluttur á fyrirtaeki_id 165' where id = 987;",
+    "update document_pairs set invoice_doc_id = 9476, status = 'vantar_skyrslu', matched_by = 'auto_trigger', notes = null where id = 1321;",
+    "update customer_documents set doc_date = null where id = 9476;"
+  ]
+}
