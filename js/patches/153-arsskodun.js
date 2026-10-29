@@ -1641,7 +1641,8 @@
       arr = arr.filter(c => !isDoneYear(c, curYear) && !isSuspect(c));
     } else if (state.status === 'nytt') {
       // Handvirkt merkt NÝTT á fyrirtækjaprófílnum (patch 281).
-      arr = arr.filter(c => !!(window.NyttBadge && NyttBadge.is(c.id)));
+      // 29.10.2026 (Agnar): NÝTT hverfur þegar félagið er komið með skoðun á yfirstandandi ári.
+      arr = arr.filter(c => !!(window.NyttBadge && NyttBadge.is(c.id)) && !isDoneYear(c, curYear));
     } else if (state.status === 'never') {
       arr = arr.filter(c => !c._ars.last_year_inspected);
     } else if (state.status === 'skipped2025') {
@@ -4510,7 +4511,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
                   <td class="_ars-namecell">
                     <span class="_co">${esc(c.nafn || '—')}</span>
                     ${c.kennitala ? `<span class="_kt">${esc(fmtKt(c.kennitala))}</span>` : ''}
-                    ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || rodSleppt) ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${rodSleppt ? (ars.ekki_sleppt
+                    ${((window.NyttBadge && NyttBadge.is(c.id) && !isDoneYear(c, new Date().getFullYear())) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || rodSleppt) ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${rodSleppt ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
                     <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(notaSyn(c.plan_note))}" placeholder="···" title="Sameiginlegur minnispunktur — sami texti og ✍ Athugasemd á fyrirtækjasíðunni og Minnispunktur á Verkstæði. Vistast á fyrirtækinu og fylgir öllum vélum." maxlength="2000">

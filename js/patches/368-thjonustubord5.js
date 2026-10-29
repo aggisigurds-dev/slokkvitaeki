@@ -3545,7 +3545,7 @@
       const nyjast = skjol.filter(d => +d.year === latest && d.doc_date).sort((a, b) => tStamp(b.doc_date) - tStamp(a.doc_date))[0];
       const latestMonth = nyjast ? new Date(nyjast.doc_date).getUTCMonth() + 1 : 0;
       const done = skjol.some(d => +d.year === AR);
-      const nytt = !skjol.length || !!(window.NyttBadge && NyttBadge.is && NyttBadge.is(f.id));
+      const nytt = !skjol.length || !!(window.NyttBadge && NyttBadge.is && NyttBadge.is(f.id) && !done);   // 29.10.2026 (Agnar): NÝTT hverfur þegar félagið er komið með skoðun ársins
       const wip = !done && +((ars[String(f.id)] || {}).field_inspected_year) === AR;
       return Object.assign({}, f, { latest, latestMonth, done, nytt, wip,
         due: !done && !nytt && !wip && latestMonth > 0 && latestMonth <= MAN_NU, upcoming: !done && !nytt && !wip && latestMonth > MAN_NU });

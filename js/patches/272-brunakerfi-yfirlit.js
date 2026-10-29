@@ -122,7 +122,8 @@
     // að kúnni er nýr þótt ein skýrsla sé þegar komin.
     out.forEach(r => {
       const manual = !!(window.NyttBadge && NyttBadge.is(r.id));
-      r.isNew = r.count === 0 || manual;
+      // 29.10.2026 (Agnar): NÝTT hverfur þegar félagið er komið með skoðun (skýrslu) á yfirstandandi ári — líka þótt handvirka merkið (281) sé á.
+      r.isNew = (r.count === 0 || manual) && !hasReport(r, NOW);
     });
     return out;
   }
