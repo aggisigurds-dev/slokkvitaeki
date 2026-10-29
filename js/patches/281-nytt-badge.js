@@ -17,12 +17,7 @@
  * Takkinn er klónaður af Breyta-hnappnum eins og patch 280 gerir, svo hann
  * falli inn í röðina. Kveikt = ✓ + fjólublár texti (#7c3aed, sami og merkið).
  *
- * 29.10.2026 (ósk Agnars: „láta nýtt táknið detta út þegar félagið er skoðað"): þegar fyrirtækjaprófíllinn hefur
- * verið opinn í ~1,5 s og félagið er merkt NÝTT (handvirkt, eða engin skýrsla enn í Brunakerfi yfirliti) tekur
- * merkið sig sjálft af: handvirka merkið er sett false og `nytt_sed_at` skráð — sá tímastimpill slekkur líka á
- * AFLEIDDA merkinu („engin skýrsla“) í patch 272. Smelli Agnar aftur á 🆕 Nýtt kviknar merkið á ný.
- *
- * Public: window.NyttBadge = { is, set, sed, badgeHtml }
+ * Public: window.NyttBadge = { is, set, badgeHtml }
  */
 (() => {
   if (window.__nyttBadgeInstalled) return;
@@ -30,7 +25,6 @@
 
   const STORAGE_KEY = 'arsskodun_customers';
   const FLAG = 'nytt_manual';
-  const SEEN = 'nytt_sed_at';       // ISO-tími þegar prófíllinn var skoðaður og merkið tók sig af (29.10.2026)
   const PURPLE = '#7c3aed';        // merkið sjálft (pilla á ljósum bakgrunni)
   // Takkinn situr í DÖKKU aðgerðaröðinni með hvítum texta, svo #7c3aed væri
   // ólæsilegur þar — ljósari fjólublár er notaður á textann sjálfan.
@@ -49,23 +43,6 @@
       const map = (window.AppSettings && AppSettings.path && AppSettings.path(STORAGE_KEY)) || {};
       const e = map[String(coId)];
       return !!(e && e[FLAG] === true);
-    } catch (_) { return false; }
-  }
-  // Hefur félagið verið skoðað síðan merkið kom? (slekkur á afleidda „engin skýrsla“-merkinu í 272)
-  function sed(coId) {
-    if (coId == null) return false;
-    try {
-      const map = (window.AppSettings && AppSettings.path && AppSettings.path(STORAGE_KEY)) || {};
-      const e = map[String(coId)];
-      return !!(e && e[SEEN]);
-    } catch (_) { return false; }
-  }
-  // Merkið tekur sig af þegar prófíllinn er skoðaður: handvirka merkið false (ekki delete — djúp-merge) + tímastimpill.
-  async function merkjaSed(coId) {
-    if (!window.AppSettings || !AppSettings.save) return false;
-    try {
-      const ok = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { [FLAG]: false, [SEEN]: new Date().toISOString() } } });
-      return ok !== false;
     } catch (_) { return false; }
   }
   async function set(coId, on) {
@@ -106,30 +83,14 @@
       : 'Merkja sem NÝTT — birtist þá undir „Nýtt"-síunni í báðum yfirlitunum';
   }
 
-  // Skoðun: prófíllinn opinn í 1,5 s og félagið NÝTT → merkið tekur sig af (einu sinni per opnun, aðeins ef þörf er á skrifi).
-  const _sedBidid = new Set();
-  function skodaFyrirtaeki(coId) {
-    if (_sedBidid.has(coId)) return;
-    const nytt = is(coId) || (!sed(coId) && !!(window.BrunakerfiYfirlit && BrunakerfiYfirlit.erNytt && BrunakerfiYfirlit.erNytt(coId)));
-    if (!nytt) return;
-    _sedBidid.add(coId);
-    setTimeout(async () => {
-      const main = document.getElementById('companies-main');
-      if (!main || !main.querySelector('button[onclick^="Companies.openEdit(' + coId + ')"]')) { _sedBidid.delete(coId); return; }   // farinn af prófílnum
-      if (!(await merkjaSed(coId))) { _sedBidid.delete(coId); return; }
-      const t = main.querySelector('._co-nytt-toggle'); if (t) paint(t, false);
-    }, 1500);
-  }
-
   function injectButton() {
     const main = document.getElementById('companies-main');
     if (!main) return;
     const editBtn = main.querySelector('button[onclick^="Companies.openEdit"]');
     if (!editBtn) return;
     const actionsRow = editBtn.parentElement;
-    const m = (editBtn.getAttribute('onclick') || '').match(/openEdit\((\d+)\)/);
-    if (m) skodaFyrirtaeki(+m[1]);
     if (!actionsRow || actionsRow.querySelector('._co-nytt-toggle')) return;
+    const m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);
     if (!m) return;
     const coId = +m[1];
 
@@ -176,7 +137,7 @@
   }
   watch();
 
-  window.NyttBadge = { is, set, sed, badgeHtml };
+  window.NyttBadge = { is, set, badgeHtml };
   console.log('[nytt-badge] installed');
 })();
 /* === END HANDVIRKT „NÝTT" MERKI === */
