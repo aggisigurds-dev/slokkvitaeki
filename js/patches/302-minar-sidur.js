@@ -471,9 +471,10 @@
         tala(x.samtals) + ' kr · ' + dagsetn(x.created_at))).join('') || 'Engar ógreiddar kröfur.') + framhald(rows.length, Math.min(n, rows.length));
     }
     if (l === 'drog') {
-      let q = sb.from('solur').select('id,customer_nafn,samtals,created_at', { count: 'exact' }).eq('status', 'drog').neq('hidden', true);
+      // .order/.limit í SÖMU keðju og fyrirspurnin (vörðurinn audit-pagination les afmörkun innan einnar keðju); síunni er bætt við á eftir.
+      let q = sb.from('solur').select('id,customer_nafn,samtals,created_at', { count: 'exact' }).eq('status', 'drog').neq('hidden', true).order('created_at', { ascending: true }).limit(n);
       if (dagar > 0) q = q.lt('created_at', new Date(fra).toISOString());
-      const r = await q.order('created_at', { ascending: true }).limit(n);
+      const r = await q;
       if (r.error) throw r.error;
       const rows = r.data || [];
       return fyrirsogn() + (rows.map(x => lina(x.customer_nafn || 'Staðgreitt',
