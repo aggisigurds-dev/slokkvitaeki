@@ -1,0 +1,3 @@
+{"lysing":"Afrit áður en R-108124 var parað við Núpalind (617), Hverafold (1607), Nýbílavegur (1609) og doc_date sett. Endurheimt: UPDATE document_pairs SET invoice_doc_id=NULL,status='vantar_reikning',matched_by='auto_trigger',notes=NULL WHERE id IN (1300,1302); DELETE nýju raðarinnar fyrir fid 1607 (matched_by='agnar_samreikningur'); UPDATE customer_documents SET doc_date=NULL WHERE id=9474.",
+"document_pairs":[{"id":1300,"fyrirtaeki_id":617,"report_doc_id":5883,"invoice_doc_id":null,"status":"vantar_reikning","matched_by":"auto_trigger","notes":null},{"id":1302,"fyrirtaeki_id":1609,"report_doc_id":5879,"invoice_doc_id":null,"status":"vantar_reikning","matched_by":"auto_trigger","notes":null}],
+"customer_documents":[{"id":9474,"doc_date":null}]}
