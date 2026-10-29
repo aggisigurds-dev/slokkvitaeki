@@ -522,17 +522,20 @@
   // Bæta við tæki á staðnum. Nýtt tæki er sjálfgefið „Yfirfarið" (þú varst að
   // skoða/setja það upp núna) — má rúlla í ⚪/🔵 með chippanum. Serial er
   // placeholder (skiptir ekki máli, sbr. CLAUDE.md). Skilar nýju röðunum.
-  async function addUnitsOnSite(coNafn, type, size, count) {
+  // coId: nýtt tæki ber fyrirtaeki_id strax (28.10.2026) — viðbótarúttekt (488) og allar sýnir sem sía á fyrirtaeki_id sjá það þá þegar,
+  // ekki aðeins eftir síðari samræmingu á nafni.
+  async function addUnitsOnSite(coNafn, type, size, count, coId) {
     const n = Math.max(1, Math.min(50, parseInt(count, 10) || 1));
     const stamp = Date.now().toString(36).toUpperCase();
     const rows = [];
     for (let i = 0; i < n; i++) rows.push({
       serial: 'TMP-' + stamp + (n > 1 ? '-' + (i + 1) : ''),
       type: type || 'Tæki', size: size || '', client: coNafn, location: '',
-      status: 'ok', last_insp: today(), next_insp: nextYearIso(), pressure: 14
+      status: 'ok', last_insp: today(), next_insp: nextYearIso(), pressure: 14,
+      ...(coId != null && coId !== '' && isFinite(+coId) ? { fyrirtaeki_id: +coId } : {})
     });
     if (window.DB && DB.sb) {
-      const r = await DB.sb.from('uttaeki').insert(rows).select('id,serial,type,size,location,status,last_insp,next_insp');
+      const r = await DB.sb.from('uttaeki').insert(rows).select('id,serial,type,size,location,status,last_insp,next_insp,fyrirtaeki_id,created_at');
       if (r && r.error) throw new Error(r.error.message || 'innsetning mistókst');
       const data = (r && r.data) || rows;
       try { const cache = (window.DB && DB.cache) || {}; if (Array.isArray(cache.units)) data.forEach(u => cache.units.push(Object.assign({ client: coNafn }, u))); } catch (_) {}
@@ -1339,7 +1342,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         if (!type) { toast('⚠ Veldu tegund'); return; }
         doAdd.textContent = '… bæti við'; doAdd.disabled = true;
         try {
-          await addUnitsOnSite(c.nafn || '', type, size, count);
+          await addUnitsOnSite(c.nafn || '', type, size, count, c.id);
           addForm.dataset.open = '0'; addForm.innerHTML = '';
           toast('✓ Tæki bætt við');
           loadUnitsInto(sheet, c);   // endurteikna listann með nýja tækinu
