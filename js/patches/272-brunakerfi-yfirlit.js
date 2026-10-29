@@ -122,7 +122,8 @@
     // að kúnni er nýr þótt ein skýrsla sé þegar komin.
     out.forEach(r => {
       const manual = !!(window.NyttBadge && NyttBadge.is(r.id));
-      r.isNew = r.count === 0 || manual;
+      // 29.10.2026: afleidda merkið („engin skýrsla“) tekur sig af þegar prófíllinn hefur verið skoðaður (NyttBadge.sed, patch 281).
+      r.isNew = (r.count === 0 && !(window.NyttBadge && NyttBadge.sed && NyttBadge.sed(r.id))) || manual;
     });
     return out;
   }
@@ -493,7 +494,8 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.BrunakerfiYfirlit = { open, reload };
+  // erNytt: sér 281 hvort félagið sé NÝTT í síðustu hleðslu (til að ákveða hvort skoðun á prófíl þurfi að skrifa)
+  window.BrunakerfiYfirlit = { open, reload, erNytt: id => { const r = (_rows || []).find(x => String(x.id) === String(id)); return !!(r && r.isNew); } };
   console.log('[patch-272] Brunakerfi yfirlit installed');
 })();
 /* === END BRUNAKERFI YFIRLIT === */
