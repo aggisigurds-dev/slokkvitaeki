@@ -1,0 +1,11 @@
+{
+  "lysing": "Vélrás (kt 491209-1270, base 265): Álhella (609) fært á febrúarskýrslu 9976 + R-107940 (tækjatölur 1/14/6 stemma við tækjaskrá; lesið úr PDF). doc_date á R-107940. Ágústparið (skýrsla 9745 + R-000754, 9 tæki) óparað þar til Agnar segir Gullhella eða Álhella. Agnar já 29.10.2026.",
+  "fyrir": {
+    "document_pairs_1303": { "id": 1303, "customer_base_id": 265, "year": 2026, "service_type": "uttekt", "report_doc_id": 9745, "invoice_doc_id": 9740, "solur_id": null, "status": "klarad", "matched_by": "auto_trigger", "notes": "kt-fallback 12.08.2026 (Drive-reikningasafn, POS/Payday útilokað)", "fyrirtaeki_id": 609 },
+    "customer_documents_9875": { "id": 9875, "invoice_number": "R-107940", "doc_date": null }
+  },
+  "endurheimta_sql": [
+    "update document_pairs set report_doc_id = 9745, invoice_doc_id = 9740, matched_by = 'auto_trigger', notes = 'kt-fallback 12.08.2026 (Drive-reikningasafn, POS/Payday útilokað)' where id = 1303;",
+    "update customer_documents set doc_date = null where id = 9875;"
+  ]
+}
