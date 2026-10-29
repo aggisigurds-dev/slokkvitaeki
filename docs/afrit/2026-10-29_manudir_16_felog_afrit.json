@@ -1,0 +1,9 @@
+{
+  "lysing": "Skoðunarmánuður (mánuður síðustu skoðunar, last_insp tækja) skráður á 16 félög í þjónustu úr lista 43 (kafli 5). Agnar já 29.10.2026 ('Ja þessi 43'). Sleppt: 4 gömul félög (Soffía, Flétturimi 10, Gerð, A. Smith; 2023-24) og 21 ekki í þjónustu. Laugavegur 42 og Menja voru skráð áður (manudir_4_felog).",
+  "manudir": { "869": 10, "1413": 12, "1629": 11, "1846": 9, "1853": 10, "1727": 1, "1642": 8, "1172": 9, "1623": 7, "1741": 4, "543": 9, "1208": 2, "1735": 6, "1737": 2, "803": 4, "1151": 3 },
+  "fyrir": "Engin færsla í arsskodun_customers nema Stálskip 1623 sem hafði inspect_month 0.",
+  "endurheimta_sql": [
+    "update app_settings set settings = jsonb_set(settings, '{arsskodun_customers}', (settings->'arsskodun_customers') - '869' - '1413' - '1629' - '1846' - '1853' - '1727' - '1642' - '1172' - '543' - '1208' - '1735' - '1737' - '803' - '1151' - '1741');",
+    "update app_settings set settings = jsonb_set(settings, '{arsskodun_customers,1623}', '{\"inspect_month\":0}');"
+  ]
+}
