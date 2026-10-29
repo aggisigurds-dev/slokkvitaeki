@@ -58,7 +58,7 @@
     bord: 'bord', verkbord: 'bord', verkefni: 'bord',   // Þjónustuborð 2 (368); gamla verkborðið (231) er farið — #verkbord opnar #bord
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     brunaskra: 'brunaskra', slokkvikerfi: 'slokkvikerfi',
-    vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
+    vidskiptavinir: 'vidskiptavinir',   // (yfirlit-slugurinn fjarlægður 29.10.2026: view-yfirlit kom úr 34-dashboard.js sem er í dvala → #yfirlit gerði ekkert)
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
     sameining: 'sameining', adstod: 'adstod',
     postur: 'reikninga-postur', reikningapostur: 'reikninga-postur',  // 📧 Reikninga-póstur (patch 240)
