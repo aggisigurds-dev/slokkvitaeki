@@ -204,6 +204,7 @@
 
 /* ===== 0. HELPERS ===== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// VÍSVITANDI óbreytt (patch-hreinsun 29.10.2026, Verkefnalisti 55d62fa3): fmtKr skilar tölu ÁN „ kr“ og margir kallarar bæta „ kr“ við sjálfir — að breyta því tvöfaldar „kr“ (þarf yfirferð allra kalla fyrst).
 function fmtKr(n){return Math.round(n||0).toLocaleString('is-IS');}
 function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return s;}}
 function toast(m,c,ms){
