@@ -571,6 +571,10 @@
         try { await SB.storage.from('samningar').remove([String(skrad.gamalt).replace(/^samningar\//, '')]); } catch (e) { console.warn('[233] eyða 254-skrá', e && e.message); }
       }
     }
+    // Skjalaröðin er orðin til (skraRod beið eftir brúnni) → Skjöl & viðhengi (199) endurteiknar sig. Áður sendi enginn
+    // atburð héðan: upphleðslan sendir attachment-year-changed ÁÐUR en röðin verður til, svo spjaldið teiknaðist of snemma
+    // og reikningurinn sást ekki fyrr en eftir refresh (Verkefnalisti ea8d2008, 29.10.2026).
+    try { document.dispatchEvent(new CustomEvent('customer-doc-written')); } catch (_) {}
     return meta;
   }
 
