@@ -153,3 +153,18 @@ Feitletrað = skoðun 2026 (mánuðurinn er nýlegur og áreiðanlegastur); hin 
 Hlíðablóm #1312 · Eskihlíð #1283 · Blástur og málun #1173 · Húsfélag Kaplahrauni 1 #1303 / 13 #1295 · Breytir #1289 · Test fyrirtæki #1404 · Húsfélag Dalshrauni #1308 · Hress hf #1269 ·
 Teitur Jónasson #169 (afskráður) · Arkbing #1290 · Húsfélag Flatahrauni 5b #1309 · Suðurvangur 8 #1803 · Sextett #1288 · Greiðan #1310 · Háaleitisbraut 58-60 #1296 · Fótaaðgerðastofa #1282 · María Ingibjörg #1736 · Nielsen #1278.
 Þetta eru tæki sem kerfið geymir en félagið er ekki í þjónustu — *spurning:* eiga tækin að standa eða eru þetta sótt/seld tæki?
+
+## 6. Viðauki: póstar (eldklar@eldklar.is og bokhald@eldklar.is, frá 01.01.2025) — sannanir sem bætast við
+Leitað að nafni hvers félags í efni/texta (aðeins þessi tvö hólf, ekki persónulegt Gmail).
+
+| Félag | Póstur sýnir | Niðurstaða |
+|---|---|---|
+| **Menja ehf #1531** | SHS-eldvarnaeftirlit, mál 25-1457: „Slökkvitæki/Brunakerfi koma og taka út eignina **3. júní** [2025]", frestur framlengdur til 20.6.; 10.06.2026 óskar Menja eftir reikningi fyrir útistandandi | Mánuður **6** — pósturinn staðfestir `last_insp` 06.2025 → miðlungs/há fullvissa. Bæjarlind 14-16, virkur kúnni. |
+| **Húsfélagið Laugavegi 42 #835** | Eignaumsjón 18.02.2026: reikningurinn hefur ekki borist; við svörum „á að vera komið úr kerfinu" | Mánuður **2** staðfestur (reikningur 02.2026 + skýrsla 2026) → há fullvissa. |
+| **Nesdekk, Dalshraun 10 #1853** | Hluti af Bílabúð Benna-samstarfi (Guðmundur Sigurðsson). Brunakerfisskýrsla 2026 send 23.10; R-001198 22.10.2026; `last_insp` tækja 09.10 | Mánuður **10** (slökkvitæki) og kerfisskoðun 20.10.2026 → miðlungs. |
+| **Skeljungur #516** | „CO2 áfylling": 16 kútar 08.09.2025, 9 hylki 19.08.2026, 4 hylki 21.09.2026 — þeir koma með kúta og biðja um reikning | Staðfest **áfylling** (búðarsala), ekki úttekt og engin tæki hjá okkur → ekki á Aksturslista. |
+| **Bílabúð Benna – Fiskislóð 41 #1612** | 16.–18.09.2026: byggingarfulltrúi krefst staðfestingar á yfirferð slökkvitækja; við sendum þjónustusamning + „auka úttektarskýrslu á slökkvitækjum miðað við **9** slökkvitæki" og brunakerfisskýrslu; 19.10 og 27.10 ný erindi (laga brunastöð, brunaþéttingar) | Skýrsla til (skjal #9996, 18.09) en **tækjaskrá segir 19 tæki, pósturinn 9** → misræmi. Enginn slökkvitækja-reikningur fyrir yfirferðina fannst (R-001081 745.168 kr er brunakerfi) → hugsanlega órukkuð eða innifalin í samningi. Þarf svar Agnars. |
+| Laufvangur 18 #1151 | Pósturinn 25.03.2026 er um **Laufvang 16** (annað húsfélag) | Ekki sönnun fyrir #1151 — sleppt. |
+
+**Engin ummerki í þessum hólfum frá 2025** (hvorki póstur inn né út) um: Lindaberg #603, D27 ehf #776, Kjarrhólmi 18 #1630, Fagraberg 18 #1637, Suðurvangur 19 #512, Miðleiti 8-10-12 #648, Danshöllin #1633, Reising #1624, Fríkirkjan Kefas #1846, Stálskip #1623, Móðurást #803, Eyesland #1735, Ragnheiður Valgarðsdóttir #1737, Ingi Már #1208, Stakkholt #1172, Soffía Jónsdóttir #637, Flétturimi 10 #784, Gerð #795, Þvottahúsið A. Smith #1264, Sætoppur #1828, Hólabrú #1727.
+Núll samskipti í 22 mánuði styður að (a) gömlu félögin (#637, #784, #795, #1264) séu ekki lengur í þjónustu og (b) skráningar án sögu (#603, #776, #1630, #1637) séu leifar — en sannar það ekki; Agnar ákveður.
