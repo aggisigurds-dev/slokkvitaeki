@@ -1,0 +1,12 @@
+{
+  "lysing": "Steypustöðin (kt 660707-0420, base 720): Malarhöfði færður á R-107964 + doc_date á R-107964 og R-108138. Agnar já 29.10.2026.",
+  "fyrir": {
+    "document_pairs_1130": { "id": 1130, "customer_base_id": 720, "year": 2026, "service_type": "uttekt", "report_doc_id": 5888, "invoice_doc_id": 9239, "solur_id": null, "status": "klarad", "matched_by": "kt_fallback_drive", "notes": "kt-fallback 12.08.2026 (Drive-reikningasafn, POS/Payday útilokað)", "fyrirtaeki_id": 285 },
+    "customer_documents_9477": { "id": 9477, "invoice_number": "R-107964", "doc_date": null },
+    "customer_documents_9479": { "id": 9479, "invoice_number": "R-108138", "doc_date": null }
+  },
+  "endurheimta_sql": [
+    "update document_pairs set invoice_doc_id = 9239, matched_by = 'kt_fallback_drive', notes = 'kt-fallback 12.08.2026 (Drive-reikningasafn, POS/Payday útilokað)' where id = 1130;",
+    "update customer_documents set doc_date = null where id in (9477, 9479);"
+  ]
+}
