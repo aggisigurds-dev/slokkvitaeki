@@ -21,7 +21,8 @@ krefst(html, /384-teikninga-forskodun\.js\?v=(20261002syn|20261019tif)/, 'index.
 // 09.10.2026: 20261009faera (452 — vistaReit opið, Stærð/Byggingarár/Eignir, 🏛) ber festTakka-lagfæringuna líka
 // 09.10.2026: 20261009grein („Greining“ í Óskráð-línunni á undan „+ Fleiri upplýsingar“) — sama festTakka
 // 13.10.2026: 20261013kyn (bannerinn sóttur með DomKynslod.qs í kyrrstöðu) — hæða-takkarnir óbreyttir, sjá kröfurnar hér að neðan.
-krefst(html, /363-banner-upplysingar\.js\?v=(20261002opna|20261004tomt|20261009faera|20261009grein|20261013kyn)/, 'index.html: 363 vantar ?v=20261013kyn (eða 20261009grein / 20261009faera / 20261004tomt / 20261002opna)');
+// 29.10.2026: 20261029a (Lánstæki-línan, 363 v4 — ný lesin lína úr Hleðsluspá) — hæða-takkarnir og landnr-kröfurnar hér að neðan óbreyttar og enn prófaðar.
+krefst(html, /363-banner-upplysingar\.js\?v=(20261002opna|20261004tomt|20261009faera|20261009grein|20261013kyn|20261029a)/, 'index.html: 363 vantar ?v=20261029a (eða 20261013kyn / 20261009grein / 20261009faera / 20261004tomt / 20261002opna)');
 krefst(html, /374-teikning-saekja\.js\?v=20261003thagufall/, 'index.html: 374 vantar ?v=20261003thagufall');
 
 krefst(p437, /background:#1a1814!important/, '437 á að mála modal-bd dokkkað gegn app.css #fff');
