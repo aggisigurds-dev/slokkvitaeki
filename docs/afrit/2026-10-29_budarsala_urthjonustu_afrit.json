@@ -1,0 +1,8 @@
+{
+  "lysing": "15 búðarsölufélög (aðeins pos-sölur, engin 'Skýrslugerð', engin tæki, engin skýrsla) skráð úr þjónustu: er_i_thjonustu true -> false. Ekkert eytt, engum málum lokað. Agnar já 29.10.2026 ('skrá úr þjónustu'). Björgunarsveit Hafnarfjarðar #789 á 6 opin gömul mál (flugeldasala, des 2025) sem standa óbreytt.",
+  "fyrirtaeki_id": [177, 507, 509, 516, 523, 528, 529, 530, 577, 789, 792, 807, 1218, 1248, 1589],
+  "fyrir": "er_i_thjonustu = true á öllum 15",
+  "endurheimta_sql": [
+    "update fyrirtaeki set er_i_thjonustu = true where id in (177,507,509,516,523,528,529,530,577,789,792,807,1218,1248,1589);"
+  ]
+}
