@@ -495,7 +495,11 @@
     } catch (e) { skra('vidbot_dagsetning_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); toast('⚠ Skoðunardagsetningar tækjanna uppfærðust ekki'); }
     try { if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) UttektInvoicePdf.saveForSale(coId, sala).catch(() => {}); } catch (_) {}
     // Ný aðalúttektarskýrsla (168 tekur við af þeirri fyrri) — og beðið eftir að hún sé raunverulega vistuð.
-    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || null, year: new Date().getFullYear() };
+    // Ósk Agnars 29.10.2026: ein setning í „Annað" á nýju skýrslunni um hvaða tæki bættust við (í stað sérdálks í töflunni).
+    const _tm = {};
+    rk.taeki.forEach(x => { const l = [x.u.type, x.u.size].filter(Boolean).join(' ') || 'tæki'; _tm[l] = (_tm[l] || 0) + 1; });
+    const annadVidbot = 'Viðbótarúttekt: ' + rk.taeki.length + ' ný tæki (' + Object.keys(_tm).map(l => _tm[l] + ' ' + l).join(', ') + ') bættust við eftir reikning ' + data.latest.num + ' og eru með í skýrslunni.';
+    window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || null, year: new Date().getFullYear(), annad: annadVidbot };
     let opnadist = true;
     try { if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar'); await CompanyInspectionReport.open(coId); }
     catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); opnaAftur(coId, sala, 'Skýrslan opnaðist ekki: ' + (e.message || e)); }
@@ -513,7 +517,7 @@
   // advanceInspectionDates (129) sem færir næstu skoðun allra tækja sem eru ekki stimpluð í dag.
   function opnaAftur(coId, sala, astaeda) {
     if (confirm('Viðbótarreikningur ' + sala.num + ' er búinn til. ' + astaeda + '\n\nNý skýrsla verður að vera vistuð áður en krafan fer út (kerfið stöðvar hana annars).\n\nOpna skýrsluna núna?')) {
-      window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear() };
+      window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear(), annad: (window.CIR_VIDBOT && window.CIR_VIDBOT.annad) || null };
       try { CompanyInspectionReport.open(coId); } catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80)); }
       bidaSkyrslu(coId, sala);
     }

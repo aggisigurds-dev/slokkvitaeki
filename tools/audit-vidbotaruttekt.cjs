@@ -83,6 +83,10 @@ if (!/window\.VidbotUttekt\s*=\s*Object\.assign\(window\.VidbotUttekt\s*\|\|\s*\
 if (!/CIR_VIDBOT\.month/.test(kodi) && !/month:\s*manudur/.test(kodi)) brot.push('488 sendir ekki skoðunarmánuð upprunalegu skýrslunnar til 168 (mánuður má aldrei færast)');
 if (!/_vb0/.test(p168)) brot.push('168 erfir ekki skoðunarmánuðinn við viðbótarskýrslu (_vb0)');
 
+// „Annað" á viðbótarskýrslu (29.10.2026): 488 sendir setninguna um nýju tækin með CIR_VIDBOT, 168 bætir henni aftan við án þess að yfirskrifa.
+if (!/annad:\s*annadVidbot/.test(kodi) || !/'Viðbótarúttekt: '/.test(kodi)) brot.push('488 sendir ekki setninguna um nýju tækin (CIR_VIDBOT.annad) í „Annað" á viðbótarskýrslunni');
+if (!/_vb0\.annad && annad\.indexOf\(_vb0\.annad\) < 0/.test(p168) || !/annad:\s*annadMed/.test(p168)) brot.push('168 bætir ekki CIR_VIDBOT.annad aftan við „Annað" (eða yfirskrifar/tvítekur texta)');
+
 const idx = lesa('index.html');
 const iS = idx.indexOf('488-vidbotar-uttekt.js');
 if (iS < 0) brot.push('index.html hleður ekki 488-vidbotar-uttekt.js');

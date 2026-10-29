@@ -276,11 +276,13 @@
     const manudur = _vb0 ? MONTHS_IS[_vb0.month - 1] : ((vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()]);
     const arYear  = _vb0 ? _vb0.year : ((vd && vd.year) ? vd.year : now.getFullYear());
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
+    // 29.10.2026: viðbótarskýrsla (488) bætir einni setningu um nýju tækin aftan við „Annað" — texti sem fyrir er stendur óbreyttur.
+    const annadMed = (_vb0 && _vb0.annad && annad.indexOf(_vb0.annad) < 0) ? (annad ? annad + ' ' : '') + _vb0.annad : annad;
     // 2026-07-16: mánaðar-index (1-12) fyrir ReportFactsSync (patch 270).
     const _mi = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudur).toLowerCase());
     const monthIdx = _mi >= 0 ? _mi + 1 : now.getMonth() + 1;
 
-    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase, ar: arYear, monthIdx };
+    const ctx = { co, counts, annad: annadMed, athugasemdir, skodunaradili, monthPhrase, ar: arYear, monthIdx };
     const html = buildReportHtml(ctx);
     showModal(html, co, opts, ctx);
   }
