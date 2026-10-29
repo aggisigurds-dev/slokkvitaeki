@@ -4,12 +4,16 @@
    í „📝 Upplýsingar um úttekt" — Elías skrifaði hann áður í hvert sinn, og með
    hundruðum skýrslna á ári er það umtalsverður tími.
 
+   29.10.2026 (ósk Agnars): textinn segir NÚ hve mörg tæki voru yfirfarin, hve mörg hlaðin („skipt um innihald") og hve mörg ný:
+     „Öll 14 slökkvitæki yfirfarin og vottuð í lagi. 12 þeirra endurhlaðin (skipt um innihald) og vottuð í lagi. 3 nýjum slökkvitækjum bætt við."
+     Heildin er yfirferð + hleðsla (hlaðið tæki er líka yfirfarið); ný tæki eru EKKI í heildinni.
+
    ORÐALAGIÐ (húsmálið, talið úr 27 frágengnum skýrslum — röðin skiptir máli):
-     1. Grunnur:      „Öll slökkvitæki yfirfarin og vottuð í lagi."
-        · allt endurhlaðið → „…yfirfarin, endurhlaðin og vottuð í lagi."
+     1. Grunnur:      „Öll N slökkvitæki yfirfarin og vottuð í lagi."
+        · allt endurhlaðið → „…yfirfarin, endurhlaðin (skipt um innihald) og vottuð í lagi."
         · ónýtt skeytist INN í grunnsetninguna, fær ekki sér setningu:
           „…vottuð í lagi nema eitt sem var dæmt ónýtt." („nema tvö … dæmd ónýt")
-     2. Hleðsla að hluta: „Fjögur slökkvitæki endurhlaðin og vottuð í lagi."
+     2. Hleðsla að hluta: „Fjögur þeirra endurhlaðin (skipt um innihald) og vottuð í lagi."
      3. Ný tæki í ÞÁGUFALLI: „Einu nýju slökkvitæki bætt við." / „3 nýjum
         slökkvitækjum bætt við."
      4. Reykskynjarar sér lína: „Reykskynjarar hljóðprófaðir og skipt um
@@ -148,9 +152,15 @@
     //    („yfirfarin, endurhlaðin og vottuð í lagi") — annars kemur hleðslan
     //    sem sér setning á eftir. Ónýtt skeytist inn í grunnsetninguna
     //    („nema eitt sem var dæmt ónýtt"), fær ALDREI sér setningu.
+    // Heildin = yfirferð + hleðsla: hlaðið tæki er líka yfirfarið. Fjöldinn er nefndur svo skýrslan segi nákvæmlega hvað var gert.
+    var heild = st.yfir + st.hled;
     var grunn = '';
-    if (st.yfir > 0)      grunn = 'Öll slökkvitæki yfirfarin og vottuð í lagi';
-    else if (st.hled > 0) grunn = 'Öll slökkvitæki yfirfarin, endurhlaðin og vottuð í lagi';
+    if (st.yfir > 0) grunn = heild === 1
+      ? 'Eitt slökkvitæki yfirfarið og vottað í lagi'
+      : 'Öll ' + heild + ' slökkvitæki yfirfarin og vottuð í lagi';
+    else if (st.hled > 0) grunn = heild === 1
+      ? 'Eitt slökkvitæki yfirfarið, endurhlaðið (skipt um innihald) og vottað í lagi'
+      : 'Öll ' + heild + ' slökkvitæki yfirfarin, endurhlaðin (skipt um innihald) og vottuð í lagi';
     if (grunn) {
       if (st.onytt > 0) grunn += st.onytt === 1
         ? ' nema eitt sem var dæmt ónýtt'
@@ -166,8 +176,8 @@
     // 2. Endurhleðsla að hluta — sér setning með vottun (einfaldasta
     //    húsmálsformið: „Fjögur slökkvitæki endurhlaðin og vottuð í lagi.").
     if (st.yfir > 0 && st.hled > 0) s.push(st.hled === 1
-      ? 'Eitt slökkvitæki endurhlaðið og vottað í lagi.'
-      : cap(hk(st.hled)) + ' slökkvitæki endurhlaðin og vottuð í lagi.');
+      ? 'Eitt þeirra endurhlaðið (skipt um innihald) og vottað í lagi.'
+      : cap(hk(st.hled)) + ' þeirra endurhlaðin (skipt um innihald) og vottuð í lagi.');
 
     // 3. Ný tæki í þágufalli.
     if (st.nytt > 0) s.push(st.nytt === 1
