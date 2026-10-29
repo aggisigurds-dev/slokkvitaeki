@@ -1,0 +1,9 @@
+{
+  "lysing": "Pizzan - Strandgata (614): par 1320 (2026) benti á skjal 9472 = KREDITNÓTA R-108123 (Tilvísun S-108122, -318.515 kr; Cowork 21.08 hafði merkt hana „MÁ EKKI TELJA SEM TEKJUR\"). Strandgata er ekki meðal sölustaða R-108122/R-108124 og á enga 2026-úttekt í kerfinu (síðasta: skýrsla mars 2025 + R-106551). Reikningur losaður af parinu. Agnar já 29.10.2026.",
+  "fyrir": {
+    "document_pairs_1320": { "id": 1320, "year": 2026, "service_type": "uttekt", "report_doc_id": null, "invoice_doc_id": 9472, "solur_id": null, "status": "vantar_skyrslu", "matched_by": "auto_trigger", "notes": null, "fyrirtaeki_id": 614 }
+  },
+  "endurheimta_sql": [
+    "update document_pairs set invoice_doc_id = 9472, status = 'vantar_skyrslu', matched_by = 'auto_trigger', notes = null where id = 1320;"
+  ]
+}
