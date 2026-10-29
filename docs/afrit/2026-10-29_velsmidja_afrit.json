@@ -8,6 +8,8 @@
   "endurheimta_sql": [
     "update document_pairs set invoice_doc_id = 9205, solur_id = 459, matched_by = 'exact+cowork_ar_kt_20260814', notes = 'FACTCHECK 13.08: R-000411 segir „Vesturhrauni 1\" í PDF — fluttur á fyrirtaeki_id 165' where id = 987;",
     "update document_pairs set invoice_doc_id = 9476, status = 'vantar_skyrslu', matched_by = 'auto_trigger', notes = null where id = 1321;",
-    "update customer_documents set doc_date = null where id = 9476;"
-  ]
+    "update customer_documents set doc_date = null where id = 9476;",
+    "update solur set customer_id = 288 where id = 459 and num = 'R-000411';"
+  ],
+  "solur_459": "R-000411 (Slippurinn, Vesturhraun 1; heimsókn 7.5.2026 skv. pósti) var skráð á customer_id 288 (Skútuhraun) — fært á 165 (Slippurinn). Aðeins customer_id; upphæð/staða/krafa óbreytt. Agnar já 29.10.2026."
 }
