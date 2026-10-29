@@ -17,6 +17,10 @@
  *   ➡️ Flýtileiðir   — beint í síður appsins (velur úr hliðarstikunni)
  *   🔤 Fyrirsögn     — til að skipta síðunni upp
  *
+ * 29.10.2026: Tala og Listi fengu fleiri fyrirfram skilgreindar mælingar/lista — ógreiddar kröfur (með síu
+ * „eldri en N daga“), drög sem bíða, tæki með útrunna skoðun, opin verkefni. Mengið er enn FASTUR listi
+ * (MAELINGAR/LISTAR), engin frjáls SQL úr viðmótinu; sían er bara fjöldi daga sem vistast á kubbnum.
+ *
  * Geymt í `app_settings.min_sidur` og vistað með atómísku vistuninni
  * (sql/2026-08-05_app_settings_atomisk_vistun.sql), svo síðurnar birtast á
  * öllum tækjunum og tvær vélar geta unnið samtímis án þess að skrifa hvor
@@ -82,7 +86,7 @@
   const GERDIR = [
     { g: 'tolur',         nafn: 'Tala',          tákn: 'layers',    w: 3,  lysing: 'Ein lifandi tala úr kerfinu — fyrirtæki, sölur, tæki…' },
     { g: 'skyrsla',       nafn: 'Skýrsla',       tákn: 'sliders',   w: 3,  lysing: 'Vistuð tala/samantekt með föstu auðkenni (Re-01) — þú skrifar gildið sjálf(ur) og getur breytt hvenær sem er.' },
-    { g: 'listi',         nafn: 'Listi',         tákn: 'list',      w: 6,  lysing: 'Nýjustu sölurnar eða nýjustu fyrirtækin, beint úr gagnagrunninum.' },
+    { g: 'listi',         nafn: 'Listi',         tákn: 'list',      w: 6,  lysing: 'Nýjustu sölurnar eða fyrirtækin — og fyrirfram skilgreindir listar með síu: ógreiddar kröfur, drög sem bíða, tæki með útrunna skoðun, opin verkefni.' },
     { g: 'tenglar',       nafn: 'Tenglasafn',    tákn: 'tag',       w: 6,  lysing: 'Hlekkir í hópum — dkPlus, Drive, bankinn, hvað sem er.' },
     { g: 'minnispunktar', nafn: 'Minnispunktar', tákn: 'clipboard', w: 6,  lysing: 'Frjáls texti sem vistast sjálfkrafa.' },
     { g: 'flytileidir',   nafn: 'Flýtileiðir',   tákn: 'grid',      w: 6,  lysing: 'Beint í síður appsins — Sala, Verkstæði, Reikningar…' },
@@ -97,12 +101,34 @@
     { m: 'uttaeki',     nafn: 'Tæki í skrá',          lysing: 'Öll skráð tæki' },
     { m: 'vorur',       nafn: 'Virkar vörur',         lysing: 'Vörur og þjónusta í sölu' },
     { m: 'solur_man',   nafn: 'Sölur í mánuðinum',    lysing: 'Fjöldi sala frá mánaðamótum' },
-    { m: 'kr_man',      nafn: 'Velta í mánuðinum',    lysing: 'Samtala sala frá mánaðamótum' }
+    { m: 'kr_man',      nafn: 'Velta í mánuðinum',    lysing: 'Samtala sala frá mánaðamótum' },
+    // 29.10.2026 — fleiri mælingar. Allar úr töflum sem lykillinn les (solur, uttaeki, verkefnalisti — staðfest
+    // með anon-lyklinum). Ekki `invoices`: RLS skilar þar tómu, og tómt lítur út eins og „0“.
+    { m: 'krofur_fj',   nafn: 'Útistandandi kröfur',          lysing: 'Ógreiddar kröfur — sama mengi og í Kröfu yfirliti' },
+    { m: 'krofur_kr',   nafn: 'Útistandandi kröfur (kr)',     lysing: 'Samtala ógreiddra krafna' },
+    { m: 'drog_fj',     nafn: 'Drög sem bíða',                lysing: 'Sölur sem eru enn í drögum' },
+    { m: 'taeki_utrunnin', nafn: 'Tæki með útrunna skoðun',   lysing: 'Næsta skoðun fyrir daginn í dag' },
+    { m: 'skodun_man',  nafn: 'Tæki með skoðun í mánuðinum',  lysing: 'Næsta skoðun á tímabili þessa mánaðar' },
+    { m: 'verkefni_opin', nafn: 'Opin verkefni',              lysing: 'Beiðnir og verk í yfirferð á verkefnalistanum' }
   ];
+  // `sia` = fyrirfram skilgreind sía sem notandinn stillir (fjöldi daga) — ENGIN frjáls fyrirspurn. `def` er sjálfgildið;
+  // gildið sem notandinn velur geymist á kubbnum (`k.dagar`) í sömu atómísku vistun og restin af síðunni.
   const LISTAR = [
     { l: 'solur',      nafn: 'Nýjustu sölur' },
-    { l: 'fyrirtaeki', nafn: 'Nýjustu fyrirtæki' }
+    { l: 'fyrirtaeki', nafn: 'Nýjustu fyrirtæki' },
+    { l: 'krofur',   nafn: 'Ógreiddar kröfur',        sia: { fyrir: 'Eldri en',                 allt: 'Allar ógreiddar kröfur',  def: 30 } },
+    { l: 'drog',     nafn: 'Drög sem bíða',           sia: { fyrir: 'Eldri en',                 allt: 'Öll drög sem bíða',       def: 0 } },
+    { l: 'utrunnin', nafn: 'Tæki með útrunna skoðun', sia: { fyrir: 'Útrunnin fyrir meira en',  allt: 'Öll útrunnin tæki',       def: 0 } },
+    { l: 'verkefni', nafn: 'Opin verkefni' }
   ];
+  const listiGerd = l => LISTAR.find(x => x.l === l) || LISTAR[0];
+  // Sía kubbsins í dögum (0–3650); ónýtt gildi falla á sjálfgildi listans.
+  function siaDagar(k) {
+    const lm = listiGerd(k && k.l);
+    if (!lm.sia) return 0;
+    const v = (k && k.dagar != null && k.dagar !== '') ? Math.round(+k.dagar) : NaN;
+    return Number.isFinite(v) ? Math.max(0, Math.min(3650, v)) : lm.sia.def;
+  }
 
   // Re-01, Re-02… — sequential, ALDREI endurnýtt (talan hækkar bara), sameiginlegur
   // teljari fyrir allar síður svo tvær skýrslur fái aldrei sama auðkenni.
@@ -222,13 +248,19 @@
     }
 
     if (k.g === 'listi') {
-      innihald = '<div class="_ms-listi" data-id="' + k.id + '" data-l="' + esc(k.l) + '" data-n="' + (k.fjoldi || 6) + '" style="font-size:12.5px;color:var(--ink3)">Sæki…</div>' +
+      const lm = listiGerd(k.l), dagar = siaDagar(k);
+      innihald = '<div class="_ms-listi" data-id="' + k.id + '" data-l="' + esc(k.l) + '" data-n="' + (k.fjoldi || 6) + '" data-dagar="' + dagar + '" style="font-size:12.5px;color:var(--ink3)">Sæki…</div>' +
         (_breyta
-          ? '<div style="display:flex;gap:6px;margin-top:9px">' +
+          ? '<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">' +
               '<select class="_ms-listaval" data-id="' + k.id + '" style="flex:1;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12px;background:var(--surface)">' +
                 LISTAR.map(x => '<option value="' + x.l + '"' + (x.l === k.l ? ' selected' : '') + '>' + esc(x.nafn) + '</option>').join('') +
               '</select>' +
               '<input class="_ms-listafj" data-id="' + k.id + '" type="number" min="3" max="20" value="' + (k.fjoldi || 6) + '" title="Fjöldi lína" style="width:70px;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12px">' +
+              (lm.sia
+                ? '<label style="flex-basis:100%;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink3)">' + esc(lm.sia.fyrir) +
+                    '<input class="_ms-listadagar" data-id="' + k.id + '" type="number" min="0" max="3650" value="' + dagar + '" title="Fjöldi daga — 0 sýnir allt" style="width:70px;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12px">' +
+                    'daga <span style="color:var(--ink4)">(0 = allt)</span></label>'
+                : '') +
             '</div>'
           : '');
     }
@@ -346,6 +378,45 @@
   const tala = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const manadamot = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString(); };
 
+  // 29.10.2026 — hjálparar fyrir nýju listana/mælingarnar.
+  const tvo = n => String(n).padStart(2, '0');
+  const dagsISO = d => d.getFullYear() + '-' + tvo(d.getMonth() + 1) + '-' + tvo(d.getDate());
+  // Dagsetning á sniðinu DD/MM/YYYY — bæði fyrir „2026-10-29“ (date) og tímastimpil (timestamptz).
+  function dagsetn(v) {
+    if (!v) return '';
+    const s = String(v), m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) return m[3] + '/' + m[2] + '/' + m[1];
+    const d = new Date(s);
+    return isNaN(d) ? '' : tvo(d.getDate()) + '/' + tvo(d.getMonth() + 1) + '/' + d.getFullYear();
+  }
+  // Dagur fyrir `dagar` dögum síðan sem 'YYYY-MM-DD' (til samanburðar við date-dálka).
+  const dagurFyrir = dagar => { const d = new Date(); return dagsISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() - dagar)); };
+  // Tæki í notkun = allt NEMA 'urelt' (sama sía og 153/DB.getOverdue). Hjálpari svo `status` standi ekki í sölukalli
+  // (audit-solu-stada dæmir hvert status-gildi nálægt sölu-fyrirspurn eftir solur_status_check).
+  const virkTaeki = q => q.neq('status', 'urelt');
+  // Villa skilar null → „—“, aldrei „0“ (tómt svar og núll eru ekki það sama).
+  const talaEdaStrik = n => (n == null ? '—' : tala(n));
+
+  // Útistandandi kröfur — NÁKVÆMLEGA sama mengi og „Kröfur“ í Kröfu yfirliti (166): greitt_med = reikningur,
+  // ógreitt, ekki ógild; kreditreikningar og reikningarnir sem þeir bakfæra teljast ekki. Mældur samanburður
+  // 29.10.2026: 52 kröfur · 3.852.439 kr, eins og 166. Sótt EINU sinni og deilt milli kubba í 20 sek.
+  let _krofurP = null, _krofurT = 0;
+  function utistandandiKrofur() {
+    if (_krofurP && Date.now() - _krofurT < 20000) return _krofurP;
+    const sb = SB();
+    _krofurT = Date.now();
+    _krofurP = DB.fetchAll((from, to) => sb.from('solur')
+      .select('id,num,customer_nafn,samtals,created_at,is_credit,credit_of')
+      .eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void')
+      .order('id').range(from, to))
+      .then(rows => {
+        const bakfaerdir = new Set(rows.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
+        return rows.filter(s => !s.is_credit && !bakfaerdir.has(String(s.id)));
+      })
+      .catch(e => { _krofurP = null; throw e; });   // misheppnuð sókn er ekki geymd
+    return _krofurP;
+  }
+
   async function maelingGildi(m) {
     const sb = SB(); if (!sb) return '—';
     const telja = async (tafla, sia) => {
@@ -365,15 +436,77 @@
         if (r.error) return '—';
         return tala((r.data || []).reduce((a, x) => a + (+x.samtals || 0), 0)) + ' kr';
       }
-    } catch (_) {}
+      // 29.10.2026 — nýju mælingarnar: villa gefur „—“ (kastar → catch neðar), aldrei „0“.
+      if (m === 'krofur_fj') return tala((await utistandandiKrofur()).length);
+      if (m === 'krofur_kr') return tala((await utistandandiKrofur()).reduce((a, x) => a + (+x.samtals || 0), 0)) + ' kr';
+      if (m === 'drog_fj')   return talaEdaStrik(await telja('solur', q => q.eq('status', 'drog').neq('hidden', true)));   // sama og Drög-flipinn (143)
+      if (m === 'taeki_utrunnin') return talaEdaStrik(await telja('uttaeki', q => virkTaeki(q).lt('next_insp', dagurFyrir(0))));   // sama skilgreining og DB.getOverdue
+      if (m === 'skodun_man') {
+        const d = new Date();
+        return talaEdaStrik(await telja('uttaeki', q => virkTaeki(q)
+          .gte('next_insp', dagsISO(new Date(d.getFullYear(), d.getMonth(), 1)))
+          .lt('next_insp', dagsISO(new Date(d.getFullYear(), d.getMonth() + 1, 1)))));
+      }
+      if (m === 'verkefni_opin') return talaEdaStrik(await telja('verkefnalisti', q => q.in('status', ['beidni', 'i_yfirferd'])));   // sama og „opin“ í 489
+    } catch (e) { console.warn('[minar-sidur] mæling ' + m + ':', e); }
     return '—';
   }
 
-  async function listaHTML(l, n) {
+  // Fyrirfram skilgreindir listar með síu (29.10.2026). Skila HTML; kasta við villu (fyllaGogn sýnir þá „Náði ekki í gögnin“
+  // — aldrei tóman lista sem lítur út eins og „ekkert fannst“). `lina(vinstri, haegri)` kemur frá listaHTML.
+  async function siuListi(l, n, dagar, lina) {
+    const sb = SB(); if (!sb) return 'Engin tenging.';
+    const fyrirsogn = () => {
+      const s = listiGerd(l).sia;
+      return s ? '<div style="font-size:11px;color:var(--ink3);margin-bottom:3px">' + esc(dagar > 0 ? s.fyrir + ' ' + dagar + ' daga' : s.allt) + '</div>' : '';
+    };
+    const framhald = (alls, synt) => alls > synt
+      ? '<div style="padding:5px 0 0;border-top:1px solid var(--brd);font-size:11px;color:var(--ink3)">+ ' + tala(alls - synt) + ' til viðbótar</div>' : '';
+    const fra = Date.now() - dagar * 86400000;
+    if (l === 'krofur') {
+      const rows = (await utistandandiKrofur())
+        .filter(x => dagar <= 0 || new Date(x.created_at).getTime() < fra)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));   // elstu fyrst
+      return fyrirsogn() + (rows.slice(0, n).map(x => lina(x.customer_nafn || '—',
+        tala(x.samtals) + ' kr · ' + dagsetn(x.created_at))).join('') || 'Engar ógreiddar kröfur.') + framhald(rows.length, Math.min(n, rows.length));
+    }
+    if (l === 'drog') {
+      let q = sb.from('solur').select('id,customer_nafn,samtals,created_at', { count: 'exact' }).eq('status', 'drog').neq('hidden', true);
+      if (dagar > 0) q = q.lt('created_at', new Date(fra).toISOString());
+      const r = await q.order('created_at', { ascending: true }).limit(n);
+      if (r.error) throw r.error;
+      const rows = r.data || [];
+      return fyrirsogn() + (rows.map(x => lina(x.customer_nafn || 'Staðgreitt',
+        tala(x.samtals) + ' kr · ' + dagsetn(x.created_at))).join('') || 'Engin drög bíða.') + framhald(r.count || 0, rows.length);
+    }
+    if (l === 'utrunnin') {
+      const r = await virkTaeki(sb.from('uttaeki').select('id,serial,type,size,client,location,next_insp', { count: 'exact' }))
+        .not('next_insp', 'is', null).lt('next_insp', dagurFyrir(dagar))
+        .order('next_insp', { ascending: true }).limit(n);
+      if (r.error) throw r.error;
+      const rows = r.data || [];
+      return fyrirsogn() + (rows.map(x => lina((x.client || x.location || '—') + (x.serial ? ' · ' + x.serial : ''),
+        dagsetn(x.next_insp))).join('') || 'Engin tæki með útrunna skoðun.') + framhald(r.count || 0, rows.length);
+    }
+    if (l === 'verkefni') {
+      const r = await sb.from('verkefnalisti').select('id,title,status,priority,created_at', { count: 'exact' })
+        .in('status', ['beidni', 'i_yfirferd'])
+        .order('priority', { ascending: true }).order('created_at', { ascending: true }).limit(n);
+      if (r.error) throw r.error;
+      const rows = r.data || [];
+      return fyrirsogn() + (rows.map(x => lina(x.title || '—',
+        (x.status === 'i_yfirferd' ? 'í yfirferð · ' : '') + dagsetn(x.created_at))).join('') || 'Engin opin verkefni.') + framhald(r.count || 0, rows.length);
+    }
+    return '—';
+  }
+
+  async function listaHTML(l, n, dagar) {
     const sb = SB(); if (!sb) return 'Engin tenging.';
     const lina = (v, h) => '<div style="display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--brd)">' +
       '<span style="flex:1;min-width:0;color:var(--ink1);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v) + '</span>' +
       '<span style="color:var(--ink3);font-size:11.5px;white-space:nowrap">' + esc(h) + '</span></div>';
+    // Listar með síu (29.10.2026) fara utan við try/catch hér að neðan: villa þeirra á að BIRTAST, ekki verða að „—“.
+    if (listiGerd(l).sia || l === 'verkefni') return siuListi(l, n, dagar, lina);
     try {
       if (l === 'solur') {
         const r = await sb.from('solur').select('created_at,customer_nafn,samtals').order('created_at', { ascending: false }).limit(n);
@@ -400,7 +533,7 @@
       catch (e) { el.textContent = '—'; el.title = String(e && e.message || e); console.warn('[minar-sidur] tala:', e); }
     }
     for (const el of v.querySelectorAll('._ms-listi')) {
-      try { el.innerHTML = await listaHTML(el.dataset.l, Math.max(3, Math.min(20, +el.dataset.n || 6))); }
+      try { el.innerHTML = await listaHTML(el.dataset.l, Math.max(3, Math.min(20, +el.dataset.n || 6)), Math.max(0, +el.dataset.dagar || 0)); }
       catch (e) { el.textContent = 'Náði ekki í gögnin.'; console.warn('[minar-sidur] listi:', e); }
     }
   }
@@ -548,7 +681,19 @@
     const listaval = e.target.closest('._ms-listaval');
     if (listaval) {
       const p2 = sidan(); const k = p2 && p2.kubbar.find(x => x.id === listaval.dataset.id);
-      if (k) { k.l = listaval.value; vista(); teikna(); }
+      if (k) {
+        k.l = listaval.value;
+        // Sían er per lista: nýr listi byrjar á sínu sjálfgildi (og listi án síu skilur ekkert eftir).
+        const s2 = listiGerd(k.l).sia;
+        if (s2) k.dagar = s2.def; else delete k.dagar;
+        vista(); teikna();
+      }
+      return;
+    }
+    const listadagar = e.target.closest('._ms-listadagar');
+    if (listadagar) {
+      const p2 = sidan(); const k = p2 && p2.kubbar.find(x => x.id === listadagar.dataset.id);
+      if (k) { k.dagar = Math.max(0, Math.min(3650, Math.round(+listadagar.value) || 0)); vista(); teikna(); }
       return;
     }
     const listafj = e.target.closest('._ms-listafj');
