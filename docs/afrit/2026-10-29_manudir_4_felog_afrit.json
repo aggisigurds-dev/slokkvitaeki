@@ -1,0 +1,7 @@
+{
+  "lysing": "Skoðunarmánuður skráður á 4 félög með sönnun (skýrsla/póstur): Sætoppur #1828 = 5 (skýrsla maí 2025 lesin), Hjallabraut 3 #154 = 9 (R-001036 25.09.2026), Menja #1531 = 6 (SHS mál 25-1457, heimsókn 3.6.2025), Laugavegur 42 #835 = 2 (Eignaumsjón 18.02.2026). Áður engin færsla í arsskodun_customers. Agnar: 'byrjaðu á því auðveldasta' 29.10.2026.",
+  "fyrir": { "arsskodun_customers": { "1828": null, "154": null, "1531": null, "835": null } },
+  "endurheimta_sql": [
+    "update app_settings set settings = jsonb_set(settings, '{arsskodun_customers}', (settings->'arsskodun_customers') - '1828' - '154' - '1531' - '835');"
+  ]
+}
