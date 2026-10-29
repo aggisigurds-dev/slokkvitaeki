@@ -104,7 +104,7 @@
       heilsa: () => bhGet('/api/kerfisheilsa'),
       veidin: () => bhGet('/api/veidin?tolur=1'),
       verkefni: () => fyrirspurn(c.from('verkefnalisti').select('status,assigned_agent,flag,priority').limit(3000)),
-      artifactListar: () => fyrirspurn(c.from('artifact_listar').select('url,titill,tegund,dags,fjoldi_opin,fjoldi_claude,fjoldi_agnar,skrad_at').limit(100))
+      artifactListar: () => fyrirspurn(c.from('artifact_listar').select('url,titill,tegund,dags,fjoldi_opin,fjoldi_claude,fjoldi_agnar,athugasemd,skrad_at').limit(100))
     };
     await Promise.all(Object.keys(verk).map(async k => {
       try { g[k] = { ok: true, v: await verk[k]() }; } catch (e) { g[k] = { ok: false, villa: (e && (e.message || e.details)) || String(e) }; }
@@ -327,15 +327,22 @@
     } },
     // Verkefnalistar sem búa í claude.ai-artifacts. Artifacts eru kyrrstæð: Claude les þau og skrifar tölurnar í artifact_listar,
     // þær uppfærast ekki sjálfar — því ber hver listi dagsetningu sína og línan segir hvenær var síðast lesið.
-    // Kyrrstæðar skýrslur (t.d. „Yfirlit í gangi“) eru ekki taldar með: þær endurtaka Samþykkja og stóra listann og myndu tvítelja.
-    { id: 'artifact_listar', hopur: 'Hunt og verkefni', heiti: 'Verkefnalistar í artifacts', slod: { url: 'https://claude.ai/artifact/5eARWxJCCDe79qdeAKfa8V', t: 'Verkefnaborð (artifact)' }, maela: g => {
+    // 29.10.2026: listarnir 16 voru sameinaðir í EINN („Sameinaður verkefnalisti“, atriði sannreynd gegn gögnum); gömlu raðirnar
+    // eru tegund „annad“ og teljast ekki. Kyrrstæðar skýrslur (tegund „skyrsla“) eru ekki taldar með: þær endurtaka Samþykkja
+    // og stóra listann og myndu tvítelja.
+    { id: 'artifact_listar', hopur: 'Hunt og verkefni', heiti: 'Sameinaður verkefnalisti (artifacts)', slod: { url: 'https://claude.ai/artifact/5BF2JMXa8uvjJwLW7t6R1y', t: 'Sameinaður verkefnalisti' }, maela: g => {
       const l = kraefst(g.artifactListar.v, 'artifact_listar'), lista = l.filter(x => x.tegund === 'verkefnalisti'), skyr = l.filter(x => x.tegund === 'skyrsla');
       const sum = (a, k) => a.reduce((s, x) => s + (Number(x[k]) || 0), 0), opin = x => Number(x.fjoldi_opin) || 0;
       const gamlir = lista.filter(x => x.dags && dagarSidan(x.dags) > THR.artifactAldurAthuga);
       const lesid = l.reduce((a, x) => (x.skrad_at && x.skrad_at > a ? x.skrad_at : a), '');
-      return { sev: 'upp', tala: sum(lista, 'fjoldi_opin') + ' opin', undir: lista.length + ' listar · Claude ' + sum(lista, 'fjoldi_claude') + ' · Agnar ' + sum(lista, 'fjoldi_agnar') + ' · ' + sum(gamlir, 'fjoldi_opin') + ' í listum eldri en ' + THR.artifactAldurAthuga + ' d',
-        punktar: lista.slice().sort((a, b) => opin(b) - opin(a)).map(x => x.titill + ' ' + opin(x) + ' opin' + (x.fjoldi_claude != null ? ' (Claude ' + x.fjoldi_claude + ' · Agnar ' + (x.fjoldi_agnar || 0) + ')' : '') + ' · ' + (x.dags ? dags(x.dags) : 'án dags.'))
-          .concat(skyr.length ? ['Kyrrstæðar skýrslur, ekki taldar með: ' + skyr.map(x => x.titill + ' ' + opin(x)).join(' · ')] : [], ['Lesið úr artifacts ' + (lesid ? dags(lesid) : '—') + ' — þau uppfærast ekki sjálf']) };
+      const linur = lista.slice().sort((a, b) => opin(b) - opin(a)).reduce((acc, x) => {
+        acc.push(x.titill + ' ' + opin(x) + ' opin' + (x.fjoldi_claude != null ? ' (Claude ' + x.fjoldi_claude + ' · Agnar ' + (x.fjoldi_agnar || 0) + ')' : '') + ' · ' + (x.dags ? dags(x.dags) : 'án dags.'));
+        if (x.athugasemd) acc.push(x.athugasemd);
+        return acc;
+      }, []);
+      return { sev: 'upp', tala: sum(lista, 'fjoldi_opin') + ' opin',
+        undir: lista.length + (lista.length === 1 ? ' listi' : ' listar') + ' · Claude ' + sum(lista, 'fjoldi_claude') + ' · Agnar ' + sum(lista, 'fjoldi_agnar') + (gamlir.length ? ' · ' + sum(gamlir, 'fjoldi_opin') + ' í listum eldri en ' + THR.artifactAldurAthuga + ' d' : ''),
+        punktar: linur.concat(skyr.length ? ['Kyrrstæðar skýrslur, ekki taldar með: ' + skyr.map(x => x.titill + ' ' + opin(x)).join(' · ')] : [], ['Lesið úr listanum ' + (lesid ? dags(lesid) : '—') + ' — tölurnar uppfærast ekki sjálfar']) };
     } },
     /* ── Kerfi ── */
     { id: 'tengingar', hopur: 'Kerfi', heiti: 'Tengingar í lagi', slod: { url: BH + '/kerfisheilsa.html', t: 'Kerfisheilsa' }, maela: g => {
