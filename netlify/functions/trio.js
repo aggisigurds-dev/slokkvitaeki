@@ -99,7 +99,7 @@ async function maela(cfg) {
        .eq('status','active'), which silently dropped any unit." */
     allar(cfg, 'uttaeki?select=id,fyrirtaeki_id&status=neq.urelt&order=id'),
     allar(cfg, 'arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,parse_ok&order=fyrirtaeki_id'),
-    allar(cfg, 'solur?select=customer_id,created_at,linur,is_credit,status&order=created_at.desc'),
+    allar(cfg, 'solur?select=customer_id,created_at,linur,is_credit,status,krafa_note&order=created_at.desc'),
   ]);
 
   const profill = new Map();
@@ -111,6 +111,8 @@ async function maela(cfg) {
   const reikn = new Map();
   sol.forEach(s => {
     if (s.is_credit || s.status === 'void' || s.status === 'drog') return;
+    // Viðbótarúttekt (488, 28.10.2026) hefur aðeins NÝJU tækin — hún er ekki „reikningur ársins" og má ekki ræna tölunni af aðalreikningnum.
+    if (/^Viðbótarúttekt við /.test(String(s.krafa_note || ''))) return;
     const k = String(s.customer_id);
     if (reikn.has(k)) return;                    // listinn er nýjast-fyrst
     let n = 0, aTaeki = false;

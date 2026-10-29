@@ -131,7 +131,7 @@ function linurAf(s) {
        .eq('status','active'), which silently dropped any unit." */
     allar('uttaeki?select=id,fyrirtaeki_id&status=neq.urelt&order=id'),
     allar('arsskodun_report_facts?select=fyrirtaeki_id,report_year,total_devices,parse_ok&order=fyrirtaeki_id'),
-    allar('solur?select=customer_id,created_at,linur,is_credit,status,vidskiptategund&order=created_at.desc'),
+    allar('solur?select=customer_id,created_at,linur,is_credit,status,vidskiptategund,krafa_note&order=created_at.desc'),
     /* 2026-09-07 (Agnar: „ætti að vera 544 trio"): POS-salan nær aðeins yfir 125
        af þeim 555 sem eiga bæði prófíl og skýrslu — 405 eru rukkuð annars staðar
        (Payday/dkPlus, eða reikningurinn er aðeins skjal) og áttu því enga þriðju
@@ -155,6 +155,8 @@ function linurAf(s) {
     // reikningstölunni af úttektinni — t.d. Colas Gullhella „1 tæki" 04.09 á móti
     // 16 í skýrslu. Búðarsölur eru því hunsaðar hér.
     if (s.vidskiptategund === 'bud') return;
+    // Viðbótarúttekt (488, 28.10.2026) hefur aðeins NÝJU tækin — hún er ekki „reikningur ársins" og má ekki ræna tölunni af aðalreikningnum.
+    if (/^Viðbótarúttekt við /.test(String(s.krafa_note || ''))) return;
     const k = String(s.customer_id);
     if (reikn.has(k)) return;                      // listinn er nýjast-fyrst
     const L = linurAf(s);
