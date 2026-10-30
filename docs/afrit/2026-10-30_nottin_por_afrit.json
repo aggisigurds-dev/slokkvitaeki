@@ -1,0 +1,51 @@
+{
+  "lysing": "Pör sem voru fyllt út eftir PDF-innihaldi nóttina 29.-30.10.2026 (Agnar: 'ransaka meira í nótt ... pörin og rétt skjöl'). Aðeins pör þar sem tölur á skýrslu og reikningi stemma nákvæmlega.",
+  "pör": [
+    {
+      "id": 1283,
+      "fyrir": {
+        "status": "vantar_reikning",
+        "invoice_doc_id": null,
+        "matched_by": "auto_trigger",
+        "notes": null
+      },
+      "eftir": "invoice_doc_id 3909 (R-107993), klarad"
+    },
+    {
+      "id": 1110,
+      "fyrir": {
+        "status": "vantar_reikning",
+        "invoice_doc_id": null,
+        "matched_by": "auto_standby_HAFNAD",
+        "notes": "FACTCHECK 13.08: KREDITREIKNINGUR (neikvæðar upphæðir) — ekki gildur úttektarreikningur"
+      },
+      "eftir": "invoice_doc_id 2469 (R-108231), klarad"
+    },
+    {
+      "id": 1683,
+      "fyrir": {
+        "status": "vantar_skyrslu",
+        "report_doc_id": null,
+        "matched_by": "auto_trigger",
+        "notes": ""
+      },
+      "eftir": "report_doc_id 10295, klarad (Suðurbraut 26)"
+    },
+    {
+      "id": 1058,
+      "fyrir": {
+        "status": "vantar_reikning",
+        "invoice_doc_id": null,
+        "matched_by": "exact",
+        "notes": ""
+      },
+      "eftir": "invoice_doc_id 3250 (R-107807), klarad (Efnalaugin Björg Mjódd)"
+    }
+  ],
+  "endurheimta_sql": [
+    "update document_pairs set invoice_doc_id = null, status = 'vantar_reikning', matched_by = 'auto_trigger', notes = null where id = 1283;",
+    "update document_pairs set invoice_doc_id = null, status = 'vantar_reikning', matched_by = 'auto_standby_HAFNAD', notes = 'FACTCHECK 13.08: KREDITREIKNINGUR (neikvæðar upphæðir) — ekki gildur úttektarreikningur' where id = 1110;",
+    "update document_pairs set report_doc_id = null, status = 'vantar_skyrslu', matched_by = 'auto_trigger', notes = '' where id = 1683;",
+    "update document_pairs set invoice_doc_id = null, status = 'vantar_reikning', matched_by = 'exact', notes = '' where id = 1058;"
+  ]
+}
