@@ -28,6 +28,28 @@ if (!/const\s+_notes\s*=\s*hreinsaNotu\(\s*sale\.athugasemdir\s*\)/.test(skra)) 
 // 28.10.2026: viðbótarúttekt (488) bætir einni stuttri línu á milli — aðeins númerið úr krafa_note fer út („Viðbót við R-xxxxx (ný tæki)"), aldrei innri textinn.
 if (/_vbLina/.test(skra) && !/const _vbLina = _vbM \? \('Viðbót við ' \+ _vbM\[1\] \+ ' \(ný tæki\)'\) : '';/.test(skra)) brot.push('_vbLina má aðeins innihalda númerið úr krafa_note (Viðbót við R-xxxxx), ekki innri texta');
 if (!/description:\s*\[_vegna,\s*(?:_vbLina,\s*)?_notes\]/.test(skra)) brot.push('description er ekki lengur [_vegna, _notes] — athugaðu hvaðan nótan kemur');
+// 31.10.2026 (allsherjar úttekt): mynstrið var /^Viðbótarúttekt við (R-d+)/ — „d" bókstafur, ekki tölustafur — svo
+// _vbLina var ALLTAF tóm og línan fór aldrei á kröfuna. Textaprófið hér að ofan sá það ekki (það les bara _vbLina-línuna).
+// Nú er mynstrið sjálft tekið úr skránni og keyrt á krafa_note eins og 488 skrifar hana.
+{
+  const mVb = skra.match(/const _vbM = (\/[^\n]*?\/[a-z]*)\.exec\(/);
+  if (/_vbLina/.test(skra)) {
+    if (!mVb) brot.push('_vbM-mynstrið fannst ekki í payday-push.cjs');
+    else {
+      let re = null;
+      try { re = new Function('return ' + mVb[1])(); } catch (e) { brot.push('_vbM-mynstrið þýðist ekki: ' + e.message); }
+      if (re) {
+        const vb = re.exec('Viðbótarúttekt við R-001250 — 4 ný tæki (Léttvatn 6L ×2, Duft 6 kg ×2)');
+        const lina = vb ? ('Viðbót við ' + vb[1] + ' (ný tæki)') : '';
+        if (lina !== 'Viðbót við R-001250 (ný tæki)') brot.push('_vbM finnur ekki númerið í krafa_note viðbótarsölu — fékk ' + JSON.stringify(lina) + ', átti að vera "Viðbót við R-001250 (ný tæki)"');
+        if (re.exec('Afsláttur úr sölu: −8091 kr')) brot.push('_vbM grípur nótu sem er ekki viðbótarsala');
+        // ^-akkerið (netvörður 31.10.2026): 17 af 70 krafa_note bera R-númer annars staðar í textanum (R-001109 „Endurútgáfa
+        // R-001029 …"). Án akkerisins fengi venjuleg krafa línuna „Viðbót við R-001029 (ný tæki)".
+        if (re.exec('Endurútgáfa R-001029 á réttan greiðanda')) brot.push('_vbM grípur R-númer í venjulegri nótu — ^-akkerið vantar');
+      }
+    }
+  }
+}
 
 // 2) fallið sjálft, tekið úr skránni
 const m = skra.match(/\/\*\s*hreinsaNotu:byrjun\s*\*\/([\s\S]*?)\/\*\s*hreinsaNotu:endir\s*\*\//);

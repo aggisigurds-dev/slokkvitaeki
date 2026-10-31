@@ -94,5 +94,13 @@ else for (const d of ['129-company-total-cost.js', '165-visit-workflow.js', '168
   const i = idx.indexOf(d); if (i < 0 || i > iS) brot.push('488 hleðst á undan ' + d);
 }
 
+// 31.10.2026 (allsherjar úttekt): /^R-0d{5}$/ í 488 — „d" bókstafur — passaði aldrei við R-númer, svo dagsetning
+// samreiknings án doc_date var aldrei sótt af sölunni. Hvert /^R-0…$/-mynstur í 488 verður að þekkja okkar eigin númer.
+for (const lit of (kodi.match(/\/\^R-0[^\/\n]*\$\//g) || [])) {
+  let re = null;
+  try { re = new Function('return ' + lit)(); } catch (e) { brot.push('488: mynstrið ' + lit + ' þýðist ekki'); continue; }
+  if (!re.test('R-001250')) brot.push('488: mynstrið ' + lit + ' þekkir ekki R-001250 (vantar \\ á undan d?)');
+  if (re.test('R-0d1250')) brot.push('488: mynstrið ' + lit + ' tekur við bókstöfum');
+}
 if (brot.length) { console.log('✗ viðbótarúttekt: ' + brot.length + ' brot'); brot.forEach(b => console.log('  - ' + b)); process.exit(1); }
 console.log('✓ viðbótarúttekt: aldrei send héðan · sala aðeins eftir staðfestingu · „Nei" á þjóni · 168 tekur við af eldri skýrslu · gildistökumörk til');

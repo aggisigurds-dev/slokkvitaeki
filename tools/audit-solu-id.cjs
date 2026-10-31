@@ -118,8 +118,30 @@ async function sb(slod) {
 
   const ollAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null
     && RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit);
-  const bidurAfhendingar = ollAnAudkennis.filter(erGengidInn);
-  const gomulAfhending  = bidurAfhendingar.filter(s => aldurDaga(s) > GAMALT_DAGAR);
+  /* 31.10.2026 (allsherjar úttekt) — GREININ GAT ALDREI KVIKNAÐ.
+   * Hún las úr `solur`, sem er aðeins sótt GLUGGI=14 daga aftur, en hrópar fyrst þegar sala er eldri en
+   * GAMALT_DAGAR=30 daga. Sala sem varð nógu gömul til að fella vörðinn var löngu dottin úr glugganum. Mælt 31.10:
+   * R-000957 (46 d), R-000972 (44 d) og R-001055 (32 d) lágu ósóttar og óséðar. Auk þess sleppti NAFNLAUST-reglan
+   * drögum sem heita „Staðgreitt" (R-001225, 36.000 kr) — gengið-inn sala án nafns bíður alveg eins afhendingar.
+   * Nú: sér sókn á gengið-inn sölur frá FASTRI dagsetningu (FRA_GENGID), svo sala eldist aldrei út úr verðinum;
+   * nafn er ekki skilyrði; ógildar (void), kredit og faldar (hidden) teljast ekki. */
+  const FRA_GENGID = '2026-09-01';
+  // Grunnlína 31.10.2026 — þekktar ósóttar sölur eldri en 30 daga. Má AÐEINS styttast (greitt, ógilt eða falið);
+  // aldrei bæta númeri á til að fá grænt.
+  const GRUNNLINA_GAMALT = {
+    'R-000871': 'Staðgreitt 1.426 kr, 03.09',
+    'R-000957': 'Þorgeir Jónsson 1.426 kr, 15.09',
+    'R-000972': 'Ingólfur og þórdís 10.540 kr, 17.09',
+    'R-001055': 'Kristinn 1.798 kr, 29.09',
+  };
+  const gengidInnAllar = await sb(
+    'solur?select=num,status,samtals,customer_nafn,customer_kt,greitt_med,paid_at,is_credit,hidden,created_at' +
+    '&customer_kt=in.(999999-9999,9999999999)&paid_at=is.null&created_at=gte.' + FRA_GENGID + '&order=created_at'
+  );
+  const bidurAfhendingar = gengidInnAllar.filter(s => RUKKA_SIDAR(s) && !s.is_credit && s.status !== 'void' && s.hidden !== true);
+  const gamlarAllar     = bidurAfhendingar.filter(s => aldurDaga(s) > GAMALT_DAGAR);
+  const gomulAfhending  = gamlarAllar.filter(s => !GRUNNLINA_GAMALT[s.num]);
+  const gomulThekkt     = gamlarAllar.filter(s => GRUNNLINA_GAMALT[s.num]);
   const soluAnAudkennis = ollAnAudkennis.filter(s => !erGengidInn(s));
   // Greiddar/kredit án tengingar: gat í sögunni (hver keypti hvað), ekki fastur
   // peningur. Þær eru taldar og sagðar frá — en fella ekki vörðinn. Vörður sem
@@ -145,6 +167,10 @@ async function sb(slod) {
     console.log('        staðgreiða við afhendingu, svo engin krafa á að fara. Ekki rauð fyrr en þær eldast.');
     bidurAfhendingar.slice(0, 6).forEach(s =>
       console.log(`        ${s.num}  ${s.samtals} kr  ${s.customer_nafn || '(nafnlaus)'}  ${Math.floor(aldurDaga(s))} d`));
+  }
+  if (gomulThekkt.length) {
+    console.log(`   ATH: ${gomulThekkt.length}/${Object.keys(GRUNNLINA_GAMALT).length} þekktar ósóttar gengið-inn sölur eldri en ${GAMALT_DAGAR} daga (grunnlína — einhver þarf að hringja):`);
+    gomulThekkt.forEach(s => console.log(`        ${s.num}  ${s.samtals} kr  ${s.customer_nafn || '(nafnlaus)'}  ${Math.floor(aldurDaga(s))} d`));
   }
   if (gomulAfhending.length) {
     gomulAfhending.forEach(s =>

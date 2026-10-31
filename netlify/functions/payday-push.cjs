@@ -451,7 +451,7 @@ function buildPayload(sale, customer, opts) {
   const _notes = hreinsaNotu(sale.athugasemdir);
   // Viðbótarúttekt (488, 28.10.2026): kúnninn fær tvær kröfur með sömu skýrslu — stutt lína segir hvað seinni er. Aðeins númerið úr
   // krafa_note (innri texti) fer út, aldrei restin.
-  const _vbM = /^Viðbótarúttekt við (R-d+)/.exec(String(sale.krafa_note || ''));
+  const _vbM = /^Viðbótarúttekt við (R-\d+)/.exec(String(sale.krafa_note || ''));
   const _vbLina = _vbM ? ('Viðbót við ' + _vbM[1] + ' (ný tæki)') : '';
   // Afhending (sjálfgefið, 2026-08-13 — Center Hótel-lexían): rafræn krafa OG
   // póstafrit þegar hvort tveggja er hægt. Áður drap rafrænt póstafritið
