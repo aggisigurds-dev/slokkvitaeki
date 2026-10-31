@@ -273,7 +273,7 @@
     } },
     { id: 'bord', hopur: 'Fólk og póstur', heiti: 'Mál á borðinu', slod: { ham: 'thjonusta', t: 'Master og mitt borð' }, maela: g => synt(String(g.bord.v), 'ekki eytt, ekki í geymslu, ekki lokað') },
     /* ── Fyrirtæki ── */
-    { id: 'nyfyrirtaeki', hopur: 'Fyrirtæki', heiti: 'Ný fyrirtæki í mánuðinum', slod: { view: 'companies', t: 'Fyrirtæki' }, maela: async (g, c) => {
+    { id: 'nyfyrirtaeki', hopur: 'Fyrirtæki', heiti: 'Ný fyrirtæki í þjónustu í mánuðinum', slod: { view: 'companies', t: 'Fyrirtæki' }, maela: async (g, c) => {
       const n = g.nyFyrirtaeki.v, ithj = n.filter(x => x.er_i_thjonustu), ids = ithj.map(x => x.id);
       let heimsaekja = ids.length, punktur = '';
       if (ids.length) {
@@ -282,7 +282,12 @@
         heimsaekja = ids.filter(i => !buin.has(i)).length;
         punktur = heimsaekja + ' af ' + ids.length + ' sem eru í þjónustu eiga eftir að fá heimsókn (ekki merkt búin í plani)';
       }
-      return { sev: heimsaekja ? 'athuga' : 'upp', tala: n.length + ' ný', undir: ithj.length + ' í þjónustu · ' + heimsaekja + ' á eftir að heimsækja', punktar: punktur ? [punktur] : [] };
+      // 31.10.2026 (Agnar: „Ný fyrirtæki, eiga bara telja ný í þjónustu"): talan taldi ÖLL ný
+      // félög mánaðarins — líka þau sem eru bara stofnuð í skrána (lausasala, kt-uppfletting)
+      // og verða aldrei í þjónustu. Það var helmingur í október (42 → 21). Talan telur nú
+      // aðeins þau sem eru í þjónustu; hin eru nefnd í undirlínunni svo sían sjáist, ekki feld.
+      const utan = n.length - ithj.length;
+      return { sev: heimsaekja ? 'athuga' : 'upp', tala: ithj.length + ' ný', undir: heimsaekja + ' á eftir að heimsækja' + (utan ? ' · ' + utan + ' ný utan þjónustu ekki talin' : ''), punktar: punktur ? [punktur] : [] };
     } },
     { id: 'bunadargr', hopur: 'Fyrirtæki', heiti: 'Búnaðargreiningar', slod: { view: 'companies', t: 'Fyrirtæki' }, maela: g => {
       const b = g.bunadargr.v, st = x => b.verk.filter(r => r.status === x).length;
