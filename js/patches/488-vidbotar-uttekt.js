@@ -120,7 +120,7 @@
           if (x && !x.is_duplicate && x.invoice_number) {
             cand = { id: 'doc' + x.id, num: String(x.invoice_number), created_at: x.doc_date || null, samtals: x.amount, athugasemdir: '', samr: true };
             // Skjal án dagsetningar en númer úr okkar kerfi (R-00xxxx): salan ber dagsetninguna (og er aldrei viðbót).
-            if (!cand.created_at && /^R-0d{5}$/.test(cand.num)) {
+            if (!cand.created_at && /^R-0\d{5}$/.test(cand.num)) {
               const sq = await sb.from('solur').select('num,created_at,samtals,krafa_note,status,is_credit').eq('num', cand.num).maybeSingle();
               if (sq.error) throw sq.error;
               if (sq.data && sq.data.status !== 'void' && !sq.data.is_credit && !String(sq.data.krafa_note || '').startsWith(MARKI)) { cand.created_at = sq.data.created_at; if (cand.samtals == null) cand.samtals = sq.data.samtals; }

@@ -705,10 +705,15 @@
     document.body.appendChild(v);
   }
 
+  // 31.10.2026 (allsherjar úttekt): áður v.innerHTML.indexOf('vorur-grid') — raðaði öllu borðinu (~2.300 hnútar,
+  // 22 þús. stafir) í streng tvisvar á sekúndu í kyrrstöðu: 866 ms af 961 ms skriftutíma á 20 s. Fyrirspurn um
+  // hnútinn sjálfan svarar sömu spurningu án þess að raða neinu.
+  function hefurGrid(v){ return !!(v && v.querySelector('#vorur-grid')); }
+
   function watchView(){
     setInterval(function(){
       var v = document.getElementById('view-vorur');
-      if(v && v.classList.contains('active') && v.innerHTML.indexOf('vorur-grid')<0){
+      if(v && v.classList.contains('active') && !hefurGrid(v)){
         refresh();
       }
     }, 500);
@@ -720,7 +725,7 @@
       id = Number(id);
       if(window.App && typeof App.switchView === 'function') App.switchView('vorur');
       if(!_products.some(function(p){ return p.id === id; })) { try { await loadProducts(); } catch(_){} }
-      for(var i = 0; i < 30 && document.getElementById('view-vorur').innerHTML.indexOf('vorur-grid') < 0; i++){
+      for(var i = 0; i < 30 && !hefurGrid(document.getElementById('view-vorur')); i++){
         await new Promise(function(r){ setTimeout(r, 150); });
       }
       if(_products.some(function(p){ return p.id === id; })) openEditor(id);
@@ -728,7 +733,7 @@
     // 12.10.2026: „+ Ný söluvara" á Birgðum opnar nýja vöru hér — birgðastaða söluvara býr í vorur.birgdir.
     ny: async function(){
       if(window.App && typeof App.switchView === 'function') App.switchView('vorur');
-      for(var i = 0; i < 30 && document.getElementById('view-vorur').innerHTML.indexOf('vorur-grid') < 0; i++){
+      for(var i = 0; i < 30 && !hefurGrid(document.getElementById('view-vorur')); i++){
         await new Promise(function(r){ setTimeout(r, 150); });
       }
       openEditor(null);
