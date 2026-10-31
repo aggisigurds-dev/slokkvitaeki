@@ -1,7 +1,9 @@
 // PDF í Viðhengi fyrirtækis með appinu sjálfu (CompanyAttachments.upload, 111) — aðeins þau tvö skrif hleypt í gegn.
 // node vista_vidhengi.cjs <cid> <skrá.pdf> <nafn í Viðhengi — ekkert ártal>
 const fs = require('fs');
-const { chromium } = require('C:/Users/Slokkvitaeki/luna-bridge/node_modules/playwright');
+const LB = [process.env.LUNA_BRIDGE, 'C:/Users/Slokkvitaeki/luna-bridge', 'C:/projects/luna-bridge'].filter(Boolean).find((p) => fs.existsSync(p + '/node_modules/playwright'));
+if (!LB) { console.error('VILLA: luna-bridge/node_modules/playwright fannst ekki — settu LUNA_BRIDGE'); process.exit(1); }
+const { chromium } = require(LB + '/node_modules/playwright');
 const CID = String(+process.argv[2]), SKRA = process.argv[3], NAFN = process.argv[4];
 if (!+CID || !fs.existsSync(SKRA) || !NAFN || /\b20[2-3]\d\b/.test(NAFN)) { console.error('VILLA: cid, skrá og nafn án ártals'); process.exit(1); }
 (async () => {

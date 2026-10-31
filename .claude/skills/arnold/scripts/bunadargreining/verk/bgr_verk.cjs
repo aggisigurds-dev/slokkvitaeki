@@ -6,6 +6,7 @@
 //
 //   node bgr_verk.cjs bida <cid> [beidandi]        setja verk í biðröð (eitt opið á félag)
 //   node bgr_verk.cjs naest [vel] [cid]            taka næsta (bida → i_vinnslu, atómískt; með cid aðeins verk þess félags); prentar verkið sem JSON; tómt = ekkert að gera
+//   node bgr_verk.cjs skila <id> ["<ástæða>"]       verk sem þú tókst (i_vinnslu) en klárar ekki → aftur í biðröð
 //   node bgr_verk.cjs stada [id|cid]               staða verks (eða síðustu verka)
 //   node bgr_verk.cjs undirbua <id>                gögn félags, borð, blöðin sótt, vigur/skönnun flokkað, gridded nærmyndir → vinnumappa
 //   node bgr_verk.cjs bord <id> <bord.json>        BÚA TIL teikning_bord þegar félag á ekkert (hæðir + skurðir valdir af þér), aldrei yfirskrifa
@@ -36,7 +37,8 @@ const VINNA = process.env.BGR_VINNA || path.join(os.homedir(), 'bgr-verk');
 const PY = process.env.BGR_PY || 'python';
 const PYENV = Object.assign({}, process.env, { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' });
 const HER = __dirname;
-const LUNA = process.env.LUNA_BRIDGE || 'C:/Users/Slokkvitaeki/luna-bridge';
+const LUNA = [process.env.LUNA_BRIDGE, 'C:/Users/Slokkvitaeki/luna-bridge', 'C:/projects/luna-bridge'].filter(Boolean).find((p) => fs.existsSync(p + '/node_modules/playwright')) || 'C:/Users/Slokkvitaeki/luna-bridge';
+process.env.LUNA_BRIDGE = LUNA;   // undirskriftir (pdf_ur_appinu, vista_vidhengi, sena_ur_appi) erfa slóðina
 
 const sg = async (q) => { const r = await fetch(U + '/rest/v1/' + q, { headers: H }); const j = await r.json(); if (!r.ok) throw new Error('GET ' + q.slice(0, 60) + ' ' + r.status + ' ' + JSON.stringify(j).slice(0, 200)); return j; };
 const sp = async (q, method, body) => { const r = await fetch(U + '/rest/v1/' + q, { method, headers: H, body: JSON.stringify(body) }); const j = await r.json().catch(() => null); return { ok: r.ok, status: r.status, j }; };
@@ -79,6 +81,12 @@ async function naest(vel, cid) {
     await sl(300 + Math.random() * 500);   // önnur vél var á undan — reyna aftur
   }
   log('{}');
+}
+async function skila(id, astaeda) {   // verk sem þú tókst en ætlar ekki að klára → aftur í biðröð (aðeins ef i_vinnslu)
+  const v = await verk(id);
+  if (v.status !== 'i_vinnslu') { log('skila: verk', id, 'er', v.status, '— ekkert gert'); process.exit(1); }
+  await skrifaStig(id, 'bida', astaeda || 'Skilað í biðröð', { status: 'bida', vel: null, tekid_at: null });
+  log('skilað í biðröð', id);
 }
 async function stada(x) {
   const q = x ? (+x > 100000 || String(x).length > 4 ? 'bunadargreining_verk?id=eq.' + x : 'bunadargreining_verk?or=(id.eq.' + x + ',company_id.eq.' + x + ')') : 'bunadargreining_verk';
@@ -336,7 +344,7 @@ async function afturkalla(id) { await skrifaStig(id, 'bida', 'Afturkallað', { s
 (async () => {
   const [cmd, a, b, c] = process.argv.slice(2);
   const falla = { bida: () => bida(a, b), naest: () => naest(a, b), stada: () => stada(a), undirbua: () => undirbua(a), bord: () => bord(a, b), vigur: () => vigur(a), yfirlag: () => yfirlag(a), vista: () => vista(a), vegghjalp: () => vegghjalp(a), skyrsla: () => skyrsla(a), render: () => render(a, false), 'render-saekja': () => render(a, true),
-    stig: () => skrifaStig(a, b, c), loka: () => loka(a, b), villa: () => villa(a, b), afturkalla: () => afturkalla(a) };
+    stig: () => skrifaStig(a, b, c), loka: () => loka(a, b), villa: () => villa(a, b), afturkalla: () => afturkalla(a), skila: () => skila(a, b) };
   if (!falla[cmd]) { console.error(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 22).join('\n')); process.exit(2); }
   await falla[cmd]();
 })().catch((e) => { console.error('VILLA ' + e.message); process.exit(1); });
