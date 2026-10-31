@@ -705,9 +705,9 @@
     document.body.appendChild(v);
   }
 
-  // 31.10.2026 (allsherjar úttekt): áður v.innerHTML.indexOf('vorur-grid') — raðaði öllu borðinu (~2.300 hnútar,
-  // 22 þús. stafir) í streng tvisvar á sekúndu í kyrrstöðu: 866 ms af 961 ms skriftutíma á 20 s. Fyrirspurn um
-  // hnútinn sjálfan svarar sömu spurningu án þess að raða neinu.
+  // 31.10.2026 (allsherjar úttekt): áður v.innerHTML.indexOf('vorur-grid') — raðaði öllu borðinu (2.290 hnútar,
+  // 3,84 m. stafir með myndum) í streng tvisvar á sekúndu, 15–16 ms hvert tif. Mælt í vafra (skrif hleruð): skriftutími
+  // 20 s kyrrstöðu á Vörum 970 ms → 150 ms. Fyrirspurn um hnútinn svarar sömu spurningu án þess að raða neinu.
   function hefurGrid(v){ return !!(v && v.querySelector('#vorur-grid')); }
 
   function watchView(){
