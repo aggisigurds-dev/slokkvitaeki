@@ -40,8 +40,13 @@ const MAPIS_SVF = {
    * safnið fyllist. */
   2000: { slug: 'reykjanesbaer', nafn: 'Reykjanesbær', kort: 'Kortasjá Reykjanesbæjar', postnr: [230, 232, 233, 260, 262], bein: true },
   3609: { slug: 'borgarbyggd', nafn: 'Borgarbyggð', kort: 'Kortasjá Borgarbyggðar', postnr: [310, 311, 320], bein: true },
+  /* 30.10.2026 (Agnar, Hótel Örk): Hveragerði — SVFNR 8716. Ekki map.is heldur kort.is (Gagnaland): opið JSON-API
+   * kort.is/api/blueprints/property/<landnr>/?public=true skilar öllu safni eignarinnar (Hótel Örk, Breiðamörk 1C,
+   * landnr 171132: 314 skjöl, 127 aðaluppdrættir, allt skannað) og PDF-in liggja á skrar.gagnaland.is. Safnið er lykilað á
+   * LANDNR eingöngu og staðfangaleit Kjarna þekkir ekki Hveragerði, svo kalla þarf með landnr + svf=8716. */
+  8716: { slug: 'hveragerdi', nafn: 'Hveragerði', kort: 'Kortasjá Hveragerðis', postnr: [810], bein: true, kortis: true },
 };
-const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is', 'snorri.borgarbyggd.is'];
+const MAPIS_HOSTS = ['teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'gagnasja.kopavogur.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is', 'snorri.borgarbyggd.is', 'skrar.gagnaland.is'];
 const beinSvf = svf => !!(MAPIS_SVF[svf] && MAPIS_SVF[svf].bein);
 const svfFyrirPostnr = pn => Object.keys(MAPIS_SVF).find(k => (MAPIS_SVF[k].postnr || []).includes(Number(pn))) || null;
 
@@ -104,6 +109,7 @@ function teikning(row) {
 // heitinr = 0 → teikningar LÓÐARINNAR; heitinr hússins → teikningar hússins (bein kortasjá). null = bilun, [] = tómt.
 async function mapisTeikningar(landnr, svf, heitinr) {
   const sv = MAPIS_SVF[svf]; if (!sv) return null;
+  if (sv.kortis) return kortisTeikningar(landnr);   // safnið er lykilað á landnr eingöngu
   const spyrja = s => fetch(MAPIS + '/webservice/queryTeiknigrunn.php?landnumer=' + landnr + '&svfnr=' + svf + '&heitinumer=' + (Number(heitinr) || 0) + '&t=' + s.token, {
     headers: { Cookie: s.cookie, Referer: MAPIS + '/' + sv.slug + '/', 'User-Agent': 'Mozilla/5.0 Slokkvitaeki-Teikning/1.0', 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json, text/plain, */*' },
     signal: AbortSignal.timeout(15000),
@@ -116,11 +122,34 @@ async function mapisTeikningar(landnr, svf, heitinr) {
   let rows; try { rows = JSON.parse(t); } catch (_) { return null; }
   return rows.map(teikning).filter(Boolean).sort((a, b) => (a.urelt !== b.urelt ? (a.urelt ? 1 : -1) : (b.dags || '').localeCompare(a.dags || '')));
 }
-const lodarTeikningar = (landnr, svf) => mapisTeikningar(landnr, svf, 0);
+// kort.is (Hveragerði): sama úttak og mapisTeikningar. Dagsetningin er oftast tóm („1899-12-31") — þá null, ekki skáldað ártal.
+function kortisTeikning(row) {
+  const slod = texti(row && row.file_url); if (!slod || !/^https:\/\//i.test(slod)) return null;
+  let u; try { u = new URL(slod); } catch (_) { return null; }
+  if (!MAPIS_HOSTS.includes(u.hostname)) return null;
+  const dags = texti(row.samth_dags), ar = dags ? Number(dags.slice(0, 4)) : 0;
+  const lysing = texti(row.lysing), gerd = texti(row.gerd);
+  const tegund = { ADALUPPDRATTUR: 'Aðaluppdrættir', RAFMAGNSTEIKNINGAR: 'Raflagnateikningar', BURDARVIRKI: 'Burðarvirki', LAGNATEIKNINGAR: 'Lagnateikningar', LJOSMYNDIR: 'Ljósmyndir', MERKJALYSINGAR: 'Merkjalýsingar', ANNAD: 'Annað' }[row.tegund] || texti(row.tegund);
+  return Object.assign({
+    filename: decodeURIComponent(u.pathname.split('/').pop() || 'teikning.pdf'), infoUrl: u.href, thumb: null,
+    stada: null, dags: ar > 1950 ? dags.slice(0, 10) : null, tegund, gerd, hofundur: texti(row.hofundur_name), lysing,
+    bnnr: texti(row.teikning_nr), gata: null, urelt: false,
+  }, haedir(gerd, lysing && !/\.pdf$/i.test(lysing) ? lysing : ''));
+}
+async function kortisTeikningar(landnr) {
+  const r = await fetch('https://kort.is/api/blueprints/property/' + Number(landnr) + '/?public=true', { headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 Slokkvitaeki-Teikning/1.0' }, signal: AbortSignal.timeout(20000) });
+  if (!r.ok) return null;
+  let rows; try { rows = await r.json(); } catch (_) { return null; }
+  if (!Array.isArray(rows)) return [];
+  const sed = new Set();   // sama skrá oft tvískráð í safninu
+  return rows.map(kortisTeikning).filter(x => x && !sed.has(x.infoUrl) && sed.add(x.infoUrl))
+    .sort((a, b) => (b.dags || '').localeCompare(a.dags || ''));
+}
+const lodarTeikningar = (landnr, svf) => (MAPIS_SVF[svf] && MAPIS_SVF[svf].kortis ? kortisTeikningar(landnr) : mapisTeikningar(landnr, svf, 0));
 function mapisSvar(d, landnr, heitinr, svf, dr, lod) {
   return {
-    utgafa: (d && d.utgafa) || null, heimild: 'map.is', heimildNafn: MAPIS_SVF[svf].nafn, landnr: Number(landnr),
-    heitinr: Number(heitinr) || 0, svf: Number(svf), ...(lod ? { lod: true } : {}), fjoldi: dr.length,
+    utgafa: (d && d.utgafa) || null, heimild: MAPIS_SVF[svf].kortis ? 'kort.is' : 'map.is', heimildNafn: MAPIS_SVF[svf].nafn, landnr: Number(landnr),
+    heitinr: Number(heitinr) || 0, svf: Number(svf), ...(lod && !MAPIS_SVF[svf].kortis ? { lod: true } : {}), fjoldi: dr.length,
     gildandi: dr.filter(x => !x.urelt).length, hrar: dr.length, results: dr,
   };
 }
