@@ -116,7 +116,7 @@
       { t: 'solur.athugasemdir prentast sem „Vegna"-texti undir kennitölunni. Innri nótur fara í krafa_note.', heim: 'Charlize #2' },
       { t: 'Hausinn nefnir greiðandann; „Vegna <staður>" nefnir staðinn.', heim: 'Charlize #350, #309' },
       { t: 'Í úttekt ræður reiturinn „Texti á reikning"; annars „Framkvæmd í <mánuður> <ár>", síðast „Vegna heimsóknar DD.MM.YYYY".', heim: '165:131-142' },
-      { t: 'Lýsing kröfu í Payday: „Vegna: <staður> – nr. N – <heimilisfang>" + „ · " + hreinsuð nóta. Tilvísun = R-númer.', heim: 'payday-push.cjs:374-417, 488-492' },
+      { t: 'Lýsing kröfu í Payday: „Vegna: <staður> – nr. N – <heimilisfang>" + (viðbótarúttekt: „Viðbót við R-… (ný tæki)") + „ · " + hreinsuð nóta. Tilvísun = R-númer.', heim: 'payday-push.cjs:374-417, 488-492' },
       { t: 'Nafn og heimilisfang staðar fara aðeins með ef kt staðarins = kt sölunnar.', heim: 'payday-push.cjs' },
       { t: 'Colas þarf „Beiðni nr: …" í nótunni (allt inntak gilt, t.d. „Deild 15").', heim: '264:1-30 · Charlize #236' },
       { t: 'Krafan berst í banka kúnna á kennitölunni; tölvupósturinn er aðeins tilkynning.', heim: 'Charlize #296' }

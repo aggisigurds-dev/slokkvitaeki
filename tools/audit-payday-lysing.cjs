@@ -43,6 +43,9 @@ if (!/description:\s*\[_vegna,\s*(?:_vbLina,\s*)?_notes\]/.test(skra)) brot.push
         const lina = vb ? ('Viðbót við ' + vb[1] + ' (ný tæki)') : '';
         if (lina !== 'Viðbót við R-001250 (ný tæki)') brot.push('_vbM finnur ekki númerið í krafa_note viðbótarsölu — fékk ' + JSON.stringify(lina) + ', átti að vera "Viðbót við R-001250 (ný tæki)"');
         if (re.exec('Afsláttur úr sölu: −8091 kr')) brot.push('_vbM grípur nótu sem er ekki viðbótarsala');
+        // ^-akkerið (netvörður 31.10.2026): 17 af 70 krafa_note bera R-númer annars staðar í textanum (R-001109 „Endurútgáfa
+        // R-001029 …"). Án akkerisins fengi venjuleg krafa línuna „Viðbót við R-001029 (ný tæki)".
+        if (re.exec('Endurútgáfa R-001029 á réttan greiðanda')) brot.push('_vbM grípur R-númer í venjulegri nótu — ^-akkerið vantar');
       }
     }
   }
