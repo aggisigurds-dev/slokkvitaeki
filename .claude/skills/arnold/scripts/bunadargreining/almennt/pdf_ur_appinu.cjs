@@ -1,6 +1,9 @@
+const fs = require('fs');
 // Nýja skýrslan = „Prenta" Búnaðargreiningar (474) á lifandi síðu, vistuð sem PDF. Öll skrif lokuð.
 // node pdf_ur_appinu.cjs <cid> <úttak.pdf> [BASE] [prenta|prenta-haedir]   (prenta = ein síða, prenta-haedir = hver hæð á sér blaði)
-const { chromium } = require('C:/Users/Slokkvitaeki/luna-bridge/node_modules/playwright');
+const LB = [process.env.LUNA_BRIDGE, 'C:/Users/Slokkvitaeki/luna-bridge', 'C:/projects/luna-bridge'].filter(Boolean).find((p) => fs.existsSync(p + '/node_modules/playwright'));
+if (!LB) { console.error('VILLA: luna-bridge/node_modules/playwright fannst ekki — settu LUNA_BRIDGE'); process.exit(1); }
+const { chromium } = require(LB + '/node_modules/playwright');
 const CID = process.argv[2], UT = process.argv[3], BASE = process.argv[4] || 'https://slokkvitaeki.netlify.app', HAMUR = process.argv[5] || 'prenta', SEL = '#co-bgr [data-a="' + HAMUR + '"]';
 (async () => {
   const b = await chromium.launch({ headless: true });

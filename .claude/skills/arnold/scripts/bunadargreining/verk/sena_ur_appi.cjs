@@ -3,7 +3,9 @@
 // Öll skrif lokuð. Hæð án veggja (engin veggjavinna í Teikningu) fær enga senu — Turbo segir það hreint út.
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('C:/Users/Slokkvitaeki/luna-bridge/node_modules/playwright');
+const LB = [process.env.LUNA_BRIDGE, 'C:/Users/Slokkvitaeki/luna-bridge', 'C:/projects/luna-bridge'].filter(Boolean).find((p) => fs.existsSync(p + '/node_modules/playwright'));
+if (!LB) { console.error('VILLA: luna-bridge/node_modules/playwright fannst ekki — settu LUNA_BRIDGE'); process.exit(1); }
+const { chromium } = require(LB + '/node_modules/playwright');
 const CID = process.argv[2], UT = process.argv[3], BASE = process.argv[4] || 'https://slokkvitaeki.netlify.app';
 if (!+CID || !UT) { console.error('notkun: node sena_ur_appi.cjs <cid> <úttaksmappa> [BASE]'); process.exit(2); }
 fs.mkdirSync(UT, { recursive: true });
