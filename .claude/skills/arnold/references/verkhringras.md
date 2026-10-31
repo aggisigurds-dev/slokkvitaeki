@@ -89,6 +89,8 @@ Forsendur: Node, Python með `pymupdf` + `Pillow` (`python -m pip install --user
 `{"haedir":[{"nafn":"1. hæð","url":"<innri .info slóð>","frum":{"b":6006,"h":4401},"skurdur":{"x":721,"y":572,"w":2042,"h":1078}}]}` →
 `bord <id> bord.json` (neitar að yfirskrifa borð sem er til). Keyrðu svo `undirbua` aftur.
 
+**Hveragerði (kort.is, 30.10.2026):** staðfangaleit þekkir ekki Hveragerði — kallaðu `teikn-listi?landnr=<landnr>&svf=8716` (Hótel Örk, Breiðamörk 1C = landnr 171132); PDF-in koma af skrar.gagnaland.is gegnum `teikn-pdf`. Dagsetning blaða er oftast tóm — veldu nýjasta blað eftir efni (aðaluppdráttur með `haed`), ekki dagsetningu.
+
 ## Reglur sem gilda alltaf
 
 * **Aldrei eyða, aldrei yfirskrifa:** virk greining fyrir fer í sögu (`fjarlaegt_at`); borðið er ósnert nema `bord` (nýtt) eða `nytt:true`.
