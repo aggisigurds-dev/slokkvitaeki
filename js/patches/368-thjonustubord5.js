@@ -1424,6 +1424,7 @@
       '.vbr{display:grid;grid-template-columns:var(--vbr-w,290px) minmax(0,1fr);gap:18px;align-items:start}',
       '.vbr-grip{position:absolute;top:0;right:0;width:10px;height:100%;cursor:col-resize;z-index:2;touch-action:none}.vbr-grip::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:transparent}.vbr-grip:hover::after,.vbr-grip.virk::after{background:var(--g6)}',
       '.samt-rod{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 0}.samt-rod button{height:26px;padding:0 9px;border-radius:5px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;font-size:11px;font-weight:600;color:inherit;cursor:pointer}.samt-rod button[aria-pressed="true"]{background:#1f2530;color:#fff;border-color:#000}.samt-teljari button[aria-pressed="true"]{outline:2px solid #1f2530;outline-offset:1px}',
+      '.heim{margin:10px 0;padding:8px 11px;border:1px solid var(--rule2);border-radius:6px;font-size:12.5px;line-height:1.45}.heim .hh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding-bottom:4px}.heim .hr{padding:5px 0;border-top:1px solid var(--rule2);overflow-wrap:anywhere}.heim .hm{opacity:.72}.heim .ht{display:inline-block;padding:0 5px;border-radius:3px;background:#a3241b;color:#fff;font-weight:700;font-size:11px}.heim a,.heim .hl{font:inherit;font-weight:700;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer}',
       '.samt-teljari{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px 12px 6px}.samt-teljari button{display:flex;align-items:center;gap:7px;min-height:36px;padding:4px 9px;border-radius:7px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;color:inherit;text-align:left;cursor:pointer}.samt-teljari button b{font-size:17px;line-height:1;min-width:22px;text-align:center}.samt-teljari button small{display:block;font:500 10px var(--mono);color:var(--mute)}.samt-teljari button._gull b{color:#8a6218}.samt-teljari button._ok b{color:#16783f}.samt-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c,#145229);color:#fff;border-color:#0b3519}.samt-teljari button._claude small{color:#bfe3c9}',
       '.vbr-list{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}',
       '.vbr-items{overflow:auto;min-height:0}',
@@ -2165,7 +2166,7 @@
       (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
-      adgerdirHtml(r) +
+      adgerdirHtml(r) + (erSamthykki(r) || svarBidur(r) ? heimildirHtml(r, 't5') : '') +
       /* Aðeins svar-málin: aðaltakkinn ber þá sama texta og næsta skref. */
       stadaHtml(r, { adalAdgerd: getaSvarad ? 'svara' : '' }) +
       sagaHtml(r) + skjolHtml(r) + well +
@@ -2313,7 +2314,7 @@
     const nr = val ? listi.indexOf(val) : -1;
     const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], grunnur.filter(r => samtHluti(r) === h[1]), h[1]]);
     const item = r => {
-      const ef = aiLine(r), undir = [samtRodun === 'sjalf' ? '' : SAMT_HLUTA_NOFN[samtHluti(r)], whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      const ef = aiLine(r), undir = [samtRodun === 'sjalf' ? '' : SAMT_HLUTA_NOFN[samtHluti(r)], heimildaFjoldi(r) ? '' : 'Engin heimild tengd', whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
       /* ★ á spjaldinu sjálfu (Agnar: „að geta merkt stjörnu sem byrtist þá efst í
        * mikilvægast"). Sama aðgerð og „☆ Áríðandi" í málglugganum — data-t5
        * „mal-ari", sem skrifar á þjóninn og býður afturköllun. Hún stýrir
@@ -4010,6 +4011,98 @@
             '<img src="' + esc(f.url) + '" alt="' + esc(f.name || 'Mynd') + '" loading="lazy"></a>').join('')
         : '<div class="sg-m">Engin fylgiskjöl á þessu máli.</div>') +
     '</div>';
+  }
+  /* 01.11.2026 — HEIMILDIR (Agnar: „ég hef ekki hingað til treyst samþykktarborðinu, finnst vanta oft meiri sannanir,
+   * vísanir í facts"). Mælt sama dag á 71 opnu samþykkismáli: 30 án „Byggt á", 3 með tengil, 2 með fylgiskjal, 26 óhreyfð í 3+
+   * vikur. Texti málsins er fullyrðing frá þeim degi sem hann var skrifaður. Hér er hún ekki endurtekin: númerin í textanum eru
+   * lesin og staðan sótt í grunninn um leið og málið er opnað, með tengli á frumgagnið. Sókn sem bregst segir það — autt svar
+   * má aldrei líta út eins og staðreynd. Mál sem nefnir ekkert rekjanlegt fær merkið „Engin heimild tengd". */
+  function heimTilvisanir(r) {
+    const t = String(r.title || '') + '\n' + String(r.notes || '');
+    const nums = [...new Set(t.match(/\bR-\d{6}\b/g) || [])];
+    const ein = (m, f) => [...new Set(m.map(f))];
+    return {
+      app: nums.filter(x => !/^R-10\d{4}$/.test(x)),
+      stolpi: ein(nums.filter(x => /^R-10\d{4}$/.test(x)), x => x.slice(2)).concat(ein(t.match(/Stólpa[\s-]*(?:reikning\w*\s+)?(?:nr\.?\s*)?1\d{5}\b/g) || [], x => x.slice(-6))),
+      // (?![.\d]): „Payday 04.09" er dagsetning, ekki reikningur 04.
+      payday: ein(t.match(/Payday(?:\s+nr\.?)?\s+\d{1,5}(?![.\d])/gi) || [], x => x.match(/\d+$/)[0]),
+      fid: r.fyrirtaeki_id || null,
+      post: postId(r)
+    };
+  }
+  const heimildaFjoldi = r => { const h = heimTilvisanir(r); return h.app.length + h.stolpi.length + h.payday.length + (h.fid ? 1 : 0) + (h.post != null ? 1 : 0); };
+  // Nýjasti dagur sem textinn segist hafa verið mældur. Ómerktur texti er ekki „nýr": þá stendur að dagurinn sé ekki skráður.
+  function heimMaelidagur(r) {
+    const t = String(r.notes || '');
+    let mest = 0, m;
+    const skra = (d, mm, a) => { const v = Date.UTC(+a || new Date().getFullYear(), +mm - 1, +d); if (v > mest && v <= Date.now() + 864e5) mest = v; };
+    const a = /mælt[^0-9\n]{0,12}(\d{1,2})\.(\d{1,2})\.(\d{4})/gi;
+    while ((m = a.exec(t))) skra(m[1], m[2], m[3]);
+    const b = /(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?\s*\(Claude,\s*endurmæling\)/g;
+    while ((m = b.exec(t))) skra(m[1], m[2], m[3]);
+    return mest;
+  }
+  async function saekjaHeimildir(h) {
+    const c = sb();
+    if (!c) throw new Error('Engin tenging');
+    const lesa = async q => { const x = await q; if (x.error) throw x.error; return x.data || []; };
+    const solur = h.app.length ? await lesa(c.from('solur').select('id,num,status,samtals,created_at,greitt_med,paid_at,krafa_sent_at,customer_id,is_credit').in('num', h.app)) : [];
+    const kredit = solur.length ? await lesa(c.from('solur').select('id,num,samtals,credit_of').in('credit_of', solur.map(s => s.id))) : [];
+    const pEf = (h.app.length ? ['reference.in.(' + h.app.join(',') + ')'] : []).concat(h.payday.length ? ['number.in.(' + h.payday.join(',') + ')'] : []);
+    const payday = pEf.length ? await lesa(c.from('payday_invoices_slokk').select('number,reference,customer_name,status,amount_total,paid_date').or(pEf.join(','))) : [];
+    const stolpi = h.stolpi.length ? await lesa(c.from('stolpi_reikningar').select('reikn_nr,nafn,dags,upphaed,stada,greitt_dags,opid_upphaed').in('reikn_nr', h.stolpi)) : [];
+    const fid = h.fid || (solur.find(s => s.customer_id) || {}).customer_id || null;
+    const fyr = fid ? (await lesa(c.from('fyrirtaeki').select('id,nafn').eq('id', fid)))[0] || null : null;
+    // Nýjustu tvö af hvoru: annars fylla reikningarnir listann og skýrslan sést aldrei.
+    const oll = fid ? await lesa(c.from('customer_documents').select('id,doc_type,year,doc_date,storage_path,drive_file_id,invoice_number,file_name').eq('fyrirtaeki_id', fid).eq('is_duplicate', false)
+      .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur']).order('doc_date', { ascending: false, nullsFirst: false }).limit(30)) : [];
+    const skjol = oll.filter(x => x.doc_type !== 'reikningur').slice(0, 2).concat(oll.filter(x => x.doc_type === 'reikningur').slice(0, 2));
+    const post = h.post != null ? (await lesa(c.from('email_digest').select('sender_name,sender_email,subject,received_at').eq('id', h.post)))[0] || null : null;
+    return { solur, kredit, payday, stolpi, fyr, skjol, post };
+  }
+  const heimSkjalSlod = d => {
+    if (d.storage_path) { const p = String(d.storage_path); return window.SUPABASE_URL + '/storage/v1/object/public/' + (/^samningar\//.test(p) ? p : 'samningar/' + p).split('/').map(encodeURIComponent).join('/'); }
+    return d.drive_file_id ? 'https://drive.google.com/file/d/' + encodeURIComponent(d.drive_file_id) + '/view' : '';
+  };
+  // `kerfi`: 't5' á borðinu, 'sm' á símasíðunni (446). Ein teikning, svo tölurnar geti ekki rekið í sundur.
+  function heimildirHtml(r, kerfi) {
+    const h = heimTilvisanir(r), md = heimMaelidagur(r), aldur = md ? Math.floor((Date.now() - md) / 864e5) : null;
+    const haus = '<div class="hh"><b>Heimildir</b><span class="hm">sótt úr grunninum núna</span></div>' +
+      '<div class="hr">' + (aldur == null ? '<span class="ht">Mælidagur ekki skráður</span> Texti málsins segir ekki hvenær hann var mældur.'
+        : aldur > 14 ? '<span class="ht">Texti mældur fyrir ' + aldur + ' dögum</span> Berðu hann saman við stöðuna hér.' : '<span class="hm">Texti málsins mældur fyrir ' + aldur + ' d.</span>') + '</div>';
+    if (!heimildaFjoldi(r)) return '<div class="heim">' + haus + '<div class="hr"><span class="ht">Engin heimild tengd</span> Málið nefnir engan reikning, stað eða póst, svo hér er ekkert til að bera textann saman við.</div></div>';
+    const g = gogn('heim:' + r.id, () => saekjaHeimildir(h), 60000), d = g.data;
+    if (g.villa) return '<div class="heim">' + haus + '<div class="hr"><span class="ht">Náði ekki í heimildir</span> ' + esc(g.villa) + '</div></div>';
+    if (!d) return '<div class="heim">' + haus + '<div class="hr hm">Sæki heimildir…</div></div>';
+    const radir = [];
+    h.app.forEach(num => {
+      const s = d.solur.find(x => x.num === num);
+      if (!s) { radir.push('<b>' + esc(num) + '</b> <span class="ht">finnst ekki í sölum</span>'); return; }
+      const kr_ = d.kredit.filter(x => x.credit_of === s.id), pd = d.payday.filter(x => x.reference === num);
+      const pdGreitt = pd.some(p => p.status === 'PAID');
+      // Kredit í Payday ber greiðsludag, svo appið getur sýnt „greidd" á bakfærðum reikningi (project_payday_kredit_greitt).
+      const stangast = !s.is_credit && pd.length && !!s.paid_at !== pdGreitt;
+      radir.push('<button type="button" class="hl" data-' + kerfi + '="heim-sala" data-id="' + s.id + '" title="Opna söluna">' + esc(num) + '</button> ' +
+        (s.status === 'void' ? '<span class="ht">ÓGILD</span> ' : '') + (s.is_credit ? '<span class="ht">KREDIT</span> ' : '') +
+        (kr_.length ? '<span class="ht">BAKFÆRÐ með ' + esc(kr_.map(x => x.num).join(', ')) + '</span> ' : '') +
+        (stangast ? '<span class="ht">App og Payday stangast á</span> ' : '') +
+        esc([kr(+s.samtals), 'stofnuð ' + fmtDags(s.created_at)].concat(s.is_credit ? [] : [s.krafa_sent_at ? 'krafa send ' + fmtDags(s.krafa_sent_at) : 'krafa ekki send', s.paid_at ? 'greidd ' + fmtDags(s.paid_at) : 'ógreidd'],
+          pd.length ? pd.map(p => 'Payday ' + p.number + ' ' + p.status + (p.paid_date ? ' ' + fmtDags(p.paid_date) : '')).join(', ') : 'ekki í Payday').join(' · ')));
+    });
+    h.payday.filter(n => !d.payday.some(p => String(p.number) === n && p.reference && h.app.indexOf(p.reference) >= 0)).forEach(n => {
+      const p = d.payday.find(x => String(x.number) === n);
+      radir.push(p ? '<b>Payday ' + esc(n) + '</b> ' + esc([p.customer_name, kr(+p.amount_total), p.status, p.paid_date ? 'greitt ' + fmtDags(p.paid_date) : ''].filter(Boolean).join(' · ')) : '<b>Payday ' + esc(n) + '</b> <span class="ht">finnst ekki</span>');
+    });
+    h.stolpi.forEach(n => {
+      const p = d.stolpi.find(x => String(x.reikn_nr) === n);
+      radir.push(p ? '<b>Stólpi ' + esc(n) + '</b> ' + esc([p.nafn, fmtDags(p.dags), kr(+p.upphaed), p.greitt_dags ? 'greitt ' + fmtDags(p.greitt_dags) : p.stada].filter(Boolean).join(' · ')) : '<b>Stólpi ' + esc(n) + '</b> <span class="hm">ekki í Stólpa-bók</span>');
+    });
+    if (d.post) radir.push('<b>Póstur</b> ' + esc([d.post.sender_name || d.post.sender_email, fmtDags(d.post.received_at), d.post.subject].filter(Boolean).join(' · ')));
+    if (d.fyr) radir.push('<a href="#company/' + d.fyr.id + '">' + esc(d.fyr.nafn || 'Fyrirtækið') + '</a> ' + (d.skjol.length ? d.skjol.map(x => {
+      const u = heimSkjalSlod(x), t = (x.doc_type === 'reikningur' ? 'reikningur ' + (x.invoice_number || '') : x.doc_type === 'brunakerfi' ? 'brunakerfi' : 'skýrsla') + ' ' + (x.doc_date ? fmtDags(x.doc_date) : (x.year || ''));
+      return u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(t.trim()) + '</a>' : esc(t.trim());
+    }).join(' · ') : '<span class="hm">engin skýrsla eða reikningur í skjölum staðarins</span>'));
+    return '<div class="heim">' + haus + radir.map(x => '<div class="hr">' + x + '</div>').join('') + '</div>';
   }
   async function hladaSkjolum(id, files) {
     const c = sb();
@@ -5789,6 +5882,10 @@
       }
       case 'sel-close': S.sel[nu()] = 0; render(); return;
       case 'stad-opna': opnaStad(S.rows.find(x => x.id === id), c); return;
+      case 'heim-sala':
+        if (window.OpnaSolu && OpnaSolu.opna) OpnaSolu.opna(id);
+        else toast('Söluritillinn er ekki hlaðinn.', true);
+        return;
       case 'endurmeta': endurmeta(); return;
       case 'fyr-saga': {
         const x = (S.leit.fyr || [])[+el.dataset.i];
@@ -6494,7 +6591,7 @@
     upphaed: upphaedMals, aiLine, sonn, erBuid: erAfgreitt, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
     // 368ab — símasíðan (446) sýnir sömu ákvörðunarblokk. Greiningin á aðeins að eiga sér EINN
     // stað; væri hún afrituð þangað myndu útgáfurnar reka í sundur um leið og orðalagið breytist.
-    adgerdir: adgerdirUrNotu, postOsvarad,
+    adgerdir: adgerdirUrNotu, postOsvarad, heimildir: heimildirHtml, heimildaFjoldi,
     velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} },
     // 08.10.2026 — sönnunarmyndir á spjöldin í símanum (Agnar: „screenshot feature þarna inn til sönnunar eða
     // staðfestingar"): EIN fyrirspurn fyrir allan listann (thjonustubeidni_files .in(ids)), ekki ein per mál.

@@ -106,6 +106,12 @@
       V + ' .sm-teljari button._claude small{color:#bfe3c9!important}',
       V + ' .sm-teljari button._gull b{color:#8a6218}',
       V + ' .sm-teljari button._on{outline:2px solid #1f2530;outline-offset:1px}',
+      V + ' .heim{margin:0 0 10px;padding:8px 10px;border:1px solid rgba(20,24,34,.22);border-radius:8px;background:#f6f7f9;color:#1f2530;font:500 13px/1.45 ' + SANS + '}',
+      V + ' .heim .hh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding-bottom:4px}',
+      V + ' .heim .hr{padding:6px 0;border-top:1px solid rgba(20,24,34,.14);overflow-wrap:anywhere}',
+      V + ' .heim .hm{color:#5b6577}',
+      V + ' .heim .ht{display:inline-block;padding:0 5px;border-radius:3px;background:#a3241b;color:#fff!important;font-weight:700;font-size:11.5px}',
+      V + ' .heim a,' + V + ' .heim .hl{font:inherit;font-weight:700;color:#1f2530;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer}',
       V + ' .sm-hluti{scroll-margin-top:72px;display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
       V + ' .sm-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}',
       V + ' .sm-hluti._gull b{background:#c99a3a;color:#1c1608}',
@@ -200,7 +206,7 @@
     const u = A.upphaed(r), s = A.sonn(r), buid = A.erBuid(r), samt = A.erSamthykki(r);
     const svar = A.svarMals(r), bid = A.busy(r.id);
     const ef = A.aiLine(r);
-    const undir = [rodun === 'sjalf' ? '' : HLUTA_NOFN[A.hluti(r)], A.whereOf(r), A.ageDays(r) + ' d.'].filter(Boolean).join(' · ');
+    const undir = [rodun === 'sjalf' ? '' : HLUTA_NOFN[A.hluti(r)], (A.heimildaFjoldi && !A.heimildaFjoldi(r)) ? 'Engin heimild tengd' : '', A.whereOf(r), A.ageDays(r) + ' d.'].filter(Boolean).join(' · ');
     const op = opin.has(r.id);
     const k = (v, cls, texti) => '<button type="button" data-sm="svar" data-v="' + v + '" data-id="' + r.id + '" class="' + cls + '"' + (bid ? ' disabled' : '') + '>' + texti + '</button>';
     /* 446c — „ÞETTA GERIST" beint fyrir ofan takkana (Agnar 09.10.2026: „auðveldara að átta sig á
@@ -246,6 +252,8 @@
       '</button>' +
       myndirHtml(r, skjol) +
       '<div class="sm-lysing">' +
+        // Aðeins á opnu spjaldi: heimildirnar eru sóttar per mál, og 70 lokuð spjöld mega ekki senda 70 sóknir.
+        (op && A.heimildir ? A.heimildir(r, 'sm') : '') +
         (r.notes ? '<div class="k">LÝSING OG ATHUGASEMDIR</div><div class="t">' + esc(r.notes) + '</div>' : '<div class="k">ENGIN LÝSING</div>') +
         '<a class="opna" href="#bord" data-sm="bord" data-id="' + r.id + '">Opna á Þjónustuborði ›</a>' +
       '</div>' + adg + svor + '</article>';
@@ -307,6 +315,7 @@
     if (a === 'sia') { sia = sia === b.dataset.v ? 'allt' : b.dataset.v; try { if (window.Vidmot) Vidmot.setja(SIA_LYKILL, sia); } catch (_) {} render(); return; }
     if (a === 'allt') { sia = 'allt'; try { if (window.Vidmot) { Vidmot.setja(SIA_LYKILL, sia); if (rodun === 'postur') { rodun = 'nyjast'; Vidmot.setja(ROD_LYKILL, rodun); } } } catch (_) {} render(); return; }
     if (a === 'rod') { rodun = b.dataset.v; try { if (window.Vidmot) Vidmot.setja(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
+    if (a === 'heim-sala') { e.preventDefault(); if (window.OpnaSolu && OpnaSolu.opna) OpnaSolu.opna(id); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }
     e.preventDefault();
     const mal = b.closest('[data-sm-mal]');
