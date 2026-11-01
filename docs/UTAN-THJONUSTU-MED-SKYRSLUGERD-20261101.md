@@ -8,8 +8,8 @@ lesinn póstur (email_digest, ekki persónulega Gmail) og kreditreikningar. Ekke
 ## Niðurstaða eftir póst og kredit
 | # | Félag | Niðurstaða | Rök |
 |---|---|---|---|
-| 140 | Sjúkraþjálfun Grafarvogs | **Í ÞJÓNUSTU** | R-000342 16.06, 1 tæki, næsta skoðun 2027-06-16. Ekkert mótstætt. |
-| 518 | Gára ehf. | **Í ÞJÓNUSTU** | 4 reikningar 2026 (R-000599, -600, -000840, -001110). Gára skrifaði 29.07: „we will continue our partnership". CO₂-áfyllingar á skip, akstur 12.500/leið í athugasemd. |
+| 140 | Sjúkraþjálfun Grafarvogs | **Í ÞJÓNUSTU — endurvakið 01.11 (afrit: backup_20261101_endurvekja_140)** | R-000342 16.06, 1 tæki, næsta skoðun 2027-06-16. Ekkert mótstætt. |
+| 518 | Gára ehf. | **ÚTI (Agnar 01.11: „bara búðarsölur")** | 4 reikningar 2026 (R-000599, -600, -000840, -001110): CO₂-áfyllingar á skip, akstur 12.500/leið í athugasemd. Skýrslugerð+Akstur dugar því ekki ein og sér. Ekki breytt. |
 | 407 | Furugrund 66 | ÚR ÞJÓNUSTU (rétt) | Sögðu upp 25.02.2026; þjónusta 29.09 var mistök. R-001052 kreditfærður sama dag (R-001054). Payday: CANCELLED + CREDIT 12.10. Innheimtubréf 10.10 kom áður en kredit var skráður. |
 | 837 | Kötlufell 9 | ÚR ÞJÓNUSTU (rétt) | R-001018 kreditfærður 06.10 (R-001092). |
 | 1261 | Þangbakki 8-10 | ÚR ÞJÓNUSTU (rétt) | Tóku tilboði frá Nordex; Agnar 17.08: „misskilningur með þetta verk". R-000716 kreditfærður (R-000723). |

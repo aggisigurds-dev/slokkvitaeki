@@ -214,6 +214,18 @@ Fagraberg 18, Reykjaklettur, Sætoppur) — **sigtið taldi aðeins `solur`, ekk
 - *Utan þjónustu en ætti að vera inni:* `er_i_thjonustu = false` en virk tæki + skýrsla/sala 2025–26;
   `subscribed` í blobbinu og `false` á röðinni (eða öfugt — keyrðu báðar áttir); `removed_from_service_at`
   stimplað en seld þjónusta eftir stimpilinn.
+- **Regla Agnars 01.11.2026 — „Skýrslugerð" + „Akstur" á reikningi ⇒ líklega í þjónustu — EN aðeins ef
+  skýrsla/skoðun fylgir.** Prófað á 8 félögum utan þjónustu: Sjúkraþjálfun Grafarvogs #140 (skoðun 16.06, 1 tæki,
+  næsta 2027-06-16) var sett aftur inn. **Gára #518 er búðarsala** (CO₂-áfylling á skip, akstur í athugasemd) —
+  „Skýrslugerð"+„Akstur" duga ekki ein og sér, skoðaðu hvað selt var. Hin sex voru rétt úti: sögðu upp og/eða
+  reikningurinn kreditfærður (Furugrund 66, Kötlufell 9, Þangbakki 8-10, Strandasel 9 og 9-11, Endurskoðun og
+  reikningshald). **Áður en „ætti að vera inni" er sagt: lestu kreditreikninga og Payday-stöðu (CANCELLED/CREDIT)
+  á reikningnum — kredit sýnir hætt verk, líka þótt línurnar líti út eins og þjónusta.** Heimild:
+  `docs/UTAN-THJONUSTU-MED-SKYRSLUGERD-20261101.md`.
+- **Endurvekja félag = TVÖ skrif** (sama regla og við brottfall, Charlize #454): `er_i_thjonustu=true` OG
+  `app_settings.settings.arsskodun_customers[id].subscribed=true` (og `removed_from_service_at` burt). Taka úr
+  þjónustu: bæði `false` + `removed_from_service_at`. Bulk-SQL á röðina eina skilur eftir draug í blobbinum
+  (#648 Miðleiti 01.11 hafði `subscribed:true` eftir að röðin fór á `false`).
 - *Röng skráning á röðinni:* tvískráð fyrirtæki (Menja #908/#1531: sama kt og heimilisfang), kt-leki milli
   systkinastaða, röng `customer_base_id` (`baseIdForKt` giskar — félagið ræður, ekki kennitalan), rangt
   póstnúmer (Húsfélagið Bæjarlind 12 #601 var 221 í stað 201), tæki sem hanga á gömlum stað (#628 með 20 úrelt),
