@@ -31,8 +31,8 @@
   const API = () => window.Samthykkja || null;
 
   const opin = new Set();          // opnuð spjöld (lifir milli teikninga — ekki í DOM)
-  // 08.10.2026 (Agnar: „4 sort stillingar — allavega nýjast, mikilvægast, verðmætast og 1–2 í viðbót"): röðun innan
-  // hvers hluta. „Sjálfgefið" er röð borðsins (áríðandi → upphæð → frestur → elst). Valið í Vidmot ('samthykkja.rodun', 472) —
+  // 08.10.2026 (Agnar: „4 sort stillingar — allavega nýjast, mikilvægast, verðmætast og 1–2 í viðbót"): raðar öllum
+  // listanum (01.11.2026). „Sjálfgefið" er röð borðsins, með hlutunum (áríðandi → upphæð → frestur → elst). Valið í Vidmot ('samthykkja.rodun', 472) —
   // SAMI lykill sem 368 notar, eitt val fyrir allar vélar (15.10.2026; var localStorage samthykkja_rodun, flutt einu sinni).
   const ROD_LYKILL = 'samthykkja.rodun';
   const RADANIR = [
@@ -53,7 +53,16 @@
   rodun = rodLes();
   // Val frá annarri vél (eða borðinu 368 á sömu vél) tekur gildi við næstu teikningu — breytan uppfærð, ekkert render().
   document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === ROD_LYKILL) rodun = rodLes(); } catch (_) {} });
+  // 01.11.2026 (Agnar: „Hafa nýjasta efst"): sama regla og á borðinu (368). Listinn er einn undir öllum röðunum nema Sjálfgefið,
+  // og teljararnir sía í sama lykli. Áður skrunuðu þeir aðeins að hlutanum og röðunin gilti aðeins innan hans.
+  const SIA_LYKILL = 'samthykkja.sia';
+  const HLUTA_NOFN = { '-1': 'Afgreitt', 0: 'Tilbúið', 1: 'Spurning', 2: 'Hjá Claude' };
+  const siaLes = () => { try { const v = String(window.Vidmot ? Vidmot.lesa(SIA_LYKILL, 'allt') : 'allt'); return ['-1', '0', '1', '2'].indexOf(v) >= 0 ? v : 'allt'; } catch (_) { return 'allt'; } };
+  let sia = siaLes();
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SIA_LYKILL) sia = siaLes(); } catch (_) {} });
   const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
+  // „Svara pósti" sían framkvæmd FYRST, svo teljarar og hausinn telji aðeins það sem sést.
+  const synilegt = (listi, A) => ((rodun === 'postur' && A.postOsvarad) ? listi.filter(A.postOsvarad) : listi);
   function rada(listi, A) {
     // „Svara pósti" er sía, ekki röðun — og hún er framkvæmd FYRST, svo teljarar og hlutar telji
     // aðeins það sem sést. Sé 368 eldri útgáfa (A.postOsvarad vantar) stendur gamla hegðunin.
@@ -96,6 +105,7 @@
       V + ' .sm-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c 0%,#145229 100%);color:#fff;border-color:#0b3519;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}',
       V + ' .sm-teljari button._claude small{color:#bfe3c9!important}',
       V + ' .sm-teljari button._gull b{color:#8a6218}',
+      V + ' .sm-teljari button._on{outline:2px solid #1f2530;outline-offset:1px}',
       V + ' .sm-hluti{scroll-margin-top:72px;display:flex;align-items:center;gap:8px;margin:14px 12px 6px;font-family:' + MONO + ';font-size:10.5px;letter-spacing:.14em;color:#525b6b;text-transform:uppercase}',
       V + ' .sm-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}',
       V + ' .sm-hluti._gull b{background:#c99a3a;color:#1c1608}',
@@ -190,7 +200,7 @@
     const u = A.upphaed(r), s = A.sonn(r), buid = A.erBuid(r), samt = A.erSamthykki(r);
     const svar = A.svarMals(r), bid = A.busy(r.id);
     const ef = A.aiLine(r);
-    const undir = [A.whereOf(r), A.ageDays(r) + ' d.'].filter(Boolean).join(' · ');
+    const undir = [rodun === 'sjalf' ? '' : HLUTA_NOFN[A.hluti(r)], A.whereOf(r), A.ageDays(r) + ' d.'].filter(Boolean).join(' · ');
     const op = opin.has(r.id);
     const k = (v, cls, texti) => '<button type="button" data-sm="svar" data-v="' + v + '" data-id="' + r.id + '" class="' + cls + '"' + (bid ? ' disabled' : '') + '>' + texti + '</button>';
     /* 446c — „ÞETTA GERIST" beint fyrir ofan takkana (Agnar 09.10.2026: „auðveldara að átta sig á
@@ -243,12 +253,12 @@
 
   // 08.10.2026 (Agnar: „counter af hvað ég er búinn að svara mörgum sem Claude á síðan eftir að vinna úr“): teljarar undir
   // röðuninni. Græni teljarinn = mál sem hann hefur svarað (samþykkt / í vinnslu / endurmeta) og Claude á eftir að vinna úr
-  // — sömu mál og hlutinn „Svarað · bíður Claude“ (hluti 2 í 368). Smellur skrunar að hlutanum. Hafnað fer af borðinu og telst ekki.
+  // — sömu mál og hlutinn „Svarað · bíður Claude“ (hluti 2 í 368). Smellur síar á hlutann (01.11.2026). Hafnað fer af borðinu og telst ekki.
   function teljariHtml(listi, A) {
     const n = h => listi.filter(r => A.hluti(r) === h).length;
     const sv = {}; listi.filter(r => A.hluti(r) === 2).forEach(r => { const s = A.svarMals ? A.svarMals(r) : null; sv[s] = (sv[s] || 0) + 1; });
     const sund = [['samthykkt', 'samþykkt'], ['vinnsla', 'í vinnslu'], ['endurmeta', 'skýring']].filter(x => sv[x[0]]).map(x => sv[x[0]] + ' ' + x[1]).join(' · ');
-    const b = (h, cls, texti, undir) => '<button type="button" data-sm="hoppa" data-v="' + h + '" class="' + cls + '"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
+    const b = (h, cls, texti, undir) => '<button type="button" data-sm="sia" data-v="' + h + '" class="' + cls + (sia === String(h) ? ' _on' : '') + '" title="Sýna aðeins þessi mál — smelltu aftur til að sýna öll"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
     return '<div class="sm-teljari">' +
       b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
       b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + '</div>';
@@ -264,20 +274,25 @@
     if (!A) body = '<div class="sm-villa">Þjónustuborðið (368) er ekki hlaðið — Samþykkja byggir á því.</div>';
     else if (!A.loaded()) body = '<div class="sm-tomt">Sæki mál…</div>';
     else {
-      const listi = A.listi();
+      const hrar = A.listi(), synileg = synilegt(hrar, A);
+      const listi = sia === 'allt' ? synileg : synileg.filter(r => String(A.hluti(r)) === sia);
       const HL = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1, '_ok'], ['Tilbúið — bara samþykkja', 0, '_gull'], ['Þarf svar frá þér', 1, ''], ['Svarað · bíður Claude', 2, '']];
-      if (!listi.length) body = '<div class="sm-tomt">Ekkert bíður svars hjá ' + esc(n) + '.<br>Nýjar tillögur birtast hér um leið og þær eru tilbúnar.</div>';
+      if (!hrar.length) body = '<div class="sm-tomt">Ekkert bíður svars hjá ' + esc(n) + '.<br>Nýjar tillögur birtast hér um leið og þær eru tilbúnar.</div>';
+      else if (!listi.length) body = '<div class="sm-tomt">' + (rodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.' : 'Ekkert mál passar við síuna.') + '<br><button type="button" class="uppf" data-sm="allt">Sýna öll mál</button></div>';
       else {
         const skjol = A.skjolMap ? A.skjolMap(listi.map(r => r.id)) : null;   // ein fyrirspurn, skyndiminni í 368
         if (A.erMynd) A_erMynd = A.erMynd;
-        body = HL.map(h => { const m = rada(listi.filter(r => A.hluti(r) === h[1]), A); return m.length ? '<div class="sm-hluti ' + h[2] + '" id="_sm-h' + h[1] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A, skjol)).join('') : ''; }).join('');
+        body = rodun === 'sjalf'
+          ? HL.map(h => { const m = rada(listi.filter(r => A.hluti(r) === h[1]), A); return m.length ? '<div class="sm-hluti ' + h[2] + '" id="_sm-h' + h[1] + '"><b>' + m.length + '</b>' + h[0] + '</div>' + m.map(r => malHtml(r, A, skjol)).join('') : ''; }).join('')
+          : rada(listi, A).map(r => malHtml(r, A, skjol)).join('');
       }
     }
-    const listi = A && A.loaded() ? A.listi() : [];
+    const hrar = A && A.loaded() ? A.listi() : [];
+    const listi = A && A.loaded() ? synilegt(hrar, A) : [];
     const t = A ? [listi.filter(r => A.hluti(r) === 0).length + ' tilbúin', listi.filter(r => A.hluti(r) === 1).length + ' spurningar', listi.filter(r => A.hluti(r) === 2).length + ' hjá Claude'].join(' · ') : '';
     const sott = (A && A.loadedAt && A.loadedAt()) ? ' · sótt kl. ' + String(A.loadedAt().getHours()).padStart(2, '0') + ':' + String(A.loadedAt().getMinutes()).padStart(2, '0') : '';
     const html = '<div class="sm-haus"><div><div class="tt">Samþykkja</div><div class="st">' + esc(t + (A && A.loading && A.loading() ? ' · sæki…' : sott)) + '</div></div>' +
-      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && listi.length ? rodHtml() + teljariHtml(listi, A) : '') + body;
+      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && hrar.length ? rodHtml() + teljariHtml(listi, A) : '') + body;
     // Skrunstaða og fókus (textarea í ritun) lifa teikninguna — 388 Stodugt.vernda ef hann er til.
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(root) : null;
     if (root._h !== html) { root.innerHTML = html; root._h = html; }
@@ -289,7 +304,8 @@
     const A = API(); if (!A) return;
     const a = b.dataset.sm, id = +b.dataset.id;
     if (a === 'uppf') { saekja(A, true); return; }
-    if (a === 'hoppa') { const h = document.getElementById('_sm-h' + b.dataset.v); if (h) h.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (a === 'sia') { sia = sia === b.dataset.v ? 'allt' : b.dataset.v; try { if (window.Vidmot) Vidmot.setja(SIA_LYKILL, sia); } catch (_) {} render(); return; }
+    if (a === 'allt') { sia = 'allt'; try { if (window.Vidmot) { Vidmot.setja(SIA_LYKILL, sia); if (rodun === 'postur') { rodun = 'nyjast'; Vidmot.setja(ROD_LYKILL, rodun); } } } catch (_) {} render(); return; }
     if (a === 'rod') { rodun = b.dataset.v; try { if (window.Vidmot) Vidmot.setja(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }
     e.preventDefault();

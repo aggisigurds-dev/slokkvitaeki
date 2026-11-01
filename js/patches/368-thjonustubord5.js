@@ -1423,7 +1423,7 @@
       '.vbstrip{min-height:44px}',
       '.vbr{display:grid;grid-template-columns:var(--vbr-w,290px) minmax(0,1fr);gap:18px;align-items:start}',
       '.vbr-grip{position:absolute;top:0;right:0;width:10px;height:100%;cursor:col-resize;z-index:2;touch-action:none}.vbr-grip::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:transparent}.vbr-grip:hover::after,.vbr-grip.virk::after{background:var(--g6)}',
-      '.samt-rod{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 0}.samt-rod button{height:26px;padding:0 9px;border-radius:5px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;font-size:11px;font-weight:600;color:inherit;cursor:pointer}.samt-rod button[aria-pressed="true"]{background:#1f2530;color:#fff;border-color:#000}',
+      '.samt-rod{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 0}.samt-rod button{height:26px;padding:0 9px;border-radius:5px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;font-size:11px;font-weight:600;color:inherit;cursor:pointer}.samt-rod button[aria-pressed="true"]{background:#1f2530;color:#fff;border-color:#000}.samt-teljari button[aria-pressed="true"]{outline:2px solid #1f2530;outline-offset:1px}',
       '.samt-teljari{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px 12px 6px}.samt-teljari button{display:flex;align-items:center;gap:7px;min-height:36px;padding:4px 9px;border-radius:7px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;color:inherit;text-align:left;cursor:pointer}.samt-teljari button b{font-size:17px;line-height:1;min-width:22px;text-align:center}.samt-teljari button small{display:block;font:500 10px var(--mono);color:var(--mute)}.samt-teljari button._gull b{color:#8a6218}.samt-teljari button._ok b{color:#16783f}.samt-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c,#145229);color:#fff;border-color:#0b3519}.samt-teljari button._claude small{color:#bfe3c9}',
       '.vbr-list{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}',
       '.vbr-items{overflow:auto;min-height:0}',
@@ -2190,8 +2190,8 @@
   const SPURNING = 'spurning';
   // 368z4: mál sem gögnin sýna afgreitt (greitt / sent / klárað / svarað) fara efst — þau þarf aðeins að loka.
   /* 09.10.2026 (Agnar: „put those filters, sorters and such in the webpage as well"): sama röðun og á símasíðunni (446),
-   * SAMI Vidmot-lykill ('samthykkja.rodun', 472) svo sími og tölva — og allar vélarnar — raði eins. Röðun er innan hvers
-   * hluta; „Sjálfgefið" = rodunSamt. 15.10.2026: var localStorage `samthykkja_rodun`, flutt einu sinni. */
+   * SAMI Vidmot-lykill ('samthykkja.rodun', 472) svo sími og tölva — og allar vélarnar — raði eins. „Sjálfgefið" = hlutar
+   * og rodunSamt innan þeirra; hinar raða öllum listanum (sjá 01.11.2026 hér að neðan). 15.10.2026: var localStorage `samthykkja_rodun`, flutt einu sinni. */
   const SAMT_ROD_LYKILL = 'samthykkja.rodun';
   const SAMT_RADANIR = [['sjalf', 'Sjálfgefið', 'Áríðandi, svo upphæð, svo frestur'], ['nyjast', 'Nýjast', 'Nýjasta málið efst'],
     ['mikilv', 'Mikilvægast', 'Áríðandi mál efst'], ['verdm', 'Verðmætast', 'Hæsta upphæð efst'], ['elst', 'Lengst beðið', 'Elsta málið efst'],
@@ -2216,15 +2216,27 @@
   const samtRada = (a, b) => {
     const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
     switch (samtRodun) {
-      case 'nyjast': return ts(b.created_at) - ts(a.created_at);
-      case 'elst': return ts(a.created_at) - ts(b.created_at);
-      case 'mikilv': return ((b.important ? 1 : 0) - (a.important ? 1 : 0)) || (ts(b.created_at) - ts(a.created_at));
+      // Jafntefli á auðkenni: mál stofnuð í sömu færslu bera sama created_at, og þá réð upphæðin röðinni undir „Nýjast".
+      case 'nyjast': return ts(b.created_at) - ts(a.created_at) || b.id - a.id;
+      case 'elst': return ts(a.created_at) - ts(b.created_at) || a.id - b.id;
+      case 'mikilv': return ((b.important ? 1 : 0) - (a.important ? 1 : 0)) || (ts(b.created_at) - ts(a.created_at)) || b.id - a.id;
       case 'verdm': return upphaedMals(b) - upphaedMals(a);
       // Sían sjálf er í `samtListi`; hér er aðeins röðun innan hennar — nýjasti pósturinn efst.
-      case 'postur': return ts(b.created_at) - ts(a.created_at);
+      case 'postur': return ts(b.created_at) - ts(a.created_at) || b.id - a.id;
       default: return 0;
     }
   };
+  /* 01.11.2026 (Agnar: „Hafa nýjasta efst … ath hvort sort/filter virka almennilega"). Mælt í viðmótinu:
+   *  · Röðunin gilti aðeins innan hluta, svo undir „Nýjast" stóð mál frá 01.11 fyrir neðan öll „Tilbúið"-málin frá september.
+   *    Nú er listinn EINN undir öllum röðunum nema Sjálfgefið, sem heldur hlutunum.
+   *  · Teljararnir skrunuðu aðeins að hlutanum. Nú sía þeir (smellur aftur = allt), í sama Vidmot-lykli og síminn (446).
+   *  · Tæmdi „Svara pósti" listann hurfu röðunartakkarnir og borðið sagði „Ekkert bíður" með 64 mál í bið. Valið er vistað
+   *    á þjóninum, svo það sat fast á öllum vélum. Takkarnir standa nú alltaf. */
+  const SAMT_SIA_LYKILL = 'samthykkja.sia';
+  const SAMT_HLUTA_NOFN = { '-1': 'Afgreitt', 0: 'Tilbúið', 1: 'Spurning', 2: '' };
+  const samtSiaLes = () => { const v = String(vmLesa(SAMT_SIA_LYKILL, 'allt')); return ['-1', '0', '1', '2'].indexOf(v) >= 0 ? v : 'allt'; };
+  let samtSia = samtSiaLes();
+  document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SAMT_SIA_LYKILL) samtSia = samtSiaLes(); } catch (_) {} });
   const samtRodHtml = () => '<div class="samt-rod" role="tablist" aria-label="Röðun">' + SAMT_RADANIR.map(x =>
     '<button type="button" data-t5="samt-rod" data-v="' + x[0] + '" aria-pressed="' + (samtRodun === x[0]) + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
   // Teljarar eins og á símasíðunni: grænn = svarað og Claude á eftir að vinna úr (hluti 2), sundurliðað eftir svari.
@@ -2232,7 +2244,7 @@
     const n = h => (hlutar.find(x => x[2] === h) || [0, []])[1].length;
     const sv = {}; (hlutar.find(x => x[2] === 2) || [0, []])[1].forEach(r => { const s = svarMals(r); sv[s] = (sv[s] || 0) + 1; });
     const sund = [['samthykkt', 'samþykkt'], ['vinnsla', 'í vinnslu'], ['endurmeta', 'skýring']].filter(x => sv[x[0]]).map(x => sv[x[0]] + ' ' + x[1]).join(' · ');
-    const b = (h, cls, texti, undir) => '<button type="button" data-t5="samt-hoppa" data-v="' + h + '" class="' + cls + '"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
+    const b = (h, cls, texti, undir) => '<button type="button" data-t5="samt-sia" data-v="' + h + '" aria-pressed="' + (samtSia === String(h)) + '" class="' + cls + '" title="Sýna aðeins þessi mál — smelltu aftur til að sýna öll"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
     return '<div class="samt-teljari">' + b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
       b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + (n(-1) ? b(-1, '_ok', 'Afgreitt', 'bara loka') : '') + '</div>';
   }
@@ -2273,9 +2285,11 @@
    * röðunarrofa. Síuðum við hér líka sat síminn fastur — „Sjálfgefið" þar gat ekki skilað
    * hinum 98 málunum, því `samtRodun` hér uppfærist aðeins við smell á BORÐINU. Borðið síar
    * fyrir sig; síminn fær hrálistann og síar sjálfur með sömu reglu (`postOsvarad`). */
-  const samtListi = (n, osiad) => S.rows
-    .filter(r => iHam(r, SAMT_HAM) && (osiad || samtRodun !== 'postur' || postOsvarad(r)))
-    .sort((a, b) => samtHluti(a) - samtHluti(b) || samtRada(a, b) || rodunSamt(a, b));
+  const samtRadari = (a, b) => (samtRodun === 'sjalf' ? samtHluti(a) - samtHluti(b) : samtRada(a, b)) || rodunSamt(a, b);
+  // Án teljarasíu: teljararnir sjálfir og hausinn telja þetta, svo tölurnar hverfi ekki þegar sía er á.
+  const samtGrunnur = () => S.rows.filter(r => iHam(r, SAMT_HAM) && (samtRodun !== 'postur' || postOsvarad(r))).sort(samtRadari);
+  const samtListi = (n, osiad) => (osiad ? S.rows.filter(r => iHam(r, SAMT_HAM)).sort(samtRadari)
+    : samtGrunnur().filter(r => samtSia === 'allt' || String(samtHluti(r)) === samtSia));
   // 448 teiknar Tölvupósta-rýmið; sækir sjálft við fyrstu opnun og kallar render() hér þegar gögnin lenda.
   function tpRymiHtml() {
     if (!window.Tolvupostar) return emptyHtml('Tölvupóstar (448) eru ekki hlaðnir.');
@@ -2289,14 +2303,14 @@
   }
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
-    const listi = samtListi(n);
-    if (!listi.length) return emptyHtml('Ekkert bíður svars hjá ' + esc(n) + '. Nýjar tillögur birtast hér um leið og þær eru tilbúnar.');
+    if (!S.rows.some(r => iHam(r, SAMT_HAM))) return emptyHtml('Ekkert bíður svars hjá ' + esc(n) + '. Nýjar tillögur birtast hér um leið og þær eru tilbúnar.');
+    const grunnur = samtGrunnur(), listi = samtListi(n);
     let val = listi.find(r => r.id === S.samtVal);
-    if (!val) { val = listi.find(erSamthykki) || listi[0]; S.samtVal = val.id; }
-    const nr = listi.indexOf(val);
-    const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], listi.filter(r => samtHluti(r) === h[1]), h[1]]);
+    if (!val && listi.length) { val = listi.find(erSamthykki) || listi[0]; S.samtVal = val.id; }
+    const nr = val ? listi.indexOf(val) : -1;
+    const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], grunnur.filter(r => samtHluti(r) === h[1]), h[1]]);
     const item = r => {
-      const ef = aiLine(r), undir = [whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      const ef = aiLine(r), undir = [samtRodun === 'sjalf' ? '' : SAMT_HLUTA_NOFN[samtHluti(r)], whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
       /* ★ á spjaldinu sjálfu (Agnar: „að geta merkt stjörnu sem byrtist þá efst í
        * mikilvægast"). Sama aðgerð og „☆ Áríðandi" í málglugganum — data-t5
        * „mal-ari", sem skrifar á þjóninn og býður afturköllun. Hún stýrir
@@ -2309,7 +2323,7 @@
       // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
       // úr textanum og getur verið áætlun — hún er vísbending, ekki bókhald.
       const u = upphaedMals(r);
-      return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === val.id) + '">' +
+      return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === S.samtVal) + '">' +
         stj +
         (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
         '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
@@ -2319,15 +2333,19 @@
     return '<div class="vbr samt"' + (vbrBreidd ? ' style="--vbr-w:' + vbrBreidd + 'px"' : '') + '>' +
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
         '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' + samtRodHtml() + samtTeljariHtml(hlutar) +
-        '<div class="vbr-items">' + hlutar.map(h => (h[1].length ? '<div class="vbr-sect" data-h="' + h[2] + '">' + h[0] + ' · ' + h[1].length + '</div>' + h[1].map(item).join('') : '')).join('') + '</div>' +
+        '<div class="vbr-items">' + (!listi.length
+          ? emptyHtml(samtRodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.' : 'Ekkert mál passar við síuna.') + '<button type="button" class="btn iv sm" data-t5="samt-allt">Sýna öll mál</button>'
+          : samtRodun === 'sjalf'
+            ? hlutar.map(h => { const m = h[1].filter(r => samtSia === 'allt' || String(h[2]) === samtSia); return m.length ? '<div class="vbr-sect" data-h="' + h[2] + '">' + h[0] + ' · ' + m.length + '</div>' + m.map(item).join('') : ''; }).join('')
+            : listi.map(item).join('')) + '</div>' +
         '<div class="vbr-grip" data-vbr-grip title="Draga til að breyta breidd listans"></div>' +
       '</aside>' +
       '<div class="vbr-main">' +
-        '<div class="vbr-top">' +
+        (val ? '<div class="vbr-top">' +
           '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
           '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= listi.length - 1 ? ' disabled' : '') + '>Næsta ›</button>' +
           '<span class="vbr-meta">' + (nr + 1) + ' af ' + listi.length + '</span></div>' +
-        '<section class="sel samt-sel" aria-live="polite">' + selHtml(val, { rymi: true }) + '</section>' +
+        '<section class="sel samt-sel" aria-live="polite">' + selHtml(val, { rymi: true }) + '</section>' : '') +
       '</div>' +
     '</div>';
   }
@@ -5827,7 +5845,12 @@
       }
       case 'samt-velja': S.samtVal = id; render(); vbrTilBaka(); return;
       case 'samt-rod': samtRodun = el.dataset.v; vmSetja(SAMT_ROD_LYKILL, samtRodun); render(); return;
-      case 'samt-hoppa': { const s = root.querySelector('.vbr-sect[data-h="' + el.dataset.v + '"]'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      case 'samt-sia': samtSia = samtSia === el.dataset.v ? 'allt' : el.dataset.v; vmSetja(SAMT_SIA_LYKILL, samtSia); render(); return;
+      case 'samt-allt':
+        samtSia = 'allt'; vmSetja(SAMT_SIA_LYKILL, samtSia);
+        if (samtRodun === 'postur') { samtRodun = 'nyjast'; vmSetja(SAMT_ROD_LYKILL, samtRodun); }
+        render();
+        return;
       case 'samt-fara': {
         const listi = samtListi(nu()), i = listi.findIndex(r => r.id === S.samtVal);
         const j = Math.min(listi.length - 1, Math.max(0, i + Number(el.dataset.v || 0)));
