@@ -84,7 +84,7 @@
     'krofu-yfirlit': 'money', income: 'money', 'br-krofur': 'money', 'br-krofuyfirlit': 'money', 'br-skuldunautar': 'money',
     'br-fjarmalyfirlit': 'money', 'br-gerdreikninga': 'money', 'br-reikningagerd': 'money',
     'bokhalds-yfirlit': 'chart', kostnadur: 'chart', 'br-efniskostnadur': 'chart',
-    'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
+    'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', vasinn: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
     companies: 'building', rekstrarfelog: 'building', 'br-verkkaupar': 'building', vidskiptavinir: 'users',
     sala: 'cart', bord: 'grid', 'minar-sidur': 'grid', arsskodun: 'check', 'br-yfirferd': 'check',
     thjonustuverk: 'wrench', 'thjonustu-verkstaedi': 'wrench', 'br-verkstadir': 'wrench',
@@ -115,6 +115,7 @@
     { k: 'tolvupostar',      label: 'Tölvupóstar',           short: 'Póstar',     emoji: '✉️' },   // 449 (09.10.2026) — símasíða Tölvupósta-hamsins
     { k: 'erindi',           label: 'Erindi · tilbúin svör',  short: 'Erindi',     emoji: '📨' },   // 449c (19.10.2026) — erindi úr pósti: gögn, eyður og svartexti Claude
     { k: 'svarstod',         label: 'Svar-stöð · hvernig textar verða til', short: 'Svar-stöð', emoji: '✉️' },   // 447 (08.10.2026)
+    { k: 'vasinn',           label: 'Vasinn · skjáskot, myndir, skrár, hljóð handa Claude', short: 'Vasinn', emoji: '👝' },   // 491 (01.11.2026)
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
@@ -656,6 +657,8 @@
     if (key === 'verkefni' && arr.indexOf('tolvupostar') < 0 && !(c && c.__tp449)) { var ti = arr.indexOf('samthykkja'); ti = ti < 0 ? arr.indexOf('bord') : ti; arr = arr.slice(0, ti + 1).concat(['tolvupostar'], arr.slice(ti + 1)); }
     // 19.10.2026 (Agnar: „sér app page … fyrir Erindi“): Erindi (449c) á Þjónustuborðs-appið, á eftir Tölvupóstum.
     if (key === 'verkefni' && arr.indexOf('erindi') < 0 && !(c && c.__er449c)) { var ei = arr.indexOf('tolvupostar'); ei = ei < 0 ? arr.indexOf('samthykkja') : ei; ei = ei < 0 ? arr.indexOf('bord') : ei; arr = arr.slice(0, ei + 1).concat(['erindi'], arr.slice(ei + 1)); }
+    // 01.11.2026 (Agnar: „búa til page í öpp sem heiti Vasinn“): Vasinn (491) á Þjónustuborðs-appið, á eftir Erindum.
+    if (key === 'verkefni' && arr.indexOf('vasinn') < 0 && !(c && c.__vasinn491)) { var vi = arr.indexOf('erindi'); vi = vi < 0 ? arr.indexOf('tolvupostar') : vi; vi = vi < 0 ? arr.indexOf('bord') : vi; arr = arr.slice(0, vi + 1).concat(['vasinn'], arr.slice(vi + 1)); }
     // 09.10.2026: Þjónustugátt-stjórnborðið á Þjónustuborðs-appið, aftast.
     if (key === 'verkefni' && arr.indexOf('br-thjonustugatt') < 0 && !(c && c.__gatt) && arr.length) arr = arr.concat(['br-thjonustugatt']);
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
