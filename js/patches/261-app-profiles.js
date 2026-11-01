@@ -659,6 +659,9 @@
     if (key === 'verkefni' && arr.indexOf('erindi') < 0 && !(c && c.__er449c)) { var ei = arr.indexOf('tolvupostar'); ei = ei < 0 ? arr.indexOf('samthykkja') : ei; ei = ei < 0 ? arr.indexOf('bord') : ei; arr = arr.slice(0, ei + 1).concat(['erindi'], arr.slice(ei + 1)); }
     // 01.11.2026 (Agnar: „búa til page í öpp sem heiti Vasinn“): Vasinn (491) á Þjónustuborðs-appið, á eftir Erindum.
     if (key === 'verkefni' && arr.indexOf('vasinn') < 0 && !(c && c.__vasinn491)) { var vi = arr.indexOf('erindi'); vi = vi < 0 ? arr.indexOf('tolvupostar') : vi; vi = vi < 0 ? arr.indexOf('bord') : vi; arr = arr.slice(0, vi + 1).concat(['vasinn'], arr.slice(vi + 1)); }
+    // 01.11.2026 (Agnar: „mátt setja vasann líka í firestarter app“): Vasinn aftast á notenda-búna appið Firestarters
+    // (xfirestarters). Vistaða stillingin á þjóninum fékk hann líka beint; þetta heldur honum þótt síðuvalið sé vistað aftur.
+    if (key === 'xfirestarters' && arr.indexOf('vasinn') < 0 && !(c && c.__vasinn491fs) && arr.length) arr = arr.concat(['vasinn']);
     // 09.10.2026: Þjónustugátt-stjórnborðið á Þjónustuborðs-appið, aftast.
     if (key === 'verkefni' && arr.indexOf('br-thjonustugatt') < 0 && !(c && c.__gatt) && arr.length) arr = arr.concat(['br-thjonustugatt']);
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
