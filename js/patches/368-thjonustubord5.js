@@ -2279,7 +2279,10 @@
     };
     h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
   }
-  const samtHluti = r => (erBuid(r) ? -1 : !erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
+  /* 01.11.2026: „Svarað" sannar að kúnninn fékk póst, ekki að spurningin til eigandans sé leyst. Mælt: #1150 (364.807 kr ósendir)
+   * og #1336 lentu undir „Þegar afgreitt — bara loka" af því að svar hafði farið í sama þræði. Greiddur reikningur telst áfram. */
+  const erAfgreitt = r => erBuid(r) && !(erSamthykki(r) && sonn(r).styrkur === 'svarad');
+  const samtHluti = r => (erAfgreitt(r) ? -1 : !erSamthykki(r) ? 2 : tagList(r).indexOf(SPURNING) >= 0 ? 1 : 0);
   /* `osiad` = skilaðu listanum ÁN „Svara pósti"-síunnar.
    * 09.10.2026, mælt á localhost: símasíðan (446) les listann héðan OG hefur sinn eigin
    * röðunarrofa. Síuðum við hér líka sat síminn fastur — „Sjálfgefið" þar gat ekki skilað
@@ -2327,7 +2330,7 @@
         stj +
         (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
         '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
-        (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erBuid(r) ? ' ok' : '') + '">' + (erBuid(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
+        (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erAfgreitt(r) ? ' ok' : '') + '">' + (erAfgreitt(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
         (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
     };
     return '<div class="vbr samt"' + (vbrBreidd ? ' style="--vbr-w:' + vbrBreidd + 'px"' : '') + '>' +
@@ -6488,7 +6491,7 @@
     // Símasíðan (446): S.loading sem situr fast (sókn rofnaði við flipaskipti / svefn símans) stöðvaði hverja nýja sókn
     // með „_aftur“ — hér er merkið losað og sótt aftur. Nota aðeins þegar hleðsla hefur staðið > 20 s.
     endurhlada: () => { if (S.loading && S.loadedAt && Date.now() - S.loadedAt.getTime() > 20000) { S.loading = false; } else if (S.loading && !S.loadedAt) { S.loading = false; } return load(true); },
-    upphaed: upphaedMals, aiLine, sonn, erBuid, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
+    upphaed: upphaedMals, aiLine, sonn, erBuid: erAfgreitt, erSamthykki, whereOf, ageDays, svarMals, SVOR, _eftir: [],
     // 368ab — símasíðan (446) sýnir sömu ákvörðunarblokk. Greiningin á aðeins að eiga sér EINN
     // stað; væri hún afrituð þangað myndu útgáfurnar reka í sundur um leið og orðalagið breytist.
     adgerdir: adgerdirUrNotu, postOsvarad,
