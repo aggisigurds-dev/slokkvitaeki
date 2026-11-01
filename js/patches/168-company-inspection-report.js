@@ -510,7 +510,10 @@
             if (sb && co.id != null && ar) {
               const rec = {
                 doc_type: 'uttektarskyrsla', fyrirtaeki_id: co.id, year: +ar,
-                storage_path: meta.storage_path || (_vb && meta.path ? 'samningar/' + meta.path : null),   // 28.10: viðbótarskýrslan skráir slóðina (annars null — handvirk lagfæring 26.10)
+                // 01.11.2026 (Factcheck „engir dauðir hlekkir“): upphleðslan skilar aðeins meta.path (ekki meta.storage_path), svo
+                // ALLAR app-gerðar skýrsluraðir fengu null og urðu dauður hlekkur þegar Drive-brúin brást (Suðurbraut 26, skjal 10295).
+                // Sama snið og reikningsraðirnar (233): 'samningar/' + slóðin. Áður aðeins viðbótarskýrslan (28.10).
+                storage_path: meta.storage_path || (meta.path ? 'samningar/' + meta.path : null),
                 doc_date: new Date().toISOString().slice(0, 10),
                 customer_name: n || null, source: 'app', found_by: 'uttektarskyrsla-app',
                 notes: fname
