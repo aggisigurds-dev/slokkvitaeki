@@ -1,0 +1,16 @@
+{
+  "lysing": "Agnar já 01.11.2026 ('Oki sameina lindaberg og drifa', 'Midleiti. Taka þa ur þjonustu'). Lindaberg #603 sameinað í #208, Drífa ehf #602 í #391, Miðleiti 8,10,12 #648 tekið úr þjónustu. Ekkert eytt. Fullar fyrir-raðir í töflunni backup_20261101_sameining_lindaberg_drifa (Supabase).",
+  "breytingar": [
+    "customer_documents 8904, 9293, 8801 (samningar Lindaberg 2016/2019): fyrirtaeki_id 603 -> 208, customer_base_id 642 -> 763",
+    "fyrirtaeki 603, 602, 648: er_i_thjonustu true -> false",
+    "customer_documents 637 (2025-skýrsla Drífa ehf, engin skrá): is_duplicate true, dup_of 2037 (skýrsla #391, par 707 klarad)",
+    "document_pairs 746: notes viðbót 'Tvítak ... Sameinað 01.11.2026.'",
+    "felag_samskipti er view reiknað úr netfangi (bh@vigri.is); ekkert flutt, fylgir sjálfkrafa"
+  ],
+  "endurheimta_sql": [
+    "update customer_documents set fyrirtaeki_id = 603, customer_base_id = 642 where id in (8904,9293,8801);",
+    "update fyrirtaeki set er_i_thjonustu = true where id in (603,602,648);",
+    "update customer_documents set is_duplicate = false, dup_of = null where id = 637;",
+    "update document_pairs set notes = (select rowdata->>'notes' from backup_20261101_sameining_lindaberg_drifa where tbl='document_pairs' and rid='746') where id = 746;"
+  ]
+}
