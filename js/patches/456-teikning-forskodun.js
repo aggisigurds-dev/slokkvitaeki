@@ -95,10 +95,22 @@
   function hreintPdf(url) {
     try { var u = new URL(url, location.href), inn = u.searchParams.get('url') || ''; return /teikn-mynd/.test(u.pathname) && !!inn && /\.pdf$/i.test(new URL(inn).pathname); } catch (_) { return false; }
   }
+  // 02.11.2026: forskoðunarspjöldin teiknuðu ÖLL PDF-blöð hússins í einu (12 blöð × 2200 px á Nýbýlavegi 4–8) og töfðu hæðina
+  // sem Teikning-glugginn opnaði um 15–18 s ("Sæki teikninguna…"). Nú eitt blað í einu og hlé meðan glugginn er opinn.
+  var pdfRod = Promise.resolve();
+  function pdfBid(fn) {
+    var r = pdfRod.then(function () {
+      return new Promise(function (ok) {
+        (function bida() { var m = document.getElementById('modal-floorplan'); if (m && m.classList.contains('open')) setTimeout(bida, 400); else ok(); })();
+      });
+    }).then(fn);
+    pdfRod = r.catch(function () {});
+    return r;
+  }
   function hladaMynd(url) {
     if (!myndir.has(url)) {
       var p;
-      if (hreintPdf(url) && window.TeiknGaedi && TeiknGaedi.rasterPdf && pdfSlod(url)) p = TeiknGaedi.rasterPdf(pdfSlod(url), 2200);
+      if (hreintPdf(url) && window.TeiknGaedi && TeiknGaedi.rasterPdf && pdfSlod(url)) p = pdfBid(function () { return TeiknGaedi.rasterPdf(pdfSlod(url), 2200); });
       else p = new Promise(function (res, rej) {
         var i = new Image();
         // opinberar myndir í Supabase-geymslu (blöð Búnaðargreiningar, 474) leyfa CORS — án þessa verður striginn
