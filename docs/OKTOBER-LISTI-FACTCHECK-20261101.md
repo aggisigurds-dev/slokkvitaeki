@@ -22,6 +22,21 @@ Heimildir: `fyrirtaeki`, `uttaeki`, `solur`, `customer_documents`, `arsskodun_re
   Skýrslurnar eru gerðar úr tækjaskránni (`source=app`), svo gallar þar fara beint í þær.
 - 50 októberskýrslur (49 félög): allar með skrá og virkan hlekk (`link_ok`), engin tvítak; **engin yfirfarin** (`reviewed = false`) og engin með `skyrsla_taeki_alls`.
 
+### 2b. PDF-in lesin (02.11.2026) — ÓMÆLT úr kafla 2 er nú mælt
+Sótti 56 októberskýrslur (doc_date 01.10–01.11, án tvítaka) úr Storage, `pdftotext`, þáttaði töfluna og „Annað/Athugasemdir".
+- **Tafla ↔ tækjaskrá:** 56 af 56 stemma (55 við bæði öll virk tæki og tæki með `last_insp` okt; 1 aðeins við öll virk). Hringrök: skýrslan er gerð úr tækjaskránni.
+- **Tafla ↔ reikningslínur** (yfirferð+hleðsla+nýtt per tegund): 56 af 56 (Narfakot #1906 er POS-salan R-001231). Fullyrðingar í texta
+  („N endurhlaðin": 22 skýrslur, „N nýjum bætt við": 7) bornar saman við Hleðsla-/Nýtt-línur: engin misræmi.
+- **Skýrslur með galla í sjálfu skjalinu:**
+  - Vatnskarðsnámur (#414, skjal 10139): texti segir „12 kg duft tæki dæmt ónýtt" en taflan 2 duft „Í lagi: Já"; tækið (id 25809) er enn `active`, `last_insp` 12.10. Segir „September 2026".
+  - Brynja Hátún 10 (#1316, 10113): athugasemd segir 2 brunaslöngur leka, taflan 33 „Í lagi: Já" og „prófaðar á fullum þrýstingi". Segir „September 2026".
+  - Bíll.is (#406, 10024, 21.09): „EKKI vottuð í lagi vegna leka" en taflan „Í lagi: Já"; undirskrift vantar. Reikningur R-001116 stemmir (4 tæki) en er ósendur.
+  - Suðurlandsbraut 30 (#463, 10154, skjal 12.10): „Júní 2026" og undirskrift vantar.
+  - suðurbraut 26 (#1879, 10295): setningin „Þremur nýjum slökkvitækjum var fyrir í stað þeirra.komið" er brengluð. Skýrslan fór í tölvupósti 27.10.
+  - „September 2026" í stað október einnig hjá Gullhamrar (10135) og Garðyrkjufélagi (10137).
+  - Vallarbarð 3 (#1366): skýrslan mælir með fleiri tækjum og reykskynjurum í sameign (sölutækifæri, ekki galli).
+- Ekki hægt að sjá úr PDF: staðsetning tækja (stendur ekki í skýrslunni).
+
 ## 3. Staðsetningar
 - **210 af 373 tækjum** í októberúttektum eru með raðnúmer `TMP-…` og **enga staðsetningu** (tómt `location`). Þar á meðal:
   Steypustöðin Borgarnes 46, Krókur 77 36, Álfaborg 13, Lýsir 13, Kvarnir 12, Jeppasmiðjan 11, Nesdekk 10, Bortækni 9, ProLan 7,
