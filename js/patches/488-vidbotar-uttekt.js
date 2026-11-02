@@ -33,6 +33,7 @@
   // Notað af 166/175/199/226/253/311/328 svo viðbótin verði aldrei „reikningur ársins" í stað aðalreikningsins.
   function erVidbot(num, note) {
     if (/^Viðbótarúttekt við /.test(String(note || ''))) return true;
+    if (/^Viðbót við brunakerfisskoðun /.test(String(note || ''))) return true;   // 494: búðarsala við brunakerfisskoðun — aldrei reikningur ársins
     try {
       const all = (window.AppSettings && AppSettings.path && AppSettings.path('vidbot_uttekt')) || {};
       for (const k in all) { const l = all[k] && all[k].sala_nums; if (Array.isArray(l) && l.indexOf(String(num)) >= 0) return true; }

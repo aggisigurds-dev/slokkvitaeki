@@ -306,7 +306,7 @@
   // ársskoðun/úttektarskýrsla (165, 418), brunakerfi = 273/291. Slökkvikerfis skoðun skráir enn engar sölur með eigin
   // uppruna — flísin stendur á 0 þar til hún gerir það. Kreditnóta fær uppruna reikningsins sem hún bakfærir.
   const UPPRUNI = [
-    { k: 'budh',  heiti: 'Búð / söluborð',       stutt: 'Söluborð',     src: ['pos', 'sott'] },
+    { k: 'budh',  heiti: 'Búð / söluborð',       stutt: 'Söluborð',     src: ['pos', 'sott', 'vidbot-brunakerfi'] },   // vidbot-brunakerfi = búðarsala úr körfunni við brunakerfisskoðun (494)
     { k: 'ars',   heiti: 'Ársskoðun',            stutt: 'Ársskoðun',    src: ['uttekt'] },
     { k: 'bk',    heiti: 'Brunakerfis skoðun',   stutt: 'Brunakerfi',   src: ['brunakerfi'] },
     { k: 'sk',    heiti: 'Slökkvikerfis skoðun', stutt: 'Slökkvikerfi', src: ['slokkvikerfi'] },

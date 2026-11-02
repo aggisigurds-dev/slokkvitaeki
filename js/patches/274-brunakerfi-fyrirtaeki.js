@@ -688,6 +688,8 @@
       '#_bkc-overlay .b274 .b274-inv #_bkr-status{border:0!important;padding:0!important;margin:0!important;box-shadow:none!important;background:transparent!important}',
       '#_bkc-overlay .b274 .b274-inv:not(:has(#_bkr-status)),#_bkc-overlay .b274 .b274-inv:has(#_bkr-inv:empty){display:none!important}',
       r('.b274-fotur', 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 2px'),
+      r('.b274-vidbot', 'font-size:12px;font-weight:600;color:#1f2530;text-decoration:underline;text-decoration-color:rgba(20,24,34,.35);text-underline-offset:3px;white-space:nowrap'),   // 494: tengill, ekki takki — engir bláir litir
+      r('.b274-vidbot:hover', 'color:#b42318;text-decoration-color:#b42318'),
       // B26: blaðið í spjaldinu — sama útlit og A4-blaðið (R_CSS úr 273 gildir á ._bksr), skrunar innan spjalds
       r('.b274-blad', 'padding:22px 26px 18px;max-height:78vh;overflow:auto;position:relative'),
       // blaðstíllinn (R_CSS úr 273) endurtekinn með forgangi — 402-reglur fyrirtækjasíðunnar (töflur, reitir) mega ekki leka inn í blaðið
@@ -1220,6 +1222,8 @@
             '<div class="b274-inv"><div id="_bkc-heroinv" data-hasinv="' + (hetja && hetja.hasInv ? '1' : '') + '"></div></div>' +
             '<div class="b274-fotur">' +
               '<span class="b274-hint">' + (repNow && repNow._inv ? 'Reikningur ' + esc(repNow._inv.num || '') + ' · ' + esc(invLabel(repNow._inv)) + '.' : repNow && repNow.status === 'final' ? 'Reikningurinn stofnast úr lokinni skýrslu.' : repNow ? 'Drög þar til skýrslan er kláruð.' : 'Engin skoðun ' + NOW + ' enn.') + '</span>' +
+              // 02.11.2026 (494): frjáls búðarsala við hlið skoðunarinnar — snertir aldrei úttektarreikninginn
+              '<a href="#" class="b274-vidbot" id="_bkc-vidbotkarfa" title="Rukka það sem gleymdist eða smásölu í leiðinni sem sjálfstæða búðarsölu — úttektarreikningurinn er ósnertur">Gera viðbótarreikning</a>' +
               '<span class="b274-sp"></span>' +
               (repNow && repNow._inv
                 // 02.10.2026 (Agnar: „drögin eiga ekki lengur við … það er fyrir og ég get ekki klárað nýja reikninginn"):
@@ -1375,6 +1379,9 @@
     // 30.09.2026: haus- og fótaðgerðir hægra spjaldsins — sömu leiðir og hnapparnir sem fyrir voru
     const vistaNu = w.querySelector('#_bkc-vista');
     if (vistaNu) vistaNu.addEventListener('click', () => { if (_vistT) { clearTimeout(_vistT); _vistT = null; } const b = _vistBid; _vistBid = {}; Object.keys(b).forEach(k => vistaVerdlinur(b[k])); if (!Object.keys(b).length && repNow) vistaVerdlinur(repNow); });
+    // 494 (02.11.2026): „Gera viðbótarreikning" opnar körfuna — sjálfstæð búðarsala, óbeint tengd skoðuninni
+    const vbk = w.querySelector('#_bkc-vidbotkarfa');
+    if (vbk) vbk.addEventListener('click', e => { e.preventDefault(); if (window.VidbotKarfa && VidbotKarfa.open) VidbotKarfa.open(co.id, { co, year: NOW }); else toast('Körfu-pappinn (494) er ekki hlaðinn', true); });
     ['#_bkc-nyhaus', '#_bkc-nyfotur'].forEach(id => { const b = w.querySelector(id); if (b) b.addEventListener('click', () => { const n = w.querySelector('#_bkc-new'); if (n) n.click(); }); });
     const reiknBar = w.querySelector('#_bkc-reiknbar');
     if (reiknBar) reiknBar.addEventListener('click', () => {
