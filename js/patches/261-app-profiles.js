@@ -92,7 +92,7 @@
     'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
     'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
     'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube', brunaaaetlun: 'flame',
-    'br-driveleit': 'search', 'br-postleit': 'mail', 'br-efnisnotkun': 'cube', 'br-fra-verkstad': 'wrench'
+    'br-driveleit': 'search', 'br-postleit': 'mail', 'br-efnisnotkun': 'cube', 'br-fra-verkstad': 'wrench', adalmal: 'list'
   };
   function pgIcon(p) {
     var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
@@ -116,6 +116,7 @@
     { k: 'erindi',           label: 'Erindi · tilbúin svör',  short: 'Erindi',     emoji: '📨' },   // 449c (19.10.2026) — erindi úr pósti: gögn, eyður og svartexti Claude
     { k: 'svarstod',         label: 'Svar-stöð · hvernig textar verða til', short: 'Svar-stöð', emoji: '✉️' },   // 447 (08.10.2026)
     { k: 'vasinn',           label: 'Vasinn · skjáskot, myndir, skrár, hljóð handa Claude', short: 'Vasinn', emoji: '👝' },   // 491 (01.11.2026)
+    { k: 'adalmal',          label: 'Aðalmál · fundir, frestir og það sem skiptir mestu', short: 'Aðalmál', emoji: '📌' },   // 492 (02.11.2026)
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
     // því hak sem gaf auðan skjá. pagesFor() vísar eldri vistunum á 'bord'.
@@ -233,7 +234,7 @@
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
-      defaults: ['bord', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
+      defaults: ['bord', 'adalmal', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -281,7 +282,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-fra-verkstad', 'br-efnisnotkun', 'br-efniskostnadur', 'kostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-fra-verkstad', 'br-efnisnotkun', 'br-efniskostnadur', 'kostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'adalmal', 'verkbord', 'rekstrarfelog'] },
     // 3dwork sem eigið app (Agnar 23.09.2026: vildi opna bekkinn af öpp-síðunni í
     // símanum, ekki úr hliðarstiku). Ein síða — bekkurinn sjálfur (iframe á
     // kjarni-3dwork.vercel.app/3dwork), sem er þegar fullt app-útlit.
@@ -827,6 +828,10 @@
         // skráningarsíðan í Boss-appið, rétt á eftir BH Kröfum (vantar hana, fara þær aftast).
         insertOnce('__fvk1',  'br-fra-verkstad', 'br-krofuyfirlit', 'boss');
         insertOnce('__fvk2',  'br-efnisnotkun',  'br-fra-verkstad', 'boss');
+        // 02.11.2026 (Agnar: „gera kannski bara sér borð/glugga fyrir þessi aðalmál"): Aðalmál (492) strax á eftir
+        // Þjónustuborðinu í Boss- og Þjónustuborðs-appinu (aftast ef borðið vantar).
+        insertOnce('__adm1',  'adalmal', 'bord', 'boss');
+        insertOnce('__adm2',  'adalmal', 'bord', 'verkefni');
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');
