@@ -92,7 +92,7 @@
     'br-vinnubok': 'doc', 'br-eydublod': 'doc', 'br-skyrslustod': 'doc', 'br-drogstod': 'inbox',
     'br-maeting': 'clock', 'br-dagurinn': 'sun', 'br-nlsh': 'hospital', 'br-jarvis': 'cpu',
     'br-raddminni': 'mic', 'br-kerfisheilsa': 'shield', 'br-thjonustugatt': 'users', turbopaint: 'brush', '3dwork': 'cube', brunaaaetlun: 'flame',
-    'br-driveleit': 'search', 'br-postleit': 'mail'
+    'br-driveleit': 'search', 'br-postleit': 'mail', 'br-efnisnotkun': 'cube', 'br-fra-verkstad': 'wrench'
   };
   function pgIcon(p) {
     var t = (p && B48_PGMAP[p.k]) || (p && p.minarId ? 'grid' : 'doc');
@@ -155,6 +155,12 @@
     { k: 'br-hreyfingar',    label: 'Hreyfingaryfirlit (Brunahólf)', short: 'Hreyf.', emoji: '📄', url: 'https://brunaholf.netlify.app/?embed=1#hreyfingaryfirlit' },
     { k: 'br-verkstadir',    label: 'Verkstaðir (Brunahólf)', short: 'Verkst.',  emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadir' },
     { k: 'br-nlsh',          label: 'Landsspítalinn (Brunahólf)', short: 'NLSH', emoji: '🏥', url: 'https://brunaholf.netlify.app/?embed=1#nlsh' },
+    // 02.11.2026 (Agnar, þriðja beiðni: „inn á firestarter … eða nothæf einföld útgáfa"): verkstjórar skrá efnisnotkun
+    // í Brunaþéttingar-appinu (/brunathettingar: verk í vinnslu, ＋/− á efni úr lager, sérkaup, bæta við verki). Það á að
+    // opnast INNI í Firestarter, ekki á stakri slóð. Engin innskráning (appið hefur enga). `br-fra-verkstad` er skrifstofu-
+    // hliðin: allt sem verkstjórar skráðu, per verk, og fer beint í Efnislistann við reikningsgerð.
+    { k: 'br-efnisnotkun',   label: 'Efnisnotkun · verkstjórar skrá efni á verk', short: 'Efnisnotkun', emoji: '🧰', url: 'https://brunaholf.netlify.app/brunathettingar?embed=1' },
+    { k: 'br-fra-verkstad',  label: 'Frá verkstað · efnisnotkun per verk', short: 'Frá verkstað', emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadapostur' },
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
@@ -232,6 +238,13 @@
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-driveleit', 'br-postleit', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
+    // Verkstjórar (Agnar 02.11.2026, þriðja beiðni: „inn á firestarter … nothæf einföld útgáfa"): app fyrir verkstjórana á
+    // verkstað — ein síða, Brunaþéttingar-appið (verk í vinnslu, efnisnotkun með ＋/−, sérkaup, bæta við verki). Skrifstofan
+    // sér það sem er skráð í „Frá verkstað" (Boss-appið) og það fer í Efnislistann við reikningsgerð.
+    { key: 'verkstjorar', emoji: '🧰', name: 'Verkstjórar', color: '#0b0b0d', dark: '#000000',
+      manifest: '/manifest-verkstjorar.json', home: 'br-efnisnotkun',
+      blurb: 'Verkstjórar skrá efnisnotkun á verk — verk í vinnslu, efni úr lager (＋/−), sérkaup og nýtt verk',
+      defaults: ['br-efnisnotkun'] },
     // Skýrslu-stöðin sem sitt eigið app (Agnar 23.09.2026: „Can you make a app page
     // for skýrslustod. For öpp page"). Hún er þegar til sem síða (br-skyrslustod →
     // brunaholf /?embed=1#skyrslustod); hér fær hún eigin skel svo hún opnist beint
@@ -268,7 +281,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-efniskostnadur', 'kostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'br-drogstod', 'br-fra-verkstad', 'br-efnisnotkun', 'br-efniskostnadur', 'kostnadur', 'income', 'bokhalds-yfirlit', 'bord', 'verkbord', 'rekstrarfelog'] },
     // 3dwork sem eigið app (Agnar 23.09.2026: vildi opna bekkinn af öpp-síðunni í
     // símanum, ekki úr hliðarstiku). Ein síða — bekkurinn sjálfur (iframe á
     // kjarni-3dwork.vercel.app/3dwork), sem er þegar fullt app-útlit.
@@ -810,6 +823,10 @@
         insertOnce('__efk2',  'br-efniskostnadur', 'br-drogstod', 'boss');           // … og í Boss
         insertOnce('__kst1',  'kostnadur', 'br-efniskostnadur', 'fjarmal');   // Kostnaður (419) í Fjármál (28.09.2026: „ég sé hana ekki")
         insertOnce('__kst2',  'kostnadur', 'br-efniskostnadur', 'boss');      // … og í Boss
+        // Efnisnotkun verkstjóra í Firestarter (02.11.2026, þriðja beiðni Agnars): skrifstofuhliðin „Frá verkstað" og sjálf
+        // skráningarsíðan í Boss-appið, rétt á eftir BH Kröfum (vantar hana, fara þær aftast).
+        insertOnce('__fvk1',  'br-fra-verkstad', 'br-krofuyfirlit', 'boss');
+        insertOnce('__fvk2',  'br-efnisnotkun',  'br-fra-verkstad', 'boss');
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');

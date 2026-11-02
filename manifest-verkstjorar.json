@@ -1,0 +1,39 @@
+{
+  "id": "/app/verkstjorar/",
+  "name": "Verkstjórar — Brunahólf",
+  "short_name": "Verkstjórar",
+  "description": "Verkstjórar skrá efnisnotkun á verk — verk í vinnslu, efni úr lager, sérkaup og nýtt verk.",
+  "start_url": "/app/verkstjorar/",
+  "scope": "/app/verkstjorar/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#0b0b0d",
+  "lang": "is",
+  "icons": [
+    {
+      "src": "/img/app-brunaholf-192.png?v=1",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/app-brunaholf-512.png?v=1",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/app-brunaholf-192-maskable.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/app-brunaholf-512-maskable.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
