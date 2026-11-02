@@ -154,6 +154,11 @@ async function skrifaVaranlegt(lykill, heimilisfang, svar) {
     });
   } catch (_) {}
 }
+/** Gömul óviss svör (landeignLeit án götuprófs) lágu varanlega í töflunni: ágiskuð lóð við ANNAN götu en spurt var um. Þau eru hunsuð. */
+function ovissRong(svar, heimilisfang) {
+  const h = thattaHeimilisfang(heimilisfang);
+  return !!(svar && svar.eign && svar.eign.oviss && h && !samaGata(h.gata, svar.eign.gata));
+}
 const MINNI_MS = 10 * 60 * 1000;
 const FRESTUR_MS = 8500;
 /** Tímamerki sem virðir sameiginlega frestinn: minnst 800 ms, mest það sem eftir er. */
@@ -232,9 +237,28 @@ function husbil(label) {
   return { fra: Number(m[1]), til: m[2] ? Number(m[2]) : Number(m[1]) };
 }
 
+/**
+ * Er þetta sama gata, óháð falli? „Nýbýlavegi" = „Nýbýlavegur", „Norðurhellu" = „Norðurhella", „Hverfisgötu" = „Hverfisgata",
+ * „Laugavegs" = „Laugavegur" — en „Laugavegur" ≠ „Sundlaugavegur" og „Vesturberg" ≠ „Vesturbær".
+ * Stofn: lágstafað, broddstafir og tölustafir burt, ö/ó → a (stofnbreyting í kvenkyni: gata/götu); beygingarendingin er
+ * það sem er afgangs eftir sameiginlegan upphafsstreng og má vera mest 2 stafir hvoru megin (ur, i, u, ar, ir, s, a).
+ * Landeignaskrá er lausleit: þegar Staðfangaskrá svarar ekki (eða fær bjagað heiti) skilar hún hvaða götu sem er með
+ * sama húsnúmeri — „Nýbýlavegi 4" varð „Ástún 4" (16 slík svör lágu í hus_upplysingar_cache, 02.11.2026).
+ */
+export function samaGata(a, b) {
+  const stofn = (s) => String(s || '').normalize('NFC').toLowerCase().replace(/[öó]/g, 'a').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/[^a-z]/g, '').replace(/(?<=[a-z]{5})(unni|inum|inni)$/, '');   // „Kringlunni"
+  const x = stofn(a), y = stofn(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  let n = 0;
+  while (n < x.length && n < y.length && x[n] === y[n]) n++;
+  return n >= 4 && x.length - n <= 2 && y.length - n <= 2;
+}
+
 /** Fallvörn: lausa leitin (sama og /.netlify/functions/landnr). Tekur aðeins lóð sem ber
- *  húsnúmerið sem leitað var að (eða bil sem það lendir í) í sama sveitarfélagi. */
-async function landeignLeit(texti, postnr, husnr, deadline) {
+ *  húsnúmerið sem leitað var að (eða bil sem það lendir í) í sama sveitarfélagi OG sömu götu (beygingarlaust). */
+async function landeignLeit(texti, postnr, husnr, deadline, gata) {
   const r = await fetch(`${LANDEIGN}?term=${encodeURIComponent(texti)}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0)', Accept: 'application/json, */*' }, signal: frestur(deadline, 5000) });
   if (!r.ok) return null;
   let raw;
@@ -243,7 +267,7 @@ async function landeignLeit(texti, postnr, husnr, deadline) {
   const rows = raw.filter((x) => x.Landnr).map((x) => {
     const label = String(x.Vef_Birting || '').replace(/\s+/g, ' ').trim();
     return { LANDNR: Number(x.Landnr), HEINUM: x.Heinum ? Number(x.Heinum) : null, POSTNR: Number((label.match(/\((\d{3})\)/) || [])[1]) || null, SVFNR: null, VEF_BIRTING: label, HEITI_NF: label.replace(/\s*\d.*$/, ''), HUSNR: Number((label.match(/\s(\d{1,4})/) || [])[1]) || null, BOKST: null };
-  }).filter((x) => samaSvaedi({ postnr }, x)).filter((x) => {
+  }).filter((x) => samaSvaedi({ postnr }, x)).filter((x) => !gata || samaGata(gata, x.HEITI_NF)).filter((x) => {
     const b = husbil(x.VEF_BIRTING);
     return b && husnr >= b.fra && husnr <= b.til && (b.til === b.fra || (husnr - b.fra) % 2 === 0);
   });
@@ -481,8 +505,8 @@ export async function husUpplysingar(heimilisfang, frestMs = FRESTUR_MS) {
   if (altGata) await reynaStadfang(() => naekvaemtStadfang({ ...h, gata: altGata }, deadline));
   await reynaStadfang(() => finnaStadfang(h, deadline));
   if (altGata) await reynaStadfang(() => finnaStadfang({ ...h, gata: altGata }, deadline));
-  await reynaStadfang(() => landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline));
-  if (altGata) await reynaStadfang(() => landeignLeit(`${altGata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline));
+  await reynaStadfang(() => landeignLeit(`${h.gata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline, h.gata));
+  if (altGata) await reynaStadfang(() => landeignLeit(`${altGata} ${h.husnr}${h.bokst ? h.bokst : ''}`, h.postnr, h.husnr, deadline, altGata));
   if (!st) {
     // Villa í skránni er ekki tómt safn. Næsta opnun má reyna aftur.
     if (stadfangVilla) {
@@ -567,12 +591,14 @@ export default async (req) => {
   const url = new URL(req.url);
   const heimilisfang = (url.searchParams.get('heimilisfang') || '').normalize('NFC').trim();
   if (heimilisfang.length < 4) return json({ error: 'heimilisfang vantar' }, 400);
+  // Bjagað stafasett (U+FFFD): „N�b�lavegi 4" var geymt varanlega sem „Ástún 4" (02.11.2026). Slíkt heimilisfang er ógilt, ekki ágiskun.
+  if (heimilisfang.includes('�')) return json({ error: 'Heimilisfangið barst með röngu stafasetti (UTF-8 vantar)', ogilt: true }, 400);
   const lykill = heimilisfang.toLowerCase();
   const gamalt = minni.get(lykill);
   if (gamalt && Date.now() - gamalt.t < MINNI_MS) return json(gamalt.v);
   // varanlega skyndiminnið: lifir kalt tilvik og er sameiginlegt öllum vélum
   const geymt = await lesaVaranlegt(lykill);
-  if (geymt) { minni.set(lykill, { t: Date.now(), v: geymt }); return json(geymt); }
+  if (geymt && !ovissRong(geymt, heimilisfang)) { minni.set(lykill, { t: Date.now(), v: geymt }); return json(geymt); }
   try {
     const v = await husUpplysingar(heimilisfang);
     v.utgafa = UTGAFA;
