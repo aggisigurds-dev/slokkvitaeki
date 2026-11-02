@@ -229,10 +229,17 @@
       '.fp-teikn-th:empty{display:flex;align-items:center;justify-content:center}@keyframes fpThSkel{to{background-position:-200% 0}}';
     (document.head || document.documentElement).appendChild(st);
   }
-  function synaLista(dr, allarSyndar) {
+  function synaLista(dr, allarSyndar, eign) {
     skeletonStill();
     var o = overlay(); if (!o) return;
     window.__teiknSidastiListi = { dr: dr, allar: !!allarSyndar };
+    // val Agnars á aðalteikningum (493) enn ósótt í þessari lotu: sótt einu sinni og listinn teiknaður upp á nýtt ef það breytti honum
+    if (window.TeiknVal && eign && !TeiknVal.erSott(eign)) {
+      var dr0 = dr, fyrirVal = JSON.stringify(TeiknVal.fyrirEign(eign));
+      TeiknVal.saekja(eign).then(function () {
+        if (JSON.stringify(TeiknVal.fyrirEign(eign)) !== fyrirVal && window.__teiknSidastiListi && window.__teiknSidastiListi.dr === dr0 && document.querySelector('.fp-teikn-kort')) synaLista(dr0, allarSyndar, eign);
+      });
+    }
     // 04.10.2026: aðaluppdrættir fyrst (Reykjavík „Aðaluppdrættir", Hafnarfjörður „Bygginganefndarteikning") — á
     // Norðurhellu 17 voru 33 „grunnmyndir" og aðeins 3 þeirra aðaluppdrættir; hinar burðarvirki, raflagnir og lagnir.
     var adal = function (d) { return /aðalupp|bygginga?nefnd/i.test(String(d.tegund || '')); };
@@ -246,6 +253,8 @@
     if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return d.grunnmynd && !d.urelt; });
     if (!syna.length && !allarSyndar) syna = dr.filter(function (d) { return !d.urelt; });
     if (!syna.length) syna = dr;
+    // 02.11.2026 (493 TeiknVal): blöðin sem Agnar valdi sem aðalteikningar hússins eru fremst (og með þótt sían feldi þau)
+    if (window.TeiknVal && eign) syna = TeiknVal.blanda(syna, dr, eign);
     var faldar = dr.length - syna.length;
 
     var kort = syna.map(function (d) {
@@ -260,7 +269,8 @@
         (d.thumb ? '<img src="' + esc(d.thumb) + '" alt="" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;opacity:0;transition:opacity .3s" onload="this.style.opacity=1;this.parentNode.classList.remove(\'fp-th-hladar\')" onerror="this.remove();this.parentNode.classList.remove(\'fp-th-hladar\');this.parentNode.textContent=\'📄\'">' : '📄') + '</div>' +
         '<div style="padding:8px 10px">' +
         '<div style="font-weight:600;font-size:13px;margin-bottom:2px;color:#fff">' + esc(titill) +
-        (d.urelt ? ' <span style="color:#e0a05f;font-size:10px;font-weight:400">(úrelt)</span>' : '') + '</div>' +
+        (d.urelt ? ' <span style="color:#e0a05f;font-size:10px;font-weight:400">(úrelt)</span>' : '') +
+        (window.TeiknVal && eign && TeiknVal.merki(d, dr, eign) ? ' <span style="color:#d9b762;font-size:10px;font-weight:600">Valin · ' + esc(TeiknVal.merki(d, dr, eign)) + '</span>' : '') + '</div>' +
         merkiHtml(d) +
         '<div style="font-size:11px;color:rgba(255,255,255,.45)">' + esc(undir) + '</div>' +
         '</div></div>';
@@ -281,7 +291,7 @@
 
     o.querySelector('.fp-teikn-loka').onclick = lokaYfir;
     var allar = o.querySelector('.fp-teikn-allar');
-    if (allar) allar.onclick = function () { synaLista(dr, !allarSyndar); };
+    if (allar) allar.onclick = function () { synaLista(dr, !allarSyndar, eign); };
     o.querySelectorAll('.fp-teikn-kort').forEach(function (k) {
       k.onclick = function () {
         var d = syna.find(function (x) { return x.infoUrl === k.getAttribute('data-url'); });
@@ -389,7 +399,7 @@
   // ui = { spinna, villa(html, hlekkur), listi(dr, eign) } — sjálfgefið yfirlagið hér; 383 „Finna allt húsið" fær listann
   // beint (TeiknSaekja.finna) án þess að listinn birtist.
   async function saekja(coId, ui) {
-    ui = ui || { spinna: spinnaYfir, villa: villaYfir, listi: function (dr) { synaLista(dr, false); } };
+    ui = ui || { spinna: spinnaYfir, villa: villaYfir, listi: function (dr, eign) { synaLista(dr, false, eign); } };
     var spinna = ui.spinna, synaVillu = ui.villa;      // skyggja yfir föllin — allt hér fer um ui
     var addr = heimilisfangFyrir(coId);
     if (!addr) {
@@ -533,7 +543,7 @@
   // „Finna allt húsið" (383): listinn án yfirlags — { dr, eign } eða { villa }
   window.TeiknSaekja = {
     flokka: flokkaBlad,
-    listi: function (dr, allar) { synaLista(dr || [], !!allar); },   // sýnir valglugga með gefnum blöðum (próf / 383)
+    listi: function (dr, allar, eign) { synaLista(dr || [], !!allar, eign); },   // sýnir valglugga með gefnum blöðum (próf / 383); eign → val Agnars (493) fremst
     finna: function (coId) {
       return new Promise(function (res) {
         var buid = false, lok = function (v) { if (!buid) { buid = true; res(v); } };

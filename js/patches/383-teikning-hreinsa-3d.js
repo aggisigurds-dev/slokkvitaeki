@@ -6026,6 +6026,10 @@
       const b = val.get(k);
       if (!b || x.lyklar.length < b.lyklar.length || (x.lyklar.length === b.lyklar.length && String(x.d.dags || '') > String(b.d.dags || ''))) val.set(k, x);
     }));
+    if (window.TeiknVal && r.eign) {   // 02.11.2026 (493): blöðin sem Agnar valdi fyrir hæðirnar ganga fyrir (ein fyrirspurn aðeins ef valið er hvergi geymt)
+      if (!TeiknVal.erTilSkyndi(r.eign)) { try { await TeiknVal.saekja(r.eign); } catch (_) {} } else if (!TeiknVal.erSott(r.eign)) TeiknVal.saekja(r.eign);
+      TeiknVal.finnaAlltHusid(val, r.dr, r.eign, TeiknSaekja.flokka);
+    }
     // 02.11.2026 (Agnar: „skelfilega hægur"): blöðin voru lesin EITT Í EINU (sækja → teikna PDF → greina → næsta). Nú 3 í einu
     // (2 þegar blaðið er hreint PDF: 6000 px strigi er ~100 MB), fyrsta hæðin fyrst, og blað sem hefur verið lesið áður í þessari
     // lotu (mynd + húsrammar) er munað í fahMinni — „Finna allt húsið" í annað sinn les ekkert upp á nýtt.

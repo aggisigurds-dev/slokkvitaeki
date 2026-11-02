@@ -383,7 +383,16 @@
     if (erGrunn(d)) return 'Grunnmynd';
     return (d && (d.tegund || d.gerd)) || 'Teikning';
   }
+  // 02.11.2026 (493 TeiknVal): blöðin sem Agnar valdi sem aðalteikningar hússins eru fremst í hverri hæð / í „Grunnmyndir“
   const synilegar = () => {
+    const r = synilegar0();
+    return window.TeiknVal && S._eign ? TeiknVal.forskodun(r, S.listi, S.sia, S._eign) : r;
+  };
+  window.addEventListener('teiknval:breytt', (ev) => {
+    if (!window.TeiknVal || !S._eign || !S.listi.length || !document.getElementById('tfs')) return;
+    if (ev && ev.detail && ev.detail.lykill === TeiknVal.lykill(S._eign)) teiknaLista(false);
+  });
+  const synilegar0 = () => {
     const l = S.listi;
     if (S.sia === 'skraning') return l.filter(erSkraning);
     if (S.sia === 'allar') return l;
@@ -656,7 +665,7 @@
     if (S.coId != null && String(S.coId) === nyr) return S.coId;
     _opnun++;
     if (document.getElementById('tfs')) loka();
-    Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: '', coId: nyr, _landnr: '', z: { s: 1, x: 0, y: 0 } });
+    Object.assign(S, { listi: [], sia: 'grunn', valin: null, stadur: '', coId: nyr, _landnr: '', _eign: null, z: { s: 1, x: 0, y: 0 } });
     return nyr;
   }
   function heimiliFyrir(coId) {
@@ -697,6 +706,10 @@
     const sia = (auka && auka.sia) || '';
     if (coId != null && coId !== '') nyskraFyrirtaeki(coId);
     const min = ++_opnun;
+    // eignin (landnr[:heitinr]) lyklar val Agnars á aðalteikningum hússins (493); sótt samhliða listanum ef það er ekki til í skyndiminni
+    const eignVal = { landnr, svf: (auka && auka.svf) || null, heitinr: (auka && auka.heitinr) || 0 };
+    const valTil = !window.TeiknVal || TeiknVal.erTilSkyndi(eignVal), valP = window.TeiknVal ? TeiknVal.saekja(eignVal) : null;
+    S._eign = eignVal;
     // Sami aðaluppdráttalisti er þegar inni — skipt er um síu án nýs kalls.
     // Ekki endurnýta gluggann þegar félagið breyttist: landnúmer getur verið
     // það sama á tveimur húsum og þá gleypti fyrri listinn seinni smellinn.
@@ -714,6 +727,7 @@
       const vidbot = auka && auka.svf ? '&svf=' + encodeURIComponent(auka.svf) + '&heitinr=' + encodeURIComponent(auka.heitinr || 0) : '';
       const r = await fetch(LISTI + '?landnr=' + encodeURIComponent(landnr) + vidbot, { signal: AbortSignal.timeout(28000) });
       const d = await r.json();
+      if (!valTil && valP) { try { await valP; } catch (_) {} }   // val Agnars (493) fremst áður en fyrsta blaðið er valið
       if (min !== _opnun || !document.getElementById('tfs')) return;
       if (d.error) throw new Error(d.error);
       S.listi = d.results || [];
@@ -773,8 +787,10 @@
       sia: sia || veljaSia(listi.length ? listi : allar),
       valin: null,
       stadur: (sk && sk.eign && sk.eign.label) || '',
+      _eign: (sk && sk.eign && sk.eign.landnr) ? sk.eign : null,   // val Agnars á aðalteikningum (493)
       coId: coId || null,
     });
+    if (window.TeiknVal && S._eign) TeiknVal.saekja(S._eign);   // berist það breytt teiknar listinn sig upp á nýtt (teiknval:breytt, ofar)
     grind();
     const titill = document.getElementById('tfs-titill');
     if (titill) titill.textContent = '📐 Teikningar' + (S.stadur ? ' — ' + S.stadur : '');
