@@ -77,19 +77,40 @@
     const W = 794; // A4 width in px @96dpi
     const holder = document.createElement('div');
     holder.style.cssText = 'position:fixed;top:0;left:0;width:' + W + 'px;background:#fff;z-index:100000';
-    holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
+    // 2026-11-02 (Istanbul Market fékk 3,4 KB auðan þjónustusamning): html2pdf klónar
+    // hnútinn sem `.from()` fær inn í sinn eigin umbúða-div (position:absolute; height:auto).
+    // Sé sá hnútur sjálfur position:fixed/absolute — eins og `holder` hér — tekur hann ekkert
+    // pláss í umbúðunum, html2canvas fær 0 px hæð og skilar auðri A4-síðu (3.058 bæti, engin
+    // mynd). Mælt í Chrome Agnars 02.11.2026: holder → canvas 1588×0; innra static div →
+    // 1588×1724 með rauðum pixlum, samningurinn 331 KB / 1 mynd. Þess vegna fer efnið í
+    // STATIC innra div og `.from(inner)` — holder-inn er áfram fixed svo hann sjáist ekki.
+    // (Sama ástæða og „html2canvas birtir autt" í 168/176 2026-06-10 og 2026-08-06.)
+    const inner = document.createElement('div');
+    inner.style.cssText = 'position:static;width:' + W + 'px;background:#fff';
+    inner.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
+    holder.appendChild(inner);
     document.body.appendChild(holder);
     try {
-      await waitForImages(holder);
+      await waitForImages(inner);
       const opt = {
         margin: [12, 12, 12, 12], // mm — top, left, bottom, right
         filename: filename || 'Uttektarskyrsla.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      const dataUri = await window.html2pdf().set(opt).from(holder).outputPdf('datauristring');
-      return String(dataUri).split(',')[1] || '';
+      const dataUri = await window.html2pdf().set(opt).from(inner).outputPdf('datauristring');
+      const b64 = String(dataUri).split(',')[1] || '';
+      // Auð-vörður: html2pdf skilar ALLTAF gildu PDF þótt ekkert hafi teiknast (auð A4 = ~3 KB,
+      // sleppur gegnum 256-stafa vörðinn í 254). Teiknuð síða ber JPEG-mynd (DCTDecode).
+      // Vanti hana er betra að stöðva sendinguna en að kúnninn fái tómt skjal.
+      let pdfBytes = '';
+      try { pdfBytes = atob(b64); } catch (_) { pdfBytes = ''; }
+      if (!pdfBytes || pdfBytes.indexOf('DCTDecode') < 0) {
+        try { if (window.logProblem) window.logProblem('blank_pdf_blocked', 'PDF teiknaðist auð (' + pdfBytes.length + ' bæti): ' + (filename || ''), { fingerprint: 'blank_pdf_' + (filename || '') }); } catch (_) {}
+        throw new Error('PDF-skjalið teiknaðist autt (' + pdfBytes.length + ' bæti) — sendi ekki. Endurhladdu síðunni og reyndu aftur.');
+      }
+      return b64;
     } finally {
       holder.remove();
     }
