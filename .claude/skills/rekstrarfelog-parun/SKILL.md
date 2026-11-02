@@ -15,7 +15,8 @@ description: >
 # Rekstrarfélög — pörun eftir tækjafjölda
 
 **Fact sheets per félag** (lesið aðeins þegar spurt er um það félag; haldið við í lok hverrar lotu):
-`references/center-hotel.md` · `references/heimaleiga.md`. Nýtt félag = ný skrá hér + lína í þessum lista.
+`references/center-hotel.md` · `references/heimaleiga.md` · `references/steypustodin.md` (staða 02.11.2026).
+Nýtt félag = ný skrá hér + lína í þessum lista.
 
 Agnar 06.10.2026: „para burtséð frá heitum / heimilisföngum" · „Invoice = skýrsla =
 tækjalisti" · „ekki alltaf að marka eldri skjöl". Skráarheiti á Drive ljúga (öll blöð
@@ -73,6 +74,21 @@ Talið per tegund: léttvatn · duft 6–12 · duft 2 · CO₂ 2 · CO₂ 5 · s
     pöruðust „nákvæmt" á öfug hótel; póstur 21.09.2023 snéri þeim við. Póstur/vegna/dagsetning skýrslu ræður, upphæðin
     er vísbending — merktu „Staðfest" eða „LÍKLEG". Full aðferð fyrir Stólpa-reikninga án PDF, innlestur skýrslna úr
     Gmail-viðhengjum og systurfélög án staðar (SAB ehf. → Blue Montain): `.claude/agents/sara-coworker.md` kafli 7.
+11. **Pörun á PDF-innihaldi, aldrei nafni (Agnar 29.10.2026: „nöfnin á skýrslunum eru oft ekki sönn — og á reikningunum").**
+    R-108138 hét „Malarhöfða 10" en reikningslesturinn sagði „vegna Hringhellu"; R-108282 bar haus „Álhellu 8" en tækin á honum
+    (5 duft 6, 3 CO₂, 5 slöngur) voru Klettagarðar; tólið giskaði á R-000057 sem Sléttuhraun, PDF sýndi búðarsölu á Klettagörðum.
+    Lestu reikning OG skýrslu (`/api/skjal?id=<drive_file_id>` + pdf-parse), berðu tækjatölur saman við tækjaskrá og leggðu pörin
+    fyrir Agnar áður en skrifað er; afrit í `docs/afrit/` fyrst. „Skýrslugerð og vottun" á reikningi = úttekt, annars búðarsala.
+12. **Skýrsla opnuð í 168 SKRIFAR skoðunarmánuð (29.10.2026).** ReportFactsSync (270) setur `inspect_month` = núverandi mánuð í
+    `arsskodun_report_facts` og `arsskodun_customers[id]` við OPNUN, líka með stubbaðri upphleðslu (Grandi fór í október).
+    Prófaðu aldrei skýrsluútlit á lifandi félagi án `window.CIR_VIDBOT.month`; athugaðu báðar geymslur strax á eftir. Viðbótarsala
+    („Viðbótarúttekt við R-…") má aldrei verða „reikningur ársins": notaðu `VidbotUttekt.erVidbot(num, krafa_note)` í hverjum
+    neytanda sem velur nýjasta/fyrsta reikning ársins (sjá minni `project_vidbotar_uttekt_20261028`).
+13. **Samreikningur og sameiginleg skýrsla (29.10–02.11.2026).** Einn reikningur getur náð yfir marga staði (Pizzan R-108124 ↔ allir 8
+    staðir) og ein skýrsla yfir tvo (Hringhella+Íshella jan 2025, 29 tæki): þá ber tækjaskrá afrit af heildartölunni á báða staði
+    (Íshella 29 í skrá, raunin ≈ 7 skv. 02.11-yfirferð). 37 staðir í rekstrarfélögum eiga úttektarreikning ársins á SYSTKINASTAÐ;
+    viðbótarkassinn (488) sér þá aðeins gegnum `document_pairs`. Skoðunarmánuðir: skoðað í ár → á mánuð skoðunarinnar (eftir já
+    Agnars); óskoðað → aðeins fram, aldrei afturábak (minni `feedback_skodunarmanudur_sidasta_skodun`).
 
 ## Lestrargildrur sem bitu
 

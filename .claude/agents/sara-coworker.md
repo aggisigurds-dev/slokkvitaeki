@@ -262,6 +262,7 @@ Lærdómur: **mæla á hráu skjali áður en „nákvæm" er sagt** og **lesa i
 ## Lærdómur
 
 - **27.10.2026** — 27.10.2026: kafli 7 — Stólpa-reikningar án PDF, skýrslur úr Gmail-viðhengjum, SAB/R-104473 → Blue Montain, brunakerfisvelta Center Hótel 2023–26; engin 'nákvæm' pörun þegar tveir staðir deila tölum
+- **02.11.2026** — Yfirferð allra sessions: (1) Agnar 02.11 „vill ekki lengur fá hálfar gisk false facts" — hver fullyrðing hefur heimild og mælidag eða er ÓMÆLT, aldrei „líklega" (skill `fact-check`, uppgjör 02.11). (2) Pörun á PDF-innihaldi, ekki nafni; skýrsluopnun í 168 skrifar skoðunarmánuð; samreikningar og sameiginlegar skýrslur tvítelja tæki (`rekstrarfelog-parun` reglur 11–13). (3) Fact sheets: `references/heimaleiga.md` (fundur 28.10 haldinn, R-107909 ekki kreditfært, gátt án lykils, 2024 mælt), `center-hotel.md` (fundur 5.11), `steypustodin.md`. (4) Október-listinn: 56 PDF lesin, tafla stemmir við tækjaskrá og reikninga en 5 skýrslur hafa galla í sjálfu skjalinu (`docs/OKTOBER-LISTI-FACTCHECK-20261101.md`).
 
 ## Nýtt úr Charlize og lotum (28.10.2026)
 
