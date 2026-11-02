@@ -307,6 +307,40 @@
     else img.src = url;
   }
 
+  /* ── hraðleið (02.11.2026, Agnar: „afhverju í andsk er ekki bara hægt að notast við það sem er í greiningunni í staðinn
+   *    þess að leita upp á nýtt í öllu“) ─────────────────────────────────────────────────────────────────────────────
+   * Glugginn fór heimilisfang → Kjarni (4 s, tómt fyrir Kópavog) → hus-upplysingar (allt að 5 s) → Kjarni aftur → teikn-listi
+   * í hvert sinn. Greiningin (451) leysir sama heimilisfang með bygging-uppl (1–2 s, þolir beygð götuheiti) og geymir eignina.
+   * Nú: (1) eignin (landnr + heitinr + svf) er munuð á félagið í vafranum, (2) annars er bygging-uppl spurt — sama fall og
+   * greiningin — og (3) aðeins sé hvorugt til staðar gildir gamla leiðin hér fyrir neðan. hus-upplysingar skilaði „Ástún 4"
+   * (oviss) fyrir „Nýbýlavegi 4" og glugginn sótti þá teikningar rangs húss — óviss eign er aldrei notuð hér. */
+  var EIGN_LS = 'teiknEign_v1_';
+  function eignGeymd(coId, addr) {
+    try {
+      var o = JSON.parse(localStorage.getItem(EIGN_LS + coId) || 'null');
+      if (o && o.addr === addr && o.eign && o.eign.landnr && !o.eign.oviss && Date.now() - o.t < 30 * 864e5) return o.eign;
+    } catch (_) {}
+    return null;
+  }
+  function geymaEign(coId, addr, eign) {
+    try { localStorage.setItem(EIGN_LS + coId, JSON.stringify({ addr: addr, t: Date.now(), eign: eign })); } catch (_) {}
+  }
+  function gleymaEign(coId) { try { localStorage.removeItem(EIGN_LS + coId); } catch (_) {} }
+  async function hradEign(coId, addr) {
+    var g = eignGeymd(coId, addr);
+    if (g) return g;
+    var b = await (await fetch('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(15000) })).json();
+    var e = b && b.eign;
+    if (!e || !e.landnr || e.oviss || b.oviss) return null;
+    return { landnr: e.landnr, heitinr: e.svf ? (e.heitinr || 0) : 0, svf: e.svf || null, label: e.label || addr, postnr: e.postnr || null,
+      heimild: e.svf ? 'map.is' : 'reykjavik', heimildNafn: e.safn || null };
+  }
+  async function listaFyrirEign(e) {
+    var qs = 'landnr=' + encodeURIComponent(e.landnr) + (e.svf ? '&heitinr=' + encodeURIComponent(e.heitinr || 0) + '&svf=' + encodeURIComponent(e.svf) : '');
+    var d = await (await fetch(LISTI + '?' + qs, { signal: AbortSignal.timeout(28000) })).json();
+    return ((d && d.results) || []).filter(function (x) { return x && x.infoUrl; });
+  }
+
   /* ── uppfletting: heimilisfang → landnúmer → teikningalisti ───────────────── */
   var spinnaYfir = spinna, villaYfir = synaVillu;    // yfirlagið (var-skygging inni í saekja nær ekki hingað)
   // ui = { spinna, villa(html, hlekkur), listi(dr, eign) } — sjálfgefið yfirlagið hér; 383 „Finna allt húsið" fær listann
@@ -321,6 +355,15 @@
     }
     spinna('Leita að húsinu…');
     try {
+      try {
+        var hrad = await hradEign(coId, addr);
+        if (hrad) {
+          spinna('Sæki teikningar hússins' + (hrad.heimildNafn ? ' (' + esc(hrad.heimildNafn) + ')' : '') + '…');
+          var drH = await listaFyrirEign(hrad);
+          if (drH.length) { geymaEign(coId, addr, hrad); ui.listi(drH, hrad); return; }
+          gleymaEign(coId);                              // tómt: gamla leiðin hér fyrir neðan fær að reyna
+        }
+      } catch (_) { /* hraðleiðin brást — gamla leiðin tekur við */ }
       var d1 = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(addr) + STADF_V, { signal: AbortSignal.timeout(28000) })).json();
       var results = (d1 && d1.results) || [];
       // 03.10.2026: heimilisfang félags er oft í ÞÁGUFALLI („Hátúni 10c, 105 Reykjavík") og Landeignaskrá finnur
@@ -330,7 +373,7 @@
       if (!results.length) {
         try {
           var hu = await (await fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(20000) })).json();
-          var nefnifall = hu && hu.eign && hu.eign.label;
+          var nefnifall = hu && hu.eign && !hu.eign.oviss && hu.eign.label;
           if (nefnifall) {
             addr = nefnifall + (hu.eign.postnr ? ', ' + hu.eign.postnr : '');
             var d1b = await (await fetch(LISTI + '?heimilisfang=' + encodeURIComponent(nefnifall) + STADF_V, { signal: AbortSignal.timeout(28000) })).json();
