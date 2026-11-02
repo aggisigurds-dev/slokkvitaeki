@@ -40,12 +40,33 @@
     const sb = window.DB && window.DB.sb;
     if (!sb) return null;
     const { data, error } = await sb.from('vorur')
-      .select('id,nafn,flokkur,mynd,verd_an_vsk,vsk_prosenta,birgdir,lysing,virkt')
+      .select('id,nafn,flokkur,mynd,verd_an_vsk,vsk_prosenta,birgdir,lysing,virkt,kostnadarverd')
       .eq('id', id)
       .maybeSingle();
     if (error || !data) return null;
     return data;
   }
+
+  // ── Kaupverð (02.11.2026, Agnar: „ef við ýtum á vöruna sjáum við hvað hún kostar okkur, svona á meðan við erum
+  // að læra á þetta") ── Sýnt í glugganum hér, í fæti vefverslunarsýnarinnar og í stuttri tilkynningu þegar ýtt er
+  // á vöruflís á Sölu. Allt sem tilheyrir þessu er merkt „Kaupverð" svo auðvelt sé að taka það út síðar.
+  function kaupverdTexti(p) {
+    const k = Number(p && p.kostnadarverd);
+    if (!k) return 'Kaupverð óskráð';
+    const s = Number(p.verd_an_vsk) || 0;
+    const f = s - k;
+    return 'Kostar okkur ' + fmtKr(k) + ' án vsk · framlegð ' + fmtKr(f) + (s > 0 ? ' (' + Math.round(f / s * 100) + ' %)' : '');
+  }
+  document.addEventListener('click', e => {
+    if (!e.isTrusted) return;                       // setjaIKorfu smellir á flísar í kóða — engin tilkynning þá
+    if (e.target.closest('._pip-btn')) return;
+    const tile = e.target.closest('.pos-prod');
+    if (!tile || !window.Toast || !Toast.show) return;
+    const id = parseInt(tile.getAttribute('data-id'), 10);
+    const st = window.POS && POS.getState && POS.getState();
+    const p = st && (st.products || []).find(x => x.id === id);
+    if (p) Toast.show(kaupverdTexti(p));
+  });
 
   // ── Vefverslunarsýn (14.10.2026, Agnar: „aðeins stærri og innihaldi sömu upplýsingar og er í netversluninni") ──
   // Vara sem er í vefversluninni opnast í stærri glugga sem sýnir vörusíðu búðarinnar sjálfrar í kassaham
@@ -100,6 +121,8 @@
     g.birgdir.innerHTML = b == null ? '' :
       '<span style="padding:7px 12px;background:' + (b > 0 ? '#dcfce7' : '#fee2e2') + ';color:' + (b > 0 ? '#166534' : '#991b1b') + ';border-radius:8px;font-size:13px;font-weight:600;display:inline-block">' +
         'Birgðir: ' + esc(b) + (b > 0 ? ' í geymslu' : ' — ekki á lager') + '</span>';
+    // Kaupverð
+    g.birgdir.innerHTML += '<span style="margin-left:10px;font-size:13px;color:#475569">' + esc(kaupverdTexti(product)) + '</span>';
   }
   function opnaVefverslun(product) {
     const g = vvGluggi();
@@ -185,6 +208,8 @@
             '<div style="font-size:24px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums">' + fmtKr(incVat) + '</div>' +
             '<div style="font-size:12px;color:#94a3b8">' + fmtKr(product.verd_an_vsk) + ' án vsk · VSK ' + (product.vsk_prosenta || 24) + '%</div>' +
           '</div>' +
+          // Kaupverð
+          (!isService ? '<div style="margin:-6px 0 12px;font-size:13px;color:#475569">' + esc(kaupverdTexti(product)) + '</div>' : '') +
           (!isService && product.birgdir != null
             ? '<div style="margin-bottom:12px;padding:8px 12px;background:' + (product.birgdir > 0 ? '#dcfce7' : '#fee2e2') + ';color:' + (product.birgdir > 0 ? '#166534' : '#991b1b') + ';border-radius:8px;font-size:13px;font-weight:600;display:inline-block">' +
                 '📦 Birgðir: ' + product.birgdir + (product.birgdir > 0 ? ' í geymslu' : ' — ekki á lager') +
