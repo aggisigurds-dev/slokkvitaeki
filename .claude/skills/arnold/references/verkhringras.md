@@ -37,6 +37,7 @@ Forsendur: Node, Python með `pymupdf` + `Pillow` (`python -m pip install --user
 2. **Skýringin ræður.** Lestu fyrst `h*_yfirlit.png` OG heildarmynd blaðsins (`<blað>.jpg` smækkuð með PIL `thumbnail((1800,1800))`) til að finna
    *skýringar og byggingarlýsingu* — þar stendur hvað ÚT / SL / BS / R þýða. Sami stafur getur þýtt ólíkt (Suðurhella: [S] = slökkvitæki,
    Trönuhraun: segulloki). Vanti skýringu: segðu það í `athugasemdir` („R-tákn túlkuð sem reykskynjarar — skýring vantar").
+   Vanti skýringu á blaðinu: sjá `references/skammstafanir.md` (NL, BO, EI, GN, HL, ÁV, UV, RS — ekki tæki nema RS; ⚠ NL getur þýtt neyðarlýsing á blaði með skýringu).
 3. **Hvað er skráð:** `ut` (ÚT-kassi — útljós/neyðarlýsing, líka þeir sem standa við björgunarop BO), `sl` (handslökkvitæki: SL/SLT/HSL/HST),
    `bs` (brunaslanga/-kefli: BS/BRSL), `r` (reykskynjari), `hiti`, `hb` (handboði), `st` („!“ stjórnstöð/útstöð). **Ekki** skráð: björgunarop (BO)
    sjálf, EI-merki, flóttaleiðaörvar (Agnar: „björgunarop þarf ekki").
