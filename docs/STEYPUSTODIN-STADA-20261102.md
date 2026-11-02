@@ -77,6 +77,11 @@ Rangt merkt frá fyrri innlestri — **leiðrétt 02.11 (Agnar: „mátt breyta"
 - 2879: var R-107186 / 182.065 / 17.01.2025 / Malarhöfði. PDF-ið er 107186 (11.210 brúttó, 10.426 til greiðslu) + kredit 107188, dags. 13.08.2025, „vegna Vatnsskarðsnámu". Nú: 11.210 · 13.08.2025 · staður 414 · kreditfært (endurgert sem R-107190).
 - 3256: var merkt Hringhellu með R-107186. PDF-ið er safnskjal með öllum 11 reikningum 2025 + kreditnum (106237 … 107539), og hver þeirra er til sem sérskjal (9717–9722, 10366–10369, 2879). Nú: tvítak, ekkert númer/upphæð, staður 285, dags. 24.11.2025.
 
+## 3c. Á Þjónustuborðinu (02.11, Agnar samþykkti að setja inn)
+#1379 Hólabrú-reikningur · #1380 Borgarnes-staðfesting Hákonar · #1381 Vatnskarð 12 kg · #1382 Búrfellslundur sem staður.
+Nýtt í mælingunni: póstur Hilmis 04.09.2025 (mál #451) — færanleg stöð flutt frá Höfn í Búrfell, tækin síðast
+yfirfarin jan 2024, spurði hvort við værum á leiðinni. Enginn fór; tækin voru seld í feb–mars 2026 í staðinn.
+
 ## 4. Ógert 2026
 1. Íshella — skoðun (og rétt tækjaskrá).
 2. Keflavíkurflugvöllur — fyrsta heimsókn, 2 ný tæki.
