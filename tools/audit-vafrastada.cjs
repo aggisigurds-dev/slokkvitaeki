@@ -79,7 +79,10 @@ const BANN = [
 // 15.10.2026 (regla Agnars: engar per-taekis stillingar): brunaholf ls 58 -> 35 (23 lyklar fluttir i state.ui.vidmot),
 // ui 52 -> 53 (nyi lykillinn vidmot = { <lykill>: {v, ts} }, nyjasta raedur per undirlykil i _mergeIn).
 // 15.10.2026 (regla Agnars): slokkvitaeki ls 158 -> 91 — ~100 vidmotsval flutt i AppSettings vidmot (472) og stillingar.
-const GRUNNLINA = { brunaholf: { ls: 35, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
+// 02.11.2026: brunaholf ls 35 -> 36. Nyi lykillinn er `ky_vsi_cache` (brunaholf js/verkstadur.js, a8c2ee6): myndir,
+// heimilisfong og teikningar per verkstad i Krofu yfirliti. Hreint skyndiminni - hlada() saekir /api/verkstadur?all=1 vid
+// hverja opnun og skrifar yfir thad (,,thjonninn raedur"); engin stada gagna byr adeins i vafranum. Stenst regluna.
+const GRUNNLINA = { brunaholf: { ls: 36, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
