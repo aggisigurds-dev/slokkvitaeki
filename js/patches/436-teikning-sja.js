@@ -19,9 +19,18 @@
   const _blobs = [];
   let _bindBid = 0;
 
-  function stimpilPx(crWidth) {
+  // SJÁLFGEFIN STÆRÐ TÁKNA (í skjápunktum við 100 %, þ.e. þegar teikningin passar í gluggann).
+  // Agnar 02.11.2026: „táknin koma allt of stór á teikningunum“ (Nýbýlavegur 4–8). Áður: breidd/12 á bilinu 32–56 px, þ.e. um
+  // 1/16–1/20 af breidd hússins — á 60 m húsi 3–4 m breitt slökkvitæki. Nú er miðað við HÚSIÐ: handslökkvitæki ≈ 1/48 af
+  // breidd þess (raunsæja myndin er teiknuð 1,15 × stærðina, því ≈ 1/42), aldrei undir 18 px (læsilegt á síma) og aldrei yfir 40 px.
+  // husHlutfall (0–1) er hlutfall hússins af myndinni sem sést (skurður minni en blaðið); án þess er myndin húsið.
+  // Aðeins SJÁLFGEFIÐ gildi — vistuð stærð (stimpilStaerd hæðar, merki.staerd) ræður alltaf yfir þessu.
+  const STIMPIL_DEILIR = 48, STIMPIL_MIN = 18, STIMPIL_MAX = 40;
+  function stimpilPx(crWidth, husHlutfall) {
     const w = Number(crWidth) || 0;
-    return Math.max(32, Math.min(56, Math.round(w / 12) || 32));
+    if (!(w > 0)) return 16;
+    const f = husHlutfall > 0 && husHlutfall <= 1 ? husHlutfall : 1;
+    return Math.max(STIMPIL_MIN, Math.min(STIMPIL_MAX, Math.round(w * f / STIMPIL_DEILIR)));
   }
   function taknPx(cw, sc) {
     const a = Math.round((Number(cw) || 0) / 70);
