@@ -588,7 +588,15 @@
   (function () {
     var n = 0;
     function t() {
-      try { if (mergeCustoms()) { var v = document.getElementById(VIEW_ID); if (v && v.classList.contains('active')) render(); } } catch (_) {}
+      try {
+        if (mergeCustoms()) {
+          var v = document.getElementById(VIEW_ID); if (v && v.classList.contains('active')) render();
+          // 02.11.2026 (mælt í vafra án localStorage: /app/xfirestartersen/ ræsti ALDREI skelina): á nýju tæki er
+          // notenda-búið app óþekkt þegar slóðin er lesin (listinn kemur úr skýinu sekúndum síðar) — ACTIVE varð null
+          // og boot() sleppti skelinni. Komi appið í ljós hér og slóðin nefnir það, ræsum við skelina seint.
+          if (!ACTIVE) { var late = urlAppKey(); if (late && APP_BY_KEY[late] && !isStandalone(late)) { ACTIVE = late; try { showSplash(ACTIVE); } catch (_) {} bootActive(); } }
+        }
+      } catch (_) {}
       if (++n < 12) setTimeout(t, 1000);
     }
     setTimeout(t, 1000);
@@ -600,13 +608,13 @@
 
   // active app mode — from the path /app/<key>/ (each app's own PWA scope) or
   // the legacy ?app=<key> query (older installed shortcuts still boot).
-  var ACTIVE = (function () {
+  function urlAppKey() {
     try {
       var pm = (location.pathname || '').match(/^\/app\/([a-z]+)\/?/);
-      var v = pm ? pm[1] : new URLSearchParams(location.search).get('app');
-      return APP_BY_KEY[v] ? v : null;
+      return (pm ? pm[1] : new URLSearchParams(location.search).get('app')) || null;
     } catch (_) { return null; }
-  })();
+  }
+  var ACTIVE = (function () { var v = urlAppKey(); return v && APP_BY_KEY[v] ? v : null; })();
 
   // ── forsíðu-hleðsluskjár (load screen) ───────────────────────────────────────
   // Sýndur STRAX (fyrir sw/pages hafa hlaðið), falinn þegar buildShell() klárar.
@@ -2016,7 +2024,11 @@
     // Standalone app (Bílstjóri) → patch 219 owns the full-screen lock; do not
     // build the 261 bottom-nav shell over it.
     if (ACTIVE && isStandalone(ACTIVE)) return;
-    if (ACTIVE) {
+    if (ACTIVE) bootActive();
+  }
+  // Ræsir app-skelina fyrir ACTIVE — úr boot() og úr seina skýja-samrunanum (retry-ið við mergeCustoms).
+  function bootActive() {
+    {
       // wait for the shell + a nav target, then lock into the app.
       // Enginn 6s dauðafrestur lengur — á hægum síma gat App.switchView komið
       // seinna og shellið byggðist þá ALDREI; vaktarinn tekur líka við eftirá.
