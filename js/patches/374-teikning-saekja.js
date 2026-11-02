@@ -123,17 +123,35 @@
    * settið (t.d. „Grunnmyndir 1. og 2. hæð, snið, útlit") sé margar síður. Nú: smámynd á hverju korti (sama pdf.js-vél og 384),
    * og smellur opnar forskoðun með stórri mynd, síðuröndinni til hliðar og „✓ Nota þessa" — valin síða fer á borðið. */
   function erBeintPdf(d) { var F = window.TeikningaForskodun; return !!(F && F.beintPdf && F.beintPdf(d)); }
+  // 02.11.2026: áður ein löng RÖÐ — öll 32+ blöðin sótt og teiknuð eitt og eitt (≈ 1 s hvert) strax við opnun, líka þau sem
+  // sjást ekki og líka eftir að glugginn lokaðist. Nú: aðeins kort sem eru (nær) í sjónmáli, 3 í einu, og hætt ef kortið er farið.
   function fyllaKortThumbs(o, syna) {
     var F = window.TeikningaForskodun; if (!F || !F.thumbAf) return;
-    var kedja = Promise.resolve();
+    var bid = [], virk = 0, MAX = 3;
+    function naest() {
+      while (virk < MAX && bid.length) {
+        var el = bid.shift();
+        if (!el.isConnected) continue;
+        var d = syna.find(function (x) { return x.infoUrl === el.getAttribute('data-url'); });
+        if (!d) continue;
+        virk++;
+        (function (el, d) {
+          F.thumbAf(d).then(function (src) {
+            if (!src || !el.isConnected) return;
+            el.style.cssText = 'height:120px;background:#fff url(\'' + src + '\') center/contain no-repeat';
+            el.textContent = '';
+          }).catch(function () {}).then(function () { virk--; naest(); });
+        })(el, d);
+      }
+    }
+    function aeskja(el) { if (el.__thBeidid) return; el.__thBeidid = true; bid.push(el); naest(); }
+    var io = window.IntersectionObserver ? new IntersectionObserver(function (fl) {
+      fl.forEach(function (f) { if (f.isIntersecting) { io.unobserve(f.target); aeskja(f.target); } });
+    }, { rootMargin: '240px' }) : null;
     o.querySelectorAll('.fp-teikn-th[data-url]').forEach(function (el) {
       var d = syna.find(function (x) { return x.infoUrl === el.getAttribute('data-url'); });
       if (!d || d.thumb || !(F.beintPdf(d) || F.beintTif(d))) return;
-      kedja = kedja.then(function () { return F.thumbAf(d); }).then(function (src) {
-        if (!src || !el.isConnected) return;
-        el.style.cssText = 'height:120px;background:#fff url(\'' + src + '\') center/contain no-repeat';
-        el.textContent = '';
-      }).catch(function () {});
+      if (io) io.observe(el); else aeskja(el);
     });
   }
   function forskodun(d, titill) {
@@ -218,8 +236,10 @@
     // 04.10.2026: aðaluppdrættir fyrst (Reykjavík „Aðaluppdrættir", Hafnarfjörður „Bygginganefndarteikning") — á
     // Norðurhellu 17 voru 33 „grunnmyndir" og aðeins 3 þeirra aðaluppdrættir; hinar burðarvirki, raflagnir og lagnir.
     var adal = function (d) { return /aðalupp|bygginga?nefnd/i.test(String(d.tegund || '')); };
+    // sama dagsetning: kjallari, 1., 2. … ris (annars lenda 20 „Óskráð“ blöð af handahófi á undan grunnmyndum)
+    var haedRod = function (d) { var f = flokkaBlad(d); return f.kjallari ? -1 : f.haed.length ? Math.min.apply(null, f.haed) : f.ris ? 900 : 500; };
     dr = dr.slice().sort(function (a, b) {
-      return (adal(b) - adal(a)) || String(b.dags || '').localeCompare(String(a.dags || ''));
+      return (adal(b) - adal(a)) || String(b.dags || '').localeCompare(String(a.dags || '')) || (haedRod(a) - haedRod(b));
     });
     // 08.10.2026: gildandi snið og útlit aðaluppdrátta sjást líka (merkt) — viðmið, ekki hæðir
     var syna = allarSyndar ? dr : dr.filter(function (d) { var f = flokkaBlad(d); return (d.grunnmynd || f.snid || f.utlit) && !d.urelt && adal(d); });
@@ -326,19 +346,42 @@
     try { localStorage.setItem(EIGN_LS + coId, JSON.stringify({ addr: addr, t: Date.now(), eign: eign })); } catch (_) {}
   }
   function gleymaEign(coId) { try { localStorage.removeItem(EIGN_LS + coId); } catch (_) {} }
+  // Svar prófílsins (363 skrarSvar = hus-upplysingar fyrir heimilisfang FÉLAGSINS, geymt í vafranum) ber þegar lóðina — sama
+  // lóð og prófíllinn sýnir. Óviss lóð (ágiskun) er aldrei notuð. Listinn í svarinu er EKKI notaður: hann er ekki sama snið og
+  // teikn-listi (lysing og grunnmynd-merki ólík á 30 af 75 blöðum í Hafnarfirði) og í geymdum svörum er hann oft tómur. 02.11.2026.
+  function eignUrProfil(coId, addr) {
+    try {
+      var sk = window.BannerUpplysingar && BannerUpplysingar.skrarSvar && BannerUpplysingar.skrarSvar(coId);
+      var e = sk && sk.eign;
+      if (!e || e.oviss || sk.oviss || !e.landnr || (e.svf && !e.heitinr)) return null;
+      return { landnr: e.landnr, heitinr: e.svf ? (e.heitinr || 0) : 0, svf: e.svf || null, label: e.label || addr, postnr: e.postnr || null,
+        heimild: e.svf ? 'map.is' : 'reykjavik', heimildNafn: e.heimildNafn || null };
+    } catch (_) { return null; }
+  }
   async function hradEign(coId, addr) {
     var g = eignGeymd(coId, addr);
     if (g) return g;
+    var pr = eignUrProfil(coId, addr);
+    if (pr) return pr;
     var b = await (await fetch('/.netlify/functions/bygging-uppl?heimilisfang=' + encodeURIComponent(addr), { signal: AbortSignal.timeout(15000) })).json();
     var e = b && b.eign;
     if (!e || !e.landnr || e.oviss || b.oviss) return null;
     return { landnr: e.landnr, heitinr: e.svf ? (e.heitinr || 0) : 0, svf: e.svf || null, label: e.label || addr, postnr: e.postnr || null,
       heimild: e.svf ? 'map.is' : 'reykjavik', heimildNafn: e.safn || null };
   }
+  // Listi hverrar eignar er munaður í minni síðunnar í 10 mín.: „Finna allt húsið" eftir „Veldu teikningu" (og öfugt) sækir hann ekki aftur.
+  var LISTA_MINNI = {}, LISTA_MS = 10 * 60 * 1000;
   async function listaFyrirEign(e) {
     var qs = 'landnr=' + encodeURIComponent(e.landnr) + (e.svf ? '&heitinr=' + encodeURIComponent(e.heitinr || 0) + '&svf=' + encodeURIComponent(e.svf) : '');
-    var d = await (await fetch(LISTI + '?' + qs, { signal: AbortSignal.timeout(28000) })).json();
-    return ((d && d.results) || []).filter(function (x) { return x && x.infoUrl; });
+    var m = LISTA_MINNI[qs];
+    if (m && Date.now() - m.t < LISTA_MS) return m.p;
+    var p = (async function () {
+      var d = await (await fetch(LISTI + '?' + qs, { signal: AbortSignal.timeout(28000) })).json();
+      return ((d && d.results) || []).filter(function (x) { return x && x.infoUrl; });
+    })();
+    LISTA_MINNI[qs] = { t: Date.now(), p: p };
+    p.then(function (dr) { if (!dr.length) delete LISTA_MINNI[qs]; }, function () { delete LISTA_MINNI[qs]; });   // tómt/villa er ekki munað
+    return p;
   }
 
   /* ── uppfletting: heimilisfang → landnúmer → teikningalisti ───────────────── */

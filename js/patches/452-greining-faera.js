@@ -193,6 +193,23 @@
     if (!w.o.isConnected) return;
     teiknaVal(w, coId, g, rad, opts);
   }
+  /* Ekkert atriði passar í reit prófílsins. 02.11.2026 (Nýbýlavegur 4, Kópavogur): glugginn sagði „Engin sjálfsótt gögn
+   * fundust" meðan fulla greiningin sýndi brunavarnir úr byggingarlýsingu og lóðina — Kópavogur á enga skráningartöflu,
+   * svo m²/hæðir/eignir eru tóm, en gögnin eru til. Nú er sagt hvað FANNST og hvers vegna ekkert fer í reiti. */
+  function tomtAtridi(g, adr) {
+    const b = (g && g.bygg) || {}, o = (g && g.opin) || {}, fundid = [];
+    const efni = b.brunavarnir && b.brunavarnir.efni ? Object.keys(b.brunavarnir.efni).length : 0;
+    if (b.brunavarnir) fundid.push('byggingarlýsing' + (b.brunavarnir.dags ? ' ' + dags(b.brunavarnir.dags) : '') + (efni ? ' (' + efni + ' brunavarnaatriði)' : ''));
+    const skjol = Array.isArray(b.heimildir) ? b.heimildir.length : 0;
+    if (skjol && !b.brunavarnir) fundid.push(skjol + (skjol === 1 ? ' skjal' : ' skjöl') + ' í teikningasafni (ólesin)');
+    if (o.lod && (o.lod.skrad_m2 || o.lod.maeld_m2)) fundid.push('lóð ' + tala(o.lod.skrad_m2 || o.lod.maeld_m2) + ' m²');
+    const eign = (b.eign && !b.eign.oviss && b.eign) || (o.eign && o.eign) || null;
+    if (eign && eign.landnr) fundid.push('lóðin L' + eign.landnr);
+    const villur = g && g.villur && (g.villur.bygg || g.villur.opin) ? ' (' + esc([g.villur.bygg, g.villur.opin].filter(Boolean).join(' · ')) + ')' : '';
+    if (!fundid.length) return '<div class="gr-fvar">Engin sjálfsótt gögn fundust fyrir ' + esc(adr || 'heimilisfangið') + villur + '.</div>';
+    return '<div class="gr-fvar" data-f="tomt-fannst"><b>Ekkert til að færa í reiti prófílsins</b> — engin lesin skráningartafla fyrir ' + esc(adr || 'heimilisfangið') + ' (m², hæðir og eignir vantar), en þetta fannst: ' +
+      esc(fundid.join(' · ')) + '. Allt er í fullu greiningunni.' + villur + '</div>';
+  }
   function teiknaVal(w, coId, g, rad, opts) {
     const co = coAf(coId);
     const adr = (g && g.adr) || (co && co.heimilisfang) || '';
@@ -221,7 +238,7 @@
           '<td><b>' + esc(r.merki) + '</b></td><td>' + esc(r.birt) + '<small>' + esc(r.heimild || '') + (r.vissa ? ' · vissa ' + esc(r.vissa) : '') + '</small></td>' +
           '<td>' + (r.nuna ? esc(r.nuna) : '<span class="ssp-daufur">tómt</span>') + '</td><td>' + stadaHtml(r) + '</td></tr>').join('') +
         '</tbody></table>'
-      : '<div class="gr-fvar">Engin sjálfsótt gögn fundust fyrir ' + esc(adr || 'heimilisfangið') + (g && g.villur && (g.villur.bygg || g.villur.opin) ? ' (' + esc([g.villur.bygg, g.villur.opin].filter(Boolean).join(' · ')) + ')' : '') + '.</div>') +
+      : tomtAtridi(g, adr)) +
       (opts.teikning ? '<div class="gr-fnaest"><div><b>Teikningar — ' + esc(opts.teikning) + '</b><button type="button" class="ssp-btn malm" data-f="teikn">Setja í Teikningu</button></div></div>' : '') +
       '<div class="gr-ftakkar">' + (adr ? '<a class="gr-fhl" href="#greining/' + encodeURIComponent(adr) + '" data-f="full">Opna fulla greiningu</a>' : '') +
       '<span class="gr-fbil"></span><button type="button" class="ssp-btn" data-f="loka">Hætta við</button>' +
