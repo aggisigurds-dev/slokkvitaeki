@@ -132,12 +132,12 @@
     const listi = verdskra();
     const rows = listi.map(([n, p]) => {
       const s = savedByName[n];
-      return { n, verd: s ? s.verd : p, magn: s ? s.magn : 0, afsl: s ? s.afsl : 0, def: p };
+      return { n, verd: s ? s.verd : p, magn: s ? s.magn : 0, afsl: s ? s.afsl : 0, stakt: !!(s && s.stakt), def: p };
     });
     // Vistuð lína sem er ekki (lengur) í verðlistanum — eigin lína eða liður sem var endurnefndur — fylgir tilboðinu
     // neðst. Annars hyrfi hún þegjandi úr vistuðu tilboði við næstu vistun.
     const iListanum = new Set(listi.map(x => x[0]));
-    (offer && offer.lines || []).forEach(l => { if (!iListanum.has(l.n)) rows.push({ n: l.n, verd: l.verd, magn: l.magn, afsl: l.afsl, def: l.verd, eigin: true }); });
+    (offer && offer.lines || []).forEach(l => { if (!iListanum.has(l.n)) rows.push({ n: l.n, verd: l.verd, magn: l.magn, afsl: l.afsl, stakt: !!l.stakt, def: l.verd, eigin: true }); });
     const totalDisc = offer ? (offer.total_disc || 0) : 0;
 
     const ov = document.createElement('div');
@@ -146,6 +146,7 @@
     const rodHtml = (r, i) => `
       <tr data-i="${i}">
         <td style="padding:5px 8px;font-size:12px;color:#0f172a">${esc(r.n)}${r.eigin ? ' <small style="color:#94a3b8">· aðeins í tilboðinu</small>' : ''}</td>
+        <td style="padding:5px 4px;text-align:center"><input data-f="stakt" type="checkbox"${r.stakt ? ' checked' : ''} title="Stakt verð — línan fer á tilboðið sem einingarverð, án magns" aria-label="Stakt verð: ${esc(r.n)}" style="appearance:auto;-webkit-appearance:checkbox;width:16px;height:16px;margin:0;padding:0;accent-color:#C0341D;cursor:pointer"></td>
         <td style="padding:5px 6px"><input data-f="magn" type="number" min="0" step="1" value="${r.magn || ''}" placeholder="0" style="width:62px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td style="padding:5px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(r.verd)}" style="width:94px;padding:5px 6px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:#C0341D"></td>
         <td style="padding:5px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${r.afsl || ''}" placeholder="0" style="width:54px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
@@ -171,9 +172,10 @@
             <table style="width:100%;border-collapse:collapse">
               <thead><tr style="position:sticky;top:0;background:#fbeee7;z-index:1;border-bottom:2px solid #F07A1E">
                 <th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;letter-spacing:.04em;font-weight:800">Liður</th>
+                <th style="text-align:center;padding:8px 4px;width:30px" title="Stök verð: hakaðar línur fara á tilboðið sem einingarverð, án magns"><input id="_bt-stakt-allt" type="checkbox" aria-label="Haka við allar línur sem stök verð" style="appearance:auto;-webkit-appearance:checkbox;width:16px;height:16px;margin:0;padding:0;accent-color:#C0341D;cursor:pointer"></th>
                 <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Magn</th>
                 <th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Verð án vsk</th>
-                <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>
+                <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800;white-space:nowrap">Afsl % <input id="_bt-afsl-allt" type="number" min="0" max="100" step="1" placeholder="allar" title="Afsláttur á allar línur — afritast niður; hverri línu má breyta eða stroka út á eftir" aria-label="Afsláttur á allar línur" style="width:52px;margin-left:4px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:11px;font-weight:600;text-transform:none;text-align:right;background:#fff"></th>
                 <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Samtals án vsk</th>
               </tr></thead>
               <tbody id="_bt-tbody">${rowHtml}</tbody>
@@ -218,7 +220,7 @@
       const out = [];
       tbody.querySelectorAll('tr').forEach(tr => {
         const i = +tr.dataset.i;
-        out.push({ n: rows[i].n, magn: num(tr.querySelector('[data-f="magn"]').value), verd: pn(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value) });
+        out.push({ n: rows[i].n, magn: num(tr.querySelector('[data-f="magn"]').value), verd: pn(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), stakt: tr.querySelector('[data-f="stakt"]').checked });
       });
       return out;
     }
@@ -227,9 +229,12 @@
       tbody.querySelectorAll('tr').forEach(tr => {
         const i = +tr.dataset.i, l = lines[i];
         const lt = num(l.magn) * num(l.verd) * (1 - num(l.afsl) / 100);
-        tr.querySelector('[data-cell="line"]').textContent = num(l.magn) > 0 ? fmtKr(lt) : '—';
-        tr.style.background = num(l.magn) > 0 ? '#f0fdf4' : '';
+        // stakt verð án magns: einingarverðið eftir afslátt sést í dálkinum („/stk") og telst ekki í samtölur
+        tr.querySelector('[data-cell="line"]').textContent = num(l.magn) > 0 ? fmtKr(lt) : l.stakt ? fmtKr(num(l.verd) * (1 - num(l.afsl) / 100)) + ' /stk' : '—';
+        tr.style.background = num(l.magn) > 0 ? '#f0fdf4' : l.stakt ? '#fff7ed' : '';
       });
+      const allt = ov.querySelector('#_bt-stakt-allt');
+      if (allt) allt.checked = lines.length > 0 && lines.every(l => l.stakt);
       const t = compute(lines, ov.querySelector('#_bt-tdisc').value);
       ov.querySelector('#_bt-brutto').textContent = fmtKr(t.brutto);
       ov.querySelector('#_bt-lina').textContent = t.lina_kr > 0 ? '− ' + fmtKr(t.lina_kr) : '—';
@@ -268,6 +273,17 @@
       nEl.focus();
     }
     ov.querySelector('#_bt-ny-baeta').onclick = baetaVidLinu;
+
+    // Stök verð + afsláttur á allar (Agnar 02.11.2026: „hakað bara við svo komi bara stök verð … afslátt sem
+    // copierast niður, en geta samt strokað út hvert og breytt"). Báðir hlusta á 'input' á reitnum sjálfum: sá
+    // atburður kemur á undan bólu-hlustaranum á ov sem endurreiknar — með 'change' hefði recompute() þegar sett
+    // haus-hakið aftur eftir línunum áður en það var afritað niður.
+    ov.querySelector('#_bt-stakt-allt').addEventListener('input', e => {
+      tbody.querySelectorAll('[data-f="stakt"]').forEach(c => { c.checked = e.target.checked; });
+    });
+    ov.querySelector('#_bt-afsl-allt').addEventListener('input', e => {
+      tbody.querySelectorAll('[data-f="afsl"]').forEach(a => { a.value = e.target.value; });
+    });
     ov.querySelector('#_bt-ny').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); baetaVidLinu(); } });
 
     const close = () => ov.remove();
@@ -276,7 +292,8 @@
     ov.addEventListener('click', e => { if (e.target === ov) close(); });
 
     function build() {
-      const lines = collect().filter(l => l.magn > 0);
+      // línur með magni + hakaðar línur (stök verð); stakt-merkið vistast aðeins þar sem það er satt
+      const lines = collect().filter(l => l.magn > 0 || l.stakt).map(l => { if (!l.stakt) delete l.stakt; return l; });
       const td = num(ov.querySelector('#_bt-tdisc').value);
       const t = compute(lines, td);
       return {
@@ -295,7 +312,7 @@
     ov.querySelector('#_bt-save').onclick = async () => {
       const o = build();
       if (!o.customer.nafn) { alert('Sláðu inn viðskiptavin (nafn).'); return; }
-      if (!o.lines.length) { alert('Veldu a.m.k. einn lið með magni.'); return; }
+      if (!o.lines.length) { alert('Veldu a.m.k. einn lið — með magni eða hak (stakt verð).'); return; }
       const btn = ov.querySelector('#_bt-save'); btn.disabled = true; btn.textContent = 'Vista…';
       const arr = getOffers();
       const idx = arr.findIndex(x => x.id === o.id);
@@ -323,7 +340,21 @@
       ? '<img src="' + esc(logo) + '" alt="" style="max-height:56px;max-width:240px">'
       : '<div style="font-size:24px;font-weight:800;color:#0f172a">' + esc(compName) + '</div>';
     const t = compute(o.lines, o.total_disc);
-    const lineRows = o.lines.map(l => {
+    // 02.11.2026: stök verð (hak, ekkert magn) prentast sér sem einingarverð — engin samtala, því magnið er óþekkt
+    const magnLinur = o.lines.filter(l => num(l.magn) > 0), stakar = o.lines.filter(l => !(num(l.magn) > 0) && l.stakt);
+    const th = (txt, r) => '<th style="text-align:' + (r ? 'right' : 'left') + ';padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">' + txt + '</th>';
+    const stakarHtml = !stakar.length ? '' :
+      '<div style="font-size:12px;font-weight:700;color:#0f172a;margin:' + (magnLinur.length ? '22px' : '0') + ' 0 6px">Brunaviðvörunarkerfi — einingarverð</div>' +
+      '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f8fafc">' +
+        th('Liður') + th('Verð án vsk', 1) + th('Afsl', 1) + th('Verð án vsk m/afsl.', 1) +
+      '</tr></thead><tbody>' + stakar.map(l => '<tr>' +
+        '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
+        '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + fmtKr(l.verd) + '</td>' +
+        '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + (num(l.afsl) ? num(l.afsl) + '%' : '—') + '</td>' +
+        '<td style="padding:7px 9px;font-size:12px;text-align:right;font-weight:600;border-bottom:1px solid #f1f5f9">' + fmtKr(num(l.verd) * (1 - num(l.afsl) / 100)) + '</td>' +
+      '</tr>').join('') + '</tbody></table>' +
+      '<div style="margin-top:6px;font-size:11px;color:#64748b">Einingarverð eru án vsk (24%) og reiknast á hverja einingu sem er skoðuð.</div>';
+    const lineRows = magnLinur.map(l => {
       const lt = num(l.magn) * num(l.verd) * (1 - num(l.afsl) / 100);
       return '<tr>' +
         '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
@@ -357,7 +388,7 @@
         '<div style="font-size:15px;font-weight:700;margin-top:3px">' + esc(o.customer.nafn || '—') + '</div>' +
         '<div style="font-size:11px;color:#475569;margin-top:2px">' + (o.customer.kennitala ? 'kt. ' + esc(o.customer.kennitala) : '') + (o.customer.heimilisfang ? (o.customer.kennitala ? ' · ' : '') + esc(o.customer.heimilisfang) : '') + '</div>' +
       '</div>' +
-      '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px">Brunaviðvörunarkerfi — árleg skoðun</div>' +
+      (magnLinur.length ? '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px">Brunaviðvörunarkerfi — árleg skoðun</div>' +
       '<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f8fafc">' +
         '<th style="text-align:left;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Liður</th>' +
         '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Magn</th>' +
@@ -374,7 +405,8 @@
         (t.disc_kr > 0 ? totRow('Án vsk eftir afslátt', fmtKr(t.an)) : '') +
         totRow('VSK 24%', fmtKr(t.vsk)) +
         totRow('Samtals m. vsk', fmtKr(t.m_vsk), true) +
-      '</div></div>' +
+      '</div></div>' : '') +
+      stakarHtml +
       (o.skyring ? '<div style="margin-top:20px;padding:11px 13px;background:#fbfaf7;border:1px solid #e7e2d7;border-radius:8px;font-size:12px;line-height:1.55;color:#334155;white-space:pre-wrap">' + esc(o.skyring) + '</div>' : '') +
       '<div style="margin-top:24px;font-size:11px;color:#64748b">Tilboð þetta gildir í 30 daga. Verð eru með fyrirvara um breytingar á umfangi kerfis.</div>' +
       '<div class="no-print" style="margin-top:24px;text-align:center"><button class="btn" style="background:' + primary + ';color:#fff" onclick="window.print()">🖨 Prenta / vista PDF</button></div>' +
