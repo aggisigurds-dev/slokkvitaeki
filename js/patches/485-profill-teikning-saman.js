@@ -45,7 +45,8 @@
       '#t485-sam .tg i{font-style:normal;opacity:.7;font-weight:500}' +
       '#t485-sam .pt{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}' +
       '#t485-sam .pt.nu{background:#e11d2e;border:1.5px solid #fff;box-shadow:0 0 0 1px #8a1d27}' +
-      '#t485-sam .pt.gr{border:2px dashed #e11d2e;background:rgba(255,255,255,.7)}' +
+      '#t485-sam .pt.gr{background:#8e24aa;border:1.5px solid #fff;box-shadow:0 0 0 1px #5e1a76}' +
+      '#t485-sam .pt.bada{background:linear-gradient(90deg,#e11d2e 50%,#8e24aa 50%);border:1.5px solid #fff;box-shadow:0 0 0 1px #6b7280}' +
       '#t485-sam button{height:26px;padding:0 10px;border:1px solid #cfccc4;border-radius:7px;background:#fff;color:#2b2a27;font:600 11.5px system-ui,sans-serif;cursor:pointer;white-space:nowrap}' +
       '#t485-sam button:hover{border-color:#2b2a27}' +
       '#t485-sam .v{display:inline-flex;align-items:center;gap:5px}' +
@@ -114,7 +115,7 @@
       bar.addEventListener('click', e => {
         const b = e.target.closest('button[data-a]');
         if (b && b.dataset.a === 'teikn') { e.stopPropagation(); try { if (window.Companies && Companies.opnaTeikningu && window._currentCompanyId != null) Companies.opnaTeikningu(window._currentCompanyId); } catch (_) {} return; }
-        if (b && (b.dataset.a === 'nu' || b.dataset.a === 'gr')) { e.stopPropagation(); const st = fmLesa(); st[b.dataset.a] = !st[b.dataset.a]; try { if (window.Vidmot) Vidmot.setja(FM_KEY, st); } catch (_) {} bar._h = ''; teiknaYfirlag(sec); fylla(sec, bar); return; }
+        if (b && b.dataset.a === 'lag') { e.stopPropagation(); const lag = b.dataset.lag, st = { nu: lag !== 'gr', gr: lag !== 'raun' }; try { if (window.Vidmot) Vidmot.setja(FM_KEY, st); } catch (_) {} bar._h = ''; teiknaYfirlag(sec); fylla(sec, bar); return; }
         if (b && b.dataset.a === 'nanar') { e.stopPropagation(); nanar = !nanar; sec.classList.toggle('t485-nanar', nanar); bar._h = ''; fylla(sec, bar); return; }
         const nu = !sec.classList.contains('t485-opid'); sec.classList.toggle('t485-opid', nu); setjaOpid(nu); bar._h = ''; fylla(sec, bar);
         if (nu) { try { window.dispatchEvent(new Event('resize')); } catch (_) {} }
@@ -132,8 +133,9 @@
       (o ? '<button type="button" data-a="nanar">' + (sec.classList.contains('t485-nanar') ? 'Fela nánari greiningu' : 'Nánari greining') + '</button>' : '') + '</div>' : '';
     const stm = fmLesa(), kort = sec.querySelectorAll('#co-fp-hdir > .cfh-k').length;
     const l3 = o && kort ? '<div class="l l3"><span class="lb">Merki á myndum</span>' +
-      '<button type="button" class="tg" data-a="nu" aria-pressed="' + stm.nu + '" title="Búnaðurinn sem er á borðinu núna (vistaður í Teikningu) — skráð tæki eru sett á teikninguna í Teikningar-glugganum (dragðu tækið úr listanum)" ' + (fmN.nu ? '' : 'style="opacity:.6"') + '><span class="pt nu"></span>' + (fmN.nu ? 'Búnaður núna <i>' + fmN.nu + '</i>' : 'Engin skráð tæki sett á teikningu') + '</button>' +
-      '<button type="button" class="tg" data-a="gr" aria-pressed="' + stm.gr + '" title="Búnaður sbr. búnaðargreiningu — strikaðir hringir sem hverfa þar sem tækið er komið á staðinn"><span class="pt gr"></span>Sbr. greiningu <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + '</i></button></div>' : '';
+      '<button type="button" class="tg" data-a="lag" data-lag="raun" aria-pressed="' + (stm.nu && !stm.gr) + '" title="Aðeins búnaðurinn sem er á borðinu núna (vistaður í Teikningu) — skráð tæki eru sett á teikninguna í Teikningar-glugganum" ' + (fmN.nu ? '' : 'style="opacity:.6"') + '><span class="pt nu"></span>Raunveruleg tæki <i>' + fmN.nu + '</i></button>' +
+      '<button type="button" class="tg" data-a="lag" data-lag="gr" aria-pressed="' + (stm.gr && !stm.nu) + '" title="Aðeins búnaður sbr. búnaðargreiningu — sömu merki og í greiningunni"><span class="pt gr"></span>Greining <i>' + (d.tx.length ? d.tx.join(' · ') + (fmN.gr ? ' · ' + fmN.gr + ' óteiknuð' : '') : fmN.gr) + '</i></button>' +
+      '<button type="button" class="tg" data-a="lag" data-lag="bada" aria-pressed="' + (stm.nu && stm.gr) + '" title="Bæði — greiningin hálfgagnsæ undir raunverulegu tækjunum"><span class="pt bada"></span>Bæði</button></div>' : '';
     const h = l1 + l2 + l3 + '|' + o;
     if (bar._h !== h) { bar._h = h; bar.innerHTML = l1 + l2 + l3; }
   }
@@ -312,20 +314,21 @@
       else if (t.bx != null && isFinite(+t.bx)) { const sh = blod[t.blad], vp = sh && sh.varpa; if (vp && vp.fx && vp.fy) uv = [vp.fx.k * +t.bx + vp.fx.c, vp.fy.k * +t.by + vp.fy.c]; else if (t.blad === t.haed_id || t.blad === h.id) uv = [+t.bx, +t.by]; }
       if (!uv) return;
       const f = String(t.flokkur || ''), n = String(t.bunadur || '');
-      const k = (f === 'flotti' || /^Útgangur/.test(n)) ? 'ut' : f === 'brunakerfi' ? null : (/lang|efli/i.test(n) ? 'bs' : 'sl');
-      if (k) ut.push({ x: uv[0], y: uv[1], k, ik: k === 'ut' ? 'skilti_ut' : k === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
+      const k = (f === 'flotti' || /^Útgangur/.test(n)) ? 'ut' : f === 'brunakerfi' ? (/reyk/i.test(n) ? 'r' : /hita/i.test(n) ? 'hiti' : /handbo/i.test(n) ? 'hb' : 'st') : (/lang|efli/i.test(n) ? 'bs' : 'sl');
+      ut.push({ x: uv[0], y: uv[1], k, tg: t.tegund, ik: k === 'ut' ? 'skilti_ut' : k === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
     });
     ((row.tillogur && row.tillogur.tki) || []).forEach(t => {
       if (!t || (t.blad !== h.id && t.haed !== h.nafn)) return;
       const x = +(t.x != null ? t.x : t.bx), y = +(t.y != null ? t.y : t.by);
-      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl', ik: t.flokkur === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
+      if (isFinite(x) && isFinite(y)) ut.push({ x, y, k: t.flokkur === 'bs' ? 'bs' : 'sl', tg: t.tegund, ik: t.flokkur === 'bs' ? 'slanga_rod' : (ikonTexta(t.tegund) || 'l') });
     });
     return ut;
   }
   // Sama teiknivél og í Teikningu (434 TeiknTakn.teiknaMerki): raunsæ tákn, stærð, „Nýtt · <tegund>“-miði — útlitið er alls staðar eins (Agnar 25.10.2026: „afhverju geturðu ekki bara notað sama útlitið allstaðar“)
   ['l', 'duft', 'co2', 'slanga_rod', 'reykskynjari', 'hitaskynjari', 'skilti_ut'].forEach(n => { try { const i = new Image(); i.src = '/img/taeki/' + n + '.png'; } catch (_) {} });
   const TAKN_AF_IK = { l: 'lettvatn', duft: 'duft', co2: 'co2', slanga_rod: 'slanga' };
-  function gervimerki(p) { return p.ik === 'skilti_ut' ? { kind: 'sign', sign: 'ut', unitId: 's:ut:x' } : p.ik === 'reykskynjari' ? { nytt: true, unitId: 'n:reykskynjari:x', tegund: 'Reykskynjari' } : p.ik === 'hitaskynjari' ? { nytt: true, unitId: 'n:hitaskynjari:x', tegund: 'Hitaskynjari' } : { takn: TAKN_AF_IK[p.ik] || 'lettvatn', unitId: 'g:x' }; }
+  // sama útlit og í greiningunni (434 flokkaMerki): punktar fyrir brunakerfið, raunsæ tákn, ÚT-skilti
+  function gervimerki(p) { const T = window.TeiknTakn; if (T && T.flokkaMerki && p.k) return T.flokkaMerki(p.k, p.tg); return p.ik === 'skilti_ut' ? { kind: 'sign', sign: 'ut', unitId: 's:ut:x' } : p.ik === 'reykskynjari' ? { nytt: true, unitId: 'n:reykskynjari:x', tegund: 'Reykskynjari' } : p.ik === 'hitaskynjari' ? { nytt: true, unitId: 'n:hitaskynjari:x', tegund: 'Hitaskynjari' } : { takn: TAKN_AF_IK[p.ik] || 'lettvatn', unitId: 'g:x' }; }
   function yfirlagKort(k, mk, c, d) {
     const h = c.h, st = d.st, sia = window.TeiknSia, V = window.TeiknVinnumynd, T = window.TeiknTakn, row = d.row;
     const vm = h.vinnumynd && h.vinnumynd.cam ? h.vinnumynd : null;
@@ -337,7 +340,7 @@
     (h.markers || []).forEach(m => { if (!m || !isFinite(+m.x) || !isFinite(+m.y) || +m.x <= 1 && +m.y <= 1 || falid(m)) return; (erGr(m) ? grm : nu).push({ x: +m.x, y: +m.y, k: flokkurMerkis(m), ik: ikonMerkis(m, d.tk), m }); });
     grAtridiHaedar(h, row).forEach(a => {
       if (nu.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol) || grm.some(q => Math.hypot(q.x - a.x, q.y - a.y) <= tol * 0.4)) return;
-      if (!(sia && sia.erFalinn && sia.erFalinn(a.k === 'ut' ? 'ut' : a.k === 'bs' ? 'slanga' : 'slt'))) grm.push(a);
+      if (!(sia && sia.erFalinn && sia.erFalinn(a.k === 'ut' ? 'ut' : a.k === 'bs' ? 'slanga' : a.k === 'sl' ? 'slt' : a.k))) grm.push(a);
     });
     const sig = [ham, st.nu, st.gr, nu.length, grm.length, d.tk ? 1 : 0, vm ? vm.t : '', h.skurdur ? h.skurdur.x + ',' + h.skurdur.w : '', d.tick].join('|');
     let cv = mk.querySelector(':scope > canvas.t485-ov');
@@ -358,9 +361,7 @@
       x.restore();
     };
     if (st.gr) grm.forEach(p => {
-      const q = P(p); if (!q) return;
-      x.save(); x.beginPath(); x.arc(q[0] * f, q[1] * f, s * 0.72, 0, Math.PI * 2); x.fillStyle = 'rgba(255,255,255,.55)'; x.fill(); x.setLineDash([s * 0.2, s * 0.14]); x.lineWidth = Math.max(1.5, s * 0.09); x.strokeStyle = LIT[p.k] || LIT.an; x.stroke(); x.restore();
-      teikna(p, p.m || gervimerki(p), 0.75);
+      teikna(p, p.m || gervimerki(p), st.nu ? 0.75 : 1);
     });
     // núverandi merkin teiknast aðeins á 3D-mynd — í 2D-forskoðun teiknar 456 þau sjálft (með auðkennum)
     if (st.nu && ham === '3d') nu.forEach(p => teikna(p, p.m, 1));

@@ -149,9 +149,7 @@
         // SAMA ÚTLIT OG Í TEIKNINGU (Agnar 25.10.2026: „afhverju geturðu ekki bara notað sama útlitið allstaðar“): raunsæ tákn úr 434 og síunni (478) virt; einfaldur punktur til vara
         try { if (window.TeiknSia && TeiknSia.falid && TeiknSia.falid(m, [])) return; } catch (_) {}
         var teiknad = false;
-        // punktur í lit flokksins (brunakerfisbúnaður Búnaðargreiningar, 474) — ekkert tákn
-        if (m.punktur) { x.beginPath(); x.arc(px, py, r * 1.25, 0, 2 * Math.PI); x.fillStyle = m.punktur; x.fill(); x.lineWidth = Math.max(1.5, r * 0.4); x.strokeStyle = '#fff'; x.stroke(); teiknad = true; }
-        if (!teiknad) try { var T = window.TeiknTakn, tk = window.ProfTeiknSaman && ProfTeiknSaman.taeki && ProfTeiknSaman.taeki(); if (T && T.teiknaMerki) { T.teiknaMerki(x, m, px, py, r * 5.2 * (m.kvardi || 1), tk ? Object.keys(tk).map(function (i) { return { id: +i, type: tk[i] }; }) : []); teiknad = true; if (T.erNytt && T.erNytt(m) && T.nyttMidi && c.width > 700) T.nyttMidi(x, m, px, py, r * 5.2); } } catch (_) {}
+        try { var T = window.TeiknTakn, tk = window.ProfTeiknSaman && ProfTeiknSaman.taeki && ProfTeiknSaman.taeki(); if (T && T.teiknaMerki) { T.teiknaMerki(x, m, px, py, r * 3.6, tk ? Object.keys(tk).map(function (i) { return { id: +i, type: tk[i] }; }) : []); teiknad = true; if (T.erNytt && T.erNytt(m) && T.nyttMidi && c.width > 700) T.nyttMidi(x, m, px, py, r * 5.2); } } catch (_) {}
         if (!teiknad) { x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
         x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke(); }
         // auðkennið (S1, BS1 …) við punktinn — sama og í listanum við hliðina
