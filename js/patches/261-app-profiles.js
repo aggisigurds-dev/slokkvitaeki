@@ -115,7 +115,7 @@
     { k: 'tolvupostar',      label: 'Tölvupóstar',           short: 'Póstar',     emoji: '✉️' },   // 449 (09.10.2026) — símasíða Tölvupósta-hamsins
     { k: 'erindi',           label: 'Erindi · tilbúin svör',  short: 'Erindi',     emoji: '📨' },   // 449c (19.10.2026) — erindi úr pósti: gögn, eyður og svartexti Claude
     { k: 'svarstod',         label: 'Svar-stöð · hvernig textar verða til', short: 'Svar-stöð', emoji: '✉️' },   // 447 (08.10.2026)
-    { k: 'vasinn',           label: 'Vasinn · skjáskot, myndir, skrár, hljóð handa Claude', short: 'Vasinn', emoji: '👝' },   // 491 (01.11.2026)
+    { k: 'vasinn',           label: 'Vasinn · skjáskot, myndir, skrár, hljóð handa Claude', short: 'Vasinn', en: 'Pocket', emoji: '👝' },   // 491 (01.11.2026)
     { k: 'adalmal',          label: 'Aðalmál · fundir, frestir og það sem skiptir mestu', short: 'Aðalmál', emoji: '📌' },   // 492 (02.11.2026)
     // 19.09.2026: 'verkbord' (Verkefnalisti) tekið úr listanum — sama sýn og 'bord' (368). pagesFor() vísar þangað.
     // 19.09.2026: 'thjonustubord' (gamla mobíl-borðið, 306) tekið úr listanum — það teiknar ekkert lengur og var
@@ -146,22 +146,22 @@
     // Drög-stöðin (05.09.2026): innhólf punkta + draft-körfur fyrir bæði félögin; „Senda í körfu" opnar söluborðið hér.
     { k: 'br-drogstod',      label: 'Drög-stöð (punktar + draft-körfur)', short: 'Drög-stöð', emoji: '🛒', url: 'https://brunaholf.netlify.app/?embed=1#drogstod' },
     // Kostnaðarreikningar úr símanum (Agnar 06.09.2026): droppa/mynda PDF, velja fyrirtæki, AI les — listinn = innkaupabók
-    { k: 'br-efniskostnadur', label: 'Efniskostnaður · kostnaðarreikningar (dropp úr síma)', short: 'Efniskostn.', emoji: '📥', url: 'https://brunaholf.netlify.app/?embed=1#efniskostnadur' },
-    { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },
+    { k: 'br-efniskostnadur', label: 'Efniskostnaður · kostnaðarreikningar (dropp úr síma)', short: 'Efniskostn.', en: 'Receipts', emoji: '📥', url: 'https://brunaholf.netlify.app/?embed=1#efniskostnadur' },
+    { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', en: 'Attendance', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },
     { k: 'br-fjarmalyfirlit',label: 'Fjármála-yfirlit (Slökkv. + Brunahólf)', short: 'Yfirlit', emoji: '💰', url: 'https://brunaholf.netlify.app/fjarmalyfirlit.html' },
     // Fleiri Brunahólf-síður (fyrir Brunahólf-appið — allt í iframe, deep-link á tab).
     { k: 'br-dagurinn',      label: 'Dagurinn (Brunahólf)',  short: 'Dagurinn',  emoji: '🌅', url: 'https://brunaholf.netlify.app/?embed=1#dagurinn' },
     { k: 'br-reikningagerd', label: 'Reikningagerð (Brunahólf)', short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#reikningar' },
     { k: 'br-skuldunautar',  label: 'Skuldunautar (Brunahólf)', short: 'Skuldun.', emoji: '💰', url: 'https://brunaholf.netlify.app/?embed=1#skuldunautar' },
     { k: 'br-hreyfingar',    label: 'Hreyfingaryfirlit (Brunahólf)', short: 'Hreyf.', emoji: '📄', url: 'https://brunaholf.netlify.app/?embed=1#hreyfingaryfirlit' },
-    { k: 'br-verkstadir',    label: 'Verkstaðir (Brunahólf)', short: 'Verkst.',  emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadir' },
-    { k: 'br-nlsh',          label: 'Landsspítalinn (Brunahólf)', short: 'NLSH', emoji: '🏥', url: 'https://brunaholf.netlify.app/?embed=1#nlsh' },
+    { k: 'br-verkstadir',    label: 'Verkstaðir (Brunahólf)', short: 'Verkst.', en: 'Worksites', emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadir' },
+    { k: 'br-nlsh',          label: 'Landsspítalinn (Brunahólf)', short: 'NLSH', en: 'NLSH', emoji: '🏥', url: 'https://brunaholf.netlify.app/?embed=1#nlsh' },
     // 02.11.2026 (Agnar, þriðja beiðni: „inn á firestarter … eða nothæf einföld útgáfa"): verkstjórar skrá efnisnotkun
     // í Brunaþéttingar-appinu (/brunathettingar: verk í vinnslu, ＋/− á efni úr lager, sérkaup, bæta við verki). Það á að
     // opnast INNI í Firestarter, ekki á stakri slóð. Engin innskráning (appið hefur enga). `br-fra-verkstad` er skrifstofu-
     // hliðin: allt sem verkstjórar skráðu, per verk, og fer beint í Efnislistann við reikningsgerð.
-    { k: 'br-efnisnotkun',   label: 'Efnisnotkun · verkstjórar skrá efni á verk', short: 'Efnisnotkun', emoji: '🧰', url: 'https://brunaholf.netlify.app/brunathettingar?embed=1' },
-    { k: 'br-fra-verkstad',  label: 'Frá verkstað · efnisnotkun per verk', short: 'Frá verkstað', emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadapostur' },
+    { k: 'br-efnisnotkun',   label: 'Efnisnotkun · verkstjórar skrá efni á verk', short: 'Efnisnotkun', en: 'Materials', emoji: '🧰', url: 'https://brunaholf.netlify.app/brunathettingar?embed=1' },
+    { k: 'br-fra-verkstad',  label: 'Frá verkstað · efnisnotkun per verk', short: 'Frá verkstað', en: 'From site', emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadapostur' },
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
@@ -173,7 +173,7 @@
     { k: 'br-thjonustugatt', label: 'Þjónustugátt · stjórnborð (kúnnavefir)', short: 'Þj.gátt', emoji: '🔑', url: '/gatt-admin/' },
     // Yfirferð efnislista — símavæn síða þar sem yfirmaður fer yfir flaggaða
     // Efnislista (Kröfu yfirlit 👔-takkinn), breytir magni, vistar og staðfestir.
-    { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },
+    { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', en: 'Review', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },
     { k: 'br-eydublod',     label: 'Eyðublöð (Brunahólf)',            short: 'Eyðublöð', emoji: '📝', url: 'https://brunaholf.netlify.app/eydublod.html' },
     // Skýrslu-stöð úr Bakendanum — einangraður flipi í brunaholf (?embed=1#skyrslustod)
     // svo AÐEINS stöðin birtist í appinu, ekki allur Bakendinn. Tengja skýrslu/reikning
@@ -188,7 +188,7 @@
     // `touch: true` = síðan á sitt eigið símaútlit og ramminn hennar fylgir KRÓM-zoominu (353), ekki síðuzoominu (333).
     // Síðuzoom 1,55 gaf rammanum 633 px viðmót (tölvuútlit í smáu letri); 2,6+ gaf 377 px og klippti stikurnar af.
     // Með krómzoominu er viðmótið nákvæmlega skjárbreiddin (412 px) og TurboPaint teiknar símaútlitið sitt 1:1.
-    { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint', touch: true },
+    { k: 'turbopaint',      label: 'TurboPaint — teikningar',        short: 'Teikningar', en: 'Drawings', emoji: '📐', url: 'https://kjarni.vercel.app/kjarni/turbopaint', touch: true },
     { k: '3dwork',          label: '3dwork — merkja/CAD-bekkur',     short: '3dwork', emoji: '🛠️', url: 'https://kjarni-3dwork.vercel.app/3dwork', touch: true },
     // 13.10.2026 (Agnar: „setja þetta tól inn á öpp og síðan inn á brunakerfi appið“): Brunaáætlun-smiðurinn (464,
     // /brunaaaetlun/) — án ?fyrirtaeki sýnir hann leit og áætlanir í vinnslu, svo hann virkar sem síða í hvaða appi sem er.
@@ -361,6 +361,9 @@
       // fyrir að hafa ekki vistast (mælt í viðmótinu).
       var a = { key: c.key, emoji: c.emoji || '📱', ikon: c.ikon || null, name: c.name || c.key, color: (c.color && c.color !== '#334155') ? c.color : '#0b0b0d',
         dark: (c.dark && c.dark !== '#0f172a') ? c.dark : '#000000', home: '', blurb: c.blurb || 'Notenda-búið app', custom: true,
+        // 02.11.2026 (Agnar: „english version of the firestarters … layover translate bara fyrir það app"): lang:'en' á
+        // notenda-búnu appi → enskir flipar (PAGES.en) og ?lang=en á römmuðu Brunahólfs-síðurnar. Ekkert annað breytist.
+        lang: c.lang === 'en' ? 'en' : '',
         defaults: Array.isArray(c.defaults) ? c.defaults : [] };
       APPS.push(a); APP_BY_KEY[a.key] = a;
       changed = true;
@@ -466,7 +469,7 @@
       }
     }
     if (app) {
-      app.name = name; app.emoji = emoji; app.blurb = blurb; app.defaults = defaults;
+      app.name = name; app.emoji = emoji; app.blurb = blurb; app.defaults = defaults;   // app.lang helst (ritillinn snertir það ekki)
       if ('ikon' in opts) app.ikon = opts.ikon || null;
       if (opts.color) app.color = opts.color;
       if (opts.dark) app.dark = opts.dark;
@@ -1664,7 +1667,7 @@
       // 04.10.2026 (Agnar: „sameinast hinu í header … setja inn í Stilla útlit. Default zoom per page"): 🎨 opnar
       // nú „Stærð og útlit" (333) — stærð ÞESSARAR síðu, vistuð á þjóninn; „Litir og letur…" þar opnar ritilinn.
       '<button id="_app-style" type="button" title="Stærð og útlit þessarar síðu">' + B48_IK.litur + '</button>' +
-      '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">' + B48_IK.nidur + '<i class="_applbl">Setja upp</i></button>' +
+      '<button class="_app-install" data-always="1" id="_app-inst2" type="button" title="Setja appið upp í símann">' + B48_IK.nidur + '<i class="_applbl">' + (a.lang === 'en' ? 'Install' : 'Setja upp') + '</i></button>' +
       '<button id="_app-exit" type="button" title="Loka appi">' + B48_IK.x + '</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
     var sty = document.getElementById('_app-style');
@@ -1680,7 +1683,7 @@
     nav.id = '_app-nav'; nav.style.display = '';
     nav.innerHTML = pages.map(function (k) {
       var p = pageByKey(k) || { k: k, label: k };
-      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + pgIcon(p) + '</span>' + esc(p.short || p.label) + '</button>';
+      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + pgIcon(p) + '</span>' + esc((a.lang === 'en' && p.en) || p.short || p.label) + '</button>';
     }).join('');
     if (!nav.parentNode) document.body.appendChild(nav);
     // Ein síða → ekkert að velja: fela dokkinn alveg (risaflísin fór hálfan skjáinn).
@@ -1908,6 +1911,13 @@
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
   }
+  // 02.11.2026: EN-app (lang:'en') sendir ?lang=en inn á römmuðu síðuna (brunathettingar.html les það) — sett á undan #hash.
+  function withLang(url) {
+    var a = ACTIVE && APP_BY_KEY[ACTIVE];
+    if (!a || a.lang !== 'en' || !url || /[?&]lang=/.test(url)) return url;
+    var i = url.indexOf('#'), base = i < 0 ? url : url.slice(0, i), hash = i < 0 ? '' : url.slice(i);
+    return base + (base.indexOf('?') < 0 ? '?' : '&') + 'lang=en' + hash;
+  }
   // Full-screen iframe host for external pages (between header + bottom nav).
   function frameEl() {
     var f = document.getElementById('_app-frame');
@@ -1922,7 +1932,8 @@
   }
   function showFrame(p) {
     var f = frameEl(), ifr = f.querySelector('iframe');
-    if (ifr.getAttribute('data-src') !== p.url) { ifr.src = p.url; ifr.setAttribute('data-src', p.url); }
+    var src = withLang(p.url);
+    if (ifr.getAttribute('data-src') !== src) { ifr.src = src; ifr.setAttribute('data-src', src); }
     // Snertisíður (touch: true) fá krómzoomið á rammann — 353 les klasann. Sjá PAGES.
     f.classList.toggle('_app-frame-touch', !!p.touch);
     f.style.display = 'block';
