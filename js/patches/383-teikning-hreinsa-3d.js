@@ -4650,7 +4650,7 @@
     }
     const FP = FPx(), h = virkHaed(), mr = main.getBoundingClientRect(), cr = c.getBoundingClientRect();
     const synilegt = c.style.display !== 'none' && cr.width > 2 && FP.bgImage;
-    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + ((plan().stimpilStaerd) || '') + '|z' + Z.s;
+    const stimpil = (plan().markers || []).filter(m => m && m.kind === 'sign').map(m => m.unitId + ':' + Math.round(m.x) + ':' + Math.round(m.y) + ':' + (m.sign || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '')).join(',') + '|s' + (window.TeiknMerking && TeiknMerking.staerdLykill ? TeiknMerking.staerdLykill() : ((plan().stimpilStaerd) || '')) + '|z' + Z.s;
     const takn = (window.TeiknTakn && TeiknTakn.fingrafar ? TeiknTakn.fingrafar() : '') + (window.TeiknSia ? '|sia:' + TeiknSia.lykill() : '');
     const ei = window.TeiknEi && TeiknEi.fingrafar ? TeiknEi.fingrafar(h) : '';
     const merki = [synilegt ? 1 : 0, Math.round(cr.left - mr.left), Math.round(cr.top - mr.top), Math.round(cr.width), Math.round(cr.height), c.width, G.rymi.x, G.rymi.y,
@@ -5966,12 +5966,45 @@
     return o;
   }
   const fahLoka = () => { const o = document.getElementById('fp-fah'); if (o) o.style.display = 'none'; };
+  // Framvinda: textinn + hæðirnar sem eru þegar lesnar (smámynd af hverri strax og blaðið er komið — ekki beðið eftir restinni)
+  function fahFramvinda(o, t, kominn) {
+    if (!o) return;
+    const hs = (kominn || []).slice().sort((a, b) => fahRod(a.k) - fahRod(b.k));
+    o.innerHTML = '<div style="margin:auto;text-align:center;color:rgba(255,255,255,.75);max-width:640px;line-height:1.5;padding:16px">' + esc(t) +
+      (hs.length ? '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px">' + hs.map((h, i) =>
+        '<div style="width:96px"><canvas data-fp="' + i + '" width="96" height="64" style="width:96px;height:64px;background:#fff;border-radius:5px"></canvas><div style="font-size:11px;color:#f0d48a;margin-top:2px">' + esc(h.nafn) + '</div></div>').join('') + '</div>' : '') + '</div>';
+    hs.forEach((h, i) => {
+      const c = o.querySelector('canvas[data-fp="' + i + '"]'); if (!c || !h.mynd) return;
+      const iw = h.mynd.naturalWidth || h.mynd.width, ih = h.mynd.naturalHeight || h.mynd.height, sk = h.skurdur || { x: 0, y: 0, w: iw, h: ih };
+      const x = c.getContext('2d'), k = Math.min(96 / sk.w, 64 / sk.h);
+      x.fillStyle = '#fff'; x.fillRect(0, 0, 96, 64);
+      try { x.drawImage(h.mynd, sk.x, sk.y, sk.w, sk.h, (96 - sk.w * k) / 2, (64 - sk.h * k) / 2, sk.w * k, sk.h * k); } catch (_) {}
+    });
+  }
   const fahTexti = (o, t) => { if (o) o.innerHTML = '<div style="margin:auto;text-align:center;color:rgba(255,255,255,.75);max-width:520px;line-height:1.5">' + esc(t) + '</div>'; };
   function fahVilla(o, t) {
     if (!o) return;
     o.innerHTML = '<div style="margin:auto;text-align:center;max-width:480px;color:rgba(255,255,255,.85);line-height:1.5;padding:20px">' + esc(t) +
       '<div style="margin-top:16px"><button type="button" class="btn btn-outline btn-sm" data-fah="loka" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.25)">Loka</button></div></div>';
     o.querySelector('[data-fah="loka"]').onclick = fahLoka;
+  }
+  // Eitt blað lesið: mynd (með 60 s tímaþaki — hún gat hangið endalaust) + húsrammar. Munað í þessari lotu (mest 12 blöð, elsta fer
+  // fyrst) svo „Finna allt húsið" í annað sinn sæki/teikni/greini ekkert upp á nýtt. Bilað blað er ekki munað.
+  const fahMinni = new Map();
+  function fahLesaBlad(url) {
+    if (fahMinni.has(url)) { const p = fahMinni.get(url); fahMinni.delete(url); fahMinni.set(url, p); return p; }
+    const p = (async () => {
+      let mynd = null, rammar = [];
+      try { mynd = await Promise.race([hladaMynd(url), new Promise((_, rej) => setTimeout(() => rej(new Error('tímamörk')), 60000))]); } catch (_) {}
+      if (mynd) { try { rammar = husRammar(mynd); } catch (e) { console.warn('[383] húsrammar', e); } }
+      if (!mynd) throw Object.assign(new Error('blað hlóðst ekki'), { bilad: true });
+      return { mynd, rammar };
+    })();
+    // bilað blað gefur tóma mynd eins og áður (tillagan fær allt blaðið / enga mynd) en er ekki munað
+    const trygg = p.catch(() => { fahMinni.delete(url); return { mynd: null, rammar: [] }; });
+    fahMinni.set(url, trygg);
+    while (fahMinni.size > 12) fahMinni.delete(fahMinni.keys().next().value);
+    return trygg;
   }
   // Tillagan fyrir staðinn — reiknuð en ekki beitt (prófanir: TeiknBord.finnaAlltHusid({ anYfirlags: true }))
   async function fahTillaga(framvinda) {
@@ -5997,17 +6030,24 @@
       if (!TeiknVal.erTilSkyndi(r.eign)) { try { await TeiknVal.saekja(r.eign); } catch (_) {} } else if (!TeiknVal.erSott(r.eign)) TeiknVal.saekja(r.eign);
       TeiknVal.finnaAlltHusid(val, r.dr, r.eign, TeiknSaekja.flokka);
     }
+    // 02.11.2026 (Agnar: „skelfilega hægur"): blöðin voru lesin EITT Í EINU (sækja → teikna PDF → greina → næsta). Nú 3 í einu
+    // (2 þegar blaðið er hreint PDF: 6000 px strigi er ~100 MB), fyrsta hæðin fyrst, og blað sem hefur verið lesið áður í þessari
+    // lotu (mynd + húsrammar) er munað í fahMinni — „Finna allt húsið" í annað sinn les ekkert upp á nýtt.
     const blod = new Map(); val.forEach((x, k) => { if (!blod.has(x)) blod.set(x, []); blod.get(x).push(k); });
-    const tillaga = [];
-    let i = 0;
-    for (const [x, lyklar] of blod) {
-      i++;
-      framvinda('Les blað ' + i + ' af ' + blod.size + ': ' + (x.d.lysing || x.d.tegund || '') + '…');
+    const verk = [...blod].map(([x, lyklar]) => { lyklar.sort((a, b) => fahRod(a) - fahRod(b)); return { x, lyklar }; })
+      .sort((a, b) => fahRod(a.lyklar[0]) - fahRod(b.lyklar[0]));
+    const tillaga = [], lesin = [];
+    let naest = 0, lokid = 0;
+    let pdfVirk = 0; const pdfBid = [];
+    const pdfLeyfi = () => new Promise(res => { const reyna = () => { if (pdfVirk < 2) { pdfVirk++; res(); } else pdfBid.push(reyna); }; reyna(); });
+    const pdfLosa = () => { pdfVirk--; const n = pdfBid.shift(); if (n) n(); };
+    const lesaBlad = async ({ x, lyklar }) => {
       const url = '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl);
-      let mynd = null, rammar = [];
-      try { mynd = await hladaMynd(url); } catch (_) {}
-      if (mynd) { try { rammar = husRammar(mynd); } catch (e) { console.warn('[383] húsrammar', e); } }
-      lyklar.sort((a, b) => fahRod(a) - fahRod(b));
+      const erPdf = /\.pdf(\.info)?$/i.test(String(x.d.infoUrl || ''));
+      if (erPdf) await pdfLeyfi();
+      let b;
+      try { b = await fahLesaBlad(url); } finally { if (erPdf) pdfLosa(); }
+      const mynd = b.mynd, rammar = b.rammar;
       // skipting miðast við ALLAR hæðir blaðsins, líka þær sem fengu nákvæmara blað (Laugavegur 18: „Grunnmynd 1. hæð,
       // 2. hæð" þegar 2. hæð á sitt eigið blað — 1. hæð er samt fyrsta grunnmyndin á blaðinu, ekki sú stærsta)
       const allir = x.lyklar.slice().sort((a, b) => fahRod(a) - fahRod(b));
@@ -6017,8 +6057,19 @@
         k, nafn: fahNafn(k), image_url: url, skurdur: samsett ? rammar[allir.indexOf(k)] : staerst,
         leid: samsett ? 'samsett' : allir.length > 1 ? 'daemigerd' : 'eitt', blad: { lysing: x.d.lysing || x.d.tegund || '', dags: x.d.dags || '', tegund: x.d.tegund || '' }, mynd
       }));
-      await new Promise(rr => setTimeout(rr, 0));
-    }
+      lokid++;
+      lesin.push(...lyklar.map(fahNafn));
+      framvinda('Las ' + lokid + ' af ' + verk.length + ' blöðum — komið: ' + lesin.slice(0, 8).join(', ') + (lesin.length > 8 ? ' …' : ''), tillaga);
+    };
+    const hlaupari = async () => {
+      while (naest < verk.length) {
+        const v = verk[naest++];
+        await lesaBlad(v);
+        await new Promise(rr => setTimeout(rr, 0));
+      }
+    };
+    framvinda('Les ' + verk.length + ' blöð (3 í einu)…', tillaga);
+    await Promise.all([hlaupari(), hlaupari(), hlaupari()]);
     tillaga.sort((a, b) => fahRod(a.k) - fahRod(b.k));
     const hs = haedir();
     tillaga.forEach(t => {
@@ -6052,7 +6103,7 @@
     o = o || {};
     const y = o.anYfirlags ? null : fahYfirlag();
     let tl;
-    try { tl = await fahTillaga(t => fahTexti(y, t)); }
+    try { tl = await fahTillaga((t, kominn) => fahFramvinda(y, t, kominn)); }
     catch (e) { if (y) fahVilla(y, (e && e.message) || String(e)); throw e; }
     if (o.anYfirlags) return tl;
     const nyjar = tl.tillaga.filter(t => !t.til).length;

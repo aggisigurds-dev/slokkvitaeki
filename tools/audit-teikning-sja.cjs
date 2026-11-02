@@ -23,7 +23,8 @@ if (/435-teikning-gaedi/.test(p436)) villur.push('436 má ekki hlaða 435 gæði
 if (/fp-gaedi/.test(p436)) villur.push('436 má ekki bæta gæði-hnöppum á gluggann');
 krefst(p436, /brightness\(0\.82\).*contrast\(1\.55\)/, '436 vantar filter sem dökkvar fölgráar CAD-línur');
 krefst(p436, /function stimpilPx/, '436 vantar stimpilPx');
-krefst(p436, /Math\.max\(32/, 'stimplar á síma eiga að vera ≥ 32 px');
+// 02.11.2026: áður „≥ 32 px“ (fast 32–56 — of stórt á stórum teikningum, Nýbýlavegur). Nú miðað við húsið, lágmark 18 px (læsilegt á síma).
+krefst(p436, /STIMPIL_MIN = 18/, 'stimplar þurfa lágmark 18 px (læsilegt á síma)');
 krefst(p436, /function taknPx/, '436 vantar taknPx');
 krefst(p436, /26 \/ sc/, 'tákn eiga að vera ~26 skjápunktar');
 krefst(p436, /TeiknGaedi\.bindSrc/, '436 _loadImg á að láta gæði ráða þegar 435 er til');
@@ -40,17 +41,19 @@ krefst(nf, /TeiknSja\.punkturPx|14\/sc/, 'newfeatures rauði punkturinn á að v
 if (/kind === 'firewall'|stimpla eldvegg/i.test(p436)) villur.push('436 má ekki stimpla EI/eldveggi');
 if (/v\.a = true/.test(p436)) villur.push('436 má ekki kveikja Skýrari veggir sjálfkrafa');
 
-function stimpilPx(crWidth) {
+function stimpilPx(crWidth, husHlutfall) {   // afrit af 436 (STIMPIL_DEILIR 48, MIN 18, MAX 40)
   const w = Number(crWidth) || 0;
-  return Math.max(32, Math.min(56, Math.round(w / 12) || 32));
+  if (!(w > 0)) return 16;
+  const f = husHlutfall > 0 && husHlutfall <= 1 ? husHlutfall : 1;
+  return Math.max(18, Math.min(40, Math.round(w * f / 48)));
 }
 function taknPx(cw, sc) {
   const a = Math.round((Number(cw) || 0) / 70);
   const b = (sc > 0 && isFinite(sc)) ? Math.round(26 / sc) : 26;
   return Math.max(22, a, b);
 }
-if (stimpilPx(360) < 32) villur.push('sími 360 px: stimpill undir 32 px');
-if (stimpilPx(360) !== 32) villur.push('sími 360 px: stimpill á að vera 32 (var ' + stimpilPx(360) + ')');
+if (stimpilPx(360) < 18) villur.push('sími 360 px: stimpill undir 18 px');
+if (stimpilPx(1200) > 30) villur.push('skjáborð 1200 px: stimpill yfir 30 px (á að vera ~1/48 af breidd hússins)');
 const sc = 360 / 6006;
 if (taknPx(6006, sc) * sc < 24) villur.push('sími: tæki undir 24 skjápunktum (' + (taknPx(6006, sc) * sc).toFixed(1) + ')');
 
@@ -59,5 +62,5 @@ if (villur.length) {
   villur.forEach(v => console.log('  · ' + v));
   process.exit(1);
 }
-console.log('TEIKNING-SJA GRÆNT — contrast, PDF innvortis, stimplar ≥32 px, engir gæða-hnappar.');
+console.log('TEIKNING-SJA GRÆNT — contrast, PDF innvortis, stimplar ≥18 px og miðaðir við húsið, engir gæða-hnappar.');
 process.exit(0);

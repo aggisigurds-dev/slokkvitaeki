@@ -73,14 +73,16 @@
       '#t442-val label{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);font:600 12px system-ui,sans-serif;cursor:pointer;user-select:none}' +
       '#t442-val input{accent-color:#c9a54a;width:16px;height:16px;margin:0}' +
       '#modal-floorplan.t442-virkt #fp-stimpil>.fp-stimpil-lbl{display:none}' +
-      '#modal-floorplan.t442-merki-lokad #fp-stimpil,#modal-floorplan.t442-merki-lokad #fp-stimpil-staerd-wrap,#modal-floorplan.t442-merki-lokad #t442-val{display:none!important}' +
+      '#modal-floorplan.t442-merki-lokad #fp-stimpil,#modal-floorplan.t442-merki-lokad #t442-val{display:none!important}' +
       // SÍMI: ein lág skrunröð af merkjum, sleðinn í einni línu
       '#modal-floorplan.fp-simi #fp-stimpil{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:5px;margin:0 0 6px;padding-bottom:2px}' +
       '#modal-floorplan.fp-simi #fp-stimpil .fp-stimpill{flex:none!important;padding:3px 8px 3px 3px;font-size:11px;white-space:nowrap}' +
       '#modal-floorplan.fp-simi #fp-stimpil .fp-stimpill-ico{width:20px!important;height:20px!important}' +
       '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap{display:flex;align-items:center;gap:8px;margin:0 0 4px;padding:0 2px;border:0!important;background:none!important}' +
       '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap .fp-stimpil-lbl{width:auto!important;margin:0!important;white-space:nowrap}' +
-      '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap .fp-staerd-rod{flex:1 1 auto}' +
+      '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap .fp-staerd-rod{flex:1 1 auto;order:2}' +
+      '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap .fp-staerd-hd{display:contents}' +
+      '#modal-floorplan.fp-simi #fp-stimpil-staerd-wrap #fp-stimpil-staerd-sjalf{order:3;height:26px!important;min-height:0!important;padding:0 8px!important;font-size:11px!important}' +
       // app-hamurinn (261/simi-compact-layer) blæs öll input upp í 52 px — tvöfalt auðkenni + !important
       '#modal-floorplan.fp-simi #fp-panel #fp-stimpil-staerd{height:22px!important;min-height:0!important;padding:0!important;margin:0!important;font-size:12px!important}' +
       // SÍMI: toppurinn fellanlegur
@@ -121,7 +123,7 @@
       // Teikning / Skoða: ekkert fyrir neðan kortið
       '#modal-floorplan.fp-simi.t442-h-teikn #fp-panel,#modal-floorplan.fp-simi.t442-h-skoda #fp-panel{display:none!important}' +
       // Tæki (Agnar 25.10.2026: „alllt of mikið af óþarfa doti … færa öll merki í merkingar“): AÐEINS tækjaspjöldin — búnaðarröðin, merkin, stærðarsleðinn og „Nýtt“-línan fara í Merki-flipann; valið merki sýnir bara nafn og Snúa / Fjarlægja
-      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil-staerd-wrap,#modal-floorplan.fp-simi.t442-h-taeki #fp-nytt{display:none!important}' +
+      '#modal-floorplan.fp-simi.t442-h-taeki #t442-haus,#modal-floorplan.fp-simi.t442-h-taeki #t442-val,#modal-floorplan.fp-simi.t442-h-taeki #fp-stimpil,#modal-floorplan.fp-simi.t442-h-taeki #fp-nytt{display:none!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-stimpil-lbl,#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-vm-stimp{display:none!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd{padding:4px 8px!important;margin:0 0 4px!important}' +
       '#modal-floorplan.fp-simi.t442-h-taeki #fp-merki-adgerd .fp-merki-nafn{font-size:13px!important;margin:0 0 4px!important}' +

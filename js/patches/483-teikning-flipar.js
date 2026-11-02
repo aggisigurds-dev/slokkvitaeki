@@ -37,8 +37,8 @@
       '#modal-floorplan.fp-simi #fp-pn-tabs{display:none!important}' +
       '#fp-panel>.fp-pn-hd0{display:none!important}' +
       // hvað sést í hverjum flipa
-      '#modal-floorplan.fp-pn-taeki #t442-haus,#modal-floorplan.fp-pn-taeki #t442-val,#modal-floorplan.fp-pn-taeki #fp-stimpil,#modal-floorplan.fp-pn-taeki #fp-stimpil-staerd-wrap,#modal-floorplan.fp-pn-taeki #fp-nytt{display:none!important}' +
-      '#modal-floorplan.fp-pn-bunadur #fp-pn-tolur,#modal-floorplan.fp-pn-bunadur #fp-pn-oskrad,#modal-floorplan.fp-pn-bunadur #fp-unit-list,#modal-floorplan.fp-pn-bunadur #fp-tl-sia,#modal-floorplan.fp-pn-bunadur #t442-haus,#modal-floorplan.fp-pn-bunadur #t442-val,#modal-floorplan.fp-pn-bunadur #fp-stimpil,#modal-floorplan.fp-pn-bunadur #fp-stimpil-staerd-wrap{display:none!important}' +
+      '#modal-floorplan.fp-pn-taeki #t442-haus,#modal-floorplan.fp-pn-taeki #t442-val,#modal-floorplan.fp-pn-taeki #fp-stimpil,#modal-floorplan.fp-pn-taeki #fp-nytt{display:none!important}' +
+      '#modal-floorplan.fp-pn-bunadur #fp-pn-tolur,#modal-floorplan.fp-pn-bunadur #fp-pn-oskrad,#modal-floorplan.fp-pn-bunadur #fp-unit-list,#modal-floorplan.fp-pn-bunadur #fp-tl-sia,#modal-floorplan.fp-pn-bunadur #t442-haus,#modal-floorplan.fp-pn-bunadur #t442-val,#modal-floorplan.fp-pn-bunadur #fp-stimpil{display:none!important}' +
       '#modal-floorplan.fp-pn-merki #fp-bunadur,#modal-floorplan.fp-pn-merki #fp-pn-tolur,#modal-floorplan.fp-pn-merki #fp-pn-oskrad,#modal-floorplan.fp-pn-merki #fp-unit-list,#modal-floorplan.fp-pn-merki #fp-tl-sia{display:none!important}' +
       '#modal-floorplan:not(.fp-pn-taeki):not(.fp-pn-bunadur):not(.fp-pn-merki) #fp-pn-tolur,#modal-floorplan:not(.fp-pn-taeki):not(.fp-pn-bunadur):not(.fp-pn-merki) #fp-pn-oskrad{display:none!important}' +
       // valið merki í Tæki: aðeins nafn og Snúa / Fjarlægja
