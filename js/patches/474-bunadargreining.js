@@ -173,10 +173,11 @@
   // tákn (takn ræður lyklinum í 434: duft/co2/lettvatn/slanga), útgangar sem grænt ÚT-skilti. Áður vantaði lykilinn og allt
   // teiknaðist sem rauði kúturinn (Agnar 02.11.2026: „Sama mynd af öllu þarna").
   function merkiTakn(k, tegund) {
+    if (window.TeiknTakn && TeiknTakn.flokkaMerki) return TeiknTakn.flokkaMerki(k, tegund);   // eitt útlit alls staðar (434)
     var t = String(tegund || '').toLowerCase().replace('₂', '2');
-    if (k === 'sl') return { takn: /co2|kols[yý]r/.test(t) ? 'co2' : /l[eé]ttvatn|abf|fro[ðd]/.test(t) ? 'lettvatn' : 'duft', kvardi: 0.6 };
-    if (k === 'bs') return { takn: 'slanga', kvardi: 0.6 };
-    if (k === 'ut') return { takn: 'ut', kvardi: 0.6 };
+    if (k === 'sl') return { takn: /co2|kols[yý]r/.test(t) ? 'co2' : /l[eé]ttvatn|abf|fro[ðd]/.test(t) ? 'lettvatn' : 'duft' };
+    if (k === 'bs') return { takn: 'slanga' };
+    if (k === 'ut') return { takn: 'ut' };
     return { punktur: LITUR_K[k] };
   }
 

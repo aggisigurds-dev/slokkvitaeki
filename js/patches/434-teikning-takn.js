@@ -39,6 +39,7 @@
     bjalla: { bg: '#e11d2e', fg: '#fff' },
     segull: { bg: '#e11d2e', fg: '#fff' },
     hitaskynjari: { bg: '#e11d2e', fg: '#fff' },
+    handbodi: { bg: '#f57c00', fg: '#fff' },
     bjorgunarop: { bg: '#15803d', fg: '#fff' },
     annad: { bg: '#e11d2e', fg: '#fff' }
   };
@@ -166,6 +167,7 @@
     if (/reyksk/.test(t)) return 'reykskynjari';
     if (/hitask/.test(t)) return 'hitaskynjari';
     if (/bjall|siren/.test(t)) return 'bjalla';
+    if (/handbo/.test(t)) return 'handbodi';
     if (/segul/.test(t)) return 'segull';
     return 'annad';
   }
@@ -363,8 +365,29 @@
     return true;
   }
 
+  /* ── EITT ÚTLIT ALLS STAÐAR (Agnar 02.11.2026: „finnst þetta vera mismunandi út um allt og ekkert virka saman"): flokkur → útlit, sama í Teikningu,
+   * forskoðun (456), prófílspjöldum (485), Búnaðargreiningu (474) og prenti. Brunakerfið er PUNKTUR í lit flokksins (reykskynjari fjólublár, hitaskynjari
+   * bleikur, handboði/bjalla appelsínugulur, stjórnstöð dökkfjólublár) — líka skráð tæki af þeim gerðum á Teikningu; slökkvitæki og slöngur raunsæ tákn;
+   * útgangur grænt ÚT-skilti. Merki ber `punktur` (litur) eða `takn` (lykill hér) og má bera `kvardi` (stærðarstuðul). ── */
+  const FLOKKA_LITIR = { sl: '#c93c1d', bs: '#1f5fbf', ut: '#2e7d32', r: '#8e24aa', hb: '#f57c00', hiti: '#e91e63', st: '#4527a0' };
+  const PUNKTUR_LYK = { reykskynjari: FLOKKA_LITIR.r, hitaskynjari: FLOKKA_LITIR.hiti, handbodi: FLOKKA_LITIR.hb, bjalla: FLOKKA_LITIR.hb };
+  function flokkaMerki(k, tegund) {
+    const t = String(tegund || '').toLowerCase().replace('\u2082', '2');
+    if (k === 'sl') return { takn: /co2|kols[yý]r/.test(t) ? 'co2' : /l[eé]ttvatn|abf|fro[ðd]/.test(t) ? 'lettvatn' : 'duft' };
+    if (k === 'bs') return { takn: 'slanga' };
+    if (k === 'ut') return { takn: 'ut' };
+    return { punktur: FLOKKA_LITIR[k] || FLOKKA_LITIR.st };
+  }
+  function teiknaPunkt(ctx, litur, mx, my, s) {
+    ctx.save(); ctx.beginPath(); ctx.arc(mx, my, s * 0.24, 0, Math.PI * 2); ctx.fillStyle = litur; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
+  }
+
   function teiknaMerki(ctx, m, mx, my, s, units) {
+    if (m && m.kvardi > 0) s = s * m.kvardi;
+    if (m && m.punktur) return teiknaPunkt(ctx, m.punktur, mx, my, s);
     const lyk = lykillFyrir(m, units);
+    if (raunOn() && PUNKTUR_LYK[lyk]) return teiknaPunkt(ctx, PUNKTUR_LYK[lyk], mx, my, s);
     if (raunOn() && teiknaRaun(ctx, lyk, mx, my, s)) return;
     const litur = Object.assign({}, LITIR[lyk] || LITIR.annad, m.color && lyk !== 'lettvatn' && lyk !== 'duft' && lyk !== 'co2' ? { bg: m.color } : {});
     teiknaTakn(ctx, val()[lyk] || SJALF[lyk] || 'extinguisher', litur, mx, my, s, m && m.rot);
@@ -827,7 +850,7 @@
   }
 
   window.TeiknTakn = {
-    val, fingrafar, teiknaTakn, teiknaMerki, teiknaISpan, teiknaOfan, fjold, glyff: GLYFF, litir: LITIR, erNytt, nyttMidi
+    val, fingrafar, teiknaTakn, teiknaMerki, teiknaISpan, teiknaOfan, fjold, glyff: GLYFF, litir: LITIR, erNytt, nyttMidi, flokkaMerki, flokkaLitir: FLOKKA_LITIR
   };
   window.TeiknEi = Object.assign({}, kjarni, {
     lesaUrPdf, lesaUrMynd, teikna: teiknaEi, fingrafar: eiFingrafar, syn: eiSyn, keyra: keyraEiLestur
