@@ -444,6 +444,9 @@
       '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-breyta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka{margin-left:8px}',
+      // Prenta verðlista — sami silfurtakki, situr milli ✎ Breyta og ✕
+      '#' + AUÐK + '-prenta{margin-left:8px;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-prenta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       // verðreitir brunakerfis-listans (442 .reitur): 96px, hægri-jafnað mono, grænt/rautt eftir vistun
       '.' + AUÐK + '-verd{width:96px;height:30px;box-sizing:border-box;padding:0 8px;text-align:right;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
       '.' + AUÐK + '-verd:focus{outline:none;border-color:rgba(201,42,42,.55);box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(201,42,42,.18)}',
@@ -822,6 +825,73 @@
     return h;
   }
 
+  // Prenta verðlista (Agnar 02.11.2026: „bætt við prenta verðlista fyrir brunakerfisþjónustuna"): sami listi og
+  // glugginn sýnir, á A4 með haus eins og 150 prentar — liður · verð án vsk · verð m/vsk. Búnaðartengingin er innri
+  // og fer ekki á blaðið. Glugginn opnast strax í smellinum (annars blokkar vafrinn hann); verð sem er enn að vistast
+  // (reiturinn óvirkur meðan savePriceItems keyrir) er beðið eftir svo blaðið sýni vistaða verðið, ekki það gamla.
+  function prentaBrunakerfi() {
+    var w = window.open('', '_blank');
+    if (!w) { segja('Vafrinn blokkaði nýjan glugga — leyfðu sprettiglugga fyrir þessa síðu.', true); return; }
+    var reynt = 0;
+    (function skrifa() {
+      if (document.querySelector('#' + AUÐK + '-efni .' + AUÐK + '-verd[disabled]') && reynt++ < 50) { setTimeout(skrifa, 100); return; }
+      w.document.open();
+      w.document.write(prentHtmlBrunakerfi());
+      w.document.close();
+    })();
+  }
+
+  function prentHtmlBrunakerfi() {
+    var VSK = 24;
+    var BK = window.BrunakerfiSkyrsla;
+    var listi = (BK && BK.priceItems) ? BK.priceItems() : ((G.bkListi && Array.isArray(G.bkListi.items)) ? G.bkListi.items : []);
+    var hopar = [['thjonusta', 'Þjónusta'], ['vara', 'Vörur']];
+    var radir = hopar.map(function (hp) {
+      var l = (listi || []).filter(function (it) { return (it.teg === 'vara' ? 'vara' : 'thjonusta') === hp[0]; });
+      if (!l.length) return '';
+      return '<tr class="hopur"><td colspan="3">' + hp[1] + '</td></tr>' + l.map(function (it) {
+        var n = Number(it.price) || 0;
+        return '<tr><td>' + esc(it.name) + '</td><td class="r">' + kr(n) + '</td><td class="r b">' + kr(n * (1 + VSK / 100)) + '</td></tr>';
+      }).join('');
+    }).join('');
+    var logo = (window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({ heightPx: 80, absoluteUrl: true })
+      : '<img src="' + window.location.origin + '/img/logo.png?v=20260520b" alt="Slökkvitæki" style="height:80px;width:240px;object-fit:contain" onerror="this.style.display=\'none\'">';
+    var nu = new Date(), dags = nu.getDate() + '.' + (nu.getMonth() + 1) + '.' + nu.getFullYear();   // toLocaleDateString('is-IS') gaf „02/11/2026" í Chromium
+    return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>Verðskrá brunakerfisþjónustu — Slökkvitæki ehf</title><style>' +
+      '@page{size:A4;margin:16mm 14mm}' +
+      'body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;margin:0;padding:0;font-size:12.5px;line-height:1.45;background:#fff}' +
+      '.wrap{max-width:780px;margin:0 auto;padding:18px 24px}' +
+      '.head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding-bottom:14px;border-bottom:2px solid #0f172a}' +
+      '.logo{display:flex;gap:12px;align-items:center}.logo img{max-height:54px}' +
+      '.co-info{font-size:11px;color:#475569;line-height:1.45}.co-info b{color:#0f172a;font-size:14px}' +
+      '.doc-title{text-align:right}.doc-title h1{margin:0;font-size:22px;letter-spacing:.5px}' +
+      '.doc-title .sub{color:#dc2626;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}' +
+      '.doc-title .meta{font-size:11px;color:#475569;margin-top:8px}' +
+      'table{width:100%;border-collapse:collapse;margin-top:18px;font-size:12px}' +
+      'th{background:#f1f5f9;color:#475569;text-transform:uppercase;font-size:10px;letter-spacing:.04em;padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0}' +
+      'th.r,td.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}' +
+      'td{padding:7px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top}td.b{font-weight:700}' +
+      'tr{break-inside:avoid}thead{display:table-header-group}' +
+      'tr.hopur td{padding:9px 10px;background:#fef2f2;color:#991b1b;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em}' +
+      '.ath{margin-top:14px;font-size:11px;color:#475569}' +
+      '.foot{margin-top:28px;padding-top:10px;border-top:1px solid #e2e8f0;text-align:center;font-size:10.5px;color:#64748b}' +
+      '.stika{position:sticky;top:0;display:flex;justify-content:flex-end;gap:8px;padding:10px 24px;background:#f1f5f9;border-bottom:1px solid #e2e8f0}' +
+      '.stika button{padding:8px 16px;border:1px solid #0f172a;border-radius:6px;background:#0f172a;color:#fff;font:700 12.5px Arial,sans-serif;cursor:pointer}' +
+      '@media print{.stika{display:none}}' +
+      '</style></head><body>' +
+      '<div class="stika"><button type="button" onclick="window.print()">Prenta / Vista PDF</button></div>' +
+      '<div class="wrap"><div class="head">' +
+        '<div class="logo">' + logo + '<div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · eldklar@eldklar.is</div></div>' +
+        '<div class="doc-title"><h1>Verðskrá</h1><div class="sub">Þjónusta við brunaviðvörunarkerfi</div><div class="meta">Dags.: <strong>' + esc(dags) + '</strong></div></div>' +
+      '</div>' +
+      '<table><thead><tr><th>Liður</th><th class="r" style="width:120px">Verð án VSK</th><th class="r" style="width:120px">Verð m/VSK</th></tr></thead>' +
+      '<tbody>' + (radir || '<tr><td colspan="3" style="padding:14px;color:#94a3b8;font-style:italic;text-align:center">Enginn verðlisti fannst</td></tr>') + '</tbody></table>' +
+      '<div class="ath">Öll verð eru í íslenskum krónum. VSK ' + VSK + ' %.</div>' +
+      '<div class="foot">Slökkvitæki ehf · Helluhraun 10, 220 Hafnarfirði · kt. 600508-0400 · Sími 565-4080</div>' +
+      '</div><script>window.addEventListener("load",function(){setTimeout(function(){window.print()},200)})<\/script></body></html>';
+  }
+
   // ── gluggi 3: slökkvikerfi ──────────────────────────────────────────────
   function htmlSlokkvikerfi() {
     var h = '<div class="' + AUÐK + '-h3">Sjálfgefin verð á línur slökkvikerfisskýrslunnar</div>';
@@ -1146,7 +1216,8 @@
           // 14.10.2026 (Agnar: „Það er eitthvað þar. En get ekki breytt neinu þar" · „setja hann bara efst í hornið á
           // núverandi lista"): brunakerfis-glugginn SÝNIR verðlistann; ritillinn er í 273 (sami og í Brunakerfis skoðun).
           // Ekkert spjald má vera blindgata — takkinn í horninu fer beint í ritilinn.
-          (_flokkur === 'brunakerfi' ? '<button id="' + AUÐK + '-breyta" type="button" title="Breyta verðlistanum — heiti, verð og tengingar, vistast fyrir allar vélar">✎ Breyta verðlista</button>' : '') +
+          (_flokkur === 'brunakerfi' ? '<button id="' + AUÐK + '-breyta" type="button" title="Breyta verðlistanum — heiti, verð og tengingar, vistast fyrir allar vélar">✎ Breyta verðlista</button>' +
+            '<button id="' + AUÐK + '-prenta" type="button" title="Prenta verðlistann á A4 með haus Slökkvitækis — verð án og með vsk">Prenta verðlista</button>' : '') +
           '<button id="' + AUÐK + '-loka" type="button" aria-label="Loka">✕</button>' +
         '</div>' +
         '<div id="' + AUÐK + '-stada"></div>' +
@@ -1163,6 +1234,8 @@
       if (window.BrunakerfiSkyrsla && BrunakerfiSkyrsla.openPriceEditor) BrunakerfiSkyrsla.openPriceEditor(null);
       else if (window.Toast && Toast.show) Toast.show('Verðlistaritillinn (273) er ekki hlaðinn');
     });
+    var prenta = document.getElementById(AUÐK + '-prenta');
+    if (prenta) prenta.addEventListener('click', prentaBrunakerfi);
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
