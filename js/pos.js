@@ -1246,6 +1246,12 @@
         '<button id="pos-svc-vat-toggle" style="border:none;background:none;padding:0;font:inherit;font-size:11px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:underline">Verð með vsk</button>'+
       '</div>'+
       '<input id="pos-svc-price" type="text" inputmode="decimal" value="5000" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;text-align:right">'+
+      // 02.11.2026 (Agnar, R-001236): handvirk þjónustulína fór ALLTAF á verkstæðið — fimm
+      // frítexta-línur (akstur, vinna rafvirkja, Xp95…) urðu 5 verkbeiðnir og 11 TMP-raðnúmer.
+      // Nú ræður þetta hak, sjálfgefið ÓVALIÐ; aðeins sýnt í þjónustu-ham.
+      '<label id="pos-svc-wb-row" style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:#334155;cursor:pointer;user-select:none">'+
+        '<input type="checkbox" id="pos-svc-wb" style="width:16px;height:16px;margin:0;flex-shrink:0">Fer á verkstæði — stofnar verkbeiðni'+
+      '</label>'+
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">'+
         '<button id="pos-svc-x" style="padding:9px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;cursor:pointer">Hætta við</button>'+
         '<button id="pos-svc-ok" style="padding:9px 18px;border-radius:8px;border:1px solid #16a34a;background:#16a34a;color:#fff;font-weight:700;cursor:pointer">Bæta við</button>'+
@@ -1262,6 +1268,8 @@
     var vatToggleEl=m.querySelector('#pos-svc-vat-toggle');
     var tabServiceEl=m.querySelector('#pos-svc-tab-service');
     var tabProductEl=m.querySelector('#pos-svc-tab-product');
+    var wbRowEl=m.querySelector('#pos-svc-wb-row');
+    var wbEl=m.querySelector('#pos-svc-wb');
 
     function setMode(next){
       if(mode===next)return;
@@ -1270,6 +1278,7 @@
       if(descEl.value===DEFAULT_DESC[mode])descEl.value=DEFAULT_DESC[next];
       mode=next;
       var isSvc=mode==='service';
+      wbRowEl.style.display=isSvc?'flex':'none'; // handvirk vara stofnar aldrei verkbeiðni
       tabServiceEl.style.fontSize=isSvc?'17px':'13px';
       tabServiceEl.style.fontWeight=isSvc?'800':'600';
       tabServiceEl.style.color=isSvc?'#0f172a':'#2563eb';
@@ -1301,9 +1310,10 @@
       if(!d){alert('Lýsing vantar');return;}
       if(isNaN(pr)){alert('Ógilt verð');return;}
       if(vatMode==='gross')pr=pr/1.24;
-      // Handvirk lína: „þjónusta" valin af starfsmanni fer áfram á verkstæði
-      // (gamla hegðunin); handvirk vara stofnar ekki verkbeiðni.
-      state.lines.push({type:mode,desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:'',krefst_verkbeidni:(mode==='service')});
+      // Handvirk lína stofnar verkbeiðni AÐEINS ef starfsmaður hakar við „Fer á verkstæði"
+      // (02.11.2026 — áður fór hver handvirk þjónustulína sjálfkrafa inn, sjá R-001236).
+      // Handvirk vara stofnar aldrei verkbeiðni.
+      state.lines.push({type:mode,desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:'',krefst_verkbeidni:(mode==='service'&&!!(wbEl&&wbEl.checked))});
       close();rerenderDynamic();
     });
     setTimeout(function(){descEl.focus();descEl.select();},40);
