@@ -180,11 +180,12 @@
       r('._vbk-vd', 'display:flex;flex-direction:column;gap:6px;min-width:0'),
       r('._vbk-list', 'display:flex;flex-direction:column;gap:4px;max-height:54vh;overflow:auto;padding:2px'),
       // heiti efst (má brotna í tvær línur), verðið í mono undir — plús-takkinn hægra megin; röðin heldur hæð sinni
-      r('._vbk-li', LINE + ';display:grid;grid-template-columns:minmax(0,1fr) 30px;grid-template-areas:"nm pl" "pr pl";column-gap:8px;row-gap:1px;align-items:center;min-height:44px;padding:5px 6px 5px 10px;font-size:12.5px;color:#2b313c'),
-      r('._vbk-li .nm', 'grid-area:nm;min-width:0;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical'),
-      r('._vbk-li .pr', 'grid-area:pr;font-family:' + MONO + ';font-size:11.5px;color:#1f2530;white-space:nowrap'),
+      r('._vbk-li', LINE + ';display:flex;align-items:center;gap:8px;min-height:44px;padding:5px 6px 5px 10px;font-size:12.5px;color:#2b313c'),
+      r('._vbk-li .tx', 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px'),
+      r('._vbk-li .nm', 'min-width:0;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical'),
+      r('._vbk-li .pr', 'font-family:' + MONO + ';font-size:11.5px;line-height:1.2;color:#1f2530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
       r('._vbk-li .pr small', 'color:#8a93a3;font-size:10px;margin-left:3px'),
-      r('._vbk-li ._vbk-plus', 'grid-area:pl'),
+      r('._vbk-oskrad', 'align-self:flex-start;margin-top:4px'),
       r('._vbk-tomt', LINE + ';padding:18px 12px;text-align:center;font-size:12.5px;color:#59606c'),
       // karfan: tafla með málmhaus
       r('._vbk-tbl', 'background:#fff;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14);display:flex;flex-direction:column;container-type:inline-size'),
@@ -230,9 +231,9 @@
         '<header class="_vbk-hd">' +
           '<div class="_vbk-t"><i class="_vbk-led"></i>Viðbótarreikningur</div>' +
           '<div class="_vbk-co" id="_vbk-co"></div>' +
-          '<span class="_vbk-plata" id="_vbk-ar"><i></i>Búðarsala</span>' +
+          '<span class="_vbk-plata" id="_vbk-ar"><i></i>Viðbót</span>' +
           '<button type="button" class="_vbk-silfur" id="_vbk-loka">Loka</button>' +
-          '<span class="_vbk-hint">Sjálfstæð búðarsala, óbeint tengd skoðuninni — úttektarreikningur ársins er ósnertur. Vistast sem drög í Kröfu yfirliti.</span>' +
+          '<span class="_vbk-hint">Sjálfstæður reikningur fyrir það sem gleymdist eða seldist í leiðinni — skoðunarreikningur ársins er ósnertur. Verður til sem ÓSEND drög í Kröfu yfirliti; þú sendir hann þaðan.</span>' +
         '</header>' +
         '<div class="_vbk-b">' +
           '<section class="_vbk-k">' +
@@ -260,24 +261,33 @@
             '</div>' +
           '</section>' +
         '</div>' +
+        // forskoðun (Agnar 02.11.2026: „fínt að sjá preview þarna fyrst"): reikningurinn eins og hann verður, áður en drögin verða til
+        '<div class="_vbk-prev" id="_vbk-prev" hidden></div>' +
         '<footer class="_vbk-ft">' +
           '<span class="_vbk-hint" id="_vbk-st"></span>' +
           '<span class="_vbk-sp"></span>' +
           '<button type="button" class="_vbk-silfur" id="_vbk-haetta">Hætta við</button>' +
-          '<button type="button" class="_vbk-graenn" id="_vbk-vista">Vista sem búðarsölu</button>' +
+          '<button type="button" class="_vbk-silfur" id="_vbk-tilbaka" hidden>Til baka í körfuna</button>' +
+          '<button type="button" class="_vbk-malmur" id="_vbk-vista">Forskoða reikning</button>' +
+          '<button type="button" class="_vbk-graenn" id="_vbk-stofna" hidden>Stofna reikningsdrög</button>' +
         '</footer>' +
       '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', e => { if (e.target === ov) haetta(); });
     ov.querySelector('#_vbk-loka').addEventListener('click', haetta);
     ov.querySelector('#_vbk-haetta').addEventListener('click', haetta);
-    ov.querySelector('#_vbk-vista').addEventListener('click', vista);
+    ov.querySelector('#_vbk-vista').addEventListener('click', forskoda);
+    ov.querySelector('#_vbk-tilbaka').addEventListener('click', tilBaka);
+    ov.querySelector('#_vbk-stofna').addEventListener('click', vista);
     ov.querySelector('#_vbk-leit').addEventListener('input', e => { ST.leit = e.target.value; teiknaVerdlista(); });
     ov.querySelector('#_vbk-pct').addEventListener('input', e => { ST.pct = num(e.target.value); samtolur(); });
     ov.querySelector('#_vbk-note').addEventListener('input', e => { ST.note = e.target.value; });
     // verðlistinn: „+“ (atburðir á ílátinu — listinn er endurteiknaður við leit)
     ov.querySelector('#_vbk-thj').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) baetaVid(JSON.parse(b.getAttribute('data-add'))); });
-    ov.querySelector('#_vbk-vor').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) baetaVid(JSON.parse(b.getAttribute('data-add'))); });
+    ov.querySelector('#_vbk-vor').addEventListener('click', e => {
+      const b = e.target.closest('[data-add]'); if (b) return baetaVid(JSON.parse(b.getAttribute('data-add')));
+      if (e.target.closest('#_vbk-oskrad')) { ST.lines.push({ type: 'product', desc: '', qty: 1, unit_price_ex_vat: 0, vsk_pct: VAT, disc_pct: 0, ref: '', product_id: null, fri: true }); teiknaKorfu(); const f = tbl.querySelector('[data-i="' + (ST.lines.length - 1) + '"] [data-k="desc"]'); if (f) f.focus(); }
+    });
     // karfan: innsláttur uppfærir ástandið og summurnar — EKKI endurteikning (Stöðugt viðmót: fókusinn helst)
     const tbl = ov.querySelector('#_vbk-tbl');
     tbl.addEventListener('input', e => {
@@ -305,15 +315,25 @@
     teiknaKorfu();
   }
 
+  // Agnar 02.11.2026: „taka út allar slökkvitækja- og viðgerðarvörurnar — þetta er aðallega fyrir brunakerfisþjónustuna og nokkrar
+  // vörur þar, og bæta við stökum óskráðum vörum". Vörur-dálkurinn er því: vörulínur brunakerfis-verðlistans (teg 'vara': XP95,
+  // hurðasegull, bjalla, Discovery …) + aðeins þeir flokkar vörutöflunnar sem eiga við brunakerfi. Slökkvitæki, varahlutir,
+  // skilti, slöngur, sjúkratöskur o.s.frv. sjást ekki hér — þær eiga heima á Sölu. Stök óskráð vara = frjáls lína.
+  const VORU_FLOKKAR = ['Skynjarar og rafhlöður', 'Vinna og akstur'];
   function teiknaVerdlista() {
     const ov = ensure();
     const q = String(ST.leit || '').trim().toLowerCase();
     const hit = n => !q || String(n || '').toLowerCase().indexOf(q) >= 0;
-    const li = (it, pid) => '<div class="_vbk-li"><span class="nm">' + esc(it.desc) + '</span><span class="pr">' + fmtKr(it.price).replace(/ kr$/, '') + '<small>kr án vsk</small></span><button type="button" class="_vbk-plus" data-add="' + esc(JSON.stringify(it)) + '" title="Setja í körfuna" aria-label="Setja í körfuna">+</button></div>';
-    const thj = thjonustuListi().filter(x => x.name && hit(x.name)).map(x => ({ type: x.teg === 'vara' ? 'product' : 'service', desc: x.name, price: x.price, vsk: VAT, product_id: null }));
-    const vor = (_vorurNu || []).filter(x => x.nafn && hit(x.nafn)).map(x => ({ type: x.flokkur === 'Þjónusta' ? 'service' : 'product', desc: x.nafn, price: num(x.verd_an_vsk), vsk: x.vsk_prosenta != null ? num(x.vsk_prosenta) : VAT, product_id: x.id, flokkur: x.flokkur || '' }));
+    const li = it => '<div class="_vbk-li"><span class="tx"><span class="nm">' + esc(it.desc) + '</span><span class="pr">' + fmtKr(it.price).replace(/ kr$/, '') + '<small>kr án vsk</small>' + (it.flokkur ? '<small>· ' + esc(it.flokkur) + '</small>' : '') + '</span></span><button type="button" class="_vbk-plus" data-add="' + esc(JSON.stringify(it)) + '" title="Setja í körfuna" aria-label="Setja í körfuna">+</button></div>';
+    const listi = thjonustuListi().filter(x => x.name && hit(x.name));
+    const thj = listi.filter(x => x.teg !== 'vara').map(x => ({ type: 'service', desc: x.name, price: x.price, vsk: VAT, product_id: null }));
+    const vorVerdl = listi.filter(x => x.teg === 'vara').map(x => ({ type: 'product', desc: x.name, price: x.price, vsk: VAT, product_id: null }));
+    const vorTafla = (_vorurNu || []).filter(x => x.nafn && VORU_FLOKKAR.indexOf(String(x.flokkur || '')) >= 0 && hit(x.nafn))
+      .map(x => ({ type: x.flokkur === 'Vinna og akstur' ? 'service' : 'product', desc: x.nafn, price: num(x.verd_an_vsk), vsk: x.vsk_prosenta != null ? num(x.vsk_prosenta) : VAT, product_id: x.id, flokkur: x.flokkur || '' }));
+    const vor = vorVerdl.concat(vorTafla);
     ov.querySelector('#_vbk-thj').innerHTML = thj.length ? thj.map(li).join('') : '<div class="_vbk-tomt">' + (q ? 'Ekkert í þjónustulistanum passar.' : 'Verðlistinn er tómur — stilltu hann í Brunakerfis skoðun.') + '</div>';
-    ov.querySelector('#_vbk-vor').innerHTML = vor.length ? vor.map(li).join('') : '<div class="_vbk-tomt">' + (q ? 'Engin vara passar.' : (_vorurSott ? 'Engar virkar vörur.' : 'Sæki vörur…')) + '</div>';
+    ov.querySelector('#_vbk-vor').innerHTML = (vor.length ? vor.map(li).join('') : '<div class="_vbk-tomt">' + (q ? 'Engin vara passar.' : (_vorurSott ? 'Engar brunakerfisvörur skráðar.' : 'Sæki vörur…')) + '</div>') +
+      '<button type="button" class="_vbk-silfur _vbk-oskrad" id="_vbk-oskrad" title="Stök vara sem er ekki í verðlistanum — heiti og verð slegið inn í körfunni">+ Óskráð vara</button>';
     ov.querySelector('#_vbk-nt').textContent = thj.length + ' liðir';
     ov.querySelector('#_vbk-nv').textContent = vor.length + ' vörur';
   }
@@ -349,8 +369,57 @@
     ov.querySelector('#_vbk-vsk').textContent = fmtKr(t.vsk);
     ov.querySelector('#_vbk-afsl').textContent = (t.discTotal > 0 ? '−' : '') + fmtKr(t.discTotal);
     ov.querySelector('#_vbk-tot').textContent = fmtKr(t.total);
-    ov.querySelector('#_vbk-vista').disabled = !ST.lines.length || ST.busy;
+    ov.querySelector('#_vbk-vista').disabled = !ST.lines.length || ST.busy || !ST.co;
+    ov.querySelector('#_vbk-stofna').disabled = !ST.lines.length || ST.busy || !ST.co;
   }
+
+  // ── forskoðun: reikningurinn eins og hann verður til (línur bakaðar, afsláttur, samtölur, greiðandi, kröfunóta) ────
+  function athugaKorfu() {
+    const ov = ensure();
+    if (!ST.co || !ST.co.id) return toast('Félagið náðist ekki — ekki hægt að stofna reikning', true), false;
+    if (!ST.lines.length) return toast('Karfan er tóm', true), false;
+    const tomar = ST.lines.filter(l => !String(l.desc || '').trim());
+    if (tomar.length) { toast('Lýsingu vantar á ' + tomar.length + (tomar.length === 1 ? ' línu' : ' línur'), true); const f = ov.querySelector('[data-i="' + ST.lines.indexOf(tomar[0]) + '"] [data-k="desc"]'); if (f) f.focus(); return false; }
+    if (ST.lines.some(l => num(l.qty) <= 0)) return toast('Magn verður að vera stærra en 0', true), false;
+    return true;
+  }
+  function synaHam(prev) {
+    const ov = ensure();
+    ST.prev = !!prev;
+    ov.querySelector('._vbk-b').hidden = ST.prev;
+    ov.querySelector('#_vbk-prev').hidden = !ST.prev;
+    ov.querySelector('#_vbk-haetta').hidden = ST.prev;
+    ov.querySelector('#_vbk-vista').hidden = ST.prev;
+    ov.querySelector('#_vbk-tilbaka').hidden = !ST.prev;
+    ov.querySelector('#_vbk-stofna').hidden = !ST.prev;
+  }
+  function forskoda() {
+    if (ST.busy || !athugaKorfu()) return;
+    const ov = ensure(); const t = totals(); const linur = bakedLines();
+    const samtals = Math.round(t.total), ex = Math.round(t.ex), vsk = samtals - ex, afsl = Math.max(0, Math.round(t.brutto) - samtals);
+    const note = String(ST.note || '').trim();
+    ov.querySelector('#_vbk-prev').innerHTML =
+      '<section class="_vbk-k">' +
+        '<div class="_vbk-kh">Reikningur — forskoðun <span class="_vbk-plata" style="margin-left:10px"><i></i>Drög · ósent</span><span class="n">' + fmtKr(samtals) + '</span></div>' +
+        '<div class="_vbk-kb">' +
+          '<div class="_vbk-pcust"><div><span class="_vbk-merki">Greiðandi</span><b>' + esc(ST.co.nafn || '') + '</b><span class="_vbk-hint">kt. ' + esc(ST.co.kennitala || '—') + '</span></div>' +
+            '<div><span class="_vbk-merki">Greiðslumáti</span><b>Reikningur (krafa í heimabanka)</b><span class="_vbk-hint">sendist úr Kröfu yfirliti — ekkert fer núna</span></div>' +
+            '<div><span class="_vbk-merki">Tengist</span><b>Brunakerfisskoðun ' + esc(ST.year) + '</b><span class="_vbk-hint">sjálfstæður reikningur, ekki skoðunarreikningur ársins</span></div></div>' +
+          '<div class="_vbk-tbl"><div class="_vbk-th _vbk-pth"><span>Lýsing á reikningi</span><span>Magn</span><span>Ein.verð án vsk</span><span>Vsk</span><span>Samtals m. vsk</span></div>' +
+            linur.map(l => '<div class="_vbk-tr _vbk-ptr"><span class="_vbk-pdesc">' + esc(l.desc) + '</span><span class="_vbk-sum">' + esc(l.qty) + '</span><span class="_vbk-sum">' + fmtKr(l.unit_price_ex_vat) + '</span><span class="_vbk-sum">' + esc(l.vsk_pct) + ' %</span><span class="_vbk-sum">' + fmtKr(l.qty * l.unit_price_ex_vat * (1 + l.vsk_pct / 100)) + '</span></div>').join('') +
+          '</div>' +
+          '<div class="_vbk-undir"><span>Án vsk <b>' + fmtKr(ex) + '</b></span>' + (afsl > 0 ? '<span class="afsl">Afsláttur á heild <b>−' + fmtKr(afsl) + '</b></span>' : '') + '<span>Vsk <b>' + fmtKr(vsk) + '</b></span></div>' +
+          '<div class="_vbk-big"><span>Samtals með vsk</span><span>' + fmtKr(samtals) + '</span></div>' +
+          '<div class="_vbk-merki">Kröfunóta <small>innri texti, sést í Kröfu yfirliti — prentast ekki á reikninginn</small></div>' +
+          '<div class="_vbk-pnote">' + esc(MARKI + ST.year + (note ? ' · ' + note : '')) + '</div>' +
+          '<div class="_vbk-hint">Reikningstexti („vegna") er auður — skrifaðu hann í Kröfu yfirliti ef þú vilt línu á reikninginn.</div>' +
+        '</div>' +
+      '</section>';
+    synaHam(true);
+    ov.querySelector('#_vbk-st').textContent = 'Ekkert hefur verið vistað enn — „Stofna reikningsdrög" býr til reikninginn.';
+    try { ov.scrollTop = 0; } catch (_) {}
+  }
+  function tilBaka() { if (ST.busy) return; synaHam(false); const ov = ensure(); ov.querySelector('#_vbk-st').textContent = ST.co && ST.co.kennitala ? 'Kt. ' + ST.co.kennitala : ''; }
 
   // ── opna / loka ──────────────────────────────────────────────────────────────────────────────────────────────────
   async function open(coId, opts) {
@@ -404,18 +473,12 @@
     const ov = ensure();
     const sb = SB();
     if (!sb) return toast('Engin gagnagrunnstenging — ekkert vistað', true);
-    if (!ST.co || !ST.co.id) return toast('Félagið náðist ekki — ekkert vistað', true);
-    if (!ST.lines.length) return toast('Karfan er tóm', true);
-    const tomar = ST.lines.filter(l => !String(l.desc || '').trim());
-    if (tomar.length) { toast('Lýsingu vantar á ' + tomar.length + (tomar.length === 1 ? ' línu' : ' línur'), true); const f = ov.querySelector('[data-i="' + ST.lines.indexOf(tomar[0]) + '"] [data-k="desc"]'); if (f) f.focus(); return; }
-    if (ST.lines.some(l => num(l.qty) <= 0)) return toast('Magn verður að vera stærra en 0', true);
+    if (!ST.prev || !athugaKorfu()) return;   // reikningurinn verður aðeins til úr forskoðuninni (notandinn hefur séð hann)
     const t = totals();
     const linur = bakedLines();
     const samtals = Math.round(t.total), ex = Math.round(t.ex), vsk = samtals - ex;   // VSK tekur afrúnun svo ex + vsk === samtals (pos.js-reglan)
     const afsl = Math.max(0, Math.round(t.brutto) - samtals);
-    const ok = await confirmUser('Vista sem búðarsölu (drög) á ' + (ST.co.nafn || '') + '?\n\n' + linur.length + (linur.length === 1 ? ' lína · ' : ' línur · ') + fmtKr(samtals) + ' með vsk' + (afsl > 0 ? ' (afsláttur ' + fmtKr(afsl) + ')' : '') + '\n\nÚttektarreikningur ársins er ósnertur. Salan fer sem drög í Kröfu yfirlit — ekkert er sent.');
-    if (!ok) return;
-    ST.busy = true; samtolur(); ov.querySelector('#_vbk-st').textContent = 'Vista…';
+    ST.busy = true; samtolur(); ov.querySelector('#_vbk-st').textContent = 'Stofna reikningsdrög…';
     const ktd = String(ST.co.kennitala || '').replace(/\D/g, '');
     const kt = ktd.length === 10 ? ktd.slice(0, 6) + '-' + ktd.slice(6) : (ST.co.kennitala || null);
     const note = String(ST.note || '').trim();
@@ -432,9 +495,9 @@
     ST.busy = false;
     if (ins.error) {
       skra('vidbotkarfa_vistun_brast', 'co ' + ST.co.id + ': ' + String(ins.error.message || '').slice(0, 140));
-      ov.querySelector('#_vbk-st').textContent = 'Vistaðist ekki: ' + (ins.error.message || '') + ' — karfan stendur óbreytt.';
+      ov.querySelector('#_vbk-st').textContent = 'Reikningsdrögin urðu ekki til: ' + (ins.error.message || '') + ' — karfan stendur óbreytt.';
       samtolur();
-      return toast('Búðarsalan vistaðist ekki: ' + (ins.error.message || ''), true);
+      return toast('Reikningsdrögin urðu ekki til: ' + (ins.error.message || ''), true);
     }
     const sala = ins.data;
     // Gikkurinn trg_vidskiptategund (set_vidskiptategund) yfirskrifar tegundina við INSERT eftir source/greitt_med — óþekktur
