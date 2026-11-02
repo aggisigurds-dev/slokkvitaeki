@@ -444,9 +444,9 @@
       '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-breyta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka{margin-left:8px}',
-      // Prenta verðlista — sami silfurtakki, situr milli ✎ Breyta og ✕
-      '#' + AUÐK + '-prenta{margin-left:8px;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
-      '#' + AUÐK + '-prenta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
+      // Búa til tilboð + Prenta verðlista — sami silfurtakki, sitja milli ✎ Breyta og ✕
+      '#' + AUÐK + '-tilbod,#' + AUÐK + '-prenta{margin-left:8px;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-tilbod:hover,#' + AUÐK + '-prenta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       // verðreitir brunakerfis-listans (442 .reitur): 96px, hægri-jafnað mono, grænt/rautt eftir vistun
       '.' + AUÐK + '-verd{width:96px;height:30px;box-sizing:border-box;padding:0 8px;text-align:right;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:12.5px;color:#141822;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:6px;box-shadow:inset 0 2px 5px rgba(0,0,0,.12)}',
       '.' + AUÐK + '-verd:focus{outline:none;border-color:rgba(201,42,42,.55);box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(201,42,42,.18)}',
@@ -1217,6 +1217,7 @@
           // núverandi lista"): brunakerfis-glugginn SÝNIR verðlistann; ritillinn er í 273 (sami og í Brunakerfis skoðun).
           // Ekkert spjald má vera blindgata — takkinn í horninu fer beint í ritilinn.
           (_flokkur === 'brunakerfi' ? '<button id="' + AUÐK + '-breyta" type="button" title="Breyta verðlistanum — heiti, verð og tengingar, vistast fyrir allar vélar">✎ Breyta verðlista</button>' +
+            '<button id="' + AUÐK + '-tilbod" type="button" title="Opna Tilboð — Brunaviðvörunarkerfi með verðunum úr þessum lista (magn, afsláttur á línu, eigin línur)">Búa til tilboð</button>' +
             '<button id="' + AUÐK + '-prenta" type="button" title="Prenta verðlistann á A4 með haus Slökkvitækis — verð án og með vsk">Prenta verðlista</button>' : '') +
           '<button id="' + AUÐK + '-loka" type="button" aria-label="Loka">✕</button>' +
         '</div>' +
@@ -1236,6 +1237,13 @@
     });
     var prenta = document.getElementById(AUÐK + '-prenta');
     if (prenta) prenta.addEventListener('click', prentaBrunakerfi);
+    // Búa til tilboð (Agnar 02.11.2026: „að maður geti opnað það úr verðlistanum inní Vörur og þjónusta"): 200 á
+    // tilboðsgluggann og les sama verðlista — þessi gluggi lokast svo tilboðið standi eitt ofan á síðunni.
+    var tilbod = document.getElementById(AUÐK + '-tilbod');
+    if (tilbod) tilbod.addEventListener('click', function () {
+      if (!(window.BrunakerfiTilbod && BrunakerfiTilbod.open)) { segja('Tilboðsglugginn (200) er ekki hlaðinn', true); return; }
+      loka(); BrunakerfiTilbod.open(null);
+    });
     document.addEventListener('keydown', escLoka);
     tengjaAtburdi(bak);
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni

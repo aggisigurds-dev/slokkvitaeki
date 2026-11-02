@@ -60,6 +60,19 @@
     ['Skoðun á yfilitsmynd og þjónustubók', 1750],
   ];
 
+  // 02.11.2026 (Agnar: „láttu 200-tilboðið lesa verðin úr verðlistanum … bættu við vinnu og því öllu"): tilboðið
+  // les SAMA verðlista og brunakerfisskýrslan og Brunak.-verðglugginn (273 priceItems → app_settings.
+  // brunakerfi_verdlisti) — vinna og vörur með. Mælt sama dag: harðkóðaði listinn hér að ofan vék frá verðlistanum
+  // í akstri (3.500 / 3.000) og hæðarlínunum, og átti hvorki vinnu né vörur. Hann er nú aðeins varaleið ef 273
+  // er ekki hlaðinn. Akstur stendur efst eins og áður (17.09.2026).
+  function verdskra() {
+    let L = null;
+    try { const BK = window.BrunakerfiSkyrsla; if (BK && BK.priceItems) L = BK.priceItems(); } catch (_) {}
+    if (!Array.isArray(L) || !L.length) return PRICE_LIST;
+    const out = L.filter(it => it && String(it.name || '').trim()).map(it => [String(it.name).trim(), Number(it.price) || 0]);
+    return out.filter(x => x[0] === 'Akstur').concat(out.filter(x => x[0] !== 'Akstur'));
+  }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -116,23 +129,29 @@
     // build initial per-row state, merging saved lines by name
     const savedByName = {};
     (offer && offer.lines || []).forEach(l => { savedByName[l.n] = l; });
-    const rows = PRICE_LIST.map(([n, p]) => {
+    const listi = verdskra();
+    const rows = listi.map(([n, p]) => {
       const s = savedByName[n];
       return { n, verd: s ? s.verd : p, magn: s ? s.magn : 0, afsl: s ? s.afsl : 0, def: p };
     });
+    // Vistuð lína sem er ekki (lengur) í verðlistanum — eigin lína eða liður sem var endurnefndur — fylgir tilboðinu
+    // neðst. Annars hyrfi hún þegjandi úr vistuðu tilboði við næstu vistun.
+    const iListanum = new Set(listi.map(x => x[0]));
+    (offer && offer.lines || []).forEach(l => { if (!iListanum.has(l.n)) rows.push({ n: l.n, verd: l.verd, magn: l.magn, afsl: l.afsl, def: l.verd, eigin: true }); });
     const totalDisc = offer ? (offer.total_disc || 0) : 0;
 
     const ov = document.createElement('div');
     ov.id = '_bt-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px';
-    const rowHtml = rows.map((r, i) => `
+    const rodHtml = (r, i) => `
       <tr data-i="${i}">
-        <td style="padding:5px 8px;font-size:12px;color:#0f172a">${esc(r.n)}</td>
+        <td style="padding:5px 8px;font-size:12px;color:#0f172a">${esc(r.n)}${r.eigin ? ' <small style="color:#94a3b8">· aðeins í tilboðinu</small>' : ''}</td>
         <td style="padding:5px 6px"><input data-f="magn" type="number" min="0" step="1" value="${r.magn || ''}" placeholder="0" style="width:62px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td style="padding:5px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(r.verd)}" style="width:94px;padding:5px 6px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:#C0341D"></td>
         <td style="padding:5px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${r.afsl || ''}" placeholder="0" style="width:54px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td data-cell="line" style="padding:5px 8px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#0f172a;white-space:nowrap">—</td>
-      </tr>`).join('');
+      </tr>`;
+    const rowHtml = rows.map(rodHtml).join('');
 
     ov.innerHTML = `
       <div style="background:#fff;border-radius:14px;max-width:920px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);margin:auto">
@@ -159,6 +178,12 @@
               </tr></thead>
               <tbody id="_bt-tbody">${rowHtml}</tbody>
             </table>
+          </div>
+          <div id="_bt-ny" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:9px 10px;border:1px dashed #cbd5e1;border-radius:10px">
+            <input id="_bt-ny-nafn" type="text" placeholder="Ný lína, t.d. Uppsetning á skynjara" aria-label="Heiti nýrrar línu" style="flex:1 1 240px;min-width:0;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12.5px">
+            <input id="_bt-ny-verd" type="text" inputmode="numeric" placeholder="Verð án vsk" aria-label="Verð án vsk" style="width:110px;padding:7px 9px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12.5px;text-align:right;font-weight:600;color:#C0341D">
+            <button id="_bt-ny-baeta" type="button" style="padding:7px 13px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap">+ Bæta við línu</button>
+            <span style="flex:1 1 100%;font-size:11px;color:#94a3b8">Línan fer aðeins á þetta tilboð (magn 1). Nýjan lið í verðlistann sjálfan setur þú í Vörur og þjónusta → Brunak. verð.</span>
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:16px">
             <div style="min-width:320px">
@@ -219,8 +244,31 @@
     }
     ov.addEventListener('input', e => { if (e.target.tagName === 'INPUT') recompute(); });
     // reformat price with thousand dots when leaving the field
-    ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="verd"]')) e.target.value = grp(pn(e.target.value)); }, true);
+    ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="verd"], #_bt-ny-verd') && String(e.target.value).trim()) e.target.value = grp(pn(e.target.value)); }, true);
     recompute();
+
+    // + Bæta við línu (Agnar 02.11.2026: „þyrfti inni tilboð-brunaviðvörunarkerfi að geta bætt við línu"): eigin lína
+    // á þetta tilboð — fer í rows og tbody eins og aðrar línur, vistast með tilboðinu, snertir ekki verðlistann.
+    function baetaVidLinu() {
+      const nEl = ov.querySelector('#_bt-ny-nafn'), vEl = ov.querySelector('#_bt-ny-verd');
+      const nafn = String(nEl.value || '').trim();
+      if (!nafn) { nEl.focus(); return; }
+      const til = rows.findIndex(r => r.n.toLowerCase() === nafn.toLowerCase());
+      if (til >= 0) {   // er þegar í listanum — fara á línuna í stað þess að tvítaka hana
+        const tr = tbody.querySelector('tr[data-i="' + til + '"]');
+        if (tr) { tr.scrollIntoView({ block: 'center' }); const m = tr.querySelector('[data-f="magn"]'); if (m) m.focus(); }
+        return;
+      }
+      const r = { n: nafn, verd: pn(vEl.value), magn: 1, afsl: 0, def: pn(vEl.value), eigin: true };
+      rows.push(r);
+      tbody.insertAdjacentHTML('beforeend', rodHtml(r, rows.length - 1));
+      nEl.value = ''; vEl.value = '';
+      recompute();
+      const tr = tbody.lastElementChild; if (tr) tr.scrollIntoView({ block: 'nearest' });
+      nEl.focus();
+    }
+    ov.querySelector('#_bt-ny-baeta').onclick = baetaVidLinu;
+    ov.querySelector('#_bt-ny').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); baetaVidLinu(); } });
 
     const close = () => ov.remove();
     ov.querySelector('#_bt-x').onclick = close;
