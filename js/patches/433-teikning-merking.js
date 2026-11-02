@@ -119,10 +119,27 @@
     if (!v || !isFinite(v)) return 0;
     return Math.max(STAERD_MIN, Math.min(STAERD_MAX, v));
   }
+  // Hlutfall hússins (skurðar hæðarinnar) af myndinni sem sést. Venjulega er myndin SJÁLF skurðurinn (383 sker blaðið
+  // að skurðinum) og hlutfallið 1; aðeins þegar strigi sýnir allt frummyndarblaðið en skurðurinn er minni (t.d. í
+  // skurðarham) er húsið brot af breiddinni. Án skurðar eða rammastærðar: 1.
+  function husHlutfall() {
+    try {
+      const p = plan(), hs = p && p.haedir;
+      const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
+      const h = hs && hs[v], sk = h && h.skurdur;
+      const c = document.getElementById('fp-canvas');
+      if (!sk || !(sk.w > 8) || !c || !c.width) return 1;
+      const fr = window.TeiknBord && TeiknBord.frum ? TeiknBord.frum() : null;
+      const fb = (fr && (fr.naturalWidth || fr.width)) || (h.frum && h.frum.b) || 0;
+      if (!(fb > 0) || Math.abs(c.width - fb) > fb * 0.02) return 1;   // strigi sýnir ekki allt blaðið
+      return Math.max(0.15, Math.min(1, sk.w / fb));
+    } catch (_) { return 1; }
+  }
   function autoStaerd(crW) {
-    if (window.TeiknSja && TeiknSja.stimpilPx) return TeiknSja.stimpilPx(crW);
+    const f = husHlutfall();
+    if (window.TeiknSja && TeiknSja.stimpilPx) return TeiknSja.stimpilPx(crW, f);
     const w = Number(crW) || 0;
-    return Math.max(32, Math.min(56, Math.round(w / 12) || 32));
+    return w > 0 ? Math.max(18, Math.min(40, Math.round(w * f / 48))) : 16;
   }
   function thysjun() {
     const z = window.TeiknBord && typeof TeiknBord.thysjun === 'function' ? TeiknBord.thysjun() : 1;
@@ -133,19 +150,28 @@
     const w = crW != null ? Number(crW) : (c && c.getBoundingClientRect().width) || 0;
     return w / thysjun();
   }
-  function sjalfStaerd(crW) {
+  // Vistað gildi: stærð VIRKU HÆÐARINNAR (haedir[i].stimpilStaerd — það sem fer á þjóninn) ræður; plan.stimpilStaerd er
+  // aðeins minni lotunnar (síðast breytta hæð) og gildir bara sé engin hæð til. Áður gekk plan-gildið fyrir og sama stærð
+  // birtist á öllum hæðum þar til endurhlaðið var. Gamla sameiginlega varagildið (Vidmot) er enn lesið.
+  function vistudStaerd() {
     const p = plan();
-    const fraPlan = p && klemmaStaerd(p.stimpilStaerd);
-    if (fraPlan) return fraPlan;
     const hs = p && p.haedir;
     const v = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
-    const fraHaed = hs && hs[v] && klemmaStaerd(hs[v].stimpilStaerd);
-    if (fraHaed) return fraHaed;
+    if (hs && hs[v]) {
+      const fraHaed = klemmaStaerd(hs[v].stimpilStaerd);
+      if (fraHaed) return fraHaed;
+    } else {
+      const fraPlan = p && klemmaStaerd(p.stimpilStaerd);
+      if (fraPlan) return fraPlan;
+    }
     try {
       const ls = klemmaStaerd(window.Vidmot ? Vidmot.lesa(STAERD_LS, null) : null);
       if (ls) return ls;
     } catch (_) {}
-    return autoStaerd(crW);
+    return 0;
+  }
+  function sjalfStaerd(crW) {
+    return vistudStaerd() || autoStaerd(crW);
   }
   function merkiStaerd(m, crW) {
     const eigin = m && klemmaStaerd(m.staerd);
@@ -494,10 +520,8 @@
       image_url: (fyrsta && typeof fyrsta.image_url === 'string' && fyrsta.image_url) || p.imageUrl || null,
       updated_at: new Date().toISOString()
     };
-    if (p.stimpilStaerd) {
-      const n = klemmaStaerd(p.stimpilStaerd);
-      if (haedirTilbunar) hs.forEach(h => { h.stimpilStaerd = n; });
-    }
+    // (02.11.2026: áður var plan.stimpilStaerd — síðast breytta hæð — skrifað á ALLAR hæðir við hverja vistun, svo stærð sem
+    // var valin á annarri hæð yfirskrifaðist. Stærðin er nú per hæð: skraStaerd skrifar haedir[virk].stimpilStaerd.)
     if (haedirTilbunar) row.haedir = hs;
     try {
       localStorage.setItem('fp_' + cid, JSON.stringify({
@@ -935,6 +959,7 @@
     if (S.valinnMerki) return merkiStaerd(S.valinnMerki, crW);
     return sjalfStaerd(passaBreidd(crW));
   }
+  function virkHaedNr() { return window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0; }
   function skraStaerd(n, vista) {
     const v = klemmaStaerd(n);
     if (!v) return 0;
@@ -943,15 +968,13 @@
       if (!S._staerdUndo) S._staerdUndo = { merki: S.valinnMerki, fra: S.valinnMerki.staerd || 0 };
       S.valinnMerki.staerd = v;
     } else if (p) {
-      if (!S._staerdUndo) S._staerdUndo = { sjalf: true, fra: p.stimpilStaerd || 0 };
+      const hs = p.haedir, i = virkHaedNr();
+      if (!S._staerdUndo) S._staerdUndo = { sjalf: true, fra: (hs && hs[i] && hs[i].stimpilStaerd) || p.stimpilStaerd || 0 };
       p.stimpilStaerd = v;
-      const hs = p.haedir;
-      const i = window.TeiknBord && typeof TeiknBord.virk === 'function' ? TeiknBord.virk() : 0;
       if (hs && hs[i]) hs[i].stimpilStaerd = v;
-      try { if (window.Vidmot) Vidmot.setja(STAERD_LS, v); } catch (_) {}
+      // (Vidmot-varagildið er ekki lengur skrifað hér: það smitaðist yfir á allar aðrar teikningar sem eiga enga vistaða stærð.)
     }
-    try { if (FP() && FP()._renderCanvas) FP()._renderCanvas(); } catch (_) {}
-    try { const y = document.getElementById('fp-yfirlag'); if (y) y._t433 = ''; } catch (_) {}
+    teiknaStaerdAftur();
     if (vista) {
       if (S._staerdUndo) {
         const u = S._staerdUndo; S._staerdUndo = null;
@@ -962,6 +985,37 @@
     }
     return v;
   }
+  function teiknaStaerdAftur() {
+    try { if (FP() && FP()._renderCanvas) FP()._renderCanvas(); } catch (_) {}
+    try { const y = document.getElementById('fp-yfirlag'); if (y) y._t433 = ''; } catch (_) {}
+  }
+  // „Sjálfvirkt“: valið merki fylgir aftur stærð hæðarinnar; annars fær hæðin sjálfgefnu stærðina (úr stærð hússins).
+  // Hæðin fær 0 (ekki undefined): 375 lætur staðbundna gildið ráða aðeins sé það !== undefined, annars kæmi gamla gildi þjónsins aftur.
+  function endurstillaStaerd() {
+    const p = plan();
+    if (S.valinnMerki) {
+      const m = S.valinnMerki;
+      if (!klemmaStaerd(m.staerd)) return false;
+      skraUndo({ teg: 'staerd', merki: afritMerki(m), fra: m.staerd, sjalf: false });
+      delete m.staerd;
+    } else if (p) {
+      const hs = p.haedir, i = virkHaedNr();
+      const fra = klemmaStaerd((hs && hs[i] && hs[i].stimpilStaerd) || p.stimpilStaerd) || 0;
+      p.stimpilStaerd = 0;
+      if (hs && hs[i]) hs[i].stimpilStaerd = 0;
+      try { if (window.Vidmot && klemmaStaerd(Vidmot.lesa(STAERD_LS, null))) Vidmot.setja(STAERD_LS, null); } catch (_) {}   // gamla sameiginlega varagildið má ekki halda stærðinni
+      if (fra) skraUndo({ teg: 'staerd', merki: null, fra, sjalf: true });
+    } else return false;
+    S._staerdUndo = null;
+    teiknaStaerdAftur();
+    try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+    vistaAdThjoni();
+    stikaStaerdHvarfa();
+    return true;
+  }
+  function erSjalfvirkStaerd() {
+    return S.valinnMerki ? !klemmaStaerd(S.valinnMerki.staerd) : !vistudStaerd();
+  }
   function stikaStaerdHvarfa() {
     const panel = document.getElementById('fp-panel');
     if (!panel) return;
@@ -970,35 +1024,57 @@
       wrap = document.createElement('div');
       wrap.id = 'fp-stimpil-staerd-wrap';
       wrap.innerHTML =
-        '<div class="fp-stimpil-lbl" id="fp-stimpil-staerd-lbl">Stærð tákna</div>' +
+        '<div class="fp-staerd-hd">' +
+          '<div class="fp-stimpil-lbl" id="fp-stimpil-staerd-lbl">Stærð tákna</div>' +
+          '<button type="button" id="fp-stimpil-staerd-sjalf" title="Sjálfgefin stærð eftir stærð hússins á teikningunni">Sjálfvirkt</button>' +
+        '</div>' +
         '<div class="fp-staerd-rod">' +
-          '<input type="range" id="fp-stimpil-staerd" min="' + STAERD_MIN + '" max="' + STAERD_MAX + '" step="2" aria-label="Stærð tákna">' +
+          '<input type="range" id="fp-stimpil-staerd" min="' + STAERD_MIN + '" max="' + STAERD_MAX + '" step="1" aria-label="Stærð tákna">' +
           '<span id="fp-stimpil-staerd-val"></span>' +
         '</div>';
-      const rod = document.getElementById('fp-stimpil');
-      const adgerd = document.getElementById('fp-merki-adgerd');
-      if (adgerd && adgerd.parentNode) adgerd.parentNode.insertBefore(wrap, adgerd.nextSibling);
-      else if (rod && rod.parentNode) rod.parentNode.insertBefore(wrap, rod.nextSibling);
-      else panel.insertBefore(wrap, panel.firstChild);
       const inn = wrap.querySelector('#fp-stimpil-staerd');
       inn.addEventListener('pointerdown', e => e.stopPropagation());
       inn.addEventListener('input', () => {
         const n = skraStaerd(inn.value, false);
         const val = document.getElementById('fp-stimpil-staerd-val');
         if (val) val.textContent = n + ' px';
+        const sj = document.getElementById('fp-stimpil-staerd-sjalf');
+        if (sj) sj.disabled = false;
       });
-      inn.addEventListener('change', () => { skraStaerd(inn.value, true); });
+      inn.addEventListener('change', () => { skraStaerd(inn.value, true); stikaStaerdHvarfa(); });
+      const sj = wrap.querySelector('#fp-stimpil-staerd-sjalf');
+      ['pointerdown', 'mousedown'].forEach(ev => sj.addEventListener(ev, e => e.stopPropagation()));
+      sj.addEventListener('click', e => { e.preventDefault(); endurstillaStaerd(); });
+    }
+    // Staðsetning: efst í spjaldinu, rétt undir flipunum (483) — sést í ÖLLUM flipum og án þess að velja merki. Áður var
+    // sleðinn neðst í Merki-flipanum (undir ellefu stimplum) og falinn í Tæki og Búnaði, svo hann fannst ekki.
+    const flipar = document.getElementById('fp-pn-tabs');
+    if (flipar && flipar.parentNode === panel) {
+      if (wrap.parentNode !== panel || flipar.nextElementSibling !== wrap) panel.insertBefore(wrap, flipar.nextSibling);
+    } else if (!wrap.parentNode) {
+      const rod = document.getElementById('fp-stimpil');
+      const adgerd = document.getElementById('fp-merki-adgerd');
+      if (adgerd && adgerd.parentNode) adgerd.parentNode.insertBefore(wrap, adgerd.nextSibling);
+      else if (rod && rod.parentNode) rod.parentNode.insertBefore(wrap, rod.nextSibling);
+      else panel.insertBefore(wrap, panel.firstChild);
     }
     const inn = document.getElementById('fp-stimpil-staerd');
     const val = document.getElementById('fp-stimpil-staerd-val');
     const lbl = document.getElementById('fp-stimpil-staerd-lbl');
+    const sj = document.getElementById('fp-stimpil-staerd-sjalf');
     const n = synlegStaerd();
-    const ser = !!S.valinnMerki;
+    const ser = !!S.valinnMerki, sjalf = erSjalfvirkStaerd();
     const lblTxt = ser ? (erStimpil(S.valinnMerki) ? 'Stærð þessa skiltis' : 'Stærð þessa tækis') : 'Stærð tákna';
     if (lbl && lbl.textContent !== lblTxt) lbl.textContent = lblTxt;
     const px = n + ' px';
     if (val && val.textContent !== px) val.textContent = px;
     if (inn && document.activeElement !== inn && String(inn.value) !== String(n)) inn.value = String(n);
+    if (sj) {
+      const t = ser ? 'Eins og hæðin' : 'Sjálfvirkt';
+      if (sj.textContent !== t) sj.textContent = t;
+      if (sj.disabled !== sjalf) sj.disabled = sjalf;
+      const tt = sjalf ? (ser ? 'Merkið fylgir stærð hæðarinnar' : 'Stærðin er sjálfvirk — miðuð við stærð hússins á teikningunni') : (ser ? 'Láta merkið fylgja stærð hæðarinnar' : 'Fjarlægja vistaða stærð og láta stærðina miðast við stærð hússins'); if (sj.title !== tt) sj.title = tt;
+    }
   }
 
   function stikaValid() {
@@ -1131,10 +1207,14 @@
       '#fp-stimpil .fp-stimpill,#fp-bunadur .fp-stimpill{display:flex;align-items:center;gap:5px;padding:4px 6px 4px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.82);font:600 11px system-ui,sans-serif;cursor:grab;flex:1 1 140px;min-width:0;max-width:100%;-webkit-user-drag:none;user-select:none}' +
       '#fp-stimpil .fp-stimpill.on,#fp-bunadur .fp-stimpill.on{border-color:#c9a54a;box-shadow:0 0 0 2px rgba(201,165,74,.45);background:rgba(201,165,74,.12)}' +
       '#fp-stimpil .fp-stimpill span,#fp-stimpil .fp-stimpill-ico,#fp-bunadur .fp-stimpill span,#fp-bunadur .fp-stimpill-ico{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;color:#fff;font:700 8px system-ui,sans-serif;overflow:hidden;flex:none}' +
-      '#fp-stimpil-staerd-wrap{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}' +
+      '#fp-stimpil-staerd-wrap{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(201,165,74,.35);background:rgba(201,165,74,.07)}' +
+      '#fp-stimpil-staerd-wrap .fp-staerd-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0 0 2px}' +
+      '#fp-stimpil-staerd-wrap .fp-staerd-hd .fp-stimpil-lbl{width:auto!important;white-space:nowrap;margin:0!important;color:rgba(255,255,255,.6)!important}' +
+      '#fp-stimpil-staerd-sjalf{flex:none;height:22px;padding:0 6px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#f1ede4;font:700 11px system-ui,sans-serif;cursor:pointer}' +
+      '#fp-stimpil-staerd-sjalf:disabled{border-color:#c9a54a;color:#c9a54a;background:rgba(201,165,74,.12);cursor:default}' +
       '#fp-stimpil-staerd-wrap .fp-staerd-rod{display:flex;align-items:center;gap:8px}' +
       '#fp-stimpil-staerd{flex:1 1 auto;min-width:0;accent-color:#c9a54a;height:28px;cursor:pointer}' +
-      '#fp-stimpil-staerd-val{flex:none;min-width:44px;text-align:right;font:700 11px system-ui,sans-serif;color:#f1ede4}' +
+      '#fp-stimpil-staerd-val{flex:none;min-width:40px;white-space:nowrap;text-align:right;font:700 11px system-ui,sans-serif;color:#f1ede4}' +
       '#fp-merki-adgerd{margin:0 0 10px;padding:8px;border-radius:10px;border:1px solid rgba(201,165,74,.35);background:rgba(201,165,74,.08)}' +
       '#fp-merki-adgerd[hidden]{display:none!important}' +
       '#fp-merki-adgerd .fp-merki-nafn{font:700 12px system-ui,sans-serif;color:#f1ede4;margin:0 0 6px}' +
@@ -1279,7 +1359,8 @@
   window.TeiknMerking = {
     grip, iDragi, setjaTaeki, setjaStimpil, setjaEitt, setjaBunad, tengjaBunad, breytaBunad, ostadsettTaeki, vistaAdThjoni, erStimpil, erNytt, nyttTalning, stimplar: STIMPLAR, bunadur: BUNADUR,
     tikk, afturkalla, eydaMerki, snuaMerki, afritaMerki, opnaValmynd, finnaMerki,
-    stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn,
+    stimpilPx: merkiStaerd, skjaStaerd, passaBreidd, setjaStaerd: skraStaerd, sjalfStaerd, breytaTakn, endurstillaStaerd,
+    staerdLykill: () => String(vistudStaerd()),
     velja: m => { S.valinnMerki = m || null; stikaValid(); },
     // Vinnumyndin (445): hvaða stimpill er vopnaður á ræmunni, hvaða merki er valið, og frágangur færslu.
     vopn: () => S.valinn,
