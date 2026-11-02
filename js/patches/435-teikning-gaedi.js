@@ -115,13 +115,44 @@
       return !!inn && /\.pdf$/i.test(new URL(inn).pathname);
     } catch (_) { return false; }
   }
+  // 02.11.2026: teiknaða blaðið (6000 px JPEG) er geymt í Supabase (opna fatan turbopaint/teikningar-mynd/). pdf.js teiknar blaðið á ~2 s en
+  // JPEG-þjöppun 6000 px striga tekur 5–8 s — og var endurtekin í hvert sinn sem síðan opnaðist (Nýbýlavegur 4–8: Teikning beið ~17 s).
+  // Nú: fyrsta skoðun teiknar og vistar, allar aðrar (öll tæki, allir notendur) sækja 2 MB JPEG beint. Skráarnöfn Kópavogs eru dagsett
+  // og breytast ekki, svo geymda myndin er aldrei úrelt. Bili geymslan er gamla leiðin farin óbreytt. image_url hæðar er óbreytt (teikn-mynd
+  // → PDF), svo vigur-eiginleikar (Skýrari veggir, Full gæði) finna frumritið eins og áður.
+  const GEYMSLA = 'turbopaint';
+  function geymslaSlod(url) {
+    try {
+      const u = new URL(url, location.href), inn = new URL(u.searchParams.get('url') || '');
+      const sida = parseInt(u.searchParams.get('sida'), 10) || 1;
+      const nafn = decodeURIComponent(inn.pathname.split('/').pop() || '').replace(/\.pdf$/i, '').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120);
+      const host = inn.hostname.replace(/[^a-z0-9]+/gi, '-');
+      return nafn && window.SUPABASE_URL ? 'teikningar-mynd/' + host + '/' + nafn + (sida > 1 ? '-s' + sida : '') + '-' + PDF_HLID + '.jpg' : '';
+    } catch (_) { return ''; }
+  }
+  const geymslaUrl = p => window.SUPABASE_URL + '/storage/v1/object/public/' + GEYMSLA + '/' + p;
+  async function ursGeymslu(p) {
+    try {
+      const r = await fetch(geymslaUrl(p), { method: 'HEAD', signal: AbortSignal.timeout(6000) });
+      return r.ok ? geymslaUrl(p) : '';
+    } catch (_) { return ''; }
+  }
+  function vistaIGeymslu(p, b) {
+    try {
+      if (!b || !window.SUPABASE_KEY) return;
+      fetch(window.SUPABASE_URL + '/storage/v1/object/' + GEYMSLA + '/' + p, { method: 'POST', headers: { apikey: window.SUPABASE_KEY, Authorization: 'Bearer ' + window.SUPABASE_KEY, 'Content-Type': 'image/jpeg', 'x-upsert': 'false' }, body: b })
+        .catch(() => {});
+    } catch (_) {}
+  }
   function hreintPdfMynd(url) {
     if (!_pdfMynd[url]) {
       let sidaNr = 1; try { sidaNr = parseInt(new URL(url, location.href).searchParams.get('sida'), 10) || 1; } catch (_) {}   // &sida=N: valin síða skjals
-      _pdfMynd[url] = rasterPdf(pdfSlodUrMynd(url), PDF_HLID, null, null, sidaNr).then(cv => new Promise(res => {
+      const gp = geymslaSlod(url);
+      const teikna = () => rasterPdf(pdfSlodUrMynd(url), PDF_HLID, null, null, sidaNr).then(cv => new Promise(res => {
         // ekki í geymaBlob: sú slóð má aldrei afturkallast á meðan hæðin getur opnast aftur
-        cv.toBlob(b => { const s = b ? URL.createObjectURL(b) : cv.toDataURL('image/jpeg', 0.92); cv.width = 0; cv.height = 0; res(s); }, 'image/jpeg', 0.92);
-      })).catch(e => { delete _pdfMynd[url]; throw e; });
+        cv.toBlob(b => { const s = b ? URL.createObjectURL(b) : cv.toDataURL('image/jpeg', 0.92); if (b && gp) vistaIGeymslu(gp, b); cv.width = 0; cv.height = 0; res(s); }, 'image/jpeg', 0.92);
+      }));
+      _pdfMynd[url] = (gp ? ursGeymslu(gp) : Promise.resolve('')).then(g => g || teikna()).catch(e => { delete _pdfMynd[url]; throw e; });
     }
     return _pdfMynd[url];
   }
@@ -133,7 +164,7 @@
     if (erHreintPdf(url)) {
       const bid = ++_bindBid;
       img._gaediBid = bid; img._gaedi = 'pdf:' + url;
-      hreintPdfMynd(url).then(slod => { if (img._gaediBid === bid) img.src = slod; })
+      hreintPdfMynd(url).then(slod => { if (img._gaediBid === bid) { if (/^https:/.test(slod)) img.crossOrigin = 'anonymous'; img.src = slod; } })
         .catch(e => { if (img._gaediBid === bid && img.onerror) img.onerror(e); });
       return;
     }

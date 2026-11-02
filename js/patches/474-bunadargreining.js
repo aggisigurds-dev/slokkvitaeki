@@ -162,9 +162,22 @@
   // flokkar staða: slökkvibúnaður (sjálfgefið), flotti (ÚT-merki), brunakerfi (skynjarar, handboðar, stjórnstöð)
   var FLOKKAR = [['slokkvibunadur', 'Slökkvibúnaður'], ['flotti', 'Útgangar (ÚT)'], ['brunakerfi', 'Brunaviðvörunarkerfi']];
   function flokkur(t) { return t.flokkur || 'slokkvibunadur'; }
-  function litur(t) {
-    var f = flokkur(t);
-    return f === 'flotti' ? '#2e7d32' : f === 'brunakerfi' ? (/hita/i.test(t.bunadur || '') ? '#e65100' : '#8e24aa') : /slang|kefli/i.test(t.bunadur || '') ? '#1f5fbf' : '#c93c1d';
+  function kindAf(t) {
+    var f = flokkur(t), n = t.bunadur || '';
+    return f === 'flotti' ? 'ut' : f === 'brunakerfi' ? (/reykskynjari/i.test(n) ? 'r' : /hita/i.test(n) ? 'hiti' : /handbo/i.test(n) ? 'hb' : 'st') : /slang|kefli/i.test(n) ? 'bs' : 'sl';
+  }
+  // Litir flokkanna — sömu á merkjum, auðkennum og í listanum (Agnar 02.11.2026: fjólublár reykskynjari, bleikur hitaskynjari, appelsínugulur handboði)
+  var LITUR_K = { sl: '#c93c1d', bs: '#1f5fbf', ut: '#2e7d32', r: '#8e24aa', hb: '#f57c00', hiti: '#e91e63', st: '#4527a0' };
+  function litur(t) { return LITUR_K[kindAf(t)]; }
+  // Útlit merkisins á teikningunni (456 → 434): brunakerfið sem punktar í lit flokksins, slökkvitæki og slöngur sem lítil raunsæ
+  // tákn (takn ræður lyklinum í 434: duft/co2/lettvatn/slanga), útgangar sem grænt ÚT-skilti. Áður vantaði lykilinn og allt
+  // teiknaðist sem rauði kúturinn (Agnar 02.11.2026: „Sama mynd af öllu þarna").
+  function merkiTakn(k, tegund) {
+    var t = String(tegund || '').toLowerCase().replace('₂', '2');
+    if (k === 'sl') return { takn: /co2|kols[yý]r/.test(t) ? 'co2' : /l[eé]ttvatn|abf|fro[ðd]/.test(t) ? 'lettvatn' : 'duft', kvardi: 0.6 };
+    if (k === 'bs') return { takn: 'slanga', kvardi: 0.6 };
+    if (k === 'ut') return { takn: 'ut', kvardi: 0.6 };
+    return { punktur: LITUR_K[k] };
   }
 
   function textiHtml(r) {
@@ -243,7 +256,7 @@
       return {
         id: b.id, nafn: b.nafn, heimild: b.heimild, image_url: b.mynd, frum: b.frum, skurdur: b.skurdur, varpa: b.varpa || null, tki: tki,
         markers: tki.map(function (t) {
-          return { x: +t.bx, y: +t.by, audkenni: flokkur(t) === 'brunakerfi' && !merkimidar ? null : t.audkenni, tegund: t.bunadur, litur: litur(t) };
+          return Object.assign({ x: +t.bx, y: +t.by, audkenni: flokkur(t) === 'brunakerfi' && !merkimidar ? null : t.audkenni, tegund: t.bunadur, litur: litur(t) }, merkiTakn(kindAf(t), t.tegund));
         })
       };
     });
@@ -296,11 +309,7 @@
     // á sama stað eða eftir að færa"): lag (Búnaðargreining · Raunveruleg tæki á Teikningu · Bæði) og sía á hverja gerð (t.d. án reykskynjara
     // og ÚT). Raunveruleg tæki = merki hæðarinnar á Teikningu, varpað á blað greiningarinnar með hnitum sem bæði kerfin eiga (x,y ↔ bx,by).
     var SIA_H = { sl: 'Slökkvitæki', bs: 'Slöngukefli', ut: 'ÚT', r: 'Reykskynjarar', hb: 'Handboðar', hiti: 'Hitaskynjarar', st: 'Stjórnstöð' };
-    var SIA_L = { sl: '#c93c1d', bs: '#1f5fbf', ut: '#2e7d32', r: '#8e24aa', hb: '#6a1b9a', hiti: '#e65100', st: '#4527a0' };
-    var kindAf = function (t) {
-      var f = flokkur(t), n = t.bunadur || '';
-      return f === 'flotti' ? 'ut' : f === 'brunakerfi' ? (/reykskynjari/i.test(n) ? 'r' : /hita/i.test(n) ? 'hiti' : /handbo/i.test(n) ? 'hb' : 'st') : /slang|kefli/i.test(n) ? 'bs' : 'sl';
-    };
+    var SIA_L = LITUR_K;
     var SIA = Object.keys(SIA_H).filter(function (k) { return b.tki.some(function (t) { return kindAf(t) === k; }); });
     var kveikt = {}; Object.keys(SIA_H).forEach(function (k) { kveikt[k] = true; });
     var lag = 'greining', raun = null, raunVilla = '';
@@ -399,7 +408,7 @@
           if (kindAf(t) !== k) return;
           var d = Math.hypot(+t.bx - x, +t.by - y); if (naest === null || d < naest.d) naest = { d: d, t: t };
         });
-        ut.push({ x: x, y: y, u: +m.x, v: +m.y, audkenni: m.audkenni || null, tegund: typ || SIA_H[k], litur: '#111827', k: k, stadur: m.stadur || '', frav: naest ? naest.d > mork : null, naest: naest && naest.t.audkenni });
+        ut.push(Object.assign(merkiTakn(k, typ), { x: x, y: y, u: +m.x, v: +m.y, audkenni: m.audkenni || null, tegund: typ || SIA_H[k], litur: '#111827', k: k, stadur: m.stadur || '', frav: naest ? naest.d > mork : null, naest: naest && naest.t.audkenni }));
       });
       return ut;
     };

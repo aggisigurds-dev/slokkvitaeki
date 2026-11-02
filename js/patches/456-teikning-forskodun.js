@@ -95,10 +95,22 @@
   function hreintPdf(url) {
     try { var u = new URL(url, location.href), inn = u.searchParams.get('url') || ''; return /teikn-mynd/.test(u.pathname) && !!inn && /\.pdf$/i.test(new URL(inn).pathname); } catch (_) { return false; }
   }
+  // 02.11.2026: forskoðunarspjöldin teiknuðu ÖLL PDF-blöð hússins í einu (12 blöð × 2200 px á Nýbýlavegi 4–8) og töfðu hæðina
+  // sem Teikning-glugginn opnaði um 15–18 s ("Sæki teikninguna…"). Nú eitt blað í einu og hlé meðan glugginn er opinn.
+  var pdfRod = Promise.resolve();
+  function pdfBid(fn) {
+    var r = pdfRod.then(function () {
+      return new Promise(function (ok) {
+        (function bida() { var m = document.getElementById('modal-floorplan'); if (m && m.classList.contains('open')) setTimeout(bida, 400); else ok(); })();
+      });
+    }).then(fn);
+    pdfRod = r.catch(function () {});
+    return r;
+  }
   function hladaMynd(url) {
     if (!myndir.has(url)) {
       var p;
-      if (hreintPdf(url) && window.TeiknGaedi && TeiknGaedi.rasterPdf && pdfSlod(url)) p = TeiknGaedi.rasterPdf(pdfSlod(url), 2200);
+      if (hreintPdf(url) && window.TeiknGaedi && TeiknGaedi.rasterPdf && pdfSlod(url)) p = pdfBid(function () { return TeiknGaedi.rasterPdf(pdfSlod(url), 2200); });
       else p = new Promise(function (res, rej) {
         var i = new Image();
         // opinberar myndir í Supabase-geymslu (blöð Búnaðargreiningar, 474) leyfa CORS — án þessa verður striginn
@@ -137,7 +149,9 @@
         // SAMA ÚTLIT OG Í TEIKNINGU (Agnar 25.10.2026: „afhverju geturðu ekki bara notað sama útlitið allstaðar“): raunsæ tákn úr 434 og síunni (478) virt; einfaldur punktur til vara
         try { if (window.TeiknSia && TeiknSia.falid && TeiknSia.falid(m, [])) return; } catch (_) {}
         var teiknad = false;
-        try { var T = window.TeiknTakn, tk = window.ProfTeiknSaman && ProfTeiknSaman.taeki && ProfTeiknSaman.taeki(); if (T && T.teiknaMerki) { T.teiknaMerki(x, m, px, py, r * 5.2, tk ? Object.keys(tk).map(function (i) { return { id: +i, type: tk[i] }; }) : []); teiknad = true; if (T.erNytt && T.erNytt(m) && T.nyttMidi && c.width > 700) T.nyttMidi(x, m, px, py, r * 5.2); } } catch (_) {}
+        // punktur í lit flokksins (brunakerfisbúnaður Búnaðargreiningar, 474) — ekkert tákn
+        if (m.punktur) { x.beginPath(); x.arc(px, py, r * 1.25, 0, 2 * Math.PI); x.fillStyle = m.punktur; x.fill(); x.lineWidth = Math.max(1.5, r * 0.4); x.strokeStyle = '#fff'; x.stroke(); teiknad = true; }
+        if (!teiknad) try { var T = window.TeiknTakn, tk = window.ProfTeiknSaman && ProfTeiknSaman.taeki && ProfTeiknSaman.taeki(); if (T && T.teiknaMerki) { T.teiknaMerki(x, m, px, py, r * 5.2 * (m.kvardi || 1), tk ? Object.keys(tk).map(function (i) { return { id: +i, type: tk[i] }; }) : []); teiknad = true; if (T.erNytt && T.erNytt(m) && T.nyttMidi && c.width > 700) T.nyttMidi(x, m, px, py, r * 5.2); } } catch (_) {}
         if (!teiknad) { x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
         x.fillStyle = litur; x.fill(); x.lineWidth = Math.max(1, r * 0.35); x.strokeStyle = '#fff'; x.stroke(); }
         // auðkennið (S1, BS1 …) við punktinn — sama og í listanum við hliðina
