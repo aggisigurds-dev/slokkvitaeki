@@ -73,7 +73,9 @@ eftir Drive-auðkenni, reikningsnúmeri og skráarstærð. Vantaði í kerfið o
 Allir Stólpa-reikningar 2025–2026 á kt 660707-0420 og 531093-2409 eru nú í kerfinu nema **106752** (06.05.2025, 17.040 kr,
 Vatnskarðsnámur) — finnst hvorki á Drive né í Storage.
 Ekki lesið: tvö skönnuð samnings-PDF á Drive („Steypustöð samningur ...pdf" 2021, 173 KB, og „Steypust_in_Malarh_f_a_Samningur_2021.pdf", 311 KB) — gætu verið bls. 2/2 sem skjal 9164 hefur tapað hlekknum á; engin PDF-myndgerð á vélinni.
-Rangt merkt frá fyrri innlestri (ekki breytt): skjal 2879 segir R-107186 með 182.065 kr (er 107186+kredit 107188, 10.426) og skjal 3256 (Hringhella) heitir R-107186 en innihaldið er R-106237.
+Rangt merkt frá fyrri innlestri — **leiðrétt 02.11 (Agnar: „mátt breyta"), afrit í backup_20261102_skjol_2879_3256**:
+- 2879: var R-107186 / 182.065 / 17.01.2025 / Malarhöfði. PDF-ið er 107186 (11.210 brúttó, 10.426 til greiðslu) + kredit 107188, dags. 13.08.2025, „vegna Vatnsskarðsnámu". Nú: 11.210 · 13.08.2025 · staður 414 · kreditfært (endurgert sem R-107190).
+- 3256: var merkt Hringhellu með R-107186. PDF-ið er safnskjal með öllum 11 reikningum 2025 + kreditnum (106237 … 107539), og hver þeirra er til sem sérskjal (9717–9722, 10366–10369, 2879). Nú: tvítak, ekkert númer/upphæð, staður 285, dags. 24.11.2025.
 
 ## 4. Ógert 2026
 1. Íshella — skoðun (og rétt tækjaskrá).
