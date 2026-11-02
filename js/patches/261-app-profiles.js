@@ -746,7 +746,8 @@
       // eiga ekki að hverfa úr kóðanum, en þau eiga að mega hverfa úr ræsaranum.
       // `falid` er afturkræft og geymt með hinu útlitinu.
       falid: !!ov.falid,
-      color: ov.color || a.color, dark: ov.dark || a.dark
+      color: ov.color || a.color, dark: ov.dark || a.dark,
+      lang: a.lang || ''   // 02.11.2026: EN-app — effectiveApp afritar valda reiti og lang var ekki með (mælt: enskir flipar komu ekki)
     };
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
     // 19.09.2026: innbyggðu öppin fara líka um fallið (kyrrstætt manifest + yfirskrift Agnars) — SAMA slóð og
