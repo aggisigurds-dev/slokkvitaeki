@@ -5993,6 +5993,10 @@
       const b = val.get(k);
       if (!b || x.lyklar.length < b.lyklar.length || (x.lyklar.length === b.lyklar.length && String(x.d.dags || '') > String(b.d.dags || ''))) val.set(k, x);
     }));
+    if (window.TeiknVal && r.eign) {   // 02.11.2026 (493): blöðin sem Agnar valdi fyrir hæðirnar ganga fyrir (ein fyrirspurn aðeins ef valið er hvergi geymt)
+      if (!TeiknVal.erTilSkyndi(r.eign)) { try { await TeiknVal.saekja(r.eign); } catch (_) {} } else if (!TeiknVal.erSott(r.eign)) TeiknVal.saekja(r.eign);
+      TeiknVal.finnaAlltHusid(val, r.dr, r.eign, TeiknSaekja.flokka);
+    }
     const blod = new Map(); val.forEach((x, k) => { if (!blod.has(x)) blod.set(x, []); blod.get(x).push(k); });
     const tillaga = [];
     let i = 0;
