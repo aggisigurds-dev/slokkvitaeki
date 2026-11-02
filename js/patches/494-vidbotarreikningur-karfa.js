@@ -4,16 +4,21 @@
  * gleymdist eða smásölu í leiðinni (skynjari, bjalla, aukavinna) sem SJÁLFSTÆÐA BÚÐARSÖLU — óbeint tengda skoðuninni.
  * Tengillinn „Gera viðbótarreikning“ (fótur hægra spjaldsins í 274) opnar körfuna.
  *
- *   · Vinstra megin: verðlistinn í tveimur dálkum — ÞJÓNUSTA (brunakerfis-verðlistinn, app_settings.brunakerfi_verdlisti,
- *     sama heimild og 273 priceItems / 274) og VÖRUR (vorur.virkt, sama tafla og Sala/pos.js). „+“ setur línu í körfuna.
+ *   · Vinstra megin: verðlistinn í tveimur dálkum — ÞJÓNUSTA (þjónustulínur brunakerfis-verðlistans, app_settings.
+ *     brunakerfi_verdlisti, sama heimild og 273 priceItems / 274) og VÖRUR (vörulínur sama verðlista: XP95, segull, bjalla …
+ *     + AÐEINS brunakerfisflokkar vörutöflunnar, VORU_FLOKKAR — Agnar 02.11: engar slökkvitækja-/viðgerðarvörur hér).
+ *     „+“ setur línu í körfuna; „+ Óskráð vara“ = stök vara sem er ekki í neinum lista.
  *   · Hægra megin: karfan — lýsing, magn, einingaverð án vsk (ritanlegt), vsk %, afsláttur % á línu; „+ Ný lína“ er frjáls
  *     lína; afsláttur á heild %; athugasemd (fer í krafa_note — ALDREI í athugasemdir, þær prentast á reikninginn);
  *     samtala án vsk / vsk / með vsk.
+ *   · „Forskoða reikning“ sýnir reikninginn eins og hann verður (Agnar: „fínt að sjá preview fyrst“) og þaðan tvennt
+ *     (Agnar: „geyma sem drafts, eða klára sölu“): GEYMA SEM DRÖG (status 'drog') eða KLÁRA SÖLU (status 'final' — ósend
+ *     krafa í Kröfu yfirliti + PDF-afrit í skjöl eins og kassasala með reikningi, pos.js → 233 saveForSale).
  *   · Afsláttur: hlutfall félagsins (fyrirtaeki.afslattur_pct) fyllist fyrirfram sem afsláttur á heild; afsláttarhópur
  *     (discount_tiers, sama vél og 296/129) fyllir línu-afslátt eftir flokki. Hvort tveggja er breytanlegt.
  *
  * VISTUN — röð í `solur` eins og kassasala (pos.js), EKKI úttektarreikningur:
- *   source 'vidbot-brunakerfi' · vidskiptategund 'bud' · status 'drog' · greitt_med 'reikningur'
+ *   source 'vidbot-brunakerfi' · vidskiptategund 'bud' · status 'drog' | 'final' · greitt_med 'reikningur'
  *   linur í POS-sniðinu {type, desc, qty, unit_price_ex_vat, vsk_pct, ref, product_id}; línu-afsláttur er BAKAÐUR í
  *   einingarverðið (165-venjan: „· −N% afsl.“ aftan á lýsinguna), afslattur = kr m. vsk af HEILDINNI (afsláttur á heild),
  *   samtals = brúttó − afslattur, án-vsk/vsk skalast (VSK tekur afrúnun). Aldrei sömu krónur bæði bakaðar OG í afslattur.
@@ -185,6 +190,8 @@
       r('._vbk-li .nm', 'min-width:0;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical'),
       r('._vbk-li .pr', 'font-family:' + MONO + ';font-size:11.5px;line-height:1.2;color:#1f2530;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
       r('._vbk-li .pr small', 'color:#8a93a3;font-size:10px;margin-left:3px'),
+      // listinn er flex-dálkur með overflow:auto — börnin mega ekki kremjast (takkinn mældist 1,6 px hár án flex:none)
+      r('._vbk-li,._vbk-oskrad,._vbk-tomt', 'flex:none'),
       r('._vbk-oskrad', 'align-self:flex-start;margin-top:4px'),
       r('._vbk-tomt', LINE + ';padding:18px 12px;text-align:center;font-size:12.5px;color:#59606c'),
       // karfan: tafla með málmhaus
@@ -211,6 +218,20 @@
       r('._vbk-big span:last-child', 'font-family:' + DISPLAY + ';font-size:30px;font-weight:800;letter-spacing:0;text-transform:none;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)'),
       r('._vbk-note', REITUR + ';height:auto;min-height:64px;padding:9px 10px;width:100%;resize:vertical;line-height:1.4'),
       r('._vbk-ft', 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px 14px;border-top:1px solid rgba(20,24,34,.12);background:rgba(255,255,255,.4);flex:none'),
+      // forskoðun reiknings
+      r('._vbk-prev', 'padding:14px;overflow:auto;flex:1 1 auto;min-height:0'),
+      r('._vbk-prev[hidden],._vbk-b[hidden],._vbk-ft button[hidden]', 'display:none!important'),
+      r('._vbk-pcust', 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px'),
+      r('._vbk-pcust > div', LINE + ';padding:8px 12px;display:flex;flex-direction:column;gap:3px;min-width:0'),
+      r('._vbk-pcust b', 'font-size:14px;font-weight:700;color:#11141c;overflow:hidden;text-overflow:ellipsis'),
+      r('._vbk-pth,._vbk-ptr', 'grid-template-columns:minmax(0,1fr) 54px 110px 54px 120px'),
+      r('._vbk-pdesc', 'font-weight:600;font-size:12.5px;color:#2b313c;min-width:0;overflow-wrap:anywhere'),
+      r('._vbk-pnote', 'background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:9px 12px;font-family:' + MONO + ';font-size:12px;color:#141822;white-space:pre-wrap'),
+      r('._vbk-pval', 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px'),
+      r('._vbk-pval > div', LINE + ';padding:8px 12px;display:flex;flex-direction:column;gap:3px'),
+      r('._vbk-pval b', 'font-size:13px;color:#11141c'),
+      '@media (max-width:760px){' + P + '._vbk-pval{grid-template-columns:1fr}}',
+      '@media (max-width:760px){' + P + '._vbk-pcust{grid-template-columns:1fr}}',
       r('._vbk-ft ._vbk-sp', 'flex:1'),
       // þröngt (sími: S26 segist 980 px — stöflum undir 1100)
       '@media (max-width:1100px){' + P + '._vbk-b{grid-template-columns:1fr}' + P + '._vbk-list{max-height:34vh}}',
@@ -269,7 +290,9 @@
           '<button type="button" class="_vbk-silfur" id="_vbk-haetta">Hætta við</button>' +
           '<button type="button" class="_vbk-silfur" id="_vbk-tilbaka" hidden>Til baka í körfuna</button>' +
           '<button type="button" class="_vbk-malmur" id="_vbk-vista">Forskoða reikning</button>' +
-          '<button type="button" class="_vbk-graenn" id="_vbk-stofna" hidden>Stofna reikningsdrög</button>' +
+          // Agnar 02.11.2026: „Geyma sem drafts, eða klára sölu á þessu fyrirtæki og geta sent inn í kröfuyfirlit með reikning"
+          '<button type="button" class="_vbk-malmur" id="_vbk-drog" hidden title="Reikningurinn verður til sem drög (status drog) — má laga í Kröfu yfirliti / Drögum áður en hann er kláraður">Geyma sem drög</button>' +
+          '<button type="button" class="_vbk-graenn" id="_vbk-klara" hidden title="Salan klárast (status final) á þetta félag — reikningurinn fer sem ósend krafa í Kröfu yfirlit, tilbúinn til sendingar">Klára sölu — reikningur í Kröfu yfirlit</button>' +
         '</footer>' +
       '</div>';
     document.body.appendChild(ov);
@@ -278,7 +301,8 @@
     ov.querySelector('#_vbk-haetta').addEventListener('click', haetta);
     ov.querySelector('#_vbk-vista').addEventListener('click', forskoda);
     ov.querySelector('#_vbk-tilbaka').addEventListener('click', tilBaka);
-    ov.querySelector('#_vbk-stofna').addEventListener('click', vista);
+    ov.querySelector('#_vbk-drog').addEventListener('click', () => vista('drog'));
+    ov.querySelector('#_vbk-klara').addEventListener('click', () => vista('final'));
     ov.querySelector('#_vbk-leit').addEventListener('input', e => { ST.leit = e.target.value; teiknaVerdlista(); });
     ov.querySelector('#_vbk-pct').addEventListener('input', e => { ST.pct = num(e.target.value); samtolur(); });
     ov.querySelector('#_vbk-note').addEventListener('input', e => { ST.note = e.target.value; });
@@ -369,8 +393,8 @@
     ov.querySelector('#_vbk-vsk').textContent = fmtKr(t.vsk);
     ov.querySelector('#_vbk-afsl').textContent = (t.discTotal > 0 ? '−' : '') + fmtKr(t.discTotal);
     ov.querySelector('#_vbk-tot').textContent = fmtKr(t.total);
-    ov.querySelector('#_vbk-vista').disabled = !ST.lines.length || ST.busy || !ST.co;
-    ov.querySelector('#_vbk-stofna').disabled = !ST.lines.length || ST.busy || !ST.co;
+    const af = !ST.lines.length || ST.busy || !ST.co;
+    ['#_vbk-vista', '#_vbk-drog', '#_vbk-klara'].forEach(id => { ov.querySelector(id).disabled = af; });
   }
 
   // ── forskoðun: reikningurinn eins og hann verður til (línur bakaðar, afsláttur, samtölur, greiðandi, kröfunóta) ────
@@ -391,7 +415,8 @@
     ov.querySelector('#_vbk-haetta').hidden = ST.prev;
     ov.querySelector('#_vbk-vista').hidden = ST.prev;
     ov.querySelector('#_vbk-tilbaka').hidden = !ST.prev;
-    ov.querySelector('#_vbk-stofna').hidden = !ST.prev;
+    ov.querySelector('#_vbk-drog').hidden = !ST.prev;
+    ov.querySelector('#_vbk-klara').hidden = !ST.prev;
   }
   function forskoda() {
     if (ST.busy || !athugaKorfu()) return;
@@ -400,7 +425,7 @@
     const note = String(ST.note || '').trim();
     ov.querySelector('#_vbk-prev').innerHTML =
       '<section class="_vbk-k">' +
-        '<div class="_vbk-kh">Reikningur — forskoðun <span class="_vbk-plata" style="margin-left:10px"><i></i>Drög · ósent</span><span class="n">' + fmtKr(samtals) + '</span></div>' +
+        '<div class="_vbk-kh">Reikningur — forskoðun <span class="_vbk-plata" style="margin-left:10px"><i></i>Ekkert vistað enn</span><span class="n">' + fmtKr(samtals) + '</span></div>' +
         '<div class="_vbk-kb">' +
           '<div class="_vbk-pcust"><div><span class="_vbk-merki">Greiðandi</span><b>' + esc(ST.co.nafn || '') + '</b><span class="_vbk-hint">kt. ' + esc(ST.co.kennitala || '—') + '</span></div>' +
             '<div><span class="_vbk-merki">Greiðslumáti</span><b>Reikningur (krafa í heimabanka)</b><span class="_vbk-hint">sendist úr Kröfu yfirliti — ekkert fer núna</span></div>' +
@@ -413,12 +438,15 @@
           '<div class="_vbk-merki">Kröfunóta <small>innri texti, sést í Kröfu yfirliti — prentast ekki á reikninginn</small></div>' +
           '<div class="_vbk-pnote">' + esc(MARKI + ST.year + (note ? ' · ' + note : '')) + '</div>' +
           '<div class="_vbk-hint">Reikningstexti („vegna") er auður — skrifaðu hann í Kröfu yfirliti ef þú vilt línu á reikninginn.</div>' +
+          '<div class="_vbk-pval"><div>' + LINEHTML('Geyma sem drög', 'Reikningurinn verður til sem DRÖG á þetta félag. Þú getur lagað línur og klárað hann seinna í Kröfu yfirliti / Drögum.') + '</div>' +
+            '<div>' + LINEHTML('Klára sölu — reikningur í Kröfu yfirlit', 'Salan klárast á þetta félag. Reikningurinn verður ÓSEND krafa í Kröfu yfirliti — þú velur hann þar og sendir í Payday.') + '</div></div>' +
         '</div>' +
       '</section>';
     synaHam(true);
-    ov.querySelector('#_vbk-st').textContent = 'Ekkert hefur verið vistað enn — „Stofna reikningsdrög" býr til reikninginn.';
+    ov.querySelector('#_vbk-st').textContent = 'Ekkert hefur verið vistað enn — veldu „Geyma sem drög" eða „Klára sölu".';
     try { ov.scrollTop = 0; } catch (_) {}
   }
+  const LINEHTML = (h, t) => '<b>' + esc(h) + '</b><span class="_vbk-hint">' + esc(t) + '</span>';
   function tilBaka() { if (ST.busy) return; synaHam(false); const ov = ensure(); ov.querySelector('#_vbk-st').textContent = ST.co && ST.co.kennitala ? 'Kt. ' + ST.co.kennitala : ''; }
 
   // ── opna / loka ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -426,10 +454,11 @@
     opts = opts || {};
     const ov = ensure();
     ST.coId = +coId || null; ST.co = opts.co || null; ST.year = opts.year || new Date().getFullYear();
-    ST.lines = []; ST.pct = 0; ST.note = ''; ST.tier = null; ST.busy = false; ST.leit = '';
+    ST.lines = []; ST.pct = 0; ST.note = ''; ST.tier = null; ST.busy = false; ST.leit = ''; ST.prev = false;
+    synaHam(false);
     ov.querySelector('#_vbk-leit').value = ''; ov.querySelector('#_vbk-note').value = ''; ov.querySelector('#_vbk-pct').value = '';
     ov.querySelector('#_vbk-co').textContent = (ST.co && ST.co.nafn) || '';
-    ov.querySelector('#_vbk-ar').innerHTML = '<i></i>Búðarsala · ' + esc(ST.year);
+    ov.querySelector('#_vbk-ar').innerHTML = '<i></i>Viðbót · ' + esc(ST.year);
     ov.querySelector('#_vbk-st').textContent = 'Sæki félagið…';
     ov.classList.add('open');
     teiknaVerdlista(); teiknaKorfu();
@@ -464,12 +493,14 @@
   async function haetta() {
     if (ST.busy) return;
     if (ST.lines.length && !(await confirmUser('Henda körfunni? Ekkert hefur verið vistað.'))) return;
-    ST.lines = []; loka();
+    ST.lines = []; synaHam(false); loka();
   }
 
   // ── vistun: EIN röð í solur, drög, búðarsala — aldrei úttektarreikningur ──────────────────────────────────────────
-  async function vista() {
+  // mode: 'drog' = geyma sem drög (laga/klára seinna) · 'final' = klára sölu, ósend krafa í Kröfu yfirliti (eins og kassasala með reikningi)
+  async function vista(mode) {
     if (ST.busy) return;
+    const status = mode === 'final' ? 'final' : 'drog';
     const ov = ensure();
     const sb = SB();
     if (!sb) return toast('Engin gagnagrunnstenging — ekkert vistað', true);
@@ -486,7 +517,7 @@
       customer_nafn: ST.co.nafn || '', customer_id: ST.co.id, customer_kt: kt || null, customer_base_id: ST.co.customer_base_id || null,
       starfsmadur: 'Kassi', linur,
       upphaed_an_vsk: ex, vsk_upphaed: vsk, afslattur: afsl, samtals,
-      greitt_med: 'reikningur', status: 'drog', source: SOURCE, vidskiptategund: 'bud',
+      greitt_med: 'reikningur', status, source: SOURCE, vidskiptategund: 'bud',
       // innri texti fer í krafa_note (Kröfu yfirlit sýnir hana), ALDREI í athugasemdir — þær prentast á reikninginn (05.10.2026)
       krafa_note: MARKI + ST.year + (note ? ' · ' + note : ''),
       athugasemdir: ''
@@ -505,10 +536,23 @@
     const up = await sb.from('solur').update({ vidskiptategund: 'bud' }).eq('id', sala.id).select('vidskiptategund').single();
     if (up.error || !up.data || up.data.vidskiptategund !== 'bud') {
       skra('vidbotkarfa_tegund_brast', sala.num + ': ' + ((up.error && up.error.message) || ('tegund ' + (up.data && up.data.vidskiptategund))).slice(0, 120));
-      toast('Salan ' + (sala.num || '') + ' vistaðist en merktist ekki sem búðarsala — merktu hana í Bókhalds yfirliti', true);
+      toast('Reikningur ' + (sala.num || '') + ' varð til en merktist ekki sem lausasala (bud) — merktu hann í Bókhalds yfirliti', true);
     }
-    ST.lines = []; loka();
-    toast('Búðarsala ' + (sala.num || '') + ' vistuð sem drög — ' + fmtKr(sala.samtals) + ' · í Kröfu yfirliti');
+    ST.lines = []; synaHam(false); loka();
+    toast(status === 'final'
+      ? 'Sala kláruð — reikningur ' + (sala.num || '') + ' · ' + fmtKr(sala.samtals) + ' · ósend krafa í Kröfu yfirliti'
+      : 'Reikningsdrög ' + (sala.num || '') + ' geymd — ' + fmtKr(sala.samtals) + ' · í Kröfu yfirliti / Drögum');
+    // Kláraður reikningur fær PDF-afrit í skjöl félagsins eins og kassasala með reikningi (pos.js → 233 saveForSale; 482 varðhundur
+    // bætir því við síðar vanti það). Bilun stöðvar ekkert — salan er þegar vistuð.
+    if (status === 'final') {
+      try {
+        if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) {
+          const full = await sb.from('solur').select('*').eq('id', sala.id).single();
+          if (full.error || !full.data) throw full.error || new Error('salan fannst ekki');
+          await UttektInvoicePdf.saveForSale(ST.co.id, full.data);
+        }
+      } catch (e) { skra('vidbotkarfa_pdf_brast', (sala.num || '') + ': ' + String((e && e.message) || e).slice(0, 120)); }
+    }
     try { document.dispatchEvent(new CustomEvent('vidbot-karfa:vistad', { detail: { coId: ST.co.id, sala } })); } catch (_) {}
     try { if (window.BrunakerfiFyrirtaeki && BrunakerfiFyrirtaeki.reload) BrunakerfiFyrirtaeki.reload(); } catch (_) {}
   }
