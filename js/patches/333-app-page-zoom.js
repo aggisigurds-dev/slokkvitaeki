@@ -140,6 +140,13 @@
       return best;
     } catch (_) { return null; }
   }
+  // nav-lyklar (data-view á .vnav-btn / slóð sem pappi skrifar) sem eru ekki id sýnar: lykill → view-<id>
+  const NAVSYN = { brunayfirlit: 'brunakerfi-yfirlit' };
+  function hashSyn(h) {
+    let r = NAVSYN[h];
+    if (!r) { try { r = (window.UrlRouting && UrlRouting.resolveView) ? UrlRouting.resolveView(h) : h; } catch (_) { r = h; } }
+    return (r && document.getElementById('view-' + r)) ? r : '';
+  }
   function siduLykill() {
     if (erApp()) {
       const f = document.getElementById('_app-frame');
@@ -158,6 +165,14 @@
       // en þá virku ræður virka sýnin. #company/… á enga eigin sýn og heldur sínum lykli.
       const hv = document.getElementById('view-' + h);
       if (vid && hv && hv !== v) return vid;
+      // 03.11.2026 (útlitsúttekt): hash sem er nav-lykill/alias en á enga sýn með sama heiti (#brunayfirlit → view-brunakerfi-yfirlit,
+      // 272 setur hann með replaceState og 348 skrifar ekki yfir hann fyrr en notandi snertir) slapp framhjá vörninni ofan:
+      // hv = null → lykillinn varð 'brunayfirlit' (0,3) á ÖLLUM flipum á eftir. Leysum nú hash í sýn (NAVSYN / UrlRouting.resolveView)
+      // og ræður virka sýnin ef hashinn vísar á aðra sýn en þá virku.
+      if (vid && !hv) {
+        const rv = hashSyn(h);
+        if (rv && rv !== vid) return vid;
+      }
       return h;
     }
     return vid || 'heim';
