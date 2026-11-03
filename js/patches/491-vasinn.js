@@ -40,6 +40,9 @@
   const taeki = () => { const ua = navigator.userAgent || ''; return /Android/i.test(ua) ? 'sími (Android)' : /iPhone|iPad/i.test(ua) ? 'sími (iOS)' : 'tölva'; };
   const toast = (m, w) => { try { if (window.Bord368 && Bord368.toast) return Bord368.toast(m, w); } catch (_) {} try { if (window.Toast && Toast.show) return Toast.show(m); } catch (_) {} try { if (window.App && App.toast) return App.toast(m); } catch (_) {} console[w ? 'warn' : 'log']('[491] ' + m); };
   const slodFyrir = p => { try { const r = sb().storage.from(BUCKET).getPublicUrl(p); return r && r.data && r.data.publicUrl || ''; } catch (_) { return ''; } };
+  // 03.11.2026 (Agnar: „Það vantar niðurhals hnappa"): ⬇ á hverjum hlut með skrá. download-eigindið eitt dugir ekki milli
+  // léna (Storage er annað lén) — Supabase gefur Content-Disposition: attachment með ?download=<nafn>.
+  const slodNidur = (p, nafn) => { const u = slodFyrir(p); return u ? u + (u.indexOf('?') < 0 ? '?' : '&') + 'download=' + encodeURIComponent(nafn || p.split('/').pop() || 'vasinn') : ''; };
 
   const IK_VASI = '<path d="M5 4h14v12a5 5 0 0 1-5 5h-4a5 5 0 0 1-5-5z"/><path d="M5 8h14"/><path d="M9 13h6"/>';
   let _olesid = -1, _teljari = 0;
@@ -259,7 +262,8 @@
       V + ' .va-hluti b{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:5px;background:#1f2530;color:#fff;font-size:11px;letter-spacing:0}' + V + ' .va-hluti._ok b{background:#6b7280}',
       V + ' .va-hluti button{margin-left:auto;background:none;border:0;font:600 11px ' + SANS + ';color:#2f6fb3;text-transform:none;letter-spacing:0;cursor:pointer;padding:6px}',
       V + ' .va-hl{margin:0 12px 10px;border-radius:12px;background:#fff;border:1px solid rgba(20,24,34,.16);box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden}' + V + ' .va-hl._lesid{opacity:.75}',
-      V + ' .va-hl .opna{display:flex;gap:10px;align-items:center;width:100%;padding:10px 12px;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      V + ' .va-hl{display:flex;flex-wrap:wrap;align-items:stretch}' + V + ' .va-hl .opna{display:flex;gap:10px;align-items:center;flex:1 1 0;min-width:0;padding:10px 12px;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      V + ' .va-hl .va-dl{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;margin:10px 10px 10px 0;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;text-decoration:none;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(0,0,0,.14)}' + V + ' .va-hl .va-dl:active{background:#dfe3ea}' + V + ' .va-inni{flex:0 0 100%;width:100%}',
       V + ' .va-hl .tn{flex:none;width:56px;height:56px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:#f4f6f9;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}' + V + ' .va-hl .tn img{width:100%;height:100%;object-fit:cover}',
       V + ' .va-hl .mi{min-width:0;flex:1}' + V + ' .va-hl .l1{display:flex;gap:6px;font-family:' + MONO + ';font-size:10.5px;color:#5b6577}' + V + ' .va-hl .l1 time{margin-left:auto;white-space:nowrap}',
       V + ' .va-hl .sk{display:block;font:600 14px/1.35 ' + SANS + ';margin-top:3px;overflow-wrap:anywhere}' + V + ' .va-hl .sk._tomt{font-weight:400;color:#8a93a3;font-style:italic}',
@@ -267,7 +271,7 @@
       V + ' .va-inni{padding:0 12px 12px;border-top:1px solid rgba(20,24,34,.1)}' + V + ' .va-inni img{display:block;max-width:100%;max-height:70vh;margin-top:10px;border-radius:8px;border:1px solid rgba(20,24,34,.2)}' + V + ' .va-inni audio{display:block;width:100%;margin-top:10px}',
       V + ' .va-kassi{margin-top:10px;padding:10px 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:#f7f8fa}' + V + ' .va-kassi>b{display:block;font:700 10.5px ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#525b6b;margin-bottom:4px}' + V + ' .va-kassi._svar{background:#eef7f0;border-color:#9fd1b0}' + V + ' .va-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;overflow-wrap:anywhere}',
       V + ' .va-inni .va-ta{min-height:56px;font-size:14px}',
-      V + ' .va-t2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}' + V + ' .va-t2 button,' + V + ' .va-t2 a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 8px;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 13px ' + SANS + ';cursor:pointer;text-decoration:none}' + V + ' .va-t2 ._raut{background:linear-gradient(180deg,#c4452f,#a8321f);border-color:#6e1c10;color:#fff}' + V + ' .va-t2 button:disabled{opacity:.45}',
+      V + ' .va-t2{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;margin-top:10px}' + V + ' .va-t2 button,' + V + ' .va-t2 a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 8px;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 13px ' + SANS + ';cursor:pointer;text-decoration:none}' + V + ' .va-t2 ._raut{background:linear-gradient(180deg,#c4452f,#a8321f);border-color:#6e1c10;color:#fff}' + V + ' .va-t2 button:disabled{opacity:.45}',
       V + ' .va-tomt{margin:30px 20px;text-align:center;font-size:14px;color:#525b6b;line-height:1.6}' + V + ' .va-villa{margin:12px;padding:12px;border-radius:9px;background:#f9e3e0;color:#7a1f14;font-size:13px}',
       '@media (min-width:900px){' + V + ' #' + ROOT_ID + '{max-width:860px;margin:0 auto}}'
     ].join('\n');
@@ -288,7 +292,7 @@
   }
   const tegTakn = r => r.tegund === 'mynd' ? '🖼' : r.tegund === 'hljod' ? '🎙' : r.tegund === 'texti' ? '✎' : /pdf/i.test(r.mime || '') ? '📄' : '📎';
   function hlutur(r) {
-    const op = S.opin.has(r.id), url = r.storage_path ? slodFyrir(r.storage_path) : '';
+    const op = S.opin.has(r.id), url = r.storage_path ? slodFyrir(r.storage_path) : '', dl = r.storage_path ? slodNidur(r.storage_path, r.file_name) : '';
     const tn = r.tegund === 'mynd' && url ? '<img src="' + esc(url) + '" alt="" loading="lazy">' : tegTakn(r);
     const sk = r.skyring ? '<span class="sk">' + esc(r.skyring) + '</span>' : (r.afrit ? '<span class="sk">' + esc(r.afrit.slice(0, 140)) + '</span>' : '<span class="sk _tomt">engin skýring</span>');
     const merki = (r.lesid_at ? '<span class="va-m _ok">✓ Claude las ' + esc(dags(r.lesid_at)) + '</span>' : '<span class="va-m _ny">ólesið</span>') + (r.file_name ? '<span class="va-m">' + esc(r.file_name) + (r.size ? ' · ' + staerd(r.size) : '') + '</span>' : '') + (r.afrit && r.tegund === 'hljod' ? '<span class="va-m">afrit</span>' : '');
@@ -302,11 +306,13 @@
       inni += '<textarea class="va-ta" data-va-in="skyr" data-v="' + r.id + '" placeholder="Skýring — hvað er þetta, hvað á Claude að gera við það?">' + esc(S.skyr[r.id] != null ? S.skyr[r.id] : (r.skyring || '')) + '</textarea>';
       inni += '<div class="va-t2"><button type="button" data-va="vista" data-v="' + r.id + '"' + (S.busy[r.id] ? ' disabled' : '') + '>💾 Vista</button>' +
         (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">↗ Opna</a>' : '<span></span>') +
+        (dl ? '<a href="' + esc(dl) + '" download="' + esc(r.file_name || '') + '">⬇ Sækja</a>' : '') +
         '<button type="button" class="' + (S.eyda === r.id ? '_raut' : '') + '" data-va="eyda" data-v="' + r.id + '"' + (S.busy[r.id] ? ' disabled' : '') + '>' + (S.eyda === r.id ? 'Ýttu aftur' : '✕ Fjarlægja') + '</button></div>';
       inni += '<div class="va-hint">' + esc(r.hofundur || '') + ' · ' + esc(r.taeki || '') + ' · #' + r.id + '</div></div>';
     }
     return '<div class="va-hl' + (r.lesid_at ? ' _lesid' : '') + '" data-k="' + r.id + '"><button type="button" class="opna" data-va="opna" data-v="' + r.id + '" aria-expanded="' + op + '">' +
-      '<span class="tn">' + tn + '</span><span class="mi"><span class="l1"><span>' + esc(r.tegund) + '</span><time>' + esc(dags(r.created_at)) + ' ' + esc(kl(r.created_at)) + '</time></span>' + sk + '<span>' + merki + '</span></span></button>' + inni + '</div>';
+      '<span class="tn">' + tn + '</span><span class="mi"><span class="l1"><span>' + esc(r.tegund) + '</span><time>' + esc(dags(r.created_at)) + ' ' + esc(kl(r.created_at)) + '</time></span>' + sk + '<span>' + merki + '</span></span></button>' +
+      (dl ? '<a class="va-dl" href="' + esc(dl) + '" download="' + esc(r.file_name || '') + '" title="Sækja ' + esc(r.file_name || 'skrána') + '" aria-label="Sækja"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg></a>' : '') + inni + '</div>';
   }
   function html() {
     const olesid = S.rows.filter(r => !r.lesid_at), lesid = S.rows.filter(r => r.lesid_at);
@@ -424,6 +430,6 @@
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Vasinn = { open, render, load, S, setja, telja, version: '491b' };
+  window.Vasinn = { open, render, load, S, setja, telja, version: '491c' };
   console.log('[491] Vasinn — app-síða');
 })();
