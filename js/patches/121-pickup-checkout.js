@@ -75,8 +75,11 @@
     const allJobs = jobsForSaleNum(saleNum);
     // Collect all units across all jobs of this sale
     const allUnits = [];
+    // 03.11.2026: eydd tæki (status 'eytt', 78 deleteUnit) eru ekki afhent — áður birtust þau sem
+    // „Tilbúið til afhendingar" (R-001248: 7 tæki í stað 6), deildu einingaverðinu, og hak tekið af
+    // þeim dró sölulínu út. Varahlutir á þeim rukkuðust líka.
     allJobs.forEach(j => {
-      (j.units || []).forEach(u => allUnits.push({ jobId: j.id, jobNum: j.num, unit: u }));
+      (j.units || []).forEach(u => { if (u && u.status !== 'eytt') allUnits.push({ jobId: j.id, jobNum: j.num, unit: u }); });
     });
 
     // 2026-06-20: Pre-load spare parts the Verkstæði added to each tæki
@@ -130,6 +133,22 @@
   // um leið og reit er breytt (pickupDiscReplace=true) KEMUR nýi afslátturinn
   // Í STAÐ sölu-afsláttarins — leggst ekki ofan á hann eins og áður.
   let pickupDiscReplace = false;
+  // 03.11.2026: sölu-afslátturinn á það sem breytist í afhendingu. Sé hann heil prósenta
+  // (afsláttur félagsins — sami lestur og origPctClean í renderPickupModal) gildir sama % á það
+  // sem bætist við eða dettur út: varahluti og tæki af verkstæðinu (verklidur.parts), „+ Bæta við"
+  // línur og ónýt tæki sem ekki eru afhent. Áður stóð kr-talan föst, svo viðbót fór á fullu verði
+  // (R-001248, 20 %: yfirferð 4.200 í stað 3.360) og ónýtt tæki dró afsláttinn ekki niður.
+  // Óbreytt upphæð → upprunalega kr-talan nákvæmlega (engin endurröndun, 26.10). Föst kr-tala
+  // (ekki heil %) helst eins og áður. Notað í calcTotals OG finalizePickup svo forskoðun = vistun.
+  function afslSolu(sale, gross) {
+    const a0 = Math.max(0, Math.round(+(sale && sale.afslattur) || 0));
+    const g = Math.max(0, Math.round(+gross || 0));
+    if (!a0) return 0;
+    const g0 = Math.round(+(sale && sale.samtals) || 0) + a0;
+    const pr = g0 > 0 ? 100 * a0 / g0 : 0;
+    const pct = pr && Math.abs(pr - Math.round(pr)) < 0.06 ? Math.round(pr) : 0;
+    return Math.max(0, Math.min(g, pct ? a0 + Math.round((g - g0) * pct / 100) : a0));
+  }
   let pickupNote = '';         // free-text athugasemd appended to audit trail
   // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
   // nr 9847265"). Surfaced in the Sótt window so the operator can edit it and
@@ -633,8 +652,8 @@
         }
         // (1 − discount_pct) mirrors finalizePickup's line-discount baking.
         unitsTotal = oldLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100) * (1 + (+l.vsk_pct || 24) / 100), 0);
-      } else if (job.verd && (job.units || []).length > 0) {
-        unitsTotal = (+job.verd / (job.units || []).length) * takenCount;
+      } else if (job.verd && (job.units || []).filter(u => u && u.status !== 'eytt').length > 0) {
+        unitsTotal = (+job.verd / (job.units || []).filter(u => u && u.status !== 'eytt').length) * takenCount;
       }
       const perUnit = takenCount > 0 ? unitsTotal / takenCount : 0;
       const extrasTotal = pickupExtras.reduce((s, ex) => {
@@ -645,8 +664,9 @@
       // preview matches finalizePickup — before, a "greitt síðar" draft with a
       // kassa-afslátt was silently previewed AND charged at full price.
       // 26.10.2026: sé reitunum BREYTT (pickupDiscReplace) fellur sölu-afslátturinn
-      // niður og nýi afslátturinn reiknast af öllu; ósnertir reitir = gamla kr-talan óbreytt.
-      const origDisc = pickupDiscReplace ? 0 : Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), subTotal);
+      // niður og nýi afslátturinn reiknast af öllu; ósnertir reitir = sölu-afslátturinn (afslSolu:
+      // sama % á viðbót/frádrátt sé hann heil prósenta, annars kr-talan óbreytt).
+      const origDisc = pickupDiscReplace ? 0 : afslSolu(sale, subTotal);
       // 2026-05-24: Apply optional pickup-time discount (0–100 %) on the rest.
       const remainder = subTotal - origDisc;
       const discPct = pickupDiscReplace ? Math.max(0, Math.min(100, +pickupDiscountPct || 0)) : 0;
@@ -975,7 +995,7 @@
     const preSamtals = preEx + preVsk;
     // 26.10.2026: replaceOrigDisc = starfsmaður breytti afsláttarreitunum í glugganum →
     // sölu-afslátturinn fellur niður og nýi kemur í hans stað (sama og calcTotals).
-    const saleAfsl = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), Math.round(preSamtals));
+    const saleAfsl = afslSolu(sale, preSamtals);
     const origAfsl = replaceOrigDisc ? 0 : saleAfsl;
     const remainderAfterOrig = Math.round(preSamtals) - origAfsl;
     const pctKr = Math.round(remainderAfterOrig * discPct / 100);
