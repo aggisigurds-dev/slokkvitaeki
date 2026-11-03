@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-03 14:34 · 906 virkar staðreyndir
+Sótt 2026-11-03 14:39 · 906 virkar staðreyndir
 
 ---
 
@@ -103,7 +103,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
-- **Aðgangsstýring (03.11.2026): Þjónustuborð → flýtileið „Aðgangsstýring“ (sést aðeins þegar AS er skráður inn) opnar patch 495. Síðuval býr í hub_adgangar.sidur sem lyklar: slokk:<data-view|slóð|@texti> og hub:<flipa-id>; slokk:*/hub:* = allar, slokk:!/hub:! = engin, enginn lykill = engin takmörkun. Vistað með POST hub-adgangar {action:'sidur'} (snertir aðeins sidur). Framfylgt fyrir innskráða starfsmenn (ekki admin): Slökkvitæki 495 (stílblað felur hnappa, App.switchView og smellir stöðvaðir, lokuð síða → fyrsta leyfða), Brunahólf js/adgangur-hub.js + renderTabs/activeTab. „Skoða sem“: sessionStorage í Slökkvitæki, ?skoda_sem=NN í Brunahólfi. Viðmótshlið, ekki API-vörn. Gildir aðeins um innskráða — krefjast_slokk er AF 03.11. Gömlu orðin í SIDUR (19.10, t.d. Marius) voru aldrei virk og eru aðeins tillaga í glugganum; „Skjöl“ á engan flipa.**
+- **Aðgangsstýring (03.11.2026): Þjónustuborð → flýtileið „Aðgangsstýring“ (sést aðeins þegar AS er skráður inn) opnar patch 495. Síðuval býr í hub_adgangar.sidur sem lyklar: slokk:<data-view|slóð|@texti> og hub:<flipa-id>; slokk:*/hub:* = allar, slokk:!/hub:! = engin, enginn lykill = engin takmörkun. Vistað með POST hub-adgangar {action:'sidur'} (snertir aðeins sidur). Framfylgt fyrir innskráða starfsmenn (ekki admin): Slökkvitæki 495 (stílblað felur hnappa, App.switchView og smellir stöðvaðir, lokuð síða → fyrsta leyfða), Brunahólf js/adgangur-hub.js + renderTabs/activeTab. „Skoða sem“: staðan býr í slóðinni ?skoda_sem=NN í báðum öppum (engin vafrageymsla — audit-vafrastada). Viðmótshlið, ekki API-vörn. Gildir aðeins um innskráða — krefjast_slokk er AF 03.11. Gömlu orðin í SIDUR (19.10, t.d. Marius) voru aldrei virk og eru aðeins tillaga í glugganum; „Skjöl“ á engan flipa.**
   <br><sub>2026-11-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **Vasinn (01.11.2026): app-síða #vasinn (491) þar sem Agnar límir skjáskot, tekur myndir, hleður upp skrám og talar inn hljóð (afrit) handa Claude. Tafla vasinn + opinber fata vasinn. Claude les með node tools/vasinn.cjs (skill vasinn), stimplar --lesid <ids> --svar. Fjarlægja = deleted_at.**
   <br><sub>2026-11-01 · slokkvitaeki · claude-code · claude-code</sub>

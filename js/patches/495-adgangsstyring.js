@@ -12,8 +12,8 @@
  *  • Framfylgt hér fyrir innskráða starfsmenn (ekki admin): stílblað felur hnappa sem eru ekki leyfðir (rífur ekkert úr
  *    DOM-inu — 68/189/391 eiga hnappana), App.switchView og smellir á lokaðar síður stöðvaðir, og sé opin síða lokuð er
  *    farið á fyrstu leyfðu síðuna. Þetta er VIÐMÓTSHLIÐ eins og innskráningarkrafan — gögnin sjálf eru ekki læst á þjóni.
- *  • „Skoða sem": admin sér appið nákvæmlega eins og starfsmaðurinn (sessionStorage, aðeins þessi flipi — tímabundin
- *    staða skv. reglunni 15.10.2026). Borði efst segir það og „Hætta" skilar öllu.
+ *  • „Skoða sem": admin sér appið nákvæmlega eins og starfsmaðurinn. Staðan býr í slóðinni (?skoda_sem=LS) — engin
+ *    vafrageymsla (audit-vafrastada), lifir endurhleðslu og hash-leiðsögn. Borði efst segir það og „Hætta" skilar öllu.
  *  Brunahólfs-hliðin: brunaholf/js/adgangur-hub.js (sama lyklakerfi, ?skoda_sem=NN).
  */
 (function () {
@@ -21,15 +21,18 @@
   if (window.Adgangsstyring) return;
 
   const HUB = 'https://brunaholf.netlify.app';
-  const SS = 'adg_skoda_sem';
+  const PARAM = 'skoda_sem';
   const ALIAS = { verkbord: 'bord' };          // nav-hnappur → view-id þar sem þau heita ekki eins
-  const S = { st: null, skoda: lesaSkoda(), sett: undefined, vafningur: null, beind: [] };
+  const S = { st: null, skoda: null, sett: undefined, vafningur: null, beind: [] };
   const A = { opid: false, hledur: false, villa: '', users: [], katHub: [], arfur: {}, krefjast: false, krefjastSlokk: false,
     valId: null, app: 'slokk', drog: null, breytt: false, vistar: false, leit: '', katSlokk: null };
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function tilkynna(m, villa) { try { if (typeof window.showToast === 'function') return window.showToast(m, villa); } catch (_) {} console.log('[495]', m); }
-  function lesaSkoda() { try { const j = JSON.parse(sessionStorage.getItem(SS) || 'null'); return j && j.nn !== undefined && Array.isArray(j.sidur) ? j : null; } catch (_) { return null; } }
+  function slodNn() { try { return new URLSearchParams(location.search).get(PARAM) || ''; } catch (_) { return ''; } }
+  function setjaSlod(nn) {
+    try { const u = new URL(location.href); if (nn) u.searchParams.set(PARAM, nn); else u.searchParams.delete(PARAM); history.replaceState(history.state, '', u.pathname + u.search + u.hash); } catch (_) {}
+  }
   function api(method, body, qs) {
     const opt = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', cache: 'no-store' };
     if (body) opt.body = JSON.stringify(body);
@@ -150,12 +153,12 @@
   function skodaSem(u) {
     if (!erAdmin()) return tilkynna('Aðeins admin getur skoðað sem annar.', true);
     S.skoda = { nn: u.nn || '', nafn: u.nafn, rola: u.rola, sidur: (u.sidur || []).slice(), _skoda: true };
-    try { sessionStorage.setItem(SS, JSON.stringify(S.skoda)); } catch (_) {}
+    setjaSlod(u.nn || '#' + u.id);
     loka(); uppfaera();
     if (!S.sett) tilkynna(u.nafn + ' sér allar síður Slökkvitæki-appsins.');
   }
   function haettaSkoda() {
-    S.skoda = null; try { sessionStorage.removeItem(SS); } catch (_) {}
+    S.skoda = null; setjaSlod('');
     uppfaera(); tilkynna('Þú sérð appið aftur sem þú sjálfur.');
   }
   function bordi() {
@@ -446,11 +449,19 @@
   (document.head || document.documentElement).appendChild(st);
 
   // ── ræsing ────────────────────────────────────────────────────────────────────────────────────────────────────────
-  if (S.skoda) uppfaera();                              // „Skoða sem" lifir endurhleðslu í þessum flipa — strax, án blikks
   const stada = window.__hubNotandiP || fetch('/api/hub-adgangar', { credentials: 'same-origin', cache: 'no-store' }).then((r) => r.json());
   stada.then((st) => { S.st = st || {}; }).catch(() => { S.st = { authed: false }; }).then(() => {
-    if (S.skoda && !erAdmin()) { S.skoda = null; try { sessionStorage.removeItem(SS); } catch (_) {} }   // aðeins admin skoðar sem annar
     uppfaera();
+    // ?skoda_sem=LS (eða #id án notandanafns) — aðeins admin; nýjasta vistaða síðuvalið sótt.
+    const nn = slodNn();
+    if (!nn) return;
+    if (!erAdmin()) return setjaSlod('');
+    api('GET', null, 'listi=1').then((j) => {
+      const u = (j.users || []).find((x) => (nn.charAt(0) === '#' ? '#' + x.id === nn : String(x.nn || '').toUpperCase() === nn.toUpperCase()));
+      if (!u) return setjaSlod('');
+      S.skoda = { nn: u.nn || '', nafn: u.nafn, rola: u.rola, sidur: (u.sidur || []).slice(), _skoda: true };
+      uppfaera();
+    }).catch(() => {});
   });
   // Hnappar sem 19 pappar setja inn á mismunandi tímum — merkt aftur og switchView vafið aftur ef annar vafði eftir á.
   [1500, 4000, 9000].forEach((ms) => setTimeout(() => { if (S.sett) { beita(); vefja(); athugaSyn(); } }, ms));
