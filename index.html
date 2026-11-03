@@ -105,6 +105,14 @@
       var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png',brunaholf:'/img/app-brunaholf-apple.png',brunakerfi:'/img/app-brunakerfi-apple.png',boss:'/img/app-boss-apple.png'};
       if(APPLE[key]) document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href',APPLE[key]+'?v=1');});
     }
+    // 03.11.2026 (útlitsúttekt): verkstjorar / skyrslustod / threedwork eru ekki í MAN (manifestið kemur úr 261 á keyrslutíma og er óbreytt hér) —
+    // þau fengu því almennan titil „Slökkvitæki ehf". Aðeins titillinn er settur; engin iOS-tákn-skrá er til fyrir þau (img/app-*-apple.png) svo APPLE er óbreytt.
+    var TITLES2={verkstjorar:'Verkstjórar',skyrslustod:'Skýrslu-stöð',threedwork:'3dwork'};
+    if(!MAN[key]&&Object.prototype.hasOwnProperty.call(TITLES2,key)){
+      var at2=document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if(at2) at2.setAttribute('content', TITLES2[key]);
+      try{ document.title=TITLES2[key]+' — Slökkvitæki'; }catch(_){}
+    }
   }catch(e){}
 })();
 </script>

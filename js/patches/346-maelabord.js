@@ -697,7 +697,14 @@
     hookSwitch();
     // Bein slóð /#maelabord á líka að virka, ekki bara nav-takkinn.
     try {
-      if (location.hash.replace('#', '') === NAV_KEY) {
+      // 03.11.2026 (útlitsúttekt): farið af Mælaborði yfir í t.d. Bókhalds yfirlit — slóðin (#maelabord) uppfærist stundum seinna en þessi vakt
+      // (300 ms) og reglan hér að neðan kippti notandanum til baka eftir ~1,5 s (mælt: Bókhalds yfirlit og Tilboð hurfu aftur í Mælaborð).
+      // Hafi Mælaborðið verið virkt og önnur sýn tekið við telst það ferð burt: ekki kippt til baka fyrr en slóðin breytist aftur (hashchange)
+      // eða Mælaborðið verður virkt á ný. Ræsing á #maelabord (Mælaborðið aldrei orðið virkt) heldur gömlu hegðuninni.
+      const el0 = document.getElementById(VIEW_ID);
+      if (el0 && el0.classList.contains('active')) vakta._burt = false;
+      else if (vakta._virk) vakta._burt = true;
+      if (location.hash.replace('#', '') === NAV_KEY && !vakta._burt) {
         const el = document.getElementById(VIEW_ID);
         if (!el || !el.classList.contains('active')) {
           if (window.App && App.switchView) App.switchView(NAV_KEY);
@@ -713,6 +720,7 @@
     vakta._virk = virk;
   }
 
+  window.addEventListener('hashchange', () => { vakta._burt = false; });
   new MutationObserver(() => { clearTimeout(window.__mbT); window.__mbT = setTimeout(vakta, 300); })
     .observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta);

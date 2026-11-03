@@ -59,13 +59,15 @@
       st.id = '_fljotandi-css';
       (document.head || document.documentElement).appendChild(st);
     }
-    st.textContent = '@media (max-width: 900px){\n' + CSS + '\n}';
+    st.textContent = '@media (max-width: 900px){\n' + CSS + '\n}\nhtml body.appmode #toast{z-index:2147481500!important}';   // app á síma er 980 px breitt → utan media-reglunnar
   }
 
   // Hæð botnstikunnar er MÆLD, ekki gefin: 353 skalar krómið eftir því hvernig
   // Chrome leggur síðuna út á símanum, svo 64 px hér og 116 px þar er sama stikan.
   function maela() {
-    if (innerWidth > 900) return;              // borðtölvan á sitt eigið útlit
+    // 03.11.2026 (útlitsúttekt): í appi á síma er síðan 980 px breið (HUB_VP, 05.10) → innerWidth > 900 og röðin fór aldrei af stað: 💬 sat á bottom:78px
+    // BAK VIÐ #_app-nav (mælt: hnit 💬 t=1993–2045, stika t=1863–2123; elementFromPoint í öllum 5 punktum = ._app-tab). Appið telst alltaf með stiku.
+    if (innerWidth > 900 && !(document.body && document.body.classList.contains('appmode'))) return;   // borðtölvan á sitt eigið útlit
     const nav = document.getElementById('_app-nav');
     const synileg = nav && getComputedStyle(nav).display !== 'none' && nav.offsetHeight > 0;
     const h = synileg ? Math.round(nav.getBoundingClientRect().height) : 0;

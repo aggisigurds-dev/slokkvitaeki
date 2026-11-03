@@ -1477,6 +1477,13 @@
       '@container rail (max-width: 560px){.week{display:flex;flex-direction:column;gap:6px;padding:10px 12px}.day{flex-direction:row;align-items:flex-start;gap:10px}.dh{flex:0 0 100px}.djobs{flex:1}' +
         '.cards{grid-template-columns:minmax(0,1fr)}.lrow{grid-template-columns:44px minmax(0,1fr)}' +
         '.lrow .btn,.lrow .lock,.lrow .tag,.lrow .lakt,.lrow .akacts{grid-column:2;justify-self:start}.lrow .lakt{justify-content:flex-start}}',
+      // 03.11.2026 (útlitsúttekt): .modgrid er 60 dálkar með 14 px bili → 59 × 14 = 826 px lágmarksbreidd þótt dálkarnir sjálfir séu minmax(0,1fr).
+      // Í mjóum reit (sími, ~400 px) varð allt borðið 826 px breitt og view-bord (overflow-x:hidden úr 263 mobile-baseline) klippti 99 texta/98 takka
+      // utan skjás. Sími-skipulagið (≤760 px) hefur aðeins eitt spjald í röð (span 60), svo dálkabilið er óþarft — línubilið helst 14 px.
+      '@container t5 (max-width: 760px){.modgrid{column-gap:0}}',
+      // Sama úttekt: Hamur-stikan (11 flipar, 1614 px) er overflow:hidden → „Test", „Afgreiðsla / Útköl", „Reikningsbeiðnir" utan skjás og ekki hægt að skruna.
+      // AÐEINS í app-sniði (body.appmode); tölvuútlit utan apps óbreytt.
+      ':host-context(body.appmode) .seg.modeseg{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
       '@container t5 (min-width: 761px){.sel.inline{display:none}}',
       '@container t5 (max-width: 760px){' +
         '.t5{padding:12px 10px 24px}.h1{font-size:30px}' +

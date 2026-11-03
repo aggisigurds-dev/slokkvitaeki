@@ -713,13 +713,16 @@
 .bt.screen--wide{max-width:900px}
 @media (min-width:1100px){ .bt.screen{max-width:440px} }
 #${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
+/* 03.11.2026 (útlitsúttekt): ?app=bilstjori er standalone (261) — engin #_app-hdr og engin #_app-nav, en 316 setur samt body.appmode.
+   Reglurnar hér miðuðu við 50 px haus og 84 px botnstiku → 50 px tóm ræma efst og 84 px neðst (mælt 375×812: view top 50, bottom 728).
+   Þær gilda því ekki í data-app="bilstjori". */
 /* 08.10.2026: Bílstjóri sem FLIPI í appi (261 PAGES) — app-hausinn (50 px) og botnstikan (#_app-nav) eru fixed
    ofan á öllu (z 2147481001). Yfirlagið og dokkan víkja fyrir þeim; --bs-navh er mæld hæð stikunnar (show/resize). */
-body.appmode #${VIEW_ID}{top:50px!important}
-body.appmode:not(.appmode-nonav) #${VIEW_ID}{bottom:var(--bs-navh,84px)!important}
-body.appmode:not(.appmode-nonav) #${VIEW_ID} .bt .dock,body.appmode:not(.appmode-nonav) #${VIEW_ID} .dock{bottom:var(--bs-navh,84px)!important}
-body.appmode:not(.appmode-nonav) ._bs-sheet{top:50px!important;bottom:var(--bs-navh,84px)!important}
-body.appmode:not(.appmode-nonav) ._bs-sheet .dock{bottom:var(--bs-navh,84px)!important}
+body.appmode:not([data-app="bilstjori"]) #${VIEW_ID}{top:50px!important}
+body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID}{bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID} .bt .dock,body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID} .dock{bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) ._bs-sheet{top:50px!important;bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) ._bs-sheet .dock{bottom:var(--bs-navh,84px)!important}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}
 /* Hide the app's global floating chrome so it never leaks OVER the locked
