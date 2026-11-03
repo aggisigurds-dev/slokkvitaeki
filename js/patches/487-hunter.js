@@ -283,7 +283,13 @@
       else if (a.stada === 'hafnad') naesta = 'Engin eftirfylgni';
       else if (a.stada === 'unnid') naesta = 'Í þjónustu';
     } else if (a.naesta_dags) naesta += ' · ' + fmtD(a.naesta_dags);
-    if (a.naesta_dags && a.stada !== 'hafnad' && a.stada !== 'unnid') { const nd = dagar(a.naesta_dags); if (nd != null && nd >= 0) ncls = ncls || 'hot'; }
+    // 03.11.2026: liðin dagsetning (fundur 28/10 sem var afboðaður sást enn sem „Fundur 28/10“ í gulu) → rautt og sagt berum orðum
+    if (a.naesta_dags && a.stada !== 'hafnad' && a.stada !== 'unnid') {
+      const nd = dagar(a.naesta_dags);
+      if (nd != null && nd > 0) { naesta += ' — liðið (' + dagaOrd(nd) + '), uppfæra stöðu'; ncls = 'raud'; }
+      else if (nd === 0) { naesta += ' — í dag'; ncls = 'hot'; }
+      else if (nd != null && nd >= -3) ncls = ncls || 'hot';
+    }
     const taeki = (S.fast[a.id] || []).reduce((n, f) => n + (+f.taeki_aaetlad || 0), 0);
     return { st, dot, sidast, sidastT, naesta, ncls, d, lengi: dot === 'lengi', taeki, fjFast: (S.fast[a.id] || []).length };
   }
@@ -301,7 +307,7 @@
       if (S.sia === 'stjarna') { if (!a.stjarna) return false; }
       else if (S.sia !== 'allir' && a.stada !== S.sia) return false;
       if (S.herferd && (a.herferd || '') !== S.herferd) return false;
-      if (q && !([a.nafn, a.len, a.netfang, a.tengilidur, a.simi, a.herferd, a.minnispunktar].join(' ').toLowerCase().includes(q))) return false;
+      if (q && !([a.nafn, a.len, a.netfang, a.tengilidur, a.simi, a.kennitala, a.herferd, a.athugasemd, a.minnispunktar, a.naesta_skref, a.sidast_post_efni].join(' ').toLowerCase().includes(q))) return false;
       return true;
     }).sort(rodun);
   }
@@ -356,12 +362,15 @@
   // ── Listasíðan ───────────────────────────────────────────────────────────────────────────────────────
   function hnod(k) { return k.split('').map(c => '<span class="hu2-hnod ' + c + '" aria-hidden="true"></span>').join(''); }
   function plata(a) { const st = STODUR[a.stada] || STODUR.bidur; return '<span class="hu2-pl ' + st.cls + '"><i aria-hidden="true"></i>' + esc(st.t) + '</span>'; }
+  // Dagatalspóstar (fundarboð, afboðun, samþykki) eru hvorki svar né sjálfvirkt svar — merkt „Dagatal" (Heimaleiga 26/10: „Canceled event: …")
+  const DAGATAL_RX = /^(canceled event|cancelled event|updated invitation|invitation:|accepted:|declined:|tentatively accepted|fundarboð|afboðað|boð:|samþykkt:|hafnað:)/i;
   // Síðasti póstur í samskiptunum (sidast_post_* úr innsoginu): hver sendi, hvenær, efni og upphaf textans.
   // Svartexti er klipptur á undan tilvitnun í fyrri póst („On … wrote:", „skrifaði …:", „From:").
   function samskiptiHtml(a, x) {
     if (!a.sidast_post_at) return '<span class="hu2-sk-h"><span class="hu2-dot ' + x.dot + '"></span><span class="hu2-skyr">' + esc(x.sidastT) + '</span></span>';
     const fra = a.sidast_post_fra || 'okkur';
-    const chip = fra === 'skil' ? '<span class="hu2-chip hu2-chip-sm raud">Skil</span>' : fra === 'okkur' ? '<span class="hu2-chip hu2-chip-sm dokk">Frá okkur</span>' : fra === 'sjalfvirkt' ? '<span class="hu2-chip hu2-chip-sm">Sjálfvirkt</span>' : '<span class="hu2-chip hu2-chip-sm gull">Frá þeim</span>';
+    const dagatal = DAGATAL_RX.test(a.sidast_post_efni || '');
+    const chip = fra === 'skil' ? '<span class="hu2-chip hu2-chip-sm raud">Skil</span>' : fra === 'okkur' ? '<span class="hu2-chip hu2-chip-sm dokk">Frá okkur</span>' : fra === 'sjalfvirkt' ? '<span class="hu2-chip hu2-chip-sm">Sjálfvirkt</span>' : dagatal ? '<span class="hu2-chip hu2-chip-sm">Dagatal</span>' : '<span class="hu2-chip hu2-chip-sm gull">Frá þeim</span>';
     let t = String(a.sidast_post_texti || '');
     const k = t.search(/(\bOn .{5,80} wrote:|\b(mán|þri|mið|fim|fös|lau|sun)\.,? \d{1,2}\. \w+\.? \d{4} kl\.|skrifaði [^:]{2,80}:|\bFrom: |\bFrá: |-----\s*(Original|Forwarded|Upprunaleg)|________)/i);
     if (k > 20) t = t.slice(0, k);
@@ -387,7 +396,10 @@
     const afgreitt = K.svar + K.sidar + K.fundur + K.unnid + K.hafnad + K.rangt;
     const bidaNy = K.bidur - K.lengi;
     const herferdir = {}; alla.forEach(a => { const h = a.herferd || 'Án herferðar'; herferdir[h] = (herferdir[h] || 0) + 1; });
-    const naestiFundur = alla.filter(a => a.stada === 'fundur' && a.naesta_dags).map(a => a.naesta_dags).sort()[0];
+    const idag = isoDag(new Date());
+    const fundir = alla.filter(a => a.stada === 'fundur' && a.naesta_dags).map(a => a.naesta_dags).sort();
+    const naestiFundur = fundir.find(d => d >= idag);
+    const lidinnFundur = !naestiFundur && fundir.length ? fundir[fundir.length - 1] : null;
     const kpi = (k, led, heiti, tala, skyr) => '<button type="button" class="hu2-k' + (S.sia === k ? ' is-on' : '') + '" data-act="sia" data-k="' + k + '"><span class="hu2-merki"><span class="hu2-led" style="background:' + led + '"></span>' + heiti + '</span><span class="hu2-tala">' + tala + '</span><span class="hu2-skyr">' + skyr + '</span></button>';
     const siur = [['allir', 'Allir', K.alls], ['stjarna', '', K.stjarna], ['svar', 'Svar borist', K.svar], ['bidur', 'Bíður svars', K.bidur], ['rangt', 'Rangt netfang', K.rangt], ['sidar', 'Síðar', K.sidar], ['fundur', 'Fundur', K.fundur], ['unnid', 'Unnið', K.unnid], ['hafnad', 'Hafnað', K.hafnad]]
       .filter(x => x[0] === 'allir' || x[0] === 'stjarna' || x[2] > 0 || S.sia === x[0]);
@@ -409,7 +421,7 @@
             kpi('bidur', '#a1a9b6', 'Bíður svars', K.bidur, 'þar af ' + K.lengi + ' ósvarað í 15+ daga') +
             kpi('svar', '#e0a93e', 'Svar borist', K.svar, 'bíður aðgerðar hjá okkur') +
             kpi('sidar', '#8f98a8', 'Hafa samband síðar', K.sidar, 'á dagatali') +
-            kpi('fundur', '#4f74dc', 'Fundur bókaður', K.fundur, naestiFundur ? 'næsti: ' + fmtD(naestiFundur) : 'enginn bókaður') +
+            kpi('fundur', '#4f74dc', 'Fundur bókaður', K.fundur, naestiFundur ? 'næsti: ' + fmtD(naestiFundur) : lidinnFundur ? 'síðasti liðinn ' + fmtD(lidinnFundur) + ' — uppfæra' : 'enginn bókaður') +
             kpi('hafnad', '#c92a2a', 'Hafnað · rangt netfang', K.hafnad + K.rangt, K.rangt + ' skiluðust ekki') +
           '</div>' +
           '<div class="hu2-eftir"><span class="hu2-merki" style="color:#845400">Eftirfylgni á gjalddaga</span>' +
@@ -548,7 +560,7 @@
     const fraOkkur = m.folder === 'SENT' || /@(eldklar|brunaholf)\.is$/i.test(m.sender_email || '');
     const skil = /^(mailer-daemon|postmaster)/i.test(m.sender_email || '');
     const sjalfv = /(sjálfvirkt svar|automatic reply|auto-?reply|out of office|í fríi|fjarverandi|liggur niðri)/i.test(m.subject || '');
-    const chip = skil ? '<span class="hu2-chip raud">Skil</span>' : fraOkkur ? '<span class="hu2-chip dokk">Frá okkur</span>' : sjalfv ? '<span class="hu2-chip">Sjálfvirkt</span>' : '<span class="hu2-chip">Frá þeim</span>';
+    const chip = skil ? '<span class="hu2-chip raud">Skil</span>' : fraOkkur ? '<span class="hu2-chip dokk">Frá okkur</span>' : sjalfv ? '<span class="hu2-chip">Sjálfvirkt</span>' : DAGATAL_RX.test(m.subject || '') ? '<span class="hu2-chip">Dagatal</span>' : '<span class="hu2-chip">Frá þeim</span>';
     const nafn = fraOkkur ? (m.sender_name && !/slökkvitæki|brunahólf/i.test(m.sender_name) ? m.sender_name : 'Slökkvitæki ehf') : (m.sender_name || m.sender_email || '');
     const texti = String(m.body_preview || m.snippet || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
     const opid = !!S.opnirPostar[m.id];
@@ -817,7 +829,7 @@
     el.addEventListener('click', async e => {
       const b = e.target.closest('[data-v]'); if (!b) return; const v = b.getAttribute('data-v'); lokaValmynd();
       if (v === 'opna') return opnaSpjald(a.id);
-      if (v === 'senda') return opnaSendingu(a);
+      if (v === 'senda') { if (S.post[a.id] == null) await hladaPost(a.id); return opnaSendingu(a); }   // póstarnir þurfa að vera til svo „svar í þræði" bjóðist
       if (v === 'stjarna') { if (await vista(a.id, { stjarna: !a.stjarna })) { render(); teiknaSpjald(); } return; }
       if (v.indexOf('st:') === 0) { const k = v.slice(3); if (await vista(a.id, { stada: k })) { toast(STODUR[k].t + ' · ' + a.nafn); render(); teiknaSpjald(); } return; }
       if (v === 'fjarlaegja') { if (!confirm('Fjarlægja ' + a.nafn + ' af Hunter-listanum? (Færslan geymist, kemur ekki aftur við innsog nema netfangið sé fjarlægt líka.)')) return;

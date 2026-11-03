@@ -192,3 +192,6 @@ where not exists (select 1 from cron.job where jobname = 'hunter-innsog');
 
 -- 26.10.2026 (seinna): nýjasti póstur geymdur á aðilanum fyrir listann — sjá migration hunter_sidasti_postur í Supabase
 -- (dálkar sidast_post_at, sidast_post_fra okkur|theim|sjalfvirkt|skil, sidast_post_efni, sidast_post_texti; hunter_innsog() fyllir þá).
+
+-- 03.11.2026: migration hunter_innsog_svor_okkar — SENT-póstur frá okkur í þekktum þræði eða á þekkt netfang uppfærir aðilann
+-- þótt efnið beri ekki herferð (nýr aðili verður aðeins til úr herferðarpósti).
