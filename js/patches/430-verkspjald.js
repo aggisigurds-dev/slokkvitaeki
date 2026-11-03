@@ -18,7 +18,8 @@
  * Inngangar: Counter.openJobModal (78 kallar hann úr Counter.select OG úr Counter.render við hverja
  * gagnabreytingu — þannig endurnýjast spjaldið), Workshop.openUnitModal, Workshop.select.
  * Skrif: aðeins verkbeidnir (nafn, sími, athugasemd, staða) og verklidur (staða, raðnr., varahlutir)
- * gegnum föll 78 og 134 — ENGIN skrif í sölur.
+ * gegnum föll 78 og 134. Eina skrifið í sölur: hleðsla ⇄ yfirferð (skiptaThj, 03.11.2026) — ein lína,
+ * aðeins á ósendri sölu (regla 142 isUnsentFinal), skilyrt á gömlu samtöluna.
  *
  * Afturkall: AppSettings `verkspjald.af = true` → gömlu gluggarnir opnast aftur.
  * Shadow DOM: þema hússins málar alla <button> með !important; skuggarótin heldur útlitinu hreinu.
@@ -77,8 +78,29 @@
     prenta: false, prentaBreyta: false, simi: null,
     meira: null,         // ⋯ opið á tæki
     rnr: null,           // raðnr. í breytingu (verklidur.id)
+    thjVinnur: null,     // hleðsla ⇄ yfirferð í vistun (verklidur.id)
     bidTeikn: false
   };
+
+  // ── hleðsla ⇄ yfirferð (Agnar 03.11.2026: „of erfitt að breyta milli hleðslu og yfirferðar") ──
+  // Áður: ⋯ › Breyta tegund / þjónustu › 30 þjónustur í lista › Vista — og það breytti AÐEINS tækinu;
+  // sölulínan (verðið) stóð, svo yfirferð var rukkuð sem hleðsla. Þjónustu-vörurnar eru sóttar einu sinni.
+  let THJ = null, thjP = null;
+  const BAKAD = /\s*·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl\.?\s*$/i;   // pos.js bakar línuafslátt í heitið
+  const thjLykill = s => String(s || '').replace(BAKAD, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const thjAf = n => /hleðsla/i.test(n || '') ? 'hleðsla' : /yfirferð/i.test(n || '') ? 'yfirferð' : '';
+  const thjMot = (n, t) => String(n || '').replace(BAKAD, '').replace(/hleðsla|yfirferð/i, t).trim();   // „Duft 6 kg. ABC hleðsla" ⇄ „… yfirferð"
+  const thjVara = n => (THJ || []).find(p => thjLykill(p.nafn) === thjLykill(n)) || null;
+  const mVsk = p => (+p.verd_an_vsk || 0) * (1 + (p.vsk_prosenta == null ? 24 : +p.vsk_prosenta) / 100);
+  function saekjaThj() {
+    if (THJ) return Promise.resolve(THJ);
+    if (!thjP) thjP = DB.sb.from('vorur').select('id,nafn,flokkur,virkt,verd_an_vsk,vsk_prosenta').then(r => {
+      if (r.error) throw r.error;
+      THJ = (r.data || []).filter(p => p.virkt !== false && /þjón/i.test(p.flokkur || ''));
+      return THJ;
+    }).catch(e => { thjP = null; throw e; });
+    return thjP;
+  }
   let host = null, rot = null, _notaT = null, _framhja = null, _tegundFraVsp = false;   // _framhja: verk sem var beðið um í eldri glugga
 
   // ── stíll (úr Verkspjald.dc.html, Brunastál) ─────────────────────────────
@@ -155,6 +177,8 @@ input,textarea{font-family:inherit}
 .vbtn.ok{background:${GRAENN};border-color:#021a0b;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 .vbtn.nyt{background:${SVART};border-color:#000;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .vbtn.sm{height:34px;font-size:12.5px;align-self:flex-start}
+.thj{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.thj .v{font-family:${MONO};font-size:11px;font-weight:600;opacity:.75}
 .meira{display:flex;flex-direction:column;border:1px solid rgba(20,24,34,.16);border-radius:9px;overflow:hidden}
 .meira button{height:40px;border:0;border-bottom:1px solid rgba(20,24,34,.08);background:#fff;text-align:left;padding:0 12px;font-size:13px;font-weight:600;color:#1f2530}
 .meira button:last-child{border-bottom:0}.meira button.eyda{color:#b42318}
@@ -197,6 +221,7 @@ input,textarea{font-family:inherit}
 .tafla .vu{font-size:11px;color:#4a5363;margin-top:1px}
 .summa{display:flex;justify-content:space-between;font-family:${MONO};font-size:12px;color:#2b313c;padding:2px 0}
 .summa.afsl{color:#b42318}
+.summa span:last-child{white-space:nowrap;padding-left:10px}
 .villa{font-size:12.5px;color:#b42318}
 @media (max-width:920px){.stal{grid-template-columns:minmax(0,1fr)}.ov{padding:0}.vsp{border-radius:0;min-height:100%}.haus{border-radius:0}.lina{grid-template-columns:1fr}.fbs .u{display:none}.nafn{font-size:22px}}
 @media (max-width:600px){.haus{flex-wrap:wrap;gap:10px;padding:14px 14px 12px}.merkid{width:44px;height:44px}.haus .grow{flex:1 1 calc(100% - 60px)}.nafn{white-space:normal}.haus>.plata{margin-left:auto}.fbs{padding:9px 10px;gap:6px}.fbs .t{font-size:12px}.stal{padding:10px}.pmenu{right:-50px;width:min(330px,calc(100vw - 20px))}}
@@ -377,6 +402,7 @@ input,textarea{font-family:inherit}
             (sk === 1 ? '<button type="button" role="menuitem" data-a="tegund" data-j="' + j.id + '" data-u="' + u.id + '">Breyta tegund / þjónustu</button>' : '') +
             (sk === 1 ? '<button type="button" role="menuitem" class="eyda" data-a="eyda" data-j="' + j.id + '" data-u="' + u.id + '">Eyða tæki</button>' : '') +
             '</div>' : '') +
+          (sk === 1 && thjAf(u.service) ? thjHtml(j, u) : '') +
           (S.rnr === u.id ? '<div class="rnr"><input class="reitur mono" data-k="rnr" data-u="' + u.id + '" value="' + esc(u.serial || '') + '" aria-label="Raðnúmer"><button type="button" class="vbtn ok" data-a="rnr-vista" data-j="' + j.id + '" data-u="' + u.id + '">Vista</button><button type="button" class="vbtn" data-a="rnr">Hætta við</button></div>' : '') +
           (u.service && u.service !== heitiTaekis(u) ? '<div class="tomt">' + esc(u.service) + '</div>' : '') +
           (parts.length ? '<table class="vk-l">' + parts.map((p, i) => {
@@ -391,7 +417,7 @@ input,textarea{font-family:inherit}
       }
       return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
         '<button type="button" class="vk-h" data-a="opna" data-u="' + u.id + '" aria-expanded="' + opid + '">' +
-          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + '</div>' +
+          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + (thjAf(u.service) ? ' · ' + thjAf(u.service) : '') + '</div>' +
             // Saga tækisins (460) — „nýtt 2024 · skoðað 2025 · hlaðið 2026".
             (window.TaekiSaga ? TaekiSaga.linaHtml(u) : '') + '</span>' +
           '<span class="grow"></span>' + (parts.length && !opid ? '<span class="plata">' + parts.length + ' hl.</span>' : '') +
@@ -400,6 +426,16 @@ input,textarea{font-family:inherit}
     return '<div class="hopur"><div class="merki">Tækin<span class="fj">' + t.length + ' tæki · smelltu til að opna</span></div>' +
       (kort || '<div class="tomt">Engin tæki á verkinu.</div>') +
       (sk === 1 ? '<button type="button" class="vbtn sm" data-a="nytt-taeki" data-j="' + jobs[0].id + '">' + I.plus + ' Bæta við tæki</button>' : '') + '</div>';
+  }
+
+  function thjHtml(j, u) {
+    const nu = thjAf(u.service);
+    if (!THJ) saekjaThj().then(teikna, () => {});   // verðin birtast þegar listinn lendir
+    return '<div class="thj" role="group" aria-label="Þjónusta">' + ['hleðsla', 'yfirferð'].map(t => {
+      const v = thjVara(thjMot(u.service, t)), a = t === nu;
+      return '<button type="button" class="vbtn' + (a ? ' nyt' : '') + '" data-a="thj" data-t="' + t + '" data-j="' + j.id + '" data-u="' + u.id + '" aria-pressed="' + a + '"' +
+        (S.thjVinnur ? ' disabled' : '') + '>' + (t === 'hleðsla' ? 'Hleðsla' : 'Yfirferð') + (v ? '<span class="v">' + kr(mVsk(v)) + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
   }
 
   function notaHtml(jobs) {
@@ -427,7 +463,7 @@ input,textarea{font-family:inherit}
   // þegar verð nýja tækisins.
   const vidbotVerkst = (t, s) => !s ? 0 : Math.round(t.reduce((a, { u }) => a + (Array.isArray(u.parts) ? u.parts : []).reduce((b, p) =>
     b + (+p.verd_an_vsk || 0) * (1 + (p.vsk_prosenta == null ? 24 : +p.vsk_prosenta) / 100) * (+p.qty || 1), 0), 0));
-  const vidbotLina = vb => vb ? '<div class="summa"><span>Af verkstæðinu · bætist við í afhendingu</span><span>+' + kr(vb) + '</span></div>' : '';
+  const vidbotLina = vb => vb ? '<div class="summa" title="Varahlutir og tæki sem bætt var við á verkstæðinu — fara á reikninginn í afhendingu"><span>Viðbót af verkstæði</span><span>+' + kr(vb) + '</span></div>' : '';
 
   function stadaHtml(jobs, t, s) {
     const tilb = t.filter(x => kominn(x.u)).length, allt = t.length > 0 && tilb === t.length, vb = vidbotVerkst(t, s);
@@ -543,6 +579,85 @@ input,textarea{font-family:inherit}
     teikna();
   }
 
+  // Hleðsla ⇄ yfirferð á einu tæki: tækið (verklidur.service) og það sem rukkar fyrir það breytast SAMAN.
+  //  · Tæki sem bætt var við á verkstæðinu (78 saveNewUnit) ber verðið í verklidur.parts → skipt þar.
+  //  · Annars ein lína á sölunni (sama vara) → ný vara og verð. Línuafsláttur heldur sér; sölu-afslátturinn
+  //    fylgir nýja verðinu sé hann heil prósenta (sami lestur og 121, ±0,06 — afsláttur er á félaginu),
+  //    annars sama kr-talan. Samtölur eins og 142 recomputeTotals. AÐEINS meðan salan er ósend (regla 142
+  //    isUnsentFinal); farin sala → Leiðrétta sölu. Tækið vistast fyrst og er skilað ef salan vistast ekki.
+  async function skiptaThj(jid, uid, t) {
+    const { j, u } = finna(jid, uid);
+    if (!u || S.thjVinnur || !thjAf(u.service) || thjAf(u.service) === t) return;
+    S.thjVinnur = u.id; teikna();
+    try {
+      await saekjaThj();
+      const gamla = String(u.service || ''), nyttHeiti = thjMot(gamla, t), ny = thjVara(nyttHeiti), gv = thjVara(gamla);
+      if (!ny) { alert('Fann ekki „' + nyttHeiti + '" í vörulistanum — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.'); return; }
+      const nyNafn = String(ny.nafn).trim(), vsk = ny.vsk_prosenta == null ? 24 : +ny.vsk_prosenta, anVsk = +ny.verd_an_vsk || 0;
+      const parts = Array.isArray(u.parts) ? u.parts : [];
+      const pi = parts.findIndex(p => thjLykill(p.nafn) === thjLykill(gamla));
+      const sn = salaNumAf(j);
+      if (pi >= 0 || !sn) {
+        const patch = { service: nyNafn };
+        if (pi >= 0) { patch.parts = parts.slice(); patch.parts[pi] = Object.assign({}, parts[pi], { vara_id: ny.id, nafn: nyNafn, verd_an_vsk: anVsk, vsk_prosenta: vsk }); }
+        const r = await DB.sb.from('verklidur').update(patch).eq('id', u.id);
+        if (r.error) { alert('Vistaðist ekki: ' + r.error.message); return; }
+        Object.assign(u, patch);
+      } else {
+        const sr = await DB.sb.from('solur').select('*').eq('num', sn).maybeSingle();
+        if (sr.error) throw sr.error;
+        const s = sr.data;
+        if (!s) { alert('Salan ' + sn + ' fannst ekki — ekkert breyttist.'); return; }
+        if (s.is_credit || s.paid_at || s.invoiced_at || s.krafa_sent_at || s.dk_invoice_id || !(s.status === 'final' || s.status === 'drog' || !s.status)) {
+          alert('Salan ' + sn + ' er farin út (greidd, krafa eða reikningur sendur) — ekkert breyttist. Breyttu henni með Leiðrétta sölu.'); return;
+        }
+        const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
+        let li = gv ? linur.findIndex(l => +l.product_id === +gv.id && thjLykill(l.desc) === thjLykill(gamla)) : -1;
+        if (li < 0) li = linur.findIndex(l => thjLykill(l.desc) === thjLykill(gamla));
+        if (li < 0) { alert('Fann ekki línuna „' + gamla + '" á sölunni ' + sn + ' — ekkert breyttist. Breyttu í Afhendingu › Breyta línum.'); return; }
+        const L = linur[li], bm = BAKAD.exec(L.desc || ''), bakad = bm ? Math.max(0, Math.min(100, parseFloat(bm[1].replace(',', '.')) || 0)) : 0;
+        const nyL = Object.assign({}, L, { qty: 1, desc: nyNafn + (bm ? bm[0] : ''), product_id: ny.id, vsk_pct: vsk,
+          unit_price_ex_vat: bakad ? Math.round(anVsk * (1 - bakad / 100) * 100) / 100 : anVsk });
+        if ((+L.qty || 1) > 1) { L.qty = (+L.qty) - 1; linur.splice(li + 1, 0, nyL); } else linur[li] = nyL;
+        let ex = 0, vs = 0;
+        linur.forEach(l => { const e = (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - (+l.discount_pct || 0) / 100); ex += e; vs += e * ((+l.vsk_pct || 24) / 100); });
+        const t0 = ex + vs, a0 = Math.max(0, Math.round(+s.afslattur || 0)), g0 = Math.round(+s.samtals || 0) + a0;
+        const pr = a0 && g0 > 0 ? 100 * a0 / g0 : 0, prH = pr && Math.abs(pr - Math.round(pr)) < 0.06 ? Math.round(pr) : 0;
+        const afsl = Math.max(0, Math.min(Math.round(t0), prH ? Math.round(Math.round(t0) * prH / 100) : a0));
+        const samtals = Math.round(t0) - afsl, exR = Math.round(ex * (t0 > 0 ? samtals / t0 : 1));
+        const upd = { linur, upphaed_an_vsk: exR, vsk_upphaed: samtals - exR, samtals, afslattur: afsl };
+        const ru = await DB.sb.from('verklidur').update({ service: nyNafn }).eq('id', u.id);
+        if (ru.error) { alert('Vistaðist ekki: ' + ru.error.message); return; }
+        // Skilyrt á gömlu samtöluna: hafi einhver breytt sölunni á meðan uppfærist engin röð.
+        const rs = await DB.sb.from('solur').update(upd).eq('id', s.id).eq('samtals', s.samtals).is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null);
+        const rv = rs.error ? null : await DB.sb.from('solur').select('samtals').eq('id', s.id).maybeSingle();
+        if (rs.error || !rv || rv.error || !rv.data || Math.round(+rv.data.samtals) !== samtals) {
+          const aftur = await DB.sb.from('verklidur').update({ service: gamla }).eq('id', u.id);
+          alert('Salan ' + sn + ' vistaðist ekki (' + ((rs.error && rs.error.message) || 'henni var breytt á sama tíma — opnaðu verkið aftur') + ').' +
+            (aftur.error ? '\n\nATH: tækið stendur á „' + nyNafn + '" — breyttu því til baka.' : ' Ekkert breyttist.'));
+          return;
+        }
+        u.service = nyNafn;
+        Object.assign(s, upd);
+        if (S.salaNum === sn) { S.sala = s; S.salaSott = Date.now(); }
+        try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: s.id } })); } catch (_) {}
+      }
+      // verkbeidni.verd (pos.js: verð m. vsk á verkið) — sjá samtalaSolu án sölu og 121 þegar engin lína er.
+      if (gv && (+j.verd || 0) > 0) {
+        const verd = Math.max(0, Math.round((+j.verd || 0) - mVsk(gv) + mVsk(ny)));
+        const rj = await DB.sb.from('verkbeidnir').update({ verd }).eq('id', j.id);
+        if (!rj.error) j.verd = verd;
+      }
+      toast(heitiTaekis(u) + ' → ' + t);
+    } catch (e) {
+      alert('Villa — ' + String((e && e.message) || e));
+    } finally {
+      S.thjVinnur = null;
+      try { if (window.Workshop && Workshop.render) Workshop.render(); } catch (_) {}
+      teikna();
+    }
+  }
+
   async function onClick(e) {
     const el = e.target.closest('[data-a]');
     if (!el || el.disabled) {
@@ -581,6 +696,7 @@ input,textarea{font-family:inherit}
       case 'hluti-x': await Workshop.removePartFromUnit(+el.dataset.j, +el.dataset.u, +el.dataset.i); teikna(); return;
       case 'rnr': { const uid = el.dataset.u ? +el.dataset.u : null; S.rnr = uid && S.rnr !== uid ? uid : null; S.meira = null; teikna(); if (S.rnr) { const i = rot.querySelector('[data-k="rnr"]'); if (i) { i.focus(); i.select(); } } return; }
       case 'rnr-vista': vistaRnr(el.dataset.j, el.dataset.u); return;
+      case 'thj': skiptaThj(el.dataset.j, el.dataset.u, el.dataset.t); return;
       case 'tegund': {
         // Sjaldgæft: þjónustuval 78 (ensureSvcProducts/svcOptionsHtml) er lokað inni í 78 — gamla breyta-formið opnast
         // OFAN Á spjaldinu (.bw-ov z 9000); þegar því er lokað teiknar Workshop.render okkur aftur.

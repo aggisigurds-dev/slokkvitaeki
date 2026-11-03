@@ -1668,6 +1668,7 @@
       const SB = DB.sb;
       // Hæsta -Vn úr þjóninum (líka eydd/aflýst verk, svo númer endurnýtist aldrei). Lestrarvilla
       // stöðvar — annars yrði næsta númer ágiskun ofan í verk sem er til (sama gildra og 142, 17.09).
+      // audit-pagination:ok — verkin einnar sölu (R-NNN-V%), fáein
       const ex = await SB.from('verkbeidnir').select('num').like('num', salaNum + '-V%');
       if (ex.error) { console.warn('[saveNewUnit] -Vn', ex.error); alert('Náði ekki að lesa verkin á ' + salaNum + ' — ekkert var skráð. Reyndu aftur.'); return; }
       let maxIdx = 0;
@@ -1691,8 +1692,9 @@
       if (ur.error || !ur.data) {
         console.warn('[saveNewUnit] verklidur', ur.error);
         // Tómt verk má ekki standa eftir á Verkstæði — aflýsa því (eytt_at, ekkert harðeytt).
-        await SB.from('verkbeidnir').update({ status: 'cancelled', eytt_at: new Date().toISOString() }).eq('id', jr.data.id);
-        alert('Náði ekki að skrá tækið — ekkert var skráð.\n\n' + ((ur.error && ur.error.message) || ''));
+        const rc = await SB.from('verkbeidnir').update({ status: 'cancelled', eytt_at: new Date().toISOString() }).eq('id', jr.data.id);
+        alert('Náði ekki að skrá tækið — ' + (rc && rc.error ? 'og tóma verkið ' + nyttVerk.num + ' stendur eftir á Verkstæði; eyddu því þar.' : 'ekkert var skráð.') +
+          '\n\n' + ((ur.error && ur.error.message) || ''));
         return;
       }
       const j = Object.assign(jr.data, { units: [ur.data] });
