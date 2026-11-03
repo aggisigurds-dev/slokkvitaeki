@@ -678,8 +678,28 @@
       // Compute draft pricing from `vorur` lookup so pickup-checkout shows
       // real numbers. Company Tilboðsverð (patch 113) applied automatically.
       const { linur, unmatched, overrideCount } = await buildLinurFromPicked(picked, _selectedCompany.id);
-      const draftEx = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
-      const draftVsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+      const brutEx = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
+      const brutVsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+
+      /* 03.11.2026 (Agnar: „sami afslátturinn á að koma sjálfvirkt á alla í sama félagi").
+       * Drögin fóru héðan með `afslattur: 0` HARÐKÓÐUÐU og litu aldrei á prósentu félagsins —
+       * þótt félagið sé valið í þessu sama falli (`_selectedCompany`). Mælt 03.11.2026: 2 af 2
+       * Sótt-sölum hjá félögum með skráðan afslátt fóru út án hans (R-001050 Brynja leigufélag
+       * 20 %, R-001080 Gullhamrar veitingar 20 %) á meðan Sölu-leiðin setti hann sjálfkrafa.
+       *
+       * Þrepin á fyrirtækjaspjaldinu ráða röðinni — Tilboðsverð › Hópur › % af öllu — svo lína
+       * sem ÞEGAR ber samningsverð félagsins (`isOverride`, patch 113) fær ekki prósentuna ofan
+       * á; hún er þegar á umsömdu verði. Sama stærðfræði og pos.js `calcTotals`: ex og vsk eru
+       * geymd EFTIR afslátt og `solur.afslattur` er mismunurinn MEÐ vsk.
+       *
+       * 121 (Sótt) les þessa krónutölu áfram sem fastan afslátt (`origAfslKr`), svo hún
+       * tvöfaldast ekki við afhendingu. Breytist línulistinn þar klemmir 121 hana við
+       * nýju upphæðina — sama hegðun og drög úr Sölu hafa haft. */
+      const afslPct = Math.max(0, Math.min(100, Number(_selectedCompany.afslattur_pct) || 0));
+      const eftir = (l) => (l.isOverride ? 1 : 1 - afslPct / 100);
+      const draftEx = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * eftir(l), 0);
+      const draftVsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100) * eftir(l), 0);
+      const draftAfsl = Math.round((brutEx + brutVsk) - (draftEx + draftVsk));
       const draftTotal = Math.round(draftEx + draftVsk);
 
       // Verk 5 (2026-08-14): „greitt síðar" krefst GILDS símanúmers — annars
@@ -709,7 +729,7 @@
         linur,
         upphaed_an_vsk: Math.round(draftEx),
         vsk_upphaed: Math.round(draftVsk),
-        afslattur: 0,
+        afslattur: draftAfsl,
         samtals: draftTotal,
         greitt_med: 'greitt_sidar',
         // NB: staða er GEYMD Í status-dálkinum ('drog'), EKKI í athugasemdum —
