@@ -552,10 +552,29 @@
     }));
   }
 
+  /* ── Hliðrað textalag (03.11.2026): sum CAD-PDF (Skútuvogur 4 2025, Skúlagata 26 2024 — ART-VERK/kettle) bera letur sem hliðrar ASCII um 29:
+   * „EI60" er geymt sem „(,99", „Ln 101118" sem „/Q\x03\x14\x13…". Blaðið telst hliðrað ef ≥ 30 % orða bera stýristafi (< 0x20) — þá eru
+   * ÖLL orð þess afkóðuð (sama regla og arnold skutuvogur-4/afkoda.py; íslenskir stafir á eigin sætum). Mutar tc.items[].str á staðnum
+   * svo hver lesari textalagsins (EI-merki hér, rými/raunmerki í 383, byggingarlýsing/rýmisheiti í 474) fær læsilegan texta. ── */
+  const HLIDR_SER = { 0xe8: 'ð', 0x69: 'á', 0xa0: 'æ', 0x74: 'í', 0x79: 'ó', 0x7e: 'ú', 0x7c: 'ö', 0xec: 'þ', 0xea: 'ý', 0x67: 'Ö', 0xcf: 'Ó', 0xd2: 'Ú', 0xe7: 'Ð', 0xf0: '²', 0x70: 'é', 0xeb: 'Þ', 0xcb: 'Í', 0xc8: 'É', 0xc4: 'Í', 0xf6: '³', 0xb3: '³', 0xed: '°' };
+  function afkodaHlidrad(s) {
+    let u = '';
+    for (const c of String(s)) { const k = c.charCodeAt(0); u += HLIDR_SER[k] || (k + 29 < 0x7f ? String.fromCharCode(k + 29) : c); }
+    return u;
+  }
+  function afkodaTextalag(tc) {
+    const items = (tc && tc.items) || []; let n = 0, m = 0;
+    items.forEach(it => { const t = String(it.str || ''); if (!t.trim()) return; n++; if (/[\x00-\x1f]/.test(t)) m++; });
+    if (!n || m < n * 0.3) return false;
+    items.forEach(it => { if (it.str) it.str = afkodaHlidrad(it.str); });
+    tc.hlidrad = true;
+    return true;
+  }
+
   async function lesaUrPdf(sida, vp, kx, ky, h) {
     if (!sida || !h) return [];
     let tc;
-    try { tc = await sida.getTextContent(); } catch (_) { return []; }
+    try { tc = await sida.getTextContent(); afkodaTextalag(tc); } catch (_) { return []; }
     const vt = vp.transform;
     const mul = (m) => [
       vt[0] * m[0] + vt[2] * m[1], vt[1] * m[0] + vt[3] * m[1],
@@ -853,7 +872,7 @@
     val, fingrafar, teiknaTakn, teiknaMerki, teiknaISpan, teiknaOfan, fjold, glyff: GLYFF, litir: LITIR, erNytt, nyttMidi, flokkaMerki, flokkaLitir: FLOKKA_LITIR
   };
   window.TeiknEi = Object.assign({}, kjarni, {
-    lesaUrPdf, lesaUrMynd, teikna: teiknaEi, fingrafar: eiFingrafar, syn: eiSyn, keyra: keyraEiLestur
+    lesaUrPdf, lesaUrMynd, afkodaTextalag, afkodaHlidrad, teikna: teiknaEi, fingrafar: eiFingrafar, syn: eiSyn, keyra: keyraEiLestur
   });
 
   if (!skraStillingar()) { let n = 0; const i = setInterval(() => { if (skraStillingar() || ++n > 40) clearInterval(i); }, 400); }
