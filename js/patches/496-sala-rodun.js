@@ -265,7 +265,10 @@
   function vakta() {
     const v = view();
     if (!v) { setTimeout(vakta, 500); return; }
-    new MutationObserver(() => { if (!S.drag) tikk(); }).observe(v, { childList: true, subtree: true });
+    // Óinngjöfuð vakt (252 __NativeMutationObserver): endurteikni pos.js ristina á röðin að standa í SAMA verki,
+    // áður en rammi með rangri röð sést. Inngjöfuð vakt bíður eftir rAF og þegir í földu spjaldi.
+    const MO = window.__NativeMutationObserver || window.MutationObserver;
+    new MO(() => { if (!S.drag) tikk(); }).observe(v, { childList: true, subtree: true });
     tikk();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vakta); else vakta();
