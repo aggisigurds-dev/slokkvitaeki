@@ -3696,6 +3696,7 @@
    *                 stigar = ≥ 4 samsíða jafnlöng þrep (0,7–1,6 m, bil 0,20–0,34 m) inni í herbergi sem heitir stigi
    *   rymiRist      herbergi = flóðfylling milli veggja, glers og hurða á 0,1 m reitum (sama regla og blender/rymi.py) */
   function raunUrSidu(tc, ops, vp) {
+    try { if (window.TeiknEi && TeiknEi.afkodaTextalag) TeiknEi.afkodaTextalag(tc); } catch (_) {}   // hliðrað letur (+29) → læsilegt (434, 03.11.2026)
     const vt = vp.transform, B = vp.width, H = vp.height, kv = Math.hypot(vt[0], vt[1]) || 1;
     const ap = (x, y) => [vt[0] * x + vt[2] * y + vt[4], vt[1] * x + vt[3] * y + vt[5]];
     // orð: miðja textans í hnitum síðunnar (pt, efra-vinstra horn) — líka snúinn texti (Fiskislóð: allur 90°)

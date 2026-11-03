@@ -697,6 +697,7 @@
       return pdfjsLib.getDocument(slod).promise.then(function (pdf) { return pdf.getPage(1); }).then(function (p) {
         var vp = p.getViewport({ scale: 1 }), k = h.frum && h.frum.b > 0 ? h.frum.b / vp.width : 6000 / Math.max(vp.width, vp.height);
         return p.getTextContent().then(function (tc) {
+          try { if (window.TeiknEi && TeiknEi.afkodaTextalag) TeiknEi.afkodaTextalag(tc); } catch (_) {}   // hliðrað letur (+29) → læsilegt (434, 03.11.2026)
           return tc.items.map(function (it) {
             var t = String(it.str || '').trim(), x = it.transform[4], y = vp.height - it.transform[5];
             return { t: t, x: (x + (it.width || 0) / 2) * k, y: y * k };
@@ -746,6 +747,7 @@
     }).then(function (p) {
       var vp = p.getViewport({ scale: 1 }), k = frumB > 0 ? frumB / vp.width : 6000 / Math.max(vp.width, vp.height);
       return p.getTextContent().then(function (tc) {
+        try { if (window.TeiknEi && TeiknEi.afkodaTextalag) TeiknEi.afkodaTextalag(tc); } catch (_) {}   // hliðrað letur (+29) → læsilegt (434, 03.11.2026)
         var ord = [];
         tc.items.forEach(function (it) {
           var s = String(it.str || ''), heil = s.trim(); if (!heil) return;
