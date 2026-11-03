@@ -45,7 +45,10 @@ krefja(/afslattur:\s*draftAfsl\s*,/.test(src),
 const fra = src.indexOf('const brutEx = linur.reduce');
 const til = src.indexOf('const draftTotal = Math.round(draftEx + draftVsk);');
 if (fra < 0 || til < 0) {
-  console.log('RED: fann ekki reiknistubbinn í 122 (`brutEx` … `draftTotal`) — vörðurinn getur ekki dæmt.');
+  // Brotin sem þegar eru fundin eru RÉTTA skýringin — annars segir vörðurinn „get ekki dæmt"
+  // þegar ástæðan er einmitt sú að útreikningurinn var fjarlægður og `afslattur: 0` komið aftur.
+  console.log('RED: fann ekki reiknistubbinn í 122 (`brutEx` … `draftTotal`) — vörðurinn getur ekki reiknað.');
+  brot.forEach((b2) => console.log('   • ' + b2));
   process.exit(1);
 }
 const stubbur = src.slice(fra, til) + 'const draftTotal = Math.round(draftEx + draftVsk);';
