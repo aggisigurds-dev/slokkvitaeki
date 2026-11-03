@@ -68,6 +68,30 @@ Húsfélagið Laugavegi 42 2026 (Heimaleiga ehf), Húsfélagið Álftamýri 24-3
 ATH: einfaldur nafnasamanburður gaf mikið af falsjákvæðum (punktar og stafsetning: Bíll.is, K.Ricter, Interroll).
 Þær raðir eru ekki taldar hér. Enginn af þessum 14 + 8 er staðfestur fyrr en PDF-ið er opnað.
 
+## 3b. PDF-in opnuð (03.11.2026 kl. 18:09) — kafli 3 hér að ofan er úreltur
+
+24 skjöl lesin (pdftotext úr Storage, innihald borið saman við önnur skjöl). Eldri vörðurinn (TILLAGA-athugasemdir)
+hafði RANGT fyrir sér í 5 af 5 tilvikum þar sem hann nefndi aðra kennitölu (Nýji tónlistarskólinn, Leirubakki 14,
+Spörvar, Húsfélag Árakur 5, Tannlæknastofan Bæjarhrauni). Ekki treysta þeim athugasemdum.
+
+**Skýrsla á röngu félagi, nákvæmt afrit af skjali á réttu félagi** (borð #1397–#1401):
+K.Ricter 2024 (= Herbergjaleiga) · Míla 2025 (= Húsfélagið Suðurlandsbraut 30) · Þórarinna Söebech 2023
+(= Húsfélagið Háteigsvegi 3) · K Apartments 2023 (= Heimaleiga Blue Mountain) · Stálsmiðjan-Framtak 2024 (= Slippurinn RVK).
+Afleiðing: röngu félögin sýna „komið“ fyrir ár sem aldrei var skoðað.
+
+**Rétt félag, rangt ár, afrit** (#1402–#1404): Nýji tónlistarskólinn 2024 (skýrslan er mars 2025, til þrisvar),
+Spörvar 2024 (apríl 2025), Leirubakki 14 2024 (júní 2026).
+
+**Annað** (#1405, #1406): Stakkholt ehf. skjal 331 er Stólpa-reikningur 105893 á kt húsfélagsins (Bílakjallari), ekki skýrsla.
+Hlöllabátar skjal 2993 merkt 2010, er apríl 2023 (Fen 2010 ehf., Ingólfstorg).
+
+**Stemmir við félagið (engin aðgerð):** Húsfélag Árakur 5, Tannlæknastofan Bæjarhrauni, Heimilisiðnaðarfélag Íslands,
+Við sjóinn (Word-skjal, ekki PDF), Prentun ehf, Ræstitækni (sama kt og Húsfélagaþjónustan), Húsfélagið Álftamýri 24-30,
+Húsfélagið Laugavegi 42 (heimilisfang stemmir, kt er Heimaleigu), Herbergjaleiga 2023 (sama hús, eldri kt 540513-1550).
+
+**Ómælt:** skjöl 384, 517 og 836 hafa enga skrá hvorki í Storage né á Drive. Downtown Reykjavík Apartments (490, kt 691003-2560)
+og Dra ehf (1334, kt 651003-2560) eru í sama grunni 815 á sama heimilisfangi; kt eru einum staf frá hvor annarri. Hvort er rétt er ómælt.
+
 ## 4. Næstu skref (bíða Agnars)
 
 1. #1395 og #1396 á borðinu.
