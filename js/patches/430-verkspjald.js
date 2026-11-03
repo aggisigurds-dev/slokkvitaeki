@@ -420,15 +420,24 @@ input,textarea{font-family:inherit}
     if (s) return +s.samtals || 0;
     return jobs.reduce((a, j) => a + (+j.verd || 0), 0);
   }
+  // Varahlutir/þjónusta á tækjunum (verklidur.parts) fara ekki á söluna fyrr en í afhendingu: 121 hleður
+  // þeim inn sem „Ný tæki / aukalega" á fullu verði (sölu-afslátturinn helst sama kr-talan nema reitnum
+  // sé breytt). „Á reikningnum" stóð því kyrrt þótt tæki væri bætt við á verkstæðinu (78 saveNewUnit,
+  // 03.11.2026). Aðeins fyrir afhendingu og aðeins með sölu — án hennar telur samtalaSolu j.verd sem á
+  // þegar verð nýja tækisins.
+  const vidbotVerkst = (t, s) => !s ? 0 : Math.round(t.reduce((a, { u }) => a + (Array.isArray(u.parts) ? u.parts : []).reduce((b, p) =>
+    b + (+p.verd_an_vsk || 0) * (1 + (p.vsk_prosenta == null ? 24 : +p.vsk_prosenta) / 100) * (+p.qty || 1), 0), 0));
+  const vidbotLina = vb => vb ? '<div class="summa"><span>Af verkstæðinu · bætist við í afhendingu</span><span>+' + kr(vb) + '</span></div>' : '';
 
   function stadaHtml(jobs, t, s) {
-    const tilb = t.filter(x => kominn(x.u)).length, allt = t.length > 0 && tilb === t.length;
+    const tilb = t.filter(x => kominn(x.u)).length, allt = t.length > 0 && tilb === t.length, vb = vidbotVerkst(t, s);
     return '<div class="spjald"><div class="shaus">' + hnod2 + 'Staða verksins</div><div class="sinni">' +
       '<div style="display:flex;align-items:baseline;gap:8px"><span class="stort">' + tilb + '</span><span>af ' + t.length + ' tækjum tilbúin</span></div>' +
       '<div class="sbar">' + t.map(x => '<span class="' + (x.u.status === 'done' ? 'ok' : x.u.status === 'broken' ? 'nyt' : '') + '"></span>').join('') + '</div>' +
       '<div>' + t.map(({ u }) => '<div class="stada-l"><b>' + esc(heitiTaekis(u)) + '</b><span class="id">' + esc(u.serial || '') + '</span><span class="grow"></span>' +
         (u.status === 'done' ? '<span class="plata ok"><i></i>Tilbúið</span>' : u.status === 'broken' ? '<span class="plata rautt"><i></i>Ónýtt</span>' : '<span class="plata"><i></i>Móttekið</span>') + '</div>').join('') + '</div>' +
-      '<div class="samtals"><span class="l">Á reikningnum</span><span class="t">' + krTala(samtalaSolu(jobs, s)) + '<small>kr</small></span></div>' +
+      vidbotLina(vb) +
+      '<div class="samtals"><span class="l">Á reikningnum</span><span class="t">' + krTala(samtalaSolu(jobs, s) + vb) + '<small>kr</small></span></div>' +
       '<button type="button" class="klara" data-a="senda"' + (allt ? '' : ' disabled') + '>Senda í afgreiðslu ' + I.afram + '</button>' +
       '<div class="skyr">' + (allt ? 'Verkið fer í Afgreiðslu og bíður þess að vera sótt.' : 'Merktu öll tæki Tilbúið eða Ónýtt fyrst.') + '</div>' +
       '</div></div>';
@@ -451,9 +460,10 @@ input,textarea{font-family:inherit}
   }
 
   function afhendingHtml(jobs, t, s) {
+    const vb = vidbotVerkst(t, s);
     return '<div class="spjald"><div class="shaus">' + hnod2 + 'Afhending og greiðsla</div><div class="sinni">' +
-      linuTafla(s) + summaHtml(s) +
-      '<div class="samtals"><span class="l">Samtals</span><span class="t">' + krTala(samtalaSolu(jobs, s)) + '<small>kr</small></span></div>' +
+      linuTafla(s) + summaHtml(s) + vidbotLina(vb) +
+      '<div class="samtals"><span class="l">Samtals</span><span class="t">' + krTala(samtalaSolu(jobs, s) + vb) + '<small>kr</small></span></div>' +
       '<button type="button" class="klara" data-a="afhenda">' + I.hak + ' Klára sölu og afhenda</button>' +
       '<div class="tvo"><button type="button" class="vbtn" data-a="linur"' + (s ? '' : ' disabled') + '>Breyta línum</button>' +
         '<button type="button" class="vbtn" data-a="aftur">Til baka á verkstæði</button></div>' +

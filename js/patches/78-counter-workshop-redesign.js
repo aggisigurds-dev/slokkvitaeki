@@ -93,15 +93,17 @@
   // Notað í „✏️ Breyta tæki" + „➕ Bæta við tæki": veldu eina þjónustu-sölueiningu
   // (t.d. „Duft 6 kg. ABC yfirferð") í stað þess að slá inn tegund/stærð/þjónustu.
   let SVC_PRODUCTS = null;
+  // 03.11.2026: verð hverrar þjónustu (nafn → vara) svo tæki sem bætt er við sölu-verk beri verðið sitt (saveNewUnit).
+  let SVC_VARA = Object.create(null);
   async function ensureSvcProducts() {
     if (SVC_PRODUCTS) return SVC_PRODUCTS;
     try {
-      const r = await DB.sb.from('vorur').select('nafn,flokkur,virkt').order('nafn');
-      SVC_PRODUCTS = (r.data || [])
-        .filter(p => p.virkt !== false && /þjón/i.test(p.flokkur || ''))
-        .map(p => String(p.nafn || '').trim())
-        .filter(Boolean);
-    } catch (e) { console.warn('[ensureSvcProducts]', e); SVC_PRODUCTS = []; }
+      const r = await DB.sb.from('vorur').select('id,nafn,flokkur,virkt,verd_an_vsk,vsk_prosenta').order('nafn');
+      if (r.error) throw r.error;
+      const virk = (r.data || []).filter(p => p.virkt !== false && /þjón/i.test(p.flokkur || '') && String(p.nafn || '').trim());
+      SVC_PRODUCTS = virk.map(p => String(p.nafn).trim());
+      virk.forEach(p => { SVC_VARA[String(p.nafn).trim()] = p; });
+    } catch (e) { console.warn('[ensureSvcProducts]', e); return []; }   // ekki geymt — næsta opnun reynir aftur
     return SVC_PRODUCTS;
   }
   // Parse a service-product name into {type,size,service} so the tile/modal + billing
@@ -1637,6 +1639,13 @@
       const svc = val('#bw-a-svc');
       if (!svc) { alert('Veldu þjónustu.'); return; }
       const parsed = parseSvcName(svc);
+      // 03.11.2026 (Agnar, R-001248): tæki sem bætt var við SÖLU-verk (R-NNN-Vn) lenti á síðustu
+      // verkbeiðninni (tvö „V5", „5 verk · 6 tæki"), fékk raðnr. R-…-V5-XXXX í stað TMP- og var
+      // hvergi á reikningnum — afhendingin (121) rukkar aðeins sölulínurnar + verklidur.parts.
+      // Nú fær það eigin verkbeiðni -V(n+1) eins og pos.js/142 búa til, TMP-raðnúmer, og verð
+      // þjónustunnar sem verklidur.parts svo 121 setji það á reikninginn sem „Ný tæki / aukalega".
+      const sm = /^([RK]-\d+)-V\d+$/i.exec(String(job.num || ''));
+      if (sm && DB.online && DB.sb) return saveNewUnitOnSale(ov, job, sm[1].toUpperCase(), svc, parsed, val('#bw-a-serial'));
       const serial = val('#bw-a-serial') ||
         ((job.num ? String(job.num).replace('#', 'SÆ-') : 'SÆ') + '-' + Date.now().toString(36).slice(-4).toUpperCase());
       const row = { job_id: jobId, serial, type: parsed.type, size: parsed.size, service: parsed.service, status: 'received' };
@@ -1655,6 +1664,44 @@
       ov.remove();
       Workshop.render();
     };
+    async function saveNewUnitOnSale(ov, job, salaNum, svc, parsed, slegid) {
+      const SB = DB.sb;
+      // Hæsta -Vn úr þjóninum (líka eydd/aflýst verk, svo númer endurnýtist aldrei). Lestrarvilla
+      // stöðvar — annars yrði næsta númer ágiskun ofan í verk sem er til (sama gildra og 142, 17.09).
+      const ex = await SB.from('verkbeidnir').select('num').like('num', salaNum + '-V%');
+      if (ex.error) { console.warn('[saveNewUnit] -Vn', ex.error); alert('Náði ekki að lesa verkin á ' + salaNum + ' — ekkert var skráð. Reyndu aftur.'); return; }
+      let maxIdx = 0;
+      (ex.data || []).forEach(r => { const m = /-V(\d+)$/.exec(r.num || ''); if (m) maxIdx = Math.max(maxIdx, +m[1]); });
+      const vara = SVC_VARA[svc] || null;
+      const vsk = vara && vara.vsk_prosenta != null ? +vara.vsk_prosenta : 24;
+      const verdAnVsk = vara ? (+vara.verd_an_vsk || 0) : 0;
+      const A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let tmp = 'TMP-'; for (let z = 0; z < 6; z++) tmp += A[Math.floor(Math.random() * A.length)];
+      const nyttVerk = {
+        num: salaNum + '-V' + (maxIdx + 1), status: 'received',
+        customer: job.customer || null, phone: job.phone || null, pickup: job.pickup || null,
+        dropoff: new Date().toISOString().slice(0, 10), notes: svc,
+        verd: Math.round(verdAnVsk * (1 + vsk / 100))
+      };
+      const jr = await SB.from('verkbeidnir').insert(nyttVerk).select().single();
+      if (jr.error || !jr.data) { console.warn('[saveNewUnit] verkbeidni', jr.error); alert('Náði ekki að stofna verkið ' + nyttVerk.num + ' — ekkert var skráð.\n\n' + ((jr.error && jr.error.message) || '')); return; }
+      const parts = verdAnVsk > 0 ? [{ vara_id: vara.id, nafn: svc, verd_an_vsk: verdAnVsk, vsk_prosenta: vsk, qty: 1 }] : [];
+      const row = { job_id: jr.data.id, serial: slegid || tmp, type: parsed.type || null, size: parsed.size || null, service: svc, status: 'received', parts };
+      const ur = await SB.from('verklidur').insert(row).select().single();
+      if (ur.error || !ur.data) {
+        console.warn('[saveNewUnit] verklidur', ur.error);
+        // Tómt verk má ekki standa eftir á Verkstæði — aflýsa því (eytt_at, ekkert harðeytt).
+        await SB.from('verkbeidnir').update({ status: 'cancelled', eytt_at: new Date().toISOString() }).eq('id', jr.data.id);
+        alert('Náði ekki að skrá tækið — ekkert var skráð.\n\n' + ((ur.error && ur.error.message) || ''));
+        return;
+      }
+      const j = Object.assign(jr.data, { units: [ur.data] });
+      if (DB.cache && Array.isArray(DB.cache.jobs)) DB.cache.jobs.unshift(j);
+      if (DB.cache && Array.isArray(DB.cache.units)) DB.cache.units.push(ur.data);
+      if (window.Toast && Toast.show) Toast.show(parts.length ? '➕ ' + nyttVerk.num + ' · ' + svc + ' fer á reikninginn í afhendingu' : '➕ ' + nyttVerk.num + ' — ekkert verð á „' + svc + '“: bættu því við í afhendingu');
+      ov.remove();
+      Workshop.render();
+    }
 
     // ── 📝 Opna Drög — drafts list (✏️ Breyta / 🗑 eyða) frá Verkröð ────────
     Workshop.openDrog = function(verkNum) {
