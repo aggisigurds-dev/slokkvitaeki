@@ -568,9 +568,13 @@
           // === 'þjónusta' (lítið þ) merkti CO₂-þjónustu ranglega sem 'product' og
           // sleppti krefst_verkbeidni, svo ritillinn bjó ekki til verkbeiðni fyrir
           // nýtt tæki. Nú case-insensitive + krefst_verkbeidni sett.
+          // 03.11.2026 (Agnar: „bara þjónustuliðir … hleðsla, yfirferð, CO₂ áfylling sem eiga að fá verk inn á
+          // Verkstæði"): flokkurinn sagði of mikið — Ársskoðun brunakerfis, Skoðunargjald, Skýrslugerð og
+          // CO₂ byrjunargjald eru líka „Þjónusta" og hefðu orðið verk með TMP-raðnúmeri. Merki VÖRUNNAR ræður
+          // (vorur.krefst_verkbeidni — sama og pos.js), byrjunargjald aldrei (pos.js 15.10).
           type: /þjónusta/i.test(p.flokkur || '') ? 'service' : 'product',
           product_id: p.id,
-          krefst_verkbeidni: /þjónusta/i.test(p.flokkur || '')
+          krefst_verkbeidni: p.krefst_verkbeidni === true && !/byrjunargjald/i.test(p.nafn || '')
         });
         renderLines();
       });

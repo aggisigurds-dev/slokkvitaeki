@@ -124,7 +124,7 @@
     const SB = getSB();
     if (!SB) return Promise.resolve([]);
     _loadingPromise = SB.from('vorur')
-      .select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,lysing,virkt')
+      .select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,lysing,virkt,krefst_verkbeidni')   // krefst_verkbeidni: 142 addLine (03.11.2026)
       .eq('virkt', true)
       .order('flokkur', { ascending: true })
       .order('nafn', { ascending: true })
