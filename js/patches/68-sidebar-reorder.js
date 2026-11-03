@@ -160,6 +160,7 @@
     ['Geymsla'],
     ['Lánstæki'],
     ['Birgðir'],
+    ['Vasinn'],   // 03.11.2026 (491): „svo það sjáist á sidebanner" — þekktur STRAX á eftir Birgðum svo hann lækni sig á 251 undir vistaðri röð (Birgðir 250 · Öpp 260) og sjáist; á eftir Reglum hefði hann lent á 431, bak við „Sjá meira" (mælt)
     ['Reglur'],   // 08.10.2026 (449): „neðarlega á hliðarstikunni" — sest strax á eftir Birgðum líka undir vistaðri röð (ofan við Öpp / „Sjá meira")
     SEP,
     ['Tilboð'],

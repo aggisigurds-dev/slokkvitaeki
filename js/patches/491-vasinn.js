@@ -16,6 +16,10 @@
  *
  * Mynstur: 449c-erindi-simi.js (view-<key>, App.switchView-umbúðir, Brunastál). Skrifar aðeins við raunverulegan smell.
  * Skráð í Öpp (261 PAGES: 'vasinn') og fer sjálfkrafa á Þjónustuborðs-appið eins og Erindi.
+ * 03.11.2026 (Agnar: „sér page fyrir Vasinn, svo það sjáist á sidebanner og hvað er í honum"): hnappur „Vasinn" í
+ * hliðarstikunni (sama gerð og Reglur 449 — button.vnav-btn + svg[data-sb-svg] + span) með .sb-badge sem telur ÓLESNA
+ * hluti (lesid_at null). Sætið er þekkt í 68 (á eftir Reglum, fyrir framan Öpp svo hann lendi ekki í „Sjá meira") og
+ * hópurinn Kerfi í 391. Teljarinn er HEAD-talning úr vasinn við ræsingu, eftir hverja breytingu og á 5 mín í sýn.
  * ============================================================================================ */
 (() => {
   if (window.__vasinn491) return;
@@ -37,6 +41,46 @@
   const toast = (m, w) => { try { if (window.Bord368 && Bord368.toast) return Bord368.toast(m, w); } catch (_) {} try { if (window.Toast && Toast.show) return Toast.show(m); } catch (_) {} try { if (window.App && App.toast) return App.toast(m); } catch (_) {} console[w ? 'warn' : 'log']('[491] ' + m); };
   const slodFyrir = p => { try { const r = sb().storage.from(BUCKET).getPublicUrl(p); return r && r.data && r.data.publicUrl || ''; } catch (_) { return ''; } };
 
+  const IK_VASI = '<path d="M5 4h14v12a5 5 0 0 1-5 5h-4a5 5 0 0 1-5-5z"/><path d="M5 8h14"/><path d="M9 13h6"/>';
+  let _olesid = -1, _teljari = 0;
+  function merki(n) {
+    _olesid = n;
+    const b = document.querySelector('.vnav-btn[data-view="' + NAV_KEY + '"]'); if (!b) return;
+    let m = b.querySelector('.sb-badge');
+    if (!m) { m = document.createElement('span'); m.className = 'sb-badge'; b.appendChild(m); }
+    const t = n > 0 ? String(n) : '';
+    if (m.textContent !== t) m.textContent = t;
+    if (m.classList.contains('zero') !== !(n > 0)) m.classList.toggle('zero', !(n > 0));
+    const tt = n > 0 ? 'Vasinn — ' + (n === 1 ? '1 ólesinn hlutur' : n + ' ólesnir hlutir') : 'Vasinn — ekkert ólesið';
+    if (b.getAttribute('title') !== tt) b.setAttribute('title', tt);
+  }
+  let _teljaBid = 0;
+  async function telja() {
+    // Mælt 03.11: við ræsingu er biðlarinn (DB.sb) oft ekki tilbúinn þegar hnappurinn kemur — reynt aftur í allt að 30 s.
+    const c = sb(); if (!c) { if (_teljaBid++ < 15) setTimeout(telja, 2000); return; }
+    _teljaBid = 0;
+    try {
+      const { count, error } = await c.from(TAFLA).select('id', { count: 'exact', head: true }).is('deleted_at', null).is('lesid_at', null);
+      if (!error && typeof count === 'number') merki(count);
+    } catch (_) {}
+  }
+  function navTakki() {
+    if (document.querySelector('.view-nav [data-view="' + NAV_KEY + '"]')) return true;
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav || !nav.querySelector('.vnav-btn[data-view]')) return false;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'vnav-btn'; b.dataset.view = NAV_KEY; b.setAttribute('title', 'Vasinn');
+    b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-sb-svg="1" data-sb-key="Vasinn" aria-hidden="true">' + IK_VASI + '</svg><span>Vasinn</span>';
+    b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); });
+    nav.appendChild(b);   // 68 þekkir „Vasinn" og setur hann á eftir Reglum / fyrir framan Öpp
+    if (_olesid >= 0) merki(_olesid); else telja();
+    return true;
+  }
+  function vaktaTeljara() {
+    clearInterval(_teljari);
+    _teljari = setInterval(() => { if (document.hidden || erVirk()) return; telja(); }, 300000);
+  }
+
   const S = { loaded: false, loading: false, villa: null, rows: [], synaLesid: false, drog: '', bidur: [], sending: false, rec: null, upptaka: false, sek: 0, afrit: '', bidAfrit: '', opin: new Set(), skyr: {}, busy: {}, eyda: null };
 
   /* ── gögn ─────────────────────────────────────────────────────────────── */
@@ -47,6 +91,7 @@
       const { data, error } = await c.from(TAFLA).select('*').is('deleted_at', null).order('created_at', { ascending: false }).limit(300);
       if (error) throw error;
       S.rows = data || []; S.loaded = true; S.villa = null;
+      merki(S.rows.filter(r => !r.lesid_at).length);
     } catch (e) { S.villa = (e && e.message) || String(e); }
     S.loading = false; render();
   }
@@ -63,12 +108,13 @@
     }
     const { data, error } = await c.from(TAFLA).insert({ tegund, skyring: (skyring || '').trim() || null, afrit: (afrit || '').trim() || null, file_name, mime, size, storage_path, hofundur: nu(), taeki: taeki() }).select().single();
     if (error) throw error;
-    S.rows.unshift(data); return data;
+    S.rows.unshift(data); merki(S.rows.filter(r => !r.lesid_at).length); return data;
   }
   async function uppfaera(id, patch) {
     const c = sb(); const { error } = await c.from(TAFLA).update(patch).eq('id', id);
     if (error) throw error;
     const r = S.rows.find(x => x.id === id); if (r) Object.assign(r, patch);
+    if (patch && ('deleted_at' in patch || 'lesid_at' in patch)) merki(S.rows.filter(x => !x.lesid_at && !x.deleted_at).length);
   }
 
   /* ── innsending (sameiginleg fyrir líma / mynd / skrá / hljóð / texta) ──────── */
@@ -372,10 +418,12 @@
   }
   function boot() {
     patchSwitchView();
+    (function nt(n) { if (navTakki()) return; if (n < 40) setTimeout(() => nt(n + 1), 300); })(0);
+    vaktaTeljara();
     if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }, 300);
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Vasinn = { open, render, load, S, setja, version: '491' };
+  window.Vasinn = { open, render, load, S, setja, telja, version: '491b' };
   console.log('[491] Vasinn — app-síða');
 })();

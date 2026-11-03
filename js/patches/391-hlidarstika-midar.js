@@ -29,7 +29,7 @@
     ['Vettvangur',     ['thjonustu-verkstaedi', 'leidsogn', 'bilstjori', 'aksturslisti', 'mottaka', 'vertid', 'field']],
     ['Tilboð',         ['tilbod', 'samningar', 'tilbodhub']],
     ['Skoðanir',       ['brunaskra', 'slokkvikerfi', 'brunakerfi', 'verkdagbok']],
-    ['Kerfi',          ['settings', 'uppferslubord', 'stadan', 'maelabord', 'bakendi', 'adstod', 'sameining', 'minar-sidur', 'stjornstod', 'svarstod']],
+    ['Kerfi',          ['settings', 'uppferslubord', 'stadan', 'maelabord', 'bakendi', 'adstod', 'sameining', 'minar-sidur', 'stjornstod', 'svarstod', 'vasinn']],
     ['Birgðir',        ['geymsla', 'birgdir', 'lanstaeki']],
   ];
   const SEC_OF = {};
