@@ -1537,11 +1537,33 @@
     // (✓ FULLBÚIÐ / 1 AF 2 VANTAR) og hver lína fær punkt — grænan fylltan
     // þegar skjalið er til, gulan brotinn hring þegar vantar — með lágstafa
     // merkimiða (skýrsla/reikningur) AFTAN við chippið í stað borðans framan við.
+    // 03.11.2026 (Agnar, skjáskot af Hveragerðissókn: „farðu yfir hvert fyrirtæki í ársskoðun og taktu í burtu tóma
+    // ranga reiti"): hvert félag fékk 🔥 Brunakerfisþjónusta-spjald á HVERJU ári — „Engin brunakerfisþjónusta ·
+    // Bæta við skýrslu" — líka félög sem hafa aldrei haft brunakerfi. Sama regla og 🍳 hér að neðan og 175
+    // (20.08: „dont show the brunakerfisþjónusta in companies that dont have them"): spjaldið er aðeins til þegar
+    // félagið tilheyrir brunakerfum — skjal/reikningur á einhverju ári, eða á áskriftarlistanum
+    // (AppSettings brunakerfi_customers, sami lykill og 147/470). Stillingar ekki hlaðnar → spjaldið stendur
+    // (óvissa felur aldrei). „+ ár / þjónusta" bætir brunakerfi við hvenær sem er.
+    var _bruTilheyrirC = null;
+    function _bruTilheyrir(){
+      if(_bruTilheyrirC!==null) return _bruTilheyrirC;
+      var j=false;
+      YEARS.forEach(function(yy){ if((bruByY[yy]||[]).length || (invBrByY[yy]||[]).length) j=true; });
+      if(!j){
+        try{
+          var m = (window.AppSettings && AppSettings.path) ? AppSettings.path('brunakerfi_customers') : null;
+          if(!m || typeof m!=='object' || !Object.keys(m).length) j=true;      // ekki hlaðið (eða tómt) → óvissa → sýna
+          else j = !!m[String(coId)];
+        }catch(_){ j=true; }
+      }
+      return (_bruTilheyrirC=j);
+    }
     function svcCardExpanded(y, svc){
       var arr=svc.repMap[y]||[];
       var r=resolved[y+'|'+svc.kind];
       var hasRep=arr.length>0, hasInv=!!r.inv;
       var wsLink=svcWorkspaceLink(svc);
+      if(svc.kind==='brunakerfi' && !hasRep && !hasInv && !r.ambiguous && !_bruTilheyrir()) return '';
       // Agnar 23.09 20:15: „gera slökkvikerfis skjalasýnina default falið — bara eitt fyrirtæki í þannig þjónustu" →
       // tómt 🍳-spjald á eldra ári birtist ekki; árið með efni (skýrsla/reikningur) og líðandi ár sjást áfram, „+ ár / þjónusta" bætir við.
       if(svc.kind==='slokkvikerfi' && !hasRep && !hasInv && !r.ambiguous && y!==NOW) return '';
@@ -1577,7 +1599,8 @@
       // 2026-08-07: ÖLL ár fá spjöldin tvö hlið við hlið (skissa Agnars) —
       // eldri ár voru áður þjappaðar línur, en stöðumerkið + punktarnir segja
       // söguna betur og eins alls staðar. cur helst fyrir upphæðir (forCompact).
-      var body = '<div class="sk-svc-grid'+(SERVICES.length>2?' sk-3':'')+'">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>';
+      var _kort = SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).filter(Boolean);
+      var body = '<div class="sk-svc-grid'+(SERVICES.length>2?' sk-3':'')+(_kort.length===1?' sk-solo':'')+'">'+_kort.join('')+'</div>';
       return '<div class="sk-yrblock"><div class="'+ycls+' sk-yr-label" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</div>'+body+'</div>';
     }).join('');
 
@@ -2212,6 +2235,7 @@
       '.sk-svc-grid.sk-3{grid-template-columns:1fr 1fr 1fr}',
       '@media (max-width:1100px){.sk-svc-grid.sk-3{grid-template-columns:1fr 1fr}}',
       '@media (max-width:620px){.sk-svc-grid.sk-3{grid-template-columns:1fr}}',
+      '.sk-svc-grid.sk-solo,.sk-svc-grid.sk-3.sk-solo{grid-template-columns:1fr}',
       '.sk-samn-yrs{font-size:11px;font-weight:700;color:var(--ink3);white-space:nowrap}',
       '.sk-samn-pill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:99px;white-space:nowrap}',
       '.sk-samn-send{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface);white-space:nowrap}',
