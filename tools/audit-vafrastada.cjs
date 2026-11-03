@@ -82,7 +82,10 @@ const BANN = [
 // 02.11.2026: brunaholf ls 35 -> 36. Nyi lykillinn er `ky_vsi_cache` (brunaholf js/verkstadur.js, a8c2ee6): myndir,
 // heimilisfong og teikningar per verkstad i Krofu yfirliti. Hreint skyndiminni - hlada() saekir /api/verkstadur?all=1 vid
 // hverja opnun og skrifar yfir thad (,,thjonninn raedur"); engin stada gagna byr adeins i vafranum. Stenst regluna.
-const GRUNNLINA = { brunaholf: { ls: 36, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
+// 03.11.2026 (Agnar: ,,ja gerdu thad"): brunaholf ls 36 -> 37. Nyi lykillinn er sessionStorage `bh_passa` (brunaholf eydublod.html,
+// 7229f40, sjalfvirk smidi eydublada): flagg sem sett er rett adur en sidan endurhledst og EYTT um leid og thad er lesid
+// (passaEinaSidu). Lifir eina siduhledslu, engin stada gagna - timabundin stada skv. reglunni 15.10.2026. Stenst.
+const GRUNNLINA = { brunaholf: { ls: 37, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
