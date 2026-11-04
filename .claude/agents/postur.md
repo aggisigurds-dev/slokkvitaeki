@@ -47,6 +47,12 @@ Tómt = óskráð — segðu það.
   Lén umsjónaraðila (eignaumsjon.is) = umsjónaraðili, ekki húsfélagið.
 - **Drög að svörum í tón Agnars:** stutt, kurteist, íslenska, „Kveðja, Agnar“ — í `thjonustubeidni.notes` sem
   `---SVAR---` + tag `undirbuid` (sama snið og 448/449c). Agnar ýtir á 📤.
+  **Skjöl (04.11.2026):** hvert skjal sem svarið á að bera skal liggja á málinu ÁÐUR en `undirbuid` er sett —
+  `thjonustubeidni_files` (Storage `verkbord-files/<mál-id>/…`, eins og 368 hleður upp) eða `thjonustubeidni_attachments`
+  með `drive_file_id`. Í uppkastinu má standa `[HENGJA VIÐ: reikningur 106682 og kredit 284]` — 448 strikar línuna út við
+  sendingu, hakar sjálfkrafa við skjölin sem tölurnar passa við (tala úr beiðninni í skráarheiti) og STÖÐVAR sendingu ef
+  nefnt skjal er ekki á málinu. Skjal sem þú nærð ekki í (t.d. Payday-kreditnóta: `/api/payday-invoice-pdf` finnur hana
+  ekki, aðeins reikninga) → segðu það í nótunni og settu EKKI `undirbuid`; Agnar sækir það og setur á málið.
 - **Síðurnar þínar:** Tölvupóstar (`js/patches/448-tolvupostar.js`, `js/patches/449-tolvupostar-simi.js`),
   Erindi (`js/patches/449c-erindi-simi.js`), Þjónustuver póstar (`js/patches/309-thjonustuver-postar.js`),
   Póstsvörun (`postsvorun.html`, `cowork_postsvor` — 66 ósvöruð 04.11). Reikninga-póstur (240) er hjá `rukkari`.

@@ -24,6 +24,15 @@
  * 240/368), svarad_at á málið, `undirbuid` tekið af. Hrátt módelsvar lendir aldrei í reitnum nema lesið (postur-reply 502 á
  * villu — feedback_hratt_modelsvar).
  *
+ * VIÐHENGI (04.11.2026, Agnar: „myndi vilja geta staðfest skjölin, og kerfið sé með þau tilbúin"): svarreiturinn sýnir
+ * fylgiskjöl málsins (thjonustubeidni_files = Supabase Storage, thjonustubeidni_attachments = Drive) með hökum og „Skoða".
+ * `[HENGJA VIÐ: …]` í uppkastinu er leiðbeining til Agnars, ALDREI sent — línan er strikuð út við sendingu og hvert skjal sem
+ * hún nefnir VERÐUR að vera á málinu (tala úr beiðninni í skráarheiti), annars stöðvast sendingin með skýringu. Fyrir sendingu
+ * kemur staðfestingargluggi með viðtakanda, viðhengjalista og texta. VÖRN: fyrir sendingu sækir 📤 nýjasta úr Gmail (inn + sent)
+ * og hættir ef þræðinum var þegar svarað þaðan eða nýr póstur kom í hann á meðan; 🔄 Sækja nýtt gerir sama handvirkt. Skjölin fara sem { filename, url } / { filename, driveId }
+ * í gmail-send (brunaholf), sem leysir þau í base64. REGLA FYRIR CLAUDE-LOTUNA: ekkert `undirbuid` fyrr en öll skjöl sem
+ * uppkastið nefnir liggja á málinu — annars sér Agnar rauða ⚠-línu og getur ekki sent.
+ *
  * Skrifleiðir (allar á þjóninn): thjonustubeidni (insert/patch tags·status·notes·svarad_at), reikninga_postur_activity (insert),
  * reikninga_postur_hidden (upsert/delete, sama tafla og 240 — felur í BÁÐUM). Sending: AppMail.send (254 → brunaholf gmail-send,
  * `from` = hólfið sem tók við póstinum, inReplyTo = message_id). Uppkast: POST /api/postur-reply (SV-19 í Svar-stöð).
@@ -63,6 +72,7 @@
     postar: [], activity: new Set(), hidden: new Set(), mal: new Map(), thraedir: [],
     valinn: null, svarOpid: null, claudeOpid: null, synaLokid: false, synaFalid: false,
     drog: {}, efni: {}, sky: {}, busy: {},
+    vidh: {}, skjol: new Map(), svarLokad: {},   // vidh[þráður] = Set(skjala-id) valin í svarið · skjol: mál-id → fylgiskjöl (04.11.2026)
     sia: { holf: 'baedi', rodun: 'nyjast', osvarad: false, beidnir: false, vidhengi: false, merki: '' },
     _eftir: []
   };
@@ -98,6 +108,19 @@
         S.hidden = new Set(((h.data) || []).map(x => x.message_id));
         S.mal = new Map();
         ((m.data) || []).forEach(r => { const id = String(r.channel_ref || '').slice(6); if (id && !S.mal.has(id)) S.mal.set(id, r); });
+        // Fylgiskjöl málanna (04.11.2026) — tvær fyrirspurnir fyrir öll mál listans, aldrei ein per mál. Bregðist þær er listinn samt sýndur.
+        S.skjol = new Map();
+        try {
+          const ids = [...S.mal.values()].map(r => r.id).filter(Boolean);
+          if (ids.length) {
+            const [f, d] = await Promise.all([
+              c.from('thjonustubeidni_files').select('id,beidni_id,name,url,path,mime_type,size').in('beidni_id', ids).order('created_at').limit(1000),
+              c.from('thjonustubeidni_attachments').select('id,beidni_id,name,url,drive_file_id,mime_type,size').in('beidni_id', ids).order('created_at').limit(1000)
+            ]);
+            ((f.data) || []).forEach(x => skraSkjal(x.beidni_id, { id: 'f' + x.id, name: x.name, url: x.url, mime: x.mime_type, size: x.size, src: 'mal' }));
+            ((d.data) || []).forEach(x => skraSkjal(x.beidni_id, { id: 'a' + x.id, name: x.name, url: x.url, driveId: x.drive_file_id, mime: x.mime_type, size: x.size, src: 'drive' }));
+          }
+        } catch (_) {}
         try { if (window.KunnaLeit && !KunnaLeit.hladid() && KunnaLeit.hlada) await KunnaLeit.hlada(); } catch (_) {}
         S.thraedir = byggjaThraedi(S.postar);
         S.loaded = true; S.loadedAt = new Date();
@@ -179,6 +202,44 @@
   const notaAnUppkasts = mal => { const n = String((mal && mal.notes) || ''); const i = n.lastIndexOf('---SVAR---'); return (i < 0 ? n : n.slice(0, i)).trim(); };
   const svarEfni = t => S.efni[t.k] != null ? S.efni[t.k] : (/^\s*re:/i.test(t.efni) ? t.efni : 'Re: ' + t.efni);
   const svarTexti = t => S.drog[t.k] != null ? S.drog[t.k] : uppkastUrNotu(t.mal);
+  // ── Viðhengi svarsins (04.11.2026) — sjá hausinn ───────────────────────────────────────────────────────────────────────
+  const skraSkjal = (id, sk) => { const k = String(id); if (!S.skjol.has(k)) S.skjol.set(k, []); S.skjol.get(k).push(sk); };
+  const HENGJA_RE = /\[\s*HENGJA\s+VI[ÐD]\s*:?\s*([^\]]*)\]/gi;
+  const skjolMals = t => (t && t.mal && S.skjol.get(String(t.mal.id))) || [];
+  // Sendanlegt héðan: opin slóð (Storage) eða Drive-id. Drive-„view"-slóð án id er aðeins til skoðunar.
+  const sendanlegt = sk => !!(sk.driveId || (sk.url && /^https?:\/\//.test(sk.url) && !/drive\.google\.com/.test(sk.url)));
+  // Beiðnirnar í [HENGJA VIÐ: a og b, c] → ['a', 'b', 'c'].
+  const hengjaBeidnir = texti => { const ut = []; String(texti || '').replace(HENGJA_RE, (_, inni) => { String(inni).split(/\s*(?:,|;|\bog\b)\s*/i).map(x => x.trim()).filter(Boolean).forEach(x => ut.push(x)); return ''; }); return ut; };
+  const anHengja = texti => String(texti || '').replace(HENGJA_RE, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  // Beiðni passar við skjal ef tala (≥3 stafir) úr henni er í skráarheitinu; án tölu dugar sértækt orð ≥5 stafa (ekki „reikningur"/„skjal" o.þ.h.).
+  function skjalFyrir(beidni, skjol) {
+    const b = String(beidni).toLowerCase(), tolur = b.match(/\d{3,}/g) || [], ord = (b.match(/[a-záðéíóúýþæö]{5,}/g) || []).filter(o => !/^(fylgiskj|skjal|payday|reikning|kredit|uppkast|þessa|máls)/.test(o));
+    return skjol.find(sk => { const n = String(sk.name || '').toLowerCase(); return tolur.some(x => n.indexOf(x) >= 0); })
+      || (tolur.length ? null : skjol.find(sk => { const n = String(sk.name || '').toLowerCase(); return ord.some(x => n.indexOf(x) >= 0); })) || null;
+  }
+  // Valin viðhengi þráðarins. Sjálfgefið: skjölin sem drögin biðja um; engin [HENGJA VIÐ] en ★ → öll sendanleg skjöl málsins; annars ekkert.
+  function valinVidh(t) {
+    if (S.vidh[t.k]) return S.vidh[t.k];
+    const skjol = skjolMals(t), bb = hengjaBeidnir(svarTexti(t)), sett = new Set();
+    if (bb.length) bb.forEach(b => { const sk = skjalFyrir(b, skjol); if (sk && sendanlegt(sk)) sett.add(sk.id); });
+    else if (t.tags.indexOf('undirbuid') >= 0) skjol.filter(sendanlegt).forEach(sk => sett.add(sk.id));
+    S.vidh[t.k] = sett; return sett;
+  }
+  const vidhengiSvars = t => { const v = valinVidh(t); return skjolMals(t).filter(sk => v.has(sk.id) && sendanlegt(sk)).map(sk => sk.driveId ? { filename: sk.name, driveId: sk.driveId } : { filename: sk.name, url: sk.url }); };
+  function vidhHtml(t) {
+    const skjol = skjolMals(t), v = valinVidh(t), bb = hengjaBeidnir(svarTexti(t)), vantar = bb.filter(b => !skjalFyrir(b, skjol));
+    let h = '<div class="tp-vidh-box"><b>📎 Viðhengi með svarinu' + (t.mal ? ' · fylgiskjöl máls #' + t.mal.id : '') + '</b>';
+    if (!skjol.length) h += '<div class="s">' + (t.mal ? 'Engin skjöl á málinu — settu þau á málið (Opna á borðinu → fylgiskjöl) og þau birtast hér með haki.' : 'Ekkert mál er tengt þræðinum, svo engin skjöl til að hengja við.') + '</div>';
+    skjol.forEach(sk => {
+      const ok = sendanlegt(sk), on = v.has(sk.id);
+      h += '<label class="tp-vidh-l' + (ok ? '' : ' _ekki') + '"><input type="checkbox" data-tp-in="vidh" data-v="' + esc(t.k) + '" data-fid="' + esc(sk.id) + '"' + (on ? ' checked' : '') + (ok ? '' : ' disabled') + '> <span>' + esc(sk.name || 'skjal') + '</span>' +
+        (sk.size ? '<span class="s">' + Math.max(1, Math.round(sk.size / 1024)) + ' KB</span>' : '') + (sk.src === 'drive' ? '<span class="s">Drive</span>' : '') +
+        (sk.url ? '<a href="' + esc(sk.url) + '" target="_blank" rel="noopener">Skoða ↗</a>' : '') + (ok ? '' : '<span class="s">ekki sendanlegt héðan</span>') + '</label>';
+    });
+    vantar.forEach(b => { h += '<div class="tp-vidh-vantar">⚠ Drögin biðja um „' + esc(b) + '“ en ekkert slíkt skjal er á málinu. Sendingin stöðvast þar til skjalið er sett á málið eða línan strikuð úr textanum.</div>'; });
+    if (bb.length && !vantar.length) h += '<div class="s">[HENGJA VIÐ …]-línan fer ekki með — hún er tekin úr textanum við sendingu. Aðeins hökuðu skjölin fylgja.</div>';
+    return h + '</div>';
+  }
   const gmailSlod = t => 'https://mail.google.com/mail/u/?authuser=' + encodeURIComponent(t.account) + '#all/' + encodeURIComponent(t.sidastaInn.thread_id || '');
   const textiIHtml = s => '<div style="font:14px/1.55 system-ui,sans-serif;color:#111;white-space:pre-wrap">' + esc(s) + '</div>';
 
@@ -260,16 +321,34 @@
     if (j.summary) toast('Uppkast: ' + j.summary);
   }
   async function senda(t) {
-    const texti = String(svarTexti(t) || '').trim();
-    if (!texti) throw new Error('Svarið er tómt');
+    const hratt = String(svarTexti(t) || '').trim();
+    if (!hratt) throw new Error('Svarið er tómt');
     if (!t.netfang) throw new Error('Enginn viðtakandi á þræðinum');
     if (!window.AppMail || !AppMail.send) throw new Error('Sendingin (254 AppMail) er ekki hlaðin');
-    const r = await AppMail.send({ from: t.account, to: [t.netfang], subject: svarEfni(t), html: textiIHtml(texti), inReplyTo: t.sidastaInn.message_id || undefined });
+    // Viðhengi (04.11.2026): hvert skjal sem [HENGJA VIÐ: …] nefnir VERÐUR að vera á málinu; línan sjálf fer aldrei með.
+    const vantar = hengjaBeidnir(hratt).filter(b => !skjalFyrir(b, skjolMals(t)));
+    if (vantar.length) throw new Error('Drögin nefna skjal sem er ekki á málinu: ' + vantar.join(' · ') + '. Settu það á málið eða strikaðu línuna úr textanum.');
+    const texti = anHengja(hratt), atts = vidhengiSvars(t);
+    if (!texti) throw new Error('Svarið er tómt þegar [HENGJA VIÐ]-línan er tekin út');
+    // Vörn (Agnar 04.11.2026: „að ég geti ekki sent ef það sé búið að svara úr mailinu"): sækja nýjasta úr Gmail (inn + sent)
+    // fyrir hólfið, endurbyggja þræðina og hætta ef þessum pósti var þegar svarað eða nýr póstur kom í þráðinn á meðan.
+    toast('Athuga Gmail áður en sent er…');
+    await Promise.all(['', '&folder=sent'].map(f => fetch(BH + '/api/gmail-ingest?account=' + encodeURIComponent(t.account) + '&days=3' + f).then(r => r.json()).catch(() => null)));
+    await load(true);
+    const t2 = finna(t.k);
+    if (!t2) throw new Error('Þráðurinn fannst ekki eftir uppfærslu — ekkert sent');
+    if (t2.svarad) throw new Error('Þessum pósti var ÞEGAR svarað (úr Gmail eða annars staðar) — ekkert sent. Þráðurinn er nú undir „Svarað · lokið".');
+    if (t2.sidastaInn && t.sidastaInn && t2.sidastaInn.message_id !== t.sidastaInn.message_id) throw new Error('Nýr póstur kom í þráðinn á meðan — lestu hann áður en þú svarar. Ekkert sent.');
+    t = t2;
+    const stadf = 'Senda svar til ' + t.netfang + ' (frá ' + t.account + ')?\n\nViðhengi (' + atts.length + '):\n' + (atts.length ? atts.map(a => '  • ' + a.filename).join('\n') : '  — engin —') + '\n\nTexti:\n' + texti.slice(0, 400) + (texti.length > 400 ? '…' : '');
+    if (!window.confirm(stadf)) { toast('Hætt við — ekkert sent'); return; }
+    const r = await AppMail.send({ from: t.account, to: [t.netfang], subject: svarEfni(t), html: textiIHtml(texti), attachments: atts, inReplyTo: t.sidastaInn.message_id || undefined });
     const j = r && r.json ? await r.json().catch(() => ({})) : {};
     if (!r || !r.ok || (j && j.ok === false)) throw new Error((j && (j.error || j.message)) || 'Pósturinn fór ekki');
+    if (j && Array.isArray(j.warnings) && j.warnings.length) toast('⚠️ ' + j.warnings.join(' · '), true);
     await merkjaSvarad(t);
-    delete S.drog[t.k]; delete S.efni[t.k]; S.svarOpid = null;
-    toast('Svar sent til ' + t.netfang + (j && j.threaded ? ' · í sama þræði' : ''));
+    delete S.drog[t.k]; delete S.efni[t.k]; delete S.vidh[t.k]; S.svarOpid = null;
+    toast('Svar sent til ' + t.netfang + (atts.length ? ' · ' + atts.length + ' viðhengi' : '') + (j && j.threaded ? ' · í sama þræði' : ''));
   }
   async function saekjaNyjan() {
     const koll = [];
@@ -322,6 +401,7 @@
     return '<section class="tp-svar"><header><b>↩ Svar · fer frá ' + esc(t.account) + ' · til ' + esc(t.netfang) + '</b></header>' +
       '<input class="tp-inp" data-tp-in="efni" data-v="' + esc(t.k) + '" value="' + esc(svarEfni(t)) + '" aria-label="Efni">' +
       '<textarea class="tp-ta" data-tp-in="drog" data-v="' + esc(t.k) + '" rows="9" placeholder="Svarið — yfirfarðu áður en þú sendir. ✨ Semja sækir uppkast; skýringin hér að neðan stýrir því.">' + esc(svarTexti(t)) + '</textarea>' +
+      vidhHtml(t) +
       '<input class="tp-inp" data-tp-in="sky" data-v="' + esc(t.k) + '" value="' + esc(S.sky[t.k] || '') + '" placeholder="Stýring á uppkastið (valfrjálst): t.d. „segðu að skýrslan fylgi á morgun“">' +
       '<div class="tp-takkar"><button type="button" class="btn iv sm" data-t5="tp-semja" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>✨ Semja uppkast</button>' +
       '<button type="button" class="btn iv sm tp-graen" data-t5="tp-senda" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>📤 Senda svar</button>' +
@@ -336,6 +416,8 @@
       '<button type="button" class="btn iv sm tp-gull" data-t5="tp-claude" data-v="samthykkt" data-k="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>✓ Samþykkt — Claude klárar</button></div></section>';
   }
   function thradurHtml(t) {
+    // ★-þráður: svarreiturinn (uppkast + viðhengi) er opinn um leið og þráðurinn er valinn — Agnar les, lagar, sendir. „Hætta við" lokar honum þar til næst.
+    if (t.hluti === 'undirbuid' && !S.svarOpid && !S.claudeOpid && !S.svarLokad[t.k] && !S.busy[t.k]) S.svarOpid = t.k;
     if (!t) return '<div class="empty"><span class="coin" aria-hidden="true"></span>Veldu þráð til vinstri.</div>';
     const b = !!S.busy[t.k], stj = t.tags.indexOf('undirbuid') >= 0;
     return '<div class="tp-haus"><div class="vbr-meta">' + esc(HLUTA_L[t.hluti]) + ' · ' + esc(stuttHolf(t.account)) + '@ · ' + esc(dags(t.timi)) + ' · ' + dagarSidan(t.timi) + ' d.' + (t.fjoldi > 1 ? ' · ' + t.fjoldi + ' skeyti' : '') + '</div>' +
@@ -397,6 +479,7 @@
         '.tp .tp-svar,.tp .tp-claude,.tp .tp-mal{margin-top:12px;padding:12px 14px;border:1px solid var(--rule3);border-radius:6px;background:rgba(255,255,255,.55)}.tp .tp-svar header,.tp .tp-claude header,.tp .tp-mal header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-bottom:8px}.tp .tp-mal header b{font-family:var(--mono);font-size:11px;letter-spacing:.06em}.tp .tp-claude header .s,.tp .tp-mal .s{font-size:11.5px;color:var(--mute)}',
         '.tp .tp-inp,.tp .tp-ta{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:8px 10px;border:1px solid var(--edge);border-radius:4px;background:#fff;color:var(--ink);font:13.5px/1.5 var(--body)}.tp .tp-ta{resize:vertical;min-height:80px}',
         '.tp .tp-nota{white-space:pre-wrap;font-size:12.5px;line-height:1.5;color:var(--ink2);max-height:260px;overflow:auto}.tp .tp-uppk{margin-top:8px;padding:8px 10px;border-left:3px solid #c9a24a;background:rgba(232,203,122,.18);white-space:pre-wrap;font-size:12.5px;line-height:1.5}.tp .tp-uppk b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8a6218;margin-bottom:4px}',
+        '.tp .tp-vidh-box{margin:8px 0;padding:8px 10px;border:1px solid var(--rule2);border-radius:4px;background:rgba(0,0,0,.03);font-size:12.5px}.tp .tp-vidh-box>b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}.tp .tp-vidh-box .s{color:var(--ink2);font-size:11.5px}.tp .tp-vidh-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 0;cursor:pointer}.tp .tp-vidh-l input{width:16px;height:16px;margin:0}.tp .tp-vidh-l._ekki{opacity:.6}.tp .tp-vidh-l a{color:#1f6b3c;font-weight:600}.tp .tp-vidh-vantar{margin-top:6px;padding:6px 8px;border-left:3px solid #c0392b;background:rgba(192,57,43,.08);color:#7a1f14;line-height:1.45}',
         '.tp .tp-skeytin{display:flex;flex-direction:column;gap:10px;margin-top:14px}.tp .tp-skeyti{padding:12px 14px;border:1px solid var(--rule2);border-radius:6px;background:#fff}.tp .tp-skeyti._okkar{background:rgba(232,203,122,.12);border-color:rgba(184,137,46,.4)}.tp .tp-skeyti header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;font-size:12.5px}.tp .tp-skeyti header .s{color:var(--mute);font-size:11.5px}.tp .tp-skeyti header time{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mute)}',
         '.tp .tp-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere}.tp .tp-vidh{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
         '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}'
@@ -420,7 +503,7 @@
       case 'hoppa': { try { const root = (el.getRootNode && el.getRootNode()) || document; const s = root.querySelector('.tp .vbr-sect[data-h="' + v + '"]'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {} return true; }
       case 'uppf': saekjaNyjan(); return true;
       case 'svara': if (!t) return true; S.svarOpid = S.svarOpid === t.k ? null : t.k; S.claudeOpid = null; R(); return true;
-      case 'haetta': S.svarOpid = null; R(); return true;
+      case 'haetta': if (S.svarOpid) S.svarLokad[S.svarOpid] = 1; S.svarOpid = null; R(); return true;
       case 'claude-opna': if (!t) return true; S.claudeOpid = S.claudeOpid === t.k ? null : t.k; S.svarOpid = null; R(); return true;
       case 'claude': if (!t) return true; adgerd(t, () => tilClaude(t, v, S.sky[t.k] || '')).then(() => { S.claudeOpid = null; notify(); }); return true;
       case 'stjarna': if (!t) return true; adgerd(t, () => stjarna(t)); return true;
@@ -439,6 +522,7 @@
     const k = el.dataset.v, h = el.dataset.tpIn;
     if (!k || !h) return;
     if (h === 'drog') S.drog[k] = el.value; else if (h === 'efni') S.efni[k] = el.value; else if (h === 'sky') S.sky[k] = el.value;
+    else if (h === 'vidh') { const t = finna(k); if (t) { const sett = valinVidh(t); if (el.checked) sett.add(el.dataset.fid); else sett.delete(el.dataset.fid); } }
   }
 
   window.Tolvupostar = {
@@ -450,6 +534,6 @@
     fela: (k, af) => { const t = finna(k); return t ? adgerd(t, () => fela(t, !!af)) : Promise.resolve(); },
     semja: k => { const t = finna(k); return t ? adgerd(t, () => semja(t)) : Promise.resolve(); },
     senda: k => { const t = finna(k); return t ? adgerd(t, () => senda(t)) : Promise.resolve(); },
-    svarEfni, svarTexti, uppkastUrNotu, notaAnUppkasts, gmailSlod, merkiHtml, dags, kl, dagarSidan, stuttHolf, esc, STJORNUR, STJ_LITUR, LOKID, version: '2026-10-09'
+    svarEfni, svarTexti, uppkastUrNotu, notaAnUppkasts, gmailSlod, vidhHtml, valinVidh, vidhengiSvars, hengjaBeidnir, anHengja, skjolMals, merkiHtml, dags, kl, dagarSidan, stuttHolf, esc, STJORNUR, STJ_LITUR, LOKID, version: '2026-11-04'
   };
 })();
