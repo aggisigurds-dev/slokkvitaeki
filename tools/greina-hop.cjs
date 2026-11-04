@@ -17,7 +17,7 @@
  *   node tools/greina-hop.cjs                       þurrkeyrsla: brunakerfi + Heimaleiga, prentar yfirlit
  *   node tools/greina-hop.cjs --skrifa --ocr        skrifar eign-raðir og setur OCR-beiðnir
  *   node tools/greina-hop.cjs --fid 205,1483        aðeins þessir staðir
- *   node tools/greina-hop.cjs --hopur heimaleiga    aðeins annar hópurinn (brunakerfi | heimaleiga)
+ *   node tools/greina-hop.cjs --hopur heimaleiga    aðeins einn hópur (brunakerfi | heimaleiga | brunaholf = verkstaðir Brunahólfs, customer_base 330)
  *   --json <skrá>   skrifar niðurstöðuna líka sem JSON
  *   --dreypa        DREYPING (með --ocr): brúin (watcher.js) hendir beiðni sem enginn tók innan 30 mín („úrelt") og les
  *                   eina í einu (~4 mín). 28 beiðnir í einu → 7 lesnar, 21 úreltar (mælt 14.10 02:04). Dreyping heldur
@@ -42,13 +42,21 @@ const JSON_UT = args.includes('--json') ? args[args.indexOf('--json') + 1] : nul
 const DREYPA = args.includes('--dreypa');
 const SAMTIMIS = args.includes('--samtimis') ? +args[args.indexOf('--samtimis') + 1] : 3;
 const KLST = args.includes('--klst') ? +args[args.indexOf('--klst') + 1] : 3;
+// 04.11.2026 (Agnar: „OCR-lesa skýrslurnar inn í greiningu á nýjum fyrirtækjum og þeim sem er eftir, eftir tækjafjölda"):
+//   --hopur eftir      öll félög í þjónustu sem eiga enga eign-röð í fasteign_greining fyrir sitt heimilisfang
+//   --rod taeki        heimilisföngin í röð eftir tækjafjölda (uttaeki) — flest fyrst
+//   --hamark N         aðeins fyrstu N heimilisföngin (eftir röðun)
+//   --leidrett <json>  { "<heimilisfang eins og það er skráð>": "<heimilisfang á HMS-sniði>" | "" (sleppa) } — ofan á LEIDRETT
+const ROD = args.includes('--rod') ? args[args.indexOf('--rod') + 1] : null;
+const HAMARK = args.includes('--hamark') ? +args[args.indexOf('--hamark') + 1] : 0;
+const LEIDRETT_SKRA = args.includes('--leidrett') ? args[args.indexOf('--leidrett') + 1] : null;
 const stimpill = () => new Date().toISOString().slice(11, 19);
 
 const get = async (q) => { const r = await fetch(U + '/rest/v1/' + q, { headers: H }); if (!r.ok) throw new Error(q.slice(0, 80) + ' → ' + r.status + ' ' + (await r.text()).slice(0, 200)); return r.json(); };
 const bid = ms => new Promise(r => setTimeout(r, ms));
 const getAll = async (q) => { const out = []; for (let off = 0; ; off += 1000) { const b = await get(q + '&limit=1000&offset=' + off); out.push(...b); if (b.length < 1000) break; } return out; };   // PostgREST skilar mest 1000 röðum — fyrirtaeki eru 1.234 (14.10)
 // heimilisföng eins og Staðfangaskrá HMS skrifar þau (fyrirtaeki.heimilisfang er handslegið)
-const LEIDRETT = { 'Vegamótastígur 9, 101 Reykjavik': 'Vegamótastígur 9, 101 Reykjavík', '17 júnítorg 1-7, 101 Reykjavík': '17. júnítorg 1, 101 Reykjavík' };
+const LEIDRETT = Object.assign({ 'Vegamótastígur 9, 101 Reykjavik': 'Vegamótastígur 9, 101 Reykjavík', '17 júnítorg 1-7, 101 Reykjavík': '17. júnítorg 1, 101 Reykjavík' }, LEIDRETT_SKRA ? JSON.parse(fs.readFileSync(LEIDRETT_SKRA, 'utf8')) : {});
 // „Laugavegur 18, 101 Reykjavík (3.–6. hæð)" → „Laugavegur 18, 101 Reykjavík"; „Flatahraun 5a, 220 Hafnarfirði" óbreytt (fallið skilur það)
 const hreinsa = a => { const h = String(a || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim(); return LEIDRETT[h] || h; };
 const lykillEignar = e => e && e.landnr ? 'eign:' + e.landnr + (e.svf && e.heitinr ? ':' + e.heitinr : '') : null;
@@ -65,14 +73,26 @@ async function byggingUppl(adr) {
 (async () => {
   const st = await get('app_settings?id=eq.1&select=b:settings->brunakerfi_customers');
   const brunakerfiIds = Object.keys((st[0] && st[0].b) || {}).map(Number);
-  const allir = await getAll('fyrirtaeki?deleted_at=is.null&select=id,nafn,heimilisfang,postnumer,kennitala,er_i_thjonustu&order=id');
-  let stadir = allir.filter(f => brunakerfiIds.includes(f.id) || /^heimaleiga/i.test(f.nafn || '')).map(f => Object.assign({ hopur: brunakerfiIds.includes(f.id) ? 'brunakerfi' : 'heimaleiga' }, f));
+  const allir = await getAll('fyrirtaeki?deleted_at=is.null&select=id,nafn,heimilisfang,postnumer,kennitala,er_i_thjonustu,customer_base_id&order=id');
+  // 04.11.2026 — hópurinn 'brunaholf': gervifélög verkstaða Brunahólfs (customer_base_id 330, „Brunahólf - <Hús>", HT-02.11)
+  // 'eftir' = í þjónustu og engin eign-röð fyrir heimilisfangið (borið saman hreinsað, eins og 468 gerir)
+  const eignAdr = HOPUR === 'eftir' ? new Set((await getAll('fasteign_greining?tegund=eq.eign&select=adr:gogn->>adr')).map(r => r.adr).filter(Boolean)) : null;
+  const hopurF = f => HOPUR === 'eftir' ? (f.er_i_thjonustu && !eignAdr.has(hreinsa(f.heimilisfang)) ? 'eftir' : null)
+    : brunakerfiIds.includes(f.id) ? 'brunakerfi' : /^heimaleiga/i.test(f.nafn || '') ? 'heimaleiga' : f.customer_base_id === 330 && /^Brunahólf - /.test(f.nafn || '') ? 'brunaholf' : null;
+  let stadir = allir.filter(f => hopurF(f)).map(f => Object.assign({ hopur: hopurF(f) }, f));
   if (FIDS) stadir = stadir.filter(f => FIDS.includes(f.id));
   if (HOPUR) stadir = stadir.filter(f => f.hopur === HOPUR);
   // sama heimilisfang hjá fleiri en einum stað → ein uppfletting, allir taldir
-  const eftirAdr = new Map();
-  stadir.forEach(f => { const a = hreinsa(f.heimilisfang); if (!a || !/\d/.test(a)) { f.sleppt = 'ekkert götunúmer í heimilisfangi'; return; } (eftirAdr.get(a) || eftirAdr.set(a, []).get(a)).push(f); });
-  console.log('GREINING Í HÓP — ' + stadir.length + ' staðir (' + stadir.filter(s => s.hopur === 'brunakerfi').length + ' brunakerfi · ' + stadir.filter(s => s.hopur === 'heimaleiga').length + ' Heimaleiga), ' + eftirAdr.size + ' heimilisföng' + (SKRIFA ? ' · SKRIFAR eign-raðir' : '') + (OCR ? ' · SETUR OCR-BEIÐNIR' : '') + (!SKRIFA && !OCR ? ' · ÞURRKEYRSLA' : ''));
+  let eftirAdr = new Map();
+  stadir.forEach(f => { const a = hreinsa(f.heimilisfang); if (a === '') { f.sleppt = 'sleppt með --leidrett'; return; } if (!a || !/\d/.test(a)) { f.sleppt = 'ekkert götunúmer í heimilisfangi'; return; } (eftirAdr.get(a) || eftirAdr.set(a, []).get(a)).push(f); });
+  if (ROD === 'taeki' || HAMARK) {
+    const taeki = new Map(); (await getAll('uttaeki?select=fyrirtaeki_id')).forEach(u => taeki.set(u.fyrirtaeki_id, (taeki.get(u.fyrirtaeki_id) || 0) + 1));
+    const rod = [...eftirAdr.entries()].map(([a, fl]) => [a, fl, fl.reduce((s, f) => s + (taeki.get(f.id) || 0), 0)]);
+    if (ROD === 'taeki') rod.sort((x, y) => y[2] - x[2]);
+    eftirAdr = new Map(rod.slice(0, HAMARK || rod.length).map(([a, fl, n]) => { fl.forEach(f => { f.taeki = n; }); return [a, fl]; }));
+    console.log('RÖÐUN' + (ROD === 'taeki' ? ' eftir tækjafjölda' : '') + (HAMARK ? ' · þak ' + HAMARK : '') + ' · ' + eftirAdr.size + ' heimilisföng · tæki alls ' + [...eftirAdr.values()].reduce((s, fl) => s + (fl[0].taeki || 0), 0));
+  }
+  console.log('GREINING Í HÓP — ' + stadir.length + ' staðir (' + stadir.filter(s => s.hopur === 'brunakerfi').length + ' brunakerfi · ' + stadir.filter(s => s.hopur === 'heimaleiga').length + ' Heimaleiga · ' + stadir.filter(s => s.hopur === 'brunaholf').length + ' Brunahólf), ' + eftirAdr.size + ' heimilisföng' + (SKRIFA ? ' · SKRIFAR eign-raðir' : '') + (OCR ? ' · SETUR OCR-BEIÐNIR' : '') + (!SKRIFA && !OCR ? ' · ÞURRKEYRSLA' : ''));
   stadir.filter(s => s.sleppt).forEach(s => console.log('  SLEPPT ' + s.id + ' ' + s.nafn + ' — ' + s.sleppt + ' („' + s.heimilisfang + '")'));
 
   // beiðnir sem þegar bíða / eru í vinnslu (per landnúmer)
@@ -83,7 +103,7 @@ async function byggingUppl(adr) {
   const pendingNu = async () => (await get('automation_triggers?workflow=eq.bygging-ocr&status=in.(bida,pending,running)&select=id')).length;
   const bidlisti = [];   // dreyping: staðir sem eiga ólesin skjöl en fengu ekki beiðni strax
   async function vinnaStad(adr, felog, ocrLeyft) {
-    const heiti = felog.map(f => f.nafn).join(' / ');
+    const heiti = felog.map(f => f.nafn).join(' / ') + (felog[0].taeki != null ? ' (' + felog[0].taeki + ' tæki)' : '');
     const j = await byggingUppl(adr);
     const lina = { adr, felog: felog.map(f => ({ id: f.id, nafn: f.nafn, hopur: f.hopur })) };
     if (!j || (j.error && !j.eign)) { lina.stada = 'fannst ekki'; lina.villa = j && j.error; ut.push(lina); console.log('  ✗ ' + adr.padEnd(44) + ' ' + heiti.slice(0, 40).padEnd(40) + ' fannst ekki: ' + (j && j.error)); return lina; }
@@ -123,6 +143,7 @@ async function byggingUppl(adr) {
   }
   let laus = OCR && DREYPA ? Math.max(0, SAMTIMIS - await pendingNu()) : Infinity;
   for (const [adr, felog] of eftirAdr) { const l = await vinnaStad(adr, felog, laus > 0); if (l && /^beiðni \d+ \(/.test(l.ocr || '')) laus--; await bid(800); }
+  if (JSON_UT) fs.writeFileSync(JSON_UT, JSON.stringify(ut, null, 1));   // fyrsta umferð strax á disk — „fannst ekki"/„óviss" má leiðrétta meðan dreypingin keyrir
   // DREYPING — halda röðinni stuttri þar til allt er lesið eða tíminn búinn
   if (OCR && DREYPA && bidlisti.length) {
     const lok = Date.now() + KLST * 3600000;

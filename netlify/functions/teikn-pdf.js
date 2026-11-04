@@ -16,6 +16,11 @@ const LEYFDIR = new Set(['skjalasafn.reykjavik.is']);
 // ekki TIFF sjálfur, svo .tif af beinum hýsli er streymd hingað (image/tiff) og 384/451 afkóða hana með UTIF í vafranum;
 // með ?nidurhal=1 fer hún sem niðurhal (attachment) með nafni skjalsins. .pdf fer áfram í forskoðun eins og áður.
 const BEINIR = new Set(['gagnasja.kopavogur.is', 'teikningar.hafnarfjordur.is', 'teikningar.gardabaer.is', 'luks.seltjarnarnes.is', 'luks.mos.is', 'teikningar.rnb.is', 'snorri.borgarbyggd.is', 'skrar.gagnaland.is']);
+// 04.11.2026 (Skúlagata 26, HT-02.11): fjölsíðu-aðaluppdrættir (53 síður, >40 MB) komast ekki í gegn hér — stakar síður
+// þeirra, klofnar úr frumritinu, liggja í opinberu Supabase-geymslunni (verkstadir/teikn/…) og eru sóttar sem beint PDF.
+// Aðeins opinberir hlutir (/storage/v1/object/public/) — ekki opinn proxy á geymsluna.
+const GEYMSLA = 'osfdzskyvisifcwyjkuk.supabase.co';
+const beinn = t => BEINIR.has(t.hostname) || (t.hostname === GEYMSLA && t.pathname.startsWith('/storage/v1/object/public/'));
 const HAMARK = 40 * 1024 * 1024;
 
 const cors = {
@@ -58,7 +63,7 @@ export default async (req) => {
   const raw = new URL(req.url).searchParams.get('url') || '';
   let target;
   try { target = new URL(raw); } catch { return villa(400, 'Ógild slóð'); }
-  if (target.protocol === 'https:' && BEINIR.has(target.hostname)) {
+  if (target.protocol === 'https:' && beinn(target)) {
     const beinTif = /\.tiff?$/i.test(target.pathname);
     if (!beinTif && !/\.pdf$/i.test(target.pathname)) return villa(415, 'Skjalið er ekki PDF');
     try {
