@@ -4,7 +4,7 @@
 // (tímasett verk „arnold-vaktin“, Agnar sjálfur eða bridge-vél) keyrir í röð. Biðröðin er taflan bunadargreining_verk
 // (sql/bunadargreining_verk.sql); Turbo-takkinn í Búnaðargreiningu (474) setur þar röð. Lýsing: ../../../references/verkhringras.md
 //
-//   node bgr_verk.cjs bida <cid> [beidandi]        setja verk í biðröð (eitt opið á félag)
+//   node bgr_verk.cjs bida <cid> [beidandi]        setja verk í biðröð (eitt opið á félag) + beiðni 'arnold-vaktin' í automation_triggers
 //   node bgr_verk.cjs naest [vel] [cid]            taka næsta (bida → i_vinnslu, atómískt; með cid aðeins verk þess félags); prentar verkið sem JSON; tómt = ekkert að gera
 //   node bgr_verk.cjs skila <id> ["<ástæða>"]       verk sem þú tókst (i_vinnslu) en klárar ekki → aftur í biðröð
 //   node bgr_verk.cjs stada [id|cid]               staða verks (eða síðustu verka)
@@ -64,7 +64,12 @@ async function skrifaStig(id, stig, texti, extra) {
 async function bida(cid, beidandi) {
   const r = await sp('bunadargreining_verk', 'POST', { company_id: +cid, status: 'bida', stig: 'bida', beidandi: beidandi || 'skipanalína', framvinda: [{ at: new Date().toISOString(), stig: 'bida', texti: 'Sett í biðröð' }] });
   if (!r.ok) { log('VILLA', r.status, JSON.stringify(r.j).slice(0, 200)); process.exit(1); }
-  log(JSON.stringify({ id: r.j[0].id, company_id: r.j[0].company_id }));
+  // 04.11.2026 (Agentakerfið 2.0, 5 F): vekja Arnold-vaktina í luna-bridge (watcher.js → arnold-vaktin.js) í stað tímasetts verks á
+  // 10–30 mín fresti. Eitt REST-kall eins og Blender-beiðnin í render; bregðist það er verkið samt í biðröð og sópun vaktarinnar
+  // (arnold-vaktin.js --sopa, í hverri watcher-umferð á kveiktri vél) býr beiðnina til síðar.
+  const t = await sp('automation_triggers', 'POST', { workflow: 'arnold-vaktin', status: 'bida', requested_by: 'bgr-verk bida', gogn: { verk_id: r.j[0].id, company_id: r.j[0].company_id } }).catch((e) => ({ ok: false, status: e.message }));
+  if (!t.ok) console.error('aðvörun: beiðni til Arnold-vaktarinnar vistaðist ekki (' + t.status + ') — sópunin tekur verkið síðar');
+  log(JSON.stringify({ id: r.j[0].id, company_id: r.j[0].company_id, trigger_id: t.ok && t.j && t.j[0] ? t.j[0].id : null }));
 }
 async function naest(vel, cid) {
   vel = vel || (os.hostname() + ' · ' + (process.env.CLAUDE_SESSION || 'claude'));
