@@ -132,7 +132,7 @@
   const lina = (m, v, vissa, auka) => '<div class="ssp-lina"><span class="ssp-merki">' + esc(m) + '</span><span class="ssp-gildi">' + (vissa ? '<i class="bs-led ' + (VISSA[vissa] || '') + '" title="Vissa: ' + esc(vissa) + '"></i>' : '') + v + (auka || '') + '</span></div>';
   const hlekkur = (slod, txt) => slod ? '<a href="' + esc(String(slod).replace(/\.info$/i, '')) + '" target="_blank" rel="noopener">' + esc(txt) + '</a>' : esc(txt);
 
-  function bukHtml(u, adr) {
+  function bukHtml(u, adr, fid) {
     if (!u) return '<div class="bs-tomt">Sæki…</div>';
     if (u.villa) return '<div class="bs-villa">Engin tenging: ' + esc(u.villa) + '</div>';
     if (!u.rod) return '<div class="bs-tomt">Engin greining til fyrir „' + esc(adr) + '“ enn. <b>Greining</b> opnar Greiningu fasteignar (sækir skjölin úr safni sveitarfélagsins og geymir), <b>Uppfæra</b> sækir beint hingað.</div>';
@@ -144,7 +144,12 @@
       // 04.11.2026 (Agnar: „rúmmál er algjör óþarfi þarna uppi"): Rúmmál farið; Birt flatarmál aðeins þegar það er annað en brúttó.
       if (b.m2_birt != null && b.m2 != null && Math.abs(b.m2_birt - b.m2) >= 1) linur.push(lina('Birt flatarmál', tala(b.m2_birt, 1) + ' m²', o.m2));
       const h = b.haedir;
-      linur.push(lina('Hæðir', h ? [h.kjallari ? 'kjallari' : '', h.ofanjardar ? h.ofanjardar + (h.ofanjardar === 1 ? ' hæð' : ' hæðir') + ' ofanjarðar' : '', h.ris ? 'ris' : ''].filter(Boolean).join(' + ') || '—' : '—', h ? o.haedir : null));
+      // 04.11.2026 (Breiðhöfði 13): skráningartaflan telur 2. hæð þjónustuhússins sem milliloft („1 hæð ofanjarðar") en grunnmyndirnar
+      // og prófíllinn segja 2 hæðir — þá ræður hæðatala prófílsins (🏛 úr grunnmyndum) og talan úr töflunni stendur dauf við hliðina.
+      const skrTxt = h ? [h.kjallari ? 'kjallari' : '', h.ofanjardar ? h.ofanjardar + (h.ofanjardar === 1 ? ' hæð' : ' hæðir') + ' ofanjarðar' : '', h.ris ? 'ris' : ''].filter(Boolean).join(' + ') || '—' : '—';
+      let bh = ''; try { bh = fid && window.BannerUpplysingar && BannerUpplysingar.gildi ? String(BannerUpplysingar.gildi(fid, 'haedir') || '').trim() : ''; } catch (_) { bh = ''; }
+      const osamhljoda = /^\d+$/.test(bh) && h && +bh !== +(h.ofanjardar || 0);
+      linur.push(lina('Hæðir', osamhljoda ? esc(bh) + (+bh === 1 ? ' hæð' : ' hæðir') + (h.kjallari ? ' + kjallari' : '') + ' <span class="ssp-daufur">(grunnmyndir · skráningartafla: ' + esc(skrTxt) + ')</span>' : skrTxt, h ? o.haedir : null));
       linur.push(lina('Eignir', b.eignir != null ? tala(b.eignir) : '—', b.eignir != null ? o.eignir : null));
       linur.push(lina('Byggingarár', b.byggingarar ? esc(b.byggingarar) : '—', b.byggingarar ? o.byggingarar : null, b.byggingarar ? ' <span class="ssp-daufur">(úr byggingarlýsingu)</span>' : ''));
       if (b.stigagangar) linur.push(lina('Stigagangar', tala(b.stigagangar), o.stigagangar));
@@ -185,7 +190,7 @@
     setP(el, '[data-bs="skjol"]', rod ? (heim.length ? lesin + ' af ' + heim.length + ' skjölum lesin' : 'engin skjöl') : '', rod && heim.length ? (lesin === heim.length ? 'graent' : lesin ? 'gull' : '') : '');
     const bd = u && u.beidni;
     setP(el, '[data-bs="ocr"]', bd && /bida|pending|running/.test(bd.status) ? 'OCR ' + (bd.status === 'running' ? 'í vinnslu' : 'bíður') : '', bd && bd.status === 'running' ? 'gull' : '');
-    const html = bukHtml(u, adr); const buk = el.querySelector('[data-bs="buk"]');
+    const html = bukHtml(u, adr, fid); const buk = el.querySelector('[data-bs="buk"]');
     if (buk.dataset.html !== html) { buk.dataset.html = html; buk.innerHTML = html; }
   }
 
