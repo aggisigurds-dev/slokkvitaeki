@@ -18,6 +18,7 @@
  *   · Úrelt mynd (veggjum, skurði eða teikningu breytt síðan hún var fest — lykillinn segir það): myndin sést SAMT strax
  *     og lína segir „Veggjum breytt síðan myndin var fest — Endurteikna". Ekkert endurbyggt sjálfkrafa — NEMA sjálfvirka
  *     verkferlið („Sjálfvirkt", leidrett.af = 'sjalfvirkt') hafi vistað veggina eftir að myndin var fest (08.10.2026).
+ *     04.11.2026: þetta „NEMA" er horfið — úrelt mynd endursmíðast sjálf hvaðan sem veggjabreytingin kom (einu sinni á lykil í lotunni).
  *   · Fyrsta mynd TILBÚINNAR hæðar (leiðrétt í TurboPaint / veggjaLinur) sem á enga er smíðuð og fest sjálfkrafa einu
  *     sinni (383 smidaVinnumynd, hulið 3D) — svo hann þurfi ekki að muna það.
  *
@@ -669,11 +670,12 @@
     if (vm) {
       const key = vmLykill(vm);
       V.urelt = vm.lykill !== V.lykill && vm.lykill !== V.lykillV1;        // veggjum, skurði eða teikningu breytt síðan hún var fest
-      // SJÁLFVIRKA VERKFERLIÐ (08.10.2026, „Sjálfvirkt" í 383 → TurboPaint): vistaði það veggina EFTIR að myndin var fest
-      // smíðast hún upp á nýtt sjálfkrafa, einu sinni á lykil — gamla myndin sést á meðan. Handvirkar breytingar gera það
-      // ekki (Agnar 07.10: „Endurteikna" ræður þar).
-      if (V.urelt && h.leidrett && h.leidrett.af === 'sjalfvirkt' && (Date.parse(h.leidrett.kl || '') || 0) > (Date.parse(vm.t || '') || 0) &&
-          !V.smidar[h.id] && !V.sjalfReynt[h.id + '|' + V.lykill]) smida(h);
+      // ÚRELT MYND ENDURSMÍÐAST SJÁLF (Agnar 04.11.2026, Nesdekk Breiðhöfði 13: „til að skipta um mynd … taktu þessa reglu burt"):
+      // áður gerðist það aðeins ef Sjálfvirkt vistaði veggina (08.10.2026) — veggir vistaðir úr TurboPaint á eftir sátu eftir með
+      // gömlu myndina (hillur sem veggir, ekkert gólf) þar til ýtt var á „Endurteikna" og „Festa". Nú smíðast hún upp á nýtt, einu sinni
+      // á lykil í lotunni, hvaðan sem veggjabreytingin kom; gamla myndin sést á meðan. „Endurteikna" er áfram til fyrir þá sem vilja
+      // stilla sýnina sjálfir.
+      if (V.urelt && tilbuin(h) && !V.smidar[h.id] && !V.sjalfReynt[h.id + '|' + V.lykill]) smida(h);
       // ÚTLITSUPPFÆRSLA: mynd með eldra útliti en UTLIT (og sjálfsmíðuð / fest úr 3D hér) endursmíðast einu sinni í lotu; gamla myndin sést á meðan
       if (!V.urelt && (vm.utlit || 0) < UTLIT && (vm.fest === 'sjalfvirkt' || vm.fest === 'festa') && tilbuin(h) && !V.smidar[h.id] && !V.sjalfReynt[h.id + '|utlit']) {
         V.sjalfReynt[h.id + '|utlit'] = true;
