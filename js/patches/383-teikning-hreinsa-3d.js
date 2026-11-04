@@ -1823,12 +1823,12 @@
     // flóðið fer um veggi sem eru rL þykkari á hvorn veg (bil allt að ~1,2 m lokast), og vex svo rL aftur inn að
     // raunverulegu veggjunum. Rýmin sjálf eru greind á þunnu veggjunum.
     const rL = Math.max(2, Math.round(0.6 * pxm));
-    const flaedaLokad = (vThunnt, medSvolum) => {
-      const uT = flaeda(teikna(medSvolum, true, 2 * rL)), d = new Int16Array(N).fill(-1);
+    const flaedaLokad = (vThunnt, medSvolum, rr = rL) => {
+      const uT = flaeda(teikna(medSvolum, true, 2 * rr)), d = new Int16Array(N).fill(-1);
       let q0 = 0, q1 = 0;
       for (let p = 0; p < N; p++) if (uT[p]) { d[p] = 0; st[q1++] = p; }
       while (q0 < q1) {
-        const p = st[q0++], dd = d[p]; if (dd >= rL) continue;
+        const p = st[q0++], dd = d[p]; if (dd >= rr) continue;
         const px = p % RW;
         if (px > 0 && d[p - 1] < 0 && !vThunnt[p - 1]) { d[p - 1] = dd + 1; st[q1++] = p - 1; }
         if (px < RW - 1 && d[p + 1] < 0 && !vThunnt[p + 1]) { d[p + 1] = dd + 1; st[q1++] = p + 1; }
@@ -1876,6 +1876,32 @@
       }
       rymi.push(r);
     }
+    // OPIN SVÆÐI INNAN HÚSS (Agnar 04.11.2026, Nesdekk Breiðhöfði 13: „vantar gólf á 3D" — verkstæðið er með bílaopum á útvegg
+    // sem eru breiðari en 1,2 m, svo flóðið lak inn og það fékk hvorki rými né gólfefni): svæði sem lokast ÞEGAR bil upp í ~6 m eru
+    // lokuð en teljast „utan" við 1,2 m lokunina verða rými líka. Aðeins samfelld svæði ≥ 15 m² (rendur við veggi detta út).
+    // Hólfin sjálf eru óbreytt: þetta bætist aðeins við þar sem ekkert rými var fyrir.
+    try {
+      const rStor = Math.max(rL + 1, Math.round(3 * pxm)), uStor = flaedaLokad(vA, true, rStor);
+      const opid = p => !vA[p] && uA[p] && !uStor[p] && merki[p] === -1;
+      for (let p0 = 0; p0 < N; p0++) {
+        if (!opid(p0)) continue;
+        const id = rymi.length, r = { n: 0, x0: RW, y0: RH, x1: 0, y1: 0, utiB: 0, sval: 0, blek: 0, sx: 0, sy: 0, opid: true };
+        const lista = []; let top = 0; merki[p0] = id; st[top++] = p0;
+        while (top) {
+          const p = st[--top], px = p % RW, py = (p - px) / RW;
+          lista.push(p); r.n++; r.sx += px; r.sy += py;
+          if (px < r.x0) r.x0 = px; if (px > r.x1) r.x1 = px; if (py < r.y0) r.y0 = py; if (py > r.y1) r.y1 = py;
+          if (bd[p * 4 + 3] > 128 && bd[p * 4] * 0.3 + bd[p * 4 + 1] * 0.59 + bd[p * 4 + 2] * 0.11 < 120) r.blek++;
+          let q = p - 1; if (px > 0 && opid(q)) { merki[q] = id; st[top++] = q; }
+          q = p + 1; if (px < RW - 1 && opid(q)) { merki[q] = id; st[top++] = q; }
+          q = p - RW; if (py > 0 && opid(q)) { merki[q] = id; st[top++] = q; }
+          q = p + RW; if (py < RH - 1 && opid(q)) { merki[q] = id; st[top++] = q; }
+        }
+        if (r.n / (pxm * pxm) < 15) { lista.forEach(p => { merki[p] = -2; }); continue; }   // of lítið: sleppt (merkt −2 svo það sé ekki talið aftur)
+        rymi.push(r);
+      }
+      for (let p = 0; p < N; p++) if (merki[p] === -2) merki[p] = -1;
+    } catch (e) { console.warn('[383] gólf: opin svæði', e); }
     const innan = rymi.reduce((t, r) => t + r.n, 0), ramm = Math.max(1, (vx1 - vx0 + 1) * (vy1 - vy0 + 1));
     if (!rymi.length || innan < ramm * 0.2) { console.info('[383] gólfefni: útveggir loka ekki húsinu (' + Math.round(innan / ramm * 100) + ' % innan) — teikningin helst'); return null; }
     // HEITI: textalag PDF (heitiTexta), lestur skrifstofutölvunnar (heitiOcr) og sameignargreiningin (446) — { texti, x, y }
