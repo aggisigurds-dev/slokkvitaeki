@@ -92,11 +92,16 @@ Húsfélagið Laugavegi 42 (heimilisfang stemmir, kt er Heimaleigu), Herbergjale
 **Ómælt:** skjöl 384, 517 og 836 hafa enga skrá hvorki í Storage né á Drive. Downtown Reykjavík Apartments (490, kt 691003-2560)
 og Dra ehf (1334, kt 651003-2560) eru í sama grunni 815 á sama heimilisfangi; kt eru einum staf frá hvor annarri. Hvort er rétt er ómælt.
 
-## 4. Næstu skref (bíða Agnars)
+## 4. Framkvæmt 04.11.2026
 
-1. #1395 og #1396 á borðinu.
-2. Opna PDF-in á listanum í kafla 3 og para við rétt félag (aðferð: skill `rekstrarfelog-parun`, para eftir innihaldi).
-3. Ákveða hvað gera á við 16 tóm félög, einkum Reitir (10 staðir óvirkir í þjónustulista).
+Agnar samþykkti í spjalli („Já, öll tíu“). Mál #1395–#1406 framkvæmd og lokuð. Mælt eftir: Gerð ehf. ekki í þjónustu,
+5 tæki `urelt`, ekkert skjal sem ekki er afrit; skjal 755 á Hveragerðiskirkju; skjöl 190, 466, 834, 831, 267, 215, 325, 250
+merkt afrit (`dup_of` bendir á skrána sem stendur); skjal 331 reikningur á Húsfélagið Stakkholt 2-4 (Bílakjallari); skjal
+2993 ár 2023. Hveragerðiskirkju-tækin 5 skráð síðast skoðuð 01.11.2024. Ekkert eytt.
+
+## 5. Næstu skref (bíða Agnars)
+
+1. Ákveða hvað gera á við 16 tóm félög, einkum Reitir (10 staðir óvirkir í þjónustulista).
 
 Kóði: 199 sýnir ekki lengur tómt 🔥 Brunakerfisþjónusta-spjald hjá félagi sem hefur aldrei haft brunakerfi
 (skjal eða reikning á neinu ári, né á áskriftarlista `brunakerfi_customers`).
