@@ -155,6 +155,9 @@
       const svarTag = tags.find(t => /^svar:(samthykkt|vinnsla|endurmeta)$/.test(t)) || null;
       const lokid = merki.has(LOKID);
       const svarad = sentEftir || S.activity.has(sidastaInn.message_id) || !!(mal && mal.svarad_at && ts(mal.svarad_at) > ts(sidastaInn.received_at));
+      // 04.11.2026 (Agnar: „sumt er löngu búið, af hverju er það ennþá ósvarað“): mál sem er lokað á borðinu og var lokað EFTIR síðasta
+      // innkomna póst telst afgreitt. Komi nýr póstur eftir lokun (ekkert nýtt mál, `mal` er þá eldra mál) er þráðurinn aftur „Bíður svars“.
+      const malLokad = !!(mal && mal.status === 'lokad' && ts(mal.updated_at) >= ts(sidastaInn.received_at));
       const falid = inn.every(x => S.hidden.has(x.message_id));
       let kunni = null;
       try { if (window.KunnaLeit && KunnaLeit.hladid()) kunni = KunnaLeit.finna(sidastaInn, postar); } catch (_) {}
@@ -163,7 +166,7 @@
       const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
         : sjalfvirkt ? 'sjalfvirkt'
-        : (!svarad && !lokid && sidasta.folder !== 'SENT') ? 'bidur' : 'buid';
+        : (!svarad && !lokid && !malLokad && sidasta.folder !== 'SENT') ? 'bidur' : 'buid';
       ut.push({ k, msgs, inn, sidastaInn, sidasta, merki: [...merki], stjornur: [...stj], vidhengi: vidh, mal, tags, svarTag, lokid, svarad, falid, kunni, hluti,
         sjalfvirkt, beidni: !sjalfvirkt && BEIDNI_RE.test(texti), mikilv: stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important),
         account: sidastaInn.account, nafn: sidastaInn.sender_name || sidastaInn.sender_email || '—', netfang: sidastaInn.sender_email || '',
