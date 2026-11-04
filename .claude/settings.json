@@ -1,7 +1,7 @@
 {
   "enableAllProjectMcpServers": true,
 
-  "//": "SessionStart-hookurinn er ÞVINGUNIN. CLAUDE.md regla #1 hefur sagt „Lestu Charlize ÁÐUR en þú byrjar\" síðan í ágúst og lotan 31.08.2026 gerði það samt ekki — með CLAUDE.md í samhengi allan tímann. Tilmæli duga ekki; sjálfvirk keyrsla gerir það. Hookurinn les GIT-eintakið (docs/MINNISBOK.md), ekki Supabase: það er samstundis, þarf hvorki net né lykla, og fellur aldrei lotu. Ferskt eintak fæst með `node tools/minni.cjs --ferskt`.",
+  "//": "SessionStart-hookurinn er ÞVINGUNIN. CLAUDE.md regla #1 hefur sagt „Lestu Charlize ÁÐUR en þú byrjar\" síðan í ágúst og lotan 31.08.2026 gerði það samt ekki — með CLAUDE.md í samhengi allan tímann. Tilmæli duga ekki; sjálfvirk keyrsla gerir það. Hookurinn les GIT-eintakið (docs/MINNISBOK.md), ekki Supabase: það er samstundis, þarf hvorki net né lykla, og fellur aldrei lotu. Ferskt eintak fæst með `node tools/minni.cjs --ferskt`. 04.11.2026: router/lotuminni-hookar (Agentakerfið 2.0) kallaðir um tools/lotu-hookar.cjs → ../brunaholf/tools/, sjá brunaholf/docs/HOOKAR.md.",
   "hooks": {
     "SessionStart": [
       {
@@ -10,9 +10,16 @@
             "type": "command",
             "command": "node tools/minni.cjs 2>&1 || echo 'Minnisstýribókin svaraði ekki — keyrðu: node tools/minni.cjs --uppfaera'",
             "timeout": 15
-          }
+          },
+          { "type": "command", "command": "node tools/lotu-hookar.cjs byrjun", "timeout": 5 }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "node tools/lotu-hookar.cjs router", "timeout": 5 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "node tools/lotu-hookar.cjs lok", "timeout": 10 } ] }
     ]
   }
 }
