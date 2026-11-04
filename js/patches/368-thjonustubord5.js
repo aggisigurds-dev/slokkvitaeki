@@ -5157,6 +5157,8 @@
         sannanirHtml() +
         // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
+        // 493 Tengill á Agentanetið í Jarvis (brunaholf) + Charlize-biðstofuna — aðeins hjá Agnari, nýr flipi.
+        (window.AgentanetTengill ? AgentanetTengill.html(n) : '') +
         leitHtml() +
         (S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
