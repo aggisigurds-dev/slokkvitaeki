@@ -172,7 +172,29 @@
     const mynd = FloorPlan.bgImage, N = 160, D = 8, SUB = 3, G = N * SUB, M = (N + 2 * D) * SUB;
     const gra = (cv) => { const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height).data, a = new Float32Array(cv.width * cv.height); for (let i = 0; i < a.length; i++) a[i] = d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2]; return a; };
     const nidur = [];
-    for (const [a, b] of [[0.5, 0.5], [0.3, 0.3], [0.7, 0.3], [0.3, 0.7], [0.7, 0.7]]) {
+    // REITIR EFTIR INNIHALDI (Agnar 04.11.2026, Nesdekk Breiðhöfða 13: lagerinn er næstum auður og fimm fastir reitir lentu
+    // á auðu — „TIF passar ekki við myndina (0 af 5 reitum)", þótt TIF-ið passi): net 9 × 6 innan hæðarinnar, þeir sex reitir
+    // með mestu birtuskilin (innbyrðis ≥ 0,2 í brotum af skurði) eru bornir saman. Auðir reitir segja ekkert um hliðrun.
+    const veljaReiti = () => {
+      const c = document.createElement('canvas'); c.width = N; c.height = N;
+      const cx = c.getContext('2d', { willReadFrequently: true }), kost = [];
+      for (let gy = 0; gy < 6; gy++) for (let gx = 0; gx < 9; gx++) {
+        const a = 0.06 + gx * 0.11, b = 0.08 + gy * 0.17;
+        const fx0 = Math.round(sk.x + a * sk.w - N / 2), fy0 = Math.round(sk.y + b * sk.h - N / 2);
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, N, N);
+        cx.drawImage(mynd, fx0 - sk.x, fy0 - sk.y, N, N, 0, 0, N, N);
+        const d = cx.getImageData(0, 0, N, N).data; let m = 0, n = 0, v = 0;
+        for (let i = 0; i < d.length; i += 28) { m += d[i] + d[i + 1] + d[i + 2]; n++; }
+        m /= n * 3;
+        for (let i = 0; i < d.length; i += 28) { const g = (d[i] + d[i + 1] + d[i + 2]) / 3 - m; v += g * g; }
+        kost.push({ a, b, v: v / n });
+      }
+      kost.sort((p, q) => q.v - p.v);
+      const val = [];
+      for (const k of kost) { if (val.length >= 6) break; if (k.v < 400) break; if (val.every(q => Math.abs(q.a - k.a) + Math.abs(q.b - k.b) >= 0.2)) val.push(k); }
+      return val.map(k => [k.a, k.b]);
+    };
+    for (const [a, b] of veljaReiti()) {
       const fx0 = Math.round(sk.x + a * sk.w - N / 2), fy0 = Math.round(sk.y + b * sk.h - N / 2);
       const j = document.createElement('canvas'); j.width = G; j.height = G;
       const jx = j.getContext('2d', { willReadFrequently: true }); jx.fillStyle = '#fff'; jx.fillRect(0, 0, G, G); jx.imageSmoothingQuality = 'high';
@@ -199,7 +221,7 @@
       for (let dy = -D * SUB; dy <= D * SUB; dy += SUB) for (let dx = -D * SUB; dx <= D * SUB; dx += SUB) { const c = fyl(dx, dy, 3); if (c > best.c) best = { dx, dy, c }; }
       const g = best;
       for (let dy = g.dy - SUB + 1; dy <= g.dy + SUB - 1; dy++) for (let dx = g.dx - SUB + 1; dx <= g.dx + SUB - 1; dx++) { if (Math.abs(dx) > D * SUB || Math.abs(dy) > D * SUB) continue; const c = fyl(dx, dy, 2); if (c > best.c) best = { dx, dy, c }; }
-      if (best.c > 0.75) nidur.push(best);
+      if (best.c > 0.7) nidur.push(best);
     }
     if (nidur.length < 2) throw new Error('TIF passar ekki við myndina (' + nidur.length + ' af 5 reitum)');
     const midgildi = v => { const a = v.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
