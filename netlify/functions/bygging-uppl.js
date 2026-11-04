@@ -252,8 +252,39 @@ export async function byggingUppl({ heimilisfang, landnr, mhl }) {
       summuprof: l.summuprof || null, lesid: l.lesid || null, adferd: l.adferd || null, lesid_af: l._uppruni || null };
     const nyrri = skran.filter((r) => String(r.dags || '') > String(valin.r.dags || '') && !LESID.get(r.infoUrl)).length;
     if (nyrri) ut.athugasemdir.push((nyrri === 1 ? '1 nýrri skráningartafla er á lóðinni, ólesin' : nyrri + ' nýrri skráningartöflur eru á lóðinni, ólesnar') + ' — tölurnar eru frá ' + valin.r.dags + '.');
-    if (matshlutar.size > 1) ut.athugasemdir.push(`Lóðin hefur ${matshlutar.size} matshluta — tölurnar eiga við matshluta ${l.matshluti || '?'} (${l.heimilisfang || 'óþekkt heimilisfang'}).`);
     if (Number.isFinite(l.stigahus) && l.stigahus > 0) { ut.stigagangar = l.stigahus; ut.oryggi.stigagangar = 'lágt'; }
+
+    // 04.11.2026 (Agnar, Breiðhöfði 13 — verkstæði MHL 01 + lager MHL 03 á sama heimilisfangi: „helstu tölur úr greiningunni
+    // mættu bara koma þarna beint inn … ekki tvítalningar eða ruglingslegt"): sé ekkert valið handvirkt (mhl) og FLEIRI en einn
+    // lesinn matshluti ber heimilisfang hússins, eru tölurnar lagðar saman (nýjasta tafla hvers matshluta) — m² og m³ summa,
+    // hæðir ofanjarðar = flestar, kjallari/ris ef einhver hluti hefur, eignir summa. Aðrar lóðir (Höfðatorg: S1/H1/H2 með ólík
+    // heimilisföng) halda einum matshluta eins og áður.
+    const samiHlutar = !mhl && matshlutar.size > 1 && husLabel
+      ? [...matshlutar].map((k) => lesnar.filter((x) => x.l.matshluti === k).sort((a, b) => String(b.r.dags || '').localeCompare(String(a.r.dags || '')))[0])
+        .filter((x) => x && x.l.heimilisfang && samaHus(x.l.heimilisfang, husLabel) && Number.isFinite(x.l.bruttoflotur_m2))
+      : [];
+    if (samiHlutar.length > 1) {
+      const sum = (f) => samiHlutar.reduce((s, x) => s + (Number.isFinite(x.l[f]) ? x.l[f] : 0), 0);
+      const hefur = (f) => samiHlutar.some((x) => Number.isFinite(x.l[f]));
+      ut.m2 = Math.round(sum('bruttoflotur_m2') * 10) / 10;
+      ut.m2_birt = hefur('birt_flatarmal_m2') ? Math.round(sum('birt_flatarmal_m2') * 10) / 10 : null;
+      ut.rummal_m3 = hefur('brutto_rummal_m3') ? Math.round(sum('brutto_rummal_m3') * 10) / 10 : null;
+      ut.haedir = {
+        ofanjardar: Math.max(...samiHlutar.map((x) => +x.l.haedir_ofan || 0)) || null,
+        kjallari: samiHlutar.some((x) => !!x.l.kjallari), ris: samiHlutar.some((x) => !!x.l.ris),
+        listi: [].concat(...samiHlutar.map((x) => (Array.isArray(x.l.haedir) ? x.l.haedir : []).map((h) => Object.assign({}, h, { matshluti: x.l.matshluti || null, heiti: (h.heiti || h.kodi || '') + ' (mhl ' + (x.l.matshluti || '?') + ')' })))),
+      };
+      ut.eignir = hefur('eignir') ? sum('eignir') : null;
+      const ordid = ['há', 'miðlungs', 'lágt'];
+      const lagst = (f) => samiHlutar.map((x) => (x.l.vissa || {})[f]).filter(Boolean).sort((a, b) => ordid.indexOf(b) - ordid.indexOf(a))[0] || null;
+      ut.oryggi.m2 = lagst('bruttoflotur_m2'); ut.oryggi.haedir = lagst('haedir'); ut.oryggi.rummal = lagst('brutto_rummal_m3');
+      ut.oryggi.eignir = ut.eignir != null ? 'miðlungs' : null;
+      ut.skraningartafla.samsvorun = 'allir matshlutar hússins lagðir saman (' + samiHlutar.map((x) => x.l.matshluti || '?').join(' + ') + ')';
+      ut.athugasemdir.push('Lóðin hefur ' + matshlutar.size + ' matshluta á sama heimilisfangi — tölurnar eru lagðar saman: ' +
+        samiHlutar.map((x) => 'mhl ' + (x.l.matshluti || '?') + ' ' + (Math.round(x.l.bruttoflotur_m2 * 10) / 10).toLocaleString('de-DE') + ' m²').join(' + ') + '.');
+    } else if (matshlutar.size > 1) {
+      ut.athugasemdir.push(`Lóðin hefur ${matshlutar.size} matshluta — tölurnar eiga við matshluta ${l.matshluti || '?'} (${l.heimilisfang || 'óþekkt heimilisfang'}).`);
+    }
   }
 
   // ── byggingarlýsing: brunavarnir (aðeins þar sem hún hefur verið lesin) ──────

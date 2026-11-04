@@ -141,8 +141,8 @@
     const linur = [];
     if (b.m2 != null || b.haedir || b.byggingarar || b.eignir != null) {
       linur.push(lina('Brúttó', tala(b.m2, 1) + ' m²', o.m2));
-      linur.push(lina('Birt flatarmál', b.m2_birt != null ? tala(b.m2_birt, 1) + ' m²' : '—', b.m2_birt != null ? o.m2 : null));
-      linur.push(lina('Rúmmál', b.rummal_m3 != null ? tala(b.rummal_m3, 1) + ' m³' : '—', b.rummal_m3 != null ? (o.rummal || o.m2) : null));
+      // 04.11.2026 (Agnar: „rúmmál er algjör óþarfi þarna uppi"): Rúmmál farið; Birt flatarmál aðeins þegar það er annað en brúttó.
+      if (b.m2_birt != null && b.m2 != null && Math.abs(b.m2_birt - b.m2) >= 1) linur.push(lina('Birt flatarmál', tala(b.m2_birt, 1) + ' m²', o.m2));
       const h = b.haedir;
       linur.push(lina('Hæðir', h ? [h.kjallari ? 'kjallari' : '', h.ofanjardar ? h.ofanjardar + (h.ofanjardar === 1 ? ' hæð' : ' hæðir') + ' ofanjarðar' : '', h.ris ? 'ris' : ''].filter(Boolean).join(' + ') || '—' : '—', h ? o.haedir : null));
       linur.push(lina('Eignir', b.eignir != null ? tala(b.eignir) : '—', b.eignir != null ? o.eignir : null));
