@@ -1,0 +1,182 @@
+[
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Iframe-ramminn (#_app-frame) er ekki falinn þegar skipt er á innbyggða síðu eftir öðrum leiðum en goPage (bakk/hashchange, 218 applyHash, innri tenglar). Ramminn (z-index 2147481000) liggur þá yfir nýju síðunni og flipaljósið bendir á aðra síðu en sést.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1957,
+  "sonnun": "patchSwitchView: grein 'else { _curPage = view; ...toggle on }' kallar aldrei hideFrame(); hideFrame() er aðeins kallað í goPage (1897-1906).",
+  "alvarleiki": 3,
+  "lagfaering": "Kalla hideFrame() í switchView-umbúðunum í hvert sinn sem leyfð innbyggð síða er opnuð."
+ },
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Skipti milli iframe-síðna (br-*) breyta ifr.src á sama iframe — það býr til færslu í sameiginlegri sögu vafrans. Bakk flakkar þá INNI í rammanum á fyrri br-síðu meðan botnstikan lýsir nýju síðuna; 276/277/261 vita ekki af því (popstate kemur á iframe-glugganum).",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1924,
+  "sonnun": "showFrame: if (ifr.getAttribute('data-src') !== p.url) { ifr.src = p.url; ... } — engin replace, engin pushState fyrir app-síðuna.",
+  "alvarleiki": 3,
+  "lagfaering": "Nota ifr.contentWindow.location.replace(url) (eða nýtt iframe-element) og ýta eigin sögufærslu {appPage:k} sem popstate les og kallar goPage."
+ },
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Iframe-síður búa ekki til bakk-færslu (hash breytist ekki). Röðin A (innbyggð) → F (iframe) → B: bakk frá B fer beint á A og hoppar yfir F; bakk frá F fer á síðuna á undan A.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1905,
+  "sonnun": "goPage: 'else if (p && p.url) showFrame(p)' — hvorki switchView né hash; 277 ýtir aðeins þegar location.hash breytist (277-nav-back.js:76-83).",
+  "alvarleiki": 2,
+  "lagfaering": "Setja hash '#f-<lykill>' (eða pushState) í goPage fyrir iframe-síður og láta 218/popstate endurheimta hana."
+ },
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Í öppum án 'companies' (Þjónustuborð, Fjármál) er 'Opna fyrirtæki' úr Þjónustuborðinu hafnað af fókuslásnum: prófíllinn blikkar og síðan smellur til baka.",
+  "skra": "js/patches/368-thjonustubord5.js",
+  "lina": 971,
+  "sonnun": "openCompany: App.switchView('companies'); Companies.openDetail(...) — 261:1950 'allowed.indexOf(view) === -1 → setTimeout(goPage(_curPage))'. Sama í 309:652, 310:149, 449b:452. _openCompanySafe (mapfix.js:11) fer framhjá switchView og virkar.",
+  "alvarleiki": 3,
+  "lagfaering": "Skipta beinu switchView('companies')+openDetail út fyrir window._openCompanySafe(id) (variant: 4 staðir)."
+ },
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Fjármál-appið hefur flipann 'Þj.verk' í sjálfgefnum síðum en Þjónustuverk (172) er í djúpdvala: smellur sýnir toast og opnar Þjónustuborðið (utan appsins) með rangt flipaljós.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 230,
+  "sonnun": "Fjármál defaults inniheldur 'thjonustuverk'; index.html:544 kommentar út 172; 465-djupdvali.js SVEFN.thjonustuverk → switchView('verkbord'); 368 skammhleypir 'verkbord' svo 261 sér það ekki.",
+  "alvarleiki": 2,
+  "lagfaering": "Taka 'thjonustuverk' úr PAGES/defaults og varpa því í pagesFor() eins og 'brunayfirlit'."
+ },
+ {
+  "flokkur": "síðuskipti/bakk",
+  "lysing": "Fókuslásinn snappar til baka hverri leyfðri en óvalinni síðu fyrstu 12 sek eftir hverja buildShell (líka endurbyggingu vaktarans), svo lögmætur smellur á innri tengil er hunsaður.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1955,
+  "sonnun": "if (Date.now() - _bootAt < 12000) { setTimeout(goPage(_curPage)) } — _bootAt = Date.now() í hvert sinn sem buildShell keyrir (1638), m.a. úr startShellGuard og AppSettings.onChange.",
+  "alvarleiki": 2,
+  "lagfaering": "Setja _bootAt aðeins við fyrstu ræsingu og hætta lás við fyrstu notendaaðgerð (sama mörk og 218 userTouched)."
+ },
+ {
+  "flokkur": "zoom/skölun",
+  "lysing": "Brunahólf-iframe-síður birtast í tölvuútliti á ~0,42-0,55 skala á S26: ramminn er 980 CSS-px breiður og síðuzoom fyrir 'f:'-lykla fellur á ~1 (ekkert BYRJUN-gildi). Snertisíður (TurboPaint/3dwork) fá krómzoom 2,38 — sumar síður risastórar, aðrar örsmáar.",
+  "skra": "js/patches/333-app-page-zoom.js",
+  "lina": 204,
+  "sonnun": "staerd(): BYRJUN hefur enga 'f:'-lykla → s = gamla()/c → virkt zoom = gamla() ≈ 1; 353:123 gefur _app-frame-touch zoom:var(--app-krom-zoom). Hubbinn (brunaholf/index.html:1446) bætir sjálfur við #view{zoom:1.32}, Vinnubók zoom:1 (1450).",
+  "alvarleiki": 3,
+  "lagfaering": "Gefa iframe-síðum sjálfgefið virkt zoom = krómhlutfall (eins og touch) og fjarlægja fasta 1.32 í hubbnum innan apps."
+ },
+ {
+  "flokkur": "zoom/skölun",
+  "lysing": "Þegar skipt er milli iframe-síðna kemur nýtt zoom og top-fylling ekki fyrr en 333 sér lykilbreytingu (≤700 ms) og 353 endurmælir — ramminn birtist fyrst í röngum skala og hoppar svo.",
+  "skra": "js/patches/333-app-page-zoom.js",
+  "lina": 658,
+  "sonnun": "Aðeins setInterval 700 ms nemur 'f:<k>'-lykilbreytingu; goPage→showFrame kallar hvorki switchView né hashchange; showFrame kallar aðeins syncFrameBottom (bottom, ekki top).",
+  "alvarleiki": 2,
+  "lagfaering": "Kalla apply 333 og AppKrom.measure beint úr goPage/showFrame."
+ },
+ {
+  "flokkur": "zoom/skölun",
+  "lysing": "Sýn með síðuzoom > 1 (S26: 2,38 × stærð) heldur height:100vh í eigin hnitum og verður hærri en skjárinn; neðsti hluti sýnarinnar er utan skjás og tvöfalt skrun (body + .view).",
+  "skra": "js/patches/333-app-page-zoom.js",
+  "lina": 357,
+  "sonnun": "'height:calc(100vh / min(1, var(--app-page-zoom, 1)))' deilir aðeins undir 1; 230-brunastal-theme.js:101 neglir height:100vh + overflow-y:auto á .view.active.",
+  "alvarleiki": 2,
+  "lagfaering": "Deila hæðinni alltaf með zoominu: calc(100vh / var(--app-page-zoom))."
+ },
+ {
+  "flokkur": "zoom/skölun",
+  "lysing": "Bílstjóri sem flipi í appi notar fast top:50px þótt app-hausinn sé 48 px (316) eða 52×krómhlutfall (≈124 CSS-px á S26) — haus hylur efsta hluta Bílstjórans.",
+  "skra": "js/patches/219-bilstjori.js",
+  "lina": 718,
+  "sonnun": "body.appmode #view-bilstjori{top:50px!important} og ._bs-sheet{top:50px!important}; #view-bilstjori ber ekki .view svo 353 stimplar enga fyllingu á það.",
+  "alvarleiki": 2,
+  "lagfaering": "Mæla haus eins og maelaNav mælir botnstikuna (--bs-hdrh) og nota í top."
+ },
+ {
+  "flokkur": "zoom/skölun",
+  "lysing": "Sjö pappar skrifa viewport-meta (index.html, 166, 219, 261, 331, 333, 336, 410) og 336 heldur MutationObserver sem skrifar til baka. Engin tvöföld meta fannst, en hver nýr ritari sem víkur frá __HUB_VP veldur 980↔412 flökti á öllu skalakerfinu.",
+  "skra": "js/patches/336-viewport-brunaholf-zoom.js",
+  "lina": 101,
+  "sonnun": "grep meta[name=viewport]: 7 JS-skrár + index.html:26/50; 336 mo.observe(vp,{attributeFilter:['content']}) → sync().",
+  "alvarleiki": 1,
+  "lagfaering": "Gera 336 að eina ritaranum (hinir kalla SlokkViewportUnlock.sync) og bæta audit sem bannar nýja setAttribute á viewport."
+ },
+ {
+  "flokkur": "sýnileiki",
+  "lysing": "Sjálfheilun botnstikunnar setur display:'grid' þegar stikan er falin — en stikan er hönnuð sem flex-lína. Án grid-dálka staflast hnapparnir lóðrétt og stikan þekur hálfan skjá.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1737,
+  "sonnun": "if (getComputedStyle(nav).display === 'none') nav.style.display = 'grid'; — CSS 1250 er display:flex.",
+  "alvarleiki": 2,
+  "lagfaering": "Setja nav.style.display = '' (eða 'flex') og virða appmode-nonav."
+ },
+ {
+  "flokkur": "sýnileiki",
+  "lysing": "Öpp skeljarinnar eru talin á þremur stöðum með föstum listum sem vantar skyrslustod, threedwork og verkstjorar (og notenda-búin öpp): 316 setur ekki viewmode=mobile/data-app fyrir þau við ræsingu og 354 meðhöndlar þau sem notenda-búin (rangt manifest í 'Athuga öpp').",
+  "skra": "js/patches/316-simi-boards.js",
+  "lina": 153,
+  "sonnun": "316: APP_KEYS = {fjarmal,verkefni,brunaholf,brunakerfi,boss,bilstjori}; 354-opp-styribord.js:35 BUILTIN sami listi; manifest-skyrslustod/threedwork/verkstjorar.json eru til á diski.",
+  "alvarleiki": 2,
+  "lagfaering": "Lesa lyklana úr window.AppProfiles (261 APPS) í stað fastra lista — variant í 316 og 354."
+ },
+ {
+  "flokkur": "sýnileiki",
+  "lysing": "316 vaktar ALLA class-breytingu í skjalinu (subtree:true á documentElement) — patch-87-gildran. Kostar keyrslu við hverja klasabreytingu hvar sem er.",
+  "skra": "js/patches/316-simi-boards.js",
+  "lina": 180,
+  "sonnun": "mo.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] }) — til þess eins að stimpla data-app.",
+  "alvarleiki": 1,
+  "lagfaering": "Vakta aðeins <body> (attributes, ekki subtree) eða stimpla data-app í buildShell sem gerir það þegar."
+ },
+ {
+  "flokkur": "sýnileiki",
+  "lysing": "mobilenav.js stimplar padding-top 86px á allar .view í appham (isMobile() = true af því viewmode=mobile), en 353/314 stimpla mælda haushæð — við hvern slokk-viewmode-atburð hoppar efnið 86↔~52 px.",
+  "skra": "js/mobilenav.js",
+  "lina": 154,
+  "sonnun": "v.style.setProperty('padding-top', window.__peBannerPad || '86px','important') án appmode-varnar; í appham er __peBannerPad null (353:211, 323:150).",
+  "alvarleiki": 2,
+  "lagfaering": "Sleppa padding-stimplun í mobilenav.js þegar body.appmode (eins og 314 pinPad gerir)."
+ },
+ {
+  "flokkur": "sýnileiki",
+  "lysing": "Grunnlitur .app-page er dökkt blek (#0f172a) en efstu 240 px síðunnar eru svartur borði (#060607): allur texti sem setur ekki eigin lit verður svart á svörtu (1,13:1).",
+  "skra": "css/theme-scoped.css",
+  "lina": 16,
+  "sonnun": ".thm .app-page{color:var(--ink)} + bakgrunnur úr .view (230) eða theme-handoff/theme.css:23 linear-gradient(#060607 0-240px…). Kontrast mældur 1,13:1.",
+  "alvarleiki": 2,
+  "lagfaering": "Setja ljósan grunnlit á .page-title-svæðið/borðann og dökkan aðeins á spjöldum."
+ },
+ {
+  "flokkur": "hlutföll",
+  "lysing": "Botnstikan fær hnappastærð úr sjö pappalögum (261, 315, 316, 349, 353, 395, 410): Fjármál 52 px/11 px letur, flest öpp 74 px/14 px, Boss 104 px/15 px, 80 px þegar krómzoomað — sama stikan hlutfallast ólíkt eftir appi.",
+  "skra": "js/patches/315-fjarmal-app-compact.js",
+  "lina": 23,
+  "sonnun": "315:23 min-height:52px;font-size:11px (fjarmal/boss, sérhæfni 1,2,2 > 316:66 74px); 349:48 min-height:104px; 353 min-height:80px; 410:38 flex:0 0 auto;min-width:64px.",
+  "alvarleiki": 2,
+  "lagfaering": "Ein uppspretta (CSS-breytur --app-nav-h/--app-nav-fs í 261) og taka 315/349-stikureglurnar úr umferð."
+ },
+ {
+  "flokkur": "hlutföll",
+  "lysing": "Hamarsregla appham blæs ALLA hnappa í 50 px/17 px og reiti í 52 px/18 px; hver síða þarf undanþágu (ars-main, krofu-yfirlit, _bky-*) — síður án hennar fá pylsuhnappa og risastafi.",
+  "skra": "js/patches/261-app-profiles.js",
+  "lina": 1269,
+  "sonnun": "'body.appmode .view button,…{font-size:17px !important;min-height:50px;padding-top:12px !important…}' + 1270 inputs 18px/52px; undanþágur 1284-1291 og 316:84-90.",
+  "alvarleiki": 2,
+  "lagfaering": "Takmarka hamarinn við síður sem biðja um hann (klasi á view) í stað allra .view."
+ },
+ {
+  "flokkur": "hlutföll",
+  "lysing": "Padding-top á .view er skrifuð af 7+ aðilum (261, 316, 333 CSS; mobilenav.js, 314, 323, 353 inline !important) og padding-bottom af 261/315/316/333/349/353 — 61 skrá vefur App.switchView. Hvert lag gerir ráð fyrir annarri haushæð (48/50/52/86 px).",
+  "skra": "js/patches/353-simi-krom-zoom.js",
+  "lina": 207,
+  "sonnun": "setProperty('padding-top',…,'important'): mobilenav.js:154, 314:330, 323:159, 353:207/222; CSS: 261:1225, 316:56, 333:359.",
+  "alvarleiki": 2,
+  "lagfaering": "Einn eigandi (353 mælir) og fjarlægja föstu CSS-gildin úr 261/316/333/315/349."
+ },
+ {
+  "flokkur": "hlutföll",
+  "lysing": "mobile.css (100 × !important) breytir öllu með 'table' í klasaheiti í display:block og minnkar töflutexta í 12/11 px — undir 16 px gátlista; á S26 (980 px) virkar skráin hins vegar aldrei, svo sími í mjóum ham og S26 fá ólíkt útlit.",
+  "skra": "css/mobile.css",
+  "lina": 67,
+  "sonnun": ".view table,.view .tbl,.view [class*=\"table\"]{display:block !important…}; 79: font-size:12px !important; 147: 11px !important; allt undir @media (max-width:900px).",
+  "alvarleiki": 1,
+  "lagfaering": "Þrengja [class*=table] í .view table og færa símareglur á data-viewmode/container queries."
+ }
+]

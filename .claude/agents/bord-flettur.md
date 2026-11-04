@@ -1,6 +1,6 @@
 ---
 name: bord-flettur
-description: Flettur, borð og navigation í Slökkvitæki-appinu — Þjónustuborð/Verkborð (368), Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk-takkinn (3 lög), app-síður (261) og Öpp-skelin í síma. Notaðu þegar bætt er við eða breytt flipa, borði, app-síðu eða deep-linki, eða bakk, endurhleðsla eða útgáfa á síma hegðar sér rangt; kallaðu á hann sjálfur áður en ný síða er tengd. Kveikjuorð: flipi, borð, nav, Þjónustuborð, Mitt borð, Afmerkja, bílstjóri, aksturslisti, bakk, back, deep link, #company, Öpp-síða, app finnst ekki í síma, uppsetning appa.
+description: Flettur, borð og navigation í Slökkvitæki-appinu — Þjónustuborð (368) og undirborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk (3 lög) og app-síður (261). Notaðu þegar flipa, borði, app-síðu eða deep-linki er bætt við eða breytt, eða bakk/endurhleðsla á síma hegðar sér rangt; kallaðu á hann sjálfur áður en ný síða er tengd. Kveikjuorð: flipi, borð, nav, Þjónustuborð, Mitt borð, Afmerkja, Aðalmál, Vinnusamantekt, bílstjóri, aksturslisti, Akstursdagbók, Tæknimenn, Uppfærsluborð, Mælaborð, Stjórnstöð, Geymsla, Mínar síður, bakk, back, deep link, #company, Öpp-síða, app finnst ekki í síma, uppsetning appa.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
@@ -224,8 +224,8 @@ starfsmanna-sía + 60s auto-refresh. Wiring: script í index.html (eftir 267),
 hliðarstiku-hnappur. `window.Aksturslisti = {open, reload}`.
 
 **Vakt — starfsmanna-nafn + dagleg virkni + staðsetning (2026-07-14):** driver
-picks their name (`EMPLOYEES = ['Hákon','Binni','Elías']`, stored `localStorage
-.bs_employee`; locked-boot prompts if unset, office can skip). Every action is
+picks their name (listinn er í kóða, ekki hér: `BordStarfsmadur.list()` úr `bord_starfsmenn`,
+219-bilstjori.js:158–159; aðeins valið er geymt í `localStorage.bs_employee`; locked-boot prompts if unset, office can skip). Every action is
 logged to Supabase table **`bilstjori_vakt`** (`employee, action, co_id, co_nafn,
 uttaeki_id, lat, lng, created_at`; RLS off, anon full) via `logAct(action,opts)`
 with best-effort `navigator.geolocation` (watchPosition). Actions: `visit`
@@ -392,7 +392,7 @@ af-haki notandinn þær eftirá troða þær sér ekki inn aftur.
 ## Þjónustuver póstar (síða patch 309, 2026-08-20)
 
 Ný SJÁLFSTÆÐ síða fyrir kúnnaþjónustu Í PÓSTI — aðskilin frá Þjónustuborði
-(patch 231, sem er áfram innra skipulag). Nákvæmt 231-mynstur: `NAV_KEY=
+(nú 368; patch 231 sem hún var smíðuð við er farinn, d3eb1b78). Sama mynstur og 231 var: `NAV_KEY=
 'thjonustuver-postar'`, view `view-thjonustuver-postar`; `injectNav()` bætir
 `.vnav-btn`, `ensureView()` klónar `.view`-klasann inn í content-panel,
 `patchSwitchView()` grípur `App.switchView('thjonustuver-postar')`, deep-link
@@ -407,7 +407,7 @@ boot). Sidebar-röð (patch 68) við hlið Reikninga-pósts. `waitForSB()` bíð
 - **✨ AI-yfirlit:** `/api/postur-triage` `mode:'thjonustuver'` (Haiku, server-hlið)
   → summary/ask/details[]/contact/needs_action/reply_hint. ⚠️ briefs eru lyklaðar á
   STRENG (Object.keys) en póst-id úr RPC er tala → nota `String(id)` við get/has/set.
-- **Svarstaða:** cutOf (patch 286) + eigin „svarað"-merki í `localStorage.tvp_handled`
+- **Svarstaða:** cutOf (patch 286) + eigin „svarað"-merki (síðan 21.09 í `samskipti_stada`, ekki lengur `localStorage.tvp_handled` — sjá Lærdóm 10.10)
   (lifir innsognstöf) + AI `needs_action` (þaggar „takk"-pósta) + 150 d. recency-gólf.
 - **Aðgerðir:** ✍️ Svara (uppkast `/api/postur-reply` → sending gegnum AppMail/
   email-send eins og patch 240), → Flytja á Þjónustuborð (`thjonustubeidni`,

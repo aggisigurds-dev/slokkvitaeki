@@ -1,0 +1,132 @@
+[
+ {
+  "skra": "css/theme-handoff/theme.css",
+  "lina": 23,
+  "forgrunnur": "#0f172a",
+  "bakgrunnur": "#060607 (versta stöð af 4)",
+  "hlutfall": 1.13,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "/* ---- page shell ---- */ .app-page"
+ },
+ {
+  "skra": "js/patches/487-hunter.js",
+  "lina": 166,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#d3ab4e (versta stöð af 6)",
+  "hlutfall": 2.16,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "'.hu2-chip.gull"
+ },
+ {
+  "skra": "js/patches/487-hunter.js",
+  "lina": 216,
+  "forgrunnur": "#a1a9b6",
+  "bakgrunnur": "#ffffff",
+  "hlutfall": 2.37,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "'.hu2-box"
+ },
+ {
+  "skra": "js/patches/488-vidbotar-uttekt.js",
+  "lina": 272,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#b8860b",
+  "hlutfall": 3.25,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "' + '#_vb-box .vb-n"
+ },
+ {
+  "skra": "css/theme-handoff/theme.css",
+  "lina": 114,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#2f9d63 (versta stöð af 4)",
+  "hlutfall": 3.43,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": ".abtn5[data-on=\"1\"]"
+ },
+ {
+  "skra": "css/theme-scoped.css",
+  "lina": 97,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#2f9d63 (versta stöð af 4)",
+  "hlutfall": 3.43,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": ".thm .abtn5[data-on=\"1\"]"
+ },
+ {
+  "skra": "css/theme-handoff/theme.css",
+  "lina": 104,
+  "forgrunnur": "#64748b",
+  "bakgrunnur": "#dbe0e9 (versta stöð af 2)",
+  "hlutfall": 3.59,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "/* small labelled action buttons (Aðgerðir column) */ .abtn5"
+ },
+ {
+  "skra": "css/theme-scoped.css",
+  "lina": 85,
+  "forgrunnur": "#64748b",
+  "bakgrunnur": "#dbe0e9 (versta stöð af 2)",
+  "hlutfall": 3.59,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": ".thm .abtn5"
+ },
+ {
+  "skra": "js/patches/492-adalmal.js",
+  "lina": 135,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#2d8a4e (versta stöð af 2)",
+  "hlutfall": 4.32,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "' + V + ' .ad-at button._on"
+ },
+ {
+  "skra": "js/patches/491-vasinn.js",
+  "lina": 210,
+  "forgrunnur": "#ffffff",
+  "bakgrunnur": "#2d8a4e (versta stöð af 2)",
+  "hlutfall": 4.32,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "' + V + ' .va-senda button"
+ },
+ {
+  "skra": "css/theme-handoff/theme.css",
+  "lina": 86,
+  "forgrunnur": "#64748b",
+  "bakgrunnur": "#f1f5f9",
+  "hlutfall": 4.34,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": ".chip--neutral"
+ },
+ {
+  "skra": "css/theme-scoped.css",
+  "lina": 71,
+  "forgrunnur": "#64748b",
+  "bakgrunnur": "#f1f5f9",
+  "hlutfall": 4.34,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": ".thm .chip--neutral"
+ },
+ {
+  "skra": "js/patches/488-vidbotar-uttekt.js",
+  "lina": 279,
+  "forgrunnur": "#64748b",
+  "bakgrunnur": "#f1f5f9",
+  "hlutfall": 4.34,
+  "krafa": 4.5,
+  "fellur": true,
+  "regla": "' + '#_vb-box .vb-pill.sk"
+ }
+]

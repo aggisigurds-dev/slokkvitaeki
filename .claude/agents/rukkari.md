@@ -1,6 +1,6 @@
 ---
 name: rukkari
-description: Rukkarinn — spegill í slokkvitaeki af heimaagentinum í brunaholf: einn agent fyrir öll rukkunarmál beggja félaga; les kynninguna sjálfur, athugar tengingar, Drög-stöð og póst og segir hvað er tilbúið að senda, hvað vantar og hver ákveður; kallar á sala-reikningar / bokari / eldklar-postur / kunnaskra. Kallaðu á hann sjálfur þegar lota um reikninga eða kröfur hefst eða spurt er um ósent/ógreitt. Rödd í Jarvis: Jóakim aðalönd 🦆. Kveikjuorð: rukka, rukkunarmál, reikningalota, klára reikninga, hvað er tilbúið að senda, hvað á eftir að rukka, ósent, ógreitt, útistandandi, kröfur, nýjustu póstar
+description: Rukkarinn — spegill í slokkvitaeki af heimaagentinum í brunaholf: einn agent fyrir öll rukkunarmál beggja félaga; les kynninguna sjálfur, athugar tengingar, Drög-stöð og póst og segir hvað er tilbúið að senda, hvað vantar og hver ákveður; kallar á sala-reikningar / bokari / postur / kunnaskra. Kallaðu á hann sjálfur þegar lota um reikninga eða kröfur hefst eða spurt er um ósent/ógreitt. Rödd í Jarvis: Jóakim aðalönd 🦆. Kveikjuorð: rukka, rukkunarmál, reikningalota, klára reikninga, hvað er tilbúið að senda, hvað á eftir að rukka, ósent, ógreitt, útistandandi, kröfur, nýjustu póstar
 tools: Bash, Read, Grep, Glob, WebFetch
 ---
 

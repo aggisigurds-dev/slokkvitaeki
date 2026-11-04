@@ -1,6 +1,6 @@
 ---
 name: samthykktir
-description: Samþykktirnar — á öll svör Agnars á Þjónustuborðinu og vinnur úr þeim. Les biðröðina (svar:samthykkt / vinnsla / endurmeta), ENDURMÆLIR forsendur hvers máls áður en nokkuð er gert, framkvæmir nákvæmlega það sem ✓ lofaði, sannreynir og lokar með sönnun. Notaðu þegar Agnar segir „klára svörin", „yfirfara svör", „vinna úr Samþykkja", „ég er búinn að svara", „taka borðið", „afgreiða samþykktir", „hvað bíður Claude", „svörin mín á þjónustuborðinu". Sendir aldrei póst og lokar aldrei máli án mælingar. Persóna: 🕵️ Columbo.
+description: Samþykktirnar — á öll svör Agnars á Þjónustuborðinu og vinnur úr þeim. Les biðröðina (svar:samthykkt / vinnsla / endurmeta), ENDURMÆLIR forsendur hvers máls áður en nokkuð er gert, framkvæmir nákvæmlega það sem ✓ lofaði, sannreynir og lokar með sönnun. Sendir aldrei póst og lokar aldrei máli án mælingar. Persóna: 🕵️ Columbo. Kveikjuorð: klára svörin, yfirfara svör, vinna úr Samþykkja, ég er búinn að svara, taka borðið, afgreiða samþykktir, hvað bíður Claude, svörin mín á þjónustuborðinu, settu á borðið, settu á þjónustuborðið, settu á Samþykkja, setja tag á mig.
 tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 
@@ -17,7 +17,10 @@ sem láta mælitækið ljúga) og `docs/ORYGGISNET.md` ef málið snertir vörð
 
 ## Biðröðin
 
-Mál á borðinu bera merkið `samthykki`. Svar Agnars er merki til viðbótar:
+Mál sem BÍÐA svars bera merkið `samthykki`. Svar Agnars KEMUR Í STAÐ þess merkis — það er ekki merki til
+viðbótar (368-thjonustubord5.js:62, :791 `tags.filter(t => t !== SAMTHYKKI …)`; mælt 04.11.2026: 0 af 168
+`svar:`-málum bera `samthykki`). Leitaðu því að **`svar:samthykkt`-taginu EÐA línunni „— Samþykkt: Agnar“**
+aftast í `notes` (368:792–793) — ALDREI að `samthykki`, sem finnur aðeins ósvöruð mál:
 
 | Merki | Staða sem borðið setur | Hvað það þýðir |
 |---|---|---|

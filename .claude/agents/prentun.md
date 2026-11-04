@@ -1,6 +1,6 @@
 ---
 name: prentun
-description: QR-merkin og miðaprentunin — Brother PT-P750W, raðnúmerakerfið, QR-skanninn og allar prentleiðirnar. Notaðu þegar miði prentast vitlaust/lítill/óskannanlegur, QR skannast ekki, bæta á við prentleið eða breyta miðasniði, og fyrir raðnúmera-spurningar (S0001, GY-0012 …); kallaðu á hann sjálfur þegar sala/verkbeiðni á að prenta QR. Rödd í Jarvis: 🏷️ DeVito. Kveikjuorð: prentun, prenta merki, QR, QR-miði, miði, Brother, PT-P750W, raðnúmer, skanni, strikamerki.
+description: QR-merkin og miðaprentunin — Brother PT-P750W, raðnúmerakerfið, QR-skanninn og allar prentleiðirnar. Notaðu þegar miði prentast vitlaust/lítill/óskannanlegur, QR skannast ekki, bæta á við prentleið eða breyta miðasniði, og fyrir raðnúmera-spurningar (S0001, GY-0012 …); kallaðu á hann sjálfur þegar sala/verkbeiðni á að prenta QR. Rödd í Jarvis: 🏷️ DeVito. Kveikjuorð: prentun, prenta merki, QR, QR-miði, miði, Brother, PT-P750W, raðnúmer, S-raðnúmer, tvítekið raðnúmer, auður miði, skanni, strikamerki.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
@@ -60,9 +60,9 @@ Og `QR.svg()` í `js/utils.js:107` er **FALSKUR QR** (hash+LCG random-fylling,
 - `js/qrbulkprint.js` — ÓSKRÁÐIR auðir miðar (líma á tæki, skrá svo í Geymslu/
   Lánstæki). Prefixar: `NEW/GY/LN/SL/RS/FY/VI`. Layout `brother4` sjálfgefið
   (4 í röð, `@page 100mm auto`, raðnr lóðrétt 6pt). Prent-CSS sprautað í AÐAL-
-  skjalið (ekkert popup — popup-blocker fix). ⚠️ **Þekkt villa** `nextSerialBlock`
-  (:19-23): leitin gerir ráð fyrir bandstriki (`NEW-%`) en útgáfan skrifar ÁN
-  bandstriks (`NEW0001`) → hver lota byrjar aftur á 0001 = **tvítekin raðnúmer**.
+  skjalið (ekkert popup — popup-blocker fix). `nextSerialBlock` (:17-23)
+  finnur nú bæði form (`SL-0206` og `VI0019`) og heldur áfram frá hæsta númeri —
+  tvítekin-raðnúmera-villan var **lagfærð 23.10.2026** (samþykkt mál #1235).
 - `js/qrprint.js` — stakur miði úr detailview („🖨 Prenta merki"), hamur í
   `localStorage._qr_mode`: `qr_only` 24×24mm / `qr_text` 24×40mm.
 - patch 224 — bulk-QR af úttektarlista (A4-ark í popup, 36mm myndir).
@@ -77,7 +77,7 @@ Og `QR.svg()` í `js/utils.js:107` er **FALSKUR QR** (hash+LCG random-fylling,
 
 ## Skanninn — `js/qrscan.js` v3 (`window.openQRScanner`)
 
-- jsQR hlaðið í `index.html:518` (jsdelivr 1.4.0); 100ms afkóðunarlykkja.
+- jsQR hlaðið EFTIR PÖNTUN (lazy) þegar skanninn opnast (index.html:689, js/scanner.js); 100ms afkóðunarlykkja.
 - Myndavélastigi: environment+1920×1080+continuous-focus → environment → hvað sem er.
 - Stjórntæki byggð **600ms EFTIR `play()`** (getCapabilities tómt fyrr):
   nær-fókus, **tap-to-focus**, zoom ±, vasaljós. Smámiðavandinn ER fókusinn —
@@ -104,7 +104,7 @@ Og `QR.svg()` í `js/utils.js:107` er **FALSKUR QR** (hash+LCG random-fylling,
 
 ## Lærdómur
 
-- **16.10.2026** — Per-tækis reglan 15.10.2026: localStorage._qr_mode (qr_only/qr_text) fluttist í Vidmot í qrprint.js. OPIÐ: nextSerialBlock-villan í qrbulkprint.js (leitar NEW-% en skrifar NEW0001 → hver lota byrjar á 0001, tvítekin raðnúmer) er ENN í kóðanum (skráin óbreytt síðan 01.07.2026) — sett sem samþykkismál á Þjónustuborðið 16.10. (js/qrprint.js, js/qrbulkprint.js)
+- **16.10.2026** — Per-tækis reglan 15.10.2026: localStorage._qr_mode (qr_only/qr_text) fluttist í Vidmot í qrprint.js. nextSerialBlock-villan í qrbulkprint.js (leitaði NEW-% en skrifaði NEW0001 → tvítekin raðnúmer) var sett sem samþykkismál 16.10 og LAGFÆRÐ 23.10.2026 (#1235). (js/qrprint.js, js/qrbulkprint.js)
 
 - **16.10.2026** — Uppgjör lota 16.10.2026: (1) Stillingar prentun.skip_unit_prompt (sjálfgefið true í js/patches/85-app-settings.js:67; js/patches/106-checkout-unit-prompt.js:382 hoppar þá yfir „Skrá tæki fyrir verkbeiðni") og default_print_qr_label (false) slökkva á popup-gluggunum tveimur í Sölu; rofar í Stillingar → Prentun (18.05.2026). (2) Merkið er EINN staður: js/patches/169-logo-customization.js SlokkLogo.imgHtml({heightPx, absoluteUrl}) les AppSettings.branding.logo_url (/img/logo.png eða data:-URL úr Stillingar → Branding), 3:1 rammi, object-fit:contain, 2 MB; allir sniðmátapatchar (10, 50, 94, 144, 150, 168) nota hann; gildra: absoluteUrl bætti origin framan við data:-URL → brotin mynd (lagað: aðeins rót-afstæðar slóðir). (3) Magnstikan í 00-legacy „Prenta merki" leitar í DB.cache.units (uttaeki) en verkbeiðnatæki eru í verklidur → „Fann ekki tækin í skrá". (4) Könnuðir 01.10 fundu 13 prentleiðir, 2 lengdarvalsglugga (139 #_pbl-picker, 08 #_qrlc_modal), 2 tækjaglugga (78, 101); „Prenta kvittun" prentaði MIÐA (lagað í Verkspjaldi áfanga 0).
 

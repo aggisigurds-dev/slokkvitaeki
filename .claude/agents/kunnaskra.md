@@ -1,6 +1,6 @@
 ---
 name: kunnaskra
-description: Viðskiptavina-líkanið (customers_base/fyrirtaeki/uttaeki/vidskiptavinir), DB-skema, base-sameining, kerfis-kort og póst-merki/póstnúmer á fyrirtækjum. Notaðu fyrir kúnna, kennitölur, gagnaskema og tengingar; kallaðu á hann sjálfur, án þess að Agnar nefni hann, þegar fyrirtæki er stofnað, sameinað, endurnefnt eða tengt kt, eða þegar tækjafjöldi/staður á fyrirtækjakorti stemmir ekki. Kveikjuorð: kennitala, kt, customers_base, rekstrarfélag, sameina, tvítak, 999999, systkini-kt, umsjónaraðili, draugatæki, endurnefna fyrirtæki, nýtt fyrirtæki, fyrirtækjakort, Allir viðskiptavinir.
+description: Viðskiptavina-líkanið (customers_base/fyrirtaeki/uttaeki/vidskiptavinir), DB-skema, base-sameining og póst-merki/póstnúmer á fyrirtækjum. Notaðu fyrir kúnna, kennitölur, gagnaskema og tengingar; kallaðu á hann sjálfur þegar fyrirtæki er stofnað, sameinað, endurnefnt eða tengt kt, eða tækjafjöldi/staður á fyrirtækjakorti stemmir ekki. Kveikjuorð: kennitala, kt, customers_base, rekstrarfélag, sameina, tvítak, tvískráð, 999999, systkini-kt, umsjónaraðili, draugatæki, nýtt fyrirtæki, fyrirtækjakort, Allir viðskiptavinir, Hunter, sölulistar, Samskiptaborð, Tengiliðir, rekstrarfelog.html.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
@@ -8,7 +8,7 @@ tools: Bash, Read, Grep, Glob, Edit
 
 
 ## Charlize — lestu fyrst
-Áður en þú breytir kerfi eða fullyrðir um það: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','brunaholf','baedi','kunni') and topic in ('kunnaskra','kunni','kunnar','sameining','rekstrarfelog','umsjonaradilar','companies','falskflogg','vidskiptavinir','thjonustulisti') order by created_at desc;` Fyrir eitt fyrirtæki: `select charlize_yfirlit('<kt>');`. Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
+Áður en þú breytir kerfi eða fullyrðir um það: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','brunaholf','baedi','kunni') and topic in ('kunnaskra','kunni','kunnar','sameining','rekstrarfelog','umsjonaradilar','companies','falskflogg','vidskiptavinir','thjonustulisti') order by created_at desc;` Fyrir eitt fyrirtæki: `select charlize_yfirlit('<kt MEÐ bandstriki>');` (lagað 04.11.2026, virkar um anon). Kasti það samt villu: lestu `v_charlize_kunni` + `v_charlize_contacts_active` beint (kt með bandstriki) og segðu frá villunni. SQL-lestur: Supabase MCP execute_sql (lesaðeins) eða REST með anon-lykli úr js/config.js. Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
 
 ---
 
@@ -20,7 +20,7 @@ tools: Bash, Read, Grep, Glob, Edit
 ## Database schema
 
 ```
-customers_base   1082 rows — the CANONICAL customer spine, one per kt (root of
+customers_base   1213 rows (04.11.2026; 1082 þegar textinn var skrifaður) — the CANONICAL customer spine, one per kt (root of
                  the data model; fyrirtaeki/vidskiptavinir/solur link to it)
                  (id bigint PK, kennitala NOT NULL, nafn, simi, netfang,
                   heimilisfang, greidsluskilmali, source_v_id, source_f_id,
@@ -35,25 +35,28 @@ vidskiptavinir   individual customers
                  (id, kennitala, nafn, simi, netfang, heimilisfang, athugasemdir,
                   created_at, afslattur_pct, farsimi, vefsida, tengilidur,
                   greidsluskilmali, customer_base_id, deleted_at)
-fyrirtaeki       1358 rows — companies / service SITES (one kt may own many =
+fyrirtaeki       1349 rows (04.11.2026) — companies / service SITES (one kt may own many =
                  rekstrarfélag). This is the service branch of the spine.
                  (id bigint PK, nafn NOT NULL, kennitala, simi, netfang,
                   heimilisfang, tengiliður, athugasemdir, created_at,
                   afslattur_pct, farsimi, vefsida, tengilidur, greidsluskilmali,
                   status ('virkur'), er_i_thjonustu bool, deleted_at,
                   customer_base_id, review_flag bool, review_note, is_bank_only
-                  bool, banner_note, payday_delivery)
+                  bool, banner_note, payday_delivery,
+                  + frá 2026-08: postnumer, discount_tier_id, stadur_nr,
+                  skyrsla_med_krofu, plan_note, bokunarnumer, ovisst,
+                  ovisst_astaeda, ovisst_sett, vidbota_upplysingar, eign)
                  ⚠️ DUPLICATE contact column: both `tengiliður` (accented) AND
                  `tengilidur` (ascii) exist — Bakendi (patch 232) flags this.
                  `er_i_thjonustu` marks a site as in active service.
-uttaeki          306+ equipment rows
+uttaeki          6571 equipment rows (04.11.2026)
                  (id, serial, type, size, client, location, last_insp, next_insp,
                   status, pressure, created_at, phone, notes)
 lanstaeki        loaned-out equipment
                  (id, serial, type, size, status, client, location, loaned_at, notes, created_at)
 verkbeidnir      jobs / work requests
                  (id, num, status, customer, phone, dropoff, pickup, notes, created_at, verd)
-solur            25+ sales as of 2026-05-01
+solur            1134 sales (04.11.2026)
                  (id, num, starfsmadur, customer_nafn, customer_id, linur (JSON),
                   upphaed_an_vsk, vsk_upphaed, afslattur, samtals, greitt_med,
                   athugasemdir, created_at)
@@ -62,10 +65,10 @@ solur            25+ sales as of 2026-05-01
                  stores that m.vsk saved amount; pre-2026-06-12 rows stored the
                  ex-VAT kr value. SalaInvoice.renderFromSale auto-detects per
                  row by checking which interpretation reproduces `samtals`.
-sala_transactions  32 rows; older sales-tracking table
+sala_transactions  965 rows (04.11.2026); older sales-tracking table
                    (id, customer, kennitala, items, total, type, status,
                     invoice_amount, paid_at, notes, created_at)
-vorur            11 products (id, nafn, flokkur, mynd, verd_an_vsk, vsk_prosenta,
+vorur            148 products (04.11.2026) (id, nafn, flokkur, mynd, verd_an_vsk, vsk_prosenta,
                               birgdir, virkt, lysing)
 verkdagbok       (id uuid PK, created_at, job_date, fyrirtaeki, athugasemdir,
                   duft_size/h/y, lettvatn_size/h/y, kolsyra_size/h/y,
@@ -132,9 +135,9 @@ Sjálfstæð síða (view `view-sameining`, slug `#sameining`, hliðarstiku-hnap
 „🔗 Sameining") sem klárar **`customer_base_id` FK-tengingu** sem byrjaði 2026-06-04
 en var hálf-flutt. Þrír undirflipar:
 
-- **🏢 Fyrirtæki** — 325 raðir með `customer_base_id IS NULL`
-- **👤 Viðskiptavinir** — 23 raðir með `customer_base_id IS NULL`
-- **💳 Sölur** — 93 raðir með `customer_base_id IS NULL` (gamla `customer_id → fyrirtaeki`)
+- **🏢 Fyrirtæki** — 19 raðir (04.11.2026; 325 í upphafi) með `customer_base_id IS NULL`
+- **👤 Viðskiptavinir** — 42 raðir (04.11.2026) með `customer_base_id IS NULL`
+- **💳 Sölur** — 82 raðir (04.11.2026) með `customer_base_id IS NULL` (gamla `customer_id → fyrirtaeki`)
 
 Suggestion engine flaggar TILLÖGU per röð:
 - 🟢 high = nákvæmt kt-match (digits-only í gegnum `ktDigits()`)

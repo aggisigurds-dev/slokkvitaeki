@@ -1,15 +1,6 @@
 ---
 name: elon-musk
-description: >
-  Elon Musk — byggingarstjóri rafkerfisins. As-built yfir tengingar á staðnum:
-  útreikningar (verð, VSK, afsláttur, KPI, TÆKI, FULLBÚIÐ), skjala-lyklar
-  (fyrirtaeki_id, ekki kt), borð/view, perur (._yr, 🧾, 📅 SOURCE vs FILTER) og
-  — tímabundið, enginn annar á þau — Teikningar-aðgerðin og búnaðargreining á
-  teikningum. Fyrsta verk: docs/RAFKERFI.md. Aldrei endurstíla ._yr, sameina
-  hótel á kt eða keyra deploy.js; vörðu línur → netvordur fyrst. Kallaðu á
-  hann sjálfur þegar pera eða tala á borði stemmir ekki.
-  Kveikjuorð: árs, ársreitur, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, RAFKERFI,
-  röng join, tækjafjöldi, teikningar, búnaðargreining, EI-60, veggjavél.
+description: Elon Musk — byggingarstjóri rafkerfisins. As-built yfir tengingar á staðnum: útreikningar (verð, VSK, afsláttur, KPI, TÆKI, FULLBÚIÐ), skjala-lyklar (fyrirtaeki_id, ekki kt), borð/view og perur (._yr, 🧾, 📅 SOURCE vs FILTER). Teikningar og búnaðargreining → Arnold. Fyrsta verk: docs/RAFKERFI.md. Aldrei endurstíla ._yr, sameina hótel á kt eða keyra deploy.js; vörðu línur → netvordur fyrst. Kallaðu á hann sjálfur þegar pera eða tala á borði stemmir ekki. Kveikjuorð: árs, ársreitur, pera, FULLBÚIÐ, VANTAR, SOURCE, FILTER, RAFKERFI, röng join, tækjafjöldi, year_factcheck, gap-flöggur, Fyrirtæki í þjónustu, skoðunarmánuður, Í vinnslu, Gleymt.
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -309,7 +300,7 @@ sjúkratöskur · Úðastútur · Notaðir kútar.
 
 `type`/`size` VERÐA að vera strengirnir sem eru þegar ráðandi í grunni, annars
 lendir `categoryOf()` þeim í `annad` og verðlistinn finnur þá ekki:
-`Léttvatn|6 L` · `ABC Duft|6 kg` · `ABC Duft|2 kg` · `CO2|5 kg` · `CO2|2 kg` ·
+`Léttvatn|6 L` · `ABC Duft|6 kg` · `ABC Duft|2 kg` · `CO₂|5 kg` · `CO₂|2 kg` (CO₂ með lágstöfuðu ₂ — 576 virk tæki 04.11.2026, 0 með `CO2`) ·
 `Brunaslanga|null` · `Reykskynjari|null` · `Eldvarnarteppi|null`.
 
 **Tvennt sem á að víkja frá takkanum:**
@@ -337,7 +328,7 @@ grunni eftir á. „Vistað" án lesturs er ekki sannreynt.
 
 ## Nýtt úr Charlize og lotum (28.10.2026)
 
-Teikningar-aðgerðin og búnaðargreining á teikningum höfðu engan skýran eiganda í lotu-uppskerunni 28.10.2026 — þau eru skráð á þig tímabundið.
+Teikningar-aðgerðin, búnaðargreining og TurboPaint eru hjá **Arnold** (skill `arnold`, frá 29.10.2026). Punktarnir hér að neðan um teikningar eru bakgrunnur — ákvarðanir og vinna þar fara til Arnolds.
 
 - **Verkaskipting:** TurboPaint (kjarni-repo, `kjarni.vercel.app/kjarni/turbopaint`) er vinnuvélin (greining, veggir, 3D); Slökkvitæki-teikningaglugginn (383) er stíluð sýn sem les niðurstöðurnar. Veggir fara á milli í `teikning_bord.haedir[].veggjaLinur [{p:[x,y,…],t}]` í punktum FRUMMYNDAR — TurboPaint „Vista í úttekt" skrifar, 383 (3D) les. Heildaryfirferð 15.10.2026: minnisblaðið HT-13.10-TEIKNINGAR (liggur ósamstillt á einni tölvu, ekki í repo). [C#724][C#838]
 - ÖLL skrif á `teikning_bord` fara um `TeiknVistun.skrifa/sja/sameinaVidFerska` (patch 375): röðin lesin fersk rétt fyrir skrif og sameinuð hafi önnur vél skrifað síðan; aldrei skrifa beint framhjá. [C#748]
@@ -348,6 +339,6 @@ Teikningar-aðgerðin og búnaðargreining á teikningum höfðu engan skýran e
 - Aðferðir sem virkuðu EKKI við veggjagreiningu (samanburður á 7 teikningum 05.10.2026 — ekki reyna aftur): `floorplan-to-3d` (MIT), `FloorplanToBlender3d` (GPL), `DeepFloorplan` (GPL). [C#863]
 - Eitt landnúmer getur átt mörg hús (L 199350 Höfðatorg: Bríetartún 9-11, Katrínartún 2, Borgartún 8-16A) — hæðatillögur út frá teikningum lóðar má aldrei taka án þess að sía á húsið. [C#566]
 - Skriftur búnaðargreiningar (`bgr_verk.cjs`, `pdf_ur_appinu.cjs`, `vista_vidhengi.cjs`, `skipta_skyrslu.cjs`) hörðkóða playwright-slóð `C:/Users/Slokkvitaeki/luna-bridge` sem er ekki til á þessari vél — rétta slóðin er `C:/projects/luna-bridge`. [lota 877c9427]
-- `uttaeki.status` hefur fimm gildi (16.10.2026): active 5.812 · urelt 471 · „Í lagi" 138 · ok 33 · loaned 9 — Ársskoðun telur aðeins `active`; hvort normalisera sé ákvörðun Agnars. [C#849]
+- `uttaeki.status` hefur fimm gildi (04.11.2026): active 5.882 · urelt 512 · „Í lagi" 138 · ok 35 · loaned 4 — Ársskoðun telur aðeins `active`; hvort normalisera sé ákvörðun Agnars. [C#849]
 - „Í vinnslu" í Ársskoðun kviknar af OPINNI ferð (`inspection_trips`) með hökum og engum reikningi, slokknar þegar reikningur er til; handvirkt OFF = -1. Blátt „á verkstæði" er LEITT (`status=loaned`) og skrifar aldrei `uttaeki`. [C#886]
 - Reikningur búinn til með beinni SQL-innsetningu kveikir EKKI á Ársskoðunar-þrepinu „reikningur" — `ArsWorkflow.markInvoice` keyrir aðeins úr `finalizeVisit` (patch 165). [C#559]

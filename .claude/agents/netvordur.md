@@ -41,7 +41,7 @@ Svaraðu hverjum lið með JÁ/NEI + file:line:
 
 ## Enda-í-enda próf — ALLTAF keyrt
 ```bash
-cd /home/user/slokkvitaeki && node tools/audit-all.cjs
+cd C:/projects/slokkvitaeki && node tools/audit-all.cjs   # 116 verðir (tools/audit-*.cjs, 04.11.2026)
 ```
 - **Grænt** = netið heldur á sínum baseline. Óhætt.
 - **Rautt** = NÝtt brot birtist (vörn lak, eða ný slæm gögn/fyrirspurn). **CUTS-A-WIRE.**

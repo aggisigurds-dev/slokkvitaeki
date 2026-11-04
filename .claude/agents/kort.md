@@ -1,6 +1,6 @@
 ---
 name: kort
-description: Kortin og geocode-kerfið — Leaflet, mapfix-merkin, Nominatim-proxyið, Staðfangaskrá HMS, geocode_cache lögin þrjú og kill-dots sagan. Notaðu þegar pinnar vantar/eru rangir, geocode bregst, kort frýs eða birtist grátt, appelsínugulir punktar birtast aftur, eða þegar bæta á korti á nýja síðu; kallaðu á hann sjálfur þegar heimilisfang lendir á röngum stað. (Leiðsögn/Bílstjóri/Aksturslisti sem SÍÐUR → bord-flettur.) Rödd í Jarvis: 🗺️ Ramsay. Kveikjuorð: kort, pinnar, hnit, geocode, Leaflet, kill-dots, Nominatim, Staðfangaskrá, loftmynd, bláa slikjan á kortum, grátt kort.
+description: Kortin og geocode-kerfið — Leaflet, mapfix-merkin, Nominatim-proxyið, Staðfangaskrá HMS, geocode_cache lögin þrjú og kill-dots sagan. Notaðu þegar pinnar vantar/eru rangir, geocode bregst, kort frýs eða birtist grátt, appelsínugulir punktar birtast aftur, eða þegar bæta á korti á nýja síðu; kallaðu á hann sjálfur þegar heimilisfang lendir á röngum stað. (Leiðsögn/Bílstjóri/Aksturslisti sem SÍÐUR → bord-flettur.) Rödd í Jarvis: 🗺️ Ramsay. Kveikjuorð: kort, pinnar, hnit, hnitalaus, pinni á röngum stað, firmanafn-lyklar, geocode, Leaflet, kill-dots, Nominatim, Staðfangaskrá, loftmynd, bláa slikjan á kortum, grátt kort.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
@@ -18,19 +18,19 @@ gamla source-layout taflan segði það — lénið býr í fjórum stöðum:
 
 ## mapfix.js v4 — „cache-first instant rendering"
 
-- `instantRender()` (:135) les hnit AÐEINS úr cache, geocodar aldrei.
+- `instantRender()` (:154) les hnit AÐEINS úr cache, geocodar aldrei.
 - **Merki eru `L.divIcon` 16px HTML-hringir** (`.mapfix-marker`), ALDREI vektorar
-  — `L.circleMarker` er monkey-patchað í no-op (00-legacy:1518).
-- Litir (`statusFor`, :63): `#dc2626` útrunnið · `#b45309` rennur út (30d) ·
+  — `L.circleMarker` er monkey-patchað í no-op (00-legacy:1551).
+- Litir (`statusFor`, :82): `#dc2626` útrunnið · `#b45309` rennur út (30d) ·
   `#1a7f4b` í lagi · `#6b7280` engar dags. Samningskúnnar án tækjaraða fá
-  `arsContractStatus` (:116, fimmti liturinn `#475569` „Á dagskrá").
+  `arsContractStatus` (:135, fimmti liturinn `#475569` „Á dagskrá").
 - **Hver fær pinna** (:149-162): virk `uttaeki`-röð (parað á NAFN-streng, ekki id!)
   EÐA samningur (`arsskodun_customers`/`brunakerfi_customers` í app_settings).
   Walk-in/sölukúnnar viljandi útilokaðir.
 - Popup-hlekkur → `window._openCompanySafe(coId)` (:11) — skiptir í
   view-companies ÁN þess að rasa við async `Companies.load()`; notað af
   pötchum 13/18/77.
-- `uppfaeraSweep` (:222) er EINA geocode-leiðin — raðbundið, **1000ms per
+- `uppfaeraSweep` (:241) er EINA geocode-leiðin — raðbundið, **1000ms per
   heimilisfang**. `boundsFit` gerist EINU SINNI (:188-193) svo kortið kippist
   ekki til meðan cache fyllist.
 - Deep-link API: `MapFix.focusCompany(coId,{zoom:16})` — 20 tilraunir á 250ms,
@@ -94,7 +94,7 @@ Google-hnit inn í `_slokk_gc`.
 ## Nágrannar (ekki tvítaka — vísa)
 
 Leiðsögn (161), Bílstjóri (219, skrifar `bilstjori_vakt`), Aksturslisti (268,
-polyline-ferlar, starfsmenn harðkóðaðir Hákon/Binni/Elías/Agnar) eiga heima hjá
+polyline-ferlar, starfsmenn úr `BordStarfsmadur.list()` (268:25), varalisti í kóða) eiga heima hjá
 **`bord-flettur`** sem SÍÐUR — hér er bara kortvélin þeirra. `navfix.js` hookar
 `_slokk_map` popupin („bæta á leið", röð í `localStorage._slokk_route`, deilt
 með 161) og RE-hookar á 1500ms ef kortið skiptir um identity.

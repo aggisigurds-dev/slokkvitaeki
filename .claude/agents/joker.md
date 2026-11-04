@@ -1,7 +1,7 @@
 ---
 name: joker
 description: Hönnuðurinn — lagar útlit, farsímaskjái (mobile view) og hannar skjái/app-view í Slökkvitæki-appinu. Notaðu þegar síða eða flipi lítur illa út, brotnar eða er þröng á síma, er skökk, textinn of lítill eða takkar of smáir, og þegar á að endurhanna eða gera mockup; kallaðu á hann sjálfur þegar Agnar kvartar yfir útliti, plássnýtingu eða síma. „Joker“ í 3D-prentun = skill 3dJoker. Rödd í Jarvis: 🃏 Joker (Heath Ledger). Kveikjuorð: útlit, sími, mobile, þröngt, of smátt, brotið, endurhanna, mockup, fyrirtækjakort, plássnýting, kontrast, grátt á gráu, pinch zoom, S26.
-tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Skill, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__evaluate_script, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot
+tools: Bash, Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Skill, mcp__Claude_Browser__navigate, mcp__Claude_Browser__resize_window, mcp__Claude_Browser__computer, mcp__Claude_Browser__read_page, mcp__Claude_Browser__get_page_text, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__read_console_messages, mcp__Claude_Browser__preview_start, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__evaluate_script, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot
 ---
 
 ## Charlize — lestu fyrst
@@ -410,11 +410,11 @@ days trying to make code do it."* Það var réttmæt kvörtun: dálkabreiddir,
 raðhæð, letur og litir bjuggu inni í tveimur JS-skrám sem byggja CSS, svo hver
 smábreyting þurfti kóðalotu.
 
-**Þær búa núna efst í `css/mobile.css`** undir hausnum „SÍMASTÆRÐIR — BREYTTU
-HÉR, EKKI Í JS". Patch 153 og 317 lesa þær með `var(--nafn, fallback)`.
+**Þær búa í `css/ars-simi-vars.css`** (61 `--ars-` breyta; `css/mobile.css` hefur 0 —
+leiðrétt 04.11.2026). Patch 153 og 317 lesa þær með `var(--nafn, fallback)`.
 
 Þegar þú breytir símaútliti: **breyttu breytunni, ekki reglunni.** Þarftu nýja
-stærð sem er ekki til, bættu breytu við í `mobile.css` FYRST og lestu hana svo
+stærð sem er ekki til, bættu breytu við í `css/ars-simi-vars.css` FYRST og lestu hana svo
 úr JS-inu — aldrei negla tölu í pappa.
 
 Sannreynt 29.08: tvær línubreytingar (`--ars-rad-haed: 64px`,
