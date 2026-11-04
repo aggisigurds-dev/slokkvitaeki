@@ -125,6 +125,39 @@
     return myndir.get(url);
   }
 
+  // SKÝRARI FORSKOÐUN (Agnar 04.11.2026, Nesdekk 2. hæð: „sæktu skýrari mynd á 2. hæð"): drawImage minnkar skönnun úr ~4400 í ~1100
+  // díla í EINU skrefi og hárfínar línur (1–2 díla á frummynd) detta út — blaðið varð fölt og loðið. Hér er hver reitur
+  // minnkaður í dekksta díl og meðaltal (línur halda sér), og birtustigið teygt svo pappírinn verði hvítur og línurnar svartar.
+  // Skilar false ef ekki þarf að minnka (mynd ≤ 1,3 × markstærð) eða striginn leyfir ekki lestur — þá teiknar kallinn eins og áður.
+  function skarpMinnka(x, img, sx, sy, sw, sh, tw, th) {
+    if (!(sw > tw * 1.3 || sh > th * 1.3) || sw * sh > 40e6) return false;
+    try {
+      var iw = Math.round(sw), ih = Math.round(sh);
+      var t = document.createElement('canvas'); t.width = iw; t.height = ih;
+      var tx = t.getContext('2d', { willReadFrequently: true });
+      tx.fillStyle = '#fff'; tx.fillRect(0, 0, iw, ih);
+      tx.drawImage(img, sx, sy, sw, sh, 0, 0, iw, ih);
+      var d = tx.getImageData(0, 0, iw, ih).data;
+      var mn = new Uint8Array(tw * th).fill(255), sm = new Float32Array(tw * th), n = new Uint16Array(tw * th);
+      for (var y = 0; y < ih; y++) {
+        var oy = Math.min(th - 1, Math.floor(y * th / ih)), ro = y * iw * 4;
+        for (var xx = 0; xx < iw; xx++) {
+          var ox = Math.min(tw - 1, Math.floor(xx * tw / iw)), i = ro + xx * 4, g = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8, o = oy * tw + ox;
+          if (g < mn[o]) mn[o] = g;
+          sm[o] += g; n[o]++;
+        }
+      }
+      var out = x.createImageData(tw, th), od = out.data;
+      for (var p = 0; p < tw * th; p++) {
+        var v = n[p] ? 0.45 * (sm[p] / n[p]) + 0.55 * mn[p] : 255;
+        v = Math.max(0, Math.min(255, (v - 90) * 255 / 150));
+        od[p * 4] = od[p * 4 + 1] = od[p * 4 + 2] = v; od[p * 4 + 3] = 255;
+      }
+      x.putImageData(out, 0, 0);
+      return true;
+    } catch (_) { return false; }
+  }
+
   // Teikning hæðarinnar á striga: skurður (frumdílar → dílar myndarinnar) og tækin sem punktar
   function teiknaTeikningu(h, c, hamark) {
     return hladaMynd(h.image_url).then(function (img) {
@@ -137,7 +170,7 @@
       c.width = Math.max(1, Math.round(sw * k)); c.height = Math.max(1, Math.round(sh * k));
       var x = c.getContext('2d');
       x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-      x.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      if (!skarpMinnka(x, img, sx, sy, sw, sh, c.width, c.height)) x.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
       var r = Math.max(3.5, c.width / 140);
       (h.markers || []).forEach(function (m) {
         var mx = +m.x, my = +m.y;
