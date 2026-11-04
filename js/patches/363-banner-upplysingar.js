@@ -358,7 +358,7 @@
         return;
       }
       skrar.set(k, { svar: lok, sott: Date.now(), heimilisfang, reyndi: true });
-      if (hefurBlod(lok) || tomtEnStadfest(lok)) vistaGeymslu(coId, heimilisfang, lok);
+      if (hefurBlod(lok) || tomtEnStadfest(lok)) { vistaGeymslu(coId, heimilisfang, lok); sjalfvirktUrSkram(coId, lok); }
     };
     fetch('/.netlify/functions/hus-upplysingar?heimilisfang=' + encodeURIComponent(heimilisfang))
       .then(r => r.json().then(svar => ({ ok: r.ok, status: r.status, svar })).catch(() => ({ ok: r.ok, status: r.status, svar: null })))
@@ -375,10 +375,35 @@
       })
       .catch(() => loka({ error: 'Náði ekki í skrár', athugasemd: 'engin teikning fannst' }));
   }
+  // 04.11.2026 (Agnar, Nesdekk Breiðhöfða 13: „helstu tölur úr greiningunni mættu bara koma þarna beint inn … ekki
+  // tvítalningar eða ruglingslegt"): hæðir/kjallari/jarðhæð úr skránum (hus-upplysingar — grunnmyndir skjalasafns +
+  // Staðfangaskrá) fara BEINT í tóma reiti, merkt 🏛 með uppruna (sama leið og 452), í stað þess að standa sem „Tillaga"
+  // við hliðina á sömu tölum í Hús-línunni. Fylltur reitur er aldrei yfirskrifaður; breyti notandinn gildinu hverfur
+  // merkið og gildið er hans. Tillögur úr athugasemdatexta eru áfram tillögur. Einu sinni á félag í lotu.
+  const _sjalfvirkt = new Set();
+  function sjalfvirktUrSkram(coId, svar) {
+    const k = String(coId);
+    if (_sjalfvirkt.has(k) || !svar || !svar.tillogur || !(window.AppSettings && AppSettings.save)) return false;
+    if (+coId <= 0 || +coId === (window.Sydarvordur && Sydarvordur.ID) || +coId === 987654321) return false;
+    const t = svar.tillogur, heimild = String(svar.heimild || 'skrár'), nu = new Date().toISOString();
+    const atridi = [['haedir', t.haedir], ['kjallari', t.kjallari], ['jardhaed', t.jardhaed]].filter(([r, g]) => g && !gildi(coId, r));
+    if (!atridi.length) return false;
+    _sjalfvirkt.add(k);
+    (async () => {
+      for (const [r, g] of atridi) {
+        if (gildi(coId, r)) continue;                      // lesið aftur rétt fyrir skrif
+        const ok = await vistaReit(coId, r, String(g));
+        if (ok) await vistaUppruna(coId, r, { gildi: String(g), heimild, af: 'sjálfvirkt úr skrám', t: nu });
+      }
+      try { haldaVid(); } catch (_) {}
+    })().catch(() => {});
+    return true;
+  }
   /** Flísar úr skránum — sama snið og athugasemda-tillögurnar, merktar skra:true. */
   function skraTillogur(coId) {
     const svar = skrarSvar(coId);
     if (!svar || !svar.tillogur) return [];
+    sjalfvirktUrSkram(coId, svar);                          // tómir reitir fyllast — gildi() sér það strax (_ny)
     const ut = [];
     const heimild = String(svar.heimild || 'skrár');
     const baeta = (reitur, g, merki) => {
