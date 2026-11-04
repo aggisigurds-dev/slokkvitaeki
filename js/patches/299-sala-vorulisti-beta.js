@@ -211,7 +211,7 @@
       '<div class="_vlb-switch">' +
         '<button type="button" data-mode="tiles">' + ic('grid', 13) + 'Flísar</button>' +
         '<button type="button" data-mode="list">' + ic('list', 13) + 'Listi</button>' +
-        '<span class="-beta">BETA — prufuútlit</span>' +
+        // 04.11.2026 (Agnar): „taka burt beta prufuútlit“ — merkið farið. 496 setur Raða aftast í röðina.
       '</div>' +
       '<div class="_vlb" id="_vlb-panel">' +
         '<div class="_vlb-top">' +
