@@ -15,6 +15,11 @@
  *      heiti (allar þjónustur heita flokkinum „Þjónusta“ í vorur.flokkur); vöruflokkarnir eru vorur.flokkur.
  *      Engir kaflar/línur í flísaveggnum (Agnar: „bíða aðeins“).
  *   3. Valið er tímabundin staða (eins og opinn flipi): lifir í breytu, núllstillist við endurhleðslu. Ekkert skrifað.
+ *   4. VÖRUMYNDIR (04.11.2026, Agnar: „stækka myndasvæðið eitthvað aðeins meira og láta sumar myndirnar með allt of
+ *      mikinn hvítann bakgrunn fylla betur út í … sést svo illa þarna“) — myndareitur vöruflísa 56 → 76 px hár og allt að
+ *      100 px breiður (tölva; sími/app óbreytt að stærð). Hvít/gegnsæ spássía hverrar myndar er mæld á striga (myndirnar
+ *      eru data:-slóðir í vorur.mynd) og skorin af með `object-view-box` — myndin sjálf og gögnin óbreytt. Mælingin
+ *      geymist í minni og er sett aftur á í sama tifi þegar pos.js teiknar flísarnar upp á nýtt.
  *
  * ÓSNERT: pos.js (vörðuð leið), karfan, línurnar, #pos-totals, afslættir, ÁFRAM. Ekkert les eða skrifar gögn
  * nema POS.getState() (lestur) til að vita flokk hverrar flísar.
@@ -103,9 +108,17 @@
     mob(C + ' .-chip') + '{flex:0 0 auto!important;height:36px!important;font-size:12.5px!important}'
   ];
 
+  // ── 4. Vörumyndir: stærri reitur (tölva) ─────────────────────────────────
+  // 74 setur 56 px á `.pos-prod img`, _mIS hvítan grunn + contain. Sími/app (338/443/pos-vm) eiga sitt útlit og haldast.
+  const TOLVA = 'html:not([data-viewmode="mobile"]) body:not(.appmode) ';
+  const CSS_MYNDIR = [
+    TOLVA + V + ' .pos-prod > img' + K + '{width:min(100px, calc(100% - 56px))!important;height:76px!important;padding:3px!important;'
+      + 'box-sizing:border-box!important;object-fit:contain!important;background:#fff!important;border-radius:10px!important}'
+  ];
+
   function css() {
     let s = document.getElementById('_s497-css');
-    const txt = CSS_HAUS.concat(CSS_SIA).join('\n');
+    const txt = CSS_HAUS.concat(CSS_SIA, CSS_MYNDIR).join('\n');
     if (!s) { s = document.createElement('style'); s.id = '_s497-css'; (document.head || document.documentElement).appendChild(s); }
     if (s.textContent !== txt) s.textContent = txt;
     // Mono 700 og Plex 600 (sama hlekkur og 389 — hlaðinn einu sinni)
@@ -255,11 +268,73 @@
     leitTom = tom;
   }, true);
 
+  // ── 4b. Vörumyndir: skera hvíta spássíu ───────────────────────────────────
+  // Hver mynd er mæld einu sinni (≤160 px strigi): bakgrunnur = litur hornanna ef þau eru ljós eða gegnsæ; reiturinn
+  // sem eftir stendur (+3 % loft) verður `object-view-box`. Mynd á dökkum/lituðum grunni, eða mynd sem fyllir þegar
+  // út í (>85 %), er látin vera. Skrifar aðeins stíl á <img> sem pos.js teiknaði — vaktin hlustar ekki á `style`.
+  const KANN_OVB = !!(window.CSS && CSS.supports && CSS.supports('object-view-box', 'inset(1% 1% 1% 1%)'));
+  const KLIPPA = new Map();   // src → 'inset(…)' | '' (ekkert að skera)
+  const BIDUR = new Map();    // src → [img] meðan mælt er
+  function reikna(im) {
+    const W = im.naturalWidth, H = im.naturalHeight;
+    if (!W || !H) return '';
+    const sk = Math.min(1, 160 / Math.max(W, H));
+    const w = Math.max(4, Math.round(W * sk)), h = Math.max(4, Math.round(H * sk));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(im, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data;
+    const horn = [[1, 1], [w - 2, 1], [1, h - 2], [w - 2, h - 2]].map(([a, b]) => (b * w + a) * 4);
+    let r = 0, g = 0, bl = 0, n = 0, gegns = 0;
+    for (const i of horn) {
+      if (d[i + 3] < 24) { gegns++; continue; }
+      if (d[i] + d[i + 1] + d[i + 2] < 3 * 205) return '';          // dökkt/litað horn — raunveruleg ljósmynd, látin vera
+      r += d[i]; g += d[i + 1]; bl += d[i + 2]; n++;
+    }
+    if (n) { r /= n; g /= n; bl /= n; } else { r = g = bl = 255; }
+    const erBak = i => d[i + 3] < 24 || (Math.abs(d[i] - r) + Math.abs(d[i + 1] - g) + Math.abs(d[i + 2] - bl)) < 42;
+    const rod = new Array(h).fill(0), dalk = new Array(w).fill(0);
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) if (!erBak((yy * w + xx) * 4)) { rod[yy]++; dalk[xx]++; }
+    const lagm = Math.max(1, Math.round(Math.min(w, h) * 0.01));   // stakir JPEG-punktar teljast ekki með
+    let y0 = rod.findIndex(v => v >= lagm), x0 = dalk.findIndex(v => v >= lagm);
+    if (y0 < 0 || x0 < 0) return '';
+    let y1 = h - 1; while (y1 > y0 && rod[y1] < lagm) y1--;
+    let x1 = w - 1; while (x1 > x0 && dalk[x1] < lagm) x1--;
+    const loft = Math.max(1, Math.round(Math.max(w, h) * 0.03));
+    x0 = Math.max(0, x0 - loft); y0 = Math.max(0, y0 - loft);
+    x1 = Math.min(w, x1 + 1 + loft); y1 = Math.min(h, y1 + 1 + loft);
+    if ((x1 - x0) * (y1 - y0) > 0.85 * w * h) return '';
+    const p = v => (Math.round(v * 10) / 10) + '%';
+    return 'inset(' + p(y0 / h * 100) + ' ' + p((w - x1) / w * 100) + ' ' + p((h - y1) / h * 100) + ' ' + p(x0 / w * 100) + ')';
+  }
+  function beita(img, v) {
+    img.__s497 = 1;   // afgreidd — næsta tikk sleppir henni (engin uppfletting á löngu data:-slóðinni)
+    if (v && img.style.getPropertyValue('object-view-box') !== v) img.style.setProperty('object-view-box', v);
+  }
+  function klippaMyndir() {
+    if (!KANN_OVB) return;
+    document.querySelectorAll('#view-sala .pos-prod > img').forEach(img => {
+      if (img.__s497) return;
+      const src = img.getAttribute('src') || '';
+      if (!src) return;
+      if (KLIPPA.has(src)) { beita(img, KLIPPA.get(src)); return; }
+      if (BIDUR.has(src)) { if (BIDUR.get(src).indexOf(img) < 0) BIDUR.get(src).push(img); return; }
+      BIDUR.set(src, [img]);
+      const im = new Image();
+      if (!/^data:/.test(src)) im.crossOrigin = 'anonymous';
+      const lok = v => { KLIPPA.set(src, v); (BIDUR.get(src) || []).forEach(i => { if (i.isConnected) beita(i, v); }); BIDUR.delete(src); };
+      im.onload = () => { let v = ''; try { v = reikna(im); } catch (_) { v = ''; } lok(v); };   // ytri mynd án CORS: óbreytt
+      im.onerror = () => lok('');
+      im.src = src;
+    });
+  }
+
   function tikk() {
     const v = document.getElementById('view-sala');
     if (!v || !document.getElementById('pos-services')) return;
     festa();
     uppfaera();
+    klippaMyndir();
   }
   function vakta() {
     const v = document.getElementById('view-sala');
