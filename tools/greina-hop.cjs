@@ -79,7 +79,8 @@ async function byggingUppl(adr) {
   const eignAdr = HOPUR === 'eftir' ? new Set((await getAll('fasteign_greining?tegund=eq.eign&select=adr:gogn->>adr')).map(r => r.adr).filter(Boolean)) : null;
   const hopurF = f => HOPUR === 'eftir' ? (f.er_i_thjonustu && !eignAdr.has(hreinsa(f.heimilisfang)) ? 'eftir' : null)
     : brunakerfiIds.includes(f.id) ? 'brunakerfi' : /^heimaleiga/i.test(f.nafn || '') ? 'heimaleiga' : f.customer_base_id === 330 && /^Brunahólf - /.test(f.nafn || '') ? 'brunaholf' : null;
-  let stadir = allir.filter(f => hopurF(f)).map(f => Object.assign({ hopur: hopurF(f) }, f));
+  // --fid tekur félag með þótt það sé utan hópanna (04.11: Nesdekk 219 Breiðhöfða 13 fyrir brunaúttekt slökkviliðsins)
+  let stadir = allir.filter(f => hopurF(f) || (FIDS && FIDS.includes(f.id))).map(f => Object.assign({ hopur: hopurF(f) || 'fid' }, f));
   if (FIDS) stadir = stadir.filter(f => FIDS.includes(f.id));
   if (HOPUR) stadir = stadir.filter(f => f.hopur === HOPUR);
   // sama heimilisfang hjá fleiri en einum stað → ein uppfletting, allir taldir
