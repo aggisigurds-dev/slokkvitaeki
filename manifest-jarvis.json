@@ -1,0 +1,39 @@
+{
+  "id": "/app/jarvis/",
+  "name": "J.A.R.V.I.S. — Brunahólf",
+  "short_name": "J.A.R.V.I.S.",
+  "description": "Agentanetið, Biðstofa Charlize, Kerfi og Fjármál — J.A.R.V.I.S. á fullum skjá í símanum.",
+  "start_url": "/app/jarvis/",
+  "scope": "/app/jarvis/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#02070b",
+  "theme_color": "#0b0b0d",
+  "lang": "is",
+  "icons": [
+    {
+      "src": "/img/app-tokn/png/29-jarvis-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/app-tokn/png/29-jarvis-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/app-tokn/png/29-jarvis-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/img/app-tokn/png/29-jarvis-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

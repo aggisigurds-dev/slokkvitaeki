@@ -66,7 +66,7 @@ export default async (req) => {
   });
 };
 
-const BUILTIN = new Set(['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss']);
+const BUILTIN = new Set(['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis']);
 async function builtin(req, key) {
   let base = null;
   try { const r = await fetch(new URL('/manifest-' + key + '.json', req.url)); if (r.ok) base = await r.json(); } catch (_) { base = null; }

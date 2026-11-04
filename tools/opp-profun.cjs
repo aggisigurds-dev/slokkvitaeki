@@ -12,7 +12,7 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 const BASE = process.env.OPP_BASE || 'https://slokkvitaeki.netlify.app';
-const APPS = process.argv.slice(2).length ? process.argv.slice(2) : ['fjarmal', 'boss', 'brunaholf', 'brunakerfi', 'bilstjori', 'skyrslustod', 'verkefni', 'threedwork'];
+const APPS = process.argv.slice(2).length ? process.argv.slice(2) : ['fjarmal', 'boss', 'brunaholf', 'brunakerfi', 'bilstjori', 'skyrslustod', 'verkefni', 'threedwork', 'jarvis'];
 const OUT = path.join(__dirname, 'opp-skjaskot');
 fs.mkdirSync(OUT, { recursive: true });
 

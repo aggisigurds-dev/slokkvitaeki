@@ -31,7 +31,7 @@
   const ID = '_op-styri';
   const STYLE_ID = 'opp-styribord-354';
   const LS_INST = 'slokk_installed_apps_v1';
-  const BUILTIN = ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss'];
+  const BUILTIN = ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis'];
   const KROM = [['auto', 'Sjálfvirkt'], ['1', '1,0'], ['1.5', '1,5'], ['2', '2,0'], ['2.5', '2,5'], ['3', '3,0']];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const state = { checks: {}, related: null, relatedErr: null, busy: false, msg: '' };

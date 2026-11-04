@@ -150,7 +150,7 @@
   mountCss();
 
   // ?app=<key> (legacy) and /app/<key>/ (PWA) — same ACTIVE as patch 261.
-  const APP_KEYS = { fjarmal: 1, verkefni: 1, brunaholf: 1, brunakerfi: 1, boss: 1, bilstjori: 1 };
+  const APP_KEYS = { fjarmal: 1, verkefni: 1, brunaholf: 1, brunakerfi: 1, boss: 1, bilstjori: 1, jarvis: 1 };
   function activeAppKey() {
     try {
       const pm = (location.pathname || '').match(/^\/app\/([a-z]+)\/?/);
