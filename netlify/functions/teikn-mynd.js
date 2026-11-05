@@ -26,7 +26,9 @@ function villa(status, error) {
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
-  const raw = new URL(req.url).searchParams.get('url') || '';
+  const sp = new URL(req.url).searchParams;
+  const raw = sp.get('url') || '';
+  const staerd = Math.min(4000, Number((sp.get('staerd') || '').replace(/[^0-9]/g, '')) || 0);
   let target;
   try { target = new URL(raw); } catch { return villa(400, 'Ógild slóð'); }
   // Aðeins leyfðir skjalasafns-hýslar — ekki opinn myndaproxy.
@@ -34,7 +36,51 @@ export default async (req) => {
     return villa(403, 'Hýsillinn er ekki leyfður');
   }
 
+  /* ?staerd=N — FORSKOÐUN Í STAÐ FULLRAR MYNDAR (Agnar 05.11.2026: „fotoWeb-skyndiminnið er útrunnið … hvað gerum við í því").
+   *
+   * Séruppdráttalistinn geymdi `previews[].href` BEINT úr FotoWeb í 30 daga. Þær slóðir bera lykil sem FotoWeb skiptir um:
+   * MÆLT þennan dag á BN057064-1174-0015.pdf — geymt hjá okkur `…pdf.jCee3qaHMslX…` (HTTP 404, HTML-villusíða), ferskt úr
+   * safninu `…pdf.jCee6_WHMslX…` (HTTP 200, 572 kB). Smámyndir séruppdrátta voru því tómar á hverju húsi þar sem listinn
+   * var eldri en lyklaskiptin, og það sást ekki sem villa — bara auður rammi.
+   *
+   * Lagfæringin er að geyma ENGA FotoWeb-slóð. Kallarinn geymir `infoUrl` (sem er varanlegur permalink) og biður hér um
+   * stærð; forskoðunin er flett upp í hvert sinn. Svarið sjálft má geyma lengi eins og áður — myndin breytist ekki þótt
+   * slóðin að henni geri það, og beiðnislóðin hér (`?url=…&staerd=…`) er stöðug.
+   *
+   * Bregðist uppflettingin er fallið aftur á fulla myndina fyrir neðan — betra en auður rammi. */
+  let myndSlod = null;
+  if (staerd) {
+    try {
+      const r0 = await fetch(raw, {
+        headers: { Accept: 'application/vnd.fotoware.asset+json', 'User-Agent': 'Slokkvitaeki/1.0' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (r0.ok) {
+        const a = await r0.json();
+        const pv = (Array.isArray(a && a.previews) ? a.previews : [])
+          .filter((x) => x && x.href)
+          .sort((x, y) => (x.size || 0) - (y.size || 0));
+        const val = pv.find((x) => (x.size || 0) >= staerd) || pv[pv.length - 1];
+        if (val) myndSlod = new URL(val.href, target.origin).href;
+      }
+    } catch (_) { /* fellur á fullu myndina */ }
+  }
+
   try {
+    if (myndSlod) {
+      const rp = await fetch(myndSlod, { headers: { 'User-Agent': 'Slokkvitaeki/1.0' }, signal: AbortSignal.timeout(30000) });
+      if (rp.ok && rp.body) {
+        const h = new Headers(cors);
+        h.set('Content-Type', rp.headers.get('content-type') || 'image/jpeg');
+        const l = rp.headers.get('content-length');
+        if (l) h.set('Content-Length', l);
+        h.set('Cache-Control', 'public, max-age=604800');
+        h.set('Netlify-CDN-Cache-Control', 'public, durable, s-maxage=31536000, stale-while-revalidate=604800');
+        h.set('Netlify-Cache-ID', 'teikn-mynd');
+        return new Response(rp.body, { status: 200, headers: h });
+      }
+      // forskoðunin brást (lykillinn getur hafa skipst MILLI uppflettingar og sóknar) — full mynd fyrir neðan
+    }
     // prefer=image: fetch-plan skilar bráðum upprunalegu VIGUR-PDF fyrir .pdf-permalinka (kjarni#124, fyrir TurboPaint).
     // Hér fer myndin í <img> og á <canvas> — PDF myndi brjóta „Sækja teikningu". Vigurinn sækir teikn-pdf sér.
     const r = await fetch(FETCH_PLAN + '?prefer=image&url=' + encodeURIComponent(raw), {

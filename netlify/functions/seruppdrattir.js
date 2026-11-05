@@ -20,7 +20,7 @@
  * 09.10.2026 (Greining fasteignar, 451 — „preview af þessum sérteikningum“): ?listi=1&landnr=N skilar BLÖÐUNUM sjálfum
  *   { landnr, blod: [{ flokkur, tegund, infoUrl, thumb, stor, filename, bnnr, blad, hofundur, heimilisfang }] }
  *   thumb = 800 px forskoðun FotoWeb (opinber, engin seta), stor = stærsta forskoðunin (til stækkunar). Mest 3 síður
- *   (75 blöð) á flokk, flokkarnir samsíða. Skyndiminni: lykill serlisti:<landnr>, útgáfa serupp-listi-1, 30 dagar.
+ *   (75 blöð) á flokk, flokkarnir samsíða. Skyndiminni: lykill serlisti:<landnr>, útgáfa serupp-listi-2, 30 dagar (thumb/stor eru teikn-mynd-slóðir).
  *
  * Skyndiminni: hus_upplysingar_cache, lykill serupp:<landnr> og
  * seradr:<heimilisfang>, útgáfa serupp-1. Önnur útgáfa en húsflettingin
@@ -229,7 +229,9 @@ async function saekjaFlokka(landnr) {
 }
 
 /* ── ?listi=1 — blöðin sjálf með forskoðun (451 Sérteikningar) ─────────────────────────────────────────────── */
-const LISTI_UTGAFA = 'serupp-listi-1';
+// serupp-listi-2 (05.11.2026): sniðið breyttist — `thumb`/`stor` eru nú teikn-mynd-slóðir, ekki FotoWeb-slóðir.
+// Útgáfan er hækkuð svo öll geymd svör með dáuðu slóðunum falli úr gildi stráx í stað þess að lifa í allt að 30 daga enn.
+const LISTI_UTGAFA = 'serupp-listi-2';
 const LISTI_DAGAR = 30;
 const mdGildi = (a, k) => { const v = a && a.metadata && a.metadata[k] && a.metadata[k].value; return v == null ? '' : String(Array.isArray(v) ? v[0] : v).trim(); };
 const algild = (h) => (h ? (String(h).startsWith('http') ? String(h) : FOTOWEB + h) : null);
@@ -264,12 +266,15 @@ async function saekjaLista(landnr) {
       for (const a of (Array.isArray(b.data) ? b.data : [])) {
         if (tegundAf(a) && tegundAf(a) !== f.tegund) continue;
         if (mdGildi(a, '202') && mdGildi(a, '202') !== String(landnr)) continue;     // aðeins þetta landnúmer
-        const pv = (Array.isArray(a.previews) ? a.previews : []).filter((x) => x && x.href).sort((x, y) => (x.size || 0) - (y.size || 0));
-        const smatt = pv.find((x) => (x.size || 0) >= 400) || pv[pv.length - 1];
-        const stort = pv[pv.length - 1];
+        /* 05.11.2026 — HÉR VORU FOTOWEB-SLÓÐIRNAR GEYMDAR, OG ÞAÐ VAR BILUNIN. `previews[].href` ber lykil sem FotoWeb
+         * skiptir um; listinn er geymdur í 30 daga, svo smámyndirnar dóu þegjandi (404, HTML-villusíða) á hverju húsi
+         * sem var sótt fyrir lyklaskiptin. Mælt á BN057064-1174-0015.pdf: geymt `…jCee3qa…` → 404, ferskt `…jCee6_W…` → 200.
+         * Nú er aðeins `infoUrl` geymt (varanlegur permalink) og myndin sótt gegnum teikn-mynd?staerd=, sem flettir
+         * forskoðuninni upp í hvert sinn. Þessar slóðir fyrnast ekki. */
         const fn = String(a.filename || '');
+        const forsk = (n) => '/.netlify/functions/teikn-mynd?staerd=' + n + '&url=' + encodeURIComponent(algild(a.href) || '');
         ut.push({
-          flokkur: f.id, tegund: f.tegund, infoUrl: algild(a.href), thumb: algild(smatt && smatt.href), stor: algild(stort && stort.href),
+          flokkur: f.id, tegund: f.tegund, infoUrl: algild(a.href), thumb: forsk(800), stor: forsk(2400),
           filename: fn, bnnr: mdGildi(a, '209') || null, blad: Number((fn.match(/-(\d{3,4})\.[a-z]+$/i) || [])[1]) || null,
           hofundur: mdGildi(a, '116') || null, heimilisfang: mdGildi(a, '210') || null,
         });
