@@ -176,5 +176,11 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
 ## Viðbætur (nýjast neðst — dags · hvað · heimild)
 
 - 05.11.2026 · Skráin stofnuð úr rannsókn dagsins (4 undiragentar, lota 5f2146a4). Fundur Center Hótel sama dag er ótengdur.
+- 05.11.2026 · **Póstleit að greiðslunum (Bríetartún 193.895 11.02 / 156.262 29.05, 80%-greiðslur apríl):** grep á kröfunúmerum og
+  upphæðum í ÖLLUM Thunderbird-hólfum eldklar/bokhald (4 GB INBOX, Sendur póstur, möppur) + email_digest → **engin bankatilkynning,
+  hvergi**. Aðeins Eignaumsjónar-þræðirnir; nýtt þar: 28.04.2026 „Stjórn hafnar kröfunni og segir að hún eigi að mestu eða öllu leyti
+  að fara á Heimaleigu“ (krafa 052866104613 á húsfélagið, gjalddagi 09.04). `bank_transactions` (til 15.06.2026) á engar Heimaleigu-
+  færslur — það er ekki reikningur Slökkvitækis. **Tvígreiðslan verður aðeins mæld á bankayfirliti 0528-26-006005 (Landsbankinn),
+  feb og maí 2026.** Mál #1329 bíður þess. Charlize #1611 · heimild: grep_inbox/grep_adrar í lotu 5f2146a4.
 
 Síðast uppfært: 05.11.2026
