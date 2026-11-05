@@ -154,9 +154,9 @@ input,textarea{font-family:inherit}
 .fbs.nu::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#b42318}
 .fbs.nu .n{background:${SVART};border-color:#000;color:#fff}
 .fbs.lok{color:#1f2530}.fbs.lok .n{background:${GRAENN};border-color:#03200f;color:#fff}
-.stal{background:#e2e6ec;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%);padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start;border-radius:0 0 13px 13px}
-.dalkur{display:flex;flex-direction:column;gap:14px;min-width:0}
-.hopur{background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:12px 14px 14px}
+.stal{background:#e2e6ec;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%);padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:12px;align-items:start;border-radius:0 0 13px 13px}
+.dalkur{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hopur{background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:10px 12px 12px}
 .merki{font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2b313c;display:flex;align-items:center;gap:7px;margin:0 0 8px}
 .merki .fj{margin-left:auto;letter-spacing:.04em;text-transform:none;font-weight:500;color:#4a5363}
 .lina{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
@@ -167,20 +167,24 @@ input,textarea{font-family:inherit}
 .reitur.mono{font-family:${MONO};font-size:13px}
 .vk{position:relative;border:1px solid rgba(20,24,34,.14);border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden;margin-bottom:8px}
 .vk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--teg,#8a93a3)}
-.vk-h{display:flex;align-items:center;gap:10px;width:100%;min-height:54px;padding:8px 12px 8px 16px;border:0;background:transparent;text-align:left;color:#11141c}
+.vk-h{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:6px 12px 6px 16px;border:0;background:transparent;text-align:left;color:#11141c}
 .vk-h .nm{font-weight:700;font-size:14px}.vk-h .id{font-family:${MONO};font-size:11.5px;color:#4a5363;margin-top:1px}
 .vk-h .sv{font-size:12px;color:#4a5363;margin-top:1px}
 .vk-h .chev{color:#4a5363;margin-left:6px}
-.vk-b{padding:2px 12px 12px 16px;display:flex;flex-direction:column;gap:8px;border-top:1px solid rgba(20,24,34,.08)}
-.vk-act{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:6px;padding-top:10px}
-.vbtn{height:40px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:${SILFUR};box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#1f2530;padding:0 10px}
+.vk-b{padding:0 12px 10px 16px;display:flex;flex-direction:column;gap:6px;border-top:1px solid rgba(20,24,34,.08)}
+.vk-act{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:6px;padding-top:8px}
+.vbtn{height:36px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:${SILFUR};box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#1f2530;padding:0 10px}
 .vbtn.ok{background:${GRAENN};border-color:#021a0b;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 .vbtn.nyt{background:${SVART};border-color:#000;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 .vbtn.sm{height:34px;font-size:12.5px;align-self:flex-start}
+.vk-nota{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:stretch}
+.vk-nota.ein{grid-template-columns:minmax(0,1fr)}
+.vk-nota .textar{min-height:34px;height:34px;padding:7px 10px;line-height:1.4}
+.vk-nota .vbtn.sm{align-self:stretch;white-space:nowrap}
 .thj{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
 .thj .v{font-family:${MONO};font-size:11px;font-weight:600;opacity:.75}
 .meira{display:flex;flex-direction:column;border:1px solid rgba(20,24,34,.16);border-radius:9px;overflow:hidden}
-.meira button{height:40px;border:0;border-bottom:1px solid rgba(20,24,34,.08);background:#fff;text-align:left;padding:0 12px;font-size:13px;font-weight:600;color:#1f2530}
+.meira button{height:36px;border:0;border-bottom:1px solid rgba(20,24,34,.08);background:#fff;text-align:left;padding:0 12px;font-size:13px;font-weight:600;color:#1f2530}
 .meira button:last-child{border-bottom:0}.meira button.eyda{color:#b42318}
 .meira button:hover{background:#f3f5f8}
 .vk-l{width:100%;border-collapse:collapse}
@@ -190,8 +194,8 @@ input,textarea{font-family:inherit}
 .fjarl{width:28px;height:28px;border-radius:6px;border:1px solid transparent;background:transparent;color:#4a5363;display:inline-flex;align-items:center;justify-content:center;margin-left:4px}
 .fjarl:hover{border-color:rgba(20,24,34,.16);color:#b42318}
 .rnr{display:flex;gap:6px;align-items:center}
-.tomt{font-size:12.5px;color:#4a5363;padding:4px 0}
-.textar{width:100%;min-height:64px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:#f6f7f9;box-shadow:inset 0 1px 2px rgba(20,24,34,.08);padding:9px 12px;font-size:13px;line-height:1.5;resize:vertical;outline:none;color:#11141c}
+.tomt{font-size:12.5px;color:#4a5363;padding:2px 0}
+.textar{width:100%;min-height:48px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:#f6f7f9;box-shadow:inset 0 1px 2px rgba(20,24,34,.08);padding:9px 12px;font-size:13px;line-height:1.5;resize:vertical;outline:none;color:#11141c}
 .textar:focus{border-color:#1f2530;background:#fff}
 .annad{font-size:12.5px;color:#2b313c;margin-top:6px;white-space:pre-wrap}
 .annad b{font-family:${MONO};font-size:11px}
@@ -410,9 +414,11 @@ input,textarea{font-family:inherit}
             return '<tr><td>' + esc(p.nafn || 'Varahlutur') + (+p.qty > 1 ? '<span class="q">×' + (+p.qty) + '</span>' : '') + '</td><td class="k">' + kr(v) +
               (sk === 1 ? '<button type="button" class="fjarl" data-a="hluti-x" data-j="' + j.id + '" data-u="' + u.id + '" data-i="' + i + '" aria-label="Taka ' + esc(p.nafn || 'varahlut') + ' af" title="Taka af">' + I.xs + '</button>' : '') + '</td></tr>';
           }).join('') + '</table>' : (sk === 1 ? '' : '<div class="tomt">Engir varahlutir.</div>')) +
-          (sk === 1 ? '<button type="button" class="vbtn sm" data-a="hluti" data-j="' + j.id + '" data-u="' + u.id + '">' + I.plus + ' Varahlutur / þjónusta</button>' : '') +
+          // 05.11.2026 (Agnar: „þjappa útlitinu"): Varahlutur-takkinn og athugasemdin á EINNI línu; merkimiðinn lifir í placeholder + aria-label.
           // Athugasemd Á TÆKINU (verklidur.notes) — gamli tækjaglugginn hafði hana; hún má ekki hverfa sjónum.
-          '<label><span class="lbl">Athugasemd á tæki</span><textarea class="textar" style="min-height:44px" data-k="tnota" data-j="' + j.id + '" data-u="' + u.id + '" rows="2" placeholder="t.d. skipti um ventil, þrýstiprófað" aria-label="Athugasemd á tæki">' + esc(u.notes || '') + '</textarea></label>' +
+          '<div class="vk-nota' + (sk === 1 ? '' : ' ein') + '">' +
+            (sk === 1 ? '<button type="button" class="vbtn sm" data-a="hluti" data-j="' + j.id + '" data-u="' + u.id + '">' + I.plus + ' Varahlutur / þjónusta</button>' : '') +
+            '<textarea class="textar" data-k="tnota" data-j="' + j.id + '" data-u="' + u.id + '" rows="1" placeholder="Athugasemd á tæki · t.d. skipti um ventil, þrýstiprófað" aria-label="Athugasemd á tæki">' + esc(u.notes || '') + '</textarea></div>' +
         '</div>';
       }
       return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
