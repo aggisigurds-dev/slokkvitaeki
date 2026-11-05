@@ -35,7 +35,8 @@
 
   const UTGAFA = 2, HAMARK = 2400, FATA = 'turbopaint', GAEDI = 0.9;
   // Útlit 3D-myndarinnar (stigar, gólfefni, veggjalitir) — hækkar þegar útlitið breytist svo vistaðar myndir endursmíðist: 3 = 21.10.2026 (stigar, grá steypugólf, ljóst parket, engir rauðir veggir), 8 = 22.10.2026 (staðlaðar innréttingar líka í „VS“ og baðrýmum án heitis), 9 = 22.10.2026 (nýir litir: ljós eik, kolgráir veggtoppar, blágrár bakgrunnshalli, fölblátt gler)
-  const UTLIT = 9;
+  // 10 = 05.11.2026: stigar úr TurboPaint í 3D, teikningin á gólfinu nær yfir allt húsið (op á útvegg yfir 1,2 m lokast), hök fyrir rauða brunaveggi og teikningu á gólfi (383).
+  const UTLIT = 10;
   const GULL = '#d9b45a', DOKKT = 'rgba(20,18,15,.85)';
   const V = {
     modal: null, gamur: null, strigi: null, val: null,
