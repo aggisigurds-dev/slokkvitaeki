@@ -11,48 +11,45 @@
 <title>Viðskiptavinavefir — Stjórn</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="/gatt/myndir/brunaholf/brunaicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Jost:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Questrial&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   /* Útlit 10.10.2026: sama efnismál og Þjónustuvefurinn (gatt/index.html, steel-þemað):
      burstað stál í haus, koparband, plötur með dýpt, lyklar og brunnar. Engin emoji. */
   /* 22.10.2026 (Agnar: „geturðu notað gullþemaið sem er í fyrirtækjunum"): sama Boss-þema og gáttin
      (gatt/index.html data-theme=boss) — svart stál, rjómapappír, gull, Playfair + IBM Plex Mono. Áður stál · kopar. */
+  /* 05.11.2026 (Agnar: „þjónustugátt stjórnborðinu … notast við brunaholf.is til viðmiðunar"): Brunahólfs-þemað —
+     navy #1b2a4d, appelsínugult #f15a24, pappír #f1f3f6, Inter + Questrial — sama og gatt/index.html data-theme=blar.
+     Allur texti á navy er hvítur. */
   :root{
-    --bg:#f4f1ea; --bg-hi:#fbf9f5; --ink:#161513; --ink2:#4a463f; --dim:#6f685c; --faint:#8f8776;
-    --line:#e6e1d6; --line2:#d9d3c6;
-    --accent:#8f6a1c; --accent2:#7a5a12; --deep:#5a4410;
-    --good:#2f7a4a; --danger:#b5522a; --idle:#a89f8c;
-    --mono:"IBM Plex Mono",ui-monospace,monospace; --ui:"Jost",system-ui,sans-serif; --serif:"Playfair Display",Georgia,serif;
-    --sh:22,21,19; --glow:184,137,46;
-    --m-edge:#5a4410; --m-ink:#2e2004;
-    --m-line:linear-gradient(90deg,#7a5a12 0%,#c9a54a 18%,#f5d76e 38%,#fff3b0 47%,#f5d76e 56%,#c9a54a 78%,#7a5a12 100%);
-    --m-face:
-      linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 52%),
-      repeating-linear-gradient(180deg,rgba(255,255,255,.08) 0 1px,rgba(0,0,0,0) 1px 3px),
-      linear-gradient(180deg,#f3dc95 0%,#d9b25a 14%,#b8892e 46%,#8f6a1c 52%,#a87b1f 74%,#cfa54a 92%,#e8cb7a 100%);
-    --m-text:linear-gradient(180deg,#f7e6b8 0%,#e8cb7a 28%,#b8892e 52%,#8f6a1c 66%,#d9b25a 100%);
-    --m-coin:
-      repeating-conic-gradient(from 0deg,rgba(255,255,255,.09) 0 1.5deg,rgba(0,0,0,0) 1.5deg 4deg),
-      radial-gradient(circle at 32% 28%,#fff3d0 0%,#e8cb7a 16%,#b8892e 46%,#7a5a12 76%,#3e2c06 100%);
-    --m-band:
-      repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 1px,rgba(0,0,0,0) 1px 4px),
-      linear-gradient(90deg,#5a4410 0%,#c9a54a 12%,#f5d76e 24%,#fff3b0 30%,#d4a92a 44%,#f5d76e 60%,#fff3b0 68%,#c9a54a 84%,#5a4410 100%);
-    --hdr:linear-gradient(180deg,#242320 0%,#141312 48%,#0a0a09 52%,#111110 100%);
-    --hdr-grain:repeating-linear-gradient(90deg,transparent 0 1px,rgba(255,255,255,.018) 1px 2px),repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.12) 3px 4px);
-    --slab:linear-gradient(160deg,#26241f 0%,#151412 40%,#0c0c0b 100%);
-    --panel:linear-gradient(180deg,#ffffff 0%,#fbf9f5 100%);
-    --strip:linear-gradient(180deg,#faf8f4,#f1ede4);
-    --well:linear-gradient(180deg,#f1ede4,#ffffff 55%);
-    --key:linear-gradient(180deg,#ffffff,#f1ede4);
-    --obsidian:linear-gradient(180deg,#3a3732 0%,#23211e 50%,#161513 51%,#1d1b18 100%);
-    --panel-sh:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(var(--sh),.06),0 1px 2px rgba(var(--sh),.10),0 6px 10px -6px rgba(var(--sh),.18),0 18px 36px -18px rgba(var(--sh),.40);
-    --slab-sh:inset 0 1px 0 rgba(255,255,255,.10),inset 0 0 0 1px rgba(var(--glow),.14),inset 0 -1px 0 rgba(0,0,0,.9),0 2px 0 #000,0 20px 40px -14px rgba(0,0,0,.75),0 0 26px -6px rgba(var(--glow),.28);
-    --key-sh:inset 0 1px 0 #fff,0 1px 2px rgba(var(--sh),.16),0 2px 0 rgba(var(--sh),.05);
-    --well-sh:inset 0 2px 4px rgba(var(--sh),.10),inset 0 0 0 1px rgba(255,255,255,.7),0 1px 0 #fff;
-    --face-sh:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 3px rgba(40,20,0,.4),0 3px 6px rgba(var(--sh),.35),0 0 12px rgba(var(--glow),.3);
-    --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --bg:#f1f3f6; --bg-hi:#ffffff; --ink:#1b2a4d; --ink2:#2d3748; --dim:#4a5568; --faint:#718096;
+    --line:#e1e5ec; --line2:#cfd5df;
+    --accent:#cc4411; --accent2:#cc4411; --deep:#b83d0d;
+    --good:#13612e; --danger:#b82105; --idle:#a0aec0;
+    --mono:"IBM Plex Mono",ui-monospace,monospace; --ui:"Inter",system-ui,sans-serif; --serif:"Questrial","Inter",system-ui,sans-serif;
+    --sh:27,42,77; --glow:241,90,36;
+    --m-edge:#f15a24; --m-ink:#ffffff;
+    --m-line:linear-gradient(90deg,#f15a24,#f15a24);
+    --m-face:linear-gradient(180deg,#f15a24,#f15a24);
+    --m-text:linear-gradient(180deg,#ffffff,#ffffff);
+    --m-coin:radial-gradient(circle at 32% 28%,#ff9a6e 0%,#f15a24 55%,#cc4411 100%);
+    --m-band:linear-gradient(90deg,#f15a24,#f15a24);
+    --hdr:linear-gradient(180deg,#1b2a4d,#1b2a4d);
+    --hdr-grain:linear-gradient(0deg,rgba(0,0,0,0),rgba(0,0,0,0));
+    --slab:linear-gradient(160deg,#1b2a4d 0%,#13203d 100%);
+    --panel:linear-gradient(180deg,#ffffff,#ffffff);
+    --strip:linear-gradient(180deg,#f1f3f6,#f1f3f6);
+    --well:linear-gradient(180deg,#ffffff,#ffffff);
+    --key:linear-gradient(180deg,#ffffff,#ffffff);
+    --obsidian:linear-gradient(180deg,#1b2a4d,#1b2a4d);
+    --panel-sh:0 1px 2px rgba(27,42,77,.08),0 10px 24px -16px rgba(27,42,77,.25);
+    --slab-sh:0 14px 30px -18px rgba(27,42,77,.45);
+    --key-sh:0 1px 2px rgba(27,42,77,.08);
+    --well-sh:inset 0 0 0 1px rgba(255,255,255,0);
+    --face-sh:0 1px 2px rgba(27,42,77,.18);
+    --grain:linear-gradient(0deg,rgba(0,0,0,0),rgba(0,0,0,0));
   }
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;background:radial-gradient(1400px 560px at 50% -160px,var(--bg-hi) 0%,rgba(255,255,255,0) 70%),var(--grain),var(--bg);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.5;padding-bottom:60px;-webkit-font-smoothing:antialiased}
@@ -62,23 +59,24 @@
   svg.i{width:15px;height:15px;flex:none}
 
   /* haus */
-  header{position:sticky;top:0;z-index:5;background:var(--hdr-grain),var(--hdr);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 14px 32px -14px rgba(0,0,0,.75)}
-  header::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:var(--m-band);box-shadow:0 0 14px rgba(var(--glow),.45)}
+  header{position:sticky;top:0;z-index:5;background:var(--hdr);box-shadow:0 1px 0 rgba(255,255,255,.06)}
+  .hbar .blogo{flex:none;height:36px;width:auto;display:block}
+  header::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:var(--m-band)}
   .hbar{display:flex;align-items:center;gap:14px;padding:15px 0}
   .crest{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--m-coin);color:rgba(42,15,4,.88);
     box-shadow:0 0 0 2px #0a0a09,0 0 0 3px rgba(var(--glow),.7),0 4px 10px rgba(0,0,0,.7),inset 0 2px 1px rgba(255,255,255,.65),inset 0 -3px 5px rgba(0,0,0,.45)}
   .crest svg{width:20px;height:20px}
-  h1{font-family:var(--serif);font-weight:700;font-size:25px;margin:0;line-height:1;letter-spacing:.02em;background:var(--m-text);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.7))}
-  .sub{font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:#a9adb3;margin-top:5px}
+  h1{font-family:var(--serif);font-weight:400;font-size:25px;margin:0;line-height:1;letter-spacing:.02em;color:#fff}
+  .sub{font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:#fff;margin-top:5px}
   .spacer{flex:1}
-  .hlink{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#cfd2d6;border:1px solid #000;border-radius:4px;padding:8px 12px;background:var(--obsidian);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 5px rgba(0,0,0,.6)}
-  .hlink:hover{filter:brightness(1.25)}
+  .hlink{display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:7px;padding:8px 12px;background:rgba(255,255,255,.08)}
+  .hlink:hover{background:rgba(255,255,255,.16)}
 
   /* takkar */
-  .btn{font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.3px;border-radius:4px;padding:8px 13px;border:1px solid var(--line2);background:var(--key);box-shadow:var(--key-sh);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;transition:border-color .15s,filter .15s}
+  .btn{font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.3px;border-radius:7px;padding:8px 13px;border:1px solid var(--line2);background:var(--key);box-shadow:var(--key-sh);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;transition:border-color .15s,filter .15s}
   .btn:hover{border-color:var(--accent)}
   .btn:active{transform:translateY(1px)}
-  .btn--accent{background:var(--m-face);border-color:var(--m-edge);color:var(--m-ink);text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:var(--face-sh)}
+  .btn--accent{background:var(--m-face);border-color:var(--m-edge);color:var(--m-ink);text-shadow:none;box-shadow:var(--face-sh)}
   .btn--accent:hover{filter:brightness(1.06) saturate(1.05);border-color:var(--m-edge)}
   .btn--sm{padding:6px 10px;font-size:11.5px}
   .btn--danger{color:#a3242c;border-color:#e3b2b6;background:linear-gradient(180deg,#fff,#fbeced)}
@@ -87,14 +85,14 @@
 
   /* lykiltölur */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0 4px}
-  .chip{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:5px;padding:16px 18px;background:var(--m-line) top/100% 3px no-repeat,var(--panel);box-shadow:var(--panel-sh)}
+  .chip{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--m-line) top/100% 3px no-repeat,var(--panel);box-shadow:var(--panel-sh)}
   .chip .k{font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--dim);font-weight:500;padding-right:42px}
   .chip .v{font-family:var(--serif);font-size:38px;font-weight:700;line-height:1;margin-top:8px;color:var(--ink);font-variant-numeric:lining-nums;text-shadow:0 1px 0 #fff}
   .chip .ico{position:absolute;top:13px;right:14px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--key);border:1px solid var(--line2);color:var(--accent);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(var(--sh),.16)}
   .chip .ico svg{width:17px;height:17px}
   .chip.good .ico{color:var(--good)}
   .chip.alert.has{background:var(--m-line) top/100% 3px no-repeat,var(--slab);border-color:#000;box-shadow:var(--slab-sh)}
-  .chip.alert.has .k{color:#a9adb3}
+  .chip.alert.has .k{color:#fff}
   .chip.alert.has .v{background:var(--m-text);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
   .chip.alert.has .ico{background:var(--m-coin);border-color:var(--m-edge);color:rgba(42,15,4,.88)}
 
@@ -106,7 +104,7 @@
   .sect h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:0;color:var(--ink)}
   .sect .hint{font-size:12px;color:var(--dim);font-style:italic}
   .sect::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--glow),.55),rgba(var(--glow),0))}
-  .panel{border:1px solid var(--line2);border-radius:5px;overflow:hidden;background:var(--m-line) top/100% 2px no-repeat,var(--panel);
+  .panel{border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:var(--m-line) top/100% 2px no-repeat,var(--panel);
     box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(var(--sh),.10),0 6px 0 -3px #f2f3f5,0 6px 0 -2px rgba(var(--sh),.14),0 12px 0 -6px #eaecef,0 12px 0 -5px rgba(var(--sh),.11),0 26px 40px -18px rgba(var(--sh),.42)}
   .picker{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line2);position:relative;background:var(--strip)}
   .picker .srch{flex:1;position:relative}
@@ -163,7 +161,7 @@
   .editor h3::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(var(--glow),.5),rgba(var(--glow),0))}
   .fld{margin-bottom:13px}
   .fld label,.flbl{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;font-weight:500}
-  .inp{width:100%;background:var(--well);box-shadow:var(--well-sh);border:1px solid var(--line2);border-radius:4px;padding:9px 11px;color:var(--ink);font-family:var(--ui);font-size:13.5px}
+  .inp{width:100%;background:var(--well);box-shadow:var(--well-sh);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;color:var(--ink);font-family:var(--ui);font-size:13.5px}
   .inp:focus{outline:none;border-color:var(--accent);box-shadow:var(--well-sh),0 0 0 3px rgba(var(--glow),.16)}
   .inp.mono{font-family:var(--mono);font-size:12.5px}
   .inrow{display:flex;gap:8px}.inrow .inp{flex:1}
@@ -260,7 +258,7 @@
   .msg .reply input{flex:1;background:var(--well);box-shadow:var(--well-sh);border:1px solid var(--line2);border-radius:4px;padding:7px 10px;color:var(--ink);font:inherit;font-size:12.5px}
   .msg .reply input:focus{outline:none;border-color:var(--accent)}
   .empty{padding:28px 16px;text-align:center;color:var(--dim);font-family:var(--serif);font-size:17px;font-style:italic}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--slab);border:1px solid #000;color:#f3f1ec;padding:11px 18px;border-radius:5px;font-size:12.5px;transition:.25s;pointer-events:none;z-index:20;box-shadow:var(--slab-sh)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--slab);border:1px solid transparent;color:#fff;padding:11px 18px;border-radius:7px;font-size:12.5px;transition:.25s;pointer-events:none;z-index:20;box-shadow:var(--slab-sh)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   @media(max-width:980px){.themes{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1500px){.grid{grid-template-columns:minmax(0,1fr)}.col-side{position:static;max-height:none}.col-side .panel{overflow:visible}.actions{flex-wrap:wrap}}
@@ -282,7 +280,7 @@
 </head>
 <body>
 <header><div class="wrap hbar">
-  <div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M16 7l2.5 2.5M14 9l2 2"/></svg></div>
+  <img class="blogo" src="/gatt/myndir/brunaholf/brunaholf-logo-hvitt.webp" alt="Brunahólf" width="500" height="150">
   <div><h1>Viðskiptavinavefir</h1><div class="sub">Brunahólf Slökkvitæki ehf · sjálfsafgreiðsluvefir rekstrarfélaga</div></div>
   <div class="spacer"></div>
   <a class="hlink" href="/gatt/?demo=1" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Sýnishorn</span></a>
@@ -313,6 +311,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="/gatt/verkfaeri.js?v=20261023a"></script>
-<script src="/gatt-admin/admin.js?v=20261023a"></script>
+<script src="/gatt-admin/admin.js?v=20261105bh"></script>
 </body>
 </html>

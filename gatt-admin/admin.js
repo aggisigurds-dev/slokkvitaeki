@@ -58,7 +58,7 @@
     { k: 'cream', n: 'Rjómi', d: 'Rjómi · gull · svart', hdr: '#22170e', paper: '#efe7db', card: '#fffdf8', metal: GOLD, dot: '#c9a54a' },
     { k: 'boss', n: 'Boss', d: 'Svart stál · gull', hdr: '#141312', paper: '#f4f1ea', card: '#ffffff', metal: GOLD, dot: '#c9a54a' },
     { k: 'grafit', n: 'Grafít', d: 'Grátt · silfur', hdr: '#27292d', paper: '#e3e4e6', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
-    { k: 'blar', n: 'Brunahólf', d: 'Dökkblátt · appelsínugult (vefverslunin)', hdr: '#222f47', paper: '#f0f2f7', card: '#ffffff', metal: 'linear-gradient(90deg,#ff4001,#ff4001)', dot: '#ff4001' },
+    { k: 'blar', n: 'Brunahólf', d: 'Navy · appelsínugult (brunaholf.is) — sjálfgefið', hdr: '#1b2a4d', paper: '#f1f3f6', card: '#ffffff', metal: 'linear-gradient(90deg,#f15a24,#f15a24)', dot: '#f15a24' },
   ];
   // Hlutar eignasíðunnar sem kveikt/slökkt er á per félag (portal_users.syn; vantar = á)
   // Verkfæraskráin er í gatt/verkfaeri.js (hlaðin á undan) — sömu lyklar og á þjóninum (_gatt-verkfaeri.cjs)
@@ -75,7 +75,7 @@
       }).join('');
     }).join('') + '</div>';
   }
-  function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES.filter(function (t) { return t.k === 'boss'; })[0] || THEMES[0]; }
+  function themeOf(k) { for (var i = 0; i < THEMES.length; i++) if (THEMES[i].k === k) return THEMES[i]; return THEMES.filter(function (t) { return t.k === 'blar'; })[0] || THEMES[0]; }
   // Línutákn (engin emoji)
   var IC = {
     copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',

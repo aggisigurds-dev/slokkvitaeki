@@ -70,7 +70,7 @@
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {
-    account: { name: 'Center Hótel', theme: 'boss' },
+    account: { name: 'Center Hótel', theme: 'blar' },
     stats: [
       { k: 'Byggingar', v: '10' }, { k: 'Slökkvitæki', v: '155' }, { k: 'Brunaslöngur', v: '77' },
       { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
@@ -433,7 +433,7 @@
   function renderPortal(data) {
     state.data = data;
     hledurFela();
-    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'boss');
+    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'blar');
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham

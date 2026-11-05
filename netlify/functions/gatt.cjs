@@ -1412,7 +1412,7 @@ exports.handler = async (event) => {
     // heiti félags úr customers_base (fyrir hausinn) ef ekki í tokeni/opnum aðgangi
     let name = session ? session.name : (openAcct && openAcct.display_name);
     if (!name) { try { const br = await P.sbGet(`customers_base?id=eq.${baseId}&select=nafn&limit=1`); if (br.ok) name = ((await br.json())[0] || {}).nafn || ''; } catch (_) {} }
-    const theme = (acct && acct.theme) || (session && session.theme) || 'boss';
+    const theme = (acct && acct.theme) || (session && session.theme) || 'blar';
 
     // ── Sérkjör (26.10.2026, Agnar: „tab/page um sérkjör … fullt verð með vsk, fullt án vsk, afsláttarkjör og verð án vsk, og
     //    hvað slökkvitækin koma út"): kjörin búa í portal_users.stillingar.serkjor — yfirferd/hledsla/slanga/skyrsla/akstur eru

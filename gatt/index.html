@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="is" data-theme="boss">
+<html lang="is" data-theme="blar">
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light"/>
@@ -34,9 +34,10 @@
 <title>Þjónustuvefur — Brunahólf / Slökkvitæki ehf.</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="/gatt/myndir/brunaholf/brunaicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600&family=Playfair+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Poppins:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@400;500;600&family=Playfair+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Questrial&display=swap">
 <style>
   /* ── Útlit 10.10.2026: dýpt eftir Boss-uppskriftunum (brunaholf .claude/skills/boss-theme —
      gold.css + elevation.css). Hver flötur er einn hlutur: plata (panel), lykill
@@ -174,38 +175,39 @@
     --bubble:linear-gradient(180deg,#f2f3f5,#e5e7ea); --bubble-edge:#cdd1d6;
     --row-hover:rgba(90,100,115,.05); --sheet:#f0f1f2; --sheet2:#e7e8ea;
   }
-  /* Brunahólf: litir, letur og form úr vefversluninni (vefverslun/verslun.css :root — --c-navy #222f47,
+  /* Brunahólf (05.11.2026, Agnar: „notast við brunaholf.is til viðmiðunar"): navy #1b2a4d, appelsínugult #f15a24, Inter + Questrial,
+     pappír #f1f3f6 — mælt af www.brunaholf.is. Sjálfgefið þema allra vefja frá 05.11.2026. Eldri heimild var vefverslunin:
      --c-navy-deep #18213a, --c-orange #ff4001, --c-orange-ink #d13300, --c-mist #f0f2f7, --c-ink #1b2338,
      --c-muted #515d78, --c-line #d5dae6, Poppins, --r 16px, --r-btn 999px). Málmurinn er hér flatur
      appelsínugulur hreimur (strikið ofan á spjöldum = virki flipinn í vefversluninni). Hreimur á ljósum
      fleti er #cc3200 (≥4,5:1 á hvítu og mist), á dökkum fleti #ff7044 (≥4,5:1 á navy). */
   :root[data-theme="blar"]{
-    --bg:#f0f2f7; --bg-hi:#ffffff; --card:#ffffff;
-    --ink:#1b2338; --ink2:#2c3650; --dim:#515d78; --faint:#7d89a3;
-    --dark:#18213a; --dark2:#222f47;
-    --accent:#cc3200; --accent-hd:#ff7044; --accent-soft:#ff4001; --ontime:#ffe9e1; --deep:#a32800;
-    --line:#d5dae6; --line2:#c3cad9; --good:#1f7a44;
-    --on-dark-dim:#b6c0d6; --sh:24,33,58; --glow:255,64,1;
-    --serif:"Poppins",system-ui,sans-serif; --ui:"Poppins",system-ui,sans-serif; --lbl:"Poppins",system-ui,sans-serif;
-    --ic-hi:#ffb199; --ic-mid:#ff4001; --ic-lo:#a32800;
-    --m-edge:#d13300; --m-ink:#ffffff; --coin-ink:#ffffff;
-    --m-line:linear-gradient(90deg,#ff4001,#ff4001);
-    --m-face:linear-gradient(180deg,#d13300,#d13300);
+    --bg:#f1f3f6; --bg-hi:#ffffff; --card:#ffffff;
+    --ink:#1b2a4d; --ink2:#2d3748; --dim:#4a5568; --faint:#718096;
+    --dark:#13203d; --dark2:#1b2a4d;
+    --accent:#cc4411; --accent-hd:#f15a24; --accent-soft:#f15a24; --ontime:#fdeae2; --deep:#b83d0d;
+    --line:#e1e5ec; --line2:#cfd5df; --good:#13612e;
+    --on-dark-dim:#ffffff; --sh:27,42,77; --glow:241,90,36;
+    --serif:"Questrial","Inter",system-ui,sans-serif; --ui:"Inter",system-ui,sans-serif; --lbl:"Inter",system-ui,sans-serif;
+    --ic-hi:#ffb48f; --ic-mid:#f15a24; --ic-lo:#b83d0d;
+    --m-edge:#f15a24; --m-ink:#ffffff; --coin-ink:#ffffff;
+    --m-line:linear-gradient(90deg,#f15a24,#f15a24);
+    --m-face:linear-gradient(180deg,#f15a24,#f15a24);
     --m-text:linear-gradient(180deg,#ffffff,#ffffff);
-    --m-coin:radial-gradient(circle at 32% 28%,#ff8a62 0%,#ff4001 55%,#d13300 100%);
-    --m-band:linear-gradient(90deg,#ff4001,#ff4001);
-    --hdr:linear-gradient(180deg,#222f47,#222f47); --hdr-grain:linear-gradient(0deg,rgba(0,0,0,0),rgba(0,0,0,0));
-    --night:linear-gradient(180deg,#222f47 0%,#18213a 100%);
-    --slab:linear-gradient(160deg,#222f47 0%,#18213a 100%);
+    --m-coin:radial-gradient(circle at 32% 28%,#ff9a6e 0%,#f15a24 55%,#cc4411 100%);
+    --m-band:linear-gradient(90deg,#f15a24,#f15a24);
+    --hdr:linear-gradient(180deg,#1b2a4d,#1b2a4d); --hdr-grain:linear-gradient(0deg,rgba(0,0,0,0),rgba(0,0,0,0));
+    --night:linear-gradient(180deg,#1b2a4d 0%,#13203d 100%);
+    --slab:linear-gradient(160deg,#1b2a4d 0%,#13203d 100%);
     --panel:linear-gradient(180deg,#ffffff,#ffffff);
-    --strip:linear-gradient(180deg,#f0f2f7,#f0f2f7);
+    --strip:linear-gradient(180deg,#f1f3f6,#f1f3f6);
     --well:linear-gradient(180deg,#ffffff,#ffffff);
     --key:linear-gradient(180deg,#ffffff,#ffffff);
-    --obsidian:linear-gradient(180deg,#18213a,#18213a);
-    --bubble:linear-gradient(180deg,#f0f2f7,#f0f2f7); --bubble-edge:#d5dae6;
-    --row-hover:rgba(34,47,71,.05); --sheet:#f0f2f7; --sheet2:#e6eaf2;
-    --face-sh:0 1px 2px rgba(24,33,58,.18); --slab-sh:0 14px 30px -18px rgba(24,33,58,.45);
-    --well-sh:inset 0 0 0 1px rgba(255,255,255,0); --key-sh:0 1px 2px rgba(24,33,58,.08);
+    --obsidian:linear-gradient(180deg,#1b2a4d,#1b2a4d);
+    --bubble:linear-gradient(180deg,#f1f3f6,#f1f3f6); --bubble-edge:#e1e5ec;
+    --row-hover:rgba(27,42,77,.05); --sheet:#f1f3f6; --sheet2:#e6eaf1;
+    --face-sh:0 1px 2px rgba(27,42,77,.18); --slab-sh:0 14px 30px -18px rgba(27,42,77,.45);
+    --well-sh:inset 0 0 0 1px rgba(255,255,255,0); --key-sh:0 1px 2px rgba(27,42,77,.08);
     --obsidian-sh:0 1px 2px rgba(0,0,0,.25);
   }
   :root{
@@ -241,25 +243,67 @@
   }
   /* Á dökkum flötum (haus, dökk spjöld, dökkir takkar) → nota haus-áhersluna. */
   header, #login button, .sc.dark, .chip.on, .msg-compose button, .dr-head, .seg button.on, .toast, .lb-h{ --accent: var(--accent-hd); }
-  /* Brunahólf: horn eins og í vefversluninni (--r 16px á spjöld, 12px á reiti, 999px á takka) og engir svartir kantar. */
+  /* Brunahólf: horn eins og á brunaholf.is (takkar 7px, spjöld 12px, reitir 8px) og engir svartir kantar. */
   :root[data-theme="blar"] .lcard,:root[data-theme="blar"] .sc,:root[data-theme="blar"] .tbl-wrap,:root[data-theme="blar"] .dpanel,:root[data-theme="blar"] .fcard,
   :root[data-theme="blar"] .kcard,:root[data-theme="blar"] .ecard,:root[data-theme="blar"] .mcard,:root[data-theme="blar"] .rl-card,:root[data-theme="blar"] .eb-card,
-  :root[data-theme="blar"] .dk,:root[data-theme="blar"] .dnext,:root[data-theme="blar"] .vb-panel{border-radius:16px}
+  :root[data-theme="blar"] .dk,:root[data-theme="blar"] .dnext,:root[data-theme="blar"] .vb-panel{border-radius:12px}
   :root[data-theme="blar"] .fld input,:root[data-theme="blar"] .msg-compose textarea,:root[data-theme="blar"] .mcard textarea,:root[data-theme="blar"] .seg,
-  :root[data-theme="blar"] .eb-seg,:root[data-theme="blar"] .fseg,:root[data-theme="blar"] .eb-a,:root[data-theme="blar"] .svc label,:root[data-theme="blar"] .yb{border-radius:12px}
+  :root[data-theme="blar"] .eb-seg,:root[data-theme="blar"] .fseg,:root[data-theme="blar"] .eb-a,:root[data-theme="blar"] .svc label,:root[data-theme="blar"] .yb{border-radius:8px}
   :root[data-theme="blar"] #login button,:root[data-theme="blar"] .hbtn,:root[data-theme="blar"] .chip,:root[data-theme="blar"] .msg-compose button,:root[data-theme="blar"] .kbtn,
-  :root[data-theme="blar"] .gbtn,:root[data-theme="blar"] .xbtn,:root[data-theme="blar"] .pdf,:root[data-theme="blar"] .dl,:root[data-theme="blar"] .tb{border-radius:999px}
+  :root[data-theme="blar"] .gbtn,:root[data-theme="blar"] .xbtn,:root[data-theme="blar"] .pdf,:root[data-theme="blar"] .dl,:root[data-theme="blar"] .tb{border-radius:7px}
   :root[data-theme="blar"] .hbtn,:root[data-theme="blar"] .xbtn,:root[data-theme="blar"] .sc.dark,:root[data-theme="blar"] #login button,:root[data-theme="blar"] .msg-compose button{border-color:transparent;text-shadow:none}
   :root[data-theme="blar"] .hbtn{color:#ffffff}
-  :root[data-theme="blar"] .seg button.on,:root[data-theme="blar"] .chip.on{color:#ffffff;text-shadow:none;border-radius:9px}
-  :root[data-theme="blar"] .chip.on{border-radius:999px}
-  :root[data-theme="blar"] .seg button{border-radius:9px}
+  :root[data-theme="blar"] .seg button.on,:root[data-theme="blar"] .chip.on{color:#ffffff;text-shadow:none;border-radius:6px}
+  :root[data-theme="blar"] .chip.on{border-radius:7px}
+  :root[data-theme="blar"] .seg button{border-radius:6px}
   :root[data-theme="blar"] header{box-shadow:0 1px 0 rgba(255,255,255,.06)}
   :root[data-theme="blar"] .lcard{box-shadow:0 24px 60px -20px rgba(0,0,0,.55)}
   :root[data-theme="blar"] nav a.tab{color:var(--on-dark-dim)}
   :root[data-theme="blar"] nav a.tab.on,:root[data-theme="blar"] h2.page,:root[data-theme="blar"] .sc .v{text-shadow:none}
   :root[data-theme="blar"] .brand b{filter:none;letter-spacing:.06em}
-  :root[data-theme="blar"] .sc .k{letter-spacing:1px;word-break:keep-all;overflow-wrap:normal;hyphens:manual}   /* 26.10.2026: Poppins er breiðara en Jost — „BYGGINGAR" brotnaði í miðju orði í þröngum glugga */
+  :root[data-theme="blar"] .sc .k{letter-spacing:1px;word-break:keep-all;overflow-wrap:normal;hyphens:manual}
+  /* 05.11.2026 (Agnar: „Breyta öllum gráum stöfum í hvíta sem er á bláu"): á navy-flötum — haus, leit, dökk spjöld,
+     skjalahaus, takkar, tilkynningar — er ALLUR texti hvítur; virki flipinn appelsínugulur eins og nav-hlekkir brunaholf.is. */
+  :root[data-theme="blar"] nav a.tab,:root[data-theme="blar"] nav a.tab:hover{color:#fff}
+  :root[data-theme="blar"] nav a.tab.on,:root[data-theme="blar"] nav a.tab.on:hover{color:#ff8a5c}
+  :root[data-theme="blar"] .htag,:root[data-theme="blar"] .htag b{color:#fff}
+  :root[data-theme="blar"] .hbtn,:root[data-theme="blar"] .hbtn.en{color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);box-shadow:none}
+  :root[data-theme="blar"] .hbtn:hover{background:rgba(255,255,255,.16);filter:none}
+  :root[data-theme="blar"] .hbtn svg{opacity:1}
+  :root[data-theme="blar"] .leit{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.28);box-shadow:none}
+  :root[data-theme="blar"] .leit>svg{opacity:1}
+  :root[data-theme="blar"] .leit input{color:#fff}
+  :root[data-theme="blar"] .leit input::placeholder{color:rgba(255,255,255,.78)}
+  :root[data-theme="blar"] .leit:focus-within{box-shadow:0 0 0 2px rgba(241,90,36,.6)}
+  :root[data-theme="blar"] .brand .s,:root[data-theme="blar"] .sc.dark .k,:root[data-theme="blar"] .dr-tt .baddr{color:#fff}
+  :root[data-theme="blar"] .sc.dark .v small{color:#fff;-webkit-text-fill-color:#fff}
+  :root[data-theme="blar"] .sc.dark .v,:root[data-theme="blar"] .dr-tt h3,:root[data-theme="blar"] .lb-h b{filter:none}
+  :root[data-theme="blar"] .lb-h .fseg{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.28)}
+  :root[data-theme="blar"] .lb-h .fseg button{color:#fff}
+  :root[data-theme="blar"] .toast,:root[data-theme="blar"] .toast svg{color:#fff}
+  :root[data-theme="blar"] #login button,:root[data-theme="blar"] .msg-compose button,:root[data-theme="blar"] .nbadge{color:#fff;text-shadow:none}
+  :root[data-theme="blar"] .sc.dark{border-color:transparent}
+  :root[data-theme="blar"] .sc.dark::after{display:none}
+  :root[data-theme="blar"] .sc.dark .art{filter:none}
+  :root[data-theme="blar"] .kicker::before{box-shadow:none}
+  :root[data-theme="blar"] header::after{box-shadow:none}
+  :root[data-theme="blar"] #login,:root[data-theme="blar"] #notready{background:var(--night)}
+  /* Upprunalega Brunahólfs-lógóið (www.brunaholf.is/wp-content/uploads/2026/10/) — hvítt á navy, dökkt á innskráningarspjaldi. */
+  .blogo,.blogo-dark{display:none}
+  :root[data-theme="blar"] .brandrow .blogo{display:block;height:38px;width:auto}
+  :root[data-theme="blar"] .brand{display:none}
+  :root[data-theme="blar"] .logo .blogo-dark{display:block;height:48px;width:auto}
+  :root[data-theme="blar"] .logo .crest,:root[data-theme="blar"] .logo .lt{display:none}
+  :root[data-theme="blar"] .lcard{background:var(--panel);border-radius:12px}
+  :root[data-theme="blar"] .lrule{background:var(--m-line)}
+  :root[data-theme="blar"] #gatt-hledur .gh-plata{background:linear-gradient(180deg,#1b2a4d,#13203d);color:#fff;border-radius:12px}
+  :root[data-theme="blar"] #gatt-hledur .gh-k{color:#fff}
+  :root[data-theme="blar"] #gatt-hledur .gh-t{font-family:"Questrial","Inter",system-ui,sans-serif}
+  :root[data-theme="blar"] #gatt-hledur .gh-bar i{background:#f15a24}
+  :root[data-theme="blar"] h2.page::after{background:linear-gradient(90deg,#f15a24,rgba(241,90,36,.25) 38%,rgba(241,90,36,0) 80%)}
+  :root[data-theme="blar"] .kst.til,:root[data-theme="blar"] .vb-ab.eigandi,:root[data-theme="blar"] .vs-fl .n,:root[data-theme="blar"] .ebmb,:root[data-theme="blar"] .ebmb:hover{color:#fff}
+  :root[data-theme="blar"] .kst.til,:root[data-theme="blar"] .vb-ab.eigandi,:root[data-theme="blar"] .eb-man{border-color:transparent}
+  :root[data-theme="blar"] .ebmb.on{color:#ff8a5c;box-shadow:none}   /* 26.10.2026: Poppins er breiðara en Jost — „BYGGINGAR" brotnaði í miðju orði í þröngum glugga */
   @media(min-width:761px) and (max-width:1100px){ :root[data-theme="blar"] .cards{grid-template-columns:repeat(3,1fr)} }   /* fimm spjöld rúmast ekki með Poppins undir 1100 px */
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -1408,7 +1452,7 @@
 <!-- ══ LOGIN ══ -->
 <section id="login" class="hidden">
   <form class="lcard" id="loginForm" autocomplete="on">
-    <div class="logo"><div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div><div class="lt"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span><span class="k">Brunavarnir &amp; eftirlit</span></div></div>
+    <div class="logo"><img class="blogo-dark" src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div><div class="lt"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span><span class="k">Brunavarnir &amp; eftirlit</span></div></div>
     <div class="lrule"></div>
     <h1>Innskráning</h1>
     <div class="sub">Þjónustuvefur Slökkvitækja ehf. — skoðanastaða, úttektarskýrslur og reikningar.</div>
@@ -1423,7 +1467,7 @@
 <!-- ══ EKKI VIRKUR ══ -->
 <section id="notready" class="hidden">
   <div class="lcard" style="text-align:center">
-    <div class="logo"><div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div><div class="lt"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span><span class="k">Brunavarnir &amp; eftirlit</span></div></div>
+    <div class="logo"><img class="blogo-dark" src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div><div class="lt"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span><span class="k">Brunavarnir &amp; eftirlit</span></div></div>
     <div class="lrule"></div>
     <h1 style="font-size:27px">Vefurinn er ekki virkur enn</h1>
     <div class="sub" id="notready-name">Aðgangur að þessum þjónustuvef hefur ekki verið virkjaður.</div>
@@ -1437,7 +1481,7 @@
     <div class="hin">
       <div class="brandrow">
         <div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div>
-        <div class="brand"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span></div>
+        <img class="blogo" src="/gatt/myndir/brunaholf/brunaholf-logo-hvitt.webp" alt="Brunahólf" width="500" height="150"><div class="brand"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span></div>
       </div>
       <div class="htag" id="htag">Brunavarnir · Þjónustuvefur Brunahólf Slökkvitæki ehf.</div>
       <nav>
@@ -1822,6 +1866,6 @@
 <script src="/gatt/eignagatt.js?v=20261023e"></script>
 <script src="/gatt/bunadargreining.js?v=20261023a"></script>
 <script src="/gatt/vidbot.js?v=20261012k"></script>
-<script src="/gatt/portal.js?v=20261027e"></script>
+<script src="/gatt/portal.js?v=20261105bh"></script>
 </body>
 </html>
