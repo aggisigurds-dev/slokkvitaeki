@@ -22,7 +22,7 @@ krefst(/erGraLod/, 'grá lóð á að detta út úr 3D-gólfi');
 if (/ut = r\.strigi/.test(skra)) villur.push('2D má ekki skipta grunnmynd út fyrir r.strigi');
 if (/function hvitaGraUtan/.test(skra)) villur.push('hvitaGraUtan má ekki vera');
 if (/ut = G\.graUtan/.test(skra)) villur.push('beita má ekki sýna hvitaða grunnmynd');
-if (!/383-teikning-hreinsa-3d\.js\?v=20261002lot/.test(html)) {
+if (!/383-teikning-hreinsa-3d\.js\?v=(20261002lot|20261105a)/.test(html)) {
   villur.push('index.html: 383 vantar ?v=20261002lot');
 }
 
