@@ -86,9 +86,11 @@ Einn opinn aðgangur, slug `center-hotel` (https://slokkvitaeki.netlify.app/g/ce
 síðast inn 09.10.2026; kynning + undirbúningsblað send 27.10. Kúnninn hefur aldrei sent erindi um gáttina. Mál #1247: setja lykilorð áður en
 slóðin er afhent; 1bls: fjarlægja Þverholts-línuna. Saga 2023–2026 skráð eftir á í Þjónustuborði (#1273–#1286, tag gatt + saga-eftir-a).
 
-## Opið núna (05.11.2026)
+## Opið núna (05.11.2026, eftir fundinn)
 
-- Ákvörðun Agnars: leiðrétting A 96.861 / B 150.481; hleðsluverð 4.100 vs 4.200; hvort vsk-gatið 154.687 verði innheimt.
+- **Nýtt tilboð + nýr samningur til Center** (ákveðið á fundinum 05.11) — óskrifað; `sala-reikningar` + `logfraedingur`. Ný verð inn í
+  afsláttarhópinn/verðskrá ÁÐUR en næsta úttekt er rukkuð.
+- Ákvörðun Agnars: leiðrétting A 96.861 / B 150.481; hleðsluverð 4.100 vs 4.200; hvort vsk-gatið 154.687 verði innheimt; hvað verður um reikningana fjóra á bið.
 - Þjónustuborð: #49 svar til Melissu um reyklosun/háfaskýrslu Miðgarðs/samning (ósent) · #954 Hlaðvarpinn · #1247 lykilorð gáttar ·
   #1249 reyklúgnalína í skýrslusnið · #1390 87.048 tvítak Plaza/Grandi (doc 9247 vs 10292) · #1435 R-107312/R-107336 staðsetning.
 - Brunakerfi 2026 vantar á Miðgarð, Skjaldbreið (11.11), Klöpp (30.12), Plaza (08.02.2027). Þingholt Apts slökkvitæki 2026 ekki komin.
@@ -136,6 +138,12 @@ slóðin er afhent; 1bls: fjarlægja Þverholts-línuna. Saga 2023–2026 skrá�
 
 ## Viðbætur (nýjast neðst — dags · hvað · heimild)
 
-- 05.11.2026 · Skráin stofnuð úr rannsókn dagsins (4 undiragentar, lota 5f2146a4). Fundurinn 05.11 kl. 10:30 var í dag — niðurstaða hans er EKKI skráð hér enn.
+- 05.11.2026 · Skráin stofnuð úr rannsókn dagsins (4 undiragentar, lota 5f2146a4).
+- 05.11.2026 · **Stöðufundur Þverholti 14 haldinn kl. 10:30 — „gekk sæmilega“ (Agnar).** Niðurstaða: Slökkvitæki gefur Center **nýtt tilboð
+  og nýjan samning**; verðreglur Center breytast því **frá og með næstu úttekt**. Afsláttarhópurinn „Center Hotels“ (tier 2, föst verð frá
+  17.08.2026) og brunakerfisverðið 968/ein. gilda ekki lengur sjálfkrafa — ný verð þarf að vera komin inn áður en næsta skoðun er rukkuð
+  (næst á dagskrá: Miðgarður + Skjaldbreið brunakerfi, frestur 11.11; Þingholt Apts slökkvitæki des). Hvað varð um reikningana fjóra á bið
+  (1.206.646) og leiðréttinguna A/B er EKKI sagt — spyrja Agnar áður en nokkuð er fellt niður eða sent. Tilboðið og samningurinn eru enn
+  ÓSKRIFUÐ 05.11 · heimild: Agnar í lotu 5f2146a4.
 
 Síðast uppfært: 05.11.2026
