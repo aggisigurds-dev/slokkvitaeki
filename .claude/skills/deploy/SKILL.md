@@ -17,6 +17,14 @@ description: >
 The app is edited from **4 machines**, each running Claude Code or Cursor. The single source
 of truth is `master` on GitHub. Deploy = commit + push. Nothing else.
 
+## 0. Lisbeth fyrst — öll deploy (Agnar 05.11.2026)
+Hookurinn `brunaholf/tools/deploy-vordur.cjs` (PreToolUse á Bash) stoppar `[deploy]`-commit, `git push` með
+`[deploy]`-haus, `netlify deploy`, `gh pr merge` og `git merge` með spurningu til Agnars þar til **kodafraedingur**
+(🖤 Lisbeth) hefur skráð úrskurð á NÁKVÆMLEGA þennan kóða: kallaðu á hana (Agent `kodafraedingur`) á diffið
+`git diff <síðasta [deploy]>..HEAD`; hún kallar á `kerfisrynir` (Stephen Hawking) ef viðmót/sími/öpp/RLS/fall
+er snert, og skráir: `node C:\projects\brunaholf\tools\deploy-vordur.cjs --urskurdur "RÉTT AÐFERÐ" --cwd <rót>`.
+Gildir 4 klst, aðeins á sama kóða. RÖNG AÐFERÐ = laga fyrst. Staða: `node …/deploy-vordur.cjs --stada --cwd <rót>`.
+
 ## The one rule (07.09.2026: push samstillir, `[deploy]` birtir)
 ```bash
 git pull origin master     # ALWAYS first — never deploy stale code over a teammate
