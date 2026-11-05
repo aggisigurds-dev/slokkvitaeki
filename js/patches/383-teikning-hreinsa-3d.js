@@ -1580,6 +1580,12 @@
   // 22.10.2026 (Agnar: „Can we try this color combination for hotels, homes and officespaces" — viðmiðunarmynd): ljósir veggir #ededec, kolgráir veggtoppar #303434,
   // bakgrunnur kalt blágrár halli (#ced8e1 → #8f9caa, svid.background hér neðar), ljós eik á gólfi, fölblátt gler, eikarhurðir — eins fyrir hótel, heimili og skrifstofur
   const GRATT_3D = { bakgrunnur: 0xb6c2ce, veggur: 0xf0efec, utveggur: 0xe9dfd0, toppur: 0x303434, skuggi: 0.34, himinn: [0xf4f7fb, 0xbfbab1, 0.95], sol: 0.85, daufur: 0.74, golf: '#b4b8bd' };
+  // HÖK Í 3D (Agnar 05.11.2026: „hak báðum megin — hvort sýna á teikningu á gólfi, auk þess að geta valið að sjá rauðu brunaveggina eða
+  // ekki", sama og í 3D í TurboPaint): rauðir eldveggir eru ekki lengur alltaf af (21.10.2026) heldur val — sjálfgefið áfram af. „Teikning á gólfi":
+  // '' = fylgir útlitinu (Brunahólf = teikning, grátt = gólfefni), 'ja' / 'nei' = val notandans. Bæði í Vidmot (eins á öllum vélum).
+  const ELDVEGGIR_LS = 'teikning.eldveggir3d', GOLFTEIKN_LS = 'teikning.golfteikning3d';
+  const lesaEldveggi = () => { try { return !!(window.Vidmot && Vidmot.lesa(ELDVEGGIR_LS, 'nei') === 'ja'); } catch (_) { return false; } };
+  const lesaGolfTeikn = () => { try { const v = window.Vidmot ? Vidmot.lesa(GOLFTEIKN_LS, '') : ''; return v === 'ja' || v === 'nei' ? v : ''; } catch (_) { return ''; } };
   const lesaUtlit = () => { try { return window.Vidmot && Vidmot.lesa(UTLIT_LS, 'gratt') === 'eld' ? 'eld' : 'gratt'; } catch (_) { return 'gratt'; } };
   const BAKGRUNNUR_3D = 0xdcd9d2, VEGGLITUR_3D = 0xf2eee6, ELDLITIR_3D = { 60: 0xd32f2f, 30: 0xe57373 }, HURDALITUR_3D = 0xb98e5c, ELDHURD_3D = 0xf57c00, ALYKTAD_3D = 0xf2a9a9, VALINN_3D = 0xd9b45a;
   // Ljósir, vel aðgreindir litir á gólf brunahólfa (RGB).
@@ -2230,6 +2236,8 @@
     const himinn = new T.HemisphereLight(0xffffff, 0xbdb8ae, 0.8); svid.add(himinn);
     const sol = new T.DirectionalLight(0xffffff, 0.6); svid.add(sol); svid.add(sol.target);
     let utlit = (gogn && gogn.utlit) || lesaUtlit();
+    let eldveggirOn = lesaEldveggi(), golfTeikn = lesaGolfTeikn();
+    const vilTeikningAGolfi = () => golfTeikn === 'ja' || (golfTeikn === '' && utlit === 'eld');
     const daufLog = [], skuggaEfni = [], hurdaEfni = [];
     const losa = [], veggEfni = [], sporEfni = [], lag = [], midar = [];
     losa.push(bakHalli);
@@ -2356,7 +2364,9 @@
       if (!lg.heilir) return;
       const grtt = utlit === 'gratt';
       const samV = samOn && lg.samV;      // sameignarsýn: veggir íbúða ljósir og daufir, veggir sameignar halda lit sínum
-      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : samV && !samV[i] ? SAMEIGN_DAUFT_3D : grtt ? GRATT_3D.veggur : VEGGLITUR_3D));
+      const alykt = hd.holf && hd.holf.alyktad;
+      const eldLitur = i => { if (!eldveggirOn) return 0; const e = hd.eld && hd.eld[i]; if (e && ELDLITIR_3D[e]) return ELDLITIR_3D[e]; return alykt && alykt[i] ? ALYKTAD_3D : 0; };
+      for (let i = 0; i < hd.butar.length; i++) lg.veggir.setColorAt(i, lit.setHex(lg.valinn === i ? VALINN_3D : samV && !samV[i] ? SAMEIGN_DAUFT_3D : eldLitur(i) || (grtt ? GRATT_3D.veggur : VEGGLITUR_3D)));
       lg.veggir.instanceColor.needsUpdate = true;
       if (lg.karmar) {
         for (let i = 0; i < hd.hurdir.length; i++) {
@@ -2611,6 +2621,42 @@
           svG.renderOrder = 2;
           hopur.add(svM, svG, svR);
           losa.push(svE, svT, sgE, shE); veggEfni.push(svE, svT); lg.svalir = svM;
+        }
+        // STIGAR ÚR TURBOPAINT (Agnar 05.11.2026): hver lína með tegund 'stigi' er einn leggur — frá neðsta þrepi (a) upp á efsta (b), breidd = þykkt
+        // línunnar (≥ 0,55 m, annars 1,1 m). Leggur sem byrjar þar sem annar endar er framhald hans: sá fyrri fer upp í hálfa hæð, pallur, sá seinni
+        // upp í fulla (U- eða L-stigi, eins og í 3D í TurboPaint); annars beinn leggur frá gólfi upp í fulla vegghæð.
+        if (hd.stigaLinur && hd.stigaLinur.length) {
+          try {
+            const stE = new T.MeshLambertMaterial({ color: 0xd9d3c7 }), stN = new T.MeshLambertMaterial({ color: 0x6f6a62 });
+            losa.push(stE, stN);
+            const leggir = hd.stigaLinur.map(v => {
+              const ax = v[0] * f - k.gw / 2, az = v[1] * f - k.gh / 2, bx = v[2] * f - k.gw / 2, bz = v[3] * f - k.gh / 2, th0 = (v[4] || 0) * f;
+              return { ax, az, bx, bz, w: th0 >= 0.55 * metri ? Math.min(2.4 * metri, th0) : 1.1 * metri, L: Math.hypot(bx - ax, bz - az), fyrri: null, naest: null };
+            }).filter(l => l.L > 0.8 * metri);
+            leggir.forEach(l => {
+              const o = leggir.find(x => x !== l && !x.naest && Math.hypot(l.ax - x.bx, l.az - x.bz) <= Math.max(x.w, l.w) * 1.6);
+              if (o) { l.fyrri = o; o.naest = l; }
+            });
+            const halfH = veggH / 2, plataH = Math.max(0.12 * metri, veggH * 0.05);
+            const kassiIHop = (hop, x0, x1, y0, y1, z0, z1, efni) => {
+              const geo = new T.BoxGeometry(Math.max(0.001, x1 - x0), Math.max(0.001, y1 - y0), Math.max(0.001, z1 - z0));
+              const ms = new T.Mesh(geo, efni); ms.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); ms.castShadow = true; hop.add(ms); losa.push(geo); return ms;
+            };
+            leggir.forEach(l => {
+              const y0 = l.fyrri ? halfH : 0, y1 = l.naest ? halfH : veggH, n = Math.max(4, Math.min(40, Math.round(l.L / (0.26 * metri)))), bil = l.L / n, rise = (y1 - y0) / n;
+              const g2 = new T.Group(); g2.position.set(l.ax, 0, l.az); g2.rotation.y = -Math.atan2(l.bz - l.az, l.bx - l.ax); hopur.add(g2);
+              for (let j = 0; j < n; j++) {
+                const top = y0 + (j + 1) * rise;
+                kassiIHop(g2, j * bil, (j + 1) * bil, Math.max(y0, top - plataH), top, -l.w / 2, l.w / 2, stE);
+                kassiIHop(g2, j * bil, j * bil + 0.04 * metri, top, top + veggH * 0.004, -l.w / 2, l.w / 2, stN);     // þrepanef
+              }
+              if (l.naest) {            // pallur í hálfri hæð milli efri enda þessa leggs og neðri enda þess næsta
+                const dx = l.naest.ax - l.bx, dz = l.naest.az - l.bz, ex = Math.cos(Math.atan2(l.bz - l.az, l.bx - l.ax)), ez = Math.sin(Math.atan2(l.bz - l.az, l.bx - l.ax));
+                const lx = dx * ex + dz * ez, lz = -dx * ez + dz * ex;       // vigur að næsta legg í hnitum þessa leggs
+                kassiIHop(g2, l.L + Math.min(0, lx) - 0.1 * l.w, l.L + Math.max(0, lx) + l.w * 0.6, halfH - plataH, halfH, Math.min(0, lz) - l.w / 2, Math.max(0, lz) + l.w / 2, stE);
+              }
+            });
+          } catch (e) { console.warn('[383] stigar úr TurboPaint', e); }
         }
         // Hurðargöt: veggurinn heldur áfram OFAN við hurðina (dyrakarmur) — rýmið lokast en gengt er undir. Hurðaropið er
         // 2,22 m óháð lofthæð (karmur 78 cm við 3 m, 28 cm við 2,5 m), en karmurinn aldrei undir 25 cm.
@@ -3225,7 +3271,7 @@
       if (rymiOn && lg.golfefni && lg.golfStr) {
         if (!lg.rymiAf) { lg.rymiAf = new T.CanvasTexture(rymisStrigi(lg.golfefni, rymiUmfang, lg.golfStr)); lg.rymiAf.anisotropy = 4; losa.push(lg.rymiAf); }
         map = lg.rymiAf;
-      } else if (lg.efniAf && utlit === 'gratt') map = lg.efniAf;
+      } else if (lg.efniAf && !vilTeikningAGolfi()) map = lg.efniAf;
       if (lg.efniAf && lg.dauf) lg.dauf.visible = false;
       if (lg.golfE.map !== map) { lg.golfE.map = map; lg.golfE.needsUpdate = true; }
     });
@@ -3234,7 +3280,7 @@
       teiknari.setClearColor(g ? GRATT_3D.bakgrunnur : BAKGRUNNUR_3D); svid.background = g ? bakHalli : null;
       himinn.color.setHex(g ? GRATT_3D.himinn[0] : 0xffffff); himinn.groundColor.setHex(g ? GRATT_3D.himinn[1] : 0xbdb8ae); himinn.intensity = g ? GRATT_3D.himinn[2] : 0.8;
       sol.intensity = g ? GRATT_3D.sol : 0.6;
-      daufLog.forEach(m => { m.visible = g; });
+      daufLog.forEach(m => { m.visible = !vilTeikningAGolfi(); });
       beitaGolfi();
       skuggaEfni.forEach(e => { e.opacity = g ? GRATT_3D.skuggi : 0.2; });
       veggEfni.forEach(e => { if (e.userData.toppur && !e.transparent) e.color.setHex(g ? GRATT_3D.toppur : TOPPLITUR_3D); });
@@ -3339,6 +3385,9 @@
       haedIds: () => lag.map(q => q.hd.haedId || null),
       synilegar: () => lag.filter(q => q.hopur.visible).map(q => q.hd.haedId || null),
       // Grátt (sjálfgefið á prófílnum) eða litað útlit eldveggja og brunahólfa.
+      // Hökin tvö: rauðir brunaveggir og teikning á gólfi. Skila gildandi gildi; boolean færir val (vistað í Vidmot).
+      eldveggir(v) { if (typeof v === 'boolean') { eldveggirOn = v; try { if (window.Vidmot) Vidmot.setja(ELDVEGGIR_LS, v ? 'ja' : 'nei'); } catch (_) {} lag.forEach(litaVeggi); } return eldveggirOn; },
+      golfTeikning(v) { if (typeof v === 'boolean') { golfTeikn = v ? 'ja' : 'nei'; try { if (window.Vidmot) Vidmot.setja(GOLFTEIKN_LS, golfTeikn); } catch (_) {} beitaUtliti(); } return vilTeikningAGolfi(); },
       utlit(v) { if (v !== 'gratt' && v !== 'eld') return utlit; utlit = v; try { if (window.Vidmot) Vidmot.setja(UTLIT_LS, v); } catch (_) {} beitaUtliti(); return utlit; },
       // MYND AF SÝNINNI (Agnar 07.10.2026: „This view would be absolutely perfect as the image we put the fire extinguisher
       // in its places"): sviðið teiknað k-falt skarpar (sömu CSS-stærð, svo miðar og tæki halda hlutföllum) → PNG.
@@ -5212,11 +5261,45 @@
         for (let x = 0; x < W; x++) { yta(x); yta((H - 1) * W + x); }
         for (let y = 0; y < H; y++) { yta(y * W); yta(y * W + W - 1); }
         while (top) { const p = st[--top], px = p % W, py = (p - px) / W; if (px > 0) yta(p - 1); if (px < W - 1) yta(p + 1); if (py > 0) yta(p - W); if (py < H - 1) yta(p + W); }
-        let inni = 0; for (let i = 0; i < W * H; i++) if (!uti[i]) inni++;
+        // OP Á ÚTVEGG (Agnar 04.11.2026, Nesdekk Breiðhöfða 13: teikningin vantaði á gólfið í verkstæðinu — bílaopin eru breiðari en
+        // örlitla lokunin hér að ofan, svo flóðið lak inn og verkstæðið taldist utan húss): annað flóð þar sem línurnar eru gerðar ~3 % af
+        // stærð hússins þykkari á hvorn veg (bil upp í ~6 m lokast), og vex svo aftur inn að raunverulegu veggjunum. Utan húss er
+        // aðeins það sem báðar leiðir segja utan; lekur hvorug er niðurstaðan eins og áður.
+        let utiF = uti;
+        try {
+          const rB = Math.max(4, Math.round(Math.max(W, H) * 0.03));
+          const hc2 = document.createElement('canvas'); hc2.width = W; hc2.height = H;
+          const h2 = hc2.getContext('2d', { willReadFrequently: true });
+          h2.strokeStyle = '#000'; h2.lineCap = 'square'; h2.lineJoin = 'miter';
+          tp.forEach(v => {
+            h2.lineWidth = Math.max(3, (Number(v.t) || 0) * kv) + 4 + 2 * rB;
+            h2.beginPath();
+            for (let i = 0; i + 1 < v.p.length; i += 2) {
+              const px = (v.p[i] - sk.x) * kv, py = (v.p[i + 1] - sk.y) * kv;
+              if (i) h2.lineTo(px, py); else h2.moveTo(px, py);
+            }
+            h2.stroke();
+          });
+          const lok2 = h2.getImageData(0, 0, W, H).data, uB = new Uint8Array(W * H), st2 = new Int32Array(W * H);
+          let t2 = 0;
+          const y2 = p => { if (!uB[p] && lok2[p * 4 + 3] < 128) { uB[p] = 1; st2[t2++] = p; } };
+          for (let x = 0; x < W; x++) { y2(x); y2((H - 1) * W + x); }
+          for (let y = 0; y < H; y++) { y2(y * W); y2(y * W + W - 1); }
+          while (t2) { const p = st2[--t2], px = p % W; if (px > 0) y2(p - 1); if (px < W - 1) y2(p + 1); if (p >= W) y2(p - W); if (p < W * (H - 1)) y2(p + W); }
+          const dd = new Int16Array(W * H).fill(-1); let q0 = 0, q1 = 0;
+          for (let p = 0; p < W * H; p++) if (uB[p]) { dd[p] = 0; st2[q1++] = p; }
+          while (q0 < q1) {
+            const p = st2[q0++], d0 = dd[p]; if (d0 >= rB) continue;
+            const px = p % W, nb = q => { if (dd[q] < 0 && lok[q * 4 + 3] < 128) { dd[q] = d0 + 1; st2[q1++] = q; } };
+            if (px > 0) nb(p - 1); if (px < W - 1) nb(p + 1); if (p >= W) nb(p - W); if (p < W * (H - 1)) nb(p + W);
+          }
+          utiF = new Uint8Array(W * H); for (let p = 0; p < W * H; p++) utiF[p] = dd[p] >= 0 ? 1 : 0;
+        } catch (e) { utiF = uti; console.warn('[383] hús úr línum (stór op)', e); }
+        let inni = 0; for (let i = 0; i < W * H; i++) if (!utiF[i]) inni++;
         const kassi = Math.max(1, (bx1 - bx0) * (by1 - by0));
         if (inni > kassi * 0.5) {      // húsið lokað: að minnsta kosti helmingur útlínukassans er inni
           const gx = golf.getContext('2d', { willReadFrequently: true }), gdat = gx.getImageData(0, 0, W, H), gp = gdat.data;
-          for (let i = 0; i < W * H; i++) if (uti[i]) gp[i * 4 + 3] = 0;
+          for (let i = 0; i < W * H; i++) if (utiF[i]) gp[i * 4 + 3] = 0;
           gx.putImageData(gdat, 0, 0);
         }
       } catch (e) { console.warn('[383] hús úr línum', e); }
@@ -5246,6 +5329,8 @@
     const merktarHurdir = tpHurdir.length ? klippaButa(tpButar(tpHurdir), sk) : null;
     // svalir eru ekki veggir í grímunni (engin brunahólf, engin hurðarbil) — þær fara beint í 3D sem lágur veggur
     const svalir = tpSvalir.length ? klippaButa(tpButar(tpSvalir), sk) : [];
+    // stigar teiknaðir í TurboPaint (tegund 'stigi': lína frá neðsta þrepi upp á efsta, þykkt = breidd) — Agnar 05.11.2026 („enn önnur vélin 3D")
+    const stigaLinur = tp.some(v => v.tegund === 'stigi') ? klippaButa(tpButar(tp.filter(v => v.tegund === 'stigi')), sk) : [];
     let gler = null;
     if (leidrett) gler = merktGler || [];
     else {
@@ -5290,7 +5375,7 @@
       talning.metrar = Math.round(butar.reduce((s0, v) => s0 + Math.hypot(v[2] - v[0], v[3] - v[1]), 0) * mpx);
     }
     try { console.info('[383] 3D ' + (h.nafn || '') + ': ' + JSON.stringify(talning)); } catch (_) {}
-    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, golfRymi: Array.isArray(h.golfRymi) ? h.golfRymi : [], merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, svalir, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
+    return { veggir, W: r.W, H: r.H, golf, kvardi: r.kvardi, golfRymi: Array.isArray(h.golfRymi) ? h.golfRymi : [], merki, merkiUti, veggjaPx: butar ? butar.length : n, butar, gler, hurdir, svalir, stigaLinur, hurdEld, eld, holf, eldSjalf: uE.eldSjalf, handval: uE.handval, eiHintar: eiHintar || [], talning, sk, frumB: fb, frumH: fh };
   }
   // EI-merki fyrir 3D: það sem teikningin geymir, annars TEXTALAG vigur-PDF-sins (ódýrt, engin myndgreining). Aðeins í
   // minni — ekkert er skrifað í teikninguna og 2D-glugginn sýnir merkin ekki (Agnar 03.10.2026: sú sýn býr í TurboPaint).
@@ -6231,6 +6316,8 @@
       '<button type="button" id="fp-3d-mynd" title="Vista sýnina eins og hún er — með tækjum og merkjum — sem skarpa PNG-mynd, t.d. í tilboð" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Vista mynd</button>' +
       '<button type="button" id="fp-3d-sjon" title="Skipta á milli sjónarhorns ofan frá (eins og teikningin) og á ská" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Á ská</button>' +
       '<button type="button" id="fp-3d-utlit" aria-pressed="false" title="Sýna eldveggi og brunahólf í lit — annars grátt útlit þar sem tækin standa út" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Brunahólf</button>' +
+      '<label id="fp-3d-hak-eld" title="Rauðir eldveggir (EI-60 og EI-30). Slökktu til að sýna alla veggi eins." style="display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer"><input type="checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#d9b45a">Rauðir brunaveggir</label>' +
+      '<label id="fp-3d-hak-golf" title="Teikningin á gólfinu. Slökktu til að sjá gólfefni eða slétt gólf innan veggja hússins." style="display:flex;align-items:center;gap:6px;height:36px;padding:0 10px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer"><input type="checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#d9b45a">Teikning á gólfi</label>' +
       '<button type="button" id="fp-3d-sameign" aria-pressed="' + (SAM.syn ? 'true' : 'false') + '" title="Sameign í fjölbýli: stigahús, gangar og kjallari í ljósum gulleitum lit, íbúðir deyfðar — greint úr teikningunni (stigar endurtaka sig milli hæða)" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:' + (SAM.syn ? '#d9b45a' : 'rgba(20,18,15,.85)') + ';color:' + (SAM.syn ? '#14120f' : '#fff') + ';font:700 13px system-ui;cursor:pointer">Sameign</button>' +
       // RÝMI (Agnar 11.10.2026): tegundir rýma í lit og talning — sameign, íbúðir eða bæði
       '<button type="button" id="fp-3d-golf" aria-pressed="false" title="Gólf: skiptu um lit á tré og steypu, eða málaðu stök rými" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(20,18,15,.85);color:#fff;font:700 13px system-ui;cursor:pointer">Gólf</button>' +
@@ -6405,7 +6492,11 @@
       };
       // Útlitshnappurinn: Brunahólf (litað) ↔ grátt.
       const ub = gamur.querySelector('#fp-3d-utlit');
-      const utlitLit = () => { if (!ub || !G.syn3d || !G.syn3d.utlit) return; const a = G.syn3d.utlit() === 'eld'; ub.setAttribute('aria-pressed', a ? 'true' : 'false'); ub.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; ub.style.color = a ? '#14120f' : '#fff'; };
+      const hakEld = gamur.querySelector('#fp-3d-hak-eld input'), hakGolf = gamur.querySelector('#fp-3d-hak-golf input');
+      const hakLit = () => { if (!G.syn3d) return; if (hakEld && G.syn3d.eldveggir) hakEld.checked = !!G.syn3d.eldveggir(); if (hakGolf && G.syn3d.golfTeikning) hakGolf.checked = !!G.syn3d.golfTeikning(); };
+      if (hakEld) hakEld.addEventListener('change', () => { if (G.syn3d && G.syn3d.eldveggir) G.syn3d.eldveggir(hakEld.checked); });
+      if (hakGolf) hakGolf.addEventListener('change', () => { if (G.syn3d && G.syn3d.golfTeikning) G.syn3d.golfTeikning(hakGolf.checked); });
+      const utlitLit = () => { hakLit(); if (!ub || !G.syn3d || !G.syn3d.utlit) return; const a = G.syn3d.utlit() === 'eld'; ub.setAttribute('aria-pressed', a ? 'true' : 'false'); ub.style.background = a ? '#d9b45a' : 'rgba(20,18,15,.85)'; ub.style.color = a ? '#14120f' : '#fff'; };
       if (ub) ub.addEventListener('click', () => { if (!G.syn3d || !G.syn3d.utlit) return; G.syn3d.utlit(G.syn3d.utlit() === 'eld' ? 'gratt' : 'eld'); utlitLit(); skyring(valin); });
       // Rými-takkinn og umfangið
       const rb = gamur.querySelector('#fp-3d-rymi'), rp = gamur.querySelector('#fp-3d-rymi-p');
