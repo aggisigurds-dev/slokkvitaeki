@@ -44,7 +44,17 @@
   const icf = (f, sz) => (window.UIIcons ? UIIcons.flokkurSvg(f, { size: sz || 15 }) : '');
 
   let term = '';
-  const openGroups = new Set();
+  // 05.11.2026 (Agnar: „afhverju þarf ég að biðja um þetta í hvert einasta skipti … að láta kerfið savast"): hvaða flokkar eru
+  // opnir í Lista-hamnum vistast á þjóninn (Vidmot 'sala.listiOpnir', fylki af flokkaheitum) — skrifað aðeins við raunverulegan
+  // smell á flokkshaus, lesið við ræsingu og þegar önnur vél breytir því.
+  const OPNIR_VM = 'sala.listiOpnir';
+  const lesaOpna = () => { try { const v = window.Vidmot ? Vidmot.lesa(OPNIR_VM, []) : []; return Array.isArray(v) ? v.filter(x => typeof x === 'string') : []; } catch (_) { return []; } };
+  const openGroups = new Set(lesaOpna());
+  document.addEventListener('vidmot-breytt', e => {
+    const d = e && e.detail;
+    if (!d || d.lykill !== OPNIR_VM || d.heima) return;
+    openGroups.clear(); lesaOpna().forEach(k => openGroups.add(k));   // tekur gildi við næstu teikningu listans (Stöðugt viðmót)
+  });
 
   // ── Stílar (dökka spjaldið úr mockup-inu, í einangruðum klösum) ───────────
   function injectCSS() {
@@ -253,6 +263,7 @@
         const nowOpen = g.dataset.open !== '1';
         g.dataset.open = nowOpen ? '1' : '0';
         if (nowOpen) openGroups.add(key); else openGroups.delete(key);
+        if (e.isTrusted) { try { if (window.Vidmot) Vidmot.setja(OPNIR_VM, Array.from(openGroups)); } catch (_) {} }   // raunverulegur smellur → þjónninn
         return;
       }
       const add = e.target.closest('._vlb-add');

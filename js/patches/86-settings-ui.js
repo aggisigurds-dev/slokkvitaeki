@@ -481,11 +481,9 @@
     cats.forEach(c => {
       listHtml += `<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;padding:8px 8px 4px;background:#f8fafc;margin-top:4px">${esc(c)}</div>`;
       byCat[c].forEach(p => {
-        const pos = positions[p.id] || '';
+        // 05.11.2026: # (töluröð) og 📌 (pinna efst) eru farin — röðin er EIN: vorur.rodun, dregin til með „Raða" á Söluborðinu.
         listHtml += `
-          <div class="su-prod-row" style="display:grid;grid-template-columns:48px 25px 25px 1fr 90px;gap:8px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9">
-            <input type="text" inputmode="numeric" pattern="[0-9]*" data-prod-pos="${p.id}" value="${esc(pos)}" maxlength="3" placeholder="—" title="Röðun á Sala síðu (1 = efst)" style="width:100%;padding:5px 8px;border:1px solid #e2e8f0;border-radius:5px;font:inherit;font-size:13px;text-align:center;font-weight:700;box-sizing:border-box">
-            <input type="checkbox" data-prod-pin="${p.id}" ${pinned.has(p.id) ? 'checked' : ''} title="Pinna efst (auðveldara — yfirskrifar #)" style="width:16px;height:16px">
+          <div class="su-prod-row" style="display:grid;grid-template-columns:25px 1fr 90px;gap:8px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9">
             <input type="checkbox" data-prod-hide="${p.id}" ${hidden.has(p.id) ? 'checked' : ''} title="Fela" style="width:16px;height:16px">
             <span class="su-prod-name" style="font-size:13px">${esc(p.nafn)}</span>
             <span class="su-prod-cat" style="text-align:right;font-size:12px;color:#64748b">${Math.round(p.verd_an_vsk * 1.24).toLocaleString('is-IS')} kr</span>
@@ -493,30 +491,20 @@
       });
     });
     return `
-      <div class="su-section-title">Röðun á Sala síðu</div>
+      <div class="su-section-title">Röðun á Söluborði</div>
       <div class="su-row">
-        <label>Sortunarröð</label>
-        <select data-sk="sort_order">
-          <option value="alphabetical" ${s.sort_order==='alphabetical'?'selected':''}>Stafrófsröð</option>
-          <option value="popular" ${s.sort_order==='popular'?'selected':''}>Vinsælast</option>
-          <option value="custom" ${s.sort_order==='custom'?'selected':''}>Eigin röð (# + pinned + stafrófsröð)</option>
-        </select>
-        <div class="su-hint" style="grid-column:2/-1;margin-top:4px">Til að "# röð" virki skaltu velja <b>Eigin röð</b> hér að ofan.</div>
+        <div class="su-hint" style="grid-column:1/-1">Röðinni er stýrt beint á <b>Söluborðinu</b>: ýttu á <b>Raða</b>, dragðu flísarnar þangað sem þær eiga að vera — röðin vistast sjálf og er eins á öllum vélum. (Gamla „Sortunarröð" og töluröðin hér voru fjarlægð 05.11.2026 því þær kepptu við þá röð.)</div>
       </div>
       <div class="su-row">
         <label>Aukavörur (📂 Aðrar Vörur)</label>
         <label class="su-inline" style="font-size:13px;font-weight:400;color:#475569"><input type="checkbox" data-sk="show_aux_categories" ${s.show_aux_categories?'checked':''} style="margin-right:6px;width:auto"> Sýna í aðalrúðu (annars eingöngu í collapsed valmynd)</label>
       </div>
-      <div class="su-section-title">Röðun, pinning og felun</div>
+      <div class="su-section-title">Felun</div>
       <div style="font-size:11px;color:#64748b;margin-bottom:8px">
-        <b>#</b> = töluröðun (1 = efst, lágmark fyrst) &nbsp;·&nbsp;
-        📌 = pinna (sett efst, yfirskrifar töluröðun) &nbsp;·&nbsp;
         🚫 = fela (engin sjáanleg)
       </div>
       <div class="su-prod-list">
-        <div style="display:grid;grid-template-columns:48px 25px 25px 1fr 90px;gap:8px;padding:6px 8px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #e2e8f0;background:#f8fafc">
-          <div style="text-align:center">#</div>
-          <div style="text-align:center">📌</div>
+        <div style="display:grid;grid-template-columns:25px 1fr 90px;gap:8px;padding:6px 8px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #e2e8f0;background:#f8fafc">
           <div style="text-align:center">🚫</div>
           <div>Vara</div>
           <div style="text-align:right">Verð m/VSK</div>
@@ -532,38 +520,12 @@
         _draft.sala[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
       });
     });
-    body.querySelectorAll('input[data-prod-pin]').forEach(cb => {
-      cb.addEventListener('change', e => {
-        const id = +e.target.dataset.prodPin;
-        const set = new Set((_draft.sala.pinned_product_ids || []).map(Number));
-        if (e.target.checked) set.add(id); else set.delete(id);
-        _draft.sala.pinned_product_ids = Array.from(set);
-      });
-    });
     body.querySelectorAll('input[data-prod-hide]').forEach(cb => {
       cb.addEventListener('change', e => {
         const id = +e.target.dataset.prodHide;
         const set = new Set((_draft.sala.hidden_product_ids || []).map(Number));
         if (e.target.checked) set.add(id); else set.delete(id);
         _draft.sala.hidden_product_ids = Array.from(set);
-      });
-    });
-    body.querySelectorAll('input[data-prod-pos]').forEach(inp => {
-      inp.addEventListener('input', e => {
-        // Strip non-digits to keep input clean (since type="text" allows anything)
-        const cleaned = e.target.value.replace(/[^0-9]/g, '');
-        if (cleaned !== e.target.value) e.target.value = cleaned;
-        const id = +e.target.dataset.prodPos;
-        if (!_draft.sala.position_orders) _draft.sala.position_orders = {};
-        if (cleaned === '' || +cleaned <= 0) {
-          // deepMerge FJARLÆGIR ALDREI lykil — `delete` hér var þögult
-          // núll-verk og gamla staðsetningin kom aftur við endurhleðslu.
-          // null = ósett (lesarinn í 87 gerir `positions[id] != null && > 0`).
-          // Sama venja og 140/147.
-          _draft.sala.position_orders[id] = null;
-        } else {
-          _draft.sala.position_orders[id] = +cleaned;
-        }
       });
     });
   }
