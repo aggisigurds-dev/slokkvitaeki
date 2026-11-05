@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-05 13:12 · 1000 virkar staðreyndir
+Sótt 2026-11-05 13:23 · 1000 virkar staðreyndir
 
 ---
 
@@ -1031,11 +1031,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### postur
 
-- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
-  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
-  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Talan á Tölvupóstar-hamnum á Þjónustuborði (Bíður svars) telur ÞRÆÐI úr email_digest (60 dagar, eldklar@ + bokhald@), ekki mál á borðinu; að loka máli breytir henni ekki. Fela póst = röð í reikninga_postur_hidden (message_id).**
   <br>04.11.2026: 168 sjálfvirkir/birgja-póstar faldir að ósk Agnars (Teya, Húsasmiðjan, Microsoft, Google, birgjareikningar o.fl.), afrit backup_20261104_postur_hidden; Bíður svars fór úr 101 í ~74 (reiknað, ekki séð á skjá). Inkasso, Nova-kröfur, Gjaldheimtan og rsk.is voru EKKI faldir. Listinn sækir ei
+  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
+  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
   <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Mál #1485 Stúdíó tönn ehf (fyrirtaeki 349): Helgi bað 27.10 um vottun vegna R-108286; svar með úttektarskýrslu (customer_documents #1587, apríl 2026, 3 léttvatn + 2 CO2) skráð sent 04.11.2026 kl. 17:59 (reikninga_postur_activity #10, svarad_at sett). Atlas #1214 svarað 17:21 (activity #9).**
   <br>Móttaka í Gmail ÓSTAÐFEST: email_digest var síðast sótt 16:55 og Thunderbird á skrifstofuvél skrifaði ekki eldklar@ INBOX síðan 15:17 né Sent síðan 04:10 (LunaBridge2-Email keyrir á 15 mín með niðurstöðu 0 og „0 msgs skipped"). Orsök ómæld. Gildra: Storage-slóð customer_documents.storage_path innihe
@@ -1435,12 +1435,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
   <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
   <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
-  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
 - **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
   <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
   <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
+- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
+  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
 
 ### taeki
 
@@ -1618,29 +1618,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Næsta sópun: EKKI reyna PATCH aftur nema heimildastilling breytist (staðfest lokað í yfir 10 sópunum núna, alltaf sama 'Modify Shared Resources' skilaboð frá Claude-classifiernum sjálfum, ekki Supabase RLS). EKKI reyna git push aftur nema Agnar bæti aggisigurds-dev/slokkvitaeki við sem WRITE-heimila
   <br><sub>2026-09-17 · baedi · sql · claude-code</sub>
 
-### oryggisnet
-
-- **audit_vernd-taflan (audit-vörnin) má ekki fjarlægja þótt hún stækki — minnkaðu risa-raðirnar, ekki vörnina.**
-  <br>[rule; agents: oryggi, kerfisheilsa, hradi] 05.08 var taflan 846 MB í 20.441 röðum (~42 kB á röð). Agnar: ‚má ekki taka í burtu þessa vernd‘ og ‚vill bara ekki að mikilvæg gögn detti út‘.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 1555dbad 2026-08-05 · claude-code</sub>
-- **Útgangskóði tail eða grep í röri gatar ekki push — lestu niðurstöðu node tools/audit-all.cjs sjálfur; þekkt gagnarauð (ekki kóðavilla): fk-join, para-tegund, payday-samraeming, solu-id, t-s-i.** _(likely)_
-  <br>[gotcha; agents: netvordur] Skrá sem fer yfir verndaðar slóðir (10/233/254, 121/pos.js, payday-push, 153/187) fylgir netvordur-gátlistanum og uppfærir docs/ORYGGISNET.md.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
-- **Netvörður 31.10.2026 (PR #939): ^-akkerið í payday-push.cjs:454 /^Viðbótarúttekt við (R-\d+)/ er EINA vörnin sem heldur „Viðbót við R-… (ný tæki)“ frá venjulegum kröfum — 17 af 70 krafa_note bera R-númer annars staðar (t.d. R-001109 „Endurútgáfa R-001029 …“). audit-payday-lysing læsir það ekki: stökkbreyting sem fjarlægir ^ eða víkkar í /(R-\d+)/ helst GRÆN. Regex-vörður þarf neikvætt dæmi sem LÍKIST (venjuleg nóta með R-númeri), ekki aðeins nótu án R-númers. Mælt: buildPayload master vs grein á öllum 1120 sölum × 2 = 0 munur.**
-  <br>Harness í vm hleður buildPayload úr báðum útgáfum; gervisala með krafa_note eins og 488:466 skrifar gefur aðeins nýja línu í description, línur/upphæðir óbreyttar.
-  <br><sub>2026-10-31 · slokkvitaeki · claude-code · claude-code</sub>
-- **14.10.2026 — eqGroups (153:873) tekur FORFLOKKUÐU lyklana slt/bsl/rs fram yfir fínflokkana (lettvatn, duft2 …) ef einhver þeirra er != null. Blob-færsla arsskodun_customers[543] (Pitstop, í þjónustu, 4 tæki) ber enn {rs:0,bsl:0,slt:4}. Hver ritari sem leggur fínflokka ofan á (224 markListiStadfest á master, 165 afritEftirUttekt frá lota8) skilur slt:4 eftir: S verður 8 á móti T=4, audit-t-s-i fer RAUTT og summu-lesarar (345 Staðan, ai-context) sýna tvöfalt. Lagfæring: setja gömlu lyklana á null (deep-merge yfirskrifar með null; eqGroups fellur þá á fínflokkana), aldrei 0 (0 != null og eqGroups sýnir þá 0 tæki).**
-  <br>netvordur yfirferð lota8 (165 afritEftirUttekt + vorur.js legsteinn). Mælt með app_settings REST: aðeins EIN færsla (543) ber gömlu lyklana.
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Sýnilegi Breyta-takkinn á fyrirtækjaprófíl fer EKKI í Companies.openEdit (14) heldur í 00-legacy openEditModal (00-legacy.js:2836, capture + stopImmediatePropagation, krókur á 1 s fresti) sem sækir ferska röð með select('*') og skrifar 7 reiti. 14 næst aðeins með beinu kalli eða fyrstu ≤1 s eftir teikningu. Mæling á 14 í vafra verður að kalla Companies.openEdit beint og segja það — smellur á takkann mælir legacy-gluggann.**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Full úttekt 07.10.2026 (93 verðir, skráð í oryggisnet_keyrslur): 89 græn, 4 rauð — fk-join (Menja ehf. tvískráð #908/#1531 sama kt, tækin 9 á 1531 → sameina), solu-id (R-001055 Kristinn drög án kúnna), T=S 2 ný brot (fyrirtæki 661 prófíll 14/skýrsla 16, 1488 5/15), payday-samræming (R-001018 Kötlufell 9 og R-001052 Furugrund 66 bakfærð án nýs reiknings).**
-  <br><sub>2026-10-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026 (leiðrétting á staðreynd 585): CARTO-flísarnar sem settar voru inn með 79ef524 prenta „API KEY REQUIRED" þvert yfir kortið — þær krefjast lykils. Kortaflísar eru því á Esri World Street Map: https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x} með höfundarmerkinu Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors (birt a3f1122). Reglan sem þetta kenndi: flísabreyting telst ekki prófuð fyrr en kortið hefur verið SKOÐAÐ á skjámynd, ekki bara talið — bæði OSM-blokkin og CARTO-vatnsmerkið skila stöðu 200. Vörðurinn tools/audit-kort-flisar.cjs fellur nú líka á basemaps.cartocdn.com. Landmælingar Íslands bjóða aðeins EPSG:3057 í WMTS, svo opinbera íslenska kortið krefst Proj4-vörpunar í Leaflet.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026: OpenStreetMap lokaði á Slökkvitækja-appið fyrir kortaflísar og skilar „Access blocked"-mynd með stöðu 200 á hverja flís — ekkert kall fellur og ekkert log sést. Merkið er að sama 6,8 kB myndin komi fyrir öll hnit, líka án undirléns. Sjö kóðastaðir (155, 161 tvisvar, 178, 219, 268 og newfeatures.js) sækja nú flísar á https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png með höfundarmerkinu © OpenStreetMap contributors © CARTO. Staðfest lifandi eftir birtingu 79ef524: 12 af 12 flísum hlóðust frá CARTO í kortinu í Fyrirtæki í Þjónustu. Hnitaleitin (Nominatim gegnum okkar eigið /api/geocode) var ósnert og svaraði 200. Vörður: tools/audit-kort-flisar.cjs, grunnlína 0, kyrrstæður svo hann keyri í pre-push.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-
 ### 3dwork
 
 - **'Merge' eða 'Ja merge' frá Agnari í kjarni-lotu er heimild til að sameina PR og hann býst við staðfestingu á að það sé komið í loftið.**
@@ -1692,12 +1669,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### villuleit
 
-- **Mælingagildrur í vafraprófum: sjálfvirkni-vafrinn (Playwright/vafraspjald) HAFNAR confirm()-gluggum sjálfkrafa svo takkar með confirm líta dauðir út; grep -r segir „Binary file matches" og felur línur ef skrá hefur NUL-bæti; AÐ FÆRA hnút ER DOM-breyting (placeSection án skilyrðis endurræsti eigin 500 ms-debounce og pappi 265 birtist aldrei); 500 ms-debounce MutationObserver sem núllast við hverja breytingu með 7 pappa á #companies-main gaf 1.695 ms töf (lagað → 38 ms). Mælitæki: Arekstrar.kyrrd() telur DOM-hreyfingar á óhreyfðri síðu og nefnir staðinn.**
-  <br>Lota 2fe4ef19 18.09.2026.
-  <br><sub>2026-10-16 · kerfi · afrit lotu 2fe4ef19 · claude-code</sub>
 - **Sala-vörumyndir (#sala) eru heittengdar frá eldvarnamidstodin.is, ekki hýstar hjá okkur (153 villur í villuvakt 19.09.2026); helmingur skráðra mynda-villna var AFLÝSTAR beiðnir við sýnaskipti → flokkur „Aflýst beiðni" í villuvaktinni.**
   <br>Lota 2fe4ef19.
   <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 2fe4ef19 · claude-code</sub>
+- **Mælingagildrur í vafraprófum: sjálfvirkni-vafrinn (Playwright/vafraspjald) HAFNAR confirm()-gluggum sjálfkrafa svo takkar með confirm líta dauðir út; grep -r segir „Binary file matches" og felur línur ef skrá hefur NUL-bæti; AÐ FÆRA hnút ER DOM-breyting (placeSection án skilyrðis endurræsti eigin 500 ms-debounce og pappi 265 birtist aldrei); 500 ms-debounce MutationObserver sem núllast við hverja breytingu með 7 pappa á #companies-main gaf 1.695 ms töf (lagað → 38 ms). Mælitæki: Arekstrar.kyrrd() telur DOM-hreyfingar á óhreyfðri síðu og nefnir staðinn.**
+  <br>Lota 2fe4ef19 18.09.2026.
+  <br><sub>2026-10-16 · kerfi · afrit lotu 2fe4ef19 · claude-code</sub>
 - **Vörn gegn endurteikningu með sec.innerHTML !== strengur er ÓNÝT: vafrinn staðlar innerHTML (rgba(255,255,255,.12) → rgba(255, 255, 255, 0.12), þema-pappar bæta inline !important) svo samanburðurinn er alltaf ósatt (17× endurteikning á 8 s í 328). Rétt: geyma síðast skrifaða strenginn sem eiginleika Á HNÚTNUM (328 __uvHtml, 307 __afslHtml, 265 __ufsHtml) — og para hverja slíka vörn við hlustara-merki (265 __ufsWired), annars hlaðast click-hlustarar upp (einn smellur opnaði skjal 5×).**
   <br>Lota bb26cb88 18.09.2026. Mæla fyrir/eftir með DOM-breytingatalningu.
   <br><sub>2026-10-16 · kerfi · afrit lotu bb26cb88 · claude-code</sub>
@@ -1712,6 +1689,50 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-20 · slokkvitaeki · claude-code · claude-code</sub>
 - **Kerfisskoðun 19.09.2026: hub index.html _J bar saman JSON-strengi en jsonb endurraðar lyklum -> tabs/bakendiLinks alltaf 'breytt' -> syncToServer í lykkju á ~1,3 s úr hverjum opnum flipa (65.453 hub_state_merge á sólarhring, líka kl. 03). Lagað með lyklaröðuðum samanburði + lykkjuvörn. Greiningaraðferð: Supabase query_logs á edge_logs, group by request.path, bera saman næturtölur. Einnig: data-sources-status úr 15 s í 2 mín; pixlabreiddir úr Hönnunarham (8 reglur) hlutleystar á síma í 382; mobile.css + 263 thead/tbody display:table -> header-group.**
   <br><sub>2026-09-19 · slokkvitaeki · claude-code · claude-code</sub>
+
+### deploy
+
+- **slokkvitaeki birtir dist/ ur build-dist.js: ~280 js/patches/*.js med defer + tomt meginmal lenda i sex-sjo _bundle-N.<md5>.js og lifandi index.html visar a thau, EKKI a /js/patches/...?v=... (ein undantekning 05.11.2026: 365-vistun-utskolun.js). Cache-lykillinn er thvi bunt-hakkid og ?v= i frumskranni hefur engin kerfisahrif a buntada skra — blandad par tveggja patcha getur ekki ordid til i framleidslu. ?v= skiptir adeins mali fyrir obuntanleg tog (async, module, utanadkomandi src, meginmal) og i obuntudu profunarumhverfi. Lisbeth urskurdadi #959 ROENG ADFERD 05.11.2026 a theirri forsendu og bakkadi eftir maelingu a lifandi sidunni — urskurdur um cache i thessu repo verdur ad lesa BIRTA index.html, ekki repo-skrana.**
+  <br><sub>2026-11-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **Áður en Agnar biður um deploy á 3dwork-síðuna vill hann afrit (backup) fyrst, og hann sameinar PR með orðinu „Merge“ eftir að hafa skoðað Vercel-preview.**
+  <br>[preference; agents: general, 3dJoker] 18.10.2026: „Lets try. Can you deploy. Perhaps make backup first“; síðar „Merge“ og „Yes merge“ eftir að preview-byggingin kláraðist.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 · claude-code</sub>
+- **Brunahólf-repo hefur engan build-skref (breytt er index.html og netlify/functions beint), deployast aðeins þegar head-commit hefur [deploy], og föllin nota SUPABASE_SERVICE_ROLE_KEY úr Netlify env sem er ekki til staðar staðbundið.** _(likely)_
+  <br>[rule; agents: framendi, gagnaleidslur, jarvis, bokari, rukkari] Staðbundnar prófanir notuðu publishable-lykilinn. index.html er 1,3 MB og á aldrei að lesa í heild.
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Margar lotur breyta sömu skrám sama daginn (gatt og Efnislisti í brunaholf), svo sæktu (fetch) og rebase-aðu alltaf fyrir push og leystu árekstra með git checkout --conflict=merge og Edit, ekki með indexOf-skriftum.** _(likely)_
+  <br>[gotcha; agents: netvordur, general] Lærdómur úr samhliða lotum 10-25.10.2026.
+  <br><sub>2026-11-04 · baedi · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
+- **Í worktrees verða skrár CRLF eftir git merge/checkout (autocrlf=true) og audit-uttekt-afslattarhopur verður þá falskt rautt; skrifaðu CRLF-skrár aftur í LF fyrir audit.** _(likely)_
+  <br>[gotcha; agents: netvordur, sala-reikningar] Keyrðu git checkout -- . fyrir merge/rebase aðeins þegar engar raunbreytingar eru í trénu. git rebase --continue brást með LF-stat skrám.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-15 · claude-code</sub>
+- **Staðbundin C:/projects/slokkvitaeki getur verið hundruð commit á eftir origin/master, svo vinna fer í ferskt worktree og næsta patch-númer er reiknað út frá origin/master, ekki staðbundnu tré.**
+  <br>[gotcha; agents: bord-flettur, framendi, general] 23.09: git status sýndi ahead 1, behind 758 og hæsta staðbundna patch var 351 en origin hafði 398.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
+- **esbuild-buntin skrifa broddstafi sem \x-hex (\xE6 \xF0 \xFD \xED \xFE), EKKI \uXXXX — grep a bundle tharf tha umbreytingu, og python unicode_escape a heila skra hrynur**
+  <br>Maelt 31.10.2026 a lifandi _bundle-4 (2,8 MB): "uppf\xE6rt", "✓" — \uXXXX er adeins notad yfir U+00FF. CLAUDE.md sagdi \uXXXX og ad nota python/unicode-escape; codecs.decode(raw,"unicode_escape") a allt buntid kastar UnicodeDecodeError (truncated \uXXXX escape) af thvi ad hra \x- og \u-brot blandast
+  <br><sub>2026-10-31 · slokkvitaeki · kodi · claude-code</sub>
+
+### oryggisnet
+
+- **audit_vernd-taflan (audit-vörnin) má ekki fjarlægja þótt hún stækki — minnkaðu risa-raðirnar, ekki vörnina.**
+  <br>[rule; agents: oryggi, kerfisheilsa, hradi] 05.08 var taflan 846 MB í 20.441 röðum (~42 kB á röð). Agnar: ‚má ekki taka í burtu þessa vernd‘ og ‚vill bara ekki að mikilvæg gögn detti út‘.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 1555dbad 2026-08-05 · claude-code</sub>
+- **Útgangskóði tail eða grep í röri gatar ekki push — lestu niðurstöðu node tools/audit-all.cjs sjálfur; þekkt gagnarauð (ekki kóðavilla): fk-join, para-tegund, payday-samraeming, solu-id, t-s-i.** _(likely)_
+  <br>[gotcha; agents: netvordur] Skrá sem fer yfir verndaðar slóðir (10/233/254, 121/pos.js, payday-push, 153/187) fylgir netvordur-gátlistanum og uppfærir docs/ORYGGISNET.md.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
+- **Netvörður 31.10.2026 (PR #939): ^-akkerið í payday-push.cjs:454 /^Viðbótarúttekt við (R-\d+)/ er EINA vörnin sem heldur „Viðbót við R-… (ný tæki)“ frá venjulegum kröfum — 17 af 70 krafa_note bera R-númer annars staðar (t.d. R-001109 „Endurútgáfa R-001029 …“). audit-payday-lysing læsir það ekki: stökkbreyting sem fjarlægir ^ eða víkkar í /(R-\d+)/ helst GRÆN. Regex-vörður þarf neikvætt dæmi sem LÍKIST (venjuleg nóta með R-númeri), ekki aðeins nótu án R-númers. Mælt: buildPayload master vs grein á öllum 1120 sölum × 2 = 0 munur.**
+  <br>Harness í vm hleður buildPayload úr báðum útgáfum; gervisala með krafa_note eins og 488:466 skrifar gefur aðeins nýja línu í description, línur/upphæðir óbreyttar.
+  <br><sub>2026-10-31 · slokkvitaeki · claude-code · claude-code</sub>
+- **14.10.2026 — eqGroups (153:873) tekur FORFLOKKUÐU lyklana slt/bsl/rs fram yfir fínflokkana (lettvatn, duft2 …) ef einhver þeirra er != null. Blob-færsla arsskodun_customers[543] (Pitstop, í þjónustu, 4 tæki) ber enn {rs:0,bsl:0,slt:4}. Hver ritari sem leggur fínflokka ofan á (224 markListiStadfest á master, 165 afritEftirUttekt frá lota8) skilur slt:4 eftir: S verður 8 á móti T=4, audit-t-s-i fer RAUTT og summu-lesarar (345 Staðan, ai-context) sýna tvöfalt. Lagfæring: setja gömlu lyklana á null (deep-merge yfirskrifar með null; eqGroups fellur þá á fínflokkana), aldrei 0 (0 != null og eqGroups sýnir þá 0 tæki).**
+  <br>netvordur yfirferð lota8 (165 afritEftirUttekt + vorur.js legsteinn). Mælt með app_settings REST: aðeins EIN færsla (543) ber gömlu lyklana.
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Sýnilegi Breyta-takkinn á fyrirtækjaprófíl fer EKKI í Companies.openEdit (14) heldur í 00-legacy openEditModal (00-legacy.js:2836, capture + stopImmediatePropagation, krókur á 1 s fresti) sem sækir ferska röð með select('*') og skrifar 7 reiti. 14 næst aðeins með beinu kalli eða fyrstu ≤1 s eftir teikningu. Mæling á 14 í vafra verður að kalla Companies.openEdit beint og segja það — smellur á takkann mælir legacy-gluggann.**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Full úttekt 07.10.2026 (93 verðir, skráð í oryggisnet_keyrslur): 89 græn, 4 rauð — fk-join (Menja ehf. tvískráð #908/#1531 sama kt, tækin 9 á 1531 → sameina), solu-id (R-001055 Kristinn drög án kúnna), T=S 2 ný brot (fyrirtæki 661 prófíll 14/skýrsla 16, 1488 5/15), payday-samræming (R-001018 Kötlufell 9 og R-001052 Furugrund 66 bakfærð án nýs reiknings).**
+  <br><sub>2026-10-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026 (leiðrétting á staðreynd 585): CARTO-flísarnar sem settar voru inn með 79ef524 prenta „API KEY REQUIRED" þvert yfir kortið — þær krefjast lykils. Kortaflísar eru því á Esri World Street Map: https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x} með höfundarmerkinu Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors (birt a3f1122). Reglan sem þetta kenndi: flísabreyting telst ekki prófuð fyrr en kortið hefur verið SKOÐAÐ á skjámynd, ekki bara talið — bæði OSM-blokkin og CARTO-vatnsmerkið skila stöðu 200. Vörðurinn tools/audit-kort-flisar.cjs fellur nú líka á basemaps.cartocdn.com. Landmælingar Íslands bjóða aðeins EPSG:3057 í WMTS, svo opinbera íslenska kortið krefst Proj4-vörpunar í Leaflet.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### bord
 
@@ -1828,27 +1849,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
 - **payday-push.js tekur sölu FRÁ áður en Payday er kallað (21.09.2026): skilyrt PATCH á solur.krafa_sendir_at (dk_invoice_id og invoiced_at null, frátekt laus eða eldri en 3 mín). 0 raðir = 409 gate:sending. Losuð á öllum villuleiðum og hreinsuð í markSaleInvoiced. Tvær vélar geta því ekki stofnað reikning fyrir sömu sölu. Vörður: tools/audit-payday-tvirukkun.cjs.**
   <br><sub>2026-09-21 · slokkvitaeki · claude-code · claude-code</sub>
-
-### deploy
-
-- **Áður en Agnar biður um deploy á 3dwork-síðuna vill hann afrit (backup) fyrst, og hann sameinar PR með orðinu „Merge“ eftir að hafa skoðað Vercel-preview.**
-  <br>[preference; agents: general, 3dJoker] 18.10.2026: „Lets try. Can you deploy. Perhaps make backup first“; síðar „Merge“ og „Yes merge“ eftir að preview-byggingin kláraðist.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 · claude-code</sub>
-- **Brunahólf-repo hefur engan build-skref (breytt er index.html og netlify/functions beint), deployast aðeins þegar head-commit hefur [deploy], og föllin nota SUPABASE_SERVICE_ROLE_KEY úr Netlify env sem er ekki til staðar staðbundið.** _(likely)_
-  <br>[rule; agents: framendi, gagnaleidslur, jarvis, bokari, rukkari] Staðbundnar prófanir notuðu publishable-lykilinn. index.html er 1,3 MB og á aldrei að lesa í heild.
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Margar lotur breyta sömu skrám sama daginn (gatt og Efnislisti í brunaholf), svo sæktu (fetch) og rebase-aðu alltaf fyrir push og leystu árekstra með git checkout --conflict=merge og Edit, ekki með indexOf-skriftum.** _(likely)_
-  <br>[gotcha; agents: netvordur, general] Lærdómur úr samhliða lotum 10-25.10.2026.
-  <br><sub>2026-11-04 · baedi · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
-- **Í worktrees verða skrár CRLF eftir git merge/checkout (autocrlf=true) og audit-uttekt-afslattarhopur verður þá falskt rautt; skrifaðu CRLF-skrár aftur í LF fyrir audit.** _(likely)_
-  <br>[gotcha; agents: netvordur, sala-reikningar] Keyrðu git checkout -- . fyrir merge/rebase aðeins þegar engar raunbreytingar eru í trénu. git rebase --continue brást með LF-stat skrám.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-15 · claude-code</sub>
-- **Staðbundin C:/projects/slokkvitaeki getur verið hundruð commit á eftir origin/master, svo vinna fer í ferskt worktree og næsta patch-númer er reiknað út frá origin/master, ekki staðbundnu tré.**
-  <br>[gotcha; agents: bord-flettur, framendi, general] 23.09: git status sýndi ahead 1, behind 758 og hæsta staðbundna patch var 351 en origin hafði 398.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
-- **esbuild-buntin skrifa broddstafi sem \x-hex (\xE6 \xF0 \xFD \xED \xFE), EKKI \uXXXX — grep a bundle tharf tha umbreytingu, og python unicode_escape a heila skra hrynur**
-  <br>Maelt 31.10.2026 a lifandi _bundle-4 (2,8 MB): "uppf\xE6rt", "✓" — \uXXXX er adeins notad yfir U+00FF. CLAUDE.md sagdi \uXXXX og ad nota python/unicode-escape; codecs.decode(raw,"unicode_escape") a allt buntid kastar UnicodeDecodeError (truncated \uXXXX escape) af thvi ad hra \x- og \u-brot blandast
-  <br><sub>2026-10-31 · slokkvitaeki · kodi · claude-code</sub>
 
 ### samskipti
 
