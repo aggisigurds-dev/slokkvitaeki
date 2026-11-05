@@ -175,20 +175,23 @@
     _dlg.id = '_se-dlg';
     _dlg.style.cssText = 'position:fixed;inset:0;z-index:100040;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:14px;font-family:inherit';
     _dlg.innerHTML = `
-      <div style="background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.35);width:min(1080px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:14px 22px;background:#0f172a;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <div>
-            <h2 style="margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px">
-              ✏️ Breyta sölu · ${esc(_sale.num || '(nýtt)')}
+      <div style="background:#fff;border:1px solid #000;border-radius:14px;box-shadow:0 40px 80px -24px rgba(0,0,0,.75),0 2px 6px rgba(0,0,0,.3);width:min(1080px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;overflow:hidden">
+        <div class="_se-haus" style="position:relative;padding:16px 22px 14px 24px;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);border-bottom:1px solid #000;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)">
+          <span class="_se-hnod" style="left:7px;top:7px"></span><span class="_se-hnod" style="right:7px;top:7px"></span><span class="_se-hnod" style="left:7px;bottom:7px"></span><span class="_se-hnod" style="right:7px;bottom:7px"></span>
+          <div style="min-width:0">
+            <div style="font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#c9d0db">Sala · ${esc(_sale.num || 'nýtt')}${_sale.paid_at ? ' · greitt ' + esc(formatDate(_sale.paid_at)) : ''}</div>
+            <h2 style="margin:2px 0 0;font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:800;letter-spacing:-.01em;line-height:1.05;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <span style="color:#fff">Breyta sölu</span>
               ${stateBadge()}
             </h2>
-            <div style="font-size:11px;color:#cbd5e1;margin-top:2px">Stofnað ${esc(formatDate(_sale.created_at))}${_sale.paid_at ? ' · Greitt ' + esc(formatDate(_sale.paid_at)) : ''}</div>
+            <div style="font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:12px;color:#e3e8ef;margin-top:5px">Stofnað <span style="color:#fff">${esc(formatDate(_sale.created_at))}</span></div>
           </div>
-          <button id="_se-x" type="button" style="background:transparent;border:1px solid #475569;color:#fff;font-size:18px;width:34px;height:34px;border-radius:7px;cursor:pointer;line-height:1">✕</button>
+          <button id="_se-x" type="button" aria-label="Loka" style="flex:none;width:40px;height:40px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font-size:18px;cursor:pointer;line-height:1">✕</button>
         </div>
-        <div id="_se-body" style="flex:1;overflow-y:auto;padding:18px 22px;background:#f8fafc"></div>
-        <div id="_se-foot" style="padding:14px 22px;border-top:1px solid #e2e8f0;background:#fff;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"></div>
+        <div id="_se-body" style="flex:1;overflow-y:auto;padding:14px 16px;background:#e2e6ec;background-image:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)"></div>
+        <div id="_se-foot" style="padding:12px 16px;border-top:1px solid #000;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"></div>
       </div>`;
+    _dlg.insertAdjacentHTML('afterbegin', '<style>#_se-dlg ._se-hnod{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}#_se-dlg button:hover{filter:brightness(.97)}#_se-dlg ._se-merki{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2b313c;margin:0 0 8px}</style>');
     document.body.appendChild(_dlg);
     _dlg.querySelector('#_se-x').addEventListener('click', lokaOruggt);
     document.addEventListener('keydown', escHandler);
@@ -207,9 +210,10 @@
   }
 
   function stateBadge() {
-    if (_sale.is_credit) return '<span style="font-size:10px;font-weight:700;background:#fee2e2;color:#991b1b;padding:3px 9px;border-radius:99px;text-transform:uppercase">Kreditfærsla</span>';
-    if (isDraft(_sale))  return '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:99px;text-transform:uppercase">📝 Drög</span>';
-    return '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:3px 9px;border-radius:99px;text-transform:uppercase">✅ Lokað</span>';
+    const plata = (lit, texti) => '<span style="display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.12);font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f2530;text-shadow:none;vertical-align:middle"><i style="width:6px;height:6px;border-radius:50%;display:inline-block;background:' + lit + '"></i>' + texti + '</span>';
+    if (_sale.is_credit) return plata('#c0392b', 'Kreditfærsla');
+    if (isDraft(_sale))  return plata('#c98a14', 'Drög');
+    return plata('#1f9d57', 'Lokað');
   }
 
   function formatDate(iso) {
@@ -244,10 +248,10 @@
         return 'V' + (vm ? vm[1] : '?') + ': ' + us.length + (size ? '×' + esc(size) : ' stk');
       });
       host.innerHTML =
-        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
-        + '<div style="font-size:13px;color:#166534"><b>✅ ' + units.length + ' tæki komin á Verkstæði</b>'
-        +   '<span style="color:#15803d"> · ' + parts.join(' · ') + '</span></div>'
-        + '<button id="_se-open-verk" type="button" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid #16a34a;background:#fff;color:#15803d;border-radius:7px;cursor:pointer;white-space:nowrap">Opna á Verkstæði →</button>'
+        '<div style="background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #1f9d57;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
+        + '<div style="font-size:13px;color:#11141c"><b>' + units.length + ' tæki komin á Verkstæði</b>'
+        +   '<span style="color:#4a5363;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:12px"> · ' + parts.join(' · ') + '</span></div>'
+        + '<button id="_se-open-verk" type="button" style="height:34px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Opna á Verkstæði →</button>'
         + '</div>';
       const ob = host.querySelector('#_se-open-verk');
       if (ob) ob.addEventListener('click', function () {
@@ -263,42 +267,42 @@
     const body = _dlg.querySelector('#_se-body');
     const locked = isLocked(_sale);
     const lockedAttr = locked ? 'disabled' : '';
-    const inputStyle = 'width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;background:' + (locked ? '#f8fafc' : '#fff') + ';color:#0f172a;box-sizing:border-box;outline:none';
+    const inputStyle = 'width:100%;height:40px;padding:0 12px;border:1px solid rgba(20,24,34,.16);border-radius:8px;font:inherit;font-size:13.5px;box-shadow:inset 0 1px 2px rgba(20,24,34,.08);background:' + (locked ? '#eef0f3' : '#f6f7f9') + ';color:#11141c;box-sizing:border-box;outline:none';
 
     const lockNote = locked
-      ? '<div style="margin-bottom:14px;padding:10px 13px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12.5px;color:#78350f">🔒 Þessi sala er lokuð (' + (_sale.is_credit ? 'kreditfærsla' : 'kláruð') + '). Notaðu kreditfærslu til að breyta.</div>'
+      ? '<div style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #c98a14;border-radius:10px;font-size:12.5px;color:#2b313c">Þessi sala er lokuð (' + (_sale.is_credit ? 'kreditfærsla' : 'kláruð') + '). Notaðu kreditfærslu til að breyta.</div>'
       : (isUnsentFinal(_sale)
-        ? '<div style="margin-bottom:14px;padding:10px 13px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12.5px;color:#1e40af">✏️ Þessi reikningur er <b>tilbúinn en óSENDUR</b> — óhætt að breyta beint (t.d. bæta við afslætti). Engin kreditfærsla þörf fyrr en hann hefur verið sendur.</div>'
+        ? '<div style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #1f9d57;border-radius:10px;font-size:12.5px;color:#2b313c">Þessi reikningur er <b>tilbúinn en óSENDUR</b> — óhætt að breyta beint (t.d. bæta við afslætti). Engin kreditfærsla þörf fyrr en hann hefur verið sendur.</div>'
         : '');
 
     body.innerHTML = `
       ${lockNote}
 
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">👤 Viðskiptavinur</div>
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:12px 14px 14px;margin-bottom:10px">
+        <div class="_se-merki">Viðskiptavinur</div>
         <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Nafn</label>
+            <label style="display:block;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4a5363;margin-bottom:4px">Nafn</label>
             <input id="_se-nafn" type="text" value="${esc(_sale.customer_nafn || '')}" ${lockedAttr} style="${inputStyle}">
           </div>
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">Kennitala</label>
+            <label style="display:block;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4a5363;margin-bottom:4px">Kennitala</label>
             <input id="_se-kt" type="text" placeholder="000000-0000" value="" ${lockedAttr} style="${inputStyle};font-family:monospace">
           </div>
           <div>
-            <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;align-items:center">
+            <label style="display:block;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4a5363;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
               <span>Tengja við</span>
-              ${!locked ? '<button id="_se-cust-search" type="button" style="font-size:10px;padding:2px 8px;border:1px solid #cbd5e1;background:#fff;border-radius:5px;cursor:pointer;color:#475569">🔎 Leita</button>' : ''}
+              ${!locked ? '<button id="_se-cust-search" type="button" style="height:24px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">Leita</button>' : ''}
             </label>
             <input id="_se-cust-info" type="text" readonly value="${_sale.customer_id ? 'ID ' + _sale.customer_id : '— ekki tengt —'}" style="${inputStyle};background:#f1f5f9;color:#64748b">
           </div>
         </div>
       </div>
 
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:12px 14px 14px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">🛒 Línur</div>
-          ${!locked ? '<button id="_se-add-line" type="button" style="font-size:11px;padding:5px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">+ Bæta við línu</button>' : ''}
+          <div class="_se-merki" style="margin:0">Línur</div>
+          ${!locked ? '<button id="_se-add-line" type="button" style="height:34px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">+ Bæta við línu</button>' : ''}
         </div>
         <div id="_se-lines"></div>
         <div id="_se-totals" style="margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0"></div>
@@ -306,13 +310,13 @@
 
       <div id="_se-verk"></div>
 
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📝 Athugasemdir</div>
-        <div id="_se-notes-log" style="max-height:140px;overflow:auto;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:2px 10px;margin-bottom:8px;display:none"></div>
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:12px 14px 14px;margin-bottom:10px">
+        <div class="_se-merki">Athugasemdir</div>
+        <div id="_se-notes-log" style="max-height:140px;overflow:auto;background:#f6f7f9;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:2px 10px;margin-bottom:8px;display:none"></div>
         ${!locked ? `
         <div style="display:flex;gap:6px">
-          <input id="_se-note-new" type="text" placeholder="+ Bæta við athugasemd…" style="flex:1;padding:7px 10px;border:1px solid #fcd34d;border-radius:6px;font:inherit;font-size:12.5px;background:#fff">
-          <button id="_se-note-add" type="button" style="padding:7px 13px;background:#f59e0b;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">Bæta við</button>
+          <input id="_se-note-new" type="text" placeholder="+ Bæta við athugasemd…" style="flex:1;height:40px;padding:0 12px;border:1px solid rgba(20,24,34,.16);border-radius:8px;font:inherit;font-size:13px;background:#f6f7f9;box-shadow:inset 0 1px 2px rgba(20,24,34,.08)">
+          <button id="_se-note-add" type="button" style="height:40px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Bæta við</button>
         </div>` : ''}
       </div>
     `;
@@ -436,7 +440,7 @@
     el.innerHTML = `
       <table style="width:100%;border-collapse:collapse">
         <thead>
-          <tr style="background:#f8fafc;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#64748b">
+          <tr style="font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#4a5363;border-bottom:1px solid rgba(20,24,34,.14)">
             <th style="padding:6px 8px;text-align:left">Lýsing</th>
             <th style="padding:6px 8px;text-align:right">Magn</th>
             <th style="padding:6px 8px;text-align:right">Ein. verð</th>
@@ -480,7 +484,7 @@
     const el = _dlg.querySelector('#_se-totals');
     const locked = isLocked(_sale);
     el.innerHTML = `
-      <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:13px;color:#b45309">
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:13px;color:#2b313c">
         <span>Afsláttur (kr m. vsk):</span>
         <input id="_se-afsl" type="number" min="0" step="1" value="${t.afsl > 0 ? t.afsl : ''}" placeholder="0" ${locked ? 'disabled' : ''}
           style="width:96px;padding:4px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:right;background:#fff">
@@ -489,7 +493,7 @@
         <span>Án VSK: <strong id="_se-t-ex">${fmtKr(t.ex)}</strong></span>
         <span>VSK: <strong id="_se-t-vsk">${fmtKr(t.vsk)}</strong></span>
       </div>
-      <div style="display:flex;justify-content:flex-end;font-size:17px;font-weight:800;color:#0f172a;margin-top:6px">Samtals:&nbsp;<span id="_se-t-total">${fmtKr(t.total)}</span></div>`;
+      <div style="display:flex;justify-content:flex-end;align-items:baseline;font-family:Playfair Display,Georgia,serif;font-size:22px;font-weight:800;color:#11141c;margin-top:6px">Samtals:&nbsp;<span id="_se-t-total">${fmtKr(t.total)}</span></div>`;
     // Update the summary spans in place on input — a full re-render here
     // would rebuild the input mid-typing and drop focus.
     const inp = el.querySelector('#_se-afsl');
@@ -755,15 +759,15 @@
   function renderFooter() {
     const f = _dlg.querySelector('#_se-foot');
     const locked = isLocked(_sale);
-    let html = '<button id="_se-close" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>';
+    let html = '<button id="_se-close" type="button" style="height:40px;padding:0 16px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">Loka</button>';
     if (isDraft(_sale)) {
-      html += '<button id="_se-save" type="button" style="padding:9px 18px;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista sem drög</button>';
-      html += '<button id="_se-finalize" type="button" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✅ Klára sölu</button>';
+      html += '<button id="_se-save" type="button" style="height:40px;padding:0 16px;border-radius:9px;border:1px solid #000;background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Vista sem drög</button>';
+      html += '<button id="_se-finalize" type="button" style="height:40px;padding:0 18px;border-radius:9px;border:1px solid #021a0b;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 10px rgba(6,51,26,.45);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Klára sölu</button>';
     } else if (isUnsentFinal(_sale)) {
       // Unsent reikningur → save the changes straight onto it (keeps status final).
-      html += '<button id="_se-save" type="button" title="Vista breytingar á þessum óSENDA reikningi (t.d. afsláttur)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista breytingar</button>';
+      html += '<button id="_se-save" type="button" title="Vista breytingar á þessum óSENDA reikningi (t.d. afsláttur)" style="height:40px;padding:0 18px;border-radius:9px;border:1px solid #021a0b;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 10px rgba(6,51,26,.45);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Vista breytingar</button>';
     } else if (!_sale.is_credit) {
-      html += '<button id="_se-credit" type="button" style="padding:9px 18px;background:#c2410c;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">↩ Kreditfæra</button>';
+      html += '<button id="_se-credit" type="button" style="height:40px;padding:0 16px;border-radius:9px;border:1px solid #2a0606;background:linear-gradient(145deg,#2a0606 0%,#7a1511 40%,#a81f18 55%,#5c0f0b 80%,#200404 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Kreditfæra</button>';
     }
     f.innerHTML = html;
     f.querySelector('#_se-close').addEventListener('click', lokaOruggt);
@@ -811,7 +815,7 @@
       const msg = 'Klára sölu og senda krafa?\n\n' + (nafn || '—') + ' · ' + fmtKr(t.total);
       let ok;
       if (window.Confirm && typeof Confirm.show === 'function') {
-        ok = await Confirm.show(msg, { okText: '✅ Klára', cancelText: 'Hætta við' });
+        ok = await Confirm.show(msg, { okText: 'Klára', cancelText: 'Hætta við' });
       } else {
         ok = window.confirm(msg);
       }
