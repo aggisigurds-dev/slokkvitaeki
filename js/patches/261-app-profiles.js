@@ -165,7 +165,9 @@
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
-    { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1' },
+    // 04.11.2026 (Agnar, J.A.R.V.I.S.-appið): jarvis.html á sitt eigið símaútlit (?embed=1: @media 960/640 px) — ramminn fylgir því
+    // krómzoominu (touch: true) svo hún fái 412 px viðmót í stað 1032 px skjáborðsútlits sem skrapp saman í ólæsilegt letur.
+    { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1', touch: true },
     { k: 'br-raddminni',     label: 'Raddminni (Brunahólf)',  short: 'Raddminni', emoji: '🎙️', url: 'https://brunaholf.netlify.app/radd.html' },
     { k: 'br-kerfisheilsa',  label: 'Kerfisheilsa (Brunahólf)', short: 'Kerfisheilsa', emoji: '🛡️', url: 'https://brunaholf.netlify.app/kerfisheilsa.html' },
     // 09.10.2026 (Agnar: „þjónustugátt. Stjórnborðið. Finn það ekki … setja það líka inn á Þjónustuborð öpp"):
@@ -239,6 +241,14 @@
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-driveleit', 'br-postleit', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting', 'turbopaint'] },
+    // J.A.R.V.I.S. sem sitt eigið app (Agnar 04.11.2026: „gera app útgáfu af þessu og setja í Þjónustuborð öpp"). Ein síða —
+    // J.A.R.V.I.S.-HUD-ið (brunaholf jarvis.html?embed=1: Agentanetið, Biðstofa Charlize, Kerfi, Fjármál) á fullum skjá, með
+    // eigið tákn (29-jarvis.svg) og manifest. Aðrar síður má haka við á kortinu. Innbyggt öpp: sami hópur og fjarmal…boss
+    // (316 APP_KEYS, 354 BUILTIN, api/app-manifest, index.html MAN) svo tákn/litir/nafn fylgja „Tákn · litur · síður".
+    { key: 'jarvis', emoji: '🧠', name: 'J.A.R.V.I.S.', color: '#0b0b0d', dark: '#02070b', ikon: '29-jarvis.svg',
+      manifest: '/manifest-jarvis.json', home: 'br-jarvis',
+      blurb: 'Agentanetið, Biðstofa Charlize, Kerfi og Fjármál á fullum skjá í símanum',
+      defaults: ['br-jarvis'] },
     // Verkstjórar (Agnar 02.11.2026, þriðja beiðni: „inn á firestarter … nothæf einföld útgáfa"): app fyrir verkstjórana á
     // verkstað — ein síða, Brunaþéttingar-appið (verk í vinnslu, efnisnotkun með ＋/−, sérkaup, bæta við verki). Skrifstofan
     // sér það sem er skráð í „Frá verkstað" (Boss-appið) og það fer í Efnislistann við reikningsgerð.
@@ -424,6 +434,7 @@
     { f: '26-driver-styri.svg',   h: 'Bílstjóri — stýri' },
     { f: '27-driver-bill.svg',    h: 'Bílstjóri — bíll' },
     { f: '28-driver-leid.svg',    h: 'Bílstjóri — leið' },
+    { f: '29-jarvis.svg',         h: 'J.A.R.V.I.S.' },
   ];
   function ikonSlod(app) {
     var f = app && app.ikon;
@@ -752,7 +763,7 @@
     if (!e.manifest && a.custom) e.manifest = customManifestUrl(e);
     // 19.09.2026: innbyggðu öppin fara líka um fallið (kyrrstætt manifest + yfirskrift Agnars) — SAMA slóð og
     // <head>-veljarinn setur, svo hlekkurinn breytist ekki eftir ræsingu. Tónlist (/spotify/) er utan þessa.
-    if (!a.custom && ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss'].indexOf(a.key) !== -1) e.manifest = customManifestUrl(e);
+    if (!a.custom && ['fjarmal', 'verkefni', 'brunaholf', 'brunakerfi', 'bilstjori', 'boss', 'jarvis'].indexOf(a.key) !== -1) e.manifest = customManifestUrl(e);
     return e;
   }
   function versionLine() {
