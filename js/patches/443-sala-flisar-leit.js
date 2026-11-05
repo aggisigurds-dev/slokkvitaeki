@@ -72,18 +72,49 @@
 
   const synilegt = el => !!(el && el.getClientRects().length && getComputedStyle(el).display !== 'none');
 
+  // 05.11.2026 (Agnar: „afhverju þarf ég að biðja um þetta í hvert einasta skipti …" — kerfisbundið: Kóðafræðingur fann að LEIT breytti
+  // stillingunni á ÞJÓNINUM, fyrir allar vélar): tímabundna „sýna allt" meðan leitað er var gert með því að haka í
+  // #pos-showall og senda gervi-`change`; pos.js skrifar gildið á þjóninn (Vidmot 'sala.allarVorur') við HVERN change, líka þennan.
+  // Leit að „duft" með hakið af skrifaði `true` á þjón allra véla og tæming skrifaði `false`; og færi maður af Sölu með virka leit
+  // (App.switchView sendir ekki hashchange) hélst `true` á þjóninum.
+  // Nú er yfirskriftin AÐEINS í minni: Vidmot.lesa('sala.allarVorur') skilar yfirAllar meðan leitað er (pos.js les hakið þannig), og
+  // Vidmot.setja á þennan eina lykil er stöðvað meðan ÞESSI patch sendir change (sendir = true). Raunverulegt hak notandans
+  // (sendir = false) skrifast eins og áður og endar yfirskriftina. pos.js ósnert (vörðuð leið).
+  const ALLAR_VM = 'sala.allarVorur';
+  let yfirAllar = null;     // tímabundið gildi meðan leitað er (aðeins minni); null = engin yfirskrift
+  let sendir = false;       // true meðan þessi patch sendir change á hakið
+  function settaVidmotHlif() {
+    const V = window.Vidmot;
+    if (!V || V.__s443) return;
+    V.__s443 = true;
+    const lesaOrig = V.lesa, setjaOrig = V.setja;
+    V.lesa = function (k) { return (k === ALLAR_VM && yfirAllar !== null) ? yfirAllar : lesaOrig.apply(this, arguments); };
+    V.setja = function (k) {
+      if (k === ALLAR_VM) {
+        if (sendir) return;                       // tilbúinn change frá leitinni — fer aldrei á þjóninn
+        yfirAllar = null; fyrriAllar = null;      // raunverulegt val notandans gildir og endar yfirskriftina
+      }
+      return setjaOrig.apply(this, arguments);
+    };
+  }
+  function settaHakid(cb, v) {
+    sendir = true;
+    try { cb.checked = v; cb.dispatchEvent(new Event('change', { bubbles: true })); } finally { sendir = false; }
+  }
+
   function hefja() {
     const cb = document.getElementById('pos-showall');
     if (fyrriAllar === null) {
       fyrriAllar = !!(cb && cb.checked);
-      if (cb && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+      if (cb && !cb.checked) { settaVidmotHlif(); yfirAllar = true; settaHakid(cb, true); }   // aðeins í minni — sjá athugasemd að ofan
     }
     const wrap = document.getElementById('pos-adrar-wrap'), btn = document.getElementById('pos-adrar-toggle');
     if (!opnadiAdrar && wrap && btn && !synilegt(wrap) && synilegt(btn)) { btn.click(); opnadiAdrar = true; }
   }
   function ljuka() {
     const cb = document.getElementById('pos-showall');
-    if (fyrriAllar === false && cb && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (fyrriAllar === false && cb && cb.checked) { yfirAllar = null; settaHakid(cb, false); }   // yfirskriftin burt, vistaða gildið (false) er óbreytt á þjóninum
+    yfirAllar = null;
     fyrriAllar = null;
     if (opnadiAdrar) {
       const wrap = document.getElementById('pos-adrar-wrap'), btn = document.getElementById('pos-adrar-toggle');

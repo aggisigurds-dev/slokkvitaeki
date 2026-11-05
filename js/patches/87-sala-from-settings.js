@@ -13,8 +13,9 @@
  * Wires:
  *   • shortcuts[] → row of quick-action buttons above the services grid
  *   • sala.hidden_product_ids → hides those tiles in #pos-products
- *   • sala.pinned_product_ids → moves those tiles to the top + outline
- *   • sala.sort_order — only honors 'custom' for explicit reorder
+ *   • sala.pinned_product_ids → outline on those tiles (no reordering since 05.11.2026)
+ *   • sala.sort_order / position_orders — NOT honored any more (05.11.2026): order = vorur.rodun
+ *     (496 „Raða" saves it, 498 syncs it, pos.js sortTiles reads it). One source of truth.
  */
 (() => {
   if (window.__salaFromSettingsV2Installed) return;
@@ -140,25 +141,12 @@
           delete t.dataset._sfsHidden;
         }
       });
-      // Reorder when sortOrder='custom' — pinned at top, then # ordered, then rest.
-      if (sortOrder === 'custom' && (pinned.size || Object.keys(positions).length)) {
-        const visible = tiles.filter(t => t.style.display !== 'none');
-        const pinnedTiles = visible.filter(t => pinned.has(+t.getAttribute('data-id')));
-        const positioned = visible.filter(t => {
-          const id = +t.getAttribute('data-id');
-          return !pinned.has(id) && positions[id] != null && +positions[id] > 0;
-        }).sort((a, b) => (+positions[+a.getAttribute('data-id')] || 999) - (+positions[+b.getAttribute('data-id')] || 999));
-        const rest = visible.filter(t => {
-          const id = +t.getAttribute('data-id');
-          return !pinned.has(id) && (positions[id] == null || +positions[id] <= 0);
-        });
-        const desired = pinnedTiles.concat(positioned).concat(rest);
-        let needsReorder = false;
-        for (let i = 0; i < desired.length; i++) {
-          if (visible[i] !== desired[i]) { needsReorder = true; break; }
-        }
-        if (needsReorder) desired.forEach(t => grid.appendChild(t));
-      }
+      // 05.11.2026 (Agnar: „söluborðið heldur ekki röðuninni"): ENGIN endurröðun hér lengur. Þessi grein raðaði
+      // flísunum aftur eftir gömlu `position_orders` ('Eigin röð', # + pinned) á eftir hverja teikningu og vann þar með
+      // á vorur.rodun — röðinni sem „Raða" (496) vistar og pos.js sortTiles les. Tvær heimildir fyrir sömu röðina:
+      // gamla talnaröðin (20→1, 6→2, 7→3 …) birtist efst og dró 11 þjónustur fram fyrir restina á öllum vélum, og fyrsta
+      // sleppingin í „Raða" skrifaði bjöguðu röðina yfir grunninn. vorur.rodun er nú EINA röðunarheimildin (498
+      // samstillir hana á opnum síðum). Felun (hidden_product_ids) og rauði rammi á festum flísum standa óbreytt.
       // Visual marker on pinned tiles
       tiles.forEach(t => {
         const id = +t.getAttribute('data-id');

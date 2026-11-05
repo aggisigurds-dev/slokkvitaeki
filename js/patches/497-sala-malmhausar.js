@@ -14,7 +14,12 @@
  *      svo endurteikning pos.js heldur síunni án þess að nokkur flís sé snert. Þjónustuflokkarnir eru lesnir úr
  *      heiti (allar þjónustur heita flokkinum „Þjónusta“ í vorur.flokkur); vöruflokkarnir eru vorur.flokkur.
  *      Engir kaflar/línur í flísaveggnum (Agnar: „bíða aðeins“).
- *   3. Valið er tímabundin staða (eins og opinn flipi): lifir í breytu, núllstillist við endurhleðslu. Ekkert skrifað.
+ *   3. Valið VISTAST á þjóninn (05.11.2026, Agnar: „afhverju þarf ég að biðja um þetta í hvert einasta skipti sem ég
+ *      breyti einhverju að láta helvítist kerfið savast“ — regla 15.10.2026: hvert val, sía og röðun á þjóninn): Vidmot
+ *      'sala.flokkur', skrifað AÐEINS við raunverulegan smell á flokk (e.isTrusted), lesið við ræsingu og endurlesið þegar
+ *      önnur vél breytir því (`vidmot-breytt`, 498 sækir það á opnum síðum). Meðan leitað er gildir „Allt“ (leitin nær yfir
+ *      allt) — það er minnis-yfirskrift sem skrifar ekkert; tæmist leitin kemur vistaða valið aftur. Vistaður flokkur sem
+ *      er ekki til (t.d. hakið tekið af) er látinn vera í gögnunum og sían er „Allt“ á meðan.
  *   4. VÖRUMYNDIR (04.11.2026, Agnar: „stækka myndasvæðið eitthvað aðeins meira og láta sumar myndirnar með allt of
  *      mikinn hvítann bakgrunn fylla betur út í … sést svo illa þarna“) — myndareitur vöruflísa 56 → 76 px hár og allt að
  *      100 px breiður (tölva; sími/app óbreytt að stærð). Hvít/gegnsæ spássía hverrar myndar er mæld á striga (myndirnar
@@ -150,7 +155,13 @@
   const erFlis = e => !!(e && e.classList && (e.classList.contains('pos-svc') || e.classList.contains('pos-prod')));
   const flisar = id => { const g = document.getElementById(id); return g ? Array.prototype.filter.call(g.children, erFlis) : []; };
 
-  let val = 'allt';   // 'allt' | 's:<lykill>' | 'p:<vöruflokkur>'
+  // 'allt' | 's:<lykill>' | 'p:<vöruflokkur>' — VISTAÐ á þjóninn (Vidmot 'sala.flokkur'), sjá haus atriði 3.
+  const VM = 'sala.flokkur';
+  const lesaVal = () => { try { const v = window.Vidmot ? Vidmot.lesa(VM, 'allt') : 'allt'; return (typeof v === 'string' && v) ? v : 'allt'; } catch (_) { return 'allt'; } };
+  const vistaVal = () => { try { if (window.Vidmot) Vidmot.setja(VM, val); } catch (_) {} };
+  let val = lesaVal();
+  let faldi = null;   // vistaða valið meðan leitin er í gangi (minnis-yfirskrift: val = 'allt' á meðan); null = engin leit
+  let eff = 'allt';   // VIRKA valið: val ef sá flokkur er til í flísunum núna, annars 'allt' — val sjálft er aldrei skrifað yfir
   let sig = '';
 
   function likan() {
@@ -183,19 +194,19 @@
   const chipHtml = (k, nafn) => '<button type="button" class="-chip" data-k="' + esc(k) + '" aria-pressed="false">' + esc(nafn) + '<span class="-n"></span></button>';
 
   function siaCss() {
-    if (val === 'allt') return '';
+    if (eff === 'allt') return '';
     const { svc, prod } = gogn();
     const ids = arr => arr.map(x => '[data-id="' + String(x.id).replace(/"/g, '') + '"]').join(',');
     const fela = sel => sel + '{display:none!important}';
-    if (val.startsWith('s:')) {
-      const inn = svc.filter(s => 's:' + svcFlokkur(s.nafn) === val);
+    if (eff.startsWith('s:')) {
+      const inn = svc.filter(s => 's:' + svcFlokkur(s.nafn) === eff);
       const not = inn.length ? ':not(' + ids(inn) + ')' : '';
       return [
         fela(V + ' #pos-services > .pos-svc' + not + K),
         fela(V + ' .pos-col-left > div:has(> #pos-products)' + K)
       ].join('\n');
     }
-    const inn = prod.filter(p => 'p:' + vFlokkur(p) === val);
+    const inn = prod.filter(p => 'p:' + vFlokkur(p) === eff);
     const not = inn.length ? ':not(' + ids(inn) + ')' : '';
     return [
       fela(V + ' #pos-services' + K),
@@ -227,16 +238,18 @@
         + (m.sChips.length ? '<span class="-skil" aria-hidden="true"></span><span class="-hop">Þjónusta</span>' + m.sChips.map(c => chipHtml(c.k, c.nafn)).join('') : '')
         + (m.pChips.length ? '<span class="-skil" aria-hidden="true"></span><span class="-hop">Vörur</span>' + m.pChips.map(c => chipHtml(c.k, c.nafn)).join('') : '');
     }
-    if (val !== 'allt' && keys.indexOf(val) < 0) val = 'allt';   // valinn flokkur horfinn (t.d. hakið tekið af)
+    // Virka valið: vistaði flokkurinn ef hann er til í flísunum núna (fyrir hleðslu / hakið tekið af = 'allt'). `val` er
+    // ALDREI skrifað hér — annars myndi fyrsta tikkið (áður en flísar eru komnar) týna vistaða valinu fyrir fullt og allt.
+    eff = keys.indexOf(val) >= 0 ? val : 'allt';
     row.querySelectorAll('.-chip').forEach(b => {
       const k = b.getAttribute('data-k');
       const h = k === 'allt' ? m.allt : m.hop.get(k);
       const n = h ? h.syn.size : 0;
       const nEl = b.querySelector('.-n');
       if (nEl && nEl.textContent !== String(n)) nEl.textContent = String(n);
-      const pr = k === val ? 'true' : 'false';
+      const pr = k === eff ? 'true' : 'false';
       if (b.getAttribute('aria-pressed') !== pr) b.setAttribute('aria-pressed', pr);
-      const tomt = n === 0 && k !== val;
+      const tomt = n === 0 && k !== eff;
       if (b.classList.contains('-tomt') !== tomt) b.classList.toggle('-tomt', tomt);
     });
     skrifaSia();
@@ -256,17 +269,29 @@
     const b = e.target && e.target.closest && e.target.closest('#' + ROW + ' .-chip');
     if (!b) return;
     const k = b.getAttribute('data-k') || 'allt';
-    val = (k === val && k !== 'allt') ? 'allt' : k;      // smellur aftur á valinn flokk = Allt
+    val = (k === eff && k !== 'allt') ? 'allt' : k;      // smellur aftur á valinn flokk = Allt
+    faldi = null;                                        // raunverulegt val nú — gildir líka eftir að leitin tæmist
+    if (e.isTrusted) vistaVal();                         // aðeins raunverulegur smellur skrifar á þjóninn (Vidmot, 400 ms samtekt)
     uppfaera();
   });
-  // Leit (443) nær yfir ALLT: þegar byrjað er að skrifa í tóman reit fer sían á Allt.
+  // Leit (443) nær yfir ALLT: meðan leitað er gildir „Allt“ — minnis-yfirskrift, EKKERT skrifað; tæmist leitin kemur
+  // vistaða valið aftur.
   let leitTom = true;
   document.addEventListener('input', e => {
     if (!e.target || e.target.id !== '_sl-leit') return;
     const tom = !String(e.target.value || '').trim();
-    if (leitTom && !tom && val !== 'allt') { val = 'allt'; uppfaera(); }
+    if (leitTom && !tom && faldi === null && val !== 'allt') { faldi = val; val = 'allt'; uppfaera(); }
+    else if (!leitTom && tom && faldi !== null) { val = faldi; faldi = null; uppfaera(); }
     leitTom = tom;
   }, true);
+  // Val frá annarri vél (472 samraema → vidmot-breytt, heima:false): tekur gildi strax; meðan leit er í gangi bíður það í faldi.
+  document.addEventListener('vidmot-breytt', e => {
+    const d = e && e.detail;
+    if (!d || d.lykill !== VM || d.heima) return;
+    const n = lesaVal();
+    if (faldi !== null) faldi = n; else val = n;
+    uppfaera();
+  });
 
   // ── 4b. Vörumyndir: skera hvíta spássíu ───────────────────────────────────
   // Hver mynd er mæld einu sinni (≤160 px strigi): bakgrunnur = litur hornanna ef þau eru ljós eða gegnsæ; reiturinn
