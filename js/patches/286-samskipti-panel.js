@@ -281,7 +281,7 @@
         // 887 → 314 ms, Center Hótel (350 póstar, 214 KB) 776 → 444 ms, auk fyrirtaeki-raðarinnar
         // hér að ofan sem hinar þurfa customer_base_id úr.
         const base = f.customer_base_id;
-        const [fsRes, vkRes, sibRes, bsRes, hRes, sentFra, umRes] = await Promise.all([
+        const [fsRes, vkRes, sibRes, bsRes, hRes, sentFra, umRes, ktRes] = await Promise.all([
           client.from("felag_samskipti")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
             .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
@@ -306,8 +306,17 @@
           client.from("felag_umsjonarpostur")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via,lyklar")
             .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400),
+          // 05.11.2026 (Agnar: „tengja fleiri pósta við fyrirtæki“): póstar tengdir félagi með KENNITÖLU (kt í texta, sami þráður,
+          // netfang í skrám, símanúmer — postur_ai_yfirlit._kt). Villa hér sleppur: taflan fær lesaðgang sér (sql/2026-11-05_…_kt.sql)
+          // og kortið má aldrei detta út vegna hennar — því er hún EKKI látin fara í out.villur.
+          client.from("fyrirtaeki_samskipti_kt")
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,via")
+            .eq("customer_base_id", base).order("received_at", { ascending: false }).limit(400)
+            .then(r => r, () => null),
         ]);
         const byId = new Map();
+        // kennitölu-tengdir póstar neðst í goggunarröðinni: sami póstur í hinum töflunum ræður (þær vita byggingu og sönnun)
+        ((ktRes && !ktRes.error && ktRes.data) || []).forEach(m => byId.set(String(m.email_id), m));
         (skra(vkRes, "v_kunni_postur") || []).forEach(m => byId.set(String(m.email_id), m));
         // umsjón á undan felag_samskipti: sami póstur í báðum → felag_samskipti ræður (hún veit hvaða bygging)
         (skra(umRes, "felag_umsjonarpostur") || []).forEach(m => {
@@ -328,15 +337,22 @@
         out.handled = (h && h.handled_at) || "";
         out.sentFra = sentFra || "";
       } else {
-        const [mRes, hRes, sentFra] = await Promise.all([
+        const [mRes, hRes, sentFra, ktRes] = await Promise.all([
           client.from("fyrirtaeki_samskipti")
             .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at")
             .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30),
           client.from("samskipti_stada")
             .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle(),
           sentThekja(),
+          client.from("fyrirtaeki_samskipti_kt")   // 05.11.2026 — sjá athugasemd ofar; villa sleppur
+            .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,via")
+            .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30)
+            .then(r => r, () => null),
         ]);
         out.mails = skra(mRes, "fyrirtaeki_samskipti") || [];
+        { const sed = new Set(out.mails.map(m => String(m.email_id)));
+          ((ktRes && !ktRes.error && ktRes.data) || []).forEach(m => { if (!sed.has(String(m.email_id))) out.mails.push(m); });
+          out.mails.sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || ""))); }
         const h = skra(hRes, "samskipti_stada");
         out.handled = (h && h.handled_at) || "";
         out.sentFra = sentFra || "";

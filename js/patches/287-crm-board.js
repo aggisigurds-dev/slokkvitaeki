@@ -208,6 +208,16 @@
       if (!res.ok) throw new Error("HTTP " + res.status);
       mails = await res.json();
       if (!Array.isArray(mails)) throw new Error("óvænt svar frá þjóni");
+      // 05.11.2026: póstar tengdir með kennitölu (fyrirtaeki_samskipti_kt) — villa sleppur, spjaldið dettur aldrei út
+      try {
+        const kr = await fetch(U + "/rest/v1/fyrirtaeki_samskipti_kt?fyrirtaeki_id=eq." + r.fyrirtaeki_id +
+          "&select=email_id,received_at,sender_name,subject,snippet,is_question,fra_okkur&order=received_at.desc&limit=5", { headers: H });
+        if (kr.ok) {
+          const kj = await kr.json(), sed = new Set(mails.map(m => String(m.email_id)));
+          if (Array.isArray(kj)) { kj.forEach(m => { if (!sed.has(String(m.email_id))) mails.push(m); });
+            mails.sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || ""))); mails = mails.slice(0, 5); }
+        }
+      } catch (e) { console.warn("[crm-board] kt-póstar", e); }
     } catch (e) { saekjaVilla = e; mails = []; }
     box.innerHTML = '<div style="border-top:1px dashed #e2e8f0;margin-top:8px;padding-top:8px">' +
       (mails.length ? mails.map(m =>
@@ -552,12 +562,16 @@
     // 10.09.2026: póstur umsjónaraðila sem gatan tengir á húsið (felag_umsjonarpostur) bætist við
     // félags-söguna. Sami póstur í báðum → felag_samskipti ræður. Bregðist umsjónar-sóknin sést
     // félags-sagan samt, og það er skráð í stjórnborðið.
-    const [res, umRes] = await Promise.all([
+    // 05.11.2026: póstar tengdir með kennitölu — villa sleppur (taflan fær lesaðgang sér)
+    const ktUrl = U + "/rest/v1/fyrirtaeki_samskipti_kt?select=email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via&" +
+      (r.customer_base_id ? "customer_base_id=eq." + r.customer_base_id : "fyrirtaeki_id=eq." + r.fyrirtaeki_id) + "&order=received_at.desc&limit=40";
+    const [res, umRes, ktRes] = await Promise.all([
       fetch(url, { headers: H }),
       r.customer_base_id
         ? fetch(U + "/rest/v1/felag_umsjonarpostur?" + sel + ",lyklar&customer_base_id=eq." + r.customer_base_id + "&order=received_at.desc&limit=40", { headers: H })
             .catch(e => { console.warn("[crm-board] umsjónarpóstur", e); return null; })
         : Promise.resolve(null),
+      fetch(ktUrl, { headers: H }).catch(() => null),
     ]);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = await res.json();
@@ -565,7 +579,8 @@
     if (umRes && umRes.ok) { try { const j = await umRes.json(); if (Array.isArray(j)) um = j; } catch (e) { console.warn("[crm-board] umsjónarpóstur", e); } }
     else if (umRes) console.warn("[crm-board] umsjónarpóstur HTTP " + umRes.status);
     const byId = new Map();
-    um.forEach(m => byId.set(String(m.email_id), m));
+    if (ktRes && ktRes.ok) { try { const kj = await ktRes.json(); if (Array.isArray(kj)) kj.forEach(m => byId.set(String(m.email_id), m)); } catch (e) { console.warn("[crm-board] kt-póstar", e); } }
+    um.forEach(m => byId.set(String(m.email_id), Object.assign({}, byId.get(String(m.email_id)) || {}, m)));
     (Array.isArray(rows) ? rows : []).forEach(m => { const k = String(m.email_id); byId.set(k, Object.assign({}, byId.get(k) || {}, m)); });
     SAGA_CACHE[key] = [...byId.values()]
       .sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || "")))
