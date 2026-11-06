@@ -251,3 +251,4 @@ html[data-theme="premium"] #drawer .dsec[data-v2f]>h4:after{content:"";display:b
 html[data-theme="premium"] #drawer .dsec[data-v2f]:not(.v2-fold)>h4:after{transform:rotate(225deg)}
 html[data-theme="premium"] #drawer .dsec.v2-fold>:not(h4){display:none!important}
 html[data-theme="premium"] #drawer .dsec.v2-fold>h4{border-radius:14px}
+html[data-theme="premium"] #drawer details.eq-fold[open] .dpanel{max-height:340px;overflow:auto}
