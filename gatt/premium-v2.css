@@ -274,3 +274,15 @@ html[data-theme="premium"] #drawer #dr-body .tgrid .fcard{min-width:0}
   html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]{display:flex;flex-direction:column}
   html[data-theme="premium"] #drawer #dr-body .tgrid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* ── Yfirlit: eignalistinn til vinstri, „Senda erindi" til hægri á ÖLLUM breiddum ≥1200 px ─────────────────────
+   index.html (max-width:1499px) setur .yf-rail{order:-1} fyrir gamla útlitið; Premium-grindin (1fr + 310 px) gerir ráð
+   fyrir að listinn sé fyrst — þess vegna lenti listinn í mjóa dálknum og klippist á 1200–1499 px skjáum. */
+@media (min-width:1200px){
+  html[data-theme="premium"] #portal .yf-main{grid-column:1;grid-row:1}
+  html[data-theme="premium"] #portal .yf-rail{grid-column:2;grid-row:1;order:0!important}
+}
+@media (min-width:1200px) and (max-width:1599px){
+  html[data-theme="premium"] #portal .yf-layout{grid-template-columns:minmax(0,1fr) 280px!important}
+  html[data-theme="premium"] #portal #yf-tbl{overflow-x:auto!important}
+}
