@@ -70,7 +70,7 @@
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {
-    account: { name: 'Center Hótel', theme: 'blar' },
+    account: { name: 'Center Hótel', theme: 'premium' },
     stats: [
       { k: 'Byggingar', v: '10' }, { k: 'Slökkvitæki', v: '155' }, { k: 'Brunaslöngur', v: '77' },
       { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
@@ -433,7 +433,7 @@
   function renderPortal(data) {
     state.data = data;
     hledurFela();
-    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'blar');
+    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'premium');
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
@@ -466,6 +466,7 @@
     renderMessages(data.messages);
     renderSerkjor();
     wireNav();
+    if (window.PremiumShell) window.PremiumShell.sync();
     // 27.10.2026: ?flipi=<view> opnar flipa beint (bæklingur, póstar, skjámyndir) — aðeins sýnilega flipa
     try {
       var fl = new URLSearchParams(location.search).get('flipi');
@@ -990,6 +991,7 @@
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
+    if (window.PremiumShell) window.PremiumShell.sync();
   }
   // „Skjöl" á Yfirliti → Skýrslur síaðar á þá byggingu (smellir á sama flís og notandinn myndi gera).
   document.addEventListener('click', function (e) {
@@ -1009,6 +1011,7 @@
         VIEWS.forEach(function (name) {
           $('#v-' + name).classList.toggle('hidden', name !== v);
         });
+        if (window.PremiumShell) window.PremiumShell.sync();
       };
     });
     $('#logoutBtn').onclick = function () {

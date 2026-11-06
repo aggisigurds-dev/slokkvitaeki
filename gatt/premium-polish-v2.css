@@ -1,70 +1,178 @@
-/* Premium reference polish v2: scoped; preserves existing functionality and all other themes. */
+/* Premium v3 component polish — data and event hooks are unchanged. */
+html[data-theme="premium"] #portal .cards .sc{
+ display:grid!important;grid-template-columns:48px minmax(0,1fr)!important;grid-template-rows:auto auto!important;
+ align-content:center!important;column-gap:8px!important;padding:11px 10px!important
+}
+html[data-theme="premium"] #portal .cards .sc>svg,
+html[data-theme="premium"] #portal .cards .sc>.ico,
+html[data-theme="premium"] #portal .cards .sc>.ic{
+ grid-row:1 / 3!important;grid-column:1!important;align-self:center!important;justify-self:center!important;max-width:42px!important
+}
+html[data-theme="premium"] #portal .cards .sc .k{
+ grid-column:2!important;grid-row:1!important;font-size:9px!important;line-height:1.2!important;text-transform:uppercase!important;letter-spacing:.05em!important
+}
+html[data-theme="premium"] #portal .cards .sc .v{grid-column:2!important;grid-row:2!important;font-size:27px!important;line-height:1.05!important}
+html[data-theme="premium"] #portal #yf-tbl,
+html[data-theme="premium"] #portal #v-reikningar>.tbl-wrap{
+ border:1px solid #dce5ef!important;border-radius:10px!important;background:#fff!important;box-shadow:0 5px 18px rgba(19,41,67,.08)!important
+}
+html[data-theme="premium"] #portal thead th{font-size:9px!important;letter-spacing:.025em!important;background:#f2f6fa!important;padding:10px 8px!important}
+html[data-theme="premium"] #portal tbody tr{border-bottom:1px solid #e7edf4!important}
+html[data-theme="premium"] #portal tbody td{font-size:11px!important;padding:8px!important}
+html[data-theme="premium"] #portal #yf-tbl .bcell{display:flex!important;align-items:center!important;gap:9px!important;min-width:170px!important}
+html[data-theme="premium"] #portal #yf-tbl .bic{display:block!important;flex:0 0 58px!important;width:58px!important;height:40px!important;border-radius:6px!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
+html[data-theme="premium"] #portal #yf-tbl .bic:not(.ph){background:#edf3f9!important;display:grid!important;place-items:center!important}
+html[data-theme="premium"] #portal #yf-tbl .bname{font-weight:750!important;color:#142542!important}
+html[data-theme="premium"] #portal #yf-tbl .baddr{color:#728197!important;font-size:9.5px!important}
+html[data-theme="premium"] #portal #yf-tbl .ract{display:flex!important;gap:4px!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important}
+html[data-theme="premium"] #portal .pdf{border-radius:6px!important}
+html[data-theme="premium"] #portal .yf-rail .rl-card,
+html[data-theme="premium"] #portal .yf-rail .naestu{
+ border-radius:9px!important;border:1px solid #dfe7f0!important;background:#fff!important;box-shadow:0 4px 16px rgba(18,44,72,.08)!important;overflow:hidden!important
+}
+html[data-theme="premium"] #portal .yf-rail .rl-card{padding:11px!important}
+html[data-theme="premium"] #portal .yf-rail #rl-send{background:linear-gradient(90deg,#f66a19,#ef4e12)!important;border:0!important;color:#fff!important;min-height:38px!important;font-weight:750!important}
+html[data-theme="premium"] #portal .yf-rail .seg{border-radius:7px!important;overflow:hidden!important}
+html[data-theme="premium"] #portal .yf-rail .seg button.on{background:#172c4b!important;color:#fff!important}
+html[data-theme="premium"] #portal .yf-rail select,
+html[data-theme="premium"] #portal .yf-rail textarea{border-radius:7px!important;background:#f9fbfd!important}
+
+html[data-theme="premium"] #portal .egp{
+ border-radius:9px!important;border:1px solid #d7e1ec!important;background:#fff!important;box-shadow:0 4px 15px rgba(17,42,69,.09)!important
+}
+html[data-theme="premium"] #portal .egp-h{
+ min-height:38px;padding:9px 12px!important;background:linear-gradient(180deg,#173150,#10243f)!important;border:0!important;color:#fff!important
+}
+html[data-theme="premium"] #portal .egp-h b{font:750 15px/1.1 Inter,system-ui,sans-serif!important;color:#fff!important}
+html[data-theme="premium"] #portal .egp-h span{font-size:8px!important;color:#dbe6f2!important}
+html[data-theme="premium"] #portal .egp-r{padding:8px 12px!important;gap:9px!important}
+html[data-theme="premium"] #portal .egt b{font-size:11px!important}
+html[data-theme="premium"] #portal .egp-n{padding:8px 12px!important;font-size:9.5px!important}
+html[data-theme="premium"] #portal .vs-kort-m{height:300px}
+html[data-theme="premium"] #portal .vs-fl{height:30px;border-radius:8px;font-size:9px}
+html[data-theme="premium"] #portal .vs-fl:first-child{background:#ed5b21;color:#fff;border-color:#ed5b21}
+html[data-theme="premium"] #portal .vs-hlekkir{display:none}
+html[data-theme="premium"] #portal #v-reikningar>.tbl-wrap{overflow-x:auto}
+html[data-theme="premium"] #portal #v-reikningar table{min-width:820px;width:100%}
+html[data-theme="premium"] #portal #v-reikningar .bname{font-size:12px!important}
+html[data-theme="premium"] #portal #v-serkjor>.kj-h{
+ display:flex;align-items:center;gap:12px;margin:22px 4px 5px!important;
+ font:800 22px/1.15 Inter,system-ui,sans-serif!important;color:#142542!important
+}
+html[data-theme="premium"] #portal #v-serkjor>.kj-h:before{
+ content:"";flex:0 0 34px;width:34px;height:34px;border-radius:50%;
+ background:radial-gradient(circle at center,#fff 0 3px,transparent 4px),repeating-conic-gradient(from 0deg,#fff 0 8deg,transparent 8deg 30deg),linear-gradient(145deg,#ff8d24,#ef4f12);
+ box-shadow:0 4px 10px rgba(238,83,18,.25)
+}
+html[data-theme="premium"] #portal #v-serkjor>.kj-h:nth-of-type(2):before{
+ border-radius:9px;background:linear-gradient(145deg,#ff8d24,#ef4f12)
+}
+html[data-theme="premium"] #portal #v-serkjor>.kj-lead{max-width:none;margin:0 48px 10px!important;font-size:12px;line-height:1.45}
+html[data-theme="premium"] #portal #v-serkjor>.tbl-wrap{
+ overflow-x:auto;border:1px solid #d7e1ec!important;border-radius:10px!important;background:#fff!important;box-shadow:0 6px 18px rgba(17,42,69,.12)!important
+}
+html[data-theme="premium"] #portal #v-serkjor .kj-tbl{min-width:820px;width:100%}
+html[data-theme="premium"] #portal #v-serkjor .kj-tbl td:first-child{font-weight:750;color:#142542}
+html[data-theme="premium"] #portal #v-serkjor .kj-tbl .pct{min-width:62px;padding:4px 9px;border-radius:7px;font:750 14px/1 Inter,system-ui,sans-serif}
+html[data-theme="premium"] #portal #v-serkjor>.kj-meira{margin:8px 4px 0;color:#e85a1b;font-size:11px}
+html[data-theme="premium"] #portal #v-serkjor>.kj-fot{max-width:none;margin:18px 12px 0;font-size:10px}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-top{position:relative;z-index:4;margin:-42px 10px 18px}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-q{
+ max-width:560px;min-height:42px;border:1px solid #d6e1ec;border-radius:8px;background:#fff;box-shadow:0 5px 16px rgba(16,39,66,.18)
+}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-list{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:12px}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c{
+ gap:6px;padding:6px 7px 9px;border:1px solid #d5e0eb;border-radius:11px;background:#fff;box-shadow:0 5px 14px rgba(16,39,66,.12)
+}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c i{height:100px;border-radius:7px;border-color:#c7d3df;background-color:#dce5ee}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c b{font:750 13px/1.12 Inter,system-ui,sans-serif;color:#142542}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c small{font-size:9.5px;line-height:1.35}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c .kst{position:absolute;top:8px;right:8px;z-index:2;box-shadow:0 2px 7px rgba(13,32,54,.18)}
+html[data-theme="premium"] #portal #v-verkbeidnir .vbt-c{position:relative}
+html[data-theme="premium"] #portal #v-verkbeidnir .dsec>h4{border-bottom-color:#ed6a2c;color:#ed5b21;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+html[data-theme="premium"] .scrim{z-index:40;background:rgba(8,24,43,.28);backdrop-filter:blur(2px)}
+html[data-theme="premium"] .drawer{
+ z-index:41;top:38px;left:126px;right:0;width:auto;max-width:none;
+ border-left:0;background:#f3f7fb;box-shadow:-8px 0 28px rgba(8,27,49,.22)
+}
+html[data-theme="premium"] .drawer .dr-head{
+ min-height:156px;align-items:flex-end;padding:24px 30px;
+ background:linear-gradient(90deg,rgba(14,35,61,.96),rgba(14,35,61,.72) 47%,rgba(14,35,61,.1)),url("https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=1800&q=86") center 58%/cover no-repeat
+}
+html[data-theme="premium"] .drawer .dr-head.hero{min-height:156px;padding:24px 30px;background:linear-gradient(90deg,rgba(14,35,61,.96),rgba(14,35,61,.68) 50%,rgba(14,35,61,.08)),var(--hero) center/cover no-repeat}
+html[data-theme="premium"] .drawer .dr-head .crest{display:none}
+html[data-theme="premium"] .drawer .dr-head .dr-tt h3{font:800 34px/1.05 Inter,system-ui,sans-serif;color:#fff;letter-spacing:-.035em}
+html[data-theme="premium"] .drawer .dr-head .baddr{color:#e6edf5}
+html[data-theme="premium"] .drawer .dr-head .xbtn{position:absolute;top:14px;right:16px}
+html[data-theme="premium"] .drawer .dr-body{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:max-content;gap:12px;align-content:start;padding:14px 16px 24px
+}
+html[data-theme="premium"] .drawer .dr-body>.dsec{min-width:0;height:max-content;align-self:start;margin:0}
+html[data-theme="premium"] .drawer .dr-body>.dsec:first-child,
+html[data-theme="premium"] .drawer .dr-body>.dgrp{grid-column:1/-1}
+html[data-theme="premium"] .drawer .dsec{
+ padding:0;border:1px solid #d6e1ec;border-radius:9px;background:#fff;box-shadow:0 4px 14px rgba(16,39,66,.09);overflow:hidden
+}
+html[data-theme="premium"] .drawer .dsec>h4{margin:0;padding:9px 12px;background:linear-gradient(180deg,#173150,#10243f);color:#fff;letter-spacing:.05em}
+html[data-theme="premium"] .drawer .dsec>h4:after{display:none}
+html[data-theme="premium"] .drawer .dsec>:not(h4){margin-left:10px;margin-right:10px}
+html[data-theme="premium"] .drawer .dkpis{gap:8px;padding:10px}
+html[data-theme="premium"] .drawer .dk{border-radius:7px;background:#f7f9fc}
+html[data-theme="premium"] .drawer .dnext{margin:0 10px 10px}
+html[data-theme="premium"] .drawer .dr-foot{padding:9px 16px;background:#fff}
+
 @media(min-width:1200px){
- html[data-theme="premium"] #portal header{box-shadow:inset -1px 0 rgba(255,255,255,.12)!important}
- html[data-theme="premium"] #portal .hin{min-height:100vh!important}
- html[data-theme="premium"] #portal header nav{margin-top:0!important}
- html[data-theme="premium"] #portal header nav a.tab{position:relative;padding-left:42px!important;font-weight:600!important;letter-spacing:0!important}
- html[data-theme="premium"] #portal header nav a.tab:before{content:"◇";position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:19px;line-height:1;color:#b5c9df}
- html[data-theme="premium"] #portal header nav a.tab[data-view="yfirlit"]:before{content:"⌂";font-size:24px}
- html[data-theme="premium"] #portal header nav a.tab[data-view="vinnusvaedi"]:before{content:"◇"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="eldvarnabok"]:before{content:"▤"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="skyrslur"]:before{content:"▥"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="reikningar"]:before{content:"▣"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="verkbeidnir"]:before{content:"⚒"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="erindi"]:before{content:"▢"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="serkjor"]:before{content:"✧"}
- html[data-theme="premium"] #portal header nav a.tab[data-view="skilabod"]:before{content:"▱"}
- html[data-theme="premium"] #portal header nav a.tab.on:before{color:#fff}
- html[data-theme="premium"] #portal .premium-hero{height:322px!important;min-height:322px!important}
- html[data-theme="premium"] #portal .premium-hero-photo{background-position:center 57%!important}
- html[data-theme="premium"] #portal .premium-section-heading{top:32px!important}
- html[data-theme="premium"] #portal .premium-hero-content{padding-top:112px!important}
- html[data-theme="premium"] #portal .premium-hero p{max-width:470px!important;color:#e0e8f2!important}
- html[data-theme="premium"] #portal .cards{margin-top:-103px!important;margin-bottom:24px!important}
- html[data-theme="premium"] #portal .cards .sc{display:grid!important;grid-template-columns:58px minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:center!important;column-gap:9px!important;padding:14px 11px!important}
- html[data-theme="premium"] #portal .cards .sc>svg,
- html[data-theme="premium"] #portal .cards .sc>.ico,
- html[data-theme="premium"] #portal .cards .sc>.ic{grid-row:1 / 3!important;grid-column:1!important;align-self:center!important;justify-self:center!important;max-width:49px!important}
- html[data-theme="premium"] #portal .cards .sc .k{grid-column:2!important;grid-row:1!important;font-size:10px!important;line-height:1.25!important;text-transform:uppercase!important;letter-spacing:.045em!important}
- html[data-theme="premium"] #portal .cards .sc .v{grid-column:2!important;grid-row:2!important;font-size:30px!important;line-height:1.12!important}
- html[data-theme="premium"] #portal .yf-layout{gap:15px!important}
- html[data-theme="premium"] #portal #yf-tbl{border:1px solid #dce5ef!important;border-radius:14px!important;background:#fff!important;box-shadow:0 7px 24px #13294314!important}
- html[data-theme="premium"] #portal #yf-tbl thead th{font-size:11px!important;letter-spacing:0!important;background:#f2f6fa!important;padding:14px 10px!important}
- html[data-theme="premium"] #portal #yf-tbl tbody tr{border-bottom:1px solid #e7edf4!important}
- html[data-theme="premium"] #portal #yf-tbl tbody td{font-size:12px!important}
- html[data-theme="premium"] #portal #yf-tbl .bcell{display:flex!important;align-items:center!important;gap:12px!important;min-width:190px!important}
- html[data-theme="premium"] #portal #yf-tbl .bic{display:block!important;flex:0 0 76px!important;width:76px!important;height:52px!important;border-radius:7px!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
- html[data-theme="premium"] #portal #yf-tbl .bic:not(.ph){background:#edf3f9!important;display:grid!important;place-items:center!important}
- html[data-theme="premium"] #portal #yf-tbl .bname{font-weight:750!important;color:#142542!important}
- html[data-theme="premium"] #portal #yf-tbl .baddr{color:#728197!important;font-size:11px!important}
- html[data-theme="premium"] #portal #yf-tbl .ract{display:flex!important;gap:5px!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important}
- html[data-theme="premium"] #portal #yf-tbl .pdf{border-radius:7px!important}
- html[data-theme="premium"] #portal .yf-rail .rl-card,
- html[data-theme="premium"] #portal .yf-rail .naestu{border-radius:13px!important;border:1px solid #dfe7f0!important;background:#fff!important;box-shadow:0 5px 20px #122c4812!important;overflow:hidden!important}
- html[data-theme="premium"] #portal .yf-rail .rl-card{padding:15px!important}
- html[data-theme="premium"] #portal .yf-rail .rl-card .kicker{color:#df5c24!important}
- html[data-theme="premium"] #portal .yf-rail #rl-send{background:linear-gradient(90deg,#f66a19,#ef4e12)!important;border:0!important;color:#fff!important;min-height:43px!important;font-weight:750!important}
- html[data-theme="premium"] #portal .yf-rail .seg{border-radius:8px!important;overflow:hidden!important}
- html[data-theme="premium"] #portal .yf-rail .seg button.on{background:#172c4b!important;color:#fff!important}
- html[data-theme="premium"] #portal .yf-rail select,
- html[data-theme="premium"] #portal .yf-rail textarea{border-radius:8px!important;background:#f9fbfd!important}
+ html[data-theme="premium"] #portal .vs-grid{grid-auto-rows:6px!important}
+ html[data-theme="premium"] #portal #vs-check{grid-column:1}
+ html[data-theme="premium"] #portal #vs-verk{grid-column:2}
+ html[data-theme="premium"] #portal #vs-dagatal{grid-column:3}
+ html[data-theme="premium"] #portal #vs-kort-wrap{grid-column:1}
+ html[data-theme="premium"] #portal #vs-vidhald{grid-column:1 / span 2}
+ html[data-theme="premium"] #portal #vs-skirteini{grid-column:1}
+ html[data-theme="premium"] #portal #vs-nidurhal,
+ html[data-theme="premium"] #portal #vs-skjol,
+ html[data-theme="premium"] #portal #vs-verktakar,
+ html[data-theme="premium"] #portal #vs-rymi,
+ html[data-theme="premium"] #portal #vs-lyklar,
+ html[data-theme="premium"] #portal #vs-maelar{grid-column:3}
 }
-@media(min-width:1200px) and (max-width:1500px){
- html[data-theme="premium"] #portal #yf-tbl{overflow-x:auto!important}
- html[data-theme="premium"] #portal #yf-tbl table{min-width:780px!important}
- html[data-theme="premium"] #portal .cards .sc{grid-template-columns:40px minmax(0,1fr)!important}
- html[data-theme="premium"] #portal .cards .sc .v{font-size:26px!important}
-}
+
 @media(max-width:1199px){
- html[data-theme="premium"] #portal .premium-hero{min-height:340px!important}
- html[data-theme="premium"] #portal .yf-layout{gap:16px!important}
- html[data-theme="premium"] #portal .yf-rail{margin-top:12px!important}
+ html[data-theme="premium"] #portal .premium-hero-content{padding:28px 24px!important}
+ html[data-theme="premium"] #portal .premium-hero h1{font-size:32px!important}
+ html[data-theme="premium"] #portal .premium-hero-actions{margin-top:18px}
+ html[data-theme="premium"] #portal .yf-rail{margin-top:10px!important}
+ html[data-theme="premium"] #portal #v-vinnusvaedi>.kicker,
+ html[data-theme="premium"] #portal #v-vinnusvaedi>.vs-haus h2,
+ html[data-theme="premium"] #portal #v-reikningar>.kicker,
+ html[data-theme="premium"] #portal #v-reikningar>h2.page,
+ html[data-theme="premium"] #portal #v-serkjor>.kicker,
+ html[data-theme="premium"] #portal #v-serkjor>h2.page,
+ html[data-theme="premium"] #portal #v-verkbeidnir>.kicker,
+ html[data-theme="premium"] #portal #v-verkbeidnir>h2.page{display:none}
+ html[data-theme="premium"] #portal #v-vinnusvaedi .vs-rond,
+ html[data-theme="premium"] #portal #v-reikningar>.chips{margin:10px 0!important}
+ html[data-theme="premium"] #portal #v-verkbeidnir .vbt-top{margin:10px 0 18px}
+ html[data-theme="premium"] .drawer{top:58px;left:110px}
+ html[data-theme="premium"] .drawer .dr-body{grid-template-columns:minmax(0,1fr)}
+ html[data-theme="premium"] .drawer .dr-body>.dgrp{grid-column:1}
 }
+
 @media(max-width:700px){
- html[data-theme="premium"] #portal .premium-hero{min-height:365px!important}
+ html[data-theme="premium"] #portal .premium-hero{height:150px!important;min-height:150px!important}
  html[data-theme="premium"] #portal .cards .sc{padding:13px 10px!important}
  html[data-theme="premium"] #portal #yf-tbl{max-width:100%!important;overflow-x:auto!important}
  html[data-theme="premium"] #portal .yf-rail .rl-card{padding:15px!important}
+ html[data-theme="premium"] #portal button,
+ html[data-theme="premium"] #portal a.tab,
+ html[data-theme="premium"] #portal a.pdf{min-width:44px!important;min-height:44px!important}
+ html[data-theme="premium"] #portal input,
+ html[data-theme="premium"] #portal select,
+ html[data-theme="premium"] #portal textarea{min-height:44px!important;font-size:16px!important}
+ html[data-theme="premium"] #portal #v-verkbeidnir .vbt-list{grid-template-columns:minmax(0,1fr)}
+ html[data-theme="premium"] .drawer{left:88px}
+ html[data-theme="premium"] .drawer .dr-head,
+ html[data-theme="premium"] .drawer .dr-head.hero{min-height:132px;padding:18px 14px}
+ html[data-theme="premium"] .drawer .dr-head .dr-tt h3{font-size:24px}
+ html[data-theme="premium"] .drawer .dr-body{padding:8px}
 }
-
-/* Release reference polish v2. */

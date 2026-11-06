@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="is" data-theme="blar">
+<html lang="is" data-theme="premium">
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light"/>
@@ -1477,6 +1477,20 @@
 
 <!-- ══ PORTAL ══ -->
 <div id="portal" class="hidden">
+  <div class="premium-topbar" aria-label="Aðalflakk">
+    <img src="/gatt/myndir/brunaholf/brunaholf-logo-hvitt.webp" alt="Brunahólf" width="500" height="150">
+    <nav class="premium-topnav">
+      <button type="button" class="on" data-premium-go="yfirlit">Yfirlit</button>
+      <button type="button" data-premium-go="vinnusvaedi">Vinnusvæði</button>
+      <button type="button" data-premium-go="eldvarnabok">Eldvarnabók</button>
+      <button type="button" data-premium-go="skyrslur">Skýrslur</button>
+      <button type="button" data-premium-go="reikningar">Reikningar</button>
+      <button type="button" data-premium-go="verkbeidnir">Verkbeiðnir</button>
+      <button type="button" data-premium-go="erindi">Erindi</button>
+      <button type="button" data-premium-go="serkjor">Sérkjör</button>
+      <button type="button" data-premium-go="skilabod">Skilaboð</button>
+    </nav>
+  </div>
   <header>
     <div class="hin">
       <div class="brandrow">
@@ -1555,6 +1569,10 @@
     </section>
     <!-- MITT VINNUSVÆÐI (eignagatt.js): verkefni · dagatal · kort · niðurhal · skjöl og hlekkir — röð eins og á Þjónustuborðinu -->
     <section id="v-vinnusvaedi" class="hidden">
+      <div class="premium-view-hero">
+        <div class="premium-view-photo" aria-hidden="true"></div>
+        <div class="premium-view-copy"><span>Brunahólf · Þjónustugátt</span><h2>Mitt vinnusvæði</h2><p>Yfirlit, verkefni, skoðanir og rekstur brunavarna á einum stað.</p></div>
+      </div>
       <div class="kicker">Byggingarumsjón · allt á einum stað</div>
       <div class="vs-haus"><h2 class="page">Mitt vinnusvæði</h2><div class="vs-hlekkir" id="vs-hlekkir"></div></div>
       <div class="vs-rond"><nav class="vs-flyti" id="vs-flyti" aria-label="Flýtileiðir á vinnusvæðinu"></nav><div class="vs-stilla"><button type="button" class="kbtn sm" id="vs-stilla">Stilla vinnusvæði</button><div class="vs-stilla-p hidden" id="vs-stilla-p"></div></div></div>
@@ -1582,6 +1600,10 @@
     </section>
     <!-- VERKBEIÐNIR (eignagatt.js): velja eign → teikningar → punktur + mynd → senda -->
     <section id="v-verkbeidnir" class="hidden">
+      <div class="premium-view-hero premium-verkbeidnir-hero">
+        <div class="premium-view-photo premium-verkbeidnir-photo" aria-hidden="true"></div>
+        <div class="premium-view-copy"><span>Verkbeiðni · beint á teikninguna</span><h2>Verkbeiðnir</h2><p>Yfirlit yfir allar verkbeiðnir og tengdar eignir.</p></div>
+      </div>
       <div class="kicker">Verkbeiðni · beint á teikninguna</div>
       <h2 class="page">Verkbeiðnir</h2>
       <div class="vbt-top">
@@ -1625,9 +1647,16 @@
     <!-- SKILABOÐ -->
     <!-- ══ SÉRKJÖR 26.10.2026 — samningskjör félagsins og pöntun með beiðni (gögn: gatt.cjs serkjor) ══ -->
     <section id="v-serkjor" class="hidden">
+      <div class="premium-view-hero premium-serkjor-hero">
+        <div class="premium-view-photo premium-serkjor-photo" aria-hidden="true"></div>
+        <div class="premium-view-copy">
+          <span>Samningskjör ykkar hjá Slökkvitækjum ehf.</span>
+          <h2>Sérkjör og verðskrá</h2>
+          <p class="kj-intro" id="kj-intro"></p>
+        </div>
+      </div>
       <div class="kicker">Samningskjör ykkar hjá Slökkvitækjum ehf.</div>
       <h2 class="page">Sérkjör og verðskrá</h2>
-      <p class="kj-intro" id="kj-intro"></p>
       <h3 class="kj-h">Þjónusta</h3>
       <p class="kj-lead" id="kj-lead-thj"></p>
       <div class="tbl-wrap"><table class="kj-tbl">
@@ -1662,6 +1691,10 @@
     </section>
     <!-- REIKNINGAR -->
     <section id="v-reikningar" class="hidden">
+      <div class="premium-view-hero">
+        <div class="premium-view-photo" aria-hidden="true"></div>
+        <div class="premium-view-copy"><span>Reikningar frá Slökkvitækjum ehf.</span><h2>Reikningar</h2><p>Yfirlit yfir alla reikninga, þjónustu og greiðslustöðu.</p></div>
+      </div>
       <div class="kicker">Reikningar frá Slökkvitækjum ehf.</div>
       <h2 class="page">Reikningar</h2>
       <div class="chips" id="re-chips"></div>
@@ -1883,9 +1916,9 @@
 <link rel="stylesheet" href="/gatt/premium-theme.css?v=20261106a">
 <link rel="stylesheet" href="/gatt/premium-layout.css?v=20261106a">
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
-<link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
-<link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261105bh"></script>
-<script src="/gatt/premium-hero.js?v=20261106b" defer></script>
+<link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106i">
+<link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106l">
+<script src="/gatt/portal.js?v=20261106b"></script>
+<script src="/gatt/premium-hero.js?v=20261106c" defer></script>
 </body>
 </html>
