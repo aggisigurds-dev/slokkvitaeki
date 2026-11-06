@@ -1,4 +1,7 @@
 /* Premium v3 — cinematic house banner + flame rail, not a flat navy theme. */
+html[data-theme="premium"]{
+ --premium-account-photo:url("/gatt/myndir/brunaholf/husasolsetur.jpg")
+}
 html[data-theme="premium"] #portal .premium-topbar{display:none}
 html[data-theme="premium"] #portal .hero-art{display:none!important}
 html[data-theme="premium"] #portal .premium-view-hero,
@@ -8,22 +11,22 @@ html[data-theme="premium"] #portal .premium-hero{
 }
 html[data-theme="premium"] #portal .premium-view-photo,
 html[data-theme="premium"] #portal .premium-hero-photo{
- position:absolute;z-index:-2;inset:0;background-color:#15263d;
- background-image:var(--premium-account-photo,none);background-position:68% 46%;background-size:cover;background-repeat:no-repeat
+ position:absolute;z-index:-2;inset:0;background-color:#15263d;opacity:1;
+ background-image:var(--premium-account-photo,none);background-position:50% 50%;background-size:cover;background-repeat:no-repeat
 }
 html.has-account-photo[data-theme="premium"] #portal .premium-view-photo,
-html.has-account-photo[data-theme="premium"] #portal .premium-hero-photo{filter:saturate(1.12) contrast(1.06)}
+html.has-account-photo[data-theme="premium"] #portal .premium-hero-photo{filter:saturate(1.06) contrast(1.04)}
 html[data-theme="premium"] #portal .premium-view-hero:before,
 html[data-theme="premium"] #portal .premium-hero:after{
  content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
- background:linear-gradient(105deg,transparent 42%,rgba(255,110,36,.22) 68%,rgba(255,78,16,.38) 100%)
+ background:linear-gradient(105deg,transparent 72%,rgba(255,110,36,.1) 100%)
 }
 html[data-theme="premium"] #portal .premium-view-hero:after{
  content:"";position:absolute;z-index:-1;inset:0;
- background:linear-gradient(90deg,#0b1830 0%,rgba(11,24,48,.94) 26%,rgba(11,24,48,.55) 48%,rgba(11,24,48,.18) 68%,rgba(11,24,48,.04) 100%)
+ background:linear-gradient(90deg,rgba(11,24,48,.42) 0%,rgba(11,24,48,.16) 22%,transparent 48%)
 }
 html[data-theme="premium"] #portal .premium-hero:before{
- background:linear-gradient(90deg,#0b1830 0%,rgba(11,24,48,.94) 26%,rgba(11,24,48,.5) 52%,rgba(11,24,48,.08) 100%)!important
+ background:linear-gradient(90deg,rgba(11,24,48,.42) 0%,rgba(11,24,48,.16) 22%,transparent 48%)!important
 }
 html[data-theme="premium"] #portal .premium-view-copy{position:relative;z-index:3;padding:34px clamp(20px,4vw,48px) 78px;max-width:58%}
 html[data-theme="premium"] #portal .premium-view-copy span,
@@ -35,26 +38,23 @@ html[data-theme="premium"] #portal .premium-hero-marks{
  display:flex;align-items:center;justify-content:flex-end;gap:10px;pointer-events:none;transform:none
 }
 html[data-theme="premium"] #portal .premium-hero-flame{
- position:absolute;left:6%;bottom:-22%;width:230px;height:270px;object-fit:contain;
+ display:none;position:absolute;left:6%;bottom:-22%;width:230px;height:270px;object-fit:contain;
  filter:drop-shadow(0 0 34px rgba(255,90,20,.78)) drop-shadow(0 16px 28px rgba(241,91,19,.5));
  transform:rotate(-12deg);opacity:.94
 }
 html[data-theme="premium"] #portal .premium-hero-ext{position:relative;z-index:2;width:52px;height:78px;margin-bottom:6px;filter:drop-shadow(0 6px 14px rgba(6,19,35,.55))}
 html[data-theme="premium"] #portal .premium-hero-shield{position:relative;z-index:2;width:64px;height:64px;margin-bottom:14px;filter:drop-shadow(0 4px 12px rgba(6,19,35,.45))}
-html[data-theme="premium"] #portal .premium-serkjor-photo{background-image:var(--premium-account-photo,none);background-position:72% 52%}
-html[data-theme="premium"] #portal .premium-serkjor-hero:after{background:linear-gradient(90deg,#0b1830 0%,rgba(11,24,48,.92) 34%,rgba(11,24,48,.42) 58%,rgba(11,24,48,.08) 100%)}
+html[data-theme="premium"] #portal .premium-serkjor-photo{background-image:var(--premium-account-photo,none);background-position:50% 50%}
+html[data-theme="premium"] #portal .premium-serkjor-hero:after{background:linear-gradient(90deg,rgba(11,24,48,.38) 0%,rgba(11,24,48,.12) 28%,transparent 55%)}
 html[data-theme="premium"] #portal .premium-serkjor-hero .kj-intro{max-width:640px;color:#f0f5fb}
-html[data-theme="premium"] #portal .premium-verkbeidnir-photo{background-image:var(--premium-account-photo,none);background-position:70% 48%}
+html[data-theme="premium"] #portal .premium-verkbeidnir-photo{background-image:var(--premium-account-photo,none);background-position:50% 50%}
 html[data-theme="premium"] #portal header .hin{position:relative;z-index:1;overflow:hidden}
 html[data-theme="premium"] #portal .sidebar-flame{
- position:absolute;z-index:1;left:0;right:0;bottom:0;width:auto;height:240px;transform:none;
+ position:absolute;z-index:1;left:0;right:0;bottom:0;width:auto;height:62%;transform:none;
  display:block;pointer-events:none;opacity:1;
- background:radial-gradient(ellipse 130% 90% at 50% 118%,rgba(255,92,18,.62) 0%,rgba(255,70,10,.28) 36%,transparent 72%),linear-gradient(180deg,transparent 28%,rgba(255,80,16,.2) 100%)
+ background:url("/gatt/myndir/brunaholf/sidebar-eldur.jpg") left bottom / cover no-repeat
 }
-html[data-theme="premium"] #portal .sidebar-flame img{
- position:absolute;left:50%;bottom:16px;width:86px;height:118px;transform:translateX(-50%);
- object-fit:contain;filter:drop-shadow(0 0 26px rgba(255,90,20,.95));opacity:.9
-}
+html[data-theme="premium"] #portal .sidebar-flame img{display:none}
 
 @media(min-width:1200px){
  html[data-theme="premium"] #portal .premium-topbar{
@@ -105,7 +105,7 @@ html[data-theme="premium"] #portal .sidebar-flame img{
  html[data-theme="premium"] #portal .premium-hero,
  html[data-theme="premium"] #portal .premium-view-hero{height:248px!important;min-height:248px!important;margin:0 -14px 0!important;border-radius:0!important;box-shadow:none!important}
  html[data-theme="premium"] #portal .premium-hero-photo,
- html[data-theme="premium"] #portal .premium-view-photo{inset:0!important;background-position:68% 46%!important;opacity:1}
+ html[data-theme="premium"] #portal .premium-view-photo{inset:0!important;background-position:50% 50%!important;opacity:1}
  html[data-theme="premium"] #portal .premium-hero-content{padding:0!important}
  html[data-theme="premium"] #portal .premium-hero-content>*{display:none!important}
  html[data-theme="premium"] #portal .premium-hero-foot{display:none!important}
@@ -177,7 +177,7 @@ html[data-theme="premium"] #portal .sidebar-flame img{
  html[data-theme="premium"] #portal .premium-hero,
  html[data-theme="premium"] #portal .premium-view-hero{height:188px!important;min-height:188px!important;margin:0 -14px!important;border-radius:0!important}
  html[data-theme="premium"] #portal .premium-hero-photo,
- html[data-theme="premium"] #portal .premium-view-photo{inset:0!important;background-position:68% 46%!important}
+ html[data-theme="premium"] #portal .premium-view-photo{inset:0!important;background-position:50% 50%!important;opacity:1}
  html[data-theme="premium"] #portal .premium-hero-content>*,
  html[data-theme="premium"] #portal .premium-hero-foot{display:none!important}
  html[data-theme="premium"] #portal .premium-section-heading{display:none!important}
@@ -196,8 +196,7 @@ html[data-theme="premium"] #portal .sidebar-flame img{
  html[data-theme="premium"] #portal .premium-topnav button{padding-inline:9px;font-size:10px}
  html[data-theme="premium"] #portal header{position:fixed!important;top:58px!important;bottom:0!important;left:0!important;width:88px!important;overflow:hidden!important}
  html[data-theme="premium"] #portal header nav{flex-direction:column!important}
- html[data-theme="premium"] #portal .sidebar-flame{height:160px}
- html[data-theme="premium"] #portal .sidebar-flame img{width:56px;height:78px;bottom:10px}
+ html[data-theme="premium"] #portal .sidebar-flame{height:58%}
  html[data-theme="premium"] #portal header nav a.tab{padding:7px 4px 7px 23px!important;font-size:9px!important}
  html[data-theme="premium"] #portal header nav a.tab:before{left:7px}
  html[data-theme="premium"] #portal header nav .leit,

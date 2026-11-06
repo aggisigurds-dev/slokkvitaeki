@@ -81,8 +81,8 @@
       { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
       { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: nóvember 2026' },
       { nafn: 'Laugavegur', heimilisfang: 'Laugavegur 95–99, 101 Reykjavík', sl: 15, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: ágúst 2027|Kerfi: september 2026' },
-      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026', eign: { mynd: '/gatt/myndir/center-hotel/midgardur.jpg' } },
-      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026', eign: { mynd: '/gatt/myndir/center-hotel/plaza.jpg' } },
+      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026', eign: { mynd: '/gatt/myndir/center-hotel/midgardur-kvold.jpg' } },
+      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026', eign: { mynd: '/gatt/myndir/center-hotel/plaza-kvold.jpg' } },
       { nafn: 'Skjaldbreið', heimilisfang: 'Laugavegur 16, 101 Reykjavík', sl: 3, slo: null, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: september 2026' },
     ],
     reports: [
@@ -430,37 +430,58 @@
   });
 
   /* Eigin húsmyndir — aðeins byggingar sem við eigum mynd af, aldrei lager/Unsplash. */
+  var HAUS_MYND = '/gatt/myndir/brunaholf/husasolsetur.jpg';
   var EIGN_MYND_EIGIN = {
-    'Plaza': '/gatt/myndir/center-hotel/plaza.jpg',
-    'Miðgarður': '/gatt/myndir/center-hotel/midgardur.jpg'
+    'Plaza': '/gatt/myndir/center-hotel/plaza-kvold.jpg',
+    'Grandi': '/gatt/myndir/center-hotel/grandi-kvold.jpg',
+    'Laugavegur': '/gatt/myndir/center-hotel/laugavegur-kvold.jpg',
+    'Miðgarður': '/gatt/myndir/center-hotel/midgardur-kvold.jpg',
+    'Arnarhvoll': '/gatt/myndir/center-hotel/arnarhvoll-kvold.jpg',
+    'Klöpp': '/gatt/myndir/center-hotel/klopp-kvold.jpg',
+    'Skjaldbreið': '/gatt/myndir/center-hotel/skjaldbreid-kvold.jpg',
+    'Þingholt Apartments': '/gatt/myndir/center-hotel/thingholt-apt-kvold.jpg',
+    'Pingholt Apartments': '/gatt/myndir/center-hotel/thingholt-apt-kvold.jpg',
+    'Þingholt': '/gatt/myndir/center-hotel/thingholt-kvold.jpg',
+    'Pingholt': '/gatt/myndir/center-hotel/thingholt-kvold.jpg'
   };
+  function eignMyndAfNafni(nafn) {
+    var n = String(nafn || '').trim();
+    if (!n) return '';
+    if (EIGN_MYND_EIGIN[n]) return EIGN_MYND_EIGIN[n];
+    var keys = Object.keys(EIGN_MYND_EIGIN).sort(function (a, b) { return b.length - a.length; });
+    var nl = n.toLowerCase();
+    for (var i = 0; i < keys.length; i++) {
+      if (nl.indexOf(keys[i].toLowerCase()) !== -1) return EIGN_MYND_EIGIN[keys[i]];
+    }
+    return '';
+  }
   function eignMyndSlod(b) {
     if (!b) return '';
+    var mapped = eignMyndAfNafni(b.nafn);
+    if (mapped) return mapped;
     var m = b.eign && b.eign.mynd;
-    if (m) return m;
-    return EIGN_MYND_EIGIN[String(b.nafn || '').trim()] || '';
+    if (m && /unsplash/i.test(m)) return '';
+    return m || '';
   }
   function festuEignMyndir(data) {
     if (!data) return;
     (data.buildings || []).concat(data.eignir_utan || []).forEach(function (b) {
-      var m = eignMyndSlod(b);
+      var m = eignMyndAfNafni(b && b.nafn);
       if (!m) return;
       b.eign = b.eign || {};
-      if (!b.eign.mynd) b.eign.mynd = m;
+      b.eign.mynd = m;
     });
   }
   function setjaAccountPhoto(data) {
     var photos = (data.buildings || []).map(function (b) { return b && b.eign && b.eign.mynd; }).filter(Boolean);
-    var dusk = '';
-    photos.forEach(function (p) { if (/midgardur/i.test(p)) dusk = p; });
-    var pick = dusk || photos[0] || '';
+    var pick = HAUS_MYND || photos[0] || '';
     document.documentElement.style.setProperty('--premium-account-photo', pick ? 'url("' + imgW(pick, 1800).replace(/"/g, '%22') + '")' : 'none');
     document.documentElement.classList.toggle('has-account-photo', !!pick);
   }
   function myndAfNafni(nafn) {
     var L = (state.data && state.data.buildings) || [];
     for (var i = 0; i < L.length; i++) if (L[i].nafn === nafn) return eignMyndSlod(L[i]);
-    return EIGN_MYND_EIGIN[String(nafn || '').trim()] || '';
+    return eignMyndAfNafni(nafn);
   }
   function eignaReitur(nafn, addr) {
     var m = myndAfNafni(nafn);
