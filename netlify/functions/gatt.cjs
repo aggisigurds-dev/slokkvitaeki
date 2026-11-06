@@ -384,6 +384,32 @@ exports.handler = async (event) => {
     return pr.ok ? P.json(200, { ok: true, hnit: eign.hnit }) : P.json(pr.status, { error: 'Vistun mistókst' });
   }
 
+  // ── Bannermynd eignar (06.11.2026, Agnar: „pinkulítinn takka þarna í banner svo maður geti skipt um bannermynd á
+  //    hverri eign"): mynd í einkabucket `gatt`, vísun í fyrirtaeki.eign.banner { path, w, h, at, af } — sýnilegt spor.
+  //    Aðeins gáttarinnar: snertir EKKI eign.mynd né húsmynd appsins (co_bygging_mynd). mynd=null fjarlægir bannerinn
+  //    (sjálfgefna myndin tekur við); gamla skráin stendur áfram í bucketinu.
+  async function vistaBanner(b) {
+    const sid = parseInt(b.site_id, 10);
+    const f0 = await eignFelags(sid, 'id,eign');
+    if (!f0) return P.json(404, { error: 'Eign fannst ekki' });
+    const eign = Object.assign({}, f0.eign && typeof f0.eign === 'object' ? f0.eign : {});
+    let banner = null;
+    if (b.mynd) {
+      const m = M.lesaDataUrl(b.mynd, 6 * 1024 * 1024);
+      if (!m || !/^image\//.test(m.mime)) return P.json(400, { error: 'Myndin er ekki á studdu sniði (JPEG/PNG/WebP, mest 6 MB)' });
+      const path = `banner/${baseId}/${sid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${m.ext}`;
+      if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Myndin vistaðist ekki' });
+      banner = { path, w: +b.mynd_w || null, h: +b.mynd_h || null, at: new Date().toISOString(), af: hofundurNafn() };
+      eign.banner = banner;
+    } else {
+      delete eign.banner;
+    }
+    const pr = await P.sbPatch(`fyrirtaeki?id=eq.${sid}&select=id`, { eign });
+    if (!pr.ok) return P.json(pr.status, { error: 'Vistun mistókst' });
+    const url = banner ? ((await M.undirrita([banner.path], 3600))[banner.path] || null) : null;
+    return P.json(200, { ok: true, banner_url: url });
+  }
+
   // ── Bæta við eign úr Landeignaskrá HMS (landnr.js hefur þegar leitað) ──────
   // Nýr staður félagsins UTAN þjónustu með eign-upplýsingum (landnr/heitinr/hnit) — sama leið og Reitis-eignirnar
   // 11.10.2026. Engin tvítekning á (félag, landnr) eða sama heimilisfangi; hámark 30 á klukkustund.
@@ -731,6 +757,7 @@ exports.handler = async (event) => {
       if (b.action === 'lokid') return await lokaVerki(b);
       if (b.action === 'einkunn') return await gefaEinkunn(b);
       if (b.action === 'hnit') return await vistaHnit(b);
+      if (b.action === 'eign_banner') return await vistaBanner(b);
       if (b.action === 'ny_eign') return await nyEign(b);
       if (b.action === 'item') return await vistaItem(b);
       if (b.action === 'item_eyda') return await eydaItem(b);
@@ -1469,6 +1496,15 @@ exports.handler = async (event) => {
         const st = (h) => { const m = /(\d+(?:[.,]\d+)?)\s*(kg|l)/i.exec(h); return m ? Number(m[1].replace(',', '.')) : 99; };
         lidir.sort((a, b) => (ROD[a.flokkur] - ROD[b.flokkur]) || (a.flokkur === 'taeki' ? 0 : (teg(a.heiti) - teg(b.heiti)) || (st(a.heiti) - st(b.heiti))));
         serkjor = { heimild: String(cfg.heimild || ''), ath: String(cfg.ath || ''), pct, ny_taeki_pct: fast(cfg.ny_taeki_pct), lidir };
+      }
+    } catch (_) {}
+
+    // Bannermyndir eigna (eign.banner.path í einkabucketinu) — ein undirritun fyrir allar, 1 klst
+    try {
+      const bEignir = [].concat(onBoard, eignirUtan).map((b) => b && b.eign).filter((e) => e && e.banner && e.banner.path);
+      if (bEignir.length) {
+        const bs = await M.undirrita(bEignir.map((e) => e.banner.path), 3600);
+        bEignir.forEach((e) => { const u = bs[e.banner.path]; if (u) e.banner_url = u; });
       }
     } catch (_) {}
 

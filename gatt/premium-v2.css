@@ -1,0 +1,170 @@
+/* Brunahólf V2 — útlitslag ofan á Premium-þemað. Hlaðið SÍÐAST.
+   Gildi úr hönnunarkerfinu „Brunahólf V2" (06.11.2026): navy-rammi, appelsínugul aðgerð, hvít spjöld á #e9f0fa,
+   Poppins. Aðeins útlit — engin gögn, engar heimildir. Sjá premium-v2.js fyrir efstu stiku og hetju. */
+html[data-theme="premium"]{
+  --v2-navy-950:#02193c;--v2-navy-900:#011f40;--v2-navy-800:#012548;--v2-navy-700:#0b2d5f;
+  --v2-on-navy-muted:#c9d3e3;--v2-orange:#ff6702;--v2-orange-hi:#ff8a1f;--v2-orange-lo:#ec5300;--v2-orange-ink:#c2410c;
+  --v2-orange-tint:#ffeee0;--v2-orange-edge:#f8b98c;--v2-page:#e9f0fa;--v2-surface-2:#f3f6fb;--v2-row-hover:#f6f9fd;
+  --v2-line:#d8dee9;--v2-line-soft:#e7ecf3;--v2-ink:#101e43;--v2-ink-2:#2e4064;--v2-muted:#5a6882;
+  --v2-ok:#16a34a;--v2-ok-tint:#ddfada;--v2-ok-ink:#166534;
+  --v2-card:0 1px 2px rgba(2,25,60,.06),0 8px 24px rgba(2,25,60,.08);
+  --v2-raised:0 2px 4px rgba(2,25,60,.08),0 14px 32px rgba(2,25,60,.14);
+  --v2-glow:0 6px 16px rgba(255,103,2,.35);
+  --v2-grad:linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300);
+  --v2-side:200px;--v2-top:52px;--v2-pad:28px;
+  /* gömlu Premium-breyturnar fá V2-gildin svo allt sem les þær fylgir */
+  --bg:#e9f0fa;--ink:#101e43;--ink2:#2e4064;--dim:#5a6882;--dark:#011f40;--dark2:#012548;
+  --accent:#ff6702;--accent-hd:#ff8a1f;--deep:#c2410c;--line:#e7ecf3;--line2:#d8dee9;--good:#16a34a;
+  --ui:Poppins,system-ui,sans-serif;--serif:Poppins,system-ui,sans-serif;--lbl:Poppins,system-ui,sans-serif;
+  --on-dark-dim:#c9d3e3;--row-hover:#f6f9fd;
+}
+html[data-theme="premium"] body{background:var(--v2-page)}
+html[data-theme="premium"] #portal,
+html[data-theme="premium"] #portal button,
+html[data-theme="premium"] #portal input,
+html[data-theme="premium"] #portal select,
+html[data-theme="premium"] #portal textarea{font-family:Poppins,system-ui,sans-serif}
+html[data-theme="premium"] #portal{background:var(--v2-page);color:var(--v2-ink)}
+html[data-theme="premium"] #portal .v2-ic{width:20px;height:20px;flex:none}
+
+/* ── Efsta stika ───────────────────────────────────────────── */
+html[data-theme="premium"] #v2-top{position:fixed;top:0;left:0;right:0;z-index:30;height:var(--v2-top);display:flex;align-items:center;gap:8px;padding-right:16px;background:var(--v2-navy-900);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.06)}
+html[data-theme="premium"] #v2-top .v2-logo{width:var(--v2-side);height:100%;display:flex;align-items:center;padding-left:24px;flex:none}
+html[data-theme="premium"] #v2-top .v2-logo img{height:26px;width:auto;display:block}
+html[data-theme="premium"] #v2-top .v2-topnav{display:flex;align-items:stretch;gap:28px;height:100%;overflow-x:auto;scrollbar-width:none;padding-left:14px;min-width:0}
+html[data-theme="premium"] #v2-top .v2-tl{display:flex;align-items:center;gap:6px;white-space:nowrap;font:600 13px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#fff;text-decoration:none;border-bottom:2px solid transparent;padding-top:2px;cursor:pointer}
+html[data-theme="premium"] #v2-top .v2-tl[hidden]{display:none}
+html[data-theme="premium"] #v2-top .v2-tl:hover{color:var(--v2-orange-hi)}
+html[data-theme="premium"] #v2-top .v2-tl[aria-current=page]{color:var(--v2-orange-hi);border-bottom-color:var(--v2-orange-hi)}
+html[data-theme="premium"] #v2-top .v2-count{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--v2-orange);color:#fff;font:700 10.5px/1 Poppins,system-ui,sans-serif;letter-spacing:0}
+html[data-theme="premium"] #v2-top .v2-tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex:none}
+html[data-theme="premium"] #v2-top #leit{display:flex;align-items:center;gap:8px;height:34px;width:250px;max-width:28vw;margin:0;padding:0 12px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);box-shadow:none;color:var(--v2-on-navy-muted)}
+html[data-theme="premium"] #v2-top #leit.hidden{display:none}
+html[data-theme="premium"] #v2-top #leit svg{width:17px;height:17px;opacity:1}
+html[data-theme="premium"] #v2-top #leit input{color:#fff;font-size:13px;background:none;border:0;outline:0;min-width:0;flex:1}
+html[data-theme="premium"] #v2-top #leit input::placeholder{color:var(--v2-on-navy-muted)}
+html[data-theme="premium"] #v2-top .v2-find{display:none;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--v2-on-navy-muted);font-size:13px;cursor:pointer}
+html[data-theme="premium"] #v2-top #leit.hidden + .v2-find{display:flex}
+html[data-theme="premium"] #v2-top .v2-find .v2-ic{width:17px;height:17px}
+html[data-theme="premium"] #v2-top .v2-ib,html[data-theme="premium"] #v2-top .v2-av{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:0;background:none;color:#fff;cursor:pointer}
+html[data-theme="premium"] #v2-top .v2-ib:hover{background:rgba(255,255,255,.07)}
+html[data-theme="premium"] #v2-top .v2-av{background:#56657f;width:32px;height:32px}
+html[data-theme="premium"] #v2-top .v2-av .v2-ic{width:17px;height:17px}
+html[data-theme="premium"] #v2-top .v2-dot{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--v2-orange);box-shadow:0 0 0 2px var(--v2-navy-900)}
+html[data-theme="premium"] #v2-top .v2-dot[hidden]{display:none}
+
+/* ── Hliðarstika (upprunalegi hausinn) ─────────────────────── */
+@media (min-width:1200px){
+  html[data-theme="premium"] #portal header{top:var(--v2-top)!important;width:var(--v2-side)!important;z-index:20!important;border-right:0!important;background:url(/gatt/myndir/brunaholf/hlidarstika-logi.webp) left bottom/cover no-repeat,var(--v2-navy-950)!important;box-shadow:none!important}
+  html[data-theme="premium"] #portal .hin{padding:16px 12px 20px;gap:10px}
+  html[data-theme="premium"] #portal main{margin-left:var(--v2-side)!important}
+  html[data-theme="premium"] #portal .foot{margin-left:var(--v2-side)}
+}
+html[data-theme="premium"] #portal{padding-top:var(--v2-top)}
+html[data-theme="premium"] #portal header .brandrow{display:none}
+html[data-theme="premium"] #portal header .htag{order:9;margin-top:6px;padding:12px 8px 0;border-top:1px solid rgba(255,255,255,.14);font:500 12px/1.4 Poppins,system-ui,sans-serif;color:var(--v2-on-navy-muted);letter-spacing:0}
+html[data-theme="premium"] #portal header .htag b{color:#fff;font-weight:600}
+html[data-theme="premium"] #portal header nav a.tab{position:relative;display:flex;align-items:center;gap:12px;min-height:42px;padding:10px 12px!important;border-radius:10px;font:500 14.5px/1.2 Poppins,system-ui,sans-serif!important;color:#fff!important;letter-spacing:0;text-transform:none;background:none;box-shadow:none}
+html[data-theme="premium"] #portal header nav a.tab:before{content:none!important;display:none!important}
+html[data-theme="premium"] #portal header nav a.tab:hover{background:rgba(255,255,255,.07)}
+html[data-theme="premium"] #portal header nav a.tab.on{background:var(--v2-grad)!important;color:#fff!important;box-shadow:var(--v2-glow)!important}
+html[data-theme="premium"] #portal header nav a.tab .nbadge{margin-left:auto;background:var(--v2-orange);color:#fff;border:0;box-shadow:none;min-width:20px;height:20px;font:700 11px/20px Poppins,system-ui,sans-serif;border-radius:999px;padding:0 6px}
+html[data-theme="premium"] #portal header nav a.tab.on .nbadge{background:#fff;color:var(--v2-orange-ink)}
+html[data-theme="premium"] #portal header nav .hbtn{border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(2,25,60,.45);color:#fff;font:500 13px Poppins,system-ui,sans-serif}
+
+/* ── Hetja (banner) á hverri síðu ──────────────────────────── */
+html[data-theme="premium"] #portal main{padding:0 var(--v2-pad) 60px!important;max-width:none}
+html[data-theme="premium"] #portal .hero-art{display:none}
+html[data-theme="premium"] #portal .premium-hero,
+html[data-theme="premium"] #portal .premium-section-heading{display:none}
+html[data-theme="premium"] #portal section.v2-has-hero > .kicker,
+html[data-theme="premium"] #portal section.v2-has-hero > h2.page,
+html[data-theme="premium"] #portal section.v2-has-hero > .vs-haus > h2.page{display:none}
+html[data-theme="premium"] #portal section.v2-has-hero > .vs-haus{justify-content:flex-end}
+html[data-theme="premium"] #portal .v2-hero{position:relative;isolation:isolate;margin:0 calc(-1 * var(--v2-pad)) -44px;padding:30px 32px 74px;min-height:230px;color:#fff;overflow:hidden;background:var(--v2-navy-950)}
+html[data-theme="premium"] #portal .v2-hero:before{content:"";position:absolute;inset:0;z-index:-2;background:url(/gatt/myndir/brunaholf/hetja-bygging-v2.webp) right top/cover no-repeat,linear-gradient(180deg,#0a2a55,#3a5b83)}
+html[data-theme="premium"] #portal .v2-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,var(--v2-navy-950) 14%,rgba(2,25,60,.55) 42%,rgba(2,25,60,0) 66%),linear-gradient(180deg,rgba(233,240,250,0) 52%,rgba(233,240,250,.85) 86%,var(--v2-page) 100%)}
+html[data-theme="premium"] #portal .v2-eyebrow{margin:0 0 10px;font:600 12px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#fff}
+html[data-theme="premium"] #portal .v2-hero h1{margin:0;font:700 44px/1.1 Poppins,system-ui,sans-serif;letter-spacing:-.02em;color:#fff;text-shadow:0 2px 12px rgba(2,25,60,.45)}
+html[data-theme="premium"] #portal .v2-sub{margin:10px 0 0;max-width:46em;font:400 16px/1.5 Poppins,system-ui,sans-serif;color:#fff}
+html[data-theme="premium"] #portal section.v2-has-hero > :not(.v2-hero){position:relative;z-index:1}
+@media (max-width:700px){html[data-theme="premium"] #portal .v2-hero h1{font-size:30px}html[data-theme="premium"]{--v2-pad:16px}}
+
+/* ── Lykiltölur ────────────────────────────────────────────── */
+html[data-theme="premium"] #portal .cards{gap:16px!important;margin:0 0 22px!important}
+html[data-theme="premium"] #portal .sc{background:#fff!important;border:0!important;border-radius:14px!important;box-shadow:var(--v2-card)!important}
+html[data-theme="premium"] #portal .sc:hover{box-shadow:var(--v2-raised)!important}
+html[data-theme="premium"] #portal .sc .k{font:600 11px/1.2 Poppins,system-ui,sans-serif!important;letter-spacing:.08em!important;text-transform:uppercase;color:var(--v2-ink-2)!important}
+html[data-theme="premium"] #portal .sc .v{font-family:Poppins,system-ui,sans-serif!important;font-weight:700!important;letter-spacing:-.01em!important;color:var(--v2-ink)!important}
+html[data-theme="premium"] #portal .sc.dark{background:var(--v2-navy-700)!important;box-shadow:inset 0 0 0 2px var(--v2-orange),var(--v2-card)!important}
+html[data-theme="premium"] #portal .sc.dark .k,html[data-theme="premium"] #portal .sc.dark .v,html[data-theme="premium"] #portal .sc.dark .v small{color:#fff!important;-webkit-text-fill-color:#fff}
+
+/* ── Spjöld, töflur ────────────────────────────────────────── */
+html[data-theme="premium"] #portal .tbl-wrap,html[data-theme="premium"] #portal .dpanel,html[data-theme="premium"] #portal .egp,
+html[data-theme="premium"] #portal .kj-karfa,html[data-theme="premium"] #portal .yf-rail,html[data-theme="premium"] #portal .mcard,
+html[data-theme="premium"] #portal .msg-compose,html[data-theme="premium"] #portal .vb-panel{border:0!important;border-radius:14px!important;background:#fff;box-shadow:var(--v2-card)!important}
+html[data-theme="premium"] #portal thead th{background:#fff!important;color:var(--v2-ink-2)!important;font:600 11px/1.2 Poppins,system-ui,sans-serif!important;letter-spacing:.08em!important;text-transform:uppercase;border-bottom:1px solid var(--v2-line)!important}
+html[data-theme="premium"] #portal thead th .thsub{font:400 11px/1.3 Poppins,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:var(--v2-muted)}
+html[data-theme="premium"] #portal tbody td{border-bottom-color:var(--v2-line-soft)!important;font-size:14px}
+html[data-theme="premium"] #portal tbody tr:hover{background:var(--v2-row-hover)!important}
+html[data-theme="premium"] #portal .bname{font-weight:600;color:var(--v2-ink)}
+html[data-theme="premium"] #portal .baddr{color:var(--v2-muted)}
+
+/* ── Takkar, flísar ────────────────────────────────────────── */
+html[data-theme="premium"] #portal .gbtn,html[data-theme="premium"] #portal .msg-compose button,html[data-theme="premium"] #portal #yf-rail button[type=submit]{background:var(--v2-grad)!important;color:#fff!important;border:0!important;border-radius:10px!important;box-shadow:var(--v2-glow)!important;font-weight:600;text-shadow:none}
+html[data-theme="premium"] #portal .kbtn,html[data-theme="premium"] #portal .xbtn,html[data-theme="premium"] #portal .pdf,html[data-theme="premium"] #portal .dl{background:#fff!important;color:var(--v2-ink)!important;border:0!important;border-radius:8px!important;box-shadow:inset 0 0 0 1px var(--v2-line),0 1px 2px rgba(2,25,60,.06)!important;text-shadow:none}
+html[data-theme="premium"] #portal .kbtn:hover,html[data-theme="premium"] #portal .xbtn:hover,html[data-theme="premium"] #portal .pdf:hover{background:var(--v2-row-hover)!important}
+html[data-theme="premium"] #portal .chip,html[data-theme="premium"] #portal .chips button{border-radius:999px!important;background:#fff!important;color:var(--v2-ink)!important;border:0!important;box-shadow:inset 0 0 0 1px var(--v2-line)!important;font:500 13px/1 Poppins,system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important}
+html[data-theme="premium"] #portal .chip.on,html[data-theme="premium"] #portal .chips button.on{background:var(--v2-navy-700)!important;color:#fff!important;box-shadow:none!important}
+html[data-theme="premium"] #portal .seg,html[data-theme="premium"] #portal .fseg,html[data-theme="premium"] #portal .eb-seg{background:var(--v2-surface-2);border:0;border-radius:10px;box-shadow:inset 0 0 0 1px var(--v2-line-soft)}
+html[data-theme="premium"] #portal .seg button.on,html[data-theme="premium"] #portal .fseg button.on,html[data-theme="premium"] #portal .eb-seg button.on{background:var(--v2-navy-700)!important;color:#fff!important;border-radius:8px}
+html[data-theme="premium"] #portal input[type=search],html[data-theme="premium"] #portal input[type=text],html[data-theme="premium"] #portal select,html[data-theme="premium"] #portal textarea{border-radius:10px;border-color:var(--v2-line)}
+html[data-theme="premium"] #portal :focus-visible{outline:3px solid var(--v2-orange);outline-offset:2px}
+
+/* ── Fótur ─────────────────────────────────────────────────── */
+html[data-theme="premium"] #portal .foot{background:none;border:0}
+html[data-theme="premium"] #portal .foot .fin{margin:0 var(--v2-pad);padding:16px 0 20px;border-top:1px solid var(--v2-orange-edge);font:600 12px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--v2-ink-2)}
+html[data-theme="premium"] #portal .foot .crest{background:var(--v2-grad);color:#fff;border-radius:50%;box-shadow:none}
+html[data-theme="premium"] #portal .foot a{letter-spacing:0;text-transform:none;color:var(--v2-orange-ink);font-weight:500}
+
+@media (max-width:1199px){
+  html[data-theme="premium"] #v2-top .v2-topnav{display:none}
+  html[data-theme="premium"] #v2-top .v2-logo{width:auto;padding:0 16px}
+  html[data-theme="premium"] #portal header{background:var(--v2-navy-950)}
+}
+@media (max-width:640px){html[data-theme="premium"] #v2-top #leit,html[data-theme="premium"] #v2-top .v2-find{display:none!important}}
+
+/* ── Eignasíðan (#drawer): banner með mynd eignarinnar + pínulítill myndatakki ── */
+html[data-theme="premium"] #drawer{background:var(--v2-page);font-family:Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer button{font-family:Poppins,system-ui,sans-serif}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero{min-height:230px;align-items:flex-end;padding:26px 30px 46px;color:#fff;box-shadow:none;
+  background:linear-gradient(90deg,var(--v2-navy-950) 8%,rgba(2,25,60,.55) 40%,rgba(2,25,60,0) 68%),
+             linear-gradient(180deg,rgba(2,25,60,.25) 0%,rgba(2,25,60,0) 30%,rgba(233,240,250,0) 58%,rgba(233,240,250,.85) 88%,var(--v2-page) 100%),
+             var(--v2-banner) right center/cover no-repeat,var(--v2-navy-950)}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero::after{display:none}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .crest{display:none}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .xbtn{align-self:flex-start;background:rgba(2,25,60,.45)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)!important}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .kicker{font:600 12px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#fff}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .kicker::before{display:none}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero h3{font:700 40px/1.1 Poppins,system-ui,sans-serif!important;letter-spacing:-.02em;color:#fff!important;-webkit-text-fill-color:#fff;background:none!important;filter:none!important;text-shadow:0 2px 12px rgba(2,25,60,.45);margin:6px 0 4px}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .baddr{color:#fff;font-size:15px;text-shadow:0 1px 6px rgba(2,25,60,.5)}
+html[data-theme="premium"] #drawer .v2-bn{position:absolute;right:16px;bottom:16px;display:flex;gap:6px;z-index:2}
+html[data-theme="premium"] #drawer .v2-bn-b{display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:50%;border:0;cursor:pointer;background:rgba(2,25,60,.55);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);opacity:.75;transition:opacity .16s,background-color .16s}
+html[data-theme="premium"] #drawer .v2-bn-b[hidden]{display:none}
+html[data-theme="premium"] #drawer .v2-bn-b:hover,html[data-theme="premium"] #drawer .v2-bn-b:focus-visible{opacity:1;background:var(--v2-orange)}
+html[data-theme="premium"] #drawer .v2-bn-b .v2-ic{width:15px;height:15px}
+html[data-theme="premium"] #drawer .dr-head.v2-bn-vinnur .v2-bn-b{pointer-events:none;opacity:.4}
+html[data-theme="premium"] #drawer .dr-body{background:var(--v2-page);margin-top:-1px}
+html[data-theme="premium"] #drawer .dk,html[data-theme="premium"] #drawer .dnext,html[data-theme="premium"] #drawer .ecard,html[data-theme="premium"] #drawer .fcard{background:#fff!important;border:0!important;border-radius:14px!important;box-shadow:var(--v2-card)!important}
+html[data-theme="premium"] #drawer .dk .k{font:600 11px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.08em;color:var(--v2-ink-2)}
+html[data-theme="premium"] #drawer .dk .v{font-family:Poppins,system-ui,sans-serif;font-weight:700;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .kicker{color:var(--v2-orange-ink)}
+html[data-theme="premium"] #drawer .dr-foot{background:#fff;border-top:1px solid var(--v2-line-soft)}
+html[data-theme="premium"] #drawer .gbtn{background:var(--v2-grad)!important;color:#fff!important;border:0!important;border-radius:10px!important;box-shadow:var(--v2-glow)!important;text-shadow:none}
+html[data-theme="premium"] #drawer .kbtn,html[data-theme="premium"] #drawer .xbtn,html[data-theme="premium"] #drawer .pdf{background:#fff;color:var(--v2-ink);border:0;border-radius:8px;box-shadow:inset 0 0 0 1px var(--v2-line),0 1px 2px rgba(2,25,60,.06)}
+@media (max-width:700px){html[data-theme="premium"] #drawer .dr-head.v2-dr-hero{min-height:190px;padding:18px 16px 40px}html[data-theme="premium"] #drawer .dr-head.v2-dr-hero h3{font-size:27px!important}}
+
+/* Premium-hetjan (index.html) lak inn í önnur þemu sem óstílaður texti („Öryggi eignanna á einum stað." + takkar efst á
+   Yfirliti í blar/cream/…). Hún á aðeins heima í Premium. */
+html:not([data-theme="premium"]) #portal .premium-hero,
+html:not([data-theme="premium"]) #portal .premium-section-heading{display:none}
