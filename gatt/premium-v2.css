@@ -286,3 +286,9 @@ html[data-theme="premium"] #drawer #dr-body .tgrid .fcard{min-width:0}
   html[data-theme="premium"] #portal .yf-layout{grid-template-columns:minmax(0,1fr) 280px!important}
   html[data-theme="premium"] #portal #yf-tbl{overflow-x:auto!important}
 }
+
+/* ── Lagfæringar úr yfirferð aðalsíðna (06.11.2026) ───────────────────────────────────────────────────── */
+html[data-theme="premium"] #portal #v-vinnusvaedi .v2-hero{margin-bottom:6px}
+html[data-theme="premium"] #portal #v-reikningar table td:nth-child(1),
+html[data-theme="premium"] #portal #v-reikningar table td:nth-child(2),
+html[data-theme="premium"] #portal #v-reikningar table td.num{white-space:nowrap}
