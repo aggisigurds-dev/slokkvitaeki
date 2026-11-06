@@ -59,6 +59,7 @@
     { k: 'boss', n: 'Boss', d: 'Svart stál · gull', hdr: '#141312', paper: '#f4f1ea', card: '#ffffff', metal: GOLD, dot: '#c9a54a' },
     { k: 'grafit', n: 'Grafít', d: 'Grátt · silfur', hdr: '#27292d', paper: '#e3e4e6', card: '#ffffff', metal: SILVER, dot: '#aab2bc' },
     { k: 'blar', n: 'Brunahólf', d: 'Navy · appelsínugult (brunaholf.is) — sjálfgefið', hdr: '#1b2a4d', paper: '#f1f3f6', card: '#ffffff', metal: 'linear-gradient(90deg,#f15a24,#f15a24)', dot: '#f15a24' },
+    { k: 'premium', n: 'Brunahólf Premium', d: 'Navy · appelsínugult · nútímalegt', hdr: '#142542', paper: '#edf2f8', card: '#ffffff', metal: 'linear-gradient(90deg,#ed5b21,#ffb789)', dot: '#ed5b21' },
   ];
   // Hlutar eignasíðunnar sem kveikt/slökkt er á per félag (portal_users.syn; vantar = á)
   // Verkfæraskráin er í gatt/verkfaeri.js (hlaðin á undan) — sömu lyklar og á þjóninum (_gatt-verkfaeri.cjs)
