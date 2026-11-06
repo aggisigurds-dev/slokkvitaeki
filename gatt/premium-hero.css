@@ -9,7 +9,7 @@ html[data-theme="premium"] #portal .premium-hero {
 }
 html[data-theme="premium"] #portal .premium-hero-photo {
  position:absolute;z-index:-2;inset:0 0 0 41%;
- background-image:url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1500&q=85");
+ background-color:#263d54;background-image:var(--premium-account-photo,none);
  background-size:cover;background-position:center 45%;
 }
 html[data-theme="premium"] #portal .premium-hero:before {

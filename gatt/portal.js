@@ -434,6 +434,8 @@
     state.data = data;
     hledurFela();
     document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'premium');
+    var accountPhoto = (data.buildings || []).map(function (b) { return b && b.eign && b.eign.mynd; }).filter(Boolean)[0] || '';
+    document.documentElement.style.setProperty('--premium-account-photo', accountPhoto ? 'url("' + imgW(accountPhoto, 1800).replace(/"/g, '%22') + '")' : 'none');
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
@@ -1074,6 +1076,7 @@
     var h = el.querySelector && el.querySelector(':scope > h4');
     var t = ((h && h.textContent) || el.textContent || '').trim().toLowerCase();
     if (t.indexOf('yfirlit') === 0) return 'yfirlit';
+    if (t.indexOf('búnaðargreining') > -1) return 'teikningar';
     if (t.indexOf('teikning') > -1) return 'teikningar';
     if (t.indexOf('reikning') > -1) return 'reikningar';
     if (t.indexOf('skýrsl') > -1 || t.indexOf('skjöl') > -1 || t.indexOf('skírteini') > -1 || t.indexOf('skirteini') > -1) return 'skjol';
@@ -1100,6 +1103,7 @@
   function drVeljaTab(tab) {
     var leyfilegt = ['yfirlit', 'brunavarnir', 'teikningar', 'verkefni', 'skodanir', 'skjol', 'reikningar', 'taekni'];
     drTab = leyfilegt.indexOf(tab) > -1 ? tab : 'yfirlit';
+    var drawer = $('#drawer'); if (drawer) drawer.setAttribute('data-dr-active', drTab);
     document.querySelectorAll('#drawer [data-dr-tab]').forEach(function (b) {
       var on = b.getAttribute('data-dr-tab') === drTab;
       b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -1388,7 +1392,7 @@
     // RÖÐ (Agnar 22.10): mikilvægast fyrst — tækjastaða (yfirlit), erindi + senda erindi, eldvarnabók → teikningar → slökkvitækjayfirlit (búnaður, saga, skýrslur) → GREININGAR neðst
     var segs = {}, nm = 'yfirlit';
     html.split(/\u0001(\w+)\u0001/).forEach(function (x, i) { if (i % 2) nm = x; else segs[nm] = (segs[nm] || '') + x; });
-    var ROD = ['yfirlit', 'erindi', 'eb', 'bgr', 'teikn', 'bunadur', 'sodsaga', 'skre', 'saga', 'skyrsla', 'vidhald', 'vidbot', 'um'];
+    var ROD = ['yfirlit', 'erindi', 'eb', 'teikn', 'bgr', 'bunadur', 'sodsaga', 'skre', 'saga', 'skyrsla', 'vidhald', 'vidbot', 'um'];
     var GREININGAR = ['grfast', 'kerfi', 'gf', 'thorf'];
     var grHtml = GREININGAR.map(function (k) { return segs[k] || ''; }).join('');
     html = ROD.map(function (k) { return segs[k] || ''; }).join('') + (grHtml.replace(/\s+/g, '') ? '<div class="dgrp">Greiningar</div>' + grHtml : '');

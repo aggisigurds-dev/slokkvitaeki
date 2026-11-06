@@ -5,7 +5,7 @@ html[data-theme="premium"] #portal .premium-view-hero{
  background:#142640;color:#fff
 }
 html[data-theme="premium"] #portal .premium-view-photo{
- position:absolute;z-index:-2;inset:0;background:url("https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1800&q=86") center 56%/cover no-repeat
+ position:absolute;z-index:-2;inset:0;background-color:#1a304d;background-image:var(--premium-account-photo,none);background-position:center 56%;background-size:cover;background-repeat:no-repeat
 }
 html[data-theme="premium"] #portal .premium-view-hero:after{
  content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.78) 46%,rgba(20,38,64,.08) 100%)
@@ -14,10 +14,16 @@ html[data-theme="premium"] #portal .premium-view-copy{padding:30px clamp(20px,4v
 html[data-theme="premium"] #portal .premium-view-copy span{font:700 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#ffb38b}
 html[data-theme="premium"] #portal .premium-view-copy h2{margin:7px 0 4px;font:800 clamp(28px,3vw,42px)/1.05 Inter,system-ui,sans-serif;letter-spacing:-.04em}
 html[data-theme="premium"] #portal .premium-view-copy p{margin:0;max-width:560px;font:500 13px/1.55 Inter,system-ui,sans-serif;color:#e2eaf4}
-html[data-theme="premium"] #portal .premium-serkjor-photo{background-image:url("https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=1800&q=86");background-position:center 58%}
+html[data-theme="premium"] #portal .premium-serkjor-photo{background-image:var(--premium-account-photo,none);background-position:center 58%}
 html[data-theme="premium"] #portal .premium-serkjor-hero:after{background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.91) 43%,rgba(20,38,64,.2) 76%,rgba(20,38,64,.06) 100%)}
 html[data-theme="premium"] #portal .premium-serkjor-hero .kj-intro{max-width:660px;color:#f0f5fb}
-html[data-theme="premium"] #portal .premium-verkbeidnir-photo{background-image:url("https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=1800&q=86");background-position:center 61%}
+html[data-theme="premium"] #portal .premium-verkbeidnir-photo{background-image:var(--premium-account-photo,none);background-position:center 61%}
+html[data-theme="premium"] #portal header .hin{position:relative;z-index:1}
+html[data-theme="premium"] #portal .sidebar-flame{
+ position:absolute;z-index:2;left:50%;bottom:150px;width:72px;height:98px;transform:translateX(-50%);
+ display:grid;place-items:center;filter:drop-shadow(0 8px 18px rgba(241,91,19,.42));opacity:.66;pointer-events:none
+}
+html[data-theme="premium"] #portal .sidebar-flame img{display:block;width:100%;height:100%;object-fit:contain}
 
 @media(min-width:1200px){
  html[data-theme="premium"] #portal .premium-topbar{
@@ -143,6 +149,7 @@ html[data-theme="premium"] #portal .premium-verkbeidnir-photo{background-image:u
  html[data-theme="premium"] #portal .premium-topbar>img{width:82px}
  html[data-theme="premium"] #portal .premium-topnav button{padding-inline:9px;font-size:10px}
  html[data-theme="premium"] #portal header{width:88px!important}
+ html[data-theme="premium"] #portal .sidebar-flame{bottom:140px;width:48px;height:66px;opacity:.24}
  html[data-theme="premium"] #portal header nav a.tab{padding:7px 4px 7px 23px!important;font-size:9px!important}
  html[data-theme="premium"] #portal header nav a.tab:before{left:7px}
  html[data-theme="premium"] #portal header nav .leit{display:none}
