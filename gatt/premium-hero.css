@@ -70,3 +70,5 @@ html[data-theme="premium"] #portal .yf-rail {min-width:0}
  html[data-theme="premium"] #portal .tbl-wrap table {min-width:650px}
 }
 @media(prefers-reduced-motion:reduce){html[data-theme="premium"] #portal .premium-hero-actions button {transition:none}}
+
+/* Production release 2026-11-06: premium homepage hero. */
