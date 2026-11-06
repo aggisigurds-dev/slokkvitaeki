@@ -1,0 +1,57 @@
+/* Brunahólf Premium — opt-in portal theme.
+   Does not affect existing themes until the portal theme selector supports "premium".
+   Scoped to the customer portal; no backend, permissions or records are changed. */
+:root[data-theme="premium"] {
+  --bg:#edf2f8;
+  --bg-hi:#f8faff;
+  --card:#ffffff;
+  --white:#ffffff;
+  --ink:#172745;
+  --ink2:#455570;
+  --dim:#64748b;
+  --faint:#94a3b8;
+  --dark:#142542;
+  --dark2:#1c3152;
+  --accent:#ed5b21;
+  --accent-hd:#ff8b4e;
+  --accent-soft:#ffc29e;
+  --ontime:#fff0e8;
+  --deep:#a93612;
+  --line:#e1e8f1;
+  --line2:#cdd9e7;
+  --good:#19805b;
+  --serif:"Inter",system-ui,sans-serif;
+  --ui:"Inter",system-ui,sans-serif;
+  --lbl:var(--ui);
+  --on-dark-dim:#b7c6da;
+  --sh:28,48,82;
+  --glow:237,91,33;
+  --hdr:linear-gradient(115deg,#142541,#1d3459);
+  --night:linear-gradient(150deg,#1e3558,#101f39);
+  --slab:linear-gradient(155deg,#203a61,#101f38);
+  --panel:linear-gradient(180deg,#fff,#f9fbff);
+  --strip:linear-gradient(180deg,#fff,#f0f5fb);
+  --well:linear-gradient(180deg,#f1f5fa,#fff);
+  --key:linear-gradient(180deg,#fff,#edf3fa);
+  --obsidian:linear-gradient(160deg,#243e65,#142541);
+  --bubble:linear-gradient(180deg,#fff2e9,#ffe4d2);
+  --bubble-edge:#f5c9b0;
+  --row-hover:rgba(237,91,33,.055);
+  --sheet:#f3f6fb;
+  --sheet2:#eaf0f7;
+  --ic-hi:#ffb789;
+  --ic-mid:#ed5b21;
+  --ic-lo:#a93612;
+}
+:root[data-theme="premium"] body {
+  background:radial-gradient(ellipse at 70% -15%,#d9e5f5 0%,transparent 56%),var(--bg);
+  color:var(--ink);
+}
+:root[data-theme="premium"] :focus-visible {
+  outline:3px solid #ed5b21;
+  outline-offset:3px;
+}
+@media (prefers-reduced-motion:reduce) {
+  :root[data-theme="premium"] *, :root[data-theme="premium"] *::before,
+  :root[data-theme="premium"] *::after {scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
