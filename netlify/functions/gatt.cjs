@@ -1131,6 +1131,11 @@ exports.handler = async (event) => {
         id: s.id, nafn: s.nafn, heimilisfang: s.heimilisfang || '',
         // Eign systkinafélags í rekstrarfélaginu (annað base_id) → nafn eiganda/greiðanda; null fyrir eigin eignir
         eigandi: s.customer_base_id != null && Number(s.customer_base_id) !== Number(baseId) ? (hopur.nofn[s.customer_base_id] || null) : null,
+        // 06.11.2026 (Agnar: „raðað eftir kennitölum/Greiðanda"): greiðandi hverrar eignar = customers_base hennar (nafn + kt),
+        // líka fyrir eigin eignir félagsins — hópaða reikningasýnin og prentyfirlitið raða eftir þessu.
+        base_id: s.customer_base_id != null ? Number(s.customer_base_id) : null,
+        greidandi: s.customer_base_id != null ? (hopur.nofn[s.customer_base_id] || '') : '',
+        greidandi_kt: s.customer_base_id != null ? ((hopur.ktById || {})[s.customer_base_id] || '') : '',
         // Óvirkur staður (status 'óvirkur', t.d. Reitir 11.10.2026: skráðir í þjónustu en óvirkir svo
         // allt kerfið nái til þeirra) telst EKKI í þjónustu í gáttinni.
         i_thjonustu: s.er_i_thjonustu !== false && !/^(óvirkur|ovirkur|inactive)$/i.test(String(s.status || '')),
@@ -1221,6 +1226,7 @@ exports.handler = async (event) => {
       (d) => normNr(d.invoice_number) || ('id:' + d.id),
     )
       .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
+        fid: d.fyrirtaeki_id != null ? Number(d.fyrirtaeki_id) : null,   // 06.11.2026: eignin → greiðandinn í hópuðu sýninni
         bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null,
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
@@ -1236,7 +1242,7 @@ exports.handler = async (event) => {
       const need0 = invoices.filter((i) => i.nr && (i.upphaed == null || !i.dags || !i.lysing));
       if (!need0.length) return null;
       const quoted = [...new Set(need0.map((i) => String(i.nr).replace(/"/g, '')))].map((n) => `"${n}"`).join(',');
-      return P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source`).catch(() => ({ ok: false }));
+      return P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source,customer_id`).catch(() => ({ ok: false }));
     })();
     try {
       const vant = invoices.filter((i) => i.nr && (!i.lysing || !i.bygging));
@@ -1250,6 +1256,7 @@ exports.handler = async (event) => {
             const y = rl[normNr(i.nr)];
             if (!y) return;
             if (!i.bygging && y.fyrirtaeki_id != null && nafnById[y.fyrirtaeki_id]) i.bygging = nafnById[y.fyrirtaeki_id];
+            if (i.fid == null && y.fyrirtaeki_id != null) i.fid = Number(y.fyrirtaeki_id);
             if (!i.lysing && y.vegna) i.lysing = String(y.vegna).slice(0, 90);
           });
         }
@@ -1270,6 +1277,7 @@ exports.handler = async (event) => {
             if (!s) return;
             if (i.upphaed == null && s.samtals != null && s.samtals !== '') i.upphaed = Number(s.samtals);
             if (!i.dags && s.created_at) i.dags = String(s.created_at).slice(0, 10);
+            if (i.fid == null && s.customer_id != null) i.fid = Number(s.customer_id);
             // AÐEINS örugg þjónustu-merki (Úttekt/Brunakerfi/Sala) — aldrei
             // athugasemdir úr solur: sá reitur getur borið innri nótur
             // (t.d. afritaðar af kúnnaspjaldi í POS) og gáttin er kúnna-sýnileg,
@@ -1308,7 +1316,7 @@ exports.handler = async (event) => {
           if (!n || til.has(n) || s.is_credit) return;
           if (leyfd && !(s.customer_id != null && leyfd.has(Number(s.customer_id)))) return;
           if (Date.parse(s.created_at) < fra) return;
-          invoices.push({ docId: null, nr: s.num, dags: String(s.created_at).slice(0, 10), ar: null,
+          invoices.push({ docId: null, nr: s.num, dags: String(s.created_at).slice(0, 10), ar: null, fid: s.customer_id != null ? Number(s.customer_id) : null,
             bygging: nafnById[s.customer_id] || s.customer_nafn || '', upphaed: s.samtals != null && s.samtals !== '' ? Number(s.samtals) : null,
             lysing: ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', pos: 'Sala' })[s.source] || '', tegund: ({ uttekt: 'uttekt', brunakerfi: 'brunakerfi' })[s.source] || null, stada: stadaAf(s) });
         });
@@ -1348,7 +1356,7 @@ exports.handler = async (event) => {
               if (kredit) return;
               const y = rl[n];
               if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
-              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
+              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
                 upphaed: x.upphaed != null ? Number(x.upphaed) : null, lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: null, stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
@@ -1466,7 +1474,7 @@ exports.handler = async (event) => {
 
     return P.json(200, {
       serkjor,
-      account: { name: name || '', theme: theme, open: openMode, netfang: session ? (session.email || '') : '', details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
+      account: { name: name || '', base_id: Number(baseId), theme: theme, open: openMode, netfang: session ? (session.email || '') : '', details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
       stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald, skrar,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar

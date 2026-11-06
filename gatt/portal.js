@@ -6,7 +6,8 @@
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
-  var fmtKr = function (n) { return (n == null || n === '') ? '—' : Number(n).toLocaleString('is-IS') + ' kr.'; };
+  // 06.11.2026: Chromium an is-IS gagna skilar kommu (1,554,179) - islenski thusundapunkturinn settur beint.
+  var fmtKr = function (n) { if (n == null || n === '') return '—'; var v = Math.round(Number(n)); var t = String(Math.abs(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return (v < 0 ? '−' : '') + t + ' kr.'; };
   var fmtDate = function (d) {
     if (!d) return '—';
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
@@ -280,6 +281,7 @@
       ],
       buildings: (d.buildings || []).map(function (b) {
         return { nafn: b.nafn, heimilisfang: b.heimilisfang, eigandi: b.eigandi || null, sl: b.taeki, slo: b.slo, br: !!b.bru_i_thjonustu,
+          base_id: b.base_id != null ? Number(b.base_id) : null, greidandi: b.greidandi || '', greidandi_kt: b.greidandi_kt || '',   // 06.11.2026: reikningar eftir greiðanda
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
@@ -294,14 +296,14 @@
         return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: r.heimilisfang || '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, eining: r.eining || (r.tegund === 'brunakerfi' ? 'einingar' : 'tæki'), ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
-        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null };
+        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null, fid: i.fid != null ? Number(i.fid) : null };
       }),
       messages: d.messages || [],
       erindi: d.erindi || [],
       items: d.items || [],
       checklist: d.checklist || [],
       vidhald: d.vidhald || [],
-      eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null, kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null }; }),
+      eignir_utan: (d.eignir_utan || []).map(function (b) { return { id: b.id, nafn: b.nafn, heimilisfang: b.heimilisfang || '', eign: b.eign || null, base_id: b.base_id != null ? Number(b.base_id) : null, greidandi: b.greidandi || '', greidandi_kt: b.greidandi_kt || '', beidni: !!b.beidni, teikning: Array.isArray(b.teikning) ? b.teikning : null, kerfi: Array.isArray(b.kerfi) ? b.kerfi : [], flokkun: b.flokkun || null }; }),
     };
     afskeyta(out);
     return out;
@@ -747,7 +749,89 @@
         '<td class="r">' + (r.docId || state.demo ? docLink('PDF', r.docId) : '<span class="dim" title="Reikningurinn berst með kröfunni í netbanka. Við sendum afrit ef óskað er.">í netbanka</span>') + '</td></tr>';
     }).join('') || '<tr><td colspan="8" class="empty">Engir reikningar skráðir</td></tr>';
     foot('#re-foot', rows.length, (state.data.invoices || []).length, ['reikningur', 'reikningar'], ['reikningi', 'reikningum'], filter);
+    state.reFilter = filter || '';
+    if (state.reSyn === 'greidandi') renderReHopad(filter);
   }
+
+  /* ══ REIKNINGAR EFTIR GREIÐENDUM (06.11.2026, Agnar: „raðað eftir kennitölum/Greiðanda … stóran lista eftir Greiðendum og
+     eignum þeirra … prentað í heild fallega") ══════════════════════════════════════════════════════════════════════════
+     Greiðandi hverrar eignar kemur af þjóninum (building.greidandi / greidandi_kt / base_id); reikningur finnur eignina
+     á fid (fyrirtaeki.id), annars á nafni byggingar. Röð: félagið sjálft fyrst, svo greiðendur eftir heildarupphæð. */
+  function reEignAf(r) {
+    var B = (state.data.buildings || []).concat(state.data.eignir_utan || []);
+    var b = null;
+    if (r.fid != null) b = B.filter(function (x) { return Number(x.id) === Number(r.fid); })[0] || null;
+    if (!b && r.bygging) b = B.filter(function (x) { return x.nafn === r.bygging; })[0] || null;
+    return b;
+  }
+  function renderReHopad(filter) {
+    var box = $('#re-hopad'); if (!box) return;
+    var rows = (state.data.invoices || []).filter(function (r) { return !filter || r.bygging === filter; });
+    var G = {}, order = [], eiginBase = state.data.account && state.data.account.base_id;
+    rows.forEach(function (r) {
+      var b = reEignAf(r);
+      var gk = b && (b.base_id != null ? 'b' + b.base_id : 'n' + (b.greidandi || '')) || 'x';
+      var gn = ((b && b.greidandi) || (state.data.account && state.data.account.name) || 'Greiðandi óþekktur').replace(/\s*\([^)]*\)\s*$/, '').trim();   // sviginn fer: S&H Invest ehf. (Heimaleiga - ...)
+      if (!G[gk]) { G[gk] = { nafn: gn, kt: (b && b.greidandi_kt) || '', base_id: b ? b.base_id : null, eignir: {}, eorder: [], sum: 0, n: 0, anUpph: 0 }; order.push(gk); }
+      var g = G[gk], ek = b ? 'i' + b.id : 'n' + (r.bygging || '');
+      if (!g.eignir[ek]) { g.eignir[ek] = { nafn: (b && b.nafn) || r.bygging || 'Eign óþekkt', adr: (b && b.heimilisfang) || '', rows: [], sum: 0, anUpph: 0 }; g.eorder.push(ek); }
+      var e = g.eignir[ek]; e.rows.push(r);
+      if (r.upphaed != null) { e.sum += Number(r.upphaed); g.sum += Number(r.upphaed); } else { e.anUpph++; g.anUpph++; }
+      g.n++;
+    });
+    order.sort(function (a, b) {
+      var A = G[a], B2 = G[b];
+      var ea = eiginBase != null && A.base_id === Number(eiginBase), eb = eiginBase != null && B2.base_id === Number(eiginBase);
+      if (ea !== eb) return ea ? -1 : 1;
+      return B2.sum - A.sum || A.nafn.localeCompare(B2.nafn, 'is');
+    });
+    var total = 0, totN = 0, totAn = 0;
+    var html = '<div class="rh-haus"><img src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf"><div class="t"><b>Reikningayfirlit eftir greiðendum</b><span>' +
+      esc((state.data.account && state.data.account.name) || '') + ' · ' + esc(fmtDate(new Date().toISOString().slice(0, 10))) + (filter ? ' · ' + esc(filter) : '') + '</span></div></div>';
+    html += order.map(function (gk) {
+      var g = G[gk]; total += g.sum; totN += g.n; totAn += g.anUpph;
+      g.eorder.sort(function (a, b) { return g.eignir[a].nafn.localeCompare(g.eignir[b].nafn, 'is'); });
+      return '<section class="rh-greid"><div class="rh-gh"><div><div class="k">Greiðandi</div><h3>' + esc(g.nafn) + '</h3>' +
+        (g.kt ? '<div class="kt">kt. ' + esc(g.kt) + '</div>' : '') + '</div>' +
+        '<div class="tot"><div class="k">Samtals</div><div class="v">' + esc(fmtKr(g.sum)) + '</div><div class="n">' + tala(g.n, 'reikningur', 'reikningar') + ' · ' + tala(g.eorder.length, 'eign', 'eignir') +
+        (g.anUpph ? ' · ' + g.anUpph + ' án upphæðar' : '') + '</div></div></div>' +
+        g.eorder.map(function (ek) {
+          var e = g.eignir[ek];
+          e.rows.sort(function (a, b) { return String(b.dags || '').localeCompare(String(a.dags || '')); });
+          return '<div class="rh-eign"><div class="rh-eh"><span class="bname">' + esc(e.nafn) + '</span>' + (e.adr ? '<span class="adr">' + esc(e.adr) + '</span>' : '') +
+            '<span class="sub">' + tala(e.rows.length, 'reikningur', 'reikningar') + ' · <b>' + esc(fmtKr(e.sum)) + '</b>' + (e.anUpph ? ' (' + e.anUpph + ' án upphæðar)' : '') + '</span></div>' +
+            '<table class="rh-t"><thead><tr><th>Nr.</th><th>Dagsetning</th><th>Lýsing</th><th>Þjónusta</th><th class="r">Upphæð</th><th>Staða</th></tr></thead><tbody>' +
+            e.rows.map(function (r) {
+              return '<tr><td class="kt">' + esc(r.nr || '—') + '</td><td class="num">' + esc(fmtDate(r.dags)) + '</td><td class="dim">' + esc(r.lysing || '') + '</td><td>' + tegundPilla(r.tegund) + '</td>' +
+                '<td class="num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td><td>' + stadaPilla(r) + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+        }).join('') + '</section>';
+    }).join('');
+    html += order.length
+      ? '<div class="rh-samtals"><span class="k">Samtals allir greiðendur</span><span class="n">' + tala(totN, 'reikningur', 'reikningar') + ' · ' + tala(order.length, 'greiðandi', 'greiðendur') + (totAn ? ' · ' + totAn + ' án upphæðar' : '') + '</span><span class="v">' + esc(fmtKr(total)) + '</span></div>'
+      : '<div class="rh-tomt">Engir reikningar skráðir</div>';
+    box.innerHTML = html;
+  }
+  function setReSyn(syn) {
+    state.reSyn = syn;
+    var seg = $('#re-seg'); if (seg) seg.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-rs') === syn); });
+    var li = $('#re-listi'), ho = $('#re-hopad');
+    if (li) li.classList.toggle('hidden', syn === 'greidandi');
+    if (ho) ho.classList.toggle('hidden', syn !== 'greidandi');
+    if (syn === 'greidandi') renderReHopad(state.reFilter || '');
+  }
+  document.addEventListener('click', function (ev) {
+    var sb = ev.target.closest && ev.target.closest('#re-seg button[data-rs]');
+    if (sb) { setReSyn(sb.getAttribute('data-rs')); return; }
+    if (ev.target.closest && ev.target.closest('#re-prenta')) {
+      // Prentar alltaf hópaða yfirlitið; sýnin stendur eftir á „Eftir greiðanda" svo það sem prentaðist sést á skjánum.
+      setReSyn('greidandi');
+      document.body.classList.add('re-prent');
+      var af = function () { document.body.classList.remove('re-prent'); window.removeEventListener('afterprint', af); };
+      window.addEventListener('afterprint', af);
+      setTimeout(function () { window.print(); setTimeout(af, 1500); }, 60);
+    }
+  });
 
   /* ══ ERINDI 22.10.2026 (generalprufa Center Hótel) ══════════════════════════
      Forsíðan fær „Senda erindi“ hægra megin: Verkbeiðni · Gagnabeiðni · Fyrirspurn · Annað. Hvert erindi verður mál með stöðu

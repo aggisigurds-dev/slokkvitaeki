@@ -210,12 +210,12 @@ function requireStaff(event) {
 // 26.10.2026: svæði fallsins (Netlify Functions region) færist aðeins á föll sem fá NÝJAN bundle — þessi lína breytir
 //   checksum allra gáttarfallanna (gatt, gatt-status, gatt-doc, gatt-slug, gatt-login …) svo eu-west-1 taki gildi.
 async function baseHopur(baseId) {
-  const ut = { ids: [Number(baseId)], nofn: {}, kt: [], merki: null };
+  const ut = { ids: [Number(baseId)], nofn: {}, kt: [], ktById: {}, merki: null };   // ktById 06.11.2026: greiðandi per eign í gáttinni
   try {
     const r0 = await sbGet(`customers_base?id=eq.${Number(baseId)}&select=id,nafn,kennitala,rekstrarfelag&limit=1`);
     const b0 = r0.ok ? (await r0.json())[0] : null;
     if (!b0) return ut;
-    ut.nofn[b0.id] = b0.nafn || ''; if (b0.kennitala) ut.kt.push(String(b0.kennitala));
+    ut.nofn[b0.id] = b0.nafn || ''; if (b0.kennitala) ut.kt.push(String(b0.kennitala)); ut.ktById[b0.id] = b0.kennitala ? String(b0.kennitala) : '';
     const merki = String(b0.rekstrarfelag || '').trim();
     if (!merki) return ut;
     ut.merki = merki;
@@ -226,7 +226,7 @@ async function baseHopur(baseId) {
     if (fold(b0.nafn).indexOf(fold(merki)) !== 0) return ut;
     const baeta = (b) => {
       const id = Number(b.id); if (!id || ut.ids.includes(id)) return;
-      ut.ids.push(id); ut.nofn[id] = b.nafn || ''; if (b.kennitala) ut.kt.push(String(b.kennitala));
+      ut.ids.push(id); ut.nofn[id] = b.nafn || ''; if (b.kennitala) ut.kt.push(String(b.kennitala)); ut.ktById[id] = b.kennitala ? String(b.kennitala) : '';
     };
     // 26.10.2026: lifandi merkið og handskráða listinn sóttir samhliða (gáttin var ~0,6 s í þessu falli einu, raðbundið).
     const [r1, r2] = await Promise.all([

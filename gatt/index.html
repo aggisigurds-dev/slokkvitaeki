@@ -1281,6 +1281,69 @@
   .gr-src{margin-top:8px;font-size:10.5px;color:var(--dim)}
   .gr-src em{font-style:normal;padding:1px 6px;border-radius:3px;background:var(--well);border:1px solid var(--line)}
   @media(max-width:760px){ .gr-grid{grid-template-columns:minmax(0,1fr)} .gr-tolur{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  /* ── REIKNINGAR EFTIR GREIÐENDUM (06.11.2026) ── */
+  .re-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-6px 0 14px}
+  .re-tools .seg{margin-bottom:0}
+  .re-tools .gbtn{margin-left:auto;height:36px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border-radius:7px;font-family:var(--lbl);font-size:11px;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;cursor:pointer}
+  .re-tools .gbtn svg{width:15px;height:15px}
+  .rh-haus{display:none}
+  .rh-greid{border:1px solid var(--line);border-radius:12px;background:var(--m-line) top/100% 3px no-repeat,var(--panel);box-shadow:var(--panel-sh);margin-bottom:18px;overflow:hidden;break-inside:avoid-page}
+  .rh-gh{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:18px 22px 14px;border-bottom:1px solid var(--line)}
+  .rh-gh .k{font-family:var(--lbl);font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .rh-gh h3{margin:3px 0 0;font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.05;color:var(--ink)}
+  .rh-gh .kt{font-family:var(--lbl);font-size:12.5px;letter-spacing:.6px;color:var(--dim);margin-top:4px}
+  .rh-gh .tot{margin-left:auto;text-align:right}
+  .rh-gh .tot .k{color:var(--dim)}
+  .rh-gh .tot .v{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--ink);line-height:1.05;font-variant-numeric:lining-nums}
+  .rh-gh .tot .n{font-size:12px;color:var(--dim);margin-top:3px}
+  .rh-eign{padding:14px 22px 6px;border-bottom:1px solid var(--line)}
+  .rh-eign:last-child{border-bottom:0;padding-bottom:12px}
+  .rh-eh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .rh-eh .bname{font-size:17px}
+  .rh-eh .adr{font-size:12.5px;color:var(--dim)}
+  .rh-eh .sub{margin-left:auto;font-family:var(--lbl);font-size:12px;color:var(--ink2);font-variant-numeric:lining-nums}
+  .rh-eh .sub b{font-size:14px;color:var(--ink)}
+  .rh-t{width:100%;border-collapse:collapse}
+  .rh-t th{font-family:var(--lbl);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);font-weight:600;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+  .rh-t td{padding:7px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+  .rh-t tr:last-child td{border-bottom:0}
+  .rh-t td.num,.rh-t th.r{text-align:right;font-variant-numeric:lining-nums;white-space:nowrap}
+  .rh-t td.kt{font-family:var(--lbl);font-size:12px;color:var(--ink2);white-space:nowrap}
+  .rh-t td.dim{color:var(--dim)}
+  .rh-samtals{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:16px 22px;border:1px solid var(--line);border-radius:12px;background:var(--slab);color:#fff;margin-bottom:18px}
+  .rh-samtals .k{font-family:var(--lbl);font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:#fff;opacity:.9}
+  .rh-samtals .v{font-family:var(--serif);font-size:30px;font-weight:600;line-height:1;font-variant-numeric:lining-nums;margin-left:auto}
+  .rh-samtals .n{font-size:12.5px;color:#fff;opacity:.85}
+  .rh-tomt{padding:30px;text-align:center;color:var(--dim);font-style:italic}
+  @media (max-width:720px){
+    .rh-t th:nth-child(3),.rh-t td:nth-child(3),.rh-t th:nth-child(4),.rh-t td:nth-child(4){display:none}
+    .rh-eign{padding:12px 14px 4px;overflow-x:auto}
+    .rh-gh{padding:16px 14px 12px}
+    .rh-gh .tot{margin-left:0;text-align:left;width:100%}
+    .rh-samtals{padding:14px}
+    .rh-samtals .v{font-size:24px;width:100%;margin-left:0}
+  }
+  /* Prentun: aðeins yfirlitið, með Brunahólfs-haus; hver greiðandi heldur sér saman þar sem hægt er. */
+  @media print{
+    body.re-prent{background:#fff!important}
+    body.re-prent *{visibility:hidden!important}
+    body.re-prent #re-hopad,body.re-prent #re-hopad *{visibility:visible!important}
+    body.re-prent #re-hopad{position:absolute;left:0;top:0;width:100%;padding:0}
+    body.re-prent .rh-haus{display:flex;align-items:center;gap:18px;padding:0 0 14px;margin-bottom:18px;border-bottom:3px solid #f15a24}
+    body.re-prent .rh-haus img{height:44px;width:auto}
+    body.re-prent .rh-haus .t{margin-left:auto;text-align:right}
+    body.re-prent .rh-haus .t b{display:block;font-family:var(--serif);font-size:22px;font-weight:600;color:#1b2a4d;line-height:1.1}
+    body.re-prent .rh-haus .t span{display:block;font-size:12px;color:#4a5568;margin-top:3px}
+    body.re-prent .rh-greid{box-shadow:none;border:1px solid #cfd5df;background:#fff;border-top:3px solid #f15a24;border-radius:8px;break-inside:avoid-page;page-break-inside:avoid}
+    body.re-prent .rh-eign{break-inside:avoid-page;page-break-inside:avoid}
+    body.re-prent .rh-t{font-size:11.5px}
+    body.re-prent .rh-t td{padding:5px 7px;font-size:11.5px}
+    body.re-prent .rh-t .tb{border:1px solid #cfd5df;background:#fff!important;color:#1b2a4d!important;box-shadow:none}
+    body.re-prent .rh-t .frest,body.re-prent .rh-t .pdf{display:none!important}
+    body.re-prent .rh-samtals{background:#1b2a4d!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:8px}
+    body.re-prent .rh-samtals .k,body.re-prent .rh-samtals .n{color:#fff!important}
+    @page{size:A4 portrait;margin:14mm 12mm}
+  }
   @media print{
     body.qr-prent > *:not(#qr-modal){display:none!important}
     body.qr-prent #qr-modal{position:static;display:block;background:none;padding:0;backdrop-filter:none}
@@ -1665,10 +1728,16 @@
       <div class="kicker">Reikningar frá Slökkvitækjum ehf.</div>
       <h2 class="page">Reikningar</h2>
       <div class="chips" id="re-chips"></div>
-      <div class="tbl-wrap"><table>
+      <!-- 06.11.2026 (Agnar): sýnarofi Listi | Eftir greiðanda + Prenta yfirlit. Hópaða sýnin raðar eftir greiðanda (kt) → eignum → reikningum. -->
+      <div class="re-tools">
+        <div class="seg" id="re-seg"><button type="button" data-rs="listi" class="on">Listi</button><button type="button" data-rs="greidandi">Eftir greiðanda</button></div>
+        <button type="button" class="gbtn sm" id="re-prenta" title="Prentar yfirlit reikninga eftir greiðendum og eignum þeirra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>Prenta yfirlit</button>
+      </div>
+      <div class="tbl-wrap" id="re-listi"><table>
         <thead><tr><th>Nr.</th><th>Dagsetning</th><th>Bygging</th><th>Þjónusta</th><th>Lýsing</th><th class="r">Upphæð</th><th>Staða</th><th class="r">Reikningur</th></tr></thead>
         <tbody id="re-body"></tbody>
       </table><div class="tbl-foot" id="re-foot"></div></div>
+      <div id="re-hopad" class="hidden"></div>
     </section>
   </main>
   <footer class="foot">
@@ -1885,7 +1954,7 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261105bh"></script>
+<script src="/gatt/portal.js?v=20261106gr"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 </body>
 </html>
