@@ -40,7 +40,7 @@ function origin(event) {
   return 'https://' + host;
 }
 // Þemu Þjónustuvefsins (gatt/index.html :root[data-theme=…]). Annað gildi er hunsað.
-const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar'];
+const THEMES = ['steel', 'cream', 'boss', 'grafit', 'blar', 'premium'];
 const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 async function verkListi() {
