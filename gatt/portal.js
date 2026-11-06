@@ -1500,6 +1500,18 @@
     $('#er-text').placeholder = ER_TXT[k].ph;
   }
   function openErindi(i, kind) { openErindiB(bldgAt(i), kind); }
+  /* Verkbeiðni opnast SJÁLFGEFIÐ á teikningunum (Agnar 06.11.2026: „hafðu frekar default að verkbeiðnin komi upp á teikningar"):
+     á eign með teikningar fer „Senda verkbeiðni" á Verkbeiðnir-síðuna með eignina valda — þar setur kúnninn punkt á hæðina
+     (og getur valið „Verkbeiðni án teikningar"). Eign án teikninga / utan þjónustu fær áfram eyðublaðið. */
+  function verkbeidniATeikningu(b) {
+    if (!b || !window.GattPunktar || !GattPunktar.veljaEign) return false;
+    if (((state.data && state.data.eignir_utan) || []).indexOf(b) > -1) return false;
+    if (!synOf().verkbeidni) return false;
+    if (!(b.teikning || []).some(function (f) { return f && f.mynd; })) return false;
+    var tab = document.querySelector('nav .tab[data-view="verkbeidnir"]'); if (!tab || tab.classList.contains('hidden')) return false;
+    closeDrawer(); closeErindi(); tab.click(); GattPunktar.veljaEign(b.id);
+    return true;
+  }
   function openErindiB(b, kind) {
     erB = b; erVisun = null;
     erUtan = !!(b && ((state.data && state.data.eignir_utan) || []).indexOf(b) > -1);
@@ -1547,7 +1559,7 @@
       })
       .catch(function () { return false; });
   }
-  $('#er-seg').addEventListener('click', function (e) { var bt = e.target.closest('button[data-k]'); if (bt) setErKind(bt.getAttribute('data-k')); });
+  $('#er-seg').addEventListener('click', function (e) { var bt = e.target.closest('button[data-k]'); if (!bt) return; var k = bt.getAttribute('data-k'); if (k === 'verkbeidni' && verkbeidniATeikningu(erB)) return; setErKind(k); });
   $('#er-close').onclick = closeErindi;
   $('#er-modal').addEventListener('mousedown', function (e) { if (e.target === this) closeErindi(); });
   $('#er-form').onsubmit = function (e) {
@@ -1570,7 +1582,7 @@
   $('#dr-close').onclick = closeDrawer;
   $('#dr-scrim').onclick = closeDrawer;
   document.querySelectorAll('[data-dr-erindi]').forEach(function (bt) {
-    bt.onclick = function () { openErindiB(drB, bt.getAttribute('data-dr-erindi')); };
+    bt.onclick = function () { var k = bt.getAttribute('data-dr-erindi'); if (k === 'verkbeidni' && verkbeidniATeikningu(drB)) return; openErindiB(drB, k); };
   });
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;

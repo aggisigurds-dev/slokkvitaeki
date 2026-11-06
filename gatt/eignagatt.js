@@ -1253,7 +1253,7 @@
     var tab = document.querySelector('nav .tab[data-view="vinnusvaedi"]'); if (tab) tab.addEventListener('click', function () { setTimeout(kortLifga, 30); });
   });
 
-  window.GattPunktar = { teikna: teikna, smellur: smellur, spjald: spjald, lbOpin: lbOpin, lbLokad: lbLokad, erindiAuki: erindiAuki, opna: opnaVb };
+  window.GattPunktar = { teikna: teikna, smellur: smellur, spjald: spjald, lbOpin: lbOpin, lbLokad: lbLokad, erindiAuki: erindiAuki, opna: opnaVb, veljaEign: vbtVelja };
 
   /* ═══ LEIT YFIR ALLT (12.10.2026): eignir, erindi, checklisti, viðhald, skjöl, skýrslur, reikningar — einn reitur í hausnum ═══ */
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
