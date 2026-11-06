@@ -136,10 +136,10 @@
   }
   function renderBanner() {
     var el = $('#bannerPanel'); if (!el) return;
-    var b = state.banner, src = b ? b.url : '/gatt/myndir/brunaholf/hetja-bygging-v2.webp';
+    var b = state.banner, src = b ? b.url : '/gatt/myndir/brunaholf/hetja-v3.webp';
     el.innerHTML = '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px">' +
       '<div id="bannerPrev" style="width:300px;max-width:100%;aspect-ratio:16/5;border-radius:8px;border:1px solid var(--line2);background:#0a2a55 center/cover no-repeat"></div>' +
-      '<div style="flex:1;min-width:200px"><div style="font-weight:600;margin-bottom:4px">' + (b ? 'Sérvalin mynd' + (b.at ? ' · vistuð ' + fmtDate(b.at) : '') : 'Sjálfgefin mynd (Brunahólf V2)') + '</div>' +
+      '<div style="flex:1;min-width:200px"><div style="font-weight:600;margin-bottom:4px">' + (b ? 'Sérvalin mynd' + (b.at ? ' · vistuð ' + fmtDate(b.at) : '') : 'Sjálfgefin mynd (Brunahólf V2 · bygging við sólarlag)') + '</div>' +
       '<div style="font-size:12px;opacity:.75;margin-bottom:10px">JPEG, PNG eða WebP. Best: breið mynd, björt til hægri — texti liggur yfir vinstri hlutanum.</div>' +
       '<button class="btn btn--accent" id="bannerVelja">Velja mynd</button> ' +
       (b ? '<button class="btn" id="bannerSjalfgefin">Nota sjálfgefna</button>' : '') +
