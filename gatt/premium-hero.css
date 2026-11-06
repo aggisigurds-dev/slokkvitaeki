@@ -8,9 +8,9 @@ html[data-theme="premium"] #portal .premium-hero {
  box-shadow:0 22px 45px rgba(15,35,62,.17);color:#fff;
 }
 html[data-theme="premium"] #portal .premium-hero-photo {
- position:absolute;z-index:-2;inset:0 0 0 41%;
+ position:absolute;z-index:-2;inset:0;
  background-color:#263d54;background-image:var(--premium-account-photo,none);
- background-size:cover;background-position:center 45%;
+ background-size:cover;background-position:68% 46%;
 }
 html[data-theme="premium"] #portal .premium-hero:before {
  content:"";position:absolute;z-index:-1;inset:0;

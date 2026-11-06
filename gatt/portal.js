@@ -81,8 +81,8 @@
       { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
       { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: nóvember 2026' },
       { nafn: 'Laugavegur', heimilisfang: 'Laugavegur 95–99, 101 Reykjavík', sl: 15, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: ágúst 2027|Kerfi: september 2026' },
-      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026' },
-      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026' },
+      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026', eign: { mynd: '/gatt/myndir/center-hotel/midgardur.jpg' } },
+      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026', eign: { mynd: '/gatt/myndir/center-hotel/plaza.jpg' } },
       { nafn: 'Skjaldbreið', heimilisfang: 'Laugavegur 16, 101 Reykjavík', sl: 3, slo: null, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: september 2026' },
     ],
     reports: [
@@ -429,13 +429,51 @@
       .catch(function () { $('#lerr').textContent = 'Villa við innskráningu. Reyndu aftur.'; });
   });
 
+  /* Eigin húsmyndir — aðeins byggingar sem við eigum mynd af, aldrei lager/Unsplash. */
+  var EIGN_MYND_EIGIN = {
+    'Plaza': '/gatt/myndir/center-hotel/plaza.jpg',
+    'Miðgarður': '/gatt/myndir/center-hotel/midgardur.jpg'
+  };
+  function eignMyndSlod(b) {
+    if (!b) return '';
+    var m = b.eign && b.eign.mynd;
+    if (m) return m;
+    return EIGN_MYND_EIGIN[String(b.nafn || '').trim()] || '';
+  }
+  function festuEignMyndir(data) {
+    if (!data) return;
+    (data.buildings || []).concat(data.eignir_utan || []).forEach(function (b) {
+      var m = eignMyndSlod(b);
+      if (!m) return;
+      b.eign = b.eign || {};
+      if (!b.eign.mynd) b.eign.mynd = m;
+    });
+  }
+  function setjaAccountPhoto(data) {
+    var photos = (data.buildings || []).map(function (b) { return b && b.eign && b.eign.mynd; }).filter(Boolean);
+    var dusk = '';
+    photos.forEach(function (p) { if (/midgardur/i.test(p)) dusk = p; });
+    var pick = dusk || photos[0] || '';
+    document.documentElement.style.setProperty('--premium-account-photo', pick ? 'url("' + imgW(pick, 1800).replace(/"/g, '%22') + '")' : 'none');
+    document.documentElement.classList.toggle('has-account-photo', !!pick);
+  }
+  function myndAfNafni(nafn) {
+    var L = (state.data && state.data.buildings) || [];
+    for (var i = 0; i < L.length; i++) if (L[i].nafn === nafn) return eignMyndSlod(L[i]);
+    return EIGN_MYND_EIGIN[String(nafn || '').trim()] || '';
+  }
+  function eignaReitur(nafn, addr) {
+    var m = myndAfNafni(nafn);
+    return '<div class="bcell">' + (m ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(m, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(nafn || '—') + '</div>' + (addr ? '<div class="baddr">' + esc(addr) + '</div>' : '') + '</div></div>';
+  }
+
   /* ── PORTAL ── */
   function renderPortal(data) {
     state.data = data;
     hledurFela();
     document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'premium');
-    var accountPhoto = (data.buildings || []).map(function (b) { return b && b.eign && b.eign.mynd; }).filter(Boolean)[0] || '';
-    document.documentElement.style.setProperty('--premium-account-photo', accountPhoto ? 'url("' + imgW(accountPhoto, 1800).replace(/"/g, '%22') + '")' : 'none');
+    festuEignMyndir(data);
+    setjaAccountPhoto(data);
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
@@ -742,7 +780,7 @@
     var rows = (state.data.reports || []).filter(function (r) { return !filter || r.bygging === filter; });
     $('#sk-body').innerHTML = rows.map(function (r) {
       return '<tr><td class="num">' + esc(skManTxt(r)) + '</td>' +
-        '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
+        '<td>' + eignaReitur(r.bygging) + '</td>' +
         '<td class="dim">' + (r.heimilisfang ? esc(r.heimilisfang) : '<span class="dim">—</span>') + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">' + esc(r.eining || 'tæki') + '</span>' : '<span class="dim">—</span>') + '</td>' +
@@ -768,7 +806,7 @@
     $('#re-body').innerHTML = rows.map(function (r) {
       return '<tr><td class="kt">' + esc(r.nr || '—') + '</td>' +
         '<td class="num">' + esc(fmtDate(r.dags)) + '</td>' +
-        '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
+        '<td>' + eignaReitur(r.bygging) + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="dim">' + esc(r.lysing || '') + '</td>' +
         '<td class="r num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td>' +
@@ -1751,7 +1789,7 @@
   }
 
   function setjaHero(b) {
-    var head = $('#drawer .dr-head'), m = b && b.eign && b.eign.mynd;
+    var head = $('#drawer .dr-head'), m = eignMyndSlod(b);
     head.classList.toggle('hero', !!m);
     head.style.setProperty('--hero', m ? 'url("' + imgW(m, 1800).replace(/"/g, '%22') + '")' : 'none');
   }
