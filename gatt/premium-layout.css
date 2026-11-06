@@ -1,0 +1,87 @@
+/* Brunahólf Premium: customer-facing layout.
+   Opt-in only; existing portal sections, events, data and access rules are untouched. */
+:root[data-theme="premium"] #portal { min-height:100vh; }
+:root[data-theme="premium"] #portal header {
+  background:#142542;box-shadow:0 12px 40px rgba(17,37,65,.14);
+  border:0;
+}
+:root[data-theme="premium"] #portal header::after {display:none}
+:root[data-theme="premium"] #portal .hin {max-width:none;padding:18px 28px;gap:12px 20px}
+:root[data-theme="premium"] #portal .brandrow {min-height:48px}
+:root[data-theme="premium"] #portal .brandrow .brand b {font-family:Inter,system-ui,sans-serif;letter-spacing:.055em;font-size:20px;background:none;color:#fff;-webkit-text-fill-color:#fff;filter:none}
+:root[data-theme="premium"] #portal .brandrow .brand .s {letter-spacing:.08em;font-size:11px;color:#b7c6da}
+:root[data-theme="premium"] #portal .brandrow .blogo {display:block;max-width:174px;height:auto}
+:root[data-theme="premium"] #portal .brandrow .brand {display:none}
+:root[data-theme="premium"] #portal .htag {font-size:11px;letter-spacing:.07em;color:#d0dced;text-transform:none}
+:root[data-theme="premium"] #portal header nav {gap:7px}
+:root[data-theme="premium"] #portal header nav a.tab {
+  font-family:Inter,system-ui,sans-serif;font-size:12px;letter-spacing:0;text-transform:none;
+  color:#c4d1e4;padding:11px 13px;border-radius:10px;white-space:nowrap;
+  transition:background .15s,color .15s;
+}
+:root[data-theme="premium"] #portal header nav a.tab:hover {color:#fff;background:rgba(255,255,255,.09)}
+:root[data-theme="premium"] #portal header nav a.tab.on {
+  color:#fff;background:#ed5b21;text-shadow:none;box-shadow:0 5px 14px rgba(237,91,33,.24)
+}
+:root[data-theme="premium"] #portal header nav a.tab::after {display:none}
+:root[data-theme="premium"] #portal .hbtn {border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.08);box-shadow:none;letter-spacing:0;text-transform:none;color:#e7eef8}
+:root[data-theme="premium"] #portal main {max-width:1540px;padding:36px clamp(18px,3vw,48px) 80px}
+:root[data-theme="premium"] #portal .hero-art {opacity:.07;pointer-events:none}
+:root[data-theme="premium"] #portal .kicker {font:600 11px/1.5 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ed5b21}
+:root[data-theme="premium"] #portal h2.page {font:750 clamp(27px,3vw,38px)/1.2 Inter,system-ui,sans-serif;letter-spacing:-.035em;color:#142542}
+:root[data-theme="premium"] #portal h2.page::after {height:3px;width:65px;background:#ed5b21;box-shadow:none}
+:root[data-theme="premium"] #portal .cards {gap:16px;margin-top:24px;margin-bottom:24px}
+:root[data-theme="premium"] #portal .sc {
+  background:#fff;border:1px solid #e1e8f1;border-radius:17px;
+  box-shadow:0 5px 22px rgba(23,47,82,.055);overflow:hidden;
+}
+:root[data-theme="premium"] #portal .sc:nth-child(2) {background:#fff}
+:root[data-theme="premium"] #portal .sc:hover {transform:translateY(-2px);box-shadow:0 12px 28px rgba(23,47,82,.1)}
+:root[data-theme="premium"] #portal .sc .k {font:600 12px Inter,system-ui,sans-serif;letter-spacing:.01em;color:#64748b}
+:root[data-theme="premium"] #portal .sc .v {font-family:Inter,system-ui,sans-serif;font-weight:750;letter-spacing:-.04em;color:#172745}
+:root[data-theme="premium"] #portal .sc.dark {background:linear-gradient(140deg,#1c355a,#142542);border-color:#243d61}
+:root[data-theme="premium"] #portal .sc.dark .k,:root[data-theme="premium"] #portal .sc.dark .v {color:#fff}
+:root[data-theme="premium"] #portal .tbl-wrap,
+:root[data-theme="premium"] #portal .dpanel,
+:root[data-theme="premium"] #portal .egp,
+:root[data-theme="premium"] #portal .kj-karfa {
+  border:1px solid #e1e8f1;border-radius:16px;background:#fff;
+  box-shadow:0 5px 24px rgba(23,47,82,.055);overflow:hidden;
+}
+:root[data-theme="premium"] #portal thead th {background:#f2f6fb;color:#52637c;font-family:Inter,system-ui,sans-serif;letter-spacing:.03em}
+:root[data-theme="premium"] #portal tbody tr:hover {background:#fff6f0}
+:root[data-theme="premium"] #portal .kbtn,
+:root[data-theme="premium"] #portal .gbtn {border-radius:10px;box-shadow:none}
+:root[data-theme="premium"] #portal .gbtn {background:#ed5b21;color:#fff;border-color:#ed5b21}
+:root[data-theme="premium"] #portal .chips {gap:8px}
+:root[data-theme="premium"] #portal .chips button {border-radius:999px}
+:root[data-theme="premium"] #portal .yf-layout {gap:22px}
+:root[data-theme="premium"] #portal .yf-rail {border-radius:16px}
+:root[data-theme="premium"] #portal .vs-grid {gap:18px}
+@media (min-width:1200px) {
+  :root[data-theme="premium"] #portal header {
+    position:fixed;top:0;bottom:0;left:0;width:246px;overflow-y:auto;z-index:10;
+  }
+  :root[data-theme="premium"] #portal .hin {display:flex;flex-direction:column;align-items:stretch;gap:20px;padding:30px 15px}
+  :root[data-theme="premium"] #portal .brandrow {padding:0 12px 15px;border-bottom:1px solid rgba(255,255,255,.12)}
+  :root[data-theme="premium"] #portal .htag {padding:0 12px;margin:0;border:0;white-space:normal;flex:none}
+  :root[data-theme="premium"] #portal header nav {display:flex;flex-direction:column;align-items:stretch;gap:4px;margin:0;width:100%}
+  :root[data-theme="premium"] #portal header nav a.tab {display:flex;align-items:center;min-height:43px;width:100%;padding:12px 14px}
+  :root[data-theme="premium"] #portal header nav .hbtn {justify-content:flex-start;margin:3px 0;padding:11px 14px}
+  :root[data-theme="premium"] #portal header nav .leit {max-width:100%;min-width:0}
+  :root[data-theme="premium"] #portal main {margin-left:246px;max-width:none}
+}
+@media (max-width:1199px) {
+  :root[data-theme="premium"] #portal header {position:relative}
+  :root[data-theme="premium"] #portal .hin {padding:16px 18px}
+  :root[data-theme="premium"] #portal header nav {flex-wrap:wrap;gap:5px}
+}
+@media (max-width:650px) {
+  :root[data-theme="premium"] #portal .htag {display:none}
+  :root[data-theme="premium"] #portal header nav {width:100%;overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start}
+  :root[data-theme="premium"] #portal header nav a.tab {flex:0 0 auto;padding:10px 12px}
+  :root[data-theme="premium"] #portal .cards {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  :root[data-theme="premium"] #portal main {padding:22px 13px 48px}
+  :root[data-theme="premium"] #portal .yf-layout {display:block}
+  :root[data-theme="premium"] #portal .yf-rail {margin-top:18px}
+}
