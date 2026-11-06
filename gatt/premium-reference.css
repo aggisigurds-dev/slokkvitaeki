@@ -1,0 +1,48 @@
+/* Reference-aligned desktop dashboard. Premium opt-in only. */
+@media(min-width:1200px){
+ html[data-theme="premium"] #portal header{width:205px!important;z-index:30!important;background:linear-gradient(180deg,#101f35,#192e49)!important;border-right:1px solid #34445b!important}
+ html[data-theme="premium"] #portal .hin{padding:24px 8px!important;gap:22px!important}
+ html[data-theme="premium"] #portal .brandrow{padding:0 12px 22px!important}
+ html[data-theme="premium"] #portal .brandrow .blogo{width:145px!important}
+ html[data-theme="premium"] #portal .htag{display:none!important}
+ html[data-theme="premium"] #portal header nav{gap:5px!important}
+ html[data-theme="premium"] #portal header nav a.tab{font-size:13px!important;font-weight:650!important;min-height:45px!important;border-radius:9px!important}
+ html[data-theme="premium"] #portal header nav a.tab.on{background:linear-gradient(110deg,#f15b13,#ff8b26)!important;box-shadow:0 4px 15px #f2672b35!important}
+ html[data-theme="premium"] #portal main{margin-left:205px!important;padding:0 22px 55px!important;max-width:none!important}
+ html[data-theme="premium"] #portal #v-yfirlit{position:relative}
+ html[data-theme="premium"] #portal .premium-hero{margin:0 -22px!important;border-radius:0!important;height:295px!important;min-height:295px!important;box-shadow:none!important;background:#152844!important}
+ html[data-theme="premium"] #portal .premium-hero-photo{inset:0 0 0 32%!important;background-position:center 51%!important;opacity:.98}
+ html[data-theme="premium"] #portal .premium-hero:before{background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.7) 37%,rgba(20,38,64,.02) 88%)!important}
+ html[data-theme="premium"] #portal .premium-hero-content{padding:34px 45px!important;max-width:680px!important}
+ html[data-theme="premium"] #portal .premium-hero h1{font-size:38px!important;margin:10px 0 8px!important}
+ html[data-theme="premium"] #portal .premium-hero p{font-size:13px!important}
+ html[data-theme="premium"] #portal .premium-hero-actions{display:none!important}
+ html[data-theme="premium"] #portal .premium-hero-foot{display:none!important}
+ html[data-theme="premium"] #portal .premium-section-heading{position:absolute;top:19px;left:44px;z-index:2;pointer-events:none}
+ html[data-theme="premium"] #portal .premium-section-heading h3{color:white!important;font-size:30px!important;text-shadow:0 2px 12px #10203588}
+ html[data-theme="premium"] #portal .premium-section-heading .premium-overline{color:#ffb58c!important}
+ html[data-theme="premium"] #portal .premium-section-note{display:none}
+ html[data-theme="premium"] #portal .premium-hero-content{padding-top:94px!important}
+ html[data-theme="premium"] #portal .premium-hero h1{display:none!important}
+ html[data-theme="premium"] #portal .premium-hero-eyebrow{display:none!important}
+ html[data-theme="premium"] #portal .premium-hero p{font-size:14px!important}
+ html[data-theme="premium"] #portal .cards{position:relative;z-index:4;margin:-90px 6px 20px!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}
+ html[data-theme="premium"] #portal .cards .sc{border-radius:13px!important;min-height:84px!important;box-shadow:0 7px 22px #0a213833!important}
+ html[data-theme="premium"] #portal .yf-layout{display:grid!important;grid-template-columns:minmax(0,1fr) 310px!important;gap:16px!important;align-items:start!important}
+ html[data-theme="premium"] #portal .yf-main{min-width:0!important}
+ html[data-theme="premium"] #portal .yf-rail{min-width:0!important;margin-top:0!important}
+ html[data-theme="premium"] #portal .yf-tools{margin-bottom:12px!important}
+ html[data-theme="premium"] #portal .tbl-wrap{border-radius:13px!important}
+ html[data-theme="premium"] #portal #yf-tbl table{width:100%!important}
+ html[data-theme="premium"] #portal #yf-tbl td{padding-top:12px!important;padding-bottom:12px!important}
+}
+@media(min-width:1200px) and (max-width:1390px){
+ html[data-theme="premium"] #portal .yf-layout{grid-template-columns:minmax(0,1fr) 270px!important}
+ html[data-theme="premium"] #portal #yf-tbl{overflow-x:auto!important}
+ html[data-theme="premium"] #portal #yf-tbl table{min-width:750px}
+}
+@media(max-width:1199px){
+ html[data-theme="premium"] #portal .premium-hero{margin-top:0!important}
+ html[data-theme="premium"] #portal .yf-layout{display:flex!important;flex-direction:column!important}
+ html[data-theme="premium"] #portal .yf-main,html[data-theme="premium"] #portal .yf-rail{width:100%!important}
+}
