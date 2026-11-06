@@ -115,6 +115,12 @@
       var h1 = document.createElement('h1'); h1.textContent = h2.textContent;
       hero.appendChild(eb); hero.appendChild(h1);
       if (SUB[v]) { var p = document.createElement('p'); p.className = 'v2-sub'; p.textContent = SUB[v]; hero.appendChild(p); }
+      /* Sérkjör: samningstextinn (#kj-intro, fylltur af portal.js) liggur í hetjunni eins og í útlitsdrögunum */
+      var intro = v === 'serkjor' ? sec.querySelector('#kj-intro') : null;
+      if (intro) {
+        var ps = document.createElement('p'); ps.className = 'v2-sub'; ps.textContent = intro.textContent; hero.appendChild(ps);
+        new MutationObserver(function () { ps.textContent = intro.textContent; }).observe(intro, { childList: true, characterData: true, subtree: true });
+      }
       sec.insertBefore(hero, sec.firstChild);
       sec.classList.add('v2-has-hero');
       /* yfirskrift sem portal.js uppfærir (t.d. #yf-kicker) speglast áfram */
