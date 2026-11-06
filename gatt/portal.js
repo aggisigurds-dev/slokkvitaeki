@@ -1067,8 +1067,58 @@
     Object.keys(SYN_DEF).forEach(function (k) { s[k] = (a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]) && SYN_TILBUID[k]; });
     return s;
   }
-  var drOpen = -1, drB = null;
+  var drOpen = -1, drB = null, drTab = 'yfirlit';
   function bldgAt(i) { return ((state.data && state.data.buildings) || [])[i] || null; }
+
+  function drFlokkur(el) {
+    var h = el.querySelector && el.querySelector(':scope > h4');
+    var t = ((h && h.textContent) || el.textContent || '').trim().toLowerCase();
+    if (t.indexOf('yfirlit') === 0) return 'yfirlit';
+    if (t.indexOf('teikning') > -1) return 'teikningar';
+    if (t.indexOf('reikning') > -1) return 'reikningar';
+    if (t.indexOf('skýrsl') > -1 || t.indexOf('skjöl') > -1 || t.indexOf('skírteini') > -1 || t.indexOf('skirteini') > -1) return 'skjol';
+    if (t.indexOf('erindi') > -1 || t.indexOf('verkefn') > -1 || t.indexOf('kostnað') > -1) return 'verkefni';
+    if (t.indexOf('skoðun') > -1 || t.indexOf('saga') > -1 || t.indexOf('viðhald') > -1) return 'skodanir';
+    if (t.indexOf('búnað') > -1 || t.indexOf('eldvarn') > -1 || t.indexOf('slökkvi') > -1 || t.indexOf('bruna') > -1) return 'brunavarnir';
+    return 'taekni';
+  }
+
+  function drMerkja() {
+    var body = $('#dr-body'); if (!body) return;
+    body.querySelectorAll(':scope > .dsec, :scope > .dgrp').forEach(function (el) {
+      el.setAttribute('data-dr-group', drFlokkur(el));
+    });
+    var tech = document.createElement('button');
+    tech.type = 'button'; tech.className = 'dr-tech-open'; tech.setAttribute('data-dr-tab', 'taekni');
+    tech.innerHTML = '<b>Tæknilegar upplýsingar</b><span>Byggingarlýsing, kerfi og aðrar varðveittar upplýsingar</span><i aria-hidden="true">›</i>';
+    body.appendChild(tech);
+    var empty = document.createElement('div');
+    empty.className = 'dr-empty hidden'; empty.textContent = 'Engin gögn eru skráð í þessum hluta.';
+    body.appendChild(empty);
+  }
+
+  function drVeljaTab(tab) {
+    var leyfilegt = ['yfirlit', 'brunavarnir', 'teikningar', 'verkefni', 'skodanir', 'skjol', 'reikningar', 'taekni'];
+    drTab = leyfilegt.indexOf(tab) > -1 ? tab : 'yfirlit';
+    document.querySelectorAll('#drawer [data-dr-tab]').forEach(function (b) {
+      var on = b.getAttribute('data-dr-tab') === drTab;
+      b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    var items = Array.prototype.slice.call(document.querySelectorAll('#dr-body > [data-dr-group]'));
+    var synileg = 0, sed = {};
+    items.forEach(function (el) {
+      var group = el.getAttribute('data-dr-group');
+      var show = drTab === 'yfirlit' ? group !== 'taekni' && !sed[group] : group === drTab;
+      if (show) { sed[group] = true; synileg++; }
+      el.classList.toggle('hidden', !show);
+      el.classList.toggle('dr-preview', drTab === 'yfirlit' && show && group !== 'yfirlit');
+    });
+    var tech = document.querySelector('#dr-body > .dr-tech-open');
+    if (tech) tech.classList.toggle('hidden', drTab !== 'yfirlit' || !items.some(function (el) { return el.getAttribute('data-dr-group') === 'taekni'; }));
+    var empty = document.querySelector('#dr-body > .dr-empty');
+    if (empty) empty.classList.toggle('hidden', synileg > 0);
+    var body = $('#dr-body'); if (body) body.scrollTop = 0;
+  }
 
   // Myndir sóttar einu sinni á lotu (sama blað á oft margar hæðir)
   var myndir = {};
@@ -1343,6 +1393,8 @@
     var grHtml = GREININGAR.map(function (k) { return segs[k] || ''; }).join('');
     html = ROD.map(function (k) { return segs[k] || ''; }).join('') + (grHtml.replace(/\s+/g, '') ? '<div class="dgrp">Greiningar</div>' + grHtml : '');
     $('#dr-body').innerHTML = html;
+    drMerkja();
+    drVeljaTab('yfirlit');
     if (window.GattGreining) GattGreining.lifga(b);
     if (window.GattBgr) GattBgr.lifga(b);
     var g = $('#dr-tk');
@@ -1487,6 +1539,12 @@
   };
   $('#dr-close').onclick = closeDrawer;
   $('#dr-scrim').onclick = closeDrawer;
+  $('#drawer').addEventListener('click', function (e) {
+    var tab = e.target.closest && e.target.closest('[data-dr-tab]');
+    if (!tab) return;
+    e.preventDefault();
+    drVeljaTab(tab.getAttribute('data-dr-tab'));
+  });
   document.querySelectorAll('[data-dr-erindi]').forEach(function (bt) {
     bt.onclick = function () { openErindiB(drB, bt.getAttribute('data-dr-erindi')); };
   });
@@ -1652,6 +1710,8 @@
         '<li><b>Allt á einum stað</b>Skýrslur, reikningar, teikningar og næsta skoðun birtast hér — og þið sendið verkbeiðnir beint.</li>' +
       '</ol></section>';
     $('#dr-body').innerHTML = html;
+    drMerkja();
+    drVeljaTab('yfirlit');
     if (window.GattGreining) GattGreining.lifga(b);
     var g = $('#dr-tk');
     if (g) {

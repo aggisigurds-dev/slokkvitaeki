@@ -29,8 +29,12 @@ const checks = [
   ['gatt/premium-polish-v2.css', /#portal a\.pdf\{min-width:44px!important;min-height:44px!important\}/, 'nav-snertiflötur'],
   ['gatt/premium-polish-v2.css', /#portal textarea\{min-height:44px!important;font-size:16px!important\}/, 'innsláttarreitir'],
   ['gatt/premium-polish-v2.css', /\.premium-hero\{height:150px!important;min-height:150px!important\}/, 'þéttur símahaus'],
+  ['gatt/index.html', /data-dr-tab="brunavarnir"[\s\S]*data-dr-tab="teikningar"[\s\S]*data-dr-tab="verkefni"[\s\S]*data-dr-tab="skodanir"[\s\S]*data-dr-tab="skjol"[\s\S]*data-dr-tab="reikningar"/, 'sex eignaundirsíður'],
+  ['gatt/portal.js', /function drVeljaTab\(tab\)/, 'eignaundirsíðustýring'],
+  ['gatt/portal.js', /function drMerkja\(\)/, 'eignagagnaflokkun'],
   ['gatt/index.html', /premium-reference\.css\?v=20261106i/, 'grunn-CSS útgáfumerki'],
-  ['gatt/index.html', /premium-polish-v2\.css\?v=20261106l/, 'fínstillingar-CSS útgáfumerki'],
+  ['gatt/index.html', /premium-polish-v2\.css\?v=20261106n/, 'fínstillingar-CSS útgáfumerki'],
+  ['gatt/index.html', /portal\.js\?v=20261106c/, 'gáttar-JS útgáfumerki'],
   ['gatt-admin/index.html', /admin\.js\?v=20261106bi/, 'stjórnborðs-JS útgáfumerki'],
 ];
 
