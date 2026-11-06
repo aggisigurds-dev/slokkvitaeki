@@ -1,0 +1,68 @@
+/* Premium reference polish v2: scoped; preserves existing functionality and all other themes. */
+@media(min-width:1200px){
+ html[data-theme="premium"] #portal header{box-shadow:inset -1px 0 rgba(255,255,255,.12)!important}
+ html[data-theme="premium"] #portal .hin{min-height:100vh!important}
+ html[data-theme="premium"] #portal header nav{margin-top:0!important}
+ html[data-theme="premium"] #portal header nav a.tab{position:relative;padding-left:42px!important;font-weight:600!important;letter-spacing:0!important}
+ html[data-theme="premium"] #portal header nav a.tab:before{content:"◇";position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:19px;line-height:1;color:#b5c9df}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="yfirlit"]:before{content:"⌂";font-size:24px}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="vinnusvaedi"]:before{content:"◇"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="eldvarnabok"]:before{content:"▤"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="skyrslur"]:before{content:"▥"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="reikningar"]:before{content:"▣"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="verkbeidnir"]:before{content:"⚒"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="erindi"]:before{content:"▢"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="serkjor"]:before{content:"✧"}
+ html[data-theme="premium"] #portal header nav a.tab[data-view="skilabod"]:before{content:"▱"}
+ html[data-theme="premium"] #portal header nav a.tab.on:before{color:#fff}
+ html[data-theme="premium"] #portal .premium-hero{height:322px!important;min-height:322px!important}
+ html[data-theme="premium"] #portal .premium-hero-photo{background-position:center 57%!important}
+ html[data-theme="premium"] #portal .premium-section-heading{top:32px!important}
+ html[data-theme="premium"] #portal .premium-hero-content{padding-top:112px!important}
+ html[data-theme="premium"] #portal .premium-hero p{max-width:470px!important;color:#e0e8f2!important}
+ html[data-theme="premium"] #portal .cards{margin-top:-103px!important;margin-bottom:24px!important}
+ html[data-theme="premium"] #portal .cards .sc{display:grid!important;grid-template-columns:58px minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:center!important;column-gap:9px!important;padding:14px 11px!important}
+ html[data-theme="premium"] #portal .cards .sc>svg,
+ html[data-theme="premium"] #portal .cards .sc>.ico,
+ html[data-theme="premium"] #portal .cards .sc>.ic{grid-row:1 / 3!important;grid-column:1!important;align-self:center!important;justify-self:center!important;max-width:49px!important}
+ html[data-theme="premium"] #portal .cards .sc .k{grid-column:2!important;grid-row:1!important;font-size:10px!important;line-height:1.25!important;text-transform:uppercase!important;letter-spacing:.045em!important}
+ html[data-theme="premium"] #portal .cards .sc .v{grid-column:2!important;grid-row:2!important;font-size:30px!important;line-height:1.12!important}
+ html[data-theme="premium"] #portal .yf-layout{gap:15px!important}
+ html[data-theme="premium"] #portal #yf-tbl{border:1px solid #dce5ef!important;border-radius:14px!important;background:#fff!important;box-shadow:0 7px 24px #13294314!important}
+ html[data-theme="premium"] #portal #yf-tbl thead th{font-size:11px!important;letter-spacing:0!important;background:#f2f6fa!important;padding:14px 10px!important}
+ html[data-theme="premium"] #portal #yf-tbl tbody tr{border-bottom:1px solid #e7edf4!important}
+ html[data-theme="premium"] #portal #yf-tbl tbody td{font-size:12px!important}
+ html[data-theme="premium"] #portal #yf-tbl .bcell{display:flex!important;align-items:center!important;gap:12px!important;min-width:190px!important}
+ html[data-theme="premium"] #portal #yf-tbl .bic{display:block!important;flex:0 0 76px!important;width:76px!important;height:52px!important;border-radius:7px!important;background-size:cover!important;background-position:center!important;overflow:hidden!important}
+ html[data-theme="premium"] #portal #yf-tbl .bic:not(.ph){background:#edf3f9!important;display:grid!important;place-items:center!important}
+ html[data-theme="premium"] #portal #yf-tbl .bname{font-weight:750!important;color:#142542!important}
+ html[data-theme="premium"] #portal #yf-tbl .baddr{color:#728197!important;font-size:11px!important}
+ html[data-theme="premium"] #portal #yf-tbl .ract{display:flex!important;gap:5px!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important}
+ html[data-theme="premium"] #portal #yf-tbl .pdf{border-radius:7px!important}
+ html[data-theme="premium"] #portal .yf-rail .rl-card,
+ html[data-theme="premium"] #portal .yf-rail .naestu{border-radius:13px!important;border:1px solid #dfe7f0!important;background:#fff!important;box-shadow:0 5px 20px #122c4812!important;overflow:hidden!important}
+ html[data-theme="premium"] #portal .yf-rail .rl-card{padding:15px!important}
+ html[data-theme="premium"] #portal .yf-rail .rl-card .kicker{color:#df5c24!important}
+ html[data-theme="premium"] #portal .yf-rail #rl-send{background:linear-gradient(90deg,#f66a19,#ef4e12)!important;border:0!important;color:#fff!important;min-height:43px!important;font-weight:750!important}
+ html[data-theme="premium"] #portal .yf-rail .seg{border-radius:8px!important;overflow:hidden!important}
+ html[data-theme="premium"] #portal .yf-rail .seg button.on{background:#172c4b!important;color:#fff!important}
+ html[data-theme="premium"] #portal .yf-rail select,
+ html[data-theme="premium"] #portal .yf-rail textarea{border-radius:8px!important;background:#f9fbfd!important}
+}
+@media(min-width:1200px) and (max-width:1500px){
+ html[data-theme="premium"] #portal #yf-tbl{overflow-x:auto!important}
+ html[data-theme="premium"] #portal #yf-tbl table{min-width:780px!important}
+ html[data-theme="premium"] #portal .cards .sc{grid-template-columns:40px minmax(0,1fr)!important}
+ html[data-theme="premium"] #portal .cards .sc .v{font-size:26px!important}
+}
+@media(max-width:1199px){
+ html[data-theme="premium"] #portal .premium-hero{min-height:340px!important}
+ html[data-theme="premium"] #portal .yf-layout{gap:16px!important}
+ html[data-theme="premium"] #portal .yf-rail{margin-top:12px!important}
+}
+@media(max-width:700px){
+ html[data-theme="premium"] #portal .premium-hero{min-height:365px!important}
+ html[data-theme="premium"] #portal .cards .sc{padding:13px 10px!important}
+ html[data-theme="premium"] #portal #yf-tbl{max-width:100%!important;overflow-x:auto!important}
+ html[data-theme="premium"] #portal .yf-rail .rl-card{padding:15px!important}
+}
