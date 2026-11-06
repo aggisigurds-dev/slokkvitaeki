@@ -199,11 +199,75 @@
       })
       .catch(function () { if (head) head.classList.remove('v2-bn-vinnur'); toast('Myndin vistaðist ekki — netvilla'); });
   }
+
+  /* ── Eignasíðan sem SÍÐA: flipar (Yfirlit · Brunavarnir · Teikningar · Verkefni · Skoðanir · Skjöl · Um eignina) ──────────
+     Hluti eignasíðunnar (#dr-body) er áfram byggður af portal.js úr RAUNGÖGNUM eignarinnar — hér er aðeins raðað:
+     hver hluti er flokkaður eftir fyrirsögn sinni og birtist undir þeim flipa/flipum sem hann á heima í. Flipi sem hefur
+     engan hluta (eignin á engin skjöl, engar teikningar …) birtist ekki. Enginn hluti er búinn til hér, engin gögn tilbúin. */
+  var TABS = [['yfirlit', 'Yfirlit'], ['brunavarnir', 'Brunavarnir'], ['teikningar', 'Teikningar'], ['verkefni', 'Verkefni'], ['skodanir', 'Skoðanir'], ['skjol', 'Skjöl'], ['reikningar', 'Reikningar'], ['um', 'Um eignina']];
+  var TAB_IC = { yfirlit: 'house', brunavarnir: 'flame', teikningar: 'layers', verkefni: 'wrench', skodanir: 'shield', skjol: 'book', reikningar: 'receipt', um: 'chart' };
+  var SEC_TAB = [
+    [/^Yfirlit/, 'yfirlit', 'w2 bare', 1], [/^Erindi/, 'yfirlit verkefni', 'w2 bare', 4], [/^Eldvarnabók/, 'yfirlit skodanir', '', 2],
+    [/^Teikningar/, 'yfirlit teikningar', 'w2', 3], [/^Búnaðargreining/, 'brunavarnir', 'w2'], [/^Búnaður/, 'brunavarnir', 'w2'],
+    [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2'], [/^Greining teikninga/, 'brunavarnir'], [/^Greining fasteignar/, 'um'],
+    [/^Viðhaldsáætlun/, 'yfirlit verkefni skodanir', '', 2], [/^Saga eignar/, 'skodanir', 'w2'], [/^Skoðana/, 'skodanir'],
+    [/^Skýrslur/, 'yfirlit skjol', '', 2], [/^Reikningar/, 'reikningar', 'w2'],
+    [/^(Rými og leigutakar|Lyklar|Orkumælar|Kostnaður|Um eignina)/, 'um']
+  ];
+  function secTab(el) {
+    if (el.classList.contains('dgrp')) return ['x', ''];
+    var h = el.querySelector('h4'); var t = h ? h.textContent.replace(/\s+/g, ' ').trim() : '';
+    for (var i = 0; i < SEC_TAB.length; i++) if (SEC_TAB[i][0].test(t)) return [SEC_TAB[i][1], SEC_TAB[i][2] || '', SEC_TAB[i][3] || 0];
+    return ['yfirlit', ''];
+  }
+  var drTab = 'yfirlit', drTabs = null;
+  function applyTab() {
+    var body = document.getElementById('dr-body'); if (!body) return;
+    Array.prototype.forEach.call(body.children, function (k) { if (!k.hasAttribute('data-v2t')) { var r = secTab(k); k.setAttribute('data-v2t', r[0]); if (r[1]) k.setAttribute('data-v2w', r[1]); if (r[2]) k.style.order = r[2]; } });
+    var have = {}; Array.prototype.forEach.call(body.children, function (k) { k.getAttribute('data-v2t').split(' ').forEach(function (t) { have[t] = (have[t] || 0) + 1; }); });
+    have.yfirlit = have.yfirlit || 1;
+    if (!have[drTab]) drTab = 'yfirlit';
+    body.setAttribute('data-v2tab', drTab);
+    var bar = document.getElementById('v2-dtabs');
+    if (!bar) {
+      bar = document.createElement('div'); bar.id = 'v2-dtabs'; bar.setAttribute('role', 'tablist');
+      var dr = document.getElementById('drawer'); dr.insertBefore(bar, body);
+      bar.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-t]'); if (!b) return;
+        drTab = b.getAttribute('data-t'); applyTab(); body.scrollTop = 0;
+      });
+    }
+    bar.innerHTML = TABS.filter(function (t) { return have[t[0]]; }).map(function (t) {
+      return '<button type="button" role="tab" data-t="' + t[0] + '" class="' + (t[0] === drTab ? 'on' : '') + '" aria-selected="' + (t[0] === drTab) + '">' + ic(TAB_IC[t[0]]) + '<span>' + t[1] + '</span></button>';
+    }).join('');
+  }
+  function drawerMeta() {
+    var g = G(), b = g && g.drB ? g.drB() : null, tt = document.querySelector('#drawer .dr-tt'); if (!tt) return;
+    var k = tt.querySelector('.kicker');
+    if (k && !k.querySelector('.v2-crumb')) { k.innerHTML = '<a href="#" class="v2-crumb">Eignir</a><span class="v2-sep">›</span><span class="v2-crumb-n"></span>'; k.querySelector('.v2-crumb').addEventListener('click', function (e) { e.preventDefault(); if (g && g.closeDrawer) g.closeDrawer(); }); }
+    if (k) { var n = k.querySelector('.v2-crumb-n'); if (n) n.textContent = b && b.nafn ? b.nafn : ''; }
+    var m = tt.querySelector('.v2-meta'); if (!m) { m = document.createElement('div'); m.className = 'v2-meta'; tt.appendChild(m); }
+    var bits = [];
+    if (b) {
+      if (b.i_thjonustu === true) bits.push('<span class="v2-chip ok">Í þjónustu</span>');
+      else if (b.i_thjonustu === false) bits.push('<span class="v2-chip">Utan þjónustu</span>');
+      var tn = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }).length;
+      if (tn) bits.push('<span class="v2-chip">' + tn + (tn === 1 ? ' teikning' : ' teikningar') + '</span>');
+      if (b.eign && b.eign.einingar) bits.push('<span class="v2-chip">' + String(b.eign.einingar).replace(/[<>&]/g, '') + ' einingar</span>');
+    }
+    m.innerHTML = bits.join('');
+  }
+  function drawerPage() { drawerMeta(); applyTab(); }
+
   function watchDrawer() {
     var d = document.getElementById('drawer'); if (!d || d._v2) return; d._v2 = true;
-    new MutationObserver(function () { if (on() && !d.classList.contains('hidden')) drawerBanner(); }).observe(d, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(function () { if (on() && !d.classList.contains('hidden')) { drTab = 'yfirlit'; drawerBanner(); drawerPage(); } }).observe(d, { attributes: true, attributeFilter: ['class'] });
+    var db = document.getElementById('dr-body'), rq = 0;
+    if (db) new MutationObserver(function () { if (!on() || rq) return; rq = requestAnimationFrame(function () { rq = 0; if (!d.classList.contains('hidden')) applyTab(); }); }).observe(db, { childList: true });
+    /* nav/efsta stika lokar eignasíðunni — hún liggur ofan á efnissvæðinu en ekki ofan á valmyndinni */
+    document.addEventListener('click', function (e) { if (on() && !d.classList.contains('hidden') && e.target.closest && e.target.closest('#v2-top a, #v2-top button, #portal header nav a.tab')) { var g = G(); if (g && g.closeDrawer) g.closeDrawer(); } }, true);
     var nm = document.getElementById('dr-name');
-    if (nm) new MutationObserver(function () { if (on()) drawerBanner(); }).observe(nm, { childList: true, characterData: true, subtree: true });
+    if (nm) new MutationObserver(function () { if (on()) { drawerBanner(); drawerMeta(); } }).observe(nm, { childList: true, characterData: true, subtree: true });
   }
 
   function start() {
