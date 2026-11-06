@@ -233,3 +233,21 @@ html[data-theme="premium"] #drawer #dr-body>.dsec:not([data-v2w~="bare"])>h4:aft
 html[data-theme="premium"] #drawer #dr-body>.dsec:not([data-v2w~="bare"])>h4 .cnt{margin-left:auto;color:var(--v2-on-navy-muted);font:500 12px/1 Poppins,system-ui,sans-serif;letter-spacing:0}
 html[data-theme="premium"] #drawer #dr-body>.dsec:not([data-v2w~="bare"])>:not(h4){margin:16px 18px}
 @media (max-width:899px){html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]{display:block}html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>.dsec{margin:0 0 18px}}
+
+/* ── Brunavarnir-flipinn: röð, tölur efst, samanbrot ──────────────────────────────────────────────── */
+html[data-theme="premium"] #drawer #dr-body:not([data-v2tab="yfirlit"]){display:flex;flex-direction:column;gap:18px}
+html[data-theme="premium"] #drawer #dr-body:not([data-v2tab="yfirlit"])>*{flex:none;margin:0!important}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="kpi"]{order:0}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="bun"]{order:1}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="kerfi"]{order:2}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="bgr"]{order:3}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="gt"]{order:4}
+html[data-theme="premium"] #drawer .v2-bvk{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+html[data-theme="premium"] #drawer .v2-kt{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:14px;background:#fff;box-shadow:var(--v2-card)}
+html[data-theme="premium"] #drawer .v2-kt span{font:600 11px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--v2-ink-2)}
+html[data-theme="premium"] #drawer .v2-kt b{font:700 28px/1.1 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .dsec[data-v2f]>h4{cursor:pointer;user-select:none}
+html[data-theme="premium"] #drawer .dsec[data-v2f]>h4:after{content:"";display:block!important;margin-left:12px;width:9px;height:9px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(45deg);transition:transform .15s;flex:none;background:none;position:static;height:9px}
+html[data-theme="premium"] #drawer .dsec[data-v2f]:not(.v2-fold)>h4:after{transform:rotate(225deg)}
+html[data-theme="premium"] #drawer .dsec.v2-fold>:not(h4){display:none!important}
+html[data-theme="premium"] #drawer .dsec.v2-fold>h4{border-radius:14px}

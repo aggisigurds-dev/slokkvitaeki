@@ -208,8 +208,8 @@
   var TAB_IC = { yfirlit: 'house', brunavarnir: 'flame', teikningar: 'layers', verkefni: 'wrench', skodanir: 'shield', skjol: 'book', reikningar: 'receipt', um: 'chart' };
   var SEC_TAB = [
     [/^Yfirlit/, 'yfirlit', 'w2 bare', 1], [/^Erindi/, 'yfirlit verkefni', 'w2 bare', 4], [/^Eldvarnabók/, 'yfirlit skodanir', '', 2],
-    [/^Teikningar/, 'yfirlit teikningar', 'w2', 3], [/^Búnaðargreining/, 'brunavarnir', 'w2'], [/^Búnaður/, 'brunavarnir', 'w2'],
-    [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2'], [/^Greining teikninga/, 'brunavarnir'], [/^Greining fasteignar/, 'um'],
+    [/^Teikningar/, 'yfirlit teikningar', 'w2', 3], [/^Búnaðargreining/, 'brunavarnir', 'w2', 0, 'bgr'], [/^Búnaður/, 'brunavarnir', 'w2', 0, 'bun'],
+    [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2', 0, 'kerfi'], [/^Greining teikninga/, 'brunavarnir', '', 0, 'gt'], [/^Greining fasteignar/, 'um'],
     [/^Viðhaldsáætlun/, 'yfirlit verkefni skodanir', '', 2], [/^Saga eignar/, 'skodanir', 'w2'], [/^Skoðana/, 'skodanir'],
     [/^Skýrslur/, 'yfirlit skjol', '', 2], [/^Reikningar/, 'reikningar', 'w2'],
     [/^(Rými og leigutakar|Lyklar|Orkumælar|Kostnaður|Um eignina)/, 'um']
@@ -217,13 +217,41 @@
   function secTab(el) {
     if (el.classList.contains('dgrp')) return ['x', ''];
     var h = el.querySelector('h4'); var t = h ? h.textContent.replace(/\s+/g, ' ').trim() : '';
-    for (var i = 0; i < SEC_TAB.length; i++) if (SEC_TAB[i][0].test(t)) return [SEC_TAB[i][1], SEC_TAB[i][2] || '', SEC_TAB[i][3] || 0];
+    for (var i = 0; i < SEC_TAB.length; i++) if (SEC_TAB[i][0].test(t)) return [SEC_TAB[i][1], SEC_TAB[i][2] || '', SEC_TAB[i][3] || 0, SEC_TAB[i][4] || ''];
     return ['yfirlit', ''];
+  }
+
+  /* Brunavarnir-flipinn: tölurnar efst (úr sömu raungögnum og Yfirlit), þungu hlutarnir samanbrotnir, tækjalistinn opinn þegar hann er stuttur */
+  var FOLD = { bgr: 1, gt: 1 };
+  function bvExtras(body) {
+    var g = G(), b = g && g.drB ? g.drB() : null;
+    Array.prototype.forEach.call(body.querySelectorAll(':scope > [data-v2s]'), function (k) {
+      var sl = k.getAttribute('data-v2s');
+      if (FOLD[sl] && !k.hasAttribute('data-v2f')) {
+        k.setAttribute('data-v2f', '1'); k.classList.add('v2-fold');
+        var h = k.querySelector('h4'); if (h) { h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0'); h.addEventListener('click', function () { k.classList.toggle('v2-fold'); }); h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); k.classList.toggle('v2-fold'); } }); }
+      }
+      if (sl === 'bun' && !k.hasAttribute('data-v2o')) {
+        k.setAttribute('data-v2o', '1');
+        var d = k.querySelector('details.eq-fold'), n = d ? d.querySelectorAll('tbody tr').length : 0; if (d && n && n <= 30) d.open = true;
+      }
+    });
+    if (!b || body.querySelector(':scope > .v2-bvk')) return;
+    var tiles = [];
+    if (b.sl != null) tiles.push(['Slökkvitæki', b.sl]);
+    if (b.slo != null) tiles.push(['Brunaslöngur', b.slo]);
+    if (b.br) tiles.push(['Brunakerfi', b.bru_ein ? String(b.bru_ein) + ' einingar' : 'Já']);
+    var nt = (b.nt || '').split('|').filter(Boolean)[0];
+    if (nt) { var kv = nt.split(':'); kv.shift(); tiles.push(['Næsta skoðun', kv.join(':').trim()]); }
+    if (!tiles.length) return;
+    var el = document.createElement('div'); el.className = 'v2-bvk'; el.setAttribute('data-v2t', 'brunavarnir'); el.setAttribute('data-v2s', 'kpi');
+    el.innerHTML = tiles.map(function (t) { return '<div class="v2-kt"><span>' + t[0] + '</span><b>' + String(t[1]).replace(/[<>&]/g, '') + '</b></div>'; }).join('');
+    body.insertBefore(el, body.firstChild);
   }
   var drTab = 'yfirlit', drTabs = null;
   function applyTab() {
     var body = document.getElementById('dr-body'); if (!body) return;
-    Array.prototype.forEach.call(body.children, function (k) { if (!k.hasAttribute('data-v2t')) { var r = secTab(k); k.setAttribute('data-v2t', r[0]); if (r[1]) k.setAttribute('data-v2w', r[1]); if (r[2]) k.style.order = r[2]; } });
+    Array.prototype.forEach.call(body.children, function (k) { if (!k.hasAttribute('data-v2t')) { var r = secTab(k); k.setAttribute('data-v2t', r[0]); if (r[1]) k.setAttribute('data-v2w', r[1]); if (r[2]) k.style.order = r[2]; if (r[3]) k.setAttribute('data-v2s', r[3]); } });
     var have = {}; Array.prototype.forEach.call(body.children, function (k) { k.getAttribute('data-v2t').split(' ').forEach(function (t) { have[t] = (have[t] || 0) + 1; }); });
     have.yfirlit = have.yfirlit || 1;
     if (!have[drTab]) drTab = 'yfirlit';
@@ -237,6 +265,7 @@
         drTab = b.getAttribute('data-t'); applyTab(); body.scrollTop = 0;
       });
     }
+    bvExtras(body);
     bar.innerHTML = TABS.filter(function (t) { return have[t[0]]; }).map(function (t) {
       return '<button type="button" role="tab" data-t="' + t[0] + '" class="' + (t[0] === drTab ? 'on' : '') + '" aria-selected="' + (t[0] === drTab) + '">' + ic(TAB_IC[t[0]]) + '<span>' + t[1] + '</span></button>';
     }).join('');
