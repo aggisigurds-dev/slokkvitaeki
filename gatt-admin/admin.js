@@ -114,10 +114,47 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.error) { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">' + esc(d.error) + '</td></tr>'; return; }
-        state.access = d.access || []; state.messages = d.messages || []; state.mal = d.mal || []; state.verk = d.verk || []; state.notendur = d.notendur || []; state.stadir = d.stadir || [];
-        renderStats(); renderAccess(); renderMessages(); renderVerk();
+        state.access = d.access || []; state.messages = d.messages || []; state.mal = d.mal || []; state.verk = d.verk || []; state.notendur = d.notendur || []; state.stadir = d.stadir || []; state.banner = d.banner || null;
+        renderBanner(); renderStats(); renderAccess(); renderMessages(); renderVerk();
       })
       .catch(function () { $('#accBody').innerHTML = '<tr><td colspan="5" class="empty">Villa við að sækja gögn</td></tr>'; });
+  }
+
+  // ── Aðalbanner gáttarinnar (06.11.2026): ein sameiginleg mynd, vistuð á þjóninn (app_kv gatt_banner) ──
+  function minnkaMynd(file) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var s = Math.min(1, 2400 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        res({ data: c.toDataURL('image/jpeg', 0.86), w: c.width, h: c.height });
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Myndin opnaðist ekki')); };
+      img.src = url;
+    });
+  }
+  function renderBanner() {
+    var el = $('#bannerPanel'); if (!el) return;
+    var b = state.banner, src = b ? b.url : '/gatt/myndir/brunaholf/hetja-bygging-v2.webp';
+    el.innerHTML = '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px">' +
+      '<div id="bannerPrev" style="width:300px;max-width:100%;aspect-ratio:16/5;border-radius:8px;border:1px solid var(--line2);background:#0a2a55 center/cover no-repeat"></div>' +
+      '<div style="flex:1;min-width:200px"><div style="font-weight:600;margin-bottom:4px">' + (b ? 'Sérvalin mynd' + (b.at ? ' · vistuð ' + fmtDate(b.at) : '') : 'Sjálfgefin mynd (Brunahólf V2)') + '</div>' +
+      '<div style="font-size:12px;opacity:.75;margin-bottom:10px">JPEG, PNG eða WebP. Best: breið mynd, björt til hægri — texti liggur yfir vinstri hlutanum.</div>' +
+      '<button class="btn btn--accent" id="bannerVelja">Velja mynd</button> ' +
+      (b ? '<button class="btn" id="bannerSjalfgefin">Nota sjálfgefna</button>' : '') +
+      '<input type="file" id="bannerFile" accept="image/jpeg,image/png,image/webp" hidden></div></div>';
+    $('#bannerPrev').style.backgroundImage = 'url("' + src.replace(/"/g, '%22') + '")';
+    $('#bannerVelja').onclick = function () { $('#bannerFile').click(); };
+    $('#bannerFile').onchange = function () { var f = this.files && this.files[0]; this.value = ''; if (!f) return; minnkaMynd(f).then(vistaBanner).catch(function (e) { toast(e.message || 'Myndin opnaðist ekki'); }); };
+    var sj = $('#bannerSjalfgefin'); if (sj) sj.onclick = function () { vistaBanner(null); };
+  }
+  function vistaBanner(m) {
+    var btn = $('#bannerVelja'); if (btn) { btn.disabled = true; btn.textContent = 'Vista…'; }
+    api({ action: 'banner-global', mynd: m ? m.data : null, mynd_w: m ? m.w : null, mynd_h: m ? m.h : null }).then(function (j) {
+      if (!j || !j.ok) { toast((j && j.error) || 'Myndin vistaðist ekki'); renderBanner(); return; }
+      state.banner = j.banner || null; renderBanner(); toast(m ? 'Aðalbanner vistaður — sést hjá öllum' : 'Sjálfgefin mynd tekin aftur');
+    }).catch(function () { toast('Vistun mistókst — netvilla'); renderBanner(); });
   }
 
   function statusOf(a) {

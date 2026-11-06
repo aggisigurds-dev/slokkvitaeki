@@ -130,7 +130,13 @@
   P.undo = '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>';
   function G() { return window.Gatt || null; }
   function cssUrl(u) { return 'url("' + String(u).replace(/"/g, '%22') + '")'; }
-  function bannerOf(b) { var e = b && b.eign; return (e && (e.banner_url || e.mynd)) || DEFAULT_BANNER; }
+  function globalUrl() { var g = G(), d = g && g.state && g.state.data; return (d && d.banner_global_url) || null; }
+  /* Aðalbanner allra gátta (valinn í stjórnborðinu, sameiginlegur) — fellur á sjálfgefnu V2-myndina */
+  function applyGlobal() {
+    var u = globalUrl();
+    if (u) root.style.setProperty('--v2-hero-img', cssUrl(u)); else root.style.removeProperty('--v2-hero-img');
+  }
+  function bannerOf(b) { var e = b && b.eign; return (e && (e.banner_url || e.mynd)) || globalUrl() || DEFAULT_BANNER; }
   function drawerBanner() {
     var head = document.querySelector('#drawer .dr-head'); if (!head) return;
     var g = G(), b = g && g.drB ? g.drB() : null;
@@ -196,7 +202,7 @@
 
   function start() {
     if (!on()) return;
-    buildTopbar(); sidebarIcons(); heroes(); watchDrawer(); sync();
+    applyGlobal(); buildTopbar(); sidebarIcons(); heroes(); watchDrawer(); sync();
   }
 
   /* Vaktir: aðeins þema-eigindin á <html> og flipar hliðarstikunnar (class + badge-texti) — ekki allt skjalið */

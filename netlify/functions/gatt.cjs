@@ -1508,7 +1508,9 @@ exports.handler = async (event) => {
       }
     } catch (_) {}
 
+    const bannerG = await M.globalBanner(3600);
     return P.json(200, {
+      banner_global_url: bannerG ? bannerG.url : null,
       serkjor,
       account: { name: name || '', base_id: Number(baseId), theme: theme, open: openMode, netfang: session ? (session.email || '') : '', details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },

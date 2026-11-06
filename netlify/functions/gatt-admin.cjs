@@ -126,7 +126,9 @@ exports.handler = async (event) => {
       if (bases.length) { const sr = await P.sbGet(`fyrirtaeki?customer_base_id=in.(${bases.join(',')})&deleted_at=is.null&select=id,customer_base_id,nafn,heimilisfang,er_i_thjonustu&order=nafn`); if (sr.ok) stadir = await sr.json(); }
       const names = await baseNames([...access.map((a) => a.base_id), ...messages.map((m) => m.base_id), ...verk.map((v) => v.base_id), ...mal.map((m) => m.customer_base_id)]);
       verk.forEach((v) => { v.base_nafn = (names[v.base_id] || {}).nafn || ('#' + v.base_id); });
+      const bannerG = await M.globalBanner(3600);
       return P.json(200, {
+        banner: bannerG ? { url: bannerG.url, at: bannerG.at, af: bannerG.af } : null,
         access: access.map((a) => Object.assign(pubRow(a), { base_nafn: (names[a.base_id] || {}).nafn || ('#' + a.base_id) })),
         messages: messages.map((m) => ({ id: m.id, base_id: m.base_id, base_nafn: (names[m.base_id] || {}).nafn || ('#' + m.base_id),
           sender: m.sender, body: m.body, author_name: m.author_name, created_at: m.created_at, read_by_staff: m.read_by_staff })),
@@ -139,6 +141,21 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST only' });
     let body; try { body = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
     const action = body.action;
+
+    // Aðalbanner gáttarinnar — sameiginlegur öllum kúnnum. mynd = data-URL (JPEG/PNG/WebP, ≤ 6 MB) eða null = sjálfgefin mynd.
+    if (action === 'banner-global') {
+      let value = {};
+      if (body.mynd) {
+        const m = M.lesaDataUrl(body.mynd, 6 * 1024 * 1024);
+        if (!m || !/^image\//.test(m.mime)) return P.json(400, { error: 'Myndin er ekki á studdu sniði (JPEG/PNG/WebP, mest 6 MB)' });
+        const path = `banner-global/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${m.ext}`;
+        if (!(await M.hlada(path, m.buf, m.mime))) return P.json(502, { error: 'Myndin vistaðist ekki' });
+        value = { path, w: +body.mynd_w || null, h: +body.mynd_h || null, at: new Date().toISOString(), af: 'stjórnborð' };
+      }
+      if (!(await M.skrifaGlobalBanner(value))) return P.json(502, { error: 'Vistun mistókst' });
+      const g = await M.globalBanner(3600);
+      return P.json(200, { ok: true, banner: g ? { url: g.url, at: g.at, af: g.af } : null });
+    }
 
     if (action === 'create') {
       const baseId = parseInt(body.base_id, 10);

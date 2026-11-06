@@ -67,4 +67,27 @@ function nafnOruggt(s) {
   return String(s || 'skjal').normalize('NFC').replace(/[^\p{L}\p{N} ._-]+/gu, '_').replace(/\s+/g, ' ').trim().slice(0, 80) || 'skjal';
 }
 
-module.exports = { BUCKET, MIME, lesaDataUrl, hlada, eyda, undirrita, nafnOruggt };
+
+// ── Aðalbanner þjónustugáttarinnar (06.11.2026, Agnar: „breyta um aðalbannerinn sem sést þá hjá öllum") ──
+// EIN sameiginleg stilling á þjóninum: app_kv['gatt_banner'] = { path, w, h, at, af } + myndin í bucketinu gatt undir
+// banner-global/. Sýnileg öllum gáttum (gatt.cjs undirritar við hverja GET); aðeins stjórnborðið skrifar (requireStaff).
+async function globalBanner(sek) {
+  try {
+    const r = await P.sbGet('app_kv?key=eq.gatt_banner&select=value&limit=1');
+    if (!r.ok) return null;
+    const v = ((await r.json())[0] || {}).value;
+    if (!v || !v.path) return null;
+    const u = (await undirrita([v.path], sek || 3600))[v.path];
+    return u ? { url: u, path: v.path, at: v.at || null, af: v.af || null } : null;
+  } catch (_) { return null; }
+}
+async function skrifaGlobalBanner(value) {
+  const r = await fetch(`${P.SUPABASE_URL}/rest/v1/app_kv?on_conflict=key`, {
+    method: 'POST',
+    headers: { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ key: 'gatt_banner', value: value || {}, updated_at: new Date().toISOString() }),
+  });
+  return r.ok;
+}
+
+module.exports = { BUCKET, MIME, lesaDataUrl, hlada, eyda, undirrita, nafnOruggt, globalBanner, skrifaGlobalBanner };
