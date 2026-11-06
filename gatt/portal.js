@@ -70,7 +70,7 @@
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {
-    account: { name: 'Center Hótel', theme: 'blar' },
+    account: { name: 'Center Hótel', theme: 'premium' },
     stats: [
       { k: 'Byggingar', v: '10' }, { k: 'Slökkvitæki', v: '155' }, { k: 'Brunaslöngur', v: '77' },
       { k: 'Brunakerfi', v: '9', s: 'hús' }, { k: 'Skoðun á tíma', v: '1', s: 'hús', dark: true },
@@ -81,8 +81,8 @@
       { nafn: 'Hlaðvarpinn', heimilisfang: 'Aðalstræti 4, 101 Reykjavík', sl: null, slo: null, br: false, y: [['no', 'no'], ['no', 'no'], ['no', 'no'], ['no', 'no']], nt: 'Tæki: —' },
       { nafn: 'Klöpp', heimilisfang: 'Klapparstígur 26, 101 Reykjavík', sl: 18, slo: 10, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: nóvember 2026' },
       { nafn: 'Laugavegur', heimilisfang: 'Laugavegur 95–99, 101 Reykjavík', sl: 15, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: ágúst 2027|Kerfi: september 2026' },
-      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026' },
-      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026' },
+      { nafn: 'Miðgarður', heimilisfang: 'Laugavegur 120, 101 Reykjavík', sl: 31, slo: null, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['no', 'ok'], ['ok', 'no']], nt: 'Tæki: september 2027|Kerfi: september 2026', eign: { mynd: '/gatt/myndir/center-hotel/midgardur-kvold.jpg' } },
+      { nafn: 'Plaza', heimilisfang: 'Aðalstræti 4–6, 101 Reykjavík', sl: 44, slo: 39, br: true, y: [['ok', 'no'], ['ok', 'ok'], ['ok', 'ok'], ['no', 'no']], nt: 'Tæki: ágúst 2026|Kerfi: desember 2026', eign: { mynd: '/gatt/myndir/center-hotel/plaza-kvold.jpg' } },
       { nafn: 'Skjaldbreið', heimilisfang: 'Laugavegur 16, 101 Reykjavík', sl: 3, slo: null, br: true, y: [['no', 'ok'], ['ok', 'ok'], ['ok', 'ok'], ['ok', 'no']], nt: 'Tæki: júlí 2027|Kerfi: september 2026' },
     ],
     reports: [
@@ -429,11 +429,72 @@
       .catch(function () { $('#lerr').textContent = 'Villa við innskráningu. Reyndu aftur.'; });
   });
 
+  /* Eigin húsmyndir — aðeins byggingar sem við eigum mynd af, aldrei lager/Unsplash. */
+  var HAUS_MYND = '/gatt/myndir/brunaholf/husasolsetur.jpg';
+  var EIGN_MYND_EIGIN = {
+    'Plaza': '/gatt/myndir/center-hotel/plaza-kvold.jpg',
+    'Grandi': '/gatt/myndir/center-hotel/grandi-kvold.jpg',
+    'Laugavegur': '/gatt/myndir/center-hotel/laugavegur-kvold.jpg',
+    'Miðgarður': '/gatt/myndir/center-hotel/midgardur-kvold.jpg',
+    'Arnarhvoll': '/gatt/myndir/center-hotel/arnarhvoll-kvold.jpg',
+    'Klöpp': '/gatt/myndir/center-hotel/klopp-kvold.jpg',
+    'Skjaldbreið': '/gatt/myndir/center-hotel/skjaldbreid-kvold.jpg',
+    'Þingholt Apartments': '/gatt/myndir/center-hotel/thingholt-apt-kvold.jpg',
+    'Pingholt Apartments': '/gatt/myndir/center-hotel/thingholt-apt-kvold.jpg',
+    'Þingholt': '/gatt/myndir/center-hotel/thingholt-kvold.jpg',
+    'Pingholt': '/gatt/myndir/center-hotel/thingholt-kvold.jpg'
+  };
+  function eignMyndAfNafni(nafn) {
+    var n = String(nafn || '').trim();
+    if (!n) return '';
+    if (EIGN_MYND_EIGIN[n]) return EIGN_MYND_EIGIN[n];
+    var keys = Object.keys(EIGN_MYND_EIGIN).sort(function (a, b) { return b.length - a.length; });
+    var nl = n.toLowerCase();
+    for (var i = 0; i < keys.length; i++) {
+      if (nl.indexOf(keys[i].toLowerCase()) !== -1) return EIGN_MYND_EIGIN[keys[i]];
+    }
+    return '';
+  }
+  function eignMyndSlod(b) {
+    if (!b) return '';
+    var mapped = eignMyndAfNafni(b.nafn);
+    if (mapped) return mapped;
+    var m = b.eign && b.eign.mynd;
+    if (m && /unsplash/i.test(m)) return '';
+    return m || '';
+  }
+  function festuEignMyndir(data) {
+    if (!data) return;
+    (data.buildings || []).concat(data.eignir_utan || []).forEach(function (b) {
+      var m = eignMyndAfNafni(b && b.nafn);
+      if (!m) return;
+      b.eign = b.eign || {};
+      b.eign.mynd = m;
+    });
+  }
+  function setjaAccountPhoto(data) {
+    var photos = (data.buildings || []).map(function (b) { return b && b.eign && b.eign.mynd; }).filter(Boolean);
+    var pick = HAUS_MYND || photos[0] || '';
+    document.documentElement.style.setProperty('--premium-account-photo', pick ? 'url("' + imgW(pick, 1800).replace(/"/g, '%22') + '")' : 'none');
+    document.documentElement.classList.toggle('has-account-photo', !!pick);
+  }
+  function myndAfNafni(nafn) {
+    var L = (state.data && state.data.buildings) || [];
+    for (var i = 0; i < L.length; i++) if (L[i].nafn === nafn) return eignMyndSlod(L[i]);
+    return eignMyndAfNafni(nafn);
+  }
+  function eignaReitur(nafn, addr) {
+    var m = myndAfNafni(nafn);
+    return '<div class="bcell">' + (m ? '<span class="bic ph" style="background-image:url(\'' + esc(imgW(m, 360)) + '\')"></span>' : '<span class="bic">' + svgIc('Byggingar') + '</span>') + '<div><div class="bname">' + esc(nafn || '—') + '</div>' + (addr ? '<div class="baddr">' + esc(addr) + '</div>' : '') + '</div></div>';
+  }
+
   /* ── PORTAL ── */
   function renderPortal(data) {
     state.data = data;
     hledurFela();
-    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'blar');
+    document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'premium');
+    festuEignMyndir(data);
+    setjaAccountPhoto(data);
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
     var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
@@ -441,6 +502,8 @@
     var d = new Date();
     var today = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
+    var yfOv = document.querySelector('#v-yfirlit .premium-overline');
+    if (yfOv) yfOv.textContent = 'Staða brunavarna · uppfært ' + today;
     if (data.account && data.account.name) $('#htag').innerHTML = 'Þjónustuvefur · <b>' + esc(data.account.name) + '</b>';
     renderCards(data.stats);
     renderYfirlit(data.buildings);
@@ -456,6 +519,7 @@
     } catch (_) {}
     renderChips('#sk-chips', data.reports, renderSkyrslur);
     renderChips('#re-chips', data.invoices, renderReikningar);
+    renderSkKpis();
     renderSkyrslur('');
     renderReikningar('');
     renderEignasafn();
@@ -466,6 +530,7 @@
     renderMessages(data.messages);
     renderSerkjor();
     wireNav();
+    if (window.PremiumShell) window.PremiumShell.sync();
     // 27.10.2026: ?flipi=<view> opnar flipa beint (bæklingur, póstar, skjámyndir) — aðeins sýnilega flipa
     try {
       var fl = new URLSearchParams(location.search).get('flipi');
@@ -620,8 +685,13 @@
   function renderMessages(msgs) {
     msgs = msgs || [];
     var box = $('#msg-thread');
-    if (!msgs.length) { box.innerHTML = '<div class="msg-empty">Engin skilaboð enn. Sendu okkur fyrirspurn hér að neðan.</div>'; }
-    else {
+    var empty = $('#msg-empty');
+    if (!msgs.length) {
+      if (box) box.innerHTML = '';
+      if (empty) empty.classList.remove('hidden');
+    } else {
+      if (empty) empty.classList.add('hidden');
+      if (!box) return;
       box.innerHTML = msgs.map(function (m) {
         var who = m.sender === 'kunni' ? (m.author_name || 'Þú') : 'Slökkvitæki ehf.';
         return '<div class="msg-bubble ' + (m.sender === 'kunni' ? 'kunni' : 'starf') + '">' +
@@ -709,11 +779,29 @@
     });
   }
 
+  function renderSkKpis() {
+    var box = $('#sk-kpis'); if (!box) return;
+    var rows = (state.data && state.data.reports) || [];
+    var byggingar = {}, ar = {};
+    var medSkjali = 0;
+    rows.forEach(function (r) {
+      if (r.bygging) byggingar[r.bygging] = 1;
+      var y = r.ar || (r.dags && String(r.dags).slice(0, 4));
+      if (y) ar[y] = 1;
+      if (r.docId || state.demo) medSkjali++;
+    });
+    box.innerHTML =
+      '<div class="sk-kpi"><div class="k">Úttektarskýrslur alls</div><div class="v">' + rows.length + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Byggingar</div><div class="v">' + Object.keys(byggingar).length + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Með skjali</div><div class="v">' + medSkjali + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Ár</div><div class="v">' + Object.keys(ar).length + '</div></div>';
+  }
+
   function renderSkyrslur(filter) {
     var rows = (state.data.reports || []).filter(function (r) { return !filter || r.bygging === filter; });
     $('#sk-body').innerHTML = rows.map(function (r) {
       return '<tr><td class="num">' + esc(skManTxt(r)) + '</td>' +
-        '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
+        '<td>' + eignaReitur(r.bygging) + '</td>' +
         '<td class="dim">' + (r.heimilisfang ? esc(r.heimilisfang) : '<span class="dim">—</span>') + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="num">' + (r.magn != null ? esc(r.magn) + ' <span class="dim">' + esc(r.eining || 'tæki') + '</span>' : '<span class="dim">—</span>') + '</td>' +
@@ -739,7 +827,7 @@
     $('#re-body').innerHTML = rows.map(function (r) {
       return '<tr><td class="kt">' + esc(r.nr || '—') + '</td>' +
         '<td class="num">' + esc(fmtDate(r.dags)) + '</td>' +
-        '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
+        '<td>' + eignaReitur(r.bygging) + '</td>' +
         '<td>' + tegundPilla(r.tegund) + '</td>' +
         '<td class="dim">' + esc(r.lysing || '') + '</td>' +
         '<td class="r num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td>' +
@@ -990,6 +1078,7 @@
   function goView(v) {
     document.querySelectorAll('nav .tab').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-view') === v); });
     VIEWS.forEach(function (name) { $('#v-' + name).classList.toggle('hidden', name !== v); });
+    if (window.PremiumShell) window.PremiumShell.sync();
   }
   // „Skjöl" á Yfirliti → Skýrslur síaðar á þá byggingu (smellir á sama flís og notandinn myndi gera).
   document.addEventListener('click', function (e) {
@@ -1009,6 +1098,7 @@
         VIEWS.forEach(function (name) {
           $('#v-' + name).classList.toggle('hidden', name !== v);
         });
+        if (window.PremiumShell) window.PremiumShell.sync();
       };
     });
     $('#logoutBtn').onclick = function () {
@@ -1064,8 +1154,106 @@
     Object.keys(SYN_DEF).forEach(function (k) { s[k] = (a.syn && typeof a.syn[k] === 'boolean' ? a.syn[k] : SYN_DEF[k]) && SYN_TILBUID[k]; });
     return s;
   }
-  var drOpen = -1, drB = null;
+  var drOpen = -1, drB = null, drTab = 'yfirlit';
   function bldgAt(i) { return ((state.data && state.data.buildings) || [])[i] || null; }
+
+  function drFlokkur(el) {
+    var h = el.querySelector && el.querySelector(':scope > h4');
+    var t = ((h && h.textContent) || el.textContent || '').trim().toLowerCase();
+    if (t.indexOf('yfirlit') === 0 || t.indexOf('grunnuppl') === 0 || t.indexOf('um eignina') === 0) return 'yfirlit';
+    if (t.indexOf('búnaðargreining') > -1) return 'teikningar';
+    if (t.indexOf('teikning') > -1) return 'teikningar';
+    if (t.indexOf('reikning') > -1) return 'reikningar';
+    if (t.indexOf('skýrsl') > -1 || t.indexOf('skjöl') > -1 || t.indexOf('skírteini') > -1 || t.indexOf('skirteini') > -1) return 'skjol';
+    if (t.indexOf('erindi') > -1 || t.indexOf('verkefn') > -1 || t.indexOf('kostnað') > -1) return 'verkefni';
+    if (t.indexOf('skoðun') > -1 || t.indexOf('saga') > -1 || t.indexOf('viðhald') > -1) return 'skodanir';
+    if (t.indexOf('búnað') > -1 || t.indexOf('eldvarn') > -1 || t.indexOf('slökkvi') > -1 || t.indexOf('bruna') > -1) return 'brunavarnir';
+    return 'taekni';
+  }
+
+  function drHoppN(key) {
+    var b = drB; if (!b) return '';
+    if (key === 'brunavarnir') return (b.kerfi || []).length ? (b.kerfi.length + ' kerfi') : '';
+    if (key === 'teikningar') return (b.teikning || []).length ? (b.teikning.length + (b.teikning.length === 1 ? ' teikning' : ' teikningar')) : '';
+    if (key === 'verkefni') {
+      var n = erindiEignar(b).length;
+      return n ? n + (n === 1 ? ' erindi' : ' erindi') : '';
+    }
+    if (key === 'skodanir') {
+      var s = skodanirEignar(b).length;
+      return s ? s + (s === 1 ? ' skoðun' : ' skoðanir') : '';
+    }
+    if (key === 'skjol') {
+      var r = ((state.data && state.data.reports) || []).filter(function (x) { return x.bygging === b.nafn; }).length;
+      return r ? r + (r === 1 ? ' skýrsla' : ' skýrslur') : '';
+    }
+    if (key === 'reikningar') {
+      var i = ((state.data && state.data.invoices) || []).filter(function (x) { return x.bygging === b.nafn; }).length;
+      return i ? i + (i === 1 ? ' reikningur' : ' reikningar') : '';
+    }
+    return '';
+  }
+
+  function drMerkja() {
+    var body = $('#dr-body'); if (!body) return;
+    body.querySelectorAll(':scope > .dsec, :scope > .dgrp').forEach(function (el) {
+      el.setAttribute('data-dr-group', drFlokkur(el));
+    });
+    var hopp = [
+      ['brunavarnir', 'Brunavarnir', 'Búnaður, viðhald, þjónusta og úrbætur'],
+      ['teikningar', 'Teikningar', 'Grunnmyndir, brunateikningar og kerfisteikningar'],
+      ['verkefni', 'Verkefni', 'Opin, í vinnslu og lokið'],
+      ['skodanir', 'Skoðanir', 'Skoðunarsaga, úrbætur og næstu dagsetningar'],
+      ['skjol', 'Skjöl', 'Skýrslur, vottorð og aðrar skrár'],
+      ['reikningar', 'Reikningar', 'Þjónusta, viðhald og tengdur kostnaður']
+    ];
+    var nav = document.createElement('div');
+    nav.className = 'dr-hopp';
+    nav.setAttribute('data-dr-group', 'yfirlit');
+    nav.innerHTML = hopp.map(function (h) {
+      var n = drHoppN(h[0]);
+      return '<button type="button" class="dr-hopp-b" data-dr-tab="' + h[0] + '"><b>' + h[1] + '</b><span>' + h[2] + '</span>' + (n ? '<i>' + esc(n) + '</i>' : '') + '</button>';
+    }).join('');
+    body.appendChild(nav);
+    var tech = document.createElement('button');
+    tech.type = 'button'; tech.className = 'dr-tech-open'; tech.setAttribute('data-dr-tab', 'taekni');
+    tech.innerHTML = '<b>Tæknilegar upplýsingar</b><span>Byggingarlýsing, kerfi og aðrar varðveittar upplýsingar</span><i aria-hidden="true">›</i>';
+    body.appendChild(tech);
+    var empty = document.createElement('div');
+    empty.className = 'dr-empty hidden'; empty.textContent = 'Engin gögn eru skráð í þessum hluta.';
+    body.appendChild(empty);
+  }
+
+  function drVeljaTab(tab) {
+    var leyfilegt = ['yfirlit', 'brunavarnir', 'teikningar', 'verkefni', 'skodanir', 'skjol', 'reikningar', 'taekni'];
+    drTab = leyfilegt.indexOf(tab) > -1 ? tab : 'yfirlit';
+    var drawer = $('#drawer'); if (drawer) drawer.setAttribute('data-dr-active', drTab);
+    document.querySelectorAll('#drawer [data-dr-tab]').forEach(function (b) {
+      var on = b.getAttribute('data-dr-tab') === drTab;
+      b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    var items = Array.prototype.slice.call(document.querySelectorAll('#dr-body > [data-dr-group]'));
+    var synileg = 0, sed = {};
+    items.forEach(function (el) {
+      var group = el.getAttribute('data-dr-group');
+      var hopp = el.classList.contains('dr-hopp');
+      var show;
+      if (drTab === 'yfirlit') {
+        if (group === 'taekni') show = false;
+        else if (group === 'yfirlit' || hopp) show = true;
+        else if (!sed[group]) { sed[group] = true; show = true; }
+        else show = false;
+      } else show = group === drTab && !hopp;
+      if (show) synileg++;
+      el.classList.toggle('hidden', !show);
+      el.classList.toggle('dr-preview', drTab === 'yfirlit' && show && group !== 'yfirlit' && !hopp);
+    });
+    var tech = document.querySelector('#dr-body > .dr-tech-open');
+    if (tech) tech.classList.toggle('hidden', drTab !== 'yfirlit' || !items.some(function (el) { return el.getAttribute('data-dr-group') === 'taekni'; }));
+    var empty = document.querySelector('#dr-body > .dr-empty');
+    if (empty) empty.classList.toggle('hidden', synileg > 0);
+    var body = $('#dr-body'); if (body) body.scrollTop = 0;
+  }
 
   // Myndir sóttar einu sinni á lotu (sama blað á oft margar hæðir)
   var myndir = {};
@@ -1335,11 +1523,13 @@
     // RÖÐ (Agnar 22.10): mikilvægast fyrst — tækjastaða (yfirlit), erindi + senda erindi, eldvarnabók → teikningar → slökkvitækjayfirlit (búnaður, saga, skýrslur) → GREININGAR neðst
     var segs = {}, nm = 'yfirlit';
     html.split(/\u0001(\w+)\u0001/).forEach(function (x, i) { if (i % 2) nm = x; else segs[nm] = (segs[nm] || '') + x; });
-    var ROD = ['yfirlit', 'erindi', 'eb', 'bgr', 'teikn', 'bunadur', 'sodsaga', 'skre', 'saga', 'skyrsla', 'vidhald', 'vidbot', 'um'];
+    var ROD = ['yfirlit', 'erindi', 'eb', 'teikn', 'bgr', 'bunadur', 'sodsaga', 'skre', 'saga', 'skyrsla', 'vidhald', 'vidbot', 'um'];
     var GREININGAR = ['grfast', 'kerfi', 'gf', 'thorf'];
     var grHtml = GREININGAR.map(function (k) { return segs[k] || ''; }).join('');
     html = ROD.map(function (k) { return segs[k] || ''; }).join('') + (grHtml.replace(/\s+/g, '') ? '<div class="dgrp">Greiningar</div>' + grHtml : '');
     $('#dr-body').innerHTML = html;
+    drMerkja();
+    drVeljaTab('yfirlit');
     if (window.GattGreining) GattGreining.lifga(b);
     if (window.GattBgr) GattBgr.lifga(b);
     var g = $('#dr-tk');
@@ -1484,6 +1674,12 @@
   };
   $('#dr-close').onclick = closeDrawer;
   $('#dr-scrim').onclick = closeDrawer;
+  $('#drawer').addEventListener('click', function (e) {
+    var tab = e.target.closest && e.target.closest('[data-dr-tab]');
+    if (!tab) return;
+    e.preventDefault();
+    drVeljaTab(tab.getAttribute('data-dr-tab'));
+  });
   document.querySelectorAll('[data-dr-erindi]').forEach(function (bt) {
     bt.onclick = function () { openErindiB(drB, bt.getAttribute('data-dr-erindi')); };
   });
@@ -1614,7 +1810,7 @@
   }
 
   function setjaHero(b) {
-    var head = $('#drawer .dr-head'), m = b && b.eign && b.eign.mynd;
+    var head = $('#drawer .dr-head'), m = eignMyndSlod(b);
     head.classList.toggle('hero', !!m);
     head.style.setProperty('--hero', m ? 'url("' + imgW(m, 1800).replace(/"/g, '%22') + '")' : 'none');
   }
@@ -1633,7 +1829,7 @@
     var tk = (syn.teikningar || syn.threed) ? (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }) : [];
     function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
     var html = (b.beidni ? '<div class="ebanner">' + svgIc('hak', 2) + '<div><b>Beiðni um þjónustu er móttekin</b><span>Við höfum samband til að skipuleggja fyrstu úttekt.</span></div></div>' : '') +
-      '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
+      '<section class="dsec"><h4>Grunnupplýsingar</h4><div class="dkpis k4">' +
         kp('Tegund', e.tegund, true) + kp('Stærð', e.staerd_m2 ? fmtTala(e.staerd_m2) + ' m²' : null) + kp('Byggt', e.byggingarar) + kp('Staða', b.beidni ? 'Beiðni í vinnslu' : 'Ekki í þjónustu', true) + '</div>' +
         (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') +
         (e.heimild ? '<div class="gnote">Mynd og lýsing: ' + esc(e.heimild) + '</div>' : '') + '</section>' +
@@ -1649,6 +1845,8 @@
         '<li><b>Allt á einum stað</b>Skýrslur, reikningar, teikningar og næsta skoðun birtast hér — og þið sendið verkbeiðnir beint.</li>' +
       '</ol></section>';
     $('#dr-body').innerHTML = html;
+    drMerkja();
+    drVeljaTab('yfirlit');
     if (window.GattGreining) GattGreining.lifga(b);
     var g = $('#dr-tk');
     if (g) {
@@ -1810,7 +2008,7 @@
     var m2 = e.staerd_m2 || f.m2, haedir = (b.teikning || []).length || f.haedir;
     if (!(e.tegund || f.tegund || m2 || e.byggingarar)) return '';
     function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
-    return '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
+    return '<section class="dsec"><h4>Grunnupplýsingar</h4><div class="dkpis k4">' +
       kp('Tegund', f.tegund || e.tegund, true) +
       kp('Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null, true) +
       kp('Stærð', m2 ? fmtTala(m2) + ' m²' : null) +

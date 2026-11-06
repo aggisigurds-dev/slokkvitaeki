@@ -154,7 +154,7 @@ exports.handler = async (event) => {
       const ex = await P.sbGet(`portal_users?slug=like.${encodeURIComponent(slug)}*&select=slug`);
       const taken = new Set((ex.ok ? await ex.json() : []).map((x) => x.slug));
       if (taken.has(slug)) { let n = 2; while (taken.has(slug + '-' + n)) n++; slug = slug + '-' + n; }
-      const ins = await P.sbPost('portal_users', { base_id: baseId, slug: slug, active: true, display_name: name });
+      const ins = await P.sbPost('portal_users', { base_id: baseId, slug: slug, active: true, display_name: name, theme: 'premium' });
       if (ins.status === 409) return P.json(409, { error: 'Vefur er þegar til fyrir þetta félag' });
       if (!ins.ok) return P.json(ins.status, { error: 'Gat ekki stofnað', detail: await ins.text() });
       const row = (await ins.json())[0];

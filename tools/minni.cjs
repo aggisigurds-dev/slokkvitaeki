@@ -200,7 +200,7 @@ function smida({ stadr, maelt, sott }) {
   p('Supabase er sannleikurinn; þessi skrá er dreifingin. Uppfærðu hana áður en');
   p('þú lokar lotu — annars sér næsta vél gamalt eintak.');
 
-  return L.join('\n') + '\n';
+  return L.map(s => String(s).replace(/[ \t]+$/g, '')).join('\n') + '\n';
 }
 
 const einlina = s => String(s == null ? '' : s).replace(/\s*\n\s*/g, ' ').trim();
