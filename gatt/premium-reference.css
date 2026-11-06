@@ -5,7 +5,7 @@ html[data-theme="premium"] #portal .premium-view-hero{
  background:#142640;color:#fff
 }
 html[data-theme="premium"] #portal .premium-view-photo{
- position:absolute;z-index:-2;inset:0;background-color:#1a304d;background-image:var(--premium-account-photo,none);background-position:center 56%;background-size:cover;background-repeat:no-repeat
+ position:absolute;z-index:-2;inset:0 0 0 28%;background-color:#1a304d;background-image:var(--premium-account-photo,none);background-position:center 56%;background-size:cover;background-repeat:no-repeat
 }
 html[data-theme="premium"] #portal .premium-view-hero:after{
  content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.78) 46%,rgba(20,38,64,.08) 100%)
@@ -14,6 +14,14 @@ html[data-theme="premium"] #portal .premium-view-copy{padding:30px clamp(20px,4v
 html[data-theme="premium"] #portal .premium-view-copy span{font:700 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#ffb38b}
 html[data-theme="premium"] #portal .premium-view-copy h2{margin:7px 0 4px;font:800 clamp(28px,3vw,42px)/1.05 Inter,system-ui,sans-serif;letter-spacing:-.04em}
 html[data-theme="premium"] #portal .premium-view-copy p{margin:0;max-width:560px;font:500 13px/1.55 Inter,system-ui,sans-serif;color:#e2eaf4}
+html[data-theme="premium"] #portal .premium-hero-marks{
+ position:absolute;z-index:4;right:18px;top:50%;transform:translateY(-46%);
+ display:flex;align-items:flex-end;gap:10px;pointer-events:none
+}
+html[data-theme="premium"] #portal .premium-hero-flame{
+ width:104px;height:136px;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(241,91,19,.5));transform:rotate(-8deg)
+}
+html[data-theme="premium"] #portal .premium-hero-shield{width:58px;height:58px;margin-bottom:18px;filter:drop-shadow(0 4px 10px rgba(6,19,35,.35))}
 html[data-theme="premium"] #portal .premium-serkjor-photo{background-image:var(--premium-account-photo,none);background-position:center 58%}
 html[data-theme="premium"] #portal .premium-serkjor-hero:after{background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.91) 43%,rgba(20,38,64,.2) 76%,rgba(20,38,64,.06) 100%)}
 html[data-theme="premium"] #portal .premium-serkjor-hero .kj-intro{max-width:660px;color:#f0f5fb}
@@ -91,13 +99,22 @@ html[data-theme="premium"] #portal .sidebar-flame img{display:block;width:100%;h
  html[data-theme="premium"] #portal #v-serkjor>.kicker,
  html[data-theme="premium"] #portal #v-serkjor>h2.page,
  html[data-theme="premium"] #portal #v-verkbeidnir>.kicker,
- html[data-theme="premium"] #portal #v-verkbeidnir>h2.page{display:none}
+ html[data-theme="premium"] #portal #v-verkbeidnir>h2.page,
+ html[data-theme="premium"] #portal #v-skyrslur>.kicker,
+ html[data-theme="premium"] #portal #v-skyrslur>h2.page,
+ html[data-theme="premium"] #portal #v-eldvarnabok>.kicker,
+ html[data-theme="premium"] #portal #v-eldvarnabok>h2.page,
+ html[data-theme="premium"] #portal #v-erindi>.kicker,
+ html[data-theme="premium"] #portal #v-erindi>h2.page,
+ html[data-theme="premium"] #portal #v-skilabod>.kicker,
+ html[data-theme="premium"] #portal #v-skilabod>h2.page{display:none}
  html[data-theme="premium"] #portal #v-vinnusvaedi .vs-haus{margin:0;padding:0 12px}
  html[data-theme="premium"] #portal #v-vinnusvaedi .vs-rond{position:relative;z-index:4;margin:-26px 8px 10px;padding:8px;border:0;border-radius:10px;background:rgba(255,255,255,.94);box-shadow:0 6px 20px rgba(10,33,56,.2)}
  html[data-theme="premium"] #portal #v-reikningar>.chips{position:relative;z-index:4;margin:-24px 8px 12px;padding:8px;border-radius:10px;background:rgba(255,255,255,.94);box-shadow:0 6px 20px rgba(10,33,56,.2)}
  html[data-theme="premium"] #portal #v-serkjor .premium-view-hero{height:238px;min-height:238px}
  html[data-theme="premium"] #portal #v-serkjor .premium-view-copy{padding-top:38px}
  html[data-theme="premium"] #portal #v-verkbeidnir .premium-view-hero{height:188px;min-height:188px}
+ html[data-theme="premium"] #portal #v-skyrslur>.chips{position:relative;z-index:4;margin:-24px 8px 12px;padding:8px;border-radius:10px;background:rgba(255,255,255,.94);box-shadow:0 6px 20px rgba(10,33,56,.2)}
  html[data-theme="premium"] #portal .vs-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
 }
 
@@ -130,7 +147,8 @@ html[data-theme="premium"] #portal .sidebar-flame img{display:block;width:100%;h
  html[data-theme="premium"] #portal #v-yfirlit{position:relative}
  html[data-theme="premium"] #portal .premium-hero,
  html[data-theme="premium"] #portal .premium-view-hero{height:150px!important;min-height:150px!important;margin:0 -14px!important;border-radius:0!important}
- html[data-theme="premium"] #portal .premium-hero-photo{inset:0!important;background-position:center 55%!important}
+ html[data-theme="premium"] #portal .premium-hero-photo,
+ html[data-theme="premium"] #portal .premium-view-photo{inset:0!important;background-position:center 55%!important}
  html[data-theme="premium"] #portal .premium-hero:before{background:linear-gradient(90deg,#142640 0%,rgba(20,38,64,.78) 55%,rgba(20,38,64,.12) 100%)!important}
  html[data-theme="premium"] #portal .premium-hero-content>*,
  html[data-theme="premium"] #portal .premium-hero-foot{display:none!important}
@@ -148,7 +166,8 @@ html[data-theme="premium"] #portal .sidebar-flame img{display:block;width:100%;h
 @media(max-width:700px){
  html[data-theme="premium"] #portal .premium-topbar>img{width:82px}
  html[data-theme="premium"] #portal .premium-topnav button{padding-inline:9px;font-size:10px}
- html[data-theme="premium"] #portal header{width:88px!important}
+ html[data-theme="premium"] #portal header{position:fixed!important;top:58px!important;bottom:0!important;left:0!important;width:88px!important;overflow-y:auto!important}
+ html[data-theme="premium"] #portal header nav{flex-direction:column!important}
  html[data-theme="premium"] #portal .sidebar-flame{bottom:140px;width:48px;height:66px;opacity:.24}
  html[data-theme="premium"] #portal header nav a.tab{padding:7px 4px 7px 23px!important;font-size:9px!important}
  html[data-theme="premium"] #portal header nav a.tab:before{left:7px}

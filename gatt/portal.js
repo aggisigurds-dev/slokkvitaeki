@@ -443,6 +443,8 @@
     var d = new Date();
     var today = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
+    var yfOv = document.querySelector('#v-yfirlit .premium-overline');
+    if (yfOv) yfOv.textContent = 'Staða brunavarna · uppfært ' + today;
     if (data.account && data.account.name) $('#htag').innerHTML = 'Þjónustuvefur · <b>' + esc(data.account.name) + '</b>';
     renderCards(data.stats);
     renderYfirlit(data.buildings);
@@ -458,6 +460,7 @@
     } catch (_) {}
     renderChips('#sk-chips', data.reports, renderSkyrslur);
     renderChips('#re-chips', data.invoices, renderReikningar);
+    renderSkKpis();
     renderSkyrslur('');
     renderReikningar('');
     renderEignasafn();
@@ -623,8 +626,13 @@
   function renderMessages(msgs) {
     msgs = msgs || [];
     var box = $('#msg-thread');
-    if (!msgs.length) { box.innerHTML = '<div class="msg-empty">Engin skilaboð enn. Sendu okkur fyrirspurn hér að neðan.</div>'; }
-    else {
+    var empty = $('#msg-empty');
+    if (!msgs.length) {
+      if (box) box.innerHTML = '';
+      if (empty) empty.classList.remove('hidden');
+    } else {
+      if (empty) empty.classList.add('hidden');
+      if (!box) return;
       box.innerHTML = msgs.map(function (m) {
         var who = m.sender === 'kunni' ? (m.author_name || 'Þú') : 'Slökkvitæki ehf.';
         return '<div class="msg-bubble ' + (m.sender === 'kunni' ? 'kunni' : 'starf') + '">' +
@@ -710,6 +718,24 @@
         onPick(c.getAttribute('data-b'));
       });
     });
+  }
+
+  function renderSkKpis() {
+    var box = $('#sk-kpis'); if (!box) return;
+    var rows = (state.data && state.data.reports) || [];
+    var byggingar = {}, ar = {};
+    var medSkjali = 0;
+    rows.forEach(function (r) {
+      if (r.bygging) byggingar[r.bygging] = 1;
+      var y = r.ar || (r.dags && String(r.dags).slice(0, 4));
+      if (y) ar[y] = 1;
+      if (r.docId || state.demo) medSkjali++;
+    });
+    box.innerHTML =
+      '<div class="sk-kpi"><div class="k">Úttektarskýrslur alls</div><div class="v">' + rows.length + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Byggingar</div><div class="v">' + Object.keys(byggingar).length + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Með skjali</div><div class="v">' + medSkjali + '</div></div>' +
+      '<div class="sk-kpi"><div class="k">Ár</div><div class="v">' + Object.keys(ar).length + '</div></div>';
   }
 
   function renderSkyrslur(filter) {
@@ -1075,7 +1101,7 @@
   function drFlokkur(el) {
     var h = el.querySelector && el.querySelector(':scope > h4');
     var t = ((h && h.textContent) || el.textContent || '').trim().toLowerCase();
-    if (t.indexOf('yfirlit') === 0) return 'yfirlit';
+    if (t.indexOf('yfirlit') === 0 || t.indexOf('grunnuppl') === 0 || t.indexOf('um eignina') === 0) return 'yfirlit';
     if (t.indexOf('búnaðargreining') > -1) return 'teikningar';
     if (t.indexOf('teikning') > -1) return 'teikningar';
     if (t.indexOf('reikning') > -1) return 'reikningar';
@@ -1086,11 +1112,50 @@
     return 'taekni';
   }
 
+  function drHoppN(key) {
+    var b = drB; if (!b) return '';
+    if (key === 'brunavarnir') return (b.kerfi || []).length ? (b.kerfi.length + ' kerfi') : '';
+    if (key === 'teikningar') return (b.teikning || []).length ? (b.teikning.length + (b.teikning.length === 1 ? ' teikning' : ' teikningar')) : '';
+    if (key === 'verkefni') {
+      var n = erindiEignar(b).length;
+      return n ? n + (n === 1 ? ' erindi' : ' erindi') : '';
+    }
+    if (key === 'skodanir') {
+      var s = skodanirEignar(b).length;
+      return s ? s + (s === 1 ? ' skoðun' : ' skoðanir') : '';
+    }
+    if (key === 'skjol') {
+      var r = ((state.data && state.data.reports) || []).filter(function (x) { return x.bygging === b.nafn; }).length;
+      return r ? r + (r === 1 ? ' skýrsla' : ' skýrslur') : '';
+    }
+    if (key === 'reikningar') {
+      var i = ((state.data && state.data.invoices) || []).filter(function (x) { return x.bygging === b.nafn; }).length;
+      return i ? i + (i === 1 ? ' reikningur' : ' reikningar') : '';
+    }
+    return '';
+  }
+
   function drMerkja() {
     var body = $('#dr-body'); if (!body) return;
     body.querySelectorAll(':scope > .dsec, :scope > .dgrp').forEach(function (el) {
       el.setAttribute('data-dr-group', drFlokkur(el));
     });
+    var hopp = [
+      ['brunavarnir', 'Brunavarnir', 'Búnaður, viðhald, þjónusta og úrbætur'],
+      ['teikningar', 'Teikningar', 'Grunnmyndir, brunateikningar og kerfisteikningar'],
+      ['verkefni', 'Verkefni', 'Opin, í vinnslu og lokið'],
+      ['skodanir', 'Skoðanir', 'Skoðunarsaga, úrbætur og næstu dagsetningar'],
+      ['skjol', 'Skjöl', 'Skýrslur, vottorð og aðrar skrár'],
+      ['reikningar', 'Reikningar', 'Þjónusta, viðhald og tengdur kostnaður']
+    ];
+    var nav = document.createElement('div');
+    nav.className = 'dr-hopp';
+    nav.setAttribute('data-dr-group', 'yfirlit');
+    nav.innerHTML = hopp.map(function (h) {
+      var n = drHoppN(h[0]);
+      return '<button type="button" class="dr-hopp-b" data-dr-tab="' + h[0] + '"><b>' + h[1] + '</b><span>' + h[2] + '</span>' + (n ? '<i>' + esc(n) + '</i>' : '') + '</button>';
+    }).join('');
+    body.appendChild(nav);
     var tech = document.createElement('button');
     tech.type = 'button'; tech.className = 'dr-tech-open'; tech.setAttribute('data-dr-tab', 'taekni');
     tech.innerHTML = '<b>Tæknilegar upplýsingar</b><span>Byggingarlýsing, kerfi og aðrar varðveittar upplýsingar</span><i aria-hidden="true">›</i>';
@@ -1112,10 +1177,17 @@
     var synileg = 0, sed = {};
     items.forEach(function (el) {
       var group = el.getAttribute('data-dr-group');
-      var show = drTab === 'yfirlit' ? group !== 'taekni' && !sed[group] : group === drTab;
-      if (show) { sed[group] = true; synileg++; }
+      var hopp = el.classList.contains('dr-hopp');
+      var show;
+      if (drTab === 'yfirlit') {
+        if (group === 'taekni') show = false;
+        else if (group === 'yfirlit' || hopp) show = true;
+        else if (!sed[group]) { sed[group] = true; show = true; }
+        else show = false;
+      } else show = group === drTab && !hopp;
+      if (show) synileg++;
       el.classList.toggle('hidden', !show);
-      el.classList.toggle('dr-preview', drTab === 'yfirlit' && show && group !== 'yfirlit');
+      el.classList.toggle('dr-preview', drTab === 'yfirlit' && show && group !== 'yfirlit' && !hopp);
     });
     var tech = document.querySelector('#dr-body > .dr-tech-open');
     if (tech) tech.classList.toggle('hidden', drTab !== 'yfirlit' || !items.some(function (el) { return el.getAttribute('data-dr-group') === 'taekni'; }));
@@ -1698,7 +1770,7 @@
     var tk = (syn.teikningar || syn.threed) ? (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }) : [];
     function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
     var html = (b.beidni ? '<div class="ebanner">' + svgIc('hak', 2) + '<div><b>Beiðni um þjónustu er móttekin</b><span>Við höfum samband til að skipuleggja fyrstu úttekt.</span></div></div>' : '') +
-      '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
+      '<section class="dsec"><h4>Grunnupplýsingar</h4><div class="dkpis k4">' +
         kp('Tegund', e.tegund, true) + kp('Stærð', e.staerd_m2 ? fmtTala(e.staerd_m2) + ' m²' : null) + kp('Byggt', e.byggingarar) + kp('Staða', b.beidni ? 'Beiðni í vinnslu' : 'Ekki í þjónustu', true) + '</div>' +
         (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') +
         (e.heimild ? '<div class="gnote">Mynd og lýsing: ' + esc(e.heimild) + '</div>' : '') + '</section>' +
@@ -1877,7 +1949,7 @@
     var m2 = e.staerd_m2 || f.m2, haedir = (b.teikning || []).length || f.haedir;
     if (!(e.tegund || f.tegund || m2 || e.byggingarar)) return '';
     function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
-    return '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
+    return '<section class="dsec"><h4>Grunnupplýsingar</h4><div class="dkpis k4">' +
       kp('Tegund', f.tegund || e.tegund, true) +
       kp('Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null, true) +
       kp('Stærð', m2 ? fmtTala(m2) + ' m²' : null) +

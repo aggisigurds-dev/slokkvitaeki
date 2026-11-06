@@ -52,7 +52,20 @@ html[data-theme="premium"] #portal .vs-kort-m{height:300px}
 html[data-theme="premium"] #portal .vs-fl{height:30px;border-radius:8px;font-size:9px}
 html[data-theme="premium"] #portal .vs-fl:first-child{background:#ed5b21;color:#fff;border-color:#ed5b21}
 html[data-theme="premium"] #portal .vs-hlekkir{display:none}
-html[data-theme="premium"] #portal #v-reikningar>.tbl-wrap{overflow-x:auto}
+html[data-theme="premium"] #portal #v-reikningar>.tbl-wrap,
+html[data-theme="premium"] #portal #v-skyrslur>.tbl-wrap{overflow-x:auto}
+html[data-theme="premium"] #portal #v-skyrslur>.sk-kpis{
+ position:relative;z-index:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:-28px 8px 12px
+}
+html[data-theme="premium"] #portal #v-skyrslur .sk-kpi{
+ min-height:78px;padding:12px 14px;border:1px solid #dce5ef;border-radius:10px;background:#fff;box-shadow:0 6px 18px rgba(10,33,56,.2)
+}
+html[data-theme="premium"] #portal #v-skyrslur .sk-kpi .k{font:700 9px/1.2 Inter,system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#6d7f94}
+html[data-theme="premium"] #portal #v-skyrslur .sk-kpi .v{margin-top:4px;font:800 24px/1 Inter,system-ui,sans-serif;color:#142542}
+html[data-theme="premium"] #portal #v-skyrslur>.tbl-wrap{
+ border:1px solid #dce5ef!important;border-radius:10px!important;background:#fff!important;box-shadow:0 5px 18px rgba(19,41,67,.08)!important
+}
+html[data-theme="premium"] #portal #v-skyrslur table{min-width:820px;width:100%}
 html[data-theme="premium"] #portal #v-reikningar table{min-width:820px;width:100%}
 html[data-theme="premium"] #portal #v-reikningar .bname{font-size:12px!important}
 html[data-theme="premium"] #portal #v-serkjor>.kj-h{
@@ -96,9 +109,13 @@ html[data-theme="premium"] .drawer{
  border-left:0;background:#f3f7fb;box-shadow:-8px 0 28px rgba(8,27,49,.22)
 }
 html[data-theme="premium"] .drawer .dr-head{
- min-height:156px;align-items:flex-end;padding:24px 30px;
+ position:relative;min-height:156px;align-items:flex-end;padding:24px 30px;
  background:linear-gradient(105deg,#102641 0%,#29445f 58%,#d8e0e7 100%)
 }
+html[data-theme="premium"] .drawer .dr-head .premium-hero-marks{
+ top:16px;right:58px;transform:none;align-items:flex-start
+}
+html[data-theme="premium"] .drawer .dr-head .premium-hero-shield{width:52px;height:52px;margin:0}
 html[data-theme="premium"] .drawer .dr-head.hero{min-height:156px;padding:24px 30px;background:linear-gradient(90deg,rgba(14,35,61,.96),rgba(14,35,61,.68) 50%,rgba(14,35,61,.08)),var(--hero) center/cover no-repeat}
 html[data-theme="premium"] .drawer .dr-head .crest{display:none}
 html[data-theme="premium"] .drawer .dr-head .dr-tt h3{font:800 34px/1.05 Inter,system-ui,sans-serif;color:#fff;letter-spacing:-.035em}
@@ -140,6 +157,42 @@ html[data-theme="premium"] .drawer .dr-tech-open{
 html[data-theme="premium"] .drawer .dr-tech-open b{font:750 12px/1.2 Inter,system-ui,sans-serif}
 html[data-theme="premium"] .drawer .dr-tech-open span{font:500 9.5px/1.3 Inter,system-ui,sans-serif;color:#617087}
 html[data-theme="premium"] .drawer .dr-tech-open i{grid-column:2;grid-row:1/3;font:700 24px/1 Inter,system-ui,sans-serif;color:#ed5b21}
+html[data-theme="premium"] .drawer .dr-hopp{
+ grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-top:4px
+}
+html[data-theme="premium"] .drawer .dr-hopp-b{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;
+ min-height:52px;padding:10px 14px;border:1px solid #d6e1ec;border-radius:8px;background:#fff;
+ color:#152945;text-align:left;cursor:pointer;box-shadow:0 3px 10px rgba(16,39,66,.07)
+}
+html[data-theme="premium"] .drawer .dr-hopp-b b{font:750 12px/1.2 Inter,system-ui,sans-serif}
+html[data-theme="premium"] .drawer .dr-hopp-b span{grid-column:1;font:500 10px/1.3 Inter,system-ui,sans-serif;color:#617087}
+html[data-theme="premium"] .drawer .dr-hopp-b i{grid-column:2;grid-row:1/3;font:700 11px/1 Inter,system-ui,sans-serif;color:#ed5b21;font-style:normal}
+html[data-theme="premium"] .drawer .dr-hopp-b:hover{border-color:#ed6a2c}
+html[data-theme="premium"] #portal .skil-layout{
+ display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px;align-items:start;margin:12px 8px 0
+}
+html[data-theme="premium"] #portal .skil-empty{
+ display:flex;flex-direction:column;gap:4px;padding:16px 18px;border:1px solid #dce5ef;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(16,39,66,.08)
+}
+html[data-theme="premium"] #portal .skil-empty.hidden{display:none}
+html[data-theme="premium"] #portal .skil-empty b{font:800 15px/1.2 Inter,system-ui,sans-serif;color:#142542}
+html[data-theme="premium"] #portal .skil-empty span{font:500 12px/1.45 Inter,system-ui,sans-serif;color:#617087}
+html[data-theme="premium"] #portal .skil-compose{
+ display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid #dce5ef;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(16,39,66,.08)
+}
+html[data-theme="premium"] #portal .skil-compose h3{margin:0;font:800 16px Inter,system-ui,sans-serif;color:#142542}
+html[data-theme="premium"] #portal .skil-compose textarea{width:100%;min-height:110px;border:1px solid #d5e0eb;border-radius:8px;padding:10px;box-sizing:border-box}
+html[data-theme="premium"] #portal .skil-compose button[type=submit]{
+ align-self:flex-end;min-height:44px;padding:0 18px;border:0;border-radius:8px;
+ background:linear-gradient(90deg,#f66a19,#ef4e12);color:#fff;font-weight:750;cursor:pointer
+}
+html[data-theme="premium"] #portal .skil-contact{
+ padding:16px 18px;border:1px solid #dce5ef;border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(16,39,66,.08)
+}
+html[data-theme="premium"] #portal .skil-contact h3{margin:0 0 10px;font:800 16px Inter,system-ui,sans-serif;color:#142542}
+html[data-theme="premium"] #portal .skil-contact a{color:#e85a1b;font-weight:650}
+html[data-theme="premium"] #portal #msg-thread:empty{display:none}
 html[data-theme="premium"] .drawer .dr-empty{grid-column:1/-1;padding:42px 18px;border:1px dashed #bdcad8;border-radius:9px;background:#fff;color:#617087;text-align:center}
 html[data-theme="premium"] .drawer[data-dr-active="teikningar"] .dr-body>.dsec{grid-column:1/-1}
 html[data-theme="premium"] .drawer[data-dr-active="teikningar"] .tgrid,
@@ -175,11 +228,23 @@ html[data-theme="premium"] .drawer[data-dr-active="teikningar"] .bgr-k .fm{aspec
  html[data-theme="premium"] #portal #v-serkjor>.kicker,
  html[data-theme="premium"] #portal #v-serkjor>h2.page,
  html[data-theme="premium"] #portal #v-verkbeidnir>.kicker,
- html[data-theme="premium"] #portal #v-verkbeidnir>h2.page{display:none}
+ html[data-theme="premium"] #portal #v-verkbeidnir>h2.page,
+ html[data-theme="premium"] #portal #v-skyrslur>.kicker,
+ html[data-theme="premium"] #portal #v-skyrslur>h2.page,
+ html[data-theme="premium"] #portal #v-eldvarnabok>.kicker,
+ html[data-theme="premium"] #portal #v-eldvarnabok>h2.page,
+ html[data-theme="premium"] #portal #v-erindi>.kicker,
+ html[data-theme="premium"] #portal #v-erindi>h2.page,
+ html[data-theme="premium"] #portal #v-skilabod>.kicker,
+ html[data-theme="premium"] #portal #v-skilabod>h2.page{display:none}
  html[data-theme="premium"] #portal #v-vinnusvaedi .vs-rond,
- html[data-theme="premium"] #portal #v-reikningar>.chips{margin:10px 0!important}
+ html[data-theme="premium"] #portal #v-reikningar>.chips,
+ html[data-theme="premium"] #portal #v-skyrslur>.chips,
+ html[data-theme="premium"] #portal #v-skyrslur>.sk-kpis{margin:10px 0!important}
+ html[data-theme="premium"] #portal #v-skyrslur>.sk-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
  html[data-theme="premium"] #portal #v-verkbeidnir .vbt-top{margin:10px 0 18px}
  html[data-theme="premium"] .drawer{top:58px;left:110px}
+ html[data-theme="premium"] #portal .skil-layout{grid-template-columns:minmax(0,1fr)}
  html[data-theme="premium"] .drawer .dr-body{grid-template-columns:minmax(0,1fr)}
  html[data-theme="premium"] .drawer .dr-body>.dgrp{grid-column:1}
 }
@@ -196,6 +261,7 @@ html[data-theme="premium"] .drawer[data-dr-active="teikningar"] .bgr-k .fm{aspec
  html[data-theme="premium"] #portal select,
  html[data-theme="premium"] #portal textarea{min-height:44px!important;font-size:16px!important}
  html[data-theme="premium"] #portal #v-verkbeidnir .vbt-list{grid-template-columns:minmax(0,1fr)}
+ html[data-theme="premium"] #portal .skil-layout{grid-template-columns:minmax(0,1fr);margin:10px 0 0}
  html[data-theme="premium"] .drawer{left:88px}
  html[data-theme="premium"] .drawer .dr-head,
  html[data-theme="premium"] .drawer .dr-head.hero{min-height:132px;padding:18px 14px}
