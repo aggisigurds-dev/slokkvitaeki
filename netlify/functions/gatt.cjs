@@ -1501,6 +1501,8 @@ exports.handler = async (event) => {
 
     // Bannermyndir eigna (eign.banner.path í einkabucketinu) — ein undirritun fyrir allar, 1 klst
     try {
+      // Fastar bannermyndir (06.11.2026): eign.banner.url vísar á skrá í repóinu (gatt/myndir/banner/…) — aðeins sú slóð, aldrei ytri vefslóð
+      [].concat(onBoard, eignirUtan).forEach((b) => { const e = b && b.eign; if (e && e.banner && typeof e.banner.url === 'string' && /^\/gatt\/myndir\/banner\/[\w.-]+\.(webp|jpe?g|png)$/.test(e.banner.url)) e.banner_url = e.banner.url; });
       const bEignir = [].concat(onBoard, eignirUtan).map((b) => b && b.eign).filter((e) => e && e.banner && e.banner.path);
       if (bEignir.length) {
         const bs = await M.undirrita(bEignir.map((e) => e.banner.path), 3600);
