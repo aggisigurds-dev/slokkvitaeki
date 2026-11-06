@@ -791,11 +791,12 @@
     html += order.map(function (gk) {
       var g = G[gk]; total += g.sum; totN += g.n; totAn += g.anUpph;
       g.eorder.sort(function (a, b) { return g.eignir[a].nafn.localeCompare(g.eignir[b].nafn, 'is'); });
-      return '<section class="rh-greid"><div class="rh-gh"><div><div class="k">Greiðandi</div><h3>' + esc(g.nafn) + '</h3>' +
+      // Hausinn og fyrsta eignin í .rh-fyrst svo prentun skilji þau aldrei að (Chromium virðir ekki break-after:avoid á flex).
+      return '<section class="rh-greid"><div class="rh-fyrst"><div class="rh-gh"><div><div class="k">Greiðandi</div><h3>' + esc(g.nafn) + '</h3>' +
         (g.kt ? '<div class="kt">kt. ' + esc(g.kt) + '</div>' : '') + '</div>' +
         '<div class="tot"><div class="k">Samtals</div><div class="v">' + esc(fmtKr(g.sum)) + '</div><div class="n">' + tala(g.n, 'reikningur', 'reikningar') + ' · ' + tala(g.eorder.length, 'eign', 'eignir') +
         (g.anUpph ? ' · ' + g.anUpph + ' án upphæðar' : '') + '</div></div></div>' +
-        g.eorder.map(function (ek) {
+        g.eorder.map(function (ek, ei) {
           var e = g.eignir[ek];
           e.rows.sort(function (a, b) { return String(b.dags || '').localeCompare(String(a.dags || '')); });
           return '<div class="rh-eign"><div class="rh-eh"><span class="bname">' + esc(e.nafn) + '</span>' + (e.adr ? '<span class="adr">' + esc(e.adr) + '</span>' : '') +
@@ -804,7 +805,7 @@
             e.rows.map(function (r) {
               return '<tr><td class="kt">' + esc(r.nr || '—') + '</td><td class="num">' + esc(fmtDate(r.dags)) + '</td><td class="dim">' + esc(r.lysing || '') + '</td><td>' + tegundPilla(r.tegund) + '</td>' +
                 '<td class="num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td><td>' + stadaPilla(r) + '</td></tr>';
-            }).join('') + '</tbody></table></div>';
+            }).join('') + '</tbody></table></div>' + (ei === 0 ? '</div>' : '');
         }).join('') + '</section>';
     }).join('');
     html += order.length
