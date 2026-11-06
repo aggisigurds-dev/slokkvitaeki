@@ -46,3 +46,5 @@
  html[data-theme="premium"] #portal .yf-layout{display:flex!important;flex-direction:column!important}
  html[data-theme="premium"] #portal .yf-main,html[data-theme="premium"] #portal .yf-rail{width:100%!important}
 }
+
+/* Reference alignment production release. */
