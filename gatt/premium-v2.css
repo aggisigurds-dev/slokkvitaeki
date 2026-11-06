@@ -242,7 +242,7 @@ html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s=
 html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="kerfi"]{order:2}
 html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="bgr"]{order:3}
 html[data-theme="premium"] #drawer #dr-body[data-v2tab="brunavarnir"]>[data-v2s="gt"]{order:4}
-html[data-theme="premium"] #drawer .v2-bvk{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+html[data-theme="premium"] #drawer .v2-bvk{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
 html[data-theme="premium"] #drawer .v2-kt{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:14px;background:#fff;box-shadow:var(--v2-card)}
 html[data-theme="premium"] #drawer .v2-kt span{font:600 11px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--v2-ink-2)}
 html[data-theme="premium"] #drawer .v2-kt b{font:700 28px/1.1 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
@@ -252,3 +252,25 @@ html[data-theme="premium"] #drawer .dsec[data-v2f]:not(.v2-fold)>h4:after{transf
 html[data-theme="premium"] #drawer .dsec.v2-fold>:not(h4){display:none!important}
 html[data-theme="premium"] #drawer .dsec.v2-fold>h4{border-radius:14px}
 html[data-theme="premium"] #drawer details.eq-fold[open] .dpanel{max-height:340px;overflow:auto}
+
+/* ── Hinir flipar: röð eftir flipa, tveggja dálka „Um eignina", breiðari teikningaspjöld ──────────────── */
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2t]{order:var(--v2o,0)}
+html[data-theme="premium"] #drawer #dr-body>*{min-width:0}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="skodanir"]>[data-v2s="eb"]{order:1}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="skodanir"]>[data-v2s="kerfi"]{order:2}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="skodanir"]>[data-v2s="vid"]{order:3}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="skodanir"]>[data-v2s="saga"]{order:4}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start;grid-auto-flow:dense}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2w~="w2"]{grid-column:1/-1}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="umeign"]{order:1}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="rymi"]{order:2}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="lyklar"]{order:3}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="orku"]{order:4}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="kostn"]{order:5}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]>[data-v2s="gfast"]{order:6}
+html[data-theme="premium"] #drawer #dr-body .tgrid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+html[data-theme="premium"] #drawer #dr-body .tgrid .fcard{min-width:0}
+@media (max-width:899px){
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="um"]{display:flex;flex-direction:column}
+  html[data-theme="premium"] #drawer #dr-body .tgrid{grid-template-columns:minmax(0,1fr)}
+}

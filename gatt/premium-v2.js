@@ -207,12 +207,12 @@
   var TABS = [['yfirlit', 'Yfirlit'], ['brunavarnir', 'Brunavarnir'], ['teikningar', 'Teikningar'], ['verkefni', 'Verkefni'], ['skodanir', 'Skoðanir'], ['skjol', 'Skjöl'], ['reikningar', 'Reikningar'], ['um', 'Um eignina']];
   var TAB_IC = { yfirlit: 'house', brunavarnir: 'flame', teikningar: 'layers', verkefni: 'wrench', skodanir: 'shield', skjol: 'book', reikningar: 'receipt', um: 'chart' };
   var SEC_TAB = [
-    [/^Yfirlit/, 'yfirlit', 'w2 bare', 1], [/^Erindi/, 'yfirlit verkefni', 'w2 bare', 4], [/^Eldvarnabók/, 'yfirlit skodanir', '', 2],
+    [/^Yfirlit/, 'yfirlit', 'w2 bare', 1], [/^Erindi/, 'yfirlit verkefni', 'w2 bare', 4], [/^Eldvarnabók/, 'yfirlit skodanir', '', 2, 'eb'],
     [/^Teikningar/, 'yfirlit teikningar', 'w2', 3], [/^Búnaðargreining/, 'brunavarnir', 'w2', 0, 'bgr'], [/^Búnaður/, 'brunavarnir', 'w2', 0, 'bun'],
-    [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2', 0, 'kerfi'], [/^Greining teikninga/, 'brunavarnir', '', 0, 'gt'], [/^Greining fasteignar/, 'um'],
-    [/^Viðhaldsáætlun/, 'yfirlit verkefni skodanir', '', 2], [/^Saga eignar/, 'skodanir', 'w2'], [/^Skoðana/, 'skodanir'],
+    [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2', 0, 'kerfi'], [/^Greining teikninga/, 'brunavarnir', '', 0, 'gt'], [/^Greining fasteignar/, 'um', 'w2', 0, 'gfast'],
+    [/^Viðhaldsáætlun/, 'yfirlit verkefni skodanir', '', 2, 'vid'], [/^Saga eignar/, 'skodanir', 'w2', 0, 'saga'], [/^Skoðana/, 'skodanir'],
     [/^Skýrslur/, 'yfirlit skjol', '', 2], [/^Reikningar/, 'reikningar', 'w2'],
-    [/^(Rými og leigutakar|Lyklar|Orkumælar|Kostnaður|Um eignina)/, 'um']
+    [/^Rými og leigutakar/, 'um', 'w2', 0, 'rymi'], [/^Lyklar/, 'um', '', 0, 'lyklar'], [/^Orkumælar/, 'um', '', 0, 'orku'], [/^Kostnaður/, 'um', '', 0, 'kostn'], [/^Um eignina/, 'um', 'w2', 0, 'umeign']
   ];
   function secTab(el) {
     if (el.classList.contains('dgrp')) return ['x', ''];
@@ -251,7 +251,7 @@
   var drTab = 'yfirlit', drTabs = null;
   function applyTab() {
     var body = document.getElementById('dr-body'); if (!body) return;
-    Array.prototype.forEach.call(body.children, function (k) { if (!k.hasAttribute('data-v2t')) { var r = secTab(k); k.setAttribute('data-v2t', r[0]); if (r[1]) k.setAttribute('data-v2w', r[1]); if (r[2]) k.style.order = r[2]; if (r[3]) k.setAttribute('data-v2s', r[3]); } });
+    Array.prototype.forEach.call(body.children, function (k) { if (!k.hasAttribute('data-v2t')) { var r = secTab(k); k.setAttribute('data-v2t', r[0]); if (r[1]) k.setAttribute('data-v2w', r[1]); if (r[2]) k.style.setProperty('--v2o', r[2]); if (r[3]) k.setAttribute('data-v2s', r[3]); } });
     var have = {}; Array.prototype.forEach.call(body.children, function (k) { k.getAttribute('data-v2t').split(' ').forEach(function (t) { have[t] = (have[t] || 0) + 1; }); });
     have.yfirlit = have.yfirlit || 1;
     if (!have[drTab]) drTab = 'yfirlit';
