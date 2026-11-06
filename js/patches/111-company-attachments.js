@@ -848,7 +848,22 @@
     });
   }
 
+  // 06.11.2026 (Agnar: „haka í hvað þetta er, eins og tilboð"): skýr tegund á viðhengi — 'tilbod' | 'samningur' |
+  // 'skyrsla' | 'reikningur' | 'annad'. Skráarheitið ræður ekki lengur þegar tegund er valin (sjá attKind í 199).
+  async function setKind(coId, id, kind) {
+    const ALLOWED = ['tilbod', 'samningur', 'skyrsla', 'reikningur', 'annad'];
+    if (ALLOWED.indexOf(kind) < 0) return false;
+    const list = getCompanyAttachments(coId);
+    const f = list.find(x => x && x.id === id);
+    if (!f) return false;
+    f.kind = kind;
+    const ok = await saveCompanyAttachments(coId, list);
+    try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {}
+    return ok;
+  }
+
   window.CompanyAttachments = {
+    setKind: setKind,
     list: getCompanyAttachments,
     upload: uploadAttachment,
     pick: pickAttachment,

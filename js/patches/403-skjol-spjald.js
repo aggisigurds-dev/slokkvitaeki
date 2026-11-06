@@ -262,7 +262,9 @@
       if (c.classList.contains('sk-att-wrap')) {
         var sk = el('span', 'b403-skjal');
         Array.prototype.slice.call(c.children).forEach(function (k) {
-          if (k.classList.contains('sk-att-x')) items.push({ label: 'Eyða skráningu', icon: ICON.trash, orig: k, danger: true }); else sk.appendChild(deEmoji(k));
+          if (k.classList.contains('sk-att-x')) items.push({ label: k.hasAttribute('data-del') ? 'Eyða viðhengi' : 'Eyða skráningu', icon: ICON.trash, orig: k, danger: true });
+          else if (k.classList.contains('sk-att-kind')) items.unshift({ label: 'Tegund skjals: ' + txt(k).replace(/\s*▾\s*$/, ''), icon: ICON.doc, orig: k });
+          else sk.appendChild(deEmoji(k));
         });
         h.appendChild(sk); return;
       }
@@ -420,7 +422,7 @@
         var vidh = el('div', 'b403-vidh');
         wraps.forEach(function (w) {
           var line = el('div', 'b403-skjal-lina'); var items = [];
-          Array.prototype.slice.call(w.children).forEach(function (k) { if (k.classList.contains('sk-att-x')) items.push({ label: 'Eyða viðhengi', icon: ICON.trash, orig: k, danger: true }); else { k.classList.add('b403-vidh-chip'); line.appendChild(deEmoji(k)); } });
+          Array.prototype.slice.call(w.children).forEach(function (k) { if (k.classList.contains('sk-att-x')) items.push({ label: 'Eyða viðhengi', icon: ICON.trash, orig: k, danger: true }); else if (k.classList.contains('sk-att-kind')) items.unshift({ label: 'Tegund skjals: ' + txt(k).replace(/\s*▾\s*$/, ''), icon: ICON.doc, orig: k }); else { k.classList.add('b403-vidh-chip'); line.appendChild(deEmoji(k)); } });
           if (items.length) line.appendChild(menuButton(items, 'Fleiri aðgerðir fyrir viðhengi'));
           vidh.appendChild(line);
         });

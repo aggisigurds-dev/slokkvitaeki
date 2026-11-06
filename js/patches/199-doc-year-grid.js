@@ -448,6 +448,10 @@
   // heitið alltaf sem „… - brunakerfi-skoðunarskýrsla.pdf".
   function attKind(a){
     var nm=String(a.name||'');
+    // 06.11.2026 (Agnar: „tilboðið fór í þjónustusamning og er fast þar"): tegund sem NOTANDINN velur (⋯ / „Tegund")
+    // vinnur alltaf — áður réð skráarheitið (orðið „samning" gerði tilboð að þjónustusamningi, án útgöngu).
+    if(a.kind==='tilbod') return 'tilbod';
+    if(a.kind==='annad') return 'other';
     if(a.kind==='brunakerfi') return 'brunakerfi';
     if(/brunakerfi[\s-]*sko(ð|d)unarsk(ý|y)rsl/i.test(nm)) return 'brunakerfi';
     // 21.09.2026: sama gildra og brunakerfið lenti í 29.07 — „slökkvikerfi-skoðunarskýrsla" ber orðið „skoðun".
@@ -470,6 +474,34 @@
   // mis-yeared) entry from the page — deletes the customer_documents row.
   function docWrap(chip, id){
     return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
+  }
+  // 06.11.2026 (Agnar: „setja delete takka … og haka í hvað þetta er, eins og tilboð"): viðhengi á samningslínunni og í
+  // „Önnur viðhengi" fá ✕ (eyða) OG tegundahnapp sem opnar glugga: Tilboð · Þjónustusamningur · Úttektarskýrsla · Reikningur · Annað.
+  var KIND_TXT={ tilbod:'Tilboð', samningur:'Samningur', skyrsla:'Skýrsla', brunakerfi:'Brunakerfi', slokkvikerfi:'Slökkvikerfi', reikningur:'Reikningur', other:'Annað' };
+  function kindBtn(a){
+    var k=attKind(a);
+    return '<button type="button" class="sk-att-kind" data-kind-att="'+esc(a.id)+'" title="Hvaða skjal er þetta? Smelltu til að velja: tilboð, samningur, skýrsla, reikningur eða annað">'+esc(KIND_TXT[k]||'Annað')+' ▾</button>';
+  }
+  function attWrapKind(chip, a){
+    return '<span class="sk-att-wrap">'+chip+kindBtn(a)+'<button type="button" class="sk-att-x" data-del="'+esc(a.id)+'" title="Eyða viðhengi">✕</button></span>';
+  }
+  function openKindDialog(a, done){
+    var cur=attKind(a), old=document.getElementById('sk-kind-dlg'); if(old) old.remove();
+    var OPTS=[['tilbod','Tilboð'],['samningur','Þjónustusamningur'],['skyrsla','Úttektarskýrsla'],['reikningur','Reikningur'],['annad','Annað']];
+    var ov=document.createElement('div'); ov.id='sk-kind-dlg'; ov.className='sk-kind-ov';
+    ov.innerHTML='<div class="sk-kind-box" role="dialog" aria-modal="true" aria-label="Hvaða skjal er þetta?"><div class="sk-kind-t">Hvaða skjal er þetta?</div><div class="sk-kind-n">'+esc(a.name||'')+'</div>'+
+      OPTS.map(function(o){ var on=(o[0]===cur)||(o[0]==='annad'&&cur==='other'); return '<button type="button" class="sk-kind-o'+(on?' on':'')+'" data-k="'+o[0]+'">'+(on?'✓ ':'')+o[1]+'</button>'; }).join('')+
+      '<div class="sk-kind-h">Skýrsla og reikningur raðast á ár eftir ártali í heitinu eða árvalinu á viðhenginu.</div><button type="button" class="sk-kind-c">Hætta við</button></div>';
+    function close(){ ov.remove(); document.removeEventListener('keydown',onKey,true); }
+    function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); close(); } }
+    ov.addEventListener('click',function(e){
+      if(e.target===ov || e.target.closest('.sk-kind-c')){ close(); return; }
+      var b=e.target.closest('.sk-kind-o'); if(!b) return;
+      b.disabled=true; close(); done(b.getAttribute('data-k'));
+    });
+    document.addEventListener('keydown',onKey,true);
+    document.body.appendChild(ov);
+    var f=ov.querySelector('.sk-kind-o.on')||ov.querySelector('.sk-kind-o'); if(f) f.focus();
   }
   // 2026-08-23 (ósk Agnars): sama og docWrap en með 3-stiga factcheck-checkmarki
   // fremst — AÐEINS á skýrslum og reikningum. dfcMark skilar tómu fyrir skjöl án
@@ -1133,7 +1165,7 @@
     atts.forEach(function(a){
       var k=attKind(a), y=parseInt(attYear(a),10);
       if(k==='samningur'){ samn.push({src:'att',a:a,year:y||null}); return; }
-      if(k==='other' || !(y>=2000&&y<=NOW+1)){ other.push(a); return; }
+      if(k==='other' || k==='tilbod' || !(y>=2000&&y<=NOW+1)){ other.push(a); return; }
       if(k==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push({_att:a});
       else if(k==='slokkvikerfi') (slkByY[y]=slkByY[y]||[]).push({_att:a});
       else if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
@@ -1296,7 +1328,7 @@
       var full=samnLabel(s), disp=full.length>46?full.slice(0,44)+'…':full;
       if(s.src==='doc'){ var u=docUrl(s.d);
         return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep miss" data-misstitle="'+esc(String(s.d.notes||'').slice(0,500))+'" title="Skjalið er ekki lengur í Drive — smelltu fyrir söguna.">⚠ '+esc(disp)+'</span>', s.d.id); }
-      return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>';
+      return attWrapKind('<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>', s.a);
     }
     // 2026-08-07 (skissa Agnars): samningurinn fær sama kort-tungumál og árin —
     // eitt kort per þjónustu með lituðum kanti og stöðupillu hægra megin.
@@ -1608,8 +1640,7 @@
     // 13.10.2026 (Agnar: „lengja textareitinn í Önnur viðhengi“): nöfn styttust í 20 stafi — nú 70; Brunastál (403) klippir eftir breidd raðarinnar.
     var otherHtml = (other.length
       ? other.map(function(a){ var ic=/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(a.name)?'🖼':(/\.pdf$/i.test(a.name)?'📄':'📎');
-          return '<span class="sk-att-wrap"><button type="button" class="sk-doc prog" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">'+ic+' '+esc(a.name.length>72?a.name.slice(0,70)+'…':a.name)+'</button>'+
-                 '<button type="button" class="sk-att-x" data-del="'+esc(a.id)+'" title="Eyða viðhengi">✕</button></span>'; }).join('')
+          return attWrapKind('<button type="button" class="sk-doc prog" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">'+ic+' '+esc(a.name.length>72?a.name.slice(0,70)+'…':a.name)+'</button>', a); }).join('')
       : '') + addChip('', '', '+ Viðhengi');
 
     var notLinked = !baseId ? '<div class="sk-strip" style="color:var(--ink4);font-size:11.5px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):'')+' — sjálfvirkar skýrslur birtast þegar tengt.</div>' : '';
@@ -2005,6 +2036,17 @@
         render(section, coId);
         return;
       }
+      var kindEl=e.target.closest('[data-kind-att]');
+      if(kindEl){
+        e.preventDefault(); e.stopPropagation();
+        var kf=attList(coId).find(function(x){return x.id===kindEl.getAttribute('data-kind-att');});
+        if(!kf) return;
+        openKindDialog(kf, async function(k){
+          try{ if(window.CompanyAttachments&&CompanyAttachments.setKind) await CompanyAttachments.setKind(coId, kf.id, k); }catch(err){ console.warn('[199] tegund vistaðist ekki', err); }
+          render(section, coId);
+        });
+        return;
+      }
       var delEl=e.target.closest('[data-del]');
       if(delEl){
         e.preventDefault();
@@ -2197,6 +2239,17 @@
       '.sk-att-wrap .sk-doc{margin:0}',
       '.sk-att-x{border:1px solid var(--brd);border-left:0;background:var(--surface);color:var(--ink4);cursor:pointer;font-size:10px;padding:4px 6px;border-radius:0 8px 8px 0;line-height:1.2}',
       '.sk-att-x:hover{color:#dc2626;border-color:#fecaca}',
+      '.sk-att-kind{border:1px solid var(--brd);border-left:0;background:var(--surface);color:var(--ink3);cursor:pointer;font-size:10px;font-weight:700;padding:4px 7px;line-height:1.2;white-space:nowrap}',
+      '.sk-att-kind:hover{color:var(--brand);border-color:var(--brand)}',
+      '.sk-kind-ov{position:fixed;inset:0;z-index:100000;background:rgba(10,14,24,.55);display:flex;align-items:center;justify-content:center;padding:16px}',
+      '.sk-kind-box{background:#fff;border-radius:14px;max-width:360px;width:100%;padding:18px;box-shadow:0 20px 50px -10px rgba(0,0,0,.5);display:grid;gap:8px}',
+      '.sk-kind-t{font-size:16px;font-weight:700;color:#11141c}',
+      '.sk-kind-n{font-size:12px;color:#5b6472;word-break:break-word;margin-bottom:4px}',
+      '.sk-kind-o{min-height:44px;border:1px solid #c3cad5;background:linear-gradient(180deg,#fdfdfe,#e3e7ee);border-radius:10px;font:inherit;font-size:14px;font-weight:600;color:#11141c;cursor:pointer;text-align:left;padding:0 14px}',
+      '.sk-kind-o.on{border-color:#16783f;color:#0b6b3a;background:#e4f3ea}',
+      '.sk-kind-o:hover{border-color:#c92a2a}',
+      '.sk-kind-h{font-size:11px;color:#6b7483;line-height:1.4}',
+      '.sk-kind-c{min-height:40px;border:0;background:transparent;color:#5b6472;font:inherit;font-size:13px;cursor:pointer}',
       // ── per-year bundle cards (replaces the old flat table, 2026-08-05) ──
       '.sk-yrwrap{padding:2px 14px 12px}',
       '.sk-yrblock{border-top:1px solid var(--brd2,#f1f5f9);padding:10px 0}',
