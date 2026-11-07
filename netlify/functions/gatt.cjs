@@ -1359,6 +1359,12 @@ exports.handler = async (event) => {
     //   greitt = paid_at er til · ogreitt = krafa send fyrir ≤ 75 dögum og engin greiðsla skráð.
     // Eldri ógreiddir fá EKKERT merki — paid_at dregst á eftir raunveruleikanum (Payday-afstemming), og rangt
     // „ógreitt" gagnvart kúnna er verra en autt merki.
+    //
+    // 07.11.2026 (Agnar: „mátt setja 3 vikna seinkun á viðvörun ef hún er ennþá ógreidd"): merkið bíður nú í
+    // ÞRJÁR VIKUR frá því krafan var send. Kúnni sem greiðir á eðlilegum gjalddaga á aldrei að sjá „Ógreitt"
+    // í gáttinni — það er ónotaleg kveðja fyrir reikning sem er í fullkomnu lagi, og `paid_at` dregst auk þess
+    // á eftir raunveruleikanum meðan Payday-afstemmingin keyrir. Glugginn er því 21–75 dagar frá kröfu:
+    // yngra en 21 dagur = ekkert merki (enn í skilum), eldra en 75 = ekkert merki (gögnin of ótraust).
     const voidQuery = (nrsIn) => {
       const nrs = [...new Set(nrsIn.map((n) => n && String(n).replace(/"/g, '')).filter(Boolean))];
       if (!nrs.length) return null;
@@ -1370,8 +1376,13 @@ exports.handler = async (event) => {
       const sr2 = await Q.solur;
       if (sr2.ok) {
         const rows2 = await sr2.json();
-        const nuMs = Date.now(), kraftur = 75 * 864e5, fra = nuMs - 730 * 864e5;
-        const stadaAf = (s) => (s.paid_at ? 'greitt' : (s.krafa_sent_at && nuMs - Date.parse(s.krafa_sent_at) <= kraftur ? 'ogreitt' : null));
+        const nuMs = Date.now(), kraftur = 75 * 864e5, bid = 21 * 864e5, fra = nuMs - 730 * 864e5;
+        const stadaAf = (s) => {
+          if (s.paid_at) return 'greitt';
+          if (!s.krafa_sent_at) return null;
+          const aldur = nuMs - Date.parse(s.krafa_sent_at);
+          return (aldur >= bid && aldur <= kraftur) ? 'ogreitt' : null;   // 21–75 dagar, sjá skýringu að ofan
+        };
         const byNr2 = {};
         rows2.forEach((s) => { if (s && s.num) byNr2[normNr(s.num)] = s; });
         invoices.forEach((i) => { const s = i.nr && byNr2[normNr(i.nr)]; i.stada = s ? stadaAf(s) : null; });
