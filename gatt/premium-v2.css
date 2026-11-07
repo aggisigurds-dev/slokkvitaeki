@@ -292,3 +292,115 @@ html[data-theme="premium"] #portal #v-vinnusvaedi .v2-hero{margin-bottom:6px}
 html[data-theme="premium"] #portal #v-reikningar table td:nth-child(1),
 html[data-theme="premium"] #portal #v-reikningar table td:nth-child(2),
 html[data-theme="premium"] #portal #v-reikningar table td.num{white-space:nowrap}
+
+
+/* ══ Eignasíðan í mockup-grind (07.11.2026, Agnar: „meira í líkindum við mockupið layoutslega séð") ══
+   Þrír dálkar á breiðum skjá eins og í mockupinu, tveir á spjaldtölvu, einn á síma. w2 spannar tvo
+   dálka (Teikningar), w3 alla (fellilistinn). Gömlu KPI-flísarnar víkja þegar nýju spjöldin eru komin
+   — efni þeirra er allt í Staða brunavarna, Brunavarnabúnaði og Lykiltölum. */
+@media (min-width:1180px){
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2w~="w2"]{grid-column:span 2}
+}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2w~="w3"]{grid-column:1/-1}
+html[data-theme="premium"] #drawer #dr-body.v2-eign-ny[data-v2tab="yfirlit"]>[data-v2s="yfkpi"]{display:none!important}
+html[data-theme="premium"] #drawer #dr-body>.dsec>h4 .v2-hic{width:17px;height:17px;flex:none;opacity:.95}
+
+/* Hetjan: tegundarlína með tákni og staðan sem pilla niðri í hægra horni. */
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero{position:relative}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .baddr{display:flex;align-items:center;gap:8px}
+html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .baddr::before{content:"";width:15px;height:15px;flex:none;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") center/contain no-repeat}
+html[data-theme="premium"] #drawer .v2-mline{display:flex;align-items:center;gap:8px;margin-top:5px;color:#fff;font:500 14px/1.3 Poppins,system-ui,sans-serif;text-shadow:0 1px 6px rgba(2,25,60,.5)}
+html[data-theme="premium"] #drawer .v2-mline .v2-ic{width:16px;height:16px;opacity:.9}
+html[data-theme="premium"] #drawer .v2-stpill{position:absolute;right:30px;bottom:20px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.18);
+  color:#fff;font:700 12px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 2px 10px rgba(2,25,60,.3);backdrop-filter:blur(3px)}
+html[data-theme="premium"] #drawer .v2-stpill.ok{background:#16a34a;box-shadow:0 2px 10px rgba(2,25,60,.3)}
+html[data-theme="premium"] #drawer .dr-head:not(.v2-dr-hero) .v2-stpill{display:none}
+
+/* Grunnupplýsingar — merki · heiti · gildi, ein lína á reit. */
+html[data-theme="premium"] #drawer .v2-info,html[data-theme="premium"] #drawer .v2-bun{display:flex;flex-direction:column}
+html[data-theme="premium"] #drawer .v2-irow,html[data-theme="premium"] #drawer .v2-brow{display:grid;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--v2-line-soft)}
+html[data-theme="premium"] #drawer .v2-irow{grid-template-columns:16px minmax(0,1fr) auto}
+html[data-theme="premium"] #drawer .v2-brow{grid-template-columns:16px minmax(0,1fr) auto 18px}
+html[data-theme="premium"] #drawer .v2-irow:last-child,html[data-theme="premium"] #drawer .v2-brow:last-child{border-bottom:0;padding-bottom:0}
+html[data-theme="premium"] #drawer .v2-sic{width:15px;height:15px;flex:none;color:var(--v2-muted)}
+html[data-theme="premium"] #drawer .v2-irow>span,html[data-theme="premium"] #drawer .v2-brow>span{font:500 13px/1.35 Poppins,system-ui,sans-serif;color:var(--v2-muted);min-width:0}
+html[data-theme="premium"] #drawer .v2-irow>b{font:600 13.5px/1.35 Poppins,system-ui,sans-serif;color:var(--v2-ink);text-align:right}
+html[data-theme="premium"] #drawer .v2-brow>b{font:700 17px/1.1 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .v2-hak{display:flex;width:18px;justify-content:flex-end}
+html[data-theme="premium"] #drawer .v2-hak .v2-ic{width:17px;height:17px;color:var(--v2-ok)}
+
+/* Staða brunavarna — fáni, svo næsta skoðun (.dnext flyst hingað úr gömlu KPI-ræmunni). */
+html[data-theme="premium"] #drawer .v2-flagg{display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border-radius:12px;background:var(--v2-ok-tint);box-shadow:inset 0 0 0 1px #b6e2bd}
+html[data-theme="premium"] #drawer .v2-flagg .v2-ic{width:22px;height:22px;color:var(--v2-ok-ink)}
+html[data-theme="premium"] #drawer .v2-flagg b{display:block;font:700 15px/1.25 Poppins,system-ui,sans-serif;color:var(--v2-ok-ink)}
+html[data-theme="premium"] #drawer .v2-flagg span{font:500 12.5px/1.45 Poppins,system-ui,sans-serif;color:#2f6b3e}
+html[data-theme="premium"] #drawer .v2-flagg.seint{background:#fff1e6;box-shadow:inset 0 0 0 1px #f8c79c}
+html[data-theme="premium"] #drawer .v2-flagg.seint .v2-ic,html[data-theme="premium"] #drawer .v2-flagg.seint b{color:#9a3412}
+html[data-theme="premium"] #drawer .v2-flagg.seint span{color:#8a4a22}
+html[data-theme="premium"] #drawer .v2-flagg.obekkt{background:var(--v2-surface-2);box-shadow:inset 0 0 0 1px var(--v2-line)}
+html[data-theme="premium"] #drawer .v2-flagg.obekkt .v2-ic,html[data-theme="premium"] #drawer .v2-flagg.obekkt b{color:var(--v2-ink-2)}
+html[data-theme="premium"] #drawer .v2-flagg.obekkt span{color:var(--v2-muted)}
+html[data-theme="premium"] #drawer .v2-naest{display:flex;align-items:center;gap:10px;margin-top:15px}
+html[data-theme="premium"] #drawer .v2-nh{display:flex;align-items:center;gap:8px;font:600 11.5px/1.2 Poppins,system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--v2-muted)}
+html[data-theme="premium"] #drawer .v2-pilla{margin-left:auto;flex:none;padding:5px 11px;border-radius:999px;background:#fff4e2;color:#9a3412;font:600 11.5px/1.3 Poppins,system-ui,sans-serif;box-shadow:inset 0 0 0 1px #f3cfa2}
+html[data-theme="premium"] #drawer .v2-pilla.sein{background:#fee2e2;color:#991b1b;box-shadow:inset 0 0 0 1px #f5b5b5}
+/* Í mjóa dálknum stendur „skoðað síðast · skoðað næst" ekki í röð við ársmerkin — textinn klipptist. Liggur nú. */
+html[data-theme="premium"] #drawer .v2-nslot .dnext{display:block;margin:9px 0 0!important;padding:0;border:0;background:none;box-shadow:none}
+html[data-theme="premium"] #drawer .v2-nslot .dnext .next{min-width:0;flex:none;font-size:12.5px}
+html[data-theme="premium"] #drawer .v2-nslot .dnext .next>div{padding:3px 0;line-height:1.45}
+html[data-theme="premium"] #drawer .v2-nslot .dnext .yrs{margin-top:10px;gap:5px}
+html[data-theme="premium"] #drawer .v2-nslot .dnext .yb{flex:1;width:auto;min-width:0}
+html[data-theme="premium"] #drawer .v2-brow.ordi>b{font:600 12.5px/1.3 Poppins,system-ui,sans-serif;color:var(--v2-ink-2)}
+
+/* Erindi á Yfirliti: þrjú nýjust í forskoðun — fjöldinn og „Öll erindi eignarinnar →" standa í hausnum. */
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="erindi"] .elist>*:nth-child(n+4){display:none}
+
+/* Staðsetning. Kortið birtist aðeins þegar hnit eru skráð á eignina. */
+html[data-theme="premium"] #drawer .v2-kmap{height:148px;border-radius:12px;overflow:hidden;background:var(--v2-surface-2);box-shadow:inset 0 0 0 1px var(--v2-line)}
+html[data-theme="premium"] #drawer .v2-kort.engin .v2-kmap{display:none}
+html[data-theme="premium"] #drawer .v2-kmap.v2-kbilun{display:flex;align-items:center;justify-content:center}
+html[data-theme="premium"] #drawer .v2-kaddr{display:flex;align-items:center;gap:8px;margin-top:11px;font:500 13px/1.4 Poppins,system-ui,sans-serif;color:var(--v2-ink-2)}
+html[data-theme="premium"] #drawer .v2-kort.engin .v2-kaddr{margin-top:0}
+.v2-pin i{display:block;width:14px;height:14px;border-radius:50%;background:#ff6702;box-shadow:0 0 0 3px #fff,0 2px 8px rgba(2,25,60,.45)}
+
+/* Flýtiaðgerðir — tveir og tveir, aðalaðgerðin appelsínugul eins og í mockupinu. */
+html[data-theme="premium"] #drawer .v2-flyti{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+html[data-theme="premium"] #drawer .v2-fb{display:flex;align-items:center;gap:9px;padding:12px 13px;border:0;border-radius:11px;background:#fff;
+  box-shadow:inset 0 0 0 1px var(--v2-line);cursor:pointer;text-align:left;font:600 12.5px/1.25 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .v2-fb:hover{background:var(--v2-row-hover)}
+html[data-theme="premium"] #drawer .v2-fb .v2-ic{width:17px;height:17px;color:var(--v2-muted)}
+html[data-theme="premium"] #drawer .v2-fb.adal{background:var(--v2-grad);color:#fff;box-shadow:var(--v2-glow)}
+html[data-theme="premium"] #drawer .v2-fb.adal .v2-ic{color:#fff}
+
+/* Lykiltölur. */
+html[data-theme="premium"] #drawer .v2-lykil{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
+html[data-theme="premium"] #drawer .v2-lt{display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:11px;background:var(--v2-surface-2);box-shadow:inset 0 0 0 1px var(--v2-line-soft)}
+html[data-theme="premium"] #drawer .v2-lt .v2-ic{width:16px;height:16px;color:var(--v2-muted);margin-bottom:2px}
+html[data-theme="premium"] #drawer .v2-lt b{font:700 20px/1.1 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .v2-lt span{font:500 11.5px/1.2 Poppins,system-ui,sans-serif;color:var(--v2-muted)}
+
+/* „Allt um eignina" — ein lína á hvern flipa sem á efni; smellur skiptir um flipa. */
+html[data-theme="premium"] #drawer .v2-nav{display:flex;flex-direction:column}
+html[data-theme="premium"] #drawer .v2-nrow{display:grid;grid-template-columns:20px auto minmax(0,1fr) auto 12px;gap:12px;align-items:center;width:100%;
+  padding:13px 4px;border:0;border-bottom:1px solid var(--v2-line-soft);background:none;cursor:pointer;text-align:left}
+html[data-theme="premium"] #drawer .v2-nrow:last-child{border-bottom:0}
+html[data-theme="premium"] #drawer .v2-nrow:hover{background:var(--v2-row-hover)}
+html[data-theme="premium"] #drawer .v2-nrow .v2-ic{width:18px;height:18px;color:var(--v2-orange)}
+html[data-theme="premium"] #drawer .v2-nrow b{font:600 14px/1.2 Poppins,system-ui,sans-serif;color:var(--v2-ink)}
+html[data-theme="premium"] #drawer .v2-nrow>span{font:500 12.5px/1.3 Poppins,system-ui,sans-serif;color:var(--v2-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-theme="premium"] #drawer .v2-ncnt{flex:none;font:600 11.5px/1 Poppins,system-ui,sans-serif;font-style:normal;color:var(--v2-ink-2);background:var(--v2-surface-2);padding:6px 11px;border-radius:999px}
+html[data-theme="premium"] #drawer .v2-nchev{width:9px;height:9px;border-right:2px solid var(--v2-muted);border-bottom:2px solid var(--v2-muted);transform:rotate(-45deg);margin-left:2px}
+
+/* Sími: einn dálkur, lýsingin í fellilistanum víkur, hetjupillan færist inn að brún. */
+@media (max-width:700px){
+  html[data-theme="premium"] #drawer .v2-stpill{right:16px;bottom:14px;padding:6px 13px;font-size:11px}
+  html[data-theme="premium"] #drawer .v2-mline{font-size:12.5px}
+  html[data-theme="premium"] #drawer .v2-nrow{grid-template-columns:20px minmax(0,1fr) auto 12px}
+  html[data-theme="premium"] #drawer .v2-nrow>span{display:none}
+  html[data-theme="premium"] #drawer .v2-flyti{grid-template-columns:1fr}
+  html[data-theme="premium"] #drawer .v2-kmap{height:130px}
+}
