@@ -106,3 +106,19 @@ DRÖG:       <mál # með ---SVAR--- tilbúið til 📤>
 3. Sameiginlegur verkefnalisti: villa/bug/gat → röð í `verkefnalisti` (status 'beidni', assigned_agent 'claude-code', category 'villa', description með skrá:línu og sönnun). Aldrei laga framhjá listanum.
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
+
+## Verkferlis-yfirlitið (07.11.2026) — EIN keyrsla í stað átján
+
+Agnar: „Kortleggja upplýsingareiti, pósta, kröfuyfirlit og allt setja í api verkferlis combo
+yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
+
+- **`/api/combo-yfirlit`** (netlify/functions/combo-yfirlit.cjs) mælir 18 línur í sjö flokkum:
+  kröfur · póstur · upplýsingareitir · skoðanir · verkefnalistar · samþykktir · tengingar.
+  `?flokkur=krofur` einangrar flokk, `?radir=N` stýrir dæmum, `?skrifa=1` uppfærir málið á borðinu.
+- **`node tools/combo-yfirlit.cjs`** er sama fall úr skipanalínu (`--json`, `--flokkur`, `--skrifa`).
+- **Spjaldið** er efst á Þjónustuborðinu (js/patches/499-combo-yfirlit.js) með Keyra-takka.
+- **Mál #1540** á borðinu geymir sama yfirlit í texta; það uppfærist sjálft og titillinn breytist.
+- **Engin ný tala.** Hver lína les SÖMU sýn og vörðurinn/borðið les. Blæbrigði eru dálkar í
+  sýninni, aldrei ný sýn — tvö mælikerfi um sama hlutinn stangast alltaf á að lokum.
+- **Þak = staðan 07.11.2026.** Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".
+- **ÓMÆLT er ekki 0.** Svari sýnin ekki stendur `merki: 'OMAELT'`, aldrei núll.
