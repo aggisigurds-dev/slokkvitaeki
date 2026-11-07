@@ -32,8 +32,12 @@ const MORK = [
     gera: 'Tengdu á ÓTVÍRÆÐRI kennitölu (ein base per kt). Sé kt á fleiri en einni base — rekstrarfélag — þarf Agnar að velja staðinn.' },
   // 29 tengd 07.11.2026 (póstur 3 · kennitala 8 · ótvírætt nafn 18). Af þeim 207 sem eftir standa
   // eiga ~93 engan kúnna (kerfis- og fjármálamál) og ~52 eru birgjar eða fjöldapóstur.
+  // KERFISMÁL TELJAST EKKI. Mál sem Claude eða Veiði-vaktin stofna eru um kerfið sjálft (mælingar,
+  // listar, ákvarðanir) og eiga ENGAN kúnna með réttu. Fyrsta útgáfan taldi þau og varð rauð um
+  // leið og vaktin bjó til mál — vörður sem rauðnar af sinni eigin réttu hegðun er hávaði.
   { heiti: 'opin erindi án fyrirtækis', tafla: 'thjonustubeidni',
-    sia: 'deleted_at=is.null&status=neq.lokad&fyrirtaeki_id=is.null&customer_base_id=is.null', thak: 207,
+    sia: 'deleted_at=is.null&status=neq.lokad&fyrirtaeki_id=is.null&customer_base_id=is.null'
+       + '&created_by=not.in.(claude,veidi-vaktin)', thak: 111,
     gera: 'Tengdu um póstinn í channel_ref, kennitölu í texta, eða ótvírætt nafn. Almennt lén (gmail, simnet) sannar ekkert, og netfang sem er á mörgum stöðum (dimka@heimaleiga.is er á 15) sannar ekkert heldur.' },
   // EYDDAR RAÐIR TELJAST EKKI. Af 33 voru 15 með deleted_at og lifandi röð á sömu base — dauð röð
   // er ekki slitin tenging. Eftir standa 18 lifandi, öll með TÓMA kennitölu, svo engin þeirra var
