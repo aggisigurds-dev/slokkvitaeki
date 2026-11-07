@@ -246,17 +246,6 @@
         var d = k.querySelector('details.eq-fold'), n = d ? d.querySelectorAll('tbody tr').length : 0; if (d && n && n <= 30) d.open = true;
       }
     });
-    if (!b || body.querySelector(':scope > .v2-bvk')) return;
-    var tiles = [];
-    if (b.sl != null) tiles.push(['Slökkvitæki', b.sl]);
-    if (b.slo != null) tiles.push(['Brunaslöngur', b.slo]);
-    if (b.br) tiles.push(['Brunakerfi', b.bru_ein ? String(b.bru_ein) + ' einingar' : 'Já']);
-    var nt = (b.nt || '').split('|').filter(Boolean)[0];
-    if (nt) { var kv = nt.split(':'); kv.shift(); tiles.push(['Næsta skoðun', kv.join(':').trim()]); }
-    if (!tiles.length) return;
-    var el = document.createElement('div'); el.className = 'v2-bvk'; el.setAttribute('data-v2t', 'brunavarnir'); el.setAttribute('data-v2s', 'kpi');
-    el.innerHTML = tiles.map(function (t) { return '<div class="v2-kt"><span>' + t[0] + '</span><b>' + String(t[1]).replace(/[<>&]/g, '') + '</b></div>'; }).join('');
-    body.insertBefore(el, body.firstChild);
   }
 
   /* ── Eignasíðan í mockup-grind (07.11.2026) ────────────────────────────────────────────────────────
@@ -310,26 +299,36 @@
   }
 
   /* Grunnupplýsingar — heimilisfang, tegund, hæðir/einingar, stærð, byggingarár, eigandi. */
+  /* HÚSATÖLUR — ein heimild báðum megin (Agnar 07.11.2026: „ársskoðun er grunnurinn").
+     Þjónninn (gatt.cjs husUr) hefur þegar valið heimild á hverjum reit: það sem Agnar skráir á
+     fyrirtækjabannerinn í Ársskoðun ræður, sjálfvirka flokkunin og Landeignaskráin eru varaleið.
+     Viðmótið VELUR EKKI heimild — það les b.hus og segir í titli hvaðan talan kemur. */
+  var HUS_HEITI = { arsskodun: 'Skráð í Ársskoðun', flokkun: 'Sjálfvirk flokkun staðarins', landeignaskra: 'Landeignaskrá HMS' };
+  function husTitill(b, reitur) {
+    var h = (b.hus && b.hus.frá && b.hus.frá[reitur]) || '';
+    return HUS_HEITI[h] ? ' title="' + HUS_HEITI[h] + '"' : '';
+  }
+  function tala(b, reitur) { var h = b.hus || {}; return h[reitur] != null ? h[reitur] : null; }
   function grunnKort(b) {
     var e = b.eign || {}, f = b.flokkun || {};
-    /* 07.11.2026: HÆÐIR koma úr fasteignaskránni (flokkun.haedir), ALDREI úr fjölda teikninga — Bríetartún 9-11
-       á 15 teikningablöð en 11 hæðir. Teikningafjöldinn stendur sér í Lykiltölum.
-    */
-    var haedir = f.haedir || (b.eign || {}).haedir;
-    var m2 = e.staerd_m2 || f.m2;
+    var m2 = tala(b, 'm2');
     var L = [
-      ['pin', 'Heimilisfang', b.heimilisfang],
-      ['house', 'Tegund', f.tegund || e.tegund],
-      ['shield', 'Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null],
-      ['layers', haedir && e.einingar ? 'Hæðir / einingar' : haedir ? 'Hæðir' : 'Einingar', haedir && e.einingar ? haedir + ' hæðir · ' + e.einingar + ' einingar' : (haedir || e.einingar || null)],
-      ['ruler', 'Flatarmál (BTA)', m2 ? tolustafir(m2) + ' m²' : null],
-      ['cal', 'Byggingarár', e.byggingarar],
-      ['user', 'Eigandi', b.eigandi]
+      ['pin', 'Heimilisfang', b.heimilisfang, ''],
+      ['house', 'Tegund', f.tegund || e.tegund, ''],
+      ['shield', 'Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null, ''],
+      ['layers', 'Hæðir', tala(b, 'haedir'), 'haedir'],
+      ['house', 'Íbúðir', tala(b, 'ibudir'), 'ibudir'],
+      ['layers', 'Stigagangar', tala(b, 'stigagangar'), 'stigagangar'],
+      ['book', 'Herbergi', tala(b, 'herbergi'), 'herbergi'],
+      ['ruler', 'Flatarmál (BTA)', m2 != null ? tolustafir(m2) + ' m²' : null, 'm2'],
+      ['cal', 'Byggingarár', tala(b, 'byggingarar'), 'byggingarar'],
+      ['user', 'Eigandi', b.eigandi, '']
     ].filter(function (x) { return x[2] != null && x[2] !== ''; });
     if (!L.length) return '';
     return kortSec('v2grunn', 'info', 'Grunnupplýsingar', '',
       '<div class="v2-info">' + L.map(function (x) {
-        return '<div class="v2-irow">' + ic(x[0], 'v2-sic') + '<span>' + hreint(x[1]) + '</span><b>' + hreint(x[2]) + '</b></div>';
+        return '<div class="v2-irow"' + (x[3] ? husTitill(b, x[3]) : '') + '>' + ic(x[0], 'v2-sic') +
+          '<span>' + hreint(x[1]) + '</span><b>' + hreint(x[2]) + '</b></div>';
       }).join('') + '</div>', '', 1);
   }
 
@@ -398,14 +397,15 @@
 
   /* Lykiltölur — sömu tölur og Grunnupplýsingar, settar fram sem flísar eins og í mockupinu. */
   function lykilKort(b) {
-    var e = b.eign || {}, f = b.flokkun || {};
-    var haedir = f.haedir || e.haedir, m2 = e.staerd_m2 || f.m2;
     var tk = (b.teikning || []).filter(function (x) { return x && (x.mynd || x.threed); }).length;
+    var ib = tala(b, 'ibudir'), hb = tala(b, 'herbergi'), hd = tala(b, 'haedir'), m2 = tala(b, 'm2');
     var L = [];
-    if (e.einingar) L.push([e.einingar, 'einingar', 'house']);
-    if (haedir) L.push([haedir, haedir === 1 ? 'hæð' : 'hæðir', 'layers']);
-    if (m2) L.push([tolustafir(m2) + ' m²', 'BTA', 'ruler']);
+    if (ib != null) L.push([ib, ib === 1 ? 'íbúð' : 'íbúðir', 'house']);
+    if (hb != null) L.push([hb, hb === 1 ? 'herbergi' : 'herbergi', 'book']);
+    if (hd != null) L.push([hd, hd === 1 ? 'hæð' : 'hæðir', 'layers']);
+    if (m2 != null) L.push([tolustafir(m2) + ' m²', 'BTA', 'ruler']);
     if (tk) L.push([tk, tk === 1 ? 'teikning' : 'teikningar', 'book']);
+    L = L.slice(0, 4);
     if (L.length < 2) return '';
     return kortSec('v2lykil', 'chart', 'Lykiltölur', '',
       '<div class="v2-lykil">' + L.map(function (x) {
@@ -527,6 +527,96 @@
     }
   });
 
+  /* ── Tölureim undirsíðanna (07.11.2026) ───────────────────────────────────────────────────
+     Ein reim, endurbyggð við hver flipaskipti úr raungögnum eignarinnar. Engin tala er reiknuð
+     hér sem á sér heimild annars staðar: tækjatölurnar koma af þjóninum (skýrslurnar = Ársskoðun),
+     húsatölurnar úr b.hus, og listarnir eru taldir eins og þeir eru teiknaðir á flipanum.
+     Flipi sem á engar tölur fær ENGA reim. */
+  function kr(n) {
+    var v = Math.round(Number(n) || 0);
+    return String(Math.abs(v)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.';
+  }
+  function erindiEignar(b) {
+    var d = (G() && G().state && G().state.data) || {};
+    return (d.erindi || []).filter(function (e) { return e && e.fid === b.id; });
+  }
+  function skjolEignar(b) {
+    var d = (G() && G().state && G().state.data) || {};
+    return (d.reports || []).filter(function (r) { return r.bygging === b.nafn; });
+  }
+  function reikningarEignar(b) {
+    var d = (G() && G().state && G().state.data) || {};
+    return (d.invoices || []).filter(function (r) { return r.fid != null ? r.fid === b.id : r.bygging === b.nafn; });
+  }
+  function flipaTolur(tab, b) {
+    var T = [], i;
+    if (tab === 'brunavarnir') {
+      if (b.sl != null) T.push(['Slökkvitæki', b.sl]);
+      if (b.slo != null) T.push(['Brunaslöngur', b.slo]);
+      if (b.br) T.push(['Brunakerfi', b.bru_ein ? b.bru_ein + ' einingar' : 'Já']);
+      var nt = (b.nt || '').split('|').filter(Boolean)[0];
+      if (nt) { var kv = nt.split(':'); kv.shift(); T.push(['Næsta skoðun', kv.join(':').trim()]); }
+    } else if (tab === 'teikningar') {
+      var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); });
+      if (!tk.length) return [];
+      T.push(['Hæðir með teikningu', tk.length]);
+      var merki = tk.reduce(function (n, f) { return n + ((f.merki || []).length); }, 0);
+      if (merki) T.push(['Merkt tæki á teikningum', merki]);
+      var td = tk.filter(function (f) { return f.threed; }).length;
+      if (td) T.push(['Hæðir með 3D', td]);
+      if (b.hus && b.hus.haedir) T.push(['Hæðir í húsinu', b.hus.haedir]);
+    } else if (tab === 'verkefni') {
+      var E = erindiEignar(b);
+      if (!E.length) return [];
+      T.push(['Erindi alls', E.length]);
+      T.push(['Opin', E.filter(function (e) { return e.stada !== 'lokid'; }).length]);
+      i = E.filter(function (e) { return e.stada === 'i_vinnslu'; }).length; if (i) T.push(['Í vinnslu', i]);
+      T.push(['Lokið', E.filter(function (e) { return e.stada === 'lokid'; }).length]);
+    } else if (tab === 'skodanir') {
+      var sg = (b.saga || []).length;
+      if (sg) T.push(['Skráðir atburðir', sg]);
+      var sk = (G() && G().skodanirEignar) ? G().skodanirEignar(b) : [];
+      sk.forEach(function (x) {
+        var n = x.n || {};
+        T.push([x.k === 'brunavidvorunarkerfi' ? 'Næsta kerfisskoðun' : 'Næsta tækjaskoðun',
+          (n.m != null ? (n.m < 10 ? '0' : '') + n.m + '/' + n.y : '—')]);
+      });
+      if (!T.length) return [];
+    } else if (tab === 'skjol') {
+      var S = skjolEignar(b);
+      if (!S.length) return [];
+      T.push(['Skýrslur', S.length]);
+      var ar = S.map(function (r) { return Number(r.ar) || 0; }).filter(Boolean);
+      if (ar.length) T.push(['Nýjasta skýrsla', Math.max.apply(null, ar)]);
+      var teg = {}; S.forEach(function (r) { if (r.tegund) teg[r.tegund] = (teg[r.tegund] || 0) + 1; });
+      Object.keys(teg).slice(0, 2).forEach(function (k) { T.push([k, teg[k]]); });
+    } else if (tab === 'reikningar') {
+      var R = reikningarEignar(b);
+      if (!R.length) return [];
+      T.push(['Reikningar', R.length]);
+      var summa = R.reduce(function (n, r) { return n + (Number(r.upphaed) || 0); }, 0);
+      if (summa) T.push(['Samtals', kr(summa)]);
+      var ny = R.slice().sort(function (a, c) { return String(c.dags || '').localeCompare(String(a.dags || '')); })[0];
+      if (ny && ny.dags) T.push(['Nýjasti', String(ny.dags).slice(0, 10).split('-').reverse().join('.')]);
+    }
+    return T;
+  }
+  function flipaRaema(body, tab) {
+    var gamalt = body.querySelector(':scope > .v2-bvk');
+    var b = gB();
+    var T = (b && tab && tab !== 'yfirlit') ? flipaTolur(tab, b) : [];
+    if (!T.length) { if (gamalt) gamalt.remove(); return; }
+    var el = gamalt || document.createElement('div');
+    el.className = 'v2-bvk';
+    el.setAttribute('data-v2t', tab);
+    el.setAttribute('data-v2s', 'kpi');
+    el.setAttribute('data-v2w', 'w3 bare');   // fyllaRod telur hana ekki sem einbreitt spjald
+    el.innerHTML = T.map(function (t) {
+      return '<div class="v2-kt"><span>' + hreint(t[0]) + '</span><b>' + hreint(t[1]) + '</b></div>';
+    }).join('');
+    if (el.parentNode !== body || body.firstChild !== el) body.insertBefore(el, body.firstChild);
+  }
+
   var drTab = 'yfirlit', drTabs = null;
   function applyTab() {
     var body = document.getElementById('dr-body'); if (!body) return;
@@ -549,6 +639,7 @@
     bar.innerHTML = TABS.filter(function (t) { return have[t[0]]; }).map(function (t) {
       return '<button type="button" role="tab" data-t="' + t[0] + '" class="' + (t[0] === drTab ? 'on' : '') + '" aria-selected="' + (t[0] === drTab) + '">' + ic(TAB_IC[t[0]]) + '<span>' + t[1] + '</span></button>';
     }).join('');
+    flipaRaema(body, drTab);
     fyllaRod(body);
   }
   function drawerMeta() {
@@ -564,7 +655,10 @@
       if (fl.tegund || eg.tegund) bits.push(String(fl.tegund || eg.tegund).replace(/[<>&]/g, ''));
       var tn = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }).length;
       if (tn) bits.push(tn + (tn === 1 ? ' teikning' : ' teikningar'));
-      if (eg.einingar) bits.push(String(eg.einingar).replace(/[<>&]/g, '') + ' einingar');
+      var hu = b.hus || {};
+      if (hu.ibudir) bits.push(hu.ibudir + (hu.ibudir === 1 ? ' íbúð' : ' íbúðir'));
+      else if (hu.herbergi) bits.push(hu.herbergi + ' herbergi');
+      else if (eg.einingar) bits.push(String(eg.einingar).replace(/[<>&]/g, '') + ' einingar');
     }
     m.innerHTML = bits.length ? '<span class="v2-mline">' + ic('house', 'v2-sic') + '<span>' + bits.join(' · ') + '</span></span>' : '';
     var head = document.querySelector('#drawer .dr-head');

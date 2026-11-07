@@ -285,7 +285,10 @@
           y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada,
           id: b.id, equipment: Array.isArray(b.equipment) ? b.equipment : null,
           teikning: Array.isArray(b.teikning) ? b.teikning : null, bgr: b.bgr && typeof b.bgr === 'object' ? b.bgr : null,
-          eign: b.eign || null, beidni: !!b.beidni, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
+          eign: b.eign || null, beidni: !!b.beidni,
+          // 07.11.2026: húsatölur með heimild á hverjum reit (Ársskoðun ræður) — normalize sleppir
+          // öllu sem er ekki talið upp hér, sjá minni project_gatt_reikningar_greidendur_20261106.
+          hus: b.hus && typeof b.hus === 'object' ? b.hus : null, bru_lysing: b.bru_lysing || null, prufa: !!b.prufa,
           bru_ein: b.bru_einingar != null && +b.bru_einingar > 0 ? +b.bru_einingar : null, bru_ein_heimild: b.bru_einingar_heimild || null,
           i_thjonustu: b.i_thjonustu, skodun_manudur: b.skodun_manudur, bru_skodun_manudur: b.bru_skodun_manudur,
           ar_slokk: b.ar_slokk || [], ar_bru: b.ar_bru || [], sidasta_ar: b.sidasta_ar, saga: Array.isArray(b.saga) ? b.saga : [],
