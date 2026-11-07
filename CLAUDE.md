@@ -108,6 +108,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 
 | Spurningin snýst um … | → Sérfræðingur |
 |---|---|
+| **„Hvar stendur allt?"** — kröfur, póstur, upplýsingareitir, skoðanir, verkefnalistar, samþykktir, tengingar í EINNI keyrslu með þaki frá 07.11.2026 | `node tools/combo-yfirlit.cjs` · `/api/combo-yfirlit` · spjaldið efst á Þjónustuborðinu (499) · mál #1540 |
 | Sölu, reikninga, dkPlus/Payday, afslætti, PDF-vistun, reikninga-póst, úttektartexta | `sala-reikningar` |
 | Rukkunarmál beggja félaga — reikningalota, hvað er tilbúið að senda, punktar, póstur, tengingar (les ../brunaholf/docs/REIKNINGALOTA.md sjálfur, stjórnar sala-reikningar / bokari; póstvörðurinn er kafli í rukkari.md) | `rukkari` 🦆 |
 | Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, skýrsla↔reikning (tækjafjöldi / vegna / tvær þjónustur), Cowork/MCP-flæðið 🤝 | `sara-coworker` |

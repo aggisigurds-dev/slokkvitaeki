@@ -122,3 +122,29 @@ yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
   sýninni, aldrei ný sýn — tvö mælikerfi um sama hlutinn stangast alltaf á að lokum.
 - **Þak = staðan 07.11.2026.** Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".
 - **ÓMÆLT er ekki 0.** Svari sýnin ekki stendur `merki: 'OMAELT'`, aldrei núll.
+
+## Hvað talan „ósvarað" raunverulega er (mælt 07.11.2026)
+
+`v_fyrirtaeki_mail_stada` sagði **214 félög í þjónustu með ósvaraðan póst**. Eftir mælingu á öllum
+214 röðunum stóðu **35 raunveruleg erindi** eftir — restin var þrennt:
+
+| Flokkur | Fjöldi | Hvers vegna það er ekki erindi |
+|---|---|---|
+| Okkar eigin reikningasending | 90 | Fór um `delivery@payday.is` / `noreply@netbokhald.is` og lenti í INBOX með OKKAR nafni |
+| Eldra en SENT-safnið (fyrir 21.11.2023) | 42 | Svar er ÓMÆLANLEGT, ekki ósent |
+| Lokakveðja („takk", „ok flott") | 33 | Engin spurning |
+| Ruslpóstur / birgir / sjálfsvar | 8 | |
+| Svarað — svar sannað í sama þræði | 5 | Svarið fór á plús-netfang, sýnin sá það ekki |
+
+**Þrjár reglur úr þessu:**
+
+1. **Sendandinn einn dugar ekki.** `delivery@payday.is` ber SJÖ nöfn og fimm þeirra eru önnur félög
+   að senda OKKUR reikning (Seavis, Galaxy, Tímavera, Flutningaþjónusta Rvk). Prófaðu sendanda
+   **og** nafn. Lagfæringin í sýninni gerir nákvæmlega það; sendandaútilokun ein hefði falið
+   raunverulegan birgjapóst. Rétt tala með rangri samsetningu er verri en engin.
+2. **SENT-safnið byrjar 21.11.2023** (867 sendir póstar á móti 9.195 innkomnum; `thread_id` er NULL
+   á 8.981 af 10.062). Félag þar sem síðasti póstur er eldri getur ALDREI mælst svarað. Biðtími yfir
+   ~1.000 daga er merki um þessa glufu, ekki um vanrækslu. Segðu **ÓMÆLT**, ekki „ósvarað".
+3. **Deilt netfang margfaldar eitt erindi.** 56 einstakir póstar lágu undir 77 félögum:
+   `reikningar@eignaumsjon.is` er á ~50 félögum, `reikningar@eignarekstur.is` á 10,
+   `dimka@heimaleiga.is` á 3. Eitt svar lokar allt að tíu „ósvöruðum félögum" — teldu pósta, ekki félög.

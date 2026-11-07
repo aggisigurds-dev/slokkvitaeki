@@ -95,10 +95,27 @@ const FLOKKAR = [
     heimild: 'sýnin v_krofu_forskodun (dálkurinn rautt), ógildar sölur frátaldar',
     adgerd: 'Lesa ábendinguna áður en krafan fer út — rautt stoppar sendingu.' },
 
+  { f: 'krofur', k: 'gengid-inn-osott', h: 'Gengið-inn sölur ósóttar yfir 30 daga',
+    leid: 'v_gengid_inn_osott?order=dagar.desc', thak: 23, krona: 'samtals',
+    select: 'num,customer_nafn,samtals,dagar,innan_vaktar',
+    heimild: 'sýnin v_gengid_inn_osott (sömu skilyrði og tools/audit-solu-id.cjs)',
+    adgerd: 'ÞETTA ER EKKI KRAFA — einstaklingar staðgreiða við afhendingu, svo þetta er '
+          + 'áminning um SÍMTAL. Vörðurinn sér aðeins 4 af 23 því hann leitar frá FASTRI '
+          + 'dagsetningu 2026-09-01; 19 eldri (183.722 kr, elst 172 dagar) hafa aldrei sést '
+          + 'í neinum verði. ÓMÆLT hvort þær voru staðgreiddar og paid_at aldrei sett.' },
+
   /* ── PÓSTUR ───────────────────────────────────────────────────────────────── */
+  /* ÞAKIÐ FÓR ÚR 214 Í 124 (07.11.2026) — ekki af því að einhver svaraði, heldur af því að
+   * sýnin taldi reikningana SEM VIÐ SENDUM sem innkominn póst. Þeir fara um Payday og
+   * Netbókhald og lenda í INBOX með okkar eigin nafni. Lagfæringin prófar sendanda OG nafn:
+   * delivery@payday.is ber sjö nöfn og fimm þeirra eru ÖNNUR félög að senda OKKUR reikning
+   * (Seavis, Galaxy, Tímavera, Flutningaþjónusta Rvk) — sá póstur er raunverulegt erindi.
+   * Að útiloka sendandann einan hefði falið hann: rétt tala með rangri samsetningu.
+   * Af þeim 124 eru ~35 raunveruleg opin erindi; hitt eru lokakveðjur, fjöldapóstur og
+   * þræðir eldri en SENT-safnið (sem byrjar 21.11.2023 og gerir eldra svar ÓMÆLANLEGT). */
   { f: 'postur', k: 'postur-osvarad-thjonusta', h: 'Félög í þjónustu með ósvaraðan póst',
     leid: 'v_fyrirtaeki_mail_stada?stada=eq.osvarad&er_i_thjonustu=is.true&order=bid_dagar.desc',
-    thak: 214,
+    thak: 124,
     select: 'nafn,netfang,sidasta_efni,bid_dagar',
     heimild: 'sýnin v_fyrirtaeki_mail_stada (stada=osvarad)',
     adgerd: 'Svara, eða merkja handled_at ef þriðji aðili svaraði. ATH: lesa to_addresses — '
@@ -120,8 +137,14 @@ const FLOKKAR = [
   { f: 'upplysingar', k: 'heimilisfang-vantar', h: 'Heimilisfang vantar',
     leid: 'v_heimilisfang_vantar', thak: 199,
     select: '*',
-    heimild: 'sýnin v_heimilisfang_vantar',
-    adgerd: 'Án heimilisfangs kemst tækið ekki á kort og verkið ekki í akstursröð.' },
+    heimild: 'sýnin v_heimilisfang_vantar — MÆLIR customers_base.heimilisfang (greiðandann)',
+    adgerd: 'VARÚÐ: sýnin mælir ANNAN REIT en kostnaðinn. Kortið og akstursröðin lesa '
+          + '`fyrirtaeki.heimilisfang` (js/mapfix.js:299) og falla á NAFNIÐ þegar það vantar '
+          + '(js/patches/155-arsskodun-map-embed.js:417). Mælt 07.11.2026: af 199 stöðva '
+          + 'aðeins TVÆR raunverulega vinnu — Eskihlíð (12 lifandi tæki, ekkert heimilisfang '
+          + 'neins staðar) og Húsfélag Dalshrauni (5 tæki, gata án húsnúmers). 14 eiga gildið '
+          + 'annars staðar (uttaeki.location) og eru TENGINGARVERK, ekki upplýsingasöfnun; '
+          + '183 skipta engu (88 afgreiðslukúnnar, 78 draugaraðir úr innflutningi).' },
 
   { f: 'upplysingar', k: 'verkstadur-an-teikninga', h: 'Verkstaður án teikninga',
     leid: 'verkstadur_info?or=(teikningar.is.null,teikningar.eq.[])', thak: 18,
