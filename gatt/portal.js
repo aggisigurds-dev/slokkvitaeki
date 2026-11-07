@@ -1617,7 +1617,17 @@
      myndaspjöld; hver eign opnar eignasíðu (mynd, um eignina, þjónustan, skrefin) og
      „Skrá í þjónustu" sendir beiðni sem verður mál á Þjónustuborðinu. */
   function imgW(u, w) { return /images\.prismic\.io/.test(u || '') ? u + (u.indexOf('?') > -1 ? '&' : '?') + 'w=' + w : (u || ''); }
-  function fmtTala(n) { return Number(n).toLocaleString('is-IS'); }
+  // 07.11.2026: reiknað snið, ekki toLocaleString('is-IS') — vafrinn féll til baka á en-US og
+  // sýndi „12,298 m²" og „2,001.2 m²" í gáttinni. Íslenskt: punktur í þúsundum, komma í tugabrot.
+  function fmtTala(n) {
+    var v = Number(n);
+    if (!isFinite(v)) return '';
+    var neg = v < 0; v = Math.abs(v);
+    var heil = Math.floor(v), brot = v - heil;
+    var ut = String(heil).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    if (brot > 0) ut += ',' + String(Math.round(brot * 100) / 100).slice(2);
+    return (neg ? '-' : '') + ut;
+  }
   function utanAt(j) { return ((state.data && state.data.eignir_utan) || [])[j] || null; }
   var SVC_KORT = [
     ['Slökkvitæki', 'Slökkvitæki', 'Árleg skoðun, áfylling og viðhald. Hvert tæki skráð með staðsetningu og næstu skoðun.'],
@@ -1905,16 +1915,40 @@
   }
 
   // ── Eignasíða: um eignina, kerfi og skoðanir, erindi, eldvarnabók ──
+  // 07.11.2026 (Agnar: „látið það tengjast við skrána í staðinn fyrir fjöldi teikninga"):
+  // húsatölurnar koma úr b.hus — það sem skráð er í Ársskoðun ræður, flokkunin og Landeignaskrá
+  // eru varaleið sem þjónninn hefur þegar valið (gatt.cjs husUr), og heimildin fylgir reitnum.
+  // FJÖLDI TEIKNINGABLAÐA ER EKKI HÆÐAFJÖLDI: Bríetartún 9-11 á 15 blöð en 12 hæðir.
+  var HUS_HEIMILD = { arsskodun: 'Skráð í Ársskoðun', flokkun: 'Sjálfvirk flokkun staðarins', landeignaskra: 'Landeignaskrá HMS' };
+  function husGildi(b, reitur) { var h = b.hus || {}; return h[reitur] != null ? h[reitur] : null; }
+  function husHeimild(b, reitur) {
+    var h = (b.hus && b.hus['frá'] && b.hus['frá'][reitur]) || '';
+    return HUS_HEIMILD[h] || '';
+  }
   function umEignina(b) {
     var e = b.eign || {}, f = b.flokkun || {};
-    var m2 = e.staerd_m2 || f.m2, haedir = (b.teikning || []).length || f.haedir;
-    if (!(e.tegund || f.tegund || m2 || e.byggingarar)) return '';
-    function kp(k, v, t) { return '<div class="dk' + (t ? ' t' : '') + '"><div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>'; }
+    var m2 = husGildi(b, 'm2'), haedir = husGildi(b, 'haedir'), byggar = husGildi(b, 'byggingarar');
+    var ibudir = husGildi(b, 'ibudir'), stiga = husGildi(b, 'stigagangar');
+    if (!(e.tegund || f.tegund || m2 || haedir || byggar)) return '';
+    function kp(k, v, t, hv) {
+      return '<div class="dk' + (t ? ' t' : '') + '"' + (hv ? ' title="' + esc(hv) + '"' : '') + '>' +
+        '<div class="k">' + k + '</div><div class="v">' + (v == null || v === '' ? '—' : esc(v)) + '</div></div>';
+    }
+    // Fjórði reiturinn: hæðir ef þær eru skráðar, annars íbúðir/stigagangar, annars byggingarár.
+    var tk = (b.teikning || []).filter(function (x) { return x && (x.mynd || x.threed); }).length;
+    var fjordi = haedir != null ? ['Hæðir', haedir, 'haedir']
+      : ibudir != null ? ['Íbúðir', ibudir, 'ibudir']
+      : stiga != null ? ['Stigagangar', stiga, 'stigagangar']
+      : byggar != null ? ['Byggt', byggar, 'byggingarar']
+      // Engin húsatala skráð: teikningablöðin eru það eina sem við vitum — og þau eru TALIN SEM BLÖÐ,
+      // ekki hæðir (titillinn segir það), svo reiturinn standi ekki tómur.
+      : tk ? ['Teikningar', tk + (tk === 1 ? ' blað' : ' blöð'), null, 'Fjöldi teikningablaða — ekki hæðafjöldi hússins']
+      : ['Byggt', null, 'byggingarar'];
     return '<section class="dsec"><h4>Um eignina</h4><div class="dkpis k4">' +
       kp('Tegund', f.tegund || e.tegund, true) +
       kp('Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null, true) +
-      kp('Stærð', m2 ? fmtTala(m2) + ' m²' : null) +
-      kp(haedir ? 'Hæðir' : 'Byggt', haedir ? haedir : e.byggingarar) + '</div>' +
+      kp('Stærð', m2 != null ? fmtTala(m2) + ' m²' : null, false, husHeimild(b, 'm2')) +
+      kp(fjordi[0], fjordi[1], false, fjordi[3] || husHeimild(b, fjordi[2])) + '</div>' +
       (e.lysing ? '<p class="elys">' + esc(e.lysing) + '</p>' : '') + '</section>';
   }
   function kerfiHtml(b, utan) {
