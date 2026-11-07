@@ -77,6 +77,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `charlize` | skill | slokkvitaeki | `.claude/skills/charlize/SKILL.md` | `muna` · `skrá` · `Charlize` · `hvernig var þetta` | Spyrja Agnar að því sem Charlize veit nú þegar. |
 | `arnold` | skill | slokkvitaeki | `.claude/skills/arnold/SKILL.md` | `staðsetning` · `slökkvigildi` · `flóttaleið` · `byggingarreglugerð` | Rugla við agent `oryggi` (RLS). Roster-Arnold er **bæði**: þetta skill + `oryggi`-rödd. |
 | `rekstrarfelog-parun` | skill | slokkvitaeki | `.claude/skills/rekstrarfelog-parun/SKILL.md` (tól: `tools/para-rekstrarfelag.cjs`, `tools/renna-rekstrarfelag.cjs`; fall: brunaholf `para-rekstrarfelag.js`) | `para eftir magni` · `rekstrarfélag stemmir` · `tvíræð` · `vegna-línan` · `sækja til hleðslu` | Para sama reikning við tvo staði. Taka fyrstu sögufærsluna af mörgum. Dæma reikning rangan án þess að lesa PDF-ið. Hreyfa manual/manual_unlink pör. |
+| `rannsoknarhamur` | skill | global (`~/.claude/skills`) | `~/.claude/skills/rannsoknarhamur/SKILL.md` | `rannsóknarhamur` · `hvað liggur úti` · `órukkað` · `finna verðmæti` · `ósvarað` | Láta rannsóknarlotu skrifa. Tvö svið á eina lotu. Segja „beið" án þess að hafa lesið gögnin. Rukka kröfu án sönnunar. |
 | `elon-musk` | skill | slokkvitaeki | `.claude/skills/elon-musk/SKILL.md` | sama og agentinn | Sjá `elon-musk` að ofan. |
 | `deploy` | skill | slokk + bh | `.claude/skills/deploy/SKILL.md` | `deploy` · `ýta` · `deploy.js` | `node deploy.js`. |
 

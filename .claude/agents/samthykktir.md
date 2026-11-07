@@ -223,6 +223,12 @@ Samþykkja skal því fylgja þessum reglum:
    í raun (verður reikningur felldur niður? fer eitthvað til viðskiptavinar?).
 3. Nýjasta málið efst (sjálfgefin röðun síðan 27.10.2026).
 
+## Lærdómur 07.11.2026 (allt mælt)
+
+- **Ólokið mál er ekki þekking.** Setning sem lýsir ástandi sem getur breyst á morgun („á ólokið að", „hefur ekki svarað") á heima á borði sem verkefni, aldrei í `charlize_knowledge`. Af 869 málum stóðust 23 tvær yfirferðir — nær öll af þessari gerð, því póstur getur sannað að eitthvað HAFI gerst en aldrei að eitthvað hafi EKKI gerst. Endurmældu því „hefur ekki svarað" gegn `v_erindi_osvarad` áður en þú treystir því.
+- **Safnaðu í eitt mál.** 15 ólokin loforð urðu að EINU máli (#1522), ekki 15 kortum. Agnar: „ég vil helst ekkert fá á þjónustuborðið mitt nema eitthvað sem er bráðnauðsynlegt að þið getið ekki fundið svarið." Áður en mál er stofnað: finnst svarið í gögnunum? Þá finnur þú það, ekki Agnar.
+- **Sýnur til endurmælingar í skrefi 2:** `v_krafa_ekki_send`, `v_kredit_an_endurgerdar`, `v_verk_an_reiknings`, `v_skodun_gleymd`, `v_taekjatolur_misraemi`, `v_erindi_osvarad`, `v_skeytamidlun_vantar`. Lestu `comment on view` (`select obj_description('<sýn>'::regclass)`) fyrir gildrurnar.
+
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).

@@ -463,6 +463,15 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
 
 - **26.10.2026** — 294 Úttektartexti (0a4d0a34, önnur lota): textinn sem 294 semur er vistaður sem trip.notesAuto. Standi reiturinn enn ÓBREYTTUR sá texti en tækjalistinn gefi nú annan, fær hann gulan ramma og takkann ↻ Uppfæra textann. Handskrifaður texti fær enga viðvörun og er aldrei yfirskrifaður — samanburðurinn er á notesAuto, ekki á reitnum einum.
 
+## Lærdómur 07.11.2026 (allt mælt)
+
+- **Tala úr talningu er ekki krafa.** `R-000716 Þangbakki 8-10, 190.987 kr.` leit út eins og kredit sem gleymdist að endurgera. Verkið var ALDREI UNNIÐ: Agnar skrifaði „misskilningur með þetta verk", málið segir „engin úttekt var gerð", og tækin 55 höfðu enga skoðunardagsetningu. Lestu söguna (`krafa_note`, athugasemdir, póstinn, málið) áður en tala er kölluð krafa.
+- **Yfirtökureikningar eru EKKI okkar krafa.** `stolpi_reikningar` merktir „opinn við yfirtöku 07.05.2026" (95 stk., 4,6 m.kr.) voru greiddir til fyrri eiganda; merkið segir aðeins að þeir stóðu opnir í bókum FYRRI EIGENDA. Þeir voru ranglega taldir sem 3,2 m.kr. í tekjum 07.11. Útilokaðu allt sem ber „yfirtöku" í stöðu eða skýringu.
+- **`invoiced_at` er TÓMT á reikningum sem bíða kröfu.** Sían `invoiced_at is not null` skilaði NÚLLI þótt níu reikningar upp á 662.759 kr. biðu. Rétta merkið er `greitt_med = 'reikningur'`.
+- **`reikningspunktar.applied` er marklaus:** NULL á öllum 26 punktunum þótt 14 séu sannanlega rukkaðir. Fáni sem er aldrei settur segir ekkert — mældu gegn `solur`. Sama með Hoppers: `krafa_sent_at` segir 28.08 en kúnninn segist aldrei hafa fengið kröfu.
+- **Samningsverð ræður reikningnum.** Hagvagnar eiga samning um 2.700 kr./tæki (Charlize #1991) en voru rukkaðir 3.065 á 177 tækjum; Hamraborg 28 á 25 % afslátt sem vantaði. Berðu verð á reikningi saman við kjörin í Charlize áður en hann fer út.
+- **Sýnur í stað handvirkrar leitar:** `v_krafa_ekki_send`, `v_kredit_an_endurgerdar`, `v_verk_an_reiknings`, `v_skodun_gleymd`, `v_taekjatolur_misraemi`, `v_erindi_osvarad`, `v_skeytamidlun_vantar`. Hver ber `comment on view` með gildrunum sínum: `select obj_description('<sýn>'::regclass)`.
+
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).

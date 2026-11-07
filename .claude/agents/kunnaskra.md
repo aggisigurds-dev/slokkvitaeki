@@ -217,6 +217,12 @@ birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" 
 - Heimaleiga ehf sér um eignirnar en er ekki alltaf greiðandinn; hver eign hefur greiðanda með EIGIN kennitölu og allir bera `rekstrarfelag=Heimaleiga` í `customers_base`. [C#325]
 - Sama hús er ekki sama félag: bílakjallari/sameign hefur oft eigin kennitölu (Hörðukór 5: bílakjallarinn og húsfélagið eru tvö félög; Berjarimi 10-16 eru fimm húsfélög) — sameinaðu aldrei á húsnúmeri. [C#432, C#558]
 
+## Lærdómur 07.11.2026 (allt mælt)
+
+- **Ólokið mál er ekki þekking.** Setning sem lýsir ástandi sem getur breyst á morgun („á ólokið að", „hefur ekki svarað") á heima á borði sem verkefni, aldrei í `charlize_knowledge`. Af 869 málum stóðust 23 tvær yfirferðir — nær öll af þessari gerð, því póstur getur sannað að eitthvað HAFI gerst en aldrei að eitthvað hafi EKKI gerst.
+- **Safnaðu í eitt mál.** 15 ólokin loforð urðu að EINU máli (#1522), ekki 15 kortum. Agnar: „ég vil helst ekkert fá á þjónustuborðið mitt nema eitthvað sem er bráðnauðsynlegt að þið getið ekki fundið svarið."
+- **Sýnur sem snerta kúnnagögn:** `v_taekjatolur_misraemi` (tækjatölur stangast), `v_skodun_gleymd`, `v_erindi_osvarad`, `v_skeytamidlun_vantar`; einnig `v_krafa_ekki_send`, `v_kredit_an_endurgerdar`, `v_verk_an_reiknings`. Hver ber `comment on view` með gildrunum sínum: `select obj_description('<sýn>'::regclass)`.
+
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
