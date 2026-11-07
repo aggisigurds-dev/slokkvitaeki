@@ -142,6 +142,15 @@ function notur(v, rodir, summa) {
     const titill = v.titill(rodir.length, summa != null ? kr(summa) : '');
     const body = { title: titill, notes: notur(v, rodir, summa), updated_at: new Date().toISOString() };
     if (mal) {
+      /* VARÐVEITA HANDSKRIFAÐ EFNI (07.11.2026). Vaktin endurskrifar `notes` í hverri keyrslu.
+         Fyrsta útgáfan hefði þurrkað út greiningu sem var bætt við málið í höndunum — netföng,
+         sannanir, ákvarðanir Agnars. Allt frá fyrsta „══" og niður úr er mannsverk og stendur. */
+      const fyrri = (await sok('thjonustubeidni?select=notes&id=eq.' + mal.id))[0];
+      const gamalt = String((fyrri && fyrri.notes) || '');
+      const i = gamalt.indexOf('\n══ ');
+      if (i > -1) body.notes += gamalt.slice(i);
+    }
+    if (mal) {
       console.log((THURR ? '[þurrt] ' : '') + 'UPPFÆRI #' + mal.id + ' — ' + rodir.length + ' raðir' + (summa ? ', ' + kr(summa) : ''));
       if (!THURR) await sok('thjonustubeidni?id=eq.' + mal.id, { method: 'PATCH', body: JSON.stringify(body) });
       uppfaert++;
