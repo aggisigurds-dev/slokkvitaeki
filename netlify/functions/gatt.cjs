@@ -931,12 +931,17 @@ exports.handler = async (event) => {
     // (AppSettings co_bygging_mynd — sama mynd og bannerinn á fyrirtækjasíðunni, Verkstæði, Ársskoðun, Rekstrarfélög)
     // er varaleið gáttarinnar þegar eign.mynd vantar. Ein heimild báðum megin: gáttarmyndirnar fara í co_bygging_mynd.
     let bmMap = {};
+    // 07.11.2026 (Agnar: „ársskoðun er grunnurinn"): húsatölurnar sem Agnar skráir á fyrirtækjabannerinn
+    // í Ársskoðun (AppSettings banner_upplysingar, patch 363) — hæðir, íbúðir, stigagangar, herbergi, m²,
+    // byggingarár, eignir. Þær RÁÐA hér; sjálfvirka flokkunin og Landeignaskráin eru varaleið.
+    let buMap = {};
     try {
       const ar = await Q.app;
       if (ar.ok) {
         const row = (await ar.json())[0];
         bruMap = (row && row.settings && row.settings.brunakerfi_customers) || {};
         bmMap = (row && row.settings && row.settings.co_bygging_mynd) || {};
+        buMap = (row && row.settings && row.settings.banner_upplysingar) || {};
       }
     } catch (_) {}
     // 23.10.2026 (Agnar: „þjónustugáttin og rekstrarfélög eru ekki að sýna heildar einingafjöldann í brunakerfisþjónustunni"):
@@ -977,6 +982,37 @@ exports.handler = async (event) => {
       const bm = bruMap[id] || bruMap[String(id)];
       const n = bm && typeof bm === 'object' ? (+bm.unit_count || 0) : 0;
       return n > 0 ? { n, heimild: 'askrift', ar: null } : null;
+    };
+    // Húsatölur eignarinnar með heimild á hverjum reit. Ársskoðun fyrst, skrárnar sem varaleið.
+    // Gildin í banner_upplysingar eru TEXTI úr innsláttarreit ("12", "12298", "6585.6", "") — tala eða ekkert.
+    const buTala = (v) => {
+      if (v == null) return null;
+      const t = String(v).trim().replace(/\s/g, '').replace(',', '.');
+      if (!t) return null;
+      const n = Number(t);
+      return isFinite(n) && n > 0 ? n : null;
+    };
+    const HUS_REITIR = [
+      ['haedir', 'haedir'], ['ibudir', 'ibudir'], ['stigagangar', 'stiga'],
+      ['herbergi', 'herbergi'], ['m2', 'm2'], ['byggingarar', 'byggar'], ['eignir', 'eignir'],
+    ];
+    const husUr = (s, fl) => {
+      const bu = buMap[String(s.id)] && typeof buMap[String(s.id)] === 'object' ? buMap[String(s.id)] : {};
+      const e = s.eign && typeof s.eign === 'object' ? s.eign : {};
+      const ut = {}, frá = {};
+      HUS_REITIR.forEach(([ut_, inn]) => { const v = buTala(bu[inn]); if (v != null) { ut[ut_] = v; frá[ut_] = 'arsskodun'; } });
+      // Varaleið per reit — aðeins þar sem Ársskoðun skráir ekkert.
+      const vara = [
+        ['haedir', fl && fl.haedir != null ? Number(fl.haedir) : null, 'flokkun'],
+        ['m2', fl && fl.m2 != null ? Number(fl.m2) : null, 'flokkun'],
+        ['byggingarar', buTala(e.byggingarar), 'landeignaskra'],
+        ['m2', buTala(e.staerd_m2), 'landeignaskra'],
+        ['eignir', buTala(e.einingar), 'landeignaskra'],
+      ];
+      vara.forEach(([k, v, h]) => { if (ut[k] == null && v != null && isFinite(v) && v > 0) { ut[k] = v; frá[k] = h; } });
+      if (!Object.keys(ut).length) return null;
+      ut.frá = frá;
+      return ut;
     };
     const husmyndUr = (s) => {
       const e = s.eign && typeof s.eign === 'object' ? s.eign : null;
@@ -1181,6 +1217,8 @@ exports.handler = async (event) => {
         slo: slo,
         // Upplýsingar um fasteignina (mynd, stærð, ár, tegund, lýsing) — opinberar upplýsingar
         eign: husmyndUr(s),
+        // Húsatölur með heimild á hverjum reit — Ársskoðun ræður (sjá husUr).
+        hus: husUr(s, flokkunById[s.id] || null),
         beidni: !!beidniById[s.id],
         kerfi: kerfiById[s.id] || [],
         flokkun: flokkunById[s.id] || null,
