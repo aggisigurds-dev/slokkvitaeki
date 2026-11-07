@@ -218,10 +218,10 @@
      Teikningar · Skoðanir · Skjöl · Lykiltölur · fellilistinn neðst. Nýju spjöldin (v2*) eru númer 1–5, 12 og 20. */
   var SEC_TAB = [
     [/^Yfirlit/, 'yfirlit', 'w3 bare', 1, 'yfkpi'], [/^Erindi/, 'verkefni', '', 6, 'erindi', 'wrench'], [/^Eldvarnabók/, 'yfirlit skodanir', '', 9, 'eb', 'book'],
-    [/^Teikningar/, 'yfirlit teikningar', 'w2', 7, 'teikn', 'layers'], [/^Búnaðargreining/, 'brunavarnir', 'w2', 0, 'bgr', 'flame'], [/^Búnaður/, 'brunavarnir', 'w2', 0, 'bun', 'flame'],
+    [/^Teikningar/, 'yfirlit teikningar', 'w3', 10, 'teikn', 'layers'], [/^Búnaðargreining/, 'brunavarnir', 'w2', 0, 'bgr', 'flame'], [/^Búnaður/, 'brunavarnir', 'w2', 0, 'bun', 'flame'],
     [/^Kerfi og skoðanir/, 'brunavarnir skodanir', 'w2', 0, 'kerfi', 'shield'], [/^Greining teikninga/, 'brunavarnir', '', 0, 'gt', 'layers'], [/^Greining fasteignar/, 'um', 'w2', 0, 'gfast', 'chart'],
-    [/^Viðhaldsáætlun/, 'verkefni skodanir', '', 11, 'vid', 'cal'], [/^Saga eignar/, 'skodanir', 'w2', 0, 'saga', 'chart'], [/^Skoðana/, 'yfirlit skodanir', '', 8, 'sodsaga', 'shield'],
-    [/^Skýrslur/, 'yfirlit skjol', '', 10, 'skyrsl', 'book'], [/^Reikningar/, 'reikningar', 'w2', 0, 'reikn', 'receipt'],
+    [/^Viðhaldsáætlun/, 'verkefni skodanir', '', 11, 'vid', 'cal'], [/^Saga eignar/, 'skodanir', 'w2', 0, 'saga', 'chart'], [/^Skoðana/, 'yfirlit skodanir', '', 7, 'sodsaga', 'shield'],
+    [/^Skýrslur um eignina/, 'skjol', '', 0, 'skyrslueign', 'book'], [/^Skýrslur/, 'yfirlit skjol', '', 8, 'skyrsl', 'book'], [/^Reikningar/, 'reikningar', 'w2', 0, 'reikn', 'receipt'],
     [/^Rými og leigutakar/, 'um', 'w2', 0, 'rymi'], [/^Lyklar/, 'um', '', 0, 'lyklar'], [/^Orkumælar/, 'um', '', 0, 'orku'], [/^Kostnaður/, 'um', '', 0, 'kostn'], [/^Um eignina/, 'um', 'w2', 0, 'umeign', 'info']
   ];
   function secTab(el) {
@@ -290,7 +290,8 @@
     var N = naestu(b), d = new Date(), nu = d.getFullYear() * 12 + (d.getMonth() + 1);
     var seint = N.filter(function (x) { return x.idx < nu; });
     var ham, hed, und;
-    if (!N.length) { ham = 'obekkt'; hed = 'Ekki skráð'; und = 'Skoðunarmánuður er ekki skráður á eignina.'; }
+    var skrad = !!String((b && b.nt) || '').trim();
+    if (!skrad) { ham = 'obekkt'; hed = 'Ekki skráð'; und = 'Skoðunarmánuður er ekki skráður á eignina.'; }
     else if (seint.length) { ham = 'seint'; hed = 'Skoðun á eftirtíma'; und = seint.length === 1 ? 'Ein skoðun er komin fram yfir skoðunarmánuð.' : seint.length + ' skoðanir eru komnar fram yfir skoðunarmánuð.'; }
     else { ham = 'ok'; hed = 'Skoðun í skilum'; und = 'Engin skoðun er komin fram yfir skoðunarmánuð.'; }
     var pilla = '';
@@ -311,11 +312,15 @@
   /* Grunnupplýsingar — heimilisfang, tegund, hæðir/einingar, stærð, byggingarár, eigandi. */
   function grunnKort(b) {
     var e = b.eign || {}, f = b.flokkun || {};
-    var haedir = (b.teikning || []).length || f.haedir;
+    /* 07.11.2026: HÆÐIR koma úr fasteignaskránni (flokkun.haedir), ALDREI úr fjölda teikninga — Bríetartún 9-11
+       á 15 teikningablöð en 11 hæðir. Teikningafjöldinn stendur sér í Lykiltölum.
+    */
+    var haedir = f.haedir || (b.eign || {}).haedir;
     var m2 = e.staerd_m2 || f.m2;
     var L = [
       ['pin', 'Heimilisfang', b.heimilisfang],
       ['house', 'Tegund', f.tegund || e.tegund],
+      ['shield', 'Notkunarflokkur', f.flokkur ? 'Flokkur ' + f.flokkur : null],
       ['layers', haedir && e.einingar ? 'Hæðir / einingar' : haedir ? 'Hæðir' : 'Einingar', haedir && e.einingar ? haedir + ' hæðir · ' + e.einingar + ' einingar' : (haedir || e.einingar || null)],
       ['ruler', 'Flatarmál (BTA)', m2 ? tolustafir(m2) + ' m²' : null],
       ['cal', 'Byggingarár', e.byggingarar],
@@ -394,7 +399,7 @@
   /* Lykiltölur — sömu tölur og Grunnupplýsingar, settar fram sem flísar eins og í mockupinu. */
   function lykilKort(b) {
     var e = b.eign || {}, f = b.flokkun || {};
-    var haedir = (b.teikning || []).length || f.haedir, m2 = e.staerd_m2 || f.m2;
+    var haedir = f.haedir || e.haedir, m2 = e.staerd_m2 || f.m2;
     var tk = (b.teikning || []).filter(function (x) { return x && (x.mynd || x.threed); }).length;
     var L = [];
     if (e.einingar) L.push([e.einingar, 'einingar', 'house']);
@@ -405,7 +410,7 @@
     return kortSec('v2lykil', 'chart', 'Lykiltölur', '',
       '<div class="v2-lykil">' + L.map(function (x) {
         return '<div class="v2-lt">' + ic(x[2], 'v2-sic') + '<b>' + hreint(x[0]) + '</b><span>' + hreint(x[1]) + '</span></div>';
-      }).join('') + '</div>', '', 12);
+      }).join('') + '</div>', '', 6);
   }
 
   /* Fellilistinn neðst — ein lína á hvern flipa sem á efni, með talningunni sem flipinn ber sjálfur. */
@@ -435,9 +440,35 @@
       }).join('') + '</div>', 'w3', 20);
   }
 
+  /* Engin röð endar hálf: síðasta einbreiða spjaldið spannar það sem upp á vantar í síðustu röðinni.
+     Dálkafjöldinn er lesinn úr grindinni sjálfri svo reglan fylgi breiddinni (3 → 2 → 1 dálkur). */
+  function fyllaRod(body) {
+    var singles = [];
+    Array.prototype.forEach.call(body.children, function (k) {
+      if (getComputedStyle(k).display === 'none') return;
+      var w = k.getAttribute('data-v2w') || '';
+      var ws = ' ' + w + ' ';
+      if (ws.indexOf(' w2 ') > -1 || ws.indexOf(' w3 ') > -1 || ws.indexOf(' bare ') > -1) return;
+      singles.push(k);
+    });
+    singles.forEach(function (k) { k.style.removeProperty('grid-column'); });
+    if (body.getAttribute('data-v2tab') !== 'yfirlit') return;
+    var cols = String(getComputedStyle(body).gridTemplateColumns || '').trim().split(' ').filter(Boolean).length;
+    if (cols < 2 || singles.length < 2) return;
+    var r = singles.length % cols;
+    if (!r) return;
+    singles.sort(function (a, c) { return (+a.style.getPropertyValue('--v2o') || 0) - (+c.style.getPropertyValue('--v2o') || 0); });
+    singles[singles.length - 1].style.setProperty('grid-column', 'span ' + (cols - r + 1));
+  }
+  var fyllaT = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(fyllaT);
+    fyllaT = setTimeout(function () { var b = document.getElementById('dr-body'); if (b && on()) fyllaRod(b); }, 120);
+  });
+
   function yfExtras(body) {
     var b = gB(); if (!b) return;
-    if (body.querySelector(':scope > [data-v2s="v2grunn"], :scope > [data-v2s="v2stada"]')) { kortLifga(body); return; }
+    if (body.querySelector(':scope > [data-v2s="v2grunn"], :scope > [data-v2s="v2stada"]')) { kortLifga(body); fyllaRod(body); return; }
     var html = grunnKort(b) + stadaKort(b) + bunadurKort(b) + stadKort(b) + flytiKort(b) + lykilKort(b) + navKort(body);
     if (!html) { body.classList.remove('v2-eign-ny'); return; }
     var tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -447,8 +478,15 @@
        í stað þess að vera teiknaður upp á nýtt (ein heimild fyrir þeim texta). */
     var dnext = body.querySelector(':scope > [data-v2s="yfkpi"] .dnext'), slot = body.querySelector('.v2-nslot');
     if (dnext && slot) slot.appendChild(dnext);
+    /* 07.11.2026 (Agnar: „sé bara ein lína af teikningum og síðan restin í tab"): forskoðunin sýnir eina röð,
+       hlekkurinn fer á Teikningar-flipann þar sem allar hæðirnar standa. CSS felur umframhæðirnar. */
+    var th = body.querySelector(':scope > [data-v2s="teikn"] > h4');
+    if (th && !th.querySelector('[data-v2go="teikningar"]')) {
+      th.insertAdjacentHTML('beforeend', '<a href="#" class="dsec-meira" data-v2go="teikningar">Opna teikningar →</a>');
+    }
     body.classList.add('v2-eign-ny');
     kortLifga(body);
+    fyllaRod(body);
   }
 
   /* Kortið er teiknað eftir á (Leaflet sótt í fyrsta sinn) — sama flísaþjónusta og Mitt vinnusvæði notar. */
@@ -511,6 +549,7 @@
     bar.innerHTML = TABS.filter(function (t) { return have[t[0]]; }).map(function (t) {
       return '<button type="button" role="tab" data-t="' + t[0] + '" class="' + (t[0] === drTab ? 'on' : '') + '" aria-selected="' + (t[0] === drTab) + '">' + ic(TAB_IC[t[0]]) + '<span>' + t[1] + '</span></button>';
     }).join('');
+    fyllaRod(body);
   }
   function drawerMeta() {
     var g = G(), b = g && g.drB ? g.drB() : null, tt = document.querySelector('#drawer .dr-tt'); if (!tt) return;

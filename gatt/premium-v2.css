@@ -404,3 +404,34 @@ html[data-theme="premium"] #drawer .v2-nchev{width:9px;height:9px;border-right:2
   html[data-theme="premium"] #drawer .v2-flyti{grid-template-columns:1fr}
   html[data-theme="premium"] #drawer .v2-kmap{height:130px}
 }
+
+/* ══ 07.11.2026 — svör við þrennu frá Agnari ══════════════════════════════════════════════════
+   „Ég vil ekki hafa svona tómt á milli": grindin var align-items:start, svo lágt spjald skildi eftir
+   gat niður að næstu röð. Spjöldin enda nú í sömu línu innan raðarinnar, eins og í mockupinu. */
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]{align-items:stretch}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>.dsec:not([data-v2w~="bare"]){display:flex;flex-direction:column}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>.dsec:not([data-v2w~="bare"])>:not(h4):last-child{flex:1 1 auto}
+
+/* „Sé bara ein lína af teikningum og síðan restin í tab": forskoðunin er EIN röð — þrjár hæðir á skjá,
+   tvær á spjaldtölvu, ein á síma. Hausinn ber „Opna teikningar →" og flipinn sýnir allar hæðirnar. */
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid>*:nth-child(n+4){display:none}
+html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .legend{display:none}
+@media (max-width:1179px){
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid>*:nth-child(n+3){display:none}
+}
+@media (max-width:700px){
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid{grid-template-columns:1fr}
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="teikn"] .tgrid>*:nth-child(n+2){display:none}
+}
+
+/* Á mjóum skjá var grindin display:block — þá hættir order að gilda og spjöldin lentu í DOM-röð
+   (Eldvarnabók og Teikningar efst, Grunnupplýsingar neðst). Einn DÁLKUR heldur röðinni. */
+@media (max-width:899px){
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>.dsec{margin:0}
+  html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>.dsec:not([data-v2w~="bare"])>:not(h4):last-child{flex:0 1 auto}
+}
+/* Flísarnar teygjast ekki þótt spjaldið geri það — talan situr í miðju í stað þess að hanga efst. */
+html[data-theme="premium"] #drawer .v2-lt{justify-content:center}
