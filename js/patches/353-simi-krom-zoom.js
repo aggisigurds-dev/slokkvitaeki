@@ -130,7 +130,7 @@
     'html[data-viewmode="mobile"] #bstal-banner .bb-word,html.slokk-phone-dev #bstal-banner .bb-word{display:none!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-logo img,html.slokk-phone-dev #bstal-banner .bb-logo img{height:24px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-logo,html.slokk-phone-dev #bstal-banner .bb-logo{padding:2px 4px 2px 2px!important;margin:0!important}',
-    'html[data-viewmode="mobile"] #bstal-banner .bb-face,html.slokk-phone-dev #bstal-banner .bb-face{padding:0 52px 0 6px!important;gap:4px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-face,html.slokk-phone-dev #bstal-banner .bb-face{padding:0 52px 0 56px!important;gap:4px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .ky-vm,html.slokk-phone-dev #bstal-banner .ky-vm{margin:0 0 0 auto!important;flex:none!important}',
     /* Merkimiðar rofans („Sími/Tafla/Skjár") fela sig aðeins undir @media ≤760px í 166 — sem gildir ekki á 980px
        layout-viewporti símans í Tölvusíðu-ham; rofinn varð 200px og flæddi út fyrir borðann. Tákn ein á síma. */

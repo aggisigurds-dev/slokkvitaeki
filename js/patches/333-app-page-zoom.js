@@ -613,7 +613,8 @@
       m.id = KL_ID;
       m.style.cssText = 'position:fixed;left:50%;top:calc(var(--sz-pnl-top,60px) + 8px);transform:translateX(-50%);z-index:2147483602;'
         + 'zoom:var(--app-krom-zoom,1);padding:6px 14px;border-radius:999px;border:1px solid #000;background:' + MALMUR + ';color:#f6e7b8;'
-        + 'font:700 15px ' + DISP + ';box-shadow:0 10px 24px -10px rgba(0,0,0,.7);pointer-events:none';
+        + 'font:700 13px ' + DISP + ';box-shadow:0 10px 24px -10px rgba(0,0,0,.7);pointer-events:none;'
+        + 'max-width:calc(100vw - 24px);white-space:nowrap';   // 07.11.2026: 15px x kromzoom var risapilla yfir efninu
       m.addEventListener('click', () => { if (lifandi) { lifandi = null; apply(); } klMerki(''); });
       document.body.appendChild(m);
     }

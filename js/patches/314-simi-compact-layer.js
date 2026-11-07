@@ -187,7 +187,18 @@
       '{max-width:none;overflow:visible}',
 
     // ── Banner: Sími is a MODE, not a media query ──────────────────────────
-    'html[data-viewmode="mobile"] #bstal-banner{height:66px!important;top:8px!important;left:58px!important;right:8px!important}',
+    // 07.11.2026 (Agnar: „vill ekki hafa þetta laust“): borðinn var fljótandi pilla (top:8 left:58 right:8, 16px horn)
+    // með hvítum hamborgara lausum vinstra megin og „Aa“ lausu fyrir neðan. Nú er hann HAFNAÐUR: fullbreiður, flatur að
+    // efri brún, aðeins neðri hornin rúnuð — og hamborgarinn, Stílstjórinn og Aa sitja INNI í honum. Hæð 62 (var 66+8).
+    'html[data-viewmode="mobile"] #bstal-banner{height:62px!important;top:0!important;left:0!important;right:0!important;' +
+      'border-radius:0 0 14px 14px!important;padding:5px!important}',
+    // (vinstri fyllingin undir hamborgarann er sett i 353, sem a padding-styttinguna a .bb-face og hleest sidar)
+    // Hamborgarinn inni í borðanum: dökkur eins og stálið, ekki hvítur ferningur utan á því.
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] #_mnav_btn{top:9px!important;left:8px!important;' +
+      'background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.22)!important;color:#eef1f5!important;' +
+      'box-shadow:none!important;border-radius:11px!important}',
+    // „Aa“ (síðustærð, 333) sat ofan í Ársskoðunar-stikunni — fer í hægri enda borðans, vinstra megin við Stílstjórann.
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] #_sz-aa{top:18px!important;right:46px!important}',
     'html[data-viewmode="mobile"] #_pe-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-rightwrap{display:none!important}',
     'html[data-viewmode="mobile"] #bstal-banner .bb-logo img{height:34px!important}',

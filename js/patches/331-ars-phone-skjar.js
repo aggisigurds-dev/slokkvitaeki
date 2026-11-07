@@ -498,6 +498,10 @@
       '@media (max-width:900px){#' + BAR_ID + '{display:flex!important}}',
       '@media (pointer:coarse){#' + BAR_ID + '{display:flex!important}}',
       '#' + BAR_ID + ' ._ars-sjon-modes{display:flex;align-items:stretch}',
+      // 07.11.2026 (Agnar: „þarf ekki tvo eins stjórntæki“): málmborðinn ber sjálfur Sími|Tafla|Skjár (.ky-vm-seg, 166)
+      // á hverri síðu. Þessi röð var nákvæmlega sama stjórntækið einu sinni enn, beint undir honum — hún víkur meðan
+      // borðinn er uppi; zoom-röðin (−/+/Passa töflu) stendur, hún á sér enga hliðstæðu. Borðinn af → röðin kemur aftur.
+      'html[data-viewmode="mobile"][data-bstal-banner="on"] #' + BAR_ID + ' ._ars-sjon-modes{display:none!important}',
       '#' + BAR_ID + ' ._ars-sjon-modes>button{flex:1;min-height:40px;margin:0;padding:8px 6px;border:1px solid #cfd4dc;'
         + 'background:#fff;color:#334155;font:inherit;font-size:13px;font-weight:700;cursor:pointer;'
         + 'touch-action:manipulation}',
