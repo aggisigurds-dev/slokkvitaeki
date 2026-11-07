@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-07 16:15 · 1000 virkar staðreyndir
+Sótt 2026-11-07 18:48 · 1000 virkar staðreyndir
 
 ---
 
@@ -93,9 +93,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [solur](#solur) | 17 |
 | [vidmot](#vidmot) | 15 |
 | [reglur](#reglur) | 15 |
+| [gatt](#gatt) | 14 |
 | [kunnaskra](#kunnaskra) | 13 |
 | [oryggi](#oryggi) | 13 |
-| [gatt](#gatt) | 13 |
 | [vinnulag](#vinnulag) | 12 |
 | [teikning](#teikning) | 12 |
 | [3djoker](#3djoker) | 11 |
@@ -103,78 +103,30 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### tengilidir
 
-- **Daníel Örn Smárason er aðaltengiliður Pizzunnar fyrir slökkvitækjaverkefni og Njarðvíkur-útibúið, netfang danielorn@pizzan.is, og í ágúst 2025 gefur hann upp síma 7742012.** _(unverified)_
-  <br>Póstur 15871 dags. 13.08.2025 tilgreinir símanúmerið 7742012 í tengiliðalínu.
-  <br><sub>2026-11-06 · kunni · artifact: postur:681016-1200:16544,15867,15871 · postur</sub>
+- **Mikael R. Ólafsson hjá IKEA hefur beðið um yfirferð CO2- og duftslökkvitækja í Kauptúni 4 og símanúmer hans er 820 2561 (skráð í undirskrift 11.05.2026).** _(unverified)_
+  <br>Áður skráð sem tengiliður með netfanginu Mikael.Olafsson@ikea.is; símanúmerið kom fram í pósti 11.05.2026 eftir beiðni Elíasar um tengilið á staðnum.
+  <br><sub>2026-11-06 · kunni · artifact: postur:541293-2809:15640,45246 · postur</sub>
+- **Guðbjörn Ólsen Jónsson (gudbjorn@atlasverktakar.is, +354 6952593) er tengiliður Atlas verktaka fyrir innkaup á léttvatnstækjum, eldvarnarteppum og reykskynjurum.** _(unverified)_
+  <br>Pantaði 4 léttvatnstæki, 3 eldvarnarteppi og 21 reykskynjara í október 2025; sótti pöntunina 30.10.2025.
+  <br><sub>2026-11-06 · kunni · artifact: postur:540319-1540:15929,19756,20231 · postur</sub>
+- **Steingrímur Hermannsson (hmmidgardur@centerhotels.com) hjá Center Hotels biður um skýrslur og tengist skoðun á slökkvikerfi í háfi í Miðgarði, Laugavegi 95-99.** _(unverified)_
+  <br>Staðfest í pósti 25.03.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:450905-1430:21175,47631 · postur</sub>
 - **Birkir Björgvinsson hjá Véltindum ehf. hefur netfangið birkir@velras.is og biður um reikninga og yfirlit.** _(unverified)_
   <br>Fram kemur í póstum frá 11.08.2026 og 29.09.2026.
   <br><sub>2026-11-06 · kunni · artifact: postur:491209-1270:47083,57665 · postur</sub>
-- **Karl Ágústsson (karl@thg.is, 545 1614 / 840-1640) er aðaltengiliður THG Ráðgjafar fyrir Kringlu- og Efstalandsverkefni, t.d. MaiKai á 3. hæð.** _(unverified)_
-  <br>Staðfest í póstum frá 2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:440703-2590:2322,62449,69055 · postur</sub>
-- **Viktoría Þóra Jónsdóttir (viktj@gara.is, +354 560 0762) hjá Gara spyr um reikninga fyrir CO2-áfyllingu, t.d. World Navigator 11.09.2026.** _(unverified)_
-  <br>Póstur 08.10.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:420993-2269:61238 · postur</sub>
-- **Atli Björn Levy var tengiliður húsfélagsins Háaleitisbraut 54 árið 2020 á haaleitisbraut54@gmail.com og í síma 862-6196.** _(unverified)_
-  <br>Póstar frá nóvember og desember 2020.
-  <br><sub>2026-11-06 · kunni · artifact: postur:451190-1569:18118,19766,19793 · postur</sub>
-- **Jón M hjá Eignarekstur (eignarekstur@eignarekstur.is, 566-5005) er tengiliður vegna eftirfylgni með brunavörnum í sameign Berjavalla 6.** _(unverified)_
-  <br>Fyrirspurn um reykskynjara á göngum sameignar, dags. 13.10.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:510293-2079:64154 · postur</sub>
-- **Ingimundur Þór Þorsteinsson er tengiliður hjá Mission á Íslandi ehf og notar netfangið ingimundurthor@gmail.com; í eldri pósti 2020 notaði hann ingimundur@internet.is.** _(unverified)_
-  <br>Sum pósthólf eldri pósta (2020) nota ingimundur@internet.is; nýjustu póstar (2021–2026) nota ingimundurthor@gmail.com. Sími 824-6642.
-  <br><sub>2026-11-06 · kunni · artifact: postur:550103-3970:18125,17912,15678 · postur</sub>
-- **Anna Þórðardóttir hjá Norðuráli (anna@nordural.is, 354 430 1067) svarar fyrirspurnum bókhalds um reikninga, þar á meðal skýringum á máltíðarfærslum í mötuneyti.** _(unverified)_
-  <br>Skráð 08.09.2025 í tengslum við reikning frá Brunahólf upp á 2.387 kr.; svar sent á brunaholf@brunaholf.is.
-  <br><sub>2026-11-06 · kunni · artifact: postur:680217-0250:2819 · postur</sub>
-- **Viktoría Ósk Daðadóttir er tengiliður hjá Eignarekstur ehf á reikningar@eignarekstur.is, sími 566-5005.** _(unverified)_
-  <br>Hefur verið í samskiptum um kröfur frá 21.07.2025 og áfram; Stella Valdís Gísladóttir kom fram sem tengiliður í póstum frá 22.07.2024.
-  <br><sub>2026-11-06 · kunni · artifact: postur:480277-9459:19963,15856,15782,51618,54937 · postur</sub>
-- **Bókari Grimma sendir veflykla (staðgreiðslu- og virðisaukalykil) fyrir Slökkvitæki og biður um að vera látin vita ef Stólpi hefur samband beint við Agnar eða bókhald Brunahólf.** _(unverified)_
-  <br>Póstur frá 21.07.2026; beiðni til Stólpa er ósvarað.
-  <br><sub>2026-11-06 · kunni · artifact: postur:080379-5019:45656 · postur</sub>
-- **Róbert Andri er tengiliður hjá Stilling hf. fyrir þakboga-fyrirspurnir, netfang stilling@stilling.is.** _(unverified)_
-  <br>Fram kemur í tilboðspósti frá 02.03.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:630269-0169:1128 · postur</sub>
-- **Gjaldkeri Eignaumsjónar hf. er Svanhildur Ólöf Harðardóttir (gjaldkeri@eignaumsjon.is, 585 4800) og Jóhanna Birgisdóttir sér um eindaga og sundurliðun, en Svala Ásbjörnsdóttir (thjonusta@eignaumsjon.is, 585 4800) sér um inneignir og kreditreikninga.** _(unverified)_
-  <br>Tengiliðir Eignaumsjónar eins og fram kemur í póstunum frá desember 2024 til janúar 2025.
-  <br><sub>2026-11-06 · kunni · artifact: postur:610514-0300:16219,16241,16255,16256 · postur</sub>
-- **Þórdís Sæmundsdóttir er bókari Pizzunnar ehf og sér um reikninga og hreyfingayfirlit, netfang reikningar@pizzan.is (2026), áður thordis@pizzan.is, sími +354 553 4060.** _(unverified)_
-  <br>Netfangið reikningar@pizzan.is kemur fram í pósti frá 04.09.2026; thordis@pizzan.is og símanúmerið koma fram frá 05.10.2022.
-  <br><sub>2026-11-06 · kunni · artifact: postur:681016-1200:17444,50995 · postur</sub>
-- **Hilmir Örn Stefánsson, staðarstjóri hjá ÞG Verk, skrifar frá hilmir@tgverk.is og er í póstum með símanúmerið 8248435 og Lágmúla 7, 108 Reykjavík sem staður verkefnis.** _(unverified)_
-  <br>Póstar 31258 (19.06.2026) og 55566; nánari skráning þegar til staðar, en staðsetning Lágmúli 7 kemur fram í póstum.
-  <br><sub>2026-11-06 · kunni · artifact: postur:581198-2569:31258,55566 · postur</sub>
-- **Oger Kassi 2 (kassi2@oger.is) er með símanúmerið 565-4080 í tengiliðaupplýsingum.** _(unverified)_
-  <br>Skráð í söluafhendingu SA138875 þann 30.09.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:600508-0400:57989 · postur</sub>
-- **Tengiliður Benna fyrir Breiðhöfða 13 er Guðmundur Sigurðsson, sem spurði um endurtekna skoðun slökkvitækja þar.** _(unverified)_
-  <br>Póstur dags. 04.11.2026; Guðmundur er með úttekt á föstudag.
-  <br><sub>2026-11-06 · kunni · artifact: postur:711292-2929:71942 · postur</sub>
-- **Pedro Santos er hótelstjóri Þingholt by Center Hotels í Þingholtsstræti 3-5 og netfangið hans er hmthingholt@centerhotels.com, sími +354 595-8530.** _(unverified)_
-  <br>Kom fram í póstum 27.10.2026 um skoðunarskýrslu slökkvitækja; ekki skráður í kúnnaminni.
-  <br><sub>2026-11-06 · kunni · artifact: postur:450905-1430:68803,68819,68804,68855 · postur</sub>
-- **Daníel Örn Smárason er aðaltengiliður Pizzunnar fyrir slökkvitækjaverkefni og Njarðvíkur-útibúið, netfang danielorn@pizzan.is.** _(unverified)_
-  <br>Í ágúst 2025 gefur hann upp síma 7742012 (sbr. póst 15871 frá 13.08.2025).
-  <br><sub>2026-11-06 · kunni · artifact: postur:681016-1200:15871,15867,15868 · postur</sub>
-- **Tengiliður Ískraft fyrir reikninga er Ískraft Reikningar, reikningar@iskraft.is.** _(unverified)_
-  <br>Staðfest í pósti 06.10.2026 vegna reiknings Srk9312225.
-  <br><sub>2026-11-06 · kunni · artifact: postur:651175-0119:60463 · postur</sub>
-- **Heimir Rafn Bjarkason hjá Javerk (heimir@javerk.is, sími +354 860 1744) er tengiliður fyrir tilboð í bruna- og hljóðþéttingar í Fjallaböðunum og fundi á verkstað.** _(unverified)_
-  <br>Póstar frá 21.01.2025 til 14.09.2026; Heimir er í fríi til 21.04.2025 samkvæmt sjálfvirku svari, skrifstofusími 480-1700 ef erindið þolir ekki bið.
-  <br><sub>2026-11-06 · kunni · artifact: postur:701292-4809:4222,524,3303,60665 · postur</sub>
-- **Reynir Þorvaldsson hjá Javerk (reynir@javerk.is, sími +354 860 1739) er tengiliður sem staðfestir reikninga og verklag á Fjallaböðunum í Þjórsárdal.** _(unverified)_
-  <br>Staðfest í pósti 10.02.2026 og 24.02.2026; Reynir tók við sem tengiliður fyrir Fjallaböðin. Þegar skráð, staðfesting á tengilið.
-  <br><sub>2026-11-06 · kunni · artifact: postur:701292-4809:3636,3692 · postur</sub>
-- **Steinþór Kristjánsson (steinthor@thg.is, 545 1621 / 772 2162) hjá THG Ráðgjöf er tengiliður fyrir Sunnukrika 3, Hallgerðargötu 13 og Efstaland 26.** _(unverified)_
-  <br>Staðfest í póstum frá 19.10.2026 og 02.06.2026; Efstaland 26 frá 21.04.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:440703-2590:66234,66299,30571,1184 · postur</sub>
-- **Karl Ásgrímur Ágústsson (karl@thg.is, 545 1614 / 840-1640) er aðaltengiliður THG Ráðgjafar fyrir Kringlu- og Efstalandsverkefni, þar á meðal MaiKai á 3. hæð.** _(unverified)_
-  <br>Staðfest í póstum frá 06.08.2026 og 24.09.2026; netfang og símanúmer samræmd í pósti 24.09.2026 (545 1614 / 840 - 1640).
-  <br><sub>2026-11-06 · kunni · artifact: postur:440703-2590:62449,46986,46985 · postur</sub>
-- **Marta Kristín Sigmarsdóttir hjá Atlas verktökum er tengiliður fyrir hreyfingayfirlit; netfangið er skráð bæði sem marta@ og Marta@atlasverktakar.is (sama netfang, mismunandi ritháttur).** _(unverified)_
-  <br>Pósturinn 16.10.2026 kom frá Marta@atlasverktakar.is.
-  <br><sub>2026-11-06 · kunni · artifact: postur:540319-1540:30 postar · postur</sub>
+- **Fjármál húsfélagsins sjá Hjálmdís Ólöf Helenudóttir á gjaldkeri@eignaumsjon.is, sími 585 4800.** _(unverified)_
+  <br>Hjálmdís er tengiliður í kröfumálum frá 23.12.2024 til 21.02.2025.
+  <br><sub>2026-11-06 · kunni · artifact: postur:590314-0130:16249,16253,16259,16260,20805,20947 · postur</sub>
+- **Hlynur Hjaltason hjá Colas (hlynur@colas.is) er tengiliður fyrir þjónustusamning slökkvibúnaðar.** _(unverified)_
+  <br>Undirritaður samningur móttekinn 11.06.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:420187-1499:45197,45200 · postur</sub>
+- **Sigrún Elfa Kristinsdóttir hjá Colas (sigrunelfa.kristinsdottir@colas.is, +354 772 5850) sér um reikninga og beiðnaupplýsingar í nýrri samskiptum um slökkvitæki.** _(unverified)_
+  <br>Síðasta samskipti 18.07.2026 um reikninga R-59, R-60 og 57, 58, 61.
+  <br><sub>2026-11-06 · kunni · artifact: postur:420187-1499:45159,44749,45153 · postur</sub>
+- **Hrafnhildur Steindórsdóttir (hrafnhildur@vsk.is) hjá Endurskoðun VSK ehf sér nú um bókhald Norðurey ehf, en áður sá Guðveig Jóna Hilmarsdóttir (jona@vsk.is) um það.** _(unverified)_
+  <br>Hrafnhildur bað um reikninga 03.09.2026, 10.09.2026 og 11.09.2026 með afriti á Kjartan forsvarsmann; Guðveig Jóna sá um bókhald í janúar 2023.
+  <br><sub>2026-11-06 · kunni · artifact: postur:430872-0289:52155,52355,20811 · postur</sub>
 - **Hinrik Þór Jónsson hjá Hagvögnum Þjónustu biður um nótur og reikninga fyrir 2 duftslökkvitæki; netfang hinrik@hopbilar.is, símanúmer +354 868 4147 eða +354 599 6072.** _(unverified)_
   <br>Póstar frá 23.06.2026.
   <br><sub>2026-11-06 · kunni · artifact: postur:640996-3159:31458,31459 · postur</sub>
@@ -205,24 +157,72 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Jón Snorri Bergþórsson hjá Ferro Zink er tengiliður fyrir pantanir í staðgreiðslu, netfang jon@ferrozink.is, sími 533 5700.** _(unverified)_
   <br>Staðsett í Álfhellu 12-14, 221 Hafnarfirði. Skráð 29.01.2026, staðfest aftur 30.01.2026.
   <br><sub>2026-11-06 · kunni · artifact: postur:520417-2300:3197,3384 · postur</sub>
-- **Melissa M. Munguia er aðaltengiliður Center Hotels fyrir slökkvikerfi, úttektir og skýrslur (dor@centerhotels.com, +354 823 8490); bókanir fara á reservations@centerhotels.com og hún var fjarverandi til 16.04.2026.** _(unverified)_
-  <br>Fjarvistarsvar 14.04.2026; Melissa vill ekki greiða tvisvar fyrir sömu þjónustu.
-  <br><sub>2026-11-06 · kunni · artifact: postur:450905-1430:15629,67122,21562 · postur</sub>
-- **Viktoría Þóra Jónsdóttir (viktj@gara.is, sími +354 560 0762) hjá Gara spyr um reikninga fyrir áfyllingu CO2-kúta.** _(unverified)_
-  <br>Póstur frá 08.10.2026 vegna áfyllingar á 10 CO2-kútum fyrir World Navigator í Reykjavík 11.09.2026.
+- **Svala Kristín Pálsdóttir hjá VR-5 ehf er tengiliður með netfangið svala@velras.is.** _(unverified)_
+  <br>Hún biður um reikninga og hreyfingayfirlit í 2023, 2026 og endurtekið; fram kemur í póstum 12.12.2023 og 25.06.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:491209-1270:16793,16794,51763,51744 · postur</sub>
+- **Viktoría Þóra Jónsdóttir (viktj@gara.is, +354 560 0762) hjá Gara spyr um reikninga fyrir CO2-áfyllingu, t.d. World Navigator 11.09.2026.** _(unverified)_
+  <br>Póstur 08.10.2026.
   <br><sub>2026-11-06 · kunni · artifact: postur:420993-2269:61238 · postur</sub>
-- **Júlía Agar Huldudóttir Mbah Nto (jahm@gara.is, +354 560 0723) er tengiliður Gara fyrir CO2-áfyllingu á skipið Greg Mortimer í maí 2026.** _(unverified)_
-  <br>Póstar frá 26.05.2026 til 28.05.2026.
-  <br><sub>2026-11-06 · kunni · artifact: postur:420993-2269:30142,30405,30406 · postur</sub>
-- **Hrönn Þorsteinsdóttir hjá Landsbankanum (Hronn.Thorsteinsdottir@landsbankinn.is, +354 410-4644) sér um áreiðanleikakönnun Brunahólfs ehf.** _(unverified)_
-  <br>Póstar frá 30.01.2026 og 26.01.2026. Hún bað um uppfærslu vegna breytts óbeins eignarhalds og breytingar á stjórn; könnunin var felld niður. Póstarnir gefa ekki til kynna að uppfærsla hafi verið framkvæmd. Athugið að yfirskrift samantektar nefnir Lífeyrissjóð verzlunarmanna, en póstarnir og kennital
-  <br><sub>2026-11-06 · kunni · artifact: postur:520417-2300:3165,1344 · postur</sub>
+- **Hilmir Örn Stefánsson, staðarstjóri hjá ÞG Verk, skrifar frá hilmir@tgverk.is og er í póstum með símanúmerið 8248435 og Lágmúla 7, 108 Reykjavík sem staður verkefnis.** _(unverified)_
+  <br>Póstar 31258 (19.06.2026) og 55566; nánari skráning þegar til staðar, en staðsetning Lágmúli 7 kemur fram í póstum.
+  <br><sub>2026-11-06 · kunni · artifact: postur:581198-2569:31258,55566 · postur</sub>
+- **Karl Svavar Sigurðsson hjá Vélrás er tengiliður með netfangið karl@velras.is og símanúmerið 6900498.** _(unverified)_
+  <br>Hann svarar um kennitölur til skiptingar reikninga fyrir yfirferð á slökkvitækjum og brunaslöngum (21.01.2025).
+  <br><sub>2026-11-06 · kunni · artifact: postur:491209-1270:20184 · postur</sub>
+- **Oger Kassi 2 (kassi2@oger.is) er með símanúmerið 565-4080 í tengiliðaupplýsingum.** _(unverified)_
+  <br>Skráð í söluafhendingu SA138875 þann 30.09.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:600508-0400:57989 · postur</sub>
+- **Tengiliður Benna fyrir Breiðhöfða 13 er Guðmundur Sigurðsson, sem spurði um endurtekna skoðun slökkvitækja þar.** _(unverified)_
+  <br>Póstur dags. 04.11.2026; Guðmundur er með úttekt á föstudag.
+  <br><sub>2026-11-06 · kunni · artifact: postur:711292-2929:71942 · postur</sub>
+- **Pedro Santos er hótelstjóri Þingholt by Center Hotels í Þingholtsstræti 3-5 og netfangið hans er hmthingholt@centerhotels.com, sími +354 595-8530.** _(unverified)_
+  <br>Kom fram í póstum 27.10.2026 um skoðunarskýrslu slökkvitækja; ekki skráður í kúnnaminni.
+  <br><sub>2026-11-06 · kunni · artifact: postur:450905-1430:68803,68819,68804,68855 · postur</sub>
 - **Tengiliður Oger Kassi 2 (kassi2@oger.is) er með símanúmerið 565-4080, eins og kemur fram í póstinum um söluafhendingu SA138875.** _(unverified)_
   <br>Staðfest 30.09.2026; áður skráð sem bíðandi staðfesting.
   <br><sub>2026-11-06 · kunni · artifact: postur:600508-0400:57989 · postur</sub>
 - **Lisa Allison Franco (lisf@gara.is, +3548257276) er tengiliður Gara fyrir CO2-áfyllingar 2025-2026.** _(unverified)_
   <br>Staðfest í pósti 27.08.2026 og 26.08.2026.
   <br><sub>2026-11-06 · kunni · artifact: postur:420993-2269:48936,49496 · postur</sub>
+- **Andri Hrafn Þorvaldsson hjá ÞG Verk er tengiliður með netfangið andri@tgverk.is og símanúmerin 824 8474 og 534 8400; hann sendir fundargerðir Landspítala-verkefnisins.** _(unverified)_
+  <br>Póstar frá júlí og ágúst 2026 (44740, 45767, 46974) staðfesta Andra sem tengilið fyrir verkfundargerðir á Landspítala.
+  <br><sub>2026-11-06 · kunni · artifact: postur:581198-2569:44740,45767,46974 · postur</sub>
+- **Eva Mareksdóttir hjá Heimaleigu er tengiliður fyrir tilboð, verð og samstarf og kemur með Ernu rekstrarstjóra á fundi; símanúmer hennar er +354 696 3636.** _(unverified)_
+  <br>Fundur 28.10.2026 var færður á kl. 09:30 á Grensásvegi 7 (3. hæð) og Eva staðfesti 26.10.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:510117-0690:67315,68329,68349,68347 · postur</sub>
+- **Pedro Santos er hótelstjóri Þingholt by Center Hotels í Þingholtsstræti 3-5, netfang hmthingholt@centerhotels.com, sími +354 595-8530.** _(unverified)_
+  <br>Staðfest í póstum 27.10.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:450905-1430:68803,68804 · postur</sub>
+- **Umboð Hrafnhildar Steindórsdóttur sem bókara Norðurey ehf þarf að staðfesta áður en afrit reiknings er sent til hennar, með afriti á Kjartan.** _(unverified)_
+  <br>Beiðni frá 11.09.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:430872-0289:52355 · postur</sub>
+- **Símanúmer Guðmundar Sigurðssonar birtist í póstum sem 590 2000 og er þá skráð sem annað en 899-7200 í kúnnaminni.** _(unverified)_
+  <br>Í póstum frá 14.10.2026 til 04.11.2026 birtist bæði 590 2000 og 899-7200; óljóst hvort 590 2000 sé skiptiborð eða annað númer.
+  <br><sub>2026-11-06 · kunni · artifact: postur:711292-2929:64388,64403,66265,68734,69218,69994 · postur</sub>
+- **Alda Særós Bóasdóttir (alda@steypustodin.is) og Áróra Kristín Hólmfríðardóttir (arora@steypustodin.is) sjá um reikninga og kröfur hjá Steypustöðinni.** _(unverified)_
+  <br>Staðfest í póstum 14.08.2025 og 25.08.2025.
+  <br><sub>2026-11-06 · kunni · artifact: postur:660707-0420:21704,20963 · postur</sub>
+- **Guðmundur Smári er framleiðslustjóri í Borgarnesi (Einingar) og vísar á staðsetningar slökkvitækja þar, sími 860 9023.** _(unverified)_
+  <br>Staðfest 08.10.2025 í þræði um viðbótarslökkvitæki í Borgarnesi.
+  <br><sub>2026-11-06 · kunni · artifact: postur:660707-0420:23049,21597,22418 · postur</sub>
+- **Marta Kristín Sigmarsdóttir (marta@atlasverktakar.is, Marta@atlasverktakar.is, +354 823-2680) biður um hreyfingayfirlit fyrir Atlas verktaka og er í samskiptum um viðskiptamannsreikning.** _(unverified)_
+  <br>Beiðnir um yfirlit bárust 11.06.2026, 11.09.2026 og 13.10.2026.
+  <br><sub>2026-11-06 · kunni · artifact: postur:540319-1540:51753,52463,64184 · postur</sub>
+- **Árni Ólafsson hjá Menju ehf er aðaltengiliður, netfang arni@menja.is, sími 8616903; Elín Árnadóttir (elin@menja.is) sér um greiðslur og bókhald.** _(unverified)_
+  <br>Árni tengist einnig Akurhúsi ehf. í málum Kirkjustéttar 4 og Hamraborgar.
+  <br><sub>2026-11-06 · kunni · artifact: postur:650184-0259:22076,15698,49481 · postur</sub>
+- **Helga Gísladóttir hjá Safír byggingum ehf. (helga@safir.is) biður um hreyfingalista og stöður skuldunautabókhalds vegna árshlutauppgjörs.** _(unverified)_
+  <br>Beiðni dags. 09.10.2026 um hreyfingalista 01.01.2026-30.09.2026. Nafnið er skráð Helga B Gísladóttir í tengiliðasvæði póstsins.
+  <br><sub>2026-11-06 · kunni · artifact: postur:551021-0680:62163 · postur</sub>
+- **Reynir Þorvaldsson hjá Javerk hefur tekið við sem tengiliður fyrir Fjallaböðin og staðfestir reikninga og verklag; netfang reynir@javerk.is, sími +354 860 1739.** _(unverified)_
+  <br>Staðfest í póstum 10.02.2026 og 24.02.2026; þegar skráð sem tengiliður.
+  <br><sub>2026-11-06 · kunni · artifact: postur:701292-4809:3636,3692 · postur</sub>
+- **Heimir Rafn Bjarkason hjá Javerk er tengiliður fyrir tilboð í bruna- og hljóðþéttingar í Fjallaböðunum; netfang heimir@javerk.is, sími +354 860 1744.** _(unverified)_
+  <br>Heimir hefur verið aðal tengiliður frá 21.01.2025 og fram til 14.09.2026; hann var í fríi til 21.04.2025.
+  <br><sub>2026-11-06 · kunni · artifact: postur:701292-4809:4222,3023,60665 · postur</sub>
+- **Terra skráir pantanir á losun gáms 105485 á Helluhrauni 10 á Axel (eldklar@eldklar.is, sími 5654080) og Haukur Valdimarsson var skráður pöntuður í júlí 2024.** _(unverified)_
+  <br>Þetta er mismunandi eftir póstum: frá 2023 til 2026 eru pantanir stundum skráðar á Axel, stundum á netfang eldklar@eldklar.is eða á kennitölu viðskiptavinar; í 16396 (02.07.2024) er Haukur Valdimarsson tengiliður og í 16448 (27.08.2024) og 15944 (28.04.2025) er terra@terra.is skráð sem tengiliður.
+  <br><sub>2026-11-06 · kunni · artifact: postur:410283-0349:16396,16448,15944,15825 · postur</sub>
 - _…og 162 til viðbótar í töflunni._
 
 ### reikningar
@@ -360,14 +360,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Bakkasel 20-36 húsfélag tekið úr þjónustu 06.11.2026 að ákvörðun Agnars: eini reikningurinn (R-107187, ágúst 2025, 961 þús.) var trjáfellingar, ekki brunavarnir. Engin tæki, engin úttekt.**
   <br>Hafði verið skráð í þjónustu fyrr sama dag á röngum forsendum. Mál #1511 lokað.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **K-50 ehf (Vesturvör 32a): R-107430 okt. 2025 er sala (3 léttvatn, 4 reykskynjarar, 3 teppi), ekki úttekt. last_year_inspected 2025 fjarlægt 06.11.2026 skv. reglu Agnars; engin ársskoðun hefur farið fram.**
-  <br>Mál #983 (13.09.2026) setti K-50 aftur í þjónustu út frá sama reikningi; mál #1507 leiðrétt.
+- **Húsfélag Næfurás 15: árleg úttekt í febrúar (1 léttvatn + akstur): 2023 R-103501, 2024 R-104809, 2026 R-107904 (26.02.2026, 8.313 kr, opið við yfirtöku); 2025 vantar. Samningur 17.02.2016 (Guðbjörg Sigurðard.). Ekkert netfang til.**
+  <br>last_year_inspected 2026 sett 06.11.2026.
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Partýbær ehf: úttekt + uppsetning feb. 2025 (R-106296: 12 tæki, 3 slöngur, skýrslugerð, akstur) í Viðburðarverksmiðjunni Gufunesvegi 17; sama fólk (Gísli, Jói 848 2143, Geoff; bókhald aslaug@ltbr.is) rekur Prikið, Ægir bar, Kaffi 22/Kíkí, Iðnó, Lemmy, Torfan, Ellý. Prikið yfirfarið apríl 2026 og samningur staðfestur 06.05.2026.**
+  <br>last_year_inspected 2025 sett 06.11.2026. 29 póstar 2022–2026 tengdir um gisli@partybaer.is.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Fjarðarmót ehf (Skyggisbraut 1-3): R-107613 des. 2025 er sala á einu CO2-tæki, ekki ársskoðun. Þjónustusamningur 28.09.2022 (Frank) en engin úttekt á reikningum 2023–2025.**
   <br>Fyrri færsla sagði „greiddi ársskoðun 19.12.2025“ — rangt, leiðrétt 06.11.2026 (mál #1500).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Partýbær ehf: úttekt + uppsetning feb. 2025 (R-106296: 12 tæki, 3 slöngur, skýrslugerð, akstur) í Viðburðarverksmiðjunni Gufunesvegi 17; sama fólk (Gísli, Jói 848 2143, Geoff; bókhald aslaug@ltbr.is) rekur Prikið, Ægir bar, Kaffi 22/Kíkí, Iðnó, Lemmy, Torfan, Ellý. Prikið yfirfarið apríl 2026 og samningur staðfestur 06.05.2026.**
-  <br>last_year_inspected 2025 sett 06.11.2026. 29 póstar 2022–2026 tengdir um gisli@partybaer.is.
+- **K-50 ehf (Vesturvör 32a): R-107430 okt. 2025 er sala (3 léttvatn, 4 reykskynjarar, 3 teppi), ekki úttekt. last_year_inspected 2025 fjarlægt 06.11.2026 skv. reglu Agnars; engin ársskoðun hefur farið fram.**
+  <br>Mál #983 (13.09.2026) setti K-50 aftur í þjónustu út frá sama reikningi; mál #1507 leiðrétt.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Húsfélagið Suðurhellu 9 (Alexander G. Alexandersson aga@alexander.is 899 1793, Marinó marino@thelamork.com): þjónustusamningur undirritaður 13.10.2025 (slökkvitæki + brunaslöngur); enginn reikningur og fyrsta úttekt ófarin.**
   <br>Brunahólf áframsendi „tveir greiðsluseðlar“ 23.09.2026.
@@ -375,28 +378,13 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Laugavegur 11 (Gerðuberg, Þórunn Sigurðardóttir thorunnsigurdar@hotmail.com): þjónustusamningur sendur 06.12.2024, samþykktur skriflega sama dag og undirritaður á staðnum ~10.12.2024; enginn reikningur og engin úttekt síðan.**
   <br>Samningur í Drive og tengdur í customer_documents (fid 1631).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Húsfélag Næfurás 15: árleg úttekt í febrúar (1 léttvatn + akstur): 2023 R-103501, 2024 R-104809, 2026 R-107904 (26.02.2026, 8.313 kr, opið við yfirtöku); 2025 vantar. Samningur 17.02.2016 (Guðbjörg Sigurðard.). Ekkert netfang til.**
-  <br>last_year_inspected 2026 sett 06.11.2026.
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Meiriháttar ehf: 5 reikningar 2023–2024 eru sala (27 tæki + skilti), engin úttekt. Sigurdór Sigurðsson (sigurdor@meirihattar.is) bað 19.03.2026 um þjónustusamning fyrir BF17 ehf (kt 691019-1280, Bugðufljót 17A bil 105); samningur sendur sama dag. BF17 er ekki í fyrirtækjaskránni.**
   <br>fyrirtaeki.netfang sett á sigurdor@meirihattar.is 06.11.2026 svo pósturinn tengist.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Lækjargata 32 húsfélag: uppsetning nóv. 2024 (R-105961, 476 þús.: 36 léttvatn, 14 uppsetningar, akstur). Engin úttekt síðan — fyrsta ársskoðun nóv. 2025 fór fram hjá. Ekkert netfang, enginn póstur.**
   <br>last_year_inspected 2024 (uppsetning) sett 06.11.2026.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Akstursþjónustan (Prime Tours) skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 14 reikningar 2023–25, rútutæki, síðast okt. 2025.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Partýbær ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 342 þús. feb. 2025, gisli@partybaer.is.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Vélsmiðjan Altak skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 98 þús. des. 2024.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Golfklúbburinn Keilir skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 68 þús. okt. 2025.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Straumhvarf ehf (Adventures) skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 73 þús. apríl 2025, invoices@adventures.com.**
+- **Geco ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): fjórir reikningar 2023–25, síðast 177 þús., staður endurvakinn.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Hamborgarabúlla Tómasar skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): árleg skoðun 2023–25, síðast okt. 2025, 4 tæki, me@tommis.is.**
@@ -408,13 +396,34 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Húsfélag Hlíðarsmára 8 skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): árleg skoðun, síðast okt. 2025, 5 tæki.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Samhengi endurskoðun skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): þrjár skýrslur 2023–25, 3 tæki, saevar@endur.is.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Highland Base Kerlingarfjöll skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 44 þús. júlí 2025, accounting@highlandbase.is.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Hraunavík ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 54 þús. nóv. 2024, Fiskislóð 75–77A, jokull@vsr.is.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Saltverk ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 63 þús. mars 2025, elin@saltverk.is.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Straumhvarf ehf (Adventures) skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 73 þús. apríl 2025, invoices@adventures.com.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Golfklúbburinn Keilir skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 68 þús. okt. 2025.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Vélsmiðjan Altak skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 98 þús. des. 2024.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Partýbær ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 342 þús. feb. 2025, gisli@partybaer.is.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Lækjargata 32 húsfélag skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 476 þús. nóv. 2024.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Samhengi endurskoðun skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): þrjár skýrslur 2023–25, 3 tæki, saevar@endur.is.**
+  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
+  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
+- **Akstursþjónustan (Prime Tours) skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 14 reikningar 2023–25, rútutæki, síðast okt. 2025.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **K-50 ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 10 tæki, rukkað okt. 2025, bjork@islyft.is.**
@@ -423,32 +432,23 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Rekstrarfélag Norðurturnsins skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 208 þús. des. 2024, tvær skýrslur, um Eignaumsjón; staður endurvakinn.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Húsfélagið Gullsmári 9 skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 146 þús. nóv. 2024, um Eignaumsjón.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Hraunavík ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 54 þús. nóv. 2024, Fiskislóð 75–77A, jokull@vsr.is.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Geco ehf skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): fjórir reikningar 2023–25, síðast 177 þús., staður endurvakinn.**
-  <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
-  <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Bakkasel 20-36 húsfélag skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 961 þús. uppsetning ágúst 2025, ársskoðun ætti að fylgja.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Lækjargata 32 húsfélag skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 476 þús. nóv. 2024.**
+- **Húsfélagið Gullsmári 9 skráð í þjónustu 06.11.2026 að ósk Agnars (endurheimt): 146 þús. nóv. 2024, um Eignaumsjón.**
   <br>Rukkað af fyrri eigendum 2024–25 en aldrei merkt í þjónustu við yfirtöku. Þjónustuborðsmál stofnað sama dag (tag endurheimt).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Eldum Rétt skráð aftur í þjónustu 06.11.2026 að ósk Agnars; borgaði ársskoðun des. 2023/24/25, 12 tæki, skoðun á tíma 1. des. Var tekið úr þjónustu 13.10.2026 án skráðrar ástæðu.**
   <br>Mál #1499. Enginn tengiliður í grunni.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Húsfélagið Suðurhellu 9 skráð aftur í þjónustu 06.11.2026; undirritaður þjónustusamningur 13.10.2025 (Alexander, aga@alexander.is), sameign og brunaslöngur óskoðaðar þótt leigjendur Aðalskoðun og Pitstop séu í þjónustu. Skoðunarmánuður september.**
-  <br>Mál #1492. Var tekið úr þjónustu 28.09.2026.
+- **Laugavegur 11 (Eignarhaldsfélagið Gerðuberg) skráð aftur í þjónustu 06.11.2026; Þórunn samþykkti samning skriflega 06.12.2024, fyrsta skoðun aldrei farin. Skoðunarmánuður desember.**
+  <br>Mál #1493. Var tekið úr þjónustu 11.09.2026.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Meiriháttar ehf (BF17 brunakerfi) skráð í þjónustu 06.11.2026; bað um brunakerfissamning 19.03.2026, ~540 þús. viðskipti 2023–24. Skoðunarmánuður nóvember.**
   <br>Mál #1494. Heimilisfang vantar á staðinn (fid 1550).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Laugavegur 11 (Eignarhaldsfélagið Gerðuberg) skráð aftur í þjónustu 06.11.2026; Þórunn samþykkti samning skriflega 06.12.2024, fyrsta skoðun aldrei farin. Skoðunarmánuður desember.**
-  <br>Mál #1493. Var tekið úr þjónustu 11.09.2026.
+- **Húsfélagið Suðurhellu 9 skráð aftur í þjónustu 06.11.2026; undirritaður þjónustusamningur 13.10.2025 (Alexander, aga@alexander.is), sameign og brunaslöngur óskoðaðar þótt leigjendur Aðalskoðun og Pitstop séu í þjónustu. Skoðunarmánuður september.**
+  <br>Mál #1492. Var tekið úr þjónustu 28.09.2026.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - **Húsfélag Næfurás 15 skráð í þjónustu 06.11.2026 að ósk Agnars; rukkað árlega í febrúar 2023/24/26, aldrei sett í þjónustu eftir yfirtöku. Skoðunarmánuður febrúar.**
   <br>Mál #1501.
@@ -951,20 +951,20 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### postur
 
-- **Viðhengi úr Gmail-innsoginu lenda í bucket postur-vidhengi + töflu postur_vidhengi (frá 05.11.2026); gmail-ingest?vidhengi=1 sækir þau, postur-vidhengi?message_id= skilar undirritaðri slóð.**
-  <br>Áætlaða keyrslan (gmail-ingest-background, 2 klst) sækir viðhengi síðustu 3 daga. format=metadata skilar EKKI hlutatrénu — skeyti með viðhengi eru fundin með has:attachment og fá format=full með fields-skurði. Storage-lykill verður að vera ASCII (InvalidKey á íslenska stafi) — rétta nafnið er í file
-  <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
 - **Gmail API 403 á attachments.get er oftast KVÓTI („Units per minute per user“), ekki umfang — bakfylling verður að keyra í lotum með ≥60 s hléi.**
   <br>Mælt 05.11.2026: 403 á hvert viðhengi í stórri lotu, textinn „Quota exceeded for quota metric Total Query Cost“. Eldklar-tengingin hefur gmail.readonly.
   <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
 - **Gmail-leit finnur ekki „skýrsla“ í íslenskum efnislínum (listed 0 þótt efnið sé „Skýrsla Bríetatún“); leita með has:attachment filename:pdf og sía skráarnöfn hjá okkur.**
   <br>Mælt 05.11.2026 á in:sent: „skýrsla“ → 0, „úttektarskýrsla“ → 4, „has:attachment older_than:310d“ → 90. Samsett orð (þjónustusamningur, samningur) fundust.
   <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
-- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
-  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
-  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Viðhengi úr Gmail-innsoginu lenda í bucket postur-vidhengi + töflu postur_vidhengi (frá 05.11.2026); gmail-ingest?vidhengi=1 sækir þau, postur-vidhengi?message_id= skilar undirritaðri slóð.**
+  <br>Áætlaða keyrslan (gmail-ingest-background, 2 klst) sækir viðhengi síðustu 3 daga. format=metadata skilar EKKI hlutatrénu — skeyti með viðhengi eru fundin með has:attachment og fá format=full með fields-skurði. Storage-lykill verður að vera ASCII (InvalidKey á íslenska stafi) — rétta nafnið er í file
+  <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
 - **Talan á Tölvupóstar-hamnum á Þjónustuborði (Bíður svars) telur ÞRÆÐI úr email_digest (60 dagar, eldklar@ + bokhald@), ekki mál á borðinu; að loka máli breytir henni ekki. Fela póst = röð í reikninga_postur_hidden (message_id).**
   <br>04.11.2026: 168 sjálfvirkir/birgja-póstar faldir að ósk Agnars (Teya, Húsasmiðjan, Microsoft, Google, birgjareikningar o.fl.), afrit backup_20261104_postur_hidden; Bíður svars fór úr 101 í ~74 (reiknað, ekki séð á skjá). Inkasso, Nova-kröfur, Gjaldheimtan og rsk.is voru EKKI faldir. Listinn sækir ei
+  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
+  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
   <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Mál #1485 Stúdíó tönn ehf (fyrirtaeki 349): Helgi bað 27.10 um vottun vegna R-108286; svar með úttektarskýrslu (customer_documents #1587, apríl 2026, 3 léttvatn + 2 CO2) skráð sent 04.11.2026 kl. 17:59 (reikninga_postur_activity #10, svarad_at sett). Atlas #1214 svarað 17:21 (activity #9).**
   <br>Móttaka í Gmail ÓSTAÐFEST: email_digest var síðast sótt 16:55 og Thunderbird á skrifstofuvél skrifaði ekki eldklar@ INBOX síðan 15:17 né Sent síðan 04:10 (LunaBridge2-Email keyrir á 15 mín með niðurstöðu 0 og „0 msgs skipped"). Orsök ómæld. Gildra: Storage-slóð customer_documents.storage_path innihe
@@ -1148,6 +1148,48 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Skrárnar: reglusafn.md (lög/reglugerðir/HMS/staðlar + forgangsröð), neydarlysing.md, byggingargogn.md, fjolbyli.md. Charlize geymir aðeins stuttar staðreyndir sem vísa þangað.
   <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
 
+### gatt
+
+- **Gáttin: Um eignina-flipinn les húsatölur úr b.hus (Ársskoðun ræður), ekki fjölda teikningablaða — (b.teikning||[]).length var notað sem hæðafjöldi og Bríetartún 9-11 sýndi 15 í stað 12 (cde6463d, 07.11.2026). Engin húsatala skráð -> fjórði reiturinn sýnir teikningafjöldann MERKTAN sem blöð. Og fmtTala reiknar íslenska talnasniðið sjálf: toLocaleString('is-IS') féll til baka á en-US í vafranum og sýndi 12,298 m2 og 2,001.2 m2.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **/api/gatt-slug?site=<fyrirtaeki.id> er óvarið (engin requireStaff) og skilar slug opinnar gáttar fyrir hvaða stað sem er — með ~1926 id-um má telja upp allar opnu gáttirnar án þess að giska á nafn. Notað af 486-gatt-hlekkur á fyrirtækjasíðunni.** _(unverified)_
+  <br>netlify/functions/gatt-slug.cjs (26.10.2026) les portal_users active=true&pass_hash=is.null; hæsta fyrirtaeki.id 1926 (04.11). Lokun þarf að fara um oryggi (t.d. requireStaff eða aðeins innan appsins).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Allar 6 Þjónustugáttirnar (portal_users, base 146/293/676/720/866/1211) eru virkar MEÐ ENGU lykilorði (pass_hash null á 6/6) og því í „opnum aðgangi“: /gatt/?c=<slug> þjónar raungögnum félagsins án innskráningar með hlutverkið stjórnandi (les reikninga, skýrslur, sérkjör og getur skrifað: skilaboð→mál, eldvarnabók, ný eign). Slug = slugify(félagsnafn) og er því giskanlegt.** _(unverified)_
+  <br>Mælt 04.11.2026: select á portal_users (active=true 6/6, pass_hash null 6/6, netfang 1/6). Kóði: gatt.cjs:149-166 (openMode), gatt-status.cjs (open = active && !pass_hash), gatt-admin.cjs:25,153 (slugify(name)). Stuttslóðir /g/:slug og /heimaleiga í slokkvitaeki netlify.toml:116-124. Opið: Þjónustub
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Ef PORTAL_JWT_SECRET vantar í Netlify skila allar innskráningar þjónustuvefsins 503.** _(unverified)_
+  <br>Brunahólf Kerfisstaða 26.08.
+  <br><sub>2026-11-04 · brunaholf · artifact: https://claude.ai/artifact/PchokyB1N4FV4pzfK2pTt7 · skjol</sub>
+- **Í þjónustuvefnum kemur base_id úr innskráningar-tokeni, aldrei úr slóð eða beiðni, og skjöl eru afhent með skammlífum signed URL eftir eignarhaldsprófun.** _(unverified)_
+  <br>Þjónustuvefur — Byggingaráætlun 22.08.
+  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
+- **Þjónustuvefur viðskiptavina (/gatt/) býr á Brunahólf og les gögn eingöngu gegnum server-fall með service-role lykli; anon-lykill fer aldrei í kúnnasíðu.** _(unverified)_
+  <br>Þjónustuvefur — Byggingaráætlun 22.08.
+  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
+- **agent_logs með agent='gatt-admin', action='opna-sem-kunni' er spor starfsmanns sem opnar gátt kúnna („Opna sem kúnni“, einnota 2-mín hlekkur → staff-session). 37 raðir 04.11: base 146 ×19 (09.10–02.11), 293 ×9, 1211 ×9. Kúnnarnir sjálfir hafa nær ekkert notað gáttina: 0 portal_notendur, 0 eldvarnabók, 0 QR-mál, einu gatt-málin (#1200/#1201) voru prufur lokaðar 29.10.** _(unverified)_
+  <br>gatt-admin.cjs:197-207 (impersonate → agent_logs), gatt-login.cjs GET ?imp=. portal_messages: 2 skilaboð frá 12.10 (base 1211) enn read_by_staff=false þó málin séu lokuð.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Dálkarnir show_details og syn á portal_users eru notaðir í kóða en hafa enga migration-skrá í sql/ (voru sett með MCP) - MIGRATION-gat.** _(likely)_
+  <br>[gotcha; agents: oryggi, kunnaskra] Líka óskjalfest: einstakur lykill portal_users_base_id_key sést aðeins sem athugasemd í gatt-admin.cjs.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **GET /api/gatt merkir starfsmannaskilaboð sem read_by_customer, svo notaðu það aldrei til að prófa viðskiptavini sem eiga skilaboð frá starfsfólki.** _(likely)_
+  <br>[gotcha; agents: framendi, oryggi] Þess vegna prófa lotur með ?demo=1&theme=X&details=0 (engin innskráning, ekkert skrifað).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
+- **Hver portal-aðgangur (portal_users.base_id) bindur sig við eitt customers_base (rekstrarfélag með kennitölu) og sér allar byggingar þess (fyrirtaeki með customer_base_id); RLS er á án policies svo aðeins service-role kemst að.** _(likely)_
+  <br>[how-to; agents: kunnaskra, oryggi] Center Hótel er með um 10 byggingar. Opin spurning 25.10: á gátt Heimaleigu að sýna allt rekstrarfélagið (17 staði) eða hvert félag fyrir sig.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **Lifandi Þjónustugáttin (gatt, gatt-admin, gatt.cjs) býr í slokkvitaeki-repóinu, ekki í brunaholf.**
+  <br>[decision; agents: framendi, joker, oryggi] Agnar 10.10: 'notaðu það frekar' um slokkvitaeki-eintakið. Skrár: gatt/index.html, gatt/portal.js, gatt/eignagatt.js, gatt/verkfaeri.js, gatt-admin/index.html, gatt-admin/admin.js, netlify/functions/gatt.cjs, _gatt-verkfaeri.cjs.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
+- **Þjónustugáttin (Þjónustuvefur) á sér eina rétta útgáfu í slokkvitaeki-repo (slokkvitaeki.netlify.app/gatt/?c=<slug> og /gatt-admin/); brunaholf-útgáfan er úrelt og á að áframsendast.** _(likely)_
+  <br>[decision; agents: framendi, tengingar] Agnar staðfesti 10.10 'það var einhver ruglingur á repos'. Verkið 11.10: 301-áframsending á /gatt* og /gatt-admin* úr brunaholf (Agnar: 'Oki merge'); tilraunagrein gatt-utlit-1010 í worktree brunaholf-wt-gatt mátti henda. Heimild…
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 229502cb 2026-10-11 · claude-code</sub>
+- **Eignagátt 11.10 kvöld: gatt/eignagatt.js (hleðst Á UNDAN portal.js, notar window.Gatt) = verkbeiðnapunktar á teikningu + Mitt vinnusvæði (verkefni, dagatal, kort+Landeignaskrá→Bæta við eign, CSV, skjöl/hlekkir). gatt.cjs POST action punktur/lokid/hnit/ny_eign/item*; myndir í einkamáls-bucket gatt (undirritaðar). Okkar hlið = gatt-admin „Verkbeiðnir af vef" + /api/verkbeidni-lokid (status lokad eins og 368, tilkynning í portal_messages, ENGINN póstur skv. Agnari). Migration sql/2026-10-11_verkbeidnapunktar.sql ÓBEITT (leyfisvörn) — skrif virka ekki fyrr en hún er keyrð; GET fellur á gamla valið á meðan. HUB_STAFF_PASSWORD vantar í Netlify → gatt-admin opinn án innskráningar.**
+  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **HT-11.10 Eignagátt: áætlun um að stækka Þjónustugátt (/gatt) í eignaumsjónar-/samræmiskerfi fyrir stóra kúnna (Reitir ~150 eignir) liggur í docs/HT-11.10-EIGNAGATT.md (11.10.2026). Kjarni: eign sem eigin tafla (landnr, ekki á fyrirtaeki), portal_felog + notendur með hlutverkum í stað eins base_id, skoðunardagatal þvert á öll kerfi úr stadur_kerfi/flokkar_krofur, eldvarnabók skv. 723/2017 gr. 26. Aldrei opinn hamur fyrir stór félög; requireStaff er fail-open ef HUB_STAFF_PASSWORD vantar.**
+  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### kunnaskra
 
 - **Húsfélag Lækjasmára 66-70 á enga úttektarskýrslu. Reikningur R-104361 (09.11.2023, 36.064 kr) var uppsetning á reykskynjurum og slökkvitækjum í sameiginlegri geymslu í kjallara, ekki ársskoðun. Heimild: póstþráðurinn „Brunavarnir í sameiginlegri geymslu“ sept.–nóv. 2023.**
@@ -1231,46 +1273,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **3dwork deilir Supabase-verkefninu með Slökkvitæki og notar töfluna work3d_projects (anon select/insert/update) og bucket work3d, svo öryggisherðing má ekki loka á þau.**
   <br>[gotcha; agents: oryggi, tengingar] 11.09 kvartaði Agnar þegar storage var læst: then I cant use this stupid thing. Bucket varð einkabucket með slóðaathugun og skjal takmarkað við 1 MB.
   <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-11 · claude-code</sub>
-
-### gatt
-
-- **/api/gatt-slug?site=<fyrirtaeki.id> er óvarið (engin requireStaff) og skilar slug opinnar gáttar fyrir hvaða stað sem er — með ~1926 id-um má telja upp allar opnu gáttirnar án þess að giska á nafn. Notað af 486-gatt-hlekkur á fyrirtækjasíðunni.** _(unverified)_
-  <br>netlify/functions/gatt-slug.cjs (26.10.2026) les portal_users active=true&pass_hash=is.null; hæsta fyrirtaeki.id 1926 (04.11). Lokun þarf að fara um oryggi (t.d. requireStaff eða aðeins innan appsins).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Allar 6 Þjónustugáttirnar (portal_users, base 146/293/676/720/866/1211) eru virkar MEÐ ENGU lykilorði (pass_hash null á 6/6) og því í „opnum aðgangi“: /gatt/?c=<slug> þjónar raungögnum félagsins án innskráningar með hlutverkið stjórnandi (les reikninga, skýrslur, sérkjör og getur skrifað: skilaboð→mál, eldvarnabók, ný eign). Slug = slugify(félagsnafn) og er því giskanlegt.** _(unverified)_
-  <br>Mælt 04.11.2026: select á portal_users (active=true 6/6, pass_hash null 6/6, netfang 1/6). Kóði: gatt.cjs:149-166 (openMode), gatt-status.cjs (open = active && !pass_hash), gatt-admin.cjs:25,153 (slugify(name)). Stuttslóðir /g/:slug og /heimaleiga í slokkvitaeki netlify.toml:116-124. Opið: Þjónustub
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Ef PORTAL_JWT_SECRET vantar í Netlify skila allar innskráningar þjónustuvefsins 503.** _(unverified)_
-  <br>Brunahólf Kerfisstaða 26.08.
-  <br><sub>2026-11-04 · brunaholf · artifact: https://claude.ai/artifact/PchokyB1N4FV4pzfK2pTt7 · skjol</sub>
-- **Í þjónustuvefnum kemur base_id úr innskráningar-tokeni, aldrei úr slóð eða beiðni, og skjöl eru afhent með skammlífum signed URL eftir eignarhaldsprófun.** _(unverified)_
-  <br>Þjónustuvefur — Byggingaráætlun 22.08.
-  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
-- **Þjónustuvefur viðskiptavina (/gatt/) býr á Brunahólf og les gögn eingöngu gegnum server-fall með service-role lykli; anon-lykill fer aldrei í kúnnasíðu.** _(unverified)_
-  <br>Þjónustuvefur — Byggingaráætlun 22.08.
-  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
-- **agent_logs með agent='gatt-admin', action='opna-sem-kunni' er spor starfsmanns sem opnar gátt kúnna („Opna sem kúnni“, einnota 2-mín hlekkur → staff-session). 37 raðir 04.11: base 146 ×19 (09.10–02.11), 293 ×9, 1211 ×9. Kúnnarnir sjálfir hafa nær ekkert notað gáttina: 0 portal_notendur, 0 eldvarnabók, 0 QR-mál, einu gatt-málin (#1200/#1201) voru prufur lokaðar 29.10.** _(unverified)_
-  <br>gatt-admin.cjs:197-207 (impersonate → agent_logs), gatt-login.cjs GET ?imp=. portal_messages: 2 skilaboð frá 12.10 (base 1211) enn read_by_staff=false þó málin séu lokuð.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Dálkarnir show_details og syn á portal_users eru notaðir í kóða en hafa enga migration-skrá í sql/ (voru sett með MCP) - MIGRATION-gat.** _(likely)_
-  <br>[gotcha; agents: oryggi, kunnaskra] Líka óskjalfest: einstakur lykill portal_users_base_id_key sést aðeins sem athugasemd í gatt-admin.cjs.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **GET /api/gatt merkir starfsmannaskilaboð sem read_by_customer, svo notaðu það aldrei til að prófa viðskiptavini sem eiga skilaboð frá starfsfólki.** _(likely)_
-  <br>[gotcha; agents: framendi, oryggi] Þess vegna prófa lotur með ?demo=1&theme=X&details=0 (engin innskráning, ekkert skrifað).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
-- **Hver portal-aðgangur (portal_users.base_id) bindur sig við eitt customers_base (rekstrarfélag með kennitölu) og sér allar byggingar þess (fyrirtaeki með customer_base_id); RLS er á án policies svo aðeins service-role kemst að.** _(likely)_
-  <br>[how-to; agents: kunnaskra, oryggi] Center Hótel er með um 10 byggingar. Opin spurning 25.10: á gátt Heimaleigu að sýna allt rekstrarfélagið (17 staði) eða hvert félag fyrir sig.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **Lifandi Þjónustugáttin (gatt, gatt-admin, gatt.cjs) býr í slokkvitaeki-repóinu, ekki í brunaholf.**
-  <br>[decision; agents: framendi, joker, oryggi] Agnar 10.10: 'notaðu það frekar' um slokkvitaeki-eintakið. Skrár: gatt/index.html, gatt/portal.js, gatt/eignagatt.js, gatt/verkfaeri.js, gatt-admin/index.html, gatt-admin/admin.js, netlify/functions/gatt.cjs, _gatt-verkfaeri.cjs.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
-- **Þjónustugáttin (Þjónustuvefur) á sér eina rétta útgáfu í slokkvitaeki-repo (slokkvitaeki.netlify.app/gatt/?c=<slug> og /gatt-admin/); brunaholf-útgáfan er úrelt og á að áframsendast.** _(likely)_
-  <br>[decision; agents: framendi, tengingar] Agnar staðfesti 10.10 'það var einhver ruglingur á repos'. Verkið 11.10: 301-áframsending á /gatt* og /gatt-admin* úr brunaholf (Agnar: 'Oki merge'); tilraunagrein gatt-utlit-1010 í worktree brunaholf-wt-gatt mátti henda. Heimild…
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 229502cb 2026-10-11 · claude-code</sub>
-- **Eignagátt 11.10 kvöld: gatt/eignagatt.js (hleðst Á UNDAN portal.js, notar window.Gatt) = verkbeiðnapunktar á teikningu + Mitt vinnusvæði (verkefni, dagatal, kort+Landeignaskrá→Bæta við eign, CSV, skjöl/hlekkir). gatt.cjs POST action punktur/lokid/hnit/ny_eign/item*; myndir í einkamáls-bucket gatt (undirritaðar). Okkar hlið = gatt-admin „Verkbeiðnir af vef" + /api/verkbeidni-lokid (status lokad eins og 368, tilkynning í portal_messages, ENGINN póstur skv. Agnari). Migration sql/2026-10-11_verkbeidnapunktar.sql ÓBEITT (leyfisvörn) — skrif virka ekki fyrr en hún er keyrð; GET fellur á gamla valið á meðan. HUB_STAFF_PASSWORD vantar í Netlify → gatt-admin opinn án innskráningar.**
-  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **HT-11.10 Eignagátt: áætlun um að stækka Þjónustugátt (/gatt) í eignaumsjónar-/samræmiskerfi fyrir stóra kúnna (Reitir ~150 eignir) liggur í docs/HT-11.10-EIGNAGATT.md (11.10.2026). Kjarni: eign sem eigin tafla (landnr, ekki á fyrirtaeki), portal_felog + notendur með hlutverkum í stað eins base_id, skoðunardagatal þvert á öll kerfi úr stadur_kerfi/flokkar_krofur, eldvarnabók skv. 723/2017 gr. 26. Aldrei opinn hamur fyrir stór félög; requireStaff er fail-open ef HUB_STAFF_PASSWORD vantar.**
-  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### vinnulag
 
@@ -1397,15 +1399,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Agnar skilur ensku 100 % — ef Sonnet gengur illa á íslensku má skrifa agent-fyrirmæli á ensku.**
   <br>[preference; agents: general] 01.08 12:13: ‚Sonnet annars bara á ensku ef það gengur illa… við skilum ensku 100%‘.
   <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
-- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
-  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
-  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
 - **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
   <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
   <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
+- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
+  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
+- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
+  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
 
 ### taeki
 
@@ -1799,12 +1801,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### villuleit
 
-- **Sala-vörumyndir (#sala) eru heittengdar frá eldvarnamidstodin.is, ekki hýstar hjá okkur (153 villur í villuvakt 19.09.2026); helmingur skráðra mynda-villna var AFLÝSTAR beiðnir við sýnaskipti → flokkur „Aflýst beiðni" í villuvaktinni.**
-  <br>Lota 2fe4ef19.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 2fe4ef19 · claude-code</sub>
 - **Mælingagildrur í vafraprófum: sjálfvirkni-vafrinn (Playwright/vafraspjald) HAFNAR confirm()-gluggum sjálfkrafa svo takkar með confirm líta dauðir út; grep -r segir „Binary file matches" og felur línur ef skrá hefur NUL-bæti; AÐ FÆRA hnút ER DOM-breyting (placeSection án skilyrðis endurræsti eigin 500 ms-debounce og pappi 265 birtist aldrei); 500 ms-debounce MutationObserver sem núllast við hverja breytingu með 7 pappa á #companies-main gaf 1.695 ms töf (lagað → 38 ms). Mælitæki: Arekstrar.kyrrd() telur DOM-hreyfingar á óhreyfðri síðu og nefnir staðinn.**
   <br>Lota 2fe4ef19 18.09.2026.
   <br><sub>2026-10-16 · kerfi · afrit lotu 2fe4ef19 · claude-code</sub>
+- **Sala-vörumyndir (#sala) eru heittengdar frá eldvarnamidstodin.is, ekki hýstar hjá okkur (153 villur í villuvakt 19.09.2026); helmingur skráðra mynda-villna var AFLÝSTAR beiðnir við sýnaskipti → flokkur „Aflýst beiðni" í villuvaktinni.**
+  <br>Lota 2fe4ef19.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 2fe4ef19 · claude-code</sub>
 - **AppSettings.save() er ósamstillt og AppSettings.get() skilar GAMLA gildinu í endurteikningunni sem keyrir strax á eftir — „fela app" og litir virtust ekki vistast. Mynstrið sem lagar: staðbundið „síðast skrifað" skyndiminni í pappanum (_ovNy, _nyskrifad, _adalNy, _ny í 261/291/274/363/367) sem lesturinn tekur fram yfir get() þar til save hefur lokið.**
   <br>Lota 487c5a12 09.09.2026.
   <br><sub>2026-10-16 · kerfi · afrit lotu 487c5a12 · claude-code</sub>
@@ -2308,17 +2310,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Veiðin-færslur (158) eru verkefnalisti, ekki staðreyndir — ekki samþykktar. reikningar (133), adgengi (35) og eldri tengiliðir voru ekki samþykktir í lotu því þær geta stýrt reikningagerð eða geymt aðgangsupplýsingar.
   <br><sub>2026-11-06 · kerfi · lota 5f2146a4 · jarvis</sub>
 
-### tilbod
-
-- **Tilboð til Benna 15.06.2026 í þjónustuskoðun brunaviðvörunarkerfa var í MEGINMÁLI póstsins (engin PDF): Krókháls 9 = 131.769 án vsk / 163.394 m. vsk eftir 10% tilboðsafslátt (listaverð 146.410 án vsk); Fiskislóð 41 = 91.746 án vsk / 113.765 m. vsk (listaverð 101.940).**
-  <br>Sent 15.06.2026 21:04 af Agnari á gudmundurs@benni.is, „Re: Krókháls 9“. Krókháls 9: 65 skynjarar-ígildi (40 skynjarar ≤6 m, 2 geislaskynjarar, 12 bjöllur, 8 handboðar, 8 segullæsingar, aðalstöð, afl, boðbúnaður, yfirlitsmynd, skýrsla). Fiskislóð 41: 31 skynjarar ≤6 m + 4 yfir 9 m, 6 bjöllur, 6 hand
-  <br><sub>2026-11-05 · kunni · Thunderbird mbox · lota 5f2146a4 · sala-reikningar</sub>
-
 ### greidslur
 
 - **Greiðslur Heimaleigu 11.02.2026 (193.895) og 29.05.2026 (156.262) og 80%-greiðslurnar í apríl finnast HVERGI í pósti (email_digest + öll Thunderbird-hólf eldklar/bokhald, leitað 05.11.2026) né í bank_transactions — bankayfirlit Slökkvitækis (0528-26-006005) þarf til að mæla tvígreiðsluna.**
   <br>Grep á kröfunúmerum 104379/104663/104583/104617 og upphæðum í 4 GB INBOX + öllum möppum: engin bankatilkynning; aðeins Eignaumsjónar-þræðirnir V26-022363/V26-121156 (þ.m.t. 28.04.2026: „Stjórn hafnar kröfunni og segir að hún eigi að mestu eða öllu leyti að fara á Heimaleigu“). bank_transactions (938
   <br><sub>2026-11-05 · kunni · lota 5f2146a4 · heimaleiga</sub>
+
+### tilbod
+
+- **Tilboð til Benna 15.06.2026 í þjónustuskoðun brunaviðvörunarkerfa var í MEGINMÁLI póstsins (engin PDF): Krókháls 9 = 131.769 án vsk / 163.394 m. vsk eftir 10% tilboðsafslátt (listaverð 146.410 án vsk); Fiskislóð 41 = 91.746 án vsk / 113.765 m. vsk (listaverð 101.940).**
+  <br>Sent 15.06.2026 21:04 af Agnari á gudmundurs@benni.is, „Re: Krókháls 9“. Krókháls 9: 65 skynjarar-ígildi (40 skynjarar ≤6 m, 2 geislaskynjarar, 12 bjöllur, 8 handboðar, 8 segullæsingar, aðalstöð, afl, boðbúnaður, yfirlitsmynd, skýrsla). Fiskislóð 41: 31 skynjarar ≤6 m + 4 yfir 9 m, 6 bjöllur, 6 hand
+  <br><sub>2026-11-05 · kunni · Thunderbird mbox · lota 5f2146a4 · sala-reikningar</sub>
 
 ### samningur
 
@@ -2637,11 +2639,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Sækja inn úr fyrirtæki (122) opnar MERKJA-haminn frá 05.10.2026: aðeins uttaeki.status='loaned', engin verkbeiðni og engin drög (Agnar: bara fram og til baka hægra megin í Komið úr þjónustu). Leysir af ákvörðunina 29.09 í 422 um að slík tæki séu unnin aðeins í verkbeiðni. R-001080 (verkbeiðni 920 → eytt, drög 1104 falin) hreinsuð mjúkt.**
   <br>commit 6c26039c
   <br><sub>2026-10-07 · slokkvitaeki · claude-code · claude-code</sub>
-
-### companies
-
-- **Borði prófíls (features.js): skýrslulínan („Skýrsla 2023: 8× Léttvatn …") taldi systurstaði í Companies.list, en við ræsingu á #company/<id> geymir listinn aðeins EINA röð, svo base-lyklaðar línur birtust þótt baseið ætti fleiri staði. Mælt á 1612 (base 868 = staðir 532 og 1612): línan sást við beina hleðslu en ekki þegar opnað var úr listanum. Lagað 04.10.2026 (b16f5d83): sé listinn styttri en 100 raðir er spurt grunninn (fyrirtaeki, customer_base_id=eq.X, deleted_at is null); bregðist það er gert ráð fyrir fleiri stöðum (línan falin). Almenn gildra: Companies.list er EKKI heill við ræsingu á djúpslóð — ekki telja í honum án þess að athuga lengdina.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
 
 ---
 
