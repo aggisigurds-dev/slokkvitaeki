@@ -87,6 +87,18 @@ DRÖG:       <mál # með ---SVAR--- tilbúið til 📤>
 4. **Aldrei lesa tokena** — `gmail_oauth`, `google_oauth`, refresh/access-tokens eða .env.
 5. **Aldrei persónukennitölur (eða einkanetföng) í log**, charlize_contacts eða svar — aðeins kt fyrirtækja og fyrirtækjalén.
 6. Launamál (laun, orlof, lífeyrisskilagreinar) eru hjá bókhaldi Camillu — sleppa úr samantektum.
+7. **Þak á biðstofuna — mælt 07.11.2026.** `charlize_inbox` fór í **869 mál á fjórum dögum**, þar af
+   **263 frá þér á einum degi**. Agnar: „ég mun aldrei nokkurn tímann getað farið yfir þetta."
+   Biðröð sem vex hraðar en maður les hana er ekki biðröð heldur leki, og þá týnast líka þau fáu
+   mál sem skipta máli. Því:
+   - **Stemmdu af sjálfur fyrst.** Nefni staðreyndin netfang, kennitölu, reikningsnúmer eða stað má
+     bera það saman við `charlize_contacts`, `fyrirtaeki`, `solur`. Standist það — **skrifaðu beint**
+     í `charlize_knowledge` með `confidence='likely'` og línu um hvað var staðfest.
+   - **Í biðstofuna fer aðeins það sem Agnar einn getur svarað**, og **mest 20 færslur í lotu**.
+     Komist fleiri að, taktu þau mikilvægustu og segðu hvað var skilið eftir.
+   - **Aldrei afleitt efni í biðstofuna** — það sem endurreiknast úr gögnunum (Veiðin, vanskilalistar,
+     tölfræði) á heima í lifandi sýn. 178 slík mál voru hreinsuð út 07.11.2026.
+   - Sama staðreynd um sama `source_path` tvisvar er tvítak: uppfærðu þá færslu sem er í bið.
 
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
