@@ -863,7 +863,9 @@ exports.handler = async (event) => {
         flokkun: siteIds.length ? g(`v_stadur_flokkun?fyrirtaeki_id=in.(${idsQ})&select=fyrirtaeki_id,tegund_heiti,notkunarflokkur,m2,haedir`) : null,
         erindi: g(`thjonustubeidni?${ERINDI_FILT}&${BF('customer_base_id')}&deleted_at=is.null&created_at=gte.${encodeURIComponent(sinceQ)}&select=${ERINDI_SEL}&order=created_at.desc&limit=300`),
         eb: siteIds.length ? g(`eldvarnabok?fyrirtaeki_id=in.(${siteIds.join(',')})&manudur=gte.${fraQ}&select=fyrirtaeki_id,manudur,svor,stada,undirritad_af,undirritad_at,updated_at,erindi_id&order=manudur.desc`) : null,
-        solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
+        // 07.11.2026: `krafa_note` fylgir með svo gáttin geti virt ⏸ BÍÐA-merkinguna sem Agnar
+        // notar þegar — sjá stadaAf() neðar. Hún var ekki sótt áður og því þagði biðmerkingin.
+        solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
         stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
         vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
@@ -1377,8 +1379,13 @@ exports.handler = async (event) => {
       if (sr2.ok) {
         const rows2 = await sr2.json();
         const nuMs = Date.now(), kraftur = 75 * 864e5, bid = 21 * 864e5, fra = nuMs - 730 * 864e5;
+        // ⏸ BÍÐA er merkingin sem Agnar notar í krafa_note þegar reikningur á EKKI að fara áfram
+        // (t.d. Bíll.is 12.10.2026, og Center Hótel sem er í endursamningum 07.11.2026). Reikningur
+        // í bið má aldrei bera „Ógreitt" gagnvart kúnnanum — síst þeim sem verið er að semja við.
+        const iBid = (s) => /^\s*⏸/.test(String(s.krafa_note || ''));
         const stadaAf = (s) => {
           if (s.paid_at) return 'greitt';
+          if (iBid(s)) return null;
           if (!s.krafa_sent_at) return null;
           const aldur = nuMs - Date.parse(s.krafa_sent_at);
           return (aldur >= bid && aldur <= kraftur) ? 'ogreitt' : null;   // 21–75 dagar, sjá skýringu að ofan
