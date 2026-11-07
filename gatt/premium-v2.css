@@ -397,7 +397,7 @@ html[data-theme="premium"] #drawer .v2-nchev{width:9px;height:9px;border-right:2
 
 /* Sími: einn dálkur, lýsingin í fellilistanum víkur, hetjupillan færist inn að brún. */
 @media (max-width:700px){
-  html[data-theme="premium"] #drawer .v2-stpill{right:16px;bottom:14px;padding:6px 13px;font-size:11px}
+  html[data-theme="premium"] #drawer .v2-stpill{top:14px;right:54px;bottom:auto;padding:6px 13px;font-size:11px}
   html[data-theme="premium"] #drawer .v2-mline{font-size:12.5px}
   html[data-theme="premium"] #drawer .v2-nrow{grid-template-columns:20px minmax(0,1fr) auto 12px}
   html[data-theme="premium"] #drawer .v2-nrow>span{display:none}
@@ -435,3 +435,13 @@ html[data-theme="premium"] #drawer #dr-body[data-v2tab="yfirlit"]>[data-v2s="tei
 }
 /* Flísarnar teygjast ekki þótt spjaldið geri það — talan situr í miðju í stað þess að hanga efst. */
 html[data-theme="premium"] #drawer .v2-lt{justify-content:center}
+
+/* 07.11.2026, mælt á lifandi síðu í 390 px: heiti og gildi rekast á gildin í mjóum dálki
+   (Tegund / „Íbúðagisting / skammtímaleiga íbúða"), og stöðupillan lá ofan í tegundarlínunni. */
+@media (max-width:700px){
+  html[data-theme="premium"] #drawer .v2-irow{grid-template-columns:16px minmax(0,1fr);row-gap:1px}
+  html[data-theme="premium"] #drawer .v2-irow>b{grid-column:2;text-align:left}
+  html[data-theme="premium"] #drawer .v2-brow{grid-template-columns:16px minmax(0,1fr) auto 18px}
+  html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .baddr,
+  html[data-theme="premium"] #drawer .v2-mline{padding-right:104px}
+}
