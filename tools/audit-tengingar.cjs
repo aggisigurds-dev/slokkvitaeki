@@ -30,12 +30,17 @@ const MORK = [
   { heiti: 'sölur án viðskiptamanns', tafla: 'solur',
     sia: 'customer_base_id=is.null&status=neq.void', thak: 6,
     gera: 'Tengdu á ÓTVÍRÆÐRI kennitölu (ein base per kt). Sé kt á fleiri en einni base — rekstrarfélag — þarf Agnar að velja staðinn.' },
+  // 29 tengd 07.11.2026 (póstur 3 · kennitala 8 · ótvírætt nafn 18). Af þeim 207 sem eftir standa
+  // eiga ~93 engan kúnna (kerfis- og fjármálamál) og ~52 eru birgjar eða fjöldapóstur.
   { heiti: 'opin erindi án fyrirtækis', tafla: 'thjonustubeidni',
-    sia: 'deleted_at=is.null&status=neq.lokad&fyrirtaeki_id=is.null&customer_base_id=is.null', thak: 236,
-    gera: 'Tengdu um póstinn í channel_ref, kennitölu í texta, eða ótvírætt nafn. Almennt lén (gmail, simnet) sannar ekkert.' },
-  { heiti: 'fyrirtæki án viðskiptamanns', tafla: 'fyrirtaeki',
-    sia: 'customer_base_id=is.null', thak: 33,
-    gera: 'Ekkert þeirra passaði á kennitölu 07.11.2026. Þarf ákvörðun Agnars: stofna base, tengja handvirkt, eða merkja dauða röð.' },
+    sia: 'deleted_at=is.null&status=neq.lokad&fyrirtaeki_id=is.null&customer_base_id=is.null', thak: 207,
+    gera: 'Tengdu um póstinn í channel_ref, kennitölu í texta, eða ótvírætt nafn. Almennt lén (gmail, simnet) sannar ekkert, og netfang sem er á mörgum stöðum (dimka@heimaleiga.is er á 15) sannar ekkert heldur.' },
+  // EYDDAR RAÐIR TELJAST EKKI. Af 33 voru 15 með deleted_at og lifandi röð á sömu base — dauð röð
+  // er ekki slitin tenging. Eftir standa 18 lifandi, öll með TÓMA kennitölu, svo engin þeirra var
+  // tengjanleg á kt (mælt 07.11.2026).
+  { heiti: 'lifandi fyrirtæki án viðskiptamanns', tafla: 'fyrirtaeki',
+    sia: 'customer_base_id=is.null&deleted_at=is.null', thak: 18,
+    gera: 'Öll 18 hafa TÓMA kennitölu — þau verða ekki tengd fyrr en hún fæst. Þarf ákvörðun Agnars: stofna base, tengja handvirkt, eða merkja dauða röð.' },
 ];
 
 const CFG = fs.readFileSync(path.join(__dirname, '..', 'js', 'config.js'), 'utf8');
