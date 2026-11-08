@@ -63,6 +63,12 @@ const kr = (n) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d
   console.log('\n[DAGSKRÁ] ' + (d.merki === 'MAELT' ? (d.naestu_dagar || []).length + ' bókaðir dagar framundan' : 'ÓMÆLD — ' + d.skyring));
   (d.naestu_dagar || []).forEach((x) => console.log('   ' + x.dags + ' · ' + x.hver + ': ' + x.texti.replace(/\s*\n\s*/g, ' / ')));
   if (d.checklistar_opnir) console.log('   opnir checklistar: ' + d.checklistar_opnir.length + ' atriði');
+  const hir = j.hirslur || {};
+  if (hir.linur) {
+    console.log('\n[HIRSLUR] ' + hir.opid_alls + ' opin atriði alls');
+    hir.linur.forEach((l) => console.log('   ' + (l.merki === 'OMAELT' ? '?' : ' ')
+      + ' ' + String(l.heiti).padEnd(44) + (l.tala == null ? 'ÓMÆLT' : String(l.tala).padStart(4))));
+  }
   const sam = j.samstilling || {};
   if (sam.merki === 'MAELT') {
     console.log('\n[SAMSTILLING] ' + sam.heimildir + ' heimildir · ' + sam.of_gamlar + ' of gamlar');

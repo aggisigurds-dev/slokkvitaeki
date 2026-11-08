@@ -145,6 +145,18 @@
       if (l.flokkur !== fl) { fl = l.flokkur; ut += '<div class="yf-flokkur">' + esc(FLOKKAHEITI[fl] || fl) + '</div>'; }
       ut += linaHtml(l);
     });
+    // Hirslurnar: hvar opið verk liggur. Agnar 08.11: „ekki hægt að hafa allt útum allt."
+    var hr = j.hirslur || {};
+    if (hr.linur) {
+      ut += '<div class="yf-flokkur">Hirslur — ' + hr.opid_alls + ' opin atriði alls</div>';
+      hr.linur.forEach(function (l) {
+        ut += '<div class="yf-lina"><span class="yf-m ' + (l.merki === 'OMAELT' ? 'om' : 'ok') + '">'
+          + (l.merki === 'OMAELT' ? '?' : '·') + '</span><span class="yf-h">' + esc(l.heiti) + '</span>'
+          + '<span class="yf-t">' + (l.tala == null ? 'ÓMÆLT' : l.tala) + '</span></div>';
+      });
+      ut += '<div class="yf-dag"><small>' + esc(hr.athugasemd || '') + '</small></div>';
+    }
+
     // Samstilling: hvenær barst hver heimild síðast. Þögn frá hubbnum er ÓMÆLD, ekki græn.
     var sm = j.samstilling || {};
     ut += '<div class="yf-flokkur">Samstilling</div>';

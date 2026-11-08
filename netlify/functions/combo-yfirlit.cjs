@@ -171,7 +171,7 @@ const FLOKKAR = [
 
   /* ── VERKEFNALISTAR ───────────────────────────────────────────────────────── */
   { f: 'verkefni', k: 'verkefnalisti-opin', h: 'Verkefnalisti — opin verk',
-    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 111,
+    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 99,
     select: 'id,title,status,assigned_agent,created_at',
     heimild: 'tafla verkefnalisti · brunaholf.netlify.app/api/verkefnalisti',
     adgerd: 'Lesa áður en nýtt verk er hafið (regla Agnars 30.07.2026).' },
@@ -179,7 +179,7 @@ const FLOKKAR = [
   /* ── SAMÞYKKTIR ───────────────────────────────────────────────────────────── */
   { f: 'samthykki', k: 'samthykki-agnar', h: 'Samþykkismál sem bíða Agnars',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad&tags=cs.%5B%22samthykki%22%5D'
-        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 148,
+        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 150,
     select: 'id,title,created_at,tags',
     heimild: 'tafla thjonustubeidni (tags ∋ samthykki, assigned_to=Agnar)',
     adgerd: 'Eitt mál = ein ákvörðun. Mál sem er orðið úrelt á að loka með „— Leiðrétt"-línu, '
@@ -187,7 +187,7 @@ const FLOKKAR = [
 
   { f: 'samthykki', k: 'bord-opin', h: 'Þjónustuborð — opin mál alls',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad'
-        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 423,
+        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 425,
     select: 'id,title,status,assigned_to',
     heimild: 'tafla thjonustubeidni',
     adgerd: 'Á borðið á aðeins það sem við finnum ekki sjálf (regla Agnars 07.11.2026).' },
@@ -297,6 +297,44 @@ async function samstilling() {
                 + 'að segja. Dagafjöldinn er eina leiðin til að greina þar á milli.',
     };
   } catch (e) { return { merki: 'OMAELT', skyring: String(e.message || e) }; }
+}
+
+
+/* ── HIRSLURNAR: hvar opið verk liggur, allt á einum stað ──────────────────────
+ * Agnar 08.11.2026: „ekki hægt að hafa allt útum allt, vantar skipulag."
+ * Tíu geymslur halda opnu verki og enginn skjár sýndi þær saman. Hér eru þær, með
+ * hlutverki hverrar — því listi án hlutverks fyllist af öllu.
+ *
+ * VARÚÐ SEM KOSTAÐI MIG MÆLINGU: `verkbeidnir` virðist 885 ef síað er á stöðuheiti sem maður
+ * giskar á. Raunverulegu gildin eru collected/eytt/ready/received, og `collected` ÞÝÐIR AÐ
+ * KÚNNINN SÓTTI TÆKIÐ — lokastaða. Opnu beiðnirnar eru 32. Kanónan: tools/audit-verk-stada.cjs.
+ */
+const HIRSLUR = [
+  { k: 'bord', h: 'Þjónustuborðið — bíður ÞÍN', leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad' },
+  { k: 'samthykki', h: '  þar af samþykki á þig', leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad&tags=cs.%5B%22samthykki%22%5D&assigned_to=eq.Agnar' },
+  { k: 'verkefni', h: 'Verkefnalistinn — bíður OKKAR', leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)' },
+  { k: 'villur_app', h: 'app_problems — vélagögn', leid: 'app_problems?resolved=is.false' },
+  { k: 'villur_vef', h: 'villur — vélagögn (hitt kerfið)', leid: 'villur?leyst_at=is.null' },
+  { k: 'factcheck', h: 'factcheck — ósvarað (12 af 13 eru tvíburar)', leid: 'factcheck_akvardanir?svar=is.null' },
+  { k: 'verkbeidnir', h: 'Verkbeiðnir á verkstæði (ready+received)', leid: 'verkbeidnir?eytt_at=is.null&status=in.(ready,received)' },
+  { k: 'sara', h: 'Sara — yfirferð bíður', leid: 'sara_yfirferd?stada=not.in.(lokid,klarad,samthykkt)' },
+  { k: 'drog', h: 'Reikningsdrög (Brunahólf)', leid: 'invoice_drafts?status=in.(draft,overdue)' },
+];
+
+async function hirslur() {
+  const ut = await Promise.all(HIRSLUR.map(async (x) => {
+    const t = await sbTelja(x.leid);
+    return { lykill: x.k, heiti: x.h, tala: t.tala,
+             merki: t.tala == null ? 'OMAELT' : 'MAELT', villa: t.villa };
+  }));
+  const maelt = ut.filter((x) => x.merki === 'MAELT' && x.lykill !== 'samthykki');
+  return {
+    merki: ut.some((x) => x.merki === 'OMAELT') ? 'AD HLUTA' : 'MAELT',
+    linur: ut,
+    opid_alls: maelt.reduce((a, x) => a + x.tala, 0),
+    athugasemd: 'Hver hlutur á einn stað. Lendi hann á tveimur er hlekkur á milli og hinn lokast '
+              + '— tools/audit-skorun-lista.cjs rauðnar þegar sami hlutur fer aftur á tvo staði.',
+  };
 }
 
 /* ── Keyrsla ────────────────────────────────────────────────────────────────── */
@@ -441,7 +479,7 @@ exports.handler = async (event) => {
   const dagar = Math.max(1, Math.min(60, parseInt(q.dagar, 10) || 10));
 
   const t0 = Date.now();
-  const [linur, dsk, sam] = await Promise.all([maela(valinn, radir), dagskra(dagar), samstilling()]);
+  const [linur, dsk, sam, hir] = await Promise.all([maela(valinn, radir), dagskra(dagar), samstilling(), hirslur()]);
 
   const maelt = linur.filter((l) => l.merki === 'MAELT');
   const omaelt = linur.filter((l) => l.merki === 'OMAELT');
@@ -464,6 +502,7 @@ exports.handler = async (event) => {
                          + 'Hún er ekki heildartalan nema peningur_allt sé true.',
     },
     linur,
+    hirslur: hir,
     dagskra: dsk,
     samstilling: sam,
     reglur: [
