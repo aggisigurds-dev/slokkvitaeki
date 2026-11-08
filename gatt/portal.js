@@ -454,6 +454,7 @@
     $('#lg-t-in').addEventListener('click', function () { flipi(false, false); });
     $('#lg-t-reg').addEventListener('click', function () { flipi(true, false); });
     $('#rg-back').addEventListener('click', function () { flipi(false, false); });
+    $('#lg-go-tilbod').addEventListener('click', function () { flipi(true, false); card.scrollIntoView({ behavior: 'smooth', block: 'start' }); var s = $('#rg-skil'); if (s) s.focus({ preventScroll: true }); });
     $('#regForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var err = $('#rg-err'), btn = $('#rg-btn');

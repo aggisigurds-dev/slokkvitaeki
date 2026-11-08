@@ -76,3 +76,7 @@ html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-ra
 .lg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:420px){.lg-row{grid-template-columns:1fr;gap:0}}
 #login .lcard textarea{min-height:64px}
+.lg-more2{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18)}
+html[data-theme] #login .lg-go{margin:14px 0 0;width:auto;padding:11px 18px;border-radius:9px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;box-shadow:none;text-shadow:none;cursor:pointer}
+html[data-theme] #login .lg-go:hover{background:rgba(255,255,255,.16)}
+html[data-theme] #login .lg-go:focus-visible{outline:2px solid #9bbcff;outline-offset:3px}
