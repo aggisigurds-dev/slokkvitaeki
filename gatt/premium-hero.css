@@ -72,3 +72,45 @@ html[data-theme="premium"] #portal .yf-rail {min-width:0}
 @media(prefers-reduced-motion:reduce){html[data-theme="premium"] #portal .premium-hero-actions button {transition:none}}
 
 /* Production release 2026-11-06: premium homepage hero. */
+
+/* Brunahólf V2 design system: compact premium hero (2026-11-08).
+   Presentation only. No hard-coded property statistics or inspection statuses. */
+@media (min-width: 701px) {
+ html[data-theme="premium"] #portal .premium-hero {
+   min-height:238px;margin-bottom:18px;border-radius:16px;
+ }
+ html[data-theme="premium"] #portal .premium-hero-content {
+   padding:24px clamp(20px,2.8vw,38px) 12px;max-width:900px;
+ }
+ html[data-theme="premium"] #portal .premium-hero h1 {
+   font-size:clamp(28px,2.7vw,42px);margin:8px 0 7px;
+ }
+ html[data-theme="premium"] #portal .premium-hero p {
+   max-width:660px;line-height:1.4;
+ }
+ html[data-theme="premium"] #portal .premium-hero-actions {
+   margin-top:13px;gap:8px;
+ }
+ html[data-theme="premium"] #portal .premium-hero-actions button {
+   padding:10px 15px;
+ }
+ html[data-theme="premium"] #portal .premium-hero-foot {
+   padding:10px clamp(20px,2.8vw,38px);
+ }
+ html[data-theme="premium"] #portal .premium-section-heading {margin-bottom:10px}
+ html[data-theme="premium"] #portal .cards {gap:12px;margin-bottom:18px}
+ html[data-theme="premium"] #portal .yf-layout {gap:15px}
+}
+@media (max-width:700px) {
+ html[data-theme="premium"] #portal .premium-hero {
+   min-height:300px;margin-bottom:17px;
+ }
+ html[data-theme="premium"] #portal .premium-hero-content {
+   padding:24px 19px 12px;
+ }
+ html[data-theme="premium"] #portal .premium-hero h1 {
+   font-size:30px;margin:10px 0 8px;
+ }
+ html[data-theme="premium"] #portal .premium-hero-actions {margin-top:15px}
+ html[data-theme="premium"] #portal .premium-hero-foot {padding:11px 19px}
+}
