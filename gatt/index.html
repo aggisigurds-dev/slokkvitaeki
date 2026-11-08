@@ -1545,17 +1545,21 @@
       <div class="lhelp">Gleymt lykilorð? <a href="mailto:eldklar@eldklar.is">eldklar@eldklar.is</a></div>
     </form>
     <form id="regForm" class="hidden" autocomplete="on" novalidate>
-      <div class="sub">Sendu beiðni um aðgang. Við staðfestum hana og sendum þér lykilorð.</div>
+      <div class="sub">Sendu beiðni um aðgang eða biddu um tilboð. Við staðfestum aðganginn og sendum þér lykilorð.</div>
       <div class="fld"><label for="rg-nafn">Nafn</label><input id="rg-nafn" autocomplete="name" maxlength="80"></div>
       <div class="fld"><label for="rg-mail">Netfang</label><input type="email" id="rg-mail" placeholder="nafn@fyrirtaeki.is" autocomplete="email" maxlength="120"></div>
       <div class="fld"><label for="rg-felag">Fyrirtæki eða húsfélag</label><input id="rg-felag" maxlength="120" autocomplete="organization"></div>
-      <div class="fld"><label for="rg-simi">Sími <span class="opt">valfrjálst</span></label><input type="tel" id="rg-simi" autocomplete="tel" maxlength="30"></div>
+      <div class="lg-row">
+      <div class="fld"><label for="rg-simi">Sími <span class="opt">valfr.</span></label><input type="tel" id="rg-simi" autocomplete="tel" maxlength="30"></div>
+      <div class="fld"><label for="rg-kt">Kennitala <span class="opt">valfr.</span></label><input id="rg-kt" inputmode="numeric" maxlength="11" placeholder="000000-0000" autocomplete="off"></div>
+      </div>
+      <div class="fld"><label for="rg-skil">Viltu fá tilboð? <span class="opt">valfrjálst</span></label><textarea id="rg-skil" rows="2" maxlength="2000" placeholder="Hvað viltu fá tilboð í? T.d. slökkvitæki eða eftirlit."></textarea></div>
       <input type="text" id="rg-vefur" class="lg-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div class="lerr" id="rg-err"></div>
       <button type="submit" id="rg-btn">Senda beiðni</button>
-      <div class="lhelp">Aðgangur er aldrei stofnaður sjálfkrafa.</div>
+      <div class="lhelp">Þú getur líka sent póst beint á <a href="mailto:slokkvitaeki@brunaholf.is">slokkvitaeki@brunaholf.is</a>. Aðgangur er aldrei stofnaður sjálfkrafa.</div>
     </form>
-    <div id="rg-ok" class="lg-ok hidden"><b>Beiðnin er móttekin</b><span>Við sendum þér póst um leið og aðgangurinn er tilbúinn.</span><button type="button" id="rg-back">Aftur í innskráningu</button></div>
+    <div id="rg-ok" class="lg-ok hidden"><b>Beiðnin er móttekin</b><span>Við sendum þér póst um leið og aðgangurinn er tilbúinn, og svörum tilboðsbeiðni ef þú sendir hana.</span><button type="button" id="rg-back">Aftur í innskráningu</button></div>
   </div>
 </section>
 
@@ -1909,7 +1913,7 @@
     <input class="svc-in" id="vb-titill" maxlength="120" placeholder="T.d. Leki við úðara á gangi, neyðarljós dautt…" autocomplete="off">
     <div id="vb-stad-wrap"><label class="flabel" for="vb-stad">Staðsetning</label><input class="svc-in" id="vb-stad" maxlength="200" placeholder="T.d. 2. hæð, gangur við lyftu" autocomplete="off"></div>
     <label class="flabel" for="vb-lysing">Nánar (valfrjálst)</label>
-    <textarea id="vb-lysing" rows="3" maxlength="2000" placeholder="Hvað sást, hvenær, hvar nákvæmlega…"></textarea>
+    <textarea id="vb-lysing" rows="2" maxlength="2000" placeholder="Hvað sást, hvenær, hvar nákvæmlega…"></textarea>
     <label class="vs-upl"><input type="file" id="vb-mynd" accept="image/*" capture="environment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Taka mynd eða velja mynd</span></label>
     <div class="vb-prev" id="vb-prev"></div>
     <div class="m-foot"><span class="m-note">Verkbeiðni til Brunahólfs verður mál á Þjónustuborðinu; þegar lagað er sést eftirmynd hér og punkturinn verður grænn.</span><button type="submit" class="gbtn" id="vb-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><span id="vb-send-l">Senda verkbeiðni</span></button></div>
@@ -1986,10 +1990,10 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261108lh"></script>
+<script src="/gatt/portal.js?v=20261108li"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261107us">
-<link rel="stylesheet" href="/gatt/login-v2.css?v=20261108g">
+<link rel="stylesheet" href="/gatt/login-v2.css?v=20261108j">
 <script src="/gatt/premium-v2.js?v=20261107us" defer></script>
 </body>
 </html>

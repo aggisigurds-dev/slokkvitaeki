@@ -1,6 +1,6 @@
 // gatt-adgangur.cjs — beiðni um aðgang að Þjónustugáttinni, ÁN innskráningar (08.11.2026).
 //
-//   POST /api/gatt-adgangur { nafn, netfang, fyrirtaeki, simi, vefur }
+//   POST /api/gatt-adgangur { nafn, netfang, fyrirtaeki, kt, simi, skilabod, vefur }
 //        → mál á Þjónustuborði (thjonustubeidni, source 'gatt-nyskraning', tags gatt/adgangur, abyrgd okkar).
 //
 // Nýskráning er BEIÐNI, ekki reikningur: starfsmaður staðfestir að netfangið tilheyri félaginu og stofnar aðganginn á
@@ -25,9 +25,12 @@ exports.handler = async (event) => {
   const netfang = String(b.netfang || '').trim().toLowerCase().slice(0, 120);
   const felag = String(b.fyrirtaeki || '').trim().slice(0, 120);
   const simi = String(b.simi || '').trim().slice(0, 30);
+  const kt = String(b.kt || '').replace(/\D/g, '');
+  const skilabod = String(b.skilabod || '').trim().slice(0, 2000);
   if (!nafn) return P.json(400, { error: 'Skrifaðu nafnið þitt' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(netfang)) return P.json(400, { error: 'Netfangið virðist ekki rétt' });
   if (!felag) return P.json(400, { error: 'Skrifaðu nafn fyrirtækis eða húsfélags' });
+  if (kt && kt.length !== 10) return P.json(400, { error: 'Kennitala er 10 tölustafir' });
 
   const addr = String((event.headers && (event.headers['x-nf-client-connection-ip'] || event.headers['x-forwarded-for'] || '')) || '').split(',')[0].trim() || 'x';
   const nu = Date.now();
@@ -37,12 +40,21 @@ exports.handler = async (event) => {
   const cr = await P.sbGet(`thjonustubeidni?source=eq.gatt-nyskraning&created_at=gte.${encodeURIComponent(since)}&select=id`);
   if (cr.ok && (await cr.json()).length >= 20) return P.json(429, { error: 'Of margar beiðnir í bili — hringdu í okkur eða reyndu aftur síðar' });
 
-  const lysing = 'Beiðni um aðgang að Þjónustugáttinni\nNafn: ' + nafn + '\nNetfang: ' + netfang + '\nFyrirtæki / húsfélag: ' + felag + (simi ? '\nSími: ' + simi : '');
+  const tilbod = !!skilabod;
+  const lysing = [
+    tilbod ? 'Beiðni um aðgang að Þjónustugáttinni og tilboð' : 'Beiðni um aðgang að Þjónustugáttinni',
+    'Nafn: ' + nafn,
+    'Netfang: ' + netfang,
+    'Fyrirtæki / húsfélag: ' + felag,
+    kt ? 'Kennitala: ' + kt.slice(0, 6) + '-' + kt.slice(6) : '',
+    simi ? 'Sími: ' + simi : '',
+    tilbod ? '\nSkilaboð / tilboðsbeiðni:\n' + skilabod : '',
+  ].filter(Boolean).join('\n');
   const mr = await P.sbPost('thjonustubeidni', {
-    customer_nafn: felag, title: 'Beiðni um gáttaraðgang — ' + felag + ' — ' + nafn, summary: lysing,
-    notes: lysing + '\nStaðfestu að netfangið tilheyri félaginu, stofnaðu aðgang á gatt-admin og sendu lykilorð. Engin sjálfvirk stofnun.',
+    customer_nafn: felag, title: (tilbod ? 'Tilboð og gáttaraðgangur — ' : 'Beiðni um gáttaraðgang — ') + felag + ' — ' + nafn, summary: lysing,
+    notes: lysing + '\nStaðfestu að netfangið tilheyri félaginu, stofnaðu aðgang á gatt-admin og sendu lykilorð. Engin sjálfvirk stofnun.' + (tilbod ? ' Svara þarf tilboðsbeiðninni sérstaklega.' : ''),
     source: 'gatt-nyskraning', type: 'annad', flokkur: 'thjonusta', status: 'nytt', priority: 'venjulegur',
-    created_by: 'gatt-nyskraning', tags: ['gatt', 'adgangur', 'nyskraning'], abyrgd: 'okkar',
+    created_by: 'gatt-nyskraning', tags: tilbod ? ['gatt', 'adgangur', 'nyskraning', 'tilbod'] : ['gatt', 'adgangur', 'nyskraning'], abyrgd: 'okkar',
   });
   if (!mr.ok) return P.json(502, { error: 'Vistun mistókst — reyndu aftur eða sendu okkur póst' });
   ip[addr].push(nu);

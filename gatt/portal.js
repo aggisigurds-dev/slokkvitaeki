@@ -458,7 +458,7 @@
       e.preventDefault();
       var err = $('#rg-err'), btn = $('#rg-btn');
       err.textContent = '';
-      var body = { nafn: $('#rg-nafn').value, netfang: $('#rg-mail').value, fyrirtaeki: $('#rg-felag').value, simi: $('#rg-simi').value, vefur: $('#rg-vefur').value };
+      var body = { nafn: $('#rg-nafn').value, netfang: $('#rg-mail').value, fyrirtaeki: $('#rg-felag').value, kt: $('#rg-kt').value, skilabod: $('#rg-skil').value, simi: $('#rg-simi').value, vefur: $('#rg-vefur').value };
       btn.disabled = true;
       fetch('/api/gatt-adgangur', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })

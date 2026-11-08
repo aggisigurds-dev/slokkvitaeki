@@ -71,3 +71,8 @@ html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-ra
   .lg-info{order:2}
   .lg-info-h{font-size:22px}
 }
+#login .lcard textarea{width:100%;box-sizing:border-box;min-height:84px;padding:11px 12px;border:1px solid #d3dbea;border-radius:8px;background:#fff;color:var(--lb);font:inherit;font-size:14px;line-height:1.45;resize:vertical}
+#login .lcard textarea:focus-visible{outline:2px solid #3b6fe0;outline-offset:2px}
+.lg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:420px){.lg-row{grid-template-columns:1fr;gap:0}}
+#login .lcard textarea{min-height:64px}
