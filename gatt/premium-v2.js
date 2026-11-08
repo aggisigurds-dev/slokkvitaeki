@@ -670,7 +670,41 @@
       else sp.hidden = true;
     }
   }
-  function drawerPage() { drawerMeta(); applyTab(); }
+  /* Þétt yfirlitsreim fyrir eign: aðeins staðfest gildi úr opnu eignargagni. */
+  function drawerSummary() {
+    var d = document.getElementById('drawer'), g = G(), b = g && g.drB ? g.drB() : null;
+    if (!d) return;
+    var old = document.getElementById('v2-dr-summary');
+    if (!b) { if (old) old.remove(); return; }
+    var rows = [];
+    var hu = b.hus || {}, eg = b.eign || {};
+    if (hu.ibudir != null && hu.ibudir !== '') rows.push(['Íbúðir', hu.ibudir]);
+    else if (hu.herbergi != null && hu.herbergi !== '') rows.push(['Herbergi', hu.herbergi]);
+    else if (eg.einingar != null && eg.einingar !== '') rows.push(['Einingar', eg.einingar]);
+    if (hu.haedir != null && hu.haedir !== '') rows.push(['Hæðir', hu.haedir]);
+    var tk = (b.teikning || []).filter(function (f) { return f && (f.mynd || f.threed); }).length;
+    if (tk) rows.push(['Teikningar', tk]);
+    if (b.sl != null && b.sl !== '') rows.push(['Slökkvitæki', b.sl]);
+    if (b.slo != null && b.slo !== '') rows.push(['Brunaslöngur', b.slo]);
+    if (b.i_thjonustu === true) rows.push(['Þjónusta', 'Í þjónustu']);
+    else if (b.i_thjonustu === false) rows.push(['Þjónusta', 'Utan þjónustu']);
+    if (!rows.length) { if (old) old.remove(); return; }
+    var strip = old || document.createElement('div');
+    strip.id = 'v2-dr-summary';
+    strip.setAttribute('aria-label', 'Lykilupplýsingar eignar');
+    strip.replaceChildren();
+    rows.slice(0, 6).forEach(function (item) {
+      var cell = document.createElement('div'), value = document.createElement('strong'), label = document.createElement('span');
+      cell.className = 'v2-dr-summary-cell';
+      value.textContent = String(item[1]);
+      label.textContent = item[0];
+      cell.appendChild(value); cell.appendChild(label); strip.appendChild(cell);
+    });
+    var tabs = document.getElementById('v2-dtabs'), body = document.getElementById('dr-body');
+    if (tabs && tabs.parentNode === d) d.insertBefore(strip, tabs);
+    else if (body && body.parentNode === d) d.insertBefore(strip, body);
+  }
+  function drawerPage() { drawerMeta(); applyTab(); drawerSummary(); }
 
   function watchDrawer() {
     var d = document.getElementById('drawer'); if (!d || d._v2) return; d._v2 = true;
@@ -680,7 +714,7 @@
     /* nav/efsta stika lokar eignasíðunni — hún liggur ofan á efnissvæðinu en ekki ofan á valmyndinni */
     document.addEventListener('click', function (e) { if (on() && !d.classList.contains('hidden') && e.target.closest && e.target.closest('#v2-top a, #v2-top button, #portal header nav a.tab')) { var g = G(); if (g && g.closeDrawer) g.closeDrawer(); } }, true);
     var nm = document.getElementById('dr-name');
-    if (nm) new MutationObserver(function () { if (on()) { drawerBanner(); drawerMeta(); } }).observe(nm, { childList: true, characterData: true, subtree: true });
+    if (nm) new MutationObserver(function () { if (on()) { drawerBanner(); drawerMeta(); drawerSummary(); } }).observe(nm, { childList: true, characterData: true, subtree: true });
   }
 
   function start() {
