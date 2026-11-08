@@ -445,3 +445,29 @@ html[data-theme="premium"] #drawer .v2-lt{justify-content:center}
   html[data-theme="premium"] #drawer .dr-head.v2-dr-hero .baddr,
   html[data-theme="premium"] #drawer .v2-mline{padding-right:104px}
 }
+
+/* Eignasíða: þétt upplýsingareim úr raunverulegum eignargögnum. */
+html[data-theme="premium"] #drawer #v2-dr-summary {
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;
+ margin:0 20px 12px;border:1px solid #e1e8f1;border-radius:13px;overflow:hidden;
+ background:#e1e8f1;box-shadow:0 3px 14px rgba(20,42,72,.06);
+}
+html[data-theme="premium"] #drawer .v2-dr-summary-cell {
+ display:flex;flex-direction:column;justify-content:center;gap:3px;
+ min-width:0;padding:12px 15px;background:#fff;
+}
+html[data-theme="premium"] #drawer .v2-dr-summary-cell strong {
+ color:#142542;font:700 19px/1.15 Inter,system-ui,sans-serif;
+ overflow-wrap:anywhere;
+}
+html[data-theme="premium"] #drawer .v2-dr-summary-cell span {
+ color:#64748b;font:600 11px/1.3 Inter,system-ui,sans-serif;
+}
+@media(max-width:700px) {
+ html[data-theme="premium"] #drawer #v2-dr-summary {
+  grid-template-columns:repeat(3,minmax(0,1fr));margin:0 12px 10px;
+ }
+ html[data-theme="premium"] #drawer .v2-dr-summary-cell {padding:10px 9px}
+ html[data-theme="premium"] #drawer .v2-dr-summary-cell strong {font-size:16px}
+ html[data-theme="premium"] #drawer .v2-dr-summary-cell span {font-size:10px}
+}
