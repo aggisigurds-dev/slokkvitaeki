@@ -171,7 +171,7 @@ const FLOKKAR = [
 
   /* ── VERKEFNALISTAR ───────────────────────────────────────────────────────── */
   { f: 'verkefni', k: 'verkefnalisti-opin', h: 'Verkefnalisti — opin verk',
-    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 99,
+    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 100,
     select: 'id,title,status,assigned_agent,created_at',
     heimild: 'tafla verkefnalisti · brunaholf.netlify.app/api/verkefnalisti',
     adgerd: 'Lesa áður en nýtt verk er hafið (regla Agnars 30.07.2026).' },
