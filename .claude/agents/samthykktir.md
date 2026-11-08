@@ -265,3 +265,28 @@ yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
   sýninni, aldrei ný sýn — tvö mælikerfi um sama hlutinn stangast alltaf á að lokum.
 - **Þak = staðan 07.11.2026.** Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".
 - **ÓMÆLT er ekki 0.** Svari sýnin ekki stendur `merki: 'OMAELT'`, aldrei núll.
+
+## Hvernig 170 samþykkismál urðu 147 (07.11.2026)
+
+Öll 170 lesin. **23 lokuð**: 18 tvítök og 5 á eigin sönnun. **141 eru raunverulegar ákvarðanir
+Agnars** og 3 voru ÓMÆLD (#1144, #1158, #1185).
+
+**Tvítak er ekki eyðing.** Hvert mál sem víkur fær línuna „— Fellt inn í #N" og sérkenni þess
+flytjast inn í móðurmálið UNDIR `══`-markið, þar sem sjálfvirk endurskrif hrófla ekki við þeim.
+Annars glatast það sem gerði málið sérstakt (að R-000927 sé void, að ABC Barnahjálp beri líka
+merkinguna „úttekt ekki gerð").
+
+**Fimm sem lokuðust á eigin sönnun — og hvað sannaði þau:**
+- #1453 Álftamýri: `solur.R-000406.customer_kt` er ÞEGAR rétt; Payday 20 var CANCELLED og endurgert sem 298, GREITT.
+- #1371 Bíll.is: Agnar setti sjálfur ⏸ BÍÐA í `krafa_note` sama dag.
+- #1418 Suðurvangur 19: #1725 hefur 0 lifandi tæki og er ekki í þjónustu — tóm skel.
+- #1413 Aðalskoðun: þrír Stólpa-reikningar bera `stada='opid_vid_yfirtoku'` → greiddir fyrri eiganda. **MÁ EKKI RUKKA.**
+- #1376 Vikuyfirlit 26.10–2.11: dagsett yfirlit sem er liðið er ekki ákvörðun.
+
+**Tvær mótsagnir fundust MILLI opinna mála** — leitaðu að þeim, þær eru dýrari en tvítök:
+- #1407 vildi bakfæra R-000356 á meðan #1529 vildi senda hana.
+- #909 („taka 44 staði úr þjónustu") og #1532 („setja 133 á skoðunarlistann") deila 24 fyrirtækjum.
+  Sami staður getur ekki bæði farið út og í skoðun.
+
+**Mál sem ber tölu úr sýn á að VÍSA í sýnina, ekki afrita hana.** #1533 sagði 45 staði þegar
+`v_taekjatolur_misraemi` skilaði 41; talan var afrituð og rak í sundur sama dag.

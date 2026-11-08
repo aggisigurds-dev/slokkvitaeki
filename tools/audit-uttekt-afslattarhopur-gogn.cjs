@@ -33,6 +33,15 @@ const GRUNNLINA_B2 = {
   'R-001071': 'Hertz Flugvellir 11, 15 % (17.108 kr) — ógreiddur (Payday 369), má leiðrétta fyrir greiðslu',
   'R-000996': 'Pitstop Suðurhella, 15 % (6.843 kr) — greiddur 30.09 (Payday 334), bíður úrskurðar Agnars',
   'R-000670': 'Center Hótel Skjaldbreið 03.08 — systurreikningur R-000668 sama dag bar „afsl."; ómetið (fannst 31.10)',
+  // MÆLT 07.11.2026 — réttmætt, ekki brot. Hópur 3 („Bílabúð Benna og Nesdekk") gefur 20 %
+  // AÐEINS á ný tæki og vörur; þjónustuprósenturnar eru tómar og almenni afslátturinn er 0 %.
+  // Systurreikningurinn R-001198 er `source=brunakerfi` með vélbúnaði og fékk því 18.213 kr
+  // afslátt. R-001264 er hrein úttekt — fimm Yfirferðar-línur, skýrslugerð og akstur, ekkert
+  // nýtt tæki — svo hópurinn á ekkert að gefa þar. Að „leiðrétta" hann væri að gefa afslátt
+  // sem enginn samdi um. Sami lærdómur og í tækjaskránni: berðu saman EFTIR TEGUND.
+  'R-001264': 'Nesdekk Dekkjalager 05.11 — réttmætt: hópur 3 gefur aðeins 20 % á NÝ tæki og '
+            + 'reikningurinn er hrein þjónusta; systurreikningur R-001198 (brunakerfi) bar '
+            + 'vélbúnað og þar átti afslátturinn við',
 };
 
 async function get(slod) {
@@ -95,8 +104,31 @@ async function systurstadir() {
     console.log('RED: engin félög með discount_tier_id lásust — RLS eða lykill? (10 voru 14.10.2026). Vörðurinn getur ekki dæmt.');
     process.exit(1);
   }
-  const hopar = await get('discount_tiers?select=id,virkt&id=in.(' + [...new Set(felog.map(f => f.discount_tier_id))].join(',') + ')');
+  /* 07.11.2026 — HÓPUR ER EKKI AFSLÁTTUR Á ÖLLU. Vörðurinn krafðist „afsl." í HVERRI
+   * Hleðslu-, Yfirferðar- og Nýtt-línu hjá félagi í afsláttarhópi. Hópur 3 („Bílabúð Benna
+   * og Nesdekk") gefur hins vegar 20 % AÐEINS á ný tæki og vörur (hardware_purchase_pct);
+   * þjónustuprósenturnar eru TÓMAR og almenni afsláttur félaganna er 0 %. R-001264 Nesdekk
+   * er hrein úttekt — fimm Yfirferðar-línur og ekkert nýtt tæki — svo hópurinn á EKKERT að
+   * gefa þar. Vörðurinn var því rauður á réttri hegðun, og vörður sem hrópar á rétta hegðun
+   * kennir manni að hunsa hann. Nú er spurt hvaða flokk línan snertir og hvort hópurinn
+   * gefi afslátt Í ÞEIM FLOKKI. */
+  const hopar = await get('discount_tiers?select=*&id=in.(' + [...new Set(felog.map(f => f.discount_tier_id))].join(',') + ')');
   const virkir = new Set(hopar.filter(h => h.virkt !== false).map(h => h.id));
+  const hopurAf = new Map(hopar.map(h => [h.id, h]));
+  const hopurFelags = new Map(felog.map(f => [f.id, f.discount_tier_id]));
+  const pct = (v) => Number(v || 0) > 0;
+  // Hvaða prósenta á við línuna? Textinn ræður flokknum, eins og í verðskránni.
+  function gefurAfslatt(hopur, d) {
+    if (!hopur) return false;
+    if (/^Nýtt ·/.test(d)) return pct(hopur.hardware_purchase_pct);
+    if (/^Hleðsla ·/.test(d)) return pct(hopur.ext_refill_pct) || pct(hopur.general_service_pct);
+    if (/^Yfirferð ·/.test(d)) {
+      if (/slang|kefl/i.test(d)) return pct(hopur.hose_service_pct) || pct(hopur.general_service_pct);
+      if (/skynjar/i.test(d)) return pct(hopur.detector_service_pct) || pct(hopur.general_service_pct);
+      return pct(hopur.ext_service_pct) || pct(hopur.general_service_pct);
+    }
+    return false;
+  }
   const ids = felog.filter(f => virkir.has(f.discount_tier_id)).map(f => f.id);
   const B = await systurstadir();
   const skyrslaB = () => {
@@ -124,6 +156,8 @@ async function systurstadir() {
     for (const l of (Array.isArray(s.linur) ? s.linur : [])) {
       const d = String((l && l.desc) || '');
       if (!/^(Hleðsla|Yfirferð|Nýtt) ·/.test(d)) continue;
+      // Krefstu afsláttar AÐEINS þar sem hópurinn gefur hann í þessum flokki.
+      if (!gefurAfslatt(hopurAf.get(hopurFelags.get(s.customer_id)), d)) continue;
       linur++;
       if (!/afsl\./.test(d)) brot.push(s.num + ' (fyrirtaeki ' + s.customer_id + '): „' + d.slice(0, 70) + '"');
     }

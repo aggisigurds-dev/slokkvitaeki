@@ -504,3 +504,38 @@ yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
   sýninni, aldrei ný sýn — tvö mælikerfi um sama hlutinn stangast alltaf á að lokum.
 - **Þak = staðan 07.11.2026.** Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".
 - **ÓMÆLT er ekki 0.** Svari sýnin ekki stendur `merki: 'OMAELT'`, aldrei núll.
+
+## Hvað tölurnar reyndust vera (rannsóknarumferð 07.11.2026, hver röð handlesin)
+
+**Stóru tölurnar í sýnunum eru að mestu þegar leystar. Lestu söguna áður en þú kallar þær kröfu.**
+
+| Sýn | Fyrirsögn | Hvað stendur raunverulega eftir |
+|---|---|---|
+| `v_krafa_ekki_send` | 23 raðir · 2.494.571 kr | **7 raðir · 618.409 kr.** Sex voru aldrei sendanlegar: fimm kreditfærðar í Payday og ein með ⏸ BÍÐA |
+| `v_kredit_an_endurgerdar` | 22 raðir · 992.163 kr | **20.190 kr** (Prinsinn R-000310) — og hann þarf NÝJAN REIKNING, ekki kröfu |
+| `v_krofu_forskodun` rautt | 9 | **1**, og það reyndist líka falskt (sjá Nesdekk) |
+
+**Hvers vegna sýnirnar ofmátu:**
+
+1. **`v_krafa_ekki_send` las aðeins `solur`, aldrei Payday-spegilinn.** Reikningur sem var sendur
+   og kreditfærður í Payday ber hvorki `credit_of` né `dk_invoice_id` í `solur` og lítur því út
+   eins og ósendur. Lagað: dálkarnir `payday_stada` og `i_bid`; `v_krafa_ekki_send_adgerd` sleppir
+   CANCELLED/CREDIT og ⏸. Heildartalan stendur í 23 svo hún stangist ekki á við patch 489.
+2. **`v_kredit_an_endurgerdar` krafðist endurgerðar Á EFTIR kreditinu og á SÖMU kennitölu.**
+   Endurgerðin er oft stofnuð á undan kreditinu (Grillvagninn R-000548, sama dag, greiddur) eða
+   fer á aðra kennitölu sama viðskiptavinar (Eldsalir, Sjúkraþjálfun, Breiðvangur). Nýr dálkur
+   `endurgerd_greidd` leitar frá UPPRUNALEGU sölunni og tekur `customer_base_id` með.
+   Eclipse R-000727 (1.211.117 kr) er sígilda dæmið: kreditfært, endurgert sem R-000940 og GREITT.
+3. **Stærsta talan er oftast sú sem er löngu leyst.** Það er ekki tilviljun — stórir reikningar eru
+   þeir sem oftast eru kreditfærðir og endurgerðir.
+
+**Nesdekk R-001264 (90.847 kr) — tvær ábendingar, báðar rangar.** Skýrslan var lesin og segir
+6 léttvatn + 4 duft + 2 CO₂ + 6 slöngur = 18, nákvæmlega eins og tækjaskráin og reikningurinn.
+(a) „Tvíýtt á Klára heimsókn?" — nei: slöngulínurnar eru 5+1 af því að fimm slöngur hafa tóman
+stærðarreit og ein er ný 30 m slanga skráð 05.11 kl. 17:03; tvíýting hefði afritað allar línur.
+(b) „Vantar afslátt eins og systurreikningurinn" — nei: hópur 3 gefur 20 % AÐEINS á ný tæki og
+R-001264 er hrein þjónusta. Eina sem má laga er að steypa slöngulínunum í eina `qty 6` svo
+reikningurinn líti ekki út fyrir að vera tvítekinn; fjárhæðin breytist ekki.
+
+**`teya_faerslur` er TÓM tafla.** Hver spurning um „var þetta staðgreitt?" er ÓMÆLANLEG úr
+grunninum þar til hún fyllist. Segðu ÓMÆLT, ekki „ógreitt".

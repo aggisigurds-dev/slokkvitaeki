@@ -96,7 +96,7 @@ const FLOKKAR = [
     adgerd: 'Lesa ábendinguna áður en krafan fer út — rautt stoppar sendingu.' },
 
   { f: 'krofur', k: 'gengid-inn-osott', h: 'Gengið-inn sölur ósóttar yfir 30 daga',
-    leid: 'v_gengid_inn_osott?order=dagar.desc', thak: 23, krona: 'samtals',
+    leid: 'v_gengid_inn_osott?order=dagar.desc', thak: 24, krona: 'samtals',
     select: 'num,customer_nafn,samtals,dagar,innan_vaktar',
     heimild: 'sýnin v_gengid_inn_osott (sömu skilyrði og tools/audit-solu-id.cjs)',
     adgerd: 'ÞETTA ER EKKI KRAFA — einstaklingar staðgreiða við afhendingu, svo þetta er '
@@ -122,7 +122,7 @@ const FLOKKAR = [
           + 'póstur getur verið svaraður af öðrum en okkur.' },
 
   { f: 'postur', k: 'kunni-postur-osvarad', h: 'Viðskiptamenn með ósvaraðan póst',
-    leid: 'v_kunni_postur_stada?osvarad=is.true', thak: 127,
+    leid: 'v_kunni_postur_stada?osvarad=is.true', thak: 98,
     select: 'customer_base_id,postar,sidasti_inn,punktur',
     heimild: 'sýnin v_kunni_postur_stada (osvarad=true)',
     adgerd: 'Sama og að ofan, en á viðskiptamanni — notað í punktinum á kúnnaspjaldinu.' },
@@ -153,7 +153,7 @@ const FLOKKAR = [
     adgerd: 'Sækja aðaluppdrátt (skill arnold) — teikning er forsenda búnaðargreiningar.' },
 
   { f: 'upplysingar', k: 'taekjatolur-misraemi', h: 'Tækjatalan stangast á (skrá ≠ skýrsla)',
-    leid: 'v_taekjatolur_misraemi', thak: 41,
+    leid: 'v_taekjatolur_misraemi', thak: 40,
     select: '*',
     heimild: 'sýnin v_taekjatolur_misraemi (útilokar parse_ok=false — misheppnaður PDF-lestur er ÞÖGN, ekki núll)',
     adgerd: 'Bera saman EFTIR TEGUND, aldrei eftir heildarfjölda. Rétt tala með rangri '
@@ -171,7 +171,7 @@ const FLOKKAR = [
 
   /* ── VERKEFNALISTAR ───────────────────────────────────────────────────────── */
   { f: 'verkefni', k: 'verkefnalisti-opin', h: 'Verkefnalisti — opin verk',
-    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 117,
+    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 111,
     select: 'id,title,status,assigned_agent,created_at',
     heimild: 'tafla verkefnalisti · brunaholf.netlify.app/api/verkefnalisti',
     adgerd: 'Lesa áður en nýtt verk er hafið (regla Agnars 30.07.2026).' },
@@ -179,7 +179,7 @@ const FLOKKAR = [
   /* ── SAMÞYKKTIR ───────────────────────────────────────────────────────────── */
   { f: 'samthykki', k: 'samthykki-agnar', h: 'Samþykkismál sem bíða Agnars',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad&tags=cs.%5B%22samthykki%22%5D'
-        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 170,
+        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 148,
     select: 'id,title,created_at,tags',
     heimild: 'tafla thjonustubeidni (tags ∋ samthykki, assigned_to=Agnar)',
     adgerd: 'Eitt mál = ein ákvörðun. Mál sem er orðið úrelt á að loka með „— Leiðrétt"-línu, '
@@ -187,7 +187,7 @@ const FLOKKAR = [
 
   { f: 'samthykki', k: 'bord-opin', h: 'Þjónustuborð — opin mál alls',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad'
-        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 445,
+        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 423,
     select: 'id,title,status,assigned_to',
     heimild: 'tafla thjonustubeidni',
     adgerd: 'Á borðið á aðeins það sem við finnum ekki sjálf (regla Agnars 07.11.2026).' },

@@ -133,7 +133,17 @@ async function sb(slod) {
     'R-000957': 'Þorgeir Jónsson 1.426 kr, 15.09',
     'R-000972': 'Ingólfur og þórdís 10.540 kr, 17.09',
     'R-001055': 'Kristinn 1.798 kr, 29.09',
+    // 07.11.2026: fór yfir 30 daga í dag. Einstaklingur staðgreiðir við afhendingu, svo
+    // engin krafa á að fara — þetta er símtal, ekki rukkun.
+    'R-001103': 'Sævar Hafberg 1.426 kr, 08.10 — kom ekki aftur að sækja',
   };
+  /* ATH (07.11.2026) — ÞESSI VÖRÐUR SÉR AÐEINS HLUTA MYNDARINNAR.
+   * FRA_GENGID er FÖST dagsetning (2026-09-01). Gólfið var sett svo sala eldist ekki út úr
+   * verðinum, en það gerir hann um leið BLINDAN á allt eldra. Mælt í dag: 23 ósóttar sölur
+   * alls, aðeins 4 innan vaktar; 19 eldri (183.722 kr, elst 172 dagar — R-000138 Stefán
+   * Ólafsson 28.768 kr) hafa aldrei sést í neinum verði. Sýnin `v_gengid_inn_osott` ber
+   * dálkinn `innan_vaktar` og sýnir hvort tveggja; hún birtist í /api/combo-yfirlit.
+   * ÓMÆLT: hvort þær 19 voru í raun staðgreiddar á staðnum og paid_at aldrei sett. */
   const gengidInnAllar = await sb(
     'solur?select=num,status,samtals,customer_nafn,customer_kt,greitt_med,paid_at,is_credit,hidden,created_at' +
     '&customer_kt=in.(999999-9999,9999999999)&paid_at=is.null&created_at=gte.' + FRA_GENGID + '&order=created_at'

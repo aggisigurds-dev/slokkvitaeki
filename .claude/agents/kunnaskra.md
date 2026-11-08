@@ -268,3 +268,24 @@ yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
   sýninni, aldrei ný sýn — tvö mælikerfi um sama hlutinn stangast alltaf á að lokum.
 - **Þak = staðan 07.11.2026.** Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".
 - **ÓMÆLT er ekki 0.** Svari sýnin ekki stendur `merki: 'OMAELT'`, aldrei núll.
+
+## Upplýsingareitur sem vantar — hver þeirra kostar (mælt 07.11.2026)
+
+`v_heimilisfang_vantar` segir 199. **Af þeim stöðva TVÆR raunverulega vinnu:**
+Eskihlíð (12 lifandi tæki, ekkert heimilisfang neins staðar) og Húsfélag Dalshrauni
+(5 tæki, gata án húsnúmers — geocode nær götu en ekki húsi).
+
+**Sýnin mælir annan reit en kostnaðinn.** Hún les `customers_base.heimilisfang` (greiðandann),
+en kortið og akstursröðin lesa `fyrirtaeki.heimilisfang` (`js/mapfix.js:299`) og falla á NAFNIÐ
+þegar það vantar (`js/patches/155-arsskodun-map-embed.js:417`). Á þeim reit: 203 af 1.278 vantar,
+fjögur í þjónustu, **núll sem eru bæði í þjónustu og með lifandi tæki**.
+
+Hinar 197: **14 eiga gildið annars staðar** (oftast `uttaeki.location` — Hótel Atlantic er með
+Skútuvog 10 þar) og eru TENGINGARVERK, ekki upplýsingasöfnun; **183 skipta engu** (88 afgreiðslu­
+kúnnar sem fóru um búðarkassann, 78 draugaraðir úr listainnflutningi, 11 án staðarraðar,
+4 í þjónustu án tækja, 2 dauðar).
+
+**18 verkstaðir án teikninga eru í raun ~14** — fjögur eru tvítök (Dalbraut×2, Hnjúkamói×2,
+Varmárskóli×2, Landspítali×2, sömu `slokk_company_id`). Aðeins einn hefur lifandi tæki (NESDEKK
+Breiðhöfða 13, 18 tæki) og hann á ÞEGAR teikningu í `bunadargreining` — ótengt, ekki vantar.
+Sjö hafa ekkert heimilisfang og því enga leið að aðaluppdrætti.
