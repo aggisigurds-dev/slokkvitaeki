@@ -171,9 +171,12 @@ const FLOKKAR = [
 
   /* ── VERKEFNALISTAR ───────────────────────────────────────────────────────── */
   { f: 'verkefni', k: 'verkefnalisti-opin', h: 'Verkefnalisti — opin verk',
-    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 100,
+    leid: 'verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc', thak: 97,
     select: 'id,title,status,assigned_agent,created_at',
     heimild: 'tafla verkefnalisti · brunaholf.netlify.app/api/verkefnalisti',
+    // Þakið hjaðnar þegar skuld er borguð: 111 → 100 (07.11) → 97 (08.11, þrjú verk lokuð
+    // með sönnun: Ægisgata 4 úr þjónustu, Agentanetið birt, pósterindin færð á mál #1541).
+    // Flokkarnir eru vaktaðir sér — tools/audit-verkefni-flokkar.cjs gegn CAT_LABELS.
     adgerd: 'Lesa áður en nýtt verk er hafið (regla Agnars 30.07.2026).' },
 
   /* ── SAMÞYKKTIR ───────────────────────────────────────────────────────────── */

@@ -28,6 +28,15 @@
  *     (netlify/functions/verkefnalisti.js: category: body.category ? … : 'allt'), svo hvert verk
  *     sem er stofnað án flokks lendir þar. Rótin er sjálfgefna gildið, ekki fólkið.
  *
+ * STAÐAN EFTIR FLOKKUN (08.11.2026, sex lesaðeins-lotur mældu öll 100 opin verk):
+ *   97 opin · kerfi 22 · utlit 19 · villa 18 · gagnaheilbrigdi 11 · skjol 9 · reikning 6 ·
+ *   oryggi 6 · utkall 3 · kodi 3 — og **`allt` er TÓMT**.
+ * 65 flokkar lagfærðir. Loturnar buðu heiti sem eru EKKI í kanónunni (`vidmot`, `gogn`,
+ * `peningar`, `taeki`) og þau voru lögð á hana (→ `utlit`, `gagnaheilbrigdi`, `reikning`),
+ * ekki bætt við hana — annars hefði mælingin sjálf búið til tvöföldunina sem hún á að finna.
+ * `allt`-talan hér að ofan er því söguleg; vörðurinn varar við um leið og eitt verk lendir
+ * þar aftur, og það gerist af sjálfu sér næst þegar verk er stofnað án flokks.
+ *
  * Vörðurinn er STATÍSKUR gagnvart kóða en les listann; hann skrifar aldrei.
  */
 const fs = require('fs');
