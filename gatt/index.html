@@ -1520,17 +1520,24 @@
 <!-- ══ LOGIN ══ -->
 <section id="login" class="hidden" data-bg="bh">
   <div class="lg-fx lg-bh"></div><div class="lg-fx lg-himinn"></div><div class="lg-fx lg-nott"></div><div class="lg-fx lg-sol"></div><div class="lg-fx lg-eldur"></div><div class="lg-fx lg-ljos"></div><div class="lg-fx lg-teikn"></div>
-  <div class="lg-iso" aria-hidden="true">
-    <div class="lg-fl" style="transform:translateZ(0)"><i style="left:40px;top:50px"></i><i style="left:120px;top:110px"></i></div>
-    <div class="lg-fl" style="transform:translateZ(46px)"><i style="left:80px;top:40px"></i></div>
-    <div class="lg-fl" style="transform:translateZ(92px)"><i style="left:50px;top:120px"></i><i style="left:130px;top:60px"></i></div>
-    <div class="lg-fl" style="transform:translateZ(138px)"><i style="left:100px;top:90px"></i></div>
-  </div>
+  <aside class="lg-info"><div class="lg-info-h">Þjónustan þín á einum stað</div>
+    <details class="lg-more" id="lg-more" open>
+      <summary>Hvað finn ég í gáttinni?</summary>
+      <ul>
+        <li><b>Reikningar</b><span>Allir reikningar félagsins á einum stað, greiddir og ógreiddir, með PDF.</span></li>
+        <li><b>Skýrslur og skrár</b><span>Úttektarskýrslur, brunakerfisskýrslur og önnur skjöl sem tengjast þjónustunni.</span></li>
+        <li><b>Skoðanir og eldvarnabók</b><span>Hvenær var síðast skoðað, hvað er næst á dagskrá og hvað þarf að laga.</span></li>
+        <li><b>Eignir, teikningar og búnaður</b><span>Hver eign með teikningum, tækjum og kerfum, svo allir sjá hvar búnaðurinn er.</span></li>
+        <li><b>Verkbeiðnir og erindi</b><span>Sendu beiðni eða spurningu og fylgstu með stöðunni.</span></li>
+        <li><b>Þjónusta og verðskrá</b><span>Sjáðu þjónustuna sem þið eruð með og kjörin ykkar, og bættu við nýrri þjónustu þegar þið þurfið.</span></li>
+      </ul>
+    </details>
+  </aside>
   <div class="lcard" id="lcard">
     <div class="lg-mark"><img src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><span>SLÖKKVITÆKI EHF.</span></div>
     <div class="lg-tabs" role="tablist"><button type="button" role="tab" id="lg-t-in" aria-selected="true">Innskráning</button><button type="button" role="tab" id="lg-t-reg" aria-selected="false">Nýskráning</button></div>
     <form id="loginForm" autocomplete="on">
-      <div class="sub">Sjáðu þá þjónustu sem þú ert með, skoðanir, skýrslur og reikninga — og bættu við nýrri þjónustu þegar þú vilt.</div>
+      <div class="sub">Skráðu þig inn með netfanginu þínu og lykilorðinu sem við sendum þér.</div>
       <div class="fld"><label for="email">Netfang</label><input type="email" id="email" placeholder="nafn@fyrirtaeki.is" autocomplete="username"></div>
       <div class="fld"><label for="password">Lykilorð</label><input type="password" id="password" autocomplete="current-password"></div>
       <div class="lerr" id="lerr"></div>
@@ -1982,7 +1989,7 @@
 <script src="/gatt/portal.js?v=20261108lh"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261107us">
-<link rel="stylesheet" href="/gatt/login-v2.css?v=20261108c">
+<link rel="stylesheet" href="/gatt/login-v2.css?v=20261108g">
 <script src="/gatt/premium-v2.js?v=20261107us" defer></script>
 </body>
 </html>
