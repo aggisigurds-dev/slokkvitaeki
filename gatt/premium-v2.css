@@ -471,3 +471,29 @@ html[data-theme="premium"] #drawer .v2-dr-summary-cell span {
  html[data-theme="premium"] #drawer .v2-dr-summary-cell strong {font-size:16px}
  html[data-theme="premium"] #drawer .v2-dr-summary-cell span {font-size:10px}
 }
+
+/* Sameinað Premium flipakerfi: þétt, aðgengilegt og skrunanlegt. */
+html[data-theme="premium"] #drawer #v2-dtabs {
+ scrollbar-width:thin;scrollbar-color:#b7c6d8 transparent;
+}
+html[data-theme="premium"] #drawer #v2-dtabs [role="tab"] {
+ white-space:nowrap;flex-shrink:0;
+}
+html[data-theme="premium"] #drawer .v2-bvk {
+ min-width:0;
+}
+html[data-theme="premium"] #drawer .v2-bvk .v2-kt {
+ min-width:0;overflow-wrap:anywhere;
+}
+@media(max-width:700px) {
+ html[data-theme="premium"] #drawer #v2-dtabs {
+  display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;max-width:100%;padding-bottom:5px;
+ }
+ html[data-theme="premium"] #drawer #v2-dtabs [role="tab"] {
+  flex:0 0 auto;min-width:max-content;
+ }
+ html[data-theme="premium"] #drawer .v2-bvk {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ }
+}
