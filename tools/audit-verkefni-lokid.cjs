@@ -24,9 +24,31 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
+/* HVAÐ GETUR BLINDAÐ VÖRÐINN (mælt 08.11.2026): commit-skilaboð sem VITNA í opin verk-id
+ * í mælingarsamhengi. Commit e64c7f59 („Verkefnalistinn flokkadur") skráði hvaða mælingar
+ * breyta forsendu hvers verks og nefndi ellefu OPIN id orðrétt. Vörðurinn gat ekki greint
+ * tilvitnun frá verklokum — eins og hausinn hér að ofan segir sjálfur — og fór rauður á
+ * öllum ellefu. Enginn þeirra var búinn.
+ *
+ * LÆRDÓMUR FYRIR NÆSTA COMMIT: mælingin á að fara í `claude_notes` á verkinu, ekki í
+ * commit-skilaboðin. Þar les næsta lota hana hvort sem er, og þá heldur þetta merki gildi
+ * sínu. Nefndu opið verk-id í commiti AÐEINS þegar commitið vinnur verkið. */
+
 // Verk sem BERA commit en standa réttilega opin (skoðuð í höndunum). id → hvers vegna.
 const GRUNNLINA = {
-  // (tómt 07.11.2026 — öll sex sem fundust voru raunverulega búin og voru lokuð)
+  // Ellefu úr commit e64c7f59 (08.11.2026) — tilvitnun, ekki verklok. Mælingin sjálf er
+  // komin í claude_notes á hverju verki; commitið endurtók hana aðeins í skilaboðunum.
+  'a56fdd5f': 'e64c7f59 vitnaði í mælingu (2 af 29 fötum í afriti); backup-verkið er ógert',
+  'b130b92a': 'e64c7f59 vitnaði í leiðréttingu (drive-download er lifandi); 7 dauð föll eftir',
+  '51bfbc07': 'e64c7f59 sagði að tillögu um flokk væri hafnað; heimsóknirnar eru ógerðar',
+  '13d91414': 'e64c7f59 vitnaði í mælingu (13 = 10 + 3 ranglega skráðar skýrslur); ógert',
+  '44d2bdb3': 'e64c7f59 sagði að tillögu um flokk væri hafnað; grænu hökin eru ógerð',
+  'e3d85beb': 'e64c7f59 vitnaði í T=S eftir tegund (20 félög víkja); samræmingin er ógerð',
+  '074f0228': 'e64c7f59 vitnaði í að forsendan væri fallin; 6 skrifleiðir skrifa enn ok',
+  'd79997c1': 'e64c7f59 vitnaði í 15 afrit með 197.407 kr mun; endurgerðin er ógerð',
+  'fad496c9': 'e64c7f59 vitnaði í að föllin séu 10, ekki 5; gáttin er enn default-open',
+  '03b364f7': 'e64c7f59 vitnaði í 142 faldar raðir (ekki 51); yfirferðin er ógerð',
+  '244bdb0f': 'e64c7f59 vitnaði í að þáttarinn lesi Athugasemdir þegar; dálkarnir vantar',
 };
 
 const CFG = fs.readFileSync(path.join(__dirname, '..', 'js', 'config.js'), 'utf8');
