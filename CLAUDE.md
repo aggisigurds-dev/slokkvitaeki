@@ -25,6 +25,27 @@ It contains everything Claude Code needs to know to be useful immediately.
 > **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
 > `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
 > nýtt verk er hafið (Agnar 2026-07-30).
+>
+> **🗂 EINN VERKEFNALISTI FYRIR ALLAR LOTUR (Agnar 08.11.2026):** „veldu einhvern einn
+> verkefnalista sem er notaður af öllum sessions svo þetta fari ekki út um allt."
+> Listinn er **`verkefnalisti`** (vefur: brunaholf.netlify.app/verkefnalisti.html).
+> **Nýtt verk fer ÞANGAÐ — ekki í nýja töflu, ekki á Þjónustuborðið, ekki í checklista.**
+>
+> Fjórar hirslur, hver með eitt hlutverk (mál #1548):
+> 1. **Þjónustuborðið** = það sem bíður AGNARS. Ákvarðanir, leyfi, svör — ekkert annað.
+> 2. **Verkefnalistinn** = það sem bíður OKKAR. Þarf verk ákvörðun? Þá fer ÁKVÖRÐUNIN á borðið,
+>    ekki verkið.
+> 3. **Villuskrár** (`app_problems`, `villur`) = vélagögn. Enginn les þær sem lista; vörður segir
+>    frá þegar eitthvað NÝTT kviknar. Reynist röð peningamál er hún LYFT á borðið.
+> 4. **Checklistar og dagnótur** = inntak, ekki geymsla. Atriði verður annaðhvort mál eða hakað.
+>
+> **Reglan sem heldur þessu:** hver hlutur á EINN stað. Lendi hann á tveimur er hlekkur á milli
+> og hinn lokast. `tools/audit-skorun-lista.cjs` rauðnar þegar sami hlutur fer aftur á tvo staði,
+> og `/api/combo-yfirlit` telur allar hirslurnar í einu svari (sést efst á Þjónustuborðinu).
+>
+> Mælt 08.11.2026 þegar reglan var sett: 844 opin atriði í níu hirslum. Skörunin sem fannst —
+> 12 af 13 ósvöruðum `factcheck_akvardanir` áttu tvíbura á borðinu, og 14 borðmál báru þegar
+> `verkefnalisti:`-tag sem hvergi var birt.
 > covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
 > `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
 > gotchas. Updated continuously as Agnar gives new context.

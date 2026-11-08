@@ -337,6 +337,37 @@ async function hirslur() {
   };
 }
 
+
+/* ── VERKEFNALISTINN Á BORÐIÐ ─────────────────────────────────────────────────
+ * Agnar 08.11.2026: „máttu setja linka inn á þessa verkefnalista á þjónustuborð Agnars, á meðan
+ * þeir eru. Og veldu einhvern einn verkefnalista sem er notaður af öllum sessions svo þetta fari
+ * ekki út um allt."
+ *
+ * EINN LISTI VAR VALINN: `verkefnalisti`. Hann var þegar sameiginlegi listinn — CLAUDE.md segir
+ * hverri lotu að lesa hann í upphafi (GET brunaholf.netlify.app/api/verkefnalisti), hann ber
+ * `assigned_agent`, `category` og `vefur`, og agentarnir skrifa í hann. Hinir listarnir halda
+ * sínu hlutverki (borðið = ákvarðanir Agnars, villuskrár = vélagögn), en NÝTT VERK fer hingað.
+ */
+const VERKLISTI_VEFUR = 'https://brunaholf.netlify.app/verkefnalisti.html';
+
+async function verkefni(radir) {
+  const t = await sbTelja('verkefnalisti?status=in.(beidni,i_yfirferd)');
+  if (t.tala == null) return { merki: 'OMAELT', skyring: t.villa || 'svaraði ekki', vefur: VERKLISTI_VEFUR };
+  const d = await sbRadir('verkefnalisti?status=in.(beidni,i_yfirferd)&order=created_at.asc',
+    'id,title,status,category,assigned_agent,created_at,vefur', Math.max(0, radir) || 8);
+  return {
+    merki: 'MAELT', opin: t.tala, vefur: VERKLISTI_VEFUR,
+    elstu: (d || []).map((v) => ({
+      id: String(v.id).slice(0, 8), titill: v.title, flokkur: v.category,
+      agent: v.assigned_agent, dags: String(v.created_at || '').slice(0, 10),
+      vefur: VERKLISTI_VEFUR + '#' + String(v.id).slice(0, 8),
+    })),
+    regla: 'EINN LISTI FYRIR ALLAR LOTUR: nýtt verk fer í `verkefnalisti`, ekki í nýja töflu og '
+         + 'ekki á Þjónustuborðið. Borðið er fyrir ákvarðanir Agnars; verk sem þarf ekki hans já '
+         + 'á heima hér.',
+  };
+}
+
 /* ── Keyrsla ────────────────────────────────────────────────────────────────── */
 async function maela(valinn, radir) {
   const listi = FLOKKAR.filter((x) => !valinn || x.f === valinn);
@@ -479,7 +510,7 @@ exports.handler = async (event) => {
   const dagar = Math.max(1, Math.min(60, parseInt(q.dagar, 10) || 10));
 
   const t0 = Date.now();
-  const [linur, dsk, sam, hir] = await Promise.all([maela(valinn, radir), dagskra(dagar), samstilling(), hirslur()]);
+  const [linur, dsk, sam, hir, verk] = await Promise.all([maela(valinn, radir), dagskra(dagar), samstilling(), hirslur(), verkefni(radir)]);
 
   const maelt = linur.filter((l) => l.merki === 'MAELT');
   const omaelt = linur.filter((l) => l.merki === 'OMAELT');
@@ -503,6 +534,7 @@ exports.handler = async (event) => {
     },
     linur,
     hirslur: hir,
+    verkefnalisti: verk,
     dagskra: dsk,
     samstilling: sam,
     reglur: [

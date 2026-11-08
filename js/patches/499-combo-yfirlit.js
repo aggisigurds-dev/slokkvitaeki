@@ -145,6 +145,25 @@
       if (l.flokkur !== fl) { fl = l.flokkur; ut += '<div class="yf-flokkur">' + esc(FLOKKAHEITI[fl] || fl) + '</div>'; }
       ut += linaHtml(l);
     });
+    // Verkefnalistinn — EINN listi fyrir allar lotur, með hlekk beint á hann (Agnar 08.11.2026).
+    var vk = j.verkefnalisti || {};
+    if (vk.merki === 'MAELT') {
+      ut += '<div class="yf-flokkur">Verkefnalistinn — ' + vk.opin + ' opin</div>';
+      (vk.elstu || []).forEach(function (v) {
+        ut += '<div class="yf-dag">· <a href="' + esc(vk.vefur) + '" target="_blank" rel="noopener"'
+          + ' style="color:#1a7f4b;text-decoration:underline">' + esc(v.id) + '</a> '
+          + esc(String(v.titill || '').slice(0, 72))
+          + (v.agent ? ' <small>' + esc(v.agent) + '</small>' : '')
+          + ' <small>' + esc(v.dags) + '</small></div>';
+      });
+      ut += '<div class="yf-dag"><a href="' + esc(vk.vefur) + '" target="_blank" rel="noopener"'
+        + ' style="color:#1a7f4b;text-decoration:underline">Opna allan verkefnalistann</a>'
+        + ' <small>' + esc(vk.regla || '') + '</small></div>';
+    } else if (vk.skyring) {
+      ut += '<div class="yf-flokkur">Verkefnalistinn</div>'
+        + '<div class="yf-dag"><b>ÓMÆLDUR</b> — ' + esc(vk.skyring) + '</div>';
+    }
+
     // Hirslurnar: hvar opið verk liggur. Agnar 08.11: „ekki hægt að hafa allt útum allt."
     var hr = j.hirslur || {};
     if (hr.linur) {

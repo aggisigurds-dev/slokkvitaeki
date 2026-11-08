@@ -35,7 +35,11 @@ const GRUNNLINA = { A: 9, B: 35, C: 0 };
  * og þau dæmi létu vörðinn rauðna á sjálfum sér í fyrstu keyrslu (B fór úr 34 í 39 af því að
  * #1544 nefnir fimm reikninga úr hinum málunum). Vörður sem rauðnar af réttri hegðun kennir
  * manni að hunsa hann — sama lexía og audit-tengingar lærði 07.11. */
-const META_MERKI = ['sl:skorun-lista', 'bh:combo-yfirlit'];
+const META_MERKI = ['sl:skorun-lista', 'bh:combo-yfirlit', 'sl:skipulag',
+                   'sl:villuskrar-skorun', 'sl:xml-hafnad-an-netfangs'];
+/* 08.11 (seinna um daginn): B fór í 38 af því að #1545, #1547 og #1548 nefna reikninga sem
+ * eldri mál nefna líka — en þau eru SKÝRSLUR UM skörun og tvítaka ekkert verk. Þau fara í
+ * META_MERKI eins og #1544 og combo-málið. Grunnlínan stendur í 35. */
 const GRUNNLINA_DAGS = '08.11.2026';
 
 const CFG = fs.readFileSync(path.join(__dirname, '..', 'js', 'config.js'), 'utf8');
