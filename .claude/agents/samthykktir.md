@@ -290,3 +290,33 @@ merkinguna „úttekt ekki gerð").
 
 **Mál sem ber tölu úr sýn á að VÍSA í sýnina, ekki afrita hana.** #1533 sagði 45 staði þegar
 `v_taekjatolur_misraemi` skilaði 41; talan var afrituð og rak í sundur sama dag.
+
+## Önnur rannsóknarumferð á samþykktunum (08.11.2026) — hvað hún breytti
+
+93 af 148 opnum samþykkismálum lesin í sex lotum. **Niðurstaðan er ekki að málin væru röng heldur
+að FORSENDUR þeirra höfðu færst.** Fjórar tillögur hefðu valdið skaða ef þær hefðu verið samþykktar
+eins og þær stóðu:
+
+| Mál | Tillagan sagði | Gögnin segja |
+|---|---|---|
+| #1407 | bakfæra 9 sölur, 282.765 kr | **TVÆR voru greiddar með korti** (R-000505, R-000709). Payday felldi kröfurnar EINMITT ÞESS VEGNA. Rétt: 7 raðir / 269.065 kr — og R-000017 ber líka paid_at |
+| #1344 | fella 2 slöngur af Höfuðstöðvum | TVÆR skýrslur telja hvor sínar 2 slöngur og tækjaskráin stemmir við báðar; húseigandi ≠ leigutaki |
+| #1455 | #1295 Kaplahraun í ruslið | 7 = 7 og sama heimilisfang eru báðar þekktar gildrur; ENGIN tegund sameiginleg |
+| #1454 | sameina þrjá Colas-staði | „Gullhella 1" er REIKNINGSFANG Colas, ekki staður; blind sameining þurrkar út tvær réttar skrár |
+
+**Og fjórar nótur byggðu á röngum grunni:** #1537 („afslættir hvergi skráðir" — þeir ERU skráðir sem
+föst tilboðsverð per ár), #1391 (89.578 → hámark 69.202; tvær sölur fengu afsláttinn í línuverðinu),
+#1394 (20% reiknað á þjónustu þar sem hópurinn gefur það aðeins á ný tæki), #1429 (13 drög → 39,
+69,9 m.kr., og eitt þeirra má EKKI merkja rukkað).
+
+**Þrjár reglur sem þetta staðfestir:**
+
+1. **Lestu BÁÐAR heimildir.** `solur` ein og sér sagði „ósend krafa" um reikninga sem Payday sýnir
+   CANCELLED/CREDIT, og „ógreitt" um sölur sem voru greiddar með korti (`greitt_med_prev` geymir
+   ummerkin). Ein tafla er aldrei sagan.
+2. **Rétt heildartala með rangri samsetningu er algengasta lygin.** Grjótháls 7 = 7 en fjögur tæki
+   á röngum stað; Máni 54 = 54 en allt talið sem léttvatn; Midtown-mismunurinn er 7 per tegund, ekki
+   10 (talan 10 var HLEÐSLUFJÖLDI af reikningi, ekki tækjafjöldi).
+3. **„Líklega afgreitt" er ekki mæling.** Tvö mál (#946, #954) báru sjálfvirka merkingu sem vísaði á
+   reikninga sem eiga ekkert skylt við málið (R-001079 er búðarsala á öðrum stað; R-001107 er
+   brunakerfisreikningur á Laugavegi). Sá sem treystir þeirri merkingu lokar máli ranglega.

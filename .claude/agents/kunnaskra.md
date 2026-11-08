@@ -289,3 +289,17 @@ kúnnar sem fóru um búðarkassann, 78 draugaraðir úr listainnflutningi, 11 �
 Varmárskóli×2, Landspítali×2, sömu `slokk_company_id`). Aðeins einn hefur lifandi tæki (NESDEKK
 Breiðhöfða 13, 18 tæki) og hann á ÞEGAR teikningu í `bunadargreining` — ótengt, ekki vantar.
 Sjö hafa ekkert heimilisfang og því enga leið að aðaluppdrætti.
+
+## `arsskodun_report_facts` er EIN RÖÐ PER FÉLAG (staðfest 08.11.2026)
+
+674 raðir, 674 félög, pkey er `fyrirtaeki_id` einn og sér. Taflan geymir **síðustu lesnu skýrsluna,
+ekki sögu**. Þrennt leiðir af því:
+
+1. **Félag sem er skoðað tvisvar á ári tapar fyrri skýrslunni.** Vélrás Álhella: febrúar 24 tæki
+   (skjal 9976) yfirskrifað af ágúst 9 tækjum (skjal 9745) — Ársskoðun sýnir 9 þar sem 24 voru
+   yfirfarin. Fjögur tæki fengu meira að segja yfirferð tvisvar á árinu.
+2. **`report_year` segir ekki hvað röðin nær yfir** — hún ber ár nýjustu skýrslunnar. Eldri ár eru
+   hvergi í töflunni; sagan er í `app_settings.arsskodun_customers[fid].history`.
+3. **Flutningur milli félaga er UPPFÆRSLA, ekki innsetning.** `insert` rekst á pkey móttakandans.
+   Þegar Hveragerðissóknar-skýrslan var færð af Gerð ehf. á Hveragerðiskirkju (07.11.2026) þurfti
+   að uppfæra röð kirkjunnar og eyða hinni — og aldrei með eldra skjali en það sem fyrir er.
