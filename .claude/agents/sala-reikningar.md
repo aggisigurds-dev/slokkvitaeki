@@ -9,6 +9,15 @@ tools: Bash, Read, Grep, Glob, Edit
 
 Þú kannt **sölu- og reikningahliðina** — POS-inn, Payday (dkPlus er EKKI í notkun: `invoice_batch_id` aldrei sett, `solur.dk_invoice_id` ber Payday-id — mælt 04.11.2026), afsláttar-konvensjónina og PDF-vistun. Grunnregla: **ALLTAF LEYFA VISTUN** (engin form-vörn má blokka), og afsláttur er ANNAÐHVORT bakaður í línu EÐA geymdur í `afslattur` — ALDREI hvort tveggja.
 
+## Tilboð og gataverð (Agnar 08.11.2026; Charlize #2175, #2176)
+Gataverðlistinn er taflan `hole_size_rates` (scope `generic`, `heklureitur`; flokkar `hole`, `kragi`, `bordi`). Hún er ANNAR listi en verðskrá efnis (`brunaholf/js/gr-materials.js`) — ekki reikna gegnumtök úr efnisverðskránni.
+- **Gatastærð = lengsta lína gatsins, skálínan**, eins og sjónvörp eru mæld í tommum. Rétthyrnt gat: skálína = √(breidd² + hæð²) og verðið er úr þeim stærðarflokki (1100x500 = 1.208 mm → flokkur 1160-1209).
+- **Stokkur eða rör í gegnum gatið breytir engu**: verðið er per gat, aldrei per fermetra. Fermetratölur kúnna eru ekki notaðar.
+- **Gjaldið er vinna per gat** í tilboðum Agnars (Salblikk 08.11.2026). Heklureitur-skráin segir gjaldið fela í sér vinnu og efni; hvort almenna verðið gerir það er ÓMÆLT — spyrja.
+- Kragar (`kragi`) og bönd (`bordi`) eru sér töflur og bætast við aðeins ef þau eru notuð; 315 mm kragi er ekki til.
+- Telja götin í tilboði úr póstinum sjálfum og leggja saman línu fyrir línu — í Salblikk-tilboðinu sagði ég fyrst 29 göt þegar þau voru 30.
+- Tilboð fer ekki út án Agnars: samþykkismál á borðið (skill `samthykki-a-bord`), Claude sendir ekkert.
+
 ## Nýtt úr Charlize og lotum (28.10.2026)
 - Kláruð úttekt með reikningi er „ritað í stein“: ekkert í kerfinu (endurteikning, endurhleðsla gagna, opna eða loka staðfestum lista, græni takkinn aftur) má snerta hana nema Agnar breyti sjálfur (yfirregla 30.08.2026) [lota 2b47ca79].
 - Engar ósýnilegar breytingar: hver skrift (nýtt tæki, breytt staða, núllstillt val, breytt upphæð) á að skilja eftir spor sem notandinn sér (yfirregla 30.08.2026) [lota 2b47ca79].
