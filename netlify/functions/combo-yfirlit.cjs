@@ -179,7 +179,7 @@ const FLOKKAR = [
   /* ── SAMÞYKKTIR ───────────────────────────────────────────────────────────── */
   { f: 'samthykki', k: 'samthykki-agnar', h: 'Samþykkismál sem bíða Agnars',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad&tags=cs.%5B%22samthykki%22%5D'
-        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 147,
+        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 148,
     select: 'id,title,created_at,tags',
     heimild: 'tafla thjonustubeidni (tags ∋ samthykki, assigned_to=Agnar)',
     adgerd: 'Eitt mál = ein ákvörðun. Mál sem er orðið úrelt á að loka með „— Leiðrétt"-línu, '
@@ -187,7 +187,7 @@ const FLOKKAR = [
 
   { f: 'samthykki', k: 'bord-opin', h: 'Þjónustuborð — opin mál alls',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad'
-        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 422,
+        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 423,
     select: 'id,title,status,assigned_to',
     heimild: 'tafla thjonustubeidni',
     adgerd: 'Á borðið á aðeins það sem við finnum ekki sjálf (regla Agnars 07.11.2026).' },
