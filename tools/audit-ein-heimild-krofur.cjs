@@ -17,8 +17,19 @@
  * Þessi vörður REFACTORAR EKKI þær ellefu — það væri áhættusamt og utan tilefnis.
  * Hann FRYSTIR fjöldann: tólfta útfærslan fer rauð og á að lesa sýnina í staðinn:
  *     v_krafa_ekki_send         — breiða talan, SÖMU skilyrði og 489 (23 · 2,5 m.kr.)
- *     v_krafa_ekki_send_adgerd  — sá hluti sem má raunverulega senda (9 · 662.759 kr.)
+ *     v_krafa_ekki_send_adgerd  — sá hluti sem má raunverulega senda (7 · 618.409 kr.)
  * Báðar bera `comment on view` með gildrunum. Sjá minni feedback_maelingin_er_lika_til.
+ *
+ * UPPFÆRT 08.11.2026 — aðgerðarsýnin fór úr 9/662.759 í 7/618.409. Ástæðan er ÞRIÐJA
+ * heimildin sem engin af útfærslunum ellefu las: `payday_invoices_slokk`. Reikningur sem
+ * var sendur og kreditfærður Í PAYDAY ber hvorki `credit_of` né `dk_invoice_id` í `solur`
+ * og lítur þar því út eins og ósendur. Sex af þeim 23 eru þannig (fimm CREDIT + ein ⏸ BÍÐA),
+ * samtals 221.231 kr. Sýnin ber núna dálkana `payday_stada` og `i_bid`.
+ *
+ * MÆLT SAMA DAG: af þessum ellefu útfærslum lesa FIMM Payday-spegilinn (166, 190, 368, 369,
+ * 420) og SEX gera það ekki (142, 197, 386, 430, 489 og fjarmal-yfirlit). Það er ekki villa
+ * í sjálfu sér — 489 á að sýna breiðu töluna og gerir það rétt — en það þýðir að enginn
+ * þeirra sex getur sagt hverjar MÁ SENDA. Sú spurning á að fara í `v_krafa_ekki_send_adgerd`.
  *
  * STATÍSKUR: enginn gagnagrunnur, ekkert net. Keyrir á sekúndubroti.
  */
