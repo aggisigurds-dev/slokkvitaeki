@@ -1,17 +1,19 @@
 /* Innskráning gáttarinnar — útfærsla D (08.11.2026): hæðir í 3D við hlið spjalds, fimm bakgrunnar.
-   Bakgrunnur: data-bg á #login (himinn | nott | sol | eldur | ljos | teikn); ?bg=<heiti> í slóðinni prófar hvern. Allt afmarkað við #login. */
+   Bakgrunnur: data-bg á #login (bh = Brunahólfs-blár, sjálfgefið | himinn | nott | sol | eldur | ljos | teikn); ?bg=<heiti> í slóðinni prófar hvern. Allt afmarkað við #login. */
 #login{--lb:#1b2a4d;--lo:#f15a24;--fb:rgba(255,255,255,.45);--ff:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05));--fs:rgba(0,0,0,.5);
   position:relative;overflow:hidden;perspective:1200px;gap:56px;background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
 #login.hidden{display:none}
 #login>*{position:relative;z-index:2}
 #login .lg-fx{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s}
-#login[data-bg=himinn] .lg-himinn,#login[data-bg=nott] .lg-nott,#login[data-bg=sol] .lg-sol,#login[data-bg=eldur] .lg-eldur,#login[data-bg=ljos] .lg-ljos,#login[data-bg=teikn] .lg-teikn{opacity:1}
+#login[data-bg=bh] .lg-bh,#login[data-bg=himinn] .lg-himinn,#login[data-bg=nott] .lg-nott,#login[data-bg=sol] .lg-sol,#login[data-bg=eldur] .lg-eldur,#login[data-bg=ljos] .lg-ljos,#login[data-bg=teikn] .lg-teikn{opacity:1}
+#login[data-bg=bh]{--fs:rgba(4,10,30,.5);background:linear-gradient(180deg,#26407a 0%,#1b2a4d 48%,#121c36 100%)!important}
 #login[data-bg=himinn]{--fs:rgba(8,28,80,.42);background:linear-gradient(180deg,#0c3585 0%,#2a68d0 34%,#74a9ea 64%,#f3c49c 90%,#f39a52 100%)!important}
 #login[data-bg=nott]{background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
 #login[data-bg=sol]{--fb:rgba(27,42,77,.55);--ff:linear-gradient(135deg,rgba(255,255,255,.7),rgba(255,255,255,.25));--fs:rgba(27,42,77,.28);background:linear-gradient(180deg,#f39a52 0%,#f6c593 24%,#cfe0f5 58%,#e9f0fa 100%)!important}
 #login[data-bg=eldur]{--fb:rgba(255,170,120,.55);--ff:linear-gradient(135deg,rgba(255,140,80,.2),rgba(255,140,80,.04));--fs:rgba(0,0,0,.6);background:linear-gradient(180deg,#171112,#0c0809)!important}
 #login[data-bg=ljos]{--fb:rgba(27,42,77,.5);--ff:linear-gradient(135deg,#fff,rgba(255,255,255,.4));--fs:rgba(27,42,77,.22);background:linear-gradient(160deg,#f4f8fe,#dbe7f7)!important}
 #login[data-bg=teikn]{--fb:rgba(255,255,255,.75);--ff:rgba(255,255,255,.06);--fs:rgba(0,0,0,.3);background:#0f3a7a!important}
+.lg-bh{background:radial-gradient(640px 420px at 28% 46%,rgba(88,128,230,.34),transparent 68%),radial-gradient(900px 300px at 50% 112%,rgba(0,0,0,.35),transparent 70%)}
 .lg-himinn{background:radial-gradient(900px 300px at 24% 104%,rgba(255,132,50,.6),transparent 70%),radial-gradient(520px 200px at 78% 100%,rgba(255,176,90,.35),transparent 70%),radial-gradient(420px 160px at 70% 22%,rgba(255,255,255,.16),transparent 70%)}
 .lg-nott{background:radial-gradient(520px 320px at 30% 45%,rgba(60,100,220,.35),transparent 65%),repeating-linear-gradient(90deg,rgba(120,160,255,.09) 0 1px,transparent 1px 56px),repeating-linear-gradient(0deg,rgba(120,160,255,.09) 0 1px,transparent 1px 56px)}
 .lg-sol{background:radial-gradient(circle at 24% 26%,#fff6d8 0,#ffd27a 9%,rgba(255,210,122,0) 22%)}

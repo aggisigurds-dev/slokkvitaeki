@@ -438,7 +438,7 @@
   (function () {
     var login = $('#login'), card = $('#lcard');
     if (!login || !card) return;
-    var BG = ['himinn', 'nott', 'sol', 'eldur', 'ljos', 'teikn'];
+    var BG = ['bh', 'himinn', 'nott', 'sol', 'eldur', 'ljos', 'teikn'];
     try {
       var bg = new URLSearchParams(location.search).get('bg');
       if (bg && BG.indexOf(bg) >= 0) login.setAttribute('data-bg', bg);
