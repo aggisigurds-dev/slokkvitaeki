@@ -187,7 +187,11 @@ const FLOKKAR = [
   /* ── SAMÞYKKTIR ───────────────────────────────────────────────────────────── */
   { f: 'samthykki', k: 'samthykki-agnar', h: 'Samþykkismál sem bíða Agnars',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad&tags=cs.%5B%22samthykki%22%5D'
-        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 150,
+        // 150 → 174 (08.11.2026). 18 af hækkuninni er SÝNILEIKI, ekki ný skuld: þau mál báru
+        // samthykki-tagið en engan eiganda, og án assigned_to='Agnar' birtast ✓/✕-takkarnir
+        // ekki — þau var ekki hægt að samþykkja úr símanum. Hin 6 eru ný mál úr
+        // samningaumferðinni 08.11 (#1549–#1554), þrjú með tilbúnum pósti.
+        + '&assigned_to=eq.Agnar&order=created_at.asc', thak: 174,
     select: 'id,title,created_at,tags',
     heimild: 'tafla thjonustubeidni (tags ∋ samthykki, assigned_to=Agnar)',
     adgerd: 'Eitt mál = ein ákvörðun. Mál sem er orðið úrelt á að loka með „— Leiðrétt"-línu, '
@@ -195,7 +199,8 @@ const FLOKKAR = [
 
   { f: 'samthykki', k: 'bord-opin', h: 'Þjónustuborð — opin mál alls',
     leid: 'thjonustubeidni?deleted_at=is.null&status=neq.lokad'
-        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 425,
+        // 425 → 431 (08.11.2026): sex ný samþykkismál úr samningaumferðinni (#1549–#1554).
+        + '&tags=not.cs.%5B%22bh%3Acombo-yfirlit%22%5D', thak: 431,
     select: 'id,title,status,assigned_to',
     heimild: 'tafla thjonustubeidni',
     adgerd: 'Á borðið á aðeins það sem við finnum ekki sjálf (regla Agnars 07.11.2026).' },
