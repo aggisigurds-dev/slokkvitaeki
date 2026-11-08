@@ -73,7 +73,10 @@ const FLOKKAR = [
     adgerd: 'Senda kröfuna, eða merkja ⏸ BÍÐA í krafa_note með ástæðu.' },
 
   { f: 'krofur', k: 'kredit-an-endurgerdar', h: 'Kreditfært og aldrei endurgert',
-    leid: 'v_kredit_an_endurgerdar', thak: 22, krona: 'samtals',
+    // 22 → 27 (08.11.2026): sýnin var LEIÐRÉTT, ekki versnað. Hún útilokaði status='draft'
+    // sem er ekki til; raunverulega gildið er 'drog', svo DRAG taldist gild endurgerð og
+    // faldi fimm raðir. 8 af 27 bera endurgerð sem VAR greidd — lestu endurgerd_greidd.
+    leid: 'v_kredit_an_endurgerdar', thak: 27, krona: 'samtals',
     select: 'num,customer_nafn,samtals,dags,kredit_num,kredit_dags',
     heimild: 'sýnin v_kredit_an_endurgerdar',
     adgerd: 'Endurgera reikninginn, eða loka málinu sem réttmætri bakfærslu.' },
@@ -128,7 +131,9 @@ const FLOKKAR = [
     adgerd: 'Sama og að ofan, en á viðskiptamanni — notað í punktinum á kúnnaspjaldinu.' },
 
   { f: 'postur', k: 'skeytamidlun-vantar', h: 'Skeytamiðlun vantar á félag',
-    leid: 'v_skeytamidlun_vantar', thak: 49,
+    // 49 → 46 (08.11.2026): fjögur félög duttu út þegar 'drog' var bætt í útilokunina —
+    // þau áttu drög, ekki kröfur. Sjá tools/audit-skeytamidlun-vantar.cjs.
+    leid: 'v_skeytamidlun_vantar', thak: 46,
     select: '*',
     heimild: 'sýnin v_skeytamidlun_vantar',
     adgerd: 'Setja netfang/skeytamiðlun á félagið svo krafan og skýrslan komist til skila.' },
