@@ -539,3 +539,31 @@ reikningurinn líti ekki út fyrir að vera tvítekinn; fjárhæðin breytist ek
 
 **`teya_faerslur` er TÓM tafla.** Hver spurning um „var þetta staðgreitt?" er ÓMÆLANLEG úr
 grunninum þar til hún fyllist. Segðu ÓMÆLT, ekki „ógreitt".
+
+## 1,42 m.kr. sem voru aldrei krafin (mælt 08.11.2026)
+
+**Frá mars 2026 voru Stólpa-kröfur stofnaðar á 80 % af reikningi + 295 kr kröfugjald**, á 89
+ólíkum kennitölum. Af 96 greiddum reikningum mars–maí fellur **enginn** á `upphaed / 1,24`
+(vsk-tilgátan sem málið byggði á) en **62 falla upp á krónu** á `upphaed × 0,80 + 295`.
+295 kr er sama talan á 13.900 kr reikningi og á 933.904 kr reikningi — hlutfall getur ekki
+hagað sér þannig, svo þetta er kröfugjald.
+
+| Mánuður | reikningar | fullgreiddir | á 80 %-mynstri | vantar |
+|---|---|---|---|---|
+| 2025-09 … 2026-02 | 623 | 617 | **0** | 41 þús. alls |
+| 2026-03 | 12 | 2 | 2 | 461.622 |
+| 2026-04 | 69 | 1 | 49 | 812.166 |
+| 2026-05 | 15 | 0 | 11 | 147.257 |
+
+**Umskiptin eru rofin, ekki stigvaxandi.** Fram í febrúar voru nánast allir reikningar greiddir
+að fullu og enginn féll á mynstrið; í mars snýst það alveg við.
+
+**Þrennt sem þetta þýðir fyrir hvern sem les Stólpa-tölur:**
+1. Þetta er ekki afsláttur. Afsláttur fylgir félaginu og er ólíkur per félag; hér er hlutfallið
+   það sama hjá 89 félögum.
+2. **`opid_upphaed` er 0 á 91 af 96** — Stólpi sýnir ekkert útistandandi. Peningurinn er ekki í
+   vanskilum, hann var aldrei krafinn, og ekkert kerfi mun minna á hann.
+3. Það hélt áfram EFTIR yfirtökuna 07.05.2026, svo þetta er ekki arfur frá fyrri eigendum einum.
+
+Heimaleiga-málið (#1329) var sama mynstur í dulargervi: „ofgreitt um 122.659" reyndist 37.338 kr
+SKULD, og sú tala er nákvæmlega 20 %-vöntunin á einum reikningi (R-108266).

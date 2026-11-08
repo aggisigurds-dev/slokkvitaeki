@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-08 07:33 · 1000 virkar staðreyndir
+Sótt 2026-11-08 07:37 · 1000 virkar staðreyndir
 
 ---
 
@@ -90,13 +90,13 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [postur](#postur) | 19 |
 | [kerfi](#kerfi) | 15 |
 | [kunnaskra](#kunnaskra) | 12 |
-| [solur](#solur) | 10 |
+| [solur](#solur) | 11 |
 | [gatt](#gatt) | 8 |
 | [verklag](#verklag) | 8 |
 | [taeki](#taeki) | 8 |
 | [skyrslur](#skyrslur) | 7 |
-| [oryggi](#oryggi) | 7 |
 | [skjol](#skjol) | 7 |
+| [oryggi](#oryggi) | 6 |
 | [afrit](#afrit) | 6 |
 | [agentar](#agentar) | 6 |
 | [rekstrarfelog](#rekstrarfelog) | 5 |
@@ -112,12 +112,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Tengiliður Slökkviliðs höfuðborgarsvæðisins í máli 23-8699 er Agnieszka Sokolowska, shs@eldvarnaeftirlit.is, sími 528-3000.** _(likely)_
   <br>Mál 23-8699 varðar Dalvegur 26, B3a-athugasemd og B1e endurkomu. · Staðfest 07.11.2026 (Claude), víðari leit: pósta #916 (22.01.2026) og #3721 (01.12.2025) með undirskrift Agnieszka Sokolowska, verkefnastjóri SHS, shs@eldvarnaeftirlit.is, 528-3000, mál 23-8699 Dalvegur 26 (B1e og B3a).
   <br><sub>2026-11-07 · kunni · artifact: postur:670821-1290:3721,916 · postur</sub>
-- **Bókari Grimma sér um veflykla (staðgreiðslu- og virðisaukalykil) fyrir Slökkvitæki og sendir þá.** _(likely)_
-  <br>Póstur dagsettur 21.07.2026; beiðni til Stólpa er sögð ósvarað. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 45656 (21.07.2026, Halldóra Ósk hjá Grimma); beiðni um tilkynningu felld burt, textinn nefnir ekki bókhald Brunahólfs. · Stytt í það sem póstarnir staðfesta.
-  <br><sub>2026-11-07 · kunni · artifact: postur:080379-5019:45656 · postur</sub>
-- **Frank Höybye (Frank@eldklar.is, 844-5222) er tengiliður á bakvið Slökkvitæki ehf í þessu máli.** _(likely)_
-  <br>Sagði málið afgreitt 18.12.2024. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 16243 (Frank Höybye, Frank@eldklar.is, gsm 844-5222, Afgreitt 18.12.2024).
-  <br><sub>2026-11-07 · kunni · artifact: postur:610514-0300:16243 · postur</sub>
 - **Uppgjörsskýrslur Teya koma úr netfanginu reporting@teya.com og hjalp@teya.is er einnig notað; þjónustusími er 560-1600.** _(likely)_
   <br>Í póstum frá september og október 2026 kemur fram bæði netfangið reporting@teya.com og hjalp@teya.is með símanúmerinu 560-1600. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 53358, 56354, 58147 og 58791 (sendandi reporting@teya.com; texti vísar á hjalp@teya.is og síma 560-1600).
   <br><sub>2026-11-07 · kunni · artifact: postur:440686-1259:53358,56354,58147,58791 · postur</sub>
@@ -133,9 +127,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Jóhannes Hafsteinsson hjá Inkasso (johannes@inkasso.is, 520 4040) sér um innheimtu og eftirfylgni reikninga fyrir Vegagerðina.** _(likely)_
   <br>Samskipti frá 18.01.2022 til 27.01.2022 varðandi kröfur C3651201 og 6802692899. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 20996, 21118, 21156 og 21283 (Jóhannes, Greiðsluráðgjafi hjá Inkasso, johannes@inkasso.is, 520 4040, kröfumál Vegagerðarinnar jan 2022).
   <br><sub>2026-11-07 · kunni · artifact: postur:680269-2899:20996,21118,21156,21283 · postur</sub>
-- **Agnieszka Sokolowska hjá Slökkvilði höfuðborgarsvæðisins (shs@eldvarnaeftirlit.is, 528-3000) tilkynnti endurkomu eldvarnaeftirlits á Dalveg 26 í máli 23-8699.** _(likely)_
-  <br>Póstur frá 01.12.2025. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 3754 (SHS, Agnieszka Sokolowska, 01.12.2025) og 2404.
-  <br><sub>2026-11-07 · kunni · artifact: postur:700920-0460:1991 · postur</sub>
+- **Bókari Grimma sér um veflykla (staðgreiðslu- og virðisaukalykil) fyrir Slökkvitæki og sendir þá.** _(likely)_
+  <br>Póstur dagsettur 21.07.2026; beiðni til Stólpa er sögð ósvarað. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 45656 (21.07.2026, Halldóra Ósk hjá Grimma); beiðni um tilkynningu felld burt, textinn nefnir ekki bókhald Brunahólfs. · Stytt í það sem póstarnir staðfesta.
+  <br><sub>2026-11-07 · kunni · artifact: postur:080379-5019:45656 · postur</sub>
+- **Frank Höybye (Frank@eldklar.is, 844-5222) er tengiliður á bakvið Slökkvitæki ehf í þessu máli.** _(likely)_
+  <br>Sagði málið afgreitt 18.12.2024. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 16243 (Frank Höybye, Frank@eldklar.is, gsm 844-5222, Afgreitt 18.12.2024).
+  <br><sub>2026-11-07 · kunni · artifact: postur:610514-0300:16243 · postur</sub>
 - **Sigríður Sveinbjörnsdóttir er gjaldkeri Gray Line (Allrahanda GL ehf) á sigga@grayline.is, síminn 540 1321.** _(likely)_
   <br>Tilkynnti breytingu á heimilisfangi reikninga 08.01.2019. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 22082 (sigga@grayline.is, 540 1321) og tengiliður #363.
   <br><sub>2026-11-07 · kunni · artifact: postur:571292-2979:22082 · postur</sub>
@@ -145,6 +142,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Símanúmer Rúnars Sigurðar Ólafssonar er +354 690 6906; í sumum póstum stendur +345 690 6906, sem er líklega ritvilla.** _(likely)_
   <br>Ósamræmi kom fram í póstum frá 24.01.2025 og fram á 2026. · Staðfest 07.11.2026 (Claude), víðari leit: pósta 903, 304, 306, 188, 104, 107, 108 og 412 (+354 690 6906); aðeins póstur 346 sýnir +345; tengiliður #676.
   <br><sub>2026-11-07 · kunni · artifact: postur:551021-0680:346,1164,2572 · postur</sub>
+- **Agnieszka Sokolowska hjá Slökkvilði höfuðborgarsvæðisins (shs@eldvarnaeftirlit.is, 528-3000) tilkynnti endurkomu eldvarnaeftirlits á Dalveg 26 í máli 23-8699.** _(likely)_
+  <br>Póstur frá 01.12.2025. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 3754 (SHS, Agnieszka Sokolowska, 01.12.2025) og 2404.
+  <br><sub>2026-11-07 · kunni · artifact: postur:700920-0460:1991 · postur</sub>
 - **Viktoría Ósk Daðadóttir hefur einnig netfangið viktoria@eignarekstur.is auk reikningar@eignarekstur.is, og er tengiliður fyrir Furugrund 73.** _(likely)_
   <br>Fram kemur í pósti frá 21.07.2025 um Furugrund 73. · Staðfest 07.11.2026 (Claude) í pósti #15856: Viktoría Ósk Daðadóttir, Eignarekstur, Furugrund 73; reikningar@eignarekstur.is og viktoria@eignarekstur.is
   <br><sub>2026-11-07 · kunni · artifact: postur:480277-9459:15856 · postur</sub>
@@ -169,6 +169,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Linda Guðmundsdóttir (linda@partybaer.is) hjá Partýbæ er tengiliður fyrir reikninga og greiðslukröfur.** _(likely)_
   <br>Póstur frá 29.06.2022 um kröfu í heimabanka og beiðni um reikning með rafrænni skeytamiðlun. · Staðfest 07.11.2026 (Claude) í pósti #17538: Linda (linda@partybaer.is) sendir kröfubeiðni og biður um reikning rafrænt
   <br><sub>2026-11-07 · kunni · artifact: postur:440413-1100:12 postar · postur</sub>
+- **Hrafnhildur Brynja Einarsdóttir hjá Inkasso (hrafnhildur@inkasso.is, 520-4040) hefur séð um beiðnir um staðfestingu á greiðslum Jarðborana.** _(likely)_
+  <br>Beiðnir frá 28.05.2018 og 10.09.2020 og ítrekun 24.09.2020 tengjast kröfum C1804422 og C2926459. · Staðfest 07.11.2026 (Claude) í pósti #19265, 18480 og 19733: Hrafnhildur hjá Inkasso, 520-4040, biður um staðfestingu greiðslu Jarðborana
+  <br><sub>2026-11-07 · kunni · artifact: postur:590286-1419:19265,18480,18233,19733 · postur</sub>
 - **Tengiliður fyrir húsfélag Álfaskeiðs 72 er Valdimar Björn Ásgeirsson, formaður, valdibjorn@gmail.com, 865 9421 (mál HUS-30522).** _(likely)_
   <br>Úr tilboðsbeiðni um yfirferð slökkvitækja og brunavarna, 15.03.2023. · Staðfest 07.11.2026 (Claude) í pósti #20769: Valdimar Björn Ásgeirsson formaður, sími og netfang, HUS-30522, 15.03.2023
   <br><sub>2026-11-07 · kunni · artifact: postur:510293-2079:20769 · postur</sub>
@@ -178,9 +181,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Tengiliður Benna fyrir Breiðhöfða 13 er Guðmundur Sigurðsson, sem spurði 04.11.2026 hvort þurfi að endurtaka skoðun slökkvitækja þar og bað um verð í úttekt.** _(likely)_
   <br>Úttekt átti að vera föstudaginn 06.11.2026; Guðmundur samþykkti heimsókn á Breiðhöfða 13 og bað um staðfestingu á henni. · Staðfest 07.11.2026 (Claude) í pósti #71942, 72204 og 72863: Guðmundur Sigurðsson hjá Benna spyr um yfirferð, samþykkir heimsókn, biður um staðfestingu
   <br><sub>2026-11-07 · kunni · artifact: postur:711292-2929:71942,72203,72204,72863 · postur</sub>
-- **Hrafnhildur Brynja Einarsdóttir hjá Inkasso (hrafnhildur@inkasso.is, 520-4040) hefur séð um beiðnir um staðfestingu á greiðslum Jarðborana.** _(likely)_
-  <br>Beiðnir frá 28.05.2018 og 10.09.2020 og ítrekun 24.09.2020 tengjast kröfum C1804422 og C2926459. · Staðfest 07.11.2026 (Claude) í pósti #19265, 18480 og 19733: Hrafnhildur hjá Inkasso, 520-4040, biður um staðfestingu greiðslu Jarðborana
-  <br><sub>2026-11-07 · kunni · artifact: postur:590286-1419:19265,18480,18233,19733 · postur</sub>
 - **Karen Kjartansdóttir hjá bókhaldi Eyktar (karen@eykt.is, +354-595-4400) svarar spurningum um reikninga.** _(likely)_
   <br>Póstur dags. 27.03.2026 um D30A reikning og framvindu. · Staðfest 07.11.2026 (Claude) í pósti #2360: Karen Kjartansdóttir hjá bókhaldi Eyktar (karen@eykt.is, +354-595-4400) svaraði um reikning og framvindu D30A
   <br><sub>2026-11-07 · kunni · artifact: postur:560192-2319:2360 · postur</sub>
@@ -208,9 +208,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Formaður húsfélagsins er Svanhvít Erla Traustadóttir, sími 692-3628.** _(likely)_
   <br>Staðfest í póstum frá 16.06.2022 og 30.11.2023. · Staðfest 07.11.2026 (Claude) í pósti #16774: Eignaumsjón staðfesti formann Svanhvíti Erlu Traustadóttur og símann 692-3628 (30.11.2023)
   <br><sub>2026-11-07 · kunni · artifact: postur:590314-0130:17521,17522,16774 · postur</sub>
-- **Magnús M. Auðunsson hjá IKEA (magnus.audunsson@ikea.is) var tengiliður fyrir tilboð í yfirferð slökkvitækja í Kauptúni 4 árið 2018, en IKEA valdi síðar lægra tilboð annars staðar.** _(likely)_
-  <br>Tilboðsbeiðni 18.10.2018; tapað tilboð skráð 20.11.2018. · Staðfest 07.11.2026 (Claude): netfangið magnus.audunsson@ikea.is er skráð á þessa kennitölu í okkar eigin póstsamskiptum, svo bréfritarinn og félagið passa saman. Frásögnin sjálf er óstaðfest.
-  <br><sub>2026-11-07 · kunni · artifact: postur:541293-2809:19335,19344,19346,19353 · postur</sub>
+- **Erlingur Bjarnason er eldvarnafulltrúi hjá Dögum með netfangið eldvarnafulltrui@dagar.is, og símanúmerin 580 0600 og 617-3958 koma fram í póstum um Þönglabakka 1 og Drangahraun 1-B.** _(likely)_
+  <br>Póstar frá 19.12.2023 til 16.01.2024; í póstinum 15.01.2024 notar hann Elli@dagar.is. · Staðfest 07.11.2026 (Claude): netfangið eldvarnafulltrui@dagar.is er skráð á þessa kennitölu í okkar eigin póstsamskiptum, svo bréfritarinn og félagið passa saman. Frásögnin sjálf er óstaðfest.
+  <br><sub>2026-11-07 · kunni · artifact: postur:460999-2439:24355,24441,24527,24440,24442 · postur</sub>
 - **Ingibjörg Anna Björnsdóttir hjá Fjöleignum ehf sér um reikninga Háaleitisbrautar 54 á fjoleignir@fjoleignir.is og í síma 531-6000.** _(likely)_
   <br>Staðfest í pósti 22.12.2020 og 12.01.2021. · Staðfest 07.11.2026 (Claude): netfangið fjoleignir@fjoleignir.is er skráð á þessa kennitölu í okkar eigin póstsamskiptum, svo bréfritarinn og félagið passa saman. Frásögnin sjálf er óstaðfest.
   <br><sub>2026-11-07 · kunni · artifact: postur:451190-1569:18176,18198 · postur</sub>
@@ -238,18 +238,24 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Reikningar vegna húsfélagsins (kt. 471002-3050) skulu sendast á reikningar@rekstrarumsjon.is, og bryndis@rekstrarumsjon.is er einnig tengiliður í sumum tilvikum.** _(likely)_
   <br>Beiðni 30.03.2023 um að reikningar fari á reikningar@rekstrarumsjon.is; ítrekað 09.04.2025 með skráningu sem viðtakanda allra reikninga fyrir húsfélagið. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #19833 (12.04.2023, Bryndís Malana, Rekstrarumsjón: kt. 471002-3050 er Álfaskeið 82-84, reikni
   <br><sub>2026-11-07 · kunni · artifact: postur:471002-3050:17088,20401,16873,19839 · postur</sub>
-- **Sölureikningar frá Probygg koma sem PDF-viðhengi án meginmáls, og upphæð og gjalddagi eru aðeins í PDF-skjalinu.** _(likely)_
-  <br>Gildir um pósta 09.01.2026 og 01.11.2026 að minnsta kosti. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #70573 (01.11.2026, Sölureikningur 1282, tómt meginmál, viðhengi Reikningur-1282.PDF) og #3259 (02.03.2026, Sölureikningur 921, tómt meginmál, viðhengi Reikningur-921.PDF). Leiðrétting: pós
-  <br><sub>2026-11-07 · kunni · artifact: postur:700920-0460:2357,70573 · postur</sub>
 - **Kreditreikningur á eldri reikninginn vegna Laugarás Lagoon var fyrst beðinn um 14.11.2025 og síðar um 3.834.712 kr. vegna þegar greidds reiknings, með réttum reikningi upp á 4.799.896 kr.** _(likely)_
   <br>Áður hafði aðeins verið beðið um kreditreikning án upphæðar (14.11.2025); 19.11.2025 var upphæðin tilgreind. · Staðfest 07.11.2026 (Claude), víðari leit: póstar #2426 (14.11.2025, kreditreikningur beðinn án upphæðar) og #2427 (19.11.2025, 3.834.712 kr. vegna þegar greidds reiknings); rétt heildarupp
   <br><sub>2026-11-07 · kunni · artifact: postur:411112-0200:2426,2427 · postur</sub>
 - **Reikningur fyrir CO2-áfyllingu Greg Mortimer (49.600 kr. með VSK) átti að fara til Gara samkvæmt Júlíu.** _(likely)_
   <br>Verð 49.600 kr. með VSK staðfest í pósti frá 28.05.2026 og áfyllingu lokið fyrir Gara. · Staðfest 07.11.2026 (Claude), víðari leit: verð 49.600 kr. með VSK staðfest í pósti #30558/#30405 (28.05.2026) og SENT-svari #45221/#45222; reikningur R-000599 (49.600 kr., 29.05.2026) skráður á Gára ehf. kt. 42
   <br><sub>2026-11-07 · kunni · artifact: postur:420993-2269:30405,30406 · postur</sub>
-- **Yfirvinnuálag (YV) á reikningi fyrir Laugarás Lagoon var lækkað úr 80% í 50%.** _(likely)_
-  <br>Þórunn hjá Mannverk samþykkti 50% álag 06.10.2025; sama álag var áður skráð í kúnnaminni. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 2789 og 2901 (Mannverk bað um 50% í stað 80%, Brunahólf miðar við 50%); eindagi 25.10.2025 er aðeins ósk Mannverks í póstunum, felldur burt. · Stytt í það sem
-  <br><sub>2026-11-07 · kunni · artifact: postur:411112-0200:2789,2901 · postur</sub>
+- **Sölureikningar frá Probygg koma sem PDF-viðhengi án meginmáls, og upphæð og gjalddagi eru aðeins í PDF-skjalinu.** _(likely)_
+  <br>Gildir um pósta 09.01.2026 og 01.11.2026 að minnsta kosti. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #70573 (01.11.2026, Sölureikningur 1282, tómt meginmál, viðhengi Reikningur-1282.PDF) og #3259 (02.03.2026, Sölureikningur 921, tómt meginmál, viðhengi Reikningur-921.PDF). Leiðrétting: pós
+  <br><sub>2026-11-07 · kunni · artifact: postur:700920-0460:2357,70573 · postur</sub>
+- **Sölureikningar Hildar Birnu Gunnarsdóttur hjá Ólafi Gíslasyni & Co hf eru greiddir með kröfu í banka og eindagar þeirra í nóv. 2026 voru 17.11.2026 (S-035882, 41.599 kr.) og 19.11.2026 (S-035956, 10.046 kr. og S-035957, 10.310 kr.).** _(likely)_
+  <br>Pósta­dagsetningar 21.10.2026, 02.11.2026 og 04.11.2026; upphæðir eru með VSK. · Staðfest 07.11.2026 (Claude), víðari leit: reikningar 70848, 71940, 71941 (33.548 án VSK gefur 41.599 með VSK; 10.046; 10.310); S-035470 og eindagi 5.11 sást ekki í pósti 66804 og var felldur burt. · Stytt í það sem pós
+  <br><sub>2026-11-07 · kunni · artifact: postur:600508-0400:66804,70848,71940,71941 · postur</sub>
+- **Sölureikningar frá Hildi Birnu Gunnarsdóttur hjá Ólafi Gíslasyni & Co hf eru greiddir með kröfu í banka með eindaga um miðjan mánuð eftir útgáfu.** _(likely)_
+  <br>Dæmi: S-035882 (eindagi 17.11.2026), S-035956 og S-035957 (eindagi 19.11.2026). · Staðfest 07.11.2026 (Claude), víðari leit: reikningar í email_digest 70848, 71940 og 71941 (Krafa send í banka, eindagi 17.11 og 19.11.2026).
+  <br><sub>2026-11-07 · kunni · artifact: postur:600508-0400:70848,71940,71941 · postur</sub>
+- **Landssamband slökkviliðs- og sjúkraflutningamanna (LSS) sendir reikning fyrir auglýsingu í Á vakt fyrir Ísland á kennitölu Brunahólfs, 520417-2300.** _(likely)_
+  <br>Auglýsingin er 1 síða A4 (29,7 x 21 cm) á 115.000 kr. Tengiliður er Tinna (lss@sakamal.is). Skilafrestur er 22.05.2026 og staðfesting móttöku barst 15.05.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 2326, 2413, 2488, 2522 og 2770 (LSS/Tinna: 115.000 kr., 1 síða A4, skil 22.05, kennitala
+  <br><sub>2026-11-07 · kunni · artifact: postur:520417-2300:2488,2522,2770 · postur</sub>
 - **Reikningur sem var sendur á Dagar átti að fara á Hegri fjárfestingar, og Magnús bað um kreditreikning 17.01.2025.** _(likely)_
   <br>Beiðni um kreditreikning 17.01.2025, ekki staðfest að hann hafi verið gefinn út. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 24353 (Magnús 17.01.2025) og fyrirtaeki 504 Dagar hf. (plan_note: Bara creditreikningar); Smiðsbúð 3 sást ekki í póstinum og var felld burt. · Stytt í það sem póstarni
   <br><sub>2026-11-07 · kunni · artifact: postur:460999-2439:24353 · postur</sub>
@@ -268,15 +274,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Thule Investments greiddi 2.000.000 kr. inn á Brunahólf sem hluta af kröfu.** _(likely)_
   <br>S. Jakob sendi 26.03.2026 reikninga 157-161 og 208 frá PCO; uppgjör átti að ljúka fyrir 5. apríl (VSK). Eftirstöðvar sagðar geta verið greiddar 08.04.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 3076 (26.03.2026), 1157 og 2227 (S. Jakob Helgason staðfestir 2.000.000 kr. innborgun og að 
   <br><sub>2026-11-07 · kunni · artifact: postur:670821-1290:3076,1157,2227 · postur</sub>
-- **Sölureikningar Hildar Birnu Gunnarsdóttur hjá Ólafi Gíslasyni & Co hf eru greiddir með kröfu í banka og eindagar þeirra í nóv. 2026 voru 17.11.2026 (S-035882, 41.599 kr.) og 19.11.2026 (S-035956, 10.046 kr. og S-035957, 10.310 kr.).** _(likely)_
-  <br>Pósta­dagsetningar 21.10.2026, 02.11.2026 og 04.11.2026; upphæðir eru með VSK. · Staðfest 07.11.2026 (Claude), víðari leit: reikningar 70848, 71940, 71941 (33.548 án VSK gefur 41.599 með VSK; 10.046; 10.310); S-035470 og eindagi 5.11 sást ekki í pósti 66804 og var felldur burt. · Stytt í það sem pós
-  <br><sub>2026-11-07 · kunni · artifact: postur:600508-0400:66804,70848,71940,71941 · postur</sub>
-- **Sölureikningar frá Hildi Birnu Gunnarsdóttur hjá Ólafi Gíslasyni & Co hf eru greiddir með kröfu í banka með eindaga um miðjan mánuð eftir útgáfu.** _(likely)_
-  <br>Dæmi: S-035882 (eindagi 17.11.2026), S-035956 og S-035957 (eindagi 19.11.2026). · Staðfest 07.11.2026 (Claude), víðari leit: reikningar í email_digest 70848, 71940 og 71941 (Krafa send í banka, eindagi 17.11 og 19.11.2026).
-  <br><sub>2026-11-07 · kunni · artifact: postur:600508-0400:70848,71940,71941 · postur</sub>
-- **Landssamband slökkviliðs- og sjúkraflutningamanna (LSS) sendir reikning fyrir auglýsingu í Á vakt fyrir Ísland á kennitölu Brunahólfs, 520417-2300.** _(likely)_
-  <br>Auglýsingin er 1 síða A4 (29,7 x 21 cm) á 115.000 kr. Tengiliður er Tinna (lss@sakamal.is). Skilafrestur er 22.05.2026 og staðfesting móttöku barst 15.05.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 2326, 2413, 2488, 2522 og 2770 (LSS/Tinna: 115.000 kr., 1 síða A4, skil 22.05, kennitala
-  <br><sub>2026-11-07 · kunni · artifact: postur:520417-2300:2488,2522,2770 · postur</sub>
 - **Rafrænir reikningar eiga að fara í gegnum skeytamiðlara.** _(likely)_
   <br>Beiðni Lísu Óskarsdóttur frá 16.08.2022 um rafræna reikninga frá 30.06.2022; Guðveig Jóna spurði 02.01.2023 hvort senda mætti rafrænt í gegnum Unimaze. Óljóst hvort það var staðfest. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 21581 (móttaka rafrænna reikninga um skeytamiðlara frá 30.06.2022
   <br><sub>2026-11-07 · kunni · artifact: postur:430872-0289:21581,20811 · postur</sub>
@@ -286,18 +283,21 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Skjöl og teikningar fyrir Norðurhellu 17 hafa verið beðin um af GreenKey, og þau eru neyðar- og leiðarlýsing fyrir brunakerfi; eldri Securitas-teikningar á vegg með yfirlitsmynd voru einu teikningarnar sem til voru.** _(likely)_
   <br>Slökkvitæki bauðst til að senda flóttaleiðir ef GreenKey óskar eftir þeim; beðið er svars frá Davíð (10.09.2026). · Staðfest 07.11.2026 (Claude), víðari leit: SENT 51627 (10.09.2026: neyðar- og leiðarlýsing send, aðeins gamlar Securitas-teikningar á vegg) og póstur 51345 (Davíð/GreenKey biður um tei
   <br><sub>2026-11-07 · kunni · artifact: postur:630216-1680:51627,51345 · postur</sub>
+- **Yfirvinnuálag (YV) á reikningi fyrir Laugarás Lagoon var lækkað úr 80% í 50%.** _(likely)_
+  <br>Þórunn hjá Mannverk samþykkti 50% álag 06.10.2025; sama álag var áður skráð í kúnnaminni. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 2789 og 2901 (Mannverk bað um 50% í stað 80%, Brunahólf miðar við 50%); eindagi 25.10.2025 er aðeins ósk Mannverks í póstunum, felldur burt. · Stytt í það sem
+  <br><sub>2026-11-07 · kunni · artifact: postur:411112-0200:2789,2901 · postur</sub>
 - **Greiðandi hjá Hertz er Bílaleiga Flugleiða ehf, kt. 471299-2439, og greiðslur frá henni hafa borist undir þessu nafni.** _(likely)_
   <br>Fram kemur í Motus-máli R93612 (23.08.2017) og Inkasso-pósti (21.08.2018); Hertz Ísland er ekki sjálfstæður greiðandi í þessum póstum. · Staðfest 07.11.2026 (Claude), víðari leit: fyrirtaeki #265/#1760 (Bílaleiga Flugleiða, Hertz, sama kt) og pósta 19462 og 19306.
   <br><sub>2026-11-07 · kunni · artifact: postur:471299-2439:19462,19306 · postur</sub>
+- **Brunaþéttingin á Engjavöllum 5A var samþykkt á 230.000 kr. (upphæð í póstum).** _(likely)_
+  <br>Upphæð 230000 kemur fram í póstum frá 02.05.2025 og 07.05.2025. · Staðfest 07.11.2026 (Claude), víðari leit: pósta 2155 og 399 (tilboð 230.000 kr. með VSK, viðskiptavinur: hljómar vel) og Engjavellir 5A-þráðinn 257/1092/2029.
+  <br><sub>2026-11-07 · kunni · artifact: postur:640614-0720:2155,399 · postur</sub>
 - **Reikningar frá Ískraft eru með númerum sem byrja á Srk eða Krn, t.d. Srk9283013 og Krn0599189.** _(likely)_
   <br>Dæmi úr póstum 29.09.2026 (57593) og 11.10.2026 (63561). · Staðfest 07.11.2026 (Claude), víðari leit: viðhengisnöfn pósta 57593, 63561 og 66411 (Srk9283013, Krn0599189, Krn0599944).
   <br><sub>2026-11-07 · kunni · artifact: postur:651175-0119:57593,63561,66411 · postur</sub>
 - **Verkefnið Efstaland 26 (kaffihús) hefur tilvísunarnúmerið USK25080265 og skjalaskil þess kalla á staðfestingu aðila sem vann brunaþéttingar og starfsleyfi.** _(likely)_
   <br>Beiðnir frá Reitum og THG Ráðgjöf 02.03.2026, Karl Ágústsson vildi öll gögn samdægurs. · Staðfest 07.11.2026 (Claude), víðari leit: pósta 2147 (23.02.2026, USK25080265 Efstaland kaffi) og 2504 (02.03.2026, staðfesting aðila sem vann brunaþéttingar og starfsleyfi).
   <br><sub>2026-11-07 · kunni · artifact: postur:530117-0300:2264,2504 · postur</sub>
-- **Brunaþéttingin á Engjavöllum 5A var samþykkt á 230.000 kr. (upphæð í póstum).** _(likely)_
-  <br>Upphæð 230000 kemur fram í póstum frá 02.05.2025 og 07.05.2025. · Staðfest 07.11.2026 (Claude), víðari leit: pósta 2155 og 399 (tilboð 230.000 kr. með VSK, viðskiptavinur: hljómar vel) og Engjavellir 5A-þráðinn 257/1092/2029.
-  <br><sub>2026-11-07 · kunni · artifact: postur:640614-0720:2155,399 · postur</sub>
 - **Reikningar vegna Fossháls 1 fyrir Össur (kt. 671106-0670) eru merktir deild 1113.** _(likely)_
   <br>Póstar 17.09.2025; upphaflegur reikningur kom frá afagmenn@gmail.com 12.09.2025. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 438 (12.09.2025: deildarnúmer á reikninginn, deild 1113) og 2356 · Stytt í það sem póstarnir staðfesta.
   <br><sub>2026-11-07 · kunni · artifact: postur:700920-0460:2356,2640 · postur</sub>
@@ -307,15 +307,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ferro Zink hefur stofnað reikning fyrir Brunahólf í staðgreiðslu og Brunahólf óskaði eftir reikningsviðskiptum með um 500.000 kr. heimild.** _(likely)_
   <br>Tengiliður er Jón Snorri Bergþórsson (jon@ferrozink.is, 533 5700). Staðfesting Rannveigar er ólokin í póstum frá 29.01.2026 og 30.01.2026. · Staðfest 07.11.2026 (Claude), víðari leit: pósta 3197 og 3384 (staðgreiðsla stofnuð, 500.000 kr. heimild óskuð); engin staðfesting Rannveigar fannst eftir 30.0
   <br><sub>2026-11-07 · kunni · artifact: postur:520417-2300:3197,3384 · postur</sub>
-- **Reikningar vegna Blóðbankans í Kringlunni og Sælkeraeldhúss við Höfðabakka 9B eru sendir af A Fagmönnum (Annþór Kristján Karlsson, afagmenn@gmail.com) og þurfa staðfestingarnúmer frá Brunahólf áður en þeir eru sendir.** _(likely)_
-  <br>Póstar 12.09.2025 bíða eftir staðfestingarnúmeri og upplýsingum frá Brunahólf. · Staðfest 07.11.2026 (Claude) í pósti #161: A Fagmenn (Annþór Kristján Karlsson) bíður eftir staðfestingarnúmeri áður en reikningur er sendur (Blóðbankinn, Höfðabakki 9B)
-  <br><sub>2026-11-07 · kunni · artifact: postur:530117-0300:161,162 · postur</sub>
-- **Eignaumsjón hf. óskar eftir að húsfélagið Kirkjulundur 12-14 verði fært í rafræna skeytamiðlun og að reikningar fari til þeirra, ekki beint á húsfélagið.** _(likely)_
-  <br>Beiðnir frá 10.12.2024 og ítrekaðar 11.12.2024 og 09.01.2025; skráningin hefur ekki verið staðfest í þráðnum. · Staðfest 07.11.2026 (Claude) í pósti #16219: Eignaumsjón 10.12.2024: sendið reikning og færið félagið í rafræna skeytamiðlun (Kirkjulundur 12-14)
-  <br><sub>2026-11-07 · kunni · artifact: postur:610514-0300:16219,16220,16221,16224,16225,16227 · postur</sub>
 - **Reikningar Pizzunnar fara á reikningar@pizzan.is, ekki til tengiliðs í rekstri, og Þórdís sér um þá.** _(likely)_
   <br>Póstur dags. 04.09.2026 um niðurfellingu löginnheimtu var sendur frá reikningar@pizzan.is. · Staðfest 07.11.2026 (Claude) í pósti #50995: reikningar@pizzan.is sendi póst undirritaðan af Þórdísi Sæmundsdóttur um reikningsmál
   <br><sub>2026-11-07 · kunni · artifact: postur:681016-1200:50995 · postur</sub>
+- **Eignaumsjón hf. óskar eftir að húsfélagið Kirkjulundur 12-14 verði fært í rafræna skeytamiðlun og að reikningar fari til þeirra, ekki beint á húsfélagið.** _(likely)_
+  <br>Beiðnir frá 10.12.2024 og ítrekaðar 11.12.2024 og 09.01.2025; skráningin hefur ekki verið staðfest í þráðnum. · Staðfest 07.11.2026 (Claude) í pósti #16219: Eignaumsjón 10.12.2024: sendið reikning og færið félagið í rafræna skeytamiðlun (Kirkjulundur 12-14)
+  <br><sub>2026-11-07 · kunni · artifact: postur:610514-0300:16219,16220,16221,16224,16225,16227 · postur</sub>
+- **Reikningar vegna Blóðbankans í Kringlunni og Sælkeraeldhúss við Höfðabakka 9B eru sendir af A Fagmönnum (Annþór Kristján Karlsson, afagmenn@gmail.com) og þurfa staðfestingarnúmer frá Brunahólf áður en þeir eru sendir.** _(likely)_
+  <br>Póstar 12.09.2025 bíða eftir staðfestingarnúmeri og upplýsingum frá Brunahólf. · Staðfest 07.11.2026 (Claude) í pósti #161: A Fagmenn (Annþór Kristján Karlsson) bíður eftir staðfestingarnúmeri áður en reikningur er sendur (Blóðbankinn, Höfðabakki 9B)
+  <br><sub>2026-11-07 · kunni · artifact: postur:530117-0300:161,162 · postur</sub>
 - **Reikningur fyrir vinnu í Gufunesvegi 17 (Viðburðarverksmiðjan) var færður yfir á Partýbæ ehf með kreditreikningi og nýjum reikningi.** _(likely)_
   <br>Áður sendur á Viðburðarverksmiðjuna; Haukur kreditfærði og gaf út nýjan reikning á Partýbæ, 03.02.2025. Fjármálastjórinn greiðir strax. · Staðfest 07.11.2026 (Claude) í póstum #16026, #20946: Reikningur fluttur á Partýbæ kt. 440413-1100 með kredit og nýjum reikningi, 03.02.2025
   <br><sub>2026-11-07 · kunni · artifact: postur:440413-1100:16026,20946 · postur</sub>
@@ -331,9 +331,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Kröfur í heimabanka fyrir viðskiptavini Grimma eru stofnaðar einu sinni í viku og greiðslufrestur er 10 dagar frá stofnun.** _(likely)_
   <br>Staðfest 15.02.2024 í pósti um reikninga í heimabanka. · Staðfest 07.11.2026 (Claude) í pósti #16464: Halldóra hjá Grimma: kröfur sendar vikulega í heimabanka, 10 daga greiðslufrestur
   <br><sub>2026-11-07 · kunni · artifact: postur:080379-5019:16464 · postur</sub>
-- **Colas vill sundurliðun á reikningum með tilgreiningu á tæki, bíl eða húsnæði; auðkenni er á tækinu sjálfu í um 90% tilvika og Colas skráir auðkenni tækjanna.** _(likely)_
-  <br>Auðunn Pálsson, 14.02.2024. · Staðfest 07.11.2026 (Claude) í pósti #22540: Auðunn Pálsson vill bíl, tæki eða húsnæði á hvern reikning; stendur á tækinu í 90% tilfella
-  <br><sub>2026-11-07 · kunni · artifact: postur:420187-1499:22540,19721 · postur</sub>
 - **Endurgreiðslu til Véltinda ehf. á að leggja inn á bankareikning 0537-26-6171 (kt. 491220-1040).** _(likely)_
   <br>Tilgreint af gjaldkera Vélrásar 12.08.2026 í svari um reikningana tvo frá júlí 2026. · Staðfest 07.11.2026 (Claude) í pósti #47081: Gjaldkeri Vélrásar gefur upp reikning 0537-26-6171 fyrir endurgreiðslu til Véltinda
   <br><sub>2026-11-07 · kunni · artifact: postur:491209-1270:47081 · postur</sub>
@@ -343,6 +340,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Reikningar til Vegagerðarinnar eru sendir rafrænt í gegnum vefgátt Skúffunnar (Advania) og Inkasso biður um að reikningar vegna krafna séu sendir á gjaldkeri@vegagerdin.is með staðfestingu til Inkasso.** _(likely)_
   <br>Reikningur 102027 var sendur 25.01.2022 í gegnum vefgátt Skúffunnar. Beiðni um sendingu á gjaldkeri@vegagerdin.is kom 26.01.2022 og var staðfest af Slökkvitækjum 26.01.2022. · Staðfest 07.11.2026 (Claude) í pósti #21156/#19771: Inkasso biður um sendingu á gjaldkeri@vegagerdin.is; reikningur 102027 s
   <br><sub>2026-11-07 · kunni · artifact: postur:680269-2899:19771,21156,21283 · postur</sub>
+- **Colas vill sundurliðun á reikningum með tilgreiningu á tæki, bíl eða húsnæði; auðkenni er á tækinu sjálfu í um 90% tilvika og Colas skráir auðkenni tækjanna.** _(likely)_
+  <br>Auðunn Pálsson, 14.02.2024. · Staðfest 07.11.2026 (Claude) í pósti #22540: Auðunn Pálsson vill bíl, tæki eða húsnæði á hvern reikning; stendur á tækinu í 90% tilfella
+  <br><sub>2026-11-07 · kunni · artifact: postur:420187-1499:22540,19721 · postur</sub>
 - _…og 156 til viðbótar í töflunni._
 
 ### thjonusta
@@ -359,12 +359,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Bros auglýsingavörur ehf sér um framleiðslu á merktum húfum, buffum og pennum fyrir Brunahólf, þar á meðal 50 húfur og 100 buff í prófarkarferli.** _(likely)_
   <br>Staðfest 12.03.2026; húfur í máli BROS-0747-26 samþykktar 16.03.2026 og sagðar tilbúnar 19.03.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstar #2325 (12.03.2026, 50 húfur og 100 buff, prófarkir; viðhengi Buff.PDF og Pennar.PDF), #2129 (16.03.2026, BROS-0747-26 sett í ferli) og #193 (19.03.2
   <br><sub>2026-11-07 · kunni · artifact: postur:590593-4949:2325,2129,193 · postur</sub>
-- **Staðir í þjónustu hjá Brynjaleigufélagi eru Hátún 10, 10a og 10b og Sléttuvegur 7 og 9.** _(likely)_
-  <br>Fram kemur í beiðni frá 29.05.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 30595 (Ármann, Brynjaleigufélag 29.05.2026, með tilvitnun í beiðni 06.05: Hátún 10, 10a, 10b og Sléttuvegur 7 og 9).
-  <br><sub>2026-11-07 · kunni · artifact: postur:420369-6979:30595 · postur</sub>
 - **Slökkvitæki ehf sinnir skoðun/þjónustu fyrir Ellý á Laugavegi 12, og Gísli Björgvinsson hjá Partýbæ er tengiliður vegna hennar.** _(likely)_
   <br>Staðfesting á skoðunartíma send 20.02.2025; viðhengi (mynd) fylgdi póstinum. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 20386 (Gísli, Partýbær: staðfesting á Ellý Laugavegi 12) og póstar 20427 og 21320 (gisli@partybaer.is er tengiliður Partýbæjar fyrir staðina).
   <br><sub>2026-11-07 · kunni · artifact: postur:440413-1100:20386 · postur</sub>
+- **Staðir í þjónustu hjá Brynjaleigufélagi eru Hátún 10, 10a og 10b og Sléttuvegur 7 og 9.** _(likely)_
+  <br>Fram kemur í beiðni frá 29.05.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 30595 (Ármann, Brynjaleigufélag 29.05.2026, með tilvitnun í beiðni 06.05: Hátún 10, 10a, 10b og Sléttuvegur 7 og 9).
+  <br><sub>2026-11-07 · kunni · artifact: postur:420369-6979:30595 · postur</sub>
 - **Yfirferð reykskynjara er verðlögð á 1.674 kr. á stykki hjá húsfélagi Sóleyjarhlíðar 1, Hafnarfirði.** _(likely)_
   <br>15.12.2020, Sigrún Baldursdóttir hjá húsfélaginu. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 22193 (Haukur 15.12.2020: samningur og skýrsla fylgdu, yfirferð reykskynjara 1.674 kr. á stk.); verðið kemur fram í póstinum, ekki endilega í samningnum, því orðalag stytt. · Stytt í það sem póstarn
   <br><sub>2026-11-07 · kunni · artifact: postur:421104-3520:22193 · postur</sub>
@@ -386,30 +386,30 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Mission á Íslandi ehf er með viðhaldssamning um árlega yfirferð slökkvitækja í Tjarnarseli 2, 109 Reykjavík, og Ingimundur óskaði eftir viðhaldssamningi fyrir íbúðir í Skarðshlíð, Hafnarfirði.** _(likely)_
   <br>Beiðni um samning fyrir Hafnarfjörð kom fram 18.11.2024. · Staðfest 07.11.2026 (Claude) í pósti #17295/#16359: Ingimundur vísar í árlega yfirferð Tjarnarsels 2 skv. samningi og vill viðhaldssamning í Hafnarfirði
   <br><sub>2026-11-07 · kunni · artifact: postur:550103-3970:17295,16359 · postur</sub>
-- **Uppsett lausn í Hraunbæ 140 kostaði 64.932 kr. með vsk. (5 reykskynjarar, 4 slökkvitæki og uppsetning) og árleg þjónusta er um 25.000 kr. með vsk.** _(likely)_
-  <br>Verð á uppsettri lausn kom fram 01.02.2021; árleg þjónusta er nefnd í póstinum 01.02.2021 (18038) sem um 25.000 kr. með vsk. · Staðfest 07.11.2026 (Claude) í pósti #18217, 18037 og 18038: 64.932 kr. m. vsk uppsett fyrir 5 skynjara og 4 tæki; árleg þjónusta um 25.000 kr.
-  <br><sub>2026-11-07 · kunni · artifact: postur:570400-2070:18217,18218,18037,18038 · postur</sub>
 - **Verð Slökkvitækis ehf fyrir yfirferð slökkvitækja er 4.200 kr. með vsk og endurhleðsla á 5 ára fresti kostar 8.410 kr. með vsk.** _(likely)_
   <br>Verðskrá send 07.05.2026; verð í yfirferð slöngu vantar í textabrotið. · Staðfest 07.11.2026 (Claude) í pósti #45248: Verðskrá 07.05.2026: yfirferð 4.200 kr., endurhleðsla 8.410 kr. m. vsk
   <br><sub>2026-11-07 · kunni · artifact: postur:420369-6979:45248 · postur</sub>
-- **Ægir Bar ehf á Laugavegi 2 þarf árlega skoðun slökkvitækja samkvæmt beiðni Gísla Björgvinssonar.** _(likely)_
-  <br>Beiðni 24.10.2024; skoðun átti að fara fram 29.10.2024 og Gísli óskar eftir árlegri skoðun í framtíðinni. · Staðfest 07.11.2026 (Claude) í pósti #16335: Gísli biður um árlega skoðun slökkvitækja fyrir Ægir Bar, Laugavegi 2
-  <br><sub>2026-11-07 · kunni · artifact: postur:440413-1100:16335,20183 · postur</sub>
+- **Uppsett lausn í Hraunbæ 140 kostaði 64.932 kr. með vsk. (5 reykskynjarar, 4 slökkvitæki og uppsetning) og árleg þjónusta er um 25.000 kr. með vsk.** _(likely)_
+  <br>Verð á uppsettri lausn kom fram 01.02.2021; árleg þjónusta er nefnd í póstinum 01.02.2021 (18038) sem um 25.000 kr. með vsk. · Staðfest 07.11.2026 (Claude) í pósti #18217, 18037 og 18038: 64.932 kr. m. vsk uppsett fyrir 5 skynjara og 4 tæki; árleg þjónusta um 25.000 kr.
+  <br><sub>2026-11-07 · kunni · artifact: postur:570400-2070:18217,18218,18037,18038 · postur</sub>
 - **Hendrik Berndsen hjá Hertz samþykkti 04.10.2024 tilboð Slökkvitækja: 14 slökkvitæki 6L og 2 CO2 5kg, samtals 179.760 kr. m. vsk., afhent án umbúða.** _(likely)_
   <br>Tilboð og pöntun frá 04.10.2024. · Staðfest 07.11.2026 (Claude) í pósti #16311 og 16312: Hertz samþykkir tilboð: 14 tæki 6L + 2 CO2, 179.760 kr. m. vsk, án umbúða
   <br><sub>2026-11-07 · kunni · artifact: postur:471299-2439:16311,16312 · postur</sub>
+- **Ægir Bar ehf á Laugavegi 2 þarf árlega skoðun slökkvitækja samkvæmt beiðni Gísla Björgvinssonar.** _(likely)_
+  <br>Beiðni 24.10.2024; skoðun átti að fara fram 29.10.2024 og Gísli óskar eftir árlegri skoðun í framtíðinni. · Staðfest 07.11.2026 (Claude) í pósti #16335: Gísli biður um árlega skoðun slökkvitækja fyrir Ægir Bar, Laugavegi 2
+  <br><sub>2026-11-07 · kunni · artifact: postur:440413-1100:16335,20183 · postur</sub>
 - **Slökkvitæki ehf sinnir árlegri yfirferð slökkvitækja og brunaslangna á Reykjavíkurvegi 72 í Hafnarfirði og skilar úttektarskýrslu til Lögborgar, sem er hluti af gögnum fyrir slökkviliðið.** _(likely)_
   <br>Beiðnir frá 2021, 2024 og 2026 um yfirferð; skýrslan þarf að berast öryggisfulltrúa leigutaka um mánaðamót. · Staðfest 07.11.2026 (Claude) í pósti #17971, 16303 og 30543: Lögborg bað um yfirferð slökkvitækja og slangna á Reykjavíkurvegi 72 (2021, 2024, 2026) og skýrslu til öryggisfulltrúa leigutaka
   <br><sub>2026-11-07 · kunni · artifact: postur:630905-2140:17971,16303,30543,30917 · postur</sub>
-- **Festingar fyrir slökkvitæki kosta 6.963 kr. + vsk, og venjulegar veggfestingar fylgja tækjunum en sterkari rútufestingar með ströppum eru einnig til sölu.** _(likely)_
-  <br>Verð á festingum var sent 07.01.2026; GTS hefur ekki enn svarað hvort vilji festingarnar. · Staðfest 07.11.2026 (Claude) í pósti #47728 og 47729: Haukur skrifaði 07.01.2026 að festingar kosta 6.963 kr+vsk, veggfestingar fylgja, rútufestingar með ströppum til sölu
-  <br><sub>2026-11-07 · kunni · artifact: postur:551010-1200:47728,47729 · postur</sub>
-- **Brunahólf útvegar Safír byggingum skýrslur og yfirlýsingar um brunaþéttingar fyrir öryggisúttektir á verkstöðum fyrirtækisins.** _(likely)_
-  <br>Við höfum fengið beiðnir fyrir D1, D2, Kárakjallara, D3 (Grensásvegur 2B), og Grensásvegur 6 Stigahús 5 frá 27.10.2025 til 05.08.2026. Yfirlýsing þarf að innihalda heiti, hluta og heimilisfang. · Staðfest 07.11.2026 (Claude) í pósti #188, 107, 108, 2521 og 46981: Safír bað um yfirlýsingar/skýrslur b
-  <br><sub>2026-11-07 · kunni · artifact: postur:551021-0680:188,107,108,2521,46981 · postur</sub>
 - **Istanbul Market þarf nýjustu skoðunarskýrslu brunaviðvörunarkerfis (ekki eldri en eins árs) og tvo þjónustusamninga: annan um eftirlit og viðhald og hinn um tengingu og vöktun brunaviðvörunarkerfis.** _(likely)_
   <br>Minnisatriði frá Slökkvitæki ehf skráð 02.11.2026 um gögn sem þarf fyrir Istanbul Market. · Staðfest 07.11.2026 (Claude) í pósti #70813: innri minnispóstur Slökkvitækis listar skoðunarskýrslu (<1 árs) og tvo þjónustusamninga fyrir Istanbul Market
   <br><sub>2026-11-07 · kunni · artifact: postur:670169-5459:70813 · postur</sub>
+- **Brunahólf útvegar Safír byggingum skýrslur og yfirlýsingar um brunaþéttingar fyrir öryggisúttektir á verkstöðum fyrirtækisins.** _(likely)_
+  <br>Við höfum fengið beiðnir fyrir D1, D2, Kárakjallara, D3 (Grensásvegur 2B), og Grensásvegur 6 Stigahús 5 frá 27.10.2025 til 05.08.2026. Yfirlýsing þarf að innihalda heiti, hluta og heimilisfang. · Staðfest 07.11.2026 (Claude) í pósti #188, 107, 108, 2521 og 46981: Safír bað um yfirlýsingar/skýrslur b
+  <br><sub>2026-11-07 · kunni · artifact: postur:551021-0680:188,107,108,2521,46981 · postur</sub>
+- **Festingar fyrir slökkvitæki kosta 6.963 kr. + vsk, og venjulegar veggfestingar fylgja tækjunum en sterkari rútufestingar með ströppum eru einnig til sölu.** _(likely)_
+  <br>Verð á festingum var sent 07.01.2026; GTS hefur ekki enn svarað hvort vilji festingarnar. · Staðfest 07.11.2026 (Claude) í pósti #47728 og 47729: Haukur skrifaði 07.01.2026 að festingar kosta 6.963 kr+vsk, veggfestingar fylgja, rútufestingar með ströppum til sölu
+  <br><sub>2026-11-07 · kunni · artifact: postur:551010-1200:47728,47729 · postur</sub>
 - **Eignarekstur ehf þjónustar húsfélagið Möðrufell 15, þar sem krafa Slökkvitækja/Eldklar er í heimabanka húsfélagsins.** _(likely)_
   <br>Staðfest í pósti frá 22.07.2024. · Staðfest 07.11.2026 (Claude) í pósti #16414: Eignarekstur þjónustar húsfélagið Möðrufell 15, krafa í heimabanka, reikningar@eignarekstur.is
   <br><sub>2026-11-07 · kunni · artifact: postur:480277-9459:16414 · postur</sub>
@@ -440,15 +440,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Hjá Menju ehf er Þriðja hæð í Bæjarlind 12 með þjónustusamning við Öryggismiðstöðina.** _(likely)_
   <br>Staðfest 05.06.2025. · Staðfest 07.11.2026 (Claude) í pósti #15984: Árni hjá Menju: þriðja hæðin er með þjónustusamning í slökkvitækjum hjá Öryggismiðstöðinni
   <br><sub>2026-11-07 · kunni · artifact: postur:650184-0259:15984,20949 · postur</sub>
-- **Colas hefur þjónustusamning um slökkvibúnað og undirritaður samningur um þjónustu slökkvibúnaðar barst Slökkvitækjum frá Hlyni hjá Colas.** _(likely)_
-  <br>Samningurinn var sendur aftur 11.06.2026 vegna rangs netfangs á fyrri útgáfu. · Staðfest 07.11.2026 (Claude) í pósti #45197: Hlynur hjá Colas sendi undirritaðan samning, Elías sendi samninginn aftur 11.06.2026 með réttu netfangi
-  <br><sub>2026-11-07 · kunni · artifact: postur:420187-1499:45197,45199,45200 · postur</sub>
 - **Reykskynjarar eiga að vera teknir út úr samningnum um yfirferð slökkvitækja hjá Brynjaleigufélagi.** _(likely)_
   <br>Beiðni Ármanns frá 08.06.2026; áður var reykskynjarar hluti af samningnum, nú óskað útskriftar. · Staðfest 07.11.2026 (Claude) í pósti #72978: Ármann 08.06.2026: Við skulum taka út reykskynjara úr samningnum
   <br><sub>2026-11-07 · kunni · artifact: postur:420369-6979:72978 · postur</sub>
 - **Eignarekstur ehf þjónustar húsfélagið Árskógar 1-3 og hefur þar kröfu í heimabanka húsfélagsins.** _(likely)_
   <br>Póstur frá 21.07.2025 ítrekar beiðni um reikning og frestun eindaga. · Staðfest 07.11.2026 (Claude) í pósti #19963: Eignarekstur þjónustar húsfélagið Árskógar 1-3, krafa í heimabanka en reikningur vantar, 21.07.2025
   <br><sub>2026-11-07 · kunni · artifact: postur:480277-9459:19963 · postur</sub>
+- **Colas hefur þjónustusamning um slökkvibúnað og undirritaður samningur um þjónustu slökkvibúnaðar barst Slökkvitækjum frá Hlyni hjá Colas.** _(likely)_
+  <br>Samningurinn var sendur aftur 11.06.2026 vegna rangs netfangs á fyrri útgáfu. · Staðfest 07.11.2026 (Claude) í pósti #45197: Hlynur hjá Colas sendi undirritaðan samning, Elías sendi samninginn aftur 11.06.2026 með réttu netfangi
+  <br><sub>2026-11-07 · kunni · artifact: postur:420187-1499:45197,45199,45200 · postur</sub>
 - **Með slökkvitækjunum fylgja venjulegar veggfestingar, en Slökkvitæki selur einnig sterkari rútufestingar með ströppum.** _(likely)_
   <br>07.01.2026, Haukur svaraði Einari hjá GTS um festingar fyrir rútur. · Staðfest 07.11.2026 (Claude) í pósti #47729: Haukur: hefðbundnar veggfestingar fylgja, rútufestingar með ströppum seldar sérstaklega
   <br><sub>2026-11-07 · kunni · artifact: postur:551010-1200:47729,21151 · postur</sub>
@@ -461,11 +461,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Bakkasel 20-36 húsfélag tekið úr þjónustu 06.11.2026 að ákvörðun Agnars: eini reikningurinn (R-107187, ágúst 2025, 961 þús.) var trjáfellingar, ekki brunavarnir. Engin tæki, engin úttekt.**
   <br>Hafði verið skráð í þjónustu fyrr sama dag á röngum forsendum. Mál #1511 lokað.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **Fjarðarmót ehf (Skyggisbraut 1-3): R-107613 des. 2025 er sala á einu CO2-tæki, ekki ársskoðun. Þjónustusamningur 28.09.2022 (Frank) en engin úttekt á reikningum 2023–2025.**
-  <br>Fyrri færsla sagði „greiddi ársskoðun 19.12.2025“ — rangt, leiðrétt 06.11.2026 (mál #1500).
+- **Laugavegur 11 (Gerðuberg, Þórunn Sigurðardóttir thorunnsigurdar@hotmail.com): þjónustusamningur sendur 06.12.2024, samþykktur skriflega sama dag og undirritaður á staðnum ~10.12.2024; enginn reikningur og engin úttekt síðan.**
+  <br>Samningur í Drive og tengdur í customer_documents (fid 1631).
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
-- **K-50 ehf (Vesturvör 32a): R-107430 okt. 2025 er sala (3 léttvatn, 4 reykskynjarar, 3 teppi), ekki úttekt. last_year_inspected 2025 fjarlægt 06.11.2026 skv. reglu Agnars; engin ársskoðun hefur farið fram.**
-  <br>Mál #983 (13.09.2026) setti K-50 aftur í þjónustu út frá sama reikningi; mál #1507 leiðrétt.
+- **Meiriháttar ehf: 5 reikningar 2023–2024 eru sala (27 tæki + skilti), engin úttekt. Sigurdór Sigurðsson (sigurdor@meirihattar.is) bað 19.03.2026 um þjónustusamning fyrir BF17 ehf (kt 691019-1280, Bugðufljót 17A bil 105); samningur sendur sama dag. BF17 er ekki í fyrirtækjaskránni.**
+  <br>fyrirtaeki.netfang sett á sigurdor@meirihattar.is 06.11.2026 svo pósturinn tengist.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 - _…og 52 til viðbótar í töflunni._
 
@@ -474,18 +474,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ágreiningur um tímagjald í Firðinum: umsamið 9.300 kr, hækkað í 9.951 kr (~7%) um áramót.** _(likely)_
   <br>Staðfest af Eyjólfi 09.07.2026 og Brynhildi 27.07.2026; hefur verið óleyst. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #42765 (09.07.2026, Eyjólfur hjá GG verk: samið var um 9300, hækkað í 9951), #44775 (15.07.2026, Brynhildur) og #45661 (23.07.2026, Brunahólf: hækkun um tæplega 7% um áramó
   <br><sub>2026-11-07 · kunni · artifact: postur:660606-1570:42765,44775,45661 · postur</sub>
-- **Ágreiningur um umfang verksins í Snorrabraut 85 hefur staðið yfir: Alva taldi 2 klst. fyrir 2 menn en verðhugmynd Brunahólfs var 16 klst. og 217.428 kr.** _(likely)_
-  <br>Kvörtun frá Birgi 12.02.2026; deilt áfram í þræði 26.02.2026, þar sem einnig var rætt um rifnar plötur sem mega þekja allt að 20% flata. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #2242 (12.02.2026, Birgir: um 2 klst. fyrir 2 menn; verðhugmynd Brunahólfs 16 klst., 217.428 kr.) og #2758 (26.
-  <br><sub>2026-11-07 · kunni · artifact: postur:690224-0540:2242,2758 · postur</sub>
 - **Reikningur 1081122 (318.515 kr., dags. 08.04.2026) fór í löginnheimtu þrátt fyrir að Pizzan segi hann kreditfærðan og greiðslu 343.329 kr. frá 21.04.2026 hafa borist.** _(likely)_
   <br>Pizzan bað um niðurfellingu löginnheimtu 04.09.2026; Agnar hjá Slökkvitæki lofaði afsökunarbeiðni og niðurfellingu, þar sem körfumál lenti í kerfisbreytingum í apríl. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #50995 (04.09.2026, Pizzan: reikningur 1081122 dags. 08.04.2026, 318.515 kr., kre
   <br><sub>2026-11-07 · kunni · artifact: postur:681016-1200:50995,51001 · postur</sub>
 - **Ískraft (staður #1136) er ekki skráð með skoðanir eða skýrslu 2026, en reikningar frá Ískraft til Brunahólfs berast samt, þar á meðal Srk9353742 (16.10.2026) og Srk9422279 (03.11.2026).** _(likely)_
   <br>Veiðin 2026 er ólokið mál: reikningarnir virðast tengdir öðrum aðila og tæki hjá Ískraft voru síðast skráð 01.02.2023. Staðfesta þarf tengsl reikninga við þjónustu áður en þeir eru greiddir. · Staðfest 07.11.2026 (Claude), víðari leit: viðhengi póstanna #67296 (Reikningur Srk9353742.pdf, 16.10.2026)
   <br><sub>2026-11-07 · kunni · artifact: postur:651175-0119:67296,71157 · postur</sub>
-- **Gufa frá sturtu og gufutæki fyrir skyrtur á baðherbergi á 2. hæð í Hlíðasmára 15 setur brunakerfið af stað.** _(likely)_
-  <br>Beiðni 22.05.2024; Tern bað um skiptingu skynjara; staðfest 24.05.2024 að skipt yrði út reykskynjara fyrir hitaskynjara. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 16533 og 16535 (Tern, 22.-24.05.2024); að skynjara hafi verið skipt út er óstaðfest (Slökkvitæki ætlaði að skoða hitaskynjara v
-  <br><sub>2026-11-07 · kunni · artifact: postur:530600-3780:16533,16535 · postur</sub>
+- **Ágreiningur um umfang verksins í Snorrabraut 85 hefur staðið yfir: Alva taldi 2 klst. fyrir 2 menn en verðhugmynd Brunahólfs var 16 klst. og 217.428 kr.** _(likely)_
+  <br>Kvörtun frá Birgi 12.02.2026; deilt áfram í þræði 26.02.2026, þar sem einnig var rætt um rifnar plötur sem mega þekja allt að 20% flata. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #2242 (12.02.2026, Birgir: um 2 klst. fyrir 2 menn; verðhugmynd Brunahólfs 16 klst., 217.428 kr.) og #2758 (26.
+  <br><sub>2026-11-07 · kunni · artifact: postur:690224-0540:2242,2758 · postur</sub>
 - **Ívar Már hjá Eykt kvartaði 06.11.2025 yfir að rafmagnsrör undir 32 mm hafi þegar verið kítt og að Brunahólf hafi bætt við óþarfa kítti.** _(likely)_
   <br>Brunahólf vísaði í leiðbeiningar um 32 mm og stærri göt með plaströrum; svar ólokið í póstum. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 2185 (06.11.2025 með tilvitnun í svar Brunahólfs 05.11); spurningin um hvaðan kíttið er keypt sást ekki (Brunahólf nefndi sjálft Redder) og var felld burt
   <br><sub>2026-11-07 · kunni · artifact: postur:560192-2319:2185 · postur</sub>
@@ -495,6 +492,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Brunaþétting í rými 01.109 var merkt frágengin áður en henni var lokað endanlega; Brunahólf bauð afsökunarbeiðni og fór yfir verklag við merkingar og skráningar.** _(likely)_
   <br>Staðfest af Heimi 22.05.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 6984 (Brunahólf 21.05: rangt að merkja frágengið, beðist velvirðingar, verklag rætt; Reynir tilgreinir rými 01.109; Heimir þakkar 22.05).
   <br><sub>2026-11-07 · kunni · artifact: postur:701292-4809:6984 · postur</sub>
+- **Gufa frá sturtu og gufutæki fyrir skyrtur á baðherbergi á 2. hæð í Hlíðasmára 15 setur brunakerfið af stað.** _(likely)_
+  <br>Beiðni 22.05.2024; Tern bað um skiptingu skynjara; staðfest 24.05.2024 að skipt yrði út reykskynjara fyrir hitaskynjara. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 16533 og 16535 (Tern, 22.-24.05.2024); að skynjara hafi verið skipt út er óstaðfest (Slökkvitæki ætlaði að skoða hitaskynjara v
+  <br><sub>2026-11-07 · kunni · artifact: postur:530600-3780:16533,16535 · postur</sub>
 - **Reikningur vegna Álftamýri 48 var sendur á rangt húsfélag og krafan hélst virk í heimabanka eftir að Slökkvitæki sagðist hafa tekið hana út 29.09.2026.** _(likely)_
   <br>Kvörtun 29.09.2026; Eignarekstur bað um eyðingu kröfunnar og Álftamýri 46-52 átti að fá kröfuna eftir sameiningu húsfélaganna. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 54937 og 57692 (Eignarekstur 21. og 29.09.2026: krafan enn í heimabanka); athugið að Inkasso felldi kröfuna niður 30.09.2
   <br><sub>2026-11-07 · kunni · artifact: postur:480277-9459:54937,57692 · postur</sub>
@@ -516,12 +516,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Brunaslöngur hjá Hópbílum hafa ítrekað fallið úr skoðun vegna vantandi eða útfallinna skoðunarmiða, og Guðjón hefur þurft aðstoð Slökkvitækja við að laga það.** _(likely)_
   <br>Dæmi: 02.06.2021 (athugasemd í úttekt á öryggisvottun), 07.06.2021, 27.09.2023, 28.09.2023 og 07.02.2024 (tvö slökkvitæki yfirfarin haustið 2023 fengu ekki skoðunarmiða). · Staðfest 07.11.2026 (Claude) í pósti #16713/#16907/#17964: Guðjón Árnason óskar eftir miðum á brunaslöngur/tæki 2021, 2023 og 2
   <br><sub>2026-11-07 · kunni · artifact: postur:461291-1399:17964,19769,16907,16908,16713 · postur</sub>
-- **Gára ehf afgreiddi ekki reikning 103989 fyrr en staðsetning og nöfn voru gefin upp fyrir þjónustuna á reikningnum.** _(likely)_
-  <br>Beiðni frá 16.10.2023; hér þarf að gefa upp staðsetningu, verkliði og tengiliði með reikningi. · Staðfest 07.11.2026 (Claude) í pósti #20661: Gára (Eimskip) vantar staðsetningu og nöfn með reikningi 103989
-  <br><sub>2026-11-07 · kunni · artifact: postur:421104-3520:20661,20771 · postur</sub>
 - **Safír byggingar telur að brunaþétting lagna upp stigagang í D4 hafi verið óþörf, þar sem stigagangurinn er eitt brunahólf.** _(likely)_
   <br>Kvörtun dags. 17.12.2025. Rúnar biður um yfirferð á fyrri framvindu og athugun á því hvort sams konar vinna hafi verið unnin í hinum stigagöngunum. · Staðfest 07.11.2026 (Claude) í pósti #104: Rúnar hjá SAFÍR kvartar yfir brunaþéttingu lagna upp stigagang í D4, eitt brunahólf, biður um yfirferð
   <br><sub>2026-11-07 · kunni · artifact: postur:551021-0680:104 · postur</sub>
+- **Gára ehf afgreiddi ekki reikning 103989 fyrr en staðsetning og nöfn voru gefin upp fyrir þjónustuna á reikningnum.** _(likely)_
+  <br>Beiðni frá 16.10.2023; hér þarf að gefa upp staðsetningu, verkliði og tengiliði með reikningi. · Staðfest 07.11.2026 (Claude) í pósti #20661: Gára (Eimskip) vantar staðsetningu og nöfn með reikningi 103989
+  <br><sub>2026-11-07 · kunni · artifact: postur:421104-3520:20661,20771 · postur</sub>
 - **Ruglingur í kerfum Slökkvitækja ehf olli villum í reikningum Véltinda ehf og var viðurkenndur; málið var farið yfir með Sveinbjörgu.** _(likely)_
   <br>Viðskiptayfirlit fyrir 1.1.–31.8.2026 var sent Birki 30.09.2026. · Staðfest 07.11.2026 (Claude) í pósti #47111: viðurkennd mistök í nýja kerfinu; #58052 ruglingur, farið yfir með Sveinbjörgu
   <br><sub>2026-11-07 · kunni · artifact: postur:491209-1270:47111,58052,57665 · postur</sub>
@@ -601,15 +601,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Einar hjá GTS hefur sagt að fleiri slökkvitæki verði send til yfirferðar hjá Slökkvitækjum ehf á næstunni.** _(likely)_
   <br>Fram kom 06.01.2026 og 07.01.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstur #21113 (06.01.2026, Einar hjá GTS: við eigum eftir að koma með töluvert af slökkvitækjum til yfirferðar á næstunni) og #21151 (07.01.2026).
   <br><sub>2026-11-07 · kunni · artifact: postur:551010-1200:21113,21151 · postur</sub>
-- **Samþykkt verð fyrir að ljúka verkinu í Stangarhylur 3-3A er 1.250.000 kr.** _(likely)_
-  <br>Skorri Rafn samþykkti verðið 22.07.2026; 04.08.2026 ætlar hann að ræða málið við Gunnar Smára og heyra í Brunahólf síðar. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 45643 (22.07.2026 Annþór fellst á 1.250.000 kr.); dagsetningarhluti felldur burt því efnislistar fyrir júlí og ágúst 2026 voru
-  <br><sub>2026-11-07 · kunni · artifact: postur:690224-0540:45643,46991 · postur</sub>
 - **Brunahólf á að ljúka uppgjöri vegna tímagjalds við GG verk með sanngjarnri lausn og senda gögn vegna Strendings/Aðallagna þegar yfirferð lýkur.** _(likely)_
   <br>Annþór lofaði gögnum vegna Strendings/Aðallagna þegar yfirferð lýkur; gögn bíða svars frá þeim. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 45661 (Annþór 23.07.2026 til GG verk); nafn Andra Valssonar og yfirferð vegna Fjarðar sást ekki í þeim pósti og var felld burt. · Stytt í það sem póstar
   <br><sub>2026-11-07 · kunni · artifact: postur:660606-1570:45661 · postur</sub>
 - **Tilboð Eimskips Q2604401 (Húni Páll Gunnlaugsson) er í flutning frá seljanda með tollskjalagerð innifalinni, og afhendingarstaður er Helluhraun 10.** _(likely)_
   <br>25.06.2026. · Staðfest 07.11.2026 (Claude), víðari leit: póstar 31467 og 31472 (tilboðið og leiðrétting afhendingarstaðar í Helluhraun 10 25.06.2026, Húni staðfestir að tilboðið gildir þangað); ekkert SENT-svar um bókun fannst, því ólokið-hluti felldur burt. · Stytt í það sem póstarnir staðfesta.
   <br><sub>2026-11-07 · kunni · artifact: postur:421104-3520:31467,31472 · postur</sub>
+- **Samþykkt verð fyrir að ljúka verkinu í Stangarhylur 3-3A er 1.250.000 kr.** _(likely)_
+  <br>Skorri Rafn samþykkti verðið 22.07.2026; 04.08.2026 ætlar hann að ræða málið við Gunnar Smára og heyra í Brunahólf síðar. · Staðfest 07.11.2026 (Claude), víðari leit: póstur 45643 (22.07.2026 Annþór fellst á 1.250.000 kr.); dagsetningarhluti felldur burt því efnislistar fyrir júlí og ágúst 2026 voru
+  <br><sub>2026-11-07 · kunni · artifact: postur:690224-0540:45643,46991 · postur</sub>
 - **Brunahólf á ólokin smávægileg atriði á Efstalandi 26 og ætlar að koma aftur þegar rafvirki hefur lokið sinni vinnu.** _(likely)_
   <br>Skráð 03.03.2026 eftir staðfestingu Brunahólfs; ekki staðfest í síðari póstum að verkinu sé lokið. · Staðfest 07.11.2026 (Claude), víðari leit: SENT-svar okkar 03.03.2026 (tilvitnað í pósti 2927) · Stytt í það sem póstarnir staðfesta.
   <br><sub>2026-11-07 · kunni · artifact: postur:440703-2590:2927 · postur</sub>
@@ -761,15 +761,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Á staðnum í Álhellu 3 í Hafnarfirði eru tengiliðirnir Andrés og Þorsteinn.** _(likely)_
   <br>Staðfest í pósti frá 17.01.2022 vegna skoðunar á 31 slökkvitæki. · Staðfest 07.11.2026 (Claude) í pósti #17557: Friðrik nefnir Andrés og Þorstein sem tengiliði í Álhellu 3, 31 tæki
   <br><sub>2026-11-07 · kunni · artifact: postur:590286-1419:17557 · postur</sub>
-- **Íbúar í Tjarnarseli 2 þurfa fyrirvara áður en farið er inn í íbúðirnar vegna yfirferðar slökkvitækja, og Ingimundur hefur sjálfur samband við leigjendur.** _(likely)_
-  <br>Kom fram 24.10.2022; Ingimundur þarf að hafa samband við leigendur fyrst. · Staðfest 07.11.2026 (Claude) í pósti #17295: Ingimundur: þarf að hafa samband við leigendur áður en farið er inn í íbúðir í Tjarnarseli 2
-  <br><sub>2026-11-07 · kunni · artifact: postur:550103-3970:17295,17297 · postur</sub>
 - **Sumir sölureikningar frá Ólafi Gíslasyni & Co hf eru merktir staðnum Sundaborg 7, 104 Reykjavík, en ekki Helluhrauni 10 í Hafnarfirði.** _(likely)_
   <br>Dæmi: S-033433 (20.08.2026) og S-034796 (30.09.2026). · Staðfest 07.11.2026 (Claude) í pósti #57990: Sölureikningar S-033433 og S-034796 sýna Sundaborg 7, 104 Reykjavík sem heimilisfang ásamt Helluhrauni 10
   <br><sub>2026-11-07 · kunni · artifact: postur:600508-0400:47989,57990 · postur</sub>
 - **Þórður Steinþórsson, nýr starfsmaður, á að vera kominn inn í sölukerfi Stólpa; ef hann sést ekki þarf að loka sölukerfinu og opna það aftur, ekki loka Stólpa alveg.** _(likely)_
   <br>Staðfest 19.09.2023 af Halldóru Ósk. · Staðfest 07.11.2026 (Claude) í pósti #16892: Halldóra Ósk 19.09.2023: ef nýr starfsmaður sést ekki í sölukerfi, loka og opna sölukerfið, ekki Stólpa
   <br><sub>2026-11-07 · kunni · artifact: postur:080379-5019:16892 · postur</sub>
+- **Íbúar í Tjarnarseli 2 þurfa fyrirvara áður en farið er inn í íbúðirnar vegna yfirferðar slökkvitækja, og Ingimundur hefur sjálfur samband við leigjendur.** _(likely)_
+  <br>Kom fram 24.10.2022; Ingimundur þarf að hafa samband við leigendur fyrst. · Staðfest 07.11.2026 (Claude) í pósti #17295: Ingimundur: þarf að hafa samband við leigendur áður en farið er inn í íbúðir í Tjarnarseli 2
+  <br><sub>2026-11-07 · kunni · artifact: postur:550103-3970:17295,17297 · postur</sub>
 - **Guðjón Árnason er tengiliður Hópbíla, sími +354 599 6086 og netfang gudjonarnason@hopbilar.is.** _(likely)_
   <br>Staðfest í nýjustu póstum 07.04.2026 og 09.04.2026. · Staðfest 07.11.2026 (Claude): netfangið gudjonarnason@hopbilar.is er skráð á þessa kennitölu í okkar eigin póstsamskiptum, svo bréfritarinn og félagið passa saman. Frásögnin sjálf er óstaðfest.
   <br><sub>2026-11-07 · kunni · artifact: postur:461291-1399:15616,15620 · postur</sub>
@@ -903,23 +903,23 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
 - **v_fyrirtaeki_mail_stada taldi reikningana SEM VIÐ SENDUM sem innkominn póst: þeir fara um delivery@payday.is og noreply@netbokhald.is og lenda i INBOX med okkar eigin nafni. Lagfaert 07.11.2026 -> osvarad i thjonustu fór úr 214 í 124. MIKILVAEGT: profa a sendanda OG nafni, aldrei sendanda einum — delivery@payday.is ber sjo nofn og fimm eru ONNUR felog ad senda OKKUR reikning (Seavis, Galaxy, Timavera, Flutningathjonusta Rvk); ad utiloka sendandann einan hefdi falid raunverulegt erindi.**
   <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gmail-leit finnur ekki „skýrsla“ í íslenskum efnislínum (listed 0 þótt efnið sé „Skýrsla Bríetatún“); leita með has:attachment filename:pdf og sía skráarnöfn hjá okkur.**
-  <br>Mælt 05.11.2026 á in:sent: „skýrsla“ → 0, „úttektarskýrsla“ → 4, „has:attachment older_than:310d“ → 90. Samsett orð (þjónustusamningur, samningur) fundust.
-  <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
 - **Gmail API 403 á attachments.get er oftast KVÓTI („Units per minute per user“), ekki umfang — bakfylling verður að keyra í lotum með ≥60 s hléi.**
   <br>Mælt 05.11.2026: 403 á hvert viðhengi í stórri lotu, textinn „Quota exceeded for quota metric Total Query Cost“. Eldklar-tengingin hefur gmail.readonly.
+  <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
+- **Gmail-leit finnur ekki „skýrsla“ í íslenskum efnislínum (listed 0 þótt efnið sé „Skýrsla Bríetatún“); leita með has:attachment filename:pdf og sía skráarnöfn hjá okkur.**
+  <br>Mælt 05.11.2026 á in:sent: „skýrsla“ → 0, „úttektarskýrsla“ → 4, „has:attachment older_than:310d“ → 90. Samsett orð (þjónustusamningur, samningur) fundust.
   <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
 - **Viðhengi úr Gmail-innsoginu lenda í bucket postur-vidhengi + töflu postur_vidhengi (frá 05.11.2026); gmail-ingest?vidhengi=1 sækir þau, postur-vidhengi?message_id= skilar undirritaðri slóð.**
   <br>Áætlaða keyrslan (gmail-ingest-background, 2 klst) sækir viðhengi síðustu 3 daga. format=metadata skilar EKKI hlutatrénu — skeyti með viðhengi eru fundin með has:attachment og fá format=full með fields-skurði. Storage-lykill verður að vera ASCII (InvalidKey á íslenska stafi) — rétta nafnið er í file
   <br><sub>2026-11-05 · brunaholf · lota 5f2146a4 · gagnaleidslur</sub>
-- **Talan á Tölvupóstar-hamnum á Þjónustuborði (Bíður svars) telur ÞRÆÐI úr email_digest (60 dagar, eldklar@ + bokhald@), ekki mál á borðinu; að loka máli breytir henni ekki. Fela póst = röð í reikninga_postur_hidden (message_id).**
-  <br>04.11.2026: 168 sjálfvirkir/birgja-póstar faldir að ósk Agnars (Teya, Húsasmiðjan, Microsoft, Google, birgjareikningar o.fl.), afrit backup_20261104_postur_hidden; Bíður svars fór úr 101 í ~74 (reiknað, ekki séð á skjá). Inkasso, Nova-kröfur, Gjaldheimtan og rsk.is voru EKKI faldir. Listinn sækir ei
+- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
+  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
   <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Mál #1485 Stúdíó tönn ehf (fyrirtaeki 349): Helgi bað 27.10 um vottun vegna R-108286; svar með úttektarskýrslu (customer_documents #1587, apríl 2026, 3 léttvatn + 2 CO2) skráð sent 04.11.2026 kl. 17:59 (reikninga_postur_activity #10, svarad_at sett). Atlas #1214 svarað 17:21 (activity #9).**
   <br>Móttaka í Gmail ÓSTAÐFEST: email_digest var síðast sótt 16:55 og Thunderbird á skrifstofuvél skrifaði ekki eldklar@ INBOX síðan 15:17 né Sent síðan 04:10 (LunaBridge2-Email keyrir á 15 mín með niðurstöðu 0 og „0 msgs skipped"). Orsök ómæld. Gildra: Storage-slóð customer_documents.storage_path innihe
   <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Lota 04.11.2026 lokaði mál #1386 (Ölhúsið, „Reikningur") ranglega af titli einum: Óli bað um símtal í 691 7030; opnað aftur. Lesa meginmál áður en póstmál er lokað sem hávaði.**
-  <br>Tengt R-001253 (Stöff ehf, 220 BAR, Payday nr. 465). Lokuð að ósk Agnars: #1320, #1332, #1336, #1150, #1349 (afrit backup_20261104_postur_hreinsun og _hreinsun2).
+- **Talan á Tölvupóstar-hamnum á Þjónustuborði (Bíður svars) telur ÞRÆÐI úr email_digest (60 dagar, eldklar@ + bokhald@), ekki mál á borðinu; að loka máli breytir henni ekki. Fela póst = röð í reikninga_postur_hidden (message_id).**
+  <br>04.11.2026: 168 sjálfvirkir/birgja-póstar faldir að ósk Agnars (Teya, Húsasmiðjan, Microsoft, Google, birgjareikningar o.fl.), afrit backup_20261104_postur_hidden; Bíður svars fór úr 101 í ~74 (reiknað, ekki séð á skjá). Inkasso, Nova-kröfur, Gjaldheimtan og rsk.is voru EKKI faldir. Listinn sækir ei
   <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Agnar merkir tölvupóst með ‚brýnt‘, ‚bókhald ósent‘ og ‚óafgreitt‘ — þessi merki á að lesa þegar póstur er yfirfarinn.**
   <br>[terminology; agents: eldklar-postur, luna] 29.06 bað hann um greiningu á 4 pósthólfum síðustu 30 daga (hvað gleymdist að svara; beiðnir um skýrslur, reikninga, tilboð) og póst-hjálpar-artifact tengt verkfaeri.netlify.app og slokkvitaeki.netlify.app; síðan: ‚wait a bit…
@@ -1033,6 +1033,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### solur
 
+- **1,42 m.kr. voru ALDREI KRAFIN: fra mars 2026 voru Stolpa-krofur stofnadar a 80% af reikningi + 295 kr krofugjald, a 89 olikum kennitolum. Maelt 08.11.2026: af 96 greiddum reikningum mars-mai fellur ENGINN a upphaed/1,24 (vsk-tilgatan) en 62 falla upp a kronu a upphaed*0,80+295. 295 er sama talan a 13.900 kr reikningi og 933.904 kr reikningi, svo thad er krofugjald en ekki hlutfall. Umskiptin eru ROFIN, ekki stigvaxandi: sept-feb voru 97-100% fullgreiddir og NULL a 80%-mynstrinu; fra mars snyst thad alveg vid. opid_upphaed er 0 a 91 af 96 svo Stolpi synir ekkert utistandandi — enginn mun bidja um thessi 20%. Og thetta helt afram EFTIR yfirtokuna 07.05.**
+  <br><sub>2026-11-08 · slokkvitaeki · claude-code · claude-code</sub>
 - **Spurningin 'er krafan send?' er svarad a ELLEFU stodum i kodanum (audit-ein-heimild-krofur fryst grunnlina). Af theim lesa FIMM Payday-spegilinn (166, 190, 368, 369, 420) og SEX ekki (142, 197, 386, 430, 489 Vinnusamantekt, brunaholf fjarmal-yfirlit). Reikningur sem var sendur og kreditfaerdur I PAYDAY ber hvorki credit_of ne dk_invoice_id i solur og litur thar ut eins og osendur — sex af 23 eru thannig (221.231 kr). Their sex geta thvi ekki sagt hverjar MA SENDA; su spurning a ad fara i v_krafa_ekki_send_adgerd (7 radir / 618.409 kr).**
   <br><sub>2026-11-08 · slokkvitaeki · claude-code · claude-code</sub>
 - **Afslattarhopur er ekki afslattur a ollu. Hopur 3 (Bilabud Benna og Nesdekk) gefur 20% ADEINS a ny taeki (hardware_purchase_pct); thjonustuprosenturnar eru tomar og almenni afslatturinn 0%. audit-uttekt-afslattarhopur-gogn krafdist afsl. i HVERRI Hledslu/Yfirferdar/Nytt-linu og vard rautt a rettri hegdun (R-001264 Nesdekk, hrein thjonusta). Lagad 07.11.2026: vordurinn spyr nu hvada flokk linan snertir og hvort hopurinn gefi afslatt I THEIM FLOKKI.**
@@ -1150,30 +1152,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>[rule; agents: sara-organizer, sara-coworker, skjol] 29.07 Agnar: brunaskýrsla kom inn í ‚slökkvitækja 2026‘ reitinn og úttektarskýrslan komst ekki inn. 21.07: ‚you cant just refer to the same company site, it is slokkvitæki vs brunakerfi‘; Center Hótel hefur báðar. doc_type:…
   <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lotur 3de57db5, 9b70f49c · claude-code</sub>
 
-### oryggi
-
-- **Stjóri (Claude á anninn76@gmail.com) les Supabase með Postgres-hlutverkinu stjori_lesari — SELECT eingöngu, BYPASSRLS, engin skrif; hann er viljandi ekki í Supabase-stofnuninni.**
-  <br>sql/2026-11-04_stjori_lesari.sql + docs/STJORI-ADGANGUR.md (brunaholf). Pro-áætlun: lægsta stofnunarhlutverk er Developer = fullur skrifaðgangur í 242 RLS-lausar töflur, þess vegna sér-hlutverk. Lykilorðið setur Agnar og það er hvergi skráð. GitHub: Write-collaborator á brunaholf+slokkvitaeki með ma
-  <br><sub>2026-11-04 · kerfi · lota 04.11.2026 · oryggi</sub>
-- **Site Audit 23.08 fann að /api/gatt-admin var án auðkenningar og anon-lykill hafði skrifaðgang; staða lagfæringar óstaðfest.** _(unverified)_
-  <br>Slökkvitæki Site Audit 23.08 — sannreyna áður en samþykkt.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/WMqHo9Ym7tKdgBKoBthpHC · skjol</sub>
-- **Slökkvitæki-appið sendir anon-lykil í vafrann (js/config.js), svo engin kúnnasíða má keyra á því léni meðan RLS er slökkt.** _(unverified)_
-  <br>Þjónustuvefur — Byggingaráætlun 22.08; Site Audit 23.08.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
-- **11.10.2026 vildi Agnar hafa Þjónustugáttina (aðgangur Reitir, /gatt/?c=reitir) opna án lykilorðs meðan hann ynni í henni, svo hver sem hafði slóðina gat lesið alvöru gögn.**
-  <br>'Ég vil ekki lykilorðið strax. Þoli ekki að þurfa skrá mig inn 50 sinnum á dag' / 'I will put password later'. Regla í sql/portal_users_open_preview.sql; open_preview-dálkurinn var síðar fjarlægður — staðfestu núverandi stöðu.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **Fjar-ársskoðunin (brunaholf /skoda.html + /api/skoda) er óvarin: skodun_invites og skodun_submissions eru RLS AF (anon les beint) og skoda.js GET ?list=1 / ?submission= / POST invite hafa enga auðkenningu og CORS * — invite-röðin ber kt, síma og tengilið. Í dag 2 boð + 2 skil, öll 30.06.2026 (prufur, engar undirskriftir), ekkert síðan.** _(unverified)_
-  <br>Mælt 04.11.2026: pg_class.relrowsecurity=false á báðum; `set local role anon; select count(*)` skilaði 2 og 2. brunaholf/netlify/functions/skoda.js:80-160 (engin requireStaff). Skoðanir-flipinn (brunaholf index.html renderSkodanir ~4419) les ?list=1.
-  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Brunaholf birtir repo-rót (publish='.') svo skrár þar (CLAUDE.md, sql, _google.js) eru netaðgengilegar — leyndarmál mega aldrei liggja í repo-skrám.** _(likely)_
-  <br>[decision; agents: oryggi, tengingar] 13.06 sagði Agnar ‚there is no exposure risk… I just want it to work‘ og bað um að hætta öryggisrannsókn; 31.07 lak Netlify-tákn í CLAUDE.md sem plain text og var skipt út (NETLIFY_TOKEN er GitHub Actions secret í…
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lotur 532a8e1d 2026-06-13, 8e43dca9 2026-07-31 · claude-code</sub>
-- **teikning_bord er með anon lestur og skrift og company_id (= fyrirtaeki.id) hefur enga FK-tengingu.** _(likely)_
-  <br>[gotcha; agents: oryggi, elon-musk] haedir jsonb geymir hæðir (mynd, merki, crop, veggi).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-
 ### skjol
 
 - **Röð fyrir brunakerfisskýrslur í Drive: færa allt í eina möppu → eyða 100 % samnefndum afritum → lesari endurnefnir hverja skrá í ströngu sniði → eyða afritum aftur → tengja við prófíl.**
@@ -1197,6 +1175,27 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Drive-möppu skýrslna (1VSRRw6O8U6lU8WzZxA8CkLtrAmiU07mg) má hvorki endurnefna né eyða sjálfvirkt; nöfn fylgja röðinni fyrirtæki, staðsetning, kennitala, ár, mánuður.**
   <br>[rule; agents: skjol, sara-organizer, natalie] 07.08 Agnar: tveggja mánaða barátta við afrit og gömul eintök; Claude/Cowork sem breyta nöfnum eða eyða gera factcheck erfiðara. ~1200 skrár og Drive-lestur hikstar við ~1000; áætlun: færa 2023 og eldra í sér möppu og…
   <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota 1555dbad 2026-08-07 · claude-code</sub>
+
+### oryggi
+
+- **Stjóri (Claude á anninn76@gmail.com) les Supabase með Postgres-hlutverkinu stjori_lesari — SELECT eingöngu, BYPASSRLS, engin skrif; hann er viljandi ekki í Supabase-stofnuninni.**
+  <br>sql/2026-11-04_stjori_lesari.sql + docs/STJORI-ADGANGUR.md (brunaholf). Pro-áætlun: lægsta stofnunarhlutverk er Developer = fullur skrifaðgangur í 242 RLS-lausar töflur, þess vegna sér-hlutverk. Lykilorðið setur Agnar og það er hvergi skráð. GitHub: Write-collaborator á brunaholf+slokkvitaeki með ma
+  <br><sub>2026-11-04 · kerfi · lota 04.11.2026 · oryggi</sub>
+- **Site Audit 23.08 fann að /api/gatt-admin var án auðkenningar og anon-lykill hafði skrifaðgang; staða lagfæringar óstaðfest.** _(unverified)_
+  <br>Slökkvitæki Site Audit 23.08 — sannreyna áður en samþykkt.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/WMqHo9Ym7tKdgBKoBthpHC · skjol</sub>
+- **Slökkvitæki-appið sendir anon-lykil í vafrann (js/config.js), svo engin kúnnasíða má keyra á því léni meðan RLS er slökkt.** _(unverified)_
+  <br>Þjónustuvefur — Byggingaráætlun 22.08; Site Audit 23.08.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
+- **11.10.2026 vildi Agnar hafa Þjónustugáttina (aðgangur Reitir, /gatt/?c=reitir) opna án lykilorðs meðan hann ynni í henni, svo hver sem hafði slóðina gat lesið alvöru gögn.**
+  <br>'Ég vil ekki lykilorðið strax. Þoli ekki að þurfa skrá mig inn 50 sinnum á dag' / 'I will put password later'. Regla í sql/portal_users_open_preview.sql; open_preview-dálkurinn var síðar fjarlægður — staðfestu núverandi stöðu.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **Fjar-ársskoðunin (brunaholf /skoda.html + /api/skoda) er óvarin: skodun_invites og skodun_submissions eru RLS AF (anon les beint) og skoda.js GET ?list=1 / ?submission= / POST invite hafa enga auðkenningu og CORS * — invite-röðin ber kt, síma og tengilið. Í dag 2 boð + 2 skil, öll 30.06.2026 (prufur, engar undirskriftir), ekkert síðan.** _(unverified)_
+  <br>Mælt 04.11.2026: pg_class.relrowsecurity=false á báðum; `set local role anon; select count(*)` skilaði 2 og 2. brunaholf/netlify/functions/skoda.js:80-160 (engin requireStaff). Skoðanir-flipinn (brunaholf index.html renderSkodanir ~4419) les ?list=1.
+  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Brunaholf birtir repo-rót (publish='.') svo skrár þar (CLAUDE.md, sql, _google.js) eru netaðgengilegar — leyndarmál mega aldrei liggja í repo-skrám.** _(likely)_
+  <br>[decision; agents: oryggi, tengingar] 13.06 sagði Agnar ‚there is no exposure risk… I just want it to work‘ og bað um að hætta öryggisrannsókn; 31.07 lak Netlify-tákn í CLAUDE.md sem plain text og var skipt út (NETLIFY_TOKEN er GitHub Actions secret í…
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lotur 532a8e1d 2026-06-13, 8e43dca9 2026-07-31 · claude-code</sub>
 
 ### afrit
 
@@ -1661,17 +1660,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Veiðin-færslur (158) eru verkefnalisti, ekki staðreyndir — ekki samþykktar. reikningar (133), adgengi (35) og eldri tengiliðir voru ekki samþykktir í lotu því þær geta stýrt reikningagerð eða geymt aðgangsupplýsingar.
   <br><sub>2026-11-06 · kerfi · lota 5f2146a4 · jarvis</sub>
 
-### tilbod
-
-- **Tilboð til Benna 15.06.2026 í þjónustuskoðun brunaviðvörunarkerfa var í MEGINMÁLI póstsins (engin PDF): Krókháls 9 = 131.769 án vsk / 163.394 m. vsk eftir 10% tilboðsafslátt (listaverð 146.410 án vsk); Fiskislóð 41 = 91.746 án vsk / 113.765 m. vsk (listaverð 101.940).**
-  <br>Sent 15.06.2026 21:04 af Agnari á gudmundurs@benni.is, „Re: Krókháls 9“. Krókháls 9: 65 skynjarar-ígildi (40 skynjarar ≤6 m, 2 geislaskynjarar, 12 bjöllur, 8 handboðar, 8 segullæsingar, aðalstöð, afl, boðbúnaður, yfirlitsmynd, skýrsla). Fiskislóð 41: 31 skynjarar ≤6 m + 4 yfir 9 m, 6 bjöllur, 6 hand
-  <br><sub>2026-11-05 · kunni · Thunderbird mbox · lota 5f2146a4 · sala-reikningar</sub>
-
 ### greidslur
 
 - **Greiðslur Heimaleigu 11.02.2026 (193.895) og 29.05.2026 (156.262) og 80%-greiðslurnar í apríl finnast HVERGI í pósti (email_digest + öll Thunderbird-hólf eldklar/bokhald, leitað 05.11.2026) né í bank_transactions — bankayfirlit Slökkvitækis (0528-26-006005) þarf til að mæla tvígreiðsluna.**
   <br>Grep á kröfunúmerum 104379/104663/104583/104617 og upphæðum í 4 GB INBOX + öllum möppum: engin bankatilkynning; aðeins Eignaumsjónar-þræðirnir V26-022363/V26-121156 (þ.m.t. 28.04.2026: „Stjórn hafnar kröfunni og segir að hún eigi að mestu eða öllu leyti að fara á Heimaleigu“). bank_transactions (938
   <br><sub>2026-11-05 · kunni · lota 5f2146a4 · heimaleiga</sub>
+
+### tilbod
+
+- **Tilboð til Benna 15.06.2026 í þjónustuskoðun brunaviðvörunarkerfa var í MEGINMÁLI póstsins (engin PDF): Krókháls 9 = 131.769 án vsk / 163.394 m. vsk eftir 10% tilboðsafslátt (listaverð 146.410 án vsk); Fiskislóð 41 = 91.746 án vsk / 113.765 m. vsk (listaverð 101.940).**
+  <br>Sent 15.06.2026 21:04 af Agnari á gudmundurs@benni.is, „Re: Krókháls 9“. Krókháls 9: 65 skynjarar-ígildi (40 skynjarar ≤6 m, 2 geislaskynjarar, 12 bjöllur, 8 handboðar, 8 segullæsingar, aðalstöð, afl, boðbúnaður, yfirlitsmynd, skýrsla). Fiskislóð 41: 31 skynjarar ≤6 m + 4 yfir 9 m, 6 bjöllur, 6 hand
+  <br><sub>2026-11-05 · kunni · Thunderbird mbox · lota 5f2146a4 · sala-reikningar</sub>
 
 ### samningur
 
