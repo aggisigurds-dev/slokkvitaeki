@@ -320,3 +320,47 @@ föst tilboðsverð per ár), #1391 (89.578 → hámark 69.202; tvær sölur fen
 3. **„Líklega afgreitt" er ekki mæling.** Tvö mál (#946, #954) báru sjálfvirka merkingu sem vísaði á
    reikninga sem eiga ekkert skylt við málið (R-001079 er búðarsala á öðrum stað; R-001107 er
    brunakerfisreikningur á Laugavegi). Sá sem treystir þeirri merkingu lokar máli ranglega.
+
+## Tíu listar halda opnu verki — og þeir skarast (mælt 08.11.2026)
+
+| Listi | Opið | Athugið |
+|---|---|---|
+| `thjonustubeidni` | 421 | þar af 145 samþykki á Agnar |
+| `app_problems` | 400 óleyst | |
+| `verkefnalisti` | 111 | |
+| `invoice_drafts` | 94 | 56 draft + 38 overdue |
+| `villur` | 30 | |
+| `verkbeidnir` | **32** | sjá viðvörun |
+| `sara_yfirferd` | 20 bíður | |
+| `factcheck_akvardanir` | 13 ósvöruð | |
+| checklistar (skipulagsbord) | 28 | |
+| `krofu_verkferli` | 7 | |
+
+**VIÐVÖRUN UM `verkbeidnir`:** listinn virðist 885 ef síað er á stöðuheiti sem maður giskar á.
+Raunverulegu gildin eru **collected 743 · eytt 110 · ready 21 · received 11**, og `collected`
+þýðir að kúnninn ER BÚINN AÐ SÆKJA tækið — lokastaða, ekki opið verk. Rétt tala er **32**.
+Kanónan stendur í `tools/audit-verk-stada.cjs`: received · inprogress · ready · collected · done · eytt.
+Þetta er sama villan og yfirferðin fann hjá öðrum: sía á giskuðum gildum í stað þess að telja
+hvaða gildi eru til.
+
+### Skörunin sem mældist
+
+**TÓLF af þrettán ósvöruðum `factcheck_akvardanir` eiga tvíbura á Þjónustuborðinu:**
+#4↔#1434 · #6↔#1533/#1535 · #7↔#1437 · #8↔#1438 · #9↔#1439+#1414 · #10↔#1542 ·
+#11↔#1440 · #12↔#1441 · #13↔#1442 · #14↔#1443 · #15↔#1444 · #16↔#1445. Aðeins #5 á engan.
+**Svar á öðrum staðnum hreyfir ekki hinn.**
+
+Það kostaði mig samdægurs: ég stofnaði #1542 með Gullsmára 5 sem NÝJUM fundi þegar factcheck #10
+frá 01.11 geymdi hann með nákvæmlega sömu tölum (9 × 4.346 = 39.114 án vsk), og #1445 er
+factcheck #16 orðrétt. **Leitaðu í factcheck ÁÐUR en þú kallar fund nýjan.**
+
+**35 reikningsnúmer koma fyrir í tveimur eða fleiri opnum málum.** Flest eðlilegt (yfirlitsmál
+telja upp marga), en þrennt eru öfugar aðgerðir á sama hlut: R-000356 (#1368 senda ↔ #1407
+bakfæra), R-000407 (#987 stofna ↔ #1407 bakfæra), og 24 staðir (#909 úr þjónustu ↔ #1532 í skoðun).
+
+**Tvö pör sem eru sama aðgerðin:** #1377 (má Bjarndís senda skjal B?) og #1378 (sendu skjal B) —
+og hvorugt getur gerst því skjalið er ekki til. **Ein háðsemi:** #1414 býr til drög „með 20%
+samningsafslætti" sem #1394 er enn að ákveða hvort eigi að vera til.
+
+Vörður: `tools/audit-skorun-lista.cjs` (A=9 · B=35 · C=0). Hann sér aðeins skörun sem R-númer
+afhjúpa — sama spurning án reikningsnúmers sleppur í gegn.
