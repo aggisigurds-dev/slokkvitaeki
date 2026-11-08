@@ -1,0 +1,49 @@
+/* Innskráning gáttarinnar — útfærsla D (08.11.2026): hæðir í 3D við hlið spjalds, fimm bakgrunnar.
+   Bakgrunnur: data-bg á #login (himinn | nott | sol | eldur | ljos | teikn); ?bg=<heiti> í slóðinni prófar hvern. Allt afmarkað við #login. */
+#login{--lb:#1b2a4d;--lo:#f15a24;--fb:rgba(255,255,255,.45);--ff:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05));--fs:rgba(0,0,0,.5);
+  position:relative;overflow:hidden;perspective:1200px;gap:56px;background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
+#login.hidden{display:none}
+#login>*{position:relative;z-index:2}
+#login .lg-fx{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s}
+#login[data-bg=himinn] .lg-himinn,#login[data-bg=nott] .lg-nott,#login[data-bg=sol] .lg-sol,#login[data-bg=eldur] .lg-eldur,#login[data-bg=ljos] .lg-ljos,#login[data-bg=teikn] .lg-teikn{opacity:1}
+#login[data-bg=himinn]{--fs:rgba(8,28,80,.42);background:linear-gradient(180deg,#0c3585 0%,#2a68d0 34%,#74a9ea 64%,#f3c49c 90%,#f39a52 100%)!important}
+#login[data-bg=nott]{background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
+#login[data-bg=sol]{--fb:rgba(27,42,77,.55);--ff:linear-gradient(135deg,rgba(255,255,255,.7),rgba(255,255,255,.25));--fs:rgba(27,42,77,.28);background:linear-gradient(180deg,#f39a52 0%,#f6c593 24%,#cfe0f5 58%,#e9f0fa 100%)!important}
+#login[data-bg=eldur]{--fb:rgba(255,170,120,.55);--ff:linear-gradient(135deg,rgba(255,140,80,.2),rgba(255,140,80,.04));--fs:rgba(0,0,0,.6);background:linear-gradient(180deg,#171112,#0c0809)!important}
+#login[data-bg=ljos]{--fb:rgba(27,42,77,.5);--ff:linear-gradient(135deg,#fff,rgba(255,255,255,.4));--fs:rgba(27,42,77,.22);background:linear-gradient(160deg,#f4f8fe,#dbe7f7)!important}
+#login[data-bg=teikn]{--fb:rgba(255,255,255,.75);--ff:rgba(255,255,255,.06);--fs:rgba(0,0,0,.3);background:#0f3a7a!important}
+.lg-himinn{background:radial-gradient(900px 300px at 24% 104%,rgba(255,132,50,.6),transparent 70%),radial-gradient(520px 200px at 78% 100%,rgba(255,176,90,.35),transparent 70%),radial-gradient(420px 160px at 70% 22%,rgba(255,255,255,.16),transparent 70%)}
+.lg-nott{background:radial-gradient(520px 320px at 30% 45%,rgba(60,100,220,.35),transparent 65%),repeating-linear-gradient(90deg,rgba(120,160,255,.09) 0 1px,transparent 1px 56px),repeating-linear-gradient(0deg,rgba(120,160,255,.09) 0 1px,transparent 1px 56px)}
+.lg-sol{background:radial-gradient(circle at 24% 26%,#fff6d8 0,#ffd27a 9%,rgba(255,210,122,0) 22%)}
+.lg-sol:before,.lg-sol:after{content:"";position:absolute;left:-5%;right:-5%;bottom:0;border-radius:50% 50% 0 0/100% 100% 0 0}
+.lg-sol:before{height:190px;background:#6c88bb;opacity:.55;border-radius:60% 40% 0 0/100% 100% 0 0}
+.lg-sol:after{height:120px;background:#1b2a4d;opacity:.9}
+.lg-eldur{background:radial-gradient(700px 260px at 30% 108%,rgba(241,90,36,.7),transparent 70%),radial-gradient(400px 200px at 80% 110%,rgba(255,170,60,.4),transparent 70%)}
+.lg-ljos{background:radial-gradient(500px 300px at 28% 40%,rgba(255,255,255,.95),transparent 70%),repeating-linear-gradient(90deg,rgba(27,42,77,.05) 0 1px,transparent 1px 56px),repeating-linear-gradient(0deg,rgba(27,42,77,.05) 0 1px,transparent 1px 56px)}
+.lg-teikn{background:repeating-linear-gradient(90deg,rgba(255,255,255,.14) 0 1px,transparent 1px 20px),repeating-linear-gradient(0deg,rgba(255,255,255,.14) 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 1px,transparent 1px 100px),repeating-linear-gradient(0deg,rgba(255,255,255,.22) 0 1px,transparent 1px 100px)}
+.lg-iso{width:240px;height:320px;flex:none;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(-35deg);animation:lgsp 14s ease-in-out infinite alternate}
+@keyframes lgsp{to{transform:rotateX(58deg) rotateZ(-12deg)}}
+.lg-fl{position:absolute;left:25px;top:0;width:190px;height:190px;border-radius:12px;border:1px solid var(--fb);background:var(--ff);box-shadow:0 0 0 1px rgba(0,0,0,.12),0 26px 34px var(--fs)}
+.lg-fl i{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--lo);box-shadow:0 0 14px 4px rgba(241,90,36,.75)}
+#login .lcard{width:100%;max-width:340px;flex:none;padding:26px 28px 22px;border-radius:16px;background:#fff;transform-style:preserve-3d;transition:transform .15s ease-out;
+  box-shadow:0 2px 4px rgba(10,20,50,.12),0 18px 30px -8px rgba(10,20,50,.35),0 44px 80px -24px rgba(10,20,50,.55)}
+.lg-mark img{height:44px;width:auto;display:block}
+.lg-mark span{display:block;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:.32em;color:var(--lo)}
+.lg-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#eef2f9;border-radius:10px;padding:4px;margin:18px 0 14px}
+html[data-theme] #login .lg-tabs button{font:inherit;font-size:13px;font-weight:600;color:#5a6785;background:none;border:0;border-radius:7px;padding:9px;margin:0;width:auto;cursor:pointer;text-transform:none;letter-spacing:0;box-shadow:none;text-shadow:none;filter:none}
+html[data-theme] #login .lg-tabs button[aria-selected=true]{background:#fff;color:var(--lb);box-shadow:0 1px 3px rgba(10,20,50,.18)}
+#login .lcard .sub{font-size:13px;color:#5a6785;margin:0 0 14px}
+#login .opt{text-transform:none;letter-spacing:0;color:#8a96b0}
+#login .lg-hp{position:absolute!important;left:-9999px;width:1px;height:1px;opacity:0}
+#login .lcard form.hidden,#login .lcard .lg-ok.hidden{display:none}
+#login .lg-ok{text-align:center;padding:14px 0 4px}
+#login .lg-ok b{display:block;font-size:18px;color:var(--lb);margin-bottom:6px}
+#login .lg-ok span{display:block;font-size:13px;color:#5a6785;margin-bottom:16px}
+html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-radius:9px;border:1px solid #d3dbea;background:#fff;color:var(--lb);font:inherit;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;box-shadow:none;text-shadow:none}
+#login .lcard button:focus-visible,#login .lcard input:focus-visible{outline:2px solid #3b6fe0;outline-offset:2px}
+@media(max-width:820px){
+  #login{padding:16px;gap:0}
+  #login .lg-iso{position:absolute;left:-90px;top:40px;opacity:.5;z-index:1}
+  #login .lcard{padding:22px 20px 18px}
+}
+@media(prefers-reduced-motion:reduce){.lg-iso{animation:none}}

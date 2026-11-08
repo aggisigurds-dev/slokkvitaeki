@@ -1518,18 +1518,38 @@
 </defs></svg>
 
 <!-- ══ LOGIN ══ -->
-<section id="login" class="hidden">
-  <form class="lcard" id="loginForm" autocomplete="on">
-    <div class="logo"><img class="blogo-dark" src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><div class="crest" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.6 2c.5 3-1.3 4.6-2.8 6.2C8.2 9.9 6.8 11.7 6.8 14.6a5.2 5.2 0 0 0 10.4 0c0-2.3-1.1-4.1-2.3-5.5-.1 1.5-.8 2.6-1.9 3.2.6-3.4-.2-6.6-.4-10.3z"/><path d="M12 22a2.6 2.6 0 0 1-2.6-2.6c0-1.6 1.2-2.4 1.9-3.6.3 1 .9 1.5 1.5 1.8.5-.5.8-1.2.8-2 .7.9 1 1.9 1 2.8A2.6 2.6 0 0 1 12 22z" fill="rgba(255,240,200,.55)"/></svg></div><div class="lt"><b>BRUNAHÓLF</b><span class="s">Slökkvitæki ehf.</span><span class="k">Brunavarnir &amp; eftirlit</span></div></div>
-    <div class="lrule"></div>
-    <h1>Innskráning</h1>
-    <div class="sub">Þjónustuvefur Slökkvitækja ehf. — skoðanastaða, úttektarskýrslur og reikningar.</div>
-    <div class="fld"><label>Netfang</label><input type="email" id="email" placeholder="nafn@fyrirtaeki.is" autocomplete="username"></div>
-    <div class="fld"><label>Lykilorð</label><input type="password" id="password" autocomplete="current-password"></div>
-    <div class="lerr" id="lerr"></div>
-    <button type="submit">Innskrá</button>
-    <div class="lhelp">Vantar aðgang? <a href="mailto:eldklar@eldklar.is">eldklar@eldklar.is</a></div>
-  </form>
+<section id="login" class="hidden" data-bg="himinn">
+  <div class="lg-fx lg-himinn"></div><div class="lg-fx lg-nott"></div><div class="lg-fx lg-sol"></div><div class="lg-fx lg-eldur"></div><div class="lg-fx lg-ljos"></div><div class="lg-fx lg-teikn"></div>
+  <div class="lg-iso" aria-hidden="true">
+    <div class="lg-fl" style="transform:translateZ(0)"><i style="left:40px;top:50px"></i><i style="left:120px;top:110px"></i></div>
+    <div class="lg-fl" style="transform:translateZ(46px)"><i style="left:80px;top:40px"></i></div>
+    <div class="lg-fl" style="transform:translateZ(92px)"><i style="left:50px;top:120px"></i><i style="left:130px;top:60px"></i></div>
+    <div class="lg-fl" style="transform:translateZ(138px)"><i style="left:100px;top:90px"></i></div>
+  </div>
+  <div class="lcard" id="lcard">
+    <div class="lg-mark"><img src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><span>SLÖKKVITÆKI EHF.</span></div>
+    <div class="lg-tabs" role="tablist"><button type="button" role="tab" id="lg-t-in" aria-selected="true">Innskráning</button><button type="button" role="tab" id="lg-t-reg" aria-selected="false">Nýskráning</button></div>
+    <form id="loginForm" autocomplete="on">
+      <div class="sub">Sjáðu þá þjónustu sem þú ert með, skoðanir, skýrslur og reikninga — og bættu við nýrri þjónustu þegar þú vilt.</div>
+      <div class="fld"><label for="email">Netfang</label><input type="email" id="email" placeholder="nafn@fyrirtaeki.is" autocomplete="username"></div>
+      <div class="fld"><label for="password">Lykilorð</label><input type="password" id="password" autocomplete="current-password"></div>
+      <div class="lerr" id="lerr"></div>
+      <button type="submit">Innskrá</button>
+      <div class="lhelp">Gleymt lykilorð? <a href="mailto:eldklar@eldklar.is">eldklar@eldklar.is</a></div>
+    </form>
+    <form id="regForm" class="hidden" autocomplete="on" novalidate>
+      <div class="sub">Sendu beiðni um aðgang. Við staðfestum hana og sendum þér lykilorð.</div>
+      <div class="fld"><label for="rg-nafn">Nafn</label><input id="rg-nafn" autocomplete="name" maxlength="80"></div>
+      <div class="fld"><label for="rg-mail">Netfang</label><input type="email" id="rg-mail" placeholder="nafn@fyrirtaeki.is" autocomplete="email" maxlength="120"></div>
+      <div class="fld"><label for="rg-felag">Fyrirtæki eða húsfélag</label><input id="rg-felag" maxlength="120" autocomplete="organization"></div>
+      <div class="fld"><label for="rg-simi">Sími <span class="opt">valfrjálst</span></label><input type="tel" id="rg-simi" autocomplete="tel" maxlength="30"></div>
+      <input type="text" id="rg-vefur" class="lg-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="lerr" id="rg-err"></div>
+      <button type="submit" id="rg-btn">Senda beiðni</button>
+      <div class="lhelp">Aðgangur er aldrei stofnaður sjálfkrafa.</div>
+    </form>
+    <div id="rg-ok" class="lg-ok hidden"><b>Beiðnin er móttekin</b><span>Við sendum þér póst um leið og aðgangurinn er tilbúinn.</span><button type="button" id="rg-back">Aftur í innskráningu</button></div>
+  </div>
 </section>
 
 <!-- ══ EKKI VIRKUR ══ -->
@@ -1959,9 +1979,10 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261107um"></script>
+<script src="/gatt/portal.js?v=20261108lg"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261107us">
+<link rel="stylesheet" href="/gatt/login-v2.css?v=20261108b">
 <script src="/gatt/premium-v2.js?v=20261107us" defer></script>
 </body>
 </html>

@@ -434,6 +434,51 @@
       .catch(function () { $('#lerr').textContent = 'Villa við innskráningu. Reyndu aftur.'; });
   });
 
+  /* ── Nýskráning = beiðni um aðgang (08.11.2026): stofnar mál á Þjónustuborði, aldrei reikning ── */
+  (function () {
+    var login = $('#login'), card = $('#lcard');
+    if (!login || !card) return;
+    var BG = ['himinn', 'nott', 'sol', 'eldur', 'ljos', 'teikn'];
+    try {
+      var bg = new URLSearchParams(location.search).get('bg');
+      if (bg && BG.indexOf(bg) >= 0) login.setAttribute('data-bg', bg);
+    } catch (_) {}
+    function flipi(reg, ok) {
+      $('#loginForm').classList.toggle('hidden', reg || ok);
+      $('#regForm').classList.toggle('hidden', !reg || ok);
+      $('#rg-ok').classList.toggle('hidden', !ok);
+      $('.lg-tabs').classList.toggle('hidden', ok);
+      $('#lg-t-in').setAttribute('aria-selected', String(!reg));
+      $('#lg-t-reg').setAttribute('aria-selected', String(reg));
+    }
+    $('#lg-t-in').addEventListener('click', function () { flipi(false, false); });
+    $('#lg-t-reg').addEventListener('click', function () { flipi(true, false); });
+    $('#rg-back').addEventListener('click', function () { flipi(false, false); });
+    $('#regForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var err = $('#rg-err'), btn = $('#rg-btn');
+      err.textContent = '';
+      var body = { nafn: $('#rg-nafn').value, netfang: $('#rg-mail').value, fyrirtaeki: $('#rg-felag').value, simi: $('#rg-simi').value, vefur: $('#rg-vefur').value };
+      btn.disabled = true;
+      fetch('/api/gatt-adgangur', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          btn.disabled = false;
+          if (res.ok && res.j.ok) { $('#regForm').reset(); flipi(true, true); }
+          else err.textContent = res.j.error || 'Beiðnin fór ekki í gegn. Reyndu aftur.';
+        })
+        .catch(function () { btn.disabled = false; err.textContent = 'Villa við sendingu. Reyndu aftur.'; });
+    });
+    // 3D-halli spjaldsins fylgir músinni (aðeins með mús og án minnkaðrar hreyfingar)
+    if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference)').matches) {
+      login.addEventListener('mousemove', function (e) {
+        var r = login.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        card.style.transform = 'rotateY(' + (x * 12) + 'deg) rotateX(' + (-y * 9) + 'deg)';
+      });
+      login.addEventListener('mouseleave', function () { card.style.transform = ''; });
+    }
+  })();
+
   /* ── PORTAL ── */
   function renderPortal(data) {
     state.data = data;

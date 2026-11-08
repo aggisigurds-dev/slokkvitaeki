@@ -39,6 +39,8 @@
   region = "dub"
 [functions.gatt-login]
   region = "dub"
+[functions.gatt-adgangur]
+  region = "dub"
 [functions.hreyfingaryfirlit]
   region = "dub"
   included_files = ["netlify/functions/_verkbord-sync.cjs", "netlify/functions/_sms-sjalfvirkt.cjs"]
