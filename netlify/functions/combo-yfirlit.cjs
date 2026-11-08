@@ -255,6 +255,50 @@ async function dagskra(dagar) {
   };
 }
 
+
+/* ── SAMSTILLING: hvenær barst hver heimild síðast ─────────────────────────────
+ * Agnar 07.11.2026: „Checka á öll sync tengingar." Staðan er lesin af hubbnum
+ * (brunaholf /api/data-sources-status) því innflutningurinn gerist þar.
+ *
+ * ÞETTA ER YTRI HEIMILD OG MÁ EKKI ÞEGJA. Svari hubburinn ekki er `merki: 'OMAELT'` —
+ * aldrei „allt í lagi". Heimild sem hættir að berast lítur nákvæmlega eins út og heimild
+ * sem hefur ekkert nýtt að segja, og munurinn kostar peninga: Landsbanka-skráin hafði
+ * ekki borist í 146 daga þegar þetta var mælt, og sjö opin samþykkismál bíða hennar.
+ */
+const THAK_DAGAR = { invoices: 3, emails: 3, ajour: 7, timavera: 7, redder: 21, bank: 21 };
+
+async function samstilling() {
+  try {
+    const r = await fetch('https://brunaholf.netlify.app/api/data-sources-status',
+      { headers: { accept: 'application/json' } });
+    if (!r.ok) return { merki: 'OMAELT', skyring: 'hubburinn svaraði HTTP ' + r.status };
+    const j = await r.json();
+    const rodir = Array.isArray(j) ? j : (j.sources || []);
+    if (!rodir.length) return { merki: 'OMAELT', skyring: 'engar heimildir í svarinu' };
+    const linur = rodir.map((x) => {
+      const dagar = Number(x.age_days);
+      const thak = THAK_DAGAR[x.key] != null ? THAK_DAGAR[x.key] : 7;
+      return {
+        lykill: x.key, heiti: x.label || x.key,
+        dagar: Number.isFinite(dagar) ? dagar : null,
+        thak, radir: x.count,
+        sidast: String(x.last_import || '').slice(0, 10),
+        merki: Number.isFinite(dagar) ? 'MAELT' : 'OMAELT',
+        of_gamalt: Number.isFinite(dagar) ? dagar > thak : null,
+      };
+    });
+    const gamlar = linur.filter((l) => l.of_gamalt);
+    return {
+      merki: 'MAELT', heimild: 'brunaholf /api/data-sources-status',
+      heimildir: linur.length, of_gamlar: gamlar.length,
+      elst: gamlar.length ? gamlar.reduce((a, b) => (b.dagar > a.dagar ? b : a)) : null,
+      linur,
+      athugasemd: 'Heimild sem hættir að berast lítur eins út og heimild sem hefur ekkert nýtt '
+                + 'að segja. Dagafjöldinn er eina leiðin til að greina þar á milli.',
+    };
+  } catch (e) { return { merki: 'OMAELT', skyring: String(e.message || e) }; }
+}
+
 /* ── Keyrsla ────────────────────────────────────────────────────────────────── */
 async function maela(valinn, radir) {
   const listi = FLOKKAR.filter((x) => !valinn || x.f === valinn);
@@ -337,6 +381,15 @@ function malTexti(svar) {
     + hluti('verkefni', 'VERKEFNALISTAR')
     + hluti('samthykki', 'SAMÞYKKTIR')
     + hluti('tengingar', 'TENGINGAR (ótengd röð er ósýnileg röð)')
+    + (function () {
+        const s2 = svar.samstilling || {};
+        if (s2.merki !== 'MAELT') return '\nSAMSTILLING: ÓMÆLD — ' + (s2.skyring || '') + '\n';
+        const g = (s2.linur || []).filter((l) => l.of_gamalt);
+        if (!g.length) return '\nSAMSTILLING: allar ' + s2.heimildir + ' heimildir ferskar.\n';
+        return '\nSAMSTILLING — ' + g.length + ' heimild(ir) hætt(ar) að berast\n'
+          + g.map((l) => '  ✗ ' + l.heiti + ': ' + l.dagar + ' dagar (þak ' + l.thak
+              + '), síðast ' + l.sidast).join('\n') + '\n';
+      })()
     + '\nDAGSKRÁ NÆSTU DAGA — staður á dagskrá er ekki gleymdur\n'
     + (dagLinur || '  (ekkert bókað í dagnótum þessa daga)') + '\n'
     + (chk.length ? '\nOPNIR CHECKLISTAR: ' + chk.length + ' atriði ('
@@ -388,7 +441,7 @@ exports.handler = async (event) => {
   const dagar = Math.max(1, Math.min(60, parseInt(q.dagar, 10) || 10));
 
   const t0 = Date.now();
-  const [linur, dsk] = await Promise.all([maela(valinn, radir), dagskra(dagar)]);
+  const [linur, dsk, sam] = await Promise.all([maela(valinn, radir), dagskra(dagar), samstilling()]);
 
   const maelt = linur.filter((l) => l.merki === 'MAELT');
   const omaelt = linur.filter((l) => l.merki === 'OMAELT');
@@ -412,6 +465,7 @@ exports.handler = async (event) => {
     },
     linur,
     dagskra: dsk,
+    samstilling: sam,
     reglur: [
       'Þak = staðan 07.11.2026. Rautt þýðir „þetta hækkaði", ekki „gamla skuldin stendur".',
       'OMAELT er ekki 0. Tómt svar er ekki staðreynd.',

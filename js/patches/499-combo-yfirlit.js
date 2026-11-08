@@ -145,6 +145,21 @@
       if (l.flokkur !== fl) { fl = l.flokkur; ut += '<div class="yf-flokkur">' + esc(FLOKKAHEITI[fl] || fl) + '</div>'; }
       ut += linaHtml(l);
     });
+    // Samstilling: hvenær barst hver heimild síðast. Þögn frá hubbnum er ÓMÆLD, ekki græn.
+    var sm = j.samstilling || {};
+    ut += '<div class="yf-flokkur">Samstilling</div>';
+    if (sm.merki !== 'MAELT') {
+      ut += '<div class="yf-dag"><b>ÓMÆLD</b> — ' + esc(sm.skyring || '')
+        + '. <small>Heimild sem hættir að berast lítur eins út og heimild sem hefur ekkert nýtt að segja.</small></div>';
+    } else {
+      (sm.linur || []).forEach(function (l) {
+        ut += '<div class="yf-lina"><span class="yf-m ' + (l.of_gamalt ? 'ny' : 'ok') + '">'
+          + (l.of_gamalt ? '✗' : '✓') + '</span><span class="yf-h">' + esc(l.heiti)
+          + ' <small>síðast ' + esc(l.sidast) + '</small></span>'
+          + '<span class="yf-t">' + l.dagar + '<small>/' + l.thak + ' d</small></span></div>';
+      });
+    }
+
     var d = j.dagskra || {};
     ut += '<div class="yf-flokkur">Dagskrá næstu daga</div>';
     if (d.merki !== 'MAELT') {

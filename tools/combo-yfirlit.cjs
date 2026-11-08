@@ -63,5 +63,15 @@ const kr = (n) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d
   console.log('\n[DAGSKRÁ] ' + (d.merki === 'MAELT' ? (d.naestu_dagar || []).length + ' bókaðir dagar framundan' : 'ÓMÆLD — ' + d.skyring));
   (d.naestu_dagar || []).forEach((x) => console.log('   ' + x.dags + ' · ' + x.hver + ': ' + x.texti.replace(/\s*\n\s*/g, ' / ')));
   if (d.checklistar_opnir) console.log('   opnir checklistar: ' + d.checklistar_opnir.length + ' atriði');
+  const sam = j.samstilling || {};
+  if (sam.merki === 'MAELT') {
+    console.log('\n[SAMSTILLING] ' + sam.heimildir + ' heimildir · ' + sam.of_gamlar + ' of gamlar');
+    (sam.linur || []).forEach((l) => console.log('   ' + (l.of_gamalt ? '✗' : '✓') + ' '
+      + l.heiti + ': ' + l.dagar + ' d (þak ' + l.thak + ') · síðast ' + l.sidast));
+  } else {
+    // Þögn frá hubbnum er ekki „allt í lagi" — heimild sem hættir að berast lítur eins út
+    // og heimild sem hefur ekkert nýtt að segja.
+    console.log('\n[SAMSTILLING] ÓMÆLD — ' + (sam.skyring || '') + '');
+  }
   if (j.bord) console.log('\n[BORÐ] mál #' + j.bord.mal_id + ' — ' + j.bord.adgerd);
 })().catch((e) => { console.log('RED: ' + e.message); process.exitCode = 1; });
