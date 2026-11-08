@@ -40,6 +40,20 @@ exports.handler = async (event) => {
   const cr = await P.sbGet(`thjonustubeidni?source=eq.gatt-nyskraning&created_at=gte.${encodeURIComponent(since)}&select=id`);
   if (cr.ok && (await cr.json()).length >= 20) return P.json(429, { error: 'Of margar beiðnir í bili — hringdu í okkur eða reyndu aftur síðar' });
 
+  // Kennitala sem passar við NÁKVÆMLEGA eitt félag tengir málið við það (aldrei giskað; ekkert fer til baka í svarinu).
+  let baseId = null, fid = null;
+  if (kt.length === 10) {
+    try {
+      const br = await P.sbGet(`customers_base?kennitala=in.(${kt},${kt.slice(0, 6)}-${kt.slice(6)})&select=id&limit=2`);
+      const bs = br.ok ? await br.json() : [];
+      if (bs.length === 1) {
+        baseId = bs[0].id;
+        const fr = await P.sbGet(`fyrirtaeki?customer_base_id=eq.${baseId}&deleted_at=is.null&select=id&limit=2`);
+        const fs = fr.ok ? await fr.json() : [];
+        if (fs.length === 1) fid = fs[0].id;
+      }
+    } catch (_) {}
+  }
   const tilbod = !!skilabod;
   const lysing = [
     tilbod ? 'Beiðni um aðgang að Þjónustugáttinni og tilboð' : 'Beiðni um aðgang að Þjónustugáttinni',
@@ -51,6 +65,7 @@ exports.handler = async (event) => {
     tilbod ? '\nSkilaboð / tilboðsbeiðni:\n' + skilabod : '',
   ].filter(Boolean).join('\n');
   const mr = await P.sbPost('thjonustubeidni', {
+    customer_base_id: baseId, fyrirtaeki_id: fid,
     customer_nafn: felag, title: (tilbod ? 'Tilboð og gáttaraðgangur — ' : 'Beiðni um gáttaraðgang — ') + felag + ' — ' + nafn, summary: lysing,
     notes: lysing + '\nStaðfestu að netfangið tilheyri félaginu, stofnaðu aðgang á gatt-admin og sendu lykilorð. Engin sjálfvirk stofnun.' + (tilbod ? ' Svara þarf tilboðsbeiðninni sérstaklega.' : ''),
     source: 'gatt-nyskraning', type: 'annad', flokkur: 'thjonusta', status: 'nytt', priority: 'venjulegur',
