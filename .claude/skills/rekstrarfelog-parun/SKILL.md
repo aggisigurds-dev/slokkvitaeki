@@ -37,6 +37,22 @@ Talið per tegund: léttvatn · duft 6–12 · duft 2 · CO₂ 2 · CO₂ 5 · s
 (= skoðuð) og „Slökkvitæki …"-línur (= ný). Besti reikningur innan −1..+4 mánaða; frávik =
 Σ|mismunur| (móti skoðuð eða skoðuð+ný) + 0,5 per mánuð; öruggt ef frávik ≤ max(2, 10 %).
 
+> **LEIÐRÉTT 08.11.2026 — „reykskynjarar eru aldrei rukkaðir" ER RANGT.** Mælt í
+> `reikningslinur`: **143 reikningar rukka reykskynjara-YFIRFERÐ, 925 stykki, á 1.350–2.346 kr
+> stykkið** (auk 63 lína af nýsölu, 247 stk). Reglan hér að ofan lýsir eldri Stólpa-reikningum;
+> B-sniðs reikningar 2026 bera línuna „Yfirferð Reykskynjari 9V rafhl. Innif." og hún er
+> raunveruleg rukkun.
+>
+> Afleiðing sem var mæld: reikningalesarinn sleppir þeirri línu og telur aðeins nýsöluna, svo
+> **sex staðir sýndu falskt „tæki stemma ekki"** (251, 252, 290, 302, 309, 351) — sjá mál #1445.
+>
+> **Hvað á að gera í staðinn:** ekki draga reykskynjara frá sjálfkrafa. Mældu per reikning hvort
+> yfirferðarlína er til fyrir þá; sé hún það telst hún með, sé hún það ekki telst hún ekki.
+> Pörunarrökin í tólunum (`para-rekstrarfelag.cjs`, `bera-saman-reikninga.cjs`) voru EKKI breytt —
+> þau bera enn „reykskynjarar aldrei", og það er þekkt skekkja sem bíður ákvörðunar, ekki villa
+> sem má laga þegjandi því hún hreyfir pörun hjá öllum félögum.
+
+
 ## Reglurnar — hver þeirra kostaði eitthvað
 
 1. **Einn reikningur, ein skýrsla.** Fyrsta útgáfan skoðaði hverja skýrslu eina og sér og
