@@ -247,7 +247,11 @@
     return '<header class="adg-hd"><span class="adg-hn" aria-hidden="true"></span><span class="adg-hn r" aria-hidden="true"></span>' +
       '<div><div class="adg-over">— — Stjórnstöð · aðeins Agnar</div><h2>Aðgangsstýring</h2>' +
       '<div class="adg-sub">Hver sér hvaða síðu — Slökkvitæki-appið og Brunahólf</div></div>' +
-      '<a class="adg-hd-lk" href="' + HUB + '/adgangar.html" target="_blank" rel="noopener">Notendur og lykilorð ↗</a>' +
+      '<span class="adg-hd-lks">' +
+        '<a class="adg-hd-lk gull" href="' + HUB + '/adgangar.html?nyr=1" target="_blank" rel="noopener" title="Stofna nýjan notanda og velja notandanafn">+ Bæta við aðgangi ↗</a>' +
+        '<a class="adg-hd-lk" href="/innskraning.html" target="_blank" rel="noopener" title="Síðan sem starfsfólk skráir sig inn á">Innskráning starfsfólks ↗</a>' +
+        '<a class="adg-hd-lk" href="' + HUB + '/adgangar.html" target="_blank" rel="noopener">Notendur og lykilorð ↗</a>' +
+      '</span>' +
       '<button type="button" class="adg-x" data-a="loka" aria-label="Loka">✕</button></header>';
   }
   function rofi(felag, on, texti, lysing) {
@@ -403,7 +407,9 @@
     '#adg-ovl .adg-over{font:700 10px/1.3 "JetBrains Mono",monospace;letter-spacing:.18em;text-transform:uppercase;color:#c9a95a}',
     '#adg-ovl h2{margin:2px 0 0;font:700 28px/1.1 "Playfair Display",Georgia,serif;color:#fff}',
     '#adg-ovl .adg-sub{font-size:12.5px;color:#aab2c0;margin-top:3px}',
+    '#adg-ovl .adg-hd-lks{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:flex-end}',
     '#adg-ovl .adg-hd-lk{margin-left:auto;color:#e9cf86;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}',
+    '#adg-ovl .adg-hd-lks .adg-hd-lk{margin-left:0}',
     '#adg-ovl .adg-x{width:40px;height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#fff;font-size:16px;cursor:pointer;flex:none}',
     '#adg-ovl .adg-rofar{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 26px;border-bottom:1px solid #d9d0bd;background:#efe8d8;flex:none}',
     '#adg-ovl .adg-rofi{display:flex;align-items:center;gap:12px;justify-content:space-between}#adg-ovl .adg-rofi b{display:block;font-size:13px}#adg-ovl .adg-rofi span{display:block;font-size:11.5px;color:#6b655a;line-height:1.35}',
