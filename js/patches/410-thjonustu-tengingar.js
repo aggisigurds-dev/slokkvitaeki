@@ -829,11 +829,11 @@
 
   // Gátt (kúnnavefurinn, netlify/functions/gatt.cjs ~1540–1547) FINNUR þjónustulínur á HEITINU. Speglað hér: breyting sem tekur línu
   // úr þeim hópi hefði fengið kúnnann til að missa hana úr verðskránni þegjandi, svo spurt er fyrst. Víki gatt.cjs, víkur þetta.
+  // (Akstur og Skýrslugerð eru EKKI lengur hér: frá 09.11.2026 les gáttin þær úr slokk_visit_defaults, sjá _gatt-serkjor.cjs.)
   var GATT_THJ = /^(Duft \d+ kg\. ABC (yfirferð|hleðsla)|Léttvatnstækis? \d+L\. (yfirferð|hleðsla)|CO₂ [25] kg\. (yfirferð|yfirferd|hleðsla)|Slökkvitæki 9L léttvatn yfirferð)$/i;
   function gattFinnur(flokkur, nafn) {
     var n = String(nafn || '').trim();
     if (flokkur === 'Þjónusta') return GATT_THJ.test(n) || /^Yfirferð Brunaslanga$/i.test(n);
-    if (flokkur === 'Vinna og akstur') return /^Skýrslugerð/i.test(n) || /^Akstur$/i.test(n);
     return false;
   }
   // Heiti línu (vorur.nafn) breytt beint í listanum. Sama skrif og ✎ Vara. Heitið ER reikningstextinn og nafnaleitin í 129 les það

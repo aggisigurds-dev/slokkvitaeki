@@ -19,6 +19,7 @@ const GY = require('./_gatt-years.cjs');
 const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 const BGR = require('./_gatt-bgr.cjs');
+const SVD = require('./_gatt-serkjor.cjs');   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -937,10 +938,14 @@ exports.handler = async (event) => {
     // í Ársskoðun (AppSettings banner_upplysingar, patch 363) — hæðir, íbúðir, stigagangar, herbergi, m²,
     // byggingarár, eignir. Þær RÁÐA hér; sjálfvirka flokkunin og Landeignaskráin eru varaleið.
     let buMap = {};
+    // 09.11.2026: Akstur/Skýrslugerð í verðskránni (patch 410 „Slökkvit. þjónusta — verð") búa í app_settings.slokk_visit_defaults — lesið hér
+    // úr sama svari (svarið er aðeins hægt að lesa einu sinni), notað í Sérkjör-hlutanum neðar.
+    let svdMap = {};
     try {
       const ar = await Q.app;
       if (ar.ok) {
         const row = (await ar.json())[0];
+        svdMap = (row && row.settings && row.settings.slokk_visit_defaults) || {};
         bruMap = (row && row.settings && row.settings.brunakerfi_customers) || {};
         bmMap = (row && row.settings && row.settings.co_bygging_mynd) || {};
         buMap = (row && row.settings && row.settings.banner_upplysingar) || {};
@@ -1543,10 +1548,13 @@ exports.handler = async (event) => {
           const leggja = (flokkur, fastV) => { const k = kjorVerd(fastV, v); baeta(v, flokkur, k.verd, k.kjor); };
           if (v.flokkur === 'Þjónusta' && THJ.test(n)) { const hl = /hleðsla/i.test(n); leggja(hl ? 'hledsla' : 'yfirferd', fast(hl ? cfg.hledsla : cfg.yfirferd)); }
           else if (v.flokkur === 'Þjónusta' && /^Yfirferð Brunaslanga$/i.test(n)) leggja('slanga', fast(cfg.slanga));
-          else if (v.flokkur === 'Vinna og akstur' && /^Skýrslugerð/i.test(n)) leggja('skyrsla', fast(cfg.skyrsla));
-          else if (v.flokkur === 'Vinna og akstur' && /^Akstur$/i.test(n)) leggja('akstur', fast(cfg.akstur));
+          // Akstur og Skýrslugerð koma úr verðskránni (slokk_visit_defaults), ekki vorur-línunum — sjá aksturSkyrsla hér að neðan
           else if (v.flokkur === 'Slökkvitæki' && (v.forsida === true || Number(v.id) === 24)) { const p = fast(cfg.ny_taeki_pct); baeta(v, 'taeki', p ? Number(v.verd_an_vsk) * (1 - p / 100) : null, p ? 'afslattur' : 'listaverd'); }
         });
+        // 09.11.2026 (Agnar: „hafa alment samkvæmt verðskrá, nema þegar samið er um annað"): listaverð Aksturs og Skýrslugerðar = verðskráin sem
+        // úttektin rukkar eftir (slokk_visit_defaults, sjá _gatt-serkjor.cjs); samningsverð (cfg.akstur / cfg.skyrsla) og flatur afsláttur (pct)
+        // leggjast ofan á eins og fyrir aðrar línur, og kúnninn borgar aldrei meira en listaverð (baeta).
+        SVD.aksturSkyrsla(svdMap, vorur).forEach((x) => { const k = kjorVerd(fast(cfg[x.flokkur]), x.v); baeta(x.v, x.flokkur, k.verd, k.kjor); });
         // Röð innan skoðunar/hleðslu: léttvatn → duft → CO₂, svo eftir stærð; tækin halda vörulistaröðinni (rodun)
         const teg = (h) => (/léttvatn/i.test(h) ? 1 : /duft/i.test(h) ? 2 : /co₂|co2/i.test(h) ? 3 : 4);
         const st = (h) => { const m = /(\d+(?:[.,]\d+)?)\s*(kg|l)/i.exec(h); return m ? Number(m[1].replace(',', '.')) : 99; };
