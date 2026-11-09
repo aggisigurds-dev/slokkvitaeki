@@ -463,6 +463,14 @@
       '.' + AUÐK + '-tafla tr.' + AUÐK + '-hopur{scroll-margin-top:36px}',
       '.' + AUÐK + '-hopur-fj{margin-left:10px;font-weight:500;letter-spacing:.06em;color:#8f98a8}',
       '.' + AUÐK + '-tafla tr.' + AUÐK + '-vidb td:first-child{padding-left:26px;font-weight:500;color:#3a4250}',
+      // heitareitir listanna eru flatir (listinn helst skimanlegur) og verða að reitum við hover/fókus — grænt/rautt eftir vistun.
+      // !important: þema-reglan `input:not([type=checkbox]):not(…)…` (sex :not) er sérhæfari en klasi + element og ræður annars rammanum.
+      '.' + AUÐK + '-tafla input.' + AUÐK + '-nafn{background:transparent!important;border-color:transparent!important;box-shadow:none!important;padding:0 6px;margin-left:-6px;min-width:0;width:calc(100% + 6px);font-weight:700;color:#0f172a}',
+      '.' + AUÐK + '-tafla input.' + AUÐK + '-nafn:hover{background:#f4f6f9!important;border-color:rgba(20,24,34,.14)!important}',
+      '.' + AUÐK + '-tafla input.' + AUÐK + '-nafn:focus{outline:none;background:#fff!important;border-color:rgba(201,42,42,.55)!important;box-shadow:0 0 0 2px rgba(201,42,42,.18)!important}',
+      '.' + AUÐK + '-tafla input.' + AUÐK + '-nafn.ok{background:#fff!important;border-color:#1f9d57!important;box-shadow:0 0 0 2px rgba(31,157,87,.25)!important}',
+      '.' + AUÐK + '-tafla input.' + AUÐK + '-nafn.villa{background:#fff!important;border-color:#e0453c!important;box-shadow:0 0 0 2px rgba(224,69,60,.25)!important}',
+      '.' + AUÐK + '-tafla tr.' + AUÐK + '-vidb input.' + AUÐK + '-nafn{font-weight:500;color:#3a4250}',
       '.' + AUÐK + '-tengill{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483}',
       '.' + AUÐK + '-hopar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}',
       '.' + AUÐK + '-hopar-takki{height:24px;padding:0 9px;border-radius:3px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap}',
@@ -750,6 +758,145 @@
     s.textContent = n == null ? '' : mvskTexti(n, inp.dataset.vsk);
   }
 
+  // ── Sjálfgildi úttektar á ÞJÓNI + heiti á línum (09.11.2026) ───────────────────────────────────────────────────────
+  // Agnar 09.11.2026: „já öll verð og textar eiga að vera breytilegir þarna, þetta er grunnurinn fyrir allt annað".
+  // Akstur og Skýrslugerð (verð OG heiti á reikningslínu) voru föst í kóða (window.SlokkVisitDefaults, 129). Breytingin býr nú í
+  // app_settings.slokk_visit_defaults og er lögð ofan á SAMA hlutinn á staðnum — 129 (úttektarskoðun), 165 (reikningsleið) og
+  // 488 (viðbótarúttekt) lesa hann við notkun, svo engin þeirra fékk nýja heimild; óbreytt gildi falla á kóðann. Gildir aðeins
+  // þar sem ferðin hefur ekki þegar handslegið verð (trip.drive / trip.skyrslugerd). Kynslóðin sem lendir á miðri síðu (önnur
+  // vél vistar) berst um AppSettings.onChange; breytist gildi er 129 beðin um að teikna töfluna aftur.
+  var SVD_LYKILL = 'slokk_visit_defaults';
+  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };   // sama og 129 — röð hleðslu skiptir ekki máli
+  var SVD_KODI = { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };   // sjálfgildin í kóðanum — það sem gildir þegar ekkert er vistað á þjóni
+  // Hluturinn er ALLTAF byggður upp á nýtt úr kóðanum + því sem er á þjóni (ekki lagt ofan á það sem var), svo gildi sem hverfur af
+  // þjóni (eða úrelt staðbundið skyndiminni AppSettings) skilur ekki eftir gamla tölu í úttektinni.
+  function svdBeita() {
+    var D = window.SlokkVisitDefaults; if (!D) return false;
+    var s = null;
+    try { s = (window.AppSettings && AppSettings.path) ? AppSettings.path(SVD_LYKILL) : null; } catch (_) {}
+    if (!s || typeof s !== 'object') s = {};
+    var fyrir = JSON.stringify(D);
+    ['akstur', 'skyrslugerd', 'driveQty'].forEach(function (k) {
+      var n = s[k]; n = (n === null || n === undefined || n === '') ? NaN : Number(n);
+      D[k] = (isFinite(n) && n >= 0) ? n : SVD_KODI[k];
+    });
+    ['akstur_heiti', 'skyrslugerd_heiti'].forEach(function (k) {
+      var t = typeof s[k] === 'string' ? s[k].replace(/\s+/g, ' ').trim() : '';
+      if (t) D[k] = t; else delete D[k];   // tómt = sjálfgefið heiti („Akstur" / „Skýrslugerð")
+    });
+    if (JSON.stringify(D) !== fyrir) { try { window.dispatchEvent(new CustomEvent('thjonustu-tengingar-breytt', { detail: { svd: true } })); } catch (_) {} }
+    return true;
+  }
+  (function svdAskrift(n) {
+    if (window.AppSettings && AppSettings.onChange) { svdBeita(); AppSettings.onChange(svdBeita); }
+    else if (n < 150) setTimeout(function () { svdAskrift(n + 1); }, 100);
+  })(0);
+
+  // Verð eða heiti Aksturs / Skýrslugerðar breytt í listanum → AppSettings.save (atómísk sameining, aðeins þessi lykill).
+  // Reiturinn segir satt: grænn = vistað, rauður = EKKI vistað (AppSettings geymir þá í biðröð og reynir aftur).
+  async function vistaSvd(inp, hvad) {
+    var lykill = hvad === 'verd' ? inp.dataset.svd : inp.dataset.svdHeiti;
+    var KODI = { akstur: 'Akstur', skyrslugerd: 'Skýrslugerð' }, kodi = KODI[lykill], D = window.SlokkVisitDefaults || {};
+    if (!kodi) return;
+    if (!(window.AppSettings && AppSettings.save)) { inp.classList.add('villa'); segja('Stillingar (85) eru ekki hlaðnar — ekkert vistað', true); return; }
+    var patch = {}, lysing;
+    if (hvad === 'verd') {
+      var n = verdTala(inp.value);
+      if (n == null || n < 0) { inp.classList.add('villa'); segja('Ógilt verð — skrifaðu tölu, t.d. 3.600', true); return; }
+      n = Math.round(n * 100) / 100;
+      if (Number(D[lykill]) === n) { inp.classList.remove('villa'); inp.value = verdSnid(n); mvskUppfaera(inp); return; }
+      patch[lykill] = n; lysing = kodi + ': ' + verdSnid(n) + ' kr án vsk';
+    } else {
+      var t = String(inp.value || '').replace(/\s+/g, ' ').trim() || kodi;   // tómt = aftur á sjálfgefið heiti
+      var nuna = D[lykill + '_heiti'] || kodi;
+      if (t === nuna) { inp.classList.remove('villa'); inp.value = nuna; return; }
+      patch[lykill + '_heiti'] = (t === kodi) ? '' : t; lysing = 'Heiti á reikningslínu: „' + t + '“';
+    }
+    var pk = {}; pk[SVD_LYKILL] = patch;
+    inp.disabled = true;
+    try {
+      var ok = await AppSettings.save(pk);
+      if (!ok) { inp.classList.add('villa'); segja('Vistaðist EKKI strax — geymt og reynt aftur. Ekki loka vafranum.', true); return; }
+      svdBeita();
+      inp.classList.remove('villa'); inp.classList.add('ok');
+      if (hvad === 'verd') { inp.value = verdSnid(D[lykill]); mvskUppfaera(inp); } else { inp.value = D[lykill + '_heiti'] || kodi; }
+      segja(lysing + ' vistað ✓ — gildir í úttektum sem hafa ekki handslegið verð');
+      setTimeout(function () { inp.classList.remove('ok'); }, 1800);
+    } catch (e) {
+      inp.classList.add('villa'); segja('Vistaðist EKKI: ' + String((e && e.message) || e), true);
+    } finally { inp.disabled = false; }
+  }
+
+  // Gátt (kúnnavefurinn, netlify/functions/gatt.cjs ~1540–1547) FINNUR þjónustulínur á HEITINU. Speglað hér: breyting sem tekur línu
+  // úr þeim hópi hefði fengið kúnnann til að missa hana úr verðskránni þegjandi, svo spurt er fyrst. Víki gatt.cjs, víkur þetta.
+  var GATT_THJ = /^(Duft \d+ kg\. ABC (yfirferð|hleðsla)|Léttvatnstækis? \d+L\. (yfirferð|hleðsla)|CO₂ [25] kg\. (yfirferð|yfirferd|hleðsla)|Slökkvitæki 9L léttvatn yfirferð)$/i;
+  function gattFinnur(flokkur, nafn) {
+    var n = String(nafn || '').trim();
+    if (flokkur === 'Þjónusta') return GATT_THJ.test(n) || /^Yfirferð Brunaslanga$/i.test(n);
+    if (flokkur === 'Vinna og akstur') return /^Skýrslugerð/i.test(n) || /^Akstur$/i.test(n);
+    return false;
+  }
+  // Heiti línu (vorur.nafn) breytt beint í listanum. Sama skrif og ✎ Vara. Heitið ER reikningstextinn og nafnaleitin í 129 les það
+  // (óskráðar tengingar) — breytingin sést á næstu teikningu listans (GISKAÐ / Þarf að skoða).
+  async function vistaVoruNafn(inp) {
+    var v = vara(inp.dataset.varaNafn);
+    if (!v) { inp.classList.add('villa'); segja('Fann ekki línuna í vörulistanum — endurhlaða gluggann', true); return; }
+    var t = String(inp.value || '').replace(/\s+/g, ' ').trim();
+    if (!t) { inp.classList.add('villa'); inp.value = v.nafn; segja('Heitið má ekki vera tómt', true); return; }
+    if (t === v.nafn) { inp.classList.remove('villa'); inp.value = v.nafn; return; }
+    if (G.vorur.some(function (p) { return p.id !== v.id && String(p.nafn).trim().toLowerCase() === t.toLowerCase(); })) {
+      inp.classList.add('villa'); segja('„' + t + '“ er þegar til í vörulistanum — veldu annað heiti', true); return;
+    }
+    if (gattFinnur(v.flokkur, v.nafn) && !gattFinnur(v.flokkur, t)) {
+      var spurn = 'Kúnnavefurinn (Gátt) finnur þessa línu á heitinu „' + v.nafn + '“. Nýja heitið „' + t + '“ passar ekki við það sem hann leitar að, ' +
+        'svo línan hverfur úr verðskrá kúnnans þar til heitið passar aftur. Breyta samt?';
+      var ja = (window.Confirm && Confirm.show) ? await Confirm.show(spurn) : window.confirm(spurn);
+      if (!ja) { inp.value = v.nafn; inp.classList.remove('villa'); segja('Heiti óbreytt'); return; }
+    }
+    var sb = SB();
+    if (!sb) { inp.classList.add('villa'); segja('Engin gagnabankatenging — ekkert vistað', true); return; }
+    inp.disabled = true;
+    try {
+      var r = await sb.from('vorur').update({ nafn: t }).eq('id', v.id).select('id,nafn').maybeSingle();
+      if (r.error || !r.data) throw new Error((r.error && r.error.message) || 'engin röð uppfærð');
+      var gamla = v.nafn; v.nafn = r.data.nafn;
+      try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent('thjonustu-tengingar-breytt', { detail: { vara_id: v.id, nafn: v.nafn } })); } catch (_) {}
+      inp.classList.remove('villa'); inp.classList.add('ok'); inp.value = v.nafn; inp.setAttribute('aria-label', 'Heiti línu: ' + v.nafn);
+      var vi = inp.closest('tr') && inp.closest('tr').querySelector('[data-vara-verd]'); if (vi) vi.setAttribute('aria-label', 'Verð án vsk: ' + v.nafn);
+      segja('Heiti: „' + gamla + '“ → „' + v.nafn + '“ vistað ✓');
+      setTimeout(function () { inp.classList.remove('ok'); }, 1800);
+    } catch (e) {
+      inp.classList.add('villa'); segja('Vistaðist EKKI: ' + String((e && e.message) || e), true);
+    } finally { inp.disabled = false; }
+  }
+  // Heiti liðar í brunakerfislistanum → allur listinn vistaður um 273 (sami úreldingarvörður og verðin). Verðreiturinn í sömu röð ber
+  // data-nafn (gamla heitið) sem vistaVerd notar til að finna liðinn — hann er uppfærður með, annars hittir næsta verð ekki.
+  async function vistaBkNafn(inp) {
+    var BK = window.BrunakerfiSkyrsla; if (!BK || !BK.priceItems || !BK.savePriceItems) return;
+    var gamla = inp.dataset.nafn, t = String(inp.value || '').replace(/\s+/g, ' ').trim();
+    if (!t) { inp.classList.add('villa'); inp.value = gamla; segja('Heitið má ekki vera tómt', true); return; }
+    if (t === gamla) { inp.classList.remove('villa'); inp.value = gamla; return; }
+    var items = BK.priceItems().map(function (x) { return { name: x.name, price: x.price, link: x.link, teg: x.teg }; });
+    var it = items[+inp.dataset.bkNafn]; if (!it || it.name !== gamla) it = items.filter(function (x) { return x.name === gamla; })[0];
+    if (!it) { inp.classList.add('villa'); segja('Fann ekki liðinn „' + gamla + '“ í listanum — endurhlaða gluggann', true); return; }
+    if (items.some(function (x) { return x !== it && String(x.name).trim().toLowerCase() === t.toLowerCase(); })) {
+      inp.classList.add('villa'); segja('„' + t + '“ er þegar í listanum — veldu annað heiti', true); return;
+    }
+    inp.disabled = true;
+    try {
+      var ok = await BK.savePriceItems(items.map(function (x) { return x === it ? { name: t, price: x.price, link: x.link, teg: x.teg } : x; }));
+      if (ok) {
+        inp.classList.remove('villa'); inp.classList.add('ok'); inp.dataset.nafn = t; inp.value = t; inp.setAttribute('aria-label', 'Heiti liðar: ' + t);
+        var vi = inp.closest('tr') && inp.closest('tr').querySelector('[data-vi]'); if (vi) { vi.dataset.nafn = t; vi.setAttribute('aria-label', 'Verð án vsk: ' + t); }
+        segja('Heiti: „' + gamla + '“ → „' + t + '“ vistað ✓');
+        setTimeout(function () { inp.classList.remove('ok'); }, 1800);
+      } else { inp.classList.add('villa'); try { await hlada(true); } catch (_) {} teikna(); }   // úrelt / net: 273 sýndi skilaboðin — listinn endurlesinn
+    } catch (e) {
+      inp.classList.add('villa'); segja('Vistun brást: ' + String((e && e.message) || e), true);
+    } finally { inp.disabled = false; }
+  }
+
   // ── hópaskipting verðlistanna (09.11.2026) ────────────────────────────────
   // hopar = [{ id, heiti, radir: [<tr>…], eining: [eintala, fleirtala] }] — hausröð (þunn lína + litlir hástafir + fjöldi) á undan
   // hverjum hóp og flýtihnappar milli hópa. Hausraðirnar teljast ekki sem raðir (beitaSiu) og hverfa þegar sían tæmir hóp.
@@ -811,8 +958,8 @@
         'Tækjategundir sóttust ekki: ' + esc(G.tegundaVilla) + '</div>';
     }
     h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
-      'Þjónustulínurnar sem ársskoðunin og reikningarnir rukka eftir. Verðið býr á vörunni sjálfri (sama verð og í Vörur og þjónusta). ' +
-      '<b>Verð má breyta beint hér</b> (vistast um leið og farið er úr reitnum, fyrir allar vélar). ' +
+      'Þjónustulínurnar sem ársskoðunin og reikningarnir rukka eftir. Verðið og heitið býr á vörunni sjálfri (sama og í Vörur og þjónusta). ' +
+      '<b>Öll verð og heiti má breyta beint hér</b> (vistast um leið og farið er úr reitnum, fyrir allar vélar) — heitið er textinn á reikningnum. ' +
       'Hvaða tegund og stærð hver liður telur og nýjar tengingar: <b>✎ Tengingar</b> í hausnum.</p>';
 
     // ── gögn: ein röð per þjónustulína, með því sem hún telur ──
@@ -897,24 +1044,26 @@
     }
     function radHtml(R) {
       var v = R.v, an = v.verd_an_vsk;
-      return '<tr data-vara="' + esc(v.id) + '"><td style="font-weight:700;color:#0f172a">' + esc(v.nafn) +
-        (v.flokkur !== 'Þjónusta' ? ' <small style="font-weight:500;color:#845400">vara</small>' : '') + '</td>' +
+      return '<tr data-vara="' + esc(v.id) + '"><td style="font-weight:700;color:#0f172a">' +
+        '<input class="' + AUÐK + '-vl-nafn ' + AUÐK + '-nafn" type="text" data-vara-nafn="' + esc(v.id) + '" value="' + esc(v.nafn) + '" aria-label="Heiti línu: ' + esc(v.nafn) + '" title="Heitið er textinn á reikningnum — breytist um leið og farið er úr reitnum">' +
+        (v.flokkur !== 'Þjónusta' ? '<small style="font-weight:500;color:#845400;margin-left:6px">vara</small>' : '') + '</td>' +
         '<td style="text-align:right;white-space:nowrap">' +
           '<input class="' + AUÐK + '-verd' + (an == null ? ' villa' : '') + '" type="text" inputmode="decimal" data-vara-verd="' + esc(v.id) + '" data-vsk="' + esc(v.vsk_prosenta || 24) + '" ' +
             'value="' + esc(an == null ? '' : verdSnid(an)) + '" placeholder="vantar" aria-label="Verð án vsk: ' + esc(v.nafn) + '"> <span class="' + AUÐK + '-kr">kr</span>' +
           '<small class="' + AUÐK + '-mvsk">' + esc(an == null ? '' : mvskTexti(an, v.vsk_prosenta)) + '</small></td>' +
         '<td style="color:#5b6573;overflow-wrap:anywhere">' + telurHtml(R) + '</td></tr>';
     }
-    // Akstur og Skýrslugerð (Agnar 09.11.2026: „vantar inn á slökkvitækjaþjónustuna verðlistann Akstur og skýrslugerð, verðin
-    // sem eru default í úttektarskoðuninni"): verðin koma LIFANDI úr window.SlokkVisitDefaults (129) — sömu einu heimild og
-    // úttektarskoðunin (129), reikningsleiðin (165) og viðbótarúttektin (488) lesa — svo listinn getur ekki sagt annað en
-    // reikningurinn. Þau eru föst í kóða, ekki á þjóninum, svo reiturinn er læstur (readonly) hér.
+    // Akstur og Skýrslugerð (Agnar 09.11.2026: „vantar … Akstur og skýrslugerð, verðin sem eru default í úttektarskoðuninni" og svo
+    // „öll verð og textar eiga að vera breytilegir"): sjálfgildi úttektarinnar — verð OG heiti á reikningslínu — búa í
+    // app_settings.slokk_visit_defaults (sjá svdBeita) og eru lögð ofan á window.SlokkVisitDefaults sem 129, 165 og 488 lesa.
     var D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
-    function fastRad(nafn, an, telur) {
-      return '<tr data-fast="1"><td style="font-weight:700;color:#0f172a">' + esc(nafn) + '</td>' +
-        '<td style="text-align:right;white-space:nowrap"><input class="' + AUÐK + '-verd" type="text" readonly tabindex="-1" value="' + esc(verdSnid(an)) + '" ' +
-          'title="Sjálfgefið verð í úttektarskoðuninni — fast í kerfinu, breytist ekki hér" aria-label="Verð án vsk: ' + esc(nafn) + ' (sjálfgefið í úttektarskoðun, læst)"> <span class="' + AUÐK + '-kr">kr</span>' +
-          '<small class="' + AUÐK + '-mvsk">' + esc(mvskTexti(an, 24)) + ' · sjálfgefið í úttekt</small></td>' +
+    function fastRad(lykill, nafnKodi, an, telur) {
+      var nafn = D[lykill + '_heiti'] || nafnKodi;
+      return '<tr data-fast="' + lykill + '"><td style="font-weight:700;color:#0f172a">' +
+          '<input class="' + AUÐK + '-vl-nafn ' + AUÐK + '-nafn" type="text" data-svd-heiti="' + lykill + '" value="' + esc(nafn) + '" aria-label="Heiti á reikningslínu: ' + esc(nafnKodi) + '" title="Heitið er textinn á reikningslínunni — tómt = „' + esc(nafnKodi) + '“"></td>' +
+        '<td style="text-align:right;white-space:nowrap"><input class="' + AUÐK + '-verd" type="text" inputmode="decimal" data-svd="' + lykill + '" data-vsk="24" value="' + esc(verdSnid(an)) + '" ' +
+          'aria-label="Verð án vsk: ' + esc(nafn) + '"> <span class="' + AUÐK + '-kr">kr</span>' +
+          '<small class="' + AUÐK + '-mvsk">' + esc(mvskTexti(an, 24)) + '</small></td>' +
         '<td style="color:#5b6573">' + telur + '</td></tr>';
     }
     // hópar: ein tegund = einn hópur (tegundaröð listans), svo fastar línur úttektarinnar, svo línur sem ekkert tæki telur
@@ -922,8 +1071,8 @@
     function hopur(id, heiti) { if (!hIdx[id]) { hIdx[id] = { id: id, heiti: heiti, radir: [], eining: ['lína', 'línur'] }; hopar.push(hIdx[id]); } return hIdx[id]; }
     rodina.forEach(function (R) { if (R.uses.length) hopur('t:' + R.uses[0].tegund, R.uses[0].tegund).radir.push(radHtml(R)); });
     var fast = hopur('fast', 'Akstur og skýrslugerð');
-    fast.radir.push(fastRad('Akstur', D.akstur, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn · × ' + esc(D.driveQty != null ? D.driveQty : 1) + '</span>'));
-    fast.radir.push(fastRad('Skýrslugerð', D.skyrslugerd, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn</span>'));
+    fast.radir.push(fastRad('akstur', 'Akstur', D.akstur, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn · × ' + esc(D.driveQty != null ? D.driveQty : 1) + ' · gildir ef verð er ekki handslegið</span>'));
+    fast.radir.push(fastRad('skyrslugerd', 'Skýrslugerð', D.skyrslugerd, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn · gildir ef verð er ekki handslegið</span>'));
     rodina.forEach(function (R) { if (!R.uses.length) hopur('onnur', 'Aðrar þjónustulínur').radir.push(radHtml(R)); });
     var hh = hopaTafla(hopar);
     h += hh.chips + '<table class="' + AUÐK + '-tafla"><thead><tr>' +
@@ -1055,7 +1204,10 @@
     var bkHopar = HOPAR_BK.map(function (x) { return { id: x[0], heiti: x[1], radir: [], eining: ['liður', 'liðir'] }; });
     listi.forEach(function (it, i) {
       var vidb = /^\s*\+/.test(String(it.name || ''));
-      var rad = '<tr' + (vidb ? ' class="' + AUÐK + '-vidb"' : '') + '><td style="font-weight:700;color:#0f172a">' + esc(it.name) + '</td>' +
+      var rad = '<tr' + (vidb ? ' class="' + AUÐK + '-vidb"' : '') + '><td style="font-weight:700;color:#0f172a">' +
+        (BK && BK.savePriceItems
+          ? '<input class="' + AUÐK + '-vl-nafn ' + AUÐK + '-nafn" type="text" data-bk-nafn="' + i + '" data-nafn="' + esc(it.name) + '" value="' + esc(it.name) + '" aria-label="Heiti liðar: ' + esc(it.name) + '">'
+          : esc(it.name)) + '</td>' +
         '<td style="text-align:right">' + (BK && BK.savePriceItems
           ? '<input class="' + AUÐK + '-verd" type="text" inputmode="decimal" data-vi="' + i + '" data-nafn="' + esc(it.name) + '" value="' + esc(verdInn(it.price)) + '" aria-label="Verð án vsk: ' + esc(it.name) + '"> <span class="' + AUÐK + '-kr">kr</span>'
           : kr(it.price)) + '</td>' +
@@ -1520,14 +1672,18 @@
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
     bak.addEventListener('input', function (e) {
       var t = e.target; if (t && t.classList && t.classList.contains(AUÐK + '-sia')) { _sia = t.value; var ef = document.getElementById(AUÐK + '-efni'); if (ef) beitaSiu(ef); }
-      if (t && t.dataset && t.dataset.varaVerd) mvskUppfaera(t);   // verðlisti slökkvitækja: „m/vsk" undir reitnum fylgir innslættinum
+      if (t && t.dataset && (t.dataset.varaVerd || t.dataset.svd)) mvskUppfaera(t);   // verðlisti slökkvitækja: „m/vsk" undir reitnum fylgir innslættinum
     });
     bak.addEventListener('change', function (e) {
       var t = e.target; if (!t || !t.classList) return;
-      if (t.classList.contains(AUÐK + '-vl-nafn')) { vinnulidurBreyting(bak, 'nafn', t); return; }
+      if (t.classList.contains(AUÐK + '-vl-nafn') && !t.classList.contains(AUÐK + '-nafn')) { vinnulidurBreyting(bak, 'nafn', t); return; }   // -nafn = heitareitir verðlistanna (sjá hér að neðan)
       if (t.classList.contains(AUÐK + '-vl-verd')) { vinnulidurBreyting(bak, 'verd', t); return; }
       if (t.id === AUÐK + '-vl-nyr-nafn' || t.id === AUÐK + '-vl-nyr-verd') return;   // nýi liðurinn vistast með takkanum / Enter
-      if (t.dataset && t.dataset.varaVerd) { vistaVoruVerd(t); return; }   // slökkvitækja-verðlistinn → vorur.verd_an_vsk
+      if (t.dataset && t.dataset.varaVerd) { vistaVoruVerd(t); return; }
+      if (t.dataset && t.dataset.svd) { vistaSvd(t, 'verd'); return; }                 // Akstur / Skýrslugerð: verð → app_settings.slokk_visit_defaults
+      if (t.dataset && t.dataset.svdHeiti) { vistaSvd(t, 'heiti'); return; }           // …og heiti á reikningslínu
+      if (t.dataset && t.dataset.varaNafn) { vistaVoruNafn(t); return; }               // heiti þjónustulínu → vorur.nafn
+      if (t.dataset && t.dataset.bkNafn != null) { vistaBkNafn(t); return; }           // heiti liðar í brunakerfislistanum → 273   // slökkvitækja-verðlistinn → vorur.verd_an_vsk
       // aðeins reitir brunakerfis-listans bera data-vi — nýju-línu reitirnir (-nyr-verd, -n-verd, -n-vsk) vistast með takka/Enter
       // og áttu aldrei að fara hingað (gáfu „Fann ekki liðinn" og rauðan ramma við hvert blur)
       var inp = t.closest && t.closest('.' + AUÐK + '-verd'); if (inp && inp.dataset.vi != null) vistaVerd(inp);
@@ -1536,7 +1692,7 @@
       if (e.key !== 'Enter' || !e.target || !e.target.classList) return;
       if (e.target.closest && e.target.closest('#' + AUÐK + '-vl-nyr')) { e.preventDefault(); vinnulidurBreyting(bak, 'baeta'); return; }
       if (e.target.closest && e.target.closest('#' + AUÐK + '-nyr')) { e.preventDefault(); baetaVidLid(bak); return; }   // Enter í nýja liðnum = Bæta við
-      if (e.target.classList.contains(AUÐK + '-verd')) { e.preventDefault(); e.target.blur(); }
+      if (e.target.classList.contains(AUÐK + '-verd') || e.target.classList.contains(AUÐK + '-nafn')) { e.preventDefault(); e.target.blur(); }
     });
     bak.addEventListener('click', function (e) {
       var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) { baetaVidLid(bak); return; }

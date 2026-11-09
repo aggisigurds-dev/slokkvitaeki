@@ -354,11 +354,12 @@
         });
       });
     }
-    if (visit.skyrslugerd > 0) linur.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
+    // 09.11.2026: heitið á línunni má breyta í „Slökkvit. þjónusta — verð" (app_settings.slokk_visit_defaults, lagt ofan á SlokkVisitDefaults í 410); óbreytt = „Skýrslugerð"/„Akstur"
+    if (visit.skyrslugerd > 0) linur.push({ desc: ((window.SlokkVisitDefaults && window.SlokkVisitDefaults.skyrslugerd_heiti) || 'Skýrslugerð'), qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
     // 2026-05-20: Akstur qty comes from the per-company driveQty input
     // (defaults to 1). Lets Agnar bill 2× Akstur etc. when extra trips needed.
     if (visit.drive > 0 && visit.driveQty > 0) {
-      linur.push({ desc: 'Akstur', qty: visit.driveQty, unit_price_ex_vat: visit.drive, vsk_pct: 24 });
+      linur.push({ desc: ((window.SlokkVisitDefaults && window.SlokkVisitDefaults.akstur_heiti) || 'Akstur'), qty: visit.driveQty, unit_price_ex_vat: visit.drive, vsk_pct: 24 });
     }
     return linur;
   }

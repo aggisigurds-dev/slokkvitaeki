@@ -1428,7 +1428,7 @@
       '<div style="background:#fff;border:1px solid var(--brd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden">' +
         // Skýrslugerð — flex-röð svo reiturinn línist upp við Akstur + Afslátt.
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px;border-top:1px dashed var(--brd)">' +
-          '<span style="font-size:12px;color:#475569">📋 Skýrslugerð</span>' +
+          '<span style="font-size:12px;color:#475569">📋 ' + esc((window.SlokkVisitDefaults && window.SlokkVisitDefaults.skyrslugerd_heiti) || 'Skýrslugerð') + '</span>' +
           '<span style="display:flex;align-items:center;gap:5px;white-space:nowrap">' +
             '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" placeholder="0" ' +
               'style="width:84px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums">' +
@@ -1437,7 +1437,7 @@
         '</div>' +
         // Akstur — fjöldi ferða × verð; báðir reitir hægra megin (línast upp).
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
-          '<span style="font-size:12px;color:#475569">🚗 Akstur</span>' +
+          '<span style="font-size:12px;color:#475569">🚗 ' + esc((window.SlokkVisitDefaults && window.SlokkVisitDefaults.akstur_heiti) || 'Akstur') + '</span>' +
           '<span style="display:flex;align-items:center;gap:5px;white-space:nowrap">' +
             '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" title="Fjöldi ferða" ' +
               'style="width:42px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +

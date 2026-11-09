@@ -249,8 +249,8 @@
   function allarLinur(coId, rk) {
     const trip = loadTrip(coId), d = sjalfgildi(trip);
     const l = rk.linur.map(x => ({ desc: x.desc, qty: x.qty, unit_price_ex_vat: x.unit, vsk_pct: x.vsk }));
-    if (ST.skyrsla) { const p = ST.skVerd != null ? ST.skVerd : d.skyrslugerd; if (p > 0) l.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: p, vsk_pct: 24 }); }
-    if (ST.akstur) { const p = ST.akVerd != null ? ST.akVerd : d.akstur; if (p > 0 && ST.akQty > 0) l.push({ desc: 'Akstur', qty: ST.akQty, unit_price_ex_vat: p, vsk_pct: 24 }); }
+    if (ST.skyrsla) { const p = ST.skVerd != null ? ST.skVerd : d.skyrslugerd; if (p > 0) l.push({ desc: ((window.SlokkVisitDefaults && window.SlokkVisitDefaults.skyrslugerd_heiti) || 'Skýrslugerð'), qty: 1, unit_price_ex_vat: p, vsk_pct: 24 }); }   // heiti: sjá 165/410
+    if (ST.akstur) { const p = ST.akVerd != null ? ST.akVerd : d.akstur; if (p > 0 && ST.akQty > 0) l.push({ desc: ((window.SlokkVisitDefaults && window.SlokkVisitDefaults.akstur_heiti) || 'Akstur'), qty: ST.akQty, unit_price_ex_vat: p, vsk_pct: 24 }); }
     const pct = window.CtcDiscount && CtcDiscount.effectivePct ? CtcDiscount.effectivePct(coId, trip) : (Number(trip.discount_pct) || 0);
     const tot = window.VisitWorkflowReikn.totalsFromLinur(l, pct);
     return { linur: l, tot, pct };
