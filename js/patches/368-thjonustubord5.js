@@ -4850,7 +4850,9 @@
     // 03.11.2026 (Agnar: „setja þarna Aðgangsstýring inn á þjónustuborðið, bara fyrir Agnar"): föst flýtileið sem 495
     // sýnir aðeins þegar Agnar (AS, admin) er skráður inn — ekki í „Skoða sem" og ekki hjá öðrum.
     const adg = (window.Adgangsstyring && Adgangsstyring.flytileid && Adgangsstyring.flytileid())
-      ? '<span class="lkw"><button type="button" class="lk" data-t5="adgangsstyring" title="Hver sér hvaða síðu — Slökkvitæki og Brunahólf"><span class="lk-ic" aria-hidden="true">A</span><span>Aðgangsstýring</span></button></span>' : '';
+      ? '<span class="lkw"><button type="button" class="lk" data-t5="adgangsstyring" title="Hver sér hvaða síðu — Slökkvitæki og Brunahólf"><span class="lk-ic" aria-hidden="true">A</span><span>Aðgangsstýring</span></button></span>' +
+        // 09.11.2026 (Agnar: „inn á slökkvitæki, þjónustuborð"): beinn tengill á Aðgangar-síðuna þar sem nýir notendur eru stofnaðir og notandanöfnin valin.
+        '<span class="lkw"><button type="button" class="lk" data-t5="adgangar-nyr" title="Stofna nýjan notanda og velja notandanafn (Brunahólf · Aðgangar)"><span class="lk-ic" aria-hidden="true">+</span><span>Nýr aðgangur</span></button></span>' : '';
     return '<section class="links" aria-label="Flýtileiðir"><span class="lbl">Flýtileiðir</span>' + adg +
       (chips ||'<span class="lk-tomt">Festu síðurnar sem þú hoppar á milli — Keldan, Drive, Payday, Tímavera …</span>') +
       (falin ? '<span class="lk-m">+ ' + falin + ' í öðrum hömum</span>' : '') +
@@ -6464,6 +6466,7 @@
       }
       case 'go': goView(el.dataset.view, el.dataset.anchor); return;
       case 'adgangsstyring': if (window.Adgangsstyring) Adgangsstyring.opna(); return;   // 495
+      case 'adgangar-nyr': window.open('https://brunaholf.netlify.app/adgangar.html?nyr=1', '_blank', 'noopener'); return;
       case 'reload': load(); return;
     }
   }
