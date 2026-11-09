@@ -18,9 +18,12 @@
  * greidd. Hinar 19 (625.370 kr) eru heldur ekki allar útistandandi — Þangbakki (190.987) má
  * EKKI rukka (verkið var aldrei unnið) og Strandasel (39.638) er afgreitt: Agnar 20.09.2026
  * „leyfa þessu að vera … Ekki spyrja aftur." Talan hér er mælikvarði, ekki krafa. */
-const BASELINE_DAGS = '08.11.2026';
-const BASELINE_TALA = 27;
-const BASELINE_UPPHAED = 1087220;   // kr (null = sýnan geymir enga fjárhæð)
+/* 27 → 28 og 1.087.220 → 1.098.080 kr (09.11.2026): R-001273 Bílaþvottur Íslands (pos-sala 10.860 kr, 13:44) var felld niður með
+ * kredit R-001274 (13:46) — Agnar 09.11.2026: „felldur niður, varð ekki sala". ÚRSKURÐUR: ekkert verður rukkað og ekkert er útistandandi;
+ * röðin er skráð í grunnlínuna (tools/_grunnlina-syn.json) og er því ekki ný næst. */
+const BASELINE_DAGS = '09.11.2026';
+const BASELINE_TALA = 28;
+const BASELINE_UPPHAED = 1098080;   // kr (null = sýnan geymir enga fjárhæð)
 
 const { keyra, kr } = require('./_grunnlina-syn.cjs');
 keyra({
