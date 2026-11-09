@@ -731,6 +731,8 @@
   // sami reitur og Birgðir (36) og ✎ Vara skrifa. Tengingarnar (tegund · stærð → lína, ✓ Staðfesta, ný tegund) eru óbreyttar og
   // búa í hinni sýninni: ✎ Tengingar í hausnum. Línur sem fá rangt verð eða ekkert á reikning birtast efst svo þær týnist ekki.
   var _syn = 'verd';   // 'verd' | 'tengingar' — aðeins meðan glugginn er opinn; opna() velur sýnina
+  var _nySyn = false;  // true rétt á meðan teikna() teiknar nýja sýn (sjá teikna)
+  function skiptaSyn(syn) { _syn = syn; _sia = ''; _nySyn = true; try { teikna(); } finally { _nySyn = false; } var ef = document.getElementById(AUÐK + '-efni'); if (ef) ef.scrollTop = 0; }
   function htmlSlokkvitaeki() { return _syn === 'tengingar' ? htmlSlokkvitaekiTengingar() : htmlSlokkvitaekiVerd(); }
 
   // toLocaleString('is-IS') fellur stundum í en-US — sniðið er reiknað hér (sama regla og verdInn)
@@ -1298,7 +1300,8 @@
   function teikna() {
     var efni = document.getElementById(AUÐK + '-efni');
     if (!efni) return;
-    var aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(efni) : null;
+    // sýnaskipti (✎ Tengingar ↔ Verðlisti) varðveita ekki skrunstöðu — ný sýn byrjar efst (eða á línunni sem var valin)
+    var aftur = (!_nySyn && window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(efni) : null;
     efni.innerHTML = _flokkur === 'slokkvitaeki' ? htmlSlokkvitaeki()
       : _flokkur === 'brunakerfi' ? htmlBrunakerfi() : _flokkur === 'verkstaedi' ? htmlVerkstaedi() : _flokkur === 'vinnulidir' ? htmlVinnulidir() : htmlSlokkvikerfi();
     // sían fer á undan fyrstu töflunni — sama staðsetning í öllum listunum (hópahnapparnir, ef þeir eru, sitja undir henni)
@@ -1495,9 +1498,7 @@
     var synTakki = document.getElementById(AUÐK + '-tengingar');
     if (synTakki) synTakki.addEventListener('click', function () {
       if (!G.hlaðið) return;
-      _syn = _syn === 'tengingar' ? 'verd' : 'tengingar'; _sia = '';
-      teikna();
-      var ef = document.getElementById(AUÐK + '-efni'); if (ef) ef.scrollTop = 0;
+      skiptaSyn(_syn === 'tengingar' ? 'verd' : 'tengingar');
     });
     var breyta = document.getElementById(AUÐK + '-breyta');
     if (breyta) breyta.addEventListener('click', function () {
@@ -1545,7 +1546,7 @@
       var tj = e.target && e.target.closest && e.target.closest('[data-tengja]');
       if (tj) {
         var tk = tj.getAttribute('data-tengja');
-        _syn = 'tengingar'; _sia = ''; teikna();
+        skiptaSyn('tengingar');
         var tr = Array.prototype.filter.call(bak.querySelectorAll('tr[data-linu]'), function (x) { return x.getAttribute('data-linu') === tk; })[0];
         if (tr) { tr.classList.add(AUÐK + '-fokus'); tr.scrollIntoView({ block: 'center' }); }
         return;
