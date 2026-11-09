@@ -50,6 +50,7 @@
     postur: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"></path><path d="m4 7 8 6 8-6"></path></svg>',
     simi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>',
     bakk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>',
+    bord: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M9 10v10"></path></svg>',
     loka: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
     stjarna: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 16.9l-5.3 2.8 1.1-5.9-4.3-4.1 5.9-.8z"></path></svg>',
     hus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path><path d="M10 20v-6h4v6"></path></svg>'
@@ -550,6 +551,7 @@
       '<footer class="hu2-spjald-fot">' +
         '<button type="button" class="hu2-raud" data-act="svara">' + IK.postur + (a.sidast_svar_id ? 'Svara í þræði' : a.stada === 'rangt' ? 'Senda aftur' : 'Senda póst')+ '</button>' +
         '<button type="button" class="hu2-malm" data-act="simtal">' + IK.simi + 'Skrá símtal</button>' +
+        '<button type="button" class="hu2-malm" data-act="bord" title="Býr til mál á Þjónustuborði Agnars með tengilið, símanúmeri og næsta skrefi">' + IK.bord + 'Á Þjónustuborð</button>' +
         '<button type="button" class="hu2-silfur hu2-ib" data-act="meira" data-id="' + a.id + '" aria-label="Fleiri aðgerðir" aria-haspopup="menu" aria-expanded="false">' + IK.meira + '</button>' +
       '</footer>';
   }
@@ -655,6 +657,7 @@
       return opnaSendingu(a);
     }
     if (act === 'simtal') return skraSimtal(a);
+    if (act === 'bord') return aBord(a, b);
     if (act === 'meira') return opnaValmynd(b, a);
   }
   async function gatToggle(a, k) {
@@ -670,6 +673,63 @@
     const g = gatlistiAf(a); const s = g.find(x => x.k === 'simtal'); if (s && !s.done) { s.done = true; s.dags = fmtD(new Date()); }
     const ok = await vista(a.id, { minnispunktar: (a.minnispunktar ? a.minnispunktar.replace(/\s+$/, '') + '\n' : '') + lina, gatlisti: g.map(x => ({ k: x.k, t: x.t, done: x.done, dags: x.dags })) });
     if (ok) { toast('Símtal skráð'); teiknaSpjald(); render(); }
+  }
+  // 09.11.2026 (Agnar: „bara af hliðarbannernum inn á þjónustuborð til Agnars"): takki á spjaldi aðila og í ⋯-valmynd
+  // býr til EITT mál á Þjónustuborðinu (thjonustubeidni) með tengilið, síma, netfangi, kt, pælingu, minnispunktum og næsta
+  // skrefi; assigned_to 'Agnar', tag 'hunter', channel_ref 'hunter:<id>' svo sami aðili fari ekki tvisvar — sé opið mál til
+  // er boðið að opna það í staðinn. Fyrirtæki tengist aðeins ef kennitala aðilans finnst EIN í fyrirtaeki (aldrei giskað á nafn).
+  async function aBord(a, btn) {
+    const sb = SB(); if (!sb) return toast('Engin tenging við gagnagrunn', true);
+    if (btn) btn.disabled = true;
+    try {
+      const ref = 'hunter:' + a.id;
+      const til = await sb.from('thjonustubeidni').select('id,status,title').eq('channel_ref', ref).neq('status', 'lokad').order('id', { ascending: false }).limit(1);
+      if (!til.error && til.data && til.data.length) {
+        const m = til.data[0];
+        if (confirm('Mál #' + m.id + ' er þegar opið á Þjónustuborðinu: „' + m.title + '“.\nOpna það?')) opnaABordi(m.id);
+        return;
+      }
+      const x = afleitt(a);
+      const hvad = prompt('Hvað á Agnar að gera fyrir ' + a.nafn + '?', a.naesta_skref || x.naesta || 'Fylgja eftir');
+      if (hvad == null) return;
+      let fid = null, baseId = null;
+      const kt = String(a.kennitala || '').replace(/\D/g, '');
+      if (kt.length === 10) {
+        try {
+          const rf = await sb.from('fyrirtaeki').select('id,customer_base_id').eq('kennitala', kt.slice(0, 6) + '-' + kt.slice(6)).is('deleted_at', null).limit(2);
+          if (!rf.error && rf.data && rf.data.length === 1) { fid = rf.data[0].id; baseId = rf.data[0].customer_base_id || null; }
+        } catch (_) {}
+      }
+      const lin = ['Úr Hunter · ' + (a.herferd ? 'herferð ' + a.herferd + ' · ' : '') + 'staða: ' + ((STODUR[a.stada] || STODUR.bidur).t)];
+      if (a.tengilidur) lin.push('Tengiliður: ' + a.tengilidur);
+      if (a.simi) lin.push('Sími: ' + a.simi);
+      if (a.netfang) lin.push('Netfang: ' + a.netfang);
+      if (a.kennitala) lin.push('Kt: ' + a.kennitala + (fid ? ' (tengt fyrirtæki #' + fid + ')' : ''));
+      if (a.athugasemd) lin.push('Pæling: ' + a.athugasemd);
+      if (a.sidast_post_at) lin.push('Síðasti póstur: ' + fmtD(a.sidast_post_at) + (a.sidast_post_efni ? ' — ' + a.sidast_post_efni : ''));
+      if (a.minnispunktar) lin.push('\nMinnispunktar:\n' + a.minnispunktar);
+      lin.push('\nOpna í Hunter: #hunter/' + a.id);
+      const nuna = new Date().toISOString();
+      const n = (() => { try { return (window.BordStarfsmadur && BordStarfsmadur.get()) || 'Agnar'; } catch (_) { return 'Agnar'; } })();
+      const obj = {
+        title: ('Hunter · ' + a.nafn + ' — ' + (hvad.trim() || 'Fylgja eftir')).slice(0, 140),
+        notes: lin.join('\n'), type: 'annad', status: 'nytt', priority: 'venjulegur',
+        customer_nafn: a.nafn, customer_base_id: baseId, fyrirtaeki_id: fid,
+        assigned_to: 'Agnar', tags: ['hunter'], source: 'beint', channel_ref: ref, important: false,
+        due_at: a.naesta_dags ? new Date(isoDag(a.naesta_dags) + 'T12:00:00').toISOString() : null,
+        created_at: nuna, created_by: n, updated_at: nuna
+      };
+      const r = await sb.from('thjonustubeidni').insert(obj).select('id').single();
+      if (r.error || !r.data) return toast('Málið vistaðist ekki: ' + ((r.error && r.error.message) || 'ekkert svar'), true);
+      const lina = fmtD(new Date()) + ' sett á Þjónustuborð Agnars sem mál #' + r.data.id + ': ' + (hvad.trim() || 'Fylgja eftir');
+      await vista(a.id, { minnispunktar: (a.minnispunktar ? a.minnispunktar.replace(/\s+$/, '') + '\n' : '') + lina });
+      toast('Komið á Þjónustuborð Agnars · mál #' + r.data.id);
+      teiknaSpjald(); render();
+    } finally { if (btn) btn.disabled = false; }
+  }
+  function opnaABordi(id) {
+    try { if (window.Bord368 && Bord368.opnaMal) Bord368.opnaMal(id); } catch (_) {}
+    if (location.hash !== '#bord') location.hash = '#bord';
   }
   async function finnaKt(a, btn) {
     btn.disabled = true;
@@ -818,7 +878,7 @@
     lokaValmynd();
     const el = document.createElement('div'); el.className = 'hu2-pop'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Aðgerðir fyrir ' + a.nafn);
     const li = (act, t, ik, cls) => '<button type="button" role="menuitem" class="' + (cls || '') + '" data-v="' + act + '">' + (ik || '') + esc(t) + '</button>';
-    el.innerHTML = li('opna', 'Opna spjaldið', IK.bakk) + li('senda', a.stada === 'rangt' ? 'Senda aftur á rétt netfang' : 'Senda póst úr eldklar@', IK.postur) + li('stjarna', a.stjarna ? 'Taka úr eftirlæti' : 'Setja í eftirlæti', IK.stjarna) + '<hr>' +
+    el.innerHTML = li('opna', 'Opna spjaldið', IK.bakk) + li('senda', a.stada === 'rangt' ? 'Senda aftur á rétt netfang' : 'Senda póst úr eldklar@', IK.postur) + li('bord', 'Á Þjónustuborð Agnars', IK.bord) + li('stjarna', a.stjarna ? 'Taka úr eftirlæti' : 'Setja í eftirlæti', IK.stjarna) + '<hr>' +
       li('st:sidar', 'Hafa samband síðar') + li('st:fundur', 'Fundur bókaður') + li('st:unnid', 'Komið í viðskipti') + li('st:hafnad', 'Merkja hafnað') + '<hr>' + li('fjarlaegja', 'Fjarlægja af listanum', IK.loka, 'haetta');
     document.body.appendChild(el);
     const r = btn.getBoundingClientRect(), pr = el.getBoundingClientRect();
@@ -831,6 +891,7 @@
       if (v === 'opna') return opnaSpjald(a.id);
       if (v === 'senda') { if (S.post[a.id] == null) await hladaPost(a.id); return opnaSendingu(a); }   // póstarnir þurfa að vera til svo „svar í þræði" bjóðist
       if (v === 'stjarna') { if (await vista(a.id, { stjarna: !a.stjarna })) { render(); teiknaSpjald(); } return; }
+      if (v === 'bord') return aBord(a, btn);
       if (v.indexOf('st:') === 0) { const k = v.slice(3); if (await vista(a.id, { stada: k })) { toast(STODUR[k].t + ' · ' + a.nafn); render(); teiknaSpjald(); } return; }
       if (v === 'fjarlaegja') { if (!confirm('Fjarlægja ' + a.nafn + ' af Hunter-listanum? (Færslan geymist, kemur ekki aftur við innsog nema netfangið sé fjarlægt líka.)')) return;
         if (await vista(a.id, { fjarlaegt_at: new Date().toISOString() })) { S.rows = S.rows.filter(x => x.id !== a.id); if (S.opinn === a.id) lokaSpjald(); else render(); toast('Fjarlægt: ' + a.nafn); } }
