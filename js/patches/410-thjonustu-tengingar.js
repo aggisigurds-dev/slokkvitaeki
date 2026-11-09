@@ -47,8 +47,10 @@
   ];
 
   var FLOKKAR = {
+    // 09.11.2026: sjálfgefin sýn er verðlisti (sama snið og brunakerfi); tengingarnar búa í ✎ Tengingar (undirTengingar)
     slokkvitaeki: { tákn: '🧯', titill: 'Slökkvit. þjónusta — verð',
-      undir: 'Hvaða þjónustulína ársskoðunin rukkar fyrir hverja tegund og stærð' },
+      undir: 'Verðlisti slökkvitækjaþjónustu og hvaða tæki hver liður telur',
+      undirTengingar: 'Hvaða þjónustulína ársskoðunin rukkar fyrir hverja tegund og stærð' },
     brunakerfi:   { tákn: '🚨', titill: 'Brunak. þjónusta — verð',
       undir: 'Verðlisti brunakerfisskýrslunnar og hvaða búnaðarlínu hver liður telur' },
     slokkvikerfi: { tákn: '🍳', titill: 'Slökkvikerfis þjónusta — verð',
@@ -441,9 +443,9 @@
       '  flex:none;width:32px;height:32px;border-radius:4px;font-size:15px;cursor:pointer;line-height:1}',
       '#' + AUÐK + '-loka:hover{filter:brightness(1.25)}',
       // ✎ Breyta verðlista — silfurtakki í horninu við hlið ✕ (sami málmur og 442 .ssp-btn)
-      '#' + AUÐK + '-breyta{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
-      '#' + AUÐK + '-breyta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
-      '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka{margin-left:8px}',
+      '#' + AUÐK + '-breyta,#' + AUÐK + '-tengingar{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '#' + AUÐK + '-breyta:hover,#' + AUÐK + '-tengingar:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
+      '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka,#' + AUÐK + '-haus:has(#' + AUÐK + '-tengingar) #' + AUÐK + '-loka{margin-left:8px}',
       // Búa til tilboð + Prenta verðlista — sami silfurtakki, sitja milli ✎ Breyta og ✕
       '#' + AUÐK + '-tilbod,#' + AUÐK + '-prenta{margin-left:8px;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-tilbod:hover,#' + AUÐK + '-prenta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
@@ -453,6 +455,26 @@
       '.' + AUÐK + '-verd.ok{border-color:#1f9d57;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(31,157,87,.25)}',
       '.' + AUÐK + '-verd.villa{border-color:#e0453c;box-shadow:inset 0 2px 5px rgba(0,0,0,.12),0 0 0 2px rgba(224,69,60,.25)}',
       '.' + AUÐK + '-verd[disabled]{opacity:.6}',
+      // 09.11.2026 (Agnar: „raðað eða skipulagt listana aðeins … mjóar línur og litlir stafir"): hópaskipting í
+      // verðlistunum — þunn lína + litlir hástafir sem hópheiti, flýtihnappar milli hópa, fastur dálkahaus
+      '.' + AUÐK + '-tafla tr.' + AUÐK + '-hopur td{padding:16px 10px 5px;background:#fff;border-bottom:1px solid rgba(20,24,34,.38);font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250}',
+      '.' + AUÐK + '-tafla tr.' + AUÐK + '-hopur:hover td{background:#fff}',
+      '.' + AUÐK + '-tafla tbody tr.' + AUÐK + '-hopur:first-child td{padding-top:10px}',
+      '.' + AUÐK + '-tafla tr.' + AUÐK + '-hopur{scroll-margin-top:36px}',
+      '.' + AUÐK + '-hopur-fj{margin-left:10px;font-weight:500;letter-spacing:.06em;color:#8f98a8}',
+      '.' + AUÐK + '-tafla tr.' + AUÐK + '-vidb td:first-child{padding-left:26px;font-weight:500;color:#3a4250}',
+      '.' + AUÐK + '-tengill{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11px;color:#6b7483}',
+      '.' + AUÐK + '-hopar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}',
+      '.' + AUÐK + '-hopar-takki{height:24px;padding:0 9px;border-radius:3px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap}',
+      '.' + AUÐK + '-hopar-takki:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 1px 3px rgba(0,0,0,.2)}',
+      '.' + AUÐK + '-hopar-takki span{margin-left:5px;font-weight:500;color:#6b7483}',
+      '.' + AUÐK + '-tafla th{position:sticky;top:-18px;z-index:2}',   // -18px = padding-top á #p410-efni (Chrome mælir sticky frá efnisreit, ekki bólstrun) — annars sést bil fyrir ofan hausinn þar sem raðir skruna í gegn
+      '.' + AUÐK + '-verd[readonly]{background:#f4f6f9;box-shadow:none;color:#3a4250;cursor:default}',
+      '.' + AUÐK + '-mvsk{display:block;margin-top:2px;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;color:#6b7483;white-space:nowrap}',
+      '.' + AUÐK + '-athugun{margin:0 0 12px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12.5px;color:#92400e;line-height:1.5}',
+      '.' + AUÐK + '-athugun ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}',
+      '.' + AUÐK + '-athugun li{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#141822}',
+      '.' + AUÐK + '-athugun li > span:nth-child(2){flex:1 1 220px}',
       '.' + AUÐK + '-kr{font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:11.5px;color:#6b7483;margin-left:4px}',
       // nýr liður neðst: hvít röð undir töflunni (sama bakki og línur töflunnar)
       '.' + AUÐK + '-nyr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:#fff;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
@@ -493,7 +515,7 @@
       '  text-transform:uppercase;letter-spacing:.14em}',
       '.' + AUÐK + '-h3:first-child{margin-top:0}',
       '#' + AUÐK + '-efni > p{color:#3a4250}',
-      '.' + AUÐK + '-tafla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff;border-radius:6px;overflow:hidden;',
+      '.' + AUÐK + '-tafla{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:#fff;border-radius:6px;overflow:hidden;overflow:clip;',
       '  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
       '.' + AUÐK + '-tafla th{text-align:left;font-family:\"JetBrains Mono\",ui-monospace,monospace;font-size:10px;text-transform:uppercase;',
       '  letter-spacing:.14em;color:#eef1f4;padding:8px 10px;background:linear-gradient(180deg,#2b2f37,#15171c);border-bottom:1px solid #000;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.5)}',
@@ -646,19 +668,9 @@
     return s1.localeCompare(s2, 'is');
   }
 
-  function htmlSlokkvitaeki() {
-    var h = '<div class="' + AUÐK + '-h3">Tengingar — tegund og stærð → þjónustulína</div>';
-    if (G.tegundaVilla) {
-      h += '<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:12.5px">' +
-        'Tækjategundir sóttust ekki: ' + esc(G.tegundaVilla) + '</div>';
-      return h;
-    }
-    h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
-      'Sé engin tenging skráð giskar ársskoðunin á þjónustulínu út frá heitinu — og hún krefst þess EKKI ' +
-      'að stærðin passi. Þess vegna fékk „Léttvatn 9 L" verð 6 L tækisins. Rauðar línur eru þær sem ' +
-      'giskið hittir ekki á rétta stærð. Val í reitnum vistast strax; „✓ Staðfesta" festir rétta ágiskun.</p>';
-
-    // 1) Reikna allar línur fyrst, 2) raða, 3) teikna.
+  // Allar línur (tegund · stærð · yfirferð/hleðsla) með stöðu og vali — sameiginlegt verðlista-sýninni og tengingar-sýninni.
+  // Út úr htmlSlokkvitaeki() 09.11.2026 óbreytt (stöðurnar og hermunin á 129 eru sú sama í báðum sýnum).
+  function reiknaLinur() {
     var linur = [];
     G.tegundir.forEach(function (t) {
       SVAR_KIND.forEach(function (kind) {
@@ -708,6 +720,229 @@
         });
       });
     });
+    return linur;
+  }
+
+  // ── gluggi 1: slökkvitæki — tvær sýnir (09.11.2026) ─────────────────────────
+  // Agnar 09.11.2026: „Mér fynnst skelfilega erfitt að notast við slökkvitækjaþjónustuverðin, geturðu sett sama format og er
+  // á brunakerfisþjónustunni". Sjálfgefið er nú VERÐLISTI í sama sniði og htmlBrunakerfi(): Liður · Verð (án vsk) í reit sem
+  // vistast við breytingu · „Telur búnaðarlínu". Hver þjónustulína kemur EINU SINNI þótt mörg tæki deili henni (áður sama
+  // verðið í fjórum röðum fyrir Brunaslöngur og ✎ Vara þurfti til að breyta því). Verðið býr á vörunni (vorur.verd_an_vsk) —
+  // sami reitur og Birgðir (36) og ✎ Vara skrifa. Tengingarnar (tegund · stærð → lína, ✓ Staðfesta, ný tegund) eru óbreyttar og
+  // búa í hinni sýninni: ✎ Tengingar í hausnum. Línur sem fá rangt verð eða ekkert á reikning birtast efst svo þær týnist ekki.
+  var _syn = 'verd';   // 'verd' | 'tengingar' — aðeins meðan glugginn er opinn; opna() velur sýnina
+  function htmlSlokkvitaeki() { return _syn === 'tengingar' ? htmlSlokkvitaekiTengingar() : htmlSlokkvitaekiVerd(); }
+
+  // toLocaleString('is-IS') fellur stundum í en-US — sniðið er reiknað hér (sama regla og verdInn)
+  function tugaDot(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function verdSnid(n) {   // 4345.97 → „4.345,97" · 3150 → „3.150" · 3387.1 → „3.387,1"
+    var x = Number(n); if (!isFinite(x)) return '';
+    var d = (Math.round(x * 100) / 100).toFixed(2).split('.');
+    var heil = d[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return d[1] === '00' ? heil : heil + ',' + d[1].replace(/0$/, '');
+  }
+  function mvskTexti(an, vsk) { var n = Number(an); return isFinite(n) ? tugaDot(n * (1 + (Number(vsk) || 24) / 100)) + ' kr m/vsk' : ''; }
+  function mvskUppfaera(inp) {
+    var s = inp.parentNode && inp.parentNode.querySelector('.' + AUÐK + '-mvsk'); if (!s) return;
+    var n = verdTala(inp.value);
+    s.textContent = n == null ? '' : mvskTexti(n, inp.dataset.vsk);
+  }
+
+  // ── hópaskipting verðlistanna (09.11.2026) ────────────────────────────────
+  // hopar = [{ id, heiti, radir: [<tr>…], eining: [eintala, fleirtala] }] — hausröð (þunn lína + litlir hástafir + fjöldi) á undan
+  // hverjum hóp og flýtihnappar milli hópa. Hausraðirnar teljast ekki sem raðir (beitaSiu) og hverfa þegar sían tæmir hóp.
+  function fjoldiTxt(n, eining) { return n + ' ' + (n === 1 ? eining[0] : eining[1]); }
+  function hopaTafla(hopar) {
+    var haus = '', chips = '';
+    hopar.forEach(function (H) {
+      if (!H.radir.length) return;
+      haus += '<tr class="' + AUÐK + '-hopur" data-hopur="' + esc(H.id) + '"><td colspan="3">' + esc(H.heiti) +
+        '<span class="' + AUÐK + '-hopur-fj">' + fjoldiTxt(H.radir.length, H.eining) + '</span></td></tr>' + H.radir.join('');
+      chips += '<button type="button" class="' + AUÐK + '-hopar-takki" data-hopur-id="' + esc(H.id) + '" title="Fara í hópinn ' + esc(H.heiti) + '">' +
+        esc(H.heiti) + '<span>' + H.radir.length + '</span></button>';
+    });
+    return { tbody: haus, chips: chips && hopar.filter(function (H) { return H.radir.length; }).length > 1 ? '<div class="' + AUÐK + '-hopar">' + chips + '</div>' : '' };
+  }
+  // fyrirsögn og undirtexti hauss eftir sýn (✎ Tengingar ↔ ← Verðlisti)
+  function uppfaeraHaus() {
+    if (_flokkur !== 'slokkvitaeki') return;
+    var f = FLOKKAR.slokkvitaeki, tengdar = _syn === 'tengingar';
+    var b = document.getElementById(AUÐK + '-tengingar'), p = document.querySelector('#' + AUÐK + '-haus p');
+    if (b) {
+      b.textContent = tengdar ? '← Verðlisti' : '✎ Tengingar';
+      b.title = tengdar ? 'Aftur í verðlistann' : 'Tengingar — hvaða tegund og stærð hver þjónustulína telur';
+    }
+    if (p) p.textContent = tengdar ? f.undirTengingar : f.undir;
+  }
+
+  // Verð þjónustulínu breytt beint í listanum → vorur.verd_an_vsk (án vsk). Sama skrif og Birgðir (36 vistaSoluverd);
+  // POS.invalidateVorur() svo Sala og reikningaflæðin lesi nýja verðið strax. Reiturinn segir satt: grænn = vistað,
+  // rauður = EKKI vistað (gildið stendur áfram í reitnum). Listinn er ekki endurteiknaður — aðeins reiturinn (Stöðugt viðmót).
+  async function vistaVoruVerd(inp) {
+    var v = vara(inp.dataset.varaVerd);
+    if (!v) { inp.classList.add('villa'); segja('Fann ekki línuna í vörulistanum — endurhlaða gluggann', true); return; }
+    var n = verdTala(inp.value);
+    if (n == null || n < 0) { inp.classList.add('villa'); segja('Ógilt verð — skrifaðu tölu, t.d. 3.150', true); return; }
+    n = Math.round(n * 100) / 100;
+    if (v.verd_an_vsk != null && Number(v.verd_an_vsk) === n) { inp.classList.remove('villa'); inp.value = verdSnid(n); mvskUppfaera(inp); return; }
+    var sb = SB();
+    if (!sb) { inp.classList.add('villa'); segja('Engin gagnabankatenging — ekkert vistað', true); return; }
+    inp.disabled = true;
+    try {
+      var r = await sb.from('vorur').update({ verd_an_vsk: n }).eq('id', v.id).select('id,verd_an_vsk').maybeSingle();
+      if (r.error || !r.data) throw new Error((r.error && r.error.message) || 'engin röð uppfærð');
+      v.verd_an_vsk = r.data.verd_an_vsk;
+      try { if (window.POS && typeof POS.invalidateVorur === 'function') POS.invalidateVorur(); } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent('thjonustu-tengingar-breytt', { detail: { vara_id: v.id, verd_an_vsk: n } })); } catch (_) {}
+      inp.classList.remove('villa'); inp.classList.add('ok'); inp.value = verdSnid(n); mvskUppfaera(inp);
+      segja(v.nafn + ': ' + verdSnid(n) + ' kr án vsk vistað ✓');
+      setTimeout(function () { inp.classList.remove('ok'); }, 1800);
+    } catch (e) {
+      inp.classList.add('villa'); segja('Vistaðist EKKI: ' + String((e && e.message) || e), true);
+    } finally { inp.disabled = false; }
+  }
+
+  function htmlSlokkvitaekiVerd() {
+    var h = '<div class="' + AUÐK + '-h3">Verðlisti slökkvitækjaþjónustu</div>';
+    if (G.tegundaVilla) {
+      return h + '<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:12.5px">' +
+        'Tækjategundir sóttust ekki: ' + esc(G.tegundaVilla) + '</div>';
+    }
+    h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
+      'Þjónustulínurnar sem ársskoðunin og reikningarnir rukka eftir. Verðið býr á vörunni sjálfri (sama verð og í Vörur og þjónusta). ' +
+      '<b>Verð má breyta beint hér</b> (vistast um leið og farið er úr reitnum, fyrir allar vélar). ' +
+      'Hvaða tegund og stærð hver liður telur og nýjar tengingar: <b>✎ Tengingar</b> í hausnum.</p>';
+
+    // ── gögn: ein röð per þjónustulína, með því sem hún telur ──
+    var STADA = { skrad: 0, sjalf: 1, rangt: 2, ekkert: 3 };
+    var linur = reiknaLinur();
+    var radir = {}, rodina = [], athuga = {}, giskad = 0;
+    function fa(id) {
+      var k = String(id);
+      if (!radir[k]) { radir[k] = { v: vara(id), notkun: {}, uses: [], kindRod: 1 }; rodina.push(radir[k]); }
+      return radir[k];
+    }
+    linur.forEach(function (L) {
+      var ekkiRukka = !!(L.tg && L.tg.ekki_rukka), k = L.tegund + '|' + L.staerd;
+      if (L.valinn && !ekkiRukka && vara(L.valinn)) {
+        var R = fa(L.valinn);
+        var U = R.notkun[k] || (R.notkun[k] = { tegund: L.tegund, staerd: L.staerd, fjoldi: L.fjoldi, kinds: [], fl: 'skrad', txt: '', titl: '' });
+        U.kinds.push(L.kind[0]);
+        if (STADA[L.fl] > STADA[U.fl]) { U.fl = L.fl; U.txt = L.txt; U.titl = L.titl; }
+      }
+      if (L.fl === 'sjalf') giskad++;
+      if (!ekkiRukka && (L.fl === 'ekkert' || L.fl === 'rangt')) {
+        var A = athuga[k] || (athuga[k] = { k: k, tegund: L.tegund, staerd: L.staerd, fjoldi: L.fjoldi, kinds: [], fl: 'ekkert', txts: [], titl: L.titl });
+        A.kinds.push(L.kind[0]);
+        if (L.fl === 'rangt') A.fl = 'rangt';
+        if (A.txts.indexOf(L.txt) < 0) A.txts.push(L.txt);
+      }
+    });
+    // þjónustulínur sem ekkert tæki telur — sýndar líka (eins og „— ekki talið —" í brunakerfislistanum)
+    G.vorur.forEach(function (p) { if (p.flokkur === 'Þjónusta') fa(p.id); });
+    rodina.forEach(function (R) {
+      R.uses = Object.keys(R.notkun).map(function (k) { return R.notkun[k]; });
+      R.uses.sort(function (a, b) { return bera(a, b, 'tegund') || bera(a, b, 'staerd'); });
+      R.kindRod = R.uses.some(function (u) { return u.kinds.indexOf('yfirferd') >= 0; }) ? 0 : 1;
+    });
+    rodina.sort(function (a, b) {
+      var an = a.uses.length ? 0 : 1, bn = b.uses.length ? 0 : 1;
+      if (an !== bn) return an - bn;
+      if (an === 0) {
+        var r = bera(a.uses[0], b.uses[0], 'tegund') || bera(a.uses[0], b.uses[0], 'staerd') || (a.kindRod - b.kindRod);
+        if (r) return r;
+      }
+      return String(a.v.nafn).localeCompare(String(b.v.nafn), 'is');
+    });
+
+    // ── Þarf að skoða: tegundir/stærðir sem fá rangt verð eða ekkert á reikning ──
+    var ath = Object.keys(athuga).map(function (k) { return athuga[k]; });
+    function kindTxt(kinds) {
+      return SVAR_KIND.filter(function (x) { return kinds.indexOf(x[0]) >= 0; }).map(function (x) { return x[1].toLowerCase(); }).join(' + ');
+    }
+    if (ath.length) {
+      ath.sort(function (a, b) { return (b.fjoldi - a.fjoldi) || bera(a, b, 'tegund') || bera(a, b, 'staerd'); });
+      h += '<div class="' + AUÐK + '-athugun"><b>Þarf að skoða · ' + ath.length + '</b> — fá rangt verð eða ekkert á reikning. ' +
+        'Veldu línu í ✎ Tengingar:<ul>' + ath.map(function (A) {
+          return '<li><span class="' + AUÐK + '-merki ' + AUÐK + '-m-' + A.fl + '" title="' + esc(A.titl) + '">' + esc(A.txts.join(' · ')) + '</span>' +
+            '<span><b>' + esc(A.tegund) + '</b> ' + esc(A.staerd || 'án stærðar') + ' · ' + kindTxt(A.kinds) + ' · ' +
+            (A.fjoldi ? tugaDot(A.fjoldi) + ' tæki' : 'engin tæki') + '</span>' +
+            '<button type="button" class="' + AUÐK + '-vara-takki" data-tengja="' + esc(A.k) + '" title="Opna Tengingar á þessari línu">Tengja</button></li>';
+        }).join('') + '</ul></div>';
+    }
+    if (giskad) {
+      h += '<p style="margin:0 0 8px;font-size:11.5px;color:#6b7483;line-height:1.5">' + giskad + ' línur eiga enga skráða tengingu — ársskoðunin giskar á þjónustulínu (merkt GISKAÐ hér að neðan). ' +
+        '„✓ Staðfesta" í ✎ Tengingar festir ágiskunina.</p>';
+    }
+
+    // ── taflan: Liður · Verð (án vsk) · Telur búnaðarlínu ──
+    function telurHtml(R) {
+      if (!R.uses.length) return '<em style="color:#94a3b8">— ekki talið —</em>';
+      var hop = [], idx = {};
+      R.uses.forEach(function (U) {
+        var H = idx[U.tegund];
+        if (!H) { H = idx[U.tegund] = { tegund: U.tegund, st: [], fjoldi: 0, kinds: [], fl: 'skrad', txt: '', titl: '' }; hop.push(H); }
+        H.st.push(U.staerd || ''); H.fjoldi += U.fjoldi;
+        U.kinds.forEach(function (k) { if (H.kinds.indexOf(k) < 0) H.kinds.push(k); });
+        if (STADA[U.fl] > STADA[H.fl]) { H.fl = U.fl; H.txt = U.txt; H.titl = U.titl; }
+      });
+      return hop.map(function (H) {
+        return '<div style="margin:1px 0"><b style="color:#141822">' + esc(H.tegund) + '</b> ' +
+          esc(H.st.map(function (x) { return x || 'án stærðar'; }).join(' · ')) +
+          ' <span style="color:#94a3b8">· ' + kindTxt(H.kinds) + ' · ' + (H.fjoldi ? tugaDot(H.fjoldi) + ' tæki' : 'engin tæki') + '</span>' +
+          (H.fl !== 'skrad' ? ' <span class="' + AUÐK + '-merki ' + AUÐK + '-m-' + H.fl + '" title="' + esc(H.titl) + '">' + esc(H.txt) + '</span>' : '') + '</div>';
+      }).join('');
+    }
+    function radHtml(R) {
+      var v = R.v, an = v.verd_an_vsk;
+      return '<tr data-vara="' + esc(v.id) + '"><td style="font-weight:700;color:#0f172a">' + esc(v.nafn) +
+        (v.flokkur !== 'Þjónusta' ? ' <small style="font-weight:500;color:#845400">vara</small>' : '') + '</td>' +
+        '<td style="text-align:right;white-space:nowrap">' +
+          '<input class="' + AUÐK + '-verd' + (an == null ? ' villa' : '') + '" type="text" inputmode="decimal" data-vara-verd="' + esc(v.id) + '" data-vsk="' + esc(v.vsk_prosenta || 24) + '" ' +
+            'value="' + esc(an == null ? '' : verdSnid(an)) + '" placeholder="vantar" aria-label="Verð án vsk: ' + esc(v.nafn) + '"> <span class="' + AUÐK + '-kr">kr</span>' +
+          '<small class="' + AUÐK + '-mvsk">' + esc(an == null ? '' : mvskTexti(an, v.vsk_prosenta)) + '</small></td>' +
+        '<td style="color:#5b6573;overflow-wrap:anywhere">' + telurHtml(R) + '</td></tr>';
+    }
+    // Akstur og Skýrslugerð (Agnar 09.11.2026: „vantar inn á slökkvitækjaþjónustuna verðlistann Akstur og skýrslugerð, verðin
+    // sem eru default í úttektarskoðuninni"): verðin koma LIFANDI úr window.SlokkVisitDefaults (129) — sömu einu heimild og
+    // úttektarskoðunin (129), reikningsleiðin (165) og viðbótarúttektin (488) lesa — svo listinn getur ekki sagt annað en
+    // reikningurinn. Þau eru föst í kóða, ekki á þjóninum, svo reiturinn er læstur (readonly) hér.
+    var D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+    function fastRad(nafn, an, telur) {
+      return '<tr data-fast="1"><td style="font-weight:700;color:#0f172a">' + esc(nafn) + '</td>' +
+        '<td style="text-align:right;white-space:nowrap"><input class="' + AUÐK + '-verd" type="text" readonly tabindex="-1" value="' + esc(verdSnid(an)) + '" ' +
+          'title="Sjálfgefið verð í úttektarskoðuninni — fast í kerfinu, breytist ekki hér" aria-label="Verð án vsk: ' + esc(nafn) + ' (sjálfgefið í úttektarskoðun, læst)"> <span class="' + AUÐK + '-kr">kr</span>' +
+          '<small class="' + AUÐK + '-mvsk">' + esc(mvskTexti(an, 24)) + ' · sjálfgefið í úttekt</small></td>' +
+        '<td style="color:#5b6573">' + telur + '</td></tr>';
+    }
+    // hópar: ein tegund = einn hópur (tegundaröð listans), svo fastar línur úttektarinnar, svo línur sem ekkert tæki telur
+    var hopar = [], hIdx = {};
+    function hopur(id, heiti) { if (!hIdx[id]) { hIdx[id] = { id: id, heiti: heiti, radir: [], eining: ['lína', 'línur'] }; hopar.push(hIdx[id]); } return hIdx[id]; }
+    rodina.forEach(function (R) { if (R.uses.length) hopur('t:' + R.uses[0].tegund, R.uses[0].tegund).radir.push(radHtml(R)); });
+    var fast = hopur('fast', 'Akstur og skýrslugerð');
+    fast.radir.push(fastRad('Akstur', D.akstur, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn · × ' + esc(D.driveQty != null ? D.driveQty : 1) + '</span>'));
+    fast.radir.push(fastRad('Skýrslugerð', D.skyrslugerd, '<b style="color:#141822">Úttektarskoðun</b> <span style="color:#94a3b8">· á hverja heimsókn</span>'));
+    rodina.forEach(function (R) { if (!R.uses.length) hopur('onnur', 'Aðrar þjónustulínur').radir.push(radHtml(R)); });
+    var hh = hopaTafla(hopar);
+    h += hh.chips + '<table class="' + AUÐK + '-tafla"><thead><tr>' +
+      '<th>Liður</th><th style="text-align:right">Verð (án vsk)</th><th>Telur búnaðarlínu</th></tr></thead><tbody>' + hh.tbody + '</tbody></table>';
+    return h + nyttSvaediHtml();
+  }
+
+  function htmlSlokkvitaekiTengingar() {
+    var h = '<div class="' + AUÐK + '-h3">Tengingar — tegund og stærð → þjónustulína</div>';
+    if (G.tegundaVilla) {
+      h += '<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:12.5px">' +
+        'Tækjategundir sóttust ekki: ' + esc(G.tegundaVilla) + '</div>';
+      return h;
+    }
+    h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
+      'Sé engin tenging skráð giskar ársskoðunin á þjónustulínu út frá heitinu — og hún krefst þess EKKI ' +
+      'að stærðin passi. Þess vegna fékk „Léttvatn 9 L" verð 6 L tækisins. Rauðar línur eru þær sem ' +
+      'giskið hittir ekki á rétta stærð. Val í reitnum vistast strax; „✓ Staðfesta" festir rétta ágiskun.</p>';
+
+    // 1) Reikna allar línur fyrst, 2) raða, 3) teikna.
+    var linur = reiknaLinur();
     linur.sort(function (a, b) {
       var r = bera(a, b, RODUN.dalkur);
       if (r) return RODUN.upp ? r : -r;
@@ -801,17 +1036,35 @@
         'Enginn verðlisti fannst — opnaðu ✎ Breyta verðlista til að vista hann fyrst.</div>';
       return h;
     }
-    h += '<table class="' + AUÐK + '-tafla"><thead><tr>' +
-      '<th>Liður</th><th style="text-align:right">Verð (án vsk)</th><th>Telur búnaðarlínu</th>' +
-      '</tr></thead><tbody>';
+    // 09.11.2026 (Agnar, með rauðum strikum á skjáskoti: „raðað eða skipulagt listana aðeins … mjóar línur og litlir stafir
+    // fyrir vörur"): listinn skiptist í hópa — Skoðun · Vinna og akstur · (Önnur þjónusta) · Vörur — með þunnri línu og litlum
+    // hástöfum á undan hverjum. Röðin INNAN hóps er sú sem vistuð er í listanum; `i` er áfram vísitalan í fullum lista
+    // (data-vi), svo vistunin hittir réttan lið þótt hóparnir birtist í annarri röð en hann er vistaður í. „+ 6-9m hæð"
+    // o.þ.h. (álag á línuna fyrir ofan) er dregið inn undir hana. Hópurinn er ráðinn af heitinu/teg — liður sem er nýr
+    // og passar hvergi lendir í „Önnur þjónusta" frekar en að týnast.
+    function hopurLidar(it) {
+      if (it.teg === 'vara') return 'vorur';
+      var n = String(it.name || '').trim();
+      if (/^(akstur|vinna)/i.test(n)) return 'vinna';
+      if (/^(skoðun|\+|samantekt)/i.test(n)) return 'skodun';
+      return 'annad';
+    }
+    var HOPAR_BK = [['skodun', 'Skoðun'], ['vinna', 'Vinna og akstur'], ['annad', 'Önnur þjónusta'], ['vorur', 'Vörur']];
+    var bkHopar = HOPAR_BK.map(function (x) { return { id: x[0], heiti: x[1], radir: [], eining: ['liður', 'liðir'] }; });
     listi.forEach(function (it, i) {
-      h += '<tr><td style="font-weight:700;color:#0f172a">' + esc(it.name) + (it.teg === 'vara' ? ' <small style="font-weight:500;color:#845400">vara</small>' : '') + '</td>' +
+      var vidb = /^\s*\+/.test(String(it.name || ''));
+      var rad = '<tr' + (vidb ? ' class="' + AUÐK + '-vidb"' : '') + '><td style="font-weight:700;color:#0f172a">' + esc(it.name) + '</td>' +
         '<td style="text-align:right">' + (BK && BK.savePriceItems
           ? '<input class="' + AUÐK + '-verd" type="text" inputmode="decimal" data-vi="' + i + '" data-nafn="' + esc(it.name) + '" value="' + esc(verdInn(it.price)) + '" aria-label="Verð án vsk: ' + esc(it.name) + '"> <span class="' + AUÐK + '-kr">kr</span>'
           : kr(it.price)) + '</td>' +
-        '<td style="color:#5b6573;overflow-wrap:anywhere">' + (it.link ? esc(it.link) : '<em style="color:#94a3b8">— ekki talið —</em>') + '</td></tr>';
+        '<td style="color:#5b6573;overflow-wrap:anywhere">' + (it.link ? '<span class="' + AUÐK + '-tengill">' + esc(it.link) + '</span>' : '<em style="color:#94a3b8">— ekki talið —</em>') + '</td></tr>';
+      var id = hopurLidar(it);
+      bkHopar.filter(function (H) { return H.id === id; })[0].radir.push(rad);
     });
-    h += '</tbody></table>';
+    var bh = hopaTafla(bkHopar);
+    h += bh.chips + '<table class="' + AUÐK + '-tafla"><thead><tr>' +
+      '<th>Liður</th><th style="text-align:right">Verð (án vsk)</th><th>Telur búnaðarlínu</th>' +
+      '</tr></thead><tbody>' + bh.tbody + '</tbody></table>';
     // nýr liður neðst (Agnar 14.10: „og bætt við línu neðst") — heiti · verð · þjónusta/vara; tengingin er valin í ritlinum
     if (BK && BK.savePriceItems) {
       h += '<div class="' + AUÐK + '-nyr" id="' + AUÐK + '-nyr">' +
@@ -1029,12 +1282,16 @@
   function beitaSiu(efni) {
     var q = _sia.trim().toLowerCase();
     var tafla = efni.querySelector('.' + AUÐK + '-tafla'); if (!tafla) return;
-    var alls = 0, synd = 0;
+    var alls = 0, synd = 0, haus = null, hausSynd = 0;
+    // hópahausar (verðlistarnir) teljast ekki sem raðir og hverfa þegar sían skilur enga línu eftir í hópnum
+    function lokaHaus() { if (haus) haus.hidden = !!q && !hausSynd; }
     tafla.querySelectorAll('tbody tr').forEach(function (tr) {
+      if (tr.classList.contains(AUÐK + '-hopur')) { lokaHaus(); haus = tr; hausSynd = 0; return; }
       alls++;
       var inn = !q || tr.textContent.toLowerCase().indexOf(q) >= 0 || Array.prototype.some.call(tr.querySelectorAll('input'), function (i) { return String(i.value || '').toLowerCase().indexOf(q) >= 0; });
-      tr.hidden = !inn; if (inn) synd++;
+      tr.hidden = !inn; if (inn) { synd++; hausSynd++; }
     });
+    lokaHaus();
     var f = efni.querySelector('.' + AUÐK + '-fjoldi');
     if (f) f.textContent = q ? synd + ' af ' + alls : alls + (alls === 1 ? ' röð' : ' raðir');
   }
@@ -1044,10 +1301,11 @@
     var aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(efni) : null;
     efni.innerHTML = _flokkur === 'slokkvitaeki' ? htmlSlokkvitaeki()
       : _flokkur === 'brunakerfi' ? htmlBrunakerfi() : _flokkur === 'verkstaedi' ? htmlVerkstaedi() : _flokkur === 'vinnulidir' ? htmlVinnulidir() : htmlSlokkvikerfi();
-    // sían fer á undan fyrstu töflunni — sama staðsetning í öllum listunum
-    var fyrstaTafla = efni.querySelector('.' + AUÐK + '-tafla');
-    if (fyrstaTafla) fyrstaTafla.insertAdjacentHTML('beforebegin', siaHtml());
+    // sían fer á undan fyrstu töflunni — sama staðsetning í öllum listunum (hópahnapparnir, ef þeir eru, sitja undir henni)
+    var anker = efni.querySelector('.' + AUÐK + '-hopar') || efni.querySelector('.' + AUÐK + '-tafla');
+    if (anker) anker.insertAdjacentHTML('beforebegin', siaHtml());
     beitaSiu(efni);
+    uppfaeraHaus();
     if (aftur) aftur();
   }
 
@@ -1201,6 +1459,8 @@
   // `fokus` = { tegund, staerd } — línan sem sendandinn var að skoða lýsist upp.
   async function opna(flokkur, fokus) {
     _flokkur = FLOKKAR[flokkur] ? flokkur : 'slokkvitaeki';
+    // slökkvitæki: verðlistinn er sjálfgefin sýn; sendi 128/129 línu (fokus) opnast tengingar-sýnin þar sem línan lýsist upp
+    _syn = (_flokkur === 'slokkvitaeki' && fokus && fokus.tegund) ? 'tengingar' : 'verd';
     VL.items = null;   // vinnuliðir: lesa ferskt af þjóni við hverja opnun
     _sia = '';
     stilar();
@@ -1219,6 +1479,8 @@
           (_flokkur === 'brunakerfi' ? '<button id="' + AUÐK + '-breyta" type="button" title="Breyta verðlistanum — heiti, verð og tengingar, vistast fyrir allar vélar">✎ Breyta verðlista</button>' +
             '<button id="' + AUÐK + '-tilbod" type="button" title="Opna Tilboð — Brunaviðvörunarkerfi með verðunum úr þessum lista (magn, afsláttur á línu, eigin línur)">Búa til tilboð</button>' +
             '<button id="' + AUÐK + '-prenta" type="button" title="Prenta verðlistann á A4 með haus Slökkvitækis — verð án og með vsk">Prenta verðlista</button>' : '') +
+          // slökkvitæki: ✎ Tengingar ↔ ← Verðlisti (texti og titill settir í uppfaeraHaus)
+          (_flokkur === 'slokkvitaeki' ? '<button id="' + AUÐK + '-tengingar" type="button">✎ Tengingar</button>' : '') +
           '<button id="' + AUÐK + '-loka" type="button" aria-label="Loka">✕</button>' +
         '</div>' +
         '<div id="' + AUÐK + '-stada"></div>' +
@@ -1229,6 +1491,14 @@
     if (window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta();
     bak.addEventListener('click', function (e) { if (e.target === bak) loka(); });
     document.getElementById(AUÐK + '-loka').addEventListener('click', loka);
+    uppfaeraHaus();
+    var synTakki = document.getElementById(AUÐK + '-tengingar');
+    if (synTakki) synTakki.addEventListener('click', function () {
+      if (!G.hlaðið) return;
+      _syn = _syn === 'tengingar' ? 'verd' : 'tengingar'; _sia = '';
+      teikna();
+      var ef = document.getElementById(AUÐK + '-efni'); if (ef) ef.scrollTop = 0;
+    });
     var breyta = document.getElementById(AUÐK + '-breyta');
     if (breyta) breyta.addEventListener('click', function () {
       loka();
@@ -1249,13 +1519,17 @@
     // verðreitir brunakerfis-listans: change (blur / Enter) vistar; Enter fer úr reitnum svo change kvikni
     bak.addEventListener('input', function (e) {
       var t = e.target; if (t && t.classList && t.classList.contains(AUÐK + '-sia')) { _sia = t.value; var ef = document.getElementById(AUÐK + '-efni'); if (ef) beitaSiu(ef); }
+      if (t && t.dataset && t.dataset.varaVerd) mvskUppfaera(t);   // verðlisti slökkvitækja: „m/vsk" undir reitnum fylgir innslættinum
     });
     bak.addEventListener('change', function (e) {
       var t = e.target; if (!t || !t.classList) return;
       if (t.classList.contains(AUÐK + '-vl-nafn')) { vinnulidurBreyting(bak, 'nafn', t); return; }
       if (t.classList.contains(AUÐK + '-vl-verd')) { vinnulidurBreyting(bak, 'verd', t); return; }
       if (t.id === AUÐK + '-vl-nyr-nafn' || t.id === AUÐK + '-vl-nyr-verd') return;   // nýi liðurinn vistast með takkanum / Enter
-      var inp = t.closest && t.closest('.' + AUÐK + '-verd'); if (inp) vistaVerd(inp);
+      if (t.dataset && t.dataset.varaVerd) { vistaVoruVerd(t); return; }   // slökkvitækja-verðlistinn → vorur.verd_an_vsk
+      // aðeins reitir brunakerfis-listans bera data-vi — nýju-línu reitirnir (-nyr-verd, -n-verd, -n-vsk) vistast með takka/Enter
+      // og áttu aldrei að fara hingað (gáfu „Fann ekki liðinn" og rauðan ramma við hvert blur)
+      var inp = t.closest && t.closest('.' + AUÐK + '-verd'); if (inp && inp.dataset.vi != null) vistaVerd(inp);
     });
     bak.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' || !e.target || !e.target.classList) return;
@@ -1267,6 +1541,22 @@
       var b = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-nyr-baeta'); if (b) { baetaVidLid(bak); return; }
       var vlb = e.target && e.target.closest && e.target.closest('#' + AUÐK + '-vl-baeta'); if (vlb) { vinnulidurBreyting(bak, 'baeta'); return; }
       var vle = e.target && e.target.closest && e.target.closest('[data-vl-eyda]'); if (vle) { vinnulidurBreyting(bak, 'eyda', vle); return; }
+      // „Tengja" í Þarf að skoða → tengingar-sýnin, línan lýst upp (data-tengja = tegund|stærð eins og data-linu)
+      var tj = e.target && e.target.closest && e.target.closest('[data-tengja]');
+      if (tj) {
+        var tk = tj.getAttribute('data-tengja');
+        _syn = 'tengingar'; _sia = ''; teikna();
+        var tr = Array.prototype.filter.call(bak.querySelectorAll('tr[data-linu]'), function (x) { return x.getAttribute('data-linu') === tk; })[0];
+        if (tr) { tr.classList.add(AUÐK + '-fokus'); tr.scrollIntoView({ block: 'center' }); }
+        return;
+      }
+      // flýtihnappar milli hópa í verðlistunum: skruna hópahausnum efst í listann (undir fasta dálkahausnum)
+      var hb = e.target && e.target.closest && e.target.closest('[data-hopur-id]');
+      if (hb) {
+        var hr = Array.prototype.filter.call(bak.querySelectorAll('tr.' + AUÐK + '-hopur'), function (x) { return x.getAttribute('data-hopur') === hb.getAttribute('data-hopur-id'); })[0];
+        if (hr && !hr.hidden) hr.scrollIntoView({ block: 'start' });
+        return;
+      }
       var ny = e.target && e.target.closest && e.target.closest('[data-ny-vara]');
       if (ny) { loka(); if (window.VorurOgThjonusta && VorurOgThjonusta.ny) VorurOgThjonusta.ny(); else segja('Vöruritillinn er ekki hlaðinn', true); return; }
       var v = e.target && e.target.closest && e.target.closest('[data-vara-opna]');
