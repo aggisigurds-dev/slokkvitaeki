@@ -251,7 +251,7 @@ async function dagskra(dagar) {
       const t = String(s.dagnotur[d] || '').trim();
       if (t && d >= fra && d <= til) ut.push({ dags: d, hver: nafn, texti: t });
     });
-    (s.checklisti || []).forEach((c) => {
+    (s.checklisti || []).concat(s.checklisti2 || []).forEach((c) => {
       if (c && c.done !== true && String(c.t || '').trim()) {
         check.push({ hver: nafn, texti: String(c.t).trim(), stjarna: !!(Number(c.star) > 0) });
       }

@@ -186,6 +186,8 @@
     // skipulagsborð sem er 3/5 breidd hægra megin, og síðan geta fengið heilbreidd skipulagsborð líka").
     // Litla borðið sýnir SÖMU spjöld og 05 — aðeins sjálfgefin breidd er önnur (⅗ við hlið checklistans).
     checklisti: { n: '23', t: 'Checklisti', d: 'Einfaldur listi: skrifa atriði, haka við þegar það er klárað. Bara þinn.' },
+    // 09.11.2026 (Agnar: „tvo ólíka checklista … hvor um sig samanbrjótanlegur“): seinni listinn, sami kóði — gagnasvæðið er `checklisti2`.
+    checklisti2: { n: '26', t: 'Checklisti 2', d: 'Annar einfaldur listi með eigin titli. Titill og samanbrot vistast á þjóni.' },
     skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -258,7 +260,7 @@
   const BREIDD_ROD = [1, 4, 2, 5, 3];
   const BREIDD_MERKI = { 1: '⅓', 4: '⅖', 2: '½', 5: '⅗', 3: '1/1' };
   const gildBreidd = b => BREIDD_ROD.indexOf(b) >= 0;
-  const sjalfgefinBreidd = k => (k === 'checklisti' ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
+  const sjalfgefinBreidd = k => ((k === 'checklisti' || k === 'checklisti2') ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
     const b = mode && mode.breidd && mode.breidd[k];
     return gildBreidd(b) ? b : sjalfgefinBreidd(k);
@@ -322,7 +324,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], skipulag2: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], skipulag2: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -344,7 +346,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, chkTitDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
@@ -420,6 +422,7 @@
   // eftir ham: sjálfgefið opið í Kröfur-ham, samanbrotið annars staðar.
   const openKey = k => nu() + ':' + (inMode(k) || k === 'krofumal' ? cfg().mode + ':' : '') + k;
   function isOpen(k) {
+    if (CHK_FELT.indexOf(k) >= 0) return chkOpid(k);   // samanbrot checklistanna býr á þjóni (ekki í S.open)
     const key = openKey(k);
     if (!(key in S.open)) S.open[key] = inMode(k) ? true : k === 'krofumal' ? cfg().mode === 'krofur' : !!cfg().mods[k][1];
     return S.open[key];
@@ -1285,6 +1288,8 @@
       // fimm dálka þegar breiddin leyfir og fellur sjálf niður í færri á mjórra.
       '.skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:10px;align-items:start}',
       // checklisti (eining 23, 25.09.2026)
+      '.chktitill{width:100%;min-width:0;border:1px solid transparent;background:transparent;font:inherit;color:inherit;letter-spacing:inherit;padding:2px 4px;border-radius:4px;outline:none;text-overflow:ellipsis}',
+      '.chktitill:hover{border-color:var(--edge)}.chktitill:focus{background:#fff;border-color:var(--g5);color:var(--ink)}',
       '.chkl{display:flex;flex-direction:column;gap:6px;padding:12px 14px}',
       '.chk{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px;background:#fff;border:1px solid var(--edge)}',
       '.chk.done{opacity:.55}.chk.done .chkt{text-decoration:line-through}',
@@ -2901,9 +2906,9 @@
     '</section>';
   }
   function modPanel(k, summary, body, action, alltaf) {
-    const m = MODS[k], open = isOpen(k);
-    return '<section class="panel mod' + (open ? ' open' : '') + (alltaf ? ' alltaf' : '') + '" aria-label="' + esc(m.t) + '">' +
-      '<header class="phead">' + plate(m.n) + '<h2 class="ptitle">' + m.t + '</h2><span class="sum">' + summary + '</span><span class="grow"></span>' +
+    const m = MODS[k], open = isOpen(k), erChk = CHK_FELT.indexOf(k) >= 0;
+    return '<section class="panel mod' + (open ? ' open' : '') + (alltaf ? ' alltaf' : '') + '" aria-label="' + esc(erChk ? chkTitill(k) : m.t) + '">' +
+      '<header class="phead">' + plate(m.n) + (erChk ? '<h2 class="ptitle"><input class="chktitill" data-chktitill="' + k + '" value="' + esc(S.chkTitDrog[k] != null ? S.chkTitDrog[k] : chkTitill(k)) + '" placeholder="Titill listans" aria-label="Titill listans (hægt að breyta)" maxlength="60"></h2>' : '<h2 class="ptitle">' + m.t + '</h2>') + '<span class="sum">' + summary + '</span><span class="grow"></span>' +
         ((open || alltaf) && action ? action : '') +
         '<button type="button" class="btn iv sm tog" data-t5="mod-open" data-m="' + k + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Fella saman ' : 'Opna ') + esc(m.t) + '">' + (open ? '▴' : '▾') + '</button>' +
       '</header>' + (open || alltaf ? body : '') + '</section>';
@@ -2924,9 +2929,13 @@
    * S.chkCache[nafn] heldur nýjustu útgáfunni á meðan skrifið er á leiðinni svo viðmótið
    * svari strax; hún hverfur þegar þjónninn hefur staðfest.
    * ────────────────────────────────────────────────────────────────────── */
-  function chkLesa(n) {
-    if (S.chkCache[n]) return S.chkCache[n];
-    const v = P('skipulagsbord.by_staff.' + n + '.checklisti');
+  // 09.11.2026: tveir listar — f er svæðið (= lykill einingarinnar): 'checklisti' | 'checklisti2'.
+  const CHK_FELT = ['checklisti', 'checklisti2'];
+  const chkCk = (n, f) => n + '|' + f;
+  function chkLesa(n, f) {
+    f = f || 'checklisti';
+    if (S.chkCache[chkCk(n, f)]) return S.chkCache[chkCk(n, f)];
+    const v = P('skipulagsbord.by_staff.' + n + '.' + f);
     return Array.isArray(v) ? v.filter(x => x && x.id).map(x => ({ id: String(x.id), t: String(x.t || ''), done: !!x.done, star: chkStjarna(x.star) })) : [];
   }
   // 01.10.2026 (Agnar: „ýtir einu sinni … gull, aftur … rauð, og aftur þá blá og aftur þá græn, og síðan aftur þá fer
@@ -2934,50 +2943,94 @@
   // áfram „stjörnumerkt" (efst í opna listanum); liturinn fer í stjörnuna og í áferð línunnar.
   const CHK_LITIR = [null, ['gull', 'Gull'], ['raud', 'Rauð'], ['bla', 'Blá'], ['graen', 'Græn']];
   function chkStjarna(v) { if (v === true) return 1; const n = Math.floor(Number(v)); return n >= 1 && n <= 4 ? n : 0; }
-  function chkVista(n, listi) {
-    S.chkCache[n] = listi;
+  function chkVista(n, f, listi) {
+    S.chkCache[chkCk(n, f)] = listi;
     render();
     return (async () => {
       let ok = false;
-      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { checklisti: listi } } } })); } catch (_) {}
-      if (ok && S.chkCache[n] === listi) delete S.chkCache[n];
-      if (!ok) toast('Checklistinn vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { [f]: listi } } } })); } catch (_) {}
+      if (ok && S.chkCache[chkCk(n, f)] === listi) delete S.chkCache[chkCk(n, f)];
+      if (!ok) toast(chkTitill(f) + ' vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
       return ok;
     })();
   }
-  function chkBreyta(n, fn) { return chkVista(n, fn(chkLesa(n).map(x => Object.assign({}, x)))); }
+  function chkBreyta(n, f, fn) { return chkVista(n, f, fn(chkLesa(n, f).map(x => Object.assign({}, x)))); }
+  // Titill hvors lista (by_staff.<nafn>.<f>_titill) og samanbrot (by_staff.<nafn>.chk_opid.<f>) — bæði á þjóni, eins á öllum vélum.
+  const CHK_TITILL_SJALFG = { checklisti: 'Checklisti', checklisti2: 'Checklisti 2' };
+  function chkTitill(f) {
+    const v = P('skipulagsbord.by_staff.' + nu() + '.' + f + '_titill');
+    return (typeof v === 'string' && v.trim()) ? v : CHK_TITILL_SJALFG[f];
+  }
+  function chkTitillVista(f, texti) {
+    const n = nu();
+    return (async () => {
+      let ok = false;
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { [f + '_titill']: texti } } } })); } catch (_) {}
+      if (ok) { if (S.chkTitDrog[f] === texti) delete S.chkTitDrog[f]; }
+      else toast('Titillinn vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
+      return ok;
+    })();
+  }
+  const _chkOpidBid = {};
+  function chkOpid(f) {
+    const n = nu(), k = chkCk(n, f);
+    if (k in _chkOpidBid) return _chkOpidBid[k];
+    const v = P('skipulagsbord.by_staff.' + n + '.chk_opid');
+    return !!(v && v[f] === true);   // sjálfgefið samanbrotið
+  }
+  function chkOpidVista(f, opid) {
+    const n = nu(), k = chkCk(n, f);
+    _chkOpidBid[k] = opid;
+    render();
+    (async () => {
+      let ok = false;
+      try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { chk_opid: { [f]: opid } } } } })); } catch (_) {}
+      if (ok && _chkOpidBid[k] === opid) delete _chkOpidBid[k];
+      if (!ok) toast('Samanbrotið vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
+    })();
+  }
   const chkNyttId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   function checklistiHtml(k) {
     // Staðlað hér: chkVista teiknar beint úr breytingunni (S.chkCache), og nýtt atriði ber engan `star` — án þess
     // reiknaðist CHK_LITIR[NaN] og teikningin hrundi (mælt 01.10.2026: atriði bættist aldrei við).
-    const n = nu(), l = chkLesa(n).map(x => Object.assign({}, x, { star: chkStjarna(x.star) }));
+    const n = nu(), l = chkLesa(n, k).map(x => Object.assign({}, x, { star: chkStjarna(x.star) }));
     // 28.09.2026 (Agnar: „leyfa mér að draga upp og niður, eða setja stjörnumerki"): stjörnumerkt atriði efst í opna
     // listanum (röðin innan hvors hóps = röðin í fylkinu); ⋮⋮-gripið dregur atriði til með pointer-atburðum (mús OG fingur).
     const opin = l.filter(x => !x.done && x.star).concat(l.filter(x => !x.done && !x.star)), lokid = l.filter(x => x.done);
-    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + (x.star ? ' star st-' + CHK_LITIR[x.star][0] : '') + '" data-chkrod="' + esc(x.id) + '">' +
+    const rod = x => '<div class="chk' + (x.done ? ' done' : '') + (x.star ? ' star st-' + CHK_LITIR[x.star][0] : '') + '" data-chkrod="' + esc(x.id) + '" data-f="' + k + '">' +
       (x.done ? '' : '<span class="chkgrip" data-chkgrip="' + esc(x.id) + '" title="Draga upp eða niður" aria-hidden="true">⋮⋮</span>') +
-      '<button type="button" class="chkbox" data-t5="chk-tog" data-id="' + esc(x.id) + '" aria-label="' + (x.done ? 'Taka hakið af' : 'Haka við') + '">' + (x.done ? '✓' : '') + '</button>' +
-      '<input class="chkt" data-chk="t" data-id="' + esc(x.id) + '" value="' + esc(S.chkDrog[x.id] != null ? S.chkDrog[x.id] : x.t) + '" placeholder="Atriði…" aria-label="Atriði">' +
-      (x.done ? '' : '<button type="button" class="chkstj' + (x.star ? ' st-' + CHK_LITIR[x.star][0] : '') + '" data-t5="chk-star" data-id="' + esc(x.id) + '" aria-pressed="' + (x.star ? 'true' : 'false') + '" aria-label="Stjarna: ' + (x.star ? CHK_LITIR[x.star][1] : 'engin') + ' — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) + '" title="' + (x.star ? CHK_LITIR[x.star][1] + ' stjarna — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) : 'Stjörnumerkja — fer efst (gull → rauð → blá → græn)') + '">' + (x.star ? '★' : '☆') + '</button>') +
-      '<button type="button" class="chkx" data-t5="chk-del" data-id="' + esc(x.id) + '" aria-label="Eyða atriði" title="Eyða">✕</button></div>';
+      '<button type="button" class="chkbox" data-t5="chk-tog" data-f="' + k + '" data-id="' + esc(x.id) + '" aria-label="' + (x.done ? 'Taka hakið af' : 'Haka við') + '">' + (x.done ? '✓' : '') + '</button>' +
+      '<input class="chkt" data-chk="t" data-f="' + k + '" data-id="' + esc(x.id) + '" value="' + esc(S.chkDrog[x.id] != null ? S.chkDrog[x.id] : x.t) + '" placeholder="Atriði…" aria-label="Atriði">' +
+      (x.done ? '' : '<button type="button" class="chkstj' + (x.star ? ' st-' + CHK_LITIR[x.star][0] : '') + '" data-t5="chk-star" data-f="' + k + '" data-id="' + esc(x.id) + '" aria-pressed="' + (x.star ? 'true' : 'false') + '" aria-label="Stjarna: ' + (x.star ? CHK_LITIR[x.star][1] : 'engin') + ' — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) + '" title="' + (x.star ? CHK_LITIR[x.star][1] + ' stjarna — smelltu: ' + (x.star >= 4 ? 'taka stjörnu af' : 'næst ' + CHK_LITIR[x.star + 1][1].toLowerCase()) : 'Stjörnumerkja — fer efst (gull → rauð → blá → græn)') + '">' + (x.star ? '★' : '☆') + '</button>') +
+      '<button type="button" class="chkx" data-t5="chk-del" data-f="' + k + '" data-id="' + esc(x.id) + '" aria-label="Eyða atriði" title="Eyða">✕</button></div>';
     const body = '<div class="chkl">' +
       (opin.length ? opin.map(rod).join('') : '<div class="chktomt">Ekkert opið — skrifaðu fyrsta atriðið hér að neðan.</div>') +
-      '<div class="chkny"><input data-chkny="1" placeholder="Nýtt atriði … Enter bætir við" aria-label="Nýtt atriði"><button type="button" class="btn gold sm" data-t5="chk-add">+ Bæta við</button></div>' +
+      '<div class="chkny"><input data-chkny="' + k + '" placeholder="Nýtt atriði … Enter bætir við" aria-label="Nýtt atriði"><button type="button" class="btn gold sm" data-t5="chk-add" data-f="' + k + '">+ Bæta við</button></div>' +
       (lokid.length ? '<div class="chksep">Klárað · ' + lokid.length + '</div>' + lokid.map(rod).join('') : '') +
       '</div>';
-    const action = lokid.length ? '<button type="button" class="btn iv sm" data-t5="chk-hreinsa">Hreinsa kláruð</button>' : '';
+    const action = lokid.length ? '<button type="button" class="btn iv sm" data-t5="chk-hreinsa" data-f="' + k + '">Hreinsa kláruð</button>' : '';
     return modPanel(k, opin.length + ' opin · ' + lokid.length + ' klárað', body, action);
   }
   function skrifaChk(el) {
-    const n = nu(), id = el.dataset.id;
+    const n = nu(), id = el.dataset.id, f = el.dataset.f || 'checklisti';
     S.chkDrog[id] = el.value;
     bida('chk:' + id, () => {
       const t = S.chkDrog[id]; if (t == null) return;
       delete S.chkDrog[id];
-      const listi = chkLesa(n).map(x => x.id === id ? Object.assign({}, x, { t: t }) : x);
-      S.chkCache[n] = listi;
-      (async () => { let ok = false; try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { checklisti: listi } } } })); } catch (_) {} if (ok && S.chkCache[n] === listi) delete S.chkCache[n]; })();
+      const listi = chkLesa(n, f).map(x => x.id === id ? Object.assign({}, x, { t: t }) : x);
+      S.chkCache[chkCk(n, f)] = listi;
+      (async () => {
+        let ok = false; try { ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: { [n]: { [f]: listi } } } })); } catch (_) {}
+        if (ok && S.chkCache[chkCk(n, f)] === listi) delete S.chkCache[chkCk(n, f)];
+        if (!ok) toast('Textinn vistaðist ekki — í biðröð, reynt aftur sjálfkrafa', true);
+      })();
     });
+  }
+  // Titill listans: sama aðferð — drög lifa í S.chkTitDrog þar til þjónninn hefur staðfest.
+  function skrifaChkTitil(el) {
+    const f = el.dataset.chktitill;
+    S.chkTitDrog[f] = el.value;
+    bida('chkt:' + f, () => { const t = S.chkTitDrog[f]; if (t == null) return; chkTitillVista(f, t.trim() || ''); });
   }
   // Dregið með pointer-atburðum (ekki HTML5 drag — það virkar ekki á snertiskjá). Línan fylgir fingrinum, lína þar sem
   // hún lendir fær .yfir; við slepp er atriðið fært í fylkinu fyrir framan (eða aftan) þá línu og listinn vistaður heill.
@@ -2985,7 +3038,7 @@
     const grip = e.target && e.target.closest ? e.target.closest('[data-chkgrip]') : null;
     if (!grip) return;
     e.preventDefault();
-    const root = grip.getRootNode(), rodEl = grip.closest('.chk'), id = grip.dataset.chkgrip;
+    const root = grip.getRootNode(), rodEl = grip.closest('.chk'), id = grip.dataset.chkgrip, f = rodEl.dataset.f || 'checklisti';
     const y0 = e.clientY;
     let mark = null, fyrir = true;
     rodEl.classList.add('dregin');
@@ -2994,7 +3047,7 @@
     const fara = ev => {
       rodEl.style.transform = 'translateY(' + (ev.clientY - y0) + 'px)';
       hreinsa(); mark = null;
-      const radir = Array.from(root.querySelectorAll('.chk[data-chkrod]:not(.done)')).filter(x => x !== rodEl);
+      const radir = Array.from(root.querySelectorAll('.chk[data-chkrod][data-f="' + f + '"]:not(.done)')).filter(x => x !== rodEl);
       for (const r of radir) {
         const b = r.getBoundingClientRect();
         if (ev.clientY >= b.top && ev.clientY <= b.bottom) { mark = r; fyrir = ev.clientY < b.top + b.height / 2; r.classList.add(fyrir ? 'yfir-upp' : 'yfir-nidur'); break; }
@@ -3005,7 +3058,7 @@
       rodEl.classList.remove('dregin'); rodEl.style.transform = ''; hreinsa();
       if (!mark) return;
       const til = mark.dataset.chkrod;
-      chkBreyta(nu(), l => {
+      chkBreyta(nu(), f, l => {
         const i = l.findIndex(x => x.id === id); if (i < 0) return l;
         const [x] = l.splice(i, 1);
         const j = l.findIndex(y => y.id === til);
@@ -3018,13 +3071,14 @@
     };
     grip.addEventListener('pointermove', fara); grip.addEventListener('pointerup', sleppa); grip.addEventListener('pointercancel', sleppa);
   }
-  function chkBaetaVid(root) {
-    const inp = root.querySelector('[data-chkny]'); const t = inp ? inp.value.trim() : '';
+  function chkBaetaVid(root, f) {
+    f = f || 'checklisti';
+    const inp = root.querySelector('[data-chkny="' + f + '"]'); const t = inp ? inp.value.trim() : '';
     if (!t) { if (inp) inp.focus(); return; }
     const n = nu();
-    const fokus = () => { const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot, ny = r && r.querySelector('[data-chkny]'); if (ny && r.activeElement !== ny) ny.focus(); };
+    const fokus = () => { const v = document.getElementById(VIEW_ID), r = v && v.shadowRoot, ny = r && r.querySelector('[data-chkny="' + f + '"]'); if (ny && r.activeElement !== ny) ny.focus(); };
     S.chkTvinga = 1;
-    chkBreyta(n, l => l.concat([{ id: chkNyttId(), t: t, done: false }])).then(fokus);
+    chkBreyta(n, f, l => l.concat([{ id: chkNyttId(), t: t, done: false }])).then(fokus);
     fokus();   // strax, í sama smelli/Enter — sími opnar lyklaborðið aðeins við fókus innan notandaaðgerðar
   }
   // 27.09.2026: dagnóturnar eru SAMEIGINLEGAR (grein „Allir"). Dagur sem á enga sameiginlega nótu enn sýnir það sem
@@ -4375,7 +4429,7 @@
   }
   function bottomHtml(k) {
     const n = nu();
-    if (k === 'checklisti') return checklistiHtml(k);
+    if (CHK_FELT.indexOf(k) >= 0) return checklistiHtml(k);
     if (k === 'skipulag' || k === 'skipulag2') {   // 24 = sömu spjöld, önnur sjálfgefin breidd
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
@@ -6025,7 +6079,7 @@
         render();
         vistaCfg({ mode: c.mode });
         return;
-      case 'mod-open': S.open[openKey(m)] = !isOpen(m); render(); return;
+      case 'mod-open': if (CHK_FELT.indexOf(m) >= 0) { chkOpidVista(m, !isOpen(m)); return; } S.open[openKey(m)] = !isOpen(m); render(); return;
       case 'mitt-fella':
         vmSetja(MITT_FELLT_LYKILL, !mittFellt());
         render();
@@ -6118,21 +6172,21 @@
         try { Vikudagskra.open(j.date, hreint, _n); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
         return;
       }
-      case 'chk-add': { chkBaetaVid(el.getRootNode()); return; }
-      case 'chk-star': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { star: (chkStjarna(x.star) + 1) % 5 }) : x)); return; }   // gull → rauð → blá → græn → engin
-      case 'chk-tog': { const id = el.dataset.id; chkBreyta(nu(), l => l.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x)); return; }
+      case 'chk-add': { chkBaetaVid(el.getRootNode(), el.dataset.f); return; }
+      case 'chk-star': { const id = el.dataset.id; chkBreyta(nu(), el.dataset.f || 'checklisti', l => l.map(x => x.id === id ? Object.assign({}, x, { star: (chkStjarna(x.star) + 1) % 5 }) : x)); return; }   // gull → rauð → blá → græn → engin
+      case 'chk-tog': { const id = el.dataset.id; chkBreyta(nu(), el.dataset.f || 'checklisti', l => l.map(x => x.id === id ? Object.assign({}, x, { done: !x.done }) : x)); return; }
       case 'chk-del': {
-        const id = el.dataset.id, n = nu(), gamalt = chkLesa(n).find(x => x.id === id);
+        const id = el.dataset.id, n = nu(), f = el.dataset.f || 'checklisti', gamalt = chkLesa(n, f).find(x => x.id === id);
         clearTimeout(_skT['chk:' + id]); delete _skBid['chk:' + id]; delete S.chkDrog[id];
-        chkBreyta(n, l => l.filter(x => x.id !== id)).then(ok => {
-          if (ok && gamalt) toast('Atriðinu var eytt', false, () => chkBreyta(n, l => l.some(x => x.id === id) ? l : l.concat([gamalt])));
+        chkBreyta(n, f, l => l.filter(x => x.id !== id)).then(ok => {
+          if (ok && gamalt) toast('Atriðinu var eytt', false, () => chkBreyta(n, f, l => l.some(x => x.id === id) ? l : l.concat([gamalt])));
         });
         return;
       }
       case 'chk-hreinsa': {
-        const n = nu(), farin = chkLesa(n).filter(x => x.done);
-        chkBreyta(n, l => l.filter(x => !x.done)).then(ok => {
-          if (ok && farin.length) toast(farin.length + ' kláruð atriði hreinsuð', false, () => chkBreyta(n, l => l.concat(farin.filter(f => !l.some(x => x.id === f.id)))));
+        const n = nu(), f = el.dataset.f || 'checklisti', farin = chkLesa(n, f).filter(x => x.done);
+        chkBreyta(n, f, l => l.filter(x => !x.done)).then(ok => {
+          if (ok && farin.length) toast(farin.length + ' kláruð atriði hreinsuð', false, () => chkBreyta(n, f, l => l.concat(farin.filter(f => !l.some(x => x.id === f.id)))));
         });
         return;
       }
@@ -6517,6 +6571,7 @@
     else if (el && el.dataset && el.dataset.dn) skrifaDagnotu(el);
     else if (el && el.dataset && el.dataset.ov && window.ThbOakvedin) ThbOakvedin.input(el);
     else if (el && el.dataset && el.dataset.chk) skrifaChk(el);
+    else if (el && el.dataset && el.dataset.chktitill) skrifaChkTitil(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
     else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
   }
@@ -6525,7 +6580,8 @@
     if (!root || !v.classList.contains('active')) return;
     const k = e.target && e.target.dataset ? e.target.dataset.k : null;
     // Checklisti: Enter í „Nýtt atriði" bætir við; Enter í atriði vistar strax.
-    if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chkny) { e.preventDefault(); chkBaetaVid(root); return; }
+    if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chkny) { e.preventDefault(); chkBaetaVid(root, e.target.dataset.chkny); return; }
+    if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chktitill) { e.preventDefault(); skola('chkt:' + e.target.dataset.chktitill); e.target.blur(); return; }
     if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.chk) { e.preventDefault(); skola('chk:' + e.target.dataset.id); e.target.blur(); return; }
     // 18.09.2026 — innsláttarreiturinn: Ctrl/Cmd+Enter vistar strax (ekki bíða 700 ms),
     // Esc skilar textanum í það sem stendur í gagnagrunninum og lokar reitnum á korti.
