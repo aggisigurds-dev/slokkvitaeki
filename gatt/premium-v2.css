@@ -497,3 +497,69 @@ html[data-theme="premium"] #drawer .v2-bvk .v2-kt {
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
  }
 }
+
+
+/* Brunahólf V2 — samræming íhluta (2026-11-09).
+   Afmarkað við Premium. Aðeins framsetning; engin gögn eða virkni breytast. */
+html[data-theme="premium"] #portal :is(.sc,.mcard,.dpanel,.vb-panel,.v2-kort,.v2-info,.v2-lykil,.v2-naest,.v2-bun){
+  border-radius:14px;
+  border-color:var(--v2-line-soft);
+  box-shadow:var(--v2-card);
+}
+html[data-theme="premium"] #portal :is(.sc,.mcard,.dpanel,.vb-panel,.v2-kort,.v2-info,.v2-lykil,.v2-naest,.v2-bun):hover{
+  border-color:var(--v2-line);
+}
+html[data-theme="premium"] #portal :is(button,.kbtn,.gbtn,.xbtn,.v2-fb,.v2-ib){
+  transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+html[data-theme="premium"] #portal :is(button,.kbtn,.gbtn,.xbtn,.v2-fb,.v2-ib):focus-visible,
+html[data-theme="premium"] #portal :is(a,input,select,textarea):focus-visible{
+  outline:3px solid rgba(255,103,2,.55);
+  outline-offset:2px;
+}
+html[data-theme="premium"] #portal :is(.chip,.v2-pilla,.v2-flagg){
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+html[data-theme="premium"] #portal :is(.v2-irow,.v2-brow,.v2-lt,.v2-info,.v2-lykil){
+  min-width:0;
+}
+html[data-theme="premium"] #portal :is(.v2-irow,.v2-brow,.v2-lt) > *{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html[data-theme="premium"] #portal :is(.v2-nav,.seg,.fseg,.eb-seg,.chips){
+  max-width:100%;
+}
+html[data-theme="premium"] #portal :is(.v2-nav,.seg,.fseg,.eb-seg){
+  scrollbar-width:thin;
+}
+html[data-theme="premium"] #portal :is(.kj-tbl,.tbl-wrap){
+  max-width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+@media (max-width:720px){
+  html[data-theme="premium"] #portal :is(.sc,.mcard,.dpanel,.vb-panel,.v2-kort,.v2-info,.v2-lykil,.v2-naest,.v2-bun){
+    border-radius:12px;
+  }
+  html[data-theme="premium"] #portal :is(.v2-nav,.seg,.fseg,.eb-seg){
+    display:flex;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  html[data-theme="premium"] #portal :is(.v2-nav,.seg,.fseg,.eb-seg) > *{
+    flex-shrink:0;
+  }
+  html[data-theme="premium"] #portal :is(.v2-info,.v2-lykil,.v2-irow,.v2-brow){
+    max-width:100%;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  html[data-theme="premium"] #portal :is(button,.kbtn,.gbtn,.xbtn,.v2-fb,.v2-ib){
+    transition:none;
+  }
+}
