@@ -1,0 +1,257 @@
+/* Brunahólf · faithful Premium login update (2026-11-09).
+   Only #login; backend, registrations, auth handlers and the portal stay unchanged.
+   Background is a locally committed, optimized copy of the user's approved art. */
+#login[data-bg] {
+  display:grid!important;
+  grid-template-columns:minmax(0,38vw) minmax(390px,35.5vw)!important;
+  grid-template-rows:96px minmax(0,1fr)!important;
+  column-gap:clamp(25px,2.8vw,50px)!important;
+  row-gap:0!important;
+  align-items:start!important;
+  justify-content:end!important;
+  align-content:start!important;
+  min-height:100svh!important;
+  padding:0 clamp(28px,8.5vw,148px) 40px 24px!important;
+  position:relative;
+  overflow:hidden!important;
+  background:#061832 url('/gatt/myndir/brunaholf/login-premium-fullscreen.webp') center center/cover no-repeat!important;
+}
+#login[data-bg]::before {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url('/gatt/myndir/brunaholf/login-premium-fullscreen.webp') center center/cover no-repeat!important;
+  opacity:1!important;transform:none!important;
+}
+#login[data-bg]::after {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(1,15,34,.25) 0%,rgba(3,19,41,.09) 46%,rgba(5,20,43,.17) 100%),
+             linear-gradient(180deg,rgba(0,12,28,.25) 0%,transparent 46%,rgba(3,14,31,.08) 100%);
+}
+#login .lg-fx {display:none!important}
+#login .lp-topbar {
+  position:absolute!important;left:0;right:0;top:0;z-index:5;
+  padding:26px clamp(28px,8.5vw,148px) 8px!important;
+  width:100%;box-sizing:border-box;min-height:90px;
+  align-self:start!important;
+}
+#login .lp-brand img{height:60px;max-width:250px}
+#login .lp-brand small{font-size:10px;letter-spacing:.31em}
+#login .lp-toplinks a{font-size:14px;gap:9px}
+#login .lp-toplinks a:nth-child(2)::before{content:"ⓘ";font-size:17px;font-weight:400}
+#login .lp-toplinks a:last-child{border-radius:22px}
+#login .lg-info {
+  grid-column:1!important;grid-row:2!important;
+  align-self:start!important;justify-self:stretch!important;order:initial!important;
+  max-width:none!important;width:100%!important;min-width:0!important;
+  margin:63px 0 0!important;padding:0!important;
+}
+#login .lp-overline {
+  margin:0 0 11px!important;font-size:16px;font-weight:800;letter-spacing:.33em;
+  color:#ff7a26;text-shadow:0 2px 10px rgba(0,0,0,.18)
+}
+#login .lg-info-h{
+  font-size:clamp(39px,3.2vw,57px)!important;
+  line-height:1.08!important;letter-spacing:-.04em!important;
+  margin-bottom:17px!important;
+}
+#login .lp-lead {
+  max-width:610px;line-height:1.55!important;font-size:clamp(16px,1.18vw,21px)!important;
+  color:#f3f5fc;margin:0 0 26px!important;
+}
+#login .lg-more:not(.lg-more2){position:relative}
+#login .lg-more:not(.lg-more2) > summary{
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
+  overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;
+}
+#login .lg-more:not(.lg-more2) ul{gap:12px!important}
+#login .lg-more:not(.lg-more2) li {
+  min-height:76px!important;box-sizing:border-box;
+  border-radius:12px!important;
+  padding:13px 11px 13px 61px!important;
+  background:linear-gradient(110deg,rgba(20,46,80,.73),rgba(38,53,87,.60))!important;
+  border-color:rgba(255,255,255,.10)!important;
+  backdrop-filter:blur(12px);
+}
+#login .lg-more:not(.lg-more2) li .lp-ico{left:20px;stroke:#ff8525}
+#login .lg-more:not(.lg-more2) li b{font-size:14px;letter-spacing:-.01em}
+#login .lg-more:not(.lg-more2) li span{font-size:12.5px;line-height:1.38;color:#e7edf9}
+#login .lg-more2{border-top:0;margin-top:17px;padding-top:0}
+#login .lg-more2 summary{color:#f2f6ff;font-size:12.5px}
+#login .lcard {
+  grid-column:2!important;grid-row:2!important;
+  justify-self:stretch!important;align-self:start!important;order:initial!important;
+  margin:35px 0 0!important;
+  width:100%!important;max-width:none!important;
+  min-height:685px;box-sizing:border-box!important;
+  padding:39px 49px 30px!important;
+  background:linear-gradient(150deg,rgba(255,255,255,.99),rgba(246,248,253,.98))!important;
+  border-radius:22px!important;
+  box-shadow:0 30px 68px rgba(1,12,35,.36),0 5px 15px rgba(10,26,56,.13)!important;
+}
+#login .lg-tabs {
+  margin:0 -1px 33px!important;
+  padding:0!important;min-height:49px;
+  border-bottom:1px solid #e3e8f2;
+}
+html[data-theme] #login .lg-tabs button {
+  display:flex;justify-content:center;align-items:center;gap:12px;
+  padding:0 8px 19px!important;
+  font-size:16px!important;font-weight:750!important;
+}
+#login .lp-tab-icon {
+  width:25px;height:25px;stroke:#647593;stroke-width:1.7;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none;
+}
+#login .lg-tabs button[aria-selected=true] .lp-tab-icon{stroke:#fb6211}
+html[data-theme] #login .lg-tabs button[aria-selected=true]::after{
+  height:3px;box-shadow:0 2px 10px rgba(242,87,10,.35)
+}
+#login .lp-form-title {font-size:28px!important;margin-bottom:10px!important}
+#login .lcard .sub{font-size:15px!important;line-height:1.5;margin:0 0 28px!important}
+#login .lp-login-field{position:relative;margin:0 0 15px!important}
+#login .lp-login-field label {
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;
+  overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;
+}
+#login .lp-fieldbox{position:relative;width:100%}
+#login .lp-fieldbox input{
+  height:57px!important;border:1px solid #bfcbe0!important;
+  border-radius:11px!important;box-sizing:border-box!important;
+  padding:12px 52px!important;background:rgba(255,255,255,.62)!important;
+  font-size:16px!important;
+}
+#login .lp-fieldbox .lp-f-icon{
+  position:absolute;z-index:2;left:16px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;stroke:#62718c;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;pointer-events:none;
+}
+html[data-theme] #login .lp-eye {
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;
+  margin:0!important;padding:6px!important;width:35px!important;height:38px!important;
+  border:0!important;background:transparent!important;color:#73819a!important;
+  border-radius:8px!important;box-shadow:none!important;text-shadow:none!important;
+}
+#login .lp-eye svg{
+  width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+#login .lp-eye:hover{color:#e96018!important}
+#login .lp-login-meta{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  margin:14px 0 25px;color:#193052;
+}
+#login .lp-remember{
+  display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:550;
+  color:#182844;cursor:pointer;
+}
+#login .lp-remember input{accent-color:#f96712;appearance:auto;width:17px;height:17px;margin:0}
+#login .lp-login-meta a{font-size:14px;font-weight:650;color:#ef5a11;text-decoration:none}
+#login .lp-login-meta a:hover{text-decoration:underline}
+html[data-theme] #login .lcard form button.lp-login-submit {
+  min-height:58px!important;margin:0!important;
+  display:flex;justify-content:center;align-items:center;gap:11px;
+  background:linear-gradient(180deg,#ff7e14,#f15600)!important;
+  box-shadow:0 12px 20px rgba(222,79,16,.29)!important;
+}
+#login .lp-login-submit svg{
+  width:22px;height:22px;stroke:white;stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+#login .lp-divider {
+  display:flex;align-items:center;gap:17px;margin:25px 0 24px;
+  color:#52627b;font-size:14px;justify-content:center;
+}
+#login .lp-divider::before,#login .lp-divider::after{
+  content:"";height:1px;background:#dce3ee;flex:1;
+}
+html[data-theme] #login .lcard button.lp-register-switch {
+  width:100%!important;min-height:58px!important;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:0!important;padding:12px!important;
+  background:linear-gradient(180deg,#fff,#f4f7fc)!important;
+  color:#142847!important;border:1px solid #becce1!important;
+  border-radius:11px!important;font:750 15px Inter,Poppins,system-ui,sans-serif!important;
+  text-transform:none!important;letter-spacing:0!important;text-shadow:none!important;
+  box-shadow:0 2px 6px rgba(4,24,55,.04)!important;
+}
+#login .lp-register-switch svg{
+  width:23px;height:23px;stroke:#13284c;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+#login .lp-register-switch:hover{border-color:#fb7721!important;background:#fff!important}
+#login .lp-secure{font-size:12px!important;margin-top:27px;color:#485d7e}
+#login .lp-secure svg{width:19px;height:19px}
+#login #regForm .lp-form-title{margin-bottom:9px!important}
+#login #regForm .sub{margin-bottom:18px!important}
+#login #regForm .fld{margin-bottom:11px!important}
+#login #regForm .fld input{height:43px!important}
+#login #regForm .lg-row{gap:10px}
+#login #regForm .lhelp{margin-top:8px}
+#login .lerr:not(:empty){display:block;margin:9px 0;color:#b91c1c}
+@media(max-width:1100px){
+  #login[data-bg]{
+    grid-template-columns:minmax(0,39vw) minmax(360px,37vw)!important;
+    column-gap:24px!important;padding-right:5vw!important;
+  }
+  #login .lcard{padding:30px 29px!important}
+  #login .lg-info{margin-top:60px!important}
+  #login .lp-lead{font-size:16px!important}
+  #login .lg-more:not(.lg-more2) li{padding-left:50px!important}
+  #login .lg-more:not(.lg-more2) li .lp-ico{left:11px}
+}
+@media(max-width:980px){
+  #login[data-bg]{
+    display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:76px auto auto!important;
+    justify-content:center!important;
+    row-gap:24px!important;min-height:100svh!important;
+    padding:0 22px 42px!important;
+    overflow:visible!important;
+    background-position:center center!important;
+  }
+  #login[data-bg]::before{background-position:left center!important;background-size:cover!important}
+  #login .lp-topbar{padding:14px 25px!important;min-height:66px}
+  #login .lp-brand img{height:42px}
+  #login .lcard{
+    grid-column:1!important;grid-row:2!important;
+    justify-self:center!important;max-width:620px!important;
+    margin:8px 0 0!important;min-height:auto;
+  }
+  #login .lg-info{
+    grid-column:1!important;grid-row:3!important;
+    justify-self:center!important;max-width:650px!important;margin:0!important;
+  }
+  #login .lg-info-h{font-size:39px!important}
+  #login .lg-more:not(.lg-more2) summary{
+    position:static!important;width:auto!important;height:auto!important;
+    clip-path:none!important;overflow:visible!important;
+  }
+}
+@media(max-width:600px){
+  #login[data-bg]{grid-template-rows:66px auto auto!important;padding:0 14px 30px!important}
+  #login .lp-topbar{padding:12px 14px!important}
+  #login .lp-toplinks a{font-size:11px}
+  #login .lp-toplinks a:nth-child(2){display:none}
+  #login .lcard{padding:22px 20px 23px!important;margin:0!important}
+  #login .lp-form-title{font-size:24px!important}
+  #login .lcard .sub{font-size:13px!important;margin-bottom:22px!important}
+  #login .lg-info-h{font-size:35px!important}
+  #login .lg-more:not(.lg-more2) li{min-height:68px!important}
+  #login .lg-more:not(.lg-more2) ul{grid-template-columns:1fr!important}
+  #login .lp-login-meta{align-items:flex-start}
+  #login .lp-login-meta a{font-size:12px}
+  #login .lp-secure{font-size:11px!important;text-align:center}
+  #login .lg-tabs{margin-bottom:22px!important}
+  #login .lg-tabs button{font-size:14px!important}
+}
+@media(max-height:760px) and (min-width:981px){
+  #login .lg-info{margin-top:32px!important}
+  #login .lcard{margin-top:5px!important;min-height:0!important;padding-top:26px!important;padding-bottom:20px!important}
+  #login .lp-overline{font-size:13px}
+  #login .lp-lead{margin-bottom:15px!important}
+  #login .lg-more:not(.lg-more2) li{min-height:63px!important}
+  #login .lcard .sub{margin-bottom:17px!important}
+  #login .lp-login-meta{margin-bottom:13px!important}
+  #login .lp-divider{margin:16px 0!important}
+  #login .lp-secure{margin-top:14px}
+}
