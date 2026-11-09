@@ -255,3 +255,6 @@ html[data-theme] #login .lcard button.lp-register-switch {
   #login .lp-divider{margin:16px 0!important}
   #login .lp-secure{margin-top:14px}
 }
+
+/* Never reveal the login view after authentication. */
+#login.hidden,#login[data-bg].hidden{display:none!important}
