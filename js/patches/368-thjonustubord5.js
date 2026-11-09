@@ -1215,6 +1215,7 @@
       '.job b{font-family:var(--mono);font-size:10.5px;font-weight:600;color:var(--ink)}.job small{font-size:11px;color:var(--mute)}',
       '.today .job{background:rgba(255,255,255,.06);border-color:#2a2823;color:var(--on2)}.today .job b{color:var(--on)}',
       '.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 16px 12px;font-size:11.5px;color:var(--mute)}.legend span{display:inline-flex;align-items:center;gap:6px}',
+      (window.ThbOakvedin ? ThbOakvedin.css() : ''),   // 500: „Þarf að gera í vikunni" (óákveðin verk)
       '.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:12px 14px}',
       '.pcard{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
       '.pcard b{font-size:13px;line-height:1.3;overflow-wrap:anywhere}.pcard span{font-size:12px;color:var(--ink2);line-height:1.4;overflow-wrap:anywhere}',
@@ -1517,6 +1518,7 @@
       document.head.appendChild(l);
     }
     const r = v.attachShadow({ mode: 'open' });
+    if (window.ThbOakvedin) ThbOakvedin.rot = rot;
     const st = document.createElement('style');
     st.textContent = cssText();
     const mount = document.createElement('div');
@@ -1538,6 +1540,7 @@
       if (el.dataset.sk) skola(el.dataset.skid);
       else if (el.dataset.nt) skola('nt:' + el.dataset.id);   // farið úr reitnum = vistað strax
       else if (el.dataset.dn) skola('dn:' + el.dataset.dn);
+      else if (el.dataset.ov && window.ThbOakvedin) ThbOakvedin.focusout(el);
       else if (el.dataset.chk) skola('chk:' + el.dataset.id);
     });
     ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
@@ -3102,7 +3105,9 @@
           : '<span class="dots">' + d.jobs.map(j => '<i class="dot" style="background:' + vdLitur(j.type) + '" title="' + esc((j.time ? j.time + ' ' : '') + (j.name || '')) + '"></i>').join('') + '</span>') +
         '</div>' +
       '</div>').join('') + '</div>' +
-      (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
+      (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '') +
+      // 09.11.2026 (Agnar): fjórir textareitir fyrir verk vikunnar sem er ekki ákveðið hvenær — 500-dagskra-oakvedin.js, vistað á þjóni.
+      (open && window.ThbOakvedin ? ThbOakvedin.html(dagskraSyn()) : '');
     const syn = dagskraSyn();
     const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
       dagskraFolk().map(x => '<option value="' + esc(x) + '"' + (x === syn ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>';
@@ -5009,7 +5014,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny))))) {
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.ov))))) {
       // 27.09.2026 (Agnar: „checklist doesn't work in phone, keyboard disappears"): reitir checklistans vantaði hér —
       // sjálfvirk endurteikning skipti reitnum út í miðju innslætti, lyklaborðið lokaðist og hálfskrifaður stafur varð
       // að atriði. Undantekning: bætt við atriði (S.chkTvinga) teiknar strax og fókusinn fer aftur í nýja reitinn.
@@ -5386,6 +5391,7 @@
   // sending klárast þar; `pagehide` fær auk þess keepalive-umferðina í skyrVidLokun á eftir.
   const skolaAllt = () => {
     Object.keys(_skBid).forEach(skola);
+    try { if (window.ThbOakvedin) ThbOakvedin.skola(); } catch (_) {}
     skolaSkyringu();
     try {
       Object.keys(S.vbt || {}).forEach(sid => { const e = S.vbt[sid]; if (e && e.dirty) vbtVista(sid); });
@@ -6509,6 +6515,7 @@
     else if (el && el.dataset && el.dataset.bm) bmSkra(el);
     else if (el && el.dataset && el.dataset.nt) skrifaNota(el);
     else if (el && el.dataset && el.dataset.dn) skrifaDagnotu(el);
+    else if (el && el.dataset && el.dataset.ov && window.ThbOakvedin) ThbOakvedin.input(el);
     else if (el && el.dataset && el.dataset.chk) skrifaChk(el);
     else if (el && el.dataset && el.dataset.skyr && S.skyrOpid) S.skyrOpid.texti = el.value;
     else if (el && el.dataset && el.dataset.samtsky) { const sid = Number(el.dataset.id); if (sid) { S.samtSkyDrog[sid] = el.value; skyDrogVista(sid, el.value); } }
