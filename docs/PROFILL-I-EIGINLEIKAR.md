@@ -71,3 +71,8 @@ hegðun gamla prófílsins á localhost (þekkt: listinn sækir með öðrum lyk
 - „Skoðun — staða" er afleidd (útrunnin tæki), ekki lesin úr sérstökum reit.
 - „Aðrar þjónustur" hefur enga eigin gagnalíkan í kóðanum: flipinn sýnir „Kerfi og þjónusta" (450) (sami hnútur og í Brunakerfisþjónustu) og „Nýr staður". Spurning til Agnars um hvað á að vera hér.
 - Ekki prófað: vistun úr Breyta/Sérkjör/Athugasemd (engin skrif í prófi — umboð keyra sama kóða og áður), prentun, bakk-hegðun, 375 px.
+
+## 5. Viðbót 09.11.2026 (sein): Athugasemd og regla „engu eytt"
+
+- **Athugasemd** er ein mjó lína neðst í glugganum (✎ „Athugasemd… (vistast sjálfkrafa)"). Hún er umboð: skrifar í `.co-banner-note` og kallar á `input` svo `Companies.onBannerNoteInput(id, texti)` vistar á sama stað og áður (prófað með upptökutæki, ekkert vistað). Gamli reiturinn er áfram í bannernum.
+- **Reglan „ekki eyða reitum"**: enginn reitur er fjarlægður. Hver er annaðhvort sýndur í glugga/flipa eða falinn þar til gögn eru skráð og nást þá með „Breyta / bæta við upplýsingum" (gamli bannerinn, allir reitir og takkar óbreyttir) eða í flipanum sem hann tilheyrir (kafli 1, dálkurinn „Staða"). „Samningur"-línan í glugganum var tekin út aðeins sem YFIRLITSLÍNA (óáreiðanleg lestur); samningskortin sjálf eru óbreytt í flipanum „Skjöl og reikningar".

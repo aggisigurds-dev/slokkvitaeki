@@ -110,6 +110,10 @@
     '#companies-main .p2-mynd .tak .p2-til{flex:1;justify-content:center}' +
     '#companies-main .p2-bæta{grid-column:1/-1;padding:10px 18px 0;font-size:12.5px;color:#525b6b}' +
     '#companies-main .p2-bæta button{border:0;background:none;cursor:pointer;font:600 12.5px "IBM Plex Sans",system-ui,sans-serif;color:#3a4250;text-decoration:underline}' +
+    '#companies-main .p2-athug{display:flex;align-items:center;gap:8px;padding:8px 18px;background:#f4f6f9;border-top:1px solid #c3cad5;border-radius:0 0 14px 14px;box-shadow:0 22px 40px -22px rgba(0,0,0,.75),0 0 0 1px rgba(20,24,34,.35)}' +
+    '#companies-main .p2-athug input{flex:1;min-width:0;height:30px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#141822}' +
+    '#companies-main .p2-athug input::placeholder{color:#525b6b}' +
+    '#companies-main .p2-glugg{border-radius:0!important;box-shadow:none!important}' +
     /* flipar */
     '#companies-main .p2-flipar{display:flex;gap:6px;padding:10px 10px 0;flex-wrap:wrap;margin-top:10px;border-radius:14px 14px 0 0;background:' + METAL + '}' +
     '#companies-main .p2-flipar button{height:42px;padding:0 16px;border-radius:9px 9px 0 0;border:0;display:flex;align-items:center;gap:8px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:#d5dbe6;cursor:pointer;background:rgba(255,255,255,.07)}' +
@@ -278,10 +282,13 @@
     var banner = sel(m, '.co-banner');
     var h = document.getElementById('p2-haus');
     if (!h || h.parentNode !== m) {
-      ['p2-haus', 'p2-glugg', 'p2-flipar', 'p2-teikn'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
+      ['p2-haus', 'p2-glugg', 'p2-athug', 'p2-flipar', 'p2-teikn'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
       h = document.createElement('div'); h.id = 'p2-haus'; h.className = 'p2-haus p2-nytt';
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
       banner.insertAdjacentElement('beforebegin', h); h.insertAdjacentElement('afterend', g);
+      var at = document.createElement('div'); at.id = 'p2-athug'; at.className = 'p2-athug p2-nytt';
+      at.innerHTML = '<span aria-hidden="true">✎</span><input type="text" aria-label="Athugasemd" placeholder="Athugasemd… (vistast sjálfkrafa)" maxlength="2000">';
+      g.insertAdjacentElement('afterend', at);
       var host = sel(m, '._samskipti-host');
       var f = document.createElement('div'); f.id = 'p2-flipar'; f.className = 'p2-flipar p2-nytt'; f.setAttribute('role', 'tablist');
       f.innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '" aria-selected="false"><span>' + t[1] + '</span><span class="c" hidden></span></button>'; }).join('');
@@ -304,7 +311,7 @@
     KAFLAR.forEach(function (k) { var e = sel(m, k[0]); if (e && e.parentNode === m && e.getAttribute('data-p2t') !== k[1]) e.setAttribute('data-p2t', k[1]); });
     /* allt annað sem var beint barn og er enn sýnilegt í gamla prófílnum án flipa → Aðrar þjónustur (Nýr staður, Bæta við tæki …) */
     allt(m, ':scope > div').forEach(function (e) {
-      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-flipar' || e.id === 'p2-teikn') return;
+      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-flipar' || e.id === 'p2-teikn') return;
       if (e === m.firstElementChild || e.classList.contains('co-banner') || e.classList.contains('_samskipti-host') || e.hasAttribute('data-p2t')) return;
       if (e.classList.contains('info-grid') || e.id === 't485-top') return;
       if (/Nýr staður/.test(e.textContent)) e.setAttribute('data-p2t', 'adrar');
@@ -326,9 +333,9 @@
 
   /* haus + gluggi sitja alltaf rétt á undan gamla bannernum (svo „Breyta / bæta við upplýsingum" opnist undir glugganum) */
   function raðaGlugga(m) {
-    var h = document.getElementById('p2-haus'), g = document.getElementById('p2-glugg'), b = sel(m, '.co-banner');
-    if (!h || !g || !b) return;
-    if (!(h.nextElementSibling === g && g.nextElementSibling === b)) { m.insertBefore(h, b); m.insertBefore(g, b); }
+    var h = document.getElementById('p2-haus'), g = document.getElementById('p2-glugg'), a = document.getElementById('p2-athug'), b = sel(m, '.co-banner');
+    if (!h || !g || !a || !b) return;
+    if (!(h.nextElementSibling === g && g.nextElementSibling === a && a.nextElementSibling === b)) { m.insertBefore(h, b); m.insertBefore(g, b); m.insertBefore(a, b); }
   }
 
   function endurteikna(m) {
@@ -343,6 +350,23 @@
     t.innerHTML = teikn(d);
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
     if (c) { c.textContent = d.nSlt ? d.nSlt : ''; c.hidden = !d.nSlt; }
+  }
+
+  /* athugasemd: ein lína sem er umboð fyrir textareit gamla bannersins (features.js onBannerNoteInput → sama vistunarleið) */
+  function athugasemd(m) {
+    var inp = document.querySelector('#p2-athug input'), ta = sel(m, '.co-banner-note');
+    if (!inp || !ta) return;
+    if (!inp.__p2) {
+      inp.__p2 = true;
+      inp.addEventListener('input', function () {
+        var t = sel(m, '.co-banner-note'); if (!t) return;
+        t.value = inp.value; t.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      inp.addEventListener('blur', function () {
+        var t = sel(m, '.co-banner-note'); if (t) t.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+    if (document.activeElement !== inp && inp.value !== ta.value) inp.value = ta.value;
   }
 
   /* ---------- smellir: allt umboð fyrir upprunalegu takkana ---------- */
@@ -408,7 +432,7 @@
     if (!m || !sel(m, '.co-banner') || !sel(m, '.b405-plata, .co-banner-name')) return;
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
-    byggja(m); merkja(m); raðaGlugga(m); raða(m); endurteikna(m);
+    byggja(m); merkja(m); raðaGlugga(m); raða(m); athugasemd(m); endurteikna(m);
   }
 
   setInterval(tikk, 600);
