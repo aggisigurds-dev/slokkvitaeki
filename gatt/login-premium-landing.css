@@ -1,0 +1,163 @@
+/* Brunahólf Premium · Login landing 2026-11-09.
+   Presentation-only. Existing loginForm, regForm, errors, tab switching and
+   security/authorization remain owned by portal.js.
+   Deliberately scoped to #login; does not modify the logged-in portal. */
+#login {
+  --lp-navy:#051a35;--lp-ink:#122541;--lp-orange:#ff6612;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr);
+  grid-template-rows:88px minmax(0,1fr);
+  align-items:center!important;
+  justify-items:stretch;
+  column-gap:clamp(40px,5.3vw,108px)!important;
+  row-gap:0!important;
+  min-height:100svh!important;
+  padding:0 clamp(28px,5.3vw,120px) 48px!important;
+  isolation:isolate;
+  overflow:visible!important;
+  background:linear-gradient(115deg,#051a35 0%,#0d2950 56%,#091c39 100%)!important;
+  font-family:Inter,Poppins,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+#login.hidden{display:none!important}
+#login::before {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url("/gatt/myndir/brunaholf/hetja-v3.webp") center bottom / 100% auto no-repeat;
+  transform:scaleX(-1);
+  opacity:.88;
+}
+#login::after {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(2,19,42,.86) 0%,rgba(4,23,48,.24) 48%,rgba(3,17,36,.23) 100%),
+    linear-gradient(90deg,rgba(3,17,36,.50) 0%,rgba(4,20,40,.22) 47%,rgba(4,17,36,.46) 100%);
+}
+#login .lg-fx{display:none!important}
+#login>*{z-index:1}
+#login .lp-topbar{
+  grid-row:1;grid-column:1 / -1;align-self:stretch;position:relative;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+#login .lp-brand{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-decoration:none}
+#login .lp-brand img{width:auto;height:50px;max-width:225px;object-fit:contain;object-position:left}
+#login .lp-brand small{color:#e6eaf3;font:600 9px/1.1 inherit;letter-spacing:.35em;padding-left:4px}
+#login .lp-toplinks{display:flex;align-items:center;gap:23px}
+#login .lp-toplinks a{display:inline-flex;align-items:center;gap:8px;padding:8px 0;color:#f1f5fa;text-decoration:none;font-weight:650;font-size:13px;white-space:nowrap;transition:color .15s}
+#login .lp-toplinks a:hover{color:#ffb07e}
+#login .lp-toplinks a:last-child{padding:8px 16px;border:1px solid rgba(255,255,255,.50);border-radius:24px}
+#login .lp-toplinks svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#login .lg-info{grid-row:2;grid-column:1;align-self:center;justify-self:start;order:initial!important;
+  max-width:660px!important;min-width:0!important;margin:0 0 5vh 0;color:#fff}
+#login .lp-overline{font-size:13px;line-height:1.3;letter-spacing:.36em;font-weight:800;color:#ff7925;margin-bottom:12px}
+#login .lg-info-h{font:800 clamp(37px,3.6vw,62px)/1.04 Inter,Poppins,system-ui,sans-serif!important;letter-spacing:-.045em;margin:0 0 17px;color:#fff;text-shadow:0 2px 20px rgba(4,18,40,.18)}
+#login .lp-lead{font-size:clamp(16px,1.22vw,21px);line-height:1.55;max-width:585px;color:#f0f3fa;margin:0 0 26px;text-wrap:pretty}
+#login .lg-more{max-width:660px}
+#login .lg-more:not(.lg-more2) summary{font-size:12px;letter-spacing:.12em;color:#dce7f7;margin:0 0 13px}
+#login .lg-more:not(.lg-more2) ul{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px!important;margin:0!important}
+#login .lg-more:not(.lg-more2) li {
+  display:flex!important;flex-direction:column;justify-content:center;gap:3px!important;
+  position:relative;min-height:84px;padding:15px 15px 15px 62px!important;
+  border-radius:13px!important;border:1px solid rgba(255,255,255,.11)!important;
+  background:linear-gradient(125deg,rgba(20,47,82,.88),rgba(15,38,74,.68))!important;
+  box-shadow:0 8px 27px rgba(1,11,29,.12);backdrop-filter:blur(9px);
+}
+#login .lg-more:not(.lg-more2) li .lp-ico{
+  width:29px;height:29px;position:absolute;left:18px;top:calc(50% - 14.5px);
+  stroke:#ff842b;stroke-width:1.8;fill:none;stroke-linejoin:round;stroke-linecap:round;
+}
+#login .lg-more:not(.lg-more2) li b{font-size:14px;font-weight:750;color:#fff;line-height:1.25}
+#login .lg-more:not(.lg-more2) li span{font-size:12px;line-height:1.35;color:#e2e8f4}
+#login .lg-more2{margin-top:17px;padding:11px 0 0;border-top:1px solid rgba(255,255,255,.19)}
+#login .lg-more2 summary{font-size:12px;color:#e6ecf7}
+#login .lg-more2 li{color:#fff}
+#login .lg-more2 ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#login .lg-more2 li{background:rgba(4,21,46,.55);padding:12px;border:1px solid rgba(255,255,255,.14);border-radius:10px}
+#login .lcard{
+  grid-row:2;grid-column:2;align-self:center;justify-self:end;order:initial!important;
+  width:100%!important;max-width:610px!important;
+  padding:clamp(24px,2.7vw,44px) clamp(22px,3vw,49px) 32px!important;
+  border:1px solid rgba(255,255,255,.78)!important;border-radius:22px!important;
+  background:linear-gradient(150deg,rgba(255,255,255,.99),rgba(247,249,253,.98))!important;
+  color:var(--lp-ink);
+  box-shadow:0 20px 70px rgba(1,11,31,.32),0 1px 3px rgba(5,20,46,.10)!important;
+}
+#login .lg-mark{display:none!important}
+#login .lg-tabs{display:grid;gap:0!important;padding:0!important;margin:0 -1px 27px!important;background:transparent!important;border-bottom:1px solid #e3e9f3;border-radius:0!important}
+html[data-theme] #login .lg-tabs button{position:relative;border-radius:0!important;box-shadow:none!important;
+  padding:12px 8px 16px!important;font:750 15px/1.2 Inter,Poppins,system-ui,sans-serif!important;color:#63718c!important}
+html[data-theme] #login .lg-tabs button[aria-selected=true]{background:transparent!important;color:#122541!important}
+html[data-theme] #login .lg-tabs button[aria-selected=true]::after{
+  content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:3px;border-radius:5px 5px 0 0;background:#fa6213;box-shadow:0 0 13px rgba(245,101,29,.36)
+}
+#login .lp-form-title{font:800 clamp(21px,1.7vw,29px)/1.18 Inter,Poppins,system-ui,sans-serif;letter-spacing:-.028em;color:#132845;margin:0 0 8px}
+#login .lcard .sub{font-size:14px;line-height:1.5;color:#64718a;margin:0 0 24px}
+#login .lcard .fld{margin-bottom:15px}
+#login .lcard .fld label{font:700 12px/1.3 Inter,Poppins,system-ui,sans-serif;letter-spacing:.015em;text-transform:none;color:#2b4264;margin:0 0 8px}
+#login .lcard .fld input,#login .lcard textarea{
+  width:100%;box-sizing:border-box;border:1px solid #cbd6e6!important;
+  border-radius:11px!important;background:#fff!important;color:#132845!important;
+  box-shadow:0 1px 2px rgba(9,28,63,.04)!important;
+  padding:12px 14px!important;font:500 15px/1.35 Inter,Poppins,system-ui,sans-serif!important;
+  transition:box-shadow .15s,border-color .15s;
+}
+#login .lcard .fld input{height:53px!important}
+#login .lcard .fld input:focus,#login .lcard textarea:focus{
+  outline:none!important;border-color:#f57529!important;box-shadow:0 0 0 3px rgba(255,107,28,.14)!important
+}
+#login .lcard .fld input::placeholder,#login .lcard textarea::placeholder{color:#9ba7b9}
+html[data-theme] #login .lcard form button[type=submit]{
+  min-height:53px;margin:8px 0 0!important;border:0!important;border-radius:11px!important;
+  background:linear-gradient(180deg,#ff7824 0%,#f05b12 100%)!important;
+  color:#fff!important;font:800 16px/1 Inter,Poppins,system-ui,sans-serif!important;
+  letter-spacing:0!important;text-transform:none!important;
+  text-shadow:none!important;box-shadow:0 9px 19px rgba(234,83,12,.22)!important;
+}
+html[data-theme] #login .lcard form button[type=submit]:hover{filter:brightness(1.05)}
+#login .lcard .lhelp{margin-top:15px;font-size:12px;line-height:1.5;color:#6d7890;text-align:center}
+#login .lcard .lhelp a{color:#e85e18;text-decoration:none;font-weight:700}
+#login .lp-secure{display:flex;align-items:center;justify-content:center;gap:8px;color:#5e708b;font-size:11px;margin-top:25px}
+#login .lp-secure svg{width:17px;height:17px;stroke:#516684;fill:none;stroke-width:1.7}
+#login .lerr:not(:empty){margin:8px 0;color:#b91c1c}
+#login .lg-ok.hidden{display:none!important}
+@media(max-width:1190px){
+  #login{column-gap:28px!important;padding-inline:28px!important}
+  #login .lg-info{max-width:550px!important}
+  #login .lg-more:not(.lg-more2) li{min-height:80px;padding-left:48px!important}
+  #login .lg-more:not(.lg-more2) li .lp-ico{left:11px;width:26px;height:26px}
+}
+@media(max-width:980px){
+  #login{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:75px auto auto!important;
+    gap:22px!important;
+    padding:0 22px 44px!important;
+    background:#0a2040!important;
+  }
+  #login::before{background-size:auto 60%;background-position:left bottom;opacity:.48}
+  #login .lp-topbar{grid-column:1;grid-row:1}
+  #login .lg-info{grid-column:1;grid-row:3;order:initial!important;justify-self:center!important;max-width:650px!important;margin:10px 0 0}
+  #login .lcard{grid-column:1;grid-row:2;order:initial!important;justify-self:center!important;max-width:610px!important}
+  #login .lg-info-h{font-size:40px!important}
+  #login .lp-lead{font-size:16px}
+}
+@media(max-width:600px){
+  #login{padding:0 14px 30px!important;gap:14px!important;grid-template-rows:66px auto auto!important}
+  #login .lp-brand img{height:36px}
+  #login .lp-brand small{font-size:7px}
+  #login .lp-toplinks{gap:10px}
+  #login .lp-toplinks a{font-size:11px}
+  #login .lp-toplinks a:last-child{padding:6px 9px}
+  #login .lp-toplinks a:nth-child(2){display:none}
+  #login .lp-toplinks svg{width:14px;height:14px}
+  #login .lcard{padding:23px 18px 22px!important;border-radius:16px!important}
+  #login .lg-tabs{margin-bottom:21px!important}
+  #login .lp-form-title{font-size:23px}
+  #login .lg-info-h{font-size:36px!important}
+  #login .lg-more:not(.lg-more2) ul{grid-template-columns:1fr!important;gap:10px!important}
+  #login .lg-more:not(.lg-more2) li{min-height:70px;padding-left:57px!important}
+  #login .lg-more:not(.lg-more2) li .lp-ico{left:17px}
+  #login .lg-more2 ul{grid-template-columns:1fr}
+  #login .lg-row{grid-template-columns:1fr;gap:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #login *,#login *::before,#login *::after{transition:none!important;animation:none!important}
+}
