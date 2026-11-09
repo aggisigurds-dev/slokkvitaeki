@@ -270,3 +270,10 @@ html[data-theme] #login .lcard button.lp-register-switch {
 }
 #login[data-bg]::before,
 #login[data-bg]::after{display:none!important}
+
+/* 10.11.2026 — lagfæringar: texti í netfangs-/lykilorðsreit lá ofan á tákninu (landing-reglan #login .lcard .fld input
+   með !important vann á specificity); þjónustuspjöldin ("Þjónusta fyrir húsfélög…") voru gegnsæ yfir húsmyndinni. */
+#login .lcard .lp-fieldbox input{padding:12px 52px!important}
+#login .lg-more2 li{background:rgba(6,20,44,.86)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#login .lg-more2 li b{color:#fff!important}
+#login .lg-more2 li span{color:#e7edf9!important}
