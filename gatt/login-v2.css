@@ -1,7 +1,7 @@
 /* Innskráning gáttarinnar — útfærsla D (08.11.2026): hæðir í 3D við hlið spjalds, fimm bakgrunnar.
    Bakgrunnur: data-bg á #login (bh = Brunahólfs-blár, sjálfgefið | himinn | nott | sol | eldur | ljos | teikn); ?bg=<heiti> í slóðinni prófar hvern. Allt afmarkað við #login. */
 #login{--lb:#1b2a4d;--lo:#f15a24;--fb:rgba(255,255,255,.45);--ff:linear-gradient(135deg,rgba(255,255,255,.22),rgba(255,255,255,.05));--fs:rgba(0,0,0,.5);
-  position:relative;overflow:hidden;perspective:1200px;gap:56px;background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
+  position:relative;overflow:hidden;perspective:1200px;gap:72px;background:linear-gradient(180deg,#0f1c3d,#070d1f)!important}
 #login.hidden{display:none}
 #login>*{position:relative;z-index:2}
 #login .lg-fx{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s}
@@ -27,7 +27,7 @@
 @keyframes lgsp{to{transform:rotateX(58deg) rotateZ(-12deg)}}
 .lg-fl{position:absolute;left:25px;top:0;width:190px;height:190px;border-radius:12px;border:1px solid var(--fb);background:var(--ff);box-shadow:0 0 0 1px rgba(0,0,0,.12),0 26px 34px var(--fs)}
 .lg-fl i{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--lo);box-shadow:0 0 14px 4px rgba(241,90,36,.75)}
-#login .lcard{width:100%;max-width:420px;flex:none;padding:36px 38px 30px;border-radius:16px;background:#fff;
+#login .lcard{width:100%;max-width:540px;flex:none;padding:40px 48px 34px;border-radius:16px;background:#fff;
   box-shadow:0 2px 4px rgba(10,20,50,.12),0 18px 30px -8px rgba(10,20,50,.35),0 44px 80px -24px rgba(10,20,50,.55)}
 .lg-mark img{height:56px;width:auto;display:block}
 .lg-mark span{display:block;margin-top:8px;font-size:12px;font-weight:600;letter-spacing:.32em;color:var(--lo)}
@@ -43,7 +43,7 @@ html[data-theme] #login .lg-tabs button[aria-selected=true]{background:#fff;colo
 #login .lg-ok span{display:block;font-size:13px;color:#5a6785;margin-bottom:16px}
 html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-radius:9px;border:1px solid #d3dbea;background:#fff;color:var(--lb);font:inherit;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;box-shadow:none;text-shadow:none}
 #login .lcard button:focus-visible,#login .lcard input:focus-visible{outline:2px solid #3b6fe0;outline-offset:2px}
-@media(max-width:820px){
+@media(max-width:1100px){
   #login{padding:16px}
   #login .lg-iso{position:absolute;left:-90px;top:40px;opacity:.5;z-index:1}
   #login .lcard{padding:26px 22px 22px}
@@ -54,7 +54,7 @@ html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-ra
 #login .lcard form button[type=submit]{padding:16px}
 .lg-tabs button{font-size:14px}
 #login .lerr:empty{display:none}
-.lg-info{width:100%;max-width:400px;flex:none;color:#fff}
+.lg-info{width:100%;max-width:440px;flex:none;color:#fff}
 .lg-info-h{font-size:26px;font-weight:600;line-height:1.15;margin-bottom:14px;text-wrap:balance}
 .lg-more summary{cursor:pointer;font-size:13px;font-weight:600;color:#cfdcf5;list-style:none;display:flex;align-items:center;gap:10px;padding:4px 0}
 .lg-more summary::-webkit-details-marker{display:none}
@@ -65,7 +65,7 @@ html[data-theme] #login .lg-ok button{width:100%;padding:13px;margin:0;border-ra
 .lg-more li{display:grid;gap:3px;padding-left:14px;border-left:2px solid #f15a24}
 .lg-more li b{font-size:15px;font-weight:600;color:#fff}
 .lg-more li span{font-size:13.5px;line-height:1.5;color:#c9d6ee}
-@media(max-width:820px){
+@media(max-width:1100px){
   #login{flex-direction:column;justify-content:center;gap:22px}
   #login .lcard{order:1}
   .lg-info{order:2}
