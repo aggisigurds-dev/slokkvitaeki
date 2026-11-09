@@ -393,9 +393,12 @@
   let _vbByCo = null;       // Map<String(co.id), [{id,titill,url,blad}]>
   let _vbLoaded = false;
   const _vbOpen = new Set();
+  let _vbTries = 0;
   async function loadVinnublad() {
     try {
-      const sb = (window.DB && DB.sb); if (!sb) return;
+      const sb = (window.DB && DB.sb);
+      // gagnagrunnstengingin gæti ekki verið tilbúin í fyrstu teikningu → reyna aftur (hámark 8×), ekki gefast upp þegjandi
+      if (!sb) { if (++_vbTries <= 8) { _vbLoaded = false; setTimeout(() => { try { render(); } catch (_) {} }, 1500); } return; }
       const rows = await DB.fetchAll((from, to) => sb.from('vinnublad_utklippur')
         .select('id,fyrirtaeki_id,titill,url,blad').eq('ar', curYear)
         .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
