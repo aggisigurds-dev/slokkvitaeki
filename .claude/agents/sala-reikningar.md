@@ -13,9 +13,10 @@ tools: Bash, Read, Grep, Glob, Edit
 Gataverðlistinn er taflan `hole_size_rates` (scope `generic`, `heklureitur`; flokkar `hole`, `kragi`, `bordi`). Hún er ANNAR listi en verðskrá efnis (`brunaholf/js/gr-materials.js`) — ekki reikna gegnumtök úr efnisverðskránni.
 - **Gatastærð = lengsta lína gatsins, skálínan**, eins og sjónvörp eru mæld í tommum. Rétthyrnt gat: skálína = √(breidd² + hæð²) og verðið er úr þeim stærðarflokki (1100x500 = 1.208 mm → flokkur 1160-1209).
 - **Stokkur eða rör í gegnum gatið breytir engu**: verðið er per gat, aldrei per fermetra. Fermetratölur kúnna eru ekki notaðar.
-- **Gjaldið er vinna per gat** í tilboðum Agnars (Salblikk 08.11.2026). Heklureitur-skráin segir gjaldið fela í sér vinnu og efni; hvort almenna verðið gerir það er ÓMÆLT — spyrja.
+- **Verð per gat í tilboði Brunahólfs til Salblikk (18.09.2026) innifela efni, uppsetningu og skráningu hvers gats**; þétting frá annarri hlið, hver hlið aukalega er ein eining; akstur sér (10.951 kr/klst á mann án vsk, 186 kr/km með vsk). Verðin voru önnur en `hole_size_rates` generic (1100x500 51.788 á móti 48.400).
 - Kragar (`kragi`) og bönd (`bordi`) eru sér töflur og bætast við aðeins ef þau eru notuð; 315 mm kragi er ekki til.
 - Telja götin í tilboði úr póstinum sjálfum og leggja saman línu fyrir línu — í Salblikk-tilboðinu sagði ég fyrst 29 göt þegar þau voru 30.
+- **Áður en tilboð eða svar er útbúið: leita í Sent Items í Thunderbird (`ImapMail/outlook.office365-1.com/Sent Items`, líka möppunni „Tilboð send“) að viðtakanda.** `email_digest` vantar sendar sendingar — 08.11.2026 bjó ég til tilboð til Salblikk sem hafði verið sent 18.09.
 - Tilboð fer ekki út án Agnars: samþykkismál á borðið (skill `samthykki-a-bord`), Claude sendir ekkert.
 
 ## Nýtt úr Charlize og lotum (28.10.2026)
