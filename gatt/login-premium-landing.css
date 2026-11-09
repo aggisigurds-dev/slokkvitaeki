@@ -39,7 +39,7 @@
 }
 #login .lp-brand{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-decoration:none}
 #login .lp-brand img{width:auto;height:50px;max-width:225px;object-fit:contain;object-position:left}
-#login .lp-brand small{color:#e6eaf3;font:600 9px/1.1 inherit;letter-spacing:.35em;padding-left:4px}
+#login .lp-brand small{color:#e6eaf3;font-size:9px;font-weight:600;line-height:1.1;letter-spacing:.35em;padding-left:4px}
 #login .lp-toplinks{display:flex;align-items:center;gap:23px}
 #login .lp-toplinks a{display:inline-flex;align-items:center;gap:8px;padding:8px 0;color:#f1f5fa;text-decoration:none;font-weight:650;font-size:13px;white-space:nowrap;transition:color .15s}
 #login .lp-toplinks a:hover{color:#ffb07e}
