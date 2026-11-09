@@ -470,16 +470,6 @@
         })
         .catch(function () { btn.disabled = false; err.textContent = 'Villa við sendingu. Reyndu aftur.'; });
     });
-    // 3D-halli spjaldsins fylgir músinni (aðeins með mús og án minnkaðrar hreyfingar)
-    if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference)').matches) {
-      login.addEventListener('mousemove', function (e) {
-        // yfir spjaldinu sjálfu er það kyrrt: hreyfanlegur takki missir smelli
-        if (card.contains(e.target)) { card.style.transform = ''; return; }
-        var r = login.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-        card.style.transform = 'rotateY(' + (x * 12) + 'deg) rotateX(' + (-y * 9) + 'deg)';
-      });
-      login.addEventListener('mouseleave', function () { card.style.transform = ''; });
-    }
   })();
 
   /* ── PORTAL ── */

@@ -27,7 +27,7 @@
 @keyframes lgsp{to{transform:rotateX(58deg) rotateZ(-12deg)}}
 .lg-fl{position:absolute;left:25px;top:0;width:190px;height:190px;border-radius:12px;border:1px solid var(--fb);background:var(--ff);box-shadow:0 0 0 1px rgba(0,0,0,.12),0 26px 34px var(--fs)}
 .lg-fl i{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--lo);box-shadow:0 0 14px 4px rgba(241,90,36,.75)}
-#login .lcard{width:100%;max-width:420px;flex:none;padding:36px 38px 30px;border-radius:16px;background:#fff;transform-style:preserve-3d;transition:transform .15s ease-out;
+#login .lcard{width:100%;max-width:420px;flex:none;padding:36px 38px 30px;border-radius:16px;background:#fff;
   box-shadow:0 2px 4px rgba(10,20,50,.12),0 18px 30px -8px rgba(10,20,50,.35),0 44px 80px -24px rgba(10,20,50,.55)}
 .lg-mark img{height:56px;width:auto;display:block}
 .lg-mark span{display:block;margin-top:8px;font-size:12px;font-weight:600;letter-spacing:.32em;color:var(--lo)}
