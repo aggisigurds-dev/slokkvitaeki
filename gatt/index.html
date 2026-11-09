@@ -1525,7 +1525,7 @@
     </a>
     <div class="lp-toplinks">
       <a href="mailto:slokkvitaeki@brunaholf.is" aria-label="Hafðu samband við Slökkvitæki"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-3a8 8 0 0 1 16 0v3"/><path d="M4 12H3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v-7H4zm16 0h1a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-3v-7h2z"/><path d="M20 19a4 4 0 0 1-4 3h-4"/></svg>Hafðu samband</a>
-      <a href="#lg-more2" aria-label="Skoða þjónustu">Þjónusta</a>
+      <a href="mailto:slokkvitaeki@brunaholf.is?subject=Hj%C3%A1lp%20me%C3%B0%20Brunah%C3%B3lf" aria-label="Fá hjálp með þjónustugáttina">Hjálp</a>
       <a href="/" aria-label="Fara á heimasíðu Slökkvitækja">Heimasíða ↗</a>
     </div>
   </div>
@@ -1557,15 +1557,20 @@
   </aside>
   <div class="lcard" id="lcard">
     <div class="lg-mark"><img src="/gatt/myndir/brunaholf/brunaholf-logo-navy.png" alt="Brunahólf" width="478" height="150"><span>SLÖKKVITÆKI EHF.</span></div>
-    <div class="lg-tabs" role="tablist"><button type="button" role="tab" id="lg-t-in" aria-selected="true">Innskráning</button><button type="button" role="tab" id="lg-t-reg" aria-selected="false">Nýskráning</button></div>
+    <div class="lg-tabs" role="tablist">
+      <button type="button" role="tab" id="lg-t-in" aria-selected="true"><svg class="lp-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3.1"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>Innskráning</button>
+      <button type="button" role="tab" id="lg-t-reg" aria-selected="false"><svg class="lp-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l5 5v13H6zM15 3v5h5M9 14h7M12.5 11v6"/></svg>Nýskráning</button>
+    </div>
     <form id="loginForm" autocomplete="on">
       <h2 class="lp-form-title">Innskráning í þjónustugátt</h2>
-      <div class="sub">Skráðu þig inn með netfanginu þínu og lykilorðinu sem við sendum þér.</div>
-      <div class="fld"><label for="email">Netfang</label><input type="email" id="email" placeholder="nafn@fyrirtaeki.is" autocomplete="username"></div>
-      <div class="fld"><label for="password">Lykilorð</label><input type="password" id="password" autocomplete="current-password"></div>
+      <div class="sub">Skráðu þig inn til að nálgast gögn, skýrslur og þjónustu.</div>
+      <div class="fld lp-login-field"><label for="email">Netfang</label><div class="lp-fieldbox"><svg class="lp-f-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><input type="email" id="email" placeholder="Netfang" autocomplete="username"></div></div>
+      <div class="fld lp-login-field"><label for="password">Lykilorð</label><div class="lp-fieldbox"><svg class="lp-f-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" id="password" placeholder="Lykilorð" autocomplete="current-password"><button type="button" class="lp-eye" id="lp-eye" aria-label="Sýna lykilorð" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <div class="lp-login-meta"><label class="lp-remember" for="lp-remember"><input type="checkbox" id="lp-remember"><span>Muna netfang</span></label><a href="mailto:eldklar@eldklar.is?subject=Gleymt%20lykilor%C3%B0%20%C3%AD%20Brunah%C3%B3lfi">Gleymt lykilorð?</a></div>
       <div class="lerr" id="lerr"></div>
-      <button type="submit">Innskrá</button>
-      <div class="lhelp">Gleymt lykilorð? <a href="mailto:eldklar@eldklar.is">eldklar@eldklar.is</a></div>
+      <button type="submit" class="lp-login-submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7M3 12h14m-6-6 6 6-6 6"/></svg>Innskrá</button>
+      <div class="lp-divider"><span>eða</span></div>
+      <button type="button" class="lp-register-switch" id="lp-register-switch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="7" r="3"/><path d="M4 20v-2a6 6 0 0 1 12 0v2m2-12v6m-3-3h6"/></svg>Nýskráning</button>
     </form>
     <form id="regForm" class="hidden" autocomplete="on" novalidate>
       <h2 class="lp-form-title">Sækja um aðgang</h2>
@@ -1584,7 +1589,7 @@
       <div class="lhelp">Þú getur líka sent póst beint á <a href="mailto:slokkvitaeki@brunaholf.is">slokkvitaeki@brunaholf.is</a>. Aðgangur er aldrei stofnaður sjálfkrafa.</div>
     </form>
     <div id="rg-ok" class="lg-ok hidden"><b>Beiðnin er móttekin</b><span>Við sendum þér póst um leið og aðgangurinn er tilbúinn, og svörum tilboðsbeiðni ef þú sendir hana.</span><button type="button" id="rg-back">Aftur í innskráningu</button></div>
-    <div class="lp-secure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5zM9 12l2 2 4-4"/></svg>Örugg HTTPS-tenging</div>
+    <div class="lp-secure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5zM9 12l2 2 4-4"/></svg>Örugg innskráning og dulkóðaður gagnaflutningur (HTTPS)</div>
   </div>
 </section>
 
@@ -2020,6 +2025,8 @@
 <link rel="stylesheet" href="/gatt/premium-v2.css?v=20261109a">
 <link rel="stylesheet" href="/gatt/login-v2.css?v=20261109breidd">
 <link rel="stylesheet" href="/gatt/login-premium-landing.css?v=20261109b">
+<link rel="stylesheet" href="/gatt/login-premium-faithful.css?v=20261109c">
 <script src="/gatt/premium-v2.js?v=20261109a" defer></script>
+<script src="/gatt/login-premium-faithful.js?v=20261109c" defer></script>
 </body>
 </html>
