@@ -9,6 +9,11 @@ import { readdirSync, statSync, mkdirSync, copyFileSync, rmSync, existsSync, rea
 import { join, relative, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execSync } from 'node:child_process';
+import vm from 'node:vm';
+
+// Málfræðivörðurinn (athugaMalfraedi neðar) — lýst hér efst því bundleIndexHtml() er kallað ofar í skránni en fallið stendur.
+const malfraediVillur = [];
+const _malfraediSed = new Set();
 
 const ROOT = process.cwd();
 const OUT = join(ROOT, 'dist');
@@ -123,6 +128,19 @@ function stampBuild() {
 // still produces a working dist/. The original per-file js/* are also still
 // copied into dist/ (just no longer referenced), so any dynamic path use keeps
 // working.
+// Málfræðivörðurinn (sjá skýringu í bundleIndexHtml). Skrá sem vantar er EKKI villa hér — bundle-leiðin ræður við það sjálf.
+function athugaMalfraedi(rel) {
+  if (_malfraediSed.has(rel)) return;
+  _malfraediSed.add(rel);
+  let kodi;
+  try { kodi = readFileSync(join(OUT, rel), 'utf8'); } catch (_) { return; }
+  try { new vm.Script(kodi, { filename: rel }); }
+  catch (e) {
+    const stadur = String((e && e.stack) || '').split('\n').slice(0, 3).join(' ⏎ ').slice(0, 300);
+    malfraediVillur.push({ rel, villa: ((e && e.message) || String(e)) + (stadur ? ' — ' + stadur : '') });
+  }
+}
+
 function bundleIndexHtml() {
   const indexPath = join(OUT, 'index.html');
   if (!existsSync(indexPath)) return;
@@ -169,10 +187,24 @@ function bundleIndexHtml() {
     const isDefer = /\bdefer\b/i.test(attrs);
     const special = /\basync\b/i.test(attrs) || /type\s*=\s*["']module["']/i.test(attrs);
     const bundleable = !!(src && local && !special && body.trim() === '');
+    // MÁLFRÆÐIVÖRÐUR (10.11.2026, Agnar: „Já, bæta við"). Hver staðbundin, klassísk skrifta er þáttuð ÁÐUR en nokkuð er
+    // búntað. Ein málfræðivilla drepur ALLT búntið sem skráin lendir í (~50 patcha), ekki bara skrána sjálfa — og esbuild-
+    // bilunin hér fyrir neðan er gleypt („shipping unminified"), svo brotna búntið fór þegjandi í loftið. Mælt 10.11.2026
+    // kl. 21:04–21:18: 502-verdlistar.js vantaði einn sviga (ókláruð breyting sem auto-sync bar á master) og úttektarspjaldið
+    // (129/165) teiknaðist ekki á lifandi síðu. Nú fellur build-ið í staðinn og síðan stendur á síðustu heilu útgáfu.
+    // vm.Script þáttar eins og vafrinn gerir við klassíska skriftu; module-skriftum er sleppt (önnur málfræði).
+    if (src && local && !/type\s*=\s*["']module["']/i.test(attrs)) athugaMalfraedi(src.replace(/^\//, '').split('?')[0]);
     parts.push({ t: 'script', raw: m[0], src, bundleable, defer: isDefer });
     last = tagRe.lastIndex;
   }
   if (last < html.length) parts.push({ t: 'html', s: html.slice(last) });
+
+  if (malfraediVillur.length) {
+    console.error('\n❌ build-dist: ' + malfraediVillur.length + ' skrifta/skriftur með MÁLFRÆÐIVILLU — ekkert birt, síðan stendur á síðustu heilu útgáfu.');
+    malfraediVillur.forEach(v => console.error('   · ' + v.rel + '\n     ' + v.villa));
+    console.error('   Lagaðu skrána (node --check <skrá>) og ýttu aftur. Neyðarútgangur: BUILD_LEYFA_MALFRAEDIVILLU=1.\n');
+    if (process.env.BUILD_LEYFA_MALFRAEDIVILLU !== '1') process.exit(1);
+  }
 
   const out = [];
   let run = [];

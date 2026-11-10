@@ -332,6 +332,12 @@ git commit --allow-empty -m "[deploy] stutt lýsing á því sem fer út" && git
 `--no-verify`. Keyrðu `node tools/audit-all.cjs --static` handvirkt þegar þú snertir varðaða leið og segðu frá rauðum vörðum. Ekki kveikja
 á hooknum aftur nema Agnar biðji um það.
 
+**Málfræðivörður í build-inu (Agnar 10.11.2026):** `build-dist.js` þáttar hverja staðbundna, klassíska skriftu í `index.html` (`vm.Script`)
+áður en búntað er og **fellur (exit 1) á málfræðivillu** — þá birtist ekkert og síðan stendur á síðustu heilu útgáfu. Tilefnið: 10.11.2026
+kl. 21:04–21:18 fór `502-verdlistar.js` í loftið með einn sviga vantandi (ókláruð breyting sem auto-sync bar á master) og drap `_bundle-3`
+í heild, því esbuild-bilunin er gleypt. Falli build-ið: `node --check <skrá>` á skránni sem villan nefnir, laga, ýta aftur. Neyðarútgangur:
+`BUILD_LEYFA_MALFRAEDIVILLU=1`. Vörðurinn nær ekki til module-skrifta né annarra síðna en `index.html` (t.d. `gatt/`).
+
 Auto-sync (`OneDrive/ClaudeMemory/auto-sync-*.ps1`, sameiginlegt öllum vélum) merkir wip-
 commit `[skip ci]` nema óýtt `[deploy]`-commit bíði undir því — þá erfir wip-commitið
 `[deploy]`. GitHub Actions (`.github/workflows/deploy.yml`) keyrir `build-dist.js` og
