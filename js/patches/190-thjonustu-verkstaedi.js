@@ -384,6 +384,50 @@
     render();
   }
 
+  /* 09.11.2026 (Agnar: „ýkt snilld að fá bútinn af skýrslunni þangað inn sem við á … collapsed"):
+   * útklippur af skönnuðum vinnublöðum (röðin sem á við fyrirtækið) sem SAMANBROTINN hluti á spjaldinu, undir
+   * nótunni og yfir Opna/Skýrsla. Gögnin eru á þjóninum (tafla vinnublad_utklippur, myndir í verkbord-files/
+   * vinnublod/) svo allar vélar sjá það sama. Aðeins LESIÐ hér. Engin röð → enginn hluti (ekkert tómt strik).
+   * Opið/lokað er aðeins til í minni flipans (_vbOpen) svo endurteikning loki ekki því sem er verið að skoða;
+   * myndirnar sækjast ekki fyrr en hluturinn er opnaður (display:none + loading=lazy). */
+  let _vbByCo = null;       // Map<String(co.id), [{id,titill,url,blad}]>
+  let _vbLoaded = false;
+  const _vbOpen = new Set();
+  let _vbTries = 0;
+  async function loadVinnublad() {
+    try {
+      const sb = (window.DB && DB.sb);
+      // gagnagrunnstengingin gæti ekki verið tilbúin í fyrstu teikningu → reyna aftur (hámark 8×), ekki gefast upp þegjandi
+      if (!sb) { if (++_vbTries <= 8) { _vbLoaded = false; setTimeout(() => { try { render(); } catch (_) {} }, 1500); } return; }
+      const rows = await DB.fetchAll((from, to) => sb.from('vinnublad_utklippur')
+        .select('id,fyrirtaeki_id,titill,url,blad').eq('ar', curYear)
+        .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
+      const m = new Map();
+      (rows || []).forEach(x => {
+        const k = String(x.fyrirtaeki_id); if (!x.url) return;
+        if (!m.has(k)) m.set(k, []);
+        m.get(k).push(x);
+      });
+      _vbByCo = m;
+    } catch (_) { return; }   // taflan ekki til / sóknarvilla → enginn hluti, ekkert endurteiknað
+    render();
+  }
+  function vinnubladLina(r) {
+    const rows = _vbByCo && _vbByCo.get(String(r.id));
+    if (!rows || !rows.length) return '';
+    const open = _vbOpen.has(String(r.id));
+    return '<div class="sv-vb' + (open ? ' open' : '') + '">' +
+      '<button type="button" class="sv-vb-hdr" data-id="' + r.id + '" aria-expanded="' + (open ? 'true' : 'false') + '" title="Útklippa af skannaða vinnublaðinu">' +
+        '<span class="sv-vb-t">Vinnublað</span>' +
+        '<span class="sv-vb-n">' + rows.length + (rows.length === 1 ? ' útklippa' : ' útklippur') + '</span>' +
+        '<i class="sv-vb-ch" aria-hidden="true"></i></button>' +
+      '<div class="sv-vb-body">' + rows.map(x =>
+        '<figure class="sv-vb-fig"><a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð">' +
+          '<img src="' + esc(x.url) + '" alt="Vinnublað: ' + esc(r.nafn) + '" loading="lazy" decoding="async"></a>' +
+          (x.titill ? '<figcaption>' + esc(x.titill) + '</figcaption>' : '') + '</figure>').join('') + '</div>' +
+    '</div>';
+  }
+
   // Greiðslustaða payday-raðar → { txt, paid } (rólegur litur á pillunni).
   function pdStatus(p) {
     const s = String((p && p.status) || '').toLowerCase();
@@ -550,6 +594,18 @@
       // merki + nóta vinstra megin, húsmynd hægra megin
       r('.sv-spj-rod', 'display:flex;gap:14px;align-items:stretch'),
       r('.sv-spj-v', 'flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px'),
+      // vinnublað (útklippur af skönnuðu blaði) — samanbrotið; silfurplata eins og hinir reitirnir, engin ný litaskrá
+      r('.sv-vb', 'margin:0 0 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;background:#eef1f6;overflow:hidden'),
+      r('.sv-vb-hdr', 'display:flex;align-items:center;gap:8px;width:100%;min-height:34px;margin:0;padding:0 10px;border:0;background:' + SILVER + ';cursor:pointer;text-align:left;font:600 12px ' + SANS + ';color:#2b313c'),
+      r('.sv-vb-hdr:focus-visible', 'outline:none;box-shadow:inset 0 0 0 3px rgba(190,32,28,.55)'),
+      r('.sv-vb-n', 'margin-left:auto;font:500 11px ' + MONO + ';color:#5b6472'),
+      r('.sv-vb-ch', 'flex:none;width:7px;height:7px;border-right:2px solid #5b6472;border-bottom:2px solid #5b6472;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s'),
+      r('.sv-vb.open .sv-vb-ch', 'transform:rotate(225deg) translate(-2px,-2px)'),
+      r('.sv-vb-body', 'display:none;padding:8px;gap:8px'),
+      r('.sv-vb.open .sv-vb-body', 'display:flex;flex-direction:column'),
+      r('.sv-vb-fig', 'margin:0'),
+      r('.sv-vb-fig img', 'display:block;width:100%;height:auto;min-height:60px;border-radius:5px;background:#fff'),
+      r('.sv-vb-fig figcaption', 'margin-top:3px;font:400 11px ' + SANS + ';color:#5b6472'),
       r('.sv-spj .sv-marks', 'gap:6px'),
       r('.sv-spj .sv-mark', 'display:inline-flex;align-items:center;height:24px!important;min-height:24px!important;padding:0 9px!important;border-radius:6px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:500 11.5px ' + SANS + '!important;color:#2b313c!important;white-space:nowrap;cursor:pointer;line-height:1!important'),
       r('.sv-spj .sv-mark[style]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25)'),
@@ -1220,6 +1276,7 @@
           '<div class="sv-spj-v">' + marks(r) + note(r) + aminningLine(r, 90) + '</div>' +
           spjMynd(r) +
         '</div>' +
+        vinnubladLina(r) +
         spjActs(r) +
       '</div>' +
     '</div>';
@@ -1243,6 +1300,7 @@
         stepperWide(r) +
         marks(r) +
         aminningLine(r) +
+        vinnubladLina(r) +
       '</div>' +
       '<div class="sv-wide-r">' + note(r) + vinnslaActsWide(r) + '</div>' +
     '</div>';
@@ -1265,6 +1323,7 @@
     // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
     if (!_verkstLoaded) { _verkstLoaded = true; loadVerkst(); }   // óskiluð tæki á verkstæðinu → ein fyrirspurn, endurteiknar
+    if (!_vbLoaded) { _vbLoaded = true; loadVinnublad(); }          // útklippur af vinnublöðum → ein fyrirspurn, endurteiknar
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
     // Skref-sían gildir á ÖLL þrjú hólfin svo talan á pillunni og listinn segi
@@ -1534,6 +1593,14 @@
       const next = cur === k ? '' : k;
       // stimpla hvenær merkt (fyrir "Nýlega merkt" röðun); núllað þegar afmerkt
       setFlag(id, { sv_mark: next, sv_mark_at: next ? Date.now() : 0 });
+    }));
+    // vinnublað: opna/loka — beint á hnútnum (engin endurteikning → skrun og fókus haldast), minnið í _vbOpen
+    v.querySelectorAll('.sv-vb-hdr').forEach(bn => bn.addEventListener('click', e => {
+      e.stopPropagation();
+      const box = bn.closest('.sv-vb'); if (!box) return;
+      const on = !box.classList.contains('open');
+      box.classList.toggle('open', on); bn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      const k = String(bn.dataset.id); if (on) _vbOpen.add(k); else _vbOpen.delete(k);
     }));
     // note — save on blur, no re-render (keep focus while typing)
     v.querySelectorAll('.sv-note').forEach(ta => ta.addEventListener('change', e => {
