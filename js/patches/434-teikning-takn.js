@@ -435,7 +435,7 @@
     const wrap = function () {
       const F2 = this, cid = F2 && F2.companyId, pl = F2 && F2.plans && F2.plans[cid], sia = window.TeiknSia;
       let sidad = null;
-      try { if (pl && Array.isArray(pl.markers) && sia && sia.lykill && sia.lykill()) { const syn = pl.markers.filter(m => !sia.falid(m, F2.units)); if (syn.length !== pl.markers.length) sidad = syn; } } catch (_) {}
+      try { if (pl && Array.isArray(pl.markers)) { const erSkilti = m => m.kind === 'sign' || (typeof m.unitId === 'string' && String(m.unitId).indexOf('s:') === 0); /* 10.11: grunnteiknarinn teiknar rauðan hring undir ÖLLUM merkjum — teiknaOfan teiknar öll merki nema skilti sjálf, svo grunnurinn fær aðeins skilti */ const syn = pl.markers.filter(m => erSkilti(m) && !(sia && sia.lykill && sia.lykill() && sia.falid(m, F2.units))); if (syn.length !== pl.markers.length) sidad = syn; } } catch (_) {}
       if (sidad) { F2.plans[cid] = Object.assign({}, pl, { markers: sidad }); try { orig(); } finally { F2.plans[cid] = pl; } } else orig();
       try { teiknaOfan(this); } catch (_) {}
     };
