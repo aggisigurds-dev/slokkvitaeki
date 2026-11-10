@@ -60,6 +60,7 @@
   const pun = n => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');   // toLocaleString('is-IS') fellur stundum í en-US
   const verdInn = n => n == null ? '' : (Number.isInteger(n) ? pun(n) : String(n).replace('.', ','));
   const kr = n => pun(n) + ' kr';
+  const krN = n => verdInn(Math.round((Number(n) || 0) * 100) / 100) + ' kr';   // einingaverð með tugabroti (52.500,5), ekki rúnnað
   const klona = o => JSON.parse(JSON.stringify(o));
   const nyId = pf => pf + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const sl = ms => new Promise(r => setTimeout(r, ms));
@@ -228,7 +229,7 @@
       '.' + P + '-ib[disabled]{opacity:.3;pointer-events:none}',
       '.' + P + '-nyr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;padding:10px 12px;background:#fff;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12),0 2px 4px rgba(10,14,22,.14)}',
       '.' + P + '-nyr input[type=text]{' + inp + ';flex:1 1 220px;min-width:0}',
-      '.' + P + '-nyr .' + P + '-verd{flex:0 0 auto}',
+      '.' + P + '-nyr input.' + P + '-verd{flex:0 0 92px;width:92px}',
       '.' + P + '-nyr select{' + inp + ';font-size:12.5px}',
       '.' + P + '-tomur{padding:26px;text-align:center;color:#5b6573;font-size:13px;background:#fff;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12);line-height:1.6}',
       '.' + P + '-tomur b{color:#141822}',
@@ -893,7 +894,7 @@
     if (x.tegund === 'tilbod') return ['samkv. tilboði', 'samkv. tilboði'];
     if (x.verd == null) return ['—', '—'];
     const f = x.tegund === 'fra' ? 'frá ' : '';
-    return [f + kr(x.verd), f + kr(mvskTala(x.verd, vsk))];
+    return [f + krN(x.verd), f + kr(mvskTala(x.verd, vsk))];
   }
   function prentaVerdlista() {
     const L = lista(_virkur); if (!L) return;
@@ -922,7 +923,7 @@
       const radir = L.hopar.map(h => {
         const l2 = ls.filter(l => l.x.hopur === h.id); if (!l2.length) return '';
         return '<tr class="hopur"><td colspan="6">' + esc(h.heiti) + '</td></tr>' + l2.map(l => {
-          const v = l.verd == null ? 'samkv. tilboði' : kr(l.verd), lt = l.verd == null ? '—' : kr(mvskTala(l.verd * l.magn * (1 - l.afsl / 100), l.vsk));
+          const v = l.verd == null ? 'samkv. tilboði' : krN(l.verd), lt = l.verd == null ? '—' : kr(mvskTala(l.verd * l.magn * (1 - l.afsl / 100), l.vsk));
           return '<tr><td>' + esc(l.x.nafn) + (l.x.ath ? '<small>' + esc(l.x.ath) + '</small>' : '') + '</td><td class="r">' + esc(String(l.magn).replace('.', ',')) + ' ' + esc(l.x.eining) + '</td><td class="r">' + esc(v) + '</td><td class="r">' + (l.afsl ? esc(String(l.afsl).replace('.', ',')) + ' %' : '') + '</td><td class="r">' + l.vsk + ' %</td><td class="r b">' + esc(lt) + '</td></tr>';
         }).join('');
       }).join('');

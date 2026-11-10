@@ -783,10 +783,11 @@
         ? 'Enginn viðskiptavinur stofnaður — kennitalan fer á reikninginn (ásamt nafni ef það er skráð).'
         : 'Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.';
     }
-    function openOstofnun(kt10, nafn) {
+    function openOstofnun(kt10, nafn, simi) {
       if (!kt10) {
         walkinBtn.click();   // endurstillir körfukúnna og setur kt 999999-9999
         if (nafn) { walkinName.value = nafn; walkinName.dispatchEvent(new Event('input', { bubbles: true })); }
+        if (simi) { walkinPhone.value = simi; walkinPhone.dispatchEvent(new Event('input', { bubbles: true })); }
         return;
       }
       const dashed = kt10.slice(0, 6) + '-' + kt10.slice(6);
@@ -881,10 +882,13 @@
         // 10.11.2026 (ósk Agnars): „+ Afgreiðsla án stofnunar" — sjá openOstofnun() fyrir ofan. Í boði með fullri kt eða nafni (ekki 7–8 stafa tölu).
         const ostofnKt = (qDigits.length === 10 && qDigits !== '9999999999') ? qDigits : '';
         const ostofnNafn = (!ostofnKt && /[A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö]/.test(q)) ? q : '';
-        if (ostofnKt || ostofnNafn) {
+        // 10.11.2026 (Agnar: „varst þú ekki búinn að laga venjulegu kennitölu afgreiðsla án stofnunar" — skjáskot: 7 stafa tala fékk bara „Stofna nýjan"):
+        // valkosturinn birtist ALLTAF þegar leitin finnur engan. 7 stafa tala er sími (fyllist inn í Sími); aðrar tölur → gluggi án áfyllingar.
+        const ostofnSimi = (!ostofnKt && !ostofnNafn && qDigits.length === 7 && /^[0-9\s-]+$/.test(q)) ? qDigits : '';
+        {
           html += '<div class="_ups-ostofn" style="padding:11px 14px;cursor:pointer;background:#fff;color:#0f172a;font-weight:600;font-size:13px;border-top:1px solid #e2e8f0" ' +
             'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'#fff\'">' +
-            '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>Afgreiðsla án stofnunar' + (ostofnNafn ? ': „' + esc(ostofnNafn) + '"' : '') +
+            '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>Afgreiðsla án stofnunar' + (ostofnNafn ? ': „' + esc(ostofnNafn) + '"' : ostofnSimi ? ': sími ' + esc(ostofnSimi.slice(0, 3) + '-' + ostofnSimi.slice(3)) : '') +
             '<div style="margin:2px 0 0 18px;font-size:11px;font-weight:400;color:#64748b">' + (ostofnKt ? 'Kennitalan fer á reikninginn — enginn viðskiptavinur stofnaður' : 'Án kennitölu — enginn viðskiptavinur stofnaður') + '</div>' +
           '</div>';
         }
@@ -939,7 +943,7 @@
         });
         const ostofnRow = results.querySelector('._ups-ostofn');
         if (ostofnRow) ostofnRow.addEventListener('click', () => {
-          openOstofnun(ostofnKt, ostofnNafn);
+          openOstofnun(ostofnKt, ostofnNafn, ostofnSimi);
         });
         return;
       }
