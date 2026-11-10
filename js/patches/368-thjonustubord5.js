@@ -259,8 +259,14 @@
   // megin). Ristin er 60 dálkar svo bæði þriðjungar og fimmtungar gangi upp. Röð þrepanna frá mjóu í breitt:
   const BREIDD_ROD = [1, 4, 2, 5, 3];
   const BREIDD_MERKI = { 1: '⅓', 4: '⅖', 2: '½', 5: '⅗', 3: '1/1' };
-  const gildBreidd = b => BREIDD_ROD.indexOf(b) >= 0;
-  const SPLIT_GILD = [4, 2, 5];   // skiptilínan velur á milli ⅖+⅗ · ½+½ · ⅗+⅖ (lágmark ⅖, hámark ⅗)
+  // 10.11.2026: skiptilínur milli allra eininga í röð — breidd má líka vera SPÖNN í 60 dálka ristinni (heiltala 10–60).
+  // Gildi 1–5 eru áfram þrepin að ofan; spönn er vistuð óbreytt (mitt.breidd / hamir[].breidd) og samstillist eins.
+  const erSponn = b => Number.isInteger(b) && b >= 10 && b <= 60;
+  const gildBreidd = b => BREIDD_ROD.indexOf(b) >= 0 || erSponn(b);
+  const SPN = { 1: 20, 2: 30, 3: 60, 4: 24, 5: 36 };   // dálkar hvers þreps (breiðir skjáir)
+  const SPONN_MIN = 16;
+  const spannAf = b => erSponn(b) ? b : (SPN[b] || 60);
+  const naestaThrep = b => BREIDD_ROD.reduce((best, x) => Math.abs(SPN[x] - spannAf(b)) < Math.abs(SPN[best] - spannAf(b)) ? x : best, 3);
   const sjalfgefinBreidd = k => ((k === 'checklisti' || k === 'checklisti2') ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
     if (gildBreidd(S.breiddBid[k])) return S.breiddBid[k];   // skiptilína dregin, vistun á leiðinni
@@ -1068,10 +1074,13 @@
       '.modcell{min-width:0;container:rail / inline-size;grid-column:span 60}',
       '.modgrid>.sel.inline{grid-column:1 / -1}',
       '.modcell{position:relative}',
+      '.modcell[data-sp="s"]{grid-column:span 60}',
       '.mspl{display:none;position:absolute;top:0;bottom:0;right:-18px;width:22px;z-index:6;border:none;padding:0;background:transparent;cursor:col-resize;touch-action:none}',
       '.mspl::after{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:4px;border-radius:2px;background:var(--edge2);opacity:.55;transition:opacity .12s,background .12s}',
       '.mspl:hover::after,.mspl.virk::after{background:var(--g5);opacity:1}',
-      '@container main (min-width: 1100px){.mspl{display:block}}',
+      '@container main (min-width: 1100px){.modcell[data-sp="s"]{grid-column:span var(--sp)}}',
+      '@container main (min-width: 1100px){.mspl.syn{display:block}}',
+      '.mspl.kant{right:-6px;width:16px}.mspl.kant::after{left:10px}',
       '@container main (min-width: 1100px){.modcell[data-sp="1"],.modcell[data-sp="2"]{grid-column:span 30}.modcell[data-sp="4"]{grid-column:span 24}.modcell[data-sp="5"]{grid-column:span 36}}',
       '@container main (min-width: 1900px){.modcell[data-sp="1"]{grid-column:span 20}.modcell[data-sp="2"]{grid-column:span 30}}',
       // Raðhamur: einingarnar fá hald, stærðarhandfang og ✕ á meðan hamur er í breytingu.
@@ -5122,7 +5131,10 @@
     const radar = !!(S.hamForm && S.hamForm.id && S.hamForm.id === c.mode);
     const einingaRod = radar ? (S.hamForm.rod || []) : mode.first;
     function frumaHtml(k, i, rod) {
-      const sp = radar ? hfBreidd(k) : breiddAf(mode, k);
+      let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
+      // Báðir checklistar og litla skipulagsborðið í sömu röð án vistaðrar breiddar: skipta röðinni (18+18+24) — annars sprytti þriðja einingin í nýja röð.
+      const TRIO = { checklisti: 18, checklisti2: 18, skipulag2: 24 };
+      if (!radar && TRIO[k] && Object.keys(TRIO).every(x => rod.indexOf(x) >= 0) && !gildBreidd(mode && mode.breidd && mode.breidd[k]) && !gildBreidd(S.breiddBid[k])) sp = TRIO[k];
       const bar = !radar ? '' : '<div class="mbar">' +
         '<span class="mgrip" aria-hidden="true">⠿</span><span>' + esc(MODS[k] ? MODS[k].t : k) + '</span><span class="grow"></span>' +
         '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="-1"' + (BREIDD_ROD.indexOf(sp) <= 0 ? ' disabled' : '') + ' title="Mjórra">◀</button>' +
@@ -5130,16 +5142,13 @@
         '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="1"' + (BREIDD_ROD.indexOf(sp) >= BREIDD_ROD.length - 1 ? ' disabled' : '') + ' title="Breiðara">▶</button>' +
         '<button type="button" data-t5="ham-eining-burt" data-m="' + esc(k) + '" title="Taka einingu úr hamnum">✕</button></div>';
       const res = radar ? '<button type="button" class="mres" data-hres="' + esc(k) + '" aria-label="Draga til að breyta breidd"></button>' : '';
-      // 10.11.2026 (Agnar): dragbær skiptilína á milli tveggja eininga sem standa hlið við hlið (⅖+⅗ · ½+½) — breiddin
-      // vistast á þjón eins og breidd úr ritlinum (Mitt vinnuborð: mitt.breidd · sérsniðinn hamur: hamir[].breidd).
-      let skipt = '';
-      if (!radar && (mode.mitt || mode.ser) && i + 1 < rod.length) {
-        const SP = { 1: 30, 2: 30, 3: 60, 4: 24, 5: 36 }, nsp = breiddAf(mode, rod[i + 1]);
-        let upph = 0; for (let j = 0; j < i; j++) upph += SP[breiddAf(mode, rod[j])] || 60;
-        if (upph % 60 === 0 && SPLIT_GILD.indexOf(sp) >= 0 && SPLIT_GILD.indexOf(nsp) >= 0 && SP[sp] + SP[nsp] === 60)
-          skipt = '<button type="button" class="mspl" data-spl="' + esc(k) + '|' + esc(rod[i + 1]) + '" aria-label="Draga til að breikka eða mjókka" title="Draga til hliðar — breidd vistast"></button>';
-      }
-      return '<div class="modcell" data-sp="' + sp + '"' +
+      // 10.11.2026 (Agnar): dragbær skiptilína á milli ALLRA eininga í röð — hver breikkar/mjókkar á kostnað nágrannans.
+      // Línan er teiknuð við hverja einingu sem á nágranna; skiptiMerkja() sýnir hana aðeins þegar nágranninn stendur
+      // í SÖMU röð (raunveruleg legu, ekki ágiskun). Breiddin vistast á þjón: Mitt vinnuborð = mitt.breidd, sérsniðinn hamur = hamir[].breidd.
+      const skipt = (!radar && (mode.mitt || mode.ser))
+        ? '<button type="button" class="mspl" data-spl="' + esc(k) + '|' + esc(rod[i + 1] || '') + '" aria-label="Draga til að breikka eða mjókka" title="Draga til hliðar — breidd vistast"></button>' : '';
+      const spAttr = erSponn(sp) ? ' data-sp="s" style="--sp:' + sp + '"' : ' data-sp="' + sp + '"';
+      return '<div class="modcell"' + spAttr +
         (radar ? ' draggable="true" data-hdrag="' + esc(k) + '"' : '') + '>' + bar + einingHtml(k) + res + skipt + '</div>';
     }
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
@@ -5285,6 +5294,7 @@
     const hostTop = hostSkr ? v.scrollTop : 0, hostLeft = hostSkr ? v.scrollLeft : 0;
     mount.innerHTML = html;
     v.dataset.t5sel = String(selId);
+    skiptiMerkja(root);
     if (hostSkr) {
       v.scrollTop = hostTop;
       v.scrollLeft = hostLeft;
@@ -5516,34 +5526,55 @@
     const h = e.target && e.target.closest ? e.target.closest('[data-spl]') : null;
     if (!h) return;
     e.preventDefault();
-    const [ka, kb] = h.dataset.spl.split('|'), grid = h.closest('.modgrid'), ca = h.closest('.modcell');
-    if (!grid || !ca || !ca.nextElementSibling) return;
-    const cb = ca.nextElementSibling, g = grid.getBoundingClientRect(), vinstri = ca.getBoundingClientRect().left;
-    const fyrst = breiddAf(M(cfg().mode), ka);
-    let sidast = fyrst;
+    const [ka, kb0] = h.dataset.spl.split('|'), grid = h.closest('.modgrid'), ca = h.closest('.modcell'), nasti = ca && ca.nextElementSibling;
+    if (!grid || !ca) return;
+    // Par: nágranninn er í sömu röð → skiptilína. Annars er þetta hægri brún síðustu einingar raðarinnar: hún breytir aðeins sjálfri sér.
+    const cb = (nasti && nasti.classList.contains('modcell') && kb0 && Math.abs(nasti.offsetTop - ca.offsetTop) < 4 && nasti.offsetLeft > ca.offsetLeft) ? nasti : null, kb = cb ? kb0 : '';
+    const GAP = 14, g = grid.getBoundingClientRect(), dalkur = (g.width + GAP) / 60;
+    const spann = c => Math.round((c.getBoundingClientRect().width + GAP) / dalkur);
+    const a0 = spann(ca), b0 = cb ? spann(cb) : 0, vinstri = ca.getBoundingClientRect().left;
+    // Laust pláss í röðinni: mjókki A situr afgangurinn eftir (nágranninn heldur sinni breidd og næsta eining í röðinni
+    // dregst upp í raðina ef hún kemst); breikki A er fyrst tekið af lausa plássinu, svo af nágrannanum.
+    const radaCells = Array.from(grid.children).filter(c => c.classList && c.classList.contains('modcell') && Math.abs(c.offsetTop - ca.offsetTop) < 4);
+    const laust = Math.max(0, 60 - radaCells.reduce((t, c) => t + spann(c), 0));
+    let sidastB = b0;
+    let sidast = a0;
     h.classList.add('virk');
     try { h.setPointerCapture(e.pointerId); } catch (_) {}
+    const setja = (c, v) => { c.dataset.sp = 's'; c.style.setProperty('--sp', String(v)); };
     const hreyfa = ev => {
-      const hlutf = (ev.clientX - vinstri) / Math.max(1, g.width);   // hlutur A af ristinni
-      const ny = hlutf < 0.45 ? 4 : hlutf < 0.55 ? 2 : 5;
+      const hrar = (ev.clientX - vinstri + GAP / 2) / dalkur;
+      const ny = Math.max(SPONN_MIN, Math.min(a0 + laust + (cb ? b0 - SPONN_MIN : 0), Math.round(hrar / 2) * 2));
       if (ny === sidast) return;
-      sidast = ny;
-      ca.dataset.sp = String(ny); cb.dataset.sp = String(ny === 4 ? 5 : ny === 5 ? 4 : 2);
+      const vantar = ny - a0;   // >0: A breikkar
+      const nb = vantar > 0 ? Math.max(SPONN_MIN, b0 - Math.max(0, vantar - laust)) : b0;
+      sidast = ny; sidastB = nb; setja(ca, ny); if (cb) setja(cb, nb);
     };
     const sleppa = () => {
       h.removeEventListener('pointermove', hreyfa); h.removeEventListener('pointerup', sleppa); h.removeEventListener('pointercancel', sleppa);
       h.classList.remove('virk');
-      if (sidast === fyrst) return;
-      const bB = sidast === 4 ? 5 : sidast === 5 ? 4 : 2;
-      S.breiddBid[ka] = sidast; S.breiddBid[kb] = bB;
-      const klar = ok => { if (ok) { delete S.breiddBid[ka]; delete S.breiddBid[kb]; } render(); };
+      if (sidast === a0) return;
+      const nb = sidastB;
+      const bd = cb ? { [ka]: sidast, [kb]: nb } : { [ka]: sidast };
+      Object.assign(S.breiddBid, bd);
+      const klar = ok => { if (ok) Object.keys(bd).forEach(x => delete S.breiddBid[x]); render(); };
       const c = cfg();
-      if (c.mode === MITT_HAM) { vistaCfg({ mitt: { breidd: { [ka]: sidast, [kb]: bB } } }).then(klar); }
-      else vistaHamir(l => { const x = l.find(y => y.id === c.mode); if (x) { x.breidd = Object.assign({}, x.breidd, { [ka]: sidast, [kb]: bB }); } return l; }).then(klar);
+      if (c.mode === MITT_HAM) vistaCfg({ mitt: { breidd: bd } }).then(klar);
+      else vistaHamir(l => { const x = l.find(y => y.id === c.mode); if (x) { x.breidd = Object.assign({}, x.breidd, bd); } return l; }).then(klar);
       render();
     };
     h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
   }
+  // Sýnir skiptilínu aðeins þar sem nágranninn stendur í sömu röð (sama offsetTop) — kallað eftir teikningu og við stærðarbreytingu.
+  function skiptiMerkja(root) {
+    if (!root) return;
+    root.querySelectorAll('.mspl').forEach(h => {
+      const ca = h.closest('.modcell'), cb = ca && ca.nextElementSibling;
+      const par = !!(cb && cb.classList.contains('modcell') && Math.abs(ca.offsetTop - cb.offsetTop) < 4 && ca.offsetLeft < cb.offsetLeft);
+      h.classList.toggle('syn', true); h.classList.toggle('kant', !par);
+    });
+  }
+  window.addEventListener('resize', () => { try { skiptiMerkja(rot()); } catch (_) {} });
   function onBreiddNidur(e) {
     const h = e.target && e.target.closest ? e.target.closest('[data-hres]') : null;
     if (!h || !S.hamForm) return;
@@ -6498,7 +6529,7 @@
       }
       case 'ham-breidd': {
         if (!S.hamForm) return;
-        const k = el.dataset.m, i0 = BREIDD_ROD.indexOf(hfBreidd(k));
+        const k = el.dataset.m, i0 = BREIDD_ROD.indexOf(naestaThrep(hfBreidd(k)));
         const ny = BREIDD_ROD[Math.max(0, Math.min(BREIDD_ROD.length - 1, i0 + (+el.dataset.v || 0)))];
         (S.hamForm.breidd = S.hamForm.breidd || {})[k] = ny;
         render();
