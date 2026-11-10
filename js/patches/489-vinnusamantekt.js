@@ -31,6 +31,9 @@
   const BH = 'https://brunaholf.netlify.app';
   const SKYNDI = 5 * 60 * 1000;
   const HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
+  // 10.11.2026: þriðja hólfið í Tölvupóstum (448). Það er Microsoft 365 og email_digest fær aðeins INNHÓLFIÐ þaðan — sendur póstur
+  // sést ekki, svo „svarað" er ómælanlegt. Bréfin eru því talin sér og sýnd sem upplýsing, aldrei sem ósvöruð.
+  const HOLF_AN_SENT = ['slokkvitaeki@brunaholf.is'];
   const FELLT_LYKILL = 'vinnusamantekt.fellt';
   // Þröskuldar alvarleika — stilla hér.
   const THR = {
@@ -87,6 +90,8 @@
       slokkvitaekiVorur: () => fyrirspurn(c.from('vorur').select('id').eq('flokkur', 'Slökkvitæki')),
       plan: () => DB.fetchAll((a, b) => c.from('v_uttektarplan').select('man,stada').order('fid').order('man').range(a, b)),
       postur: () => saekjaPost(c),
+      posturAnSent: () => fyrirspurn(c.from('email_digest').select('id,received_at')
+        .in('account', HOLF_AN_SENT).eq('folder', 'INBOX').gte('received_at', vika(-1).toISOString()).limit(1000)),
       bord: () => telja(c.from('thjonustubeidni').select('id', { count: 'exact', head: true }).is('deleted_at', null).is('archived_at', null).or('status.is.null,status.neq.lokad')),
       villur: () => bhGet('/api/villur?dagar=14&allt=1&limit=200'),   // villur er RLS-varin án anon-reglna — aðeins þetta fall les hana
       nyFyrirtaeki: () => fyrirspurn(c.from('fyrirtaeki').select('id,er_i_thjonustu').gte('created_at', manudur().toISOString()).is('deleted_at', null).limit(1000)),
@@ -172,7 +177,14 @@
       const t = tekjurManadar(kraefst(g.solur.v, 'solur')), n = t.nu, f = t.fyrri, dagur = new Date().getUTCDate();
       const spa = n.all / hluti(), hlutf = f.all ? spa / f.all : 1;
       const sev = dagur < 8 ? 'upp' : hlutf < THR.tekjurAlv ? 'alv' : hlutf < THR.tekjurAthuga ? 'athuga' : 'ok';
-      return { sev, tala: mkr(n.all), undir: pst(n.all, f.all) + ' frá síðasta mánuði (' + mkr(f.all) + ')', punktar: [
+      // 10.11.2026: undirtextinn bar hráa mánaðartölu saman við HEILAN síðasta mánuð („−86,8 %" á 10. degi) þótt ljósið dæmi eftir
+      // framreiknaðri spá. Nú segir textinn það sama og ljósið; fyrstu vikuna er engin spá sýnd (of lítið liðið af mánuðinum).
+      const dagarAlls = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0)).getUTCDate();
+      const undir = dagur < 8
+        ? 'dagur ' + dagur + ' af ' + dagarAlls + ' · of snemmt að spá · síðasti mánuður ' + mkr(f.all)
+        : 'stefnir í ' + mkr(spa) + ' · ' + pst(spa, f.all) + ' miðað við síðasta mánuð (' + mkr(f.all) + ')';
+      return { sev, tala: mkr(n.all), undir, punktar: [
+        'dagur ' + dagur + ' af ' + dagarAlls + ' · spáin er salan hingað til framreiknuð á allan mánuðinn',
         'úttektir ' + mkr(n.uttekt) + ' · ' + n.nu + ' reikningar (síðast ' + mkr(f.uttekt) + ')',
         'búð ' + mkr(n.bud) + ' · ' + n.nb + ' reikningar (síðast ' + mkr(f.bud) + ')',
         'annað ' + mkr(n.annad) + ' (síðast ' + mkr(f.annad) + ')',
@@ -259,8 +271,14 @@
       const bar = g.postur.v.filter(m => Date.parse(m.received_at) >= v0).length, barFy = g.postur.v.filter(m => Date.parse(m.received_at) < v0).length;
       const elst = nu.concat(fy).reduce((a, m) => Math.max(a, dagarSidan(m.received_at)), 0);
       const sev = nu.length >= THR.postAlv || elst > THR.postAldurAlv ? 'alv' : nu.length >= THR.postAthuga || elst > THR.postAldurAthuga ? 'athuga' : 'ok';
-      return { sev, tala: nu.length + ' þessa viku', undir: 'af ' + bar + ' sem bárust · síðasta vika ' + fy.length + ' af ' + barFy,
-        punktar: [nu.filter(m => m.is_question).length + ' spurningar í vikunni · elsti ósvaraði ' + elst + ' d.', 'eldklar@ og bokhald@ · sjálfvirkur póstur er með'] };
+      const punktar = [nu.filter(m => m.is_question).length + ' spurningar í vikunni · elsti ósvaraði ' + elst + ' d.', 'eldklar@ og bokhald@ · sjálfvirkur póstur er með'];
+      // Hólf án sends pósts í kerfinu: talið sér, aldrei „ósvarað" (bilun í þeirri sókn fellir ekki mælinguna).
+      // Tómt svar er EKKI núll: aðgangsreglan á email_digest hleypir vafranum (anon) aðeins í eldklar-hólfin (mælt 10.11.2026), svo
+      // tómt þýðir „fékk ekki að lesa" þar til regla fyrir hólfið er komin. Þá birtist talan sjálfkrafa.
+      const an = g.posturAnSent && g.posturAnSent.ok ? g.posturAnSent.v : null;
+      if (an && an.length) punktar.push(HOLF_AN_SENT.join(', ') + ': ' + an.filter(m => Date.parse(m.received_at) >= v0).length + ' bréf bárust í vikunni · svör þaðan sjást ekki í kerfinu og eru því ótalin hér');
+      else punktar.push(HOLF_AN_SENT.join(', ') + ': ekki mælt — vafrinn fær ekki að lesa hólfið (aðgangsregla vantar)');
+      return { sev, tala: nu.length + ' þessa viku', undir: 'af ' + bar + ' sem bárust · síðasta vika ' + fy.length + ' af ' + barFy, punktar };
     } },
     { id: 'samthykki', hopur: 'Fólk og póstur', heiti: 'Bíður samþykkis hjá þér', slod: { ham: 'samthykkja', t: 'Samþykkja' }, live: () => {
       const s = samt(); if (!s) return null;
@@ -488,5 +506,5 @@
     return false;
   }
 
-  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-10-29' };
+  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-10' };
 })();
