@@ -15,7 +15,7 @@
  *   - Allt úr gamla prófílnum er áfram aðgengilegt: „Breyta upplýsingum" opnar gamla bannerinn (inline-reitir, mynd,
  *     athugasemd, Fleiri upplýsingar, Brunaáætlun, Rýmingaráætlun …) og ⋯-valmyndin geymir hina aðgerðatakkana.
  *
- * Gildissvið: Brunastál, tölva (ekki sími — síminn heldur röðun 363/338).
+ * Gildissvið: tölva OG sími (gámafyrirspurn @container p2c + @media ≤ 900 px; síminn er 980 px breiður, sjá slokkvitaeki-layout §9).
  */
 (function () {
   'use strict';
@@ -31,7 +31,7 @@
   if (!KVEIKT) return;
 
   var F = ':not(#_p2a):not(#_p2b):not(#_p2c)';
-  var M = 'html:not([data-viewmode="mobile"]) body:not(.appmode) #companies-main.p2' + F;
+  var M = 'html body #companies-main.p2' + F;
   var FX = ':not(#_p2d):not(#_p2e):not(#_p2f):not(#_p2g):not(#_p2h):not(#_p2i):not(#_p2j)';
   var G = M + FX;
   var METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
@@ -62,6 +62,12 @@
   ];
 
   var css =
+    M + '{display:flex!important;flex-direction:column}' +
+    G + ' > *{flex:none!important;min-height:0}' +
+    G + ' > #p2-haus,' + G + ' > #p2-glugg,' + G + ' > #p2-athug,' + G + ' > #p2-samsk,' + G + ' > #p2-teikn,' + G + ' > #p2-adrar{overflow:visible!important}' +
+    G + ' > #p2-haus{order:1}' + G + ' > #p2-glugg{order:2}' + G + ' > #p2-athug{order:3}' + G + ' > .co-banner{order:4}' +
+    G + ' > #p2-samsk,' + G + ' > ._samskipti-host{order:5}' + G + ' > #p2-flipar{order:6}' + G + ' > #p2-teikn{order:7}' + G + ' > #p2-adrar{order:8}' +
+    G + ' > [data-p2t]:not(#p2-teikn):not(#p2-adrar){order:9}' + G + ' > *:not([id^="p2-"]):not(.co-banner):not(._samskipti-host):not([data-p2t]){order:10}' +
     G + ' > div:first-child{display:none!important}' +
     G + ' > .co-banner:not(.p2-open){display:none!important}' +
     G + ' > .p2-gomul{display:none!important}' +
@@ -114,6 +120,15 @@
     '#companies-main .p2-athug input{flex:1;min-width:0;height:30px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#141822}' +
     '#companies-main .p2-athug input::placeholder{color:#525b6b}' +
     '#companies-main .p2-glugg{border-radius:0!important;box-shadow:none!important}' +
+      '#companies-main .p2-adrar{background:#fff;border-radius:0 0 14px 14px;padding:16px 18px;color:#11141c;box-shadow:inset 0 1px 0 rgba(20,24,34,.08)}' +
+    '#companies-main .p2-adrar .hl2{display:flex;align-items:center;gap:12px;margin-bottom:12px}' +
+    '#companies-main .p2-tbl{font-size:13.5px}' +
+    '#companies-main .p2-tbl .rad{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;padding:10px;border-bottom:1px solid #edf0f4;align-items:center}' +
+    '#companies-main .p2-tbl .rad.hd{font:500 10.5px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#525b6b;background:#f4f6f9;border-bottom:1px solid #c3cad5}' +
+    '#companies-main .p2-adrar .p2-pl{font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 10px;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
+    '#companies-main .p2-adrar .p2-pl.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
+    '#companies-main .p2-adrar .p2-pl.rd{background:linear-gradient(150deg,#e25555,#a01818)}' +
+    '#companies-main .p2-tomt{color:#525b6b;font-size:13.5px;padding:8px 0}' +
     /* flipar */
     '#companies-main .p2-flipar{display:flex;gap:6px;padding:10px 10px 0;flex-wrap:wrap;margin-top:10px;border-radius:14px 14px 0 0;background:' + METAL + '}' +
     '#companies-main .p2-flipar button{height:42px;padding:0 16px;border-radius:9px 9px 0 0;border:0;display:flex;align-items:center;gap:8px;font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:#d5dbe6;cursor:pointer;background:rgba(255,255,255,.07)}' +
@@ -150,8 +165,8 @@
     '#companies-main .p2-samsk .tx{flex:1;min-width:0;font-size:13.5px}' +
     '#companies-main .p2-samsk .tx .m{color:#525b6b;font:12px ' + MONO + '}' +
     '#companies-main .p2-samsk .tx .l{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}' +
-    '#companies-main .p2-samsk .pill{font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 10px;flex:none;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
-    '#companies-main .p2-samsk .pill.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
+    '#companies-main .p2-samsk .p2-pl{font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 10px;flex:none;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
+    '#companies-main .p2-samsk .p2-pl.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
     '#companies-main .p2-samsk .svar{display:flex;gap:8px;margin-top:auto}' +
     '#companies-main .p2-samsk .svar .inn{flex:1;min-width:0;height:34px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#525b6b;text-align:left;cursor:pointer}' +
     '#companies-main .p2-samsk .yf{background:rgba(255,255,255,.07);border-radius:10px;padding:10px 14px}' +
@@ -169,11 +184,32 @@
     '.p2-valm button.eyda{color:#a01818}' +
     '.p2-valm hr{border:0;border-top:1px solid #e4e6ea;margin:4px 0}';
 
+  /* þröngt: sími (980 px sýnisgluggi í appinu ⇒ gámafyrirspurn á #companies-main) og þröngir vafragluggar (≤ 900 px) */
+  var NARROW =
+    '#companies-main .p2-haus{flex-wrap:wrap;gap:10px;padding:10px 12px}' +
+    '#companies-main .p2-nafn{font-size:20px}' +
+    '#companies-main .p2-nm{flex:1 1 55%!important}' +
+    '#companies-main .p2-skod{order:5;flex:1 0 100%}' +
+    '#companies-main .p2-glugg{grid-template-columns:1fr;padding:10px 0}' +
+    '#companies-main .p2-dalk{border-right:0;border-bottom:1px solid #c3cad5;padding:0 14px 10px;margin-bottom:10px}' +
+    '#companies-main .p2-mynd{padding:0 14px}' +
+    '#companies-main .p2-mynd .ram{min-height:170px}' +
+    '#companies-main .p2-samsk .gr{grid-template-columns:1fr}' +
+    '#companies-main .p2-samsk .c1{flex-direction:row;flex-wrap:wrap}' +
+    '#companies-main .p2-samsk .c1 .kass{flex:1 0 100%}' +
+    '#companies-main .p2-samsk .c1 .p2-til{flex:1 1 140px}' +
+    '#companies-main .p2-flipar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}' +
+    '#companies-main .p2-flipar button{flex:none;height:44px;white-space:nowrap}' +
+    '#companies-main .p2-tbl .rad{grid-template-columns:1fr 1fr}' +
+    '#companies-main .p2-tbl .rad.hd{display:none}' +
+    '#companies-main .p2-teikn .hl{flex-direction:column;gap:2px}' +
+    '#companies-main .p2-til{min-height:44px}';
+
   function stilar() {
     if (document.getElementById('p2-css')) return;
     var s = document.createElement('style');
     s.id = 'p2-css';
-    s.textContent = css;
+    s.textContent = css + '#companies-main.p2{container:p2c/inline-size}@container p2c (max-width:760px){' + NARROW + '}@media (max-width:900px){' + NARROW + '}';
     document.head.appendChild(s);
   }
 
@@ -199,7 +235,7 @@
     /* staðreyndalínan: heimilisfang · sími · netfang (+N) */
     d.heimilisfang = ''; d.simi = ''; d.netfang = ''; d.fleiri = '';
     allt(m, '.co-banner-facts > span').forEach(function (sp) {
-      var a = sel(sp, 'a'); var t = txt(a || sp);
+      var a = sel(sp, 'a'); var t = txt(a || sp).replace(/^[^A-Za-zÁ-ÿ0-9+@]+/, '');
       if (/@/.test(t)) { d.netfang = t; var b = sel(sp, '._anf-takki'); d.fleiri = b ? txt(b) : ''; }
       else if (/^[+\d][\d\s\-+]{5,}$/.test(t)) d.simi = t;
       else if (t && !d.heimilisfang) d.heimilisfang = t;
@@ -253,6 +289,12 @@
         imp: txt(sel(sc, '._smx-imp'))
       };
     } else d.sam = null;
+    /* Aðrar þjónustur: kerfin úr „Kerfi og þjónusta" (450, title = „Heiti · Krafa · Hver — staða") án slökkvitækja og brunakerfis */
+    d.thj = allt(m, '#_kt450 .kt-raema .kt-k').map(function (c) {
+      var p = (c.getAttribute('title') || '').split(' · ');
+      var rest = (p[2] || '').split(' — ');
+      return { heiti: p[0] || txt(c), krafa: p[1] || '', hver: rest[0] || '', stada: rest[1] || '', led: /rautt/.test((sel(c, 'i') || {}).className || '') ? 'rd' : (/graent/.test((sel(c, 'i') || {}).className || '') ? 'ok' : 'am') };
+    }).filter(function (x) { return x.heiti && !/^(Slökkvitæki|Brunaviðvörunarkerfi)$/i.test(x.heiti); });
     d.teikn = txt(sel(m, '._bupp-teikn-inn'));
     d.serupp = txt(sel(m, '._serupp-inn'));
     return d;
@@ -275,7 +317,7 @@
       ? '<div class="p2-skod" data-s="' + skS + '"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7fe0a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg><div><b>' + esc(d.naest ? skTxt : 'Skoðun') + '</b><small>' + (d.sidast ? 'síðast ' + esc(d.sidast) : '') + (d.sidast && d.naest ? ', ' : '') + (d.naest ? 'næst ' + esc(d.naest) : '') + '</small></div></div>' : '';
     var lh = '<button type="button" class="p2-til" data-p2="til" aria-label="Til baka">‹ Til baka</button>' +
       '<div class="p2-mono">' + esc(d.mono || (d.nafn || '?').slice(0, 2).toUpperCase()) + '</div>' +
-      '<div style="min-width:0;flex:1"><h1 class="p2-nafn">' + esc(d.nafn) + '</h1><div class="p2-ktlina">' +
+      '<div class="p2-nm" style="min-width:0;flex:1"><h1 class="p2-nafn">' + esc(d.nafn) + '</h1><div class="p2-ktlina">' +
       (d.kt ? '<span>kt. ' + esc(d.kt) + '</span>' : '') +
       d.tenglar.map(function (a) { return '<a class="p2-merki" href="' + esc(a.href) + '" target="_blank" rel="noopener" title="' + esc(a.title) + '">' + esc(a.t) + '</a>'; }).join('') +
       (d.gatt && d.gatt.href ? '<a class="p2-merki" href="' + esc(d.gatt.href) + '" target="_blank" rel="noopener" title="Opna gáttina á þessa eign">' + esc(d.gatt.t) + '</a>' : '') +
@@ -323,6 +365,17 @@
       '<div class="p2-bæta">Vantar eitthvað? <button type="button" data-p2="opna-gamalt">Breyta / bæta við upplýsingum</button></div>';
   }
 
+  function adrar(d) {
+    /* ATH: engin <table> — 00-legacy bætir við stöðuvali sem SKRIFAR í uttaeki á hverja töflu með „Staða"-dálk (lykill = fyrsti reitur) */
+    var raedur = d.thj.map(function (x) {
+      return '<div class="rad" role="row"><b role="cell">' + esc(x.heiti) + '</b><span role="cell">' + esc(x.krafa) + '</span><span role="cell">' + esc(x.hver) + '</span><span role="cell"><span class="p2-pl ' + x.led + '">' + esc(x.stada || '—') + '</span></span></div>';
+    }).join('');
+    return '<div class="hl2"><span class="mono" style="font:500 11px ' + MONO + ';letter-spacing:.16em;color:#3a4250">AÐRAR ÞJÓNUSTUR</span><span style="margin-left:auto;display:flex;gap:8px">' +
+      '<button type="button" class="p2-til p2-gr" data-p2="adrar-baeta">+ Bæta við þjónustu...</button></span></div>' +
+      (raedur ? '<div class="p2-tbl" role="table"><div class="rad hd" role="row"><span role="columnheader">Þjónusta</span><span role="columnheader">Krafa</span><span role="columnheader">Hver þjónar</span><span role="columnheader">Ástand</span></div>' + raedur + '</div>'
+        : '<div class="p2-tomt">Engin kerfi skráð ennþá — „+ Bæta við þjónustu…" opnar Kerfi og þjónusta.</div>');
+  }
+
   function teikn(d) {
     return '<div class="hl"><span class="k">Teikningar</span><span>' + esc(d.teikn || 'Engin teikning skráð') + '</span></div>' +
       (d.serupp ? '<div class="hl"><span class="k">Séruppdrættir</span><span>' + esc(d.serupp) + '</span></div>' : '') +
@@ -356,7 +409,7 @@
         '<button type="button" role="tab" data-p2="sam-tab-vinna" aria-selected="false">Vinnusaga</button></div>' +
         (x.subj || x.txt ? '<div class="msg"><span class="av' + (fraKunna ? '' : ' ok') + '">' + esc(ini) + '</span><div class="tx"><b>' + esc(nafnFra) + '</b> <span class="m">' + esc(x.fra[1] || '') + '</span>' +
           (x.subj ? '<div class="l"><b>' + esc(x.subj) + '</b></div>' : '') + (x.txt ? '<div class="l">' + esc(x.txt) + '</div>' : '') + '</div>' +
-          (bidur ? '<span class="pill am">Svar bíður</span>' : '<span class="pill">' + (fraKunna ? 'Svarað' : 'Frá okkur') + '</span>') + '</div>' : '<div class="msg"><div class="tx">Engin samskipti skráð</div></div>') +
+          (bidur ? '<span class="p2-pl am">Svar bíður</span>' : '<span class="p2-pl">' + (fraKunna ? 'Svarað' : 'Frá okkur') + '</span>') + '</div>' : '<div class="msg"><div class="tx">Engin samskipti skráð</div></div>') +
         '<div class="svar"><button type="button" class="inn" data-p2="sam-svara">Skrifa svar til ' + esc(d.nafn) + '…</button><button type="button" class="p2-til p2-gr" data-p2="sam-svara">Svara</button></div></div>' +
       '<div class="c3"><div class="yf"><div class="t">YFIRLIT SAMSKIPTA</div>' + yf('Aðili', d.nafn) + yf('Tengiliður', d.tengilidur) +
         yf('Netfang', x.tengi.a) + yf('Sími', sima, sima ? '<a href="' + esc(x.tengi.tel || 'tel:' + sima) + '" class="p2-n">' + esc(sima) + '</a>' : '') + '</div>' +
@@ -370,7 +423,7 @@
     var banner = sel(m, '.co-banner');
     var h = document.getElementById('p2-haus');
     if (!h || h.parentNode !== m) {
-      ['p2-haus', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
+      ['p2-haus', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
       h = document.createElement('div'); h.id = 'p2-haus'; h.className = 'p2-haus p2-nytt';
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
       banner.insertAdjacentElement('beforebegin', h); h.insertAdjacentElement('afterend', g);
@@ -383,6 +436,8 @@
       (host || g).insertAdjacentElement('afterend', f);
       var tp = document.createElement('div'); tp.id = 'p2-teikn'; tp.className = 'p2-teikn p2-nytt'; tp.setAttribute('data-p2t', 'teikn');
       f.insertAdjacentElement('afterend', tp);
+      var ad = document.createElement('div'); ad.id = 'p2-adrar'; ad.className = 'p2-adrar p2-nytt'; ad.setAttribute('data-p2t', 'adrar');
+      tp.insertAdjacentElement('afterend', ad);
       if (!m.__p2klikk) { m.__p2klikk = true; m.addEventListener('click', smellur); }
       sig = '';
       velja(m, window.__p2flipi || 'skjol');
@@ -399,51 +454,32 @@
     KAFLAR.forEach(function (k) { var e = sel(m, k[0]); if (e && e.parentNode === m && e.getAttribute('data-p2t') !== k[1]) e.setAttribute('data-p2t', k[1]); });
     /* allt annað sem var beint barn og er enn sýnilegt í gamla prófílnum án flipa → Aðrar þjónustur (Nýr staður, Bæta við tæki …) */
     allt(m, ':scope > div').forEach(function (e) {
-      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn') return;
+      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn' || e.id === 'p2-adrar') return;
       if (e === m.firstElementChild || e.classList.contains('co-banner') || e.classList.contains('_samskipti-host') || e.hasAttribute('data-p2t')) return;
       if (e.classList.contains('info-grid') || e.id === 't485-top') return;
       if (/Nýr staður/.test(e.textContent)) e.setAttribute('data-p2t', 'adrar');
     });
   }
 
-  /* flipastikan og Teikningar-spjaldið sitja rétt á undan fyrsta flipakaflanum (aðrir patchar setja kafla inn eftir á) */
-  function raða(m) {
-    var f = document.getElementById('p2-flipar'), t = document.getElementById('p2-teikn');
-    if (!f || !t) return;
-    var fyrsti = null;
-    for (var c = m.firstElementChild; c; c = c.nextElementSibling) {
-      if (c === f || c === t) continue;
-      if (c.hasAttribute('data-p2t')) { fyrsti = c; break; }
-    }
-    if (!fyrsti) return;
-    if (!(f.nextElementSibling === t && t.nextElementSibling === fyrsti)) { m.insertBefore(f, fyrsti); m.insertBefore(t, fyrsti); }
-  }
-
-  /* haus + gluggi sitja alltaf rétt á undan gamla bannernum (svo „Breyta / bæta við upplýsingum" opnist undir glugganum) */
-  function raðaGlugga(m) {
-    var h = document.getElementById('p2-haus'), g = document.getElementById('p2-glugg'), a = document.getElementById('p2-athug'), b = sel(m, '.co-banner');
-    if (!h || !g || !a || !b) return;
-    if (!(h.nextElementSibling === g && g.nextElementSibling === a && a.nextElementSibling === b)) { m.insertBefore(h, b); m.insertBefore(g, b); m.insertBefore(a, b); }
-  }
-
-  /* Samskiptaboxið okkar situr rétt á undan gamla Samskipti-hnútnum (hann er falinn en lifir; „Allar færslur" sýnir hann) */
+  /* Röðun með CSS `order` (flex-dálkur) — enginn hnútur fluttur (reglan um tvo pabba á sama hnút) */
   function samskiptaBox(m) {
     var host = sel(m, '._samskipti-host'); var b = document.getElementById('p2-samsk');
     if (!host) return;
-    if (!b) { b = document.createElement('div'); b.id = 'p2-samsk'; b.className = 'p2-samsk p2-nytt'; sig = ''; }
-    if (b.nextElementSibling !== host) host.insertAdjacentElement('beforebegin', b);
+    if (!b) { b = document.createElement('div'); b.id = 'p2-samsk'; b.className = 'p2-samsk p2-nytt'; sig = ''; host.insertAdjacentElement('beforebegin', b); }
   }
 
   function endurteikna(m) {
     var d = lesa(m);
     var s = JSON.stringify(d);
-    if (s === sig) return;
+    var sbT = document.getElementById('p2-samsk');
+    if (s === sig && !(sbT && !sbT.firstChild && d.sam)) return;
     sig = s;
     var h = document.getElementById('p2-haus'), g = document.getElementById('p2-glugg'), t = document.getElementById('p2-teikn');
     var afturH = window.Stodugt && Stodugt.vernda ? Stodugt.vernda(h) : null;
     h.innerHTML = haus(d); if (afturH) afturH();
     g.innerHTML = gluggi(d);
     t.innerHTML = teikn(d);
+    var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
     var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
     if (sb && m.classList.contains('p2-gam')) { var tt = sb.querySelectorAll('.flip button'); if (tt[1]) { tt[0].setAttribute('aria-selected', 'false'); tt[1].setAttribute('aria-selected', 'true'); } }
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
@@ -524,6 +560,7 @@
       allt(m, '#p2-samsk .flip button').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
       if (tb === 'allt') { var tg = sel(m, '._ssk-toggle'); if (tg && !sel(m, '._ssk-full')) tg.click(); }
     }
+    else if (a === 'adrar-baeta') { var op = sel(m, '#_kt450 [data-kt="opna"]'); if (op) { if (op.getAttribute('aria-expanded') !== 'true') op.click(); var k = sel(m, '#_kt450'); if (k) k.scrollIntoView({ block: 'start' }); } }
     else if (a === 'rf') { e.preventDefault(); umbod(m, '.co-banner-name [data-rf-opna]'); }
     else if (a === 'bgr') umbod(m, '#bgr-takki');
     else if (a === 'hrey') umbod(m, '._hy-takki');
@@ -541,7 +578,7 @@
     if (!m || !sel(m, '.co-banner') || !sel(m, '.b405-plata, .co-banner-name')) return;
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
-    byggja(m); merkja(m); raðaGlugga(m); samskiptaBox(m); raða(m); athugasemd(m); endurteikna(m);
+    byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m);
   }
 
   setInterval(tikk, 600);
