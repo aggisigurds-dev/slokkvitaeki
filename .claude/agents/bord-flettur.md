@@ -642,3 +642,5 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 - **Verðlistaglugginn (502):** hópar, liðir (verð fast/frá/tilboð, eining, vsk, athugasemd, virkur), % verð, líma inn, CSV, prenta, tilboðsham.
   Skrif í sama lista fara í röð og úreldingarvörður (`u`) neitar að yfirskrifa lista sem önnur vél breytti. Eyða lista = mjúkt (`eytt:true`),
   endurheimt í „＋ Nýr verðlisti".
+
+- **11.11.2026** — Þjónustuborð 368, framhald [docs/THJONUSTUBORD-CHECKLISTAR.md]: Hunter er order 0 efst í hliðarstiku (68, óháð vistaðri röð) og takki á Þjónustuborði (493); röð hliðarstiku býr í `sidebar_order` í app_settings (ekki `ui.vidmot.hlidarstika`). Eining 27 „Stjörnumerkt“ les beint úr upprunanum (checklistar, spjöld merkt á þig, 5 efstu áríðandi) og tekur merki af með aðgerðum upprunans, engin afrit. Spjald á Skipulagsborði: „Í checklista ›“ býr til atriði `nafn — texti`; spjaldið helst nema staðfest sé að eyða. Commit 2ddf4489, 9f75e43b, d44a7315. Worktree á grein eldri en 534f8cbc er enn með virkan pre-push hook: sameina origin/master inn í greinina.
