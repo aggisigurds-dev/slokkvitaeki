@@ -238,3 +238,45 @@ einu INSERT í `solur` — gikkirnir sjá um restina:
 
 Dæmi 09.10.2026: R-001111 Suðurlandsbraut 30 (SARA 49), R-001112 Matborðið (42),
 R-001113 Veghús 1 (35), R-001114 Tjarnarból 2 (12), R-001115 Megin, R-001116 Bíll.is.
+
+## Undirritun og skoðunaraðili á skýrslu (10.11.2026)
+
+Agnar 10.11.2026: „Gleymdir að skrá nafn, svo þær verða ólöglegar." **Skýrsla án nafns er ógild** —
+athugaðu fótinn áður en þú segir skýrslu tilbúna.
+
+- **Skoðunaraðili** = sá sem skoðaði. Sjálfgefið **Hákon** (Elías er hættur). Reitur `#_ctc-skodun`
+  á úttektarspjaldinu, `trip.skodunaradili`; tómur reitur prentast sem Hákon.
+- **Undirritun** = sá sem skrifar undir „Fyrir hönd Slökkvitæki ehf". Valið `#_vw-undirritun`
+  neðst við „Klára heimsókn": Agnar Sigurðsson, Bjarndís eða Brynjar → `trip.undirritun`
+  (samstillist milli véla, lifir af frágang). Listinn er `UNDIRRITENDUR` í patch 168.
+- **Undirskriftarmynd**: `app_settings.undirskriftir["<nafn>"]` = PNG data-URL með gegnsæjum
+  bakgrunni. Sé hún til situr myndin á línunni og nafnið undir; annars nafnið eitt. Agnars er
+  komin (481×214); Bjarndísar og Brynjars bætast við með `app_settings_merge` — engin kóðabreyting.
+  Hlutföllin 481/214 eru harðkóðuð í PDF-teikningunni: klipptu nýjar myndir í svipuð hlutföll.
+- **Fóturinn**: „Fyrir hönd Slökkvitæki ehf" → undirskrift á línu → nafn undirritanda →
+  „Skoðunaraðili: Hákon". Lesarar (`lesa_skyrslur.py`, `tools/skyrsla-texti.cjs`,
+  brunaholf `para-rekstrarfelag.js`) skera við „Fyrir hönd" og eru óháðir þessu.
+
+### Að endurgera skýrslu sem er þegar vistuð
+
+Sjálfvistun sleppir skýrslu sem er til. Leiðin (prófuð á 5 félögum 10.11):
+1. Laga `inspection_trips[<id>]` í `app_settings` með NÝJU `_ts` (ms) — annars vinnur gamla
+   localStorage-ferðin (227: nýrra `_ts` ræður). Skýrslan les localStorage, ekki blobbinn.
+2. `CompanyInspectionReport.open(id)` → `#_cir-save` er óvirkur („✓ Vistuð") → virkja og smella.
+   Forskoðunin er í `#_cir-modal iframe` — lestu textann þar, ekki í ytra skjalinu.
+3. `customer_documents`-röðin uppfærist á sínum stað (sama id, nýtt `storage_path` og
+   `drive_file_id`), en GAMLA skráin situr eftir í `samningar/company_attachments/<id>/` —
+   eyða henni með storage-API (`DELETE /storage/v1/object/samningar`, `{prefixes:[…]}`).
+4. Stubbaðu `alert/confirm/print` fyrst; innbyggðir gluggar frysta flipann („Breyta stærð" opnar `prompt`).
+
+## Vinnublöð: lestur og útklippur (10.11.2026)
+
+- **Lestrarreglur Agnars**: engin stærð skrifuð = duft 6 kg / léttvatn 6 L · Reyksk = alltaf
+  yfirferð · X í Y = yfirferð · hringað X í H = hleðsla, tekið á verkstæði (akstur 2).
+- **Magnlínan** á að vera stutt og í tækjaröð: „2× léttvatn 9 L hleðsla · 2× léttvatn 9 L yfirferð
+  · 1× CO₂ 2 kg yfirferð". Agnar: „seinlegt að lesa" langar lýsingar.
+- **Útklippa af blaðinu fer á spjald félagsins** á Þjónustuverkstæði: tafla `vinnublad_utklippur`
+  (fyrirtaeki_id, ar, titill, url, bucket_path, blad, magn, stada `bidur_samthykkis`/`samthykkt`).
+  Patch 190 sýnir hana í samanbrotnum „Vinnublað"-hluta. Myndir klipptar með System.Drawing (PS 5.1).
+- **Verðlínur**: allar stærðir eiga að vera í „Slökkvit. þjónusta — verð" (`vorur`, flokkur Þjónusta)
+  og úttektin les þaðan. Léttvatn 3 L: hleðsla 5.000 án vsk (6.200 m/vsk), yfirferð 2.903,23 (3.600).
