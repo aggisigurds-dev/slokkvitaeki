@@ -621,3 +621,15 @@ Flipi sem var opinn fyrir birtingu sýnir gamla textann þar til hann er endurhl
 **Prófunaraðferð sem dugði (engin skrif á lifandi):** `DB.sb.from` → Proxy sem skráir köll, `DB.sb.rpc` og `storage` uppgerð, `fetch`-skrif
 blokkuð; svo raunverulegir smellir á ÁFRAM og greiðslumáta. Gildrur: tvítöku-vörnin (sama kt + upphæð < 2 mín) spyr með `Confirm.show`;
 QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.
+
+## Afgreiðsla án stofnunar — keðjan rakin til enda (lokayfirferð 10.11.2026)
+
+- **Reikningurinn:** `SalaInvoice.renderFromSale` á sölu með raun-kt og engan viðskiptavin prentar „Viðskiptavinur 110989-2889" (nafn tómt) eða
+  „Ásgeir Prófari 110989-2889" — aldrei 999999-9999. Mælt með gervi-glugga (engin skrif).
+- **Sótt ✓ (121) og Klára í Drög stofna ENGAN viðskiptavin** — sala án stofnunar helst óskráð þegar hún er kláruð við afhendingu.
+- **`audit_vernd_guard`** (BEFORE UPDATE/DELETE á `solur`) skráir aðeins eldri röð í `audit_vernd`; hann stöðvar ekkert, svo merkið
+  `an_stofnunar` kemst inn á eftir insertinu fyrir allar stöður.
+- **Greiðsluglugginn (07)** segir „Án stofnunar — enginn viðskiptavinur verður stofnaður" undir kennitölunni þegar merkið er virkt.
+- **Drög-leit:** „óskráður" finnur Greitt síðar án viðskiptavinar (áður aðeins „enginn kúnni").
+- **Óprófað:** raunveruleg sala án stofnunar á lifandi (engin slík sala til 10.11 kl. 21); Claude býr ekki til prófunarsölu með R-númeri.
+- Próf án skrifa: `tools/prof-uppgerd-skrif.js` (`Uppgerd.sala()`), sjá skill `add-feature`.

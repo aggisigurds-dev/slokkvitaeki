@@ -452,7 +452,7 @@
     // gaf "[object Object]" — svo staðsetningarleitin sem commit 3b19e28 lofaði virkaði
     // aldrei, og leitarstrengurinn „object“ skilaði ÖLLUM röðum. Leitum í merkinu sjálfu.
     return [d.num, d.customer_nafn, d.greitt_med, d._loc && d._loc.label,
-            (d.customer_id == null && d.customer_base_id == null && /reikning|sidar|síðar/i.test(String(d.greitt_med || ''))) ? 'enginn kúnni vantar kennitölu' : '']
+            (d.customer_id == null && d.customer_base_id == null && /reikning|sidar|síðar/i.test(String(d.greitt_med || ''))) ? (/sidar|síðar/i.test(String(d.greitt_med || '')) ? 'óskráður viðskiptavinur enginn kúnni' : 'enginn kúnni vantar kennitölu') : '']
       .map(function (x) { return String(x == null ? '' : x).toLowerCase(); })
       .join(' ').indexOf(_q) > -1;
   }

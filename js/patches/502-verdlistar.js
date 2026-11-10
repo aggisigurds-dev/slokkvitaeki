@@ -58,7 +58,8 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const tala = v => { const s = String(v == null ? '' : v).replace(/\s/g, '').replace(/\.(?=\d{3}(?:[.,]|$))/g, '').replace(',', '.'); if (s === '') return null; const n = parseFloat(s); return isFinite(n) ? n : null; };
   const pun = n => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');   // toLocaleString('is-IS') fellur stundum í en-US
-  const verdInn = n => n == null ? '' : (Number.isInteger(n) ? pun(n) : String(n).replace('.', ','));
+  // 148000.5 → „148.000,5" (þúsundapunktur líka þegar aukastafir eru — annars prentaðist „148000,5 kr")
+  const verdInn = n => { if (n == null) return ''; if (Number.isInteger(n)) return pun(n); const p = String(n).split('.'); return p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + (p[1] || '0'); };
   const kr = n => pun(n) + ' kr';
   const krN = n => verdInn(Math.round((Number(n) || 0) * 100) / 100) + ' kr';   // einingaverð með tugabroti (52.500,5), ekki rúnnað
   const klona = o => JSON.parse(JSON.stringify(o));
@@ -217,6 +218,10 @@
       '.' + P + '-ath:focus{outline:none;background:#fff!important;border-color:rgba(201,42,42,.55)!important;box-shadow:0 0 0 2px rgba(201,42,42,.18)!important}',
       '.' + P + '-n.ok,.' + P + '-verd.ok,.' + P + '-fl.ok,.' + P + '-ath.ok,.' + P + '-hn2.ok{background:#fff!important;border-color:#1f9d57!important;box-shadow:0 0 0 2px rgba(31,157,87,.25)!important}',
       '.' + P + '-n.villa,.' + P + '-verd.villa,.' + P + '-fl.villa,.' + P + '-ath.villa,.' + P + '-hn2.villa{background:#fff!important;border-color:#e0453c!important;box-shadow:0 0 0 2px rgba(224,69,60,.25)!important}',
+      '.' + P + '-ht{font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250}',
+      '.' + P + '-nt{font-weight:600;color:#141822}',
+      '.' + P + '-at{display:block;margin-top:1px;font-size:11.5px;color:#6b7483}',
+      '.' + P + '-verk .' + P + '-hint{flex:1 1 260px}',
       '.' + P + '-vc{display:flex;align-items:center;gap:5px;justify-content:flex-end}',
       '.' + P + '-vc .' + P + '-fl{width:64px;padding:0 4px}',
       '.' + P + '-tilb{font-family:' + MONO + ';font-size:11px;color:#6b7483;white-space:nowrap}',
@@ -259,13 +264,42 @@
       '.' + P + '-tk button.on{border-color:#c92a2a;box-shadow:0 0 0 2px rgba(201,42,42,.3)}',
       '.' + P + '-hint{font-size:11.5px;color:#6b7483;line-height:1.5}',
       '.' + P + '-pre{margin-top:8px;padding:8px 10px;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12);font-size:12px;color:#3a4250;line-height:1.5}',
-      '@media(max-width:760px){',
+      // Mjórri skjáir (sími, spjaldtölva, lítil fartölva): 8 dálka ritháttur þarf ~1100 px (mælt 10.11.2026: 117 px yfirflæði við 1024).
+      // Hver liður verður spjald í tveggja dálka grind með merktum reitum (data-l) — engin lárétt skrun.
+      '@media(max-width:1150px){',
       '  #' + P + '-efni{padding:12px}',
       '  .' + P + '-tafla thead{display:none}',
-      '  .' + P + '-tafla td{display:block;border:0;padding:3px 0}',
-      '  .' + P + '-tafla tr.rad{display:block;padding:10px 0;border-bottom:1px solid #e2e8f0}',
-      '  .' + P + '-tafla tr.hopur,.' + P + '-tafla tr.tomt{display:block}',
-      '  .' + P + '-verd{width:110px}.' + P + '-vc,.' + P + '-ad{justify-content:flex-start}.' + P + '-mv{text-align:left}',
+      '  .' + P + '-tafla,.' + P + '-tafla tbody{display:block}',
+      '  .' + P + '-tafla tr.hopur,.' + P + '-tafla tr.tomt,.' + P + '-tafla tr.hopur td,.' + P + '-tafla tr.tomt td{display:block}',
+      '  .' + P + '-tafla tr.rad{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;padding:10px;border-bottom:1px solid #e2e8f0}',
+      '  .' + P + '-tafla tr.rad td{display:block;border:0;padding:0;min-width:0!important;text-align:left}',
+      '  .' + P + '-tafla tr.rad td[data-l]::before{content:attr(data-l);display:block;margin-bottom:2px;font-family:' + MONO + ';font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7483}',
+      '  .' + P + '-tafla tr.rad td:nth-child(1){order:1;grid-column:1/-1}',
+      '  .' + P + '-tafla tr.rad td:nth-child(2){order:2}.' + P + '-tafla tr.rad td:nth-child(5){order:3}',
+      '  .' + P + '-tafla tr.rad td:nth-child(3){order:4}.' + P + '-tafla tr.rad td:nth-child(4){order:5}',
+      '  .' + P + '-tafla tr.rad td:nth-child(6){order:6}',
+      '  .' + P + '-tafla tr.rad td:nth-child(7){order:7;grid-column:1/-1}.' + P + '-tafla tr.rad td:nth-child(8){order:8;grid-column:1/-1}',
+      '  .' + P + '-tafla:not(.tb) tr.rad td:nth-child(2){grid-column:1/-1}',   // ritháttur: tegund + verðreitur þurfa alla breiddina (verðið sást ekki í hálfri)
+      '  .' + P + '-tafla.tb tr.rad td:nth-child(7){order:7;grid-column:auto}.' + P + '-tafla.tb tr.rad td:nth-child(8){order:8;grid-column:1/-1}',
+      '  .' + P + '-tafla tr.rad select.' + P + '-fl{width:100%!important}',
+      '  .' + P + '-tafla tr.rad .' + P + '-vc select.' + P + '-fl{width:74px!important;flex:none}',
+      '  .' + P + '-vc,.' + P + '-ad{justify-content:flex-start}',
+      '  .' + P + '-tafla tr.rad .' + P + '-verd{flex:0 1 180px;width:auto;min-width:0}',
+      '  .' + P + '-tafla tr.rad .' + P + '-mg{width:100%}',
+      '  .' + P + '-mv{text-align:left}',
+      '  .' + P + '-tb{position:static}.' + P + '-sum{margin-left:0;text-align:left;flex:1 1 100%}',
+      '  .' + P + '-sp{margin-left:0}',
+      '}',
+      // Sími: hausinn var 171 px (tákn á eigin línu, takkar í tveimur röðum) og hann er fastur efst — þéttur í ~90 px
+      '@media(max-width:700px){',
+      '  #' + P + '-haus{padding:9px 14px;gap:6px 8px}',
+      '  #' + P + '-haus > span:first-child{font-size:18px!important}',
+      '  #' + P + '-haus > div:not(.' + P + '-hn){flex:1 1 0;min-width:0}',
+      '  html body #' + P + '-haus h2{font-size:16px}',
+      '  #' + P + '-haus p{display:none}',
+      '  #' + P + '-haus .' + P + '-hn{margin-left:0;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;gap:6px}',
+      '  #' + P + '-haus .' + P + '-hn button{height:28px;padding:0 9px;font-size:11.5px;flex:none}',
+      '  #' + P + '-haus .' + P + '-hn #' + P + '-loka{margin-left:auto;width:28px}',
       '}'
     ].join('\n');
     document.head.appendChild(st);
@@ -391,22 +425,25 @@
         '<button type="button" class="' + P + '-t" data-a="prosenta" title="Hækka eða lækka öll verð í einu, með rúnnun">% Verð</button>' +
         '<button type="button" class="' + P + '-t" data-a="lima" title="Líma inn lista úr Excel: heiti ; verð ; eining ; hópur">Líma inn</button>' +
         '<button type="button" class="' + P + '-t" data-a="csv" title="Sækja listann sem CSV (Excel)">CSV</button>' +
-      '</span></div>';
+      '</span></div>');
     const hopHtml = [];
     const chips = [];
     L.hopar.forEach((hp, hi) => {
       const radir = L.lidir.filter(x => x.hopur === hp.id);
       const sy = radir.filter(synd);
-      if (q && !sy.length) return;
-      chips.push('<button type="button" class="' + P + '-hb" data-hopur-id="' + esc(hp.id) + '">' + esc(hp.heiti) + '<span>' + radir.length + '</span></button>');
-      hopHtml.push('<tr class="hopur" data-h="' + esc(hp.id) + '"><td colspan="' + dalkar + '"><div class="hh">' +
-        '<input class="' + P + '-hn2" data-hf="heiti" value="' + esc(hp.heiti) + '" aria-label="Heiti hóps" title="Heiti hóps — breyta beint">' +
-        '<span class="' + P + '-fj">' + radir.length + '</span>' +
-        '<span style="margin-left:auto;display:flex;gap:4px">' +
-          '<button type="button" class="' + P + '-ib" data-a="hopur-upp" title="Færa hóp upp"' + (hi === 0 ? ' disabled' : '') + '>▲</button>' +
-          '<button type="button" class="' + P + '-ib" data-a="hopur-nidur" title="Færa hóp niður"' + (hi === L.hopar.length - 1 ? ' disabled' : '') + '>▼</button>' +
-          '<button type="button" class="' + P + '-ib rautt" data-a="hopur-eyda" title="Eyða hóp (liðirnir færast í næsta hóp)"' + (L.hopar.length < 2 ? ' disabled' : '') + '>✕</button>' +
-        '</span></div></td></tr>' +
+      if ((q || _tilbod) && !sy.length) return;
+      const fjHop = _tilbod ? sy.length : radir.length;
+      chips.push('<button type="button" class="' + P + '-hb" data-hopur-id="' + esc(hp.id) + '">' + esc(hp.heiti) + '<span>' + fjHop + '</span></button>');
+      const hausInni = _tilbod
+        ? '<span class="' + P + '-ht">' + esc(hp.heiti) + '</span><span class="' + P + '-fj">' + fjHop + '</span>'
+        : '<input class="' + P + '-hn2" data-hf="heiti" value="' + esc(hp.heiti) + '" aria-label="Heiti hóps" title="Heiti hóps — breyta beint">' +
+          '<span class="' + P + '-fj">' + radir.length + '</span>' +
+          '<span style="margin-left:auto;display:flex;gap:4px">' +
+            '<button type="button" class="' + P + '-ib" data-a="hopur-upp" title="Færa hóp upp"' + (hi === 0 ? ' disabled' : '') + '>▲</button>' +
+            '<button type="button" class="' + P + '-ib" data-a="hopur-nidur" title="Færa hóp niður"' + (hi === L.hopar.length - 1 ? ' disabled' : '') + '>▼</button>' +
+            '<button type="button" class="' + P + '-ib rautt" data-a="hopur-eyda" title="Eyða hóp (liðirnir færast í næsta hóp)"' + (L.hopar.length < 2 ? ' disabled' : '') + '>✕</button>' +
+          '</span>';
+      hopHtml.push('<tr class="hopur" data-h="' + esc(hp.id) + '"><td colspan="' + dalkar + '"><div class="hh">' + hausInni + '</div></td></tr>' +
         (sy.length ? sy.map(x => radHtml(L, x)).join('') : '<tr class="tomt"><td colspan="' + dalkar + '">' + (radir.length ? 'Engir liðir passa við síuna' : 'Engir liðir í þessum hóp — bættu við neðst') + '</td></tr>'));
     });
     if (chips.length > 1) h += '<div class="' + P + '-hopar">' + chips.join('') + '</div>';
@@ -414,9 +451,10 @@
       h += '<div class="' + P + '-tomur"><b>' + esc(L.nafn) + ' á enn engan lið.</b><br>Bættu við fyrsta liðnum neðst, eða límdu inn lista úr Excel (<b>Líma inn</b>).<br>' +
         'Hverjum lið má stilla verð (fast, frá eða samkvæmt tilboði), einingu, vsk og hóp.</div>';
     }
-    h += '<table class="' + P + '-tafla" id="' + P + '-tafla"><thead><tr><th>Liður</th><th class="' + P + '-r">Verð án vsk</th><th>Eining</th><th>Vsk</th><th class="' + P + '-r">Verð m/vsk</th><th>Hópur</th><th>Athugasemd</th><th></th>' +
-      (_tilbod ? '<th class="' + P + '-r">Magn</th><th class="' + P + '-r">Afsl. %</th><th class="' + P + '-r">Samtals m/vsk</th>' : '') + '</tr></thead><tbody>' + hopHtml.join('') + '</tbody></table>';
-    h += '<div class="' + P + '-nyr" id="' + P + '-nyr">' +
+    h += '<table class="' + P + '-tafla' + (_tilbod ? ' tb' : '') + '" id="' + P + '-tafla"><thead><tr><th>Liður</th><th class="' + P + '-r">Verð án vsk</th><th>Eining</th><th>Vsk</th><th class="' + P + '-r">Verð m/vsk</th>' +
+      (_tilbod ? '<th class="' + P + '-r">Magn</th><th class="' + P + '-r">Afsl. %</th><th class="' + P + '-r">Samtals m/vsk</th>' : '<th>Hópur</th><th>Athugasemd</th><th></th>') +
+      '</tr></thead><tbody>' + hopHtml.join('') + '</tbody></table>';
+    if (!_tilbod) h += '<div class="' + P + '-nyr" id="' + P + '-nyr">' +
       '<input type="text" id="' + P + '-nyr-nafn" placeholder="Nýr liður, t.d. Árleg skoðun sprinklerkerfis" aria-label="Heiti nýs liðar">' +
       '<input class="' + P + '-verd" id="' + P + '-nyr-verd" type="text" inputmode="decimal" placeholder="14.500" aria-label="Verð án vsk"> <span class="' + P + '-kr">kr án vsk</span>' +
       '<select id="' + P + '-nyr-ein" aria-label="Eining">' + EININGAR.map(e => '<option value="' + esc(e) + '">' + esc(e) + '</option>').join('') + '</select>' +
@@ -439,32 +477,40 @@
   function radHtml(L, x) {
     const vsk = x.vsk == null ? L.vsk : x.vsk;
     const tb = _tb[x.id] || {};
+    if (_tilbod) {   // læstur listi: texti + Magn · Afsl. % · Samtals
+      const vt = x.tegund === 'tilbod' ? 'samkv. tilboði' : (x.verd == null ? '—' : (x.tegund === 'fra' ? 'frá ' : '') + verdInn(x.verd) + ' kr');
+      return '<tr class="rad" data-id="' + esc(x.id) + '">' +
+        '<td style="min-width:200px"><span class="' + P + '-nt">' + esc(x.nafn) + '</span>' + (x.ath ? '<small class="' + P + '-at">' + esc(x.ath) + '</small>' : '') + '</td>' +
+        '<td class="' + P + '-mv" data-l="Verð án vsk">' + esc(vt) + '</td>' +
+        '<td data-l="Eining">' + esc(x.eining) + '</td><td data-l="Vsk">' + vsk + ' %</td>' +
+        '<td class="' + P + '-mv" data-l="Verð m/vsk" data-mv>' + mvskTexti(x, vsk) + '</td>' +
+        '<td class="' + P + '-r" data-l="Magn"><input class="' + P + '-mg" data-tb="magn" type="text" inputmode="decimal" value="' + esc(tb.magn || '') + '" aria-label="Magn: ' + esc(x.nafn) + '" placeholder="0"></td>' +
+        '<td class="' + P + '-r" data-l="Afsl. %"><input class="' + P + '-mg" data-tb="afsl" type="text" inputmode="decimal" value="' + esc(tb.afsl || '') + '" aria-label="Afsláttur %: ' + esc(x.nafn) + '" placeholder="0"></td>' +
+        '<td class="' + P + '-mv" data-l="Samtals m/vsk" data-lt>' + linuSumma(L, x) + '</td></tr>';
+    }
     const verdReitur = x.tegund === 'tilbod'
       ? '<span class="' + P + '-tilb">samkv. tilboði</span>'
       : '<input class="' + P + '-verd" data-f="verd" type="text" inputmode="decimal" value="' + esc(verdInn(x.verd)) + '" placeholder="—" aria-label="Verð án vsk: ' + esc(x.nafn) + '"> <span class="' + P + '-kr">kr</span>';
     const opt = (v, t, val) => '<option value="' + esc(v) + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + esc(t) + '</option>';
     return '<tr class="rad' + (x.virkt ? '' : ' ovirk') + '" data-id="' + esc(x.id) + '">' +
       '<td style="min-width:200px"><input class="' + P + '-n" data-f="nafn" value="' + esc(x.nafn) + '" aria-label="Heiti liðar"></td>' +
-      '<td class="' + P + '-r"><div class="' + P + '-vc"><select class="' + P + '-fl" data-f="tegund" aria-label="Tegund verðs" title="Fast verð · Verð frá · Samkvæmt tilboði">' + TEGUNDIR.map(t => opt(t[0], t[1], x.tegund)).join('') + '</select>' + verdReitur + '</div></td>' +
-      '<td><select class="' + P + '-fl" data-f="eining" aria-label="Eining" style="width:76px">' + EININGAR.map(e => opt(e, e, x.eining)).join('') + '</select></td>' +
-      '<td><select class="' + P + '-fl" data-f="vsk" aria-label="Vsk" style="width:84px" title="Sjálfgefinn vsk listans er ' + L.vsk + ' %">' + opt('', 'lista ' + L.vsk + '%', x.vsk == null ? '' : x.vsk) + VSK_VAL.map(v => opt(v, v + ' %', x.vsk)).join('') + '</select></td>' +
-      '<td class="' + P + '-mv" data-mv>' + mvskTexti(x, vsk) + '</td>' +
-      '<td><select class="' + P + '-fl" data-f="hopur" aria-label="Hópur" style="width:112px">' + L.hopar.map(hp => opt(hp.id, hp.heiti, x.hopur)).join('') + '</select></td>' +
+      '<td class="' + P + '-r" data-l="Verð án vsk"><div class="' + P + '-vc"><select class="' + P + '-fl" data-f="tegund" aria-label="Tegund verðs" title="Fast verð · Verð frá · Samkvæmt tilboði">' + TEGUNDIR.map(t => opt(t[0], t[1], x.tegund)).join('') + '</select>' + verdReitur + '</div></td>' +
+      '<td data-l="Eining"><select class="' + P + '-fl" data-f="eining" aria-label="Eining" style="width:76px">' + EININGAR.map(e => opt(e, e, x.eining)).join('') + '</select></td>' +
+      '<td data-l="Vsk"><select class="' + P + '-fl" data-f="vsk" aria-label="Vsk" style="width:84px" title="Sjálfgefinn vsk listans er ' + L.vsk + ' %">' + opt('', 'lista ' + L.vsk + '%', x.vsk == null ? '' : x.vsk) + VSK_VAL.map(v => opt(v, v + ' %', x.vsk)).join('') + '</select></td>' +
+      '<td class="' + P + '-mv" data-l="Verð m/vsk" data-mv>' + mvskTexti(x, vsk) + '</td>' +
+      '<td data-l="Hópur"><select class="' + P + '-fl" data-f="hopur" aria-label="Hópur" style="width:112px">' + L.hopar.map(hp => opt(hp.id, hp.heiti, x.hopur)).join('') + '</select></td>' +
       '<td style="min-width:140px"><input class="' + P + '-ath" data-f="ath" value="' + esc(x.ath) + '" placeholder="athugasemd…" aria-label="Athugasemd"></td>' +
       '<td><div class="' + P + '-ad">' +
         '<label class="' + P + '-chk" title="Virkur — óvirkir liðir birtast ekki á prentun eða í tilboði"><input type="checkbox" data-f="virkt"' + (x.virkt ? ' checked' : '') + '></label>' +
         '<button type="button" class="' + P + '-ib" data-a="lid-upp" title="Færa upp">▲</button>' +
         '<button type="button" class="' + P + '-ib" data-a="lid-nidur" title="Færa niður">▼</button>' +
         '<button type="button" class="' + P + '-ib rautt" data-a="lid-eyda" title="Eyða lið">✕</button></div></td>' +
-      (_tilbod ? '<td class="' + P + '-r"><input class="' + P + '-mg" data-tb="magn" type="text" inputmode="decimal" value="' + esc(tb.magn || '') + '" aria-label="Magn" placeholder="0"></td>' +
-        '<td class="' + P + '-r"><input class="' + P + '-mg" data-tb="afsl" type="text" inputmode="decimal" value="' + esc(tb.afsl || '') + '" aria-label="Afsláttur %" placeholder="0"></td>' +
-        '<td class="' + P + '-mv" data-lt>' + linuSumma(L, x) + '</td>' : '') +
       '</tr>';
   }
   function mvskTexti(x, vsk) {
     if (x.tegund === 'tilbod') return '—';
     if (x.verd == null) return '—';
-    return pun(mvskTala(x.verd, vsk)) + (x.tegund === 'fra' ? ' (frá)' : '') + ' kr';
+    return (x.tegund === 'fra' ? 'frá ' : '') + pun(mvskTala(x.verd, vsk)) + ' kr';
   }
   function linuSumma(L, x) {
     const t = _tb[x.id]; const magn = t ? tala(t.magn) : null;
@@ -487,7 +533,10 @@
   function summa(linur) {
     let an = 0, mv = 0;
     linur.forEach(l => { if (l.verd == null) return; const a = l.verd * l.magn * (1 - l.afsl / 100); an += a; mv += mvskTala(a, l.vsk); });
-    return { an, vsk: mv - an, mvsk: mv };
+    // Sama regla og kassinn (pos.js): samtala og án-vsk rúnnaðar, VSK tekur afgangskrónuna — þá er án vsk + vsk ALLTAF = samtals
+    // (annars sýndi tilboð 183.821 + 44.117 = 227.938 við hlið samtölunnar 227.937).
+    const mvR = Math.round(mv), anR = Math.round(an);
+    return { an: anR, vsk: mvR - anR, mvsk: mvR };
   }
   function uppfaeraSummu() {
     const L = lista(_virkur), el = document.getElementById(P + '-sum'); if (!L || !el) return;

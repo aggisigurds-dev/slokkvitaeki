@@ -252,6 +252,8 @@
             if (cu.kt) meta.push('kt. ' + esc(cu.kt));
             if (cu.simi) meta.push('📞 ' + esc(cu.simi));
             if (meta.length) parts.push('<div style="font-size:12px;color:#475569;margin-top:2px">' + meta.join(' · ') + '</div>');
+            // 10.11.2026: „+ Afgreiðsla án stofnunar" (114) — segja það hér svo afgreiðslan sjái að enginn viðskiptavinur verður stofnaður.
+            try { const _sc = window.POS && POS.getState && POS.getState().customer; if (_sc && _sc.an_stofnunar && String(_sc.an_stofnunar) === String(cu.kt || '').replace(/[^0-9]/g, '')) parts.push('<div style="font-size:11px;font-weight:700;color:#166534;margin-top:4px">Án stofnunar — enginn viðskiptavinur verður stofnaður</div>'); } catch (_) {}
             return '<div style="margin:0 0 14px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">' +
               '<div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Reikningur á</div>' +
               parts.join('') +

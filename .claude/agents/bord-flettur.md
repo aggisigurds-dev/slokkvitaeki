@@ -644,3 +644,17 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   endurheimt í „＋ Nýr verðlisti".
 
 - **11.11.2026** — Þjónustuborð 368, framhald [docs/THJONUSTUBORD-CHECKLISTAR.md]: Hunter er order 0 efst í hliðarstiku (68, óháð vistaðri röð) og takki á Þjónustuborði (493); röð hliðarstiku býr í `sidebar_order` í app_settings (ekki `ui.vidmot.hlidarstika`). Eining 27 „Stjörnumerkt“ les beint úr upprunanum (checklistar, spjöld merkt á þig, 5 efstu áríðandi) og tekur merki af með aðgerðum upprunans, engin afrit. Spjald á Skipulagsborði: „Í checklista ›“ býr til atriði `nafn — texti`; spjaldið helst nema staðfest sé að eyða. Commit 2ddf4489, 9f75e43b, d44a7315. Worktree á grein eldri en 534f8cbc er enn með virkan pre-push hook: sameina origin/master inn í greinina.
+
+## Verðlistaglugginn (502) — hamir og breiddir (lokayfirferð 10.11.2026, mælt)
+
+- **Tveir hamir, báðir 8 dálkar.** Ritháttur: Liður · Verð án vsk (tegund fast/frá/tilboð + reitur) · Eining · Vsk · Verð m/vsk · Hópur ·
+  Athugasemd · aðgerðir. **Tilboðsham er LÆSTUR:** sömu fimm fyrstu dálkar sem TEXTI + Magn · Afsl. % · Samtals m/vsk; óvirkir liðir sjást
+  ekki, verkfæri og „Nýr liður" hverfa. (Áður 11 dálkar sem flæddu út fyrir gluggann, og verð gat breyst óvart í miðju tilboði.)
+- **Undir 1150 px** (sími, spjaldtölva, lítil fartölva) verður hver liður spjald í tveggja dálka grind; reitirnir bera merki úr `data-l`
+  (`td[data-l]::before`). Mælt: 0 px lárétt yfirflæði við 375, 1024 og 1400 px í báðum hömum. Undir 700 px er hausinn þéttur (81 px, var 171).
+- **Tölur:** verð með aukastaf birtist með þúsundapunkti („148.000,5"); í tilboði er samtala og án-vsk rúnnuð og VSK tekur afgangskrónuna
+  (sama regla og kassinn), svo án vsk + vsk = samtals alltaf.
+- **Takkarnir:** `schedule()` notar rAF + `setTimeout` til vara (sjá gildruna um falinn glugga hér að ofan).
+- **Raunveruleg vistun á lifandi `app_settings` er ÓPRÓFUÐ af Claude** (skrifum neitað 10.11). Sannað í staðinn: kóðinn sendir
+  `{verdlistar:{<id>:<listi>}}` á `app_settings_merge`; `jsonb_deep_merge` með þeirri lögun heldur öðrum listum og öðrum stillingum og
+  yfirskrifar `lidir`-fylkið heilt (lesfyrirspurn); og sama vistunarleið (`AppSettings.save`) skilaði verðbreytingu Agnars (Skýrslugerð 4.600) alla leið í Gátt.

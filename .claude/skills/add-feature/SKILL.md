@@ -100,3 +100,22 @@ földum/huldum glugga þótt `document.hidden` sé false (mælt: takkar 502 birt
 
 Gögn sem margar vélar breyta í `app_settings`: eitt skrif í einu per lykil (biðröð) + úreldingarvörður (`u`) — sjá `vista()` í
 `js/patches/502-verdlistar.js`. `app_settings_merge` sameinar djúpt en FYLKI yfirskrifast heil.
+
+## Próf án skrifa á lifandi gögn (10.11.2026)
+Dev-þjónninn (`preview_start slokkvitaeki-dev`) talar við LIFANDI Supabase, og Claude er neitað um raunskrif þangað í prófi. Hladdu
+`tools/prof-uppgerd-skrif.js` í vafrann ÁÐUR en þú smellir á neitt sem vistar:
+
+```js
+(0, eval)(await fetch('/tools/prof-uppgerd-skrif.js').then(r => r.text()));
+await Uppgerd.stillingar({ verdlistar: { /* sáð gögn */ } });   // app_settings í minni — verðlistar, stillingar; aðrar töflur lesa raungögn
+Uppgerd.sala();                                                  // kassinn: ALLAR töflur uppgerðar (insert á solur skilar röð)
+// …smelltu í gegnum raunverulegt viðmót…
+Uppgerd.skrif();                                                 // það sem hefði verið skrifað, í röð
+```
+
+Skrifvörnin fellur við endurhleðslu. Gildrurnar (tvítöku-vörn kassans, QR-miðaglugginn, rAF í földum glugga, `find` þekkir `title`) standa
+í haus skráarinnar. **Þetta sannar hvað kóðinn SENDIR, ekki að þjónninn taki við því** — segðu hreint út að raunveruleg vistun sé óprófuð,
+og sannreyndu þjónshliðina með lesfyrirspurn þar sem hægt er (t.d. `select public.jsonb_deep_merge(a, b)` fyrir `app_settings`).
+
+Breidd: mældu `efni.scrollWidth - efni.clientWidth` við 375, 1024 og 1400 px (`resize_window`) — átta dálka ritill þarf ~1100 px og
+flæddi út fyrir við 1024 (502; lausn: spjald per röð með `data-l`-merktum reitum undir 1150 px).
