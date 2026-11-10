@@ -587,7 +587,6 @@ html[data-theme="premium"] #v2-dtabs::-webkit-scrollbar{display:none}
   html[data-theme="premium"] #portal .v2-sub{text-shadow:0 1px 8px rgba(2,25,60,.6)}
   .open-ribbon{left:8px!important;right:8px;bottom:8px!important;transform:none!important;max-width:none!important;justify-content:center;padding:6px 10px!important;font-size:11px!important;line-height:1.25;border-radius:10px!important;opacity:.94}
   body:has(.open-ribbon) #portal{padding-bottom:46px}
-  body:has(.open-ribbon) #drawer .dr-foot{padding-bottom:46px}
 }
 @media(max-width:720px){
   html[data-theme="premium"] #drawer #v2-dtabs{scrollbar-width:none!important}
@@ -606,4 +605,13 @@ html[data-theme="premium"] #v2-top .v2-topnav{padding-right:26px;-webkit-mask-im
 }
 @media(min-width:721px){
   html[data-theme="premium"] #drawer .v2-dr-hero .v2-stpill{right:92px}
+}
+@media(max-width:1199px){
+  html[data-theme="premium"] #portal header nav{scrollbar-width:none}
+  html[data-theme="premium"] #portal header nav::-webkit-scrollbar{display:none}
+}
+@media(min-width:1200px) and (max-width:1340px){
+  html[data-theme="premium"] #v2-top .v2-topnav{gap:12px}
+  html[data-theme="premium"] #v2-top .v2-tl{font-size:12px}
+  html[data-theme="premium"] #v2-top #leit{width:160px}
 }
