@@ -188,5 +188,10 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   15923) bað um endurhleðslu á 3. hæð (5) + 5. hæð (2) = 7 = Máni-hæðir (3.–6.), auk lobby + 2 á 2. hæð + 4 slöngur. Tengingin (pör 1479, 26.10.2026)
   hvíldi á kenningunni „hótelhlutinn“. Aðalreikningur Midtown: enginn fannst í Stólpa/solur á kt Heimaleigu okt 2025–jan 2026 (aðeins 107457,
   107527 Bríetartún sameign, 107528 Ice, 107643 Bríetartún) — Drive/banki ómælt. Ekki leiðrétt; bíður Agnars.
+- 10.11.2026 · **Greiðendur að breytast** (póstur Dimku 06.11 og 09.11 í slokkvitaeki@brunaholf.is, lesinn beint úr Thunderbird; ekki í email_digest):
+  Máni Apartments herbergi 232, 234, 330, 332, 334-337, 430, 432, 434, 530, 531, 532, 534 + sameignir → **Laugaverk ehf. 680396-2219**; Midtown Reykjavik
+  (allt annað á Laugavegi 18 + sameignir) → **IHC ehf. 630693-2419**; Barónsstígur 18 (ný eign, 3 íbúðir) → **Sirius ehf. 460504-2520**. Engin þessara kt er í
+  customers_base eða fyrirtaeki (mælt 10.11.2026); fid 869 og 1486 bera enn Heimaleigu 510117-0690. EKKERT tengt, stofnað eða sameinað — Agnar ákveður.
+  Reikningur á Máni/Midtown má ekki fara á Heimaleigu ehf. fyrr en það er útkljáð. Charlize: kunni/reikningar (kt-færslur) og kerfi/postur (nýja pósthólfið).
 
 Síðast uppfært: 10.11.2026

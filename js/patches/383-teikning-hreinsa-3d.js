@@ -4385,12 +4385,33 @@
   }
   const okkar = m => !!m && (m === G.synd);
 
+  // 10.11.2026 (Midtown 4. hæð sýndi 2024-blaðið kjallara/1. hæðar): FloorPlan.open sækir mynd FYRSTU hæðar og setur hana
+  // á bgImage þegar hún berst — líka ef notandinn er þá kominn á aðra hæð. beita() tók hana þá sem frummynd virku
+  // hæðarinnar, skurðurinn lenti á röngu blaði og samstillaVirka vistaði stærð þess blaðs (frum) á hæðina.
+  // ATH: p.imageUrl dugar EKKI til að þekkja hana — 436 (_loadImg) skrifar plan.imageUrl um leið og myndin berst, svo
+  // seina myndin hefur þá þegar yfirskrifað það. Greint á gögnum hæðanna: myndin er blað FYRSTU hæðar, virka hæðin er
+  // önnur og á annað blað, og glugginn opnaðist fyrir < 60 s. Blob/gagnaslóðir (upphleðsla, PDF-raster) eru aldrei dæmdar.
+  const slodUrParam = s => { try { return new URL(String(s), location.href).searchParams.get('url') || ''; } catch (_) { return ''; } };
+  function seinMyndFyrstuHaedar(mynd, h) {
+    if (!mynd || !h || !h.image_url || G.virk === 0 || !(Date.now() - (G.opnadi || 0) < 60000)) return false;
+    const s = String(mynd._sja || mynd.src || '');
+    if (!/teikn-mynd/.test(s)) return false;
+    const a = slodUrParam(s), mitt = slodUrParam(h.image_url), fyrsta = slodUrParam((haedir()[0] || {}).image_url);
+    return !!a && !!mitt && !!fyrsta && a === fyrsta && a !== mitt;
+  }
   function beita() {
     const FP = FPx(); if (!FP || !FP.companyId) return;
     const p = plan(), h = virkHaed(), val = lesaVal(FP.companyId), nu = FP.bgImage;
     if (nu && !okkar(nu) && nu !== G.frum) {
       // NÝ frummynd (fyrsta hleðsla, svar þjóns, „Sækja teikningu", „Hlaða upp" eða skipt um hæð).
       if (nu.complete === false) return;
+      if (seinMyndFyrstuHaedar(nu, h)) {
+        // sein mynd fyrstu hæðar: setja aftur slóð og mynd virku hæðarinnar (eða ekkert fyrr en hennar mynd kemur)
+        p.imageUrl = h.image_url;
+        FP.bgImage = G.synd || G.stig1 || G.frum || null;
+        try { FP._renderCanvas(); } catch (_) {}
+        return;
+      }
       // 13.10.2026: 463 afkóðar stórar myndir utan aðalþráðarins og kallar nyMynd() þegar þær eru tilbúnar — skurður hér
       // á meðan (drawImage) hefði afkóðað 26 MP á aðalþræðinum og fryst gluggann í ~1 s.
       if (window.TeiknSaman && TeiknSaman.afkodar && TeiknSaman.afkodar(nu)) return;
@@ -6995,7 +7016,7 @@
 
     FP.open = function () {
       loka3d(); cancelAnimationFrame(G.raf);
-      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false });
+      Object.assign(G, { frum: null, stig1: null, stig1Lykill: '', synd: null, lykill: '', hrein: null, hreinLykill: '', rymi: { x: 0, y: 0 }, virk: 0, hamur: null, kedja: null, bendill: null, drag: null, teiknad: '', soknKom: 0, rodKomin: 0, _haedirCid: 0, _haedirBid: 0, _festCid: 0, _festModal: null, minni: {}, skipti: (G.skipti || 0) + 1, pdfBid: false, opnadi: Date.now() });
       const r = opna.apply(this, arguments);
       Z.s = 1; Z.x = 0; Z.y = 0; Z.sjalf = true; Z.gs = 1;
       try { tikk(); } catch (_) {}
