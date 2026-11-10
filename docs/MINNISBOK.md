@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-10 21:57 · 2140 virkar staðreyndir — 1231 prentaðar hér
+Sótt 2026-11-10 21:59 · 2141 virkar staðreyndir — 1232 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 116 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -101,9 +101,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [villuleit](#villuleit) | 25 |
 | [skyrslur](#skyrslur) | 25 |
 | [gatt](#gatt) | 23 |
+| [deploy](#deploy) | 22 |
 | [oryggi](#oryggi) | 22 |
 | [thjonustubord](#thjonustubord) | 22 |
-| [deploy](#deploy) | 21 |
 | [uttekt](#uttekt) | 21 |
 | [reikningar](#reikningar) | 20 |
 | [bord-flettur](#bord-flettur) | 19 |
@@ -1175,6 +1175,70 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sýnishornið (?demo=1 Center Hótel) sýnir 77 slöngur. Lifandi Center Hótel sýndi þankastrik og 245 slökkvitæki (slöngur innifaldar í total_devices). Lagað í PR 799: skýrsla fyrst, v_uttaeki_fid_rollup.bsl sem vara; slökkvitæki = total_devices minus slo. Plaza 44+39, heild 168+77. Heimaleiga 25 slöngu
   <br><sub>2026-08-30 · slokkvitaeki · kóði · chat</sub>
 
+### deploy
+
+- **Málfræðivörður í build-dist.js frá 10.11.2026 (d9d4c3e5): hver staðbundin klassísk skrifta í index.html er þáttuð með vm.Script áður en búntað er; málfræðivilla → exit 1, ekkert birt, síðan stendur á síðustu heilu útgáfu. Villan nefnir skrá og línu. Neyðarútgangur BUILD_LEYFA_MALFRAEDIVILLU=1. Nær ekki til module-skrifta né annarra síðna en index.html (gatt/). Prófað: heilt build EXIT=0 (495 skriftur), 502 viljandi brotin → EXIT=1; CI (Node 20) birti d9d4c3e án falskrar viðvörunar.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Birtingarmerkið [deploy] kveikir birtingu hvar sem það stendur í skilaboðum haus-commitsins, líka í meginmáli: setning eins og „Ekki [deploy]" birtir báðar síður.**
+  <br>Mælt 10.11.2026 (lota 2ef635f0): brunaholf netlify.toml ignore = `git log -1 --pretty=%B | grep -qF '[deploy]'`; slokkvitaeki .github/workflows/deploy.yml = contains(github.event.head_commit.message, '[deploy]'). Commit með „Ekki [deploy]: fer út með næstu birtingu" í meginmáli birti brunaholf 70baa
+  <br><sub>2026-11-10 · kerfi · kóði · claude-code</sub>
+- **Framleiðslubilun 10.11.2026 kl. 21:04–21:18: js/patches/502-verdlistar.js fór í loftið með málfræðivillu (vantaði sviga) og drap _bundle-3 í heild — úttektarspjaldið (129/165) teiknaðist ekki. Orsök: ókláruð breyting barst á master með auto-sync wip-commiti og næsta [deploy] annarrar lotu birti hana. build-dist.js gleypir bilun esbuild þegjandi (catch → „shipping unminified“, stdio ignore), svo brotið búnt fer óþjappað í loftið í stað þess að build-ið falli. Pre-push vörðurinn er af. Áður en [deploy] er ýtt: for f in js/patches/*.js; node --check. Einkenni á lifandi síðu: SyntaxError í _bundle-N í console og _ctc-slot tómt.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Pre-push hookurinn í slokkvitaeki (.githooks/pre-push) er AFVIRKJAÐUR frá 10.11.2026 að ósk Agnars (exit 0 efst í skránni): git push keyrir enga verði og þarf aldrei --no-verify.**
+  <br>Hookurinn keyrði audit-all --static (80 verðir, ~70 s, gagnaverðir sem lesa lifandi sýnir meðtaldir) og stöðvaði þrjár birtingar á rekstrargögnum óskyldum kóðanum. Verðirnir eru óbreyttir: node tools/audit-all.cjs handvirkt + GitHub Actions audit.yml. Ekki kveikja aftur nema Agnar biðji um það; keyr
+  <br><sub>2026-11-10 · kerfi · Agnar 10.11.2026 + kóði (commit 534f8cbc) · claude-code</sub>
+- **Óýtt commit í aðal-checkouti slokkvitaeki fer á master með næsta push eða auto-sync, líka commit annarra lota; „ekki ýta fyrr en Agnar segir já" heldur því ekki nema commitið sé aðeins á eigin grein.**
+  <br>09.–10.11.2026: þrjár worktree-lotur fengu fyrirmælin „ekki ýta í master" en allt endaði á master, m.a. af því lotur cherry-pickuðu í aðal-checkoutið og auto-sync (commit 7dd8b97c, [deploy]) ýtti. Vilji maður halda breytingu frá master: skilja hana eftir á worktree-greininni.
+  <br><sub>2026-11-10 · kerfi · spjall 10.11 · claude-code</sub>
+- **slokkvitaeki birtir dist/ ur build-dist.js: ~280 js/patches/*.js med defer + tomt meginmal lenda i sex-sjo _bundle-N.<md5>.js og lifandi index.html visar a thau, EKKI a /js/patches/...?v=... (ein undantekning 05.11.2026: 365-vistun-utskolun.js). Cache-lykillinn er thvi bunt-hakkid og ?v= i frumskranni hefur engin kerfisahrif a buntada skra — blandad par tveggja patcha getur ekki ordid til i framleidslu. ?v= skiptir adeins mali fyrir obuntanleg tog (async, module, utanadkomandi src, meginmal) og i obuntudu profunarumhverfi. Lisbeth urskurdadi #959 ROENG ADFERD 05.11.2026 a theirri forsendu og bakkadi eftir maelingu a lifandi sidunni — urskurdur um cache i thessu repo verdur ad lesa BIRTA index.html, ekki repo-skrana.**
+  <br><sub>2026-11-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **Áður en Agnar biður um deploy á 3dwork-síðuna vill hann afrit (backup) fyrst, og hann sameinar PR með orðinu „Merge“ eftir að hafa skoðað Vercel-preview.**
+  <br>[preference; agents: general, 3dJoker] 18.10.2026: „Lets try. Can you deploy. Perhaps make backup first“; síðar „Merge“ og „Yes merge“ eftir að preview-byggingin kláraðist.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 · claude-code</sub>
+- **Brunahólf-repo hefur engan build-skref (breytt er index.html og netlify/functions beint), deployast aðeins þegar head-commit hefur [deploy], og föllin nota SUPABASE_SERVICE_ROLE_KEY úr Netlify env sem er ekki til staðar staðbundið.** _(likely)_
+  <br>[rule; agents: framendi, gagnaleidslur, jarvis, bokari, rukkari] Staðbundnar prófanir notuðu publishable-lykilinn. index.html er 1,3 MB og á aldrei að lesa í heild.
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Margar lotur breyta sömu skrám sama daginn (gatt og Efnislisti í brunaholf), svo sæktu (fetch) og rebase-aðu alltaf fyrir push og leystu árekstra með git checkout --conflict=merge og Edit, ekki með indexOf-skriftum.** _(likely)_
+  <br>[gotcha; agents: netvordur, general] Lærdómur úr samhliða lotum 10-25.10.2026.
+  <br><sub>2026-11-04 · baedi · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
+- **Í worktrees verða skrár CRLF eftir git merge/checkout (autocrlf=true) og audit-uttekt-afslattarhopur verður þá falskt rautt; skrifaðu CRLF-skrár aftur í LF fyrir audit.** _(likely)_
+  <br>[gotcha; agents: netvordur, sala-reikningar] Keyrðu git checkout -- . fyrir merge/rebase aðeins þegar engar raunbreytingar eru í trénu. git rebase --continue brást með LF-stat skrám.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-15 · claude-code</sub>
+- **Staðbundin C:/projects/slokkvitaeki getur verið hundruð commit á eftir origin/master, svo vinna fer í ferskt worktree og næsta patch-númer er reiknað út frá origin/master, ekki staðbundnu tré.**
+  <br>[gotcha; agents: bord-flettur, framendi, general] 23.09: git status sýndi ahead 1, behind 758 og hæsta staðbundna patch var 351 en origin hafði 398.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
+- **esbuild-buntin skrifa broddstafi sem \x-hex (\xE6 \xF0 \xFD \xED \xFE), EKKI \uXXXX — grep a bundle tharf tha umbreytingu, og python unicode_escape a heila skra hrynur**
+  <br>Maelt 31.10.2026 a lifandi _bundle-4 (2,8 MB): "uppf\xE6rt", "✓" — \uXXXX er adeins notad yfir U+00FF. CLAUDE.md sagdi \uXXXX og ad nota python/unicode-escape; codecs.decode(raw,"unicode_escape") a allt buntid kastar UnicodeDecodeError (truncated \uXXXX escape) af thvi ad hra \x- og \u-brot blandast
+  <br><sub>2026-10-31 · slokkvitaeki · kodi · claude-code</sub>
+- **deploy.yml tímakeyrslan (cron 10 6 * * *) getur seinkað um klukkustundir hjá GitHub: 14.09.2026 keyrði hún 12:37 og birti wip-hausinn 0a3f978 af því live ≠ HEAD. Hálfkláruð breyting í sameiginlega vinnutrénu getur því farið í loftið án [deploy]. Hvert millistig á vörðum leiðum þarf að vera óvirkt/öruggt, eða vinna í sér-worktree.**
+  <br>Mælt í GitHub Actions API: 2026-09-14T12:37:02Z event=schedule head_sha=0a3f978. Millistigið þá var óvirkt (skraXmlHofnun skilgreint án kalla) og probe svaraði 200.
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
+- **DEPLOY-REGLA frá 07.09.2026 (Agnar: „næstum 10$ á dag í viðbótargjöld"): Netlify-krítur fóru í DEPLOY, ekki notkun — 1.031 framleiðslu-deploy 18.08–07.09 = 15.465 af 16.636 krítum (hvert deploy 15 krítur ≈ 10 sent; compute 923, bandvídd 172, vefbeiðnir 77). Hver ýting var deploy (632 í slokkvitaeki, 218 í brunaholf, tvöfalt í slokkvitaeki fram að 07.09). Nú: ýtingar samstilla vélarnar fjórar frjálst en síðan fer AÐEINS í loftið þegar haus-commit ýtingar ber [deploy] — slokkvitaeki: deploy.yml `if` (+ workflow_dispatch + morgunkeyrsla 06:10 UTC sem deployar aðeins ef live build.json ≠ HEAD); brunaholf: netlify.toml `ignore` (exit 1 aðeins með [deploy]) + `command` skrifar build.json + morning-deploy.yml 06:15 UTC ýtir tómu [deploy]-commiti ef óbirt. Auto-sync (OneDrive/ClaudeMemory/auto-sync-*.ps1, sameiginlegt öllum vélum) merkir wip alltaf [skip ci] nema óýtt [deploy]-commit bíði — þá erfir wip [deploy]. Vinnulag Claude-lota: laga, prófa staðbundið (preview_start), committa; LOKA verkinu með `git commit --allow-empty -m "[deploy] …"` eða setja [deploy] í síðasta commit. Tómt [deploy]-commit dugar til að birta allt sem er óbirt.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **SÓPUN 06.09.2026 (2. keyrsla): canon_stadur_empty-fix endurgerður ÁTTUNDA sinnið á claude/mcp-browser-access-wqattt (commit a95518a ofan á 5a2f4e7), rautt->grænt staðfest með node tools/audit-db-null-guard.cjs (byrjaði rautt á gömlu skránni, grænt eftir fix) og node tools/audit-all.cjs (26/26 grænt). git push fær ENN NÁKVÆMLEGA SAMA 403 "not in this session's authorized repository set" — ÁTTUNDI staðfesti dagurinn í röð (01/02/04/05x2/06x2/06-annar). Þetta er ekki lengur tilviljun eða sópunar-session-heppni: átta aðskildar keyrslur yfir sex daga, ALLTAF sama proxy-synjun, aldrei breytt milli keyrslna. AGNAR ÞARF SJÁLFUR að bæta aggisigurds-dev/slokkvitaeki (push access) við Sources á þessari endurteknu sópunar-trigger/session á claude.ai — ekkert innan session getur leyst þetta framar, það er staðfest tæmandi. Fixið sjálft (7 línur + audit-guard) er óbreytt frá fyrri lýsingum, sjá Charlize-færslur 02.09/04.09/05.09 fyrir fullan format-patch.**
+  <br>automation_triggers staðfest ENN kyrrstætt: síðasta röð er ENN id=38 (ajour, error, 2026-08-30T11:37 UTC) — nú 7 heilir dagar án NOKKURRAR keyrslu (ajour/email/redder/timavera). Grunur um að luna-bridge-vaktarinn á Agnars vél sé stöðvaður stendur óhaggaður og styrkist fyrir hvern dag sem líður án ný
+  <br><sub>2026-09-06 · kerfi · sql · claude-code</sub>
+- **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
+  <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
+  <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
+- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
+  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
+  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
+  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
+- **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
+  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Grep a _bundle-*.js finnur ALDREI islenska stafi — esbuild skrifar tha sem \uXXXX. Og patch getur verid i odru bundle en madur giskar a. Rett adferd: finna bundlid a einkennandi ASCII-streng (t.d. __docYearGridInstalled) og bera saman HASH fyrir og eftir.**
+  <br>Kostadi 8 minutur af pollun 01.09.2026 sem sagdi ranglega 'ekki komid'; utgafan hafdi lent strax. Aukagildra: grep a almennu ordi gaf falskt jakvaett tvi 'Hreyfingarlisti' var thegar til sem valmyndaratridi. CLAUDE.md varar vid thessu — eg las thad ekki fyrst.
+  <br><sub>2026-09-01 · kerfi · 01.09.2026 · claude-code</sub>
+- **Container-útgangur á api.netlify.com er lokaður; deploy fer fram með fetch() í vafra-flipa á síðunni sjálfri**
+  <br>manifest -> POST /deploys með SHA-1 korti -> PUT aðeins skrárnar í deploy.required -> /restore.
+  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
+- **Kóðinn er modular patch-skrár undir /js/patches/ — patch-master.js er úrelt tilvísun**
+  <br>Um 240 stakar JS-skrár hlaðast per load; bundling er á verkefnalistanum.
+  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
+
 ### oryggi
 
 - **Kúnnaminni (scope kunni) má ALDREI fara í skrá sem er committuð: repóin slokkvitaeki, brunaholf og kjarni eru OPINBER á GitHub (mælt 10.11.2026; luna-bridge og verkfaeri eru private). tools/minni.cjs --uppfaera sleppir scope kunni frá 10.11.2026 og segir fjöldann í haus bókarinnar; kúnnaminnið er lesið á skjá með --ferskt eða í hubbnum (Jarvis, Minnið, Kúnnaminni).**
@@ -1299,68 +1363,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
 - **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
   <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-
-### deploy
-
-- **Birtingarmerkið [deploy] kveikir birtingu hvar sem það stendur í skilaboðum haus-commitsins, líka í meginmáli: setning eins og „Ekki [deploy]" birtir báðar síður.**
-  <br>Mælt 10.11.2026 (lota 2ef635f0): brunaholf netlify.toml ignore = `git log -1 --pretty=%B | grep -qF '[deploy]'`; slokkvitaeki .github/workflows/deploy.yml = contains(github.event.head_commit.message, '[deploy]'). Commit með „Ekki [deploy]: fer út með næstu birtingu" í meginmáli birti brunaholf 70baa
-  <br><sub>2026-11-10 · kerfi · kóði · claude-code</sub>
-- **Framleiðslubilun 10.11.2026 kl. 21:04–21:18: js/patches/502-verdlistar.js fór í loftið með málfræðivillu (vantaði sviga) og drap _bundle-3 í heild — úttektarspjaldið (129/165) teiknaðist ekki. Orsök: ókláruð breyting barst á master með auto-sync wip-commiti og næsta [deploy] annarrar lotu birti hana. build-dist.js gleypir bilun esbuild þegjandi (catch → „shipping unminified“, stdio ignore), svo brotið búnt fer óþjappað í loftið í stað þess að build-ið falli. Pre-push vörðurinn er af. Áður en [deploy] er ýtt: for f in js/patches/*.js; node --check. Einkenni á lifandi síðu: SyntaxError í _bundle-N í console og _ctc-slot tómt.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Pre-push hookurinn í slokkvitaeki (.githooks/pre-push) er AFVIRKJAÐUR frá 10.11.2026 að ósk Agnars (exit 0 efst í skránni): git push keyrir enga verði og þarf aldrei --no-verify.**
-  <br>Hookurinn keyrði audit-all --static (80 verðir, ~70 s, gagnaverðir sem lesa lifandi sýnir meðtaldir) og stöðvaði þrjár birtingar á rekstrargögnum óskyldum kóðanum. Verðirnir eru óbreyttir: node tools/audit-all.cjs handvirkt + GitHub Actions audit.yml. Ekki kveikja aftur nema Agnar biðji um það; keyr
-  <br><sub>2026-11-10 · kerfi · Agnar 10.11.2026 + kóði (commit 534f8cbc) · claude-code</sub>
-- **Óýtt commit í aðal-checkouti slokkvitaeki fer á master með næsta push eða auto-sync, líka commit annarra lota; „ekki ýta fyrr en Agnar segir já" heldur því ekki nema commitið sé aðeins á eigin grein.**
-  <br>09.–10.11.2026: þrjár worktree-lotur fengu fyrirmælin „ekki ýta í master" en allt endaði á master, m.a. af því lotur cherry-pickuðu í aðal-checkoutið og auto-sync (commit 7dd8b97c, [deploy]) ýtti. Vilji maður halda breytingu frá master: skilja hana eftir á worktree-greininni.
-  <br><sub>2026-11-10 · kerfi · spjall 10.11 · claude-code</sub>
-- **slokkvitaeki birtir dist/ ur build-dist.js: ~280 js/patches/*.js med defer + tomt meginmal lenda i sex-sjo _bundle-N.<md5>.js og lifandi index.html visar a thau, EKKI a /js/patches/...?v=... (ein undantekning 05.11.2026: 365-vistun-utskolun.js). Cache-lykillinn er thvi bunt-hakkid og ?v= i frumskranni hefur engin kerfisahrif a buntada skra — blandad par tveggja patcha getur ekki ordid til i framleidslu. ?v= skiptir adeins mali fyrir obuntanleg tog (async, module, utanadkomandi src, meginmal) og i obuntudu profunarumhverfi. Lisbeth urskurdadi #959 ROENG ADFERD 05.11.2026 a theirri forsendu og bakkadi eftir maelingu a lifandi sidunni — urskurdur um cache i thessu repo verdur ad lesa BIRTA index.html, ekki repo-skrana.**
-  <br><sub>2026-11-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **Áður en Agnar biður um deploy á 3dwork-síðuna vill hann afrit (backup) fyrst, og hann sameinar PR með orðinu „Merge“ eftir að hafa skoðað Vercel-preview.**
-  <br>[preference; agents: general, 3dJoker] 18.10.2026: „Lets try. Can you deploy. Perhaps make backup first“; síðar „Merge“ og „Yes merge“ eftir að preview-byggingin kláraðist.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 · claude-code</sub>
-- **Brunahólf-repo hefur engan build-skref (breytt er index.html og netlify/functions beint), deployast aðeins þegar head-commit hefur [deploy], og föllin nota SUPABASE_SERVICE_ROLE_KEY úr Netlify env sem er ekki til staðar staðbundið.** _(likely)_
-  <br>[rule; agents: framendi, gagnaleidslur, jarvis, bokari, rukkari] Staðbundnar prófanir notuðu publishable-lykilinn. index.html er 1,3 MB og á aldrei að lesa í heild.
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Margar lotur breyta sömu skrám sama daginn (gatt og Efnislisti í brunaholf), svo sæktu (fetch) og rebase-aðu alltaf fyrir push og leystu árekstra með git checkout --conflict=merge og Edit, ekki með indexOf-skriftum.** _(likely)_
-  <br>[gotcha; agents: netvordur, general] Lærdómur úr samhliða lotum 10-25.10.2026.
-  <br><sub>2026-11-04 · baedi · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
-- **Í worktrees verða skrár CRLF eftir git merge/checkout (autocrlf=true) og audit-uttekt-afslattarhopur verður þá falskt rautt; skrifaðu CRLF-skrár aftur í LF fyrir audit.** _(likely)_
-  <br>[gotcha; agents: netvordur, sala-reikningar] Keyrðu git checkout -- . fyrir merge/rebase aðeins þegar engar raunbreytingar eru í trénu. git rebase --continue brást með LF-stat skrám.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-15 · claude-code</sub>
-- **Staðbundin C:/projects/slokkvitaeki getur verið hundruð commit á eftir origin/master, svo vinna fer í ferskt worktree og næsta patch-númer er reiknað út frá origin/master, ekki staðbundnu tré.**
-  <br>[gotcha; agents: bord-flettur, framendi, general] 23.09: git status sýndi ahead 1, behind 758 og hæsta staðbundna patch var 351 en origin hafði 398.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
-- **esbuild-buntin skrifa broddstafi sem \x-hex (\xE6 \xF0 \xFD \xED \xFE), EKKI \uXXXX — grep a bundle tharf tha umbreytingu, og python unicode_escape a heila skra hrynur**
-  <br>Maelt 31.10.2026 a lifandi _bundle-4 (2,8 MB): "uppf\xE6rt", "✓" — \uXXXX er adeins notad yfir U+00FF. CLAUDE.md sagdi \uXXXX og ad nota python/unicode-escape; codecs.decode(raw,"unicode_escape") a allt buntid kastar UnicodeDecodeError (truncated \uXXXX escape) af thvi ad hra \x- og \u-brot blandast
-  <br><sub>2026-10-31 · slokkvitaeki · kodi · claude-code</sub>
-- **deploy.yml tímakeyrslan (cron 10 6 * * *) getur seinkað um klukkustundir hjá GitHub: 14.09.2026 keyrði hún 12:37 og birti wip-hausinn 0a3f978 af því live ≠ HEAD. Hálfkláruð breyting í sameiginlega vinnutrénu getur því farið í loftið án [deploy]. Hvert millistig á vörðum leiðum þarf að vera óvirkt/öruggt, eða vinna í sér-worktree.**
-  <br>Mælt í GitHub Actions API: 2026-09-14T12:37:02Z event=schedule head_sha=0a3f978. Millistigið þá var óvirkt (skraXmlHofnun skilgreint án kalla) og probe svaraði 200.
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code 14.09.2026 · claude-code</sub>
-- **DEPLOY-REGLA frá 07.09.2026 (Agnar: „næstum 10$ á dag í viðbótargjöld"): Netlify-krítur fóru í DEPLOY, ekki notkun — 1.031 framleiðslu-deploy 18.08–07.09 = 15.465 af 16.636 krítum (hvert deploy 15 krítur ≈ 10 sent; compute 923, bandvídd 172, vefbeiðnir 77). Hver ýting var deploy (632 í slokkvitaeki, 218 í brunaholf, tvöfalt í slokkvitaeki fram að 07.09). Nú: ýtingar samstilla vélarnar fjórar frjálst en síðan fer AÐEINS í loftið þegar haus-commit ýtingar ber [deploy] — slokkvitaeki: deploy.yml `if` (+ workflow_dispatch + morgunkeyrsla 06:10 UTC sem deployar aðeins ef live build.json ≠ HEAD); brunaholf: netlify.toml `ignore` (exit 1 aðeins með [deploy]) + `command` skrifar build.json + morning-deploy.yml 06:15 UTC ýtir tómu [deploy]-commiti ef óbirt. Auto-sync (OneDrive/ClaudeMemory/auto-sync-*.ps1, sameiginlegt öllum vélum) merkir wip alltaf [skip ci] nema óýtt [deploy]-commit bíði — þá erfir wip [deploy]. Vinnulag Claude-lota: laga, prófa staðbundið (preview_start), committa; LOKA verkinu með `git commit --allow-empty -m "[deploy] …"` eða setja [deploy] í síðasta commit. Tómt [deploy]-commit dugar til að birta allt sem er óbirt.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **SÓPUN 06.09.2026 (2. keyrsla): canon_stadur_empty-fix endurgerður ÁTTUNDA sinnið á claude/mcp-browser-access-wqattt (commit a95518a ofan á 5a2f4e7), rautt->grænt staðfest með node tools/audit-db-null-guard.cjs (byrjaði rautt á gömlu skránni, grænt eftir fix) og node tools/audit-all.cjs (26/26 grænt). git push fær ENN NÁKVÆMLEGA SAMA 403 "not in this session's authorized repository set" — ÁTTUNDI staðfesti dagurinn í röð (01/02/04/05x2/06x2/06-annar). Þetta er ekki lengur tilviljun eða sópunar-session-heppni: átta aðskildar keyrslur yfir sex daga, ALLTAF sama proxy-synjun, aldrei breytt milli keyrslna. AGNAR ÞARF SJÁLFUR að bæta aggisigurds-dev/slokkvitaeki (push access) við Sources á þessari endurteknu sópunar-trigger/session á claude.ai — ekkert innan session getur leyst þetta framar, það er staðfest tæmandi. Fixið sjálft (7 línur + audit-guard) er óbreytt frá fyrri lýsingum, sjá Charlize-færslur 02.09/04.09/05.09 fyrir fullan format-patch.**
-  <br>automation_triggers staðfest ENN kyrrstætt: síðasta röð er ENN id=38 (ajour, error, 2026-08-30T11:37 UTC) — nú 7 heilir dagar án NOKKURRAR keyrslu (ajour/email/redder/timavera). Grunur um að luna-bridge-vaktarinn á Agnars vél sé stöðvaður stendur óhaggaður og styrkist fyrir hvern dag sem líður án ný
-  <br><sub>2026-09-06 · kerfi · sql · claude-code</sub>
-- **git push a claude/mcp-browser-access-wqattt / aggisigurds-dev/slokkvitaeki er ENN lokad fyrir sopunar-session (403 'not in this session's authorized repository set') — nu stadfest a.m.k. fjorda skiptid (01.09, 02.09, 04.09 + fyrri).**
-  <br>04.09.2026: GITHUB_TOKEN i thessari session HEFUR lesadgang (git clone/fetch/checkout a slokkvitaeki gekk fint, gh/api /repos/... synir sama '403 not enabled' skilabod jafnvel thott clone virki). En `git push -u origin claude/mcp-browser-access-wqattt` faer beint fra git-proxynum: 'access denied by 
-  <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-- **Vörn sem býr í vafranum getur aldrei stöðvað vafra sem keyrir gamlan kóða — regla sem verður að halda á að vera í gagnagrunninum**
-  <br>Lærdómur 03.09.2026: sáningarpatcharnir voru lagaðir (PR #845) og lagfæringin sannreynd í framleiðslubúntinum, en eyddar vörur komu samt aftur kl. 22:36 því einhver vafri keyrði fyrri útgáfuna. Deploy fer ekki fram í öllum vöfrum samtímis; preview-lén og cache lengja halann. Þegar afleiðing rangrar 
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
-- **Netlify deploy-preview slóðir eru SÉRSTÖK LÉN með tómt localStorage — en þær skrifa í FRAMLEIÐSLU-gagnagrunninn**
-  <br>Uppgötvað 03.09.2026 við að rekja af hverju eyddar vörur komu aftur EFTIR að lagfæring fór í loftið. Hver „keyr þetta einu sinni"-vörn sem byggir á localStorage-merki (t.d. _auxProductsSeededV1, _pricelist66Seeded, _vrSeeded) er ÓSETT á preview-léni og keyrir því upp á nýtt — gegn alvöru gögnum. Sam
-  <br><sub>2026-09-03 · kerfi · kóði · claude-code</sub>
-- **Rautt audit er EKKI staðreynd um main fyrr en vinnutréð er ferskt. 2026-09-01 var audit-attachment-forms rautt og virtist segja að gmail-send vörnina vantaði; hún var í main frá 68c7a66 (2026-08-27) — greinin var 32 commit á eftir. git fetch + git status -sb á að vera FYRSTA prófunin þegar audit er rautt, ekki sú síðasta. Sama gildir um A/B með git stash: það mælir bara greinina sem þú stendur á.**
-  <br><sub>2026-09-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Grep a _bundle-*.js finnur ALDREI islenska stafi — esbuild skrifar tha sem \uXXXX. Og patch getur verid i odru bundle en madur giskar a. Rett adferd: finna bundlid a einkennandi ASCII-streng (t.d. __docYearGridInstalled) og bera saman HASH fyrir og eftir.**
-  <br>Kostadi 8 minutur af pollun 01.09.2026 sem sagdi ranglega 'ekki komid'; utgafan hafdi lent strax. Aukagildra: grep a almennu ordi gaf falskt jakvaett tvi 'Hreyfingarlisti' var thegar til sem valmyndaratridi. CLAUDE.md varar vid thessu — eg las thad ekki fyrst.
-  <br><sub>2026-09-01 · kerfi · 01.09.2026 · claude-code</sub>
-- **Container-útgangur á api.netlify.com er lokaður; deploy fer fram með fetch() í vafra-flipa á síðunni sjálfri**
-  <br>manifest -> POST /deploys með SHA-1 korti -> PUT aðeins skrárnar í deploy.required -> /restore.
-  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
-- **Kóðinn er modular patch-skrár undir /js/patches/ — patch-master.js er úrelt tilvísun**
-  <br>Um 240 stakar JS-skrár hlaðast per load; bundling er á verkefnalistanum.
-  <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
 
 ### uttekt
 
