@@ -625,3 +625,20 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
 
 - **09.11.2026** — 09.11.2026 (Agnar): Þjónustuborð 368 fékk fasta flýtileið 'Nýr aðgangur' (data-t5=adgangar-nyr, sést aðeins þegar AS/admin er skráður inn — sama skilyrði og Aðgangsstýring, Adgangsstyring.flytileid()) sem opnar brunaholf.netlify.app/adgangar.html?nyr=1 í nýjum flipa; adgangar.html opnar 'Bæta við aðgangi' einu sinni við ?nyr=1. Haus Aðgangsstýringar (495) fékk líka hlekkina '+ Bæta við aðgangi' og 'Innskráning starfsfólks' (/innskraning.html). Innskráning varir: hub_adgangar_stilling.session_alltaf = true (09.11, nýjar innskráningar haldast allt að ár).
+
+- **10.11.2026** — Þjónustuborð 368, lota 09.–10.11.2026 [C#2222–2225]: (1) Dagskráin er teiknuð af `dagskraHtml` í 368, EKKI 303; „Þarf að gera í vikunni" (fjórir 2x2 reitir, 2 línur sjálfgefið, dragast stærri) er `js/patches/500-dagskra-oakvedin.js` og vistast í `skipulagsbord.by_staff.<nafn>.oakvedin` sem hlutur per reit. (2) Checklistar eru tveir, eining 23 `checklisti` og eining 26 `checklisti2` (`CHK_FELT`); titill í `<svæði>_titill`, samanbrot í `chk_opid.<svæði>`, bæði á þjóni; titilreitur verður að vera í biðlistanum sem frestar endurteikningu (3493712f). (3) Skiptilínur `.mspl` milli allra eininga í röð: spönn í 60 dálka rist, lágmark 16, vistast í `mitt.breidd` / `hamir[].breidd`. HÖRÐ REGLA Agnars: allt sem er skrifað inn á hvaða síðu sem er vistast á þjóni og samstillist milli tækja; aldrei setja reit á síðu sem getur ekki vistast. ÓGERT úr sömu lotu (aðeins hönnun): Hunter inn á Þjónustuborðið + hlekkur efst í hliðarstiku, „Stjörnumerkt"-borð yfir alla hami, flutningur spjalda af Skipulagsborði · lítið í checklista.
+
+## Drög-flipinn og takkaröðin í Vörur og þjónustu (10.11.2026)
+
+- **Drög (143):** „Geymd drög N" chip HÆGRA megin í síuræmunni + flokkur „Geymd drög" efst í „Allt" (körfur úr `sala_geymd`, 501; miði með
+  „Opna í Sölu" + ruslatákn). Sala með „Greitt síðar" án viðskiptavinar ber grátt „Óskráður viðskiptavinur" (`.dr2-oskr`); rauða
+  „Enginn viðskiptavinur" (`.dr2-vant`, `data-vantar-kunna`) er aðeins fyrir „reikningur" án viðskiptavinar.
+- **Vörur og þjónusta — takkaröðin** (`#view-vorur .page-title__tools`): vorur.js á þrjá takka + „Ný vara", 469 bætir Verkstæði verð og
+  Vinnuliðum við, **502 setur verðlistatakkana FREMST** (einn per lista í `app_settings.verdlistar` + „＋ Nýr verðlisti"). vorur.js teiknar
+  röðina upp á nýtt við hverja síun, svo 469 og 502 setja sína takka aftur inn (MutationObserver + 1,5 s vakt). Nýr verðlisti = takki sjálfkrafa.
+- **Gildra (mæld 10.11.2026): `requestAnimationFrame` keyrir ekki í földum eða huldum glugga þótt `document.hidden` sé false.** Pappi sem
+  setur inn hnappa/hluta um MutationObserver → rAF eingöngu birtir þá aldrei þar. Hafðu `setTimeout` til vara (502 `schedule()`), eða
+  kallaðu beint úr vaktinni (469 `setInterval → setja()`).
+- **Verðlistaglugginn (502):** hópar, liðir (verð fast/frá/tilboð, eining, vsk, athugasemd, virkur), % verð, líma inn, CSV, prenta, tilboðsham.
+  Skrif í sama lista fara í röð og úreldingarvörður (`u`) neitar að yfirskrifa lista sem önnur vél breytti. Eyða lista = mjúkt (`eytt:true`),
+  endurheimt í „＋ Nýr verðlisti".

@@ -323,6 +323,10 @@ git push origin master      # samstillir vélarnar — EKKERT deploy
 git commit --allow-empty -m "[deploy] stutt lýsing á því sem fer út" && git push   # birtir
 ```
 
+**Pre-push vörðurinn er af (Agnar 10.11.2026):** `.githooks/pre-push` byrjar á `exit 0`, svo `git push` keyrir enga verði og þarf ekki
+`--no-verify`. Keyrðu `node tools/audit-all.cjs --static` handvirkt þegar þú snertir varðaða leið og segðu frá rauðum vörðum. Ekki kveikja
+á hooknum aftur nema Agnar biðji um það.
+
 Auto-sync (`OneDrive/ClaudeMemory/auto-sync-*.ps1`, sameiginlegt öllum vélum) merkir wip-
 commit `[skip ci]` nema óýtt `[deploy]`-commit bíði undir því — þá erfir wip-commitið
 `[deploy]`. GitHub Actions (`.github/workflows/deploy.yml`) keyrir `build-dist.js` og

@@ -18,7 +18,7 @@ No framework, no bundler-at-author-time. A feature is a **new patch file plus a
 script tag**; `build-dist.js` bundles them at deploy.
 
 ## Client feature = one new patch
-1. New file `js/patches/NNN-name.js` — next free number (currently 308+; check
+1. New file `js/patches/NNN-name.js` — next free number (currently 503+; check
    `ls js/patches | grep -oE '^[0-9]+' | sort -n | tail`).
 2. Wrap it as a **guarded IIFE** and expose a small API:
    ```js
@@ -92,3 +92,11 @@ grep -rl "MyThing" dist/                    # confirm it bundled
 Grep gotcha: esbuild writes broddstafir as `\uXXXX` in the bundle — unicode-escape
 your Icelandic needle (`python3 -c "print('Sækja'.encode('unicode_escape').decode())"`)
 or grep the source instead.
+
+## Hlutur inni í hnút sem ANNAR pappi teiknar (10.11.2026)
+Dæmi: takkaröðin í Vörur og þjónustu (vorur.js teiknar, 469 og 502 bæta við). Settu hlutinn inn aftur með MutationObserver, snertu DOM
+aðeins þegar hann vantar eða er úreltur (undirskrift í `dataset`), og **treystu ekki á `requestAnimationFrame` eitt** — það keyrir ekki í
+földum/huldum glugga þótt `document.hidden` sé false (mælt: takkar 502 birtust ekki). `setTimeout` til vara; sá sem kemur fyrr teiknar.
+
+Gögn sem margar vélar breyta í `app_settings`: eitt skrif í einu per lykil (biðröð) + úreldingarvörður (`u`) — sjá `vista()` í
+`js/patches/502-verdlistar.js`. `app_settings_merge` sameinar djúpt en FYLKI yfirskrifast heil.

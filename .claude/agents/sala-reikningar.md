@@ -577,3 +577,45 @@ að fullu og enginn féll á mynstrið; í mars snýst það alveg við.
 
 Heimaleiga-málið (#1329) var sama mynstur í dulargervi: „ofgreitt um 122.659" reyndist 37.338 kr
 SKULD, og sú tala er nákvæmlega 20 %-vöntunin á einum reikningi (R-108266).
+
+## Verðskrár, geymd drög og afgreiðsla án stofnunar (lota 09.–10.11.2026, allt mælt)
+
+**Verðskráin er á einum stað og hún er breytanleg.**
+- **Slökkvit. þjónusta — verð** (`410-thjonustu-tengingar.js`, Vörur og þjónusta → 🧯): ein röð per þjónustulínu í hópum (tegund → Akstur og
+  skýrslugerð → Aðrar). Verð og HEITI eru reitir sem vistast við blur í `vorur.verd_an_vsk` / `vorur.nafn`. **Heitið er reikningstextinn OG
+  Gátt finnur línur á heitinu** (regex í `netlify/functions/gatt.cjs`) — endurnefning sem tekur línu úr Gáttar-hópi spyr fyrst.
+- **Akstur og Skýrslugerð** (verð + heiti reikningslínu) búa á þjóni: `app_settings.slokk_visit_defaults` = {akstur, skyrslugerd, driveQty,
+  akstur_heiti, skyrslugerd_heiti}. Kóðasjálfgildi 3.600 / 5.600. 129 (töflumerki), 165 (reikningslínur), 488 (viðbótarúttekt) og Gátt lesa
+  þaðan; gildir þar sem ferðin hefur ekki handslegið verð. Mælt 10.11.2026: Agnar setti Skýrslugerð í 4.600 í listanum → Gátt sýndi
+  `fullt_an 4600` (3.450 m. 25 % samningsafslætti).
+- **Gátt Sérkjör = almenn verðskrá nema samið sé um annað** (Agnar 09.11): `netlify/functions/_gatt-serkjor.cjs` (`aksturSkyrsla`); samningsverð
+  (`cfg.akstur` / `cfg.skyrsla`) og flatur afsláttur leggjast ofan á. Próf: `node tools/test-gatt-serkjor.cjs` (25).
+- **Nýir verðlistar** (`502-verdlistar.js`: Sprinklerkerfi · Neyðarljós · „＋ Nýr verðlisti"): `app_settings.verdlistar[<id>]`, sjá `bord-flettur`.
+  **Tilboðsham → „Setja í körfu í Sölu"** setur línur `{type:'service', krefst_verkbeidni:false, disc_pct}` — afsláttur er LÍNUAFSLÁTTUR
+  (aldrei bæði bakaður í línu og í `afslattur`). Úttektir lesa verðin EKKI úr þessum listum enn (`Verdlistar.lidir(id)` er til reiðu).
+
+**Geymd drög eru karfa, ekki sala.** „Geyma sem drög" í greiðsluglugganum (07) → `GeymdDrog.vista()` (501) → tafla `sala_geymd` (karfa jsonb).
+Ekkert R-númer, ekkert í `solur`/Bókhaldi/Kröfu yfirliti/Payday. „Opna í Sölu" í Drög (143) hleður körfuna og merkir röðina `deleted_at`
+(„Sýna eydd" → Endurheimta). Gildra: 255 (sjálfvirkur fyrirtækjaafsláttur) núllstillir `discount_pct` þegar kúnni kemur inn með körfunni —
+`festaAfslatt()` í 501 festir geymda gildið aftur.
+
+**Afgreiðsla án stofnunar** (Agnar 10.11: „flókið að eiga við einstaklingskennitölur hjá þeim sem maður ætlar sér ekkert að skrá").
+- Rótin: `pos.js checkout` AUTO-STOFNAR `customers_base` + `fyrirtaeki` (er_i_thjonustu=false, `review_flag` ef nafn er rusl) fyrir HVERJA
+  óþekkta 10 stafa kt (kanóníska leiðin frá 09.09.2026).
+- „+ Afgreiðsla án stofnunar" í leitar-fellilistanum (114; birtist ALLTAF þegar leit finnur engan) opnar sama glugga og „Án kennitölu".
+  Með 10 stafa kt: `state.customer.an_stofnunar = <hrein kt>` → auto-stofnun sleppt; salan ber nafn (eða „Viðskiptavinur") og raun-kt í
+  `customer_kt`, `customer_id` tómt, og `solur.an_stofnunar = true` er sett eftir insert. 7 stafa tala = sími (kt 999999-9999); nafn = nafn.
+  Reikningurinn er óbreyttur (kemur eins og úr kennitölu). **Kennitala fer aldrei í nafnareit.**
+- `audit-solu-id`: undanþága AÐEINS `greitt_sidar` + merki; „reikningur" án tengingar helst rautt. `v_gengid_inn_osott` nær líka yfir
+  merktar sölur (ósótt vara dettur ekki úr vaktinni).
+
+**Greitt síðar án viðskiptavinar er EÐLILEGT** (Agnar 10.11: „óskráður viðskiptavinur … greiðir þegar hann sækir og getur ekki fengið sendan
+reikning"). Drög sýna grátt „Óskráður viðskiptavinur"; rauða merkið og kassaviðvörunin („KRÖFUNA er ekki hægt að senda", `sala_krafa_an_kunna`)
+kvikna aðeins þegar greiðslumáti er **reikningur** án kennitölu.
+
+**Smátt:** söluloka-glugginn segir „🖨 Prenta reikning" (var „Prenta aftur"; Bókhalds-yfirlit 11 á enn sitt „Prenta aftur (kvittun)").
+Flipi sem var opinn fyrir birtingu sýnir gamla textann þar til hann er endurhlaðinn — það er ekki skyndiminni.
+
+**Prófunaraðferð sem dugði (engin skrif á lifandi):** `DB.sb.from` → Proxy sem skráir köll, `DB.sb.rpc` og `storage` uppgerð, `fetch`-skrif
+blokkuð; svo raunverulegir smellir á ÁFRAM og greiðslumáta. Gildrur: tvítöku-vörnin (sama kt + upphæð < 2 mín) spyr með `Confirm.show`;
+QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.

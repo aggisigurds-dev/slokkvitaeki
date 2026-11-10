@@ -10,6 +10,11 @@
 > **Read it before changing any guarded path. Run `node tools/audit-all.cjs`
 > before every push.**
 
+> **10.11.2026 — pre-push hookurinn er AFVIRKJAÐUR að ósk Agnars** (`exit 0` efst í `.githooks/pre-push`). Hann keyrði alla 80
+> verðina (gagnaverði líka) við hverja ýtingu og stöðvaði birtingu á rekstrargögnum sem koma kóðanum ekki við. Verðirnir sjálfir eru
+> óbreyttir: keyrðu `node tools/audit-all.cjs` handvirkt á vörðuðum leiðum og segðu frá því sem er rautt; `audit.yml` (GitHub Actions)
+> keyrir þá eftir á. Ekki kveikja á hooknum aftur nema Agnar biðji um það.
+
 The app is ~280 runtime patches with no framework and (historically) no tests,
 which is why "fix one thing, two break." This net is the fix for *that*: make
 failures impossible to ship silently, and make every guarantee testable in one
