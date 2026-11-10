@@ -95,7 +95,7 @@
         const g = drog[key] != null ? drog[key] : lesa(eig, r);
         const st = stada[key];
         return '<div class="ovbox">' +
-          '<textarea data-ov="' + esc(key) + '" rows="5" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
+          '<textarea data-ov="' + esc(key) + '" rows="2" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
           '<span class="ovst ' + (st ? st.t : '') + '" data-ovst="' + esc(key) + '">' + esc(st ? st.s : '') + '</span></div>';
       };
       return '<div class="ov">' +
@@ -110,7 +110,7 @@
         '.ovh span{font-size:11.5px;color:var(--mute)}',
         '.ovgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
         '.ovbox{display:flex;flex-direction:column;gap:2px;min-width:0}',
-        '.ovbox textarea{width:100%;min-height:96px;padding:7px 8px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
+        '.ovbox textarea{width:100%;min-height:44px;padding:7px 8px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
         '.ovbox textarea:hover{background:#fffdf7}',
         '.ovbox textarea:focus{outline:2px solid var(--g5);outline-offset:1px;background:#fffdf7}',
         '.ovbox textarea::placeholder{color:var(--mute);opacity:.45}',
