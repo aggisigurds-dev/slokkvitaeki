@@ -79,6 +79,23 @@ Kveddu skýrt upp annað hvort:
 
 - **16.10.2026** — Uppgjör lota 16.10.2026 (Beiðnaskógurinn): (1) tools/audit-all.cjs tók SÍÐUSTU línu úttaks sem samantekt — lagfæringarábending á eftir sagði „✅ All green" með 46 óskoðuð skrif eftir → síðasta lína = dómur („🟡 EKKI GRÆNT — N"). (2) GAGNA-verðir (rauð gögn) felldu hverja CI-keyrslu og póstur kom á hverja ýtingu → skipting: KÓÐA-verðir fella keyrslu, GAGNA-verðir aðeins ⚠. (3) grep -r segir „Binary file matches" og felur línur ef skrá inniheldur NUL-bæti (265-utfyllt-skjol.js hafði eitt); Node-verðir lesa hana. (4) Sjálfvirkni-vafrinn HAFNAR confirm()-gluggum sjálfkrafa — „🗑 Hreinsa" leit dauð út; fjórar falskar „bilanir" á Leiðsögn voru allar mæliaðferð. (5) Trigger set_vidskiptategund (BEFORE INSERT OR UPDATE) yfirskrifaði handvirka leiðréttingu → regla: ályktun má ekki yfirskrifa ákvörðun; skýr breyting á reitnum gildir.
 
+## Lærdómur 31.10.–10.11.2026 (allsherjar úttekt + eftirfylgni)
+
+- **Sönnunin fyrir breytingu á `payday-push` er samanburður á raungögnum, ekki lestur á diffi.** Hlaða `buildPayload` úr
+  master OG grein í `vm`, keyra ALLAR sölur (31.10.: 1.120, með og án staðar = 2.240 payload) og bera saman bæti fyrir bæti.
+  Munur 0 = venjulegar kröfur ósnertar; gervisala sýnir svo nýju hegðunina eina. (PR #939, harness í scratchpad —
+  endursmíðaðu, hún er 60 línur.)
+- **Vörður sem enginn hefur séð rauðan er ekki prófaður** (MAELINGAR kafli 19). Hluti af SAFE-úrskurði um nýjan/breyttan
+  vörð er stökkbreyting: taka eitt tilvik af grunnlínu, brjóta mynstrið, víkka mynstrið — og sjá RAUTT í öllum þremur.
+- **Mynstur í vörðum leiðum eru KEYRÐ í verðinum** — `audit-payday-lysing` keyrir `_vbM` á dæmi, gagndæmi og akkerisdæmi
+  („Endurútgáfa R-001029 …" má ekki passa: 17 af 70 nótum bera R-númer annars staðar en fremst). Týnt bakskástrik
+  (`R-d+`) þýðist og þegir — `tools/audit-regex-bakstrik.cjs` (10.11.) leitar að því í báðum repóum.
+- **Gaffall (fork) getur ekki kallað á þig.** Sé breyting á varðri leið unnin í gaffli verður AÐALLOTAN að kalla á
+  netvörð áður en sameinað er — „sjálfsyfirferð gaffals" er ekki úrskurður (#939: gaffallinn skráði það réttilega).
+- **Pre-push hookurinn er af síðan 10.11.2026 (Agnar)** — `node tools/audit-all.cjs --static` er keyrt handvirkt fyrir
+  ýtingu á varðri leið og rauðir verðir nefndir í skilunum. Rauðir GAGNAverðir 10.11. (osendar-krofur, payday-samraeming
+  T3:R-001248, skeytamidlun-vantar, tengingar) eru daglegur rekstur, ekki kóðabilun.
+
 ## Nýtt úr Charlize og lotum (28.10.2026)
 
 - Deploy-regla (Agnar 07.09, „næstum 10$ á dag“): hvert framleiðslu-deploy kostar 15 krítur (1.031 deploy 18.08–07.09 = 15.465 af 16.636 krítum), svo bæði repoin fara aðeins í loftið þegar síðasta commit inniheldur `[deploy]` — `git push` eitt og sér samstillir bara; staðfestu með `/build.json` (60–100 s eftir push). [C#437, lota 6db7868a]

@@ -364,3 +364,5 @@ samningsafslætti" sem #1394 er enn að ákveða hvort eigi að vera til.
 
 Vörður: `tools/audit-skorun-lista.cjs` (A=9 · B=35 · C=0). Hann sér aðeins skörun sem R-númer
 afhjúpa — sama spurning án reikningsnúmers sleppur í gegn.
+
+- **10.11.2026** — Tillaga eldist — berðu hana við nýjustu ákvörðun Agnars áður en þú framkvæmir. SQL-skrá sem var „tilbúin til keyrslu" 31.10. (loka anon-skrifum) reyndist 10.11. eldri en svar Agnars 07.11. í máli #1536 („RLS skiptir ekki miklu máli") og var EKKI keyrð; hún stendur merkt ÓKEYRT í brunaholf/sql/. Staðfesting Supabase (apply_migration) birtist ekki alltaf hjá Agnari (sími): renni hún út hefur EKKERT keyrt — staðfestu það með SQL og farðu aldrei framhjá með execute_sql. Viðbætur 10.11. sem bíða svars: #1536 (cowork_js_patches, lykilorð „loka cowork") og #1431 (repóin eru opinber á GitHub; kúnnaminni tekið úr minnisbókinni). MAELINGAR kaflar 20 og 22. (docs/MAELINGAR.md, docs/ORYGGISNET.md)

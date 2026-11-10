@@ -49,6 +49,8 @@ eiga að vera. `brunaholf/tools/deploy-vordur.cjs` (PreToolUse á Bash) svarar `
 8. **RLS** — anon les TÓMT úr invoices/timavera/villur o.fl.; tómt svar ≠ engin gögn. Ný tafla án policy = RÖNG AÐFERÐ.
 9. **Þjónsstaða** — val notanda fer í AppSettings/Supabase, aldrei aðeins localStorage (regla 15.10.2026; `audit-vafrastada`).
 10. **Próf** — `node tools/audit-all.cjs` grænt fyrir og eftir; UI staðfest í gegnum viðmótið (skill `vidmotsprof`, Playwright með skrif-gildru), aldrei með API-kalli.
+11. **Leitarmynstur með týnt bakskástrik** — `\d`/`\s`/`\w` verða að bókstöfunum `d`/`s`/`w` þegar kóði fer í gegnum STRENG á leið í skrána (`sed`-útskipting, `node -e`, JS-strengur/template, `new RegExp('\d')`). Mynstrið þýðist, kastar engu og passar bara aldrei — eða étur stafi: payday-push `R-d+` (31.10.2026, „Viðbót við R-…" fór aldrei á kröfuna), 478 `.replace(/s+/g,' ')` (10.11.2026, hvert „s" hvarf úr skráarnafni, fór í loftið samdægurs). Mynstur eru skrifuð með Edit/Write, og `node tools/audit-regex-bakstrik.cjs` keyrt á eftir (er í audit-all, les líka Brunahólf). Vörður sem ver mynstur KEYRIR það á raundæmi og gagndæmi (`audit-payday-lysing`) — grep á textann sannar ekkert. Sama leið étur `\uXXXX` og lokar blokk-athugasemd ef `*/` stendur í dæmi.
+12. **`limit=` yfir 1000 í EINU kalli er ekki vörn** — PostgREST klippir í 1000 og svarar 200/206 án villu (10.11.2026: minnisbókin sá 1000 af 2.133 staðreyndum, „Minnið" í Jarvis 976 af 2.133, kt-uppfletting 1000 af 1.284 félögum). Flettu með fastri röð (`DB.fetchAll` í appinu, `allPages`/`order=id&limit=1000&offset=` í föllum og tólum) og berðu sóttar raðir við `content-range`. Slétt tala jöfn þakinu er grunur, ekki talning. MAELINGAR kafli 22.
 
 ## Hvar hlutirnir liggja
 
@@ -65,6 +67,8 @@ eiga að vera. `brunaholf/tools/deploy-vordur.cjs` (PreToolUse á Bash) svarar `
 | Inline !important-ritarar | `js/mobilenav.js:154`, `314:330`, `323:159`, `353:207` |
 | As-built (perur/vírar) | `docs/RAFKERFI.md` kafli 0, 5, 7 |
 | Mælingagildrur | `docs/MAELINGAR.md` |
+| Týnt bakskástrik í leitarmynstri | `tools/audit-regex-bakstrik.cjs` (MAELINGAR kafli 18) |
+| Lestur yfir 1000-raða þakið | `tools/audit-pagination.cjs` (kóði í `js/`) · `tools/audit-rodafjoldi.cjs` (tölur) · MAELINGAR kafli 22 (föll og tól: handvirk leit að `limit=` yfir 1000) |
 | Variant-aðferð | `.claude/skills/variant-analysis/SKILL.md`, `villuleit/SKILL.md` |
 | Patch 87-gildran | minni `feedback_patch_87_caution.md` |
 | switchView-race | minni `reference_infra.md` |
