@@ -104,17 +104,17 @@
     },
     css() {
       return [
-        '.ov{padding:2px 16px 14px}',
-        '.ovh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:8px 0 6px;border-top:1px solid var(--edge)}',
-        '.ovh h3{margin:0;font:700 12px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}',
+        '.ov{padding:0 16px 8px}',
+        '.ovh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:5px 0 4px;border-top:1px solid var(--edge)}',
+        '.ovh h3{margin:0;font:700 11.5px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}',
         '.ovh span{font-size:11.5px;color:var(--mute)}',
-        '.ovgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
-        '.ovbox{display:flex;flex-direction:column;gap:2px;min-width:0}',
-        '.ovbox textarea{width:100%;min-height:44px;padding:7px 8px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
+        '.ovgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}',
+        '.ovbox{position:relative;min-width:0}',
+        '.ovbox textarea{width:100%;min-height:40px;display:block;padding:4px 6px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
         '.ovbox textarea:hover{background:#fffdf7}',
         '.ovbox textarea:focus{outline:2px solid var(--g5);outline-offset:1px;background:#fffdf7}',
         '.ovbox textarea::placeholder{color:var(--mute);opacity:.45}',
-        '.ovst{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--mute);min-height:11px}',
+        '.ovst{position:absolute;right:14px;bottom:3px;max-width:80%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none;background:rgba(255,253,247,.85);padding:0 3px;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--mute)}',
         '.ovst.ok{color:var(--green)}.ovst.vistar,.ovst.bid{color:var(--gink)}',
         '@media (max-width:420px){.ovgrid{grid-template-columns:minmax(0,1fr)}}'
       ].join('\n');
