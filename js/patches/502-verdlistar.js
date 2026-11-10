@@ -375,12 +375,16 @@
     const L = lista(_virkur), ef = efniEl(); if (!L || !ef) return;
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(ef) : null;
     const q = norm(_sia);
-    const synd = x => (_synaOvirk || x.virkt) && (!q || norm(x.nafn + ' ' + x.ath).indexOf(q) >= 0);
+    // Tilboðsham (10.11.2026, lokayfirferð): 11 dálkar náðu út fyrir gluggann. Í tilboðsham er verðlistinn LÆSTUR og sýndur sem texti —
+    // Hópur · Athugasemd · aðgerðir víkja fyrir Magn · Afsl. % · Samtals, óvirkir liðir sjást ekki (þeir fara aldrei á tilboð) og
+    // verkfærin hverfa. Báðir hamir eru því 8 dálkar, og verð breytist ekki óvart í miðju tilboði.
+    const synd = x => (_tilbod ? x.virkt : (_synaOvirk || x.virkt)) && (!q || norm(x.nafn + ' ' + x.ath).indexOf(q) >= 0);
     const fjoldiVirkir = L.lidir.filter(x => x.virkt).length;
-    const dalkar = _tilbod ? 11 : 8;
+    const dalkar = 8;
     let h = '<div class="' + P + '-verk">' +
       '<input class="' + P + '-sia" type="search" id="' + P + '-sia" placeholder="Sía listann…" value="' + esc(_sia) + '" aria-label="Sía listann">' +
       '<span class="' + P + '-fj">' + L.lidir.length + ' ' + (L.lidir.length === 1 ? 'liður' : 'liðir') + (fjoldiVirkir !== L.lidir.length ? ' · ' + fjoldiVirkir + ' virkir' : '') + '</span>' +
+      (_tilbod ? '<span class="' + P + '-hint">Tilboðsham — settu magn á liðina. Verðlistanum sjálfum er breytt utan tilboðshams.</span></div>' :
       '<label class="' + P + '-chk"><input type="checkbox" id="' + P + '-ovirk"' + (_synaOvirk ? ' checked' : '') + '> Sýna óvirka</label>' +
       '<span class="' + P + '-sp">' +
         '<button type="button" class="' + P + '-t" data-a="nyr-hopur" title="Bæta við hóp (t.d. Skoðun, Vinna og akstur)">＋ Hópur</button>' +

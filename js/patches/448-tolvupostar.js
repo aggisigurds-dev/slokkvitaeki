@@ -42,7 +42,11 @@
   if (window.__tolvupostar448) return;
   window.__tolvupostar448 = true;
 
-  const HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
+  // 10.11.2026 (Agnar: slokkvitaeki@brunaholf.is „verður smám saman aðal pósturinn“): þriðja hólfið er Microsoft 365 — lesið úr email_digest
+  // (luna-bridge), en EKKI tengt Gmail: engin sókn (gmail-ingest), engin sending héðan og enginn Gmail-hlekkur. Sjá erGmail().
+  const GMAIL_HOLF = ['eldklar@eldklar.is', 'bokhald@eldklar.is'];
+  const HOLF = GMAIL_HOLF.concat(['slokkvitaeki@brunaholf.is']);
+  const erGmail = a => GMAIL_HOLF.indexOf(String(a || '').toLowerCase()) >= 0;
   const DAGAR = 60;
   const BH = 'https://brunaholf.netlify.app';
   const SIA_LYKILL = 'tolvupostar.sia';
@@ -96,7 +100,7 @@
       try {
         const [p, a, h, m] = await Promise.all([
           c.from('email_digest').select('id,message_id,account,folder,thread_id,sender_name,sender_email,to_addresses,subject,snippet,body_preview,received_at,labels,has_attachment,attachment_names,is_question')
-            .in('account', HOLF).gte('received_at', fra).order('received_at', { ascending: false }).limit(1000),
+            .in('account', HOLF.concat(['Slokkvitaeki@brunaholf.is'])).gte('received_at', fra).order('received_at', { ascending: false }).limit(1000),
           c.from('reikninga_postur_activity').select('message_id,kind').limit(1000),
           c.from('reikninga_postur_hidden').select('message_id').limit(1000),
           c.from('thjonustubeidni').select('id,title,status,tags,notes,channel_ref,assigned_to,svarad_at,fyrirtaeki_id,customer_nafn,updated_at,created_by,created_at')
@@ -166,7 +170,7 @@
       const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
         : sjalfvirkt ? 'sjalfvirkt'
-        : (!svarad && !lokid && !malLokad && sidasta.folder !== 'SENT') ? 'bidur' : 'buid';
+        : (!svarad && !lokid && !malLokad && sidasta.folder !== 'SENT') ? (erGmail(sidastaInn.account) || msgs.some(x => x.folder === 'SENT') ? 'bidur' : 'omaelt') : 'buid';   // 10.11.2026: án Sent-möppu er „ósvarað“ ekki mælanlegt — ekki fullyrða það
       ut.push({ k, msgs, inn, sidastaInn, sidasta, merki: [...merki], stjornur: [...stj], vidhengi: vidh, mal, tags, svarTag, lokid, svarad, falid, kunni, hluti,
         sjalfvirkt, beidni: !sjalfvirkt && BEIDNI_RE.test(texti), mikilv: stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important),
         account: sidastaInn.account, nafn: sidastaInn.sender_name || sidastaInn.sender_email || '—', netfang: sidastaInn.sender_email || '',
@@ -175,14 +179,14 @@
     ut.sort((a, b) => ts(b.timi) - ts(a.timi));
     return ut;
   }
-  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok']];
+  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''], ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok']];
   const FELLT = { buid: true, sjalfvirkt: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
   const erFellt = (h, s) => !!FELLT[h] && !s.merki;
   const HLUTA_L = Object.fromEntries(HLUTAR.map(h => [h[0], h[1]]));
   function siad() {
     const s = S.sia;
     let l = S.thraedir.filter(t => S.synaFalid ? t.falid : !t.falid);
-    if (s.holf !== 'baedi') l = l.filter(t => stuttHolf(t.account) === s.holf);
+    if (s.holf !== 'baedi') l = l.filter(t => stuttHolf(t.account).toLowerCase() === s.holf);
     if (s.osvarad) l = l.filter(t => t.hluti !== 'buid' && t.hluti !== 'sjalfvirkt');
     if (s.beidnir) l = l.filter(t => t.beidni);
     if (s.vidhengi) l = l.filter(t => t.vidhengi.length);
@@ -327,6 +331,7 @@
     const hratt = String(svarTexti(t) || '').trim();
     if (!hratt) throw new Error('Svarið er tómt');
     if (!t.netfang) throw new Error('Enginn viðtakandi á þræðinum');
+    if (!erGmail(t.account)) throw new Error('Sending héðan er ekki tengd ' + t.account + ' — svaraðu í Outlook/Thunderbird og ýttu svo á „Merkja svarað“');
     if (!window.AppMail || !AppMail.send) throw new Error('Sendingin (254 AppMail) er ekki hlaðin');
     // Viðhengi (04.11.2026): hvert skjal sem [HENGJA VIÐ: …] nefnir VERÐUR að vera á málinu; línan sjálf fer aldrei með.
     const vantar = hengjaBeidnir(hratt).filter(b => !skjalFyrir(b, skjolMals(t)));
@@ -355,7 +360,7 @@
   }
   async function saekjaNyjan() {
     const koll = [];
-    HOLF.forEach(a => ['', '&folder=sent'].forEach(f => koll.push(fetch(BH + '/api/gmail-ingest?account=' + encodeURIComponent(a) + '&days=3' + f).then(r => r.json()).catch(() => null))));
+    GMAIL_HOLF.forEach(a => ['', '&folder=sent'].forEach(f => koll.push(fetch(BH + '/api/gmail-ingest?account=' + encodeURIComponent(a) + '&days=3' + f).then(r => r.json()).catch(() => null))));
     const sv = await Promise.all(koll);
     const nyir = sv.reduce((n, x) => n + ((x && x.nyir) || 0), 0), bilad = sv.some(x => !x || x.ok === false);
     await load(true);
@@ -428,12 +433,12 @@
       '<div class="tp-undir"><b>' + esc(t.nafn) + '</b> &lt;' + esc(t.netfang) + '&gt;' + (t.kunni ? ' · <button type="button" class="tp-link" data-t5="fyr-id" data-id="' + esc(t.kunni.coId || '') + '">' + esc(t.kunni.nafn || '') + '</button>' : ' · <span class="s">enginn kúnni fannst</span>') + '</div>' +
       '<div class="tp-merki _oll">' + merkiHtml(t, true) + '</div></div>' +
       '<div class="tp-takkar _adal">' +
-        '<button type="button" class="btn iv sm' + (S.svarOpid === t.k ? ' _on' : '') + '" data-t5="tp-svara" data-v="' + esc(t.k) + '">↩ Svara</button>' +
-        (t.kunni && window.ReikningaPostur && ReikningaPostur.sendaReikning ? '<button type="button" class="btn iv sm" data-t5="tp-skjol" data-v="' + esc(t.k) + '">✉ Senda reikning / skýrslu</button>' : '') +
+        (erGmail(t.account) ? '<button type="button" class="btn iv sm' + (S.svarOpid === t.k ? ' _on' : '') + '" data-t5="tp-svara" data-v="' + esc(t.k) + '">↩ Svara</button>' : '<span class="s" title="Hólfið er Microsoft 365 og er ekki tengt sendingu úr appinu">Svarað í Outlook — sending héðan er ekki tengd þessu hólfi</span>') +
+        (erGmail(t.account) && t.kunni && window.ReikningaPostur && ReikningaPostur.sendaReikning ? '<button type="button" class="btn iv sm" data-t5="tp-skjol" data-v="' + esc(t.k) + '">✉ Senda reikning / skýrslu</button>' : '') +
         '<button type="button" class="btn iv sm' + (S.claudeOpid === t.k ? ' _on' : '') + '" data-t5="tp-claude-opna" data-v="' + esc(t.k) + '">🤖 Til Claude…</button>' +
         '<button type="button" class="btn iv sm' + (stj ? ' tp-gull' : '') + '" data-t5="tp-stjarna" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Tilbúið að svara — efst í listanum">' + (stj ? '★ Tilbúið' : '☆ Merkja tilbúið') + '</button>' +
-        (t.hluti === 'bidur' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
-        '<a class="btn iv sm" href="' + esc(gmailSlod(t)) + '" target="_blank" rel="noopener">Opna í Gmail ↗</a>' +
+        (t.hluti === 'bidur' || t.hluti === 'omaelt' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
+        (erGmail(t.account) ? '<a class="btn iv sm" href="' + esc(gmailSlod(t)) + '" target="_blank" rel="noopener">Opna í Gmail ↗</a>' : '') +
         '<button type="button" class="btn iv sm" data-t5="' + (t.falid ? 'tp-afhylja' : 'tp-fela') + '" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>' + (t.falid ? 'Sýna aftur' : '✕ Fela') + '</button>' +
       '</div>' + claudeHtml(t) + svarHtml(t) + malHtml(t) +
       '<div class="tp-skeytin">' + t.msgs.slice().reverse().map(skeytiHtml).join('') + '</div>';
@@ -453,7 +458,7 @@
       '<aside class="panel vbr-list" aria-label="Tölvupóstar">' +
         '<header class="phead"><span class="plate">✉</span><h2 class="ptitle">Tölvupóstar</h2><span class="sum">' + esc(hausTala) + '</span>' +
           '<button type="button" class="btn iv sm tp-uppf" data-t5="tp-uppf" title="Sækja nýjan póst úr Gmail"' + (S.loading ? ' disabled' : '') + '>↻</button></header>' +
-        '<div class="samt-rod">' + chip('holf', 'baedi', s.holf === 'baedi', 'Bæði hólfin') + chip('holf', 'eldklar', s.holf === 'eldklar', 'eldklar@') + chip('holf', 'bokhald', s.holf === 'bokhald', 'bokhald@') +
+        '<div class="samt-rod">' + chip('holf', 'baedi', s.holf === 'baedi', 'Öll hólfin') + chip('holf', 'eldklar', s.holf === 'eldklar', 'eldklar@') + chip('holf', 'bokhald', s.holf === 'bokhald', 'bokhald@') + chip('holf', 'slokkvitaeki', s.holf === 'slokkvitaeki', 'slokkvitaeki@') +
           '<span class="tp-skil"></span>' + chip('sia', 'osvarad', s.osvarad, 'Ósvarað', 'Aðeins þræðir sem bíða svars eða eru hjá Claude') + chip('sia', 'beidnir', s.beidnir, '✉ Beiðnir', 'Lítur út eins og beiðni um reikning/skýrslu') + chip('sia', 'vidhengi', s.vidhengi, '📎 Viðhengi') +
           '<span class="tp-skil"></span>' + chip('rod', 'nyjast', s.rodun === 'nyjast', 'Nýjast') + chip('rod', 'elst', s.rodun === 'elst', 'Elst') + chip('rod', 'mikilv', s.rodun === 'mikilv', 'Mikilvægast', 'Stjörnumerkt og IMPORTANT efst') + chip('rod', 'fjoldi', s.rodun === 'fjoldi', 'Flest skeyti') + '</div>' +
         '<div class="samt-rod tp-merkjarod">' + merkjaTalning().slice(0, 12).map(([m, c]) => chip('merki', m, s.merki === m, (m === '★' ? '<span style="color:#d4a017">★</span>' : esc(m)) + ' <small>' + c + '</small>')).join('') + (s.merki ? chip('merki', '', false, '✕ Hreinsa') : '') + '</div>' +
@@ -529,7 +534,7 @@
   }
 
   window.Tolvupostar = {
-    S, HOLF, HLUTAR, HLUTA_L, load, loaded: () => S.loaded, loading: () => S.loading, loadedAt: () => S.loadedAt, villa: () => S.villa,
+    S, HOLF, GMAIL_HOLF, erGmail, HLUTAR, HLUTA_L, load, loaded: () => S.loaded, loading: () => S.loading, loadedAt: () => S.loadedAt, villa: () => S.villa,
     siad, hlutaListi, finna, FELLT, erFellt, valinn, merkjaTalning, vistaSiu, rymiHtml, smellur, innslattur, saekjaNyjan,
     tilClaude: (k, v, sky) => { const t = finna(k); return t ? adgerd(t, () => tilClaude(t, v, sky)) : Promise.resolve(); },
     stjarna: k => { const t = finna(k); return t ? adgerd(t, () => stjarna(t)) : Promise.resolve(); },

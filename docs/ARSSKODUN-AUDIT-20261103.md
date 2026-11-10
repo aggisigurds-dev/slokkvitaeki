@@ -114,8 +114,13 @@ Ný mál: **#1584** Míla ehf. (7 tæki afrituð úr skýrslu Húsfélagsins Su�
 (41 tæki afrituð úr skýrslu Blue Mountain; þrotabú 2024). Sama mynstur og Gerð. Verkefnalisti: 70 pör á
 afritsskýrslu og 33 á skýrslu annars félags í kerfinu öllu.
 
-ÓMÆLT: birtingin í appinu sjálfu (innbyggði vafrinn er ekki skráður inn); staðfest með talningu í grunni og
-lestri á 199/153.
+Birtingin staðfest í Chrome Agnars 10.11.2026 kl. 21:05 (lifandi síða, commit 6625622, Skjöl-spjald prófílsins lesið):
+ranga árið er horfið hjá öllum tíu (K.Ricter, Míla, Þórarinna, K Apartments, Stálsmiðjan 2024/2025/2023; Nýji
+tónlistarskólinn, Spörvar, Leirubakki 14 án 2024; Stakkholt ehf án 2024; Hlöllabátar með 2023, án 2010). Réttu
+félögin sýna skýrsluna á réttu ári og afritið er falið. Ekkert Brunakerfis-spjald á þessum félögum; G14 (204)
+sýnir sín þrjú. Ársskoðunarlistinn sjálfur var síaður og ekki lesinn — Gerð utan hans staðfest með `inService`-
+reglunni (er_i_thjonustu false, engin röð í arsskodun_customers, 0 lifandi tæki). Skjáskot náðist ekki.
+Slippurinn RVK 2024 og Nýji tónlistarskólinn 2025 sýna TVÆR skýrslur (1469+1604, 383+1638) — var þannig fyrir.
 
 ## 5. Næstu skref (bíða Agnars)
 
