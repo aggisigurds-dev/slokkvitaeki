@@ -567,3 +567,31 @@ html[data-theme="premium"] #portal :is(.kj-tbl,.tbl-wrap){
 /* 10.11.2026 — erindisgluggi: fimm flipar (Fyrirspurn…Annað) voru 620 px í 580 px formi → lárétt skrun og „Annað" klippt af. */
 #er-form #er-seg{display:flex;flex-wrap:wrap;max-width:100%;box-sizing:border-box}
 #er-form #er-seg>button{flex:1 1 auto}
+
+/* 10.11.2026 — símayfirferð (mælt 390 px á lifandi Heimaleigu):
+   1) síuhnappar (.chips) fylltu 512–552 px af skjánum áður en taflan sást → ein lína sem skrunast til hliðar;
+   2) #v2-dtabs var með margin-top:-30px og huldi neðri röð yfirlitsreita eignar (#v2-dr-summary);
+   3) „Eignir › NAFN" í haus eignasíðu rakst á stöðumerkið → falið á síma (nafnið stendur beint fyrir neðan);
+   4) hvítur hetjutexti á ljósri mynd var illlæsilegur → dekkri slæða á síma;
+   5) „Opinn aðgangur"-borðinn lá yfir efni → mjó ræma neðst og síðan fær pláss undir hana. */
+html[data-theme="premium"] #drawer #v2-dr-summary + #v2-dtabs{margin-top:10px}
+html[data-theme="premium"] #v2-dtabs::-webkit-scrollbar{display:none}
+@media(max-width:720px){
+  html[data-theme="premium"] #portal .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 2px 6px;margin-right:-16px;padding-right:28px;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 34px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 34px),transparent 100%)}
+  html[data-theme="premium"] #portal .chips::-webkit-scrollbar{display:none}
+  html[data-theme="premium"] #portal .chips>.chip{flex:none}
+  html[data-theme="premium"] #drawer .dr-head .dr-tt>.kicker{display:none}
+  html[data-theme="premium"] #drawer .dr-head .dr-tt{padding-top:34px}
+  html[data-theme="premium"] #portal .v2-hero:after{background:linear-gradient(180deg,rgba(2,25,60,.66) 0,rgba(2,25,60,.46) 52%,rgba(233,240,250,0) 74%,rgba(233,240,250,.8) 90%,var(--v2-page) 100%)}
+  html[data-theme="premium"] #portal .v2-sub{text-shadow:0 1px 8px rgba(2,25,60,.6)}
+  .open-ribbon{left:8px!important;right:8px;bottom:8px!important;transform:none!important;max-width:none!important;justify-content:center;padding:6px 10px!important;font-size:11px!important;line-height:1.25;border-radius:10px!important;opacity:.94}
+  body:has(.open-ribbon) #portal{padding-bottom:46px}
+  body:has(.open-ribbon) #drawer .dr-foot{padding-bottom:46px}
+}
+@media(max-width:720px){
+  html[data-theme="premium"] #drawer #v2-dtabs{scrollbar-width:none!important}
+  /* yfirlitsreitir: síðasta röð fyllir breiddina í stað þess að skilja eftir grátt gat */
+  html[data-theme="premium"] #drawer #v2-dr-summary{display:flex!important;flex-wrap:wrap}
+  html[data-theme="premium"] #drawer .v2-dr-summary-cell{flex:1 1 30%}
+}
