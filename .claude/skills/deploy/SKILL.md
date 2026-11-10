@@ -24,6 +24,14 @@ skráð í `~/.claude/lisbeth/yfirferd-bid.jsonl`; **kodafraedingur** (🖤 Lisb
 kallar á `kerfisrynir` (Stephen Hawking) ef viðmót/sími/öpp/RLS/fall er snert, og lagar/stillir það sem er rangt.
 Þú þarft ekki að kalla á hana fyrir deploy. Staða: `node C:\projects\brunaholf\tools\deploy-vordur.cjs --stada --cwd <rót>`.
 
+## 0b. Pre-push vörðurinn er AF (Agnar 10.11.2026)
+`.githooks/pre-push` byrjar á `exit 0` — `git push` keyrir enga verði og þarf aldrei `--no-verify`. Ástæðan: hookurinn keyrði
+`audit-all --static` (80 verðir, ~70 s), þar á meðal gagnaverði sem lesa lifandi sýnir, og stöðvaði birtingu á rekstrargögnum
+(ósendar kröfur, skeytamiðlun) sem koma kóðanum ekki við. **Ekki kveikja aftur nema Agnar biðji um það.**
+Í staðinn: keyrðu `node tools/audit-all.cjs --static` HANDVIRKT fyrir birtingu þegar þú snertir varðaða leið (reikningur OUT `10/233/254`,
+kennitala `121/pos.js`, `payday-push.cjs`, readiness `153/187`), athugaðu `EXIT`, og SEGÐU Agnari frá rauðum vörðum — ekki þegja og ekki
+stöðva birtinguna. GitHub Actions `audit.yml` keyrir verðina áfram eftir á.
+
 ## The one rule (07.09.2026: push samstillir, `[deploy]` birtir)
 ```bash
 git pull origin master     # ALWAYS first — never deploy stale code over a teammate

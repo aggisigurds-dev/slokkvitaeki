@@ -347,3 +347,17 @@ samningsafslætti" sem #1394 er enn að ákveða hvort eigi að vera til.
 
 Vörður: `tools/audit-skorun-lista.cjs` (A=9 · B=35 · C=0). Hann sér aðeins skörun sem R-númer
 afhjúpa — sama spurning án reikningsnúmers sleppur í gegn.
+
+## Undantekning frá „hver kennitala fær skráningu": afgreiðsla án stofnunar (10.11.2026)
+
+Reglan frá 09.09.2026 stendur: kassinn (`js/pos.js`, checkout) stofnar `customers_base` + `fyrirtaeki` fyrir hverja óþekkta 10 stafa kennitölu.
+**Ein viljandi undantekning:** „+ Afgreiðsla án stofnunar" í leit Sölu (114) → `solur.an_stofnunar = true`; salan ber raun-kt í `customer_kt`
+en `customer_id` og `customer_base_id` eru tóm og ENGIN röð verður til í `customers_base` / `fyrirtaeki` / `vidskiptavinir`.
+- **Sala með kt en án base er því ekki lengur alltaf bilun** — lestu `an_stofnunar` áður en þú „lagar" slíka röð eða bakfyllir.
+  Án merkis er hún áfram bilun í auto-stofnun (`pos_kunni_otengd` í `app_problems`).
+- Triggerinn `solur_fill_base_id` STOFNAR EKKI: hann tengir aðeins ef kennitalan er þegar til (einkvæm) í `customers_base`. Komi sami
+  einstaklingur síðar inn sem skráður kúnni tengjast nýjar sölur sjálfar; eldri merktar sölur ekki.
+- `audit-solu-id` undanskilur merktar sölur aðeins ef `greitt_med = 'greitt_sidar'`; `v_gengid_inn_osott` telur þær með gengið-inn (30 daga mörk).
+- Mælt 10.11.2026 (viðmið með uppgerðum skrifum): sama sala ÁN merkis → `customers_base`-insert + `fyrirtaeki`-insert með nafninu „Viðskiptavinur".
+- **Greitt síðar án viðskiptavinar er eðlilegt** (Agnar 10.11): einstaklingur greiðir við afhendingu og fær ekki sendan reikning. Það er
+  „óskráður viðskiptavinur", ekki vöntun á skráningu.

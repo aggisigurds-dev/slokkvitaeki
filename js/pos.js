@@ -1477,7 +1477,11 @@
       //
       // VISTUN ER EKKI STÖÐVUÐ — „ALLTAF LEYFA VISTUN" er rétt regla og afgreiðsla
       // má ekki stranda. Salan er inni; starfsmaðurinn fær bara að vita strax.
-      if((pmCode==='reikningur'||pmCode==='greitt_sidar') && String(custKt||'').replace(/[^0-9]/g,'')==='9999999999' && !state.customer.co_id){
+      // 10.11.2026 — AÐEINS „reikningur". Agnar: „Enginn viðskiptavinur ætti í raun bara að vera óskráður viðskiptavinur, sem greitt síðar
+      // þýðir að hann greiðir þegar hann sækir og getur ekki fengið sendan reikning." Greitt síðar án kennitölu er því EÐLILEGT (engin
+      // krafa á að fara) — viðvörunin og villuskráin kviknuðu að ósekju við hverja slíka afgreiðslu (mælt: sala 1293 og 1298, 09.–10.11).
+      // Sama regla og Drög-merkið (143) og audit-solu-id (gengið-inn + greitt_sidar er ekki ótengd krafa).
+      if(pmCode==='reikningur' && String(custKt||'').replace(/[^0-9]/g,'')==='9999999999' && !state.customer.co_id){
         try{
           var _adv='⚠ '+(num||'Salan')+' er vistuð — en KRÖFUNA er ekki hægt að senda: engin kennitala er á kaupanda. Opnaðu söluna og tengdu kennitölu áður en rukkað er.';
           if(window.Toast&&Toast.show)Toast.show(_adv);
@@ -1811,7 +1815,7 @@
       // window (if it opened) so the user can compare or re-print easily.
       var verkMsgShort = skipVerk
         ? '⏭ Engar verkbeiðnir búnar til'
-        : (verkCount + ' verkbeiðni' + (verkCount === 1 ? '' : 'r') + ' búin' + (verkCount === 1 ? '' : 'ar') + ' til');
+        : (verkCount + ' verkbeiðni' + (verkCount === 1 ? '' : 'r') + (verkCount === 1 ? ' búin' : ' búnar') + ' til');   // 10.11.2026: var „búinar"
       // 2026-05-19: Skip the "Sala kláruð" success modal when payment is
       // "greitt_sidar" (pay when picking up). The customer doesn't need a
       // receipt yet — the pickup-checkout flow (patch 121) will print one

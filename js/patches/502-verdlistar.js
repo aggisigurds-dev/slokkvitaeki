@@ -273,7 +273,14 @@
 
   // ── takkarnir í Vörur og þjónusta (vinstra megin; Agnar: rauðu kassarnir) ────────────────────────────────
   let _takkiQ = false;
-  function schedule() { if (_takkiQ) return; _takkiQ = true; requestAnimationFrame(() => { _takkiQ = false; try { settaTakka(); } catch (e) { console.error('[502]', e); } }); }
+  // rAF EITT dugar ekki: í földum eða huldum glugga keyrir requestAnimationFrame ekki þótt document.hidden sé false (mælt 10.11.2026 í
+  // földum vafraglugga: rAF kom aldrei, takkarnir birtust ekki). Tímamælir tekur við — sá sem kemur fyrr teiknar, hinn gerir ekkert.
+  function schedule() {
+    if (_takkiQ) return; _takkiQ = true;
+    const keyra = () => { if (!_takkiQ) return; _takkiQ = false; try { settaTakka(); } catch (e) { console.error('[502]', e); } };
+    requestAnimationFrame(keyra);
+    setTimeout(keyra, 250);
+  }
   function takkiHtml(l) { return esc(l.takn) + ' ' + esc(l.nafn); }
   function settaTakka() {
     const rod = document.querySelector('#view-vorur .page-title__tools'); if (!rod) return;
