@@ -6,7 +6,7 @@
  *
  * ── HVAÐ VAR ÞEGAR TIL, OG HVAÐ VANTAÐI ───────────────────────────────────
  * Minnið sjálft er til og er heilbrigt: Supabase-taflan `charlize_knowledge`
- * (view `v_charlize_active`) — 282 virkar staðreyndir, skrifaðar af
+ * (view `v_charlize_active`) — 282 virkar staðreyndir (2.136 þann 10.11.2026), skrifaðar af
  * claude-code (108), cowork (73), chat (62), natalie (23) og fleirum, síðast
  * 31.08.2026. Það er EKKI vandinn.
  *
@@ -31,6 +31,9 @@
  * ── SKIPANIRNAR ───────────────────────────────────────────────────────────
  *   node tools/minni.cjs                  stýribókin (git-eintakið, samstundis)
  *   node tools/minni.cjs <svid|topic>     bara það svið
+ *   node tools/minni.cjs --leit "<orð>"   leitar í ÖLLUM efnum bókarinnar í einu (öll orðin
+ *                                         verða að finnast); með --ferskt leitar hún í allri
+ *                                         töflunni, líka því sem bókin sleppir
  *   node tools/minni.cjs --ferskt         les BEINT úr Supabase (nýjast)
  *   node tools/minni.cjs --uppfaera       sækir úr Supabase og skrifar
  *                                         docs/MINNISBOK.md (til að committa)
@@ -41,6 +44,10 @@
  * Skrifar aldrei yfir staðreynd og eyðir aldrei. Úrelt staðreynd fær
  * `status='superseded'` í töflunni sjálfri — það er Charlize-reglan og hún
  * stendur. Þessi skrá bætir bara við og les.
+ *
+ * Skrifar aldrei KÚNNAMINNI (scope `kunni`) í git-eintakið (10.11.2026). Repóið er opinbert á GitHub
+ * og kúnnaminnið ber nöfn tengiliða, netföng, símanúmer og aðgengi. Það er lesið beint úr töflunni:
+ * --ferskt (skjár, ekkert skrifað) eða hubbinn. Mál 1431 á Þjónustuborðinu.
  */
 const fs = require('fs');
 const path = require('path');
@@ -66,22 +73,33 @@ async function sbGet(q) {
   return r.json();
 }
 
-/* Heildarfjöldi virkra staðreynda (10.11.2026). Bókin er GLUGGI: nýjustu 1000 færslurnar, í mesta lagi 40 í hverju
-   efni. Þann dag voru 2113 virkar en hausinn sagði „1000 virkar staðreyndir" eins og það væri allt minnið. Skilar
-   null ef talningin bregst — bókin fellur ekki á henni, hún sleppir þá bara hlutfallinu. */
-async function telja() {
-  try {
-    const { url, h } = keys();
-    const r = await fetch(`${url}/rest/v1/v_charlize_active?select=id&limit=1`, { headers: Object.assign({}, h, { Prefer: 'count=exact' }) });
-    const m = String(r.headers.get('content-range') || '').match(/\/(\d+)$/);
-    return m ? +m[1] : null;
-  } catch (_) { return null; }
-}
-
-/* ── Sækja allt sem stýribókin sýnir ───────────────────────────────────── */
+/* ── Sækja allt sem stýribókin sýnir ─────────────────────────────────────
+   10.11.2026, tvö skref sama dag. Fyrst: hausinn sagði „1000 virkar staðreyndir" þegar þær voru 2.113, og var
+   látinn segja satt („1000 nýjustu af N"). Svo: glugginn sjálfur var vandinn. PostgREST skilar mest 1000 röðum
+   í kalli, 775 af þeim 1000 nýjustu voru kúnnaminni frá 04.11., og allt eldra — 158 efni af 239, þar á meðal
+   `oryggisnet`, `hradi` og `rukkun` — var horfið úr bókinni: `node tools/minni.cjs oryggisnet` svaraði „Ekkert
+   efni heitir". Nú er flett 1000 í senn með fastri röð og fjöldinn borinn við talningu þjónsins: vanti raðir er
+   KASTAÐ, ekki skrifuð hálf bók. (MAELINGAR kafli 22.) */
 async function saekja() {
-  const stadr = await sbGet('v_charlize_active?select=*&order=created_at.desc&limit=1000');
-  const alls = await telja();
+  const { url, h } = keys();
+  const sed = new Set();
+  const stadr = [];
+  let alls = null;                                  // heildin þegar lesturinn HÓFST
+  for (let fra = 0; ; fra += 1000) {
+    const r = await fetch(`${url}/rest/v1/v_charlize_active?select=*&order=created_at.desc,id.desc&limit=1000&offset=${fra}`,
+      { headers: Object.assign({}, h, { Prefer: 'count=exact' }) });
+    if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    const m = String(r.headers.get('content-range') || '').match(/\/(\d+)$/);
+    if (m && alls == null) alls = +m[1];
+    const sida = await r.json();
+    // Bætist staðreynd við á meðan flett er hliðrast síðurnar um eina röð — sama id má ekki teljast tvisvar.
+    sida.forEach(x => { if (!sed.has(x.id)) { sed.add(x.id); stadr.push(x); } });
+    if (sida.length < 1000) break;
+    if (fra >= 100000) throw new Error('v_charlize_active: yfir 100.000 raðir — flettingin stöðvuð');
+  }
+  if (alls != null && stadr.length < alls) {
+    throw new Error(`v_charlize_active: sótti ${stadr.length} raðir en þjónninn taldi ${alls} — bókin væri ófullkomin`);
+  }
 
   // Mælibókin er valfrjáls viðbót — hún má ekki fella minnið ef hún svarar ekki.
   let maelt = null;
@@ -96,7 +114,18 @@ async function saekja() {
 }
 
 /* ── Smíða stýribókina sem markdown ────────────────────────────────────── */
-function smida({ stadr, maelt, sott, alls }) {
+function smida({ stadr: allar, maelt, sott }, val) {
+  const hamark = (val && val.hamark) || 40;      // staðreyndir á efni í bókinni; --ferskt --leit tekur allt
+  // Kúnnaminnið fer ALDREI í skrána sem er committuð (opinbert repó) — aðeins á skjá með --ferskt.
+  const medKunni = !!(val && val.kunni);
+  const stadr = medKunni ? allar : allar.filter(x => x.scope !== 'kunni');
+  const nKunni = allar.length - allar.filter(x => x.scope !== 'kunni').length;
+  // Hve mörgum sleppir 40-á-efni þakið? Talið hér svo hausinn geti sagt það.
+  const fjoldiEfnis = new Map();
+  stadr.forEach(x => { const t = x.topic || '(óflokkað)'; fjoldiEfnis.set(t, (fjoldiEfnis.get(t) || 0) + 1); });
+  let slepptHamark = 0;
+  fjoldiEfnis.forEach(n => { if (n > hamark) slepptHamark += n - hamark; });
+
   const L = [];
   const p = s => L.push(s);
 
@@ -107,14 +136,16 @@ function smida({ stadr, maelt, sott, alls }) {
   p('> Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:');
   p('> `node tools/minni.cjs --skra "..." --topic <efni>`');
   p('');
-  if (alls && alls > stadr.length) {
-    p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${stadr.length} nýjustu af ${alls} virkum staðreyndum`);
+  p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${allar.length} virkar staðreyndir — ${stadr.length - slepptHamark} prentaðar hér`);
+  if (slepptHamark || (!medKunni && nKunni)) {
+    const hlutar = [];
+    if (slepptHamark) hlutar.push(`${slepptHamark} eldri staðreyndum er sleppt (mest ${hamark} í hverju efni)`);
+    if (!medKunni && nKunni) hlutar.push(`kúnnaminnið (${nKunni} færslur) er aldrei skrifað hingað`);
     p('');
-    p(`> ⚠ **${alls - stadr.length} eldri staðreyndir eru EKKI í þessari bók.** Hún er gluggi: nýjustu ${stadr.length} færslurnar og í mesta`);
-    p('> lagi 40 í hverju efni. Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — spurðu grunninn beint:');
+    p(`> ⚠ **Bókin er ekki allt minnið:** ${hlutar.join(' og ')}.`);
+    p('> Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:');
+    p('> `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:');
     p("> `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`");
-  } else {
-    p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${stadr.length} virkar staðreyndir`);
   }
   p('');
   p('---');
@@ -180,6 +211,12 @@ function smida({ stadr, maelt, sott, alls }) {
   p('');
   p('Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.');
   p('');
+  if (!medKunni && nKunni) {
+    p(`> **Kúnnaminnið (scope \`kunni\`, ${nKunni} færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er`);
+    p('> opinbert á GitHub, og kúnnaminnið ber nöfn tengiliða, netföng, símanúmer og aðgengi. Lestu það beint úr töflunni:');
+    p('> `node tools/minni.cjs --ferskt --leit "<nafn eða kennitala>"` — eða í hubbnum: Jarvis → Minnið → Kúnnaminni.');
+    p('');
+  }
 
   const eftirTopic = new Map();
   stadr.forEach(x => {
@@ -197,13 +234,13 @@ function smida({ stadr, maelt, sott, alls }) {
   raðaðTopics.forEach(([t, arr]) => {
     p(`### ${t}`);
     p('');
-    arr.slice(0, 40).forEach(x => {
+    arr.slice(0, hamark).forEach(x => {
       const merki = x.confidence === 'confirmed' ? '' : ` _(${x.confidence})_`;
       p(`- **${einlina(x.fact)}**${merki}`);
       if (x.detail) p(`  <br>${einlina(x.detail).slice(0, 300)}`);
       p(`  <br><sub>${String(x.created_at).slice(0, 10)} · ${x.scope} · ${x.source || '—'} · ${x.agent || '—'}</sub>`);
     });
-    if (arr.length > 40) p(`- _…og ${arr.length - 40} til viðbótar í töflunni._`);
+    if (arr.length > hamark) p(`- _…og ${arr.length - hamark} til viðbótar í töflunni._`);
     p('');
   });
 
@@ -238,8 +275,10 @@ function yfirlit(md, sia) {
     const n = (md.match(/^- \*\*/gm) || []).length;
     console.log(`## 3. Staðreyndir — ${n} talsins`);
     console.log('');
-    console.log('Þær eru of margar fyrir skjáinn. Lestu docs/MINNISBOK.md, eða síaðu:');
-    console.log('  node tools/minni.cjs <efni>      t.d. solur · skjol · villuleit · deploy');
+    const efni = (md.match(/^### /gm) || []).length;
+    console.log(`Þær eru of margar fyrir skjáinn (${efni} efni). Síaðu eða leitaðu:`);
+    console.log('  node tools/minni.cjs <efni>            t.d. solur · skjol · villuleit · deploy');
+    console.log('  node tools/minni.cjs --leit "<orð>"    leitar í öllum efnum í einu');
     return;
   }
   const s = sia.toLowerCase();
@@ -253,6 +292,47 @@ function yfirlit(md, sia) {
   let j = i + 1;
   while (j < linur.length && !linur[j].startsWith('### ') && !linur[j].startsWith('---')) j++;
   console.log(linur.slice(i, j).join('\n'));
+}
+
+/* ── Leit þvert á efnin (10.11.2026) ──────────────────────────────────────
+   Bókin ber yfir 200 efni; lota sem veit ekki hvað efnið HEITIR fann ekkert. Leitin fer yfir hverja staðreynd
+   (setninguna og skýringuna) og krefst þess að ÖLL orðin finnist. Hún segir líka hvað hún sá EKKI: bókin
+   geymir mest 40 staðreyndir á efni og ekkert kúnnaminni, og leit sem þegir um afganginn væri mælitæki sem lýgur. */
+function leita(md, ord, ferskt) {
+  const ordin = ord.toLowerCase().split(/\s+/).filter(Boolean);
+  const linur = md.split('\n');
+  const byrjun = linur.findIndex(l => l.startsWith('## 3. '));
+  let efni = '', skodad = 0, sleppt = 0;
+  const km = /Kúnnaminnið \(scope `kunni`, (\d+) færslur\) er EKKI/.exec(md);
+  const kunni = km ? parseInt(km[1], 10) : 0;
+  const hitt = [];
+  for (let i = Math.max(byrjun, 0); i < linur.length; i++) {
+    const l = linur[i];
+    if (l.startsWith('### ')) { efni = l.slice(4); continue; }
+    const m = /^- _…og (\d+) til viðbótar/.exec(l);
+    if (m) { sleppt += parseInt(m[1], 10); continue; }
+    if (!l.startsWith('- **')) continue;
+    skodad++;
+    let j = i + 1;
+    while (j < linur.length && linur[j].startsWith('  <br>')) j++;
+    const blokk = linur.slice(i, j);
+    const lagt = blokk.join(' ').toLowerCase();
+    if (ordin.every(o => lagt.includes(o))) hitt.push({ efni, blokk });
+    i = j - 1;
+  }
+  const SYNA = 25;
+  hitt.slice(0, SYNA).forEach(h => {
+    console.log(`[${h.efni}]`);
+    console.log(h.blokk.join('\n'));
+    console.log('');
+  });
+  console.log(`${hitt.length} staðreyndir með „${ord}" af ${skodad} skoðuðum` +
+    (hitt.length > SYNA ? ` — ${SYNA} sýndar, þrengdu leitina` : '') + '.');
+  if ((sleppt || kunni) && !ferskt) {
+    console.log(`ATH: EKKI skoðað — ${sleppt} eldri staðreyndir (bókin ber 40 á efni)` +
+      (kunni ? ` og ${kunni} færslur kúnnaminnis (aldrei í bókinni).` : '.'));
+    console.log(`     Leita í allri töflunni:  node tools/minni.cjs --ferskt --leit "${ord}"`);
+  }
 }
 
 /* ── Keyrsla ───────────────────────────────────────────────────────────── */
@@ -298,8 +378,20 @@ function yfirlit(md, sia) {
     return;
   }
 
+  if (arg.includes('--leit')) {
+    const ord = (flagg('--leit') || '').trim();
+    if (!ord || ord.startsWith('--')) { console.error('Vantar: --leit "<orð>"'); process.exit(1); }
+    const ferskt = arg.includes('--ferskt');
+    if (!ferskt && !fs.existsSync(BOK)) {
+      console.log('docs/MINNISBOK.md er ekki til enn. Keyrðu:  node tools/minni.cjs --uppfaera');
+      process.exit(1);
+    }
+    leita(ferskt ? smida(await saekja(), { hamark: Infinity, kunni: true }) : fs.readFileSync(BOK, 'utf8'), ord, ferskt);
+    return;
+  }
+
   if (arg.includes('--ferskt')) {
-    const md = smida(await saekja());
+    const md = smida(await saekja(), { kunni: true });     // skjár, ekkert skrifað — kúnnaminnið með
     yfirlit(md, arg.find(a => !a.startsWith('--')));
     return;
   }

@@ -334,6 +334,125 @@ rukkuðu nákvæmlega það sem eftir stóð), og legsteinninn kom með eyðingu
 Hvort tveggja var raunveruleg vinna sem kóðinn höndlaði rangt, ekki leki. **Lestu `audit_vernd`
 (og `solur` fyrir sama dag) áður en þú kennir prófunum um** — sá sem kennir lekanum um lagar ekkert.
 
+## 18. Mynstur sem þýðist en passar aldrei — týnt bakskástrik
+
+**Mælt 31.10. og 10.11.2026.** `payday-push.cjs` bar `/^Viðbótarúttekt við (R-d+)/` og 488 bar `/^R-0d{5}$/`.
+`d` er þá bókstafurinn d. Mynstrið þýðist, kastar engu og skilar „fannst ekki" — nákvæmlega sama svar og
+þegar ekkert er að finna. „Viðbót við R-… (ný tæki)" fór því aldrei á Payday-kröfuna frá 28.10., og vörðurinn
+`audit-payday-lysing` var grænn allan tímann: hann grep-aði að línan sem BÝR TIL textann væri í skránni, en
+keyrði aldrei mynstrið. Það slapp aðeins vegna þess að engin viðbótarsala hafði orðið til (0 raðir, enn 10.11.).
+
+Leit að systkinum 10.11. (skill `variant-analysis`) fann þrjú til viðbótar — eitt þeirra fór í loftið þann sama dag:
+
+| Staður | Mynstrið | Hvað það gerði í raun |
+|---|---|---|
+| 478 „Vista mynd" | `.replace(/s+/g, ' ')` | hvert „s" í skráarnafni varð að bili: „Dalshraun 10 Hús" → „Dal hraun 10 Hú " |
+| 478 sama lína | `^s*Teiknings*[—–-]s*` | forskeytið „Teikning — " var aldrei tekið af (passar aðeins án bila) |
+| 404 takkatexti | `[─-◿]` + `s*` | bil stóð eftir fremst |
+| brunaholf `ajour-myndayfirlit.cjs` | `.replace(/s+/g, '_')` | „s" í möppuheiti varð að „_" |
+
+**Hvaðan það kemur:** bakskástrikið týnist þegar kóðinn fer í gegnum STRENG á leiðinni í skrána — `sed`-útskipting
+(GNU sed sleppir óþekktu `\x` í útskiptitexta), `node -e`/JS-strengur (`'\d' === 'd'`), `new RegExp('\d+')`.
+Ég gekk í sömu gildru þrisvar við að SKRIFA vörðinn: `□` kom út sem stafurinn sjálfur, dæmi í
+blokk-athugasemd með `s*` + skástriki lokaði athugasemdinni (SyntaxError), og `\[` opnaði gervi-stafaklasa sem
+gleypti það sem átti að finnast.
+
+**Vörnin:** `tools/audit-regex-bakstrik.cjs` (í audit-all, les líka Brunahólf) — rauður á `d+ d{N s+ s* w+` sem
+stendur ekki á eftir bókstaf. Hann var prófaður RAUÐUR fyrst: á öllum fjórum stöðunum áður en þeir voru lagaðir,
+og á upprunalegu Payday-mynstrunum tveimur í tómri möppu. Og reglan fyrir verði almennt: **vörður sem ver mynstur
+keyrir það** — á dæmi sem á að passa, dæmi sem á ekki að passa, og dæmi sem prófar akkerið (`audit-payday-lysing`
+gerir nú allt þrennt; án `^` fengi venjuleg krafa með R-númeri í nótu línuna „Viðbót við R-…").
+
+## 19. Vörður sem getur ekki kviknað
+
+**Mælt 31.10.2026 — þrír verðir voru grænir af því þeir GÁTU ekki orðið rauðir:**
+
+- `audit-solu-id` sótti sölur síðustu 14 daga (`GLUGGI=14`) en hrópaði fyrst á gengið-inn sölu eldri en 30 daga
+  (`GAMALT_DAGAR=30`). Greinin var dauð. Þrjár ósóttar sölur (32–46 daga, 13.764 kr) sáust hvergi.
+- `audit-uttekt-afslattarhopur-gogn` las aðeins `discount_tier_id` (10 félög). 81 félag bar `afslattur_pct > 0`.
+  Þrír nýir staðir voru rukkaðir á fullu verði meðan systurstaðir á sömu kennitölu fengu 15–25 % (43.107 kr).
+- `audit-payday-lysing` — kafli 18.
+
+Enginn þeirra laug um það sem hann mældi. Þeir mældu bara minna en nafnið lofaði, og grænt var lesið sem
+„þetta svið er í lagi".
+
+**Prófið er stökkbreyting, og það tekur mínútu:** taktu EITT þekkt tilvik af grunnlínunni (eða brjóttu mynstrið,
+eða víkkaðu það) og keyrðu vörðinn. Verði hann ekki rauður er hann skraut. Netvörður gerði þetta á #939: R-000957
+tekin af grunnlínu → RAUTT; R-001071 tekin af B2-grunnlínu → RAUTT; mynstrið víkkað í `/(R-\d+)/` → RAUTT.
+**Vörður sem enginn hefur séð rauðan hefur ekki verið prófaður.**
+
+## 20. Rautt úr uppsetningu mælandans — ekki úr kerfinu
+
+**Mælt 31.10. og 10.11.2026.** Þrisvar sagði tækið eitthvað um MIG, ekki kerfið:
+
+- `audit-agentar` sagði „4 dauðir vísar" í fersku eintaki í scratch-möppu. Systur-repóið hét þar `bh`, ekki
+  `brunaholf`, svo vörðurinn fann það ekki. Með `ln -s bh brunaholf` við hliðina: grænt. Uppsetningin verður að
+  vera eins og í CI (`../brunaholf`).
+- `git log --grep '#925'` fann ekkert — klónið var grunnt (99 commit). „Ekki til" var „ekki sótt".
+  `git fetch --depth=700` (eða `--shallow-since`) fyrst; `audit-utgafumerki` sleppir sér sjálfur af sömu ástæðu.
+- Supabase `apply_migration` bað um staðfestingu sem birtist ekki á tækinu sem Agnar var á (31.10. og 10.11.) og
+  rann út á 230 s. Svarið „timed out" segir ekki hvort eitthvað keyrði — ég las stöðuna á eftir (`relrowsecurity`,
+  `pg_indexes`) í bæði skiptin: ekkert hafði keyrt. **Lestu stöðuna, ekki villuboðin** (sbr. kafla 11).
+
+Og fjórða, af annarri gerð: úttekt sem liggur í tíu daga er ekki lengur lýsing á kerfinu. 10.11. voru 354 commit
+komin á master Slökkvitækis og 131 á main Brunahólfs frá 31.10., RLS-lausar töflur 288 í stað 232, og Agnar hafði
+tekið ákvörðun (mál #1536, 07.11.) sem breytti því hvað mátti keyra. **Endurmældu forsendurnar áður en þú keyrir
+það sem var „tilbúið" — og leitaðu að ákvörðun á Þjónustuborðinu sem er yngri en tillagan þín.**
+
+## 21. Tvær síður, ein tala — heildarsamanburður felur hvar munurinn býr
+
+**Mælt 31.10.2026.** Viðskiptavinir í hubbnum sýndi 70,4 m.kr. „ógreitt"; Kröfu yfirlit 6,2 m.kr. Báðar síður
+lásu sömu töflur. Munurinn var ekki gögn heldur SKILGREINING: tvö afrit af reglunum um ógreitt/ósent, og annað
+hafði ekki fengið lagfæringuna frá 20.10. (Payday-drög töldust ógreidd, faldar kröfur taldar með, drög sem voru
+þegar í Payday töldust ósend).
+
+Heildartölurnar tvær sögðu aðeins „eitthvað er að". Það sem fann rótina var að bera saman **per greiðanda** og
+rekja hvern mun til einnar reglu. Og það sem sannaði lagfæringuna var harness sem keyrði GÖMLU og NÝJU útgáfu
+beggja falla á sömu raungögnum (gervi-`fetch`, aðeins GET): Kröfu yfirlit bæti fyrir bæti eins fyrir og eftir,
+Viðskiptavinir 6.194.804 = 6.194.804 með 0 kr mun per nafn — og eini munurinn sem eftir stóð á ósendu (358.918 kr)
+var EITT nafngreint tilvik (NESDEKK-drög án greiðanda), ekki „námundun". 10.11. stóð það enn: 13.150.501 = 13.150.501.
+
+Reglurnar búa nú á einum stað (`brunaholf/netlify/functions/_krofu-flokkun.js`). **Þegar tvær síður eiga að sýna
+sömu tölu: berðu saman per lykil, ekki per summu — og láttu þær deila kóðanum, ekki afriti af honum.**
+
+## 22. Tala sem er nákvæmlega þakið — og `limit` sem lofar meiru en þjónninn skilar
+
+**Mælt 10.11.2026.** Minnisstýribókin (`tools/minni.cjs`) sagði „1000 virkar staðreyndir". Þær voru 2.133. Kallið bar
+`limit=1000`, PostgREST skilar mest 1000 röðum í kalli, og bókin sýndi því aðeins það nýjasta: 81 efni af 239 —
+`oryggisnet`, `hradi`, `rukkun` og `rekstrarfelog` vantaði alveg, og `node tools/minni.cjs oryggisnet` svaraði
+„Ekkert efni heitir". Tækið sem á að hindra að lotur endurtaki sig hafði gleymt meira en helmingnum og sagði ekkert.
+
+Systkinin fundust með einni leit (`limit=` yfir 1000 í einu kalli: 33 staðir í tveimur repóum) og EINNI talningu
+(raðir í hverri töflu með sömu síu). Fjórir staðir voru yfir þakinu:
+
+| Hvar | Bað um | Fékk | Afleiðing |
+|---|---|---|---|
+| `tools/minni.cjs` | 1000 | 1000 af 2.133 | 158 efni ósýnileg í bókinni |
+| hub `charlize-stada.js` | 10000 | 1000 af 2.168 | „Minnið" í Jarvis: 976 virkar í stað 2.133, kúnnaminni 83 í stað 793 |
+| hub `reikningspunktar.js` (kt → nöfn) | 2000 | 1000 af 1.284 | 247 kennitölur fundust aldrei í „bíður"-króknum |
+| hub `raddminni.js` (nafnaleit) | 2000 | 1000 af 1.284 | félag utan þeirra 1000 fannst ekki eftir nafni |
+
+Þrennt hefði átt að kveikja grun:
+
+1. **Talan var slétt og jöfn þakinu.** „1000 staðreyndir", „1000 félög" — raunveruleg talning lendir nær aldrei þar.
+2. **`limit=10000` les eins og vörn** („nóg pláss") en er óskhyggja: þjónninn klippir í 1000 og svarar 200/206.
+   Svarið ber `content-range: 0-999/2168` — heildin stendur þar, enginn las hana.
+3. **Athugasemdin við kallið sagði „~1.400 raðir"** — við hliðina á kalli sem skilaði 1000.
+
+Lagfæringin er fletting með FASTRI röð (`order=id`; án raðar getur röð fallið milli síðna) og, þar sem hægt er,
+samanburður við talningu þjónsins: `minni.cjs` KASTAR nú ef sóttar raðir ≠ `content-range`-heildin, í stað þess að
+skrifa hálfa bók. Sönnunin var þrenns konar: gamall og nýr kóði fallanna keyrður á lifandi gögnum (aðeins GET),
+próf með gerviþjóni sem skilar aldrei fleiri en 1000 röðum (`brunaholf/test/charlize-stada-thak.test.js`), og
+það próf SÉÐ rautt á gamla kóðanum (3 af 4) áður en það var tekið gilt. Hinir 29 staðirnir eru undir þakinu í dag
+(mest 653 raðir). Kóðahlið appsins er varin af `audit-pagination.cjs` (aðeins `js/`), tölurnar af `audit-rodafjoldi.cjs`.
+
+Tvennt til viðbótar úr sama degi. **Heiðarlegur haus er ekki lagfæring:** önnur lota sá sömu tölu klukkutíma fyrr og lét
+hausinn segja „1000 nýjustu af N" — satt, en bókin var áfram án alls sem var eldra en 04.11., því 775 af þeim 1000
+nýjustu voru kúnnaminni sem kom inn þann dag. Og **það sem ýtti þekkingunni út átti ekki heima í skránni:** kúnnaminnið
+ber tengiliði og aðgengi, og skráin er committuð í opinbert repó. `--uppfaera` sleppir því nú og segir fjöldann í haus.
+
+**Slétt tala sem er jöfn þaki er ekki talning. Berðu fjöldann sem þú fékkst við heildina sem þjónninn gefur upp.**
+
 ## Gátlisti áður en sagt er „mælt"
 
 1. Hvaða útgáfa svaraði? (`build.json` / `?v=`)
@@ -349,3 +468,8 @@ Hvort tveggja var raunveruleg vinna sem kóðinn höndlaði rangt, ekki leki. **
 11. Prófaði ég útdráttinn á sama hráefni og framleiðslukóðinn fær?
 12. Nær biðin yfir heila lotu biðraðarinnar / tímamælisins?
 13. Gerði ég `sendBeacon` og `keepalive` óvirk (`addInitScript`) áður en síðunni var lokað eða hún endurhlaðin? (`setOffline` ver EKKI — kafli 17)
+14. Hef ég SÉÐ vörðinn rauðan á villunni sem hann á að grípa — stökkbreytti ég? (kaflar 18–19)
+15. Er uppsetningin mín eins og í CI — systur-repó við hliðina, ferskt tré, nógu djúp saga — og las ég stöðuna eftir villuboð? (kafli 20)
+16. Er tillagan mín eldri en nýjasta ákvörðun Agnars um sama efni? (kafli 20)
+17. Bar ég saman per lykil, eða bara tvær summur? (kafli 21)
+18. Er talan mín slétt og jöfn þaki (1000)? Bar ég sóttar raðir við heildina í `content-range`? (kafli 22)

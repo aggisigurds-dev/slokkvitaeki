@@ -38,6 +38,17 @@ Tómt = óskráð — segðu það.
 3. **Tenging:** sendandi → `v_kunni_netfong` (netfang, svo lén) → `fyrirtaeki`/kt; annars `charlize_contacts`;
    annars „ótengt“ (birgir/kerfi/óþekkt). `v_kunni_netfong` þekkir aðeins Slökkvitækis-kúnna — Brunahólfs-kúnnar
    (landspitali.is, istak.is) tengjast aldrei þar.
+   **Viðbótarnetföng félags (16.10.2026, endurmælt 10.11.):** „+N"-platan á Netfang-línunni í borða prófílsins
+   (`473-aukanetfong.js`, í SKREF-lista 462) opnar spjald þar sem netfang er bætt við / samþykkt / aftengt. Skrif fara
+   AÐEINS um brunaholf `/api/tengilidir` (GET `?kennitala=`, POST `add`/`aftengja`; `charlize_contacts` er RLS-læst).
+   Samþykkt netfang (`status='approved'`) tengir póst nema það sé (a) líka á öðru félagi, (b) á léni í `umsjonar_len` /
+   `v_thjonustulen` (umsjónaraðili, banki — sá póstur tengist „eftir götu hússins"), eða (c) okkar eigið lén. Spjaldið
+   segir ástæðuna. `heimaleiga.is` er umsjónarlén síðan 26.10.2026 (Agnar), svo netföng Heimaleigu sýna „Tengist ekki" —
+   viljandi, ekki bilun. Vörður: `tools/audit-vidbotarnetfong.cjs` (10.11.: 242 af 250 samþykktum tengja).
+   **Gat sem stendur (mælt 10.11., á verkefnalista):** 49 félög (40 í þjónustu) bera FLEIRI EN EITT netfang í
+   `fyrirtaeki.netfang` („a@x.is, b@x.is"). Viewið krefst eins netfangs í reitnum, svo ekkert þeirra tengist — 46 netföng
+   tengjast hvorki á netfang né lén og 143 póstar (12 mán.) sitja ótengdir. Lausnin sem bætir flestu við er að skrá
+   aukanetföngin um „+N" (þá fara þau rétta leið), ekki að troða fleirum í aðalreitinn.
 
 ## Sérhæfing
 - **Lesa** email_digest (4 rekstrarhólf + brunaholfehf@gmail.com) og Thunderbird-mbox þegar undirmöppu þarf.

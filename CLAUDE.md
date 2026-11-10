@@ -70,6 +70,7 @@ frá 28.08.2026.
 ```bash
 node tools/minni.cjs                    # stýribókin (git-eintak, 87 ms, án nets)
 node tools/minni.cjs solur              # bara það efni
+node tools/minni.cjs --leit "payday krafa"   # leit þvert á öll efnin (yfir 200) — þegar þú veist ekki hvað efnið heitir
 node tools/minni.cjs --ferskt           # beint úr Supabase
 node tools/minni.cjs --skra "<staðreynd>" --topic <efni>
 node tools/minni.cjs --uppfaera         # endurskrifa docs/MINNISBOK.md + committa
@@ -83,7 +84,7 @@ allan tímann. Hún endurreiknaði í staðinn tölur sem voru þegar til, og fa
 tvö mælikerfi sem stönguðust á. Tilmæli duga ekki.
 
 **Tvær hliðar á sama minni:** Supabase (`charlize_knowledge` / `v_charlize_active`,
-282 virkar staðreyndir) er sannleikurinn — ritanlegur samstundis úr hvaða
+2.133 virkar staðreyndir 10.11.2026) er sannleikurinn — ritanlegur samstundis úr hvaða
 verkfæri sem er. `docs/MINNISBOK.md` er **generuð** og committuð, svo minnið
 berst á allar fjórar vélarnar með `git pull` og er læsilegt án nets eða lykla.
 
@@ -217,7 +218,7 @@ couldn't reach api.netlify.com directly. All accumulated patches lived in
 ```
 
 That single file has since been **split into `js/patches/*.js`** (one file per
-patch block), and the project lives in a private GitHub repo at
+patch block), and the project lives in a GitHub repo (⚠️ PUBLIC — see Setup status) at
 `aggisigurds-dev/slokkvitaeki`. Adding new functionality means a new file under
 `js/patches/` and a `<script>` tag in `index.html` — no need for the
 `/* === NAME === */` wrapper anymore.
@@ -249,7 +250,10 @@ js/v9.js                Realtime sync (Supabase channels)
 - ✅ `js/patch-master.js` split into `js/patches/*.js`
 - ✅ `verkdagbok_attachments` table + `verkdagbok-attachments` storage bucket exist in Supabase
 - ⚠️ `deploy.js` is DEPRECATED & guarded off — it wipes the serverless functions. Deploy via `git push` → GitHub Actions ONLY (see Deploy workflow)
-- ✅ Private GitHub repo at `aggisigurds-dev/slokkvitaeki`
+- ⚠️ GitHub repo `aggisigurds-dev/slokkvitaeki` er **OPINBERT** (mælt 31.10. og 10.11.2026 — `brunaholf` og `kjarni` líka;
+  þessi lína sagði „Private" og var röng). Hvort það á að vera private er ákvörðun Agnars (mál #1431). Þangað til:
+  engir lyklar, ekkert kúnnaminni (scope `kunni`), engin netföng/símanúmer tengiliða og engar skref-fyrir-skref leiðir að
+  óvörðum föllum í skrár, commit-skilaboð eða PR. `tools/minni.cjs --uppfaera` sleppir kúnnaminninu af þessari ástæðu.
 
 ---
 
