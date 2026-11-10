@@ -1547,6 +1547,7 @@
       else if (el.dataset.dn) skola('dn:' + el.dataset.dn);
       else if (el.dataset.ov && window.ThbOakvedin) ThbOakvedin.focusout(el);
       else if (el.dataset.chk) skola('chk:' + el.dataset.id);
+      else if (el.dataset.chktitill) skola('chkt:' + el.dataset.chktitill);   // titill vistast strax þegar farið er úr reitnum
     });
     ['dragstart', 'dragover', 'drop', 'dragend'].forEach(t => r.addEventListener(t, onDrag));
     r.addEventListener('paste', onPaste);
@@ -5068,7 +5069,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.ov))))) {
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.chktitill || ae.dataset.ov))))) {
       // 27.09.2026 (Agnar: „checklist doesn't work in phone, keyboard disappears"): reitir checklistans vantaði hér —
       // sjálfvirk endurteikning skipti reitnum út í miðju innslætti, lyklaborðið lokaðist og hálfskrifaður stafur varð
       // að atriði. Undantekning: bætt við atriði (S.chkTvinga) teiknar strax og fókusinn fer aftur í nýja reitinn.
