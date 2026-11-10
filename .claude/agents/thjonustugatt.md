@@ -45,7 +45,9 @@ Tómt = óskráð — segðu það.
   tákni í reitnum). Spjaldið er kyrrt (engin 3D-hreyfing, Agnar 09.11).
 - **V2-útlit gáttar** (`html[data-theme="premium"]`): `gatt/premium-v2.css` + `premium-v2.js` (haus `#v2-top`, hetjur,
   eignasíða í flipum eftir `<h4>`-texta, `SEC_TAB`). Aðalbanner: `app_kv['gatt_banner']` + gatt-admin „Aðalbanner
-  gáttarinnar" (vistun ÓPRÓFUÐ lifandi; `app_kv` tómt 10.11 → sjálfgefin `hetja-v3.webp`). Eignabanner:
+  gáttarinnar" (vistun og „Nota sjálfgefna" prófað lifandi 10.11; `app_kv` tómt → sjálfgefin `hetja-v3.webp`).
+  **Gildra:** `normalize()` í `gatt/portal.js` hleypir AÐEINS upptöldum lyklum úr `/api/gatt` í `state.data` — nýr reitur
+  af þjóni (t.d. `banner_global_url`, `serkjor`) hverfur þegjandi nema honum sé bætt þar við. Eignabanner:
   `fyrirtaeki.eign.banner` (`path` undirritað, eða stöðugt `url` undir `/gatt/myndir/banner/`).
 - **„Senda verkbeiðni" opnar teikninguna** þegar eignin á teikningu með mynd (`verkbeidniATeikningu` í `portal.js`);
   án teikningar opnast erindisformið — það er ætlað, ekki bilun.
