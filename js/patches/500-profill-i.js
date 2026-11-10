@@ -54,6 +54,9 @@
     ['.uttekt-cols', 'slt'],
     ['#_hsp-spjald', 'slt'],
     ['#vbu-section', 'slt'],
+    ['#_sks-tabs', 'slt bk'],   /* þjónustuflipar 274 (Slökkvitæki / Brunakerfi …) — sýnilegir í báðum, samstilltir við okkar flipa */
+    ['#_sks-host', 'bk'],
+    ['#_sks-bru', 'bk'],
     ['#_kt450', 'bk adrar'],
     ['#_bs468', 'bygg'],
     ['#co-fp-section', 'teikn'],
@@ -117,8 +120,8 @@
     '#companies-main .p2-bæta{grid-column:1/-1;padding:10px 18px 0;font-size:12.5px;color:#525b6b}' +
     '#companies-main .p2-bæta button{border:0;background:none;cursor:pointer;font:600 12.5px "IBM Plex Sans",system-ui,sans-serif;color:#3a4250;text-decoration:underline}' +
     '#companies-main .p2-athug{display:flex;align-items:center;gap:8px;padding:8px 18px;background:#f4f6f9;border-top:1px solid #c3cad5;border-radius:0 0 14px 14px;box-shadow:0 22px 40px -22px rgba(0,0,0,.75),0 0 0 1px rgba(20,24,34,.35)}' +
-    '#companies-main .p2-athug input{flex:1;min-width:0;height:30px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#141822}' +
-    '#companies-main .p2-athug input::placeholder{color:#525b6b}' +
+    '#companies-main .p2-athug textarea{flex:1;min-width:0;height:30px;min-height:30px;max-height:120px;resize:none;line-height:20px;padding-top:5px!important;padding-bottom:5px!important;overflow-y:auto;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#141822}' +
+    '#companies-main .p2-athug textarea::placeholder{color:#525b6b}' +
     '#companies-main .p2-glugg{border-radius:0!important;box-shadow:none!important}' +
       '#companies-main .p2-adrar{background:#fff;border-radius:0 0 14px 14px;padding:16px 18px;color:#11141c;box-shadow:inset 0 1px 0 rgba(20,24,34,.08)}' +
     '#companies-main .p2-adrar .hl2{display:flex;align-items:center;gap:12px;margin-bottom:12px}' +
@@ -214,10 +217,11 @@
   }
 
   /* ---------- lestur úr gamla prófílnum (sami DOM, sömu tölur) ---------- */
-  function txt(e) { return e ? (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+  /* textContent, ekki innerText: innerText þvingar útlitsreikning (reflow) og lesa() keyrir í hverju tifi */
+  function txt(e) { return e ? (e.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
   function sel(m, s) { return m.querySelector(s); }
   function allt(m, s) { return Array.prototype.slice.call(m.querySelectorAll(s)); }
-  function tugir(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  function tugir(n) { var p = String(n).replace(',', '.').split('.'); return p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : ''); }
   var MAN = { 'janúar': 1, 'febrúar': 2, 'mars': 3, 'apríl': 4, 'maí': 5, 'júní': 6, 'júlí': 7, 'ágúst': 8, 'september': 9, 'október': 10, 'nóvember': 11, 'desember': 12 };
   function dd(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -295,6 +299,8 @@
       var rest = (p[2] || '').split(' — ');
       return { heiti: p[0] || txt(c), krafa: p[1] || '', hver: rest[0] || '', stada: rest[1] || '', led: /rautt/.test((sel(c, 'i') || {}).className || '') ? 'rd' : (/graent/.test((sel(c, 'i') || {}).className || '') ? 'ok' : 'am') };
     }).filter(function (x) { return x.heiti && !/^(Slökkvitæki|Brunaviðvörunarkerfi)$/i.test(x.heiti); });
+    var bkT = sel(m, '#_sks-tabs ._sks-tab[data-flipi="bru"] ._sks-tu');
+    if (bkT) { var bt = txt(bkT); var be = /(\d+)\s*eining/.exec(bt); d.bk = { undir: bt, ein: be ? be[1] : '' }; } else d.bk = null;
     d.teikn = txt(sel(m, '._bupp-teikn-inn'));
     d.serupp = txt(sel(m, '._serupp-inn'));
     return d;
@@ -341,19 +347,20 @@
     var dalkur2 = (hus ? '<div class="p2-sec">Húsið</div>' + hus : '') +
       (kjor ? '<div class="p2-sec' + (hus ? ' p2-næsta' : '') + '">Þjónusta og kjör</div>' + kjor : '');
     var bun = '';
-    if (d.nSlt) {
-      var teg = [];
-      d.flokkar.forEach(function (f) {
-        var n = /(\d+)\s*tæki/.exec(f); var nm = f.replace(/\s*\d+\s*tæki.*/, '').replace(/^[^A-Za-zÁ-ÿ]+/, '').trim();
-        if (n && nm && !/slöng|kefli|reykskynj/i.test(nm)) teg.push(esc(nm) + ' ' + n[1]);
-      });
-      bun += '<div class="p2-kv">' + HAK + '<span class="v">Slökkvitæki' + (teg.length > 1 ? '<br><small style="font-weight:500;color:#525b6b">' + teg.join(' · ') + '</small>' : '') + '</span><span class="n">' + d.nSlt + '</span></div>';
-    }
+    /* tækjatölur eftir TEGUND (regla Agnars): slökkvitæki = summa slökkvitækjaflokka; slöngur og reykskynjarar sér */
+    var teg = [], nTeg = 0, slong = 0, reyk = 0;
     d.flokkar.forEach(function (f) {
-      var n = /(\d+)\s*tæki/.exec(f); var nm = f.replace(/\s*\d+\s*tæki.*/, '');
-      if (n && /slöng|kefli/i.test(nm)) bun += '<div class="p2-kv">' + HAK + '<span class="v">Brunaslöngur</span><span class="n">' + n[1] + '</span></div>';
-      else if (n && /reykskynj/i.test(nm)) bun += '<div class="p2-kv">' + HAK + '<span class="v">Reykskynjarar</span><span class="n">' + n[1] + '</span></div>';
+      var n = /(\d+)\s*tæki/.exec(f); if (!n) return;
+      var nm = f.replace(/\s*\d+\s*tæki.*/, '').replace(/^[^A-Za-zÁ-ÿ]+/, '').trim(); var k = parseInt(n[1], 10);
+      if (/slang|slöng|kefli/i.test(nm)) slong += k;
+      else if (/reykskynj/i.test(nm)) reyk += k;
+      else if (nm) { teg.push(esc(nm) + ' ' + k); nTeg += k; }
     });
+    var nS = teg.length ? nTeg : (slong || reyk ? 0 : d.nSlt);
+    if (nS) bun += '<div class="p2-kv">' + HAK + '<span class="v">Slökkvitæki' + (teg.length > 1 ? '<br><small style="font-weight:500;color:#525b6b">' + teg.join(' · ') + '</small>' : '') + '</span><span class="n">' + nS + '</span></div>';
+    if (slong) bun += '<div class="p2-kv">' + HAK + '<span class="v">Brunaslöngur</span><span class="n">' + slong + '</span></div>';
+    if (reyk) bun += '<div class="p2-kv">' + HAK + '<span class="v">Reykskynjarar</span><span class="n">' + reyk + '</span></div>';
+    if (d.bk) bun += '<div class="p2-kv">' + HAK + '<span class="v">Brunakerfi' + (d.bk.undir ? '<br><small style="font-weight:500;color:#525b6b">' + esc(d.bk.undir) + '</small>' : '') + '</span>' + (d.bk.ein ? '<span class="n">' + esc(d.bk.ein) + ' ein.</span>' : '') + '</div>';
     var skodRaðir = kv('Síðasta', esc(d.sidast), ' n') +
       kv('Næsta', d.naest ? '<span style="color:' + (d.utrunnin ? '#a01818' : '#845400') + '">' + esc(d.naest) + '</span>' : '', ' n') +
       kv('Mánuður', esc(d.skodMan)) + (d.utrunnin ? kv('Útrunnin tæki', String(d.utrunnin), ' n') : '');
@@ -428,7 +435,7 @@
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
       banner.insertAdjacentElement('beforebegin', h); h.insertAdjacentElement('afterend', g);
       var at = document.createElement('div'); at.id = 'p2-athug'; at.className = 'p2-athug p2-nytt';
-      at.innerHTML = '<span aria-hidden="true">✎</span><input type="text" aria-label="Athugasemd" placeholder="Athugasemd… (vistast sjálfkrafa)" maxlength="2000">';
+      at.innerHTML = '<span aria-hidden="true">✎</span><textarea rows="1" aria-label="Athugasemd" placeholder="Athugasemd… (vistast sjálfkrafa)"></textarea>';
       g.insertAdjacentElement('afterend', at);
       var host = sel(m, '._samskipti-host');
       var f = document.createElement('div'); f.id = 'p2-flipar'; f.className = 'p2-flipar p2-nytt'; f.setAttribute('role', 'tablist');
@@ -448,6 +455,9 @@
     m.setAttribute('data-p2tab', t);
     allt(m, '#p2-flipar button').forEach(function (b) { b.setAttribute('aria-selected', b.getAttribute('data-t') === t ? 'true' : 'false'); });
     window.__p2flipi = t;
+    /* þjónustuflipar 274: Slökkvitækjaþjónusta ↔ „ars", Brunakerfisþjónusta ↔ „bru" (umboðssmellur, aðeins ef ekki þegar valinn) */
+    var vil = t === 'slt' ? 'ars' : (t === 'bk' ? 'bru' : '');
+    if (vil) { var fb = sel(m, '#_sks-tabs ._sks-tab[data-flipi="' + vil + '"]'); if (fb && !fb.classList.contains('on')) { m.__p2sks = true; fb.click(); m.__p2sks = false; } }
   }
 
   function merkja(m) {
@@ -484,23 +494,27 @@
     if (sb && m.classList.contains('p2-gam')) { var tt = sb.querySelectorAll('.flip button'); if (tt[1]) { tt[0].setAttribute('aria-selected', 'false'); tt[1].setAttribute('aria-selected', 'true'); } }
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
     if (c) { c.textContent = d.nSlt ? d.nSlt : ''; c.hidden = !d.nSlt; }
+    var ca = sel(m, '#p2-flipar button[data-t="adrar"] .c');
+    if (ca) { ca.textContent = d.thj.length || ''; ca.hidden = !d.thj.length; }
   }
 
   /* athugasemd: ein lína sem er umboð fyrir textareit gamla bannersins (features.js onBannerNoteInput → sama vistunarleið) */
+  /* fjöllínu-athugasemd heldur línuskilum (textarea, ekki input); hæðin fylgir textanum upp í 5 línur — aðeins við breytingu */
+  function haed(t) { t.style.height = '30px'; var h = Math.min(120, t.scrollHeight); if (h > 30) t.style.height = h + 'px'; }
   function athugasemd(m) {
-    var inp = document.querySelector('#p2-athug input'), ta = sel(m, '.co-banner-note');
+    var inp = document.querySelector('#p2-athug textarea'), ta = sel(m, '.co-banner-note');
     if (!inp || !ta) return;
     if (!inp.__p2) {
       inp.__p2 = true;
       inp.addEventListener('input', function () {
         var t = sel(m, '.co-banner-note'); if (!t) return;
-        t.value = inp.value; t.dispatchEvent(new Event('input', { bubbles: true }));
+        t.value = inp.value; t.dispatchEvent(new Event('input', { bubbles: true })); haed(inp);
       });
       inp.addEventListener('blur', function () {
         var t = sel(m, '.co-banner-note'); if (t) t.dispatchEvent(new Event('change', { bubbles: true }));
       });
     }
-    if (document.activeElement !== inp && inp.value !== ta.value) inp.value = ta.value;
+    if (document.activeElement !== inp && inp.value !== ta.value) { inp.value = ta.value; haed(inp); }
   }
 
   /* ---------- smellir: allt umboð fyrir upprunalegu takkana ---------- */
@@ -541,6 +555,8 @@
 
   function smellur(e) {
     var m = e.currentTarget;
+    var sk = e.target.closest('#_sks-tabs ._sks-tab');
+    if (sk && !m.__p2sks) { var want = sk.getAttribute('data-flipi') === 'ars' ? 'slt' : 'bk'; if (m.getAttribute('data-p2tab') !== want) { m.setAttribute('data-p2tab', want); allt(m, '#p2-flipar button').forEach(function (x) { x.setAttribute('aria-selected', x.getAttribute('data-t') === want ? 'true' : 'false'); }); window.__p2flipi = want; } return; }
     var f = e.target.closest('#p2-flipar button[data-t]');
     if (f) { velja(m, f.getAttribute('data-t')); return; }
     var b = e.target.closest('[data-p2]'); if (!b || !m.contains(b)) return;
@@ -574,8 +590,9 @@
   }
 
   function tikk() {
-    var m = document.querySelector('#companies-main.co-opid');
-    if (!m || !sel(m, '.co-banner') || !sel(m, '.b405-plata, .co-banner-name')) return;
+    if (document.hidden) return;
+    var m = document.getElementById('companies-main');
+    if (!m || !sel(m, ':scope > .co-banner') || !sel(m, '.co-banner-name')) return;
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
     byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m);

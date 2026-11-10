@@ -42,7 +42,8 @@
     ['286', function () { if (window.SamskiptiPanel && SamskiptiPanel.forbua) SamskiptiPanel.forbua(); }],
     ['467', function () { if (window.Hledsluspa) Hledsluspa.tick(); }],                     // Hleðsluspá-spjaldið yfir tækjadálkunum (14.10.2026, var 465 — 465-djupdvali tók númerið sama kvöld)
     ['468', function () { if (window.ByggingSpjald) ByggingSpjald.tick(); }],                 // Byggingarupplýsingar (14.10.2026)
-    ['405b', function () { if (window.Efsta405) Efsta405.tick(); }]                        // það sem ofantalið færði inn
+    ['405b', function () { if (window.Efsta405) Efsta405.tick(); }],                       // það sem ofantalið færði inn
+    ['500', function () { if (window.Prof2 && Prof2.tikk) Prof2.tikk(); }]                  // hönnun I (?prof=2) — glugginn í sama tifi (10.11.2026); án rofans er Prof2.tikk ekki til
   ];
 
   // 363/367/432 lesa félagið úr slóðinni (#company/<id>). 235 setur hana í sama kalli og teikninguna, svo hún er rétt

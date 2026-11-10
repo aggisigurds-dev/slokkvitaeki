@@ -32,6 +32,21 @@ Tómt = óskráð, villa = villa — aldrei „ekkert skráð“ af því kalli�
 - **Kúnnaminni** (`scope='kunni'`): topic adgengi · tengilidur · taeki · reikningur · saga · sertharfir
   (`.claude/skills/charlize/references/kunnaminni.md`). Aðeins 18 raðir á 7 kt (04.11) — það er þitt að fylla.
 
+## Fyrirtækjaprófíllinn — hönnun I (patch 500, `?prof=2`, 09.–10.11.2026)
+Nýi prófíllinn er FRAMSETNING ofan á þann gamla — `js/patches/500-profill-i.js`. Lestu `docs/PROFILL-I-EIGINLEIKAR.md`
+áður en þú svarar „hvar er X á prófílnum" eða breytir honum. Það sem þarf að vita:
+- **Rofi:** `?prof=2` í slóðinni (engin vafra-geymsla). Án hans er gamli prófíllinn óbreyttur.
+- **Engin gögn sótt, engin skrif:** hver reitur er lesinn úr DOM-i gamla prófílsins (363 banner, 404 tækjalisti, 403 skjöl,
+  286 samskipti, 450 kerfi, 274 þjónustuflipar); hver takki er umboð (`click()` á upprunalega takkann). Tala sem er röng í
+  nýja glugganum er röng í gamla líka — leitaðu þar (elon-musk / natalie), ekki í 500.
+- **Reitur án heimildar er falinn, aldrei skáldaður** (Fyrirtækjaskrá-heimilisfang/starfsemi, samningsstaða). Allt úr gamla
+  bannernum nást með „Breyta / bæta við upplýsingum".
+- **Flipar → kaflar:** Skjöl og reikningar = `._dyg-section` · Slökkvitækjaþjónusta = `.uttekt-cols` + Hleðsluspá ·
+  Brunakerfisþjónusta = `#_sks-bru` (274, flipi „bru") + `#_kt450` · Teikningar = `#co-fp-section`/`#_bgm477` + takkar ·
+  Byggingarupplýsingar = `#_bs468` · Sérkjör = `._afsl-box` · Aðrar þjónustur = línur úr 450.
+- **„Skoðun — Í lagi / N útrunnin" er afleidd** (tæki með næsta < í dag), „Síðasta" = mánuður úr 199-pillu + ár úr tækjalista.
+- Nýr kafli sem annar patch bætir í `#companies-main` birtist í ÖLLUM flipum þar til hann fær línu í `KAFLAR` í 500.
+
 ## Afhendingarreglan
 1. **Lesa:** charlize_yfirlit(kt) + opin mál (`thjonustubeidni` á fyrirtaeki_id, ekki lokið/geymt).
 2. **Vísa:**

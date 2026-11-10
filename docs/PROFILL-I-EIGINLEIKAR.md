@@ -91,3 +91,23 @@ hegðun gamla prófílsins á localhost (þekkt: listinn sækir með öðrum lyk
 Líka: `.pill` er app-víður klasi (grár); okkar flögur heita `p2-pl`.
 
 **Ekki gert / ósannreynt:** vistun úr reitum (engin skrif í prófi); athugasemdarlína prófuð með upptökutæki, ekki raunvistun; ekki skoðað í raun-S26 (aðeins 375 px Chrome + 980 px með viewmode=mobile); Brunakerfisþjónusta-flipinn sýnir enn aðeins „Kerfi og þjónusta"-kaflann; „Vinnusaga"-flipinn sýnir gamla kortið (engin sérstök vinnusöguheimild fundin).
+
+## 7. Yfirferð allrar lotunnar 10.11.2026 (kvöld) — sannreynt og endurbætt
+
+Sannreynt: lifandi búntið (`build.json` e0b937a) inniheldur patch 500 með Samskiptaboxi, síma-CSS og Aðrar þjónustur.
+Lifandi síðan sjálf var EKKI smellprófuð (krefst innskráningar); allt hér að neðan er localhost gegn lifandi gagnagrunni, lesið.
+
+| Fannst | Lagað |
+|---|---|
+| Flatarmál með aukastaf varð „6.585.6 m²" (192) | `tugir()` → „6.585,6 m²" |
+| „Slanga 18" (207) taldist með slökkvitækjum (regex þekkti bara „slöng") | slöngur sér: „Slökkvitæki 44 (Léttvatn 43 · CO₂ 1)" + „Brunaslöngur 18" |
+| Þjónustuflipar 274 (`#_sks-tabs`: Slökkvitæki / Brunakerfi) og `#_sks-bru` voru ómerktir → sáust neðst í ÖLLUM flipum, og Brunakerfisþjónusta sýndi ekki brunakerfið | merktir; flipinn Brunakerfisþjónusta smellir á „bru" og sýnir `#_sks-bru`; smellur í `#_sks-tabs` samstillir okkar flipa |
+| „Brunakerfi" vantaði í Búnað í þjónustu | lesið úr `._sks-tu` (t.d. „Brunaviðvörunarkerfi · skoðað 30/09/2025", einingar ef 274 birtir þær) |
+| Athugasemd var einnar línu `<input>` — hefði flatt út línuskil í fjöllínu-athugasemd við fyrstu breytingu | `<textarea>` sem vex upp í 5 línur; línuskil haldast (prófað með upptökutæki) |
+| Gamli prófíllinn sást í allt að 600 ms áður en sá nýi tók við | krókur í 462 (`SKREF '500'`): 0 af 400 römmum sýna gamla bannerinn; CLS eftir opnun 0,184 (gamli: 0,213) |
+| `lesa()` notaði `innerText` (þvingar útlitsreikning) á 600 ms fresti | `textContent`; tifið sleppir þegar flipinn er falinn |
+| Flipateljari | „Aðrar þjónustur" fær fjölda lína |
+
+Staðfest óbreytt: rofinn af ⇒ gamli prófíllinn; 7 flipar rétt; Samskipti (Póstsaga/Samtal/Svara opnar `_rp-modal`); 375 px og
+980 px viewmode=mobile án láréttrar skrunar; engar JS-villur.
+„Næst 14/01/2027" úr hönnunarskjámyndinni finnst EKKI í `uttaeki.next_insp` fyrir 443 (lægsta = 01/12/2026) — glugginn sýnir 01/12/2026.

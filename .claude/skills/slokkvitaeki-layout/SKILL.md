@@ -356,6 +356,29 @@ separate checklist: agent `bord-flettur`, entry 08.10.2026.
    classes and ids the JS binds to (`_hr-*`, `#_drog-q`, `data-act`) - grep
    that no stylesheet targets them before reusing.
 
+6. **A `<table>` with a "Staða" column gets a write-capable dropdown.**
+   `js/patches/00-legacy.js` (~line 2905) decorates *every* table that has a
+   "Staða" header with an equipment-status `<select>` (Active / Í geymslu /
+   Í lagi ...) whose `onchange` runs
+   `uttaeki.update({status}).eq('serial', <text of column 0>)`. A read-only
+   table on the company profile (measured 10.11.2026, patch 500 "Aðrar
+   þjónustur") got one per row. Do not name a column "Staða" in a new
+   `<table>` inside `#companies-main` - use a div grid with `role="table"`,
+   or another header ("Ástand"). Check:
+   `document.querySelectorAll('<your root> select._pm_status_sel').length === 0`.
+7. **`.pill` is an app-wide class** (grey, small). A new coloured badge needs
+   its own name (`p2-pl`), not `.pill.am`.
+8. **Re-layout an existing page with CSS, not by moving nodes.** The company
+   profile is ~40 patches that each own a direct child of `#companies-main`
+   and re-insert it on their own tick. Patch 500 (`?prof=2`) therefore tags
+   children with `data-p2t="<tab>"`, shows/hides them with CSS, orders them
+   with `display:flex; flex-direction:column` + `order`, and drives the
+   original buttons by proxy (`el.click()`). Two things bite: in mobile
+   viewmode `356` gives every `#companies-main > *` `overflow:auto` (new
+   blocks need `overflow:visible!important`), and flex children need
+   `flex:none` or tall sections shrink to scroll boxes.
+   Feature map: `docs/PROFILL-I-EIGINLEIKAR.md`.
+
 Also: re-render lists through `Stodugt.vernda(rot)`
 (`js/patches/388-stodugt-vidmot.js`) so scroll, focus and selection survive;
 draw icons as inline stroke SVG - the arrows `▲ ▼ ↕` render as emoji on
