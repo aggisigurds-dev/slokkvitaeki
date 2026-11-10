@@ -188,6 +188,8 @@
     checklisti: { n: '23', t: 'Checklisti', d: 'Einfaldur listi: skrifa atriði, haka við þegar það er klárað. Bara þinn.' },
     // 09.11.2026 (Agnar: „tvo ólíka checklista … hvor um sig samanbrjótanlegur“): seinni listinn, sami kóði — gagnasvæðið er `checklisti2`.
     checklisti2: { n: '26', t: 'Checklisti 2', d: 'Annar einfaldur listi með eigin titli. Titill og samanbrot vistast á þjóni.' },
+    // 10.11.2026 (Agnar): allt stjörnumerkt á einum stað — lesið beint úr upprunanum (engin afrit); stjarnan tekur merkið af þar.
+    stjornumerkt: { n: '27', t: 'Stjörnumerkt', d: 'Allt sem er stjörnumerkt: checklistar, spjöld merkt á þig og áríðandi mál. Smelltu til að opna í sínum ham; stjarnan tekur merkið af.' },
     skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -332,7 +334,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], skipulag2: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], skipulag2: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -431,7 +433,7 @@
   // eftir ham: sjálfgefið opið í Kröfur-ham, samanbrotið annars staðar.
   const openKey = k => nu() + ':' + (inMode(k) || k === 'krofumal' ? cfg().mode + ':' : '') + k;
   function isOpen(k) {
-    if (CHK_FELT.indexOf(k) >= 0) return chkOpid(k);   // samanbrot checklistanna býr á þjóni (ekki í S.open)
+    if (SERVER_OPID.indexOf(k) >= 0) return chkOpid(k);   // samanbrot checklistanna og Stjörnumerkts býr á þjóni (ekki í S.open)
     const key = openKey(k);
     if (!(key in S.open)) S.open[key] = inMode(k) ? true : k === 'krofumal' ? cfg().mode === 'krofur' : !!cfg().mods[k][1];
     return S.open[key];
@@ -2950,6 +2952,7 @@
    * ────────────────────────────────────────────────────────────────────── */
   // 09.11.2026: tveir listar — f er svæðið (= lykill einingarinnar): 'checklisti' | 'checklisti2'.
   const CHK_FELT = ['checklisti', 'checklisti2'];
+  const SERVER_OPID = CHK_FELT.concat(['stjornumerkt']);
   const chkCk = (n, f) => n + '|' + f;
   function chkLesa(n, f) {
     f = f || 'checklisti';
@@ -3089,6 +3092,47 @@
       });
     };
     grip.addEventListener('pointermove', fara); grip.addEventListener('pointerup', sleppa); grip.addEventListener('pointercancel', sleppa);
+  }
+  /* ── STJÖRNUMERKT (eining 27, 10.11.2026) — EIN heimild: lesið úr upprunanum í hvert sinn, ekkert afritað.
+   * Heimildir: checklisti 1 og 2 (star > 0, ókláruð) · spjöld á Skipulagsborðum annarra merkt á mig · áríðandi mál á mínu borði.
+   * Smellur á línu opnar atriðið í hamnum þar sem það býr; stjarnan/✓ tekur merkið af ÞAR (sömu aðgerðir og upprunans). */
+  function stjornuAtridi(n) {
+    const out = [];
+    CHK_FELT.forEach(f => chkLesa(n, f).forEach(x => { if (!x.done && chkStjarna(x.star) > 0 && String(x.t || '').trim()) out.push({ t: 'chk', f: f, id: x.id, texti: x.t, fra: chkTitill(f), lit: CHK_LITIR[chkStjarna(x.star)][0] }); }));
+    merktAMig(n).forEach(({ eig, cd }) => out.push({ t: 'sk', eig: eig, id: cd.id, texti: [cd.name, cd.title].filter(Boolean).join(' — ') || '(tómt spjald)', fra: 'Skipulagsborð · frá ' + eig, lit: 'gull' }));
+    // Áríðandi mál eru oft tugir — fimm efstu hér, afgangurinn opnast í Áríðandi-einingunni (annars drukknar það sem var stjörnumerkt viljandi).
+    const ari = S.rows.filter(r => r.important && onBoardOf(r, n)).sort(rodun);
+    ari.slice(0, 5).forEach(r => out.push({ t: 'mal', id: r.id, texti: r.title || '(án titils)', fra: 'Áríðandi mál', lit: 'raud' }));
+    if (ari.length > 5) out.push({ t: 'fleiri', id: '', texti: '+ ' + (ari.length - 5) + ' áríðandi mál til viðbótar', fra: 'Áríðandi', lit: 'raud' });
+    return out;
+  }
+  function stjornumerktHtml(k) {
+    const n = nu(), l = stjornuAtridi(n);
+    const rod = x => '<div class="chk star st-' + x.lit + ' stj">' + (x.t === 'fleiri' ? '<span class="chkstj st-' + x.lit + '" aria-hidden="true">★</span>' :
+      '<button type="button" class="chkstj st-' + x.lit + '" aria-pressed="true" data-t5="' + (x.t === 'chk' ? 'star-af' : x.t === 'sk' ? 'sk-merki-af' : 'mal-ari') + '" data-skid="' + esc(x.t === 'sk' ? x.id : '') + '" data-tg="' + x.t + '" data-f="' + esc(x.f || '') + '" data-eig="' + esc(x.eig || '') + '" data-id="' + esc(x.id) + '" aria-label="Taka merkið af" title="Taka merkið af — á upprunastaðnum">' + (x.t === 'sk' ? '✓' : '★') + '</button>') +
+      '<button type="button" class="stjtxt" data-t5="star-opna" data-tg="' + x.t + '" data-f="' + esc(x.f || '') + '" data-id="' + esc(x.id) + '" title="Opna í sínum ham"><span class="stjt">' + esc(x.texti) + '</span><span class="stjfra">' + esc(x.fra) + ' ›</span></button></div>';
+    const body = '<div class="chkl">' + (l.length ? l.slice(0, 40).map(rod).join('') + (l.length > 40 ? '<div class="more">+ ' + (l.length - 40) + ' til viðbótar</div>' : '') : '<div class="chktomt">Ekkert er stjörnumerkt.</div>') + '</div>';
+    return modPanel(k, l.length + ' merkt', body, '');
+  }
+  // Hamur sem geymir eininguna (núverandi ef hún er þar, annars sá fyrsti sem hefur hana).
+  function stjHamFyrir(mod) {
+    const c = cfg(), l = [c.mode].concat(hamaListi());
+    return l.find(h => { const m = M(h); return m && m.first && m.first.indexOf(mod) >= 0; }) || '';
+  }
+  function stjOpna(tg, f, id) {
+    const c = cfg(), mod = tg === 'chk' ? f : tg === 'sk' ? 'skipulag' : 'aridandi';
+    if (tg === 'fleiri') tg = 'ari';
+    if (tg === 'mal') { S.sel[nu()] = id; S.selFra = c.mode; S.leit.opid = false; render(); return; }   // sama og „Opna mál“
+    let ham = stjHamFyrir(mod) || (tg === 'sk' ? stjHamFyrir('skipulag2') : '');
+    if (!ham) { toast('Einingin er ekki í neinum ham hjá þér — bættu henni á vinnuborðið.', true); return; }
+    if (tg === 'chk') chkOpidVista(f, true); else S.open[nu() + ':' + ham + ':' + mod] = true;
+    if (ham !== c.mode) {
+      if (!krefstStillinga()) return;
+      c.mode = ham; S.filter = (M(ham) || MODES.thjonusta).filter || 'allt'; S.synd = PAGE; S.view = 'master';
+      vistaCfg({ mode: ham });
+    }
+    render();
+    setTimeout(() => { const r = rot(), e = r && r.querySelector(tg === 'chk' ? '[data-chktitill="' + f + '"]' : '[data-skid="' + id + '"]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 250);
   }
   function chkBaetaVid(root, f) {
     f = f || 'checklisti';
@@ -4449,6 +4493,7 @@
   function bottomHtml(k) {
     const n = nu();
     if (CHK_FELT.indexOf(k) >= 0) return checklistiHtml(k);
+    if (k === 'stjornumerkt') return stjornumerktHtml(k);
     if (k === 'skipulag' || k === 'skipulag2') {   // 24 = sömu spjöld, önnur sjálfgefin breidd
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
@@ -6163,7 +6208,7 @@
         render();
         vistaCfg({ mode: c.mode });
         return;
-      case 'mod-open': if (CHK_FELT.indexOf(m) >= 0) { chkOpidVista(m, !isOpen(m)); return; } S.open[openKey(m)] = !isOpen(m); render(); return;
+      case 'mod-open': if (SERVER_OPID.indexOf(m) >= 0) { chkOpidVista(m, !isOpen(m)); return; } S.open[openKey(m)] = !isOpen(m); render(); return;
       case 'mitt-fella':
         vmSetja(MITT_FELLT_LYKILL, !mittFellt());
         render();
@@ -6254,6 +6299,12 @@
         if (!j) { toast('Verkið fannst ekki lengur á dagskránni.', true); render(); return; }
         const { _n, ...hreint } = j;   // 27.09.2026: vistast á grein eigandans, ekki þess sem er við vélina
         try { Vikudagskra.open(j.date, hreint, _n); } catch (_) { toast('Dagskrárglugginn opnaðist ekki.', true); }
+        return;
+      }
+      case 'star-opna': stjOpna(el.dataset.tg, el.dataset.f, el.dataset.id); return;
+      case 'star-af': {
+        const tg = el.dataset.tg, id = el.dataset.id;
+        if (tg === 'chk') { const f = el.dataset.f || 'checklisti', n = nu(), gamalt = chkLesa(n, f).find(x => x.id === id); chkBreyta(n, f, l => l.map(x => x.id === id ? Object.assign({}, x, { star: 0 }) : x)).then(ok => { if (ok && gamalt) toast('Stjarnan tekin af', false, () => chkBreyta(n, f, l => l.map(x => x.id === id ? Object.assign({}, x, { star: chkStjarna(gamalt.star) }) : x))); }); return; }
         return;
       }
       case 'chk-add': { chkBaetaVid(el.getRootNode(), el.dataset.f); return; }
