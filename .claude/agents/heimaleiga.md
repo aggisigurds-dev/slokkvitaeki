@@ -183,4 +183,10 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   færslur — það er ekki reikningur Slökkvitækis. **Tvígreiðslan verður aðeins mæld á bankayfirliti 0528-26-006005 (Landsbankinn),
   feb og maí 2026.** Mál #1329 bíður þess. Charlize #1611 · heimild: grep_inbox/grep_adrar í lotu 5f2146a4.
 
-Síðast uppfært: 05.11.2026
+- 10.11.2026 · **R-107457 (doc 10285) á Midtown er líklega rangt tengdur — Agnar sá það.** PDF opnað: 29.10.2025, 65.317 kr, 7 hleðsla léttvatn,
+  3 O-hringir, 1 yfirferð brunaslanga, 1 nýtt léttvatn, ENGIN „Vegna“-lína (R-107052 segir „Vegna Máni Apartments“). Dimka 20.10.2025 (email_digest
+  15923) bað um endurhleðslu á 3. hæð (5) + 5. hæð (2) = 7 = Máni-hæðir (3.–6.), auk lobby + 2 á 2. hæð + 4 slöngur. Tengingin (pör 1479, 26.10.2026)
+  hvíldi á kenningunni „hótelhlutinn“. Aðalreikningur Midtown: enginn fannst í Stólpa/solur á kt Heimaleigu okt 2025–jan 2026 (aðeins 107457,
+  107527 Bríetartún sameign, 107528 Ice, 107643 Bríetartún) — Drive/banki ómælt. Ekki leiðrétt; bíður Agnars.
+
+Síðast uppfært: 10.11.2026
