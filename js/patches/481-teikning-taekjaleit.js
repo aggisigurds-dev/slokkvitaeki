@@ -14,7 +14,7 @@
 
   const KEY = 'teikning.taekjalisti';
   const FP = () => window.FloorPlan;
-  const STODUR = [['', 'Öll'], ['ekki', 'Ekki merkt'], ['her', 'Merkt hér'], ['annars', 'Á annarri hæð']];
+  const STODUR = [['', 'Öll'], ['ekki', 'Ekki merkt'], ['her', 'Merkt hér'], ['annars', 'Á annarri hæð'], ['vantar', 'Vantar']];
   let leit = '';                                  // tímabundið — ekki vistað
   let beinn = 0;
 
@@ -116,25 +116,28 @@
     const hs = (window.TeiknBord && TeiknBord.haedir && TeiknBord.haedir()) || [], virk = (window.TeiknBord && TeiknBord.virk && TeiknBord.virk()) || 0;
     const v = lesa(), q = norm(leit).trim(), valid = F._selectedUnitId;
     const kort = [...el.children].filter(r => !r.classList.contains('tl-tomt'));
-    const tegundir = {}, tolur = { '': 0, ekki: 0, her: 0, annars: 0 };
+    const tegundir = {}, tolur = { '': 0, ekki: 0, her: 0, annars: 0, vantar: 0 };
+    const vantarId = new Set();   // tæki sem eru merkt „Vantar“ (fjólublá) á einhverri hæð
+    hs.forEach((h, j) => ((j === virk ? (pl && pl.markers) : h.markers) || []).forEach(mk => { if (mk && mk.vantar && mk.unitId != null) vantarId.add(mk.unitId); }));
+    ((pl && pl.markers) || []).forEach(mk => { if (mk && mk.vantar && mk.unitId != null) vantarId.add(mk.unitId); });
     const eftirTegund = [];
     F.units.forEach((u, i) => {
       if (!u) return;
       const st = stadaTaekis(u, her, hs, virk), teg = String(u.type || '—');
       const passar = !q || norm(u.serial).indexOf(q) >= 0 || norm(u.type).indexOf(q) >= 0;
-      eftirTegund[i] = { u, st, teg, passar };
+      eftirTegund[i] = { u, st, teg, passar, vantar: vantarId.has(u.id) };
     });
     // tölur á flísum miðast við leit + tegund (ekki stöðuvalið sjálft); tegundatölur við leit + stöðu
     eftirTegund.forEach(o => {
       if (!o) return;
-      if (o.passar && (!v.t || o.teg === v.t)) { tolur[''] += 1; tolur[o.st] += 1; }
-      if (o.passar && (!v.s || o.st === v.s)) tegundir[o.teg] = (tegundir[o.teg] || 0) + 1;
+      if (o.passar && (!v.t || o.teg === v.t)) { tolur[''] += 1; tolur[o.st] += 1; if (o.vantar) tolur.vantar += 1; }
+      if (o.passar && (!v.s || (v.s === 'vantar' ? o.vantar : o.st === v.s))) tegundir[o.teg] = (tegundir[o.teg] || 0) + 1;
     });
     let synd = 0;
     kort.forEach((rod, i) => {
       const o = eftirTegund[i]; if (!o) return;
       const tt = ikon(o.u); if (rod.getAttribute('data-tt') !== tt) rod.setAttribute('data-tt', tt);
-      const sja = o.u.id === valid || (o.passar && (!v.s || o.st === v.s) && (!v.t || o.teg === v.t));
+      const sja = o.u.id === valid || (o.passar && (!v.s || (v.s === 'vantar' ? o.vantar : o.st === v.s)) && (!v.t || o.teg === v.t));
       const d = sja ? '' : 'none';
       if (rod.style.display !== d) rod.style.display = d;
       const ord = (o.st === 'her' || o.st === 'annars') && o.u.id !== valid ? '1' : '';   // staðsett → neðst, nema valið
