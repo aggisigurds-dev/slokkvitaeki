@@ -122,6 +122,7 @@
   // gets placed at this position. Multiple substrings let us tolerate
   // the user's typos (e.g. "Stjórnborð" vs "Stjórnstöð") and short forms.
   const ORDER = [
+    ['Hunter'],              // 10.11.2026 (Agnar): Hunter er EFST í hliðarstikunni, ofan við Vefverslun (sjá fasta röð neðar)
     ['Vefverslun'],          // 13.10.2026 (Agnar: „setja hana efst á sidebanner"): static <a> → /vefverslun/?breyta=1. Fyrst í ORDER svo hún sest efst líka undir vistaðri röð (þekktur hnappur án nágranna á undan fær order 6)
     SEP,
     ['Verkborð'],            // 2026-06-22: sameinaði verkborðið (patch 231) efst
@@ -144,7 +145,7 @@
     ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
     ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
-    ['Hunter'],  // 26.10.2026: 🎯 Hunter — sölulistar (487), í viðskiptavinaklasanum; þekktur hér svo hann lendi hjá Allir undir vistaðri röð en ekki aftast (9000)
+    // (Hunter er nú efst — 10.11.2026) // 26.10.2026: 🎯 Hunter — sölulistar (487), í viðskiptavinaklasanum; þekktur hér svo hann lendi hjá Allir undir vistaðri röð en ekki aftast (9000)
     ['Viðskiptavinavefir'],  // 2026-08-23: static <a> → /gatt-admin/ (customer-portal admin, standalone page). Placed by the customer cluster; self-heals here even under a saved custom order.
     SEP,
     // 2026-05-20: Bill-and-claim cluster — grouped together below the
@@ -425,6 +426,9 @@
       // Sé hann viljandi falinn í sidebar_hidden er það virt (hiddenButtons).
       const vefverslun = buttons.find(b => /\/vefverslun\//.test(b.getAttribute('href') || ''));
       if (vefverslun && !hiddenButtons.has(vefverslun) && vefverslun.style.order !== '1') vefverslun.style.order = '1';
+      // 10.11.2026 (Agnar): Hunter er FÖST efst, ofan við Vefverslun (order 0) — sami rökstuðningur: vistuð röð má ekki senda hann neðar.
+      const hunter = buttons.find(b => b.getAttribute('data-view') === 'hunter');
+      if (hunter && !hiddenButtons.has(hunter) && hunter.style.order !== '0') hunter.style.order = '0';
     } finally {
       inProgress = false;
     }
