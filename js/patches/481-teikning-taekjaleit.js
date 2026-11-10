@@ -27,6 +27,8 @@
     if (document.getElementById('_t481-css')) return;
     const st = document.createElement('style'); st.id = '_t481-css';
     st.textContent = '' +
+      /* 10.11: stadsett taeki sokkva nidur a botn (CSS order — DOM-rodin og visitolur haldast) */
+      '#fp-unit-list{display:flex;flex-direction:column}#modal-floorplan.fp-simi #fp-unit-list{flex-direction:row}' +
       '#fp-tl-sia{position:sticky;top:-12px;z-index:5;margin:-2px -12px 8px;padding:8px 12px 8px;background:rgba(26,24,20,.99);border-bottom:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:6px}' +
       '#fp-tl-sia .tl-leit{position:relative}' +
       '#fp-tl-sia input{width:100%!important;box-sizing:border-box!important;height:30px!important;padding:0 26px 0 9px!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.16)!important;background:rgba(255,255,255,.06)!important;color:#f1ece2!important;box-shadow:none!important;font:500 12px/1 var(--font,system-ui)!important}' +
@@ -135,6 +137,8 @@
       const sja = o.u.id === valid || (o.passar && (!v.s || o.st === v.s) && (!v.t || o.teg === v.t));
       const d = sja ? '' : 'none';
       if (rod.style.display !== d) rod.style.display = d;
+      const ord = (o.st === 'her' || o.st === 'annars') && o.u.id !== valid ? '1' : '';   // staðsett → neðst, nema valið
+      if (rod.style.order !== ord) rod.style.order = ord;
       if (sja) synd++;
     });
     // tómt?
