@@ -128,6 +128,40 @@
     '#companies-main .p2-teikn .hl{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid #edf0f4;font-size:14px}' +
     '#companies-main .p2-teikn .hl .k{flex:none;width:150px;font:500 10.5px ' + MONO + ';letter-spacing:.14em;text-transform:uppercase;color:#525b6b}' +
     '#companies-main .p2-teikn .tk{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}' +
+    /* Samskipti, þrískipt: teljarar + takkar | samtal | yfirlit (okkar eigin hnútar; gamla kortið er falið en lifir) */
+    G + ' > ._samskipti-host:not(.p2-sýna){display:none!important}' +
+    G + '.p2-gam > ._samskipti-host{display:block!important}' +
+    '#companies-main .p2-samsk{margin-top:10px;color:#fff;border-radius:14px;overflow:hidden;background:' + METAL + ';box-shadow:0 12px 30px -16px rgba(0,0,0,.55),0 0 0 1px rgba(20,24,34,.4)}' +
+    '#companies-main .p2-samsk .hd{padding:10px 16px;font:500 11.5px ' + MONO + ';letter-spacing:.18em}' +
+    '#companies-main .p2-samsk .gr{display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:12px;padding:0 12px 12px}' +
+    '#companies-main .p2-samsk .c1,#companies-main .p2-samsk .c3{display:flex;flex-direction:column;gap:8px;min-width:0}' +
+    '#companies-main .p2-samsk .kass{background:rgba(255,255,255,.07);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:6px;font-size:13.5px}' +
+    '#companies-main .p2-samsk .kass div{display:flex;justify-content:space-between;gap:8px}' +
+    '#companies-main .p2-samsk .kass b{font-family:' + MONO + '}' +
+    '#companies-main .p2-samsk .c1 .p2-til{justify-content:center;outline:1px solid rgba(255,255,255,.2)}' +
+    '#companies-main .p2-samsk .c1 .p2-til.p2-gr{outline:1px solid rgba(52,168,98,.55)}' +
+    '#companies-main .p2-samsk .c2{display:flex;flex-direction:column;gap:8px;min-width:0;background:linear-gradient(180deg,#f4f6f9,#e8ebf0);color:#11141c;border-radius:12px;padding:8px 12px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 0 0 1px rgba(20,24,34,.12)}' +
+    '#companies-main .p2-samsk .flip{display:flex;gap:18px;border-bottom:1px solid #c3cad5}' +
+    '#companies-main .p2-samsk .flip button{border:0;background:none;color:#525b6b;padding:6px 0;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;cursor:pointer;border-bottom:3px solid transparent}' +
+    '#companies-main .p2-samsk .flip button[aria-selected="true"]{color:#11141c;font-weight:700;border-bottom-color:#c92a2a}' +
+    '#companies-main .p2-samsk .msg{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px rgba(20,24,34,.1),0 1px 2px rgba(20,24,34,.08)}' +
+    '#companies-main .p2-samsk .av{width:32px;height:32px;border-radius:50%;background:#971515;color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px "IBM Plex Sans",sans-serif;flex:none}' +
+    '#companies-main .p2-samsk .av.ok{background:#3a3a41}' +
+    '#companies-main .p2-samsk .tx{flex:1;min-width:0;font-size:13.5px}' +
+    '#companies-main .p2-samsk .tx .m{color:#525b6b;font:12px ' + MONO + '}' +
+    '#companies-main .p2-samsk .tx .l{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}' +
+    '#companies-main .p2-samsk .pill{font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 10px;flex:none;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
+    '#companies-main .p2-samsk .pill.am{background:linear-gradient(150deg,#e0a93e,#9a6a14)}' +
+    '#companies-main .p2-samsk .svar{display:flex;gap:8px;margin-top:auto}' +
+    '#companies-main .p2-samsk .svar .inn{flex:1;min-width:0;height:34px;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#525b6b;text-align:left;cursor:pointer}' +
+    '#companies-main .p2-samsk .yf{background:rgba(255,255,255,.07);border-radius:10px;padding:10px 14px}' +
+    '#companies-main .p2-samsk .yf .t{font:10.5px ' + MONO + ';letter-spacing:.16em;color:#b9c1cf;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:4px}' +
+    '#companies-main .p2-samsk .yf .r{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:5px 0}' +
+    '#companies-main .p2-samsk .yf .r span:first-child{color:#b9c1cf}' +
+    '#companies-main .p2-samsk .yf .r b{text-align:right;overflow-wrap:anywhere}' +
+    '#companies-main .p2-samsk .yf a{color:#fff;text-decoration:none}' +
+    '#companies-main .p2-samsk .sig{font-size:12.5px;color:#d5dbe6;display:flex;flex-wrap:wrap;gap:6px}' +
+    '#companies-main .p2-samsk .sig span{background:rgba(255,255,255,.14);border-radius:99px;padding:2px 10px;color:#fff!important}' +
     /* ⋯-valmynd */
     '.p2-valm{position:absolute;z-index:60;min-width:230px;background:#fff;color:#11141c;border-radius:10px;box-shadow:0 14px 34px -10px rgba(0,0,0,.6),0 0 0 1px rgba(20,24,34,.2);padding:6px;display:flex;flex-direction:column}' +
     '.p2-valm button{border:0;background:none;text-align:left;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;padding:9px 12px;border-radius:7px;cursor:pointer;color:#11141c}' +
@@ -203,6 +237,22 @@
     d.samn = [];
     var im = sel(m, '.co-mynd img'); d.mynd = im ? im.getAttribute('src') : '';
     var gE = sel(m, '.b486-gatt'); d.gatt = gE ? { href: gE.getAttribute('href'), t: txt(gE) || 'Þjónustugátt ↗' } : null;
+    var sc = sel(m, '._samskipti-card');
+    if (sc) {
+      var tl = allt(sc, '._skx-tile'); var tv = function (i, q) { return tl[i] ? txt(sel(tl[i], q)) : ''; };
+      var ny = sel(sc, '._skx-nyjast'); var meta = ny ? allt(ny, '._skx-meta > span') : [];
+      d.sam = {
+        tala: txt(sel(sc, '.b405-talning .tala')),
+        opin: { a: tv(2, 'span'), b: tv(2, 'small') },
+        tengi: { a: tv(3, 'span'), b: tv(3, 'small'), tel: tl[3] && sel(tl[3], 'a') ? sel(tl[3], 'a').getAttribute('href') : '' },
+        fra: meta.filter(function (x) { return x.className.indexOf('_skx-chip') < 0 && !/^·$/.test(txt(x)); }).slice(0, 2).map(txt),
+        chips: meta.filter(function (x) { return /kunni|okkur|osvarad/.test(x.className); }).map(txt),
+        subj: ny ? txt(sel(ny, '._skx-subj')).replace(/[▾▸]\s*$/, '').trim() : '',
+        txt: ny ? txt(sel(ny, '._skx-txt')) : '',
+        sigs: allt(sc, '._smx-sig').map(txt),
+        imp: txt(sel(sc, '._smx-imp'))
+      };
+    } else d.sam = null;
     d.teikn = txt(sel(m, '._bupp-teikn-inn'));
     d.serupp = txt(sel(m, '._serupp-inn'));
     return d;
@@ -283,13 +333,44 @@
       '<button type="button" class="p2-til p2-silf" data-p2="brunaaaetlun">Brunaáætlun</button></div>';
   }
 
+  function samskiptiMarkup(d) {
+    var x = d.sam; if (!x) return '';
+    var fraKunna = x.chips.some(function (c) { return /kúnna/i.test(c); });
+    var bidur = x.chips.some(function (c) { return /ósvarað/i.test(c); });
+    var nafnFra = x.fra[0] || d.nafn || '';
+    var ini = nafnFra.split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+    var sima = (x.tengi.b || '').replace(/^[^\d+]+/, '');
+    var yf = function (k, v, tengill) { return v ? '<div class="r"><span>' + esc(k) + '</span><b>' + (tengill || esc(v)) + '</b></div>' : ''; };
+    return '<div class="hd">SAMSKIPTI</div><div class="gr">' +
+      '<div class="c1"><div class="kass">' +
+        (x.opin.a ? '<div><span>Opin mál</span><b>' + esc(x.opin.a) + '</b></div>' : '') +
+        (x.opin.b ? '<div><span>Beiðnir</span><b>' + esc(x.opin.b.replace(/\s*opnar beiðnir/, '')) + '</b></div>' : '') +
+        (x.tala ? '<div><span>Færslur síðustu 12 mán.</span><b>' + esc(x.tala) + '</b></div>' : '') + '</div>' +
+        '<button type="button" class="p2-til p2-gr" data-p2="sam-nyr">+ Nýr póstur</button>' +
+        '<button type="button" class="p2-til" data-p2="sam-saga">Póstsaga</button>' +
+        '<button type="button" class="p2-til" data-p2="sam-afgr">Merkja afgreitt</button>' +
+        (x.imp ? '<button type="button" class="p2-til" data-p2="sam-imp">' + esc(x.imp) + '</button>' : '') +
+        '<button type="button" class="p2-til" data-p2="sam-meira">Meira</button></div>' +
+      '<div class="c2"><div class="flip" role="tablist"><button type="button" role="tab" data-p2="sam-tab-samtal" aria-selected="true">Samtal</button>' +
+        '<button type="button" role="tab" data-p2="sam-tab-allt" aria-selected="false">Allar færslur</button>' +
+        '<button type="button" role="tab" data-p2="sam-tab-vinna" aria-selected="false">Vinnusaga</button></div>' +
+        (x.subj || x.txt ? '<div class="msg"><span class="av' + (fraKunna ? '' : ' ok') + '">' + esc(ini) + '</span><div class="tx"><b>' + esc(nafnFra) + '</b> <span class="m">' + esc(x.fra[1] || '') + '</span>' +
+          (x.subj ? '<div class="l"><b>' + esc(x.subj) + '</b></div>' : '') + (x.txt ? '<div class="l">' + esc(x.txt) + '</div>' : '') + '</div>' +
+          (bidur ? '<span class="pill am">Svar bíður</span>' : '<span class="pill">' + (fraKunna ? 'Svarað' : 'Frá okkur') + '</span>') + '</div>' : '<div class="msg"><div class="tx">Engin samskipti skráð</div></div>') +
+        '<div class="svar"><button type="button" class="inn" data-p2="sam-svara">Skrifa svar til ' + esc(d.nafn) + '…</button><button type="button" class="p2-til p2-gr" data-p2="sam-svara">Svara</button></div></div>' +
+      '<div class="c3"><div class="yf"><div class="t">YFIRLIT SAMSKIPTA</div>' + yf('Aðili', d.nafn) + yf('Tengiliður', d.tengilidur) +
+        yf('Netfang', x.tengi.a) + yf('Sími', sima, sima ? '<a href="' + esc(x.tengi.tel || 'tel:' + sima) + '" class="p2-n">' + esc(sima) + '</a>' : '') + '</div>' +
+        (x.sigs.length ? '<div class="yf"><div class="t">MERKI Í PÓSTSÖGU</div><div class="sig">' + x.sigs.map(function (g) { return '<span>' + esc(g) + '</span>'; }).join('') + '</div></div>' : '') + '</div>' +
+      '</div>';
+  }
+
   /* ---------- samsetning ---------- */
   var sig = '';
   function byggja(m) {
     var banner = sel(m, '.co-banner');
     var h = document.getElementById('p2-haus');
     if (!h || h.parentNode !== m) {
-      ['p2-haus', 'p2-glugg', 'p2-athug', 'p2-flipar', 'p2-teikn'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
+      ['p2-haus', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
       h = document.createElement('div'); h.id = 'p2-haus'; h.className = 'p2-haus p2-nytt';
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
       banner.insertAdjacentElement('beforebegin', h); h.insertAdjacentElement('afterend', g);
@@ -318,7 +399,7 @@
     KAFLAR.forEach(function (k) { var e = sel(m, k[0]); if (e && e.parentNode === m && e.getAttribute('data-p2t') !== k[1]) e.setAttribute('data-p2t', k[1]); });
     /* allt annað sem var beint barn og er enn sýnilegt í gamla prófílnum án flipa → Aðrar þjónustur (Nýr staður, Bæta við tæki …) */
     allt(m, ':scope > div').forEach(function (e) {
-      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-flipar' || e.id === 'p2-teikn') return;
+      if (e.id === 'p2-haus' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn') return;
       if (e === m.firstElementChild || e.classList.contains('co-banner') || e.classList.contains('_samskipti-host') || e.hasAttribute('data-p2t')) return;
       if (e.classList.contains('info-grid') || e.id === 't485-top') return;
       if (/Nýr staður/.test(e.textContent)) e.setAttribute('data-p2t', 'adrar');
@@ -345,6 +426,14 @@
     if (!(h.nextElementSibling === g && g.nextElementSibling === a && a.nextElementSibling === b)) { m.insertBefore(h, b); m.insertBefore(g, b); m.insertBefore(a, b); }
   }
 
+  /* Samskiptaboxið okkar situr rétt á undan gamla Samskipti-hnútnum (hann er falinn en lifir; „Allar færslur" sýnir hann) */
+  function samskiptaBox(m) {
+    var host = sel(m, '._samskipti-host'); var b = document.getElementById('p2-samsk');
+    if (!host) return;
+    if (!b) { b = document.createElement('div'); b.id = 'p2-samsk'; b.className = 'p2-samsk p2-nytt'; sig = ''; }
+    if (b.nextElementSibling !== host) host.insertAdjacentElement('beforebegin', b);
+  }
+
   function endurteikna(m) {
     var d = lesa(m);
     var s = JSON.stringify(d);
@@ -355,6 +444,8 @@
     h.innerHTML = haus(d); if (afturH) afturH();
     g.innerHTML = gluggi(d);
     t.innerHTML = teikn(d);
+    var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
+    if (sb && m.classList.contains('p2-gam')) { var tt = sb.querySelectorAll('.flip button'); if (tt[1]) { tt[0].setAttribute('aria-selected', 'false'); tt[1].setAttribute('aria-selected', 'true'); } }
     var c = sel(m, '#p2-flipar button[data-t="slt"] .c');
     if (c) { c.textContent = d.nSlt ? d.nSlt : ''; c.hidden = !d.nSlt; }
   }
@@ -422,6 +513,17 @@
     else if (a === 'breyta') umbod(m, '.b405-rod > button.btn-outline', /Breyta/);
     else if (a === 'meira') valmynd(m, b);
     else if (a === 'fleiri') umbod(m, '._anf-takki');
+    else if (a === 'sam-svara') umbod(m, '._skx-svara');
+    else if (a === 'sam-nyr') umbod(m, '._skx-nyr');
+    else if (a === 'sam-afgr') umbod(m, '._ssk-mark');
+    else if (a === 'sam-imp') umbod(m, '._smx-imp');
+    else if (a === 'sam-saga') { m.classList.add('p2-gam'); umbod(m, '._ssk-toggle'); }
+    else if (a === 'sam-meira') { m.classList.add('p2-gam'); umbod(m, '.b411-samsk-meira'); }
+    else if (/^sam-tab-/.test(a)) {
+      var tb = a.replace('sam-tab-', ''); m.classList.toggle('p2-gam', tb !== 'samtal');
+      allt(m, '#p2-samsk .flip button').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      if (tb === 'allt') { var tg = sel(m, '._ssk-toggle'); if (tg && !sel(m, '._ssk-full')) tg.click(); }
+    }
     else if (a === 'rf') { e.preventDefault(); umbod(m, '.co-banner-name [data-rf-opna]'); }
     else if (a === 'bgr') umbod(m, '#bgr-takki');
     else if (a === 'hrey') umbod(m, '._hy-takki');
@@ -439,7 +541,7 @@
     if (!m || !sel(m, '.co-banner') || !sel(m, '.b405-plata, .co-banner-name')) return;
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
-    byggja(m); merkja(m); raðaGlugga(m); raða(m); athugasemd(m); endurteikna(m);
+    byggja(m); merkja(m); raðaGlugga(m); samskiptaBox(m); raða(m); athugasemd(m); endurteikna(m);
   }
 
   setInterval(tikk, 600);
