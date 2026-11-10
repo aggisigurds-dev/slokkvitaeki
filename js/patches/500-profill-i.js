@@ -249,7 +249,14 @@
     var dalkur2 = (hus ? '<div class="p2-sec">Húsið</div>' + hus : '') +
       (kjor ? '<div class="p2-sec' + (hus ? ' p2-næsta' : '') + '">Þjónusta og kjör</div>' + kjor : '');
     var bun = '';
-    if (d.nSlt) bun += '<div class="p2-kv">' + HAK + '<span class="v">Slökkvitæki</span><span class="n">' + d.nSlt + '</span></div>';
+    if (d.nSlt) {
+      var teg = [];
+      d.flokkar.forEach(function (f) {
+        var n = /(\d+)\s*tæki/.exec(f); var nm = f.replace(/\s*\d+\s*tæki.*/, '').replace(/^[^A-Za-zÁ-ÿ]+/, '').trim();
+        if (n && nm && !/slöng|kefli|reykskynj/i.test(nm)) teg.push(esc(nm) + ' ' + n[1]);
+      });
+      bun += '<div class="p2-kv">' + HAK + '<span class="v">Slökkvitæki' + (teg.length > 1 ? '<br><small style="font-weight:500;color:#525b6b">' + teg.join(' · ') + '</small>' : '') + '</span><span class="n">' + d.nSlt + '</span></div>';
+    }
     d.flokkar.forEach(function (f) {
       var n = /(\d+)\s*tæki/.exec(f); var nm = f.replace(/\s*\d+\s*tæki.*/, '');
       if (n && /slöng|kefli/i.test(nm)) bun += '<div class="p2-kv">' + HAK + '<span class="v">Brunaslöngur</span><span class="n">' + n[1] + '</span></div>';
