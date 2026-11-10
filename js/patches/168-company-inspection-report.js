@@ -20,6 +20,23 @@
   window.__companyInspectionReportInstalled = true;
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
+
+  /* 10.11.2026 (Agnar: „Fyrir hönd Slökkvitækis … velja Agnar, Bjarndís eða Brynjar … undirskriftin kemur sjálfkrafa þegar hún er
+   * komin inn, þangað til nafnið skrifað"; „Hákon sjálfgefinn skoðunaraðili, Elías er hættur"):
+   *   • Skoðunaraðili er sá sem skoðaði (sjálfgefið Hákon) — sérstök lína á skýrslunni.
+   *   • Undirritun er sá sem skrifar undir f.h. félagsins (trip.undirritun). Hafi hann undirskriftarmynd (app_settings.undirskriftir[nafn],
+   *     PNG með gegnsæjum bakgrunni) fer myndin á skýrsluna með nafninu undir; annars aðeins nafnið skrifað.
+   * Myndir bætast við í app_settings.undirskriftir án kóðabreytingar; listinn hér að neðan ræður hverjir eru í valinu. */
+  const UNDIRRITENDUR = ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+  const SKODUNARADILI_SJALFGEFINN = 'Hákon';
+  function undirskriftarMynd(nafn) {
+    try {
+      const m = (window.AppSettings && AppSettings.path && AppSettings.path('undirskriftir')) || {};
+      const v = m[String(nafn || '')];
+      return (typeof v === 'string' && /^data:image\/png;base64,/.test(v)) ? v : '';
+    } catch (_) { return ''; }
+  }
+  window.UttektUndirritun = { listi: UNDIRRITENDUR, skodunaradili: SKODUNARADILI_SJALFGEFINN, mynd: undirskriftarMynd };
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -187,9 +204,20 @@
     doc.splitTextToSize(pdfText(athugasemdir), CW).forEach(line => { doc.text(line, ML, y); y += 5.2; });
     y += 18;
 
-    // Sign-off
-    doc.text(pdfText('Fyrir hönd Slökkvitæki ehf'), ML, y); y += 16;
-    doc.text(pdfText(skodunaradili || '_______________________'), ML, y);
+    // Sign-off: „Fyrir hönd Slökkvitæki ehf" → undirskrift (mynd) eða nafn skrifað; síðan skoðunaraðili sem sérlína.
+    doc.text(pdfText('Fyrir hönd Slökkvitæki ehf'), ML, y); y += 3;
+    const _nafnU = String(ctx.undirritun || '').trim();
+    let _myndOk = false;
+    if (ctx.undirskrift) {
+      try {
+        doc.addImage(ctx.undirskrift, 'PNG', ML, y, 44, 44 * (214 / 481));   // hlutföll skannaðrar undirskriftar (481×214)
+        _myndOk = true;
+      } catch (_) { _myndOk = false; }
+    }
+    y += _myndOk ? 21 : 13;
+    doc.text(pdfText(_nafnU || '_______________________'), ML, y); y += 8;
+    doc.setFontSize(9.5);
+    doc.text(pdfText('Skoðunaraðili: ' + (skodunaradili || SKODUNARADILI_SJALFGEFINN)), ML, y);
 
     return doc.output('blob');
   }
@@ -258,7 +286,9 @@
     const trip = loadTripState(coId);
     const annad = (trip.notes || '').trim();
     const athugasemdir = (trip.athugasemdir_skyrsla || '').trim() || 'Engar athugasemdir';
-    const skodunaradili = (trip.skodunaradili || '').trim();
+    const skodunaradili = (trip.skodunaradili || '').trim() || SKODUNARADILI_SJALFGEFINN;
+    const undirritun = (trip.undirritun || '').trim();
+    const undirskrift = undirritun ? undirskriftarMynd(undirritun) : '';
 
     const now = new Date();
     // 2026-06-02: Agnar asked for the inspection date in dd.mm.yyyy instead of
@@ -282,7 +312,7 @@
     const _mi = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudur).toLowerCase());
     const monthIdx = _mi >= 0 ? _mi + 1 : now.getMonth() + 1;
 
-    const ctx = { co, counts, annad: annadMed, athugasemdir, skodunaradili, monthPhrase, ar: arYear, monthIdx };
+    const ctx = { co, counts, annad: annadMed, athugasemdir, skodunaradili, undirritun, undirskrift, monthPhrase, ar: arYear, monthIdx };
     const html = buildReportHtml(ctx);
     showModal(html, co, opts, ctx);
   }
@@ -363,8 +393,12 @@
         <div style="font-size:13px;color:#0f172a;line-height:1.7">
           Fyrir hönd <strong>Slökkvitæki ehf</strong>
         </div>
-        <div style="margin-top:28px;font-size:13px;color:#0f172a">
-          ${skodunaradili ? esc(skodunaradili) : '_______________________'}
+        <div style="margin-top:8px;font-size:13px;color:#0f172a">
+          ${ctx.undirskrift ? `<img src="${ctx.undirskrift}" alt="Undirskrift" style="display:block;height:64px;width:auto;margin-bottom:2px">` : '<div style="height:28px"></div>'}
+          ${ctx.undirritun ? esc(ctx.undirritun) : '_______________________'}
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#334155">
+          Skoðunaraðili: ${esc(skodunaradili || SKODUNARADILI_SJALFGEFINN)}
         </div>
 
       </body></html>`;

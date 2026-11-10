@@ -83,7 +83,7 @@
   // núllast — heimsóknin er búin — en RITAÐIR REITIR lifa áfram. Þeir eru
   // hvort eð er réttir fyrir næstu heimsókn (sami skoðunaraðili, sami mánuður)
   // og starfsmaðurinn breytir þeim frekar en að slá þá inn upp á nýtt.
-  const KEEP_FIELDS = ['skodunaradili', 'skodun_manudur', 'skodun_ym', 'skodun_dagsetning',
+  const KEEP_FIELDS = ['skodunaradili', 'undirritun', 'skodun_manudur', 'skodun_ym', 'skodun_dagsetning',
                        'athugasemdir_skyrsla', 'athugasemdir', 'invoice_text'];
   // 2026-08-17 (CRITICAL, staðfest í agent-villuleit): keep-skrifið eitt og sér
   // hreinsaði skýið ALDREI — deepMerge (85 + server) EYÐIR ekki lyklum, svo
@@ -734,7 +734,17 @@
     const bar = document.createElement('div');
     bar.className = '_vw-bar';
     bar.style.cssText = 'display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:flex-end';
+    // 10.11.2026 (Agnar): hver skrifar undir „Fyrir hönd Slökkvitæki ehf" á skýrslunni. Nafnið skrifað þar til undirskriftarmynd
+    // er komin (app_settings.undirskriftir[nafn]); þá kemur myndin sjálfkrafa. Vistast í trip.undirritun (samstillist milli véla).
+    const _coU = getCompanyId();
+    const _curU = (_coU && loadTrip(_coU).undirritun) || '';
+    const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
     bar.innerHTML =
+      '<label style="display:flex;align-items:center;gap:6px;margin-right:auto;font-size:12px;font-weight:700;color:#334155">✍ Undirritar f.h. Slökkvitækis' +
+      '<select id="_vw-undirritun" style="padding:8px 10px;border:1px solid #94a3b8;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#0f172a">' +
+      '<option value="">— velja —</option>' +
+      _listU.map(n => '<option value="' + n + '"' + (n === _curU ? ' selected' : '') + '>' + n + '</option>').join('') +
+      '</select></label>' +
       // Blár „Vista / í Vinnslu": setur fyrirtækið í vinnslu → birtist á
       // ÞjónustuVerkstæði (áminning: skýrsla ekki búin) + blátt á Fyrirtæki í
       // þjónustu. Speglar sömu stöðu og ✓-takkinn á listanum (arsskodun_customers).
@@ -743,6 +753,13 @@
       '<button id="_vw-finish" type="button" style="padding:10px 18px;background:#166534;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)">' +
       '✓ Klára heimsókn — búa til reikning</button>';
     section.appendChild(bar);
+    section.querySelector('#_vw-undirritun').addEventListener('change', (ev) => {
+      const id = getCompanyId(); if (!id) return;
+      const st = loadTrip(id) || {};
+      st.undirritun = ev.target.value || null;
+      saveTrip(id, st);
+      if (window.Toast && Toast.show) Toast.show(ev.target.value ? '✍ Undirritar: ' + ev.target.value : 'Undirritun afvalin');
+    });
     section.querySelector('#_vw-finish').addEventListener('click', runVisitWorkflow);
     section.querySelector('#_vw-invinnsla').addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
   }

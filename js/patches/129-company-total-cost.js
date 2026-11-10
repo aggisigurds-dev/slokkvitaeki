@@ -1264,7 +1264,9 @@
       }
     } catch (_) {}
 
-    const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
+    // 10.11.2026 (Agnar: „Hákon sjálfgefinn skoðunaraðili alltaf, Elías er hættur"): tómur reitur = Hákon.
+    const skodunaradili = (tripState.skodunaradili != null && String(tripState.skodunaradili).trim() !== '')
+      ? String(tripState.skodunaradili) : ((window.UttektUndirritun && UttektUndirritun.skodunaradili) || 'Hákon');
     // 2026-06-09: custom inspection date — Agnar wants to bill/report for the
     // actual month the visit happened, not "today". Two free-text fields:
     //   • skodun_manudur  — month label (e.g. "Maí") → "Framkvæmd í Maí 2026"
@@ -1348,7 +1350,7 @@
       // mjóa hægri-dálkinum ("boxes don't line up"). Takkar fá sína eigin röð.
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">🧑 Skoðunaraðili' +
-          '<input id="_ctc-skodun" type="text" list="_ctc-skodun-dl" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
+          '<input id="_ctc-skodun" type="text" list="_ctc-skodun-dl" value="' + esc(skodunaradili) + '" placeholder="t.d. Hákon"' +
             'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
         '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">📅 Framkvæmd' +
