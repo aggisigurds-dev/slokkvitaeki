@@ -76,3 +76,18 @@ hegðun gamla prófílsins á localhost (þekkt: listinn sækir með öðrum lyk
 
 - **Athugasemd** er ein mjó lína neðst í glugganum (✎ „Athugasemd… (vistast sjálfkrafa)"). Hún er umboð: skrifar í `.co-banner-note` og kallar á `input` svo `Companies.onBannerNoteInput(id, texti)` vistar á sama stað og áður (prófað með upptökutæki, ekkert vistað). Gamli reiturinn er áfram í bannernum.
 - **Reglan „ekki eyða reitum"**: enginn reitur er fjarlægður. Hver er annaðhvort sýndur í glugga/flipa eða falinn þar til gögn eru skráð og nást þá með „Breyta / bæta við upplýsingum" (gamli bannerinn, allir reitir og takkar óbreyttir) eða í flipanum sem hann tilheyrir (kafli 1, dálkurinn „Staða"). „Samningur"-línan í glugganum var tekin út aðeins sem YFIRLITSLÍNA (óáreiðanleg lestur); samningskortin sjálf eru óbreytt í flipanum „Skjöl og reikningar".
+
+## 6. Lokaumferð 10.11.2026 (allt á bak við `?prof=2`)
+
+| Hluti | Hvað | Hvernig prófað |
+|---|---|---|
+| Tækjatölur eftir tegund | „Slökkvitæki 73 / Duft 15 · CO₂ 58" eins og gamli listinn | 117, 186, 443 á localhost |
+| **Samskiptabox þrískipt** | `#p2-samsk`: teljarar + takkar \| samtal (flipar Samtal / Allar færslur / Vinnusaga, nýjasti póstur í tveimur línum, ljós miðja) \| Yfirlit samskipta (+ merki í póstsögu). Allir takkar eru umboð fyrir 286 (`._skx-svara`, `._skx-nyr`, `._ssk-toggle`, `._ssk-mark`, `._smx-imp`, `b411-samsk-meira`). Gamla Samskipti-kortið er falið en lifir; „Póstsaga"/„Allar færslur"/„Meira" sýna það. | smellt á Póstsaga / Samtal / Allar færslur / Svara (opnar `_rp-modal`, ekkert sent) |
+| **Sími (375 px)** | gámafyrirspurn `@container p2c (max-width:760px)` + `@media (max-width:900px)`; allt í einum dálki, flipar skruna lárétt, snertimörk ≥ 44 px | 375 px í Chrome: engin lárétt skrun (scrollWidth 375), haus/gluggi/Samskipti lesin á skjámynd |
+| **Aðrar þjónustur** | `#p2-adrar`: línur úr „Kerfi og þjónusta" (450: heiti · krafa · hver þjónar · ástand) án slökkvitækja/brunakerfis; „+ Bæta við þjónustu..." opnar Kerfi og þjónusta (`[data-kt=opna]`) þar sem kerfi eru skráð. Engin ný gagnalíkön, engir dálkar fyrir samning/síðast/næst (engin heimild). | smellt á takkann (aria-expanded=true) |
+| Röðun | `#companies-main.p2` er flex-dálkur og `order` raðar kaflana — enginn hnútur fluttur (reglan um tvo pabba) | allir 7 flipar: rétt sýnilegir kaflar í réttri röð |
+
+**Gildra sem fannst (skráð svo hún bíti ekki aftur):** `js/patches/00-legacy.js` bætir stöðuvali (Active / Í geymslu / Í lagi …) við *hverja* `<table>` með „Staða"-dálk og lykill = fyrsti reitur — og það val SKRIFAR í `uttaeki.status` (`.eq('serial', <fyrsti reitur>)`). Fyrsta útgáfa „Aðrar þjónustur" var `<table>` og fékk slíkt val á hverja röð (Slöngukefli o.s.frv.). Lagað: engin `<table>` og dálkurinn heitir „Ástand". **Ný síða sem notar `<table>` með „Staða"-hausnum í prófílnum fær sama val.**
+Líka: `.pill` er app-víður klasi (grár); okkar flögur heita `p2-pl`.
+
+**Ekki gert / ósannreynt:** vistun úr reitum (engin skrif í prófi); athugasemdarlína prófuð með upptökutæki, ekki raunvistun; ekki skoðað í raun-S26 (aðeins 375 px Chrome + 980 px með viewmode=mobile); Brunakerfisþjónusta-flipinn sýnir enn aðeins „Kerfi og þjónusta"-kaflann; „Vinnusaga"-flipinn sýnir gamla kortið (engin sérstök vinnusöguheimild fundin).
