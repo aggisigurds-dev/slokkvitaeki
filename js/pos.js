@@ -1522,7 +1522,23 @@
       // er_i_thjonustu=false → birtast í "Allir viðskiptavinir" en EKKI í
       // Fyrirtækjaþjónustu-listanum (sbr. 280-company-service-toggle).
       // Rusl-nöfn eru merkt review_flag svo hægt sé að hreinsa/flytja síðar.
-      if(state.customer.mode==='kt'&&state.customer.kt&&!state.customer.co_id){
+      // 10.11.2026 (Agnar) — AFGREIÐSLA ÁN STOFNUNAR. „Það hefur verið smá flókið að eiga við einstaklingskennitölur, hjá þeim sem maður ætlar
+      // sér ekkert að skrá almennilega í kerfið." Valmyndin í leitinni (114: „+ Afgreiðsla án stofnunar") setur state.customer.an_stofnunar
+      // = hreina kt. Þá er auto-stofnunin hér fyrir neðan SLEPPT: engin röð í customers_base/fyrirtaeki. Salan sjálf er óbreytt — insertið
+      // hér að ofan skrifaði þegar nafn (eða „Viðskiptavinur") og raun-kt í customer_kt, svo reikningurinn kemur eins og úr kennitölu.
+      // Merkið er aðeins virt ef það á við NÚVERANDI kt (annar kúnni valinn á eftir → merkið fellur af sjálfu sér) og enginn kúnni er valinn.
+      // `solur.an_stofnunar` greinir ásetning frá bilun fyrir vörðinn audit-solu-id; mistakist skrifið stendur salan (ALLTAF LEYFA VISTUN).
+      var _anStofn=!!(state.customer.an_stofnunar&&!state.customer.co_id&&state.customer.mode==='kt'&&String(state.customer.an_stofnunar)===String(state.customer.kt||'').replace(/[^0-9]/g,''));
+      if(_anStofn){
+        try{
+          var _mr=await DB.sb.from('solur').update({an_stofnunar:true}).eq('id',sr.data.id);
+          if(_mr&&_mr.error)throw _mr.error;
+        }catch(_me){
+          console.warn('[POS] an_stofnunar merki:',_me);
+          try{if(window.logProblem)window.logProblem('sala_an_stofnunar_merki','sala '+sr.data.id+' — '+String(_me&&_me.message||_me));}catch(_){}
+        }
+      }
+      if(!_anStofn&&state.customer.mode==='kt'&&state.customer.kt&&!state.customer.co_id){
         var cleanKt=state.customer.kt.replace(/[^0-9]/g,'');
         if(cleanKt==='9999999999'){
           // Staðgreitt walk-in án kennitölu — engin kúnnastofnun, bara nafn á kvittun.

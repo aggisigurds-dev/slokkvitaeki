@@ -26,6 +26,8 @@
   window.__unifiedPosSearchInstalled = true;
 
   const STAÐGREITT_KT = '999999-9999';
+  // 10.11.2026: hrein kt þegar „+ Afgreiðsla án stofnunar" er virk ('' = venjulegt „án kennitölu"). Sést bæði í wireSearch og selectCustomer.
+  let _ostofnKt = '';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -658,14 +660,14 @@
       // Walk-in form (hidden until user clicks Án kennitölu) — soft green
       '<div id="_ups-walkin-form" style="display:none;margin-top:8px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.05em">⚡ Án kennitölu — kt: 999999-9999</div>' +
+          '<div id="_ups-walkin-title" style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.05em">⚡ Án kennitölu — kt: 999999-9999</div>' +
           '<button id="_ups-walkin-clear" type="button" style="background:transparent;border:none;color:#166534;font-size:14px;cursor:pointer;padding:0 4px">✕</button>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
           '<input id="_ups-walkin-name" type="text" placeholder="Nafn (valkvætt)" style="padding:8px 10px;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
           '<input id="_ups-walkin-phone" type="tel" placeholder="Sími (valkvætt)" style="padding:8px 10px;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
         '</div>' +
-        '<div style="margin-top:6px;font-size:11px;color:#166534">Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.</div>' +
+        '<div id="_ups-walkin-note" style="margin-top:6px;font-size:11px;color:#166534">Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.</div>' +
       '</div>';
 
     card.insertBefore(wrap, ktBox);
@@ -765,6 +767,51 @@
     }
     function runSearchPlus() { runSearch(); renderInvSection(); }
 
+    // ── Afgreiðsla án stofnunar (10.11.2026, ósk Agnars) ─────────────────────────────────────────────────────────
+    // „Það hefur verið smá flókið að eiga við einstaklingskennitölur, hjá þeim sem maður ætlar sér ekkert að skrá almennilega í kerfið."
+    // „+ Afgreiðsla án stofnunar" í fellilistanum opnar SAMA glugga og „⚡ Án kennitölu" (nafn + sími, bæði valkvæð).
+    //   • Með 10 stafa kennitölu í leitinni: salan heldur kennitölunni — reikningurinn kemur eins og úr kennitölu (nafn eða „Viðskiptavinur"
+    //     og kt) — en ENGINN viðskiptavinur er stofnaður: state.customer.an_stofnunar slekkur á auto-stofnuninni í pos.js (checkout).
+    //   • Án kennitölu (nafn slegið inn): sama og „⚡ Án kennitölu" með nafnið áfyllt (kt 999999-9999, engin skráning).
+    // Kennitala fer ALDREI í nafnareit.
+    function stillaPanel(kt) {
+      _ostofnKt = kt || '';
+      const t = document.getElementById('_ups-walkin-title');
+      const n = document.getElementById('_ups-walkin-note');
+      if (t) t.textContent = kt ? '+ Afgreiðsla án stofnunar — kt: ' + kt.slice(0, 6) + '-' + kt.slice(6) : '⚡ Án kennitölu — kt: 999999-9999';
+      if (n) n.textContent = kt
+        ? 'Enginn viðskiptavinur stofnaður — kennitalan fer á reikninginn (ásamt nafni ef það er skráð).'
+        : 'Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.';
+    }
+    function openOstofnun(kt10, nafn) {
+      if (!kt10) {
+        walkinBtn.click();   // endurstillir körfukúnna og setur kt 999999-9999
+        if (nafn) { walkinName.value = nafn; walkinName.dispatchEvent(new Event('input', { bubbles: true })); }
+        return;
+      }
+      const dashed = kt10.slice(0, 6) + '-' + kt10.slice(6);
+      try {
+        const st = window.POS && typeof POS.getState === 'function' && POS.getState();
+        if (st && st.customer) {
+          Object.assign(st.customer, { mode: 'kt', kt: dashed, nafn: '', simi: '', co_id: null, heimilisfang: '', afslattur_pct: 0, athugasemdir: '', an_stofnunar: kt10 });
+          st.discount_pct = 0;
+          try { if (typeof POS.rerenderDynamic === 'function') POS.rerenderDynamic(); } catch (_) {}
+        }
+      } catch (_) {}
+      // Reitirnir aðeins SÝNDIR — enginn input-atburður á #pos-kt: kt-uppfletting pos.js er ósamstillt og núllstillir nafn/síma á óþekktri kt.
+      const setV = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+      setV('pos-kt', dashed); setV('pos-nafn', ''); setV('pos-simi', '');
+      const memo = document.getElementById('pos-customer-memo'); if (memo) memo.style.display = 'none';
+      const selCard = document.getElementById('_ups-selected'); if (selCard) selCard.style.display = 'none';
+      walkinName.value = ''; walkinPhone.value = '';
+      stillaPanel(kt10);
+      walkinForm.style.display = '';
+      search.value = ''; results.style.display = 'none';
+      const r = document.getElementById('pos-kt-result');
+      if (r) r.innerHTML = '<span style="color:#166534;font-weight:600">+ Án stofnunar · kt ' + dashed + '</span>';
+      setTimeout(() => walkinName.focus(), 30);
+    }
+
     search.addEventListener('input', () => {
       const q = search.value.trim();
       invHTML = ''; invForQ = '';
@@ -831,6 +878,16 @@
           'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'#fff\'">' +
           '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>' + newLabel +
         '</div>';
+        // 10.11.2026 (ósk Agnars): „+ Afgreiðsla án stofnunar" — sjá openOstofnun() fyrir ofan. Í boði með fullri kt eða nafni (ekki 7–8 stafa tölu).
+        const ostofnKt = (qDigits.length === 10 && qDigits !== '9999999999') ? qDigits : '';
+        const ostofnNafn = (!ostofnKt && /[A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö]/.test(q)) ? q : '';
+        if (ostofnKt || ostofnNafn) {
+          html += '<div class="_ups-ostofn" style="padding:11px 14px;cursor:pointer;background:#fff;color:#0f172a;font-weight:600;font-size:13px;border-top:1px solid #e2e8f0" ' +
+            'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'#fff\'">' +
+            '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>Afgreiðsla án stofnunar' + (ostofnNafn ? ': „' + esc(ostofnNafn) + '"' : '') +
+            '<div style="margin:2px 0 0 18px;font-size:11px;font-weight:400;color:#64748b">' + (ostofnKt ? 'Kennitalan fer á reikninginn — enginn viðskiptavinur stofnaður' : 'Án kennitölu — enginn viðskiptavinur stofnaður') + '</div>' +
+          '</div>';
+        }
         if (!html) html = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px">Engin niðurstaða — prófaðu „⚡ Staðgreitt" eða sláðu inn fulla kennitölu.</div>';
         results.innerHTML = html;
         results.style.display = 'block';
@@ -879,6 +936,10 @@
         }
         results.querySelector('._ups-new').addEventListener('click', () => {
           openNewCustomerDialog(q, qDigits.length === 10 ? qDigits : '');
+        });
+        const ostofnRow = results.querySelector('._ups-ostofn');
+        if (ostofnRow) ostofnRow.addEventListener('click', () => {
+          openOstofnun(ostofnKt, ostofnNafn);
         });
         return;
       }
@@ -963,6 +1024,7 @@
     }
 
     walkinBtn.addEventListener('click', () => {
+      stillaPanel('');   // 10.11.2026: venjulegt „án kennitölu" (ekki „án stofnunar")
       walkinForm.style.display = '';
       // 2026-05-12: FULLY RESET previous customer state before entering
       // walk-in mode. Was carrying over the last customer's nafn/sími which
@@ -985,6 +1047,7 @@
           posState.customer.afslattur_pct = 0;
           posState.customer.athugasemdir = '';
           posState.customer.mode = 'walkin';
+          posState.customer.an_stofnunar = '';
         }
       } catch (_) {}
       // Set kt to 999999-9999 (drives existing pos.js auto-create logic)
@@ -1012,11 +1075,11 @@
     walkinName.addEventListener('input', () => {
       const manualNafn = document.getElementById('pos-nafn');
       if (manualNafn) {
-        manualNafn.value = walkinName.value || 'Staðgreitt';
+        manualNafn.value = walkinName.value || (_ostofnKt ? '' : 'Staðgreitt');   // án stofnunar: tómt nafn → „Viðskiptavinur" í checkout
         manualNafn.dispatchEvent(new Event('input', { bubbles: true }));
       }
       const r = document.getElementById('pos-kt-result');
-      if (r) r.innerHTML = '<span style="color:#166534;font-weight:600">⚡ Án kennitölu' + (walkinName.value ? ' · ' + esc(walkinName.value) : '') + '</span>';
+      if (r) r.innerHTML = '<span style="color:#166534;font-weight:600">' + (_ostofnKt ? '+ Án stofnunar · kt ' + _ostofnKt.slice(0, 6) + '-' + _ostofnKt.slice(6) : '⚡ Án kennitölu') + (walkinName.value ? ' · ' + esc(walkinName.value) : '') + '</span>';
     });
     walkinPhone.addEventListener('input', () => {
       const manualSimi = document.getElementById('pos-simi');
@@ -1028,6 +1091,8 @@
 
     walkinClear.addEventListener('click', () => {
       walkinForm.style.display = 'none';
+      _ostofnKt = '';
+      try { const stc = window.POS && typeof POS.getState === 'function' && POS.getState(); if (stc && stc.customer) stc.customer.an_stofnunar = ''; } catch (_) {}
       walkinName.value = '';
       walkinPhone.value = '';
       const ktInp = document.getElementById('pos-kt');
@@ -1055,6 +1120,7 @@
         posState.customer.kt = m.kennitala || '';
         posState.customer.simi = m.simi || '';
         posState.customer.co_id = (source === 'fyrirtaeki') ? (m.id || null) : null;
+        posState.customer.an_stofnunar = ''; _ostofnKt = '';   // 10.11.2026: alvöru kúnni valinn → „án stofnunar" fellur af
         posState.customer.mode = 'kt';   // 2026-08-19: að velja alvöru kúnna hreinsar „án kennitölu"-haminn (var sticky → auto-tenging slökkt)
         posState.customer.heimilisfang = m.heimilisfang || m.heimilisFang || '';
         // Always write, including 0 — otherwise the previous customer's % stays in the cart.

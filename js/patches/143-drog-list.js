@@ -271,7 +271,7 @@
       V + '.dr2-l1{display:flex;align-items:center;gap:9px;min-width:0}',
       V + '.dr2-nafn{min-width:0;font-size:15px;font-weight:600;line-height:1.25;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       V + '.dr2-vant{flex:none;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:5px;border:1px solid rgba(180,35,24,.28);background:#fdf1ef;font-size:11.5px;font-weight:600;color:#b42318;white-space:nowrap}',
-      V + '.dr2-eyttm{flex:none;font:700 10px/1 ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#b42318}',
+      V + '.dr2-oskr{flex:none;display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:5px;border:1px solid rgba(20,24,34,.16);background:rgba(255,255,255,.55);font-size:11.5px;font-weight:600;color:#5b6472;white-space:nowrap}', V + '.dr2-eyttm{flex:none;font:700 10px/1 ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#b42318}',
       V + '.dr2-l2{display:flex;flex-wrap:wrap;align-items:center;gap:6px 9px;font-size:12.5px;color:#5b6472}',
       V + '.dr2-stad{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:5px;border:1px solid rgba(20,24,34,.16);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);font-size:12px;font-weight:600;color:#2b313c;white-space:nowrap}',
       V + '.dr2-stad.rautt{color:#b42318}' + V + '.dr2-stad.graent{color:#0b6b3a}',
@@ -492,8 +492,13 @@
     // Þetta stöðvar ekkert og felur ekkert; það gerir muninn sýnilegan þar sem drögin eru afgreidd.
     const rukkaSidar = /reikning|sidar|síðar/i.test(String(s.greitt_med || ''));
     const enginnKunni = s.customer_id == null && s.customer_base_id == null;
-    const vantarKunna = rukkaSidar && enginnKunni && !s.hidden;
-    const kunnaMerki = vantarKunna
+    // 10.11.2026 (Agnar: „Enginn viðskiptavinur ætti í raun bara að vera óskráður viðskiptavinur … greitt síðar þýðir að hann greiðir þegar hann sækir og getur ekki fengið sendan reikning"): GREITT SÍÐAR án viðskiptavinar er EKKI bilun — einstaklingur staðgreiðir við afhendingu og engin krafa fer — svo það fær hlutlaust „Óskráður viðskiptavinur". Rauða viðvörunin helst aðeins fyrir „reikningur" án viðskiptavinar, þar sem krafan verður í raun ekki send.
+    const greittSidar = /sidar|síðar/i.test(String(s.greitt_med || ''));
+    const vantarKunna = rukkaSidar && enginnKunni && !s.hidden && !greittSidar;
+    const oskradur = greittSidar && enginnKunni && !s.hidden;
+    const kunnaMerki = oskradur
+      ? '<span class="dr2-oskr" title="Óskráður viðskiptavinur — greiðir þegar hann sækir; enginn reikningur eða krafa er send.">Óskráður viðskiptavinur</span>'
+      : vantarKunna
       ? '<span class="dr2-vant" title="Engin kennitala og enginn viðskiptavinur á sölunni — krafan verður ekki send. Opnaðu söluna og tengdu kaupandann.">' +
         _ik('<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><path d="M12 17v.5"/>', 12, 2.4) + 'Enginn viðskiptavinur</span>'
       : '';

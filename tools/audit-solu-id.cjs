@@ -54,7 +54,7 @@ async function sb(slod) {
 
   // ---- 1. Sölur -----------------------------------------------------------
   const solur = await sb(
-    'solur?select=num,status,samtals,customer_nafn,customer_kt,customer_id,customer_base_id,' +
+    'solur?select=num,status,samtals,customer_nafn,customer_kt,customer_id,customer_base_id,an_stofnunar,' +
     'krafa_sent_at,paid_at,greitt_med,is_credit,created_at,updated_at&created_at=gte.' + fra + '&order=created_at.desc'
   );
 
@@ -117,7 +117,14 @@ async function sb(slod) {
   const aldurDaga = s => (Date.now() - new Date(s.created_at).getTime()) / 864e5;
 
   const ollAnAudkennis = solur.filter(s => nafngreind(s) && s.customer_base_id == null
-    && RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit);
+    && RUKKA_SIDAR(s) && !s.paid_at && !s.is_credit
+    /* 10.11.2026 — AFGREIÐSLA ÁN STOFNUNAR er ÁSETNINGUR, ekki bilun. Agnar: „Enginn viðskiptavinur ætti í raun bara að vera óskráður
+     * viðskiptavinur, sem greitt síðar þýðir að hann greiðir þegar hann sækir og getur ekki fengið sendan reikning." Kassinn merkir
+     * söluna `an_stofnunar` (js/pos.js, „+ Afgreiðsla án stofnunar" í leitinni) — sama staða og gengið-inn (999999-9999): einstaklingur
+     * staðgreiðir við afhendingu, engin krafa fer. UNDANÞÁGAN ER ÞRÖNG: aðeins `greitt_sidar` (pickup). „reikningur" án tengingar
+     * helst rautt hér og í `orukkanlegar`, því þá á að rukka einhvern sem kerfið þekkir ekki. Ósótt vara er áfram talin í
+     * `gengidInnAllar` hér fyrir neðan (sama 30 daga mörk), svo hún hverfur ekki úr vaktinni. */
+    && !(s.an_stofnunar === true && s.greitt_med === 'greitt_sidar'));
   /* 31.10.2026 (allsherjar úttekt) — GREININ GAT ALDREI KVIKNAÐ.
    * Hún las úr `solur`, sem er aðeins sótt GLUGGI=14 daga aftur, en hrópar fyrst þegar sala er eldri en
    * GAMALT_DAGAR=30 daga. Sala sem varð nógu gömul til að fella vörðinn var löngu dottin úr glugganum. Mælt 31.10:
@@ -146,7 +153,7 @@ async function sb(slod) {
    * ÓMÆLT: hvort þær 19 voru í raun staðgreiddar á staðnum og paid_at aldrei sett. */
   const gengidInnAllar = await sb(
     'solur?select=num,status,samtals,customer_nafn,customer_kt,greitt_med,paid_at,is_credit,hidden,created_at' +
-    '&customer_kt=in.(999999-9999,9999999999)&paid_at=is.null&created_at=gte.' + FRA_GENGID + '&order=created_at'
+    '&or=(customer_kt.in.(999999-9999,9999999999),an_stofnunar.eq.true)&paid_at=is.null&created_at=gte.' + FRA_GENGID + '&order=created_at'
   );
   const bidurAfhendingar = gengidInnAllar.filter(s => RUKKA_SIDAR(s) && !s.is_credit && s.status !== 'void' && s.hidden !== true);
   const gamlarAllar     = bidurAfhendingar.filter(s => aldurDaga(s) > GAMALT_DAGAR);
