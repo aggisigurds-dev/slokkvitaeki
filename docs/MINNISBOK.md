@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-10 22:15 · 2149 virkar staðreyndir — 1238 prentaðar hér
+Sótt 2026-11-10 22:17 · 2150 virkar staðreyndir — 1239 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 118 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -101,10 +101,10 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [villuleit](#villuleit) | 25 |
 | [skyrslur](#skyrslur) | 25 |
 | [gatt](#gatt) | 23 |
+| [uttekt](#uttekt) | 22 |
 | [deploy](#deploy) | 22 |
 | [oryggi](#oryggi) | 22 |
 | [thjonustubord](#thjonustubord) | 22 |
-| [uttekt](#uttekt) | 21 |
 | [reikningar](#reikningar) | 20 |
 | [bord-flettur](#bord-flettur) | 19 |
 | [oryggisnet](#oryggisnet) | 19 |
@@ -1179,6 +1179,58 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sýnishornið (?demo=1 Center Hótel) sýnir 77 slöngur. Lifandi Center Hótel sýndi þankastrik og 245 slökkvitæki (slöngur innifaldar í total_devices). Lagað í PR 799: skýrsla fyrst, v_uttaeki_fid_rollup.bsl sem vara; slökkvitæki = total_devices minus slo. Plaza 44+39, heild 168+77. Heimaleiga 25 slöngu
   <br><sub>2026-08-30 · slokkvitaeki · kóði · chat</sub>
 
+### uttekt
+
+- **Skönnuð vinnublöð (10.11.2026): frumritin eru í Documents/Skönnuð invoice/Scan<dags>_<nr>.pdf á skrifstofuvél (myndin er JPEG-straumur í PDF, síður oft á hvolfi). Haus blaðsins: Fyrirtæki · Athugasemdir · Duft h y · Léttvatn h y · Kolsýra h y; breiði dálkurinn ber strik eða stærð, mjóu dálkarnir X. Útklippur í vinnublad_utklippur bera ekki hausinn, svo dálkar eru lesnir af heilu síðunni. Spjaldið á Þjónustuverkstæði sýnir dálkinn magn efst með stöðu (stada); x í fyrirtaeki.plan_note = samþykki Agnars á lestrinum.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Endurgerð vistaðrar úttektarskýrslu: (1) laga inspection_trips[id] í app_settings með nýju _ts svo localStorage-ferðin víki, (2) CompanyInspectionReport.open(id), virkja #_cir-save og smella, (3) customer_documents-röðin uppfærist á sama id en gamla PDF-skráin situr eftir í samningar/company_attachments/id/ og þarf að eyða með storage-API. Forskoðun er í #_cir-modal iframe. Prófað á 421, 422, 423, 737, 1187 þann 10.11.2026.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Úttektarskýrsla (patch 168) frá 10.11.2026: skýrsla án nafns er ógild (Agnar). Skoðunaraðili er sjálfgefið Hákon (Elías hættur), trip.skodunaradili. Undirritandi f.h. Slökkvitæki ehf er valinn við Klára heimsókn (#_vw-undirritun: Agnar Sigurðsson / Bjarndís / Brynjar) og vistast í trip.undirritun. Undirskriftarmynd: app_settings.undirskriftir[nafn] = PNG data-URL (gegnsær bakgrunnur, hlutföll 481x214); til = mynd á línu + nafn undir, annars nafnið eitt. Agnars er komin, Bjarndísar og Brynjars vantar. Ný mynd þarf enga kóðabreytingu (app_settings_merge).**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **06.10.2026 leyfði Agnar að pörin Þingholt 2026 ↔ R-000804 (frávik 0) og Plaza 2025 ↔ R-107257 (frávik 0,5) yrðu tengd aftur þótt þau hefðu verið aftengd handvirkt 24.08.** _(likely)_
+  <br>'Þitt að úrskurða: ... mátt þá tengja það aftur'. Leyfið var um þessi tvö pör, ekki almennt umboð.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Reikningur = skýrsla = tækjalisti: pörun skýrslu og reiknings á að byggja á magni hvers tækis eftir tegund, mánuði og ári, óháð nöfnum og heimilisföngum, og eldri skjöl eru ekki alltaf marktæk.**
+  <br>[rule; agents: sara-organizer, sara-coworker, natalie, rukkari, kunnaskra] 06.10.2026: 'Invoice=skýrsla=tækjalisti' og 'Ekki alltaf að marka eldri skjöl'; Agnar tekur saman reikninga 2022-2024 sjálfur. Verkfæri fyrir rekstrarfélög á að skrá tækjafjölda eftir tegund (ný, hlaðin, yfirfarin) úr skýrslu
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Vinnublað er heimildin um HEIMSÓKN. Skýrsla með customer_documents.source=app (87 af 352 árið 2026) án sölu og án vinnublaðs er ENGIN sönnun um að farið hafi verið (source=gdrive, 265 skannaðar, eru raunveruleg blöð) — þá er þetta akstur sem gleymdist, ekki krafa. Skoðunaraðili á eftir-gerðri skýrslu án vinnublaðs er alltaf Hákon; sjálfvirki textinn dugar. „bíða" frá Agnari þýðir bíða — ekki eyða.**
+  <br>Agnar 20.09.2026 20:54 og 21:21–21:23. Aðstoðarmaður las „bíða" sem „eyða" og henti skýrslu í Drive-rusl (næst ekki til baka um MCP). sara_yfirferd á aðeins 63 blöð skönnuð 9.–14.09 → „ekkert blað" sannar ekkert um ~300 aðra staði.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 2fe4ef19 · claude-code</sub>
+- **Blár punktur í Ársskoðun = reikningur til en engin skýrsla. Regla Agnars 08.09.2026: skrá tækjafjölda úr reikningnum (tools/uttekt-graen-af-reikningi.cjs) og merkja klarad svo punkturinn verði grænn — en BÚA ALDREI TIL skýrslu („má ekki þykjast"). Tækjatala er tala, ekki saga: Crinis blár 2025 og 2026 → generera EINU sinni.**
+  <br>Lota 487c5a12 08.09.2026 14:17.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 487c5a12 · claude-code</sub>
+- **ÁÆTLAÐ VIRÐI vs RAUNREIKNINGUR á Ársskoðun eru TVÆR ÓLÍKAR SPURNINGAR, ekki sama talan með skekkju. Áætlunin (153 estimated_yearly) = Σ(tæki × (yfirferð+hleðsla) × 1,24) + skýrslugerð + akstur×margfaldara — líkan af heilu þjónustuári. Raunreikningurinn (129, geymdur í inspection_trips[id].computed.total) = ÞESSI heimsókn með þeim valum sem tæknimaðurinn gerði (yfirferð/hleðsla/nýtt per tæki, aukalínur, afsláttur, réttur akstursfjöldi). Mælt 08.09.2026 á 51 félagi sem á bæði: hlutfall raun/áætlun 0,907 en dreifing frá ×0,22 upp í ×4,13 — 20 hærri, 25 lægri. Þess vegna er ekki hægt að leiða raun af áætlun né öfugt, og þess vegna eru aðeins ~88 raunreiknuð: talan verður til við að einhver opni fyrirtækið og verðleggi heimsóknina.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Tómur tækjalisti í Ársskoðun (08.09.2026, 59 félög): stærsta skýringin er TVÍTEKNING — 19 af 59 eiga systkinaröð sem ber tækin (Álfaskeið 78-80 vs 257, Bílabúð Benna Fiskislóð vs 532, Flétturima 16 vs 301, Lindaberg vs 208 T-10, Hjarðarból vs 697 Grasnytjar). Sex úttektarskýrslur eru auk þess skráðar á rangt félag — kt í PDF-inu á sér alltaf raunverulegt annað félag. Tvö skjalanna eru ekki úttektarskýrslur heldur þjónustusamningur og brunakerfis-skýrsla.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Úttektarskýrslu-tengingar í customer_documents eru að stórum hluta NAFNAÁGISKUN sem kerfið merkti sjálft vafasama (K.Rickter.pdf -> K-50 ehf, Lyfja Selfossi -> SE ehf, Fiskbúð Suðurlands -> Heilbrigðisstofnun Suðurlands). 26 af 36 skjölum hjá vinnulista-hópnum bera hvorki drive_file_id né storage_path (dauðir Drive-hlekkir hreinsaðir 30.07.2026). arsskodun_report_facts.report_year hjá þeim hópi er því ekki traust — þar með sex 2026-stimplar. Master-mappan (1494 skrár, /api/drive-filelist) á ENGA skrá fyrir 41 af 63 félögum vinnulistans.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Ársskoðun 153: 🕶 Hide-takki á röðinni í ⚡-ham (08.09.2026) skrifar fyrirtaeki.ovisst — SAMA dálk og 🕶 Óvissir í patch 157, svo eitt felu-merki gildir á báðum síðum. Faldir hverfa úr öllum sýnum nema 🕶 Faldir-flipanum en ALDREI úr leit. Per-röð skrif, ekki settings-blobbið (last-write-wins með fjórum vélum).**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Ársskoðun-borðið (patch 153): mánaðar-flögurnar töldu úr arsAll (aðeins félög með skráðan búnað) meðan sían sjálf keyrði á allt borðið — „Án mánaðar" sagði 38 en smellurinn skilaði 93. Lagað 08.09.2026: monthCounts kemur nú úr filteredSorted({ignoreMonths:true}), sama mynstur og pnrPool. Regla: hver teljari á flögu VERÐUR að lesa úr sama úrvali og smellurinn skilar.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **SKÝRSLULESTUR ÚR DRIVE, fyrsti áfangi 08.09.2026: 35 skýrslur lesnar fyrir félög á Fyrirtæki-í-þjónustu borðinu sem vantaði mánuð eða tæki. 0 villur, 24 skiluðu tækjatölu og mánuði. SÖNNUN að lesarinn er réttur: Nesdekk Dekkjalager mældist áður 'reikningur 16 · skýrsla 0' í tríóinu — skýrslan les núna 16. Reikningurinn hafði alltaf rétt fyrir sér og skýrslutalan var lesvilla. Skrifað: 10 nýjar raðir + 4 uppfærðar (níu sleppt af vörn sem skrifar ekki yfir betri gögn). Mánuðir án gildis 144 -> 135. Afrit backup_report_facts_lestur_20260908. ÓLESIÐ ENN: brunakerfisskýrslur eru með ÖÐRU SNIÐI og lesarinn kann þær ekki (Hlíðasmári 15/17/19, JM Veitingar). GRUNSAMLEGT: Pure Deli les 51 tæki og K Apartments 41 — Pure Deli var sleppt viljandi þangað til Agnar staðfestir að skýrslan sé á réttum stað.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **FACT-CHECK FERLIÐ er skjalfest: docs/FACT-CHECK-YFIRFERD.md (fjórar heimildir, reglurnar, tólin, gildrurnar) og skillið .claude/skills/fact-check/SKILL.md. Heimildirnar fjórar: þjónustusamningamappa (Drive 1hu405fCw01…, 98% skráð), úttektarreikningar 2025 + jan-maí 2026 (Drive 1Nkf8Btc… og 17VbRbche…, 436 lesnir), úttektarskýrslu-master (Drive 1VSRRw6O8U6…, ~1500 skjöl, lesin af multitool) og tækjaskráin sjálf sem er AFLEIDD heimild. Samræmi einstaða-kúnna fór úr 61% í 75% með þremur mældum leiðréttingum: reykskynjarar dregnir frá skýrslu, hæsti reikningur ársins í stað summu, og skýrslur sem lesa 0 slepptar.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **TVÆR GEYMSLUR FYRIR SÖMU ÚTTEKTARSKÝRSLU — stærsta gildran í kerfinu. (1) app_settings.arsskodun_customers: 855 félög með sögu per ár (2025-2026), fyllt af multitool í brunahólf (/api/skyrsla-bunadur). (2) arsskodun_report_facts: EIN RÖÐ PER FÉLAG (lykill er fyrirtaeki_id EINN, ekki fyrirtaeki_id+ár), geymir nýjustu skýrsluna — og það er taflan sem tríóið og tilbúið-ljósin lesa. Þær fara úr takt: 08.09.2026 áttu 62 félög nýrri skýrslu í (1) en (2), og 59 félög mældust 'komin fram yfir skoðun' þótt þau hefðu verið skoðuð 2026. Sú tala rataði inn í markaðsgreiningu sem lagði til að hringja í 219 kúnna; réttur listi var 160. LAGAÐ: 2 nýjar raðir + 62 uppfærðar, 2026-skýrslur 291->354, fram-yfir 219->160, afrit í backup_report_facts_20260908. REGLA: berðu geymslurnar saman ÁÐUR en óskoðaður-listi er notaður í áminningar, símtöl eða markaðssetningu.**
+  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **ÚTTEKT eða BÚÐARSALA á reikningi (regla Agnars 07.09.2026): 'ef það stendur ekki Akstur eða skýrslugerð þá er reikningurinn líklega bara úr búð'. Hvort tveggja er merki um að farið hafi verið á staðinn. Mælt sama dag: af 40 reikningum sem fyrri reglan (aðeins Skýrslugerð) flokkaði sem búðarsölu báru 36 Akstur — þeir voru útkallsverk, þar á meðal 21 tækja verk hjá Teiti Jónassyni. Aðeins 4 af 436 reikningum eru raunverulegar búðarsölur.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **SKRÁARHEITI Á DRIVE-REIKNINGUM LÝGUR — staðfest aftur 07.09.2026: þrír reikningar í möppunni 2025 reyndust dagsettir 2024, og heiti með jákvæðri upphæð geta verið kreditnótur. Eini lykillinn sem lýgur ekki er reikningsnúmerið inni í PDF-inu. Drive-afrit ((2)/(3)) bera sama reikningsnúmer og mega aldrei skrást tvisvar.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Reikninga-PDF má lesa vélrænt: tools/lesa-reikninga-drive.cjs sækir skjalið gegnum brunaholf /api/skjal?id=<driveId> og les tækjatölu, reikningsnúmer, dagsetningu og tegund úr PDF-inu (pdf-parse v1 — v2 hrynur). Snið: lýsing á einni línu, magn á þeirri næstu, einingaverð+vörunúmer límd saman. 07.09.2026 voru 436 reikningar lesnir úr Drive-möppum 2025 og jan-apríl 2026, 0 villur; 121 nýjar raðir skrifaðar í uttekt_reikningur_facts (118 frá 2026 sem voru alls ekki til). Tríó-þekjan fór úr 145 í 318 félög með allar þrjár heimildir.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Pörun reiknings við úttektarskýrslu: notaðu HÆSTA úttektarreikning ársins, ekki summu allra. Kúnni með margar heimsóknir (t.d. Hreyfill með þrjá reikninga 2026) fær summu 31 á móti skýrslu upp á 15. Með hæsta reikningi og að sleppa skýrslum sem lesa 0 tæki fer samræmið í 75% (137 af 183). Og ALDREI para fjölstaða-kúnna á kennitölu — summa allra reikninga kt á móti þeim fáu skýrslum sem til eru lítur út eins og risafrávik (Center Hótel 2025: 220 á móti 5).**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Talningarregla Agnars staðfest empirískt 07.09.2026: tækjatala á úttektarreikningi = YFIRFERÐ + HLEÐSLA + SALA lögð saman. Prófað á 188 einstaða-pörum gegn skýrslunum: sú regla gefur 61% samræmi, að sleppa hleðslu gefur 40%, aðeins yfirferð 39%, hæsta-af-yfirferð/hleðslu 48%. Hleðsla er því raunveruleg viðbót en ekki tvítalning á sömu tækjum.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Reikningur rukkar ALDREI reykskynjara, en úttektarskýrslan telur þá með. Húsfélag með 4 léttvatnstæki + 6 skynjara fær skýrslu upp á 10 og reikning upp á 4 — hvort tveggja rétt. Mælt 07.09.2026 á 188 einstaða-pörum: samræmi reiknings og skýrslu fer úr 61% í 71% ef skynjarar eru dregnir frá skýrslunni. Allar aðrar tegundir (léttvatn, duft, CO2, brunaslöngur) ERU rukkaðar — að sleppa þeim versnar samræmið.**
+  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Vinnublaðið er heimildin um hvað var unnið — tækjalistinn í kerfinu er það ekki**
+  <br>Tækjafjöldi í árskoðun hefur verið rangur árum saman. Sjá sara-skillinn.
+  <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
+
 ### deploy
 
 - **Málfræðivörður í build-dist.js frá 10.11.2026 (d9d4c3e5): hver staðbundin klassísk skrifta í index.html er þáttuð með vm.Script áður en búntað er; málfræðivilla → exit 1, ekkert birt, síðan stendur á síðustu heilu útgáfu. Villan nefnir skrá og línu. Neyðarútgangur BUILD_LEYFA_MALFRAEDIVILLU=1. Nær ekki til module-skrifta né annarra síðna en index.html (gatt/). Prófað: heilt build EXIT=0 (495 skriftur), 502 viljandi brotin → EXIT=1; CI (Node 20) birti d9d4c3e án falskrar viðvörunar.**
@@ -1367,56 +1419,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
 - **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
   <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-
-### uttekt
-
-- **Endurgerð vistaðrar úttektarskýrslu: (1) laga inspection_trips[id] í app_settings með nýju _ts svo localStorage-ferðin víki, (2) CompanyInspectionReport.open(id), virkja #_cir-save og smella, (3) customer_documents-röðin uppfærist á sama id en gamla PDF-skráin situr eftir í samningar/company_attachments/id/ og þarf að eyða með storage-API. Forskoðun er í #_cir-modal iframe. Prófað á 421, 422, 423, 737, 1187 þann 10.11.2026.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Úttektarskýrsla (patch 168) frá 10.11.2026: skýrsla án nafns er ógild (Agnar). Skoðunaraðili er sjálfgefið Hákon (Elías hættur), trip.skodunaradili. Undirritandi f.h. Slökkvitæki ehf er valinn við Klára heimsókn (#_vw-undirritun: Agnar Sigurðsson / Bjarndís / Brynjar) og vistast í trip.undirritun. Undirskriftarmynd: app_settings.undirskriftir[nafn] = PNG data-URL (gegnsær bakgrunnur, hlutföll 481x214); til = mynd á línu + nafn undir, annars nafnið eitt. Agnars er komin, Bjarndísar og Brynjars vantar. Ný mynd þarf enga kóðabreytingu (app_settings_merge).**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **06.10.2026 leyfði Agnar að pörin Þingholt 2026 ↔ R-000804 (frávik 0) og Plaza 2025 ↔ R-107257 (frávik 0,5) yrðu tengd aftur þótt þau hefðu verið aftengd handvirkt 24.08.** _(likely)_
-  <br>'Þitt að úrskurða: ... mátt þá tengja það aftur'. Leyfið var um þessi tvö pör, ekki almennt umboð.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Reikningur = skýrsla = tækjalisti: pörun skýrslu og reiknings á að byggja á magni hvers tækis eftir tegund, mánuði og ári, óháð nöfnum og heimilisföngum, og eldri skjöl eru ekki alltaf marktæk.**
-  <br>[rule; agents: sara-organizer, sara-coworker, natalie, rukkari, kunnaskra] 06.10.2026: 'Invoice=skýrsla=tækjalisti' og 'Ekki alltaf að marka eldri skjöl'; Agnar tekur saman reikninga 2022-2024 sjálfur. Verkfæri fyrir rekstrarfélög á að skrá tækjafjölda eftir tegund (ný, hlaðin, yfirfarin) úr skýrslu
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Vinnublað er heimildin um HEIMSÓKN. Skýrsla með customer_documents.source=app (87 af 352 árið 2026) án sölu og án vinnublaðs er ENGIN sönnun um að farið hafi verið (source=gdrive, 265 skannaðar, eru raunveruleg blöð) — þá er þetta akstur sem gleymdist, ekki krafa. Skoðunaraðili á eftir-gerðri skýrslu án vinnublaðs er alltaf Hákon; sjálfvirki textinn dugar. „bíða" frá Agnari þýðir bíða — ekki eyða.**
-  <br>Agnar 20.09.2026 20:54 og 21:21–21:23. Aðstoðarmaður las „bíða" sem „eyða" og henti skýrslu í Drive-rusl (næst ekki til baka um MCP). sara_yfirferd á aðeins 63 blöð skönnuð 9.–14.09 → „ekkert blað" sannar ekkert um ~300 aðra staði.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 2fe4ef19 · claude-code</sub>
-- **Blár punktur í Ársskoðun = reikningur til en engin skýrsla. Regla Agnars 08.09.2026: skrá tækjafjölda úr reikningnum (tools/uttekt-graen-af-reikningi.cjs) og merkja klarad svo punkturinn verði grænn — en BÚA ALDREI TIL skýrslu („má ekki þykjast"). Tækjatala er tala, ekki saga: Crinis blár 2025 og 2026 → generera EINU sinni.**
-  <br>Lota 487c5a12 08.09.2026 14:17.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 487c5a12 · claude-code</sub>
-- **ÁÆTLAÐ VIRÐI vs RAUNREIKNINGUR á Ársskoðun eru TVÆR ÓLÍKAR SPURNINGAR, ekki sama talan með skekkju. Áætlunin (153 estimated_yearly) = Σ(tæki × (yfirferð+hleðsla) × 1,24) + skýrslugerð + akstur×margfaldara — líkan af heilu þjónustuári. Raunreikningurinn (129, geymdur í inspection_trips[id].computed.total) = ÞESSI heimsókn með þeim valum sem tæknimaðurinn gerði (yfirferð/hleðsla/nýtt per tæki, aukalínur, afsláttur, réttur akstursfjöldi). Mælt 08.09.2026 á 51 félagi sem á bæði: hlutfall raun/áætlun 0,907 en dreifing frá ×0,22 upp í ×4,13 — 20 hærri, 25 lægri. Þess vegna er ekki hægt að leiða raun af áætlun né öfugt, og þess vegna eru aðeins ~88 raunreiknuð: talan verður til við að einhver opni fyrirtækið og verðleggi heimsóknina.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Tómur tækjalisti í Ársskoðun (08.09.2026, 59 félög): stærsta skýringin er TVÍTEKNING — 19 af 59 eiga systkinaröð sem ber tækin (Álfaskeið 78-80 vs 257, Bílabúð Benna Fiskislóð vs 532, Flétturima 16 vs 301, Lindaberg vs 208 T-10, Hjarðarból vs 697 Grasnytjar). Sex úttektarskýrslur eru auk þess skráðar á rangt félag — kt í PDF-inu á sér alltaf raunverulegt annað félag. Tvö skjalanna eru ekki úttektarskýrslur heldur þjónustusamningur og brunakerfis-skýrsla.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Úttektarskýrslu-tengingar í customer_documents eru að stórum hluta NAFNAÁGISKUN sem kerfið merkti sjálft vafasama (K.Rickter.pdf -> K-50 ehf, Lyfja Selfossi -> SE ehf, Fiskbúð Suðurlands -> Heilbrigðisstofnun Suðurlands). 26 af 36 skjölum hjá vinnulista-hópnum bera hvorki drive_file_id né storage_path (dauðir Drive-hlekkir hreinsaðir 30.07.2026). arsskodun_report_facts.report_year hjá þeim hópi er því ekki traust — þar með sex 2026-stimplar. Master-mappan (1494 skrár, /api/drive-filelist) á ENGA skrá fyrir 41 af 63 félögum vinnulistans.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Ársskoðun 153: 🕶 Hide-takki á röðinni í ⚡-ham (08.09.2026) skrifar fyrirtaeki.ovisst — SAMA dálk og 🕶 Óvissir í patch 157, svo eitt felu-merki gildir á báðum síðum. Faldir hverfa úr öllum sýnum nema 🕶 Faldir-flipanum en ALDREI úr leit. Per-röð skrif, ekki settings-blobbið (last-write-wins með fjórum vélum).**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Ársskoðun-borðið (patch 153): mánaðar-flögurnar töldu úr arsAll (aðeins félög með skráðan búnað) meðan sían sjálf keyrði á allt borðið — „Án mánaðar" sagði 38 en smellurinn skilaði 93. Lagað 08.09.2026: monthCounts kemur nú úr filteredSorted({ignoreMonths:true}), sama mynstur og pnrPool. Regla: hver teljari á flögu VERÐUR að lesa úr sama úrvali og smellurinn skilar.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **SKÝRSLULESTUR ÚR DRIVE, fyrsti áfangi 08.09.2026: 35 skýrslur lesnar fyrir félög á Fyrirtæki-í-þjónustu borðinu sem vantaði mánuð eða tæki. 0 villur, 24 skiluðu tækjatölu og mánuði. SÖNNUN að lesarinn er réttur: Nesdekk Dekkjalager mældist áður 'reikningur 16 · skýrsla 0' í tríóinu — skýrslan les núna 16. Reikningurinn hafði alltaf rétt fyrir sér og skýrslutalan var lesvilla. Skrifað: 10 nýjar raðir + 4 uppfærðar (níu sleppt af vörn sem skrifar ekki yfir betri gögn). Mánuðir án gildis 144 -> 135. Afrit backup_report_facts_lestur_20260908. ÓLESIÐ ENN: brunakerfisskýrslur eru með ÖÐRU SNIÐI og lesarinn kann þær ekki (Hlíðasmári 15/17/19, JM Veitingar). GRUNSAMLEGT: Pure Deli les 51 tæki og K Apartments 41 — Pure Deli var sleppt viljandi þangað til Agnar staðfestir að skýrslan sé á réttum stað.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **FACT-CHECK FERLIÐ er skjalfest: docs/FACT-CHECK-YFIRFERD.md (fjórar heimildir, reglurnar, tólin, gildrurnar) og skillið .claude/skills/fact-check/SKILL.md. Heimildirnar fjórar: þjónustusamningamappa (Drive 1hu405fCw01…, 98% skráð), úttektarreikningar 2025 + jan-maí 2026 (Drive 1Nkf8Btc… og 17VbRbche…, 436 lesnir), úttektarskýrslu-master (Drive 1VSRRw6O8U6…, ~1500 skjöl, lesin af multitool) og tækjaskráin sjálf sem er AFLEIDD heimild. Samræmi einstaða-kúnna fór úr 61% í 75% með þremur mældum leiðréttingum: reykskynjarar dregnir frá skýrslu, hæsti reikningur ársins í stað summu, og skýrslur sem lesa 0 slepptar.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **TVÆR GEYMSLUR FYRIR SÖMU ÚTTEKTARSKÝRSLU — stærsta gildran í kerfinu. (1) app_settings.arsskodun_customers: 855 félög með sögu per ár (2025-2026), fyllt af multitool í brunahólf (/api/skyrsla-bunadur). (2) arsskodun_report_facts: EIN RÖÐ PER FÉLAG (lykill er fyrirtaeki_id EINN, ekki fyrirtaeki_id+ár), geymir nýjustu skýrsluna — og það er taflan sem tríóið og tilbúið-ljósin lesa. Þær fara úr takt: 08.09.2026 áttu 62 félög nýrri skýrslu í (1) en (2), og 59 félög mældust 'komin fram yfir skoðun' þótt þau hefðu verið skoðuð 2026. Sú tala rataði inn í markaðsgreiningu sem lagði til að hringja í 219 kúnna; réttur listi var 160. LAGAÐ: 2 nýjar raðir + 62 uppfærðar, 2026-skýrslur 291->354, fram-yfir 219->160, afrit í backup_report_facts_20260908. REGLA: berðu geymslurnar saman ÁÐUR en óskoðaður-listi er notaður í áminningar, símtöl eða markaðssetningu.**
-  <br><sub>2026-09-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **ÚTTEKT eða BÚÐARSALA á reikningi (regla Agnars 07.09.2026): 'ef það stendur ekki Akstur eða skýrslugerð þá er reikningurinn líklega bara úr búð'. Hvort tveggja er merki um að farið hafi verið á staðinn. Mælt sama dag: af 40 reikningum sem fyrri reglan (aðeins Skýrslugerð) flokkaði sem búðarsölu báru 36 Akstur — þeir voru útkallsverk, þar á meðal 21 tækja verk hjá Teiti Jónassyni. Aðeins 4 af 436 reikningum eru raunverulegar búðarsölur.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **SKRÁARHEITI Á DRIVE-REIKNINGUM LÝGUR — staðfest aftur 07.09.2026: þrír reikningar í möppunni 2025 reyndust dagsettir 2024, og heiti með jákvæðri upphæð geta verið kreditnótur. Eini lykillinn sem lýgur ekki er reikningsnúmerið inni í PDF-inu. Drive-afrit ((2)/(3)) bera sama reikningsnúmer og mega aldrei skrást tvisvar.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Reikninga-PDF má lesa vélrænt: tools/lesa-reikninga-drive.cjs sækir skjalið gegnum brunaholf /api/skjal?id=<driveId> og les tækjatölu, reikningsnúmer, dagsetningu og tegund úr PDF-inu (pdf-parse v1 — v2 hrynur). Snið: lýsing á einni línu, magn á þeirri næstu, einingaverð+vörunúmer límd saman. 07.09.2026 voru 436 reikningar lesnir úr Drive-möppum 2025 og jan-apríl 2026, 0 villur; 121 nýjar raðir skrifaðar í uttekt_reikningur_facts (118 frá 2026 sem voru alls ekki til). Tríó-þekjan fór úr 145 í 318 félög með allar þrjár heimildir.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Pörun reiknings við úttektarskýrslu: notaðu HÆSTA úttektarreikning ársins, ekki summu allra. Kúnni með margar heimsóknir (t.d. Hreyfill með þrjá reikninga 2026) fær summu 31 á móti skýrslu upp á 15. Með hæsta reikningi og að sleppa skýrslum sem lesa 0 tæki fer samræmið í 75% (137 af 183). Og ALDREI para fjölstaða-kúnna á kennitölu — summa allra reikninga kt á móti þeim fáu skýrslum sem til eru lítur út eins og risafrávik (Center Hótel 2025: 220 á móti 5).**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Talningarregla Agnars staðfest empirískt 07.09.2026: tækjatala á úttektarreikningi = YFIRFERÐ + HLEÐSLA + SALA lögð saman. Prófað á 188 einstaða-pörum gegn skýrslunum: sú regla gefur 61% samræmi, að sleppa hleðslu gefur 40%, aðeins yfirferð 39%, hæsta-af-yfirferð/hleðslu 48%. Hleðsla er því raunveruleg viðbót en ekki tvítalning á sömu tækjum.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Reikningur rukkar ALDREI reykskynjara, en úttektarskýrslan telur þá með. Húsfélag með 4 léttvatnstæki + 6 skynjara fær skýrslu upp á 10 og reikning upp á 4 — hvort tveggja rétt. Mælt 07.09.2026 á 188 einstaða-pörum: samræmi reiknings og skýrslu fer úr 61% í 71% ef skynjarar eru dregnir frá skýrslunni. Allar aðrar tegundir (léttvatn, duft, CO2, brunaslöngur) ERU rukkaðar — að sleppa þeim versnar samræmið.**
-  <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Vinnublaðið er heimildin um hvað var unnið — tækjalistinn í kerfinu er það ekki**
-  <br>Tækjafjöldi í árskoðun hefur verið rangur árum saman. Sjá sara-skillinn.
-  <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
 
 ### reikningar
 
@@ -2458,7 +2460,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### verd
 
-- **Verðtengingar slökkvitækja 10.11.2026 (thjonustu_tengingar): ABC Duft án stærðar → Duft 6 kg yfirferð (vara 28) og hleðsla (vara 6) samkvæmt reglu Agnars að engin stærð = 6 kg; Léttvatn 3 L hleðsla → vara 468 (6.200 m. vsk), yfirferð → vara 454 (3.600 m. vsk). Skráð tenging gengur alltaf fyrir nafnaleit; lykill er tegund|stærð|yfirferd eða hledsla, tóm stærð = tveir pípur í röð.**
+- **Verðtengingar slökkvitækja 10.11.2026 (thjonustu_tengingar): Duft án stærðar → Duft 6 kg yfirferð (vara 28) og hleðsla (vara 6) samkvæmt reglu Agnars að engin stærð = 6 kg; Léttvatn 3 L hleðsla → vara 468 (6.200 m. vsk), yfirferð → vara 454 (3.600 m. vsk). Skráð tenging gengur alltaf fyrir nafnaleit. LYKILLINN notar FJÖLSKYLDUHEITI tegundar (normalizeTypeFamily í 129 / fjolskylda í 410: Duft, CO₂, Léttvatn, Brunaslanga, Reykskynjari, Eldvarnateppi) — EKKI hrátt uttaeki.type („ABC Duft"). Snið: Duft||yfirferd (tóm stærð = tveir pípur í röð). Gildra 10.11: lykill skráður sem „ABC Duft||…" virkaði ekki, og SQL-prófun sem paraði á hráu type staðfesti aðeins eigin forsendu; verðlistaglugginn (✎ Slökkvit. þjónusta — verð) sýndi áfram STÆRÐ VANTAR. Sannreyna alltaf í glugganum sjálfum.**
   <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
 - **Handvirk aukalína (inspection_trips[fid].extras) birtist hvorki í úttektarskýrslunni né sem tæki á prófílnum — vörur sem eru raunveruleg tæki (t.d. 10 stk 3L léttvatn) eiga að vera uttaeki-raðir (type Léttvatn, size 3 L) með tengingu í thjonustu_tengingar (lykill „Léttvatn|3 L|yfirferd“ → vara 454), annars vantar þau í skýrslu, facts og tækjatölu.**
   <br>Vara 454 „3L léttvatn yfirferð“ (2.343,55 án vsk) varð til við söluna og fékk birgdir −10 af aukalínunni; hún er enn í flokknum „Slökkvitæki“ ekki „Þjónusta“.

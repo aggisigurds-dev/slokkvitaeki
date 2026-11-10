@@ -278,5 +278,9 @@ Sjálfvistun sleppir skýrslu sem er til. Leiðin (prófuð á 5 félögum 10.11
 - **Útklippa af blaðinu fer á spjald félagsins** á Þjónustuverkstæði: tafla `vinnublad_utklippur`
   (fyrirtaeki_id, ar, titill, url, bucket_path, blad, magn, stada `bidur_samthykkis`/`samthykkt`).
   Patch 190 sýnir hana í samanbrotnum „Vinnublað"-hluta. Myndir klipptar með System.Drawing (PS 5.1).
+- **Dálkar blaðsins** (haus: Fyrirtæki · Athugasemdir · Duft h y · Léttvatn h y · Kolsýra h y): breiði dálkurinn ber strik/stærð, mjóu dálkarnir X. Útklippan ber EKKI hausinn — lestu dálkana af heilu síðunni (`Documents/Skönnuð invoice/Scan<dags>_<nr>.pdf`, oft á hvolfi; myndin er JPEG-straumur í PDF-inu). ÞG verktakar 10.11: „2 kg / 5 kg" stóð í kolsýrudálki, fyrri lestur kallaði það duft.
+- **Spjaldið sýnir `magn` efst** með stöðunni (Bíður samþykkis / Samþykkt); `titill` er aðeins skýring undir myndinni. Skrifaðu því lesturinn í `magn`, og það sem vantar í tækjaskrá aftast í sömu línu.
+- **x í `fyrirtaeki.plan_note`** = Agnar samþykkir lesturinn → gera úttekt (Staðfesta lista → texti → undirritun → Búa til úttektarskýrslu → Klára heimsókn → Staðfesta í forskoðun). Annar texti þar er spurning hans, ekki samþykki.
+- **Verðtenging notar fjölskylduheiti** (Duft, CO₂, Léttvatn …), ekki hrátt `uttaeki.type`: lykill `Duft||yfirferd`, aldrei `ABC Duft||…`. Sannreyna í verðlistaglugganum, ekki með SQL á eigin lykil.
 - **Verðlínur**: allar stærðir eiga að vera í „Slökkvit. þjónusta — verð" (`vorur`, flokkur Þjónusta)
   og úttektin les þaðan. Léttvatn 3 L: hleðsla 5.000 án vsk (6.200 m/vsk), yfirferð 2.903,23 (3.600).
