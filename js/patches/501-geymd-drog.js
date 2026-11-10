@@ -167,7 +167,8 @@
   // Listi fyrir Drög-flipann (án körfu-JSON): nýjast fyrst, eydd aðeins ef beðið er um þau.
   async function listi(o) {
     const S = sb(); if (!S) return [];
-    let q = S.from(TAFLA).select('id,created_at,updated_at,deleted_at,customer_nafn,customer_kt,samtals,linur_fjoldi,yfirlit');
+    // starf = nóta „Fyrir starfsfólk" úr körfunni (jsonb-slóð, ekki öll karfan) — Drög-listinn sýnir hana á daufri línu
+    let q = S.from(TAFLA).select('id,created_at,updated_at,deleted_at,customer_nafn,customer_kt,samtals,linur_fjoldi,yfirlit,starf:karfa->>staffNotes');
     if (!(o && o.medEyddum)) q = q.is('deleted_at', null);
     const r = await q.order('created_at', { ascending: false }).limit(100);
     if (r.error) { console.warn('[geymd-drog] listi:', r.error.message || r.error); return []; }
