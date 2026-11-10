@@ -64,7 +64,7 @@
       '#fp-pn-tolur .tl-l i{font-style:normal;font-weight:700}' +
       '#fp-pn-tolur .tl-c{display:flex;justify-content:center;font:700 13px/1.2 system-ui,sans-serif;color:#fff;white-space:nowrap}' +
 
-      '#fp-pn-tolur .g,#fp-pn-tolur .tl-l .g{color:#e9c76e}#fp-pn-tolur .s,#fp-pn-tolur .tl-l .s{color:#fff}#fp-pn-tolur .m,#fp-pn-tolur .tl-l .m{color:#62e6a3}' +
+      '#fp-pn-tolur .g,#fp-pn-tolur .tl-l .g{color:#e9c76e}#fp-pn-tolur .s,#fp-pn-tolur .tl-l .s{color:#fff}#fp-pn-tolur .m,#fp-pn-tolur .tl-l .m{color:#62e6a3}#fp-pn-tolur .v,#fp-pn-tolur .tl-l .v{color:#c08df0}' +
       '#fp-pn-tolur .vantar{color:#ff9d8a}' +
       // óskráð tæki (Nýtt-merki) efst
       '#fp-pn-oskrad{margin:0 0 8px;border-radius:10px;border:1px solid rgba(170,170,255,.4);background:rgba(79,70,229,.12);overflow:hidden}' +
@@ -167,9 +167,15 @@
     hs.forEach((h, j) => ((j === virk ? (pl && pl.markers) : h.markers) || []).forEach(mk => { if (mk && typeof mk.unitId === 'number') merkt.add(mk.unitId); }));
     const skr = { l: 0, duft: 0, co2: 0, slanga_rod: 0 }, mk = { l: 0, duft: 0, co2: 0, slanga_rod: 0 };
     units.forEach(u => { const k = ikonTegund(u.type); if (skr[k] == null) return; skr[k]++; if (merkt.has(u.id)) mk[k]++; });
+    const vt = { l: 0, duft: 0, co2: 0, slanga_rod: 0 };   // „Vantar“: fjólublá merki á öllum hæðum, eftir tegund
+    hs.forEach((h, j) => ((j === virk ? (pl && pl.markers) : h.markers) || []).forEach(mk => {
+      if (!mk || !mk.vantar) return;
+      const u = typeof mk.unitId === 'number' ? units.find(q => q && q.id === mk.unitId) : null, k = ikonTegund(u ? u.type : mk.tegund);
+      if (vt[k] != null) vt[k]++;
+    }));
     const gr = grSkyndi && grSkyndi.cid === F.companyId ? grSkyndi.n : null;
     const rada = (kl, nafn, fn) => '<div class="tl-l"><i class="' + kl + '">' + nafn + '</i></div>' + GERDIR.map(g => { const k = g[0], v = fn(k); return '<div class="tl-c" title="' + esc(g[2] + ' — ' + nafn.toLowerCase()) + '"><span class="' + kl + (kl === 's' && gr && gr[k] != null && skr[k] < gr[k] ? ' vantar' : '') + '">' + v + '</span></div>'; }).join('');
-    const html = rada('g', 'Greining', k => (gr ? gr[k] : '–')) + rada('s', 'Skráð', k => skr[k]) + rada('m', 'Merkt inn', k => mk[k]);
+    const html = rada('g', 'Greining', k => (gr ? gr[k] : '–')) + rada('s', 'Skráð', k => skr[k]) + rada('m', 'Merkt inn', k => mk[k]) + rada('v', 'Vantar', k => vt[k]);
     if (tolur._h !== html) { tolur._h = html; tolur.innerHTML = html; }
     const o = oskrad(), sydd = alltOskrad ? o : o.slice(0, 6);
     const oh = !o.length ? '' : '<div class="hd"><span>Óskráð · ' + o.length + '</span>' + (o.length > 6 ? '<button type="button" data-all="1">' + (alltOskrad ? 'Færri' : 'Öll ' + o.length) + '</button>' : '') + '</div>' +

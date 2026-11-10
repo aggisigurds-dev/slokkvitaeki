@@ -388,3 +388,23 @@ ekki sögu**. Þrennt leiðir af því:
 3. **Flutningur milli félaga er UPPFÆRSLA, ekki innsetning.** `insert` rekst á pkey móttakandans.
    Þegar Hveragerðissóknar-skýrslan var færð af Gerð ehf. á Hveragerðiskirkju (07.11.2026) þurfti
    að uppfæra röð kirkjunnar og eyða hinni — og aldrei með eldra skjali en það sem fyrir er.
+
+## Afrit (`is_duplicate`) felur EKKI eina skjal ársins (mælt 10.11.2026)
+
+Átta skýrslur voru merktar afrit 04.11.2026 (mál #1397–#1404) og stóðu samt áfram á röngu félagi/ári:
+
+- 199 `dedupBucket` fellir afrit aðeins úr (ár, þjónusta) hópi þar sem raunskjal stendur eftir. Afrit sem er
+  EINA skjal ársins birtist áfram (vísvitandi: „sýnilegt-en-brotið er skárra en að skoðun virðist vanta").
+- 153 `docYearsP` les `customer_documents` án þess að sía `is_duplicate`.
+- `document_pairs`-röðin á gamla (félag, ár) lifir sem `vantar_reikning` — lítur út eins og órukkuð skoðun.
+  Triggerinn `auto_pair_customer_document` sleppir afritum og eyðir aldrei gömlum pörum.
+
+Leiðréttingin sem virkar: færa afritið á (félag, ár) raunskjalsins (`fyrirtaeki_id` + `customer_base_id`, eða
+`year`), halda `is_duplicate` + `dup_of`, og eyða úrelta parinu eftir afrit (`backup_20261110_arsskodun_pairs`).
+Sannprófað með talningu á báðum hliðum: ranga hliðin 0 skýrslur / 0 pör. Verklagið er í skill `uttekt-audit`.
+
+`arsskodun_report_facts` getur líka hvílt á skýrslu annars félags (Míla 1414 ← skjal 466, K Apartments 1413 ←
+tölur úr skjali 831). Þá eru tækin í `uttaeki` afrit líka — Gerð-mynstrið. Mál #1584/#1585 bíða Agnars.
+
+199 `_bruTilheyrir()` (03.11.2026, 567f8fdd): tómt Brunakerfis-spjald birtist ekki hjá félagi sem á hvorki
+brunakerfisskjal né -reikning á neinu ári og er ekki á `brunakerfi_customers`. Óhlaðinn/tómur listi = sýna.

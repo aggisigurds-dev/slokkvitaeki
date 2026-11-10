@@ -437,7 +437,7 @@
       if (!ok) return;
       try {
         // Sama hreinsun og 165 gerði áður sjálfkrafa — nú AÐEINS að beiðni Agnars.
-        const KEEP = ['skodunaradili', 'skodun_manudur', 'skodun_ym', 'skodun_dagsetning',
+        const KEEP = ['skodunaradili', 'undirritun', 'skodun_manudur', 'skodun_ym', 'skodun_dagsetning',
                       'invoice_text', 'notes'];
         let st0 = {};
         try { st0 = JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}') || {}; } catch (_) {}

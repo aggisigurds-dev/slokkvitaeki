@@ -117,8 +117,29 @@
       (function () {
         const r = raunsaett();
         return '<button type="button" data-raun="1" aria-pressed="' + r + '" title="Myndir af tækjunum sjálfum í stað tákna" style="' + hnappur +
-          'background:' + (r ? DOKKT : 'transparent') + ';color:' + (r ? '#f1ede4' : '#8d887c') + ';' + (r ? 'border-color:' + GULL + ';' : '') + '">Raunsæ tákn</button>';
+          'background:' + (r ? DOKKT : 'transparent') + ';color:' + (r ? '#f1ede4' : '#8d887c') + ';' + (r ? 'border-color:' + GULL + ';' : '') + '">Raunsæ tákn</button>' +
+          '<button type="button" data-mynd="1" title="Vista teikninguna með tækjunum sem PNG í fullum gæðum (upprunaleg upplausn)" style="' + hnappur + 'background:' + DOKKT + ';color:#f1ede4;">Vista mynd</button>';
       })();
+  }
+  // VISTA MYND (Agnar 10.11.2026): teikningin eins og hún er á striganum — í upprunalegri upplausn, með tækjunum (fjólublá „vantar“ með) — sem PNG.
+  function vistaMynd() {
+    const c = document.getElementById('fp-canvas'), F = FP();
+    if (!c || !c.width || !F || !F.bgImage) return;
+    try {
+      try { if (F._renderCanvas) F._renderCanvas(); } catch (_) {}
+      const o = document.createElement('canvas'); o.width = c.width; o.height = c.height;
+      const x = o.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.drawImage(c, 0, 0);
+      o.toBlob(b => {
+        if (!b) return;
+        const h = document.querySelector('#modal-floorplan h1, #modal-floorplan h2, #modal-floorplan h3');
+        const stadur = String((h && h.textContent) || '').replace(/^s*Teiknings*[—–-]s*/, '').trim();
+        const hs = (window.TeiknBord && TeiknBord.haedir && TeiknBord.haedir()) || [], vi = (window.TeiknBord && TeiknBord.virk && TeiknBord.virk()) || 0;
+        const d = new Date(), dags = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+        const nafn = ['Teikning', stadur, hs[vi] && hs[vi].nafn, dags].filter(Boolean).join(' ').replace(/[\/:*?"<>|]+/g, ' ').replace(/s+/g, ' ').trim() + '.png';
+        const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = nafn; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 10000);
+      }, 'image/png');
+    } catch (_) {}
   }
   function festa(host, id, css, allar, fela) {
     if (!host) return;
@@ -127,6 +148,7 @@
       el = document.createElement('div'); el.id = id;
       el.style.cssText = 'position:absolute;z-index:12;display:none;flex-wrap:wrap;gap:6px;align-items:center;pointer-events:auto;' + css;
       el.addEventListener('click', e => {
+        const my = e.target.closest && e.target.closest('[data-mynd]'); if (my) { e.preventDefault(); e.stopPropagation(); vistaMynd(); return; }
         const r = e.target.closest && e.target.closest('[data-raun]'); if (r) { e.preventDefault(); e.stopPropagation(); skiptaRaun(); return; }
         const b = e.target.closest && e.target.closest('[data-sia]'); if (b) { e.preventDefault(); e.stopPropagation(); skipta(b.getAttribute('data-sia')); }
       });

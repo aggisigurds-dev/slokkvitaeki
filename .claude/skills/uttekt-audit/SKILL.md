@@ -20,7 +20,8 @@ committaðu — þá syncist listinn á allar vélar.
 Supabase-verkefni `osfdzskyvisifcwyjkuk` (execute_sql gegnum MCP).
 
 1. **Tækjalistinn**: `uttaeki` þar sem `status != 'urelt'` (active + ok +
-   i_vinnslu teljast). Tenging við fyrirtæki: `lower(trim(client)) =
+   `Í lagi` + i_vinnslu teljast — fjögur orð yfir lifandi tæki; talning á `active`
+   einni sér sleppti heilum félögum 03.11.2026). Tenging við fyrirtæki: `lower(trim(client)) =
    lower(trim(fyrirtaeki.nafn))`, `deleted_at IS NULL`; tvítekin nöfn → lægsta id.
    Gróf flokkun: slökkvitæki (Léttvatn/CO₂/Duft/ABC), brunaslöngur
    (Brunaslanga/Slönguskápur), reykskynjarar.
@@ -67,6 +68,36 @@ tengd. Misræmi = líklega röng pörun (dæmi: doc 972 hjá Afltak bar kt
 Sjúkraþjálfunar Afls). ~26% skjala bera kt í notes; hin eru ósannreynanleg svona.
 85+ eldri tilvik eru þegar for-flögguð í notes („TILLAGA …"/„ótengt") — teldu þau
 ekki sem ný.
+
+**„TILLAGA"-flöggin eru ekki sönnun (mælt 03.11.2026).** Af þeim sem nefndu aðra
+kennitölu og voru opnuð höfðu 5 af 5 rangt fyrir sér (vörðurinn las kt úr ANNARRI
+skrá með líkt heiti). Skýrsla er ekki sögð röng fyrr en PDF-ið er opnað:
+
+1. Sækja skrána úr Storage (bucket `samningar`, `storage_path`) og `pdftotext -enc UTF-8 -layout`.
+2. Lesa hausinn: nafn, heimilisfang, kt og mánuður/ár úttektar.
+3. Bera útdráttinn saman við skýrslur réttu félagsins (sami texti = afrit).
+
+Þrjár gerðir fundust (docs/ARSSKODUN-AUDIT-20261103.md): skýrsla á röngu félagi sem
+er afrit af skjali á réttu félagi · rétt félag en rangt ár (afrit) · skjal sem er
+alls ekki skýrsla (reikningur í skýrsluhólfi).
+
+## Þegar röng skýrsla er leiðrétt — `is_duplicate` eitt og sér dugar EKKI
+
+Mælt 10.11.2026 (átta skjöl voru merkt afrit og stóðu samt áfram á röngu ári):
+
+- 199 `dedupBucket` felur afrit AÐEINS ef raunskjal stendur eftir í sama (ár, þjónusta)
+  hópi. Afrit sem er EINA skjal ársins birtist áfram. 153 `docYearsP` síar afrit alls ekki.
+- Rétta leiðin: færa afritið þangað sem raunskjalið er — `fyrirtaeki_id` OG
+  `customer_base_id` á rétta félagið, eða `year` á rétt ár — og halda `is_duplicate` +
+  `dup_of`. Þá tæmist ranga árið og afritið felst við hlið raunskjalsins.
+- `document_pairs`-röðin á gamla (félag, ár) verður eftir sem `vantar_reikning` og lítur
+  út eins og órukkuð skoðun. Triggerinn `auto_pair_customer_document` býr til ný pör
+  en eyðir aldrei gömlum og sleppir afritum. Afrita parið í `backup_<dags>_…` og eyða.
+- Sannprófun: telja skýrslur (alls / ekki afrit) og pör á BÁÐUM (félag, ár) — ranga
+  hliðin á að vera 0/0/0, rétta hliðin með a.m.k. eitt raunskjal.
+
+Sama gildir um reikning sem er færður: athuga fyrst hvort hann sé þegar til á réttu
+félagi (`invoice_number`), annars birtist hann tvisvar.
 
 ## Skil
 

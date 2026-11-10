@@ -14,7 +14,7 @@
 
   const KEY = 'teikning.taekjalisti';
   const FP = () => window.FloorPlan;
-  const STODUR = [['', 'Öll'], ['ekki', 'Ekki merkt'], ['her', 'Merkt hér'], ['annars', 'Á annarri hæð']];
+  const STODUR = [['', 'Öll'], ['ekki', 'Ekki merkt'], ['her', 'Merkt hér'], ['annars', 'Á annarri hæð'], ['vantar', 'Vantar']];
   let leit = '';                                  // tímabundið — ekki vistað
   let beinn = 0;
 
@@ -27,6 +27,8 @@
     if (document.getElementById('_t481-css')) return;
     const st = document.createElement('style'); st.id = '_t481-css';
     st.textContent = '' +
+      /* 10.11: stadsett taeki sokkva nidur a botn (CSS order — DOM-rodin og visitolur haldast) */
+      '#fp-unit-list{display:flex;flex-direction:column}#modal-floorplan.fp-simi #fp-unit-list{flex-direction:row}' +
       '#fp-tl-sia{position:sticky;top:-12px;z-index:5;margin:-2px -12px 8px;padding:8px 12px 8px;background:rgba(26,24,20,.99);border-bottom:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:6px}' +
       '#fp-tl-sia .tl-leit{position:relative}' +
       '#fp-tl-sia input{width:100%!important;box-sizing:border-box!important;height:30px!important;padding:0 26px 0 9px!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.16)!important;background:rgba(255,255,255,.06)!important;color:#f1ece2!important;box-shadow:none!important;font:500 12px/1 var(--font,system-ui)!important}' +
@@ -114,27 +116,32 @@
     const hs = (window.TeiknBord && TeiknBord.haedir && TeiknBord.haedir()) || [], virk = (window.TeiknBord && TeiknBord.virk && TeiknBord.virk()) || 0;
     const v = lesa(), q = norm(leit).trim(), valid = F._selectedUnitId;
     const kort = [...el.children].filter(r => !r.classList.contains('tl-tomt'));
-    const tegundir = {}, tolur = { '': 0, ekki: 0, her: 0, annars: 0 };
+    const tegundir = {}, tolur = { '': 0, ekki: 0, her: 0, annars: 0, vantar: 0 };
+    const vantarId = new Set();   // tæki sem eru merkt „Vantar“ (fjólublá) á einhverri hæð
+    hs.forEach((h, j) => ((j === virk ? (pl && pl.markers) : h.markers) || []).forEach(mk => { if (mk && mk.vantar && mk.unitId != null) vantarId.add(mk.unitId); }));
+    ((pl && pl.markers) || []).forEach(mk => { if (mk && mk.vantar && mk.unitId != null) vantarId.add(mk.unitId); });
     const eftirTegund = [];
     F.units.forEach((u, i) => {
       if (!u) return;
       const st = stadaTaekis(u, her, hs, virk), teg = String(u.type || '—');
       const passar = !q || norm(u.serial).indexOf(q) >= 0 || norm(u.type).indexOf(q) >= 0;
-      eftirTegund[i] = { u, st, teg, passar };
+      eftirTegund[i] = { u, st, teg, passar, vantar: vantarId.has(u.id) };
     });
     // tölur á flísum miðast við leit + tegund (ekki stöðuvalið sjálft); tegundatölur við leit + stöðu
     eftirTegund.forEach(o => {
       if (!o) return;
-      if (o.passar && (!v.t || o.teg === v.t)) { tolur[''] += 1; tolur[o.st] += 1; }
-      if (o.passar && (!v.s || o.st === v.s)) tegundir[o.teg] = (tegundir[o.teg] || 0) + 1;
+      if (o.passar && (!v.t || o.teg === v.t)) { tolur[''] += 1; tolur[o.st] += 1; if (o.vantar) tolur.vantar += 1; }
+      if (o.passar && (!v.s || (v.s === 'vantar' ? o.vantar : o.st === v.s))) tegundir[o.teg] = (tegundir[o.teg] || 0) + 1;
     });
     let synd = 0;
     kort.forEach((rod, i) => {
       const o = eftirTegund[i]; if (!o) return;
       const tt = ikon(o.u); if (rod.getAttribute('data-tt') !== tt) rod.setAttribute('data-tt', tt);
-      const sja = o.u.id === valid || (o.passar && (!v.s || o.st === v.s) && (!v.t || o.teg === v.t));
+      const sja = o.u.id === valid || (o.passar && (!v.s || (v.s === 'vantar' ? o.vantar : o.st === v.s)) && (!v.t || o.teg === v.t));
       const d = sja ? '' : 'none';
       if (rod.style.display !== d) rod.style.display = d;
+      const ord = (o.st === 'her' || o.st === 'annars') && o.u.id !== valid ? '1' : '';   // staðsett → neðst, nema valið
+      if (rod.style.order !== ord) rod.style.order = ord;
       if (sja) synd++;
     });
     // tómt?

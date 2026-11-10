@@ -277,3 +277,13 @@ html[data-theme] #login .lcard button.lp-register-switch {
 #login .lg-more2 li{background:linear-gradient(110deg,#172d50,#1c2f4f)!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:12px!important}  /* sami litur og efri spjöldin, en ógegnsær svo húsmyndin skíni ekki í gegn */
 #login .lg-more2 li b{color:#fff!important}
 #login .lg-more2 li span{color:#e7edf9!important}
+
+/* 10.11.2026 — toplinkar náðu 6 px út fyrir 390 px skjá (lárétt skrun): sleppa heyrnartólatákni og þrengja bil á litlum símum. */
+@media(max-width:430px){
+  #login .lp-topbar{gap:8px!important}
+  #login .lp-toplinks{gap:8px!important}
+  #login .lp-toplinks a:first-child svg{display:none}
+  #login .lp-toplinks a:last-child{padding:6px 8px!important}
+}
+@media(max-width:345px){#login .lp-toplinks a:first-child{display:none}}
+@media(max-width:380px){#login .lp-toplinks{gap:6px!important}#login .lp-toplinks a{font-size:10.5px!important}#login .lp-toplinks a:last-child{padding:6px 7px!important}}
