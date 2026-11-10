@@ -45,6 +45,7 @@ tillögu (fjöldi + staðsetning) — ekki bara reglutilvitnun.
 | `references/bunadur.md` | **Reglurnar sem þú reiknar eftir:** handslökkvitæki, slöngukefli, reykskynjarar, skilti og merkingar |
 | `references/reglusafn.md` | **Öll lög, reglugerðir, HMS-leiðbeiningar og staðlar með tenglum** og greinanúmerum + forgangsröð heimilda |
 | `references/neydarlysing.md` | Neyðarlýsing og útljós: hverjir eru skyldugir (9.4.12, eftir notkunarflokki), fjölbýli, eldri hús, eftirlit, þjónustusamningur, löggilding (rafvirkjameistari), staðlar EN 1838/50172, sölutækifæri |
+| `references/arsskodun-kerfi.md` | **Eftirlit og viðhald ANNARRA kerfa** (vatnsúðakerfi, reyklosun, stigleiðsla, neyðarlýsing, eigið eftirlit): tíðni, hver má, réttindi, heimildir með tenglum. Grunnur verðlistanna í Vörur og þjónustu (502). Lestu áður en þú svarar um ársskoðun þessara kerfa |
 | `references/verkhringras.md` | **Verkhringrásin:** Búnaðargreining gerð af kerfinu sjálfu — biðröð (`bunadargreining_verk`), Turbo-takki, skipanir `scripts/bunadargreining/verk/bgr_verk.cjs`, lestur af skönnun (gridded nærmyndir → `lestur.json` → yfirlag → vista → PDF → Viðhengi → Þjónustugátt). Lestu hana áður en þú tekur verk úr biðröðinni |
 | `references/skammstafanir.md` | Skammstafanir á teikningum (NL, BO, EI, GN, HL, ÁV, UV, RS …): hvað þær þýða og hvort þær eru tæki — varaleið þegar blaðið hefur enga skýringu |
 | `references/byggingargogn.md` | Skráningartafla (m², hæðir, eignir) og **byggingarlýsing (HVAR búnaður á að vera)** úr skjalasafni — hvernig á að finna, lesa og treysta; dæmi Fiskislóð 41 |

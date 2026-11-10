@@ -4,7 +4,7 @@ Allar heimildir sem Arnold vitnar í, með tengli og stuttri samantekt á því 
 Slökkvitæki ehf máli. Vitnaðu alltaf í grein + tengil. Ef grein er ekki hér: flettu upp í
 frumtextanum (tenglarnir), ekki giska á greinanúmer.
 
-Síðast yfirfarið 08.10.2026 (neyðarlýsingarrannsókn — sjá `neydarlysing.md`).
+Síðast yfirfarið 10.11.2026 (ársskoðun annarra kerfa — sjá `arsskodun-kerfi.md`; áður 08.10.2026 neyðarlýsing, `neydarlysing.md`).
 
 ---
 
@@ -32,6 +32,9 @@ Síðast yfirfarið 08.10.2026 (neyðarlýsingarrannsókn — sjá `neydarlysing
 | Leiðbeining | Efni | Tengill |
 |---|---|---|
 | **HMS 9.4.12 Neyðarlýsing** (útg. 1.5, 31.03.2026) | Tafla 1: krafa eftir notkunarflokki · Fylgiblað 1: staðfesting á prófun, undirrituð af rafvirkjameistara · álagspróf rafhlaðna árlega | https://www.byggingarreglugerd.is/leidbeiningar/neydarlysing |
+| **HMS 9.4.6 Sjálfvirk slökkvikerfi** (útg. 1.0, 27.8.2025) | þjónustusamningur við viðurkennda aðila; viðhald og eftirlit vatnsúðakerfa skv. ÍST EN 12845 — sjá `arsskodun-kerfi.md` | https://www.byggingarreglugerd.is/leidbeiningar/sjalfvirk-slokkvikerfi |
+| **HMS 9.8.4 Reyklosun** | eftirlit a.m.k. einu sinni á ári af aðilum með tilskilin réttindi; vélræn reyklosun prófuð viku-, mánaðar- og árlega — sjá `arsskodun-kerfi.md` | https://www.byggingarreglugerd.is/leidbeiningar/reyklosun |
+| **HMS 9.8.5 Stigleiðsla** (útg. 1.4, 23.11.2020) | allur búnaður yfirfarinn árlega; þurr stigleiðsla þrýstiprófuð á 5 ára fresti (min. 10 bör, 2 klst); gögn til slökkviliðs — sjá `arsskodun-kerfi.md` | https://www.byggingarreglugerd.is/leidbeiningar/stigleidsla |
 | **HMS 9.5.11 Leiðamerkingar á flóttaleiðum** | útljós, lesfjarlægð, stærð merkja, varastraumur eins og neyðarlýsing | https://www.byggingarreglugerd.is/leidbeiningar/leidamerkingar-a-flottaleidum |
 | **HMS Slöngukefli** | drægni, staðsetning við hurð í flóttaleið, hæð 1–1,5 m | https://www.byggingarreglugerd.is/leidbeiningar/slongukefli |
 | **HMS leiðbeiningar — yfirlit** | allar leiðbeiningar við byggingarreglugerð | https://www.byggingarreglugerd.is/leidbeiningar |
@@ -54,6 +57,7 @@ Síðast yfirfarið 08.10.2026 (neyðarlýsingarrannsókn — sjá `neydarlysing
 | **ÍST 150** gr. 5.4 | neyðarlýsing á flóttaleiðum í sameiginlegu rými fjölbýla (viðmiðunarregla — túlkunarvafi) |
 | **ÍST EN 179** | neyðarhúnar á flóttahurðum |
 | **ÍST EN 12101-2** | reyklúgur (B300,30) |
+| **ÍST EN 12845** | vatnsúðakerfi: hönnun, uppsetning og viðhald (kafli 20: viðhaldsbil; viðauki K: úðastútar eftir 25 ár) |
 | **NFPA 13** | vatnsúðakerfi (vísað í byggingarlýsingum) |
 | **ISO 7010** | öryggismerki: F001 slökkvitæki, F002 slöngukefli, E001/E002 flóttaleið |
 

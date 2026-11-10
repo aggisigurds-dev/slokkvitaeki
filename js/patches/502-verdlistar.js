@@ -49,9 +49,84 @@
   const TAKN_VAL = ['💦', '💡', '🔥', '🧯', '🚨', '🛠', '📋', '🏢', '⚡', '🔔', '🧪', '🪜', '💨', '📢'];
   const HOPAR_STOFN = () => [{ id: 'skodun', heiti: 'Skoðun' }, { id: 'vinna', heiti: 'Vinna og akstur' }, { id: 'efni', heiti: 'Varahlutir og efni' }];
   // Listar sem eru til frá byrjun (Agnar 10.11.2026). Þeir bíða í kóðanum þar til fyrsta breyting vistar þá á þjóninn — ekkert skrifað við hleðslu.
+  //
+  // GRUNNUR (Agnar 10.11.2026: „mátt prófa setja einhvern grunn inn, leita á netinu, hvernig þetta virkar almennilega"). Liðirnir fylgja
+  // því sem reglur og leiðbeiningar HMS segja að eigi að skoða og hve oft — sjá .claude/skills/arnold/references/arsskodun-kerfi.md
+  // (heimildir með tenglum). ENGIN VERÐ eru sett: verð er `null` („—") og Agnar fyllir þau inn; tala sem endar á reikningi er aldrei
+  // giskuð. `heimild` birtist efst í glugganum svo sjáist hvaðan grunnurinn kemur. Listi sem hefur verið vistaður á þjóninn ræður — þessi
+  // grunnur gildir aðeins þar til fyrsta breyting er vistuð (þá fer hann allur með á þjóninn).
+  const G = (id, nafn, eining, hopur, ath, tegund) => ({ id: id, nafn: nafn, verd: null, eining: eining || 'stk', vsk: null, hopur: hopur, ath: ath || '', virkt: true, tegund: tegund || 'fast' });
+  const VINNA = pf => [G(pf + '-timi', 'Tímavinna tæknimanns', 'klst', 'vinna'), G(pf + '-akstur', 'Akstur', 'ferð', 'vinna'), G(pf + '-skyrsla', 'Skýrslugerð', 'stk', 'vinna')];
+  const H_VINNA = { id: 'vinna', heiti: 'Vinna og akstur' }, H_EFNI = { id: 'efni', heiti: 'Varahlutir og efni' };
   const STOFN = [
-    { id: 'sprinkler',  nafn: 'Sprinklerkerfi', takn: '💦', litur: 'teal',      lysing: 'Árleg skoðun og þjónusta sprinklerkerfa', vsk: 24, rod: 10 },
-    { id: 'neydarljos', nafn: 'Neyðarljós',     takn: '💡', litur: 'appelsina', lysing: 'Skoðun og þjónusta neyðarlýsingar og útljósa', vsk: 24, rod: 20 }
+    { id: 'sprinkler', nafn: 'Sprinklerkerfi', takn: '💦', litur: 'teal', vsk: 24, rod: 10,
+      lysing: 'Viðhald og eftirlit vatnsúðakerfa — ÍST EN 12845',
+      heimild: 'Byggingarreglugerð 112/2012 gr. 9.4.6 og leiðbeining HMS 9.4.6 (útg. 1.0, 27.8.2025): „Gerðir skulu þjónustusamningar við viðurkennda aðila um viðhald og eftirlit" og viðhald og eftirlit vatnsúðakerfa skal vera í samræmi við ÍST EN 12845 (kafli 20: ársfjórðungs-, hálfsárs-, árs-, 3 ára og 10 ára skoðun). Krefst starfsleyfis HMS fyrir slökkvikerfi (reglugerð 1067/2011).',
+      hopar: [{ id: 'skodun', heiti: 'Reglubundin skoðun' }, { id: 'lengri', heiti: 'Lengri skoðunarbil' }, H_VINNA, H_EFNI],
+      lidir: [
+        G('sp-q', 'Ársfjórðungsskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Úðastútar, lagnir og upphengi, vatnsveita, lokar og viðvörun — ÍST EN 12845'),
+        G('sp-h', 'Hálfsársskoðun — þurrlokar og boð til vaktstöðvar', 'skoðun', 'skodun', 'ÍST EN 12845'),
+        G('sp-a', 'Ársskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Dæluprófun á fullu álagi, flotlokar og síur — ÍST EN 12845'),
+        G('sp-loki', 'Prófun viðvörunarloka og vatnsklukku', 'stk', 'skodun', 'Verð á hvern stjórnloka'),
+        G('sp-daela', 'Prófun slökkvidælu á fullu álagi', 'stk', 'skodun', 'Árlega'),
+        G('sp-3', '3 ára skoðun — vatnsgeymar og lokar', 'skoðun', 'lengri', 'ÍST EN 12845'),
+        G('sp-10', '10 ára skoðun — hreinsun og innri skoðun vatnsgeymis', 'skoðun', 'lengri', 'ÍST EN 12845', 'tilbod'),
+        G('sp-25', 'Sýnataka og prófun úðastúta eftir 25 ár', 'stk', 'lengri', 'ÍST EN 12845, viðauki K', 'tilbod')
+      ].concat(VINNA('sp'), [G('sp-stutur', 'Úðastútur — skipti', 'stk', 'efni')]) },
+    { id: 'neydarljos', nafn: 'Neyðarljós', takn: '💡', litur: 'appelsina', vsk: 24, rod: 20,
+      lysing: 'Eftirlit og prófanir neyðarlýsingar og útljósa — ÍST EN 50172',
+      heimild: 'Byggingarreglugerð 112/2012 gr. 9.4.12 og leiðbeining HMS 9.4.12 (útg. 1.5, 31.3.2026): rafhlöður álagsprófaðar árlega. ÍST EN 50172: mánaðarleg virkniprófun, árleg prófun á fullum endingartíma (60 mín), ljósmæling við afhendingu og á 5 ára fresti, allt fært í dagbók. Staðfesting til slökkviliðs (Fylgiblað 1) er undirrituð af rafvirkjameistara.',
+      hopar: [{ id: 'skodun', heiti: 'Skoðun og prófun' }, H_VINNA, H_EFNI],
+      lidir: [
+        G('ne-a', 'Árleg skoðun og prófun neyðarlýsingar', 'skoðun', 'skodun', 'Full ending (60 mín) og álagsprófun rafhlaðna — ÍST EN 50172'),
+        G('ne-ljos', 'Prófun á hvert neyðarljós / útljós', 'stk', 'skodun', 'Verð á hvert ljós'),
+        G('ne-m', 'Mánaðarleg virkniprófun', 'skoðun', 'skodun', 'ÍST EN 50172'),
+        G('ne-midl', 'Álagsprófun miðlægs rafhlöðukerfis', 'kerfi', 'skodun', 'ÍST EN 50171'),
+        G('ne-lux', 'Ljósmæling', 'skoðun', 'skodun', 'Við afhendingu og á 5 ára fresti — ÍST EN 50172'),
+        G('ne-stadf', 'Staðfesting til slökkviliðs (Fylgiblað 1)', 'stk', 'skodun', 'Undirrituð af rafvirkjameistara — HMS 9.4.12')
+      ].concat(VINNA('ne'), [G('ne-rafhl', 'Rafhlaða í neyðarljós — skipti', 'stk', 'efni'), G('ne-nytt', 'Neyðarljós / útljós — skipti', 'stk', 'efni')]) },
+    { id: 'eldvarnaeftirlit', nafn: 'Eldvarnaeftirlit', takn: '🔥', litur: 'fjola', vsk: 24, rod: 30,
+      lysing: 'Eigið eldvarnaeftirlit, áætlanir og þjálfun — reglugerð 723/2017',
+      heimild: 'Reglugerð um eldvarnir og eldvarnaeftirlit 723/2017, 10.–13. og 26. gr., og leiðbeiningar Eldvarnabandalagsins um eigið eldvarnaeftirlit (2025): mánaðarlegur gátlisti (7 liðir) og árlegur (15 liðir). SHS: skriflegt eigið eftirlit mánaðarlega ef fleiri en 50 manns eru í húsinu, annars árlega. Eftirlitið sjálft framkvæmir eldvarnafulltrúi eiganda — þetta er aðstoð við það.',
+      hopar: [{ id: 'eftirlit', heiti: 'Eftirlit' }, { id: 'skjol', heiti: 'Skjöl og áætlanir' }, { id: 'fraedsla', heiti: 'Fræðsla og æfingar' }, H_VINNA],
+      lidir: [
+        G('ee-m', 'Mánaðarlegt eftirlit samkvæmt gátlista', 'skoðun', 'eftirlit', '7 liðir — Eldvarnabandalagið'),
+        G('ee-a', 'Árlegt eftirlit samkvæmt gátlista', 'skoðun', 'eftirlit', '15 liðir — Eldvarnabandalagið'),
+        G('ee-upps', 'Uppsetning á skriflegu eigin eldvarnaeftirliti', 'stk', 'skjol', '723/2017 10. gr.'),
+        G('ee-aaetlun', 'Viðbragðs- og rýmingaráætlun', 'stk', 'skjol', '723/2017 13. gr.'),
+        G('ee-uppdr', 'Rýmingaruppdráttur', 'stk', 'skjol', 'Verð á hverja hæð'),
+        G('ee-flotti', 'Flóttaleiðauppdráttur í herbergi', 'stk', 'skjol', 'Gisting — einn á hvert herbergi'),
+        G('ee-aefing', 'Rýmingaræfing', 'stk', 'fraedsla', 'Árlega — 723/2017 12. gr.'),
+        G('ee-thjalfun', 'Þjálfun starfsfólks í notkun slökkvitækja', 'stk', 'fraedsla', 'A.m.k. á 3 ára fresti')
+      ].concat(VINNA('ee')) },
+    { id: 'reyklosun', nafn: 'Reyklosun', takn: '💨', litur: 'grafit', vsk: 24, rod: 40,
+      lysing: 'Árlegt eftirlit og prófun reyklosunarbúnaðar — HMS 9.8.4',
+      heimild: 'Byggingarreglugerð 112/2012 gr. 9.8.4 og leiðbeining HMS 9.8.4, kaflar 5–6: eigendur láta framkvæma eftirlit með búnaði til reyklosunar „að minnsta kosti einu sinni á ári", af aðilum með tilskilin réttindi og samkvæmt fyrirmælum framleiðanda; vélræn reyklosun er prófuð viku-, mánaðar- og árlega. Hönnun samkvæmt ÍST EN 12101.',
+      hopar: [{ id: 'skodun', heiti: 'Skoðun og prófun' }, H_VINNA, H_EFNI],
+      lidir: [
+        G('re-a', 'Árleg skoðun og prófun reyklosunar', 'skoðun', 'skodun', 'A.m.k. einu sinni á ári — HMS 9.8.4'),
+        G('re-luga', 'Prófun reyklúgu og opnunarbúnaðar', 'stk', 'skodun', 'Verð á hverja lúgu'),
+        G('re-styri', 'Prófun stjórnbúnaðar og varaafls', 'stk', 'skodun', 'Stjórnstöð, opnunarrofar og rafhlöður'),
+        G('re-blasari', 'Prófun reykblásara', 'stk', 'skodun', 'Vélræn reyklosun'),
+        G('re-m', 'Mánaðarleg prófun vélrænnar reyklosunar', 'skoðun', 'skodun', 'Samkvæmt fyrirmælum framleiðanda')
+      ].concat(VINNA('re'), [G('re-rafhl', 'Rafhlaða í stjórnbúnað — skipti', 'stk', 'efni')]) },
+    { id: 'stigleidsla', nafn: 'Stigleiðsla', takn: '🪜', litur: 'ljosblar', vsk: 24, rod: 50,
+      lysing: 'Árleg yfirferð og þrýstiprófun stigleiðslna — HMS 9.8.5',
+      heimild: 'Byggingarreglugerð 112/2012 gr. 9.8.5 og leiðbeining HMS 9.8.5 (útg. 1.4, 23.11.2020), kafli 7: húseigandi lætur „a.m.k. einu sinni á ári" yfirfara allan búnað stigleiðslunnar; þurra stigleiðslu ber að yfirfara, kanna ryðmyndun og þrýstiprófa á a.m.k. fimm ára fresti; dælu- og ræsibúnaður og viðvörunar- og stýribúnaður er prófaður a.m.k. tvisvar á ári; afrit af gögnum fer til slökkviliðs. Þrýstiprófun (kafli 6.1): minnst 10 bör og 25 % yfir mesta notþrýstingi, haldið í 2 klst; pípulagningameistari staðfestir.',
+      hopar: [{ id: 'skodun', heiti: 'Skoðun og prófun' }, H_VINNA, H_EFNI],
+      lidir: [
+        G('st-a', 'Árleg yfirferð stigleiðslu', 'stk', 'skodun', 'Allur búnaður — HMS 9.8.5 kafli 7'),
+        G('st-tengi', 'Yfirferð inntaks og slöngutengja', 'stk', 'skodun', 'Verð á hvert tengi: loki, lok með keðju og merking'),
+        G('st-thryst', 'Þrýstiprófun þurrar stigleiðslu', 'stk', 'skodun', 'Á 5 ára fresti — minnst 10 bör í 2 klst'),
+        G('st-daela', 'Prófun dælu- og ræsibúnaðar', 'stk', 'skodun', 'Tvisvar á ári'),
+        G('st-styri', 'Prófun viðvörunar- og stýribúnaðar', 'stk', 'skodun', 'Tvisvar á ári')
+      ].concat(VINNA('st'), [G('st-lok', 'Lok með keðju á slöngutengi', 'stk', 'efni'), G('st-skilti', 'Skilti / merking stigleiðslu', 'stk', 'efni')]) },
+    // „Hávakerfi": engin heimild fannst um hvað þetta nær yfir (hátalarakerfi/talað rýmingarkerfi? háfakerfi í eldhúsi?) — listinn er því
+    // TÓMUR þar til Agnar segir til. Enginn grunnur er betri en rangur grunnur.
+    { id: 'havakerfi', nafn: 'Hávakerfi', takn: '📋', litur: 'gull', vsk: 24, rod: 60,
+      lysing: 'Enginn grunnur settur enn',
+      heimild: 'Enginn grunnur var settur í þennan lista: ekki var ljóst hvað „hávakerfi" á að ná yfir. Bættu liðum við hér, eða segðu til og grunnurinn verður settur.',
+      hopar: HOPAR_STOFN(), lidir: [] }
   ];
 
   // ── hjálparföll ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -98,6 +173,7 @@
       takn: String(l.takn || '📋'),
       litur: LITIR[l.litur] ? l.litur : 'grafit',
       lysing: String(l.lysing || ''),
+      heimild: String(l.heimild || ''),   // hvaðan grunnur listans kemur (reglugerð/leiðbeining) — birt samanbrotið efst í glugganum
       vsk: VSK_VAL.indexOf(Number(l.vsk)) >= 0 ? Number(l.vsk) : 24,
       rod: Number(l.rod) || 1000,
       hopar: hopar,
@@ -218,6 +294,10 @@
       '.' + P + '-ath:focus{outline:none;background:#fff!important;border-color:rgba(201,42,42,.55)!important;box-shadow:0 0 0 2px rgba(201,42,42,.18)!important}',
       '.' + P + '-n.ok,.' + P + '-verd.ok,.' + P + '-fl.ok,.' + P + '-ath.ok,.' + P + '-hn2.ok{background:#fff!important;border-color:#1f9d57!important;box-shadow:0 0 0 2px rgba(31,157,87,.25)!important}',
       '.' + P + '-n.villa,.' + P + '-verd.villa,.' + P + '-fl.villa,.' + P + '-ath.villa,.' + P + '-hn2.villa{background:#fff!important;border-color:#e0453c!important;box-shadow:0 0 0 2px rgba(224,69,60,.25)!important}',
+      '.' + P + '-vantar{color:#92400e;border-color:rgba(180,120,20,.4);background:linear-gradient(180deg,#fffbeb 0%,#fde9b8 100%)}',
+      '.' + P + '-heim{margin:0 0 8px;font-size:12px;color:#3a4250}',
+      '.' + P + '-heim summary{cursor:pointer;font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6b7483}',
+      '.' + P + '-heim p{margin:6px 0 0;padding:9px 11px;background:#fff;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.12);line-height:1.55}',
       '.' + P + '-ht{font-family:' + MONO + ';font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#3a4250}',
       '.' + P + '-nt{font-weight:600;color:#141822}',
       '.' + P + '-at{display:block;margin-top:1px;font-size:11.5px;color:#6b7483}',
@@ -414,10 +494,12 @@
     // verkfærin hverfa. Báðir hamir eru því 8 dálkar, og verð breytist ekki óvart í miðju tilboði.
     const synd = x => (_tilbod ? x.virkt : (_synaOvirk || x.virkt)) && (!q || norm(x.nafn + ' ' + x.ath).indexOf(q) >= 0);
     const fjoldiVirkir = L.lidir.filter(x => x.virkt).length;
+    const anVerds = L.lidir.filter(x => x.virkt && x.tegund !== 'tilbod' && x.verd == null).length;   // grunnliðir koma án verða — sýna hvað á eftir að fylla
     const dalkar = 8;
     let h = '<div class="' + P + '-verk">' +
       '<input class="' + P + '-sia" type="search" id="' + P + '-sia" placeholder="Sía listann…" value="' + esc(_sia) + '" aria-label="Sía listann">' +
       '<span class="' + P + '-fj">' + L.lidir.length + ' ' + (L.lidir.length === 1 ? 'liður' : 'liðir') + (fjoldiVirkir !== L.lidir.length ? ' · ' + fjoldiVirkir + ' virkir' : '') + '</span>' +
+      (anVerds ? '<span class="' + P + '-fj ' + P + '-vantar" title="Liðir sem eiga eftir að fá verð — þeir prentast með „—" og teljast ekki með í tilboði">' + anVerds + ' án verðs</span>' : '') +
       (_tilbod ? '<span class="' + P + '-hint">Tilboðsham — settu magn á liðina. Verðlistanum sjálfum er breytt utan tilboðshams.</span></div>' :
       '<label class="' + P + '-chk"><input type="checkbox" id="' + P + '-ovirk"' + (_synaOvirk ? ' checked' : '') + '> Sýna óvirka</label>' +
       '<span class="' + P + '-sp">' +
@@ -446,6 +528,7 @@
       hopHtml.push('<tr class="hopur" data-h="' + esc(hp.id) + '"><td colspan="' + dalkar + '"><div class="hh">' + hausInni + '</div></td></tr>' +
         (sy.length ? sy.map(x => radHtml(L, x)).join('') : '<tr class="tomt"><td colspan="' + dalkar + '">' + (radir.length ? 'Engir liðir passa við síuna' : 'Engir liðir í þessum hóp — bættu við neðst') + '</td></tr>'));
     });
+    if (L.heimild && !_tilbod) h += '<details class="' + P + '-heim"><summary>Grunnur og heimildir</summary><p>' + esc(L.heimild) + '</p></details>';
     if (chips.length > 1) h += '<div class="' + P + '-hopar">' + chips.join('') + '</div>';
     if (!L.lidir.length) {
       h += '<div class="' + P + '-tomur"><b>' + esc(L.nafn) + ' á enn engan lið.</b><br>Bættu við fyrsta liðnum neðst, eða límdu inn lista úr Excel (<b>Líma inn</b>).<br>' +
