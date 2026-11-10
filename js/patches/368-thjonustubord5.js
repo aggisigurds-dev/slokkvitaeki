@@ -260,8 +260,10 @@
   const BREIDD_ROD = [1, 4, 2, 5, 3];
   const BREIDD_MERKI = { 1: '⅓', 4: '⅖', 2: '½', 5: '⅗', 3: '1/1' };
   const gildBreidd = b => BREIDD_ROD.indexOf(b) >= 0;
+  const SPLIT_GILD = [4, 2, 5];   // skiptilínan velur á milli ⅖+⅗ · ½+½ · ⅗+⅖ (lágmark ⅖, hámark ⅗)
   const sjalfgefinBreidd = k => ((k === 'checklisti' || k === 'checklisti2') ? 4 : k === 'skipulag2' ? 5 : BREIDAR.indexOf(k) >= 0 ? 3 : 1);
   function breiddAf(mode, k) {
+    if (gildBreidd(S.breiddBid[k])) return S.breiddBid[k];   // skiptilína dregin, vistun á leiðinni
     const b = mode && mode.breidd && mode.breidd[k];
     return gildBreidd(b) ? b : sjalfgefinBreidd(k);
   }
@@ -346,7 +348,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, chkTitDrog: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, chkTitDrog: {}, breiddBid: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
@@ -415,6 +417,7 @@
     _vistar--;
     if (!ok) { delete _cfg[n]; toast('Stillingin vistaðist ekki. Reyndu aftur.', true); render(); }
     else if (skilabod) toast(skilabod);
+    return ok;
   }
   const isOn = k => !!cfg().mods[k][0];
   const inMode = k => (M(cfg().mode) || MODES.thjonusta).first.indexOf(k) >= 0;
@@ -1064,6 +1067,11 @@
       '.modgrid{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));gap:14px;align-items:start}',
       '.modcell{min-width:0;container:rail / inline-size;grid-column:span 60}',
       '.modgrid>.sel.inline{grid-column:1 / -1}',
+      '.modcell{position:relative}',
+      '.mspl{display:none;position:absolute;top:0;bottom:0;right:-18px;width:22px;z-index:6;border:none;padding:0;background:transparent;cursor:col-resize;touch-action:none}',
+      '.mspl::after{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:4px;border-radius:2px;background:var(--edge2);opacity:.55;transition:opacity .12s,background .12s}',
+      '.mspl:hover::after,.mspl.virk::after{background:var(--g5);opacity:1}',
+      '@container main (min-width: 1100px){.mspl{display:block}}',
       '@container main (min-width: 1100px){.modcell[data-sp="1"],.modcell[data-sp="2"]{grid-column:span 30}.modcell[data-sp="4"]{grid-column:span 24}.modcell[data-sp="5"]{grid-column:span 36}}',
       '@container main (min-width: 1900px){.modcell[data-sp="1"]{grid-column:span 20}.modcell[data-sp="2"]{grid-column:span 30}}',
       // Raðhamur: einingarnar fá hald, stærðarhandfang og ✕ á meðan hamur er í breytingu.
@@ -1534,6 +1542,7 @@
     // 18.09.2026 — stærðarhandfangið í hægri brún einingar. Breiddin er 1/2/3 dálkar
     // af þremur, svo dráttur smellur í þrep: hlutfall bendilsins af breidd ristarinnar.
     r.addEventListener('pointerdown', onBreiddNidur);
+    r.addEventListener('pointerdown', onSkiptiNidur);
     r.addEventListener('pointerdown', onVbrGrip);   // 09.10.2026 — breidd Samþykkja-listans
     r.addEventListener('pointerdown', chkDragNidur);
     r.addEventListener('change', onChange);
@@ -5121,8 +5130,17 @@
         '<button type="button" data-t5="ham-breidd" data-m="' + esc(k) + '" data-v="1"' + (BREIDD_ROD.indexOf(sp) >= BREIDD_ROD.length - 1 ? ' disabled' : '') + ' title="Breiðara">▶</button>' +
         '<button type="button" data-t5="ham-eining-burt" data-m="' + esc(k) + '" title="Taka einingu úr hamnum">✕</button></div>';
       const res = radar ? '<button type="button" class="mres" data-hres="' + esc(k) + '" aria-label="Draga til að breyta breidd"></button>' : '';
+      // 10.11.2026 (Agnar): dragbær skiptilína á milli tveggja eininga sem standa hlið við hlið (⅖+⅗ · ½+½) — breiddin
+      // vistast á þjón eins og breidd úr ritlinum (Mitt vinnuborð: mitt.breidd · sérsniðinn hamur: hamir[].breidd).
+      let skipt = '';
+      if (!radar && (mode.mitt || mode.ser) && i + 1 < rod.length) {
+        const SP = { 1: 30, 2: 30, 3: 60, 4: 24, 5: 36 }, nsp = breiddAf(mode, rod[i + 1]);
+        let upph = 0; for (let j = 0; j < i; j++) upph += SP[breiddAf(mode, rod[j])] || 60;
+        if (upph % 60 === 0 && SPLIT_GILD.indexOf(sp) >= 0 && SPLIT_GILD.indexOf(nsp) >= 0 && SP[sp] + SP[nsp] === 60)
+          skipt = '<button type="button" class="mspl" data-spl="' + esc(k) + '|' + esc(rod[i + 1]) + '" aria-label="Draga til að breikka eða mjókka" title="Draga til hliðar — breidd vistast"></button>';
+      }
       return '<div class="modcell" data-sp="' + sp + '"' +
-        (radar ? ' draggable="true" data-hdrag="' + esc(k) + '"' : '') + '>' + bar + einingHtml(k) + res + '</div>';
+        (radar ? ' draggable="true" data-hdrag="' + esc(k) + '"' : '') + '>' + bar + einingHtml(k) + res + skipt + '</div>';
     }
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
     const midjuEiningar = (einingarIMidju || radar) && einingaRod.length ? ristHtml(einingaRod) : '';
@@ -5491,6 +5509,40 @@
     const cd = l.find(x => x.id === fraId);
     if (cd) cd.slot = naestaSlot(l);
     return l;
+  }
+  // Skiptilínan: dregin með pointer-atburðum (mús og fingur). Lifandi sýn setur data-sp beint á báðar einingar (engin
+  // endurteikning á meðan — engin ritun eða skrun tapast); við slepp er breiddin vistuð á þjón.
+  function onSkiptiNidur(e) {
+    const h = e.target && e.target.closest ? e.target.closest('[data-spl]') : null;
+    if (!h) return;
+    e.preventDefault();
+    const [ka, kb] = h.dataset.spl.split('|'), grid = h.closest('.modgrid'), ca = h.closest('.modcell');
+    if (!grid || !ca || !ca.nextElementSibling) return;
+    const cb = ca.nextElementSibling, g = grid.getBoundingClientRect(), vinstri = ca.getBoundingClientRect().left;
+    const fyrst = breiddAf(M(cfg().mode), ka);
+    let sidast = fyrst;
+    h.classList.add('virk');
+    try { h.setPointerCapture(e.pointerId); } catch (_) {}
+    const hreyfa = ev => {
+      const hlutf = (ev.clientX - vinstri) / Math.max(1, g.width);   // hlutur A af ristinni
+      const ny = hlutf < 0.45 ? 4 : hlutf < 0.55 ? 2 : 5;
+      if (ny === sidast) return;
+      sidast = ny;
+      ca.dataset.sp = String(ny); cb.dataset.sp = String(ny === 4 ? 5 : ny === 5 ? 4 : 2);
+    };
+    const sleppa = () => {
+      h.removeEventListener('pointermove', hreyfa); h.removeEventListener('pointerup', sleppa); h.removeEventListener('pointercancel', sleppa);
+      h.classList.remove('virk');
+      if (sidast === fyrst) return;
+      const bB = sidast === 4 ? 5 : sidast === 5 ? 4 : 2;
+      S.breiddBid[ka] = sidast; S.breiddBid[kb] = bB;
+      const klar = ok => { if (ok) { delete S.breiddBid[ka]; delete S.breiddBid[kb]; } render(); };
+      const c = cfg();
+      if (c.mode === MITT_HAM) { vistaCfg({ mitt: { breidd: { [ka]: sidast, [kb]: bB } } }).then(klar); }
+      else vistaHamir(l => { const x = l.find(y => y.id === c.mode); if (x) { x.breidd = Object.assign({}, x.breidd, { [ka]: sidast, [kb]: bB }); } return l; }).then(klar);
+      render();
+    };
+    h.addEventListener('pointermove', hreyfa); h.addEventListener('pointerup', sleppa); h.addEventListener('pointercancel', sleppa);
   }
   function onBreiddNidur(e) {
     const h = e.target && e.target.closest ? e.target.closest('[data-hres]') : null;
@@ -6294,7 +6346,7 @@
         if (S.hamForm && S.hamForm.id === MITT_HAM) {
           if (!krefstStillinga()) return;
           const F = S.hamForm, rod = (F.rod || []).filter(k => MODS[k]), breidd = {};
-          rod.forEach(k => { const b = (F.breidd || {})[k]; if (b === 1 || b === 2 || b === 3) breidd[k] = b; });
+          rod.forEach(k => { const b = (F.breidd || {})[k]; if (gildBreidd(b)) breidd[k] = b; });
           S.hamForm = null;
           // `first` er fylki: deepMerge sameinar hluti en skiptir fylkjum út, svo afhakað hverfur. `breidd` er hlutur
           // og gæti haldið gömlum lyklum — þeir eru meinlausir, breiddAf les aðeins einingar sem eru í `first`.
@@ -6314,7 +6366,7 @@
         // eininga sem eru í hamnum eru geymdar — annars sæti gamalt rusl eftir.
         const rod = (F.rod || []).slice();
         const breidd = {};
-        rod.forEach(k => { const b = (F.breidd || {})[k]; if (b === 1 || b === 2 || b === 3) breidd[k] = b; });
+        rod.forEach(k => { const b = (F.breidd || {})[k]; if (gildBreidd(b)) breidd[k] = b; });
         const gildi = { id: hid, l: nafn, board: bordMed, first: rod, breidd: breidd, flokkar: valin('hf_'), merki: valin('hg_'), eigandi: baraEg ? (fyrri.eigandi || nu()) : '' };
         if (!bordMed && !gildi.first.length) { toast('Veldu að minnsta kosti eina einingu — hamurinn yrði annars auður.', true); return; }
         el.disabled = true;
