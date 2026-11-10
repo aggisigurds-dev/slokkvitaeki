@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Framlína — Slökkvitæki</title>
+<!-- Framlínan (Agnar 10.11.2026): það sem kom inn í dag og í gær, nýjast efst, aðskilið frá bunkanum.
+     SJÁLFSTÆÐ síða: hleður engu úr appinu (engir patchar, engin skel) svo bilun hér brýtur ekkert annað og öfugt.
+     Gögn: GET /api/framlina (netlify/functions/framlina.cjs). Staðreyndir (póstur, svarað, mál, verðir) koma úr
+     gögnunum; AI raðar aðeins í flokka og er alltaf merkt „AI“. Enginn póstur er falinn. Ekkert er sent héðan. -->
+<script>
+(function(){try{
+  fetch('/api/hub-adgangar',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(s){
+    if(s && s.gate && !s.authed) location.replace('/innskraning.html?next='+encodeURIComponent(location.pathname+location.hash));
+  }).catch(function(){});
+}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@700;800&display=swap">
+<style>
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;min-height:100vh;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%);background-attachment:fixed;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#11141c;font-size:15px;line-height:1.4}
+button{font-family:inherit;cursor:pointer;border:0}
+a{color:inherit}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.sida{max-width:1360px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 56px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+.efst{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#fff}
+.efst .t{flex:1 1 220px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.efst h1{margin:0;font-family:"JetBrains Mono",monospace;font-weight:500;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#d5dbe6}
+.efst .d{font-size:24px;font-weight:600;text-shadow:0 1px 1px rgba(0,0,0,.5)}
+.efst .u{font-family:"JetBrains Mono",monospace;font-size:12px;color:#c3cad5}
+.silfur{height:44px;padding:0 16px;border-radius:10px;font-size:14px;font-weight:600;color:#2b313c;background:linear-gradient(180deg,#fdfdfe,#e3e7ee);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);outline:1px solid rgba(20,24,34,.16);outline-offset:-1px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
+.silfur:hover{filter:brightness(.97)}
+.dokk{height:44px;padding:0 16px;border-radius:10px;font-size:14px;font-weight:600;color:#eef1f4;background:linear-gradient(180deg,#3d4048,#1c1e23);outline:1px solid #000;outline-offset:-1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
+.dokk:hover{filter:brightness(1.2)}
+.graen{height:44px;padding:0 16px;border-radius:10px;color:#fff;font-weight:600;font-size:14px;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 5px rgba(0,0,0,.3);outline:1px solid rgba(52,168,98,.55);outline-offset:-1px;text-shadow:0 1px 1px rgba(0,0,0,.55);display:inline-flex;align-items:center;gap:7px}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid #c92a2a;outline-offset:2px}
+button[disabled]{opacity:.55;cursor:default}
+
+/* Verðir */
+.verdir{background:#fff;border-radius:14px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55),0 0 0 1px rgba(20,24,34,.14);overflow:hidden}
+.verdir summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:12px 16px;min-height:48px}
+.verdir summary::-webkit-details-marker{display:none}
+.vh{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;color:#3a4250}
+.vs{font-weight:600;font-size:14px}
+.vl{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#2b313c;white-space:nowrap}
+.led{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.led.graent{background:#1f9d57;box-shadow:0 0 0 3px rgba(31,157,87,.16)}
+.led.gult{background:#d99a1c;box-shadow:0 0 0 3px rgba(217,154,28,.2)}
+.led.rautt{background:#d5362c;box-shadow:0 0 0 3px rgba(213,54,44,.2)}
+.vlisti{border-top:1px solid #dfe3ea;padding:8px 16px 12px;display:grid;gap:6px}
+.vlina{display:grid;grid-template-columns:auto minmax(110px,170px) 1fr;gap:10px;align-items:baseline;font-size:13.5px}
+.vlina b{font-weight:600}
+.vlina span:last-child{color:#3a4250;word-break:break-word}
+
+/* Dálkar */
+.dalkar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.col{flex:1 1 340px;min-width:0;background:#fff;border-radius:14px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55),0 0 0 1px rgba(20,24,34,.14);overflow:hidden;display:flex;flex-direction:column}
+.chead{position:relative;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);padding:16px 18px 14px;display:flex;align-items:center;gap:12px;color:#fff}
+.rv{position:absolute;top:6px;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}
+.ctitle{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+.cnt{margin-left:auto;display:flex;align-items:baseline;gap:8px}
+.cnum{font-family:"Playfair Display",Georgia,serif;font-weight:800;font-size:38px;line-height:1;font-variant-numeric:lining-nums;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35)}
+.clab{font-family:"Playfair Display",Georgia,serif;font-weight:700;font-size:16px;color:#d9dee6}
+.plate{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0,#dce1e8)}
+.sec{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:#3a4250;padding:6px 4px 0}
+.tomt{padding:18px 8px;text-align:center;font-size:14px;color:#3a4250}
+
+/* Miði */
+.tk{background:#fff;border-radius:12px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.07);filter:drop-shadow(0 1px 1px rgba(15,20,30,.22)) drop-shadow(0 6px 12px rgba(15,20,30,.12));overflow:hidden}
+.tk.osvarad{box-shadow:inset 3px 0 0 #c92a2a,inset 0 0 0 1px rgba(20,24,34,.07)}
+.tkh{display:flex;width:100%;text-align:left;background:transparent;padding:0;min-height:72px;color:inherit}
+.stub{width:84px;flex:none;background:#f4f6f9;border-right:1.5px dashed #c3cad5;padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.kl{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:#11141c}
+.dg{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#4a5363}
+.dg.idag{color:#0b6b3a}
+.body{flex:1;min-width:0;padding:10px 12px 10px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.fra{font-weight:600;font-size:15px;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.efni{font-size:14px;color:#2b313c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai{font-size:13px;color:#4a5363;display:flex;gap:6px;align-items:baseline}
+.ai i{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;font-weight:700;color:#5b3fa0;flex:none}
+.ai span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:500;color:#2b313c;background:linear-gradient(180deg,#fdfdfe,#e3e7ee);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.chip.r{color:#a01c14;background:#fdecea;box-shadow:inset 0 0 0 1px rgba(180,35,24,.3)}
+.chip.g{color:#0b6b3a;background:#e4f3ea;box-shadow:inset 0 0 0 1px rgba(22,120,63,.3)}
+.opid{border-top:1px solid #dfe3ea;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.aisam{font-size:13.5px;color:#3a4250;background:#f3f0fa;border-radius:8px;padding:8px 10px}
+.aisam b{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.08em;color:#5b3fa0;margin-right:6px}
+.msg{border:1px solid #dfe3ea;border-radius:10px;background:#fafbfc;padding:10px 12px}
+.msg .mh{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:#4a5363;margin-bottom:6px;word-break:break-word}
+.msg .mt{font-size:14px;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto}
+.msg .mt.tomur{color:#5b6472;font-style:italic}
+.adg{display:flex;gap:8px;flex-wrap:wrap}
+.fellt{background:#fff;border-radius:14px;box-shadow:0 12px 30px -16px rgba(0,0,0,.55),0 0 0 1px rgba(20,24,34,.14);overflow:hidden}
+.fellt>summary{list-style:none;cursor:pointer;padding:14px 16px;min-height:48px;display:flex;align-items:center;gap:10px;font-weight:600}
+.fellt>summary::-webkit-details-marker{display:none}
+.fellt>summary .n{font-family:"JetBrains Mono",monospace;font-size:12px;color:#4a5363;font-weight:500}
+.fellt .plate{border-top:1px solid #dfe3ea}
+.villa{background:#fdecea;color:#7a160f;border-radius:12px;padding:14px 16px;box-shadow:inset 0 0 0 1px rgba(180,35,24,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.malrod{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:8px 10px 8px 12px;min-height:56px;box-shadow:inset 0 0 0 1px rgba(20,24,34,.07);filter:drop-shadow(0 1px 1px rgba(15,20,30,.22));text-decoration:none}
+.malrod:hover{box-shadow:inset 0 0 0 1px rgba(201,42,42,.45)}
+.malrod .nr{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;flex:none;width:58px}
+.malrod .mt2{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.malrod .mt2 b{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.malrod .mt2 span{font-size:12.5px;color:#4a5363;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){.efst .d{font-size:20px}.stub{width:72px}.vlina{grid-template-columns:auto 1fr}.vlina span:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="sida">
+  <div class="efst">
+    <div class="t"><h1>Framlína</h1><div class="d" id="dags">Sæki…</div><div class="u" id="uppf"></div></div>
+    <a class="dokk" href="/#bord">Eldra · Þjónustuborð</a>
+    <button class="silfur" type="button" id="btn-uppf">Uppfæra</button>
+  </div>
+  <div id="villa" hidden></div>
+  <div id="efni"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/framlina';
+  var S = { d: null, opinn: null, hled: false, flokkar: false, synaMal: 30 };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+  var dagur = function (d) { return p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear(); };
+  var kl = function (d) { return p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+  var dagsMerki = function (iso) {
+    var d = new Date(iso), n = new Date(), a = new Date(n.getFullYear(), n.getMonth(), n.getDate()), b = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var dagar = Math.round((a - b) / 864e5);
+    return dagar === 0 ? { t: 'Í dag', idag: true } : dagar === 1 ? { t: 'Í gær' } : { t: p2(d.getDate()) + '/' + p2(d.getMonth() + 1) };
+  };
+  var holf = function (a) { return String(a || '').split('@')[0].toLowerCase() + '@'; };
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Þræðir: nýjasti innkomni póstur í þræði ræður flokki og stöðu; eldri póstar þráðarins fylgja með þegar opnað er.
+  function thraedir(postar) {
+    var m = {}, rod = [];
+    postar.forEach(function (p) {
+      var k = (p.holf || '') + '|' + (String(p.efni || '').replace(/^\s*((re|fw|fwd|fs|sv|svar)\s*:\s*)+/i, '').trim().toLowerCase());
+      if (!m[k]) { m[k] = { k: k, postar: [] }; rod.push(m[k]); }
+      m[k].postar.push(p);                                   // postar koma nýjast fyrst
+    });
+    rod.forEach(function (t) {
+      var n = t.postar[0];
+      t.nyr = n; t.id = n.id;
+      t.afgreitt = n.afgreitt || null;
+      t.svarad = !!n.svarad;
+      t.mal = t.postar.map(function (x) { return x.mal; }).filter(Boolean)[0] || null;
+      t.fl = n.flokkun ? n.flokkun.f : null;
+    });
+    return rod;
+  }
+
+  function midi(t) {
+    var n = t.nyr, dm = dagsMerki(n.kom), f = n.flokkun, opinn = S.opinn === t.k;
+    var chips = '';
+    if (t.afgreitt) chips += '<span class="chip g">Afgreitt' + (t.afgreitt.af ? ' · ' + esc(t.afgreitt.af) : '') + '</span>';
+    else if (t.svarad) chips += '<span class="chip g">Svarað</span>';
+    else if (t.fl === 'svara' || t.fl === 'akvordun' || !t.fl) chips += '<span class="chip r">Ósvarað</span>';
+    if (t.mal) chips += '<span class="chip">Mál #' + esc(t.mal.id) + (t.mal.status === 'lokad' ? ' · lokað' : '') + '</span>';
+    if (t.postar.length > 1) chips += '<span class="chip">' + t.postar.length + ' í þræði</span>';
+    if (n.vidhengi) chips += '<span class="chip">Viðhengi</span>';
+    chips += '<span class="chip">' + esc(holf(n.holf)) + '</span>';
+    var h = '<article class="tk' + (!t.afgreitt && !t.svarad && t.fl !== 'upplysing' ? ' osvarad' : '') + '">' +
+      '<button type="button" class="tkh" data-opna="' + esc(t.k) + '" aria-expanded="' + opinn + '">' +
+        '<span class="stub"><span class="kl">' + kl(new Date(n.kom)) + '</span><span class="dg' + (dm.idag ? ' idag' : '') + '">' + esc(dm.t) + '</span></span>' +
+        '<span class="body"><span class="fra">' + esc(n.fra) + '</span><span class="efni">' + esc(n.efni) + '</span>' +
+          (f && f.a ? '<span class="ai"><i>' + (f.m === 'regla' ? 'REGLA' : 'AI') + '</i><span>' + esc(f.a) + '</span></span>' : !f ? '<span class="ai"><i>ÓFLOKKAÐ</i><span>bíður flokkunar</span></span>' : '') +
+          '<span class="chips">' + chips + '</span></span>' +
+      '</button>';
+    if (opinn) {
+      h += '<div class="opid">' +
+        (f && f.s ? '<div class="aisam"><b>AI-SAMANTEKT</b>' + esc(f.s) + '</div>' : '') +
+        t.postar.map(function (x) {
+          var d = new Date(x.kom), txt = String(x.texti || '').trim();
+          return '<div class="msg"><div class="mh">' + dagur(d) + ' ' + kl(d) + ' · ' + esc(x.fra) + ' &lt;' + esc(x.netfang) + '&gt; → ' + esc(x.holf) + (x.svarad ? ' · svarað' : '') + '</div>' +
+            '<div class="mt' + (txt ? '' : ' tomur') + '">' + (txt ? esc(txt) : 'Enginn texti var sóttur úr þessum pósti (aðeins efnislína eða viðhengi). Opnaðu hann í Tölvupóstum.') + '</div></div>';
+        }).join('') +
+        '<div class="adg">' +
+          (t.afgreitt ? '<button type="button" class="silfur" data-afgr="' + esc(t.id) + '" data-aftur="1">Taka afgreiðslu til baka</button>'
+                      : '<button type="button" class="graen" data-afgr="' + esc(t.id) + '">Afgreitt</button>') +
+          '<a class="silfur" href="/#tolvupostar">Opna í Tölvupóstum</a>' +
+          (t.mal ? '<a class="silfur" href="/#bord">Opna mál #' + esc(t.mal.id) + '</a>' : '') +
+        '</div></div>';
+    }
+    return h + '</article>';
+  }
+  function dalkur(titill, led, listi, tomt) {
+    return '<section class="col" aria-label="' + esc(titill) + '"><div class="chead"><span class="rv" style="left:6px"></span><span class="rv" style="right:6px"></span>' +
+      '<span class="led ' + led + '"></span><span class="ctitle">' + esc(titill) + '</span><span class="cnt"><span class="cnum">' + listi.length + '</span></span></div>' +
+      '<div class="plate">' + (listi.length ? listi.map(midi).join('') : '<div class="tomt">' + esc(tomt) + '</div>') + '</div></section>';
+  }
+
+  function teikna() {
+    var d = S.d; if (!d) return;
+    var nu = new Date(d.nu);
+    $('dags').textContent = 'Dagurinn ' + dagur(nu);
+    $('uppf').textContent = 'Uppfært kl. ' + kl(new Date()) + (S.flokkar ? ' · flokka nýjan póst…' : '');
+
+    var T = thraedir(d.postar);
+    var opnir = T.filter(function (t) { return !t.afgreitt && !t.svarad; });
+    var svara = opnir.filter(function (t) { return t.fl === 'svara' || !t.fl; });
+    var akv = opnir.filter(function (t) { return t.fl === 'akvordun'; });
+    var uppl = opnir.filter(function (t) { return t.fl === 'upplysing'; });
+    var lokid = T.filter(function (t) { return t.afgreitt || t.svarad; });
+
+    // Verðir
+    var bil = d.verdir.filter(function (v) { return v.ljos !== 'graent'; });
+    var raud = bil.filter(function (v) { return v.ljos === 'rautt'; }).length;
+    var vh = '<details class="verdir"' + (raud ? ' open' : '') + '><summary><span class="vh">Verðir</span>' +
+      '<span class="led ' + (raud ? 'rautt' : bil.length ? 'gult' : 'graent') + '"></span>' +
+      '<span class="vs">' + (bil.length ? (raud ? raud + ' á rauðu' : '') + (raud && bil.length - raud ? ' · ' : '') + (bil.length - raud ? (bil.length - raud) + ' á gulu' : '') + ' af ' + d.verdir.length : 'Allir ' + d.verdir.length + ' vakandi') + '</span>' +
+      bil.map(function (v) { return '<span class="vl"><span class="led ' + v.ljos + '"></span>' + esc(v.l) + '</span>'; }).join('') + '</summary>' +
+      '<div class="vlisti">' + d.verdir.map(function (v) { return '<div class="vlina"><span class="led ' + v.ljos + '"></span><b>' + esc(v.l) + '</b><span>' + esc(v.t) + '</span></div>'; }).join('') + '</div></details>';
+
+    // Ný mál (ekki þau sem urðu til úr pósti sem þegar sést hér)
+    var postRef = {}; d.postar.forEach(function (p) { if (p.mal) postRef[p.mal.id] = 1; });
+    var malOll = d.mal.filter(function (m) { return !postRef[m.id] && m.status !== 'lokad'; });
+    var mal = malOll.filter(function (m) { return !m.vel; });            // stofnuð af fólki (starfsfólk, gátt, sími)
+    var malVel = malOll.filter(function (m) { return m.vel; });          // stofnuð af vélum og AI — haldið sér
+    var malRod = function (m) {
+      var dm = dagsMerki(m.created_at), c = new Date(m.created_at);
+      return '<a class="malrod" href="/#bord"><span class="nr">#' + esc(m.id) + '</span><span class="mt2"><b>' + esc(m.title || '(án titils)') + '</b>' +
+        '<span>' + esc(dm.t) + ' ' + kl(c) + (m.customer_nafn ? ' · ' + esc(m.customer_nafn) : '') + ' · á: ' + esc(m.assigned_to || 'enginn') + ' · frá: ' + esc(m.created_by || m.source || '?') + '</span></span>' +
+        (m.important ? '<span class="chip r">Áríðandi</span>' : '') + '</a>';
+    };
+    var malH = '<section class="col" aria-label="Ný mál frá fólki"><div class="chead"><span class="rv" style="left:6px"></span><span class="rv" style="right:6px"></span><span class="led graent"></span>' +
+      '<span class="ctitle">Ný mál frá fólki</span><span class="cnt"><span class="cnum">' + mal.length + '</span></span></div><div class="plate">' +
+      (mal.length ? mal.slice(0, S.synaMal).map(malRod).join('') + (mal.length > S.synaMal ? '<button type="button" class="silfur" data-fleiri="1">Sýna ' + (mal.length - S.synaMal) + ' í viðbót</button>' : '')
+        : '<div class="tomt">Ekkert mál stofnað af fólki síðustu ' + Math.round(d.gluggi_klst / 24) + ' daga.</div>') + '</div></section>';
+
+    $('efni').innerHTML = vh +
+      '<div class="dalkar" style="margin-top:16px">' +
+        dalkur('Svara', 'rautt', svara, 'Ekkert bíður svars.') +
+        dalkur('Ákvörðun', 'gult', akv, 'Engin ákvörðun bíður.') +
+        malH +
+      '</div>' +
+      '<details class="fellt" style="margin-top:16px"><summary>Til upplýsingar <span class="n">' + uppl.length + ' · ekkert þarf að gera</span></summary><div class="plate">' + (uppl.length ? uppl.map(midi).join('') : '<div class="tomt">Ekkert.</div>') + '</div></details>' +
+      '<details class="fellt" style="margin-top:16px"><summary>Vélgerð mál <span class="n">' + malVel.length + ' · stofnuð af Claude og sjálfvirkum vörðum, ósannreynd</span></summary><div class="plate">' + (malVel.length ? malVel.map(malRod).join('') : '<div class="tomt">Engin.</div>') + '</div></details>' +
+      '<details class="fellt" style="margin-top:16px"><summary>Svarað og afgreitt <span class="n">' + lokid.length + ' · síðustu ' + Math.round(d.gluggi_klst / 24) + ' daga</span></summary><div class="plate">' + (lokid.length ? lokid.map(midi).join('') : '<div class="tomt">Ekkert enn.</div>') + '</div></details>';
+    // halda felldum hlutum opnum yfir endurteikningu
+    document.querySelectorAll('#efni details.fellt').forEach(function (el, i) { if (S['f' + i]) el.open = true; el.addEventListener('toggle', function () { S['f' + i] = el.open; }); });
+  }
+
+  function synaVillu(t) { var v = $('villa'); v.hidden = false; v.innerHTML = '<div class="villa"><span><b>Náði ekki í gögn.</b> ' + esc(t) + '</span><button type="button" class="silfur" id="btn-aftur">Reyna aftur</button></div>'; $('btn-aftur').onclick = function () { hlada(true); }; }
+
+  function hlada(handvirkt) {
+    if (S.hled) return Promise.resolve();
+    S.hled = true; $('btn-uppf').disabled = true;
+    return fetch(API, { credentials: 'same-origin', cache: 'no-store' }).then(function (r) {
+      if (r.status === 401) { location.replace('/innskraning.html?next=' + encodeURIComponent(location.pathname)); throw new Error('Innskráning vantar'); }
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.error ? j.error : 'HTTP ' + r.status); return j; });
+    }).then(function (j) {
+      S.d = j; $('villa').hidden = true; teikna();
+      if (j.postar.some(function (p) { return !p.flokkun; })) flokka(0);
+    }).catch(function (e) { synaVillu(String(e && e.message || e)); }).then(function () { S.hled = false; $('btn-uppf').disabled = false; });
+  }
+  // Óflokkaður póstur: biðja þjóninn að flokka (mest 24 í kalli) og sækja aftur; hámark 4 umferðir.
+  function flokka(umferd) {
+    if (S.flokkar || umferd >= 4) return;
+    S.flokkar = true; teikna();
+    fetch(API, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'flokka' }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { S.flokkar = false; var st = j && j.stada; return hladaHljott().then(function () { if (st && !st.villa && st.oflokkad > 0) flokka(umferd + 1); }); })
+      .catch(function () { S.flokkar = false; teikna(); });
+  }
+  function hladaHljott() { return fetch(API, { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.postar) { S.d = j; teikna(); } }).catch(function () {}); }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-opna]');
+    if (b) { var k = b.getAttribute('data-opna'); S.opinn = S.opinn === k ? null : k; teikna(); return; }
+    var a = e.target.closest('[data-afgr]');
+    if (a) {
+      a.disabled = true;
+      var id = a.getAttribute('data-afgr'), aftur = !!a.getAttribute('data-aftur');
+      fetch(API, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'afgreitt', id: id, afturkalla: aftur, af: (S.d && S.d.notandi) || '' }) })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error((j && j.error) || 'HTTP ' + r.status); }); })
+        .then(function () { S.opinn = null; return hladaHljott(); })
+        .catch(function (err) { a.disabled = false; synaVillu('Merkingin vistaðist ekki: ' + String(err && err.message || err)); });
+      return;
+    }
+    if (e.target.closest('[data-fleiri]')) { S.synaMal += 50; teikna(); }
+  });
+  $('btn-uppf').addEventListener('click', function () { hlada(true); });
+  // Sjálfvirk uppfærsla á 2 mín fresti meðan síðan er sýnileg og enginn miði opinn (til að trufla ekki lestur).
+  setInterval(function () { if (document.visibilityState === 'visible' && !S.opinn) hladaHljott(); }, 120000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && !S.opinn) hladaHljott(); });
+  hlada();
+})();
+</script>
+</body>
+</html>
