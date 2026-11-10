@@ -419,7 +419,7 @@
       // gagnagrunnstengingin gæti ekki verið tilbúin í fyrstu teikningu → reyna aftur (hámark 8×), ekki gefast upp þegjandi
       if (!sb) { if (++_vbTries <= 8) { _vbLoaded = false; setTimeout(() => { try { render(); } catch (_) {} }, 1500); } return; }
       const rows = await DB.fetchAll((from, to) => sb.from('vinnublad_utklippur')
-        .select('id,fyrirtaeki_id,titill,url,blad').eq('ar', curYear)
+        .select('id,fyrirtaeki_id,titill,url,blad,magn,stada').eq('ar', curYear)
         .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
       const m = new Map();
       (rows || []).forEach(x => {
@@ -440,8 +440,12 @@
         '<span class="sv-vb-t">Vinnublað</span>' +
         '<span class="sv-vb-n">' + rows.length + (rows.length === 1 ? ' útklippa' : ' útklippur') + '</span>' +
         '<i class="sv-vb-ch" aria-hidden="true"></i></button>' +
+      // 10.11.2026 (Agnar: „seinlegt að lesa þetta"): lesna magnið stendur EFST í einni línu, í tækjaröð, með stöðunni fremst —
+      // titillinn undir myndinni er aðeins skýring. Magnið er í dálkinum `magn`, staðan í `stada` (bidur_samthykkis | samthykkt).
       '<div class="sv-vb-body">' + rows.map(x =>
-        '<figure class="sv-vb-fig"><a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð">' +
+        '<figure class="sv-vb-fig">' +
+          (x.magn ? '<p class="sv-vb-magn"><strong>' + (x.stada === 'samthykkt' ? 'Samþykkt' : 'Bíður samþykkis') + '</strong> ' + esc(x.magn) + '</p>' : '') +
+          '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Opna í fullri stærð">' +
           '<img src="' + esc(x.url) + '" alt="Vinnublað: ' + esc(r.nafn) + '" loading="lazy" decoding="async"></a>' +
           (x.titill ? '<figcaption>' + esc(x.titill) + '</figcaption>' : '') + '</figure>').join('') + '</div>' +
     '</div>';
@@ -625,6 +629,8 @@
       r('.sv-vb-fig', 'margin:0'),
       r('.sv-vb-fig img', 'display:block;width:100%;height:auto;min-height:60px;border-radius:5px;background:#fff'),
       r('.sv-vb-fig figcaption', 'margin-top:3px;font:400 11px ' + SANS + ';color:#5b6472'),
+      r('.sv-vb-magn', 'margin:0 0 6px;font:500 13px/1.45 ' + SANS + ';color:#1f242d;overflow-wrap:anywhere'),
+      r('.sv-vb-magn strong', 'display:inline-block;margin-right:6px;padding:1px 7px;border-radius:3px;background:#dfe3ea;font:600 11px ' + MONO + ';color:#2b313c;letter-spacing:.02em;text-transform:uppercase'),
       r('.sv-spj .sv-marks', 'gap:6px'),
       r('.sv-spj .sv-mark', 'display:inline-flex;align-items:center;height:24px!important;min-height:24px!important;padding:0 9px!important;border-radius:6px!important;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12);font:500 11.5px ' + SANS + '!important;color:#2b313c!important;white-space:nowrap;cursor:pointer;line-height:1!important'),
       r('.sv-spj .sv-mark[style]', 'background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.25)'),
