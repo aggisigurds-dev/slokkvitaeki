@@ -661,10 +661,6 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 
 ## Aðalmál (492, `#adalmal`) — vikuyfirlit á eigin borði (02.11.2026 · 492b 10.11.2026)
 
-- **Staða 10.11.2026:** 492b er á greininni `adalmal-492b` (commit með `[deploy]` í haus), EKKI á master og EKKI birt. Sjálfvirki
-  flokkarinn stöðvaði framleiðslubirtinguna og hún bíður samþykkis Agnars. Þar til gildir gamla hegðunin á master og á lifandi síðu:
-  viðbætur með þankastriki renna inn í Spurningar og tómt borð gefur enga skýringu. Staðfestu með `window.Adalmal.version`
-  (`'492'` = gamalt, `'492b'` = nýtt). Þegar greinin er komin á master má eyða þessari línu.
 - **Hvað:** `js/patches/492-adalmal.js`, sýn `view-adalmal`, 261 PAGES `adalmal` (Þjónustuborðs- og Boss-appið á eftir `bord`, merki
   `__adm1`/`__adm2`). Engin eigin tafla: borðið les `thjonustubeidni` með merkinu `adalmal` í `tags` og teiknar `notes`. `tags` er jsonb,
   svo sían er `.contains('tags', JSON.stringify(['adalmal']))`; fylki gefur „invalid input syntax for type json".

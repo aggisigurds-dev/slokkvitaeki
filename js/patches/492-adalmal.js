@@ -14,6 +14,12 @@
  * borðinu (368/489), samstillt á allar vélar, aldrei eytt. Kláruð atriði fara neðst, strikuð, „N klárað · sýna".
  * „Á borðið" opnar málið á Þjónustuborðinu (Bord368.opnaMal) þar sem má svara, fela og breyta textanum.
  *
+ * 492b (10.11.2026): viðbót aftan við yfirlitið sem byrjar á þankastriki („— Athugasemd 03.11.2026 (Claude): …",
+ * „— Endurmælt …", „— Leiðrétt og lokað …") fer í eigin hluta „Leiðrétt eftir endurmælingu", nýjasti kaflinn efst. Áður
+ * rann hún inn í Spurningar (mælt á #1376: 10 af 13 „spurningum" voru endurmælingar, borðið taldi 39 atriði í stað 29).
+ * Borðið les aðeins OPIN mál; sé ekkert opið segir það hvaða yfirliti var lokað síðast og hvers vegna (lokid_at,
+ * lokid_lysing) svo tómt borð lesist ekki sem bilun. Yfirlit sem er 7 daga eða eldra fær aldursmerki.
+ *
  * Mynstur: 491-vasinn.js (view-<key>, App.switchView-umbúðir, Brunastál). Skrifar aðeins við raunverulegan smell.
  * Skráð í Öpp (261 PAGES: 'adalmal') og sett á Boss- og Þjónustuborðs-appið á eftir Þjónustuborðinu (__adm1/__adm2).
  * ============================================================================================ */
@@ -39,27 +45,33 @@
   const HLUTAR = {
     a:  { heiti: 'Fundir og frestir næstu daga', rod: 1, opinn: true,  takn: '🗓' },
     c:  { heiti: 'Það sem skiptir mestu að gera',  rod: 2, opinn: true,  takn: '➤' },
+    // Leiðréttingar sem bætt var aftan við yfirlitið eftir að það var skrifað (endurmæling í grunni, lokun).
+    ath: { heiti: 'Leiðrétt eftir endurmælingu',   rod: 2.5, opinn: false, takn: '↻' },
     b:  { heiti: 'Hvað gerðist',                   rod: 3, opinn: false, takn: '◦' },
     sp: { heiti: 'Spurningar til þín',             rod: 4, opinn: true,  takn: '?' }
   };
 
-  const S = { loaded: false, loading: false, villa: null, mal: [], falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {} };
+  const S = { loaded: false, loading: false, villa: null, mal: [], sidast: null, falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {} };
 
   /* ── gögn ─────────────────────────────────────────────────────────────── */
   async function load() {
     const c = sb(); if (!c) { S.villa = 'Biðlarinn er ekki tilbúinn'; render(); return; }
     if (S.loading) return; S.loading = true; render();
     try {
-      const [m, f] = await Promise.all([
+      const [m, f, s] = await Promise.all([
         c.from('thjonustubeidni').select('id,title,summary,notes,status,due_at,created_at,updated_at,created_by,tags')
           .is('deleted_at', null).is('archived_at', null).or('status.is.null,status.neq.lokad')
           // tags er jsonb — strengur fer óbreyttur í cs.["adalmal"]; fylki yrði {adalmal} (Postgres-fylki) og grunnurinn
           // svarar „invalid input syntax for type json".
           .contains('tags', JSON.stringify([MERKI])).order('created_at', { ascending: false }).limit(5),
-        c.from('thjonustubord_falid').select('lykill,falid').like('lykill', EINING + ':%').limit(1000)
+        c.from('thjonustubord_falid').select('lykill,falid').like('lykill', EINING + ':%').limit(1000),
+        // Síðasta LOKAÐA yfirlit — aðeins til að skýra tómt borð (hvenær og hvers vegna því var lokað).
+        c.from('thjonustubeidni').select('id,title,lokid_at,lokid_af,lokid_lysing').is('deleted_at', null).eq('status', 'lokad')
+          .contains('tags', JSON.stringify([MERKI])).order('lokid_at', { ascending: false, nullsFirst: false }).limit(1)
       ]);
       if (m.error) throw m.error;
       if (f.error) throw f.error;
+      S.sidast = (!s.error && s.data && s.data[0]) || null;      // skýring, ekki gögn borðsins — villa hér stoppar ekkert
       S.mal = m.data || [];
       const kort = {};
       (f.data || []).forEach(r => { kort[r.lykill] = !!r.falid; });
@@ -87,7 +99,7 @@
   function greina(m) {
     const hl = {}, ordh = [];
     let h = null;
-    const nyr = (k, heiti) => { if (!hl[k]) { hl[k] = { k, heiti, atridi: [] }; ordh.push(k); } h = hl[k]; };
+    const nyr = (k, heiti) => { if (!hl[k]) { hl[k] = { k, heiti, atridi: [], haus: {} }; ordh.push(k); } h = hl[k]; };
     String(m.notes || '').split(/\r?\n/).forEach(raw => {
       const l = raw.trim(); if (!l) return;
       let mm = l.match(/^([A-F])\s*[·•–-]\s*(.+)$/);
@@ -97,6 +109,10 @@
         l.replace(/^spurningar[^:]*:\s*/i, '').split(/\s·\s/).forEach(x => { x = x.trim(); if (x) h.atridi.push(x); });
         return;
       }
+      // Viðbót aftan við yfirlitið (endurmæling, leiðrétting, lokun) byrjar á þankastriki: „— Athugasemd 03.11.2026 (Claude): …".
+      // Hún fær eigin hluta og punktalínurnar á eftir fylgja henni. Án þessa rann hún inn í síðasta hluta (Spurningar).
+      mm = l.match(/^—\s*(\S.*)$/);
+      if (mm) { nyr('ath', HLUTAR.ath.heiti); h.haus[h.atridi.length] = true; h.atridi.push(mm[1].trim()); return; }
       mm = l.match(/^(?:•|-|–|\d{1,2}[.)])\s*(.+)$/);
       if (mm) { if (!h) nyr('x', 'Annað'); h.atridi.push(mm[1].trim()); return; }
       if (h && h.atridi.length) h.atridi[h.atridi.length - 1] += ' ' + l;      // framhaldslína
@@ -104,6 +120,24 @@
       // inngangslínur (dagsetning, heimildir) eru ekki sýndar — hausinn ber dagsetninguna
     });
     return ordh.map(k => hl[k]).sort((x, y) => ((HLUTAR[x.k] || {}).rod || 9) - ((HLUTAR[y.k] || {}).rod || 9));
+  }
+  // Nýjasta dagsetningin í kaflahausum leiðréttinga („Endurmælt 07.11.2026 …") — updated_at málsins hreyfist ekki við viðbót.
+  function sidastLeidrett(hlutar) {
+    const a = hlutar.find(h => h.k === 'ath'); if (!a) return '';
+    let best = 0, txt = '';
+    a.atridi.forEach((t, i) => {
+      if (!a.haus[i]) return;
+      const d = String(t).match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/); if (!d) return;
+      const n = +d[3] * 10000 + +d[2] * 100 + +d[1];
+      if (n > best) { best = n; txt = p2(+d[1]) + '.' + p2(+d[2]) + '.' + d[3]; }
+    });
+    return txt;
+  }
+  // Leiðréttingar: kaflarnir í öfugri röð (nýjasti efst), línur innan kafla halda sinni röð. Lykill ✓ fylgir upphaflegu númeri.
+  function nyjastEfst(radir) {
+    const kaflar = [];
+    radir.forEach(r => { if (r.haus || !kaflar.length) kaflar.push([]); kaflar[kaflar.length - 1].push(r); });
+    return kaflar.reverse().reduce((a, k) => a.concat(k), []);
   }
   // Taflan skorðar lykilinn við ^[a-z_]+:[a-z_]+:[^\s]+$ (eining:undireining:afgangur) — talan má því ekki vera í 2. sæti.
   const lykill = (m, h, i) => EINING + ':atridi:' + m.id + '-' + h.k + '-' + i;
@@ -123,20 +157,22 @@
       V + ' .ad-titill{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 2px 10px}' + V + ' .ad-titill b{font-family:' + DISP + ';font-size:17px;line-height:1.25}' + V + ' .ad-titill small{font-family:' + MONO + ';font-size:10.5px;color:#525b6b;letter-spacing:.04em}',
       V + ' .ad-grid{display:grid;grid-template-columns:1fr;gap:10px}',
       V + ' .ad-hl{border-radius:12px;background:#fff;border:1px solid rgba(20,24,34,.16);box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden}',
-      V + ' .ad-hl._a{border-top:4px solid #c4452f}' + V + ' .ad-hl._c{border-top:4px solid #1f6b3c}' + V + ' .ad-hl._b{border-top:4px solid #5b6577}' + V + ' .ad-hl._sp{border-top:4px solid #b8892e}',
+      V + ' .ad-hl._a{border-top:4px solid #c4452f}' + V + ' .ad-hl._c{border-top:4px solid #1f6b3c}' + V + ' .ad-hl._b{border-top:4px solid #5b6577}' + V + ' .ad-hl._sp{border-top:4px solid #b8892e}' + V + ' .ad-hl._ath{border-top:4px solid #2f6fb3}',
       V + ' .ad-hl .haus{display:flex;align-items:center;gap:8px;width:100%;padding:11px 12px;border:0;background:none;text-align:left;cursor:pointer;color:#1f2530;font:700 13px ' + SANS + '}',
       V + ' .ad-hl .haus .tk{flex:none;width:24px;height:24px;border-radius:6px;background:#1f2530;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px}',
       V + ' .ad-hl .haus .n{margin-left:auto;font-family:' + MONO + ';font-size:10.5px;color:#525b6b;letter-spacing:.06em;white-space:nowrap}' + V + ' .ad-hl .haus .pil{font-size:11px;color:#525b6b}',
       V + ' .ad-hl ol{list-style:none;margin:0;padding:0 6px 8px}',
       V + ' .ad-at{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-top:1px solid rgba(20,24,34,.08);font-size:15px;line-height:1.5;overflow-wrap:anywhere}',
-      V + ' .ad-hl._b .ad-at{font-size:13.5px}' + V + ' .ad-at._kl{opacity:.5}' + V + ' .ad-at._kl .tx{text-decoration:line-through}',
+      V + ' .ad-hl._b .ad-at,' + V + ' .ad-hl._ath .ad-at{font-size:13.5px}' + V + ' .ad-at._haus{border-top:2px solid rgba(20,24,34,.26);background:rgba(47,111,179,.07)}' + V + ' .ad-at._kl{opacity:.5}' + V + ' .ad-at._kl .tx{text-decoration:line-through}',
       V + ' .ad-at .nr{flex:none;min-width:22px;padding-top:2px;font-family:' + MONO + ';font-size:12px;color:#525b6b;text-align:right}',
       V + ' .ad-at .tx{flex:1;min-width:0}' + V + ' .ad-at .tx b{font-weight:700}',
       V + ' .ad-at button{flex:none;width:34px;height:34px;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font-size:15px;cursor:pointer}' + V + ' .ad-at button._on{background:linear-gradient(180deg,#2d8a4e,#1f6b3c);border-color:#0b3519;color:#fff}' + V + ' .ad-at button:disabled{opacity:.45}',
       V + ' .ad-klarad{display:flex;align-items:center;gap:8px;padding:8px 12px 10px;font:11px ' + MONO + ';color:#525b6b;letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(20,24,34,.08)}' + V + ' .ad-klarad button{margin-left:auto;background:none;border:0;font:600 11px ' + SANS + ';color:#2f6fb3;text-transform:none;letter-spacing:0;cursor:pointer;padding:4px 6px}',
+      V + ' .ad-titill small._gamalt{color:#a3301e;font-weight:700}',
+      V + ' .ad-sidast{margin:14px auto;max-width:520px;padding:10px 12px;border-radius:9px;background:#fff;border:1px solid rgba(20,24,34,.16);text-align:left;font-size:13px;line-height:1.5;color:#1f2530}' + V + ' .ad-sidast span{display:block;margin-top:4px;color:#525b6b}',
       V + ' .ad-tomt{margin:30px 20px;text-align:center;font-size:14px;color:#525b6b;line-height:1.6}' + V + ' .ad-villa{margin:12px;padding:12px;border-radius:9px;background:#f9e3e0;color:#7a1f14;font-size:13px}',
       V + ' .ad-hint{margin:0 12px;font:11px ' + MONO + ';color:#5b6577;line-height:1.5}',
-      '@media (min-width:900px){' + V + ' #' + ROOT_ID + '{max-width:980px;margin:0 auto}' + V + ' .ad-grid{grid-template-columns:1fr 1fr}' + V + ' .ad-hl._b,' + V + ' .ad-hl._sp{grid-column:1/-1}}'
+      '@media (min-width:900px){' + V + ' #' + ROOT_ID + '{max-width:980px;margin:0 auto}' + V + ' .ad-grid{grid-template-columns:1fr 1fr}' + V + ' .ad-hl._b,' + V + ' .ad-hl._sp,' + V + ' .ad-hl._ath{grid-column:1/-1}}'
     ].join('\n');
   }
   function injectCss() { if (document.getElementById('_adm-css')) return; const st = document.createElement('style'); st.id = '_adm-css'; st.textContent = css(); document.head.appendChild(st); }
@@ -156,9 +192,10 @@
   }
   function hlutiHtml(m, h) {
     const d = HLUTAR[h.k] || { takn: '•' }, opinn = erOpinn(m, h), id = m.id + ':' + h.k;
-    const radir = h.atridi.map((t, i) => ({ t, i, l: lykill(m, h, i) }));
+    let radir = h.atridi.map((t, i) => ({ t, i, l: lykill(m, h, i), haus: !!(h.haus && h.haus[i]) }));
+    if (h.k === 'ath') radir = nyjastEfst(radir);
     const opin = radir.filter(r => !erKlarad(r.l)), klarad = radir.filter(r => erKlarad(r.l));
-    const rod = r => '<li class="ad-at' + (erKlarad(r.l) ? ' _kl' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><span class="tx">' + atridiHtml(r.t) + '</span>' +
+    const rod = r => '<li class="ad-at' + (erKlarad(r.l) ? ' _kl' : '') + (r.haus ? ' _haus' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><span class="tx">' + atridiHtml(r.t) + '</span>' +
       '<button type="button" class="' + (erKlarad(r.l) ? '_on' : '') + '" data-adm="klara" data-l="' + esc(r.l) + '"' + (r.l in S.bid ? ' disabled' : '') + ' title="' + (erKlarad(r.l) ? 'Taka klárað-merkið af' : 'Merkja klárað') + '">' + (erKlarad(r.l) ? '✓' : '○') + '</button></li>';
     let x = '<section class="ad-hl _' + esc(h.k) + '"><button type="button" class="haus" data-adm="opna" data-id="' + esc(id) + '" aria-expanded="' + opinn + '"><span class="tk">' + d.takn + '</span>' + esc(h.heiti) +
       '<span class="n">' + opin.length + (klarad.length ? ' · ' + klarad.length + ' ✓' : '') + '</span><span class="pil">' + (opinn ? '▾' : '▸') + '</span></button>';
@@ -173,24 +210,32 @@
   }
   function malHtml(m) {
     const hlutar = greina(m);
-    let x = '<div class="ad-mal"><div class="ad-titill"><b>' + esc(String(m.title || '').replace(/^📌\s*/, '')) + '</b><small>#' + m.id + ' · ' + esc(dags(m.updated_at || m.created_at)) + ' ' + esc(kl(m.updated_at || m.created_at)) + (m.due_at ? ' · frestur ' + esc(dags(m.due_at)) : '') + '</small></div>';
+    const leidr = sidastLeidrett(hlutar), aldur = Math.floor((Date.now() - new Date(m.created_at).getTime()) / 864e5);
+    let x = '<div class="ad-mal"><div class="ad-titill"><b>' + esc(String(m.title || '').replace(/^📌\s*/, '')) + '</b><small>#' + m.id + ' · ' + esc(dags(m.updated_at || m.created_at)) + ' ' + esc(kl(m.updated_at || m.created_at)) + (m.due_at ? ' · frestur ' + esc(dags(m.due_at)) : '') + (leidr ? ' · leiðrétt ' + esc(leidr) : '') + '</small>' +
+      (aldur >= 7 ? '<small class="_gamalt">' + aldur + ' daga gamalt · biddu Claude um nýtt yfirlit</small>' : '') + '</div>';
     x += hlutar.length ? '<div class="ad-grid">' + hlutar.map(h => hlutiHtml(m, h)).join('') + '</div>'
       : '<div class="ad-hl"><div class="ad-at" style="white-space:pre-wrap">' + esc(m.notes || m.summary || '') + '</div></div>';
     return x + '</div>';
   }
+  // Tómt borð: segja hvaða yfirliti var lokað síðast og hvers vegna, svo tómt lesist ekki sem bilun.
+  function sidastHtml() {
+    const s = S.sidast; if (!s) return '';
+    return '<div class="ad-sidast"><b>Síðasta yfirlit</b> (#' + esc(s.id) + ') var lokað' + (s.lokid_at ? ' ' + esc(dags(s.lokid_at)) : '') + (s.lokid_af ? ' af ' + esc(s.lokid_af) : '') + '.' +
+      (s.lokid_lysing ? '<span>' + esc(String(s.lokid_lysing).slice(0, 300)) + '</span>' : '') + '</div>';
+  }
   function html() {
     const n = S.mal.length;
-    let fjoldi = 0;
-    S.mal.forEach(m => { greina(m).forEach(h => { fjoldi += h.atridi.length; }); });
+    let fjoldi = 0, leidr = 0;      // leiðréttingar teljast sér (kaflar), ekki sem atriði yfirlitsins
+    S.mal.forEach(m => { greina(m).forEach(h => { if (h.k === 'ath') leidr += Object.keys(h.haus).length; else fjoldi += h.atridi.length; }); });
     let st = 'sæki…';
-    if (S.loaded) st = n ? n + ' yfirlit · ' + fjoldi + ' atriði' : 'engin aðalmál skráð';
+    if (S.loaded) st = n ? n + ' yfirlit · ' + fjoldi + ' atriði' + (leidr ? ' · ' + leidr + (leidr === 1 ? ' leiðrétting' : ' leiðréttingar') : '') : 'engin aðalmál skráð';
     else if (S.villa) st = '⚠️ ' + S.villa;
     let h = '<div class="ad-haus"><div><div class="tt">📌 Aðalmál</div><div class="st">' + esc(st) + '</div></div>' +
       (n ? '<button type="button" data-adm="bord" data-id="' + S.mal[0].id + '" title="Opna málið á Þjónustuborðinu">Á borðið</button>' : '') +
       '<button type="button" class="uppf" data-adm="uppf" title="Sækja aftur">↻</button></div>';
     if (S.villa) h += '<div class="ad-villa">' + esc(S.villa) + '</div>';
     if (S.loaded) {
-      h += n ? S.mal.map(malHtml).join('') : '<div class="ad-tomt">Engin aðalmál skráð.<br>Biddu Claude: „settu vikuyfirlit á Aðalmál".</div>';
+      h += n ? S.mal.map(malHtml).join('') : '<div class="ad-tomt">Engin aðalmál skráð.' + sidastHtml() + (S.sidast ? '' : '<br>') + 'Biddu Claude: „settu vikuyfirlit á Aðalmál".</div>';
       h += '<div class="ad-hint">○ = merkja klárað (geymt fyrir allar vélar) · textinn er mál á Þjónustuborðinu með merkinu „adalmal" — Claude skrifar nýtt fyrir nýja viku.</div>';
     } else if (!S.villa) h += '<div class="ad-tomt">Sæki aðalmálin…</div>';
     return h;
@@ -262,6 +307,6 @@
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Adalmal = { open, render, load, greina, S, version: '492' };
-  console.log('[492] Aðalmál — sér borð');
+  window.Adalmal = { open, render, load, greina, S, version: '492b' };
+  console.log('[492b] Aðalmál — sér borð');
 })();
