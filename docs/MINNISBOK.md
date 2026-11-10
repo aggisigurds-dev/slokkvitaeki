@@ -5,9 +5,9 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-10 22:17 · 2150 virkar staðreyndir — 1239 prentaðar hér
+Sótt 2026-11-10 22:52 · 2157 virkar staðreyndir — 1244 prentaðar hér
 
-> ⚠ **Bókin er ekki allt minnið:** 118 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
+> ⚠ **Bókin er ekki allt minnið:** 120 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
 > `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:
 > `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`
@@ -91,8 +91,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 |---|---:|
 | [kerfi](#kerfi) | 131 |
 | [solur](#solur) | 50 |
+| [teikningar](#teikningar) | 49 |
 | [skjol](#skjol) | 49 |
-| [teikningar](#teikningar) | 47 |
 | [postur](#postur) | 41 |
 | [taeki](#taeki) | 34 |
 | [sweep](#sweep) | 31 |
@@ -305,6 +305,106 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
 - _…og 10 til viðbótar í töflunni._
 
+### teikningar
+
+- **TurboPaint 10.11.2026 nótt (kjarni PR #306–#310, mælt á framleiðslu): (1) úttektarhæð opnast BEINT — áður hlóð ?uttekt= síðasta borðinu að fullu og gamla efni hæðarborðsins til þess eins að henda því; Breiðhöfði 2. hæð 19,9 → 14,5 s og löng verk á aðalþræði 4,9 → 0,8 s (takaVidBordi, haettaBidOgHlada); (2) lokaskref TIF-skönnunar í vinnuþræði, blaðið pixlarétt eins; (3) „Útveggir úr útlínu“ í Húsið-spjaldinu — útveggir eftir handteiknuðu útlínunni þar sem enginn veggur er fyrir (68 → 72 á Breiðhöfða, undo virkar); (4) gólfáferðin í 3D sést og er í réttum litum (three í 3D er r128 af cdnjs: map.repeat endurtók alphaMap-grímuna). Raunveruleg veggjavél á 2. hæð Breiðhöfða með útlínu um allt húsið: 30 veggir / 43 m, aðeins efri útveggurinn — sjálfvirk greining leysir þá hæð ekki, handleiðin (Húsið → Útveggir úr útlínu → ritill) gerir það. Prófunargildra: bíða eftir mynd með uttekt.haedId hæðarinnar og !importProgress, ekki fyrstu mynd (síðasta borðið birtist fyrst).**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **TurboPaint 10.11.2026 kvöld (kjarni PR #298–#302, allt á framleiðslu): Húsið (handteiknuð útlína) ræður nú skurðinum í sjálfvirka verkferlinu (kassiUtlinu + 2,5 %; fyrri skurður víkur nema myndSkurdur/leiðrétt hæð — verkferlið skrifar sinn skurð með sjalf:false svo sú flagga greinir ekki handskurð); halli blaðsins allur í vinnuþræði (377 ms hiksti → 0 löng verk á JPEG-blaði) og bíður eftir blaðinu í stað „Náði ekki að mæla“; Útlit í 3D (litir veggja/hurða, gólfáferðir steypa/epoxy/flísar/parket/glans, vistast á hæðina sem utlit3d). OPIÐ: 2. hæð Breiðhöfða 13 — með útlínu um allt húsið fann vafraleitin 8 veggi, 0 hurðir (tvöfaldar hárfínar línur); veggjavélin (U-Net) fann 68 línur 05.11 en F1 0,33 á þessu húsi. Heildarstaða: arnold references/turbopaint-stada.md.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **TurboPaint 10.11.2026 (kjarni PR #296): hæð úr Slökkvitæki-appinu (?uttekt=&haed=) opnast í SKOÐUN þegar ekkert borð er til — engin röð í turbopaint_boards, engin mynd í geymsluna; fyrsta breytingin eða „Vista í úttekt“ býr borðið til (useSkodun.uttekt, vistaSkodunSemBord). Áður varð til borð + mynd í geymslu við HVERJA opnun (Agnar 06.11: „helling af vistast … borð sem er bara þarna“). Einnig í nóv.: halli blaðsins handstýrður (#290), Húsið handteiknað (#291), engin sjálfvirk læsing á teikningu í veggjaritli (#292), eigin Supabase-geymsla á leyfilista fetch-plan (#294). Helgarþjálfun veggjavélar 07.11 (net3_*.pt, ~/vegg-tilraun): veggir óbreyttir (F1 0,33 Breiðhöfði / 0,71–0,81 á 490), hurðir mun færri falskar; ekkert í notkun.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **HÆÐATAPIÐ í Teikning-glugganum (Agnar: „mest ein hæð sem dettur síðan út“, mánuðir) fannst og var lagað 10.11.2026 (commit f31e917f, 383+375): sameinaHaedir skipti staðbundna hæðalistanum út fyrir lista þjónsins þegar röð hans barst 0,4–40 s eftir opnun — ný hæð („+ Hæð“, innsetning úr safni) hvarf, virka hæðin datt á fyrstu hæð og upphlaðna myndin lenti þar og þurrkaði skurð/veggi hennar. Nú halda hæðir sem urðu til hér (G.nyjarHer) sér þar til þær eru á þjóninum; eydd hæð annars staðar fer. Mælt skrifvarið með tools/teikning-haed-tap-vafri.cjs (5→4 fyrir, 5→5 eftir). Heildarstaða Teikning/TurboPaint: arnold references/turbopaint-stada.md.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Krókháls 9 (Bílabúð Benna, félag 532) 09.11.2026: grunnmyndir voru klofnar í A/B-blöð (2023) og 8 skannaðar sneiðar (2012) — engin heil hæð til í skjalasafninu. Blöðin A+B voru saumuð saman (ORB+RANSAC, hrein hliðrun dy −2207,5 px) í eina mynd á hæð (Kjallari, 1. hæð, 2. hæð = 2023-„Milligólf“ sem ber titilinn „Grunnmynd 2.h“), geymd í turbopaint/teikningar-mynd/sameinad/ og settar inn sem einar hæðir í teikning_bord; 8 merki + 126 veggjalínur af „1. hæð A“ fluttar yfir. Verkferlið: slokkvitaeki/.claude/skills/arnold/references/sameina-blod.md + scripts/sameina-blod/. TurboPaint þurfti osfdzskyvisifcwyjkuk.supabase.co á leyfilista fetch-plan (kjarni PR #294).**
+  <br><sub>2026-11-09 · slokkvitaeki · claude-code · claude-code</sub>
+- **Íbúðagistingar eru oft ekki með slökkvitæki teiknuð á aðaluppdrátt því tæki eru sett í hverja íbúð; þá segir tækjaskráin ein til um fjöldann.** _(unverified)_
+  <br>Búnaður Heimaleigu 22.10.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/6ZoV54vbwjLdBfJT9wvJjh · skjol</sub>
+- **teikn-listi er CORS-proxy því Kjarni sendir enga CORS-hausa; map.is varaleiðin nær aðeins Kópavogi, Garðabæ og Hafnarfirði (MAPIS_SVF 1000/1300/1400) og Seltjarnarnes (1100) vantar.** _(likely)_
+  <br>[gotcha; agents: elon-musk, kort] Reykjavík fer um FotoWeb-skjalasafn (Aðaluppdrættir) með landnr; map.is-niðurstöður eru lóðarteikningar (lod:true). Cache 1 klst á svari og 7 dagar í Netlify durable cache.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 877c9427 2026-10-15 · claude-code</sub>
+- **Prófunarfyrirtæki fyrir teikningavinnu: Fiskislóð 41 (Bílabúð Benna), Norðurhella 17 (E Fasteignafélag, fyrirtæki 1626), Skútuvogur 4/Álfaborg (661), Center Hótel Miðgarður (192) og Hátún 10c.** _(likely)_
+  <br>[how-to; agents: arnold] Agnar leyfði að draga inn tæki til að prófa. ID koma úr samantekt lotu — staðfestu í fyrirtaeki áður en treyst er.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
+- **Sama hæð birtist á níu stöðum í teikningakerfinu og sex þeirra sýna vistaða mynd sem getur verið eldri en gögnin í teikning_bord; turbopaint_boards er sér geymsla.** _(unverified)_
+  <br>Teikningakort 21.10.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/MzXWqTwPqFUc8HLykV6Xwh · skjol</sub>
+- **Leit að heimilisfangi í TurboPaint á sjálfgefið að sækja bestu fáanlegu gæði (eins og TIFF-niðurhal) og sía á veggi má aldrei gera myndina óskýra — Agnar vill frekar upprunalegu útgáfuna.**
+  <br>[preference; agents: arnold] Agnar 03.10: 'ég myndi vilja fá sem bestu gæðin. líka til að opna á möguleikana á frekari greiningarvinnu'; um síuna: 'þessi verður allt of óskýr'. 20.09: þegar hann skráir húsnúmer vill hann aðeins sjá niðurstöður úr því númeri.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-03 · claude-code</sub>
+- **Veggir úr vektor-PDF teikningum eru greindir með því að flokka strokur eftir línubreidd úr pdf.js operator-list (constructPath hefur ólíkt snið í 3.x og 5.x); miðlínur eru unnar úr maska með vendoruðu Vecline (MIT).** _(likely)_
+  <br>[how-to; agents: arnold] pdf.js 3.11.174 af cdnjs; teikn-pdf og teikn-mynd Netlify-föllin proxa teikningasafn Reykjavíkur.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-23/10-04 · claude-code</sub>
+- **Þegar teikning er vistuð (skurður að byggingu, 'Skýrari veggir', '📌 Festa útlit') á kerfið að sækja hana nákvæmlega eins og hún var vistuð — engin endurgreining við hverja opnun, tæki mega ekki hoppa og myndin skörp í aðdrætti.**
+  <br>[rule; agents: arnold] Agnar 04.10: 'Þegar teikning er vistuð þá ætti kerfið bara að sækja þá mynd eins og hún er'; Fiskislóð 41 leit illa út í 538% aðdrætti. Geymt í teikning_bord.haedir[] (skurdur, thett, syn.fest, pdfVeggir o.fl.).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-04 · claude-code</sub>
+- **Reykjanesbær (SVFNR 2000, map.is/reykjanesbaer, PDF á teikningar.rnb.is) er í teikningaleitinni síðan 19.10.2026 (f3b4dc07) — bein kortasjá eins og Mosfellsbær/Seltjarnarnes; postnr 230/232/233/260/262; húsateikningar á heitinr hússins (heitinumer=0 skilar engu). Keilisbraut 745, 262 → 7 blöð; Hafnargata 57, 230 → 327. hus-upplysingar þarf póstnúmer í heimilisfanginu.**
+  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **19.10.2026: Bein .tif kortasjár (luks.mos.is, Mosfellsbær) birtast sem myndir í Greiningu 451 og skoðara 384 um TIF-vélina window.TeiknTif í 384 (UTIF 3.1.0 jsdelivr + pako í vinnuþræði; hrá gögn í þræði, mynd af umbeðinni stærð með kassasíun; 1 bita teikning fær dökkva × hliðarlengd kassans svo línur hverfi ekki). teikn-pdf streymir .tif án attachment nema ?nidurhal=1. Skrá > 25 MB → villa + ⬇. Vörðurinn audit-teikning-opna neglir ?v-merki 384/363 — nýtt merki þarf inn í listann þar.**
+  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Mosfellsbær (1604, map.is/moso, luks.mos.is) er í teikningaleitinni síðan 19.10.2026; húsateikningar krefjast heitinr, ekki 0**
+  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Reykskynjaratalning af teikningum er stærðargráða, ekki talning (−11 % Þingholt Apts, −26 % Þingholt, +64 % Arnarhvoll): aðaluppdrættir sýna sjaldan skynjara (Fiskislóð 41 hefur R aðeins í skýringartöflu), séruppdrættir rafhönnuða (safn 5004) sýna þá, eldri hús hafa engar merkingar — segja það frekar en giska. Grandi: skráin segir 453 en rásmynd Mannvits 2017 listar 318 skynjara/508 vistföng (besta heimild, 6. hæð 2024 ekki með); Plaza telur JRS (jónískir við reyklokur) með; Laugavegur 95-99 teikning 104 (hluti húss) vs 206+17. Frumrit 3,2 GB í brunavidvorun\_gogn, 5,3 GB myndafritum eytt (scripts\forskoda.py endurgerir).**
+  <br>Undiragent a3340 09.10.2026. Sjá líka fact um eldri skýrslur (gátlistar án talna).
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
+- **Aðferðir sem VIRKUÐU EKKI við veggjagreiningu (samanburður 05.10.2026 á 7 teikningum, ekki reyna aftur): Yytsi/floorplan-to-3d (MIT) sér ekkert á gráum skönnunum og merkir allt blek sem vegg á 1-bita; FloorplanToBlender3d (GPL) heldur aðeins stærstu útlínunni og texti/húsgögn verða veggir; DeepFloorplan (GPL) ≈ OpenCV-grunnlína og hægast (294 s); OpenCV nær fylltum veggjum en engum þunnum skilveggjum. CubiCasa5k var best (212 s, +145 s snúin umferð finnur 13° álmu) en CC BY-NC → eigið líkan (Veggjavél). OCR: RapidOCR 0/90/270° (27 merki á 33 s) sló EasyOCR (21 á 317 s).**
+  <br>512 px flísar eftir 0,5× smækkun (150 dpi) best; 1,0× suðugra. Útlína lokast á 5 af 7.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint 05.10 · claude-code</sub>
+- **Kvarðatölur teikninga (dílar/m við lestur): A1 1:100 skjalasafn Reykjavíkur = 71,44; A2 (Þingholt, Dalshraun/DRA) = 101 — teikn-blað segir A2 en A1-ágiskun gefur 71 og fellir hurðir (0,85 m → 0,61 m); Hafnarfjarðar-blöð 1169 mm = 51,3; Sléttuvegur 7 A1 838,8 mm = 71,6; Plaza líklega ~81 (ekki 71); Skútuvogur óviss; Krókháls A4 engin „1:N". TurboPaint sjálfvirkt + Greina veggi nota kvardiTeikningar (kjarni #204).**
+  <br>Undiragentar aed1e/ae527/ab411 09.–12.10.2026.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
+- **Hlutasöfn fyrir 3D (thrividd/hlutasofn.md): CC0 = Poly Haven, ambientCG, Kenney, Quaternius; Poly Pizza CC0 EÐA CC BY eftir líkani og bannar AI-þjálfun; Sweet Home 3D er Free Art License (copyleft, forðast í sameinuðum GLB); BIMobject bannar innfellingu í þjónustu þriðja aðila og AI-þjálfun; NBS bannar breytingar/birtingu; KitBash keypti Sketchfab ágúst 2026 og höfundar geta breytt leyfum → halda leyfi.json per hlut (slóð, leyfi, dags.). Engin nothæf CC0-flekahurð fannst — smíðuð sjálf.**
+  <br>Undiragent a52d3 09.10.2026.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
+- **Sjálfmerking veggja úr vigur-PDF (cad_til_grimu.py) virkar (Fiskislóð 41: nákvæmni 0,91/heimt 0,95) en gler er ALDREI sérstakt línulag — aðeins af rúmfræði (tvær samsíða línur <5 cm í veggopi); aðeins born-digital teikningar 2022–23 eru vigur (3 af 5 nýjum, 0 af eldri/öðrum bæjum; ~33.500 PDF vs ~184.000 TIF í Aðaluppdráttum); hver teiknistofa teiknar öðruvísi (0,48 pt sjálfvaldir veggir vs 0,10 pt á öllu vs svartar fyllingar). Höfundaréttur arkitekta + ESB TDM-undanþága óstaðfest á Íslandi → EKKI þjálfað á þeim fyrr en Agnar/lögfræði ákveður.**
+  <br>Undiragentar a9de6/afb1b 08.–09.10.2026. Krókháls A4 án „1:N" → sjálfgildi 1:100 rangt.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
+- **Nesdekk (1853), 13.10.2026: að beiðni Agnars er „1. hæð — nýjar teikningar“ (hd1853v1, ljósmyndin) nú FYRSTA hæð (aðalteikning; image_url/markers raðarinnar spegla hana). Gamla „1. hæð“ heitir nú „1. hæð — eldri teikning“ (hd1853n1) og heldur sínum 10 merkjum (3 tæki + 7 skilti) — tækin þarf að setja á nýju teikninguna í glugganum. Afrit fyrir allar breytingar: backup_20261013_teikning_1853.**
+  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
+- **Nesdekk, Dalshraun 10 (1853): ljósmyndaða teikningin (hæð hd1853v1, nú „1. hæð — nýjar teikningar“) er NÝ teikning sem er ekki komin á vef byggingarfulltrúa Hafnarfjarðar (Agnar 13.10.2026). „Sækja teikningu“ / „Finna allt húsið“ finna hana því ekki — ljósmyndin er eina heimildin þar til hún birtist á vefnum.**
+  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
+- **Nesdekk, Dalshraun 10 (1853), 13.10.2026: ljósmynd Agnars af brunavarnateikningu á staðnum (vesturhluti hússins, nýtt innra skipulag — Vörumóttaka, Vinnusalur 221,5 m², 9 lagerar, Afgreiðsla o.fl.) var rétt af (fjarvídd frá 4 hornum) og hreinsuð, og bætt við sem hæð hd1853v1 „1. hæð — vesturhluti, núverandi skipulag“ (turbopaint/teikning/1853/dalshraun10-vesturhluti-nuverandi.png, 0,55 px/cm). Ytri mál: breidd 2380; hæðarmálið les „2700“ en herbergjamálin (1158×1915 = 221,5 m², lagerdálkar 934/948) ganga aðeins upp með 2900 — 2900 notað. Nesdekk-teikningin „1. hæð“ (hd1853n1, 2900×1980, 10 tæki) er annar hluti hússins. Afrit af röðinni fyrir breytingu: backup_20261013_teikning_1853.**
+  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383/433/434) — TÆKI SEM LÍKÖN OG TÁKN, 05.10.2026 (commits 19257f90, 7964b24b). Agnar sendi tákn sem fyrirmyndir (🧯, rautt slöngukefli með stút, rauður reykskynjari með reyk, rauð viðvörunarbjalla með kólfi, grár rafmagnsskápur með gulri eldingu, skeifusegull með eldingum = „Segulloki á eldvarnarhurð", hitaskynjari með hitamæli) og sagði „Þá held ég komið". gerdTaekis(tegund, stimpill) velur gerð: slokkvitaeki, co2, slanga, reykskynjari, hitaskynjari, bjalla, segull, rafmagn, skilti, skilti-ut, teppi. teiknaTaekistakn(ctx, gerd) teiknar táknið í lit í 48×48 reit (eigin teikning með einföldum formum — engin mynd afrituð) og það stendur í hvítum hring á miða hvers tækis í 3D; miðinn sýnir alltaf TEGUND. taekjalikan() smíðar líkanið og festaAVegg() hengir það á næsta vegg (innan ≈1,6 m), þeim megin sem merkið stendur; reyk- og hitaskynjarar við loft. Ný merki í 2D-bakkanum (433 STIMPLAR): Reykskynjari, Hitaskynjari, Viðvörunarbjalla, Segulloki; 434 fékk lykla/liti og nýtt 2D-tákn „magnet". GILDRA: þrír verðir (audit-teikning-gaedi/merking/sja) festa útgáfuforskeyti 433 og 434 í index.html við 20261002(…stjorn…) — nýtt merki verður að byrja á því (t.d. ?v=20261002stjorn-bjalla), annars verða þeir rauðir.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383) — BRUNAHÓLF og HANDVAL, 04.–05.10.2026 (commits 57db4082, 19257f90). Reglur Agnars: „Brunaveggir mynda alltaf lokað öruggt rými … brunahólf … allan hringinn með eldveggjum og útveggjum", „brunaveggir geta ekki verið stakir", „eins og öryggisgirðing — ekki hægt að sleppa á einum stað", „ein merking á vegg nær allan þann vegg". Útfært: brunaholf() finnur ÚTVEGGI (flætt utan frá; fyrst gróft með ≈5 m þenslu svo aksturshurðir hleypi útisvæðinu ekki inn, bil ≤15 m milli útveggjabúta á sömu línu lokað með sýndarvegg, svo nákvæmt ≈0,6 m), LOKAR lausum enda brunaveggjar eftir stystu leið um aðra veggi (≤15 m) → ÁLYKTAÐUR brunaveggur, sýndur ljósbleikur, og telur HÓLFIN (≥6 m²) sem fá hvert sinn lit á gólfið; svæði sem lekur út fær engan lit. eldurHurda(): karmur yfir hurð í brunavegg er rauður, hurðir sjást ofan frá á litaðri rönd (brunahurð appelsínugul, önnur brún). HANDVAL: takkinn „Breyta eldveggjum" í 3D → smellur á vegg → EI-60 / EI-30 / Ekki brunaveggur / ↺ Sjálfvirkt aftur; valið fer í teikning_bord.haedir[].eldVal = [[ax,ay,bx,by,mín]] (dílar frummyndar) og vistast með sjálfvistun gluggans (STILLINGAR) — tæki og hæðalisti ekki snert. Handvalið gengur fyrir EI-merkjum og aftengdur veggur verður ekki ályktaður aftur. Veggur finnst aftur eftir línu+skörun (veggurVid), ekki miðjupunkti. Mælt á Fiskislóð 41: 21 eldveggur, 1 ályktaður, 29 útveggir, 9 brunahólf; handval „Ekki brunaveggur" → 8 hólf.**
+  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
+- **EI-merki á SKÖNNUÐUM teikningum — mælt 04.10.2026 (E:/pascal-profun: ocr-tilraun.cjs, ocr-flis.cjs, pdf-flis.mjs): í 6006 px myndinni sem teikningaglugginn notar er textinn ~12 px hár og Tesseract les „EI-60" sem „ElL80"/„El.80" — ónothæft, líka stækkað 3×. Í FRUMSKÖNNUNINNI (Álfaborg: PDF með einni innfelldri mynd, 13216 × 9454 px, 400 dpi — sótt með pdf.js page.objs.get án þess að teikna síðuna) les Tesseract „EI-60" og „R60" rétt, EN aðeins eftir að langar línur (dökk hlaup ≥70 px, lárétt og lóðrétt) eru hvítaðar — veggjalína sem liggur við textann eyðir honum annars. Myndlesarinn í 434 (TeiknEi.lesaUrMynd, sniðmátasamanburður) finnur 0 merki á Álfaborg og Fiskislóð. Næsta skref: full gæði + flísar + línur burt + Tesseract í 0°/90°/270°, aðeins nálægt veggjum; niðurstaðan vistuð í haedir[].eiHintar svo þetta sé gert einu sinni. TurboPaint á þegar Tesseract (detect-firewalls.ts) en vistar eldveggi ekki í úttektina.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383, commit f95e6973, 04.10.2026 kl. 22:50) — fimm viðbætur eftir ábendingar Agnars í símanum: (1) ÚTVEGGIR: sían sem fellir dót utan húss (golfMedUti) felldi útveggina sjálfa því flóðfyllingin nær inn í vegginn; nú fellur veggur aðeins ef ekkert er INNI ≈0,5 m til hliðar við hann (Álfaborg: 15 veggir féllu ranglega → 0). (2) ELDVEGGIR (merkjaEldveggi): EI-60/EI-30 merki litar allan vegginn út í enda línunnar, í gegnum hurðargöt; EI-CS eru hurðir og lita ekkert; merkin koma úr h.eiHintar eða textalagi vigur-PDF við opnun 3D (aðeins í minni; 2D sýnir þau ekki). Fiskislóð: 27 merki → 21 af 48 veggjum rauður. (3) husklasi: aðeins veggjanetið sem hangir saman er húsið — nafnreitur og lóðartákn falla (Arnarhvoll 30 → 0); álmur (drjúgur klasi ≤4 m frá) haldast. (4) hurdagot — regla Agnars „allir veggirnir tengjast, hvort það sé gluggi eða hurð": stutt bil (≤2,75 m) sem er ekki gler fær dyrakarm; laus veggendi tengist veggnum beint fram undan. (5) tengdirVeggir: stakur stuttur veggur úti á gólfi (snertir ekkert, engin hurð/gluggi) fellur. undirbua() skráir talningu hvers skrefs í console.info „[383] 3D <hæð>: {…}" — notaðu hana við villuleit. Vörðurinn audit-teikning-3d.cjs keyrir tíu reglur á tilbúnum gögnum.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D á SKÖNNUNUM (383, commit 746c1eb2, 04.10.2026 kvöld) — leysir af hólmi lið (a) í fyrri færslu um það sem vantaði. Skönnunarleið undirbua() er nú fjögur skref: (1) þykkir fylltir veggir úr grímunni (heilirUrGrimu), (2) linubond — útveggur teiknaður sem 3–4 örþunnar línur þétt saman rennur í gráan borða í vinnuupplausn: vægur þröskuldur (215) + opnun r=1 + borðar ≥3,5 díla breiðir og ≥2 m, (3) holirVeggir — hvíta bilið milli tveggja mjórra lína lesið sem borði; greiður (stigar) og stutt stök pör (hurðarblöð) falla, (4) lengjaVeggi — Agnar: „Veggirnir stoppa oft á miðri leið. Eins og með EI-60 og EI-30 veggi, þá ná þeir alla línuna þar til hún endar á annarri eða endar": línunni fylgt á myndinni frá hvorum enda yfir stutt rof, stoppar við hurðargat eða annan vegg. Mælt: Álfaborg 1. hæð 31 → 88 veggir (458 m, allur hægri útveggurinn kominn); Miðgarður 2. hæð 109 → 184 veggir (849 m). LÆRDÓMUR: hærri upplausn ein bætti litlu við (2200 → 4236 px: 410 → 422 m) — vandinn var að ÞEKKJA veggjagerðina, ekki skerpan. Enn ógert: EI-60/EI-30 merkin sem lita veggi í 3D (Agnar stakk upp á; snúa á alla vegu, þurfa textalestur — h.eiHintar og TurboPaint detect-firewalls.ts eru til), gluggar í holum/bandveggjum verða heill veggur, vegghæð er hlutfall en ekki raunhæð.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D — hvað VANTAR ENN (04.10.2026): (a) þunnir HOLIR veggir í skönnunum (tvær mjóar línur — efri álma Miðgarðs, Skútuvogur 4, Norðurhella) finnast ekki: lokun grímunnar (fylla) tekur líka áslínur, málsetningu og skástrikun (prófað á Fiskislóð: 545 „veggir", ónothæft) — þarf holveggjagreiningu eins og TurboPaint lib/board/veggir.ts; (b) veggir í þunna línuflokknum (0,24 pt) á vigur-PDF sem liggja ekki í veggjalínu — pörun þess flokks gefur stiga, húsgögn og textakassa með (thunnir.mjs); (c) 2. hæð Fiskislóðar (1612) notar sama blað og 1. hæð; (d) vegghæð er hlutfall af stærð hússins, ekki raunhæð. Almennir rasta→vigur breytar (vtracer o.fl.) leysa þetta EKKI: þeir rekja útlínur bleks en vita ekki hvað er veggur; vandinn er flokkun, ekki rakning. Pascal Editor (pascalorg/editor, MIT, WebGPU) var prófað sem sýn á sömu veggi (E:/pascal-profun) — fallegri skuggar, en gögnin skiptu mestu; ekki tekið inn í appið.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikning 3D (383), 04.10.2026 (commit 7735def4): „girðingin" í 3D kom úr GÖGNUNUM, ekki teiknaranum — CAD teiknar vegg sem tvær samsíða línur með endastrikum og 3D málaði strikin í grímu sem var lyft í ~420 reita rist. Nú þrjár reiknireglur, allar hrein gagnavinnsla í 383 og prófaðar í tools/audit-teikning-3d.cjs: (1) heilirVeggir — PDF-strik pöruð í veggi (miðlína + þykkt, sama aðferð og TurboPaint pdf-veggir.ts), samlínu bútar sameinaðir yfir ≤18 pt bil (súlur; hurðargöt haldast), endar smelltir á þverveggi; (2) veggirUrGrimu — skönnun: veggjagríman lesin sem langir jafnþykkir borðar (hlaupalengdir → stefna → þversnið í hverjum dálki → Douglas–Peucker), skáveggir verða einn leggur, klessur ekki veggir; (3) glerIBilum — bil milli veggbúta á sömu línu er gler ef myndin sýnir ≥2 samsíða línur þar (autt hurðargat og stök áslína ekki). Mælt: Fiskislóð 41 777 strik → 48 veggir, 245 m, hús 32,9 × 41,2 m (A1, 1:100), 11 glerfletir; Miðgarður 1. hæð (skönnuð TIF) 106 veggir, 6 hæðir í 3D á 25 s. Sýnin: ljós grunnur, skuggar, miðar í skjástærð með tegund þegar raðnúmer er TMP-, „Gegnsætt", hæðatakkar (smellur = sú hæð ein). Gamla ristarleiðin er varaleið.**
+  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningaglugginn (383): 'Skýrari veggir' og skurður geymast á þjóninum (teikning_bord.haedir[].syn) og vistast sjálfkrafa; '📌 Festa útlit' (syn.fest) stöðvar alla sjálfvirka greiningu svo teikningin opnast alltaf eins. Veggjatalning og EI-merki falin — greining býr í TurboPaint, sem hefur nú hama (Teikning/Slökkvitæki/Brunaþéttingar/Brunakerfi/Rými). Agnar 03.10.2026.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **TurboPaint er vinnuvélin (greining, veggir, 3D), Slökkvitæki-teikningaglugginn (383) er stíluð sýn fyrir þjónustuna sem les niðurstöðurnar. Veggir fara á milli í teikning_bord.haedir[].veggjaLinur [{p:[x,y,…],t}] í punktum frummyndar — TurboPaint 'Vista í úttekt' skrifar, 383 3D les (Agnar 03.10.2026).**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): EI-60/EI-30 merki heldur áfram í gegnum T-mót (þverveggur sem kemur á), held ég í öllum tilvikum. Það stoppar aðeins þar sem veggjalínan sjálf endar.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): EI-60 / EI-30 merki gildir um ALLAN vegginn sem það stendur á — alla leið út í enda línunnar (þar sem veggurinn endar), ekki bara blettinn við textann. Merkið er upplýsing um þann vegg. Veggjagreining á að fylgja línunni frá merkinu í báðar áttir þar til hún endar og merkja allan bútinn.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Teikningar (Agnar 03.10.2026): SLT á uppdrætti = þar á að setja slökkvitæki. BRSL + spírall = brunaslanga/slöngukefli. BRSL SLT saman = brunaslanga OG slökkvitæki á þeim stað. EI-60 / EICS-30 / AREIM-120 meðfram veggjum (í hvaða stefnu sem er) = brunahólfandi veggir. rafm. tafla = rafmagnstafla.**
+  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fölgráar CAD-línur á FotoWeb-JPEG grunnmyndum (t.d. Fiskislóð #1612) dökknar með CSS brightness(0.82) contrast(1.55) á #fp-canvas. contrast-fyrst gerir ljósa veggi enn ljósari. Stimplar á síma ≥32 CSS px. Full gæði (pdf.js) má teikna innvortis án gæða-hnapps. 436-teikning-sja. Engir EI-stimplar, engir nýir hamrar.**
+  <br>Agnar 02.10.2026: very haaard to see. Tækjadráttur óbreyttur frá e9c347f. Extra power í TurboPaint.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
+  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
+  <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
+- **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
+  <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · claude-code</sub>
+- **02.10.2026: Agnar sá EKKI 1. hæð / Skýrari veggir / 3D á LIVE FloorPlan #company/1612 eftir cab96432. Rót: 383 endurfestaEfNyttFelag lyklaði aðeins á companyId, en FloorPlan.open rífur #modal-floorplan alltaf. Lagað 1626d51: _festModal + vaktGlugga + haus width:auto. Sannað live 1612 og 388. Aldrei node deploy.js. Aldrei DELETE document_pairs.**
+  <br><sub>2026-10-02 · slokkvitaeki · claude-code · claude-code</sub>
+- _…og 9 til viðbótar í töflunni._
+
 ### skjol
 
 - **Afritsraðir í customer_documents með dup_of á skjal ANNARS félags eru flestar skráarlausar (storage_path og drive_file_id null) — þær verða ekki sannreyndar með PDF-samanburði og geta verið raunveruleg skýrsla með týnda skrá**
@@ -422,108 +522,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Dæmi 07.08.2026: „Hagverk_2025.pdf" reyndist mars 2024 skýrsla; „Kvikkfix_2025.pdf" lá í Supabase-möppu Tor ehf (322) en var skýrsla annars fyrirtækis (kt 480601-2620). Þrjár falskar 2025-tengingar hefðu orðið til ef nöfnin hefðu ráðið. Lesa með pdf-parse á public storage-URL áður en röð er skráð.
   <br><sub>2026-08-08 · baedi · sql · claude-code</sub>
 - _…og 9 til viðbótar í töflunni._
-
-### teikningar
-
-- **TurboPaint 10.11.2026 (kjarni PR #296): hæð úr Slökkvitæki-appinu (?uttekt=&haed=) opnast í SKOÐUN þegar ekkert borð er til — engin röð í turbopaint_boards, engin mynd í geymsluna; fyrsta breytingin eða „Vista í úttekt“ býr borðið til (useSkodun.uttekt, vistaSkodunSemBord). Áður varð til borð + mynd í geymslu við HVERJA opnun (Agnar 06.11: „helling af vistast … borð sem er bara þarna“). Einnig í nóv.: halli blaðsins handstýrður (#290), Húsið handteiknað (#291), engin sjálfvirk læsing á teikningu í veggjaritli (#292), eigin Supabase-geymsla á leyfilista fetch-plan (#294). Helgarþjálfun veggjavélar 07.11 (net3_*.pt, ~/vegg-tilraun): veggir óbreyttir (F1 0,33 Breiðhöfði / 0,71–0,81 á 490), hurðir mun færri falskar; ekkert í notkun.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **HÆÐATAPIÐ í Teikning-glugganum (Agnar: „mest ein hæð sem dettur síðan út“, mánuðir) fannst og var lagað 10.11.2026 (commit f31e917f, 383+375): sameinaHaedir skipti staðbundna hæðalistanum út fyrir lista þjónsins þegar röð hans barst 0,4–40 s eftir opnun — ný hæð („+ Hæð“, innsetning úr safni) hvarf, virka hæðin datt á fyrstu hæð og upphlaðna myndin lenti þar og þurrkaði skurð/veggi hennar. Nú halda hæðir sem urðu til hér (G.nyjarHer) sér þar til þær eru á þjóninum; eydd hæð annars staðar fer. Mælt skrifvarið með tools/teikning-haed-tap-vafri.cjs (5→4 fyrir, 5→5 eftir). Heildarstaða Teikning/TurboPaint: arnold references/turbopaint-stada.md.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Krókháls 9 (Bílabúð Benna, félag 532) 09.11.2026: grunnmyndir voru klofnar í A/B-blöð (2023) og 8 skannaðar sneiðar (2012) — engin heil hæð til í skjalasafninu. Blöðin A+B voru saumuð saman (ORB+RANSAC, hrein hliðrun dy −2207,5 px) í eina mynd á hæð (Kjallari, 1. hæð, 2. hæð = 2023-„Milligólf“ sem ber titilinn „Grunnmynd 2.h“), geymd í turbopaint/teikningar-mynd/sameinad/ og settar inn sem einar hæðir í teikning_bord; 8 merki + 126 veggjalínur af „1. hæð A“ fluttar yfir. Verkferlið: slokkvitaeki/.claude/skills/arnold/references/sameina-blod.md + scripts/sameina-blod/. TurboPaint þurfti osfdzskyvisifcwyjkuk.supabase.co á leyfilista fetch-plan (kjarni PR #294).**
-  <br><sub>2026-11-09 · slokkvitaeki · claude-code · claude-code</sub>
-- **Íbúðagistingar eru oft ekki með slökkvitæki teiknuð á aðaluppdrátt því tæki eru sett í hverja íbúð; þá segir tækjaskráin ein til um fjöldann.** _(unverified)_
-  <br>Búnaður Heimaleigu 22.10.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/6ZoV54vbwjLdBfJT9wvJjh · skjol</sub>
-- **teikn-listi er CORS-proxy því Kjarni sendir enga CORS-hausa; map.is varaleiðin nær aðeins Kópavogi, Garðabæ og Hafnarfirði (MAPIS_SVF 1000/1300/1400) og Seltjarnarnes (1100) vantar.** _(likely)_
-  <br>[gotcha; agents: elon-musk, kort] Reykjavík fer um FotoWeb-skjalasafn (Aðaluppdrættir) með landnr; map.is-niðurstöður eru lóðarteikningar (lod:true). Cache 1 klst á svari og 7 dagar í Netlify durable cache.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 877c9427 2026-10-15 · claude-code</sub>
-- **Prófunarfyrirtæki fyrir teikningavinnu: Fiskislóð 41 (Bílabúð Benna), Norðurhella 17 (E Fasteignafélag, fyrirtæki 1626), Skútuvogur 4/Álfaborg (661), Center Hótel Miðgarður (192) og Hátún 10c.** _(likely)_
-  <br>[how-to; agents: arnold] Agnar leyfði að draga inn tæki til að prófa. ID koma úr samantekt lotu — staðfestu í fyrirtaeki áður en treyst er.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
-- **Sama hæð birtist á níu stöðum í teikningakerfinu og sex þeirra sýna vistaða mynd sem getur verið eldri en gögnin í teikning_bord; turbopaint_boards er sér geymsla.** _(unverified)_
-  <br>Teikningakort 21.10.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/MzXWqTwPqFUc8HLykV6Xwh · skjol</sub>
-- **Leit að heimilisfangi í TurboPaint á sjálfgefið að sækja bestu fáanlegu gæði (eins og TIFF-niðurhal) og sía á veggi má aldrei gera myndina óskýra — Agnar vill frekar upprunalegu útgáfuna.**
-  <br>[preference; agents: arnold] Agnar 03.10: 'ég myndi vilja fá sem bestu gæðin. líka til að opna á möguleikana á frekari greiningarvinnu'; um síuna: 'þessi verður allt of óskýr'. 20.09: þegar hann skráir húsnúmer vill hann aðeins sjá niðurstöður úr því númeri.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-03 · claude-code</sub>
-- **Veggir úr vektor-PDF teikningum eru greindir með því að flokka strokur eftir línubreidd úr pdf.js operator-list (constructPath hefur ólíkt snið í 3.x og 5.x); miðlínur eru unnar úr maska með vendoruðu Vecline (MIT).** _(likely)_
-  <br>[how-to; agents: arnold] pdf.js 3.11.174 af cdnjs; teikn-pdf og teikn-mynd Netlify-föllin proxa teikningasafn Reykjavíkur.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-23/10-04 · claude-code</sub>
-- **Þegar teikning er vistuð (skurður að byggingu, 'Skýrari veggir', '📌 Festa útlit') á kerfið að sækja hana nákvæmlega eins og hún var vistuð — engin endurgreining við hverja opnun, tæki mega ekki hoppa og myndin skörp í aðdrætti.**
-  <br>[rule; agents: arnold] Agnar 04.10: 'Þegar teikning er vistuð þá ætti kerfið bara að sækja þá mynd eins og hún er'; Fiskislóð 41 leit illa út í 538% aðdrætti. Geymt í teikning_bord.haedir[] (skurdur, thett, syn.fest, pdfVeggir o.fl.).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-04 · claude-code</sub>
-- **Reykjanesbær (SVFNR 2000, map.is/reykjanesbaer, PDF á teikningar.rnb.is) er í teikningaleitinni síðan 19.10.2026 (f3b4dc07) — bein kortasjá eins og Mosfellsbær/Seltjarnarnes; postnr 230/232/233/260/262; húsateikningar á heitinr hússins (heitinumer=0 skilar engu). Keilisbraut 745, 262 → 7 blöð; Hafnargata 57, 230 → 327. hus-upplysingar þarf póstnúmer í heimilisfanginu.**
-  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **19.10.2026: Bein .tif kortasjár (luks.mos.is, Mosfellsbær) birtast sem myndir í Greiningu 451 og skoðara 384 um TIF-vélina window.TeiknTif í 384 (UTIF 3.1.0 jsdelivr + pako í vinnuþræði; hrá gögn í þræði, mynd af umbeðinni stærð með kassasíun; 1 bita teikning fær dökkva × hliðarlengd kassans svo línur hverfi ekki). teikn-pdf streymir .tif án attachment nema ?nidurhal=1. Skrá > 25 MB → villa + ⬇. Vörðurinn audit-teikning-opna neglir ?v-merki 384/363 — nýtt merki þarf inn í listann þar.**
-  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Mosfellsbær (1604, map.is/moso, luks.mos.is) er í teikningaleitinni síðan 19.10.2026; húsateikningar krefjast heitinr, ekki 0**
-  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Reykskynjaratalning af teikningum er stærðargráða, ekki talning (−11 % Þingholt Apts, −26 % Þingholt, +64 % Arnarhvoll): aðaluppdrættir sýna sjaldan skynjara (Fiskislóð 41 hefur R aðeins í skýringartöflu), séruppdrættir rafhönnuða (safn 5004) sýna þá, eldri hús hafa engar merkingar — segja það frekar en giska. Grandi: skráin segir 453 en rásmynd Mannvits 2017 listar 318 skynjara/508 vistföng (besta heimild, 6. hæð 2024 ekki með); Plaza telur JRS (jónískir við reyklokur) með; Laugavegur 95-99 teikning 104 (hluti húss) vs 206+17. Frumrit 3,2 GB í brunavidvorun\_gogn, 5,3 GB myndafritum eytt (scripts\forskoda.py endurgerir).**
-  <br>Undiragent a3340 09.10.2026. Sjá líka fact um eldri skýrslur (gátlistar án talna).
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Aðferðir sem VIRKUÐU EKKI við veggjagreiningu (samanburður 05.10.2026 á 7 teikningum, ekki reyna aftur): Yytsi/floorplan-to-3d (MIT) sér ekkert á gráum skönnunum og merkir allt blek sem vegg á 1-bita; FloorplanToBlender3d (GPL) heldur aðeins stærstu útlínunni og texti/húsgögn verða veggir; DeepFloorplan (GPL) ≈ OpenCV-grunnlína og hægast (294 s); OpenCV nær fylltum veggjum en engum þunnum skilveggjum. CubiCasa5k var best (212 s, +145 s snúin umferð finnur 13° álmu) en CC BY-NC → eigið líkan (Veggjavél). OCR: RapidOCR 0/90/270° (27 merki á 33 s) sló EasyOCR (21 á 317 s).**
-  <br>512 px flísar eftir 0,5× smækkun (150 dpi) best; 1,0× suðugra. Útlína lokast á 5 af 7.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint 05.10 · claude-code</sub>
-- **Kvarðatölur teikninga (dílar/m við lestur): A1 1:100 skjalasafn Reykjavíkur = 71,44; A2 (Þingholt, Dalshraun/DRA) = 101 — teikn-blað segir A2 en A1-ágiskun gefur 71 og fellir hurðir (0,85 m → 0,61 m); Hafnarfjarðar-blöð 1169 mm = 51,3; Sléttuvegur 7 A1 838,8 mm = 71,6; Plaza líklega ~81 (ekki 71); Skútuvogur óviss; Krókháls A4 engin „1:N". TurboPaint sjálfvirkt + Greina veggi nota kvardiTeikningar (kjarni #204).**
-  <br>Undiragentar aed1e/ae527/ab411 09.–12.10.2026.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Hlutasöfn fyrir 3D (thrividd/hlutasofn.md): CC0 = Poly Haven, ambientCG, Kenney, Quaternius; Poly Pizza CC0 EÐA CC BY eftir líkani og bannar AI-þjálfun; Sweet Home 3D er Free Art License (copyleft, forðast í sameinuðum GLB); BIMobject bannar innfellingu í þjónustu þriðja aðila og AI-þjálfun; NBS bannar breytingar/birtingu; KitBash keypti Sketchfab ágúst 2026 og höfundar geta breytt leyfum → halda leyfi.json per hlut (slóð, leyfi, dags.). Engin nothæf CC0-flekahurð fannst — smíðuð sjálf.**
-  <br>Undiragent a52d3 09.10.2026.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Sjálfmerking veggja úr vigur-PDF (cad_til_grimu.py) virkar (Fiskislóð 41: nákvæmni 0,91/heimt 0,95) en gler er ALDREI sérstakt línulag — aðeins af rúmfræði (tvær samsíða línur <5 cm í veggopi); aðeins born-digital teikningar 2022–23 eru vigur (3 af 5 nýjum, 0 af eldri/öðrum bæjum; ~33.500 PDF vs ~184.000 TIF í Aðaluppdráttum); hver teiknistofa teiknar öðruvísi (0,48 pt sjálfvaldir veggir vs 0,10 pt á öllu vs svartar fyllingar). Höfundaréttur arkitekta + ESB TDM-undanþága óstaðfest á Íslandi → EKKI þjálfað á þeim fyrr en Agnar/lögfræði ákveður.**
-  <br>Undiragentar a9de6/afb1b 08.–09.10.2026. Krókháls A4 án „1:N" → sjálfgildi 1:100 rangt.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Nesdekk (1853), 13.10.2026: að beiðni Agnars er „1. hæð — nýjar teikningar“ (hd1853v1, ljósmyndin) nú FYRSTA hæð (aðalteikning; image_url/markers raðarinnar spegla hana). Gamla „1. hæð“ heitir nú „1. hæð — eldri teikning“ (hd1853n1) og heldur sínum 10 merkjum (3 tæki + 7 skilti) — tækin þarf að setja á nýju teikninguna í glugganum. Afrit fyrir allar breytingar: backup_20261013_teikning_1853.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
-- **Nesdekk, Dalshraun 10 (1853): ljósmyndaða teikningin (hæð hd1853v1, nú „1. hæð — nýjar teikningar“) er NÝ teikning sem er ekki komin á vef byggingarfulltrúa Hafnarfjarðar (Agnar 13.10.2026). „Sækja teikningu“ / „Finna allt húsið“ finna hana því ekki — ljósmyndin er eina heimildin þar til hún birtist á vefnum.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
-- **Nesdekk, Dalshraun 10 (1853), 13.10.2026: ljósmynd Agnars af brunavarnateikningu á staðnum (vesturhluti hússins, nýtt innra skipulag — Vörumóttaka, Vinnusalur 221,5 m², 9 lagerar, Afgreiðsla o.fl.) var rétt af (fjarvídd frá 4 hornum) og hreinsuð, og bætt við sem hæð hd1853v1 „1. hæð — vesturhluti, núverandi skipulag“ (turbopaint/teikning/1853/dalshraun10-vesturhluti-nuverandi.png, 0,55 px/cm). Ytri mál: breidd 2380; hæðarmálið les „2700“ en herbergjamálin (1158×1915 = 221,5 m², lagerdálkar 934/948) ganga aðeins upp með 2900 — 2900 notað. Nesdekk-teikningin „1. hæð“ (hd1853n1, 2900×1980, 10 tæki) er annar hluti hússins. Afrit af röðinni fyrir breytingu: backup_20261013_teikning_1853.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D (383/433/434) — TÆKI SEM LÍKÖN OG TÁKN, 05.10.2026 (commits 19257f90, 7964b24b). Agnar sendi tákn sem fyrirmyndir (🧯, rautt slöngukefli með stút, rauður reykskynjari með reyk, rauð viðvörunarbjalla með kólfi, grár rafmagnsskápur með gulri eldingu, skeifusegull með eldingum = „Segulloki á eldvarnarhurð", hitaskynjari með hitamæli) og sagði „Þá held ég komið". gerdTaekis(tegund, stimpill) velur gerð: slokkvitaeki, co2, slanga, reykskynjari, hitaskynjari, bjalla, segull, rafmagn, skilti, skilti-ut, teppi. teiknaTaekistakn(ctx, gerd) teiknar táknið í lit í 48×48 reit (eigin teikning með einföldum formum — engin mynd afrituð) og það stendur í hvítum hring á miða hvers tækis í 3D; miðinn sýnir alltaf TEGUND. taekjalikan() smíðar líkanið og festaAVegg() hengir það á næsta vegg (innan ≈1,6 m), þeim megin sem merkið stendur; reyk- og hitaskynjarar við loft. Ný merki í 2D-bakkanum (433 STIMPLAR): Reykskynjari, Hitaskynjari, Viðvörunarbjalla, Segulloki; 434 fékk lykla/liti og nýtt 2D-tákn „magnet". GILDRA: þrír verðir (audit-teikning-gaedi/merking/sja) festa útgáfuforskeyti 433 og 434 í index.html við 20261002(…stjorn…) — nýtt merki verður að byrja á því (t.d. ?v=20261002stjorn-bjalla), annars verða þeir rauðir.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D (383) — BRUNAHÓLF og HANDVAL, 04.–05.10.2026 (commits 57db4082, 19257f90). Reglur Agnars: „Brunaveggir mynda alltaf lokað öruggt rými … brunahólf … allan hringinn með eldveggjum og útveggjum", „brunaveggir geta ekki verið stakir", „eins og öryggisgirðing — ekki hægt að sleppa á einum stað", „ein merking á vegg nær allan þann vegg". Útfært: brunaholf() finnur ÚTVEGGI (flætt utan frá; fyrst gróft með ≈5 m þenslu svo aksturshurðir hleypi útisvæðinu ekki inn, bil ≤15 m milli útveggjabúta á sömu línu lokað með sýndarvegg, svo nákvæmt ≈0,6 m), LOKAR lausum enda brunaveggjar eftir stystu leið um aðra veggi (≤15 m) → ÁLYKTAÐUR brunaveggur, sýndur ljósbleikur, og telur HÓLFIN (≥6 m²) sem fá hvert sinn lit á gólfið; svæði sem lekur út fær engan lit. eldurHurda(): karmur yfir hurð í brunavegg er rauður, hurðir sjást ofan frá á litaðri rönd (brunahurð appelsínugul, önnur brún). HANDVAL: takkinn „Breyta eldveggjum" í 3D → smellur á vegg → EI-60 / EI-30 / Ekki brunaveggur / ↺ Sjálfvirkt aftur; valið fer í teikning_bord.haedir[].eldVal = [[ax,ay,bx,by,mín]] (dílar frummyndar) og vistast með sjálfvistun gluggans (STILLINGAR) — tæki og hæðalisti ekki snert. Handvalið gengur fyrir EI-merkjum og aftengdur veggur verður ekki ályktaður aftur. Veggur finnst aftur eftir línu+skörun (veggurVid), ekki miðjupunkti. Mælt á Fiskislóð 41: 21 eldveggur, 1 ályktaður, 29 útveggir, 9 brunahólf; handval „Ekki brunaveggur" → 8 hólf.**
-  <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-- **EI-merki á SKÖNNUÐUM teikningum — mælt 04.10.2026 (E:/pascal-profun: ocr-tilraun.cjs, ocr-flis.cjs, pdf-flis.mjs): í 6006 px myndinni sem teikningaglugginn notar er textinn ~12 px hár og Tesseract les „EI-60" sem „ElL80"/„El.80" — ónothæft, líka stækkað 3×. Í FRUMSKÖNNUNINNI (Álfaborg: PDF með einni innfelldri mynd, 13216 × 9454 px, 400 dpi — sótt með pdf.js page.objs.get án þess að teikna síðuna) les Tesseract „EI-60" og „R60" rétt, EN aðeins eftir að langar línur (dökk hlaup ≥70 px, lárétt og lóðrétt) eru hvítaðar — veggjalína sem liggur við textann eyðir honum annars. Myndlesarinn í 434 (TeiknEi.lesaUrMynd, sniðmátasamanburður) finnur 0 merki á Álfaborg og Fiskislóð. Næsta skref: full gæði + flísar + línur burt + Tesseract í 0°/90°/270°, aðeins nálægt veggjum; niðurstaðan vistuð í haedir[].eiHintar svo þetta sé gert einu sinni. TurboPaint á þegar Tesseract (detect-firewalls.ts) en vistar eldveggi ekki í úttektina.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D (383, commit f95e6973, 04.10.2026 kl. 22:50) — fimm viðbætur eftir ábendingar Agnars í símanum: (1) ÚTVEGGIR: sían sem fellir dót utan húss (golfMedUti) felldi útveggina sjálfa því flóðfyllingin nær inn í vegginn; nú fellur veggur aðeins ef ekkert er INNI ≈0,5 m til hliðar við hann (Álfaborg: 15 veggir féllu ranglega → 0). (2) ELDVEGGIR (merkjaEldveggi): EI-60/EI-30 merki litar allan vegginn út í enda línunnar, í gegnum hurðargöt; EI-CS eru hurðir og lita ekkert; merkin koma úr h.eiHintar eða textalagi vigur-PDF við opnun 3D (aðeins í minni; 2D sýnir þau ekki). Fiskislóð: 27 merki → 21 af 48 veggjum rauður. (3) husklasi: aðeins veggjanetið sem hangir saman er húsið — nafnreitur og lóðartákn falla (Arnarhvoll 30 → 0); álmur (drjúgur klasi ≤4 m frá) haldast. (4) hurdagot — regla Agnars „allir veggirnir tengjast, hvort það sé gluggi eða hurð": stutt bil (≤2,75 m) sem er ekki gler fær dyrakarm; laus veggendi tengist veggnum beint fram undan. (5) tengdirVeggir: stakur stuttur veggur úti á gólfi (snertir ekkert, engin hurð/gluggi) fellur. undirbua() skráir talningu hvers skrefs í console.info „[383] 3D <hæð>: {…}" — notaðu hana við villuleit. Vörðurinn audit-teikning-3d.cjs keyrir tíu reglur á tilbúnum gögnum.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D á SKÖNNUNUM (383, commit 746c1eb2, 04.10.2026 kvöld) — leysir af hólmi lið (a) í fyrri færslu um það sem vantaði. Skönnunarleið undirbua() er nú fjögur skref: (1) þykkir fylltir veggir úr grímunni (heilirUrGrimu), (2) linubond — útveggur teiknaður sem 3–4 örþunnar línur þétt saman rennur í gráan borða í vinnuupplausn: vægur þröskuldur (215) + opnun r=1 + borðar ≥3,5 díla breiðir og ≥2 m, (3) holirVeggir — hvíta bilið milli tveggja mjórra lína lesið sem borði; greiður (stigar) og stutt stök pör (hurðarblöð) falla, (4) lengjaVeggi — Agnar: „Veggirnir stoppa oft á miðri leið. Eins og með EI-60 og EI-30 veggi, þá ná þeir alla línuna þar til hún endar á annarri eða endar": línunni fylgt á myndinni frá hvorum enda yfir stutt rof, stoppar við hurðargat eða annan vegg. Mælt: Álfaborg 1. hæð 31 → 88 veggir (458 m, allur hægri útveggurinn kominn); Miðgarður 2. hæð 109 → 184 veggir (849 m). LÆRDÓMUR: hærri upplausn ein bætti litlu við (2200 → 4236 px: 410 → 422 m) — vandinn var að ÞEKKJA veggjagerðina, ekki skerpan. Enn ógert: EI-60/EI-30 merkin sem lita veggi í 3D (Agnar stakk upp á; snúa á alla vegu, þurfa textalestur — h.eiHintar og TurboPaint detect-firewalls.ts eru til), gluggar í holum/bandveggjum verða heill veggur, vegghæð er hlutfall en ekki raunhæð.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D — hvað VANTAR ENN (04.10.2026): (a) þunnir HOLIR veggir í skönnunum (tvær mjóar línur — efri álma Miðgarðs, Skútuvogur 4, Norðurhella) finnast ekki: lokun grímunnar (fylla) tekur líka áslínur, málsetningu og skástrikun (prófað á Fiskislóð: 545 „veggir", ónothæft) — þarf holveggjagreiningu eins og TurboPaint lib/board/veggir.ts; (b) veggir í þunna línuflokknum (0,24 pt) á vigur-PDF sem liggja ekki í veggjalínu — pörun þess flokks gefur stiga, húsgögn og textakassa með (thunnir.mjs); (c) 2. hæð Fiskislóðar (1612) notar sama blað og 1. hæð; (d) vegghæð er hlutfall af stærð hússins, ekki raunhæð. Almennir rasta→vigur breytar (vtracer o.fl.) leysa þetta EKKI: þeir rekja útlínur bleks en vita ekki hvað er veggur; vandinn er flokkun, ekki rakning. Pascal Editor (pascalorg/editor, MIT, WebGPU) var prófað sem sýn á sömu veggi (E:/pascal-profun) — fallegri skuggar, en gögnin skiptu mestu; ekki tekið inn í appið.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikning 3D (383), 04.10.2026 (commit 7735def4): „girðingin" í 3D kom úr GÖGNUNUM, ekki teiknaranum — CAD teiknar vegg sem tvær samsíða línur með endastrikum og 3D málaði strikin í grímu sem var lyft í ~420 reita rist. Nú þrjár reiknireglur, allar hrein gagnavinnsla í 383 og prófaðar í tools/audit-teikning-3d.cjs: (1) heilirVeggir — PDF-strik pöruð í veggi (miðlína + þykkt, sama aðferð og TurboPaint pdf-veggir.ts), samlínu bútar sameinaðir yfir ≤18 pt bil (súlur; hurðargöt haldast), endar smelltir á þverveggi; (2) veggirUrGrimu — skönnun: veggjagríman lesin sem langir jafnþykkir borðar (hlaupalengdir → stefna → þversnið í hverjum dálki → Douglas–Peucker), skáveggir verða einn leggur, klessur ekki veggir; (3) glerIBilum — bil milli veggbúta á sömu línu er gler ef myndin sýnir ≥2 samsíða línur þar (autt hurðargat og stök áslína ekki). Mælt: Fiskislóð 41 777 strik → 48 veggir, 245 m, hús 32,9 × 41,2 m (A1, 1:100), 11 glerfletir; Miðgarður 1. hæð (skönnuð TIF) 106 veggir, 6 hæðir í 3D á 25 s. Sýnin: ljós grunnur, skuggar, miðar í skjástærð með tegund þegar raðnúmer er TMP-, „Gegnsætt", hæðatakkar (smellur = sú hæð ein). Gamla ristarleiðin er varaleið.**
-  <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningaglugginn (383): 'Skýrari veggir' og skurður geymast á þjóninum (teikning_bord.haedir[].syn) og vistast sjálfkrafa; '📌 Festa útlit' (syn.fest) stöðvar alla sjálfvirka greiningu svo teikningin opnast alltaf eins. Veggjatalning og EI-merki falin — greining býr í TurboPaint, sem hefur nú hama (Teikning/Slökkvitæki/Brunaþéttingar/Brunakerfi/Rými). Agnar 03.10.2026.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **TurboPaint er vinnuvélin (greining, veggir, 3D), Slökkvitæki-teikningaglugginn (383) er stíluð sýn fyrir þjónustuna sem les niðurstöðurnar. Veggir fara á milli í teikning_bord.haedir[].veggjaLinur [{p:[x,y,…],t}] í punktum frummyndar — TurboPaint 'Vista í úttekt' skrifar, 383 3D les (Agnar 03.10.2026).**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): EI-60/EI-30 merki heldur áfram í gegnum T-mót (þverveggur sem kemur á), held ég í öllum tilvikum. Það stoppar aðeins þar sem veggjalínan sjálf endar.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): EI-60 / EI-30 merki gildir um ALLAN vegginn sem það stendur á — alla leið út í enda línunnar (þar sem veggurinn endar), ekki bara blettinn við textann. Merkið er upplýsing um þann vegg. Veggjagreining á að fylgja línunni frá merkinu í báðar áttir þar til hún endar og merkja allan bútinn.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Teikningar (Agnar 03.10.2026): SLT á uppdrætti = þar á að setja slökkvitæki. BRSL + spírall = brunaslanga/slöngukefli. BRSL SLT saman = brunaslanga OG slökkvitæki á þeim stað. EI-60 / EICS-30 / AREIM-120 meðfram veggjum (í hvaða stefnu sem er) = brunahólfandi veggir. rafm. tafla = rafmagnstafla.**
-  <br><sub>2026-10-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fölgráar CAD-línur á FotoWeb-JPEG grunnmyndum (t.d. Fiskislóð #1612) dökknar með CSS brightness(0.82) contrast(1.55) á #fp-canvas. contrast-fyrst gerir ljósa veggi enn ljósari. Stimplar á síma ≥32 CSS px. Full gæði (pdf.js) má teikna innvortis án gæða-hnapps. 436-teikning-sja. Engir EI-stimplar, engir nýir hamrar.**
-  <br>Agnar 02.10.2026: very haaard to see. Tækjadráttur óbreyttur frá e9c347f. Extra power í TurboPaint.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **EI-30 og EI-60 á teikningu eru veggja-ÁBENDINGAR (overlay-miðar), ekki eldveggir. Lesið úr PDF-texta í hvaða snúningi sem er (0/90/180/270 og meðfram vegg). AREIM/90/120 hunsað.**
-  <br>TeiknEi í 434; 383 teiknar hintana. Agnar 02.10.2026: ekki stimpla fire walls.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
-  <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
-  <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
-  <br><sub>2026-10-02 · slokkvitaeki · kóði · claude-code</sub>
-- **02.10.2026: Agnar sá EKKI 1. hæð / Skýrari veggir / 3D á LIVE FloorPlan #company/1612 eftir cab96432. Rót: 383 endurfestaEfNyttFelag lyklaði aðeins á companyId, en FloorPlan.open rífur #modal-floorplan alltaf. Lagað 1626d51: _festModal + vaktGlugga + haus width:auto. Sannað live 1612 og 388. Aldrei node deploy.js. Aldrei DELETE document_pairs.**
-  <br><sub>2026-10-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **Kjarni skilar Kópavogi, Garðabæ og Hafnarfirði aðeins djúptengli á map.is, ekki blöðunum. Listinn er queryTeiknigrunn beint (slug kopavogur, gardabaer, hafnarfjordur), eins og Seltjarnarnes.**
-  <br>PDF-hýsar: gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is. heitinumer=0 skilar „Engar niðurstöður“. Séruppdráttur flokkast áfram með aðaluppdráttum; Burðarvirki með burðarþoli. Tómt safn fær mapisBeint og er ekki sótt aftur. Tímaþrot fær ekki mapisBeint.
-  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
-- **Póstnúmer 170 er Seltjarnarnes, SVFNR 1100, ekki FotoWeb Reykjavíkur. Teikningarnar koma beint úr map.is queryTeiknigrunn og PDF-in liggja á luks.seltjarnarnes.is. Kjarni þekkir ekki 1100.**
-  <br>Fyrirtæki 388, Tjarnarból 2, landnúmer 117672, heitinúmer 1024962: 27 teikningar (aðaluppdrættir, raflagnir, lagnir, burðarþol). Prófíll sýnir bupp_skrar_v2 úr localStorage án nýs kalls. Vanti svarið sækir opinn prófíll hus-upplysingar einu sinni fyrir þetta heimilisfang. Hlaða dreifir ekki kallinu.
-  <br><sub>2026-10-01 · slokkvitaeki · kodi · cursor</sub>
-- _…og 7 til viðbótar í töflunni._
 
 ### postur
 
@@ -1991,6 +1989,48 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
+### 3djoker
+
+- **Útkeyrslulíkan Prufukeyrslunnar (muzzle.ts) er línulegt í hlauplengd og ofmetur löng hlaup, svo með 250 mm hlaupi á að byrja á ⌀6-8 ventilhálsi og mæla með hraðamæli, því ⌀9 getur farið yfir 16 J.** _(likely)_
+  <br>[rule; agents: 3dJoker, 3dwork] Líkan appsins við 250 mm: ⌀8 17,2 J og ⌀9 21,8 J; flæðistakmarkaður ventill gefur nær E ~ L^(2/3): ⌀8 13,8 J og ⌀9 17,5 J. Svarið 31.10.2026 (+35 %, ⌀9 = 15 J) var of lágt og var leiðrétt 10.11. Gefa tölu appsins sem efri mörk, aldrei sem loforð. Tafla: 3dJoker refere
+  <br><sub>2026-11-10 · folk · útreikningur 10.11 · claude-code</sub>
+- **Þegar Agnar svarar beiðni um breytingu á parti með skráarslóð og orðunum „its ready here" hefur hann gert breytinguna sjálfur, svo bera skal nýju skrána saman við fyrri útgáfu áður en spurt er eða skorið.**
+  <br>[gotcha; agents: 3dJoker] 31.10.-1.11.2026: hann merkti raufar á rörinu bláar (fylla) og rauðar (lengja), vistaði svo sjálfur body cut v2, v3 313 og v3 á hálftíma og sendi slóðina. Svarið var að kortleggja skrána og biðja hann að benda á raufar; hann svaraði ekki í níu daga. Athuga tímastimpla í möp
+  <br><sub>2026-11-10 · folk · spjall 1.11 + skráartímar · claude-code</sub>
+- **Í merkjara-smíði er vélbúnaðurinn smíðaður vel en skotorka ekki hámörkuð: halda um 12-16 J, nefna alltaf augnvörn, chronograph og lagamörk, og líta á aflsamanburð við fagmannlega framleiðslu sem fróðleik.** _(likely)_
+  <br>[rule; agents: 3dJoker] Fastur varnagli í samantektum lotunnar 15.-24.09. Agnar spurði 15.09 um aflið af forvitni (not asking you to design it).
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
+- **Agnar geymir 3MF-skrár sínar í Desktop/Top model 3 og Desktop/---Prenta út------ þar sem skráarnöfn bera dagsetningar- og tímastimpil útgáfunnar.**
+  <br>[how-to; agents: 3dJoker] Skrám er deilt með @-tilvísun. Nýjasti stimpillinn er yfirleitt réttasta útgáfan.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
+- **Agnar á ekki rennibekk, svo hönnun á að vera framkvæmanleg með sög, bor, própanbrennara (pípulóðmálmur) og keyptum rörum og fittings, helst úr íslenskum verslunum.**
+  <br>[rule; agents: 3dJoker] 15.09: Hef nefnilega ekki rennibekk; vill helst kaupa allt hérna á Íslandi; lóðun með própanbrennara. Dæmi: sintrað brons-hylki, nestuð messingrör og solid 25 mm messing sem er sagað og borað.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
+- **Agnar prentar í svörtu ABS á Bambu P1S með 0,6 mm dýsu og vill að Claude stilli Bambu Studio á heimatölvunni.**
+  <br>[how-to; agents: 3dJoker] 15.–19.09: ég nota abs; spurði hvort Claude geti opnað Bambu-appið á tölvunni sem Claude vinnur á og stillt fyrir 0.6 mm P1S með black ABS.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
+- **Orðaforði: kverk er innra 90° horn sem á að ávala eða styrkja, Add volume er 3dwork-tólið sem bætir fillet eða skáflöt í valda kverk, powertube er rörið sem ventill og hamar sitja í.**
+  <br>[terminology; agents: 3dJoker] 20.09: Get ég ýtt inn svona 90 gráðu kverka svo þeir verði ávalari, Add volume pencil. Leiðarinn er hlutinn ofan á rörinu.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-20 · claude-code</sub>
+- **Merkjara-verkefni Agnars heita Iron Wolf (Tippmann 98 Custom sem grunnskipulag, innvols án body), SETH/Desert Eagle skammbyssan og 98-mini.**
+  <br>[terminology; agents: 3dJoker] 16.-18.09: base skipulagið er byggt á Tippmann 98 Custom, svo skiptum við út hlutum. Iron Wolf-verkefnið er innvols án body.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-16 · claude-code</sub>
+- **Þegar Agnar biður um breytingu á eigin 3MF-hlut á að halda möskvanum hans NÁKVÆMLEGA og aðeins bæta efni á merktum stöðum, aldrei endurmódela hlutinn til að líkjast honum.**
+  <br>[rule; agents: 3dJoker] 19.09 í reiði: only this part and only in the yellow corners, fylgdu leiðbeiningunum og stykkinu sem ég sendi. Sönnunarteikna og fá samþykki áður en skrá er send.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
+- **Ofurþunnar skel-útgáfur af styrkingum eru óprentanlegar; styrking í kverkum á að vera raunverulegt solid rúmmál (union) sem prentast með 0,6 mm dýsu.**
+  <br>[gotcha; agents: 3dJoker] 20.09: það er ekki séns að prenta þessar örþunnu útgáfur; Agnar vill að Claude læri aðferðina (Add volume-tólið, STEP-vinnslan) frekar en að giska.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-20 · claude-code</sub>
+- **Íslenskir birgjar sem komu til greina fyrir merkjara-smíðina eru Fálkinn, Landvélar, Biltema, Würth, Fossberg og Tómstundahúsið, auk gorma og ventla úr verkfærum og slökkvitækjum.** _(likely)_
+  <br>[how-to; agents: 3dJoker] 15.–22.09: Agnar bað um meira úrval á Íslandi og hvort gormar úr tólum nýtist. Staðfesta framboð áður en pantað er.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-22 · claude-code</sub>
+- **Agnar vill að lærdómur úr 3D-lotum, þar á meðal vinnuferli og CAD-breytingaaðferð, sé skráður í 3dJoker-skill svo hann sé endurtakanlegur.** _(likely)_
+  <br>[decision; agents: 3dJoker] 16.09 bað hann um nýjan agent og möppu sem heitir 3dJoker; 30.09 vísar hann í skill 3djoker við möskva-viðgerð.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-16 · claude-code</sub>
+- **Prentaði powertube-hluturinn í ABS brotnar og losnar í innri hornum rauf-rótarinnar þegar ventillinn opnast; lagfæringin er aukið fillet-efni í þau horn og í hornin á o-hring grópinni.**
+  <br>[gotcha; agents: 3dJoker] 15.09 og 19.09: koparrör er límt inn í borunina, 4 mm skrúfur brutu hlutinn. Aðeins gulmerktu hornin skal styrkja.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
+
 ### agentar
 
 - **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
@@ -2195,41 +2235,38 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Measured 29.8.2026: production sent max-age=0 on ~1.1 MB of bundles. Preview #789 serves immutable on _bundle-0..7, 1h SWR on /js/* and /css/*, 1d SWR on /img/*, sw.js still max-age=0.
   <br><sub>2026-08-29 · slokkvitaeki · kóði · cursor</sub>
 
-### 3djoker
+### 3dwork
 
-- **Í merkjara-smíði er vélbúnaðurinn smíðaður vel en skotorka ekki hámörkuð: halda um 12-16 J, nefna alltaf augnvörn, chronograph og lagamörk, og líta á aflsamanburð við fagmannlega framleiðslu sem fróðleik.** _(likely)_
-  <br>[rule; agents: 3dJoker] Fastur varnagli í samantektum lotunnar 15.-24.09. Agnar spurði 15.09 um aflið af forvitni (not asking you to design it).
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
-- **Agnar geymir 3MF-skrár sínar í Desktop/Top model 3 og Desktop/---Prenta út------ þar sem skráarnöfn bera dagsetningar- og tímastimpil útgáfunnar.**
-  <br>[how-to; agents: 3dJoker] Skrám er deilt með @-tilvísun. Nýjasti stimpillinn er yfirleitt réttasta útgáfan.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
-- **Agnar á ekki rennibekk, svo hönnun á að vera framkvæmanleg með sög, bor, própanbrennara (pípulóðmálmur) og keyptum rörum og fittings, helst úr íslenskum verslunum.**
-  <br>[rule; agents: 3dJoker] 15.09: Hef nefnilega ekki rennibekk; vill helst kaupa allt hérna á Íslandi; lóðun með própanbrennara. Dæmi: sintrað brons-hylki, nestuð messingrör og solid 25 mm messing sem er sagað og borað.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
-- **Agnar prentar í svörtu ABS á Bambu P1S með 0,6 mm dýsu og vill að Claude stilli Bambu Studio á heimatölvunni.**
-  <br>[how-to; agents: 3dJoker] 15.–19.09: ég nota abs; spurði hvort Claude geti opnað Bambu-appið á tölvunni sem Claude vinnur á og stillt fyrir 0.6 mm P1S með black ABS.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
-- **Orðaforði: kverk er innra 90° horn sem á að ávala eða styrkja, Add volume er 3dwork-tólið sem bætir fillet eða skáflöt í valda kverk, powertube er rörið sem ventill og hamar sitja í.**
-  <br>[terminology; agents: 3dJoker] 20.09: Get ég ýtt inn svona 90 gráðu kverka svo þeir verði ávalari, Add volume pencil. Leiðarinn er hlutinn ofan á rörinu.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-20 · claude-code</sub>
-- **Merkjara-verkefni Agnars heita Iron Wolf (Tippmann 98 Custom sem grunnskipulag, innvols án body), SETH/Desert Eagle skammbyssan og 98-mini.**
-  <br>[terminology; agents: 3dJoker] 16.-18.09: base skipulagið er byggt á Tippmann 98 Custom, svo skiptum við út hlutum. Iron Wolf-verkefnið er innvols án body.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-16 · claude-code</sub>
-- **Þegar Agnar biður um breytingu á eigin 3MF-hlut á að halda möskvanum hans NÁKVÆMLEGA og aðeins bæta efni á merktum stöðum, aldrei endurmódela hlutinn til að líkjast honum.**
-  <br>[rule; agents: 3dJoker] 19.09 í reiði: only this part and only in the yellow corners, fylgdu leiðbeiningunum og stykkinu sem ég sendi. Sönnunarteikna og fá samþykki áður en skrá er send.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-19 · claude-code</sub>
-- **Ofurþunnar skel-útgáfur af styrkingum eru óprentanlegar; styrking í kverkum á að vera raunverulegt solid rúmmál (union) sem prentast með 0,6 mm dýsu.**
-  <br>[gotcha; agents: 3dJoker] 20.09: það er ekki séns að prenta þessar örþunnu útgáfur; Agnar vill að Claude læri aðferðina (Add volume-tólið, STEP-vinnslan) frekar en að giska.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-20 · claude-code</sub>
-- **Íslenskir birgjar sem komu til greina fyrir merkjara-smíðina eru Fálkinn, Landvélar, Biltema, Würth, Fossberg og Tómstundahúsið, auk gorma og ventla úr verkfærum og slökkvitækjum.** _(likely)_
-  <br>[how-to; agents: 3dJoker] 15.–22.09: Agnar bað um meira úrval á Íslandi og hvort gormar úr tólum nýtist. Staðfesta framboð áður en pantað er.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-22 · claude-code</sub>
-- **Agnar vill að lærdómur úr 3D-lotum, þar á meðal vinnuferli og CAD-breytingaaðferð, sé skráður í 3dJoker-skill svo hann sé endurtakanlegur.** _(likely)_
-  <br>[decision; agents: 3dJoker] 16.09 bað hann um nýjan agent og möppu sem heitir 3dJoker; 30.09 vísar hann í skill 3djoker við möskva-viðgerð.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-16 · claude-code</sub>
-- **Prentaði powertube-hluturinn í ABS brotnar og losnar í innri hornum rauf-rótarinnar þegar ventillinn opnast; lagfæringin er aukið fillet-efni í þau horn og í hornin á o-hring grópinni.**
-  <br>[gotcha; agents: 3dJoker] 15.09 og 19.09: koparrör er límt inn í borunina, 4 mm skrúfur brutu hlutinn. Aðeins gulmerktu hornin skal styrkja.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
+- **Söfn í 3dwork búa í röðinni prj_favorites: partur tilheyrir safni með collectionId og ber place {x, y, q}, svo raunmál samsetningar fást án vafra með því að miðja möskvann á kassann sinn, snúa með q og færa á place.**
+  <br>[how-to; agents: 3dJoker, 3dwork] Verkfæri: 3dJoker scripts/app/collection_layout.mjs "<safn>" út --ref "<partur>", og fit_figure.mjs fyrir hliðarmynd á móti opum rörs. Handröðun er á 1 mm neti: 1-2 mm er suð, 5 mm er niðurstaða. Dálkurinn part_count í prj_favorites telur aðeins sýnilega parta (176 
+  <br><sub>2026-11-10 · kerfi · sql + kóði · claude-code</sub>
+- **Vafrapróf á 3dwork verður að stöðva allar beiðnir nema GET, HEAD og OPTIONS áður en síðan hleðst, því appið vistar sjálfkrafa í sameiginlega skýið (work3d_projects og bucket work3d), líka af staðbundnum dev-þjóni.**
+  <br>[rule; agents: 3dJoker, 3dwork, kjarni-vefur] Playwright: context.route á allt og abort á annað en lestur; allur lestur appsins er GET svo það virkar og breytingar lifa aðeins í IndexedDB einnota vafrans. Úttekt 10.11.2026: 77 skriftilraunir stöðvaðar, allar frá einnota prófverkefnum, 0 frá ósnertu 
+  <br><sub>2026-11-10 · kerfi · prófun 10.11 · claude-code</sub>
+- **'Merge' eða 'Ja merge' frá Agnari í kjarni-lotu er heimild til að sameina PR og hann býst við staðfestingu á að það sé komið í loftið.**
+  <br>[terminology; agents: 3dJoker, general] 01.10.2026 'ja merge' (PR #141-144 sameinuð og deployuð) og 18.10.2026 'Ertu búinn að deploy merge'. Kjarni deployast á Vercel, öfugt við Slökkvitæki sem deployast með [deploy] í commit.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-17 · claude-code</sub>
+- **Þegar Agnar nefnir 'joker agient skill' í 3D-prentunarlotu á hann við 3dJoker-skillið (ekki Joker-hönnuðinn) og býst við að það sé uppfært með nýjustu verkferlum og verkfærum eftir lotuna.** _(likely)_
+  <br>[terminology; agents: 3dJoker, joker] 30.09.2026: 'sækja online og uppfæra ákveðna verkferla í 3djoker'; 24.10.2026: 'ath joker agient skill tól og uppfæra hann með því nýjasta'. Joker agentinn er hinn sem sér um útlit og síma.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-24 · claude-code</sub>
+- **Ekki nota keypt 3D-módel sem leyfið bannar notkun með gervigreind: Trinity Force DMR Grip frá CGTrader (Royalty Free No AI, leyfi §21B.1) var hafnað sem inntak.** _(likely)_
+  <br>[rule; agents: 3dJoker] Agnar keypti módelið í október 2026 en agentinn neitaði að nota það í breytingar. Reglan er að skoða leyfi áður en keypt módel er notað sem grunnur.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-17 · claude-code</sub>
+- **Blender 4.0 fylgir pyopenvdb sem hentar til að loka rifum með level set (mesh á +r, aftur level set, mesh á −r), en adaptivity yfir 0 gefur rifnar brúnir og 0,02 mm voxel veldur minnisþurrð.** _(likely)_
+  <br>[how-to; agents: 3dJoker] Notaðu mesh á adaptivity 0 og svo Blender Decimate. Boolean-árekstrarprófanir hanga á næstum samfalla flötum, svo notaðu VDB gap check í staðinn.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-09-30 · claude-code</sub>
+- **3dwork (kjarni-3dwork.vercel.app) geymir verkefni í töflu work3d_projects og mesh í bucket work3d sem prj_<id>/ver_<id>.bin, Partasafnið er röðin prj_favorites (skjal að hámarki 1 MB), og nýjar útgáfur bætast við en skrifa aldrei yfir.** _(likely)_
+  <br>[how-to; agents: 3dJoker, general] Skrifa alltaf NÝJAR skýjabyggingar með föstum ids frekar en að snerta byggingu sem Agnar hefur opna. Safn (t.d. Iron wolf, Evo) hefur kafla, stöðu printed, made eða bought og lög 1-4.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-09-30 · claude-code</sub>
+- **Á 16 GB vélinni má aðeins keyra eitt receiver-job í einu í 3dwork (hvert tekur 1–3 GB); endurskapa án vafra með headless Playwright sem vistar body-soups úr IndexedDB og vitest-prófi sem kallar makeOnePiece með { gapMm: 0.4, crumbMm3: 20, seamMm: 0.5 }.** _(likely)_
+  <br>[how-to; agents: 3dJoker] Keyra prófin úr apps/web: ./node_modules/.bin/vitest run --root src lib/3dwork app/3dwork; auk tsc og oxlint.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota befe3b7c 2026-09-13 · claude-code</sub>
+- **One piece (bridgeSeams) í 3dwork endar á 'memory access out of bounds' við 0,5 mm seam á Valken receiver því eitt brúarstykki liggur flatt að fínu yfirborði og joined.add(part) sprengir þríhyrningafjölda (1–5,7 milljónir, yfir 2 GB) áður en BLOWUP-varðan sér það.** _(likely)_
+  <br>[gotcha; agents: 3dJoker] Mælt 2026-09-13. Útilokað: part.simplify(), tvöfalt seam, snertipróf á stykki með boolean eða minGap (100+ s). Hugmyndir: klippa brúarstykki við þunnt band um snertiflöt, byggja úr litlum staðbundnum frumum, prófa join á…
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota befe3b7c 2026-09-13 · claude-code</sub>
+- **3dwork er sjálfsmíðaður STL-bekkur Agnars í kjarni-repo (apps/web, production kjarni-3dwork.vercel.app); skýið er Supabase-taflan work3d_projects og bucket work3d, og deploy er branch, PR, merge, Vercel byggir production.** _(likely)_
+  <br>[how-to; agents: 3dJoker, tengingar] Bíða eftir Vercel kjarni-3dwork pass áður en merge. Vercel Agent Review er ekki blokkandi.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
 
 ### nlsh
 
@@ -2509,33 +2546,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Endurnýta timavera_meta-mynstrið fyrir alla sync-tímastimpla — ekki búa til ný afbrigði**
   <br>Bein fyrirmæli Agnars 25.7.2026. Ein lína, upsert per import: last_import, source_file, row_count.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
-### 3dwork
-
-- **'Merge' eða 'Ja merge' frá Agnari í kjarni-lotu er heimild til að sameina PR og hann býst við staðfestingu á að það sé komið í loftið.**
-  <br>[terminology; agents: 3dJoker, general] 01.10.2026 'ja merge' (PR #141-144 sameinuð og deployuð) og 18.10.2026 'Ertu búinn að deploy merge'. Kjarni deployast á Vercel, öfugt við Slökkvitæki sem deployast með [deploy] í commit.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-17 · claude-code</sub>
-- **Þegar Agnar nefnir 'joker agient skill' í 3D-prentunarlotu á hann við 3dJoker-skillið (ekki Joker-hönnuðinn) og býst við að það sé uppfært með nýjustu verkferlum og verkfærum eftir lotuna.** _(likely)_
-  <br>[terminology; agents: 3dJoker, joker] 30.09.2026: 'sækja online og uppfæra ákveðna verkferla í 3djoker'; 24.10.2026: 'ath joker agient skill tól og uppfæra hann með því nýjasta'. Joker agentinn er hinn sem sér um útlit og síma.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-24 · claude-code</sub>
-- **Ekki nota keypt 3D-módel sem leyfið bannar notkun með gervigreind: Trinity Force DMR Grip frá CGTrader (Royalty Free No AI, leyfi §21B.1) var hafnað sem inntak.** _(likely)_
-  <br>[rule; agents: 3dJoker] Agnar keypti módelið í október 2026 en agentinn neitaði að nota það í breytingar. Reglan er að skoða leyfi áður en keypt módel er notað sem grunnur.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-10-17 · claude-code</sub>
-- **Blender 4.0 fylgir pyopenvdb sem hentar til að loka rifum með level set (mesh á +r, aftur level set, mesh á −r), en adaptivity yfir 0 gefur rifnar brúnir og 0,02 mm voxel veldur minnisþurrð.** _(likely)_
-  <br>[how-to; agents: 3dJoker] Notaðu mesh á adaptivity 0 og svo Blender Decimate. Boolean-árekstrarprófanir hanga á næstum samfalla flötum, svo notaðu VDB gap check í staðinn.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-09-30 · claude-code</sub>
-- **3dwork (kjarni-3dwork.vercel.app) geymir verkefni í töflu work3d_projects og mesh í bucket work3d sem prj_<id>/ver_<id>.bin, Partasafnið er röðin prj_favorites (skjal að hámarki 1 MB), og nýjar útgáfur bætast við en skrifa aldrei yfir.** _(likely)_
-  <br>[how-to; agents: 3dJoker, general] Skrifa alltaf NÝJAR skýjabyggingar með föstum ids frekar en að snerta byggingu sem Agnar hefur opna. Safn (t.d. Iron wolf, Evo) hefur kafla, stöðu printed, made eða bought og lög 1-4.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota d0183946 2026-09-30 · claude-code</sub>
-- **Á 16 GB vélinni má aðeins keyra eitt receiver-job í einu í 3dwork (hvert tekur 1–3 GB); endurskapa án vafra með headless Playwright sem vistar body-soups úr IndexedDB og vitest-prófi sem kallar makeOnePiece með { gapMm: 0.4, crumbMm3: 20, seamMm: 0.5 }.** _(likely)_
-  <br>[how-to; agents: 3dJoker] Keyra prófin úr apps/web: ./node_modules/.bin/vitest run --root src lib/3dwork app/3dwork; auk tsc og oxlint.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota befe3b7c 2026-09-13 · claude-code</sub>
-- **One piece (bridgeSeams) í 3dwork endar á 'memory access out of bounds' við 0,5 mm seam á Valken receiver því eitt brúarstykki liggur flatt að fínu yfirborði og joined.add(part) sprengir þríhyrningafjölda (1–5,7 milljónir, yfir 2 GB) áður en BLOWUP-varðan sér það.** _(likely)_
-  <br>[gotcha; agents: 3dJoker] Mælt 2026-09-13. Útilokað: part.simplify(), tvöfalt seam, snertipróf á stykki með boolean eða minGap (100+ s). Hugmyndir: klippa brúarstykki við þunnt band um snertiflöt, byggja úr litlum staðbundnum frumum, prófa join á…
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota befe3b7c 2026-09-13 · claude-code</sub>
-- **3dwork er sjálfsmíðaður STL-bekkur Agnars í kjarni-repo (apps/web, production kjarni-3dwork.vercel.app); skýið er Supabase-taflan work3d_projects og bucket work3d, og deploy er branch, PR, merge, Vercel byggir production.** _(likely)_
-  <br>[how-to; agents: 3dJoker, tengingar] Bíða eftir Vercel kjarni-3dwork pass áður en merge. Vercel Agent Review er ekki blokkandi.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
 
 ### afkost
 
@@ -3273,6 +3283,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Aðalskoðun er fjórir staðir á 540994-2269. Staðfestu á HEIMILISFANGI þegar kt á fleiri en einn stað.
   <br><sub>2026-08-07 · baedi · greining · chat</sub>
 
+### claude-code
+
+- **Myndir og skilaboð sem Agnar sendir í miðri umferð eru í lotuskránni (.jsonl) sem attachment af gerð queued_command með myndunum í base64, svo merktar skjámyndir má sækja aftur eftir samhengisþjöppun í stað þess að biðja hann um þær.**
+  <br>[how-to; agents: general, 3dJoker] Lotuskrár: C:\Users\Notandi\.claude\projects\<verkefni>\<session-id>.jsonl. Lesari sem tekur aðeins type=user missir mið-umferðar skilaboðin og myndir þeirra. Verkfæri: 3dJoker scripts/app/session_requests.mjs <lota.jsonl> <út> skilar beiðnum, myndum, PR, artifact-
+  <br><sub>2026-11-10 · kerfi · kóði · claude-code</sub>
+- **Sjálfvirk heilsusópunar-lota (Routine) sem klónar aggisigurds-dev/slokkvitaeki með GITHUB_TOKEN hefur LESAÐGANG en EKKI push-aðgang — git push mistekst með "access denied by the git proxy: ... is not in this session's authorized repository set". Skýrt sem policy-synjun (403), ekki reynt aftur skv. proxy-reglum.**
+  <br>2026-09-01 sweep: náði að klóna, checka út claude/mcp-browser-access-wqattt, committa lagfæringar, en push+draft-PR mistókst. Ef þessi sópun á að geta skilað PR-um sjálf þarf Agnar að virkja add_repo/push-heimild fyrir þetta trigger-session (utan seilingar Claude — mannleg stilling á claude.ai sessi
+  <br><sub>2026-09-01 · kerfi · sql · claude-code</sub>
+
 ### maelingar
 
 - **Slökkvitæki-appið er á bak við innskráningu síðan eftir 31.10.2026 (rofinn krefjast_slokk í hub_adgangar_stilling; /api/hub-adgangar skilar gate:true). Óinnskráður vafri lendir á /innskraning.html, svo mæliskriftur sem athuga ekki slóðina skila „CLS 0, 0 villur" af innskráningarsíðunni. tools/maelingar/*.cjs stoppa nú á hliðinu (exit 2). Að svara hliðinu í prófvafra eða fá hub_user-köku er ákvörðun Agnars — án hennar er vafrinn EKKI MÆLDUR og það er sagt.**
@@ -3760,12 +3779,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Sopunar-session (trigger/scheduled) hefur ENGAN skrif-adgang ad app_problems (PATCH lokad af Claude Code auto-mode classifier), OHAD filter-lögun — leidrettir gomlu getgátuna í #361 um ad thetta se sertaekt wildcard-filter vandamal.**
   <br>Sannreynt 04.09.2026: bædi PATCH med kind=eq.X&resolved=eq.false OG PATCH med staka id=eq.N a app_problems eru stödvud af sama classifier-skilabodi, i gegnum bædi curl og python urllib (svo thetta er ekki curl-sertaekt heldur). Aftur a moti VIRKAR INSERT/DELETE a charlize_knowledge eðlilega gegnum s
   <br><sub>2026-09-04 · kerfi · sql · claude-code</sub>
-
-### claude-code
-
-- **Sjálfvirk heilsusópunar-lota (Routine) sem klónar aggisigurds-dev/slokkvitaeki með GITHUB_TOKEN hefur LESAÐGANG en EKKI push-aðgang — git push mistekst með "access denied by the git proxy: ... is not in this session's authorized repository set". Skýrt sem policy-synjun (403), ekki reynt aftur skv. proxy-reglum.**
-  <br>2026-09-01 sweep: náði að klóna, checka út claude/mcp-browser-access-wqattt, committa lagfæringar, en push+draft-PR mistókst. Ef þessi sópun á að geta skilað PR-um sjálf þarf Agnar að virkja add_repo/push-heimild fyrir þetta trigger-session (utan seilingar Claude — mannleg stilling á claude.ai sessi
-  <br><sub>2026-09-01 · kerfi · sql · claude-code</sub>
 
 ### svid/agentar
 
