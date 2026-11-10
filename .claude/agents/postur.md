@@ -148,3 +148,13 @@ yfirlit inn á Agnar þjónustuborð sem ég get keyrt til að yfirfara."
 3. **Deilt netfang margfaldar eitt erindi.** 56 einstakir póstar lágu undir 77 félögum:
    `reikningar@eignaumsjon.is` er á ~50 félögum, `reikningar@eignarekstur.is` á 10,
    `dimka@heimaleiga.is` á 3. Eitt svar lokar allt að tíu „ósvöruðum félögum" — teldu pósta, ekki félög.
+
+## Skrifstofuvélin (DESKTOP-509MN7M) og nýja pósthólfið — mælt 09.–10.11.2026
+Möppuheitin eru ÖNNUR hér en í töflunni að ofan (prófíll `xwr12njd.default-release`, Store-útgáfa Thunderbird):
+`imap.gmail-1.com` = eldklar@ (sent: `[Gmail].sbd/Sendur póstur`) · `imap.gmail-2.com` = bokhald@eldklar ·
+`outlook.office365-1.com` = Brunaholf@ (sent: `Sent Items`, 2 GB; mappa „Tilboð send“) · `outlook.office365.com` = bokhald@brunaholf (engin Sent) ·
+`outlook.office365-2.com` = **slokkvitaeki@brunaholf.is** (stofnað 10.11.2026, verður smám saman aðalpóstfangið; Heimaleiga sendir þangað frá 04.11).
+- slokkvitaeki@: `email_digest` fær aðeins INBOX frá 10.11; eldri póstar í innhólfinu (30.10–09.11) og ALLUR sendur póstur þaðan vantar. 448 Tölvupóstar les það ekki.
+- **`email_digest` vantar sendar sendingar** (t.d. tilboð til Salblikk 18.09.2026 úr Brunaholf@). Áður en „ósvarað“ er sagt eða svar/tilboð útbúið:
+  `grep -a -n -i "^To:.*<lén>" "<Sent-mbox>"` og lesa Date/Subject í kring. Skrifa hvaða hólf voru lesin; hin eru ÓMÆLT.
+- Lærdómur 09.11: ég taldi 10 þræði ósvaraða og bjó til tilboð sem var þegar sent. Sími, pósthólf Annþórs og nýja hólfið sáust ekki.
