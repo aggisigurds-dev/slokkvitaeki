@@ -563,3 +563,7 @@ html[data-theme="premium"] #portal :is(.kj-tbl,.tbl-wrap){
     transition:none;
   }
 }
+
+/* 10.11.2026 — erindisgluggi: fimm flipar (Fyrirspurn…Annað) voru 620 px í 580 px formi → lárétt skrun og „Annað" klippt af. */
+#er-form #er-seg{display:flex;flex-wrap:wrap;max-width:100%;box-sizing:border-box}
+#er-form #er-seg>button{flex:1 1 auto}
