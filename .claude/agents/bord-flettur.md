@@ -658,3 +658,36 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 - **Raunveruleg vistun á lifandi `app_settings` er ÓPRÓFUÐ af Claude** (skrifum neitað 10.11). Sannað í staðinn: kóðinn sendir
   `{verdlistar:{<id>:<listi>}}` á `app_settings_merge`; `jsonb_deep_merge` með þeirri lögun heldur öðrum listum og öðrum stillingum og
   yfirskrifar `lidir`-fylkið heilt (lesfyrirspurn); og sama vistunarleið (`AppSettings.save`) skilaði verðbreytingu Agnars (Skýrslugerð 4.600) alla leið í Gátt.
+
+## Aðalmál (492, `#adalmal`) — vikuyfirlit á eigin borði (02.11.2026 · 492b 10.11.2026)
+
+- **Staða 10.11.2026:** 492b er á greininni `adalmal-492b` (commit með `[deploy]` í haus), EKKI á master og EKKI birt. Sjálfvirki
+  flokkarinn stöðvaði framleiðslubirtinguna og hún bíður samþykkis Agnars. Þar til gildir gamla hegðunin á master og á lifandi síðu:
+  viðbætur með þankastriki renna inn í Spurningar og tómt borð gefur enga skýringu. Staðfestu með `window.Adalmal.version`
+  (`'492'` = gamalt, `'492b'` = nýtt). Þegar greinin er komin á master má eyða þessari línu.
+- **Hvað:** `js/patches/492-adalmal.js`, sýn `view-adalmal`, 261 PAGES `adalmal` (Þjónustuborðs- og Boss-appið á eftir `bord`, merki
+  `__adm1`/`__adm2`). Engin eigin tafla: borðið les `thjonustubeidni` með merkinu `adalmal` í `tags` og teiknar `notes`. `tags` er jsonb,
+  svo sían er `.contains('tags', JSON.stringify(['adalmal']))`; fylki gefur „invalid input syntax for type json".
+- **Aðeins OPIN mál.** Sían er `deleted_at is null`, `archived_at is null`, `status <> 'lokad'`. Lokað yfirlit = tómt borð. #1376 var lokað
+  07.11.2026 („úrelt af sjálfu sér") og borðið var tómt frá þeim degi. 492b sýnir þá „Síðasta yfirlit (#N) var lokað dd.mm af X" ásamt
+  `lokid_lysing`. Kvörtun um að Aðalmál sýni ekkert → athugaðu FYRST status málsins, ekki kóðann.
+- **Sniðið í `notes`** (þáttarinn `Adalmal.greina(m)`): lína „A · …", „B · …", „C · …" = hluti (A fundir og frestir · C gera · B gerðist);
+  „• " og „1. " = atriði; lína sem byrjar á „Spurningar…:" = spurningar aðskildar með „ · "; **lína sem byrjar á þankastriki „— " =
+  leiðréttingarkafli** (hluti `ath`, „Leiðrétt eftir endurmælingu", nýjasti kaflinn efst, samanbrotinn á síma). Punktalínur á eftir fylgja kaflanum.
+- **Regla fyrir þann sem bætir við yfirlit:** viðbót aftan við `notes` byrjar ALLTAF á „— <Orð> dd.mm.áááá (höfundur): …" (Athugasemd /
+  Endurmælt / Leiðrétt og lokað). Fyrir 492b rann slík viðbót inn í Spurningar: mælt á #1376 10.11.2026 voru 10 af 13 „spurningum"
+  endurmælingar og borðið taldi 39 atriði í stað 29. Dagsetningin í kaflahausnum birtist sem „leiðrétt dd.mm" í titli. `updated_at` málsins
+  hreyfist EKKI við viðbót (engin kveikja), svo hann segir ekkert um hvenær textinn breyttist síðast.
+- **Ný vika = NÝTT mál** með merkinu `adalmal`; gamla málinu er lokað, því er ekki breytt. Enginn sjálfvirkur keyrari skrifar yfirlit (mælt
+  10.11.2026: engin tímasett keyrsla til) — það gerist aðeins þegar Agnar biður. Yfirlit sem er 7 daga eða eldra fær rautt aldursmerki.
+  Uppskriftin: summary í mesta lagi 4 línur og 600 stafir, ekkert „✓ Samþykkja / ✕ Hafna"-snið í notes (368 `adgerdirUrNotu` les það sem
+  aðgerðir), launamál ekki með, hver lína mæld með heimild eða merkt ÓMÆLT.
+- **✓ klárað** skrifar `thjonustubord_falid` með lykli `adalmal:atridi:<mál>-<hluti>-<nr>`. CHECK á töflunni er `^[a-z_]+:[a-z_]+:[^\s]+$`
+  (tala má ekki vera í 2. sæti). Númerið er SÆTI atriðisins í þáttuðum texta: sé atriði bætt inn í miðjan hluta færast hökin á rangt atriði.
+  Bættu aðeins við aftast, eða skrifaðu nýtt mál.
+- **Fjöldi atriða** er talinn með `Adalmal.greina(m)`, aldrei úr minni eða eldri nótu. 04.11.2026 sagði Claude „29 atriði" eftir minnisnótu
+  þegar borðið sýndi 39.
+- **Prófun:** lifandi síðan er á bak við innskráningu starfsfólks [C#2261, C#2236]. Án innskráningar má staðfesta birtingu með `build.json`
+  og leit að `__adalmal492` í `_bundle-*.js` (lifandi `index.html` nefnir ekki patch-skrána því build-dist búntar). Eftir innskráningu:
+  `window.Adalmal.version` á að vera `'492b'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
+  `nytt` í vafranum einum — aldrei opna málið í grunninum til að prófa.

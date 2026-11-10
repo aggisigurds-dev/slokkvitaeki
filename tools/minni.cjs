@@ -66,9 +66,22 @@ async function sbGet(q) {
   return r.json();
 }
 
+/* Heildarfjöldi virkra staðreynda (10.11.2026). Bókin er GLUGGI: nýjustu 1000 færslurnar, í mesta lagi 40 í hverju
+   efni. Þann dag voru 2113 virkar en hausinn sagði „1000 virkar staðreyndir" eins og það væri allt minnið. Skilar
+   null ef talningin bregst — bókin fellur ekki á henni, hún sleppir þá bara hlutfallinu. */
+async function telja() {
+  try {
+    const { url, h } = keys();
+    const r = await fetch(`${url}/rest/v1/v_charlize_active?select=id&limit=1`, { headers: Object.assign({}, h, { Prefer: 'count=exact' }) });
+    const m = String(r.headers.get('content-range') || '').match(/\/(\d+)$/);
+    return m ? +m[1] : null;
+  } catch (_) { return null; }
+}
+
 /* ── Sækja allt sem stýribókin sýnir ───────────────────────────────────── */
 async function saekja() {
   const stadr = await sbGet('v_charlize_active?select=*&order=created_at.desc&limit=1000');
+  const alls = await telja();
 
   // Mælibókin er valfrjáls viðbót — hún má ekki fella minnið ef hún svarar ekki.
   let maelt = null;
@@ -79,11 +92,11 @@ async function saekja() {
     if (r.ok) maelt = await r.json();
   } catch (_) {}
 
-  return { stadr, maelt, sott: new Date().toISOString() };
+  return { stadr, maelt, alls, sott: new Date().toISOString() };
 }
 
 /* ── Smíða stýribókina sem markdown ────────────────────────────────────── */
-function smida({ stadr, maelt, sott }) {
+function smida({ stadr, maelt, sott, alls }) {
   const L = [];
   const p = s => L.push(s);
 
@@ -94,7 +107,15 @@ function smida({ stadr, maelt, sott }) {
   p('> Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:');
   p('> `node tools/minni.cjs --skra "..." --topic <efni>`');
   p('');
-  p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${stadr.length} virkar staðreyndir`);
+  if (alls && alls > stadr.length) {
+    p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${stadr.length} nýjustu af ${alls} virkum staðreyndum`);
+    p('');
+    p(`> ⚠ **${alls - stadr.length} eldri staðreyndir eru EKKI í þessari bók.** Hún er gluggi: nýjustu ${stadr.length} færslurnar og í mesta`);
+    p('> lagi 40 í hverju efni. Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — spurðu grunninn beint:');
+    p("> `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`");
+  } else {
+    p(`Sótt ${sott.slice(0, 16).replace('T', ' ')} · ${stadr.length} virkar staðreyndir`);
+  }
   p('');
   p('---');
   p('');
