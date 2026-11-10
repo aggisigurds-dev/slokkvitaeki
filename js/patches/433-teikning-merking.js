@@ -1100,7 +1100,7 @@
       if (!panel) return;
       let box = document.getElementById('fp-merki-adgerd');
       const m = S.valinnMerki;
-      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.takn || '') + ':' + (m.rot || 0) + ':' + (m.staerd || '') + ':' + (erStimpil(m) ? 's' : erNytt(m) ? 'n' + ((FP() && FP().units) || []).length : 't') : '') + '|' + (S.valinn || '');
+      const lyk = (m ? String(m.unitId) + ':' + (m.sign || '') + ':' + (m.takn || '') + ':' + (m.rot || 0) + ':' + (m.vantar ? 'v' : '') + ':' + (m.staerd || '') + ':' + (erStimpil(m) ? 's' : erNytt(m) ? 'n' + ((FP() && FP().units) || []).length : 't') : '') + '|' + (S.valinn || '');
       if (!m) {
         if (box && !box.hidden) { box.hidden = true; box.dataset.ok = lyk; }
         return;
@@ -1119,7 +1119,12 @@
           const sign = b.getAttribute('data-sign');
           const takn = b.getAttribute('data-takn');
           if (act === 'snua') snuaMerki(S.valinnMerki);
-          else if (act === 'afrita') {
+          else if (act === 'vantar') {
+            const mv = S.valinnMerki;
+            if (mv.vantar) delete mv.vantar; else mv.vantar = true;   // 10.11: „tækið vantar" → fjólublátt raunsætt tákn (434)
+            try { if (window.TeiknBord && TeiknBord.samstilla) TeiknBord.samstilla(); } catch (_) {}
+            endurteikna(); vistaAdThjoni();
+          } else if (act === 'afrita') {
             const ny = afritaMerki(S.valinnMerki);
             if (ny) { vistaAdThjoni(); S.valinnMerki = ny; }
           } else if (act === 'eyda') eydaMerki(S.valinnMerki);
@@ -1159,6 +1164,7 @@
         '<div class="fp-merki-nafn">' + esc(nafnMerkis(m)) + '</div>' +
         '<div class="fp-merki-acts">' +
           '<button type="button" data-act="snua">Snúa</button>' +
+          (!stimp ? '<button type="button" data-act="vantar" title="Tækið vantar á staðinn — táknið verður fjólublátt">' + (m.vantar ? 'Er á staðnum' : 'Vantar') + '</button>' : '') +
           (stimp || nytt ? '<button type="button" data-act="afrita">Afrita</button>' : '') +
           '<button type="button" class="fp-vm-hætta" data-act="eyda">' + (stimp || nytt ? 'Eyða' : 'Fjarlægja af teikningu') + '</button></div>' +
         tengja +

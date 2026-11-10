@@ -354,12 +354,13 @@
     }
     return i.complete && i.naturalWidth ? i : null;
   }
-  function teiknaRaun(ctx, lyk, mx, my, s) {
+  function teiknaRaun(ctx, lyk, mx, my, s, vantar) {
     const n = RAUN[lyk]; if (!n) return false;
     const i = raunMynd(n); if (!i) return false;
     const kassi = s * 1.15, k = kassi / Math.max(i.naturalWidth, i.naturalHeight), w = i.naturalWidth * k, h = i.naturalHeight * k;
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = Math.max(3, s * 0.22); ctx.shadowOffsetY = Math.max(1, s * 0.06);
+    if (vantar) ctx.filter = 'hue-rotate(285deg) saturate(1.1)';   // taekid vantar: rautt verdur fjolublatt
     ctx.drawImage(i, mx - w / 2, my - h / 2, w, h);
     ctx.restore();
     return true;
@@ -388,8 +389,9 @@
     if (m && m.punktur) return teiknaPunkt(ctx, m.punktur, mx, my, s);
     const lyk = lykillFyrir(m, units);
     if (raunOn() && PUNKTUR_LYK[lyk]) return teiknaPunkt(ctx, PUNKTUR_LYK[lyk], mx, my, s);
-    if (raunOn() && teiknaRaun(ctx, lyk, mx, my, s)) return;
+    if (raunOn() && teiknaRaun(ctx, lyk, mx, my, s, m && m.vantar)) return;
     const litur = Object.assign({}, LITIR[lyk] || LITIR.annad, m.color && lyk !== 'lettvatn' && lyk !== 'duft' && lyk !== 'co2' ? { bg: m.color } : {});
+    if (m && m.vantar) litur.bg = '#7b1fa2';
     teiknaTakn(ctx, val()[lyk] || SJALF[lyk] || 'extinguisher', litur, mx, my, s, m && m.rot);
   }
 
