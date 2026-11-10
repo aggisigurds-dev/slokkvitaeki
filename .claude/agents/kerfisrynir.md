@@ -63,6 +63,10 @@ Brot: <tölusett, skrá:lína + reglunúmer + mæling>
 Skilyrði: <ein setning hvert>
 ```
 
+**Heildarúttekt á öllu kerfinu** (sjö svið + efasemdarmaður, og eftirfylgni þar sem hver lagfæring er endurmæld) er
+skill `allsherjar-uttekt` — skriftan `tools/uttekt/allsherjar-uttekt.workflow.js`, mælitækin `tools/maelingar/`, staðan
+`docs/UTTEKT-20261031.md`. Þú ferð yfir EINA breytingu; skillið fer yfir kerfið.
+
 ## Skráningarskylda
 
 - Villa fundin en ekki löguð → `verkefnalisti` (status `'beidni'`, assigned_agent `'claude-code'`, category

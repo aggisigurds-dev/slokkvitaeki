@@ -132,10 +132,10 @@
       o.toBlob(b => {
         if (!b) return;
         const h = document.querySelector('#modal-floorplan h1, #modal-floorplan h2, #modal-floorplan h3');
-        const stadur = String((h && h.textContent) || '').replace(/^s*Teiknings*[—–-]s*/, '').trim();
+        const stadur = String((h && h.textContent) || '').replace(/^\s*Teikning\s*[—–-]\s*/, '').trim();
         const hs = (window.TeiknBord && TeiknBord.haedir && TeiknBord.haedir()) || [], vi = (window.TeiknBord && TeiknBord.virk && TeiknBord.virk()) || 0;
         const d = new Date(), dags = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
-        const nafn = ['Teikning', stadur, hs[vi] && hs[vi].nafn, dags].filter(Boolean).join(' ').replace(/[\/:*?"<>|]+/g, ' ').replace(/s+/g, ' ').trim() + '.png';
+        const nafn = ['Teikning', stadur, hs[vi] && hs[vi].nafn, dags].filter(Boolean).join(' ').replace(/[\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() + '.png';
         const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = nafn; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(u), 10000);
       }, 'image/png');
