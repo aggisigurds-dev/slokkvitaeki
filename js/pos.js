@@ -1868,7 +1868,7 @@
           '<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#64748b">Verkstæði:</span><span style="font-weight:600;color:#1e40af">' + esc(info.verkMsg) + '</span></div>' +
         '</div>' +
         '<div style="padding:12px 22px 18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +
-          '<button id="_ps-reprint" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">🖨 Prenta aftur</button>' +
+          '<button id="_ps-reprint" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">🖨 Prenta reikning</button>' +
           '<button id="_ps-view" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">📋 Sjá reikning</button>' +
           '<button id="_ps-close" type="button" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:700">↺ Loka · Aftur á söluborð</button>' +
         '</div>' +
@@ -1886,7 +1886,7 @@
       var btn = this;
       btn.disabled = true; btn.textContent = '🖨 Prentar...';
       var w = window.open('', '_blank', 'width=900,height=1100');
-      if (!w) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta'); btn.disabled = false; btn.textContent = '🖨 Prenta aftur'; return; }
+      if (!w) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta'); btn.disabled = false; btn.textContent = '🖨 Prenta reikning'; return; }
       if (window.SalaInvoice && typeof SalaInvoice.render === 'function') {
         // Synthesise a sale row so SalaInvoice.renderFromSale produces the
         // same A4 layout that historical re-prints use.
@@ -1922,7 +1922,7 @@
       } else {
         showReceipt(info.num, info.customer, info.lines || [], info.totals, 0, info.phone || '', '');
       }
-      setTimeout(function(){ btn.disabled = false; btn.textContent = '🖨 Prenta aftur'; }, 800);
+      setTimeout(function(){ btn.disabled = false; btn.textContent = '🖨 Prenta reikning'; }, 800);
     };
 
     // Auto-focus the "Loka" button so Enter closes the modal.
@@ -2014,7 +2014,14 @@
     w.document.close();
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);return;}refreshCatalogIfStale();},300);}
-  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic, invalidateVorur: invalidateVorur };
+  // 10.11.2026 (Geyma sem drög, js/patches/501-geymd-drog.js): sama endurstilling og eftir sölu (checkout, ~1835–1838) svo karfan tæmist
+  // eftir að hún hefur verið geymd sem drög. Fer EKKI um checkout() — engin sala, ekkert R-númer, engin verkbeiðni.
+  function resetCart(){
+    state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.staffNotes='';state.discount=0;state.discount_pct=0;state.beidninumer='';
+    var m=document.getElementById('pos-customer-memo');if(m)m.style.display='none';
+    var v=document.getElementById('view-sala');if(v){v.removeAttribute('data-pos-v3');render();}
+  }
+  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic, invalidateVorur: invalidateVorur, resetCart: resetCart };
   // App-wide view-mode toggle (patch 166) → POS reacts PURELY via CSS keyed off
   // html[data-viewmode] (see _ensurePosVmCss). We deliberately DO NOT re-render
   // here: a rebuild would wipe the cart + selected customer. We only make sure

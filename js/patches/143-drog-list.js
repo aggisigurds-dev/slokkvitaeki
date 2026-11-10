@@ -119,11 +119,19 @@
   function saveSort(v) { try { if (window.Vidmot) Vidmot.setja(DROG_SORT_VM, v); } catch (_) {} }
   let _sortMode = loadSort();
   let _showDeleted = false;   // 2026-06-24: reveal soft-deleted (hidden) drög
+  // 10.11.2026 (Agnar: „geyma sem drög … Geymd Drög, í sér flokki ofanlega"): körfur sem voru geymdar úr greiðsluglugga Sölu
+  // (js/patches/501-geymd-drog.js, tafla sala_geymd). EKKI sölur: ekkert R-númer og ekkert í Bókhaldi — því talið og sýnt sér.
+  let _geymd = [];
+  async function loadGeymd() {
+    try { _geymd = (window.GeymdDrog && GeymdDrog.listi) ? await GeymdDrog.listi({ medEyddum: _showDeleted }) : []; }
+    catch (e) { console.warn('[drog-list] geymd:', e); _geymd = []; }
+  }
 
   async function loadDrog() {
     const SB = getSB();
     if (!SB) return;
     try {
+      await loadGeymd();   // geymd drög (sér tafla) — óháð því hvort sölulistinn hleðst
       // audit-pagination:ok — drög, .limit(100) í næsta skrefi
       let q = SB.from('solur')
         .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir,hidden,customer_id,customer_base_id,customer_kt')
@@ -241,6 +249,10 @@
       V + '.b-vika{color:#3a4250}' + V + '.b-vika i{background:#8a93a3}',
       V + '.b-tvaer{color:#845400}' + V + '.b-tvaer i{background:#e0a93e}',
       V + '.b-lengi{color:#b42318}' + V + '.b-lengi i{background:#c92a2a}',
+      // Geymd drög (10.11.2026): flokkur efst + „Geymd drög N" hægra megin í síuræmunni (Agnar)
+      V + '.b-geymd{color:#11141c}' + V + '.b-geymd i{background:#11141c}',
+      V + '.dr2-sia button.dr2-geymd' + K + '{margin-left:auto!important}',
+      V + '.dr2-yfirl{max-width:44ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       // miðinn
       V + '.dr2-t{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;border-radius:12px;background:#fff;filter:drop-shadow(0 1px 1px rgba(10,14,22,.18)) drop-shadow(0 4px 10px rgba(10,14,22,.1))}',
       V + '.dr2-t.eytt{opacity:.6}',
@@ -456,13 +468,17 @@
   let _locSia = 'allt';
   function teiknaSiu() {
     const el = document.getElementById('_drog-sia'); if (!el) return;
-    if (!_items.length) { el.innerHTML = ''; return; }
     const n = {};
     _items.forEach(s => { const k = locKey(s._loc); n[k] = (n[k] || 0) + 1; });
-    if (_locSia !== 'allt' && !n[_locSia]) _locSia = 'allt';
+    if (_locSia !== 'allt' && _locSia !== 'geymd' && !n[_locSia]) _locSia = 'allt';
     const takki = (k, label, fj, ik) => '<button type="button" data-loc="' + k + '" class="' + (_locSia === k ? 'is-on' : '') + '" aria-pressed="' + (_locSia === k) + '">' + (ik || '') + esc(label) + '<b>' + fj + '</b></button>';
-    el.innerHTML = '<span class="dr2-sia-m">Staðsetning</span>' + takki('allt', 'Allt', _items.length) +
-      ['drog', 'verkstaedi', 'afgreidsla', 'sott', 'afturkallad', 'verkeytt'].filter(k => n[k]).map(k => takki(k, LOC[k].label, n[k], LOC_IK[k])).join('');
+    // „Geymd drög" og fjöldinn — hægra megin í ræmunni (Agnar 10.11.2026), sýnt líka þegar engin önnur drög eru til. Telur aðeins virk (ekki eydd).
+    const gfj = _geymd.filter(g => !g.deleted_at).length;
+    const geymdTakki = '<button type="button" data-loc="geymd" class="dr2-geymd' + (_locSia === 'geymd' ? ' is-on' : '') + '" aria-pressed="' + (_locSia === 'geymd') + '" title="Körfur sem voru geymdar sem drög í Sölu">Geymd drög<b>' + gfj + '</b></button>';
+    el.innerHTML = (_items.length
+      ? '<span class="dr2-sia-m">Staðsetning</span>' + takki('allt', 'Allt', _items.length) +
+        ['drog', 'verkstaedi', 'afgreidsla', 'sott', 'afturkallad', 'verkeytt'].filter(k => n[k]).map(k => takki(k, LOC[k].label, n[k], LOC_IK[k])).join('')
+      : '') + geymdTakki;
     el.querySelectorAll('button[data-loc]').forEach(b => b.addEventListener('click', () => { _locSia = b.dataset.loc; renderList(); }));
   }
 
@@ -501,48 +517,101 @@
     '</div>';
   }
 
+  // Geymd drög: sama miðaform og sölu-drögin (rifflipi · meginmál · upphæð · aðgerðir) en án R-númers — salan verður til í Sölu.
+  function matchesQG(g) {
+    if (!_q) return true;
+    return [g.customer_nafn, g.customer_kt, g.yfirlit, 'geymd drög geymt karfa']
+      .map(function (x) { return String(x == null ? '' : x).toLowerCase(); })
+      .join(' ').indexOf(_q) > -1;
+  }
+  function geymdMidi(g) {
+    const age = daysSince(g.created_at), fl = aldurFl(age);
+    const eytt = !!g.deleted_at;
+    const nafn = g.customer_nafn || 'Enginn viðskiptavinur';
+    const fj = +g.linur_fjoldi || 0;
+    const korfuIk = _ik('<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.5 11h11l2.5-7H6"/>', 14);
+    const adg = eytt
+      ? '<button data-act="g-restore" type="button" class="dr2-silfur">' + _ik('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>', 16) + 'Endurheimta</button>'
+      : '<button data-act="g-opna" type="button" class="dr2-klara" aria-label="Opna geymd drög í Sölu — ' + esc(nafn) + '">' + _ik('<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>', 16, 2.6) + 'Opna í Sölu</button>' +
+        '<button data-act="g-eyda" type="button" class="dr2-ib" title="Eyða geymdum drögum" aria-label="Eyða geymdum drögum — ' + esc(nafn) + '">' + _ik('<path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>', 16) + '</button>';
+    return '<div class="dr2-t dr2-g' + (eytt ? ' eytt' : '') + '" data-geymd-id="' + g.id + '">' +
+      '<button type="button" class="dr2-opna" data-act="g-opna" aria-label="Opna geymd drög í Sölu — ' + esc(nafn) + '">' +
+        '<span class="dr2-stub"><span class="dr2-num">Geymt</span><span class="dr2-aldur b-' + fl.k + '"><i aria-hidden="true"></i>' + esc(dagarTxt(age)) + '</span></span>' +
+        '<span class="dr2-hak t" aria-hidden="true"></span><span class="dr2-hak b" aria-hidden="true"></span>' +
+        '<span class="dr2-buk">' +
+          '<span class="dr2-l1"><span class="dr2-nafn">' + esc(nafn) + '</span>' + (eytt ? '<span class="dr2-eyttm">Eytt</span>' : '') + '</span>' +
+          '<span class="dr2-l2"><span class="dr2-stad">' + korfuIk + 'Geymd karfa</span><span class="dr2-pk" aria-hidden="true">·</span><span>' + fj + (fj === 1 ? ' lína' : ' línur') + '</span>' +
+            (g.yfirlit ? '<span class="dr2-pk" aria-hidden="true">·</span><span class="dr2-yfirl" title="' + esc(g.yfirlit) + '">' + esc(g.yfirlit) + '</span>' : '') +
+            '<span class="dr2-pk" aria-hidden="true">·</span><span>Geymt <span class="dr2-dag">' + esc(fmtDate(g.created_at)) + '</span></span></span>' +
+        '</span>' +
+        '<span class="dr2-upph">' + esc(fmtKr(g.samtals).replace(/ kr$/, '')) + '<small>kr</small></span>' +
+      '</button>' +
+      '<div class="dr2-adg">' + adg + '</div>' +
+    '</div>';
+  }
+
   function renderList() {
     const body = document.getElementById('_drog-body');
     if (!body) return;
     lokaVal(false);
     const fj = document.getElementById('_drog-fj'); if (fj) fj.textContent = String(_count);
     teiknaSiu();
-    if (!_items.length) {
-      body.innerHTML = '<div class="dr2-tomt">Engin drög í gangi</div>';
-      return;
-    }
-    // 2026-05-21: client-side sort so the dropdown takes effect without a
-    // round-trip. Pulled the items in updated_desc order, but the user can
-    // re-sort here.
-    const sorted = _items.slice().sort((a, b) => {
-      switch (_sortMode) {
-        case 'created_desc': return (b.created_at || '').localeCompare(a.created_at || '');
-        case 'created_asc':  return (a.created_at || '').localeCompare(b.created_at || '');
-        case 'amount_desc':  return (+b.samtals || 0) - (+a.samtals || 0);
-        case 'amount_asc':   return (+a.samtals || 0) - (+b.samtals || 0);
-        default: /* updated_desc */
-          return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
+    // Geymd drög (10.11.2026): sér flokkur EFST — í „Allt" og í eigin síu („Geymd drög N" hægra megin); aðrar staðsetningarsíur fela hann.
+    const gList = (_locSia === 'allt' || _locSia === 'geymd')
+      ? _geymd.filter(matchesQG).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')) : [];
+    const gHtml = gList.length
+      ? '<div class="dr2-kafli b-geymd"><i aria-hidden="true"></i>Geymd drög<b>' + gList.length + '</b><em aria-hidden="true"></em></div>' + gList.map(geymdMidi).join('')
+      : '';
+    let html = '';
+    if (_locSia === 'geymd') {
+      if (!gHtml) {
+        body.innerHTML = '<div class="dr2-tomt">' + (_q ? 'Ekkert fannst fyrir \u201e' + esc(_q) + '\u201c' : 'Engin geymd drög \u2014 \u201eGeyma sem drög\u201c í greiðsluglugganum á Sölu vistar körfuna hingað') + '</div>';
+        return;
       }
-    });
-    const synileg = sorted.filter(matchesQ).filter(s => _locSia === 'allt' || locKey(s._loc) === _locSia);
-    if (!synileg.length) {
-      body.innerHTML = '<div class="dr2-tomt">' + (_q ? 'Ekkert fannst fyrir \u201e' + esc(_q) + '\u201c' : 'Engin drög hér') + '</div>';
-      return;
-    }
-    // Biðtímakaflar (Miðakerfið) fyrir dagsetningarröðun; upphæðarröðun er einn samfelldur listi.
-    let html;
-    if (_sortMode === 'amount_desc' || _sortMode === 'amount_asc') html = synileg.map(midi).join('');
-    else {
-      const hopar = ALDUR.map(a => ({ a: a, list: synileg.filter(s => aldurFl(daysSince(s.created_at)).k === a.k) })).filter(h => h.list.length);
-      if (_sortMode === 'created_asc') hopar.reverse();
-      html = hopar.map(h => '<div class="dr2-kafli b-' + h.a.k + '"><i aria-hidden="true"></i>' + h.a.heiti + '<b>' + h.list.length + '</b><em aria-hidden="true"></em></div>' + h.list.map(midi).join('')).join('');
+    } else if (!_items.length) {
+      if (!gHtml) { body.innerHTML = '<div class="dr2-tomt">Engin drög í gangi</div>'; return; }
+    } else {
+      // 2026-05-21: client-side sort so the dropdown takes effect without a
+      // round-trip. Pulled the items in updated_desc order, but the user can
+      // re-sort here.
+      const sorted = _items.slice().sort((a, b) => {
+        switch (_sortMode) {
+          case 'created_desc': return (b.created_at || '').localeCompare(a.created_at || '');
+          case 'created_asc':  return (a.created_at || '').localeCompare(b.created_at || '');
+          case 'amount_desc':  return (+b.samtals || 0) - (+a.samtals || 0);
+          case 'amount_asc':   return (+a.samtals || 0) - (+b.samtals || 0);
+          default: /* updated_desc */
+            return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
+        }
+      });
+      const synileg = sorted.filter(matchesQ).filter(s => _locSia === 'allt' || locKey(s._loc) === _locSia);
+      if (!synileg.length) {
+        if (!gHtml) {
+          body.innerHTML = '<div class="dr2-tomt">' + (_q ? 'Ekkert fannst fyrir \u201e' + esc(_q) + '\u201c' : 'Engin drög hér') + '</div>';
+          return;
+        }
+      } else if (_sortMode === 'amount_desc' || _sortMode === 'amount_asc') {
+        // Biðtímakaflar (Miðakerfið) fyrir dagsetningarröðun; upphæðarröðun er einn samfelldur listi.
+        html = synileg.map(midi).join('');
+      } else {
+        const hopar = ALDUR.map(a => ({ a: a, list: synileg.filter(s => aldurFl(daysSince(s.created_at)).k === a.k) })).filter(h => h.list.length);
+        if (_sortMode === 'created_asc') hopar.reverse();
+        html = hopar.map(h => '<div class="dr2-kafli b-' + h.a.k + '"><i aria-hidden="true"></i>' + h.a.heiti + '<b>' + h.list.length + '</b><em aria-hidden="true"></em></div>' + h.list.map(midi).join('')).join('');
+      }
     }
     // STÖÐUGT VIÐMÓT (CLAUDE.md 23.09.2026): skrun + fókus haldast yfir endurteikningu.
     const _aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(body) : null;
-    body.innerHTML = html;
+    body.innerHTML = gHtml + html;
     if (_aftur) _aftur();
 
-    body.querySelectorAll('.dr2-t').forEach(t => {
+    body.querySelectorAll('.dr2-g').forEach(t => {
+      const id = t.dataset.geymdId;
+      const on = (act, fn) => t.querySelectorAll('button[data-act="' + act + '"]').forEach(b => b.addEventListener('click', fn));
+      on('g-opna', () => { if (window.GeymdDrog) GeymdDrog.opna(id); });
+      on('g-eyda', () => { if (window.GeymdDrog) GeymdDrog.eyda(id); });
+      on('g-restore', () => { if (window.GeymdDrog) GeymdDrog.endurheimta(id); });
+    });
+    body.querySelectorAll('.dr2-t:not(.dr2-g)').forEach(t => {
       const id = t.dataset.id;
       const on = (act, fn) => { const b = t.querySelector('button[data-act="' + act + '"]'); if (b) b.addEventListener('click', fn); };
       on('edit', () => opna(id));
@@ -618,6 +687,10 @@
 
   // ── Refresh hooks ─────────────────────────────────────────────────────────
   document.addEventListener('sale-edited', loadDrog);
+  // 10.11.2026: geymd drög vistuð / opnuð / eydd (501-geymd-drog.js) → listinn og talan í síuræmunni endurnýjast strax
+  document.addEventListener('geymd-drog-breytt', () => {
+    loadGeymd().then(() => { const vv = document.getElementById(VIEW_ID); if (vv && vv.classList.contains('active') && document.getElementById('_drog-body')) renderList(); });
+  });
   // 01.10.2026: enginn 30 s púls. Drög hlaðast við opnun og þegar sala er vistuð.
 
   // ── Boot ──────────────────────────────────────────────────────────────────

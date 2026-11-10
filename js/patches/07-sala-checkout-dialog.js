@@ -106,6 +106,14 @@
         font-family: inherit;
       }
       #${MODAL_ID} .scd-cancel:hover { background: #f8fafc; border-color: #94a3b8; }
+      /* 10.11.2026 (Agnar): „Geyma sem drög" neðst til vinstri — geymir körfuna í Drög → Geymd drög (501-geymd-drog.js) */
+      #${MODAL_ID} .scd-geyma {
+        margin-right: auto; padding: 9px 16px; background: #fff; border: 1px solid #cbd5e1;
+        border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; color: #0f172a;
+        font-family: inherit;
+      }
+      #${MODAL_ID} .scd-geyma:hover { background: #f8fafc; border-color: #94a3b8; }
+      #${MODAL_ID} .scd-geyma:disabled { opacity: .55; cursor: default; }
     `;
     document.head.appendChild(s);
   }
@@ -298,6 +306,7 @@
           </div>
         </div>
         <div class="scd-foot">
+          <button class="scd-geyma" type="button" title="Geymir körfuna sem drög (Drög → Geymd drög). Engin sala er stofnuð — opnaðu drögin í Sölu til að klára.">Geyma sem drög</button>
           <button class="scd-cancel" type="button">Hætta við</button>
         </div>
       </div>
@@ -307,6 +316,14 @@
     modal.querySelector('.scd-back').addEventListener('click', close);
     modal.querySelector('.scd-x').addEventListener('click', close);
     modal.querySelector('.scd-cancel').addEventListener('click', close);
+    modal.querySelector('.scd-geyma').addEventListener('click', async (e) => {
+      const b = e.currentTarget;
+      if (!(window.GeymdDrog && window.GeymdDrog.vista)) { alert('Geymd drög (patch 501) eru ekki hlaðin — endurhlaðið síðuna og reyndu aftur.'); return; }
+      b.disabled = true; b.textContent = 'Geymi…';
+      let ok = false;
+      try { ok = await window.GeymdDrog.vista(); } catch (_) {}
+      if (ok) close(); else { b.disabled = false; b.textContent = 'Geyma sem drög'; }   // misheppnist: glugginn og karfan standa óbreytt
+    });
 
     modal.querySelectorAll('.scd-method').forEach(btn => {
       btn.addEventListener('click', () => {
