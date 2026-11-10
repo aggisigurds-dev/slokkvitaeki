@@ -356,7 +356,7 @@
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
-    skDrog: {}, skTs: {}, chkCache: {}, chkDrog: {}, chkTitDrog: {}, breiddBid: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
+    skDrog: {}, skTs: {}, skChk: null, chkCache: {}, chkDrog: {}, chkTitDrog: {}, breiddBid: {}, undo: null, virkni: {}, virkniBid: false, bmDrog: {}, bmOpid: {}, aiBid: {},
     // 18.09.2026: innsláttur beint á borðinu. ntDrog = texti sem er ekki kominn í
     // gagnagrunninn (lifir af teikningu OG af misheppnaðri vistun), ntStada = það sem
     // reiturinn segir notandanum, ntOpid = opinn reitur á hvítu spjaldi.
@@ -1309,6 +1309,9 @@
       // checklisti (eining 23, 25.09.2026)
       '.chktitill{width:100%;min-width:0;border:1px solid transparent;background:transparent;font:inherit;color:inherit;letter-spacing:inherit;padding:2px 4px;border-radius:4px;outline:none;text-overflow:ellipsis}',
       '.chktitill:hover{border-color:var(--edge)}.chktitill:focus{background:#fff;border-color:var(--g5);color:var(--ink)}',
+      '.skchkb{margin-right:4px}.skchk{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--edge);background:var(--rule2);border-radius:5px;font-size:12px}',
+      '.stj{padding:0}.stjtxt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:none;background:transparent;text-align:left;cursor:pointer;padding:5px 6px;font:13.5px var(--body);color:var(--ink)}',
+      '.stjt{overflow-wrap:anywhere}.stjfra{font:10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}.stjtxt:hover .stjt{text-decoration:underline}',
       '.chkl{display:flex;flex-direction:column;gap:6px;padding:12px 14px}',
       '.chk{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:5px;background:#fff;border:1px solid var(--edge)}',
       '.chk.done{opacity:.55}.chk.done .chkt{text-decoration:line-through}',
@@ -4512,7 +4515,9 @@
           '<button type="button" class="skstrip" data-t5="sk-type" data-skid="' + id + '" style="background:' + (t ? t[1] : 'var(--rule3)') + '" title="' + (t ? esc(t[0]) : 'Enginn litur') + ' — smelltu til að skipta um lit" aria-label="Litur spjalds"></button>' +
           '<div class="skh" draggable="true" data-skdrag="' + id + '" title="Dragðu spjaldið til að færa það">' +
             '<span class="skgrip" aria-hidden="true">⠿</span><span class="grow"></span>' +
+            '<button type="button" class="skb skchkb" data-t5="sk-chk" data-skid="' + id + '" aria-expanded="' + (S.skChk === cd.id) + '" title="Búa til atriði í checklista úr þessu spjaldi">Í checklista ›</button>' +
             '<button type="button" class="skx" data-t5="sk-del" data-skid="' + id + '" aria-label="Eyða spjaldi" title="Eyða spjaldi">✕</button></div>' +
+          (S.skChk === cd.id ? '<div class="skchk" role="group" aria-label="Færa í checklista"><span>Færa í:</span>' + CHK_FELT.map(f => '<button type="button" class="btn gold sm" data-t5="sk-chk-fara" data-skid="' + id + '" data-f="' + f + '">' + esc(chkTitill(f)) + '</button>').join('') + '<button type="button" class="btn iv sm" data-t5="sk-chk" data-skid="' + id + '">Hætta við</button></div>' : '') +
           '<input class="skn" data-sk="name" data-skid="' + id + '" value="' + esc(nafn) + '" placeholder="Fyrirsögn" aria-label="Fyrirsögn">' +
           '<textarea class="skt" data-sk="title" data-skid="' + id + '" rows="' + Math.min(8, Math.max(2, String(texti).split('\n').length + 1)) + '" placeholder="Skrifaðu hvað sem er…" aria-label="Texti">' + esc(texti) + '</textarea>' +
           skFylgiHtml(id, texti, cd.skjol) +
@@ -6333,6 +6338,29 @@
           render();
           const f = rot() && rot().querySelector('[data-sk="name"][data-skid="' + nid + '"]');
           if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        });
+        return;
+      }
+      case 'sk-chk': { const sid = el.dataset.skid; S.skChk = S.skChk === sid ? null : sid; render(); return; }
+      case 'sk-chk-fara': {
+        // 10.11.2026 (Agnar): spjald → atriði í checklista (titill + texti). Spjaldið helst NEMA Agnar staðfesti eyðingu.
+        const sid = el.dataset.skid, f = el.dataset.f, n = nu(), cd = cardsFor(n).find(x => x.id === sid);
+        S.skChk = null;
+        if (!cd || CHK_FELT.indexOf(f) < 0) { render(); return; }
+        const d = Object.assign({}, cd, S.skDrog[sid] || {});   // líka það sem er í ritun og ekki vistað
+        const texti = [d.name, d.title].map(x => String(x || '').replace(/\s+/g, ' ').trim()).filter(Boolean).join(' — ');
+        if (!texti) { toast('Spjaldið er tómt — ekkert til að færa.', true); render(); return; }
+        chkBreyta(n, f, l => l.concat([{ id: chkNyttId(), t: texti, done: false }])).then(async ok => {
+          if (!ok) return;   // vistun mistókst: viðvörun komin, spjaldið stendur óbreytt
+          toast('Atriði búið til í „' + chkTitill(f) + '“');
+          let eyda = false;
+          try { eyda = !!(await Confirm.show('Atriðið er komið í „' + chkTitill(f) + '“.\n\nEyða spjaldinu líka?', { okText: 'Eyða spjaldinu', cancelText: 'Halda spjaldinu', danger: true })); } catch (_) {}
+          if (!eyda) return;
+          clearTimeout(_skT[sid]); delete _skBid[sid]; delete S.skDrog[sid];
+          vistaSpjold(l => l.filter(x => x.id !== sid)).then(ok2 => {
+            render();
+            if (ok2) toast('Spjaldinu var eytt', false, () => vistaSpjold(l => l.some(x => x.id === cd.id) ? l : l.concat([cd]), 'Spjaldið er komið aftur').then(render));
+          });
         });
         return;
       }
