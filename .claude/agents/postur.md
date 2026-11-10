@@ -158,3 +158,11 @@ Möppuheitin eru ÖNNUR hér en í töflunni að ofan (prófíll `xwr12njd.defau
 - **`email_digest` vantar sendar sendingar** (t.d. tilboð til Salblikk 18.09.2026 úr Brunaholf@). Áður en „ósvarað“ er sagt eða svar/tilboð útbúið:
   `grep -a -n -i "^To:.*<lén>" "<Sent-mbox>"` og lesa Date/Subject í kring. Skrifa hvaða hólf voru lesin; hin eru ÓMÆLT.
 - Lærdómur 09.11: ég taldi 10 þræði ósvaraða og bjó til tilboð sem var þegar sent. Sími, pósthólf Annþórs og nýja hólfið sáust ekki.
+- **Vafrinn sér EKKI nýja hólfið (mælt 10.11.2026, lota 2ef635f0):** RLS á `email_digest` hefur aðeins tvær anon-reglur (eldklar@eldklar.is;
+  bokhald@eldklar.is INBOX, síað). 448 fékk `slokkvitaeki@brunaholf.is` í `HOLF` 10.11 en fær TÓMT svar: SQL sýnir 44 INBOX-raðir, vafrinn
+  enga. Ný regla er öryggisbreyting sem bíður samþykkis Agnars (verkefnalisti `81f09e2c`, Charlize #2287). Vinnusamantekt (489) segir
+  „ekki mælt" fyrir hólfið á meðan. Prófaðu alltaf nýtt hólf í VAFRA (`DB.sb.from('email_digest')…eq('account', …)`), ekki bara í SQL.
+- **Póstur án sýnilegs svars 10.11** (úr yfirferðinni, með fyrirvara um hólf án Sent): Búseti/sprinkler-verðskrá (15.10), Brynja leigufélag
+  Hátún 10C (16.10), Reising MHL03-vottorð (16.10), Nesdekk reikningur + vinnuskýrsla (21.10), Eignaumsjón V26-279914 (26.10), NB Fire
+  skilti (27.10), Probygg reikningur 1282 (01.11). Listinn stendur í Aðalmál-máli #1587 hjá Agnari — ekki búa til svör án þess að lesa
+  Sent-mbox fyrst (sjá lærdóminn hér að ofan).

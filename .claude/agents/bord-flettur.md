@@ -691,3 +691,25 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   og leit að `__adalmal492` í `_bundle-*.js` (lifandi `index.html` nefnir ekki patch-skrána því build-dist búntar). Eftir innskráningu:
   `window.Adalmal.version` á að vera `'492b'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
   `nytt` í vafranum einum — aldrei opna málið í grunninum til að prófa.
+- **Nýtt yfirlit 10.11.2026: #1587** (vika 03.11–10.11; merki `adalmal`, `vikuyfirlit`, `claude:vikuyfirlit-2026-11-10`; EKKI `samthykki`,
+  ekki `important`). Borðið er því ekki lengur tómt: 1 yfirlit, 27 atriði (A 6 · B 8 · C 7 · spurningar 5), staðfest staðbundið. Skrifað í
+  lotu-yfirferð lotu 2ef635f0 úr mældum gögnum; það sem ekki tókst að mæla (fundartími „E og G í Fossvogi", greiðslur til birgja) er
+  merkt þannig í textanum. Þegar næsta yfirlit er skrifað: loka #1587 í sama skrefi.
+
+## Vinnusamantekt (489) — það sem yfirferðin 10.11.2026 breytti og mældi (lota 2ef635f0, sem smíðaði hana 29.10)
+
+- **Staða:** 29 mælingar, allar skila tölu á um 4 sek.; Brunahólfs-föllin átta (`/api/krofu-yfirlit-bru`, `fjarmal-yfirlit`,
+  `nlsh-dashboard`, `kerfisheilsa`, `veidin?tolur=1`, `worksites`, `krofu-greidslur`, `villur`) svara án innskráningar. „Mál á borðinu"
+  og verkefnalistinn stemmdu við SQL upp á tölu 10.11.
+- **Tekjulínan** (8642c13d, ?v=20261110a, óbirt þar til næsta birting fer út): ljósið dæmdi eftir framreiknaðri spá en undirtextinn
+  sýndi hráa mánaðartölu á móti HEILUM síðasta mánuði („−86,8 %" á 10. degi). Nú: „stefnir í X · ±N % miðað við síðasta mánuð";
+  fyrstu 7 dagana „of snemmt að spá". Regla: texti og ljós verða að segja það sama — annars les Agnar rautt ljós með rangri skýringu.
+- **Póstlínan:** `HOLF` telur aðeins eldklar@ og bokhald@eldklar. `slokkvitaeki@brunaholf.is` (þriðja hólfið í 448 frá 10.11) er nefnt
+  sér í punktalínu og ALDREI talið ósvarað (enginn sendur póstur þaðan í `email_digest`). RLS hleypir vafranum ekki í hólfið
+  (Charlize #2287, verkefnalisti `81f09e2c`) → línan segir „ekki mælt" þar til regla er komin; þá birtist talan sjálfkrafa.
+  Nýtt pósthólf í 448 þarf alltaf (1) RLS-reglu og (2) ákvörðun um hvort „svarað" sé mælanlegt, áður en það fer í `HOLF`.
+- **Artifact-línan** (`artifact_listar`) er frá 29.10 og uppfærist ekki sjálf — Agnar sagði nei við sjálfvirkni; endurlesa aðeins að beiðni.
+- **Prófun án innskráningar:** staðbundinn þjónn á vinnutré (`/app/*` → index.html), `await Vinnusamantekt.load(true)`, lesa
+  `Vinnusamantekt.S.res` (hlutur með lykli per mæling; `samthykki` og `claude` eru lifandi og vantar þar). **Gildra:** service worker og
+  skyndiminni vafrans skila gömlu patch-skránni — `window.__vinnusamantekt489 = false` og hlaða skránni með `?t=<tími>`.
+- **Sími (375 px):** nothæf án láréttrar skrunar en ▸-hnapparnir eru 27×20 px (undir 44 px snertimörkum) — ólagað.

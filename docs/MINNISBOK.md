@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-10 21:35 · 1000 nýjustu af 2133 virkum staðreyndum
+Sótt 2026-11-10 21:37 · 1000 nýjustu af 2133 virkum staðreyndum
 
 > ⚠ **1133 eldri staðreyndir eru EKKI í þessari bók.** Hún er gluggi: nýjustu 1000 færslurnar og í mesta
 > lagi 40 í hverju efni. Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — spurðu grunninn beint:
@@ -101,8 +101,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [thjonustubord](#thjonustubord) | 6 |
 | [teikningar](#teikningar) | 6 |
 | [skyrslur](#skyrslur) | 6 |
-| [nlsh](#nlsh) | 5 |
 | [ajour](#ajour) | 5 |
+| [nlsh](#nlsh) | 5 |
 | [oryggi](#oryggi) | 5 |
 
 ### tengilidir
@@ -1127,12 +1127,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### thjonustubord
 
-- **Aðalmál (patch 492, #adalmal) sýnir aðeins ÓLOKUÐ mál með merkinu adalmal: dagsett vikuyfirlit er nýtt mál í hverri viku (merki adalmal + vikuyfirlit, ekki samthykki) og því gamla er lokað um leið, annars stendur borðið tómt.**
-  <br>#1376 (02.11.2026) var lokað 07.11 sem „úrelt af sjálfu sér" og borðið stóð tómt til 10.11 þegar #1587 var skrifað. Snið sem 492 þáttar: fyrsta lína „VIKUYFIRLIT dd.mm–dd.mm.áááá — …", kaflar „A · FUNDIR OG FRESTIR NÆSTU DAGA", „B · …", „C · …", „SPURNINGAR TIL ÞÍN"; atriði byrja á „• " eða „1. ". L
-  <br><sub>2026-11-10 · slokkvitaeki · sql · claude-code</sub>
 - **Vinnusamantekt (patch 489) prófast staðbundið á móti lifandi grunni með await Vinnusamantekt.load(true) og lestri á Vinnusamantekt.S.res; tekjulínan sýnir framreiknaða spá frá 8. degi mánaðar, sömu tölu og ljósið dæmir eftir.**
   <br>Slökkvitæki krefst innskráningar frá 09.11.2026 (hub_adgangar_stilling.krefjast_slokk), svo Claude prófar á staðbundnum þjóni (fs-server á vinnutré, /app/* → index.html). Gildra: service worker og skyndiminni vafrans skila gömlu patch-skránni þótt ?v= sé óbreytt — settu window.__vinnusamantekt489 = 
   <br><sub>2026-11-10 · slokkvitaeki · kóði · claude-code</sub>
+- **Aðalmál (patch 492, #adalmal) sýnir aðeins ÓLOKUÐ mál með merkinu adalmal: dagsett vikuyfirlit er nýtt mál í hverri viku (merki adalmal + vikuyfirlit, ekki samthykki) og því gamla er lokað um leið, annars stendur borðið tómt.**
+  <br>#1376 (02.11.2026) var lokað 07.11 sem „úrelt af sjálfu sér" og borðið stóð tómt til 10.11 þegar #1587 var skrifað. Snið sem 492 þáttar: fyrsta lína „VIKUYFIRLIT dd.mm–dd.mm.áááá — …", kaflar „A · FUNDIR OG FRESTIR NÆSTU DAGA", „B · …", „C · …", „SPURNINGAR TIL ÞÍN"; atriði byrja á „• " eða „1. ". L
+  <br><sub>2026-11-10 · slokkvitaeki · sql · claude-code</sub>
 - **Hamurinn „BH · Þjónustubeiðnir" (id hmbhthj01, app_settings thjonustubord5.hamir, stofnaður 08.11.2026) er aðeins fyrir Agnar og Anni (Annþór): hann er falinn hjá öðrum með by_staff.<nafn>.falnir_hamir. Nýr starfsmaður sér hann sjálfkrafa þar til hann er settur á listann. Mál tengjast með taginu ham:hmbhthj01.**
   <br>Sérsniðinn hamur styður aðeins EINN eiganda (`eigandi`), því er falið hjá hinum. Frá 04.11.2026 telst lokað mál afgreitt í Tölvupóstum (448, commit 1a2fb1cb, í loftinu 10.11): þráður fer úr „Bíður svars" ef málið var lokað eftir síðasta innkomna póst. Afrit: backup_20261108_hamir.
   <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
@@ -1180,20 +1180,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Upphleðsluleið: curl POST á storage/v1/object/samningar/<slóð> með publishable-lykli appsins (bucket er opinn fyrir insert); Drive create_file með base64 var of stórt fyrir gluggann.
   <br><sub>2026-11-06 · kunni · lota 5f2146a4 · fyrirtaeki</sub>
 
-### nlsh
-
-- **Frosinn NLSH-mánuður tekur ekki upp seinkomna flokkabreytingu í Ajour: skráning telst á mánuð Done-dagsins, svo munurinn birtist hvergi og lokatölu verkliðarins í næsta opna mánuði þarf að hækka með hendi.**
-  <br>Rakið í nlsh-stada.js 10.11.2026: nlsh_stada_manudir telur á mánuð coalesce(checked_date, execution_date); frosinn mánuður notar stakar_man eins og hann var sendur; tillaga næsta mánaðar = lokatala + nýtt í þeim mánuði. Dæmið: 47 október-skráningar á teikningunni „6H 2S-1S Rafmagnsþéttingar.jpg" sta
-  <br><sub>2026-11-10 · brunaholf · kóði · claude-code</sub>
-- **NLSH frysting: Kröfu yfirlit tengir drög við Payday-reikning aðeins í útreikningi (sjalfvirk_tenging í /api/krofu-yfirlit-bru) og skrifar ekki payday_invoice_id, svo nlsh-stada frystir sendan mánuð EKKI sjálfkrafa. Október 2026 = R-388 (4.756.347 = 5.006.681 x 0,95) var festur handvirkt 10.11.2026 (action frysta). Athuga alltaf: tilvísun í sjalfvirk_tenging en fryst false => bera saman x 0,95 og festa. Verkefnalisti: 'NLSH: sendur mánuður frystist ekki sjálfkrafa'.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **Miro-borðið Landsspitali (uXjVJ1jKBnY=): einn rammi per kerfi og deild á 6H. 6H2S Rafmagnsraufar = 55 grænir tíglar = 55 pör = 110 stakar lokanir. Sprinklerkerfi 6H2S = 83 stjörnur, hver = eitt gegnumtak = TVÆR lokanir (Agnar 08.11.2026) = 166 stakar. Flokkun: 35 mm í Stál Ø15-35, 40/50 í Ø40-50, 60 og 75 í Ø75-110. Ajour-flokkar Stál telja öll stálrör, ekki bara sprinkler. 6H1S og 6H2S eru tvær deildir.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH 2.11 metraskrá: POST /api/nlsh-stada {action:'raufar', serial_number, metrar, athugasemd, month}; metrar = (L+L+B+B)/1000. 08.11.2026 voru 67 raðir úr Excel Landsspitali_metrar vistaðar (128,35 m). 39 raðir án verknúmers (6H2S, 76,1 m) eru EKKI inni: engar Raufar-skráningar eru á bilinu 1266-3719 og röðin 'næstu númer upp' stenst ekki.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH Efnislisti: hver vistun yfirskrifar allar 15 lokatölur mánaðarins. Tala úr fyrri lotu er úrelt um leið og einhver vistar aftur (október 2026: vistað 06.11 = 4.340.140, vistað aftur úr glugganum 09.11 = 5.006.681). Lesa nlsh_manadarlok + invoice_drafts áður en vitnað er í tölu. Vistun án innskráningar: POST /api/nlsh-stada + POST /api/invoice-drafts (sömu köll og nle-save).**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-
 ### ajour
 
 - **ajour-ingest tvítekur skráningar án framkvæmdadags við hverja sókn, því NULL passar ekki einkvæma vísinn (serial_number, project_name, execution_date); teldu alltaf count(distinct serial_number), aldrei count(*).**
@@ -1209,6 +1195,20 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ajour-innsogið nær nú til tveggja verka: NLSH 5-6. hæð (síðast 03.11.2026) og Heklureitur (30.10.2026, um ajour-yfirlit.js syncVerkefnaRadir). Hin 23 verkin í ajour_registrations komu síðast inn 13.10.2026 í einu heildarinnsogi. Færslan frá 18.09 („frosin fyrir öll nema NLSH“) er úrelt.** _(unverified)_
   <br>select project_name, count(*), max(execution_date), max(imported_at)::date from ajour_registrations group by 1 — NLSH 10.978 raðir, Heklureitur 2.220, t.d. Skúlagata 26 1.453 (nýjast framkvæmt 13.10), Borgarspítalinn 732 (25.09). 149 raðir fluttar inn síðustu 7 daga.
   <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:07-brunaholf-rekstur.inbox.json · greining-07</sub>
+
+### nlsh
+
+- **Frosinn NLSH-mánuður tekur ekki upp seinkomna flokkabreytingu í Ajour: skráning telst á mánuð Done-dagsins, svo munurinn birtist hvergi og lokatölu verkliðarins í næsta opna mánuði þarf að hækka með hendi.**
+  <br>Rakið í nlsh-stada.js 10.11.2026: nlsh_stada_manudir telur á mánuð coalesce(checked_date, execution_date); frosinn mánuður notar stakar_man eins og hann var sendur; tillaga næsta mánaðar = lokatala + nýtt í þeim mánuði. Dæmið: 47 október-skráningar á teikningunni „6H 2S-1S Rafmagnsþéttingar.jpg" sta
+  <br><sub>2026-11-10 · brunaholf · kóði · claude-code</sub>
+- **NLSH frysting: Kröfu yfirlit tengir drög við Payday-reikning aðeins í útreikningi (sjalfvirk_tenging í /api/krofu-yfirlit-bru) og skrifar ekki payday_invoice_id, svo nlsh-stada frystir sendan mánuð EKKI sjálfkrafa. Október 2026 = R-388 (4.756.347 = 5.006.681 x 0,95) var festur handvirkt 10.11.2026 (action frysta). Athuga alltaf: tilvísun í sjalfvirk_tenging en fryst false => bera saman x 0,95 og festa. Verkefnalisti: 'NLSH: sendur mánuður frystist ekki sjálfkrafa'.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **Miro-borðið Landsspitali (uXjVJ1jKBnY=): einn rammi per kerfi og deild á 6H. 6H2S Rafmagnsraufar = 55 grænir tíglar = 55 pör = 110 stakar lokanir. Sprinklerkerfi 6H2S = 83 stjörnur, hver = eitt gegnumtak = TVÆR lokanir (Agnar 08.11.2026) = 166 stakar. Flokkun: 35 mm í Stál Ø15-35, 40/50 í Ø40-50, 60 og 75 í Ø75-110. Ajour-flokkar Stál telja öll stálrör, ekki bara sprinkler. 6H1S og 6H2S eru tvær deildir.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH 2.11 metraskrá: POST /api/nlsh-stada {action:'raufar', serial_number, metrar, athugasemd, month}; metrar = (L+L+B+B)/1000. 08.11.2026 voru 67 raðir úr Excel Landsspitali_metrar vistaðar (128,35 m). 39 raðir án verknúmers (6H2S, 76,1 m) eru EKKI inni: engar Raufar-skráningar eru á bilinu 1266-3719 og röðin 'næstu númer upp' stenst ekki.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH Efnislisti: hver vistun yfirskrifar allar 15 lokatölur mánaðarins. Tala úr fyrri lotu er úrelt um leið og einhver vistar aftur (október 2026: vistað 06.11 = 4.340.140, vistað aftur úr glugganum 09.11 = 5.006.681). Lesa nlsh_manadarlok + invoice_drafts áður en vitnað er í tölu. Vistun án innskráningar: POST /api/nlsh-stada + POST /api/invoice-drafts (sömu köll og nle-save).**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
 
 ### oryggi
 
@@ -1432,14 +1432,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Teya-afstemming 12.09 og Kortauppgjör 20.08.
   <br><sub>2026-11-04 · slokkvitaeki · artifact: https://claude.ai/artifact/766M2uz8eeon1vaXJyePxm · skjol</sub>
 
-### krofuyfirlit
-
-- **Sjálfvirk tenging draga við Payday í Kröfu yfirliti er aðeins reiknuð í svari krofu-yfirlit-bru (sjalfvirk_tenging, haldid_eftir); payday_invoice_id á drögunum helst null, og invoice_drafts.stadfesting er sér dálkur utan materials_jsonb.**
-  <br>Mælt 10.11.2026: drög #343 Heklu reitur (4.798.428) tengjast Payday 387 og #344 Landsspitalinn (5.006.681) Payday 388 (4.756.347 = 95 %, haldið eftir 250.334) án þess að payday_invoice_id sé skrifað. Afleiðing: nlsh-stada frystir ekki mánuðinn sjálft (verkefnalisti 67fa36c2) og Brunaþéttingar-appið 
-  <br><sub>2026-11-10 · brunaholf · sql · claude-code</sub>
-- **Kröfu yfirlit (brunaholf index.html) 10.11.2026: sendur reikningur á þrepi 1 sem er í sjalfvirk_tenging fær tengilinn 'Efnislisti · sundurliðun' ([data-ky-sendpdf]) á PDF-ið úr EFDOCS[verkstaður|mánuður]. Aðeins lestur. PDF sendra Efnislista býr í efnislisti_documents (doc_type efnislisti_pdf, public_url) þótt drögin beri ekki Payday-númer.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-
 ### agentar
 
 - **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
@@ -1448,6 +1440,14 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Skill samthykki-a-bord sem AGENTASKRA.md og tools/agents-meta.json vísa á (~/.claude/skills/samthykki-a-bord) er ekki til, og ~/.claude/agents (rukkari-speglinn) er ekki til heldur á DESKTOP-M5FO3I6.**
   <br>ls 04.11.2026: ~/.claude/skills hefur 10 möppur (3dJoker, artifacts-builder, debugging-code, frontend-design, luna, parametric-3d-printing, ui-ux-pro-max, using-superpowers, web-artifacts-builder, webapp-testing); ~/.claude/agents er ekki til. AGENTASKRA-taflan hefur 23 línur en agentarnir eru 25 (r
   <br><sub>2026-11-04 · kerfi · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
+
+### krofuyfirlit
+
+- **Sjálfvirk tenging draga við Payday í Kröfu yfirliti er aðeins reiknuð í svari krofu-yfirlit-bru (sjalfvirk_tenging, haldid_eftir); payday_invoice_id á drögunum helst null, og invoice_drafts.stadfesting er sér dálkur utan materials_jsonb.**
+  <br>Mælt 10.11.2026: drög #343 Heklu reitur (4.798.428) tengjast Payday 387 og #344 Landsspitalinn (5.006.681) Payday 388 (4.756.347 = 95 %, haldið eftir 250.334) án þess að payday_invoice_id sé skrifað. Afleiðing: nlsh-stada frystir ekki mánuðinn sjálft (verkefnalisti 67fa36c2) og Brunaþéttingar-appið 
+  <br><sub>2026-11-10 · brunaholf · sql · claude-code</sub>
+- **Kröfu yfirlit (brunaholf index.html) 10.11.2026: sendur reikningur á þrepi 1 sem er í sjalfvirk_tenging fær tengilinn 'Efnislisti · sundurliðun' ([data-ky-sendpdf]) á PDF-ið úr EFDOCS[verkstaður|mánuður]. Aðeins lestur. PDF sendra Efnislista býr í efnislisti_documents (doc_type efnislisti_pdf, public_url) þótt drögin beri ekki Payday-númer.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
 
 ### villuleit
 
