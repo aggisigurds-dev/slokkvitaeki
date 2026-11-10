@@ -19,6 +19,14 @@
 #
 # Framhjá í neyð:  git push --no-verify
 
+# ── AFVIRKJAÐ 10.11.2026 (Agnar: „Burt með þennan helvítis vörð … hann er að rugla í öllu hjá mér") ──────────────
+# Hookurinn átti aðeins að keyra KÓÐA-varðirnar (~2,5 s, enginn net-þörf). `--static` er í dag orðið 80 vörður, margir
+# þeirra GAGNA-verðir sem lesa lifandi sýnir (ósendar kröfur, skeytamiðlun …) — svo hver ýting beið ~70 s og féll á
+# rekstrargögnum sem koma kóðanum ekkert við. Hann hefur ítrekað stöðvað birtingu og þurft --no-verify.
+# Varðirnir sjálfir eru óbreyttir: `node tools/audit-all.cjs` (handvirkt) og GitHub Actions (audit.yml) keyra þá áfram.
+# Til að kveikja aftur: eyddu línunni `exit 0` hér fyrir neðan (afgangurinn af skránni er óbreyttur).
+exit 0
+
 haus=$(git log -1 --pretty=%s 2>/dev/null)
 
 case "$haus" in
