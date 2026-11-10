@@ -99,6 +99,24 @@ Agnar samþykkti í spjalli („Já, öll tíu“). Mál #1395–#1406 framkvæm
 merkt afrit (`dup_of` bendir á skrána sem stendur); skjal 331 reikningur á Húsfélagið Stakkholt 2-4 (Bílakjallari); skjal
 2993 ár 2023. Hveragerðiskirkju-tækin 5 skráð síðast skoðuð 01.11.2024. Ekkert eytt.
 
+## 4b. Endurmælt 10.11.2026 — afritsmerkingin dugði ekki, lagað
+
+Gögnin frá 04.11 stóðu óbreytt, en átta skýrslur sem voru merktar afrit birtust áfram á röngu félagi/ári:
+199 `dedupBucket` felur afrit aðeins þegar raunskjal er í sama árshópi, 153 síar afrit ekki, og gömlu
+`document_pairs`-raðirnar stóðu sem `vantar_reikning`.
+
+Lagað: afritin 190, 466, 834, 831, 267 færð á rétta félagið (737, 463, 422, 1483, 165); afritin 215, 325, 250
+fengu rétt ár (2025, 2025, 2026); skjal 331 merkt afrit af 2772 (reikningur 105893 var þegar til á húsfélaginu);
+11 úrelt pör eytt (afrit í `backup_20261110_arsskodun_pairs`). Talið eftir: 0 skýrslur og 0 pör á öllum ellefu
+röngum (félag, ár); a.m.k. ein raunskýrsla á öllum tíu réttum.
+
+Ný mál: **#1584** Míla ehf. (7 tæki afrituð úr skýrslu Húsfélagsins Suðurlandsbraut 30) og **#1585** K Apartments
+(41 tæki afrituð úr skýrslu Blue Mountain; þrotabú 2024). Sama mynstur og Gerð. Verkefnalisti: 70 pör á
+afritsskýrslu og 33 á skýrslu annars félags í kerfinu öllu.
+
+ÓMÆLT: birtingin í appinu sjálfu (innbyggði vafrinn er ekki skráður inn); staðfest með talningu í grunni og
+lestri á 199/153.
+
 ## 5. Næstu skref (bíða Agnars)
 
 1. Ákveða hvað gera á við 16 tóm félög, einkum Reitir (10 staðir óvirkir í þjónustulista).
