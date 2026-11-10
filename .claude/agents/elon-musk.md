@@ -408,3 +408,11 @@ tölur úr skjali 831). Þá eru tækin í `uttaeki` afrit líka — Gerð-mynst
 
 199 `_bruTilheyrir()` (03.11.2026, 567f8fdd): tómt Brunakerfis-spjald birtist ekki hjá félagi sem á hvorki
 brunakerfisskjal né -reikning á neinu ári og er ekki á `brunakerfi_customers`. Óhlaðinn/tómur listi = sýna.
+
+## Þjónustuverkstæði: afleidd skref og Vinnublað (10.11.2026)
+
+- `effSteps(a, hasReik, hasSkyrsla, verkstN)` í 190: séu tæki félagsins á verkstæði (`uttaeki.status='loaned'`, verkstN>0) verða `farid` og `averkstaedi` sönn nema þau séu skráð berum orðum — skráð `false` vinnur. Smellur á skref vistar afleiddu gildin.
+- Verkstæðistalan endursækist á 20 s fresti við teikningu (`_verkstAt`/`_verkstBusy`), svo spjaldið uppfærist án endurhleðslu.
+- „Í vinnslu" (476 IVinnslu) = ekki `sv_force_unstarted` OG (`field_inspected_year`=árið og `last_year_inspected`≠árið, EÐA tæki á verkstæði, EÐA vistuð drög). Þjónustuverkstæði og „Í vinnslu"-flipinn í Ársskoðun eiga að telja eins; muni einum er sía oftast á (Agnar 10.11: „var með einhverja síu á óvart"). Rentur Fagraberg 18 (1637) vantaði í Ársskoðun 10.11 — orsök ÓMÆLD.
+- Samanbrotinn „Vinnublað"-hluti á spjaldi les `vinnublad_utklippur` (`.sv-vb`); mynd er `loading=lazy`.
+- Mælingagildra: Chrome-gluggi í lágmarki gefur `innerWidth=0` og öll breidd mælist 0–2 px — það er glugginn, ekki útlitið.

@@ -272,6 +272,7 @@
     var out = {
       account: d.account || {},
       serkjor: d.serkjor || null,   // 26.10.2026: Sérkjör-flipinn (normalize sleppti lyklinum → flipinn var falinn)
+      banner_global_url: d.banner_global_url || null,   // 10.11.2026: aðalbanner úr stjórnborði (normalize sleppti lyklinum → vistaður banner birtist aldrei)
       stats: [
         { k: 'Byggingar', v: s.byggingar != null ? String(s.byggingar) : '—' },
         { k: 'Slökkvitæki', v: s.taeki_alls != null ? String(s.taeki_alls) : '—' },

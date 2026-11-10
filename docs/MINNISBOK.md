@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-10 20:51 · 1000 virkar staðreyndir
+Sótt 2026-11-10 20:54 · 1000 virkar staðreyndir
 
 ---
 

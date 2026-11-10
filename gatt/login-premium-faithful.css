@@ -287,3 +287,8 @@ html[data-theme] #login .lcard button.lp-register-switch {
 }
 @media(max-width:345px){#login .lp-toplinks a:first-child{display:none}}
 @media(max-width:380px){#login .lp-toplinks{gap:6px!important}#login .lp-toplinks a{font-size:10.5px!important}#login .lp-toplinks a:last-child{padding:6px 7px!important}}
+/* 10.11.2026 — 320 px skjár: flipinn „Nýskráning" náði 18 px út fyrir spjaldið. */
+@media(max-width:345px){
+  html[data-theme] #login .lg-tabs button{min-width:0!important;font-size:13px!important;padding-left:4px!important;padding-right:4px!important;gap:5px!important}
+  #login .lg-tabs .lp-tab-icon{display:none}
+}

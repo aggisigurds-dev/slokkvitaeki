@@ -27,6 +27,7 @@
         '<span class="l">J.A.R.V.I.S. · Agentanetið</span>' +
         '<a class="btn iv sm" href="' + URL + '#agentanet" target="_blank" rel="noopener">' + NET + 'Agentanetið — stjóri → sérfræðingar → síður</a>' +
         '<a class="btn iv sm" href="' + URL + '#bidstofa" target="_blank" rel="noopener">Charlize-biðstofan</a>' +
+        '<button type="button" class="btn iv sm" data-t5="go" data-view="hunter" style="min-height:32px">Hunter</button>' +   // 10.11.2026: færður hingað úr miðri hliðarstikunni (innri síða, sami flipi)
         '<a class="btn iv sm" href="' + URL + '" target="_blank" rel="noopener">Jarvis</a>' +
         '</div>';
     }

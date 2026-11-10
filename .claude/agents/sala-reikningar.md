@@ -578,6 +578,8 @@ að fullu og enginn féll á mynstrið; í mars snýst það alveg við.
 Heimaleiga-málið (#1329) var sama mynstur í dulargervi: „ofgreitt um 122.659" reyndist 37.338 kr
 SKULD, og sú tala er nákvæmlega 20 %-vöntunin á einum reikningi (R-108266).
 
+- **10.11.2026** — Lota 10.11.2026: (1) Úttektarskýrsla (168) prentar nú undirskriftarlínu undirritanda (trip.undirritun, mynd úr app_settings.undirskriftir) og sérlínu Skoðunaraðili (sjálfgefið Hákon); skýrsla án nafns er ógild — svarstöð 447a uppfærð. (2) audit-payday-samraeming T2 „engin Payday-röð“ strax eftir sendingu er oftast úreltur spegill: payday_invoices_slokk sækist aðeins 10:00 og 15:00 UTC. Athuga solur.dk_invoice_id (sett = Payday tók við) og keyra POST /api/payday-pull-slokk?since=<dagur> áður en frávik er rannsakað (R-001282–85 mældust þannig 10.11, urðu nr. 472–475 SENT). (3) Léttvatn 3 L verðlínur: hleðsla vorur 468 = 5.000 án vsk, yfirferð vorur 454 = 2.903,23. (4) Drög-línur sýna nótuna Fyrir starfsfólk (.dr2-l3, 143/501).
+
 ## Verðskrár, geymd drög og afgreiðsla án stofnunar (lota 09.–10.11.2026, allt mælt)
 
 **Verðskráin er á einum stað og hún er breytanleg.**
