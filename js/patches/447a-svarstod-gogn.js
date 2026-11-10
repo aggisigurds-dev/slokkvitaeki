@@ -70,7 +70,7 @@
           '„Annað" = það sem var GERT. Má lýsa staðnum („Slökkvitæki í 51 herbergi …").',
           '„Athugasemdir" = það sem KÚNNINN þarf að bregðast við („Brunaslanga … lekur vatni og þarfnast lagfæringar."). Gallar fara hingað.',
           'Tómt gildi Athugasemda er „Engar athugasemdir".',
-          'Undir prentast „Fyrir hönd Slökkvitæki ehf" og nafn skoðunaraðila.'
+          'Undir prentast „Fyrir hönd Slökkvitæki ehf", undirskriftarlína (mynd undirritanda sé hún til í app_settings.undirskriftir, annars nafnið eitt) og sérlína „Skoðunaraðili: {nafn}" — sjálfgefið Hákon (10.11.2026).'
         ],
         skrar: ['js/patches/168-company-inspection-report.js:177-193, 259 (PDF-útprentun)', '.claude/skills/sara/references/husmal.md:116-134']
       },
@@ -330,8 +330,8 @@
     { id: 'pdf-uttekt', kodi: 'SV-15', gluggi: 'Enginn gluggi — merkið fer ALDREI á skjal sem kúnninn fær', ras: 'pdf', stada: 'handvirkt', felag: 'Slökkvitæki',
       heiti: 'Úttektarskýrslan (PDF)',
       hvadan: 'Búa til úttektarskýrslu / Klára heimsókn', hvert: 'Kúnni · Drive · Skjöl & viðhengi', sendir: '—',
-      breytur: '{mánuður} {ár} {úttektarlýsing} {athugasemdir} {skoðunaraðili}',
-      textar: [{ heiti: 'Fastir hlutar', t: 'Tæki voru yfirfarin af Slökkvitæki ehf í {mánuður} {ár}\n…8 flokkar tækja…\nAnnað: {úttektarlýsing}\nAthugasemdir: {athugasemdir — sjálfgefið „Engar athugasemdir"}\nFyrir hönd Slökkvitæki ehf\n{skoðunaraðili}' },
+      breytur: '{mánuður} {ár} {úttektarlýsing} {athugasemdir} {undirritandi} {skoðunaraðili}',
+      textar: [{ heiti: 'Fastir hlutar', t: 'Tæki voru yfirfarin af Slökkvitæki ehf í {mánuður} {ár}\n…8 flokkar tækja…\nAnnað: {úttektarlýsing}\nAthugasemdir: {athugasemdir — sjálfgefið „Engar athugasemdir"}\nFyrir hönd Slökkvitæki ehf\n{undirskrift á línu}\n{undirritandi}\nSkoðunaraðili: {skoðunaraðili — sjálfgefið Hákon}' },
                { heiti: 'Skráarnafn á Drive', t: '{nafn} - {heimilisfang} - {kt} - {ár} - {mánuður} - úttektarskýrsla - #{id}.pdf' }],
       skrar: ['js/patches/168-company-inspection-report.js:64-71, 140, 156, 176-193, 260, 474, 536'],
       reglur: ['Sjá flipann Úttektarlýsing fyrir reglurnar um „Annað".'] },
