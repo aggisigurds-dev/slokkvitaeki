@@ -86,7 +86,7 @@
   // (field_inspected_year === curYear) telst með úttektina búna, og fullklárað
   // ár (last_year_inspected === curYear) sýnir öll skrefin græn — nema
   // skrefið hafi verið afhakað sérstaklega (explicit false vinnur alltaf).
-  function effSteps(a, hasReik, hasSkyrsla) {
+  function effSteps(a, hasReik, hasSkyrsla, verkstN) {
     a = a || {};
     const s = Object.assign({}, a[STEPS_KEY] || {});
     if (s.uttekt === undefined && +a.field_inspected_year === curYear) s.uttekt = true;
@@ -116,6 +116,13 @@
     if (s.taekjalisti === undefined && s.uttekt) s.taekjalisti = true;
     if (s.averkstaedi === undefined && (s.uttekt || s.taekjalisti)) s.averkstaedi = true;
     if (s.farid === undefined && (s.uttekt || s.averkstaedi || s.taekjalisti)) s.farid = true;
+    // 10.11.2026 (Agnar: „þegar tæki eru skráð inn á verkstæði … Merkjast í Farið 1 og 2 Verkst."): tæki félagsins á
+    // verkstæðinu (status 'loaned') eru sönnun þess að það var farið og tækin eru hjá okkur — bæði skrefin kvikna SJÁLF
+    // á meðan þau eru þar. Aðeins ÓSKRÁÐ skref eru afleidd; skýrt afhak (false) vinnur alltaf. Ekkert er skrifað hér.
+    if (+verkstN > 0) {
+      if (s.averkstaedi === undefined) s.averkstaedi = true;
+      if (s.farid === undefined) s.farid = true;
+    }
     return s;
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
@@ -367,7 +374,14 @@
    */
   let _verkstByCo = null;   // Map<String(co.id), fjöldi óskilaðra tækja>
   let _verkstLoaded = false;
+  // 10.11.2026 (Agnar: tæki skráð inn á verkstæði „ætti að uppfærast þarna inn á þjónustuverkstæði"): talan var sótt EINU
+  // SINNI við opnun, svo tæki sem komu inn eftir það sáust ekki fyrr en síðan var endurhlaðin. Nú er hún sótt aftur þegar
+  // borðið er teiknað og talan er orðin eldri en 20 sek; endurteiknað AÐEINS ef mengið breyttist (fingrafar) — engin
+  // kjúfa á borðinu þegar ekkert er nýtt, og aldrei lykkja (sókn → teikning → sókn kemst í kyrrstöðu á aldursmörkunum).
+  let _verkstAt = 0, _verkstFinger = null, _verkstBusy = false;
   async function loadVerkst() {
+    if (_verkstBusy) return;
+    _verkstBusy = true;
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
       const rows = await DB.fetchAll((from, to) => sb.from('uttaeki')
@@ -379,8 +393,13 @@
         if (!k || k === 'null' || k === 'undefined') return;
         m.set(k, (m.get(k) || 0) + 1);
       });
+      const finger = [...m.entries()].sort((x, y) => String(x[0]).localeCompare(String(y[0]))).map(e => e[0] + ':' + e[1]).join('|');
+      _verkstAt = Date.now();
+      if (_verkstByCo && finger === _verkstFinger) return;   // ekkert nýtt → engin endurteikning
+      _verkstFinger = finger;
       _verkstByCo = m;
     } catch (_) { return; }   // sóknarvilla → engin tala, ENGIN núll-fullyrðing
+    finally { _verkstBusy = false; }
     render();
   }
 
@@ -911,7 +930,7 @@
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
-        steps: effSteps(a, hasReik, hasSkyrsla),   // 153-staða + eigin skýrsla/reikningur/krafa
+        steps: effSteps(a, hasReik, hasSkyrsla, _verkstByCo ? (_verkstByCo.get(String(co.id)) || 0) : 0),   // 153-staða + eigin skýrsla/reikningur/krafa + tæki á verkstæði
         stepsMeta: a[STEPS_META_KEY] || {},   // hver setti hvaða skref og hvenær
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         // 24.09.2026 (Agnar: „sync these three text boxes together ... saved and
@@ -1323,6 +1342,7 @@
     // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
     if (!_verkstLoaded) { _verkstLoaded = true; loadVerkst(); }   // óskiluð tæki á verkstæðinu → ein fyrirspurn, endurteiknar
+    else if (!_verkstBusy && Date.now() - _verkstAt > 20000) loadVerkst();   // ný tæki á verkstæði sjást án endurhleðslu
     if (!_vbLoaded) { _vbLoaded = true; loadVinnublad(); }          // útklippur af vinnublöðum → ein fyrirspurn, endurteiknar
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
@@ -1560,7 +1580,7 @@
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.step;
       const a = arsMap()[String(id)] || {};
-      const cur = effSteps(a, _reikCoIds.has(id), !!( _yearDocs && _yearDocs.get(String(id)) && _yearDocs.get(String(id)).skyrsla ));
+      const cur = effSteps(a, _reikCoIds.has(id), !!( _yearDocs && _yearDocs.get(String(id)) && _yearDocs.get(String(id)).skyrsla ), _verkstByCo ? (_verkstByCo.get(String(id)) || 0) : 0);
       const next = Object.assign({}, a[STEPS_KEY] || {}, cur, { [k]: !cur[k] });
       // Kveikt á úttektinni ⇒ „Farið á verkstað" kviknar með (undanfari), og
       // afhak á ferðinni slekkur á úttektinni. Þannig getur stikan aldrei sýnt
