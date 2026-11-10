@@ -14,11 +14,11 @@
   padding:0 clamp(28px,8.5vw,148px) 40px 24px!important;
   position:relative;
   overflow:hidden!important;
-  background:#061832 url('/gatt/myndir/brunaholf/login-premium-original-20261109.webp') center center/cover no-repeat!important;
+  background:#061832 url('/gatt/myndir/brunaholf/login-premium-bg.webp') center center/cover no-repeat!important;
 }
 #login[data-bg]::before {
   content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:url('/gatt/myndir/brunaholf/login-premium-original-20261109.webp') center center/cover no-repeat!important;
+  background:url('/gatt/myndir/brunaholf/login-premium-bg.webp') center center/cover no-repeat!important;
   opacity:1!important;transform:none!important;
 }
 #login[data-bg]::after {
@@ -263,7 +263,7 @@ html[data-theme] #login .lcard button.lp-register-switch {
    No mirrored second layer or color gradient: preserve the user's exact colors. */
 #login[data-bg] {
   background-color:#061832!important;
-  background-image:url('/gatt/myndir/brunaholf/login-premium-original-20261109.webp')!important;
+  background-image:url('/gatt/myndir/brunaholf/login-premium-bg.webp')!important;
   background-size:cover!important;
   background-position:center center!important;
   background-repeat:no-repeat!important;
@@ -292,3 +292,4 @@ html[data-theme] #login .lcard button.lp-register-switch {
   html[data-theme] #login .lg-tabs button{min-width:0!important;font-size:13px!important;padding-left:4px!important;padding-right:4px!important;gap:5px!important}
   #login .lg-tabs .lp-tab-icon{display:none}
 }
+/* 10.11.2026 — bakgrunnsmyndin var 1,4 MB (taplaus); login-premium-bg.webp er sama mynd í gæðum 95 (246 KB). Frumritið er enn í möppunni. */
