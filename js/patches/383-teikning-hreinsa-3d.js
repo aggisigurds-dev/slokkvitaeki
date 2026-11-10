@@ -4094,6 +4094,8 @@
   const segja = t => { try { if (window.Toast && Toast.show) Toast.show(t); } catch (_) {} };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const nyttId = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  // Hæðir sem urðu til HÉR og eru ekki enn á þjóninum — sameinaHaedir heldur þeim þegar röð þjónsins berst (10.11.2026).
+  const nyHer = id => { (G.nyjarHer = G.nyjarHer || new Set()).add(id); };
 
   const G = {
     frum: null,            // frummynd virku hæðarinnar (það sem FloorPlan hlóð)
@@ -4191,11 +4193,18 @@
     if (G.virk >= p.haedir.length) G.virk = 0;
     return p.haedir;
   }
-  function sameinaHaedir(gamlar, nyjar) {
+  // 10.11.2026 — HÆÐATAPIÐ (Agnar: „mest ein hæð sem dettur síðan út“, „nokkrir mánuðir og þetta hefur ekki virkað“).
+  // Röð þjónsins berst 0,4–40 s eftir opnun (serverFetch, tryggjaHaedir, ↻). Hér var listanum SKIPT ÚT fyrir lista þjónsins:
+  // hæð sem var nýbúið að bæta við („+ Hæð“, innsetning úr safni) og þjónninn þekkti ekki hvarf, virka hæðin datt á 0, og
+  // myndin sem var verið að hlaða upp fyrir nýju hæðina lenti á FYRSTU hæð — og þurrkaði skurð og veggi hennar (beita()).
+  // Mælt 10.11.2026 (teikn-haed-tap.cjs): 5 hæðir → 4 um leið og röðin kom. Nú: hæð sem var BÚIN TIL HÉR (G.nyjarHer:
+  // „+ Hæð“, innsetning úr safni) og er ekki enn komin á þjóninn helst á sínum stað. Allt annað sem þjónninn hefur ekki
+  // — gervihæðin, hæð úr skyndiminni, hæð sem var eytt annars staðar — fer eins og áður (sama regla og 375 sameinaVidFerska).
+  function sameinaHaedir(gamlar, nyjar, nyjarHer) {
     if (!Array.isArray(nyjar) || !nyjar.length) return gamlar || null;
     const byId = {};
     (gamlar || []).forEach(h => { if (h && h.id) byId[h.id] = h; });
-    return nyjar.map(n => {
+    const ut = nyjar.map(n => {
       const g = n && n.id && byId[n.id];
       if (!g) return n;
       if ((g.image_url || null) !== (n.image_url || null)) return n;
@@ -4216,6 +4225,13 @@
         vinnumynd: (g.vinnumynd && (!n.vinnumynd || String(g.vinnumynd.t || '') > String(n.vinnumynd.t || ''))) ? g.vinnumynd : n.vinnumynd
       });
     });
+    const aThjoni = {}; nyjar.forEach(n => { if (n && n.id) aThjoni[n.id] = 1; });
+    (gamlar || []).forEach((g, i) => {
+      if (!g || !g.id || aThjoni[g.id]) return;
+      if (!nyjarHer || !nyjarHer.has(g.id)) return;           // ekki búin til hér (gervihæð, skyndiminni, eytt annars staðar) → fer
+      ut.splice(Math.min(i, ut.length), 0, g);                // búin til hér og ekki enn á þjóninum: helst á sínum stað
+    });
+    return ut;
   }
   const virkHaed = () => haedir()[G.virk];
   const erPx = m => (m.x > 1 || m.y > 1);
@@ -4607,6 +4623,16 @@
     s.style.display = html ? 'flex' : 'none';
   }
 
+  // „+ Hæð“: tóm hæð aftast, virk — sama leið úr handfanginu og úr tólum (TeiknBord.nyHaed).
+  function nyHaed() {
+    const hs = haedir();
+    samstillaVirka();
+    hs.push({ id: nyttId(), nafn: (hs.length + 1) + '. hæð', image_url: null, markers: [], skurdur: null, veggir: [] });
+    nyHer(hs[hs.length - 1].id);
+    virkja(hs.length - 1);
+    segja('Ný hæð — sæktu eða hlaðu upp teikningu fyrir hana.');
+    return hs[hs.length - 1];
+  }
   // Hæðaflipar efst til vinstri.
   function flipar() {
     const main = fpEl('fp-main'); if (!main) return;
@@ -4618,11 +4644,7 @@
       f.addEventListener('click', e => {
         const t = e.target.closest('[data-h]'); if (!t) return;
         const a = t.dataset.h, hs = haedir();
-        if (a === 'ny') {
-          samstillaVirka();
-          hs.push({ id: nyttId(), nafn: (hs.length + 1) + '. hæð', image_url: null, markers: [], skurdur: null, veggir: [] });
-          virkja(hs.length - 1);
-          segja('Ný hæð — sæktu eða hlaðu upp teikningu fyrir hana.');
+        if (a === 'ny') { nyHaed();
         } else if (a === 'saekja') { endurlesa();
         } else if (a === 'nafn') {
           const n = window.prompt('Heiti hæðar', virkHaed().nafn || ''); if (n != null && n.trim()) virkHaed().nafn = n.trim().slice(0, 24);
@@ -6220,7 +6242,7 @@
       const h = { id: nyttId(), nafn: t.nafn, image_url: t.image_url, markers: [], skurdur: t.skurdur ? { x: t.skurdur.x, y: t.skurdur.y, w: t.skurdur.w, h: t.skurdur.h } : null, veggir: [], pdfVeggir: [], uppruni: { af: 'finna-allt-husid', leid: t.leid, blad: t.blad.lysing, dags: t.blad.dags } };
       if (h.skurdur) h.sjalf = true;
       if (snidBlod.length) h.snidBlod = snidBlod;
-      hs.push(h); nyjar.push(h);
+      hs.push(h); nyjar.push(h); nyHer(h.id);
     });
     if (!nyjar.length) return 0;
     // röð: Kjallari, 1., 2. … Ris — stöðug (hæðir með óþekkt heiti halda sínum stað innbyrðis)
@@ -7038,7 +7060,8 @@
       const idVirk = (virkAdur && virkAdur.id) || null;
       const urlAdur = (virkAdur && virkAdur.image_url) || null;
       const nyjar = Array.isArray(row.haedir) && row.haedir.length ? JSON.parse(JSON.stringify(row.haedir)) : null;
-      p.haedir = sameinaHaedir(p.haedir, nyjar);
+      p.haedir = sameinaHaedir(p.haedir, nyjar, G.nyjarHer);
+      if (nyjar && G.nyjarHer) nyjar.forEach(h => { if (h && h.id) G.nyjarHer.delete(h.id); });   // komin á þjóninn → venjuleg hæð
       const hs = haedir();
       let i = idVirk ? hs.findIndex(h => h.id === idVirk) : 0;
       if (i < 0) i = 0;
@@ -7133,6 +7156,7 @@
   }
 
   window.TeiknBord = {
+    nyHaed,
     samstilla: samstillaVirka,
     hamur: () => G.hamur,
     rymi: () => G.rymi,

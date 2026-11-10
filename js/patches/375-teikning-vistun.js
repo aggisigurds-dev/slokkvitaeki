@@ -42,7 +42,7 @@
       if (!l) return l;
       var f = l.id && eftirId[l.id];
       // Þessi vafri sá röðina aldrei (sed === null): auðkenni hæðar hér getur verið gervi — þá ræður sama mynd.
-      if (!f && !sed) f = ferskar.filter(function (q) { return q && q.id && !notad[q.id] && !minar.some(function (o) { return o && o.id === q.id; }) && (q.image_url || null) === (l.image_url || null); })[0];
+      if (!f && !sed && l.image_url) f = ferskar.filter(function (q) { return q && q.id && !notad[q.id] && !minar.some(function (o) { return o && o.id === q.id; }) && q.image_url === l.image_url; })[0];   // 10.11.2026: aldrei para tvær myndlausar hæðir (null === null)
       if (!f) return l;                                                   // ný hæð hér
       notad[f.id] = 1;
       if ((l.image_url || null) !== (f.image_url || null)) return l;     // önnur mynd hér: hæðin er ný að efni
