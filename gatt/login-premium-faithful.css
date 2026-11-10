@@ -274,6 +274,6 @@ html[data-theme] #login .lcard button.lp-register-switch {
 /* 10.11.2026 — lagfæringar: texti í netfangs-/lykilorðsreit lá ofan á tákninu (landing-reglan #login .lcard .fld input
    með !important vann á specificity); þjónustuspjöldin ("Þjónusta fyrir húsfélög…") voru gegnsæ yfir húsmyndinni. */
 #login .lcard .lp-fieldbox input{padding:12px 52px!important}
-#login .lg-more2 li{background:rgba(6,20,44,.86)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#login .lg-more2 li{background:linear-gradient(110deg,#172d50,#1c2f4f)!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:12px!important}  /* sami litur og efri spjöldin, en ógegnsær svo húsmyndin skíni ekki í gegn */
 #login .lg-more2 li b{color:#fff!important}
 #login .lg-more2 li span{color:#e7edf9!important}
