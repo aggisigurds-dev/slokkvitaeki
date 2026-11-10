@@ -90,17 +90,43 @@
     const k = locKey(loc);
     return '<span class="dr2-stad' + (LOC_LIT[k] ? ' ' + LOC_LIT[k] : '') + '">' + LOC_IK[k] + esc(loc.label) + '</span>';
   }
+  // 10.11.2026 (Agnar: „mættir láta textareitinn Fyrir starfsfólk sjást á daufri punktalínu inn í drafts líka"):
+  // starfsmanna-nótan úr Sölu (#pos-notes-staff) er geymd á verkbeiðninni sem línurnar EFTIR fyrstu (fyrsta línan er
+  // þjónustulýsingin) — sama regla og groupStaffNote í 78. Sjálfvirkar verðnótur („Byrjunargjald …") eru ekki nóta frá
+  // starfsfólki. Afturkallaðar/eyddar verkbeiðnir telja ekki með. Aðeins LESIÐ hér; ekkert er skrifað.
+  // Sjálfvirkar línur sem kerfið skrifar sjálft eru ekki nóta frá starfsfólki: verðnótur og dagsettir stimplar
+  // („[2026-09-22 · Aftur til verkstæðis] (engin ástæða)").
+  const AUTO_NOTA_RX = /byrjunargjald|^\[\d{4}-\d{2}-\d{2}\s*·/i;
+  function staffNotaUr(notesList) {
+    const out = [];
+    notesList.forEach(function (n) {
+      String(n || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).slice(1).forEach(function (l) {
+        const t = l.replace(/^—\s*/, '').trim();
+        if (t && !AUTO_NOTA_RX.test(t) && out.indexOf(t) === -1) out.push(t);
+      });
+    });
+    return out.join(' · ');
+  }
   async function attachLocations(SB) {
     try {
-      const data = await DB.fetchAll((from, to) => SB.from('verkbeidnir').select('num,status').order('id').range(from, to));
-      const map = {};
+      const data = await DB.fetchAll((from, to) => SB.from('verkbeidnir').select('num,status,notes').order('id').range(from, to));
+      const map = {}, notur = {};
       (data || []).forEach(v => {
         const parent = String(v.num || '').replace(/-V\d+$/, '');
         if (!parent) return;
         (map[parent] = map[parent] || new Set()).add(v.status);
+        if (v.status !== 'cancelled' && v.status !== 'eytt') (notur[parent] = notur[parent] || []).push(v.notes);
       });
-      _items.forEach(s => { s._loc = locFor(map[s.num]); });
-    } catch (e) { console.warn('[drog-list] locations:', e); _items.forEach(s => { s._loc = LOC.drog; }); }
+      _items.forEach(s => { s._loc = locFor(map[s.num]); s._staff = staffNotaUr(notur[s.num] || []); });
+    } catch (e) { console.warn('[drog-list] locations:', e); _items.forEach(s => { s._loc = LOC.drog; s._staff = ''; }); }
+  }
+  // Ein dauf lína með punktalínu undir stöðulínunni; engin nóta → engin lína (ekkert tómt strik).
+  function staffLina(txt) {
+    txt = String(txt || '').trim();
+    if (!txt) return '';
+    return '<span class="dr2-l3" title="Fyrir starfsfólk: ' + esc(txt) + '">' +
+      _ik('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>', 12, 2) +
+      '<span class="dr2-l3t">' + esc(txt) + '</span></span>';
   }
 
   let _count = 0;
@@ -273,6 +299,10 @@
       V + '.dr2-vant{flex:none;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:5px;border:1px solid rgba(180,35,24,.28);background:#fdf1ef;font-size:11.5px;font-weight:600;color:#b42318;white-space:nowrap}',
       V + '.dr2-eyttm{flex:none;font:700 10px/1 ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;color:#b42318}',
       V + '.dr2-l2{display:flex;flex-wrap:wrap;align-items:center;gap:6px 9px;font-size:12.5px;color:#5b6472}',
+      // starfsmanna-nóta (Fyrir starfsfólk) — dauf lína með punktalínu undir stöðulínunni; ein lína, klippt með …
+      V + '.dr2-l3{display:flex;align-items:center;gap:6px;min-width:0;margin-top:-2px;padding-bottom:3px;border-bottom:1px dotted rgba(91,100,114,.45);font-size:12px;line-height:1.3;color:#8a93a3}',
+      V + '.dr2-l3 svg{flex:none;color:#a1a9b6}',
+      V + '.dr2-l3t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V + '.dr2-stad{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:5px;border:1px solid rgba(20,24,34,.16);background:' + SILVER + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);font-size:12px;font-weight:600;color:#2b313c;white-space:nowrap}',
       V + '.dr2-stad.rautt{color:#b42318}' + V + '.dr2-stad.graent{color:#0b6b3a}',
       V + '.dr2-pk{color:#a1a9b6}',
@@ -510,6 +540,7 @@
           '<span class="dr2-l1"><span class="dr2-nafn">' + esc(s.customer_nafn || '—') + '</span>' + (s.hidden ? '<span class="dr2-eyttm">Eytt</span>' : '') + kunnaMerki + '</span>' +
           '<span class="dr2-l2">' + locBadge(s._loc) + '<span class="dr2-pk" aria-hidden="true">·</span><span>' + greidslaTxt(s.greitt_med) + '</span>' +
             '<span class="dr2-pk" aria-hidden="true">·</span><span>Stofnað <span class="dr2-dag">' + esc(fmtDate(s.created_at)) + '</span></span></span>' +
+          staffLina(s._staff) +
         '</span>' +
         '<span class="dr2-upph">' + esc(fmtKr(s.samtals).replace(/ kr$/, '')) + '<small>kr</small></span>' +
       '</button>' +
@@ -543,6 +574,7 @@
           '<span class="dr2-l2"><span class="dr2-stad">' + korfuIk + 'Geymd karfa</span><span class="dr2-pk" aria-hidden="true">·</span><span>' + fj + (fj === 1 ? ' lína' : ' línur') + '</span>' +
             (g.yfirlit ? '<span class="dr2-pk" aria-hidden="true">·</span><span class="dr2-yfirl" title="' + esc(g.yfirlit) + '">' + esc(g.yfirlit) + '</span>' : '') +
             '<span class="dr2-pk" aria-hidden="true">·</span><span>Geymt <span class="dr2-dag">' + esc(fmtDate(g.created_at)) + '</span></span></span>' +
+          staffLina(g.starf) +
         '</span>' +
         '<span class="dr2-upph">' + esc(fmtKr(g.samtals).replace(/ kr$/, '')) + '<small>kr</small></span>' +
       '</button>' +
