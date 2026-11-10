@@ -595,3 +595,15 @@ html[data-theme="premium"] #v2-dtabs::-webkit-scrollbar{display:none}
   html[data-theme="premium"] #drawer #v2-dr-summary{display:flex!important;flex-wrap:wrap}
   html[data-theme="premium"] #drawer .v2-dr-summary-cell{flex:1 1 30%}
 }
+
+/* 10.11.2026 — tölva: (1) efsta valmyndin klippti síðasta flipann („Skilaboð") á 1440 px með níu flipa → þéttari á
+   1200–1620 px og dofnar út hægra megin ef hún skrunast; (2) stöðumerki eignar lá ofan á myndavélartakkanum. */
+html[data-theme="premium"] #v2-top .v2-topnav{padding-right:26px;-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 26px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 26px),transparent 100%)}
+@media(min-width:1200px) and (max-width:1620px){
+  html[data-theme="premium"] #v2-top .v2-topnav{gap:17px}
+  html[data-theme="premium"] #v2-top .v2-tl{font-size:12.5px;letter-spacing:0}
+  html[data-theme="premium"] #v2-top #leit{width:190px}
+}
+@media(min-width:721px){
+  html[data-theme="premium"] #drawer .v2-dr-hero .v2-stpill{right:92px}
+}
