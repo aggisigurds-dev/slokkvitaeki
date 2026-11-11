@@ -76,7 +76,12 @@ repo-rót). Aðallotan vinnur prófin sjálf í röð — undiragentar aðeins �
 ### D. Húsmynd
 - Skráð: `app_settings.co_bygging_mynd[id]` — `uppspretta`: `handvirkt` · `google-maps-skjamynd` · `google-streetview` ·
   `gatt` · `borgarvefsja-2018` / `mapis-loftmynd` (loftmyndir). **Myndin er alltaf SKOÐUÐ**, uppsprettan ein segir ekkert.
-- **Í lagi aðeins ef húsið sjálft sést: framhlið eða inngangur staðarins.** Ekki í lagi: innimynd (verslun,
+- **Tilgangur myndarinnar (Agnar 11.11.2026): að við finnum húsið og þekkjum það þegar við komum á staðinn.** Hún á
+  því að vera tekin UTAN af húsinu, frá götunni eins og maður kemur að því: allt húsið (eða sá hluti sem staðurinn er
+  í) í einni mynd, með inngangi og helst húsnúmeri, skilti eða öðru kennileiti. Spurðu: „myndi ég þekkja húsið af
+  þessari mynd úr bílnum?" Sé svarið nei er myndin ekki í lagi.
+- **Í lagi aðeins ef húsið sjálft sést að utan: framhlið eða inngangur staðarins.** Nærmynd af hurð eða vegg án
+  samhengis dugar ekki; fjarmynd þar sem húsið er eitt af mörgum dugar ekki heldur. Ekki í lagi: innimynd (verslun,
   veitingasalur — merkt „Trusted Photographer"), gluggalaus veggur, bílastæði, sund milli húsa, gatan án hússins,
   loftmynd. Agnar 11.11.2026: sjálfsóttu myndirnar eru lélegar — vera strangur.
 - `handvirkt` er **aldrei snert**, sama hvernig myndin er.
