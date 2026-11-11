@@ -263,11 +263,9 @@
 [functions."trio-cron"]
   schedule = "0 6 * * *"
 
-# Framlínan (10.11.2026): flokkar nýjan innkominn póst á 30 mín fresti kl. 07–19 (UTC = íslenskur tími) svo
-# /framlina.html sé rétt þegar hún er opnuð. Gerir ekkert þegar enginn póstur er nýr (tvær Supabase-fyrirspurnir,
-# ekkert AI-kall). 26 keyrslur á dag. Síðan sjálf biður líka um flokkun við opnun (POST /api/framlina).
-[functions."framlina-cron"]
-  schedule = "*/30 7-19 * * *"
+# Framlínan (10.11.2026) — ÁÆTLUN TEKIN AF 11.11.2026 (Agnar: „mér vantar verkfæri ekki plaggat" — síðan sýnir póst en þar er
+# ekkert hægt að gera; Tölvupóstar á Þjónustuborðinu eru vinnutækið). Flokkunin keyrir því ekki lengur sjálf. Síðan
+# /framlina.html og fallið standa óvirk og innskráningarvarin; fallið flokkar aðeins ef einhver opnar síðuna.
 
 # Þjónustugátt: vikuleg samantekt í pósti á mánudagsmorgnum (12.10.2026) — aðeins félög með rofann
 # „vikupostur" kveiktan á gatt-admin (sjálfgefið slökkt). Á eftir, næstu skoðanir, opin verk, skírteini
