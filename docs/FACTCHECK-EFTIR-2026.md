@@ -183,3 +183,11 @@ Póstur frá tengilið húsfélagsins 25.08.2026: „7 samtengjanlegir reykskynj
 dufttækjunum sem voru fyrir) og 1 lítið kolsýrutæki" — biður um reikning og árlegt eftirlit frá júní–júlí 2027.
 R-000892 (07.09.2026, 71.227 kr) og skýrslan (maí 2026) bera aðeins 7 reykskynjara + vinnu + skýrslugerð + akstur;
 tækjaskráin sömuleiðis. **Léttvatnstækin tvö og kolsýrutækið finnast hvorki á reikningi, skýrslu né lista.**
+
+## Leiðrétt 11.11.2026 — Vallarbraut 5 og 7 í 220 Hafnarfjörð
+
+Agnar samþykkti. Raðir 440 og 441: „200 Kópavogur“ → „220 Hafnarfjörður“, póstnúmer 220. Afrit í
+`backup_20261111_sannreyna_heimilisfang`, review_note á báðum röðum, lesið til baka (220 á báðum, sían enn 168).
+
+Röðin hliðraðist um tvö sæti: 1136 er nú sæti 83, og 440/441 eru í sætum 127 og 128 (þegar yfirfarin, sleppa þeim þar).
+**Næsta lota: `rn between 84 and 93`** (id 1373, 1123, 718, 1531, 468, 452, 478, 729, 743, 1106).
