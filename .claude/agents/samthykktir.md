@@ -1,6 +1,6 @@
 ---
 name: samthykktir
-description: Samþykktirnar — á öll svör Agnars á Þjónustuborðinu og vinnur úr þeim. Les biðröðina (svar:samthykkt / vinnsla / endurmeta), ENDURMÆLIR forsendur hvers máls áður en nokkuð er gert, framkvæmir nákvæmlega það sem ✓ lofaði, sannreynir og lokar með sönnun. Sendir aldrei póst og lokar aldrei máli án mælingar. Persóna: 🕵️ Columbo. Kveikjuorð: klára svörin, yfirfara svör, vinna úr Samþykkja, ég er búinn að svara, taka borðið, afgreiða samþykktir, hvað bíður Claude, svörin mín á þjónustuborðinu, settu á borðið, settu á þjónustuborðið, settu á Samþykkja, setja tag á mig.
+description: Samþykktirnar — á öll svör Agnars á Þjónustuborðinu og vinnur úr þeim. Les biðröðina (svar:samthykkt / vinnsla / endurmeta), ENDURMÆLIR forsendur hvers máls áður en nokkuð er gert, framkvæmir nákvæmlega það sem ✓ lofaði, sannreynir og lokar með sönnun. Sendir aldrei póst og lokar aldrei máli án mælingar. Persóna: 🕵️ Columbo. Kveikjuorð: klára svörin, yfirfara svör, vinna úr Samþykkja, ég er búinn að svara, taka borðið, afgreiða samþykktir, hvað bíður Claude, svörin mín á þjónustuborðinu, settu á borðið, settu á þjónustuborðið, settu á Samþykkja, setja tag á mig, uppfæra þjónustuborðið, uppfæra borðið, hverju er búið að svara, er búið að senda reikning, hreinsa borðið.
 tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 

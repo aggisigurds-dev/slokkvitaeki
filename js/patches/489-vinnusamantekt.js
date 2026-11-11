@@ -106,6 +106,7 @@
       redder: () => fyrirspurn(c.from('redder_invoices').select('dagsetning,m_vsk').gte('dagsetning', isoDags(vika(-1))).limit(500)),
       nyirStadir: () => bhGet('/api/worksites?year=2026'),
       // 11.11.2026: staða verkferlisins „Sannreyna fyrirtæki" (skill sannreyna-fyrirtaeki) — keyrslur skráðar á þjón.
+      verkferliKeyrslur: async () => { const r = await fyrirspurn(c.from('app_settings').select('s:settings->verkferli_keyrslur').limit(1)); return (r[0] && r[0].s) || {}; },
       sannreyna: async () => { const r = await fyrirspurn(c.from('app_settings').select('s:settings->sannreyna_fyrirtaeki').limit(1)); return (r[0] && r[0].s) || {}; },
       kyb: () => bhGet('/api/krofu-yfirlit-bru'),
       fjarmal: () => bhGet('/api/fjarmal-yfirlit'),
@@ -336,22 +337,32 @@
     /* 11.11.2026 (Agnar: „ef þú manst eftir fleiri svona góðum verkferlum sem væri gott að hafa tilbúið þarna"): EITT box
      * sem telur upp verkferlin sem eru þegar til sem skill eða agent, með orðinu sem ræsir þau. Aðeins skrá — engin mæling,
      * ekkert ljós í talningunni (sev 'upp'), og nýtt verkferli bætist við sem ein lína hér um leið og skillið er til. */
-    { id: 'verkferli', hopur: 'Fyrirtæki', heiti: 'Verkferli tilbúin til keyrslu', maela: () => {
+    { id: 'verkferli', hopur: 'Fyrirtæki', heiti: 'Verkferli tilbúin til keyrslu', maela: g => {
+      // [lykill í app_settings.verkferli_keyrslur, heiti, orðin sem ræsa, hvað það gerir, tillaga að tíðni, dagar milli keyrslna (0 = eftir þörf)]
       const F = [
-        ['Sannreyna fyrirtæki', 'sannreyna fyrirtæki', 'sjö próf per félag á lista'],
-        ['Reikningalota', 'reikningalota', 'hvað er tilbúið að senda, tengingar, drög'],
-        ['Rannsóknarhamur', 'rannsóknarhamur', 'órukkað, ósvarað, gleymdar skoðanir'],
-        ['Samræmi ársins', 'stemmir árið', 'tækjalisti = skýrsla = reikningur per félag'],
-        ['Rekstrarfélög', 'para eftir magni', 'skýrsla við reikning per stað á sömu kt'],
-        ['Svörin á borðinu', 'klára svörin', 'vinna úr því sem þú samþykktir eða hafnaðir'],
-        ['Mánaðarlok gata', 'loka mánuðinum', 'Landspítali og Heklureitur í Gerð reikninga'],
-        ['Staðfesting brunalokana', 'staðfesting brunalokana', 'skjal til verkkaupa úr Eyðublöðum'],
-        ['Allsherjar úttekt', 'allsherjar úttekt', 'allt kerfið mælt og lagfæringar endurmældar'],
-        ['Lotuúttekt', 'lotuúttekt', 'lotur tímabils lesnar, endurmældar og skráðar í Charlize'],
-        ['Agenta-samstilling', 'samstilla agentana', 'allir agentar uppfærðir á móti Charlize'],
-        ['Listaúttekt', 'listaúttekt', 'allir listar, mælingar og tól í eina skrá; lifandi, dautt, skarast']
+        ['bord-uppfaersla', 'Uppfæra Þjónustuborðið', 'uppfæra borðið', 'svör unnin, leyst mál lokuð með sönnun', 'daglega', 1],
+        ['reikningalota', 'Reikningalota', 'reikningalota', 'hvað er tilbúið að senda, tengingar, drög', 'vikulega', 7],
+        ['lotu-uttekt', 'Lotuúttekt', 'lotuúttekt', 'lotur lesnar, endurmældar, skráðar í Charlize', 'vikulega', 7],
+        ['agenta-samstilling', 'Agenta-samstilling', 'samstilla agentana', 'allir agentar uppfærðir á móti Charlize', 'á tveggja vikna fresti', 14],
+        ['rannsoknarhamur', 'Rannsóknarhamur', 'rannsóknarhamur', 'órukkað, ósvarað, gleymdar skoðanir', 'mánaðarlega', 30],
+        ['uttekt-audit', 'Samræmi ársins', 'stemmir árið', 'tækjalisti = skýrsla = reikningur per félag', 'mánaðarlega', 30],
+        ['rekstrarfelog-parun', 'Rekstrarfélög', 'para eftir magni', 'skýrsla við reikning per stað á sömu kt', 'mánaðarlega', 30],
+        ['gata-manadarlok', 'Mánaðarlok gata', 'loka mánuðinum', 'Landspítali og Heklureitur í Gerð reikninga', 'mánaðarlega, 1.–5.', 31],
+        ['lista-uttekt', 'Listaúttekt', 'listaúttekt', 'allir listar, mælingar og tól í eina skrá', 'mánaðarlega', 30],
+        ['allsherjar-uttekt', 'Allsherjar úttekt', 'allsherjar úttekt', 'allt kerfið mælt, lagfæringar endurmældar', 'ársfjórðungslega', 90],
+        ['sannreyna-fyrirtaeki', 'Sannreyna fyrirtæki', 'sannreyna fyrirtæki', 'sjö próf per félag á lista', 'þegar listi er valinn', 0],
+        ['profa-fyrir-birtingu', 'Prófa fyrir birtingu', 'prófa fyrir birtingu', 'skylduhlið á undan hverju [deploy]', 'við hverja birtingu', 0],
+        ['stadfesting-brunalokana', 'Staðfesting brunalokana', 'staðfesting brunalokana', 'skjal til verkkaupa úr Eyðublöðum', 'eftir beiðni', 0]
       ];
-      return { sev: 'upp', tala: F.length + ' ferli', undir: 'ræst með því að segja orðin við Claude', punktar: F.map(f => f[0] + ' · „' + f[1] + '" · ' + f[2]) };
+      // Síðasta keyrsla er skráð á þjón af verkferlinu sjálfu (lokaskref hvers skills). Sókn sem bilar → engar dagsetningar, boxið stendur samt.
+      let k = {}; try { k = (g.verkferliKeyrslur && g.verkferliKeyrslur.ok !== false && g.verkferliKeyrslur.v) || {}; } catch (_) { k = {}; }
+      const nu = Date.now(); let komid = 0;
+      const punktar = F.map(x => {
+        const s = k[x[0]] && k[x[0]].sidast, t = s ? Date.parse(s) : NaN, d = isNaN(t) ? null : Math.floor((nu - t) / 864e5);
+        const of = d != null && x[5] > 0 && d > x[5]; if (of) komid++;
+        return x[1] + ' · „' + x[2] + '" · ' + x[3] + ' · ' + x[4] + ' · ' + (d == null ? 'aldrei keyrt' : 'síðast ' + dags(s) + (of ? ' — KOMINN TÍMI' : ''));
+      });
+      return { sev: komid ? 'athuga' : 'upp', tala: F.length + ' ferli', undir: komid ? komid + ' komin á tíma · ræst með því að segja orðin við Claude' : 'ræst með því að segja orðin við Claude', punktar };
     } },
     /* ── Hunt og verkefni — „Veiðin" úr Jarvis (grunnlína 30/07/2026) og stóri verkefnalistinn ── */
     { id: 'hunt_skyrslur', hopur: 'Hunt og verkefni', heiti: 'Hunt · staðir með 2026-skýrslu', slod: { url: BH + '/veidin.html', t: 'Veiðin' }, maela: g => {

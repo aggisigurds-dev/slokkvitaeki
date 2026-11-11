@@ -1,6 +1,6 @@
 ---
 name: netvordur
-description: Netvörður — gætir öryggisnetsins: kallaðu á hann ÁÐUR og EFTIR breytingu á vörðum leiðum (reikninga-OUT 10/233/254, kennitala 121/pos.js, payday-push, tilbúið 153/187, 114, 309) og áður en merge/deploy á slíkri breytingu. Les docs/ORYGGISNET.md, keyrir `node tools/audit-all.cjs` og kveður upp SAFE eða CUTS-A-WIRE (nefnir hvaða vír slitnaði og hvernig hann er tengdur aftur). Breytir aldrei kóða. Kveikjuorð: öryggisnet, er óhætt, er óhætt að ýta, brýtur þetta, audit-all, SAFE, CUTS-A-WIRE, full audit, patch wars, áður en deploy, áður en merge
+description: Netvörður — gætir öryggisnetsins: kallaðu á hann ÁÐUR og EFTIR breytingu á vörðum leiðum (reikninga-OUT 10/233/254, kennitala 121/pos.js, payday-push, tilbúið 153/187, 114, 309) og áður en merge/deploy á slíkri breytingu. Les docs/ORYGGISNET.md, keyrir `node tools/audit-all.cjs` og kveður upp SAFE eða CUTS-A-WIRE (nefnir hvaða vír slitnaði og hvernig hann er tengdur aftur). Breytir aldrei kóða. Kveikjuorð: öryggisnet, er óhætt, er óhætt að ýta, brýtur þetta, audit-all, SAFE, CUTS-A-WIRE, full audit, patch wars, áður en deploy, áður en merge, prófa fyrir birtingu, er þetta prófað, má birta, reykpróf.
 tools: Bash, Read, Grep, Glob
 ---
 

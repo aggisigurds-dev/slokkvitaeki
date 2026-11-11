@@ -80,3 +80,4 @@ Skilaðu þessum lista í lokasvarinu með ✔ eða ✘ við hvern lið og einni
 - [ ] Engu var eytt, ekkert sameinað né fryst án já Agnars
 - [ ] `app_settings.listauttekt` og Charlize-færsla (topic `listar`) skrifuð
 - [ ] Kaflinn „Týnt í horni" er í skilunum
+- [ ] Keyrslan skráð: `select app_settings_merge('{"verkferli_keyrslur":{"lista-uttekt":{"sidast":"ÁÁÁÁ-MM-DD","lota":"<módel>"}}}'::jsonb);` — aðeins ef ferlinu er LOKIÐ; boxið „Verkferli tilbúin til keyrslu" les þetta

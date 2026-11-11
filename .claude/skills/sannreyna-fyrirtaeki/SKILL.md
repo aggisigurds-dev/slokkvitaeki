@@ -145,3 +145,4 @@ Skilaðu þessum lista í lokasvarinu með ✔ eða ✘ við hvern lið og einni
 - [ ] Vinnuskjalið í `docs/` er uppfært og ber engin netföng eða síma
 - [ ] `app_settings.sannreyna_fyrirtaeki` uppfært (buid, fravik, dags, sidasta_id) og lesið til baka
 - [ ] Taflan til Agnars er í lokasvarinu, frávik sem þurfa ákvörðun efst
+- [ ] Keyrslan skráð: `select app_settings_merge('{"verkferli_keyrslur":{"sannreyna-fyrirtaeki":{"sidast":"ÁÁÁÁ-MM-DD","lota":"<módel>"}}}'::jsonb);` — aðeins ef ferlinu er LOKIÐ; boxið „Verkferli tilbúin til keyrslu" les þetta

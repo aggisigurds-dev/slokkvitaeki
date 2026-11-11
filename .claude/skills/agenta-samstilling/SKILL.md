@@ -82,3 +82,4 @@ Skilaðu þessum lista í lokasvarinu með ✔ eða ✘ við hvern lið og einni
 - [ ] `router.cjs --dry` prófað á þremur kveikjuorðum per breyttan agent (heilar setningar, 3+ orð)
 - [ ] `audit-agentar.cjs` keyrt eftir á og EXIT lesið sér
 - [ ] Charlize-færsla (topic `agentar`) skrifuð og taflan í lokasvarinu
+- [ ] Keyrslan skráð: `select app_settings_merge('{"verkferli_keyrslur":{"agenta-samstilling":{"sidast":"ÁÁÁÁ-MM-DD","lota":"<módel>"}}}'::jsonb);` — aðeins ef ferlinu er LOKIÐ; boxið „Verkferli tilbúin til keyrslu" les þetta

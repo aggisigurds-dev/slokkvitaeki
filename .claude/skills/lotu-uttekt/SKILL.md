@@ -73,3 +73,4 @@ Skilaðu þessum lista í lokasvarinu með ✔ eða ✘ við hvern lið og einni
 - [ ] `charlize_sessions` uppfært fyrir lesnar lotur
 - [ ] `minni.cjs --uppfaera` keyrt og Charlize-færsla með topic `lotuuttekt` skrifuð
 - [ ] Taflan per lotu er í lokasvarinu
+- [ ] Keyrslan skráð: `select app_settings_merge('{"verkferli_keyrslur":{"lotu-uttekt":{"sidast":"ÁÁÁÁ-MM-DD","lota":"<módel>"}}}'::jsonb);` — aðeins ef ferlinu er LOKIÐ; boxið „Verkferli tilbúin til keyrslu" les þetta
