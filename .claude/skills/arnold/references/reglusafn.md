@@ -4,7 +4,7 @@ Allar heimildir sem Arnold vitnar í, með tengli og stuttri samantekt á því 
 Slökkvitæki ehf máli. Vitnaðu alltaf í grein + tengil. Ef grein er ekki hér: flettu upp í
 frumtextanum (tenglarnir), ekki giska á greinanúmer.
 
-Síðast yfirfarið 10.11.2026 (ársskoðun annarra kerfa — sjá `arsskodun-kerfi.md`; áður 08.10.2026 neyðarlýsing, `neydarlysing.md`).
+Síðast yfirfarið 11.11.2026 (eldhúsháfar bætt við; 10.11 ársskoðun annarra kerfa — sjá `arsskodun-kerfi.md`; áður 08.10.2026 neyðarlýsing, `neydarlysing.md`).
 
 ---
 
@@ -39,6 +39,7 @@ Síðast yfirfarið 10.11.2026 (ársskoðun annarra kerfa — sjá `arsskodun-ke
 | **HMS Slöngukefli** | drægni, staðsetning við hurð í flóttaleið, hæð 1–1,5 m | https://www.byggingarreglugerd.is/leidbeiningar/slongukefli |
 | **HMS leiðbeiningar — yfirlit** | allar leiðbeiningar við byggingarreglugerð | https://www.byggingarreglugerd.is/leidbeiningar |
 | **Brunamálastofnun 165.BR1** — Val og staðsetning handslökkvitækja | 25/20 m gönguleið, 0,065 A/m², 26A lágmark, 2 tæki á hæð, B-tafla | https://vatnsidnadur.net/wp-content/uploads/2018/01/MVS-165_BR1.pdf (útfært í kjarna `lib/board/mvs165.ts`) |
+| **SHS — Útsogsrör, háfar, slökkvikerfi og Ozon-kerfi á veitingastöðum** | háfar og útsogsrör hreinsuð minnst árlega af sérfróðum aðila; bræðivör skipt árlega; gaumlúgur á um 4 m fresti; kröfur til slökkvikerfis í háfi — sjá `arsskodun-kerfi.md` kafla 4b | https://reykjavik.is/sites/default/files/USK/Heilbrigdiseftirlit/fraedsla/hafar-og-lagnir.pdf |
 | **SHS — Gagnaskil til slökkviliðs** (15.06.2022) | Fjórar grunnstaðfestingar: eldvarnarfulltrúi, brunaviðvörun, handslökkvibúnaður, **leiðar- og neyðarlýsing** (liður 4a: eyðublað HMS 9.4.12, undirritað af rafvirkjameistara); liður 1c: eigið eftirlit mánaðarlegt ef >50 manns | https://vefur.shs.is/wp-content/uploads/2022/10/Gogn-sem-tharf-ad-stadfesta-vid-slokkvilid-Uppfaert-15.06.2022.pdf |
 | **Eldvarnabandalagið — Leiðbeiningar um eigið eldvarnaeftirlit** (2025) | Tíu meginþættir; kafli 7 viðbragðs- og rýmingaráætlun (æfð árlega, söfnunarsvæði á teikningu); þjálfun á slökkvitæki a.m.k. á 3 ára fresti; mánaðarlegur og árlegur gátlisti (sömu xlsx og SHS sendir). Sjá `eigid-eftirlit.md` | https://www.eldvarnabandalagid.is/fraedsluefni |
 

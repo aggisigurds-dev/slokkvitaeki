@@ -46,7 +46,7 @@
   const EININGAR = ['stk', 'klst', 'm', 'fm', 'm²', 'kerfi', 'ferð', 'skoðun', 'mán.', 'ár', '%'];
   const TEGUNDIR = [['fast', 'fast'], ['fra', 'frá'], ['tilbod', 'tilboð']];
   const VSK_VAL = [24, 11, 0];
-  const TAKN_VAL = ['💦', '💡', '🔥', '🧯', '🚨', '🛠', '📋', '🏢', '⚡', '🔔', '🧪', '🪜', '💨', '📢'];
+  const TAKN_VAL = ['💦', '💡', '🔥', '🧯', '🚨', '🛠', '📋', '🏢', '⚡', '🔔', '🧪', '🪜', '💨', '📢', '♨️'];
   const HOPAR_STOFN = () => [{ id: 'skodun', heiti: 'Skoðun' }, { id: 'vinna', heiti: 'Vinna og akstur' }, { id: 'efni', heiti: 'Varahlutir og efni' }];
   // Listar sem eru til frá byrjun (Agnar 10.11.2026). Þeir bíða í kóðanum þar til fyrsta breyting vistar þá á þjóninn — ekkert skrifað við hleðslu.
   //
@@ -121,12 +121,22 @@
         G('st-daela', 'Prófun dælu- og ræsibúnaðar', 'stk', 'skodun', 'Tvisvar á ári'),
         G('st-styri', 'Prófun viðvörunar- og stýribúnaðar', 'stk', 'skodun', 'Tvisvar á ári')
       ].concat(VINNA('st'), [G('st-lok', 'Lok með keðju á slöngutengi', 'stk', 'efni'), G('st-skilti', 'Skilti / merking stigleiðslu', 'stk', 'efni')]) },
-    // „Hávakerfi": engin heimild fannst um hvað þetta nær yfir (hátalarakerfi/talað rýmingarkerfi? háfakerfi í eldhúsi?) — listinn er því
-    // TÓMUR þar til Agnar segir til. Enginn grunnur er betri en rangur grunnur.
-    { id: 'havakerfi', nafn: 'Hávakerfi', takn: '📋', litur: 'gull', vsk: 24, rod: 60,
-      lysing: 'Enginn grunnur settur enn',
-      heimild: 'Enginn grunnur var settur í þennan lista: ekki var ljóst hvað „hávakerfi" á að ná yfir. Bættu liðum við hér, eða segðu til og grunnurinn verður settur.',
-      hopar: HOPAR_STOFN(), lidir: [] }
+    // „Hávakerfi" = HÁFAR Í ELDHÚSI (Agnar 11.11.2026; auðkennið `havakerfi` stendur, heitið er leiðrétt í „Háfakerfi"). Grunnurinn er
+    // HREINSUN og skoðun háfa og útsogsröra. Skoðun SLÖKKVIKERFISINS í háfinum er EKKI hér — hún er þegar verðlögð í „Slökkvikerfis verð"
+    // (🍳, 410/386) og á ekki að eiga tvö verð.
+    { id: 'havakerfi', nafn: 'Háfakerfi', takn: '♨️', litur: 'gull', vsk: 24, rod: 60,
+      lysing: 'Hreinsun og skoðun eldhúsháfa og útsogsröra — leiðbeiningar SHS',
+      heimild: 'Leiðbeiningar Slökkviliðs höfuðborgarsvæðisins „Útsogsrör, háfar, slökkvikerfi og Ozon-kerfi á veitingastöðum" og byggingarreglugerð 112/2012 gr. 9.6.14: „Háfa og stokka/rör skal hreinsa reglulega, mismunandi eftir notkun, minnst einu sinni á ári og loftsíur daglega ef að með þarf. Hreinsun stokka/röra skal framkvæmd af sérfróðum aðilum." Gaumlúgur til hreinsunar eiga að vera á um 4 m fresti og fitugildrur (síur) í öllum háfum. Bræðivör í sjálfvirkum slökkvibúnaði skal skipta um árlega. Skoðun slökkvikerfisins sjálfs er verðlögð í „Slökkvikerfis verð" og krefst starfsleyfis HMS fyrir slökkvikerfi í eldhúsháfa.',
+      hopar: [{ id: 'hreinsun', heiti: 'Hreinsun' }, { id: 'skodun', heiti: 'Skoðun' }, H_VINNA, H_EFNI],
+      lidir: [
+        G('ha-hafur', 'Hreinsun eldhúsháfs', 'stk', 'hreinsun', 'Minnst einu sinni á ári, oftar eftir notkun — SHS'),
+        G('ha-ror', 'Hreinsun útsogsröra', 'm', 'hreinsun', 'Verð á metra — sérfróður aðili, um gaumlúgur'),
+        G('ha-blasari', 'Hreinsun útsogsblásara', 'stk', 'hreinsun'),
+        G('ha-siur', 'Hreinsun fitugildra (sía)', 'stk', 'hreinsun', 'Rekstraraðili hreinsar daglega ef með þarf'),
+        G('ha-stadf', 'Staðfesting á hreinsun', 'stk', 'hreinsun', 'Skrifleg staðfesting sérfróðs aðila'),
+        G('ha-skodun', 'Skoðun háfs, fitugildra og gaumlúga', 'stk', 'skodun', 'Vökvaþétt samskeyti, fitugildrur, gaumlúgur á um 4 m fresti'),
+        G('ha-ozon', 'Þjónusta ozon-kerfis', 'kerfi', 'skodun', 'Síur framan við útsogsblásara; ozon gengur aðeins með blásara')
+      ].concat(VINNA('ha'), [G('ha-fitusia', 'Fitusía — ný', 'stk', 'efni'), G('ha-braedivar', 'Bræðivar — skipti', 'stk', 'efni', 'Skipt árlega — SHS'), G('ha-m5', 'Sía í ozon-kerfi (M5)', 'stk', 'efni')]) }
   ];
 
   // ── hjálparföll ─────────────────────────────────────────────────────────────────────────────────────────────
