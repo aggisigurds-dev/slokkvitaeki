@@ -357,3 +357,36 @@ Húsmyndir skoðaðar: 1172, 740, 1803, 1131, 1629, 965, 1260, 464. Án myndar: 
 Húsmyndir skoðaðar: 673, 680, 438, 418, 521, 702 og 631 (Maps-skjámynd, rétt). Án myndar: 1610, 1888, 613.
 
 **Staða: 155 af 168 yfirfarin, 135 með frávik. Síðasta röð: 613. Næst: síðustu 13 óyfirförnu raðirnar á eftir 613.**
+
+## Lota 17 — síðustu 13 raðirnar, 270–870 og raðir án póstnúmers (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 734 | Skíðaskálinn Hveradölum | Kt = Skíðaskálinn ehf., lögheimili Fróðaþing 6, 203. Röð og skýrsla segja Bröttuhlíð 12, Mosfellsbæ | Skýrsla jan. 2024, kt rétt. Athugasemd: brunaslanga á miðhæð óvirk | Punktur og mynd sýna íbúðarhús, ekki skálann | Listi = skýrsla = reikn. 104626 (6 duft, 1 CO₂ 5 kg, 3 slöngur, 1 teppi) | Enginn póstur á netfangið. Engin úttekt 2025; vinnublað: 11 tæki óafgreidd af janúarlista 2026 | Röðin bendir ekki á skálann; 2025 og 2026 ógert |
+| 1122 | Krisp | PASSAR (lögheimili Smáratún 5, Selfossi) | Skýrsla sept. 2023, kt rétt, en heimilisfang „Eyrarvegi“ | Punktur og mynd sýna íbúðarhús á Smáratúni | Listi = skýrsla = reikn. 104235 (4 LV) | Netfang staðfest (2024). Engin úttekt 2024 né 2025 | Tækin eru á Eyrarvegi; tvö ár án skoðunar |
+| 484 | Sláturfélag Suðurlands | Nafn og kt rétt; lögheimili Fossháls 1, 110. Staður Fossnes, Selfossi, án húsnúmers | Skýrsla apríl 2025, kt rétt | Handsett mynd, ÓSNERT; geokóðun Fossnes 25 | Listi = skýrsla (12 LV, 3 duft 6 kg, 1 CO₂ 2 kg, 3 CO₂ 5 kg); reikn. 106715 rukkar 4 CO₂ 5 kg og duft 2 kg | Reikningsskjalið 2026 á röðinni (R-000285) er búðarsala ANNARS kúnna; þess vegna segir document_pairs „2026 vantar skýrslu“. Nóta: koma í nóvember 2026. Skoðunarmánuður skráður 11, skýrslan segir apríl | Rangt skjal tengt; 2026 ógert; mánuður 11 ≠ 4 |
+| 1354 | Hveragerðiskirkja | Kt = Hveragerðissókn (lögheimili pósthólf) | Skýrsla nóv. 2024; kt í skýrslu vantar síðasta staf | Punktur réttur; Maps-skjámynd sýnir kirkjuna (rétt) | Listi = skýrsla (4 LV + 1 slanga) | Ekkert netfang. Engin úttekt 2025 | 2025 sleppt |
+| 437 | Örkin veitingar ehf | PASSAR | Skýrsla nóv. 2025, kt rétt | Handsett mynd, ÓSNERT; geokóðun 1B (röð 1C) | Listi = skýrsla = reikn. 107543 (37 LV, 4 CO₂ 2 kg, 1 CO₂ 5 kg, 13 slöngur, 2 RS) | Netfang staðfest (nóv. 2025). Á tíma í nóvember | Ekkert |
+| 1200 | Golfklúbbur Hveragerðis | Nafn og kt rétt; lögheimili pósthólf; heimilisfang „Gufudalur, 816“ | Skýrsla sept. 2023, kt rétt | Geokóðun finnur aðeins dalinn; **ENGIN MYND** | Listi = skýrsla (4 LV) | Ekkert netfang. Nóta: koma í maí 2027. Engin úttekt 2024 né 2025 | Þrjú ár án skoðunar þegar farið verður |
+| 667 | Eyrar ehf vegna Bakki Hostel | PASSAR | Skýrsla sept. 2024, kt rétt | Geokóðun lendir á Túngötu 8 (röð segir 20); götumynd einbýlishús | **LISTI ≠ SKÝRSLA**: listi 21 LV; skýrsla 17 LV + 4 duft 6 kg | Enginn póstur á netfangið. Engin úttekt 2025 | Tegund röng á lista; 2025 sleppt; punktur vafasamur |
+| 1349 | Hellishólar ehf | Nafn og kt rétt; heimilisfang raðar aðeins „861 Hvolsvelli“ | Skýrsla ágúst 2023, engin kt í skýrslu | Handsett mynd, ÓSNERT; geokóðun lendir á tjaldsvæði á Hvolsvelli | Listi = skýrsla (29 LV, 1 duft, 4 slöngur) | Enginn póstur á netfangið. Nóta: fara eftir 20. nóv. Engin úttekt 2024 né 2025 | Tvö ár án skoðunar; year_factcheck segir ranglega „engin tæki“ |
+| 1208 | Einstaklingur, Vík | Einstaklingur: A á ekki við | Skýrsluskjal 2025 ekki lesið: ÓMÆLT | Punktur réttur; **ENGIN MYND** | Listi 2 duft (ný 26.02.2026). Reikn. 107906 er búðarsala á þeim tveimur | document_pairs „2026 vantar skýrslu“ út á búðarsölu | Búðarsala talin úttekt |
+| 1593 | Fjarðarmót ehf | Nafn og kt rétt; lögheimili Melabraut 29, 220. Röð: Skyggnisbraut 1-3 án póstnúmers | Engin skýrsla | Enginn punktur, engin mynd | Engin tæki. Reikn. 107613 (des. 2025) er sala á einu CO₂ | Mál #1500 opið: samningur 2022, engin úttekt síðan | Póstnúmer vantar; engin úttekt í fjögur ár |
+| 1934 | Húsfélagið Birkimelur 10a, 10b, 10c | Kt rétt (í skrá „Birkimelur 10, 10a, 10b“); póstnúmer vantar | Engin skýrsla, enginn reikningur | Enginn punktur; götumynd fjölbýlisinngangur | Engin tæki | Tilboð upp á 499.730 kr. liggur fyrir; mál #55 opið síðan maí 2026 | Tilboði ósvarað/ólokið; póstnúmer vantar |
+| 1596 | Lækjargata 32, húsfélag | Kt rétt; **HEIMILISFANG VANTAR** (í skrá Lækjargötu 32, 220 Hafnarfjörður) | Engin skýrsla | Enginn punktur, engin mynd | **ENGIN TÆKI Á LISTA** þótt reikn. 105961 (14.11.2024) selji 36 LV | Ekkert netfang. Mál #1512 opið: hafa samband og bóka | Heimilisfang og tækjalisti vantar; engin úttekt enn |
+| 1550 | Meiriháttar ehf | Kt rétt; **HEIMILISFANG VANTAR** (í skrá Bíldshöfða 14, 110 Reykjavík) | Engin skýrsla | Enginn punktur, engin mynd | **ENGIN TÆKI Á LISTA** þótt þrír reikn. 2024 selji 16 LV | Netfang staðfest (mars 2026, „Samningur BF17“). Aðeins búðarsölur | Heimilisfang og tækjalisti vantar; engin úttekt enn |
+
+Húsmyndir skoðaðar: 734, 1122, 667, 1934 og 1354 (Maps-skjámynd, rétt). Myndir 484, 437 og 1349 eru handsettar og ósnertar.
+
+## Lokastaða 11.11.2026
+
+**168 af 168 raðir yfirfarnar. 147 með frávik, 21 án fráviks.** Ekkert óflokkað.
+
+Það sem endurtók sig oftast:
+- Röðin er á lögheimili eða skrifstofu, ekki þar sem tækin eru (729, 1132, 449, 504, 1197, 734, 1122, 475).
+- Búðarsala eða verkstæðisþjónusta talin sem úttekt (1531, 1197, 521, 1208, 1172).
+- Úttektarreikningur til en skýrsla ekki á röðinni (1373, 1733, 673, 1629, 165, 614, 1803).
+- Raðir sem eiga ekki heima á listanum: farið 2026 (1803), ekki í þjónustu (1260), tvítak (1741/735, 1106/409).
+- Tækjalisti tómur þótt tæki hafi verið seld eða skoðuð (1828, 521, 1596, 1550).
+- Ár sleppt úr (2024 og/eða 2025) hjá á þriðja tug félaga.
+- Skýrsluskjöl sem opnast ekki í Drive og því ÓMÆLT: 1141, 736, 1172.
