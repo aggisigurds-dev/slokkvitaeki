@@ -219,3 +219,23 @@ Röðin hliðraðist um eitt sæti í viðbót: 448 er nú sæti 105 (þegar yfi
 Húsmyndir skoðaðar: 1373, 1123, 718, 468, 452, 729, 743 (götumyndir), 478 og 1106 (Maps-skjámyndir, báðar réttar). 1531 er handsett og ósnert.
 
 **Staða: 95 af 168 yfirfarin, 82 með frávik. Síðasta félag: 1106. Næst: `rn between 93 and 102`** (sæti 92 = 1106; sleppa 448, 440 og 441 aftar á listanum).
+
+## Lagfært 11.11.2026 — sex afturkræfar leiðréttingar með sönnun
+
+Agnar: „eitthvað sem þú getur lagfært“. Aðeins það sem heimild sannar og hægt er að bakka. Afrit af röðunum í
+`backup_20261111_sannreyna_heimilisfang`, review_note á hverri röð, allt lesið til baka, sían enn 168.
+
+| id | Félag | Var | Er nú | Heimild |
+|---|---|---|---|---|
+| 478 | Púst hjá Einari | „Smiðjuvegi 200 Kópavogi“ | „Smiðjuvegi 50, 200 Kópavogi“ | Skilti og húsnúmer á húsmynd félagsins |
+| 205 | Húsfélag Hlíðasmára 17 | póstnr. 200 | 201 | Fyrirtækjaskrá |
+| 190 | Húsfélagið Hlíðasmára 19 | póstnr. 200 | 201 | Fyrirtækjaskrá |
+| 709 | Húsfélag Kjarrhólma 8 | nafn „Húsfélag Karhólma 8“ | „Húsfélag Kjarrhólma 8“ | Fyrirtækjaskrá og heimilisfang raðarinnar |
+| 468 | Nýbýlavegur 4-8 ehf | skoðunarmánuður 11 | 2 (febrúar) | Skýrsla feb. 2025, last_skodun, reikn. R-106416 |
+| 468 | Nýbýlavegur 4-8 ehf | document_pairs #809 „vantar_reikning“ | „klarad“, reikningsskjal #2836 tengt | R-106416 (03.03.2025) er úttekt með skýrslugerð og akstri |
+
+Ekki lagfært (þarf ákvörðun eða gögn sem vantar): tvítak 1106/409, RENTUR tækjastaður, Menja 2026-parið (verkstæðisþjónusta talin úttekt),
+rangar húsmyndir 669/444/700, Kjarrhólmi 8 og #866, Ískraft, netfangið á 709.
+
+Röðin hliðraðist (205 og 190 fóru í 201). **Næsta lota, tíu óyfirfarin í röð: id 410, 1734, 601, 188, 833, 385, 1396, 1397, 212, 1135**
+(sæti 91–102 að frátöldum 205 og 190). Alltaf sleppa id sem eru þegar í skjalinu.
