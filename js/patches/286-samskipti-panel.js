@@ -66,6 +66,7 @@
       "._skx-btn{border:1px solid rgba(190,32,28,.55);background:" + BSTAL + ";color:#fff;border-radius:9px;padding:5px 12px;font:inherit;font-size:12px;font-weight:600;line-height:1.3;cursor:pointer;box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);white-space:nowrap}" +
       "._skx-btn.ljos{background:#fff;color:var(--ink,#0f172a);border-color:var(--brd,#e3e7ee);box-shadow:none}" +
       "._skx-btn.ljos:hover{background:#f7f8fa}._skx-btn:disabled{opacity:.6;cursor:default}" +
+      "._ssk-lok{display:flex;justify-content:center;padding:12px 14px 6px}._ssk-lok ._ssk-loka-nedst{min-height:36px;padding:0 18px}" +
       "._skx-afgreitt{font-size:12px;font-weight:700;color:#166534}" +
       "._skx-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0 4px}" +
       "._skx-tile{background:#f7f8fa;border:1px solid var(--brd,#e3e7ee);border-radius:10px;padding:8px 11px;min-width:0}" +
@@ -552,7 +553,10 @@
           (window.Verkbord || window.Thjonustubord5 ? '<button type="button" class="_ssk-bord _skx-btn ljos">Opna Þjónustuborð</button>' : "") +
         "</div>" +
         beidnirHtml +
-      "</div>";
+      "</div>" +
+      // 11.11.2026 (Agnar: „fer þetta lengst niður og get ekki lokað aftur"): opin póstsaga Heimaleigu – S30 mældist 4.043 px
+      // og eini lokunartakkinn var EFST á kortinu. Sami rofi er því líka neðst; hann lokar og skrunar kortið aftur í sjón.
+      '<div class="_ssk-lok" style="display:none"><button type="button" class="_ssk-loka-nedst _skx-btn ljos">Loka póstsögu ▴</button></div>';
 
     // ✉️ Nýr póstur — ÓHÁÐ póstsögunni. Viðtakandinn er sóttur með Vidtakandi.fyrir
     // (regla 381: tengiliður hússins fyrst, umsjónaraðili fær ekki póst) og ástæðan
@@ -768,11 +772,21 @@
         });
       });
     });
-    card.querySelector("._ssk-toggle").addEventListener("click", e => {
-      const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
-      full.style.display = open ? "" : "none";
-      e.target.textContent = open ? "Loka póstsögu ▴" : "Póstsaga ▾";
+    const sogaSetja = (open) => {
+      const full = card.querySelector("._ssk-full"), tg = card.querySelector("._ssk-toggle"), lok = card.querySelector("._ssk-lok");
+      if (full) full.style.display = open ? "" : "none";
+      if (tg) tg.textContent = open ? "Loka póstsögu ▴" : "Póstsaga ▾";
+      if (lok) lok.style.display = open ? "" : "none";
       uiSetja(fid, "saga", open);
+    };
+    card.querySelector("._ssk-toggle").addEventListener("click", () => {
+      sogaSetja(card.querySelector("._ssk-full").style.display === "none");
+    });
+    const lokNedst = card.querySelector("._ssk-loka-nedst");
+    if (lokNedst) lokNedst.addEventListener("click", () => {
+      sogaSetja(false);
+      // kortið var þúsundir px á hæð — eftir lokun er notandinn annars skilinn eftir langt fyrir neðan það
+      try { card.scrollIntoView({ block: "nearest" }); } catch (_) {}
     });
     const mk = card.querySelector("._ssk-mark");
     if (mk) mk.addEventListener("click", async e => {
@@ -788,7 +802,7 @@
     // 10.09.2026: opin/lokuð staða lifir endurteikningu — fersk gögn, ✓ afgreitt, eða prófíllinn
     // teiknaður aftur (mælt: 357 opnar djúptengdan prófíl tvisvar og póstsagan lokaðist ~1 s eftir smell).
     const ui = uiLesa(fid);
-    if (ui.saga) { const fu = card.querySelector("._ssk-full"), tg = card.querySelector("._ssk-toggle"); if (fu) fu.style.display = ""; if (tg) tg.textContent = "Loka póstsögu ▴"; }
+    if (ui.saga) { const fu = card.querySelector("._ssk-full"), tg = card.querySelector("._ssk-toggle"), lk = card.querySelector("._ssk-lok"); if (fu) fu.style.display = ""; if (tg) tg.textContent = "Loka póstsögu ▴"; if (lk) lk.style.display = ""; }
     if (ui.eldri && meira) { const bx = card.querySelector("._ssk-eldri"); if (bx) { bx.hidden = false; meira.textContent = "⬆ Sýna aðeins " + SYNI + " nýjustu"; } }
     if (ui.aths && noteEl) noteEl.open = true;
     host.appendChild(card);
