@@ -281,3 +281,22 @@ Bætt við mál #1581 (Granítsmiðjan, þegar merkt skilaboð): hvaða reikning
 Húsmyndir skoðaðar: 504, 1337, 1197, 445, 687, 449, 450. Mynd 1846 er handsett og ósnert. Án myndar: 430, 679.
 
 **Staða: 115 af 168 yfirfarin, 102 með frávik. Síðasta félag: 450. Næst: tíu næstu óyfirförnu á eftir 450 í röðinni (póstnúmer, nafn).**
+
+## Lota 13 — tíu félög í 210–220 (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 432 | Kirkjulundur 12-14 | Nafn og kt rétt; lögheimili pósthólf umsjónarfélags | Þrjár skýrslur nóv. 2025 (nr. 12, nr. 14, bílakjallari). Lesin: bílakjallari, kt rétt, 2 LV + 2 slöngur í lagi; póstnr. ritað 110 | Geokóðun finnur aðeins götuna; götumynd fjölbýli | Listi 6 LV virk + 2 slöngur **merktar úreltar** þótt skýrslan segi þær í lagi. Reikn. 107533 ber líka 24 hleðslur (tæki íbúa) | Netfang umsjónarfélags staðfest. Mál #356 opið síðan nóv. 2025. Á tíma í nóvember | Slöngur ranglega úreltar; gamalt mál opið |
+| 1733 | Norðurbrú 1, húsfélag | PASSAR | **SKÝRSLU VANTAR**: reikn. 106713 (05.05.2025) er úttekt með skýrslugerð, engin skýrsla á röðinni | Punktur réttur; handsett mynd, ÓSNERT | Listi 13 LV = reikn. 2025 (13 hleðslur). Tækin bera skoðunardag 31.08.2026 en engin heimsókn finnst (mál #963) | Ekkert netfang. Skoðunarmánuður skráður 8, úttekt 2025 var í maí | Skýrsla 2025 vantar; 2026 óljóst (#963); mánuður 8 ≠ 5 |
+| 1132 | TBI ehf | PASSAR (lögheimili Garðahraun 2) | **SKÝRSLA ANNARS STAÐAR**: sept. 2023, Austurvegi, 800 Selfossi | Punktur og mynd sýna Garðahraun 2, ekki tækjastað | Listi = skýrsla (2 LV) | Netfang skráð, enginn póstur. Engin úttekt síðan 2023 | Tækin eru á Selfossi; tvö ár án skoðunar |
+| 165 | Vélsmiðja Orms og Víglundar – Slippurinn RVK | Rekstrarfélag, þrír staðir á kt: A á ekki við | Skýrsla maí 2025, kt rétt, Vesturhrauni 1. Skráarnafnið segir ranglega „Skútuhraun 9 … #288“ | Handsett mynd, ÓSNERT; punktur réttur | Listi = skýrsla 2025 (3 LV, 11 duft, 2 CO₂ 5 kg, 8 slöngur). R-000411 (24.06.2026, 168.953 kr.) ber tvo staði (mál #1416) | 2026 rukkað án skýrslu. Reikn. 107981 og 108002 „opið við yfirtöku“. Nóta: ný tæki ófarin á staðinn | Skýrsla 2026 vantar; #1416 og #1002 opin; opnir reikn. frá yfirtöku |
+| 1399 | Versus bílaréttingar og sprautun | Kt rétt; röð segir Suðurhrauni 2a, Fyrirtækjaskrá og skýrsla segja 2 | Skýrsla des. 2024, kt rétt | Punktur Suðurhraun 2; götumynd iðnaðarhús | Listi = skýrsla = reikn. 106182 (2 duft, 1 slanga) | Ekkert netfang. Úttekt des. 2024 var rukkuð í jan. 2025 og talin sem 2025; engin úttekt í des. 2025 | Tímabil 2025 sleppt; húsnúmer 2a/2 |
+| 676 | Danco | PASSAR | Skýrsla des. 2024, kt rétt | Enginn punktur í geocode_cache; götumynd í lagi | Listi = skýrsla (2 LV + 2 slöngur) | Netfang skráð, enginn póstur. Engin úttekt 2025 | 2025 sleppt |
+| 1141 | Filtertækni ehf (Kvikkfix) | PASSAR | Skýrsla nóv. 2023 lesin, kt rétt. Viðhengi „úttektarskýrsla 2025“ vísar á Drive-skjal sem opnast ekki: ÓMÆLT | Geokóðun finnur aðeins götuna; **ENGIN MYND** | Listi = skýrsla 2023 | Ekkert netfang. Enginn reikningur síðan 04.12.2023. document_pairs „2025 vantar reikning“ | Ef skýrslan 2025 er raunveruleg er úttektin órukkuð; annars tvö ár án skoðunar |
+| 475 | Framsýn menntun | Nafn og kt rétt; röð og Fyrirtækjaskrá segja Reykjavíkurveg 50 | **HEIMILISFANG ANNAÐ Í SKÝRSLU**: mars 2025, Flatahraun 7 | Punktur og mynd sýna Reykjavíkurveg 50 (matvöruverslun á jarðhæð) | Listi = skýrsla = reikn. 106500 | Netfang skráð, enginn póstur. Skoðunarmánuður mars, engin úttekt 2026 | 2026 ógert; óvíst hvort tækin eru á Flatahrauni 7 |
+| 442 | Húsfélagið Álfholt 2c | Kt rétt; í skrá „Álfholt 2a,b,c, húsfélag“, lögheimili pósthólf | Skýrsla des. 2025, kt rétt | Enginn punktur í geocode_cache; götumynd fjölbýli | Listi = skýrsla = reikn. 107670 (2 LV) | Netfang umsjónarfélags staðfest. Á tíma í desember | Ekkert |
+| 439 | Húsfélagið Flatahrauni 1 | PASSAR | Skýrsla des. 2025, kt rétt | Punktur réttur, götumynd fjölbýli | Listi = skýrsla = reikn. 107594 (14 LV, 2 CO₂ 5 kg, 12 slöngur, 11 RS) | Netfang skráð, enginn póstur. Nótan á röðinni er „Bara test“ | Ekkert (prufunóta á röð) |
+
+Húsmyndir skoðaðar: 432, 1132, 1399, 676, 475, 442, 439. Myndir 1733 og 165 eru handsettar og ósnertar. Án myndar: 1141.
+
+**Staða: 125 af 168 yfirfarin, 110 með frávik. Síðasta félag: 439. Næst: tíu næstu óyfirförnu á eftir 439 í röðinni (póstnúmer, nafn).**
