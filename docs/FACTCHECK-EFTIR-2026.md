@@ -300,3 +300,22 @@ Húsmyndir skoðaðar: 504, 1337, 1197, 445, 687, 449, 450. Mynd 1846 er handset
 Húsmyndir skoðaðar: 432, 1132, 1399, 676, 475, 442, 439. Myndir 1733 og 165 eru handsettar og ósnertar. Án myndar: 1141.
 
 **Staða: 125 af 168 yfirfarin, 110 með frávik. Síðasta félag: 439. Næst: tíu næstu óyfirförnu á eftir 439 í röðinni (póstnúmer, nafn).**
+
+## Lota 14 — tíu félög í 220 (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 419 | Húsfélagið Hjallabraut 43 | PASSAR | Skýrsla nóv. 2025, kt rétt | Enginn punktur í geocode_cache; götumynd fjölbýli | Listi = skýrsla = reikn. 107601 (4 LV) | Ekkert netfang. Á tíma í nóvember | Ekkert (netfang vantar) |
+| 426 | Húsfélagið Suðurbraut 20 | PASSAR | Skýrsla nóv. 2025, kt rétt | Enginn punktur í geocode_cache; götumynd sýnir nr. 20 | Listi = skýrsla = reikn. 107668 (2 LV) | Ekkert netfang. Á tíma í nóvember | Ekkert (netfang vantar) |
+| 427 | Húsfélagið Suðurgata 72 | PASSAR | Skýrsla nóv. 2025, kt rétt | Punktur réttur; götumynd sýnir nr. 72 | Listi = skýrsla = reikn. 107602 (1 LV, 1 duft 6 kg, 2 RS nýir) | Ekkert netfang. Á tíma í nóvember | Ekkert (netfang vantar) |
+| 585 | JM Veitingar ehf | Nafn og kt rétt; lögheimili Kvistavellir 27, 221. Staður Reykjavíkurvegur 60 | Engin slökkvitækjaskýrsla; brunakerfi síðast maí 2023 | Punktur réttur; götumynd sýnir Reykjavíkurveg 60 | Engin tæki skráð | Netfang staðfest. **ÓSVARAÐ**: 03.11.2026 biður tengiliður um símtal sem svar við reikningi. Mál #1498 og #1449 opin | Símtal ógert síðan 03.11.; engin þjónusta síðan 2023 |
+| 1376 | Lampar.is | PASSAR (Lampar ehf.) | Skýrsla des. 2023, kt rétt | Punktur réttur; götumynd sýnir nr. 66 | Listi = skýrsla (7 LV + 1 CO₂). Reikn. 105277 (31.05.2024) er verkstæðisþjónusta án aksturs | Netfang skráð, síðasti póstur 2018. Engin úttekt 2024 né 2025 | Tvö ár án skoðunar |
+| 208 | Lindaberg ehf (T-10) | **NAFN ANNAÐ**: kt 671222-0240 er Fasteignin T10 ehf. (lögheimili Reykjavíkurvegur 68); skýrslan ritar líka „Fasteignin T-10 ehf“ | Skýrsla des. 2025, kt rétt, Trönuhrauni 10 | Punktur réttur; götumynd sýnir „T 10“ á húsinu | Listi = skýrsla = reikn. 107595 (6 LV + 2 slöngur) | Enginn póstur á netfangið. document_pairs segir „2025 vantar reikning“ bæði fyrir úttekt og brunakerfi þótt 107595 og 107591 séu til | Nafn á röð rangt; pörun röng |
+| 614 | Pizzan – Strandgata | Rekstrarfélag, 11 staðir á kt: A á ekki við | Nýjasta skýrsla mars 2025, kt rétt. **SKÝRSLU 2026 VANTAR**: safnreikn. 108124 (08.04.2026, 8x skýrslugerð) nær yfir alla staði | Punktur réttur; götumynd sýnir húsvegg án skiltis | Listi = skýrsla 2025 (4 LV + 1 teppi) | Netfang staðfest (2025). year_factcheck: rukkað án skýrslu | Skýrsla 2026 vantar |
+| 1828 | Sætoppur ehf. | PASSAR | Skýrsla maí 2025, kt rétt. Athugasemd: brunaslanga í ólagi | Punktur réttur; **ENGIN MYND** | **ENGIN TÆKI Á LISTA**; skýrslan ber 5 LV, 1 duft 2 kg, 2 CO₂ 5 kg, 1 slöngu. Reikn. 106848 (23.05.2025) er úttekt | Ekkert netfang. Skoðunarmánuður maí, engin úttekt 2026. document_pairs „2025 vantar reikning“ þótt 106848 sé til | Tækjalisti tómur; 2026 ógert; slanga í ólagi; pörun röng |
+| 732 | Sigbrandur ehf | Kt rétt; röð segir Kaplahrauni 7, Fyrirtækjaskrá 7d | Skýrsla des. 2024, kt rétt | Geokóðun og götumynd sýna Kaplahraun 7A | Listi = skýrsla (1 duft 6 kg + 1 CO₂ 2 kg) | Ekkert netfang. Engin úttekt 2025 | 2025 sleppt; bil 7d/7A óstaðfest |
+| 736 | Sléttahraun | Kt rétt (Sléttahraun 34, húsfélag); nafn raðar aðeins „Sléttahraun“ | Skjal merkt 2025 er skýrslan frá des. 2024. Skýrsluskjalið sem report_facts vísar á (2025) opnast ekki: ÓMÆLT | Enginn punktur í geocode_cache; götumynd fjölbýli | Listi = skýrsla 2024 (3 LV + 6 RS); tækin bera skoðunardag des. 2025 | Netfang skráð, síðasti póstur 2022. Enginn reikningur eftir 106183 (06.01.2025) | Ef skoðað var í des. 2025 er það órukkað; annars er árið rangt skráð |
+
+Húsmyndir skoðaðar: 419, 426, 427, 585, 1376, 208, 614, 732, 736. Án myndar: 1828.
+
+**Staða: 135 af 168 yfirfarin, 117 með frávik. Síðasta félag: 736. Næst: tíu næstu óyfirförnu á eftir 736 í röðinni (póstnúmer, nafn).**
