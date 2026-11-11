@@ -181,7 +181,7 @@
                 ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:42}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki" style="height:42px;width:126px;object-fit:contain" onerror="this.style.display=\'none\'">'}
                 <div>
                   <div style="font-size:14px;font-weight:800;color:#0f172a">Slökkvitæki ehf</div>
-                  <div style="font-size:10.5px;color:#64748b;line-height:1.4">Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · eldklar@eldklar.is</div>
+                  <div style="font-size:10.5px;color:#64748b;line-height:1.4">Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · slokkvitaeki@brunaholf.is</div>
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
@@ -417,7 +417,7 @@
   <div class="head">
     <div class="logo">
       ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:80, absoluteUrl:true}) : '<img src="' + window.location.origin + '/img/logo.png?v=20260520b" alt="Slökkvitæki" style="height:80px;width:240px;object-fit:contain" onerror="this.style.display=\'none\'">'}
-      <div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · eldklar@eldklar.is</div>
+      <div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · slokkvitaeki@brunaholf.is</div>
     </div>
     <div class="doc-title">
       <h1>${esc(values.title || 'Reikningur')}</h1>

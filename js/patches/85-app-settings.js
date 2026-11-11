@@ -30,7 +30,7 @@
       address1: 'Helluhrauni 10',
       address2: '220 Hafnarfirði',
       phone: '565-4080',
-      email: 'eldklar@eldklar.is',
+      email: 'slokkvitaeki@brunaholf.is',
       logo_url: '/img/logo.png',
       primary_color: '#C93C1D',
       banner_text: 'Slökkvitæki',
@@ -104,7 +104,7 @@
       reikningur_body: 'Sæl/sæll {customerName},\n\nMeðfylgjandi er reikningur {invoiceNum} að upphæð {amount}.\n\nGreiðslukröfur birtast í heimabankanum þínum innan örfárra daga.\n\nKveðja,\n{companyName}',
       reminder_subject: 'Áminning — reikningur {invoiceNum} ógreidd',
       reminder_body: 'Sæl/sæll {customerName},\n\nReikningur {invoiceNum} að upphæð {amount} er enn ógreiddur.\n\nVinsamlegast greiðið við fyrsta tækifæri.\n\nKveðja,\n{companyName}',
-      signature: 'Slökkvitæki ehf · 565-4080 · eldklar@eldklar.is'
+      signature: 'Slökkvitæki ehf · 565-4080 · slokkvitaeki@brunaholf.is'
     },
     backup: {
       auto_export_enabled: false,

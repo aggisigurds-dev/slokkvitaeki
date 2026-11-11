@@ -553,7 +553,7 @@ function reikna(gogn, stillingar) {
       kennitala: b.kennitala || '600508-0400',
       heimilisfang: [b.address1, b.address2].filter(Boolean).join(', ') || 'Helluhrauni 10, 220 Hafnarfirði',
       simi: b.phone || '565-4080',
-      netfang: b.email || 'eldklar@eldklar.is',
+      netfang: b.email || 'slokkvitaeki@brunaholf.is',
       // Sama merki og reikningarnir (SlokkLogo.getUrl() → branding.logo_url, oftast í Supabase
       // Storage). data:-slóðir (hlaðið upp í Stillingum) eru ekki sendar í JSON — þá sjálfgefið.
       merki: typeof b.logo_url === 'string' && b.logo_url.length < 500 && (/^\/[^/]/.test(b.logo_url) || /^https:\/\//.test(b.logo_url)) ? b.logo_url : MERKI,

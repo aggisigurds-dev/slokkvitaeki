@@ -656,3 +656,30 @@ QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.
 - **Prófað á dev með uppgerðum skrifum** (`tools/prof-uppgerd-skrif.js`, raunverulegir smellir): opnun á báðum stöðum, verð úr lista,
   samtala (4 × 24.000 + 31.000 = 127.000 án vsk → 157.480 m. vsk), prentun með auðum línum, vistun, breyta, 375 px án yfirflæðis.
   **Óprófað:** raunveruleg vistun á lifandi `app_settings` og prentun á pappír (blaðsíðuskil).
+
+## Verkferlar (504), Verð samkeppnisaðila (505), byggingarvísitala og netfang — 11.11.2026
+
+- **Verkferlar** (`js/patches/504-verkferlar.js`): upplýsingaskjal per þjónustu — hvað er gert við skoðun, eftir hvaða reglum, verð og
+  fyrirvarar. `app_settings.verkferlar[<id>]`; skjölin tvö frá Agnari (neyðar- og útgöngulýsing, brunaviðvörunarkerfi) eru STOFN í kóðanum
+  og fara á þjóninn við fyrstu breytingu. Opnast með „📄 Verkferill" í haus allra verðglugga (502 og 410) og „Verkferlar" á Tilboð & samningar.
+  Formið Þjónustusamningur (201) hefur „Sækja verkferil…" → reiturinn Verkþættir, prentast á undan skilmálum.
+- **Verð samkeppnisaðila** (`js/patches/505-samkeppnisverd.js`, tafla `samkeppnisverd`, `sql/samkeppnisverd.sql`): ein röð per verð —
+  frá hverjum, liður, verð ÁN vsk, eining, dags, tilefni, stærð, staður, athugasemd, `okkar_lidur` (tenging við lið í okkar verðlista).
+  „📊 Verð samkeppnisaðila" í haus allra verðglugga + á Tilboð & samningar. Dálkar: „Á verðlagi í dag" (uppreiknað með vísitölu
+  byggingarkostnaðar) og „Okkar verð" með mun í %. Verð gefið upp með vsk er umreiknað við skráningu. Mjúk eyðing (`eytt`).
+  Samanburður við okkar verð virkar aðeins fyrir verðlista í 502; flokkarnir í 410 eiga ekki liði á því formi.
+- **Byggingarvísitala:** Hagstofa, tafla VIS13000 (grunnur 2021 = 100), `https://px.hagstofa.is/pxis/api/v1/is/Efnahagur/visitolur/2_byggingarvisitala/byggingarvisitala/VIS13000.px`.
+  POST með JSON-fyrirspurn **ÁN Content-Type-hauss** — með `application/json` sendir vafrinn forskoðun sem Hagstofan svarar án CORS-hausa
+  („Failed to fetch"). Sprinkler-samningurinn (503) sækir nýjasta gildið á nýju formi og prentar „130,4 stig (október 2026, grunnur 2021 = 100)".
+  Viðmið: síðasta BIRTA gildi á deginum (gildi mánaðar birtist um 23.) — fyrirmyndin frá 15.09.2022 bar 108,3 = ágúst 2022.
+- **Bráðabirgðaverð Sprinklerkerfi** (Agnar: „svona í bili"): ársfjórðungsskoðun 24.000, ársskoðun 31.000, akstur 2.676 kr. án vsk. — úr
+  samningi samkeppnisaðila frá 2022; uppreiknað til október 2026 væri það 28.898 / 37.326 / 3.222. **Neyðarljós** (verð Agnars sjálfs):
+  tímavinna 14.500 kr./klst., sjónskoðun „frá 29.000" (lágmark 2 klst.). Allt í STOFN í 502 — listi sem er vistaður á þjóninn ræður.
+- **Netfang út á við er slokkvitaeki@brunaholf.is** (Agnar 11.11.2026). Breytt á 33 stöðum sem viðskiptavinur sér (prenthausar, undirskriftir,
+  skjalasniðmát, gátt, vefverslun, AI-svör) og í `app_settings`: `branding.email`, `email.signature`, `skjalasnidmat[0|3].html`
+  (afrit: `backup_20261111_app_settings_netfang`). **EKKI breytt:** pósthólfsauðkenni (`email_digest.account = 'eldklar@eldklar.is'`),
+  Gmail-sendandi (`SJALFGEFID_FRA`, `FRA`, hub `MAIL_FROM`) og `email.from_email` — kerfið sendir og les áfram úr eldklar@-hólfinu.
+  Að skipta þeim út brýtur póstlestur og sendingu nema nýja hólfið sé tengt sem sendandi.
+- **Viðbótarpunktar:** `ThjonustuTengingar.hausTakki(o)` (410, allir þrír flokkar), `Verdlistar.hausTakki('*', o)` (allir listar í 502),
+  `TilbodHub.tol(o)` (verkfærataki hjá Verðskrá). Prófunartólið hefur nýjan ham `Uppgerd.blandad()`: lestur af þjóni, skrif uppgerð.
+- **Óprófað:** raunveruleg vistun verkferils og samkeppnisverðs á lifandi (aðeins uppgerð skrif); prentun á pappír.

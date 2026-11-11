@@ -1579,7 +1579,7 @@
         noteHtml +
         '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Meðfylgjandi er reikningur <strong>' + esc(sale.num || '') + '</strong>' +
           (co && co.nafn ? ' fyrir ' + esc(co.nafn) : '') + ', að upphæð <strong>' + fmtKr(sale.samtals) + '</strong>.</p>' +
-        '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Brunahólf Slökkvitæki ehf</strong><br>eldklar@eldklar.is</p>' +
+        '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Brunahólf Slökkvitæki ehf</strong><br>slokkvitaeki@brunaholf.is</p>' +
       '</div></body></html>';
   }
   /* 19.09.2026 — TVÖ ÞREP. Agnar: „Ekki senda strax."

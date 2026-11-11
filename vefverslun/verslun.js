@@ -211,7 +211,7 @@
 <nav class="vv-flipar" aria-label="Svið"><div class="vv-wrap">${flipar.map(([k, d, h]) => `<a class="vv-flipi" href="${h}"${k === 'verslun' ? ' aria-current="page"' : UT}>${E('span', 'flipi.' + k, d)}</a>`).join('')}</div></nav>`;
   }
   function fotur() {
-    return B('fotur', `<div class="vv-wrap"><a class="vv-logo" href="#/">${M('fotur.logo', { src: 'myndir/brunaholf-logo.png', alt: 'Brunahólf', fit: 'contain', h: 30, bak: 'transparent' })}</a>${E('span', 'fotur.texti', 'Brunahólf · Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfirði · 565-4080 · eldklar@eldklar.is')}</div>`, 'vv-fotur', 'footer');
+    return B('fotur', `<div class="vv-wrap"><a class="vv-logo" href="#/">${M('fotur.logo', { src: 'myndir/brunaholf-logo.png', alt: 'Brunahólf', fit: 'contain', h: 30, bak: 'transparent' })}</a>${E('span', 'fotur.texti', 'Brunahólf · Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfirði · 565-4080 · slokkvitaeki@brunaholf.is')}</div>`, 'vv-fotur', 'footer');
   }
   // birgdir: null = ekki talið, < 0 = skekkja í talningu (selt umfram skráð). Aðeins 0 er raunverulega uppselt.
   const uppseltV = (v) => v.birgdir === 0;

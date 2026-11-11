@@ -791,8 +791,8 @@
     const efni = valk.efni || (a.herferd && a.herferd !== 'Samstarf' ? a.herferd : 'Brunavarnir — ' + a.nafn);
     const avarp = a.tengilidur ? 'Sæl/l ' + a.tengilidur.split(/\s+og\s+/)[0] + ',' : 'Góðan dag,';
     const texti = valk.texti || (a.stada === 'rangt'
-      ? avarp + '\n\nVið sendum ykkur erindi ' + fmtD(a.fyrst_sent_at) + ' sem skilaði sér ekki. Við hjá Brunahólfi Slökkvitæki ehf. sjáum um reglubundna yfirferð slökkvitækja, brunaslangna og annarra brunavarna og langar að kanna hvort þið væruð opin fyrir tilboði í þjónustuna.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · eldklar@eldklar.is'
-      : avarp + '\n\nVið sendum ykkur línu ' + fmtD(a.fyrst_sent_at) + ' um reglubundna yfirferð brunavarna og langar að heyra hvort erindið hafi borist og hvort einhver tími henti til að taka stutt spjall.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · eldklar@eldklar.is');
+      ? avarp + '\n\nVið sendum ykkur erindi ' + fmtD(a.fyrst_sent_at) + ' sem skilaði sér ekki. Við hjá Brunahólfi Slökkvitæki ehf. sjáum um reglubundna yfirferð slökkvitækja, brunaslangna og annarra brunavarna og langar að kanna hvort þið væruð opin fyrir tilboði í þjónustuna.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · slokkvitaeki@brunaholf.is'
+      : avarp + '\n\nVið sendum ykkur línu ' + fmtD(a.fyrst_sent_at) + ' um reglubundna yfirferð brunavarna og langar að heyra hvort erindið hafi borist og hvort einhver tími henti til að taka stutt spjall.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · slokkvitaeki@brunaholf.is');
     _bak = document.createElement('div'); _bak.className = 'hu2-bak';
     _bak.innerHTML = '<div class="hu2-modal" role="dialog" aria-modal="true" aria-label="Senda póst úr eldklar@">' +
       '<header class="hu2-spjald-haus">' + hnod('vh') + '<h2>' + (a.stada === 'rangt' ? 'Senda aftur' : 'Senda póst') + ' — ' + esc(a.nafn) + '<small>frá eldklar@eldklar.is' + (okkar ? ' · svar í þræði fyrri pósts' : '') + '</small></h2><button type="button" class="hu2-silfur hu2-ib" data-m="loka" aria-label="Loka">' + IK.loka + '</button></header>' +

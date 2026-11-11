@@ -51,14 +51,14 @@ export default async (req) => {
 
   const prompt =
     'Þú ert kurteis þjónustufulltrúi hjá Slökkvitæki ehf (íslenskt fyrirtæki sem selur og ' +
-    'þjónustar slökkvitæki og brunakerfi). Netfang okkar er eldklar@eldklar.is, kt 600508-0400. ' +
+    'þjónustar slökkvitæki og brunakerfi). Netfang okkar er slokkvitaeki@brunaholf.is, kt 600508-0400. ' +
     'Semdu STUTT, hlýlegt og fagmannlegt SVAR á íslensku við póstinum hér að neðan. ' +
     'Reglur:\n' +
     '- Ávarpaðu viðtakanda eðlilega (t.d. „Sæl/l" eða nafn ef við á).\n' +
     '- Svaraðu beint því sem spurt er um. Ef beðið er um reikning/afrit, staðfestu að við sendum hann.\n' +
     '- EKKI finna upp upphæðir, reikningsnúmer eða dagsetningar — notaðu aðeins það sem kemur fram í samhenginu. Ef upplýsingar vantar, biddu kurteislega um þær.\n' +
     '- Ekki lofa neinu sem þú veist ekki (t.d. nákvæmri dagsetningu leiðréttingar).\n' +
-    '- Undirskrift: „Kveðja,\\nSlökkvitæki ehf\\neldklar@eldklar.is".\n' +
+    '- Undirskrift: „Kveðja,\\nSlökkvitæki ehf\\nslokkvitaeki@brunaholf.is".\n' +
     '- Haltu því undir ~120 orðum.\n' +
     '- ÍSLENSKAN VERÐUR AÐ VERA RÉTT — réttar beygingar og engin orð sem eru ekki til. Þetta fer beint á viðskiptavin.\n' +
     'Auk svarsins skaltu greina póstinn:\n' +

@@ -266,6 +266,17 @@
   }
 
   // ───────────────────────────── tengingar ─────────────────────────────
+  // Þjónustugluggarnir í 410 (Slökkvitæki · Brunakerfi · Slökkvikerfi) fá sama takka; skjalið ber auðkenni flokksins.
+  const FLOKKAR_410 = { slokkvitaeki: 'Slökkvitæki', brunakerfi: 'Brunaviðvörunarkerfi', slokkvikerfi: 'Slökkvikerfi í eldhúsi' };
+  let _tengt410 = false, _tilr410 = 0;
+  function tengjaThjonustuglugga() {
+    if (_tengt410) return;
+    const H = window.ThjonustuTengingar;
+    if (!H || !H.hausTakki) { if (_tilr410++ < 40) setTimeout(tengjaThjonustuglugga, 300); return; }
+    _tengt410 = true;
+    H.hausTakki({ texti: '📄 Verkferill', titill: 'Verkferill og upplýsingar um þessa þjónustu — skoða, breyta, prenta', smellur: fl => opna(fl, { nafn: FLOKKAR_410[fl] || fl }) });
+  }
+
   let _tengt = false, _tilr = 0;
   function tengja() {
     if (_tengt) return;
@@ -275,6 +286,7 @@
     // '*' = allir verðlistar. Listinn á sitt skjal undir sama auðkenni (neydarljos → neyðarlýsing); eigi hann ekkert opnast autt skjal með nafni listans.
     V.hausTakki('*', { texti: '📄 Verkferill', titill: 'Verkferill og upplýsingar um þessa þjónustu — skoða, breyta, prenta',
       smellur: id => { const l = (V.listi() || []).filter(x => x.id === id)[0]; opna(id, { nafn: l ? l.nafn : '' }); } });
+    tengjaThjonustuglugga();
     T.tol({ texti: 'Verkferlar', titill: 'Verkferlar og upplýsingar um þjónustur — notað í samninga og tilboð', smellur: () => opna() });
   }
   tengja();

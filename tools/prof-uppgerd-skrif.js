@@ -16,6 +16,8 @@
  *   Uppgerd.stillingar({lykill})   // AÐEINS app_settings uppgert, með minni: app_settings_merge sameinar í afrit í vafranum og
  *                                  //   AppSettings.load() les það til baka. Aðrar töflur lesa raungögn. Fyrir verðlista o.þ.h.
  *                                  //   Sáðu gögnum: Uppgerd.stillingar({ verdlistar: { sprinkler: {...} } })
+ *   Uppgerd.blandad({lykill})      // LESTUR af þjóni, SKRIF uppgerð á öllum töflum, app_settings í minni. Fyrir glugga sem þurfa
+ *                                  //   raungögn til að teikna sig (505 Verð samkeppnisaðila). Önnur RPC en merge eru ekki keyrð.
  *   Uppgerd.skrif()                // ['solur :: insert({...})', 'solur :: update({...})', 'rpc:app_settings_merge', …]
  *   Uppgerd.hreinsa()              // tæmir skráninguna milli prófa
  *   Uppgerd.opnad                  // HTML sem fór í window.open (prentgluggar) — window.open er uppgert líka
@@ -92,6 +94,38 @@
       ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { settings: U.srv }, error: null }) }) }) }
       : raun.from(t);
     return (window.AppSettings && AppSettings.load) ? AppSettings.load().then(() => 'Uppgerð skrif virk (stillingar): app_settings í minni') : 'Uppgerð skrif virk (stillingar)';
+  };
+  // BLANDAÐUR HAMUR (11.11.2026): LESTUR fer á þjóninn, SKRIF eru uppgerð (skráð, ekki framkvæmd) og app_settings býr í minni.
+  // Fyrir glugga sem þurfa raungögn til að teikna sig (t.d. Verð samkeppnisaðila, 505). Keðjan er spiluð á raunverulega biðlarann
+  // AÐEINS ef hún ber enga skrifaðgerð; önnur RPC en app_settings_merge eru skráð og ekki keyrð.
+  const SKRIFAD = ['insert', 'update', 'upsert', 'delete'];
+  const blond = heiti => {
+    const rec = { table: heiti, ops: [] };
+    const chain = new Proxy(function () {}, { get(_, prop) {
+      if (prop === 'then') return (res, rej) => {
+        const skr = rec.ops.find(o => SKRIFAD.includes(o.m));
+        if (!skr) { let q = raun.from(heiti); rec.ops.forEach(o => { q = q[o.m].apply(q, o.a); }); return q.then(res, rej); }
+        U.koll.push(rec);
+        const einn = rec.ops.some(o => o.m === 'single' || o.m === 'maybeSingle');
+        const gogn = Array.isArray(skr.a[0]) ? skr.a[0][0] : skr.a[0];
+        const rod = skr.m === 'insert' || skr.m === 'upsert' ? Object.assign({ id: 'uppgert-' + Date.now() }, gogn) : Object.assign({}, gogn);
+        return Promise.resolve({ data: einn ? rod : [rod], error: null }).then(res, rej);
+      };
+      return (...a) => { rec.ops.push({ m: prop, a }); return chain; };
+    } });
+    return chain;
+  };
+  U.blandad = function (sad) {
+    skrifvorn(); U.hamur = 'blandad';
+    U.srv = djup(JSON.parse(JSON.stringify(window.AppSettings ? AppSettings.get() : {})), sad || {});
+    sb.rpc = async (n, a) => {
+      if (n === 'app_settings_merge') { U.srv = djup(U.srv, a.p_patch); U.koll.push({ table: 'rpc:app_settings_merge', ops: [{ m: 'update', a: [a.p_patch] }] }); return { data: { ok: true }, error: null }; }
+      U.koll.push({ table: 'rpc:' + n, ops: [{ m: 'rpc', a: [a] }] }); return { data: null, error: null };
+    };
+    sb.from = t => t === 'app_settings'
+      ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { settings: U.srv }, error: null }) }) }) }
+      : blond(t);
+    return (window.AppSettings && AppSettings.load) ? AppSettings.load().then(() => 'Uppgerð skrif virk (blandað): lestur af þjóni, skrif uppgerð') : 'Uppgerð skrif virk (blandað)';
   };
   U.skrif = () => U.koll.filter(c => c.ops.some(o => ['insert', 'update', 'upsert', 'delete', 'rpc'].includes(o.m)))
     .map(c => c.table + ' :: ' + c.ops.filter(o => ['insert', 'update', 'upsert', 'delete', 'rpc'].includes(o.m)).map(o => o.m + '(' + stutt(o.a[0]) + ')').join('.'));

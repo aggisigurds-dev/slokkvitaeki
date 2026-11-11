@@ -18,7 +18,7 @@ No framework, no bundler-at-author-time. A feature is a **new patch file plus a
 script tag**; `build-dist.js` bundles them at deploy.
 
 ## Client feature = one new patch
-1. New file `js/patches/NNN-name.js` — next free number (currently 504+; check
+1. New file `js/patches/NNN-name.js` — next free number (currently 506+; check
    `ls js/patches | grep -oE '^[0-9]+' | sort -n | tail`).
 2. Wrap it as a **guarded IIFE** and expose a small API:
    ```js
@@ -69,6 +69,12 @@ Sönnun á að teiknunarbreyting breyti engum rökum: taktu fingrafar af reitunu
   saveHub, grp, fmtKr, pn …) svo formið líti út og vistist eins og hin. Fyrirmynd: `js/patches/503-sprinkler-samningur.js`.
 - Takki í haus verðlista (502): `Verdlistar.hausTakki(listaId, { texti, titill, smellur })`.
 - Tómur verðreitur er `null`, ekki 0 — prentast sem auð lína. Aldrei fundið upp verð í samning eða tilboð.
+- Takki í haus þjónustuglugganna í 410 (Slökkvitæki · Brunakerfi · Slökkvikerfi): `ThjonustuTengingar.hausTakki({ texti, titill, smellur(flokkur) })`;
+  `Verdlistar.hausTakki('*', …)` nær til allra lista í 502; `TilbodHub.tol({ texti, titill, smellur })` setur verkfærataka hjá Verðskrá.
+- Próf á glugga sem þarf RAUNGÖGN til að teikna sig: `await Uppgerd.blandad()` — lestur fer á þjóninn, skrif eru uppgerð og skráð
+  (`Uppgerd.sala()` skilar tómu úr öllum töflum, þá sýnist listinn tómur).
+- Gátreitur inni í `label` erfir `label input{width:100%}` — gefðu honum sértækari reglu, annars teygist hann yfir formið (505).
+- Ytri vefþjónusta úr vafra: prófaðu í vafranum, ekki með curl — forskoðun (OPTIONS) getur fallið þótt GET virki (Hagstofa, 503).
 
 ## Data access
 - `window.DB.sb` is the Supabase client (publishable key from `js/config.js`).

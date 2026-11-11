@@ -22,7 +22,7 @@
 
   const LOGO_PATH = '/img/brunaholf-logo.png';
   const VALID_LINE = 'Tilboð þetta gildir í 30 daga. Verð eru með fyrirvara um breytingar á umfangi verks.';
-  const FOOT_CO = 'Brunahólf slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565-4080 · eldklar@eldklar.is';
+  const FOOT_CO = 'Brunahólf slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565-4080 · slokkvitaeki@brunaholf.is';
 
   let _logoData = null;
 
@@ -107,7 +107,7 @@
     doc.text(today(), MR, y + 38, { align: 'right' });
     y += 74;
     doc.setTextColor.apply(doc, GRAY); doc.setFontSize(8.5);
-    ['Helluhrauni 10, 220 Hafnarfirði', 'Sími 565-4080 · eldklar@eldklar.is', 'kt. 600508-0400'].forEach(t => { doc.text(t, ML, y); y += 11; });
+    ['Helluhrauni 10, 220 Hafnarfirði', 'Sími 565-4080 · slokkvitaeki@brunaholf.is', 'kt. 600508-0400'].forEach(t => { doc.text(t, ML, y); y += 11; });
     y += 6;
     doc.setDrawColor.apply(doc, RED); doc.setLineWidth(2.5);
     doc.line(ML, y, MR, y); y += 20;

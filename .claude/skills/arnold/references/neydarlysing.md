@@ -223,6 +223,22 @@ Rannsókn 08.10.2026 fyrir Slökkvitæki ehf. Allar tilvitnanir eru orðréttar 
 
 ---
 
+## 4b. Verkferill og verð Slökkvitækis (frá Agnari 11.11.2026)
+
+Árleg skoðun neyðar- og útgöngulýsingar eins og félagið selur hana — textinn er í appinu undir Verkferlar (`js/patches/504-verkferlar.js`,
+„📄 Verkferill" í verðlistanum Neyðarljós) og er þar breytanlegur:
+
+1. Sjónskoðun: ástand, festingar, staðsetning og sýnileiki neyðar- og útgöngulampa.
+2. Flóttaleiðir og merkingar: eru útgöngumerkingar greinilegar og neyðarlýsing á nauðsynlegum stöðum.
+3. Skráning frávika: sýnilegar bilanir, skemmdir og önnur frávik, með tillögum að úrbótum.
+4. Skýrslugerð: skoðunarskýrsla með niðurstöðum og yfirliti yfir búnað sem þarf að laga eða endurnýja.
+
+- Með hliðsjón af byggingarreglugerð 112/2012 og ÍST EN 50172, eftir því sem við á.
+- **Verð:** tímavinna 14.500 kr. + vsk. á klst. (17.980 m. vsk.); lágmarksgjald 2 klst. = 29.000 kr. + vsk. (35.960 m. vsk.).
+- **Þetta er sjónræn ástandsyfirferð.** Viðgerðir, varahlutir, rafhlöðuskipti og ljósstyrksmælingar eru ekki innifalin nema um það sé samið.
+  Árleg prófun á fullum endingartíma (60 mín, ÍST EN 50172) og staðfesting rafvirkjameistara til slökkviliðs (kafli 2–3) eru því EKKI
+  hluti af þessari skoðun — segja viðskiptavini það ef hann spyr hvort skoðunin uppfylli árlegu prófunina.
+
 ## 5. Óvíst eða ekki staðfest
 
 - Hvort kjallari telst með í „yfir fjórar hæðir".

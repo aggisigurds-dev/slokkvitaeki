@@ -1055,7 +1055,7 @@
       '.foot{margin-top:28px;padding-top:10px;border-top:1px solid #e2e8f0;text-align:center;font-size:10.5px;color:#64748b}' +
       '.stika{position:sticky;top:0;display:flex;justify-content:flex-end;gap:8px;padding:10px 24px;background:#f1f5f9;border-bottom:1px solid #e2e8f0}.stika button{padding:8px 16px;border:1px solid #0f172a;border-radius:6px;background:#0f172a;color:#fff;font:700 12.5px Arial,sans-serif;cursor:pointer}' +
       '@media print{.stika{display:none}}</style></head><body><div class="stika"><button type="button" onclick="window.print()">Prenta / Vista PDF</button></div>' +
-      '<div class="wrap"><div class="head"><div class="logo">' + logo + '<div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · eldklar@eldklar.is</div></div>' +
+      '<div class="wrap"><div class="head"><div class="logo">' + logo + '<div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · slokkvitaeki@brunaholf.is</div></div>' +
       '<div class="doc-title"><h1>' + esc(titill) + '</h1><div class="sub">' + esc(undirtitill) + '</div><div class="meta">Dags.: <strong>' + esc(dags) + '</strong></div></div></div>' +
       meginmal + (aths ? '<div class="ath">' + esc(aths) + '</div>' : '') +
       '<div class="foot">Slökkvitæki ehf · Helluhraun 10, 220 Hafnarfirði · kt. 600508-0400 · Sími 565-4080</div></div>' +

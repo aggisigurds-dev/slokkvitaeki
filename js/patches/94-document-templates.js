@@ -68,7 +68,7 @@
   </div>
 
   <div style="font-size:13px;line-height:1.55;margin-bottom:18px">
-    Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara á e-mailið <a href="mailto:eldklar@eldklar.is" style="color:#2563eb;text-decoration:underline">eldklar@eldklar.is</a>
+    Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara á e-mailið <a href="mailto:slokkvitaeki@brunaholf.is" style="color:#2563eb;text-decoration:underline">slokkvitaeki@brunaholf.is</a>
   </div>
 
   <div style="margin-bottom:8px;font-size:13.5px;font-weight:700">Umsjón með:</div>
@@ -83,7 +83,7 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:auto;padding-top:24px">
     <div style="text-align:center">
       <div style="font-size:12.5px;font-weight:700;color:#b91c1c">Samþykki staðfest með tölvupósti</div>
-      <div style="font-size:13px;font-weight:700;margin:4px 0 2px">eldklar@eldklar.is</div>
+      <div style="font-size:13px;font-weight:700;margin:4px 0 2px">slokkvitaeki@brunaholf.is</div>
       <div style="height:38px;display:flex;align-items:flex-end;justify-content:center;font-weight:700;font-size:13px">{{sig_slokkvitaeki}}{{starfsmadur}}</div>
       <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:left">Fyrir hönd Brunahólf Slökkvitæki ehf.:</div>
     </div>
@@ -101,7 +101,7 @@
 
   <div style="margin-top:16px;text-align:center;font-size:11px;color:#475569;line-height:1.6">
     Brunahólf Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfirði · Vsknr. 98107<br>
-    Netfang: <a href="mailto:eldklar@eldklar.is" style="color:#2563eb;text-decoration:underline">eldklar@eldklar.is</a> &nbsp;·&nbsp; Sími 565-4080
+    Netfang: <a href="mailto:slokkvitaeki@brunaholf.is" style="color:#2563eb;text-decoration:underline">slokkvitaeki@brunaholf.is</a> &nbsp;·&nbsp; Sími 565-4080
   </div>
 </div>`
     },
@@ -141,7 +141,7 @@
   </div>
 
   <div style="font-size:13px;line-height:1.6;margin-bottom:18px;color:#475569;font-style:italic">
-    Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara í síma 565-4080 eða á e-mailið <strong>eldklar@eldklar.is</strong>
+    Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara í síma 565-4080 eða á e-mailið <strong>slokkvitaeki@brunaholf.is</strong>
   </div>
 
   <hr style="border:none;border-top:1px dashed #cbd5e1;margin:24px 0 18px">
@@ -162,7 +162,7 @@
 
   <div style="margin-top:18px;padding-top:12px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#64748b;line-height:1.6">
     Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði · vsknr. 98107<br>
-    Netfang: eldklar@eldklar.is &nbsp;·&nbsp; Sími 565-4080
+    Netfang: slokkvitaeki@brunaholf.is &nbsp;·&nbsp; Sími 565-4080
   </div>
 </div>`
     },
@@ -380,7 +380,7 @@
 
   <div style="margin-top:18px;padding-top:12px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#64748b;line-height:1.6">
     Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði · vsknr. 98107<br>
-    Netfang: eldklar@eldklar.is &nbsp;·&nbsp; Sími 565-4080
+    Netfang: slokkvitaeki@brunaholf.is &nbsp;·&nbsp; Sími 565-4080
   </div>
 </div>`
     },
@@ -533,7 +533,7 @@
   </div>
 
   <div style="text-align:center;font-size:11px;color:#64748b;margin-top:30px;padding-top:12px;border-top:1px solid #cbd5e1">
-    Slökkvitæki ehf · kt. 600508-0400 · vsknr. 98107 · 565-4080 · eldklar@eldklar.is
+    Slökkvitæki ehf · kt. 600508-0400 · vsknr. 98107 · 565-4080 · slokkvitaeki@brunaholf.is
   </div>
 </div>`
     }

@@ -22,7 +22,7 @@
     kt:   '600508-0400',
     heimilisfang: 'Helluhrauni 10, 220 Hafnarfirði',
     sími: '565-4080',
-    netfang: 'eldklar@eldklar.is',
+    netfang: 'slokkvitaeki@brunaholf.is',
     vsknr: '98107',
     slogan: 'Hleðsla – Sala – Þjónusta',
     fineprint: 'Slökkvitæki ehf leggja áherslu á persónulega og vandaða þjónustu.'

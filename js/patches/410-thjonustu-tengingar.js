@@ -446,6 +446,14 @@
       '#' + AUÐK + '-breyta,#' + AUÐK + '-tengingar{margin-left:auto;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-breyta:hover,#' + AUÐK + '-tengingar:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
       '#' + AUÐK + '-haus:has(#' + AUÐK + '-breyta) #' + AUÐK + '-loka,#' + AUÐK + '-haus:has(#' + AUÐK + '-tengingar) #' + AUÐK + '-loka{margin-left:8px}',
+      // aukatakkar (hausTakki): sami silfurtakki; sá fyrsti ýtir röðinni til hægri, hinir liggja þétt, og hausinn má brotna í tvær línur
+      '.' + AUÐK + '-aukat{margin-left:0;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
+      '.' + AUÐK + '-aukat:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
+      '.' + AUÐK + '-aukat + .' + AUÐK + '-aukat,.' + AUÐK + '-aukat ~ #' + AUÐK + '-breyta,.' + AUÐK + '-aukat ~ #' + AUÐK + '-tengingar,.' + AUÐK + '-aukat ~ #' + AUÐK + '-loka{margin-left:0}',
+      // Titillinn gefur eftir (undirlínan styttist með …) svo takkarnir haldist í einni línu; þrengist enn brotna þeir hægra megin.
+      '#' + AUÐK + '-haus:has(.' + AUÐK + '-aukat){flex-wrap:wrap;gap:8px 10px;justify-content:flex-end}',
+      '#' + AUÐK + '-haus:has(.' + AUÐK + '-aukat) > div{flex:1 1 230px;min-width:0;margin-right:auto}',
+      '#' + AUÐK + '-haus:has(.' + AUÐK + '-aukat) > div p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       // Búa til tilboð + Prenta verðlista — sami silfurtakki, sitja milli ✎ Breyta og ✕
       '#' + AUÐK + '-tilbod,#' + AUÐK + '-prenta{margin-left:8px;height:32px;padding:0 12px;border-radius:4px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);color:#1f2530;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.25);font-family:\"IBM Plex Sans\",system-ui,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}',
       '#' + AUÐK + '-tilbod:hover,#' + AUÐK + '-prenta:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(201,42,42,.35),0 2px 6px rgba(0,0,0,.25)}',
@@ -1289,7 +1297,7 @@
       '</style></head><body>' +
       '<div class="stika"><button type="button" onclick="window.print()">Prenta / Vista PDF</button></div>' +
       '<div class="wrap"><div class="head">' +
-        '<div class="logo">' + logo + '<div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · eldklar@eldklar.is</div></div>' +
+        '<div class="logo">' + logo + '<div class="co-info"><b>Slökkvitæki ehf</b><br>Helluhraun 10, 220 Hafnarfirði<br>kt. 600508-0400 · vsknr. 98107<br>Sími 565-4080 · slokkvitaeki@brunaholf.is</div></div>' +
         '<div class="doc-title"><h1>Verðskrá</h1><div class="sub">Þjónusta við brunaviðvörunarkerfi</div><div class="meta">Dags.: <strong>' + esc(dags) + '</strong></div></div>' +
       '</div>' +
       '<table><thead><tr><th>Liður</th><th class="r" style="width:120px">Verð án VSK</th><th class="r" style="width:120px">Verð m/VSK</th></tr></thead>' +
@@ -1611,6 +1619,11 @@
     return !!fyrsta;
   }
 
+  // 11.11.2026: AUKATAKKAR í haus allra þriggja flokka — aðrir pappar skrá þá hér (504 „Verkferill", 505 „Verð samkeppnisaðila").
+  // o = { texti, titill, smellur(flokkur) }. Takkarnir sitja framan við takka flokksins og ✕.
+  var _aukaHaus = [];
+  function hausTakki(o) { if (o && typeof o.smellur === 'function') _aukaHaus.push(o); }
+
   // `fokus` = { tegund, staerd } — línan sem sendandinn var að skoða lýsist upp.
   async function opna(flokkur, fokus) {
     _flokkur = FLOKKAR[flokkur] ? flokkur : 'slokkvitaeki';
@@ -1628,6 +1641,7 @@
         '<div id="' + AUÐK + '-haus">' +
           '<span style="font-size:24px;line-height:1">' + f.tákn + '</span>' +
           '<div><h2>' + esc(f.titill) + '</h2><p>' + esc(f.undir) + '</p></div>' +
+          _aukaHaus.map(function (t, i) { return '<button type="button" class="' + AUÐK + '-aukat" data-ht="' + i + '" title="' + esc(t.titill || '') + '">' + esc(t.texti || '') + '</button>'; }).join('') +
           // 14.10.2026 (Agnar: „Það er eitthvað þar. En get ekki breytt neinu þar" · „setja hann bara efst í hornið á
           // núverandi lista"): brunakerfis-glugginn SÝNIR verðlistann; ritillinn er í 273 (sami og í Brunakerfis skoðun).
           // Ekkert spjald má vera blindgata — takkinn í horninu fer beint í ritilinn.
@@ -1646,6 +1660,9 @@
     if (window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta();
     bak.addEventListener('click', function (e) { if (e.target === bak) loka(); });
     document.getElementById(AUÐK + '-loka').addEventListener('click', loka);
+    Array.prototype.forEach.call(bak.querySelectorAll('.' + AUÐK + '-aukat'), function (b) {
+      b.addEventListener('click', function () { var t = _aukaHaus[+b.getAttribute('data-ht')]; if (t) t.smellur(_flokkur); });
+    });
     uppfaeraHaus();
     var synTakki = document.getElementById(AUÐK + '-tengingar');
     if (synTakki) synTakki.addEventListener('click', function () {
@@ -1741,7 +1758,7 @@
     }
   }
 
-  function escLoka(e) { if (e.key === 'Escape') loka(); }
+  function escLoka(e) { if (e.key === 'Escape' && !document.getElementById('vf4-bak') && !document.getElementById('sk5-bak')) loka(); }   // gluggi ofan á (504/505) lokast fyrst
   function loka() {
     var b = document.getElementById(AUÐK + '-bak');
     if (b) b.remove();
@@ -1752,6 +1769,7 @@
   // ── opinbert API — `vorur.js` á takkana, þessi pappi á gluggana ──────────
   window.ThjonustuTengingar = {
     opna: opna,
+    hausTakki: hausTakki,
     fjolskylda: fjolskylda,
     // Fyrir 128 o.fl.: skráð vara fyrir tegund+stærð+þjónustu (yfirferd/hledsla),
     // 'ekki_rukka', eða null. Sami lykill og 129 les — fjölskylduheiti + trimmuð stærð.
