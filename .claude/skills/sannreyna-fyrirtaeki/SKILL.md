@@ -98,9 +98,13 @@ repo-rót). Aðallotan vinnur prófin sjálf í röð — undiragentar aðeins �
   `= 'active'` ein felur heil félög með aðra stöðu). `urelt` telst ekki en er nefnt ef það er tvítak af virku tækjunum.
 - Skýrsla: tölurnar í skýrslutextanum (B) og `arsskodun_report_facts.equipment`. Nýjasta útgáfa ræður.
 - Reikningur: `solur` (tækjalínur, ekki kredit, `source` uttekt/vinnublad) eða `stolpi_reikningar` á `kt10` fyrir
-  07.05.2026 — Stólpi geymir aðeins upphæð, þá er sagt „reikningur til, línur ólesnar".
-- Ef reikningur er YNGRI en nýjasta skýrsla (skoðað og rukkað, skýrslu vantar) er það sérstakt frávik: SKÝRSLU VANTAR
-  FYRIR <ár>.
+  07.05.2026. Línur Stólpa-reikninga ERU til: `reikningslinur` þar sem `reikningur_nr = 'R-' || reikn_nr`
+  (dálkar `lysing`, `magn`, `thjonusta`). LESTU LÍNURNAR áður en þú segir nokkuð um reikninginn.
+- **Úttekt eða búðarsala (regla Agnars 11.11.2026):** reikningur telst ÚTTEKT aðeins ef á honum er lína „Akstur" EÐA
+  „Skýrslugerð og vottun" / úttektarskýrsla (yfirleitt líka „Yfirferð …"). Hvorug línan → BÚÐARSALA (ný tæki keypt),
+  ekki skoðun. `uttaeki.last_insp` sannar EKKI skoðun: tæki stofnuð upp úr reikningi fá reikningsdaginn í `last_insp`.
+- Ef ÚTTEKTAR-reikningur er YNGRI en nýjasta skýrsla (skoðað og rukkað, skýrslu vantar) er það sérstakt frávik:
+  SKÝRSLU VANTAR FYRIR <ár>. Búðarsala vekur þetta frávik aldrei.
 - Úrskurðir: PASSAR (tegund fyrir tegund) · LISTI ≠ SKÝRSLA · LISTI ≠ REIKNINGUR · SKÝRSLA ≠ REIKNINGUR · SKÝRSLU
   VANTAR · EKKERT TIL. Tækjaskrá er ekki breytt; mismunur er aldrei rukkaður eftir á.
 

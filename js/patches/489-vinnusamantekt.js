@@ -332,7 +332,7 @@
       const s = k[0], eftir = Math.max(0, (+s.alls || 0) - (+s.buid || 0));
       return { sev: (+s.fravik || 0) ? 'athuga' : eftir ? 'upp' : 'ok', tala: (+s.buid || 0) + ' af ' + (+s.alls || 0),
         undir: (s.heiti || 'keyrsla') + ' · ' + (+s.fravik || 0) + ' með frávik · síðast ' + dags(s.dags),
-        punktar: [profin, raesa].concat(k.slice(1, 4).map(x => (x.heiti || 'keyrsla') + ' · ' + (+x.buid || 0) + ' af ' + (+x.alls || 0) + ' · ' + dags(x.dags))) };
+        punktar: [profin, raesa].concat(k.slice(1, 4).map(x => ({ feitt: x.heiti || 'keyrsla', texti: ' · ' + (+x.buid || 0) + ' af ' + (+x.alls || 0) + ' · ' + dags(x.dags) }))) };
     } },
     /* 11.11.2026 (Agnar: „ef þú manst eftir fleiri svona góðum verkferlum sem væri gott að hafa tilbúið þarna"): EITT box
      * sem telur upp verkferlin sem eru þegar til sem skill eða agent, með orðinu sem ræsir þau. Aðeins skrá — engin mæling,
@@ -360,7 +360,8 @@
       const punktar = F.map(x => {
         const s = k[x[0]] && k[x[0]].sidast, t = s ? Date.parse(s) : NaN, d = isNaN(t) ? null : Math.floor((nu - t) / 864e5);
         const of = d != null && x[5] > 0 && d > x[5]; if (of) komid++;
-        return x[1] + ' · „' + x[2] + '" · ' + x[3] + ' · ' + x[4] + ' · ' + (d == null ? 'aldrei keyrt' : 'síðast ' + dags(s) + (of ? ' — KOMINN TÍMI' : ''));
+        // 11.11.2026 (Agnar: „feitletra heitin á keyrslunum"): punktur má vera { feitt, texti } — radHtml feitletrar heitið.
+        return { feitt: x[1], texti: ' · „' + x[2] + '" · ' + x[3] + ' · ' + x[4] + ' · ' + (d == null ? 'aldrei keyrt' : 'síðast ' + dags(s) + (of ? ' — KOMINN TÍMI' : '')) };
       });
       return { sev: komid ? 'athuga' : 'upp', tala: F.length + ' ferli', undir: komid ? komid + ' komin á tíma · ræst með því að segja orðin við Claude' : 'ræst með því að segja orðin við Claude', punktar };
     } },
@@ -476,7 +477,7 @@
     '.vs-l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}.vs-t{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--edge)}.vs-t:hover,.vs-t:focus-visible{border-bottom-color:var(--ink);outline:0}' +
     '.vs-n{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;margin-left:auto;text-align:right}.vs-w{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}' +
     '.vs-r[data-sev="alv"] .vs-w{color:#b3220f}.vs-r[data-sev="athuga"] .vs-w{color:#8a6500}.vs-u{grid-column:2;font-size:12px;color:var(--ink2)}' +
-    '.vs-p{grid-column:2;margin:1px 0 0;padding:0 0 0 14px;list-style:disc;font-size:11.5px;color:var(--mute)}.vs-p li{margin:1px 0}.vs-p .skyr{display:inline}' +
+    '.vs-p{grid-column:2;margin:1px 0 0;padding:0 0 0 14px;list-style:disc;font-size:11.5px;color:var(--mute)}.vs-p li{margin:1px 0}.vs-p li>strong{font-weight:700;color:var(--ink)}.vs-p .skyr{display:inline}' +
     '.vs-a{grid-column:2;font-size:11.5px;color:var(--mute)}.vs-r.falid{opacity:.6}.vs-tomt{padding:12px 14px;color:var(--mute);font-size:13px}.vs-f{padding:6px 14px 10px}' +
     '.vs-tog{all:unset;cursor:pointer;padding:0 8px;font-size:13px;color:var(--mute)}.vs-tog:focus-visible{outline:2px solid var(--ink)}' +
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
@@ -502,7 +503,7 @@
       '<span class="vs-led" data-sev="' + r.sev + '" role="img" aria-label="' + sv[0] + '" title="' + sv[0] + '"></span>' +
       '<div class="vs-l1">' + tengill + ((r.sev === 'alv' || r.sev === 'athuga') ? '<span class="vs-w">' + sv[0] + '</span>' : '') + '<span class="vs-n">' + esc(r.tala) + '</span>' + tog + '</div>' +
       (r.undir ? '<div class="vs-u">' + esc(r.undir) + '</div>' : '') +
-      (opin ? (efni ? '<ul class="vs-p">' + (r.punktar || []).map(p => '<li>' + esc(p) + '</li>').join('') + (skyr ? '<li>' + skyr + '</li>' : '') + '</ul>' : '') +
+      (opin ? (efni ? '<ul class="vs-p">' + (r.punktar || []).map(p => '<li>' + (p && typeof p === 'object' ? '<strong>' + esc(p.feitt) + '</strong>' + esc(p.texti || '') : esc(p)) + '</li>').join('') + (skyr ? '<li>' + skyr + '</li>' : '') + '</ul>' : '') +
         '<div class="vs-a">' + (api ? api.felaTakki(f).replace(/^ · /, '') : '') + '</div>' : '') + '</div>';
   }
 
