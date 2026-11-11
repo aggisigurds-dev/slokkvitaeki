@@ -155,6 +155,35 @@ Sá sem svarar málum er `samthykktir` (.claude/agents/samthykktir.md). Þakið 
 
 ---
 
+## ⭐ FORGANGSMÁL — handvalið á vinnuborð Agnars (11.11.2026)
+
+Agnar 11.11.2026 um niðurstöðu úr yfirferð (samningur undirritaður, fyrsta úttekt ógerð): „þetta eru alveg svona
+top priority niðurstöður … myndi vilja bara fá sem Forgangsmál inn á þjónustuborðið mitt … auk svona ný skilaboð,
+sem eru mikilvæg, handvalið bara frá Claude“. Einingin **28 Forgangsmál** (368, `forgangsmalHtml` í `bottomHtml`)
+á „Agnar · mitt vinnuborð“ les venjuleg Þjónustuborðsmál — engin ný tafla, ekkert sjálfvirkt:
+
+| Hluti | Merki í `thjonustubeidni.tags` | Hvað á heima þar |
+|---|---|---|
+| Þarf að bregðast við | `forgangsmal` | Niðurstaða sem kostar peninga eða kúnna ef ekkert er gert, og Agnar getur brugðist við með einni aðgerð |
+| Ný skilaboð | `skilabod` | Póstur frá manneskju sem bíður svars og skiptir máli (kvörtun, ágreiningur um reikning, stórt tilboð) |
+
+**Uppskrift:** nýtt mál með `assigned_to` 'Agnar', `created_by` 'claude', `summary` = EIN lína um hvers vegna þetta
+skiptir máli (hún stendur undir titlinum í einingunni), `notes` = „Hvað þarf að gera“ + „Byggt á (mælt dd.mm.áááá)“
+með tölum, `fyrirtaeki_id` sé félag í spilinu. Skilaboð: sé póstmálið þegar til (`channel_ref = 'email:<id>'`) er
+merkinu BÆTT VIÐ það mál — ekki stofna tvítak og ekki færa það af Master.
+
+**Þak — þetta er ekki nýtt samþykktarborð:**
+1. Mest **7 opin forgangsmál og 5 skilaboð**. Sé fullt tekurðu merkið af því sísta áður en þú bætir við.
+2. Aðeins það sem er MÆLT sama dag í gögnunum, með tölunni í málinu. Ekkert „gæti verið“.
+3. Ekkert sem annað opið mál segir þegar (leitaðu á nafni, kennitölu og R-númeri).
+4. Ekki spurning til Agnars um kerfið og ekki tilboð um aukavinnu. Aðgerðin er hans: bóka, hringja, svara, ákveða.
+5. Brunahólfs-pósthólfin opnast ekki í þessu appi (RLS á `email_digest` leyfir aðeins eldklar@ og bokhald@eldklar):
+   þá stendur samantektin ein. Starfsmannamál og annað viðkvæmt fer ALDREI á borðið — það sjá allir starfsmenn.
+6. Þegar aðgerðin er búin lokar Agnar málinu á línunni (✓ Lokið). Lota sem sér að málið er leyst í gögnunum lokar
+   því með sönnun (sama lokunarvenja og annars staðar).
+
+---
+
 ## 🧭 HVER KANN HVAÐ — byrjaðu hér
 
 Þekkingin sem áður var í þessu skjali (~15.000 tokens sem hlóðust í **hverri einustu

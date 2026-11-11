@@ -190,6 +190,9 @@
     checklisti2: { n: '26', t: 'Checklisti 2', d: 'Annar einfaldur listi með eigin titli. Titill og samanbrot vistast á þjóni.' },
     // 10.11.2026 (Agnar): allt stjörnumerkt á einum stað — lesið beint úr upprunanum (engin afrit); stjarnan tekur merkið af þar.
     stjornumerkt: { n: '27', t: 'Stjörnumerkt', d: 'Allt sem er stjörnumerkt: checklistar, spjöld merkt á þig og áríðandi mál. Smelltu til að opna í sínum ham; stjarnan tekur merkið af.' },
+    // 11.11.2026 (Agnar: „top priority niðurstöður … sem Forgangsmál inn á þjónustuborðið mitt … auk ný skilaboð, sem eru
+    // mikilvæg, handvalið bara frá Claude“): mál á eigin borði með merkinu `forgangsmal` eða `skilabod`. Sjá forgangsmalHtml.
+    forgangsmal: { n: '28', t: 'Forgangsmál', d: 'Handvalið af Claude: það sem skiptir mestu núna og mikilvæg ný skilaboð. Opna, ljúka og fela á línunni.' },
     skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -334,7 +337,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], skipulag2: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -4503,6 +4506,35 @@
     const n = nu();
     if (CHK_FELT.indexOf(k) >= 0) return checklistiHtml(k);
     if (k === 'stjornumerkt') return stjornumerktHtml(k);
+    if (k === 'forgangsmal') {
+      /* FORGANGSMÁL (eining 28, 11.11.2026) — handvalið af Claude, ekkert sjálfvirkt. ENGIN NÝ TAFLA: venjuleg mál á borði
+       * starfsmannsins með merkinu `forgangsmal` (niðurstaða sem þarf að bregðast við) eða `skilabod` (mikilvægur nýr póstur
+       * eða skilaboð — merkið er sett á póstmálið sem er þegar til). Hver lína ER málið: smellur opnar það hægra megin og
+       * ✓ Lokið / ☆ / 🗑 / Fela eru á línunni (malAdg), allt afturkallanlegt. Þak og uppskrift fyrir lotur: CLAUDE.md. */
+      // Á eigin borði EÐA laust (póstmál sem enginn hefur tekið): merkið tekur málið ekki af Master, það bendir aðeins á það.
+      const min = S.rows.filter(r => onBoardOf(r, n) || isFree(r)), hefur = (r, m) => tagList(r).indexOf(m) >= 0;
+      const lyk = r => 'forgangsmal:mal:' + r.id;
+      const F = fela(min.filter(r => hefur(r, 'forgangsmal')).sort(rodun), lyk);
+      const K = fela(min.filter(r => hefur(r, 'skilabod') && !hefur(r, 'forgangsmal')).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at)), lyk);
+      // Línan undir titlinum: samantekt málsins (það sem Claude skrifaði um hvers vegna þetta skiptir máli) → byrjun póstsins → fyrsta lína lýsingar.
+      const lina = r => {
+        const s = String(r.summary || '').trim(), sam = (s && !/^DRAFT\|/.test(s)) ? s : '';
+        if (!sam && isPost(r)) { const p = postForskodun(r); if (p) return p; }
+        const t = sam || (String(r.notes || '').split('\n').find(x => x.trim()) || '').trim();
+        return t ? '<span class="pprev" title="' + esc(t.slice(0, 600)) + '">' + esc(t.slice(0, 260)) + (t.length > 260 ? '…' : '') + '</span>' : '';
+      };
+      // 🗓 á forgangsmálum: setur málið á dagskrá (eða opnar daginn sé það komið þangað) — sama og í Áríðandi (25).
+      const rod = (r, falinn) => lrowHtml(r, hefur(r, 'forgangsmal') ? dagskrarTakki(r) : '',
+        { l: lyk(r), e: k, d: r.title, falinn }, lina(r));
+      const hluti = (heiti, X, h) => (X.synd.length || X.falin.length)
+        ? '<div class="sect">' + heiti + ' (' + X.synd.length + ')</div>' + X.synd.slice(0, 12).map(r => rod(r)).join('') +
+          (X.synd.length > 12 ? '<div class="more">+ ' + (X.synd.length - 12) + ' til viðbótar</div>' : '') +
+          falinHtml('forgangsmal:' + h, X.falin.length, () => X.falin.map(r => rod(r, true)).join(''))
+        : '';
+      const body = hluti('Þarf að bregðast við', F, 'forg') + hluti('Ný skilaboð', K, 'skil') ||
+        emptyHtml('Ekkert forgangsmál og engin ný skilaboð. Hér birtist aðeins það sem Claude handvelur.');
+      return modPanel(k, F.synd.length + ' forgangsmál · ' + K.synd.length + ' skilaboð' + falinSum(F.falin.length + K.falin.length), body, '');
+    }
     if (k === 'skipulag' || k === 'skipulag2') {   // 24 = sömu spjöld, önnur sjálfgefin breidd
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
       // og skrifað þar sem maður vill skrifa". Sömu gögn og 305: skipulagsbord.by_staff.<nafn> = { cards, krass }.
@@ -6972,7 +7004,7 @@
     openFromHash();
     setTimeout(() => { patchSwitchView(); ensureView(); festaHnapp(); openFromHash(); }, 1600);
     // rows: aðeins lestur, fyrir ⚡ Hlaða (407) — hvaða fyrirtæki eiga opin mál og ættu að vera hituð (12.10.2026).
-    window.Thjonustubord5 = { show, load, render, rows: () => S.rows.slice(), version: '368z4' };
+    window.Thjonustubord5 = { show, load, render, rows: () => S.rows.slice(), version: '368z5' };
     console.log('[368-thjonustubord5] installed (#bord)');
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
