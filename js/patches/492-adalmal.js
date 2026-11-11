@@ -20,6 +20,10 @@
  * Borðið les aðeins OPIN mál; sé ekkert opið segir það hvaða yfirliti var lokað síðast og hvers vegna (lokid_at,
  * lokid_lysing) svo tómt borð lesist ekki sem bilun. Yfirlit sem er 7 daga eða eldra fær aldursmerki.
  *
+ * 492c (11.11.2026): fyrirsögnin „SPURNINGAR TIL ÞÍN" án tvípunkts er aðeins haus. Áður varð hún sjálf að fyrstu
+ * „spurningunni" með eigin ✓ (mælt á #1587: 6 spurningar í stað 5, 27 atriði í stað 26). Með tvípunkti gildir áfram
+ * gamla sniðið: spurningar á sömu línu, aðskildar með „ · ".
+ *
  * Mynstur: 491-vasinn.js (view-<key>, App.switchView-umbúðir, Brunastál). Skrifar aðeins við raunverulegan smell.
  * Skráð í Öpp (261 PAGES: 'adalmal') og sett á Boss- og Þjónustuborðs-appið á eftir Þjónustuborðinu (__adm1/__adm2).
  * ============================================================================================ */
@@ -106,7 +110,10 @@
       if (mm) { const k = mm[1].toLowerCase(); nyr(k, (HLUTAR[k] && HLUTAR[k].heiti) || fegra(mm[2])); return; }
       if (/^spurningar/i.test(l)) {
         nyr('sp', HLUTAR.sp.heiti);
-        l.replace(/^spurningar[^:]*:\s*/i, '').split(/\s·\s/).forEach(x => { x = x.trim(); if (x) h.atridi.push(x); });
+        // Fyrirsögn án tvípunkts („SPURNINGAR TIL ÞÍN") er aðeins haus; spurningarnar koma þá sem númeraðar línur á eftir.
+        // Fyrir 492c varð fyrirsögnin sjálf að fyrstu „spurningunni" (mælt á #1587 11.11.2026: 6 í stað 5).
+        const tv = l.indexOf(':');
+        if (tv >= 0) l.slice(tv + 1).split(/\s·\s/).forEach(x => { x = x.trim(); if (x) h.atridi.push(x); });
         return;
       }
       // Viðbót aftan við yfirlitið (endurmæling, leiðrétting, lokun) byrjar á þankastriki: „— Athugasemd 03.11.2026 (Claude): …".
@@ -307,6 +314,6 @@
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Adalmal = { open, render, load, greina, S, version: '492b' };
+  window.Adalmal = { open, render, load, greina, S, version: '492c' };
   console.log('[492b] Aðalmál — sér borð');
 })();
