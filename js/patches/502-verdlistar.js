@@ -459,6 +459,7 @@
   }
   function escLoka(e) {
     if (e.key !== 'Escape') return;
+    if (document.getElementById('_th-modal')) return;   // form ofan á glugganum (samningur, 503) — Esc lokar ekki listanum undir því
     const f = document.getElementById(P + '-f');
     if (f) f.remove(); else loka();
   }
@@ -481,12 +482,22 @@
     teiknaHaus(); teikna();
   }
 
+  // 11.11.2026: aukatakkar í haus — aðrir pappar skrá takka á tiltekinn lista (503: „Þjónustusamningur" á Sprinklerkerfi).
+  // Takkinn fer vinstra megin við „⚙ Stillingar". o = { texti, titill, smellur(listaId) }.
+  const _hausTakkar = {};
+  function hausTakki(listaId, o) {
+    if (!listaId || !o || typeof o.smellur !== 'function') return;
+    (_hausTakkar[listaId] = _hausTakkar[listaId] || []).push(o);
+    if (_virkur === listaId) teiknaHaus();
+  }
+
   function teiknaHaus() {
     const L = lista(_virkur), h = document.getElementById(P + '-haus'); if (!L || !h) return;
     h.style.setProperty('--vl5-bg', LITIR[L.litur][1]);
     h.innerHTML = '<span style="font-size:24px;line-height:1">' + esc(L.takn) + '</span>' +
       '<div><h2>' + esc(L.nafn) + ' — verð</h2><p>' + esc(L.lysing || 'Verðlisti — verð, einingar og vsk') + '</p></div>' +
       '<div class="' + P + '-hn">' +
+        (_hausTakkar[L.id] || []).map((t, i) => '<button type="button" data-ht="' + i + '" title="' + esc(t.titill || '') + '">' + esc(t.texti || '') + '</button>').join('') +
         '<button type="button" id="' + P + '-stillingar" title="Heiti, tákn, litur, sjálfgefinn vsk, afrita eða eyða listanum">⚙ Stillingar</button>' +
         '<button type="button" id="' + P + '-tilbod" class="' + (_tilbod ? 'on' : '') + '" title="Magn og afsláttur á línu — prenta tilboð eða setja línurnar í körfu í Sölu">' + (_tilbod ? '✓ Tilboðsham' : 'Búa til tilboð') + '</button>' +
         '<button type="button" id="' + P + '-prenta" title="Prenta verðlistann á A4 með haus Slökkvitækis — verð án og með vsk">Prenta verðlista</button>' +
@@ -668,6 +679,8 @@
       const hb = e.target.closest('[data-hopur-id]');
       if (hb) { const tr = bak.querySelector('tr.hopur[data-h="' + hb.getAttribute('data-hopur-id') + '"]'); if (tr) tr.scrollIntoView({ block: 'start' }); return; }
       const id = e.target.id;
+      const ht = e.target.closest('[data-ht]');
+      if (ht) { const t = (_hausTakkar[_virkur] || [])[+ht.dataset.ht]; if (t) t.smellur(_virkur); return; }
       if (id === P + '-loka') { loka(); return; }
       if (id === P + '-stillingar') { stillingar(_virkur); return; }
       if (id === P + '-prenta') { prentaVerdlista(); return; }
@@ -1117,6 +1130,7 @@
   window.Verdlistar = {
     opna: opna,
     nyr: nyr,
+    hausTakki: hausTakki,
     listi: () => allir(false).map(l => ({ id: l.id, nafn: l.nafn, takn: l.takn, litur: l.litur, lidir: l.lidir.length })),
     get: id => { const l = lista(id); return l ? klona(l) : null; },
     // Fyrir úttektir/tilboð: virkir liðir listans með verði án og með vsk (null ef verð vantar eða „samkv. tilboði")

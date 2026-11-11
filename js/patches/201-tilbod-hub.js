@@ -82,6 +82,8 @@
     try { if (window.FyrirtaekjaLeit) FyrirtaekjaLeit.tengja('_th-nafn', { kt: '_th-kt', addr: '_th-addr' }); } catch (_) {}
     const close = () => ov.remove();
     ov.querySelector('#_th-x').onclick = close;
+    // 11.11.2026: „Loka" í fæti var ótengdur takki í öllum formunum — hann lokar nú eins og ×.
+    const hl = ov.querySelector('#_th-cancel'); if (hl) hl.onclick = close;
     ov.addEventListener('click', e => { if (e.target === ov) close(); });
     return { ov, close };
   }
@@ -518,6 +520,13 @@
     serverd: { label: 'Sérverð', stutt: 'Sérverð', plata: 'silfur' },
     samningur: { label: 'Þjónustusamningur', stutt: 'Samningar', plata: 'gull' },
   };
+  // 11.11.2026: AUKATEGUNDIR — aðrir pappar skrá sín form hér (TilbodHub.skra) í stað þess að hvert nýtt form bæti grein í
+  // þessa skrá. Fyrsta: 'sprinklersamn' (503). `flokkur` segir undir hvaða teljara formið telst (t.d. 'samningur');
+  // `opna(form?)` opnar formið, `html(form)` skilar prentskjalinu, `undir(form)` er undirlínan í „Vistuð form".
+  const AUKA = {};
+  const metaFyrir = t => TYPE_META[t] || AUKA[t] || TYPE_META.slokkvitaeki;
+  const flokkur = f => (AUKA[f.type] && AUKA[f.type].flokkur) || f.type;
+  function skra(tegund, o) { if (!tegund || !o || typeof o.opna !== 'function' || typeof o.html !== 'function') return; AUKA[tegund] = o; try { render(); } catch (_) {} }
   const TH_ICON = {
     plus: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
     edit: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M10.8 2.4l2.8 2.8-8 8H2.8v-2.8z M9.4 3.8l2.8 2.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>',
@@ -632,12 +641,12 @@
     const forms = allForms();
     // teljarar: fjöldi + samtala m. vsk per tegund (sérverð hefur enga upphæð)
     const telj = { brunakerfi: { n: 0, s: 0 }, slokkvitaeki: { n: 0, s: 0 }, serverd: { n: 0, s: 0 }, samningur: { n: 0, s: 0 } };
-    forms.forEach(f => { const t = telj[f.type] || telj.slokkvitaeki; t.n++; t.s += num(f.m_vsk); });
+    forms.forEach(f => { const t = telj[flokkur(f)] || telj.slokkvitaeki; t.n++; t.s += num(f.m_vsk); });
     const DOT = { rautt: '#971515', malmur: '#3d4048', silfur: '#e3e7ee', gull: '#d3ab4e' };
     const teljari = k => { const tm = TYPE_META[k], t = telj[k];
       const u = k === 'serverd' ? (t.n === 1 ? 'verðlisti' : 'verðlistar') : (t.n ? fmtKr(t.s) + '<span class="tl-vsk"> m. vsk</span>' : '—');
       return `<button type="button" class="th-telj${thSia === k ? ' on' : ''}" data-sia="${k}" aria-pressed="${thSia === k}"><span class="tl-m"><span class="tl-d" style="background:${DOT[tm.plata]}"></span>${tm.stutt}</span><span class="tl-t">${t.n}</span><span class="tl-u">${u}</span></button>`; };
-    const ny = (id, t) => `<button id="${id}" type="button" class="th-ny">${TH_ICON.plus}${t}</button>`;
+    const ny = (id, t, ti) => `<button id="${id}" type="button" class="th-ny"${ti ? ' title="' + esc(ti) + '"' : ''}>${TH_ICON.plus}${t}</button>`;
     main.innerHTML = `<div class="th-wrap">
       <div class="th-haus"><span class="th-hnod-n"></span>
         <div class="th-efst">
@@ -655,6 +664,7 @@
         ${ny('_th-new-sl', 'Slökkvitæki-tilboð')}
         ${ny('_th-new-sv', 'Sérverð')}
         ${ny('_th-new-mn', 'Þjónustusamningur')}
+        ${Object.keys(AUKA).map(k => ny('_th-new-x-' + k, esc(AUKA[k].takki || AUKA[k].label), AUKA[k].titill)).join('')}
         <a class="th-verdskra" href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" title="Opna tengt verðskrár-/vöruskjal í Google Sheets">${TH_ICON.sheet}Verðskrá<small>Google Sheet ↗</small></a>
       </div>
       <div class="th-listhaus"><h2>Vistuð form<span id="_th-fjoldi"></span></h2>
@@ -663,7 +673,7 @@
     </div>`;
     const teiknaLista = () => {
       const q = thLeit.trim().toLowerCase();
-      const syn = forms.filter(f => (thSia === 'allt' || f.type === thSia) && (!q || String(f.customer && f.customer.nafn || '').toLowerCase().includes(q) || String(f.customer && f.customer.kt || '').includes(q)));
+      const syn = forms.filter(f => (thSia === 'allt' || flokkur(f) === thSia) && (!q || String(f.customer && f.customer.nafn || '').toLowerCase().includes(q) || String(f.customer && f.customer.kt || '').includes(q)));
       main.querySelector('#_th-fjoldi').textContent = syn.length === forms.length ? '· ' + forms.length : '· ' + syn.length + ' af ' + forms.length;
       const L = main.querySelector('#_th-listi');
       L.innerHTML = syn.length ? syn.map(rowFor).join('') : `<div class="th-tomt">${forms.length ? 'Ekkert form passar við síuna.' : 'Engin form enn — búðu til hér að ofan.'}</div>`;
@@ -685,12 +695,13 @@
     main.querySelector('#_th-new-sl').onclick = () => openSlokk();
     main.querySelector('#_th-new-sv').onclick = () => openServerd();
     main.querySelector('#_th-new-mn').onclick = () => openSamn();
+    Object.keys(AUKA).forEach(k => { const b = main.querySelector('#_th-new-x-' + k); if (b) b.onclick = () => AUKA[k].opna(); });
     main.querySelector('#_th-send').onclick = sendLink;
     main.querySelector('#_th-theme').onclick = cycleTheme;
   }
   function rowFor(f) {
-    const tm = TYPE_META[f.type] || TYPE_META.slokkvitaeki;
-    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.filter(l => !l.heading).length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
+    const tm = metaFyrir(f.type);
+    const sub = AUKA[f.type] ? esc(AUKA[f.type].undir ? AUKA[f.type].undir(f) : '') : f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.filter(l => !l.heading).length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
     const amount = f.type === 'serverd' ? '<div class="th-upph sv">Sérverð</div>' : '<div class="th-upph">' + fmtKr(f.m_vsk) + '</div>';
     return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}">
       <span class="th-plotu ${tm.plata}" title="${tm.label}">${tm.label}</span>
@@ -704,8 +715,8 @@
       </div>
     </div>`;
   }
-  function editForm(f) { if (f.type === 'brunakerfi') { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(f); afterModal(); } else if (f.type === 'samningur') openSamn(f); else if (f.type === 'serverd') openServerd(f); else openSlokk(f); }
-  function printForm(f) { if (f.type === 'brunakerfi') window.BrunakerfiTilbod && window.BrunakerfiTilbod.printOffer(f); else if (f.type === 'samningur') printDoc(samnHtml(f)); else if (f.type === 'serverd') printDoc(serverdHtml(f)); else printDoc(slokkHtml(f)); }
+  function editForm(f) { if (AUKA[f.type]) AUKA[f.type].opna(f); else if (f.type === 'brunakerfi') { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(f); afterModal(); } else if (f.type === 'samningur') openSamn(f); else if (f.type === 'serverd') openServerd(f); else openSlokk(f); }
+  function printForm(f) { if (AUKA[f.type]) printDoc(AUKA[f.type].html(f)); else if (f.type === 'brunakerfi') window.BrunakerfiTilbod && window.BrunakerfiTilbod.printOffer(f); else if (f.type === 'samningur') printDoc(samnHtml(f)); else if (f.type === 'serverd') printDoc(serverdHtml(f)); else printDoc(slokkHtml(f)); }
   async function delForm(f) {
     if (!confirm('Eyða þessu formi fyrir "' + (f.customer && f.customer.nafn || '') + '"?')) return;
     if (f.type === 'brunakerfi') { await saveBk(getBk().filter(x => x.id !== f.id)); window.BrunakerfiTilbod && window.BrunakerfiTilbod.refreshSaved(); }
@@ -773,5 +784,7 @@
   document.addEventListener('DOMContentLoaded', () => { injectNav(); deepLink(); });
   setTimeout(() => { injectNav(); deepLink(); }, 900);
 
-  window.TilbodHub = { open: go, render };
+  // `skra` + `vf` (verkfæri): svo ný form (503 o.fl.) noti SAMA glugga, prentskel, geymslu og talnasnið og formin hér.
+  window.TilbodHub = { open: go, render, skra,
+    vf: { modal, docShell, printDoc, getHub, saveHub, skjalNafn, grp, fmtKr, pn, num, fmtDate, todayISO, branding, theme, toast, footBtns, VSK } };
 })();
