@@ -195,3 +195,7 @@ where not exists (select 1 from cron.job where jobname = 'hunter-innsog');
 
 -- 03.11.2026: migration hunter_innsog_svor_okkar — SENT-póstur frá okkur í þekktum þræði eða á þekkt netfang uppfærir aðilann
 -- þótt efnið beri ekki herferð (nýr aðili verður aðeins til úr herferðarpósti).
+
+-- 11.11.2026 (migration hunter_innsog_brunaholf — AUTHORITATIVE útgáfa er í Supabase): hunter_innsog sækir nú líka
+-- slokkvitaeki@brunaholf.is. Sérstakur blokk í lokin (eldklar@-rökin ósnert); luna-bridge setur ekki thread_id, svo
+-- pörun er á LÉN fyrir herferd=Samningar aðila (ekki frípóstlén). Engir nýir aðilar verða til úr brunaholf-hólfinu.
