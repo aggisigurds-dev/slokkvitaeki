@@ -63,16 +63,16 @@
     { nafn: 'Keðjustigi 4,5m', flokkur: 'Ýmsar vörur', verd_an_vsk: 15242 },
     { nafn: 'Lyfjaskápur m/glerhurð og skrá', flokkur: 'Ýmsar vörur', verd_an_vsk: 6950 },
     { nafn: 'Miðar á tæki Bílanaust', flokkur: 'Ýmsar vörur', verd_an_vsk: 453 },
-    { nafn: 'Millistykki Co2 í Argon', flokkur: 'Ýmsar vörur', verd_an_vsk: 2812 },
+    { nafn: 'Millistykki CO₂ í Argon', flokkur: 'Ýmsar vörur', verd_an_vsk: 2812 },
     { nafn: 'Skápur fyrir 6 kg. Slökkvitæki', flokkur: 'Ýmsar vörur', verd_an_vsk: 18010 },
     { nafn: 'Skipafesting fyrir 6 kg. Slökkvitæki', flokkur: 'Ýmsar vörur', verd_an_vsk: 6963 },
     { nafn: 'Skyndihjálparpúði 112', flokkur: 'Ýmsar vörur', verd_an_vsk: 2550 },
-    { nafn: 'Álhimna Co2', flokkur: 'Varahlutir', verd_an_vsk: 341 },
+    { nafn: 'Álhimna CO₂', flokkur: 'Varahlutir', verd_an_vsk: 341 },
     { nafn: 'Botn slökkvitæki', flokkur: 'Varahlutir', verd_an_vsk: 1845 },
     { nafn: 'Double tape pr. M.', flokkur: 'Varahlutir', verd_an_vsk: 340 },
     { nafn: 'Horn fyrir 2 kg. Kolsýrutæki', flokkur: 'Varahlutir', verd_an_vsk: 1803 },
     { nafn: 'Hosuklemma', flokkur: 'Varahlutir', verd_an_vsk: 498 },
-    { nafn: 'Krani fyrir Co2 flöskur', flokkur: 'Varahlutir', verd_an_vsk: 5976 },
+    { nafn: 'Krani fyrir CO₂ flöskur', flokkur: 'Varahlutir', verd_an_vsk: 5976 },
     { nafn: 'Miði notk.leiðb. Slökkvitæki', flokkur: 'Varahlutir', verd_an_vsk: 863 },
     { nafn: 'O-hringur', flokkur: 'Varahlutir', verd_an_vsk: 270 },
     { nafn: 'Píla', flokkur: 'Varahlutir', verd_an_vsk: 195 },
@@ -82,7 +82,7 @@
     { nafn: 'Slöngufesting', flokkur: 'Varahlutir', verd_an_vsk: 251 },
     { nafn: 'Úðastútur brunaslanga 19 m.m.', flokkur: 'Varahlutir', verd_an_vsk: 6774 },
     { nafn: 'Veggfesting', flokkur: 'Varahlutir', verd_an_vsk: 800 },
-    { nafn: 'Þéttihringur Co2', flokkur: 'Varahlutir', verd_an_vsk: 298 },
+    { nafn: 'Þéttihringur CO₂', flokkur: 'Varahlutir', verd_an_vsk: 298 },
     { nafn: 'Þrýstimælir', flokkur: 'Varahlutir', verd_an_vsk: 1928 },
     { nafn: 'Öryggisinnsigli hvítt', flokkur: 'Varahlutir', verd_an_vsk: 461 },
     { nafn: 'Öryggispinni slökkvitæki', flokkur: 'Varahlutir', verd_an_vsk: 240 },
@@ -123,13 +123,18 @@
   // Beinn lestur getur ekki lent í kapphlaupi. Bregðist hann skilum við null og
   // seed() sleppir innsetningunni ALVEG (fail closed): sáningarvél sem veit ekki
   // hverju var eytt má ekki setja neitt inn.
+  // 11.11.2026 (mál #1460): samanburður á heitum þolir CO₂/Co2/co2. Sáningin bar saman í lágstöfum
+  // einum, svo „co₂“ ≠ „co2“ — þegar vörurnar voru endurnefndar CO₂ 08.11 setti hún fjórar inn aftur
+  // með gamla rithættinum (vorur 464–467).
+  function heitiLykill(n) { return String(n || '').trim().toLowerCase().replace(/co₂/g, 'co2'); }
+
   async function readTombstones() {
     try {
       // 21.09.2026 (afköst): sótti ALLAN 1,4 MB stillinga-blobbinn til að lesa EINN lykil. JSON-slóð í select skilar aðeins lyklinum.
       const r = await DB.sb.from('app_settings').select('dpn:settings->sala->deleted_product_names').eq('id', 1).maybeSingle();
       if (r.error) return null;
       const arr = (r.data && Array.isArray(r.data.dpn)) ? r.data.dpn : [];
-      return new Set(arr.map(n => String(n || '').trim().toLowerCase()));
+      return new Set(arr.map(n => heitiLykill(n)));
     } catch (_) { return null; }
   }
 
@@ -146,8 +151,8 @@
       }
       const r = await DB.sb.from('vorur').select('nafn');
       if (r.error) { console.warn('[aux-products] read failed:', r.error.message); return; }
-      const have = new Set((r.data || []).map(p => String(p.nafn || '').trim().toLowerCase()));
-      const missing = AUX_PRODUCTS.filter(p => !have.has(p.nafn.toLowerCase()) && !tombstoned.has(p.nafn.toLowerCase()));
+      const have = new Set((r.data || []).map(p => heitiLykill(p.nafn)));
+      const missing = AUX_PRODUCTS.filter(p => !have.has(heitiLykill(p.nafn)) && !tombstoned.has(heitiLykill(p.nafn)));
       if (!missing.length) {
         // 18.09.2026 (yfirferð): ekki staða heldur staðbundin sáningarvörn. Sannleikurinn
         // um vörurnar er `vorur`-taflan (lesin hér að ofan í hverri lotu); merkið sparar
