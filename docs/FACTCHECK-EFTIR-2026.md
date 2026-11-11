@@ -403,3 +403,16 @@ Agnar: „skrá allt í customer database … svo við þurfum ekki að gera þe
 
 Pizzan – Háholt (613): Agnar sagði „má gera aftur“. Skráð á mál #1058 með línunum sem drögin eiga að bera (3 yfirferðir léttvatn +
 skýrslugerð + akstur, 23.126 kr. m. vsk). Drögin sjálf voru EKKI stofnuð; körfusniðið varð ekki sannreynt án innskráningar.
+
+## Leiðrétt 11.11.2026 — fjögur heimilisföng sem vantaði
+
+Agnar: „leiðrétta“. Afrit í `backup_20261111_sannreyna_heimilisfang`, lína bætt aftan við review_note, lesið til baka.
+
+| id | Félag | Var | Er nú | Heimild |
+|---|---|---|---|---|
+| 1596 | Lækjargata 32, húsfélag | autt | Lækjargötu 32, 220 Hafnarfjörður | Fyrirtækjaskrá |
+| 1550 | Meiriháttar ehf | autt | Bíldshöfða 14, 110 Reykjavík | Fyrirtækjaskrá (lögheimili; ÓMÆLT hvort tækin eru þar) |
+| 1396 | Tannlæknastofan Prófíll | „201 Kópavogi“ | Hlíðasmára 17, 201 Kópavogi | Úttektarskýrsla des. 2023 |
+| 1397 | Tannlæknastofan Smárinn | „201 Kópavogi“ | Hlíðasmára 14, 201 Kópavogi | Úttektarskýrsla des. 2023 og Fyrirtækjaskrá |
+
+Punktur og húsmynd þessara raða eru óbreytt; geokóðun þarf að keyra aftur á nýju heimilisföngin.
