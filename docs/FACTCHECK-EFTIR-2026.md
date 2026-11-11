@@ -191,3 +191,12 @@ Agnar samþykkti. Raðir 440 og 441: „200 Kópavogur“ → „220 Hafnarfjör
 
 Röðin hliðraðist um tvö sæti: 1136 er nú sæti 83, og 440/441 eru í sætum 127 og 128 (þegar yfirfarin, sleppa þeim þar).
 **Næsta lota: `rn between 84 and 93`** (id 1373, 1123, 718, 1531, 468, 452, 478, 729, 743, 1106).
+
+## Leiðrétt 11.11.2026 — Hótel Kríunes (448) á Kríunesveg 12
+
+Agnar gaf heimilisfangið: Kríunesvegur 12, Vatnsenda, við Elliðavatn í Kópavogi. Röð 448: „Elliðavatn 200 Kópavogur“ →
+„Kríunesvegur 12, 203 Kópavogur“, póstnúmer 203 (úr OpenStreetMap; Fyrirtækjaskrá skráir lögheimilið í 200). Afrit í
+`backup_20261111_sannreyna_heimilisfang`, review_note á röðinni, lesið til baka, sían enn 168. Punktur og húsmynd enn ósett.
+
+Röðin hliðraðist um eitt sæti í viðbót: 448 er nú sæti 105 (þegar yfirfarið, sleppa).
+**Næsta lota: `rn between 83 and 92`** (id 1373, 1123, 718, 1531, 468, 452, 478, 729, 743, 1106).
