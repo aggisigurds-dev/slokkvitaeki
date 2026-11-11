@@ -125,7 +125,8 @@ Talið per tegund: léttvatn · duft 6–12 · duft 2 · CO₂ 2 · CO₂ 5 · s
 
 ```bash
 node tools/renna-rekstrarfelag.cjs 540994-2269            # lesaðeins: staðan núna
-node tools/renna-rekstrarfelag.cjs 540994-2269 --skrifa   # les ólesnar PDF + parar örugg
+node tools/para-rekstrarfelag.cjs --kt 540994-2269 --allt --tillogur   # FYRST: tillögurnar lagðar fyrir Agnar (regla 11)
+node tools/renna-rekstrarfelag.cjs 540994-2269 --skrifa   # AÐEINS eftir já Agnars: les ólesnar PDF + parar örugg
 node tools/para-rekstrarfelag.cjs --kt 540994-2269 --allt --tillogur
 ```
 
@@ -140,7 +141,7 @@ node tools/para-rekstrarfelag.cjs --kt 540994-2269 --allt --tillogur
 4. Skráðu í minnisbókina (`node tools/minni.cjs --skra … --topic skyrslur`) og uppfærðu
    `brunaholf/.claude/agents/skjol.md` ef reglan breytist.
 
-## Opið (06.10.2026)
+## Opið (staðan 06.10.2026 — ÚRELT sem verkefnalisti; mældu upp á nýtt áður en nokkuð hér er talið órukkað)
 
 - Hleðsluspáin (5 ár léttvatn/duft, 10 ár CO₂) bíður reikninganna 2022–2024 sem Agnar
   tekur saman; reikningslestur nær aðeins til 2024.

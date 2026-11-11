@@ -1,6 +1,6 @@
 ---
 name: uttekt-audit
-description: Samræmisúttekt Slökkvitækis — ber saman magn á tækjaúttektarlista (uttaeki), magn í úttektarskýrslu (arsskodun_report_facts) og magn á reikningi (solur) fyrir hvert skoðað fyrirtæki árs; allt stemmir = grænt merki, annað fer á „skoða sérstaklega"-lista. Notaðu þegar Agnar biður um audit, samræmi, „passar magnið", „stemmir þetta", „farðu yfir árið", „hvort rétt skýrsla sé við hvert", eða vill uppfæra docs/SAMRAEMI-<ár>.md. Líka fyrir stakt fyrirtæki („stemmir Afltak?"). Kveikjuorð: audit, samræmi, stemmir, passar magnið, fölsk staðreynd, false-fact, falskt grænt, arsskodun_report_facts. Afrit af sömu villu → villuleit / variant-analysis.
+description: Samræmisúttekt Slökkvitækis — ber saman magn á tækjaúttektarlista (uttaeki), magn í úttektarskýrslu (arsskodun_report_facts) og magn á reikningi (solur) fyrir hvert skoðað fyrirtæki árs; allt stemmir = grænt merki, annað fer á „skoða sérstaklega"-lista. Notaðu þegar Agnar biður um audit, samræmi, „passar magnið", „stemmir þetta", „stemmir árið", „samræmi ársins", „farðu yfir árið", „hvort rétt skýrsla sé við hvert", eða vill uppfæra docs/SAMRAEMI-<ár>.md. Líka fyrir stakt fyrirtæki („stemmir Afltak?"). Kveikjuorð: audit, samræmi, stemmir, passar magnið, fölsk staðreynd, false-fact, falskt grænt, arsskodun_report_facts. Afrit af sömu villu → villuleit / variant-analysis.
 ---
 
 # Úttektar-audit — magn á þremur stöðum == grænt
@@ -32,6 +32,10 @@ Supabase-verkefni `osfdzskyvisifcwyjkuk` (execute_sql gegnum MCP).
    **Yfirferð/Hleðsla/Nýtt** (EKKI Akstur, EKKI Skýrslugerð). Kredit-reikningar
    dragast frá sjálfkrafa (neikvætt magn). Tenging: customer_id → fyrirtaeki.id,
    fallback kennitala (þoldu með/án bandstriks).
+   **„Enginn reikningur" er ekki niðurstaða fyrr en líka er lesið:** `stolpi_reikningar` á `kt10` (allt fyrir
+   07.05.2026; opið við yfirtöku telst greitt fyrri eigendum), `credit_of` (kredit + endurgerð) og
+   `customer_documents` með `invoice_number`. Án þess reyndust 103 af 148 „skoðað án reiknings" rangar (11.2026).
+   Félag með fleiri en einn stað á kt fer um skill `rekstrarfelog-parun`, ekki þessa pörun.
 4. **Ársmerkið** (til hliðsjónar í töfluna): `year_factcheck` (co_id, year,
    status human/claude/gap) og `app_settings.settings->'arsskodun_customers'-><id>
    ->'last_year_inspected'`.

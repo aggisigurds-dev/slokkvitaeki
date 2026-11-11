@@ -92,7 +92,11 @@ Notaðu `returning id, title` — lestu titilinn sem þú lokaðir, aldrei bara 
   tvítalning — tæki eru FJÖLDI, raðnúmer skipta engu.
 - **`app_settings` er skrifað með `app_settings_merge`**, aldrei heil-skrifað. Merge
   getur ekki EYTT lykli; `false` er leiðin til að slökkva á þrepi (`!!s[k]` í 266).
-- **`krafa_note` prentast á reikninginn.** Innri skýringar eiga ekki heima þar.
+- **`athugasemdir` prentast á reikninginn og fer í Payday-kröfuna; `krafa_note` er innri reiturinn.** Innri skýringar
+  fara í `krafa_note`, aldrei í `athugasemdir` (leiðrétt 11.11.2026 — hér stóð öfugt; sjá kaflann frá 09.10 neðar).
+- **Samþykkisþakið (CLAUDE.md 11.11.2026) gildir um hvert „stofnaðu nýtt mál" í þessari skrá:** nýtt mál á Agnar aðeins
+  ef aðgerðin fer út fyrir kerfið eða er óafturkræf, forsendan er mæld sama dag, ekkert opið mál er til um efnið (þá
+  bætist lína við það), og lotan stofnar mest TVÖ. Allt annað fer á Verkefnalistann.
 - **Engar kröfur á einstaklinga** — þeir staðgreiða.
 
 ## Tvær mælingargildrur sem bitu hér

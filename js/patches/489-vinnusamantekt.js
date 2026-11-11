@@ -105,6 +105,8 @@
       },
       redder: () => fyrirspurn(c.from('redder_invoices').select('dagsetning,m_vsk').gte('dagsetning', isoDags(vika(-1))).limit(500)),
       nyirStadir: () => bhGet('/api/worksites?year=2026'),
+      // 11.11.2026: staða verkferlisins „Sannreyna fyrirtæki" (skill sannreyna-fyrirtaeki) — keyrslur skráðar á þjón.
+      sannreyna: async () => { const r = await fyrirspurn(c.from('app_settings').select('s:settings->sannreyna_fyrirtaeki').limit(1)); return (r[0] && r[0].s) || {}; },
       kyb: () => bhGet('/api/krofu-yfirlit-bru'),
       fjarmal: () => bhGet('/api/fjarmal-yfirlit'),
       nlsh: () => bhGet('/api/nlsh-dashboard'),
@@ -318,6 +320,39 @@
       return { sev: otengdir.length ? 'athuga' : 'ok', tala: String(l.length), undir: otengdir.length ? otengdir.length + ' án kúnna tengdan · fyrsta færsla síðustu 14 daga' : 'allir tengdir kúnna',
         punktar: l.slice(0, 5).map(w => w.project + ' · ' + tal(w.hours) + ' klst · fyrst ' + dags(w.first) + ((w.mapped_customers || []).length ? '' : ' · án kúnna')) };
     } },
+    /* 11.11.2026 (Agnar: „skrá þetta verkferli niður sem Sannreyna fyrirtæki box … svo ég geti síðar beðið um að keyra
+     * þetta ferli í gang fyrir önnur fyrirtæki"). Ferlið sjálft er skill `sannreyna-fyrirtaeki` (.claude/skills); boxið
+     * sýnir stöðu síðustu keyrslu úr app_settings.sannreyna_fyrirtaeki.keyrslur og minnir á hvernig það er ræst. */
+    { id: 'sannreyna', hopur: 'Fyrirtæki', heiti: 'Sannreyna fyrirtæki', slod: { view: 'arsskodun', t: 'Fyrirtæki í þjónustu' }, maela: g => {
+      const k = Object.values((g.sannreyna.v || {}).keyrslur || {}).sort((a, b) => String(b.dags || '').localeCompare(String(a.dags || '')));
+      const profin = 'Sjö próf per félag: kt við nafn og heimilisfang · kt við skýrslu · geopunktur · húsmynd · tækjalisti við skýrslu/reikning · netfang og samskipti · enn starfandi';
+      const raesa = 'Ræst með því að biðja Claude: „sannreyna fyrirtæki" og nefna listann eða félögin';
+      if (!k.length) return { sev: 'upp', tala: 'engin keyrsla', undir: 'verkferli skráð · ekkert keyrt enn', punktar: [profin, raesa] };
+      const s = k[0], eftir = Math.max(0, (+s.alls || 0) - (+s.buid || 0));
+      return { sev: (+s.fravik || 0) ? 'athuga' : eftir ? 'upp' : 'ok', tala: (+s.buid || 0) + ' af ' + (+s.alls || 0),
+        undir: (s.heiti || 'keyrsla') + ' · ' + (+s.fravik || 0) + ' með frávik · síðast ' + dags(s.dags),
+        punktar: [profin, raesa].concat(k.slice(1, 4).map(x => (x.heiti || 'keyrsla') + ' · ' + (+x.buid || 0) + ' af ' + (+x.alls || 0) + ' · ' + dags(x.dags))) };
+    } },
+    /* 11.11.2026 (Agnar: „ef þú manst eftir fleiri svona góðum verkferlum sem væri gott að hafa tilbúið þarna"): EITT box
+     * sem telur upp verkferlin sem eru þegar til sem skill eða agent, með orðinu sem ræsir þau. Aðeins skrá — engin mæling,
+     * ekkert ljós í talningunni (sev 'upp'), og nýtt verkferli bætist við sem ein lína hér um leið og skillið er til. */
+    { id: 'verkferli', hopur: 'Fyrirtæki', heiti: 'Verkferli tilbúin til keyrslu', maela: () => {
+      const F = [
+        ['Sannreyna fyrirtæki', 'sannreyna fyrirtæki', 'sjö próf per félag á lista'],
+        ['Reikningalota', 'reikningalota', 'hvað er tilbúið að senda, tengingar, drög'],
+        ['Rannsóknarhamur', 'rannsóknarhamur', 'órukkað, ósvarað, gleymdar skoðanir'],
+        ['Samræmi ársins', 'stemmir árið', 'tækjalisti = skýrsla = reikningur per félag'],
+        ['Rekstrarfélög', 'para eftir magni', 'skýrsla við reikning per stað á sömu kt'],
+        ['Svörin á borðinu', 'klára svörin', 'vinna úr því sem þú samþykktir eða hafnaðir'],
+        ['Mánaðarlok gata', 'loka mánuðinum', 'Landspítali og Heklureitur í Gerð reikninga'],
+        ['Staðfesting brunalokana', 'staðfesting brunalokana', 'skjal til verkkaupa úr Eyðublöðum'],
+        ['Allsherjar úttekt', 'allsherjar úttekt', 'allt kerfið mælt og lagfæringar endurmældar'],
+        ['Lotuúttekt', 'lotuúttekt', 'lotur tímabils lesnar, endurmældar og skráðar í Charlize'],
+        ['Agenta-samstilling', 'samstilla agentana', 'allir agentar uppfærðir á móti Charlize'],
+        ['Listaúttekt', 'listaúttekt', 'allir listar, mælingar og tól í eina skrá; lifandi, dautt, skarast']
+      ];
+      return { sev: 'upp', tala: F.length + ' ferli', undir: 'ræst með því að segja orðin við Claude', punktar: F.map(f => f[0] + ' · „' + f[1] + '" · ' + f[2]) };
+    } },
     /* ── Hunt og verkefni — „Veiðin" úr Jarvis (grunnlína 30/07/2026) og stóri verkefnalistinn ── */
     { id: 'hunt_skyrslur', hopur: 'Hunt og verkefni', heiti: 'Hunt · staðir með 2026-skýrslu', slod: { url: BH + '/veidin.html', t: 'Veiðin' }, maela: g => {
       const n = g.veidin.v.nuna || {}, b = g.veidin.v.baseline || {}, d = (n.stadir_med_2026_skyrslu || 0) - (b.stadir_med_2026_skyrslu || 0);
@@ -445,6 +480,7 @@
     const s = m.slod || {};
     const tengill = s.ham ? '<button type="button" class="vs-t" data-t5="mode" data-mode="' + esc(s.ham) + '" title="Opna ' + esc(s.t) + ' — þar sem þetta er unnið">' + esc(m.heiti) + ' ›</button>'
       : s.view ? '<button type="button" class="vs-t" data-t5="vs-opna" data-v="' + esc(s.view) + '" title="Opna ' + esc(s.t) + ' — þar sem þetta er unnið">' + esc(m.heiti) + ' ›</button>'
+      : !s.url ? '<span class="vs-t">' + esc(m.heiti) + '</span>'   // 11.11.2026: skrárbox án áfangastaðar (Verkferli) — enginn tengill sem leiðir ekkert
       : '<a class="vs-t" href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer" title="Opna ' + esc(s.t) + ' (nýr flipi)">' + esc(m.heiti) + ' ↗</a>';
     const skyr = api ? api.skyrLina(f) : '';
     // Opinn skýringarritill heldur röðinni opinni — annars hyrfi textinn sem verið er að skrifa.
