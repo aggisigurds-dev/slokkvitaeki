@@ -659,6 +659,11 @@
     || (a.due_at ? tStamp(a.due_at) : Infinity) - (b.due_at ? tStamp(b.due_at) : Infinity)
     || tStamp(a.created_at) - tStamp(b.created_at);
   const tagList = r => (Array.isArray(r.tags) ? r.tags : []).filter(t => typeof t === 'string');
+  // 11.11.2026 (mál #1544): sama ákvörðun stendur líka í factcheck_akvardanir. Merkið factcheck:<id> tengir þær og
+  // krókarnir thjb_factcheck_samstilla / factcheck_bord_samstilla (sql/2026-11-11_factcheck_bord_samstilling.sql) bera
+  // svarið á milli — svar hér lokar factcheck-færslunni og öfugt. Flagan segir það svo það sjáist án þess að opna málið.
+  const fcNr = r => tagList(r).map(t => /^factcheck:(\d+)$/.exec(t)).filter(Boolean).map(m => m[1]);
+  const fcTexti = r => { const n = fcNr(r); return n.length ? 'Líka í factcheck #' + n.join(', #') + ' — svar hér lokar því' : ''; };
   const skyrirHamir = r => tagList(r).filter(t => t.indexOf(HAM_MERKI) === 0).map(t => t.slice(HAM_MERKI.length)).filter(id => !!M(id));
   // 368aa: hvert mál á einn stað. Merki á vinnusvæðis-ham (ham:vinnublod, 368y) ræður fyrst; bíði málið svars á borði þess
   // sem er við vélina er það í Samþykkja; annars í Master og mitt borð (eða sérsniðnum ham sem það er tengt). Einingahamir
@@ -1811,6 +1816,7 @@
         (isPost(r) && r.svarad_at ? '<span class="tag ok">Svarað</span>' : '') +
         (virkniEftir(r) ? '<span class="tag ok" title="Reikningur, sala eða skýrsla eftir að málið varð til">Líklega afgreitt</span>' : '')) +
       (!isFree(r) ? '<span class="tag">' + esc(eigandaTexti(r, n)) + '</span>' : '') +
+      (fcNr(r).length ? '<span class="tag" title="' + esc(fcTexti(r)) + ' sjálfkrafa (og öfugt)">Líka í factcheck #' + esc(fcNr(r).join(', #')) + '</span>' : '') +
       skyrirHamir(r).filter(k => k !== cfg().mode).map(k => '<span class="tag ham">' + esc(M(k).l) + '</span>').join('');
     const hlid = onBoardOf(r, n) ? '<span class="lock">Þitt</span>'
       : '<button type="button" class="btn iv sm" data-t5="take" data-id="' + r.id + '"' + dis(r.id) +
@@ -2353,7 +2359,7 @@
     const nr = val ? listi.indexOf(val) : -1;
     const hlutar = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1], ['Tilbúið — bara samþykkja', 0], ['Þarf svar frá þér', 1], ['Svarað · bíður Claude', 2]].map(h => [h[0], grunnur.filter(r => samtHluti(r) === h[1]), h[1]]);
     const item = r => {
-      const ef = aiLine(r), undir = [samtRodun === 'sjalf' ? '' : SAMT_HLUTA_NOFN[samtHluti(r)], heimildaFjoldi(r) ? '' : 'Engin heimild tengd', whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : ''].filter(Boolean).join(' · ');
+      const ef = aiLine(r), undir = [samtRodun === 'sjalf' ? '' : SAMT_HLUTA_NOFN[samtHluti(r)], heimildaFjoldi(r) ? '' : 'Engin heimild tengd', whereOf(r), fmtDags(r.created_at), ageDays(r) + ' d.', svarBidur(r) ? SVOR[svarMals(r)].merki : '', fcTexti(r)].filter(Boolean).join(' · ');
       /* ★ á spjaldinu sjálfu (Agnar: „að geta merkt stjörnu sem byrtist þá efst í
        * mikilvægast"). Sama aðgerð og „☆ Áríðandi" í málglugganum — data-t5
        * „mal-ari", sem skrifar á þjóninn og býður afturköllun. Hún stýrir
