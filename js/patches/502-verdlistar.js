@@ -52,39 +52,47 @@
   //
   // GRUNNUR (Agnar 10.11.2026: „mátt prófa setja einhvern grunn inn, leita á netinu, hvernig þetta virkar almennilega"). Liðirnir fylgja
   // því sem reglur og leiðbeiningar HMS segja að eigi að skoða og hve oft — sjá .claude/skills/arnold/references/arsskodun-kerfi.md
-  // (heimildir með tenglum). ENGIN VERÐ eru sett: verð er `null` („—") og Agnar fyllir þau inn; tala sem endar á reikningi er aldrei
+  // (heimildir með tenglum). ENGIN VERÐ eru sett nema þau sem Agnar hefur sjálfur gefið upp (V() hér að neðan — 11.11.2026: Neyðarljós,
+  // tímavinna 14.500 og sjónskoðun frá 29.000): annars er verð `null` („—") og Agnar fyllir það inn; tala sem endar á reikningi er aldrei
   // giskuð. `heimild` birtist efst í glugganum svo sjáist hvaðan grunnurinn kemur. Listi sem hefur verið vistaður á þjóninn ræður — þessi
   // grunnur gildir aðeins þar til fyrsta breyting er vistuð (þá fer hann allur með á þjóninn).
   const G = (id, nafn, eining, hopur, ath, tegund) => ({ id: id, nafn: nafn, verd: null, eining: eining || 'stk', vsk: null, hopur: hopur, ath: ath || '', virkt: true, tegund: tegund || 'fast' });
+  // Verð sem Agnar hefur SJÁLFUR gefið upp fer inn með V() og heimild í athugasemd — aldrei ágiskun.
+  const V = (lid, verd, tegund) => Object.assign(lid, { verd: verd, tegund: tegund || lid.tegund });
   const VINNA = pf => [G(pf + '-timi', 'Tímavinna tæknimanns', 'klst', 'vinna'), G(pf + '-akstur', 'Akstur', 'ferð', 'vinna'), G(pf + '-skyrsla', 'Skýrslugerð', 'stk', 'vinna')];
   const H_VINNA = { id: 'vinna', heiti: 'Vinna og akstur' }, H_EFNI = { id: 'efni', heiti: 'Varahlutir og efni' };
   const STOFN = [
     { id: 'sprinkler', nafn: 'Sprinklerkerfi', takn: '💦', litur: 'teal', vsk: 24, rod: 10,
       lysing: 'Viðhald og eftirlit vatnsúðakerfa — ÍST EN 12845',
-      heimild: 'Byggingarreglugerð 112/2012 gr. 9.4.6 og leiðbeining HMS 9.4.6 (útg. 1.0, 27.8.2025): „Gerðir skulu þjónustusamningar við viðurkennda aðila um viðhald og eftirlit" og viðhald og eftirlit vatnsúðakerfa skal vera í samræmi við ÍST EN 12845 (kafli 20: ársfjórðungs-, hálfsárs-, árs-, 3 ára og 10 ára skoðun). Krefst starfsleyfis HMS fyrir slökkvikerfi (reglugerð 1067/2011).',
+      heimild: 'Byggingarreglugerð 112/2012 gr. 9.4.6 og leiðbeining HMS 9.4.6 (útg. 1.0, 27.8.2025): „Gerðir skulu þjónustusamningar við viðurkennda aðila um viðhald og eftirlit" og viðhald og eftirlit vatnsúðakerfa skal vera í samræmi við ÍST EN 12845 (kafli 20: ársfjórðungs-, hálfsárs-, árs-, 3 ára og 10 ára skoðun). Krefst starfsleyfis HMS fyrir slökkvikerfi (reglugerð 1067/2011). BRÁÐABIRGÐAVERÐ sett 11.11.2026: ársfjórðungsskoðun 24.000, ársskoðun 31.000 og akstur 2.676 kr. án vsk. eru tekin úr þjónustusamningi samkeppnisaðila frá september 2022 (byggingarvísitala þá 108,3; í október 2026 er hún 130,4) — á eftir að ákveða okkar eigin verð.',
       hopar: [{ id: 'skodun', heiti: 'Reglubundin skoðun' }, { id: 'lengri', heiti: 'Lengri skoðunarbil' }, H_VINNA, H_EFNI],
       lidir: [
-        G('sp-q', 'Ársfjórðungsskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Úðastútar, lagnir og upphengi, vatnsveita, lokar og viðvörun — ÍST EN 12845'),
+        // BRÁÐABIRGÐAVERÐ (Agnar 11.11.2026: „Mátt notast við verðin á sprinkler kerfinu og setja það inn í okkar verð svona í bili"):
+        // 24.000 / 31.000 / akstur 2.676 kr. án vsk., úr þjónustusamningi samkeppnisaðila frá 15.09.2022. Uppruninn stendur í `heimild`
+        // (sést aðeins í glugganum, prentast ekki) og í Verði samkeppnisaðila — ekki í athugasemd liðar, hún fer á prentaðan verðlista.
+        V(G('sp-q', 'Ársfjórðungsskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Úðastútar, lagnir og upphengi, vatnsveita, lokar og viðvörun — ÍST EN 12845'), 24000),
         G('sp-h', 'Hálfsársskoðun — þurrlokar og boð til vaktstöðvar', 'skoðun', 'skodun', 'ÍST EN 12845'),
-        G('sp-a', 'Ársskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Dæluprófun á fullu álagi, flotlokar og síur — ÍST EN 12845'),
+        V(G('sp-a', 'Ársskoðun vatnsúðakerfis', 'skoðun', 'skodun', 'Dæluprófun á fullu álagi, flotlokar og síur — ÍST EN 12845'), 31000),
         G('sp-loki', 'Prófun viðvörunarloka og vatnsklukku', 'stk', 'skodun', 'Verð á hvern stjórnloka'),
         G('sp-daela', 'Prófun slökkvidælu á fullu álagi', 'stk', 'skodun', 'Árlega'),
         G('sp-3', '3 ára skoðun — vatnsgeymar og lokar', 'skoðun', 'lengri', 'ÍST EN 12845'),
         G('sp-10', '10 ára skoðun — hreinsun og innri skoðun vatnsgeymis', 'skoðun', 'lengri', 'ÍST EN 12845', 'tilbod'),
         G('sp-25', 'Sýnataka og prófun úðastúta eftir 25 ár', 'stk', 'lengri', 'ÍST EN 12845, viðauki K', 'tilbod')
-      ].concat(VINNA('sp'), [G('sp-stutur', 'Úðastútur — skipti', 'stk', 'efni')]) },
+      ].concat(VINNA('sp').map(x => x.id === 'sp-akstur' ? V(x, 2676) : x), [G('sp-stutur', 'Úðastútur — skipti', 'stk', 'efni')]) },
     { id: 'neydarljos', nafn: 'Neyðarljós', takn: '💡', litur: 'appelsina', vsk: 24, rod: 20,
       lysing: 'Eftirlit og prófanir neyðarlýsingar og útljósa — ÍST EN 50172',
       heimild: 'Byggingarreglugerð 112/2012 gr. 9.4.12 og leiðbeining HMS 9.4.12 (útg. 1.5, 31.3.2026): rafhlöður álagsprófaðar árlega. ÍST EN 50172: mánaðarleg virkniprófun, árleg prófun á fullum endingartíma (60 mín), ljósmæling við afhendingu og á 5 ára fresti, allt fært í dagbók. Staðfesting til slökkviliðs (Fylgiblað 1) er undirrituð af rafvirkjameistara.',
       hopar: [{ id: 'skodun', heiti: 'Skoðun og prófun' }, H_VINNA, H_EFNI],
       lidir: [
+        // Verð frá Agnari 11.11.2026 (verkferill neyðarlýsingar, 504): tímavinna 14.500 kr./klst. án vsk., lágmark 2 klst. = 29.000 kr.
+        V(G('ne-sjon', 'Árleg skoðun neyðar- og útgöngulýsingar — sjónræn ástandsyfirferð', 'skoðun', 'skodun', 'Lágmarksgjald: 2 klst. tímavinna; stærri byggingar eftir tíma. Viðgerðir, rafhlöðuskipti og ljósmælingar ekki innifalin'), 29000, 'fra'),
         G('ne-a', 'Árleg skoðun og prófun neyðarlýsingar', 'skoðun', 'skodun', 'Full ending (60 mín) og álagsprófun rafhlaðna — ÍST EN 50172'),
         G('ne-ljos', 'Prófun á hvert neyðarljós / útljós', 'stk', 'skodun', 'Verð á hvert ljós'),
         G('ne-m', 'Mánaðarleg virkniprófun', 'skoðun', 'skodun', 'ÍST EN 50172'),
         G('ne-midl', 'Álagsprófun miðlægs rafhlöðukerfis', 'kerfi', 'skodun', 'ÍST EN 50171'),
         G('ne-lux', 'Ljósmæling', 'skoðun', 'skodun', 'Við afhendingu og á 5 ára fresti — ÍST EN 50172'),
         G('ne-stadf', 'Staðfesting til slökkviliðs (Fylgiblað 1)', 'stk', 'skodun', 'Undirrituð af rafvirkjameistara — HMS 9.4.12')
-      ].concat(VINNA('ne'), [G('ne-rafhl', 'Rafhlaða í neyðarljós — skipti', 'stk', 'efni'), G('ne-nytt', 'Neyðarljós / útljós — skipti', 'stk', 'efni')]) },
+      ].concat(VINNA('ne').map(x => x.id === 'ne-timi' ? V(x, 14500) : x), [G('ne-rafhl', 'Rafhlaða í neyðarljós — skipti', 'stk', 'efni'), G('ne-nytt', 'Neyðarljós / útljós — skipti', 'stk', 'efni')]) },
     { id: 'eldvarnaeftirlit', nafn: 'Eldvarnaeftirlit', takn: '🔥', litur: 'fjola', vsk: 24, rod: 30,
       lysing: 'Eigið eldvarnaeftirlit, áætlanir og þjálfun — reglugerð 723/2017',
       heimild: 'Reglugerð um eldvarnir og eldvarnaeftirlit 723/2017, 10.–13. og 26. gr., og leiðbeiningar Eldvarnabandalagsins um eigið eldvarnaeftirlit (2025): mánaðarlegur gátlisti (7 liðir) og árlegur (15 liðir). SHS: skriflegt eigið eftirlit mánaðarlega ef fleiri en 50 manns eru í húsinu, annars árlega. Eftirlitið sjálft framkvæmir eldvarnafulltrúi eiganda — þetta er aðstoð við það.',
@@ -459,7 +467,7 @@
   }
   function escLoka(e) {
     if (e.key !== 'Escape') return;
-    if (document.getElementById('_th-modal')) return;   // form ofan á glugganum (samningur, 503) — Esc lokar ekki listanum undir því
+    if (document.getElementById('_th-modal') || document.getElementById('vf4-bak')) return;   // form ofan á glugganum (samningur 503, verkferlar 504) — Esc lokar ekki listanum undir því
     const f = document.getElementById(P + '-f');
     if (f) f.remove(); else loka();
   }
@@ -484,11 +492,13 @@
 
   // 11.11.2026: aukatakkar í haus — aðrir pappar skrá takka á tiltekinn lista (503: „Þjónustusamningur" á Sprinklerkerfi).
   // Takkinn fer vinstra megin við „⚙ Stillingar". o = { texti, titill, smellur(listaId) }.
+  // listaId '*' = allir listar (504: „Verkferill"). Algildir takkar koma fyrst, takkar listans næst Stillingum.
   const _hausTakkar = {};
+  const hausTakkarFyrir = id => (_hausTakkar['*'] || []).concat(_hausTakkar[id] || []);
   function hausTakki(listaId, o) {
     if (!listaId || !o || typeof o.smellur !== 'function') return;
     (_hausTakkar[listaId] = _hausTakkar[listaId] || []).push(o);
-    if (_virkur === listaId) teiknaHaus();
+    if (_virkur && (listaId === '*' || _virkur === listaId)) teiknaHaus();
   }
 
   function teiknaHaus() {
@@ -497,7 +507,7 @@
     h.innerHTML = '<span style="font-size:24px;line-height:1">' + esc(L.takn) + '</span>' +
       '<div><h2>' + esc(L.nafn) + ' — verð</h2><p>' + esc(L.lysing || 'Verðlisti — verð, einingar og vsk') + '</p></div>' +
       '<div class="' + P + '-hn">' +
-        (_hausTakkar[L.id] || []).map((t, i) => '<button type="button" data-ht="' + i + '" title="' + esc(t.titill || '') + '">' + esc(t.texti || '') + '</button>').join('') +
+        hausTakkarFyrir(L.id).map((t, i) => '<button type="button" data-ht="' + i + '" title="' + esc(t.titill || '') + '">' + esc(t.texti || '') + '</button>').join('') +
         '<button type="button" id="' + P + '-stillingar" title="Heiti, tákn, litur, sjálfgefinn vsk, afrita eða eyða listanum">⚙ Stillingar</button>' +
         '<button type="button" id="' + P + '-tilbod" class="' + (_tilbod ? 'on' : '') + '" title="Magn og afsláttur á línu — prenta tilboð eða setja línurnar í körfu í Sölu">' + (_tilbod ? '✓ Tilboðsham' : 'Búa til tilboð') + '</button>' +
         '<button type="button" id="' + P + '-prenta" title="Prenta verðlistann á A4 með haus Slökkvitækis — verð án og með vsk">Prenta verðlista</button>' +
@@ -680,7 +690,7 @@
       if (hb) { const tr = bak.querySelector('tr.hopur[data-h="' + hb.getAttribute('data-hopur-id') + '"]'); if (tr) tr.scrollIntoView({ block: 'start' }); return; }
       const id = e.target.id;
       const ht = e.target.closest('[data-ht]');
-      if (ht) { const t = (_hausTakkar[_virkur] || [])[+ht.dataset.ht]; if (t) t.smellur(_virkur); return; }
+      if (ht) { const t = hausTakkarFyrir(_virkur)[+ht.dataset.ht]; if (t) t.smellur(_virkur); return; }
       if (id === P + '-loka') { loka(); return; }
       if (id === P + '-stillingar') { stillingar(_virkur); return; }
       if (id === P + '-prenta') { prentaVerdlista(); return; }

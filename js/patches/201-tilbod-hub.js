@@ -423,6 +423,27 @@
   }
 
   // ====================== ÞJÓNUSTUSAMNINGUR ======================
+  // 11.11.2026 (Agnar: „getum notast eitthvað við þetta við samningaformið"): VERKÞÆTTIR í samningi — sóttir úr Verkferlum (504)
+  // með „Sækja verkferil…" eða skrifaðir beint. Prentast á undan skilmálum. Valið fyllir líka „Þjónusta" sé hún ósnert.
+  const SJ_THJON = 'Árleg skoðun og þjónusta slökkvitækja og brunakerfa';
+  function verkReitur(d) {
+    const l = (window.Verkferlar && Verkferlar.listi && Verkferlar.listi()) || [];
+    return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<label for="_th-verk" style="font-size:11px;color:#64748b;font-weight:700">Verkþættir (valfrjálst — prentast á undan skilmálum)</label>' +
+      (l.length ? '<select id="_th-verkval" aria-label="Sækja verkferil" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12px;background:#fff;max-width:100%"><option value="">Sækja verkferil…</option>' + l.map(x => '<option value="' + esc(x.id) + '">' + esc(x.nafn || x.titill) + '</option>').join('') + '</select>' : '') +
+      '</div><textarea id="_th-verk" rows="5" placeholder="Hvað er gert við skoðun — sæktu verkferil eða skrifaðu beint" style="width:100%;margin-top:3px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px;box-sizing:border-box;resize:vertical">' + esc(d.verk || '') + '</textarea></div>';
+  }
+  function tengjaVerkval(ov) {
+    const vv = ov.querySelector('#_th-verkval'); if (!vv) return;
+    vv.onchange = () => {
+      const s = vv.value && window.Verkferlar && Verkferlar.get(vv.value); vv.value = ''; if (!s) return;
+      const ta = ov.querySelector('#_th-verk'), th = ov.querySelector('#_th-thjon');
+      if (ta.value.trim() && ta.value.trim() !== String(s.texti).trim() && !confirm('Skipta út textanum í Verkþættir fyrir „' + (s.nafn || s.titill) + '"?')) return;
+      ta.value = s.texti;
+      const heiti = String(s.titill || s.nafn || '').replace(/^Verkferill\s*[–-]\s*/i, '');
+      if (heiti && th && (!th.value.trim() || th.value === SJ_THJON)) th.value = heiti;
+    };
+  }
   function openSamn(existing) {
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
     const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO(), skyring: (o && o.skyring) || '' });
@@ -430,7 +451,7 @@
     const inp = (id, val, ph) => `<input id="${id}" type="text" value="${esc(val || '')}" placeholder="${esc(ph || '')}" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box">`;
     const body = custFields(c) +
       '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:12px">' +
-        '<label style="font-size:11px;color:#64748b;font-weight:700">Þjónusta' + inp('_th-thjon', d.thjonusta || 'Árleg skoðun og þjónusta slökkvitækja og brunakerfa', '') + '</label>' +
+        '<label style="font-size:11px;color:#64748b;font-weight:700">Þjónusta' + inp('_th-thjon', d.thjonusta || SJ_THJON, '') + '</label>' +
         '<label style="font-size:11px;color:#64748b;font-weight:700">Verð án vsk / ár<input id="_th-verd" type="text" inputmode="numeric" value="' + grp(d.verd || 0) + '" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid var(--th-tintb);border-radius:7px;font:inherit;font-size:13px;font-weight:600;color:var(--th-primary);box-sizing:border-box"></label>' +
         '<label style="font-size:11px;color:#64748b;font-weight:700">Tíðni' + inp('_th-tidni', d.tidni || 'Árlega', '') + '</label>' +
       '</div>' +
@@ -438,6 +459,7 @@
         '<label style="font-size:11px;color:#64748b;font-weight:700">Gildir frá<input id="_th-fra" type="date" value="' + esc(d.gildir_fra || todayISO()) + '" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></label>' +
         '<label style="font-size:11px;color:#64748b;font-weight:700">Uppsagnarfrestur' + inp('_th-upps', d.uppsogn || '3 mánuðir', '') + '</label>' +
       '</div>' +
+      verkReitur(d) +
       '<label style="font-size:11px;color:#64748b;font-weight:700">Skilmálar<textarea id="_th-skilm" rows="5" style="width:100%;margin-top:3px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px;box-sizing:border-box;resize:vertical">' + esc(d.skilmalar || 'Verktaki annast reglubundna skoðun, viðhald og endurhleðslu slökkvitækja og eftirlit með brunaviðvörunarkerfi skv. gildandi reglugerðum. Samningurinn endurnýjast sjálfkrafa um eitt ár í senn sé honum ekki sagt upp innan uppsagnarfrests. Verð er án vsk og uppfærist árlega skv. vísitölu.') + '</textarea></label>' +
       '<div style="display:flex;justify-content:flex-end;margin-top:14px"><div style="min-width:280px">' +
         '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>Verð án vsk / ár</span><span id="_th-s-an">—</span></div>' +
@@ -449,10 +471,11 @@
     function recompute() { const an = pn(ov.querySelector('#_th-verd').value); ov.querySelector('#_th-s-an').textContent = fmtKr(an); ov.querySelector('#_th-s-vsk').textContent = fmtKr(an * VSK); ov.querySelector('#_th-s-tot').textContent = fmtKr(an * (1 + VSK)); }
     ov.addEventListener('input', recompute);
     ov.addEventListener('blur', e => { if (e.target.id === '_th-verd') e.target.value = grp(pn(e.target.value)); }, true);
+    tengjaVerkval(ov);
     recompute();
     function build() {
       const an = pn(ov.querySelector('#_th-verd').value);
-      return { skyring: readSkyring(ov), id: (o && o.id) || ('M' + Date.now()), type: 'samningur', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), thjonusta: ov.querySelector('#_th-thjon').value.trim(), tidni: ov.querySelector('#_th-tidni').value.trim(), gildir_fra: ov.querySelector('#_th-fra').value, uppsogn: ov.querySelector('#_th-upps').value.trim(), skilmalar: ov.querySelector('#_th-skilm').value.trim(), verd: an, an_vsk: Math.round(an), vsk: Math.round(an * VSK), m_vsk: Math.round(an * (1 + VSK)) };
+      return { skyring: readSkyring(ov), id: (o && o.id) || ('M' + Date.now()), type: 'samningur', verk: ((ov.querySelector('#_th-verk') || {}).value || '').trim(), created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), thjonusta: ov.querySelector('#_th-thjon').value.trim(), tidni: ov.querySelector('#_th-tidni').value.trim(), gildir_fra: ov.querySelector('#_th-fra').value, uppsogn: ov.querySelector('#_th-upps').value.trim(), skilmalar: ov.querySelector('#_th-skilm').value.trim(), verd: an, an_vsk: Math.round(an), vsk: Math.round(an * VSK), m_vsk: Math.round(an * (1 + VSK)) };
     }
     ov.querySelector('#_th-print').onclick = () => printDoc(samnHtml(build()));
     ov.querySelector('#_th-save').onclick = async () => {
@@ -471,6 +494,8 @@
         row('Verð án vsk / ár', fmtKr(o.an_vsk)) + row('VSK 24%', fmtKr(o.vsk)) +
         row('Samtals m. vsk / ár', '<span style="color:' + tp + ';font-weight:800">' + fmtKr(o.m_vsk) + '</span>') +
       '</table>' +
+      (o.verk ? '<div style="font-size:11px;font-weight:700;color:' + tdk + ';margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em">Verkþættir</div>' +
+        ((window.Verkferlar && Verkferlar.textiHtml) ? Verkferlar.textiHtml(o.verk) : '<div style="font-size:12px;line-height:1.55;color:#0f172a;white-space:pre-wrap">' + esc(o.verk) + '</div>') : '') +
       '<div style="font-size:11px;font-weight:700;color:' + tdk + ';margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em">Skilmálar</div>' +
       '<div style="font-size:12px;line-height:1.55;color:#0f172a;white-space:pre-wrap">' + esc(o.skilmalar || '') + '</div>' +
       '<div style="display:flex;justify-content:space-between;gap:40px;margin-top:40px">' +
@@ -527,6 +552,9 @@
   const metaFyrir = t => TYPE_META[t] || AUKA[t] || TYPE_META.slokkvitaeki;
   const flokkur = f => (AUKA[f.type] && AUKA[f.type].flokkur) || f.type;
   function skra(tegund, o) { if (!tegund || !o || typeof o.opna !== 'function' || typeof o.html !== 'function') return; AUKA[tegund] = o; try { render(); } catch (_) {} }
+  // VERKFÆRATAKKAR á aðgerðaplötunni, hjá „Verðskrá" (TilbodHub.tol) — t.d. „Verkferlar" (504). o = { texti, undir, titill, smellur }.
+  const TOL = [];
+  function tol(o) { if (!o || typeof o.smellur !== 'function') return; TOL.push(o); try { render(); } catch (_) {} }
   const TH_ICON = {
     plus: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
     edit: '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M10.8 2.4l2.8 2.8-8 8H2.8v-2.8z M9.4 3.8l2.8 2.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/></svg>',
@@ -582,6 +610,9 @@
       r('.th-ny svg', 'opacity:.9'),
       r('.th-verdskra', btnSilfur + ';margin-left:auto;height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-size:13px;white-space:nowrap'),
       r('.th-verdskra small', 'font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a6410'),
+      // verkfærahópur (TOL-takkar + Verðskrá): stendur saman hægra megin og fer saman í næstu línu þegar platan er full
+      r('.th-tolhop', 'display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;align-items:center;justify-content:flex-end'),
+      r('.th-tolhop .th-verdskra', 'margin-left:0'), r('.th-tol', 'cursor:pointer'),
       // ── listinn ──
       r('.th-listhaus', 'display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px'),
       // fyrirsögnin stendur á gráa stálinu undir dökka bandinu (ekki á plötu) — ljós, eins og 409-undirlínan
@@ -617,6 +648,7 @@
         r('.th-telj .tl-t', 'font-size:22px'),
         r('.th-ny', 'flex:1 1 calc(50% - 10px);justify-content:center;padding:0 10px;font-size:12.5px;min-height:44px'),
         r('.th-verdskra', 'flex:1 1 100%;margin-left:0;justify-content:center;min-height:44px'),
+        r('.th-tolhop', 'flex:1 1 100%;margin-left:0'),
         r('.th-leit', 'flex:1 1 100%'), r('.th-leit input', 'width:100%;height:40px'),
         r('.th-row', 'grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px'),
         r('.th-plotu', 'grid-column:1;grid-row:1'),
@@ -665,7 +697,8 @@
         ${ny('_th-new-sv', 'Sérverð')}
         ${ny('_th-new-mn', 'Þjónustusamningur')}
         ${Object.keys(AUKA).map(k => ny('_th-new-x-' + k, esc(AUKA[k].takki || AUKA[k].label), AUKA[k].titill)).join('')}
-        <a class="th-verdskra" href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" title="Opna tengt verðskrár-/vöruskjal í Google Sheets">${TH_ICON.sheet}Verðskrá<small>Google Sheet ↗</small></a>
+        <div class="th-tolhop">${TOL.map((t, i) => '<button type="button" class="th-verdskra th-tol" data-tol="' + i + '"' + (t.titill ? ' title="' + esc(t.titill) + '"' : '') + '>' + TH_ICON.sheet + esc(t.texti) + (t.undir ? '<small>' + esc(t.undir) + '</small>' : '') + '</button>').join('')}
+        <a class="th-verdskra" href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" title="Opna tengt verðskrár-/vöruskjal í Google Sheets">${TH_ICON.sheet}Verðskrá<small>Google Sheet ↗</small></a></div>
       </div>
       <div class="th-listhaus"><h2>Vistuð form<span id="_th-fjoldi"></span></h2>
         <label class="th-leit">${TH_ICON.leit}<input id="_th-leit" type="search" placeholder="Leita að viðskiptavini…" value="${esc(thLeit)}" autocomplete="off"></label></div>
@@ -696,6 +729,7 @@
     main.querySelector('#_th-new-sv').onclick = () => openServerd();
     main.querySelector('#_th-new-mn').onclick = () => openSamn();
     Object.keys(AUKA).forEach(k => { const b = main.querySelector('#_th-new-x-' + k); if (b) b.onclick = () => AUKA[k].opna(); });
+    main.querySelectorAll('[data-tol]').forEach(b => { b.onclick = () => { const t = TOL[+b.dataset.tol]; if (t) t.smellur(); }; });
     main.querySelector('#_th-send').onclick = sendLink;
     main.querySelector('#_th-theme').onclick = cycleTheme;
   }
@@ -785,6 +819,6 @@
   setTimeout(() => { injectNav(); deepLink(); }, 900);
 
   // `skra` + `vf` (verkfæri): svo ný form (503 o.fl.) noti SAMA glugga, prentskel, geymslu og talnasnið og formin hér.
-  window.TilbodHub = { open: go, render, skra,
+  window.TilbodHub = { open: go, render, skra, tol,
     vf: { modal, docShell, printDoc, getHub, saveHub, skjalNafn, grp, fmtKr, pn, num, fmtDate, todayISO, branding, theme, toast, footBtns, VSK } };
 })();

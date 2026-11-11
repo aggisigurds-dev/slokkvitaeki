@@ -34,6 +34,30 @@
   const SJ_REGLUR = 'Þjónustan skal vera í samræmi við lög um brunavarnir nr. 75/2000, byggingarreglugerð nr. 112/2012 og leiðbeiningar Húsnæðis- og mannvirkjastofnunar (HMS) um sjálfvirk slökkvikerfi, þar sem viðhald og eftirlit vatnsúðakerfa fer eftir ÍST EN 12845.';
   const SJ_GR3 = 'Ef þörf er á lagfæringum skal verktaki senda verkkaupa skýrslu yfir það sem þarfnast viðgerðar. Afrit af skoðunarskýrslu er fært inn á gagnagrunn Slökkviliðs höfuðborgarsvæðisins hverju sinni.';
 
+  // BYGGINGARVÍSITALA (Agnar 11.11.2026: „Mátt finna byggingarvísitöluna og setja hana inn"). Nýjasta BIRTA gildi vísitölu
+  // byggingarkostnaðar, grunnur 2021 = 100, sótt beint af PX-vef Hagstofu Íslands (tafla VIS13000; CORS opið). Sama viðmið og í
+  // fyrirmyndinni: samningur dags. 15.09.2022 bar 108,3 = gildi ágústmánaðar 2022, þ.e. það sem var birt á undirritunardegi.
+  // Náist ekki samband er reiturinn auður — hér er aldrei sett inn tala sem er ekki frá Hagstofu.
+  const HAGSTOFA = 'https://px.hagstofa.is/pxis/api/v1/is/Efnahagur/visitolur/2_byggingarvisitala/byggingarvisitala/VIS13000.px';
+  const MAN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+  let _vis = null, _visT = 0;
+  async function saekjaVisitolu() {
+    if (_vis && Date.now() - _visT < 6 * 3600e3) return _vis;
+    try {
+      // ENGINN Content-Type-haus: með „application/json" sendir vafrinn forskoðun (OPTIONS) sem Hagstofan svarar án CORS-hausa og
+      // fyrirspurnin fellur („Failed to fetch", mælt 11.11.2026). Án haussins er þetta einföld beiðni og svarið kemur með ACAO: *.
+      const r = await fetch(HAGSTOFA, { method: 'POST',
+        body: JSON.stringify({ query: [{ code: 'Liður', selection: { filter: 'item', values: ['BCI'] } }, { code: 'Mánuður', selection: { filter: 'top', values: ['1'] } }], response: { format: 'json' } }) });
+      if (!r.ok) return null;
+      const j = JSON.parse((await r.text()).replace(/^﻿/, ''));
+      const d = j && j.data && j.data[j.data.length - 1]; if (!d) return null;
+      const lykill = (d.key || []).filter(k => /^\d{4}M\d{2}$/.test(k))[0], m = lykill && /^(\d{4})M(\d{2})$/.exec(lykill), g = parseFloat(d.values && d.values[0]);
+      if (!m || !isFinite(g) || g < 50 || g > 1000) return null;   // ólíkleg tala = ekki treyst
+      _vis = { gildi: g, texti: String(d.values[0]).replace('.', ','), manudur: MAN[+m[2] - 1] + ' ' + m[1], lykill: lykill }; _visT = Date.now();
+      return _vis;
+    } catch (_) { return null; }
+  }
+
   // Verð úr verðlistanum (án vsk) eða null — aldrei ágiskun.
   function verdUrLista(id) {
     try {
@@ -57,7 +81,7 @@
         { heiti: 'Ársskoðun', fjoldi: 1, af: 'verktaki', verd: verdUrLista('sp-a') }
       ],
       akstur_a: true, akstur: verdUrLista('sp-akstur'),
-      visitala_a: true, visitala_dags: i, visitala_gildi: '',
+      visitala_a: true, visitala_dags: i, visitala_gildi: '', visitala_man: '',   // _man: mánuður Hagstofugildis („október 2026"); autt = handslegið
       reikn: '', gr3: SJ_GR3, gildir_fra: i, uppsogn: 'þriggja mánaða', serakvaedi: '',
       // „220 Hafnarfirði" → „Hafnarfirði" (staður undirritunar; breytanlegt)
       undir: { stadur: String(b.address2 || '').replace(/^\s*\d{3}\s*/, '').trim(), kaupi: '', taki: '' }
@@ -111,7 +135,8 @@
       p('Þjónustan innifelur eftirfarandi:') +
       '<ul style="margin:0 0 9px;padding-left:20px;font-size:12.5px;line-height:1.6;color:#0f172a">' + lidir.map(s => '<li style="margin-bottom:5px">' + s + '</li>').join('') + '</ul>' +
       (o.visitala_a ? p('Þóknun er uppfærð miðað við byggingarvísitölu dags. ' + (o.visitala_dags ? esc(dags(o.visitala_dags)) : autt(80)) +
-        '. Byggingarvísitala við undirskrift er ' + eda(o.visitala_gildi, 60) + '.') : '') +
+        '. Byggingarvísitala við undirskrift er ' + eda(o.visitala_gildi, 60) +
+        ((o.visitala_gildi && o.visitala_man) ? ' stig (' + esc(o.visitala_man) + ', grunnur 2021 = 100)' : '') + '.') : '') +
       p('Reikningar sem eru í samræmi við ofangreint skulu sendir á: ' + eda(reikn, 240) + '.') +
       gr(3) + '<p style="' + P + ';white-space:pre-wrap">' + esc(o.gr3 || '') + '</p>' +
       gr(4) +
@@ -157,6 +182,8 @@
       M + '._ss-del{all:unset;box-sizing:border-box;width:28px;height:30px;border-radius:6px;background:#fef2f2;color:#dc2626;text-align:center;cursor:pointer;font-size:16px;line-height:30px;align-self:center}',
       M + '._ss-ny{all:unset;box-sizing:border-box;display:inline-block;padding:7px 12px;border:1px dashed var(--th-primary,#C0341D);border-radius:7px;background:#fff;color:var(--th-primary,#C0341D);cursor:pointer;font-size:12px;font-weight:700}',
       M + '._ss-hint{font-size:11.5px;color:#64748b;margin:0 0 9px;line-height:1.45}',
+      M + '._ss-tengill{all:unset;cursor:pointer;color:var(--th-primary,#C0341D);font-size:11.5px;font-weight:700;text-decoration:underline;white-space:nowrap}',
+      M + '._ss-tengill:disabled{opacity:.5;cursor:default}',
       M + '._ss-hint b{color:#b45309}',
       M + '._ss-summa{display:flex;justify-content:flex-end;margin-top:12px}',
       M + '._ss-summa>div{min-width:300px;max-width:100%}',
@@ -226,7 +253,8 @@
           '<div><label class="_ss-hak"><input type="checkbox" id="_ss-akstur-a"' + (o.akstur_a ? ' checked' : '') + '> Akstur rukkaður í hvert skipti</label>' +
             '<label class="_ss-l">Akstur, hver ferð (án vsk)<input id="_ss-akstur" type="text" inputmode="numeric" value="' + esc(verdReitur(o.akstur)) + '" placeholder="kr"></label></div>' +
           '<div class="_ss-2"><label class="_ss-hak"><input type="checkbox" id="_ss-visit-a"' + (o.visitala_a ? ' checked' : '') + '> Þóknun fylgir byggingarvísitölu</label>' +
-            '<div class="_ss-g" style="grid-template-columns:repeat(2,minmax(0,1fr))">' + dag('Grunndagsetning vísitölu', '_ss-visit-d', o.visitala_dags) + txt('Byggingarvísitala við undirskrift', '_ss-visit-g', o.visitala_gildi, 'stig — autt = auð lína') + '</div></div>' +
+            '<div class="_ss-g" style="grid-template-columns:repeat(2,minmax(0,1fr))">' + dag('Grunndagsetning vísitölu', '_ss-visit-d', o.visitala_dags) + txt('Byggingarvísitala við undirskrift', '_ss-visit-g', o.visitala_gildi, 'stig — autt = auð lína') + '</div>' +
+            '<p class="_ss-hint" style="margin:6px 0 0"><span id="_ss-visit-n"></span> <button type="button" class="_ss-tengill" id="_ss-visit-s">Sækja nýjustu frá Hagstofu</button></p></div>' +
           txt('Reikningar sendist á', '_ss-reikn', o.reikn, 'Autt = nafn og heimilisfang verkkaupa', '_ss-allt') +
         '</div>' +
         '<div class="_ss-summa"><div>' +
@@ -296,6 +324,29 @@
     }
     function teikna() { R.innerHTML = radir.map(rodHtml).join(''); reikna(); }
 
+    // ── byggingarvísitala: nýtt form sækir nýjasta gildi sjálft EF reiturinn er auður; vistað eða handslegið gildi er aldrei yfirskrifað
+    //    nema ýtt sé á „Sækja nýjustu frá Hagstofu". Handsláttur hreinsar mánuðinn (þá er ekki fullyrt hvaðan talan er).
+    let visMan = o.visitala_man || '';
+    const visNota = t => { const n = g('_ss-visit-n'); if (n) n.textContent = t; };
+    const visStada = () => visNota(visMan && gildi('_ss-visit-g') ? 'Gildi Hagstofu Íslands fyrir ' + visMan + ' (grunnur 2021 = 100).' : gildi('_ss-visit-g') ? 'Handslegið gildi.' : 'Autt — prentast sem auð lína.');
+    async function visSaekja(yfirskrifa) {
+      const hn = g('_ss-visit-s'), inn = g('_ss-visit-g'); if (!hn || !inn) return;
+      hn.disabled = true; visNota('Sæki byggingarvísitölu frá Hagstofu…');
+      const v = await saekjaVisitolu();
+      if (!ov.isConnected) return;
+      hn.disabled = false;
+      if (!v) { visNota('Náði ekki sambandi við Hagstofu — sláðu gildið inn eða reyndu aftur.'); return; }
+      if (yfirskrifa || !inn.value.trim()) {
+        inn.value = v.texti; visMan = v.manudur;
+        if (yfirskrifa) breytt = true; else inn.defaultValue = v.texti;   // sjálfsótt gildi á nýju formi telst ekki óvistuð breyting (177)
+      }
+      visStada();
+    }
+    g('_ss-visit-s').onclick = () => visSaekja(true);
+    g('_ss-visit-g').addEventListener('input', () => { visMan = ''; visStada(); });
+    visStada();
+    if (nytt && o.visitala_a) visSaekja(false);
+
     ov.addEventListener('input', () => { breytt = true; reikna(); });
     ov.addEventListener('change', () => { breytt = true; reikna(); });
     ov.addEventListener('blur', e => {
@@ -329,7 +380,7 @@
         kerfi: gildi('_ss-kerfi') || 'vatnsúðakerfum', stadur: gildi('_ss-stadur'), reglur: gildi('_ss-reglur'),
         skodanir: rs,
         akstur_a: g('_ss-akstur-a').checked, akstur: verdEdaNull(g('_ss-akstur').value),
-        visitala_a: g('_ss-visit-a').checked, visitala_dags: g('_ss-visit-d').value, visitala_gildi: gildi('_ss-visit-g'),
+        visitala_a: g('_ss-visit-a').checked, visitala_dags: g('_ss-visit-d').value, visitala_gildi: gildi('_ss-visit-g'), visitala_man: gildi('_ss-visit-g') ? visMan : '',
         reikn: gildi('_ss-reikn'), gr3: gildi('_ss-gr3'), gildir_fra: g('_ss-fra').value, uppsogn: gildi('_ss-upps'), serakvaedi: gildi('_ss-ser'),
         undir: { stadur: gildi('_ss-ustadur'), kaupi: gildi('_ss-ukaupi'), taki: gildi('_ss-utaki') },
         an_vsk: Math.round(an), vsk: Math.round(an * (1 + h.VSK)) - Math.round(an), m_vsk: Math.round(an * (1 + h.VSK))

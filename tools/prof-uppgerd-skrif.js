@@ -66,7 +66,8 @@
   function skrifvorn() {   // sameiginlegt báðum hömum: fetch-skrif, storage og prentgluggar
     window.fetch = function (u, o) {
       const m = ((o && o.method) || 'GET').toUpperCase();
-      if (m !== 'GET' && m !== 'HEAD') { U.blokkad.push(m + ' ' + String(u).slice(0, 90)); return Promise.resolve(new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })); }
+      // px.hagstofa.is: PX-vefþjónustan tekur FYRIRSPURNIR með POST — lesaðeins, hleypt í gegn (byggingarvísitala í 503).
+      if (m !== 'GET' && m !== 'HEAD' && !/^https:\/\/px\.hagstofa\.is\//.test(String(u))) { U.blokkad.push(m + ' ' + String(u).slice(0, 90)); return Promise.resolve(new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })); }
       return raun.fetch.apply(this, arguments);
     };
     try { Object.defineProperty(sb, 'storage', { configurable: true, value: { from: () => ({
