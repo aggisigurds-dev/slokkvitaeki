@@ -26,18 +26,26 @@ sannprófun á fundunum (SQL + PDF-lestur) og skrif frá einum aðila. Grunnur: 
   BF17, Háholt 12, Bifreiðaverkstæðið Lyngási 12, Félag skipstjórnarmanna, Afltak.
 - **Háholt 12 (402):** netfang leiðrétt úr `olavur@vso.is` í `olafur@vso.is`.
 
-## Á borðinu (bíða Agnars)
+## Framkvæmt 11.11.2026 (Agnar: „þú mátt alveg laga það sem þú er viss um")
+
+Fjögur mál klárað eftir sannprófun; afrit í `backup_20261111_yfirferd_*`. Birting staðfest í Chrome Agnars:
+
+| Mál | Niðurstaða |
+|---|---|
+| #1589 | Þakefnasala Íslands (1260) úr þjónustu; 4 tæki úrelt; facts-röð eytt. Prófíll: aðeins 2026-reitur eftir |
+| #1590 | Flétturimi 10, húsfélag (784): skjal 1030 (mars 2023) fært á Flétturima 10-16 (301), 13 tæki úrelt, par 1407 eytt, facts eytt. Prófíll: 2026 + 2022 + 2021 (eigin reikningar) |
+| #1591 | Soffía Jónsdóttir (637): skjöl 1042 (feb 2023) og 193 (2024) færð á Ferðafélag Íslands (179), 16 tæki úrelt, pör 22 + 360 eytt, facts eytt. Prófíll: 2026 eftir. Soffía helst í þjónustu (eigin samningur 28.07.2026) |
+| #1592 | Suðurvangur 8, húsfélag (1803): í þjónustu með skoðunarmánuð september (R-000918 10.09.2026, 3 léttvatn) |
+
+## Bíða Agnars
 
 | Mál | Efni |
 |---|---|
-| #1589 | Þakefnasala Íslands (1260): draugur, 4 tæki afrituð úr skýrslu Heimilisiðnaðarfélagsins |
-| #1590 | Flétturimi 10, húsfélag (784): 13 tæki eru þau sömu og hjá Flétturima 10-16 (skýrsla opnuð) |
-| #1591 | Soffía Jónsdóttir (637): 16 tæki og skýrsla eru Ferðafélags Íslands (skýrsla opnuð) |
-| #1592 | Suðurvangur 8, húsfélag (1803): hlaðið og rukkað 10.09.2026 en ekki í þjónustu |
+| #1584 | Míla ehf: taka úr þjónustu og merkja 7 tæki úrelt |
+| #1585 | K Apartments: taka úr þjónustu og merkja 41 tæki úrelt (þrotabú 2024) |
 | #1593 | AFL Starfsgreinafélag (901): Farið + Á verkstæði 2026, engin skýrsla né reikningur (~100.000 kr fyrri ár) |
 | #1594 | Stóreldhúsið 3.–6.11: leiga til sýnenda órukkuð |
 | #1595 | Fjórir póstar 08.–10.11 án máls og svars: Hótel Múli, ÍAV, Allverk, Bryggjuvör 1d |
-| #1584, #1585 | Míla og K Apartments (frá fyrr í dag) |
 
 ## Það sem sannprófunin felldi
 
