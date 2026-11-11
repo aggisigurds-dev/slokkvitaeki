@@ -319,3 +319,22 @@ Húsmyndir skoðaðar: 432, 1132, 1399, 676, 475, 442, 439. Myndir 1733 og 165 e
 Húsmyndir skoðaðar: 419, 426, 427, 585, 1376, 208, 614, 732, 736. Án myndar: 1828.
 
 **Staða: 135 af 168 yfirfarin, 117 með frávik. Síðasta félag: 736. Næst: tíu næstu óyfirförnu á eftir 736 í röðinni (póstnúmer, nafn).**
+
+## Lota 15 — tíu raðir í 220 (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 637 | Einstaklingur, Hraunstíg 4 | Einstaklingur, ekki í Fyrirtækjaskrá: A á ekki við. Heimilisfang ritað „220 Hraunstíg 4“ | Engin skýrsla, enginn reikningur | Punktur réttur; **ENGIN MYND** | Öll 16 tæki merkt úrelt (síðast feb. 2024) | Ekkert netfang. Nóta: „Það var farið í febrúar“ (ár ótilgreint). year_factcheck: líklega hættur | Engin virk tæki, engin gögn; telst samt í þjónustu |
+| 1172 | Stakkholt ehf | PASSAR | Skýrsluskjal 2025 opnast ekki: ÓMÆLT | Enginn punktur í geocode_cache; götumynd iðnaðarhús | Listi 5 LV. R-000611 (22.07.2026): 6 hleðslur án aksturs og skýrslu = verkstæðisþjónusta | Ekkert netfang. Enginn Stólpa-reikningur. document_pairs „2025 vantar reikning“ | Skýrsla 2025 óstaðfest og órukkuð ef raunveruleg; listi 5 / hleðslur 6 |
+| 740 | Stál og suða | PASSAR | Skýrsla des. 2024, kt rétt | Punktur réttur; götumynd sýnir skilti félagsins | Listi = skýrsla (2 LV, 2 duft 6 kg, 1 CO₂) | Ekkert netfang. Reikn. 107080 (júlí 2025) og 107956 (mars 2026), 13.900 kr. hvor, án lína: ÓMÆLT hvað. Engin úttekt des. 2025 | 2025 sleppt |
+| 1803 | Suðurvangur 8, húsfélag | PASSAR | **SKÝRSLU VANTAR**: R-000918 (10.09.2026) ber 3 hleðslur + „þjónusta, akstur og skoðun“ = úttekt | Punktur réttur, götumynd fjölbýli | Listi 3 LV = reikningur | Ekkert netfang. Ársskoðun skráir ekki 2026 þótt farið hafi verið 10.09.2026 | Á ekki heima á „Eftir 2026“; skýrsla 2026 vantar |
+| 1131 | Súfistinn | Kt = S.L. Kaffi ehf., Strandgötu 9 | Skýrsla des. 2023, kt rétt | Punktur réttur; götumynd sýnir kaffihúsið | Listi = skýrsla (1 LV) | Ekkert netfang. Engin úttekt 2024 né 2025 | Tvö ár án skoðunar |
+| 1741 | Vélrás – Sléttuhraun | Rekstrarfélag (4 staðir á kt). Skýrslan ber kt Vélrásar en heimilisfangið er húsfélagið Sléttahraun 19-21 (röð 735) | Skýrsla apríl 2026, 4 LV | Geokóðun finnur aðeins götuna; **ENGIN MYND** | Sömu 4 tæki og á röð 735; úttektin var rukkuð á húsfélagið (R-108284) | Mál #946 opið síðan 12.09.2026: röðin er tvítak við 735 | Tvítak (bíður svars í #946) |
+| 1629 | Vélsmiðja Orms og Víglundar – Kaplahraun | Rekstrarfélag: A á ekki við | Engin skýrsla á röðinni þótt reikn. 107515 (17.11.2025) sé úttekt með skýrslugerð | Geokóðun finnur aðeins götuna; götumyndin sýnir hús með skiltum annarra fyrirtækja: **MYND VAFASÖM** | Listi = reikn. 107515 (4 LV, 4 CO₂ 5 kg, 2 duft, 2 slöngur) | Netfang staðfest; innpóstur 13.08.2026 „FW: Reikningur 2025“, ÓMÆLT hvort svarað | Skýrsla 2025 vantar; mynd líklega af röngu húsi |
+| 965 | Víðivangur 5, húsfélag | PASSAR | Skýrsla júní 2025, kt rétt (skráarnafnið byrjar á „Breiðvangur“, skjalið merkt tvítak) | Punktur réttur; götumynd sýnir nr. 5 | Listi = skýrsla = reikn. 107039 (3 LV) | Ekkert netfang. Skoðað í júní/júlí 2025, engin úttekt 2026 | 2026 ógert; eina 2025-skýrslan merkt tvítak |
+| 1260 | Þakefnasala Íslands ehf. | PASSAR | Engin skýrsla, enginn reikningur | Punktur réttur; götumynd sýnir skilti annars félags í sama húsi | Öll 4 tæki merkt úrelt (des. 2024) | Ekkert netfang. Röðin er merkt EKKI í þjónustu, en Ársskoðun telur hana áskrifanda | Á ekki heima á listanum |
+| 464 | ÞG verktakar | Nafn og kt rétt; lögheimili Lágmúli 7, 108. Staður Skútahraun 2 | Skýrsla jan. 2025, kt rétt | Punktur réttur; götumynd iðnaðarhús | Listi = skýrsla (3 LV, 1 duft 2 kg, 1 CO₂ 5 kg). Reikn. 106312 rukkar CO₂ 2 kg og 2 slöngur sem eru ekki á lista | Enginn póstur á netfangið. Vinnublað maí–júní 2026 sýnir heimsókn (mál #1019 opið). Skoðunarmánuður janúar | Slöngur ekki á lista; CO₂ 2/5 kg; 2026 óafgreitt (#1019) |
+
+Húsmyndir skoðaðar: 1172, 740, 1803, 1131, 1629, 965, 1260, 464. Án myndar: 637, 1741.
+
+**Staða: 145 af 168 yfirfarin, 127 með frávik. Síðasta röð: 464. Næst: tíu næstu óyfirförnu á eftir 464 í röðinni (póstnúmer, nafn).**
