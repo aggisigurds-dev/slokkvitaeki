@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-11 10:23 · 2169 virkar staðreyndir — 1255 prentaðar hér
+Sótt 2026-11-11 10:39 · 2173 virkar staðreyndir — 1259 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 121 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -105,7 +105,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [uttekt](#uttekt) | 22 |
 | [oryggi](#oryggi) | 22 |
 | [thjonustubord](#thjonustubord) | 22 |
-| [bord-flettur](#bord-flettur) | 20 |
+| [bord-flettur](#bord-flettur) | 21 |
 | [reikningar](#reikningar) | 20 |
 | [oryggisnet](#oryggisnet) | 19 |
 | [nlsh](#nlsh) | 18 |
@@ -1423,6 +1423,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### bord-flettur
 
+- **Ný form á Tilboð & samningar eru SKRÁÐ, ekki bætt í 201: TilbodHub.skra(tegund, {label, stutt, plata, flokkur, takki, titill, opna, html, undir}); TilbodHub.vf gefur glugga, prentskel, geymslu og talnasnið. Takki í haus verðlista: Verdlistar.hausTakki(listaId, {texti, titill, smellur}).**
+  <br>Fyrirmynd: js/patches/503-sprinkler-samningur.js. Síðan bætir sjálf við takka, röð í Vistuð form, breyta/prenta og teljara (flokkur ræður undir hvaða teljara formið telst). „Loka" í fæti formanna var ótengdur takki til 11.11.2026. Smell utan glugga á óvistuðu formi ver 177 (modal-dirty-guard) — ekki
+  <br><sub>2026-11-11 · kerfi · kóði 11.11.2026 · claude-code</sub>
 - **Aðalmál (492): fyrirsögn spurningakaflans í notes án tvípunkts („SPURNINGAR TIL ÞÍN") verður sjálf að fyrstu spurningunni í 492 og 492b; 492c gerir hana að hreinum haus.**
   <br>Mælt 11.11.2026 á #1587 með Adalmal.greina: 6 spurningar í stað 5, 27 atriði í stað 26. 492b er í loftinu (commit 3a96ba31, staðfest í build.json og _bundle-4). 492c er commit 93f759a6 á greininni adalmal-492c og bíður samþykkis Agnars; staðfestu með window.Adalmal.version áður en þú treystir á hegð
   <br><sub>2026-11-11 · slokkvitaeki · kóði + sql · claude-code</sub>
@@ -1728,6 +1731,54 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>fyrirtaeki.deleted_at markar eydd. Viewið v_fyrirtaeki_mail_stada tengir listann við póstinn á fyrirtaeki.netfang.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 
+### reglur
+
+- **Lög nr. 75/2000 eru LÖG um brunavarnir, ekki reglugerð. Eldri sprinkler-þjónustusamningar vísa ranglega í „reglugerð nr 75/2000 frá Mannvirkjastofnun"; rétt tilvísun er lög 75/2000, byggingarreglugerð 112/2012 (gr. 9.4.6) og leiðbeining HMS 9.4.6 um sjálfvirk slökkvikerfi, sem vísar í ÍST EN 12845.**
+  <br>Mannvirkjastofnun heitir nú HMS. Sjálfgefinn texti í samningsforminu (503) notar réttu tilvísunina; reiturinn er frjáls texti svo Agnar ræður orðalaginu. Arnold: references/arsskodun-kerfi.md kafli 1.
+  <br><sub>2026-11-11 · baedi · fyrirmynd Agnars 11.11.2026 + HMS-leiðbeining 9.4.6 (lesin 10.11.2026) · claude-code</sub>
+- **Yfirregla 4 (30.08.2026): eytt er eytt — tæki sem á að hverfa er raunverulega fjarlægt úr uttaeki eftir afrit í backup_YYYYMMDD_*, ekki sett í limbó-stöðu eins og urelt, ok eða Í lagi.**
+  <br>[rule; agents: sala-reikningar, kunnaskra, sara-coworker, netvordur] Orðrétt: 'Eydd tæki eru bara delete.' 'urelt' gildir áfram fyrir tæki sem eru raunverulega tekin úr notkun; reglan á við tvítök og rusl. Limbó-raðir eru ósýnilegar í einni sýn en finnast í annarri.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Yfirregla 3 (30.08.2026): einn staður og hann er skjárinn — reikningur á að telja nákvæmlega þær raðir sem eru teiknaðar, úr sömu uppsprettu og sömu síu, og talan á skjánum er sú eina sem má standa á reikningnum.**
+  <br>[rule; agents: sala-reikningar, kunnaskra, sara-coworker, natalie] Tækjalistinn síaði á fyrirtaeki_id en reikningurinn taldi á client-nafni. Orðrétt: '1+1 á skjá þýðir 2... ekki 86 eða eitthvað álíka bull.' Stemma tölurnar ekki er verkið ekki búið, sama hversu réttur kóðinn lítur út.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Yfirregla 2 (30.08.2026): engar ósýnilegar breytingar — hver skrift (nýtt tæki, breytt staða, núllstillt val, breytt upphæð) á að skilja eftir spor sem notandinn sér eftir á.**
+  <br>[rule; agents: sala-reikningar, sara-coworker, framendi, netvordur, kunnaskra] Orðrétt: 'ALDREI gera einhverjar ósýnilegar breytingar — allt þarf að vera sjáanlegt.' Það sem gerist í kyrrþey er villa, líka þegar það er 'rétt'.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Yfirregla 1 (30.08.2026): kláruð úttekt með reikningi er 'ritað í stein' og ekkert í kerfinu má snerta hana (endurteikning, endurhleðsla gagna, opna eða loka staðfestum lista, græni takkinn aftur) nema Agnar breyti sjálfur og meðvitað.**
+  <br>[rule; agents: sala-reikningar, sara-coworker, netvordur, framendi] Orðrétt: 'Þetta er bara ritað í stein nema ég breyti sjálfur.' Kom eftir að spjaldið fór úr 170.346 í 129.853 af sjálfu sér á Fornhaga 11-17.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Eldvarnarteppi í kaffikrók/eldunaraðstöðu í lager- og iðnaðarhúsnæði (Suðurhella 5, krókur undir millilofti): EKKI skylda — flokkar.md/json (idnadur, lager) Teppi '—'; aðeins ráðlegging 165.BR1 (eldhús); SHS krefst í veitingaeldhúsum (gagnaskil 7g); skylt í heimagistingu/íbúðagistingu (1277/2016 13. gr.). Bjóða sem tillögu. Bætt í Arnold (flokkar.md/json, bunadur.md), flokkar_krofur í Supabase og greiningu 1875.**
+  <br><sub>2026-10-20 · slokkvitaeki · claude-code · claude-code</sub>
+- **Búnaðargreining 19.10.2026 (framhald): greiningin hefur SÉR TEIKNINGU (bunadargreining.teikningar + tki.blad/bx/by), flokka flotti (ÚT) og brunakerfi (R/H/HB/stjórnstöð), skýrsla í Viðhengi gerð úr Prenta (474); gamla skýrslan tekin af lista en skráin kyrr í geymslu. Skriftur og gögn: .claude/skills/arnold/scripts/bunadargreining/ (Sunnukriki 3 bíður vistunar — ekkert félag).**
+  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Búnaðargreining (19.10.2026): tæki lesin af gildandi aðaluppdráttum vistast FÖST í töflunni bunadargreining (ein virk röð á company_id) + audkenni/stadur á merkjum Teikningar + PDF í Viðhengi (ekkert ártal í nafni). Spjald 474 á prófíl. Skýringar blaðsins ráða merkingu tákna ([S] = slökkvitæki hjá PPverk/VEGA en segulloki hjá öðrum; HST = handslökkvitæki). Skráð tæki → aldrei Nýtt-merki. Aðferð: .claude/skills/arnold/references/bunadargreining.md**
+  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Reglur-síðan (patch 449): kaflar.json ræður röð kafla og build-dist.js afritar ÖLL *.md og *.json úr .claude/skills/arnold/references í dist/reglur/ → allar references-skrár eru opinberar á slokkvitaeki.netlify.app/reglur/…, þ.m.t. sölukaflinn í neydarlysing.md og flokkar.json (228 KB, ónotað af síðunni). Ákvörðun Agnars hvort það er í lagi (samþykkismál 16.10.2026).**
+  <br>Undiragent af29d 09.10.2026. Kaflarnir um handslökkvitæki/slöngukefli/reykskynjara/merkingar voru fluttir úr SKILL.md í references/bunadur.md.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
+- **Í fjölbýlum (húsfélögum) er brunavarnabúnaður Slökkvitækis yfirleitt aðeins í sameign: stigagöngum og kjallara.**
+  <br>Agnar 08.10.2026. Appið greinir sameign (446-teikning-sameign.js, takki Sameign). Sjá arnold/references/fjolbyli.md.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Skráningartafla í aðaluppdráttum gefur m², m² á hæð, hæðir, eignir og rúmmál; OCR las 395/396 reiti rétt og tölur með stemmandi summum eru áreiðanlegar.**
+  <br>Orðaleit á landnúmeri í skjalasafni tekur blöð annarra lóða — sía á landnúmersreit. OCR keyrir aðeins staðbundið (RapidOCR). Frumgerð bygging-uppl óbirt (08.10.2026).
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Samþykkt byggingarlýsing/brunahönnun hússins ræður hvar búnaður á að vera þar sem hún nefnir staði; hún finnst í aðaluppdráttum skjalasafnsins (Lýsing: Byggingarlýsing).**
+  <br>Dæmi Fiskislóð 41: neyðarlýsing 5 lux yfir slökkvitækjum, handboðum, stigahúsum; brunaslöngur í dekkjalager; slökkvitæki við aðalrafmagnstöflu. Sjá arnold/references/byggingargogn.md.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Neyðarlýsing er ekki starfssvið HMS-starfsleyfis (rg. 1067/2011); uppsetning krefst löggilts rafverktaka og staðfesting til slökkviliðs er undirrituð af rafvirkjameistara.**
+  <br>SHS biður árlega um Fylgiblað 1 (HMS 9.4.12) undirritað af rafvirkjameistara. Slökkvitæki ehf þarf rafvirkjameistara (ráðinn eða undirverktaka) til að selja neyðarlýsingarþjónustu með gildum gögnum.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Engin regla krefst þjónustusamnings um neyðarlýsingu sérstaklega nema byggingarlýsing hússins lofi honum; þá er hann forsenda byggingarleyfis (723/2017 3. gr.).**
+  <br>Þjónustusamningur er skilyrði við öryggisúttekt aðeins fyrir brunaviðvörunarkerfi og vatnsúðakerfi (112/2012 gr. 3.8.2). Fiskislóð 41 (2023) lofar samningi um út- og neyðarlýsingu = sölutækifæri.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Neyðarlýsing er skylda í öllum notkunarflokkum nema 3 (íbúðir), skv. byggingarreglugerð 112/2012 gr. 9.4.12.**
+  <br>Fjölbýli (fl. 3): stigahús yfir fjórar hæðir, gluggalaus stigahús/gangar, lyftur, tæknirými; sameiginleg bílgeymsla = fl. 1. Lágmark 60 mín, 1 lux flóttaleið, 5 lux stigahús. Sjá arnold/references/neydarlysing.md.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+- **Lög og reglur brunavarna og staðsetning búnaðar eiga sérfræðinginn Arnold (skill arnold). Reglusafn með tenglum: .claude/skills/arnold/references/reglusafn.md.**
+  <br>Skrárnar: reglusafn.md (lög/reglugerðir/HMS/staðlar + forgangsröð), neydarlysing.md, byggingargogn.md, fjolbyli.md. Charlize geymir aðeins stuttar staðreyndir sem vísa þangað.
+  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### turbopaint
 
 - **TurboPaint Esc-keppni LÖGUÐ: PR #295 sameinað í kjarni main 10.11.2026 (squash 0f4b220), Vercel-birting tókst. VeggjaStika les useBoardStore.getState().tool í effectinum. Óprófað í vafra (Esc og svo J í veggjaham).**
@@ -1822,51 +1873,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Payday er API-tengt Slökkvitæki (payday_invoices_slokk); reference-reiturinn geymir innra sölunúmer R-xxx**
   <br>Pull-hlið aðeins, push var sleppt.
   <br><sub>2026-08-07 · slokkvitaeki · kodi · chat</sub>
-
-### reglur
-
-- **Yfirregla 4 (30.08.2026): eytt er eytt — tæki sem á að hverfa er raunverulega fjarlægt úr uttaeki eftir afrit í backup_YYYYMMDD_*, ekki sett í limbó-stöðu eins og urelt, ok eða Í lagi.**
-  <br>[rule; agents: sala-reikningar, kunnaskra, sara-coworker, netvordur] Orðrétt: 'Eydd tæki eru bara delete.' 'urelt' gildir áfram fyrir tæki sem eru raunverulega tekin úr notkun; reglan á við tvítök og rusl. Limbó-raðir eru ósýnilegar í einni sýn en finnast í annarri.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Yfirregla 3 (30.08.2026): einn staður og hann er skjárinn — reikningur á að telja nákvæmlega þær raðir sem eru teiknaðar, úr sömu uppsprettu og sömu síu, og talan á skjánum er sú eina sem má standa á reikningnum.**
-  <br>[rule; agents: sala-reikningar, kunnaskra, sara-coworker, natalie] Tækjalistinn síaði á fyrirtaeki_id en reikningurinn taldi á client-nafni. Orðrétt: '1+1 á skjá þýðir 2... ekki 86 eða eitthvað álíka bull.' Stemma tölurnar ekki er verkið ekki búið, sama hversu réttur kóðinn lítur út.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Yfirregla 2 (30.08.2026): engar ósýnilegar breytingar — hver skrift (nýtt tæki, breytt staða, núllstillt val, breytt upphæð) á að skilja eftir spor sem notandinn sér eftir á.**
-  <br>[rule; agents: sala-reikningar, sara-coworker, framendi, netvordur, kunnaskra] Orðrétt: 'ALDREI gera einhverjar ósýnilegar breytingar — allt þarf að vera sjáanlegt.' Það sem gerist í kyrrþey er villa, líka þegar það er 'rétt'.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Yfirregla 1 (30.08.2026): kláruð úttekt með reikningi er 'ritað í stein' og ekkert í kerfinu má snerta hana (endurteikning, endurhleðsla gagna, opna eða loka staðfestum lista, græni takkinn aftur) nema Agnar breyti sjálfur og meðvitað.**
-  <br>[rule; agents: sala-reikningar, sara-coworker, netvordur, framendi] Orðrétt: 'Þetta er bara ritað í stein nema ég breyti sjálfur.' Kom eftir að spjaldið fór úr 170.346 í 129.853 af sjálfu sér á Fornhaga 11-17.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Eldvarnarteppi í kaffikrók/eldunaraðstöðu í lager- og iðnaðarhúsnæði (Suðurhella 5, krókur undir millilofti): EKKI skylda — flokkar.md/json (idnadur, lager) Teppi '—'; aðeins ráðlegging 165.BR1 (eldhús); SHS krefst í veitingaeldhúsum (gagnaskil 7g); skylt í heimagistingu/íbúðagistingu (1277/2016 13. gr.). Bjóða sem tillögu. Bætt í Arnold (flokkar.md/json, bunadur.md), flokkar_krofur í Supabase og greiningu 1875.**
-  <br><sub>2026-10-20 · slokkvitaeki · claude-code · claude-code</sub>
-- **Búnaðargreining 19.10.2026 (framhald): greiningin hefur SÉR TEIKNINGU (bunadargreining.teikningar + tki.blad/bx/by), flokka flotti (ÚT) og brunakerfi (R/H/HB/stjórnstöð), skýrsla í Viðhengi gerð úr Prenta (474); gamla skýrslan tekin af lista en skráin kyrr í geymslu. Skriftur og gögn: .claude/skills/arnold/scripts/bunadargreining/ (Sunnukriki 3 bíður vistunar — ekkert félag).**
-  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Búnaðargreining (19.10.2026): tæki lesin af gildandi aðaluppdráttum vistast FÖST í töflunni bunadargreining (ein virk röð á company_id) + audkenni/stadur á merkjum Teikningar + PDF í Viðhengi (ekkert ártal í nafni). Spjald 474 á prófíl. Skýringar blaðsins ráða merkingu tákna ([S] = slökkvitæki hjá PPverk/VEGA en segulloki hjá öðrum; HST = handslökkvitæki). Skráð tæki → aldrei Nýtt-merki. Aðferð: .claude/skills/arnold/references/bunadargreining.md**
-  <br><sub>2026-10-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Reglur-síðan (patch 449): kaflar.json ræður röð kafla og build-dist.js afritar ÖLL *.md og *.json úr .claude/skills/arnold/references í dist/reglur/ → allar references-skrár eru opinberar á slokkvitaeki.netlify.app/reglur/…, þ.m.t. sölukaflinn í neydarlysing.md og flokkar.json (228 KB, ónotað af síðunni). Ákvörðun Agnars hvort það er í lagi (samþykkismál 16.10.2026).**
-  <br>Undiragent af29d 09.10.2026. Kaflarnir um handslökkvitæki/slöngukefli/reykskynjara/merkingar voru fluttir úr SKILL.md í references/bunadur.md.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Í fjölbýlum (húsfélögum) er brunavarnabúnaður Slökkvitækis yfirleitt aðeins í sameign: stigagöngum og kjallara.**
-  <br>Agnar 08.10.2026. Appið greinir sameign (446-teikning-sameign.js, takki Sameign). Sjá arnold/references/fjolbyli.md.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Skráningartafla í aðaluppdráttum gefur m², m² á hæð, hæðir, eignir og rúmmál; OCR las 395/396 reiti rétt og tölur með stemmandi summum eru áreiðanlegar.**
-  <br>Orðaleit á landnúmeri í skjalasafni tekur blöð annarra lóða — sía á landnúmersreit. OCR keyrir aðeins staðbundið (RapidOCR). Frumgerð bygging-uppl óbirt (08.10.2026).
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Samþykkt byggingarlýsing/brunahönnun hússins ræður hvar búnaður á að vera þar sem hún nefnir staði; hún finnst í aðaluppdráttum skjalasafnsins (Lýsing: Byggingarlýsing).**
-  <br>Dæmi Fiskislóð 41: neyðarlýsing 5 lux yfir slökkvitækjum, handboðum, stigahúsum; brunaslöngur í dekkjalager; slökkvitæki við aðalrafmagnstöflu. Sjá arnold/references/byggingargogn.md.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Neyðarlýsing er ekki starfssvið HMS-starfsleyfis (rg. 1067/2011); uppsetning krefst löggilts rafverktaka og staðfesting til slökkviliðs er undirrituð af rafvirkjameistara.**
-  <br>SHS biður árlega um Fylgiblað 1 (HMS 9.4.12) undirritað af rafvirkjameistara. Slökkvitæki ehf þarf rafvirkjameistara (ráðinn eða undirverktaka) til að selja neyðarlýsingarþjónustu með gildum gögnum.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Engin regla krefst þjónustusamnings um neyðarlýsingu sérstaklega nema byggingarlýsing hússins lofi honum; þá er hann forsenda byggingarleyfis (723/2017 3. gr.).**
-  <br>Þjónustusamningur er skilyrði við öryggisúttekt aðeins fyrir brunaviðvörunarkerfi og vatnsúðakerfi (112/2012 gr. 3.8.2). Fiskislóð 41 (2023) lofar samningi um út- og neyðarlýsingu = sölutækifæri.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Neyðarlýsing er skylda í öllum notkunarflokkum nema 3 (íbúðir), skv. byggingarreglugerð 112/2012 gr. 9.4.12.**
-  <br>Fjölbýli (fl. 3): stigahús yfir fjórar hæðir, gluggalaus stigahús/gangar, lyftur, tæknirými; sameiginleg bílgeymsla = fl. 1. Lágmark 60 mín, 1 lux flóttaleið, 5 lux stigahús. Sjá arnold/references/neydarlysing.md.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
-- **Lög og reglur brunavarna og staðsetning búnaðar eiga sérfræðinginn Arnold (skill arnold). Reglusafn með tenglum: .claude/skills/arnold/references/reglusafn.md.**
-  <br>Skrárnar: reglusafn.md (lög/reglugerðir/HMS/staðlar + forgangsröð), neydarlysing.md, byggingargogn.md, fjolbyli.md. Charlize geymir aðeins stuttar staðreyndir sem vísa þangað.
-  <br><sub>2026-10-08 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### sameining
 
@@ -2731,6 +2737,27 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>trg_vorur_hafna_eyddum → vorur_hafna_eyddum() (BEFORE INSERT, SECURITY DEFINER), sett upp 03.09.2026. Röðin fer EKKI inn og er skráð í vorur_hafnad_log. RETURN NULL en ekki RAISE — undantekning hefði fellt heila lotu-innsetningu sáningarinnar og þar með líka löglegar nýjar vörur. ÞETTA ER ÁSTÆÐAN ef
   <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 
+### verdlistar
+
+- **Útfyllanlegur þjónustusamningur fyrir vatnsúðakerfi (sprinkler) er í appinu: „Sprinkler-samningur" á Tilboð & samningar og „📜 Þjónustusamningur" í haus verðlistans Sprinklerkerfi (js/patches/503-sprinkler-samningur.js).**
+  <br>Vistast í app_settings.tilbod_hub (tegund sprinklersamn), telst með Samningar. Nýtt form sækir þóknun úr verðlistanum Sprinklerkerfi (sp-q, sp-a, sp-akstur) ef verð er þar; tómur reitur er null og prentast sem auð lína — aldrei fundið upp verð. Vistaður samningur heldur sínum tölum. Vistun er aldrei
+  <br><sub>2026-11-11 · slokkvitaeki · kóði + próf á dev með uppgerðum skrifum 11.11.2026 · claude-code</sub>
+- **Grunnur ársskoðunarverðlistanna (502) er settur án verða í sex lista: Sprinklerkerfi, Neyðarljós, Eldvarnaeftirlit, Reyklosun, Stigleiðsla og Háfakerfi; liðirnir fylgja því sem leiðbeiningar HMS og SHS segja að eigi að skoða og hve oft, verð er tómt („—") og Agnar verðleggur.**
+  <br>js/patches/502-verdlistar.js STOFN (10.–11.11.2026). „Hávakerfi" sem Agnar nefndi = háfar í eldhúsi (11.11.2026): auðkenni listans er havakerfi, heitið Háfakerfi, og hann nær yfir HREINSUN og skoðun háfa og útsogsröra — EKKI skoðun slökkvikerfisins í háfinum, sem er þegar verðlögð í „Slökkvikerfis v
+  <br><sub>2026-11-11 · slokkvitaeki · kóði + rannsókn 10.–11.11.2026 · claude-code</sub>
+- **Verðlistaglugginn (502) hefur tvo hami með 8 dálkum: ritháttur, og LÆSTUR tilboðsham þar sem listinn er texti og Magn · Afsl. % · Samtals koma í stað Hóps · Athugasemdar · aðgerða; undir 1150 px verður hver liður spjald með merktum reitum.**
+  <br>Mælt 10.11.2026: 0 px lárétt yfirflæði við 375, 1024 og 1400 px (áður 117 px við 1024 og 11 dálkar í tilboðsham). Í tilboði er VSK = samtals − án vsk (rúnnað eins og kassinn). Verð með aukastaf birtist „148.000,5". app_settings_merge með lögun {verdlistar:{id:listi}} heldur öðrum listum og yfirskrif
+  <br><sub>2026-11-10 · slokkvitaeki · kóði + mæling 10.11.2026 · claude-code</sub>
+- **Verðlistar nýrra ársskoðunarþjónusta (Sprinklerkerfi, Neyðarljós, síðar Eldvarnareftirlit, Reyklosun, Hávakerfi, Stigleiðsla) búa í app_settings.verdlistar[<id>] og nýr listi er búinn til í viðmótinu („＋ Nýr verðlisti" í Vörur og þjónustu), ekki með kóða.**
+  <br>js/patches/502-verdlistar.js. Listi = {nafn, takn, litur, lysing, vsk, hopar[], lidir[{nafn, verd án vsk, eining, vsk, hopur, ath, virkt, tegund fast|fra|tilbod}], u, eytt}. Skrif í sama lista fara í röð + úreldingarvörður (u). Tilboðsham setur línur í körfu Sölu með disc_pct. API: Verdlistar.lidir(
+  <br><sub>2026-11-10 · slokkvitaeki · kóði, prófað 10.11.2026 · claude-code</sub>
+- **Akstur og Skýrslugerð í úttekt slökkvitækja (verð og heiti reikningslínu) búa í app_settings.slokk_visit_defaults {akstur, skyrslugerd, driveQty, akstur_heiti, skyrslugerd_heiti}; kóðasjálfgildi eru 3.600 og 5.600 kr án vsk.**
+  <br>129 (töflumerki), 165 (reikningslínur), 488 (viðbótarúttekt) og Gátt Sérkjör lesa þaðan; gildir þar sem ferðin hefur ekki handslegið verð. Breytt í Slökkvit. verð-glugganum (410). Mælt 10.11.2026: skyrslugerd=4600 á þjóni → /api/gatt?c=steypustodin sýndi fullt_an 4600, verd_an 3450 (25 %).
+  <br><sub>2026-11-10 · slokkvitaeki · kóði + mæling á lifandi 10.11.2026 · claude-code</sub>
+- **Slökkvit. þjónusta — verð (patch 410, Vörur og þjónusta) er grunnverðskrá slökkvitækjaþjónustu: verð og heiti hverrar þjónustulínu eru reitir sem skrifa beint í vorur.verd_an_vsk og vorur.nafn.**
+  <br>Heitið er reikningstextinn OG Gátt finnur línur á heitinu (regex í netlify/functions/gatt.cjs) — endurnefning sem tekur línu úr Gáttar-hópi spyr fyrst. Hópar: tegund → Akstur og skýrslugerð → Aðrar þjónustulínur. Agnar 09.11.2026: „öll verð og textar eiga að vera breytilegir þarna, þetta er grunnuri
+  <br><sub>2026-11-10 · slokkvitaeki · kóði + Agnar 09.11.2026 · claude-code</sub>
+
 ### afrit
 
 - **Nafnareglan backup_YYYYMMDD_<hvað> dugar ekki: aðeins 175 af 333 afritum fylgja henni, 98 er ekki hægt að tengja frumtöflu og 264 (35,2 MB) eiga enga vísun, Charlize-færslu né COMMENT (mælt 04.11.2026).**
@@ -2770,24 +2797,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **221 virk fyrirtæki eru ótengd customers_base og 17+ nafna-part-dups eru til með kt-stafavíxli**
   <br>Leitaðu bæði á kennitölu og nafnbroti áður en nýr kúnni er stofnaður.
   <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
-
-### verdlistar
-
-- **Grunnur ársskoðunarverðlistanna (502) er settur án verða í sex lista: Sprinklerkerfi, Neyðarljós, Eldvarnaeftirlit, Reyklosun, Stigleiðsla og Háfakerfi; liðirnir fylgja því sem leiðbeiningar HMS og SHS segja að eigi að skoða og hve oft, verð er tómt („—") og Agnar verðleggur.**
-  <br>js/patches/502-verdlistar.js STOFN (10.–11.11.2026). „Hávakerfi" sem Agnar nefndi = háfar í eldhúsi (11.11.2026): auðkenni listans er havakerfi, heitið Háfakerfi, og hann nær yfir HREINSUN og skoðun háfa og útsogsröra — EKKI skoðun slökkvikerfisins í háfinum, sem er þegar verðlögð í „Slökkvikerfis v
-  <br><sub>2026-11-11 · slokkvitaeki · kóði + rannsókn 10.–11.11.2026 · claude-code</sub>
-- **Verðlistaglugginn (502) hefur tvo hami með 8 dálkum: ritháttur, og LÆSTUR tilboðsham þar sem listinn er texti og Magn · Afsl. % · Samtals koma í stað Hóps · Athugasemdar · aðgerða; undir 1150 px verður hver liður spjald með merktum reitum.**
-  <br>Mælt 10.11.2026: 0 px lárétt yfirflæði við 375, 1024 og 1400 px (áður 117 px við 1024 og 11 dálkar í tilboðsham). Í tilboði er VSK = samtals − án vsk (rúnnað eins og kassinn). Verð með aukastaf birtist „148.000,5". app_settings_merge með lögun {verdlistar:{id:listi}} heldur öðrum listum og yfirskrif
-  <br><sub>2026-11-10 · slokkvitaeki · kóði + mæling 10.11.2026 · claude-code</sub>
-- **Verðlistar nýrra ársskoðunarþjónusta (Sprinklerkerfi, Neyðarljós, síðar Eldvarnareftirlit, Reyklosun, Hávakerfi, Stigleiðsla) búa í app_settings.verdlistar[<id>] og nýr listi er búinn til í viðmótinu („＋ Nýr verðlisti" í Vörur og þjónustu), ekki með kóða.**
-  <br>js/patches/502-verdlistar.js. Listi = {nafn, takn, litur, lysing, vsk, hopar[], lidir[{nafn, verd án vsk, eining, vsk, hopur, ath, virkt, tegund fast|fra|tilbod}], u, eytt}. Skrif í sama lista fara í röð + úreldingarvörður (u). Tilboðsham setur línur í körfu Sölu með disc_pct. API: Verdlistar.lidir(
-  <br><sub>2026-11-10 · slokkvitaeki · kóði, prófað 10.11.2026 · claude-code</sub>
-- **Akstur og Skýrslugerð í úttekt slökkvitækja (verð og heiti reikningslínu) búa í app_settings.slokk_visit_defaults {akstur, skyrslugerd, driveQty, akstur_heiti, skyrslugerd_heiti}; kóðasjálfgildi eru 3.600 og 5.600 kr án vsk.**
-  <br>129 (töflumerki), 165 (reikningslínur), 488 (viðbótarúttekt) og Gátt Sérkjör lesa þaðan; gildir þar sem ferðin hefur ekki handslegið verð. Breytt í Slökkvit. verð-glugganum (410). Mælt 10.11.2026: skyrslugerd=4600 á þjóni → /api/gatt?c=steypustodin sýndi fullt_an 4600, verd_an 3450 (25 %).
-  <br><sub>2026-11-10 · slokkvitaeki · kóði + mæling á lifandi 10.11.2026 · claude-code</sub>
-- **Slökkvit. þjónusta — verð (patch 410, Vörur og þjónusta) er grunnverðskrá slökkvitækjaþjónustu: verð og heiti hverrar þjónustulínu eru reitir sem skrifa beint í vorur.verd_an_vsk og vorur.nafn.**
-  <br>Heitið er reikningstextinn OG Gátt finnur línur á heitinu (regex í netlify/functions/gatt.cjs) — endurnefning sem tekur línu úr Gáttar-hópi spyr fyrst. Hópar: tegund → Akstur og skýrslugerð → Aðrar þjónustulínur. Agnar 09.11.2026: „öll verð og textar eiga að vera breytilegir þarna, þetta er grunnuri
-  <br><sub>2026-11-10 · slokkvitaeki · kóði + Agnar 09.11.2026 · claude-code</sub>
 
 ### variant
 
@@ -3085,6 +3094,17 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Engin jsdom í Claude Code remote-umhverfinu. Til að prófa render() í patch-skrá: vm.runInThisContext á skrána með smá-DOM stubbum (document.getElementById/createElement/addEventListener, localStorage, getComputedStyle) og lesa el.innerHTML. tools/test-skipulagsbord-radir.cjs er fyrirmyndin — hún prófar líka línumælingu með fölsuðum getBoundingClientRect.**
   <br><sub>2026-09-04 · slokkvitaeki · claude-code · claude-code</sub>
 
+### skraning
+
+- **Gatakort í Kjarna (11.11.2026): /kjarni/skraning/kort sýnir allar 11.206 NLSH-skráningar á brunayfirlitsblöðum 6H/5H/4H með táknum, síum (staða, deild, tegund, starfsmaður, tímabil, lagfæringar, tvítök), lögum (skr_log) og áætluðum götum (skr_aaetlud). Gögnin eru í skr_verk id 4 'NLSH 5-6. hæð · gatakort' með ajour_nafn = NULL, svo skr_yfirlit og uppgjör hubsins lesa áfram ajour_registrations (sannreynt: nlsh-uppgjor, nlsh-dashboard, gata-uppgjor óbreytt fyrir og eftir). Endurnýjun: luna-bridge ajour-export-allt.js --project NLSH --no-photos, svo kjarni apps/slokkvitaeki/tools/skraning-gatakort-innflutningur.cjs (dry) og --write. ALDREI keyra ajour-import.js --write fyrir NLSH: það setur ajour_nafn og snýr uppgjörinu á skr_*. Kóðinn er á grein skraning-nlsh-kort (a2c73d8) í kjarni, ekki sameinaður main enn.**
+  <br><sub>2026-11-11 · kerfi · claude-code · claude-code</sub>
+- **Skráning (/kjarni/skraning, eigið kerfi í stað Ajour) er ekki komin í notkun 04.11.2026: 8 eigin skráningar (síðast 14.10), 2 verk, 2 teikningar; Ajour er áfram lifandi uppspretta (ajour_registrations 25 879 raðir, síðasti innflutningur 03.11) og sögu-innflutningurinn (ajour-import.js --write) hefur ekki verið keyrður.**
+  <br>Sjö síður: yfirlit, yfirsyn (skr_maelabord), greining (skr_stadreyndir), verk, vinna (PWA), flokkar, prenta. Tengist Ajour (skr_ajour_lesid / skr_yfirlit) og Tímaveru (project_aliases + skr_starfsmenn.tv_nofn), EKKI bunadargreiningu (hún er TurboPaint vegghjalp.ts + slokkvitaeki patch 474). Innskrán
+  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:09-kjarni.inbox.json · greining-09</sub>
+- **Brunahólfs-hubbinn (nlsh-dashboard.js, nlsh-uppgjor.js, gata-uppgjor.js) les skr_hub_skraningar frá 14.10.2026, en það view, skr_yfirlit og föllin skr_verk_yfirlit/skr_maelabord/skr_stadreyndir eru AÐEINS til í remote-gagnagrunninum — ekki í apps/database/supabase/schemas í kjarna.**
+  <br>skraning.sql nefnir þau aðeins í athugasemd („skilgreiningarnar eru í migration-skránni“), en apps/database/supabase/migrations inniheldur aðeins 7 template-migrations; skr_*-migrations (skraning_grunnur, skr_yfirlit_view_og_rpc, skr_yfirlit_an_tvitekningar 13.–14.10) eru aðeins í supabase_migration
+  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:09-kjarni.inbox.json · greining-09</sub>
+
 ### krofuyfirlit
 
 - **Sjálfvirk tenging draga við Payday í Kröfu yfirliti er aðeins reiknuð í svari krofu-yfirlit-bru (sjalfvirk_tenging, haldid_eftir); payday_invoice_id á drögunum helst null, og invoice_drafts.stadfesting er sér dálkur utan materials_jsonb.**
@@ -3359,15 +3379,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Netlify sker samstillt fall við 10 s — fall sem keðjar ytri köll (Staðfangaskrá → kjarni-API → map.is) mældist 10,7 s í heild þegar allt var kalt; slík föll þurfa sameiginlegan frest (~8,5 s) og eiga að skila hlutasvari með reynaAftur í stað þess að deyja.**
   <br>Mælt 14.09.2026 á hus-upplysingar (Strandgata 6, fyrsta kall). Mynstrið: deadline = Date.now()+8500, hvert fetch fær AbortSignal.timeout(min(hámark, deadline-now)); við tímaþrot skilar fallið því sem fannst (eign + tengill) + error + reynaAftur:true með 200 og geymir svarið ekki í minni; framendinn 
   <br><sub>2026-09-14 · slokkvitaeki · kóði · claude-code</sub>
-
-### skraning
-
-- **Skráning (/kjarni/skraning, eigið kerfi í stað Ajour) er ekki komin í notkun 04.11.2026: 8 eigin skráningar (síðast 14.10), 2 verk, 2 teikningar; Ajour er áfram lifandi uppspretta (ajour_registrations 25 879 raðir, síðasti innflutningur 03.11) og sögu-innflutningurinn (ajour-import.js --write) hefur ekki verið keyrður.**
-  <br>Sjö síður: yfirlit, yfirsyn (skr_maelabord), greining (skr_stadreyndir), verk, vinna (PWA), flokkar, prenta. Tengist Ajour (skr_ajour_lesid / skr_yfirlit) og Tímaveru (project_aliases + skr_starfsmenn.tv_nofn), EKKI bunadargreiningu (hún er TurboPaint vegghjalp.ts + slokkvitaeki patch 474). Innskrán
-  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:09-kjarni.inbox.json · greining-09</sub>
-- **Brunahólfs-hubbinn (nlsh-dashboard.js, nlsh-uppgjor.js, gata-uppgjor.js) les skr_hub_skraningar frá 14.10.2026, en það view, skr_yfirlit og föllin skr_verk_yfirlit/skr_maelabord/skr_stadreyndir eru AÐEINS til í remote-gagnagrunninum — ekki í apps/database/supabase/schemas í kjarna.**
-  <br>skraning.sql nefnir þau aðeins í athugasemd („skilgreiningarnar eru í migration-skránni“), en apps/database/supabase/migrations inniheldur aðeins 7 template-migrations; skr_*-migrations (skraning_grunnur, skr_yfirlit_view_og_rpc, skr_yfirlit_an_tvitekningar 13.–14.10) eru aðeins í supabase_migration
-  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:09-kjarni.inbox.json · greining-09</sub>
 
 ### artcraft
 

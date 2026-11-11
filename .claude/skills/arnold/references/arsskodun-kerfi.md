@@ -31,6 +31,13 @@ Tengill: https://www.byggingarreglugerd.is/leidbeiningar/sjalfvirk-slokkvikerfi 
   eftir öðrum staðli — HMS samþykkir NFPA 13 og NFPA 750, en þá skal fylgja NFPA í heild).
 - Þokukerfi: skv. hönnunarstaðli (ÍST EN 14972-1) og DIOM-handbók framleiðanda. Íbúðakerfi: ÍST EN 16925.
 - Eldvarnaeftirlit kannar við lokaúttekt og almenna skoðun hvort þjónustusamningar séu til staðar.
+- **Samningsform í appinu (11.11.2026):** útfyllanlegur þjónustusamningur um eftirlit með vatnsúðakerfi — „Sprinkler-samningur" á
+  Tilboð & samningar og „📜 Þjónustusamningur" í haus verðlistans Sprinklerkerfi (`js/patches/503-sprinkler-samningur.js`). Sjálfgefnar
+  skoðanir eftir fyrirmynd Agnars: mánaðarleg skoðun 8× á ári (húseigandi), ársfjórðungsskoðun 4× og ársskoðun 1× (verktaki), akstur í
+  hvert skipti, verðtrygging við byggingarvísitölu, gagnkvæmur þriggja mánaða uppsagnarfrestur.
+- **Tilvísun í reglur — algeng villa:** eldri samningar vísa í „reglugerð nr 75/2000 frá Mannvirkjastofnun". 75/2000 eru **lög um
+  brunavarnir**, ekki reglugerð, og Mannvirkjastofnun heitir nú HMS. Rétt tilvísun: lög 75/2000, byggingarreglugerð 112/2012 (gr. 9.4.6)
+  og leiðbeining HMS 9.4.6, sem vísar í ÍST EN 12845 um viðhald og eftirlit.
 - Vinni aðili ÁN starfsleyfis stærra verk þarf úttekt aðila með gilt starfsleyfi áður en kerfið er tekið í notkun að nýju.
 - **Starfsleyfi:** svið „slökkvikerfi" í 1067/2011. Ábyrgðarmaður þarf að vera pípulagningameistari (eða sambærilegt) með námskeið sem HMS
   viðurkennir og skila gæðahandbók; leyfið gildir í 5 ár. https://island.is/starfsleyfi-fyrir-thjonustuadila-brunavarna/t-hjonustuadilar-sloekkvikerfa

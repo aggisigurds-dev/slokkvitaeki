@@ -18,7 +18,7 @@ No framework, no bundler-at-author-time. A feature is a **new patch file plus a
 script tag**; `build-dist.js` bundles them at deploy.
 
 ## Client feature = one new patch
-1. New file `js/patches/NNN-name.js` — next free number (currently 503+; check
+1. New file `js/patches/NNN-name.js` — next free number (currently 504+; check
    `ls js/patches | grep -oE '^[0-9]+' | sort -n | tail`).
 2. Wrap it as a **guarded IIFE** and expose a small API:
    ```js
@@ -61,6 +61,14 @@ if (aftur) aftur();   // strax á eftir, í SAMA tifi
 Sönnun á að teiknunarbreyting breyti engum rökum: taktu fingrafar af reitunum (klasar + texti), rífðu þá svo handvirkt
 út í vafranum, láttu gömlu leiðina byggja þá upp á nýtt og berðu saman. Fingrafar milli tveggja SÍÐUHLEÐSLNA er
 ómarktækt — hleðslararnir lenda á mismunandi tíma.
+
+## Nýtt form eða verðlistatakki — skráðu það, ekki breyta 201/502 (11.11.2026)
+
+- Nýtt tilboðs-/samningsform á „Tilboð & samningar": `TilbodHub.skra(tegund, { label, stutt, plata, flokkur, takki, titill, opna, html, undir })`.
+  Síðan bætir sjálf við takka, röð í „Vistuð form", breyta/prenta og teljara. Notaðu `TilbodHub.vf` (modal, docShell, printDoc, getHub,
+  saveHub, grp, fmtKr, pn …) svo formið líti út og vistist eins og hin. Fyrirmynd: `js/patches/503-sprinkler-samningur.js`.
+- Takki í haus verðlista (502): `Verdlistar.hausTakki(listaId, { texti, titill, smellur })`.
+- Tómur verðreitur er `null`, ekki 0 — prentast sem auð lína. Aldrei fundið upp verð í samning eða tilboð.
 
 ## Data access
 - `window.DB.sb` is the Supabase client (publishable key from `js/config.js`).

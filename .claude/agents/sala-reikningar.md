@@ -634,3 +634,25 @@ QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.
 - **Drög-leit:** „óskráður" finnur Greitt síðar án viðskiptavinar (áður aðeins „enginn kúnni").
 - **Óprófað:** raunveruleg sala án stofnunar á lifandi (engin slík sala til 10.11 kl. 21); Claude býr ekki til prófunarsölu með R-númeri.
 - Próf án skrifa: `tools/prof-uppgerd-skrif.js` (`Uppgerd.sala()`), sjá skill `add-feature`.
+
+## Sprinkler-þjónustusamningur (503) — 11.11.2026
+
+- **Hvað:** útfyllanlegur fjögurra greina þjónustusamningur um eftirlit með vatnsúðakerfi (`js/patches/503-sprinkler-samningur.js`),
+  eftir fyrirmynd sem Agnar sendi. Opnast á TVEIMUR stöðum: „Sprinkler-samningur" á Tilboð & samningar (201) og „📜 Þjónustusamningur"
+  í haus verðlistans Sprinklerkerfi (502), vinstra megin við „⚙ Stillingar".
+- **Gögn:** sama geymsla og önnur form síðunnar — `app_settings.tilbod_hub` (fylki, yfirskrifast heilt), tegund `sprinklersamn`,
+  auðkenni `P<tími>`. Telst með „Samningar" (flokkur). Engin ný tafla, engin tenging við `thjonustusamningar` (50/94).
+- **Verð:** nýtt form sækir þóknun úr `Verdlistar.lidir('sprinkler')` (`sp-q`, `sp-a`, `sp-akstur`) EF verð er þar; annars er
+  reiturinn tómur (`null`, ekki 0) og prentast sem auð lína til að handfylla. Aldrei fundið upp verð. Vistaður samningur heldur sínum tölum.
+- **Vistun er aldrei stöðvuð:** vanti nafn verkkaupa er vistað og sagt frá í skilaboðum.
+- **Viðbótarpunktar fyrir næsta form:** `TilbodHub.skra(tegund, { label, stutt, plata, flokkur, takki, titill, opna(form?), html(form), undir(form) })`
+  bætir takka, listaröð, breyta/prenta-grein og teljara við síðuna án þess að snerta 201; `TilbodHub.vf` gefur sama glugga
+  (`modal`), prentskel (`docShell`, `printDoc`), geymslu (`getHub`, `saveHub`) og talnasnið. `Verdlistar.hausTakki(listaId, { texti, titill, smellur })`
+  setur takka í haus verðlista.
+- **Lagað í leiðinni:** „Loka" í fæti allra forma á Tilboð & samningar var ótengdur takki — lokar nú. Smell utan glugga ver 177
+  (modal-dirty-guard) nú þegar; 503 spyr aðeins við × og „Loka" svo ekki sé spurt tvisvar.
+- **Orðalag:** fyrirmyndin vísaði í „reglugerð nr 75/2000 frá Mannvirkjastofnun" — 75/2000 eru LÖG um brunavarnir. Sjálfgefinn texti vísar í
+  lög 75/2000, byggingarreglugerð 112/2012 og leiðbeiningu HMS um sjálfvirk slökkvikerfi (ÍST EN 12845). Reiturinn er frjáls texti.
+- **Prófað á dev með uppgerðum skrifum** (`tools/prof-uppgerd-skrif.js`, raunverulegir smellir): opnun á báðum stöðum, verð úr lista,
+  samtala (4 × 24.000 + 31.000 = 127.000 án vsk → 157.480 m. vsk), prentun með auðum línum, vistun, breyta, 375 px án yfirflæðis.
+  **Óprófað:** raunveruleg vistun á lifandi `app_settings` og prentun á pappír (blaðsíðuskil).
