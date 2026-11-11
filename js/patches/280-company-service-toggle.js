@@ -37,7 +37,11 @@
   // settings-blobbið merkir subscribed / með skráðan búnað.
   async function isInService(coId) {
     const a = mapEntry(coId);
-    const mapIn = !!(a && (a.subscribed === true || (a.equipment && Object.keys(a.equipment).length)));
+    // 11.11.2026: SKÝR AFSKRÁNING VINNUR hér líka (sama regla og 153 fékk 30.09.2026). K-50 ehf. (847) var tekið úr þjónustu —
+    // er_i_thjonustu false, subscribed false, removed_from_service_at sett — en takkinn sagði áfram „Taka úr þjónustu" því
+    // equipment-blobbið frá 13.09 (3 léttvatn, 4 reykskynjarar, 3 teppi) taldist sem „í þjónustu". Listinn sagði eitt, takkinn annað.
+    const afskrad = !!(a && (a.removed_from_service_at || a.subscribed === false));
+    const mapIn = !afskrad && !!(a && (a.subscribed === true || (a.equipment && Object.keys(a.equipment).length)));
     let colIn = false;
     try {
       const sb = SB();
