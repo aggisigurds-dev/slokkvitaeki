@@ -122,6 +122,39 @@ alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
 
 ---
 
+## ⛔ SAMÞYKKISÞAK — áður en þú stofnar mál á Agnar (11.11.2026)
+
+**Mælt 11.11.2026:** síðustu 14 daga stofnuðu Claude-lotur 99 samþykkismál á Þjónustuborðið
+(tag `samthykki`, `assigned_to` Agnar), sjálfvirkir verðir 12 í viðbót. Agnar svaraði ENGU þeirra;
+146 biðu. Orð hans: „þori ekki að taka mark á neinu í samþykktarborði“ og „AI á að hjálpa mér í
+rekstrinum, ekki ég að hlaupa á eftir AI“. Tvær yfirferðir (07.11, 08.11) sýndu að málin voru
+flest rétt mæld — vandinn er FJÖLDINN og að flest þeirra eru ekki ákvarðanir sem hann einn getur tekið.
+
+Spurning sem enginn svarar er ekki öryggisnet. Hún felur þær sem skipta máli.
+
+**Þú mátt AÐEINS stofna samþykkismál á Agnar ef allt þetta á við:**
+1. Aðgerðin fer út fyrir kerfið eða er óafturkræf: krafa, reikningur, kredit, endurgreiðsla, póstur
+   eða svar til kúnna, félag tekið úr eða sett í þjónustu, eyðing gagna.
+2. Forsendan er MÆLD sama dag í báðum heimildum (ekki ályktuð) og mælingin stendur í málinu.
+3. Ekkert opið mál er til um sama efni (leitaðu á nafni, kennitölu og R-númeri). Sé það til bætirðu
+   línu við það mál í stað þess að stofna nýtt.
+4. Lotan stofnar mest TVÖ slík mál. Eigirðu fleiri velurðu þau tvö sem varða mesta peninga.
+
+**Allt annað fer EKKI á samþykktarborðið:**
+- Kerfisspurning („á X að hegða sér Y?“) → haltu óbreyttri hegðun og skráðu spurninguna á
+  verkefnalistann. Spyrðu í spjallinu ef Agnar er við.
+- „Á ég að taka saman / prófa / skrifa …?“ → gerðu það eða slepptu því. Tilboð um aukavinnu er
+  ekki ákvörðun.
+- Afturkræf gagnaleiðrétting með sönnun → verkefnalistinn (`assigned_agent` claude-code), ekki borðið.
+- Verk fyrir starfsmann (hringja, finna netfang, bóka skoðun) → verkefnalistinn; mál á starfsmann
+  aðeins ef Agnar hefur falið honum slík verk.
+- Sjálfvirkir verðir (payday-push, veidi-vaktin, ai-uppfaerslur) uppfæra EITT mál per tegund,
+  þeir stofna ekki nýtt mál per tilvik.
+
+Sá sem svarar málum er `samthykktir` (.claude/agents/samthykktir.md). Þakið gildir um að STOFNA þau.
+
+---
+
 ## 🧭 HVER KANN HVAÐ — byrjaðu hér
 
 Þekkingin sem áður var í þessu skjali (~15.000 tokens sem hlóðust í **hverri einustu
