@@ -390,3 +390,16 @@ Húsmyndir skoðaðar: 734, 1122, 667, 1934 og 1354 (Maps-skjámynd, rétt). Myn
 - Tækjalisti tómur þótt tæki hafi verið seld eða skoðuð (1828, 521, 1596, 1550).
 - Ár sleppt úr (2024 og/eða 2025) hjá á þriðja tug félaga.
 - Skýrsluskjöl sem opnast ekki í Drive og því ÓMÆLT: 1141, 736, 1172.
+
+## Skráð í grunninn 11.11.2026
+
+Agnar: „skrá allt í customer database … svo við þurfum ekki að gera þetta aftur“.
+- Hver af röðunum 168 ber nú línu aftast í `fyrirtaeki.review_note`: „Sannreynt 11.11.2026 (Eftir 2026): <frávik eða án fráviks>“.
+  Eldri nótur standa óbreyttar fyrir framan. Afrit allra raðanna fyrir skrif: `backup_20261111_sannreyna_heimilisfang`.
+- `app_settings.sannreyna_fyrirtaeki.nidurstodur['eftir-2026']` geymir id-listana `an_fraviks` (23) og `med_fravik` (145).
+  Talan 147/21 í lokastöðunni var handtalin eftir lotum; listarnir eru lesnir vélrænt úr töflunum (feitletrað = frávik í eldri töflum).
+- Skill `sannreyna-fyrirtaeki` les þetta fyrst og mælir ekki aftur félag sem á úrskurð.
+- Lesið til baka: 168 raðir með línuna. `year_factcheck` var EKKI snert (staðan þar stýrir síunni „Eftir 2026“).
+
+Pizzan – Háholt (613): Agnar sagði „má gera aftur“. Skráð á mál #1058 með línunum sem drögin eiga að bera (3 yfirferðir léttvatn +
+skýrslugerð + akstur, 23.126 kr. m. vsk). Drögin sjálf voru EKKI stofnuð; körfusniðið varð ekki sannreynt án innskráningar.

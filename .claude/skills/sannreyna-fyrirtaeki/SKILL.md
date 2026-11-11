@@ -34,7 +34,12 @@ repo-rót). Aðallotan vinnur prófin sjálf í röð — undiragentar aðeins �
    hún ekki er ekki haldið áfram.
    Án innskráningar í vafra: endurgerðu síuna í SQL, merktu mengið „ÓSTAÐFEST á móti skjá" efst í vinnuskjalinu og
    biddu Agnar um töluna af skjánum; prófin mega hefjast á félögum sem hann nefndi sjálfur.
-2. Athugaðu `app_settings.sannreyna_fyrirtaeki.keyrslur` og vinnuskjalið: er keyrslan þegar hafin? Þá er haldið áfram
+2. **Úrskurður sem er til er ekki mældur aftur.** Hvert yfirfarið félag ber línu í `fyrirtaeki.review_note` sem byrjar á
+   „Sannreynt <dags> (<keyrsla>):" og `app_settings.sannreyna_fyrirtaeki.nidurstodur.<lykill>` geymir id-listana
+   `an_fraviks` og `med_fravik`. Lestu þetta FYRST (`select id, review_note from fyrirtaeki where review_note like '%Sannreynt %'`)
+   og slepptu þeim félögum nema Agnar biðji um endurmælingu eða gögnin hafi breyst síðan (ný skýrsla, nýr reikningur).
+   Skráning í lok keyrslu: lína bætt AFTAN við `review_note` (aldrei yfirskrifa), afrit fyrst, lesið til baka.
+   Athugaðu `app_settings.sannreyna_fyrirtaeki.keyrslur` og vinnuskjalið: er keyrslan þegar hafin? Þá er haldið áfram
    þar sem frá var horfið — félag með úrskurð í skjalinu er ekki mælt aftur nema Agnar biðji um það. **Röð listans er
    föst (heimilisfang eins og skjárinn, annars `fyrirtaeki.id`) og skráð í vinnuskjalið; `sidasta_id` í stöðulyklinum
    segir hvar næsta lota byrjar.**
