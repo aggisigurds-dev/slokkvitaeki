@@ -15,6 +15,9 @@
  *   Hjá Claude           málið ber svar:samthykkt | svar:vinnsla | svar:endurmeta og er ekki lokað — Claude á verkið.
  *   Bíður svars          síðasta skeyti þráðarins er frá þeim, ekkert sent á eftir, engin „svarað"-skráning, ekki 🟢 Lokið.
  *   Svarað · lokið       allt hitt — falið sjálfgefið, „sýna" nær því.
+ *   (11.11.2026) Samanbrotnir hlutar fyrir það sem enginn bíður svars við: Innanhúss (eldklar/brunaholf-lén + starfsmenn úr eigin
+ *   Gmail), Reikningar til okkar (sölureikningar birgja), Sjálfvirkt (+ Gmail CATEGORY_UPDATES án máls og kúnna), Auglýsingar
+ *   (Gmail PROMOTIONS/SOCIAL + fréttabréfa-sendendur). Auglýsing víkur aðeins fyrir ★ og Hjá Claude — sjálfvirka innsogið bjó til #1600.
  *
  * SAMNINGURINN VIÐ CLAUDE (lotan sem vinnur úr „Hjá Claude"): málið er thjonustubeidni með channel_ref 'email:<email_digest.id>'
  * (sama og innsogið 11.09 notar). Þegar verkinu er lokið skrifar Claude uppkastið að svarinu í `notes` á eftir línu sem er
@@ -66,6 +69,24 @@
   // Sjálfvirkur sendandi / tilkynning — sömu hugmynd og regla 3–4 í bh_postur_inn_a_bord (11.09): sést, en telst ekki „bíða svars“.
   const SJALFV_RE = /no-?reply|noreply|donotreply|mailer-daemon|postmaster|notification|newsletter|nyhetsbrev|frettabref|booking.com|google.com|microsoft.com|teya.|alfred.is|unimaze|rsk.is|postur.is|facebookmail|linkedin.com|paypal.com|apple.com|amazon.|netlify.com|github.com|supabase.|dropbox.com|inexchange|nova.is|siminn.is|vodafone.is|payday.is|dk.is|stolpi.is|inkasso|motus.is|landsbankinn|islandsbanki|arionbanki|skatturinn|island.is|sendgrid|mailchimp|hubspot|salesforce/i;
   const SJALFV_EFNI = /^(Delivery Status Notification|Undeliverable|Mail delivery failed|Automatic reply|Sjálfvirkt svar|Out of office)/i;
+  // 11.11.2026 (Agnar: „algjörlega óþarfi að hafa einhver juice tilboð þarna inn á … flokka þetta eitthvað“). Mælt sama dag: af 42 í
+  // „Bíður svars“ voru 2 auglýsingar (JOE & THE JUICE, Gmail-flokkur Promotions), 22 innanhúss (Frank/eldklar/brunaholf áframsent,
+  // minnispunktar) og 4 reikningar frá birgjum. Þeir fá hver sinn samanbrotna hluta með tölu — ekkert hverfur þegjandi (regla 21.09).
+  // Auglýsing: Gmail setur CATEGORY_PROMOTIONS/SOCIAL sjálft; sendandaregla nær hinu (fréttabréfa-undirlén eins og news.e.joejuice.com).
+  const AUGL_MERKI = /^CATEGORY_(PROMOTIONS|SOCIAL)$/;
+  const AUGL_SENDANDI = /@(news|newsletter|e|em|email|mailing|marketing|promo|campaign|engage|engagement|info)\.[a-z0-9-]+\.|newsletter|nyhetsbrev|fr[eé]ttabr[eé]f|campaign|mailchimp|klaviyo|sendinblue|brevo|mailerlite/i;
+  // Efnisregla aðeins fyrir hólf án Gmail-merkja (slokkvitaeki@ er M365) og aðeins ef sendandinn er ekki þekktur kúnni — „tilboð“ eitt og sér nægir ALDREI.
+  const AUGL_EFNI = /black friday|cyber monday|tax free|sale ends|\b\d{1,2}\s?% (off|afsl)|save \d+\s?%|webinar|hottest deals|tilboð vikunnar|tilboðsdag|helgartilboð|miðvikudagstilboð/i;
+  // Innanhúss: okkar eigin lén + starfsmenn sem skrifa úr eigin Gmail (CLAUDE.md „Starfsmenn“). Áframsent og minnispunktar, ekki kúnni sem bíður.
+  const OKKAR_LEN = /@(eldklar\.is|brunaholf\.is)$/i;
+  const STARFSMENN = ['aggisigurds@gmail.com', 'anninn76@gmail.com', 'brynjar.oryggislausnir@gmail.com'];
+  const fraOkkur = a => { const s = String(a || '').toLowerCase().trim(); return OKKAR_LEN.test(s) || STARFSMENN.indexOf(s) >= 0; };
+  // Reikningur frá birgi til okkar: greiða, ekki svara. Aldrei svar (Re:) og aldrei ef efnið nefnir okkur — þá er það OKKAR reikningur sem kúnninn spyr um.
+  const BIRGI_RE = /sölureikning|^\s*reikningur\s+(nr|númer|\d)|^\s*reikningur frá |reikningur \S+ frá |hefur sent þér reikning|móttekið rafrænt skjal|greiðsluseð|reikningsyfirlit|^\s*reikningur f(yrir)?\.? vinnu/i;
+  const OKKAR_NAFN = /sl[öo]kkvit[æa]ki|brunah[óo]lf|eldklar|600508-?0400/i;
+  const SVAR_EFNI = /^\s*(re|sv|svar|aw)\s*:/i;
+  // Hlutar sem bíða EKKI svars — „Ósvarað“-sían fellir þá út og þeir eru samanbrotnir.
+  const EKKI_BIDA = { buid: 1, sjalfvirkt: 1, auglysing: 1, innanhuss: 1, reikningar: 1 };
   // Gmail-merki sem Gmail setur sjálft — geymd, ekki sýnd (sama regla og 240 merkiEigin).
   const KERFISMERKI = /^(CATEGORY_|IMPORTANT$|STARRED$|UNREAD$|INBOX$|SENT$|DRAFT$|SPAM$|TRASH$|CHAT$)/;
   const STJORNUR = { STARRED: '★', YELLOW_STAR: '★', BLUE_STAR: '★', RED_STAR: '★', GREEN_STAR: '★', ORANGE_STAR: '★', PURPLE_STAR: '★', GREEN_CIRCLE: '●', BLUE_CIRCLE: '●', RED_CIRCLE: '●', ORANGE_CIRCLE: '●', PURPLE_CIRCLE: '●', YELLOW_CIRCLE: '●' };
@@ -166,33 +187,47 @@
       let kunni = null;
       try { if (window.KunnaLeit && KunnaLeit.hladid()) kunni = KunnaLeit.finna(sidastaInn, postar); } catch (_) {}
       const texti = (sidastaInn.subject || '') + ' ' + (sidastaInn.snippet || '') + ' ' + (sidastaInn.body_preview || '').slice(0, 600);
-      const sjalfvirkt = !mal && (SJALFV_RE.test(String(sidastaInn.sender_email || '')) || SJALFV_EFNI.test(String(sidastaInn.subject || '')));
+      const sendandi = String(sidastaInn.sender_email || ''), efniInn = String(sidastaInn.subject || ''), lab = Array.isArray(sidastaInn.labels) ? sidastaInn.labels : [];
+      const okkar = fraOkkur(sendandi);
+      const auglysing = !okkar && (lab.some(l => AUGL_MERKI.test(l)) || AUGL_SENDANDI.test(sendandi) || (!kunni && !mal && !lab.length && AUGL_EFNI.test(efniInn)));
+      const sjalfvirkt = !auglysing && !mal && (SJALFV_RE.test(sendandi) || SJALFV_EFNI.test(efniInn));
+      const reikningur = !mal && !okkar && !SVAR_EFNI.test(efniInn) && BIRGI_RE.test(efniInn) && !OKKAR_NAFN.test(efniInn);
+      const uppfaersla = !mal && !kunni && lab.indexOf('CATEGORY_UPDATES') >= 0;   // Gmail: kvittanir, tilkynningar, kannanir — enginn bíður svars
+      const bidur = !svarad && !lokid && !malLokad && sidasta.folder !== 'SENT';
       const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
+        : auglysing ? 'auglysing'
         : sjalfvirkt ? 'sjalfvirkt'
-        : (!svarad && !lokid && !malLokad && sidasta.folder !== 'SENT') ? (erGmail(sidastaInn.account) || msgs.some(x => x.folder === 'SENT') ? 'bidur' : 'omaelt') : 'buid';   // 10.11.2026: án Sent-möppu er „ósvarað“ ekki mælanlegt — ekki fullyrða það
+        : bidur ? (okkar ? 'innanhuss' : reikningur ? 'reikningar' : uppfaersla ? 'sjalfvirkt'
+          : (erGmail(sidastaInn.account) || msgs.some(x => x.folder === 'SENT') ? 'bidur' : 'omaelt')) : 'buid';   // 10.11.2026: án Sent-möppu er „ósvarað“ ekki mælanlegt — ekki fullyrða það
+      const mikilv = stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important);
+      // Mikilvægi (11.11.2026): stjarna > þekktur kúnni > mál á borðinu / beiðni / samtal sem við höfum tekið þátt í > Gmail IMPORTANT. Jafnt → nýjast.
+      const beidni = !sjalfvirkt && !auglysing && BEIDNI_RE.test(texti);
+      const mikilvTala = (stj.size ? 8 : 0) + (kunni ? 4 : 0) + (mal ? 2 : 0) + (beidni ? 2 : 0) + (msgs.some(x => x.folder === 'SENT') ? 1 : 0) + (lab.indexOf('IMPORTANT') >= 0 ? 1 : 0);
       ut.push({ k, msgs, inn, sidastaInn, sidasta, merki: [...merki], stjornur: [...stj], vidhengi: vidh, mal, tags, svarTag, lokid, svarad, falid, kunni, hluti,
-        sjalfvirkt, beidni: !sjalfvirkt && BEIDNI_RE.test(texti), mikilv: stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important),
+        sjalfvirkt, auglysing, beidni, mikilv, mikilvTala,
         account: sidastaInn.account, nafn: sidastaInn.sender_name || sidastaInn.sender_email || '—', netfang: sidastaInn.sender_email || '',
         efni: sidastaInn.subject || '(ekkert efni)', timi: sidastaInn.received_at, fjoldi: msgs.length });
     });
     ut.sort((a, b) => ts(b.timi) - ts(a.timi));
     return ut;
   }
-  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''], ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok']];
-  const FELLT = { buid: true, sjalfvirkt: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
+  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''],
+    ['innanhuss', 'Innanhúss · áframsent og minnispunktar', '_ok'], ['reikningar', 'Reikningar til okkar · greiða, ekki svara', '_ok'],
+    ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok'], ['auglysing', 'Auglýsingar · fréttabréf', '_ok']];
+  const FELLT = { innanhuss: true, reikningar: true, buid: true, sjalfvirkt: true, auglysing: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
   const erFellt = (h, s) => !!FELLT[h] && !s.merki;
   const HLUTA_L = Object.fromEntries(HLUTAR.map(h => [h[0], h[1]]));
   function siad() {
     const s = S.sia;
     let l = S.thraedir.filter(t => S.synaFalid ? t.falid : !t.falid);
     if (s.holf !== 'baedi') l = l.filter(t => stuttHolf(t.account).toLowerCase() === s.holf);
-    if (s.osvarad) l = l.filter(t => t.hluti !== 'buid' && t.hluti !== 'sjalfvirkt');
+    if (s.osvarad) l = l.filter(t => !EKKI_BIDA[t.hluti]);
     if (s.beidnir) l = l.filter(t => t.beidni);
     if (s.vidhengi) l = l.filter(t => t.vidhengi.length);
     if (s.merki) l = l.filter(t => s.merki === '★' ? t.stjornur.length : t.merki.indexOf(s.merki) >= 0);
     if (s.rodun === 'elst') l = l.slice().sort((a, b) => ts(a.timi) - ts(b.timi));
-    else if (s.rodun === 'mikilv') l = l.slice().sort((a, b) => ((b.mikilv ? 1 : 0) - (a.mikilv ? 1 : 0)) || ts(b.timi) - ts(a.timi));
+    else if (s.rodun === 'mikilv') l = l.slice().sort((a, b) => (b.mikilvTala - a.mikilvTala) || ts(b.timi) - ts(a.timi));
     else if (s.rodun === 'fjoldi') l = l.slice().sort((a, b) => (b.fjoldi - a.fjoldi) || ts(b.timi) - ts(a.timi));
     return l;
   }
@@ -460,7 +495,7 @@
           '<button type="button" class="btn iv sm tp-uppf" data-t5="tp-uppf" title="Sækja nýjan póst úr Gmail"' + (S.loading ? ' disabled' : '') + '>↻</button></header>' +
         '<div class="samt-rod">' + chip('holf', 'baedi', s.holf === 'baedi', 'Öll hólfin') + chip('holf', 'eldklar', s.holf === 'eldklar', 'eldklar@') + chip('holf', 'bokhald', s.holf === 'bokhald', 'bokhald@') + chip('holf', 'slokkvitaeki', s.holf === 'slokkvitaeki', 'slokkvitaeki@') +
           '<span class="tp-skil"></span>' + chip('sia', 'osvarad', s.osvarad, 'Ósvarað', 'Aðeins þræðir sem bíða svars eða eru hjá Claude') + chip('sia', 'beidnir', s.beidnir, '✉ Beiðnir', 'Lítur út eins og beiðni um reikning/skýrslu') + chip('sia', 'vidhengi', s.vidhengi, '📎 Viðhengi') +
-          '<span class="tp-skil"></span>' + chip('rod', 'nyjast', s.rodun === 'nyjast', 'Nýjast') + chip('rod', 'elst', s.rodun === 'elst', 'Elst') + chip('rod', 'mikilv', s.rodun === 'mikilv', 'Mikilvægast', 'Stjörnumerkt og IMPORTANT efst') + chip('rod', 'fjoldi', s.rodun === 'fjoldi', 'Flest skeyti') + '</div>' +
+          '<span class="tp-skil"></span>' + chip('rod', 'nyjast', s.rodun === 'nyjast', 'Nýjast') + chip('rod', 'elst', s.rodun === 'elst', 'Elst') + chip('rod', 'mikilv', s.rodun === 'mikilv', 'Mikilvægast', 'Stjörnumerkt efst, svo þekktir kúnnar, mál á borðinu og beiðnir — jafnt raðast eftir nýjasta') + chip('rod', 'fjoldi', s.rodun === 'fjoldi', 'Flest skeyti') + '</div>' +
         '<div class="samt-rod tp-merkjarod">' + merkjaTalning().slice(0, 12).map(([m, c]) => chip('merki', m, s.merki === m, (m === '★' ? '<span style="color:#d4a017">★</span>' : esc(m)) + ' <small>' + c + '</small>')).join('') + (s.merki ? chip('merki', '', false, '✕ Hreinsa') : '') + '</div>' +
         '<div class="samt-teljari"><button type="button" data-t5="tp-hoppa" data-v="undirbuid" class="_gull"><b>' + n('undirbuid') + '</b><span>★ Tilbúið að svara<small>Claude undirbjó — þú sendir</small></span></button>' +
           '<button type="button" data-t5="tp-hoppa" data-v="claude" class="_claude"><b>' + n('claude') + '</b><span>Hjá Claude<small>í vinnslu eða samþykkt</small></span></button>' +
@@ -542,6 +577,6 @@
     fela: (k, af) => { const t = finna(k); return t ? adgerd(t, () => fela(t, !!af)) : Promise.resolve(); },
     semja: k => { const t = finna(k); return t ? adgerd(t, () => semja(t)) : Promise.resolve(); },
     senda: k => { const t = finna(k); return t ? adgerd(t, () => senda(t)) : Promise.resolve(); },
-    svarEfni, svarTexti, uppkastUrNotu, notaAnUppkasts, gmailSlod, vidhHtml, valinVidh, vidhengiSvars, hengjaBeidnir, anHengja, skjolMals, merkiHtml, dags, kl, dagarSidan, stuttHolf, esc, STJORNUR, STJ_LITUR, LOKID, version: '2026-11-04'
+    svarEfni, svarTexti, uppkastUrNotu, notaAnUppkasts, gmailSlod, vidhHtml, valinVidh, vidhengiSvars, hengjaBeidnir, anHengja, skjolMals, merkiHtml, dags, kl, dagarSidan, stuttHolf, esc, STJORNUR, STJ_LITUR, LOKID, EKKI_BIDA, fraOkkur, version: '2026-11-11'
   };
 })();
