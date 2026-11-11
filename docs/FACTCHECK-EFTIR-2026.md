@@ -338,3 +338,22 @@ Húsmyndir skoðaðar: 419, 426, 427, 585, 1376, 208, 614, 732, 736. Án myndar:
 Húsmyndir skoðaðar: 1172, 740, 1803, 1131, 1629, 965, 1260, 464. Án myndar: 637, 1741.
 
 **Staða: 145 af 168 yfirfarin, 127 með frávik. Síðasta röð: 464. Næst: tíu næstu óyfirförnu á eftir 464 í röðinni (póstnúmer, nafn).**
+
+## Lota 16 — tíu raðir í 221–270 (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 673 | Burknavellir 1A | PASSAR (húsfélag 1a og b) | Nýjasta skýrsla nóv. 2024, kt rétt. **SKÝRSLU 2025 VANTAR**: reikn. 107458 (29.10.2025) er úttekt | Punktur réttur, götumynd fjölbýli | Listi 6 duft 6 kg; reikn. 2025 ber 5 duft + 1 LV. Búðarsala R-000226 (01.06.2026): 1 duft 2 kg, ekki á lista | Ekkert netfang. Ársskoðun segir síðast skoðað 2024, mánuður 11; rukkað var í október 2025 | Skýrsla 2025 vantar; ár og mánuður rangt; tegund 6/5+1 |
+| 680 | Húsfélag Eskivellir 21 | Nafn og kt rétt; lögheimili pósthólf umsjónarfélags | Skýrsla des. 2024, kt rétt | Punktur réttur, götumynd fjölbýli | Listi = skýrsla = reikn. 106139 (2 LV + 11 RS) | Netfang umsjónarfélags staðfest. Engin úttekt 2025 | 2025 sleppt |
+| 438 | Húsfélagið Akurvellir 1 | Nafn og kt rétt; lögheimili pósthólf umsjónarfélags | Skýrsla des. 2025, kt rétt. Athugasemd: tæki á 2. hæð fjarlægt, eiga að vera 5 | Punktur réttur, götumynd fjölbýli | Listi = skýrsla = reikn. 107669 (4 LV) | Netfang umsjónarfélags staðfest. Á tíma í desember | Ekkert (eitt tæki vantar í húsið skv. skýrslu) |
+| 418 | Húsfélagið Dofraberg 11 | PASSAR | Skýrsla nóv. 2025, kt rétt | Punktur réttur, götumynd fjölbýli | Listi = skýrsla = reikn. 107667 (2 duft + 5 RS) | Netfang umsjónarfélags staðfest. Á tíma í nóvember | Ekkert |
+| 631 | Húsfélagið Suðurhellu 9 | **NAFN ANNAÐ**: kt er Suðurhella 9 ehf. (eigandi hússins, lögheimili Skeifan 11B), ekki húsfélag | Engin skýrsla, enginn reikningur | Punktur réttur; Maps-skjámynd sýnir nr. 9 (rétt hús) | Engin tæki skráð | Netfang staðfest. Þjónustusamningur undirr. 13.10.2025; fyrsta úttekt ógerð. Mál #413 opið síðan okt. 2025 | Fyrsta úttekt ógerð í 13 mánuði; nafn á röð rangt |
+| 521 | Pétur Ólafsson byggverktakar ehf. | Nafn og kt rétt; lögheimili Flatahraun 23, 220. Staður Dofrahella 8 | Engin skýrsla | Punktur réttur, götumynd iðnaðarbil | **ENGIN TÆKI Á LISTA** þótt reikn. 106535 (25.03.2025) selji 22 LV + 2 CO₂ 5 kg. Sá reikningur er búðarsala (enginn akstur, engin skýrslugerð) en document_pairs telur hann úttekt 2025 | Við sendum 22.09.2026 um yfirferð; ekkert svar sést | Tækjalisti tómur; búðarsala talin úttekt; ósvarað síðan 22.09. |
+| 1610 | Steypustöðin – Íshellu | Rekstrarfélag, 9 staðir á kt: A á ekki við. Heimilisfang án húsnúmers | Skýrsla jan. 2025 er „vegna Hringhellu og Íshellu“ saman, kt rétt | Geokóðun finnur aðeins götuna; **ENGIN MYND** | Listi (29 tæki) = skýrslan öll, þ.e. báðir staðir. Hringhella er líka sér röð (608) | year_factcheck: tvítak. Reikn. 107964 (05.03.2026, 197.930 kr.) „opið við yfirtöku“. Skýrsla 2026 ekki á röðinni | Tæki tveggja staða á einni röð; skýrsla 2026 vantar |
+| 1888 | Steypustöðin – Keflavíkurflugvelli | Rekstrarfélag: A á ekki við. Heimilisfang án götu | Engin skýrsla | Enginn nothæfur punktur; **ENGIN MYND** | Engin tæki skráð | Engin gögn um staðinn | Tóm röð í þjónustu |
+| 702 | Icerental 4x4 | Nafn og kt rétt; lögheimili pósthólf. Staður Bogatröð 2 (og 2122) | Skýrsla sept. 2024, kt rétt | Punktur réttur; götumynd sýnir skemmu | Listi = skýrsla (3 LV + 7 duft) | Enginn póstur á netfangið. Fjórir reikn. 2025 án lína: ÓMÆLT hvort úttekt. Reikn. 108070 (30.03.2026, 197.674 kr.) „opið við yfirtöku“ | Engin skýrsla 2025; stór reikningur opinn frá yfirtöku |
+| 613 | Pizzan – Háholt | Rekstrarfélag: A á ekki við. Heimilisfang án húsnúmers | Nýjasta skýrsla júní 2024, kt rétt | Geokóðun finnur aðeins götuna; **ENGIN MYND** | Listi 3 LV + 1 teppi; skýrsla 1 LV + 2 ABF + 1 teppi | Nóta: gera skýrslu aftur, reikningur bakfærður óvart. Mál #1058 opið | Skýrsla 2025/2026 vantar; ABF ekki aðgreint á lista |
+
+Húsmyndir skoðaðar: 673, 680, 438, 418, 521, 702 og 631 (Maps-skjámynd, rétt). Án myndar: 1610, 1888, 613.
+
+**Staða: 155 af 168 yfirfarin, 135 með frávik. Síðasta röð: 613. Næst: síðustu 13 óyfirförnu raðirnar á eftir 613.**
