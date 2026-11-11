@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-11 11:51 · 2188 virkar staðreyndir — 1269 prentaðar hér
+Sótt 2026-11-11 12:13 · 2191 virkar staðreyndir — 1272 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 124 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (795 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -1880,6 +1880,52 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Last-write-wins á doc.updatedAt; IndexedDB á tækinu er vinnusannleikur, skýið spegill. Push debounce 2,5s, pull við opnun/fókus. RLS virkt með anon-policy, ENGIN delete-policy — borðum aðeins soft-eytt (deleted=true). Skema: kjarni apps/database/supabase/schemas/turbopaint.sql; migration turbopaint_
   <br><sub>2026-08-26 · slokkvitaeki · kóði · claude-code</sub>
 
+### agentar
+
+- **11.11.2026: boxið Verkferli tilbúin til keyrslu (489) sýnir síðast keyrt og tillögu að tíðni per verkferli úr app_settings.verkferli_keyrslur og gulnar þegar ferli er komið á tíma. Lokaskref hvers verkferlis er app_settings_merge með lyklinum og dagsetningu; hálfkláruð keyrsla er ekki skráð. Reglan stendur í brunaholf/.claude/agents/jarvis.md.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **11.11.2026: verkferli eru skráð sem skills og talin upp í boxinu Verkferli tilbúin til keyrslu í Vinnusamantekt (489). Ný: sannreyna-fyrirtaeki (eigandi fyrirtaeki), agenta-samstilling, lotu-uttekt, lista-uttekt (eigandi jarvis). Routerinn les aðeins kveikjuorð AGENTA og þegir á færri en 3 orðum, svo kveikjuorð skills verða líka að standa í lýsingu eiganda-agentsins.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
+  <br>Agnar 10.11.2026, sent á margar lotur. Aðferð sem virkaði í lotu 2ef635f0 (59 beiðnir, 15 þræðir): (1) draga beiðnirnar úr afritinu með python; (2) þrír lesaðeins undiragentar samhliða (lifandi app, reikningar/fjármál, listar/póstur), aðeins EINN með vafrann; (3) sannreyna á lifandi gögnum: build.js
+  <br><sub>2026-11-10 · kerfi · claude-code · claude-code</sub>
+- **Skill samthykki-a-bord sem AGENTASKRA.md og tools/agents-meta.json vísa á (~/.claude/skills/samthykki-a-bord) er ekki til, og ~/.claude/agents (rukkari-speglinn) er ekki til heldur á DESKTOP-M5FO3I6.**
+  <br>ls 04.11.2026: ~/.claude/skills hefur 10 möppur (3dJoker, artifacts-builder, debugging-code, frontend-design, luna, parametric-3d-printing, ui-ux-pro-max, using-superpowers, web-artifacts-builder, webapp-testing); ~/.claude/agents er ekki til. AGENTASKRA-taflan hefur 23 línur en agentarnir eru 25 (r
+  <br><sub>2026-11-04 · kerfi · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
+- **Þegar endapunkti er bætt við í brunaholf á að uppfæra viðkomandi sérfræðing í .claude/agents/ í sömu lotu.** _(likely)_
+  <br>[rule; agents: framendi, gagnaleidslur, jarvis, rukkari, bokari] Staðið sem fast regla í brunaholf-repo í lotum 5-6 október 2026. Án þess vita agentarnir ekki af nýja endapunktinum næst.
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Hver agent á eitt frumeintak (merkt í banner) og speglar í öðrum repo-um eru afrit sem úreldast; frumritið ræður.** _(unverified)_
+  <br>Agentaskráin 31.08: 9 af 21 spegli höfðu dregist aftur úr.
+  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
+- **Agent-skrár hlaðast úr <vinnumappa>/.claude/agents/, svo lota þarf að ræsast inni í repo-inu sem á agentana (slokkvitaeki, brunaholf eða kjarni) til að þeir séu tiltækir.** _(unverified)_
+  <br>Agentaskráin 31.08: lota í C:\projects hafði 0 af 23 agentum.
+  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
+- **Agent-skrár í .claude/agents í repo og skills, MCP-þjónar og plugins á claude.ai-reikningnum eru tvö samhliða kerfi sem hafa ítrekað valdið ruglingi.** _(likely)_
+  <br>[gotcha; agents: jarvis, general] Í dag eru 16 agent-skrár í brunaholf og 13 í slokkvitaeki (joker, kunnaskra, natalie, rukkari í báðum); skills eins og charlize, arnold og sara lifa á reikningnum. Agnar bað 30.08.2026 um að 'þjálfa upp hópinn' sem eru skráðir á…
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Þekkingu má aldrei týna þegar CLAUDE.md er skipt upp — flytja hana óbreytta á sérfræðinga-agentana eftir flokkum; stórt CLAUDE.md brenndi tokens í hverri lotu.**
+  <br>[decision; agents: general, jarvis] 01.08 Agnar: ‚vill ekki tapa neinni þekkingu… skipta þeim niður á agentana eftir flokkum‘ og ‚tokens eru alveg að brenna upp‘. Hugmynd hans: agentar fyrir kúnnagrunn, pör/bundles, síðuhraða og bókara, minnisskipulag teiknað í…
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
+- **Agnar skilur ensku 100 % — ef Sonnet gengur illa á íslensku má skrifa agent-fyrirmæli á ensku.**
+  <br>[preference; agents: general] 01.08 12:13: ‚Sonnet annars bara á ensku ef það gengur illa… við skilum ensku 100%‘.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
+- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
+  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
+- **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
+  <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
+  <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
+- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
+  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
+- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
+  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
+  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+
 ### kunnaskra
 
 - **Brunahólfs-verkstaður fær teikningaborð með takkanum „＋ Stofna teikningaborð“ í verkstaðaglugga hubbsins (/api/verkstadur action stofna_bord, 11.11.2026, mál #1464): falið félag „Brunahólf - <verkstaður>“ á kt 520417-2300 (grunnur 330, óvirkt, ekki í þjónustu) tengt í verkstadur_info.slokk_company_id. teikning_bord-röðin verður fyrst til þegar Teikningin í Slökkvitæki vistar. Prófið bjó til #1944 Ármúli 25.**
@@ -1968,6 +2014,43 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Jaðarleiti 2-8, 103 Rvk sameinað (board 141e4f90): #495 (tómt, eytt) -> #704. Sami staður/kt 611117-0190/base 591.**
   <br>survivor=704 loser=495
   <br><sub>2026-08-26 · baedi · agnar · claude-code</sub>
+
+### kort
+
+- **11.11.2026 mælt: /api/husmynd (vilja streetview) skilaði engri nothæfri mynd af fjórum (innimynd úr verslun, gluggalaus veggur, sund) — fallið velur næsta panó, ekki framhlið. Röð með heimilisfang án götu (aðeins 101 Reykjavík) fær miðju póstnúmers 64.145981,-21.9422367 sem punkt og loftmynd af röngum stað.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtæki í þjónustu án hnita 04.11.2026: 19 af 634 (fyrirtaeki.er_i_thjonustu=true og enginn lykill '__co__:'||id, heimilisfang né nafn í geocode_cache ∪ app_settings.geocode_cache). Aðeins taflan: 20. 600 hafa __co__-lykil. 157 deila hniti með öðru fyrirtæki í þjónustu (56 hópar, sumir eðlilega í sama húsi).** _(unverified)_
+  <br>Sama uppflettiröð og 155/161/219 (gc['__co__:'+id] || gc[heimilisfang] || gc[nafn]). localStorage._slokk_gc (lag 1) er ekki mælanlegt úr SQL.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
+- **Útibú sitja á hnitum höfuðstöðva í geocode_cache: Pizzan Njarðvík/Mosfellsbær/Hafnarfirði/Núpalind/Lóuhólum o.fl. eru öll á 64.1330,-21.8770 (Síðumúla 28, 15 lyklar), Steypustöðin Borgarnes/Helguvík/Þorlákshöfn á Malarhöfða (7 lyklar), og 20 lyklar (m.a. '104 Reykjavík', __co__:221) á miðju Reykjavíkur 64.1460,-21.9422. 5 fyrirtæki í þjónustu hafa __co__-hnit á þeirri miðju.** _(unverified)_
+  <br>Nafn-lykill (gc[co.nafn]) er þriðja uppflettingin í 155/161/219 — systkini-mynstrið í hnitum. Leiðrétting krefst audit_vernd + samþykkis Agnars (kort.md:108).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
+- **Á kortum í Kjarni vill Agnar fjarlægja bláu slikjuna — ekki breyta bláa litnum á vefsíðunum sjálfum.** _(likely)_
+  <br>[preference; agents: kort, thema] Orðrétt: 'Take away blues hue on the maps and such' → 'No i dont wannt you to chaange blue on the websites' → 'Just delete it'. Óljóst hvað 'it' er — staðfestu áður en breytt er.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 6f49d5d4 2026-10-25 · claude-code</sub>
+- **geocode_cache 04.11.2026: 1.884 raðir, 0 án hnita, elsta 17.05.2026 (engin eldri en 180 daga; fyrstu ná 180 dögum 13.11, 259 fyrir 22.11). 1.875 source='local-sync', 6 stadfangaskra, 2 uppferslubord, 1 nominatim. 248 lyklar eru __co__:<id> og 357 lyklar hafa engan tölustaf (firmanöfn/rusl) — plausibleAddress-vörðurinn (mapfix) gildir aðeins í vafranum, local-sync skrifar slíka lykla samt í töfluna.** _(unverified)_
+  <br>select count(*), count(*) filter (where lat is null), min(created_at), count(*) filter (where query not like '\_\_%' and query !~ '[0-9]') from geocode_cache. app_settings.settings->'geocode_cache' ber 1.083 lykla til viðbótar (757 __co__).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
+- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
+  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
+  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
+- **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
+  <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
+  <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
+- **17.09.2026 (framhald): Agnar samþykkti leiðréttingar á heimilisföngum í útkeyrsluþjónustu. 29 heimilisföng leiðrétt í fyrirtaeki (afrit sjálfkrafa í audit_vernd): 22 eftir Staðfangaskrá (m.a. Distica og Vesturhraun 1 í 210 Garðabæ ekki 220, Laugavegur 116/126 í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur x3, Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Aspafell→Asparfell, og sex sett saman úr nafni staðar þar sem heimilisfangið var pósthólf/brot) og 7 úr fyrirtækjaskrá Skattsins (fimm staðir höfðu ekkert heimilisfang; Karhólmi reyndist Kjarrhólmi 8; Garðatorg 7 er í 210 ekki 212). Húsnúmerabil halda sér. Staðir í þjónustu með punkt: 585 → 614 af 627. Þrettán eftir og hver þarf ákvörðun Agnars: Engjaás 2 í Borgarnesi er ekki til í skrá (1, 1a, 8, 10 eru til) — 40 tæki; Ölfusborgir og Hótel Kríunes eru staðir án götunúmers; Hringhella og Skútahraun (skráin stafar það Skútahraun, ekki Skútuhraun) vantar húsnúmer; KFC Austurvegi vantar númer; Golfklúbbur Hveragerðis og E fasteignafélag bera pósthólf/lögheimili en ekki starfsstöð; Bifreið.is er skráð á Hjallahraun 4 hjá Skattinum en 14 hjá okkur og Staðfangaskrá þekkir enga Hjallahraun-götu; GG optic er í Kringlunni en félagið GG Invest var AFSKRÁÐ 28.01.2026.**
+  <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
+- **17.09.2026: Útkeyrsluþjónustan (fyrirtaeki.er_i_thjonustu = 627 staðir) yfirfarin sérstaklega vegna staðsetningarpunkta. 585 áttu punkt, 42 ekki. Forrit leitaði að réttu staðfangi í Staðfangaskrá fyrir hvert þeirra (húsnúmer fast, götuheiti borið saman við öll staðföng með sama númeri, valið eftir minnstu villu, sama póstnúmeri og bókstaf) og fann ótvírætt staðfang fyrir 15. Hnitin voru skrifuð undir NÚVERANDI heimilisfangi svo kúnnagögn væru ekki snert — staðir með punkt fóru úr 585 í 600. Textaleiðréttingarnar sjálfar bíða samþykkis: Distica og Vesturhraun 1 eru í 210 Garðabæ ekki 220, Laugavegur 116 og 126 eru í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur (þrír staðir), Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Völuteig→Völuteigur. 27 eiga enn engan punkt: 5 án heimilisfangs, 5 án húsnúmers (Skútuhraun, Hringhella, Austurvegur, Brúarholt, Ölfusborgir), 6 þar sem gatan er í nafni staðarins en heimilisfangið er pósthólf eða brot, og restin sveitastaðir eða margræð svör.**
+  <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026 (yfirferð hnita): Öll heimilisföng virkra staða (943 ólík) flett upp í Staðfangaskrá HMS og borin saman við geocode_cache. Niðurstaða: 737 fundust í skránni, 73 heimilisföng ólæsileg, 133 ófundin. 25 hnit voru meira en 150 m frá réttum stað og voru leiðrétt (afrit í audit_vernd fyrst) — verst: Suðurgata 72 Hafnarfirði 29 km, Hafnarbraut 25 Kópavogi 23 km, Öldugata 42-44 9,4 km (Reykjavíkur-Öldugata), Strandvegur 2-10 8,8 km, Vitastígur 13 8,5 km (Hafnarfjarðar-Vitastígur). Auk þess voru 171 heimilisföng sem skráin þekkir en áttu engin hnit skrifuð inn. Staðir með hnit fóru úr 665 í 909 af 992. Aðferð: node-forrit sem notar sama lesara og /api/geocode, ber saman með haversine og sleppir tilvikum þar sem umbeðinn bókstafur er ekki til í skránni. 83 staðir eiga enn engin hnit — heimilisfangið er ólæsilegt eða ekki í skránni.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026 (framhald hnitaleitar): Fjögur heimilisföng sem voru brot leiðrétt að ósk Agnars („Fyrstu 3 taktu núna rétt .. og 4 er í Reykjavík") — götuheitið hafði lent í nafni staðarins og framhaldslínan stóð ein eftir. #264 → Burknavellir 5A-B, 221 Hafnarfjörður · #393 → Daggarvellir 4A-B, 221 Hafnarfjörður · #673 → Burknavellir 1A og 1B, 221 Hafnarfjörður · #706 Kaffi 22 → Laugavegur 22, 101 Reykjavík (var Laugarvegur). Ritháttur staðfestur í Staðfangaskrá, afrit sjálfkrafa í audit_vernd, og öll fjögur leysast nú á höfuðborgarsvæðinu. Tvær lagfæringar á lesaranum í /api/geocode: bandstrik má fylgja húsnúmeri eða bókstaf (Miðleiti 2-6 — 74 slík heimilisföng — fóru annars fram hjá Staðfangaskrá; fyrsta númerið gildir) og þegar bæði Hverfisgata 4 og 4A eru til vinnur sá bókstafur sem beðið var um. Staðfest á óskyndiminntum heimilisföngum: Bíldshöfði 18-20 og Stórhöfði 33A-B leysast báðir gegnum stadfangaskra.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026: Hnitaleitin (/api/geocode) reynir nú Staðfangaskrá HMS á undan Nominatim — opið WFS á geo.fasteignaskra.is (fasteignaskra:VSTADF_ALLT), enginn lykill, sama heimild og hus-upplysingar notar. Hún ber götuheiti saman í nefnifalli OG þágufalli (HEITI_NF/HEITI_TGF) og skilar hnitum staðfangsins í EPSG:4326 með srsName. Rótin: Nominatim ræður ekki við þágufall og giskaði á samnefnda götu annars staðar — Fjarðargötu 17 í Hafnarfirði sat á Flateyri (65,87/-23,48) og níu staðir á höfuðborgarsvæðinu höfðu punkt í röngum landshluta. Öryggi: sé póstnúmer þekkt verður svarið að bera sama póstnúmer, annars aðeins tekið gilt ef ótvírætt. Staðfest eftir birtingu 9904e67: Fjarðargata 17 → 64,06725/-21,95613, Breiðuvík 22 → 64,15233/-21,77241, Lyngási 10 → 64,09016/-21,93728, og Funahöfði 1 leysist nú (fannst ekki áður). Fimm röng skyndiminnisfærslur eyddar með afriti í audit_vernd og endurleystar. Eftir standa fjögur heimilisföng sem eru brot eða innsláttarvilla og fá engan punkt: #264 B 221 Hafnarfirði, #393 A-B 221 Hafnarfirði, #673 og 1B 221 Hafnarfjörður, #706 Laugarvegur 22 (á að vera Laugavegur).**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### samskipti
 
@@ -2094,83 +2177,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Prentaði powertube-hluturinn í ABS brotnar og losnar í innri hornum rauf-rótarinnar þegar ventillinn opnast; lagfæringin er aukið fillet-efni í þau horn og í hornin á o-hring grópinni.**
   <br>[gotcha; agents: 3dJoker] 15.09 og 19.09: koparrör er límt inn í borunina, 4 mm skrúfur brutu hlutinn. Aðeins gulmerktu hornin skal styrkja.
   <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
-
-### agentar
-
-- **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
-  <br>Agnar 10.11.2026, sent á margar lotur. Aðferð sem virkaði í lotu 2ef635f0 (59 beiðnir, 15 þræðir): (1) draga beiðnirnar úr afritinu með python; (2) þrír lesaðeins undiragentar samhliða (lifandi app, reikningar/fjármál, listar/póstur), aðeins EINN með vafrann; (3) sannreyna á lifandi gögnum: build.js
-  <br><sub>2026-11-10 · kerfi · claude-code · claude-code</sub>
-- **Skill samthykki-a-bord sem AGENTASKRA.md og tools/agents-meta.json vísa á (~/.claude/skills/samthykki-a-bord) er ekki til, og ~/.claude/agents (rukkari-speglinn) er ekki til heldur á DESKTOP-M5FO3I6.**
-  <br>ls 04.11.2026: ~/.claude/skills hefur 10 möppur (3dJoker, artifacts-builder, debugging-code, frontend-design, luna, parametric-3d-printing, ui-ux-pro-max, using-superpowers, web-artifacts-builder, webapp-testing); ~/.claude/agents er ekki til. AGENTASKRA-taflan hefur 23 línur en agentarnir eru 25 (r
-  <br><sub>2026-11-04 · kerfi · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
-- **Þegar endapunkti er bætt við í brunaholf á að uppfæra viðkomandi sérfræðing í .claude/agents/ í sömu lotu.** _(likely)_
-  <br>[rule; agents: framendi, gagnaleidslur, jarvis, rukkari, bokari] Staðið sem fast regla í brunaholf-repo í lotum 5-6 október 2026. Án þess vita agentarnir ekki af nýja endapunktinum næst.
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Hver agent á eitt frumeintak (merkt í banner) og speglar í öðrum repo-um eru afrit sem úreldast; frumritið ræður.** _(unverified)_
-  <br>Agentaskráin 31.08: 9 af 21 spegli höfðu dregist aftur úr.
-  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
-- **Agent-skrár hlaðast úr <vinnumappa>/.claude/agents/, svo lota þarf að ræsast inni í repo-inu sem á agentana (slokkvitaeki, brunaholf eða kjarni) til að þeir séu tiltækir.** _(unverified)_
-  <br>Agentaskráin 31.08: lota í C:\projects hafði 0 af 23 agentum.
-  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
-- **Agent-skrár í .claude/agents í repo og skills, MCP-þjónar og plugins á claude.ai-reikningnum eru tvö samhliða kerfi sem hafa ítrekað valdið ruglingi.** _(likely)_
-  <br>[gotcha; agents: jarvis, general] Í dag eru 16 agent-skrár í brunaholf og 13 í slokkvitaeki (joker, kunnaskra, natalie, rukkari í báðum); skills eins og charlize, arnold og sara lifa á reikningnum. Agnar bað 30.08.2026 um að 'þjálfa upp hópinn' sem eru skráðir á…
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Þekkingu má aldrei týna þegar CLAUDE.md er skipt upp — flytja hana óbreytta á sérfræðinga-agentana eftir flokkum; stórt CLAUDE.md brenndi tokens í hverri lotu.**
-  <br>[decision; agents: general, jarvis] 01.08 Agnar: ‚vill ekki tapa neinni þekkingu… skipta þeim niður á agentana eftir flokkum‘ og ‚tokens eru alveg að brenna upp‘. Hugmynd hans: agentar fyrir kúnnagrunn, pör/bundles, síðuhraða og bókara, minnisskipulag teiknað í…
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
-- **Agnar skilur ensku 100 % — ef Sonnet gengur illa á íslensku má skrifa agent-fyrirmæli á ensku.**
-  <br>[preference; agents: general] 01.08 12:13: ‚Sonnet annars bara á ensku ef það gengur illa… við skilum ensku 100%‘.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
-- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
-  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
-  <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
-  <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
-- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
-  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
-  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
-- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
-  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
-
-### kort
-
-- **Fyrirtæki í þjónustu án hnita 04.11.2026: 19 af 634 (fyrirtaeki.er_i_thjonustu=true og enginn lykill '__co__:'||id, heimilisfang né nafn í geocode_cache ∪ app_settings.geocode_cache). Aðeins taflan: 20. 600 hafa __co__-lykil. 157 deila hniti með öðru fyrirtæki í þjónustu (56 hópar, sumir eðlilega í sama húsi).** _(unverified)_
-  <br>Sama uppflettiröð og 155/161/219 (gc['__co__:'+id] || gc[heimilisfang] || gc[nafn]). localStorage._slokk_gc (lag 1) er ekki mælanlegt úr SQL.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
-- **Útibú sitja á hnitum höfuðstöðva í geocode_cache: Pizzan Njarðvík/Mosfellsbær/Hafnarfirði/Núpalind/Lóuhólum o.fl. eru öll á 64.1330,-21.8770 (Síðumúla 28, 15 lyklar), Steypustöðin Borgarnes/Helguvík/Þorlákshöfn á Malarhöfða (7 lyklar), og 20 lyklar (m.a. '104 Reykjavík', __co__:221) á miðju Reykjavíkur 64.1460,-21.9422. 5 fyrirtæki í þjónustu hafa __co__-hnit á þeirri miðju.** _(unverified)_
-  <br>Nafn-lykill (gc[co.nafn]) er þriðja uppflettingin í 155/161/219 — systkini-mynstrið í hnitum. Leiðrétting krefst audit_vernd + samþykkis Agnars (kort.md:108).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
-- **Á kortum í Kjarni vill Agnar fjarlægja bláu slikjuna — ekki breyta bláa litnum á vefsíðunum sjálfum.** _(likely)_
-  <br>[preference; agents: kort, thema] Orðrétt: 'Take away blues hue on the maps and such' → 'No i dont wannt you to chaange blue on the websites' → 'Just delete it'. Óljóst hvað 'it' er — staðfestu áður en breytt er.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 6f49d5d4 2026-10-25 · claude-code</sub>
-- **geocode_cache 04.11.2026: 1.884 raðir, 0 án hnita, elsta 17.05.2026 (engin eldri en 180 daga; fyrstu ná 180 dögum 13.11, 259 fyrir 22.11). 1.875 source='local-sync', 6 stadfangaskra, 2 uppferslubord, 1 nominatim. 248 lyklar eru __co__:<id> og 357 lyklar hafa engan tölustaf (firmanöfn/rusl) — plausibleAddress-vörðurinn (mapfix) gildir aðeins í vafranum, local-sync skrifar slíka lykla samt í töfluna.** _(unverified)_
-  <br>select count(*), count(*) filter (where lat is null), min(created_at), count(*) filter (where query not like '\_\_%' and query !~ '[0-9]') from geocode_cache. app_settings.settings->'geocode_cache' ber 1.083 lykla til viðbótar (757 __co__).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:11-utlit-tol.inbox.json · greining-11</sub>
-- **Loftmynd fyrir póstnúmer 200–203, 210–212, 225, 220 og 221 er map.is WMS myndkort (ts1.map.is, EPSG:3057), merkt Loftmynd · map.is. Borgarvefsjá 2018 er Reykjavík þó hnitin lendi innan þekjunnar. Þetta er ekki götumynd og má ekki skrifa yfir mynd sem var sett inn.**
-  <br>Enginn Google-lykill. Handmynd (hvaða url sem er) er vernduð. Geymd engin frá borgarvefsja má reyna loftmynd einu sinni. Tímaþrot er ekki vistað sem engin mynd.
-  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
-- **Staðfangaskrá stafar sumar götur á -ahraun þó færslan segi -uhraun. Skútahraun 2, 220 (land 122238, heitinr 1030190) er ekki Skútahraun 2A (land 176716) og ekki Skútahraun 2 í póstnúmeri 660.**
-  <br>Bókstafslaus röð er tekin á undan 2A. Ein auka-leit uhraun→ahraun, ekki lykkja. Sama mynstur og Sléttuhraun→Sléttahraun.
-  <br><sub>2026-10-02 · slokkvitaeki · wfs · cursor</sub>
-- **17.09.2026 (framhald): Agnar samþykkti leiðréttingar á heimilisföngum í útkeyrsluþjónustu. 29 heimilisföng leiðrétt í fyrirtaeki (afrit sjálfkrafa í audit_vernd): 22 eftir Staðfangaskrá (m.a. Distica og Vesturhraun 1 í 210 Garðabæ ekki 220, Laugavegur 116/126 í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur x3, Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Aspafell→Asparfell, og sex sett saman úr nafni staðar þar sem heimilisfangið var pósthólf/brot) og 7 úr fyrirtækjaskrá Skattsins (fimm staðir höfðu ekkert heimilisfang; Karhólmi reyndist Kjarrhólmi 8; Garðatorg 7 er í 210 ekki 212). Húsnúmerabil halda sér. Staðir í þjónustu með punkt: 585 → 614 af 627. Þrettán eftir og hver þarf ákvörðun Agnars: Engjaás 2 í Borgarnesi er ekki til í skrá (1, 1a, 8, 10 eru til) — 40 tæki; Ölfusborgir og Hótel Kríunes eru staðir án götunúmers; Hringhella og Skútahraun (skráin stafar það Skútahraun, ekki Skútuhraun) vantar húsnúmer; KFC Austurvegi vantar númer; Golfklúbbur Hveragerðis og E fasteignafélag bera pósthólf/lögheimili en ekki starfsstöð; Bifreið.is er skráð á Hjallahraun 4 hjá Skattinum en 14 hjá okkur og Staðfangaskrá þekkir enga Hjallahraun-götu; GG optic er í Kringlunni en félagið GG Invest var AFSKRÁÐ 28.01.2026.**
-  <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
-- **17.09.2026: Útkeyrsluþjónustan (fyrirtaeki.er_i_thjonustu = 627 staðir) yfirfarin sérstaklega vegna staðsetningarpunkta. 585 áttu punkt, 42 ekki. Forrit leitaði að réttu staðfangi í Staðfangaskrá fyrir hvert þeirra (húsnúmer fast, götuheiti borið saman við öll staðföng með sama númeri, valið eftir minnstu villu, sama póstnúmeri og bókstaf) og fann ótvírætt staðfang fyrir 15. Hnitin voru skrifuð undir NÚVERANDI heimilisfangi svo kúnnagögn væru ekki snert — staðir með punkt fóru úr 585 í 600. Textaleiðréttingarnar sjálfar bíða samþykkis: Distica og Vesturhraun 1 eru í 210 Garðabæ ekki 220, Laugavegur 116 og 126 eru í 105 ekki 101, Hörðurkór→Hörðukór, Mörðufell→Möðrufell, Garðarstræti→Garðastræti, Reykjarvíkurvegi→Reykjavíkurvegur (þrír staðir), Eyrarvegi→Eyravegur, Nýbílavegur→Nýbýlavegur, Gulhellu 1 220→Gullhella 1 221, Sléttuhraun→Sléttahraun, Völuteig→Völuteigur. 27 eiga enn engan punkt: 5 án heimilisfangs, 5 án húsnúmers (Skútuhraun, Hringhella, Austurvegur, Brúarholt, Ölfusborgir), 6 þar sem gatan er í nafni staðarins en heimilisfangið er pósthólf eða brot, og restin sveitastaðir eða margræð svör.**
-  <br><sub>2026-09-17 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026 (yfirferð hnita): Öll heimilisföng virkra staða (943 ólík) flett upp í Staðfangaskrá HMS og borin saman við geocode_cache. Niðurstaða: 737 fundust í skránni, 73 heimilisföng ólæsileg, 133 ófundin. 25 hnit voru meira en 150 m frá réttum stað og voru leiðrétt (afrit í audit_vernd fyrst) — verst: Suðurgata 72 Hafnarfirði 29 km, Hafnarbraut 25 Kópavogi 23 km, Öldugata 42-44 9,4 km (Reykjavíkur-Öldugata), Strandvegur 2-10 8,8 km, Vitastígur 13 8,5 km (Hafnarfjarðar-Vitastígur). Auk þess voru 171 heimilisföng sem skráin þekkir en áttu engin hnit skrifuð inn. Staðir með hnit fóru úr 665 í 909 af 992. Aðferð: node-forrit sem notar sama lesara og /api/geocode, ber saman með haversine og sleppir tilvikum þar sem umbeðinn bókstafur er ekki til í skránni. 83 staðir eiga enn engin hnit — heimilisfangið er ólæsilegt eða ekki í skránni.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026 (framhald hnitaleitar): Fjögur heimilisföng sem voru brot leiðrétt að ósk Agnars („Fyrstu 3 taktu núna rétt .. og 4 er í Reykjavík") — götuheitið hafði lent í nafni staðarins og framhaldslínan stóð ein eftir. #264 → Burknavellir 5A-B, 221 Hafnarfjörður · #393 → Daggarvellir 4A-B, 221 Hafnarfjörður · #673 → Burknavellir 1A og 1B, 221 Hafnarfjörður · #706 Kaffi 22 → Laugavegur 22, 101 Reykjavík (var Laugarvegur). Ritháttur staðfestur í Staðfangaskrá, afrit sjálfkrafa í audit_vernd, og öll fjögur leysast nú á höfuðborgarsvæðinu. Tvær lagfæringar á lesaranum í /api/geocode: bandstrik má fylgja húsnúmeri eða bókstaf (Miðleiti 2-6 — 74 slík heimilisföng — fóru annars fram hjá Staðfangaskrá; fyrsta númerið gildir) og þegar bæði Hverfisgata 4 og 4A eru til vinnur sá bókstafur sem beðið var um. Staðfest á óskyndiminntum heimilisföngum: Bíldshöfði 18-20 og Stórhöfði 33A-B leysast báðir gegnum stadfangaskra.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026: Hnitaleitin (/api/geocode) reynir nú Staðfangaskrá HMS á undan Nominatim — opið WFS á geo.fasteignaskra.is (fasteignaskra:VSTADF_ALLT), enginn lykill, sama heimild og hus-upplysingar notar. Hún ber götuheiti saman í nefnifalli OG þágufalli (HEITI_NF/HEITI_TGF) og skilar hnitum staðfangsins í EPSG:4326 með srsName. Rótin: Nominatim ræður ekki við þágufall og giskaði á samnefnda götu annars staðar — Fjarðargötu 17 í Hafnarfirði sat á Flateyri (65,87/-23,48) og níu staðir á höfuðborgarsvæðinu höfðu punkt í röngum landshluta. Öryggi: sé póstnúmer þekkt verður svarið að bera sama póstnúmer, annars aðeins tekið gilt ef ótvírætt. Staðfest eftir birtingu 9904e67: Fjarðargata 17 → 64,06725/-21,95613, Breiðuvík 22 → 64,15233/-21,77241, Lyngási 10 → 64,09016/-21,93728, og Funahöfði 1 leysist nú (fannst ekki áður). Fimm röng skyndiminnisfærslur eyddar með afriti í audit_vernd og endurleystar. Eftir standa fjögur heimilisföng sem eru brot eða innsláttarvilla og fá engan punkt: #264 B 221 Hafnarfirði, #393 A-B 221 Hafnarfirði, #673 og 1B 221 Hafnarfjörður, #706 Laugarvegur 22 (á að vera Laugavegur).**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **Heimilisfangaleit TurboPaint (kjarni apps/slokkvitaeki app/api/turbopaint/teikningar/route.ts): heimilisfang → Landeignaskrá HMS (geo.fasteignaskra.is, landnúmer + póstnúmer + ISN93) → FotoWeb-teikningasafn Reykjavíkur (skjalasafn.reykjavik.is). Aðeins Reykjavík hefur teikningalista; Kópavogur/Garðabær/Hafnarfjörður fá djúptengil á map.is. Broddstafir verða að vera NFC.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **geocode_cache er yfir 1000 raðir (1.567 12.09.2026). 156-geocode-prewarm sótti áður aðeins 1000 → 566 hnit náðu aldrei í vafrann; síðan a5a5b76 flettir hann með offset. Staðir á aksturslista (arsskodun_customers.akstur 1–3) fá hnit í forhleðslu síðan 010e9d6.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### bord
 
