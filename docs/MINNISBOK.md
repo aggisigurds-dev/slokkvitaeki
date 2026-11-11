@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-11 02:28 · 2165 virkar staðreyndir — 1251 prentaðar hér
+Sótt 2026-11-11 10:23 · 2169 virkar staðreyndir — 1255 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 121 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (793 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -108,7 +108,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [bord-flettur](#bord-flettur) | 20 |
 | [reikningar](#reikningar) | 20 |
 | [oryggisnet](#oryggisnet) | 19 |
-| [vidmot](#vidmot) | 18 |
+| [nlsh](#nlsh) | 18 |
 
 ### kerfi
 
@@ -1579,6 +1579,50 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Reglurnar (Agnar's „electric cable"-samlíking — ekki klippa aðal-línuna án þess að tengja aftur og keyra enda-í-enda próf): (1) aldrei fjarlægja/veikja vörn án staðgengils + græns audits; (2) breyting á vörðum leiðum (reikninga-OUT 10/233/254, kt 121/pos.js, rukkun payday-push, tilbúið-staða 153/187
   <br><sub>2026-08-20 · kerfi · kóði · claude-code</sub>
 
+### nlsh
+
+- **LEIÐRÉTTING á færslu 2326 (NLSH gólf 5H, 11.11.2026): teikningin '5H. Ceiling' er heilt hæðarblað með S1, S2, S4 og S5, ekki S1+S2. Gólfgöt 5H kláruð: S1 119, S2 150, S4 101, S5 97 — 'rúmlega 100 á deild' stenst. Fyrri tölur (S1 um 248, S2 um 193, ekkert á S4/S5) voru rangar vegna deildaskiptingar í tools/nlsh-stukur.cjs; lagað með deildFall (blað með fylki af deildum skiptist við þrjú stærstu x-bilin). Lærdómur: bera x-svið punkta við þekkt blað áður en blaði er skipt í deildir.**
+  <br><sub>2026-11-11 · brunaholf · claude-code · claude-code</sub>
+- **NLSH lagfæringar (Agnar 11.11.2026): lagfæring á að koma sem NÝTT verk í Ajour, ekki draga frá sem tvítak. Talning úr lýsingum 11.206 skráninga: 521 með lagfæringarmerki; 98 skráðar sem nýtt verk (5H 41, 6H 39, Viðbótarverk 14, 4H 4); 248 eru upphaflega skráningin með athugasemd um lagfæringu síðar (5H 106, 6H 91, 4H 36), engin sérstök skráning; 175 óflokkaðar (lýsing án dagsetningar). Flokkunin er túlkun á texta.**
+  <br><sub>2026-11-11 · brunaholf · claude-code · claude-code</sub>
+- **NLSH gólfskráningar 5H S1/S2 kannaðar 11.11.2026 (Ajour + ljósmyndir): ekki tvítök. Hver skráning á '5H. Ceiling' er sérstakt rör gegnum plötuna, þétt neðan frá. S1: 267 kláraðar = 2 hrein tvítök (#4454=#1311, #4453=#2374) + 17 nýjar skráningar á stað eldri (lagfæring, rör minkað) + um 248 stök rör. S2: 198, þar af 5 á stað eldri, um 193 stök. 4H: 84/107/91/75 á deild. 'Rúmlega 100 á deild' stenst því á 4H en ekki á 5H S1/S2. Ljósmynd skráningar fæst um /api/construction/registration/file/scaled/print?id=<photos[].fileId>.**
+  <br><sub>2026-11-11 · brunaholf · claude-code · claude-code</sub>
+- **NLSH einingar (Agnar 11.11.2026): Ajour telur STÖK verk; tvö stök verk eru ein lokun í Landspítalatilboðinu, NEMA gólfgötin (milliloftaþéttingar): rörið kemur gegnum gólfið og er aðeins þétt neðan frá, svo eitt stakt gólfverk er heil þétting. Markmið gólfgata á Landspítalasíðunni lækkað úr 200 í 110 á deild (brunaholf bfbb448): 4. hæð 81%, 5. hæð 80%, 6. hæð 99%, heild 90%. Ómælt: af hverju gólf á 5H S1/S2 er 267 og 206 skráningar á móti rúmlega 100 á deild.**
+  <br><sub>2026-11-11 · brunaholf · claude-code · claude-code</sub>
+- **NLSH punktakort á Landspítalasíðunni (brunaholf 5cd9c3d, 10.11.2026): hver punktur í data/nlsh-punktar.json ber stærðarflokk Ajour (7. gildi, flokkar[]); kortið teiknar tákn eftir tegund og stærð (kross loft, hringur stál, þríhyrningur plast, ferningur milliloft, tígull rafmagn), skýringar eru síur og 'S1 + S2' / 'S4 + S5' stækka. Agnar leyfði 10.11 að nota TurboPaint eða Miro; kortið var haft í hubnum því það les Ajour beint og ekkert skrifað á Miro. Bakgrunnsmyndin img/nlsh-yfirlit-5h|6h.jpg er aðeins 2.123 px, skarpari stækkun krefst nýrrar myndar úr PDF.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH kort á Landspítalasíðunni (brunaholf 6f60ce4, 10.11.2026): deildaspjöld með stiku per flokkahóp (loftræsting, stálrör, plaströr, milliloft), markmið = sami hópur á 6H en aldrei minna en klárað + opið; loftræsting á 5H kvörðuð við Miro-talningu (MIRO_LOFT í js/nlsh-sections.js); rafmagn og skráningar utan deilda koma úr nýja lyklinum 'utan' í data/nlsh-stukur.json (tools/nlsh-stukur.cjs). Sýnir 6H 99%, 5H 77% (S1 100, S2 96, S4 81, S5 33), 4H 44%. Óvissa: GOLF_TGT = 200 lokanir á deild; ef gólfgat er ein skráning í Ajour er 4. hæð nær lokið (84-107 á deild).**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH (Agnar 10.11.2026): Miro-heildartalningin á borði uXjVJ1jKBnY= var gerð áður en byrjað var á baðherbergjunum, því er Ajour hærra í Plast Ø20-34 og Stál Ø15-35. Engar gólfþéttingar (milliloftaþéttingar) eiga að vera á 6. hæð, aðeins á 5. og 4. hæð, rúmlega 100 á deild; 4. hæð er bara gólfþéttingar. Rafmagn: aðeins upprunalegar teikningar til, miklar breytingar og sum göt rukkuð tvisvar, svo 110 á deild er upprunaleg hönnun en ekki raunmagn. Loftræsting 5. hæðar er talin á Miro-borði uXjVG3Z1Bmk= (5H1S 115 krossar = 230 lokanir, 5H2S 122 = 244): 5. hæð hefur um 17% færri loftgegnumtök en 6. hæð, svo 6H sem 100% vanmetur loft á 5H. Leiðrétt mat veggja: 5H S1 um 100%, S2 97-99%, S4 um 96%, S5 um 39%. Gólf 5H S4/S5: ein skráning í Ajour, rúmlega 100 göt á deild eftir.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH staða verks (mælt 10.11.2026): deildatalningin data/nlsh-stukur.json sleppir teikningunum '6H 2S-1S Rafmagnsþéttingar.jpg' (244 skráðar/231 kláruð), '5H1S OG 5H2S - Rafmagnsþéttingar.jpg' (72 mældar í júní, 0 kláruð), 'NLSH - Viðbótarverkefni.jpg' (85/81) og 466 skráningum án teikningar. Af 680 opnum hafa 445 enga teikningu, þar af 131 minnispunktar (Guide point 81, Annað 50) — opnar eru ekki sama og ólokuð gegnumtök. Gólfgöt liggja á Ceiling-teikningum: 5H S1+S2 465/471, 4H S1+S2 191/194, 4H S4+S5 167/183, 5H S4+S5 aðeins 1 skráning. Mat með 6H sem 100% og þaki per flokkahóp: 5H S1 97,5%, S2 96%, S4 93% (loft 68%), S5 38%; veggir 5H 81%. Miro-borð uXjVGGsx7W8= er nýrra en uXjVJ1jKBnY= (yfirlit 5H, millihæðaþéttingar). Fullt: brunaholf/.claude/agents/gagnaleidslur.md, kafli 'Staða verks fyrir COWI'.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH 100%-viðmið (mælt 10.11.2026): 6. hæð er kláruð í Ajour (S1 1.247, S2 1.590, S4 1.196, S5 1.278; 6 opnar) og er besta viðmiðið fyrir 5. hæð. Miro-töflur Agnars fyrir 6H2S (stakar) staðfesta Ajour innan ~10% á fjórum flokkum: Stál Ø40-50 338 á móti 345, Loft Ø200-315 114-118 á móti 114, Loft Ø125-160 136 á móti 151, sprinkler Ø75-110 104 á móti 92. Ósamræmi óleyst: Stál Ø15-35 (Miro tafla 244, límmiði 496 stk, Ajour 320) og Plast Ø20-34 (Miro 76-78, Ajour 151). Staða 5H án gólfgata og rafmagns: S1 ~100%, S2 96%, S4 96%, S5 38% (483 af ~1.270). COWI (verkeftirlit, Arnar Ingi Þórsson) bað 10.11.2026 um stöðu verks, vörur, vottanir, starfsmannalista og gæðagögn, áframsent af Hilmi Erni hjá ÞG Verk.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **Frosinn NLSH-mánuður tekur ekki upp seinkomna flokkabreytingu í Ajour: skráning telst á mánuð Done-dagsins, svo munurinn birtist hvergi og lokatölu verkliðarins í næsta opna mánuði þarf að hækka með hendi.**
+  <br>Rakið í nlsh-stada.js 10.11.2026: nlsh_stada_manudir telur á mánuð coalesce(checked_date, execution_date); frosinn mánuður notar stakar_man eins og hann var sendur; tillaga næsta mánaðar = lokatala + nýtt í þeim mánuði. Dæmið: 47 október-skráningar á teikningunni „6H 2S-1S Rafmagnsþéttingar.jpg" sta
+  <br><sub>2026-11-10 · brunaholf · kóði · claude-code</sub>
+- **NLSH frysting: Kröfu yfirlit tengir drög við Payday-reikning aðeins í útreikningi (sjalfvirk_tenging í /api/krofu-yfirlit-bru) og skrifar ekki payday_invoice_id, svo nlsh-stada frystir sendan mánuð EKKI sjálfkrafa. Október 2026 = R-388 (4.756.347 = 5.006.681 x 0,95) var festur handvirkt 10.11.2026 (action frysta). Athuga alltaf: tilvísun í sjalfvirk_tenging en fryst false => bera saman x 0,95 og festa. Verkefnalisti: 'NLSH: sendur mánuður frystist ekki sjálfkrafa'.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **Miro-borðið Landsspitali (uXjVJ1jKBnY=): einn rammi per kerfi og deild á 6H. 6H2S Rafmagnsraufar = 55 grænir tíglar = 55 pör = 110 stakar lokanir. Sprinklerkerfi 6H2S = 83 stjörnur, hver = eitt gegnumtak = TVÆR lokanir (Agnar 08.11.2026) = 166 stakar. Flokkun: 35 mm í Stál Ø15-35, 40/50 í Ø40-50, 60 og 75 í Ø75-110. Ajour-flokkar Stál telja öll stálrör, ekki bara sprinkler. 6H1S og 6H2S eru tvær deildir.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH 2.11 metraskrá: POST /api/nlsh-stada {action:'raufar', serial_number, metrar, athugasemd, month}; metrar = (L+L+B+B)/1000. 08.11.2026 voru 67 raðir úr Excel Landsspitali_metrar vistaðar (128,35 m). 39 raðir án verknúmers (6H2S, 76,1 m) eru EKKI inni: engar Raufar-skráningar eru á bilinu 1266-3719 og röðin 'næstu númer upp' stenst ekki.**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **NLSH Efnislisti: hver vistun yfirskrifar allar 15 lokatölur mánaðarins. Tala úr fyrri lotu er úrelt um leið og einhver vistar aftur (október 2026: vistað 06.11 = 4.340.140, vistað aftur úr glugganum 09.11 = 5.006.681). Lesa nlsh_manadarlok + invoice_drafts áður en vitnað er í tölu. Vistun án innskráningar: POST /api/nlsh-stada + POST /api/invoice-drafts (sömu köll og nle-save).**
+  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
+- **nlsh_month_snapshot stöðvaðist: 9 raðir (2025-09→2026-05), allar teknar 11.06.2026. Samt les nlsh-monthly.js hana enn; frosnu tölurnar eru nú í nlsh_manadarlok.** _(unverified)_
+  <br>select month, captured_at from nlsh_month_snapshot — mælt 04.11.2026. grep: netlify/functions/nlsh-monthly.js er eini lesandinn.
+  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:07-brunaholf-rekstur.inbox.json · greining-07</sub>
+- **nlsh_manadarlok = 14 mánuðir × 15 verkliðir (210 raðir). 2025-09→2026-08 voru frystir 06.10.2026 (heimild Landsspitalinn ágúst.xlsx), 2026-09 frystur 01.11.2026 (drög #339, 3.827.435 kr m.vsk). Október 2026 er opinn: fryst_at og upphaed_man null.** _(unverified)_
+  <br>select month, count(*), count(fryst_at), max(fryst_at)::date, sum(upphaed_man) from nlsh_manadarlok group by month — mælt 04.11.2026. Mánaðarlok október bíða (skill gata-manadarlok).
+  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:07-brunaholf-rekstur.inbox.json · greining-07</sub>
+- **NLSH-mánaðartillagan (nlsh-stada) er lokatala fyrri mánaðar + (nýjar Done-lokanir mánaðarins eftir coalesce(checked_date, execution_date) − teknar_fram fyrri mánaðar); 2.11 telst í metrum úr raufMetrar(subject) og ummál eins og „620mm" eða „0-32" lesast EKKI (telja 0 kr).**
+  <br>Lesið úr netlify/functions/nlsh-stada.js + nlsh-uppgjor.js 04.11.2026. Nýjar lokanir = RPC nlsh_stada_manudir (distinct serial, 1 lína per serial í ajour_registrations). nyMan = max(0, ný − teknar_fram); heilar = nyMan × studull (1.1/1.2 full 1=1, 1.3 full frá 2026-08, 2.2 hálft frá 2026-08, annað 0
+  <br><sub>2026-11-04 · brunaholf · kóði · claude-code</sub>
+- **Payday-reikningar til ÞG verktaka (Landspítali, NLSH) eru 95% af mánaðaruppgjörinu: 5% er öryggisfé sem er haldið eftir (ekki afsláttur) og greiðist þegar verkinu lýkur.**
+  <br>Mælt 01.11.2026: R-310, 319, 343, 352, 370, 376 (apríl–sept) eru 95% upp á krónu; R-299 (mars) ±20 kr; fyrir mars 100%. customer_worksite_map.retention_pct segir 10 en raunin er 5 (Agnar: samningurinn segir 5–10%). Afleiðing: drögin (invoice_drafts) hafa upphæð uppgjörsins og krofu-yfirlit-bru.js sj
+  <br><sub>2026-11-01 · brunaholf · sql · claude-code</sub>
+
 ### vidmot
 
 - **Töflurnar numerarod og stjornbord_layout eru utan útlits/prentunar: numerarod (forskeyti K2609=7, K2610=5) er talning fyrir next_forskeyti_num (solur/tilbod-númer) og stjornbord_layout (key 'default', mode desktop, zoom mobile 1/desktop 1.6) er skrifuð af kjarni/apps/slokkvitaeki/public/stjornbord.html (Stjórnborð — Ragnarök), ekki slokkvitaeki- eða brunaholf-kóða.** _(unverified)_
@@ -1732,44 +1776,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **TurboPaint borð samstillast milli tækja um Supabase-töfluna turbopaint_boards + public bucketið turbopaint (eitt PNG per assetId, ódauðanlegt)**
   <br>Last-write-wins á doc.updatedAt; IndexedDB á tækinu er vinnusannleikur, skýið spegill. Push debounce 2,5s, pull við opnun/fókus. RLS virkt með anon-policy, ENGIN delete-policy — borðum aðeins soft-eytt (deleted=true). Skema: kjarni apps/database/supabase/schemas/turbopaint.sql; migration turbopaint_
   <br><sub>2026-08-26 · slokkvitaeki · kóði · claude-code</sub>
-
-### nlsh
-
-- **NLSH einingar (Agnar 11.11.2026): Ajour telur STÖK verk; tvö stök verk eru ein lokun í Landspítalatilboðinu, NEMA gólfgötin (milliloftaþéttingar): rörið kemur gegnum gólfið og er aðeins þétt neðan frá, svo eitt stakt gólfverk er heil þétting. Markmið gólfgata á Landspítalasíðunni lækkað úr 200 í 110 á deild (brunaholf bfbb448): 4. hæð 81%, 5. hæð 80%, 6. hæð 99%, heild 90%. Ómælt: af hverju gólf á 5H S1/S2 er 267 og 206 skráningar á móti rúmlega 100 á deild.**
-  <br><sub>2026-11-11 · brunaholf · claude-code · claude-code</sub>
-- **NLSH punktakort á Landspítalasíðunni (brunaholf 5cd9c3d, 10.11.2026): hver punktur í data/nlsh-punktar.json ber stærðarflokk Ajour (7. gildi, flokkar[]); kortið teiknar tákn eftir tegund og stærð (kross loft, hringur stál, þríhyrningur plast, ferningur milliloft, tígull rafmagn), skýringar eru síur og 'S1 + S2' / 'S4 + S5' stækka. Agnar leyfði 10.11 að nota TurboPaint eða Miro; kortið var haft í hubnum því það les Ajour beint og ekkert skrifað á Miro. Bakgrunnsmyndin img/nlsh-yfirlit-5h|6h.jpg er aðeins 2.123 px, skarpari stækkun krefst nýrrar myndar úr PDF.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH kort á Landspítalasíðunni (brunaholf 6f60ce4, 10.11.2026): deildaspjöld með stiku per flokkahóp (loftræsting, stálrör, plaströr, milliloft), markmið = sami hópur á 6H en aldrei minna en klárað + opið; loftræsting á 5H kvörðuð við Miro-talningu (MIRO_LOFT í js/nlsh-sections.js); rafmagn og skráningar utan deilda koma úr nýja lyklinum 'utan' í data/nlsh-stukur.json (tools/nlsh-stukur.cjs). Sýnir 6H 99%, 5H 77% (S1 100, S2 96, S4 81, S5 33), 4H 44%. Óvissa: GOLF_TGT = 200 lokanir á deild; ef gólfgat er ein skráning í Ajour er 4. hæð nær lokið (84-107 á deild).**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH (Agnar 10.11.2026): Miro-heildartalningin á borði uXjVJ1jKBnY= var gerð áður en byrjað var á baðherbergjunum, því er Ajour hærra í Plast Ø20-34 og Stál Ø15-35. Engar gólfþéttingar (milliloftaþéttingar) eiga að vera á 6. hæð, aðeins á 5. og 4. hæð, rúmlega 100 á deild; 4. hæð er bara gólfþéttingar. Rafmagn: aðeins upprunalegar teikningar til, miklar breytingar og sum göt rukkuð tvisvar, svo 110 á deild er upprunaleg hönnun en ekki raunmagn. Loftræsting 5. hæðar er talin á Miro-borði uXjVG3Z1Bmk= (5H1S 115 krossar = 230 lokanir, 5H2S 122 = 244): 5. hæð hefur um 17% færri loftgegnumtök en 6. hæð, svo 6H sem 100% vanmetur loft á 5H. Leiðrétt mat veggja: 5H S1 um 100%, S2 97-99%, S4 um 96%, S5 um 39%. Gólf 5H S4/S5: ein skráning í Ajour, rúmlega 100 göt á deild eftir.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH staða verks (mælt 10.11.2026): deildatalningin data/nlsh-stukur.json sleppir teikningunum '6H 2S-1S Rafmagnsþéttingar.jpg' (244 skráðar/231 kláruð), '5H1S OG 5H2S - Rafmagnsþéttingar.jpg' (72 mældar í júní, 0 kláruð), 'NLSH - Viðbótarverkefni.jpg' (85/81) og 466 skráningum án teikningar. Af 680 opnum hafa 445 enga teikningu, þar af 131 minnispunktar (Guide point 81, Annað 50) — opnar eru ekki sama og ólokuð gegnumtök. Gólfgöt liggja á Ceiling-teikningum: 5H S1+S2 465/471, 4H S1+S2 191/194, 4H S4+S5 167/183, 5H S4+S5 aðeins 1 skráning. Mat með 6H sem 100% og þaki per flokkahóp: 5H S1 97,5%, S2 96%, S4 93% (loft 68%), S5 38%; veggir 5H 81%. Miro-borð uXjVGGsx7W8= er nýrra en uXjVJ1jKBnY= (yfirlit 5H, millihæðaþéttingar). Fullt: brunaholf/.claude/agents/gagnaleidslur.md, kafli 'Staða verks fyrir COWI'.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH 100%-viðmið (mælt 10.11.2026): 6. hæð er kláruð í Ajour (S1 1.247, S2 1.590, S4 1.196, S5 1.278; 6 opnar) og er besta viðmiðið fyrir 5. hæð. Miro-töflur Agnars fyrir 6H2S (stakar) staðfesta Ajour innan ~10% á fjórum flokkum: Stál Ø40-50 338 á móti 345, Loft Ø200-315 114-118 á móti 114, Loft Ø125-160 136 á móti 151, sprinkler Ø75-110 104 á móti 92. Ósamræmi óleyst: Stál Ø15-35 (Miro tafla 244, límmiði 496 stk, Ajour 320) og Plast Ø20-34 (Miro 76-78, Ajour 151). Staða 5H án gólfgata og rafmagns: S1 ~100%, S2 96%, S4 96%, S5 38% (483 af ~1.270). COWI (verkeftirlit, Arnar Ingi Þórsson) bað 10.11.2026 um stöðu verks, vörur, vottanir, starfsmannalista og gæðagögn, áframsent af Hilmi Erni hjá ÞG Verk.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **Frosinn NLSH-mánuður tekur ekki upp seinkomna flokkabreytingu í Ajour: skráning telst á mánuð Done-dagsins, svo munurinn birtist hvergi og lokatölu verkliðarins í næsta opna mánuði þarf að hækka með hendi.**
-  <br>Rakið í nlsh-stada.js 10.11.2026: nlsh_stada_manudir telur á mánuð coalesce(checked_date, execution_date); frosinn mánuður notar stakar_man eins og hann var sendur; tillaga næsta mánaðar = lokatala + nýtt í þeim mánuði. Dæmið: 47 október-skráningar á teikningunni „6H 2S-1S Rafmagnsþéttingar.jpg" sta
-  <br><sub>2026-11-10 · brunaholf · kóði · claude-code</sub>
-- **NLSH frysting: Kröfu yfirlit tengir drög við Payday-reikning aðeins í útreikningi (sjalfvirk_tenging í /api/krofu-yfirlit-bru) og skrifar ekki payday_invoice_id, svo nlsh-stada frystir sendan mánuð EKKI sjálfkrafa. Október 2026 = R-388 (4.756.347 = 5.006.681 x 0,95) var festur handvirkt 10.11.2026 (action frysta). Athuga alltaf: tilvísun í sjalfvirk_tenging en fryst false => bera saman x 0,95 og festa. Verkefnalisti: 'NLSH: sendur mánuður frystist ekki sjálfkrafa'.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **Miro-borðið Landsspitali (uXjVJ1jKBnY=): einn rammi per kerfi og deild á 6H. 6H2S Rafmagnsraufar = 55 grænir tíglar = 55 pör = 110 stakar lokanir. Sprinklerkerfi 6H2S = 83 stjörnur, hver = eitt gegnumtak = TVÆR lokanir (Agnar 08.11.2026) = 166 stakar. Flokkun: 35 mm í Stál Ø15-35, 40/50 í Ø40-50, 60 og 75 í Ø75-110. Ajour-flokkar Stál telja öll stálrör, ekki bara sprinkler. 6H1S og 6H2S eru tvær deildir.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH 2.11 metraskrá: POST /api/nlsh-stada {action:'raufar', serial_number, metrar, athugasemd, month}; metrar = (L+L+B+B)/1000. 08.11.2026 voru 67 raðir úr Excel Landsspitali_metrar vistaðar (128,35 m). 39 raðir án verknúmers (6H2S, 76,1 m) eru EKKI inni: engar Raufar-skráningar eru á bilinu 1266-3719 og röðin 'næstu númer upp' stenst ekki.**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **NLSH Efnislisti: hver vistun yfirskrifar allar 15 lokatölur mánaðarins. Tala úr fyrri lotu er úrelt um leið og einhver vistar aftur (október 2026: vistað 06.11 = 4.340.140, vistað aftur úr glugganum 09.11 = 5.006.681). Lesa nlsh_manadarlok + invoice_drafts áður en vitnað er í tölu. Vistun án innskráningar: POST /api/nlsh-stada + POST /api/invoice-drafts (sömu köll og nle-save).**
-  <br><sub>2026-11-10 · brunaholf · claude-code · claude-code</sub>
-- **nlsh_month_snapshot stöðvaðist: 9 raðir (2025-09→2026-05), allar teknar 11.06.2026. Samt les nlsh-monthly.js hana enn; frosnu tölurnar eru nú í nlsh_manadarlok.** _(unverified)_
-  <br>select month, captured_at from nlsh_month_snapshot — mælt 04.11.2026. grep: netlify/functions/nlsh-monthly.js er eini lesandinn.
-  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:07-brunaholf-rekstur.inbox.json · greining-07</sub>
-- **nlsh_manadarlok = 14 mánuðir × 15 verkliðir (210 raðir). 2025-09→2026-08 voru frystir 06.10.2026 (heimild Landsspitalinn ágúst.xlsx), 2026-09 frystur 01.11.2026 (drög #339, 3.827.435 kr m.vsk). Október 2026 er opinn: fryst_at og upphaed_man null.** _(unverified)_
-  <br>select month, count(*), count(fryst_at), max(fryst_at)::date, sum(upphaed_man) from nlsh_manadarlok group by month — mælt 04.11.2026. Mánaðarlok október bíða (skill gata-manadarlok).
-  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:07-brunaholf-rekstur.inbox.json · greining-07</sub>
-- **NLSH-mánaðartillagan (nlsh-stada) er lokatala fyrri mánaðar + (nýjar Done-lokanir mánaðarins eftir coalesce(checked_date, execution_date) − teknar_fram fyrri mánaðar); 2.11 telst í metrum úr raufMetrar(subject) og ummál eins og „620mm" eða „0-32" lesast EKKI (telja 0 kr).**
-  <br>Lesið úr netlify/functions/nlsh-stada.js + nlsh-uppgjor.js 04.11.2026. Nýjar lokanir = RPC nlsh_stada_manudir (distinct serial, 1 lína per serial í ajour_registrations). nyMan = max(0, ný − teknar_fram); heilar = nyMan × studull (1.1/1.2 full 1=1, 1.3 full frá 2026-08, 2.2 hálft frá 2026-08, annað 0
-  <br><sub>2026-11-04 · brunaholf · kóði · claude-code</sub>
-- **Payday-reikningar til ÞG verktaka (Landspítali, NLSH) eru 95% af mánaðaruppgjörinu: 5% er öryggisfé sem er haldið eftir (ekki afsláttur) og greiðist þegar verkinu lýkur.**
-  <br>Mælt 01.11.2026: R-310, 319, 343, 352, 370, 376 (apríl–sept) eru 95% upp á krónu; R-299 (mars) ±20 kr; fyrir mars 100%. customer_worksite_map.retention_pct segir 10 en raunin er 5 (Agnar: samningurinn segir 5–10%). Afleiðing: drögin (invoice_drafts) hafa upphæð uppgjörsins og krofu-yfirlit-bru.js sj
-  <br><sub>2026-11-01 · brunaholf · sql · claude-code</sub>
 
 ### payday
 
@@ -2767,9 +2773,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### verdlistar
 
-- **Grunnur ársskoðunarverðlistanna (502) er settur án verða: Sprinklerkerfi, Neyðarljós, Eldvarnaeftirlit, Reyklosun og Stigleiðsla hafa liði eftir því sem HMS-leiðbeiningar segja að eigi að skoða og hve oft; verð er tómt („—") og Agnar verðleggur.**
-  <br>js/patches/502-verdlistar.js STOFN (10.11.2026); heimild hvers lista birtist samanbrotin í glugganum („Grunnur og heimildir") og flís sýnir fjölda liða án verðs. Grunnurinn gildir þar til listi er vistaður á þjóninn. „Hávakerfi" er TÓMT — óljóst hvað það nær yfir (hátalarakerfi? háfakerfi?), Agnar þ
-  <br><sub>2026-11-10 · slokkvitaeki · kóði + rannsókn 10.11.2026 · claude-code</sub>
+- **Grunnur ársskoðunarverðlistanna (502) er settur án verða í sex lista: Sprinklerkerfi, Neyðarljós, Eldvarnaeftirlit, Reyklosun, Stigleiðsla og Háfakerfi; liðirnir fylgja því sem leiðbeiningar HMS og SHS segja að eigi að skoða og hve oft, verð er tómt („—") og Agnar verðleggur.**
+  <br>js/patches/502-verdlistar.js STOFN (10.–11.11.2026). „Hávakerfi" sem Agnar nefndi = háfar í eldhúsi (11.11.2026): auðkenni listans er havakerfi, heitið Háfakerfi, og hann nær yfir HREINSUN og skoðun háfa og útsogsröra — EKKI skoðun slökkvikerfisins í háfinum, sem er þegar verðlögð í „Slökkvikerfis v
+  <br><sub>2026-11-11 · slokkvitaeki · kóði + rannsókn 10.–11.11.2026 · claude-code</sub>
 - **Verðlistaglugginn (502) hefur tvo hami með 8 dálkum: ritháttur, og LÆSTUR tilboðsham þar sem listinn er texti og Magn · Afsl. % · Samtals koma í stað Hóps · Athugasemdar · aðgerða; undir 1150 px verður hver liður spjald með merktum reitum.**
   <br>Mælt 10.11.2026: 0 px lárétt yfirflæði við 375, 1024 og 1400 px (áður 117 px við 1024 og 11 dálkar í tilboðsham). Í tilboði er VSK = samtals − án vsk (rúnnað eins og kassinn). Verð með aukastaf birtist „148.000,5". app_settings_merge með lögun {verdlistar:{id:listi}} heldur öðrum listum og yfirskrif
   <br><sub>2026-11-10 · slokkvitaeki · kóði + mæling 10.11.2026 · claude-code</sub>
@@ -2925,6 +2931,21 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ársskoðun á síma (382-ars-simi-samraemi.js, 18.09.2026): (1) appskelin 261 'body.appmode .view.active:not(#view-opp){background:grátt !important}' (sérhæfni 1,2,1) vann alltaf bakgrunn úr Hönnunarham (#_pe-overrides '#view-x', 1,0,0) — sama síða varð grá í appi en dökkblá á vefslóð; 382 endurómar PE-bakgrunn síðunnar með hærri sérhæfni í appham. (2) .cb-dot úr 237 lendir sem grid-barn í ._arsm-row (enginn titil-hnútur) → eigin lína + 50px lágmarkshæð takka í appham = sporaskja; nú absolute 14x14 í nafnadálki. (3) css/mobile.css (≤900px) setur '.view table thead,tbody{display:table}' — 325 endurreisir töfluna en ekki thead/tbody, svo colgroup gilti ekki í Skjár/Tafla á síma (th≠td, tafla 2455px utan um 1061px); 382 setur table-header-group/row-group + width:auto undir html.ars-wide-table.**
   <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
 
+### brunavarnir
+
+- **Eldhúsháfar og útsogsrör á veitingastöðum: háfa og stokka/rör skal hreinsa reglulega eftir notkun, minnst einu sinni á ári, og hreinsun röra skal framkvæmd af sérfróðum aðilum; bræðivör í sjálfvirkum slökkvibúnaði skal skipta um árlega.**
+  <br>Leiðbeiningar SHS „Útsogsrör, háfar, slökkvikerfi og Ozon-kerfi á veitingastöðum" (lesnar 11.11.2026): https://reykjavik.is/sites/default/files/USK/Heilbrigdiseftirlit/fraedsla/hafar-og-lagnir.pdf · 112/2012 gr. 9.6.14. Gaumlúgur á um 4 m fresti, fitugildrur í öllum háfum, loftsíur daglega ef með þa
+  <br><sub>2026-11-11 · baedi · SHS-leiðbeining, lesin 11.11.2026 · claude-code</sub>
+- **Reyklosun: eigendur láta framkvæma eftirlit með búnaði til reyklosunar að minnsta kosti einu sinni á ári, af aðilum með tilskilin réttindi og samkvæmt fyrirmælum framleiðanda; vélræn reyklosun er prófuð viku-, mánaðar- og árlega.**
+  <br>Leiðbeining HMS 9.8.4, kaflar 5–6: https://www.byggingarreglugerd.is/leidbeiningar/reyklosun. Hönnun skv. ÍST EN 12101; reyklúga í gluggalausu stigahúsi opnanleg frá jarðhæð og merkt „Reyklúga". Leiðbeiningin skilgreinir ekki hvaða réttindi þarf né skráningarkröfur.
+  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
+- **Stigleiðsla: húseigandi lætur yfirfara allan búnað a.m.k. einu sinni á ári, þurr stigleiðsla er yfirfarin, ryð kannað og þrýstiprófuð á a.m.k. fimm ára fresti, og dælu-, ræsi-, viðvörunar- og stýribúnaður prófaður a.m.k. tvisvar á ári; afrit af gögnum fer til slökkviliðs.**
+  <br>Leiðbeining HMS 9.8.5 (útg. 1.4, 23.11.2020), kaflar 6–7: https://www.byggingarreglugerd.is/leidbeiningar/stigleidsla. Þrýstiprófun: minnst 10 bör og 25 % yfir mesta notþrýstingi, haldið í 2 klst, mælt við inntak; pípulagningameistari staðfestir; þjónustusamningur skal liggja fyrir. Krafist í húsum 
+  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
+- **Vatnsúðakerfi (sprinkler): gera skal þjónustusamning við viðurkenndan aðila um viðhald og eftirlit, og viðhald og eftirlit skal vera samkvæmt ÍST EN 12845; þjónustuaðili þarf starfsleyfi HMS á sviðinu slökkvikerfi (ábyrgðarmaður pípulagningameistari með námskeið HMS).**
+  <br>Leiðbeining HMS 9.4.6 Sjálfvirk slökkvikerfi (útg. 1.0, 27.8.2025): https://www.byggingarreglugerd.is/leidbeiningar/sjalfvirk-slokkvikerfi · 1067/2011. EN 12845 kafli 20 (úr eftirmálum, staðall ekki lesinn): ársfjórðungs-, hálfsárs-, árs-, 3 ára og 10 ára skoðun; úðastútar eftir 25 ár. Óstaðfest hvo
+  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
+
 ### framendi
 
 - **00-legacy.js setur stöðuval á hverja <table> sem hefur dálkinn „Staða" og valið SKRIFAR í uttaeki.status (serial = fyrsti reitur raðarinnar); ný tafla með „Staða"-dálki fær það óvart.** _(likely)_
@@ -3063,18 +3084,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Engin jsdom í Claude Code remote-umhverfinu. Til að prófa render() í patch-skrá: vm.runInThisContext á skrána með smá-DOM stubbum (document.getElementById/createElement/addEventListener, localStorage, getComputedStyle) og lesa el.innerHTML. tools/test-skipulagsbord-radir.cjs er fyrirmyndin — hún prófar líka línumælingu með fölsuðum getBoundingClientRect.**
   <br><sub>2026-09-04 · slokkvitaeki · claude-code · claude-code</sub>
-
-### brunavarnir
-
-- **Reyklosun: eigendur láta framkvæma eftirlit með búnaði til reyklosunar að minnsta kosti einu sinni á ári, af aðilum með tilskilin réttindi og samkvæmt fyrirmælum framleiðanda; vélræn reyklosun er prófuð viku-, mánaðar- og árlega.**
-  <br>Leiðbeining HMS 9.8.4, kaflar 5–6: https://www.byggingarreglugerd.is/leidbeiningar/reyklosun. Hönnun skv. ÍST EN 12101; reyklúga í gluggalausu stigahúsi opnanleg frá jarðhæð og merkt „Reyklúga". Leiðbeiningin skilgreinir ekki hvaða réttindi þarf né skráningarkröfur.
-  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
-- **Stigleiðsla: húseigandi lætur yfirfara allan búnað a.m.k. einu sinni á ári, þurr stigleiðsla er yfirfarin, ryð kannað og þrýstiprófuð á a.m.k. fimm ára fresti, og dælu-, ræsi-, viðvörunar- og stýribúnaður prófaður a.m.k. tvisvar á ári; afrit af gögnum fer til slökkviliðs.**
-  <br>Leiðbeining HMS 9.8.5 (útg. 1.4, 23.11.2020), kaflar 6–7: https://www.byggingarreglugerd.is/leidbeiningar/stigleidsla. Þrýstiprófun: minnst 10 bör og 25 % yfir mesta notþrýstingi, haldið í 2 klst, mælt við inntak; pípulagningameistari staðfestir; þjónustusamningur skal liggja fyrir. Krafist í húsum 
-  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
-- **Vatnsúðakerfi (sprinkler): gera skal þjónustusamning við viðurkenndan aðila um viðhald og eftirlit, og viðhald og eftirlit skal vera samkvæmt ÍST EN 12845; þjónustuaðili þarf starfsleyfi HMS á sviðinu slökkvikerfi (ábyrgðarmaður pípulagningameistari með námskeið HMS).**
-  <br>Leiðbeining HMS 9.4.6 Sjálfvirk slökkvikerfi (útg. 1.0, 27.8.2025): https://www.byggingarreglugerd.is/leidbeiningar/sjalfvirk-slokkvikerfi · 1067/2011. EN 12845 kafli 20 (úr eftirmálum, staðall ekki lesinn): ársfjórðungs-, hálfsárs-, árs-, 3 ára og 10 ára skoðun; úðastútar eftir 25 ár. Óstaðfest hvo
-  <br><sub>2026-11-10 · baedi · HMS-leiðbeining, lesin 10.11.2026 · claude-code</sub>
 
 ### krofuyfirlit
 
