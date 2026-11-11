@@ -197,6 +197,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Rukkunarmál beggja félaga — reikningalota, hvað er tilbúið að senda, punktar, póstur, tengingar (les ../brunaholf/docs/REIKNINGALOTA.md sjálfur, stjórnar sala-reikningar / bokari; póstvörðurinn er kafli í rukkari.md) | `rukkari` 🦆 |
 | Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, skýrsla↔reikning (tækjafjöldi / vegna / tvær þjónustur), Cowork/MCP-flæðið 🤝 | `sara-coworker` |
 | Viðskiptavini, kennitölur, DB-skema, sameiningu, kerfis-kort, póst-merki | `kunnaskra` |
+| **Spurt um eitt félag** („hvað vitum við um X", staða, heimilisfang, tæki, skýrsla) — lesa FYRST `fyrirtaeki.review_note`: línan „Sannreynt <dags> (<keyrsla>): …" ber úrskurð yfirferðarinnar (168 raðir „Eftir 2026", 11.11.2026). Ekki mæla aftur nema Agnar biðji eða ný skýrsla/reikningur hafi bæst við | `docs/FACTCHECK-EFTIR-2026.md` + skill `sannreyna-fyrirtaeki` |
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
 | **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn `?prof=2` (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
