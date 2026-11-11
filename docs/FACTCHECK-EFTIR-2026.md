@@ -260,3 +260,24 @@ Bæjarlind 12 er eitt hús með þrjá greiðendur (601 húsfélag, 1734 Húnar,
 Húsmyndir skoðaðar: 410, 1734, 601, 833, 1135. Mynd 188 er handsett og ósnert. Fjórar raðir án myndar: 385, 1396, 1397, 212.
 
 **Staða: 105 af 168 yfirfarin, 92 með frávik. Síðasta félag: 1135. Næst: tíu næstu óyfirförnu á eftir 1135 í röðinni (póstnúmer, nafn)**; sleppa 448, 440 og 441.
+
+## Lota 12 — tíu félög í 203–210 (11.11.2026)
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 1846 | Fríkirkjan Kefas | PASSAR | Engin skýrsla, enginn reikningur | Punktur réttur; handsett mynd, ÓSNERT | Listi 11 tæki (5 LV, 4 CO₂, 2 slöngur) er lýsing tengiliðs 30.09.2026, ekki úttekt | Netfang staðfest. Þeir báðu um eftirlitssamning 30.09.2026; síðasti póstur er frá þeim. Mál #1570 opið | Samningur og tilboð ósent síðan 30.09.; talin í þjónustu án úttektar |
+| 430 | H210 ehf | Nafn og kt rétt; lögheimili Hlíðarás 21, 221. Staður Turnahvarf 6L | Skýrsla nóv. 2025, kt rétt | Geokóðun lendir á Turnahvarfi 6A; **ENGIN MYND** | Listi = skýrsla (2 LV, 1 duft 6 kg, 2 RS); reikn. 107542 rukkar aðeins 2 LV | Ekkert netfang. Á tíma núna í nóvember | Duft og RS órukkuð 2025; netfang vantar |
+| 504 | Dagar hf. | PASSAR (höfuðstöðvar Lyngási 17) | **SKÝRSLA ANNARS STAÐAR**: jan. 2024, Drangahraun 1b, 220 Hafnarfirði | Punktur og mynd sýna höfuðstöðvar, ekki tækjastað | Listi 3 LV = skýrsla 2024. Reikn. 106006 (21.11.2024) var með 5 LV, CO₂ og slöngu og var kreditfærður að fullu | Nóta: „bara kreditreikningar“. Enginn póstur á netfangið. document_pairs „2025 vantar skýrslu“ byggir á kreditreikningi | Engin greidd úttekt síðan feb. 2024; röð bendir á rangan stað |
+| 679 | Efnalaug Garðabæjar | Kt rétt; nafn í skrá „Efnalaug Garðabæ ehf.“; „Garðartorg“ ritvilla | Skýrsla nóv. 2024, kt rétt | Punktur réttur; **ENGIN MYND** | Listi = skýrsla (1 LV + 2 CO₂ 5 kg) | Ekkert netfang. Engin úttekt 2025 | 2025 sleppt; netfang vantar |
+| 1337 | Faglitun ehf | PASSAR | Skýrsla okt. 2023, kt rétt | Punktur réttur, götumynd í lagi | Listi = skýrsla (2 LV, 1 duft 6 kg, 1 CO₂ 5 kg) | Ekkert netfang. Engin úttekt 2024 né 2025 | Tvö ár án skoðunar |
+| 1197 | Garðabær | Kt = sveitarfélagið, Garðatorgi 7 | **SKÝRSLA ANNARS STAÐAR**: maí 2023, Starfsmannafélag Garðabæjar vegna sumarhúsa í Reykjaskógi; engin kt í skýrslu | Punktur og mynd sýna Garðatorg, ekki sumarhúsin | Listi 2 LV; skýrsla 2 LV + 2 duft 6 kg + 8 RS. Reikn. 107731 (19.01.2026) er búðarsala á 1 LV, „opið við yfirtöku“ | Ekkert netfang. Skráð „skoðað 2026“ og document_pairs „2026 vantar skýrslu“ út á búðarsölu | Búðarsala talin úttekt; tækin eru í sumarhúsum; listi ≠ skýrsla |
+| 445 | Geyslatækni | Kt rétt; nafn ritað „Geyslatækni“, í skrá „Geislatækni ehf, Laserþjónustan“ | Skýrsla des. 2025, kt rétt | Geokóðun lendir á Suðurhrauni 12A (röð segir 12c); götumynd iðnaðarhús | Listi = skýrsla = reikn. 107676 | Netfang skráð, síðasti póstur 2018. Á tíma í desember | Ritvilla í nafni |
+| 687 | Granitsmiðjan | Kt rétt; tvær raðir á kt (687 og 737 „Herbergjaleiga“, sama hús) | Nýjasta skýrsla nóv. 2024. Engin skýrsla 2025: reikn. 107683 (30.12.2025) ber yfirferð og akstur en enga skýrslugerð | Enginn punktur í geocode_cache; götumynd í lagi | Listi 2 LV + 1 slanga (+2 LV úrelt); reikn. 2025: 1 LV + 1 slanga | **ÓSVARAÐ**: 10.11.2026 spyr tengiliður hvort R-001286 (51.976 kr., gefinn út á röð 737) sé úttekt á þeirra rými; man ekki eftir heimsókn. Mál #1581 | Spurning um reikning ósvöruð; year_factcheck segir ranglega „líklega hættur“ |
+| 449 | JFK fasteignir | PASSAR (lögheimili Lynghólum 10, íbúðarhús) | Skýrsla des. 2025, kt rétt, en **TÆKIN ERU ANNARS STAÐAR**: Tjarnarvellir 3, 221 Hafnarfirði (hótel og líkamsrækt) | Punktur og mynd sýna íbúðarhús, ekki tækjastað | Listi = skýrsla = reikn. 107583 (19 LV, 4+2 CO₂, 7 slöngur) | Netfang staðfest (2024). Á tíma í desember | Röðin bendir á lögheimili, ekki tækjastað |
+| 450 | K.Ricter | Kt rétt; nafn ritað „K.Ricter“, í skrá „K. Richter hf.“ | Skýrsla des. 2025, kt rétt | Enginn punktur í geocode_cache; götumynd sýnir skilti félagsins | Listi = skýrsla (2 LV + 1 duft 6 kg); reikn. 107686 ber yfirferð á 1 dufti og 1 nýtt duft 6 kg | Netfang staðfest. Mál #232 opið (bað um hreyfingalista 16.01.2026) | Ritvilla í nafni; nýtt dufttæki ekki á lista (eða skipt út, ÓMÆLT) |
+
+Bætt við mál #1581 (Granítsmiðjan, þegar merkt skilaboð): hvaða reikningur þetta er og á hvaða röð hann var gefinn út.
+
+Húsmyndir skoðaðar: 504, 1337, 1197, 445, 687, 449, 450. Mynd 1846 er handsett og ósnert. Án myndar: 430, 679.
+
+**Staða: 115 af 168 yfirfarin, 102 með frávik. Síðasta félag: 450. Næst: tíu næstu óyfirförnu á eftir 450 í röðinni (póstnúmer, nafn).**
