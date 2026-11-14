@@ -85,7 +85,17 @@ const BANN = [
 // 03.11.2026 (Agnar: ,,ja gerdu thad"): brunaholf ls 36 -> 37. Nyi lykillinn er sessionStorage `bh_passa` (brunaholf eydublod.html,
 // 7229f40, sjalfvirk smidi eydublada): flagg sem sett er rett adur en sidan endurhledst og EYTT um leid og thad er lesid
 // (passaEinaSidu). Lifir eina siduhledslu, engin stada gagna - timabundin stada skv. reglunni 15.10.2026. Stenst.
-const GRUNNLINA = { brunaholf: { ls: 37, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
+// 14.11.2026: brunaholf ls 37 -> 41. Fjórir lyklar nýja vefsins (brunaholf/vefur/, opinber síða fyrir gesti), allir standast regluna:
+//   KARFA_LYKILL (vefur/verslun/verslun.js): karfa GESTS í versluninni á nýja vefnum, sama og `bh_vefverslun_karfa` 12.10.2026.
+//     Gesturinn á enga auðkenningu á þjóninum fyrr en hann sendir pöntun, svo karfan getur ekki verið annars staðar.
+//   `bh_efni_<útgáfa>` (vefur/site/efni.js og ritill.js): skyndiminni af BIRTU efni síðunnar, svo hún birtist rétt strax við næstu
+//     heimsókn. Þjónninn (/api/vefur-efni) er sóttur við hverja opnun og skrifar yfir það; drög og birting búa í vefur_efni.
+//   SS_PRUFA (sessionStorage, vefur/site/ritill.js): ósend prufudrög þess sem prófar ritilinn ÁN innskráningar. Lifir einn flipa
+//     og er eytt við innskráningu; innskráður notandi vistar allt á þjóninn. Tímabundin staða skv. reglunni 15.10.2026.
+//   LS_NN (vefur/site/ritill.js): notandanafnið sem síðast skráði sig inn í ritilinn, til að forfylla innskráningarreitinn
+//     („hver er við vélina"). Ekkert lykilorð og engin innskráning er geymd í vafranum: hún er cookie-ið hub_user frá þjóninum.
+// Hækkað af því lyklarnir standast regluna, ekki til að fá grænt.
+const GRUNNLINA = { brunaholf: { ls: 41, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

@@ -257,6 +257,9 @@
   .msg .reply{margin-top:9px;display:flex;gap:6px}
   .msg .reply input{flex:1;background:var(--well);box-shadow:var(--well-sh);border:1px solid var(--line2);border-radius:4px;padding:7px 10px;color:var(--ink);font:inherit;font-size:12.5px}
   .msg .reply input:focus{outline:none;border-color:var(--accent)}
+  /* hlekkir á nýja vefinn: raðast í línu, brotna á síma; snertiflötur 44 px */
+  .vefur-hlekkir{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px}
+  .vefur-hlekkir .btn{min-height:44px}
   .empty{padding:28px 16px;text-align:center;color:var(--dim);font-family:var(--serif);font-size:17px;font-style:italic}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--slab);border:1px solid transparent;color:#fff;padding:11px 18px;border-radius:7px;font-size:12.5px;transition:.25s;pointer-events:none;z-index:20;box-shadow:var(--slab-sh)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -288,6 +291,13 @@
 
 <div class="wrap">
   <div class="stats" id="stats"></div>
+  <div class="sect"><h2>Nýr vefur Brunahólfs</h2><span class="hint">tillagan að nýrri brunaholf.is · aðalútgáfan er sú sem unnið er með · hinar tvær eru geymdar til samanburðar</span></div>
+  <div class="panel vefur-hlekkir">
+    <a class="btn btn--accent" href="https://brunaholf.netlify.app/vefur/" target="_blank" rel="noopener">Aðalútgáfan</a>
+    <a class="btn" href="https://brunaholf.netlify.app/vefur/?ritill" target="_blank" rel="noopener">Ritillinn · breyta vefnum</a>
+    <a class="btn" href="https://brunaholf.netlify.app/vefur/v1.html" target="_blank" rel="noopener">Útgáfa V1</a>
+    <a class="btn" href="https://brunaholf.netlify.app/vefur/v3.html" target="_blank" rel="noopener">Útgáfa V3 · núverandi útlit</a>
+  </div>
   <div class="grid">
     <div class="col-main">
       <div class="sect"><h2>Aðalbanner gáttarinnar</h2><span class="hint">myndin efst á hverri síðu · sést hjá ÖLLUM kúnnum · eigin bannermynd eignar gengur fyrir</span></div>
