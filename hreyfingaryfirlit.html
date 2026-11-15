@@ -132,34 +132,15 @@ tr.obekraeft td{font-style:italic}
   function ktSnid(v) { var d = String(v || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : String(v || '').trim(); }
   function idagIso() { return new Date().toISOString().slice(0, 10); }
 
-  // ── Starfsmanna-hlið: 401 { need_login } → lykilorðs-gluggi → POST /api/hub-login → reyna aftur.
-  //    Sama mynstur og gatt-admin/admin.js. Óvirkt nema HUB_STAFF_PASSWORD sé sett server-megin.
+  // ── Starfsmanna-hlið (15.11.2026, Agnar: „Já, lokaðu þeim"): 401 { need_login } → innskráning appsins
+  //    (/innskraning.html?next=…), sem sendir starfsmanninn hingað aftur. Sama mynstur og gatt-admin/admin.js.
+  //    Áður lykilorðsgluggi fyrir sameiginlega lykilorðið (/api/hub-login), sem var aldrei sett (503).
   var hubLoginP = null;
-  function hubLogin() {
+  function hubLogin(slod) {
     if (hubLoginP) return hubLoginP;
-    hubLoginP = new Promise(function (resolve) {
-      var ov = document.createElement('div');
-      ov.className = 'ekki-prenta';
-      ov.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(10,12,16,.72);display:flex;align-items:center;justify-content:center');
-      ov.innerHTML = '<form style="background:#14181f;color:#fff;padding:24px 22px;border-radius:14px;border:1px solid rgba(255,255,255,.14);min-width:290px">' +
-        '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Starfsmanna-innskráning</div>' +
-        '<div style="font-size:12px;color:#9aa3b2;margin-bottom:14px">Þessi síða er varin. Sláðu inn sameiginlega lykilorðið.</div>' +
-        '<input type="password" autocomplete="current-password" placeholder="Lykilorð" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:#0e1116;color:#fff;font:inherit;font-size:15px">' +
-        '<div class="hv" style="color:#ff6b6b;font-size:12px;min-height:16px;margin:8px 2px 0"></div>' +
-        '<button type="submit" style="margin-top:8px;width:100%;padding:10px;border:0;border-radius:9px;background:#c8302f;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Skrá inn</button></form>';
-      var form = ov.querySelector('form'), inp = ov.querySelector('input'), err = ov.querySelector('.hv'), btn = ov.querySelector('button');
-      form.onsubmit = function (e) {
-        e.preventDefault(); if (!inp.value) return;
-        btn.disabled = true; err.textContent = '';
-        fetch('/api/hub-login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: inp.value }) })
-          .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
-          .then(function (res) {
-            if (res.ok) { document.body.removeChild(ov); hubLoginP = null; resolve(); }
-            else { err.textContent = (res.j && res.j.error) || 'Villa'; btn.disabled = false; inp.select(); }
-          })
-          .catch(function () { err.textContent = 'Netvilla'; btn.disabled = false; });
-      };
-      document.body.appendChild(ov); setTimeout(function () { inp.focus(); }, 30);
+    hubLoginP = new Promise(function () {   // leysist aldrei: síðan fer á innskráninguna
+      var s = (typeof slod === 'string' && slod.charAt(0) === '/' && slod.charAt(1) !== '/') ? slod : '/innskraning.html';
+      location.href = s + '?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
     });
     return hubLoginP;
   }
@@ -168,7 +149,7 @@ tr.obekraeft td{font-style:italic}
     return fetch(url, opts).then(function (r) {
       if (r.status !== 401) return r;
       return r.clone().json().catch(function () { return {}; }).then(function (j) {
-        return j && j.need_login ? hubLogin().then(function () { return fetch(url, opts); }) : r;
+        return j && j.need_login ? hubLogin(j.login) : r;
       });
     });
   }

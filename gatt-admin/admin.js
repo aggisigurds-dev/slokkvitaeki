@@ -1,35 +1,16 @@
 /* admin.js — Viðskiptavinavefir stjórnsíða. Talar við /api/gatt-admin. */
 (function () {
   'use strict';
-  // ── Starfsmanna-hlið: fái síðan 401 { need_login } frá bakenda birtir hún
-  // lykilorðs-glugga, skráir inn (POST /api/hub-login) og reynir aftur. Óvirkt
-  // nema HUB_STAFF_PASSWORD sé sett server-megin — þá svarar gatt-admin 200 eins
-  // og áður og þessi kóði kemur aldrei við sögu.
+  // ── Starfsmanna-hlið (15.11.2026, Agnar: „Já, lokaðu þeim"): bakendinn krefst innskráningar appsins
+  // (hub_user). Fái síðan 401 { need_login } fer hún á innskráningarsíðuna, sem sendir starfsmanninn hingað
+  // aftur (?next=). Áður birtist hér lykilorðsgluggi fyrir sameiginlega lykilorðið (/api/hub-login) — það var
+  // aldrei sett, svo glugginn hefði svarað 503 að eilífu.
   var __hubLoginP = null;
-  function hubLogin() {
+  function hubLogin(slod) {
     if (__hubLoginP) return __hubLoginP;
-    __hubLoginP = new Promise(function (resolve) {
-      var ov = document.createElement('div');
-      ov.setAttribute('style', 'position:fixed;inset:0;z-index:99999;background:rgba(10,12,16,.72);display:flex;align-items:center;justify-content:center;font-family:inherit');
-      ov.innerHTML = '<form id="__hubForm" style="background:#14181f;color:#fff;padding:24px 22px;border-radius:14px;border:1px solid rgba(255,255,255,.14);min-width:290px;box-shadow:0 20px 60px rgba(0,0,0,.5)">'
-        + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Starfsmanna-innskr&#225;ning</div>'
-        + '<div style="font-size:12px;color:#9aa3b2;margin-bottom:14px">&#222;essi s&#237;&#240;a er varin. Sl&#225;&#240;u inn sameiginlega lykilor&#240;i&#240;.</div>'
-        + '<input id="__hubPw" type="password" autocomplete="current-password" placeholder="Lykilor&#240;" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:#0e1116;color:#fff;font:inherit;font-size:15px">'
-        + '<div id="__hubErr" style="color:#ff6b6b;font-size:12px;min-height:16px;margin:8px 2px 0"></div>'
-        + '<button id="__hubBtn" type="submit" style="margin-top:8px;width:100%;padding:10px;border:0;border-radius:9px;background:#c8302f;color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Skr&#225; inn</button></form>';
-      var form = ov.querySelector('#__hubForm'), inp = ov.querySelector('#__hubPw'), err = ov.querySelector('#__hubErr'), btn = ov.querySelector('#__hubBtn');
-      form.onsubmit = function (e) {
-        e.preventDefault(); var pw = inp.value; if (!pw) return;
-        btn.disabled = true; btn.textContent = 'Skr\u00e1i inn\u2026'; err.textContent = '';
-        fetch('/api/hub-login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw }) })
-          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-          .then(function (res) {
-            if (res.ok) { document.body.removeChild(ov); __hubLoginP = null; resolve(); }
-            else { err.textContent = (res.j && res.j.error) || 'Villa'; btn.disabled = false; btn.textContent = 'Skr\u00e1 inn'; inp.select(); }
-          })
-          .catch(function () { err.textContent = 'Netvilla'; btn.disabled = false; btn.textContent = 'Skr\u00e1 inn'; });
-      };
-      document.body.appendChild(ov); setTimeout(function () { inp.focus(); }, 30);
+    __hubLoginP = new Promise(function () {   // leysist aldrei: síðan fer á innskráninguna
+      var s = (typeof slod === 'string' && slod.charAt(0) === '/' && slod.charAt(1) !== '/') ? slod : '/innskraning.html';
+      location.href = s + '?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
     });
     return __hubLoginP;
   }
@@ -38,7 +19,7 @@
     return fetch(url, opts).then(function (r) {
       if (r.status !== 401) return r;
       return r.clone().json().catch(function () { return {}; }).then(function (j) {
-        if (j && j.need_login) return hubLogin().then(function () { return fetch(url, opts); });
+        if (j && j.need_login) return hubLogin(j.login);
         return r;
       });
     });

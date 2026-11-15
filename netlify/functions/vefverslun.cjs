@@ -16,8 +16,7 @@
 // forsíða söluborðsins án þjónustuliða (forsida = true, flokkur ≠ Þjónusta, krefst_verkbeidni = false); ritillinn
 // getur bætt öðrum við (efni.vorur.aukalega) eða falið (efni.vorur.falid).
 //
-// Skrif fara um P.requireStaff: opið meðan HUB_STAFF_PASSWORD er ekki sett (eins og gatt-admin), lokast sjálfkrafa
-// fyrir öðrum en innskráðu starfsfólki um leið og það er sett.
+// Skrif fara um P.requireStaff: aðeins innskráð starfsfólk (lokað sjálfgefið frá 15.11.2026). Lestur (GET) er opinn.
 
 const crypto = require('crypto');
 const P = require('./_portal.cjs');
@@ -148,7 +147,7 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
-    const lok = P.requireStaff(event); if (lok) return lok;
+    const lok = await P.requireStaff(event); if (lok) return lok;
     if ((event.body || '').length > HAMARK_EFNI + 7 * 1024 * 1024) return P.json(413, { error: 'Of stórt' });
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }

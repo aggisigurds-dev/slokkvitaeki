@@ -9,10 +9,10 @@
 //   Glugginn er Agnars, en „Ég er"-valið á borðinu getur hver sem er stillt; þjónninn má því ekki treysta því. Þetta fall
 //   les líka pósthólf sem RLS appsins sýnir ekki (brunaholf.is) með þjónustulyklinum — rofinn má ekki opna það.
 //   Kerfisrýni 15.11.2026: „hvaða hlutverk sem er kemst inn" og „opið þegar rofanum er slökkt" — hvort tveggja lokað hér.
-//   1. P.requireStaff — gildir þegar HUB_STAFF_PASSWORD verður sett (sama og önnur föll).
+//   1. P.requireStaff — innskráður starfsmaður (lokað sjálfgefið frá 15.11.2026, sama og önnur föll).
 //   2. Innskráning appsins (hub-adgangar, cookie hub_user): spurt er FALL hliðsins sjálft (sami kóði og innskráningarsíðan),
 //      ekki afrit af dulrituninni. Engin innskráning → 401, annað hlutverk → 403, hliðið svarar ekki → 503 (lokað).
-//   Önnur föll breytast ekki: að tengja ÞAU við innskráninguna er sér-ákvörðun Agnars (sjá haus hub-adgangar.cjs).
+//   15.11.2026 (Agnar: „Já, lokaðu þeim“): önnur föll með P.requireStaff krefjast nú líka innskráningar; hér bætist rola Admin við.
 //
 // MORGUNKALLIÐ: radgjafinn-morgun.cjs (áætlun, 30 s þak) ræsir radgjafinn-background.cjs (15 mín) yfir HTTP og hefur
 // enga innskráningu. Það sendir tíma-tóka undirritaðan með þjónustulyklinum (HMAC-SHA256 af „radgjafinn-morgun|<mínúta>"),
@@ -43,7 +43,7 @@ function erMorgunKall(event, ms = Date.now()) {
 
 // Skilar null ef beiðnin má halda áfram, annars svarinu sem á að senda (401 / 403 / 503).
 async function hlid(event) {
-  const g = P.requireStaff(event); if (g) return g;
+  const g = await P.requireStaff(event); if (g) return g;
   let s = null;
   try {
     const h = (event && event.headers) || {};

@@ -152,12 +152,12 @@ function verifyQr(t) {
 function envReady() { return !!(SUPABASE_URL && SUPABASE_KEY && JWT_SECRET); } // login/session (þarf JWT)
 function dbReady() { return !!(SUPABASE_URL && SUPABASE_KEY); }                 // stjórnsíða/status (aðeins DB)
 
-// ── Starfsmanna-hlið (hub) — EIN sameiginleg innskráning fyrir innri tólin ────
-// Virkjast AÐEINS þegar HUB_STAFF_PASSWORD er sett í Netlify-env. Meðan hún er
-// ekki sett skilar requireStaff null (hleypir öllu í gegn) svo EKKERT brotni —
-// staðuppsetning fyrir áfanga-útrás (Agnar 02.09.2026: „viðbótar auth á öllum
-// stöðum"). Cookie-lykillinn ER lykilorðið sjálft: að skipta um
-// HUB_STAFF_PASSWORD ógildir öll starfsmanna-session sjálfkrafa.
+// ── Starfsmanna-hlið (hub) ──────────────────────────────────────────────────────
+// Sameiginlega lykilorðið (HUB_STAFF_PASSWORD, cookie hub_session) var aldrei sett í
+// framleiðslu. Til 15.11.2026 hleypti requireStaff þá ÖLLU í gegn — sjá requireStaff
+// hér að neðan, sem er nú LOKAÐ sjálfgefið og les innskráningu appsins (hub_user).
+// Cookie-lykillinn ER lykilorðið sjálft: að skipta um HUB_STAFF_PASSWORD ógildir öll
+// hub_session sjálfkrafa.
 const HUB_PW = process.env.HUB_STAFF_PASSWORD || '';
 const STAFF_COOKIE = 'hub_session';
 const STAFF_TTL = 60 * 60 * 10; // 10 klst
@@ -196,11 +196,29 @@ function checkStaffPassword(pw) {
   const b = crypto.createHash('sha256').update(HUB_PW).digest();
   return crypto.timingSafeEqual(a, b);
 }
-// Setjið FREMST í handler (á eftir OPTIONS): const g = P.requireStaff(event); if (g) return g;
-function requireStaff(event) {
-  if (!HUB_PW) return null;                 // óvirkt þar til lykilorð er sett — brýtur ekkert
-  if (staffFromEvent(event)) return null;   // gilt starfsmanna-session
-  return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true });
+// Setjið FREMST í handler (á eftir OPTIONS):  const g = await P.requireStaff(event); if (g) return g;
+//
+// LOKAÐ SJÁLFGEFIÐ (15.11.2026, Agnar: „Já, lokaðu þeim"). Áður: `if (!HUB_PW) return null` — og HUB_STAFF_PASSWORD
+// var aldrei sett, svo gatt-admin (aðgangar og lykilorð kúnna), hreyfingaryfirlit (viðskiptahreyfingar per kt),
+// verkbeidni-lokid og skrif vefverslunar voru opin öllum á netinu. Nú kemst inn:
+//   1. gilt hub_session (sameiginlega lykilorðið) — aðeins ef HUB_STAFF_PASSWORD er sett;
+//   2. annars innskráning appsins: virkur notandi í notendaskránni (hub-adgangar, cookie hub_user), hvaða rola sem er
+//      (Admin / Starfsmaður / Afgreiðsla). Spurt er FALL hliðsins sjálft, eins og _radgjafinn-hlid.cjs gerir — ekki
+//      afrit af undirrituninni;
+//   3. annars 401 { need_login, login } — og 503 ef notendaskráin svarar ekki (lokað, aldrei opið).
+// ASYNC: gleymist `await` er loforðið skilað sem svari — það brotnar (engin gögn), opnast aldrei.
+async function requireStaff(event) {
+  if (HUB_PW && staffFromEvent(event)) return null;
+  let s = null;
+  try {
+    const HUB = require('./hub-adgangar.cjs');   // seint: hub-adgangar.cjs krefst þessarar skrár (hringtenging)
+    const h = (event && event.headers) || {};
+    const r = await HUB.handler({ httpMethod: 'GET', queryStringParameters: {}, headers: { host: h.host || h.Host || '', cookie: h.cookie || h.Cookie || '' } });
+    if (r && r.statusCode === 200) s = JSON.parse(r.body);
+  } catch (_) { s = null; }
+  if (!s || typeof s.authed !== 'boolean') return json(503, { error: 'Náði ekki að staðfesta innskráningu — reyndu aftur eftir smá stund' });
+  if (s.authed && s.user) return null;
+  return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true, login: '/innskraning.html' });
 }
 
 // ── Rekstrarfélag = hópur félaga (26.10.2026, Agnar: „settu allar eignir tengt Heimaleigu inn í þeirra gátt … ath

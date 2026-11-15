@@ -11,8 +11,8 @@
 // PostgREST-sókn með Range-síðuskiptingu. stolpi_* töflurnar eru með RLS sem aðeins
 // þjónustulykillinn les — þess vegna server-megin.
 //
-// Varið með sama starfsmanna-hliði og gatt-admin (P.requireStaff): opið þar til
-// HUB_STAFF_PASSWORD er sett í Netlify, þá 401 { need_login } án hub_session.
+// Varið með sama starfsmanna-hliði og gatt-admin (P.requireStaff, lokað sjálfgefið frá 15.11.2026):
+// án innskráningar appsins (hub_user) → 401 { need_login, login }.
 // Kostnaður: eitt kall per hleðslu síðu / smell á „Sækja" — engin vöktun.
 
 const P = require('./_portal.cjs');
@@ -39,7 +39,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET') return P.json(405, { error: 'Aðeins GET' });
   if (!P.dbReady()) return P.json(503, { error: 'Supabase env vantar' });
-  const _g = P.requireStaff(event); if (_g) return _g;
+  const _g = await P.requireStaff(event); if (_g) return _g;
 
   const q = event.queryStringParameters || {};
   const kt10 = K.ktHreint(q.kt);
