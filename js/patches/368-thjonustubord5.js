@@ -5334,6 +5334,8 @@
         sannanirHtml() +
         // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
+        // 506 Ráðgjafinn — fréttir úr póstinum við Heimaleigu og Center Hotels + ráð dagsins, aðeins hjá Agnari (506 ákveður það sjálf).
+        (window.Radgjafinn ? Radgjafinn.html(n) : '') +
         // 493 Tengill á Agentanetið í Jarvis (brunaholf) + Charlize-biðstofuna — aðeins hjá Agnari, nýr flipi.
         (window.AgentanetTengill ? AgentanetTengill.html(n) : '') +
         leitHtml() +
@@ -6105,6 +6107,7 @@
     const a = el.dataset.t5, id = el.dataset.id ? Number(el.dataset.id) : null, m = el.dataset.m;
     if (a && a.indexOf('tp-') === 0 && window.Tolvupostar) { if (Tolvupostar.smellur(el, e)) return; }   // 448 Tölvupóstar
     if (a && a.indexOf('vs-') === 0 && window.Vinnusamantekt) { if (Vinnusamantekt.smellur(el, e)) return; }   // 489 Vinnusamantekt
+    if (a && a.indexOf('rg-') === 0 && window.Radgjafinn) { if (Radgjafinn.smellur(el, e)) return; }   // 506 Ráðgjafinn
     if (a && a.indexOf('er-') === 0 && window.ErindiSimi) { if (ErindiSimi.smellurT5(el)) return; }   // 449c Erindi
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
