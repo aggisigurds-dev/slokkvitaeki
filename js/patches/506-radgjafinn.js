@@ -219,7 +219,9 @@
     const nyleg = (t) => !!t && (Date.now() - Date.parse(t)) < BID_MIN * 60000;
     const nyskrifad = nyleg(n && n.skrifad_at) || nyleg(g && g.sidasta_villa && g.sidasta_villa.kl);
     const stada = S.skrifar ? 'skrifar… (1–2 mín.)' : n ? dagsTxt(n.skrifad_at) + ' · skrifað kl. ' + klst(n.skrifad_at) : S.loading ? 'sæki…' : '';
+    // 15.11.2026 (Agnar: „bara ýtt á staðfesta eða senda"): Afgreiðslan er þar sem ráðin verða að verkum — forunnin, eitt í einu.
     const haus = '<header class="rg-h"><h2>Tony Stark · Ráðgjafinn</h2><span class="rg-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
+      '<a class="btn iv sm" href="/afgreidsla.html" title="Forunnin verk: takkinn framkvæmir það sem á honum stendur">Afgreiðsla</a>' +
       '<button type="button" class="btn iv sm" data-t5="rg-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
         ' title="' + (nyskrifad ? 'Nýskrifað eða nýreynt — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta Tony skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="rg-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' ráðgjafann">' + (S.fellt ? '▾' : '▴') + '</button></header>';

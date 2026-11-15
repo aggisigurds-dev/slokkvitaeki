@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light"/>
+<style>html{color-scheme:light}html,body{color-scheme:only light}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Afgreiðsla — Slökkvitæki ehf.</title>
+<!--
+  afgreidsla.html — AFGREIÐSLA (15.11.2026). Forunnin verk; takkinn FRAMKVÆMIR það sem á honum stendur.
+  Agnar 15.11.2026: „bara ýtt á staðfesta eða senda" — og um gamla kerfið: „óskýrt … ekki nægilegar sannanir eða rök …
+  rennur svo mikið saman. Treysti því ekki." Því: EITT mál í einu, „Hvað gerist þegar þú ýtir" efst, sannanir og
+  athuganir (✓/✗) sýnilegar, og takkinn segir nákvæmlega hvað hann gerir. Tvö tök á takkann (vopna → staðfesta).
+  Gögn: /api/afgreidsla (netlify/functions/afgreidsla.cjs) — aðeins innskráður stjórnandi. Útlit: Brunastál C
+  (málmhaus með hnoðum, stálplata, stálspjald, silfur/málm/rauðir takkar; táknin úr js/patches/413-afslaettir-c.js).
+  Stöðugt viðmót: spjaldið fær fasta lágmarkshæð, textareiturinn er aldrei endurteiknaður meðan skrifað er.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --metal:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);
+  --stal:#e2e6ec;
+  --silfur:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);
+  --malmtakki:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);
+  --rautt:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);
+  --graent:linear-gradient(180deg,#2f6b3a 0%,#1b4423 100%);
+  --ink:#141822;--ink2:#3a4250;--ink5:#6b7380;--edge:rgba(20,24,34,.14);
+  --sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;--disp:"Playfair Display",Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#cfd5dd;color:var(--ink);font:14px/1.45 var(--sans)}
+.hnod{position:relative}
+.hnod::before,.hnod::after{content:"";position:absolute;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)}
+.hnod::before{left:7px}.hnod::after{right:7px}
+header.sida{background:var(--metal);color:#fff;padding:14px 24px 12px;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+header.sida h1{margin:0;font:800 30px/1.1 var(--disp);letter-spacing:.01em}
+header.sida .undir{font:700 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#aeb5bf}
+header.sida .grow{flex:1 1 auto}
+.btn{font:600 13px/1 var(--sans);min-height:36px;padding:0 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn.silfur{background:var(--silfur);border:1px solid var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530}
+.btn.malmur{background:var(--malmtakki);border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 6px rgba(0,0,0,.45);color:#eef1f4}
+.btn.rautt{background:var(--rautt);border:1px solid rgba(190,32,28,.55);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 2px 8px rgba(0,0,0,.45);font-weight:700;font-size:15px;min-height:48px;padding:0 20px}
+.btn.rautt.vopnad{background:var(--graent);border-color:#0f2a15}
+.btn[disabled]{opacity:.38;pointer-events:none}
+main{max-width:820px;margin:0 auto;padding:18px 14px 40px}
+.plata{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:3px;border:1px solid var(--edge);background:var(--silfur);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.12);font:700 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#1f2530;white-space:nowrap}
+.stalplata{background:var(--stal);border:1px solid rgba(0,0,0,.25);border-radius:14px;padding:12px;box-shadow:0 10px 30px -14px rgba(0,0,0,.45)}
+.spjald{background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12);overflow:hidden;min-height:420px;display:flex;flex-direction:column}
+.spjald>.haus{background:var(--metal);color:#fff;min-height:46px;padding:6px 18px 6px 22px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.spjald>.haus .titill{font:600 15px/1.25 var(--sans);text-shadow:0 1px 0 rgba(0,0,0,.6);flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.spjald>.haus .tala{font:700 12px/1 var(--mono);color:#cfd5dd;white-space:nowrap}
+.innihald{padding:14px 18px 6px;flex:1 1 auto}
+.kafli{margin:0 0 14px}
+.kafli>h3{margin:0 0 6px;font:700 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.gerist{font:600 16px/1.4 var(--sans);color:var(--ink);background:#f4f6f9;border:1px solid var(--edge);border-left:4px solid #7a0b0e;border-radius:8px;padding:10px 12px}
+ul.rok{margin:0;padding:0;list-style:none}
+ul.rok li{padding:6px 0 6px 18px;position:relative;border-top:1px dashed var(--edge)}ul.rok li:first-child{border-top:0}
+ul.rok li::before{content:"";position:absolute;left:4px;top:13px;width:6px;height:6px;border-radius:50%;background:#3a4250}
+ul.rok .heimild{display:block;font:500 11px/1.3 var(--mono);color:var(--ink5);margin-top:2px}
+.skeyti{background:#f7f8fa;border:1px solid var(--edge);border-radius:8px;padding:10px 12px}
+.skeyti .meta{font:500 11.5px/1.4 var(--mono);color:var(--ink5);margin-bottom:4px}
+.skeyti .efni{font-weight:700;margin-bottom:4px}
+.skeyti pre{margin:0;white-space:pre-wrap;font:13px/1.45 var(--sans);color:var(--ink2);max-height:220px;overflow:auto}
+.reitur{width:100%;background:#eef1f6;border:1px solid var(--edge);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.18);padding:10px 12px;font:14px/1.5 var(--sans);color:var(--ink);min-height:180px;resize:vertical}
+.linur{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 10px;font-size:13px;margin-bottom:8px}
+.linur dt{font:700 11px/1.7 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink5)}.linur dd{margin:0;overflow-wrap:anywhere}
+ul.ath{margin:0;padding:0;list-style:none}
+ul.ath li{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:13.5px}
+ul.ath svg{flex:0 0 18px;margin-top:1px}
+.fotur{border-top:1px solid var(--edge);padding:12px 18px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fafbfc}
+.fotur .grow{flex:1 1 auto}
+.skilabod{margin:10px 0 0;padding:10px 12px;border-radius:8px;font-weight:600}
+.skilabod.ok{background:#e7f3ea;border:1px solid #9cc9a6;color:#1b4423}
+.skilabod.villa{background:#fbe9e9;border:1px solid #e3a3a3;color:#7a0b0e}
+.tomt{padding:40px 22px;text-align:center;color:var(--ink2)}
+.tomt b{display:block;font:800 26px/1.2 var(--disp);color:var(--ink);margin-bottom:6px}
+.saga table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden}
+.saga th{background:var(--metal);color:#cfd5dd;font:700 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:left;padding:9px 8px}
+.saga td{padding:8px;border-top:1px solid var(--edge);font-size:13px;vertical-align:top}
+.saga td.mono{font:12px/1.4 var(--mono);white-space:nowrap}
+.villa-sida{padding:20px;color:#7a0b0e}
+@media (max-width:640px){header.sida{padding:12px 16px}header.sida h1{font-size:24px}.fotur .btn{flex:1 1 100%;min-height:44px}.btn.rautt{order:-1}.innihald{padding:12px 14px 4px}
+  .fotur .btn[data-a=fyrra],.fotur .btn[data-a=naesta]{flex:1 1 calc(50% - 5px)}}
+</style>
+</head>
+<body>
+<header class="sida hnod">
+  <div><h1>Afgreiðsla</h1><div class="undir" id="undir">Sæki…</div></div>
+  <span class="grow"></span>
+  <button type="button" class="btn malmur" id="sagaTakki" aria-pressed="false">Saga</button>
+  <a class="btn silfur" href="/#bord">Þjónustuborð</a>
+</header>
+<main>
+  <div class="stalplata"><div id="rot" aria-live="polite"></div></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/afgreidsla';
+  var S = { tilbuin: [], saga: [], i: 0, syna: 'spjald', throskuldur: 10000, vopnad: null, busy: false, skilabod: null };
+  var rot = document.getElementById('rot');
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
+  var kr = function (n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; };
+  var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk' };
+  var STADA = { framkvaemt: 'Gert', sleppt: 'Sleppt', ekki_thess_virdi: 'Ekki þess virði', urelt: 'Úrelt', villa: 'Villa', i_vinnslu: 'Í vinnslu' };
+  var JA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-label="Í lagi"><circle cx="9" cy="9" r="8" fill="#1b6b2d"/><path d="M5 9.3l2.6 2.6L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var NEI = '<svg width="18" height="18" viewBox="0 0 18 18" aria-label="Ekki í lagi"><circle cx="9" cy="9" r="8" fill="#a1161a"/><path d="M6 6l6 6M12 6l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  function api(opts) {
+    opts = opts || {};
+    return fetch(API, { method: opts.body ? 'POST' : 'GET', credentials: 'same-origin', headers: opts.body ? { 'Content-Type': 'application/json' } : {}, body: opts.body ? JSON.stringify(opts.body) : undefined })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 401 && j && j.need_login) { location.href = '/innskraning.html?next=' + encodeURIComponent(location.pathname + location.search); throw new Error('Innskráning'); }
+          j._status = r.status; return j;
+        });
+      });
+  }
+
+  function hlada() {
+    return api().then(function (j) {
+      if (j._status !== 200) throw new Error(j.error || ('Villa ' + j._status));
+      S.tilbuin = j.tilbuin || []; S.saga = j.saga || []; S.throskuldur = j.throskuldur || S.throskuldur;
+      if (S.i >= S.tilbuin.length) S.i = Math.max(0, S.tilbuin.length - 1);
+      teikna();
+    }).catch(function (e) { if (String(e.message) !== 'Innskráning') rot.innerHTML = '<div class="villa-sida">Náði ekki í verkin: ' + esc(e.message) + '</div>'; });
+  }
+
+  function undirlina() {
+    var n = S.tilbuin.length;
+    document.getElementById('undir').textContent = n ? (n + ' tilbúin · eitt í einu · takkinn framkvæmir það sem á honum stendur') : 'Ekkert bíður';
+  }
+
+  function rokHtml(rok) {
+    if (!rok || !rok.length) return '';
+    return '<section class="kafli"><h3>Af hverju þetta er rétt</h3><ul class="rok">' + rok.map(function (r) {
+      return '<li>' + esc(r.texti) + (r.heimild ? '<span class="heimild">' + esc(r.heimild) + '</span>' : '') + '</li>';
+    }).join('') + '</ul></section>';
+  }
+  function athHtml(a) {
+    if (!a || !a.length) return '';
+    return '<section class="kafli"><h3>Athuganir — keyrðar núna</h3><ul class="ath">' + a.map(function (x) {
+      return '<li>' + (x.ok ? JA : NEI) + '<span>' + esc(x.texti) + '</span></li>';
+    }).join('') + '</ul></section>';
+  }
+
+  function spjaldHtml(v) {
+    var n = S.tilbuin.length;
+    var h = '<article class="spjald"><div class="haus hnod"><span class="plata">' + esc(TEG[v.tegund] || v.tegund) + '</span>' +
+      '<span class="titill">' + esc(v.titill) + '</span><span class="tala">' + (S.i + 1) + ' af ' + n + '</span></div><div class="innihald">';
+    h += '<section class="kafli"><h3>Hvað gerist þegar þú ýtir</h3><div class="gerist">' + esc(v.hvad_gerist) + '</div></section>';
+    h += rokHtml(v.af_hverju);
+    if (v.tegund === 'tolvupostur') {
+      if (v.svar_vid) h += '<section class="kafli"><h3>Skeytið sem þú svarar (það nýjasta í þræðinum)</h3><div class="skeyti"><div class="meta">' +
+        esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + '</div><div class="efni">' + esc(v.svar_vid.efni) + '</div><pre>' + esc(v.svar_vid.texti) + '</pre></div></section>';
+      var p = v.post || {};
+      h += '<section class="kafli"><h3>Svarið — þú mátt breyta því</h3><dl class="linur"><dt>Frá</dt><dd>' + esc(p.account) + '</dd><dt>Til</dt><dd>' + esc((p.to || []).join(', ')) + '</dd>' +
+        ((p.cc || []).length ? '<dt>Afrit</dt><dd>' + esc(p.cc.join(', ')) + '</dd>' : '') + '<dt>Efni</dt><dd>' + esc(p.subject) + '</dd>' +
+        ((p.vidhengi || []).length ? '<dt>Viðhengi</dt><dd>' + esc(p.vidhengi.join(', ')) + '</dd>' : '') + '</dl>' +
+        '<textarea class="reitur" id="texti" spellcheck="true">' + esc(p.texti) + '</textarea></section>';
+    } else if (v.tegund === 'simtal') {
+      var s = v.simtal || {};
+      h += '<section class="kafli"><h3>Símtalið</h3><dl class="linur"><dt>Hverjum</dt><dd>' + esc(s.hverjum) + '</dd>' + (s.simi ? '<dt>Sími</dt><dd><a href="tel:' + esc(String(s.simi).replace(/\s/g, '')) + '">' + esc(s.simi) + '</a></dd>' : '') + '</dl>' +
+        (s.handrit ? '<div class="skeyti"><pre>' + esc(s.handrit) + '</pre></div>' : '') + '</section>';
+    } else if (v.tegund === 'verk') {
+      h += '<section class="kafli"><h3>Verkið</h3><div class="skeyti"><pre>' + esc((v.verk || {}).lysing) + '</pre></div></section>';
+    }
+    h += athHtml(v.athuganir);
+    if (S.skilabod) h += '<div class="skilabod ' + (S.skilabod.ok ? 'ok' : 'villa') + '" role="status">' + esc(S.skilabod.texti) + '</div>';
+    h += '</div><div class="fotur">' +
+      '<button type="button" class="btn silfur" data-a="fyrra"' + (S.i === 0 ? ' disabled' : '') + ' aria-label="Fyrra verk">Fyrra</button>' +
+      '<button type="button" class="btn silfur" data-a="naesta"' + (S.i >= n - 1 ? ' disabled' : '') + ' aria-label="Næsta verk">Næsta</button>' +
+      '<span class="grow"></span>' +
+      '<button type="button" class="btn silfur" data-a="seinna">Seinna</button>' +
+      '<button type="button" class="btn malmur" data-a="sleppa">Ekki þess virði</button>' +
+      '<button type="button" class="btn rautt' + (S.vopnad === v.id ? ' vopnad' : '') + '" data-a="framkvaema"' + (!v.ok || S.busy ? ' disabled' : '') +
+        ' title="' + esc(v.ok ? v.hvad_gerist : 'Athugun stóðst ekki — sjá að ofan') + '">' +
+        esc(S.busy ? 'Augnablik…' : S.vopnad === v.id ? 'Ýttu aftur til að staðfesta' : v.takki) + '</button>' +
+      '</div></article>';
+    return h;
+  }
+
+  function sagaHtml() {
+    if (!S.saga.length) return '<div class="tomt"><b>Engin saga enn</b>Hér birtist allt sem var gert, sleppt eða úrelt — með tíma og niðurstöðu.</div>';
+    return '<div class="saga"><table><thead><tr><th>Hvenær</th><th>Verk</th><th>Staða</th><th>Niðurstaða</th></tr></thead><tbody>' + S.saga.map(function (r) {
+      var kl = r.framkvaemt_at || r.updated_at || '';
+      var nid = r.stada === 'framkvaemt' && r.nidurstada ? (r.nidurstada.to ? 'Sent til ' + [].concat(r.nidurstada.to).join(', ') : r.nidurstada.payday ? 'Payday ' + r.nidurstada.payday : (r.nidurstada.athugasemd || 'Lokið')) : (r.astaeda || '');
+      return '<tr><td class="mono">' + esc(String(kl).slice(0, 16).replace('T', ' ')) + (r.framkvaemt_af ? '<br>' + esc(r.framkvaemt_af) : '') + '</td><td>' + esc(r.titill) +
+        '</td><td><span class="plata">' + esc(STADA[r.stada] || r.stada) + '</span></td><td>' + esc(nid) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  }
+
+  function teikna() {
+    undirlina();
+    var btn = document.getElementById('sagaTakki');
+    btn.setAttribute('aria-pressed', S.syna === 'saga' ? 'true' : 'false');
+    btn.textContent = S.syna === 'saga' ? 'Til baka í verkin' : 'Saga';
+    if (S.syna === 'saga') { rot.innerHTML = sagaHtml(); return; }
+    var v = S.tilbuin[S.i];
+    if (!v) { rot.innerHTML = '<div class="tomt"><b>Allt afgreitt</b>Ekkert bíður þín. Tony setur ný verk hér þegar þau eru tilbúin og standast athuganirnar.</div>'; return; }
+    rot.innerHTML = spjaldHtml(v);
+  }
+
+  function textiNuna() { var t = document.getElementById('texti'); return t ? t.value : undefined; }
+
+  function framkvaema(v) {
+    if (S.vopnad !== v.id) { S.vopnad = v.id; S.skilabod = null; var tx = textiNuna(); teikna(); if (tx != null) document.getElementById('texti').value = tx; setTimeout(function () { if (S.vopnad === v.id) { S.vopnad = null; var t2 = textiNuna(); teikna(); if (t2 != null) document.getElementById('texti').value = t2; } }, 6000); return; }
+    S.vopnad = null; S.busy = true; var texti = textiNuna(); teikna(); if (texti != null) document.getElementById('texti').value = texti;
+    api({ body: { id: v.id, adgerd: 'framkvaema', texti: texti } }).then(function (j) {
+      S.busy = false;
+      if (j._status === 200 && j.ok) {
+        S.tilbuin.splice(S.i, 1); if (j.verk) S.saga.unshift(j.verk);
+        if (S.i >= S.tilbuin.length) S.i = Math.max(0, S.tilbuin.length - 1);
+        S.skilabod = { ok: true, texti: 'Gert: ' + v.titill + '.' };
+      } else {
+        S.skilabod = { ok: false, texti: (j.error || 'Villa') + (j.urelt ? ' Verkið hefur verið tekið úr röðinni.' : '') };
+        if (j.urelt) { S.tilbuin.splice(S.i, 1); if (S.i >= S.tilbuin.length) S.i = Math.max(0, S.tilbuin.length - 1); }
+        else if (j.athuganir) v.athuganir = j.athuganir;
+      }
+      teikna();
+    }).catch(function (e) { S.busy = false; S.skilabod = { ok: false, texti: 'Netvilla: ' + e.message }; teikna(); });
+  }
+
+  rot.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-a]'); if (!b || S.busy) return;
+    var a = b.getAttribute('data-a'), v = S.tilbuin[S.i];
+    var tx = textiNuna();
+    if (a === 'fyrra' && S.i > 0) { if (v && v.tegund === 'tolvupostur' && tx != null && tx !== (v.post || {}).texti) v.post.texti = tx; S.i--; S.vopnad = null; S.skilabod = null; teikna(); return; }
+    if (a === 'naesta' && S.i < S.tilbuin.length - 1) { if (v && v.tegund === 'tolvupostur' && tx != null && tx !== (v.post || {}).texti) v.post.texti = tx; S.i++; S.vopnad = null; S.skilabod = null; teikna(); return; }
+    if (!v) return;
+    if (a === 'framkvaema') { framkvaema(v); return; }
+    if (a === 'seinna') { api({ body: { id: v.id, adgerd: 'seinna' } }).then(function () { S.skilabod = null; return hlada(); }); return; }
+    if (a === 'sleppa') {
+      var astaeda = window.prompt('Ekki þess virði — kemur aldrei aftur. Ástæða (má sleppa):', '');
+      if (astaeda === null) return;
+      api({ body: { id: v.id, adgerd: 'sleppa', varanlegt: true, astaeda: astaeda || 'Ekki þess virði' } }).then(function (j) {
+        if (j._status === 200) { S.tilbuin.splice(S.i, 1); if (j.verk) S.saga.unshift(j.verk); if (S.i >= S.tilbuin.length) S.i = Math.max(0, S.tilbuin.length - 1); S.skilabod = null; }
+        else S.skilabod = { ok: false, texti: j.error || 'Villa' };
+        teikna();
+      });
+    }
+  });
+  // Breyttur texti vistast þegar farið er úr reitnum (aldrei endurteiknað meðan skrifað er).
+  rot.addEventListener('focusout', function (e) {
+    if (e.target.id !== 'texti') return; var v = S.tilbuin[S.i]; if (!v || !v.post) return;
+    var t = e.target.value; if (t === v.post.texti) return; v.post.texti = t;
+    api({ body: { id: v.id, adgerd: 'vista', texti: t } }).then(function (j) { if (j._status === 200 && j.verk) { v.athuganir = j.verk.athuganir; v.ok = j.verk.ok; var tx = textiNuna(); teikna(); if (tx != null) document.getElementById('texti').value = tx; } });
+  });
+  document.getElementById('sagaTakki').addEventListener('click', function () { S.syna = S.syna === 'saga' ? 'spjald' : 'saga'; teikna(); });
+  hlada();
+})();
+</script>
+</body>
+</html>
