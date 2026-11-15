@@ -28,7 +28,12 @@ function posturToki(ms = Date.now()) {
   return m + '.' + crypto.createHmac('sha256', String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')).update('postur-senda|' + m).digest('hex');
 }
 
+// Netlify drepur fallið eftir ~10 s og vafrinn fengi þá 502 án JSON — meðan gmail-send gæti enn verið að senda.
+// Við hættum því sjálf að bíða 9 s frá upphafi og segjum hreint út að pósturinn GÆTI hafa farið (netvörður 15.11.2026).
+const FRESTUR_MS = 9000;
+
 exports.handler = async (event) => {
+  const t0 = Date.now();
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
 
@@ -36,19 +41,27 @@ exports.handler = async (event) => {
   if (g) return g;
 
   const hausar = { [HAUS]: posturToki(), 'user-agent': 'slokkvitaeki-postur-senda' };
-  let r;
+  // Venjulegur (ref'd) teljari, ekki AbortSignal.timeout: sá er unref'd og heldur ekki ferlinu á lífi.
+  const ac = new AbortController();
+  const teljari = setTimeout(() => ac.abort(), Math.max(2000, FRESTUR_MS - (Date.now() - t0)));
+  let r, texti;
   try {
     if (event.httpMethod === 'GET') {
-      r = await fetch(MARK + '?status=1', { headers: hausar });
+      r = await fetch(MARK + '?status=1', { headers: hausar, signal: ac.signal });
     } else {
       const body = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString('utf8') : (event.body || '{}');
-      r = await fetch(MARK, { method: 'POST', headers: { ...hausar, 'content-type': 'application/json' }, body });
+      r = await fetch(MARK, { method: 'POST', headers: { ...hausar, 'content-type': 'application/json' }, body, signal: ac.signal });
     }
+    texti = await r.text();
   } catch (e) {
+    if (ac.signal.aborted) {
+      return P.json(504, { error: 'POSTUR_TIMEOUT', message: 'Póstþjónninn svaraði ekki í tæka tíð. Pósturinn GÆTI hafa farið — athugaðu Sent-möppuna áður en þú sendir aftur.' });
+    }
     // Beiðnin gæti hafa náð alla leið þótt svarið týndist — segjum það, svo enginn sendi kúnna tvisvar.
     return P.json(502, { error: 'POSTUR_OFFLINE', message: 'Náði ekki sambandi við póstþjóninn (' + String((e && e.message) || e).slice(0, 120) + '). Athugaðu Sent-möppuna áður en þú sendir aftur.' });
+  } finally {
+    clearTimeout(teljari);
   }
-  const texti = await r.text().catch(() => '');
   let svar = texti;
   try { JSON.parse(texti); } catch (_) { svar = JSON.stringify({ error: 'POSTUR_BAD_RESPONSE', message: 'Póstþjónninn svaraði HTTP ' + r.status + ' án JSON.' }); }
   return { statusCode: r.status, headers: P.secHeaders(), body: svar };
