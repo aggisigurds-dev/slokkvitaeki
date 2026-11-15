@@ -76,7 +76,13 @@ function stub(h, opt = {}) {
       h.kv[k] = body.value; return svar([{ key: k, value: body.value }]);
     }
     if (tafla === 'app_kv') { const k = q.get('key').replace('eq.', ''); return svar(h.kv[k] ? [{ value: h.kv[k] }] : []); }
+    if (tafla === 'automation_runs' && method === 'GET') return svar(h.runs_villur || []);
     if (tafla === 'automation_runs') { (h.runs = h.runs || []).push(body); return svar(null); }
+    if (tafla === 'v_uttektarplan') return svar(h.uttektarplan || []);
+    const sida = (a) => { const off = Number(q.get('offset') || 0), lim = Number(q.get('limit') || 1000); return (a || []).slice(off, off + lim); };
+    if (tafla === 'solur' && q.get('status') === 'eq.final') return svar(sida(h.tekjur_sl));
+    if (tafla === 'solur' && q.get('paid_at') === 'is.null' && h.ogreitt_sl) return svar(sida(h.ogreitt_sl));
+    if (tafla === 'invoices' && q.get('gjalddagi')) return svar(sida(h.tekjur_bh));
     if (tafla === 'email_digest') {
       const len = Object.keys(h.postar).find((d) => q.get('and').includes(d));
       assert.match(q.get('and'), /account\.ilike\."\*@eldklar\.is",account\.ilike\."\*@brunaholf\.is"/, 'SQL-sían takmarkar við pósthólf félaganna');
@@ -213,15 +219,22 @@ test('kalla: höfnun, of langt svar, ógilt JSON og API-villa kasta — engin h�
   }
 });
 
-test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, mest 4 fréttir og 3 ráð', async () => {
+test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, mest 4 fréttir og 10 ráð (Agnar 15.11: „top 10")', async () => {
   const h = heimur(); stub(h);
   const f = await R.safna({ nu: NU });
   const s = R.stadfesta(GOTT, f);
   assert.deepEqual(s.heimaleiga.frettir.map((x) => x.texti), ['Sigga vill skoðun á Norðurhús á þriðjudag.', 'Leiðréttur reikningur sendur.']);
-  assert.deepEqual(s.rad.map((x) => x.titill), ['Svara Jónu', 'Innheimta Norðurhús', 'Fjórða ráðið']);
+  assert.deepEqual(s.rad.map((x) => x.titill), ['Svara Jónu', 'Innheimta Norðurhús', 'Fjórða ráðið', 'Fimmta ráðið']);
+  assert.ok(s.rad.every((x) => x.flokkur === 'umbót'), 'ráð án gilds flokks fær „umbót"');
   assert.equal(s.betri_leid.titill, 'Greiðandi staðfestur áður en reikningur fer', 'fyrsta gilda tillagan; H77 er ekki til');
   assert.deepEqual(s.betri_leid.heimildir, ['H2', 'H3', 'HK1']);
-  assert.equal(s.hent, 8, 'frétt H99 + ráð án heimildar + fimmta ráðið + tillögur: H77, án „núna", án „betra", án titils, önnur gild (mest ein)');
+  assert.equal(s.hent, 7, 'frétt H99 + ráð án heimildar + tillögur: H77, án „núna", án „betra", án titils, önnur gild (mest ein)');
+  const tolf = Array.from({ length: 12 }, (_, i) => ({ flokkur: 'peningar', titill: 'Ráð ' + (i + 1), af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['G'] }));
+  const s12 = R.stadfesta({ ...GOTT, rad: tolf }, f);
+  assert.equal(s12.rad.length, 10, 'mest 10 ráð');
+  assert.equal(s12.rad[9].titill, 'Ráð 10');
+  assert.equal(s12.hent, 7 - 1 + 2, 'ráð 11 og 12 teljast hent (GOTT-ráðið án heimildar er ekki lengur með)');
+  assert.equal(s12.rad[0].flokkur, 'peningar');
   assert.deepEqual(s.rad[0].heimildir, ['C1', 'F1']);
   assert.deepEqual(Object.keys(s.postar).sort(), ['C1', 'H1', 'H2', 'H3'], 'aðeins póstar sem eru notaðir — H3 kemur úr betri leiðinni');
   assert.equal(s.postar.H1.efni, 'Skoðun Norðurhús'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
@@ -240,7 +253,7 @@ test('stadfesta: engin betri leið (tómur listi, vantar eða ekki listi) → nu
 test('skrifa: vistar nýjasta + sögu + staðreyndir og skráir í automation_runs', async () => {
   const h = heimur(); stub(h);
   const rec = await R.skrifa({ kalladAf: 'morgun', nu: NU });
-  assert.equal(rec.rad.length, 3);
+  assert.equal(rec.rad.length, 4, 'GOTT: 5 ráð, eitt án heimildar — mest 10');
   assert.equal(h.kv.radgjafinn.nyjast.fyrirsogn, GOTT.fyrirsogn);
   assert.equal(h.kv.radgjafinn.saga.length, 1);
   assert.equal(h.kv.radgjafinn.sidasta_villa, null);
@@ -521,4 +534,104 @@ test('lestrarvilla stöðvar skrifin: síðustu góðu skrifin og sagan standa, 
   assert.equal(JSON.stringify(h.kv.radgjafinn), adur);
   assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 0);
   assert.match(h.runs.at(-1).detail, /Las ekki fyrri skrif/);
+});
+
+// ── Ráðningin 15.11.2026: allur reksturinn, markmiðið (2× tekjur), top 10 og 2 mánaða planið ──────────────────────────
+const PLAN = { utgafa: 1, samthykkt: false, timabil: { fra: '2026-11-16', til: '2027-01-15' },
+  grunnlina: { samtals_a_manudi: 600000, maelt: '2026-11-15', markmid_fyrir: '2027-11' },
+  atridi: [{ id: 'A1', titill: 'Gera hagnað mælanlegan', eigandi: 'bokari', maelikvardi: 'hagnaður á mánuði', markmid_vikur: 'v2: laun' },
+    { id: 'A2', titill: 'Bóka gleymdar skoðanir', eigandi: 'spider-man', maelikvardi: 'skoðun gleymd', markmid_vikur: 'v4: −40' }] };
+function heimurTekjur() {
+  const h = heimur();
+  h.tekjur_sl = [
+    { upphaed_an_vsk: 100000, created_at: '2026-10-05T10:00:00Z' }, { upphaed_an_vsk: -20000, created_at: '2026-10-07T10:00:00Z' },
+    { upphaed_an_vsk: 50000, created_at: '2026-09-10T10:00:00Z' }, { upphaed_an_vsk: 70000, created_at: '2026-08-10T10:00:00Z' },
+    { upphaed_an_vsk: 999, created_at: '2026-11-02T10:00:00Z' },
+  ];
+  h.tekjur_bh = [
+    { hofudstoll: 1000000, gjalddagi: '2026-10-20' }, { hofudstoll: 500000, gjalddagi: '2026-09-01' },
+    { hofudstoll: 300000, gjalddagi: '2026-08-01' }, { hofudstoll: 200000, gjalddagi: '2026-04-01' },
+  ];
+  h.kv.radgjafinn_aaetlun = JSON.parse(JSON.stringify(PLAN));
+  h.runs_villur = [
+    { job_name: 'arnold-vaktin', status: 'error', started_at: dag(0.2), detail: 'hámarki snúninga náð' },
+    { job_name: 'payday-sync', status: 'error', started_at: dag(0.3), detail: 'Payday 500' },
+    { job_name: 'arnold-vaktin', status: 'error', started_at: dag(0.5), detail: 'hámarki snúninga náð' },
+  ];
+  h.ogreitt_sl = [{ samtals: 100000, krafa_sent_at: dag(90), created_at: dag(95) }, { samtals: 20000, krafa_sent_at: null, created_at: dag(10) }];
+  h.uttektarplan = [{ stada: 'utrunnid' }, { stada: 'utrunnid' }, { stada: 'thessi_manudur' }, { stada: 'framundan' }];
+  return h;
+}
+
+test('tekjur: kreditnótur dregnar frá, síðustu 3 HEILU mánuðir, markmið = 2× grunnlína planins, líðandi mánuður utan meðaltals', async () => {
+  const h = heimurTekjur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const m = f.markmid;
+  assert.equal(m.id, 'M');
+  assert.deepEqual(m.sidustu3.manudir, ['2026-08', '2026-09', '2026-10']);
+  assert.equal(m.sidustu3.slokkvitaeki, 70000 + 50000 + 100000 - 20000, 'kreditnóta (neikvæð) dregin frá');
+  assert.equal(m.sidustu3.brunaholf, 1800000);
+  assert.equal(m.sidustu3.a_manudi, Math.round(2000000 / 3));
+  assert.equal(m.markmid_a_manudi, 1200000);
+  assert.equal(m.hlutfall_af_markmidi, Math.round((100 * Math.round(2000000 / 3)) / 1200000));
+  const nov = m.manudir.find((x) => x.man === '2026-11');
+  assert.equal(nov.hluti_manadar, true); assert.equal(nov.slokkvitaeki, 999);
+  assert.equal(m.hagnadur, null, 'hagnaður er ómældur — null, aldrei 0');
+  assert.match(m.skilgreining, /bráðabirgða/);
+});
+
+test('tekjur: mánuðir fyrir yfirtöku (05.2026) eru ÓMÆLDIR hjá Slökkvitæki — null, ekki 0, og ekki í meðaltali; ekkert plan → ekkert markmið', async () => {
+  const h = heimurTekjur(); delete h.kv.radgjafinn_aaetlun; stub(h);
+  const m = await R.tekjur(new Date('2026-07-16T06:45:00Z'), null);
+  const apr = m.manudir.find((x) => x.man === '2026-04');
+  assert.equal(apr.slokkvitaeki, null); assert.equal(apr.samtals, null); assert.equal(apr.brunaholf, 200000);
+  assert.deepEqual(m.sidustu3.manudir, ['2026-05', '2026-06']);
+  assert.equal(m.markmid_a_manudi, null, 'án grunnlínu er ekkert markmið reiknað');
+  assert.equal(m.hlutfall_af_markmidi, null);
+});
+
+test('safna: allur reksturinn — peningalínur (combo-yfirlit), sjálfvirkni sem brást, úttektarplan, planið; ómælt skráð, ekki 0', async () => {
+  const h = heimurTekjur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  assert.deepEqual(f.omaelt, []);
+  assert.ok(f.peningar.length > 5 && f.peningar.every((p) => /^P\d+$/.test(p.id)));
+  assert.ok(f.peningar.every((p) => p.merki === 'OMAELT' && p.tala == null && p.kr == null), 'stub svarar ekki sýnunum → ÓMÆLT, aldrei 0');
+  assert.deepEqual(f.kerfi.map((k) => [k.id, k.starf, k.villur]), [['K1', 'arnold-vaktin', 2], ['K2', 'payday-sync', 1]]);
+  assert.deepEqual(f.taekifaeri.uttektir, { id: 'T1', utrunnid: 2, thessi_manudur: 1, framundan: 1, engin_dags: 0 });
+  assert.deepEqual(f.aaetlun.atridi.map((x) => x.id), ['A1', 'A2']);
+  assert.equal(f.aaetlun.samthykkt, false);
+  assert.deepEqual(f.ogreitt, { id: 'O', fjoldi: 2, kr: 120000, elsta_dagar: 90, eldri_en_60_fjoldi: 1, eldri_en_60_kr: 100000 }, 'sama skilgreining og 489');
+});
+
+test('stadfesta: plan_stada — aðeins atriði planins, eitt á atriði, gild staða og gild heimild', async () => {
+  const h = heimurTekjur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const s = R.stadfesta({ ...GOTT, plan_stada: [
+    { id: 'A1', stada: 'á eftir', texti: 'Laun eru ekki komin í kerfið.', heimildir: ['M'] },
+    { id: 'A1', stada: 'lokið', texti: 'tvítak', heimildir: ['M'] },
+    { id: 'A9', stada: 'lokið', texti: 'ekki í planinu', heimildir: ['M'] },
+    { id: 'A2', stada: 'kannski', texti: 'ógild staða', heimildir: ['T1'] },
+    { id: 'A2', stada: 'á áætlun', texti: 'án gildrar heimildar', heimildir: ['X1'] },
+  ] }, f);
+  assert.deepEqual(s.plan_stada, [{ id: 'A1', stada: 'á eftir', texti: 'Laun eru ekki komin í kerfið.', heimildir: ['M'] }]);
+  assert.equal(s.hent, 7 + 4);
+  const ekkert = R.stadfesta({ ...GOTT, plan_stada: [{ id: 'A1', stada: 'lokið', texti: 'x', heimildir: ['M'] }] }, { ...f, aaetlun: null });
+  assert.deepEqual(ekkert.plan_stada, [], 'ekkert plan → engin staða');
+});
+
+test('skrifa: markmiðsröndin og planið koma úr gögnunum (ekki texta Claude) og fara á skjáinn', async () => {
+  const h = heimurTekjur(); stub(h);
+  const rec = await R.skrifa({ kalladAf: 'agnar', nu: NU });
+  assert.equal(rec.markmid.markmid_a_manudi, 1200000);
+  assert.equal(rec.markmid.hagnadur, null);
+  assert.deepEqual(rec.aaetlun.atridi.map((x) => x.id), ['A1', 'A2']);
+  assert.ok(Array.isArray(rec.plan_stada));
+  assert.equal(h.kv.radgjafinn.nyjast.markmid.sidustu3.samtals, 2000000);
+});
+
+test('SKEMA og KERFI: top 10 og plan_stada eru í sniðinu og reglunum; flokkarnir eru fimm', () => {
+  assert.equal(R.MAX_RAD, 10);
+  assert.ok(R.SKEMA.required.includes('plan_stada'));
+  assert.deepEqual(R.SKEMA.properties.rad.items.properties.flokkur.enum, R.FLOKKAR_RADA);
+  assert.match(R.KERFI, /MEST 10/); assert.match(R.KERFI, /tvöfalda tekjur og þrefalda hagnað/); assert.doesNotMatch(R.KERFI, /1 til 3/);
 });

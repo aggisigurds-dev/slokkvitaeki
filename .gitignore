@@ -25,6 +25,9 @@ desktop.ini
 !.claude/skills/
 !.claude/skills/**
 !.claude/settings.json
+# Síðukortið (síður → eigandi-agent) les Jarvis-byggingin í brunaholf á ÖLLUM vélum; utan git missti hver bygging
+# síðan 08.11.2026 allar síður slokkvitaeki (Tony sýndi „0 síður"). Engin persónugögn í skránni (athugað 16.11.2026).
+!.claude/sidukort.json
 
 # Local outputs / scratch
 /tmp/

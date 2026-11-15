@@ -24,6 +24,12 @@
  * Samanbrotið er viðmótsval → Vidmot (472, eins á öllum vélum). 368 teiknar gluggann (Radgjafinn.html(n)) og sendir smelli
  * með data-t5="rg-…" hingað (Radgjafinn.smellur); fókusinn fer aftur á takkann eftir teikningu.
  * Sími og app-hamur: gámafyrirspurn á .t5 (borðið sjálft), ekki @media — í app-ham er síðan 980 px en borðið mjótt.
+ *
+ * RÁÐNINGIN (Agnar 15.11.2026, kvöld): Tony er aðalfyrirtækjaráðgjafi — „tvöfalda tekjurnar og 3falda hagnaðinn" (fyrir
+ * nóv. 2027), „helst ekki meira en top 10 málin", „2 mánaða plan". Glugginn sýnir því, í þessari röð:
+ *   · fyrirsögn · MARKMIÐSRÖND (tekjur sl. 3 heila mánuði á móti markmiðinu, hagnaður — „ómælt" þar til hann er mældur;
+ *     tölurnar koma úr gögnunum á þjóninum, aldrei úr texta Claude) · Í DAG — TOP 10 (flokkur, hvað, af hverju, fyrsta skref)
+ *     · 2 MÁNAÐA PLANIÐ (staða hvers atriðis + „Tillaga" þar til Agnar samþykkir) við hlið PÓSTSINS · betri leið.
  * ============================================================================================== */
 (() => {
   if (window.Radgjafinn) return;
@@ -157,19 +163,39 @@
     '.rg-betri .rg-a{margin-top:3px}.rg-betri .rg-a b{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-right:6px}' +
     '.rg-ft{padding:8px 16px 11px;border-top:1px solid var(--rule2);font-size:11.5px;color:var(--mute)}.rg-ft .err{color:#b3220f}.rg-tomt{padding:16px;color:var(--mute);font-size:13px;min-height:220px}' +
     '.rg-bid{min-height:300px}' +
-    '@container t5 (max-width:760px){.rg-h .btn{min-height:44px;min-width:44px}.rg-grid{grid-template-columns:minmax(0,1fr)}.rg-dalkur+.rg-dalkur{border-left:0;border-top:1px solid var(--rule2)}.rg-fyrir{font-size:18px}}' +
+    '.rg-grid.rg-ein{grid-template-columns:minmax(0,1fr)}' +
+    // Markmiðsröndin: smáar flísar (minnisregla: samtölur sem litlar flísar, engar stórar töflur).
+    '.rg-mm{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid var(--rule2)}' +
+    '.rg-mm>div{flex:1 1 150px;min-width:0;padding:6px 10px;border:1px solid var(--rule2);border-radius:4px}' +
+    '.rg-mm b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700}' +
+    '.rg-mm span{display:block;font-size:17px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}.rg-mm small{display:block;font-size:11.5px;color:var(--mute);overflow-wrap:anywhere}' +
+    '.rg-topp{padding:12px 16px 6px;border-bottom:1px solid var(--rule2)}.rg-topp>h3,.rg-plan>h3{margin:0 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
+    '.rg-topp .rg-rad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px}.rg-topp .rg-rad>li:nth-child(2){border-top:0;padding-top:2px}' +
+    '.rg-fl{display:inline-block;margin-right:6px;padding:0 5px;font-size:10px;line-height:1.6;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--edge);border-radius:3px;color:var(--mute);font-weight:700;vertical-align:1px}' +
+    '.rg-pl{list-style:none;margin:0;padding:0}.rg-pl>li{padding:7px 0;border-top:1px dashed var(--rule2)}.rg-pl>li:first-child{border-top:0;padding-top:0}' +
+    '.rg-pl .rg-t{font-size:13.5px}.rg-pl .rg-t i{font-style:normal;font-weight:400;color:var(--mute);font-size:12px}' +
+    '.rg-st{display:inline-block;margin-left:6px;padding:0 6px;font-size:10.5px;line-height:1.6;border-radius:3px;border:1px solid var(--rule2);color:var(--mute);font-weight:700;white-space:nowrap}' +
+    '.rg-st.eftir{border-color:#b3220f;color:#b3220f}.rg-st.aaetlun{border-color:#2f7d32;color:#2f7d32}.rg-st.lokid{color:var(--ink)}' +
+    '.rg-tillaga{display:inline-block;margin-left:8px;padding:0 6px;font-size:10.5px;letter-spacing:.06em;border:1px dashed var(--edge);border-radius:3px;color:var(--ink);text-transform:none}' +
+    '@container t5 (max-width:760px){.rg-h .btn{min-height:44px;min-width:44px}.rg-grid{grid-template-columns:minmax(0,1fr)}.rg-dalkur+.rg-dalkur{border-left:0;border-top:1px solid var(--rule2)}.rg-fyrir{font-size:18px}' +
+      '.rg-topp .rg-rad{grid-template-columns:minmax(0,1fr)}.rg-topp .rg-rad>li:nth-child(2){border-top:1px dashed var(--rule2);padding-top:10px}}' +
     '@media (pointer:coarse){.rg-h .btn{min-height:44px;min-width:44px}}' +
     '</style>';
 
   // Heimild sem merki: póstur → „12.11 · efni"; annað → hvað það er. Merkið er upplýsing, ekki tengill.
   function heimildir(ids, n) {
     const p = (n && n.postar) || {};
-    const heiti = { HR: 'Reikningar Heimaleigu', CR: 'Reikningar Center Hotels', G: 'Greitt í vikunni' };
+    const heiti = { HR: 'Reikningar Heimaleigu', CR: 'Reikningar Center Hotels', G: 'Greitt í vikunni', M: 'Tekjur og markmið', O: 'Ógreitt alls', T1: 'Úttektarplanið' };
+    const peningalina = (id) => ((n && n.peningar) || []).find((x) => x.id === id);
+    const planAtridi = (id) => ((n && n.aaetlun && n.aaetlun.atridi) || []).find((x) => x.id === id);
     const mrk = (ids || []).slice(0, 4).map((id) => {
       if (p[id]) return '<span title="' + esc((p[id].att === 'frá okkur' ? 'Frá okkur' : 'Frá ' + (p[id].fra || '')) + ' · ' + p[id].dags) + '">' + esc(stuttDags(p[id].dags) + ' · ' + p[id].efni) + '</span>';
       if (heiti[id]) return '<span>' + esc(heiti[id]) + '</span>';
       if (/^F\d+$/.test(id)) return '<span>Forgangsmál</span>';
       if (/^[HC]K\d+$/.test(id)) return '<span>Úr þekkingunni</span>';
+      if (/^P\d+$/.test(id)) { const l = peningalina(id); return '<span>' + esc(l ? l.heiti : 'Peningalína') + '</span>'; }
+      if (/^K\d+$/.test(id)) return '<span>Sjálfvirkni sem brást</span>';
+      if (/^A\d+$/.test(id)) { const a = planAtridi(id); return '<span>' + esc('Planið · ' + (a ? a.titill : id)) + '</span>'; }
       return '';
     }).join('');
     return mrk ? '<div class="rg-hm" aria-label="Heimildir">' + mrk + '</div>' : '';
@@ -206,7 +232,7 @@
       return CSS + '<section class="panel rg rg-bid" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus + '<p class="rg-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
     }
 
-    const rad = (n.rad || []).map((r) => '<li><div class="rg-t">' + esc(r.titill) + '</div><div class="rg-a">' + esc(r.af_hverju) + '</div>' +
+    const rad = (n.rad || []).map((r) => '<li><div class="rg-t">' + (r.flokkur ? '<span class="rg-fl">' + esc(r.flokkur) + '</span>' : '') + esc(r.titill) + '</div><div class="rg-a">' + esc(r.af_hverju) + '</div>' +
       (r.fyrsta_skref ? '<div class="rg-s"><b>Fyrsta skref</b>' + esc(r.fyrsta_skref) + '</div>' : '') + heimildir(r.heimildir, n) + '</li>').join('');
     const b = n.betri_leid;
     const betri = b ? '<section class="rg-betri" aria-label="Betri leið"><h3>Betri leið</h3><div class="rg-t">' + esc(b.titill) + '</div>' +
@@ -214,17 +240,58 @@
       (b.betra ? '<div class="rg-a"><b>Betra</b>' + esc(b.betra) + '</div>' : '') +
       (b.fyrsta_skref ? '<div class="rg-s"><b>Fyrsta skref</b>' + esc(b.fyrsta_skref) + '</div>' : '') + heimildir(b.heimildir, n) + '</section>' : '';
     const fjoldi = n.fjoldi || {};
-    const ft = '<div class="rg-ft">Skrifað af Claude í rödd Tony Stark úr póstinum við Heimaleigu og Center Hotels, stöðu reikninga og forgangsmálum' +
+    const ft = '<div class="rg-ft">Skrifað af Claude í rödd Tony Stark úr tekjum, peningalínum, sjálfvirkninni, úttektarplaninu, 2 mánaða planinu, ' +
+      'póstinum við Heimaleigu og Center Hotels og forgangsmálum' +
       (n.kallad_af === 'agnar' ? ' · skrifað aftur að beiðni' : '') + '. Ráð og tillögur — þú ákveður.' +
       ((n.omaelt && n.omaelt.length) ? '<br><span class="err">Ekki mælt: ' + esc(n.omaelt.map((o) => o.hluti).join(', ')) + '</span>' : '') +
       '</div>' + villuLina(g);
+    // Eldri skrif (fyrir ráðninguna) bera hvorki markmið né plan — þá teiknast glugginn eins og áður, bara án þeirra kafla.
+    const planid = planHtml(n);
     return CSS + '<section class="panel rg" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus +
-      (n.fyrirsogn ? '<p class="rg-fyrir">' + esc(n.fyrirsogn) + '</p>' : '') +
-      '<div class="rg-grid">' +
-        '<section class="rg-dalkur" aria-label="Í dag"><h3>Í dag — einbeittu þér að</h3>' + (rad ? '<ol class="rg-rad">' + rad + '</ol>' : '<p class="rg-mute">Engin ráð í dag.</p>') + '</section>' +
+      (n.fyrirsogn ? '<p class="rg-fyrir">' + esc(n.fyrirsogn) + '</p>' : '') + markmidHtml(n.markmid) +
+      '<section class="rg-topp" aria-label="Í dag"><h3>Í dag — einbeittu þér að' + ((n.rad || []).length > 3 ? ' · top ' + n.rad.length : '') + '</h3>' +
+        (rad ? '<ol class="rg-rad">' + rad + '</ol>' : '<p class="rg-mute">Engin ráð í dag.</p>') + '</section>' +
+      '<div class="rg-grid' + (planid ? '' : ' rg-ein') + '">' +
+        (planid ? '<section class="rg-dalkur rg-plan" aria-label="2 mánaða planið">' + planid + '</section>' : '') +
         '<section class="rg-dalkur" aria-label="Úr póstinum"><h3>Úr póstinum</h3>' +
           hopurHtml('Heimaleiga', n.heimaleiga, fjoldi.heimaleiga, n) + hopurHtml('Center Hotels', n.center, fjoldi.center, n) + '</section>' +
       '</div>' + betri + ft + '</section>';
+  }
+
+  // Milljónir með íslenskri kommu: 18708725 → „18,7 m". null/óþekkt → „ómælt" (þögn er ekki núll).
+  const mkr = (v) => (v == null || !Number.isFinite(Number(v)) ? 'ómælt' : (Number(v) / 1e6).toFixed(1).replace('.', ',') + ' m');
+  const manTxt = (m) => { const [a, b] = String(m || '').split('-'); return b ? MAN[Number(b) - 1] + ' ' + a : ''; };
+
+  function markmidHtml(m) {
+    if (!m) return '';
+    const s = m.sidustu3 || {};
+    const tim = (s.manudir || []).length ? manTxt(s.manudir[0]).split(' ')[0] + '–' + manTxt(s.manudir[s.manudir.length - 1]) : '';
+    return '<div class="rg-mm" role="group" aria-label="Markmiðið" title="' + esc(m.skilgreining || '') + '">' +
+      '<div><b>Tekjur á mánuði</b><span>' + esc(mkr(s.a_manudi)) + '</span><small>meðaltal ' + esc(tim) + ' · án VSK</small></div>' +
+      '<div><b>Markmið ' + esc(manTxt(m.markmid_fyrir)) + '</b><span>' + esc(mkr(m.markmid_a_manudi)) + '</span><small>' +
+        (m.hlutfall_af_markmidi != null ? esc(m.hlutfall_af_markmidi + ' % náð · 2× tekjur') : '2× tekjur · grunnlína ómæld') + '</small></div>' +
+      '<div><b>Slökkvitæki · Brunahólf</b><span>' + esc(mkr(s.slokkvitaeki != null ? s.slokkvitaeki / Math.max(1, (s.manudir || []).length) : null)) + ' · ' +
+        esc(mkr(s.brunaholf != null ? s.brunaholf / Math.max(1, (s.manudir || []).length) : null)) + '</span><small>á mánuði · Brunahólf bráðabirgða</small></div>' +
+      '<div><b>Hagnaður</b><span>' + esc(mkr(m.hagnadur)) + '</span><small>' + esc(m.hagnadur == null ? 'markmið 3× — fyrst þarf að mæla hann' : '') + '</small></div>' +
+    '</div>';
+  }
+
+  const STADA_KLASI = { 'á eftir': 'eftir', 'á áætlun': 'aaetlun', 'lokið': 'lokid', 'ómælt': '' };
+  function planHtml(n) {
+    const a = n.aaetlun;
+    if (!a || !(a.atridi || []).length) return '';
+    const st = {};
+    for (const x of n.plan_stada || []) st[x.id] = x;
+    const tim = a.timabil ? stuttDags(a.timabil.fra) + '–' + stuttDags(a.timabil.til) : '';
+    const li = a.atridi.map((x) => {
+      const s = st[x.id];
+      return '<li><div class="rg-t">' + esc(x.titill) + (x.eigandi ? ' <i>· ' + esc(x.eigandi) + '</i>' : '') +
+        (s ? '<span class="rg-st ' + (STADA_KLASI[s.stada] || '') + '">' + esc(s.stada) + '</span>' : '') + '</div>' +
+        (s && s.texti ? '<div class="rg-a">' + esc(s.texti) + '</div>' : '') + '</li>';
+    }).join('');
+    return '<h3>2 mánaða planið' + (tim ? ' · ' + esc(tim) : '') +
+      (a.samthykkt ? '' : '<span class="rg-tillaga" title="Tony lagði planið til — segðu já í spjallinu og það er samþykkt">Tillaga — bíður samþykkis</span>') + '</h3>' +
+      '<ol class="rg-pl">' + li + '</ol>';
   }
 
   function villuLina(g) {
@@ -250,5 +317,5 @@
     return false;
   }
 
-  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15e' };
+  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-16a' };
 })();

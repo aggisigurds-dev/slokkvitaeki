@@ -567,3 +567,6 @@ exports.handler = async (event) => {
 
   return P.json(200, svar);
 };
+
+// Ráðgjafinn (Tony, _radgjafinn.cjs) les SÖMU línur á morgnana — ENGIN NÝ TALA (15.11.2026).
+exports.maela = maela;
