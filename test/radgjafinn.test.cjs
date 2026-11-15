@@ -81,8 +81,11 @@ function stub(h, opt = {}) {
     if (tafla === 'v_uttektarplan') return svar(h.uttektarplan || []);
     if (tafla === 'afgreidsla') return svar(h.akvardanir || []);
     const sida = (a) => { const off = Number(q.get('offset') || 0), lim = Number(q.get('limit') || 1000); return (a || []).slice(off, off + lim); };
+    if (tafla === 'solur' && q.get('credit_of')) return svar(h.kreditnotur || []);
+    if (tafla === 'payday_invoices_slokk') return svar(h.payday || []);
+    if (tafla === 'v_krafa_ekki_send_adgerd') return svar(h.adgerd || []);
+    if (tafla === 'solur' && q.get('paid_at') === 'is.null' && q.get('greitt_med')) return svar(sida(h.ogreitt_sl || []));
     if (tafla === 'solur' && q.get('status') === 'eq.final') return svar(sida(h.tekjur_sl));
-    if (tafla === 'solur' && q.get('paid_at') === 'is.null' && h.ogreitt_sl) return svar(sida(h.ogreitt_sl));
     if (tafla === 'invoices' && q.get('gjalddagi')) return svar(sida(h.tekjur_bh));
     if (tafla === 'email_digest') {
       const len = Object.keys(h.postar).find((d) => q.get('and').includes(d));
@@ -561,7 +564,12 @@ function heimurTekjur() {
     { job_name: 'payday-sync', status: 'error', started_at: dag(0.3), detail: 'Payday 500' },
     { job_name: 'arnold-vaktin', status: 'error', started_at: dag(0.5), detail: 'hámarki snúninga náð' },
   ];
-  h.ogreitt_sl = [{ samtals: 100000, krafa_sent_at: dag(90), created_at: dag(95) }, { samtals: 20000, krafa_sent_at: null, created_at: dag(10) }];
+  h.ogreitt_sl = [{ id: 501, num: 'R-1', samtals: 100000, krafa_sent_at: dag(90), created_at: dag(95) }, { id: 502, num: 'R-2', samtals: 20000, krafa_sent_at: null, created_at: dag(10) },
+    { id: 503, num: 'R-3', samtals: 999000, krafa_sent_at: dag(80), created_at: dag(80) }, { id: 504, num: 'R-4', samtals: 300000, krafa_sent_at: dag(70), created_at: dag(70), krafa_note: '⏸ BÍÐA — samningar' },
+    { id: 505, num: 'R-5', samtals: 40000, krafa_sent_at: dag(65), created_at: dag(65) }];
+  h.kreditnotur = [{ credit_of: 503 }];
+  h.payday = [{ reference: 'R-5', status: 'CANCELLED', created_date: dag(60) }];
+  h.adgerd = [{ num: 'R-9', samtals: 23668 }];
   h.uttektarplan = [{ stada: 'utrunnid' }, { stada: 'utrunnid' }, { stada: 'thessi_manudur' }, { stada: 'framundan' }];
   return h;
 }
@@ -598,12 +606,17 @@ test('safna: allur reksturinn — peningalínur (combo-yfirlit), sjálfvirkni se
   const f = await R.safna({ nu: NU });
   assert.deepEqual(f.omaelt, []);
   assert.ok(f.peningar.length > 5 && f.peningar.every((p) => /^P\d+$/.test(p.id)));
-  assert.ok(f.peningar.every((p) => p.merki === 'OMAELT' && p.tala == null && p.kr == null), 'stub svarar ekki sýnunum → ÓMÆLT, aldrei 0');
+  assert.ok(f.peningar.filter((p) => p.lykill !== 'krafa-ekki-send').every((p) => p.merki === 'OMAELT' && p.tala == null && p.kr == null), 'stub svarar ekki sýnunum → ÓMÆLT, aldrei 0');
   assert.deepEqual(f.kerfi.map((k) => [k.id, k.starf, k.villur]), [['K1', 'arnold-vaktin', 2], ['K2', 'payday-sync', 1]]);
   assert.deepEqual(f.taekifaeri.uttektir, { id: 'T1', utrunnid: 2, thessi_manudur: 1, framundan: 1, engin_dags: 0 });
   assert.deepEqual(f.aaetlun.atridi.map((x) => x.id), ['A1', 'A2']);
   assert.equal(f.aaetlun.samthykkt, false);
-  assert.deepEqual(f.ogreitt, { id: 'O', fjoldi: 2, kr: 120000, elsta_dagar: 90, eldri_en_60_fjoldi: 1, eldri_en_60_kr: 100000 }, 'sama skilgreining og 489');
+  // Mæling 15.11.2026: kreditfærð (credit_of) og CANCELLED í Payday út; á bið (⏸) sér — ekki innheimtumál.
+  assert.equal(f.ogreitt.fjoldi, 2); assert.equal(f.ogreitt.kr, 120000); assert.equal(f.ogreitt.eldri_en_60_fjoldi, 1);
+  assert.equal(f.ogreitt.a_bid_fjoldi, 1); assert.equal(f.ogreitt.a_bid_kr, 300000);
+  assert.equal(f.ogreitt.kreditfaert_utilokad_fjoldi, 2, 'R-3 kreditfærð + R-5 CANCELLED í Payday');
+  assert.equal(f.peningar.find((p) => p.lykill === 'kredit-an-endurgerdar'), undefined, 'ótraust lína fer ekki til Tonys');
+  const kes = f.peningar.find((p) => p.lykill === 'krafa-ekki-send'); assert.equal(kes.tala, 1); assert.equal(kes.kr, 23668);
 });
 
 test('stadfesta: plan_stada — aðeins atriði planins, eitt á atriði, gild staða og gild heimild', async () => {
@@ -648,4 +661,16 @@ test('ákvarðanir Agnars (D1 …) koma úr Afgreiðslunni og reglurnar þrjár 
   assert.match(R.KERFI, /AÐEINS NÝJASTA SKEYTIÐ/); assert.match(R.KERFI, /ÁKVÖRÐUN STENDUR/); assert.match(R.KERFI, /ÞESS VIRÐI/);
   const s = R.stadfesta({ ...GOTT, rad: [{ flokkur: 'umbót', titill: 'Virða ákvörðun', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['D1'] }] }, f);
   assert.deepEqual(s.rad[0].heimildir, ['D1'], 'D-auðkenni eru gildar heimildir');
+});
+
+test('stadfesta: peningaráð þarf mælda heimild og hálfvissa er hent (Agnar 15.11.2026: „allt sé rannsakað vel")', async () => {
+  const h = heimurTekjur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const s = R.stadfesta({ ...GOTT, rad: [
+    { flokkur: 'peningar', titill: 'Rukka verk', af_hverju: 'Samþykkt verk virðist órukkað.', fyrsta_skref: 'x', heimildir: ['O'] },
+    { flokkur: 'peningar', titill: 'Rukka verk B', af_hverju: 'Samþykkt 1,2 m.', fyrsta_skref: 'x', heimildir: ['HK1'] },
+    { flokkur: 'peningar', titill: 'Innheimta gamlar kröfur', af_hverju: '1 krafa eldri en 60 daga.', fyrsta_skref: 'x', heimildir: ['O'] },
+    { flokkur: 'tækifæri', titill: 'Svara Jónu', af_hverju: 'Spyr um skýrslur.', fyrsta_skref: 'x', heimildir: ['C1'] },
+  ] }, f);
+  assert.deepEqual(s.rad.map((x) => x.titill), ['Innheimta gamlar kröfur', 'Svara Jónu'], 'hálfvissa og peningaráð án mældrar heimildar fara út');
 });
