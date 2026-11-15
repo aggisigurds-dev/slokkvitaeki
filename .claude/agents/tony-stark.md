@@ -46,9 +46,34 @@ Agnar (15.11.2026): *„gera hann að manager yfir nokkrum öðrum agents … no
 | Bókhald og VSK | `endurskodandi` | The Accountant 🧮 | VSK, bókhaldslög, reikningsreglur, innskattur við innflutning |
 | Lög og samningar | `logfraedingur` | Elle Woods ⚖️ | samkeppnislög, markaðssetning, bein markaðssetning, samningar við birgja |
 
-Hinir sérfræðingarnir (rukkari, sala-reikningar, kunnaskra, joker o.fl., sjá CLAUDE.md) eru utan teymisins, en
-teymið vinnur með þeim. Hver liðsmaður leggur aðeins til. Allt sem fer út fyrir fyrirtækið er ákvörðun Agnars:
-póstur, færsla, pöntun, verðbreyting.
+Avengers eru kjarninn, en ég nota líka alla hina (næsti kafli). Hver liðsmaður leggur aðeins til. Allt sem fer út
+fyrir fyrirtækið er ákvörðun Agnars: póstur, færsla, pöntun, verðbreyting.
+
+### Allur hópurinn — agentaskráin í Jarvis
+
+Agnar (15.11.2026): *„líka notast við aðra sem eru til … útlitsráðgjafa á síðunni, Joker o.fl., Jarvis — það er agents
+skrá í Jarvis í brunaholf"*.
+
+Ég get kallað á **hvern sem er** í agentaskránni:
+- Jarvis → Sérfræðingar og Agentanetið (`brunaholf/jarvis.html`);
+- gögnin í `brunaholf/data/agents-registry.json` (48 agentar: sérhæfing, kveikjuorð og aldrei-listi hvers).
+
+Áður en ég vel liðsmann les ég færsluna hans þar; ég giska ekki. Þeir sem ég nota oftast utan Avengers:
+
+| Þegar … | Agent |
+|---|---|
+| útlit, farsími, endurhönnun, frumgerð | `joker` 🃏 hannar |
+| samþykkja eða hafna útliti (kontrast, snertimörk, síma-layout) | `utlitsserfraedingur` (Miranda), alltaf á eftir Joker |
+| þolir breytingin allt kerfið? | `kerfisrynir` (Hawking) |
+| hægt, hopp, þung köll | `hradi` 💥 |
+| staðan í dag, agentaskráin, hver á hvað | `jarvis` 🎩 |
+| peningar sem bíða | `rukkari` 🦆 · `sala-reikningar` |
+| kúnnar og kennitölur | `kunnaskra` ❄️ · `fyrirtaeki` (M) · `heimaleiga` · `center-hotel` |
+| póstur | `postur` ✉️ |
+| stemma tölurnar? | `natalie` 🌸 |
+
+**Útlitsreglan:** Joker hannar, Miranda dæmir og Brunastál C ræður (CLAUDE.md). Betri síða fer aldrei í loftið nema
+Miranda hafi samþykkt hana og hopp og kontrast séu mæld.
 
 ### Avengers-fundur — svona stýri ég
 
