@@ -305,6 +305,16 @@ async function taekifaeri() {
   return { uttektir: { id: 'T1', utrunnid: t.utrunnid || 0, thessi_manudur: t.thessi_manudur || 0, framundan: t.framundan || 0, engin_dags: t.engin_dags || 0 } };
 }
 
+// ÁKVARÐANIR AGNARS — úr Afgreiðslunni (15.11.2026): það sem hann gerði, sleppti eða sagði „ekki þess virði" síðustu 30 daga.
+// Regla 2 (Agnar: „skiptir um skoðun fram og til baka"): Tony leggur aldrei aftur til það sem hér stendur nema ný staðreynd komi.
+async function akvardanir(nu) {
+  const fra = iso(new Date(nu - 30 * 864e5));
+  const r = await sb(`afgreidsla?select=titill,stada,astaeda,framkvaemt_at,updated_at&stada=in.(framkvaemt,sleppt,ekki_thess_virdi)&updated_at=gte.${fra}&order=updated_at.desc&limit=40`);
+  const ORD = { framkvaemt: 'gert', sleppt: 'sleppt', ekki_thess_virdi: 'ekki þess virði' };
+  return r.map((x, i) => ({ id: `D${i + 1}`, titill: hylja(String(x.titill || '').slice(0, 140)), akvordun: ORD[x.stada] || x.stada,
+    astaeda: x.astaeda ? hylja(String(x.astaeda).slice(0, 160)) : null, dags: String(x.framkvaemt_at || x.updated_at || '').slice(0, 10) }));
+}
+
 // 2 MÁNAÐA PLANIÐ — eins og Tony skrifaði það (mest MAX_PLAN atriði). Ekkert plan = null, ekki villa.
 async function lesaAaetlun() {
   const a = await lesaKv(AAETLUN_LYKILL);
@@ -321,10 +331,11 @@ async function lesaAaetlun() {
 
 async function safna({ nu = new Date() } = {}) {
   const t = new Date(nu);
-  const f = { dags: iso(t).slice(0, 10), vikudagur: VIKUDAGAR[t.getUTCDay()], markmid: null, aaetlun: null, peningar: [], ogreitt: null, kerfi: [], taekifaeri: null,
+  const f = { dags: iso(t).slice(0, 10), vikudagur: VIKUDAGAR[t.getUTCDay()], markmid: null, aaetlun: null, akvardanir: [], peningar: [], ogreitt: null, kerfi: [], taekifaeri: null,
     hopar: {}, forgangsmal: [], greitt_vikan: null, omaelt: [] };
   const reyna = async (hluti, fn) => { try { return await fn(); } catch (e) { f.omaelt.push({ hluti, villa: String((e && e.message) || e).slice(0, 200) }); return null; } };
   f.aaetlun = await reyna('Planið', lesaAaetlun);
+  f.akvardanir = (await reyna('Ákvarðanir', () => akvardanir(t))) || [];
   [f.markmid, f.peningar, f.ogreitt, f.kerfi, f.taekifaeri] = await Promise.all([
     reyna('Tekjur', () => tekjur(t, f.aaetlun)),
     reyna('Peningar (combo-yfirlit)', peningar).then((x) => x || []),
@@ -361,8 +372,14 @@ const KERFI = [
   '',
   'REGLUR:',
   '- Notaðu AÐEINS það sem stendur í gögnunum. Engar ágiskanir. Engin tala sem stendur ekki í gögnunum.',
-  '- Hvert atriði vísar í auðkenni úr gögnunum: tekjur/markmið (M), peningalínur (P1 …), ógreitt alls (O), kerfið (K1 …),',
+  '- Hvert atriði vísar í auðkenni úr gögnunum: tekjur/markmið (M), peningalínur (P1 …), ógreitt alls (O), kerfið (K1 …), ákvarðanir (D1 …),',
   '  úttektarplanið (T1), planið (A1 …), póstar (H1, C3 …), reikningar (HR, CR), þekking (HK2, CK1 …), forgangsmál (F1 …), greitt (G).',
+  '- AÐEINS NÝJASTA SKEYTIÐ: leggðu ALDREI til að svara skeyti ef nýrra skeyti er komið í sama þráð (frá hvorum sem er). Berðu saman',
+  '  dagsetningar póstanna; hafi verið svarað eða nýtt skeyti komið, á ráðið við nýjasta skeytið eða fellur niður. (Agnar 15.11.2026.)',
+  '- ÁKVÖRÐUN STENDUR: akvardanir (D1 …) eru það sem Agnar gerði, sleppti eða sagði „ekki þess virði". Leggðu það ALDREI aftur til nema',
+  '  ný staðreynd sé í gögnunum, og nefndu þá staðreyndina. Ekki skipta um skoðun frá degi til dags án nýrra gagna.',
+  '- ÞESS VIRÐI: ekkert ráð um leiðréttingu undir 10.000 kr (vanrukkun, aurar, kredit + nýr reikningur + símtal fyrir smáupphæð) — það er',
+  '  ekki þess virði og er ekki nefnt. Það sem skilar mestu fyrir minnsta fyrirhöfn fer efst.',
   '- merki "OMAELT" eða null þýðir ÓMÆLT — aldrei núll og aldrei „í lagi". Hagnaður er ómældur: segðu það, reiknaðu hann aldrei sjálfur.',
   '- Tekjur Brunahólfs eru bráðabirgðaskilgreining (sjá markmid.skilgreining); nefndu það ef þú byggir ráð á þeim.',
   '- Fréttir: það sem gerðist eða breyttist í póstinum — beiðnir, kvartanir, loforð, frestir, greiðslur, það sem bíður svars frá okkur.',
@@ -449,6 +466,7 @@ function stadfesta(svar, f) {
   for (const m of f.forgangsmal || []) til.add(m.id);
   if (f.markmid) til.add('M');
   if (f.ogreitt) til.add('O');
+  for (const d of f.akvardanir || []) til.add(d.id);
   for (const p of f.peningar || []) til.add(p.id);
   for (const k of f.kerfi || []) til.add(k.id);
   if (f.taekifaeri) til.add(f.taekifaeri.uttektir.id);
