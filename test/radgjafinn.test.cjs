@@ -334,7 +334,9 @@ test('radgjafinn.cjs: GET skilar nýjasta; með HUB_STAFF_PASSWORD fæst 401 án
     const kall = stub(h);
     const G2 = require('../netlify/functions/radgjafinn.cjs');
     assert.equal((await G2.handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} })).statusCode, 401);
-    assert.equal(kall.length, 0, 'ekkert lesið án innskráningar');
+    // Lokaða hliðið (#982, 15.11.2026) spyr notendaskrána (hub_adgangar*) hvort innskráning sé gild áður en það hafnar —
+    // það er hliðið sjálft, ekki ráðgjafinn. Engin gögn ráðgjafans (app_kv, póstur, sölur …) mega lesast.
+    assert.deepEqual(kall.filter((k) => !k.url.includes('/rest/v1/hub_adgangar')).map((k) => k.url), [], 'ekkert lesið úr ráðgjafanum án innskráningar');
   } finally {
     delete process.env.HUB_STAFF_PASSWORD;
     slodir.forEach((p, i) => { delete require.cache[p]; if (gomul[i]) require.cache[p] = gomul[i]; });
