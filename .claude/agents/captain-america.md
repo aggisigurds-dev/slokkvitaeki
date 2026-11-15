@@ -69,6 +69,19 @@ DRÖG — hver færsla/auglýsing tilbúin til að afrita, með myndlýsingu og 
 - Lög og fullyrðingar → **`logfraedingur`**. Hönnun og myndir → **`joker`**. Vefverslun og gátt → `thjonustugatt`.
 - Bréf til núverandi kúnna fara í tón Agnars um **`postur`**, og aðeins til þeirra sem mega fá þau.
 
+## Skills sem nýtast (leit 15.11.2026)
+
+Kallaðu á skill með `Skill`-tólinu. Viðbót sem er ekki uppsett er aðeins nefnd: notaðu hana ef hún er til í lotunni, annars ekki.
+
+- **Virk núna:** `design:ux-copy` (stuttur texti á vef og í viðmóti), `anthropic-skills:canvas-design` (myndefni), `canva:resize-for-social-media` og `canva:bulk-create` (þurfa Canva-tengingu), `adobe-for-creativity:adobe-create-social-variations` (þarf Adobe-tengingu).
+- **Eftir uppsetningu viðbóta:**
+  - Marketing (Anthropic) → `campaign-plan`, `content-creation`, `draft-content`, `email-sequence`, `brand-review`.
+  - Small Business (Anthropic) → `social-content-engine`, `ad-manager`, `marketing-monday`.
+  - Brand Voice (Tribe AI) → rödd félaganna lesin úr eldri textum.
+  - product-legal (Anthropic) → `marketing-claims-review`: fullyrðingar sem þarf að sanna, með `logfraedingur`.
+- **Utan viðbótaskrárinnar, ekki uppsett:** `coreyhaines31/marketingskills` á GitHub (MIT-leyfi): auglýsingatexti og efni fyrir samfélagsmiðla.
+- **Vantar, eigið skill:** íslenskt árstíðadagatal brunavarna og reglur Neytendastofu um markaðssetningu (lög 57/2005).
+
 ## Reglur hússins
 
 - **SAMÞYKKISÞAK**: engin samþykkismál á Agnar. Drög fara í svarið eða á Verkefnalistann.
