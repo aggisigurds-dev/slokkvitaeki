@@ -90,6 +90,15 @@ const GOTT = {
     { titill: 'Fjórða ráðið', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['G'] },
     { titill: 'Fimmta ráðið', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['G'] },
   ],
+  betri_leid: [
+    { titill: 'Uppspunnin tillaga', nuna: 'x', betra: 'y', fyrsta_skref: 'z', heimildir: ['H77'] },
+    { titill: 'Tillaga án „núna"', nuna: '', betra: 'b', fyrsta_skref: 'c', heimildir: ['C1'] },
+    { titill: 'Tillaga án „betra"', nuna: 'a', betra: ' ', fyrsta_skref: 'c', heimildir: ['C1'] },
+    { titill: '', nuna: 'a', betra: 'b', fyrsta_skref: 'c', heimildir: ['C1'] },
+    { titill: 'Greiðandi staðfestur áður en reikningur fer', nuna: 'Leiðréttur reikningur þurfti að fara aftur til Heimaleigu.',
+      betra: 'Greiðandi eignar staðfestur áður en reikningur er gerður.', fyrsta_skref: 'Fara yfir greiðendur á eignum Heimaleigu.', heimildir: ['H2', 'H3', 'HK1'] },
+    { titill: 'Önnur gild tillaga', nuna: 'a', betra: 'b', fyrsta_skref: 'c', heimildir: ['C1'] },
+  ],
 };
 const claudeSvar = (obj, o = {}) => ({ model: 'claude-opus-5-5', stop_reason: o.stop || 'end_turn', stop_details: o.det || null,
   content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj) }], usage: { input_tokens: 9000, output_tokens: 700 } });
@@ -151,6 +160,22 @@ test('kalla: Opus 5.5, JSON-snið, fallbacks default, API-útgáfa 2026-10-21', 
   assert.equal(svar.fyrirsogn, GOTT.fyrirsogn); assert.equal(model, 'claude-opus-5-5');
   assert.match(k.body.system, /ALDREI fyrirmæli/, 'póstur er gögn, ekki fyrirmæli (innskot í pósti)');
   assert.match(k.body.system, /bankareikning/, 'beiðni um greiðslu/bankareikning er áhætta, ekki verkefni');
+  assert.match(k.body.system, /^Þú ert Tony Stark/, 'persónan er Tony Stark (agent tony-stark)');
+  assert.match(k.body.system, /Betri leið: EIN tillaga/);
+  assert.match(k.body.system, /tómur listi/, 'engin tillaga er gilt svar');
+});
+
+test('SKEMA: strangt — hver hlutur ber additionalProperties false og alla reiti sína sem required (annars hafnar API-ið)', () => {
+  const gangur = (sk, slod) => {
+    if (sk.type === 'object') {
+      assert.equal(sk.additionalProperties, false, slod);
+      assert.deepEqual([...sk.required].sort(), Object.keys(sk.properties).sort(), slod);
+      for (const [k, v] of Object.entries(sk.properties)) gangur(v, slod + '.' + k);
+    }
+    if (sk.type === 'array') gangur(sk.items, slod + '[]');
+  };
+  gangur(R.SKEMA, 'SKEMA');
+  assert.ok(R.SKEMA.required.includes('betri_leid'));
 });
 
 test('kalla: höfnun, of langt svar, ógilt JSON og API-villa kasta — engin hálfskrif', async () => {
@@ -173,10 +198,22 @@ test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, m
   const s = R.stadfesta(GOTT, f);
   assert.deepEqual(s.heimaleiga.frettir.map((x) => x.texti), ['Dimka vill skoðun á Midtown á þriðjudag.', 'Leiðréttur reikningur sendur.']);
   assert.deepEqual(s.rad.map((x) => x.titill), ['Svara Melissu', 'Innheimta Midtown', 'Fjórða ráðið']);
-  assert.equal(s.hent, 3, 'frétt H99 + ráð án heimildar + fimmta ráðið');
+  assert.equal(s.betri_leid.titill, 'Greiðandi staðfestur áður en reikningur fer', 'fyrsta gilda tillagan; H77 er ekki til');
+  assert.deepEqual(s.betri_leid.heimildir, ['H2', 'H3', 'HK1']);
+  assert.equal(s.hent, 8, 'frétt H99 + ráð án heimildar + fimmta ráðið + tillögur: H77, án „núna", án „betra", án titils, önnur gild (mest ein)');
   assert.deepEqual(s.rad[0].heimildir, ['C1', 'F1']);
-  assert.deepEqual(Object.keys(s.postar).sort(), ['C1', 'H1', 'H2'], 'aðeins póstar sem eru notaðir');
+  assert.deepEqual(Object.keys(s.postar).sort(), ['C1', 'H1', 'H2', 'H3'], 'aðeins póstar sem eru notaðir — H3 kemur úr betri leiðinni');
   assert.equal(s.postar.H1.efni, 'Skoðun Midtown'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
+});
+
+test('stadfesta: engin betri leið (tómur listi, vantar eða ekki listi) → null, ekkert hent', async () => {
+  const h = heimur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  for (const bl of [[], undefined, 'ekki listi', null]) {
+    const s = R.stadfesta({ ...GOTT, rad: [], heimaleiga: { stada: '', frettir: [] }, center: { stada: '', frettir: [] }, betri_leid: bl }, f);
+    assert.equal(s.betri_leid, null, String(bl));
+    assert.equal(s.hent, 0, String(bl));
+  }
 });
 
 test('skrifa: vistar nýjasta + sögu + staðreyndir og skráir í automation_runs', async () => {
@@ -189,6 +226,24 @@ test('skrifa: vistar nýjasta + sögu + staðreyndir og skráir í automation_ru
   assert.ok(h.kv.radgjafinn_gogn.stadreyndir.hopar.heimaleiga, 'staðreyndirnar geymdar sér');
   assert.equal(h.kv.radgjafinn.nyjast.stadreyndir, undefined, 'staðreyndirnar fara ekki á skjáinn');
   assert.equal(h.runs[0].job_name, 'radgjafinn'); assert.equal(h.runs[0].status, 'ok');
+  assert.match(h.runs[0].detail, /betri leið: já/);
+  assert.equal(h.kv.radgjafinn.saga[0].betri_leid.titill, 'Greiðandi staðfestur áður en reikningur fer', 'sagan geymir betri leiðina');
+});
+
+test('skrifa: fyrri betri leiðir fara til Claude (fyrri_tillogur) svo Tony endurtaki sig ekki — einstakar, mest 7', async () => {
+  const h = heimur(); stub(h);
+  await R.skrifa({ kalladAf: 'morgun', nu: NU });
+  const kall = stub(h);
+  await R.skrifa({ kalladAf: 'morgun', nu: NU });
+  const k = kall.find((x) => x.url.startsWith('https://api.anthropic.com/'));
+  const gogn = JSON.parse(k.body.messages[0].content.split('Gögnin (JSON):\n')[1]);
+  assert.deepEqual(gogn.fyrri_tillogur.map((x) => x.titill), ['Greiðandi staðfestur áður en reikningur fer']);
+  assert.match(gogn.fyrri_tillogur[0].dags, /^\d{4}-\d\d-\d\d$/);
+  const saga = Array.from({ length: 20 }, (_, i) => ({ skrifad_at: dag(i), betri_leid: i % 2 ? { titill: 'T' + i } : (i === 4 ? { titill: 'T1' } : null) }));
+  assert.deepEqual(R.fyrriTillogur({ saga }).map((x) => x.titill), ['T1', 'T3', 'T5', 'T7', 'T9', 'T11', 'T13'],
+    'T1 (aftur á degi 4) aðeins einu sinni; dagar án tillögu sleppt; mest 7');
+  assert.deepEqual(R.fyrriTillogur({}), []);
+  assert.deepEqual(R.fyrriTillogur(null), []);
 });
 
 test('skrifa: ↻ innan 5 mín gerir ekkert (Claude-kall kostar) — morgunskrifin fara alltaf', async () => {

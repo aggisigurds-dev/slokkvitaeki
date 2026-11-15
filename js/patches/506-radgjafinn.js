@@ -5,11 +5,13 @@
  * updates og síðan frá besta rekstrarráðgjafa heims ráðleggingar hvað ég ætti að einbeita mér að fyrir daginn" og
  * „updatin eru úr tölvupóstunum milli Heimaleigu og síðan Center Hotel".
  *
- * HVAÐ ÞETTA ER: einn stór gluggi beint undir Vinnusamantekt (489), aðeins hjá Agnari:
+ * HVAÐ ÞETTA ER: einn stór gluggi beint undir Vinnusamantekt (489), aðeins hjá Agnari, í rödd Tony Stark
+ * (.claude/agents/tony-stark.md — Agnar 15.11.2026: „nýjan agent fyrir the master top ráðgjafann. Tony Stark"):
  *   · fyrirsögn dagsins — það mikilvægasta í einni setningu;
  *   · Í dag — einbeittu þér að: 1–3 ráð (hvað, af hverju, fyrsta skref);
- *   · Úr póstinum: Heimaleiga og Center Hotels — staða + mest 4 fréttir hvor.
- * Hvert atriði sýnir heimildina sína (póstur, dagsetning, efni) — ráð án heimildar er hent á þjóninum.
+ *   · Úr póstinum: Heimaleiga og Center Hotels — staða + mest 4 fréttir hvor;
+ *   · Betri leið: ein tillaga um betra vinnulag, síðu eða virkni (núna → betra, fyrsta skref) — eða engin.
+ * Hvert atriði sýnir heimildina sína (póstur, dagsetning, efni) — atriði án heimildar er hent á þjóninum.
  *
  * HVAÐAN: Claude skrifar þetta kl. 06:45 á hverjum morgni úr póstinum, reikningsstöðu, Charlize og forgangsmálum
  * (netlify/functions/_radgjafinn.cjs). Glugginn LES aðeins — /api/radgjafinn — og ↻ biður um ný skrif
@@ -89,6 +91,8 @@
     '.rg-hop+.rg-hop{margin-top:12px;padding-top:10px;border-top:1px solid var(--rule2)}.rg-hop h4{margin:0 0 3px;font-size:13px;font-weight:700;color:var(--ink)}.rg-hop h4 span{font-weight:400;color:var(--mute);font-size:12px}' +
     '.rg-stada{margin:0 0 5px;font-size:12.5px;color:var(--ink2);font-style:italic}.rg-fr{margin:0;padding:0 0 0 16px;font-size:13px;color:var(--ink);line-height:1.45}.rg-fr li{margin:3px 0}' +
     '.rg-hm{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.rg-hm span{font-size:10.5px;line-height:1.6;padding:0 6px;border:1px solid var(--rule2);border-radius:3px;color:var(--mute);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}' +
+    '.rg-betri{padding:12px 16px 14px;border-top:1px solid var(--rule2)}.rg-betri>h3{margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
+    '.rg-betri .rg-a{margin-top:3px}.rg-betri .rg-a b{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-right:6px}' +
     '.rg-ft{padding:8px 16px 11px;border-top:1px solid var(--rule2);font-size:11.5px;color:var(--mute)}.rg-ft .err{color:#b3220f}.rg-tomt{padding:16px;color:var(--mute);font-size:13px;min-height:220px}' +
     '.rg-bid{min-height:300px}' +
     '@media (max-width:760px){.rg-h .btn{min-height:44px;min-width:44px}.rg-grid{grid-template-columns:minmax(0,1fr)}.rg-dalkur+.rg-dalkur{border-left:0;border-top:1px solid var(--rule2)}.rg-fyrir{font-size:18px}}' +
@@ -123,33 +127,38 @@
     const g = S.gogn, n = g && g.nyjast;
     const nyskrifad = n && (Date.now() - Date.parse(n.skrifad_at)) < BID_MIN * 60000;
     const stada = S.skrifar ? 'skrifar… (1–2 mín.)' : n ? dagsTxt(n.skrifad_at) + ' · skrifað kl. ' + klst(n.skrifad_at) : S.loading ? 'sæki…' : '';
-    const haus = '<header class="rg-h"><h2>Ráðgjafinn</h2><span class="rg-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
+    const haus = '<header class="rg-h"><h2>Tony Stark · Ráðgjafinn</h2><span class="rg-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
       '<button type="button" class="btn iv sm" data-t5="rg-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
-        ' title="' + (nyskrifad ? 'Nýskrifað — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta ráðgjafann skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
+        ' title="' + (nyskrifad ? 'Nýskrifað — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta Tony skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="rg-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' ráðgjafann">' + (S.fellt ? '▾' : '▴') + '</button></header>';
-    if (S.fellt) return CSS + '<section class="panel rg" aria-label="Ráðgjafinn">' + haus + '</section>';
+    if (S.fellt) return CSS + '<section class="panel rg" aria-label="Ráðgjafinn Tony Stark">' + haus + '</section>';
 
     if (!n) {
       const txt = S.villa ? 'Náði ekki í ráðgjafann: ' + S.villa
         : S.loading || !S.at ? 'Sæki ráðgjafann…'
-        : 'Ráðgjafinn hefur ekki skrifað enn. Fyrsta yfirlitið kemur kl. 06:45 — eða ýttu á ↻ Skrifa aftur.';
-      return CSS + '<section class="panel rg rg-bid" aria-label="Ráðgjafinn">' + haus + '<p class="rg-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
+        : 'Tony hefur ekki skrifað enn. Fyrsta yfirlitið kemur kl. 06:45 — eða ýttu á ↻ Skrifa aftur.';
+      return CSS + '<section class="panel rg rg-bid" aria-label="Ráðgjafinn Tony Stark">' + haus + '<p class="rg-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
     }
 
     const rad = (n.rad || []).map((r) => '<li><div class="rg-t">' + esc(r.titill) + '</div><div class="rg-a">' + esc(r.af_hverju) + '</div>' +
       (r.fyrsta_skref ? '<div class="rg-s"><b>Fyrsta skref</b>' + esc(r.fyrsta_skref) + '</div>' : '') + heimildir(r.heimildir, n) + '</li>').join('');
+    const b = n.betri_leid;
+    const betri = b ? '<section class="rg-betri" aria-label="Betri leið"><h3>Betri leið</h3><div class="rg-t">' + esc(b.titill) + '</div>' +
+      (b.nuna ? '<div class="rg-a"><b>Núna</b>' + esc(b.nuna) + '</div>' : '') +
+      (b.betra ? '<div class="rg-a"><b>Betra</b>' + esc(b.betra) + '</div>' : '') +
+      (b.fyrsta_skref ? '<div class="rg-s"><b>Fyrsta skref</b>' + esc(b.fyrsta_skref) + '</div>' : '') + heimildir(b.heimildir, n) + '</section>' : '';
     const fjoldi = n.fjoldi || {};
-    const ft = '<div class="rg-ft">Skrifað af Claude úr póstinum við Heimaleigu og Center Hotels, stöðu reikninga og forgangsmálum' +
-      (n.kallad_af === 'agnar' ? ' · skrifað aftur að beiðni' : '') + '. Ráð — þú ákveður.' +
+    const ft = '<div class="rg-ft">Skrifað af Claude í rödd Tony Stark úr póstinum við Heimaleigu og Center Hotels, stöðu reikninga og forgangsmálum' +
+      (n.kallad_af === 'agnar' ? ' · skrifað aftur að beiðni' : '') + '. Ráð og tillögur — þú ákveður.' +
       ((n.omaelt && n.omaelt.length) ? '<br><span class="err">Ekki mælt: ' + esc(n.omaelt.map((o) => o.hluti).join(', ')) + '</span>' : '') +
       '</div>' + villuLina(g);
-    return CSS + '<section class="panel rg" aria-label="Ráðgjafinn">' + haus +
+    return CSS + '<section class="panel rg" aria-label="Ráðgjafinn Tony Stark">' + haus +
       (n.fyrirsogn ? '<p class="rg-fyrir">' + esc(n.fyrirsogn) + '</p>' : '') +
       '<div class="rg-grid">' +
         '<section class="rg-dalkur" aria-label="Í dag"><h3>Í dag — einbeittu þér að</h3>' + (rad ? '<ol class="rg-rad">' + rad + '</ol>' : '<p class="rg-mute">Engin ráð í dag.</p>') + '</section>' +
         '<section class="rg-dalkur" aria-label="Úr póstinum"><h3>Úr póstinum</h3>' +
           hopurHtml('Heimaleiga', n.heimaleiga, fjoldi.heimaleiga, n) + hopurHtml('Center Hotels', n.center, fjoldi.center, n) + '</section>' +
-      '</div>' + ft + '</section>';
+      '</div>' + betri + ft + '</section>';
   }
 
   function villuLina(g) {
@@ -166,5 +175,5 @@
     return false;
   }
 
-  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15' };
+  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15b' };
 })();
