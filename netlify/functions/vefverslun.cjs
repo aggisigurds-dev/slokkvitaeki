@@ -77,16 +77,27 @@ async function lesaVorur(efni) {
   }));
 }
 
+// ?mynd=<id> afhendir mynd vöru af léni appsins. Aðeins venjulegar myndategundir fara út: SVG og aðrar tegundir sem geta
+// borið skriftu eru aldrei afhentar héðan (404), og hausinn CSP með sandbox heldur skriftu frá því að keyra þótt slóðin sé
+// opnuð beint. Tilvísun (vefslóð í `vorur.mynd`) fer aðeins í opnu myndageymslu verkefnisins, aldrei á önnur lén.
+const MYND_TEGUNDIR = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const MYND_GEYMSLA = /^https:\/\/osfdzskyvisifcwyjkuk\.supabase\.co\/storage\/v1\/object\/public\/[A-Za-z0-9][A-Za-z0-9._~\/-]{0,300}$/;
+const MYND_HAUSAR = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox", 'Referrer-Policy': 'no-referrer' };
+const engin = () => ({ statusCode: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', ...MYND_HAUSAR }, body: 'engin mynd' });
 async function sendaMynd(id) {
   const r = await P.sbGet(`vorur?id=eq.${id}&select=mynd,image_url&limit=1`);
   const v = r.ok ? (await r.json())[0] : null;
   const m = v && String(v.mynd || '');
-  if (m && /^https?:\/\//i.test(m)) return { statusCode: 302, headers: { Location: m, 'Cache-Control': 'public, max-age=3600' }, body: '' };
-  const d = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i.exec(m || '');
-  if (!d) return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, body: 'engin mynd' };
+  if (m && /^https?:\/\//i.test(m)) {
+    if (!MYND_GEYMSLA.test(m) || m.includes('..')) return engin();
+    return { statusCode: 302, headers: { Location: m, 'Cache-Control': 'public, max-age=3600', ...MYND_HAUSAR }, body: '' };
+  }
+  const d = /^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+\/=\s]+)$/i.exec(m || '');
+  const tegund = d && d[1].toLowerCase().replace('image/jpg', 'image/jpeg');
+  if (!d || !MYND_TEGUNDIR.includes(tegund)) return engin();
   return {
     statusCode: 200,
-    headers: { 'Content-Type': d[1], 'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800', 'X-Content-Type-Options': 'nosniff' },
+    headers: { 'Content-Type': tegund, 'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800', ...MYND_HAUSAR },
     body: d[2].replace(/\s+/g, ''),
     isBase64Encoded: true,
   };
