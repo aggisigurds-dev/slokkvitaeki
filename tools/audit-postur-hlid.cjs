@@ -75,7 +75,14 @@ else {
   if (!/BH_ORIGIN\s*=\s*'https:\/\/brunaholf\.netlify\.app'/.test(s254)) villur.push('254 brú: BH_ORIGIN er ekki brunaholf.netlify.app');
 }
 
-// 5. þjónn sem kallar á gmail-send
+// 5. þjónn sem kallar á gmail-send — HVERT fall sem nefnir slóðina verður að senda tókann (hub-adgangar, afgreidsla,
+//    postur-senda …); annars svarar gmail-send 401 og pósturinn fer hljóðlaust ekki.
+const FDIR = path.join(ROT, 'netlify', 'functions');
+for (const f of fs.readdirSync(FDIR).filter((n) => /\.(c?js|mjs)$/.test(n))) {
+  const t = anAths(fs.readFileSync(path.join(FDIR, f), 'utf8'));
+  if (!/\/api\/gmail-send/.test(t)) continue;
+  if (!/x-postur-toki/.test(t) || !/posturToki\(\)/.test(t)) villur.push(`${f}: kallar á gmail-send án tíma-tókans (x-postur-toki + posturToki()) — svarar 401`);
+}
 const hub = anAths(les('netlify/functions/hub-adgangar.cjs'));
 const kall = (/fetch\(MAIL_ORIGIN \+ '\/api\/gmail-send'[\s\S]{0,200}/.exec(hub) || [''])[0];
 if (!kall) vidvaranir.push('hub-adgangar.cjs: fann ekki gmail-send kallið — uppfærðu vörðinn');
@@ -110,6 +117,8 @@ if (fs.existsSync(sib)) {
     const ev = (m) => ({ httpMethod: m, headers: { host: 'slokkvitaeki.netlify.app', cookie: 'hub_user=x' }, body: '{"to":["a@b.is"]}', queryStringParameters: {} });
     let r = await PS.handler(ev('POST'));
     if (r.statusCode !== 401 || kallad.length) villur.push(`postur-senda (hegðun): óinnskráður fékk ${r.statusCode} og ${kallad.length} köll fóru áfram — á að vera 401 og 0`);
+    r = await PS.handler(ev('GET'));
+    if (r.statusCode !== 401 || kallad.length) villur.push(`postur-senda (hegðun): óinnskráður GET fékk ${r.statusCode} og ${kallad.length} köll fóru áfram — á að vera 401 og 0`);
     innskradur = true;
     r = await PS.handler(ev('POST'));
     const k = kallad[0] || { opt: {} };
