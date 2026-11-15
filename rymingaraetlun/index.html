@@ -469,7 +469,8 @@ async function addFiles(files,target){if(!files.length)return;const items=[];
   render();touch()}
 
 /* ---------- senda í tölvupósti (sama leið og reikningar/skýrslur: Gmail /api/gmail-send hjá brunahólfi, SV-28) ---------- */
-const GMAIL_SEND_API='https://brunaholf.netlify.app/api/gmail-send';
+/* 15.11.2026: gmail-send krefst innskráningar — farið um /api/postur-senda á sama vef (innskráning appsins + tími-tóki). */
+const GMAIL_SEND_API='/api/postur-senda';
 const SENDENDUR=['eldklar@eldklar.is','bokhald@eldklar.is'];
 function pdfHtml(){
   const p=P,m=p.meta,yr=yearOf(m.dags);

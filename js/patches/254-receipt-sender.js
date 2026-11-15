@@ -42,7 +42,10 @@
 
   // Sent gegnum GMAIL (brunahólf `gmail-send.js`), ekki Resend — sjá hausinn.
   // Sendandi verður að vera pósthólf sem er OAuth-tengt með gmail.send heimild.
-  const GMAIL_SEND_API = 'https://brunaholf.netlify.app/api/gmail-send';
+  // 15.11.2026 (Agnar: „aðeins innskráðir geti sent"): gmail-send svaraði öllum án innskráningar og krefst nú
+  // innskráningar eða tíma-tóka. Vafrinn hér á ekki Brunahólfs-kökuna, svo hann kallar á /api/postur-senda á SAMA
+  // vef: það krefst innskráningar appsins og áframsendir beiðnina óbreytta með tókanum. Svarið kemur óbreytt til baka.
+  const GMAIL_SEND_API = '/api/postur-senda';
   // „Nafn <netfang>" → „netfang" (Gmail þarf að vita hvaða pósthólf sendir).
   function addrOf(s) { const m = String(s || '').match(/<([^>]+)>/); return (m ? m[1] : String(s || '')).trim(); }
   // AÐEINS VIRK PÓSTHÓLF. `reikningar@eldklar.is` var gamla sjálfgefna gildið en
@@ -384,6 +387,31 @@
     return { ok: ok, status: r.status, json: async () => j };
   }
   window.AppMail = { send: appSend };
+
+  // ── Brú fyrir innfelldar Brunahólfs-síður (15.11.2026) ────────────────────
+  // Appið fellir Brunahólfs-flipa inn í iframe (261-app-profiles.js, ?embed=1). Þar fær gmail-send ekki
+  // Brunahólfs-kökuna (SameSite=Lax milli vefja) og svarar 401, svo síðan (brunaholf js/postur-bru.js) biður
+  // appið að senda: { type:'postur-senda', id, payload }. Appið sendir payload ÓBREYTT á /api/postur-senda
+  // (innskráning appsins krafin) og skilar { type:'postur-senda-svar', id, status, json }.
+  // Aðeins tekið við frá brunaholf.netlify.app OG frá iframe í þessu skjali — engin önnur síða getur notað brúna.
+  const BH_ORIGIN = 'https://brunaholf.netlify.app';
+  window.addEventListener('message', async (e) => {
+    if (e.origin !== BH_ORIGIN) return;
+    const d = e.data || {};
+    if (d.type !== 'postur-senda' || typeof d.id !== 'string' || !d.payload || typeof d.payload !== 'object') return;
+    const fraIframe = Array.prototype.some.call(document.querySelectorAll('iframe'), (f) => f.contentWindow === e.source);
+    if (!fraIframe) return;
+    let status = 0, j = {};
+    try {
+      const r = await fetch(GMAIL_SEND_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d.payload) });
+      status = r.status;
+      j = await r.json().catch(() => ({}));
+    } catch (err) { j = { error: 'NETWORK', message: String((err && err.message) || err) }; }
+    if ((!status || status >= 400 || j.error) && d.payload.prufa !== true) {
+      try { if (window.logProblem) window.logProblem('send_failed', 'postur-bru HTTP ' + status + ' — ' + (j.error || j.message || 'óþekkt'), { fingerprint: 'send_failed' }); } catch (_) {}
+    }
+    try { e.source.postMessage({ type: 'postur-senda-svar', id: d.id, status: status, json: j }, BH_ORIGIN); } catch (_) {}
+  });
 
   // Teiknar reikning sölu sem base64-PDF viðhengi — fyrir attachmentChoices
   // (t.d. Kröfu yfirlit „📧 Senda"). Skilar null ef ekki hægt.
