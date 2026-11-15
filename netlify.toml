@@ -263,9 +263,10 @@
 [functions."trio-cron"]
   schedule = "0 6 * * *"
 
-# Ráðgjafinn (15.11.2026) — morgunyfirlit á Þjónustuborði Agnars: fréttir úr póstinum við Heimaleigu og Center Hotels
-# og þrjú ráð dagsins, skrifuð af Claude úr gögnunum. Tilbúið áður en Agnar mætir. Sjá netlify/functions/_radgjafinn.cjs.
-[functions."radgjafinn-morgun-background"]
+# Ráðgjafinn (15.11.2026) — morgunyfirlit á Þjónustuborði Agnars í rödd Tony Stark: fréttir úr póstinum við Heimaleigu og
+# Center Hotels, ráð dagsins og ein betri leið, skrifuð af Claude úr gögnunum. Tilbúið áður en Agnar mætir.
+# Áætlað fall hefur 30 sek. þak, svo radgjafinn-morgun RÆSIR radgjafinn-background (15 mín.). Sjá _radgjafinn.cjs.
+[functions."radgjafinn-morgun"]
   schedule = "45 6 * * *"
 
 # Framlínan (10.11.2026) — ÁÆTLUN TEKIN AF 11.11.2026 (Agnar: „mér vantar verkfæri ekki plaggat" — síðan sýnir póst en þar er

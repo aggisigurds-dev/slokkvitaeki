@@ -1,6 +1,6 @@
 // Próf: Ráðgjafinn (netlify/functions/_radgjafinn.cjs) — söfnun úr pósti/reikningum, kallið á Claude, vörðurinn sem hendir
 // atriðum án heimildar, skrifin/minnið og starfsmanna-hliðið. Stub-fetch fyrir Supabase og Claude — ekkert lifandi snert.
-// Keyrsla: node --test test/
+// Keyrsla: node --test test/radgjafinn.test.cjs
 'use strict';
 process.env.SUPABASE_URL = 'http://stub.invalid';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'stub';
@@ -54,7 +54,9 @@ function stub(h, opt = {}) {
     const body = o.body ? JSON.parse(o.body) : null;
     kall.push({ url, method, body, headers: o.headers || {} });
     if (url.startsWith('https://api.anthropic.com/')) return opt.claude ? opt.claude(body, o.headers) : svar(claudeSvar(GOTT));
+    if (url.includes('/.netlify/functions/')) return opt.fall ? opt.fall(url, o) : svar(null, 202);
     const u = new URL(url), tafla = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
+    if (opt.kasta && opt.kasta(tafla, method)) throw new Error('stub-netvilla');
     if (opt.bila && opt.bila(tafla, method)) return svar({ message: 'stub-bilun' }, 500);
     if (tafla === 'app_kv' && method === 'POST') { h.kv[body.key] = body.value; return svar(null); }
     if (tafla === 'app_kv') { const k = q.get('key').replace('eq.', ''); return svar(h.kv[k] ? [{ value: h.kv[k] }] : []); }
@@ -70,6 +72,8 @@ function stub(h, opt = {}) {
     if (tafla === 'invoices') return svar(h.greitt_bh);
     if (tafla === 'v_charlize_active') return svar(q.get('fact').includes('heimaleig') ? h.charlize : []);
     if (tafla === 'thjonustubeidni') return svar(h.forgangsmal);
+    if (tafla === 'hub_adgangar_stilling') return svar(h.hub && h.hub.stilling ? [h.hub.stilling] : []);
+    if (tafla === 'hub_adgangar') { const id = Number(String(q.get('id') || '').replace('eq.', '')); return svar(h.hub && h.hub.user && h.hub.user.id === id ? [h.hub.user] : []); }
     throw new Error('óþekkt slóð ' + tafla);
   };
   return kall;
@@ -285,7 +289,8 @@ test('radgjafinn.cjs: GET skilar nýjasta; með HUB_STAFF_PASSWORD fæst 401 án
   assert.equal(r.statusCode, 200);
   assert.equal(JSON.parse(r.body).nyjast.fyrirsogn, GOTT.fyrirsogn);
   assert.equal((await G.handler({ httpMethod: 'POST', headers: {} })).statusCode, 405);
-  const slodir = ['../netlify/functions/radgjafinn.cjs', '../netlify/functions/_portal.cjs'].map((p) => require.resolve(p));
+  const slodir = ['../netlify/functions/radgjafinn.cjs', '../netlify/functions/_portal.cjs', '../netlify/functions/_radgjafinn-hlid.cjs',
+    '../netlify/functions/hub-adgangar.cjs'].map((p) => require.resolve(p));
   const gomul = slodir.map((p) => require.cache[p]);
   slodir.forEach((p) => delete require.cache[p]);
   process.env.HUB_STAFF_PASSWORD = 'prof-lykilord';
@@ -298,4 +303,92 @@ test('radgjafinn.cjs: GET skilar nýjasta; með HUB_STAFF_PASSWORD fæst 401 án
     delete process.env.HUB_STAFF_PASSWORD;
     slodir.forEach((p, i) => { delete require.cache[p]; if (gomul[i]) require.cache[p] = gomul[i]; });
   }
+});
+
+// ── Hliðið (_radgjafinn-hlid.cjs): fallið er jafn lokað og appið ─────────────────────────────────────────────────────
+const crypto = require('crypto');
+const H = require('../netlify/functions/_radgjafinn-hlid.cjs');
+const b64 = (buf) => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+// Sama undirritun og signSession í hub-adgangar.cjs — prófið fer gegnum raunverulegan kóða hliðsins.
+function hubToki(leynd, uid, v, gildirSek = 3600) {
+  const nu = Math.floor(Date.now() / 1000);
+  const payload = b64(JSON.stringify({ uid, nn: 'AG', v, iat: nu, exp: nu + gildirSek }));
+  return payload + '.' + b64(crypto.createHmac('sha256', leynd).update(payload).digest());
+}
+const HUB = (krefjast) => ({ stilling: { id: 1, pw_hash: 'stub-hash', session_secret: 'stub-leynd', pw_changed_at: '2026-11-01', krefjast_slokk: krefjast, krefjast: false },
+  user: { id: 7, virkur: true, notandanafn: 'AG', nafn: 'Agnar', rola: 'Admin' } });
+const kokur = (t) => ({ cookie: 'annad=1; hub_user=' + encodeURIComponent(t) });
+const G = () => require('../netlify/functions/radgjafinn.cjs');
+const B = () => require('../netlify/functions/radgjafinn-background.cjs');
+const M = () => require('../netlify/functions/radgjafinn-morgun.cjs');
+
+test('hlið: kveikt innskráning → 401 án innskráningar, 401 með fölsuðum eða útrunnum tóka, 200 með gildri', async () => {
+  const h = heimur(); h.hub = HUB(true); stub(h);
+  await R.skrifa({ kalladAf: 'morgun', nu: NU });
+  const sv = (headers) => G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers });
+  const an = await sv({});
+  assert.equal(an.statusCode, 401); assert.equal(JSON.parse(an.body).need_login, true);
+  assert.ok(!an.body.includes(GOTT.fyrirsogn), 'ekkert efni lekur í 401');
+  assert.equal((await sv(kokur(hubToki('röng-leynd', 7, '2026-11-01')))).statusCode, 401, 'undirritað með rangri leynd');
+  assert.equal((await sv(kokur(hubToki('stub-leynd', 7, '2026-10-01')))).statusCode, 401, 'lykilorði skipt síðan → ógilt');
+  assert.equal((await sv(kokur(hubToki('stub-leynd', 7, '2026-11-01', -5)))).statusCode, 401, 'útrunninn');
+  assert.equal((await sv(kokur(hubToki('stub-leynd', 99, '2026-11-01')))).statusCode, 401, 'notandi ekki til');
+  const ok = await sv(kokur(hubToki('stub-leynd', 7, '2026-11-01')));
+  assert.equal(ok.statusCode, 200); assert.equal(JSON.parse(ok.body).nyjast.fyrirsogn, GOTT.fyrirsogn);
+});
+
+test('hlið: slökkt innskráning → opið eins og appið; hliðið svarar ekki → 503 (lokað, ekki opið)', async () => {
+  const h = heimur(); h.hub = HUB(false); stub(h);
+  assert.equal((await G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} })).statusCode, 200);
+  h.hub = HUB(true); stub(h, { kasta: (t) => t === 'hub_adgangar_stilling' });
+  const r = await G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} });
+  assert.equal(r.statusCode, 503);
+});
+
+test('morguntóki: gildir í 10 mín., aðeins óbreyttur og aðeins með þjónustulyklinum', () => {
+  const t0 = Date.parse('2026-11-16T06:45:10Z');
+  const ev = (t) => ({ headers: { [H.MORGUN_HAUS]: t } });
+  const t = H.morgunToki(t0);
+  assert.ok(H.erMorgunKall(ev(t), t0));
+  assert.ok(H.erMorgunKall(ev(t), t0 + 9 * 60000), '9 mín. síðar');
+  assert.ok(!H.erMorgunKall(ev(t), t0 + 11 * 60000), '11 mín. síðar');
+  assert.ok(!H.erMorgunKall(ev(H.morgunToki(t0 + 5 * 60000)), t0), 'úr framtíð');
+  const [m, sig] = t.split('.');
+  assert.ok(!H.erMorgunKall(ev(m + '.' + (sig[0] === 'a' ? 'b' : 'a') + sig.slice(1)), t0), 'breytt undirritun');
+  assert.ok(!H.erMorgunKall(ev((Number(m) + 1) + '.' + sig), t0), 'önnur mínúta, sama undirritun');
+  assert.ok(!H.erMorgunKall(ev(''), t0)); assert.ok(!H.erMorgunKall({}, t0)); assert.ok(!H.erMorgunKall(ev('x.y'), t0));
+  const lykill = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Án lykils gæti hver sem er reiknað HMAC með tómum lykli — tóki sem er „rétt" undirritaður með '' má samt aldrei gilda.
+  try { process.env.SUPABASE_SERVICE_ROLE_KEY = ''; assert.ok(!H.erMorgunKall(ev(H.morgunToki(t0)), t0), 'enginn lykill → aldrei'); }
+  finally { process.env.SUPABASE_SERVICE_ROLE_KEY = lykill; }
+});
+
+test('background: ↻ án innskráningar skrifar ekkert; ↻ innskráður skrifar sem agnar; morgunkall skrifar sem morgun (aldrei prufa)', async () => {
+  const h = heimur(); h.hub = HUB(true); let kall = stub(h);
+  await B().handler({ httpMethod: 'POST', queryStringParameters: {}, headers: {} });
+  assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 0, 'ekkert Claude-kall án innskráningar');
+  assert.equal(h.kv.radgjafinn, undefined);
+  await B().handler({ httpMethod: 'POST', queryStringParameters: {}, headers: kokur(hubToki('stub-leynd', 7, '2026-11-01')) });
+  assert.equal(h.kv.radgjafinn.nyjast.kallad_af, 'agnar');
+  kall = stub(h);
+  await B().handler({ httpMethod: 'POST', queryStringParameters: { prufa: '1' }, headers: { [H.MORGUN_HAUS]: H.morgunToki() } });
+  assert.equal(h.kv.radgjafinn.nyjast.kallad_af, 'morgun', 'morgunkallið fer fram hjá 5 mín. biðinni og hliðinu');
+  assert.equal(h.kv.radgjafinn_prufa, undefined, 'morgunkallið skrifar aldrei prufu');
+});
+
+test('radgjafinn-morgun: ræsir background með gildum tóka; bilun skráist í automation_runs og skilar 500', async () => {
+  const h = heimur(); let sent = null;
+  stub(h, { fall: (url, o) => { sent = { url, o }; return { ok: true, status: 202, json: async () => null, text: async () => '' }; } });
+  const r = await M().handler({});
+  assert.equal(r.statusCode, 200);
+  assert.equal(sent.url, 'https://slokkvitaeki.netlify.app/.netlify/functions/radgjafinn-background');
+  assert.equal(sent.o.method, 'POST');
+  assert.ok(H.erMorgunKall({ headers: sent.o.headers }), 'tókinn sem fór stenst hliðið');
+  stub(h, { fall: () => ({ ok: false, status: 500, json: async () => null, text: async () => '' }) });
+  const r2 = await M().handler({});
+  assert.equal(r2.statusCode, 500);
+  assert.equal(h.runs.at(-1).status, 'error'); assert.match(h.runs.at(-1).detail, /fóru ekki af stað.*500/);
+  stub(h, { fall: () => { throw new Error('stub-netvilla'); } });
+  assert.equal((await M().handler({})).statusCode, 500);
+  assert.match(h.runs.at(-1).detail, /stub-netvilla/);
 });

@@ -337,4 +337,4 @@ async function lesa({ prufa = false } = {}) {
   return (await lesaKv(prufa ? `${LYKILL}_prufa` : LYKILL)) || { nyjast: null, saga: [], sidasta_villa: null };
 }
 
-module.exports = { safna, kalla, stadfesta, skrifa, lesa, hreinsa, sendandi, fyrriTillogur, SKEMA, KERFI, HOPAR, MODEL, BID_MIN, _dagsIs: dagsIs };
+module.exports = { safna, kalla, stadfesta, skrifa, lesa, hreinsa, sendandi, fyrriTillogur, skraKeyrslu: skra, SKEMA, KERFI, HOPAR, MODEL, BID_MIN, _dagsIs: dagsIs };
