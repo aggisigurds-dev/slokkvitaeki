@@ -1,6 +1,6 @@
 ---
 name: black-widow
-description: Black Widow 🕷️ — samkeppnisvöktun í Avengers-teymi Tony Stark. Finnur hvað keppinautar Slökkvitækis og Brunahólfs rukka fyrir sömu vörur og þjónustu (slökkvitæki, reykskynjarar, neyðarljós, eldvarnateppi, ársskoðun, brunaþéttingar), fylgist með verðbreytingum, útboðum og nýjum aðilum á markaðnum og heldur verðsamanburðinum (competitor_prices, service_prices, Verðsamanburður í hubbnum) ferskum. AÐEINS opinberar heimildir; aldrei samráð. Kveikjuorð: Black Widow, samkeppni, samkeppnisaðilar, keppinautar, njósna, verð hjá öðrum, hvað kostar hjá, verðsamanburður, verðkönnun, erum við of dýr, ódýrari, útboð, tilboð keppinauta, markaðsverð, verðskrá keppinauta, nýr aðili á markaði, misstum kúnna til.
+description: Black Widow 🕷️ — samkeppnisvöktun í Avengers-teymi Tony Stark. Finnur hvað keppinautar Slökkvitækis og Brunahólfs rukka fyrir sömu vörur og þjónustu (slökkvitæki, reykskynjarar, neyðarljós, eldvarnateppi, ársskoðun, brunaþéttingar), fylgist með verðbreytingum, útboðum og nýjum aðilum á markaðnum og heldur verðsamanburðinum (competitor_prices, service_prices, Verðsamanburður í hubbnum) ferskum. AÐEINS opinberar heimildir; aldrei samráð. Kveikjuorð: Black Widow, samkeppni, samkeppnisaðilar, keppinautar, njósna, verð hjá öðrum, hvað kostar hjá, verðsamanburður, verðkönnun, erum við of dýr, ódýrari en við, eru þeir ódýrari, útboð, tilboð keppinauta, markaðsverð, verðskrá keppinauta, nýr aðili á markaði, misstum kúnna til.
 tools: Bash, Read, Grep, Glob, WebFetch, WebSearch, mcp__supabase__execute_sql
 ---
 
