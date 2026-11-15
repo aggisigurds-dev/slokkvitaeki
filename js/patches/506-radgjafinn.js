@@ -34,7 +34,14 @@
   const FELLT_LYKILL = 'radgjafinn_fellt';         // viðmótsval → Vidmot (samstillt á allar vélar)
   const ENDURLES_MS = 5 * 60 * 1000, KONNUN_MS = 8000, KONNUN_MAX_MS = 4 * 60 * 1000, BID_MIN = 5;
 
-  const S = { gogn: null, at: 0, loading: false, villa: null, skrifar: null, skrifVilla: null, fellt: null };
+  const S = { gogn: null, at: 0, loading: false, villa: null, skrifar: null, skrifVilla: null, skrifVillaFra: 0, fellt: null };
+
+  // BAKGRUNNUR (atvik 15.11.2026 kl. 18:30–18:36): appið fór í bakgrunn eftir ↻ (skipt yfir í annað app) og Android stöðvaði
+  // netið hjá síðunni. Netlify skráði aðeins 3 GET á 8 mín. — ~30 kannanir fóru aldrei úr símanum („Failed to fetch"),
+  // könnunin gafst upp eftir 4 mín. þótt skrifin hefðu tekist eftir 72 s, og ↻ nr. 2 kostaði óþarfa Claude-kall.
+  // Nú: engin sókn meðan síðan er falin, aðeins tími í forgrunni telst upp í KONNUN_MAX_MS, og glugginn heldur strax
+  // áfram (eða sækir upp á nýtt) þegar appið kemur aftur í forgrunn.
+  const falin = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const notify = () => { try { if (window.Bord368 && Bord368.render) Bord368.render(); } catch (_) {} };
@@ -82,17 +89,19 @@
       if (!r.ok) throw new Error('svar ' + r.status);
       const g = await r.json();
       S.gogn = g; S.villa = null;
-    } catch (e) { S.villa = (e && e.message) || String(e); }
+      // Gömul villa („tóku of langan tíma") hverfur þegar skrifin sem hún átti við hafa borist.
+      if (S.skrifVilla && S.skrifVillaFra && g && g.nyjast && Date.parse(g.nyjast.skrifad_at) >= S.skrifVillaFra) { S.skrifVilla = null; S.skrifVillaFra = 0; }
+    } catch (e) { S.villa = (e && e.name === 'TypeError') ? 'náði ekki sambandi við þjóninn' : ((e && e.message) || String(e)); }
     // S.at er líka sett þegar sókn bilar — annars kallaði hver teikning á nýja sókn (sama regla og 489).
     S.at = Date.now(); S.loading = false;
     if (teikna && undirskrift() !== adur) teiknaStodugt();
   }
 
-  // ↻ — biður þjóninn um ný skrif og kannar svo á 8 sek. fresti þar til þau koma (eða villa / 4 mín.).
+  // ↻ — biður þjóninn um ný skrif og kannar svo á 8 sek. fresti þar til þau koma (eða villa / 4 mín. í forgrunni).
   async function skrifaAftur() {
     if (S.skrifar) return;
     const fra = Date.now();
-    S.skrifar = { fra }; S.skrifVilla = null; notify();
+    S.skrifar = { fra, virkt: 0, tima: 0, kanna: null }; S.skrifVilla = null; S.skrifVillaFra = 0; notify();
     try {
       const r = await fetch(SKRIFA, { method: 'POST', credentials: 'same-origin' });
       if (r.status === 401) throw new Error('innskráning vantar');
@@ -102,18 +111,32 @@
     // Könnunin SÆKIR án þess að teikna; borðið er teiknað EINU SINNI þegar niðurstaðan liggur fyrir (ein teikning = ein
     // skrunleiðrétting sem ekkert afturkallar).
     const kanna = async () => {
-      if (!S.skrifar) return;
+      const sk = S.skrifar;
+      if (!sk) return;
+      if (falin()) return;                    // bíður: visibilitychange heldur áfram þegar appið sést aftur
+      sk.virkt += KONNUN_MS;
       await load(true, false);
+      if (S.skrifar !== sk) return;
       const n = S.gogn && S.gogn.nyjast, v = S.gogn && S.gogn.sidasta_villa;
       let lok = null;
       if (n && Date.parse(n.skrifad_at) >= fra) lok = { villa: null };
       else if (v && Date.parse(v.kl) >= fra) lok = { villa: v.texti };
-      else if (Date.now() - fra > KONNUN_MAX_MS) lok = { villa: 'skrifin tóku of langan tíma — reyndu aftur síðar' };
-      if (lok) { S.skrifar = null; S.skrifVilla = lok.villa; teiknaStodugt(); return; }
-      setTimeout(kanna, KONNUN_MS);
+      else if (sk.virkt > KONNUN_MAX_MS) lok = { villa: 'skrifin tóku of langan tíma — reyndu aftur síðar' };
+      if (lok) { S.skrifar = null; S.skrifVilla = lok.villa; S.skrifVillaFra = lok.villa ? fra : 0; teiknaStodugt(); return; }
+      sk.tima = setTimeout(kanna, KONNUN_MS);
     };
-    setTimeout(kanna, KONNUN_MS);
+    S.skrifar.kanna = kanna;
+    S.skrifar.tima = setTimeout(kanna, KONNUN_MS);
   }
+
+  // Aftur í forgrunn: halda könnun strax áfram, eða sækja upp á nýtt ef síðasta sókn brást eða er orðin gömul.
+  // Aðeins þar sem glugginn hefur hlaðist (S.at) — þ.e. hjá Agnari.
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => {
+    if (falin() || !S.at) return;
+    const sk = S.skrifar;
+    if (sk && sk.kanna) { clearTimeout(sk.tima); sk.kanna(); return; }
+    if (S.villa || Date.now() - S.at > 60000) load(true);
+  });
 
   const CSS = '<style id="_rg506-css">' +
     '.rg{margin:0 0 14px;padding:0}' +
@@ -227,5 +250,5 @@
     return false;
   }
 
-  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15d' };
+  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15e' };
 })();
