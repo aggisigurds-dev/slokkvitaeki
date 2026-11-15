@@ -195,7 +195,7 @@ body.vv-ritill-a #vv-app .vvr-drop{outline:3px dashed #16a34a!important;outline-
       const r = await fetch(VV.API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adgerd: 'vista', efni: VV.efni, grunnur: yfirskrifa ? undefined : VV.drog_uppfaert }) });
       const d = await r.json().catch(() => ({}));
       if (r.status === 409) { R.vistar = false; arekstur(d); return; }
-      if (r.status === 401) throw new Error('Innskráning starfsmanns vantar');
+      if (r.status === 401) { innskraningVantar(); throw new Error('Innskráning starfsmanns vantar'); }
       if (!r.ok) throw new Error(d.error || 'Villa ' + r.status);
       VV.drog_uppfaert = d.drog_uppfaert;
       R.vistadKl = klst();
@@ -763,6 +763,7 @@ ${fast ? '<p class="vvr-hint">Þessi rammi lagar sig að kaflanum; stærðinni e
     try {
       const gogn = await minnka(file);
       const r = await fetch(VV.API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adgerd: 'mynd', gogn }) });
+      if (r.status === 401) innskraningVantar();
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.url) throw new Error(d.error || 'Villa ' + r.status);
       R.vistar = false;
@@ -797,8 +798,20 @@ ${fast ? '<p class="vvr-hint">Þessi rammi lagar sig að kaflanum; stærðinni e
     if (fyrsti) fyrsti.focus();
     return h;
   }
+  // 15.11.2026 (Agnar: „Já, lokaðu þeim"): skrif í verslunina krefjast innskráningar appsins (P.requireStaff í
+  // vefverslun.cjs, lokað sjálfgefið). Á 401 býðst innskráning einu sinni; breytingarnar haldast í ritlinum ef
+  // hætt er við, og vistast við næstu breytingu eftir innskráningu (í öðrum flipa).
+  let _innskrBodin = false;
+  function innskraningVantar() {
+    if (_innskrBodin) return;
+    _innskrBodin = true;
+    const slod = '/innskraning.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash);
+    gluggi('<h3>Innskráning vantar</h3><p>Breytingar á versluninni vistast aðeins hjá innskráðum starfsmanni. Skráðu þig inn með notandanafni appsins og opnaðu ritilinn aftur.</p>',
+      [['Skrá inn', () => { location.href = slod; }, 'blar']]);
+  }
   async function adgerd(nafn, auki) {
     const r = await fetch(VV.API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ adgerd: nafn }, auki || {})) });
+    if (r.status === 401) innskraningVantar();
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Villa ' + r.status);
     return d;

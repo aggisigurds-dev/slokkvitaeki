@@ -8,10 +8,10 @@
 //                                              skilar netfangi kúnnans svo vafrinn sendi póst um AppMail (Gmail) — Resend-
 //                                              leiðin (/api/email-send) er dauð fyrir eldklar.is skv. 240/254.
 //
-// Aðgangur: P.requireStaff — virkt þegar HUB_STAFF_PASSWORD er sett í Netlify (annars opið eins og gatt-admin;
-// sjá athugasemd í _portal.cjs). Málið verður að vera til, ekki eytt og ekki þegar lokað.
+// Aðgangur: P.requireStaff — innskráður starfsmaður (lokað sjálfgefið frá 15.11.2026; sjá _portal.cjs). Málið verður að vera til, ekki eytt og ekki þegar lokað.
 
 const P = require('./_portal.cjs');
+const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
 const M = require('./_gatt-myndir.cjs');
 
 const SEL = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,abyrgd,punktur,myndir,eftirmyndir,lokid_at,lokid_af,lokid_lysing,tilkynnt_at,tags';
@@ -30,7 +30,7 @@ async function netfangFelags(baseId) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (!P.dbReady()) return P.json(503, { error: 'Ekki uppsett' });
-  const g = P.requireStaff(event); if (g) return g;
+  const g = await H.krefjastStarfsmanns(event); if (g) return g;
 
   if (event.httpMethod === 'GET') {
     const id = parseInt((event.queryStringParameters || {}).id, 10);

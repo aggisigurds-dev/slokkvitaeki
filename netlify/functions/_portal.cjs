@@ -152,12 +152,12 @@ function verifyQr(t) {
 function envReady() { return !!(SUPABASE_URL && SUPABASE_KEY && JWT_SECRET); } // login/session (þarf JWT)
 function dbReady() { return !!(SUPABASE_URL && SUPABASE_KEY); }                 // stjórnsíða/status (aðeins DB)
 
-// ── Starfsmanna-hlið (hub) — EIN sameiginleg innskráning fyrir innri tólin ────
-// Virkjast AÐEINS þegar HUB_STAFF_PASSWORD er sett í Netlify-env. Meðan hún er
-// ekki sett skilar requireStaff null (hleypir öllu í gegn) svo EKKERT brotni —
-// staðuppsetning fyrir áfanga-útrás (Agnar 02.09.2026: „viðbótar auth á öllum
-// stöðum"). Cookie-lykillinn ER lykilorðið sjálft: að skipta um
-// HUB_STAFF_PASSWORD ógildir öll starfsmanna-session sjálfkrafa.
+// ── Starfsmanna-hlið (hub) ──────────────────────────────────────────────────────
+// Sameiginlega lykilorðið (HUB_STAFF_PASSWORD, cookie hub_session) var aldrei sett í
+// framleiðslu. Til 15.11.2026 hleypti requireStaff þá ÖLLU í gegn — sjá requireStaff
+// hér að neðan, sem er nú LOKAÐ sjálfgefið og les innskráningu appsins (hub_user).
+// Cookie-lykillinn ER lykilorðið sjálft: að skipta um HUB_STAFF_PASSWORD ógildir öll
+// hub_session sjálfkrafa.
 const HUB_PW = process.env.HUB_STAFF_PASSWORD || '';
 const STAFF_COOKIE = 'hub_session';
 const STAFF_TTL = 60 * 60 * 10; // 10 klst
@@ -196,11 +196,18 @@ function checkStaffPassword(pw) {
   const b = crypto.createHash('sha256').update(HUB_PW).digest();
   return crypto.timingSafeEqual(a, b);
 }
-// Setjið FREMST í handler (á eftir OPTIONS): const g = P.requireStaff(event); if (g) return g;
-function requireStaff(event) {
-  if (!HUB_PW) return null;                 // óvirkt þar til lykilorð er sett — brýtur ekkert
-  if (staffFromEvent(event)) return null;   // gilt starfsmanna-session
-  return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true });
+// STARFSMANNAHLIÐIÐ ER Í _starfshlid.cjs — setjið FREMST í handler (á eftir OPTIONS):
+//   H = _starfshlid.cjs  …  const g = await H.krefjastStarfsmanns(event); if (g) return g;   (dæmi: gatt-admin.cjs)
+//
+// LOKAÐ SJÁLFGEFIÐ (15.11.2026, Agnar: „Já, lokaðu þeim"). Áður skilaði það null (hleypti inn) væri HUB_PW tómt — og HUB_STAFF_PASSWORD
+// var aldrei sett, svo gatt-admin, hreyfingaryfirlit, verkbeidni-lokid og skrif vefverslunar voru opin öllum á netinu.
+// requireStaff sjálft les nú AÐEINS sameiginlega lykilorðið og hleypir engum inn án þess. Það spyr EKKI notendaskrána
+// (hub-adgangar.cjs): sú skrá krefst þessarar, og hringtenging _portal ↔ hub-adgangar gaf báðum föllunum sama
+// skráamengi → sama digest á Netlify → hub-adgangar keyrði búnt _portal og svaraði 500 (deploy-preview #982).
+// Vörður: tools/audit-fall-mengi.cjs.
+async function requireStaff(event) {
+  if (HUB_PW && staffFromEvent(event)) return null;
+  return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true, login: '/innskraning.html' });
 }
 
 // ── Rekstrarfélag = hópur félaga (26.10.2026, Agnar: „settu allar eignir tengt Heimaleigu inn í þeirra gátt … ath

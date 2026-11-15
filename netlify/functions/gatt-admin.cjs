@@ -17,6 +17,7 @@
 // væntanlega hub-innskráningu. Öll skrif nota service-role (aldrei í vafra).
 
 const P = require('./_portal.cjs');
+const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
 const crypto = require('crypto');
 // Póstur fer gegnum slokkvitaeki /api/email-send (Resend). „from" verður að vera
 // staðfest lén í Resend — stillanlegt með PORTAL_MAIL_FROM env.
@@ -95,7 +96,7 @@ async function baseNames(ids) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (!P.dbReady()) return P.json(503, { error: 'Supabase env vantar' });
-  const _g = P.requireStaff(event); if (_g) return _g;
+  const _g = await H.krefjastStarfsmanns(event); if (_g) return _g;
 
   try {
     // ── GET ──
