@@ -48,8 +48,10 @@
   const undirskrift = () => JSON.stringify([!!S.at, S.villa, S.gogn && S.gogn.nyjast && S.gogn.nyjast.skrifad_at,
     S.gogn && S.gogn.sidasta_villa && S.gogn.sidasta_villa.kl]);
 
-  // Hopp: þegar svarið berst breytist hæð gluggans (staðgengill 300 px → 460–660 px). Sé notandinn skrunaður niður fyrir
-  // topp gluggans færist allt fyrir neðan — skrun hýsilsins er leiðrétt um muninn. Á eftir rAF-endurheimt 368 á skruninu.
+  // Hopp: þegar svarið berst breytist hæð gluggans (staðgengill 300 px → mælt 730 px venjulega og 1.836 px mest á tölvu).
+  // Sé notandinn skrunaður niður fyrir topp gluggans færist allt fyrir neðan — skrun hýsilsins er leiðrétt um muninn.
+  // FÖST TALA, sett strax og aftur í rAF: 368 endurheimtir gamla skrunið í eigin rAF, og „+=" sem keyrði á undan næstu
+  // teikningu var afturkallað (kerfisrýni 15.11.2026: +1.372 px á síma þegar ↻ kláraðist).
   const hysill = () => document.getElementById('view-bord');
   const rgRect = () => { const v = hysill(), s = v && v.shadowRoot && v.shadowRoot.querySelector('section.rg'); return s ? s.getBoundingClientRect() : null; };
   function teiknaStodugt() {
@@ -57,29 +59,33 @@
     const skrunar = v && v.scrollHeight > v.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(v).overflowY);
     const sk = skrunar ? v : (document.scrollingElement || document.documentElement);
     const efst = skrunar ? v.getBoundingClientRect().top : 0;
+    const st0 = sk.scrollTop;
     notify();
     const eftir = rgRect();
     if (!fyrir || !eftir) return;
     const munur = eftir.height - fyrir.height;
     if (!munur || fyrir.top >= efst) return;   // glugginn byrjar á skjánum eða neðar — ekkert sýnilegt færist
     const z = skrunar ? (parseFloat(getComputedStyle(v).zoom) || 1) : 1;   // skrun hýsilsins er í óaðdregnum px
-    requestAnimationFrame(() => { sk.scrollTop += munur / z; });
+    const mark = st0 + munur / z;
+    sk.scrollTop = mark;
+    requestAnimationFrame(() => { sk.scrollTop = mark; });
   }
 
-  async function load(force) {
+  async function load(force, teikna = true) {
     if (S.loading && !force) return;
     const adur = undirskrift();
     S.loading = true;
     try {
       const r = await fetch(LES, { credentials: 'same-origin', cache: 'no-store' });
-      if (r.status === 401) throw new Error('innskráning starfsmanns vantar');
+      if (r.status === 401) throw new Error('innskráning vantar');
+      if (r.status === 403) throw new Error('aðeins fyrir stjórnanda');
       if (!r.ok) throw new Error('svar ' + r.status);
       const g = await r.json();
       S.gogn = g; S.villa = null;
     } catch (e) { S.villa = (e && e.message) || String(e); }
     // S.at er líka sett þegar sókn bilar — annars kallaði hver teikning á nýja sókn (sama regla og 489).
     S.at = Date.now(); S.loading = false;
-    if (undirskrift() !== adur) teiknaStodugt();
+    if (teikna && undirskrift() !== adur) teiknaStodugt();
   }
 
   // ↻ — biður þjóninn um ný skrif og kannar svo á 8 sek. fresti þar til þau koma (eða villa / 4 mín.).
@@ -89,23 +95,28 @@
     S.skrifar = { fra }; S.skrifVilla = null; notify();
     try {
       const r = await fetch(SKRIFA, { method: 'POST', credentials: 'same-origin' });
-      if (r.status === 401) throw new Error('innskráning starfsmanns vantar');
+      if (r.status === 401) throw new Error('innskráning vantar');
+      if (r.status === 403) throw new Error('aðeins fyrir stjórnanda');
       if (!r.ok && r.status !== 202) throw new Error('svar ' + r.status);
-    } catch (e) { S.skrifar = null; S.skrifVilla = (e && e.message) || String(e); notify(); return; }
+    } catch (e) { S.skrifar = null; S.skrifVilla = (e && e.message) || String(e); teiknaStodugt(); return; }
+    // Könnunin SÆKIR án þess að teikna; borðið er teiknað EINU SINNI þegar niðurstaðan liggur fyrir (ein teikning = ein
+    // skrunleiðrétting sem ekkert afturkallar).
     const kanna = async () => {
       if (!S.skrifar) return;
-      await load(true);
+      await load(true, false);
       const n = S.gogn && S.gogn.nyjast, v = S.gogn && S.gogn.sidasta_villa;
-      if (n && Date.parse(n.skrifad_at) >= fra) { S.skrifar = null; notify(); return; }
-      if (v && Date.parse(v.kl) >= fra) { S.skrifar = null; S.skrifVilla = v.texti; notify(); return; }
-      if (Date.now() - fra > KONNUN_MAX_MS) { S.skrifar = null; S.skrifVilla = 'skrifin tóku of langan tíma — reyndu aftur síðar'; notify(); return; }
+      let lok = null;
+      if (n && Date.parse(n.skrifad_at) >= fra) lok = { villa: null };
+      else if (v && Date.parse(v.kl) >= fra) lok = { villa: v.texti };
+      else if (Date.now() - fra > KONNUN_MAX_MS) lok = { villa: 'skrifin tóku of langan tíma — reyndu aftur síðar' };
+      if (lok) { S.skrifar = null; S.skrifVilla = lok.villa; teiknaStodugt(); return; }
       setTimeout(kanna, KONNUN_MS);
     };
     setTimeout(kanna, KONNUN_MS);
   }
 
   const CSS = '<style id="_rg506-css">' +
-    '.rg{margin:0 0 14px;padding:0}.rg:focus{outline:none}' +
+    '.rg{margin:0 0 14px;padding:0}' +
     '.rg-fyrir,.rg-t,.rg-a,.rg-s,.rg-stada,.rg-fr,.rg-tomt,.rg-ft,.rg-hop h4{overflow-wrap:anywhere}' +
     '.rg-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-bottom:1px solid var(--rule)}' +
     '.rg-h h2{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase}.rg-mute{color:var(--mute);font-size:12.5px}.rg-h .grow{flex:1 1 auto}' +
@@ -155,11 +166,13 @@
     if (S.fellt == null) { try { S.fellt = !!(window.Vidmot && Vidmot.lesaTaeki && Vidmot.lesaTaeki(FELLT_LYKILL, false)); } catch (_) { S.fellt = false; } }
     if (!S.at || Date.now() - S.at > ENDURLES_MS) load();
     const g = S.gogn, n = g && g.nyjast;
-    const nyskrifad = n && (Date.now() - Date.parse(n.skrifad_at)) < BID_MIN * 60000;
+    // Þjónninn sleppir ↻ innan BID_MIN mín. frá síðustu TILRAUN (líka misheppnaðri) — takkinn segir það sama.
+    const nyleg = (t) => !!t && (Date.now() - Date.parse(t)) < BID_MIN * 60000;
+    const nyskrifad = nyleg(n && n.skrifad_at) || nyleg(g && g.sidasta_villa && g.sidasta_villa.kl);
     const stada = S.skrifar ? 'skrifar… (1–2 mín.)' : n ? dagsTxt(n.skrifad_at) + ' · skrifað kl. ' + klst(n.skrifad_at) : S.loading ? 'sæki…' : '';
     const haus = '<header class="rg-h"><h2>Tony Stark · Ráðgjafinn</h2><span class="rg-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
       '<button type="button" class="btn iv sm" data-t5="rg-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
-        ' title="' + (nyskrifad ? 'Nýskrifað — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta Tony skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
+        ' title="' + (nyskrifad ? 'Nýskrifað eða nýreynt — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta Tony skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="rg-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' ráðgjafann">' + (S.fellt ? '▾' : '▴') + '</button></header>';
     if (S.fellt) return CSS + '<section class="panel rg" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus + '</section>';
 
@@ -214,5 +227,5 @@
     return false;
   }
 
-  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15c' };
+  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15d' };
 })();

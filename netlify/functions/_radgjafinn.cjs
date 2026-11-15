@@ -76,13 +76,22 @@ function hreinsa(t) {
   return s.replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim().slice(0, TEXTI_MAX);
 }
 // Persónugögn í póstinum (undirskriftir, áframsendingar) fara hvorki til Claude né á skjáinn. Röðin skiptir máli:
-// netföng fyrst, svo bankareikningar (0133-26-012345), kennitölur (10 tölustafir) og loks símanúmer.
+// netföng, IBAN, bankareikningar (0133-26-012345, 133-26-12345), kennitölur (010203-3456, 010203 3456) og loks símanúmer
+// (699 1234 · 699.1234 · 699 12 34 · 69 91 234 · 6991234 · +354 …). Sjö tölustafir í röð teljast ekki sími ef „kr"/„ISK"
+// fylgir eða „nr", „#", „R-" eða „reikning…" fer á undan — upphæðir og reikningsnúmer standa (kerfisrýni 15.11.2026).
 const NETFANG = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
-const BANKI = /\b\d{4}[- ]\d{2}[- ]\d{6}\b/g;
-const KENNITALA = /\b\d{6}-?\d{4}\b/g;
-const SIMI = /(?:\+|\b00)\d{1,3}[\s-]?(?:\d[\s-]?){6,12}\d\b|\b\d{3}[\s-]\d{4}\b|\b[4-8]\d{6}\b/g;
+const IBAN = /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b/g;
+const BANKI = /\b\d{3,4}[- ]\d{2}[- ]\d{4,6}\b/g;
+const KENNITALA = /\b\d{6}[- ]?\d{4}\b/g;
+const SIMI = new RegExp([
+  '(?:\\+|\\b00)\\d{1,3}[\\s.-]?(?:\\d[\\s.-]?){6,12}\\d\\b',
+  '\\b\\d{3}[\\s.-]\\d{4}\\b',
+  '\\b\\d{3}\\s\\d{2}\\s\\d{2}\\b',
+  '\\b\\d{2}\\s\\d{2}\\s\\d{3}\\b',
+  '(?<![#\\w./-])(?<!nr\\.?\\s?)(?<!reikning\\w*\\s)[4-8]\\d{6}(?!\\d|[.,]\\d|\\s?(?:kr|isk|krón))',
+].join('|'), 'gi');
 function hylja(t) {
-  return String(t == null ? '' : t).replace(NETFANG, '[netfang]').replace(BANKI, '[bankareikningur]')
+  return String(t == null ? '' : t).replace(NETFANG, '[netfang]').replace(IBAN, '[bankareikningur]').replace(BANKI, '[bankareikningur]')
     .replace(KENNITALA, '[kennitala]').replace(SIMI, '[sími]');
 }
 // Pósturinn tilheyrir hópnum aðeins ef netfang sendanda eða viðtakanda ENDAR á léninu (eða undirléni þess) —

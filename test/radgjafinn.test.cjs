@@ -459,10 +459,22 @@ test('safna: netföng, símanúmer, kennitölur og bankareikningar huldir áður
   for (const merki of ['[netfang]', '[sími]', '[kennitala]', '[bankareikningur]']) assert.ok(sent.includes(merki), merki);
 });
 
-test('hylja: tölur sem eru ekki persónugögn standa óbreyttar', () => {
-  const t = 'Reikningur R-001070 upp á 1.234.567 kr, 15.11.2026 kl. 10:30, 12 tæki, 2.500 kr/stk, póstnr. 220, 1234567 kr.';
-  assert.equal(R.hylja(t), t);
-  assert.equal(R.hylja('s. +44 20 7946 0958'), 's. [sími]');
+test('hylja: öll algeng snið símanúmera, kennitalna, bankareikninga og netfanga eru hulin', () => {
+  const snid = {
+    '[sími]': ['555 1234', '+354 699 1234', '8991234', '8991234.', '8991234,', '699 12 34', '699.1234', '69 91 234', '699-1234', '+44 20 7946 0958'],
+    '[kennitala]': ['010203-3456', '0102033456', '010203 3456'],
+    '[bankareikningur]': ['0133-26-012345', '0133-26-12345', '133-26-012345', '0133 26 012345', 'IS14 0159 2600 7654 5510 7303 39'],
+    '[netfang]': ['ny.adili@daemi.is', 'a@b.co.uk'],
+  };
+  for (const [merki, listi] of Object.entries(snid)) for (const t of listi) assert.equal(R.hylja('x ' + t + ' y'), 'x ' + merki + t.replace(/^.*?([.,]?)$/, '$1') + ' y', t);
+});
+
+test('hylja: upphæðir, dagsetningar og reikningsnúmer standa óbreytt (ekkert „[sími]" á peningum)', () => {
+  for (const t of ['Reikningur R-001070 upp á 1.234.567 kr, 15.11.2026 kl. 10:30, 12 tæki, 2.500 kr/stk, póstnr. 220, 1234567 kr.',
+    '5250000 kr', '5250000kr', '5250000 ISK', '5250000,50', '5250000.5', 'Reikningur 6012345', 'reikningur nr. 6012345', 'nr. 6012345', '#6012345', 'R-4001234',
+    '2026-11-15', '1 234 567 kr', '12 000 000 kr', '08:00-16:00']) {
+    assert.equal(R.hylja(t), t, t);
+  }
 });
 
 test('stadfesta: texti sem fer á skjáinn er líka hulinn (vörn ef Claude afritar netfang eða símanúmer)', async () => {
