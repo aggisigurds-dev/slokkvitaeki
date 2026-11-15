@@ -79,6 +79,7 @@ function stub(h, opt = {}) {
     if (tafla === 'automation_runs' && method === 'GET') return svar(h.runs_villur || []);
     if (tafla === 'automation_runs') { (h.runs = h.runs || []).push(body); return svar(null); }
     if (tafla === 'v_uttektarplan') return svar(h.uttektarplan || []);
+    if (tafla === 'afgreidsla') return svar(h.akvardanir || []);
     const sida = (a) => { const off = Number(q.get('offset') || 0), lim = Number(q.get('limit') || 1000); return (a || []).slice(off, off + lim); };
     if (tafla === 'solur' && q.get('status') === 'eq.final') return svar(sida(h.tekjur_sl));
     if (tafla === 'solur' && q.get('paid_at') === 'is.null' && h.ogreitt_sl) return svar(sida(h.ogreitt_sl));
@@ -636,4 +637,15 @@ test('SKEMA og KERFI: top 10 og plan_stada eru í sniðinu og reglunum; flokkarn
   assert.ok(R.SKEMA.required.includes('plan_stada'));
   assert.deepEqual(R.SKEMA.properties.rad.items.properties.flokkur.enum, R.FLOKKAR_RADA);
   assert.match(R.KERFI, /MEST 10/); assert.match(R.KERFI, /tvöfalda tekjur og þrefalda hagnað/); assert.doesNotMatch(R.KERFI, /1 til 3/);
+});
+
+test('ákvarðanir Agnars (D1 …) koma úr Afgreiðslunni og reglurnar þrjár standa í KERFI (Agnar 15.11.2026)', async () => {
+  const h = heimurTekjur();
+  h.akvardanir = [{ titill: 'Kredit og nýr reikningur fyrir 1.000 kr vanrukkun', stada: 'ekki_thess_virdi', astaeda: 'Ekki þess virði', framkvaemt_at: dag(1), updated_at: dag(1) }];
+  stub(h);
+  const f = await R.safna({ nu: NU });
+  assert.deepEqual(f.akvardanir.map((d) => [d.id, d.akvordun]), [['D1', 'ekki þess virði']]);
+  assert.match(R.KERFI, /AÐEINS NÝJASTA SKEYTIÐ/); assert.match(R.KERFI, /ÁKVÖRÐUN STENDUR/); assert.match(R.KERFI, /ÞESS VIRÐI/);
+  const s = R.stadfesta({ ...GOTT, rad: [{ flokkur: 'umbót', titill: 'Virða ákvörðun', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['D1'] }] }, f);
+  assert.deepEqual(s.rad[0].heimildir, ['D1'], 'D-auðkenni eru gildar heimildir');
 });
