@@ -16,6 +16,7 @@
 // Kostnaður: eitt kall per hleðslu síðu / smell á „Sækja" — engin vöktun.
 
 const P = require('./_portal.cjs');
+const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
 const K = require('./_hreyfingaryfirlit-kjarni.cjs');
 
 async function sbGet(slod, fra, til) {
@@ -39,7 +40,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET') return P.json(405, { error: 'Aðeins GET' });
   if (!P.dbReady()) return P.json(503, { error: 'Supabase env vantar' });
-  const _g = await P.requireStaff(event); if (_g) return _g;
+  const _g = await H.krefjastStarfsmanns(event); if (_g) return _g;
 
   const q = event.queryStringParameters || {};
   const kt10 = K.ktHreint(q.kt);

@@ -196,28 +196,17 @@ function checkStaffPassword(pw) {
   const b = crypto.createHash('sha256').update(HUB_PW).digest();
   return crypto.timingSafeEqual(a, b);
 }
-// Setjið FREMST í handler (á eftir OPTIONS):  const g = await P.requireStaff(event); if (g) return g;
+// STARFSMANNAHLIÐIÐ ER Í _starfshlid.cjs — setjið FREMST í handler (á eftir OPTIONS):
+//   H = _starfshlid.cjs  …  const g = await H.krefjastStarfsmanns(event); if (g) return g;   (dæmi: gatt-admin.cjs)
 //
-// LOKAÐ SJÁLFGEFIÐ (15.11.2026, Agnar: „Já, lokaðu þeim"). Áður: `if (!HUB_PW) return null` — og HUB_STAFF_PASSWORD
-// var aldrei sett, svo gatt-admin (aðgangar og lykilorð kúnna), hreyfingaryfirlit (viðskiptahreyfingar per kt),
-// verkbeidni-lokid og skrif vefverslunar voru opin öllum á netinu. Nú kemst inn:
-//   1. gilt hub_session (sameiginlega lykilorðið) — aðeins ef HUB_STAFF_PASSWORD er sett;
-//   2. annars innskráning appsins: virkur notandi í notendaskránni (hub-adgangar, cookie hub_user), hvaða rola sem er
-//      (Admin / Starfsmaður / Afgreiðsla). Spurt er FALL hliðsins sjálft, eins og _radgjafinn-hlid.cjs gerir — ekki
-//      afrit af undirrituninni;
-//   3. annars 401 { need_login, login } — og 503 ef notendaskráin svarar ekki (lokað, aldrei opið).
-// ASYNC: gleymist `await` er loforðið skilað sem svari — það brotnar (engin gögn), opnast aldrei.
+// LOKAÐ SJÁLFGEFIÐ (15.11.2026, Agnar: „Já, lokaðu þeim"). Áður skilaði það null (hleypti inn) væri HUB_PW tómt — og HUB_STAFF_PASSWORD
+// var aldrei sett, svo gatt-admin, hreyfingaryfirlit, verkbeidni-lokid og skrif vefverslunar voru opin öllum á netinu.
+// requireStaff sjálft les nú AÐEINS sameiginlega lykilorðið og hleypir engum inn án þess. Það spyr EKKI notendaskrána
+// (hub-adgangar.cjs): sú skrá krefst þessarar, og hringtenging _portal ↔ hub-adgangar gaf báðum föllunum sama
+// skráamengi → sama digest á Netlify → hub-adgangar keyrði búnt _portal og svaraði 500 (deploy-preview #982).
+// Vörður: tools/audit-fall-mengi.cjs.
 async function requireStaff(event) {
   if (HUB_PW && staffFromEvent(event)) return null;
-  let s = null;
-  try {
-    const HUB = require('./hub-adgangar.cjs');   // seint: hub-adgangar.cjs krefst þessarar skrár (hringtenging)
-    const h = (event && event.headers) || {};
-    const r = await HUB.handler({ httpMethod: 'GET', queryStringParameters: {}, headers: { host: h.host || h.Host || '', cookie: h.cookie || h.Cookie || '' } });
-    if (r && r.statusCode === 200) s = JSON.parse(r.body);
-  } catch (_) { s = null; }
-  if (!s || typeof s.authed !== 'boolean') return json(503, { error: 'Náði ekki að staðfesta innskráningu — reyndu aftur eftir smá stund' });
-  if (s.authed && s.user) return null;
   return json(401, { error: 'Innskráning starfsmanns vantar', need_login: true, login: '/innskraning.html' });
 }
 

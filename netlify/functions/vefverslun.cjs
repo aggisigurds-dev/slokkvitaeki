@@ -20,6 +20,7 @@
 
 const crypto = require('crypto');
 const P = require('./_portal.cjs');
+const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
 
 const HAMARK_EFNI = 600 * 1024;
 const MIME = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
@@ -147,7 +148,7 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
-    const lok = await P.requireStaff(event); if (lok) return lok;
+    const lok = await H.krefjastStarfsmanns(event); if (lok) return lok;
     if ((event.body || '').length > HAMARK_EFNI + 7 * 1024 * 1024) return P.json(413, { error: 'Of stórt' });
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return P.json(400, { error: 'Ógilt JSON' }); }
