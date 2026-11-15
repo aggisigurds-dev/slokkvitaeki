@@ -6,27 +6,25 @@
 // gmail-send hleypir nú aðeins inn innskráðum á Brunahólfi eða þjóni með tíma-tóka. Vafrinn hér getur ekki sent
 // Brunahólfs-kökuna (annar vefur), svo hann kallar á ÞETTA fall á sama vef:
 //   1. innskráning appsins er krafin (_starfshlid.cjs — sama hlið og gatt-admin o.fl.; 401 án hennar);
-//   2. beiðnin fer ÓBREYTT til gmail-send með tókanum x-postur-toki
-//      (HMAC-SHA256(SUPABASE_SERVICE_ROLE_KEY, 'postur-senda|<mínúta>'), gildir 10 mín — sjá brunaholf/_postur-toki.js);
+//   2. beiðnin fer ÓBREYTT til gmail-send með tókanum x-postur-toki (HUB.posturToki(): HMAC-SHA256 af session_secret
+//      úr hub_adgangar_stilling, sameiginlegum báðum vefjum; gildir 10 mín). 16.11.2026: fyrsta útgáfan notaði
+//      SUPABASE_SERVICE_ROLE_KEY, en hann er ólíkur á vefjunum — tókanum var hafnað í loftinu og lokunin afturkölluð;
 //   3. svar gmail-send skilast óbreytt (staða + JSON), svo 254-receipt-sender.js og allir AppMail-kallendur
 //      sjá sömu villuboð og áður (422 ATTACHMENTS_FAILED, NOT_CONNECTED, SCOPE_MISSING …).
 //
 //   GET  /api/postur-senda?status=1  → hvaða pósthólf geta sent (gmail-send GET)
 //   POST /api/postur-senda           → sama meginmál og gmail-send POST; { prufa:true } sendir EKKERT (prófar leiðina)
+//        og svarar líka toki_gildur_hja_brunaholf (brunaholf /api/hub-adgangar?postur_prufa=1) — heilsupróf milli vefja.
 //
 // Innfelldar Brunahólfs-síður í appinu (iframe) senda líka hingað um postMessage-brú í 254-receipt-sender.js.
 
-const crypto = require('crypto');
 const P = require('./_portal.cjs');
 const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
+const HUB = require('./hub-adgangar.cjs'); // póst-tókinn (sameiginlegur lykill beggja vefja)
 
 const MARK = 'https://brunaholf.netlify.app/api/gmail-send';
-const HAUS = 'x-postur-toki';
-
-function posturToki(ms = Date.now()) {
-  const m = Math.floor(ms / 60000);
-  return m + '.' + crypto.createHmac('sha256', String(process.env.SUPABASE_SERVICE_ROLE_KEY || '')).update('postur-senda|' + m).digest('hex');
-}
+const PRUFA_MARK = 'https://brunaholf.netlify.app/api/hub-adgangar?postur_prufa=1';
+const HAUS = HUB.POSTUR_HAUS;
 
 // Netlify drepur fallið eftir ~10 s og vafrinn fengi þá 502 án JSON — meðan gmail-send gæti enn verið að senda.
 // Við hættum því sjálf að bíða 9 s frá upphafi og segjum hreint út að pósturinn GÆTI hafa farið (netvörður 15.11.2026).
@@ -40,7 +38,9 @@ exports.handler = async (event) => {
   const g = await H.krefjastStarfsmanns(event);
   if (g) return g;
 
-  const hausar = { [HAUS]: posturToki(), 'user-agent': 'slokkvitaeki-postur-senda' };
+  const toki = await HUB.posturToki();
+  if (!toki) return P.json(503, { error: 'POSTUR_TOKI', message: 'Náði ekki í póstlykilinn — reyndu aftur eftir smá stund. Pósturinn var EKKI sendur.' });
+  const hausar = { [HAUS]: toki, 'user-agent': 'slokkvitaeki-postur-senda' };
   // Venjulegur (ref'd) teljari, ekki AbortSignal.timeout: sá er unref'd og heldur ekki ferlinu á lífi.
   const ac = new AbortController();
   const teljari = setTimeout(() => ac.abort(), Math.max(2000, FRESTUR_MS - (Date.now() - t0)));
@@ -64,7 +64,13 @@ exports.handler = async (event) => {
   }
   let svar = texti;
   try { JSON.parse(texti); } catch (_) { svar = JSON.stringify({ error: 'POSTUR_BAD_RESPONSE', message: 'Póstþjónninn svaraði HTTP ' + r.status + ' án JSON.' }); }
+  // Heilsupróf: tekur brunaholf við tóka héðan? (sendir ekkert; svarið sést þótt gmail-send sé enn opið)
+  if (event.httpMethod === 'POST' && /"prufa"\s*:\s*true/.test(String(event.body || ''))) {
+    try {
+      const pr = await fetch(PRUFA_MARK, { headers: hausar, signal: AbortSignal.timeout(4000) });
+      const pj = await pr.json();
+      svar = JSON.stringify({ ...JSON.parse(svar), toki_gildur_hja_brunaholf: pj.postur_toki === true });
+    } catch (_) { /* heilsuprófið má aldrei fella svarið */ }
+  }
   return { statusCode: r.status, headers: P.secHeaders(), body: svar };
 };
-
-module.exports.posturToki = posturToki;

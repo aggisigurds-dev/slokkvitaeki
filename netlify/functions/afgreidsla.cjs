@@ -42,11 +42,9 @@ async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(
 const lesa = (qs) => P.sbGet(qs).then(sbJson);
 const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date().toISOString() }, body)).then(sbJson);
 
-// Tóki fyrir póstsendinguna þjóna á milli (sami samningur og lokun gmail-send á að virða: HMAC af þjónustulyklinum).
-function posturToki(ms = Date.now()) {
-  const m = Math.floor(ms / 60000);
-  return m + '.' + crypto.createHmac('sha256', String(P.SUPABASE_KEY || '')).update('postur-senda|' + m).digest('hex');
-}
+// Tóki fyrir póstsendinguna þjóna á milli. 16.11.2026: myntaður í hub-adgangar.cjs með session_secret úr sameiginlega
+// grunninum — þjónustulykillinn (fyrri útgáfa hér) er ólíkur á vefjunum og brunaholf hafnaði honum í loftinu.
+const posturToki = () => HUB.posturToki();
 
 async function notandi(event) {
   try {
@@ -148,7 +146,7 @@ async function sendaPost(g) {
     attachments: g.vidhengi || [],
     inReplyTo: (g.svar_vid && g.svar_vid.message_id) || undefined,
   };
-  const r = await fetch(GMAIL_SEND, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-postur-toki': posturToki() }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+  const r = await fetch(GMAIL_SEND, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-postur-toki': await posturToki() }, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || j.error || j.ok === false) throw new Error('Pósturinn fór ekki: ' + (j.message || j.error || ('HTTP ' + r.status)));
   return { messageId: j.id || j.messageId || null, threaded: j.threaded != null ? !!j.threaded : null, account: body.account, to: body.to };
