@@ -193,7 +193,11 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Spurningin snýst um … | → Sérfræðingur |
 |---|---|
 | **„Hvar stendur allt?"** — kröfur, póstur, upplýsingareitir, skoðanir, verkefnalistar, samþykktir, tengingar í EINNI keyrslu með þaki frá 07.11.2026 | `node tools/combo-yfirlit.cjs` · `/api/combo-yfirlit` · spjaldið efst á Þjónustuborðinu (499) · mál #1540 |
-| **„Hvað á ég að einbeita mér að?"** — forgangsröðun, betri leiðir, gagnrýni á uppbygginguna (síður, útlit, virkni, verkferla), djarfar hugmyndir. Aðalráðgjafinn; skrifar líka morgunyfirlit Ráðgjafans á borði Agnars (506 · `netlify/functions/_radgjafinn.cjs`) | `tony-stark` 🦾 |
+| **„Hvað á ég að einbeita mér að?"** — forgangsröðun, betri leiðir, gagnrýni á uppbygginguna (síður, útlit, virkni, verkferla), djarfar hugmyndir. Aðalráðgjafinn og **stjórnandi Avengers-teymisins** (fjórar línur hér fyrir neðan + `endurskodandi`, `logfraedingur`); skrifar líka morgunyfirlit Ráðgjafans á borði Agnars (506 · `netlify/functions/_radgjafinn.cjs`) | `tony-stark` 🦾 |
+| Verð keppinauta — hvað aðrir rukka, verðbreytingar, útboð; heldur `competitor_prices`/`service_prices` (Verðsamanburður í hubbnum) ferskum. Aðeins opinberar heimildir | `black-widow` 🕷️ |
+| Innkaup — besta innkaupsverð, birgjar, jafngildar vörur, innflutningur frá EES (verð við komu, tollur, VSK, vottun). Leggur til, pantar aldrei | `hawkeye` 🏹 |
+| Markaðsmál — Facebook/Instagram-færslur, auglýsingar, efnisdagatal, herferðir, vefsíðutexti. Drög; Agnar birtir | `captain-america` 🛡️ |
+| Sala — nýir kúnnar og endurheimt gamalla, Hunter (`#hunter`, `hunter_adilar`), drög að pósti og símtölum. Sendir aldrei | `spider-man` 🕸️ |
 | Sölu, reikninga, dkPlus/Payday, afslætti, PDF-vistun, reikninga-póst, úttektartexta | `sala-reikningar` |
 | Rukkunarmál beggja félaga — reikningalota, hvað er tilbúið að senda, punktar, póstur, tengingar (les ../brunaholf/docs/REIKNINGALOTA.md sjálfur, stjórnar sala-reikningar / bokari; póstvörðurinn er kafli í rukkari.md) | `rukkari` 🦆 |
 | Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, skýrsla↔reikning (tækjafjöldi / vegna / tvær þjónustur), Cowork/MCP-flæðið 🤝 | `sara-coworker` |
