@@ -21,14 +21,15 @@ fyrir hinar kennitölurnar). Tómt = óskráð, villa = villa.
 | Icelandic Apartments (1622) | Urðarhvarf 4, Kóp. | **Aegina ehf. · 681013-0830** (784), bókhald alvin@fylgi.is — staðfest af Dimku 14.08.2025 og 25.09.2026 | sept. · 40 |
 | Höfuðstöðvar (269) | Grensásvegur 14 | Heimaleiga ehf — þjónustusamningur undirritaður 07.11.2024 (Sölvi), doc 10343 | ágúst/sept. · 6 |
 | G14 ehf (204) | Grensásvegur 14 (húseigandi) | **G14 ehf · 510809-0170** (308) — brunakerfi + slökkvitæki, eigin samningur | nóv./feb. · 7 |
-| Máni Apartments (869) | Laugavegur 18, 3.–6. hæð | Heimaleiga ehf | **júlí** · 54 (FC869-raðnr) |
-| Midtown Hotel (1486) | Laugavegur 18, 1.–2. hæð (fyrirtaeki segir Vegamótastígur 9, finnst ekki í Staðfangaskrá) | Heimaleiga ehf | **október** · 61 (AE20260728-raðnr) |
+| Máni Apartments (869) | Laugavegur 18, 3.–6. hæð | **Laugaverk ehf. · 680396-2219** (1261) frá 15.11.2026 — Dimka 06.11 | **júlí** · 54 (FC869-raðnr) |
+| Midtown Hotel (1486) | Laugavegur 18, 1.–2. hæð (fyrirtaeki segir Vegamótastígur 9, finnst ekki í Staðfangaskrá) | **IHC ehf. · 630693-2419** (1262) frá 15.11.2026 — Dimka 06.11 | **október** · 61 (AE20260728-raðnr) |
 | Iceland Comfort Apartments (1488) | Hamraborg 7, Kóp. | Heimaleiga ehf | júní/júlí · 15 |
 | Hamraborg 7, jarðhæð (1851) | Hamraborg 7, Kóp. | **Eldsalir ehf. · 491117-1840** (1210), ingi@kaskur.is — beiðni Dimku 06.10.2026 | sept. · 5 |
-| Ice Apartments (1484) | Laugavegur 1B | Heimaleiga ehf | okt./nóv. · 8 |
+| Ice Apartments (1484) | Laugavegur 1B | **365 hf. · 480702-2390** (1263), kfj@365.is, frá 15.11.2026 — Dimka 10.11 | okt./nóv. · 8 |
+| Barónsstígur 18 (1941) | Barónsstígur 18 (3 íbúðir) | **Sirius ehf · 460504-2520** (1264) frá 15.11.2026 — Dimka 09.11 | — · staður stofnaður 09.11 |
 | Bríetartún 9–11, íbúðir (443) | Bríetartún 9–11 (35 + 13 íbúðir) | Heimaleiga ehf — Sölvi CEO 26.01.2026: „bara ekki húsfélagið sem á að greiða“ | desember · 48 |
 | Bríetartún 9–11, sameign (1487) | Bríetartún 9 og 11 | **Húsfélagið Bríetartún 9-11 · 540119-0660** (394), reikningar@eignaumsjon.is — en 2025-reikningurinn (R-107527) fór á Heimaleigu | október · 8 |
-| Freyjugata 16 (1485) | Freyjugata 16 | **EA Law Practice ehf. · 650222-0400** (681; fid 857 Skipholt 50D er greiðandaröð, er_i_thjonustu=false, ekki staður) | mars · 5 |
+| Freyjugata 16 (1485) | Freyjugata 16 | **EA Law Practice ehf. · 650222-0400** (681 — staðurinn tengdur þangað 15.11.2026, bar áður 293; fid 857 Skipholt 50D er greiðandaröð, er_i_thjonustu=false, ekki staður) | mars · 5 |
 | Laugavegur 46 · 46heima (305) | Laugavegur 46 | **S&H Invest ehf. · 641115-0100** (676), v@waterfrontconsult.com, rafrænt á hans kt | mars · 6 |
 | S30 Apartments (243) | Ármúli 13A (reikningur á Smáratorg 3) | **S30 ehf. · 711096-2059** (866) | janúar · 65 |
 | Mannheimar · TYR Apartments (626) | Grettisgata 62 | **Mannheimar ehf · 680169-6409** (769), mannheimar.ehf@gmail.com | janúar · 8 |
@@ -194,4 +195,13 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   customers_base eða fyrirtaeki (mælt 10.11.2026); fid 869 og 1486 bera enn Heimaleigu 510117-0690. EKKERT tengt, stofnað eða sameinað — Agnar ákveður.
   Reikningur á Máni/Midtown má ekki fara á Heimaleigu ehf. fyrr en það er útkljáð. Charlize: kunni/reikningar (kt-færslur) og kerfi/postur (nýja pósthólfið).
 
-Síðast uppfært: 10.11.2026
+- 15.11.2026 · **Greiðendurnir settir (Agnar: „geturðu sett á rétta greiðendur … í ársskoðun, Rekstrarfélög og gáttinni“).** Fjórir nýir
+  greiðendur í customers_base, allir með rekstrarfelag='Heimaleiga' og sannreyndir í Fyrirtækjaskrá Skattsins: **Laugaverk ehf. 680396-2219
+  (base 1261) ← Máni 869** · **IHC ehf. 630693-2419 (1262) ← Midtown 1486** · **365 hf. 480702-2390 (1263) ← Ice Apartments 1484** (beiðni
+  Dimku 10.11; HQ 269 áfram á Heimaleigu) · **Sirius ehf 460504-2520 (1264) ← Barónsstígur 18, staður 1941** (stofnaður 09.11). Auk þess
+  **Freyjugata 16 (1485) → EA Law 681** (staðurinn bar áður base 293). Rekstrarfélags-byggingalistinn (Barónsstígur 18) ber nú kt Siriusar.
+  Gátt 293 sér 14 greiðendur með réttri kt; audit-customer-base RAUTT → GRÆNT. Engar sölur á þessa staði síðan 01.11 — engin reikningur á
+  röngum greiðanda. Afrit: `backup_20261115_heimaleiga_greidendur`. Charlize scope kunni (5 færslur). Reikninganetfang Laugaverks, IHC og
+  Siriusar ekki gefið — dimka@ eins og aðrir greiðendur hópsins.
+
+Síðast uppfært: 15.11.2026
