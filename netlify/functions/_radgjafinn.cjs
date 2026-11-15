@@ -153,17 +153,39 @@ async function postarHops(h, nu) {
   };
 }
 
-// Reikningar hópsins í sölukerfinu — sama skilgreining og 489 „Ógreiddar sendar kröfur": sent (dk_invoice_id eða
-// krafa_sent_at), ógreitt, ekki ógilt, ekki kredit, ekki falið.
+// KRÖFUR HREINSAÐAR — mæling Natalie 15.11.2026: 489, v_krafa_ekki_send og fyrsta útgáfa þessa falls töldu KREDITFÆRÐA
+// frumreikninga sem útistandandi (lesa aðeins is_credit, ekki credit_of): 22 raðir / 3,44 m kr af draugum (Eclipse R-000727
+// og R-000728 ein og sér 2,4 m; raunverulegi reikningurinn R-000940 var greiddur 02.10). Kröfuyfirlitið (166:945) gerir það
+// rétt. Sama regla hér: kreditnóta með credit_of = salan → út; Payday CANCELLED/CREDIT → út; „⏸" fremst í krafa_note = á bið
+// að ákvörðun Agnars — sýnt SÉR, aldrei sem ráð um innheimtu (Center Hotels 07.11.2026, Charlize #2140).
+async function hreinsaKrofur(rodir) {
+  if (!rodir.length) return [];
+  const ids = rodir.map((r) => r.id);
+  const num = rodir.map((r) => r.num).filter(Boolean);
+  const [kredit, pd] = await Promise.all([
+    sb(`solur?select=credit_of&credit_of=in.(${ids.join(',')})&limit=5000`),
+    num.length ? sb(`payday_invoices_slokk?select=reference,status,created_date&reference=in.(${num.map((n) => '"' + String(n).replace(/"/g, '') + '"').join(',')})&order=created_date.desc&limit=5000`) : [],
+  ]);
+  const kreditad = new Set(kredit.map((k) => k.credit_of));
+  const pdStada = {};
+  for (const p of pd) if (!(p.reference in pdStada)) pdStada[p.reference] = p.status;   // nýjasta fyrst
+  return rodir.map((r) => ({ ...r, kreditfaerd: kreditad.has(r.id), payday: pdStada[r.num] || null,
+    a_bid: /^\s*⏸/.test(String(r.krafa_note || '')) }));
+}
+const lifandiKrafa = (r) => !r.kreditfaerd && !['CANCELLED', 'CREDIT'].includes(String(r.payday || ''));
+
+// Reikningar hópsins — ógreiddar sendar kröfur, HREINSAÐAR (hreinsaKrofur): kreditfærðar út, á bið sér.
 async function reikningarHops(h, nu) {
   const base = await sb(`customers_base?select=id,nafn&${h.base}&limit=200`);
   const ids = base.map((b) => b.id).filter(Boolean);
   if (!ids.length) return { id: `${h.st}R`, greidendur: 0, ath: 'enginn greiðandi fannst' };
   const fra = iso(new Date(nu - 400 * 864e5));
-  const solur = await sb(`solur?select=id,customer_nafn,samtals,created_at,krafa_sent_at,paid_at,status,is_credit,hidden,dk_invoice_id,greitt_med` +
+  const solur = await sb(`solur?select=id,num,customer_nafn,samtals,created_at,krafa_sent_at,paid_at,status,is_credit,hidden,dk_invoice_id,greitt_med,krafa_note` +
     `&customer_base_id=in.(${ids.join(',')})&created_at=gte.${fra}&order=id.asc&limit=1000`);
   const gild = solur.filter((r) => r.status !== 'void' && !r.is_credit && !r.hidden);
-  const ogreitt = gild.filter((r) => (r.dk_invoice_id || r.krafa_sent_at) && !r.paid_at);
+  const sendOgreitt = await hreinsaKrofur(gild.filter((r) => (r.dk_invoice_id || r.krafa_sent_at) && !r.paid_at));
+  const lifandi = sendOgreitt.filter(lifandiKrafa);
+  const ogreitt = lifandi.filter((r) => !r.a_bid), bid = lifandi.filter((r) => r.a_bid);
   const greitt30 = gild.filter((r) => r.paid_at && dagarSidan(r.paid_at, nu) <= 30);
   const s = (a) => a.reduce((x, r) => x + kr(r.samtals), 0);
   return {
@@ -173,13 +195,18 @@ async function reikningarHops(h, nu) {
     ogreitt_elsta_dagar: ogreitt.reduce((a, r) => Math.max(a, dagarSidan(r.krafa_sent_at || r.created_at, nu)), 0),
     ogreitt_staerstu: [...ogreitt].sort((a, b) => kr(b.samtals) - kr(a.samtals)).slice(0, 4)
       .map((r) => ({ nafn: r.customer_nafn, kr: kr(r.samtals), dagar: dagarSidan(r.krafa_sent_at || r.created_at, nu) })),
+    a_bid_fjoldi: bid.length, a_bid_kr: s(bid),
+    a_bid_skyring: bid.length ? 'Á BIÐ að ákvörðun Agnars (⏸ í krafa_note) — EKKI innheimtumál; ekki leggja til innheimtu.' : null,
+    kreditfaert_utilokad: sendOgreitt.length - lifandi.length,
     greitt_30d_fjoldi: greitt30.length, greitt_30d_kr: s(greitt30),
   };
 }
 
 async function charlizeHops(h) {
   const r = await sb(`v_charlize_active?select=fact,created_at&fact=ilike.${encodeURIComponent(`*${h.charlize}*`)}&order=created_at.desc&limit=12`);
-  return r.map((x, i) => ({ id: `${h.st}K${i + 1}`, dags: String(x.created_at).slice(0, 10), texti: hylja(String(x.fact || '').slice(0, 420)) }));
+  // 1200 (áður 420): mæling 15.11.2026 — 420 klippti Charlize #2140 rétt áður en „fjórir reikningar … merktir í bið", svo
+  // Tony lagði til innheimtu sem stangaðist á við skráða ákvörðun.
+  return r.map((x, i) => ({ id: `${h.st}K${i + 1}`, dags: String(x.created_at).slice(0, 10), texti: hylja(String(x.fact || '').slice(0, 1200)) }));
 }
 
 async function forgangsmal() {
@@ -264,23 +291,44 @@ async function tekjur(nu, aaetlun) {
 }
 
 // PENINGAR — sömu línur og combo-yfirlit / borðið (maela), án dæma (nöfn kúnna fara ekki með).
+// Mæling Natalie 15.11.2026: tvær línur combo-yfirlits eru ótraustar sem grunnur ráða —
+//   „krafa ekki send" (21) telur 14 kreditfærða frumreikninga → hér kemur talan úr v_krafa_ekki_send_adgerd (tilbúnar til sendingar);
+//   „kreditfært og aldrei endurgert" (27): aðeins 2 af 27 stóðust → fer EKKI til Tonys (ósannreynt fer ekki á skjáinn).
+const OTRAUST_LINA = new Set(['kredit-an-endurgerdar']);
 async function peningar() {
   const CY = require('./combo-yfirlit.cjs');
-  const linur = await CY.maela(null, 1);
-  return linur.map((l, i) => ({
-    id: `P${i + 1}`, flokkur: l.flokkur, heiti: l.heiti, tala: l.tala, grunnlina_0711: l.thak, nytt: l.nytt, merki: l.merki,
+  const linur = (await CY.maela(null, 1)).filter((l) => !OTRAUST_LINA.has(l.lykill));
+  const ut = linur.map((l, i) => ({
+    id: `P${i + 1}`, lykill: l.lykill, flokkur: l.flokkur, heiti: l.heiti, tala: l.tala, grunnlina_0711: l.thak, nytt: l.nytt, merki: l.merki,
     kr: l.peningur != null ? kr(l.peningur) : null, kr_er_heild: l.peningur != null ? !!l.peningur_allt : null,
   }));
+  const kes = ut.find((p) => p.lykill === 'krafa-ekki-send');
+  if (kes) {
+    const a = await sb('v_krafa_ekki_send_adgerd?select=num,samtals&limit=1000');
+    Object.assign(kes, { heiti: 'Reikningur til — krafa ekki send (aðeins þær sem eru tilbúnar til sendingar)', tala: a.length,
+      kr: a.reduce((s, r) => s + kr(r.samtals), 0), kr_er_heild: true, merki: 'MAELT',
+      ath: 'Borðið sýnir fleiri, en þær eru kreditfærðar eða greiddar í verslun (mæling 15.11.2026).' });
+  }
+  return ut;
 }
 
-// ÓGREITT — allar ógreiddar sendar kröfur Slökkvitækis, SAMA skilgreining og 489 „Ógreiddar sendar kröfur" og reikningarHops:
-// sent (dk_invoice_id eða krafa_sent_at), ógreitt, ekki ógilt, ekki kredit, ekki falið. Mælt 15.11.2026: 44 / 4.373.596 kr = borðið.
+// ÓGREITT — allar ógreiddar sendar kröfur Slökkvitækis, HREINSAÐAR eins og Kröfuyfirlitið (166): greitt_med reikningur, final,
+// sent, ógreitt, ekki kredit/falið — og hvorki kreditfærð (credit_of) né CANCELLED/CREDIT í Payday. Á bið (⏸) sýnt sér.
+// Mælt 15.11.2026: 489 sagði 44 / 4.373.596 kr; raunin 35 sendar í Payday / 2.720.774 kr, þar af 5 á bið.
 async function ogreitt(nu) {
-  const r = await sbOll('solur?select=samtals,krafa_sent_at,created_at&paid_at=is.null&status=neq.void&is_credit=not.is.true&hidden=not.is.true' +
+  const r = await sbOll('solur?select=id,num,samtals,krafa_sent_at,created_at,krafa_note&greitt_med=eq.reikningur&paid_at=is.null&status=eq.final&is_credit=not.is.true&hidden=not.is.true' +
     '&or=(dk_invoice_id.not.is.null,krafa_sent_at.not.is.null)&order=id.asc');
+  const hreint = await hreinsaKrofur(r);
+  const lifandi = hreint.filter(lifandiKrafa);
+  const virkt = lifandi.filter((x) => !x.a_bid), bid = lifandi.filter((x) => x.a_bid);
   const dagar = (x) => dagarSidan(x.krafa_sent_at || x.created_at, nu);
-  return { id: 'O', fjoldi: r.length, kr: r.reduce((a, x) => a + kr(x.samtals), 0), elsta_dagar: r.reduce((a, x) => Math.max(a, dagar(x)), 0),
-    eldri_en_60_fjoldi: r.filter((x) => dagar(x) > 60).length, eldri_en_60_kr: r.filter((x) => dagar(x) > 60).reduce((a, x) => a + kr(x.samtals), 0) };
+  const s = (a) => a.reduce((t, x) => t + kr(x.samtals), 0);
+  const gomul = virkt.filter((x) => dagar(x) > 60);
+  return { id: 'O', fjoldi: virkt.length, kr: s(virkt), elsta_dagar: virkt.reduce((a, x) => Math.max(a, dagar(x)), 0),
+    eldri_en_60_fjoldi: gomul.length, eldri_en_60_kr: s(gomul),
+    a_bid_fjoldi: bid.length, a_bid_kr: s(bid), a_bid_skyring: 'Á BIÐ að ákvörðun Agnars (⏸) — ekki innheimtumál.',
+    kreditfaert_utilokad_fjoldi: hreint.length - lifandi.length, kreditfaert_utilokad_kr: s(hreint.filter((x) => !lifandiKrafa(x))),
+    skilgreining: 'Sendar ógreiddar kröfur; kreditfærðar (credit_of) og niðurfelldar í Payday útilokaðar; á bið sýnt sér.' };
 }
 
 // KERFIÐ — sjálfvirkni sem brást síðasta sólarhring, eftir starfi (laga áður en fer úrskeiðis).
@@ -380,6 +428,10 @@ const KERFI = [
   '  ný staðreynd sé í gögnunum, og nefndu þá staðreyndina. Ekki skipta um skoðun frá degi til dags án nýrra gagna.',
   '- ÞESS VIRÐI: ekkert ráð um leiðréttingu undir 10.000 kr (vanrukkun, aurar, kredit + nýr reikningur + símtal fyrir smáupphæð) — það er',
   '  ekki þess virði og er ekki nefnt. Það sem skilar mestu fyrir minnsta fyrirhöfn fer efst.',
+  '- RANNSAKAÐ VEL (Agnar 15.11.2026): peningaráð verður að vísa í mælda línu (O, P …, M, HR/CR, G) — þekking (HK/CK) ein og sér dugar',
+  '  ekki. Aldrei „virðist", „líklega", „sennilega" — ef það er ekki staðfest í gögnunum er það ekki ráð. Færri en örugg ráð.',
+  '- KRÖFUR Á BIÐ (a_bid, ⏸) eru ákvörðun Agnars — ALDREI leggja til innheimtu, fyrirspurn eða áminningu á þeim. Kreditfærðar kröfur eru',
+  '  þegar útilokaðar úr ogreitt og reikningum hópanna; reiknaðu þær aldrei inn aftur.',
   '- merki "OMAELT" eða null þýðir ÓMÆLT — aldrei núll og aldrei „í lagi". Hagnaður er ómældur: segðu það, reiknaðu hann aldrei sjálfur.',
   '- Tekjur Brunahólfs eru bráðabirgðaskilgreining (sjá markmid.skilgreining); nefndu það ef þú byggir ráð á þeim.',
   '- Fréttir: það sem gerðist eða breyttist í póstinum — beiðnir, kvartanir, loforð, frestir, greiðslur, það sem bíður svars frá okkur.',
@@ -481,10 +533,19 @@ function stadfesta(svar, f) {
     if (frettir.length > 4) hent += frettir.length - 4;
     return { stada: str(h && h.stada, 280), frettir: frettir.slice(0, 4) };
   };
+  // Agnar 15.11.2026: „einbeitum okkur bara á stærstu málum. Og að allt sé rannsakað vel." Tony keyrir án tóla og getur ekki
+  // rannsakað — því tvær FASTAR reglur hér, ekki bara í textanum: (1) peningaráð þarf MÆLDA heimild (O, P…, M, HR/CR, G) — þekking
+  // (HK/CK) ein og sér dugar ekki; (2) hálfvissa („virðist", „líklega", „sennilega", „trúlega") er ekki rannsakað mál → hent.
+  const MAELD = /^(O|M|G|Pd+|[HC]R)$/;
+  const HALFVISSA = /(^|[^a-záðéíóúýþæö])(virðist|virðast|líklega|sennilega|trúlega)([^a-záðéíóúýþæö]|$)/i;
   const rad = (Array.isArray(svar && svar.rad) ? svar.rad : []).map((x) => ({
     flokkur: FLOKKAR_RADA.includes(x && x.flokkur) ? x.flokkur : 'umbót',
     titill: str(x && x.titill, 120), af_hverju: str(x && x.af_hverju, 420), fyrsta_skref: str(x && x.fyrsta_skref, 220), heimildir: heim(x && x.heimildir),
-  })).filter((x) => { const ok = x.titill && x.af_hverju && x.heimildir.length; if (!ok) hent++; return ok; });
+  })).filter((x) => {
+    const ok = x.titill && x.af_hverju && x.heimildir.length && !HALFVISSA.test(x.titill + ' ' + x.af_hverju) &&
+      (x.flokkur !== 'peningar' || x.heimildir.some((h) => MAELD.test(h)));
+    if (!ok) hent++; return ok;
+  });
   if (rad.length > MAX_RAD) hent += rad.length - MAX_RAD;
   // Staða plansins: aðeins atriði sem eru í planinu, eitt á atriði, gild staða og heimild sem er til.
   const sedPlan = new Set();
