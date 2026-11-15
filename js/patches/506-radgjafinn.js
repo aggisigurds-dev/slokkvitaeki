@@ -17,11 +17,13 @@
  * (netlify/functions/_radgjafinn.cjs). Glugginn LES aðeins — /api/radgjafinn — og ↻ biður um ný skrif
  * (/.netlify/functions/radgjafinn-background, 1–2 mín.). Ekkert annað er skrifað.
  *
- * STÖÐUGT VIÐMÓT: ekkert vafra-skyndiminni (póstefni viðskiptavina á ekki heima í localStorage). Mælt 15.11.2026 í
- * Playwright (1600 px og 390 px, tvær keyrslur hvor, með og án 506): glugginn bætir engu við hopp síðunnar — hann teiknast
- * fyrir neðan sýnilega svæðið við opnun og staðgengillinn heldur 300 px þar til svarið berst. Samanbrotið er viðmótsval →
- * Vidmot (472, eins á öllum vélum). 368 teiknar gluggann (Radgjafinn.html(n)) og sendir smelli með data-t5="rg-…"
- * hingað (Radgjafinn.smellur).
+ * STÖÐUGT VIÐMÓT: ekkert vafra-skyndiminni (póstefni viðskiptavina á ekki heima í localStorage). Glugginn teiknast fyrir
+ * neðan sýnilega svæðið við opnun. CLS sér EKKI hopp á borðinu (368 skiptir öllum hnútum út — kerfisrýni 15.11.2026), svo
+ * hoppið er leyst beint: þegar svarið berst og notandinn er skrunaður niður fyrir topp gluggans er skrun hýsilsins leiðrétt
+ * um hæðarmuninn (teiknaStodugt). Borðið er aðeins teiknað þegar eitthvað breyttist (ekki við hverja könnun ↻).
+ * Samanbrotið er viðmótsval → Vidmot (472, eins á öllum vélum). 368 teiknar gluggann (Radgjafinn.html(n)) og sendir smelli
+ * með data-t5="rg-…" hingað (Radgjafinn.smellur); fókusinn fer aftur á takkann eftir teikningu.
+ * Sími og app-hamur: gámafyrirspurn á .t5 (borðið sjálft), ekki @media — í app-ham er síðan 980 px en borðið mjótt.
  * ============================================================================================== */
 (() => {
   if (window.Radgjafinn) return;
@@ -42,8 +44,31 @@
   const klst = (s) => { const d = new Date(s); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   const stuttDags = (iso) => (iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) : '');
 
+  // Hvað glugginn sýnir — teiknað er aðeins þegar þetta breytist (könnun ↻ á 8 s fresti teiknar annars borðið ~30 sinnum).
+  const undirskrift = () => JSON.stringify([!!S.at, S.villa, S.gogn && S.gogn.nyjast && S.gogn.nyjast.skrifad_at,
+    S.gogn && S.gogn.sidasta_villa && S.gogn.sidasta_villa.kl]);
+
+  // Hopp: þegar svarið berst breytist hæð gluggans (staðgengill 300 px → 460–660 px). Sé notandinn skrunaður niður fyrir
+  // topp gluggans færist allt fyrir neðan — skrun hýsilsins er leiðrétt um muninn. Á eftir rAF-endurheimt 368 á skruninu.
+  const hysill = () => document.getElementById('view-bord');
+  const rgRect = () => { const v = hysill(), s = v && v.shadowRoot && v.shadowRoot.querySelector('section.rg'); return s ? s.getBoundingClientRect() : null; };
+  function teiknaStodugt() {
+    const v = hysill(), fyrir = rgRect();
+    const skrunar = v && v.scrollHeight > v.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(v).overflowY);
+    const sk = skrunar ? v : (document.scrollingElement || document.documentElement);
+    const efst = skrunar ? v.getBoundingClientRect().top : 0;
+    notify();
+    const eftir = rgRect();
+    if (!fyrir || !eftir) return;
+    const munur = eftir.height - fyrir.height;
+    if (!munur || fyrir.top >= efst) return;   // glugginn byrjar á skjánum eða neðar — ekkert sýnilegt færist
+    const z = skrunar ? (parseFloat(getComputedStyle(v).zoom) || 1) : 1;   // skrun hýsilsins er í óaðdregnum px
+    requestAnimationFrame(() => { sk.scrollTop += munur / z; });
+  }
+
   async function load(force) {
     if (S.loading && !force) return;
+    const adur = undirskrift();
     S.loading = true;
     try {
       const r = await fetch(LES, { credentials: 'same-origin', cache: 'no-store' });
@@ -53,7 +78,8 @@
       S.gogn = g; S.villa = null;
     } catch (e) { S.villa = (e && e.message) || String(e); }
     // S.at er líka sett þegar sókn bilar — annars kallaði hver teikning á nýja sókn (sama regla og 489).
-    S.at = Date.now(); S.loading = false; notify();
+    S.at = Date.now(); S.loading = false;
+    if (undirskrift() !== adur) teiknaStodugt();
   }
 
   // ↻ — biður þjóninn um ný skrif og kannar svo á 8 sek. fresti þar til þau koma (eða villa / 4 mín.).
@@ -79,7 +105,9 @@
   }
 
   const CSS = '<style id="_rg506-css">' +
-    '.rg{margin:0 0 14px;padding:0}.rg-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-bottom:1px solid var(--rule)}' +
+    '.rg{margin:0 0 14px;padding:0}.rg:focus{outline:none}' +
+    '.rg-fyrir,.rg-t,.rg-a,.rg-s,.rg-stada,.rg-fr,.rg-tomt,.rg-ft,.rg-hop h4{overflow-wrap:anywhere}' +
+    '.rg-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-bottom:1px solid var(--rule)}' +
     '.rg-h h2{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase}.rg-mute{color:var(--mute);font-size:12.5px}.rg-h .grow{flex:1 1 auto}' +
     '.rg-fyrir{margin:0;padding:14px 16px 12px;font-family:var(--serif,"Playfair Display",Georgia,serif);font-size:21px;line-height:1.3;font-weight:700;color:var(--ink);border-bottom:1px solid var(--rule2)}' +
     '.rg-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0}' +
@@ -95,7 +123,8 @@
     '.rg-betri .rg-a{margin-top:3px}.rg-betri .rg-a b{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-right:6px}' +
     '.rg-ft{padding:8px 16px 11px;border-top:1px solid var(--rule2);font-size:11.5px;color:var(--mute)}.rg-ft .err{color:#b3220f}.rg-tomt{padding:16px;color:var(--mute);font-size:13px;min-height:220px}' +
     '.rg-bid{min-height:300px}' +
-    '@media (max-width:760px){.rg-h .btn{min-height:44px;min-width:44px}.rg-grid{grid-template-columns:minmax(0,1fr)}.rg-dalkur+.rg-dalkur{border-left:0;border-top:1px solid var(--rule2)}.rg-fyrir{font-size:18px}}' +
+    '@container t5 (max-width:760px){.rg-h .btn{min-height:44px;min-width:44px}.rg-grid{grid-template-columns:minmax(0,1fr)}.rg-dalkur+.rg-dalkur{border-left:0;border-top:1px solid var(--rule2)}.rg-fyrir{font-size:18px}}' +
+    '@media (pointer:coarse){.rg-h .btn{min-height:44px;min-width:44px}}' +
     '</style>';
 
   // Heimild sem merki: póstur → „12.11 · efni"; annað → hvað það er. Merkið er upplýsing, ekki tengill.
@@ -114,7 +143,8 @@
 
   function hopurHtml(nafn, h, fjoldi, n) {
     const fr = (h && h.frettir) || [];
-    const tala = fjoldi == null ? '' : ' <span>· ' + fjoldi + ' póst' + (fjoldi === 1 ? 'ur' : 'ar') + ' sl. 14 daga</span>';
+    const f = Number(fjoldi);
+    const tala = fjoldi == null || !Number.isFinite(f) ? '' : ' <span>· ' + f + ' póst' + (f === 1 ? 'ur' : 'ar') + ' sl. 14 daga</span>';
     return '<div class="rg-hop"><h4>' + esc(nafn) + tala + '</h4>' +
       (h && h.stada ? '<p class="rg-stada">' + esc(h.stada) + '</p>' : '') +
       (fr.length ? '<ul class="rg-fr">' + fr.map((x) => '<li>' + esc(x.texti) + heimildir(x.heimildir, n) + '</li>').join('') + '</ul>' : '') + '</div>';
@@ -131,13 +161,13 @@
       '<button type="button" class="btn iv sm" data-t5="rg-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
         ' title="' + (nyskrifad ? 'Nýskrifað — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta Tony skrifa upp á nýtt úr nýjasta póstinum (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="rg-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' ráðgjafann">' + (S.fellt ? '▾' : '▴') + '</button></header>';
-    if (S.fellt) return CSS + '<section class="panel rg" aria-label="Ráðgjafinn Tony Stark">' + haus + '</section>';
+    if (S.fellt) return CSS + '<section class="panel rg" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus + '</section>';
 
     if (!n) {
       const txt = S.villa ? 'Náði ekki í ráðgjafann: ' + S.villa
         : S.loading || !S.at ? 'Sæki ráðgjafann…'
         : 'Tony hefur ekki skrifað enn. Fyrsta yfirlitið kemur kl. 06:45 — eða ýttu á ↻ Skrifa aftur.';
-      return CSS + '<section class="panel rg rg-bid" aria-label="Ráðgjafinn Tony Stark">' + haus + '<p class="rg-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
+      return CSS + '<section class="panel rg rg-bid" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus + '<p class="rg-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
     }
 
     const rad = (n.rad || []).map((r) => '<li><div class="rg-t">' + esc(r.titill) + '</div><div class="rg-a">' + esc(r.af_hverju) + '</div>' +
@@ -152,7 +182,7 @@
       (n.kallad_af === 'agnar' ? ' · skrifað aftur að beiðni' : '') + '. Ráð og tillögur — þú ákveður.' +
       ((n.omaelt && n.omaelt.length) ? '<br><span class="err">Ekki mælt: ' + esc(n.omaelt.map((o) => o.hluti).join(', ')) + '</span>' : '') +
       '</div>' + villuLina(g);
-    return CSS + '<section class="panel rg" aria-label="Ráðgjafinn Tony Stark">' + haus +
+    return CSS + '<section class="panel rg" tabindex="-1" aria-label="Ráðgjafinn Tony Stark">' + haus +
       (n.fyrirsogn ? '<p class="rg-fyrir">' + esc(n.fyrirsogn) + '</p>' : '') +
       '<div class="rg-grid">' +
         '<section class="rg-dalkur" aria-label="Í dag"><h3>Í dag — einbeittu þér að</h3>' + (rad ? '<ol class="rg-rad">' + rad + '</ol>' : '<p class="rg-mute">Engin ráð í dag.</p>') + '</section>' +
@@ -167,13 +197,22 @@
   }
 
   // Smellir sem 368 sendir hingað (data-t5="rg-*"). Skilar true ef smellurinn var okkar.
+  // 368 skiptir öllum hnútum út við teikningu og endurheimtir aðeins fókus á [data-k]-reitum — án þessa fer fókusinn á BODY
+  // eftir Enter á takka (kerfisrýni 15.11.2026). ↻ verður óvirkur meðan skrifað er, þá fær glugginn sjálfur fókusinn.
+  function fokusAftur(t5) {
+    try {
+      const v = hysill(), rot = v && v.shadowRoot; if (!rot) return;
+      const b = rot.querySelector('[data-t5="' + t5 + '"]:not([disabled])') || rot.querySelector('section.rg');
+      if (b) b.focus({ preventScroll: true });
+    } catch (_) {}
+  }
   function smellur(el) {
     const a = el && el.dataset && el.dataset.t5;
     if (!a || a.indexOf('rg-') !== 0) return false;
-    if (a === 'rg-skrifa') { skrifaAftur(); return true; }
-    if (a === 'rg-fella') { S.fellt = !S.fellt; try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(FELLT_LYKILL, S.fellt); } catch (_) {} notify(); return true; }
+    if (a === 'rg-skrifa') { skrifaAftur(); fokusAftur('rg-skrifa'); return true; }
+    if (a === 'rg-fella') { S.fellt = !S.fellt; try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(FELLT_LYKILL, S.fellt); } catch (_) {} notify(); fokusAftur('rg-fella'); return true; }
     return false;
   }
 
-  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15b' };
+  window.Radgjafinn = { html, load, smellur, S, EIGANDI, version: '2026-11-15c' };
 })();

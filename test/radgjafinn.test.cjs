@@ -12,33 +12,35 @@ const R = require('../netlify/functions/_radgjafinn.cjs');
 
 const NU = new Date('2026-11-16T06:45:00Z');
 const dag = (n) => new Date(NU - n * 864e5).toISOString();
-const post = (id, msg, folder, fra, nafn, efni, texti, dagar) => ({ id, message_id: msg, folder, sender_email: fra, sender_name: nafn, subject: efni, body_preview: texti, snippet: '', received_at: dag(dagar) });
+const post = (id, msg, folder, fra, nafn, efni, texti, dagar, auka = {}) => ({ id, message_id: msg, account: 'stub@eldklar.is', folder, sender_email: fra,
+  to_addresses: 'stub@eldklar.is', sender_name: nafn, subject: efni, body_preview: texti, snippet: '', received_at: dag(dagar), ...auka });
+const TIL_H = { to_addresses: '"Stub" <stub-a@heimaleiga.is>' }, TIL_C = { to_addresses: 'stub-c@centerhotels.com' };
 
 function heimur() {
   return {
     postar: {
       'heimaleiga.is': [
-        post(1, 'm1', 'INBOX', 'stub-a@heimaleiga.is', 'Dimka', 'Skoðun Midtown', 'Getið þið komið á þriðjudag?\n\nOn Mon, 10 Nov 2026 Agnar wrote:\n> gamall texti', 1),
-        post(2, 'm1', 'INBOX', 'stub-a@heimaleiga.is', 'Dimka', 'Skoðun Midtown', 'tvítak sama message_id', 1),
-        post(3, 'm2', 'SENT', 'okkar@slokkvitaeki.is', 'Agnar', 'Re: Reikningur', 'Sendum leiðréttan reikning í dag.', 3),
+        post(1, 'm1', 'INBOX', 'stub-a@heimaleiga.is', 'Sigga', 'Skoðun Norðurhús', 'Getið þið komið á þriðjudag?\n\nOn Mon, 10 Nov 2026 Agnar wrote:\n> gamall texti', 1),
+        post(2, 'm1', 'INBOX', 'stub-a@heimaleiga.is', 'Sigga', 'Skoðun Norðurhús', 'tvítak sama message_id', 1),
+        post(3, 'm2', 'SENT', 'okkar@slokkvitaeki.is', 'Agnar', 'Re: Reikningur', 'Sendum leiðréttan reikning í dag.', 3, TIL_H),
         post(4, 'm3', 'INBOX', 'stub-b@heimaleiga.is', '', 'Ný eign', 'Bætist við í desember.', 20),
       ],
       'centerhotels.com': [
-        post(10, 'c1', 'INBOX', 'stub-c@centerhotels.com', 'Melissa', 'Skýrslur', 'Hvenær koma skýrslurnar?', 2),
-        ...[1, 2, 3, 4, 5, 6, 7].map((i) => post(10 + i, 'c' + (i + 1), 'SENT', 'okkar@slokkvitaeki.is', 'Agnar', 'Eldra ' + i, 'texti ' + i, 20 + i)),
+        post(10, 'c1', 'INBOX', 'stub-c@centerhotels.com', 'Jóna', 'Skýrslur', 'Hvenær koma skýrslurnar?', 2),
+        ...[1, 2, 3, 4, 5, 6, 7].map((i) => post(10 + i, 'c' + (i + 1), 'SENT', 'okkar@slokkvitaeki.is', 'Agnar', 'Eldra ' + i, 'texti ' + i, 20 + i, TIL_C)),
       ],
     },
     base: { heimaleiga: [{ id: 101 }, { id: 102 }], center: [{ id: 146 }] },
     solur: [
-      { id: 1, customer_nafn: 'Midtown', samtals: 50000, created_at: dag(40), krafa_sent_at: dag(38), paid_at: null, status: 'lokid', is_credit: false, hidden: false },
-      { id: 2, customer_nafn: 'Máni', samtals: 30000, created_at: dag(10), krafa_sent_at: null, dk_invoice_id: 'D9', paid_at: null, status: 'lokid', is_credit: false, hidden: false },
+      { id: 1, customer_nafn: 'Norðurhús', samtals: 50000, created_at: dag(40), krafa_sent_at: dag(38), paid_at: null, status: 'lokid', is_credit: false, hidden: false },
+      { id: 2, customer_nafn: 'Suðurhús', samtals: 30000, created_at: dag(10), krafa_sent_at: null, dk_invoice_id: 'D9', paid_at: null, status: 'lokid', is_credit: false, hidden: false },
       { id: 3, customer_nafn: 'Ógilt', samtals: 999999, created_at: dag(5), krafa_sent_at: dag(5), paid_at: null, status: 'void', is_credit: false, hidden: false },
       { id: 4, customer_nafn: 'Kredit', samtals: -20000, created_at: dag(5), krafa_sent_at: dag(5), paid_at: null, status: 'lokid', is_credit: true, hidden: false },
       { id: 5, customer_nafn: 'Ósent', samtals: 70000, created_at: dag(5), krafa_sent_at: null, paid_at: null, status: 'lokid', is_credit: false, hidden: false },
       { id: 6, customer_nafn: 'Greitt', samtals: 40000, created_at: dag(20), krafa_sent_at: dag(19), paid_at: dag(4), status: 'lokid', is_credit: false, hidden: false },
     ],
     charlize: [{ fact: 'Heimaleiga fékk sérkjör 30.10.2026', created_at: dag(16) }],
-    forgangsmal: [{ id: 9, title: 'Center: reikningar á bið', summary: '1.206.646 kr bíða', customer_nafn: 'Center Hotels', created_at: dag(6) }],
+    forgangsmal: [{ id: 9, title: 'Center: reikningar á bið', summary: '900.000 kr bíða', customer_nafn: 'Center Hotels', created_at: dag(6) }],
     greitt_sl: [{ samtals: 40000, status: 'lokid', is_credit: false, greitt_med: 'reikningur' }, { samtals: 5000, status: 'lokid', is_credit: false, greitt_med: 'posi' }],
     greitt_bh: [{ upphaed_total: 1327046 }],
     kv: {},
@@ -58,11 +60,26 @@ function stub(h, opt = {}) {
     const u = new URL(url), tafla = u.pathname.replace('/rest/v1/', ''), q = u.searchParams;
     if (opt.kasta && opt.kasta(tafla, method)) throw new Error('stub-netvilla');
     if (opt.bila && opt.bila(tafla, method)) return svar({ message: 'stub-bilun' }, 500);
-    if (tafla === 'app_kv' && method === 'POST') { h.kv[body.key] = body.value; return svar(null); }
+    if (tafla === 'app_kv' && method === 'POST') {
+      const pref = String((o.headers || {}).Prefer || '');
+      if (/ignore-duplicates/.test(pref)) { if (h.kv[body.key]) return svar([]); h.kv[body.key] = body.value; return svar([body]); }
+      h.kv[body.key] = body.value; return svar(null);
+    }
+    if (tafla === 'app_kv' && method === 'PATCH') {
+      const k = q.get('key').replace('eq.', ''), v = h.kv[k];
+      const ok = v && [...q.entries()].every(([sl, gildi]) => {
+        const m = sl.match(/^value->>(\w+)$/); if (!m) return true;
+        const [op, x] = [gildi.slice(0, gildi.indexOf('.')), gildi.slice(gildi.indexOf('.') + 1)];
+        return op === 'lt' && v[m[1]] != null && String(v[m[1]]) < x;
+      });
+      if (!ok) return svar([]);
+      h.kv[k] = body.value; return svar([{ key: k, value: body.value }]);
+    }
     if (tafla === 'app_kv') { const k = q.get('key').replace('eq.', ''); return svar(h.kv[k] ? [{ value: h.kv[k] }] : []); }
     if (tafla === 'automation_runs') { (h.runs = h.runs || []).push(body); return svar(null); }
     if (tafla === 'email_digest') {
-      const len = Object.keys(h.postar).find((d) => q.get('or').includes(d));
+      const len = Object.keys(h.postar).find((d) => q.get('and').includes(d));
+      assert.match(q.get('and'), /account\.ilike\."\*@eldklar\.is",account\.ilike\."\*@brunaholf\.is"/, 'SQL-sían takmarkar við pósthólf félaganna');
       const fra = q.get('received_at').replace('gte.', '');
       return svar(h.postar[len].filter((p) => p.received_at >= fra).sort((a, b) => b.received_at.localeCompare(a.received_at)));
     }
@@ -80,16 +97,16 @@ function stub(h, opt = {}) {
 }
 
 const GOTT = {
-  fyrirsogn: 'Svaraðu Center um skýrslurnar og innheimtu Midtown.',
-  heimaleiga: { stada: 'Dimka bíður svars um skoðun.', frettir: [
-    { texti: 'Dimka vill skoðun á Midtown á þriðjudag.', heimildir: ['H1'] },
+  fyrirsogn: 'Svaraðu Center um skýrslurnar og innheimtu Norðurhús.',
+  heimaleiga: { stada: 'Sigga bíður svars um skoðun.', frettir: [
+    { texti: 'Sigga vill skoðun á Norðurhús á þriðjudag.', heimildir: ['H1'] },
     { texti: 'Uppspunnin frétt án heimildar.', heimildir: ['H99'] },
     { texti: 'Leiðréttur reikningur sendur.', heimildir: ['H2', 'HR'] },
   ] },
-  center: { stada: 'Melissa spyr um skýrslur.', frettir: [{ texti: 'Melissa spyr hvenær skýrslurnar koma.', heimildir: ['C1'] }] },
+  center: { stada: 'Jóna spyr um skýrslur.', frettir: [{ texti: 'Jóna spyr hvenær skýrslurnar koma.', heimildir: ['C1'] }] },
   rad: [
-    { titill: 'Svara Melissu', af_hverju: 'Samband og reikningar á bið.', fyrsta_skref: 'Senda dagsetningu.', heimildir: ['C1', 'F1'] },
-    { titill: 'Innheimta Midtown', af_hverju: '50.000 kr 38 daga.', fyrsta_skref: 'Hringja.', heimildir: ['HR'] },
+    { titill: 'Svara Jónu', af_hverju: 'Samband og reikningar á bið.', fyrsta_skref: 'Senda dagsetningu.', heimildir: ['C1', 'F1'] },
+    { titill: 'Innheimta Norðurhús', af_hverju: '50.000 kr 38 daga.', fyrsta_skref: 'Hringja.', heimildir: ['HR'] },
     { titill: 'Ráð án heimildar', af_hverju: 'x', fyrsta_skref: 'y', heimildir: [] },
     { titill: 'Fjórða ráðið', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['G'] },
     { titill: 'Fimmta ráðið', af_hverju: 'x', fyrsta_skref: 'y', heimildir: ['G'] },
@@ -127,10 +144,10 @@ test('safna: reikningastaða hópsins með sömu skilgreiningu og 489 (sent, óg
   const h = heimur(); stub(h);
   const r = (await R.safna({ nu: NU })).hopar.heimaleiga.reikningar;
   assert.equal(r.id, 'HR');
-  assert.equal(r.ogreitt_fjoldi, 2, 'Midtown (krafa send) + Máni (dk_invoice_id); ógilt, kredit, ósent og greitt utan');
+  assert.equal(r.ogreitt_fjoldi, 2, 'Norðurhús (krafa send) + Suðurhús (dk_invoice_id); ógilt, kredit, ósent og greitt utan');
   assert.equal(r.ogreitt_kr, 80000);
   assert.equal(r.ogreitt_elsta_dagar, 38);
-  assert.deepEqual(r.ogreitt_staerstu.map((x) => x.nafn), ['Midtown', 'Máni']);
+  assert.deepEqual(r.ogreitt_staerstu.map((x) => x.nafn), ['Norðurhús', 'Suðurhús']);
   assert.equal(r.greitt_30d_fjoldi, 1); assert.equal(r.greitt_30d_kr, 40000);
 });
 
@@ -200,14 +217,14 @@ test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, m
   const h = heimur(); stub(h);
   const f = await R.safna({ nu: NU });
   const s = R.stadfesta(GOTT, f);
-  assert.deepEqual(s.heimaleiga.frettir.map((x) => x.texti), ['Dimka vill skoðun á Midtown á þriðjudag.', 'Leiðréttur reikningur sendur.']);
-  assert.deepEqual(s.rad.map((x) => x.titill), ['Svara Melissu', 'Innheimta Midtown', 'Fjórða ráðið']);
+  assert.deepEqual(s.heimaleiga.frettir.map((x) => x.texti), ['Sigga vill skoðun á Norðurhús á þriðjudag.', 'Leiðréttur reikningur sendur.']);
+  assert.deepEqual(s.rad.map((x) => x.titill), ['Svara Jónu', 'Innheimta Norðurhús', 'Fjórða ráðið']);
   assert.equal(s.betri_leid.titill, 'Greiðandi staðfestur áður en reikningur fer', 'fyrsta gilda tillagan; H77 er ekki til');
   assert.deepEqual(s.betri_leid.heimildir, ['H2', 'H3', 'HK1']);
   assert.equal(s.hent, 8, 'frétt H99 + ráð án heimildar + fimmta ráðið + tillögur: H77, án „núna", án „betra", án titils, önnur gild (mest ein)');
   assert.deepEqual(s.rad[0].heimildir, ['C1', 'F1']);
   assert.deepEqual(Object.keys(s.postar).sort(), ['C1', 'H1', 'H2', 'H3'], 'aðeins póstar sem eru notaðir — H3 kemur úr betri leiðinni');
-  assert.equal(s.postar.H1.efni, 'Skoðun Midtown'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
+  assert.equal(s.postar.H1.efni, 'Skoðun Norðurhús'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
 });
 
 test('stadfesta: engin betri leið (tómur listi, vantar eða ekki listi) → null, ekkert hent', async () => {
@@ -236,7 +253,7 @@ test('skrifa: vistar nýjasta + sögu + staðreyndir og skráir í automation_ru
 
 test('skrifa: fyrri betri leiðir fara til Claude (fyrri_tillogur) svo Tony endurtaki sig ekki — einstakar, mest 7', async () => {
   const h = heimur(); stub(h);
-  await R.skrifa({ kalladAf: 'morgun', nu: NU });
+  await R.skrifa({ kalladAf: 'agnar', nu: NU });
   const kall = stub(h);
   await R.skrifa({ kalladAf: 'morgun', nu: NU });
   const k = kall.find((x) => x.url.startsWith('https://api.anthropic.com/'));
@@ -259,16 +276,22 @@ test('skrifa: ↻ innan 5 mín gerir ekkert (Claude-kall kostar) — morgunskrif
   assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 0);
   kall = stub(h);
   const m = await R.skrifa({ kalladAf: 'morgun' });
-  assert.ok(m.skrifad_at);
+  assert.ok(m.skrifad_at, 'morgunskrifin fara fram hjá 5 mín. biðinni');
+  const m2 = await R.skrifa({ kalladAf: 'morgun' });
+  assert.match(m2.sleppt, /morgunskrifin fóru fram fyrir minna en 60 mín/, 'tókinn gildir í 10 mín. — en mest ein heppnuð morgunkeyrsla á klst.');
 });
 
 test('skrifa: bilun heldur síðustu góðu skrifunum, skráir villuna og kastar', async () => {
   const h = heimur(); stub(h);
   await R.skrifa({ kalladAf: 'morgun', nu: NU });
   const gomul = h.kv.radgjafinn.nyjast.skrifad_at;
+  h.kv.radgjafinn.nyjast.skrifad_at = new Date(Date.now() - 2 * 3600e3).toISOString();   // morgunskrifin voru fyrir 2 klst.
+  const gomulBreytt = h.kv.radgjafinn.nyjast.skrifad_at;
   stub(h, { claude: () => ({ ok: false, status: 500, json: async () => ({ error: { message: 'bilað' } }) }) });
   await assert.rejects(R.skrifa({ kalladAf: 'morgun', nu: NU }), /Claude 500/);
-  assert.equal(h.kv.radgjafinn.nyjast.skrifad_at, gomul, 'síðustu góðu skrifin standa');
+  assert.ok(gomul);
+  assert.equal(h.kv.radgjafinn.nyjast.skrifad_at, gomulBreytt, 'síðustu góðu skrifin standa');
+  assert.equal(h.kv.radgjafinn.saga.length, 1, 'sagan stendur');
   assert.match(h.kv.radgjafinn.sidasta_villa.texti, /Claude 500: bilað/);
   assert.equal(h.runs.at(-1).status, 'error');
 });
@@ -282,10 +305,10 @@ test('skrifa: prufa fer í sér lykla og snertir ekki það sem borðið sýnir'
 });
 
 test('radgjafinn.cjs: GET skilar nýjasta; með HUB_STAFF_PASSWORD fæst 401 án innskráningar', async () => {
-  const h = heimur(); stub(h);
+  const h = heimur(); h.hub = HUB(true); stub(h);
   await R.skrifa({ kalladAf: 'morgun', nu: NU });
   const G = require('../netlify/functions/radgjafinn.cjs');
-  const r = await G.handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} });
+  const r = await G.handler({ httpMethod: 'GET', queryStringParameters: {}, headers: kokur(hubToki('stub-leynd', 7, '2026-11-01')) });
   assert.equal(r.statusCode, 200);
   assert.equal(JSON.parse(r.body).nyjast.fyrirsogn, GOTT.fyrirsogn);
   assert.equal((await G.handler({ httpMethod: 'POST', headers: {} })).statusCode, 405);
@@ -337,9 +360,16 @@ test('hlið: kveikt innskráning → 401 án innskráningar, 401 með fölsuðum
   assert.equal(ok.statusCode, 200); assert.equal(JSON.parse(ok.body).nyjast.fyrirsogn, GOTT.fyrirsogn);
 });
 
-test('hlið: slökkt innskráning → opið eins og appið; hliðið svarar ekki → 503 (lokað, ekki opið)', async () => {
+test('hlið: rofinn opnar ekki — slökkt innskráning krefst samt stjórnanda; annað hlutverk 403; hliðið svarar ekki → 503', async () => {
   const h = heimur(); h.hub = HUB(false); stub(h);
-  assert.equal((await G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} })).statusCode, 200);
+  const sv = (headers) => G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers });
+  assert.equal((await sv({})).statusCode, 401, 'rofinn slökktur, engin innskráning → samt lokað');
+  assert.equal((await sv(kokur(hubToki('stub-leynd', 7, '2026-11-01')))).statusCode, 200, 'stjórnandi kemst inn');
+  h.hub.user.rola = 'Starfsmaður';
+  const r403 = await sv(kokur(hubToki('stub-leynd', 7, '2026-11-01')));
+  assert.equal(r403.statusCode, 403, 'starfsmaður sem velur „Agnar" á borðinu fær ekki gögnin');
+  assert.ok(!/nyjast|fyrirsogn/.test(r403.body));
+  h.hub.user.rola = 'Admin';
   h.hub = HUB(true); stub(h, { kasta: (t) => t === 'hub_adgangar_stilling' });
   const r = await G().handler({ httpMethod: 'GET', queryStringParameters: {}, headers: {} });
   assert.equal(r.statusCode, 503);
@@ -391,4 +421,92 @@ test('radgjafinn-morgun: ræsir background með gildum tóka; bilun skráist í 
   stub(h, { fall: () => { throw new Error('stub-netvilla'); } });
   assert.equal((await M().handler({})).statusCode, 500);
   assert.match(h.runs.at(-1).detail, /stub-netvilla/);
+});
+
+// ── Kerfisrýni 15.11.2026: pósthólf, lén, persónugögn og lás ─────────────────────────────────────────────────────────
+test('safna: aðeins pósthólf félaganna (eldklar.is, brunaholf.is) og netfang sem ENDAR á léni hópsins', async () => {
+  const h = heimur();
+  h.postar['heimaleiga.is'].push(
+    post(30, 'x1', 'INBOX', 'stub-a@heimaleiga.is', 'Sigga', 'Í einkapósthólfi', 'einka', 1, { account: 'einka@gmail.com' }),
+    post(31, 'x2', 'INBOX', 'heimaleiga.is.svik@gmail.com', 'Svik', 'Falskt lén', 'svik', 1),
+    post(32, 'x3', 'INBOX', 'x@ekkiheimaleiga.is', 'Svik', 'Annað lén', 'svik', 1),
+    post(33, 'x4', 'INBOX', 'stub-b@heimaleiga.is', 'Sigga', 'Úr Brunahólfs-hólfi', 'texti', 2, { account: 'stub@brunaholf.is' }),
+    post(34, 'x5', 'INBOX', 'stub-d@post.heimaleiga.is', 'Sigga', 'Undirlén', 'texti', 2),
+  );
+  stub(h);
+  const efni = (await R.safna({ nu: NU })).hopar.heimaleiga.postar.map((p) => p.efni);
+  assert.ok(efni.includes('Úr Brunahólfs-hólfi'), 'brunaholf.is-hólfin með (þar er mest af póstinum)');
+  assert.ok(efni.includes('Undirlén'), 'undirlén hópsins telst með');
+  for (const ut of ['Í einkapósthólfi', 'Falskt lén', 'Annað lén']) assert.ok(!efni.includes(ut), ut);
+  assert.ok(R.tilheyrir({ to_addresses: '"N" <a@heimaleiga.is>, b@annad.is' }, 'heimaleiga.is'));
+  assert.ok(!R.tilheyrir({ sender_email: 'a@heimaleiga.is.x', to_addresses: '' }, 'heimaleiga.is'));
+  assert.ok(!R.urPostholfi({ account: '' }) && !R.urPostholfi({ account: 'x@eldklar.is.annad.com' }));
+});
+
+test('safna: netföng, símanúmer, kennitölur og bankareikningar huldir áður en nokkuð fer til Claude', async () => {
+  const h = heimur();
+  h.postar['heimaleiga.is'].push(post(40, 'p1', 'INBOX', 'stub-a@heimaleiga.is', 'Sigga', 'Nýtt netfang: ny.adili@daemi.is',
+    'Hringið í 555 1234 eða +354 699 1234, eða 8991234. Kt. 010203-3456 og 0102033456. Greiðið inn á 0133-26-012345.\nKv. sigga@daemi.is', 1));
+  h.charlize = [{ fact: 'Tengiliður: anna@daemi.is, s. 699 4321', created_at: dag(3) }];
+  h.forgangsmal = [{ id: 9, title: 'Hringja í 555 9876', summary: 'netfang: x@daemi.is', customer_nafn: 'Center Hotels', created_at: dag(6) }];
+  const kall = stub(h);
+  const f = await R.safna({ nu: NU });
+  await R.kalla(f);
+  const sent = kall.find((k) => k.url.startsWith('https://api.anthropic.com/')).body.messages[0].content;
+  for (const leki of ['@', '555 1234', '699 1234', '8991234', '010203-3456', '0102033456', '0133-26-012345', '699 4321', '555 9876']) {
+    assert.ok(!sent.includes(leki), 'lak til Claude: ' + leki);
+  }
+  for (const merki of ['[netfang]', '[sími]', '[kennitala]', '[bankareikningur]']) assert.ok(sent.includes(merki), merki);
+});
+
+test('hylja: tölur sem eru ekki persónugögn standa óbreyttar', () => {
+  const t = 'Reikningur R-001070 upp á 1.234.567 kr, 15.11.2026 kl. 10:30, 12 tæki, 2.500 kr/stk, póstnr. 220, 1234567 kr.';
+  assert.equal(R.hylja(t), t);
+  assert.equal(R.hylja('s. +44 20 7946 0958'), 's. [sími]');
+});
+
+test('stadfesta: texti sem fer á skjáinn er líka hulinn (vörn ef Claude afritar netfang eða símanúmer)', async () => {
+  const h = heimur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const s = R.stadfesta({ ...GOTT, fyrirsogn: 'Hringdu í 555 1234 í dag', heimaleiga: { stada: 'Skrifaðu á a@b.is', frettir: [{ texti: 'Kt. 010203-3456 fylgdi', heimildir: ['H1'] }] } }, f);
+  assert.equal(s.fyrirsogn, 'Hringdu í [sími] í dag');
+  assert.equal(s.heimaleiga.stada, 'Skrifaðu á [netfang]');
+  assert.equal(s.heimaleiga.frettir[0].texti, 'Kt. [kennitala] fylgdi');
+});
+
+test('lás: tvö samtímis ↻ gefa EITT Claude-kall', async () => {
+  const h = heimur(); const kall = stub(h);
+  const [a, b] = await Promise.all([R.skrifa({ kalladAf: 'agnar', nu: NU }), R.skrifa({ kalladAf: 'agnar', nu: NU })]);
+  assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 1);
+  assert.equal([a, b].filter((x) => x.sleppt).length, 1);
+});
+
+test('lás: ↻ á meðan Claude bregst kallar ekki á Claude oftar en á 5 mín. fresti', async () => {
+  const h = heimur();
+  let kall = stub(h, { claude: () => ({ ok: false, status: 529, json: async () => ({ error: { message: 'overloaded' } }) }) });
+  await assert.rejects(R.skrifa({ kalladAf: 'agnar', nu: NU }), /Claude 529/);
+  const ut = await R.skrifa({ kalladAf: 'agnar', nu: NU });
+  assert.match(ut.sleppt, /minna en 5 mín/);
+  assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 1);
+});
+
+test('lás: útrunninn lás (fall dó í miðju kalli) er tekinn yfir; virkur lás stöðvar líka morgunskrifin', async () => {
+  const h = heimur(); stub(h);
+  const fyrir = (min) => new Date(Date.now() - min * 60000).toISOString();
+  h.kv.radgjafinn_las = { fra: fyrir(20), til: fyrir(10), kallad_af: 'agnar' };
+  assert.ok((await R.skrifa({ kalladAf: 'agnar', nu: NU })).skrifad_at, 'útrunninn lás tekinn yfir');
+  h.kv.radgjafinn_las = { fra: fyrir(1), til: new Date(Date.now() + 5 * 60000).toISOString(), kallad_af: 'agnar' };
+  assert.match((await R.skrifa({ kalladAf: 'morgun', nu: NU })).sleppt, /önnur keyrsla er í gangi/);
+});
+
+test('lestrarvilla stöðvar skrifin: síðustu góðu skrifin og sagan standa, ekkert Claude-kall, villan skráð', async () => {
+  const h = heimur(); stub(h);
+  await R.skrifa({ kalladAf: 'agnar', nu: NU });
+  const adur = JSON.stringify(h.kv.radgjafinn);
+  h.kv.radgjafinn_las.fra = new Date(Date.now() - 10 * 60000).toISOString();   // 5 mín. biðin liðin
+  const kall = stub(h, { bila: (t, m) => t === 'app_kv' && m === 'GET' });
+  await assert.rejects(R.skrifa({ kalladAf: 'agnar', nu: NU }), /app_kv/);
+  assert.equal(JSON.stringify(h.kv.radgjafinn), adur);
+  assert.equal(kall.filter((k) => k.url.startsWith('https://api.anthropic.com/')).length, 0);
+  assert.match(h.runs.at(-1).detail, /Las ekki fyrri skrif/);
 });
