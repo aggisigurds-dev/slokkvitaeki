@@ -1024,6 +1024,8 @@
       '.h1{font-family:var(--disp);font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:6px 0 0;color:var(--ink);text-shadow:0 1px 0 #fff,0 2px 2px rgba(22,21,19,.18)}',
       '.lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}',
       '.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 18px;flex-wrap:wrap}',
+      '.t5-hl{position:absolute;top:0;right:0;display:flex;gap:8px;z-index:2}.t5-hl a{text-decoration:none}',
+      '@container t5 (max-width: 760px){.t5-hl{position:static;flex-wrap:wrap;margin:0 0 10px}.t5-hl .btn{flex:1}}',
       '.meta{margin:8px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}',
       '.beta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}',
       '.note{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}',
@@ -1536,7 +1538,9 @@
         '.cfgrow.hamh>.lock:not(:last-child),.cfgrow.hamh>span:empty{display:none}' +
         '.composer,.composer.ny{grid-template-columns:minmax(0,1fr)}.composer textarea{grid-column:auto}.leit{max-width:none}' +
       '}',
-      '@media (prefers-reduced-motion: reduce){.btn{transition:none}}'
+      '@media (prefers-reduced-motion: reduce){.btn{transition:none}}',
+      // 507 (16.11.2026): Brunahólf V2-útlit á nafn starfsmanns — yfirlag sem gildir aðeins undir :host([data-thema="bh2"]).
+      (window.ThbThemaBh2 ? ThbThemaBh2.css() : '')
     ].join('\n');
   }
   // Skuggarótin verður til einu sinni; atburðir hlustaðir á henni (change fer ekki út úr skugga).
@@ -5183,6 +5187,7 @@
     }
     S.chkTvinga = 0;
     const n = nu(), c = cfg();
+    if (window.ThbThemaBh2) ThbThemaBh2.stilla(v, n);   // 507: data-thema="bh2" á hýslinum ef sá sem er við borðið valdi V2
     // Hamur sem var falinn í ⚙ (eða opnaður úr öðru, t.d. vinnublaði) er ekki sýndur — lent á sýnilegum ham.
     if (hamFalinnHja(n, c.mode)) { c.mode = lendingarHamur(n, ''); S.filter = (M(c.mode) || MODES.thjonusta).filter || 'allt'; }
     const mode = M(c.mode) || MODES.thjonusta;
@@ -5317,11 +5322,17 @@
       '<div class="t5"><div class="col">' +
         '<div class="head" style="position:relative"><div>' +
           // 09.10.2026 (Agnar: „setja stjórnborðið þarna sem ég kemst inn á fyrirtækin" — efst t.h.): Þjónustugátt-stjórnborðið.
-          '<a class="btn iv" href="/gatt-admin/" title="Stjórnborð þjónustugáttarinnar — opna vef hvers fyrirtækis" style="position:absolute;top:0;right:0;text-decoration:none;z-index:2">Þjónustugátt ›</a>' +
+          // 16.11.2026 (Agnar: „setja linkinn af nýju vefsíðunni … inn á þjónustuborð … hjá öllum ofarlega"): nýi vefur
+          // Brunahólfs (brunaholf repo vefur/) við hlið Þjónustugáttar, hjá öllum starfsmönnum. Í síma fer röðin ofan við fyrirsögnina.
+          '<div class="t5-hl">' +
+            '<a class="btn iv" href="https://brunaholf.netlify.app/vefur/" target="_blank" rel="noopener" title="Nýi vefur Brunahólfs — opnast í nýjum flipa">Nýi vefurinn ↗</a>' +
+            '<a class="btn iv" href="/gatt-admin/" title="Stjórnborð þjónustugáttarinnar — opna vef hvers fyrirtækis">Þjónustugátt ›</a>' +
+          '</div>' +
           '<div class="kicker">Þjónusta · ' + VIKUDAGUR[now.getDay()] + ' ' + now.getDate() + '. ' + MAN[now.getMonth()] + '</div>' +
           '<h1 class="h1">Þjónustuborð</h1>' +
           '<p class="meta">' + (mode.board ? (c.mode !== 'thjonusta' ? 'Hamur: ' + esc(mode.l) + ' · ' : '') + master.length + ' á Master · ' + mine.length + ' á þínu borði · ' + hot + ' áríðandi' : 'Hamur: ' + esc(mode.l)) +
-            '<span class="t5-sott">' + (S.loadedAt ? ' · sótt kl. ' + klukka(S.loadedAt) : '') + '</span></p>' +
+            '<span class="t5-sott">' + (S.loadedAt ? ' · sótt kl. ' + klukka(S.loadedAt) : '') + '</span>' +
+            (window.ThbThemaBh2 ? ThbThemaBh2.rofi(n) : '') + '</p>' +   // 507: litli rofinn [Boss | V2]
           '' +
         '</div><div class="acts">' +
           '<label class="who"><span class="lbl">Ég er</span><select data-t5="who" aria-label="Starfsmaður">' +
@@ -6569,6 +6580,11 @@
         return;
       }
       case 'sannreyna': sannreyna(); return;
+      case 'thema': {   // 507: útlit borðsins á nafn þess sem er við borðið (vistað á þjón, eins á öllum vélum)
+        if (!window.ThbThemaBh2 || !krefstStillinga()) return;
+        ThbThemaBh2.skipta(nu(), el.dataset.v, render).then(ok => { if (!ok) toast('Útlitið vistaðist ekki. Reyndu aftur.', true); });
+        return;
+      }
       case 'sann-loka': S.sannreyn = null; render(); return;
       case 'fela-endurlesa': if (G.falid) G.falid.at = 0; render(); return;
       case 'skyr-opna': skyrOpna({ l: el.dataset.fl, e: el.dataset.fe, d: el.dataset.fd }); return;
