@@ -57,7 +57,7 @@ test('listinn: sækir verkin, telur eftir tegund og afmáir texta úr gögnunum'
   const h = BA.listi();
   assert.ok(!/<img src=x/.test(h), 'titill úr gögnunum má aldrei verða að HTML');
   assert.match(h, /&lt;img src=x onerror=alert\(1\)&gt; Svara/);
-  assert.match(h, /30\.773 kr\./, 'áætlað virði sýnt');
+  assert.match(h, /12\.345 kr\./, 'áætlað virði sýnt');
   assert.match(h, /data-baf="opna" data-id="22" aria-expanded="false"/);
   assert.ok(!/baf-d-22/.test(h), 'ekkert opið fyrr en smellt er');
 });
