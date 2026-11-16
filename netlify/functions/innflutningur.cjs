@@ -2,6 +2,7 @@
 // öllu innfluttu sem við síðan uppfærum við núverandi birgðir").
 //
 //   GET  /api/innflutningur                                   → { sendingar[], vorur[] }  (hver sending ber `reikningur`)
+//   GET  /api/innflutningur?vara=<id>                         → { vara, hreyfingar[], sala[] }  hreyfingalisti einnar vöru
 //   POST { action:'vista', sending:{ id?, updated_at?, … } }  → { sending }   drög; ný röð ef ekkert id
 //   POST { action:'eyda', id }                                → { ok }        aðeins drög
 //   POST { action:'faera', id, val, forskoda?, omaelt_ok? }   → { aaetlun } / { sending, faersla }
@@ -110,11 +111,17 @@ async function faera(b, nafn) {
   if (!gert.length) return P.json(409, { error: 'Engu var breytt: vörunum var breytt á meðan. Hladdu flipanum aftur.', arekstrar });
 
   const nu = new Date().toISOString();
+  // Hreyfingalisti hverrar vöru (vorur_hreyfingar): ein röð per vöru sendingarinnar, líka þær sem halda eldra kaupverði.
+  // Bregðist skriftin stendur færslan (kaupverðið er komið á vörurnar og `faersla` geymir það) — sagt frá í svarinu.
+  let hreyfingarVilla = null;
+  try {
+    await sb('vorur_hreyfingar', { method: 'POST', body: JSON.stringify(R.hreyfingar(row, reikn, gert, vorur, nafn)) });
+  } catch (e) { hreyfingarVilla = e && e.message ? e.message : String(e); console.error('[innflutningur] hreyfingar', e); }
   const faersla = { at: nu, af: nafn, linur: gert, arekstrar, omaeldir: reikn.omaeldir };
   const saga = (Array.isArray(row.saga) ? row.saga : []).concat([{ at: nu, af: nafn, adgerd: 'faert', fjoldi: gert.length }]);
   const [ny] = await sb(`innflutningur?id=eq.${row.id}`, { method: 'PATCH', headers: skila,
     body: JSON.stringify({ stada: 'faert', faersla, saga, breytt_af: nafn, updated_at: nu }) });
-  return P.json(200, { sending: utSending(ny), faersla });
+  return P.json(200, { sending: utSending(ny), faersla, hreyfingar_villa: hreyfingarVilla });
 }
 
 async function afturkalla(b, nafn) {
@@ -150,10 +157,25 @@ async function afturkalla(b, nafn) {
     else sleppt.push({ vara_id: l.vara_id, nafn: l.nafn, astaeda: 'Vörunni var breytt á meðan — reyndu aftur' });
   }
   const nu = new Date().toISOString();
+  try {
+    await sb(`vorur_hreyfingar?innflutningur_id=eq.${row.id}&afturkallad_at=is.null`, { method: 'PATCH', body: JSON.stringify({ afturkallad_at: nu }) });
+  } catch (e) { console.error('[innflutningur] hreyfingar afturkallaðar', e); }
   const saga = (Array.isArray(row.saga) ? row.saga : []).concat([{ at: nu, af: nafn, adgerd: 'afturkallad', fjoldi: afturkallad.length, sleppt: sleppt.length }]);
   const [ny] = await sb(`innflutningur?id=eq.${row.id}`, { method: 'PATCH', headers: skila,
     body: JSON.stringify({ stada: 'drog', faersla: null, saga, breytt_af: nafn, updated_at: nu }) });
   return P.json(200, { sending: utSending(ny), afturkallad, sleppt });
+}
+
+// Hreyfingalisti einnar vöru: varan sjálf, hreyfingarnar (nýjast fyrst) og salan eftir mánuðum (sömu föll og „Selt"
+// í Birgðum). Náist salan ekki er hún sögð ómæld (sala_villa) — hún er aldrei sýnd sem núll.
+async function voruSaga(id) {
+  const [vorur, hreyfingar, sala] = await Promise.all([
+    sb(`vorur?id=eq.${id}&select=id,nafn,flokkur,birgdir,kostnadarverd,listaverd,verd_an_vsk,vsk_prosenta,birgi`),
+    sb(`vorur_hreyfingar?vara_id=eq.${id}&select=*&order=created_at.desc,id.desc&limit=300`),
+    sb('rpc/vara_solusaga', { method: 'POST', body: JSON.stringify({ p_vara: id }) }).catch((e) => { console.error('[innflutningur] sölusaga', e); return null; }),
+  ]);
+  if (!vorur || !vorur[0]) return P.json(404, { error: 'Varan fannst ekki' });
+  return P.json(200, { vara: vorur[0], hreyfingar: hreyfingar || [], sala: sala || [], sala_villa: sala == null });
 }
 
 exports.handler = async (event) => {
@@ -164,6 +186,11 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
+      const q = event.queryStringParameters || {};
+      if (q.vara != null && q.vara !== '') {
+        if (!idOk(q.vara)) return P.json(400, { error: 'Ógilt vörunúmer' });
+        return await voruSaga(Number(q.vara));
+      }
       const [sendingar, vorur] = await Promise.all([
         sb('innflutningur?select=*&order=dags.desc.nullsfirst,id.desc&limit=200'),
         sb('vorur?select=id,nafn,flokkur,birgdir,kostnadarverd,listaverd,verd_an_vsk,vsk_prosenta,birgi,virkt&order=nafn&limit=2000'),

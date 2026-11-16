@@ -466,6 +466,7 @@
           ? `<a class="btn btn-ghost btn-sm" href="${esc(m.slod)}" target="_blank" rel="noopener" oncontextmenu="Stock.setjaSlod(${kq});return false" title="Opna hjá birgja: ${esc(hostur(m.slod))} · hægrismella til að breyta eða fjarlægja" style="color:var(--blu);text-decoration:none">🔗</a>`
           : `<button class="btn btn-ghost btn-sm" onclick="Stock.setjaSlod(${kq})" title="Setja inn tengil á vöruna hjá birgja" style="opacity:.55">🔗</button>`}
         <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
+        ${vara ? `<button class="btn btn-ghost btn-sm" onclick="window.VoruHreyfingar && VoruHreyfingar.opna(${i.id})" title="Hreyfingar vörunnar: innkaup, kostnaðarverð með útreikningi, talningar og sala">Saga</button>` : ''}
         ${!vara ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
         <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
       </div></td>
