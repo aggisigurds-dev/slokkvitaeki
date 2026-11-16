@@ -263,6 +263,11 @@
 [functions."trio-cron"]
   schedule = "0 6 * * *"
 
+# Einkaritarinn (16.11.2026) — morgunyfirlit á Þjónustuborði Agnars: vikan í tölum, samningar, forgangsröðun, áminningar.
+# Sama mynstur og Ráðgjafinn: 30 sek. áætlunarkall sem ræsir einkaritari-background (15 mín.).
+[functions."einkaritari-cron"]
+  schedule = "45 6 * * *"
+
 # Ráðgjafinn (15.11.2026) — morgunyfirlit á Þjónustuborði Agnars í rödd Tony Stark: fréttir úr póstinum við Heimaleigu og
 # Center Hotels, ráð dagsins og ein betri leið, skrifuð af Claude úr gögnunum. Tilbúið áður en Agnar mætir.
 # Áætlað fall hefur 30 sek. þak, svo radgjafinn-morgun RÆSIR radgjafinn-background (15 mín.). Sjá _radgjafinn.cjs.
