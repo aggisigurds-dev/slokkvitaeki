@@ -158,6 +158,27 @@ neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (ke
 
 ---
 
+## 👁️ ÓÐINN — fyrst til hans, svo (kannski) til Agnars (16.11.2026)
+
+Agnar réð agentinn `odin` 16.11.2026 sem umsjónarmann samþykkta og Verkefnalistans, og kennir honum regla fyrir
+reglu hvernig hann vill að mál séu afgreidd („bit by bit … in the beginning easier obvious samþykktir, then more and more").
+
+**Áður en þú stofnar samþykkismál á Agnar, verk á Verkefnalistann, eða tilkynnir bilun** flettir þú upp í reglubókinni:
+
+```sql
+select id, heiti, thegar, adgerd, urskurdur, heimild, thak_kr, agent, skill, skref from odin_reglur where virk order by flokkur, id;
+```
+
+- Regla á við og `heimild = 'sjalfur'` → gerðu það sem reglan segir og skráðu úrskurðinn í `odin_urskurdir` (`gert = true`). Ekkert mál á Agnar.
+- Regla á við og `heimild = 'leggja_til'` → undirbúðu verkið (Afgreiðsla / „Tilbúin verk") svo Agnar ýti einu sinni. Skráðu úrskurð með `gert = false`.
+- Engin regla → þá fyrst mál á Agnar (innan SAMÞYKKISÞAKS), með einni já/nei-línu og spurningunni hvort svarið eigi að verða regla.
+
+**Þegar Agnar segir „Óðinn: …"** er hann að kenna reglu: skráðu hana í `odin_reglur` með orðum hans orðrétt í `heimildarord`
+(`heimild = 'leggja_til'` nema hann segi skýrt að Óðinn megi afgreiða sjálfur) og segðu honum í einni línu hvað var skráð.
+Heimild `sjalfur` veitir aðeins Agnar. Öll rútínan og mörkin: `.claude/agents/odin.md`.
+
+---
+
 ## ⛔ SAMÞYKKISÞAK — áður en þú stofnar mál á Agnar (11.11.2026)
 
 **Mælt 11.11.2026:** síðustu 14 daga stofnuðu Claude-lotur 99 samþykkismál á Þjónustuborðið
