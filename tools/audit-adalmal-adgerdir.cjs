@@ -11,6 +11,8 @@
  *   4. Prufa póstsendingar sendir gmail-send AÐEINS { prufa, account } með tókanum — engir viðtakendur, ekkert efni.
  *   5. 492 skrifar aldrei sjálft í afgreidsla / charlize_knowledge / verkefnalisti (aðeins um vélina), og lykill
  *      borðsins (adalmal:<mál>-<hluti>-<nr>) er sá sami og þjónsins.
+ *   6. „Biddu Claude" (492f): rofinn af → 409 og ekkert skráð; einnota nonce fer ALDREI til vafrans; bakgrunnsvinnan gerir
+ *      ekkert með röngu nonce; staðhæfing án gildrar heimildar er hent; svar á sjálfvirkt netfang (noreply) stöðvast í athuga().
  * Keyrir líka í `audit-all --static`.
  */
 'use strict';
@@ -92,6 +94,28 @@ const AKV = { adgerd: 'adalmal', mal_id: 1587, hluti: 'c', nr: 0, texti: TEXTI, 
     villur.push('5. lykill borðsins (amLyk) og þjónsins (amLykill) eru ekki lengur sá sami — ákvarðanir lentu á röngu atriði');
   }
 
+  // 6. „Biddu Claude"
+  MAL = OPID; KOLL.length = 0;
+  r = await kall(Object.assign({}, AKV, { gerd: 'claude', fyrirmaeli: 'x' }));
+  if (r.s !== 409 || KOLL.some((k) => k[0] !== 'GET')) villur.push(`6a. „Biddu Claude" með rofann af: vænti 409 án skrifa, fékk ${r.s} (${KOLL.filter((k) => k[0] !== 'GET').length} skrif)`);
+  const syn = AF._synilegtAdalmal({ lykill: 'adalmal:1587-c-0', gogn: {}, nidurstada: { claude: { stada: 'i_vinnslu', nonce: 'a'.repeat(32), at: new Date().toISOString() } } });
+  if (!syn.claude || 'nonce' in syn.claude) villur.push('6b. nonce Claude-beiðnar fer til vafrans — þá gæti hver sem sér svarið ræst bakgrunnsvinnuna');
+  const CL = require(path.join(FN, '_adalmal-claude.cjs'));
+  const getFyrir = P.sbGet; KOLL.length = 0;
+  P.sbGet = async (qs) => { KOLL.push(['GET', qs]); if (qs.startsWith('afgreidsla')) return svar([{ id: 1, gogn: { mal_id: 1587, hluti: 'c', nr: 0, texti: TEXTI }, nidurstada: { claude: { stada: 'i_vinnslu', nonce: 'a'.repeat(32), at: new Date().toISOString() } } }]);
+    if (qs.startsWith('thjonustubeidni')) return svar([{ id: 1587, title: 'Vikuyfirlit', status: 'nytt' }]);   // opið mál — svo vinnan kæmist alla leið að Claude án nonce-varnar
+    return svar([]); };
+  const kallaFyrir = CL.kalla; let kallad = false; CL.kalla = async () => { kallad = true; return { svar: {}, model: 'x' }; };
+  try {
+    const v = await CL.vinna('adalmal:1587-c-0', 'b'.repeat(32));
+    if (v.ok || kallad || KOLL.some((k) => k[0] !== 'GET')) villur.push('6c. bakgrunnsvinnan keyrði (eða skrifaði) með RÖNGU nonce');
+  } finally { P.sbGet = getFyrir; CL.kalla = kallaFyrir; }
+  const st = await CL.stadfesta({ svar: 's', stadreyndir: [{ texti: 'gild', heimildir: ['B1'] }, { texti: 'uppspuni', heimildir: ['Z9'] }], tillaga: { tegund: 'ekkert' }, omaelt: [] },
+    { kort: { B1: { lysing: 'R-364', opna: null } } });
+  if (st.stadreyndir.length !== 1 || st.hent !== 1) villur.push('6d. staðhæfing án gildrar heimildar var ekki hent');
+  const athS = await AF._athuga({ tegund: 'tolvupostur', gogn: { account: 'eldklar@eldklar.is', to: ['noreply@domain.is'], texti: 'x', svar_vid: {} } });
+  if (athS.ok || !athS.athuganir.some((a) => /sjálfvirkt netfang/.test(a.texti) && !a.ok)) villur.push('6e. athuga() stöðvar ekki svar á noreply-netfang');
+
   if (villur.length) { console.log('✗ audit-adalmal-adgerdir — ' + villur.length + ' brot:\n  ' + villur.join('\n  ')); process.exit(1); }
-  console.log('✓ audit-adalmal-adgerdir — hlið, lokað mál, rangur texti, Já→Charlize, prufa {prufa,account} og eina leið 492 standast');
+  console.log('✓ audit-adalmal-adgerdir — hlið, lokað mál, rangur texti, Já→Charlize, prufa {prufa,account}, eina leið 492 og „Biddu Claude" (rofi, nonce, heimildir, noreply) standast');
 })().catch((e) => { console.log('✗ audit-adalmal-adgerdir — keyrsla brást: ' + (e && e.stack || e)); process.exit(1); });

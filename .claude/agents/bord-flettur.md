@@ -710,6 +710,16 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   492 `opnaMalUrSlod` → `Bord368.opnaMal`). Athugasemd á hvert verk (`adgerd:'athugasemd'`, dálkar `athugasemd/_af/_at`,
   sql/2026-11-16b) og á hvert atriði (`gerd:'athugasemd'`, ekki Charlize). afgreidsla.html: listi til hliðar (≥960 px; ofan
   við spjaldið í síma), flokkasía (Allt/Póstur/Krafa/Símtal/Verk), val eftir auðkenni (`S.val`), ✎ á verkum með athugasemd.
+  · **492f „✦ Biddu Claude" (16.11.2026, Agnar valdi „A fyrst, svo B"):** á hverju A/C-atriði og spurningu. Fyrirmæli (má sleppa) →
+  `gerd:'claude'` skráir beiðni með einnota `nonce` á röðina og ræsir `adalmal-claude-background` (HEIMILDIN ER RÖÐIN: rangt/útrunnið
+  nonce = ekkert gert). `_adalmal-claude.cjs` safnar gögnum sem atriðið nefnir (R-NNNNNN → solur + v_krafa_ogreidd/ekki_send +
+  Payday; R-NNN → Brunahólfs-invoices + Kröfuyfirlit; #mál; drög #; nöfn → fyrirtaeki, Tímavera eftir mánuði, invoice_drafts, póstur
+  60 d. án sjálfvirkra sendenda, opið í Afgreiðslu/Verkefnalista, Charlize), HYLUR netföng/kt/síma/bankareikninga, kallar Opus
+  (json_schema) og HENDIR staðhæfingu án gildrar heimildar; póstsvar aðeins við nýjasta skeyti, eldklar@/bokhald@, ekki noreply.
+  `gerd:'claude_samthykkja'` = einn takki: verk → Verkefnalisti, póstsvar → ný röð í „Tilbúið til afgreiðslu" (athuga() keyrt;
+  Agnar sendir þaðan). Á spurningum „Nota sem drög að svari þínu". Borðið kannar á 4 s fresti. **ROFI:** `app_kv adalmal_claude
+  {virkt:true}` — AF þar til raunverulegt Opus-kall hefur staðist Í LOFTINU (ANTHROPIC_API_KEY fæst ekki úr `netlify dev:exec`:
+  413 stafa dulkóðað gildi → 401). Staðbundin próf stubba `CL.kalla` (scratchpad `test-claude-stub.cjs`, 12/12).
   · **Áður en NÝTT yfirlit er skrifað:** lestu `select fact from v_charlize_active where topic='akvardanir-agnars'` og
   `afgreidsla where tegund='adalmal'` — Nei-atriði fara ekki aftur á blað nema ný staðreynd sé komin.
   · Prófun: `tools/audit-adalmal-adgerdir.cjs` (hegðun á stubbum: hlið, lokað mál, rangur texti, Já→Charlize, prufa). Enda á milli

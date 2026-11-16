@@ -32,6 +32,11 @@
  *     Á Verkefnalistann (Claude vinnur verkið). Athugasemd má fylgja.
  *   · Tilbúið til afgreiðslu: forunnu verkin úr Afgreiðslu (póstsvar, krafa, símtal, verk) beint á borðinu — sama spjald,
  *     sömu athuganir, sami rauði takki (tvö tök) og afgreidsla.html.
+ * 492f (16.11.2026, Agnar valdi „A fyrst, svo B"): „✦ Biddu Claude" á hverju atriði og spurningu — fyrirmæli (má sleppa),
+ *   Opus les atriðið og gögnin sem það nefnir (_adalmal-claude.cjs, bakgrunnsfall) og skilar svari, staðreyndum með heimildum
+ *   og MEST EINNI tillögu (verk eða póstsvar); einn takki samþykkir (verk → Verkefnalisti, póstsvar → Tilbúið til afgreiðslu,
+ *   þaðan sendir Agnar sjálfur). Á spurningum: „Nota sem drög að svari þínu". Takkinn sést aðeins þegar rofinn er á
+ *   (app_kv adalmal_claude). Borðið kannar röðina á 4 s fresti meðan Claude vinnur.
  * 492e (16.11.2026): R-númer í textanum og hver heimild á afgreiðsluspjaldi opnar skjalið sjálft (reikningur/skýrsla
  *   sem PDF, pósturinn í Gmail, Payday-PDF); athugasemd á hvert afgreiðsluverk og hvert atriði („Vista athugasemd").
  *   Allt fer um SÖMU vél: /api/afgreidsla (netlify/functions/afgreidsla.cjs) — aðeins innskráður stjórnandi, læst röð á
@@ -71,7 +76,8 @@
 
   const S = { loaded: false, loading: false, villa: null, mal: [], sidast: null, falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {},
     // 492d — afgreiðsluvélin (/api/afgreidsla): leyfi null = óvíst (ekkert sýnt fyrr en þjónninn hefur svarað)
-    af: { tilbuin: [], am: {}, tilv: {}, at: 0, loading: false, villa: null, leyfi: null },
+    af: { tilbuin: [], am: {}, tilv: {}, at: 0, loading: false, villa: null, leyfi: null, claudeVirkt: false },
+    clOpid: null, clPoll: 0,
     opidAt: null, drog: {}, amBusy: {}, hlSkilabod: {}, svBreyta: {}, atKort: {},
     afOpid: null, afVopnad: null, afBusy: false, afSkilabod: null, afTexti: {}, afAthDrog: {}, afAthSk: {}, afAthBusy: false };
   const AF = '/api/afgreidsla';
@@ -133,10 +139,18 @@
         S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = j.tilbuin || [];
         const am = {}; (j.adalmal || []).forEach(x => { am[x.lykill] = x; }); S.af.am = am;
         S.af.tilv = j.tilvisanir || {};
+        S.af.claudeVirkt = !!j.claude_virkt;
         if (S.afOpid != null && !S.af.tilbuin.some(v => v.id === S.afOpid)) S.afOpid = null;
       }
     } catch (e) { S.af.villa = 'Náði ekki í afgreiðsluna: ' + ((e && e.message) || e); }
     S.af.at = Date.now(); S.af.loading = false; render();
+    kannaClaude();
+  }
+  // Meðan Claude vinnur á einhverju atriði er röðin könnuð á 4 s fresti (mest 5 mín. frá beiðni). Ein klukka í einu.
+  function kannaClaude() {
+    clearTimeout(S.clPoll); S.clPoll = 0;
+    const bidur = Object.values(S.af.am).some(x => x && x.claude && x.claude.stada === 'i_vinnslu' && Date.now() - Date.parse(x.claude.at) < 5 * 60 * 1000);
+    if (bidur && erVirk()) S.clPoll = setTimeout(() => { if (!S.af.loading) loadAf(); else kannaClaude(); }, 4000);
   }
   // Svar/ákvörðun á atriði — lesið til baka úr svari þjónsins (atridi) og teiknað þaðan, aldrei úr því sem var sent.
   async function amAdgerd(l, gerd, extra) {
@@ -151,6 +165,11 @@
         if (gerd === 'svar') { delete S.drog['sv:' + l]; S.svBreyta[l] = false; }
         delete S.drog['ath:' + l]; drogVista();
         if (gerd !== 'akvordun' || (extra && extra.akvordun !== 'ja')) S.opidAt = null;
+        if (gerd === 'claude') { delete S.drog['cl:' + l]; drogVista(); S.clOpid = null; kannaClaude(); }
+        if (gerd === 'claude_samthykkja') {
+          const sa = j.atridi.claude && j.atridi.claude.samthykkt;
+          if (sa && sa.afgreidsla_id) { S.afOpid = sa.afgreidsla_id; loadAf(); }
+        }
       } else {
         S.hlSkilabod[hk] = { ok: false, texti: j.error || ('Villa ' + j._status), at: Date.now(), atridi: at.texti };
         if (j._status === 401 || j._status === 403) { S.af.leyfi = false; S.af.villa = j.error; }
@@ -316,6 +335,14 @@
       V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
       V + ' .ad-linur{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 10px;font-size:13px;margin-bottom:6px}' + V + ' .ad-linur dt{font:700 10.5px/1.8 ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#6b7380}' + V + ' .ad-linur dd{margin:0;overflow-wrap:anywhere}',
+      V + ' .ad-akr{display:flex;flex-wrap:wrap;gap:6px}' + V + ' .ad-ak-cl{border-color:#2f4f7a;color:#1d3b63}' + V + ' .ad-ak-cl[aria-expanded="true"]{background:linear-gradient(180deg,#2f4f7a,#1d3b63);color:#fff}',
+      V + ' .ad-cl{margin:8px 0 2px;padding:10px 12px;border-radius:9px;background:#eef3fa;border:1px solid rgba(47,79,122,.35);font-size:14px;line-height:1.45}',
+      V + ' .ad-cl._bid{color:#1d3b63;font-weight:600}' + V + ' .ad-cl._v{background:#fbe9e9;border-color:#e3a3a3;color:#7a0b0e}' + V + ' .ad-cl small{font:500 11px ' + MONO + ';color:#525b6b;font-weight:400}',
+      V + ' .ad-cl-h{font:700 11px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#1d3b63;margin-bottom:4px}' + V + ' .ad-cl-svar{margin:0 0 6px;font-weight:600}',
+      V + ' .ad-cl-st{margin:0 0 6px;padding-left:16px}' + V + ' .ad-cl-st li{margin:3px 0}' + V + ' .ad-cl-hm{display:inline-block;font:500 10.5px ' + MONO + ';color:#525b6b;border:1px solid rgba(20,24,34,.18);border-radius:3px;padding:0 5px;margin-left:2px}',
+      V + ' .ad-cl-om{font:500 11.5px ' + MONO + ';color:#6b5320;margin:4px 0}',
+      V + ' .ad-cl-t{margin:6px 0;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid rgba(20,24,34,.16)}' + V + ' .ad-cl-t b{font-size:12.5px}' + V + ' .ad-cl-t .tt{font-weight:700;margin-top:3px}' + V + ' .ad-cl-t .tl{font-size:13px;color:#3a4250;white-space:pre-wrap;max-height:160px;overflow:auto}',
+      V + ' .ad-cl-t pre{margin:6px 0 0;white-space:pre-wrap;font:13.5px/1.45 ' + SANS + ';color:#1f2530;max-height:240px;overflow:auto}',
       V + ' a.ad-opna{display:inline-block;margin-left:2px;font:600 12px ' + SANS + ';color:#1d4f91;text-decoration:none;border-bottom:1px solid rgba(29,79,145,.35)}',
       V + ' .ad-afk textarea.ad-afath{min-height:60px}',
       V + ' .ad-afk textarea{width:100%;box-sizing:border-box;min-height:150px;resize:vertical;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.15);padding:9px 11px;font:14px/1.5 ' + SANS + ';color:#141822}',
@@ -402,6 +429,43 @@
       (x && x.svar ? '<button type="button" class="_lt" data-adm="svhaetta" data-l="' + el + '">Hætta við</button>' : '') + '</div>' +
       '<div class="ad-skyr">Svarið vistast hjá Charlize og fer á Verkefnalistann — Claude vinnur úr því.</div></div>';
   }
+  /* ── 492f: „Biddu Claude" (Agnar valdi A 16.11.2026) ─────────────────────── */
+  const sekAf = iso => Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  function claudeSvarHtml(l, c, k) {
+    const el = esc(l), t = c.tillaga || { tegund: 'ekkert' }, busy = !!S.amBusy[l], hm = c.heimildir || {};
+    let h = '<div class="ad-cl"><div class="ad-cl-h">✦ Claude' + (c.fyrirmaeli ? ' · „' + esc(String(c.fyrirmaeli).slice(0, 90)) + '“' : '') + ' <small>' + esc(klTxt(c.lokid_at)) + '</small></div>';
+    if (c.svar) h += '<p class="ad-cl-svar">' + esc(c.svar) + '</p>';
+    if ((c.stadreyndir || []).length) h += '<ul class="ad-cl-st">' + c.stadreyndir.map(st => '<li>' + esc(st.texti) + ' ' + (st.heimildir || []).map(id => {
+      const x = hm[id] || {};
+      return x.slod ? opnaHtml({ url: x.slod.url, texti: x.lysing || x.slod.texti }) : '<span class="ad-cl-hm">' + esc(x.lysing || id) + '</span>';
+    }).join(' ') + '</li>').join('') + '</ul>';
+    if ((c.omaelt || []).length) h += '<div class="ad-cl-om">Ómælt: ' + c.omaelt.map(esc).join(' · ') + '</div>';
+    if (t.tegund === 'verk') h += '<div class="ad-cl-t"><b>Tillaga — verk á Verkefnalistann</b><div class="tt">' + esc(t.titill) + '</div><div class="tl">' + esc(t.lysing) + '</div></div>';
+    if (t.tegund === 'tolvupostur') { const po = t.post || {}; h += '<div class="ad-cl-t"><b>Tillaga — svar til ' + esc(po.fra) + '</b><small> „' + esc(po.efni) + '“ · ' + esc(po.dags) + ' · frá ' + esc(po.postholf) + '</small><pre>' + esc(t.texti) + '</pre></div>'; }
+    h += '<div class="ad-tk">';
+    if (c.samthykkt) h += '<span class="ad-chip _ja">✓ Samþykkt ' + esc(klTxt(c.samthykkt.at)) + (c.samthykkt.afgreidsla_id ? ' · í Afgreiðslu' : ' · á Verkefnalistanum') + '</span>';
+    else if (t.tegund === 'verk') h += '<button type="button" class="_ja" data-adm="clsamth" data-l="' + el + '"' + (busy ? ' disabled' : '') + ' title="Stofnar verkið á Verkefnalistanum — Claude-lota vinnur það">Setja á Verkefnalistann</button>';
+    else if (t.tegund === 'tolvupostur') h += '<button type="button" class="_ja" data-adm="clsamth" data-l="' + el + '"' + (busy ? ' disabled' : '') + ' title="Svarið fer í Tilbúið til afgreiðslu — ekkert er sent">Setja svarið í Afgreiðslu</button>';
+    if (k === 'sp' && c.svar && !(S.af.am[l] && S.af.am[l].svar)) h += '<button type="button" data-adm="clnota" data-l="' + el + '">Nota sem drög að svari þínu</button>';
+    h += '<button type="button" class="_lt" data-adm="clopna" data-l="' + el + '">Spyrja aftur</button></div>';
+    if (t.tegund === 'tolvupostur' && !c.samthykkt) h += '<div class="ad-skyr">Svarið fer í „Tilbúið til afgreiðslu“. Þar lestu það, breytir og sendir sjálfur með rauða takkanum. Ekkert er sent héðan.</div>';
+    return h + '</div>';
+  }
+  function claudeHtml(l, x, k) {
+    const c = x && x.claude, el = esc(l), busy = !!S.amBusy[l];
+    let h = '';
+    if (c && c.stada === 'i_vinnslu') h += '<div class="ad-cl _bid" role="status">✦ Claude er að vinna… <small>' + sekAf(c.at) + ' s — svarið birtist hér</small></div>';
+    else if (c && c.stada === 'villa') h += '<div class="ad-cl _v" role="status">✦ Claude kláraði ekki: ' + esc(c.villa || 'óþekkt villa') + '</div>';
+    else if (c && c.stada === 'tilbuid') h += claudeSvarHtml(l, c, k);
+    if (S.clOpid === l) {
+      h += '<div class="ad-rond"><textarea id="_adm-cl-' + idOf(l) + '" data-drog="cl:' + el + '" maxlength="1500" placeholder="Hvað viltu að Claude geri? T.d. „skrifaðu svar við póstinum“ eða „hvað er staðan á R-364?“ (má sleppa — þá leggur hann til næsta skref)">' + esc(S.drog['cl:' + l] || '') + '</textarea>' +
+        '<div class="ad-tk"><button type="button" class="_ja" data-adm="clbidja" data-l="' + el + '"' + (busy || (c && c.stada === 'i_vinnslu') ? ' disabled' : '') + '>✦ Biðja Claude</button></div>' +
+        '<div class="ad-skyr">Claude (Opus) les atriðið og gögnin sem það nefnir — Payday, póst, drög, tíma, ákvarðanir í Charlize — og skilar einni tillögu með heimildum. Ekkert fer út; þú samþykkir eða ekki.</div></div>';
+    }
+    return h;
+  }
+  const claudeTakki = (l, x) => S.af.claudeVirkt ? '<button type="button" class="ad-ak ad-ak-cl" data-adm="clopna" data-l="' + esc(l) + '" aria-expanded="' + (S.clOpid === l) + '">✦ Biddu Claude</button>' : '';
+
   function hlutiHtml(m, h) {
     const d = HLUTAR[h.k] || { takn: '•' }, opinn = erOpinn(m, h), id = m.id + ':' + h.k;
     const leyfi = S.af.leyfi === true, akv = leyfi && (AKVARDANLEG[h.k] || h.k === 'sp');
@@ -414,19 +478,20 @@
     if (h.k === 'ath') radir = nyjastEfst(radir);
     // Afgreitt = klárað (✓), Nei, komið á Verkefnalistann eða spurningu svarað. Já stendur opið (verkið er eftir).
     const afgreitt = r => erKlarad(r.l) || (akv && !!r.x && (r.x.akvordun === 'nei' || (h.k === 'sp' ? !!r.x.svar : !!r.x.verkefnalisti_id)));
-    const iVinnslu = r => S.opidAt === r.amL || !!S.amBusy[r.amL] || !!S.svBreyta[r.amL];
+    const iVinnslu = r => S.opidAt === r.amL || S.clOpid === r.amL || !!S.amBusy[r.amL] || !!S.svBreyta[r.amL] || !!(r.x && r.x.claude && r.x.claude.stada === 'i_vinnslu');
     const seinnaR = radir.filter(r => !afgreitt(r) && !iVinnslu(r) && akv && erSeinna(r.x));
     const klarad = radir.filter(r => afgreitt(r) && !iVinnslu(r));
     const opin = radir.filter(r => klarad.indexOf(r) < 0 && seinnaR.indexOf(r) < 0);
     const rod = r => {
       const l = r.amL, x = r.x, kl = erKlarad(r.l);
       let ins = '<span class="txt">' + atridiHtml(r.t) + '</span>';
-      if (akv && h.k === 'sp') ins += svarHtml(l, x);
+      if (akv && h.k === 'sp') ins += svarHtml(l, x) + (S.af.claudeVirkt ? '<div class="ad-akr">' + claudeTakki(l, x) + '</div>' : '') + claudeHtml(l, x, h.k);
       else if (akv) {
         const opid = S.opidAt === l;
-        ins += chipHtml(x) + '<button type="button" class="ad-ak" data-adm="atopna" data-l="' + esc(l) + '" aria-expanded="' + opid + '">' +
-          (x && (x.akvordun || x.verkefnalisti_id || x.athugasemd_agnars) ? 'Breyta ▾' : 'Ákveða ▾') + '</button>';
+        ins += chipHtml(x) + '<div class="ad-akr"><button type="button" class="ad-ak" data-adm="atopna" data-l="' + esc(l) + '" aria-expanded="' + opid + '">' +
+          (x && (x.akvordun || x.verkefnalisti_id || x.athugasemd_agnars) ? 'Breyta ▾' : 'Ákveða ▾') + '</button>' + claudeTakki(l, x) + '</div>';
         if (opid) ins += rondHtml(l, x);
+        ins += claudeHtml(l, x, h.k);
       }
       return '<li class="ad-at' + (kl ? ' _kl' : '') + (r.haus ? ' _haus' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><div class="tx">' + ins + '</div>' +
         '<button type="button" class="' + (kl ? '_on' : '') + '" data-adm="klara" data-l="' + esc(r.l) + '"' + (r.l in S.bid ? ' disabled' : '') + ' title="' + (kl ? 'Taka klárað-merkið af' : 'Merkja klárað') + '">' + (kl ? '✓' : '○') + '</button></li>';
@@ -576,6 +641,15 @@
     if (a === 'akv') { amAdgerd(l, 'akvordun', { akvordun: el.getAttribute('data-v'), athugasemd: domGildi('_adm-ath-') }); return true; }
     if (a === 'vl') { amAdgerd(l, 'verkefnalisti', { athugasemd: domGildi('_adm-ath-') }); return true; }
     if (a === 'amath') { amAdgerd(l, 'athugasemd', { athugasemd: domGildi('_adm-ath-') }); return true; }
+    if (a === 'clopna') { S.clOpid = S.clOpid === l ? null : l; render(); if (S.clOpid) setTimeout(() => { const x = document.getElementById('_adm-cl-' + idOf(l)); if (x && !mjor()) x.focus({ preventScroll: true }); }, 0); return true; }
+    if (a === 'clbidja') { amAdgerd(l, 'claude', { fyrirmaeli: domGildi('_adm-cl-') }); return true; }
+    if (a === 'clsamth') { amAdgerd(l, 'claude_samthykkja'); return true; }
+    if (a === 'clnota') {
+      const c = S.af.am[l] && S.af.am[l].claude; if (!c || !c.svar) return true;
+      S.drog['sv:' + l] = c.svar; drogVista(); S.svBreyta[l] = true; render();
+      setTimeout(() => { const x = document.getElementById('_adm-sv-' + idOf(l)); if (x) x.focus({ preventScroll: true }); }, 0);
+      return true;
+    }
     if (a === 'afath') {
       const v0 = S.af.tilbuin.find(x => x.id === id); if (!v0 || S.afAthBusy) return true;
       const ta = document.getElementById('_adm-af-ath-' + id), t = ta ? ta.value : '';
@@ -696,6 +770,6 @@
     setTimeout(reyna, 300);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Adalmal = { open, render, load, loadAf, greina, S, version: '492e' };
-  console.log('[492e] Aðalmál — gagnvirkt borð, tenglar og athugasemdir');
+  window.Adalmal = { open, render, load, loadAf, greina, S, version: '492f' };
+  console.log('[492f] Aðalmál — gagnvirkt borð, tenglar, athugasemdir og „Biddu Claude"');
 })();
