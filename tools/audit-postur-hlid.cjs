@@ -11,7 +11,9 @@
  *   3. 254 (AppMail) og Rýmingaráætlun nota /api/postur-senda;
  *   4. brúin í 254: skeyti frá öðrum uppruna eða glugga sem er ekki iframe í appinu → hunsað; úr Brunahólfs-iframe →
  *      sent á /api/postur-senda og svarað á brunaholf-uppruna;
- *   5. þjónn sem kallar á gmail-send (hub-adgangar.cjs) sendir tókann í sama kalli.
+ *   5. hvert fall sem kallar á gmail-send sendir tókann, og tókinn er AÐEINS myntaður í hub-adgangar.cjs (session_secret
+ *      úr sameiginlega grunninum). 16.11.2026: tóki úr SUPABASE_SERVICE_ROLE_KEY var hafnað í loftinu — lykillinn er
+ *      ólíkur á vefjunum — og lokunin var afturkölluð.
  * Systurhliðin (brunaholf/gmail-send.js) er skoðuð ef repo-ið er við höndina — ⚠ en ekki rautt (mappan getur verið
  * á eftir origin); brunaholf prófar hliðið sjálft í tools/test-gmail-send-hlid.cjs (keyrt í CI þar).
  * Ekkert net, engir lyklar — keyrir líka í `audit-all --static`.
@@ -81,12 +83,16 @@ const FDIR = path.join(ROT, 'netlify', 'functions');
 for (const f of fs.readdirSync(FDIR).filter((n) => /\.(c?js|mjs)$/.test(n))) {
   const t = anAths(fs.readFileSync(path.join(FDIR, f), 'utf8'));
   if (!/\/api\/gmail-send/.test(t)) continue;
-  if (!/x-postur-toki/.test(t) || !/posturToki\(\)/.test(t)) villur.push(`${f}: kallar á gmail-send án tíma-tókans (x-postur-toki + posturToki()) — svarar 401`);
+  if (!/x-postur-toki|POSTUR_HAUS/.test(t) || !/posturToki\(/.test(t)) villur.push(`${f}: kallar á gmail-send án tíma-tókans (x-postur-toki + posturToki()) — svarar 401`);
+}
+for (const f of fs.readdirSync(FDIR).filter((n) => /\.(c?js|mjs)$/.test(n) && n !== 'hub-adgangar.cjs')) {
+  const t = anAths(fs.readFileSync(path.join(FDIR, f), 'utf8'));
+  if (/postur-senda\|/.test(t)) villur.push(`${f}: myntar póst-tóka sjálft — notaðu HUB.posturToki() (þjónustulyklarnir eru ólíkir á vefjunum; 16.11.2026)`);
 }
 const hub = anAths(les('netlify/functions/hub-adgangar.cjs'));
 const kall = (/fetch\(MAIL_ORIGIN \+ '\/api\/gmail-send'[\s\S]{0,200}/.exec(hub) || [''])[0];
 if (!kall) vidvaranir.push('hub-adgangar.cjs: fann ekki gmail-send kallið — uppfærðu vörðinn');
-else if (!/\[POSTUR_HAUS\]\s*:\s*posturToki\(\)/.test(kall)) villur.push('hub-adgangar.cjs: aðgangspóstur fer án tóka — gmail-send svarar 401');
+else if (!/\[POSTUR_HAUS\]\s*:\s*await\s+posturToki\(stilling\)/.test(kall)) villur.push('hub-adgangar.cjs: aðgangspóstur fer án tóka — gmail-send svarar 401');
 
 // systurhliðin
 const sib = path.join(ROT, '..', 'brunaholf', 'netlify', 'functions', 'gmail-send.js');
@@ -101,7 +107,9 @@ if (fs.existsSync(sib)) {
 (async () => {
   const LYKILL = 'audit-lykill';
   process.env.SUPABASE_SERVICE_ROLE_KEY = LYKILL;
-  const rett = (tok) => { const [m, s] = String(tok || '').split('.'); return /^\d+$/.test(m) && s === crypto.createHmac('sha256', LYKILL).update('postur-senda|' + m).digest('hex'); };
+  const rett = (tok) => tok === 'audit-toki';
+  const hubPath = require.resolve(path.join(ROT, 'netlify', 'functions', 'hub-adgangar.cjs'));
+  require.cache[hubPath] = { id: hubPath, filename: hubPath, loaded: true, exports: { POSTUR_HAUS: 'x-postur-toki', posturToki: async () => 'audit-toki', handler: async () => ({ statusCode: 200, body: '{}' }) } };
 
   // 2. postur-senda.cjs á stubbuðu hliði og neti
   const FN = path.join(ROT, 'netlify', 'functions');
