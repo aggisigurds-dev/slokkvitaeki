@@ -164,4 +164,70 @@ function aaetlun(reikningur, val, vorur) {
   return { linur, sleppt };
 }
 
-module.exports = { hreinsa, reikna, aVorur, medalverd, aaetlun, tala, TEGUNDIR, SKIPTING, KAUPVERD_VAL };
+// Hreyfingalisti vöru (vorur_hreyfingar, 16.11.2026 — Agnar: „hverja vöru með history glugga … magn og á hvaða verði,
+// og útreikninga, vísun í þennan útreikning"). Ein röð per vöru í sendingunni — LÍKA vörur þar sem kaupverðið stóð
+// óbreytt (ekki í færslunni), svo sagan sýni hvað sendingin kostaði þótt varan haldi eldra verði.
+//   row       = innflutningur-röðin · reikningur = reikna(row) · faerdar = línurnar sem færslan skrifaði (aaetlun)
+//   vorur     = { id, birgdir, kostnadarverd } eins og þær voru lesnar FYRIR færsluna
+// Tölur eru geymdar með tveimur aukastöfum; glugginn sýnir heilar krónur.
+function hreyfingar(row, reikningur, faerdar, vorur, nafn) {
+  const tveir = (x) => (x == null || !Number.isFinite(Number(x)) ? null : Math.round(Number(x) * 100) / 100);
+  const eftirId = new Map((vorur || []).map((v) => [Number(v.id), v]));
+  const faert = new Map((faerdar || []).map((l) => [Number(l.vara_id), l]));
+  const lidir = hreinsa(row).kostnadur.filter((k) => k.heiti).map((k) => ({ heiti: k.heiti, upphaed: k.upphaed, tegund: k.tegund }));
+  const m = new Map();
+  for (const l of reikningur.linur) {
+    if (!l.vara_id || !(l.magn > 0)) continue;
+    const a = m.get(l.vara_id) || { vara_id: l.vara_id, magn: 0, erl: 0, vorur_isk: 0, alag: 0, samtals: 0 };
+    a.magn += l.magn;
+    a.erl += l.magn * l.einingaverd;
+    a.vorur_isk += l.vorur_isk;
+    a.alag += l.alag;
+    a.samtals += l.samtals;
+    m.set(l.vara_id, a);
+  }
+  return [...m.values()].map((a) => {
+    const f = faert.get(a.vara_id);
+    const v = eftirId.get(a.vara_id) || {};
+    const kNu = v.kostnadarverd == null ? null : Number(v.kostnadarverd);
+    const bNu = v.birgdir == null ? null : Number(v.birgdir);
+    const hlutur = reikningur.skipting === 'verd'
+      ? (reikningur.vorur_isk > 0 ? a.vorur_isk / reikningur.vorur_isk : 0)
+      : (reikningur.magn > 0 ? a.magn / reikningur.magn : 0);
+    return {
+      vara_id: a.vara_id,
+      dags: row.dags || null,
+      tegund: 'innflutningur',
+      magn: a.magn,
+      einingaverd: tveir(a.erl / a.magn),
+      mynt: row.mynt || 'EUR',
+      gengi: tveir(reikningur.gengi),
+      vorur_kr: tveir(a.vorur_isk / a.magn),
+      alag_kr: tveir(a.alag / a.magn),
+      kostnadarverd: tveir(a.samtals / a.magn),
+      kostn_fyrir: f ? f.kostn_fyrir : kNu,
+      kostn_eftir: f ? f.kostn_eftir : kNu,
+      birgdir_fyrir: f ? f.birgdir_fyrir : bNu,
+      birgdir_eftir: f ? f.birgdir_eftir : bNu,
+      tilvisun: row.tilvisun || null,
+      innflutningur_id: row.id || null,
+      utreikningur: {
+        birgir: row.birgir || null,
+        land: row.land || null,
+        erl_alls: tveir(reikningur.erl),
+        vorur_isk_alls: tveir(reikningur.vorur_isk),
+        kostnadur_alls: tveir(reikningur.kostnadur_alls),
+        heild: tveir(reikningur.heild),
+        skipting: reikningur.skipting,
+        hlutur,
+        lidir,
+        omaeldir: reikningur.omaeldir,
+        kaupverd: f ? f.kaupverd : 'obreytt',
+        baeta: !!(f && f.baeta),
+      },
+      skrad_af: nafn || null,
+    };
+  });
+}
+
+module.exports = { hreinsa, reikna, aVorur, medalverd, aaetlun, hreyfingar, tala, TEGUNDIR, SKIPTING, KAUPVERD_VAL };
