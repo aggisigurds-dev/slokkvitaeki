@@ -124,26 +124,37 @@ alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
 
 ## ✅ FAST UMBOÐ — það sem þú gerir ÁN þess að spyrja Agnar (16.11.2026)
 
-**Mælt 16.11.2026:** af 1.583 skeytum Agnars í 49 lotum (7.6–16.11) voru um 350 (22 %) aðeins leyfi til að
-halda áfram: „já" 141, „merge" 44, „halda áfram" 37, „birta" 17. Hann samþykkti þessa reglu sama dag
-(„Ja hljómar vel"). Hún er til þess að hann þurfi ekki að vera „áfram-takkinn" í hverri lotu.
+**Mælt 16.11.2026:** af 1.583 skeytum Agnars í 49 lotum voru um 350 (22 %) aðeins leyfi til að halda áfram.
+Sama dag enduðu loturnar á einni vél 19 af 36 umferðum á spurningu („Má ég birta lagfæringuna?" sjö sinnum,
+ein lota spurði sömu spurningar þrisvar í röð) og stóðu svo kyrrar. Orð hans um kvöldið: „þarf að fara inn á
+hvert session á nokkurra mínútna fresti til að segja halda áfram, því allt er stopp" og „setja allt á
+verkefnalista í stað þess að laga það". Hann samþykkti umboðið („Ja hljómar vel") og það var víkkað sama kvöld.
 
 **Gerðu þetta án þess að spyrja:**
 
-1. **Haltu áfram milli skrefa** í verki sem hann bað um. Ekki stoppa til að spyrja „á ég að halda áfram?" eða
-   „viltu að ég taki næsta skref?". Stoppaðu aðeins þegar næsta skref er á spyrja-fyrst-listanum hér að neðan,
-   eða þegar þú veist í raun ekki hvað hann vill.
+1. **Haltu áfram milli skrefa** í verki sem hann bað um. Ekki „á ég að halda áfram?" eða „viltu að ég taki næsta skref?".
 2. **Sameinaðu (merge) þína eigin grein** þegar öll próf standast og öryggisnetið sýnir ekkert nýtt rautt frá
    þinni breytingu (berðu saman við hreint `git worktree` — sumt er rautt fyrir).
-3. **Birtu lagfæringu á bilun sem hann tilkynnti**, eftir að hafa prófað hana enda á milli („aldrei smíðað en
-   óprófað"). `[deploy]` í haus-commit og staðfest með `build.json`.
+3. **Birtu það sem hann bað um** — nýja virkni jafnt sem lagfæringu — þegar það er prófað enda á milli („aldrei
+   smíðað en óprófað"). `[deploy]` í haus-commit, staðfest með `build.json`. Ekki enda á „Má ég birta?".
+4. **Lagaðu villu sem þú finnur** í því sem þú ert að vinna við, ef lagfæringin er afturkræf. Ekki spyrja „á ég
+   að laga hana?" og ekki setja hana á Verkefnalistann í staðinn.
+
+**Ekki enda umferð á spurningu sem svarið er augljóst „já" við.** Spurning í lok umferðar (líka í `wrap_up`)
+stöðvar lotuna þar til hann kemur aftur, oft klukkustundum síðar og úr síma. Spyrðu aðeins um það sem er á
+listanum hér að neðan, eða þegar valið er raunverulega hans og þú getur ekki lesið það úr gögnunum.
 
 **Spyrðu ALLTAF fyrst (óbreytt):** póstur eða SMS út úr húsi · kröfur, reikningar, kredit og annað sem snertir
 peninga · eyðing gagna · verðbreytingar · breytingar á borði eða stillingum annarra starfsmanna.
 
-**Eftir á:** segðu í einni línu hvað var sameinað eða birt og hvernig það var sannreynt. Umboðið víkkar ekkert
-annað: nýjar síður og stærri breytingar sem hann bað ekki um fara áfram á Verkefnalistann, og SAMÞYKKISÞAKIÐ
-hér að neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (keðjaðu með `if`, ekki `;`).
+**⛔ VERKEFNALISTAÞAK:** Verkefnalistinn (`verkefnalisti`) er listi AGNARS fyrir hans beiðnir. Lotur og agentar
+stofna EKKI verk þar nema hann biðji um það — mest EITT á lotu fyrir það sem er utan verksins og of stórt til
+að laga núna. Mælt 16.11: 175 verk biðu, 137 ný á 14 dögum en 21 kláruð. Orð hans: „Ég vil geta sett á
+verkefnalista en ekki að ég fái mörg hundruð atriði á verkefnalistann á móti." Það sem þú finnur og lagar ekki fer
+í lokasvarið og `charlize_knowledge`. (Þetta kemur í stað gömlu grunnreglu 3 „villa/bug/gat → röð í verkefnalisti".)
+
+**Eftir á:** segðu í einni línu hvað var sameinað eða birt og hvernig það var sannreynt. SAMÞYKKISÞAKIÐ hér að
+neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (keðjaðu með `if`, ekki `;`).
 
 ---
 
