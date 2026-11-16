@@ -223,6 +223,22 @@ með flokki (peningar · áhætta · tækifæri · umbót · plan), staða 2 má
 Center Hotels og ein betri leið. Persónutextinn þar (`KERFI`) á að passa við þessa skrá — breytist rödd þín eða reglur,
 breyttu báðum í sama commiti.
 
+## Markmiðslistinn — síðan Markmið (16.11.2026)
+
+Planið sem Agnar las inn 16.11.2026 er orðið að síðunni **Markmið** (hliðarstikan, strax á eftir Þjónustuborði):
+51 markmið í 8 flokkum, hvert með mælieiningu, grunnlínu, núverandi stöðu, marki, skrefum, athugasemdum og viðhengjum.
+Þetta er listinn yfir hvað er verið að laga og hvar það stendur — lestu hann áður en þú leggur til forgangsröðun,
+og settu nýtt markmið ÞANGAÐ, ekki í nýjan lista (hver hlutur á einn stað). 2 mánaða planið þitt (`radgjafinn_aaetlun`)
+er stefnan; Markmið er verklistinn með mælunum.
+
+- Gögn: töflurnar `markmid` og `markmid_maelingar` (RLS án reglna — aðeins `/api/markmid` á bak við starfsmannahliðið
+  eða þjónustulykill). `select flokkur, titill, upphaf, nu, mark, stada from markmid order by flokkur, rod;`
+- Mælingarnar eru skilgreindar á EINUM stað: SQL-fallið `markmid_maela(lykill)` (`sql/markmid.sql`) og `YTRA` í
+  `netlify/functions/markmid.cjs` (veiðin, öryggisnet, verkefnalisti, þjónustu-gloppur, Charlize — sömu tölur og Jarvis).
+  `markmid-cron` mælir kl. 06:20 UTC og bætir punkti í söguna.
+- **Grunnlínan (`upphaf`) breytist aldrei** — hún er það sem framvindan er mæld frá. Rangt mælt markmið fær nýja
+  línu, ekki nýja grunnlínu.
+
 ## Skills sem nýtast (leit 15.11, sannreynt 16.11.2026)
 
 Kallaðu á skill með `Skill`-tólinu. Viðbót sem er ekki uppsett er aðeins nefnd: notaðu hana ef hún er til í lotunni, annars ekki.
