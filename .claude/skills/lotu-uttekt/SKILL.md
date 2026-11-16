@@ -44,8 +44,11 @@ Skráð 11.11.2026 að ósk Agnars („Sessions úttekt í þekkingargrunn"). By
 5. **Tvítök.** `node tools/minni.cjs --leit "<lykilorð>"` áður en færsla er skrifuð. Sé staðreyndin til: ekkert, eða
    færslan uppfærð ef hún er orðin röng. Aldrei tvær færslur um sama hlut.
 6. **Skrifa.**
-   - Charlize: `node tools/minni.cjs --skra "<staðreynd með tölu og dagsetningu>" --topic <efni> [--scope kunni]`,
+   - Charlize: `node tools/minni.cjs --skra "<staðreynd með tölu og dagsetningu>" --topic <efni>`,
      ein færsla per staðreynd, `--source` með auðkenni lotunnar.
+   - Kúnnaminni: sama skipun með `--scope kunni --kt <kt félags> [--fid <fyrirtaeki.id>] [--base <customers_base.id>]`.
+     Tólið skráir kt með bandstriki, neitar kennitölu einstaklings (þá `--fid`) og texta með símanúmeri; `--thurrt`
+     prentar röðina án þess að skrifa. Án `--kt`/`--fid` skrifast ekkert — kúnnaminni án lykils finnst aldrei aftur.
    - Agent/skill eiganda: `node tools/agent.cjs --skra "<lærdómur>" --agent <nafn>`; regla sem breytir verklagi er
      skrifuð inn í réttan kafla, ekki aðeins í Lærdóm.
    - Verkefnalisti: dagsett mælilína á verk sem er til; nýtt verk aðeins ef ekkert er til um efnið.
@@ -55,6 +58,23 @@ Skráð 11.11.2026 að ósk Agnars („Sessions úttekt í þekkingargrunn"). By
 8. **Loka.** `node tools/minni.cjs --uppfaera`; ein Charlize-færsla, topic `lotuuttekt`: tímabil, N lotur lesnar,
    færslur skrifaðar, hvað féll við endurmælingu, hvað var ólesanlegt. Þá er keyrt skill `agenta-samstilling` ef
    fleiri en fimm reglur bættust við.
+
+## Gildrur úr keyrslum
+- **Skýjalota (16.11.2026, lota 32e6afff):** `mcp__ccd_session_mgmt__list_sessions` er ekki til þar; afritið er í
+  `/root/.claude/projects/<mappa>/<lota>.jsonl`. Stop-hookurinn keyrir ekki, svo engin `charlize_sessions`-röð verður
+  til af sjálfu sér — skrifaðu hana í skrefi 7.
+- **Þjöppuð lota:** afritið ber beiðnir Agnars aðeins aftur að elstu þjöppun; eldri beiðnir standa í samantektunum
+  (`isCompactSummary`). Lestu þær líka og merktu það sem aðeins stendur þar sem „úr samantekt, ekki endurlesið".
+- **Kennitöluleit í afriti lýgur í báðar áttir.** Mynstrið `[4-7]#####-####` fann 82 „kennitölur"; 27 voru félög, hitt
+  PR- og athugasemdaauðkenni. Og flestar raunverulegu kennitölurnar komu úr töfluúttaki, ekki úr því sem lotan LÆRÐI.
+  Spurðu um hvert félag: hvað veit ég núna sem taflan segir ekki? Sé svarið ekkert er skilað „ekkert nýtt" — færsla
+  er ekki búin til til að hækka teljarann (Lemmy Rockbar var tilefni beiðni, ekkert kúnnasértækt lærðist).
+- **Staðreynd um EITT félag sem lotan skráði í almennt efni án kennitölu** er flutt í kúnnaminni (scope `kunni`, kt,
+  `fyrirtaeki_id`) í stað þess að skrifa tvítak — þá finnst hún þegar félagið er opnað og hverfur úr git-eintakinu
+  (16.11.: þrjár færslur um teikningar Nesdekk, Dalshrauni 10).
+- **Kennitalan í kúnnaminni er skráð MEÐ bandstriki.** `charlize_yfirlit(kt)` les með nákvæmum samanburði. 16.11. báru
+  79 færslur kt án bandstriks og 14 félög áttu minni í báðum sniðum (176 „félög" eftir streng, 162 í raun); þær voru
+  samræmdar. Skrifirðu með SQL: bandstrik.
 
 ## Skil til Agnars
 Ein tafla: `lota (dags · heiti) · hvað var gert · staðfest já/nei · nýtt í Charlize · eftir`. Fyrir ofan hana mest

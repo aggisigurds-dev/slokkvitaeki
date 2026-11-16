@@ -5,9 +5,9 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-16 22:19 · 2355 virkar staðreyndir — 1392 prentaðar hér
+Sótt 2026-11-16 23:13 · 2443 virkar staðreyndir — 1398 prentaðar hér
 
-> ⚠ **Bókin er ekki allt minnið:** 136 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (827 færslur) er aldrei skrifað hingað.
+> ⚠ **Bókin er ekki allt minnið:** 135 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (910 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
 > `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:
 > `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`
@@ -83,22 +83,22 @@ Skilaðu niðurstöðu á RÉTT svið svo hún rati til þess sem á málið:
 
 Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
-> **Kúnnaminnið (scope `kunni`, 827 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
+> **Kúnnaminnið (scope `kunni`, 910 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
 > opinbert á GitHub, og kúnnaminnið ber nöfn tengiliða, netföng, símanúmer og aðgengi. Lestu það beint úr töflunni:
 > `node tools/minni.cjs --ferskt --leit "<nafn eða kennitala>"` — eða í hubbnum: Jarvis → Minnið → Kúnnaminni.
 
 | Efni | Fjöldi |
 |---|---:|
-| [kerfi](#kerfi) | 137 |
-| [solur](#solur) | 52 |
+| [kerfi](#kerfi) | 138 |
+| [solur](#solur) | 53 |
 | [skjol](#skjol) | 51 |
-| [teikningar](#teikningar) | 51 |
+| [teikningar](#teikningar) | 48 |
 | [postur](#postur) | 45 |
 | [taeki](#taeki) | 35 |
 | [sweep](#sweep) | 32 |
+| [thjonustubord](#thjonustubord) | 30 |
 | [reikningar](#reikningar) | 30 |
 | [brunaholf](#brunaholf) | 29 |
-| [thjonustubord](#thjonustubord) | 29 |
 | [arsskodun](#arsskodun) | 29 |
 | [oryggi](#oryggi) | 27 |
 | [bord-flettur](#bord-flettur) | 25 |
@@ -108,10 +108,13 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [vefsida](#vefsida) | 24 |
 | [gatt](#gatt) | 23 |
 | [uttekt](#uttekt) | 22 |
-| [thjonustulisti](#thjonustulisti) | 19 |
+| [oryggisnet](#oryggisnet) | 21 |
 
 ### kerfi
 
+- **Kúnnaminni skráist með einni skipun frá 16.11.2026: node tools/minni.cjs --skra "…" --topic <efni> --scope kunni --kt <kt félags> [--fid <fyrirtaeki.id>] [--base <customers_base.id>] [--thurrt]. Tólið skráir kennitöluna MEÐ bandstriki, neitar kennitölu einstaklings (þá --fid) og texta sem ber símanúmer. charlize_yfirlit(kt) les kúnnaminni með NÁKVÆMUM samanburði á kennitölu, svo færsla án bandstriks finnst ekki þar.**
+  <br>Mælt 16.11.2026: 79 kúnnaminnis-færslur (id 2532 til 2610) báru kennitölu án bandstriks og 14 félög áttu minni í báðum sniðum (176 félög talin eftir streng, 162 í raun). Þær voru samræmdar á bandstrik sama dag; eftir það 910 færslur á 162 félögum, allar með bandstriki. Skrifirðu kúnnaminni með SQL: 
+  <br><sub>2026-11-16 · baedi · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
 - **invoices.utgafudagur dálkur bættur við í brunaholf (sql/2026-11-16_invoices_utgafudagur.sql) og payday-pull.js uppfært til að geyma invoiceDate frá Payday. Þetta gerir Einkaritaranum kleift að telja sendar kröfur Brunahólfs (áður var ekkert tímabil á Payday-reikningum).**
   <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
 - **Markmið-einingin (368-thjonustubord5.js lína 342): sjálfgefin staða breytt úr [0, 0] (óvirkt) í [1, 0] (virkt) 16.11.2026 svo ný markmið séu virk sjálfkrafa. 29 ómæld markmið greind — ekkert þeirra er sjálfvirkt mælanlegt (öll krefjast handvirkrar mælingar eða Agnars mats).**
@@ -197,12 +200,13 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 487c5a12 · claude-code</sub>
 - **Viðbótarnetföng félags (16.10.2026): v_kunni_netfong les samþykkta charlize_contacts með kennitölu → customers_base (aðeins nákvæmt netfang, aðalnetfang ræður, umsjonar_len/v_thjonustulen útilokuð nema plús-netfang). Viðmót 473 (+N á Netfang-línu prófílsins), skrif aðeins um brunaholf /api/tengilidir (GET ?kennitala, add, aftengja). Vörður audit-vidbotarnetfong.cjs. Heimaleiga 0→46 póstar.**
   <br><sub>2026-10-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **Mæliskriftir: context.route hlerar EKKI keepalive-fetch/sendBeacon sem fara við pagehide/visibilitychange þegar síðu er lokað/endurhlaðið — þau ná á lifandi þjón. setOffline(true) ver EKKI. addInitScript sem gerir sendBeacon að no-op og falsar keepalive-fetch ver (0 lak). Próf: tools/maelingar/leki-vid-lokun.cjs, MAELINGAR.md kafli 17. Lesa audit_vernd áður en leka er kennt um rautt gagnavörð.**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 97 til viðbótar í töflunni._
+- _…og 98 til viðbótar í töflunni._
 
 ### solur
 
+- **Söludrög má útbúa fyrir Agnar með röð í sala_geymd („Geymd drög“ í Drög-flipanum) — það tekur ekkert R-númer og snertir hvorki solur, Payday né bókhald; salan verður til þegar hann klárar körfuna í Sölu.**
+  <br>karfa-jsonb verður að bera POS-snið: customer {mode,kt,nafn,simi,co_id (fyrirtaeki.id),afslattur_pct,athugasemdir} og lines [{type:'service'|'product',desc,qty,unit_price_ex_vat,vsk_pct,ref,krefst_verkbeidni}] auk discount, discount_pct, discount_gross, notes, staffNotes, beidninumer. Lína án produc
+  <br><sub>2026-11-16 · slokkvitaeki · kóði + prófun 16.11.2026 · claude-code</sub>
 - **Kútur sem bætt er við sölu í söluritlinum (142) fær nú eigið verk: verkLinurTilStofnunar stofnar verk fyrir hverja nýja tækjalínu (_ny) með síma og sóttmáta systurverks.**
   <br>Lagað 16.11.2026 (53adc900). Áður fengu línur sem bættust við eftir stofnun sölu ekkert verk og týndust á verkstæðinu. Próf: tools/test-sala-ritill-verk.cjs. linurTilVistunar hreinsar _ny áður en vistað er.
   <br><sub>2026-11-16 · slokkvitaeki · kóði · claude-code</sub>
@@ -301,10 +305,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Skýrslu-flæðið frýs af því hvert „finish" klónar allan app_settings-blobbinn (~0.5–1.4 MB) 3–4x og notify() endurteiknar allan 660-fyrirtækja listann ósíðaðan á aðal-þræðinum — client-side main-thread block, EKKI DB (DB svarar á 0.26–0.55 s).**
   <br>85-app-settings.js save (244/292) gerir JSON.parse(JSON.stringify(heilan blob)) per kall; notify() (187) fannar á ~15 onChange-hlustara; 153 renderCards (2051) er ósíðað í kortasýn (tafla síðar við 50); tveir setInterval(process,1500) (187:570, 222:124) endurskanna sífellt. Ein finish = 3–4 klón + 6
   <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
-- **„Fyrirtæki í þjónustu" sýnir rautt (ekki tilbúið) þótt fyrirtæki sé skoðað, af því staðnað „vantar skýrslu"-flagg (year_factcheck gap) TROMPAR raunverulega skoðun í isDoneYear og ekkert hreinsar flaggið þegar skýrslan kemur.**
-  <br>346 gap-raðir úr einni bulk-audit 22.07.2026 („Skýrsla vantar fyrir þetta ár"); isDoneYear (153:777) les gap Á UNDAN last_year_inspected/report-on-file, og completion-pípurnar (266/270/165) snerta year_factcheck aldrei → júlí-flaggið lifir af ágúst-skýrsluna. Task #14 (klaradCur) var of þröngt (aðei
-  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
-- _…og 12 til viðbótar í töflunni._
+- _…og 13 til viðbótar í töflunni._
 
 ### skjol
 
@@ -483,12 +484,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Sjálfmerking veggja úr vigur-PDF (cad_til_grimu.py) virkar (Fiskislóð 41: nákvæmni 0,91/heimt 0,95) en gler er ALDREI sérstakt línulag — aðeins af rúmfræði (tvær samsíða línur <5 cm í veggopi); aðeins born-digital teikningar 2022–23 eru vigur (3 af 5 nýjum, 0 af eldri/öðrum bæjum; ~33.500 PDF vs ~184.000 TIF í Aðaluppdráttum); hver teiknistofa teiknar öðruvísi (0,48 pt sjálfvaldir veggir vs 0,10 pt á öllu vs svartar fyllingar). Höfundaréttur arkitekta + ESB TDM-undanþága óstaðfest á Íslandi → EKKI þjálfað á þeim fyrr en Agnar/lögfræði ákveður.**
   <br>Undiragentar a9de6/afb1b 08.–09.10.2026. Krókháls A4 án „1:N" → sjálfgildi 1:100 rangt.
   <br><sub>2026-10-16 · slokkvitaeki · afrit lotu turboprint · claude-code</sub>
-- **Nesdekk (1853), 13.10.2026: að beiðni Agnars er „1. hæð — nýjar teikningar“ (hd1853v1, ljósmyndin) nú FYRSTA hæð (aðalteikning; image_url/markers raðarinnar spegla hana). Gamla „1. hæð“ heitir nú „1. hæð — eldri teikning“ (hd1853n1) og heldur sínum 10 merkjum (3 tæki + 7 skilti) — tækin þarf að setja á nýju teikninguna í glugganum. Afrit fyrir allar breytingar: backup_20261013_teikning_1853.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
-- **Nesdekk, Dalshraun 10 (1853): ljósmyndaða teikningin (hæð hd1853v1, nú „1. hæð — nýjar teikningar“) er NÝ teikning sem er ekki komin á vef byggingarfulltrúa Hafnarfjarðar (Agnar 13.10.2026). „Sækja teikningu“ / „Finna allt húsið“ finna hana því ekki — ljósmyndin er eina heimildin þar til hún birtist á vefnum.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
-- **Nesdekk, Dalshraun 10 (1853), 13.10.2026: ljósmynd Agnars af brunavarnateikningu á staðnum (vesturhluti hússins, nýtt innra skipulag — Vörumóttaka, Vinnusalur 221,5 m², 9 lagerar, Afgreiðsla o.fl.) var rétt af (fjarvídd frá 4 hornum) og hreinsuð, og bætt við sem hæð hd1853v1 „1. hæð — vesturhluti, núverandi skipulag“ (turbopaint/teikning/1853/dalshraun10-vesturhluti-nuverandi.png, 0,55 px/cm). Ytri mál: breidd 2380; hæðarmálið les „2700“ en herbergjamálin (1158×1915 = 221,5 m², lagerdálkar 934/948) ganga aðeins upp með 2900 — 2900 notað. Nesdekk-teikningin „1. hæð“ (hd1853n1, 2900×1980, 10 tæki) er annar hluti hússins. Afrit af röðinni fyrir breytingu: backup_20261013_teikning_1853.**
-  <br><sub>2026-10-13 · slokkvitaeki · claude-code · claude-code</sub>
 - **Teikning 3D (383/433/434) — TÆKI SEM LÍKÖN OG TÁKN, 05.10.2026 (commits 19257f90, 7964b24b). Agnar sendi tákn sem fyrirmyndir (🧯, rautt slöngukefli með stút, rauður reykskynjari með reyk, rauð viðvörunarbjalla með kólfi, grár rafmagnsskápur með gulri eldingu, skeifusegull með eldingum = „Segulloki á eldvarnarhurð", hitaskynjari með hitamæli) og sagði „Þá held ég komið". gerdTaekis(tegund, stimpill) velur gerð: slokkvitaeki, co2, slanga, reykskynjari, hitaskynjari, bjalla, segull, rafmagn, skilti, skilti-ut, teppi. teiknaTaekistakn(ctx, gerd) teiknar táknið í lit í 48×48 reit (eigin teikning með einföldum formum — engin mynd afrituð) og það stendur í hvítum hring á miða hvers tækis í 3D; miðinn sýnir alltaf TEGUND. taekjalikan() smíðar líkanið og festaAVegg() hengir það á næsta vegg (innan ≈1,6 m), þeim megin sem merkið stendur; reyk- og hitaskynjarar við loft. Ný merki í 2D-bakkanum (433 STIMPLAR): Reykskynjari, Hitaskynjari, Viðvörunarbjalla, Segulloki; 434 fékk lykla/liti og nýtt 2D-tákn „magnet". GILDRA: þrír verðir (audit-teikning-gaedi/merking/sja) festa útgáfuforskeyti 433 og 434 í index.html við 20261002(…stjorn…) — nýtt merki verður að byrja á því (t.d. ?v=20261002stjorn-bjalla), annars verða þeir rauðir.**
   <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
 - **Teikning 3D (383) — BRUNAHÓLF og HANDVAL, 04.–05.10.2026 (commits 57db4082, 19257f90). Reglur Agnars: „Brunaveggir mynda alltaf lokað öruggt rými … brunahólf … allan hringinn með eldveggjum og útveggjum", „brunaveggir geta ekki verið stakir", „eins og öryggisgirðing — ekki hægt að sleppa á einum stað", „ein merking á vegg nær allan þann vegg". Útfært: brunaholf() finnur ÚTVEGGI (flætt utan frá; fyrst gróft með ≈5 m þenslu svo aksturshurðir hleypi útisvæðinu ekki inn, bil ≤15 m milli útveggjabúta á sömu línu lokað með sýndarvegg, svo nákvæmt ≈0,6 m), LOKAR lausum enda brunaveggjar eftir stystu leið um aðra veggi (≤15 m) → ÁLYKTAÐUR brunaveggur, sýndur ljósbleikur, og telur HÓLFIN (≥6 m²) sem fá hvert sinn lit á gólfið; svæði sem lekur út fær engan lit. eldurHurda(): karmur yfir hurð í brunavegg er rauður, hurðir sjást ofan frá á litaðri rönd (brunahurð appelsínugul, önnur brún). HANDVAL: takkinn „Breyta eldveggjum" í 3D → smellur á vegg → EI-60 / EI-30 / Ekki brunaveggur / ↺ Sjálfvirkt aftur; valið fer í teikning_bord.haedir[].eldVal = [[ax,ay,bx,by,mín]] (dílar frummyndar) og vistast með sjálfvistun gluggans (STILLINGAR) — tæki og hæðalisti ekki snert. Handvalið gengur fyrir EI-merkjum og aftengdur veggur verður ekki ályktaður aftur. Veggur finnst aftur eftir línu+skörun (veggurVid), ekki miðjupunkti. Mælt á Fiskislóð 41: 21 eldveggur, 1 ályktaður, 29 útveggir, 9 brunahólf; handval „Ekki brunaveggur" → 8 hólf.**
@@ -522,7 +517,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Stimplar á FloorPlan (Rafmagnstafla, Skilti slökkvitæki, Skilti brunaslanga, Neyðarútgangur, Út, Slöngumerki) eru merki kind=sign, ekki uttaeki-raðir. Tákn valin í Stillingum (teikning_takn / patch 434).**
   <br>Patch 433 STIMPLAR + 434 TeiknTakn. Geymsla teikning_bord.haedir[].markers. Agnar 02.10.2026.
   <br><sub>2026-10-02 · slokkvitaeki · kóði · cursor</sub>
-- _…og 11 til viðbótar í töflunni._
+- **Sjálfvirk veggagreining á raster-grunnmynd (engin vigur, þunnar línur, stórt hvítt blað) gaf 1,0% veggi og slitrótta viðvörun. 383 mælir nú þekju eftir blekRammi-spássíuskurð og reynir þunnlínu-CAD aðeins með heilt fótspor; undir 4% er upprunalega sýnd og 3D þykist ekki. Viðvörun er ein íslensk lína; Veggir er varaleið.**
+  <br>Álfaborg #661 02.10.2026: eftir lagfæringu 6,2–6,3% veggir, hæðir 5+2 og tækjaræma óbreytt. Handvalinn skurður ósnertur.
+  <br><sub>2026-10-02 · slokkvitaeki · kóði · claude-code</sub>
+- **02.10.2026: Agnar sá EKKI 1. hæð / Skýrari veggir / 3D á LIVE FloorPlan #company/1612 eftir cab96432. Rót: 383 endurfestaEfNyttFelag lyklaði aðeins á companyId, en FloorPlan.open rífur #modal-floorplan alltaf. Lagað 1626d51: _festModal + vaktGlugga + haus width:auto. Sannað live 1612 og 388. Aldrei node deploy.js. Aldrei DELETE document_pairs.**
+  <br><sub>2026-10-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **Kjarni skilar Kópavogi, Garðabæ og Hafnarfirði aðeins djúptengli á map.is, ekki blöðunum. Listinn er queryTeiknigrunn beint (slug kopavogur, gardabaer, hafnarfjordur), eins og Seltjarnarnes.**
+  <br>PDF-hýsar: gagnasja.kopavogur.is, teikningar.gardabaer.is, teikningar.hafnarfjordur.is. heitinumer=0 skilar „Engar niðurstöður“. Séruppdráttur flokkast áfram með aðaluppdráttum; Burðarvirki með burðarþoli. Tómt safn fær mapisBeint og er ekki sótt aftur. Tímaþrot fær ekki mapisBeint.
+  <br><sub>2026-10-02 · slokkvitaeki · kodagreining · cursor</sub>
+- _…og 8 til viðbótar í töflunni._
 
 ### postur
 
@@ -838,6 +841,87 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Heilsu-sopan (routine trig_013hqjttRBk7TqbrPum2MskF) hefur ekki GitHub-adgang ad slokkvitaeki-repoinu i thessu keyrsluumhverfi - getur lesid Supabase en ekki ytt fix/PR.**
   <br><sub>2026-08-23 · kerfi · sql · claude-code</sub>
 
+### thjonustubord
+
+- **Áður en lína er skrifuð á mál fyrir Agnar um tiltekið fyrirtæki verður að lesa kúnnaminnið (v_charlize_kunni á kennitölunni) og nótur á sölunni sjálfri: seinni yfirferð 16.11.2026 fann 13 úrskurði sem stóðust ekki þá mælingu.**
+  <br>Dæmi: mál #1290 lagði til að fækka tækjum Midtown Hotel því húsið væri „tvítalið“, en kúnnaminni #152 og #288 segja tvö aðskilin verk sem má aldrei sameina; mál #1407 spurði um sölu sem ber nótuna „Ekki spyrja aftur“ (ákvörðun Agnars 20.09.2026); mál #1454 spurði hvort staður væri raunverulegur þótt
+  <br><sub>2026-11-16 · baedi · lota 5f2146a4 · claude-code</sub>
+- **tools/veidi-vaktin.cjs stofnar mál aftur ef ekkert OPIÐ mál ber merki vaktarinnar; slíku máli má því ekki loka til að losna við það, heldur færa það á annan starfsmann.** _(likely)_
+  <br>16.11.2026 voru #1532 og #1533 færð af borði Agnars á Charlize og haldið opnum af þessari ástæðu.
+  <br><sub>2026-11-16 · slokkvitaeki · kóði + lota 5f2146a4 · claude-code</sub>
+- **Mál sem stendur eftir hjá Agnari eftir yfirferð á að bera EINA já/nei-línu í thjonustubeidni.summary; einingarnar á borðinu sýna summary á undan nótunni.**
+  <br>Aðferðin 16.11.2026 (167 mál → 76): lesandi aðstoðarmenn, einn hópur hver, skila JSON-úrskurði per mál (LOKA / FRAMKVAEMA / VERKEFNI / AGNAR / SAMTHYKKT_OUNNID / OMAELT) með sönnun; aðallotan les yfir, framkvæmir sjálf og lokar samkvæmt lokunarvenjunni. Lokunartexti má ekki styttast í miðri setningu
+  <br><sub>2026-11-16 · slokkvitaeki · lota 5f2146a4 · claude-code</sub>
+- **Máli á Þjónustuborðinu er lokað afturkræft: fyrst röð í thjonustubord_lokanir_log með fyrra ástandi, svo status lokad með merkinu lokad:claude-yfirferd og línu efst í notes.**
+  <br>Log-dálkar: mal_id, fyrra_status, fyrri_tags, fyrri_notes, fyrra_updated_at, astaeda, domur, lokad_af, lokad_at, afturkallad_at. Á málinu: status=lokad, svarad_at, lokid_at, lokid_af=claude, lokid_lysing. Afturköllun: afrita fyrra ástand til baka úr logginum og setja afturkallad_at. 16.11.2026 voru 
+  <br><sub>2026-11-16 · slokkvitaeki · sql + lota 5f2146a4 · claude-code</sub>
+- **Þjónustuborðið prófast staðbundið án innskráningar á LIFANDI grunni: kyrrstæður þjónn á vinnutré slokkvitaeki (t.d. python -m http.server 8796) og #bord hleðst sem sá starfsmaður sem er valinn; innskráningarhliðið í index.html bilar opið þegar /api svarar ekki.**
+  <br>Mælt 16.11.2026. Smellir þar skrifa í raungögn — aðeins lesa. /api/* föllin eru ekki til staðbundið (404), svo einingar sem lesa þaðan þurfa gervi-fetch í síðunni. anon-lykillinn les ekki töfluna afgreidsla (RLS). Skrunarinn á borðinu er #view-bord, ekki window.
+  <br><sub>2026-11-16 · slokkvitaeki · Claude Code 16.11.2026 · bord-flettur</sub>
+- **Varfærin yfirferð samþykktarborðsins 15.11.2026: engin R-tvítök milli opinna mála, engin liðin yfirlit til lokunar — fyrri yfirferðir (08.10/07.11/08.11) hreinsuðu þau. Af 177 opnum var AÐEINS 1 lokað (#1468, tilboð um aukavinnu); hin 176 eru raunverulegar ákvarðanir Agnars (~13 m.kr. nefnt).**
+  <br>Flokkun: kröfur/sending 52 (3,2 m), tæki/skýrslur 23 (2,4 m), þjónusta/skoðun 13, kredit/endurgreiðsla 5, annað 81. Stærstu: #1130 LSH 1.096.368, #1529 7 kröfur 618.409, #1407 bakfæra 269.065. MÓTSÖGN flögguð: #1622 (AI-tillaga) segir yfirlit til Evu SENT 9.11 og vill loka #1378, EN #1378 bíður þess
+  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
+- **Af 260 opnum þjónustuborðsmálum 15.11.2026 eru 173 samþykki (ósvöruð) + 110 spurningar; aðeins 4 samþykkismál eru svöruð (svar:*), og þau 4 bíða flest handavinnu Agnars/starfsmanns, ekki framkvæmdar Claude.**
+  <br>Svöruð 15.11: #1175 (svar:vinnsla — stór reikningsdraga-yfirferð á 17 félögum, má ekki flýta), #1244 (Agnar vinnur TurboPaint-leiðréttinguna sjálfur), #1493 (Gerðuberg þegar er_i_thjonustu=true; eftir er að hringja og bóka skoðun = starfsmannsverk), #1547 (finna netföng og endursenda 5 reikninga 110
+  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
+- **Hörð tenging dugar EKKI til að loka samþykktarmáli: sala:R-tag sem er greidd/send leysir ekki mál sem SPYR um þá sölu, og verkefnalisti:X „klarad" getur falið ósvaraða spurningu.**
+  <br>Mælt 15.11.2026 á 28 hörð-tengdum ósvöruðum málum. Dæmi sem litu út fyrir að vera búin en voru það ekki: #1430 (verkefni klarad EN claude_notes: „BÍÐUR ÁKVÖRÐUNAR ÞINNAR — 57 DAGAR"), #1431 (klarad EN bíður þess að Agnar afturkalli Netlify-lykilinn sjálfur), #1446/#1447/#1449/#1450/#1451 (klarad EN 
+  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
+- **Vinnusamantekt (patch 489) prófast staðbundið á móti lifandi grunni með await Vinnusamantekt.load(true) og lestri á Vinnusamantekt.S.res; tekjulínan sýnir framreiknaða spá frá 8. degi mánaðar, sömu tölu og ljósið dæmir eftir.**
+  <br>Slökkvitæki krefst innskráningar frá 09.11.2026 (hub_adgangar_stilling.krefjast_slokk), svo Claude prófar á staðbundnum þjóni (fs-server á vinnutré, /app/* → index.html). Gildra: service worker og skyndiminni vafrans skila gömlu patch-skránni þótt ?v= sé óbreytt — settu window.__vinnusamantekt489 = 
+  <br><sub>2026-11-10 · slokkvitaeki · kóði · claude-code</sub>
+- **Aðalmál (patch 492, #adalmal) sýnir aðeins ÓLOKUÐ mál með merkinu adalmal: dagsett vikuyfirlit er nýtt mál í hverri viku (merki adalmal + vikuyfirlit, ekki samthykki) og því gamla er lokað um leið, annars stendur borðið tómt.**
+  <br>#1376 (02.11.2026) var lokað 07.11 sem „úrelt af sjálfu sér" og borðið stóð tómt til 10.11 þegar #1587 var skrifað. Snið sem 492 þáttar: fyrsta lína „VIKUYFIRLIT dd.mm–dd.mm.áááá — …", kaflar „A · FUNDIR OG FRESTIR NÆSTU DAGA", „B · …", „C · …", „SPURNINGAR TIL ÞÍN"; atriði byrja á „• " eða „1. ". L
+  <br><sub>2026-11-10 · slokkvitaeki · sql · claude-code</sub>
+- **Hamurinn „BH · Þjónustubeiðnir" (id hmbhthj01, app_settings thjonustubord5.hamir, stofnaður 08.11.2026) er aðeins fyrir Agnar og Anni (Annþór): hann er falinn hjá öðrum með by_staff.<nafn>.falnir_hamir. Nýr starfsmaður sér hann sjálfkrafa þar til hann er settur á listann. Mál tengjast með taginu ham:hmbhthj01.**
+  <br>Sérsniðinn hamur styður aðeins EINN eiganda (`eigandi`), því er falið hjá hinum. Frá 04.11.2026 telst lokað mál afgreitt í Tölvupóstum (448, commit 1a2fb1cb, í loftinu 10.11): þráður fer úr „Bíður svars" ef málið var lokað eftir síðasta innkomna póst. Afrit: backup_20261108_hamir.
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Hamir á Þjónustuborði: Test og Reikningsbeiðnir (sérsniðnir) voru fjarlægðir úr app_settings thjonustubord5.hamir 04.11.2026; Samskipti og Pósthólf (innbyggðir í 368) faldir hjá Agnari með by_staff.Agnar.falnir_hamir. Afrit backup_20261104_hamir.**
+  <br>Reikningsbeiðnir sýndi aðeins eininguna postbeidnir sem er líka í Pósthólf; Tölvupóstar (448) geta allt það (svara, Senda reikning/skýrslu um ReikningaPostur.sendaReikning). Innbyggða hami er ekki hægt að fjarlægja án kóðabreytingar — nota falnir_hamir.
+  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
+- **Aðalmál (492, #adalmal) les mál með merkinu adalmal; 'Kubbasafn' er hvergi til í kóða né skjölum (næst kemst 'kubbar' í 302 Mínar síður); cowork_action_items er lesin af engri skrá en cowork_postsvor af postsvorun.html (mælt 04.11.2026).** _(unverified)_
+  <br>grep kubbasafn: 0 tilvik í slokkvitaeki og brunaholf; 302-minar-sidur.js:14,85; postsvorun.html:114,171. 04.11.2026 voru 40 cowork_action_items 'open', ósnert síðan 16.07.2026.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
+- **thjonustubeidni ER í lifandi samstillingu: RT_TABLES í js/db.js inniheldur nú thjonustubeidni (og spjall). Staðreyndin frá 01.09.2026 um að Þjónustuborðið hafi enga lifandi samstillingu er úrelt (hún átti við 231).** _(unverified)_
+  <br>js/db.js:508 RT_TABLES = ['uttaeki','verkbeidnir','verklidur','fyrirtaeki','vidskiptavinir','thjonustubeidni','spjall']. 368 sjálft hefur engin .channel()-köll. Sama gildir um 03.09-staðreyndirnar um claimOldJobs í 231: fallið heitir nú saekjaBunka í 368 (368:15,551).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
+- **thjonustubeidni.priority er nánast dauður reitur með 9 stafsetningum (venjulegur 1.109, har 21, hár 15, lagur 12, hatt 6, high, normal, 1, 3). Forgangur borðsins er important (boolean); 368 les ekki priority, skrifar aðeins 'venjulegur' við nýtt mál.** _(unverified)_
+  <br>Mælt 04.11.2026 á 1.167 óeyddum málum. 368-thjonustubord5.js:827 eina priority-tilvísunin; 489 les hann einu sinni. Ekki samræma gildin nema Agnar vilji — en aldrei mæla 'áríðandi' á priority.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
+- **Svar Agnars á Þjónustuborði (✓/▶/✕/💬) skrifar merkið svar:<samthykkt|vinnsla|hafnad|endurmeta> Í STAÐ merkisins samthykki — það er ekki viðbót. Biðröð Claude er því tags like '%svar:%' and status <> 'lokad', aldrei sía á samthykki.** _(unverified)_
+  <br>368-thjonustubord5.js:62 og :791 (tags.filter(t => t !== SAMTHYKKI && !svar:…).concat(['svar:'+svar])). Mælt 04.11.2026: 0 af 168 málum með svar:-merki bera samthykki; biðröðin var 2 mál (#1244 tilbuid, #1175 i_vinnslu). samthykktir.md:20 segir ranglega 'merki til viðbótar'. svar:upplysing (2 lokuð 
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
+- **'✕ Afmerkja' á Verkstæðisborði tekur fyrirtækið af borðinu OG afhakar bláa 'í vinnslu' hakið í Ársskoðun-töflunni; hnappurinn er í samtengdum takkahóp og aðeins virkur þegar fyrirtækið er 'Í vinnslu'.**
+  <br>[rule; agents: bord-flettur, sara-coworker] Á bak við var flagg sv_force_unstarted í arsskodun_customers (SavedReports.has() skilaði true ef inspection_trips átti gögn og hélt fyrirtækinu inni) og bein uppfærsla á Arsskodun._cache því patch 153 hefur ekkert…
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-26/27 · claude-code</sub>
+- **Hver starfsmaður á að geta valið eigið vinnuborð (hamur 'Mitt'); master-borðið með öllu má ekki flæða yfir alla.**
+  <br>[preference; agents: bord-flettur] Agnar: 'allt overcrowded hjá öllum því master borðið er inni allstaðar… maður á að geta valið Agnar mitt vinnuborð sem er bara hálf tómt'. Útfært sem MITT_HAM í patch 368 (by_staff.<n>.mitt, eigandi-merki á sérhömum,…
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-19 · claude-code</sub>
+- **Þjónustuborð 02.11.2026: öll 136 opin mál endurmæld í grunni (solur/Payday/Stólpi/skjöl/sara/email_digest). 7 lokað með sönnun (#1375 Payday PAID, #1015 R-000668, #722 Miðleiti, #1286/#1308/#1311 saga-eftir-a, #855), 30 fengu mælda línu, afrit backup_20261102_bord. Regla Agnars sama dag: engar hálfar giskanir — hver lína mæld með heimild eða merkt ÓMÆLT. Skýrsla docs/THJONUSTUBORD-YFIRFERD-20261102.md. Gildrur: channel_ref='email:<id>'; body_preview ~200 stafir; sara_yfirferd.stada aðeins bidur/klarad; teikning_bord.updated_at breytist af búnaðargreiningu, ekki veggjum.**
+  <br><sub>2026-11-02 · slokkvitaeki · claude-code · claude-code</sub>
+- **Samþykkja (368/446) sýnir Heimildir úr grunninum á opnu máli: les R-númer, Payday, Stólpa, fyrirtaeki_id og channel_ref. Nýtt samþykkismál þarf R-númer orðrétt, fyrirtaeki_id og 'mælt dd.mm.áááá', annars fær það rautt merki.**
+  <br><sub>2026-11-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð (368z4, 01.10.2026): thjonustubeidni.sonnun = staða úr gögnum (buid/liklega/upplysing, texti, naesta, tengill). Reiknað í thjb_sonnun_reikna; krókar á solur/sara_yfirferd/email_digest/thjonustubeidni setja í thjb_endurmat_bidrod, pg_cron thjb-bidrod (mín.) + thjb-endurmat (klst.). Greiðsla telst aðeins afgreiðsla á rukkunarmálum. Takki ↻ Endurmeta kallar rpc thjonustubeidni_endurmeta.**
+  <br><sub>2026-10-01 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gamla þjónustuborðið (231) og spjallið (347) voru tekin út 11.09.2026 ásamt viðbótum sem bjuggu aðeins í því (343, 358, 364, 287-postar-queue). Þjónustuborð 2 (368p) tekur við: hliðarstikuhnappurinn með data-view verkbord (vegna sidebar_order), #verkbord og #verkefni opna #bord, óúthlutuð mál eldri en 30 daga fara í bunka Charlize, og fylgiskjöl (thjonustubeidni_files + verkbord-files) eru í völdu máli. db.js realtime kallar á Thjonustubord5.load. Starfsmannalistar í bílstjóraappi (219), verkstæði (190) og aksturslista (268) lesa sameiginlega listann í 350; AppSettings starfsmenn = Agnar, Bjarndís, Binni, Anni, Hákon, Afgreiðsla.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368o, 11.09.2026): einn starfsmannalisti í AppSettings bord_starfsmenn = Agnar, Bjarndís, Binni, Anni, Hákon, Afgreiðsla, Charlize, Allir. Charlize og Allir eru sýndarborð (Ég er Charlize sýnir bunkann sem Mitt borð; Allir = sameiginleg verk) en teljast laus fyrir aðra. Hreinsa Master flokkar mál (tvítekið, líklega búið, vantar fyrirtæki, gamalt, enn opið) og starfsmaður lokar völdum með afturköllun — engu lokað sjálfkrafa. Tengja fyrirtæki: tillögur úr netfangi sendanda, nafni eða heimilisfangi; leitin í tengja-ham tengir í stað þess að opna prófíl.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368m/368n, 11.09.2026): hamirnir Akstur, Skýrslur og Kröfur eru vinnusvæði. Akstur: aksturslistar 1-3 (arsskodun_customers.akstur, prentun fyrir bílstjóra með samantekt, leið í Google Maps), Forgangur, Brunakerfi (regla 272), Ný mál, Starfsmenn. Skýrslur: vinnublöð (sara_yfirferd) beint í borðinu með sönnun (skýrsla á stað + reikningur á kúnna), Í vinnslu - er það búið. Kröfur: kröfulisti eins og 166 án kredit og bakfærðra (55), v_gleymt_ad_rukka_uttekt (39), greitt síðar-drög, kort/reiðufé ómerkt, bakfærslur, Staðan í afgreiðslu (starfsmadur Kassi). Gögn eininga sótt latt (G, 5-10 mín). customer_documents.created_at er innlestrartími: fyrirtaeki_virkni v2 notar doc_date eða 1. jan skýrsluárs.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368l, 11.09.2026): hamir. Allir hamir sýna borðið með sínum málum. Aðild: beint merki ham:<id> í thjonustubeidni.tags, eða flokkur og merki hamsins (gömlu flokkarnir og merkin úr 231); Samskipti tekur líka pósta. Þjónusta er allt sem er ekki beint tengt öðrum ham. Sérsniðnir hamir samstilltir í AppSettings thjonustubord5.hamir; Hamir-flögur í völdu máli tengja og aftengja (skilyrt á updated_at). Nýtt mál fer í opinn ham. 231 heldur óþekktum merkjum, svo ham-merkin lifa þar.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368k, 11.09.2026, live 70ccec7): ✨ Tillaga vistar aldrei Líklega búið nema sala eða skýrsla hafi komið eftir stofnun málsins (vörn í borðinu); eldri saga er ekki send líkaninu; tv-summary temperature 0. Rót: dæmið í promptinu var sjálf prófunargögnin (R-000703) og líkanið afritaði það í 6 af 6 köllum, líka um nýtt reykskynjaramál. Regla: aldrei setja raunveruleg gögn sem dæmi í prompt.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368j, 11.09.2026): ✨ Tillaga sendir SAGA EFTIR STOFNUN og ELDRI SAGA aðskilið, og borðið ber dagsetningarnar saman sjálft. Prófað live: nýtt prófunarmál með eldri greiddum reikningi fékk Líklega búið þegar líkanið átti sjálft að bera saman dagsetningar. Prompt tv-summary: aðeins SAGA EFTIR STOFNUN gefur Líklega búið. Regla: aldrei láta líkanið bera saman dagsetningar sem kóðinn getur borið saman.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368i, 11.09.2026): ✨ Tillaga í völdu máli kallar á /api/tv-summary (Haiku, aðeins við smell) með sögu fyrirtækis, eiganda, fresti og pósti; vistar í summary og Afturkalla setur fyrri samantekt aftur. Prompt tv-summary fékk reglu: reikningur eða skýrsla dagsett eftir Stofnað = Líklega búið, loka máli (líkanið hafði lagt til að bóka uppsetningu í Engjaseli 31 þótt reikningur væri greiddur). notes-þak 700 stafir.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368h, 11.09.2026): engin mörk á fjölda mála; hvaða opið mál sem er opnast í Valið mál (Master, annarra, leit); mál sett á hvern sem er eða Master, skilyrt á eigandann sem var á skjánum; fyrirtækið alltaf smellanlegt (#company/<id>); skipulagsborðið skrifanlegt í 368 (skipulagsbord.by_staff.<nafn>.cards + krass, sömu gögn og 305); rofar úr gamla borðinu í ⚙: Frestir, Nýjast, Saga fyrirtækis, Breyta máli. 305 addFromRow þurrkar borð ef 305 er ekki mountað — ekki kalla það úr 368.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
+  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### reikningar
 
 - **Vinnulag Agnars í Kröfu yfirliti (16.11.2026): hann vill klára reikningana ÞAR; sendur reikningur er verðið (taxti sem var rukkaður gildir fram yfir verðskrá); yfirvinna ræðst af hakinu á verkinu, ekki af reglu („ekki reglu, frekar bara hak"); og þegar INN/ÚT er breytt í tímabók Efnislistans reiknast TÍMAR upp á nýtt.**
@@ -1005,84 +1089,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-03 · slokkvitaeki · claude-code · claude-code</sub>
 - **NLSH manadarlok (02.09.2026): brunaholf /api/nlsh-stada?til=YYYY-MM skilar uppsafnadri Done-talningu per verklid (stakar) i lok manadar - reitur 'Stada i lok manadar' a nlsh.html med Afrita-takka. Agnar limir dalkinn i samningsbladid (Google Sheet) sem reiknar heildir/verd sjalft. Talan stemmir EKKI upp a stak vid bladid: ~510 skraningar halfkladar/ekki merktar Done (ekki_done i svarinu) - vitad og i lagi. SQL-fall nlsh_stada (service_role eingongu), VERK-kortlagning deild ur nlsh-uppgjor.js.**
   <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-
-### thjonustubord
-
-- **tools/veidi-vaktin.cjs stofnar mál aftur ef ekkert OPIÐ mál ber merki vaktarinnar; slíku máli má því ekki loka til að losna við það, heldur færa það á annan starfsmann.** _(likely)_
-  <br>16.11.2026 voru #1532 og #1533 færð af borði Agnars á Charlize og haldið opnum af þessari ástæðu.
-  <br><sub>2026-11-16 · slokkvitaeki · kóði + lota 5f2146a4 · claude-code</sub>
-- **Mál sem stendur eftir hjá Agnari eftir yfirferð á að bera EINA já/nei-línu í thjonustubeidni.summary; einingarnar á borðinu sýna summary á undan nótunni.**
-  <br>Aðferðin 16.11.2026 (167 mál → 76): lesandi aðstoðarmenn, einn hópur hver, skila JSON-úrskurði per mál (LOKA / FRAMKVAEMA / VERKEFNI / AGNAR / SAMTHYKKT_OUNNID / OMAELT) með sönnun; aðallotan les yfir, framkvæmir sjálf og lokar samkvæmt lokunarvenjunni. Lokunartexti má ekki styttast í miðri setningu
-  <br><sub>2026-11-16 · slokkvitaeki · lota 5f2146a4 · claude-code</sub>
-- **Máli á Þjónustuborðinu er lokað afturkræft: fyrst röð í thjonustubord_lokanir_log með fyrra ástandi, svo status lokad með merkinu lokad:claude-yfirferd og línu efst í notes.**
-  <br>Log-dálkar: mal_id, fyrra_status, fyrri_tags, fyrri_notes, fyrra_updated_at, astaeda, domur, lokad_af, lokad_at, afturkallad_at. Á málinu: status=lokad, svarad_at, lokid_at, lokid_af=claude, lokid_lysing. Afturköllun: afrita fyrra ástand til baka úr logginum og setja afturkallad_at. 16.11.2026 voru 
-  <br><sub>2026-11-16 · slokkvitaeki · sql + lota 5f2146a4 · claude-code</sub>
-- **Þjónustuborðið prófast staðbundið án innskráningar á LIFANDI grunni: kyrrstæður þjónn á vinnutré slokkvitaeki (t.d. python -m http.server 8796) og #bord hleðst sem sá starfsmaður sem er valinn; innskráningarhliðið í index.html bilar opið þegar /api svarar ekki.**
-  <br>Mælt 16.11.2026. Smellir þar skrifa í raungögn — aðeins lesa. /api/* föllin eru ekki til staðbundið (404), svo einingar sem lesa þaðan þurfa gervi-fetch í síðunni. anon-lykillinn les ekki töfluna afgreidsla (RLS). Skrunarinn á borðinu er #view-bord, ekki window.
-  <br><sub>2026-11-16 · slokkvitaeki · Claude Code 16.11.2026 · bord-flettur</sub>
-- **Varfærin yfirferð samþykktarborðsins 15.11.2026: engin R-tvítök milli opinna mála, engin liðin yfirlit til lokunar — fyrri yfirferðir (08.10/07.11/08.11) hreinsuðu þau. Af 177 opnum var AÐEINS 1 lokað (#1468, tilboð um aukavinnu); hin 176 eru raunverulegar ákvarðanir Agnars (~13 m.kr. nefnt).**
-  <br>Flokkun: kröfur/sending 52 (3,2 m), tæki/skýrslur 23 (2,4 m), þjónusta/skoðun 13, kredit/endurgreiðsla 5, annað 81. Stærstu: #1130 LSH 1.096.368, #1529 7 kröfur 618.409, #1407 bakfæra 269.065. MÓTSÖGN flögguð: #1622 (AI-tillaga) segir yfirlit til Evu SENT 9.11 og vill loka #1378, EN #1378 bíður þess
-  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
-- **Af 260 opnum þjónustuborðsmálum 15.11.2026 eru 173 samþykki (ósvöruð) + 110 spurningar; aðeins 4 samþykkismál eru svöruð (svar:*), og þau 4 bíða flest handavinnu Agnars/starfsmanns, ekki framkvæmdar Claude.**
-  <br>Svöruð 15.11: #1175 (svar:vinnsla — stór reikningsdraga-yfirferð á 17 félögum, má ekki flýta), #1244 (Agnar vinnur TurboPaint-leiðréttinguna sjálfur), #1493 (Gerðuberg þegar er_i_thjonustu=true; eftir er að hringja og bóka skoðun = starfsmannsverk), #1547 (finna netföng og endursenda 5 reikninga 110
-  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
-- **Hörð tenging dugar EKKI til að loka samþykktarmáli: sala:R-tag sem er greidd/send leysir ekki mál sem SPYR um þá sölu, og verkefnalisti:X „klarad" getur falið ósvaraða spurningu.**
-  <br>Mælt 15.11.2026 á 28 hörð-tengdum ósvöruðum málum. Dæmi sem litu út fyrir að vera búin en voru það ekki: #1430 (verkefni klarad EN claude_notes: „BÍÐUR ÁKVÖRÐUNAR ÞINNAR — 57 DAGAR"), #1431 (klarad EN bíður þess að Agnar afturkalli Netlify-lykilinn sjálfur), #1446/#1447/#1449/#1450/#1451 (klarad EN 
-  <br><sub>2026-11-15 · slokkvitaeki · sql · claude-code</sub>
-- **Vinnusamantekt (patch 489) prófast staðbundið á móti lifandi grunni með await Vinnusamantekt.load(true) og lestri á Vinnusamantekt.S.res; tekjulínan sýnir framreiknaða spá frá 8. degi mánaðar, sömu tölu og ljósið dæmir eftir.**
-  <br>Slökkvitæki krefst innskráningar frá 09.11.2026 (hub_adgangar_stilling.krefjast_slokk), svo Claude prófar á staðbundnum þjóni (fs-server á vinnutré, /app/* → index.html). Gildra: service worker og skyndiminni vafrans skila gömlu patch-skránni þótt ?v= sé óbreytt — settu window.__vinnusamantekt489 = 
-  <br><sub>2026-11-10 · slokkvitaeki · kóði · claude-code</sub>
-- **Aðalmál (patch 492, #adalmal) sýnir aðeins ÓLOKUÐ mál með merkinu adalmal: dagsett vikuyfirlit er nýtt mál í hverri viku (merki adalmal + vikuyfirlit, ekki samthykki) og því gamla er lokað um leið, annars stendur borðið tómt.**
-  <br>#1376 (02.11.2026) var lokað 07.11 sem „úrelt af sjálfu sér" og borðið stóð tómt til 10.11 þegar #1587 var skrifað. Snið sem 492 þáttar: fyrsta lína „VIKUYFIRLIT dd.mm–dd.mm.áááá — …", kaflar „A · FUNDIR OG FRESTIR NÆSTU DAGA", „B · …", „C · …", „SPURNINGAR TIL ÞÍN"; atriði byrja á „• " eða „1. ". L
-  <br><sub>2026-11-10 · slokkvitaeki · sql · claude-code</sub>
-- **Hamurinn „BH · Þjónustubeiðnir" (id hmbhthj01, app_settings thjonustubord5.hamir, stofnaður 08.11.2026) er aðeins fyrir Agnar og Anni (Annþór): hann er falinn hjá öðrum með by_staff.<nafn>.falnir_hamir. Nýr starfsmaður sér hann sjálfkrafa þar til hann er settur á listann. Mál tengjast með taginu ham:hmbhthj01.**
-  <br>Sérsniðinn hamur styður aðeins EINN eiganda (`eigandi`), því er falið hjá hinum. Frá 04.11.2026 telst lokað mál afgreitt í Tölvupóstum (448, commit 1a2fb1cb, í loftinu 10.11): þráður fer úr „Bíður svars" ef málið var lokað eftir síðasta innkomna póst. Afrit: backup_20261108_hamir.
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Hamir á Þjónustuborði: Test og Reikningsbeiðnir (sérsniðnir) voru fjarlægðir úr app_settings thjonustubord5.hamir 04.11.2026; Samskipti og Pósthólf (innbyggðir í 368) faldir hjá Agnari með by_staff.Agnar.falnir_hamir. Afrit backup_20261104_hamir.**
-  <br>Reikningsbeiðnir sýndi aðeins eininguna postbeidnir sem er líka í Pósthólf; Tölvupóstar (448) geta allt það (svara, Senda reikning/skýrslu um ReikningaPostur.sendaReikning). Innbyggða hami er ekki hægt að fjarlægja án kóðabreytingar — nota falnir_hamir.
-  <br><sub>2026-11-04 · slokkvitaeki · claude-code · claude-code</sub>
-- **Aðalmál (492, #adalmal) les mál með merkinu adalmal; 'Kubbasafn' er hvergi til í kóða né skjölum (næst kemst 'kubbar' í 302 Mínar síður); cowork_action_items er lesin af engri skrá en cowork_postsvor af postsvorun.html (mælt 04.11.2026).** _(unverified)_
-  <br>grep kubbasafn: 0 tilvik í slokkvitaeki og brunaholf; 302-minar-sidur.js:14,85; postsvorun.html:114,171. 04.11.2026 voru 40 cowork_action_items 'open', ósnert síðan 16.07.2026.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
-- **thjonustubeidni ER í lifandi samstillingu: RT_TABLES í js/db.js inniheldur nú thjonustubeidni (og spjall). Staðreyndin frá 01.09.2026 um að Þjónustuborðið hafi enga lifandi samstillingu er úrelt (hún átti við 231).** _(unverified)_
-  <br>js/db.js:508 RT_TABLES = ['uttaeki','verkbeidnir','verklidur','fyrirtaeki','vidskiptavinir','thjonustubeidni','spjall']. 368 sjálft hefur engin .channel()-köll. Sama gildir um 03.09-staðreyndirnar um claimOldJobs í 231: fallið heitir nú saekjaBunka í 368 (368:15,551).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
-- **thjonustubeidni.priority er nánast dauður reitur með 9 stafsetningum (venjulegur 1.109, har 21, hár 15, lagur 12, hatt 6, high, normal, 1, 3). Forgangur borðsins er important (boolean); 368 les ekki priority, skrifar aðeins 'venjulegur' við nýtt mál.** _(unverified)_
-  <br>Mælt 04.11.2026 á 1.167 óeyddum málum. 368-thjonustubord5.js:827 eina priority-tilvísunin; 489 les hann einu sinni. Ekki samræma gildin nema Agnar vilji — en aldrei mæla 'áríðandi' á priority.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
-- **Svar Agnars á Þjónustuborði (✓/▶/✕/💬) skrifar merkið svar:<samthykkt|vinnsla|hafnad|endurmeta> Í STAÐ merkisins samthykki — það er ekki viðbót. Biðröð Claude er því tags like '%svar:%' and status <> 'lokad', aldrei sía á samthykki.** _(unverified)_
-  <br>368-thjonustubord5.js:62 og :791 (tags.filter(t => t !== SAMTHYKKI && !svar:…).concat(['svar:'+svar])). Mælt 04.11.2026: 0 af 168 málum með svar:-merki bera samthykki; biðröðin var 2 mál (#1244 tilbuid, #1175 i_vinnslu). samthykktir.md:20 segir ranglega 'merki til viðbótar'. svar:upplysing (2 lokuð 
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:05-thjonustubord-verk.inbox.json · greining-05</sub>
-- **'✕ Afmerkja' á Verkstæðisborði tekur fyrirtækið af borðinu OG afhakar bláa 'í vinnslu' hakið í Ársskoðun-töflunni; hnappurinn er í samtengdum takkahóp og aðeins virkur þegar fyrirtækið er 'Í vinnslu'.**
-  <br>[rule; agents: bord-flettur, sara-coworker] Á bak við var flagg sv_force_unstarted í arsskodun_customers (SavedReports.has() skilaði true ef inspection_trips átti gögn og hélt fyrirtækinu inni) og bein uppfærsla á Arsskodun._cache því patch 153 hefur ekkert…
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-26/27 · claude-code</sub>
-- **Hver starfsmaður á að geta valið eigið vinnuborð (hamur 'Mitt'); master-borðið með öllu má ekki flæða yfir alla.**
-  <br>[preference; agents: bord-flettur] Agnar: 'allt overcrowded hjá öllum því master borðið er inni allstaðar… maður á að geta valið Agnar mitt vinnuborð sem er bara hálf tómt'. Útfært sem MITT_HAM í patch 368 (by_staff.<n>.mitt, eigandi-merki á sérhömum,…
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-09-19 · claude-code</sub>
-- **Þjónustuborð 02.11.2026: öll 136 opin mál endurmæld í grunni (solur/Payday/Stólpi/skjöl/sara/email_digest). 7 lokað með sönnun (#1375 Payday PAID, #1015 R-000668, #722 Miðleiti, #1286/#1308/#1311 saga-eftir-a, #855), 30 fengu mælda línu, afrit backup_20261102_bord. Regla Agnars sama dag: engar hálfar giskanir — hver lína mæld með heimild eða merkt ÓMÆLT. Skýrsla docs/THJONUSTUBORD-YFIRFERD-20261102.md. Gildrur: channel_ref='email:<id>'; body_preview ~200 stafir; sara_yfirferd.stada aðeins bidur/klarad; teikning_bord.updated_at breytist af búnaðargreiningu, ekki veggjum.**
-  <br><sub>2026-11-02 · slokkvitaeki · claude-code · claude-code</sub>
-- **Samþykkja (368/446) sýnir Heimildir úr grunninum á opnu máli: les R-númer, Payday, Stólpa, fyrirtaeki_id og channel_ref. Nýtt samþykkismál þarf R-númer orðrétt, fyrirtaeki_id og 'mælt dd.mm.áááá', annars fær það rautt merki.**
-  <br><sub>2026-11-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð (368z4, 01.10.2026): thjonustubeidni.sonnun = staða úr gögnum (buid/liklega/upplysing, texti, naesta, tengill). Reiknað í thjb_sonnun_reikna; krókar á solur/sara_yfirferd/email_digest/thjonustubeidni setja í thjb_endurmat_bidrod, pg_cron thjb-bidrod (mín.) + thjb-endurmat (klst.). Greiðsla telst aðeins afgreiðsla á rukkunarmálum. Takki ↻ Endurmeta kallar rpc thjonustubeidni_endurmeta.**
-  <br><sub>2026-10-01 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gamla þjónustuborðið (231) og spjallið (347) voru tekin út 11.09.2026 ásamt viðbótum sem bjuggu aðeins í því (343, 358, 364, 287-postar-queue). Þjónustuborð 2 (368p) tekur við: hliðarstikuhnappurinn með data-view verkbord (vegna sidebar_order), #verkbord og #verkefni opna #bord, óúthlutuð mál eldri en 30 daga fara í bunka Charlize, og fylgiskjöl (thjonustubeidni_files + verkbord-files) eru í völdu máli. db.js realtime kallar á Thjonustubord5.load. Starfsmannalistar í bílstjóraappi (219), verkstæði (190) og aksturslista (268) lesa sameiginlega listann í 350; AppSettings starfsmenn = Agnar, Bjarndís, Binni, Anni, Hákon, Afgreiðsla.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368o, 11.09.2026): einn starfsmannalisti í AppSettings bord_starfsmenn = Agnar, Bjarndís, Binni, Anni, Hákon, Afgreiðsla, Charlize, Allir. Charlize og Allir eru sýndarborð (Ég er Charlize sýnir bunkann sem Mitt borð; Allir = sameiginleg verk) en teljast laus fyrir aðra. Hreinsa Master flokkar mál (tvítekið, líklega búið, vantar fyrirtæki, gamalt, enn opið) og starfsmaður lokar völdum með afturköllun — engu lokað sjálfkrafa. Tengja fyrirtæki: tillögur úr netfangi sendanda, nafni eða heimilisfangi; leitin í tengja-ham tengir í stað þess að opna prófíl.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368m/368n, 11.09.2026): hamirnir Akstur, Skýrslur og Kröfur eru vinnusvæði. Akstur: aksturslistar 1-3 (arsskodun_customers.akstur, prentun fyrir bílstjóra með samantekt, leið í Google Maps), Forgangur, Brunakerfi (regla 272), Ný mál, Starfsmenn. Skýrslur: vinnublöð (sara_yfirferd) beint í borðinu með sönnun (skýrsla á stað + reikningur á kúnna), Í vinnslu - er það búið. Kröfur: kröfulisti eins og 166 án kredit og bakfærðra (55), v_gleymt_ad_rukka_uttekt (39), greitt síðar-drög, kort/reiðufé ómerkt, bakfærslur, Staðan í afgreiðslu (starfsmadur Kassi). Gögn eininga sótt latt (G, 5-10 mín). customer_documents.created_at er innlestrartími: fyrirtaeki_virkni v2 notar doc_date eða 1. jan skýrsluárs.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368l, 11.09.2026): hamir. Allir hamir sýna borðið með sínum málum. Aðild: beint merki ham:<id> í thjonustubeidni.tags, eða flokkur og merki hamsins (gömlu flokkarnir og merkin úr 231); Samskipti tekur líka pósta. Þjónusta er allt sem er ekki beint tengt öðrum ham. Sérsniðnir hamir samstilltir í AppSettings thjonustubord5.hamir; Hamir-flögur í völdu máli tengja og aftengja (skilyrt á updated_at). Nýtt mál fer í opinn ham. 231 heldur óþekktum merkjum, svo ham-merkin lifa þar.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368k, 11.09.2026, live 70ccec7): ✨ Tillaga vistar aldrei Líklega búið nema sala eða skýrsla hafi komið eftir stofnun málsins (vörn í borðinu); eldri saga er ekki send líkaninu; tv-summary temperature 0. Rót: dæmið í promptinu var sjálf prófunargögnin (R-000703) og líkanið afritaði það í 6 af 6 köllum, líka um nýtt reykskynjaramál. Regla: aldrei setja raunveruleg gögn sem dæmi í prompt.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368j, 11.09.2026): ✨ Tillaga sendir SAGA EFTIR STOFNUN og ELDRI SAGA aðskilið, og borðið ber dagsetningarnar saman sjálft. Prófað live: nýtt prófunarmál með eldri greiddum reikningi fékk Líklega búið þegar líkanið átti sjálft að bera saman dagsetningar. Prompt tv-summary: aðeins SAGA EFTIR STOFNUN gefur Líklega búið. Regla: aldrei láta líkanið bera saman dagsetningar sem kóðinn getur borið saman.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368i, 11.09.2026): ✨ Tillaga í völdu máli kallar á /api/tv-summary (Haiku, aðeins við smell) með sögu fyrirtækis, eiganda, fresti og pósti; vistar í summary og Afturkalla setur fyrri samantekt aftur. Prompt tv-summary fékk reglu: reikningur eða skýrsla dagsett eftir Stofnað = Líklega búið, loka máli (líkanið hafði lagt til að bóka uppsetningu í Engjaseli 31 þótt reikningur væri greiddur). notes-þak 700 stafir.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368h, 11.09.2026): engin mörk á fjölda mála; hvaða opið mál sem er opnast í Valið mál (Master, annarra, leit); mál sett á hvern sem er eða Master, skilyrt á eigandann sem var á skjánum; fyrirtækið alltaf smellanlegt (#company/<id>); skipulagsborðið skrifanlegt í 368 (skipulagsbord.by_staff.<nafn>.cards + krass, sömu gögn og 305); rofar úr gamla borðinu í ⚙: Frestir, Nýjast, Saga fyrirtækis, Breyta máli. 305 addFromRow þurrkar borð ef 305 er ekki mountað — ekki kalla það úr 368.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (patch 368) er á falinni slóð #bord síðan 11.09.2026 (49d345f): Master = opin mál án starfsmanns EÐA á Charlize (231 claimOldJobs setur óúthlutað eldra en 30 daga á Charlize). Borðið býr í Shadow DOM því Brunastál-þemað þvingar .view .btn og .view h1–h3 með !important. Gamla borðið 231 og spjallið 347 víkja eftir samþykki Agnars.**
-  <br><sub>2026-09-11 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### arsskodun
 
@@ -1694,6 +1700,60 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Tækjafjöldi í árskoðun hefur verið rangur árum saman. Sjá sara-skillinn.
   <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
 
+### oryggisnet
+
+- **audit-agentar telur aðeins COMMITTAÐAR skrár: hann er grænn í vinnutré fyrir commit og getur rauðnað í CI á sömu breytingu (10.11.2026: agentinn samthykktir fór úr 5 í 6 skrár á eftir). Keyrðu audit-all --static aftur EFTIR commit; lagfæringin er raunverulegur lærdómur lotunnar í agentinn með node tools/agent.cjs --skra, ekki tóm snerting.**
+  <br><sub>2026-11-16 · slokkvitaeki · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
+- **CI Slökkvitækis (verdir) klónar brunaholf main. Lagfæring sem vörður les í systur-repóinu verður að vera sameinuð í brunaholf Á UNDAN PR-inum í slokkvitaeki, annars er verdir rautt á réttum kóða (10.11.2026: audit-regex-bakstrik á PR 972, lagfæringin beið í brunaholf PR 454).**
+  <br><sub>2026-11-16 · baedi · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
+- **audit_vernd-taflan (audit-vörnin) má ekki fjarlægja þótt hún stækki — minnkaðu risa-raðirnar, ekki vörnina.**
+  <br>[rule; agents: oryggi, kerfisheilsa, hradi] 05.08 var taflan 846 MB í 20.441 röðum (~42 kB á röð). Agnar: ‚má ekki taka í burtu þessa vernd‘ og ‚vill bara ekki að mikilvæg gögn detti út‘.
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 1555dbad 2026-08-05 · claude-code</sub>
+- **Útgangskóði tail eða grep í röri gatar ekki push — lestu niðurstöðu node tools/audit-all.cjs sjálfur; þekkt gagnarauð (ekki kóðavilla): fk-join, para-tegund, payday-samraeming, solu-id, t-s-i.** _(likely)_
+  <br>[gotcha; agents: netvordur] Skrá sem fer yfir verndaðar slóðir (10/233/254, 121/pos.js, payday-push, 153/187) fylgir netvordur-gátlistanum og uppfærir docs/ORYGGISNET.md.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
+- **Netvörður 31.10.2026 (PR #939): ^-akkerið í payday-push.cjs:454 /^Viðbótarúttekt við (R-\d+)/ er EINA vörnin sem heldur „Viðbót við R-… (ný tæki)“ frá venjulegum kröfum — 17 af 70 krafa_note bera R-númer annars staðar (t.d. R-001109 „Endurútgáfa R-001029 …“). audit-payday-lysing læsir það ekki: stökkbreyting sem fjarlægir ^ eða víkkar í /(R-\d+)/ helst GRÆN. Regex-vörður þarf neikvætt dæmi sem LÍKIST (venjuleg nóta með R-númeri), ekki aðeins nótu án R-númers. Mælt: buildPayload master vs grein á öllum 1120 sölum × 2 = 0 munur.**
+  <br>Harness í vm hleður buildPayload úr báðum útgáfum; gervisala með krafa_note eins og 488:466 skrifar gefur aðeins nýja línu í description, línur/upphæðir óbreyttar.
+  <br><sub>2026-10-31 · slokkvitaeki · claude-code · claude-code</sub>
+- **14.10.2026 — eqGroups (153:873) tekur FORFLOKKUÐU lyklana slt/bsl/rs fram yfir fínflokkana (lettvatn, duft2 …) ef einhver þeirra er != null. Blob-færsla arsskodun_customers[543] (Pitstop, í þjónustu, 4 tæki) ber enn {rs:0,bsl:0,slt:4}. Hver ritari sem leggur fínflokka ofan á (224 markListiStadfest á master, 165 afritEftirUttekt frá lota8) skilur slt:4 eftir: S verður 8 á móti T=4, audit-t-s-i fer RAUTT og summu-lesarar (345 Staðan, ai-context) sýna tvöfalt. Lagfæring: setja gömlu lyklana á null (deep-merge yfirskrifar með null; eqGroups fellur þá á fínflokkana), aldrei 0 (0 != null og eqGroups sýnir þá 0 tæki).**
+  <br>netvordur yfirferð lota8 (165 afritEftirUttekt + vorur.js legsteinn). Mælt með app_settings REST: aðeins EIN færsla (543) ber gömlu lyklana.
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Sýnilegi Breyta-takkinn á fyrirtækjaprófíl fer EKKI í Companies.openEdit (14) heldur í 00-legacy openEditModal (00-legacy.js:2836, capture + stopImmediatePropagation, krókur á 1 s fresti) sem sækir ferska röð með select('*') og skrifar 7 reiti. 14 næst aðeins með beinu kalli eða fyrstu ≤1 s eftir teikningu. Mæling á 14 í vafra verður að kalla Companies.openEdit beint og segja það — smellur á takkann mælir legacy-gluggann.**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Full úttekt 07.10.2026 (93 verðir, skráð í oryggisnet_keyrslur): 89 græn, 4 rauð — fk-join (Menja ehf. tvískráð #908/#1531 sama kt, tækin 9 á 1531 → sameina), solu-id (R-001055 Kristinn drög án kúnna), T=S 2 ný brot (fyrirtæki 661 prófíll 14/skýrsla 16, 1488 5/15), payday-samræming (R-001018 Kötlufell 9 og R-001052 Furugrund 66 bakfærð án nýs reiknings).**
+  <br><sub>2026-10-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026 (leiðrétting á staðreynd 585): CARTO-flísarnar sem settar voru inn með 79ef524 prenta „API KEY REQUIRED" þvert yfir kortið — þær krefjast lykils. Kortaflísar eru því á Esri World Street Map: https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x} með höfundarmerkinu Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors (birt a3f1122). Reglan sem þetta kenndi: flísabreyting telst ekki prófuð fyrr en kortið hefur verið SKOÐAÐ á skjámynd, ekki bara talið — bæði OSM-blokkin og CARTO-vatnsmerkið skila stöðu 200. Vörðurinn tools/audit-kort-flisar.cjs fellur nú líka á basemaps.cartocdn.com. Landmælingar Íslands bjóða aðeins EPSG:3057 í WMTS, svo opinbera íslenska kortið krefst Proj4-vörpunar í Leaflet.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **16.09.2026: OpenStreetMap lokaði á Slökkvitækja-appið fyrir kortaflísar og skilar „Access blocked"-mynd með stöðu 200 á hverja flís — ekkert kall fellur og ekkert log sést. Merkið er að sama 6,8 kB myndin komi fyrir öll hnit, líka án undirléns. Sjö kóðastaðir (155, 161 tvisvar, 178, 219, 268 og newfeatures.js) sækja nú flísar á https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png með höfundarmerkinu © OpenStreetMap contributors © CARTO. Staðfest lifandi eftir birtingu 79ef524: 12 af 12 flísum hlóðust frá CARTO í kortinu í Fyrirtæki í Þjónustu. Hnitaleitin (Nominatim gegnum okkar eigið /api/geocode) var ósnert og svaraði 200. Vörður: tools/audit-kort-flisar.cjs, grunnlína 0, kyrrstæður svo hann keyri í pre-push.**
+  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **15.09.2026: Reikningsskjal úr appinu (brunaholf uttekt-upload.js) vistaðist án vidskiptategund, svo auto_pair_customer_document paraði búðarsölu sem úttekt (7 pör, Pitstop og Colas-Gullhella merkt klarad; vörðurinn sá aðeins 2). Lagað í DB: trg_customer_documents_erfa_tegund erfir tegund sölunnar (solur.num) við vistun og auto_pair losar reikning úr röngu pari þegar tegundin breytist (+teg_breyting); 34 skjöl stimpluð, 7 pör losuð með UPDATE, afrit í audit_vernd. Vörður audit-para-tegund: T1 notar tegund sölunnar, T2 óstimpluð reikningsskjöl með sölu = 0. ATH: bud er ekki öruggt merki um að reikningur sé ekki úttekt — úttekt þar sem tækin koma í búðina er rukkuð með yfirferðar- og hleðslulínum (Hamraborg ehf R-000577, JDÓ ehf R-000531), svo gleymt-sýnirnar sía búð ekki út. sql/2026-09-15_para_tegund_erfd.sql**
+  <br><sub>2026-09-15 · slokkvitaeki · claude-code · claude-code</sub>
+- **Frá 15.09.2026 ([deploy] 2cdc01f) stofnar payday-push XML-höfnunarmál á Þjónustuborðinu með merkjunum samthykki + spurning og samantekt „Þarf frá þér: …" (pósturinn fór / Vantar netfang á <nafn> / drög / enginn reikningur), svo þau lenda undir „Þarf svar frá þér" í Samþykkja-hamnum (368aa), ekki „Tilbúið — bara samþykkja". Vörðurinn tools/audit-payday-xml-skraning.cjs keyrir skraXmlHofnun á gervineti og synaXmlHofnun (166) í gervi-DOM. Lærdómur fyrir alla verði sem taka fall úr skrá með regex: vörðurinn prófar FYRSTU skilgreininguna en JavaScript keyrir þá SÍÐUSTU — krefjast nákvæmlega einnar skilgreiningar (netvörður 15.09.).**
+  <br><sub>2026-09-15 · slokkvitaeki · claude-code · claude-code</sub>
+- **14.09.2026 (seinni lota): 48-notifications tapaði röðum — tæki á gjalddaga næstu 30 daga eru 2.118 en ópöguð sókn sá 1.000 (bjallan 1055 alls → 2173). solur (832 raðir, +5,5/dag, 1000 um miðjan október) sett í BIG í audit-pagination og 30 ópöguð svör blaðsíðuflett fyrirfram. Vörðurinn hertur: segment endar við næsta .from( (fyrirspurnir í sama Promise.all földu hver aðra) og .in(dálkur, [fastur listi]) telst ekki afmörkun. Athugasemdahreinsirinn er sameiginlegur í tools/_athugasemdir.cjs (fjórir verðir). Gáttin (gatt.js → v_next_inspection) les handvirkan skoðunarmánuð úr app_kv en appið vistar hann í app_settings: 63 staðir sýna viðskiptavinum rangan eða engan mánuð; lagfæring í sql/2026-09-14_v_next_inspection_app_settings.sql bíður beitingar.**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **14.09.2026: .limit(N) með N>1000 hnekkir EKKI 1000-raða þaki PostgREST (sama gildra og .range(0,2999): HTTP 200, engin villa). Töpuðu röðum: 153 v_skodunar_manudur 1000 af 1250, 236 customers_base 1000 af 1152, 27 fyrirtaeki 1000 af 1250 og 1000 af 1180. Allar 20 slíkar í js/ blaðsíðuflettar með DB.fetchAll + einkvæmri röðun; FAST-reglan í tools/audit-pagination.cjs gerir .limit(N>1000) RAUTT án grunnlínu. Athugasemda-hreinsirinn þar les nú strengi, sniðmát og regex: sá gamli tók image/* inni í streng sem athugasemd og faldi raunverulegan kóða (úttak hans þýddist ekki í 20 af 369 skrám).**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **payday-push.js hreinsar sölunótuna (hreinsaNotu) áður en hún fer í description kröfunnar síðan 12.09.2026 (010e9d6): Sótt-merki (Kt:, [Sótt …], Greiðsla:), Payday #N PAID, (leiðrétt …), Sótt ✓. Vörður tools/audit-payday-lysing.cjs, netvörður SAFE.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **312-canon-stadur.js _sb() skilaði null (enginn fallback-klient) þegar DB.sb/__vdaSB voru ekki enn til við ræsingu → _load() taldi TÓKST-en-tómt og skráði canon_stadur_empty ranglega — 460 atvik 24.08.–01.09.2026 þótt v_stadur_yfirlit beri staðfest >1000 raðir beint úr grunninum.**
+  <br>Sweep 2026-09-01: fix er fallback-klient í _sb() (stíll 03/04/78-skránna) + audit-db-null-guard.cjs framlengt til að verja hann. Í commit 0a7b4b2 á branch claude/mcp-browser-access-wqattt — ÓPUSHAÐ, sjá kerfi-færslu um session án push-aðgangs. Agnar þarf annaðhvort að veita þessari lotu push eða bei
+  <br><sub>2026-09-01 · slokkvitaeki · sql · claude-code</sub>
+- **js_error-flóð (Cannot read properties of null (reading (from)) á pos.js:58) hélt áfram 08-31→09-01 EFTIR að 74119ff lagaði DB.sb null-race í pos.js, af því vísunin í index.html hélt sömu ?v=20260830adrar — netlify.toml /js/* er max-age=3600 stale-while-revalidate=86400 svo gamla brotna skráin sat áfram í cache.**
+  <br>Sweep 2026-09-01 (branch claude/mcp-browser-access-wqattt, commit 0a7b4b2, ÓPUSHAÐ — sjá session-gloppu færslu): bumpaði í ?v=20260901nullguard. Regla staðfest af index.html sjálfu: allar hinar skrárnar sem breyttust 09-01 fengu 20260901-tögg, pos.js gleymdist. Lærdómur: cache-bust ER hluti af fix-i
+  <br><sub>2026-09-01 · slokkvitaeki · sql · claude-code</sub>
+- **Merge-lexía (#728, 2026-08-26): þegar PR og master hafa bæði bætt SÖMU vörn við (master nýrri, öðru nafni — reikMap.byCo vs #728 reikByCo) á merge-upplausn ALLTAF að halda master-hlið vörðu skránna (153/187/199 enduðu bit-fyrir-bit = master). Gildra: merge tvítók const SRC187/SRC199 í tools/audit-rekstrarfelog-sites.cjs → SyntaxError á module-load → ÖLL próf skrárinnar dauð og audit-all rautt — netið fangaði sinn eigin brotna vír. Eftir upplausn: audit source-check verður að miða við master-mynstrið (reikMap = { byCo, byKtOrphan), ekki úrelt PR-nafn. audit-all 13/13 grænt á test-merge-728 @ 6c18edb; netvordur SAFE.**
+  <br><sub>2026-08-26 · slokkvitaeki · — · —</sub>
+- **Regla 0 (docs/ORYGGISNET.md): áður en Claude-session/agent breytir vörðum leiðum í Slökkvitæki VERÐUR hann að fara um kortið, keyra netvörðinn (subagent_type: netvordur) OG audit-all grænt — fyrir OG eftir breytingu. netvordur kveður upp SAFE eða CUTS-A-WIRE.**
+  <br>netvordur er sérfræði-agent (.claude/agents/netvordur.md) sem GÆTIR netsins — les docs/ORYGGISNET.md, athugar hvort vörn tapist (233/254 tóm-reikningur, 121/pos.js kt, payday-push rukkun, 153/187 tilbúið), hvort nýr bilunar-punktur kalli window.logProblem, hvort nýtt invariant fái audit, og keyrir n
+  <br><sub>2026-08-20 · kerfi · agnar · claude-code</sub>
+- **Sjálfvirk heilsu-sópun (Routine trig_013hqjttRBk7TqbrPum2MskF) keyrir 3x á dag (08/13/18) og les v_app_problems_open + automation_runs, lagar smátt+öruggt á draft-PR og lætur Agnar vita AÐEINS ef eitthvað þarf hann.**
+  <br>Registry-taflan app_problems (RLS: anon insert+select, aðeins þjónn/Claude resolve) + view v_app_problems_open. Client-hlið: js/patches/309-problem-registry.js (hlaðið strax á eftir db.js). Fyrstu merkt failure-points: blank_invoice_source (233), blank_invoice_blocked + send_failed (254). Óunnið: se
+  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
+- **Slökkvitæki hefur öryggisnet (docs/ORYGGISNET.md): varnir á OUT-hlið (blokka slæma útkomu, aldrei vistun), problem-registry (window.logProblem → app_problems), og audits (tools/audit-*.cjs). Keyrðu `node tools/audit-all.cjs` fyrir HVERJA ýtingu — grænt = óhætt að ýta.**
+  <br>Reglurnar (Agnar's „electric cable"-samlíking — ekki klippa aðal-línuna án þess að tengja aftur og keyra enda-í-enda próf): (1) aldrei fjarlægja/veikja vörn án staðgengils + græns audits; (2) breyting á vörðum leiðum (reikninga-OUT 10/233/254, kt 121/pos.js, rukkun payday-push, tilbúið-staða 153/187
+  <br><sub>2026-08-20 · kerfi · kóði · claude-code</sub>
+
 ### thjonustulisti
 
 - **Merkið removed_from_service_at í app_settings.arsskodun_customers[fid] getur staðið eftir á félagi sem er komið aftur í þjónustu, og subscribed verður að vera boolean (true/false), annars telst félagið hálfskráð.** _(likely)_
@@ -1804,56 +1864,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **16.09.2026: Banner fyrirtækjaprófíls (js/features.js) fékk uppflettingar og skráningu. Pinninn og heimilisfangið opna Google Maps á SKRÁÐU heimilisfangi fyrirtækjaskrár þegar það berst, annars okkar. Þrjú merki við kennitöluna: K (Keldan), 1819 og FS (Fyrirtækjaskrá) — Keldan og FS aðeins fyrir félög (kt byrjar á 41+). Skráningarlína sýnir skráð heimilisfang, rekstrarform, stofndag, ÍSAT og forráðamann, gula flögu ef heimilisfang stemmir ekki og RAUÐA flögu ef félagið er gjaldþrota eða afskráð. Skatturinn setur þær línur sem p.highlight undir stofndaginn; kt-lookup skilar þeim í stada og bt_adili. Staðfest lifandi á #1404 Test fyrirtæki (kt Glyms ehf.): Úrskurðað gjaldþrota 23.03.2021, félag afskráð 29.06.2021, skiptastjóri Stefán Bjarni Gunnlaugsson. Fjórar gildrur kostuðu fimm birtingar: fast ?v-merki á stakri skriftu (vörður tools/audit-utgafumerki.cjs), max-age=86400 á kt-lookup svo fyrirspurnin ber &skra=UTGAFA, localStorage-lykill verður að bera sömu útgáfu (ktskra3), og reitir sem voru lesnir en ekki settir í JSON-svarið. Gögn 1819 (opnunartími, vefsíða, netfang, Facebook) eru EKKI sótt sjálfvirkt — sama regla og Já.is.**
   <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
 
-### oryggisnet
-
-- **audit_vernd-taflan (audit-vörnin) má ekki fjarlægja þótt hún stækki — minnkaðu risa-raðirnar, ekki vörnina.**
-  <br>[rule; agents: oryggi, kerfisheilsa, hradi] 05.08 var taflan 846 MB í 20.441 röðum (~42 kB á röð). Agnar: ‚má ekki taka í burtu þessa vernd‘ og ‚vill bara ekki að mikilvæg gögn detti út‘.
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 1555dbad 2026-08-05 · claude-code</sub>
-- **Útgangskóði tail eða grep í röri gatar ekki push — lestu niðurstöðu node tools/audit-all.cjs sjálfur; þekkt gagnarauð (ekki kóðavilla): fk-join, para-tegund, payday-samraeming, solu-id, t-s-i.** _(likely)_
-  <br>[gotcha; agents: netvordur] Skrá sem fer yfir verndaðar slóðir (10/233/254, 121/pos.js, payday-push, 153/187) fylgir netvordur-gátlistanum og uppfærir docs/ORYGGISNET.md.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
-- **Netvörður 31.10.2026 (PR #939): ^-akkerið í payday-push.cjs:454 /^Viðbótarúttekt við (R-\d+)/ er EINA vörnin sem heldur „Viðbót við R-… (ný tæki)“ frá venjulegum kröfum — 17 af 70 krafa_note bera R-númer annars staðar (t.d. R-001109 „Endurútgáfa R-001029 …“). audit-payday-lysing læsir það ekki: stökkbreyting sem fjarlægir ^ eða víkkar í /(R-\d+)/ helst GRÆN. Regex-vörður þarf neikvætt dæmi sem LÍKIST (venjuleg nóta með R-númeri), ekki aðeins nótu án R-númers. Mælt: buildPayload master vs grein á öllum 1120 sölum × 2 = 0 munur.**
-  <br>Harness í vm hleður buildPayload úr báðum útgáfum; gervisala með krafa_note eins og 488:466 skrifar gefur aðeins nýja línu í description, línur/upphæðir óbreyttar.
-  <br><sub>2026-10-31 · slokkvitaeki · claude-code · claude-code</sub>
-- **14.10.2026 — eqGroups (153:873) tekur FORFLOKKUÐU lyklana slt/bsl/rs fram yfir fínflokkana (lettvatn, duft2 …) ef einhver þeirra er != null. Blob-færsla arsskodun_customers[543] (Pitstop, í þjónustu, 4 tæki) ber enn {rs:0,bsl:0,slt:4}. Hver ritari sem leggur fínflokka ofan á (224 markListiStadfest á master, 165 afritEftirUttekt frá lota8) skilur slt:4 eftir: S verður 8 á móti T=4, audit-t-s-i fer RAUTT og summu-lesarar (345 Staðan, ai-context) sýna tvöfalt. Lagfæring: setja gömlu lyklana á null (deep-merge yfirskrifar með null; eqGroups fellur þá á fínflokkana), aldrei 0 (0 != null og eqGroups sýnir þá 0 tæki).**
-  <br>netvordur yfirferð lota8 (165 afritEftirUttekt + vorur.js legsteinn). Mælt með app_settings REST: aðeins EIN færsla (543) ber gömlu lyklana.
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Sýnilegi Breyta-takkinn á fyrirtækjaprófíl fer EKKI í Companies.openEdit (14) heldur í 00-legacy openEditModal (00-legacy.js:2836, capture + stopImmediatePropagation, krókur á 1 s fresti) sem sækir ferska röð með select('*') og skrifar 7 reiti. 14 næst aðeins með beinu kalli eða fyrstu ≤1 s eftir teikningu. Mæling á 14 í vafra verður að kalla Companies.openEdit beint og segja það — smellur á takkann mælir legacy-gluggann.**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Full úttekt 07.10.2026 (93 verðir, skráð í oryggisnet_keyrslur): 89 græn, 4 rauð — fk-join (Menja ehf. tvískráð #908/#1531 sama kt, tækin 9 á 1531 → sameina), solu-id (R-001055 Kristinn drög án kúnna), T=S 2 ný brot (fyrirtæki 661 prófíll 14/skýrsla 16, 1488 5/15), payday-samræming (R-001018 Kötlufell 9 og R-001052 Furugrund 66 bakfærð án nýs reiknings).**
-  <br><sub>2026-10-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026 (leiðrétting á staðreynd 585): CARTO-flísarnar sem settar voru inn með 79ef524 prenta „API KEY REQUIRED" þvert yfir kortið — þær krefjast lykils. Kortaflísar eru því á Esri World Street Map: https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x} með höfundarmerkinu Flísar © Esri, HERE, Garmin, © OpenStreetMap contributors (birt a3f1122). Reglan sem þetta kenndi: flísabreyting telst ekki prófuð fyrr en kortið hefur verið SKOÐAÐ á skjámynd, ekki bara talið — bæði OSM-blokkin og CARTO-vatnsmerkið skila stöðu 200. Vörðurinn tools/audit-kort-flisar.cjs fellur nú líka á basemaps.cartocdn.com. Landmælingar Íslands bjóða aðeins EPSG:3057 í WMTS, svo opinbera íslenska kortið krefst Proj4-vörpunar í Leaflet.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **16.09.2026: OpenStreetMap lokaði á Slökkvitækja-appið fyrir kortaflísar og skilar „Access blocked"-mynd með stöðu 200 á hverja flís — ekkert kall fellur og ekkert log sést. Merkið er að sama 6,8 kB myndin komi fyrir öll hnit, líka án undirléns. Sjö kóðastaðir (155, 161 tvisvar, 178, 219, 268 og newfeatures.js) sækja nú flísar á https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png með höfundarmerkinu © OpenStreetMap contributors © CARTO. Staðfest lifandi eftir birtingu 79ef524: 12 af 12 flísum hlóðust frá CARTO í kortinu í Fyrirtæki í Þjónustu. Hnitaleitin (Nominatim gegnum okkar eigið /api/geocode) var ósnert og svaraði 200. Vörður: tools/audit-kort-flisar.cjs, grunnlína 0, kyrrstæður svo hann keyri í pre-push.**
-  <br><sub>2026-09-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **15.09.2026: Reikningsskjal úr appinu (brunaholf uttekt-upload.js) vistaðist án vidskiptategund, svo auto_pair_customer_document paraði búðarsölu sem úttekt (7 pör, Pitstop og Colas-Gullhella merkt klarad; vörðurinn sá aðeins 2). Lagað í DB: trg_customer_documents_erfa_tegund erfir tegund sölunnar (solur.num) við vistun og auto_pair losar reikning úr röngu pari þegar tegundin breytist (+teg_breyting); 34 skjöl stimpluð, 7 pör losuð með UPDATE, afrit í audit_vernd. Vörður audit-para-tegund: T1 notar tegund sölunnar, T2 óstimpluð reikningsskjöl með sölu = 0. ATH: bud er ekki öruggt merki um að reikningur sé ekki úttekt — úttekt þar sem tækin koma í búðina er rukkuð með yfirferðar- og hleðslulínum (Hamraborg ehf R-000577, JDÓ ehf R-000531), svo gleymt-sýnirnar sía búð ekki út. sql/2026-09-15_para_tegund_erfd.sql**
-  <br><sub>2026-09-15 · slokkvitaeki · claude-code · claude-code</sub>
-- **Frá 15.09.2026 ([deploy] 2cdc01f) stofnar payday-push XML-höfnunarmál á Þjónustuborðinu með merkjunum samthykki + spurning og samantekt „Þarf frá þér: …" (pósturinn fór / Vantar netfang á <nafn> / drög / enginn reikningur), svo þau lenda undir „Þarf svar frá þér" í Samþykkja-hamnum (368aa), ekki „Tilbúið — bara samþykkja". Vörðurinn tools/audit-payday-xml-skraning.cjs keyrir skraXmlHofnun á gervineti og synaXmlHofnun (166) í gervi-DOM. Lærdómur fyrir alla verði sem taka fall úr skrá með regex: vörðurinn prófar FYRSTU skilgreininguna en JavaScript keyrir þá SÍÐUSTU — krefjast nákvæmlega einnar skilgreiningar (netvörður 15.09.).**
-  <br><sub>2026-09-15 · slokkvitaeki · claude-code · claude-code</sub>
-- **14.09.2026 (seinni lota): 48-notifications tapaði röðum — tæki á gjalddaga næstu 30 daga eru 2.118 en ópöguð sókn sá 1.000 (bjallan 1055 alls → 2173). solur (832 raðir, +5,5/dag, 1000 um miðjan október) sett í BIG í audit-pagination og 30 ópöguð svör blaðsíðuflett fyrirfram. Vörðurinn hertur: segment endar við næsta .from( (fyrirspurnir í sama Promise.all földu hver aðra) og .in(dálkur, [fastur listi]) telst ekki afmörkun. Athugasemdahreinsirinn er sameiginlegur í tools/_athugasemdir.cjs (fjórir verðir). Gáttin (gatt.js → v_next_inspection) les handvirkan skoðunarmánuð úr app_kv en appið vistar hann í app_settings: 63 staðir sýna viðskiptavinum rangan eða engan mánuð; lagfæring í sql/2026-09-14_v_next_inspection_app_settings.sql bíður beitingar.**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **14.09.2026: .limit(N) með N>1000 hnekkir EKKI 1000-raða þaki PostgREST (sama gildra og .range(0,2999): HTTP 200, engin villa). Töpuðu röðum: 153 v_skodunar_manudur 1000 af 1250, 236 customers_base 1000 af 1152, 27 fyrirtaeki 1000 af 1250 og 1000 af 1180. Allar 20 slíkar í js/ blaðsíðuflettar með DB.fetchAll + einkvæmri röðun; FAST-reglan í tools/audit-pagination.cjs gerir .limit(N>1000) RAUTT án grunnlínu. Athugasemda-hreinsirinn þar les nú strengi, sniðmát og regex: sá gamli tók image/* inni í streng sem athugasemd og faldi raunverulegan kóða (úttak hans þýddist ekki í 20 af 369 skrám).**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **payday-push.js hreinsar sölunótuna (hreinsaNotu) áður en hún fer í description kröfunnar síðan 12.09.2026 (010e9d6): Sótt-merki (Kt:, [Sótt …], Greiðsla:), Payday #N PAID, (leiðrétt …), Sótt ✓. Vörður tools/audit-payday-lysing.cjs, netvörður SAFE.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **312-canon-stadur.js _sb() skilaði null (enginn fallback-klient) þegar DB.sb/__vdaSB voru ekki enn til við ræsingu → _load() taldi TÓKST-en-tómt og skráði canon_stadur_empty ranglega — 460 atvik 24.08.–01.09.2026 þótt v_stadur_yfirlit beri staðfest >1000 raðir beint úr grunninum.**
-  <br>Sweep 2026-09-01: fix er fallback-klient í _sb() (stíll 03/04/78-skránna) + audit-db-null-guard.cjs framlengt til að verja hann. Í commit 0a7b4b2 á branch claude/mcp-browser-access-wqattt — ÓPUSHAÐ, sjá kerfi-færslu um session án push-aðgangs. Agnar þarf annaðhvort að veita þessari lotu push eða bei
-  <br><sub>2026-09-01 · slokkvitaeki · sql · claude-code</sub>
-- **js_error-flóð (Cannot read properties of null (reading (from)) á pos.js:58) hélt áfram 08-31→09-01 EFTIR að 74119ff lagaði DB.sb null-race í pos.js, af því vísunin í index.html hélt sömu ?v=20260830adrar — netlify.toml /js/* er max-age=3600 stale-while-revalidate=86400 svo gamla brotna skráin sat áfram í cache.**
-  <br>Sweep 2026-09-01 (branch claude/mcp-browser-access-wqattt, commit 0a7b4b2, ÓPUSHAÐ — sjá session-gloppu færslu): bumpaði í ?v=20260901nullguard. Regla staðfest af index.html sjálfu: allar hinar skrárnar sem breyttust 09-01 fengu 20260901-tögg, pos.js gleymdist. Lærdómur: cache-bust ER hluti af fix-i
-  <br><sub>2026-09-01 · slokkvitaeki · sql · claude-code</sub>
-- **Merge-lexía (#728, 2026-08-26): þegar PR og master hafa bæði bætt SÖMU vörn við (master nýrri, öðru nafni — reikMap.byCo vs #728 reikByCo) á merge-upplausn ALLTAF að halda master-hlið vörðu skránna (153/187/199 enduðu bit-fyrir-bit = master). Gildra: merge tvítók const SRC187/SRC199 í tools/audit-rekstrarfelog-sites.cjs → SyntaxError á module-load → ÖLL próf skrárinnar dauð og audit-all rautt — netið fangaði sinn eigin brotna vír. Eftir upplausn: audit source-check verður að miða við master-mynstrið (reikMap = { byCo, byKtOrphan), ekki úrelt PR-nafn. audit-all 13/13 grænt á test-merge-728 @ 6c18edb; netvordur SAFE.**
-  <br><sub>2026-08-26 · slokkvitaeki · — · —</sub>
-- **Regla 0 (docs/ORYGGISNET.md): áður en Claude-session/agent breytir vörðum leiðum í Slökkvitæki VERÐUR hann að fara um kortið, keyra netvörðinn (subagent_type: netvordur) OG audit-all grænt — fyrir OG eftir breytingu. netvordur kveður upp SAFE eða CUTS-A-WIRE.**
-  <br>netvordur er sérfræði-agent (.claude/agents/netvordur.md) sem GÆTIR netsins — les docs/ORYGGISNET.md, athugar hvort vörn tapist (233/254 tóm-reikningur, 121/pos.js kt, payday-push rukkun, 153/187 tilbúið), hvort nýr bilunar-punktur kalli window.logProblem, hvort nýtt invariant fái audit, og keyrir n
-  <br><sub>2026-08-20 · kerfi · agnar · claude-code</sub>
-- **Sjálfvirk heilsu-sópun (Routine trig_013hqjttRBk7TqbrPum2MskF) keyrir 3x á dag (08/13/18) og les v_app_problems_open + automation_runs, lagar smátt+öruggt á draft-PR og lætur Agnar vita AÐEINS ef eitthvað þarf hann.**
-  <br>Registry-taflan app_problems (RLS: anon insert+select, aðeins þjónn/Claude resolve) + view v_app_problems_open. Client-hlið: js/patches/309-problem-registry.js (hlaðið strax á eftir db.js). Fyrstu merkt failure-points: blank_invoice_source (233), blank_invoice_blocked + send_failed (254). Óunnið: se
-  <br><sub>2026-08-20 · slokkvitaeki · kóði · claude-code</sub>
-- **Slökkvitæki hefur öryggisnet (docs/ORYGGISNET.md): varnir á OUT-hlið (blokka slæma útkomu, aldrei vistun), problem-registry (window.logProblem → app_problems), og audits (tools/audit-*.cjs). Keyrðu `node tools/audit-all.cjs` fyrir HVERJA ýtingu — grænt = óhætt að ýta.**
-  <br>Reglurnar (Agnar's „electric cable"-samlíking — ekki klippa aðal-línuna án þess að tengja aftur og keyra enda-í-enda próf): (1) aldrei fjarlægja/veikja vörn án staðgengils + græns audits; (2) breyting á vörðum leiðum (reikninga-OUT 10/233/254, kt 121/pos.js, rukkun payday-push, tilbúið-staða 153/187
-  <br><sub>2026-08-20 · kerfi · kóði · claude-code</sub>
-
 ### nlsh
 
 - **LEIÐRÉTTING á færslu 2326 (NLSH gólf 5H, 11.11.2026): teikningin '5H. Ceiling' er heilt hæðarblað með S1, S2, S4 og S5, ekki S1+S2. Gólfgöt 5H kláruð: S1 119, S2 150, S4 101, S5 97 — 'rúmlega 100 á deild' stenst. Fyrri tölur (S1 um 248, S2 um 193, ekkert á S4/S5) voru rangar vegna deildaskiptingar í tools/nlsh-stukur.cjs; lagað með deildFall (blað með fylki af deildum skiptist við þrjú stærstu x-bilin). Lærdómur: bera x-svið punkta við þekkt blað áður en blaði er skipt í deildir.**
@@ -1897,6 +1907,58 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Payday-reikningar til ÞG verktaka (Landspítali, NLSH) eru 95% af mánaðaruppgjörinu: 5% er öryggisfé sem er haldið eftir (ekki afsláttur) og greiðist þegar verkinu lýkur.**
   <br>Mælt 01.11.2026: R-310, 319, 343, 352, 370, 376 (apríl–sept) eru 95% upp á krónu; R-299 (mars) ±20 kr; fyrir mars 100%. customer_worksite_map.retention_pct segir 10 en raunin er 5 (Agnar: samningurinn segir 5–10%). Afleiðing: drögin (invoice_drafts) hafa upphæð uppgjörsins og krofu-yfirlit-bru.js sj
   <br><sub>2026-11-01 · brunaholf · sql · claude-code</sub>
+
+### agentar
+
+- **Agentar samstilltir að hluta 16.11.2026 eftir lotu 5f2146a4: bord-flettur (Forgangsmál eining 28, tóm sía í 448), samthykktir (borðyfirferðin, afturkræf lokun, eitt mál ein útkoma), sala-reikningar og fyrirtaeki (lærdómslínur), bokari í brunaholf (breytingasaga efnislista) og skill bord-uppfaersla (lokun um thjonustubord_lokanir_log).**
+  <br>slokkvitaeki c4f574c3 og brunaholf 6583d54, engin birting. Agentaskráin endurbyggð (build-agents-registry) og kveikjuorðið Forgangsmál ratar á bord-flettur í router --dry. Þetta var EKKI full agenta-samstilling: aðrir agentar voru ekki bornir saman við Charlize og vélar-speglar ekki skoðaðir.
+  <br><sub>2026-11-16 · kerfi · git · claude-code</sub>
+- **Agentinn gatakort (Jackie Chan) á Gatakortið og stöðuskýrsluna í nýja Ajour (Skráning í Kjarna): kortleggur húsnæði, púslar teikningum, stillir af lög, finnur og parar punkta. Heimaskrá brunaholf/.claude/agents/gatakort.md; verkferli fyrir nýtt húsnæði er skill gatakort-nytt-husnaedi; öll NLSH-sagan (11.–14.11.2026) er í NLSH-DAGBOK.md í skill-möppunni.**
+  <br>[decision; agents: gatakort, skraning] Stofnað 14.11.2026 að ósk Agnars („stofna Jackie Chan fyrir nýja Ajour … layer-vinnu, finna punktana, matcha … mappa upp annað húsnæði“, „agent með skill, líklegast í Jarvis brunaholf“). Kóðinn er í Kjarna: apps/slokkvitaeki/tools/skraning-gatakort-* og /kjarni
+  <br><sub>2026-11-14 · kerfi · claude-code · claude-code</sub>
+- **11.11.2026: boxið Verkferli tilbúin til keyrslu (489) sýnir síðast keyrt og tillögu að tíðni per verkferli úr app_settings.verkferli_keyrslur og gulnar þegar ferli er komið á tíma. Lokaskref hvers verkferlis er app_settings_merge með lyklinum og dagsetningu; hálfkláruð keyrsla er ekki skráð. Reglan stendur í brunaholf/.claude/agents/jarvis.md.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **11.11.2026: verkferli eru skráð sem skills og talin upp í boxinu Verkferli tilbúin til keyrslu í Vinnusamantekt (489). Ný: sannreyna-fyrirtaeki (eigandi fyrirtaeki), agenta-samstilling, lotu-uttekt, lista-uttekt (eigandi jarvis). Routerinn les aðeins kveikjuorð AGENTA og þegir á færri en 3 orðum, svo kveikjuorð skills verða líka að standa í lýsingu eiganda-agentsins.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
+  <br>Agnar 10.11.2026, sent á margar lotur. Aðferð sem virkaði í lotu 2ef635f0 (59 beiðnir, 15 þræðir): (1) draga beiðnirnar úr afritinu með python; (2) þrír lesaðeins undiragentar samhliða (lifandi app, reikningar/fjármál, listar/póstur), aðeins EINN með vafrann; (3) sannreyna á lifandi gögnum: build.js
+  <br><sub>2026-11-10 · kerfi · claude-code · claude-code</sub>
+- **Skill samthykki-a-bord sem AGENTASKRA.md og tools/agents-meta.json vísa á (~/.claude/skills/samthykki-a-bord) er ekki til, og ~/.claude/agents (rukkari-speglinn) er ekki til heldur á DESKTOP-M5FO3I6.**
+  <br>ls 04.11.2026: ~/.claude/skills hefur 10 möppur (3dJoker, artifacts-builder, debugging-code, frontend-design, luna, parametric-3d-printing, ui-ux-pro-max, using-superpowers, web-artifacts-builder, webapp-testing); ~/.claude/agents er ekki til. AGENTASKRA-taflan hefur 23 línur en agentarnir eru 25 (r
+  <br><sub>2026-11-04 · kerfi · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
+- **Þegar endapunkti er bætt við í brunaholf á að uppfæra viðkomandi sérfræðing í .claude/agents/ í sömu lotu.** _(likely)_
+  <br>[rule; agents: framendi, gagnaleidslur, jarvis, rukkari, bokari] Staðið sem fast regla í brunaholf-repo í lotum 5-6 október 2026. Án þess vita agentarnir ekki af nýja endapunktinum næst.
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
+- **Hver agent á eitt frumeintak (merkt í banner) og speglar í öðrum repo-um eru afrit sem úreldast; frumritið ræður.** _(unverified)_
+  <br>Agentaskráin 31.08: 9 af 21 spegli höfðu dregist aftur úr.
+  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
+- **Agent-skrár hlaðast úr <vinnumappa>/.claude/agents/, svo lota þarf að ræsast inni í repo-inu sem á agentana (slokkvitaeki, brunaholf eða kjarni) til að þeir séu tiltækir.** _(unverified)_
+  <br>Agentaskráin 31.08: lota í C:\projects hafði 0 af 23 agentum.
+  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
+- **Agent-skrár í .claude/agents í repo og skills, MCP-þjónar og plugins á claude.ai-reikningnum eru tvö samhliða kerfi sem hafa ítrekað valdið ruglingi.** _(likely)_
+  <br>[gotcha; agents: jarvis, general] Í dag eru 16 agent-skrár í brunaholf og 13 í slokkvitaeki (joker, kunnaskra, natalie, rukkari í báðum); skills eins og charlize, arnold og sara lifa á reikningnum. Agnar bað 30.08.2026 um að 'þjálfa upp hópinn' sem eru skráðir á…
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
+- **Þekkingu má aldrei týna þegar CLAUDE.md er skipt upp — flytja hana óbreytta á sérfræðinga-agentana eftir flokkum; stórt CLAUDE.md brenndi tokens í hverri lotu.**
+  <br>[decision; agents: general, jarvis] 01.08 Agnar: ‚vill ekki tapa neinni þekkingu… skipta þeim niður á agentana eftir flokkum‘ og ‚tokens eru alveg að brenna upp‘. Hugmynd hans: agentar fyrir kúnnagrunn, pör/bundles, síðuhraða og bókara, minnisskipulag teiknað í…
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
+- **Agnar skilur ensku 100 % — ef Sonnet gengur illa á íslensku má skrifa agent-fyrirmæli á ensku.**
+  <br>[preference; agents: general] 01.08 12:13: ‚Sonnet annars bara á ensku ef það gengur illa… við skilum ensku 100%‘.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
+- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
+  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
+- **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
+  <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
+  <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
+- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
+  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
+  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
+- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
+  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
+- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
+  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
+  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### payday
 
@@ -2045,55 +2107,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Verkefni fara á verkefnalista-töfluna (assigned_agent), lærdómur fer í charlize_knowledge**
   <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-
-### agentar
-
-- **Agentinn gatakort (Jackie Chan) á Gatakortið og stöðuskýrsluna í nýja Ajour (Skráning í Kjarna): kortleggur húsnæði, púslar teikningum, stillir af lög, finnur og parar punkta. Heimaskrá brunaholf/.claude/agents/gatakort.md; verkferli fyrir nýtt húsnæði er skill gatakort-nytt-husnaedi; öll NLSH-sagan (11.–14.11.2026) er í NLSH-DAGBOK.md í skill-möppunni.**
-  <br>[decision; agents: gatakort, skraning] Stofnað 14.11.2026 að ósk Agnars („stofna Jackie Chan fyrir nýja Ajour … layer-vinnu, finna punktana, matcha … mappa upp annað húsnæði“, „agent með skill, líklegast í Jarvis brunaholf“). Kóðinn er í Kjarna: apps/slokkvitaeki/tools/skraning-gatakort-* og /kjarni
-  <br><sub>2026-11-14 · kerfi · claude-code · claude-code</sub>
-- **11.11.2026: boxið Verkferli tilbúin til keyrslu (489) sýnir síðast keyrt og tillögu að tíðni per verkferli úr app_settings.verkferli_keyrslur og gulnar þegar ferli er komið á tíma. Lokaskref hvers verkferlis er app_settings_merge með lyklinum og dagsetningu; hálfkláruð keyrsla er ekki skráð. Reglan stendur í brunaholf/.claude/agents/jarvis.md.**
-  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **11.11.2026: verkferli eru skráð sem skills og talin upp í boxinu Verkferli tilbúin til keyrslu í Vinnusamantekt (489). Ný: sannreyna-fyrirtaeki (eigandi fyrirtaeki), agenta-samstilling, lotu-uttekt, lista-uttekt (eigandi jarvis). Routerinn les aðeins kveikjuorð AGENTA og þegir á færri en 3 orðum, svo kveikjuorð skills verða líka að standa í lýsingu eiganda-agentsins.**
-  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Lotu-yfirferð („farðu í gegnum allar beiðnir lotunnar og athugaðu hvort það virki í raun"): beiðnirnar fást úr ~/.claude/projects/<verkefni>/<lota>.jsonl (type user, án tool_result og isMeta); algengustu bilanirnar eru úrelt dagsett gögn, hálfkláruð beiðni sem önnur tók við og nótur með gömlum tölum.**
-  <br>Agnar 10.11.2026, sent á margar lotur. Aðferð sem virkaði í lotu 2ef635f0 (59 beiðnir, 15 þræðir): (1) draga beiðnirnar úr afritinu með python; (2) þrír lesaðeins undiragentar samhliða (lifandi app, reikningar/fjármál, listar/póstur), aðeins EINN með vafrann; (3) sannreyna á lifandi gögnum: build.js
-  <br><sub>2026-11-10 · kerfi · claude-code · claude-code</sub>
-- **Skill samthykki-a-bord sem AGENTASKRA.md og tools/agents-meta.json vísa á (~/.claude/skills/samthykki-a-bord) er ekki til, og ~/.claude/agents (rukkari-speglinn) er ekki til heldur á DESKTOP-M5FO3I6.**
-  <br>ls 04.11.2026: ~/.claude/skills hefur 10 möppur (3dJoker, artifacts-builder, debugging-code, frontend-design, luna, parametric-3d-printing, ui-ux-pro-max, using-superpowers, web-artifacts-builder, webapp-testing); ~/.claude/agents er ekki til. AGENTASKRA-taflan hefur 23 línur en agentarnir eru 25 (r
-  <br><sub>2026-11-04 · kerfi · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
-- **Þegar endapunkti er bætt við í brunaholf á að uppfæra viðkomandi sérfræðing í .claude/agents/ í sömu lotu.** _(likely)_
-  <br>[rule; agents: framendi, gagnaleidslur, jarvis, rukkari, bokari] Staðið sem fast regla í brunaholf-repo í lotum 5-6 október 2026. Án þess vita agentarnir ekki af nýja endapunktinum næst.
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota e9205308 2026-10-06 · claude-code</sub>
-- **Hver agent á eitt frumeintak (merkt í banner) og speglar í öðrum repo-um eru afrit sem úreldast; frumritið ræður.** _(unverified)_
-  <br>Agentaskráin 31.08: 9 af 21 spegli höfðu dregist aftur úr.
-  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
-- **Agent-skrár hlaðast úr <vinnumappa>/.claude/agents/, svo lota þarf að ræsast inni í repo-inu sem á agentana (slokkvitaeki, brunaholf eða kjarni) til að þeir séu tiltækir.** _(unverified)_
-  <br>Agentaskráin 31.08: lota í C:\projects hafði 0 af 23 agentum.
-  <br><sub>2026-11-04 · kerfi · artifact: https://claude.ai/artifact/XfdWRVFo44hkvTyQvEX5fe · skjol</sub>
-- **Agent-skrár í .claude/agents í repo og skills, MCP-þjónar og plugins á claude.ai-reikningnum eru tvö samhliða kerfi sem hafa ítrekað valdið ruglingi.** _(likely)_
-  <br>[gotcha; agents: jarvis, general] Í dag eru 16 agent-skrár í brunaholf og 13 í slokkvitaeki (joker, kunnaskra, natalie, rukkari í báðum); skills eins og charlize, arnold og sara lifa á reikningnum. Agnar bað 30.08.2026 um að 'þjálfa upp hópinn' sem eru skráðir á…
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 2b47ca79 2026-08-30 · claude-code</sub>
-- **Þekkingu má aldrei týna þegar CLAUDE.md er skipt upp — flytja hana óbreytta á sérfræðinga-agentana eftir flokkum; stórt CLAUDE.md brenndi tokens í hverri lotu.**
-  <br>[decision; agents: general, jarvis] 01.08 Agnar: ‚vill ekki tapa neinni þekkingu… skipta þeim niður á agentana eftir flokkum‘ og ‚tokens eru alveg að brenna upp‘. Hugmynd hans: agentar fyrir kúnnagrunn, pör/bundles, síðuhraða og bókara, minnisskipulag teiknað í…
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
-- **Agnar skilur ensku 100 % — ef Sonnet gengur illa á íslensku má skrifa agent-fyrirmæli á ensku.**
-  <br>[preference; agents: general] 01.08 12:13: ‚Sonnet annars bara á ensku ef það gengur illa… við skilum ensku 100%‘.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 8e43dca9 2026-08-01 · claude-code</sub>
-- **Athugasemdir Agnars við agenta og skills (Jarvis → opna agent → „Bæta við upplýsingum“) vistast í agent_notes (status nytt → tekid_inn | hafnad) gegnum /api/agent-notes; skill agent-athugasemdir lýsir hvernig þær eru teknar inn í skrárnar.**
-  <br>Lykill agent = nafn agentsins, skill-<nafn í lágstöfum> fyrir skill, almennt = á við alla. Taflan hefur RLS án policy (aðeins service role). sql/2026-10-28_agent_notes.sql.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Kveikjuorð agents eiga heima í description: (síðasta setning „Kveikjuorð: …“) því lýsingarnar birtast í agent-listanum í samhengi hverrar lotu; haltu þeim ≤ ~650 stafir og forðastu almenn orð eins og „er búið“, „laga“, „skoða“.**
-  <br>Reglan sett 28.10.2026 þegar 29 agent-skrár voru endurskrifaðar (25 agentar, 9 skills fengu kveikjuorð). Langt meginmál hleðst aðeins þegar agentinn er kallaður til; lýsingin hleðst alltaf.
-  <br><sub>2026-10-28 · baedi · kóði · claude-code</sub>
-- **Jarvis → Sérfræðingar er teiknað úr js/agents-registry.js, sem node tools/build-agents-registry.cjs býr til úr .claude/agents og .claude/skills í brunaholf og slokkvitaeki; keyra þarf byggjarann eftir hverja breytingu á agent- eða skill-skrá.**
-  <br>Lýsing, kveikjuorð, verkfæri og dagsetning koma úr skránum (dagsetning úr git, mtime ef óskuldbundið); persóna, flokkur, sérhæfing og „aldrei“ úr tools/agents-meta.json. Byggjarinn skrifar líka sjálfvirka kveikjuorðatöflu neðst í docs/TRIGGERS.md. Smíðað 28.10.2026.
-  <br><sub>2026-10-28 · brunaholf · kóði · claude-code</sub>
-- **Sara (sara-organizer í brunaholf / sara-coworker í slokkvitaeki) veit hvaða úttektarskýrslur á eftir að senda almennt — Rukkarinn spyr hana um heildarlistann áður en hann segir hvað er tilbúið að senda**
-  <br>Agnar 05.09.2026. Pörin skýrsla↔reikningur búa í v_bundle_coverage (kind/stada) og Sara á þau; Rukkarinn stjórnar lotunni en finnur ekki upp skýrslulista sjálfur.
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
-- **Beiðnir og vinna sem tengist rukkunum → kalla SJÁLFKRAFA á agentinn rukkari (Rukkarinn 🦆) — ekki bíða eftir að Agnar útskýri félögin, flæðin, afslættina eða póstinn**
-  <br>Heimaskrá brunaholf/.claude/agents/rukkari.md (spegill í slokkvitaeki/.claude/agents og ~/.claude/agents á vinnuvélinni). Hann les docs/REIKNINGALOTA.md, athugar tengingar (/api/data-sources-status), les Drög-stöðina (/api/reikningspunktar?op=stada) og póstinn (eldklar-postur) og kallar á bokari / s
-  <br><sub>2026-09-04 · baedi · chat · claude-code</sub>
 
 ### reglur
 
@@ -2494,6 +2507,33 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Measured 29.8.2026: production sent max-age=0 on ~1.1 MB of bundles. Preview #789 serves immutable on _bundle-0..7, 1h SWR on /js/* and /css/*, 1d SWR on /img/*, sw.js still max-age=0.
   <br><sub>2026-08-29 · slokkvitaeki · kóði · cursor</sub>
 
+### verklag
+
+- **Viðbót sem er hengd á mál annars efnis týnist þegar málinu er lokað. Liðurinn um töfluna cowork_js_patches stóð sem athugasemd við mál 1536 frá 10.11.2026; málinu var lokað 16.11. sem skráðri ákvörðun um RLS og liðurinn stóð óafgreiddur. Opinn aðgangur fær sitt eigið forgangsmál (regla Óðins 19: ekki sameinað öðru) — varð mál 1650. Áður en máli er lokað eru allar dagsettar viðbætur í notes lesnar og spurt hvort ákvörðunin nái til hverrar.**
+  <br><sub>2026-11-16 · baedi · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
+- **Próf á dev-þjóni slokkvitaeki án skrifa á lifandi gögn: hlaða tools/prof-uppgerd-skrif.js í vafrann (Uppgerd.sala() eða Uppgerd.stillingar({...})), smella í gegnum raunverulegt viðmót og lesa Uppgerd.skrif().**
+  <br>Dev-þjónninn talar við lifandi Supabase og Claude er neitað um raunskrif þangað í prófi (10.11.2026: bæði verðbreyting á vöru og nýr verðlisti í app_settings). Uppgerðin sannar hvað kóðinn SENDIR, ekki að þjónninn taki við því — segja að raunveruleg vistun sé óprófuð og sannreyna þjónshlið með lesfy
+  <br><sub>2026-11-10 · kerfi · lota 10.11.2026 · claude-code</sub>
+- **Sonnunarleit 07.11.2026 (onnur rannsoknarumferd yfir Verkefnalista, Thjonustuver og Charlize). STAERSTI FUNDUR: R-000716 Thangbakki 8-10 190.987 kr. MA ALLS EKKI RUKKA - verkid var aldrei unnid; kreditfaert ad fullu med R-000723, Agnar skrifadi sjalfur 17.08 'misskilningur med thetta verk', mal #986 segir 'engin uttekt var gerd', 55 taeki an skodunardagsetningar. Endurmetin heildartala: 997.264 - 190.987 - 4.420 (Hertz segir 'afgreidd med reikningi 276') = 801.857 kr., thar af 455.654 a sterkri sonnun. TAFLAN cowork_krafa_vantar_2025_26 (744 radir, 37 m.kr.) ER UPPGERD I HEILD - 648 greiddar, 44 kreditfaerdar, 0 okrafid; ma fara af lista. NYTT: 95 Stolpa-reikningar 'opid_vid_yfirtoku 07.05.2026' = 4.607.794 kr. ogreitt, thar af 63 (3.232.644 kr.) an nokkurrar krofu sidan - mal #1527. MEKANIK: Center Hotels krefjast skeytamidlunar en payday_delivery er TOMT a ollum 12 stodum (okt-reikningar 1,21 m.kr. sitja fastir) - mal #1528. RONG KJOR: Hagvagnar rukkadir 3.065 i stad 2.700 samkvaemt samningi (177 taeki, ~65 th. of hatt); Hamraborg 28 a 25% afslatt sem vantar. SAMTHYKKT EN ORUKKAD: Stangarhylur 3-3A 1.250.000, Engjavellir 5A 230.000, GTS 174.194, Motormax 31.000. Reikningspunktar: 14 af 26 eru rukkadir en faninn applied er NULL a ollum - faninn er omarktaekur.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Verdmaetamaeling 07.11.2026 (rannsoknarhamur): THRJU THREP. (1) Bokfaert og bara osent 997.264 kr - krafa aldrei send 634.095, kredit an endurgerdar 270.809, send krafa ogreidd >60d 92.360. (2) Verk unnid en enginn reikningur ~155.000 kr (ABC Barnahjalp, Klubburinn Geysir, Hljodfaerahusid, Pallett, Arakur 5). (3) ARLEG SKODUN SEM HEFUR EKKI FARID FRAM 2026: 105 stadir sem eru ENN I THJONUSTU, 774 lifandi taeki, 4.261.293 kr. verdlagt a sidasta reikningi hvers stadar (medaltal 42.026 kr/stad). Til vidbotar 28 stadir merktir ur thjonustu, 151 taeki, 991.991 kr. Samtals threp 1-3 um 5,4 m.kr. Threp 4 (fjorar osvaradar tilbodsbeidnir, m.a. Oddafell 22 taeki og Eykt brunathettingar a Landspitala) er OMAELT. Sian: lifandi taeki (status <> urelt), sidasta skodun eldri en 11 manada, og ENGIN 2026-hreyfing i arsskodun_report_facts, solur ne stolpi_reikningar - thannig falla rekstrarfelog med einn reikning fyrir marga stadi ekki ranglega inn.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Rannsoknarhamur 07.11.2026 (Agnar: 'fara sidan adra umferd med rannsoknarham'). Sex lesadeins-lotur leitudu i stad thess ad stadfesta; nidurstodur i mal #1522-#1526 a Thjonustubordinu. FUNDIR: ~1,5 m.kr. utistandandi (R-001198 Nesdekk Dalshrauni 364.807 kr. an krofu fra 22.10; R-001018 Kotlufell 9 59.632 kr. kreditfaert 06.10 og aldrei endurgert; ABC Barnahjalp, Klubburinn Geysir og Hljodfaerahusid med skyrslu 2026 en engan reikning); 9 kunnar osvaradir, thar af 4 tilbodsbeidnir (Oddafell 22 taeki 148 daga, Tolvuland 124, Eykt Landspitali 89, Krumma 37) og Heimaleiga skrifadi 04.11 'mjog ahugasom' um tilbod; 46 af 643 stodum med misvisandi taekjatolur (Velras Alhellu 9 vs 24, Nordurturninn 79 i skyrslu og 0 i taekjaskra); Batik med tvaer kt, tolustafir vixladir (650706-0640 vs -0604); 15 stadir med ~300 taeki bida skodunar (Felag skipstjornarmanna 42 manudir). ADFERD SEM VIRKADI: eitt svid per lotu + listi yfir gildrurnar sem hafa bitid (kredit+endurgerd, Stolpi, rekstrarfelog, 999999-9999, uttaeki.status fjogur gildi, arstidir) + fyrirmaeli um ad skrifa OMAELT frekar en ad thegja. Lesadeins er retti hamurinn fyrir rannsokn.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Onnur umferd 07.11.2026 (95%-umbodid). Charlize-bidstofan 869 -> 23: thridja umferd las postana sem source_path nefnir, fjorda umferd leitadi UT FYRIR tha - onnur bref sama felags, OKKAR EIGIN SENT-svor og gagnagrunninn sjalfan. SENT-mappan er vanmetin heimild. Nytt verkfaeri sem virkadi: STYTTA OG SAMTHYKKJA - 34 stadreyndir voru rettar ad hluta, ostadfesti hlutinn felldur burt (aldrei baett vid) og kjarninn samthykktur. 281 ny stadreynd i Charlize i dag. Thjonustubordid 663 -> 450 opin: 93 svorud erindi, 65 tvitok, 24 fjoldapostar/auglysingar sem postflokkarinn setti i 'skodun_tilbod' (postlisti@, sala@, no_reply@ eiga aldrei ad stofna erindi), 18 mal sem sogdu sjalf 'FLUTT 09.09.2026 i Sara Vinnublod' en stodu samt opin. Samthykkismalin 188 endurmaeld: 9 lokad, 19 baru ranga tolu eda urelta forsendu, 169 bera nu maelda athugasemd. Mal 1368 og 1407 stangast a (bakfaera vs senda aftur R-000356). Tvitakapor thvert a lotur leystust rett thvi hverri lotu var bannad ad loka hlid sem onnur atti.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Charlize-bidrodin og Thjonustubordid grisjud 07.11.2026 (95%-umbodid). charlize_inbox 869 -> 138: atta samhlida yfirferdarlotur lasu email_digest.body_preview fyrir postana sem source_path nefnir; 117 samthykkt + 72 ur netfangasamanburdi = 189 nyjar stadreyndir med confidence likely og postnumer i detail, 199 hafnad (nanast allt einnota atburdir sem eru lidnir). Thjonustubordid 663 opin -> 505: 93 lokad thar sem SENT-posthólfid synir svar til sama vidtakanda med sama efni innan 21 dags og erindid er eldra en 6 manada (thread_id dugdi ekki, adeins 71 af 373 bera hann), 65 lokad sem tvitok. Afrit: backup_20261107_charlize_inbox og backup_20261107_thjonustubeidni. GILDRA: ein lota skiladi 35 malum 'latin bida' en hafdi ekki lesid postana - oskodad mal er ekki nidurstada, spyrja alltaf hvort 'beid' thydi 'las og dugdi ekki' eda 'las ekki'. OPID: kt 600508-0400 birtist baedi sem Olafur Gislason & Co hf og sem Brunaholf/Slokkvitaeki i postum 47989, 54082, 66804.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Bidstofan (charlize_inbox) fekk nio flokka 07.11.2026 (brunaholf c04a9d2): Peningar, Eftir ad svara, Thjonusta, Mikilvaegast, Vandamal, Tengilidir, Adgengi, Kerfisspurningar, Annad + aldursas (nytt <=7d / eldra). charlize-stada.js flokka()/aldur() reikna flokkinn vid hvert kall og op=inbox skilar per_flokkur/per_aldur og tekur &flokkur=&aldur=; rodin er sott i heilu lagi (thak 2000) thvi PostgREST getur hvorki siad ne talid reiknadan flokk. MAELING sem breytti honnuninni: flokkun eftir ordalagi einu skildi 219 af 488 (45%) eftir i Annad, svo topic raedur meginflokkuninni og ordalagid lyftir adeins thvi adkallandi upp i Mikilvaegast. Bidrodin for ur 869 i 459 (131 somu-slod, 178 veidin, 29 naer-tvitok med pg_trgm >0.72, 72 samthykkt maelt).**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **95%-umbodid (Agnar 07.11.2026): 'ef thu getur svarad thessu med 95% vissu tha máttu taka sem mest fyrir mig'. Nai maeling 95% ur heimild (gagnagrunnur, teikning, reikningur, skyrsla, okkar eigin postsamskipti) ma Claude afgreida samthykktarmal og Charlize-mal sjalfur: svara, loka, hafna, leidretta, samthykkja i gognunum. Afrit (backup_<dags>_<tafla>) fyrst og review_note i hverja rod sem segir hvad var maelt. UTAN umbodsins: senda post/reikning, hreyfa peninga, afturkalla, eyda. Fyrsta umferd: charlize_inbox 869 pending -> 488 (131 eldri afrit af somu source_path, 178 veidin sem er lifandi syn ekki thekking, 72 samthykkt thvi netfangid er skrad a somu kt i okkar postsamskiptum). ATH: samthykkt verdur ad fara BAEDI i charlize_inbox.status OG charlize_knowledge - enginn triggeri tengir thaer. Rotin: postur skrifar ~250 mal a dag i bidrod sem madur a ad lesa.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Thjonustubordid: Agnar 07.11.2026 - 'eg vil helst ekkert fa a thjonustubordid mitt nema eitthvad sem er bradnaudsynlegt ad thid getid ekki fundid svarid'. Finnist heimild (teikningar, skraningartafla, v_stadur_flokkun, reikningur, skyrsla) er LEIDRETT STRAX og sagt fra i einni linu - ekkert mal stofnad. A bordid fara adeins raunverulegar akvardanir hans og thad sem engin heimild svarar. Daemi: Mani Apartments var skrad med 56 haedir i banner_upplysingar; teikningarnar syna Kjallari + 1.-6. haed og reiturinn heitir 'Haedir ofan jardar' (patch 363) svo rett tala er 6 - skrifad beint, ekki sett a bordid. v_stadur_flokkun sagdi 7 thvi hun telur kjallarann med.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **API-LYKLA-AÐFERÐIN (Agnar 18.09.2026: „frábær leið"): þegar lykill, token eða lykilorð þarf að komast í stillingaskrá skrifar Claude skrána tilbúna með tómri línu LYKILL= og íslenskri athugasemd, opnar hana í Notepad hjá Agnari OG opnar um leið nákvæmlega réttu vefsíðuna þar sem lykillinn er sóttur. Agnar afritar, límir, vistar og segir „komið". Claude prófar strax að lykillinn virki og birtir gildið aldrei.**
+  <br>Claude má ekki slá inn lykla sjálfur og Agnar á aldrei að líma lykil í spjallið. Skrefin til hans: 3–4 stuttar línur á mannamáli, engin tæknihugtök. Fyrst notað við luna-bridge 2 á skrifstofuvélinni (C:\Users\Slokkvitaeki\luna-bridge\.env, Supabase service_role). Ath: Microsoft 365 hafnar IMAP-lykil
+  <br><sub>2026-09-18 · baedi · claude-code · claude-code</sub>
+
 ### verd
 
 - **ja.is Vöruleit má ekki skrapa eða afrita í gagnagrunn: skilmálar Já banna afritun, gagnagrunnsgerð og viðskiptalega notkun án skriflegs leyfis og robots.txt bannar /vorur/. 167 raðir sem verðkönnun las þaðan 16.11.2026 voru útilokaðar úr birtu gögnunum; flipinn Samkeppnisaðilar – Vörur sýnir aðeins handvirka tengla á ja.is Vöruleit. Verð skal sótt beint af vefjum seljenda eða með skriflegu leyfi frá Já.**
@@ -2624,31 +2664,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ajour CSV-útflutningurinn er í raun eitt JSON-kall á /api/reporting/legacy/GetReportData — vafrinn býr CSV-ið til sjálfur úr svarinu**
   <br>Enginn CSV-endapunktur er til server-megin. Auðkenning er EINGÖNGU setu-kaka (httpOnly), engin API-lykill, svo ómönnuð keyrsla þarf annaðhvort geymda köku eða forritaða innskráningu. NLSH-útflutningur er ~36-39 MB og ~120 þús. línur, 53 dálkar, semíkommu-aðskilið með UTF-8 BOM.
   <br><sub>2026-08-28 · brunaholf · kóði · claude-code</sub>
-
-### verklag
-
-- **Próf á dev-þjóni slokkvitaeki án skrifa á lifandi gögn: hlaða tools/prof-uppgerd-skrif.js í vafrann (Uppgerd.sala() eða Uppgerd.stillingar({...})), smella í gegnum raunverulegt viðmót og lesa Uppgerd.skrif().**
-  <br>Dev-þjónninn talar við lifandi Supabase og Claude er neitað um raunskrif þangað í prófi (10.11.2026: bæði verðbreyting á vöru og nýr verðlisti í app_settings). Uppgerðin sannar hvað kóðinn SENDIR, ekki að þjónninn taki við því — segja að raunveruleg vistun sé óprófuð og sannreyna þjónshlið með lesfy
-  <br><sub>2026-11-10 · kerfi · lota 10.11.2026 · claude-code</sub>
-- **Sonnunarleit 07.11.2026 (onnur rannsoknarumferd yfir Verkefnalista, Thjonustuver og Charlize). STAERSTI FUNDUR: R-000716 Thangbakki 8-10 190.987 kr. MA ALLS EKKI RUKKA - verkid var aldrei unnid; kreditfaert ad fullu med R-000723, Agnar skrifadi sjalfur 17.08 'misskilningur med thetta verk', mal #986 segir 'engin uttekt var gerd', 55 taeki an skodunardagsetningar. Endurmetin heildartala: 997.264 - 190.987 - 4.420 (Hertz segir 'afgreidd med reikningi 276') = 801.857 kr., thar af 455.654 a sterkri sonnun. TAFLAN cowork_krafa_vantar_2025_26 (744 radir, 37 m.kr.) ER UPPGERD I HEILD - 648 greiddar, 44 kreditfaerdar, 0 okrafid; ma fara af lista. NYTT: 95 Stolpa-reikningar 'opid_vid_yfirtoku 07.05.2026' = 4.607.794 kr. ogreitt, thar af 63 (3.232.644 kr.) an nokkurrar krofu sidan - mal #1527. MEKANIK: Center Hotels krefjast skeytamidlunar en payday_delivery er TOMT a ollum 12 stodum (okt-reikningar 1,21 m.kr. sitja fastir) - mal #1528. RONG KJOR: Hagvagnar rukkadir 3.065 i stad 2.700 samkvaemt samningi (177 taeki, ~65 th. of hatt); Hamraborg 28 a 25% afslatt sem vantar. SAMTHYKKT EN ORUKKAD: Stangarhylur 3-3A 1.250.000, Engjavellir 5A 230.000, GTS 174.194, Motormax 31.000. Reikningspunktar: 14 af 26 eru rukkadir en faninn applied er NULL a ollum - faninn er omarktaekur.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Verdmaetamaeling 07.11.2026 (rannsoknarhamur): THRJU THREP. (1) Bokfaert og bara osent 997.264 kr - krafa aldrei send 634.095, kredit an endurgerdar 270.809, send krafa ogreidd >60d 92.360. (2) Verk unnid en enginn reikningur ~155.000 kr (ABC Barnahjalp, Klubburinn Geysir, Hljodfaerahusid, Pallett, Arakur 5). (3) ARLEG SKODUN SEM HEFUR EKKI FARID FRAM 2026: 105 stadir sem eru ENN I THJONUSTU, 774 lifandi taeki, 4.261.293 kr. verdlagt a sidasta reikningi hvers stadar (medaltal 42.026 kr/stad). Til vidbotar 28 stadir merktir ur thjonustu, 151 taeki, 991.991 kr. Samtals threp 1-3 um 5,4 m.kr. Threp 4 (fjorar osvaradar tilbodsbeidnir, m.a. Oddafell 22 taeki og Eykt brunathettingar a Landspitala) er OMAELT. Sian: lifandi taeki (status <> urelt), sidasta skodun eldri en 11 manada, og ENGIN 2026-hreyfing i arsskodun_report_facts, solur ne stolpi_reikningar - thannig falla rekstrarfelog med einn reikning fyrir marga stadi ekki ranglega inn.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Rannsoknarhamur 07.11.2026 (Agnar: 'fara sidan adra umferd med rannsoknarham'). Sex lesadeins-lotur leitudu i stad thess ad stadfesta; nidurstodur i mal #1522-#1526 a Thjonustubordinu. FUNDIR: ~1,5 m.kr. utistandandi (R-001198 Nesdekk Dalshrauni 364.807 kr. an krofu fra 22.10; R-001018 Kotlufell 9 59.632 kr. kreditfaert 06.10 og aldrei endurgert; ABC Barnahjalp, Klubburinn Geysir og Hljodfaerahusid med skyrslu 2026 en engan reikning); 9 kunnar osvaradir, thar af 4 tilbodsbeidnir (Oddafell 22 taeki 148 daga, Tolvuland 124, Eykt Landspitali 89, Krumma 37) og Heimaleiga skrifadi 04.11 'mjog ahugasom' um tilbod; 46 af 643 stodum med misvisandi taekjatolur (Velras Alhellu 9 vs 24, Nordurturninn 79 i skyrslu og 0 i taekjaskra); Batik med tvaer kt, tolustafir vixladir (650706-0640 vs -0604); 15 stadir med ~300 taeki bida skodunar (Felag skipstjornarmanna 42 manudir). ADFERD SEM VIRKADI: eitt svid per lotu + listi yfir gildrurnar sem hafa bitid (kredit+endurgerd, Stolpi, rekstrarfelog, 999999-9999, uttaeki.status fjogur gildi, arstidir) + fyrirmaeli um ad skrifa OMAELT frekar en ad thegja. Lesadeins er retti hamurinn fyrir rannsokn.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Onnur umferd 07.11.2026 (95%-umbodid). Charlize-bidstofan 869 -> 23: thridja umferd las postana sem source_path nefnir, fjorda umferd leitadi UT FYRIR tha - onnur bref sama felags, OKKAR EIGIN SENT-svor og gagnagrunninn sjalfan. SENT-mappan er vanmetin heimild. Nytt verkfaeri sem virkadi: STYTTA OG SAMTHYKKJA - 34 stadreyndir voru rettar ad hluta, ostadfesti hlutinn felldur burt (aldrei baett vid) og kjarninn samthykktur. 281 ny stadreynd i Charlize i dag. Thjonustubordid 663 -> 450 opin: 93 svorud erindi, 65 tvitok, 24 fjoldapostar/auglysingar sem postflokkarinn setti i 'skodun_tilbod' (postlisti@, sala@, no_reply@ eiga aldrei ad stofna erindi), 18 mal sem sogdu sjalf 'FLUTT 09.09.2026 i Sara Vinnublod' en stodu samt opin. Samthykkismalin 188 endurmaeld: 9 lokad, 19 baru ranga tolu eda urelta forsendu, 169 bera nu maelda athugasemd. Mal 1368 og 1407 stangast a (bakfaera vs senda aftur R-000356). Tvitakapor thvert a lotur leystust rett thvi hverri lotu var bannad ad loka hlid sem onnur atti.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Charlize-bidrodin og Thjonustubordid grisjud 07.11.2026 (95%-umbodid). charlize_inbox 869 -> 138: atta samhlida yfirferdarlotur lasu email_digest.body_preview fyrir postana sem source_path nefnir; 117 samthykkt + 72 ur netfangasamanburdi = 189 nyjar stadreyndir med confidence likely og postnumer i detail, 199 hafnad (nanast allt einnota atburdir sem eru lidnir). Thjonustubordid 663 opin -> 505: 93 lokad thar sem SENT-posthólfid synir svar til sama vidtakanda med sama efni innan 21 dags og erindid er eldra en 6 manada (thread_id dugdi ekki, adeins 71 af 373 bera hann), 65 lokad sem tvitok. Afrit: backup_20261107_charlize_inbox og backup_20261107_thjonustubeidni. GILDRA: ein lota skiladi 35 malum 'latin bida' en hafdi ekki lesid postana - oskodad mal er ekki nidurstada, spyrja alltaf hvort 'beid' thydi 'las og dugdi ekki' eda 'las ekki'. OPID: kt 600508-0400 birtist baedi sem Olafur Gislason & Co hf og sem Brunaholf/Slokkvitaeki i postum 47989, 54082, 66804.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Bidstofan (charlize_inbox) fekk nio flokka 07.11.2026 (brunaholf c04a9d2): Peningar, Eftir ad svara, Thjonusta, Mikilvaegast, Vandamal, Tengilidir, Adgengi, Kerfisspurningar, Annad + aldursas (nytt <=7d / eldra). charlize-stada.js flokka()/aldur() reikna flokkinn vid hvert kall og op=inbox skilar per_flokkur/per_aldur og tekur &flokkur=&aldur=; rodin er sott i heilu lagi (thak 2000) thvi PostgREST getur hvorki siad ne talid reiknadan flokk. MAELING sem breytti honnuninni: flokkun eftir ordalagi einu skildi 219 af 488 (45%) eftir i Annad, svo topic raedur meginflokkuninni og ordalagid lyftir adeins thvi adkallandi upp i Mikilvaegast. Bidrodin for ur 869 i 459 (131 somu-slod, 178 veidin, 29 naer-tvitok med pg_trgm >0.72, 72 samthykkt maelt).**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **95%-umbodid (Agnar 07.11.2026): 'ef thu getur svarad thessu med 95% vissu tha máttu taka sem mest fyrir mig'. Nai maeling 95% ur heimild (gagnagrunnur, teikning, reikningur, skyrsla, okkar eigin postsamskipti) ma Claude afgreida samthykktarmal og Charlize-mal sjalfur: svara, loka, hafna, leidretta, samthykkja i gognunum. Afrit (backup_<dags>_<tafla>) fyrst og review_note i hverja rod sem segir hvad var maelt. UTAN umbodsins: senda post/reikning, hreyfa peninga, afturkalla, eyda. Fyrsta umferd: charlize_inbox 869 pending -> 488 (131 eldri afrit af somu source_path, 178 veidin sem er lifandi syn ekki thekking, 72 samthykkt thvi netfangid er skrad a somu kt i okkar postsamskiptum). ATH: samthykkt verdur ad fara BAEDI i charlize_inbox.status OG charlize_knowledge - enginn triggeri tengir thaer. Rotin: postur skrifar ~250 mal a dag i bidrod sem madur a ad lesa.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Thjonustubordid: Agnar 07.11.2026 - 'eg vil helst ekkert fa a thjonustubordid mitt nema eitthvad sem er bradnaudsynlegt ad thid getid ekki fundid svarid'. Finnist heimild (teikningar, skraningartafla, v_stadur_flokkun, reikningur, skyrsla) er LEIDRETT STRAX og sagt fra i einni linu - ekkert mal stofnad. A bordid fara adeins raunverulegar akvardanir hans og thad sem engin heimild svarar. Daemi: Mani Apartments var skrad med 56 haedir i banner_upplysingar; teikningarnar syna Kjallari + 1.-6. haed og reiturinn heitir 'Haedir ofan jardar' (patch 363) svo rett tala er 6 - skrifad beint, ekki sett a bordid. v_stadur_flokkun sagdi 7 thvi hun telur kjallarann med.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **API-LYKLA-AÐFERÐIN (Agnar 18.09.2026: „frábær leið"): þegar lykill, token eða lykilorð þarf að komast í stillingaskrá skrifar Claude skrána tilbúna með tómri línu LYKILL= og íslenskri athugasemd, opnar hana í Notepad hjá Agnari OG opnar um leið nákvæmlega réttu vefsíðuna þar sem lykillinn er sóttur. Agnar afritar, límir, vistar og segir „komið". Claude prófar strax að lykillinn virki og birtir gildið aldrei.**
-  <br>Claude má ekki slá inn lykla sjálfur og Agnar á aldrei að líma lykil í spjallið. Skrefin til hans: 3–4 stuttar línur á mannamáli, engin tæknihugtök. Fyrst notað við luna-bridge 2 á skrifstofuvélinni (C:\Users\Slokkvitaeki\luna-bridge\.env, Supabase service_role). Ath: Microsoft 365 hafnar IMAP-lykil
-  <br><sub>2026-09-18 · baedi · claude-code · claude-code</sub>
 
 ### uttektir
 
@@ -3918,6 +3933,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Claude-session sem „vaktar" draft-PR vekur sig sjálft á klukkutíma fresti þar til PR-ið er merge-að/lokað — yfir nótt getur það étið stóran hluta vikunýtingarinnar (8.8.: 50%→75% á einni nóttu, session á Opus max effort með ~30M token samhengi).**
   <br>Lausn: merge-a/loka draft-PR-um áður en lagst er á koddann, eða segja sessioninu að hætta að fylgjast með. Vakningar sjást og slökkvast með list_triggers/delete_trigger. Gömul risa-session (500M+ cache-lestrar) eru líka dýr í endurvakningu — nýtt lítið session per verk er ódýrara.
   <br><sub>2026-08-08 · kerfi · claude-code · claude-code</sub>
+
+### lotuuttekt
+
+- **Lotuúttekt 16.11.2026 á EINNI lotu (32e6afff, skýjalota, afrit á diski frá 14.10. til 16.11.2026; eldri beiðnir aðeins í samantekt): 5 beiðnir Agnars lesnar, allt sem var sagt búið endurmælt 10.11. og 16.11. Skrifað: 1 ný kúnnaminnis-færsla (Krókur 77) og 3 fluttar á kennitölu (Nesdekk Dalshrauni 10), 4 reglur í Charlize, lærdómur í agentana netvordur og samthykktir, skills allsherjar-uttekt og lotu-uttekt uppfærð að reglunum frá 16.11., tools/minni.cjs tekur --kt fyrir kúnnaminni. Samræmt: 79 kúnnaminnis-færslur á kennitölu með bandstriki. Stofnað: forgangsmál 1650 (cowork_js_patches, regla Óðins 19). Féll við endurmælingu: ekkert af því sem var sagt lagað; SQL frá 31.10. er enn ókeyrt og vaframælingar óunnar (innskráningarhlið).**
+  <br><sub>2026-11-16 · baedi · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
 
 ### efnislisti
 

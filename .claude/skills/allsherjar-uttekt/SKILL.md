@@ -64,13 +64,23 @@ er sagt þannig, með „versnað/batnað/óbreytt".
 
 1. **Kóði** í PR per repó, EITT `[deploy]` hvort (deploy kostar; sjá skill `deploy`). Vörðuð leið → `netvordur`
    kallaður úr AÐALLOTUNNI (gaffall getur það ekki) með master-á-móti-grein samanburði á raungögnum.
+   **Fast umboð (16.11.2026):** bað Agnar um lagfæringarnar sameinarðu og birtir sjálfur þegar prófin standast og
+   ekkert NÝTT er rautt frá þinni breytingu (berðu saman við hreint `git worktree` af master — sumt er rautt fyrir).
+   Ekki enda á „má ég birta?". Segðu eftir á í einni línu hvað fór út og hvernig það var sannreynt.
+   **Röð sameininga:** CI Slökkvitækis klónar `brunaholf` main. Lagfæring sem vörður les í systur-repóinu verður að
+   vera sameinuð ÞAR á undan, annars er `verdir` rautt á réttum kóða (10.11.: `audit-regex-bakstrik`).
 2. **Tvær síður, ein tala** → sameiginleg skrá, og harness sem keyrir gamalt og nýtt á sömu gögnum (MAELINGAR kafli 21).
 3. **Gagnagrunnsbreytingar (DDL)** fara í `brunaholf/sql/<dags>_<nafn>.sql` með afturköllun í haus og eru prófaðar
    sem `create temp view` / í tómri færslu fyrst. `apply_migration` spyr Agnar — sjái hann ekki spurninguna (sími)
-   rennur hún út; þá stendur skráin merkt ÓKEYRT og verkið fer á Verkefnalistann. Aldrei framhjá með `execute_sql`.
-4. **Öryggisstillingar (RLS, lyklar, innskráning) eru ákvörðun Agnars** — mál á Þjónustuborðinu, ekki verk.
-   Eitt mál, ekki tíu; leitaðu fyrst að opnu máli um sama efni og bættu við það.
-5. **Verk sem þú lagar ekki** → `verkefnalisti` (status `beidni`, eitt verk per MYNSTUR, skrá:lína og mæling).
+   rennur hún út; þá stendur skráin merkt ÓKEYRT og það er sagt í lokasvarinu. Aldrei framhjá með `execute_sql`.
+4. **Öryggisstillingar (RLS, lyklar, innskráning) eru ákvörðun Agnars.** RLS almennt er afgreitt (mál #1536, lokað
+   16.11.2026: hann metur áhættuna litla) — ekki nýtt mál um það sama. Lykill, lykilorð eða OPINN AÐGANGUR af öðru
+   eðli (kóði sem keyrir, lykill sem lak) fer beint til hans sem forgangsmál með nákvæmlega því skrefi sem hann
+   tekur (`odin_reglur` regla 19; mest 7 opin forgangsmál, leitaðu fyrst að opnu máli um sama efni).
+5. **Það sem þú lagar ekki fer EKKI sjálfkrafa á Verkefnalistann.** Verkefnalistaþak (16.11.2026): lota stofnar mest
+   EITT verk, aðeins fyrir það sem er utan verksins og of stórt. Úttekt finnur tugi atriða — þau fara í skýrsluna,
+   `docs/UTTEKT-<dags>.md` og Charlize; dagsett mælilína bætist við verk sem ER til. Samþykkismál aðeins ef aðgerðin
+   fer út úr húsi eða er óafturkræf (samþykkisþak, mest tvö á lotu). Flettu upp í `odin_reglur` áður en þú stofnar nokkuð.
 
 ## 5. Eftirfylgni — „virkar þetta í raun?"
 
@@ -90,7 +100,12 @@ Gerð í nýrri umferð, helst nokkrum dögum síðar. Úttekt sem liggur er ekk
    systkini (10.11.: `audit-regex-bakstrik` fann þrjú, eitt komið í loftið sama dag).
 8. **Hvað var lagað en hefur aldrei keyrt í alvöru?** Segðu það (10.11.: „Viðbót við R-…" á Payday-kröfu — engin
    viðbótarsala enn til).
-9. Þekkingin: MAELINGAR (ný gildra), agent-skrá eigandans (ein staðreynd, einn staður), Charlize (`minni.cjs --skra`,
+9. `audit-agentar` telur aðeins COMMITTAÐAR skrár: hann er grænn fyrir commit og getur orðið rauður í CI. Keyrðu
+   `node tools/audit-all.cjs --static` aftur EFTIR commit. Rauðni agent sem gætir skrár sem þú breyttir: skráðu
+   raunverulegan lærdóm lotunnar í hann (`node tools/agent.cjs --skra "…" --agent <nafn>`), ekki tóma snertingu.
+10. Kúnnafróðleikur fer í kúnnaminni, ekki í almennt efni: `node tools/minni.cjs --skra "…" --topic taeki --scope kunni
+   --kt <kt félags>`. Heildarferlið fyrir eina lotu eða margar er skill `lotu-uttekt`.
+11. Þekkingin: MAELINGAR (ný gildra), agent-skrá eigandans (ein staðreynd, einn staður), Charlize (`minni.cjs --skra`,
    svo `--uppfaera`), `docs/UTTEKT-<dags>.md` uppfært með stöðu. Áður en þú skráir: `node tools/minni.cjs --leit "<orð>"`
    — er staðreyndin þegar til? (Bókin ber yfir 200 efni; leitin fer yfir þau öll og segir hvað hún sá ekki.)
 
@@ -103,5 +118,11 @@ Gerð í nýrri umferð, helst nokkrum dögum síðar. Úttekt sem liggur er ekk
   hvar þær eru mældar; aldrei gildi lykils, aldrei skref-fyrir-skref leið að óvörðu falli.
 - **Slétt tala sem er jöfn þaki (1000) er ekki talning** — minnisbókin sagði „1000 staðreyndir" af 2.133 frá 04.11. til 10.11.2026
   og allt eldra en 04.11. var horfið úr henni (MAELINGAR kafli 22). Berðu sóttar raðir við `content-range`-heildina.
+- **Sama beiðni fer oft á margar lotur í einu.** 10.11. breyttu tvær lotur `tools/minni.cjs` og endursmíðuðu
+  `docs/MINNISBOK.md` sama klukkutímann. Generuð skrá í árekstri: taktu master og endursmíðaðu, ekki handsameina.
+  Tól í árekstri: byrjaðu á master-útgáfunni, lestu hvað hin lotan ætlaði, og leggðu þína breytingu ofan á.
+- **Viðbót sem þú hengir á mál annars efnis týnist þegar málinu er lokað.** `cowork_js_patches`-liðurinn stóð sem
+  athugasemd við #1536; málinu var lokað 16.11. af yfirferð og liðurinn stóð óafgreiddur (RLS enn af, mælt 16.11.).
+  Opinn aðgangur fær sitt eigið forgangsmál (`odin_reglur` regla 19; varð #1650) — og er sagður í lokasvarinu.
 - **Tillaga eldist.** Það sem var „tilbúið til keyrslu" í síðustu umferð er endurmælt og borið við nýjustu ákvörðun
   Agnars áður en það er keyrt (MAELINGAR kafli 20).
