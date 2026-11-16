@@ -39,6 +39,13 @@ function heimur() {
       { id: 5, customer_nafn: 'Ósent', samtals: 70000, created_at: dag(5), krafa_sent_at: null, paid_at: null, status: 'lokid', is_credit: false, hidden: false },
       { id: 6, customer_nafn: 'Greitt', samtals: 40000, created_at: dag(20), krafa_sent_at: dag(19), paid_at: dag(4), status: 'lokid', is_credit: false, hidden: false },
     ],
+    // v_krafa_ogreidd fyrir hópinn (16.11.2026): sýnin flokkar; kreditfærð og á bið teljast ekki sem innheimta.
+    ogreidd_hops: [
+      { num: 'R-N', customer_nafn: 'Norðurhús', samtals: 50000, dagar: 38, flokkur: 'innheimta' },
+      { num: 'R-S', customer_nafn: 'Suðurhús', samtals: 30000, dagar: 10, flokkur: 'innheimta' },
+      { num: 'R-K', customer_nafn: 'Kreditað', samtals: 999000, dagar: 60, flokkur: 'kreditfaert' },
+      { num: 'R-B', customer_nafn: 'Á bið', samtals: 70000, dagar: 20, flokkur: 'a_bid' },
+    ],
     charlize: [{ fact: 'Heimaleiga fékk sérkjör 30.10.2026', created_at: dag(16) }],
     forgangsmal: [{ id: 9, title: 'Center: reikningar á bið', summary: '900.000 kr bíða', customer_nafn: 'Center Hotels', created_at: dag(6) }],
     greitt_sl: [{ samtals: 40000, status: 'lokid', is_credit: false, greitt_med: 'reikningur' }, { samtals: 5000, status: 'lokid', is_credit: false, greitt_med: 'posi' }],
@@ -81,10 +88,10 @@ function stub(h, opt = {}) {
     if (tafla === 'v_uttektarplan') return svar(h.uttektarplan || []);
     if (tafla === 'afgreidsla') return svar(h.akvardanir || []);
     const sida = (a) => { const off = Number(q.get('offset') || 0), lim = Number(q.get('limit') || 1000); return (a || []).slice(off, off + lim); };
-    if (tafla === 'solur' && q.get('credit_of')) return svar(h.kreditnotur || []);
-    if (tafla === 'payday_invoices_slokk') return svar(h.payday || []);
-    if (tafla === 'v_krafa_ekki_send_adgerd') return svar(h.adgerd || []);
-    if (tafla === 'solur' && q.get('paid_at') === 'is.null' && q.get('greitt_med')) return svar(sida(h.ogreitt_sl || []));
+    // 16.11.2026 (ein skilgreining): Tony les v_krafa_ogreidd; combo-yfirlit telur v_krafa_ekki_send_adgerd með content-range.
+    if (tafla === 'v_krafa_ogreidd' && q.get('customer_base_id')) return svar(q.get('customer_base_id').includes('101') ? (h.ogreidd_hops || []) : []);
+    if (tafla === 'v_krafa_ogreidd') return svar(sida(h.ogreidd || []));
+    if (tafla === 'v_krafa_ekki_send_adgerd') { const d = h.adgerd || []; return { ...svar(d), headers: { get: (k) => (k.toLowerCase() === 'content-range' && h.adgerd ? '0-0/' + d.length : null) } }; }
     if (tafla === 'solur' && q.get('status') === 'eq.final') return svar(sida(h.tekjur_sl));
     if (tafla === 'invoices' && q.get('gjalddagi')) return svar(sida(h.tekjur_bh));
     if (tafla === 'email_digest') {
@@ -150,7 +157,7 @@ test('safna: póstar hópanna, tvítök út, tilvitnanir út, engin netföng, st
   assert.deepEqual(f.omaelt, []);
 });
 
-test('safna: reikningastaða hópsins með sömu skilgreiningu og 489 (sent, ógreitt, ekki ógilt/kredit/falið)', async () => {
+test('safna: reikningastaða hópsins úr v_krafa_ogreidd (innheimta talin; á bið og kreditfært sér)', async () => {
   const h = heimur(); stub(h);
   const r = (await R.safna({ nu: NU })).hopar.heimaleiga.reikningar;
   assert.equal(r.id, 'HR');
@@ -158,6 +165,7 @@ test('safna: reikningastaða hópsins með sömu skilgreiningu og 489 (sent, óg
   assert.equal(r.ogreitt_kr, 80000);
   assert.equal(r.ogreitt_elsta_dagar, 38);
   assert.deepEqual(r.ogreitt_staerstu.map((x) => x.nafn), ['Norðurhús', 'Suðurhús']);
+  assert.equal(r.a_bid_fjoldi, 1); assert.equal(r.a_bid_kr, 70000); assert.equal(r.kreditfaert_utilokad, 1);
   assert.equal(r.greitt_30d_fjoldi, 1); assert.equal(r.greitt_30d_kr, 40000);
 });
 
@@ -564,11 +572,10 @@ function heimurTekjur() {
     { job_name: 'payday-sync', status: 'error', started_at: dag(0.3), detail: 'Payday 500' },
     { job_name: 'arnold-vaktin', status: 'error', started_at: dag(0.5), detail: 'hámarki snúninga náð' },
   ];
-  h.ogreitt_sl = [{ id: 501, num: 'R-1', samtals: 100000, krafa_sent_at: dag(90), created_at: dag(95) }, { id: 502, num: 'R-2', samtals: 20000, krafa_sent_at: null, created_at: dag(10) },
-    { id: 503, num: 'R-3', samtals: 999000, krafa_sent_at: dag(80), created_at: dag(80) }, { id: 504, num: 'R-4', samtals: 300000, krafa_sent_at: dag(70), created_at: dag(70), krafa_note: '⏸ BÍÐA — samningar' },
-    { id: 505, num: 'R-5', samtals: 40000, krafa_sent_at: dag(65), created_at: dag(65) }];
-  h.kreditnotur = [{ credit_of: 503 }];
-  h.payday = [{ reference: 'R-5', status: 'CANCELLED', created_date: dag(60) }];
+  // v_krafa_ogreidd flokkar sjálf (16.11.2026): R-3 kreditfærð, R-4 á bið (⏸), R-5 CANCELLED í Payday.
+  h.ogreidd = [{ id: 501, samtals: 100000, dagar: 90, flokkur: 'innheimta' }, { id: 502, samtals: 20000, dagar: 10, flokkur: 'innheimta' },
+    { id: 503, samtals: 999000, dagar: 80, flokkur: 'kreditfaert' }, { id: 504, samtals: 300000, dagar: 70, flokkur: 'a_bid' },
+    { id: 505, samtals: 40000, dagar: 65, flokkur: 'payday_fellt' }];
   h.adgerd = [{ num: 'R-9', samtals: 23668 }];
   h.uttektarplan = [{ stada: 'utrunnid' }, { stada: 'utrunnid' }, { stada: 'thessi_manudur' }, { stada: 'framundan' }];
   return h;

@@ -83,8 +83,12 @@
     const verk = {
       solur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,created_at,paid_at,krafa_sent_at,dk_invoice_id,vidskiptategund,status,is_credit,hidden,greitt_med,linur')
         .gte('created_at', manudur(-1).toISOString()).neq('status', 'void').order('id').range(a, b)),
-      opnarKrofur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,created_at,krafa_sent_at,dk_invoice_id,status,is_credit,hidden')
-        .eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void').order('id').range(a, b)),
+      // EIN SKILGREINING (Agnar 15.11.2026: „Ein skilgreining fyrst"): sömu sýnir og Tony (506), combo-yfirlit og verðirnir.
+      // Mæling Natalie 15.11.2026: eigin útreikningur hér taldi kreditfærða frumreikninga sem útistandandi — 19 „ósendar"
+      // voru 3 sendanlegar, 46 „ógreiddar" voru 32 í innheimtu + 5 á bið (hitt kreditfært eða fellt í Payday).
+      krofurOsendar: () => DB.fetchAll((a, b) => c.from('v_krafa_ekki_send').select('num,samtals,dagar,kreditfaerdur,gengid_inn,payday_stada,i_bid')
+        .order('num').range(a, b)),
+      krofurOgreiddar: () => DB.fetchAll((a, b) => c.from('v_krafa_ogreidd').select('id,samtals,dagar,flokkur').order('id').range(a, b)),
       greitt: () => DB.fetchAll((a, b) => c.from('solur').select('samtals,paid_at,is_credit,status,greitt_med').gte('paid_at', vika(-1).toISOString()).order('id').range(a, b)),
       bhGreitt: () => bhGet('/api/krofu-greidslur?n=20'),
       slokkvitaekiVorur: () => fyrirspurn(c.from('vorur').select('id').eq('flokkur', 'Slökkvitæki')),
@@ -147,7 +151,6 @@
 
   /* ── mælingarnar — hver skilar { sev, tala, undir, punktar[] } ────────────────────────────── */
   const erKredit = r => r.is_credit === true;
-  const lokid = r => r.status === 'final' && !erKredit(r);
   function tekjurManadar(rows) {
     const mb = manudur().getTime(), r = { nu: { all: 0, uttekt: 0, bud: 0, annad: 0, n: 0, nu: 0, nb: 0 }, fyrri: { all: 0, uttekt: 0, bud: 0, annad: 0, n: 0, nu: 0, nb: 0 } };
     rows.filter(lokid).forEach(x => {
@@ -210,19 +213,35 @@
         'Slökkvitæki ' + mkr(s(nu)) + ' · ' + nu.length + ' (síðast ' + mkr(s(fy)) + ' · ' + fy.length + ')',
         'Brunahólf ' + mkr(b(bn)) + ' · ' + bn.length + ' (síðast ' + mkr(b(bf)) + ' · ' + bf.length + ')'].concat(bhNota ? [bhNota] : []) };
     } },
+    // Ósendar: aðeins þær sem MÁ senda (sama regla og v_krafa_ekki_send_adgerd) eru taldar; hitt er nefnt í punktum svo ekkert hverfi.
     { id: 'osend_sl', hopur: 'Peningar', heiti: 'Ósendar kröfur · Slökkvitæki', slod: { ham: 'krofur', t: 'Kröfur' }, maela: g => {
-      const l = g.opnarKrofur.v.filter(r => lokid(r) && !r.hidden && !r.dk_invoice_id && !r.krafa_sent_at);
-      const s = l.reduce((a, r) => a + (Number(r.samtals) || 0), 0), elst = l.reduce((a, r) => Math.max(a, dagarSidan(r.created_at)), 0);
-      const kred = g.opnarKrofur.v.filter(r => erKredit(r) && !r.hidden && !r.dk_invoice_id);
-      return { sev: !l.length ? 'ok' : elst > THR.osentAldurAlv ? 'alv' : 'athuga', tala: l.length + ' · ' + mkr(s), undir: l.length ? 'elsta ' + elst + ' d. gömul' : 'ekkert bíður sendingar',
-        punktar: kred.length ? [kred.length + ' ósend kreditskjöl · ' + mkr(kred.reduce((a, r) => a + (Number(r.samtals) || 0), 0)) + ' (ekki í Payday)'] : [] };
+      const allar = g.krofurOsendar.v, sum = a => a.reduce((x, r) => x + (Number(r.samtals) || 0), 0);
+      const fellt = r => r.payday_stada === 'CANCELLED' || r.payday_stada === 'CREDIT';
+      const l = allar.filter(r => !r.kreditfaerdur && !r.gengid_inn && !fellt(r) && !r.i_bid);
+      const bid = allar.filter(r => !r.kreditfaerdur && !r.gengid_inn && !fellt(r) && r.i_bid);
+      const uti = allar.filter(r => r.kreditfaerdur || fellt(r)), inn = allar.filter(r => !r.kreditfaerdur && !fellt(r) && r.gengid_inn);
+      const s = sum(l), elst = l.reduce((a, r) => Math.max(a, Number(r.dagar) || 0), 0);
+      // 16.11.2026: punkturinn „N ósend kreditskjöl (ekki í Payday)" fór út — 32 / −3,7 m.kr, en 29 þeirra þurfti aldrei að
+      // senda (16 á frumreikninga sem fóru aldrei út, 13 kreditfærð beint í Payday). Ósannreynt fer ekki á skjáinn.
+      const punktar = [];
+      if (bid.length) punktar.push(bid.length + ' á bið (⏸) · ' + mkr(sum(bid)) + ' — ekki sent að ákvörðun');
+      if (inn.length) punktar.push(inn.length + ' gengið inn (sótt í verslun) · ' + mkr(sum(inn)));
+      if (uti.length) punktar.push(uti.length + ' kreditfærðar eða felldar í Payday · ' + mkr(sum(uti)) + ' — ekki taldar');
+      return { sev: !l.length ? 'ok' : elst > THR.osentAldurAlv ? 'alv' : 'athuga', tala: l.length + ' · ' + mkr(s), undir: l.length ? 'tilbúnar til sendingar · elsta ' + elst + ' d.' : 'ekkert bíður sendingar',
+        punktar };
     } },
+    // Ógreiddar: v_krafa_ogreidd. Talan = í innheimtu; á bið og útilokaðar sér. Aldur frá sendingu (sýnin), ekki frá stofnun.
     { id: 'ogr_sl', hopur: 'Peningar', heiti: 'Ógreiddar sendar kröfur · Slökkvitæki', slod: { ham: 'krofur', t: 'Kröfur' }, maela: g => {
-      const l = g.opnarKrofur.v.filter(r => lokid(r) && !r.hidden && (r.dk_invoice_id || r.krafa_sent_at));
-      const s = l.reduce((a, r) => a + (Number(r.samtals) || 0), 0), elst = l.reduce((a, r) => Math.max(a, dagarSidan(r.created_at)), 0);
-      const gamlar = l.filter(r => dagarSidan(r.created_at) > THR.krofuAldurAthuga);
-      return { sev: elst > THR.krofuAldurAlv ? 'alv' : elst > THR.krofuAldurAthuga ? 'athuga' : l.length ? 'ok' : 'ok', tala: l.length + ' · ' + mkr(s), undir: 'elsta ' + elst + ' d. gömul',
-        punktar: [gamlar.length + ' eldri en ' + THR.krofuAldurAthuga + ' daga · ' + mkr(gamlar.reduce((a, r) => a + (Number(r.samtals) || 0), 0))] };
+      const allar = g.krofurOgreiddar.v, sum = a => a.reduce((x, r) => x + (Number(r.samtals) || 0), 0);
+      const l = allar.filter(r => r.flokkur === 'innheimta'), bid = allar.filter(r => r.flokkur === 'a_bid');
+      const uti = allar.filter(r => r.flokkur === 'kreditfaert' || r.flokkur === 'payday_fellt');
+      const s = sum(l), elst = l.reduce((a, r) => Math.max(a, Number(r.dagar) || 0), 0);
+      const gamlar = l.filter(r => (Number(r.dagar) || 0) > THR.krofuAldurAthuga);
+      const punktar = [gamlar.length + ' eldri en ' + THR.krofuAldurAthuga + ' daga · ' + mkr(sum(gamlar))];
+      if (bid.length) punktar.push(bid.length + ' á bið (⏸) · ' + mkr(sum(bid)) + ' — ekki innheimtumál');
+      if (uti.length) punktar.push(uti.length + ' kreditfærðar eða felldar í Payday · ' + mkr(sum(uti)) + ' — ekki taldar');
+      return { sev: elst > THR.krofuAldurAlv ? 'alv' : elst > THR.krofuAldurAthuga ? 'athuga' : 'ok', tala: l.length + ' · ' + mkr(s), undir: 'í innheimtu · elsta ' + elst + ' d. frá sendingu',
+        punktar };
     } },
     { id: 'osend_bh', hopur: 'Peningar', heiti: 'Ósendar kröfur · Brunahólf', slod: { url: BH + '/fjarmalyfirlit.html', t: 'Fjármála-yfirlit' }, maela: g => {
       const t = g.kyb.v.tier2 || {}, n = t.n || 0, s = t.total || 0;
@@ -554,5 +573,5 @@
     return false;
   }
 
-  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-10' };
+  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-16' };
 })();

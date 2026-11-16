@@ -153,51 +153,39 @@ async function postarHops(h, nu) {
   };
 }
 
-// KRÖFUR HREINSAÐAR — mæling Natalie 15.11.2026: 489, v_krafa_ekki_send og fyrsta útgáfa þessa falls töldu KREDITFÆRÐA
-// frumreikninga sem útistandandi (lesa aðeins is_credit, ekki credit_of): 22 raðir / 3,44 m kr af draugum (Eclipse R-000727
-// og R-000728 ein og sér 2,4 m; raunverulegi reikningurinn R-000940 var greiddur 02.10). Kröfuyfirlitið (166:945) gerir það
-// rétt. Sama regla hér: kreditnóta með credit_of = salan → út; Payday CANCELLED/CREDIT → út; „⏸" fremst í krafa_note = á bið
-// að ákvörðun Agnars — sýnt SÉR, aldrei sem ráð um innheimtu (Center Hotels 07.11.2026, Charlize #2140).
-async function hreinsaKrofur(rodir) {
-  if (!rodir.length) return [];
-  const ids = rodir.map((r) => r.id);
-  const num = rodir.map((r) => r.num).filter(Boolean);
-  const [kredit, pd] = await Promise.all([
-    sb(`solur?select=credit_of&credit_of=in.(${ids.join(',')})&limit=5000`),
-    num.length ? sb(`payday_invoices_slokk?select=reference,status,created_date&reference=in.(${num.map((n) => '"' + String(n).replace(/"/g, '') + '"').join(',')})&order=created_date.desc&limit=5000`) : [],
-  ]);
-  const kreditad = new Set(kredit.map((k) => k.credit_of));
-  const pdStada = {};
-  for (const p of pd) if (!(p.reference in pdStada)) pdStada[p.reference] = p.status;   // nýjasta fyrst
-  return rodir.map((r) => ({ ...r, kreditfaerd: kreditad.has(r.id), payday: pdStada[r.num] || null,
-    a_bid: /^\s*⏸/.test(String(r.krafa_note || '')) }));
-}
-const lifandiKrafa = (r) => !r.kreditfaerd && !['CANCELLED', 'CREDIT'].includes(String(r.payday || ''));
+// KRÖFUR — EIN SKILGREINING (Agnar 15.11.2026: „Ein skilgreining fyrst"). Mæling Natalie 15.11.2026: 489,
+// v_krafa_ekki_send og fyrsta útgáfa þessa falls töldu KREDITFÆRÐA frumreikninga sem útistandandi (22 raðir / 3,44 m kr af
+// draugum). Reglan býr nú á EINUM stað, í sýninni v_krafa_ogreidd (sendar, ógreiddar), sem flokkar hverja kröfu:
+//   innheimta    — raunveruleg útistandandi krafa
+//   a_bid        — „⏸" fremst í krafa_note: á bið að ákvörðun Agnars, sýnt SÉR, aldrei ráð um innheimtu (Charlize #2140)
+//   kreditfaert  — kreditnóta með credit_of = salan → ekki skuld
+//   payday_fellt — CANCELLED/CREDIT í Payday → ekki skuld
+// Tony, 489 og combo-yfirlit lesa sömu sýnina; hér er engin eigin útgáfa af reglunni lengur.
+const KROFU_UTI = new Set(['kreditfaert', 'payday_fellt']);
 
-// Reikningar hópsins — ógreiddar sendar kröfur, HREINSAÐAR (hreinsaKrofur): kreditfærðar út, á bið sér.
+// Reikningar hópsins — ógreiddar sendar kröfur úr v_krafa_ogreidd (sjá að ofan), greitt síðustu 30 daga úr solur.
 async function reikningarHops(h, nu) {
   const base = await sb(`customers_base?select=id,nafn&${h.base}&limit=200`);
   const ids = base.map((b) => b.id).filter(Boolean);
   if (!ids.length) return { id: `${h.st}R`, greidendur: 0, ath: 'enginn greiðandi fannst' };
-  const fra = iso(new Date(nu - 400 * 864e5));
-  const solur = await sb(`solur?select=id,num,customer_nafn,samtals,created_at,krafa_sent_at,paid_at,status,is_credit,hidden,dk_invoice_id,greitt_med,krafa_note` +
-    `&customer_base_id=in.(${ids.join(',')})&created_at=gte.${fra}&order=id.asc&limit=1000`);
-  const gild = solur.filter((r) => r.status !== 'void' && !r.is_credit && !r.hidden);
-  const sendOgreitt = await hreinsaKrofur(gild.filter((r) => (r.dk_invoice_id || r.krafa_sent_at) && !r.paid_at));
-  const lifandi = sendOgreitt.filter(lifandiKrafa);
-  const ogreitt = lifandi.filter((r) => !r.a_bid), bid = lifandi.filter((r) => r.a_bid);
-  const greitt30 = gild.filter((r) => r.paid_at && dagarSidan(r.paid_at, nu) <= 30);
+  const fra30 = iso(new Date(nu - 30 * 864e5));
+  const [krofur, greitt] = await Promise.all([
+    sb(`v_krafa_ogreidd?select=num,customer_nafn,samtals,dagar,flokkur&customer_base_id=in.(${ids.join(',')})&order=id.asc&limit=1000`),
+    sb(`solur?select=samtals,paid_at,status,is_credit,hidden&customer_base_id=in.(${ids.join(',')})&paid_at=gte.${fra30}&order=id.asc&limit=1000`),
+  ]);
+  const ogreitt = krofur.filter((r) => r.flokkur === 'innheimta'), bid = krofur.filter((r) => r.flokkur === 'a_bid');
+  const greitt30 = greitt.filter((r) => r.paid_at && r.status !== 'void' && !r.is_credit && !r.hidden && dagarSidan(r.paid_at, nu) <= 30);
   const s = (a) => a.reduce((x, r) => x + kr(r.samtals), 0);
   return {
     id: `${h.st}R`,
     greidendur: ids.length,
     ogreitt_fjoldi: ogreitt.length, ogreitt_kr: s(ogreitt),
-    ogreitt_elsta_dagar: ogreitt.reduce((a, r) => Math.max(a, dagarSidan(r.krafa_sent_at || r.created_at, nu)), 0),
+    ogreitt_elsta_dagar: ogreitt.reduce((a, r) => Math.max(a, Number(r.dagar) || 0), 0),
     ogreitt_staerstu: [...ogreitt].sort((a, b) => kr(b.samtals) - kr(a.samtals)).slice(0, 4)
-      .map((r) => ({ nafn: r.customer_nafn, kr: kr(r.samtals), dagar: dagarSidan(r.krafa_sent_at || r.created_at, nu) })),
+      .map((r) => ({ nafn: r.customer_nafn, kr: kr(r.samtals), dagar: Number(r.dagar) || 0 })),
     a_bid_fjoldi: bid.length, a_bid_kr: s(bid),
     a_bid_skyring: bid.length ? 'Á BIÐ að ákvörðun Agnars (⏸ í krafa_note) — EKKI innheimtumál; ekki leggja til innheimtu.' : null,
-    kreditfaert_utilokad: sendOgreitt.length - lifandi.length,
+    kreditfaert_utilokad: krofur.filter((r) => KROFU_UTI.has(r.flokkur)).length,
     greitt_30d_fjoldi: greitt30.length, greitt_30d_kr: s(greitt30),
   };
 }
@@ -291,44 +279,34 @@ async function tekjur(nu, aaetlun) {
 }
 
 // PENINGAR — sömu línur og combo-yfirlit / borðið (maela), án dæma (nöfn kúnna fara ekki með).
-// Mæling Natalie 15.11.2026: tvær línur combo-yfirlits eru ótraustar sem grunnur ráða —
-//   „krafa ekki send" (21) telur 14 kreditfærða frumreikninga → hér kemur talan úr v_krafa_ekki_send_adgerd (tilbúnar til sendingar);
-//   „kreditfært og aldrei endurgert" (27): aðeins 2 af 27 stóðust → fer EKKI til Tonys (ósannreynt fer ekki á skjáinn).
+// „krafa ekki send" les nú v_krafa_ekki_send_adgerd í combo-yfirliti sjálfu (ein skilgreining 16.11.2026), svo hér er
+// engin yfirskrift lengur. „kreditfært og aldrei endurgert" (27): aðeins 2 af 27 stóðust mælingu Natalie 15.11.2026 →
+// fer EKKI til Tonys (ósannreynt fer ekki á skjáinn).
 const OTRAUST_LINA = new Set(['kredit-an-endurgerdar']);
 async function peningar() {
   const CY = require('./combo-yfirlit.cjs');
   const linur = (await CY.maela(null, 1)).filter((l) => !OTRAUST_LINA.has(l.lykill));
-  const ut = linur.map((l, i) => ({
+  return linur.map((l, i) => ({
     id: `P${i + 1}`, lykill: l.lykill, flokkur: l.flokkur, heiti: l.heiti, tala: l.tala, grunnlina_0711: l.thak, nytt: l.nytt, merki: l.merki,
     kr: l.peningur != null ? kr(l.peningur) : null, kr_er_heild: l.peningur != null ? !!l.peningur_allt : null,
   }));
-  const kes = ut.find((p) => p.lykill === 'krafa-ekki-send');
-  if (kes) {
-    const a = await sb('v_krafa_ekki_send_adgerd?select=num,samtals&limit=1000');
-    Object.assign(kes, { heiti: 'Reikningur til — krafa ekki send (aðeins þær sem eru tilbúnar til sendingar)', tala: a.length,
-      kr: a.reduce((s, r) => s + kr(r.samtals), 0), kr_er_heild: true, merki: 'MAELT',
-      ath: 'Borðið sýnir fleiri, en þær eru kreditfærðar eða greiddar í verslun (mæling 15.11.2026).' });
-  }
-  return ut;
 }
 
-// ÓGREITT — allar ógreiddar sendar kröfur Slökkvitækis, HREINSAÐAR eins og Kröfuyfirlitið (166): greitt_med reikningur, final,
-// sent, ógreitt, ekki kredit/falið — og hvorki kreditfærð (credit_of) né CANCELLED/CREDIT í Payday. Á bið (⏸) sýnt sér.
+// ÓGREITT — allar ógreiddar sendar kröfur Slökkvitækis úr v_krafa_ogreidd (ein skilgreining, sjá KRÖFUR að ofan).
+// Innheimta = fjöldi/kr; á bið sýnt sér; kreditfærðar og niðurfelldar í Payday aðeins taldar sem útilokaðar.
 // Mælt 15.11.2026: 489 sagði 44 / 4.373.596 kr; raunin 35 sendar í Payday / 2.720.774 kr, þar af 5 á bið.
-async function ogreitt(nu) {
-  const r = await sbOll('solur?select=id,num,samtals,krafa_sent_at,created_at,krafa_note&greitt_med=eq.reikningur&paid_at=is.null&status=eq.final&is_credit=not.is.true&hidden=not.is.true' +
-    '&or=(dk_invoice_id.not.is.null,krafa_sent_at.not.is.null)&order=id.asc');
-  const hreint = await hreinsaKrofur(r);
-  const lifandi = hreint.filter(lifandiKrafa);
-  const virkt = lifandi.filter((x) => !x.a_bid), bid = lifandi.filter((x) => x.a_bid);
-  const dagar = (x) => dagarSidan(x.krafa_sent_at || x.created_at, nu);
+async function ogreitt() {
+  const r = await sbOll('v_krafa_ogreidd?select=id,samtals,dagar,flokkur&order=id.asc');
+  const virkt = r.filter((x) => x.flokkur === 'innheimta'), bid = r.filter((x) => x.flokkur === 'a_bid');
+  const uti = r.filter((x) => KROFU_UTI.has(x.flokkur));
+  const dagar = (x) => Number(x.dagar) || 0;
   const s = (a) => a.reduce((t, x) => t + kr(x.samtals), 0);
   const gomul = virkt.filter((x) => dagar(x) > 60);
   return { id: 'O', fjoldi: virkt.length, kr: s(virkt), elsta_dagar: virkt.reduce((a, x) => Math.max(a, dagar(x)), 0),
     eldri_en_60_fjoldi: gomul.length, eldri_en_60_kr: s(gomul),
     a_bid_fjoldi: bid.length, a_bid_kr: s(bid), a_bid_skyring: 'Á BIÐ að ákvörðun Agnars (⏸) — ekki innheimtumál.',
-    kreditfaert_utilokad_fjoldi: hreint.length - lifandi.length, kreditfaert_utilokad_kr: s(hreint.filter((x) => !lifandiKrafa(x))),
-    skilgreining: 'Sendar ógreiddar kröfur; kreditfærðar (credit_of) og niðurfelldar í Payday útilokaðar; á bið sýnt sér.' };
+    kreditfaert_utilokad_fjoldi: uti.length, kreditfaert_utilokad_kr: s(uti),
+    skilgreining: 'Sýnin v_krafa_ogreidd: sendar ógreiddar kröfur; kreditfærðar (credit_of) og niðurfelldar í Payday útilokaðar; á bið sýnt sér.' };
 }
 
 // KERFIÐ — sjálfvirkni sem brást síðasta sólarhring, eftir starfi (laga áður en fer úrskeiðis).

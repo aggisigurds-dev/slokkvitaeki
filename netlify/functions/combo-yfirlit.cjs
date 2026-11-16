@@ -66,10 +66,13 @@ async function sbRadir(leid, select, radir) {
  */
 const FLOKKAR = [
   /* ── KRÖFUYFIRLIT ─────────────────────────────────────────────────────────── */
-  { f: 'krofur', k: 'krafa-ekki-send', h: 'Reikningur til — krafa ekki send',
-    leid: 'v_krafa_ekki_send', thak: 23, krona: 'samtals',
-    select: 'num,customer_nafn,samtals,dags,dagar,kreditfaerdur,gengid_inn',
-    heimild: 'sýnin v_krafa_ekki_send (sama skilyrði og patch 489)',
+  // 16.11.2026 (ein skilgreining, Agnar 15.11): v_krafa_ekki_send taldi kreditfærða frumreikninga (14 af 19, 1,83 m kr)
+  // og sölur á bið. Línan les nú AÐGERÐAHÆFA hlutann — sömu sýn og audit-krafa-ekki-send, 489 og Tony. Þakið 9 er
+  // grunnlína þeirrar sýnar 07.11.2026 (sama og vörðurinn), ekki 23 sem átti við breiðu sýnina.
+  { f: 'krofur', k: 'krafa-ekki-send', h: 'Reikningur til — krafa ekki send (tilbúin til sendingar)',
+    leid: 'v_krafa_ekki_send_adgerd', thak: 9, krona: 'samtals',
+    select: 'num,customer_nafn,samtals,dags,dagar',
+    heimild: 'sýnin v_krafa_ekki_send_adgerd (án kreditfærðra, gengið-inn, niðurfelldra í Payday og ⏸ á bið) — sama og 489',
     adgerd: 'Senda kröfuna, eða merkja ⏸ BÍÐA í krafa_note með ástæðu.' },
 
   { f: 'krofur', k: 'kredit-an-endurgerdar', h: 'Kreditfært og aldrei endurgert',
