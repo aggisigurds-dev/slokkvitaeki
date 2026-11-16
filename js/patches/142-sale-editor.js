@@ -118,6 +118,60 @@
   }
   function isLocked(sale) { return !isDraft(sale) && !isUnsentFinal(sale); }
 
+  // ── LEIÐRÉTTING Á LOKUÐUM REIKNINGI (16.11.2026) ──────────────────────────
+  // Agnar: „Allt gersamlega læst og ónothæft í real live vinnslu" · „þarf að vera með Claude í hverju einasta atriði".
+  // Lokaðan (sendan) reikning var aðeins hægt að leiðrétta með kreditfærslu OG heilli nýrri úttekt („önnur úttekt ársins"):
+  // kennitölubreyting á tveimur reikningum tók heilan dag. Nú býr „✏️ Leiðrétta" til ný DRÖG með sömu línum, sömu verðum og
+  // sama kúnna. Hann breytir því sem þarf (kennitölu, nafni, línum), klárar söluna og kreditfærir þann gamla með takkanum
+  // sem fylgir drögunum. EKKERT er sent, kreditfært eða klárað sjálfkrafa — hvert skref er hans smellur.
+  const LEIDR = /Leiðrétting á ([A-Z]{1,2}-?\d{3,})/;
+  function maLeidretta(sale) {
+    return !!sale && !sale.is_credit && !!sale.num && sale.greitt_med === 'reikningur' && isLocked(sale);
+  }
+  function leidrettingarRod(sale) {
+    return {
+      customer_nafn: sale.customer_nafn || '',
+      customer_kt: sale.customer_kt || null,
+      customer_id: sale.customer_id || null,
+      customer_base_id: sale.customer_base_id || null,
+      starfsmadur: sale.starfsmadur || 'Kassi',
+      linur: linurTilVistunar(JSON.parse(JSON.stringify(Array.isArray(sale.linur) ? sale.linur : []))),
+      upphaed_an_vsk: sale.upphaed_an_vsk,
+      vsk_upphaed: sale.vsk_upphaed,
+      afslattur: sale.afslattur || 0,
+      samtals: sale.samtals,
+      greitt_med: 'reikningur',
+      status: 'drog',                 // ALDREI final: hann klárar sjálfur
+      source: sale.source || null,
+      athugasemdir: sale.athugasemdir || '',
+      krafa_note: 'Leiðrétting á ' + sale.num + ' — sami reikningur endurgerður, ekki ný úttekt'
+    };
+  }
+  let _leidrIGangi = false;
+  async function leidretta() {
+    const SB = getSB();
+    if (!SB || !_sale || !maLeidretta(_sale) || _leidrIGangi) return;
+    const fra = _sale;
+    const msg = 'Leiðrétta ' + fra.num + '?\n\nÞað verða til ný DRÖG með sömu línum, verðum og kúnna. Þú breytir því sem þarf ' +
+      '(kennitölu, nafni, línum) og klárar söluna.\n\n' + fra.num + ' stendur óbreyttur þar til þú kreditfærir hann.';
+    let ok;
+    if (window.Confirm && typeof Confirm.show === 'function') ok = await Confirm.show(msg, { okText: 'Búa til drög', cancelText: 'Hætta við' });
+    else ok = window.confirm(msg);
+    if (!ok) return;
+    _leidrIGangi = true;
+    let ins;
+    try { ins = await SB.from('solur').insert(leidrettingarRod(fra)).select('id,num').single(); }
+    catch (e) { ins = { error: e }; }
+    _leidrIGangi = false;
+    if (!ins || ins.error || !ins.data) {
+      alert('Drögin urðu ekki til: ' + ((ins && ins.error && ins.error.message) || 'óþekkt villa') + '\n\n' + fra.num + ' er óbreyttur.');
+      return;
+    }
+    close();
+    try { if (window.Toast && Toast.show) Toast.show('✓ Drög ' + (ins.data.num || '') + ' — leiðrétting á ' + fra.num); } catch (_) {}
+    return openById(ins.data.id);
+  }
+
   // ── Open ──────────────────────────────────────────────────────────────────
   async function openById(id) {
     const SB = getSB();
@@ -297,13 +351,21 @@
     const inputStyle = 'width:100%;height:40px;padding:0 12px;border:1px solid rgba(20,24,34,.16);border-radius:8px;font:inherit;font-size:13.5px;box-shadow:inset 0 1px 2px rgba(20,24,34,.08);background:' + (locked ? '#eef0f3' : '#f6f7f9') + ';color:#11141c;box-sizing:border-box;outline:none';
 
     const lockNote = locked
-      ? '<div style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #c98a14;border-radius:10px;font-size:12.5px;color:#2b313c">Þessi sala er lokuð (' + (_sale.is_credit ? 'kreditfærsla' : 'kláruð') + '). Notaðu kreditfærslu til að breyta.</div>'
+      ? '<div style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #c98a14;border-radius:10px;font-size:12.5px;color:#2b313c">Þessi sala er lokuð (' + (_sale.is_credit ? 'kreditfærsla' : 'kláruð') + '). ' + (maLeidretta(_sale) ? '<b>✏️ Leiðrétta</b> býr til ný drög með sömu línum sem þú breytir og klárar; kreditfærðu svo þennan.' : 'Notaðu kreditfærslu til að breyta.') + '</div>'
       : (isUnsentFinal(_sale)
         ? '<div style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #1f9d57;border-radius:10px;font-size:12.5px;color:#2b313c">Þessi reikningur er <b>tilbúinn en óSENDUR</b> — óhætt að breyta beint (t.d. bæta við afslætti). Engin kreditfærsla þörf fyrr en hann hefur verið sendur.</div>'
         : '');
 
+    // Drög sem eru leiðrétting á lokuðum reikningi: segja hvaða reikningi, og bjóða kreditfærslu hans héðan.
+    const _lm = isDraft(_sale) ? LEIDR.exec(String(_sale.krafa_note || '')) : null;
+    const leidrNote = _lm
+      ? '<div id="_se-leidr-note" style="margin-bottom:10px;padding:10px 13px;background:#fff;border:1px solid rgba(20,24,34,.14);border-left:4px solid #2c6e9e;border-radius:10px;font-size:12.5px;color:#2b313c;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px">' +
+          '<span style="flex:1 1 260px">Drög að <b>leiðréttingu á ' + esc(_lm[1]) + '</b>. Breyttu því sem þarf og kláraðu söluna. <span id="_se-leidr-stada">' + esc(_lm[1]) + ' er enn í gildi þar til hann er kreditfærður.</span></span>' +
+          '<button id="_se-leidr-kredit" type="button" data-num="' + esc(_lm[1]) + '" style="height:34px;padding:0 12px;border-radius:9px;border:1px solid #2a0606;background:linear-gradient(145deg,#2a0606 0%,#7a1511 40%,#a81f18 55%,#5c0f0b 80%,#200404 100%);color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Kreditfæra ' + esc(_lm[1]) + '</button></div>'
+      : '';
+
     body.innerHTML = `
-      ${lockNote}
+      ${lockNote}${leidrNote}
 
       <div style="background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 16px -10px rgba(0,0,0,.25);padding:12px 14px 14px;margin-bottom:10px">
         <div class="_se-merki">Viðskiptavinur</div>
@@ -352,6 +414,30 @@
     renderNotesLog();
     wireBody();
     loadKtIfMissing();
+    leidrBordi();
+  }
+
+  // Borðinn á leiðréttingardrögum: takkinn opnar kreditfærslu gamla reikningsins (sama flæði og „Kreditfæra" á lokaðri sölu).
+  // Sé hann þegar kreditfærður hverfur takkinn og textinn segir það.
+  function leidrBordi() {
+    const b = _dlg && _dlg.querySelector('#_se-leidr-kredit');
+    if (!b) return;
+    const num = b.getAttribute('data-num');
+    b.addEventListener('click', () => {
+      if (erOvistad() && !confirm('Vistaðu drögin fyrst — óvistaðar breytingar glatast þegar kreditfærslan opnast.\n\nHalda samt áfram?')) return;
+      close();
+      if (window.kreditFaera) window.kreditFaera(num);
+      else if (window.openKreditLookup) window.openKreditLookup();
+    });
+    const SB = getSB();
+    if (!SB) return;
+    const sala = _sale;
+    Promise.resolve(SB.from('solur').select('num').eq('kredit_a', num).limit(1)).then(r => {
+      if (!_dlg || _sale !== sala || !r || r.error || !r.data || !r.data.length) return;
+      const st = _dlg.querySelector('#_se-leidr-stada'), k = _dlg.querySelector('#_se-leidr-kredit');
+      if (st) st.textContent = num + ' hefur þegar verið kreditfærður (' + (r.data[0].num || '') + ').';
+      if (k) k.remove();
+    }).catch(() => {});
   }
 
   // Try to look up the kennitala for this sale's customer. Multiple sources,
@@ -797,12 +883,14 @@
       // Unsent reikningur → save the changes straight onto it (keeps status final).
       html += '<button id="_se-save" type="button" title="Vista breytingar á þessum óSENDA reikningi (t.d. afsláttur)" style="height:40px;padding:0 18px;border-radius:9px;border:1px solid #021a0b;background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 10px rgba(6,51,26,.45);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Vista breytingar</button>';
     } else if (!_sale.is_credit) {
+      if (maLeidretta(_sale)) html += '<button id="_se-leidretta" type="button" title="Býr til ný DRÖG með sömu línum, verðum og kúnna. Þú breytir því sem þarf (t.d. kennitölu) og klárar. Gamli reikningurinn stendur þar til þú kreditfærir hann." style="height:40px;padding:0 16px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);color:#1f2530;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✏️ Leiðrétta</button>';
       html += '<button id="_se-credit" type="button" style="height:40px;padding:0 16px;border-radius:9px;border:1px solid #2a0606;background:linear-gradient(145deg,#2a0606 0%,#7a1511 40%,#a81f18 55%,#5c0f0b 80%,#200404 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Kreditfæra</button>';
     }
     f.innerHTML = html;
     f.querySelector('#_se-close').addEventListener('click', lokaOruggt);
     const s = f.querySelector('#_se-save'); if (s) s.addEventListener('click', () => commit({ finalize: false }));
     const fin = f.querySelector('#_se-finalize'); if (fin) fin.addEventListener('click', () => commit({ finalize: true }));
+    const lr = f.querySelector('#_se-leidretta'); if (lr) lr.addEventListener('click', leidretta);
     const cr = f.querySelector('#_se-credit'); if (cr) cr.addEventListener('click', () => {
       // 01.10.2026: close() núllar _sale — númerið lesið FYRST (annars TypeError og kreditleiðin opnaðist aldrei).
       const num = _sale && _sale.num;
@@ -1008,7 +1096,9 @@
   window.SaleEditor = {
     openById, openByNum, openFromJob, isDraft, isLocked,
     // hrein föll, birt fyrir tools/test-sala-ritill-verk.cjs
-    _verkLinurTilStofnunar: verkLinurTilStofnunar, _linurTilVistunar: linurTilVistunar
+    _verkLinurTilStofnunar: verkLinurTilStofnunar, _linurTilVistunar: linurTilVistunar,
+    // 16.11.2026: leiðrétting á lokuðum reikningi — hrein föll birt fyrir test/sala-leidretting.test.cjs
+    _maLeidretta: maLeidretta, _leidrettingarRod: leidrettingarRod, _isUnsentFinal: isUnsentFinal
   };
   console.log('[patch-142] sale-editor installed — window.SaleEditor.{openById,openByNum,openFromJob}');
 })();
