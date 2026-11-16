@@ -700,7 +700,7 @@
       const _u = uppruni(s), u = upp[_u.k];
       if (_u.k === 'annad') annadSrc.add(String(s.source || '(ekkert)'));
       if (s.is_credit) { credits += Math.abs(total); nKredit++; u.kredit += Math.abs(total); }
-      else if (String(s.status || '') === 'void') { /* ógild sala er ekki sala — sjá athugasemd ofar */ }
+      else if (String(s.status || '') !== 'final') { /* aðeins kláraðar sölur teljast — drög og ógilt ekki */ }
       else {
         sales += total; nSala++; u.sala += total; u.n++;
         if (s.paid_at) { paidIn += total; nGreitt++; }

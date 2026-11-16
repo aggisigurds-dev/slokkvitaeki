@@ -78,7 +78,7 @@
   }
 
   // ── sölulíkami úr ctx (SAMA stærðfræði og 273 createInvoice) ───────────────
-  function buildDraftBody(co, year, ctx) {
+  function buildDraftBody(co, year, ctx, coPct) {
     // 04.10.2026 (Agnar: „útreikningarnir eru ekki að uppfærast miðað við skýrsluna").
     // Mælt á úttekt 26-0007 (Center Hótel – Arnarhvoll): skýrslan taldi 196 einingar
     // og REIKNINGURINN var réttur — 9 línur, 347.845 kr, reiknaður úr búnaðartöflunni.
@@ -103,6 +103,7 @@
       to = Math.round(ctx.verdTotal);
       const brutto = Math.round(linur.reduce((a, l) => a + l.qty * l.unit_price_ex_vat, 0) * (1 + VAT_PCT / 100));
       afsl = Math.max(0, brutto - to);
+      if (afsl === 0 && (coPct || 0) > 0) { afsl = Math.round(brutto * coPct / 100); to = brutto - afsl; }
     } else if (auto.some(l => (num(l.qty) || 0) > 0 && (num(l.price) || 0) > 0)) {
       // fallback: reiknaðar línur úr búnaðaryfirlitinu (enginn afsláttur)
       const al = auto.filter(l => (num(l.qty) || 0) > 0);
@@ -113,7 +114,9 @@
         unit_price_ex_vat: (V && V.netto) ? V.netto(l) : (num(l.price) || 0),
         vsk_pct: VAT_PCT, ref: '' }));
       const sum = al.reduce((a, l) => a + vLina(l), 0);
-      to = Math.round(sum * (1 + VAT_PCT / 100));
+      const brutto = Math.round(sum * (1 + VAT_PCT / 100));
+      if ((coPct || 0) > 0) { afsl = Math.round(brutto * coPct / 100); to = brutto - afsl; }
+      else to = brutto;
       fraAuto = al.map(l => ({ name: l.name || '', qty: String(num(l.qty) || 0), price: String(num(l.price) || 0), afsl: l.afsl == null ? '' : String(l.afsl) }));
     }
     if (!linur.length || !(to > 0)) {
@@ -163,7 +166,20 @@
         if (!ctx.quiet) toast('🧾 Reikningur ' + (ex.num || '') + ' er þegar til fyrir ' + ctx.year + ' — engin ný drög stofnuð.');
         return ex;
       }
-      const b = buildDraftBody(ctx.co, ctx.year, ctx);
+      let coPct = 0;
+      try {
+        const cr = await sb.from('fyrirtaeki').select('afslattur_pct,discount_tier_id').eq('id', ctx.co.id).maybeSingle();
+        if (cr && cr.data) {
+          coPct = Math.max(0, Math.min(100, +(cr.data.afslattur_pct) || 0));
+          if (cr.data.discount_tier_id != null) {
+            try {
+              const tr = await sb.from('discount_tiers').select('*').eq('id', cr.data.discount_tier_id).maybeSingle();
+              if (tr && tr.data && tr.data.virkt !== false) { const tp = +(tr.data.afslattur_pct || 0); if (tp > coPct) coPct = tp; }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+      const b = buildDraftBody(ctx.co, ctx.year, ctx, coPct);
       const ins = await sb.from('solur').insert(b.row).select('id,num,status,samtals').single();
       if (ins.error) {
         console.warn('[bkr] draft insert', ins.error);
