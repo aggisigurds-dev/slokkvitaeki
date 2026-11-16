@@ -122,6 +122,31 @@ alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
 
 ---
 
+## ✅ FAST UMBOÐ — það sem þú gerir ÁN þess að spyrja Agnar (16.11.2026)
+
+**Mælt 16.11.2026:** af 1.583 skeytum Agnars í 49 lotum (7.6–16.11) voru um 350 (22 %) aðeins leyfi til að
+halda áfram: „já" 141, „merge" 44, „halda áfram" 37, „birta" 17. Hann samþykkti þessa reglu sama dag
+(„Ja hljómar vel"). Hún er til þess að hann þurfi ekki að vera „áfram-takkinn" í hverri lotu.
+
+**Gerðu þetta án þess að spyrja:**
+
+1. **Haltu áfram milli skrefa** í verki sem hann bað um. Ekki stoppa til að spyrja „á ég að halda áfram?" eða
+   „viltu að ég taki næsta skref?". Stoppaðu aðeins þegar næsta skref er á spyrja-fyrst-listanum hér að neðan,
+   eða þegar þú veist í raun ekki hvað hann vill.
+2. **Sameinaðu (merge) þína eigin grein** þegar öll próf standast og öryggisnetið sýnir ekkert nýtt rautt frá
+   þinni breytingu (berðu saman við hreint `git worktree` — sumt er rautt fyrir).
+3. **Birtu lagfæringu á bilun sem hann tilkynnti**, eftir að hafa prófað hana enda á milli („aldrei smíðað en
+   óprófað"). `[deploy]` í haus-commit og staðfest með `build.json`.
+
+**Spyrðu ALLTAF fyrst (óbreytt):** póstur eða SMS út úr húsi · kröfur, reikningar, kredit og annað sem snertir
+peninga · eyðing gagna · verðbreytingar · breytingar á borði eða stillingum annarra starfsmanna.
+
+**Eftir á:** segðu í einni línu hvað var sameinað eða birt og hvernig það var sannreynt. Umboðið víkkar ekkert
+annað: nýjar síður og stærri breytingar sem hann bað ekki um fara áfram á Verkefnalistann, og SAMÞYKKISÞAKIÐ
+hér að neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (keðjaðu með `if`, ekki `;`).
+
+---
+
 ## ⛔ SAMÞYKKISÞAK — áður en þú stofnar mál á Agnar (11.11.2026)
 
 **Mælt 11.11.2026:** síðustu 14 daga stofnuðu Claude-lotur 99 samþykkismál á Þjónustuborðið
