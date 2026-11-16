@@ -241,6 +241,60 @@
 
       // Merki.
       H + ' .tag{border-radius:999px;padding:3px 9px}',
+      H + ' .tag.ham{border-color:#f8b98c;color:#c2410c}',
+      H + ' .tag.samt{border-color:#f8b98c;color:#c2410c;background:#ffeee0}',
+      // Engin emoji í V2 (hönnunarkerfið): ⚙ 🔍 ✎ í tökkunum eru vafin í .t5-emo í 368.
+      H + ' .t5-emo{display:none}',
+
+      // ── Það sem hin hamirnir og undirgluggarnir teikna (16.11.2026, „kláraðu þemabreytinguna") ──────────
+      // Mælt á borði Anni: hver litur í gull/rjóma-sviði (litblær 36–62°) og Playfair/Plex-letur í öllum hömum.
+      // Valið mál, brunnar og dökk spjöld: svart stál → navy.
+      H + ' .sel,' + H + ' .vbr-svar{border:0;border-image:none;border-radius:14px;background:#011f40;box-shadow:' + SH + '}',
+      H + ' .sel .age.warm{color:#ff8a1f}',
+      H + ' .sel .age.hot{color:#ffb4a2}',
+      H + ' .well,' + H + ' .saga,' + H + ' .bm,' + H + ' .fskjol{border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#02193c;box-shadow:none}',
+      H + ' .well p{color:#e6ecf5}',
+      H + ' .fsmynd{border-color:rgba(255,255,255,.12)}',
+      H + ' .sacts.sm2{border-top-color:rgba(255,255,255,.14)}',
+      H + ' .vbr-mynd{border:0;border-radius:10px;background:#011f40}',
+      H + ' .slot.on{background:#0b2d5f;border-color:#0b2d5f}',
+      H + ' .nt textarea{border-radius:10px;background:#fff;box-shadow:none}',
+      H + ' .nt.dark textarea{border-color:rgba(255,255,255,.16);background:#02193c;color:#fff;box-shadow:none}',
+      H + ' .nt.dark textarea:focus,' + H + ' .bm textarea:focus,' + H + ' .bm input:focus{border-color:#ff6702;box-shadow:0 0 0 3px rgba(255,103,2,.35)}',
+      H + ' .t5toast{border:0;border-radius:10px;background:#011f40;box-shadow:' + SH + '}',
+      H + ' .t5toast .undo{border:0;border-radius:8px;background:' + APP + ';color:#fff}',
+      // Hlekkir, flísar og valdar línur.
+      H + ' .clink.dk{color:#ff8a1f;text-decoration-color:rgba(255,138,31,.5)}',
+      H + ' .hchip.on{background:linear-gradient(180deg,#ff8a1f,#ec5300);border-color:transparent;color:#fff}',
+      H + ' .hchip.auto{border-color:rgba(255,138,31,.6);color:#ff8a1f}',
+      H + ' .mrow[aria-current="true"],' + H + ' .vbr-item[aria-current="true"]{background:#eef3fb}',
+      H + ' .vbr-item[aria-current="true"]{box-shadow:inset 3px 0 0 #ff6702}',
+      H + ' .mn:not(.les):hover,' + H + ' .mn:not(.les):focus-visible{background:#f6f9fd}',
+      H + ' .vbt-kort{background:#f3f6fb}',
+      H + ' .tfbanner{border-color:#f8b98c;border-radius:10px;background:#ffeee0}',
+      H + ' .chk.star{background:linear-gradient(90deg,#ffeee0,#fff 40%)}',
+      H + ' .skla.skbid{background:#fff;color:#c2410c}',
+      H + ' .tb-grip::before{background:#c3ccd9}',
+      H + ' .samt-teljari button._gull b{color:#c2410c}',
+      // „Velja einingar"-ritillinn (raðhamur).
+      H + ' .mbar button{border-radius:6px;background:#fff}',
+      H + ' .mbar button:hover{color:#fff}',
+      // Tölvupóstar (448) og Erindi (449c): gyllt merki, drög og takkar → appelsínugult V2.
+      H + ' .tp .tp-m._beidni,' + H + ' .er .er-m._eyda{border-color:#f8b98c;color:#c2410c;background:#ffeee0}',
+      H + ' .tp .btn.tp-gull,' + H + ' .er .er-takkar ._gull{border:0;background:' + APP + ';color:#fff;box-shadow:' + GLOD + '}',
+      H + ' .tp .tp-uppk{border-left:0;border-radius:10px;background:#ffeee0;box-shadow:inset 0 0 0 1px #f8b98c}',
+      H + ' .tp .tp-uppk b{color:#c2410c}',
+      H + ' .tp .tp-skeyti._okkar{background:#f3f6fb;border-color:#d8dee9}',
+      H + ' .tp-stj,' + H + ' [style*="d4a017"]{color:#ff6702!important}',
+      H + ' .er .er-kassi._svar{background:#ffeee0;border-color:#f8b98c}',
+      H + ' .er .er-eydur button{border-color:#d8dee9;border-radius:8px;background:#fff;color:#101e43}',
+      // Verkferlis-yfirlit (499) efst: svart stál + Plex → navy + Poppins. Takkinn ber :not()×4 í 499, því !important á letrinu.
+      H + ' #yf499{border:0;border-radius:14px;background:#011f40;box-shadow:' + SH + ';font-family:var(--body)}',
+      H + ' #yf499 .yf-titill,' + H + ' #yf499 .yf-stada,' + H + ' #yf499 .yf-flokkur,' + H + ' #yf499 .yf-m,' + H + ' #yf499 .yf-t,' + H + ' #yf499 .yf-p{font-family:var(--body)}',
+      H + ' #yf499 .yf-keyra:not(#_yA):not(#_yB):not(#_yC):not(#_yD):not(#_yE){font-family:var(--body)!important;border-radius:8px}',
+      // Stýringar í dökku spjöldunum (Valið mál, skráning, flýtival): brúnsvart #1c1b18 → navy-700 með hárlínu.
+      H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:rgba(255,255,255,.18);background:#0b2d5f}',
+      H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#123a73}',
 
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',
