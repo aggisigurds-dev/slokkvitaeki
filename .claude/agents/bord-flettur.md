@@ -1,6 +1,6 @@
 ---
 name: bord-flettur
-description: Flettur, borð og navigation í Slökkvitæki-appinu — Þjónustuborð (368) og undirborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk (3 lög) og app-síður (261). Notaðu þegar flipa, borði, app-síðu eða deep-linki er bætt við eða breytt, eða bakk/endurhleðsla á síma hegðar sér rangt; kallaðu á hann sjálfur áður en ný síða er tengd. Kveikjuorð: flipi, borð, nav, Þjónustuborð, Mitt borð, Afmerkja, Aðalmál, Vinnusamantekt, bílstjóri, aksturslisti, Akstursdagbók, Tæknimenn, Uppfærsluborð, Mælaborð, Stjórnstöð, Geymsla, Mínar síður, bakk, back, deep link, #company, Öpp-síða, app finnst ekki í síma, uppsetning appa.
+description: Flettur, borð og navigation í Slökkvitæki-appinu — Þjónustuborð (368) og undirborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing (218), bakk (3 lög) og app-síður (261). Notaðu þegar flipa, borði, app-síðu eða deep-linki er bætt við eða breytt, eða bakk/endurhleðsla á síma hegðar sér rangt; kallaðu á hann sjálfur áður en ný síða er tengd. Kveikjuorð: flipi, borð, nav, Þjónustuborð, Mitt borð, Afmerkja, Aðalmál, Vinnusamantekt, Forgangsmál, bílstjóri, aksturslisti, Akstursdagbók, Tæknimenn, Uppfærsluborð, Mælaborð, Stjórnstöð, Geymsla, Mínar síður, bakk, back, deep link, #company, Öpp-síða, app finnst ekki í síma, uppsetning appa.
 tools: Bash, Read, Grep, Glob, Edit
 ---
 
@@ -811,3 +811,22 @@ verk, með þessum mun:
 - **Rökfræðin er prófanleg sér:** `netlify/functions/_afgreidsla-sameina.cjs` (athuganir, synilegt, triggerBody, hafnaFeedback) —
   `test/afgreidsla-sameina.test.cjs`. Rendering 'sameina' í einingunni: ný próf í `test/bord-afgreidsla.test.cjs` (skjáskot-https,
   höfnunartexti). Fullt flæði vaktarinnar er skjalfest í `luna-bridge/CLAUDE.md`.
+
+## Forgangsmál — eining 28 (11.11.2026) [C#2499]
+- Eining `forgangsmal` (n 28) í `js/patches/368-thjonustubord5.js`: skráð í `MODS`, `SJALFGEFID` (`[0, 0]` = slökkt
+  sjálfgefið) og á sér grein í `bottomHtml`.
+- Hún sýnir AÐEINS mál starfsmannsins sjálfs (`onBoardOf(r, n) || isFree(r)`) sem bera merkið `forgangsmal`
+  (hlutinn „Þarf að bregðast við“, raðað með `rodun`, ber `dagskrarTakki`) eða `skilabod` án `forgangsmal`
+  (hlutinn „Ný skilaboð“, nýjast efst). Mest 12 raðir í hvorum hluta; fela-lykillinn er `forgangsmal:mal:<id>`.
+- Forskoðunarlínan er `summary` → `postForskodun` → fyrsta lína nótu. Mál sem á að lesast í einni línu þarf því
+  `summary`.
+- Kveikt per starfsmann í `app_settings.thjonustubord5.by_staff.<nafn>.mitt` (`first` + `breidd.forgangsmal`).
+- Einingin er HANDVALIN, aldrei sjálfvirk: þak 7 forgangsmál og 5 skilaboð, hvert mælt sama dag (uppskriftin er í
+  `CLAUDE.md`, kafli FORGANGSMÁL). Borðið sést öllu starfsfólki, svo starfsmannamál fara aldrei á það.
+  Brunahólfs-póstur opnast ekki í appinu (RLS á `email_digest`), svo slíkt mál þarf samantektina í nótunni.
+
+## Eining sem kastar tekur borðið með sér — tóm sía í Tölvupóstum (448, 16.11.2026) [C#2509]
+- `thradurHtml(t)` í `js/patches/448-tolvupostar.js` las `t.hluti` áður en athugað var hvort þráður væri til; sía sem
+  skilaði engu felldi þá teikninguna. Lagað í cba87ebb: núll-athugunin er fyrsta lína fallsins.
+- Regla: teiknifall í einingu gerir aldrei ráð fyrir að valinn hlutur sé til. Prófaðu tóma ástandið (tóm sía,
+  0 raðir, enginn valinn) áður en eining er birt.

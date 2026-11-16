@@ -106,3 +106,9 @@ SKRÁÐ:      <N kunni-færslur / „ekkert nýtt“>
 - **16.11.2026 — netfang vantar á félag í þjónustu:** leitaðu í `charlize_contacts` á kt og kt í `email_digest` áður en þú svarar „ekkert skráð";
   það finnst oft í póstinum. Skráðu það aðeins með heimild og kúnnaminni (`scope='kunni'`, topic samskipti) ef niðurstaðan er óvenjuleg
   (birgi sem er líka kúnni, staður skráður á rangan aðila, netfang á tveimur félögum). Sjá `agents/postur.md`.
+
+## Lærdómur
+
+- **16.11.2026** — uttaeki.last_insp er ekki sönnun um heimsókn á fjöldaskráðu tæki (created_at sami dagur og last_insp, raðnúmer TMP-…): berðu saman við skýrslu eða reikning áður en úttekt telst unnin. [C#2505]
+
+- **16.11.2026** — arsskodun_customers[fid]: subscribed verður að vera boolean, og removed_from_service_at getur staðið eftir á félagi sem er aftur í þjónustu — hreinsaðu merkið við endurvakningu. Dauð færsla í company_attachments (skrá ekki til í Storage) sést nú í næturafrituninni (automation_runs.detail). [C#2506, C#2507]

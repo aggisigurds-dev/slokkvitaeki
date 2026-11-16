@@ -381,3 +381,32 @@ afhjúpa — sama spurning án reikningsnúmers sleppur í gegn.
 
 - **10.11.2026** — Tillaga eldist — berðu hana við nýjustu ákvörðun Agnars áður en þú framkvæmir. SQL-skrá sem var „tilbúin til keyrslu" 31.10. (loka anon-skrifum) reyndist 10.11. eldri en svar Agnars 07.11. í máli #1536 („RLS skiptir ekki miklu máli") og var EKKI keyrð; hún stendur merkt ÓKEYRT í brunaholf/sql/. Staðfesting Supabase (apply_migration) birtist ekki alltaf hjá Agnari (sími): renni hún út hefur EKKERT keyrt — staðfestu það með SQL og farðu aldrei framhjá með execute_sql. Viðbætur 10.11. sem bíða svars: #1536 (cowork_js_patches, lykilorð „loka cowork") og #1431 (repóin eru opinber á GitHub; kúnnaminni tekið úr minnisbókinni). MAELINGAR kaflar 20 og 22. (docs/MAELINGAR.md, docs/ORYGGISNET.md)
 - **11.11.2026** — SAMÞYKKISÞAK sett í CLAUDE.md (bæði repó): 99 samþykkismál frá Claude-lotum á 14 dögum, 0 svarað, 146 biðu. Lota stofnar mest tvö, aðeins fyrir aðgerð sem fer út fyrir kerfið eða er óafturkræf, mæld sama dag og án opins máls um sama efni. Yfirferð 11.11 lokaði tveimur á eigin sönnun (#1574 Báran: Agnar svaraði sjálfur 10.11 12:07 eftir lokatilboð 300.000; #1243 pósthólfin skila sér um luna-bridge) — hin stóðust mælingu. Flokkun allra 146 eftir því HVER á að afgreiða stendur í lotu 5f2146a4.
+
+## Borðyfirferðin 16.11.2026 — leysa, ekki endurraða [C#2500–2503]
+Agnar bað um að losna við mál af borðinu sínu og hafnaði bæði geymslu og sameiningu: „bara að þú reynir að leysa þau
+sjálfur“ og „ekki vera troða öllu í eitt mál sem eru með mismunandi útkomur“. 167 mál urðu 76 með þessari röð:
+1. **Mæla hvert mál** á móti gögnum (sala, reikningur, skýrsla, sendur póstur á diski). Lesandi aðstoðarmenn, einn
+   hópur hver, skila úrskurði per mál með sönnun: LOKA · FRAMKVAEMA · VERKEFNI · AGNAR · SAMTHYKKT_OUNNID · OMAELT.
+   Aðallotan les yfir og framkvæmir sjálf; aðstoðarmenn skrifa ekki í grunninn.
+2. **Loka með sönnun** því sem er búið, úrelt eða byggt á forsendu sem stóðst ekki mælingu.
+3. **Framkvæma** afturkræfar innri leiðréttingar (röng pörun, dauð skjalafærsla, tvítalin tæki) í stað þess að spyrja.
+4. **Eftir stendur** aðeins það sem er peningur út eða inn, póstur til kúnna eða þjónustustaða félags. Hvert slíkt mál
+   fær EINA já/nei-línu í `thjonustubeidni.summary`; borðið sýnir hana á undan nótunni.
+
+Reglur sem bitu:
+- **Eitt mál = ein útkoma.** Sama rót má standa í nótu hvers máls, en hver kúnni og hver reikningur á sitt mál.
+  Aðeins raunverulegt tvítak (sami reikningur, sama spurning) má sameina.
+- **Lokun er afturkræf:** fyrst röð í `thjonustubord_lokanir_log` (`mal_id, fyrra_status, fyrri_tags, fyrri_notes,
+  fyrra_updated_at, astaeda, domur, lokad_af, lokad_at`), svo `status='lokad'`, `svarad_at`, `lokid_at`,
+  `lokid_af`, `lokid_lysing`, merkið `lokad:claude-yfirferd` og lína EFST í nótu. Afturköllun: afrita fyrra ástand
+  til baka úr logginum og setja `afturkallad_at`. Níu lokanir voru teknar til baka þannig 16.11 án taps.
+- **Vakt sem endurstofnar:** `tools/veidi-vaktin.cjs` stofnar mál aftur ef ekkert OPIÐ mál ber merki hennar. Slíkt mál
+  er fært á annan starfsmann, ekki lokað. Höfnunarmálin úr `payday-push` eru ákvörðun Agnars (14.–15.09.2026) og varin
+  af `tools/audit-payday-xml-skraning.cjs`: þeirri leið er ekki breytt án hans.
+- **Verk fyrir starfsfólk** (hringja eftir netfangi, svara kúnna) fer á Master, ekki á borð Agnars.
+- **„Ekkert svar í pósti“ er ekki „óafgreitt“:** athugaðu sölu og afhendingu áður en mál er sagt bíða.
+- **„Klárað“ á Verkefnalistanum er ekki sönnun:** sjö verk voru merkt `klarad` 08.11 aðeins af því þau voru „felld inn
+  í Þjónustuborðið“. Lestu `claude_notes` áður en máli er lokað á þeim grunni.
+- **Lokunartexti styttist ekki í miðri setningu.** Sé hann of langur fyrir reitinn fer afgangurinn í nótuna.
+- **Samþykkt en óunnið** (`svar:samthykkt` án framkvæmdar) er framkvæmt strax eða nefnt með nafni í skilunum; það er
+  það sem Agnar tekur verst.

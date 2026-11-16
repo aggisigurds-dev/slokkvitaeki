@@ -100,6 +100,18 @@ returning id, title, status;
 Berðu `title` sem kemur til baka saman við málið sem þú ætlaðir að loka. TVÍTAK: lína í BÆÐI málin sem vísar á hitt;
 það eldra/fyllra heldur. Engu máli er eytt.
 
+**Viðbót 16.11.2026 — lokunin er afturkræf og hvert mál á eina útkomu.** Í SÖMU færslu og `update`-skipunin hér að
+ofan, á undan henni, fer fyrra ástand í loggið:
+```sql
+insert into thjonustubord_lokanir_log (mal_id, fyrra_status, fyrri_tags, fyrri_notes, fyrra_updated_at, astaeda, domur, lokad_af, lokad_at)
+select id, status, tags, notes, updated_at, '<ástæðan>', '<dómur, t.d. leyst / urelt / tvitak>', 'claude-code', now()
+from thjonustubeidni where id = <id> and deleted_at is null and status is distinct from 'lokad';
+```
+Settu líka `lokid_at=now()`, `lokid_af='claude'`, `lokid_lysing` og merkið `lokad:claude-yfirferd` á málið.
+Afturköllun: afrita `fyrra_status`, `fyrri_tags` og `fyrri_notes` til baka og setja `afturkallad_at` í logginu.
+Mál með ÓLÍKAR útkomur (ólíkir kúnnar, ólíkir reikningar) eru aldrei sameinuð, þótt rótin sé sú sama: aðeins sami
+reikningur eða sama spurning telst TVÍTAK. Mál sem stendur eftir hjá Agnari fær eina já/nei-línu í `summary`.
+
 ## Skref 3 — birtingin og eftirmæling
 1. Keyrðu grunnmælinguna úr skrefi 0 aftur → „EFTIR". FYRIR − lokað = EFTIR; stemmi það ekki, finndu hvers vegna.
 2. Skrif lesið til baka er ekki birting: athugaðu á borðinu (eða `node tools/combo-yfirlit.cjs`) að teljararnir hafi

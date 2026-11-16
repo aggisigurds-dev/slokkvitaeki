@@ -683,3 +683,9 @@ QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.
 - **Viðbótarpunktar:** `ThjonustuTengingar.hausTakki(o)` (410, allir þrír flokkar), `Verdlistar.hausTakki('*', o)` (allir listar í 502),
   `TilbodHub.tol(o)` (verkfærataki hjá Verðskrá). Prófunartólið hefur nýjan ham `Uppgerd.blandad()`: lestur af þjóni, skrif uppgerð.
 - **Óprófað:** raunveruleg vistun verkferils og samkeppnisverðs á lifandi (aðeins uppgerð skrif); prentun á pappír.
+
+- **16.11.2026** — Söluritillinn (142): tækjalína sem bætt er við sölu EFTIR stofnun fær nú eigið verk (verkLinurTilStofnunar, merkið _ny, sími og sóttmáti systurverks); áður týndust slíkir kútar á verkstæðinu. Próf: tools/test-sala-ritill-verk.cjs. [C#2510] (js/patches/142-sale-editor.js)
+
+- **16.11.2026** — PDF úr 176 klipptist hægra megin þegar haldarinn var 794 px: breiddin á að vera (210 − 2 × MARGIN_MM) mm svo hún passi við mm-spássíur html2pdf (lagað 53adc900). [C#2508] (js/patches/176-company-report-email.js)
+
+- **16.11.2026** — Payday-höfnun á rafrænum reikningi er nær alltaf kúnnans megin (60 af 61 mælt 16.11.2026: viðtakandi tekur ekki við rafrænum reikningum). Ekki galli í payday-push; reikningurinn fer þá í pósti, og án netfangs aðeins sem bankakrafa. [C#2504]
