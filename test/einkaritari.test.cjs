@@ -228,6 +228,7 @@ test('506: tölurnar lesa lykla bakendans, takkar vísa á raunverulega staði, 
   assert.match(t, /654\.251 kr/);
   assert.match(K.toluHtml({ greitt: null, sendar: null, nyir_i_thjonustu: null }), /ómælt/, 'null = ómælt, ekki 0');
   assert.match(K.takkiHtml({ adgerd: 'afgreidsla', audkenni: 24 }), /href="\/afgreidsla\.html\?v=24"/);
+  assert.match(K.takkiHtml({ adgerd: 'afgreidsla', audkenni: 24 }), /data-t5="ek-afgr" data-id="24"/, 'verkið opnast á borðinu (511); href er varaleiðin');
   assert.match(K.takkiHtml({ adgerd: 'mal', audkenni: 1604 }), /data-t5="ek-mal" data-id="1604"/);
   assert.match(K.takkiHtml({ adgerd: 'adalmal', audkenni: 1629 }), /data-t5="ek-syn" data-v="adalmal"/);
   assert.strictEqual(K.takkiHtml({ adgerd: 'engin', audkenni: 0 }), '');

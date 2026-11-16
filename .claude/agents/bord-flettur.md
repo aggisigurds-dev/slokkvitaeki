@@ -750,3 +750,30 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   `Vinnusamantekt.S.res` (hlutur með lykli per mæling; `samthykki` og `claude` eru lifandi og vantar þar). **Gildra:** service worker og
   skyndiminni vafrans skila gömlu patch-skránni — `window.__vinnusamantekt489 = false` og hlaða skránni með `?t=<tími>`.
 - **Sími (375 px):** nothæf án láréttrar skrunar en ▸-hnapparnir eru 27×20 px (undir 44 px snertimörkum) — ólagað.
+
+## Tilbúin verk á Þjónustuborðinu — eining 30 (511, 16.11.2026)
+
+Agnar 16.11.2026: „Gerðu bara þjónustuborðið öflugra sem vinnuborð" · „Finna út leið til að hjálpa mér". Borðið hans sýndi
+dagskrá, lista og markmið; forunnu verkin (`afgreidsla`, 15 tilbúin þann dag) lágu á annarri síðu og á borðinu var ekkert hægt að
+framkvæma. Nú er einingin `tilbuin` (MODS, n 30) á borðinu: `js/patches/511-bord-afgreidsla.js` → `window.BordAfgreidsla`.
+
+- **Mynstrið er það sama og 508/369:** 368 kallar `BA.festa(rot())`, `BA.samantekt()`, `BA.listi()`, `BA.takkar()`. 511 festir eigin
+  stíl (`#baf-still`) og hlustara (click, input, focusout) á skuggarótina; smellir bera `data-baf`, EKKI `data-t5`.
+- **Engin ný skrifleið:** allt fer um `/api/afgreidsla` (sama fall, sömu athuganir og sama hlið og `/afgreidsla.html`). Þjónninn
+  les pósthólfið aftur áður en hann sendir. `v.ok === false` → takkinn er óvirkur og `framkvaema()` sendir ekkert.
+- **Tveir smellir:** fyrri vopnar (6 sek., `S.vopnad = 'framkvaema:<id>'`), seinni framkvæmir. Sama fyrir „Ekki þess virði"
+  (`sleppa`, varanlegt; athugasemdin fylgir sem ástæða). Flokkaskipti, annað verk eða lokun afvopnar.
+- **Innsláttur:** reitirnir bera `data-ritun="1"` og 368 frestar endurteikningu á meðan fókusinn er þar (ný almenn regla í
+  `render()` — notaðu `data-ritun` á nýja textareiti í einingum í stað þess að bæta nýju dataset-heiti í listann). Drögin búa í
+  `S.textaDrog` / `S.athDrog`; breyttur póstur vistast við blur (`adgerd: 'vista'`) og fer líka með í `framkvaema`.
+- **Netvilla í framkvæmd er aldrei „ekkert gerðist":** skilaboðin segja óvíst og staðan er sótt aftur; ekki er reynt sjálfkrafa aftur.
+- **Breidd:** `.baf` er eigin gámur (`container-name: baf`): ≥ 980 px fær opið verk tvo dálka (rök | efni), ≤ 620 px símauppsetningu.
+- **`Bord368.opnaEiningu(k)`** (nýtt): opnar einingu á borði þess sem situr við það, skiptir í „mitt vinnuborð" sé hún aðeins þar
+  og skrunar að henni; `false` ef hún er ekki á borðinu. Einkaritarinn (506 `ek-afgr`) notar það: „Afgreiða ›" opnar verkið á
+  borðinu (`BordAfgreidsla.opna(id)`), annars fer tengillinn á `/afgreidsla.html?v=<id>` eins og áður.
+- **Hver sér hvað:** einingin er aðeins á borði þess sem hefur `tilbuin` í `mitt.first` (Agnar, sett 16.11). Aðrir sem kveikja á
+  henni fá „Aðeins stjórnandi sér tilbúnu verkin" (hliðið í afgreidsla.cjs). anon-lykillinn les EKKI töfluna `afgreidsla` (RLS, mælt).
+- **Prófun:** `node --test test/bord-afgreidsla.test.cjs` (13 próf í vm-samhengi; stökkbreytingar á vopnun, ok-vörn og textasendingu
+  fella þau). Í vafra án innskráningar: staðbundinn þjónn á vinnutré, gervi-`fetch` fyrir `/api/afgreidsla` og
+  `AppSettings.path('thjonustubord5.by_staff.Agnar.mitt').first.unshift('tilbuin')` í minni (ekkert vistað).
+- **Sagan** (gert / sleppt / úrelt) er áfram aðeins á `/afgreidsla.html` — „Saga ›" í haus einingarinnar.

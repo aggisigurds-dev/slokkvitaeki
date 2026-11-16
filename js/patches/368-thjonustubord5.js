@@ -195,6 +195,8 @@
     forgangsmal: { n: '28', t: 'Forgangsmál', d: 'Handvalið af Claude: það sem skiptir mestu núna og mikilvæg ný skilaboð. Opna, ljúka og fela á línunni.' },
     // 16.11.2026 (Agnar: „Settu þetta í sér lista inn á þjónustuborðið. Hjá hinum sem er efst“): markmiðslistinn (508 MarkmidBord).
     markmid:    { n: '29', t: 'Markmið', d: 'Markmiðslistinn: flokkarnir með framvindu, opnanlegir. Smellur á markmið opnar það á síðunni Markmið.' },
+    // 16.11.2026 (Agnar: „Gerðu bara þjónustuborðið öflugra sem vinnuborð“): forunnu verkin úr Afgreiðslu framkvæmd Á borðinu (511 BordAfgreidsla).
+    tilbuin:    { n: '30', t: 'Tilbúin verk', d: 'Forunnin verk úr Afgreiðslu: lesa rökin, breyta svarinu og framkvæma á línunni. Takkinn gerir það sem á honum stendur.' },
     skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -260,7 +262,7 @@
   // 18.09.2026: skipulag bættist við — skrifflötur sem nýtist ekki í hálfri breidd
   // (spjöldin kremjast). BREIDAR er nú
   // aðeins SJÁLFGEFIÐ gildi: notandinn ræður breiddinni sjálfur í „Breyta ham".
-  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir'];
+  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir', 'tilbuin'];
   // Breidd einingar: 1 = þriðjungur · 2 = hálft · 3 = fullt. Sjá .modcell[data-sp].
   // 25.09.2026: tvö þrep til viðbótar — 4 = ⅖ og 5 = ⅗ (checklisti vinstra megin, lítið skipulagsborð hægra
   // megin). Ristin er 60 dálkar svo bæði þriðjungar og fimmtungar gangi upp. Röð þrepanna frá mjóu í breitt:
@@ -339,7 +341,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0], tilbuin: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -4822,6 +4824,13 @@
       MB.festa(rot());
       return modPanel(k, esc(MB.samantekt()), isOpen(k) ? MB.listi() : '', MB.takkar());
     }
+    if (k === 'tilbuin') {
+      // Tilbúin verk (511): forunnu verkin úr Afgreiðslu, framkvæmd á línunni. 511 festir stíl, smelli og innslátt á rótina og á gögnin.
+      const BA = window.BordAfgreidsla;
+      if (!BA) return modPanel(k, 'Ekki hlaðið', emptyHtml('Tilbúin verk (511) hafa ekki hlaðist — endurhlaðið síðuna.'), '');
+      BA.festa(rot());
+      return modPanel(k, esc(BA.samantekt()), isOpen(k) ? BA.listi() : '', BA.takkar());
+    }
     if (k === 'krofumal') {
       // Forgangslisti krafna + vinnugluggi (369). Hér er aðeins spjaldið; 369 festir stíl, smelli og gluggann á rótina.
       const KV = window.KrofuVinnugluggi, opin = isOpen(k);
@@ -5188,7 +5197,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.chktitill || ae.dataset.ov))))) {
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.chktitill || ae.dataset.ov || ae.dataset.ritun))))) {
       // 27.09.2026 (Agnar: „checklist doesn't work in phone, keyboard disappears"): reitir checklistans vantaði hér —
       // sjálfvirk endurteikning skipti reitnum út í miðju innslætti, lyklaborðið lokaðist og hálfskrifaður stafur varð
       // að atriði. Undantekning: bætt við atriði (S.chkTvinga) teiknar strax og fókusinn fer aftur í nýja reitinn.
@@ -6891,6 +6900,20 @@
     // 489 Vinnusamantekt endurnýtir Fela/Skýring-kerfið: sama geymsla (thjonustubord_falid), sömu smellir, sömu takkar.
     felaApi: { felaTakki, skyrLina, erFalid, falinHtml },
     root: () => { const v = document.getElementById(VIEW_ID); return v && v.shadowRoot; },
+    // 511/506: opna einingu sem er á borði þess sem situr við það og skruna að henni. Sé hún ekki í hamnum sem er opinn en
+    // á „mitt vinnuborð" hans, er skipt þangað. false = einingin er ekki á borðinu (kallandinn fer þá sína varaleið).
+    opnaEiningu: k => {
+      if (!MODS[k]) return false;
+      const c = cfg();
+      if (!inMode(k)) {
+        if (mittHamur().first.indexOf(k) < 0) return false;
+        c.mode = MITT_HAM; S.filter = 'allt'; vistaCfg({ mode: c.mode });
+      }
+      S.open[openKey(k)] = true;
+      render();
+      setTimeout(() => { try { const b = rot().querySelector('[data-t5="mod-open"][data-m="' + k + '"]'), s = b && b.closest('section'); if (s) s.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {} }, 40);
+      return true;
+    },
     opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); }
   };
   window.Samthykkja = {

@@ -189,7 +189,7 @@
   // takkinn vísar alltaf á verk/mál sem er til. Eldri skrif (með „hlekkur") fá engan takka.
   function takkiHtml(r) {
     const id = Number(r && r.audkenni) || 0;
-    if (r.adgerd === 'afgreidsla' && id) return '<a class="btn iv sm" href="/afgreidsla.html?v=' + id + '" title="Forunnið verk — þar framkvæmir takkinn">Afgreiða ›</a>';
+    if (r.adgerd === 'afgreidsla' && id) return '<a class="btn iv sm" href="/afgreidsla.html?v=' + id + '" data-t5="ek-afgr" data-id="' + id + '" title="Forunnið verk — opnast hér á borðinu, þar framkvæmir takkinn">Afgreiða ›</a>';
     if (r.adgerd === 'adalmal') return '<button type="button" class="btn iv sm" data-t5="ek-syn" data-v="adalmal" title="Topp 10 listinn">Opna Aðalmál ›</button>';
     if (r.adgerd === 'mal' && id) return '<button type="button" class="btn iv sm" data-t5="ek-mal" data-id="' + id + '" title="Opna málið á borðinu">Opna málið ›</button>';
     return '';
@@ -260,7 +260,7 @@
     // 16.11.2026: takkar á staðina þar sem verkin eru UNNIN — Afgreiðsla (forunnin verk, takkinn framkvæmir) og Aðalmál (topp 10).
     const afgFj = n && n.afgreidsla_fjoldi != null ? ' · ' + Number(n.afgreidsla_fjoldi) : '';
     const haus = '<header class="ek-h"><h2>Einkaritarinn</h2><span class="ek-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
-      '<a class="btn iv sm" href="/afgreidsla.html" title="Forunnin verk sem bíða þín — þar framkvæmir takkinn">Afgreiðsla' + esc(afgFj) + ' ›</a>' +
+      '<a class="btn iv sm" href="/afgreidsla.html" data-t5="ek-afgr" title="Forunnin verk sem bíða þín — opnast hér á borðinu, þar framkvæmir takkinn">Afgreiðsla' + esc(afgFj) + ' ›</a>' +
       '<button type="button" class="btn iv sm" data-t5="ek-syn" data-v="adalmal" title="Topp 10 listinn — sannreyndur">Aðalmál ›</button>' +
       '<button type="button" class="btn iv sm" data-t5="ek-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
         ' title="' + (nyskrifad ? 'Nýskrifað eða nýreynt — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta skrifa upp á nýtt (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
@@ -309,9 +309,15 @@
       if (b) b.focus({ preventScroll: true });
     } catch (_) {}
   }
-  function smellur(el) {
+  function smellur(el, e) {
     const a = el && el.dataset && el.dataset.t5;
     if (!a || a.indexOf('ek-') !== 0) return false;
+    // 16.11.2026 (511): forunnið verk opnast Á borðinu (eining 30 „Tilbúin verk"). Sé einingin ekki á borði þess sem situr
+    // við það fer tengillinn sína leið á /afgreidsla.html (sjálfgefin hegðun er þá ekki stöðvuð).
+    if (a === 'ek-afgr') {
+      try { if (window.BordAfgreidsla && BordAfgreidsla.opna(Number(el.dataset.id) || 0) && e && e.preventDefault) e.preventDefault(); } catch (_) {}
+      return true;
+    }
     if (a === 'ek-skrifa') { skrifaAftur(); fokusAftur('ek-skrifa'); return true; }
     if (a === 'ek-fella') { S.fellt = !S.fellt; try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(FELLT_LYKILL, S.fellt); } catch (_) {} notify(); fokusAftur('ek-fella'); return true; }
     // 16.11.2026: mál opnast á borðinu (368 opnaMal velur það í Master) og skrunað er að því; sýn opnast með App.switchView.
@@ -329,5 +335,5 @@
     return false;
   }
 
-  window.Einkaritari = { html, load, smellur, takkiHtml, toluHtml, aminningarHtml, S, EIGANDI, version: '2026-11-16b' };
+  window.Einkaritari = { html, load, smellur, takkiHtml, toluHtml, aminningarHtml, S, EIGANDI, version: '2026-11-16c' };
 })();
