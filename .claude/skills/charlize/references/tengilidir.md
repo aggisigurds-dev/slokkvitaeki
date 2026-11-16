@@ -79,3 +79,31 @@ eldklar@eldklar.is. Kúnnapósturinn næst því ekki þaðan. Tvær leiðir:
 
 Mundu að Redder-mappan þurfti að vera SUBSCRIBED í Thunderbird til að sjást — sama gildir um
 allar möppur sem á að lesa.
+
+## Samþykktarlistinn og pörun við félög (16.11.2026)
+
+**Hvar:** Tengiliðir-síðan (`js/patches/310-tengilidir.js`). Listinn er `charlize_contacts` með `status='pending'`;
+`approved` tengir netfangið við félag í `v_kunni_netfong` og póstur birtist í Samskiptum prófílsins
+(`286`, les `v_kunni_postur`). Skrif fara um brunaholf `/api/tengilidir` (`approve`, `add` = viðbótarnetfang,
+`link`, `aftengja`) — aldrei `charlize_contacts` beint úr vafra (RLS).
+
+**Mælt 16.11.2026:** 531 bíðandi með kt + 1.252 án. Agnar veitti umboð („tengja eins marga og þú getur"):
+387 samþykktir. Tengdir póstar 2.262 → 2.436, 0 tengingar töpuðust (borið saman par fyrir par).
+
+**Örugg sía (má magnsamþykkja):** kt er í `customers_base` · netfangið er ekki samþykkt á ÖÐRU félagi ·
+ekki okkar lén · og flokkurinn er einn af: netfang þegar skráð á félagið · sama lén og skráð/samþykkt netfang
+félagsins (lénið hjá EINU félagi) · deilt lén rekstrarfélags · kt í netfangi · „lén líkist heiti" eftir að
+efnislínur voru lesnar. Eftir 6 prófanir fyrst (eitt tilvik af hverri gerð), svo magn.
+
+**Gildrur sem bitu eða hefðu bitið:**
+1. Netfang sem er samþykkt á tveimur félögum slítur tengingu BEGGJA (`HAVING count(distinct bid)=1`).
+2. Reitur með fleiri en einu netfangi (`a@x, b@y`) tengir ekkert — skráðu þau um `add`, ekki í aðalreitinn.
+3. Umsjónarlén (`umsjonar_len`) tengir aldrei á netfang, aðeins á hús sem er nefnt í efni pósts
+   (`bh_umsjonarpostur_endurreikna`); „Álftamýri 48" finnur ekki skráð „Álftamýri 46-52".
+4. Birgi sem er líka kúnni: tengt birgjanetfang sýnir falskt „Ósvarað" (reikningar TIL okkar).
+5. CC á verkfundum byggingarverktaka er ekki samskipti við kúnna — lestu efnislínur áður en lén er samþykkt.
+6. „Lén líkist heiti" er ágiskun: gardabaer.is ≠ Efnalaug Garðabæjar, nordural.is ≠ ferðaskrifstofa.
+7. `samskipti_tengd` (`samskipti_tengd_reikna()`) telur EKKI sögu sem kemur um samþykkt viðbótarnetfang eða kt-merki —
+   mældu „engin saga" á öllum þremur leiðum (samskipti_tengd + v_kunni_postur + fyrirtaeki_samskipti_kt).
+8. Bein SQL-uppfærsla á `status` stöðvast af öryggisvörn nema Agnar hafi sagt það skýrt; notaðu API fyrir fá, SQL fyrir magn með umboði.
+9. Kt í pósti (efnislína/texti) er sterkasta sönnunin fyrir ÓTENGDAN sendanda — leitaðu í `email_digest` á kt með og án bandstriks.

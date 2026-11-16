@@ -177,3 +177,16 @@ Möppuheitin eru ÖNNUR hér en í töflunni að ofan (prófíll `xwr12njd.defau
   Hátún 10C (16.10), Reising MHL03-vottorð (16.10), Nesdekk reikningur + vinnuskýrsla (21.10), Eignaumsjón V26-279914 (26.10), NB Fire
   skilti (27.10), Probygg reikningur 1282 (01.11). Listinn stendur í Aðalmál-máli #1587 hjá Agnari — ekki búa til svör án þess að lesa
   Sent-mbox fyrst (sjá lærdóminn hér að ofan).
+
+## Pörun pósts við félög án netfangs — mælt 16.11.2026
+Agnar bað um að para nýju Thunderbird-möppurnar við félög í þjónustu án netfangs/póstsögu. Niðurstaða og aðferð:
+- **Kennitöluleit fyrst** yfir ALLA pósta (ekki bara eldklar@): `position(kt in lower(subject||snippet||body_preview||attachment_names))`
+  með og án bandstriks. 82 kt fundust, en aðeins 9 í nýju möppunum — eldklar@-undirmöppur eru EKKI kveiktar (`postmoppur.html`).
+- **`postsaga_otengd_reikna()` les aðeins eldklar@ og bokhald@eldklar** — Brunahólfs-hólfin og slokkvitaeki@brunaholf.is
+  eru aldrei skoðuð þar. Nafna-/heimilisfangaleit í þeim pósti er nær eintóm suð (prentun, Síðumúla 1, Hamraborg).
+- **Skráðu netfang í `fyrirtaeki.netfang` aðeins með heimild** (kt í pósti, tilboð tekið, reikningur sendur þangað, samþykktur tengiliður);
+  fylltu `customers_base.netfang` aðeins ef það er tómt og EINN staður á kt (aldrei afrita á systurstaði rekstrarfélags).
+  Afrit fyrst (`backup_<dags>_…`), lestu til baka, endurreiknaðu `samskipti_tengd_reikna()`.
+- **Samþykktarlistinn:** sjá `.claude/skills/charlize/references/tengilidir.md` (örugg sía + 9 gildrur). 387 samþykktir 16.11.2026,
+  tengdir póstar 2.262 → 2.436, 0 töpuð tenging. Prófaðu 5–6 ólík tilvik á lifandi prófíl (`_openCompanySafe(id)`, lestu `._samskipti-host`) áður en magn.
+- **Aukaverkun sem þú átt að segja frá:** birgjapóstur (reikningar til okkar) á félagi sem er líka kúnni gerir „Ósvarað" rangt.

@@ -361,3 +361,9 @@ en `customer_id` og `customer_base_id` eru tóm og ENGIN röð verður til í `c
 - Mælt 10.11.2026 (viðmið með uppgerðum skrifum): sama sala ÁN merkis → `customers_base`-insert + `fyrirtaeki`-insert með nafninu „Viðskiptavinur".
 - **Greitt síðar án viðskiptavinar er eðlilegt** (Agnar 10.11): einstaklingur greiðir við afhendingu og fær ekki sendan reikning. Það er
   „óskráður viðskiptavinur", ekki vöntun á skráningu.
+
+## Tómt netfang á félagi — 16.11.2026
+Segðu ekki „vantar netfang" fyrr en þú hefur leitað í póstinum: kt í texta (`email_digest`), `postfang_tengsl`, samþykktir tengiliðir
+(`charlize_contacts` á kt) og netfang á móðurskrá/systurstað. Mælt 16.11: 190 staðir í þjónustu án netfangs; 14 fengu netfang
+úr pósti, 31 viðbótarnetfang og 3 ótengdir sendendur voru tengdir. 164 voru eftir án netfangs ANNARS STAÐAR í kerfinu.
+Fylltu tómt `customers_base.netfang` aðeins þegar bara einn staður er á kt. Sjá `agents/postur.md` og `charlize/references/tengilidir.md`.
