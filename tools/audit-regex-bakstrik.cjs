@@ -52,7 +52,7 @@ function finnaSystur() {
   return frambod.find((p) => fs.existsSync(path.join(p, 'netlify', 'functions'))) || null;
 }
 
-const SLEPPA = /(^|\/)(node_modules|dist|graphify-out|vendor|backups|_attic|lib|\.git|\.sister|test-results)(\/|$)|\.min\.js$|jspdf|pdf\.worker|leaflet|qrcode/i;
+const SLEPPA = /(^|\/)(node_modules|dist|graphify-out|vendor|backups|_attic|lib|\.git|\.sister|test-results|\.claude)(\/|$)|\.min\.js$|jspdf|pdf\.worker|leaflet|qrcode/i;
 function skrar(rot) {
   const ut = [];
   (function ganga(dir, dypt) {
