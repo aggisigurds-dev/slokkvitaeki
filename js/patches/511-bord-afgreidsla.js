@@ -26,9 +26,9 @@
   var API = '/api/afgreidsla';
   var FERSKT_MS = 5 * 60 * 1000, VOPN_MS = 6000;
   var THAK = 8;   // línur sýndar í einu — einingin má ekki ýta dagskránni langt niður; „sýna öll" opnar restina
-  var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk' };
-  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'] };
-  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk'];
+  var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk', sameina: 'Breyting' };
+  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'], sameina: ['breyting', 'breytingar'] };
+  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk', 'sameina'];
 
   var S = { tilbuin: null, villa: null, loading: null, at: 0, flokkur: 'allt', opid: null, vopnad: null, vopnT: null,
     busy: null, skilabod: null, athDrog: {}, textaDrog: {}, athBusy: null, athSkilabod: null, allt: false };
@@ -44,6 +44,11 @@
   var opnaHtml = function (s) {
     if (!s || !s.url || !/^(https?:\/\/|\/(?!\/))/.test(String(s.url))) return '';
     return '<a class="baf-lk" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.texti || 'Opna') + ' ↗</a>';
+  };
+  // Skjáskot (verkefnavaktin): aðeins https-slóð (public bucket) verður að mynd — aldrei data:/javascript:/annar vefur.
+  var mynd = function (url) {
+    if (!url || !/^https:\/\/[^\s"'<>]+$/.test(String(url))) return '';
+    return '<a class="baf-lk" href="' + esc(url) + '" target="_blank" rel="noopener"><img class="baf-skot" src="' + esc(url) + '" alt="Skjáskot af breytingunni" loading="lazy"></a>';
   };
 
   function kall(body) {
@@ -151,10 +156,19 @@
       var ks = v.krafa.slod ? opnaHtml(v.krafa.slod) : '';
       return '<section class="baf-k"><h3>Krafan</h3><dl class="baf-dl"><dt>Reikningur</dt><dd>' + esc(v.krafa.r_numer || '') + (ks ? ' · ' + ks : '') + '</dd></dl></section>';
     }
+    if (v.tegund === 'sameina' && v.sameina) {
+      var sm = v.sameina;
+      var hs = '<section class="baf-k"><h3>Hvað var gert</h3><div class="baf-sk"><pre>' + esc(sm.lysing) + '</pre></div></section>';
+      if (sm.sannprof) hs += '<section class="baf-k"><h3>Hvernig það var sannreynt</h3><div class="baf-sk"><pre>' + esc(sm.sannprof) + '</pre></div></section>';
+      hs += '<section class="baf-k"><h3>Grein</h3><dl class="baf-dl"><dt>Grein</dt><dd><code class="baf-grein">' + esc(sm.grein) + '</code></dd><dt>Vefur</dt><dd>' + esc(sm.vefur) + '</dd>' +
+        (sm.verk_slod ? '<dt>Verk</dt><dd>' + opnaHtml(sm.verk_slod) + '</dd>' : '') + '</dl></section>';
+      if (sm.skjaskot_url) hs += '<section class="baf-k"><h3>Skjáskot</h3>' + mynd(sm.skjaskot_url) + '</section>';
+      return hs;
+    }
     return '';
   }
   function opidHtml(v) {
-    var upptekid = S.busy === v.id, vopnF = S.vopnad === 'framkvaema:' + v.id, vopnS = S.vopnad === 'sleppa:' + v.id;
+    var upptekid = S.busy === v.id, vopnF = S.vopnad === 'framkvaema:' + v.id, vopnS = S.vopnad === 'sleppa:' + v.id, erSam = v.tegund === 'sameina';
     var h = '<div class="baf-d" id="baf-d-' + v.id + '">';
     // Tveir dálkar þegar einingin er breið (bogaskjárinn): rökin vinstra megin, efnið og athugasemdin hægra megin.
     h += '<div class="baf-c"><section class="baf-k"><h3>Hvað gerist þegar þú ýtir</h3><div class="baf-g">' + esc(v.hvad_gerist) + '</div></section>';
@@ -166,8 +180,9 @@
     if (S.skilabod && S.skilabod.id === v.id) h += '<div class="baf-msg villa" role="alert">' + esc(S.skilabod.texti) + '</div>';
     h += '<div class="baf-ft">' +
       '<button type="button" class="btn iv sm" data-baf="seinna" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') + ' title="Færir verkið aftar í röðina">Seinna</button>' +
-      '<button type="button" class="btn iv sm' + (vopnS ? ' baf-vopn' : '') + '" data-baf="sleppa" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') + ' title="Tekur verkið úr röðinni fyrir fullt og allt. Athugasemdin þín fylgir sem ástæða.">' +
-        (vopnS ? 'Ýttu aftur — kemur ekki aftur' : 'Ekki þess virði') + '</button>' +
+      '<button type="button" class="btn iv sm' + (vopnS ? ' baf-vopn' : '') + '" data-baf="sleppa" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') +
+        ' title="' + (erSam ? 'Hafnar breytingunni og sendir hana aftur í vinnu með athugasemdinni þinni sem skýringu.' : 'Tekur verkið úr röðinni fyrir fullt og allt. Athugasemdin þín fylgir sem ástæða.') + '">' +
+        (erSam ? (vopnS ? 'Ýttu aftur — fer aftur í vinnu' : 'Hafna ›') : (vopnS ? 'Ýttu aftur — kemur ekki aftur' : 'Ekki þess virði')) + '</button>' +
       '<span class="baf-grow"></span>' +
       (v.ok ? '' : '<span class="baf-stopp">Athugun stóðst ekki — ekkert verður gert</span>') +
       '<button type="button" class="btn baf-go' + (vopnF ? ' baf-vopn' : '') + '" data-baf="framkvaema" data-id="' + v.id + '"' + (!v.ok || upptekid ? ' disabled' : '') +
@@ -327,6 +342,8 @@
       '.baf-lk{color:var(--g8);font-weight:700;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}',
       '.baf-sk{padding:9px 11px;border:1px solid var(--rule);border-radius:4px;background:#fffdf7;max-width:92ch}',
       '.baf-sk pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 var(--body);color:var(--ink2);max-height:260px;overflow:auto}',
+      '.baf-skot{display:block;max-width:100%;height:auto;border:1px solid var(--rule);border-radius:4px;background:#fff}',
+      '.baf-grein{font:12px var(--mono);word-break:break-all}',
       '.baf-meta{margin-bottom:4px;font:11px/1.4 var(--mono);color:var(--mute)}',
       '.baf-efni{margin-bottom:4px;font-size:13px;font-weight:700}',
       '.baf-dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:0 0 8px;font-size:12.5px}',
@@ -395,7 +412,7 @@
     return true;
   }
 
-  var api = { version: '2026-11-16b', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
+  var api = { version: '2026-11-16c', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
     uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

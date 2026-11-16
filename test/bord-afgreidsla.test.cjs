@@ -244,3 +244,49 @@ test('þak: mest 8 línur í einu, „sýna öll" opnar restina og opið verk ne
   assert.strictEqual(fj(BA.listi()), 11);
   assert.match(BA.listi(), /Sýna færri/);
 });
+
+// ── tegund 'sameina' (Verkefnavaktin, 16.11.2026) ──────────────────────────────────────────────────────
+function sam(yfir) {
+  return Object.assign({ id: 70, tegund: 'sameina', titill: 'Breyting: prufusíða', takki: 'Sameina og birta',
+    hvad_gerist: 'Grein vakt/abc verður sameinuð og birt.', af_hverju: [{ texti: 'Vaktin vann verkið', heimild: 'Verkefnavaktin' }],
+    virdi_kr: null, athuganir: [{ texti: 'Verkið bíður yfirferðar', ok: true }], ok: true, urelt: null,
+    sameina: { verk_id: 'abc-123', grein: 'vakt/abc123', vefur: 'slokkvitaeki', lysing: 'Bætti við línu á prufusíðu',
+      sannprof: 'node --test, fail 0', skjaskot_url: 'https://x.supabase.co/storage/v1/object/public/verkefnalisti/result/1.png',
+      verk_slod: { url: 'https://brunaholf.netlify.app/verkefnalisti.html', texti: 'Verkið á Verkefnalistanum' } } }, yfir || {});
+}
+
+test('sameina: birtist í listanum og opið verk sýnir hvað var gert, grein og skjáskot (https)', async () => {
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [sam()] } }));
+  BA.samantekt(); await BA.S.loading; await bida();
+  assert.match(BA.samantekt(), /1 tilbúin · 1 breyting/);
+  smella(BA, 'opna', 70);
+  const h = BA.listi();
+  assert.match(h, /Hvað var gert/);
+  assert.match(h, /Bætti við línu á prufusíðu/);
+  assert.match(h, /Hvernig það var sannreynt/);
+  assert.match(h, /<code class="baf-grein">vakt\/abc123<\/code>/);
+  assert.match(h, /<img class="baf-skot" src="https:\/\/x\.supabase\.co[^"]*\/result\/1\.png"/, 'skjáskot birtist sem mynd');
+  assert.match(h, /data-baf="framkvaema" data-id="70"[^>]*>Sameina og birta<\/button>/);
+});
+
+test('sameina: skjáskot aðeins https — data:/http verða aldrei að mynd', async () => {
+  for (const u of ['data:image/png;base64,AAAA', 'http://x/y.png', '//annar/x.png', 'javascript:alert(1)']) {
+    const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [sam({ sameina: Object.assign(sam().sameina, { skjaskot_url: u }) })] } }));
+    BA.samantekt(); await BA.S.loading; smella(BA, 'opna', 70);
+    assert.ok(!/baf-skot/.test(BA.listi()), 'engin mynd fyrir ' + u);
+  }
+});
+
+test('sameina: höfnunartakkinn segir aftur-í-vinnu og sendir sleppa með athugasemd', async () => {
+  const { BA, kollud } = hlada((m) => (m === 'GET' ? { status: 200, json: { tilbuin: [sam()] } } : { status: 200, json: { ok: true } }));
+  BA.samantekt(); await BA.S.loading;
+  smella(BA, 'opna', 70);
+  const h = BA.listi();
+  assert.match(h, /data-baf="sleppa" data-id="70"[^>]*>Hafna ›<\/button>/, 'höfnun heitir „Hafna", ekki „Ekki þess virði"');
+  assert.ok(!/Ekki þess virði/.test(h));
+  BA.innslattur({ target: { getAttribute: (k) => (k === 'data-baf-ath' ? '70' : null), value: 'Nota annað orð' } });
+  smella(BA, 'sleppa', 70);                       // fyrri smellur vopnar
+  assert.match(BA.listi(), /Ýttu aftur — fer aftur í vinnu/);
+  await smella(BA, 'sleppa', 70);                 // seinni sendir
+  assert.deepStrictEqual(kollud.filter((k) => k.method === 'POST')[0].body, { id: 70, adgerd: 'sleppa', varanlegt: true, astaeda: 'Nota annað orð' });
+});

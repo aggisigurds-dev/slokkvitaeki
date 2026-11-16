@@ -777,3 +777,22 @@ framkvæma. Nú er einingin `tilbuin` (MODS, n 30) á borðinu: `js/patches/511-
   fella þau). Í vafra án innskráningar: staðbundinn þjónn á vinnutré, gervi-`fetch` fyrir `/api/afgreidsla` og
   `AppSettings.path('thjonustubord5.by_staff.Agnar.mitt').first.unshift('tilbuin')` í minni (ekkert vistað).
 - **Sagan** (gert / sleppt / úrelt) er áfram aðeins á `/afgreidsla.html` — „Saga ›" í haus einingarinnar.
+
+### Tegund `sameina` — Verkefnavaktin (16.11.2026)
+
+Ný afgreidsla-tegund `sameina` (migration `sql/2026-11-16_afgreidsla_sameina.sql` bætir henni við tegund-CHECK). Verkefnavaktin
+(`luna-bridge/verkefna-vaktin.js`) vinnur verk af Verkefnalistanum hauslaust í sérklóni, prófar það og ýtir GREININNI (`vakt/<id>`,
+ÁN `[deploy]`); verkið fer í `i_yfirferd` og ein `afgreidsla`-röð verður til með tegund `sameina`. Eining 30 sýnir hana eins og önnur
+verk, með þessum mun:
+- **Efni (`efniHtml`, tegund `sameina`):** „Hvað var gert" (`v.sameina.lysing`), „Hvernig það var sannreynt" (`sannprof`), grein
+  (`<code class="baf-grein">`), tengill á verkið og — ef til — skjáskot. **Skjáskot verður AÐEINS að mynd ef slóðin er `https://`**
+  (`mynd()`-hjálparinn; sama varúð og `opnaHtml`). `v.sameina` kemur frá `afgreidsla.cjs` → `_afgreidsla-sameina.cjs` `synilegt()`.
+- **Takkinn** er `v.takki` = „Sameina og birta" (framkvæmir eins og aðrir — tveir smellir). `afgreidsla.cjs` skrifar þá beiðni í
+  `automation_triggers` (`workflow:'verkefna-sameina'`); watcher keyrir `verkefna-sameina.js` sem rebase-ar, prófar aftur, sameinar
+  og birtir með `[deploy]`, og setur verkið `klarad`. Árekstur/fallin próf → ekkert sameinað, verk aftur í `beidni` með feedback.
+- **Höfnun:** fyrir `sameina` heitir „Ekki þess virði"-takkinn **„Hafna ›"** (vopnaður: „Ýttu aftur — fer aftur í vinnu"). Hann
+  sendir sömu `sleppa`-aðgerð, en `afgreidsla.cjs` skrifar þá athugasemd Agnars í `verkefnalisti.feedback` og setur verkið aftur í
+  `beidni` (`assigned_agent='vakt'`) — sama og „↶ Aftur í vinnu" á verkefnalistanum. Vaktin les feedback fyrst næst.
+- **Rökfræðin er prófanleg sér:** `netlify/functions/_afgreidsla-sameina.cjs` (athuganir, synilegt, triggerBody, hafnaFeedback) —
+  `test/afgreidsla-sameina.test.cjs`. Rendering 'sameina' í einingunni: ný próf í `test/bord-afgreidsla.test.cjs` (skjáskot-https,
+  höfnunartexti). Fullt flæði vaktarinnar er skjalfest í `luna-bridge/CLAUDE.md`.
