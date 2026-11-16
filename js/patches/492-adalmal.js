@@ -32,6 +32,8 @@
  *     Á Verkefnalistann (Claude vinnur verkið). Athugasemd má fylgja.
  *   · Tilbúið til afgreiðslu: forunnu verkin úr Afgreiðslu (póstsvar, krafa, símtal, verk) beint á borðinu — sama spjald,
  *     sömu athuganir, sami rauði takki (tvö tök) og afgreidsla.html.
+ * 492e (16.11.2026): R-númer í textanum og hver heimild á afgreiðsluspjaldi opnar skjalið sjálft (reikningur/skýrsla
+ *   sem PDF, pósturinn í Gmail, Payday-PDF); athugasemd á hvert afgreiðsluverk og hvert atriði („Vista athugasemd").
  *   Allt fer um SÖMU vél: /api/afgreidsla (netlify/functions/afgreidsla.cjs) — aðeins innskráður stjórnandi, læst röð á
  *   hvert atriði, einkvæmur lykill adalmal:<mál>-<hluti>-<nr> (sama sæti og ✓-lykillinn). Enginn takki „merkir" bara:
  *   hver segir hvert hann skrifar.
@@ -69,9 +71,9 @@
 
   const S = { loaded: false, loading: false, villa: null, mal: [], sidast: null, falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {},
     // 492d — afgreiðsluvélin (/api/afgreidsla): leyfi null = óvíst (ekkert sýnt fyrr en þjónninn hefur svarað)
-    af: { tilbuin: [], am: {}, at: 0, loading: false, villa: null, leyfi: null },
+    af: { tilbuin: [], am: {}, tilv: {}, at: 0, loading: false, villa: null, leyfi: null },
     opidAt: null, drog: {}, amBusy: {}, hlSkilabod: {}, svBreyta: {}, atKort: {},
-    afOpid: null, afVopnad: null, afBusy: false, afSkilabod: null, afTexti: {} };
+    afOpid: null, afVopnad: null, afBusy: false, afSkilabod: null, afTexti: {}, afAthDrog: {}, afAthSk: {}, afAthBusy: false };
   const AF = '/api/afgreidsla';
   const AKVARDANLEG = { a: 1, c: 1, x: 1 };        // hlutar þar sem atriði fá Já/Nei/Seinna/Verkefnalista (B og leiðréttingar eru saga)
   const TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk' };
@@ -130,6 +132,7 @@
       else {
         S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = j.tilbuin || [];
         const am = {}; (j.adalmal || []).forEach(x => { am[x.lykill] = x; }); S.af.am = am;
+        S.af.tilv = j.tilvisanir || {};
         if (S.afOpid != null && !S.af.tilbuin.some(v => v.id === S.afOpid)) S.afOpid = null;
       }
     } catch (e) { S.af.villa = 'Náði ekki í afgreiðsluna: ' + ((e && e.message) || e); }
@@ -313,6 +316,8 @@
       V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
       V + ' .ad-linur{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 10px;font-size:13px;margin-bottom:6px}' + V + ' .ad-linur dt{font:700 10.5px/1.8 ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#6b7380}' + V + ' .ad-linur dd{margin:0;overflow-wrap:anywhere}',
+      V + ' a.ad-opna{display:inline-block;margin-left:2px;font:600 12px ' + SANS + ';color:#1d4f91;text-decoration:none;border-bottom:1px solid rgba(29,79,145,.35)}',
+      V + ' .ad-afk textarea.ad-afath{min-height:60px}',
       V + ' .ad-afk textarea{width:100%;box-sizing:border-box;min-height:150px;resize:vertical;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.15);padding:9px 11px;font:14px/1.5 ' + SANS + ';color:#141822}',
       V + ' .ad-ath{margin:0;padding:0;list-style:none}' + V + ' .ad-ath li{display:flex;gap:7px;align-items:flex-start;padding:3px 0;font-size:13px}' + V + ' .ad-ath svg{flex:0 0 16px;margin-top:2px}',
       V + ' .ad-aff{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}' + V + ' .ad-aff .grow{flex:1 1 auto}',
@@ -340,7 +345,16 @@
   // Fyrsta setningin feitletruð svo augað grípi hvað atriðið ER áður en það les hvers vegna.
   function atridiHtml(t) {
     const m = String(t).match(/^(.{8,90}?[.:—–])\s(.+)$/);
-    return m ? '<b>' + esc(m[1]) + '</b> ' + esc(m[2]) : esc(t);
+    return tengjaReikninga(m ? '<b>' + esc(m[1]) + '</b> ' + esc(m[2]) : esc(t));
+  }
+  // 492e (16.11.2026, Agnar: „ef þú ert að vísa í skýrslur eða reikninga, heimilaðu mér að geta opnað þá til að staðfesta"):
+  // R-númer í textanum verður tengill á reikninginn sjálfan — AÐEINS ef þjónninn fann hann (S.af.tilv, /api/afgreidsla?adalmal).
+  function tengjaReikninga(html) {
+    const tv = S.af.tilv || {};
+    return String(html).replace(/\bR-\d{3,6}\b/g, nr => {
+      const sl = tv[nr];
+      return sl && sl.url && /^https?:\/\//.test(sl.url) ? '<a class="ad-opna" href="' + esc(sl.url) + '" target="_blank" rel="noopener" title="' + esc(sl.texti || nr) + '">' + nr + ' ↗</a>' : nr;
+    });
   }
   /* ── 492d: aðgerðir á atriðum ─────────────────────────────────────────────── */
   // Sami sæti og ✓-lykillinn (adalmal:atridi:<mál>-<hluti>-<nr>), en eigin lykill í afgreidsla-töflunni.
@@ -370,6 +384,7 @@
         '<button type="button" class="_nei' + (v === 'nei' ? ' _val' : '') + '" data-adm="akv" data-v="nei" data-l="' + el + '"' + dis + ' title="Skráir NEI hjá Charlize — atriðið er ekki lagt til aftur nema ný staðreynd komi fram">Nei</button>' +
         '<button type="button"' + (v === 'seinna' ? ' class="_val"' : '') + ' data-adm="akv" data-v="seinna" data-l="' + el + '"' + dis + ' title="Atriðið hverfur af borðinu í 3 daga og kemur svo aftur">Seinna · 3 dagar</button>' +
         '<button type="button" data-adm="vl" data-l="' + el + '"' + (busy || (x && x.verkefnalisti_id) ? ' disabled' : '') + ' title="Stofnar verk á Verkefnalistanum — Claude vinnur það">' + (x && x.verkefnalisti_id ? 'Á Verkefnalistanum ✓' : 'Á Verkefnalistann') + '</button>' +
+        '<button type="button" class="_lt" data-adm="amath" data-l="' + el + '"' + dis + ' title="Vistar athugasemdina á atriðið án ákvörðunar">Vista athugasemd</button>' +
         (v ? '<button type="button" class="_lt" data-adm="akv" data-v="engin" data-l="' + el + '"' + dis + ' title="Fjarlægir ákvörðunina (Charlize-færslan víkur)">Taka ákvörðun til baka</button>' : '') +
       '</div>' +
       '<div class="ad-skyr">' + (busy ? 'Skrái…' : 'Já / Nei = ákvörðun þín, skráð hjá Charlize — agentarnir lesa hana og leggja Nei-atriði ekki til aftur. Verkefnalistinn = Claude vinnur verkið.') + '</div></div>';
@@ -410,7 +425,7 @@
       else if (akv) {
         const opid = S.opidAt === l;
         ins += chipHtml(x) + '<button type="button" class="ad-ak" data-adm="atopna" data-l="' + esc(l) + '" aria-expanded="' + opid + '">' +
-          (x && (x.akvordun || x.verkefnalisti_id) ? 'Breyta ▾' : 'Ákveða ▾') + '</button>';
+          (x && (x.akvordun || x.verkefnalisti_id || x.athugasemd_agnars) ? 'Breyta ▾' : 'Ákveða ▾') + '</button>';
         if (opid) ins += rondHtml(l, x);
       }
       return '<li class="ad-at' + (kl ? ' _kl' : '') + (r.haus ? ' _haus' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><div class="tx">' + ins + '</div>' +
@@ -438,11 +453,13 @@
   /* ── 492d: Tilbúið til afgreiðslu — sama spjald og afgreidsla.html ──────────── */
   const JA_SVG = '<svg width="16" height="16" viewBox="0 0 18 18" aria-label="Í lagi"><circle cx="9" cy="9" r="8" fill="#1b6b2d"/><path d="M5 9.3l2.6 2.6L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const NEI_SVG = '<svg width="16" height="16" viewBox="0 0 18 18" aria-label="Ekki í lagi"><circle cx="9" cy="9" r="8" fill="#a1161a"/><path d="M6 6l6 6M12 6l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+  // Slóð frá þjóninum (skjalið sjálft: PDF, Gmail, Payday) → tengill í nýjum flipa. Aðeins http(s) eða slóð á þessum vef.
+  const opnaHtml = sl => (sl && sl.url && /^(https?:\/\/|\/)/.test(sl.url) ? '<a class="ad-opna" href="' + esc(sl.url) + '" target="_blank" rel="noopener">' + esc(sl.texti || 'Opna') + ' ↗</a>' : '');
   function afKortHtml(v) {
     let h = '<div class="ad-afk"><h4>Hvað gerist þegar þú ýtir</h4><div class="ad-gerist">' + esc(v.hvad_gerist) + '</div>';
-    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + esc(r.texti) + (r.heimild ? '<small>' + esc(r.heimild) + '</small>' : '') + '</li>').join('') + '</ul>';
+    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + esc(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
     if (v.tegund === 'tolvupostur') {
-      if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
+      if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + (v.svar_vid.slod ? ' · ' + opnaHtml(v.svar_vid.slod) : '') + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
       const p = v.post || {};
       h += '<h4>Svarið — þú mátt breyta því</h4><dl class="ad-linur"><dt>Frá</dt><dd>' + esc(p.account) + '</dd><dt>Til</dt><dd>' + esc((p.to || []).join(', ')) + '</dd>' +
         ((p.cc || []).length ? '<dt>Afrit</dt><dd>' + esc(p.cc.join(', ')) + '</dd>' : '') + '<dt>Efni</dt><dd>' + esc(p.subject) + '</dd>' +
@@ -455,8 +472,14 @@
     } else if (v.tegund === 'verk') {
       h += '<h4>Verkið</h4><div class="ad-skeyti"><pre>' + esc((v.verk || {}).lysing) + '</pre></div>';
     } else if (v.tegund === 'krafa' && v.krafa && v.krafa.r_numer) {
-      h += '<h4>Krafan</h4><dl class="ad-linur"><dt>Reikningur</dt><dd>' + esc(v.krafa.r_numer) + '</dd></dl>';
+      h += '<h4>Krafan</h4><dl class="ad-linur"><dt>Reikningur</dt><dd>' + esc(v.krafa.r_numer) + (v.krafa.slod ? ' · ' + opnaHtml(v.krafa.slod) : '') + '</dd></dl>';
     }
+    // Athugasemd Agnars á verkið (vistuð á afgreidsla-röðina; Tony og lotur lesa hana).
+    const athT = v.id in S.afAthDrog ? S.afAthDrog[v.id] : (v.athugasemd || '');
+    const athM = S.afAthSk[v.id] || (v.athugasemd ? 'Vistað ' + klTxt(v.athugasemd_at) + (v.athugasemd_af ? ' · ' + v.athugasemd_af : '') : '');
+    h += '<h4>Athugasemd þín</h4><textarea class="ad-afath" id="_adm-af-ath-' + v.id + '" data-af-ath="' + v.id + '" maxlength="2000" placeholder="Til Tonys og Claude — vistast á verkið">' + esc(athT) + '</textarea>' +
+      '<div class="ad-tk"><button type="button" data-adm="afath" data-id="' + v.id + '"' + (S.afAthBusy ? ' disabled' : '') + '>' + (S.afAthBusy ? 'Vista…' : 'Vista athugasemd') + '</button>' +
+      (athM ? '<span class="ad-skyr" role="status" style="margin:0;align-self:center">' + esc(athM) + '</span>' : '') + '</div>';
     if ((v.athuganir || []).length) h += '<h4>Athuganir — keyrðar núna</h4><ul class="ad-ath">' + v.athuganir.map(a => '<li>' + (a.ok ? JA_SVG : NEI_SVG) + '<span>' + esc(a.texti) + '</span></li>').join('') + '</ul>';
     const vop = S.afVopnad === v.id, dis = S.afBusy ? ' disabled' : '';
     h += '<div class="ad-aff"><button type="button" data-adm="afseinna" data-id="' + v.id + '"' + dis + ' title="Aftast í röðina — ekki ákvörðun">Seinna</button>' +
@@ -552,6 +575,19 @@
     if (a === 'atopna') { S.opidAt = S.opidAt === l ? null : l; render(); if (S.opidAt) setTimeout(() => { const x = document.getElementById('_adm-ath-' + idOf(l)); if (x && !mjor()) x.focus({ preventScroll: true }); }, 0); return true; }
     if (a === 'akv') { amAdgerd(l, 'akvordun', { akvordun: el.getAttribute('data-v'), athugasemd: domGildi('_adm-ath-') }); return true; }
     if (a === 'vl') { amAdgerd(l, 'verkefnalisti', { athugasemd: domGildi('_adm-ath-') }); return true; }
+    if (a === 'amath') { amAdgerd(l, 'athugasemd', { athugasemd: domGildi('_adm-ath-') }); return true; }
+    if (a === 'afath') {
+      const v0 = S.af.tilbuin.find(x => x.id === id); if (!v0 || S.afAthBusy) return true;
+      const ta = document.getElementById('_adm-af-ath-' + id), t = ta ? ta.value : '';
+      S.afAthBusy = true; delete S.afAthSk[id]; render();
+      afKall({ id, adgerd: 'athugasemd', texti: t }).then(j => {
+        S.afAthBusy = false;
+        if (j._status === 200 && j.ok) { v0.athugasemd = j.athugasemd; v0.athugasemd_af = j.athugasemd_af; v0.athugasemd_at = j.athugasemd_at; delete S.afAthDrog[id]; S.afAthSk[id] = j.athugasemd ? 'Vistað ' + klTxt(j.athugasemd_at) + (j.athugasemd_af ? ' · ' + j.athugasemd_af : '') : 'Athugasemdin var hreinsuð'; }
+        else S.afAthSk[id] = 'Vistaðist ekki: ' + (j.error || ('villa ' + j._status)) + ' — textinn er enn í reitnum';
+        render();
+      }).catch(e => { S.afAthBusy = false; S.afAthSk[id] = 'Netvilla — vistaðist ekki: ' + ((e && e.message) || e); render(); });
+      return true;
+    }
     if (a === 'svara') {
       const t = domGildi('_adm-sv-'), at = S.atKort[l];
       if (!t) { if (at) S.hlSkilabod[at.mal_id + ':' + at.hluti] = { ok: false, texti: 'Skrifaðu svarið fyrst — ekkert var sent.', at: Date.now(), atridi: at.texti }; render(); return true; }
@@ -591,6 +627,7 @@
     const t = e.target; if (!t || !t.dataset) return;
     if (t.dataset.drog) { S.drog[t.dataset.drog] = t.value; drogVista(); return; }
     if (t.dataset.afTx) S.afTexti[Number(t.dataset.afTx)] = t.value;
+    if (t.dataset.afAth) S.afAthDrog[Number(t.dataset.afAth)] = t.value;
   }
   // Breyttur póstur vistast þegar farið er úr reitnum (eins og afgreidsla.html) — athuganirnar keyra aftur á nýja textanum.
   function fokusUt(e) {
@@ -638,8 +675,27 @@
     patchSwitchView();
     if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }, 300);
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
+    opnaMalUrSlod();
+  }
+  // 492e: tilvísun „Mál #N" (afgreidsla.cjs → /?mal=N#bord) opnar MÁLIÐ sjálft á Þjónustuborðinu, ekki bara borðið.
+  // Reynt í allt að 8 s meðan appið ræsist (sama hugsun og 357); ?mal= er fjarlægt úr slóðinni þegar málið er opið.
+  function opnaMalUrSlod() {
+    let id = 0;
+    try { id = Number(new URLSearchParams(location.search).get('mal')); } catch (_) {}
+    if (!Number.isInteger(id) || id <= 0) return;
+    const t0 = Date.now();
+    const reyna = () => {
+      if (window.App && App.switchView && window.Bord368 && Bord368.opnaMal) {
+        try { App.switchView('bord'); } catch (_) {}
+        setTimeout(() => { try { Bord368.opnaMal(id); } catch (_) {} }, 400);
+        try { const u = new URL(location.href); u.searchParams.delete('mal'); history.replaceState(null, '', u.pathname + u.search + '#bord'); } catch (_) {}
+        return;
+      }
+      if (Date.now() - t0 < 8000) setTimeout(reyna, 250);
+    };
+    setTimeout(reyna, 300);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Adalmal = { open, render, load, loadAf, greina, S, version: '492d' };
-  console.log('[492d] Aðalmál — gagnvirkt borð');
+  window.Adalmal = { open, render, load, loadAf, greina, S, version: '492e' };
+  console.log('[492e] Aðalmál — gagnvirkt borð, tenglar og athugasemdir');
 })();

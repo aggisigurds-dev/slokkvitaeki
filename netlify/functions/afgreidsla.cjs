@@ -11,6 +11,8 @@
 //   POST /api/afgreidsla { id, adgerd:'seinna' }                → aftast í röðina (ekki ákvörðun)
 //   POST /api/afgreidsla { id, adgerd:'sleppa', varanlegt?, astaeda? } → ákvörðun: kemur aldrei aftur á sama lykli
 //   POST /api/afgreidsla { id, adgerd:'framkvaema', prufa:true }  → athuganir + hlið gmail-send prófað ({prufa:true}), EKKERT sent
+//   POST /api/afgreidsla { id, adgerd:'athugasemd', texti }        → athugasemd Agnars á verkið (vistuð, lesin til baka)
+//   Hvert af_hverju-atriði getur borið `opna` → skjárinn fær `slod` {url, texti} á skjalið sjálft (sjá leysaTilvisanir).
 //
 // AÐALMÁL (16.11.2026, Agnar: „gera þetta aðalatriða borðið þitt eitthvað interactive, ég get ekki gert rassgat þarna eða
 // látið þig vita svörin eða svarað póstum"). Borðið (js/patches/492-adalmal.js) notar SÖMU vél:
@@ -21,6 +23,7 @@
 //                             seinna      → atriðið hverfur af borðinu í SEINNA_DAGAR daga (ekki ákvörðun, ekki Charlize)
 //                             engin       → ákvörðun tekin til baka (Charlize-færslan víkur)
 //        gerd 'verkefnalisti'             → atriðið á Verkefnalistann (Claude vinnur verkið)
+//        gerd 'athugasemd'                → athugasemd á atriðið, án ákvörðunar (tóm hreinsar)
 //   Ein röð í afgreidsla á hvert atriði (tegund 'adalmal', lykill adalmal:<mál>-<hluti>-<nr>, sama sæti og ✓-lykillinn):
 //   einkvæmur lykill = ákvörðun stendur; saga í nidurstada.saga; birtist í Sögu Afgreiðslunnar.
 //
@@ -130,21 +133,109 @@ async function athuga(row, { lesaNu = false } = {}) {
   return { athuganir: a, ok: !urelt && a.every((x) => x.ok), urelt };
 }
 
+/* ── TILVÍSANIR SEM OPNAST (16.11.2026, Agnar: „ef þú ert að vísa í skýrslur eða reikninga, heimilaðu mér að geta opnað
+ * þá til að staðfesta"). Röð getur borið `opna` á hverju af_hverju-atriði: {tegund:'skjal'|'sala'|'post'|'payday'|'mal', …}.
+ * Þjónninn breytir því í slóð á SKJALIÐ SJÁLFT — sömu leiðir og appið notar annars staðar:
+ *   skjal  → customer_documents: opinber Storage-slóð, annars Drive-umboð brunaholf /api/skjal (175/190 docUrl)
+ *   sala   → reikningurinn sem PDF (customer_documents reikningur með sama R-númeri), annars #sale/<R-nr> (235)
+ *   post   → pósturinn í Gmail (448 gmailSlod: authuser + #all/<thread>), aðeins Gmail-hólf
+ *   payday → Brunahólf: /api/payday-invoice-pdf?tilvisun=; Slökkvitæki: reikningurinn úr customer_documents
+ *   mal    → Þjónustuborðsmálið (opnast í appinu; slóðin ein opnar borðið)
+ * Finnist skjalið ekki fær atriðið ENGA slóð — aldrei slóð sem gæti opnað rangt skjal. */
+const SB_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+const GMAIL = /^(eldklar|bokhald)@eldklar\.is$|^brunaholfehf@gmail\.com$/i;
+function geymsluSlod(sp) {
+  const s = String(sp || '').replace(/^\/+/, ''), i = s.indexOf('/');
+  if (i < 1 || !SB_URL) return '';
+  return SB_URL + '/storage/v1/object/public/' + s.slice(0, i) + '/' + s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+}
+const skjalSlod = (d) => geymsluSlod(d && d.storage_path) ||
+  (d && d.drive_file_id && String(d.drive_file_id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(d.drive_file_id) : '');
+const gmailSlod = (account, thread) => (GMAIL.test(String(account || '')) && thread
+  ? 'https://mail.google.com/mail/u/?authuser=' + encodeURIComponent(String(account).toLowerCase()) + '#all/' + encodeURIComponent(thread) : '');
+const DOC_HEITI = { reikningur: 'Reikningurinn (PDF)', uttektarskyrsla: 'Úttektarskýrslan (PDF)', brunakerfi: 'Brunakerfisskýrslan (PDF)', samningur: 'Samningurinn (PDF)' };
+const tolur = (a) => [...new Set(a.map(Number).filter((x) => Number.isInteger(x) && x > 0))];
+
+// Leysir allar tilvísanir einnar raðar í EINNI umferð (fá köll). Skilar fall: ref → { url, texti } | null.
+async function leysaTilvisanir(refs) {
+  const R = refs.filter((r) => r && typeof r === 'object');
+  const ids = (t) => tolur(R.filter((r) => r.tegund === t).map((r) => r.id));
+  const [skjol, solur, postar, mal] = await Promise.all([
+    ids('skjal').length ? lesa(`customer_documents?select=id,doc_type,storage_path,drive_file_id,invoice_number&id=in.(${ids('skjal').join(',')})`).catch(() => []) : [],
+    ids('sala').length ? lesa(`solur?select=id,num&id=in.(${ids('sala').join(',')})`).catch(() => []) : [],
+    ids('post').length ? lesa(`email_digest?select=id,account,thread_id&id=in.(${ids('post').join(',')})`).catch(() => []) : [],
+    ids('mal').length ? lesa(`thjonustubeidni?select=id,status,deleted_at,archived_at&id=in.(${ids('mal').join(',')})`).catch(() => []) : [],
+  ]);
+  const rnr = [...new Set(solur.map((s) => s.num).concat(R.filter((r) => r.tegund === 'payday' && r.felag === 'slokkvitaeki').map((r) => String(r.numer || '')))
+    .filter((x) => /^[RK]-\d{3,8}$/.test(x)))];
+  const reikn = rnr.length ? await lesa(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${rnr.join(',')})&order=id.desc`).catch(() => []) : [];
+  const reiknPdf = (nr) => { const d = reikn.find((x) => x.invoice_number === nr && !x.is_duplicate) || reikn.find((x) => x.invoice_number === nr); return d ? skjalSlod(d) : ''; };
+  return (r) => {
+    if (!r || typeof r !== 'object') return null;
+    if (r.tegund === 'skjal') { const d = skjol.find((x) => x.id === Number(r.id)); const u = d && skjalSlod(d); return u ? { url: u, texti: DOC_HEITI[d.doc_type] || 'Skjalið (PDF)' } : null; }
+    if (r.tegund === 'sala') {
+      const s = solur.find((x) => x.id === Number(r.id)); if (!s || !s.num) return null;
+      const pdf = reiknPdf(s.num);
+      return pdf ? { url: pdf, texti: 'Reikningur ' + s.num + ' (PDF)' } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' };
+    }
+    if (r.tegund === 'post') { const p = postar.find((x) => x.id === Number(r.id)); const u = p && gmailSlod(p.account, p.thread_id); return u ? { url: u, texti: 'Pósturinn í Gmail' } : null; }
+    if (r.tegund === 'payday') {
+      const nr = String(r.numer || '').trim(); if (!nr) return null;
+      if (r.felag === 'brunaholf' && /^\d{1,7}$/.test(nr)) return { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(nr), texti: 'Payday-reikningur ' + nr + ' (PDF)' };
+      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: 'Reikningur ' + nr + ' (PDF)' } : null; }
+      return null;
+    }
+    // Aðeins OPIÐ mál fær slóð — lokað mál sést ekki á borðinu og tengillinn lofaði þá einhverju sem gerist ekki.
+    if (r.tegund === 'mal' && mal.some((x) => x.id === Number(r.id) && x.status !== 'lokad' && !x.deleted_at && !x.archived_at)) return { url: '/?mal=' + Number(r.id) + '#bord', texti: 'Mál #' + Number(r.id) + ' á Þjónustuborði', mal_id: Number(r.id) };
+    return null;
+  };
+}
+
+// R-númer í texta aðalmálanna → reikningurinn sjálfur. Aðeins það sem FINNST verður tengill:
+//   R-NNNNNN (6 stafir) = Slökkvitæki → reikningurinn í customer_documents (PDF)
+//   R-NNN    (3–4 stafir) = Brunahólf  → Payday-PDF (invoices.tilvisun með payday_uuid, brunaholf /api/payday-invoice-pdf)
+async function reikningsTenglar(malIds) {
+  const mal = await lesa(`thjonustubeidni?select=notes&id=in.(${tolur(malIds).join(',')})`);
+  const nr = [...new Set(mal.map((m) => String(m.notes || '').match(/\bR-\d{3,6}\b/g) || []).flat())].slice(0, 200);
+  const slokk = nr.filter((x) => /^R-\d{6}$/.test(x)), bru = nr.filter((x) => /^R-\d{3,4}$/.test(x)).map((x) => x.slice(2));
+  const [docs, inv] = await Promise.all([
+    slokk.length ? lesa(`customer_documents?select=invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${slokk.join(',')})&order=id.desc`) : [],
+    bru.length ? lesa(`invoices?select=tilvisun&source=eq.payday&payday_uuid=not.is.null&tilvisun=in.(${bru.join(',')})`) : [],
+  ]);
+  const ut = {};
+  for (const n of slokk) {
+    const d = docs.find((x) => x.invoice_number === n && !x.is_duplicate) || docs.find((x) => x.invoice_number === n);
+    const u = d && skjalSlod(d);
+    if (u) ut[n] = { url: u, texti: 'Reikningur ' + n + ' (PDF)' };
+  }
+  for (const t of new Set(inv.map((x) => String(x.tilvisun)))) ut['R-' + t] = { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(t), texti: 'Payday-reikningur ' + t + ' (PDF, Brunahólf)' };
+  return ut;
+}
+
 // Það sem skjárinn fær — ekkert úr gögnunum sem skjárinn þarf ekki.
 async function synilegt(row) {
   const ath = await athuga(row);
   const g = row.gogn || {};
-  const o = { id: row.id, tegund: row.tegund, titill: row.titill, takki: row.takki, hvad_gerist: row.hvad_gerist, af_hverju: row.af_hverju || [],
-    virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by, ...ath };
+  const rok = Array.isArray(row.af_hverju) ? row.af_hverju : [];
+  // Sjálfgefnar tilvísanir: pósturinn sem er svarað og salan sem krafan er fyrir — þær eru alltaf í gögnunum sjálfum.
+  const sjalfgefid = [];
+  if (row.tegund === 'tolvupostur' && g.svar_vid && g.svar_vid.digest_id) sjalfgefid.push({ tegund: 'post', id: g.svar_vid.digest_id });
+  if (row.tegund === 'krafa' && g.sale_id) sjalfgefid.push({ tegund: 'sala', id: g.sale_id });
+  const leysa = await leysaTilvisanir(rok.map((x) => x && x.opna).concat(sjalfgefid)).catch(() => () => null);
+  const o = { id: row.id, tegund: row.tegund, titill: row.titill, takki: row.takki, hvad_gerist: row.hvad_gerist,
+    af_hverju: rok.map((x) => { const s = x && x.opna ? leysa(x.opna) : null; return s ? Object.assign({}, x, { slod: s }) : x; }),
+    virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by,
+    athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
   if (row.tegund === 'tolvupostur') {
     o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename) };
-    o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500) } : null;
+    o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500),
+      slod: (g.svar_vid.digest_id && leysa({ tegund: 'post', id: g.svar_vid.digest_id })) || (gmailSlod(g.account, g.svar_vid.thread_id) ? { url: gmailSlod(g.account, g.svar_vid.thread_id), texti: 'Pósturinn í Gmail' } : null) } : null;
   } else if (row.tegund === 'simtal') {
     o.simtal = { hverjum: g.hverjum || '', simi: g.simi || '', handrit: g.handrit || '' };
   } else if (row.tegund === 'verk') {
     o.verk = { lysing: g.lysing || '' };
   } else if (row.tegund === 'krafa') {
-    o.krafa = { sale_id: g.sale_id, r_numer: g.r_numer || '' };
+    o.krafa = { sale_id: g.sale_id, r_numer: g.r_numer || '', slod: g.sale_id ? leysa({ tegund: 'sala', id: g.sale_id }) : null };
   }
   return o;
 }
@@ -277,7 +368,7 @@ const verkefnalistiLesa = (id) => (id ? lesa(`verkefnalisti?select=id,title,stat
 async function adalmal(b, event) {
   const mid = Number(b.mal_id), nr = Number(b.nr), h = String(b.hluti || ''), gerd = String(b.gerd || '');
   if (!Number.isInteger(mid) || mid <= 0 || !Number.isInteger(nr) || nr < 0 || nr > 500 || !/^[a-z]{1,4}$/.test(h)) return P.json(400, { error: 'Atriðið er ekki rétt tilgreint' });
-  if (!['svar', 'akvordun', 'verkefnalisti'].includes(gerd)) return P.json(400, { error: 'Óþekkt aðgerð á Aðalmálum' });
+  if (!['svar', 'akvordun', 'verkefnalisti', 'athugasemd'].includes(gerd)) return P.json(400, { error: 'Óþekkt aðgerð á Aðalmálum' });
   if (gerd === 'svar' && h !== 'sp') return P.json(400, { error: 'Svar á aðeins við spurningar' });
   if (gerd === 'akvordun' && !AM_AKV[b.akvordun]) return P.json(400, { error: 'Ákvörðun er já, nei eða seinna' });
   const texti = String(b.texti || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
@@ -360,6 +451,11 @@ async function adalmal(b, event) {
         takki = AM_AKV[v]; hvad = 'Ákvörðunin skráð hjá Charlize (#' + cid + ')';
         skilabod = 'Skráð: ' + AM_AKV[v] + '. Charlize #' + cid + ' — agentarnir lesa það áður en þeir vinna' + (v === 'nei' ? ' og leggja þetta ekki til aftur.' : '.');
       }
+    } else if (gerd === 'athugasemd') {
+      // Athugasemd ein og sér (engin ákvörðun, ekki Charlize) — tómur texti hreinsar.
+      n.athugasemd_agnars = ath || null; n.athugasemd = ath ? 'Athugasemd: ' + ath.slice(0, 160) : 'Athugasemd hreinsuð';
+      takki = 'Vista athugasemd'; hvad = ath ? 'Athugasemd vistuð' : 'Athugasemd hreinsuð';
+      skilabod = ath ? 'Athugasemdin er vistuð á atriðinu.' : 'Athugasemdin var hreinsuð.';
     } else {
       let vl = await verkefnalistiLesa(n.verkefnalisti_id);
       if (vl) {
@@ -375,9 +471,9 @@ async function adalmal(b, event) {
       n.athugasemd = 'Á Verkefnalistann';
       takki = 'Á Verkefnalistann'; hvad = 'Atriðið sett á Verkefnalistann';
     }
-    if (ath) n.athugasemd_agnars = ath;
+    if (ath && gerd !== 'athugasemd') n.athugasemd_agnars = ath;
     const saga = Array.isArray(fyrri.saga) ? fyrri.saga.slice(-29) : [];
-    saga.push({ at: nuIso, af: hver, gerd, gildi: gerd === 'svar' ? svar.slice(0, 300) : gerd === 'akvordun' ? b.akvordun : n.verkefnalisti_id });
+    saga.push({ at: nuIso, af: hver, gerd, gildi: gerd === 'svar' ? svar.slice(0, 300) : gerd === 'akvordun' ? b.akvordun : gerd === 'athugasemd' ? ath.slice(0, 300) : n.verkefnalisti_id });
     n.saga = saga;
     const lokid = await opna({ nidurstada: n, takki, hvad_gerist: hvad, gogn, titill: ((h === 'sp' ? 'Spurning: ' : '') + texti).slice(0, 200),
       framkvaemt_at: nuIso, framkvaemt_af: hver });
@@ -395,7 +491,7 @@ async function adalmal(b, event) {
 
 function synilegtSaga(r) {
   return { id: r.id, tegund: r.tegund, titill: r.titill, takki: r.takki, stada: r.stada, astaeda: r.astaeda, nidurstada: r.nidurstada,
-    framkvaemt_at: r.framkvaemt_at, framkvaemt_af: r.framkvaemt_af, updated_at: r.updated_at };
+    framkvaemt_at: r.framkvaemt_at, framkvaemt_af: r.framkvaemt_af, updated_at: r.updated_at, athugasemd: r.athugasemd || null };
 }
 
 exports.handler = async (event) => {
@@ -422,6 +518,7 @@ exports.handler = async (event) => {
         const ids = String(qs.adalmal).split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0).slice(0, 10);
         const am = ids.length ? await lesa(`afgreidsla?select=*&tegund=eq.adalmal&gogn->>mal_id=in.(${ids.join(',')})&order=updated_at.desc&limit=500`) : [];
         svar.adalmal = am.filter((r) => r.nidurstada && Object.keys(r.nidurstada).length).map(synilegtAdalmal);
+        svar.tilvisanir = ids.length ? await reikningsTenglar(ids).catch(() => ({})) : {};
       }
       return P.json(200, svar);
     } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
@@ -443,6 +540,15 @@ exports.handler = async (event) => {
       const gogn = Object.assign({}, r.gogn, { texti: String(b.texti || '').slice(0, 20000) });
       await breyta(`afgreidsla?id=eq.${id}`, { gogn });
       return P.json(200, { ok: true, verk: await synilegt(Object.assign(r, { gogn })) });
+    }
+    // Athugasemd Agnars á verkið (16.11.2026: „sett athugasemd"). Vistast á röðina í hvaða stöðu sem er, lesin til baka;
+    // Tony og lotur lesa hana (`select … from afgreidsla where athugasemd is not null`). Tómur texti hreinsar.
+    if (b.adgerd === 'athugasemd') {
+      const hver = await notandi(event);
+      const t = String(b.texti || '').trim().slice(0, 2000);
+      const r = await breyta(`afgreidsla?id=eq.${id}`, { athugasemd: t || null, athugasemd_af: t ? hver : null, athugasemd_at: t ? new Date().toISOString() : null });
+      if (!r.length) return P.json(404, { error: 'Verkið fannst ekki' });
+      return P.json(200, { ok: true, athugasemd: r[0].athugasemd, athugasemd_af: r[0].athugasemd_af, athugasemd_at: r[0].athugasemd_at });
     }
     if (b.adgerd === 'seinna') {
       const r = (await lesa(`afgreidsla?select=forgangur&id=eq.${id}&stada=eq.tilbuid&limit=1`))[0];

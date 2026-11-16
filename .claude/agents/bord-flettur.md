@@ -688,7 +688,7 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   þegar borðið sýndi 39.
 - **Prófun:** lifandi síðan er á bak við innskráningu starfsfólks [C#2261, C#2236]. Án innskráningar má staðfesta birtingu með `build.json`
   og leit að `__adalmal492` í `_bundle-*.js` (lifandi `index.html` nefnir ekki patch-skrána því build-dist búntar). Eftir innskráningu:
-  `window.Adalmal.version` á að vera `'492c'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
+  `window.Adalmal.version` á að vera `'492e'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
   `nytt` í vafranum einum — aldrei opna málið í grunninum til að prófa.
 - **Gagnvirkt (492d, 16.11.2026 — Agnar: „ég get ekki gert rassgat þarna eða látið þig vita svörin eða svarað póstum").**
   Allt fer um SÖMU vél og Afgreiðslan: `/api/afgreidsla` (aðeins innskráður stjórnandi; 492 talar aldrei sjálft við töflurnar).
@@ -702,6 +702,14 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   lykill `adalmal:<mál>-<hluti>-<nr>` (SAMA sæti og ✓-lykillinn → bættu aðeins aftast við yfirlit). Þjónninn hafnar (409) ef
   málið er lokað/án merkis eða textinn stendur ekki lengur í notes; skráning sem á við eldri texta er hunsuð á borðinu.
   `GET /api/afgreidsla?adalmal=<id>` skilar skráningunum (`adalmal[]`). Afgreitt (✓, Nei, Verkefnalisti, svarað) fer í fold.
+  · **492e (16.11.2026 — „heimilaðu mér að geta opnað [skýrslur og reikninga] til að staðfesta … heildarpunktana til hliðar …
+  valið flokka, eða sett athugasemd"):** R-númer í texta yfirlitsins verða tenglar (`GET ?adalmal=` → `tilvisanir`): R-NNNNNN →
+  reikningurinn úr `customer_documents` (PDF), R-NNN → Brunahólfs-Payday-PDF (`invoices.tilvisun` með payday_uuid). Aðeins það
+  sem FINNST fær tengil. Á afgreiðsluverkum: `af_hverju[].opna` {sala|skjal|post|payday|mal} → `slod` frá þjóninum
+  (`leysaTilvisanir`); pósturinn í Gmail (448-mynstrið), krafan → reikningur-PDF; mál aðeins ef OPIÐ (`/?mal=N#bord` →
+  492 `opnaMalUrSlod` → `Bord368.opnaMal`). Athugasemd á hvert verk (`adgerd:'athugasemd'`, dálkar `athugasemd/_af/_at`,
+  sql/2026-11-16b) og á hvert atriði (`gerd:'athugasemd'`, ekki Charlize). afgreidsla.html: listi til hliðar (≥960 px; ofan
+  við spjaldið í síma), flokkasía (Allt/Póstur/Krafa/Símtal/Verk), val eftir auðkenni (`S.val`), ✎ á verkum með athugasemd.
   · **Áður en NÝTT yfirlit er skrifað:** lestu `select fact from v_charlize_active where topic='akvardanir-agnars'` og
   `afgreidsla where tegund='adalmal'` — Nei-atriði fara ekki aftur á blað nema ný staðreynd sé komin.
   · Prófun: `tools/audit-adalmal-adgerdir.cjs` (hegðun á stubbum: hlið, lokað mál, rangur texti, Já→Charlize, prufa). Enda á milli
