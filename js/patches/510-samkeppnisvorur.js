@@ -133,6 +133,18 @@
       .samk-bil .m{position:absolute;top:-4px;width:3px;height:14px;border-radius:2px;background:#b91c1c}
       .samk-csv{margin-left:10px;border:1px solid var(--brd);background:var(--bg1);color:var(--ink1);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;vertical-align:middle}
       .samk-csv:hover{background:var(--bg2)}
+      .samk-sia{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+      .samk-f{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink3);min-width:130px}
+      .samk-f .samk-in{min-width:0;width:120px;flex:none}
+      .samk-rofi{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);background:var(--bg1);border:1px solid var(--brd);border-radius:8px;padding:7px 10px;cursor:pointer;white-space:nowrap}
+      .samk-rofi:hover{background:var(--bg2)}
+      .samk-rofi input{margin:0;width:16px;height:16px}
+      .samk-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px;min-height:30px;align-content:flex-start}
+      .samk-chip{border:1px solid #cbd5e1;background:var(--bg1);color:var(--ink1);border-radius:99px;padding:4px 11px;font:inherit;font-size:12px;cursor:pointer}
+      .samk-chip:hover{background:#fee2e2;border-color:#fecaca}
+      .samk-tk{border:1px solid var(--brd);background:var(--bg1);color:var(--ink1);border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+      .samk-tk:hover{background:var(--bg2)}
+      .samk-tk.on{background:#0f172a;color:#fff;border-color:#0f172a}
       @media(max-width:900px){.samk-tafla{display:block;overflow-x:auto;white-space:nowrap}}
     `;
     document.head.appendChild(s);
@@ -514,22 +526,26 @@
   window.Samkeppni = {
     teikna,
     fjoldi: () => (_g && Array.isArray(_g.vorur) ? _g.vorur.length : null),
-    _flipi(k) { _flipi = k; _seljandi = ''; _flokkur = ''; uppfaera(); },
-    _leit(v) { _q = String(v || '').trim(); uppfaera(); },
-    _flokk(v) { _flokkur = v; uppfaera(); },
-    _selj(v) { _seljandi = v; uppfaera(); },
-    _land(v) { _land = v; uppfaera(); },
-    _csv(id) {
-      if (id === 'birgjar') {
-        const l = (_g && _g.birgjar) || [];
-        return sækjaCsv('birgjar', ['Birgir', 'Land', 'Tegund', 'Núverandi birgir', 'B2B', 'Sendir til Íslands', 'Lágmarkspöntun', 'Flutningur/tollar', 'Vörur', 'Vefur'],
-          l.map((b) => [b.nafn, b.land, tegundHeiti(b.tegund), b.nuverandi_birgir ? 'já' : '', b.b2b, b.sendir_til_islands, b.magn_lagmark, b.ath_fluttning, b.vorur, b.vefur]));
-      }
-      const t = _tof[id];
-      if (!t) return;
-      const cols = t.cols.filter((c) => c.t);
-      sækjaCsv('samkeppni-' + id, cols.map((c) => c.t), rada(id, t.rows, t.cols).map((r) => cols.map((c) => (c.c ? c.c(r) : textiAf(c.h(r))))));
+    _flipi(k) { _flipi = k; _seljandi = ''; _flokkur = ''; _rod = null; uppfaera(); vista(); },
+    _leit(v) { _q = String(v || '').trim(); uppfaeraEfni(); vista(); },
+    _flokk(v) { _flokkur = v; uppfaeraEfni(); vista(); },
+    _selj(v) { _seljandi = v; uppfaeraEfni(); vista(); },
+    _land(v) { _land = v; uppfaeraEfni(); vista(); },
+    // Ein sía úr síuspjaldinu (select, hak eða talnareitur) — spjaldið sjálft er ekki endurteiknað svo reiturinn missir ekki fókus
+    _sia(k, v) {
+      if (!(k in SIUR_FRUM)) return;
+      F[k] = typeof SIUR_FRUM[k] === 'boolean' ? !!v : String(v == null ? '' : v);
+      uppfaeraEfni(); vista();
     },
-    _rada(id, k) { const s = _sort[id]; _sort[id] = s && s.k === k ? { k, d: -s.d } : { k, d: 1 }; uppfaera(); }
-  };
-})();
+    _hreinsa(k) {
+      if (k === 'q') _q = '';
+      else if (k === 'flokkur') _flokkur = '';
+      else if (k === 'seljandi') _seljandi = '';
+      else if (k === 'land') _land = '';
+      else if (k in SIUR_FRUM) F[k] = SIUR_FRUM[k];
+      else return;
+      uppfaera(); vista();
+    },
+    _hreinsaAllt() {
+      _q = ''; _flokkur = ''; _seljandi = ''; _land = ''; _rod = null;
+      Object.assi
