@@ -123,7 +123,7 @@
   // the user's typos (e.g. "Stjórnborð" vs "Stjórnstöð") and short forms.
   const ORDER = [
     ['Hunter'],              // 10.11.2026 (Agnar): Hunter er EFST í hliðarstikunni, ofan við Vefverslun (sjá fasta röð neðar)
-    ['Vefverslun'],          // 13.10.2026 (Agnar: „setja hana efst á sidebanner"): static <a> → /vefverslun/?breyta=1. Fyrst í ORDER svo hún sest efst líka undir vistaðri röð (þekktur hnappur án nágranna á undan fær order 6)
+    ['Nýi vefurinn', 'Vefverslun'],   // 16.11.2026: tengillinn vísar nú á nýja vefinn (brunaholf.netlify.app/vefur/). 13.10.2026 (Agnar: „setja hana efst á sidebanner"): static <a> → /vefverslun/?breyta=1. Fyrst í ORDER svo hún sest efst líka undir vistaðri röð (þekktur hnappur án nágranna á undan fær order 6)
     SEP,
     ['Verkborð'],            // 2026-06-22: sameinaði verkborðið (patch 231) efst
     ['Verkdagbók'],
@@ -424,7 +424,8 @@
       // sem „#heiti" — svo hnappurinn fékk order 410, lenti á eftir Öpp og „Sjá meira" (391) faldi hann. Röð notandans má
       // ekki geta sent hann neðar: order 1 er undir fyrsta hnappi (order 10) og fyrir framan Öpp, svo hann er aldrei í „Sjá meira".
       // Sé hann viljandi falinn í sidebar_hidden er það virt (hiddenButtons).
-      const vefverslun = buttons.find(b => /\/vefverslun\//.test(b.getAttribute('href') || ''));
+      // 16.11.2026: tengillinn vísar á nýja vefinn (brunaholf.netlify.app/vefur/) en heldur sama fasta sæti.
+      const vefverslun = buttons.find(b => /\/vefverslun\/|brunaholf\.netlify\.app\/vefur\//.test(b.getAttribute('href') || ''));
       if (vefverslun && !hiddenButtons.has(vefverslun) && vefverslun.style.order !== '1') vefverslun.style.order = '1';
       // 10.11.2026 (Agnar): Hunter er FÖST efst, ofan við Vefverslun (order 0) — sami rökstuðningur: vistuð röð má ekki senda hann neðar.
       const hunter = buttons.find(b => b.getAttribute('data-view') === 'hunter');
