@@ -318,7 +318,14 @@
     if (_q) l = l.filter((b) => { const hey = norm([b.nafn, b.land, b.tegund, b.vorur, b.athugasemd].join(' ')); return _q.split(/\s+/).every((t) => hey.includes(norm(t))); });
     if (!l.length) return '<div class="samk-tomt">Engir birgjar með þessum síum.</div>';
     const kort = (b) => {
-      const sy = (b.synishorn || []).filter((s) => s && s.vara).slice(0, 4).map((s) => `<li>${mynd(s.mynd_url, s.vara)}<span>${slod(s.url) ? tengill(s.url, s.vara) : esc(s.vara)}<br><span class="samk-sm">${s.verd_erl != null ? esc(s.verd_erl) + ' ' + esc(s.mynt || '') + (s.vsk ? ' · ' + esc(s.vsk) + ' VSK' : '') : 'verð ekki birt'}</span></span></li>`).join('');
+      const synKomid = (s) => {
+        if (s.komid_an_vsk == null) return '';
+        const v = s.okkar_id != null && _okkar ? _okkar[s.okkar_id] : null;
+        const k = okkarKostn(v);
+        const st = k != null ? ` <span class="${s.komid_an_vsk < k ? 'samk-gott' : 'samk-slaemt'}">(við kaupum á ${kr(k)}${s.komid_an_vsk < k ? ' — ' + pct(-((k - s.komid_an_vsk) / k) * 100) : ''})</span>` : '';
+        return `<br><span class="samk-sm" title="${esc(s.forsendur || '')}">Komið til okkar ≈ <b>${kr(s.komid_an_vsk)}</b> án VSK${s.eining_fjoldi > 1 ? ' á stk' : ''}${st}${s.stadall ? ' · ' + esc(s.stadall) : ''}</span>`;
+      };
+      const sy = (b.synishorn || []).filter((s) => s && s.vara).slice(0, 6).map((s) => `<li>${mynd(s.mynd_url, s.vara)}<span>${slod(s.url) ? tengill(s.url, s.vara) : esc(s.vara)}<br><span class="samk-sm">${s.verd_erl != null ? esc(s.verd_erl) + ' ' + esc(s.mynt || '') + (s.vsk ? ' · ' + esc(s.vsk) + ' VSK' : '') : 'verð ekki birt'}</span>${synKomid(s)}</span></li>`).join('');
       return `<div class="samk-kort">
         <h4>${esc(b.nafn)}</h4>
         <div class="samk-sm">${esc(b.land || '')} · ${esc(tegundHeiti(b.tegund))}</div>
