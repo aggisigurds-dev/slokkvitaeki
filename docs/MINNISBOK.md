@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-16 09:52 · 2270 virkar staðreyndir — 1341 prentaðar hér
+Sótt 2026-11-16 10:10 · 2271 virkar staðreyndir — 1342 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 125 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (804 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -2961,6 +2961,19 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Leitaðu bæði á kennitölu og nafnbroti áður en nýr kúnni er stofnaður.
   <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
 
+### hunter
+
+- **LEYST 16.11.2026: Hunter aðila-spjaldið sýnir nú samskipti beggja hólfa gegnum SECURITY DEFINER fall hunter_samskipti(p_adili_id) — skilar email_digest-póstum eldklar@ + slokkvitaeki@brunaholf.is AÐEINS fyrir þann aðila (netfang/þráður + lén fyrir herferd=Samningar). hladaPost kallar RPC í stað beinnar email_digest-fyrirspurnar (RLS lokar anon á brunaholf). brunaholf-póstar fá merki 'brunaholf' og engan 'Svara í þræði'-takka (gmail-send sendir ekki úr brunaholf-hólfinu). Agnar samþykkti að opna samningapóst á anon-lykilinn 16.11. Mælt: Center id38 15 póstar (8+7), Heimaleiga id37 52 (incl 15 Dimka um lén-pörun).**
+  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **Hunter aðila-spjald getur EKKI sýnt samskipti af slokkvitaeki@brunaholf.is með beinni email_digest-fyrirspurn: RLS leyfir anon-lyklinum aðeins account='eldklar@eldklar.is' (+takmarkað bokhald@eldklar). Innsogið (hunter_innsog) les brunaholf því það er SECURITY DEFINER; frontend með anon-lykli fær 0 brunaholf-raðir (mælt 16.11.2026 á Center Hotels: 7 raðir í SQL, 0 um anon). Til að sýna brunaholf-samskipti í appinu þarf SECURITY DEFINER RPC/‪/api‬ scoped á Samningar-netföng — og það opnar kúnna-póst á opinn anon-lykil (opið repó, mál #1431), svo ákvörðun Agnars. Listalínan sýnir samt sidast_post_* (sett af innsoginu).**
+  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **hunter_innsog sækir nú LÍKA slokkvitaeki@brunaholf.is (migration hunter_innsog_brunaholf 11.11.2026): sérstakur einangraður blokk í lokin, eldklar@-rökin ósnert. luna-bridge setur ekki thread_id þar, svo pörun er á LÉN fyrir herferd='Samningar' aðila (ekki frípóstlén) — Center Hotels/Hótel Múli/Heimaleiga haldast fersk. ENGIR nýir aðilar verða til úr brunaholf-hólfinu (herferðir eru eldklar@-herferðir). Aðila-spjaldið (hladaPost) les samt enn aðeins eldklar@, svo Samskipti-kaflinn er tómur fyrir brunaholf-samninga.**
+  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Hunter-innsog (03.11.2026): þekktur aðili uppfærist úr HVAÐA SENT-pósti sem er frá eldklar@ (netfang eða thread_id), ekki aðeins herferðarpósti — annars sitja 'síðast frá okkur' og sidast_post_* föst þegar við svörum í þræði (Heimaleiga 28/10–02/11 sást ekki). Nýr aðili verður aðeins til úr pósti með efni herferðar (hunter_herferdir.efni_regex).**
+  <br><sub>2026-11-03 · slokkvitaeki · claude-code · claude-code</sub>
+- **Hunter (#hunter, pappi 487, 26.10.2026): sölulistar Slökkvitækis — hunter_adilar/hunter_fasteignir/hunter_herferdir, hunter_innsog() les SENT+INBOX úr email_digest á 15 mín (pg_cron hunter-innsog), svar í þræði um ReikningaPostur.replyTo, nýr póstur um AppMail.send úr eldklar@; skil (bounce) → staða rangt; staða starfsmanns aldrei yfirskrifuð nema bidur/rangt→svar. Afrit sql/hunter.sql; mockup claude.ai/artifact/Hski75RRHnF58fooq46DR1**
+  <br><sub>2026-10-26 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### variant
 
 - **limit= yfir 1000 í EINU PostgREST-kalli er þegjandi klippt í 1000 raðir (svar 200/206; content-range ber heildina). 10.11.2026 voru fjórir staðir yfir þakinu og eru lagaðir: tools/minni.cjs (bókin sá 1000 af 2.133 staðreyndum, 158 efni vantaði), hub charlize-stada.js (Minnið í Jarvis sagði 976 virkar í stað 2.133), hub reikningspunktar.js kt-uppfletting (1000 af 1.284 félögum, 247 kennitölur ósýnilegar í bíður-króknum) og hub raddminni.js finnaFelag. Slétt tala sem er jöfn þakinu er grunur, ekki talning.**
@@ -3102,17 +3115,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-10-04 · slokkvitaeki · claude-code · claude-code</sub>
 - **Ársskoðun á síma (382-ars-simi-samraemi.js, 18.09.2026): (1) appskelin 261 'body.appmode .view.active:not(#view-opp){background:grátt !important}' (sérhæfni 1,2,1) vann alltaf bakgrunn úr Hönnunarham (#_pe-overrides '#view-x', 1,0,0) — sama síða varð grá í appi en dökkblá á vefslóð; 382 endurómar PE-bakgrunn síðunnar með hærri sérhæfni í appham. (2) .cb-dot úr 237 lendir sem grid-barn í ._arsm-row (enginn titil-hnútur) → eigin lína + 50px lágmarkshæð takka í appham = sporaskja; nú absolute 14x14 í nafnadálki. (3) css/mobile.css (≤900px) setur '.view table thead,tbody{display:table}' — 325 endurreisir töfluna en ekki thead/tbody, svo colgroup gilti ekki í Skjár/Tafla á síma (th≠td, tafla 2455px utan um 1061px); 382 setur table-header-group/row-group + width:auto undir html.ars-wide-table.**
   <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-
-### hunter
-
-- **Hunter aðila-spjald getur EKKI sýnt samskipti af slokkvitaeki@brunaholf.is með beinni email_digest-fyrirspurn: RLS leyfir anon-lyklinum aðeins account='eldklar@eldklar.is' (+takmarkað bokhald@eldklar). Innsogið (hunter_innsog) les brunaholf því það er SECURITY DEFINER; frontend með anon-lykli fær 0 brunaholf-raðir (mælt 16.11.2026 á Center Hotels: 7 raðir í SQL, 0 um anon). Til að sýna brunaholf-samskipti í appinu þarf SECURITY DEFINER RPC/‪/api‬ scoped á Samningar-netföng — og það opnar kúnna-póst á opinn anon-lykil (opið repó, mál #1431), svo ákvörðun Agnars. Listalínan sýnir samt sidast_post_* (sett af innsoginu).**
-  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **hunter_innsog sækir nú LÍKA slokkvitaeki@brunaholf.is (migration hunter_innsog_brunaholf 11.11.2026): sérstakur einangraður blokk í lokin, eldklar@-rökin ósnert. luna-bridge setur ekki thread_id þar, svo pörun er á LÉN fyrir herferd='Samningar' aðila (ekki frípóstlén) — Center Hotels/Hótel Múli/Heimaleiga haldast fersk. ENGIR nýir aðilar verða til úr brunaholf-hólfinu (herferðir eru eldklar@-herferðir). Aðila-spjaldið (hladaPost) les samt enn aðeins eldklar@, svo Samskipti-kaflinn er tómur fyrir brunaholf-samninga.**
-  <br><sub>2026-11-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Hunter-innsog (03.11.2026): þekktur aðili uppfærist úr HVAÐA SENT-pósti sem er frá eldklar@ (netfang eða thread_id), ekki aðeins herferðarpósti — annars sitja 'síðast frá okkur' og sidast_post_* föst þegar við svörum í þræði (Heimaleiga 28/10–02/11 sást ekki). Nýr aðili verður aðeins til úr pósti með efni herferðar (hunter_herferdir.efni_regex).**
-  <br><sub>2026-11-03 · slokkvitaeki · claude-code · claude-code</sub>
-- **Hunter (#hunter, pappi 487, 26.10.2026): sölulistar Slökkvitækis — hunter_adilar/hunter_fasteignir/hunter_herferdir, hunter_innsog() les SENT+INBOX úr email_digest á 15 mín (pg_cron hunter-innsog), svar í þræði um ReikningaPostur.replyTo, nýr póstur um AppMail.send úr eldklar@; skil (bounce) → staða rangt; staða starfsmanns aldrei yfirskrifuð nema bidur/rangt→svar. Afrit sql/hunter.sql; mockup claude.ai/artifact/Hski75RRHnF58fooq46DR1**
-  <br><sub>2026-10-26 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### radgjafinn
 
