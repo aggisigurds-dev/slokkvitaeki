@@ -47,7 +47,7 @@ Skráð 11.11.2026 að ósk Agnars („Sessions úttekt í þekkingargrunn"). By
    - Charlize: `node tools/minni.cjs --skra "<staðreynd með tölu og dagsetningu>" --topic <efni>`,
      ein færsla per staðreynd, `--source` með auðkenni lotunnar.
    - Kúnnaminni: sama skipun með `--scope kunni --kt <kt félags> [--fid <fyrirtaeki.id>] [--base <customers_base.id>]`.
-     Tólið skráir kt með bandstriki, neitar kennitölu einstaklings (þá `--fid`) og texta með símanúmeri; `--thurrt`
+     Tólið skráir kt með bandstriki, neitar kennitölu einstaklings (þá `--fid`); símanúmer og netföng tengiliða mega standa (Agnar 16.11.2026); `--thurrt`
      prentar röðina án þess að skrifa. Án `--kt`/`--fid` skrifast ekkert — kúnnaminni án lykils finnst aldrei aftur.
    - Agent/skill eiganda: `node tools/agent.cjs --skra "<lærdómur>" --agent <nafn>`; regla sem breytir verklagi er
      skrifuð inn í réttan kafla, ekki aðeins í Lærdóm.

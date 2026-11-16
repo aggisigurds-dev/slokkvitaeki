@@ -365,7 +365,8 @@ function leita(md, ord, ferskt) {
     /* Kúnnaminni (16.11.2026). Áður tók --skra enga kennitölu, svo „--scope kunni" bjó til færslu sem
        charlize_yfirlit(kt) og v_charlize_kunni fundu aldrei — eina leiðin var handskrifað SQL. Reglurnar
        eru úr .claude/skills/charlize/references/kunnaminni.md: kennitala lögaðila er lykillinn, og
-       kennitölur og símanúmer einstaklinga fara ekki í töflu sem vefurinn getur lesið. */
+       kennitölur einstaklinga fara ekki í töflu sem vefurinn getur lesið. Símanúmer og netföng tengiliða mega standa
+       (Agnar 16.11.2026). */
     const heil = (nafn) => {
       const v = flagg(nafn);
       if (v == null) return null;
@@ -397,14 +398,7 @@ function leita(md, ord, ferskt) {
         console.error('Textinn ber kennitölu einstaklings. Taktu hana út — hlutverk dugar („gjaldkeri", „húsvörður").');
         process.exit(1);
       }
-      if (/(?:\+354[ -]?)?(?<![\d-])\d{3}[ -]?\d{4}(?![\d-])/.test(texti.replace(/R-\d+/g, '').replace(/\d{6}-\d{4}/g, ''))) {
-        console.error('Textinn ber símanúmer. Símanúmer og netföng tengiliða eiga heima í Tengiliðum (charlize_contacts),');
-        console.error('ekki í kúnnaminni. Skrifaðu hlutverkið: „boða komu hjá rekstrarstjóra".');
-        process.exit(1);
-      }
-      if (/[\w.+-]+@[\w-]+\.[\w.]+/.test(texti)) {
-        console.error('ATH: textinn ber netfang. Hlutverkshólf félags (reikningar@…) má standa; netfang einstaklings á heima í Tengiliðum.');
-      }
+      // Símanúmer og netföng tengiliða MEGA standa í kúnnaminni (Agnar 16.11.2026: „símanúmer tengiliða er fínt líka").
     }
     if (arg.includes('--thurrt')) {
       console.log('ÞURRT — ekkert skrifað. Röðin sem færi inn:');

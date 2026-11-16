@@ -40,7 +40,8 @@ part-dups eru þegar 17+ talsins. Skrifaðu hana alltaf, líka þótt `customer_
 - **Aðgangskóðar, lyklaboxkóðar, lykilorð.** RLS er slökkt á töflunum — anon-lykillinn les
   allt. Kóði sem opnar hús fer ekki í töflu sem vefurinn getur lesið. Skrifaðu „lyklabox við
   bakdyr, kóði hjá Agnari", ekki kóðann.
-- **Kennitölur eða símanúmer einstaklinga.** Fyrirtækjakennitala já, persónukennitala nei.
+- **Kennitölur einstaklinga.** Fyrirtækjakennitala já, persónukennitala nei. Símanúmer og netföng TENGILIÐA
+  mega standa (Agnar 16.11.2026: „símanúmer tengiliða er fínt líka").
   Tengiliður er „rekstrarstjóri", ekki nafn + númer + heimilisfang.
 - **Skoðanir á fólki.** „Erfiður kúnni" hjálpar engum og les illa ef það birtist á skjá hjá
   kúnnanum sjálfum. Skrifaðu hegðunina sem skiptir máli: „vill staðfestingu í tölvupósti
@@ -70,7 +71,7 @@ node tools/minni.cjs --skra "Komast þarf um bakdyr — aðalinngangur er læstu
 ```
 
 Tólið skráir kennitöluna MEÐ bandstriki (það er sniðið sem `charlize_yfirlit(kt)` les — nákvæmur samanburður),
-neitar kennitölu einstaklings (notaðu þá `--fid`) og texta sem ber símanúmer. `--thurrt` sýnir röðina án þess að skrifa.
+neitar kennitölu einstaklings (notaðu þá `--fid`). `--thurrt` sýnir röðina án þess að skrifa.
 Sama með SQL (kennitalan þá líka með bandstriki):
 
 ```sql
