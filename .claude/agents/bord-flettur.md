@@ -718,8 +718,10 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   (json_schema) og HENDIR staðhæfingu án gildrar heimildar; póstsvar aðeins við nýjasta skeyti, eldklar@/bokhald@, ekki noreply.
   `gerd:'claude_samthykkja'` = einn takki: verk → Verkefnalisti, póstsvar → ný röð í „Tilbúið til afgreiðslu" (athuga() keyrt;
   Agnar sendir þaðan). Á spurningum „Nota sem drög að svari þínu". Borðið kannar á 4 s fresti. **ROFI:** `app_kv adalmal_claude
-  {virkt:true}` — AF þar til raunverulegt Opus-kall hefur staðist Í LOFTINU (ANTHROPIC_API_KEY fæst ekki úr `netlify dev:exec`:
-  413 stafa dulkóðað gildi → 401). Staðbundin próf stubba `CL.kalla` (scratchpad `test-claude-stub.cjs`, 12/12).
+  {virkt:true}` — KVEIKT 16.11.2026 eftir birtingu 63cff0e („Ja" Agnars) og raunverulegt Opus-kall í loftinu 9/9 (21 s; rangt nonce
+  breytti engu; 401 án innskráningar; Claude vísaði á Afgreiðslu #23/#24 í stað þess að tvítaka). Slökkt = `virkt:false`.
+  ANTHROPIC_API_KEY fæst EKKI úr `netlify dev:exec` (413 stafa dulkóðað gildi → 401): staðbundin próf stubba `CL.kalla`;
+  raunkall prófast í loftinu með því að skrá röð með nonce (SQL) og POST á `/.netlify/functions/adalmal-claude-background`.
   · **Áður en NÝTT yfirlit er skrifað:** lestu `select fact from v_charlize_active where topic='akvardanir-agnars'` og
   `afgreidsla where tegund='adalmal'` — Nei-atriði fara ekki aftur á blað nema ný staðreynd sé komin.
   · Prófun: `tools/audit-adalmal-adgerdir.cjs` (hegðun á stubbum: hlið, lokað mál, rangur texti, Já→Charlize, prufa). Enda á milli
