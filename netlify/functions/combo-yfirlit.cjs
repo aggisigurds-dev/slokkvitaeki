@@ -573,3 +573,4 @@ exports.handler = async (event) => {
 
 // Ráðgjafinn (Tony, _radgjafinn.cjs) les SÖMU línur á morgnana — ENGIN NÝ TALA (15.11.2026).
 exports.maela = maela;
+exports.dagskra = dagskra;
