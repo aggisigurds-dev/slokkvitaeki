@@ -412,3 +412,4 @@ Reglur sem bitu:
   það sem Agnar tekur verst.
 
 - **16.11.2026** — Seinni yfirferð 16.11.2026: 13 úrskurðir stóðust ekki samanburð við kúnnaminni og sölunótur (t.d. tillaga um að fækka tækjum á stað sem kúnnaminnið segir tvö aðskilin verk; spurning um sölu sem ber nótuna „Ekki spyrja aftur“). Lestu v_charlize_kunni á kennitölunni, samningatöfluna og krafa_note sölunnar ÁÐUR en lína fer á mál fyrir Agnar.
+- **16.11.2026** — Viðbót sem er hengd á mál annars efnis týnist þegar málinu er lokað: cowork_js_patches-liðurinn stóð sem athugasemd við #1536 frá 10.11., málinu var lokað 16.11. sem skráðri ákvörðun um RLS og liðurinn stóð óafgreiddur (RLS enn af, mælt 16.11.). Áður en máli er lokað: lestu ALLAR viðbæturnar í notes (línur sem byrja á þankastriki og dagsetningu) og spurðu hvort hver þeirra sé afgreidd af sömu ákvörðun. Sé viðbót annars eðlis fær hún sitt eigið mál áður en lokað er (opinn aðgangur: regla Óðins 19; varð #1650).

@@ -73,6 +73,7 @@ node tools/minni.cjs solur              # bara það efni
 node tools/minni.cjs --leit "payday krafa"   # leit þvert á öll efnin (yfir 200) — þegar þú veist ekki hvað efnið heitir
 node tools/minni.cjs --ferskt           # beint úr Supabase
 node tools/minni.cjs --skra "<staðreynd>" --topic <efni>
+node tools/minni.cjs --skra "<staðreynd um EITT félag>" --topic taeki --scope kunni --kt <kt>   # kúnnaminni (aldrei í git)
 node tools/minni.cjs --uppfaera         # endurskrifa docs/MINNISBOK.md + committa
 ```
 
