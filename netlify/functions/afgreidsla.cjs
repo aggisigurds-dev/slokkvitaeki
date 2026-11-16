@@ -313,7 +313,8 @@ async function framkvaema(id, body, event) {
         status: 'beidni', category: v.category || 'villa', assigned_agent: v.assigned_agent || 'claude-code', vefur: v.vefur || 'slokkvitaeki', priority: v.priority || 2 }).then(sbJson);
       nidurstada = { verkefnalisti_id: ny[0] && ny[0].id, athugasemd: 'Sett á Verkefnalistann' };
     } else {
-      nidurstada = { athugasemd: String(body.athugasemd || '').slice(0, 500) || null };
+      // Símtal: niðurstaðan er athugasemd Agnars — úr kallinu, annars sú sem hann vistaði á verkið (492e).
+      nidurstada = { athugasemd: String(body.athugasemd || row.athugasemd || '').slice(0, 500) || null };
     }
     const lokid = await skila('framkvaemt', { framkvaemt_at: new Date().toISOString(), framkvaemt_af: hver, nidurstada });
     return P.json(200, { ok: true, verk: await synilegtSaga(lokid[0]) });
