@@ -339,7 +339,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [0, 0], einkaritari: [1, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
