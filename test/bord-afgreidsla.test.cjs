@@ -228,3 +228,19 @@ test('opna(id) úr Einkaritaranum: false þegar einingin er ekki á borðinu, an
   await BA.S.loading; await bida();
   assert.strictEqual(BA.S.opid, 22);
 });
+
+test('þak: mest 8 línur í einu, „sýna öll" opnar restina og opið verk neðan þaks sést alltaf', async () => {
+  const morg = Array.from({ length: 11 }, (_, i) => verk({ id: 100 + i, titill: 'Verk nr. ' + (i + 1) }));
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: morg } }));
+  BA.samantekt(); await BA.S.loading;
+  const fj = (h) => (h.match(/data-baf="opna"/g) || []).length;
+  assert.strictEqual(fj(BA.listi()), 8);
+  assert.match(BA.listi(), /\+ 3 til viðbótar — sýna öll 11/);
+  BA.S.opid = 110;   // ellefta verkið, opnað úr Einkaritaranum
+  assert.strictEqual(fj(BA.listi()), 9, 'opna verkið bætist við neðan þaks');
+  assert.match(BA.listi(), /baf-d-110/);
+  assert.match(BA.listi(), /\+ 2 til viðbótar — sýna öll 11/);
+  smella(BA, 'allt', null);
+  assert.strictEqual(fj(BA.listi()), 11);
+  assert.match(BA.listi(), /Sýna færri/);
+});

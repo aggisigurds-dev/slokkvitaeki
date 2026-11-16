@@ -25,12 +25,13 @@
 
   var API = '/api/afgreidsla';
   var FERSKT_MS = 5 * 60 * 1000, VOPN_MS = 6000;
+  var THAK = 8;   // línur sýndar í einu — einingin má ekki ýta dagskránni langt niður; „sýna öll" opnar restina
   var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk' };
   var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'] };
   var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk'];
 
   var S = { tilbuin: null, villa: null, loading: null, at: 0, flokkur: 'allt', opid: null, vopnad: null, vopnT: null,
-    busy: null, skilabod: null, athDrog: {}, textaDrog: {}, athBusy: null, athSkilabod: null };
+    busy: null, skilabod: null, athDrog: {}, textaDrog: {}, athBusy: null, athSkilabod: null, allt: false };
 
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
   var kr = function (v) { return v == null || !isFinite(Number(v)) ? '' : Math.round(Number(v)).toLocaleString('is-IS') + ' kr.'; };
@@ -195,8 +196,11 @@
     h += '<div class="baf-fl" role="group" aria-label="Flokkar verka">' + FLOKKAR.filter(function (k) { return k === 'allt' || tel[k] || S.flokkur === k; }).map(function (k) {
       return '<button type="button" class="baf-f" data-baf="fl" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : TEG[k]) + ' <b>' + (tel[k] || 0) + '</b></button>';
     }).join('') + '</div>';
-    var l = sia();
-    h += l.length ? l.map(radHtml).join('') : '<div class="baf-tomt">Ekkert í þessum flokki.</div>';
+    var l = sia(), synd = S.allt || l.length <= THAK ? l : l.slice(0, THAK);
+    // Opið verk er alltaf sýnt, líka þegar það er neðan við þakið (opnað úr Einkaritaranum).
+    if (synd.length < l.length && S.opid && !synd.some(function (v) { return v.id === S.opid; })) { var o = finna(S.opid); if (o && l.indexOf(o) >= 0) synd = synd.concat([o]); }
+    h += l.length ? synd.map(radHtml).join('') : '<div class="baf-tomt">Ekkert í þessum flokki.</div>';
+    if (l.length > THAK) h += '<button type="button" class="baf-meira" data-baf="allt" aria-expanded="' + !!S.allt + '">' + (S.allt ? 'Sýna færri' : '+ ' + (l.length - synd.length) + ' til viðbótar — sýna öll ' + l.length) + '</button>';
     return h + '</div>';
   }
 
@@ -272,6 +276,7 @@
     var a = el.getAttribute('data-baf'), id = Number(el.getAttribute('data-id')) || null, v = id ? finna(id) : null;
     if (a === 'uppf') { S.at = 0; S.villa = null; hlada(); notify(); return null; }
     if (a === 'fl') { S.flokkur = el.getAttribute('data-f') || 'allt'; afvopna(); notify(); return null; }
+    if (a === 'allt') { S.allt = !S.allt; notify(); return null; }
     if (a === 'opna') { S.opid = S.opid === id ? null : id; afvopna(); S.skilabod = null; S.athSkilabod = null; notify(); return null; }
     if (!v || S.busy) return null;
     if (a === 'framkvaema') return framkvaema(v);
@@ -346,6 +351,8 @@
       '.btn.baf-go[disabled]{cursor:not-allowed;background:#b9b3a6;border-color:#9a9383;color:#fff;box-shadow:none;filter:none;opacity:1}',
       '.btn.baf-vopn{border-color:#b8892e;background:#161513;color:#f7e6b8;font-weight:800;box-shadow:0 0 0 2px rgba(184,137,46,.45)}',
       '.baf-tomt{padding:14px 16px;font-size:13px;color:var(--mute)}',
+      '.baf-meira{display:block;width:100%;min-height:40px;padding:8px 14px;border:0;border-top:1px solid var(--rule2);background:none;font:600 12px var(--body);color:var(--ink2);text-align:left;cursor:pointer}',
+      '.baf-meira:hover{background:rgba(241,237,228,.55)}.baf-meira:focus-visible{outline:2px solid var(--g6);outline-offset:-2px}',
       '.baf-tomt b{color:var(--ink)}',
       '@media (prefers-reduced-motion:no-preference){.btn.baf-go{transition:filter 120ms,background-color 120ms}}',
       '@container baf (min-width: 980px){.baf-d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}.baf-d>.baf-msg,.baf-ft{grid-column:1 / -1}}',
@@ -388,7 +395,7 @@
     return true;
   }
 
-  var api = { version: '2026-11-16a', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
+  var api = { version: '2026-11-16b', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
     uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
