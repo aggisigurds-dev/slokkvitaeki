@@ -5338,8 +5338,8 @@
           '<label class="who"><span class="lbl">Ég er</span><select data-t5="who" aria-label="Starfsmaður">' +
             (ppl.indexOf(n) < 0 ? '<option value="" selected disabled>Veldu nafn…</option>' : '') +
             ppl.map(x => '<option' + (x === n ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>' +
-          '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '">⚙ Mitt vinnuborð</button>' +
-          '<button type="button" class="btn iv" data-t5="sannreyna" title="Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum">🔍 Sannreyna</button>' +
+          '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '"><span class="t5-emo" aria-hidden="true">⚙ </span>Mitt vinnuborð</button>' +   // 507: t5-emo hverfur í V2
+          '<button type="button" class="btn iv" data-t5="sannreyna" title="Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum"><span class="t5-emo" aria-hidden="true">🔍 </span>Sannreyna</button>' +
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
         sannanirHtml() +
@@ -5355,7 +5355,7 @@
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
         '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
-        (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + (mode.mitt ? '✎ Velja einingar' : '✎ Breyta ham') + '</button>' : '') +
+        (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + '<span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>' : '') +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +
