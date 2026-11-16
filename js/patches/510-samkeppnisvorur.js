@@ -389,8 +389,68 @@
       ${ekkiLesid.length ? `<div class="samk-h">Vantar enn</div><ul class="samk-note" style="padding-left:18px">${ekkiLesid.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}`;
   }
 
+  // ── 5. Þjónustuverð keppinauta (hleðsla, yfirferð, akstur …) ─────────────────────────────────────────────────────
+  // Okkar þjónustuvörur eru flokkaðar eftir heiti (tegund + þjónusta + stærð) — sama þjónusta og sama stærðarbil telst sambærileg.
+  const gerdTaekis = (s) => (/duft/i.test(s) ? 'duft' : /co₂|co2|kolsýr/i.test(s) ? 'co2' : /vatn|froð/i.test(s) ? 'vatn' : /slang/i.test(s) ? 'brunaslanga' : '');
+  const gerdThjonustu = (s) => (/yfirfer|skoðun/i.test(s) ? 'yfirferð' : /hleðsl|helðsl|áfylling/i.test(s) ? 'hleðsla' : '');
+  const stadirUr = (s) => { const t = String(s || '').replace(/,/g, '.').match(/\d+(?:\.\d+)?/g); if (!t) return null; const n = t.map(Number); return n.length > 1 ? [Math.min(...n), Math.max(...n)] : [n[0], n[0]]; };
+  let _okkarThj = null;
+  function okkarThjonusta() {
+    if (_okkarThj || !_okkar) return _okkarThj || [];
+    _okkarThj = Object.values(_okkar).filter((v) => v && v.nafn && v.flokkur === 'Þjónusta').map((v) => {
+      const st = stadirUr(String(v.nafn).replace(/CO₂/g, 'CO'));
+      return { v, tegund: gerdTaekis(v.nafn), thj: gerdThjonustu(v.nafn), st: st ? st[0] : null, verd: okkarSala(v) };
+    }).filter((x) => x.tegund && x.thj && x.verd != null);
+    return _okkarThj;
+  }
+  const FASTAR = { 'akstur': 136, 'tímagjald': 134, 'förgun': 151 };
+  // Önnur eining en „á tæki": kílómetragjald, tímagjald á slöngu, áfylling á gasflösku/kút … — ekki sambærilegt við okkar föstu verð
+  const OSAMBAERILEG_EINING = /km|klst|flösk|kút|bör|á tæki|hylki/i;
+  function okkarSamsvarandi(t) {
+    const lbl = String(t.size_label || '');
+    if (FASTAR[t.service_kind] && _okkar && _okkar[FASTAR[t.service_kind]]) {
+      if (t.service_kind === 'akstur' && /km/i.test(lbl)) return null;
+      const v = _okkar[FASTAR[t.service_kind]]; return { l: [okkarSala(v)], nofn: [v.nafn] };
+    }
+    const tg = gerdTaekis(t.product_type || ''), th = gerdThjonustu(t.service_kind || '');
+    if (OSAMBAERILEG_EINING.test(lbl)) return null;
+    if (!tg || !th || tg === 'brunaslanga') {
+      if (tg === 'brunaslanga' && th === 'yfirferð' && _okkar && _okkar[32]) return { l: [okkarSala(_okkar[32])], nofn: [_okkar[32].nafn] };
+      return null;
+    }
+    const rng = stadirUr(t.size_label);
+    const l = okkarThjonusta().filter((x) => x.tegund === tg && x.thj === th && (!rng || (x.st != null && x.st >= rng[0] - 0.01 && x.st <= rng[1] + 0.01)));
+    return l.length ? { l: l.map((x) => x.verd), nofn: l.map((x) => x.v.nafn) } : null;
+  }
+  function thjonusta() {
+    const allt = _g && Array.isArray(_g.thjonusta) ? _g.thjonusta : [];
+    const rows = allt.map((t) => ({ seljandi: t.vendor, nafn: [t.service_kind, t.product_type].filter(Boolean).join(' '), staerd: t.size_label, flokkur: '', athugasemd: t.notes, t }))
+      .filter(passar).map((x) => {
+        const o = okkarSamsvarandi(x.t);
+        const okMed = o ? o.l.slice().sort((a, b) => a - b)[Math.floor((o.l.length - 1) / 2)] : null;
+        return { ...x, o, okMed, munur: okMed != null ? ((okMed - x.t.price_incl_vat) / x.t.price_incl_vat) * 100 : null };
+      });
+    if (!allt.length) return '<div class="samk-tomt">Engin þjónustuverð hafa verið skráð enn.</div>';
+    const pr = rows.filter((x) => x.munur != null);
+    const odyr = pr.filter((x) => x.munur < -3).length, dyr = pr.filter((x) => x.munur > 3).length;
+    const kpiHtml = kpi([[rows.length, 'þjónustuverð'], [new Set(rows.map((x) => x.t.vendor)).size, 'aðilar'], [pr.length, 'með sambærilegri þjónustu hjá okkur'], [odyr, 'við ódýrari', odyr ? 'g' : ''], [dyr, 'við dýrari', dyr ? 'r' : '']]);
+    const cols = [
+      { k: 'ad', t: 'Aðili', v: (x) => x.t.vendor, h: (x) => esc(x.t.vendor) },
+      { k: 'thj', t: 'Þjónusta', v: (x) => x.t.service_kind, h: (x) => `${esc(x.t.service_kind)}<div class="samk-sm">${esc([x.t.product_type === 'co2' ? 'CO₂' : x.t.product_type, x.t.size_label && x.t.size_label !== '—' ? x.t.size_label : ''].filter(Boolean).join(' · '))}</div>` },
+      { k: 'verd', t: 'Verð m. VSK', r: 1, v: (x) => x.t.price_incl_vat, h: (x) => kr(x.t.price_incl_vat) },
+      { k: 'ok', t: 'Okkar verð m. VSK', r: 1, v: (x) => x.okMed, h: (x) => (x.o ? `${kr(x.okMed)}${x.o.l.length > 1 ? `<div class="samk-sm" title="${esc(x.o.nofn.join(' · '))}">${Math.min(...x.o.l) === Math.max(...x.o.l) ? x.o.l.length + ' stærðir, sama verð' : thus(Math.min(...x.o.l)) + '–' + thus(Math.max(...x.o.l)) + ' kr (' + x.o.l.length + ' stærðir)'}</div>` : `<div class="samk-sm">${esc(x.o.nofn[0])}</div>`}` : '<span class="samk-sm">—</span>') },
+      { k: 'mun', t: 'Við vs þeir', r: 1, v: (x) => x.munur, h: (x) => (x.munur == null ? '<span class="samk-sm">—</span>' : `<span class="${x.munur > 3 ? 'samk-slaemt' : x.munur < -3 ? 'samk-gott' : ''}">${pct(x.munur)}</span>`) },
+      { k: 'ath', t: 'Athugasemd', h: (x) => `<span class="samk-sm">${esc(x.t.notes || '')}</span>` },
+      { k: 'dags', t: 'Sótt', v: (x) => x.t.dags || _g.sott, h: (x) => esc(dags(x.t.dags || _g.sott)) },
+      { k: 'url', t: 'Síða', c: (x) => x.t.source_url || '', h: (x) => tengill(x.t.source_url, 'Opna') }
+    ];
+    return `${kpiHtml}
+      <p class="samk-note">Opinber verð á hleðslu, yfirferð og annarri þjónustu hjá öðrum (gjaldskrár sveitarfélaga og slökkviliða, auglýst verð fyrirtækja). <b>Jákvæð prósenta = við erum dýrari</b> en þeir, neikvæð = við ódýrari (okkar söluverð m. VSK úr Vörum og þjónustu, miðgildi þeirra stærða sem falla í sama stærðarbil). Slökkvilið taka gjald fyrir sitt sveitarfélag og eru ekki endilega í beinni samkeppni við okkur. Verð Securitas og Öryggismiðstöðvarinnar fyrir þjónustu eru ekki birt opinberlega. ${rows.length ? csvTakki('thjonusta') : ''}</p>
+      ${tafla('thjonusta', cols, rows)}`;
+  }
+
   // ── Skel og teikning ─────────────────────────────────────────────────────────────────────────────────────────────
-  const FLIPAR = [['odyrara', 'Ódýrara innkaup'], ['samanb', 'Verðsamanburður'], ['birgjar', 'Hvar kaupa'], ['innkaup', 'Okkar innkaup']];
+  const FLIPAR = [['odyrara', 'Ódýrara innkaup'], ['samanb', 'Verðsamanburður'], ['thjonusta', 'Þjónustuverð'], ['birgjar', 'Hvar kaupa'], ['innkaup', 'Okkar innkaup']];
 
   function valmyndir() {
     const m = _g && Array.isArray(_g.vorur) ? _g.vorur : [];
@@ -398,6 +458,10 @@
     const ik = _g && _g.innkaup && Array.isArray(_g.innkaup.linur) ? _g.innkaup.linur : [];
     const selj = [...new Set((_flipi === 'innkaup' ? ik : m).map((r) => r.seljandi).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'is'));
     const sel = (id, v, fyrst, lista, fall) => `<select class="samk-sel" id="${id}" onchange="window.Samkeppni.${fall}(this.value)"><option value="">${fyrst}</option>${lista.map((x) => `<option value="${esc(x)}"${x === v ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+    if (_flipi === 'thjonusta') {
+      const ad = [...new Set(((_g && _g.thjonusta) || []).map((t) => t.vendor).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'is'));
+      return sel('samk-selj', _seljandi, 'Allir aðilar', ad, '_selj');
+    }
     if (_flipi === 'birgjar') return `<select class="samk-sel" onchange="window.Samkeppni._land(this.value)"><option value="">Öll lönd</option><option value="is"${_land === 'is' ? ' selected' : ''}>Innanlands</option><option value="erl"${_land === 'erl' ? ' selected' : ''}>Erlendis</option></select>`;
     return (_flipi === 'innkaup' ? '' : sel('samk-flokkur', _flokkur, 'Allir flokkar', flokkar, '_flokk')) + sel('samk-selj', _seljandi, 'Allir seljendur', selj, '_selj');
   }
@@ -407,6 +471,7 @@
     if (!_g) return '<div class="loading-state">Hleður samkeppnisgögn…</div>';
     try {
       if (_flipi === 'samanb') return samanburdur();
+      if (_flipi === 'thjonusta') return thjonusta();
       if (_flipi === 'birgjar') return birgjar();
       if (_flipi === 'innkaup') return innkaup();
       return odyrara();
@@ -423,7 +488,7 @@
     const st = _rot.querySelector('#samk-stada');
     if (st && _g) {
       const n = (_g.vorur || []).length, s = new Set((_g.vorur || []).map((r) => r.seljandi)).size;
-      st.textContent = `Verð sótt ${dags(_g.sott)} af opinberum vefsíðum · ${n} vörur frá ${s} seljendum · ${(_g.birgjar || []).length} birgjar`;
+      st.textContent = `Verð sótt ${dags(_g.sott)} af opinberum vefsíðum · ${n} vörur frá ${s} seljendum · ${(_g.birgjar || []).length} birgjar${(_g.thjonusta || []).length ? ' · ' + _g.thjonusta.length + ' þjónustuverð' : ''}`;
     }
   }
 
