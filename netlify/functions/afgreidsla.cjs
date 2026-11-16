@@ -44,6 +44,7 @@ const P = require('./_portal.cjs');
 const H = require('./_radgjafinn-hlid.cjs');
 const HUB = require('./hub-adgangar.cjs');
 const CL = require('./_adalmal-claude.cjs');
+const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
 
 const THROSKULDUR_KR = 10000;
 const POSTHOLF = /^(eldklar|bokhald)@eldklar\.is$/i;
@@ -131,8 +132,12 @@ async function athuga(row, { lesaNu = false } = {}) {
       a.push({ texti: 'Upphæð ' + kr(s.samtals).toLocaleString('is-IS') + ' kr á ' + (s.customer_nafn || '?'), ok: kr(s.samtals) > 0 });
       if (s.krafa_sent_at || s.dk_invoice_id || s.paid_at) urelt = s.paid_at ? 'Salan er þegar greidd' : 'Krafan hefur þegar verið send';
     }
+  } else if (row.tegund === 'sameina') {
+    const s = await SAM.sameinaAthuganir(row.gogn || {}, lesa);
+    for (const x of s.a) a.push(x);
+    if (s.urelt) urelt = s.urelt;
   }
-  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa') {
+  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa' && row.tegund !== 'sameina') {
     a.push({ texti: 'Undir þröskuldi (' + THROSKULDUR_KR.toLocaleString('is-IS') + ' kr) — ekki þess virði', ok: false });
   }
   return { athuganir: a, ok: !urelt && a.every((x) => x.ok), urelt };
@@ -241,6 +246,8 @@ async function synilegt(row) {
     o.verk = { lysing: g.lysing || '' };
   } else if (row.tegund === 'krafa') {
     o.krafa = { sale_id: g.sale_id, r_numer: g.r_numer || '', slod: g.sale_id ? leysa({ tegund: 'sala', id: g.sale_id }) : null };
+  } else if (row.tegund === 'sameina') {
+    o.sameina = SAM.synilegt(g);
   }
   return o;
 }
@@ -317,6 +324,13 @@ async function framkvaema(id, body, event) {
       const ny = await P.sbPost('verkefnalisti', { title: String(v.title || row.titill).slice(0, 200), description: String(v.description || '').slice(0, 4000),
         status: 'beidni', category: v.category || 'villa', assigned_agent: v.assigned_agent || 'claude-code', vefur: v.vefur || 'slokkvitaeki', priority: v.priority || 2 }).then(sbJson);
       nidurstada = { verkefnalisti_id: ny[0] && ny[0].id, athugasemd: 'Sett á Verkefnalistann' };
+    } else if (row.tegund === 'sameina') {
+      // „Sameina og birta": skrifar beiðni í automation_triggers. Watcher á vélinni keyrir verkefna-sameina.js
+      // (rebase á nýjasta master/main, prófin aftur, sameina, ýta með [deploy], staðfesta með build.json, verk -> klarad).
+      // EKKERT er sameinað hér — aðeins beiðnin búin til. Árekstur / fallin próf -> ekkert sameinað, verk aftur í beidni.
+      if (body.prufa) { await skila('tilbuid'); return P.json(200, { ok: true, prufa: true, athuganir: ath.athuganir }); }
+      const ny = await P.sbPost('automation_triggers', SAM.triggerBody(row.gogn, hver, id)).then(sbJson);
+      nidurstada = { trigger_id: ny[0] && ny[0].id, athugasemd: 'Sameining sett í gang — rebase á nýjasta ' + SAM.adalgrein((row.gogn || {}).vefur) + ', prófin aftur, sameina ef allt stenst.' };
     } else {
       // Símtal: niðurstaðan er athugasemd Agnars — úr kallinu, annars sú sem hann vistaði á verkið (492e).
       nidurstada = { athugasemd: String(body.athugasemd || row.athugasemd || '').slice(0, 500) || null };
@@ -652,8 +666,22 @@ exports.handler = async (event) => {
     }
     if (b.adgerd === 'sleppa') {
       const hver = await notandi(event);
-      const r = await breyta(`afgreidsla?id=eq.${id}&stada=eq.tilbuid`, { stada: b.varanlegt ? 'ekki_thess_virdi' : 'sleppt',
-        astaeda: String(b.astaeda || (b.varanlegt ? 'Ekki þess virði' : 'Sleppt')).slice(0, 300), framkvaemt_at: new Date().toISOString(), framkvaemt_af: hver });
+      const astaeda = String(b.astaeda || (b.varanlegt ? 'Ekki þess virði' : 'Sleppt')).slice(0, 300);
+      // 'sameina': „Hafna" þýðir ekki „kemur aldrei aftur" heldur „aftur í vinnu" — athugasemd Agnars fer í
+      // verkefnalisti.feedback og verkið aftur í `beidni` (sama og „↶ Aftur í vinnu"). Vaktin les feedback fyrst næst.
+      const r0 = (await lesa(`afgreidsla?select=tegund,gogn&id=eq.${id}&stada=eq.tilbuid&limit=1`))[0];
+      if (!r0) return P.json(409, { error: 'Verkið er ekki lengur opið' });
+      let stada = b.varanlegt ? 'ekki_thess_virdi' : 'sleppt', astaedaRod = astaeda;
+      if (r0.tegund === 'sameina' && r0.gogn && r0.gogn.verk_id) {
+        const vid = r0.gogn.verk_id;
+        const cur = (await lesa(`verkefnalisti?select=feedback,status&id=eq.${encodeURIComponent(vid)}&limit=1`))[0];
+        if (cur && cur.status !== 'klarad') {
+          const hf = SAM.hafnaFeedback(cur, astaeda, hver, new Date());
+          await breyta(`verkefnalisti?id=eq.${encodeURIComponent(vid)}`, hf.patch);
+        }
+        stada = 'sleppt'; astaedaRod = 'Hafnað — aftur í vinnu: ' + astaeda;
+      }
+      const r = await breyta(`afgreidsla?id=eq.${id}&stada=eq.tilbuid`, { stada, astaeda: astaedaRod.slice(0, 300), framkvaemt_at: new Date().toISOString(), framkvaemt_af: hver });
       if (!r.length) return P.json(409, { error: 'Verkið er ekki lengur opið' });
       return P.json(200, { ok: true, verk: synilegtSaga(r[0]) });
     }
@@ -667,3 +695,4 @@ module.exports._posturToki = posturToki;
 module.exports._prufaSending = prufaSending;
 module.exports._amLykill = amLykill;
 module.exports._synilegtAdalmal = synilegtAdalmal;
+module.exports._sameina = SAM;   // tegund 'sameina' (Verkefnavaktin)

@@ -33,6 +33,21 @@ nýja"*. Þú ert í teymi **Tony Stark** (`tony-stark`).
 **Veiðin** (`brunaholf/veidin.html`, `/api/veidin`, sýnir `v_veidin_*`, eigandi `kunnaskra`) er endurheimt SKJALA og
 TEKNA (skýrslur og reikningar sem vantar), ekki endurheimt kúnna. Ekki rugla þessu saman.
 
+### Samningar og brunaholf-hólfið (16.11.2026)
+
+Útávið-netfangið **slokkvitaeki@brunaholf.is** (Outlook, um luna-bridge) er sótt inn í `email_digest` eins og eldklar@.
+`hunter_innsog` les nú BÆÐI hólf: eldklar@ býr til nýja aðila úr herferðarpóstum, en brunaholf-hólfið uppfærir AÐEINS
+þá sem til eru — parað á lén fyrir herferð **`Samningar`** (ekki frípóstlén), svo margir tengiliðir sama félags telja
+á sama aðila. Samningar-aðilar (stór tilboð/þjónustusamningar í vinnslu) eru skráðir handvirkt, ekki sjálfkrafa; staða
+þeirra er lifandi í `hunter_adilar` — ekki í Charlize (ólokið mál er ekki þekking).
+
+Aðila-spjaldið sýnir samskipti BEGGJA hólfa gegnum fallið **`hunter_samskipti(p_adili_id)`** (SECURITY DEFINER) — því
+RLS á `email_digest` leyfir anon-lyklinum aðeins eldklar@/bokhald@eldklar og lokar á brunaholf beina. Fallið skilar
+aðeins póstum sem tengjast ÞEIM aðila. Brunaholf-póstar fá merkið „brunaholf" og ENGAN „Svara í þræði"-takka: appið
+sendir um gmail-send (eldklar@/bokhald@), ekki úr brunaholf-hólfinu — þeim þræði er svarað úr Outlook. Nýtt félag sem
+er enn í samningaferli fær EKKI `fyrirtaeki`/`customers_base`-skráningu (bíður þar til samningur klárast); þekkt félag
+er tengt um `hunter_adilar.kennitala`. Charlize: `topic='hunter'` (RLS-takmörkun, hunter_samskipti, brunaholf-innsog).
+
 „Ekki í þjónustu" er EKKI það sama og „hættur". Margir voru aldrei í þjónustu. Hver er raunverulega dottinn út segir
 yfirferð **`natalie`** (ársskoðunarlistinn, „búið að fara til", „alls ekki í þjónustu") og `fyrirtaeki` (M).
 

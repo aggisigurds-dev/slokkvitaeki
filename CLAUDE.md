@@ -122,6 +122,63 @@ alveg jafn mikinn tíma og ósannreynd fullyrðing um lagfæringu.**
 
 ---
 
+## ✅ FAST UMBOÐ — það sem þú gerir ÁN þess að spyrja Agnar (16.11.2026)
+
+**Mælt 16.11.2026:** af 1.583 skeytum Agnars í 49 lotum voru um 350 (22 %) aðeins leyfi til að halda áfram.
+Sama dag enduðu loturnar á einni vél 19 af 36 umferðum á spurningu („Má ég birta lagfæringuna?" sjö sinnum,
+ein lota spurði sömu spurningar þrisvar í röð) og stóðu svo kyrrar. Orð hans um kvöldið: „þarf að fara inn á
+hvert session á nokkurra mínútna fresti til að segja halda áfram, því allt er stopp" og „setja allt á
+verkefnalista í stað þess að laga það". Hann samþykkti umboðið („Ja hljómar vel") og það var víkkað sama kvöld.
+
+**Gerðu þetta án þess að spyrja:**
+
+1. **Haltu áfram milli skrefa** í verki sem hann bað um. Ekki „á ég að halda áfram?" eða „viltu að ég taki næsta skref?".
+2. **Sameinaðu (merge) þína eigin grein** þegar öll próf standast og öryggisnetið sýnir ekkert nýtt rautt frá
+   þinni breytingu (berðu saman við hreint `git worktree` — sumt er rautt fyrir).
+3. **Birtu það sem hann bað um** — nýja virkni jafnt sem lagfæringu — þegar það er prófað enda á milli („aldrei
+   smíðað en óprófað"). `[deploy]` í haus-commit, staðfest með `build.json`. Ekki enda á „Má ég birta?".
+4. **Lagaðu villu sem þú finnur** í því sem þú ert að vinna við, ef lagfæringin er afturkræf. Ekki spyrja „á ég
+   að laga hana?" og ekki setja hana á Verkefnalistann í staðinn.
+
+**Ekki enda umferð á spurningu sem svarið er augljóst „já" við.** Spurning í lok umferðar (líka í `wrap_up`)
+stöðvar lotuna þar til hann kemur aftur, oft klukkustundum síðar og úr síma. Spyrðu aðeins um það sem er á
+listanum hér að neðan, eða þegar valið er raunverulega hans og þú getur ekki lesið það úr gögnunum.
+
+**Spyrðu ALLTAF fyrst (óbreytt):** póstur eða SMS út úr húsi · kröfur, reikningar, kredit og annað sem snertir
+peninga · eyðing gagna · verðbreytingar · breytingar á borði eða stillingum annarra starfsmanna.
+
+**⛔ VERKEFNALISTAÞAK:** Verkefnalistinn (`verkefnalisti`) er listi AGNARS fyrir hans beiðnir. Lotur og agentar
+stofna EKKI verk þar nema hann biðji um það — mest EITT á lotu fyrir það sem er utan verksins og of stórt til
+að laga núna. Mælt 16.11: 175 verk biðu, 137 ný á 14 dögum en 21 kláruð. Orð hans: „Ég vil geta sett á
+verkefnalista en ekki að ég fái mörg hundruð atriði á verkefnalistann á móti." Það sem þú finnur og lagar ekki fer
+í lokasvarið og `charlize_knowledge`. (Þetta kemur í stað gömlu grunnreglu 3 „villa/bug/gat → röð í verkefnalisti".)
+
+**Eftir á:** segðu í einni línu hvað var sameinað eða birt og hvernig það var sannreynt. SAMÞYKKISÞAKIÐ hér að
+neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (keðjaðu með `if`, ekki `;`).
+
+---
+
+## 👁️ ÓÐINN — fyrst til hans, svo (kannski) til Agnars (16.11.2026)
+
+Agnar réð agentinn `odin` 16.11.2026 sem umsjónarmann samþykkta og Verkefnalistans, og kennir honum regla fyrir
+reglu hvernig hann vill að mál séu afgreidd („bit by bit … in the beginning easier obvious samþykktir, then more and more").
+
+**Áður en þú stofnar samþykkismál á Agnar, verk á Verkefnalistann, eða tilkynnir bilun** flettir þú upp í reglubókinni:
+
+```sql
+select id, heiti, thegar, adgerd, urskurdur, heimild, thak_kr, agent, skill, skref from odin_reglur where virk order by flokkur, id;
+```
+
+- Regla á við og `heimild = 'sjalfur'` → gerðu það sem reglan segir og skráðu úrskurðinn í `odin_urskurdir` (`gert = true`). Ekkert mál á Agnar.
+- Regla á við og `heimild = 'leggja_til'` → undirbúðu verkið (Afgreiðsla / „Tilbúin verk") svo Agnar ýti einu sinni. Skráðu úrskurð með `gert = false`.
+- Engin regla → þá fyrst mál á Agnar (innan SAMÞYKKISÞAKS), með einni já/nei-línu og spurningunni hvort svarið eigi að verða regla.
+
+**Þegar Agnar segir „Óðinn: …"** er hann að kenna reglu: skráðu hana í `odin_reglur` með orðum hans orðrétt í `heimildarord`
+(`heimild = 'leggja_til'` nema hann segi skýrt að Óðinn megi afgreiða sjálfur) og segðu honum í einni línu hvað var skráð.
+Heimild `sjalfur` veitir aðeins Agnar. Öll rútínan og mörkin: `.claude/agents/odin.md`.
+
+---
+
 ## ⛔ SAMÞYKKISÞAK — áður en þú stofnar mál á Agnar (11.11.2026)
 
 **Mælt 11.11.2026:** síðustu 14 daga stofnuðu Claude-lotur 99 samþykkismál á Þjónustuborðið

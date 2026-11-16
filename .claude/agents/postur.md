@@ -114,7 +114,7 @@ DRÖG:       <mál # með ---SVAR--- tilbúið til 📤>
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
-3. Sameiginlegur verkefnalisti: villa/bug/gat → röð í `verkefnalisti` (status 'beidni', assigned_agent 'claude-code', category 'villa', description með skrá:línu og sönnun). Aldrei laga framhjá listanum.
+3. Villa eða gat sem þú finnur: LAGAÐU það sjálfur ef það er innan verksins sem þú ert í og lagfæringin er afturkræf (prófa, segja frá í lokasvari). Verkefnalistinn er listi Agnars — stofnaðu röð þar AÐEINS ef hann biður um það, eða mest EINA á lotu fyrir það sem er utan verksins og of stórt til að laga núna (skrá:lína og sönnun). Annað fer í lokasvarið og charlize_knowledge, ekki á listann. (Agnar 16.11.2026: „setja allt á verkefnalista í stað þess að laga það“ · „ég vil geta sett á verkefnalista en ekki að ég fái mörg hundruð atriði á móti“; mælt: 137 ný verk á 14 dögum, 21 kláruð.)
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
 
@@ -177,3 +177,16 @@ Möppuheitin eru ÖNNUR hér en í töflunni að ofan (prófíll `xwr12njd.defau
   Hátún 10C (16.10), Reising MHL03-vottorð (16.10), Nesdekk reikningur + vinnuskýrsla (21.10), Eignaumsjón V26-279914 (26.10), NB Fire
   skilti (27.10), Probygg reikningur 1282 (01.11). Listinn stendur í Aðalmál-máli #1587 hjá Agnari — ekki búa til svör án þess að lesa
   Sent-mbox fyrst (sjá lærdóminn hér að ofan).
+
+## Pörun pósts við félög án netfangs — mælt 16.11.2026
+Agnar bað um að para nýju Thunderbird-möppurnar við félög í þjónustu án netfangs/póstsögu. Niðurstaða og aðferð:
+- **Kennitöluleit fyrst** yfir ALLA pósta (ekki bara eldklar@): `position(kt in lower(subject||snippet||body_preview||attachment_names))`
+  með og án bandstriks. 82 kt fundust, en aðeins 9 í nýju möppunum — eldklar@-undirmöppur eru EKKI kveiktar (`postmoppur.html`).
+- **`postsaga_otengd_reikna()` les aðeins eldklar@ og bokhald@eldklar** — Brunahólfs-hólfin og slokkvitaeki@brunaholf.is
+  eru aldrei skoðuð þar. Nafna-/heimilisfangaleit í þeim pósti er nær eintóm suð (prentun, Síðumúla 1, Hamraborg).
+- **Skráðu netfang í `fyrirtaeki.netfang` aðeins með heimild** (kt í pósti, tilboð tekið, reikningur sendur þangað, samþykktur tengiliður);
+  fylltu `customers_base.netfang` aðeins ef það er tómt og EINN staður á kt (aldrei afrita á systurstaði rekstrarfélags).
+  Afrit fyrst (`backup_<dags>_…`), lestu til baka, endurreiknaðu `samskipti_tengd_reikna()`.
+- **Samþykktarlistinn:** sjá `.claude/skills/charlize/references/tengilidir.md` (örugg sía + 9 gildrur). 387 samþykktir 16.11.2026,
+  tengdir póstar 2.262 → 2.436, 0 töpuð tenging. Prófaðu 5–6 ólík tilvik á lifandi prófíl (`_openCompanySafe(id)`, lestu `._samskipti-host`) áður en magn.
+- **Aukaverkun sem þú átt að segja frá:** birgjapóstur (reikningar til okkar) á félagi sem er líka kúnni gerir „Ósvarað" rangt.

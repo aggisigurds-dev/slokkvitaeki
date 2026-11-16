@@ -1,0 +1,16 @@
+-- 16.11.2026 — ÓÐINN: reglubók og úrskurðaskrá (keyrt sem migration „odin_reglubok_og_urskurdir").
+-- Agentinn: .claude/agents/odin.md · reglan fyrir lotur: CLAUDE.md, kaflinn ÓÐINN.
+--
+-- odin_reglur    — hvernig Agnar vill að samþykktir, verk og tilkynningar varða séu afgreidd.
+--                  heimild: 'leggja_til' (Óðinn undirbýr, Agnar ýtir) | 'sjalfur' (Óðinn afgreiðir). 'sjalfur' veitir AÐEINS Agnar.
+--                  thak_kr: hámark sem Óðinn má afgreiða sjálfur; heimildarord: orð Agnars og dagsetning.
+-- odin_urskurdir — hver úrskurður með rökum og sönnun. gert = false er aðeins tillaga.
+--                  domur ('rett' | 'rangt') + domur_athugasemd er kennsla Agnars; rangt → afturkallad_at og reglan löguð.
+-- RLS er á báðum töflum án reglna: aðeins þjónninn (service role) les og skrifar.
+--
+-- Fyrstu níu reglurnar (16.11.2026) eru allar úr ákvörðunum sem Agnar hafði þegar tekið:
+--   sjalfur:    leyst samkvæmt gögnum · undir 10.000 kr. · launa- og starfsmannamál · kerfismál er ekki samþykkismál ·
+--               tvítekið mál með sömu útkomu · vörður eða lota tilkynnir bilun
+--   leggja_til: póstur til kúnna · kröfur, reikningar og kredit · Heimaleiga
+-- Skilgreining taflnanna: sjá migration í Supabase (list_migrations) — hún er heimildin, ekki þetta skjal.
+select id, heiti, flokkur, heimild, thak_kr, agent, virk from odin_reglur order by id;

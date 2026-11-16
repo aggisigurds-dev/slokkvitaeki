@@ -202,7 +202,12 @@
     const services = state.services || [];
     let prod = null;
     if (ch === 'hledsla' || ch === 'yfirferd') prod = pickByKind(findMatchingServices(u.type, u.size, services), ch);
-    else if (ch === 'nyitt') prod = findReplacementProduct(u.type, u.size, services);
+    else if (ch === 'nyitt') {
+      // 16.11.2026: skráð Nýtt-tenging (410) gengur fyrir ágiskun — sama og 129/128.
+      const skrad = tengNyitt(u.type, u.size);
+      if (skrad === 'ekki_rukka') return { billable: false };
+      prod = skrad || findReplacementProduct(u.type, u.size, services);
+    }
     else return { billable: false }; // onytt / none
     if (!prod) return { billable: false, unmatched: true };
     const ov = findOverride(coId, prod.nafn);
@@ -263,7 +268,27 @@
     const SB = getSB(); if (!SB) return [];
     const { data } = await SB.from('vorur').select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,virkt').eq('virkt', true);
     state.services = data || [];
+    // 16.11.2026: skráðar Nýtt-tengingar (patch 410) svo verkstæðis-reikningur sé samhljóða
+    // ársskoðuninni (129). Lesið einu sinni; tengNyitt() flettir upp samstundis við verðlagningu.
+    try {
+      const { data: tg } = await SB.from('thjonustu_tengingar')
+        .select('lykill,vara_id,ekki_rukka').eq('flokkur', 'slokkvitaeki');
+      state.tengingar = {};
+      (tg || []).forEach(t => { state.tengingar[t.lykill] = t; });
+    } catch (_) { state.tengingar = state.tengingar || {}; }
     return state.services;
+  }
+  // Skráð Nýtt-tenging fyrir tegund+stærð → vara, 'ekki_rukka', eða null (þá ágiskun).
+  // Lykillinn notar fjölskylduheiti (CO₂, Duft…) eins og 129 skrifar hann, svo normaliserum type eins.
+  function tengNyitt(type, size) {
+    const map = state.tengingar; if (!map) return null;
+    const fam = (window.CtcPricing && window.CtcPricing.normalizeTypeFamily)
+      ? window.CtcPricing.normalizeTypeFamily(type) : type;
+    const t = map[String(fam || '') + '|' + String(size || '').trim() + '|nyitt'];
+    if (!t) return null;
+    if (t.ekki_rukka) return 'ekki_rukka';
+    if (!t.vara_id) return null;
+    return (state.services || []).find(p => String(p.id) === String(t.vara_id)) || null;
   }
   async function loadBases() {
     const SB = getSB(); if (!SB) return;

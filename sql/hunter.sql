@@ -199,3 +199,8 @@ where not exists (select 1 from cron.job where jobname = 'hunter-innsog');
 -- 11.11.2026 (migration hunter_innsog_brunaholf — AUTHORITATIVE útgáfa er í Supabase): hunter_innsog sækir nú líka
 -- slokkvitaeki@brunaholf.is. Sérstakur blokk í lokin (eldklar@-rökin ósnert); luna-bridge setur ekki thread_id, svo
 -- pörun er á LÉN fyrir herferd=Samningar aðila (ekki frípóstlén). Engir nýir aðilar verða til úr brunaholf-hólfinu.
+
+-- 16.11.2026 (migration hunter_samskipti — AUTHORITATIVE í Supabase): SECURITY DEFINER fall hunter_samskipti(p_adili_id)
+-- skilar póstum beggja hólfa (eldklar@ + slokkvitaeki@brunaholf.is) AÐEINS fyrir þann hunter_adilar (netfang/þráður +
+-- lén fyrir herferd=Samningar, ekki frípóstlén). Nauðsyn: RLS á email_digest lokar anon á brunaholf; spjaldið (hladaPost)
+-- kallar RPC í stað beinnar email_digest-fyrirspurnar. Opnar samningapóst á anon-lykilinn (opið repó, mál #1431) — samþykkt af Agnari 16.11.

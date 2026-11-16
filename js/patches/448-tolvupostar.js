@@ -460,8 +460,10 @@
   }
   function thradurHtml(t) {
     // ★-þráður: svarreiturinn (uppkast + viðhengi) er opinn um leið og þráðurinn er valinn — Agnar les, lagar, sendir. „Hætta við" lokar honum þar til næst.
+    // 16.11.2026: tóma valið VERÐUR að koma á undan — þegar sían skilur engan þráð eftir er t null og lesturinn á t.hluti felldi
+    // alla teikningu rýmisins („Cannot read properties of null (reading 'hluti')“, þrisvar hjá Agnari 16.11.2026).
+    if (!t) return '<div class="empty"><span class="coin" aria-hidden="true"></span>Enginn þráður passar við síuna.</div>';
     if (t.hluti === 'undirbuid' && !S.svarOpid && !S.claudeOpid && !S.svarLokad[t.k] && !S.busy[t.k]) S.svarOpid = t.k;
-    if (!t) return '<div class="empty"><span class="coin" aria-hidden="true"></span>Veldu þráð til vinstri.</div>';
     const b = !!S.busy[t.k], stj = t.tags.indexOf('undirbuid') >= 0;
     return '<div class="tp-haus"><div class="vbr-meta">' + esc(HLUTA_L[t.hluti]) + ' · ' + esc(stuttHolf(t.account)) + '@ · ' + esc(dags(t.timi)) + ' · ' + dagarSidan(t.timi) + ' d.' + (t.fjoldi > 1 ? ' · ' + t.fjoldi + ' skeyti' : '') + '</div>' +
       '<h1 class="vbr-titill">' + esc(t.efni) + '</h1>' +

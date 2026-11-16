@@ -157,6 +157,9 @@ ul.ath svg{flex:0 0 18px;margin-top:1px}
     return api().then(function (j) {
       if (j._status !== 200) throw new Error(j.error || ('Villa ' + j._status));
       S.tilbuin = j.tilbuin || []; S.saga = j.saga || []; S.throskuldur = j.throskuldur || S.throskuldur;
+      // 16.11.2026: djúptengill /afgreidsla.html?v=<id> (takkinn „Afgreiða ›" í Einkaritaranum, 506) opnar það verk beint.
+      // Aðeins við fyrstu hleðslu — eftir það ræður val notandans.
+      if (!S._djup) { S._djup = true; try { var qv = Number(new URLSearchParams(location.search).get('v')); if (qv) S.val = qv; } catch (_) {} }
       teikna();
     }).catch(function (e) { if (String(e.message) !== 'Innskráning') rot.innerHTML = '<div class="villa-sida">Náði ekki í verkin: ' + esc(e.message) + '</div>'; });
   }

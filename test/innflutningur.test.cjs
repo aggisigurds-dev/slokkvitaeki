@@ -138,6 +138,24 @@ test('aaetlun: sjálfgefið nýtt á tómt kaupverð, óbreytt þar sem verð er
   assert.deepEqual(R.aaetlun(R.reikna({ vorur_isk: 1, linur: [{ vara_id: 777, magn: 1, einingaverd: 1 }] }), {}, VORUR()).sleppt[0].vara_id, 777);
 });
 
+test('hreyfingar: ein röð per vöru, líka vara sem heldur eldra kaupverði; útreikningurinn fylgir', () => {
+  const r = R.reikna({ ...TE(), id: 9, dags: '2026-07-30' });
+  const p = R.aaetlun(r, {}, VORUR());
+  const h = R.hreyfingar({ ...TE(), id: 9, dags: '2026-07-30' }, r, p.linur, VORUR(), 'Agnar');
+  assert.deepEqual(h.map((x) => x.vara_id), [1, 2, 3]);
+  assert.deepEqual(h.map((x) => x.kostnadarverd), [3400, 6800, 850]);
+  assert.deepEqual(h.map((x) => [x.vorur_kr, x.alag_kr]), [[2800, 600], [5600, 1200], [700, 150]]);
+  assert.deepEqual(h.map((x) => [x.kostn_fyrir, x.kostn_eftir]), [[null, 3400], [null, 6800], [1000, 1000]], 'vara C heldur 1.000 en sagan sýnir 850');
+  assert.deepEqual(h.map((x) => x.utreikningur.kaupverd), ['nytt', 'nytt', 'obreytt']);
+  assert.ok(Math.abs(h.reduce((a, x) => a + x.utreikningur.hlutur, 0) - 1) < 1e-9, 'hlutdeildin summast í heild');
+  assert.equal(h[0].einingaverd, 20); assert.equal(h[0].gengi, 140); assert.equal(h[0].magn, 100);
+  assert.equal(h[0].tilvisun, 'PROF-1'); assert.equal(h[0].innflutningur_id, 9); assert.equal(h[0].dags, '2026-07-30'); assert.equal(h[0].skrad_af, 'Agnar');
+  assert.equal(h[0].utreikningur.kostnadur_alls, 150000); assert.equal(h[0].utreikningur.heild, 850000);
+  assert.deepEqual(h[0].utreikningur.omaeldir, ['Innanlandsgjöld']);
+  assert.equal(h[0].utreikningur.lidir.length, 6);
+  assert.equal(h[2].birgdir_fyrir, 400); assert.equal(h[2].birgdir_eftir, 400);
+});
+
 // ── Fallið ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 const b64 = (buf) => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -151,7 +169,7 @@ const HUB = { stilling: { id: 1, pw_hash: 'stub-hash', session_secret: 'stub-ley
 const INN = { cookie: 'hub_user=' + encodeURIComponent(hubToki('stub-leynd', 7, '2026-11-01')) };
 
 function heimur() {
-  const db = { innflutningur: [], vorur: VORUR() };
+  const db = { innflutningur: [], vorur: VORUR(), vorur_hreyfingar: [], sala: [] };
   let nid = 1, klukka = 0;
   const kall = [];
   const svar = (data, status = 200) => ({ ok: status < 400, status, json: async () => data, text: async () => (data == null ? '' : JSON.stringify(data)) });
@@ -170,8 +188,10 @@ function heimur() {
     kall.push({ tafla, method, q: Object.fromEntries(q), body });
     if (tafla === 'hub_adgangar_stilling') return svar([HUB.stilling]);
     if (tafla === 'hub_adgangar') { const id = Number(String(q.get('id') || '').replace('eq.', '')); return svar(HUB.user.id === id ? [HUB.user] : []); }
+    if (tafla === 'rpc/vara_solusaga') return svar(db.sala.filter((x) => x.vara_id === body.p_vara).map(({ vara_id, ...r }) => r));
     const rows = db[tafla];
     if (!rows) throw new Error('óþekkt tafla ' + tafla);
+    if (method === 'POST' && Array.isArray(body)) { const nyjar = body.map((b) => ({ id: nid++, afturkallad_at: null, created_at: `2026-11-16T00:02:${String(klukka++).padStart(2, '0')}Z`, ...b })); rows.push(...nyjar); return svar(nyjar, 201); }
     if (method === 'GET') return svar(rows.filter((r) => passar(r, q)).map((r) => JSON.parse(JSON.stringify(r))));
     if (method === 'POST') { const r = { id: nid++, stada: 'drog', faersla: null, saga: [], ...body, updated_at: `2026-11-16T00:00:${String(klukka++).padStart(2, '0')}Z` }; rows.push(r); return svar([r]); }
     if (method === 'PATCH') {
@@ -184,6 +204,8 @@ function heimur() {
   };
   return { db, kall };
 }
+const saekja = (q, headers = INN) => F.handler({ httpMethod: 'GET', queryStringParameters: q, headers })
+  .then((r) => ({ status: r.statusCode, d: r.body ? JSON.parse(r.body) : null }));
 const kalla = (method, body, headers = INN) => F.handler({ httpMethod: method, queryStringParameters: {}, headers, body: body ? JSON.stringify(body) : undefined })
   .then((r) => ({ status: r.statusCode, d: r.body ? JSON.parse(r.body) : null }));
 
@@ -293,4 +315,37 @@ test('fall: ógild gögn og aðgerðir', async () => {
   assert.equal((await kalla('PUT')).status, 405);
   const r = await F.handler({ httpMethod: 'POST', headers: INN, body: '{ekki json' });
   assert.equal(r.statusCode, 400);
+});
+
+test('fall: færsla skrifar hreyfingu á hverja vöru, afturköllun merkir þær, og ?vara= skilar listanum með sölu', async () => {
+  const h = heimur();
+  h.db.sala.push({ vara_id: 1, manudur: '2026-10', magn: 12, an_vsk: 120000 }, { vara_id: 2, manudur: '2026-10', magn: 1, an_vsk: 1 });
+  const { d } = await kalla('POST', { action: 'vista', sending: { ...TE(), dags: '2026-07-30' } });
+  const id = d.sending.id;
+  const f = await kalla('POST', { action: 'faera', id, omaelt_ok: true });
+  assert.equal(f.status, 200); assert.equal(f.d.hreyfingar_villa, null);
+  assert.deepEqual(h.db.vorur_hreyfingar.map((x) => [x.vara_id, x.kostnadarverd, x.kostn_eftir]), [[1, 3400, 3400], [2, 6800, 6800], [3, 850, 1000]]);
+  assert.ok(h.db.vorur_hreyfingar.every((x) => x.innflutningur_id === id && x.skrad_af === 'Agnar' && x.tegund === 'innflutningur'));
+  const s = await saekja({ vara: '1' });
+  assert.equal(s.status, 200);
+  assert.equal(s.d.vara.nafn, 'Vara A'); assert.equal(s.d.vara.kostnadarverd, 3400);
+  assert.equal(s.d.hreyfingar.length, 1); assert.equal(s.d.hreyfingar[0].magn, 100);
+  assert.deepEqual(s.d.sala, [{ manudur: '2026-10', magn: 12, an_vsk: 120000 }]); assert.equal(s.d.sala_villa, false);
+  assert.equal((await saekja({ vara: '777' })).status, 404);
+  assert.equal((await saekja({ vara: 'x' })).status, 400);
+  assert.equal((await saekja({ vara: '1' }, {})).status, 401, 'sagan er á bak við starfsmannahliðið');
+  await kalla('POST', { action: 'afturkalla', id });
+  assert.ok(h.db.vorur_hreyfingar.every((x) => x.afturkallad_at), 'afturköllun eyðir engu, merkir');
+  assert.equal(h.db.vorur_hreyfingar.length, 3);
+});
+
+test('fall: bregðist hreyfingaskriftin stendur færslan og svarið segir frá', async () => {
+  const h = heimur();
+  const { d } = await kalla('POST', { action: 'vista', sending: TE() });
+  delete h.db.vorur_hreyfingar;
+  const f = await kalla('POST', { action: 'faera', id: d.sending.id, omaelt_ok: true });
+  assert.equal(f.status, 200);
+  assert.ok(f.d.hreyfingar_villa, 'villan er sögð');
+  assert.equal(h.db.vorur.find((x) => x.id === 1).kostnadarverd, 3400);
+  assert.equal(h.db.innflutningur[0].stada, 'faert');
 });

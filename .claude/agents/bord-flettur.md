@@ -620,7 +620,7 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
-3. Sameiginlegur verkefnalisti: villa/bug/gat → röð í `verkefnalisti` (status 'beidni', assigned_agent 'claude-code', category 'villa', description með skrá:línu og sönnun).
+3. Villa eða gat sem þú finnur: LAGAÐU það sjálfur ef það er innan verksins sem þú ert í og lagfæringin er afturkræf (prófa, segja frá í lokasvari). Verkefnalistinn er listi Agnars — stofnaðu röð þar AÐEINS ef hann biður um það, eða mest EINA á lotu fyrir það sem er utan verksins og of stórt til að laga núna (skrá:lína og sönnun). Annað fer í lokasvarið og charlize_knowledge, ekki á listann. (Agnar 16.11.2026: „setja allt á verkefnalista í stað þess að laga það“ · „ég vil geta sett á verkefnalista en ekki að ég fái mörg hundruð atriði á móti“; mælt: 137 ný verk á 14 dögum, 21 kláruð.)
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
 
@@ -765,3 +765,49 @@ Tvö spjöld undir Vinnusamantekt á Þjónustuborði Agnars, bæði í patch-n�
 - **Staðsetning:** beint undir 489 (Vinnusamantekt) á Þjónustuborði. Tengd í `368-thjonustubord5.js`
   á línu ~5337. `<script>` tag í `index.html`.
 - **Prófun:** `?dry=1` á POST `/api/einkaritari` skilar forskoðun án vistunar.
+
+## Tilbúin verk á Þjónustuborðinu — eining 30 (511, 16.11.2026)
+
+Agnar 16.11.2026: „Gerðu bara þjónustuborðið öflugra sem vinnuborð" · „Finna út leið til að hjálpa mér". Borðið hans sýndi
+dagskrá, lista og markmið; forunnu verkin (`afgreidsla`, 15 tilbúin þann dag) lágu á annarri síðu og á borðinu var ekkert hægt að
+framkvæma. Nú er einingin `tilbuin` (MODS, n 30) á borðinu: `js/patches/511-bord-afgreidsla.js` → `window.BordAfgreidsla`.
+
+- **Mynstrið er það sama og 508/369:** 368 kallar `BA.festa(rot())`, `BA.samantekt()`, `BA.listi()`, `BA.takkar()`. 511 festir eigin
+  stíl (`#baf-still`) og hlustara (click, input, focusout) á skuggarótina; smellir bera `data-baf`, EKKI `data-t5`.
+- **Engin ný skrifleið:** allt fer um `/api/afgreidsla` (sama fall, sömu athuganir og sama hlið og `/afgreidsla.html`). Þjónninn
+  les pósthólfið aftur áður en hann sendir. `v.ok === false` → takkinn er óvirkur og `framkvaema()` sendir ekkert.
+- **Tveir smellir:** fyrri vopnar (6 sek., `S.vopnad = 'framkvaema:<id>'`), seinni framkvæmir. Sama fyrir „Ekki þess virði"
+  (`sleppa`, varanlegt; athugasemdin fylgir sem ástæða). Flokkaskipti, annað verk eða lokun afvopnar.
+- **Innsláttur:** reitirnir bera `data-ritun="1"` og 368 frestar endurteikningu á meðan fókusinn er þar (ný almenn regla í
+  `render()` — notaðu `data-ritun` á nýja textareiti í einingum í stað þess að bæta nýju dataset-heiti í listann). Drögin búa í
+  `S.textaDrog` / `S.athDrog`; breyttur póstur vistast við blur (`adgerd: 'vista'`) og fer líka með í `framkvaema`.
+- **Netvilla í framkvæmd er aldrei „ekkert gerðist":** skilaboðin segja óvíst og staðan er sótt aftur; ekki er reynt sjálfkrafa aftur.
+- **Breidd:** `.baf` er eigin gámur (`container-name: baf`): ≥ 980 px fær opið verk tvo dálka (rök | efni), ≤ 620 px símauppsetningu.
+- **`Bord368.opnaEiningu(k)`** (nýtt): opnar einingu á borði þess sem situr við það, skiptir í „mitt vinnuborð" sé hún aðeins þar
+  og skrunar að henni; `false` ef hún er ekki á borðinu. Einkaritarinn (506 `ek-afgr`) notar það: „Afgreiða ›" opnar verkið á
+  borðinu (`BordAfgreidsla.opna(id)`), annars fer tengillinn á `/afgreidsla.html?v=<id>` eins og áður.
+- **Hver sér hvað:** einingin er aðeins á borði þess sem hefur `tilbuin` í `mitt.first` (Agnar, sett 16.11). Aðrir sem kveikja á
+  henni fá „Aðeins stjórnandi sér tilbúnu verkin" (hliðið í afgreidsla.cjs). anon-lykillinn les EKKI töfluna `afgreidsla` (RLS, mælt).
+- **Prófun:** `node --test test/bord-afgreidsla.test.cjs` (13 próf í vm-samhengi; stökkbreytingar á vopnun, ok-vörn og textasendingu
+  fella þau). Í vafra án innskráningar: staðbundinn þjónn á vinnutré, gervi-`fetch` fyrir `/api/afgreidsla` og
+  `AppSettings.path('thjonustubord5.by_staff.Agnar.mitt').first.unshift('tilbuin')` í minni (ekkert vistað).
+- **Sagan** (gert / sleppt / úrelt) er áfram aðeins á `/afgreidsla.html` — „Saga ›" í haus einingarinnar.
+
+### Tegund `sameina` — Verkefnavaktin (16.11.2026)
+
+Ný afgreidsla-tegund `sameina` (migration `sql/2026-11-16_afgreidsla_sameina.sql` bætir henni við tegund-CHECK). Verkefnavaktin
+(`luna-bridge/verkefna-vaktin.js`) vinnur verk af Verkefnalistanum hauslaust í sérklóni, prófar það og ýtir GREININNI (`vakt/<id>`,
+ÁN `[deploy]`); verkið fer í `i_yfirferd` og ein `afgreidsla`-röð verður til með tegund `sameina`. Eining 30 sýnir hana eins og önnur
+verk, með þessum mun:
+- **Efni (`efniHtml`, tegund `sameina`):** „Hvað var gert" (`v.sameina.lysing`), „Hvernig það var sannreynt" (`sannprof`), grein
+  (`<code class="baf-grein">`), tengill á verkið og — ef til — skjáskot. **Skjáskot verður AÐEINS að mynd ef slóðin er `https://`**
+  (`mynd()`-hjálparinn; sama varúð og `opnaHtml`). `v.sameina` kemur frá `afgreidsla.cjs` → `_afgreidsla-sameina.cjs` `synilegt()`.
+- **Takkinn** er `v.takki` = „Sameina og birta" (framkvæmir eins og aðrir — tveir smellir). `afgreidsla.cjs` skrifar þá beiðni í
+  `automation_triggers` (`workflow:'verkefna-sameina'`); watcher keyrir `verkefna-sameina.js` sem rebase-ar, prófar aftur, sameinar
+  og birtir með `[deploy]`, og setur verkið `klarad`. Árekstur/fallin próf → ekkert sameinað, verk aftur í `beidni` með feedback.
+- **Höfnun:** fyrir `sameina` heitir „Ekki þess virði"-takkinn **„Hafna ›"** (vopnaður: „Ýttu aftur — fer aftur í vinnu"). Hann
+  sendir sömu `sleppa`-aðgerð, en `afgreidsla.cjs` skrifar þá athugasemd Agnars í `verkefnalisti.feedback` og setur verkið aftur í
+  `beidni` (`assigned_agent='vakt'`) — sama og „↶ Aftur í vinnu" á verkefnalistanum. Vaktin les feedback fyrst næst.
+- **Rökfræðin er prófanleg sér:** `netlify/functions/_afgreidsla-sameina.cjs` (athuganir, synilegt, triggerBody, hafnaFeedback) —
+  `test/afgreidsla-sameina.test.cjs`. Rendering 'sameina' í einingunni: ný próf í `test/bord-afgreidsla.test.cjs` (skjáskot-https,
+  höfnunartexti). Fullt flæði vaktarinnar er skjalfest í `luna-bridge/CLAUDE.md`.

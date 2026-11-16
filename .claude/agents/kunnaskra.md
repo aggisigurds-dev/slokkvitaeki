@@ -226,7 +226,7 @@ birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" 
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
-3. Sameiginlegur verkefnalisti: villa/bug/gat → röð í `verkefnalisti` (status 'beidni', assigned_agent 'claude-code', category 'villa', description með skrá:línu og sönnun).
+3. Villa eða gat sem þú finnur: LAGAÐU það sjálfur ef það er innan verksins sem þú ert í og lagfæringin er afturkræf (prófa, segja frá í lokasvari). Verkefnalistinn er listi Agnars — stofnaðu röð þar AÐEINS ef hann biður um það, eða mest EINA á lotu fyrir það sem er utan verksins og of stórt til að laga núna (skrá:lína og sönnun). Annað fer í lokasvarið og charlize_knowledge, ekki á listann. (Agnar 16.11.2026: „setja allt á verkefnalista í stað þess að laga það“ · „ég vil geta sett á verkefnalista en ekki að ég fái mörg hundruð atriði á móti“; mælt: 137 ný verk á 14 dögum, 21 kláruð.)
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
 
@@ -361,3 +361,9 @@ en `customer_id` og `customer_base_id` eru tóm og ENGIN röð verður til í `c
 - Mælt 10.11.2026 (viðmið með uppgerðum skrifum): sama sala ÁN merkis → `customers_base`-insert + `fyrirtaeki`-insert með nafninu „Viðskiptavinur".
 - **Greitt síðar án viðskiptavinar er eðlilegt** (Agnar 10.11): einstaklingur greiðir við afhendingu og fær ekki sendan reikning. Það er
   „óskráður viðskiptavinur", ekki vöntun á skráningu.
+
+## Tómt netfang á félagi — 16.11.2026
+Segðu ekki „vantar netfang" fyrr en þú hefur leitað í póstinum: kt í texta (`email_digest`), `postfang_tengsl`, samþykktir tengiliðir
+(`charlize_contacts` á kt) og netfang á móðurskrá/systurstað. Mælt 16.11: 190 staðir í þjónustu án netfangs; 14 fengu netfang
+úr pósti, 31 viðbótarnetfang og 3 ótengdir sendendur voru tengdir. 164 voru eftir án netfangs ANNARS STAÐAR í kerfinu.
+Fylltu tómt `customers_base.netfang` aðeins þegar bara einn staður er á kt. Sjá `agents/postur.md` og `charlize/references/tengilidir.md`.

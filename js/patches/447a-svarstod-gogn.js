@@ -31,17 +31,20 @@
           '1. Öll slökkvitæki yfirfarin og vottuð í lagi{ nema eitt sem var dæmt ónýtt}.\n' +
           '   (allt hlaðið: „Öll slökkvitæki yfirfarin, endurhlaðin og vottuð í lagi.")\n' +
           '2. {Fjögur} slökkvitæki endurhlaðin og vottuð í lagi.\n' +
-          '3. {Einu nýju slökkvitæki} bætt við.  /  {3} nýjum slökkvitækjum bætt við.\n' +
-          '4. Reykskynjarar hljóðprófaðir og skipt um rafhlöður.\n' +
+          '3. {3} nýjum {léttvatnstækjum} bætt við.  /  {18} nýjum {6 L léttvatnstækjum} og {3} nýjum {5 kg CO₂ slökkvitækjum} bætt við.\n' +
+          '   (ný tæki nefnd eftir tegund og stærð; óþekkt tegund: „Einu nýju slökkvitæki bætt við.")\n' +
+          '4. Reykskynjarar hljóðprófaðir og skipt um rafhlöður.  {21} nýjum {samtengjanlegum} reykskynjurum bætt við.\n' +
+          '   (nýir skynjarar fá sína setningu — þeir eru ekki „hljóðprófaðir")\n' +
           '5. Skipt um stút á {einni brunaslöngu}.        ← sér lína\n' +
           '6. Brunaslöngur prófaðar á fullum þrýstingi.   ← alltaf síðast' }],
-        skrar: ['js/patches/294-uttektartexti.js:143-197 (smida)']
+        skrar: ['js/patches/294-uttektartexti.js:201-269 (smida)']
       },
       {
         heiti: 'Dæmi eins og það kemur út', plata: 'Sjálfvirkt',
         daemi: [
           { heiti: '12 tæki, 2 hlaðin, 1 ónýtt, 4 slöngur', t: 'Öll slökkvitæki yfirfarin og vottuð í lagi nema eitt sem var dæmt ónýtt. Tvö slökkvitæki endurhlaðin og vottuð í lagi.\nBrunaslöngur prófaðar á fullum þrýstingi.' },
-          { heiti: 'Húsfélag, nýtt tæki, reykskynjarar', t: 'Öll slökkvitæki yfirfarin og vottuð í lagi. Einu nýju slökkvitæki bætt við. Reykskynjarar hljóðprófaðir og skipt um rafhlöður.' }
+          { heiti: 'Húsfélag, nýtt tæki, reykskynjarar', t: 'Öll slökkvitæki yfirfarin og vottuð í lagi. Einu nýju léttvatnstæki bætt við. Reykskynjarar hljóðprófaðir og skipt um rafhlöður.' },
+          { heiti: 'Ný uppsetning: allt nýtt (Birkimelur 16.11.2026)', t: '18 nýjum 6 L léttvatnstækjum og 3 nýjum 5 kg CO₂ slökkvitækjum bætt við. 21 nýjum samtengjanlegum reykskynjurum bætt við.' }
         ]
       },
       {
@@ -62,7 +65,7 @@
         heiti: 'Brunaslöngur eru aldrei vottaðar sjálfkrafa', plata: 'Handvirkt',
         texti: 'Kóðinn skrifar aðeins að slöngurnar hafi verið PRÓFAÐAR. Niðurstöðuna — „og vottaðar í lagi" EÐA athugasemd um leka — skrifar maður sjálfur. Ástæðan er Blikkhellu-gildran: ein slanga lak, en sjálfvirki textinn hefði vottað hana.',
         daemi: [{ heiti: 'Maður bætir við', t: 'Brunaslöngur prófaðar á fullum þrýstingi {og vottaðar í lagi}.' }],
-        skrar: ['js/patches/294-uttektartexti.js:185-196']
+        skrar: ['js/patches/294-uttektartexti.js:254-266']
       },
       {
         heiti: '„Annað" og „Athugasemdir" eru ekki það sama', plata: 'Skýrsla',
@@ -82,7 +85,7 @@
           'Ekki nota „Búa til úttektarskýrslu" né „Merkja skoðun" á borðmáli — þeir skrifa yfir skoðunardagsetningar (Charlize #486, #491).',
           'Orðalaginu er aldrei breytt án þess að Agnar eða Elías staðfesti (sara-coworker).'
         ],
-        skrar: ['js/patches/294-uttektartexti.js:36-37', '.claude/skills/sara/references/gildrur.md:84-91']
+        skrar: ['js/patches/294-uttektartexti.js:46-47', '.claude/skills/sara/references/gildrur.md:84-91']
       },
       {
         heiti: 'Þín regla um úttektarlýsinguna', plata: 'Stýring',

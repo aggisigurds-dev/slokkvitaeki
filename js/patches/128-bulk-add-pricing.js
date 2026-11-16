@@ -222,8 +222,10 @@
     // og í 129, annars segir þessi gluggi eitt og reikningurinn annað.
     let skrad = null;
     try {
-      if (window.ThjonustuTengingar && ThjonustuTengingar.skradVara && choice !== 'nyitt') {
-        skrad = await ThjonustuTengingar.skradVara(type, size, choice === 'hledsla' ? 'hledsla' : 'yfirferd');
+      if (window.ThjonustuTengingar && ThjonustuTengingar.skradVara) {
+        // 16.11.2026: nyitt má nú líka eiga skráða tengingu (410) — áður sleppt og alltaf ágiskað.
+        const kind410 = choice === 'hledsla' ? 'hledsla' : choice === 'nyitt' ? 'nyitt' : 'yfirferd';
+        skrad = await ThjonustuTengingar.skradVara(type, size, kind410);
       }
     } catch (_) { skrad = null; }
     if (skrad === 'ekki_rukka') {

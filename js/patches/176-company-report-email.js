@@ -74,9 +74,17 @@
     // output). So render a real full-A4-width visible holder, but at a z-index
     // just BELOW the report modal (100050) so it sits hidden behind the modal
     // backdrop — invisible to the user, fully captured by html2canvas.
-    const W = 794; // A4 width in px @96dpi
+    // 2026-11-16 (klippt skjal): breiddin var 794 px (heil A4-síða), en html2pdf teiknar
+    // umbúðirnar sínar á PRENTFLETINUM — síðubreidd mínus spássíur, 210 − 2×12 = 186 mm
+    // (703 px) — og html2canvas myndar aðeins þann flöt. Efni sem er sett upp á 794 px
+    // stendur því 91 px út fyrir og hægri 11 % skjalsins klippast af. Mælt 16.11.2026 á
+    // samningnum sem fór auður 02.11.2026: myndin í PDF-inu 1406 px breið (= 703 × 2),
+    // „Dags: 02/11/2026" varð „Dags: 02" og hægri undirskriftardálkurinn skarst. Efnið er
+    // nú sett upp á sömu breidd og prentflöturinn, svo ekkert stendur út fyrir.
+    const MARGIN_MM = 12;
+    const W = (210 - 2 * MARGIN_MM) + 'mm'; // prentflötur A4 innan spássíu
     const holder = document.createElement('div');
-    holder.style.cssText = 'position:fixed;top:0;left:0;width:' + W + 'px;background:#fff;z-index:100000';
+    holder.style.cssText = 'position:fixed;top:0;left:0;width:' + W + ';background:#fff;z-index:100000';
     // 2026-11-02 (Istanbul Market fékk 3,4 KB auðan þjónustusamning): html2pdf klónar
     // hnútinn sem `.from()` fær inn í sinn eigin umbúða-div (position:absolute; height:auto).
     // Sé sá hnútur sjálfur position:fixed/absolute — eins og `holder` hér — tekur hann ekkert
@@ -86,14 +94,14 @@
     // STATIC innra div og `.from(inner)` — holder-inn er áfram fixed svo hann sjáist ekki.
     // (Sama ástæða og „html2canvas birtir autt" í 168/176 2026-06-10 og 2026-08-06.)
     const inner = document.createElement('div');
-    inner.style.cssText = 'position:static;width:' + W + 'px;background:#fff';
+    inner.style.cssText = 'position:static;width:' + W + ';background:#fff';
     inner.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
     holder.appendChild(inner);
     document.body.appendChild(holder);
     try {
       await waitForImages(inner);
       const opt = {
-        margin: [12, 12, 12, 12], // mm — top, left, bottom, right
+        margin: [MARGIN_MM, MARGIN_MM, MARGIN_MM, MARGIN_MM], // mm — top, left, bottom, right
         filename: filename || 'Uttektarskyrsla.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },

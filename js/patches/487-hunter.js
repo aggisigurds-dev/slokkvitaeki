@@ -562,16 +562,17 @@
     const fraOkkur = m.folder === 'SENT' || /@(eldklar|brunaholf)\.is$/i.test(m.sender_email || '');
     const skil = /^(mailer-daemon|postmaster)/i.test(m.sender_email || '');
     const sjalfv = /(sjálfvirkt svar|automatic reply|auto-?reply|out of office|í fríi|fjarverandi|liggur niðri)/i.test(m.subject || '');
+    const bh = m.account === 'slokkvitaeki@brunaholf.is';   // þráður á Outlook-hólfinu — appið sendir ekki þaðan
     const chip = skil ? '<span class="hu2-chip raud">Skil</span>' : fraOkkur ? '<span class="hu2-chip dokk">Frá okkur</span>' : sjalfv ? '<span class="hu2-chip">Sjálfvirkt</span>' : DAGATAL_RX.test(m.subject || '') ? '<span class="hu2-chip">Dagatal</span>' : '<span class="hu2-chip">Frá þeim</span>';
     const nafn = fraOkkur ? (m.sender_name && !/slökkvitæki|brunahólf/i.test(m.sender_name) ? m.sender_name : 'Slökkvitæki ehf') : (m.sender_name || m.sender_email || '');
     const texti = String(m.body_preview || m.snippet || '').replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
     const opid = !!S.opnirPostar[m.id];
     return '<article class="hu2-msg' + (sjalfv ? ' dauf' : '') + (opid ? ' opid' : '') + '" data-mid="' + m.id + '">' +
-      '<div class="h">' + chip + '<span class="n">' + esc(nafn) + '</span><span class="dt">' + esc(fmtDT(m.received_at)) + '</span></div>' +
+      '<div class="h">' + chip + (bh ? '<span class="hu2-chip" title="Þráður á slökkvitaeki@brunaholf.is (Outlook) — svaraðu þaðan">brunaholf</span>' : '') + '<span class="n">' + esc(nafn) + '</span><span class="dt">' + esc(fmtDT(m.received_at)) + '</span></div>' +
       '<span class="s">' + esc(m.subject || '(ekkert efni)') + '</span>' +
       (texti ? '<p class="b">' + esc(texti) + '</p>' : '') +
       '<div class="f">' + (texti.length > 180 ? '<button type="button" class="hu2-silfur" data-act="post-meira" data-mid="' + m.id + '">' + (opid ? 'Minna' : 'Meira') + '</button>' : '') +
-        (!fraOkkur && !skil && !sjalfv && m.sender_email ? '<button type="button" class="hu2-malm" data-act="post-svara" data-mid="' + m.id + '">' + IK.postur + 'Svara í þræði</button>' : '') + '</div>' +
+        (!fraOkkur && !skil && !sjalfv && !bh && m.sender_email ? '<button type="button" class="hu2-malm" data-act="post-svara" data-mid="' + m.id + '">' + IK.postur + 'Svara í þræði</button>' : '') + '</div>' +
     '</article>';
   }
   async function hladaPost(id) {
@@ -579,14 +580,14 @@
     const a = adili(id); if (!a || !sb) return;
     if (S.postHl[id]) return; S.postHl[id] = true;
     try {
-      const ors = ['sender_email.eq.' + a.netfang, 'to_addresses.ilike.%' + a.netfang + '%', 'body_preview.ilike.%' + a.netfang + '%'];
-      if (a.thread_ids && a.thread_ids.length) ors.push('thread_id.in.(' + a.thread_ids.map(t => '"' + t + '"').join(',') + ')');
-      let q = sb.from('email_digest').select('id,message_id,folder,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,received_at,thread_id')
-        .eq('account', 'eldklar@eldklar.is').or(ors.join(',')).order('received_at', { ascending: false }).limit(60);
-      const fra = a.fyrst_sent_at || a.created_at; if (fra) q = q.gte('received_at', new Date(new Date(fra).getTime() - 86400000).toISOString());
-      const r = await q;
+      // email_digest er RLS-læst á anon fyrir slökkvitaeki@brunaholf.is; hunter_samskipti (SECURITY DEFINER)
+      // skilar póstum BEGGJA hólfa fyrir þennan aðila — netfang/þráður, og lén fyrir herferd='Samningar'. Sjá migration hunter_samskipti.
+      const r = await sb.rpc('hunter_samskipti', { p_adili_id: id });
       if (r.error) throw r.error;
-      S.post[id] = (r.data || []).filter(m => !(m.folder === 'SENT' && a.netfang && !String(m.to_addresses || '').toLowerCase().includes(a.netfang) && !(a.thread_ids || []).includes(m.thread_id)));
+      const FRI = ['gmail.com', 'googlemail.com', 'hotmail.com', 'outlook.com', 'live.com', 'msn.com', 'yahoo.com', 'icloud.com', 'me.com', 'simnet.is', 'internet.is', 'visir.is'];
+      const samn = a.herferd === 'Samningar' && a.len && FRI.indexOf(a.len) < 0;
+      const tilOkkar = m => { const t = String(m.to_addresses || '').toLowerCase(); return (a.netfang && t.includes(a.netfang)) || (samn && a.len && t.includes('@' + a.len)) || (a.thread_ids || []).includes(m.thread_id); };
+      S.post[id] = (r.data || []).filter(m => !(m.folder === 'SENT' && !tilOkkar(m)));
     } catch (e) { S.post[id] = []; toast('Náði ekki í póstana: ' + ((e && e.message) || e), true); }
     finally { S.postHl[id] = false; }
     if (S.opinn === id) teiknaSpjald();

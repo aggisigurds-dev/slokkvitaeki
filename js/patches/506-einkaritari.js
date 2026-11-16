@@ -143,6 +143,9 @@
     '.ek-am-texti{font-size:13px;color:var(--ink);line-height:1.5;margin:0 0 8px;overflow-wrap:anywhere}' +
     '.ek-am-listi{list-style:none;margin:0;padding:0}.ek-am-listi>li{padding:4px 0;font-size:12.5px;color:var(--ink);border-top:1px dashed var(--rule2);overflow-wrap:anywhere}.ek-am-listi>li:first-child{border-top:0}' +
     '.ek-am-listi em{font-style:normal;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-right:4px}' +
+    /* Takkar á atriðum (16.11.2026) */
+    '.ek-tk{margin-top:6px}.ek-h a.btn{text-decoration:none}' +
+    '.ek-lk{appearance:none;background:none;border:0;padding:0;margin:0;font:inherit;color:var(--link,#1565c0);cursor:pointer;text-align:left}.ek-lk:hover{text-decoration:underline}' +
     /* Fótur + responsive */
     '.ek-ft{padding:8px 16px 11px;border-top:1px solid var(--rule2);font-size:11.5px;color:var(--mute)}.ek-ft .err{color:#b3220f}.ek-tomt{padding:16px;color:var(--mute);font-size:13px;min-height:220px}' +
     '.ek-bid{min-height:300px}' +
@@ -152,29 +155,44 @@
     '</style>';
 
   /* ── Tölur úr gögnunum (ALDREI úr texta Claude) ────────────────────────── */
+  // 16.11.2026: fyrsta útgáfan las lyklana SL/BH/fyrri.samtals sem bakendinn skilar ekki (hann skilar slokkvitaeki /
+  // brunaholf / samtals) → „SL ómælt · BH ómælt" þótt talan væri mæld. Hluti sem er null (söfnunin brást) er „ómælt",
+  // aldrei 0.
   function toluHtml(tolur) {
     if (!tolur) return '';
-    const g = tolur.greitt || {}, s = tolur.sendar || {}, ny = tolur.nyir_i_thjonustu;
-    const fyrriG = (g.fyrri && g.fyrri.samtals) || {};
-    const samG = g.samtals || {};
-    const slG = g.SL || {}, bhG = g.BH || {};
-    const samS = s.samtals || {};
-    const slS = s.SL || {}, bhS = s.BH || {};
-    const breyting = (nu, fyrri) => {
-      if (nu == null || fyrri == null || !Number.isFinite(Number(nu)) || !Number.isFinite(Number(fyrri))) return '';
-      const m = Number(nu) - Number(fyrri);
-      return m === 0 ? ' (eins og viku á undan)' : (m > 0 ? ' (+' : ' (') + Math.round(m).toLocaleString('is-IS') + ' kr)';
+    const g = tolur.greitt, s = tolur.sendar, ny = tolur.nyir_i_thjonustu;
+    const hl = (o, k) => (o && o[k]) || null;
+    const samG = hl(g, 'samtals'), slG = hl(g, 'slokkvitaeki'), bhG = hl(g, 'brunaholf');
+    const slS = hl(s, 'slokkvitaeki'), bhS = hl(s, 'brunaholf');
+    const samS = hl(s, 'samtals') || (slS && bhS ? { fjoldi: (slS.fjoldi || 0) + (bhS.fjoldi || 0), kr: (slS.kr || 0) + (bhS.kr || 0) } : null);
+    const krT = (o) => fmtKr(o ? o.kr : null);
+    const fjT = (o) => (o ? (o.fjoldi || 0) + ' kröfur' : '');
+    const breyting = (o) => {
+      if (!o || !Number.isFinite(Number(o.kr)) || !Number.isFinite(Number(o.fyrri_kr))) return '';
+      const m = Number(o.kr) - Number(o.fyrri_kr);
+      return m === 0 ? ' · eins og vikuna á undan' : ' · ' + (m > 0 ? '+' : '−') + Math.abs(Math.round(m)).toLocaleString('is-IS') + ' kr frá fyrri viku';
     };
-    const nyNofn = (ny && ny.length) ? ny.map((x) => x.nafn).join(', ') : 'engin';
     return '<div class="ek-tolur" role="group" aria-label="Vikan í tölum">' +
-      '<div><b>Greitt</b><span>' + esc(fmtKr(samG.kr)) + '</span><small>' +
-        esc((samG.fjoldi || 0) + ' kröfur') + esc(breyting(samG.kr, fyrriG.kr)) +
-        '<br>SL ' + esc(fmtKr(slG.kr)) + ' · BH ' + esc(fmtKr(bhG.kr)) + '</small></div>' +
-      '<div><b>Kröfur sendar</b><span>' + esc(fmtKr(samS.kr)) + '</span><small>' +
-        esc((samS.fjoldi || 0) + ' kröfur') +
-        '<br>SL ' + esc(fmtKr(slS.kr)) + ' · BH ' + esc(fmtKr(bhS.kr)) + '</small></div>' +
-      '<div><b>Nýir í þjónustu</b><span>' + esc(ny ? ny.length : 0) + '</span><small>' + esc(nyNofn) + '</small></div>' +
+      '<div><b>Greitt · 7 dagar</b><span>' + esc(krT(samG)) + '</span><small>' +
+        esc(fjT(samG) + breyting(samG)) +
+        '<br>Slökkvitæki ' + esc(krT(slG)) + ' · Brunahólf ' + esc(krT(bhG)) + '</small></div>' +
+      '<div><b>Kröfur sendar · 7 dagar</b><span>' + esc(krT(samS)) + '</span><small>' +
+        esc(fjT(samS)) +
+        '<br>Slökkvitæki ' + esc(krT(slS)) + ' · Brunahólf ' + esc(krT(bhS)) + '</small></div>' +
+      '<div><b>Nýir í þjónustu · 7 dagar</b><span>' + esc(ny ? ny.length : 'ómælt') + '</span><small>' +
+        esc(ny ? (ny.length ? ny.map((x) => x.nafn).join(', ') : 'enginn í vikunni') : '') + '</small></div>' +
     '</div>';
+  }
+
+  /* ── Takki á atriði: opnar staðinn þar sem hægt er að GERA eitthvað (16.11.2026) ─────────── */
+  // Agnar: „ég get heldur ekki ýtt eða gert neitt þarna". Bakendinn sannreynir adgerd + audkenni (stadfesta), svo
+  // takkinn vísar alltaf á verk/mál sem er til. Eldri skrif (með „hlekkur") fá engan takka.
+  function takkiHtml(r) {
+    const id = Number(r && r.audkenni) || 0;
+    if (r.adgerd === 'afgreidsla' && id) return '<a class="btn iv sm" href="/afgreidsla.html?v=' + id + '" data-t5="ek-afgr" data-id="' + id + '" title="Forunnið verk — opnast hér á borðinu, þar framkvæmir takkinn">Afgreiða ›</a>';
+    if (r.adgerd === 'adalmal') return '<button type="button" class="btn iv sm" data-t5="ek-syn" data-v="adalmal" title="Topp 10 listinn">Opna Aðalmál ›</button>';
+    if (r.adgerd === 'mal' && id) return '<button type="button" class="btn iv sm" data-t5="ek-mal" data-id="' + id + '" title="Opna málið á borðinu">Opna málið ›</button>';
+    return '';
   }
 
   /* ── Samningar ─────────────────────────────────────────────────────────── */
@@ -202,19 +220,32 @@
   }
 
   /* ── Áminningar ─────────────────────────────────────────────────────────── */
+  // 16.11.2026: dagskra kom sem HLUTUR úr combo-yfirliti og hefði fellt gluggann (for…of á hlut) um leið og áminningarnar
+  // mældust — bakendinn skilar nú lista og hér er hver reitur varinn með listi(). Forgangsmál opnast á borðinu.
   function aminningarHtml(texti, aminningar) {
-    if (!texti && (!aminningar || (!aminningar.eindagar || !aminningar.eindagar.length) && (!aminningar.forgangsmal || !aminningar.forgangsmal.length) && (!aminningar.a_fresti || !aminningar.a_fresti.length) && (!aminningar.dagskra || !aminningar.dagskra.length))) return '';
-    let h = '<section class="ek-am" aria-label="Áminningar"><h3>Áminningar</h3>';
-    if (texti) h += '<p class="ek-am-texti">' + esc(texti) + '</p>';
-    if (aminningar) {
-      const li = [];
-      if (aminningar.eindagar) for (const x of aminningar.eindagar) li.push('<li><em>Eindagi</em>' + esc(x.nafn + ' — ' + fmtKr(x.kr) + ' — ' + (x.gjalddagi || '')) + '</li>');
-      if (aminningar.forgangsmal) for (const x of aminningar.forgangsmal) li.push('<li><em>Forgangsmál</em>' + esc(x.titill) + '</li>');
-      if (aminningar.a_fresti) for (const x of aminningar.a_fresti) li.push('<li><em>Frestur</em>' + esc(x.nafn + (x.stada ? ' — ' + x.stada : '')) + '</li>');
-      if (aminningar.dagskra) for (const x of aminningar.dagskra) li.push('<li><em>Dagskrá</em>' + esc(x.titill + (x.dags ? ' · ' + x.dags : '')) + '</li>');
-      if (li.length) h += '<ul class="ek-am-listi">' + li.join('') + '</ul>';
+    const listi = (a) => (Array.isArray(a) ? a : []);
+    const am = aminningar || {};
+    const li = [];
+    for (const x of listi(am.eindagar)) {
+      const dags = x.eindagi || x.gjalddagi || '';
+      const yfir = Number(x.dagar_fram_yfir);
+      li.push('<li><em>Eindagi</em>' + esc(x.nafn + ' — ' + fmtKr(x.kr) + (dags ? ' — eindagi ' + dags : '') +
+        (Number.isFinite(yfir) ? (yfir > 0 ? ' · ' + yfir + ' d. fram yfir' : ' · í dag eða framundan') : '')) + '</li>');
     }
-    return h + '</section>';
+    const eldri = am.eindagar_eldri_en_60d;
+    if (eldri && eldri.fjoldi) li.push('<li><em>Eldra</em>' + esc(eldri.fjoldi + ' reikningar með eindaga fyrir meira en 60 dögum · ' + fmtKr(eldri.kr) + ' (gömul mál, ekki áminning dagsins)') + '</li>');
+    for (const x of listi(am.forgangsmal)) {
+      li.push('<li><em>Forgangsmál</em>' + (x.mal_id
+        ? '<button type="button" class="ek-lk" data-t5="ek-mal" data-id="' + Number(x.mal_id) + '" title="Opna málið á borðinu">' + esc(x.titill) + ' ›</button>'
+        : esc(x.titill)) + '</li>');
+    }
+    const ut = am.uttektir;
+    if (ut && (ut.utrunnid || ut.thessi_manudur)) li.push('<li><em>Úttektir</em>' + esc((ut.utrunnid || 0) + ' útrunnar · ' + (ut.thessi_manudur || 0) + ' í þessum mánuði') + '</li>');
+    for (const x of listi(am.dagskra)) li.push('<li><em>Dagskrá</em>' + esc((x.dags ? x.dags + ' · ' : '') + (x.hver ? x.hver + ': ' : '') + (x.titill || '')) + '</li>');
+    if (!texti && !li.length) return '';
+    return '<section class="ek-am" aria-label="Áminningar"><h3>Áminningar</h3>' +
+      (texti ? '<p class="ek-am-texti">' + esc(texti) + '</p>' : '') +
+      (li.length ? '<ul class="ek-am-listi">' + li.join('') + '</ul>' : '') + '</section>';
   }
 
   /* ── Aðalfall: html(nafn) ─────────────────────────────────────────────── */
@@ -226,7 +257,11 @@
     const nyleg = (t) => !!t && (Date.now() - Date.parse(t)) < BID_MIN * 60000;
     const nyskrifad = nyleg(n && n.skrifad_at) || nyleg(g && g.sidasta_villa && g.sidasta_villa.kl);
     const stada = S.skrifar ? 'skrifar… (1–2 mín.)' : n ? dagsTxt(n.skrifad_at) + ' · skrifað kl. ' + klst(n.skrifad_at) : S.loading ? 'sæki…' : '';
+    // 16.11.2026: takkar á staðina þar sem verkin eru UNNIN — Afgreiðsla (forunnin verk, takkinn framkvæmir) og Aðalmál (topp 10).
+    const afgFj = n && n.afgreidsla_fjoldi != null ? ' · ' + Number(n.afgreidsla_fjoldi) : '';
     const haus = '<header class="ek-h"><h2>Einkaritarinn</h2><span class="ek-mute" role="status">' + esc(stada) + '</span><span class="grow"></span>' +
+      '<a class="btn iv sm" href="/afgreidsla.html" data-t5="ek-afgr" title="Forunnin verk sem bíða þín — opnast hér á borðinu, þar framkvæmir takkinn">Afgreiðsla' + esc(afgFj) + ' ›</a>' +
+      '<button type="button" class="btn iv sm" data-t5="ek-syn" data-v="adalmal" title="Topp 10 listinn — sannreyndur">Aðalmál ›</button>' +
       '<button type="button" class="btn iv sm" data-t5="ek-skrifa"' + (S.skrifar || nyskrifad ? ' disabled' : '') +
         ' title="' + (nyskrifad ? 'Nýskrifað eða nýreynt — hægt að skrifa aftur eftir nokkrar mínútur' : 'Láta skrifa upp á nýtt (1–2 mín.)') + '">↻ Skrifa aftur</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="ek-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' einkaritarann">' + (S.fellt ? '▾' : '▴') + '</button></header>';
@@ -239,10 +274,14 @@
       return CSS + '<section class="panel ek ek-bid" tabindex="-1" aria-label="Einkaritarinn">' + haus + '<p class="ek-tomt">' + esc(txt) + '</p>' + villuLina(g) + '</section>';
     }
 
-    const idag = (n.i_dag || []).map((r) => '<li><div class="ek-t">' + esc(r.titill) + '</div><div class="ek-a">' + esc(r.af_hverju) + '</div>' +
-      (r.hlekkur ? '<div class="ek-s"><a href="' + esc(r.hlekkur) + '">' + esc(r.hlekkur) + '</a></div>' : '') + '</li>').join('');
+    // Eldri skrif báru „hlekkur" (texti eins og „samningar › heimaleiga", ekki slóð) sem var teiknaður sem dauður tengill.
+    const idag = (n.i_dag || []).map((r) => {
+      const t = takkiHtml(r);
+      return '<li><div class="ek-t">' + esc(r.titill) + '</div><div class="ek-a">' + esc(r.af_hverju) + '</div>' +
+        (t ? '<div class="ek-s ek-tk">' + t + '</div>' : '') + '</li>';
+    }).join('');
 
-    const ft = '<div class="ek-ft">Skrifað af Claude út frá kröfum, pósti, þjónustuborði og dagskrá' +
+    const ft = '<div class="ek-ft">Skrifað af Claude út frá kröfum, Þjónustuborði, Afgreiðslu og dagskrá' +
       (n.kallad_af === 'agnar' ? ' · skrifað aftur að beiðni' : '') + '.' +
       ((n.omaelt && n.omaelt.length) ? '<br><span class="err">Ekki mælt: ' + esc(n.omaelt.map((o) => o.hluti).join(', ')) + '</span>' : '') +
       '</div>' + villuLina(g);
@@ -270,13 +309,31 @@
       if (b) b.focus({ preventScroll: true });
     } catch (_) {}
   }
-  function smellur(el) {
+  function smellur(el, e) {
     const a = el && el.dataset && el.dataset.t5;
     if (!a || a.indexOf('ek-') !== 0) return false;
+    // 16.11.2026 (511): forunnið verk opnast Á borðinu (eining 30 „Tilbúin verk"). Sé einingin ekki á borði þess sem situr
+    // við það fer tengillinn sína leið á /afgreidsla.html (sjálfgefin hegðun er þá ekki stöðvuð).
+    if (a === 'ek-afgr') {
+      try { if (window.BordAfgreidsla && BordAfgreidsla.opna(Number(el.dataset.id) || 0) && e && e.preventDefault) e.preventDefault(); } catch (_) {}
+      return true;
+    }
     if (a === 'ek-skrifa') { skrifaAftur(); fokusAftur('ek-skrifa'); return true; }
     if (a === 'ek-fella') { S.fellt = !S.fellt; try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(FELLT_LYKILL, S.fellt); } catch (_) {} notify(); fokusAftur('ek-fella'); return true; }
+    // 16.11.2026: mál opnast á borðinu (368 opnaMal velur það í Master) og skrunað er að því; sýn opnast með App.switchView.
+    if (a === 'ek-mal') {
+      const id = Number(el.dataset.id);
+      try {
+        if (id && window.Bord368 && Bord368.opnaMal) {
+          Bord368.opnaMal(id);
+          requestAnimationFrame(() => { try { const rot = Bord368.root && Bord368.root(); const s = rot && (rot.querySelector('.sel:not(.inline)') || rot.querySelector('.sel')); if (s) s.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (_) {} });
+        }
+      } catch (_) {}
+      return true;
+    }
+    if (a === 'ek-syn') { try { if (window.App && App.switchView) App.switchView(el.dataset.v); } catch (_) {} return true; }
     return false;
   }
 
-  window.Einkaritari = { html, load, smellur, S, EIGANDI, version: '2026-11-16a' };
+  window.Einkaritari = { html, load, smellur, takkiHtml, toluHtml, aminningarHtml, S, EIGANDI, version: '2026-11-16c' };
 })();

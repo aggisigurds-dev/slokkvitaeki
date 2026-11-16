@@ -38,7 +38,11 @@
   'use strict';
 
   var AUÐK = 'p410';
-  var SVAR_KIND = [['yfirferd', 'Yfirferð'], ['hledsla', 'Hleðsla']];
+  // 16.11.2026 (Agnar: „nýtt co2 5kg kemur út sem notað … get ekki breytt því í tengingar"):
+  // þriðja þjónustan — Nýtt. Fyrir nýtt tæki rukkar 129 endurnýjunarverð (findReplacementProduct),
+  // hrein nafnaleit sem fann „Notaðir 5kg CO₂ kútar" fyrir nýjan CO₂ 5kg. Nú má festa tenginguna
+  // (tegund+stærð+nyitt → rétt vara) hér, og 129/128/210 spyrja hana á undan ágiskuninni.
+  var SVAR_KIND = [['yfirferd', 'Yfirferð'], ['hledsla', 'Hleðsla'], ['nyitt', 'Nýtt']];
   var SVAR_LINUR = [
     ['skodun',  '🍳 Skoðun slökkvikerfis', 'stk'],
     ['vinna',   '🛠 Vinna',                'klst'],
@@ -305,6 +309,17 @@
   function nafnaleit(tegund, staerd, thjonusta) {
     var reyk = reykAfbrigdi(tegund, staerd);
     if (reyk) return { vara: reyk, leid: 'afbrigdi', staerdHunsud: false, staerdRong: false };
+    // Nýtt: engin þjónustulína (yfirferð/hleðsla) á við — 129 rukkar endurnýjunar-/söluverð
+    // vöru (findReplacementProduct). Hermum hana með sama stærðarverðinum (varaleit), svo
+    // dálkurinn sýni sömu ágiskun og reikningurinn þar til tengingin er fest.
+    if (thjonusta === 'nyitt') {
+      var vn = varaleit(tegund, staerd);
+      if (!vn) return null;
+      var vnTolur = norm(vn.vara.nafn).split(' ').filter(erStaerd);
+      var tnTolur = norm(tegund + ' ' + staerd).split(' ').filter(erStaerd);
+      return { vara: vn.vara, leid: 'vara', staerdHunsud: false, staerdRong: false,
+        staerdVantar: !tnTolur.length && vnTolur.length > 0 };
+    }
     var hunsud = STAERDARLAUS.test(tegund);
     var leitarStaerd = hunsud ? '' : staerd;
     var a = adalleit(tegund, leitarStaerd, thjonusta);
@@ -980,6 +995,7 @@
       return radir[k];
     }
     linur.forEach(function (L) {
+      if (L.kind[0] === 'nyitt') return;   // Nýtt-tengingar búa aðeins í tengingar-sýninni; verðlistinn er óbreyttur
       var ekkiRukka = !!(L.tg && L.tg.ekki_rukka), k = L.tegund + '|' + L.staerd;
       if (L.valinn && !ekkiRukka && vara(L.valinn)) {
         var R = fa(L.valinn);
@@ -1098,7 +1114,9 @@
     h += '<p style="margin:0 0 10px;font-size:12px;color:#5b6573;line-height:1.5">' +
       'Sé engin tenging skráð giskar ársskoðunin á þjónustulínu út frá heitinu — og hún krefst þess EKKI ' +
       'að stærðin passi. Þess vegna fékk „Léttvatn 9 L" verð 6 L tækisins. Rauðar línur eru þær sem ' +
-      'giskið hittir ekki á rétta stærð. Val í reitnum vistast strax; „✓ Staðfesta" festir rétta ágiskun.</p>';
+      'giskið hittir ekki á rétta stærð. Val í reitnum vistast strax; „✓ Staðfesta" festir rétta ágiskun. ' +
+      '<b>Nýtt</b>-dálkurinn tengir nýtt tæki við sölu-/endurnýjunarvöru (t.d. „CO₂ 5 kg · nýtt" → nýir kútar) — ' +
+      'annars giskar reikningurinn og getur lent á rangri vöru eins og notuðum kútum.</p>';
 
     // 1) Reikna allar línur fyrst, 2) raða, 3) teikna.
     var linur = reiknaLinur();
@@ -1144,7 +1162,8 @@
     }
     h += '<table class="' + AUÐK + '-tafla ' + AUÐK + '-tvi"><thead><tr>' +
       haus('tegund', 'Tegund') + haus('staerd', 'Stærð') + haus('taeki', 'Tæki', 'text-align:right') +
-      '<th>Yfirferð — tengd lína · verð · staða</th><th>Hleðsla — tengd lína · verð · staða</th></tr></thead><tbody>';
+      '<th>Yfirferð — tengd lína · verð · staða</th><th>Hleðsla — tengd lína · verð · staða</th>' +
+      '<th>Nýtt — tengd lína · verð · staða</th></tr></thead><tbody>';
     hopar.forEach(function (H) {
       var hra = H.t.hra && H.t.hra.length
         ? '<div style="font-size:10.5px;font-weight:400;color:#94a3b8">' + esc(H.t.hra.join(' · ')) + '</div>' : '';
@@ -1155,7 +1174,8 @@
         '<td>' + esc(H.staerd || '—') + '</td>' +
         '<td style="text-align:right;color:#5b6573;white-space:nowrap">' + (H.fjoldi || '<span style="color:#cbd5e1">0</span>') + eyda + '</td>' +
         '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[0][0]]) + '</td>' +
-        '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[1][0]]) + '</td></tr>';
+        '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[1][0]]) + '</td>' +
+        '<td class="' + AUÐK + '-kind">' + hluti(H.kinds[SVAR_KIND[2][0]]) + '</td></tr>';
     });
     h += '</tbody></table>';
     // + Bæta við tegund/stærð (Agnar 24.09: „ég geti bætt við t.d. öðrum stærðum,

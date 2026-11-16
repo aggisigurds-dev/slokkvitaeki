@@ -20,7 +20,10 @@ function run(units, choices) {
     MutationObserver: function () { this.observe = () => {}; }, Event: function () {}, alert() {}, confirm() { return true; },
   };
   sb.window.Companies = { list: [{ id: 1, nafn: 'X' }] };
-  sb.window.DB = { cache: { units: units.map((t, i) => ({ id: i + 1, client: 'X', type: t })) } };
+  // Tæki er annaðhvort tegundarheiti ('Léttvatn') eða [tegund, stærð] (['CO₂', '5 kg']).
+  sb.window.DB = { cache: { units: units.map((t, i) => Array.isArray(t)
+    ? { id: i + 1, client: 'X', type: t[0], size: t[1] }
+    : { id: i + 1, client: 'X', type: t }) } };
   sb.window.UnitServicePicker = { getChoice: (co, id) => choices[id - 1] };
   sb.DB = sb.window.DB; sb.Companies = sb.window.Companies; sb.UnitServicePicker = sb.window.UnitServicePicker;
   new Function(...Object.keys(sb), src).apply(null, Object.values(sb));
@@ -37,8 +40,21 @@ const TILVIK = [
   ['eitt hlaðið', [D], ['hledsla'], 'Eitt slökkvitæki yfirfarið, endurhlaðið (skipt um innihald) og vottað í lagi.'],
   ['blanda: yfirferð, hleðsla, ný, slöngur, ónýtt', [...rep(L, 10), D, ...rep(L, 3), ...rep(S, 6), L],
     [...rep('yfirferd', 10), 'hledsla', ...rep('nyitt', 3), ...rep('yfirferd', 6), 'onytt'],
-    'Öll 11 slökkvitæki yfirfarin og vottuð í lagi nema eitt sem var dæmt ónýtt. Eitt þeirra endurhlaðið (skipt um innihald) og vottað í lagi. 3 nýjum slökkvitækjum bætt við.\nBrunaslöngur prófaðar á fullum þrýstingi.'],
-  ['bara ný', rep(L, 3), rep('nyitt', 3), '3 nýjum slökkvitækjum bætt við.'],
+    'Öll 11 slökkvitæki yfirfarin og vottuð í lagi nema eitt sem var dæmt ónýtt. Eitt þeirra endurhlaðið (skipt um innihald) og vottað í lagi. 3 nýjum léttvatnstækjum bætt við.\nBrunaslöngur prófaðar á fullum þrýstingi.'],
+  // 16.11.2026 (Agnar, Birkimelur fid 1934): ný tæki eru nefnd eftir tegund og stærð, og NÝIR reykskynjarar
+  // fá ekki „hljóðprófaðir og skipt um rafhlöður" — þeir voru settir upp, ekki þjónustaðir.
+  ['bara ný', rep(L, 3), rep('nyitt', 3), '3 nýjum léttvatnstækjum bætt við.'],
+  ['eitt nýtt, óþekkt tegund', ['Annað'], ['nyitt'], 'Einu nýju slökkvitæki bætt við.'],
+  ['eitt nýtt duft 6 kg', [['ABC Duft', '6 kg']], ['nyitt'], 'Einu nýju 6 kg dufttæki bætt við.'],
+  ['Birkimelur: allt nýtt', [...rep(['Léttvatn', '6 L'], 18), ...rep(['CO₂', '5 kg'], 3), ...rep(['Reykskynjari', 'Samtengjanlegir'], 21)],
+    rep('nyitt', 42),
+    '18 nýjum 6 L léttvatnstækjum og 3 nýjum 5 kg CO₂ slökkvitækjum bætt við. 21 nýjum samtengjanlegum reykskynjurum bætt við.'],
+  ['þrjár nýjar tegundir', [['CO2', '2 kg'], ...rep(['Léttvatn', '6 L'], 2), ['Eldvarnarteppi', '100x100']], rep('nyitt', 4),
+    '2 nýjum 6 L léttvatnstækjum, einu nýju 2 kg CO₂ slökkvitæki og einu nýju eldvarnarteppi bætt við.'],
+  ['þjónustaðir skynjarar + einn nýr', [L, ...rep('Reykskynjari', 3)], ['yfirferd', 'yfirferd', 'yfirferd', 'nyitt'],
+    'Eitt slökkvitæki yfirfarið og vottað í lagi. Reykskynjarar hljóðprófaðir og skipt um rafhlöður. Einum nýjum reykskynjara bætt við.'],
+  ['aðeins þjónustaðir skynjarar', [L, ...rep('Reykskynjari', 2)], rep('yfirferd', 3),
+    'Eitt slökkvitæki yfirfarið og vottað í lagi. Reykskynjarar hljóðprófaðir og skipt um rafhlöður.'],
 ];
 const brot = [];
 for (const [nafn, u, c, vaent] of TILVIK) {

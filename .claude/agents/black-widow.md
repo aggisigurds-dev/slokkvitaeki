@@ -26,6 +26,7 @@ Agnar (15.11.2026): *„samkeppnisaðila njósnara — Black Widow — finnur ve
 | `service_competitors` | þjónustuaðilar brunaviðvörunarkerfa (vörumerki, markhópar, 24h, leyfi) | 6 |
 | `competitor_meta` | `last_scrape`, `row_count`, `source_notes` | síðast 22.05.2026 |
 | `vorur` | okkar verð (`verd_an_vsk`, `vsk_prosenta`, `listaverd`) | 143 virkar vörur |
+| `js/data/samkeppnisvorur.json` | flipinn **Samkeppnisaðilar – Vörur** í Birgðum (patch 510): 668 opinber verð með mynd og slóð frá 25 seljendum + 59 birgjar/aðilar ef við verðum tómir + 59 opinber þjónustuverð (flipinn Þjónustuverð) + innflutningur með komuverði | sótt 16.11.2026. ALDREI úr ja.is (skilmálar Já banna afritun); okkar innkaupaverð eru í `app_kv` lykli `samkeppni_innkaup` (ekki í repo, opið) |
 
 Hubbinn sýnir þetta í flipanum **Verðsamanburður** (`brunaholf/index.html` `renderCompetitors`, `/api/competitors`).
 Fyrsta verkið er því að **endurnýja verðin**: þau eru hálfs árs gömul.

@@ -628,6 +628,12 @@
       hlada().then(() => { if (_rot === rot) teiknaAllt(); });
     },
     fjoldi: () => (_gogn ? _gogn.sendingar.length : null),
+    // 509 (hreyfingar vöru) vísar hingað: opna tiltekna sendingu. Séu gögnin ósótt velur hlada() hana þegar þau koma.
+    opnaSendingu(id) {
+      id = Number(id);
+      if (!_gogn) { _opid = id; return; }
+      if (_gogn.sendingar.some((s) => s.id === id)) opna(id);
+    },
     hlada: () => hlada(true),
   };
 })();

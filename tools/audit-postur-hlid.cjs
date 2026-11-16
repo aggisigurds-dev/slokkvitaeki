@@ -43,7 +43,7 @@ const vidvaranir = [];
 // 1. enginn vafrakóði á beina slóð
 function ganga(dir, ut) {
   for (const n of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (['node_modules', '.git', '_attic', 'docs', 'tools', 'netlify', '.claude', 'graphify-out'].includes(n.name)) continue;
+    if (['node_modules', '.git', '_attic', 'docs', 'tools', 'netlify', '.claude', 'dist', 'graphify-out'].includes(n.name)) continue;
     const p = path.join(dir, n.name);
     if (n.isDirectory()) ganga(p, ut);
     else if (/\.(js|html|mjs)$/.test(n.name)) ut.push(p);
