@@ -51,7 +51,49 @@ veggja). Kandídatinn `net3_allt.pt` (allar 11 hæðir, 24.000 itr) er EKKI í n
 í ÓLÍKUM byggingum hjálpa mest (489 hæð 2–4 eru sama merkingin þrisvar). Hvernig hæð verður þjálfunargögn: leiðrétt í
 TurboPaint („Vista í úttekt“ með `leidrett.af = turbopaint`) → `samstilla.py --skrifa` tekur hana inn.
 
+## Veggjavélin — næturþjálfun 11.11.2026 (14 hæðir, `nott.py` á heimatölvunni)
+
+Þrjár hæðir bættust við (Krókháls 9 1. hæð — aðeins merkti hlutinn, `skurdur` handsettur í gt-skrána; Máni Apartments 6. hæð;
+Ice Apartments 1. hæð) → 14 hæðir í 8 byggingum. Tvö líkön: `net3_n4utan219.pt` (6000 itr, Breiðhöfði haldinn frá) og
+`net3_n4allt.pt` (16.000 itr, allar 14). Keyrslan tók 01:12–06:42. Tölurnar eru í `~/vegg-tilraun/NIDURSTODUR_nott_2026-11-11.md`.
+
+| Mat á hæð sem líkanið sá ALDREI | Veggir F1 línur (pixlar) | Hurðir @0,35: rétt af (nákvæmni) |
+|---|---|---|
+| Helgarlíkanið `net3_allt` á Krókhálsi 9, 1. hæð | 0,71 (0,79) | 4 af 16 (0,22) |
+| Helgarlíkanið á Mána, 6. hæð | 0,83 (0,85) | 10 af 13 (0,53) |
+| Helgarlíkanið á Ice, 1. hæð | 0,61 (0,63) | 3 af 6 (0,19) |
+| Breiðhöfði: 10 hæðir í þjálfun (helgin) → 13 hæðir (`n4utan219`) | 0,33 (0,35) → 0,35 (0,37) | 8 af 25 (0,33) → **4 af 25 (0,15)** |
+
+Niðurstaða: nýju hæðirnar þrjár breyttu veggjum á Breiðhöfða ekki (0,02 er innan sveiflu einnar keyrslu) og **hurðir versnuðu
+þar** á öllum þröskuldum (@0,25: 10 réttar af 42 spám → 8 af 57). Ekkert bendir til að `net3_n4allt.pt` sé betra en
+`net3_allt.pt`; það sá allar 14 hæðirnar og verður því ekki metið á þeim. Kandídatinn er áfram `net3_allt.pt`, ekkert í notkun.
+Líkanið dugar sem drög á íbúða- og gistihús (0,61–0,83 á óséðum húsum) en ekki á vöruhús með rekkum (0,35). Það sem vantar
+er **önnur húsgerð í safnið** (vöruhús/verkstæði á eina hæð af 14), ekki fleiri íbúðahæðir.
+
+Gildrur úr þessari keyrslu:
+- **Berðu saman á SAMA þröskuldi.** Hurðatölur eru til á 0,15 / 0,25 / 0,35 / 0,5; „8 af 25“ á 0,25 hjá nýja líkaninu og „8 af 25“
+  á 0,35 hjá því gamla eru ekki sami árangur (svarið 11.11 bar þetta saman þvert á þröskulda og sagði „óbreytt“ — það var rangt).
+- **Lækkandi tap er ekki árangur.** Tapið í `log4_n4allt.txt` (9,8 → ~1,3) er mælt á þjálfunargögnunum sjálfum; aðeins mat á
+  hæð sem líkanið sá ekki segir eitthvað.
+- **Líkan sem sá allt verður ekki metið.** Áður en „allt“-líkan er þjálfað: keyra `utan<bygging>` fyrir hverja NÝJA byggingu,
+  annars er engin tala til um hvort nýju gögnin hjálpuðu þeim.
+- Bakgrunnsferli sem á að lifa endurræsingu lotunnar: `Invoke-CimMethod -ClassName Win32_Process -MethodName Create`
+  (`Start-Process` dó með lotunni kl. 02:03); `nott.py` heldur áfram frá vistunarpunkti (250 itr) og sleppir mati sem er til.
+- `eval4_nytt_219.txt` er cp1252 (hinar eru UTF-8) — lestu með `grep -a`, ekki breyta skránni.
+
+## Endurprófað 16.11.2026 (eftir að aðrar lotur sameinuðu #320–#326: PWA, Verkefni-forsíða)
+
+Prófskrifturnar eru nú geymdar í skillinu: `scripts/turbopaint-prof/` (README þar segir hvað hver svarar og hver rétt útkoma er;
+þær voru áður aðeins í vinnumöppu lotunnar). Sömu skrifvörðu próf og 11.11, á framleiðslu, Krókháls 9 1. hæð: `tp-teikna-talning.cjs` — 60 hreyfingar á veggenda: blað 0 teikningar,
+rúðunet 0, aðallag 59 (aðeins 8 tákn teiknuð beint, 200×128, enginn heilskjáastrigi); `tp-log-prof.cjs` — þrjú lög, tákn dregst,
+blaðið valið með smelli, útflutningur skilar mynd; `tp-vista.cjs` — hæð opnuð án borðs sýnir „Vista í úttekt“, 0 skrif við opnun,
+smellur skrifar geymslu + `turbopaint_boards` + `teikning_bord` (gripið). Gögn Krókháls 9 óbreytt: 8 merki og 126 veggjalínur á 1. hæð.
+Engin ný leiðrétt hæð hafði bæst við þjálfunarsafnið (síðasta: Ice 1. hæð 10.11).
+
 ## Enn opið (ekki lagað — ekki segja að það sé það)
+
+- **Barónsstígur 18** (staður 1941, heitir „Baronstígur 18“ í `fyrirtaeki`): Agnar sagði 10.11 að 1. hæð væri „ready“, en engin röð er í `teikning_bord` 16.11 — ekkert var vistað. Hæðin fer í þjálfun þegar hún er vistuð og leiðrétt.
+- **„+ Hæð“ í Teikning-glugganum** hefur ekki verið smellt á lifandi vef eftir lagfæringuna 10.11 (þarf innskráningu); Agnar hefur ekki sagt hvort hæðir detta enn út.
 
 - **2. hæð Breiðhöfða finnst ekki sjálfvirkt**: raunveruleg veggjavél (verk 303, 10.11) + þunnveggjaleit með útlínu um allt húsið = 30 veggir / 43 m, 1 hurð — aðeins efri útveggurinn (vafraleitin ein: 8 veggir). Hæðin er vöruhús (rekkar) með skrifstofukjarna neðst til hægri. Handleiðin er komin: Húsið → „Útveggir úr útlínu“ → teikna kjarnann í ritlinum. Veggirnir þar eru tvöfaldar hárfínar línur sem klassíska skönnunarleitin sér ekki; veggjavélin (U-Net) fann 68 línur 05.11 en F1 líkansins á þessu húsi er 0,33. Þetta er næsta stóra verkið — þunnveggjaleit (`finnaThunnaVeggi`) eða fleiri leiðréttar hæðir af þessari húsgerð.
 - Lifandi prófun á Teikning-glugganum (hæðatapið) á slokkvitaeki.netlify.app þarf innskráningu — sannreynt af vinnutrénu og að lagfæringin sé í lifandi búntinu (`_bundle-4`: `nyjarHer`), ekki með smelli á lifandi vef.

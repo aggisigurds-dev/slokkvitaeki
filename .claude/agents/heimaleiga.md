@@ -26,7 +26,7 @@ fyrir hinar kennitölurnar). Tómt = óskráð, villa = villa.
 | Iceland Comfort Apartments (1488) | Hamraborg 7, Kóp. | Heimaleiga ehf | júní/júlí · 15 |
 | Hamraborg 7, jarðhæð (1851) | Hamraborg 7, Kóp. | **Eldsalir ehf. · 491117-1840** (1210), ingi@kaskur.is — beiðni Dimku 06.10.2026 | sept. · 5 |
 | Ice Apartments (1484) | Laugavegur 1B | **365 hf. · 480702-2390** (1263), kfj@365.is, frá 15.11.2026 — Dimka 10.11 | okt./nóv. · 8 |
-| Barónsstígur 18 (1941) | Barónsstígur 18 (3 íbúðir) | **Sirius ehf · 460504-2520** (1264) frá 15.11.2026 — Dimka 09.11 | — · staður stofnaður 09.11 |
+| Barónsstígur 18 (1941) | Barónsstígur 18 (3 íbúðir) | **Sirius ehf · 460504-2520** (1264) frá 15.11.2026 — Dimka 09.11 | — · 2 (skráð 16.11) · staður stofnaður 09.11; heitir „Baronstígur 18“ í `fyrirtaeki` (án ó, eitt s) — leit að „Barónsstígur“/„Heimaleiga“ finnur hann ekki, leitaðu á 1941; engin teikning vistuð 16.11 |
 | Bríetartún 9–11, íbúðir (443) | Bríetartún 9–11 (35 + 13 íbúðir) | Heimaleiga ehf — Sölvi CEO 26.01.2026: „bara ekki húsfélagið sem á að greiða“ | desember · 48 |
 | Bríetartún 9–11, sameign (1487) | Bríetartún 9 og 11 | **Húsfélagið Bríetartún 9-11 · 540119-0660** (394), reikningar@eignaumsjon.is — en 2025-reikningurinn (R-107527) fór á Heimaleigu | október · 8 |
 | Freyjugata 16 (1485) | Freyjugata 16 | **EA Law Practice ehf. · 650222-0400** (681 — staðurinn tengdur þangað 15.11.2026, bar áður 293; fid 857 Skipholt 50D er greiðandaröð, er_i_thjonustu=false, ekki staður) | mars · 5 |
@@ -162,7 +162,7 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
-3. Sameiginlegur verkefnalisti: villa/bug/gat → röð í `verkefnalisti` (status 'beidni', assigned_agent 'claude-code', category 'villa', description með skrá:línu og sönnun). Aldrei laga framhjá listanum.
+3. Villa eða gat sem þú finnur: LAGAÐU það sjálfur ef það er innan verksins sem þú ert í og lagfæringin er afturkræf (prófa, segja frá í lokasvari). Verkefnalistinn er listi Agnars — stofnaðu röð þar AÐEINS ef hann biður um það, eða mest EINA á lotu fyrir það sem er utan verksins og of stórt til að laga núna (skrá:lína og sönnun). Annað fer í lokasvarið og charlize_knowledge, ekki á listann. (Agnar 16.11.2026: „setja allt á verkefnalista í stað þess að laga það“ · „ég vil geta sett á verkefnalista en ekki að ég fái mörg hundruð atriði á móti“; mælt: 137 ný verk á 14 dögum, 21 kláruð.)
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
 
@@ -204,4 +204,6 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   röngum greiðanda. Afrit: `backup_20261115_heimaleiga_greidendur`. Charlize scope kunni (5 færslur). Reikninganetfang Laugaverks, IHC og
   Siriusar ekki gefið — dimka@ eins og aðrir greiðendur hópsins.
 
-Síðast uppfært: 15.11.2026
+- 16.11.2026 · **Staðfest í loftinu + stöku AI-tillögur lokaðar.** Agnar bað aftur („geturðu kíkt á póstinn og fært allar eignirnar á nýju kennitölurnar") — verkið var ÞEGAR gert 15.11; fid 869/1486/1484 bera Laugaverk 680396-2219 / IHC 630693-2419 / 365 hf. 480702-2390 í bæði `kennitala` OG `customer_base_id` (staðfest lifandi). Pósturinn ber ekkert nýtt um greiðendur (nýjasti Heimaleigu-póstur 13.11 = Eva um inneign/endurgreiðslu, mál #1329/#1377). Lokaði afturkræft #1580 (stofna greiðendur), #1608 (Mani/Midtown/ICE) og #1614 (ICE→365) sem þegar-framkvæmdum (bakk-heimaleiga-tillogur-2026-11-16.json). OPIÐ enn: reikninganetfang Laugaverks + IHC ógefin (sjálfgefið dimka@) — drög að pósti til Dimku eftir þeim útbúin 16.11 (mál #1633, `undirbuid`, Agnar sendir); #1290 Midtown-tækjafjöldi (61→10) er sérmál, ósnert.
+
+Síðast uppfært: 16.11.2026
