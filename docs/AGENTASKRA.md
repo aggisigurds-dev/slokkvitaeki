@@ -84,6 +84,20 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 
 ---
 
+## Bakgrunnsvaktir (luna-bridge)
+
+Bakgrunnsrunnur á vél Agnars (`luna-bridge`, git; `watcher.js` í Task Scheduler á mínútu → `automation_triggers`). **Ekki subagentar** — ekki kallanlegar sem `subagent_type`; kóðinn er í `luna-bridge`, ekki í `.claude/`. Verk fyrir vaktina: settu `assigned_agent='vakt'` á `beidni`-verk á Verkefnalistanum.
+
+| Vakt | Skrá | Hvað | Kveikt | Aldrei |
+|---|---|---|---|---|
+| `arnold-vaktin` | `luna-bridge/arnold-vaktin.js` | Eldri grind — fyrirmynd verkefnavaktarinnar. | `arnold-vaktin.kveikt` | Sjá prompt vaktarinnar. |
+| `verkefna-vaktin` | `luna-bridge/verkefna-vaktin.js` | Tekur eitt verk (`status=beidni` + `assigned_agent='vakt'`, `vefur` slokkvitaeki/brunaholf), vinnur hauslaust í sérklóni (`C:\projects\slokkvitaeki-vakt` / `brunaholf-vakt`), ýtir grein `vakt/<id>` **án `[deploy]`**, verk → `i_yfirferd` + afgreidsla tegund `sameina`. | `verkefna-vaktin.kveikt` (**EKKI til = SLÖKKT**) | Skrifa í master/main. `[deploy]`. Þjónusta / peningar / póstur / eyðing (bannlisti í prompt **og** `--disallowedTools`). Service-lykill inn í lotuna. |
+| `verkefna-sameina` | `luna-bridge/verkefna-sameina.js` | Eftir „Sameina og birta" á borðinu: rebase á master/main, próf, `merge --no-ff` með `[deploy]`, push, staðfest með `build.json`, verk `klarad`. Árekstur/fall → ekkert sameinað, verk aftur í `beidni`. | Keyrt af watcher um `automation_triggers` — ekki háð kveikt-skrá. | Force-push á master. Sameina með próf fallin. |
+
+Smíðað + prófað enda-í-enda 16.11.2026 (SLÖKKT við skil). Skjalfest: skill `verkefnalisti`, `luna-bridge/CLAUDE.md`, agent `bord-flettur` (kafli „Tegund `sameina`"), Charlize `topic='verkefnavaktin'` (#2474). `sameina` á afgreidsla-borðinu er eining 30 (`js/patches/511-bord-afgreidsla.js` + `netlify/functions/afgreidsla.cjs`).
+
+---
+
 ## Jarvis-roster (brunaholf)
 
 Áhöfnin á `jarvis.html` (spjaldið Sérfræðingar) er **17 sæti**. Hún stemmir við agent-skrárnar sem eiga roster-nafn. **Ekki** uppfært í þessari lotu.

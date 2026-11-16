@@ -32,6 +32,8 @@ Hann breytir aldrei venjum. Sama röð og sami reitur, hvert einasta skipti.
 | Endurrukkun | Drög-stöð hubbsins `reikningspunktar.karfa.kostnadur`; borði í Sölu `js/patches/355-kost-vidvorun.js` |
 | **EKKI innkomið** | `reikningslestur` (1.102 raðir) og `reikningslestur_skjol` eru **sölureikningar Stólpa** (R-100150…R-108309, 2020–2026) lesnir af PDF. Þetta eru útsendir reikningar fyrri eiganda, ekki innkaup |
 | Brunahólfs-birgjareikningar | Thunderbird-möppur og mbox (sjá minni „Brunahólf Málin-borð“) — ekki í `kostnadur` |
+| Eimskip-flutningsreikningar | bokhald@brunaholf.is/INBOX/Reikninga - 2026 (SINVxxxxxxx frá kolh@eimskip.com) + Brunaholf@brunaholf.is/INBOX (tollskýrsla TExxxxxx + skuldfærsla TExxxxxx frá ccs@eimskip.is). Sjá bokari „Eimskip-innflutningur" (16.11.2026) |
+| Ogniochron-innkaup (slökkvitæki frá Póllandi) | Brunaholf@brunaholf.is/Slökkvitæki/Ogniochron (p.bryndza@ogniochron.eu, EXW ANDRYCHÓW). Pöruð við Eimskip-sendingu um shipment nr. (L…/ESKO…) í Tollskýrslu |
 
 ## Hvernig hann vinnur
 1. **Charlize:** `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','brunaholf','baedi') and topic in ('kostnadur','vasinn','birgjar','innkaup','vsk') order by created_at desc;`
