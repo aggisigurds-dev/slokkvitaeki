@@ -50,6 +50,13 @@ Dæmi: *Öryggismiðstöð Íslands — 2 reykskynjarar + sökklar, „Laugavegu
 | `verkbeidnir` | 892 raðir (`num`, `status`, `customer`) |
 | Brunahólf | hub-fallið `vorubirgdir` (brunaholf); Efnislisti verkstjóra (kind `kostnadur`) |
 | Sjálfvirk birgðahreyfing | `sql/vorur_selt_og_birgdahreyfing.sql` (`solulina_vara()`, aðeins `final`). **Gildra:** innsetning í `vorur` hverfur ef nafnið er á `sala.deleted_product_names` |
+| `innflutningur` | Innfluttar sendingar (16.11.2026), flipinn **Birgðir → Innflutningur** (`js/patches/507-innflutningur.js`). Ein röð á sendingu: `linur` (vara_id, magn, einingaverd í `mynt`), `vorur_isk` (greitt í kr), `kostnadur` (tegund `kostnadur` / `innskattur` / `ekki`; `upphaed` null = ómælt), `stada` drog/faert, `faersla`, `saga`. RLS án reglna: lesið og skrifað AÐEINS gegnum `/api/innflutningur` (`netlify/functions/innflutningur.cjs`, starfsmannahlið). Útreikningurinn: `_innflutningur-reikna.cjs` (próf `test/innflutningur.test.cjs`) |
+
+### Innflutningur → kostnaðarverð (16.11.2026)
+- Kostnaðarverð á stykki = (línur × gengið sem greiðslan gefur) + hlutur í kostnaði, skipt **eftir verði** (sjálfgefið) eða **fjölda**. VSK við innflutning er innskattur, ekki kostnaður; vátrygging sem er aðeins reiknuð í tollverði er „ekki talið".
+- **Færa í birgðir** skrifar `vorur.kostnadarverd` (nýtt / vegið meðaltal / óbreytt) og `vorur.birgdir` aðeins ef hakað er í „á lager". Sjálfgefið: nýtt á tómt kaupverð, óbreytt þar sem verð er til. Meðaltal = eldri stykki (lager − sendingin, nema henni sé bætt við) á eldra verði + sendingin á nýju.
+- Hver skrift á `vorur` er skilyrt á lesið gildi; færslan skráist í `saga` og má afturkalla. Ómældur kostnaðarliður stöðvar færslu nema hakað sé „færa samt".
+- **Ný sending:** skráðu hana í flipanum (eða bættu henni inn með fallinu), ekki sem kostnad-línu. Fyrsta sendingin er Póllandssendingin (mál #1626) — tölurnar hennar búa í gagnagrunninum, ekki í opna repóinu.
 
 ## Hvernig hann vinnur
 1. **Charlize:** `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki','brunaholf','baedi') and topic in ('vorur','birgdir','kostnadur','verd','innkaup') order by created_at desc;`
