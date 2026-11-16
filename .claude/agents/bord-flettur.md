@@ -750,3 +750,18 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   `Vinnusamantekt.S.res` (hlutur með lykli per mæling; `samthykki` og `claude` eru lifandi og vantar þar). **Gildra:** service worker og
   skyndiminni vafrans skila gömlu patch-skránni — `window.__vinnusamantekt489 = false` og hlaða skránni með `?t=<tími>`.
 - **Sími (375 px):** nothæf án láréttrar skrunar en ▸-hnapparnir eru 27×20 px (undir 44 px snertimörkum) — ólagað.
+
+## Ráðgjafinn + Einkaritarinn (506) — 15.–16.11.2026
+
+Tvö spjöld undir Vinnusamantekt á Þjónustuborði Agnars, bæði í patch-númerinu 506:
+
+- **`506-radgjafinn.js`** (15.11.2026): Morgunráð Tony Stark — top 10 mál vikunnar, forgangsröðun
+  dagsins og ráðleggingar ráðgjafans. Bakendi: `netlify/functions/_radgjafinn.cjs`. Skrifað af
+  scheduled task (kl. 06:45) eða „↻ Skrifa aftur". Vistað í `einkaritari_samantekt`. Spjaldið er
+  aðeins sýnilegt Agnari (staff-hlið).
+- **`506-einkaritari.js`** (16.11.2026): Einkaritarinn — vikan í tölum (greitt, kröfur sendar, nýir
+  í þjónustu), staða samninga (Heimaleiga, Center Hotels), áminningar og dagskrá. Mældar tölur úr
+  gagnagrunni; texti skrifaður af Claude úr staðreyndunum. Sama bakendi og vistun.
+- **Staðsetning:** beint undir 489 (Vinnusamantekt) á Þjónustuborði. Tengd í `368-thjonustubord5.js`
+  á línu ~5337. `<script>` tag í `index.html`.
+- **Prófun:** `?dry=1` á POST `/api/einkaritari` skilar forskoðun án vistunar.
