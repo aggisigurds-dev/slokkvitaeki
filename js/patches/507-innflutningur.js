@@ -148,7 +148,7 @@
       `${V}-btn--graent{height:44px!important;min-height:44px!important;font-size:14px!important;font-weight:700!important;padding:0 18px!important;border-radius:10px!important;border:1px solid rgba(52,168,98,.55);background:linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 14px -5px rgba(22,140,72,.65),0 2px 5px rgba(0,0,0,.3)}`,
       `${V}-btn--litill{height:30px!important;min-height:30px!important;width:30px!important;padding:0!important;justify-content:center;border-radius:6px!important}`,
       `${V}-btn[disabled]{opacity:.38;pointer-events:none}`,
-      `${V}-haus ${V}-btn{margin-left:0}`,
+      `${V}-haus .innf-btn{margin-left:0}`,
       // Reitir
       `${V}-reitir{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr));gap:10px}`,
       `${V}-reitir label{min-width:0}`,
@@ -183,7 +183,7 @@
       `${V}-samt{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:flex-end;font-family:${MONO};font-size:12.5px;color:#3a4250}`,
       `${V}-samt b{color:#141822}`,
       `${V}-band{background:${METAL};border:1px solid #000;border-radius:10px;padding:10px 16px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;color:#c9ced8;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}`,
-      `${V}-band ${V}-tala{font-size:28px}`,
+      `${V}-band .innf-tala{font-size:28px}`,
       `${V}-band-merki{font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}`,
       // Viðvaranir: frátekið pláss, svo ekkert hoppar þegar þær koma og fara
       `${V}-vantar{min-height:22px;display:flex;flex-wrap:wrap;gap:6px}`,
