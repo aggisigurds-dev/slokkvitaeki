@@ -35,14 +35,25 @@ const KERFI = [
   '- Stutt og skýrt. Nefndu fólk og fyrirtæki með nafni eins og það stendur í gögnunum.',
   '',
   'ÞÚ SKRIFAR:',
-  '1. **i_dag**: 3–5 atriði sem Agnar á að einbeita sér að í dag, hvert með „af_hverju" (talan úr gögnunum) og „hlekkur" (hvar í kerfinu).',
+  '1. **i_dag**: 3–5 atriði sem Agnar á að einbeita sér að í dag. Hvert með „af_hverju" (talan úr gögnunum), „adgerd" og „audkenni".',
+  '   Veldu úr því sem hægt er að GERA eitthvað við, í þessari röð: `afgreidsla` (forunnin verk — takkinn framkvæmir),',
+  '   `adalmal.atridi` (sannreyndi topp 10 listinn), `aminningar.eindagar`, `aminningar.forgangsmal`, `samningar.*.opin_mal`.',
+  '   adgerd = "afgreidsla" og audkenni = afgreidsla_id · adgerd = "adalmal" og audkenni = adalmal.mal_id ·',
+  '   adgerd = "mal" og audkenni = mal_id málsins · annars adgerd = "engin" og audkenni = 0. Notaðu AÐEINS auðkenni sem standa í gögnunum.',
   '2. **samningar**: Heimaleiga og Center Hotels — staða í einni setningu, opin mál, næsta skref.',
-  '3. **topp_vikunnar**: Mest 10 atriði sem skiptu máli í vikunni: peningar, viðskiptavinir, borð, kerfið. Hvert með „texti" og „heimild".',
-  '4. **aminningar_texti**: Samantekt á áminningum (eindagar, forgangsmál, skoðanir á fresti) í 2–4 setningum.',
+  '3. **topp_vikunnar**: Mest 10 atriði sem skiptu máli í vikunni: peningar, viðskiptavinir, borð. Hvert með „texti" og „heimild".',
+  '4. **aminningar_texti**: Samantekt á áminningum (eindagar, forgangsmál, úttektir) í 2–4 setningum.',
   '5. **fyrirsogn**: Ein setning — það mikilvægasta í dag.',
   '',
   '- Tölurnar í „Vikan í tölum" (greitt, sendar, nýir) skrifar KÓÐINN — þú nefnir þær EKKI.',
   '- Kröfur á bið (a_bid, ⏸) eru ákvörðun Agnars — aldrei leggja til innheimtu á þeim.',
+  // 16.11.2026 (Agnar: „ennþá drasl ómælt … hvað á ég að nota þetta í"): fyrsta útgáfan setti kerfisvillur efst á blað.
+  '- ÓMÆLT (listinn `omaelt`, eða hópur með reitinn `omaelt`) er KERFISVILLA sem forritarinn lagar. Hún fer ALDREI í fyrirsögn,',
+  '  i_dag eða topp_vikunnar og Agnar á aldrei að „laga fyrirspurn". Um ómældan hóp skrifar þú aðeins „ómælt" í stöðuna.',
+  '- AI-tillögur eru ekki staðreyndir og eru ekki í gögnunum; nefndu þær ekki. Launa- og starfsmannamál fara aldrei á blað.',
+  '- Ekkert undir 10.000 kr. Ákvörðun sem Agnar hefur tekið er ekki lögð til aftur.',
+  '- `eindagar_eldri_en_60d` eru gömul mál: nefndu þau mest í einni setningu, aldrei sem atriði dagsins.',
+  '- `aaetlad_virdi_kr` er ÁÆTLUN, ekki reikningur: nefnir þú hana, þá alltaf með orðinu „áætlað".',
 ].join('\n');
 
 /* ── Claude JSON-skema ──────────────────────────────────────────────────────────── */
@@ -52,8 +63,10 @@ const SKEMA = {
   required: ['fyrirsogn', 'i_dag', 'samningar', 'topp_vikunnar', 'aminningar_texti'],
   properties: {
     fyrirsogn: STRENGUR,
-    i_dag: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['titill', 'af_hverju', 'hlekkur'],
-      properties: { titill: STRENGUR, af_hverju: STRENGUR, hlekkur: STRENGUR } } },
+    // adgerd + audkenni: 506 teiknar TAKKA sem opnar réttan stað (Afgreiðsla, Aðalmál, málið á borðinu). stadfesta()
+    // sannreynir auðkennið gegn gögnunum — óþekkt auðkenni verður „engin" (enginn takki), aldrei dauður tengill.
+    i_dag: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['titill', 'af_hverju', 'adgerd', 'audkenni'],
+      properties: { titill: STRENGUR, af_hverju: STRENGUR, adgerd: { type: 'string', enum: ['afgreidsla', 'adalmal', 'mal', 'engin'] }, audkenni: { type: 'integer' } } } },
     samningar: { type: 'object', additionalProperties: false, required: ['heimaleiga', 'center'],
       properties: {
         heimaleiga: { type: 'object', additionalProperties: false, required: ['stada', 'opin_mal', 'naesta_skref'],
@@ -94,11 +107,31 @@ async function kalla(stadreyndir) {
 }
 
 /* ── Staðfesta — HALFVISSA og tóm atriði hent ──────────────────────────────────── */
-const HALFVISSA = /\b(virðist|líklega|sennilega|gæti verið|mögulega|kannski)\b/i;
-function stadfesta(svar) {
+const HALFVISSA = /(^|[^a-záðéíóúýþæö])(virðist|virðast|líklega|sennilega|gæti verið|mögulega|kannski)([^a-záðéíóúýþæö]|$)/i;
+// Kerfisvilla sem atriði („Laga fyrirspurn áminninga — villa 42703"): hent í kóða þótt KERFI banni það líka.
+const KERFISMAL = /ómæl|42703|villu? í kerfinu|laga fyrirspurn/i;
+function stadfesta(svar, f) {
   let hent = 0;
-  if (svar.i_dag) { const f = svar.i_dag.filter((x) => x.titill && !HALFVISSA.test(x.af_hverju)); hent += svar.i_dag.length - f.length; svar.i_dag = f.slice(0, 5); }
-  if (svar.topp_vikunnar) { const f = svar.topp_vikunnar.filter((x) => x.texti && !HALFVISSA.test(x.texti)); hent += svar.topp_vikunnar.length - f.length; svar.topp_vikunnar = f.slice(0, 10); }
+  const afgr = new Set(((f && f.afgreidsla) || []).map((x) => Number(x.afgreidsla_id)));
+  const adalId = f && f.adalmal && f.adalmal.mal_id ? Number(f.adalmal.mal_id) : 0;
+  const mal = new Set();
+  if (f && f.samningar) for (const h of Object.values(f.samningar)) for (const m of ((h && h.opin_mal) || [])) mal.add(Number(m.mal_id));
+  for (const m of ((f && f.aminningar && f.aminningar.forgangsmal) || [])) mal.add(Number(m.mal_id));
+  if (adalId) mal.add(adalId);
+  if (svar.i_dag) {
+    const g = svar.i_dag.filter((x) => x.titill && !HALFVISSA.test(x.af_hverju) && !KERFISMAL.test(x.titill + ' ' + x.af_hverju));
+    hent += svar.i_dag.length - g.length;
+    svar.i_dag = g.slice(0, 5).map((x) => {
+      const id = Number(x.audkenni) || 0;
+      const gilt = x.adgerd === 'afgreidsla' ? afgr.has(id) : x.adgerd === 'adalmal' ? !!adalId : x.adgerd === 'mal' ? mal.has(id) : false;
+      return { titill: x.titill, af_hverju: x.af_hverju, adgerd: gilt ? x.adgerd : 'engin', audkenni: gilt ? (x.adgerd === 'adalmal' ? adalId : id) : 0 };
+    });
+  }
+  if (svar.topp_vikunnar) {
+    const g = svar.topp_vikunnar.filter((x) => x.texti && !HALFVISSA.test(x.texti) && !KERFISMAL.test(x.texti));
+    hent += svar.topp_vikunnar.length - g.length; svar.topp_vikunnar = g.slice(0, 10);
+  }
+  if (svar.fyrirsogn && KERFISMAL.test(svar.fyrirsogn)) { svar.fyrirsogn = ''; hent++; }
   return { ...svar, hent };
 }
 
@@ -157,12 +190,15 @@ async function skrifaUr(fyrri, { key, kalladAf, prufa, nu, t0, byrjad }) {
   try {
     const f = await S.safna({ nu });
     const { svar, model, usage } = await kalla(f);
-    const gilt = stadfesta(svar);
+    const gilt = stadfesta(svar, f);
     const rec = {
       skrifad_at: new Date().toISOString(), kallad_af: kalladAf, model, ms: Date.now() - t0,
       omaelt: f.omaelt,
       tolur: { greitt: f.greitt, sendar: f.sendar, nyir_i_thjonustu: f.nyir_i_thjonustu },
       aminningar: f.aminningar,
+      // Fyrir takkana í haus 506: hve mörg forunnin verk bíða og hvaða mál er topp 10 listinn.
+      afgreidsla_fjoldi: f.afgreidsla ? f.afgreidsla.length : null,
+      adalmal_id: (f.adalmal && f.adalmal.mal_id) || null,
       tokn: usage ? { inn: usage.input_tokens, ut: usage.output_tokens } : null,
       hent: gilt.hent,
       ...gilt,
