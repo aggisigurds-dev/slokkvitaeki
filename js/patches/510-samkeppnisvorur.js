@@ -123,6 +123,16 @@
       .samk-h{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--ink1)}
       .samk-tomt{padding:28px;text-align:center;color:var(--ink3);background:var(--bg2);border-radius:10px;font-size:13px}
       .samk-afsl{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+      .samk-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 14px}
+      .samk-kpi>div{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;min-width:0}
+      .samk-kpi b{display:block;font-size:22px;line-height:1.15;color:var(--ink1);font-variant-numeric:tabular-nums}
+      .samk-kpi span{font-size:11.5px;color:var(--ink3)}
+      .samk-kpi .g b{color:#15803d}.samk-kpi .r b{color:#b91c1c}
+      .samk-bil{position:relative;height:8px;border-radius:99px;background:var(--bg2);border:1px solid var(--brd);min-width:140px}
+      .samk-bil .b{position:absolute;top:0;bottom:0;border-radius:99px;background:#94a3b8}
+      .samk-bil .m{position:absolute;top:-4px;width:3px;height:14px;border-radius:2px;background:#b91c1c}
+      .samk-csv{margin-left:10px;border:1px solid var(--brd);background:var(--bg1);color:var(--ink1);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;vertical-align:middle}
+      .samk-csv:hover{background:var(--bg2)}
       @media(max-width:900px){.samk-tafla{display:block;overflow-x:auto;white-space:nowrap}}
     `;
     document.head.appendChild(s);
@@ -145,8 +155,22 @@
       return (typeof x === 'string' ? x.localeCompare(y, 'is') : x - y) * s.d;
     });
   }
+  const textiAf = (h) => String(h == null ? '' : h).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+  const _tof = {};   // töflurnar sem voru teiknaðar (id → {cols, rows}) — CSV-útflutningur les þær í sömu röð og á skjánum
+  const csvTakki = (id) => `<button type="button" class="samk-csv" onclick="window.Samkeppni._csv('${id}')" title="Sækja þessa töflu sem CSV (Excel, semíkomma)">Sækja CSV</button>`;
+  function sækjaCsv(nafn, haus, linur) {
+    const reit = (v) => { const s = String(v == null ? '' : v).replace(/\r?\n/g, ' '); return /[";]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const txt = '﻿' + [haus, ...linur].map((l) => l.map(reit).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
+    a.download = `${nafn}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  const kpi = (l) => `<div class="samk-kpi">${l.map(([tala, texti, lit]) => `<div class="${lit || ''}"><b>${esc(tala)}</b><span>${esc(texti)}</span></div>`).join('')}</div>`;
   function tafla(id, cols, rows) {
-    if (!rows.length) return '<div class="samk-tomt">Ekkert fannst með þessum síum.</div>';
+    if (!rows.length) { delete _tof[id]; return '<div class="samk-tomt">Ekkert fannst með þessum síum.</div>'; }
+    _tof[id] = { cols, rows };
     const s = _sort[id];
     const haus = cols.map((c) => `<th class="${c.v ? 'srt' : ''}${c.r ? ' r' : ''}"${c.v ? ` onclick="window.Samkeppni._rada('${id}','${c.k}')"` : ''}>${esc(c.t)}${s && s.k === c.k ? (s.d > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('');
     const lik = rada(id, rows, cols).map((r) => `<tr>${cols.map((c) => `<td class="${c.r ? 'r' : ''}">${c.h(r)}</td>`).join('')}</tr>`).join('');
@@ -163,6 +187,10 @@
     return true;
   }
 
+  // Breyting á verði frá síðustu mælingu (r.fyrra_verd_m_vsk / r.fyrra_dags koma úr competitor_prices þegar sama slóð var mæld áður)
+  const breyting = (r) => (r.fyrra_verd_m_vsk && perStkMVsk(r) != null ? ((perStkMVsk(r) - Number(r.fyrra_verd_m_vsk)) / Number(r.fyrra_verd_m_vsk)) * 100 : null);
+  const breytingHtml = (r) => { const b = breyting(r); return b == null ? '<span class="samk-sm">—</span>' : `<span class="${b > 1 ? 'samk-slaemt' : b < -1 ? 'samk-gott' : ''}">${pct(b)}</span><div class="samk-sm">${esc(dags(r.fyrra_dags))}</div>`; };
+
   // ── 1. Ódýrara innkaup ───────────────────────────────────────────────────────────────────────────────────────────
   function odyrara() {
     const m = markadur().filter(passar);
@@ -173,7 +201,12 @@
       return { r, v, k, n, sparnadur: k != null && n != null ? k - n : null };
     });
     const odyrari = samanb.filter((x) => x.sparnadur != null && x.sparnadur > 0.5).sort((a, b) => (b.sparnadur / b.k) - (a.sparnadur / a.k));
-    const utan = samanb.filter((x) => x.r.okkar_id == null).sort((a, b) => String(a.r.flokkur).localeCompare(String(b.r.flokkur), 'is') || a.n - b.n);
+    // Möguleikar: raðir sem voru bornar við kostnaðarverðið okkar (samb_kostn) án þess að pörunin sé sönnuð — „staðfestu að varan sé sambærileg"
+    const mogul = samanb.filter((x) => !(x.sparnadur != null && x.sparnadur > 0.5) && x.r.samb_kostn != null && x.n != null && x.n < Number(x.r.samb_kostn))
+      .map((x) => ({ ...x, k2: Number(x.r.samb_kostn), spar2: Number(x.r.samb_kostn) - x.n }))
+      .sort((a, b) => (b.spar2 / b.k2) - (a.spar2 / a.k2));
+    const moguleg = new Set(mogul.map((x) => x.r));
+    const utan = samanb.filter((x) => x.r.okkar_id == null && !moguleg.has(x.r)).sort((a, b) => String(a.r.flokkur).localeCompare(String(b.r.flokkur), 'is') || a.n - b.n);
     const dyrara = samanb.filter((x) => x.k != null && x.sparnadur != null && x.sparnadur <= 0.5);
     const vantar = samanb.filter((x) => x.r.okkar_id != null && x.k == null).length;
 
@@ -185,8 +218,20 @@
       { k: 'kostn', t: 'Við kaupum á', r: 1, v: (x) => x.k, h: (x) => kr(x.k) },
       { k: 'net', t: 'Þeirra án VSK', r: 1, v: (x) => x.n, h: (x) => kr(x.n) },
       { k: 'spar', t: 'Sparnaður', r: 1, v: (x) => x.sparnadur, h: (x) => `<span class="samk-gott">${kr(x.sparnadur)}</span><div class="samk-sm">${pct(-(x.sparnadur / x.k) * 100)}</div>` },
+      { k: 'bre', t: 'Frá síðustu mælingu', r: 1, v: (x) => breyting(x.r), h: (x) => breytingHtml(x.r) },
       { k: 'dags', t: 'Sótt', v: (x) => x.r.dags || _g.sott, h: (x) => esc(dags(x.r.dags || _g.sott)) },
-      { k: 'url', t: 'Síða', h: (x) => tengill(x.r.url, 'Opna') }
+      { k: 'url', t: 'Síða', c: (x) => x.r.url || '', h: (x) => tengill(x.r.url, 'Opna') }
+    ];
+    const colsMogul = [
+      { k: 'mynd', t: '', h: (x) => mynd(x.r.mynd_url, x.r.nafn) },
+      { k: 'vara', t: 'Vara hjá seljanda', v: (x) => x.r.nafn, h: (x) => `<div class="samk-nafn">${esc(x.r.nafn)}</div><div class="samk-sm">${esc([x.r.staerd, x.r.flokkur].filter(Boolean).join(' · '))}${x.r.eining_fjoldi > 1 ? ` · verð fyrir ${esc(x.r.eining_fjoldi)} stk` : ''}</div>` },
+      { k: 'okkar', t: 'Okkar vara', v: (x) => x.r.samb_vara, h: (x) => esc(x.r.samb_vara || '') },
+      { k: 'selj', t: 'Seljandi', v: (x) => x.r.seljandi, h: (x) => `${esc(x.r.seljandi)}<div class="samk-sm">${esc(tegundHeiti(x.r.tegund_seljanda))}</div>` },
+      { k: 'kostn', t: 'Við kaupum á', r: 1, v: (x) => x.k2, h: (x) => kr(x.k2) },
+      { k: 'net', t: 'Þeirra án VSK', r: 1, v: (x) => x.n, h: (x) => kr(x.n) },
+      { k: 'spar', t: 'Sparnaður', r: 1, v: (x) => x.spar2, h: (x) => `<span class="samk-gott">${kr(x.spar2)}</span><div class="samk-sm">${pct(-(x.spar2 / x.k2) * 100)}</div>` },
+      { k: 'ath', t: 'Athugasemd', h: (x) => `<span class="samk-sm">${esc(x.r.athugasemd || '')}</span>` },
+      { k: 'url', t: 'Síða', c: (x) => x.r.url || '', h: (x) => tengill(x.r.url, 'Opna') }
     ];
     const colsUtan = [
       { k: 'mynd', t: '', h: (x) => mynd(x.r.mynd_url, x.r.nafn) },
@@ -194,17 +239,40 @@
       { k: 'selj', t: 'Seljandi', v: (x) => x.r.seljandi, h: (x) => `${esc(x.r.seljandi)}<div class="samk-sm">${esc(tegundHeiti(x.r.tegund_seljanda))}</div>` },
       { k: 'm', t: 'Verð m. VSK', r: 1, v: (x) => perStkMVsk(x.r), h: (x) => kr(perStkMVsk(x.r)) },
       { k: 'net', t: 'Án VSK', r: 1, v: (x) => x.n, h: (x) => kr(x.n) },
+      { k: 'bre', t: 'Frá síðustu mælingu', r: 1, v: (x) => breyting(x.r), h: (x) => breytingHtml(x.r) },
       { k: 'ath', t: 'Athugasemd', h: (x) => `<span class="samk-sm">${esc(x.r.athugasemd || '')}</span>` },
-      { k: 'url', t: 'Síða', h: (x) => tengill(x.r.url, 'Opna') }
+      { k: 'url', t: 'Síða', c: (x) => x.r.url || '', h: (x) => tengill(x.r.url, 'Opna') }
     ];
-    return `
+    const medalSpar = odyrari.length ? odyrari.reduce((a, x) => a + x.sparnadur / x.k, 0) / odyrari.length * 100 : null;
+    const kpiHtml = kpi([
+      [odyrari.length, 'vörur ódýrari en við kaupum á í dag', odyrari.length ? 'g' : ''],
+      [medalSpar == null ? '—' : medalSpar.toFixed(0) + ' %', 'meðalsparnaður á þeim'],
+      [mogul.length, 'möguleikar til að staðfesta (sambærileg vara?)', mogul.length ? 'g' : ''],
+      [utan.length, 'vörur utan skrár okkar'],
+      [new Set(m.map((r) => r.seljandi)).size, 'seljendur í niðurstöðum'],
+      [dyrara.length, 'pöruð verð ≥ okkar kostnaðarverði']
+    ]);
+    return `${kpiHtml}
       <p class="samk-note">Hér sjást aðeins vörur þar sem <b>verð án VSK</b> hjá seljanda er lægra en <b>kostnaðarverðið sem við borgum í dag</b> (kostnaðarverð í Birgðum, eftir afslátt birgja). Verð úr verslunum er deilt með 1,24. Hafðu í huga: verð í vefverslun er smásöluverð og flutningur, magnskilmálar og tollar bætast við hjá erlendum birgjum — staðfestu verðið hjá seljanda áður en pantað er.
       ${vantar ? `<br><b>${vantar}</b> vörur eiga pörun við okkar vöru en vantar kostnaðarverð hjá okkur, svo þær komast ekki í samanburðinn.` : ''}</p>
-      <div class="samk-h">Ódýrara en við kaupum á í dag (${odyrari.length})</div>
+      <div class="samk-h">Ódýrara en við kaupum á í dag (${odyrari.length})${odyrari.length ? csvTakki('odyrara') : ''}</div>
       ${odyrari.length ? tafla('odyrara', cols, odyrari) : `<div class="samk-tomt">Ekkert fannst ódýrara en núverandi kostnaðarverð með þessum síum.${dyrara.length ? ` Næst kemst þetta: ${dyrara.length} pöruð verð eru jafn há eða hærri en við borgum nú.` : ''}</div>`}
-      <div class="samk-h">Vörur utan skrár okkar — gætu verið áhugaverðar (${utan.length})</div>
+      <div class="samk-h">Möguleikar til að skoða — staðfestu að varan sé sambærileg (${mogul.length})${mogul.length ? csvTakki('mogul') : ''}</div>
+      <p class="samk-note">Ódýrari en kostnaðarverðið okkar, en pörunin (tegund, stærð, vottun) er ekki sönnuð — t.d. önnur gerð af rafhlöðu eða stút. Athugaðu athugasemdina og vöruna sjálfa áður en nokkuð er keypt.</p>
+      ${mogul.length ? tafla('mogul', colsMogul, mogul) : '<div class="samk-tomt">Engir möguleikar fundust.</div>'}
+      <div class="samk-h">Vörur utan skrár okkar — gætu verið áhugaverðar (${utan.length})${utan.length ? csvTakki('utan') : ''}</div>
       <p class="samk-note">Vörur sem við seljum ekki enn eða hafa ekki pörun við vöru í Vörum og þjónustu. Röðun: flokkur, svo lægsta verð fyrst.</p>
       ${tafla('utan', colsUtan, utan)}`;
+  }
+
+  // Verðbil á markaði: grá súla frá lægsta til hæsta verði, rautt strik = okkar verð m. VSK
+  function bilSula(x) {
+    const v = x.l.map(perStkMVsk).filter((n) => n != null);
+    if (!v.length) return '';
+    const lo = Math.min(...v, x.ok == null ? Infinity : x.ok), hi = Math.max(...v, x.ok == null ? -Infinity : x.ok);
+    const sk = (n) => (hi === lo ? 50 : ((n - lo) / (hi - lo)) * 100);
+    const a = sk(Math.min(...v)), b = sk(Math.max(...v));
+    return `<div class="samk-bil" title="Markaður ${thus(Math.min(...v))}–${thus(Math.max(...v))} kr${x.ok != null ? ' · við ' + thus(x.ok) + ' kr' : ''}"><span class="b" style="left:${a}%;width:${Math.max(b - a, 2)}%"></span>${x.ok != null ? `<span class="m" style="left:calc(${sk(x.ok)}% - 1px)"></span>` : ''}</div><div class="samk-sm">${thus(Math.min(...v))}–${thus(Math.max(...v))}</div>`;
   }
 
   // ── 2. Verðsamanburður (sala) ────────────────────────────────────────────────────────────────────────────────────
@@ -227,10 +295,19 @@
       { k: 'lag', t: 'Lægst hjá', r: 1, v: (x) => x.lagstVerd, h: (x) => `${kr(x.lagstVerd)}<div class="samk-sm">${esc(x.lagst.seljandi)}</div>` },
       { k: 'med', t: 'Miðgildi', r: 1, v: (x) => x.med, h: (x) => kr(x.med) },
       { k: 'mun', t: 'Við vs miðgildi', r: 1, v: (x) => x.munur, h: (x) => `<span class="${x.munur > 3 ? 'samk-slaemt' : x.munur < -3 ? 'samk-gott' : ''}">${pct(x.munur)}</span>` },
+      { k: 'bil', t: 'Verðbil á markaði', h: (x) => bilSula(x) },
       { k: 'fj', t: 'Verð', r: 1, v: (x) => x.l.length, h: (x) => `${x.l.length}` },
+      { k: 'ja', t: 'Leita', c: (x) => '', h: (x) => tengill('https://ja.is/vorur/?q=' + encodeURIComponent(String(x.v.nafn).replace(/\.\s*(Slökkvitæki|AB|ABC)\b.*$/i, '').slice(0, 60)), 'ja.is') },
       { k: 'tilb', t: 'Hjá', h: (x) => x.l.slice().sort((a, b) => perStkMVsk(a) - perStkMVsk(b)).slice(0, 5).map((r) => `<div>${slod(r.url) ? tengill(r.url, r.seljandi) : esc(r.seljandi)} <span class="samk-sm">${kr(perStkMVsk(r))}</span></div>`).join('') }
     ];
-    return `<p class="samk-note">Söluverðið okkar (m. VSK, úr Vörum og þjónustu) á móti verði samkeppnisaðila. Neikvæð prósenta = við erum ódýrari en miðgildið. Aðeins vörur með nákvæma pörun (sama tegund og stærð) eru taldar — annað er „ómælt".</p>${tafla('samanb', cols, rows)}`;
+    const odyrariVid = rows.filter((x) => x.munur != null && x.munur < -3).length, dyrariVid = rows.filter((x) => x.munur != null && x.munur > 3).length;
+    const kpiHtml = kpi([
+      [rows.length, 'vörur með samanburð'],
+      [odyrariVid, 'við ódýrari en miðgildið', odyrariVid ? 'g' : ''],
+      [dyrariVid, 'við dýrari en miðgildið', dyrariVid ? 'r' : ''],
+      [rows.length - odyrariVid - dyrariVid, 'á svipuðu verði (±3 %)']
+    ]);
+    return `${kpiHtml}<p class="samk-note">Söluverðið okkar (m. VSK, úr Vörum og þjónustu) á móti verði samkeppnisaðila. Neikvæð prósenta = við erum ódýrari en miðgildið. Aðeins vörur með nákvæma pörun (sama tegund og stærð) eru taldar — annað er „ómælt". ${rows.length ? csvTakki('samanb') : ''}</p>${tafla('samanb', cols, rows)}`;
   }
 
   // ── 3. Hvar kaupa ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -259,7 +336,8 @@
       </div>`;
     };
     const is = l.filter((b) => b.land === 'Ísland'), erl = l.filter((b) => b.land !== 'Ísland');
-    return `<p class="samk-note">Hvar við getum keypt ef við verðum tómir. Aðeins opinberar upplýsingar af vefsíðum birgja — engin samskipti hafa átt sér stað. „Sendir til Íslands" er skráð eftir því sem birgirinn birtir sjálfur; óvíst þýðir að það þarf að spyrja.</p>
+    const kpiHtml = kpi([[l.length, 'birgjar í niðurstöðum'], [is.length, 'innanlands'], [erl.length, 'erlendis'], [l.filter((b) => b.nuverandi_birgir).length, 'núverandi birgjar'], [l.filter((b) => b.sendir_til_islands === 'já').length, 'senda til Íslands (staðfest)', 'g']]);
+    return `${kpiHtml}<p class="samk-note">${csvTakki('birgjar')} Hvar við getum keypt ef við verðum tómir. Aðeins opinberar upplýsingar af vefsíðum birgja — engin samskipti hafa átt sér stað. „Sendir til Íslands" er skráð eftir því sem birgirinn birtir sjálfur; óvíst þýðir að það þarf að spyrja.</p>
       ${is.length ? `<div class="samk-h">Innanlands (${is.length})</div><div class="samk-grid">${is.map(kort).join('')}</div>` : ''}
       ${erl.length ? `<div class="samk-h">Erlendis (${erl.length})</div><div class="samk-grid">${erl.map(kort).join('')}</div>` : ''}`;
   }
@@ -272,7 +350,8 @@
     const l = ik.filter((r) => passar({ nafn: r.lysing, seljandi: r.seljandi, athugasemd: r.vorunr, flokkur: '' }) && (!_seljandi || r.seljandi === _seljandi));
     // Afsláttaryfirlit per birgi (reiknað af línunum, ekki af samantekt)
     const yfir = {};
-    l.forEach((r) => { const k = r.seljandi; yfir[k] = yfir[k] || {}; const a = r.afslattur_pct == null ? 'óþekktur' : Number(r.afslattur_pct); yfir[k][a] = (yfir[k][a] || 0) + 1; });
+    const fra = new Date(Date.now() - 548 * 864e5).toISOString().slice(0, 10);   // síðustu 18 mánuðir — gamlir reikningar skekkja yfirlitið
+    l.filter((r) => String(r.dags) >= fra).forEach((r) => { const k = r.seljandi; yfir[k] = yfir[k] || {}; const a = r.afslattur_pct == null ? 'óþekktur' : Number(r.afslattur_pct); yfir[k][a] = (yfir[k][a] || 0) + 1; });
     const afslChips = Object.keys(yfir).map((s) => `<div class="samk-kort" style="padding:10px 12px"><b>${esc(s)}</b><div class="l">${Object.keys(yfir[s]).sort((a, b) => yfir[s][b] - yfir[s][a]).map((a) => `<span class="samk-pill ${Number(a) > 0 ? 'gr' : ''}">${a === 'óþekktur' ? 'afsláttur óþekktur' : Number(a) > 0 ? esc(String(a).replace('.', ',')) + ' % afsláttur' : 'enginn afsláttur'} · ${yfir[s][a]} ${yfir[s][a] === 1 ? 'lína' : 'línur'}</span>`).join('')}</div></div>`).join('');
     // Ein röð per vara og birgi: nýjasta verð + saga
     const hopar = {};
@@ -295,8 +374,11 @@
       { k: 'mark', t: 'Lægst á markaði (án VSK)', r: 1, v: (x) => (x.mark ? x.mark.n : null), h: (x) => (x.mark ? `<span class="${x.n.netto_eining_an_vsk != null && x.mark.n < x.n.netto_eining_an_vsk ? 'samk-gott' : ''}">${kr(x.mark.n)}</span><div class="samk-sm">${esc(x.mark.r.seljandi)}</div>` : '<span class="samk-sm">—</span>') },
       { k: 'pdf', t: 'Reikningur', h: (x) => (x.n.drive_id ? tengill('https://drive.google.com/file/d/' + encodeURIComponent(x.n.drive_id) + '/view', 'PDF') : '') }
     ];
-    return `<p class="samk-note">Verðin sem við höfum borgað birgjum, lesin af reikningum í Drive. Afslátturinn er sá sem stendur á hverri reikningslínu — hann er ekki alltaf sá sami (Oger gefur t.d. mest 35 % en lægri afslátt á sumum vörum). „Lægst á markaði" er lægsta verð án VSK sem fannst hjá öðrum seljanda fyrir sömu vöru.</p>
-      <div class="samk-afsl">${afslChips}</div>${tafla('innkaup', cols, rows)}
+    const dagar = ik.map((r) => r.dags).filter(Boolean).sort();
+    const kpiHtml = kpi([[new Set(ik.map((r) => r.reikningur)).size, 'reikningar lesnir'], [ik.length, 'vörulínur'], [new Set(ik.map((r) => r.seljandi)).size, 'birgjar'], [dagar.length ? dags(dagar[dagar.length - 1]) : '—', 'síðasti reikningur']]);
+    return `${kpiHtml}<p class="samk-note">Verðin sem við höfum borgað birgjum, lesin af reikningum í Drive. Afslátturinn er sá sem stendur á hverri reikningslínu — hann er ekki alltaf sá sami (Oger gefur t.d. mest 35 % en lægri afslátt á sumum vörum). „Lægst á markaði" er lægsta verð án VSK sem fannst hjá öðrum seljanda fyrir sömu vöru.</p>
+      <div class="samk-sm" style="margin:0 0 6px">Afslættir á reikningum síðustu 18 mánuði (taflan sýnir alla sögu):</div>
+      <div class="samk-afsl">${afslChips || '<span class="samk-sm">Engir reikningar á tímabilinu.</span>'}</div><div class="samk-h" style="margin-top:0">Allar vörur og verðin sem við höfum borgað${csvTakki('innkaup')}</div>${tafla('innkaup', cols, rows)}
       ${ekkiLesid.length ? `<div class="samk-h">Vantar enn</div><ul class="samk-note" style="padding-left:18px">${ekkiLesid.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}`;
   }
 
@@ -348,6 +430,7 @@
           <div class="samk-sub">${FLIPAR.map(([k, l]) => `<button type="button" data-f="${k}" onclick="window.Samkeppni._flipi('${k}')">${esc(l)}</button>`).join('')}</div>
           <input class="samk-in" id="samk-leit" type="text" placeholder="Leita að vöru, seljanda eða flokki…" value="${esc(_q)}" oninput="window.Samkeppni._leit(this.value)">
           <span id="samk-val" style="display:contents"></span>
+          <a class="samk-tengill" href="https://ja.is/vorur/" target="_blank" rel="noopener noreferrer" title="Já leyfir ekki afritun gagna úr Vöruleit, svo flipinn notar hana ekki — flettu upp handvirkt">Leita á ja.is Vöruleit ↗</a>
         </div>
         <div class="samk-sm" id="samk-stada" style="margin:-4px 0 10px"></div>
         <div id="samk-efni"></div>`;
@@ -364,6 +447,17 @@
     _flokk(v) { _flokkur = v; uppfaera(); },
     _selj(v) { _seljandi = v; uppfaera(); },
     _land(v) { _land = v; uppfaera(); },
+    _csv(id) {
+      if (id === 'birgjar') {
+        const l = (_g && _g.birgjar) || [];
+        return sækjaCsv('birgjar', ['Birgir', 'Land', 'Tegund', 'Núverandi birgir', 'B2B', 'Sendir til Íslands', 'Lágmarkspöntun', 'Flutningur/tollar', 'Vörur', 'Vefur'],
+          l.map((b) => [b.nafn, b.land, tegundHeiti(b.tegund), b.nuverandi_birgir ? 'já' : '', b.b2b, b.sendir_til_islands, b.magn_lagmark, b.ath_fluttning, b.vorur, b.vefur]));
+      }
+      const t = _tof[id];
+      if (!t) return;
+      const cols = t.cols.filter((c) => c.t);
+      sækjaCsv('samkeppni-' + id, cols.map((c) => c.t), rada(id, t.rows, t.cols).map((r) => cols.map((c) => (c.c ? c.c(r) : textiAf(c.h(r))))));
+    },
     _rada(id, k) { const s = _sort[id]; _sort[id] = s && s.k === k ? { k, d: -s.d } : { k, d: 1 }; uppfaera(); }
   };
 })();
