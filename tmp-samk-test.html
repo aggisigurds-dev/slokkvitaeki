@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><title>samk test</title>
+<style>:root{--bg1:#fff;--bg2:#f1f5f9;--brd:#d9dee5;--ink1:#0f172a;--ink2:#334155;--ink3:#64748b}body{font-family:system-ui;margin:20px;background:#f8fafc}</style></head>
+<body><div id="r" style="max-width:1200px"></div>
+<script>
+window.DB={sb:{from:()=>({select:()=>({limit:async()=>({data:[
+{id:1,nafn:'Duft 6 kg. ABC Slökkvitæki',flokkur:'Slökkvitæki',verd_an_vsk:10887.1,vsk_prosenta:24,kostnadarverd:4031,listaverd:null,birgi:'Ogniochron S.A.',virkt:true},
+{id:4,nafn:'Eldvarnateppi 1m x 1m',flokkur:'Eldvarnir',verd_an_vsk:3137,vsk_prosenta:24,kostnadarverd:null,virkt:true},
+{id:344,nafn:'Reykskynjari Opt. SND-500-S 9V',flokkur:'Skynjarar',verd_an_vsk:1815.32,vsk_prosenta:24,kostnadarverd:1180,virkt:true}],error:null})})})}};
+</script>
+<script>
+const _of=window.fetch;
+window.fetch=async (u,o)=>{ if(String(u).startsWith('/api/samkeppni-innkaup')){ const v=await (await _of('/tmp-innkaup.json')).json();
+ const ex=l=>l.seljandi?l:{seljandi:l.s,reikningur:l.r,dags:l.d,vorunr:l.n,lysing:l.l,magn:l.m,lista_an_vsk:l.p,afslattur_pct:l.a,netto_eining_an_vsk:l.v,drive_id:l.i||null,okkar_id:l.o==null?null:l.o,athugasemd:l.c||''};
+ return new Response(JSON.stringify({innkaup:{...v,linur:v.linur.map(ex)}}),{status:200}); } return _of(u,o); };
+</script>
+<script src="/js/patches/510-samkeppnisvorur.js"></script>
+<script>window.Samkeppni.teikna(document.getElementById('r'))</script></body></html>

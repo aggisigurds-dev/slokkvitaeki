@@ -1,0 +1,89 @@
+{
+ "sott": "2026-05-22",
+ "athugasemd": "SÝNISHORN — verður skipt út fyrir fulla gagnasöfnun 16.11.2026",
+ "vorur": [
+  {
+   "flokkur": "Duft ABC",
+   "nafn": "Slökkvitæki duft 6 kg m/mæli",
+   "staerd": "6 kg",
+   "seljandi": "BYKO",
+   "tegund_seljanda": "byggingavoruverslun",
+   "verd_isk_m_vsk": 10899,
+   "eining": "stk",
+   "url": "https://byko.is/vara/slokkvitaeki-duft-6kg-mmaeli-352526",
+   "mynd_url": "",
+   "okkar_id": 1,
+   "dags": "2026-05-22",
+   "athugasemd": ""
+  },
+  {
+   "flokkur": "Duft ABC",
+   "nafn": "6kg Mobiak dufttæki m/mæli",
+   "staerd": "6 kg",
+   "seljandi": "Eldvarnamiðstöðin",
+   "tegund_seljanda": "samkeppnisadili",
+   "verd_isk_m_vsk": 13512,
+   "eining": "stk",
+   "url": "https://eldvarnamidstodin.is/products/6kg-mobiak-dufttaeki-m-maeli",
+   "mynd_url": "",
+   "okkar_id": 1,
+   "dags": "2026-05-22",
+   "athugasemd": ""
+  },
+  {
+   "flokkur": "Duft ABC",
+   "nafn": "Slökkvitæki duft 6 kg",
+   "staerd": "6 kg",
+   "seljandi": "Öryggismiðstöðin",
+   "tegund_seljanda": "samkeppnisadili",
+   "verd_isk_m_vsk": 17069,
+   "eining": "stk",
+   "url": "https://www.oryggi.is/brunavarnir/slokkvitaeki-duft-6kg/",
+   "mynd_url": "",
+   "okkar_id": 1,
+   "dags": "2026-05-21",
+   "athugasemd": ""
+  },
+  {
+   "flokkur": "Eldvarnateppi",
+   "nafn": "Eldvarnateppi",
+   "staerd": "1x1 m",
+   "seljandi": "Nortek",
+   "tegund_seljanda": "samkeppnisadili",
+   "verd_isk_m_vsk": 2474,
+   "eining": "stk",
+   "url": "https://www.nortek.is/vara/eldvarnateppi/",
+   "mynd_url": "",
+   "okkar_id": 4,
+   "dags": "2026-05-22",
+   "athugasemd": ""
+  },
+  {
+   "flokkur": "Léttvatn",
+   "nafn": "Slökkvitæki 6 lítra léttvatn 34A",
+   "staerd": "6 l",
+   "seljandi": "Nortek",
+   "tegund_seljanda": "samkeppnisadili",
+   "verd_isk_m_vsk": 16990,
+   "eining": "stk",
+   "url": "https://www.nortek.is/vara/slokkvitaeki-6-litra-lettvatn-34a/",
+   "mynd_url": "",
+   "okkar_id": null,
+   "dags": "2026-05-22",
+   "athugasemd": ""
+  }
+ ],
+ "birgjar": [
+  {
+   "nafn": "Ólafur Gíslason & Co hf (Oger)",
+   "land": "Ísland",
+   "tegund": "heildsali",
+   "nuverandi_birgir": true,
+   "vefur": "https://www.oger.is",
+   "vorur": "Eldvarnavörur, skynjarar, merki, sjúkrakassar",
+   "b2b": "viðskiptareikningur",
+   "sendir_til_islands": "já",
+   "synishorn": []
+  }
+ ]
+}

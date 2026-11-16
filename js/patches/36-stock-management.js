@@ -47,6 +47,9 @@
   // Sjötti glugginn „Innflutningur" (Agnar 16.11.2026: „nýjan flipa þarna um innfluttning og útreikninginn á öllu
   // innfluttu sem við síðan uppfærum við núverandi birgðir"). Efnið teiknar 507-innflutningur.js í #innf-rot.
   const INNFL_HAM = 'innflutningur';
+  // Sjöundi glugginn „Samkeppnisaðilar – Vörur" (Agnar 16.11.2026): verð samkeppnisaðila, ódýrara innkaup, birgjar og okkar innkaupaverð.
+  // Efnið teiknar 510-samkeppnisvorur.js í #samk-rot (aðeins lestur).
+  const SAMK_HAM = 'samkeppni';
   const hamHeiti = i => (HAMIR.find(h => passarHam(i, h[0])) || HAMIR[0])[1];
   const passarHam = (i, h) => h === PANTA_HAM ? erPanta(i)
     : h === 'brunakerfi' ? i.flokkur === 'Brunakerfi'
@@ -197,7 +200,7 @@
       _siaLesin = m;
       if (!v || typeof v !== 'object') return;
       _catFilter = v.f || ''; _stada = v.s || '';
-      if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM || v.h === INNFL_HAM) _hamur = v.h;
+      if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM || v.h === INNFL_HAM || v.h === SAMK_HAM) _hamur = v.h;
     } catch (_) {}
   };
   const geymaSiu = () => { try { if (!window.Vidmot) return; const v = { f: _catFilter, s: _stada, h: _hamur }; _siaLesin = JSON.stringify(v); Vidmot.setja(VM_SIA, v); } catch (_) {} };
@@ -219,7 +222,7 @@
     }
     _bidDB = 0;
     // Í Innflutningi heldur flipinn sínu (507 uppfærir sig sjálfur eftir færslu) — enginn hleðsluskjár yfir hann.
-    if (!(_hamur === INNFL_HAM && el.querySelector(':scope > #innf-rot'))) el.innerHTML = '<div class="loading-state">Hleður birgðir…</div>';
+    if (!(_hamur === INNFL_HAM && el.querySelector(':scope > #innf-rot')) && !(_hamur === SAMK_HAM && el.querySelector(':scope > #samk-rot'))) el.innerHTML = '<div class="loading-state">Hleður birgðir…</div>';
     const { data, error } = await SB.from('birgdir').select('*').order('nafn');
     if (error && error.code === '42P01') {
       el.innerHTML = `<div style="padding:32px;max-width:560px">
@@ -365,12 +368,17 @@
     const iInnfl = _hamur === INNFL_HAM && !q;
     const nInnfl = window.Innflutningur && Innflutningur.fjoldi ? Innflutningur.fjoldi() : null;
     const innflFlis = `<button type="button" class="stk-ham${iInnfl ? ' on' : ''}" onclick="window.Stock._setHam('${INNFL_HAM}')" title="Innfluttar sendingar: kostnaðarverð með flutningi og gjöldum">Innflutningur <span class="stk-ham-n" id="innf-ham-n">${nInnfl == null ? '' : nInnfl}</span></button>`;
+    // Samkeppnisaðilar – Vörur (510): eigin hnútur, #samk-rot, sama mynstur og Innflutningur.
+    const iSamk = _hamur === SAMK_HAM && !q;
+    const nSamk = window.Samkeppni && Samkeppni.fjoldi ? Samkeppni.fjoldi() : null;
+    const samkFlis = `<button type="button" class="stk-ham${iSamk ? ' on' : ''}" onclick="window.Stock._setHam('${SAMK_HAM}')" title="Verð samkeppnisaðila, ódýrara innkaup, birgjar og verðin sem við höfum borgað">Samkeppnisaðilar – Vörur <span class="stk-ham-n" id="samk-ham-n">${nSamk == null ? '' : nSamk}</span></button>`;
     const toppur = takkar => `<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
         <div class="stk-hamar">${HAMIR.map(hamFlis).join('')}</div>
         <div class="stk-hamar stk-hamar-panta">${pantaFlis}</div>
         <div class="stk-hamar">${innflFlis}</div>
+        <div class="stk-hamar">${samkFlis}</div>
       </div>
       ${takkar}
     </div>`;
@@ -390,6 +398,21 @@
         const rot = el.querySelector('#innf-rot');
         if (window.Innflutningur) Innflutningur.teikna(rot);
         else rot.innerHTML = '<div class="loading-state">Hleður innflutning…</div>';
+      }
+      return;
+    }
+
+    if (iSamk) {
+      const haus = toppur('') + `<div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">Hvað samkeppnisaðilar selja á, hvar við getum keypt ódýrara eða ef við verðum tómir, og verðin sem við höfum borgað birgjum.</div>`;
+      const hausEl = el.querySelector(':scope > .stk-samk-haus');
+      const rotEl = el.querySelector(':scope > #samk-rot');
+      if (hausEl && rotEl) {
+        hausEl.innerHTML = haus;
+      } else {
+        el.innerHTML = `<div class="stk-samk-haus">${haus}</div><div id="samk-rot" style="min-height:480px"></div>`;
+        const rot = el.querySelector('#samk-rot');
+        if (window.Samkeppni) Samkeppni.teikna(rot);
+        else rot.innerHTML = '<div class="loading-state">Hleður samkeppnisgögn…</div>';
       }
       return;
     }
@@ -953,7 +976,7 @@
     load, render, openNew, openEdit, saveItem, deleteItem, openNota, confirmNota, exportCsv, togglePanta, setjaSlod,
     _setFilter(v) { _filter=v; render(); },
     _setCat(v)    { _catFilter=v; geymaSiu(); render(); },
-    _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM && v !== INNFL_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
+    _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM && v !== INNFL_HAM && v !== SAMK_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
     _hamurIGlugga() { hamurIGlugga(document.getElementById('be-flokkur')?.value); },
     _setStada(v)  { _stada=v; geymaSiu(); render(); },
     _opnaVoru(id) { if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id); else if (window.App) App.switchView('vorur'); }
