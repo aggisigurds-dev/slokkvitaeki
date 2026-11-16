@@ -37,6 +37,16 @@ where tags::text like '%svar:%' and status <> 'lokad' and deleted_at is null
 order by updated_at desc;
 ```
 
+**Önnur hirsla svara: Aðalmál (492d, 16.11.2026).** Svör og ákvarðanir Agnars á atriðum vikuyfirlitsins bera EKKI
+`svar:`-merki. Þau liggja í `afgreidsla` (`tegund='adalmal'`, lykill `adalmal:<mál>-<hluti>-<nr>`) og í Charlize
+(`topic='akvardanir-agnars'`, confirmed). Svar við spurningu stofnar líka verk „Svar Agnars: …" á `verkefnalisti` (claude-code) —
+það er biðröðin sem vinnur úr því. Já/Nei á atriði eru ákvarðanir sem standa; Nei = ekki leggja til aftur.
+
+```sql
+select lykill, gogn->>'texti' atridi, nidurstada->>'svar' svar, nidurstada->>'akvordun' akv, nidurstada->>'verkefnalisti_id' vl, framkvaemt_af, updated_at
+from afgreidsla where tegund = 'adalmal' order by updated_at desc;
+```
+
 ## Rútínan — fimm skref, engu sleppt
 
 **1. Lestu nótuna til enda.** Ákvörðunarlínurnar (✓ ▶ ✕ 💬) standa efst; allt neðar

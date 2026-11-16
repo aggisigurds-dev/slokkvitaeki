@@ -83,6 +83,11 @@ const LEYFT = [
     hversvegna: 'teiknar stöðu-fellilista tækis (selected-merking), ekki sía',
   },
   {
+    skra: 'netlify/functions/afgreidsla.cjs',
+    inniheldur: 'charlize_knowledge?id=eq.',
+    hversvegna: 'charlize_knowledge.status (active/superseded/wrong) — eldri ákvörðun Agnars víkur aðeins ef hún er enn virk; ekki tækjastaða',
+  },
+  {
     skra: 'tools/audit-status-gildi.cjs',
     inniheldur: 'medActive.add(k)',
     hversvegna: 'vörðurinn sjálfur telur active viljandi til að finna fyrirtækin sem eiga ekkert',

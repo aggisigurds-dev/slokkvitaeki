@@ -690,6 +690,23 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   og leit að `__adalmal492` í `_bundle-*.js` (lifandi `index.html` nefnir ekki patch-skrána því build-dist búntar). Eftir innskráningu:
   `window.Adalmal.version` á að vera `'492c'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
   `nytt` í vafranum einum — aldrei opna málið í grunninum til að prófa.
+- **Gagnvirkt (492d, 16.11.2026 — Agnar: „ég get ekki gert rassgat þarna eða látið þig vita svörin eða svarað póstum").**
+  Allt fer um SÖMU vél og Afgreiðslan: `/api/afgreidsla` (aðeins innskráður stjórnandi; 492 talar aldrei sjálft við töflurnar).
+  · Spurning → reitur + „Senda svar til Claude": svarið í `charlize_knowledge` (scope baedi, **topic `akvardanir-agnars`**,
+  confirmed) OG verk á `verkefnalisti` („Svar Agnars: …", claude-code) — breytt svar uppfærir sama verk, eldri Charlize víkur.
+  · Atriði í A/C → „Ákveða ▾": **Já / Nei** = ákvörðun til Charlize (Nei: „ekki leggja til aftur") · **Seinna** = hverfur í 3 daga
+  (ekki Charlize) · **Á Verkefnalistann** (ekki tvítekið) · „Taka ákvörðun til baka" (Charlize-færslan víkur). B og leiðréttingar: aðeins ✓.
+  · **Tilbúið til afgreiðslu** efst = `stada='tilbuid'` raðir Afgreiðslunnar (póstsvar/krafa/símtal/verk), sama spjald og
+  afgreidsla.html: athuganir, breytanlegur póstur (vistast við blur), rauður takki tvö tök, Seinna, Ekki þess virði.
+  · Geymsla: ein `afgreidsla`-röð á atriði, `tegund='adalmal'` (CHECK víkkað 16.11, `sql/2026-11-16_afgreidsla_adalmal.sql`),
+  lykill `adalmal:<mál>-<hluti>-<nr>` (SAMA sæti og ✓-lykillinn → bættu aðeins aftast við yfirlit). Þjónninn hafnar (409) ef
+  málið er lokað/án merkis eða textinn stendur ekki lengur í notes; skráning sem á við eldri texta er hunsuð á borðinu.
+  `GET /api/afgreidsla?adalmal=<id>` skilar skráningunum (`adalmal[]`). Afgreitt (✓, Nei, Verkefnalisti, svarað) fer í fold.
+  · **Áður en NÝTT yfirlit er skrifað:** lestu `select fact from v_charlize_active where topic='akvardanir-agnars'` og
+  `afgreidsla where tegund='adalmal'` — Nei-atriði fara ekki aftur á blað nema ný staðreynd sé komin.
+  · Prófun: `tools/audit-adalmal-adgerdir.cjs` (hegðun á stubbum: hlið, lokað mál, rangur texti, Já→Charlize, prufa). Enda á milli
+  16.11: `netlify dev:exec node <prófunarskrá>` keyrir fallið staðbundið með umhverfi vefsins (ekkert prentað af lyklum);
+  `{adgerd:'framkvaema', prufa:true}` prófar nú hlið gmail-send með tókanum (`gmail_send.via:'toki'`) og sendir EKKERT.
 - **Nýtt yfirlit 10.11.2026: #1587** (vika 03.11–10.11; merki `adalmal`, `vikuyfirlit`, `claude:vikuyfirlit-2026-11-10`; EKKI `samthykki`,
   ekki `important`). Borðið er því ekki lengur tómt: 1 yfirlit, 26 atriði (A 6 · B 8 · C 7 · spurningar 5), mælt með 492c 11.11.2026
   (492 og 492b sýndu 27 því fyrirsögnin „SPURNINGAR TIL ÞÍN" taldist atriði). Skrifað í

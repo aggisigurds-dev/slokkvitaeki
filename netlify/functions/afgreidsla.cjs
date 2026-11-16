@@ -10,6 +10,19 @@
 //   POST /api/afgreidsla { id, adgerd:'vista', texti }          → vistar breyttan texta (tölvupóstur)
 //   POST /api/afgreidsla { id, adgerd:'seinna' }                → aftast í röðina (ekki ákvörðun)
 //   POST /api/afgreidsla { id, adgerd:'sleppa', varanlegt?, astaeda? } → ákvörðun: kemur aldrei aftur á sama lykli
+//   POST /api/afgreidsla { id, adgerd:'framkvaema', prufa:true }  → athuganir + hlið gmail-send prófað ({prufa:true}), EKKERT sent
+//
+// AÐALMÁL (16.11.2026, Agnar: „gera þetta aðalatriða borðið þitt eitthvað interactive, ég get ekki gert rassgat þarna eða
+// látið þig vita svörin eða svarað póstum"). Borðið (js/patches/492-adalmal.js) notar SÖMU vél:
+//   GET  /api/afgreidsla?adalmal=1587            → það sama + adalmal[] (svör/ákvarðanir á atriðum þessara mála)
+//   POST /api/afgreidsla { adgerd:'adalmal', mal_id, hluti, nr, texti, gerd, svar?, akvordun?, athugasemd? }
+//        gerd 'svar'          (spurning)  → svarið til Charlize + verk á Verkefnalistann: „vinna úr svari Agnars"
+//        gerd 'akvordun'      ja | nei    → ákvörðunin til Charlize (agentarnir lesa hana; Nei = ekki leggja til aftur)
+//                             seinna      → atriðið hverfur af borðinu í SEINNA_DAGAR daga (ekki ákvörðun, ekki Charlize)
+//                             engin       → ákvörðun tekin til baka (Charlize-færslan víkur)
+//        gerd 'verkefnalisti'             → atriðið á Verkefnalistann (Claude vinnur verkið)
+//   Ein röð í afgreidsla á hvert atriði (tegund 'adalmal', lykill adalmal:<mál>-<hluti>-<nr>, sama sæti og ✓-lykillinn):
+//   einkvæmur lykill = ákvörðun stendur; saga í nidurstada.saga; birtist í Sögu Afgreiðslunnar.
 //
 // REGLURNAR ÞRJÁR (Agnar 15.11.2026: „aðeins eftir að svara skilaboð úr miðjum samskiptum og mörg samskipti komin eftir
 // það … skiptir um skoðun fram og til baka … setur í forgang eitthvað sem skiptir engu máli"):
@@ -152,6 +165,15 @@ async function sendaPost(g) {
   return { messageId: j.id || j.messageId || null, threaded: j.threaded != null ? !!j.threaded : null, account: body.account, to: body.to };
 }
 
+// Prófar hlið gmail-send með sama tóka og raunsendingin. Aðeins { prufa, account } fer — engir viðtakendur, ekkert efni —
+// svo jafnvel þótt gmail-send hunsaði prufa-merkið hefði það ekkert til að senda.
+async function prufaSending(g) {
+  const r = await fetch(GMAIL_SEND, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-postur-toki': await posturToki() },
+    body: JSON.stringify({ prufa: true, account: String(g.account || '').toLowerCase() }), signal: AbortSignal.timeout(15000) });
+  const j = await r.json().catch(() => ({}));
+  return { status: r.status, ok: r.ok && j.prufa === true && j.sent === false, via: j.via || null, villa: r.ok ? null : String(j.error || j.message || '').slice(0, 200) || null };
+}
+
 async function sendaKrofu(g, event) {
   const PP = require('./payday-push.cjs');
   const h = Object.assign({}, (event && event.headers) || {});
@@ -182,7 +204,12 @@ async function framkvaema(id, body, event) {
     const hver = await notandi(event);
     let nidurstada;
     if (row.tegund === 'tolvupostur') {
-      if (body.prufa) { await skila('tilbuid'); return P.json(200, { ok: true, prufa: true, athuganir: ath.athuganir, myndi_senda: { to: row.gogn.to, from: row.gogn.account, subject: row.gogn.subject } }); }
+      if (body.prufa) {
+        // Prufa nær alla leið að sendingunni: sama tóki, sama hlið á gmail-send — en sendir EKKERT ({prufa:true}).
+        const hlid = await prufaSending(row.gogn).catch((e) => ({ ok: false, villa: String((e && e.message) || e).slice(0, 200) }));
+        await skila('tilbuid');
+        return P.json(200, { ok: !!hlid.ok, prufa: true, athuganir: ath.athuganir, gmail_send: hlid, myndi_senda: { to: row.gogn.to, from: row.gogn.account, subject: row.gogn.subject } });
+      }
       nidurstada = await sendaPost(row.gogn);
       if (row.gogn.mal_id) await breyta(`thjonustubeidni?id=eq.${Number(row.gogn.mal_id)}`, { svarad_at: new Date().toISOString() }).catch(() => {});
     } else if (row.tegund === 'krafa') {
@@ -203,6 +230,166 @@ async function framkvaema(id, body, event) {
     const villa = String((e && e.message) || e).slice(0, 300);
     await skila('villa', { astaeda: villa }).catch(() => {});
     return P.json(502, { error: villa });
+  }
+}
+
+/* ── AÐALMÁL — svör, ákvarðanir og Verkefnalistinn á atriðum vikuyfirlitsins ───────────────────────────────── */
+const AM_HLUTAR = { a: 'Fundir og frestir', c: 'Það sem skiptir mestu', b: 'Hvað gerðist', sp: 'Spurningar', ath: 'Leiðrétt', x: 'Annað' };
+const AM_AKV = { ja: 'Já', nei: 'Nei', seinna: 'Seinna', engin: 'Engin ákvörðun' };
+const SEINNA_DAGAR = 3;
+const LAS_UTRUNNINN_MS = 2 * 60 * 1000;   // lás sem situr lengur (fall dó í miðju) má taka yfir
+const normT = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+const p2 = (n) => String(n).padStart(2, '0');
+const dagsIs = (d) => p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear();
+const amLykill = (mid, h, nr) => 'adalmal:' + mid + '-' + h + '-' + nr;
+
+function synilegtAdalmal(r) {
+  const n = r.nidurstada || {}, g = r.gogn || {};
+  return { lykill: r.lykill, id: r.id, mal_id: g.mal_id, hluti: g.hluti, nr: g.nr, texti: g.texti || '',
+    svar: n.svar || null, svar_at: n.svar_at || null, svar_af: n.svar_af || null,
+    akvordun: n.akvordun || null, akvordun_at: n.akvordun_at || null, akvordun_af: n.akvordun_af || null, seinna_til: n.seinna_til || null,
+    athugasemd_agnars: n.athugasemd_agnars || null,
+    verkefnalisti_id: n.verkefnalisti_id || null, verkefnalisti_titill: n.verkefnalisti_titill || null, verkefnalisti_at: n.verkefnalisti_at || null,
+    charlize_id: n.akv_charlize_id || n.svar_charlize_id || null, stada: r.stada, updated_at: r.updated_at };
+}
+
+// Charlize: þar lesa agentarnir ákvarðanir áður en þeir vinna (v_charlize_active, MINNISBOK). Eldri færsla um sama atriði
+// víkur (superseded_by) svo aðeins nýjasta ákvörðunin stendur — en AÐEINS eftir að allt annað tókst (sjá `eftir` í adalmal).
+async function charlizeSkra(fact, detail) {
+  const r = await P.sbPost('charlize_knowledge', { scope: 'baedi', topic: 'akvardanir-agnars', fact: String(fact).slice(0, 1800), detail: String(detail).slice(0, 2000),
+    source: 'agnar', confidence: 'confirmed', status: 'active', agent: 'claude-code' }).then(sbJson);
+  const id = r[0] && r[0].id;
+  if (!id) throw new Error('Charlize skilaði engu auðkenni');
+  return id;
+}
+const charlizeVikja = (id, nytt) => P.sbPatch(`charlize_knowledge?id=eq.${Number(id)}&status=eq.active`,
+  { status: 'superseded', superseded_by: nytt || null, updated_at: new Date().toISOString() }).then(sbJson).catch(() => []);
+const charlizeOgilda = (id) => P.sbPatch(`charlize_knowledge?id=eq.${Number(id)}`, { status: 'wrong', updated_at: new Date().toISOString() }).then(sbJson).catch(() => []);
+
+async function verkefnalistiStofna(title, description) {
+  const ny = await P.sbPost('verkefnalisti', { title: String(title).slice(0, 200), description: String(description).slice(0, 4000), status: 'beidni',
+    category: 'allt', assigned_agent: 'claude-code', vefur: 'sameiginlegt', priority: 2 }).then(sbJson);
+  if (!ny[0] || !ny[0].id) throw new Error('Verkefnalistinn skilaði engri röð');
+  return ny[0];
+}
+const verkefnalistiLesa = (id) => (id ? lesa(`verkefnalisti?select=id,title,status&id=eq.${encodeURIComponent(id)}&limit=1`).then((x) => x[0] || null) : Promise.resolve(null));
+
+async function adalmal(b, event) {
+  const mid = Number(b.mal_id), nr = Number(b.nr), h = String(b.hluti || ''), gerd = String(b.gerd || '');
+  if (!Number.isInteger(mid) || mid <= 0 || !Number.isInteger(nr) || nr < 0 || nr > 500 || !/^[a-z]{1,4}$/.test(h)) return P.json(400, { error: 'Atriðið er ekki rétt tilgreint' });
+  if (!['svar', 'akvordun', 'verkefnalisti'].includes(gerd)) return P.json(400, { error: 'Óþekkt aðgerð á Aðalmálum' });
+  if (gerd === 'svar' && h !== 'sp') return P.json(400, { error: 'Svar á aðeins við spurningar' });
+  if (gerd === 'akvordun' && !AM_AKV[b.akvordun]) return P.json(400, { error: 'Ákvörðun er já, nei eða seinna' });
+  const texti = String(b.texti || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
+  if (texti.length < 3) return P.json(400, { error: 'Texti atriðisins vantar' });
+  const svar = String(b.svar || '').trim().slice(0, 4000);
+  if (gerd === 'svar' && !svar) return P.json(400, { error: 'Svarið er tómt' });
+  const ath = String(b.athugasemd || '').trim().slice(0, 1000);
+
+  // Málið verður að vera opið aðalmál og atriðið að standa í textanum NÚNA — annars gæti svarið lent á röngu atriði.
+  const m = (await lesa(`thjonustubeidni?select=id,title,notes,status,tags,deleted_at,archived_at&id=eq.${mid}&limit=1`))[0];
+  if (!m || m.deleted_at || m.archived_at || m.status === 'lokad' || !(Array.isArray(m.tags) && m.tags.includes('adalmal'))) {
+    return P.json(409, { error: 'Aðalmálið #' + mid + ' er ekki lengur opið — ekkert var skráð.' });
+  }
+  if (!normT(m.notes).includes(normT(texti).slice(0, 80))) {
+    return P.json(409, { error: 'Atriðið stendur ekki lengur svona í yfirlitinu — sæktu borðið aftur. Ekkert var skráð.' });
+  }
+
+  const hver = await notandi(event);
+  const lyk = amLykill(mid, h, nr);
+  const nu = new Date(), nuIso = nu.toISOString(), dags = dagsIs(nu);
+  const gogn = { mal_id: mid, hluti: h, nr, texti, mal_titill: String(m.title || '').slice(0, 200) };
+
+  // Lás: ein aðgerð í einu á hvert atriði (tvísmellur / tvær vélar). Ný röð fæðist læst.
+  let row = null;
+  const ny = await P.sbPost('afgreidsla', { lykill: lyk, tegund: 'adalmal', titill: ((h === 'sp' ? 'Spurning: ' : '') + texti).slice(0, 200), takki: '—',
+    hvad_gerist: '—', gogn, stada: 'i_vinnslu', created_by: 'adalmal', nidurstada: {} });
+  if (ny.ok) row = (await ny.json())[0];
+  else if (ny.status !== 409) throw new Error(`Supabase ${ny.status}: ${(await ny.text()).slice(0, 160)}`);
+  else {
+    const takmork = new Date(Date.now() - LAS_UTRUNNINN_MS).toISOString();
+    const tekin = await breyta(`afgreidsla?lykill=eq.${encodeURIComponent(lyk)}&or=(stada.eq.framkvaemt,and(stada.eq.i_vinnslu,updated_at.lt.${encodeURIComponent('"' + takmork + '"')}))`, { stada: 'i_vinnslu' });
+    if (!tekin.length) return P.json(409, { error: 'Annað smell á sama atriði er í vinnslu — augnablik.' });
+    row = tekin[0];
+  }
+  const n = Object.assign({}, row.nidurstada || {});
+  const fyrri = JSON.parse(JSON.stringify(n));
+  const opna = (extra) => breyta(`afgreidsla?id=eq.${row.id}`, Object.assign({ stada: 'framkvaemt' }, extra || {}));
+  const malRef = 'Aðalmál #' + mid + ' (' + (AM_HLUTAR[h] || h) + ', atriði ' + (nr + 1) + ')';
+  const heimild = 'Heimild: thjonustubeidni #' + mid + ' („' + gogn.mal_titill + '") · afgreidsla ' + lyk;
+  let takki = '', hvad = '', skilabod = '';
+  const nyCid = [];     // Charlize-færslur sem urðu til í þessu kalli — ógildar ef eitthvað bregst á eftir
+  const eftir = [];     // eldri Charlize-færslur sem víkja — aðeins þegar röðin hefur verið skrifuð
+  const nyVl = [];      // verk sem urðu til í þessu kalli — sleppt ef eitthvað bregst á eftir
+  try {
+    if (gerd === 'svar') {
+      const cid = await charlizeSkra('Agnar svaraði spurningu á ' + malRef + ' ' + dags + ': „' + texti + '" — SVAR: ' + svar, heimild + ' · skráð af ' + hver);
+      nyCid.push(cid);
+      if (n.svar_charlize_id) eftir.push([n.svar_charlize_id, cid]);
+      const desc = 'Agnar svaraði á Aðalmálum ' + dags + ' (' + hver + ').\n\nSPURNINGIN: ' + texti + '\n\nSVARIÐ: ' + svar +
+        '\n\nVinna úr svarinu: gera það sem það segir, sannreyna gegn frumheimild og skrá niðurstöðuna. Svarið er líka í Charlize #' + cid + '.\n' + heimild + '.';
+      // Svarið er verk fyrir OKKUR (CLAUDE.md: Verkefnalistinn = það sem bíður okkar). Breytt svar uppfærir opna verkið.
+      let vl = await verkefnalistiLesa(n.verkefnalisti_id);
+      if (vl && (vl.status === 'beidni' || vl.status === 'i_vinnu')) {
+        await P.sbPatch(`verkefnalisti?id=eq.${encodeURIComponent(vl.id)}`, { description: (desc + '\n\n(Svari breytt ' + dags + ')').slice(0, 4000), updated_at: nuIso }).then(sbJson);
+      } else {
+        vl = await verkefnalistiStofna('Svar Agnars: ' + texti.slice(0, 160), desc);
+        nyVl.push(vl.id);
+        n.verkefnalisti_at = nuIso;
+      }
+      Object.assign(n, { svar, svar_at: nuIso, svar_af: hver, svar_charlize_id: cid, verkefnalisti_id: vl.id, verkefnalisti_titill: String(vl.title || '').slice(0, 200), athugasemd: 'Svar: ' + svar.slice(0, 200) });
+      takki = 'Senda svar til Claude'; hvad = 'Svarið skráð hjá Charlize (#' + cid + ') og sett á Verkefnalistann';
+      skilabod = 'Svarið er vistað og komið til Claude: Charlize #' + cid + ' og verk á Verkefnalistanum.';
+    } else if (gerd === 'akvordun') {
+      const v = b.akvordun;
+      if (v === 'seinna' || v === 'engin') {
+        if (n.akv_charlize_id) eftir.push([n.akv_charlize_id, null]);
+        const til = v === 'seinna' ? new Date(nu.getTime() + SEINNA_DAGAR * 864e5) : null;
+        Object.assign(n, { akvordun: v === 'seinna' ? 'seinna' : null, akvordun_at: nuIso, akvordun_af: hver, akv_charlize_id: null,
+          seinna_til: til ? til.toISOString().slice(0, 10) : null, athugasemd: v === 'seinna' ? 'Seinna — kemur aftur ' + dagsIs(til) : 'Ákvörðun tekin til baka' });
+        takki = AM_AKV[v]; hvad = v === 'seinna' ? 'Atriðið hverfur af borðinu til ' + dagsIs(til) : 'Fyrri ákvörðun tekin til baka';
+        skilabod = v === 'seinna' ? 'Seinna: atriðið kemur aftur á borðið ' + dagsIs(til) + '.' : 'Ákvörðunin var tekin til baka.';
+      } else {
+        const cid = await charlizeSkra('Agnar ákvað ' + (v === 'ja' ? 'JÁ' : 'NEI') + ' við atriði á ' + malRef + ' ' + dags + ': „' + texti + '"' +
+          (ath ? ' — Athugasemd Agnars: ' + ath : '') + (v === 'nei' ? ' — Ekki leggja þetta til aftur nema ný staðreynd komi fram (ákvörðun stendur).' : ''),
+          heimild + ' · skráð af ' + hver);
+        nyCid.push(cid);
+        if (n.akv_charlize_id) eftir.push([n.akv_charlize_id, cid]);
+        Object.assign(n, { akvordun: v, akvordun_at: nuIso, akvordun_af: hver, akv_charlize_id: cid, seinna_til: null,
+          athugasemd: (v === 'ja' ? 'Já' : 'Nei') + (ath ? ': ' + ath.slice(0, 160) : '') });
+        takki = AM_AKV[v]; hvad = 'Ákvörðunin skráð hjá Charlize (#' + cid + ')';
+        skilabod = 'Skráð: ' + AM_AKV[v] + '. Charlize #' + cid + ' — agentarnir lesa það áður en þeir vinna' + (v === 'nei' ? ' og leggja þetta ekki til aftur.' : '.');
+      }
+    } else {
+      let vl = await verkefnalistiLesa(n.verkefnalisti_id);
+      if (vl) {
+        skilabod = 'Þetta er þegar á Verkefnalistanum (' + (vl.status || '?') + ').';
+      } else {
+        vl = await verkefnalistiStofna('Aðalmál #' + mid + ': ' + texti.slice(0, 160),
+          'Agnar setti þetta á Verkefnalistann af Aðalmálum ' + dags + ' (' + hver + ').\n\nATRIÐIÐ (' + (AM_HLUTAR[h] || h) + '): ' + texti +
+          (ath ? '\n\nATHUGASEMD AGNARS: ' + ath : '') + '\n\n' + heimild + '.');
+        nyVl.push(vl.id);
+        Object.assign(n, { verkefnalisti_id: vl.id, verkefnalisti_titill: String(vl.title || '').slice(0, 200), verkefnalisti_at: nuIso });
+        skilabod = 'Komið á Verkefnalistann — Claude vinnur verkið.';
+      }
+      n.athugasemd = 'Á Verkefnalistann';
+      takki = 'Á Verkefnalistann'; hvad = 'Atriðið sett á Verkefnalistann';
+    }
+    if (ath) n.athugasemd_agnars = ath;
+    const saga = Array.isArray(fyrri.saga) ? fyrri.saga.slice(-29) : [];
+    saga.push({ at: nuIso, af: hver, gerd, gildi: gerd === 'svar' ? svar.slice(0, 300) : gerd === 'akvordun' ? b.akvordun : n.verkefnalisti_id });
+    n.saga = saga;
+    const lokid = await opna({ nidurstada: n, takki, hvad_gerist: hvad, gogn, titill: ((h === 'sp' ? 'Spurning: ' : '') + texti).slice(0, 200),
+      framkvaemt_at: nuIso, framkvaemt_af: hver });
+    for (const [gamla, nytt] of eftir) await charlizeVikja(gamla, nytt);
+    return P.json(200, { ok: true, skilabod, atridi: synilegtAdalmal(lokid[0]) });
+  } catch (e) {
+    // Fyrri staða atriðisins stendur: ný Charlize-færsla úr þessu kalli er ógilt, eldri færslur standa óbreyttar.
+    // Ný röð sem fékk aldrei neitt er skilin eftir tóm (nidurstada {} — sést ekki á borðinu).
+    for (const cid of nyCid) await charlizeOgilda(cid);
+    for (const id of nyVl) await P.sbPatch(`verkefnalisti?id=eq.${encodeURIComponent(id)}`, { status: 'sleppt', claude_notes: 'Stofnað af Aðalmálum en skráningin brást í sama kalli — ekki vinna.' }).catch(() => {});
+    await opna({ nidurstada: fyrri }).catch(() => {});
+    return P.json(502, { error: 'Ekki skráð: ' + String((e && e.message) || e).slice(0, 240) });
   }
 }
 
@@ -228,12 +415,23 @@ exports.handler = async (event) => {
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }
         tilbuin.push(s);
       }
-      return P.json(200, { tilbuin, saga: saga.map(synilegtSaga), throskuldur: THROSKULDUR_KR });
+      const svar = { tilbuin, saga: saga.map(synilegtSaga), throskuldur: THROSKULDUR_KR };
+      // Aðalmál-borðið (492) biður líka um svör og ákvarðanir á atriðum opnu málanna sinna.
+      const qs = (event.queryStringParameters || {});
+      if (qs.adalmal != null) {
+        const ids = String(qs.adalmal).split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0).slice(0, 10);
+        const am = ids.length ? await lesa(`afgreidsla?select=*&tegund=eq.adalmal&gogn->>mal_id=in.(${ids.join(',')})&order=updated_at.desc&limit=500`) : [];
+        svar.adalmal = am.filter((r) => r.nidurstada && Object.keys(r.nidurstada).length).map(synilegtAdalmal);
+      }
+      return P.json(200, svar);
     } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
   }
   if (event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
 
   let b; try { b = JSON.parse(event.body || '{}'); } catch (_) { return P.json(400, { error: 'Ógilt JSON' }); }
+  if (b.adgerd === 'adalmal') {
+    try { return await adalmal(b, event); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
+  }
   const id = Number(b.id);
   if (!Number.isInteger(id) || id <= 0) return P.json(400, { error: 'id vantar' });
   try {
@@ -266,3 +464,5 @@ exports.handler = async (event) => {
 module.exports.THROSKULDUR_KR = THROSKULDUR_KR;
 module.exports._athuga = athuga;
 module.exports._posturToki = posturToki;
+module.exports._prufaSending = prufaSending;
+module.exports._amLykill = amLykill;

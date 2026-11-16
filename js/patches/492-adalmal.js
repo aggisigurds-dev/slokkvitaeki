@@ -24,6 +24,18 @@
  * „spurningunni" með eigin ✓ (mælt á #1587: 6 spurningar í stað 5, 27 atriði í stað 26). Með tvípunkti gildir áfram
  * gamla sniðið: spurningar á sömu línu, aðskildar með „ · ".
  *
+ * 492d (16.11.2026, Agnar: „geturðu líka gert þetta aðalatriða borðið þitt eitthvað interactive, ég get ekki gert rassgat
+ * þarna eða látið þig vita svörin eða svarað póstum eða neitt, þetta er ekki multifunctional aðalborð"). Borðið GERIR nú:
+ *   · Spurning → reitur „Senda svar til Claude": svarið fer til Charlize (topic akvardanir-agnars) og á Verkefnalistann
+ *     sem verk („vinna úr svari Agnars"), lesið til baka og sýnt undir spurningunni.
+ *   · Atriði (A/C) → „Ákveða": Já / Nei (ákvörðun til Charlize; Nei = ekki lagt til aftur) · Seinna (hverfur í 3 daga) ·
+ *     Á Verkefnalistann (Claude vinnur verkið). Athugasemd má fylgja.
+ *   · Tilbúið til afgreiðslu: forunnu verkin úr Afgreiðslu (póstsvar, krafa, símtal, verk) beint á borðinu — sama spjald,
+ *     sömu athuganir, sami rauði takki (tvö tök) og afgreidsla.html.
+ *   Allt fer um SÖMU vél: /api/afgreidsla (netlify/functions/afgreidsla.cjs) — aðeins innskráður stjórnandi, læst röð á
+ *   hvert atriði, einkvæmur lykill adalmal:<mál>-<hluti>-<nr> (sama sæti og ✓-lykillinn). Enginn takki „merkir" bara:
+ *   hver segir hvert hann skrifar.
+ *
  * Mynstur: 491-vasinn.js (view-<key>, App.switchView-umbúðir, Brunastál). Skrifar aðeins við raunverulegan smell.
  * Skráð í Öpp (261 PAGES: 'adalmal') og sett á Boss- og Þjónustuborðs-appið á eftir Þjónustuborðinu (__adm1/__adm2).
  * ============================================================================================ */
@@ -55,7 +67,19 @@
     sp: { heiti: 'Spurningar til þín',             rod: 4, opinn: true,  takn: '?' }
   };
 
-  const S = { loaded: false, loading: false, villa: null, mal: [], sidast: null, falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {} };
+  const S = { loaded: false, loading: false, villa: null, mal: [], sidast: null, falid: {}, bid: {}, opin: {}, synaKlarad: {}, busy: {},
+    // 492d — afgreiðsluvélin (/api/afgreidsla): leyfi null = óvíst (ekkert sýnt fyrr en þjónninn hefur svarað)
+    af: { tilbuin: [], am: {}, at: 0, loading: false, villa: null, leyfi: null },
+    opidAt: null, drog: {}, amBusy: {}, hlSkilabod: {}, svBreyta: {}, atKort: {},
+    afOpid: null, afVopnad: null, afBusy: false, afSkilabod: null, afTexti: {} };
+  const AF = '/api/afgreidsla';
+  const AKVARDANLEG = { a: 1, c: 1, x: 1 };        // hlutar þar sem atriði fá Já/Nei/Seinna/Verkefnalista (B og leiðréttingar eru saga)
+  const TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk' };
+  const normT = s => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const idOf = s => String(s).replace(/[^a-z0-9_-]/gi, '_');
+  const iDag = () => { const d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
+  try { const d = JSON.parse(localStorage.getItem('adm_drog') || '{}'); if (d && typeof d === 'object') S.drog = d; } catch (_) {}
+  const drogVista = () => { try { localStorage.setItem('adm_drog', JSON.stringify(S.drog)); } catch (_) {} };
 
   /* ── gögn ─────────────────────────────────────────────────────────────── */
   async function load() {
@@ -83,7 +107,80 @@
       S.loaded = true; S.villa = null;
     } catch (e) { S.villa = (e && e.message) || String(e); }
     S.loading = false; render();
+    if (S.loaded && S.mal.length) loadAf();
   }
+
+  /* ── 492d: afgreiðsluvélin — svör, ákvarðanir, tilbúin verk ──────────────── */
+  async function afKall(body) {
+    const r = await fetch(AF, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    j._status = r.status;
+    return j;
+  }
+  async function loadAf() {
+    if (S.af.loading) return;
+    S.af.loading = true;
+    try {
+      const ids = S.mal.map(m => m.id).join(',');
+      const r = await fetch(AF + '?adalmal=' + encodeURIComponent(ids), { credentials: 'same-origin', cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) { S.af.leyfi = false; S.af.villa = 'Skráðu þig inn til að svara og afgreiða hér.'; }
+      else if (r.status === 403) { S.af.leyfi = false; S.af.villa = 'Aðeins stjórnandi getur svarað og afgreitt á Aðalmálum.'; }
+      else if (!r.ok) throw new Error(j.error || ('svar ' + r.status));
+      else {
+        S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = j.tilbuin || [];
+        const am = {}; (j.adalmal || []).forEach(x => { am[x.lykill] = x; }); S.af.am = am;
+        if (S.afOpid != null && !S.af.tilbuin.some(v => v.id === S.afOpid)) S.afOpid = null;
+      }
+    } catch (e) { S.af.villa = 'Náði ekki í afgreiðsluna: ' + ((e && e.message) || e); }
+    S.af.at = Date.now(); S.af.loading = false; render();
+  }
+  // Svar/ákvörðun á atriði — lesið til baka úr svari þjónsins (atridi) og teiknað þaðan, aldrei úr því sem var sent.
+  async function amAdgerd(l, gerd, extra) {
+    const at = S.atKort[l]; if (!at || S.amBusy[l]) return;
+    S.amBusy[l] = true; render();
+    const hk = at.mal_id + ':' + at.hluti;
+    try {
+      const j = await afKall(Object.assign({ adgerd: 'adalmal', mal_id: at.mal_id, hluti: at.hluti, nr: at.nr, texti: at.texti, gerd }, extra || {}));
+      if (j._status === 200 && j.ok && j.atridi) {
+        S.af.am[l] = j.atridi;
+        S.hlSkilabod[hk] = { ok: true, texti: j.skilabod || 'Skráð.', at: Date.now(), atridi: at.texti };
+        if (gerd === 'svar') { delete S.drog['sv:' + l]; S.svBreyta[l] = false; }
+        delete S.drog['ath:' + l]; drogVista();
+        if (gerd !== 'akvordun' || (extra && extra.akvordun !== 'ja')) S.opidAt = null;
+      } else {
+        S.hlSkilabod[hk] = { ok: false, texti: j.error || ('Villa ' + j._status), at: Date.now(), atridi: at.texti };
+        if (j._status === 401 || j._status === 403) { S.af.leyfi = false; S.af.villa = j.error; }
+      }
+    } catch (e) { S.hlSkilabod[hk] = { ok: false, texti: 'Netvilla — ekkert var skráð: ' + ((e && e.message) || e), at: Date.now(), atridi: at.texti }; }
+    delete S.amBusy[l]; render();
+  }
+  // Skráning sem á við atriðið eins og það stendur NÚNA (texti breyttur → gamla skráningin gildir ekki um nýja textann).
+  const amRec = (l, texti) => { const x = S.af.am[l]; return x && normT(x.texti) === normT(texti) ? x : null; };
+  const erSeinna = x => !!(x && x.akvordun === 'seinna' && x.seinna_til && x.seinna_til >= iDag());
+
+  // Afgreiðsluverk (sama og afgreidsla.html: tvö tök á rauða takkann, textinn vistast þegar farið er úr reitnum).
+  async function afFramkvaema(v) {
+    if (S.afVopnad !== v.id) {
+      S.afVopnad = v.id; S.afSkilabod = null; render();
+      setTimeout(() => { if (S.afVopnad === v.id) { S.afVopnad = null; render(); } }, 6000);
+      return;
+    }
+    S.afVopnad = null; S.afBusy = true; render();
+    try {
+      const j = await afKall({ id: v.id, adgerd: 'framkvaema', texti: v.tegund === 'tolvupostur' ? afTextiNu(v) : undefined });
+      if (j._status === 200 && j.ok) {
+        S.af.tilbuin = S.af.tilbuin.filter(x => x.id !== v.id); S.afOpid = null;
+        S.afSkilabod = { ok: true, texti: 'Gert: ' + v.titill + '.' };
+      } else {
+        S.afSkilabod = { ok: false, texti: (j.error || 'Villa') + (j.urelt ? ' Verkið hefur verið tekið úr röðinni.' : '') };
+        if (j.urelt) { S.af.tilbuin = S.af.tilbuin.filter(x => x.id !== v.id); S.afOpid = null; }
+        else if (j.athuganir) v.athuganir = j.athuganir;
+      }
+    } catch (e) { S.afSkilabod = { ok: false, texti: 'Netvilla: ' + ((e && e.message) || e) }; }
+    S.afBusy = false; render();
+  }
+  const afTextiNu = v => (v.id in S.afTexti ? S.afTexti[v.id] : (v.post || {}).texti);
   const erKlarad = l => (l in S.bid ? S.bid[l] : !!S.falid[l]);
   async function klara(l, lysing, gildi) {
     const c = sb(); if (!c) { toast('Biðlarinn er ekki tilbúinn', true); return; }
@@ -173,12 +270,58 @@
       V + ' .ad-hl._b .ad-at,' + V + ' .ad-hl._ath .ad-at{font-size:13.5px}' + V + ' .ad-at._haus{border-top:2px solid rgba(20,24,34,.26);background:rgba(47,111,179,.07)}' + V + ' .ad-at._kl{opacity:.5}' + V + ' .ad-at._kl .tx{text-decoration:line-through}',
       V + ' .ad-at .nr{flex:none;min-width:22px;padding-top:2px;font-family:' + MONO + ';font-size:12px;color:#525b6b;text-align:right}',
       V + ' .ad-at .tx{flex:1;min-width:0}' + V + ' .ad-at .tx b{font-weight:700}',
-      V + ' .ad-at button{flex:none;width:34px;height:34px;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font-size:15px;cursor:pointer}' + V + ' .ad-at button._on{background:linear-gradient(180deg,#2d8a4e,#1f6b3c);border-color:#0b3519;color:#fff}' + V + ' .ad-at button:disabled{opacity:.45}',
+      V + ' .ad-at>button{flex:none;width:34px;height:34px;border-radius:9px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font-size:15px;cursor:pointer}' + V + ' .ad-at>button._on{background:linear-gradient(180deg,#2d8a4e,#1f6b3c);border-color:#0b3519;color:#fff}' + V + ' .ad-at>button:disabled{opacity:.45}',
       V + ' .ad-klarad{display:flex;align-items:center;gap:8px;padding:8px 12px 10px;font:11px ' + MONO + ';color:#525b6b;letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(20,24,34,.08)}' + V + ' .ad-klarad button{margin-left:auto;background:none;border:0;font:600 11px ' + SANS + ';color:#2f6fb3;text-transform:none;letter-spacing:0;cursor:pointer;padding:4px 6px}',
       V + ' .ad-titill small._gamalt{color:#a3301e;font-weight:700}',
       V + ' .ad-sidast{margin:14px auto;max-width:520px;padding:10px 12px;border-radius:9px;background:#fff;border:1px solid rgba(20,24,34,.16);text-align:left;font-size:13px;line-height:1.5;color:#1f2530}' + V + ' .ad-sidast span{display:block;margin-top:4px;color:#525b6b}',
       V + ' .ad-tomt{margin:30px 20px;text-align:center;font-size:14px;color:#525b6b;line-height:1.6}' + V + ' .ad-villa{margin:12px;padding:12px;border-radius:9px;background:#f9e3e0;color:#7a1f14;font-size:13px}',
       V + ' .ad-hint{margin:0 12px;font:11px ' + MONO + ';color:#5b6577;line-height:1.5}',
+      // 492d — aðgerðir á atriðum. Takkar: silfur (venjulegt), málmur (Nei), grænt (Já), rautt (framkvæmir út á við).
+      V + ' .ad-at .tx>.txt{display:block}',
+      V + ' .ad-chip{display:inline-flex;align-items:center;gap:5px;margin:5px 6px 0 0;padding:2px 8px;border-radius:4px;border:1px solid rgba(20,24,34,.2);background:#f1f3f6;font:600 11.5px/1.5 ' + SANS + ';color:#1f2530;text-decoration:none}',
+      V + ' .ad-chip._ja{border-color:#1f6b3c;color:#1b4423;background:#e7f3ea}' + V + ' .ad-chip._nei{border-color:#7a1f14;color:#7a1f14;background:#fbe9e9}' + V + ' .ad-chip._s{border-style:dashed}',
+      V + ' .ad-chip small{font:10.5px ' + MONO + ';color:#525b6b}',
+      V + ' .ad-ak{margin:6px 0 0;min-height:30px;padding:0 10px;border-radius:7px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12px ' + SANS + ';cursor:pointer}',
+      V + ' .ad-ak[aria-expanded="true"]{background:linear-gradient(180deg,#3d4048,#1c1e23);color:#eef1f4;border-color:#000}',
+      V + ' .ad-rond{margin:8px 0 2px;padding:10px;border-radius:9px;background:#eef1f6;border:1px solid rgba(20,24,34,.14);box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}',
+      V + ' .ad-rond input,' + V + ' .ad-rond textarea{width:100%;box-sizing:border-box;border:1px solid rgba(20,24,34,.2);border-radius:7px;background:#fff;padding:8px 10px;font:14px/1.45 ' + SANS + ';color:#1f2530}',
+      V + ' .ad-rond textarea{min-height:76px;resize:vertical}',
+      V + ' .ad-tk{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
+      V + ' .ad-tk button{min-height:38px;padding:0 13px;border-radius:8px;border:1px solid rgba(20,24,34,.3);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 13px ' + SANS + ';cursor:pointer}',
+      V + ' .ad-tk button._ja{background:linear-gradient(180deg,#2f6b3a,#1b4423);border-color:#0f2a15;color:#fff}' + V + ' .ad-tk button._nei{background:linear-gradient(180deg,#3d4048,#1c1e23);border-color:#000;color:#eef1f4}',
+      V + ' .ad-tk button._val{outline:2px solid #2f6fb3;outline-offset:1px}' + V + ' .ad-tk button._lt{background:none;border-color:transparent;color:#2f6fb3;font-weight:600}',
+      V + ' .ad-tk button:disabled{opacity:.45;cursor:default}',
+      V + ' .ad-skyr{margin-top:7px;font:11px/1.45 ' + MONO + ';color:#525b6b}',
+      V + ' .ad-svar{margin:7px 0 0;padding:8px 10px;border-radius:8px;background:#f6f1e4;border:1px solid rgba(184,137,46,.45);font-size:14px;line-height:1.45}',
+      V + ' .ad-svar b{font:700 10.5px ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#6b5320}' + V + ' .ad-svar p{margin:3px 0 0;white-space:pre-wrap}',
+      V + ' .ad-sk{margin:6px 10px 2px;padding:8px 10px;border-radius:8px;font-size:13px;line-height:1.45;font-weight:600}' + V + ' .ad-sk._ok{background:#e7f3ea;border:1px solid #9cc9a6;color:#1b4423}' + V + ' .ad-sk._v{background:#fbe9e9;border:1px solid #e3a3a3;color:#7a0b0e}',
+      V + ' .ad-sk span{display:block;font-weight:400;color:#3a4250;font-size:12px;margin-top:2px}',
+      V + ' .ad-leyfi{margin:12px;padding:9px 12px;border-radius:9px;background:#fff;border:1px solid rgba(20,24,34,.16);font-size:13px;color:#3a4250}',
+      // Tilbúið til afgreiðslu — sama spjald og afgreidsla.html, þjappað.
+      V + ' .ad-af{margin:12px;border-radius:12px;background:#fff;border:1px solid #000;box-shadow:0 10px 26px -14px rgba(10,14,22,.5);overflow:hidden}',
+      V + ' .ad-af-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;font:700 13px ' + SANS + '}',
+      V + ' .ad-af-h small{font:10.5px ' + MONO + ';color:#aeb5bf;letter-spacing:.06em;text-transform:uppercase}' + V + ' .ad-af-h .grow{flex:1 1 auto}' + V + ' .ad-af-h a{color:#cfd5dd;font:600 12px ' + SANS + ';text-decoration:none}',
+      V + ' .ad-af ol{list-style:none;margin:0;padding:0}',
+      V + ' .ad-afr+.ad-afr{border-top:1px solid rgba(20,24,34,.1)}',
+      V + ' .ad-afr>button.haus{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:8px 12px;border:0;background:none;text-align:left;cursor:pointer;color:#1f2530;font:600 14px/1.35 ' + SANS + '}',
+      V + ' .ad-afr>button.haus .t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}' + V + ' .ad-afr>button.haus .k{font:600 11.5px ' + MONO + ';color:#525b6b;white-space:nowrap}',
+      V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 10px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
+      V + ' .ad-afk{padding:4px 14px 12px}' + V + ' .ad-afk h4{margin:10px 0 5px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
+      V + ' .ad-gerist{font:600 15px/1.4 ' + SANS + ';background:#f4f6f9;border:1px solid rgba(20,24,34,.14);border-left:4px solid #7a0b0e;border-radius:8px;padding:9px 11px}',
+      V + ' .ad-rok{margin:0;padding:0;list-style:none}' + V + ' .ad-rok li{padding:4px 0 4px 14px;position:relative;font-size:13.5px;border-top:1px dashed rgba(20,24,34,.14)}' + V + ' .ad-rok li:first-child{border-top:0}',
+      V + ' .ad-rok li::before{content:"";position:absolute;left:3px;top:11px;width:5px;height:5px;border-radius:50%;background:#3a4250}' + V + ' .ad-rok small{display:block;font:11px ' + MONO + ';color:#6b7380}',
+      V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
+      V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
+      V + ' .ad-linur{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 10px;font-size:13px;margin-bottom:6px}' + V + ' .ad-linur dt{font:700 10.5px/1.8 ' + MONO + ';letter-spacing:.08em;text-transform:uppercase;color:#6b7380}' + V + ' .ad-linur dd{margin:0;overflow-wrap:anywhere}',
+      V + ' .ad-afk textarea{width:100%;box-sizing:border-box;min-height:150px;resize:vertical;background:#eef1f6;border:1px solid rgba(20,24,34,.14);border-radius:8px;box-shadow:inset 0 2px 5px rgba(0,0,0,.15);padding:9px 11px;font:14px/1.5 ' + SANS + ';color:#141822}',
+      V + ' .ad-ath{margin:0;padding:0;list-style:none}' + V + ' .ad-ath li{display:flex;gap:7px;align-items:flex-start;padding:3px 0;font-size:13px}' + V + ' .ad-ath svg{flex:0 0 16px;margin-top:2px}',
+      V + ' .ad-aff{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}' + V + ' .ad-aff .grow{flex:1 1 auto}',
+      V + ' .ad-aff button{min-height:40px;padding:0 14px;border-radius:8px;cursor:pointer;font:600 13px ' + SANS + ';border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530}',
+      V + ' .ad-aff button._m{background:linear-gradient(180deg,#3d4048,#1c1e23);border-color:#000;color:#eef1f4}',
+      V + ' .ad-aff button._r{min-height:46px;padding:0 18px;font-weight:700;font-size:14.5px;color:#fff;border-color:rgba(190,32,28,.55);background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)}',
+      V + ' .ad-aff button._r._v{background:linear-gradient(180deg,#2f6b3a,#1b4423);border-color:#0f2a15}' + V + ' .ad-aff button:disabled{opacity:.38;cursor:default}',
+      '@media (pointer:coarse){' + V + ' .ad-ak{min-height:44px}' + V + ' .ad-tk button{min-height:44px}' + V + ' .ad-aff button{min-height:44px}}',
+      '@media (max-width:640px){' + V + ' .ad-aff button{flex:1 1 calc(50% - 4px)}' + V + ' .ad-aff button._r{flex:1 1 100%;order:-1}' + V + ' .ad-aff .grow{display:none}' + V + ' .ad-tk button{flex:1 1 calc(50% - 3px)}}',
       '@media (min-width:900px){' + V + ' #' + ROOT_ID + '{max-width:980px;margin:0 auto}' + V + ' .ad-grid{grid-template-columns:1fr 1fr}' + V + ' .ad-hl._b,' + V + ' .ad-hl._sp,' + V + ' .ad-hl._ath{grid-column:1/-1}}'
     ].join('\n');
   }
@@ -189,6 +332,8 @@
     v = document.createElement('div'); v.id = VIEW_ID; v.className = 'view';
     v.innerHTML = '<div id="' + ROOT_ID + '"></div>';
     v.addEventListener('click', smellur);
+    v.addEventListener('input', inntak);
+    v.addEventListener('focusout', fokusUt);
     document.body.appendChild(v);
     return v;
   }
@@ -197,23 +342,143 @@
     const m = String(t).match(/^(.{8,90}?[.:—–])\s(.+)$/);
     return m ? '<b>' + esc(m[1]) + '</b> ' + esc(m[2]) : esc(t);
   }
+  /* ── 492d: aðgerðir á atriðum ─────────────────────────────────────────────── */
+  // Sami sæti og ✓-lykillinn (adalmal:atridi:<mál>-<hluti>-<nr>), en eigin lykill í afgreidsla-töflunni.
+  const amLyk = (m, h, i) => EINING + ':' + m.id + '-' + h.k + '-' + i;
+  const klTxt = iso => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + ' kl. ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+  const dmTxt = ymd => String(ymd || '').slice(8, 10) + '.' + String(ymd || '').slice(5, 7);
+  // Hvað hefur verið skráð á atriðið — lesið af þjóninum, aldrei úr því sem var sent.
+  function chipHtml(x) {
+    if (!x) return '';
+    let c = '';
+    if (x.akvordun === 'ja' || x.akvordun === 'nei') {
+      c += '<span class="ad-chip _' + x.akvordun + '">' + (x.akvordun === 'ja' ? '✓ Já' : '✕ Nei') + ' <small>' + esc([x.akvordun_af, klTxt(x.akvordun_at)].filter(Boolean).join(' · ')) +
+        (x.charlize_id ? ' · Charlize #' + esc(x.charlize_id) : '') + '</small></span>';
+    }
+    if (x.akvordun === 'seinna' && x.seinna_til) c += '<span class="ad-chip _s">⏸ ' + (erSeinna(x) ? 'Seinna — kemur aftur ' : 'Seinna rann út ') + esc(dmTxt(x.seinna_til)) + '</span>';
+    if (x.verkefnalisti_id) c += '<span class="ad-chip">→ Verkefnalistinn <small>' + esc(klTxt(x.verkefnalisti_at)) + '</small></span>';
+    if (x.athugasemd_agnars) c += '<span class="ad-chip"><small>💬 ' + esc(String(x.athugasemd_agnars).slice(0, 140)) + '</small></span>';
+    return c ? '<div>' + c + '</div>' : '';
+  }
+  function rondHtml(l, x) {
+    const busy = !!S.amBusy[l], dis = busy ? ' disabled' : '', v = x && x.akvordun, el = esc(l);
+    const ath = S.drog['ath:' + l] != null ? S.drog['ath:' + l] : '';
+    return '<div class="ad-rond">' +
+      '<input type="text" id="_adm-ath-' + idOf(l) + '" data-drog="ath:' + el + '" maxlength="1000" placeholder="Athugasemd til Claude (má sleppa)" value="' + esc(ath) + '">' +
+      '<div class="ad-tk">' +
+        '<button type="button" class="_ja' + (v === 'ja' ? ' _val' : '') + '" data-adm="akv" data-v="ja" data-l="' + el + '"' + dis + ' title="Skráir JÁ hjá Charlize — agentarnir lesa það áður en þeir vinna">Já</button>' +
+        '<button type="button" class="_nei' + (v === 'nei' ? ' _val' : '') + '" data-adm="akv" data-v="nei" data-l="' + el + '"' + dis + ' title="Skráir NEI hjá Charlize — atriðið er ekki lagt til aftur nema ný staðreynd komi fram">Nei</button>' +
+        '<button type="button"' + (v === 'seinna' ? ' class="_val"' : '') + ' data-adm="akv" data-v="seinna" data-l="' + el + '"' + dis + ' title="Atriðið hverfur af borðinu í 3 daga og kemur svo aftur">Seinna · 3 dagar</button>' +
+        '<button type="button" data-adm="vl" data-l="' + el + '"' + (busy || (x && x.verkefnalisti_id) ? ' disabled' : '') + ' title="Stofnar verk á Verkefnalistanum — Claude vinnur það">' + (x && x.verkefnalisti_id ? 'Á Verkefnalistanum ✓' : 'Á Verkefnalistann') + '</button>' +
+        (v ? '<button type="button" class="_lt" data-adm="akv" data-v="engin" data-l="' + el + '"' + dis + ' title="Fjarlægir ákvörðunina (Charlize-færslan víkur)">Taka ákvörðun til baka</button>' : '') +
+      '</div>' +
+      '<div class="ad-skyr">' + (busy ? 'Skrái…' : 'Já / Nei = ákvörðun þín, skráð hjá Charlize — agentarnir lesa hana og leggja Nei-atriði ekki til aftur. Verkefnalistinn = Claude vinnur verkið.') + '</div></div>';
+  }
+  function svarHtml(l, x) {
+    const busy = !!S.amBusy[l], el = esc(l);
+    if (x && x.svar && !S.svBreyta[l]) {
+      return '<div class="ad-svar"><b>Svar þitt · ' + esc(klTxt(x.svar_at)) + (x.svar_af ? ' · ' + esc(x.svar_af) : '') + '</b><p>' + esc(x.svar) + '</p>' +
+        '<div class="ad-tk" style="margin-top:6px"><span class="ad-chip">→ Charlize' + (x.charlize_id ? ' #' + esc(x.charlize_id) : '') + ' · Verkefnalistinn</span>' +
+        '<button type="button" class="_lt" data-adm="svbreyta" data-l="' + el + '">Breyta svari</button></div></div>';
+    }
+    const t = S.drog['sv:' + l] != null ? S.drog['sv:' + l] : (x && x.svar) || '';
+    return '<div class="ad-rond"><textarea id="_adm-sv-' + idOf(l) + '" data-drog="sv:' + el + '" maxlength="4000" placeholder="Svar þitt…">' + esc(t) + '</textarea>' +
+      '<div class="ad-tk"><button type="button" class="_ja" data-adm="svara" data-l="' + el + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Sendi…' : 'Senda svar til Claude') + '</button>' +
+      (x && x.svar ? '<button type="button" class="_lt" data-adm="svhaetta" data-l="' + el + '">Hætta við</button>' : '') + '</div>' +
+      '<div class="ad-skyr">Svarið vistast hjá Charlize og fer á Verkefnalistann — Claude vinnur úr því.</div></div>';
+  }
   function hlutiHtml(m, h) {
     const d = HLUTAR[h.k] || { takn: '•' }, opinn = erOpinn(m, h), id = m.id + ':' + h.k;
-    let radir = h.atridi.map((t, i) => ({ t, i, l: lykill(m, h, i), haus: !!(h.haus && h.haus[i]) }));
+    const leyfi = S.af.leyfi === true, akv = leyfi && (AKVARDANLEG[h.k] || h.k === 'sp');
+    let radir = h.atridi.map((t, i) => {
+      const r = { t, i, l: lykill(m, h, i), haus: !!(h.haus && h.haus[i]), amL: amLyk(m, h, i) };
+      r.x = amRec(r.amL, t);
+      S.atKort[r.amL] = { mal_id: m.id, hluti: h.k, nr: i, texti: t };
+      return r;
+    });
     if (h.k === 'ath') radir = nyjastEfst(radir);
-    const opin = radir.filter(r => !erKlarad(r.l)), klarad = radir.filter(r => erKlarad(r.l));
-    const rod = r => '<li class="ad-at' + (erKlarad(r.l) ? ' _kl' : '') + (r.haus ? ' _haus' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><span class="tx">' + atridiHtml(r.t) + '</span>' +
-      '<button type="button" class="' + (erKlarad(r.l) ? '_on' : '') + '" data-adm="klara" data-l="' + esc(r.l) + '"' + (r.l in S.bid ? ' disabled' : '') + ' title="' + (erKlarad(r.l) ? 'Taka klárað-merkið af' : 'Merkja klárað') + '">' + (erKlarad(r.l) ? '✓' : '○') + '</button></li>';
+    // Afgreitt = klárað (✓), Nei, komið á Verkefnalistann eða spurningu svarað. Já stendur opið (verkið er eftir).
+    const afgreitt = r => erKlarad(r.l) || (akv && !!r.x && (r.x.akvordun === 'nei' || (h.k === 'sp' ? !!r.x.svar : !!r.x.verkefnalisti_id)));
+    const iVinnslu = r => S.opidAt === r.amL || !!S.amBusy[r.amL] || !!S.svBreyta[r.amL];
+    const seinnaR = radir.filter(r => !afgreitt(r) && !iVinnslu(r) && akv && erSeinna(r.x));
+    const klarad = radir.filter(r => afgreitt(r) && !iVinnslu(r));
+    const opin = radir.filter(r => klarad.indexOf(r) < 0 && seinnaR.indexOf(r) < 0);
+    const rod = r => {
+      const l = r.amL, x = r.x, kl = erKlarad(r.l);
+      let ins = '<span class="txt">' + atridiHtml(r.t) + '</span>';
+      if (akv && h.k === 'sp') ins += svarHtml(l, x);
+      else if (akv) {
+        const opid = S.opidAt === l;
+        ins += chipHtml(x) + '<button type="button" class="ad-ak" data-adm="atopna" data-l="' + esc(l) + '" aria-expanded="' + opid + '">' +
+          (x && (x.akvordun || x.verkefnalisti_id) ? 'Breyta ▾' : 'Ákveða ▾') + '</button>';
+        if (opid) ins += rondHtml(l, x);
+      }
+      return '<li class="ad-at' + (kl ? ' _kl' : '') + (r.haus ? ' _haus' : '') + '"><span class="nr">' + (h.k === 'c' || h.k === 'b' ? (r.i + 1) + '.' : '') + '</span><div class="tx">' + ins + '</div>' +
+        '<button type="button" class="' + (kl ? '_on' : '') + '" data-adm="klara" data-l="' + esc(r.l) + '"' + (r.l in S.bid ? ' disabled' : '') + ' title="' + (kl ? 'Taka klárað-merkið af' : 'Merkja klárað') + '">' + (kl ? '✓' : '○') + '</button></li>';
+    };
     let x = '<section class="ad-hl _' + esc(h.k) + '"><button type="button" class="haus" data-adm="opna" data-id="' + esc(id) + '" aria-expanded="' + opinn + '"><span class="tk">' + d.takn + '</span>' + esc(h.heiti) +
-      '<span class="n">' + opin.length + (klarad.length ? ' · ' + klarad.length + ' ✓' : '') + '</span><span class="pil">' + (opinn ? '▾' : '▸') + '</span></button>';
+      '<span class="n">' + opin.length + (klarad.length ? ' · ' + klarad.length + ' ✓' : '') + (seinnaR.length ? ' · ' + seinnaR.length + ' ⏸' : '') + '</span><span class="pil">' + (opinn ? '▾' : '▸') + '</span></button>';
     if (opinn) {
-      x += '<ol>' + (opin.length ? opin.map(rod).join('') : '<li class="ad-at" style="color:#525b6b;font-style:italic">Allt klárað.</li>') + '</ol>';
+      const sk = S.hlSkilabod[id];
+      if (sk && Date.now() - sk.at < 60000) x += '<div class="ad-sk _' + (sk.ok ? 'ok' : 'v') + '" role="status">' + esc(sk.texti) + '<span>' + esc(String(sk.atridi || '').slice(0, 110)) + '</span></div>';
+      x += '<ol>' + (opin.length ? opin.map(rod).join('') : '<li class="ad-at" style="color:#525b6b;font-style:italic">' + (h.k === 'sp' ? 'Öllu svarað.' : 'Allt afgreitt.') + '</li>') + '</ol>';
+      if (seinnaR.length) {
+        const sid = id + ':seinna';
+        x += '<div class="ad-klarad">' + seinnaR.length + ' seinna<button type="button" data-adm="syna" data-id="' + esc(sid) + '">' + (S.synaKlarad[sid] ? 'fela' : 'sýna') + '</button></div>';
+        if (S.synaKlarad[sid]) x += '<ol>' + seinnaR.map(rod).join('') + '</ol>';
+      }
       if (klarad.length) {
-        x += '<div class="ad-klarad">' + klarad.length + ' klárað<button type="button" data-adm="syna" data-id="' + esc(id) + '">' + (S.synaKlarad[id] ? 'fela' : 'sýna') + '</button></div>';
+        x += '<div class="ad-klarad">' + klarad.length + (akv ? (h.k === 'sp' ? ' svarað' : ' afgreitt') : ' klárað') + '<button type="button" data-adm="syna" data-id="' + esc(id) + '">' + (S.synaKlarad[id] ? 'fela' : 'sýna') + '</button></div>';
         if (S.synaKlarad[id]) x += '<ol>' + klarad.map(rod).join('') + '</ol>';
       }
     }
     return x + '</section>';
+  }
+
+  /* ── 492d: Tilbúið til afgreiðslu — sama spjald og afgreidsla.html ──────────── */
+  const JA_SVG = '<svg width="16" height="16" viewBox="0 0 18 18" aria-label="Í lagi"><circle cx="9" cy="9" r="8" fill="#1b6b2d"/><path d="M5 9.3l2.6 2.6L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const NEI_SVG = '<svg width="16" height="16" viewBox="0 0 18 18" aria-label="Ekki í lagi"><circle cx="9" cy="9" r="8" fill="#a1161a"/><path d="M6 6l6 6M12 6l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+  function afKortHtml(v) {
+    let h = '<div class="ad-afk"><h4>Hvað gerist þegar þú ýtir</h4><div class="ad-gerist">' + esc(v.hvad_gerist) + '</div>';
+    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + esc(r.texti) + (r.heimild ? '<small>' + esc(r.heimild) + '</small>' : '') + '</li>').join('') + '</ul>';
+    if (v.tegund === 'tolvupostur') {
+      if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
+      const p = v.post || {};
+      h += '<h4>Svarið — þú mátt breyta því</h4><dl class="ad-linur"><dt>Frá</dt><dd>' + esc(p.account) + '</dd><dt>Til</dt><dd>' + esc((p.to || []).join(', ')) + '</dd>' +
+        ((p.cc || []).length ? '<dt>Afrit</dt><dd>' + esc(p.cc.join(', ')) + '</dd>' : '') + '<dt>Efni</dt><dd>' + esc(p.subject) + '</dd>' +
+        ((p.vidhengi || []).length ? '<dt>Viðhengi</dt><dd>' + esc(p.vidhengi.join(', ')) + '</dd>' : '') + '</dl>' +
+        '<textarea id="_adm-af-tx-' + v.id + '" data-af-tx="' + v.id + '" spellcheck="true">' + esc(afTextiNu(v)) + '</textarea>';
+    } else if (v.tegund === 'simtal') {
+      const s = v.simtal || {};
+      h += '<h4>Símtalið</h4><dl class="ad-linur"><dt>Hverjum</dt><dd>' + esc(s.hverjum) + '</dd>' + (s.simi ? '<dt>Sími</dt><dd><a href="tel:' + esc(String(s.simi).replace(/\s/g, '')) + '">' + esc(s.simi) + '</a></dd>' : '') + '</dl>' +
+        (s.handrit ? '<div class="ad-skeyti"><pre>' + esc(s.handrit) + '</pre></div>' : '');
+    } else if (v.tegund === 'verk') {
+      h += '<h4>Verkið</h4><div class="ad-skeyti"><pre>' + esc((v.verk || {}).lysing) + '</pre></div>';
+    } else if (v.tegund === 'krafa' && v.krafa && v.krafa.r_numer) {
+      h += '<h4>Krafan</h4><dl class="ad-linur"><dt>Reikningur</dt><dd>' + esc(v.krafa.r_numer) + '</dd></dl>';
+    }
+    if ((v.athuganir || []).length) h += '<h4>Athuganir — keyrðar núna</h4><ul class="ad-ath">' + v.athuganir.map(a => '<li>' + (a.ok ? JA_SVG : NEI_SVG) + '<span>' + esc(a.texti) + '</span></li>').join('') + '</ul>';
+    const vop = S.afVopnad === v.id, dis = S.afBusy ? ' disabled' : '';
+    h += '<div class="ad-aff"><button type="button" data-adm="afseinna" data-id="' + v.id + '"' + dis + ' title="Aftast í röðina — ekki ákvörðun">Seinna</button>' +
+      '<button type="button" class="_m" data-adm="afsleppa" data-id="' + v.id + '"' + dis + ' title="Ákvörðun: kemur aldrei aftur">Ekki þess virði</button><span class="grow"></span>' +
+      '<button type="button" class="_r' + (vop ? ' _v' : '') + '" data-adm="affram" data-id="' + v.id + '"' + (!v.ok || S.afBusy ? ' disabled' : '') + ' title="' + esc(v.ok ? v.hvad_gerist : 'Athugun stóðst ekki — sjá að ofan') + '">' +
+      esc(S.afBusy ? 'Augnablik…' : vop ? 'Ýttu aftur til að staðfesta' : v.takki) + '</button></div></div>';
+    return h;
+  }
+  function afHtml() {
+    if (S.af.leyfi === false) return S.af.villa ? '<div class="ad-leyfi">' + esc(S.af.villa) + '</div>' : '';
+    if (S.af.leyfi !== true) return S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
+    const t = S.af.tilbuin;
+    let x = S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
+    if (!t.length && !S.afSkilabod) return x;
+    x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span><a href="/afgreidsla.html" title="Allt sem var gert, sleppt eða úrelt">Saga ›</a></div>';
+    if (S.afSkilabod) x += '<div class="ad-sk _' + (S.afSkilabod.ok ? 'ok' : 'v') + '" role="status">' + esc(S.afSkilabod.texti) + '</div>';
+    x += '<ol>' + t.map(v => {
+      const opid = S.afOpid === v.id;
+      return '<li class="ad-afr"><button type="button" class="haus" data-adm="afopna" data-id="' + v.id + '" aria-expanded="' + opid + '"><span class="ad-plata">' + esc(TEG[v.tegund] || v.tegund) + '</span><span class="t">' + esc(v.titill) + '</span>' +
+        (v.ok ? '' : '<span class="k" style="color:#a1161a">✗ athugun</span>') + '<span class="pil">' + (opid ? '▾' : '▸') + '</span></button>' + (opid ? afKortHtml(v) : '') + '</li>';
+    }).join('') + '</ol></section>';
+    return x;
   }
   function malHtml(m) {
     const hlutar = greina(m);
@@ -235,15 +500,18 @@
     let fjoldi = 0, leidr = 0;      // leiðréttingar teljast sér (kaflar), ekki sem atriði yfirlitsins
     S.mal.forEach(m => { greina(m).forEach(h => { if (h.k === 'ath') leidr += Object.keys(h.haus).length; else fjoldi += h.atridi.length; }); });
     let st = 'sæki…';
-    if (S.loaded) st = n ? n + ' yfirlit · ' + fjoldi + ' atriði' + (leidr ? ' · ' + leidr + (leidr === 1 ? ' leiðrétting' : ' leiðréttingar') : '') : 'engin aðalmál skráð';
+    if (S.loaded) st = n ? n + ' yfirlit · ' + fjoldi + ' atriði' + (leidr ? ' · ' + leidr + (leidr === 1 ? ' leiðrétting' : ' leiðréttingar') : '') +
+      (S.af.leyfi === true && S.af.tilbuin.length ? ' · ' + S.af.tilbuin.length + ' tilbúin til afgreiðslu' : '') : 'engin aðalmál skráð';
     else if (S.villa) st = '⚠️ ' + S.villa;
     let h = '<div class="ad-haus"><div><div class="tt">📌 Aðalmál</div><div class="st">' + esc(st) + '</div></div>' +
       (n ? '<button type="button" data-adm="bord" data-id="' + S.mal[0].id + '" title="Opna málið á Þjónustuborðinu">Á borðið</button>' : '') +
       '<button type="button" class="uppf" data-adm="uppf" title="Sækja aftur">↻</button></div>';
     if (S.villa) h += '<div class="ad-villa">' + esc(S.villa) + '</div>';
     if (S.loaded) {
+      h += afHtml();
       h += n ? S.mal.map(malHtml).join('') : '<div class="ad-tomt">Engin aðalmál skráð.' + sidastHtml() + (S.sidast ? '' : '<br>') + 'Biddu Claude: „settu vikuyfirlit á Aðalmál".</div>';
-      h += '<div class="ad-hint">○ = merkja klárað (geymt fyrir allar vélar) · textinn er mál á Þjónustuborðinu með merkinu „adalmal" — Claude skrifar nýtt fyrir nýja viku.</div>';
+      h += '<div class="ad-hint">○ = merkja klárað (geymt fyrir allar vélar) · Ákveða = já / nei / seinna / á Verkefnalistann — já og nei skráð hjá Charlize · ' +
+        'svör við spurningum fara til Claude (Charlize + Verkefnalistinn) · textinn er mál á Þjónustuborðinu með merkinu „adalmal" — Claude skrifar nýtt fyrir nýja viku.</div>';
     } else if (!S.villa) h += '<div class="ad-tomt">Sæki aðalmálin…</div>';
     return h;
   }
@@ -262,19 +530,77 @@
   function smellur(e) {
     const el = e.target && e.target.closest && e.target.closest('[data-adm]'); if (!el) return;
     const a = el.getAttribute('data-adm'), id = el.getAttribute('data-id');
-    if (a === 'uppf') return load();
+    if (a === 'uppf') { S.afSkilabod = null; return load(); }
     if (a === 'opna') { S.opin[id] = !erOpinnId(id); render(); return; }
     if (a === 'syna') { S.synaKlarad[id] = !S.synaKlarad[id]; render(); return; }
     if (a === 'klara') {
       const l = el.getAttribute('data-l'); if (!l || l in S.bid) return;
-      const tx = el.parentNode && el.parentNode.querySelector('.tx');
+      const tx = el.parentNode && el.parentNode.querySelector('.txt');
       return klara(l, tx ? tx.textContent : '', !erKlarad(l));
     }
+    if (smellur492d(a, el)) return;
     if (a === 'bord') {
       const mid = +id;
       try { if (window.App && App.switchView) App.switchView('bord'); } catch (_) {}
       setTimeout(() => { try { if (window.Bord368 && Bord368.opnaMal) Bord368.opnaMal(mid); } catch (_) {} }, 400);
     }
+  }
+  // 492d — smellir á aðgerðir. Skilar true ef smellurinn var okkar.
+  function smellur492d(a, el) {
+    const l = el.getAttribute('data-l'), id = Number(el.getAttribute('data-id'));
+    const domGildi = (pre) => { const x = document.getElementById(pre + idOf(l)); return x ? String(x.value || '').trim() : ''; };
+    if (a === 'atopna') { S.opidAt = S.opidAt === l ? null : l; render(); if (S.opidAt) setTimeout(() => { const x = document.getElementById('_adm-ath-' + idOf(l)); if (x && !mjor()) x.focus({ preventScroll: true }); }, 0); return true; }
+    if (a === 'akv') { amAdgerd(l, 'akvordun', { akvordun: el.getAttribute('data-v'), athugasemd: domGildi('_adm-ath-') }); return true; }
+    if (a === 'vl') { amAdgerd(l, 'verkefnalisti', { athugasemd: domGildi('_adm-ath-') }); return true; }
+    if (a === 'svara') {
+      const t = domGildi('_adm-sv-'), at = S.atKort[l];
+      if (!t) { if (at) S.hlSkilabod[at.mal_id + ':' + at.hluti] = { ok: false, texti: 'Skrifaðu svarið fyrst — ekkert var sent.', at: Date.now(), atridi: at.texti }; render(); return true; }
+      amAdgerd(l, 'svar', { svar: t }); return true;
+    }
+    if (a === 'svbreyta') { S.svBreyta[l] = true; render(); setTimeout(() => { const x = document.getElementById('_adm-sv-' + idOf(l)); if (x) x.focus({ preventScroll: true }); }, 0); return true; }
+    if (a === 'svhaetta') { S.svBreyta[l] = false; delete S.drog['sv:' + l]; drogVista(); render(); return true; }
+    const v = S.af.tilbuin.find(x => x.id === id);
+    if (a === 'afopna') { S.afOpid = S.afOpid === id ? null : id; S.afVopnad = null; S.afSkilabod = null; render(); return true; }
+    if (!v || S.afBusy) return a.indexOf('af') === 0;
+    if (a === 'affram') { afFramkvaema(v); return true; }
+    if (a === 'afseinna') {
+      S.afBusy = true; render();
+      afKall({ id: v.id, adgerd: 'seinna' }).then(j => {
+        S.afBusy = false;
+        S.afSkilabod = j._status === 200 ? { ok: true, texti: 'Sett aftast í röðina: ' + v.titill + '.' } : { ok: false, texti: j.error || ('Villa ' + j._status) };
+        S.afOpid = null; return loadAf();
+      }).catch(e => { S.afBusy = false; S.afSkilabod = { ok: false, texti: 'Netvilla: ' + ((e && e.message) || e) }; render(); });
+      return true;
+    }
+    if (a === 'afsleppa') {
+      const astaeda = window.prompt('Ekki þess virði — kemur aldrei aftur. Ástæða (má sleppa):', '');
+      if (astaeda === null) return true;
+      S.afBusy = true; render();
+      afKall({ id: v.id, adgerd: 'sleppa', varanlegt: true, astaeda: astaeda || 'Ekki þess virði' }).then(j => {
+        S.afBusy = false;
+        if (j._status === 200) { S.af.tilbuin = S.af.tilbuin.filter(x => x.id !== v.id); S.afOpid = null; S.afSkilabod = { ok: true, texti: 'Sleppt og kemur ekki aftur: ' + v.titill + '.' }; }
+        else S.afSkilabod = { ok: false, texti: j.error || ('Villa ' + j._status) };
+        render();
+      }).catch(e => { S.afBusy = false; S.afSkilabod = { ok: false, texti: 'Netvilla: ' + ((e && e.message) || e) }; render(); });
+      return true;
+    }
+    return false;
+  }
+  // Drög lifa endurteikningu (minni + localStorage); ekkert er teiknað meðan skrifað er.
+  function inntak(e) {
+    const t = e.target; if (!t || !t.dataset) return;
+    if (t.dataset.drog) { S.drog[t.dataset.drog] = t.value; drogVista(); return; }
+    if (t.dataset.afTx) S.afTexti[Number(t.dataset.afTx)] = t.value;
+  }
+  // Breyttur póstur vistast þegar farið er úr reitnum (eins og afgreidsla.html) — athuganirnar keyra aftur á nýja textanum.
+  function fokusUt(e) {
+    const t = e.target; if (!t || !t.dataset || !t.dataset.afTx) return;
+    const v = S.af.tilbuin.find(x => x.id === Number(t.dataset.afTx)); if (!v || !v.post) return;
+    const tx = t.value; if (tx === v.post.texti) return;
+    afKall({ id: v.id, adgerd: 'vista', texti: tx }).then(j => {
+      if (j._status === 200 && j.verk) { v.post.texti = tx; delete S.afTexti[v.id]; v.athuganir = j.verk.athuganir; v.ok = j.verk.ok; render(); }
+      else { S.afSkilabod = { ok: false, texti: 'Breytti textinn vistaðist ekki: ' + (j.error || ('villa ' + j._status)) + ' — hann er enn í reitnum.' }; render(); }
+    }).catch(() => {});
   }
   const erOpinnId = id => { if (id in S.opin) return S.opin[id]; const k = String(id).split(':')[1]; const d = HLUTAR[k]; return mjor() ? !!(d && d.opinn) : true; };
 
@@ -314,6 +640,6 @@
     window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  window.Adalmal = { open, render, load, greina, S, version: '492c' };
-  console.log('[492b] Aðalmál — sér borð');
+  window.Adalmal = { open, render, load, loadAf, greina, S, version: '492d' };
+  console.log('[492d] Aðalmál — gagnvirkt borð');
 })();
