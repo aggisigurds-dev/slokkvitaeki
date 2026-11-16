@@ -39,7 +39,7 @@
  *                                         docs/MINNISBOK.md (til að committa)
  *   node tools/minni.cjs --skra "<staðreynd>" --topic X [--scope Y] [--detail Z]
  *                                         skrifar NÝJA staðreynd í Supabase
- *   node tools/minni.cjs --skra "<staðreynd>" --topic taeki --scope kunni --kt 550193-2409 [--fid 123] [--base 45]
+ *   node tools/minni.cjs --skra "<staðreynd>" --topic taeki --scope kunni --kt <kt félags> [--fid 123] [--base 45]
  *                                         KÚNNAMINNI: staðreynd um EITT félag. --kt er kennitala
  *                                         lögaðila (skráð með bandstriki); staður sem er skráður á
  *                                         einstakling fær --fid í staðinn. --thurrt prentar röðina
