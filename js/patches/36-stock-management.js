@@ -44,6 +44,9 @@
   ];
   // Fimmti glugginn „★ Þarf að panta" (Agnar 12.10): allt stjörnumerkt úr öllum hömum á einum stað.
   const PANTA_HAM = 'panta';
+  // Sjötti glugginn „Innflutningur" (Agnar 16.11.2026: „nýjan flipa þarna um innfluttning og útreikninginn á öllu
+  // innfluttu sem við síðan uppfærum við núverandi birgðir"). Efnið teiknar 507-innflutningur.js í #innf-rot.
+  const INNFL_HAM = 'innflutningur';
   const hamHeiti = i => (HAMIR.find(h => passarHam(i, h[0])) || HAMIR[0])[1];
   const passarHam = (i, h) => h === PANTA_HAM ? erPanta(i)
     : h === 'brunakerfi' ? i.flokkur === 'Brunakerfi'
@@ -194,7 +197,7 @@
       _siaLesin = m;
       if (!v || typeof v !== 'object') return;
       _catFilter = v.f || ''; _stada = v.s || '';
-      if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM) _hamur = v.h;
+      if (HAMIR.some(h => h[0] === v.h) || v.h === PANTA_HAM || v.h === INNFL_HAM) _hamur = v.h;
     } catch (_) {}
   };
   const geymaSiu = () => { try { if (!window.Vidmot) return; const v = { f: _catFilter, s: _stada, h: _hamur }; _siaLesin = JSON.stringify(v); Vidmot.setja(VM_SIA, v); } catch (_) {} };
@@ -215,7 +218,8 @@
       el.innerHTML = '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">Gagngrunnur ekki tengdur</div><button class="btn btn-primary btn-sm" onclick="Stock.load()" style="margin-top:10px">Reyna aftur</button></div>'; _bidDB = 0; return;
     }
     _bidDB = 0;
-    el.innerHTML = '<div class="loading-state">Hleður birgðir…</div>';
+    // Í Innflutningi heldur flipinn sínu (507 uppfærir sig sjálfur eftir færslu) — enginn hleðsluskjár yfir hann.
+    if (!(_hamur === INNFL_HAM && el.querySelector(':scope > #innf-rot'))) el.innerHTML = '<div class="loading-state">Hleður birgðir…</div>';
     const { data, error } = await SB.from('birgdir').select('*').order('nafn');
     if (error && error.code === '42P01') {
       el.innerHTML = `<div style="padding:32px;max-width:560px">
@@ -356,21 +360,47 @@
     const nPantaLeit = q ? _items.filter(i => erPanta(i) && passarLeit(i)).length : nPanta;
     const pantaFlis = `<button type="button" class="stk-ham stk-ham-panta${iPanta && !q ? ' on' : ''}" onclick="window.Stock._setHam('${PANTA_HAM}')" title="Allt stjörnumerkt úr öllum hömum">★ Þarf að panta <span class="stk-ham-n">${nPantaLeit}</span></button>`;
 
-    let html = `<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+    // Innflutningur (507): flipinn á sinn eigin hnút, #innf-rot. Hér er aðeins hausinn teiknaður; hnúturinn lifir
+    // endurteikningar 36 (leit, Stock.load eftir færslu) svo reitir, fókus og skrun innflutningsins haldast.
+    const iInnfl = _hamur === INNFL_HAM && !q;
+    const nInnfl = window.Innflutningur && Innflutningur.fjoldi ? Innflutningur.fjoldi() : null;
+    const innflFlis = `<button type="button" class="stk-ham${iInnfl ? ' on' : ''}" onclick="window.Stock._setHam('${INNFL_HAM}')" title="Innfluttar sendingar: kostnaðarverð með flutningi og gjöldum">Innflutningur <span class="stk-ham-n" id="innf-ham-n">${nInnfl == null ? '' : nInnfl}</span></button>`;
+    const toppur = takkar => `<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
         <div class="stk-hamar">${HAMIR.map(hamFlis).join('')}</div>
         <div class="stk-hamar stk-hamar-panta">${pantaFlis}</div>
+        <div class="stk-hamar">${innflFlis}</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${takkar}
+    </div>`;
+    const leitarreitur = `<input id="stk-leit" type="text" placeholder="Leita að vöru, flokki, birgja eða í athugasemdum…" value="${esc(_filter)}" oninput="window.Stock._setFilter(this.value)"
+        style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">`;
+    if (iInnfl) {
+      const haus = toppur('') + `<div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">Innfluttar sendingar: kostnaðarverð á stykki með flutningi og gjöldum, fært á vörurnar í Birgðum.</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">${leitarreitur}</div>`;
+      const hausEl = el.querySelector(':scope > .stk-innf-haus');
+      const rotEl = el.querySelector(':scope > #innf-rot');
+      if (hausEl && rotEl) {
+        const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(hausEl) : null;
+        hausEl.innerHTML = haus;
+        if (aftur) aftur();
+      } else {
+        el.innerHTML = `<div class="stk-innf-haus">${haus}</div><div id="innf-rot" style="min-height:480px"></div>`;
+        const rot = el.querySelector('#innf-rot');
+        if (window.Innflutningur) Innflutningur.teikna(rot);
+        else rot.innerHTML = '<div class="loading-state">Hleður innflutning…</div>';
+      }
+      return;
+    }
+
+    let html = toppur(`<div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">⬇ CSV</button>
         ${iPanta ? '' : `<button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>`}
-      </div>
-    </div>
+      </div>`) + `
     <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `🔍 Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : ''}${nPanta ? ` &middot; <span style="color:#b45309;font-weight:600">★ ${nPanta} þarf að panta</span>` : ''}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-      <input id="stk-leit" type="text" placeholder="Leita að vöru, flokki, birgja eða í athugasemdum…" value="${esc(_filter)}" oninput="window.Stock._setFilter(this.value)"
-        style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;background:var(--bg1);color:var(--ink1)">
+      ${leitarreitur}
       <div style="display:flex;gap:6px;flex-wrap:wrap">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
     </div>
     ${cats.length > 1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
@@ -922,7 +952,7 @@
     load, render, openNew, openEdit, saveItem, deleteItem, openNota, confirmNota, exportCsv, togglePanta, setjaSlod,
     _setFilter(v) { _filter=v; render(); },
     _setCat(v)    { _catFilter=v; geymaSiu(); render(); },
-    _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
+    _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM && v !== INNFL_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
     _hamurIGlugga() { hamurIGlugga(document.getElementById('be-flokkur')?.value); },
     _setStada(v)  { _stada=v; geymaSiu(); render(); },
     _opnaVoru(id) { if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id); else if (window.App) App.switchView('vorur'); }
