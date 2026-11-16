@@ -32,6 +32,33 @@
   }
   function todayISO() { return new Date().toISOString().slice(0, 10); }
 
+  // ── Hvaða línur fá NÝJA verkbeiðni við vistun ─────────────────────────────
+  // 16.11.2026 (Agnar: „2 CO2 fyllinga kútar koma ennþá stundum sem eitt verk"):
+  // gamla reglan bar saman FJÖLDA verka sölunnar og fjölda lína merktra
+  // krefst_verkbeidni. En sölulínur úr Sölu bera merkið EKKI í grunninum
+  // (pos.js bakedLines sleppir því) — aðeins línur sem ritillinn bætti við. Sala
+  // úr Sölu með einn CO₂-kút átti því 1 verk og 0 merktar línur; þegar seinni
+  // kútnum var bætt við í ritlinum varð talningin 1 verk á móti 1 merktri línu
+  // → „ekkert vantar" → seinni kúturinn fékk ALDREI verk á Verkstæði.
+  // Sannað á R-000926 (2 × CO₂ 100 gr., eitt verk) og R-001004 (2 viðbættar línur, ekkert verk).
+  // Nú: (a) hver tæki-lína sem bætt er við í þessari opnun (nyjar) fær sitt verk,
+  //     óháð því hve mörg verk salan á fyrir;
+  //     (b) eldri merktar línur fylgja gömlu talningunni óbreyttri — hún er
+  //     varaleiðin „vistaðu söluna aftur" þegar stofnun verks mistókst áður.
+  function verkLinurTilStofnunar(linur, fjoldiVerka, nyjar) {
+    const ny = Array.isArray(nyjar) ? nyjar : [];
+    const taeki = (linur || []).filter(l => l && l.krefst_verkbeidni === true);
+    const eldri = taeki.filter(l => ny.indexOf(l) < 0);
+    return eldri.slice(Math.max(0, +fjoldiVerka || 0)).concat(taeki.filter(l => ny.indexOf(l) >= 0));
+  }
+  // Vinnumerkið _ny (addLine) fer aldrei í solur.linur.
+  function linurTilVistunar(linur) {
+    return (linur || []).map(l => {
+      if (!l || !Object.prototype.hasOwnProperty.call(l, '_ny')) return l;
+      const c = Object.assign({}, l); delete c._ny; return c;
+    });
+  }
+
   // ── State per open editor ─────────────────────────────────────────────────
   let _sale = null;       // canonical solur row (with mutations)
   let _afslKr = 0;        // sale-level kr discount (gross, m. vsk) — editable
@@ -578,7 +605,10 @@
           // (vorur.krefst_verkbeidni — sama og pos.js), byrjunargjald aldrei (pos.js 15.10).
           type: /þjónusta/i.test(p.flokkur || '') ? 'service' : 'product',
           product_id: p.id,
-          krefst_verkbeidni: p.krefst_verkbeidni === true && !/byrjunargjald/i.test(p.nafn || '')
+          krefst_verkbeidni: p.krefst_verkbeidni === true && !/byrjunargjald/i.test(p.nafn || ''),
+          // 16.11.2026: bætt við Í ÞESSARI OPNUN — fær sína verkbeiðni við vistun (verkLinurTilStofnunar).
+          // Vinnumerki: fer aldrei í grunninn (linurTilVistunar).
+          _ny: true
         });
         renderLines();
       });
@@ -837,7 +867,7 @@
     const update = {
       customer_nafn: nafn,
       customer_id: _sale.customer_id || null,
-      linur: _sale.linur,
+      linur: linurTilVistunar(_sale.linur),
       upphaed_an_vsk: t.ex,
       vsk_upphaed: t.vsk,
       samtals: t.total,
@@ -892,9 +922,12 @@
         // Only lines explicitly marked krefst_verkbeidni:true (catalog products)
         // get a verkbeidni — matches pos.js behaviour. Free-text lines like
         // "Útkall/þjónusta" or "Akstur" are not workshop-bound.
-        const isTaeki = l => l.krefst_verkbeidni === true;
-        const taeki = (_sale.linur || []).filter(isTaeki);
-        const ex = await SB.from('verkbeidnir').select('num').like('num', _sale.num + '-V%');
+        // 16.11.2026: línurnar sem bætt var við í ÞESSARI opnun eru teknar frá og merkið hreinsað
+        // STRAX (á undan fyrsta await) — tvísmellur á Vista stofnar þá ekki verkið tvisvar.
+        const nyjar = (_sale.linur || []).filter(l => l && l._ny === true);
+        nyjar.forEach(l => { delete l._ny; });
+        // audit-pagination:ok — verkin einnar sölu (R-NNN-V%), fáein
+        const ex = await SB.from('verkbeidnir').select('num,phone,pickup').like('num', _sale.num + '-V%');
         // 17.09.2026: `ex.data || []` faldi lestrarvillu. Misheppnaðist SELECT-ið
         // taldist salan verkbeiðnalaus og lykkjan hér að neðan bjó til -V1, -V2 …
         // OFAN Í þær sem voru þegar til → tvítekin tæki á Verkstæði.
@@ -902,9 +935,15 @@
         const existing = ex.data || [];
         let maxIdx = 0;
         existing.forEach(row => { const m = /-V(\d+)$/.exec(row.num || ''); if (m) maxIdx = Math.max(maxIdx, +m[1]); });
+        // Sími og sóknardagur systkinaverks fylgja nýja verkinu (eins og 78 saveNewUnitOnSale) — borðin
+        // hópa eftir nafni + síma (78 custKey); símalaust verk lenti annars á öðrum miða en hin verk kúnnans.
+        const systkin = existing.find(row => String(row.phone || '').replace(/\D/g, '')) || existing[0] || {};
         const tmpSerial = () => { const A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; let s = ''; for (let z = 0; z < 6; z++) s += A[Math.floor(Math.random() * A.length)]; return 'TMP-' + s; };
-        for (let k = existing.length; k < taeki.length; k++) {
-          const sl = taeki[k];
+        // Var: for (k = existing.length; k < taeki.length; k++) — taldi verk á móti MERKTUM línum, en
+        // línur úr Sölu eru ómerktar í grunninum, svo viðbót við sölu sem átti verk fékk ekkert (sjá efst).
+        const tilStofnunar = verkLinurTilStofnunar(_sale.linur, existing.length, nyjar);
+        for (let k = 0; k < tilStofnunar.length; k++) {
+          const sl = tilStofnunar[k];
           const gram = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc || '');
           const qty = parseInt(sl.qty, 10) || 1;
           const vat = (sl.vsk_pct != null ? +sl.vsk_pct : 24);
@@ -913,6 +952,8 @@
             num: _sale.num + '-V' + (++maxIdx),
             status: 'received',
             customer: nafn,
+            phone: systkin.phone || null,
+            pickup: systkin.pickup || null,
             dropoff: new Date().toISOString().slice(0, 10),
             notes: sl.desc,
             verd: verd
@@ -965,7 +1006,9 @@
 
   // ── Public API ────────────────────────────────────────────────────────────
   window.SaleEditor = {
-    openById, openByNum, openFromJob, isDraft, isLocked
+    openById, openByNum, openFromJob, isDraft, isLocked,
+    // hrein föll, birt fyrir tools/test-sala-ritill-verk.cjs
+    _verkLinurTilStofnunar: verkLinurTilStofnunar, _linurTilVistunar: linurTilVistunar
   };
   console.log('[patch-142] sale-editor installed — window.SaleEditor.{openById,openByNum,openFromJob}');
 })();
