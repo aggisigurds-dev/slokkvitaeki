@@ -92,3 +92,34 @@ UNION ALL
      JOIN email_digest d ON d.account = t.account AND d.folder = t.mappa
      JOIN fyrirtaeki f ON f.id = t.fyrirtaeki_id AND f.deleted_at IS NULL
   WHERE t.fyrirtaeki_id IS NOT NULL AND lower(COALESCE(d.account, ''::text)) <> 'aggisigurds@gmail.com'::text;
+
+-- ── 2. útgáfa sama dag: MÖPPUAÐILD (postur_moppur) ─────────────────────────────────────────────
+-- Fyrsta útgáfan tengdi aðeins eftir email_digest.folder. Flest skeyti í verkefnamöppum komu fyrst inn úr INBOX/SENT og
+-- voru svo færð í möppu, og insert-only skildi þau eftir með folder='INBOX' (Egilsgata 14: 31 MB → 1 skeyti).
+-- luna-bridge 5397685 skráir nú aðild hvers skeytis í kveiktri möppu (skraMoppu), og sýnin tengir eftir henni.
+-- Ný tenging á möppu: bæta röð í postmappa_tengsl OG núllstilla MAPPA-offset möppunnar í luna-bridge/state.json svo
+-- aðild skráist fyrir skeyti sem voru þegar lesin.
+-- Mælt 16.11 kl. 02:35: 32 skeyti tengd á 7 staði (Heklureitur 12, Stangarhylur 3 8, Hnjúkamói 9 6, ...), kt-hluti 1.020 óbreyttur.
+
+create table if not exists public.postur_moppur (
+  message_id text not null,
+  account    text not null,
+  mappa      text not null,
+  created_at timestamptz not null default now(),
+  primary key (message_id, account, mappa)
+);
+alter table public.postur_moppur enable row level security;
+grant select on public.postur_moppur to authenticated, service_role, stjori_lesari;
+create index if not exists postur_moppur_mappa_idx on public.postur_moppur (account, mappa);
+
+-- Möppuhluti fyrirtaeki_samskipti_kt (kt-hlutinn eins og að ofan):
+--   FROM ( SELECT DISTINCT t.fyrirtaeki_id, t.mappa, e0.id AS email_id
+--            FROM postmappa_tengsl t
+--            JOIN LATERAL ( SELECT e.id FROM email_digest e WHERE e.account = t.account AND e.folder = t.mappa
+--                     UNION
+--                     SELECT e.id FROM postur_moppur pm JOIN email_digest e ON e.message_id = pm.message_id
+--                      WHERE pm.account = t.account AND pm.mappa = t.mappa) e0 ON true
+--           WHERE t.fyrirtaeki_id IS NOT NULL) x
+--   JOIN email_digest d ON d.id = x.email_id
+--   JOIN fyrirtaeki f ON f.id = x.fyrirtaeki_id AND f.deleted_at IS NULL
+-- (Keyrt sem apply_migration postur_moppur_adild_2026_11_16.)
