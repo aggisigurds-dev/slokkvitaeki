@@ -36,6 +36,13 @@ create table if not exists public.markmid (
   updated_at   timestamptz not null default now()
 );
 
+-- 16.11.2026: er að marka mælinn? Úrskurður óháðrar mælingar (Agnar: „allskonar mælitæki á Jarvis sem ég veit ekkert
+-- hvort sé að marka"). null = ósannreynd; síðan og borðið sýna það.
+alter table public.markmid
+  add column if not exists sannreynt text check (sannreynt in ('rett', 'rangt', 'oljost')),
+  add column if not exists sannreynt_at timestamptz,
+  add column if not exists sannreynt_lysing text;
+
 create table if not exists public.markmid_maelingar (
   id         bigserial primary key,
   markmid_id bigint not null references public.markmid(id) on delete cascade,
@@ -97,6 +104,9 @@ begin
     -- óleystar villur síðustu 7 daga (sama tala og Villuvöktun á Kerfisheilsu, brunaholf villur.js)
     when 'villur_oleystar' then
       select count(*) into v from villur where leyst_at is null and sidast_at >= now() - interval '7 days';
+    -- mæld markmið (ekki lokin) þar sem mælirinn hefur ekki verið sannreyndur réttur með óháðri mælingu (16.11.2026)
+    when 'markmid_osannreynd' then
+      select count(*) into v from markmid where maeling is not null and stada <> 'lokid' and coalesce(sannreynt, '') <> 'rett';
     else v := null;
   end case;
   return v;

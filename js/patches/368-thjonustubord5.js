@@ -193,6 +193,8 @@
     // 11.11.2026 (Agnar: „top priority niðurstöður … sem Forgangsmál inn á þjónustuborðið mitt … auk ný skilaboð, sem eru
     // mikilvæg, handvalið bara frá Claude“): mál á eigin borði með merkinu `forgangsmal` eða `skilabod`. Sjá forgangsmalHtml.
     forgangsmal: { n: '28', t: 'Forgangsmál', d: 'Handvalið af Claude: það sem skiptir mestu núna og mikilvæg ný skilaboð. Opna, ljúka og fela á línunni.' },
+    // 16.11.2026 (Agnar: „Settu þetta í sér lista inn á þjónustuborðið. Hjá hinum sem er efst“): markmiðslistinn (508 MarkmidBord).
+    markmid:    { n: '29', t: 'Markmið', d: 'Markmiðslistinn: flokkarnir með framvindu, opnanlegir. Smellur á markmið opnar það á síðunni Markmið.' },
     skipulag2:  { n: '24', t: 'Skipulagsborð · lítið', d: 'Sömu spjöld og 05 í ⅗ breidd — fyrir hlið checklistans.' },
     vinnublod: { n: '06', t: 'Vinnublöð', d: 'Yfirferð vinnublaða: samþykkja, merkja klárað, sjá skýrslu og reikning.' },
     postsvor:  { n: '07', t: 'Póstsvörun', d: 'Póstmál sem bíða svars.' },
@@ -337,7 +339,7 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0] };
+  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -4812,6 +4814,13 @@
         (g && g.data && g.data.some(f => f.heimilisfang) ? '<a class="btn iv sm" href="' + esc(mapsSlod(g.data)) + '" target="_blank" rel="noopener">🗺 Leið</a>' : '') +
         uppfTakki('akstur:') + '<button type="button" class="btn iv sm" data-t5="go" data-view="aksturslisti">Vaktin ›</button>';
       return modPanel(k, 'Listi 1 · ' + listar[1].length + '  ·  Listi 2 · ' + listar[2].length + '  ·  Listi 3 · ' + listar[3].length, body, action);
+    }
+    if (k === 'markmid') {
+      // Markmiðslistinn (508). Hér er aðeins spjaldið; 508 festir stíl og smelli á rótina og á gögnin.
+      const MB = window.MarkmidBord;
+      if (!MB) return modPanel(k, 'Ekki hlaðið', emptyHtml('Markmiðin (508) hafa ekki hlaðist — endurhlaðið síðuna.'), '');
+      MB.festa(rot());
+      return modPanel(k, esc(MB.samantekt()), isOpen(k) ? MB.listi() : '', MB.takkar());
     }
     if (k === 'krofumal') {
       // Forgangslisti krafna + vinnugluggi (369). Hér er aðeins spjaldið; 369 festir stíl, smelli og gluggann á rótina.

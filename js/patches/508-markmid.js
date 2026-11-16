@@ -32,6 +32,7 @@
   let _gogn = null, _loadP = null, _villa = null, _vinnur = false;
   const _opin = new Set();      // opin markmið (tímabundin staða)
   let _sidastOpnad = null;      // Ctrl+V fer á það markmið
+  let _hoppaTil = null;         // markmið sem var opnað af borðinu — skrunað að því þegar gögnin eru komin
 
   async function api(method, body) {
     const r = await fetch(API, { method, credentials: 'same-origin', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -116,6 +117,12 @@
       `${V}-plate--dokk{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);border-color:#000;color:#eef1f4}`,
       `${V}-plate i{width:7px;height:7px;border-radius:50%;background:#8f98a8}`,
       `${V}-plate--i_vinnu i{background:#d29a1e}${V}-plate--lokid i{background:#16a34a}`,
+      `${V}-traust{display:inline-flex;align-items:center;height:22px;padding:0 8px;margin-left:6px;border-radius:3px;font-family:${MONO};font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle;border:1px dashed #8f98a8;color:#3a4250;background:transparent}`,
+      `${V}-traust--rett{border:1px solid rgba(22,120,63,.45);color:#0e5a2e;background:#eef8f1}`,
+      `${V}-traust--rangt{border:1px solid rgba(180,35,24,.5);color:#8a1c12;background:#fff3f1}`,
+      `${V}-traust--oljost{border:1px solid rgba(160,110,20,.5);color:#6b4a0c;background:#fff8e6}`,
+      `${V}-traust-lysing{margin-top:8px;padding:8px 10px;border-radius:6px;font-size:12.5px;line-height:1.5;background:#f3f5f8;border-left:3px solid #8f98a8;color:#1f2530}`,
+      `${V}-traust-lysing--rett{border-left-color:#16783f}${V}-traust-lysing--rangt{border-left-color:#b42318}${V}-traust-lysing--oljost{border-left-color:#d29a1e}`,
       // Lína markmiðs
       `${V}-lina{border-top:1px solid #e4e8ef}`,
       `${V}-lina:first-child{border-top:0}`,
@@ -202,6 +209,26 @@
     return `<div class="mm-kvardi"><span>grunnlína ${tala(m.upphaf)}</span><span>mark ${tala(m.mark)}</span></div>`;
   }
 
+  // Er að marka mælinn? (16.11.2026, Agnar: „allskonar mælitæki á Jarvis sem ég veit ekkert hvort sé að marka").
+  // Aðeins sjálfvirkt mæld markmið bera merkið; handvirk tala og skref eru það sem fólk skráði sjálft.
+  const TRAUST = { rett: 'Sannreynt', rangt: 'Mælingin röng', oljost: 'Óljós mæling' };
+  const dagsStutt = (iso) => { if (!iso) return ''; const d = new Date(iso); return `${p2(d.getDate())}.${p2(d.getMonth() + 1)}`; };
+  function traustTexti(m) {
+    if (m.tegund !== 'maelt') return '';
+    return m.sannreynt ? TRAUST[m.sannreynt] + (m.sannreynt === 'rett' && m.sannreynt_at ? ' ' + dagsStutt(m.sannreynt_at) : '') : 'Ósannreynd';
+  }
+  function traust(m) {
+    const t = traustTexti(m);
+    if (!t) return '';
+    return `<span class="mm-traust${m.sannreynt ? ' mm-traust--' + m.sannreynt : ''}" title="${esc(m.sannreynt_lysing || 'Mælirinn hefur ekki verið borinn saman við óháða mælingu.')}">${esc(t)}</span>`;
+  }
+  function traustLysing(m) {
+    if (m.tegund !== 'maelt') return '';
+    const k = m.sannreynt ? ' mm-traust-lysing--' + m.sannreynt : '';
+    const haus = m.sannreynt ? `${TRAUST[m.sannreynt]}${m.sannreynt_at ? ' ' + dags(m.sannreynt_at) : ''}: ` : 'Ósannreynd mæling: ';
+    return `<div class="mm-traust-lysing${k}"><b>${esc(haus)}</b>${esc(m.sannreynt_lysing || 'talan hefur ekki enn verið borin saman við óháða mælingu, svo ekki er vitað hvort það er að marka hana.')}</div>`;
+  }
+
   function sagaSvg(saga) {
     const s = (saga || []).filter((x) => Number.isFinite(x.gildi));
     if (s.length < 2) return '<div class="mm-daufur">Ein mæling enn — sagan teiknast þegar fleiri koma (á hverjum morgni kl. 06:20).</div>';
@@ -218,6 +245,7 @@
       <div class="mm-tolur"><div><span>Grunnlína ${dags(m.upphaf_at)}</span><b>${tala(m.upphaf)}</b></div><div><span>Núna${m.nu_at ? ' · ' + dags(m.nu_at) : ''}</span><b class="${m.versnad ? 'mm-versnad' : ''}">${tala(m.nu)}</b></div>
       <div><span>Mark</span><b>${tala(m.mark)}</b></div><div><span>Breyting</span><b class="${m.versnad ? 'mm-versnad' : ''}">${breyting == null ? '—' : (breyting > 0 ? '+' : '') + tala(breyting)}</b></div></div>
       <div class="mm-saga" style="margin-top:8px">${sagaSvg(m.saga)}</div>
+      ${traustLysing(m)}
       ${m.tegund === 'handvirkt' && !lokid ? `<div class="mm-saman"><input type="text" inputmode="decimal" data-nu="${m.id}" placeholder="Ný staða (${esc(m.maelieining || 'tala')})" aria-label="Ný staða"><button type="button" class="mm-btn mm-btn--malmur" data-a="nu" data-id="${m.id}">Skrá stöðu</button></div>` : ''}
       ${m.tegund === 'maelt' ? `<div class="mm-daufur" style="margin-top:6px">Mælist sjálfkrafa á hverjum morgni kl. 06:20. <button type="button" class="mm-btn" data-a="maela1" data-id="${m.id}" style="margin-left:6px">Mæla núna</button></div>` : ''}</div>`;
     const skref = (m.skref || []).map((s) => `<label class="${s.done ? 'done' : ''}"><input type="checkbox" data-skref="${esc(s.id)}" data-id="${m.id}"${s.done ? ' checked' : ''}${lokid ? ' disabled' : ''}><span>${esc(s.t)}${s.done && s.af ? `<small>${esc(s.af)} · ${stund(s.at)}</small>` : ''}</span></label>`).join('');
@@ -251,7 +279,7 @@
     const opid = _opin.has(m.id);
     return `<div class="mm-lina" data-mm="${m.id}" data-opid="${opid ? 1 : 0}">
       <button type="button" class="mm-rod" data-a="opna" data-id="${m.id}" aria-expanded="${opid}">
-        <span style="min-width:0"><span class="mm-mtitill${m.stada === 'lokid' ? ' mm-mtitill--lokid' : ''}">${esc(m.titill)}<span class="mm-plate mm-plate--${m.stada}"><i aria-hidden="true"></i>${STADA[m.stada] || m.stada}</span></span>
+        <span style="min-width:0"><span class="mm-mtitill${m.stada === 'lokid' ? ' mm-mtitill--lokid' : ''}">${esc(m.titill)}<span class="mm-plate mm-plate--${m.stada}"><i aria-hidden="true"></i>${STADA[m.stada] || m.stada}</span>${traust(m)}</span>
           <span class="mm-maeli-lina" style="display:block">${maeliLina(m)}</span></span>
         <span class="mm-gauge">${maelir(m)}${kvardi(m)}</span>
         <span class="mm-mpct">${pct(m.framvinda)}</span>${CHEV}
@@ -298,6 +326,11 @@
     rot.innerHTML = allt();
     if (aftur) aftur();
     tengja(rot);
+    if (_hoppaTil != null && _gogn) {
+      const el = rot.querySelector(`[data-mm="${_hoppaTil}"]`);
+      _hoppaTil = null;
+      if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    }
   }
 
   // ── Aðgerðir ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -444,5 +477,139 @@
     hlada(true).then(teikna);
   });
 
-  window.Markmid = { teikna, hlada: () => hlada(true).then(teikna) };
+  /* ── Eining 29 á Þjónustuborðinu (16.11.2026, Agnar: „Settu þetta í sér lista inn á þjónustuborðið. Hjá hinum sem er efst").
+   * Sama mynstur og 369 (KrofuVinnugluggi): 368 kallar samantekt() / listi() / takkar() / festa(rót) og teiknar spjaldið.
+   * Gögnin eru SÖMU og síðunnar (_gogn) — ein sókn. Opnir flokkar vistast á þjóninum (markmid_bord.by_staff.<nafn>.opid),
+   * regla 15.10.2026: samanbrot er eins á öllum vélum. Smellur á markmið opnar það á síðunni Markmið. */
+  const bordNafn = () => { try { return (window.BordStarfsmadur && BordStarfsmadur.get()) || 'Agnar'; } catch (_) { return 'Agnar'; } };
+  const teiknaBord = () => { try { if (window.Thjonustubord5 && Thjonustubord5.render) Thjonustubord5.render(); } catch (_) {} };
+  let _bordBid = null, _bordOpidBid = null;
+  function bordTryggja(afl) {
+    if ((_gogn || _villa) && !afl) return;
+    if (_bordBid) return;
+    _bordBid = hlada(!!afl).then(() => {
+      _bordBid = null;
+      teiknaBord();
+      if (document.getElementById('markmid-main')) teikna();
+    });
+  }
+  function bordOpid() {
+    if (_bordOpidBid) return new Set(_bordOpidBid);
+    let v = null;
+    try { v = window.AppSettings && AppSettings.path ? AppSettings.path('markmid_bord.by_staff.' + bordNafn() + '.opid') : null; } catch (_) {}
+    return new Set(Array.isArray(v) ? v : []);
+  }
+  async function bordOpidVista(set) {
+    const listi = [...set];
+    _bordOpidBid = listi;
+    teiknaBord();
+    let ok = false;
+    try { ok = !!(await AppSettings.save({ markmid_bord: { by_staff: { [bordNafn()]: { opid: listi } } } })); } catch (_) {}
+    if (_bordOpidBid === listi) _bordOpidBid = ok ? null : listi;
+  }
+  function bordHeild() {
+    const mm = (_gogn && _gogn.markmid) || [];
+    const f = mm.map((m) => m.framvinda).filter((x) => x != null);
+    return { mm, heild: mm.length ? f.reduce((a, b) => a + b, 0) / mm.length : 0, lokid: mm.filter((m) => m.stada === 'lokid').length,
+      osannreynd: mm.filter((m) => m.tegund === 'maelt' && m.sannreynt !== 'rett').length };
+  }
+  function bordSamantekt() {
+    bordTryggja(false);
+    if (_villa) return _villa.inn ? 'Innskráning vantar' : 'Náði ekki í markmiðin';
+    if (!_gogn) return 'Sæki markmiðin…';
+    const h = bordHeild();
+    return pct(h.heild) + ' · ' + h.lokid + ' af ' + h.mm.length + ' lokið' + (h.osannreynd ? ' · ' + h.osannreynd + ' mælar ósannreyndir' : '') + (_bordBid ? ' · uppfæri…' : '');
+  }
+  const bordMaelir = (f, cls) => `<span class="mmb-bar${cls || ''}" role="img" aria-label="Framvinda ${pct(f)}"><i style="width:${f == null ? 0 : Math.max(2, Math.round(f * 100))}%"></i></span>`;
+  function bordStutt(m) {
+    if (m.tegund === 'skref' || m.upphaf == null) { const s = m.skref || []; return s.filter((x) => x.done).length + ' af ' + s.length + ' skrefum'; }
+    return tala(m.nu) + ' ' + (m.maelieining || '') + ' · mark ' + tala(m.mark);
+  }
+  function bordListi() {
+    if (_villa) return `<div class="mmb-tomt">${esc(_villa.texti)}</div>`;
+    if (!_gogn) {
+      // Staðgengill í sömu hæð og listinn (9 flokkar 16.11.2026) svo ekkert hoppi þegar gögnin lenda.
+      return '<div class="mmb">' + Array.from({ length: 9 }, () => '<div class="mmb-fl mmb-fl--bid" aria-hidden="true"></div>').join('') + '</div>';
+    }
+    const opid = bordOpid(), mm = _gogn.markmid || [];
+    return '<div class="mmb">' + (_gogn.flokkar || []).map((x) => {
+      const o = opid.has(x.heiti);
+      const lin = o ? mm.filter((m) => m.flokkur === x.heiti).map((m) => {
+        const t = traustTexti(m);
+        return `<button type="button" class="mmb-m" data-mmb="opna" data-id="${m.id}" title="Opna markmiðið á síðunni Markmið">
+          <span class="mmb-mt"><span class="mmb-mn${m.stada === 'lokid' ? ' mmb-mn--lokid' : ''}">${esc(m.titill)}</span>
+            <span class="mmb-ms"><span class="${m.versnad ? 'mmb-versnad' : ''}">${esc(bordStutt(m))}</span>${t ? `<span class="mmb-tr${m.sannreynt ? ' mmb-tr--' + m.sannreynt : ''}">${esc(t)}</span>` : ''}</span></span>
+          ${bordMaelir(m.framvinda, m.framvinda == null ? ' mmb-bar--byrjun' : m.versnad ? ' mmb-bar--lagt' : '')}<span class="mmb-pct">${pct(m.framvinda)}</span></button>`;
+      }).join('') : '';
+      return `<button type="button" class="mmb-fl" data-mmb="fl" data-fl="${esc(x.heiti)}" aria-expanded="${o}">
+          <span class="mmb-fn">${esc(x.heiti)}</span><span class="mmb-fs">${x.lokid} af ${x.fjoldi} lokið</span>
+          ${bordMaelir(x.framvinda)}<span class="mmb-pct">${pct(x.framvinda)}</span><span class="mmb-chev" aria-hidden="true">${o ? '▴' : '▾'}</span></button>${o ? `<div class="mmb-ml">${lin}</div>` : ''}`;
+    }).join('') + '</div>';
+  }
+  function bordTakkar() {
+    return '<button type="button" class="btn iv sm tog" data-mmb="uppf" title="Sækja nýjustu stöðu" aria-label="Uppfæra markmiðin">↻</button>' +
+      '<button type="button" class="btn gold sm" data-mmb="sida">Markmið ›</button>';
+  }
+  function bordCss() {
+    return [
+      '.mmb{display:flex;flex-direction:column}',
+      '.mmb-fl{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(90px,180px) 44px 18px;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 14px;border:0;border-top:1px solid var(--rule2);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}',
+      '.mmb-fl:hover{background:rgba(241,237,228,.55)}',
+      '.mmb-fl:focus-visible,.mmb-m:focus-visible{outline:2px solid var(--g6);outline-offset:-2px}',
+      '.mmb-fl--bid{cursor:default;background:linear-gradient(90deg,rgba(0,0,0,.025),rgba(0,0,0,.06),rgba(0,0,0,.025))}',
+      '.mmb-fn{font-size:13.5px;font-weight:700;min-width:0;overflow-wrap:anywhere}',
+      '.mmb-fs{font-family:var(--mono);font-size:11px;color:var(--mute);white-space:nowrap}',
+      '.mmb-bar{display:block;height:8px;border-radius:4px;background:#dfe3e8;box-shadow:inset 0 1px 2px rgba(0,0,0,.18);overflow:hidden}',
+      '.mmb-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#0e5a2e,#16783f)}',
+      '.mmb-bar--byrjun i{background:#c8ccd2}.mmb-bar--lagt i{background:linear-gradient(90deg,#8a1c12,#b42318)}',
+      '.mmb-pct{font-family:var(--mono);font-size:12.5px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}',
+      '.mmb-chev{font-size:12px;color:var(--mute);text-align:center}',
+      '.mmb-ml{display:flex;flex-direction:column;background:rgba(250,248,243,.7);border-top:1px dashed var(--rule2)}',
+      '.mmb-m{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,140px) 44px;align-items:center;gap:10px;width:100%;min-height:44px;padding:7px 14px 7px 26px;border:0;border-top:1px solid rgba(0,0,0,.05);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}',
+      '.mmb-m:hover .mmb-mn{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
+      '.mmb-mt{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '.mmb-mn{font-size:13px;font-weight:600;overflow-wrap:anywhere}.mmb-mn--lokid{text-decoration:line-through;color:var(--mute)}',
+      '.mmb-ms{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
+      '.mmb-versnad{color:#8a1c12;font-weight:700}',
+      '.mmb-tr{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:2px;border:1px dashed #8f98a8;color:#3a4250}',
+      '.mmb-tr--rett{border:1px solid rgba(22,120,63,.45);color:#0e5a2e;background:#eef8f1}',
+      '.mmb-tr--rangt{border:1px solid rgba(180,35,24,.5);color:#8a1c12;background:#fff3f1}',
+      '.mmb-tr--oljost{border:1px solid rgba(160,110,20,.5);color:#6b4a0c;background:#fff8e6}',
+      '.mmb-tomt{padding:12px 14px;font-size:13px;color:var(--mute)}',
+      '@media (max-width:720px){.mmb-fl{grid-template-columns:minmax(0,1fr) 44px 18px;row-gap:4px}.mmb-fl .mmb-fs{grid-column:1;grid-row:2}.mmb-fl .mmb-bar{grid-column:1/-1;grid-row:3}' +
+        '.mmb-m{grid-template-columns:minmax(0,1fr) 44px;padding-left:18px}.mmb-m .mmb-bar{grid-column:1/-1;grid-row:2}}'
+    ].join('');
+  }
+  function bordFesta(root) {
+    if (!root) return;
+    if (!root.querySelector('#mmb-still')) {
+      const st = document.createElement('style');
+      st.id = 'mmb-still';
+      st.textContent = bordCss();
+      root.appendChild(st);
+    }
+    if (root.__mmbFest) return;
+    root.__mmbFest = true;
+    root.addEventListener('click', (e) => {
+      const el = e.target && e.target.closest ? e.target.closest('[data-mmb]') : null;
+      if (!el) return;
+      const a = el.dataset.mmb;
+      if (a === 'fl') { const o = bordOpid(), h = el.dataset.fl; if (o.has(h)) o.delete(h); else o.add(h); bordOpidVista(o); return; }
+      if (a === 'uppf') { bordTryggja(true); teiknaBord(); return; }
+      if (a === 'sida') { App.switchView('markmid'); return; }
+      if (a === 'opna') opnaMarkmid(Number(el.dataset.id));
+    });
+  }
+  function opnaMarkmid(id) {
+    if (!id) return;
+    _opin.add(id);
+    _sidastOpnad = id;
+    _hoppaTil = id;
+    App.switchView('markmid');
+  }
+
+  window.MarkmidBord = { version: '508b', samantekt: bordSamantekt, listi: bordListi, takkar: bordTakkar, festa: bordFesta, uppfaera: () => { bordTryggja(true); teiknaBord(); } };
+  // 368 kann að hafa teiknað borðið áður en þessi skrá hlóðst („Ekki hlaðið“) — teikna einu sinni aftur ef borðið er sýnilegt.
+  { const vb = document.getElementById('view-bord'); if (vb && vb.offsetParent !== null) teiknaBord(); }
+  window.Markmid = { teikna, hlada: () => hlada(true).then(teikna), opna: opnaMarkmid };
 })();
