@@ -14,10 +14,16 @@
         · ónýtt skeytist INN í grunnsetninguna, fær ekki sér setningu:
           „…vottuð í lagi nema eitt sem var dæmt ónýtt." („nema tvö … dæmd ónýt")
      2. Hleðsla að hluta: „Fjögur þeirra endurhlaðin (skipt um innihald) og vottuð í lagi."
-     3. Ný tæki í ÞÁGUFALLI: „Einu nýju slökkvitæki bætt við." / „3 nýjum
-        slökkvitækjum bætt við."
+     3. Ný tæki í ÞÁGUFALLI, nefnd eftir TEGUND og stærð (16.11.2026, Agnar —
+        Birkimelur: nýr CO₂ 5 kg sást hvergi í textanum):
+        „3 nýjum léttvatnstækjum bætt við." / „18 nýjum 6 L léttvatnstækjum og
+        3 nýjum 5 kg CO₂ slökkvitækjum bætt við." Óþekkt tegund heldur gamla
+        forminu: „Einu nýju slökkvitæki bætt við."
      4. Reykskynjarar sér lína: „Reykskynjarar hljóðprófaðir og skipt um
         rafhlöður." — skynjarar og slöngur teljast EKKI með slökkvitækjunum.
+        NÝIR skynjarar (val `nyitt`) eru EKKI hljóðprófaðir með rafhlöðuskiptum;
+        þeir fá sína setningu á eftir: „21 nýjum samtengjanlegum reykskynjurum
+        bætt við." (fram að 16.11.2026 fengu þeir ranglega hljóðprófunar-línuna).
      5. Stútskipti:   „Skipt um stút á einni brunaslöngu."
                       (fleirtala: „Skipt um stúta á N brunaslöngum.")
      6. Slöngur SÍÐAST, sér lína: „Brunaslöngur prófaðar á fullum þrýstingi."
@@ -91,6 +97,41 @@
     return /skynjar|smoke|detector/.test(t);
   }
 
+  /* NÝ TÆKI EFTIR TEGUND (16.11.2026). Húsmálið nefnir tegundina („3 nýjum
+     léttvatnstækjum bætt við."), en textinn taldi áður aðeins heildina — nýr
+     CO₂ 5 kg á Birkimel (fid 1934) kom hvergi fram. Heitin eru í þágufalli,
+     eintölu og fleirtölu; öll eru hvorugkyns svo „einu nýju / N nýjum" á við
+     þau öll. Tegund sem þekkist ekki fær gamla heitið „slökkvitæki". */
+  function nyttHeiti(u) {
+    var t = ((u && u.type) || '').toLowerCase();
+    if (/teppi/.test(t)) return { et: 'eldvarnarteppi', ft: 'eldvarnarteppum', staerd: false };
+    if (/co2|co₂|kols[ýy]r/.test(t)) return { et: 'CO₂ slökkvitæki', ft: 'CO₂ slökkvitækjum', staerd: true };
+    if (/l[ée]ttvatn/.test(t)) return { et: 'léttvatnstæki', ft: 'léttvatnstækjum', staerd: true };
+    if (/duft/.test(t)) return { et: 'dufttæki', ft: 'dufttækjum', staerd: true };
+    return { et: 'slökkvitæki', ft: 'slökkvitækjum', staerd: true };
+  }
+  // Stærðin fer aðeins í textann þegar hún er hrein mæling („6 L", „5 kg") —
+  // afbrigði og mál („Samtengjanlegir", „100x100") eiga ekki heima framan við heitið.
+  function staerdTexti(u) {
+    var m = String((u && u.size) || '').trim().match(/^(\d+(?:[.,]\d+)?)\s*(l|ltr|kg)\.?$/i);
+    if (!m) return '';
+    return m[1] + ' ' + (/^kg$/i.test(m[2]) ? 'kg' : 'L');
+  }
+  // Afbrigði reykskynjara býr í stærðarreitnum (129 `reykVariantProduct`).
+  function skynjaraLo(u) {
+    return /samteng/i.test(String((u && u.size) || '')) ? 'samtengjanlegum ' : '';
+  }
+  function teljaHop(listi, lykill, gogn) {
+    for (var i = 0; i < listi.length; i++) if (listi[i].lykill === lykill) { listi[i].n++; return; }
+    gogn.lykill = lykill; gogn.n = 1; listi.push(gogn);
+  }
+  // „a" · „a og b" · „a, b og c" — stærsti hópurinn fyrst, annars röð tækjalistans.
+  function upptalning(hopar, ordFn) {
+    var l = hopar.slice().sort(function (a, b) { return b.n - a.n; }).map(ordFn);
+    if (l.length < 2) return l.join('');
+    return l.slice(0, -1).join(', ') + ' og ' + l[l.length - 1];
+  }
+
   /* Telur þjónustuval per tæki — SÖMU gildi og reikningurinn les.
      NB `getChoice` skilar SJÁLFGEFNU gildi þegar tækið hefur ekki verið snert
      (duft → hleðsla, annað → yfirferð, sjá 131 `defaultForType`). Það er
@@ -101,7 +142,9 @@
     // yfir/hled/nytt/onytt telja aðeins SLÖKKVITÆKI — slöngur og skynjarar
     // eiga sínar eigin setningar í húsmálinu og mengast ekki inn í
     // „Öll slökkvitæki yfirfarin".
-    var st = { yfir: 0, hled: 0, nytt: 0, onytt: 0, slanga: 0, skynj: 0, alls: 0 };
+    // skynj = skynjarar sem voru ÞJÓNUSTAÐIR; nySkynj = nýir skynjarar (val nyitt).
+    // nyTeg / nySkynjTeg = sömu nýju tækin brotin niður á tegund (fyrir setningu 3 og 4).
+    var st = { yfir: 0, hled: 0, nytt: 0, onytt: 0, slanga: 0, skynj: 0, nySkynj: 0, alls: 0, nyTeg: [], nySkynjTeg: [] };
     var units = unitsFor(coId);
     units.forEach(function (u) {
       var val = '';
@@ -112,9 +155,20 @@
       if (val === 'none') return;
       st.alls++;
       if (isSlanga(u)) { st.slanga++; return; }
-      if (isSkynjari(u)) { st.skynj++; return; }
+      if (isSkynjari(u)) {
+        if (val === 'nyitt') {
+          var lo = skynjaraLo(u);
+          st.nySkynj++;
+          teljaHop(st.nySkynjTeg, lo, { lo: lo });
+        } else st.skynj++;
+        return;
+      }
       if (val === 'hledsla') st.hled++;
-      else if (val === 'nyitt') st.nytt++;
+      else if (val === 'nyitt') {
+        var h = nyttHeiti(u), sz = h.staerd ? staerdTexti(u) : '';
+        st.nytt++;
+        teljaHop(st.nyTeg, h.ft + '|' + sz, { et: h.et, ft: h.ft, staerd: sz });
+      }
       else if (val === 'onytt') st.onytt++;
       else st.yfir++;
     });
@@ -179,16 +233,21 @@
       ? 'Eitt þeirra endurhlaðið (skipt um innihald) og vottað í lagi.'
       : cap(hk(st.hled)) + ' þeirra endurhlaðin (skipt um innihald) og vottuð í lagi.');
 
-    // 3. Ný tæki í þágufalli.
-    if (st.nytt > 0) s.push(st.nytt === 1
-      ? 'Einu nýju slökkvitæki bætt við.'
-      : st.nytt + ' nýjum slökkvitækjum bætt við.');
+    // 3. Ný tæki í þágufalli, nefnd eftir tegund og stærð (sjá nyttHeiti).
+    if (st.nytt > 0) s.push(cap(upptalning(st.nyTeg, function (g) {
+      var sz = g.staerd ? g.staerd + ' ' : '';
+      return g.n === 1 ? 'einu nýju ' + sz + g.et : g.n + ' nýjum ' + sz + g.ft;
+    })) + ' bætt við.');
 
     // 4. Reykskynjarar — sér lína í húsmálinu, rafhlöðuskipti eru hluti af
-    //    árlegri þjónustu.
+    //    árlegri þjónustu. Aðeins skynjarar sem voru þjónustaðir; nýir skynjarar
+    //    fá sína setningu á eftir (þeir voru settir upp, ekki hljóðprófaðir).
     if (st.skynj > 0) s.push(st.skynj === 1
       ? 'Reykskynjari hljóðprófaður og skipt um rafhlöður.'
       : 'Reykskynjarar hljóðprófaðir og skipt um rafhlöður.');
+    if (st.nySkynj > 0) s.push(cap(upptalning(st.nySkynjTeg, function (g) {
+      return g.n === 1 ? 'einum nýjum ' + g.lo + 'reykskynjara' : g.n + ' nýjum ' + g.lo + 'reykskynjurum';
+    })) + ' bætt við.');
 
     var txt = s.join(' ');
 
