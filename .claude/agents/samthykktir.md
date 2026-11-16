@@ -410,3 +410,5 @@ Reglur sem bitu:
 - **Lokunartexti styttist ekki í miðri setningu.** Sé hann of langur fyrir reitinn fer afgangurinn í nótuna.
 - **Samþykkt en óunnið** (`svar:samthykkt` án framkvæmdar) er framkvæmt strax eða nefnt með nafni í skilunum; það er
   það sem Agnar tekur verst.
+
+- **16.11.2026** — Seinni yfirferð 16.11.2026: 13 úrskurðir stóðust ekki samanburð við kúnnaminni og sölunótur (t.d. tillaga um að fækka tækjum á stað sem kúnnaminnið segir tvö aðskilin verk; spurning um sölu sem ber nótuna „Ekki spyrja aftur“). Lestu v_charlize_kunni á kennitölunni, samningatöfluna og krafa_note sölunnar ÁÐUR en lína fer á mál fyrir Agnar.
