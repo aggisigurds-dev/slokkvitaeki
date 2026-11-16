@@ -1127,8 +1127,16 @@
       // Uses findReplacementProduct (same matcher used for Eldvarnateppi etc.)
       // which looks for non-hleðsla/yfirferð products by type+size tokens.
       if (g.nyitt > 0) {
-        const newProduct = findReplacementProduct(g.type, g.size, services);
-        if (newProduct) {
+        // 16.11.2026 (Agnar): skráð Nýtt-tenging (410, lykill tegund|stærð|nyitt) gengur fyrir
+        // nafnaleitinni — sama regla og yfirferð/hleðsla. Áður fór nýtt tæki beint í
+        // findReplacementProduct og nýr CO₂ 5kg lenti á „Notaðir 5kg CO₂ kútar".
+        let newProduct = skradVara(g.type, g.size, 'nyitt', services);
+        const nyEkkiRukka = newProduct === 'ekki_rukka';
+        if (nyEkkiRukka) newProduct = null;
+        else if (!newProduct) newProduct = findReplacementProduct(g.type, g.size, services);
+        if (nyEkkiRukka) {
+          // Skráð sem lína sem á ekki að rukkast — engin ný-lína (eins og yfirferð/hleðsla).
+        } else if (newProduct) {
           const override = findOverride(coId, newProduct.nafn);
           let unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
