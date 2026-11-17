@@ -743,7 +743,7 @@
   }
 
   // Tillaga B — hrein föll og HTML-bútar sem /afgreidsla.html notar líka (ein útgáfa af greiningunni).
-  var snid = { titill: titill, bid: bid, timalina: timalina, gerist: gerist, handrit: handrit, hverjum: hverjum, aherslur: aherslur,
+  var snid = { titill: titill, bid: bid, timalina: timalina, gerist: gerist, handrit: handrit, hverjum: hverjum, aherslur: aherslur, merktHtml: merktHtml,
     hausHtml: hausHtml, linaHtml: linaHtml, timalinaHtml: timalinaHtml, geristHtml: geristHtml, handritHtml: handritHtml, handritKafli: handritKafli,
     afrita: afrita, css: bCss };
   var api = { version: '2026-11-17b', snid: snid, samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,

@@ -373,6 +373,7 @@
     dnDrog: {}, dnStada: {},   // 18.09.2026: frjáls texti á dag í Dagskránni
     skHled: {},                // 01.10.2026: skjöl á leið á spjald { skid: [{ k, nafn, stada: 'hled'|'vistar'|'villa' }] }
     samtSkyOpid: {}, samtSkyDrog: {},   // 368w: opinn skýringarritill á samþykkismáli + óvistuð drög
+    samtMeira: {},                      // 368ad: „Meira um málið" opið á B-spjaldinu í Samþykkja (id → true/false)
     falidBid: {},      // Fela-skrif sem bíða eða kláruðust nýlega: { lykill: { falid, row, tok, lokid } }
     skyrBid: {},       // Skýringar-skrif sem bíða eða kláruðust nýlega: { lykill: { skyring, af, at, rod, tok, lokid } }
     skyrOpid: null,    // opinn skýringarritill (einn í einu): { l, e, d, texti, upphaf, vistar, villa }
@@ -1477,6 +1478,72 @@
       '.vbr-item[aria-current="true"]{background:rgba(241,237,228,.85);box-shadow:inset 3px 0 0 var(--g6)}.vbr-item.svarad{opacity:.62}',
       '.vbr-main{display:flex;flex-direction:column;gap:14px;min-width:0}',
       '.vbr-top{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}',
+      /* 368ad — Samþykkja í Tillögu B: hvítt spjald, Poppins (var(--body) í V2), litatónar úr Brunahólf V2. */
+      '.sb{background:#fff;border-radius:14px;box-shadow:0 2px 4px rgba(2,25,60,.08),0 14px 32px rgba(2,25,60,.14);overflow:hidden;color:var(--ink);font-family:var(--body)}',
+      '.sb-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 22px;background:#f3f6fb;border-bottom:1px solid #e7ecf3}',
+      '.sb-bar-t{font-size:14.5px;color:var(--ink2);min-width:0;overflow-wrap:anywhere}.sb-bar-t b{color:var(--ink);font-weight:700}',
+      '.sb-nr{font-size:12.5px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}',
+      '.sb-chip{flex:none;font:600 10px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;border-radius:6px;padding:4px 7px;background:#f3f6fb;color:#2e4064;box-shadow:inset 0 0 0 1px #d8dee9}',
+      '.sb-chip._till{background:#ffeee0;color:#9a3412;box-shadow:none}.sb-chip._spur{background:#ebf0fe;color:#1e3a8a;box-shadow:none}',
+      '.sb-chip._sv{background:#ddfada;color:#166534;box-shadow:none}.sb-chip._ok{background:#ddfada;color:#166534;box-shadow:none}',
+      '.sb-in{padding:24px 28px 8px;display:flex;flex-direction:column;gap:20px}',
+      '.sb-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px 20px;flex-wrap:wrap}',
+      '.sb-hdt{flex:999 1 380px;min-width:0;display:flex;flex-direction:column;gap:9px}',
+      '.sb-kr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.sb-sogn{font:700 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#c2410c;background:#ffeee0;box-shadow:inset 0 0 0 1px #f8b98c;border-radius:6px;padding:5px 9px}',
+      '.sb-kick{font:600 11.5px/1.2 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}',
+      '.sb-ari{font-size:12px;font-weight:600;color:#b91c1c;background:#fee2de;border-radius:999px;padding:3px 10px}',
+      '.sb-h{margin:0;font:700 clamp(20px,1.7vw,28px)/1.22 var(--body);letter-spacing:-.015em;color:var(--ink);overflow-wrap:anywhere}',
+      '.sb-h-a{display:block;margin-bottom:5px;font:600 15px/1.3 var(--body);letter-spacing:0}',
+      '.sb-fyr{color:var(--ink2);text-decoration:none}a.sb-fyr:hover{color:#c2410c;text-decoration:underline}',
+      '.sb-h .baf-merk{background:#fde5a4;color:inherit;border-radius:5px;padding:0 5px;-webkit-box-decoration-break:clone;box-decoration-break:clone}',
+      '.sb-bord{flex:none;display:flex;flex-direction:column;gap:1px;padding:7px 13px;border-radius:10px;box-shadow:inset 0 0 0 1px #d8dee9}',
+      '.sb-bord span{font:600 10px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}.sb-bord b{font:700 16px/1.25 var(--body);color:var(--ink)}',
+      '.sb-strip{margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:#e7ecf3;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px #e7ecf3}',
+      '.sb-sr{display:flex;flex-direction:column;gap:2px;min-width:0;padding:12px 16px;background:#f3f6fb}',
+      '.sb-sr dt{font:600 10.5px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
+      '.sb-sv{margin:0;font:700 16.5px/1.3 var(--body);color:var(--ink);overflow-wrap:anywhere}.sb-su{margin:0;font:12.5px/1.4 var(--body);color:var(--mute);overflow-wrap:anywhere}',
+      '.sb-sr._warn{background:#feecd2}.sb-sr._warn dt,.sb-sr._warn .sb-sv,.sb-sr._warn .sb-su{color:#9a3412}',
+      '.sb-sr._ok .sb-sv{color:#166534}',
+      '.sb-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:24px 44px;align-items:start}.sb-cols>div{min-width:0;display:flex;flex-direction:column;gap:18px}',
+      '.sb-k h4{margin:0 0 10px;font:600 11px/1.3 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
+      '.sb-tl{list-style:none;margin:0;padding:0}',
+      '.sb-tl li{display:grid;grid-template-columns:52px 18px minmax(0,1fr);column-gap:10px}',
+      '.sb-tld{font:700 13.5px/1.6 var(--body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.sb-tlp{position:relative}',
+      '.sb-tlp::before{content:"";position:absolute;left:4px;top:6px;width:10px;height:10px;border-radius:50%;background:#c3ccd9}',
+      '.sb-tlp::after{content:"";position:absolute;left:8px;top:19px;bottom:-5px;width:2px;background:#e7ecf3}',
+      '.sb-tl li:last-child .sb-tlp::after{display:none}.sb-tl li.sidast .sb-tlp::before{background:#0b2d5f}',
+      '.sb-tl li.idag .sb-tld{color:#b91c1c}.sb-tl li.idag .sb-tlp::before{left:3px;top:5px;width:12px;height:12px;background:#dc2626;box-shadow:0 0 0 4px #fee2de}',
+      '.sb-tl p{margin:0 0 14px;font:14px/1.6 var(--body);color:var(--ink2);overflow-wrap:anywhere}.sb-tl li:last-child p{margin-bottom:0}',
+      '.sb-tl b{font-weight:600;color:var(--ink)}',
+      '.sb-ath{margin:10px 0 0;font-size:12.5px;color:var(--mute)}',
+      '.sb-info{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:10px;background:#ebf0fe;color:#1e3a8a}',
+      '.sb-info svg{flex:none;margin-top:2px;color:#2f6fe4}.sb-info b{display:block;font:700 15px/1.45 var(--body)}.sb-info span{display:block;margin-top:3px;font:13.5px/1.5 var(--body)}',
+      '.sb-svor{display:flex;flex-direction:column;gap:8px}',
+      '.sb-svar{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:52px;padding:11px 14px;border:0;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px #d8dee9;font:inherit;color:var(--ink);text-align:left;cursor:pointer}',
+      '.sb-svar:hover{background:#f6f9fd}.sb-svar b{font:700 14.5px/1.3 var(--body)}.sb-svar span{font:12.5px/1.45 var(--body);color:var(--mute)}',
+      '.sb-svar b i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-left:6px;padding:2px 7px;border-radius:999px;background:#ddfada;color:#166534}',
+      '.sb-svar._adal{background:linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300);box-shadow:0 6px 16px rgba(255,103,2,.35);color:#fff}',
+      '.sb-svar._adal span{color:#fff}.sb-svar._adal:hover{background:#ec5300}.sb-svar._adal b i{background:rgba(255,255,255,.25);color:#fff}',
+      '.sb-svar[disabled]{opacity:.5;cursor:default}',
+      '.sb-sky{display:flex;flex-direction:column;gap:6px;margin-top:6px}.sb-sky span{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
+      '.sb-sky textarea{box-sizing:border-box;width:100%;resize:vertical;padding:10px 12px;border:0;border-radius:10px;box-shadow:inset 0 0 0 1px #d8dee9;background:#fff;font:15px/1.5 var(--body);color:var(--ink)}',
+      '.sb-sky textarea:focus-visible{outline:3px solid rgba(255,103,2,.45);outline-offset:0}',
+      '.sb-sky-t{display:flex;justify-content:flex-end;margin-top:6px}',
+      '.sb-stada{padding:12px 14px;border-radius:10px;background:#f3f6fb;font-size:14px;color:var(--ink2)}',
+      '.sb-meira{margin-top:14px;border-top:1px solid #e7ecf3}',
+      '.sb-meira-t{display:block;width:100%;min-height:48px;padding:12px 28px;border:0;background:#fff;text-align:left;font:600 14px var(--body);color:var(--ink);cursor:pointer}',
+      '.sb-meira-t:hover{background:#f6f9fd}.sb-meira-t span{margin-left:6px;font-weight:400;font-size:12.5px;color:var(--mute)}',
+      '.sb-meira-in{margin:0 16px 16px;border-radius:12px}',
+      /* Listalínan á B-formi. */
+      '.samt .vbr-item.sb-li{gap:6px;padding:12px 40px 12px 16px}',
+      '.sb-li-top{display:flex;align-items:center;gap:8px;min-width:0}.sb-li-meta{font-size:11.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.sb-li-t{font-size:14px;line-height:1.4;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.vbr-item.sb-li .sb-li-t b{font-size:inherit;font-weight:700;color:var(--ink)}',
+      '.sb-li-p{display:flex;flex-wrap:wrap;gap:6px}',
+      '.sb-p{font:700 11.5px/1 var(--body);font-variant-numeric:tabular-nums;border-radius:999px;padding:4px 9px;background:#f3f6fb;color:#2e4064}',
+      '.sb-p._y{background:#fde5a4;color:#7a4b00}.sb-p._r{background:#fee2de;color:#b91c1c}.sb-p._w{background:#feecd2;color:#9a3412;font-weight:600}',
       '.vbr-titill{font-family:var(--disp);font-size:28px;font-weight:800;line-height:1.1;letter-spacing:-.01em;overflow-wrap:anywhere;color:var(--ink)}',
       '.vbr-meta{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}',
       '.vbr-mynd{margin:0;padding:10px;border:1px solid #000;border-radius:5px;background:var(--slab);box-shadow:var(--slabsh)}',
@@ -2216,18 +2283,20 @@
       (post && !(sonn(r) && sonn(r).texti) ? (r.svarad_at ? 'Svarað ' + fmtD(r.svarad_at) : 'Bíður svars') : '')
     ].filter(Boolean).join(' · ');
     const w = fyrLink(r, 'dk');
-    return '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
+    // opt.bMeira (17.11.2026, Tillaga B í Samþykkja): hausinn, samantektin og svartakkarnir standa á hvíta B-spjaldinu
+    // fyrir ofan; hér er aðeins „Meira um málið" — lýsingin, heimildir, saga, skjöl og aukaaðgerðirnar, óbreytt.
+    return (opt.bMeira ? '' : '<div class="shead"><span class="plate dark">04</span><span class="slabel">' + (minn ? 'Valið mál' : 'Til skoðunar') + '</span><span class="grow"></span>' +
         '<span class="age ' + ageCls(a) + '">' + a + 'D</span>' + (opt.rymi ? '' : '<button type="button" class="sx" data-t5="sel-close" aria-label="Loka málinu">✕</button>') + '</div>' +
       '<h3 class="stitle">' + esc(r.title || '(ónefnt mál)') + '</h3>' +
       (w ? '<div class="sfyr">🏢 ' + w + '</div>' : '') +
       '<div class="smeta">' + esc(meta) + '</div>' +
       (samantekt(r) ? '<div class="aisum"><span class="slabel">Samantekt</span>' + esc(samantekt(r).slice(0, 600)) + '</div>' : '') +
-      adgerdirHtml(r) + (erSamthykki(r) || svarBidur(r) ? heimildirHtml(r, 't5') : '') +
+      adgerdirHtml(r)) + (erSamthykki(r) || svarBidur(r) ? heimildirHtml(r, 't5') : '') +
       /* Aðeins svar-málin: aðaltakkinn ber þá sama texta og næsta skref. */
       stadaHtml(r, { adalAdgerd: getaSvarad ? 'svara' : '' }) +
       sagaHtml(r) + skjolHtml(r) + well +
       // póstmál: málið SJÁLFT er staðurinn (↩ Svara í sama þræði) — enginn „Opna" takki sem vísar á sig sjálft
-      '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + samtTakkar(r, ' lg') + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) ? skyRitillHtml(r) : '') +
+      '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) && !opt.bMeira ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + (opt.bMeira ? '' : samtTakkar(r, ' lg')) + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) && !opt.bMeira ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
         '<button type="button" class="btn iv" data-t5="ai-tillaga" data-id="' + r.id + '"' + (S.aiBid[r.id] ? ' disabled' : '') +
           ' title="Gervigreind les málið, póstinn og sögu fyrirtækisins og leggur til næsta skref">' + (S.aiBid[r.id] ? '… hugsa' : '✨ Tillaga') + '</button></div>' +
@@ -2302,8 +2371,8 @@
     const sv = {}; (hlutar.find(x => x[2] === 2) || [0, []])[1].forEach(r => { const s = svarMals(r); sv[s] = (sv[s] || 0) + 1; });
     const sund = [['samthykkt', 'samþykkt'], ['vinnsla', 'í vinnslu'], ['endurmeta', 'skýring']].filter(x => sv[x[0]]).map(x => sv[x[0]] + ' ' + x[1]).join(' · ');
     const b = (h, cls, texti, undir) => '<button type="button" data-t5="samt-sia" data-v="' + h + '" aria-pressed="' + (samtSia === String(h)) + '" class="' + cls + '" title="Sýna aðeins þessi mál — smelltu aftur til að sýna öll"><b>' + n(h) + '</b><span>' + texti + (undir ? '<small>' + esc(undir) + '</small>' : '') + '</span></button>';
-    return '<div class="samt-teljari">' + b(2, '_claude', 'Svarað — Claude á eftir að vinna úr', sund || 'ekkert bíður') +
-      b(0, '_gull', 'Tilbúið', 'bara samþykkja') + b(1, '', 'Spurningar', 'þarf svar frá þér') + (n(-1) ? b(-1, '_ok', 'Afgreitt', 'bara loka') : '') + '</div>';
+    return '<div class="samt-teljari">' + b(2, '_claude', 'Svarað · hjá Claude', sund || 'ekkert bíður') +
+      b(0, '_gull', 'Tilbúið · samþykkja', '') + b(1, '', 'Spurningar · svara', '') + (n(-1) ? b(-1, '_ok', 'Afgreitt · loka', '') : '') + '</div>';
   }
   // Breidd listans (Agnar: „drag the list to the side so more text will fit"): handfang í hægri brún, px í Vidmot per tækjaflokk
   // (lesaTaeki/setjaTaeki 'bord.vbrBreidd' — dregin breidd er eðlislægt ólík á síma og tölvu; 448 les sama lykil).
@@ -2361,6 +2430,131 @@
     if (!window.ErindiSimi) return emptyHtml('Erindi (449c) eru ekki hlaðin.');
     return ErindiSimi.rymiHtml();
   }
+  /* ── 368ad: SAMÞYKKJA Í TILLÖGU B (17.11.2026) ──────────────────────────────────────────────────────────────
+   * Agnar: „samþykkjaboxið er skelfilegt" → samþykkti mockup „Samþykkja — Tillaga B" á Design-striganum
+   * https://claude.ai/artifact/T3duYbnZX8poZJAmXBvK7M („Já, smíðaðu"). Sama form og Tilbúin verk (511):
+   *   · haus: sögn (stuttur hali titilsins) + aðili + spurningin með kjarnann auðkenndan; „Á borðinu" til hliðar;
+   *   · staðreyndalína: Fyrirtæki · Upphæð (≈ úr texta) · Heimildir · Sönnun · Frestur — aðeins það sem málið ber;
+   *   · SAGA MÁLSINS: hver dagsett málsgrein lýsingarinnar („— Endurmælt 16.11.2026 (Claude): …", „— Samþykkt: Agnar ·
+   *     08/11") verður hnútur, raðað eftir degi, og rauður „Í dag"-hnútur segir hvað bíður;
+   *   · samantektin í bláum reit; svörin sem stórir takkar með afleiðingunni úr lýsingunni (adgerdirUrNotu) undir;
+   *     skýringarreiturinn alltaf opinn;
+   *   · ALLT annað (lýsingin, heimildir, saga fyrirtækisins, fylgiskjöl, Setja á, dagskrá, Tillaga, eyða) stendur
+   *     óbreytt í dökka spjaldinu undir „Meira um málið" — selHtml(r, { rymi, bMeira }). Engin aðgerð hvarf.
+   * Greiningin á titlinum og áherslurnar eru þær sömu og í 511 (BordAfgreidsla.snid); vanti 511 standa einföld varaföll. */
+  const sbSnid = () => (window.BordAfgreidsla && window.BordAfgreidsla.snid) || null;
+  const sbDagaOrd = d => (d === 0 ? 'Í dag' : d + (d % 10 === 1 && d % 100 !== 11 ? ' dagur' : ' dagar'));
+  const sbTitill = r => { const s = sbSnid(); return s ? s.titill(r.title || '') : { adili: '', spurning: String(r.title || '(ónefnt mál)'), sogn: '' }; };
+  const sbAher = t => { const s = sbSnid(); return s && s.aherslur ? s.aherslur(t) : esc(t); };
+  const SB_HLUTI = { '-1': ['Afgreitt', '_ok'], 0: ['Tilbúið', '_till'], 1: ['Spurning', '_spur'], 2: ['Svarað', '_sv'] };
+  // Lýsingin → hnútar. Málsgrein án dagsetningar, spurningin sjálf og svar-afleiðingarnar (✓/✕/▶) fara ekki á tímalínuna.
+  const SB_DAGS = /(^|[^\d.\/])(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{4}))?(?!\d)/;
+  const SB_SLEPPA = /^(Það sem þú ákveður|✓|✕|▶|💬|Ef þú|Tillaga\s*:|Hvað gerðist|SÖNNUN|Byggt á|•|·)/;
+  function sbSaga(notes) {
+    const nu0 = new Date(), ut = [];
+    String(notes || '').replace(/\r/g, '').split(/\n\s*\n/).forEach(bl => {
+      const linur = bl.split('\n').map(x => x.trim()).filter(Boolean);
+      if (!linur.length || SB_SLEPPA.test(linur[0])) return;
+      let t = linur[0];
+      if (t.length < 60 && linur[1] && !SB_SLEPPA.test(linur[1])) t += ' ' + linur[1];
+      const m = SB_DAGS.exec(t);
+      if (!m) return;
+      const d = +m[2], mn = +m[3];
+      if (d < 1 || d > 31 || mn < 1 || mn > 12) return;
+      const ar = m[4] ? +m[4] : nu0.getFullYear();
+      let dt = new Date(ar, mn - 1, d);
+      if (!m[4] && dt > nu0) dt = new Date(ar - 1, mn - 1, d);
+      if (dt > nu0) return;
+      // „— Endurmælt 16.11.2026 (Claude): texti" → hver „Endurmælt", texti restin. Hástafaheiti („ENDURSPURT") lækkuð.
+      let texti = t.replace(/^[—–-]\s*/, '').replace(/^[❓⚠✔✅]️?\s*/, ''), hver = '';
+      const k = texti.indexOf(':');
+      if (k > 0 && k < 70) {
+        hver = texti.slice(0, k).replace(/\([^)]*\)/g, ' ').replace(/\b\d{1,2}[.\/]\d{1,2}(?:[.\/]\d{4})?\b/g, ' ').replace(/\s+/g, ' ').trim();
+        texti = texti.slice(k + 1).trim();
+        if (hver && hver === hver.toUpperCase() && /[A-ZÁÐÉÍÓÚÝÞÆÖ]{3}/.test(hver)) hver = hver.charAt(0) + hver.slice(1).toLowerCase();
+      }
+      texti = texti.replace(/\s+/g, ' ');
+      if (texti.length > 240) texti = texti.slice(0, 236).replace(/\s+\S*$/, '') + ' …';
+      ut.push({ dt, merki: String(d).padStart(2, '0') + '.' + String(mn).padStart(2, '0'), hver, texti });
+    });
+    return ut.sort((a, b) => a.dt - b.dt).slice(-8);
+  }
+  const sbMeiraOpid = r => (S.samtMeira[r.id] != null ? !!S.samtMeira[r.id] : !(erSamthykki(r) && onBoardOf(r, nu())));
+  function sbReitur(heiti, gildi, undir, kl) {
+    return '<div class="sb-sr' + (kl ? ' ' + kl : '') + '"><dt>' + esc(heiti) + '</dt><dd class="sb-sv">' + gildi + '</dd>' + (undir ? '<dd class="sb-su">' + undir + '</dd>' : '') + '</div>';
+  }
+  function sbLinaHtml(r) {
+    const c = [], hv = whereOf(r), u = upphaedMals(r), hf = heimildaFjoldi(r), s = sonn(r);
+    if (hv) c.push(sbReitur('Fyrirtæki', esc(hv), esc(tegMals(r))));
+    c.push(sbReitur('Upphæð', u ? '≈ ' + esc(kr(u)) : 'Engin', u ? 'lesin úr textanum — vísbending' : 'engin upphæð í textanum'));
+    c.push(hf ? sbReitur('Heimildir', hf + ' tengd' + (hf === 1 ? '' : 'ar'), 'opnast undir „Meira um málið"')
+      : sbReitur('Heimildir', 'Engin tengd', 'málið nefnir engan reikning, stað eða póst', '_warn'));
+    const st = !!(s && (s.styrkur || s.buid)), gi = !!(s && s.liklega);
+    c.push(sbReitur('Sönnun', st ? 'Staðfest úr gögnum' : gi ? 'Ágiskun' : 'Engin mæling',
+      esc(String((s && (s.texti || s.naesta)) || 'ekkert í gögnunum staðfestir málið sjálfkrafa').slice(0, 110)), st ? '_ok' : gi ? '_warn' : ''));
+    if (r.due_at) c.push(sbReitur('Frestur', esc(fmtD(r.due_at)), ''));
+    return '<dl class="sb-strip">' + c.join('') + '</dl>';
+  }
+  function sbSagaHtml(r) {
+    const h = sbSaga(r.notes), sid = svarBidur(r) ? SVOR[svarMals(r)].merki : '';
+    const idag = erSamthykki(r) ? (onBoardOf(r, nu()) ? 'Bíður svars þíns — ' + sbDagaOrd(ageDays(r)).toLowerCase() + ' á borðinu.' : 'Bíður samþykkis á öðru borði.')
+      : sid ? sid + '.' : erAfgreitt(r) ? 'Gögnin sýna þetta afgreitt — aðeins eftir að loka málinu.' : '';
+    if (!h.length && !idag) return '';
+    const allir = h.map((x, i) => '<li class="' + (i === h.length - 1 ? 'sidast' : '') + '"><span class="sb-tld">' + esc(x.merki) + '</span><span class="sb-tlp" aria-hidden="true"></span>' +
+      '<p>' + (x.hver ? '<b>' + esc(x.hver) + ':</b> ' : '') + sbAher(x.texti) + '</p></li>');
+    if (idag) allir.push('<li class="idag"><span class="sb-tld">Í dag</span><span class="sb-tlp" aria-hidden="true"></span><p><b>' + esc(idag) + '</b></p></li>');
+    return '<section class="sb-k"><h4>Saga málsins</h4><ol class="sb-tl">' + allir.join('') + '</ol>' +
+      (h.length ? '' : '<p class="sb-ath">Engin dagsett færsla í lýsingunni enn — hún er öll undir „Meira um málið".</p>') + '</section>';
+  }
+  // Svörin: sömu fjórir og samtTakkar (sömu data-t5, sama svaraSamthykki), stórir og með afleiðinguna úr lýsingunni undir.
+  function sbSvorHtml(r) {
+    const minn = onBoardOf(r, nu());
+    if (!erSamthykki(r) || !minn) {
+      const t = !erSamthykki(r) ? (svarBidur(r) ? SVOR[svarMals(r)].merki + ' — ekkert bíður þín hér.' : erAfgreitt(r) ? 'Afgreitt samkvæmt gögnunum — lokaðu málinu undir „Meira um málið".' : '')
+        : 'Málið er á borði ' + (normW(r.assigned_to) || 'annars') + ' — aðgerðirnar eru undir „Meira um málið".';
+      return t ? '<div class="sb-stada">' + esc(t) + '</div>' : '';
+    }
+    const a = adgerdirUrNotu(r.notes) || { adg: [], maelt: '' };
+    const af = v => { const x = a.adg.find(y => y.v === v); return x && x.texti ? x.texti : ''; };
+    const SJ = { samthykkt: 'Claude vinnur málið; lokasending er alltaf þín.', vinnsla: 'Málið bíður hjá Claude; ekkert gert í bili.', hafnad: 'Málinu er lokað og ekkert gert.' };
+    const k = (v, cls, heiti) => '<button type="button" class="sb-svar ' + cls + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + '>' +
+      '<b>' + heiti + (a.maelt === v ? ' <i>Tillaga</i>' : '') + '</b><span>' + esc((af(v) || SJ[v]).slice(0, 240)) + '</span></button>';
+    if (S.samtSkyDrog[r.id] == null) S.samtSkyDrog[r.id] = skyDrogLesa(r.id);
+    return '<section class="sb-k"><h4>Hvað viltu gera?</h4><div class="sb-svor">' +
+      (erBuid(r) ? '<button type="button" class="sb-svar _adal" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '><b>✓ Loka — afgreitt</b><span>Gögnin sýna málið afgreitt.</span></button>' : '') +
+      k('samthykkt', erBuid(r) ? '' : '_adal', '✓ Samþykkja') + k('vinnsla', '', '▶ Í vinnslu') + k('hafnad', '', '✕ Hafna') + '</div>' +
+      '<label class="sb-sky"><span>Eða skrifaðu skýringu til Claude</span>' +
+        '<textarea data-samtsky="1" data-id="' + r.id + '" rows="2" placeholder="T.d. „loka samningnum, þetta var prufufærsla“ — Claude les, endurmetur og kemur aftur.">' + esc(S.samtSkyDrog[r.id] || '') + '</textarea></label>' +
+      '<div class="sb-sky-t"><button type="button" class="btn iv" data-t5="samt-sky-senda" data-id="' + r.id + '"' + dis(r.id) + '>💬 Senda skýringu</button></div></section>';
+  }
+  function sbSpjaldHtml(r, nr, alls) {
+    const t = sbTitill(r), h = SB_HLUTI[samtHluti(r)] || SB_HLUTI[2], lead = t.adili || whereOf(r);
+    const sogn = t.sogn || (samtHluti(r) === 1 ? 'Svara' : samtHluti(r) === 0 ? 'Samþykkja' : samtHluti(r) === -1 ? 'Loka' : 'Hjá Claude');
+    const sp = t.adili ? t.spurning.charAt(0).toLocaleUpperCase('is') + t.spurning.slice(1) : t.spurning;
+    const s = sbSnid(), spH = s && s.merktHtml ? s.merktHtml(sp) : esc(sp);
+    const fyr = r.fyrirtaeki_id ? '<a href="#company/' + r.fyrirtaeki_id + '" class="sb-fyr" data-t5="fyr" data-id="' + r.id + '" title="Opna ' + esc(whereOf(r) || lead) + '">' + esc(lead) + ' ›</a>' : (lead ? '<span class="sb-fyr">' + esc(lead) + '</span>' : '');
+    const minn = onBoardOf(r, nu()), opid = sbMeiraOpid(r);
+    const sam = samantekt(r), g = s && s.gerist && sam ? s.gerist(sam) : { fyrsta: sam || '', rest: '' };
+    return '<section class="sb" aria-labelledby="sb-h-' + r.id + '" aria-live="polite">' +
+      '<div class="sb-bar"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span><span class="sb-bar-t">' + (lead ? '<b>' + esc(lead) + '</b> · ' : '') + esc(minn ? 'á þínu borði' : isFree(r) ? 'á Master' : 'á borði ' + normW(r.assigned_to)) + '</span>' +
+        '<span class="grow"></span><span class="sb-nr">' + (nr + 1) + ' af ' + alls + '</span>' +
+        '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
+        '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= alls - 1 ? ' disabled' : '') + '>Næsta ›</button></div>' +
+      '<div class="sb-in"><div class="sb-hd"><div class="sb-hdt"><div class="sb-kr"><span class="sb-sogn">' + esc(sogn) + '</span><span class="sb-kick">Það sem þú ákveður</span>' +
+          (r.important ? '<span class="sb-ari">★ Áríðandi</span>' : '') + '</div>' +
+          '<h3 class="sb-h" id="sb-h-' + r.id + '">' + (fyr ? '<span class="sb-h-a">' + fyr + '</span>' : '') + spH + '</h3></div>' +
+          '<div class="sb-bord"><span>Á borðinu</span><b>' + esc(sbDagaOrd(ageDays(r))) + '</b></div></div>' +
+        sbLinaHtml(r) +
+        '<div class="sb-cols"><div>' + sbSagaHtml(r) + '</div><div>' +
+          (g.fyrsta ? '<div class="sb-info"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>' +
+            '<div><b>' + esc(g.fyrsta) + '</b>' + (g.rest ? '<span>' + esc(g.rest.slice(0, 500)) + '</span>' : '') + '</div></div>' : '') +
+          sbSvorHtml(r) + '</div></div></div>' +
+      '<div class="sb-meira"><button type="button" class="sb-meira-t" data-t5="samt-meira" data-id="' + r.id + '" aria-expanded="' + opid + '">' + (opid ? '▾' : '▸') +
+        ' Meira um málið <span>lýsing og athugasemdir · heimildir · saga fyrirtækisins · fylgiskjöl · setja á · dagskrá · eyða</span></button>' +
+        (opid ? '<div class="sel sb-meira-in">' + selHtml(r, { rymi: true, bMeira: true }) + '</div>' : '') + '</div>' +
+    '</section>';
+  }
+
   function samtRymiHtml(n) {
     if (!S.loaded) return emptyHtml('Sæki mál…');
     if (!S.rows.some(r => iHam(r, SAMT_HAM))) return emptyHtml('Ekkert bíður svars hjá ' + esc(n) + '. Nýjar tillögur birtast hér um leið og þær eru tilbúnar.');
@@ -2383,12 +2577,20 @@
       // 18.09.2026: upphæðin sést, svo röðin sé læsileg. „≈" af því hún er lesin
       // úr textanum og getur verið áætlun — hún er vísbending, ekki bókhald.
       const u = upphaedMals(r);
-      return '<button type="button" class="vbr-item' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === S.samtVal) + '">' +
+      /* 17.11.2026 (368ad, Tillaga B): lína á B-formi — tegundarmerki + dagsetning efst, aðilinn feitur og restin venjuleg
+       * (mest tvær línur), svo pillur: ≈ upphæð · dagar · „Engin heimild". Samantektin (aiLine) víkur af listanum; hún
+       * stendur í bláa reitnum á spjaldinu. Sönnunarlínan heldur sér (græn þegar gögnin sýna málið afgreitt). */
+      const t = sbTitill(r), h = SB_HLUTI[samtHluti(r)] || SB_HLUTI[2], d = ageDays(r);
+      const meta = [fmtDags(r.created_at), t.adili ? '' : whereOf(r), svarBidur(r) ? SVOR[svarMals(r)].merki : '', fcTexti(r) ? 'factcheck #' + fcNr(r).join(', #') : ''].filter(Boolean).join(' · ');
+      void ef; void undir;
+      return '<button type="button" class="vbr-item sb-li' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === S.samtVal) + '" title="' + esc(r.title || '') + '">' +
         stj +
-        (u ? '<span class="samt-kr" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
-        '<b>' + esc(r.title || '(ónefnt mál)') + '</b>' +
-        (sonn(r) && sonn(r).texti ? '<span class="s samt-sonn' + (erAfgreitt(r) ? ' ok' : '') + '">' + (erAfgreitt(r) ? '✓ ' : '') + esc(sonn(r).texti) + '</span>' : '') +
-        (ef ? '<span class="s samt-ef">' + esc(ef) + '</span>' : '') + '<span class="s">' + esc(undir) + '</span></button>';
+        '<span class="sb-li-top"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span><span class="sb-li-meta">' + esc(meta) + '</span></span>' +
+        '<span class="sb-li-t">' + (t.adili ? '<b>' + esc(t.adili) + '</b> · ' + esc(t.spurning + (t.sogn ? ' — ' + t.sogn : '')) : '<b>' + esc(r.title || '(ónefnt mál)') + '</b>') + '</span>' +
+        (sonn(r) && sonn(r).texti && erAfgreitt(r) ? '<span class="s samt-sonn ok">✓ ' + esc(sonn(r).texti) + '</span>' : '') +
+        '<span class="sb-li-p">' + (u ? '<span class="sb-p" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
+          '<span class="sb-p ' + (d >= 30 ? '_r' : d >= 7 ? '_y' : '') + '">' + d + ' d.</span>' +
+          (heimildaFjoldi(r) ? '' : '<span class="sb-p _w">Engin heimild</span>') + '</span></button>';
     };
     return '<div class="vbr samt"' + (vbrBreidd ? ' style="--vbr-w:' + vbrBreidd + 'px"' : '') + '>' +
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
@@ -2401,11 +2603,8 @@
         '<div class="vbr-grip" data-vbr-grip title="Draga til að breyta breidd listans"></div>' +
       '</aside>' +
       '<div class="vbr-main">' +
-        (val ? '<div class="vbr-top">' +
-          '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
-          '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= listi.length - 1 ? ' disabled' : '') + '>Næsta ›</button>' +
-          '<span class="vbr-meta">' + (nr + 1) + ' af ' + listi.length + '</span></div>' +
-        '<section class="sel samt-sel" aria-live="polite">' + selHtml(val, { rymi: true }) + '</section>' : '') +
+        // 368ad: B-spjaldið (Fyrra/Næsta og „N af M" standa í haus þess); gamla dökka spjaldið er „Meira um málið" inni í því.
+        (val ? sbSpjaldHtml(val, nr, listi.length) : '') +
       '</div>' +
     '</div>';
   }
@@ -6228,6 +6427,7 @@
         return;
       }
       case 'samt-velja': S.samtVal = id; render(); vbrTilBaka(); return;
+      case 'samt-meira': { const r0 = S.rows.find(x => x.id === id); S.samtMeira[id] = !(r0 ? sbMeiraOpid(r0) : S.samtMeira[id]); render(); return; }
       case 'samt-rod': samtRodun = el.dataset.v; vmSetja(SAMT_ROD_LYKILL, samtRodun); render(); return;
       case 'samt-sia': samtSia = samtSia === el.dataset.v ? 'allt' : el.dataset.v; vmSetja(SAMT_SIA_LYKILL, samtSia); render(); return;
       case 'samt-allt':
