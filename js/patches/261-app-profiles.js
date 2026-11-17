@@ -84,7 +84,7 @@
     'krofu-yfirlit': 'money', income: 'money', 'br-krofur': 'money', 'br-krofuyfirlit': 'money', 'br-skuldunautar': 'money',
     'br-fjarmalyfirlit': 'money', 'br-gerdreikninga': 'money', 'br-reikningagerd': 'money',
     'bokhalds-yfirlit': 'chart', kostnadur: 'chart', 'br-efniskostnadur': 'chart',
-    'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', vasinn: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
+    'tilbuin-verk': 'check', 'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', vasinn: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
     companies: 'building', rekstrarfelog: 'building', 'br-verkkaupar': 'building', vidskiptavinir: 'users',
     sala: 'cart', bord: 'grid', 'minar-sidur': 'grid', arsskodun: 'check', 'br-yfirferd': 'check',
     thjonustuverk: 'wrench', 'thjonustu-verkstaedi': 'wrench', 'br-verkstadir': 'wrench',
@@ -111,6 +111,7 @@
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
+    { k: 'tilbuin-verk',     label: 'Tilbúin verk · afgreiða í símanum', short: 'Tilbúin', emoji: '⚡' },   // 515 (17.11.2026) — símasíða Afgreiðslu (forunnin verk, takkinn framkvæmir)
     { k: 'samthykkja',       label: 'Samþykkja',             short: 'Samþykkja',  emoji: '✅' },   // 446 (08.10.2026) — símasíða Samþykkja-hamsins
     { k: 'tolvupostar',      label: 'Tölvupóstar',           short: 'Póstar',     emoji: '✉️' },   // 449 (09.10.2026) — símasíða Tölvupósta-hamsins
     { k: 'erindi',           label: 'Erindi · tilbúin svör',  short: 'Erindi',     emoji: '📨' },   // 449c (19.10.2026) — erindi úr pósti: gögn, eyður og svartexti Claude
@@ -234,9 +235,11 @@
     // opnast hvort eð er á #bord, svo það heitir nú Þjónustuborð (lykill, id og
     // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
-      manifest: '/manifest-verkefni.json', home: 'bord',
-      blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
-      defaults: ['bord', 'adalmal', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
+      // 17.11.2026 (Agnar: „símaview sér öpp síðu … í þjónustuver öpp og sé fremst þar"): Tilbúin verk (515) er
+      // heimasíðan — skelin setur heimasíðuna alltaf fremst (skelSidur). Borðið kemur strax á eftir.
+      manifest: '/manifest-verkefni.json', home: 'tilbuin-verk',
+      blurb: 'Þjónustuborð — tilbúin verk, Master borð, mitt borð og eftirfylgni',
+      defaults: ['tilbuin-verk', 'bord', 'adalmal', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
@@ -699,6 +702,11 @@
     // notenda-búna appið Firestarters (xfirestarters) — fyrsta síðan er heimasíða notenda-búins apps (home: ''). Vistaða
     // stillingin á þjóninum fékk hann líka beint; þetta heldur honum þótt síðuvalið sé vistað aftur af eldri vél.
     if (key === 'xfirestarters' && arr.indexOf('vasinn') < 0 && !(c && c.__vasinn491fs) && arr.length) arr = ['vasinn'].concat(arr);
+    // 17.11.2026 (Agnar: „… í þjónustuver öpp og sé fremst þar"): Tilbúin verk (515) FREMST á Þjónustuborðs-appinu við
+    // LESTUR líka — skelin byggist áður en flutningurinn (__tlb1) nær í vistaða listann, og opnaði þá á gamla fyrsta
+    // flipanum (mælt: Kröfu yfirlit). Flaggið __tlb1 brennur þegar flutningurinn hefur sett síðuna inn, svo taki Agnar
+    // hana út í síðuvalinu kemur hún ekki aftur.
+    if (key === 'verkefni' && arr.indexOf('tilbuin-verk') < 0 && !(c && c.__tlb1) && arr.length) arr = ['tilbuin-verk'].concat(arr);
     // 09.10.2026: Þjónustugátt-stjórnborðið á Þjónustuborðs-appið, aftast.
     if (key === 'verkefni' && arr.indexOf('br-thjonustugatt') < 0 && !(c && c.__gatt) && arr.length) arr = arr.concat(['br-thjonustugatt']);
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
@@ -819,6 +827,7 @@
     function flytja(c) {
         var changed = false;
         // appKey er valfrjálst og fellur aftur á 'fjarmal' svo eldri köllin séu óbreytt.
+        // afterKey === null → fremst (17.11.2026, Tilbúin verk í Þjónustuborðs-appinu).
         function insertOnce(flag, key, afterKey, appKey) {
           appKey = appKey || 'fjarmal';
           if (c[flag]) return;
@@ -827,8 +836,8 @@
           // (Sé engin stilling til á endanum sér `defaults` um nýju síðurnar.)
           if (!Array.isArray(arr)) return;
           if (arr.indexOf(key) === -1) {
-            var ki = arr.indexOf(afterKey);
-            arr.splice(ki === -1 ? arr.length : ki + 1, 0, key);
+            var ki = afterKey === null ? -2 : arr.indexOf(afterKey);
+            arr.splice(ki === -2 ? 0 : ki === -1 ? arr.length : ki + 1, 0, key);
           }
           c[flag] = 1; changed = true;
         }
@@ -856,6 +865,8 @@
         // Þjónustuborðinu í Boss- og Þjónustuborðs-appinu (aftast ef borðið vantar).
         insertOnce('__adm1',  'adalmal', 'bord', 'boss');
         insertOnce('__adm2',  'adalmal', 'bord', 'verkefni');
+        // 17.11.2026 (Agnar): Tilbúin verk (515) FREMST í Þjónustuborðs-appinu — er líka heimasíða þess (APPS.home).
+        insertOnce('__tlb1',  'tilbuin-verk', null, 'verkefni');
         insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         insertOnce('__tp1',   'turbopaint', 'sala', 'brunakerfi');
         insertOnce('__tp1b',  'turbopaint', 'br-maeting', 'brunaholf');

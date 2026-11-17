@@ -43,6 +43,7 @@ require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tók
 const crypto = require('crypto');
 const P = require('./_portal.cjs');
 const H = require('./_radgjafinn-hlid.cjs');
+const V = require('./_vip-postur.cjs');   // sama VIP-pörun og VIP-vaktin (513) — netfang, lén, kt; aldrei eftir nafni
 const HUB = require('./hub-adgangar.cjs');
 const CL = require('./_adalmal-claude.cjs');
 const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
@@ -275,7 +276,29 @@ async function reikningsTenglar(malIds) {
 }
 
 // Það sem skjárinn fær — ekkert úr gögnunum sem skjárinn þarf ekki.
-async function synilegt(row) {
+// VIP (17.11.2026, símasíðan 515): á verkið við félag á VIP-vaktinni? Pósturinn: viðtakendur (to, cc) paraðir eins og
+// VIP-vaktin parar sendanda; önnur verk: kennitala í gögnunum. Skilar aðeins félagsheiti og leið — aldrei tengiliðum.
+function vipFyrir(g, tegund, visir) {
+  if (!visir || !g) return null;
+  if (tegund === 'tolvupostur') {
+    for (const a of [].concat(g.to || [], g.cc || [])) {
+      const p = V.para({ sender_email: a }, visir);
+      if (p && p.felag) return { felag: p.felag.nafn, hvernig: p.hvernig };
+    }
+  }
+  const kt = String(g.kennitala || g.kt || '').replace(/\D/g, '');
+  const f = kt.length === 10 && visir.kt ? visir.kt.get(kt) : null;
+  return f ? { felag: f.nafn, hvernig: 'kennitala' } : null;
+}
+async function vipVisir() {
+  const radir = await lesa('fyrirtaeki?select=id,nafn,kennitala,netfang,vip,vip_svartimi_min&vip=eq.true&deleted_at=is.null&order=id');
+  const kts = [...new Set(radir.map((r) => String(r.kennitala || '').replace(/\D/g, '')).filter((k) => k.length === 10))];
+  const ktForm = kts.flatMap((k) => [k, k.slice(0, 6) + '-' + k.slice(6)]);
+  const tengl = ktForm.length ? await lesa('charlize_contacts?select=kennitala,netfang,len,status&kennitala=in.(' + ktForm.map(encodeURIComponent).join(',') + ')') : [];
+  return V.byggjaVisi(radir, tengl);
+}
+
+async function synilegt(row, visir) {
   const ath = await athuga(row);
   const g = row.gogn || {};
   const rok = Array.isArray(row.af_hverju) ? row.af_hverju : [];
@@ -287,6 +310,7 @@ async function synilegt(row) {
   const o = { id: row.id, tegund: row.tegund, titill: row.titill, takki: row.takki, hvad_gerist: row.hvad_gerist,
     af_hverju: rok.map((x) => { const s = x && x.opna ? leysa(x.opna) : null; return s ? Object.assign({}, x, { slod: s }) : x; }),
     virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by,
+    forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
     athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
   if (row.tegund === 'tolvupostur') {
     o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename) };
@@ -659,8 +683,9 @@ exports.handler = async (event) => {
         lesa('afgreidsla?select=*&stada=neq.tilbuid&order=updated_at.desc&limit=40'),
       ]);
       const tilbuin = [];
+      const visir = await vipVisir().catch(() => null);   // VIP-merkið bregst → verkin koma samt, án merkis
       for (const r of tilb) {
-        const s = await synilegt(r);
+        const s = await synilegt(r, visir);
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }
         tilbuin.push(s);
       }
@@ -769,4 +794,5 @@ module.exports._posturToki = posturToki;
 module.exports._prufaSending = prufaSending;
 module.exports._amLykill = amLykill;
 module.exports._synilegtAdalmal = synilegtAdalmal;
-module.exports._sameina = SAM;   // tegund 'sameina' (Verkefnavaktin)
+module.exports._sameina = SAM;
+module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)

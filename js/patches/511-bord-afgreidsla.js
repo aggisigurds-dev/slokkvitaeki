@@ -37,8 +37,17 @@
   var kr = function (v) { return v == null || !isFinite(Number(v)) ? '' : Math.round(Number(v)).toLocaleString('is-IS') + ' kr.'; };
   var klTxt = function (iso) { var d = new Date(iso); if (isNaN(d)) return ''; var p = function (n) { return String(n).padStart(2, '0'); }; return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' kl. ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
   var bord = function () { return rot.Bord368 || null; };
-  var notify = function () { try { var b = bord(); if (b && b.render) b.render(); } catch (_) {} };
-  var toast = function (t, villa) { try { var b = bord(); if (b && b.toast) b.toast(t, !!villa); } catch (_) {} };
+  // 17.11.2026 (símasíðan 515): fleiri en borðið teikna úr sama ástandi (S) — hver skráir sig með vakta(fn) og er
+  // kallaður eftir hverja breytingu, eins og borðið. Ein heimild: sömu föll, sama sókn, sama staðfesting.
+  var vaktar = [];
+  var notify = function () {
+    try { var b = bord(); if (b && b.render) b.render(); } catch (_) {}
+    vaktar.forEach(function (f) { try { f(); } catch (_) {} });
+  };
+  var toast = function (t, villa) {
+    try { var b = bord(); if (b && b.toast) { b.toast(t, !!villa); return; } } catch (_) {}
+    try { if (rot.Toast && rot.Toast.show) rot.Toast.show(t); } catch (_) {}
+  };
   var falinn = function () { return typeof document !== 'undefined' && document.visibilityState === 'hidden'; };
   // Slóð frá þjóninum → tengill í nýjum flipa. Aðeins http(s) eða slóð á þessum vef (aldrei //annar-vefur, aldrei javascript:).
   var opnaHtml = function (s) {
@@ -426,8 +435,11 @@
     return true;
   }
 
-  var api = { version: '2026-11-16c', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
-    uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S };
+  var api = { version: '2026-11-17a', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
+    uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S,
+    // Fyrir símasíðuna (515): sömu hjálparföll og borðið teiknar með — engin önnur útgáfa af gögnunum eða aðgerðunum.
+    vakta: function (f) { if (typeof f === 'function' && vaktar.indexOf(f) < 0) vaktar.push(f); },
+    tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, kr: kr, TEG: TEG };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
