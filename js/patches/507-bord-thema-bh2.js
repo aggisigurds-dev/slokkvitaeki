@@ -338,6 +338,25 @@
       H + ' .baf-tomt{font-family:var(--body)}',
       H + ' .baf-bid{background:linear-gradient(90deg,#eef3fb,#dfe8f5,#eef3fb)}',
 
+      /* Markmið (508) — sama gat og var á Tilbúnum verkum: einingin er á borði Agnars (og hans borð er á V2),
+       * en 507 átti enga reglu fyrir `.mmb-*`, svo rjómahover, hlý merki og dökkrauð „versnað“ stóðu eftir
+       * inni í navy-borðinu. Letrið fylgdi strax (var(--mono) er Poppins í V2) — hér eru hörðu gildin. */
+      H + ' .mmb-fl{border-top-color:#e7ecf3}',
+      H + ' .mmb-fl:hover{background:#f6f9fd}',
+      H + ' .mmb-fl--bid{background:linear-gradient(90deg,#eef3fb,#dfe8f5,#eef3fb)}',
+      H + ' .mmb-ml{background:#f6f9fd;border-top-color:#e7ecf3}',
+      H + ' .mmb-m{border-top-color:#e7ecf3}',
+      H + ' .mmb-bar{background:#dbe3ee;box-shadow:inset 0 1px 2px rgba(2,25,60,.14)}',
+      H + ' .mmb-bar i{background:linear-gradient(90deg,#166534,#1d7a44)}',
+      H + ' .mmb-bar--byrjun i{background:#c9d3e3}',
+      H + ' .mmb-bar--lagt i{background:linear-gradient(90deg,#991b1b,#b91c1c)}',
+      H + ' .mmb-versnad{color:#b91c1c}',
+      H + ' .mmb-tr{border-radius:6px;border:1px dashed #c3ccd9;color:#5a6882;font-family:var(--body);letter-spacing:.06em}',
+      H + ' .mmb-tr--rett{border:1px solid #a7e8c5;color:#166534;background:#ecfdf3}',
+      H + ' .mmb-tr--rangt{border:1px solid #f5c2c0;color:#b91c1c;background:#fef2f2}',
+      H + ' .mmb-tr--oljost{border:1px solid #f8b98c;color:#c2410c;background:#ffeee0}',
+      H + ' .mmb-mn--lokid{color:#5a6882}',
+
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',
       H + ' .t5-thema{margin-left:0}',
