@@ -777,12 +777,42 @@
   // renderFromSale, sama mót og „Prenta aftur"). Notað af BÆÐI 🧾-chippinu
   // (data-invopen) OG 👁-skoða-takkanum í „hvaða reikningur?"-veljaranum svo
   // reikningur án PDF opnist alltaf án þess að fara á Sölu-síðuna og leita.
-  async function openInvFromSale(num, coId){
+  // 17.11.2026 (Agnar, skjámynd af hótelstað: „Gat ekki opnað reikninginn: salan R-10… fannst ekki í Sölu"):
+  // reikningur sem er EKKI í Sölu er úr Stólpa (gamla kerfið, fyrri eigandi — R-10xxxx) eða skráður beint í skjalasafnið.
+  // Þá er opnað það sem smellt var á: PDF-ið eftir reikningsnúmeri úr skjalasafninu (customer_documents — sama heimild og
+  // „KOMIN"-línan), og finnist ekkert PDF er sagt hvaðan reikningurinn er og hvað er skráð um hann — ekki „fannst ekki í Sölu".
+  var erStolpaNr = function(num){ var m=/^R-?0*(\d+)$/i.exec(String(num||'').trim()); return !!(m && +m[1] >= 100000); };
+  async function openInvAnnad(num, coId, d){
+    var sb=SB(), rows=[];
+    try{
+      var r=await sb.from('customer_documents').select('id,invoice_number,storage_path,drive_file_id,amount,doc_date,year,notes,stolpi_stada,stolpi_skyring,vidskiptategund').eq('invoice_number', num);
+      rows=(r&&r.data)||[];
+    }catch(_){}
+    var medPdf=rows.filter(function(x){ return !!docUrl(x); })[0];
+    if(medPdf){ window.open(docUrl(medPdf), '_blank', 'noopener'); return 'pdf'; }
+    var x=d||rows[0]||null;
+    var stolpi=erStolpaNr(num) || /st[óo]lp/i.test(String((x&&x.notes)||'')) || !!(x&&x.stolpi_stada);
+    var bitar=[];
+    var _dm=/^(\d{4})-(\d{2})-(\d{2})/.exec(String((x&&x.doc_date)||''));
+    if(_dm) bitar.push(_dm[3]+'.'+_dm[2]+'.'+_dm[1]); else if(x && x.year) bitar.push(String(x.year));
+    if(x && x.amount!=null && x.amount!=='') bitar.push(fmtKrLoc(+x.amount)+' kr');
+    if(x && x.vidskiptategund) bitar.push(String(x.vidskiptategund));
+    if(x && x.stolpi_skyring) bitar.push(String(x.stolpi_skyring)); else if(x && x.stolpi_stada) bitar.push('Stólpi: '+String(x.stolpi_stada));
+    var msg = stolpi
+      ? 'Reikningur '+num+' er úr Stólpa (gamla kerfinu, fyrri eigandi) — PDF fannst ekki í skjalasafninu.'
+      : 'Reikningur '+num+' er hvorki í Sölu né með PDF í skjalasafninu.';
+    if(bitar.length) msg += '\n\nSkráð: '+bitar.join(' · ');
+    if(x && x.notes) msg += '\n'+String(x.notes).slice(0,400);
+    if(stolpi) msg += '\n\nUpphæð og dagsetning koma úr Stólpa-bókinni; frumritið er hjá fyrri eiganda eða í Stólpa.';
+    alert(msg);
+    return stolpi ? 'stolpi' : 'ekkert';
+  }
+  async function openInvFromSale(num, coId, d){
     try{
       var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
       var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
       var sale=rs&&rs.data&&rs.data[0];
-      if(!sale) throw new Error('salan '+num+' fannst ekki í Sölu');
+      if(!sale) return await openInvAnnad(num, coId, d);
       if(!(window.SalaInvoice&&SalaInvoice.renderFromSale)) throw new Error('reikningsmótið er ekki tiltækt');
       var co=getCompany(coId);
       openInvoiceOverlay(num, function(iwin){
@@ -1991,7 +2021,7 @@
         // er til sem sölu-röð → opna hann beint úr sölunni (sama og data-invopen),
         // í stað þess að segja „ekkert til". Notandinn þarf ekki lengur að fara á
         // Sölu-síðuna og leita handvirkt.
-        if(pinv && pinv.invoice_number){ await openInvFromSale(pinv.invoice_number, coId); return; }
+        if(pinv && pinv.invoice_number){ await openInvFromSale(pinv.invoice_number, coId, pinv); return; }
         alert('Engin skrá tengd þessari sölu — hún kemur bara úr Sölu-skráningu, ekkert PDF til að skoða.');
         return;
       }

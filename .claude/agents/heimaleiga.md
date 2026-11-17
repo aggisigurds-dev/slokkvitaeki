@@ -206,4 +206,10 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
 
 - 16.11.2026 · **Staðfest í loftinu + stöku AI-tillögur lokaðar.** Agnar bað aftur („geturðu kíkt á póstinn og fært allar eignirnar á nýju kennitölurnar") — verkið var ÞEGAR gert 15.11; fid 869/1486/1484 bera Laugaverk 680396-2219 / IHC 630693-2419 / 365 hf. 480702-2390 í bæði `kennitala` OG `customer_base_id` (staðfest lifandi). Pósturinn ber ekkert nýtt um greiðendur (nýjasti Heimaleigu-póstur 13.11 = Eva um inneign/endurgreiðslu, mál #1329/#1377). Lokaði afturkræft #1580 (stofna greiðendur), #1608 (Mani/Midtown/ICE) og #1614 (ICE→365) sem þegar-framkvæmdum (bakk-heimaleiga-tillogur-2026-11-16.json). OPIÐ enn: reikninganetfang Laugaverks + IHC ógefin (sjálfgefið pósthólf rekstrarstjórans) — drög að pósti til Dimku eftir þeim útbúin 16.11 (mál #1633, `undirbuid`, Agnar sendir); #1290 Midtown-tækjafjöldi (61→10) er sérmál, ósnert.
 
-Síðast uppfært: 16.11.2026
+- 17.11.2026 · **„VANTAR“-árspjöld.** Mælt í vafra án skrifa: 6 árspjöld á Heimaleigu-stöðum standa á „VANTAR“ með veljara.
+  - EIN tillaga, kt og ár stemma, upphæð ekki borin við skýrslu: G14 2024 sl + bk (R-106013, R-106012) og
+    Icelandic Apartments 2025 (R-107300, sami reikningur tvítalinn sem skjalaröð + viðhengi).
+  - FLEIRI tillögur: Bríetartún íbúðir 2026 (6) og húsfélag 2026 (4), sem eru kreditreikningar og afrit, og Freyjugata 2026 (2).
+  - Ekkert var tengt. Listinn er í powerplan_lotur lota 6 (tolur.reikningur_pdf_fylgir_solu.stolpi). Heimild: lota 6, stjórnlotan.
+
+Síðast uppfært: 17.11.2026

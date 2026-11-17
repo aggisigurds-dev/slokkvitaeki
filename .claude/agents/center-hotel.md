@@ -146,4 +146,20 @@ slóðin er afhent; 1bls: fjarlægja Þverholts-línuna. Saga 2023–2026 skrá�
   (1.206.646) og leiðréttinguna A/B er EKKI sagt — spyrja Agnar áður en nokkuð er fellt niður eða sent. Tilboðið og samningurinn eru enn
   ÓSKRIFUÐ 05.11 · heimild: Agnar í lotu 5f2146a4.
 
-Síðast uppfært: 05.11.2026
+- 17.11.2026 · **👁 á Stólpa-tillögu og „VANTAR“-árspjöldin.**
+  - 👁 í „hvaða reikningur?“-veljaranum sagði „salan R-104123 fannst ekki í Sölu“. Nú opnar hann PDF-ið eftir reikningsnúmeri
+    úr skjalasafninu. Sé ekkert PDF til segir hann „úr Stólpa … PDF fannst ekki í skjalasafninu“, með dagsetningu, upphæð og
+    pörunarathugasemdinni frá 27.10 (199, slokkvitaeki).
+  - Mælt í vafra án skrifa: 27 árspjöld á öllum 11 hótelunum standa á „VANTAR“ með veljara. Hvert þeirra hefur EINA tillögu,
+    og kt og ár stemma alls staðar.
+  - Upphæð stemmir sannanlega við skýrslu (talning × verð) eða sölu, eða pörunin var staðfest í pósti, á 12 spjöldum:
+    - Laugavegur 2023 + 2024 bk, Grandi 2024 bk, Þingholt 2023 + 2024 bk;
+    - Klöpp, Skjaldbreið, Þingholt og Arnarhvoll 2023 sl, Plaza 2024 sl;
+    - Þingholt + Þingholt Apts 2026 bk (app-sala).
+  - Hin 15 eru „líkleg“: sama upphæð og annað ár, föst verð, eða óstaðfest.
+  - **Ástæðan fyrir „VANTAR“:** 199 tengir aðeins sjálft þegar engin skýrsla HINNAR þjónustunnar er til sama ár. Hótelin hafa
+    bæði slökkvitæki og brunakerfi hvert ár, þótt reikningurinn beri sjálfur þjónustutegundina.
+  - Ekkert var tengt. Listinn með R-númerum er í powerplan_lotur lota 6
+    (tolur.reikningur_pdf_fylgir_solu.stolpi) til samþykktar í einu lagi. Heimild: lota 6, stjórnlotan.
+
+Síðast uppfært: 17.11.2026

@@ -881,6 +881,14 @@ Mælt 17.11.2026 á 1.001 lokasölu (466 með PDF):
 - 10 pör héldu kreditfærðum reikningi: 6 fá gildan, 4 bíða nýs reiknings.
 - Tölvupóstur: 42 breytast (13 kt + 29 kredit).
 
+**Reikningur sem er ekki í Sölu** (Stólpi R-10xxxx, eða aðeins skráður í skjalasafnið). 199 `openInvFromSale` → `openInvAnnad`,
+fyrir bæði 👁 í veljaranum og 🧾-flísina. Fallið opnar PDF-ið eftir reikningsnúmeri úr `customer_documents`, sömu heimild og
+„KOMIN“-línan. Finnist ekkert PDF segir það: „Reikningur R-… er úr Stólpa … PDF fannst ekki í skjalasafninu“, með dagsetningu,
+upphæð og athugasemd. Það segir aldrei „fannst ekki í Sölu“.
+
+Athugið: vafrinn má ekki lesa `stolpi_reikningar`, því RLS er á án reglna. Upplýsingarnar koma því úr skjalaröðinni.
+Prófið er `test/reikningur-stolpi-opna.test.cjs`.
+
 ### Hvað er sannað (17.11.2026)
 
 - Aðeins hreinu föll „Leiðrétta“ (5 próf í `test/sala-leidretting.test.cjs`).
