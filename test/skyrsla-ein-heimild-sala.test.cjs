@@ -84,7 +84,7 @@ function net(st) {
     if (url.includes('/rest/v1/app_settings')) return svar(200, [{ settings: { company_attachments: { 9: st.vidhengi } } }]);
     if (url.includes('/rest/v1/customer_documents')) return svar(200, st.skjol || []);
     if (url.includes('/rest/v1/arsskodun_report_facts')) return svar(200, st.facts ? [st.facts] : []);
-    if (url.includes('/storage/v1/object/samningar/')) return svar(200, '', Buffer.from('%PDF-gervi'));
+    if (url.includes('/storage/v1/object/samningar/')) return st.storageVilla ? svar(400, 'ekki til') : svar(200, '', Buffer.from('%PDF-gervi'));
     if (url.includes('/rest/v1/customers_base')) return svar(200, [st.base || { id: 5, nafn: st.sala.customer_nafn, kennitala: st.sala.customer_kt, netfang: null }]);
     if (url.includes('/rest/v1/fyrirtaeki')) return svar(200, [st.site || { id: 9, nafn: st.sala.customer_nafn, kennitala: st.sala.customer_kt, netfang: null, heimilisfang: 'Gervigata 1' }]);
     if (url.includes('/rest/v1/thjonustubeidni') && m === 'GET') return svar(200, []);
@@ -258,4 +258,52 @@ test('516: kt EÐA nafn eitt og sér (nýr greiðandi) truflar ekki — engin sp
   v.doc.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: 92001 } }));
   await bida();
   assert.strictEqual(v.skra.confirm.length, 0);
+});
+
+// ── Óháð rýni 17.11.2026: galli 1 (Drive-viðhengi án path), galli 3 (nýjasta gengur fyrir), niðurhal brestur, galli 2 (texti) ──
+const drive = (ms, nafn) => ({ id: 'd' + ms, kind: 'skyrsla', year: ar, uploaded_at: new Date(ms).toISOString(), external: true, drive_id: 'gervi-drive-' + ms,
+  name: (nafn || 'Nýja félagið ehf') + ' - ' + KT_B + ' - ' + ar + ' - úttektarskýrsla.pdf' });
+const skjalAr = { storage_path: 'samningar/company_attachments/9/5_skjal_arsins.pdf', year: +ar, doc_date: ar + '-06-01',
+  notes: 'Nýja félagið ehf - Gervigata 1 - ' + KT_B + ' - ' + ar + ' - júní - úttektarskýrsla - #9.pdf' };
+test('galli 1: nýjasta viðhengi ársins er Drive-tengill (ekkert path) → skjalaröð ársins fylgir, ALDREI krafa án skýrslu', async () => {
+  assert.strictEqual(SS.velja(sala(), [drive(Date.now())], null, Object.assign({ uppruni: 'skjal' }, skjalAr)).storage_path, skjalAr.storage_path);
+  const r = await keyra({ sala: sala(), vidhengi: [drive(Date.now())], skjol: [skjalAr] }, {});
+  assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.j));
+  assert.ok(r.nidurhal.length === 1 && r.nidurhal[0].includes('5_skjal_arsins'), 'sótt: ' + r.nidurhal.join(' | '));
+  assert.ok(r.j.attached_report, 'skýrsla fylgdi');
+});
+test('galli 1: skýrsla ársins (skjalaröð) gengur fyrir sækjanlegri skýrslu ANNARS árs', () => {
+  const fyrra = Object.assign(sk(KT_B, 'Nýja félagið ehf', Date.now() - 400 * 864e5), { year: String(+ar - 1) });
+  const v = SS.velja(sala(), [fyrra], null, Object.assign({ uppruni: 'skjal' }, skjalAr));
+  assert.strictEqual(v.storage_path, skjalAr.storage_path);
+  assert.strictEqual(SS.velja(sala(), [fyrra], null, null), fyrra, 'annað ár aðeins sem síðasta úrræði');
+});
+test('galli 3: nýrri handhlaðin skýrsla gengur fyrir eldri sjálfgerðri — líka þótt sú eldri beri kt sölunnar', () => {
+  const eldriApp = sk(KT_B, 'Nýja félagið ehf', Date.now() - 150 * 864e5);
+  const nyrriHand = { id: 'h1', kind: 'skyrsla', year: ar, uploaded_at: new Date(Date.now() - 10 * 864e5).toISOString(), path: 'company_attachments/9/2_leidrett.pdf', name: 'Leiðrétt samsetning.pdf' };
+  assert.strictEqual(SS.velja(sala(), [eldriApp, nyrriHand], null, null), nyrriHand);
+});
+test('niðurhal valinnar skýrslu brestur → 409 skyrsla_nidurhal (aldrei þegjandi án skýrslu); „án skýrslu" sendir', async () => {
+  const st = { sala: sala(), vidhengi: [sk(KT_B, 'Nýja félagið ehf', Date.now())], storageVilla: true };
+  const nei = await keyra(st, {});
+  assert.strictEqual(nei.res.statusCode, 409, JSON.stringify(nei.j)); assert.strictEqual(nei.j.gate, 'skyrsla_nidurhal');
+  assert.match(nei.j.error, /EKKI send/);
+  assert.strictEqual(nei.payday.filter((x) => x.url.includes('/invoices')).length, 0);
+  const an = await keyra(st, { attach_report: false });
+  assert.strictEqual(an.res.statusCode, 200, JSON.stringify(an.j));
+  const k = fs.readFileSync(path.join(ROT, 'js/patches/166-krofu-yfirlit.js'), 'utf8');
+  assert.match(k, /j\.gate === 'skyrsla_nidurhal'\) \{[\s\S]{0,500}okText: 'Senda án skýrslu'[\s\S]{0,300}senda\(\{ attach_report: false \}\)/);
+});
+test('galli 2: handskrifaður texti — geymdur með skýrslunni, tekinn úr fyrri skýrslu á annarri vél, ALDREI sjálfvirk vistun án hans', () => {
+  const k = fs.readFileSync(path.join(ROT, 'js/patches/168-company-inspection-report.js'), 'utf8');
+  const k111 = fs.readFileSync(path.join(ROT, 'js/patches/111-company-attachments.js'), 'utf8');
+  assert.match(k, /const _textiHer = !!\(String\(trip\.notes/);
+  assert.match(k, /if \(_fyrri && _fyrri\.texti && typeof _fyrri\.texti === 'object'\) \{[\s\S]{0,400}textiUppruni = 'fyrri'/);
+  assert.match(k, /\} else if \(_fyrri\) \{\s*textiUppruni = 'ovist'/);
+  assert.match(k, /if \(ctx && ctx\.textiUppruni === 'ovist'\) \{\s*if \(auto\) \{ _cirTextiBordi\(\); return; \}/);
+  assert.match(k, /okText: 'Vista samt', cancelText: 'Hætta við'/);
+  assert.match(k, /CompanyAttachments\.upload\(co\.id, file, \{ year: ar, kind: 'skyrsla', texti: \(ctx && ctx\.texti\) \|\| null \}\)/);
+  assert.match(k111, /texti: \(opts && opts\.texti && typeof opts\.texti === 'object'\) \? \{/);
+  // ovist-athugunin kemur Á EFTIR „þegar til"-skilyrðinu — venjuleg opnun eldri skýrslu á skrifstofuvél breytist ekki
+  assert.ok(k.indexOf("if (ctx && ctx.textiUppruni === 'ovist')") > k.indexOf('if (auto && !_vb && !_ny) {'));
 });

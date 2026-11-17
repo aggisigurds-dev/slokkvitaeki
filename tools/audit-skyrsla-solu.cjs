@@ -43,7 +43,7 @@ const lysaMis = (m) => m.svid === 'taeki' ? 'salan er með ' + m.sala + ' tæki 
 
 // Dómurinn yfir einni sölu → { rautt: [texti], gult: [texti] }
 function daema(g) {
-  const sk = SS.velja(g.sale, g.vidhengi || [], g.site) || g.skjal || null;
+  const sk = SS.velja(g.sale, g.vidhengi || [], g.site, g.skjal || null);
   const r = SS.bera(g.sale, sk, { site: g.site, base: g.base, facts: g.facts, vidbot: !!g.vidbot });
   const merki = (g.sale.num || ('#' + g.sale.id)) + ' (sala ' + g.sale.id + ', staður #' + g.sale.customer_id + ')';
   const rautt = r.misraemi.filter((m) => m.stodvar || m.svid === 'taeki').map((m) => merki + ': ' + lysaMis(m));
