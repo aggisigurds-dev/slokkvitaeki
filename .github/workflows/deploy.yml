@@ -36,7 +36,19 @@ jobs:
       # commit-hashið; berum það saman við fullt HEAD sem forskeyti.
       - name: Athuga hvort eitthvað sé óbirt
         id: gate
+        env:
+          HAUS_SKILABOD: ${{ github.event.head_commit.message }}
         run: |
+          # 17.11.2026 (lota 9, Verkefnalisti 166530a8): ýting birtir AÐEINS ef merkið er í FYRIRSÖGN haus-commitsins.
+          # `contains(head_commit.message, …)` í if-skilyrðinu les öll skilaboðin — merki í meginmáli („Ekki [deploy] …",
+          # lota 2ef635f0 10.11.) birti óvart. Skilaboðin koma um env (ekki ${{ }} í skelinni) svo þau keyrast aldrei.
+          if [ "${{ github.event_name }}" = "push" ]; then
+            fyrirsogn=$(printf '%s\n' "$HAUS_SKILABOD" | head -n 1)
+            case "$fyrirsogn" in
+              *"[deploy]"*) ;;
+              *) echo "Merkið er aðeins í meginmáli, ekki fyrirsögn — sleppi deploy"; echo "run=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            esac
+          fi
           if [ "${{ github.event_name }}" = "schedule" ]; then
             live=$(curl -sf "https://slokkvitaeki.netlify.app/build.json?_=$(date +%s)" | sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p')
             full=$(git rev-parse HEAD)
