@@ -2153,6 +2153,16 @@
             r = await senda({ force_duplicate: true });
             j = await r.json().catch(() => ({}));
           }
+          // 17.11.2026 (óháð rýni): valin skýrsla náðist ekki úr geymslu — krafan fer ALDREI þegjandi án hennar. Spurt hvort
+          // senda eigi án skýrslu; „Hætta við" sendir ekkert.
+          if (r.status === 409 && j && j.gate === 'skyrsla_nidurhal') {
+            const msg = '⚠ Skýrslan fylgdi EKKI.\n\n' + String(j.error || '') + '\n\nSenda kröfuna ÁN skýrslu? (Veldu „Hætta við" til að reyna aftur síðar eða búa til nýja skýrslu.)';
+            const an = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { okText: 'Senda án skýrslu', cancelText: 'Hætta við' }) : confirm(msg);
+            if (!an) { b.disabled = false; b.textContent = 'Krafa send'; await load(_state.month); return; }
+            b.textContent = '⏳ Sendir…';
+            r = await senda({ attach_report: false });
+            j = await r.json().catch(() => ({}));
+          }
           // 17.11.2026: skýrslan stemmir ekki við söluna (staðurinn sjálfur skipti um kt OG nafn). Sá sem veit betur
           // staðfestir og sendir samt — hann festist aldrei. „Hætta við" sendir ekkert.
           if (r.status === 409 && j && j.gate === 'skyrsla_stemmir') {

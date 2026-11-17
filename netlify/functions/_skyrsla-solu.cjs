@@ -79,16 +79,27 @@ function taekiISolu(linur) {
 const nyjast = (a, b) => String((b && b.uploaded_at) || '').localeCompare(String((a && a.uploaded_at) || ''));
 const arSolu = (sale) => String(new Date((sale && sale.created_at) || Date.now()).getFullYear());
 
-// Hvaða viðhengi fylgir? Skýrsla sem ber kt SÖLUNNAR (eða staðarins) gengur fyrir, svo nýjasta; skýrsla merkt
-// „leyst af hólmi" (leyst_af, 168/111) fylgir aldrei. Ár sölunnar fyrst; annars nýjasta skýrsla yfirleitt (bera() flaggar árið).
-function velja(sale, vidhengi, site) {
+// Sækjanlegt = skráin er í geymslunni (path). Drive-viðhengi (external, aðeins drive_id) er ekki hægt að festa við kröfu —
+// fyrir þau er skjalaröð ársins (customer_documents, oft Drive-spegill) varaleiðin, eins og í gamla valinu (findReportPdf).
+const saekjanlegt = (a) => !!(a && (a.path || a.storage_path));
+
+// Hvaða skýrsla fylgir? (óháð rýni 17.11.2026 — galli 1 og 3)
+//   1. NÝJASTA skýrsluviðhengi staðarins á ári sölunnar (handhlaðin nýrri skýrsla gengur fyrir eldri sjálfgerðri);
+//      skýrsla merkt „leyst af hólmi" (leyst_af, 168/111) fylgir aldrei.
+//   2. Sé það ekki sækjanlegt (Drive): skjalaröð ársins (customer_documents) — sama varaleið og gamla valið.
+//   3. Annars næsta sækjanlega viðhengi ársins.
+//   4. Síðasta úrræði: nýjasta sækjanlega skýrsla annars árs (bera() merkir 'ar'). ALDREI annað ár fram yfir skýrslu ársins.
+// skjalArsins: { name, storage_path, year, doc_date, uppruni:'skjal' } eða null — kallandinn sækir hana.
+function velja(sale, vidhengi, site, skjalArsins) {
   const list = (Array.isArray(vidhengi) ? vidhengi : []).filter((a) => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af);
   const ar = arSolu(sale);
-  const ktir = [ktTolur(sale && sale.customer_kt), ktTolur(site && site.kennitala)].filter((k) => k.length === 10);
-  const rettKt = (a) => ktir.indexOf(lysa(a.name).kt) >= 0;
   const rod = list.slice().sort(nyjast);
   const iAr = rod.filter((a) => String(a.year || lysa(a.name).ar || '') === ar);
-  return iAr.find(rettKt) || iAr[0] || rod.find(rettKt) || rod[0] || null;
+  if (iAr[0] && saekjanlegt(iAr[0])) return iAr[0];
+  if (skjalArsins && skjalArsins.storage_path) return skjalArsins;
+  const naest = iAr.find(saekjanlegt);
+  if (naest) return naest;
+  return rod.find(saekjanlegt) || null;
 }
 
 // Ber skýrsluna saman við söluna. Skilar { stemmir, stodvar, misraemi[], lysing }.
@@ -173,4 +184,4 @@ function skilabod(r) {
     (r.stodvar ? ' Búðu til nýja úttektarskýrslu á staðnum („Búa til úttektarskýrslu") — hún fær nafn og kennitölu sölunnar og fylgir þá kröfunni sjálfkrafa. Eða sendu kröfuna án skýrslu — eða, ef þú veist að skýrslan er rétt, staðfestu og sendu samt.' : '');
 }
 
-module.exports = { lysa, velja, bera, skilabod, taekiISolu, nafnStemmir, nafnNorm, ktTolur, ktBil, annadKerfi };
+module.exports = { lysa, velja, bera, skilabod, taekiISolu, nafnStemmir, nafnNorm, ktTolur, ktBil, annadKerfi, saekjanlegt };

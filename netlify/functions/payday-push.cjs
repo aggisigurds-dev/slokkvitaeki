@@ -210,7 +210,7 @@ exports.handler = async (event) => {
     // source 'slokkvikerfi' (386) er líka skoðunarreikningur — en HANS skýrsla er aðeins slökkvikerfisskýrslan sem
     // skoðunin vísar á (findSlokkvikerfiPdf), aldrei slökkvitækjaskýrsla staðarins og aldrei slóð frá vafranum.
     const attachReport = body.attach_report !== false; // default on
-    let attachment = null, attachSkipReason = null, _skVal = null;
+    let attachment = null, attachSkipReason = null, _skVal = null, _skNidurhalVilla = null;
     if (attachReport) {
       // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): source 'brunakerfi' (273/291) fær
       // AÐEINS brunakerfisskýrsluna sem úttektin vísar á (findBrunakerfiPdf) — áður fór hann án skýrslu.
@@ -235,7 +235,11 @@ exports.handler = async (event) => {
                 // hún var „gamla tengingin" sem varð eftir þegar sölunni var breytt. Sjá _skyrsla-solu.cjs.
                 _skVal = await skyrslaFyrirSolu(sale, site, customer, await erVidbotSala(sale));
                 const v = _skVal.sk;
-                return v ? downloadReport(v.path || v.storage_path) : null;
+                if (!v) return null;
+                // Óháð rýni 17.11.2026: mistakist niðurhal VALINNAR skýrslu má krafan ALDREI fara þegjandi án hennar —
+                // villan er geymd og hliðið skyrsla_nidurhal (hér að neðan) stöðvar sendinguna með skýrum skilaboðum.
+                try { return await downloadReport(v.path || v.storage_path); }
+                catch (e) { _skNidurhalVilla = String((e && e.message) || e); return null; }
               })();
           if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
             ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'
@@ -246,6 +250,18 @@ exports.handler = async (event) => {
       }
     } else {
       attachSkipReason = 'attach_report=false';
+    }
+
+    // ── Valin skýrsla náðist ekki úr geymslu (óháð rýni 17.11.2026) ───────────────────────────────
+    // Áður fór krafan þá ÞEGJANDI án skýrslu (villan varð attachSkipReason). Nú stöðvast hún, líka í dry-run, og segir
+    // hvaða skýrsla náðist ekki. Leiðir áfram: reyna aftur, búa til nýja skýrslu, eða senda „án skýrslu" (attach_report:false).
+    if (!attachment && _skVal && _skVal.sk && _skNidurhalVilla) {
+      const _nm = (_skVal.r && _skVal.r.lysing && _skVal.r.lysing.nafn) || _skVal.sk.name || _skVal.sk.path || _skVal.sk.storage_path;
+      return json(409, {
+        gate: 'skyrsla_nidurhal', skyrsla: _skVal.r && _skVal.r.lysing, villa: _skNidurhalVilla.slice(0, 300),
+        error: 'Úttektarskýrslan sem á að fylgja kröfunni („' + _nm + '") náðist ekki úr geymslunni (' + _skNidurhalVilla.slice(0, 120) + '). ' +
+          'Krafan var EKKI send. Reyndu aftur eftir smá stund, búðu til nýja skýrslu á staðnum („Búa til úttektarskýrslu"), eða sendu kröfuna án skýrslu.',
+      });
     }
 
     // ── Viðbótarúttekt (patch 488, 28.10.2026) ──────────────────────────────
@@ -1042,13 +1058,12 @@ async function skyrslaFyrirSolu(sale, site, base, vidbot) {
   const coId = sale.customer_id;
   let sk = null;
   if (coId) {
-    const settings = await fetchAppSettings();
+    // Óháð rýni 17.11.2026 (galli 1): skjalaröð ársins er sótt FYRIR valið — hún er varaleiðin þegar nýjasta viðhengi
+    // ársins er Drive-tengill (ekki sækjanlegt), og skýrsla ársins gengur alltaf fyrir skýrslu annars árs.
+    const [settings, cd] = await Promise.all([fetchAppSettings(), fetchReportDoc(coId, year)]);
     const list = settings && settings.company_attachments && settings.company_attachments[String(coId)];
-    sk = SS.velja(sale, Array.isArray(list) ? list : [], site);
-    if (!sk) {
-      const cd = await fetchReportDoc(coId, year);
-      if (cd && cd.storage_path) sk = { name: cd.notes || '', storage_path: cd.storage_path, year: String(cd.year || year), doc_date: cd.doc_date || null, uppruni: 'skjal' };
-    }
+    const skjal = (cd && cd.storage_path) ? { name: cd.notes || '', storage_path: cd.storage_path, year: String(cd.year || year), doc_date: cd.doc_date || null, uppruni: 'skjal' } : null;
+    sk = SS.velja(sale, Array.isArray(list) ? list : [], site, skjal);
   }
   const facts = (sk && coId) ? await fetchReportFacts(coId, year) : null;
   return { sk, r: SS.bera(sale, sk, { site, base, facts, vidbot: !!vidbot }) };

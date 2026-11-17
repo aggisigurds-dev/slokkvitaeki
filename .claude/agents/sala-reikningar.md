@@ -675,6 +675,19 @@ Mælt á raungögnum 17.11.2026, aðeins með lestri:
 rétt … senda hana samt“. Fái sendingin 409 `skyrsla_stemmir` spyr glugginn „Senda samt“. Þá fer `force_skyrsla: true` með,
 og payday-push sendir, skráir `skyrsla_yfirskrifud` í svarinu og skrifar í logg fallsins. Hakið er aldrei sjálfgefið.
 
+**Hvaða skýrsla er valin** (óháð rýni 17.11.2026):
+1. NÝJASTA skýrsluviðhengi staðarins á ári sölunnar. Handhlaðin, nýrri skýrsla gengur fyrir eldri sjálfgerðri.
+2. Sé það Drive-tengill (ekkert `path`, ekki hægt að festa) er skjalaröð ársins í `customer_documents` notuð, sama varaleið og gamla valið.
+3. Annars næsta sækjanlega viðhengi ársins.
+4. Annað ár aðeins sem síðasta úrræði, og aldrei fram yfir skýrslu ársins.
+
+Mistakist niðurhal valinnar skýrslu stöðvast sendingin (409 `skyrsla_nidurhal`, „Krafan var EKKI send"), og glugginn býður „Senda án skýrslu". Krafa fer aldrei þegjandi án skýrslu. `tools/endurspilun-skyrsla-solu.cjs` keyrir allar sölur ársins gegnum gamla og nýja valið; 17.11.2026: 274 af 276 eins, 2 stöðvast (ætlað), 0 önnur skýrsla.
+
+**Handskrifaður texti** („Annað", athugasemdir, undirritun) býr í `localStorage` á vél skoðunarmannsins, ekki á þjóni. Frá og
+með 17.11.2026 geymist hann MEÐ hverri nýrri skýrslu (`texti` á viðhenginu, 111). Þegar ný skýrsla er gerð á vél án textans
+er hann tekinn úr skýrslunni sem hún leysir af hólmi. Eldri skýrslur bera hann ekki. Þá vistast ný skýrsla ALDREI
+sjálfkrafa; borði segir hvað tapast og gamla skýrslan fylgir áfram. Handvirkt Vista spyr „Vista samt?".
+
 **Ein leið eftir breytingu:** `js/patches/516-skyrsla-solu.js`, `SkyrslaSolu.eftirBreytingu(saleId)`. Fallið spyr payday-push
 og býður „Búa til skýrslu“ ef kt, nafn, staður eða tæki stemma ekki. Það gerir ekkert sjálfvirkt og blokkar ekkert.
 

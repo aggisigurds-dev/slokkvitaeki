@@ -296,7 +296,12 @@
         year: ym ? ym[1] : null,
         // explicit doc kind from the year-grid attach buttons ('skyrsla' /
         // 'reikningur'); null when uploaded via the generic picker.
-        kind: (opts && opts.kind) || null
+        kind: (opts && opts.kind) || null,
+        // 17.11.2026: handskrifaður texti skýrslunnar (168) — svo ný skýrsla á annarri vél tapi honum aldrei.
+        texti: (opts && opts.texti && typeof opts.texti === 'object') ? {
+          annad: String(opts.texti.annad || '').slice(0, 4000), athugasemdir: String(opts.texti.athugasemdir || '').slice(0, 4000),
+          skodunaradili: String(opts.texti.skodunaradili || '').slice(0, 200), undirritun: String(opts.texti.undirritun || '').slice(0, 200),
+        } : undefined
       };
       const list = getCompanyAttachments(coId);
       list.unshift(meta);
