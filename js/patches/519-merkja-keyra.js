@@ -41,7 +41,9 @@
   const kl = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getHours()) + ':' + p2(d.getMinutes()); };
   const ymd = (d) => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
   const bord = () => window.Bord368 || null;
-  const nuNafn = () => { try { return bord() && bord().nu ? bord().nu() : ''; } catch (_) { return ''; } };
+  // Hver situr við borðið: Samthykkja.nu (368) — sama og „Ég er“-valið. html(n) fær það líka beint frá 368.
+  let _nuSidast = '';
+  const nuNafn = () => { try { return (window.Samthykkja && Samthykkja.nu) ? Samthykkja.nu() : _nuSidast; } catch (_) { return _nuSidast; } };
   const toast = (m, w) => { try { if (bord() && bord().toast) return bord().toast(m, w); } catch (_) {} console[w ? 'warn' : 'log']('[519] ' + m); };
   const teikna = () => { try { if (window.Thjonustubord5 && Thjonustubord5.render) Thjonustubord5.render(); } catch (_) {} };
   // „Séð“ á umferð: viðmótsval vistað um Vidmot (472 — EITT gildi á þjóninum fyrir allar vélar, aldrei localStorage), svo
@@ -63,7 +65,11 @@
     S.sott = Date.now();
     const t = j.teljari || {};
     // Umferð sem var í keyrslu er búin → tilkynning (sama hugsun og VIP-klukkan: sést án þess að leita).
-    if (S.fyrraBuin === false && t.buin) toast('Umferðin er búin: ' + (t.klarad || 0) + ' klárað · ' + (t.vantar_svar || 0) + ' vantar svör.');
+    // Tilbúnu verkin (511) sótt strax, svo það sem Óðinn samþykkti standi í „Tilbúin verk“ án þess að bíða 5 mín.
+    if (S.fyrraBuin === false && t.buin) {
+      toast('Umferðin er búin: ' + (t.klarad || 0) + ' klárað · ' + (t.vantar_svar || 0) + ' vantar svör.');
+      try { if (window.BordAfgreidsla && BordAfgreidsla.uppfaera) BordAfgreidsla.uppfaera(); } catch (_) {}
+    }
     S.fyrraBuin = !!t.buin;
     if (t.i_keyrslu > 0) raesaKonnun(); else stodvaKonnun();
   }
@@ -154,7 +160,7 @@
     '.mk-lst li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:5px 8px;border-radius:5px;background:#fbece5;font-size:12px;line-height:1.35;color:#7c2f12}' +
     '.mk-lst li.ok{background:#e7f2ea;color:#1f5434}.mk-lst li b{color:var(--ink,#161513)}' +
     '.mk-lst button{all:unset;cursor:pointer;text-decoration:underline;font-weight:600}' +
-    '.frow .kick,.mrow .kick{display:flex;align-items:center;flex-wrap:wrap}' +
+    '.frow .kick,.mrow .kick{display:flex;align-items:center;flex-wrap:wrap}.sb-mk{margin-top:6px}.lrow .s .mk-m{margin-right:6px}' +
     '@media (max-width:700px){.mk-m{min-width:30px;height:26px;font-size:12px}.mk-h{min-height:48px;font-size:12px}.mk-bar{padding:7px 9px;gap:5px 9px}.mk-run{flex:1 1 100%;justify-content:center;min-height:40px}}' +
     '</style>';
 
@@ -173,6 +179,16 @@
     }
     return '<button type="button" class="mk-m" data-t5="mk-opna" data-id="' + Number(r.id) + '"' + (s ? ' data-s="' + esc(s) + '"' : '') + (m && m._bid ? ' data-bid="1"' : '') +
       ' aria-expanded="' + (S.opid === Number(r.id)) + '" aria-label="' + esc(titill) + '" title="' + esc(titill) + '">' + inni + '</button>';
+  }
+
+  // Stöðutákn án smells — í Samþykkja-listanum, þar sem listaatriðið sjálft er hnappur (merkið er á spjaldi valda málsins).
+  function stada(r) {
+    if (!r || !S.virkt || nuNafn() !== EIGANDI) return '';
+    const m = S.idx.get(Number(r.id));
+    if (!m) return '';
+    const s = m.snooze_buid ? 'snooze_buid' : m.stada;
+    const t = m.stada === 'blundar' ? (m.snooze_buid ? '⏰' : '💤') : m.stada === 'i_keyrslu' ? '⟳' : m.stada === 'klarad' ? '✓' : m.stada === 'vantar_svar' ? '!' : (TAKN[m.merki] || '•');
+    return '<span class="mk-m" data-s="' + esc(s) + '" aria-label="Merkt: ' + esc(HEITI[m.merki] || '') + '" style="pointer-events:none;margin:0 4px">' + esc(t) + '</span>';
   }
 
   // Glugginn undir línunni (368 kallar þetta aftast í línunni). Teiknaður úr ástandi — lifir endurteikningu borðsins.
@@ -206,6 +222,7 @@
 
   // Teljarinn + ▶ Keyra + ljósið, ein lína efst á borðinu (368 kallar þetta undir VIP-vaktinni).
   function html(n) {
+    _nuSidast = n || '';
     if (n !== EIGANDI) return '';
     if (!S.sott || Date.now() - S.sott > 60000) { if (!S.bid) hlada(); }
     if (!S.virkt) return '';
@@ -277,7 +294,7 @@
   setInterval(tengjaRot, 1500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.virkt) hlada(); });
 
-  window.MerkjaKeyra = { html, merki, gluggi, smellur, hlada, S, MERKI, version: '519a' };
+  window.MerkjaKeyra = { html, merki, gluggi, stada, smellur, hlada, S, MERKI, version: '519a' };
   console.log('[519-merkja-keyra] installed');
 })();
 /* === END MERKJA OG KEYRA === */

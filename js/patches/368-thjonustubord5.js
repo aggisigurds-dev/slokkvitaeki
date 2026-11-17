@@ -1887,6 +1887,7 @@
   // 519 Merkja og keyra (17.11.2026): lítið merki fremst í línunni + gluggi undir henni. Villa í 519 má aldrei fella borðið.
   const mkMerki = r => { try { return window.MerkjaKeyra ? MerkjaKeyra.merki(r) : ''; } catch (_) { return ''; } };
   const mkGluggi = r => { try { return window.MerkjaKeyra ? MerkjaKeyra.gluggi(r) : ''; } catch (_) { return ''; } };
+  const mkStada = r => { try { return window.MerkjaKeyra && MerkjaKeyra.stada ? MerkjaKeyra.stada(r) : ''; } catch (_) { return ''; } };
   function feedRow(r, valid) {
     const a = ageDays(r), sam = linur(samantekt(r), 4).slice(0, 600), n = nu(), w = fyrLink(r);
     const tags = samtMerki(r) +
@@ -2545,7 +2546,7 @@
         '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= alls - 1 ? ' disabled' : '') + '>Næsta ›</button></div>' +
       '<div class="sb-in"><div class="sb-hd"><div class="sb-hdt"><div class="sb-kr"><span class="sb-sogn">' + esc(sogn) + '</span><span class="sb-kick">Það sem þú ákveður</span>' +
           (r.important ? '<span class="sb-ari">★ Áríðandi</span>' : '') + '</div>' +
-          '<h3 class="sb-h" id="sb-h-' + r.id + '">' + (fyr ? '<span class="sb-h-a">' + fyr + '</span>' : '') + spH + '</h3></div>' +
+          '<h3 class="sb-h" id="sb-h-' + r.id + '">' + (fyr ? '<span class="sb-h-a">' + fyr + '</span>' : '') + spH + '</h3>' + (mkMerki(r) ? '<div class="sb-mk">' + mkMerki(r) + '</div>' : '') + mkGluggi(r) + '</div>' +
           '<div class="sb-bord"><span>Á borðinu</span><b>' + esc(sbDagaOrd(ageDays(r))) + '</b></div></div>' +
         sbLinaHtml(r) +
         '<div class="sb-cols"><div>' + sbSagaHtml(r) + '</div><div>' +
@@ -2588,7 +2589,7 @@
       void ef; void undir;
       return '<button type="button" class="vbr-item sb-li' + (erSamthykki(r) ? '' : ' svarad') + '" data-t5="samt-velja" data-id="' + r.id + '" aria-current="' + (r.id === S.samtVal) + '" title="' + esc(r.title || '') + '">' +
         stj +
-        '<span class="sb-li-top"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span><span class="sb-li-meta">' + esc(meta) + '</span></span>' +
+        '<span class="sb-li-top"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span>' + mkStada(r) + '<span class="sb-li-meta">' + esc(meta) + '</span></span>' +
         '<span class="sb-li-t">' + (t.adili ? '<b>' + esc(t.adili) + '</b> · ' + esc(t.spurning + (t.sogn ? ' — ' + t.sogn : '')) : '<b>' + esc(r.title || '(ónefnt mál)') + '</b>') + '</span>' +
         (sonn(r) && sonn(r).texti && erAfgreitt(r) ? '<span class="s samt-sonn ok">✓ ' + esc(sonn(r).texti) + '</span>' : '') +
         '<span class="sb-li-p">' + (u ? '<span class="sb-p" title="Upphæð lesin úr texta málsins — vísbending, ekki bókhald">≈ ' + esc(kr(u)) + '</span>' : '') +
@@ -4499,7 +4500,7 @@
     const a = ageDays(r), w = fyrLink(r);
     return '<div class="lrow' + (f && f.falinn ? ' falid' : '') + '"><span class="age ' + ageCls(a) + '">' + a + 'D</span>' +
       '<div><button type="button" class="lpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið"><b>' + esc(r.title || '(ónefnt mál)') + '</b></button>' +
-      '<span class="s">' + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + (forsk || '') + malAdg(r, 'lina') + '</div>' + (merki || '<span></span>') + '</div>';
+      '<span class="s">' + mkMerki(r) + (w ? w + ' · ' : '') + esc(eigandaTexti(r, nu())) + felaTakki(f) + '</span>' + skyrLina(f) + (forsk || '') + malAdg(r, 'lina') + mkGluggi(r) + '</div>' + (merki || '<span></span>') + '</div>';
   }
   // Byrjun skilaboðanna, án tilvitnaðs texta. Sama hugsun og KLIPPA_TXT í 286:
   // það sem stendur NEÐAN við „-----", „Frá:", „On … wrote:" er gamall póstur.
