@@ -1758,7 +1758,7 @@
         var navDead = !nav || !nav.isConnected || !nav.querySelector('._app-tab');
         var hdrDead = !hdr || !hdr.isConnected;
         if (navDead || hdrDead) { buildShell(); return; }
-        if (getComputedStyle(nav).display === 'none') nav.style.display = 'grid';
+        if (getComputedStyle(nav).display === 'none') nav.style.display = 'flex';   // 17.11.2026 (lota 9, Öpp-villa 12): stikan er flex-lína (CSS #_app-nav) — 'grid' án dálka staflaði hnöppunum lóðrétt yfir hálfan skjáinn
         if (getComputedStyle(hdr).display === 'none') hdr.style.display = 'flex';
         syncFrameBottom();
       } catch (_) {}
