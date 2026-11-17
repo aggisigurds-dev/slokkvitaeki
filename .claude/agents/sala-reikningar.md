@@ -32,6 +32,8 @@ Gataverðlistinn er taflan `hole_size_rates` (scope `generic`, `heklureitur`; fl
 - Úttekt með skýrslu en engum reikningi þar sem skoðunin var jan.–apr. 2026 (fyrir yfirtöku 07.05.) telst greidd fyrri eigendum og á ekki að rukka [C#582].
 - Allur útsendur póstur fer frá eldklar@eldklar.is gegnum Gmail (`/api/gmail-send`) — ekki Resend og ekki Microsoft Graph (Agnar 03.08.2026) [lota 177227fe; C#507].
 - Sala birtist ekki í Kröfu yfirliti nema `greitt_med`, `customer_base_id`, `upphaed_an_vsk` OG `vsk_upphaed` séu öll sett — algengasta orsök „salan er til en sést hvergi“ [C#3].
+  *Lota 7 (17.11.2026, lesið í kóða, ekki í vafra):* sían í `166-krofu-yfirlit.js:709–714` krefst aðeins `greitt_med='reikningur'`
+  (og ógreidd, ekki void). `customer_base_id` stöðvar SENDINGU (`payday-push` → 422), ekki birtingu. Sjá handbókina neðar.
 - Það má aldrei breyta dagsetningunni á eldri reikning (Agnar 14.08.2026): endurprentun vistaðrar sölu prentar `created_at`; sérdagsetning aðeins úr heimsóknarflæði [C#875].
 
 
@@ -482,6 +484,138 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
 - **`reikningspunktar.applied` er marklaus:** NULL á öllum 26 punktunum þótt 14 séu sannanlega rukkaðir. Fáni sem er aldrei settur segir ekkert — mældu gegn `solur`. Sama með Hoppers: `krafa_sent_at` segir 28.08 en kúnninn segist aldrei hafa fengið kröfu.
 - **Samningsverð ræður reikningnum.** Hagvagnar eiga samning um 2.700 kr./tæki (Charlize #1991) en voru rukkaðir 3.065 á 177 tækjum; Hamraborg 28 á 25 % afslátt sem vantaði. Berðu verð á reikningi saman við kjörin í Charlize áður en hann fer út.
 - **Sýnur í stað handvirkrar leitar:** `v_krafa_ekki_send`, `v_kredit_an_endurgerdar`, `v_verk_an_reiknings`, `v_skodun_gleymd`, `v_taekjatolur_misraemi`, `v_erindi_osvarad`, `v_skeytamidlun_vantar`. Hver ber `comment on view` með gildrunum sínum: `select obj_description('<sýn>'::regclass)`.
+
+## Handbók: fjögur daglegu reikningaverkin (lota 7, 17.11.2026)
+
+Agnar 16.11.2026: „Gekk hræðilega í dag.“ Handbókin er lesin úr kóðanum: `142-sale-editor.js`, `26-credit-invoice.js`,
+`92`, `166-krofu-yfirlit.js`, `369-krofu-vinnugluggi.js` og `netlify/functions/payday-push.cjs` (PP). Hún styðst líka við
+reglur 30–33 í `odin_reglur`. Merkin þýða:
+- **SANNAÐ**: próf í `test/` eða keyrt í lotu 6.
+- **ÓSANNAÐ**: lesið í kóða, ekki keyrt.
+
+Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar þetta var skrifað. Niðurstöður hennar færa skref
+úr ÓSANNAÐ í SANNAÐ hér.
+
+**Gildir um öll fjögur verkin:**
+- Ekkert hér sendir neitt nema „Krafa send“, „🏦 Senda valdar í Payday“ eða „📤 Í Payday sem drög“ í Kröfuyfirliti. Á
+  þá takka ýtir Agnar einn. Það er verklagsregla, ekki aðgangsstýring: takkinn er opinn öllum innskráðum (166:2104).
+- Sala er aldrei eydd. Hún er ógilt (`void`), kreditfærð eða „sleppt“ (369).
+- Eftir hvert skrif er lesið til baka úr ferskri `solur`-röð. „Vistað“ í viðmótinu er ekki sönnun.
+
+### 1. Breyta reikningi
+
+**A. Ósend sala eða drög (ritillinn, 142).** Breytanlegt er:
+- drög,
+- eða `final` + ógreidd + ekki kredit + `invoiced_at`, `krafa_sent_at` og `dk_invoice_id` öll tóm (142:104–118).
+
+1. Opna söluna með „Breyta“ í Kröfuyfirliti (166:2182) eða í Drögum. **ÓSANNAÐ**
+2. Breyta línum, afslætti, nafni eða athugasemd. Afsláttur fer á EINN stað: línu-prósentu EÐA krónur (142:208–222,
+   915–925). **ÓSANNAÐ**
+3. Smella á „Vista breytingar“, „Vista sem drög“ eða „Klára sölu“. **„Klára sölu“ sendir ekkert**, þótt staðfestingin
+   spyrji „…og senda krafa?“ (142:933). **ÓSANNAÐ**
+4. **Ef kt var breytt:** ritillinn vistar AÐEINS `customer_kt` og nafn. `customer_base_id` og `customer_id` standa óbreytt
+   (142:947–977), og `payday-push` tæki þá netfang, heimilisfang og síma gamla kúnnans (PP:147, 406–423). Uppfærðu
+   `customer_base_id` beint og lestu til baka (regla 31). Kt er heldur ekki vartöluprófuð í ritlinum (142:909). **ÓSANNAÐ**
+5. Sannreyna: `solur` ber nýju gildin og sendimerkin þrjú eru enn `null`.
+
+**B. Sendur reikningur: „✏️ Leiðrétta“.**
+1. Opna sendan reikning (læstur ritill), smella á „✏️ Leiðrétta“ og svo „Búa til drög“. Ný `solur`-röð verður til
+   (`status='drog'`) með afrit af línum, sama kúnna og `krafa_note` „Leiðrétting á R-… — … ekki ný úttekt“. Hún ber
+   ekkert úr sendingarsögunni. **SANNAÐ** (`test/sala-leidretting.test.cjs`, 5 próf á hreinu föllunum; smellir og
+   `insert` eru ekki prófuð)
+2. Breyta drögunum og smella á „Klára sölu“. **ÓSANNAÐ**
+3. **KREDITFÆRA GAMLA FYRST** (blái borðinn „Kreditfæra R-…“, 142:422–441), áður en nýi reikningurinn fer. **ÓSANNAÐ**
+4. Agnar sendir nýja reikninginn úr Kröfuyfirliti. **ÓSANNAÐ**
+
+> ⚠ **Gat, lesið í kóða 17.11.2026, ekki keyrt.** Leiðréttingardrögin (`status='drog'`, `greitt_med='reikningur'`)
+> birtast undir „Ósendar“. `payday-push` stöðvar þau ekki heldur: síurnar 166:713 og PP:122 útiloka aðeins `void`. Því má
+> senda nýja reikninginn ÁÐUR en sá gamli er kreditfærður, og það er tvírukkun nema tvírukkunarhliðið (PP:134) grípi.
+> Mælt 17.11.: 0 slík drög til. Röðin í skrefum 3→4 er því vörnin þar til kóðinn er lagaður.
+
+Sannreyna:
+- ný röð `drog` og `krafa_note` „Leiðrétting á …“,
+- gamli reikningurinn óbreyttur þar til hann er kreditfærður,
+- eftir kreditfærslu: sjá verk 2.
+
+### 2. Kreditfæra
+
+1. Opna „↩ Bakfæra (kreditreikningur)“ í ⋯-valmyndinni í Kröfuyfirliti (166:2222) eða „Kreditfæra“ í læstum ritli
+   (142:887). **ÓSANNAÐ**
+2. Haka við línur, skrifa ástæðu og smella á „✓ Gefa út kreditreikning“ (26:116–193). **ÓSANNAÐ**
+3. Ný `solur`-röð verður til: `is_credit=true`, `credit_of=<móðir>`, neikvæð `samtals`, númer `K…`, `status='final'`.
+   Kreditnótan sjálf fer EKKI í Payday (26:244–375). **ÓSANNAÐ**
+4. Fullt kredit á ÓGREIDDAN sendan reikning afturkallar í Payday (`payday-push` `action:'cancel'`). Bankakrafan er felld,
+   reikningurinn fer í CANCELLED og sendimerkin á móðurinni tæmast (26:210–241, PP:909–941, 676–686). **ÓSANNAÐ**
+   (369:160 segir sjálf að afturköllun Payday-DRAGA sé óprófuð gegn Payday.)
+
+Aldrei:
+- kredit á kredit (92:74),
+- hlutakredit sem fellir allan reikninginn (26:204),
+- afturköllun greiddrar kröfu: það er endurgreiðsla og ákvörðun Agnars (26:220),
+- afsláttur á kreditlínum (`discount_pct:0`, 26:249).
+
+Sannreyna:
+- kreditröðin sjálf,
+- móðirin (fullt + ógreitt): sendimerkin `null`,
+- `payday_invoices_slokk`: gamla röðin CANCELLED. Leitaðu eftir `reference` (R-númeri), því `dk_invoice_id` er tæmt.
+  Spegillinn uppfærist kl. 10 og 15 UTC.
+
+**Mistakist afturköllun** stendur kreditið en krafan stendur enn í bankanum. Segðu Agnari það strax.
+
+### 3. Færa á aðra kennitölu
+
+**A. Ósend sala:** breyta kt í ritlinum og fylgja skrefi 1A.4 (`customer_base_id` beint). **ÓSANNAÐ**
+
+**B. Sendur reikningur: Kröfu-vinnugluggi `faera_kt` (369).** Forathugun: salan er ógreidd, `final`, ekki kreditfærð og
+stendur SENT eða DRAFT í Payday (369:718–720).
+1. Opna Þjónustuborð → Kröfur → Forgangslisti og smella á „↪ Rangur greiðandi“ eða „Vinna ›“. Slá inn gilda kt nýs
+   greiðanda; vartalan er prófuð og sama kt er hafnað (369:1214–1247). **ÓSANNAÐ**
+2. Smella á „Tilbúið í vinnslu“. Glugginn skrifar aðeins í `krofu_verkferli` og sendir ekkert (369:14–19). **ÓSANNAÐ**
+3. Claude vinnur 🤖-þrepin í þessari röð og les hvert til baka (369:713–731). **ÓSANNAÐ**
+   - (a) stofna greiðandann í `customers_base` ef hann vantar, ÁÐUR en afturkallað er,
+   - (b) afturkalla í Payday,
+   - (c) uppfæra söluna: kt, nafn, `customer_base_id`, `customer_id` og athugasemd,
+   - (d) salan situr ósend í Kröfuyfirliti.
+4. Málið fer í `i_yfirferd_agnars` og Agnar sendir á nýja greiðandann. **ÓSANNAÐ**
+
+RÖNG leið: „Kredit + endurútgáfa“ (26) færir ekki kt. Athugið að 369:159/162 segir að sú leið kalli ekki á Payday. Það er
+úrelt síðan 08.10.2026, því fullt ógreitt kredit afturkallar nú.
+
+Sannreyna:
+- `solur`: ný kt, nafn og `customer_base_id`, og sendimerkin `null` þar til Agnar sendir,
+- gamla Payday-röðin CANCELLED,
+- `krofu_verkferli`: `stada='i_yfirferd_agnars'` og skrefin `gert`,
+- eftir sendingu: `dk_invoice_id` ≠ `gogn.upphaflegt.dk_invoice_id`.
+
+### 4. Setja í Kröfuyfirlit
+
+Sala birtist undir „Ósendar“ þegar þetta á allt við (166:709–714):
+- `greitt_med='reikningur'`,
+- `paid_at` er `null`,
+- öll þrjú sendimerkin eru `null`,
+- `status ≠ 'void'`.
+
+`final`, `hidden` og gild kt eru EKKI skilyrði fyrir birtingu. Kt er athuguð við sendingu (`ensureKtForSale`, 166:2352).
+
+1. Sala kemst inn eftir einni af þessum leiðum. **ÓSANNAÐ**
+   - kassinn með „reikningur“ sem greiðslumáta,
+   - „→ Í kröfu“ úr „Sést hvergi“: einstefna, sem setur `final` ef salan var drög (166:3568),
+   - Leiðrétta eða Kredit + breyta,
+   - 369-mál.
+2. Undirbúa: kt er gild, `customer_base_id` er sett, upphæðin rétt og skýrslan valin. **ÓSANNAÐ**
+3. Agnar ýtir á „Krafa send“ eða „🏦 Senda valdar í Payday“. Hliðin í PP eru í þessari röð: þegar send, writeback brast,
+   void, `customer_base_id` vantar (422) og tvírukkun (409). **ÓSANNAÐ**
+
+Sannreyna eftir sendingu:
+- `dk_invoice_id`, `krafa_sent_at` og `invoiced_at` eru sett og `status='final'`,
+- `payday_invoices_slokk` sýnir SENT eftir næstu sókn.
+
+### Hvað er sannað (17.11.2026)
+
+- Aðeins hreinu föll „Leiðrétta“ (5 próf í `test/sala-leidretting.test.cjs`).
+- Ekkert próf í `test/` nær yfir vistun úr ritli, kreditfærslu, kt-flutning, Kröfuyfirlit né `payday-push`.
+- Stöðuverðir í `tools/` sanna kóðamynstur, ekki flæði: `audit-kredit-afturkollun`, `audit-krofu-vinnugluggi`,
+  `audit-osendar-krofur`, `audit-payday-tvirukkun` og `audit-einstefna-krofu`.
 
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.

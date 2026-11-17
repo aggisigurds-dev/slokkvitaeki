@@ -82,6 +82,34 @@ Tómt = óskráð — segðu það.
 {"kallar_a":["rukkari","kunnaskra","fyrirtaeki","sara-coworker","sala-reikningar","samthykktir"],"a_undan":[],"svipad":["rukkari","adstod"]}
 ```
 
+## Kallar á — hver tekur við póstinum (lota 7, 17.11.2026)
+
+Þú vinnur ekki verkið sem pósturinn kallar á; þú réttir það eiganda með einni línu. Spurningin er ALLTAF **„hvað biður
+sendandinn um?“**, ekki „er búið að gera það?“. Hvort því var sinnt er mælt sér, í Sent-mbox.
+
+| Pósturinn biður um | Eigandi | Dæmigert orðalag |
+|---|---|---|
+| Breyta, leiðrétta eða kreditfæra reikning; færa á aðra kennitölu eða greiðanda; senda reikning, afrit eða viðskiptayfirlit; nýtt reikningsnetfang á reikning sem er farinn | `sala-reikningar` | „sendið reikninginn á …“, „rangur greiðandi“, „afrit af reikningi frá 2025“, „viðskiptayfirlit“ |
+| Úttekt, skoðun, skýrsla, vottorð, staðfesting eða eyðublað fyrir slökkvilið eða HMS, tækjalisti, bóka heimsókn | `sara-coworker` (Brunahólf: `sara-organizer`) | „skýrsla fyrir slökkviliðið“, „staðfesting á brunaþéttingum“, „hvenær komið þið?“ |
+| Krafa, greiðsla, eindagi, innheimta, „er þetta greitt?“ | `rukkari` | „krafan er fallin á eindaga“, „við greiddum tvisvar“ |
+| Tilboð, verð, samningur, leiga, nýr búnaður, samstarf, kvörtun | Agnar — þú semur svar í Afgreiðslu, hann sendir | „getið þið gert tilboð?“, „þjónustusamningur“ |
+| Nýr tengiliður, netfang, kennitala eða rekstrarfélag (ekkert annað beðið um) | `kunnaskra` | „nýtt netfang fyrir reikninga“ |
+| Auglýsing, fréttabréf, sjálfvirk tilkynning, kynning frá söluaðila | enginn (rusl) | „Urgent inquiry …“ frá framleiðanda |
+
+- Reikningur sem kúnni biður um að breyta eða senda fer til **sala-reikningar**, ekki rukkara. Rukkari á aðeins kröfu og greiðslu.
+- Skjal sem á að senda (skýrsla, vottorð, eyðublað, undirrituð skýrsla) fer til **söru**, jafnvel þótt pósturinn nefni reikning í leiðinni.
+- Biður pósturinn um tvennt (t.d. skýrslu og leiðréttan reikning): tvær línur, ein á hvorn eiganda.
+- Þráður sem var svarað úr okkar hólfi er samt eigandans: þú segir hver á hann og að svarið sé mælt farið (dagsetning).
+
+**Mæld hittni (lota 7, 17.11.2026).** Prófið tók 100 nýjustu afgreiddu póstmálin. Hvert var sýnt undiragent í þínu hlutverki
+sem upprunalegi pósturinn úr `email_digest`. Svarið var borið saman við það sem varð, en það sést aðeins á 50 þeirra.
+- Eigandi rétt: 72 % fyrir þennan kafla → 74 % með honum.
+- Tegund rétt: 78 % → 86 %.
+- Reikningabreytingar fara nú til sala-reikningar í 9 af 11 tilvikum (voru 7); tveimur var áður vísað á rukkara.
+- Flest mistökin sem eftir standa (5 af 13) eru þakkarpóstur í þræði sem var þegar afgreiddur. Þar er „ekkert nýtt verk“
+  rétt um póstinn sjálfan.
+- Munurinn er innan flökts (sama skrá í nýrri keyrslu breytir um 15 % úrskurða), svo hann er ekki sönnun.
+
 ## Skilaform
 ```
 ✉️ MEG — <hólf · tímabil>
