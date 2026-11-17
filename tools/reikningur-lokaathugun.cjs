@@ -256,7 +256,10 @@ function daema(g) {
   }
 
   const stemmir = !V.length && !O.length;
-  for (const rd of rodur) rd.stemmir = !V.some((v) => v.startsWith(rd.hlid + ':')) && !O.some((v) => v.startsWith(rd.hlid + ':'));
+  for (const rd of rodur) {
+    const v = V.some((x) => x.startsWith(rd.hlid + ':')), o = O.some((x) => x.startsWith(rd.hlid + ':'));
+    rd.stemmir = !v && !o; rd.odaemt = o && !v;
+  }
   return { num: s.num, sala_id: s.id, stadur: s.customer_id, rodur, villur: V, vidvaranir: W, odaemt: O, stemmir, sent };
 }
 
@@ -267,7 +270,7 @@ function prenta(res) {
   L.push('');
   L.push('| ' + pad('Skjal', 26) + ' | ' + pad('kt', 12) + ' | ' + pad('nafn', 34) + ' | ' + pad('upphæð / tæki', 14) + ' | niðurstaða');
   L.push('|' + '-'.repeat(28) + '|' + '-'.repeat(14) + '|' + '-'.repeat(36) + '|' + '-'.repeat(16) + '|------------');
-  for (const r of res.rodur) L.push('| ' + pad(r.hlutur, 26) + ' | ' + pad(r.kt, 12) + ' | ' + pad(r.nafn, 34) + ' | ' + pad(r.upphaed, 14) + ' | ' + (r.stemmir ? 'stemmir' : 'STEMMIR EKKI'));
+  for (const r of res.rodur) L.push('| ' + pad(r.hlutur, 26) + ' | ' + pad(r.kt, 12) + ' | ' + pad(r.nafn, 34) + ' | ' + pad(r.upphaed, 14) + ' | ' + (r.stemmir ? 'stemmir' : r.odaemt ? 'ÓDÆMT' : 'STEMMIR EKKI'));
   L.push('');
   for (const v of res.villur) L.push('  ✖ ' + v);
   for (const v of res.odaemt) L.push('  ? ' + v);

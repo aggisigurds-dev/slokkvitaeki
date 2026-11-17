@@ -76,6 +76,7 @@ test('reglan 517 vantar → ÓDÆMT, aldrei „stemmir"', () => {
   assert.strictEqual(r.stemmir, false);
   assert.ok(hefur(r.odaemt, /517/), r.odaemt.join(' | '));
   assert.match(T.prenta(r), /verkið er EKKI búið/);
+  assert.match(T.prenta(r), /Reiknings-PDF .*\| ÓDÆMT/);
 });
 
 test('R-001307-mynstrið: parið á spjaldinu bendir á kreditfærðan reikning → reiknings-PDF STEMMIR EKKI meðan 517 er ekki í loftinu', { skip: anRS }, () => {
