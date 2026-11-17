@@ -51,7 +51,10 @@ function skrar(rot, undir) {
     if (!fs.existsSync(p)) continue;
     for (const f of fs.readdirSync(p)) {
       const fp = path.join(p, f);
-      if (SLEPPA_SLOD.test(fp)) continue;
+      // 17.11.2026 (verða-sjálfpróf lotu 6): sleppilistinn var borinn saman við FULLA slóð. Repó undir möppu sem heitir
+      // t.d. `claude` eða `docs` (afrit í Temp\claude\…) sleppti ÖLLUM skrám og varðaði grænt án þess að lesa neitt.
+      // Nú: slóðin innan repósins. Og 0 lesnar skrár er villa hér að neðan, aldrei grænt.
+      if (SLEPPA_SLOD.test('/' + path.relative(rot, fp).replace(/\\/g, '/'))) continue;
       try { if (!fs.statSync(fp).isFile()) continue; } catch { continue; }
       if (!/\.(js|css)$/.test(f)) continue;
       ut.push(fp);
@@ -63,7 +66,12 @@ function skrar(rot, undir) {
 const brot = [];
 const slod = f => path.relative(ROT, f).replace(/\\/g, '/');
 
-for (const f of skrar(ROT, SKODA)) {
+const lesnar = skrar(ROT, SKODA);
+if (!lesnar.length) {
+  console.log('RED: þemafrysting las 0 skrár í ' + SKODA.join(', ') + ' — vörðurinn sér ekkert (rangt ROT eða sleppilisti gleypir allt).');
+  process.exit(1);
+}
+for (const f of lesnar) {
   let txt;
   try { txt = fs.readFileSync(f, 'utf8'); } catch { continue; }
   // Athugasemdir mega NEFNA dökkt þema — þær kveikja ekki á neinu. Haus patch 220,
@@ -82,8 +90,11 @@ for (const f of skrar(ROT, SKODA)) {
     if (!hreint.trim()) return;
 
     // 1. Setja data-theme á dökkt
+    // 17.11.2026: `el.dataset.theme = 'dark'` gerir það sama og setAttribute og slapp framhjá (verða-sjálfpróf).
     if (/setAttribute\s*\(\s*['"]data-theme['"]\s*,\s*['"]dark['"]/.test(hreint) ||
-        /data-theme\s*=\s*['"]dark['"]/.test(hreint)) {
+        /data-theme\s*=\s*['"]dark['"]/.test(hreint) ||
+        /\.dataset\.theme\s*=\s*['"]dark['"]/.test(hreint) ||
+        /\.dataset\[\s*['"]theme['"]\s*\]\s*=\s*['"]dark['"]/.test(hreint)) {
       brot.push({ f, i: i + 1, hvad: 'setur data-theme="dark"', txt: hreint.trim().slice(0, 76) });
     }
 
@@ -125,5 +136,5 @@ if (brot.length) {
   process.exit(1);
 }
 
-console.log('✅ GRÆNT þemafrysting: ekkert kveikir á dökku þema (gatt/ undanskilið — ' +
+console.log('✅ GRÆNT þemafrysting: ' + lesnar.length + ' skrár lesnar, ekkert kveikir á dökku þema (gatt/ undanskilið — ' +
   'þar er data-theme viðskiptahópa-eiginleiki, ekki ljóst/dökkt-rofi)');
