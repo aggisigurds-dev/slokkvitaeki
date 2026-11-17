@@ -41,7 +41,7 @@ jobs:
         run: |
           # 17.11.2026 (lota 9, Verkefnalisti 166530a8): ýting birtir AÐEINS ef merkið er í FYRIRSÖGN haus-commitsins.
           # `contains(head_commit.message, …)` í if-skilyrðinu les öll skilaboðin — merki í meginmáli („Ekki [deploy] …",
-          # lota 2ef635f0 10.11.) birti óvart. Skilaboðin koma um env (ekki ${{ }} í skelinni) svo þau keyrast aldrei.
+          # lota 2ef635f0 10.11.) birti óvart. Skilaboðin koma um env (ekki sem segð inni í skelinni) svo þau keyrast aldrei.
           if [ "${{ github.event_name }}" = "push" ]; then
             fyrirsogn=$(printf '%s\n' "$HAUS_SKILABOD" | head -n 1)
             case "$fyrirsogn" in
