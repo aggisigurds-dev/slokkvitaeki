@@ -1,0 +1,259 @@
+// Próf: „Merkja og keyra“ (519, lota 14, 17.11.2026) — merki á línum Þjónustuborðsins → Keyra → agent → Óðinn → tilbúið verk.
+//   node --test test/merkja-keyra.test.cjs
+// Það sem má ALDREI bila:
+//   · „Veit ekki“ og „Rannsaka betur“ fara FREMST í röðina (verðmætustu merkin, ekki eyður);
+//   · snooze án dagsetningar er hafnað (annars hverfur atriðið) og ekkert skráð;
+//   · teljarinn telur merkt · í keyrslu · klárað · vantar svör fyrir SÍÐUSTU umferð og ljósið kviknar aðeins þegar hún er búin;
+//   · dreifingin kemur úr leiðarvísinum (agents-registry) með sömu stigum og brunaholf/tools/router.cjs — ekki föstum lista;
+//   · hálfsvar telst ALDREI klárað (vantar_svar með ástæðu); marktækt svar verður tilbúið verk í afgreidsla — ekkert fer út;
+//   · gamalt/rangt nonce gerir ekkert.
+// Enginn gagnagrunnur og ekkert net: _portal-föllunum er skipt út fyrir gervi-PostgREST (test/_fake-postgrest.cjs),
+// Claude-kallinu og gagnasöfnuninni fyrir stubba.
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const F = require('./_fake-postgrest.cjs');
+const P = require('../netlify/functions/_portal.cjs');
+const CL = require('../netlify/functions/_adalmal-claude.cjs');
+const L = require('../netlify/functions/_merkja-leid.cjs');
+const M = require('../netlify/functions/_merkja.cjs');
+
+// Lítil agentaskrá á sama sniði og data/agents-registry.json (list + pages).
+const REG = { list: [
+  { type: 'agent', name: 'postur', emoji: '✉', lysing: 'Póstur og svör', kveikjuord: ['póstur', 'svara pósti', 'ósvarað'], aldrei: ['Senda póst sjálfur'], skrar: [{ repo: 'brunaholf' }] },
+  { type: 'agent', name: 'rukkari', emoji: '💰', lysing: 'Kröfur og innheimta', kveikjuord: ['krafa', 'ógreitt', 'innheimta'], aldrei: ['Senda kröfu'], skrar: [{ repo: 'slokkvitaeki' }] },
+  { type: 'agent', name: 'jarvis', emoji: 'J', lysing: 'Stjórinn', kveikjuord: ['jarvis'], aldrei: [], skrar: [] },
+], pages: [{ id: 'krofuyfirlit', titill: 'Kröfuyfirlit', eigandi: 'rukkari', kveikjuord: [] }] };
+
+const NU = new Date('2026-11-17T21:00:00Z');
+const m = (o) => Object.assign({ stada: 'merkt', merkt_at: '2026-11-17T20:00:00Z', lina: 'mal:' + (o.mal_id || 1) }, o);
+
+/* ── Röðun ───────────────────────────────────────────────────────────── */
+test('röðun: Veit ekki og Rannsaka betur fremst, svo Yfirfara, Athugasemd, Keyra, Já, Nei; elsta merki fyrst innan flokks', () => {
+  const l = [
+    m({ id: 1, merki: 'ja', forgangur: 45 }), m({ id: 2, merki: 'keyra' }), m({ id: 3, merki: 'rannsaka', merkt_at: '2026-11-17T20:30:00Z' }),
+    m({ id: 4, merki: 'nei' }), m({ id: 5, merki: 'veit_ekki', merkt_at: '2026-11-17T20:10:00Z' }), m({ id: 6, merki: 'yfirfara' }), m({ id: 7, merki: 'comment' }),
+  ];
+  assert.deepStrictEqual(M.rodun(l).map((x) => x.id), [5, 3, 6, 7, 2, 1, 4]);
+  // Forgangurinn er í merkinu sjálfu, ekki í því sem stendur í dálkinum (gömul röð með rangt gildi fer samt rétt).
+  assert.deepStrictEqual(M.rodun([m({ id: 1, merki: 'keyra', forgangur: 1 }), m({ id: 2, merki: 'veit_ekki', forgangur: 99 })]).map((x) => x.id), [2, 1]);
+});
+
+/* ── Snooze ──────────────────────────────────────────────────────────── */
+test('snooze: dagsetning SKYLDA, í framtíð og innan árs; dagur → kl. 08:00 þann dag', () => {
+  assert.throws(() => M.snoozeDags('', NU), /þarf dagsetningu/);
+  assert.throws(() => M.snoozeDags(null, NU), /þarf dagsetningu/);
+  assert.throws(() => M.snoozeDags('2026-11-16', NU), /liðin/);
+  assert.throws(() => M.snoozeDags('2028-01-01', NU), /eitt ár/);
+  assert.throws(() => M.snoozeDags('bull', NU), /Ógild/);
+  assert.strictEqual(M.snoozeDags('2026-11-20', NU), '2026-11-20T08:00:00.000Z');
+  assert.ok(M.snoozeBuid({ stada: 'blundar', due_at: '2026-11-17T08:00:00Z' }, NU));
+  assert.ok(!M.snoozeBuid({ stada: 'blundar', due_at: '2026-11-20T08:00:00Z' }, NU));
+});
+
+test('snooze án dagsetningar skráist ALDREI (ekkert skrifað)', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 11, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  try {
+    await assert.rejects(() => M.vista({ mal_id: 11, merki: 'snooze' }, 'Agnar', NU), /þarf dagsetningu/);
+    assert.strictEqual(fake.skrif.length, 0);
+    const r = await M.vista({ mal_id: 11, merki: 'snooze', due_at: '2026-11-24' }, 'Agnar', NU);
+    assert.strictEqual(r.stada, 'blundar');
+    assert.strictEqual(r.due_at, '2026-11-24T08:00:00.000Z');
+  } finally { aftur(); }
+});
+
+/* ── Teljari ─────────────────────────────────────────────────────────── */
+test('teljari: merkt · í keyrslu · klárað · vantar svör (síðasta umferð) · ljós aðeins þegar umferð er búin', () => {
+  const gomul = [m({ id: 1, stada: 'klarad', umferd: 'u1', keyrt_at: '2026-11-16T10:00:00Z' }), m({ id: 2, stada: 'vantar_svar', umferd: 'u1', keyrt_at: '2026-11-16T10:00:00Z' })];
+  const ny = [m({ id: 3, stada: 'klarad', umferd: 'u2', keyrt_at: '2026-11-17T20:00:00Z', lokid_at: '2026-11-17T20:02:00Z' }), m({ id: 4, stada: 'i_keyrslu', umferd: 'u2', keyrt_at: '2026-11-17T20:00:00Z' })];
+  const onnur = [m({ id: 5 }), m({ id: 6 }), m({ id: 7, stada: 'blundar', due_at: '2026-11-20T08:00:00Z' }), m({ id: 8, stada: 'tekid_af' })];
+  let t = M.teljari(gomul.concat(ny, onnur), NU);
+  assert.deepStrictEqual([t.merkt, t.i_keyrslu, t.klarad, t.vantar_svar, t.blundar, t.umferd, t.buin], [2, 1, 1, 0, 1, 'u2', false]);
+  ny[1].stada = 'vantar_svar'; ny[1].lokid_at = '2026-11-17T20:03:00Z';
+  t = M.teljari(gomul.concat(ny, onnur), NU);
+  assert.deepStrictEqual([t.klarad, t.vantar_svar, t.i_keyrslu, t.buin, t.lokid_at], [1, 1, 0, true, '2026-11-17T20:03:00Z']);
+  assert.strictEqual(M.teljari([], NU).buin, false);
+});
+
+/* ── Dreifing (leiðarvísirinn) ───────────────────────────────────────── */
+test('dreifing: agent úr kveikjuorðum/síðukorti registry — enginn hittir → jarvis heldur keflinu (gat)', async () => {
+  const g = L.undirbua(REG);
+  assert.strictEqual((await L.leid('Póstur: ósvarað síðan 09.10 — svara pósti', { g })).agent, 'postur');
+  assert.strictEqual((await L.leid('Krafa ógreitt síðan 20.09, innheimta', { g })).agent, 'rukkari');
+  assert.strictEqual((await L.leid('Kröfuyfirlit sýnir ranga stöðu', { g })).agent, 'rukkari');   // síðuheiti → eigandi síðunnar
+  const v = await L.leid('Kolsýru tæki', { g });
+  assert.deepStrictEqual([v.agent, v.gat], ['jarvis', true]);
+  const bil = await L.leid('Krafa ógreitt', { fetchFn: async () => ({ ok: false, status: 503 }), url: 'http://x' });
+  assert.strictEqual(bil.agent, 'jarvis');
+  assert.ok(bil.gat && /svaraði ekki/.test(bil.villa));
+});
+
+test('dreifing = brunaholf/tools/router.cjs (sömu agentar á sömu textum) — sleppt ef brunaholf-repóið er ekki við hliðina', (t) => {
+  const rot = path.resolve(__dirname, '..', '..', 'brunaholf');
+  const rf = path.join(rot, 'tools', 'router.cjs'), reg = path.join(rot, 'data', 'agents-registry.json');
+  if (!fs.existsSync(rf) || !fs.existsSync(reg)) { t.skip('brunaholf ekki við hliðina'); return; }
+  const R = require(rf), g = L.undirbua(JSON.parse(fs.readFileSync(reg, 'utf8')));
+  const T = ['Hringja: húsfélag, reikningur fór aðeins sem krafa í banka. Félagið á ekkert netfang, svo enginn fékk reikninginn.',
+    'Tilboð: verðbeiðni í brunavarnir og brunafrágang, ósvarað', 'Annað: bókhaldið spyr hvort reikning vanti, ósvarað',
+    'Hringja: úttektarskýrslan fór ekki út, netfang vantar', 'Annað: Öryggi: tafla sem síðurnar keyra kóða úr er ólæst',
+    'Annað: AI-tillaga: umsaminn afsláttur vantar á reikning', 'Skoðun & tilboð: Kolsýru tæki'];
+  for (const x of T) assert.deepStrictEqual(L.greina(x, g).map((s) => s.agent), R.greina(x, path.resolve(rot, '..', 'slokkvitaeki')).valdir.map((s) => s.agent), x);
+});
+
+/* ── Mat Óðins ───────────────────────────────────────────────────────── */
+const st = (n, h = 'F1') => Array.from({ length: n }, (_, i) => ({ texti: 'Staðreynd ' + i, heimildir: [h] }));
+test('Óðinn: hálfsvar telst ALDREI klárað; marktækt verk/póstur/útskýring/vísun', () => {
+  assert.strictEqual(M.metaSkil({ stada: 'villa', villa: 'Claude 529' }, 'keyra').marktaekt, false);
+  const tom = M.metaSkil({ stada: 'tilbuid', svar: 'Fann ekkert', stadreyndir: [], tillaga: { tegund: 'ekkert' }, omaelt: ['Engin gögn um málið'] }, 'veit_ekki');
+  assert.strictEqual(tom.marktaekt, false);
+  assert.match(tom.astaeda, /fann ekkert/); assert.match(tom.astaeda, /Engin gögn/);
+  const half = M.metaSkil({ stada: 'tilbuid', svar: 'Málið virðist snúast um reikning.', stadreyndir: st(1), tillaga: { tegund: 'ekkert' } }, 'keyra');
+  assert.strictEqual(half.marktaekt, false); assert.match(half.astaeda, /Hálfsvar/);
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'x', stadreyndir: st(1), hent: 4, tillaga: { tegund: 'verk', titill: 'Verk', lysing: 'Lýsing á verki sem er nógu löng' } }, 'keyra').marktaekt, false);
+  assert.deepStrictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Gera X', stadreyndir: st(1), tillaga: { tegund: 'verk', titill: 'Verk', lysing: 'Lýsing' } }, 'keyra'), { marktaekt: true, tegund: 'verk' });
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Svar', stadreyndir: st(1), tillaga: { tegund: 'tolvupostur', texti: 'Góðan dag', post: { digest_id: 1 } } }, 'ja').tegund, 'tolvupostur');
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'veit_ekki').tegund, 'utskyring');
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'ja').marktaekt, false);
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Símtalið bíður þegar í Afgreiðslu #23.', stadreyndir: st(1, 'A1'), tillaga: { tegund: 'ekkert' } }, 'keyra').tegund, 'visun');
+});
+
+/* ── Enda í enda á gervigrunni: merkja → keyra → agent → Óðinn → tilbúið verk ── */
+test('lykkjan: röð til agenta (Veit ekki fyrst), Nei → Charlize, hámark umferðar, marktækt → afgreidsla, hálfsvar → vantar_svar', async () => {
+  const fake = F.bua({ thjonustubeidni: [
+    { id: 21, title: 'Póstur: ósvarað frá kúnna, svara pósti', type: 'email', status: 'nytt' },
+    { id: 22, title: 'Krafa ógreitt síðan 20.09', type: 'hringja', status: 'nytt' },
+    { id: 23, title: 'Gamalt mál sem skiptir engu', type: 'annad', status: 'nytt' },
+    { id: 24, title: 'Kolsýru tæki', type: 'skodun_tilbod', status: 'nytt' },
+    { id: 25, title: 'Krafa ógreitt — annað', type: 'hringja', status: 'nytt' } ] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { safna: CL.safna, kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    await M.vista({ mal_id: 21, merki: 'keyra' }, 'Agnar', NU);
+    await M.vista({ mal_id: 22, merki: 'ja' }, 'Agnar', NU);
+    await M.vista({ mal_id: 23, merki: 'nei', athugasemd: 'Skiptir engu' }, 'Agnar', NU);
+    await M.vista({ mal_id: 24, merki: 'veit_ekki' }, 'Agnar', new Date(NU.getTime() + 60000));
+    await M.vista({ mal_id: 25, merki: 'keyra' }, 'Agnar', NU);
+    // Nýtt merki á sömu línu leysir eldra af hólmi — engu eytt.
+    await M.vista({ mal_id: 25, merki: 'rannsaka' }, 'Agnar', NU);
+    assert.deepStrictEqual(fake.T.bord_merkingar.filter((x) => x.mal_id === 25).map((x) => [x.merki, x.stada]), [['keyra', 'tekid_af'], ['rannsaka', 'merkt']]);
+
+    const kveikt = [];
+    const r = await M.keyra('Agnar', { kveikja: async (id, nonce) => { kveikt.push({ id, nonce }); }, hamark: 3, nu: new Date() });   // claude.at verður að vera ferskt (< 15 mín.)
+    const malAf = (id) => fake.T.bord_merkingar.find((x) => x.id === id).mal_id;
+    // Röðin: Rannsaka (25) og Veit ekki (24) fremst — jafnir, elsta merkið fyrst — svo Keyra (21); Já (22) bíður (hámark 3).
+    assert.deepStrictEqual(kveikt.map((k) => malAf(k.id)), [25, 24, 21]);
+    assert.deepStrictEqual([r.sent, r.bida, r.nei], [3, 1, 1]);
+    const nei = fake.T.bord_merkingar.find((x) => x.mal_id === 23);
+    assert.strictEqual(nei.stada, 'klarad');
+    assert.ok(fake.T.charlize_knowledge.some((c) => c.topic === 'akvardanir-agnars' && /NEI við mál #23/.test(c.fact) && /Ekki leggja þetta til aftur/.test(c.fact)));
+    const agentAf = (mal) => fake.T.bord_merkingar.find((x) => x.mal_id === mal && x.stada === 'i_keyrslu').agent;
+    assert.deepStrictEqual([agentAf(21), agentAf(25), agentAf(24)], ['postur', 'rukkari', 'jarvis']);
+    assert.strictEqual(fake.T.bord_merkingar.find((x) => x.mal_id === 22).stada, 'merkt');
+
+    // Agentinn: gagnasöfnun og Claude stubbuð. 24 (Veit ekki) fær útskýringu, 21 verk, 25 hálfsvar.
+    CL.safna = async () => ({ gogn: { gogn: [{ id: 'F1' }, { id: 'S1' }] }, kort: { F1: { lysing: 'Fyrirtæki X', opna: null }, S1: { lysing: 'Sala R-000001', opna: { tegund: 'sala', id: 1 } } } });
+    const kerfi = [];
+    CL.kalla = async (gogn, o) => {
+      kerfi.push(o.kerfiAuki);
+      const f = gogn.fyrirmaeli || '';
+      if (/„Veit ekki“/.test(o.kerfiAuki + f)) return { svar: { svar: 'Málið snýst um kolsýrutæki sem kúnninn spurði um. Ekkert tilboð hefur farið.', stadreyndir: [{ texti: 'Kúnninn spurði', heimildir: ['F1'] }, { texti: 'Engin sala', heimildir: ['S1'] }], tillaga: { tegund: 'ekkert', titill: '', lysing: '', post_id: '', texti: '' }, omaelt: [] }, model: 'stub' };
+      if (/„Rannsaka betur“/.test(o.kerfiAuki + f)) return { svar: { svar: 'Fann lítið.', stadreyndir: [{ texti: 'Ógrunduð staðhæfing', heimildir: ['Z9'] }], tillaga: { tegund: 'ekkert', titill: '', lysing: '', post_id: '', texti: '' }, omaelt: ['Engin krafa fannst í gögnunum'] }, model: 'stub' };
+      return { svar: { svar: 'Svara kúnnanum og staðfesta tímann.', stadreyndir: [{ texti: 'Pósturinn bíður', heimildir: ['F1'] }], tillaga: { tegund: 'verk', titill: 'Svara kúnna um tíma', lysing: 'Lesa póstinn og útbúa svar með tímasetningu skoðunar.', post_id: '', texti: '' }, omaelt: [] }, model: 'stub' };
+    };
+    // Rangt nonce gerir ekkert.
+    assert.deepStrictEqual(await M.vinnaMerki(kveikt[0].id, 'f'.repeat(32)), { ok: false, astaeda: 'engin gild beiðni' });
+    for (const k of kveikt) await M.vinnaMerki(k.id, k.nonce);
+    // Sama nonce aftur gerir ekkert (röðin er ekki lengur í keyrslu).
+    assert.strictEqual((await M.vinnaMerki(kveikt[0].id, kveikt[0].nonce)).ok, false);
+
+    const rod = (mal) => fake.T.bord_merkingar.find((x) => x.mal_id === mal && x.stada !== 'tekid_af');
+    assert.ok(kerfi.every((x) => /LÍNA Á ÞJÓNUSTUBORÐINU/.test(x) && /ÞÚ VINNUR SEM AGENTINN/.test(x)));
+    assert.ok(kerfi.some((x) => /postur/.test(x) && /Senda póst sjálfur/.test(x)), 'ALDREI-línur agentsins fara með: ' + JSON.stringify(kerfi));
+    // 21 → verk → tilbúið verk sem setur á Verkefnalistann (assigned_agent = agentinn)
+    const v21 = rod(21);
+    assert.strictEqual(v21.stada, 'klarad');
+    const a21 = fake.T.afgreidsla.find((a) => a.id === v21.afgreidsla_id);
+    assert.deepStrictEqual([a21.stada, a21.tegund, a21.takki, a21.gogn.verkefnalisti.assigned_agent], ['tilbuid', 'verk', 'Setja á Verkefnalistann', 'postur']);
+    // 24 (Veit ekki) → útskýring → „Lesið — loka“, fremst í Afgreiðslu (lægri forgangur)
+    const v24 = rod(24), a24 = fake.T.afgreidsla.find((a) => a.id === v24.afgreidsla_id);
+    assert.deepStrictEqual([v24.stada, a24.takki, a24.gogn.verkefnalisti], ['klarad', 'Lesið — loka', undefined]);
+    assert.ok(a24.forgangur < a21.forgangur);
+    // 25 (Rannsaka) → hálfsvar → vantar_svar með ástæðu, ekkert tilbúið verk
+    const v25 = rod(25);
+    assert.deepStrictEqual([v25.stada, v25.afgreidsla_id], ['vantar_svar', null]);
+    assert.match(v25.astaeda, /fann ekkert/); assert.match(v25.astaeda, /Engin krafa fannst/);
+    // Óðinn skráir úrskurð á hvert skil
+    assert.deepStrictEqual(fake.T.odin_urskurdir.map((u) => u.urskurdur).sort(), ['til_agnars', 'undirbua_afgreidslu', 'undirbua_afgreidslu']);
+    // Teljarinn: umferðin búin — 2 klárað (21, 24) + Nei (23), 1 vantar svar (25), 1 enn merkt (22)
+    const t = M.teljari(fake.T.bord_merkingar);
+    assert.deepStrictEqual([t.merkt, t.i_keyrslu, t.klarad, t.vantar_svar, t.buin], [1, 0, 3, 1, true]);
+    // EKKERT fer út: aðeins innri töflur skrifaðar
+    const toflur = [...new Set(fake.skrif.map((s) => s.t))].sort();
+    assert.deepStrictEqual(toflur, ['afgreidsla', 'bord_merkingar', 'charlize_knowledge', 'odin_urskurdir']);
+    // Vafrinn sér aldrei nonce
+    assert.ok(fake.T.bord_merkingar.map(M.synilegt).every((x) => !JSON.stringify(x).includes(kveikt[0].nonce)));
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+test('merki á línu sem agent vinnur í er hafnað (409); taka af = tekid_af, engu eytt', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 31, title: 'Mál', status: 'nytt' }],
+    bord_merkingar: [{ id: 1, bord: 'thjonustubord', lina: 'mal:31', mal_id: 31, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu' }] });
+  const aftur = F.tengja(P, fake);
+  try {
+    await assert.rejects(() => M.vista({ mal_id: 31, merki: 'nei' }, 'Agnar'), (e) => e.kodi === 409);
+    fake.T.bord_merkingar[0].stada = 'merkt';
+    assert.strictEqual(await M.vista({ mal_id: 31, merki: null }, 'Agnar'), null);
+    assert.deepStrictEqual(fake.T.bord_merkingar.map((x) => x.stada), ['tekid_af']);
+    assert.ok(!fake.skrif.some((s) => s.m === 'DELETE'));
+  } finally { aftur(); }
+});
+
+test('afgreidsla.cjs: merkja/merkja_keyra fara um sama fall og sama rofa og „Biddu Claude“', async () => {
+  const H = require('../netlify/functions/_radgjafinn-hlid.cjs'), HUB = require('../netlify/functions/hub-adgangar.cjs');
+  const fyrr = { hlid: H.hlid, hub: HUB.handler };
+  H.hlid = async () => null;
+  HUB.handler = async () => ({ statusCode: 200, body: JSON.stringify({ user: { nn: 'Agnar' } }) });
+  const fake = F.bua({ thjonustubeidni: [{ id: 41, title: 'Krafa ógreitt', status: 'nytt' }], app_kv: [{ key: 'adalmal_claude', value: { virkt: false } }] });
+  const aftur = F.tengja(P, fake);
+  const A = require('../netlify/functions/afgreidsla.cjs');
+  const kall = async (b) => { const r = await A.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(b) }); return { s: r.statusCode, j: JSON.parse(r.body) }; };
+  try {
+    let r = await kall({ adgerd: 'merkja', mal_id: 41, merki: 'veit_ekki' });
+    assert.strictEqual(r.s, 200);
+    assert.strictEqual(r.j.merking.merki, 'veit_ekki');
+    assert.strictEqual(r.j.teljari.merkt, 1);
+    r = await kall({ adgerd: 'merkja', mal_id: 41, merki: 'snooze' });
+    assert.strictEqual(r.s, 400); assert.match(r.j.error, /dagsetningu/);
+    // Rofinn af → ekkert keyrt, merkingin stendur
+    r = await kall({ adgerd: 'merkja_keyra' });
+    assert.strictEqual(r.s, 409);
+    assert.strictEqual(fake.T.bord_merkingar.find((x) => x.stada !== 'tekid_af').stada, 'merkt');
+    const g = await A.handler({ httpMethod: 'GET', headers: {}, queryStringParameters: { merkingar: '1' } });
+    const gj = JSON.parse(g.body);
+    assert.deepStrictEqual([g.statusCode, gj.merkingar.length, gj.claude_virkt], [200, 1, false]);
+  } finally { aftur(); H.hlid = fyrr.hlid; HUB.handler = fyrr.hub; }
+});
+
+test('Já á póstmáli → drög að svari í Afgreiðslu (Agnar sendir) — sami póstsvars-smiður og „Biddu Claude“, ekkert sent', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 51, title: 'Póstur: ósvarað', type: 'email', status: 'nytt' }],
+    email_digest: [{ id: 7, account: 'eldklar@eldklar.is', folder: 'INBOX', sender_name: 'Kúnni', sender_email: 'kunni@example.is', subject: 'Spurning', received_at: '2026-11-17T10:00:00Z', thread_id: 't7', message_id: '<m7@x>', body_preview: 'Halló' }] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { safna: CL.safna, kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    await M.vista({ mal_id: 51, merki: 'ja' }, 'Agnar');
+    const k = [];
+    await M.keyra('Agnar', { kveikja: async (id, nonce) => k.push([id, nonce]) });
+    CL.safna = async () => ({ gogn: { gogn: [{ id: 'E1' }] }, kort: { E1: { lysing: 'Póstur 17.11 · Spurning', opna: { tegund: 'post', id: 7 }, hrar: { digest_id: 7 } } } });
+    CL.kalla = async () => ({ svar: { svar: 'Svara kúnnanum.', stadreyndir: [{ texti: 'Kúnninn spurði', heimildir: ['E1'] }], tillaga: { tegund: 'tolvupostur', titill: '', lysing: '', post_id: 'E1', texti: 'Góðan dag,\n\nTakk fyrir póstinn — við komum á fimmtudag.\n\nKv.\nAgnar Sigurðsson\nBrunahólf Slökkvitæki ehf.' }, omaelt: [] }, model: 'stub' });
+    await M.vinnaMerki(k[0][0], k[0][1]);
+    const rod = fake.T.bord_merkingar.find((x) => x.mal_id === 51);
+    const a = fake.T.afgreidsla.find((x) => x.id === rod.afgreidsla_id);
+    assert.deepStrictEqual([rod.stada, a.tegund, a.lykill, a.created_by, a.gogn.to[0]], ['klarad', 'tolvupostur', 'svar:<m7@x>', 'merkja', 'kunni@example.is']);
+    assert.ok(!fake.skrif.some((s) => /gmail|payday|sms|senda/i.test(s.t)));
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});

@@ -1884,6 +1884,9 @@
     if (d) toast('Endurmetið: ' + (d.metin || 0) + ' opin mál · ' + (d.buid || 0) + ' sannanlega afgreidd' + (d.breytt ? ' · ' + d.breytt + ' breyttust' : ' · engin breyting'));
   }
 
+  // 519 Merkja og keyra (17.11.2026): lítið merki fremst í línunni + gluggi undir henni. Villa í 519 má aldrei fella borðið.
+  const mkMerki = r => { try { return window.MerkjaKeyra ? MerkjaKeyra.merki(r) : ''; } catch (_) { return ''; } };
+  const mkGluggi = r => { try { return window.MerkjaKeyra ? MerkjaKeyra.gluggi(r) : ''; } catch (_) { return ''; } };
   function feedRow(r, valid) {
     const a = ageDays(r), sam = linur(samantekt(r), 4).slice(0, 600), n = nu(), w = fyrLink(r);
     const tags = samtMerki(r) +
@@ -1902,14 +1905,14 @@
         (S.busy[r.id] ? 'Augnablik…' : isFree(r) ? 'Taka ›' : 'Færa á mig ›') + '</button>';
     return '<article class="frow" aria-current="' + !!valid + '">' +
       '<div class="age ' + ageCls(a) + '" title="' + a + ' dagar síðan málið varð til">' + a + 'D</div>' +
-      '<div class="fbody"><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
+      '<div class="fbody"><div class="kick">' + mkMerki(r) + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
         '<button type="button" class="fpick" data-t5="skoda" data-id="' + r.id + '" title="Skoða málið">' +
           '<span class="rt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
           (sam ? '<span class="ai">' + esc(sam) + '</span>' : '') + '</button>' +
         naestaHtml(r) +
         // Master líka: það á ekki að þurfa að opna mál til að skrifa eina setningu.
         ntReitur(r) +
-        (tags ? '<div class="tags">' + tags + '</div>' : '') + malAdg(r, 'lina') + '</div>' + hlid +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') + malAdg(r, 'lina') + mkGluggi(r) + '</div>' + hlid +
     '</article>';
   }
   // Svartakkar á máli sem bíður samþykkis (368v).
@@ -1945,7 +1948,7 @@
     const a = ageDays(r), w = fyrLink(r), sam = linur(samantekt(r), 4).slice(0, 600);
     return '<div class="mrow" aria-current="' + valid + '">' +
       '<span class="pin" aria-hidden="true">◆</span>' +
-      '<div><div class="kick">' + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
+      '<div><div class="kick">' + mkMerki(r) + esc(tegMals(r)) + (w ? ' · ' + w : '') + '</div>' +
         '<button type="button" class="mpick" data-t5="select" data-id="' + r.id + '">' +
           '<span class="mt">' + esc(r.title || '(ónefnt mál)') + '</span>' +
         '</button>' +
@@ -1969,7 +1972,7 @@
             '<button type="button" class="btn iv sm" data-t5="giveback" data-id="' + r.id + '"' + dis(r.id) + '>↩ Skila</button>') +
           '<button type="button" class="btn iv sm" data-t5="mal-ari" data-id="' + r.id + '"' + dis(r.id) + ' title="' + (r.important ? 'Taka áríðandi-merkið af' : 'Merkja áríðandi') + '">' + (r.important ? '★' : '☆') + '</button>' +
           '<button type="button" class="btn iv sm" data-t5="mal-eyda" data-id="' + r.id + '"' + dis(r.id) + ' title="Eyða málinu — hægt að afturkalla">🗑</button>' +
-        '</div></div></div>';
+        '</div>' + mkGluggi(r) + '</div></div>';
   }
   // Breyta máli — sömu reitir og „⋯ Meira" á gamla borðinu. Drög lifa í S.bmDrog (valið mál er teiknað
   // tvisvar: hliðarspjald og í línunni í síma) og teikning bíður á meðan skrifað er.
@@ -5396,7 +5399,7 @@
     const ae = root.activeElement;
     // Opinn fellilisti lokast og texti í ritun á skipulagsborði eða í skýringu truflast ef teiknað er undir — bíða.
     // Skráarval opið: teikning myndi skipta út <input type="file"> og skrárnar tapast.
-    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.chktitill || ae.dataset.ov || ae.dataset.ritun))))) {
+    if (S.skjalVal || (ae && (ae.tagName === 'SELECT' || (ae.dataset && (ae.dataset.sk || ae.dataset.bm || ae.dataset.nt || ae.dataset.dn || ae.dataset.skyr || ae.dataset.samtsky || ae.dataset.chk || ae.dataset.chkny || ae.dataset.chktitill || ae.dataset.ov || ae.dataset.mk || ae.dataset.ritun))))) {
       // 27.09.2026 (Agnar: „checklist doesn't work in phone, keyboard disappears"): reitir checklistans vantaði hér —
       // sjálfvirk endurteikning skipti reitnum út í miðju innslætti, lyklaborðið lokaðist og hálfskrifaður stafur varð
       // að atriði. Undantekning: bætt við atriði (S.chkTvinga) teiknar strax og fókusinn fer aftur í nýja reitinn.
@@ -5562,6 +5565,8 @@
         sannanirHtml() +
         // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
         (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
+        // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
+        (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
         // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
         // 506 Einkaritarinn — morgunyfirlit: forgangsröðun, vikan í tölum, samningar, topp vikunnar, áminningar.
@@ -6342,6 +6347,7 @@
     if (a && a.indexOf('ek-') === 0 && window.Einkaritari) { if (Einkaritari.smellur(el, e)) return; }   // 506 Einkaritarinn
     if (a && a.indexOf('rg-') === 0 && window.Radgjafinn) { if (Radgjafinn.smellur(el, e)) return; }   // 506 Ráðgjafinn
     if (a && a.indexOf('er-') === 0 && window.ErindiSimi) { if (ErindiSimi.smellurT5(el)) return; }   // 449c Erindi
+    if (a && a.indexOf('mk-') === 0 && window.MerkjaKeyra) { if (MerkjaKeyra.smellur(el, e)) return; }   // 519 Merkja og keyra
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
     const nyttId = () => 'lk' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
