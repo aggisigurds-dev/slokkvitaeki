@@ -237,7 +237,7 @@
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       // 17.11.2026 (Agnar: „símaview sér öpp síðu … í þjónustuver öpp og sé fremst þar"): Tilbúin verk (515) er
       // heimasíðan — skelin setur heimasíðuna alltaf fremst (skelSidur). Borðið kemur strax á eftir.
-      manifest: '/manifest-verkefni.json', home: 'tilbuin-verk',
+      manifest: '/manifest-verkefni.json', home: 'tilbuin-verk', homeVara: 'bord',
       blurb: 'Þjónustuborð — tilbúin verk, Master borð, mitt borð og eftirfylgni',
       defaults: ['tilbuin-verk', 'bord', 'adalmal', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
@@ -755,7 +755,7 @@
     var a = APP_BY_KEY[key]; if (!a) return null;
     var ov = loadOverrides()[key] || {};
     var e = {
-      key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
+      key: a.key, manifest: a.manifest, home: a.home, homeVara: a.homeVara || null, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
       emoji: ov.emoji || a.emoji, name: ov.name || a.name, blurb: ov.blurb || a.blurb,
       // 2026-09-08: táknið úr safninu fylgir sömu leið og hitt útlitið, svo það
       // birtist samstundis á spjaldi, haus, splash OG í manifestinu.
@@ -1650,8 +1650,11 @@
     // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
     // Verkefnalista-appið (verkbord) fékk krofu-yfirlit fremst þegar það var valið
     // með — og opnaðist ranglega á Fjármála-skjánum. Hífum home fremst í nav + boot.
-    if (a.home && pages.indexOf(a.home) > 0) {
-      pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
+    // homeVara (17.11.2026): sé heimasíðan tekin út í síðuvalinu hífist varaheimasíðan í staðinn — Þjónustuborðs-appið
+    // opnaði annars á fyrstu vistuðu síðunni (Kröfu yfirliti) þegar Tilbúin verk (515) væru tekin út.
+    var hm = a.home && pages.indexOf(a.home) >= 0 ? a.home : (a.homeVara && pages.indexOf(a.homeVara) >= 0 ? a.homeVara : null);
+    if (hm && pages.indexOf(hm) > 0) {
+      pages = [hm].concat(pages.filter(function (k) { return k !== hm; }));
     }
     return pages;
   }

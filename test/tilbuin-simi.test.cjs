@@ -150,3 +150,13 @@ test('261: síðan er í PAGES, heimasíða Þjónustuborðs-appsins og fremst �
   const h = fs.readFileSync(path.join(ROT, 'index.html'), 'utf8');
   assert.ok(h.indexOf('511-bord-afgreidsla.js') < h.indexOf('515-tilbuin-simi.js'), '515 verður að hlaðast á eftir 511');
 });
+
+test('261 skelSidur: heimasíðan fremst; sé hún tekin út fer varaheimasíðan (borðið) fremst, ekki fyrsta vistaða síðan', () => {
+  const s = fs.readFileSync(path.join(ROT, 'js/patches/261-app-profiles.js'), 'utf8');
+  const i = s.indexOf('function skelSidur(a) {'), j = s.indexOf('\n  }\n', i);
+  const skel = (listi) => new Function('pagesFor', s.slice(i, j + 4) + '; return skelSidur;')(() => listi.slice());
+  const app = { key: 'verkefni', home: 'tilbuin-verk', homeVara: 'bord', defaults: [] };
+  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala', 'bord', 'tilbuin-verk'])(app).slice(0, 2), ['tilbuin-verk', 'krofu-yfirlit']);
+  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala', 'bord'])(app)[0], 'bord');
+  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala'])(app)[0], 'krofu-yfirlit');
+});
