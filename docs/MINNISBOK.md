@@ -5,9 +5,9 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-17 14:30 · 2522 virkar staðreyndir — 1432 prentaðar hér
+Sótt 2026-11-17 16:01 · 2526 virkar staðreyndir — 1435 prentaðar hér
 
-> ⚠ **Bókin er ekki allt minnið:** 155 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
+> ⚠ **Bókin er ekki allt minnið:** 156 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
 > `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:
 > `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`
@@ -90,7 +90,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | Efni | Fjöldi |
 |---|---:|
 | [kerfi](#kerfi) | 138 |
-| [solur](#solur) | 56 |
+| [solur](#solur) | 57 |
 | [postur](#postur) | 56 |
 | [teikningar](#teikningar) | 53 |
 | [skjol](#skjol) | 52 |
@@ -204,6 +204,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### solur
 
+- **Sótt/Verkspjald 17.11.2026 (b1fb92db): (1) GREIDD eða send sala stöðvar EKKI þjónustuskiptin í Verkspjaldinu (430) — verklidur.service breytist, reikningurinn og verkbeidnir.verd standa, tilkynningin segir frá. Áður hafnaði rofinn öllu og þar sem flestar Sótt-sölur eru greiddar með korti virkaði hann nánast hvergi. (2) Afsláttur á STÖKU LÍNU í Sótt (121) undir 'Verð á seldum tækjum': %-reitur sem skrifar í line.discount_pct — calcTotals og finalizePickup lásu hann þegar, finalize bakar hann í verðið með '· −N% afsl.'. Afslátturinn neðst reiknast áfram ofan á heildina. GILDRA: þemað málar reiti/texta með !important yfir inline-stíl — gulur litur á virkum afslætti þurfti klasa í stílblaði (sama og _pkc-thj).**
+  <br><sub>2026-11-17 · slokkvitaeki · claude-code · claude-code</sub>
 - **Verkspjald (430) 17.11.2026 (378b32f): hver tækjaröð ber hak + rofa Yfirferð | Hleðsla | Ónýtt (án þess að opna tækið); smellur merkir tækið Tilbúið með þeirri þjónustu (verð fylgir um 518 ThjSkipti), smellur á valið tekur merkinguna af á verkstæði. Efst í Tækjum: velja öll, hópaðgerðir fyrir hökuð tæki, Eyða og + Tæki. EYÐING tækis á ÓSENDRI sölu tekur línu þess af reikningnum og geymir hana á tækinu (verklidur.parts) — endurheimt tæki ber verðið aftur í afhendinguna (121 rukkar parts); áður stóð línan eftir. Farin sala breytist ekki. Gildra í prófi: Uppgerd.blandad les sölu af þjóni, svo skilyrt vistun (lestur til baka) fellur nema solur sé höfð í minni ofan á uppgerðina.**
   <br><sub>2026-11-17 · slokkvitaeki · claude-code · claude-code</sub>
 - **Sótt/afhending (121) 17.11.2026: hvert tæki ber rofa Yfirferð | Hleðsla | Ónýtt (eins og í Ársskoðun). Skipting færir sölulínuna (eða viðbótina, hafi tækinu verið bætt við á verkstæði) og vistast við 'Klára sölu og afhenda': verklidur.service + lína 'Þjónustu breytt við afhendingu' í athugasemd sölunnar. Ónýtt = hak af = ekki rukkað, og dregur SÍNA línu frá (áður magnmestu línuna). Sala komin í Payday: aðeins tækið og athugasemdin breytast. Pörun tæki ↔ þjónustuvara ↔ sölulína er í js/patches/518-thj-skipti.js (ThjSkipti) eftir tegund + stærð + þjónustu, EKKI heiti — vörulistinn skrifar 'Léttvatnstækis 6L. hleðsla' / 'Léttvatnstæki 6L. yfirferð' / 'CO₂ 5 kg. yfirferd'. Verkspjaldið (430) notar sömu pörun.**
@@ -302,9 +304,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 - **POS kanónísk kúnnastofnun LIVE 10.09.2026 (13b3fb8): sala með nýja kennitölu stofnar customers_base + fyrirtaeki og tengir customer_id/customer_base_id. Allar bilanir fara í logProblem sem pos_kunni_base_failed / _fyrirtaeki_failed / _tenging_failed / _otengd / _villa — detail ber sölu-id, aldrei kennitölu. Greinarnar claude/pos-canonical-customer-id + -followup sameinaðar saman (B háð A). audit-stadur-nr afmarkar nú sneið eftir blokkinni, ekki föstum 3700 stöfum.**
   <br><sub>2026-09-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **GREIDANDINN ER SA SEM REIKNINGURINN ER STILADUR A — hausinn a PDF-inu, ekki hvar verkid var unnid. 'Vegna <stadur>'-linan nedst nefnir STADINN; hausinn nefnir GREIDANDANN. Thetta sker ur um hvada kennitolu stadur a ad sitja undir. Maelt 02.09.2026 a Urdarhvarfi: R-106967 (139.562 kr, Urdarhvarf 2) er stiladur a Heimaleiga ehf 510117-0690, en R-107300 (236.889 kr) er stiladur a Aegina ehf 681013-0830 'vegna Urdarhvarf 4'. Kerfid var THEGAR rett — Urdarhvarf 2 undir Heimaleigu, 4 undir Aegina — og tillaga min um ad faera Blue Mountain yfir a Aegina var RONG og er felld. Badir reikningar fara a Grensasveg 14 (skrifstofa Heimaleigu) sem er astaedan fyrir thvi ad thau lita ut fyrir ad vera eitt felag. Sama adferd stadfesti Velras: R-106444 stiladur a VR-5 ehf 'Vegna Klettagardar' -> fid 1742 er tvitak af fid 470 (badir Klettagordum 12); og uttektarskyrsla april 2026 stadfestir Slettuhraun 19-21 sem raunverulegan stad med 4 lettvatnstaekjum thott engin uttaeki-rod se til.**
-  <br><sub>2026-09-02 · slokkvitaeki · claude-code · claude-code</sub>
-- _…og 16 til viðbótar í töflunni._
+- _…og 17 til viðbótar í töflunni._
 
 ### postur
 
@@ -1882,6 +1882,62 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>fyrirtaeki.deleted_at markar eydd. Viewið v_fyrirtaeki_mail_stada tengir listann við póstinn á fyrirtaeki.netfang.
   <br><sub>2026-08-07 · slokkvitaeki · sql · chat</sub>
 
+### vinnulag
+
+- **Vercel-forsýningar Kjarna (verkefni slokkvitaeki, slokkvitaeki-git-<grein>-kjarni.vercel.app) eru læstar á bak við Vercel SSO (302 á vercel.com/sso-api) — get_access_to_vercel_url gefur 23 klst. _vercel_share-tengil sem opnast líka í síma.**
+  <br>Mælt 17.11.2026 á grein ragnarok-hringur. Push á hvaða grein sem er í kjarni byggir forsýningu sjálfkrafa (target null) á ~70 s.
+  <br><sub>2026-11-17 · baedi · lota 17.11.2026 Ragnarök-hringir · kjarni-vefur</sub>
+- **Netlify byggir brunaholf AÐEINS af main og PR-forsýningum — push á aðra grein gefur enga greinaslóð (<grein>--brunaholf.netlify.app = 404) og enga stöðu á GitHub, jafnvel með [deploy] í efstu línu.**
+  <br>Mælt 17.11.2026 á jarvis-ragnarok-hringur (0df85d4, b9cefc6): 404 eftir 4+ mín, GitHub status total_count 0; jarvis-simi-utlit líka 404. Forsýning þarf PR (deploy-preview-N--brunaholf.netlify.app) eða staðbundna keyrslu (python -m http.server í vinnutré + ?thema=ragnarok; /api virkar ekki þar). igno
+  <br><sub>2026-11-17 · brunaholf · lota 17.11.2026 Ragnarök-hringir · jarvis</sub>
+- **LÆRDÓMUR 16.11.2026: auto-sync (wip: auto-sync …) commit-ar OG ýtir ÖLLU sem liggur í vinnutrénu innan fárra mínútna — líka tímabundnum skrám. Sé viðkvæm gögn (innkaupaverð, afslættir, Drive-auðkenni reikninga) skrifuð í repo-möppuna, jafnvel í tmp-skrá í mínútu, endar hún á opna GitHub-repoinu. Viðkvæm tímabundin gögn eiga að liggja utan repo (scratchpad) og prófunarsíður sem þurfa þau fá þau úr stubbi sem er utan vinnutrésins. Sama dag lak tmp-innkaup.json (68 innkaupalínur) í commit 39b09062; ákvörðun um hreinsun sögunnar er Agnars.**
+  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **VINNUREGLA AGNARS 15.11.2026: aðeins STÆRSTU málin fara fyrir hann, og hvert þeirra er rannsakað til botns gegn FRUMHEIMILD (Payday, banki, pósturinn sjálfur með nýjustu skeytum, PDF-skýrslan, ákvarðanir í Charlize) áður en það er sýnt eða lagt til. Ósannreynt eða óvíst fer ekki á skjáinn. Smámál (leiðréttingar undir 10.000 kr) aldrei. Á hverju máli stendur hvað var athugað og hvenær.**
+  <br>Agnar: „Treysti bara kerfinu ekki neitt. Endalausar villur … tefur svo fyrir að þurfa að factchecka allt sjálfur. Svona 30 % sem sýna í raun rétt“ og „Síðan einbeitum við okkur bara á stærstu málum. Og að allt sé rannsakað vel.“ Mæling á réttu hlutfalli fimm skjáa keyrð sama kvöld (Natalie).
+  <br><sub>2026-11-15 · baedi · Agnar í spjalli 15.11.2026 · tony-stark</sub>
+- **Hver lota fær worktree slokkvitaeki-wt-<heiti> (t.d. ht210, eignagatt, teikn, grunnur) á eigin grein sem er ýtt með git push origin HEAD:master, og Agnar nefnir loturnar HT-<dd.mm> <efni> með skjali docs/HT-<dd.mm>-<EFNI>.md.** _(likely)_
+  <br>[terminology; agents: netvordur, jarvis] Merking skammstöfunarinnar HT er ekki skráð í heimildum; ekki giska á hana.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **Agnar skrifar blöndu af ensku og íslensku, sérstaklega í hönnunar- og artifact-lotum; svaraðu á því máli sem hann notaði í síðustu skilaboðum.** _(likely)_
+  <br>[preference; agents: general] Í Golden Jarvis-lotunni skrifaði hann mest ensku en inn á milli íslensku („Geturdu sett …“); fyrirtækjakortalotan var öll á íslensku.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 og lota 7576079c 2026-10-25/26 · claude-code</sub>
+- **Þegar langt verk krefst handvirks skrefs hjá Agnari (tæma ruslið, endurræsa o.s.frv.) svarar hann yfirleitt aðeins „done“ — hafðu hvert skref eitt og skýrt og haltu áfram sjálfkrafa þegar hann svarar.** _(likely)_
+  <br>[preference; agents: general] Í diskahreinsunarlotunni 17.–22.10.2026 skrifaði hann „Done“ yfir 15 sinnum á milli lotna sem agent keyrði í bakgrunni.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 3b0147ea 2026-10-17..22 · claude-code</sub>
+- **Grunnatriði í kerfunum (verð, tímar, texti, dagsetning, eyða, raða, fela síðu, vistun) verða að vera breytanleg af Agnari sjálfum í viðmótinu — hann vill ekki þurfa að bíða eftir Claude.**
+  <br>[preference; agents: framendi, bokari, rukkari, sala-reikningar, bord-flettur, sara-coworker] 13.06: ‚I hate being depending on you 24/7… most of my time is fixing basic things‘; samþykkti almennan ‚Breyta‘-ritil í báðum kerfum. 01.08 hafði hann ‚barist í marga mánuði‘ við að fá skýrslu vistaða fyri
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lotur 532a8e1d 2026-06-13, 8e43dca9 2026-08-01 · claude-code</sub>
+- **Agnar gefur oft frjálsar hendur ('mátt velja hvað þér finnst skipta mestu máli', 'mátt byggja', 'mátt halda áfram og endurbæta'); þá velur Claude sjálft forgang en heldur mockup, samþykki, bygging, deploy-ferlinu og segir hvað var valið.**
+  <br>[preference; agents: general] Dæmi 05.10 Ársskoðun snertistærðir, 14.10 vefverslunar-yfirferð, 15.10 'Matt deploy merge'.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-14 · claude-code</sub>
+- **Agnar sefur oft á meðan Claude vinnur og gefur þá fulla heimild til að halda áfram yfir nóttina þar til útkoman er góð; hann vill finna kláraða vinnu og stutta skýrslu að morgni.**
+  <br>[preference; agents: general] 14.10 01:07: 'Yes just keep going with the testing and development through the night. Im going to sleep and i will check on you in 7 hours.' og 01:12: 'Ég fer fljótlega að sofa svo þú færð fullt leyfi að halda áfram í nótt'.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lotur c2a00410, c5897be7 2026-10-14 · claude-code</sub>
+- **Þegar Agnar segir 'merge', 'keyra, deploy merge' eða 'geturðu mergað svo ég sjái' á hann við að breytingin fari á master með [deploy]-commit svo hún sjáist í lifandi appinu, og 'er búið' spyr hvort deployið sé komið.**
+  <br>[terminology; agents: netvordur, general] Dæmi: 15.10 'geturðu mergað svo ég sjái', 25.10 'keyra. deploy merge', 25.10 'Er búið'.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
+- **Agnar vill að Claude sjái um uppsetningu á GitHub, MCP og samstillingu milli véla sjálfur og án tæknimáls, því hann vinnur á mörgum tölvum og símum.**
+  <br>[preference; agents: general, tengingar] 28.08: I dont know any of this damn crap, I just want this to work; just do everything that you can; gott að hafa eina tölvu ofurhlaðna ef eitthvað klikkar.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota e1be41b4 2026-08-28 · claude-code</sub>
+- **Claude á að prófa sjálfur, líka á símanum, áður en Agnar fær nýja útgáfu, og sýna eða spyrja áður en stór viðmótsbreyting fer í production.**
+  <br>[rule; agents: general, joker, framendi] 21.09: Idiot, Teeestt first og stop making me the tester. Hann prófaði gamla útgáfu á síma og fékk ekki það sem lofað var.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
+- **Þegar Agnar hefur samþykkt mockup á að smíða NÁKVÆMLEGA það mockup, ekki eigin túlkun.**
+  <br>[rule; agents: joker, thema, framendi] 21.09: Þetta er gamla stjórnborðið, ekki 3d builder replicate. Sama gilti 03.09 um Boss-hönnunina sem var flutt inn úr Claude Design.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
+- **Agnar skoðar mest í símanum og getur ekki opnað localhost eða staðbundnar skrár þar, svo senda skal skjámyndir eða deployaða slóð.**
+  <br>[rule; agents: general, joker, bord-flettur] 15.09: Ég get eiginlega ekki opnað neitt af þessu í símanum, geturðu sent mér screenshots. 26.10: Virkar ekki í síma og finn ekki á síðu.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
+- **Agnar villist á mörgum útgáfum (local, preview, production, gömul á síma), svo segja skal alltaf hver er lifandi útgáfan og hvar hann finnur hana.** _(likely)_
+  <br>[gotcha; agents: general, joker, framendi] 21.09: Why do I still have this version, Hvar er hin útgáfan, I get old version in mobile. 13.09: sé nokkrar útgáfur, hver er best.
+  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
+- **Verkaskipting: Claude Code = Slökkvitæki-appið, Cowork = Brunahólfs-rekstur, Sara = úttektarskráning**
+  <br>Cowork sér um Sheets, Apps Script, Tímavera og Ajour.
+  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+- **Verkefni fara á verkefnalista-töfluna (assigned_agent), lærdómur fer í charlize_knowledge**
+  <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
+  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
+
 ### payday
 
 - **payday-push man höfnun rafræns reiknings per kt (payday_rafraent_hafnad) og sleppir XML fyrir þær kt — frá 17.11.2026.**
@@ -2078,56 +2134,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-07 · slokkvitaeki · claude-code · claude-code</sub>
 - **Tækitegund CO2 samræmd 06.09.2026 (Agnar: „já samræma co2"): 5 tæki (TMP-raðnúmer, Center Hótel Þingholt/Arnarhvoll, Endurskoðun og reikningshald, Stálnaust) voru „CO₂" en 527 „CO2" → öll CO2 í uttaeki.type. Uppsprettur í kóða lagaðar: modal.js option-gildi, 176-unit-type-column TYPES, 00-legacy merkimiði (var CO² með yfirskrift). v9 BASE_TYPES heldur báðum til samsvörunar. vorur.nafn er enn blandað (CO₂/Co2/co2) — ekki snert.**
   <br><sub>2026-09-06 · slokkvitaeki · claude-code · claude-code</sub>
-
-### vinnulag
-
-- **LÆRDÓMUR 16.11.2026: auto-sync (wip: auto-sync …) commit-ar OG ýtir ÖLLU sem liggur í vinnutrénu innan fárra mínútna — líka tímabundnum skrám. Sé viðkvæm gögn (innkaupaverð, afslættir, Drive-auðkenni reikninga) skrifuð í repo-möppuna, jafnvel í tmp-skrá í mínútu, endar hún á opna GitHub-repoinu. Viðkvæm tímabundin gögn eiga að liggja utan repo (scratchpad) og prófunarsíður sem þurfa þau fá þau úr stubbi sem er utan vinnutrésins. Sama dag lak tmp-innkaup.json (68 innkaupalínur) í commit 39b09062; ákvörðun um hreinsun sögunnar er Agnars.**
-  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **VINNUREGLA AGNARS 15.11.2026: aðeins STÆRSTU málin fara fyrir hann, og hvert þeirra er rannsakað til botns gegn FRUMHEIMILD (Payday, banki, pósturinn sjálfur með nýjustu skeytum, PDF-skýrslan, ákvarðanir í Charlize) áður en það er sýnt eða lagt til. Ósannreynt eða óvíst fer ekki á skjáinn. Smámál (leiðréttingar undir 10.000 kr) aldrei. Á hverju máli stendur hvað var athugað og hvenær.**
-  <br>Agnar: „Treysti bara kerfinu ekki neitt. Endalausar villur … tefur svo fyrir að þurfa að factchecka allt sjálfur. Svona 30 % sem sýna í raun rétt“ og „Síðan einbeitum við okkur bara á stærstu málum. Og að allt sé rannsakað vel.“ Mæling á réttu hlutfalli fimm skjáa keyrð sama kvöld (Natalie).
-  <br><sub>2026-11-15 · baedi · Agnar í spjalli 15.11.2026 · tony-stark</sub>
-- **Hver lota fær worktree slokkvitaeki-wt-<heiti> (t.d. ht210, eignagatt, teikn, grunnur) á eigin grein sem er ýtt með git push origin HEAD:master, og Agnar nefnir loturnar HT-<dd.mm> <efni> með skjali docs/HT-<dd.mm>-<EFNI>.md.** _(likely)_
-  <br>[terminology; agents: netvordur, jarvis] Merking skammstöfunarinnar HT er ekki skráð í heimildum; ekki giska á hana.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **Agnar skrifar blöndu af ensku og íslensku, sérstaklega í hönnunar- og artifact-lotum; svaraðu á því máli sem hann notaði í síðustu skilaboðum.** _(likely)_
-  <br>[preference; agents: general] Í Golden Jarvis-lotunni skrifaði hann mest ensku en inn á milli íslensku („Geturdu sett …“); fyrirtækjakortalotan var öll á íslensku.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota a8586ee5 2026-10-17/18 og lota 7576079c 2026-10-25/26 · claude-code</sub>
-- **Þegar langt verk krefst handvirks skrefs hjá Agnari (tæma ruslið, endurræsa o.s.frv.) svarar hann yfirleitt aðeins „done“ — hafðu hvert skref eitt og skýrt og haltu áfram sjálfkrafa þegar hann svarar.** _(likely)_
-  <br>[preference; agents: general] Í diskahreinsunarlotunni 17.–22.10.2026 skrifaði hann „Done“ yfir 15 sinnum á milli lotna sem agent keyrði í bakgrunni.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 3b0147ea 2026-10-17..22 · claude-code</sub>
-- **Grunnatriði í kerfunum (verð, tímar, texti, dagsetning, eyða, raða, fela síðu, vistun) verða að vera breytanleg af Agnari sjálfum í viðmótinu — hann vill ekki þurfa að bíða eftir Claude.**
-  <br>[preference; agents: framendi, bokari, rukkari, sala-reikningar, bord-flettur, sara-coworker] 13.06: ‚I hate being depending on you 24/7… most of my time is fixing basic things‘; samþykkti almennan ‚Breyta‘-ritil í báðum kerfum. 01.08 hafði hann ‚barist í marga mánuði‘ við að fá skýrslu vistaða fyri
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lotur 532a8e1d 2026-06-13, 8e43dca9 2026-08-01 · claude-code</sub>
-- **Agnar gefur oft frjálsar hendur ('mátt velja hvað þér finnst skipta mestu máli', 'mátt byggja', 'mátt halda áfram og endurbæta'); þá velur Claude sjálft forgang en heldur mockup, samþykki, bygging, deploy-ferlinu og segir hvað var valið.**
-  <br>[preference; agents: general] Dæmi 05.10 Ársskoðun snertistærðir, 14.10 vefverslunar-yfirferð, 15.10 'Matt deploy merge'.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-14 · claude-code</sub>
-- **Agnar sefur oft á meðan Claude vinnur og gefur þá fulla heimild til að halda áfram yfir nóttina þar til útkoman er góð; hann vill finna kláraða vinnu og stutta skýrslu að morgni.**
-  <br>[preference; agents: general] 14.10 01:07: 'Yes just keep going with the testing and development through the night. Im going to sleep and i will check on you in 7 hours.' og 01:12: 'Ég fer fljótlega að sofa svo þú færð fullt leyfi að halda áfram í nótt'.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lotur c2a00410, c5897be7 2026-10-14 · claude-code</sub>
-- **Þegar Agnar segir 'merge', 'keyra, deploy merge' eða 'geturðu mergað svo ég sjái' á hann við að breytingin fari á master með [deploy]-commit svo hún sjáist í lifandi appinu, og 'er búið' spyr hvort deployið sé komið.**
-  <br>[terminology; agents: netvordur, general] Dæmi: 15.10 'geturðu mergað svo ég sjái', 25.10 'keyra. deploy merge', 25.10 'Er búið'.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-25 · claude-code</sub>
-- **Agnar vill að Claude sjái um uppsetningu á GitHub, MCP og samstillingu milli véla sjálfur og án tæknimáls, því hann vinnur á mörgum tölvum og símum.**
-  <br>[preference; agents: general, tengingar] 28.08: I dont know any of this damn crap, I just want this to work; just do everything that you can; gott að hafa eina tölvu ofurhlaðna ef eitthvað klikkar.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota e1be41b4 2026-08-28 · claude-code</sub>
-- **Claude á að prófa sjálfur, líka á símanum, áður en Agnar fær nýja útgáfu, og sýna eða spyrja áður en stór viðmótsbreyting fer í production.**
-  <br>[rule; agents: general, joker, framendi] 21.09: Idiot, Teeestt first og stop making me the tester. Hann prófaði gamla útgáfu á síma og fékk ekki það sem lofað var.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
-- **Þegar Agnar hefur samþykkt mockup á að smíða NÁKVÆMLEGA það mockup, ekki eigin túlkun.**
-  <br>[rule; agents: joker, thema, framendi] 21.09: Þetta er gamla stjórnborðið, ekki 3d builder replicate. Sama gilti 03.09 um Boss-hönnunina sem var flutt inn úr Claude Design.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
-- **Agnar skoðar mest í símanum og getur ekki opnað localhost eða staðbundnar skrár þar, svo senda skal skjámyndir eða deployaða slóð.**
-  <br>[rule; agents: general, joker, bord-flettur] 15.09: Ég get eiginlega ekki opnað neitt af þessu í símanum, geturðu sent mér screenshots. 26.10: Virkar ekki í síma og finn ekki á síðu.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
-- **Agnar villist á mörgum útgáfum (local, preview, production, gömul á síma), svo segja skal alltaf hver er lifandi útgáfan og hvar hann finnur hana.** _(likely)_
-  <br>[gotcha; agents: general, joker, framendi] 21.09: Why do I still have this version, Hvar er hin útgáfan, I get old version in mobile. 13.09: sé nokkrar útgáfur, hver er best.
-  <br><sub>2026-11-04 · folk · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-21 · claude-code</sub>
-- **Verkaskipting: Claude Code = Slökkvitæki-appið, Cowork = Brunahólfs-rekstur, Sara = úttektarskráning**
-  <br>Cowork sér um Sheets, Apps Script, Tímavera og Ajour.
-  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
-- **Verkefni fara á verkefnalista-töfluna (assigned_agent), lærdómur fer í charlize_knowledge**
-  <br>Verkefni klárast og verða úrelt; þekking gerir það ekki.
-  <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
 ### reglur
 
@@ -3829,6 +3835,15 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Aðalskoðun er fjórir staðir á 540994-2269. Staðfestu á HEIMILISFANGI þegar kt á fleiri en einn stað.
   <br><sub>2026-08-07 · baedi · greining · chat</sub>
 
+### jarvis
+
+- **<ragnarok-ring> (js/ragnarok-ring.js): agnastriginn í skugga-DOM-inu hafði inset:6% OG width/height:100% og hliðraðist 6 % niður/hægri — undir hnetti Jarvis sáust tveir kjarnar. Lagað í 88 % (b9cefc6, grein jarvis-ragnarok-hringur); afritið í kjarni (apps/slokkvitaeki/app/kjarni/ragnarok/ragnarok-ring.js) er ólagað en ónotað eftir ApocalypseRing.**
+  <br>Hringurinn í Jarvis: stærð 3,4·R, miðja = miðja hnattarins, active meðan #hnappur.on (r1 30 s, comet 4 s). Mælt 1440 px: 499 px, (712,499); 375 px: 322 px.
+  <br><sub>2026-11-17 · brunaholf · lota 17.11.2026 Ragnarök-hringir · jarvis</sub>
+- **svid-status.js:422 kallar á P.log(...) en P er hvergi skilgreint í skránni — hvert ?fresh=1 kall skrifar cache og kastar svo ReferenceError (utan try), og agent_logs hefur 0 'jarvis:'-raðir.** _(likely)_
+  <br>Kóðalestur 04.11.2026 á staðbundnu eintaki: eina tilvik \bP\b í netlify/functions/svid-status.js er lína 422; log() býr í _portal.js:140 en er ekki require-að. agent_logs (61 röð 06.09–03.11) skráir aðeins drogstod, gatt-admin, hub-adgangar, postvordur. EKKI prófað lifandi (Brunahólf-föll framkvæma 
+  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
+
 ### fyrirtaeki
 
 - **Áður en bókun skoðunar er lögð til: lesa review_note, plan_note og banner_note á fyrirtækinu (ekki aðeins athugasemdir) og leita annarra raða í sama húsi eftir götustofni + húsnúmeri.**
@@ -4140,12 +4155,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 - **Þjónustuverkstæði (patch 190, 10.11.2026): tæki félags á verkstæði (uttaeki.status loaned) → félagið í vinnslu (476), skref 1 Farið + 2 Verkst. kvikna sjálf (afleidd, skýrt afhak vinnur) og kortið sýnir N á verkstæði; talan er sótt aftur eftir 20 sek. Vinnublað-útklippur: tafla vinnublad_utklippur, samanbrotinn hluti á spjaldi.**
   <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-
-### jarvis
-
-- **svid-status.js:422 kallar á P.log(...) en P er hvergi skilgreint í skránni — hvert ?fresh=1 kall skrifar cache og kastar svo ReferenceError (utan try), og agent_logs hefur 0 'jarvis:'-raðir.** _(likely)_
-  <br>Kóðalestur 04.11.2026 á staðbundnu eintaki: eina tilvik \bP\b í netlify/functions/svid-status.js er lína 422; log() býr í _portal.js:140 en er ekki require-að. agent_logs (61 röð 06.09–03.11) skráir aðeins drogstod, gatt-admin, hub-adgangar, postvordur. EKKI prófað lifandi (Brunahólf-föll framkvæma 
-  <br><sub>2026-11-04 · brunaholf · artifact: greining-04.11:12-agentar-minni.inbox.json · greining-12</sub>
 
 ### arkitektur
 
