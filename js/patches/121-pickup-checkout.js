@@ -95,7 +95,9 @@
           qty: +p.qty || 1,
           unit_price_ex_vat: +p.verd_an_vsk || 0,
           vsk_pct: +p.vsk_prosenta || 24,
-          _fromWorkshop: true
+          _fromWorkshop: true,
+          _unitId: unit.id,
+          _thj: erThjTaekis(p, unit)   // 17.11.2026: þjónusta tækisins sjálfs (78 saveNewUnitOnSale), ekki varahlutur
         });
       });
     });
@@ -148,6 +150,66 @@
     const pr = g0 > 0 ? 100 * a0 / g0 : 0;
     const pct = pr && Math.abs(pr - Math.round(pr)) < 0.06 ? Math.round(pr) : 0;
     return Math.max(0, Math.min(g, pct ? a0 + Math.round((g - g0) * pct / 100) : a0));
+  }
+  /* ── ÞJÓNUSTA TÆKIS VIÐ AFHENDINGU (17.11.2026) ────────────────────────────────────────────────────────────────
+   * Agnar: „þegar fólk er að sækja tækin í sótt, þá verð ég að geta svissað á milli hvort það hafi verið hlaðið eða
+   * yfirfarið eða ónýtt, settu bara svipað og í ársskoðun". Hvert tæki ber því Yfirferð | Hleðsla | Ónýtt.
+   *   • Yfirferð ⇄ Hleðsla færir það sem rukkar fyrir tækið: sölulínuna (sale.linur í minni — calcTotals og
+   *     finalizePickup lesa hana þaðan) eða viðbótina, hafi tækinu verið bætt við á verkstæðinu (78 → verklidur.parts).
+   *     Pörunin tæki ↔ vara ↔ lína er í 518 (ThjSkipti). Ekkert vistast fyrr en „Klára sölu og afhenda".
+   *   • Ónýtt = hakið af: tækið fer ekki út og er ekki rukkað (sama staða og áður, nú sýnileg).
+   *   • Sala sem er komin í Payday: þjónustan skráist á tækið, reikningurinn breytist ekki (SEND SALA neðar).
+   * Tækið sem fer ekki út dregur nú SÍNA línu frá. Áður var dregið af magnmestu línunni, sama hvert tækið var:
+   * ónýt yfirferð (4.200) gat tekið hleðslu (8.410) af reikningnum, eða stykki af seldri vöru. Finnist línan ekki
+   * (eða 518 er ekki hlaðið) gildir gamla reglan óbreytt. */
+  const TS = () => window.ThjSkipti || null;
+  const nafnTaekis = s => (s && s.nafn != null) ? s.nafn : ((s && s.unit && s.unit.service) || '');
+  const lysTaekis = s => { const t = TS(); return (t && s && s.unit) ? t.lysaTaeki(s.unit, s.nafn != null ? s.nafn : undefined) : null; };
+  // Varahlutur á tæki sem er í raun ÞJÓNUSTA tækisins sjálfs: sama heiti, eða sama tegund + stærð + þjónusta.
+  const erThjTaekis = (p, unit) => {
+    const t = TS(); if (!t || !p || !unit) return false;
+    const k = t.lykill(p.nafn); if (!k) return false;
+    const d = t.lysa(p.nafn);
+    return k === t.lykill(unit.service) || (!!d.teg && t.sama(d, t.lysaTaeki(unit)));
+  };
+  // Verð tækisins býr í viðbótinni, ekki á sölulínu.
+  const iVidbot = (s, extras) => (extras || []).some(ex => ex && ex._thj && s.unit && ex._unitId === s.unit.id);
+  // Viðbótin sem er rukkuð: þjónusta tækis sem fer ekki út dettur af.
+  const vidbotAfhent = (extras, unitState) => (extras || []).filter(ex =>
+    !(ex && ex._thj && (unitState || []).some(s => s.unit && s.unit.id === ex._unitId && !s.checked)));
+  // Sölulínurnar að frádregnum tækjum sem fara ekki út. Notað í calcTotals OG finalizePickup (forskoðun = vistun).
+  function linurAnOafhentra(linur, unitState, extras) {
+    const w = (linur || []).map(l => ({ ...l, qty: +l.qty || 0 }));
+    const us = unitState || [], t = TS();
+    let toRemove = 0;
+    us.forEach(s => {
+      if (s.checked || iVidbot(s, extras)) return;
+      const i = t ? t.finnaLinu(w, nafnTaekis(s), lysTaekis(s)) : -1;
+      if (i >= 0) w[i].qty -= 1; else toRemove++;
+    });
+    if (toRemove > 0) {
+      // Gamla reglan (2026-05-15): af magnmestu línunni fyrst; gangi það ekki upp, hlutfallslega.
+      const order = w.map((l, i) => ({ i, qty: l.qty })).sort((a, b) => b.qty - a.qty);
+      for (const e of order) { if (toRemove <= 0) break; const take = Math.min(toRemove, w[e.i].qty); w[e.i].qty -= take; toRemove -= take; }
+      if (toRemove > 0 && us.length > 0) { const ratio = us.filter(s => s.checked).length / us.length; w.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); }); }
+    }
+    return w;
+  }
+  // Útlit rofans (Brunastál: silfurbakki, valið = málmsvart, Ónýtt valið = rautt á ljósu — sama og í Ársskoðun 224).
+  // Þemað málar <button> með !important, því gervi-auðkenni + !important.
+  function thjStill() {
+    if (document.getElementById('_pkc-thj-css')) return;
+    const st = document.createElement('style');
+    st.id = '_pkc-thj-css';
+    const K = '#_pkc-dialog:not(#_pk1):not(#_pk2):not(#_pk3) ';
+    st.textContent =
+      K + '._pkc-seg{display:inline-flex;flex:none;gap:2px;padding:3px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:#eef1f5;box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}' +
+      K + '._pkc-thj{height:30px!important;min-height:0!important;min-width:0!important;margin:0!important;padding:0 11px!important;border-radius:7px!important;border:1px solid transparent!important;' +
+        'background:transparent!important;box-shadow:none!important;color:#1f2530!important;font:600 12.5px/1 "IBM Plex Sans",system-ui,sans-serif!important;text-shadow:none!important;cursor:pointer;white-space:nowrap}' +
+      K + '._pkc-thj.on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.3)!important}' +
+      K + '._pkc-thj._pkc-onytt.on{background:#fff0ed!important;border-color:#fca5a5!important;color:#c0341d!important;box-shadow:none!important}' +
+      K + '._pkc-thj:disabled{opacity:.38!important;pointer-events:none}';
+    document.head.appendChild(st);
   }
   let pickupNote = '';         // free-text athugasemd appended to audit trail
   // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
@@ -203,7 +265,9 @@
       idx: i,
       jobId: ctx.jobId,
       unit: ctx.unit,
-      checked: ctx.unit.status !== 'broken'
+      checked: ctx.unit.status !== 'broken',
+      nafn: null,      // 17.11.2026: þjónustuheiti valið í glugganum (null = óbreytt, unit.service)
+      upph: null       // það sem rukkaði fyrir tækið fyrir fyrstu skiptingu — skilað nákvæmlega sé skipt til baka
     }));
 
     // Lines from existing sale, if any
@@ -292,6 +356,69 @@
     dlg.querySelector('#_pkc-x').addEventListener('click', close);
     dlg.querySelector('#_pkc-cancel').addEventListener('click', close);
 
+    // ── 17.11.2026: Yfirferð | Hleðsla | Ónýtt á hverju tæki (sjá ÞJÓNUSTA TÆKIS VIÐ AFHENDINGU efst) ──────────────
+    thjStill();
+    // Teiknar meginmálið aftur án þess að skrun eða fókus hoppi (388), og samtölurnar með.
+    function endurteikna() {
+      const body = dlg.querySelector('#_pkc-body');
+      const aftur = (window.Stodugt && Stodugt.vernda && body) ? Stodugt.vernda(body) : null;
+      renderBody();
+      if (aftur) aftur();
+      renderTotals();
+    }
+    let _thjVinnur = false;
+    async function veljaThj(s, t) {
+      if (_thjVinnur) return;
+      if (t === 'onytt') { s.checked = false; endurteikna(); return; }
+      const T = TS();
+      if (!T) { s.checked = true; endurteikna(); return; }
+      _thjVinnur = true;
+      try {
+        await T.saekja();
+        const d = lysTaekis(s);
+        if (d.teg !== t) {
+          const ny = T.vara(d, t);
+          if (!ny) { alert('Engin ' + t + ' er til í vörulistanum fyrir þetta tæki (' + (nafnTaekis(s) || s.unit.type || 'tæki') + '). Ekkert breyttist.'); return; }
+          const gamla = nafnTaekis(s), nyNafn = String(ny.nafn).trim();
+          const vsk = ny.vsk_prosenta == null ? 24 : +ny.vsk_prosenta;
+          const tilBaka = !!(s.upph && s.upph.teg === t);   // aftur á upphaflegu þjónustuna → nákvæmlega fyrri lína/verð
+          const ex = pickupExtras.find(x => x._thj && x._unitId === s.unit.id);
+          if (ex) {
+            if (!s.upph) s.upph = { teg: d.teg, ex: { name: ex.name, unit_price_ex_vat: ex.unit_price_ex_vat, vsk_pct: ex.vsk_pct, _varaId: ex._varaId != null ? ex._varaId : null } };
+            if (tilBaka && s.upph.ex) Object.assign(ex, s.upph.ex);
+            else Object.assign(ex, { name: nyNafn, unit_price_ex_vat: +ny.verd_an_vsk || 0, vsk_pct: vsk, _varaId: ny.id });
+            s.ath = 'verðið fylgir valinu';
+          } else if (erSendSala(sale) === true) {
+            if (!s.upph) s.upph = { teg: d.teg };
+            s.ath = 'salan er komin í Payday, reikningurinn breytist ekki';
+          } else if (sale && Array.isArray(sale.linur) && sale.linur.length) {
+            const i = T.finnaLinu(sale.linur, gamla, d);
+            if (i < 0) {
+              if (!s.upph) s.upph = { teg: d.teg };
+              s.ath = 'fann ekki línuna á sölunni, verðið er óbreytt — lagaðu það undir „Verð á seldum tækjum“';
+            } else {
+              const L = sale.linur[i];
+              if (!s.upph) s.upph = { teg: d.teg, lina: { desc: L.desc, product_id: L.product_id, unit_price_ex_vat: L.unit_price_ex_vat, vsk_pct: L.vsk_pct } };
+              const j = T.skiptaLinu(sale.linur, i, ny);
+              if (tilBaka && s.upph.lina) Object.assign(sale.linur[j], s.upph.lina);
+              s.ath = 'verðið fylgir valinu';
+            }
+          } else {
+            if (!s.upph) s.upph = { teg: d.teg };
+            s.ath = '';   // engin sala enn: línurnar verða til úr tækjunum við afhendingu (linurUrVerklidum)
+          }
+          // Aftur á upphaflegu þjónustuna: tækið ber þá sitt upphaflega heiti (ekkert skrifast á það).
+          s.nafn = tilBaka ? null : nyNafn;
+        }
+        s.checked = true;
+      } catch (e) {
+        alert('Náði ekki í vörulistann, svo ekki er hægt að skipta um þjónustu núna. Reyndu aftur. (' + ((e && e.message) || e) + ')');
+      } finally {
+        _thjVinnur = false;
+        endurteikna();
+      }
+    }
+
     // Render body and totals
     function renderBody() {
       const body = dlg.querySelector('#_pkc-body');
@@ -301,9 +428,13 @@
       // Walk-ins (kt 999999-9999) often want to add their real kt at pickup
       // for their receipt. Allow editing here so user can update without
       // having to cancel + recreate the sale.
-      const curNafn = (sale && sale.customer_nafn) || job.customer || '';
-      const curKt = (sale && (sale.customer_kt || (sale.linur && sale.linur[0] && sale.linur[0].customer_kt))) || '';
-      const curSimi = (job.phone || '');
+      // 17.11.2026: það sem þegar var slegið inn heldur sér við endurteikningu (rofi á tæki, „+ Bæta við") —
+      // áður fór nafn/kt/sími aftur í gildi sölunnar og innslátturinn hvarf.
+      const fyrri = id => { const e = body && body.querySelector('#' + id); return e ? e.value : null; };
+      const fN = fyrri('_pkc-cust-nafn'), fK = fyrri('_pkc-cust-kt'), fS = fyrri('_pkc-cust-simi');
+      const curNafn = fN != null ? fN : ((sale && sale.customer_nafn) || job.customer || '');
+      const curKt = fK != null ? fK : ((sale && (sale.customer_kt || (sale.linur && sale.linur[0] && sale.linur[0].customer_kt))) || '');
+      const curSimi = fS != null ? fS : (job.phone || '');
       html += '<div style="margin-bottom:14px;padding:11px 13px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px">' +
         '<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Upplýsingar á reikning</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
@@ -329,22 +460,38 @@
       html += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Tæki frá viðgerð</div>';
       if (unitState.length) {
         html += '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">';
+        // 17.11.2026: hak · Yfirferð | Hleðsla | Ónýtt á hverju tæki (eins og í Ársskoðun). Röðin er ekki lengur <label>
+        // utan um allt — smellur á rofann má ekki snúa hakinu. Ónýtt ≡ hakið af (sama staða og vistast: 'broken').
+        const T = TS(), listi = T && T.listi();
         unitState.forEach(s => {
           const u = s.unit;
-          const broken = u.status === 'broken';
-          html += '<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9;cursor:pointer;background:' + (broken ? '#fef2f2' : '#fff') + '">' +
-            '<input type="checkbox" data-idx="' + s.idx + '" ' + (s.checked ? 'checked' : '') + ' class="_pkc-unit-chk" style="width:18px;height:18px;cursor:pointer">' +
+          const broken = !s.checked;
+          const d = lysTaekis(s);
+          const breytt = s.nafn != null && T && T.lysaTaeki(u).teg !== (d && d.teg);
+          const seg = ['yfirferð', 'hleðsla'].map(t => {
+            const a = !broken && !!d && d.teg === t;
+            // Óvirkur aðeins þegar listinn er kominn og engin slík vara er til fyrir tækið (t.d. CO₂ 100 gr.).
+            const til = !listi || !d || d.teg === t || !!T.vara(d, t);
+            return '<button type="button" class="_pkc-thj' + (a ? ' on' : '') + '" data-idx="' + s.idx + '" data-t="' + t + '" aria-pressed="' + a + '"' +
+              (til ? '' : ' disabled title="Engin ' + t + ' er til í vörulistanum fyrir þetta tæki"') + '>' + (t === 'hleðsla' ? 'Hleðsla' : 'Yfirferð') + '</button>';
+          }).join('') +
+            '<button type="button" class="_pkc-thj _pkc-onytt' + (broken ? ' on' : '') + '" data-idx="' + s.idx + '" data-t="onytt" aria-pressed="' + broken + '">Ónýtt</button>';
+          html += '<div class="_pkc-urow" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:9px 12px;border-bottom:1px solid #f1f5f9;background:' + (broken ? '#fef2f2' : '#fff') + '">' +
+            '<label style="display:flex;align-items:center;gap:10px;flex:1 1 220px;min-width:0;cursor:pointer">' +
+            '<input type="checkbox" data-idx="' + s.idx + '" ' + (s.checked ? 'checked' : '') + ' class="_pkc-unit-chk" style="width:18px;height:18px;cursor:pointer;flex:none">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:' + (broken ? '#7f1d1d' : '#0f172a') + '">' +
-                esc(u.serial || '—') + ' · ' + esc(u.service || u.type || '—') +
-                (broken ? ' <span style="background:#dc2626;color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px">⚠ ÓNÝTT</span>' : '') +
+                esc(u.serial || '—') + ' · ' + esc(nafnTaekis(s) || u.type || '—') +
+                (broken ? ' <span style="background:#dc2626;color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px">ÓNÝTT</span>' : '') +
               '</div>' +
               (broken
-                ? '<div style="font-size:11px;color:#7f1d1d;margin-top:2px">Verkstæði fann ónýtt — verður EKKI afhent</div>'
-                : '<div style="font-size:11px;color:#64748b;margin-top:2px">Tilbúið til afhendingar</div>'
+                ? '<div style="font-size:11px;color:#7f1d1d;margin-top:2px">' + (u.status === 'broken' ? 'Verkstæði fann ónýtt — ' : '') + 'Fer ekki út og er ekki rukkað</div>'
+                : '<div style="font-size:11px;color:#64748b;margin-top:2px">' + (breytt ? 'Var skráð „' + esc(u.service || '') + '“' + (s.ath ? ' — ' + esc(s.ath) : '') : 'Tilbúið til afhendingar') + '</div>'
               ) +
             '</div>' +
-          '</label>';
+            '</label>' +
+            '<div class="_pkc-seg" role="group" aria-label="Þjónusta á ' + esc(u.serial || 'tæki') + '">' + seg + '</div>' +
+          '</div>';
         });
         html += '</div>';
       } else {
@@ -412,10 +559,12 @@
         pickupExtras.forEach((ex, i) => {
           const lineTotal = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
           // F1 fix: qty is now an inline editable input.
-          const wsTag = ex._fromWorkshop
+          // 17.11.2026: þjónusta tækis sem fer ekki út (Ónýtt / hak af) er ekki rukkuð — línan stendur dauf.
+          const sleppt = !!(ex._thj && unitState.some(s => s.unit && s.unit.id === ex._unitId && !s.checked));
+          const wsTag = (ex._fromWorkshop
             ? ' <span style="font-size:9px;background:#fee2e2;color:#991b1b;padding:1px 7px;border-radius:99px;font-weight:700;vertical-align:middle">🔧 frá verkstæði</span>'
-            : '';
-          html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
+            : '') + (sleppt ? ' <span style="font-size:9px;background:#e2e8f0;color:#475569;padding:1px 7px;border-radius:99px;font-weight:700;vertical-align:middle">ekki rukkað — tækið fer ekki út</span>' : '');
+          html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9' + (sleppt ? ';opacity:.55' : '') + '">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(ex.name) + wsTag + '</div>' +
               // 2026-07-01: unit price is now inline-editable so the operator can
@@ -481,8 +630,12 @@
           const idx = +cb.dataset.idx;
           const s = unitState.find(x => x.idx === idx);
           if (s) s.checked = cb.checked;
-          renderTotals();
+          endurteikna();   // 17.11.2026: röðin, rofinn og viðbótin fylgja hakinu (áður aðeins samtölurnar)
         });
+      });
+      // 17.11.2026: Yfirferð | Hleðsla | Ónýtt
+      body.querySelectorAll('._pkc-thj').forEach(b => {
+        b.addEventListener('click', () => { const s = unitState.find(x => x.idx === +b.dataset.idx); if (s) veljaThj(s, b.dataset.t); });
       });
       // Wire add-extra
       body.querySelector('#_pkc-add-extra').addEventListener('click', () => openExtraDialog());
@@ -642,21 +795,16 @@
       // peel the UNCHECKED units off the largest-qty lines (the old
       // samtals/totalUnits estimate diverged on sales mixing units + products).
       let unitsTotal = 0;
-      const oldLinur = (sale && Array.isArray(sale.linur)) ? sale.linur.map(l => ({ ...l, qty: +l.qty || 0 })) : [];
+      // 17.11.2026: tækið sem fer ekki út dregur SÍNA línu frá (linurAnOafhentra) — sama fall og finalizePickup.
+      const oldLinur = linurAnOafhentra((sale && Array.isArray(sale.linur)) ? sale.linur : [], unitState, pickupExtras);
       if (oldLinur.length) {
-        let toRemove = totalUnits - takenCount;
-        if (toRemove > 0) {
-          const order = oldLinur.map((l, i) => ({ i, qty: l.qty })).sort((a, b) => b.qty - a.qty);
-          for (const e of order) { if (toRemove <= 0) break; const take = Math.min(toRemove, oldLinur[e.i].qty); oldLinur[e.i].qty -= take; toRemove -= take; }
-          if (toRemove > 0 && totalUnits > 0) { const ratio = takenCount / totalUnits; oldLinur.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); }); }
-        }
         // (1 − discount_pct) mirrors finalizePickup's line-discount baking.
         unitsTotal = oldLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100) * (1 + (+l.vsk_pct || 24) / 100), 0);
       } else if (job.verd && (job.units || []).filter(u => u && u.status !== 'eytt').length > 0) {
         unitsTotal = (+job.verd / (job.units || []).filter(u => u && u.status !== 'eytt').length) * takenCount;
       }
       const perUnit = takenCount > 0 ? unitsTotal / takenCount : 0;
-      const extrasTotal = pickupExtras.reduce((s, ex) => {
+      const extrasTotal = vidbotAfhent(pickupExtras, unitState).reduce((s, ex) => {
         return s + (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
       }, 0);
       const subTotal = unitsTotal + extrasTotal;
@@ -697,7 +845,7 @@
       // 17.11.2026 (60d00882): sala komin í Payday — upphæð hennar breytist ekki við afhendingu; aðeins viðbótin er rukkuð
       // hér (á nýja sölu). Án þessa sýndi glugginn heildina og kortið gat verið rukkað fyrir reikning sem er þegar í banka.
       const sendS = erSendSala(sale) === true;
-      const rukkaNu = sendS ? vidbotarSala(pickupExtras.map(ex => ({ ...ex, qty: ex.qty || 1 })), pickupDiscReplace ? (+pickupDiscountPct || 0) : 0, pickupDiscReplace ? (+pickupDiscountKr || 0) : 0).samtals : 0;
+      const rukkaNu = sendS ? vidbotarSala(vidbotAfhent(pickupExtras, unitState).map(ex => ({ ...ex, qty: ex.qty || 1 })), pickupDiscReplace ? (+pickupDiscountPct || 0) : 0, pickupDiscReplace ? (+pickupDiscountKr || 0) : 0).samtals : 0;
       const sendBordi = !sendS ? '' :
         '<div style="margin-bottom:8px;padding:8px 10px;border-radius:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:12.5px;line-height:1.4">' +
           '<b>⚠ ' + esc(sale.num || 'Salan') + ' er þegar komin í Payday.</b> Upphæð hennar breytist ekki hér' +
@@ -744,6 +892,8 @@
 
     renderBody();
     renderTotals();
+    // 17.11.2026: vörulisti þjónustu (518) sóttur einu sinni svo rofinn viti hvaða þjónusta er til fyrir hvert tæki.
+    try { const T = TS(); if (T && !T.listi()) T.saekja().then(() => { if (document.body.contains(dlg)) endurteikna(); }, () => {}); } catch (_) {}
 
     // Wire finalize
     dlg.querySelector('#_pkc-finalize').addEventListener('click', async () => {
@@ -998,28 +1148,11 @@
     // from the line pool, starting with the largest-qty line so single-qty
     // lines drop out cleanly when broken.
     const oldLinur = (sale && Array.isArray(sale.linur)) ? sale.linur : [];
-    const workingLinur = oldLinur.map(l => ({ ...l, qty: +l.qty || 0 }));
-    let toRemove = unchecked;
-    if (toRemove > 0) {
-      // Sort by qty descending — peel from biggest first
-      const order = workingLinur
-        .map((l, i) => ({ i, qty: l.qty }))
-        .sort((a, b) => b.qty - a.qty);
-      for (const entry of order) {
-        if (toRemove <= 0) break;
-        const take = Math.min(toRemove, workingLinur[entry.i].qty);
-        workingLinur[entry.i].qty -= take;
-        toRemove -= take;
-      }
-      // Safety: if we couldn't account for every unchecked (e.g. linur qty
-      // sum < totalUnits), fall back to proportional scaling for whatever
-      // remains. Rare edge case.
-      if (toRemove > 0 && totalUnits > 0) {
-        const ratio = takenCount / totalUnits;
-        workingLinur.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); });
-      }
-    }
-    const newLinur = workingLinur.filter(l => l.qty > 0);
+    // 17.11.2026: tækið sem fer ekki út dregur SÍNA línu frá, og þjónusta þess í viðbótinni (verklidur.parts) dettur af.
+    // Sama fall og calcTotals notar (forskoðun = vistun); gamla reglan (magnmesta línan fyrst) er varaleiðin í fallinu.
+    const allarVidbaetur = extras || [];
+    extras = vidbotAfhent(allarVidbaetur, unitState);
+    const newLinur = linurAnOafhentra(oldLinur, unitState, allarVidbaetur).filter(l => l.qty > 0);
 
     // Verk 2 (2026-08-14): ENGIN sala og engar upprunalínur → línurnar koma
     // ÚR VERKLIÐUNUM — tæki fer aldrei út án sölu. Verðið finnst í vorur
@@ -1027,7 +1160,7 @@
     // „⚠ verð vantar" svo hún sé sýnileg og leiðréttanleg í Sale editor —
     // aldrei ósýnileg afhending.
     if ((!sale || !sale.id) && newLinur.length === 0 && takenCount > 0) {
-      const seeded = await linurUrVerklidum(unitState.filter(s => s.checked));
+      const seeded = await linurUrVerklidum(unitState.filter(s => s.checked).map(s => s.nafn != null ? { ...s, unit: { ...s.unit, service: s.nafn } } : s));
       seeded.forEach(l => newLinur.push(l));
     }
 
@@ -1091,6 +1224,7 @@
 
     const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
     const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
+    const thjBreytt = unitState.filter(s => s.checked && s.nafn != null).map(s => (s.unit.serial || 'tæki') + ': ' + (s.unit.service || '—') + ' → ' + s.nafn);
     const trimmedNote = (userNote || '').trim();
     // 2026-08-10: describe whichever of %/fast kr (or both) actually applied.
     const pickupDiscParts = [];
@@ -1099,6 +1233,7 @@
     const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
       (brokenList.length ? '\nEkki afhent: ' + brokenList.join(', ') : '') +
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
+      (thjBreytt.length ? '\nÞjónustu breytt við afhendingu: ' + thjBreytt.join(', ') : '') +
       (origAfsl ? '\nAfsláttur úr sölu: −' + origAfsl + ' kr' : '') +
       (pickupKr ? '\nAfsláttur við afhendingu: ' + pickupDiscParts.join(' + ') + ' (−' + pickupKr + ' kr)' : '') +
       (replaceOrigDisc && saleAfsl && !pickupKr ? '\nAfsláttur úr sölu felldur niður (var −' + saleAfsl + ' kr)' : '') +
@@ -1232,9 +1367,21 @@
     // reduce either because price-scaling relies on this state).
     for (const s of unitState) {
       const newStatus = s.checked ? 'done' : 'broken';
+      // 17.11.2026: þjónustan sem valin var í afhendingunni fylgir tækinu — og verð hennar í parts, hafi það búið þar.
+      const upd = { status: newStatus };
+      if (s.checked && s.nafn != null) {
+        upd.service = s.nafn;
+        const ex = allarVidbaetur.find(x => x && x._thj && x._unitId === s.unit.id);
+        const pi = (ex && Array.isArray(s.unit.parts)) ? s.unit.parts.findIndex(p => erThjTaekis(p, s.unit)) : -1;
+        if (pi >= 0) {
+          upd.parts = s.unit.parts.slice();
+          upd.parts[pi] = { ...upd.parts[pi], nafn: ex.name, verd_an_vsk: ex.unit_price_ex_vat, vsk_prosenta: ex.vsk_pct, vara_id: ex._varaId != null ? ex._varaId : upd.parts[pi].vara_id };
+        }
+      }
       try {
-        const rv = await SB.from('verklidur').update({ status: newStatus }).eq('id', s.unit.id);
+        const rv = await SB.from('verklidur').update(upd).eq('id', s.unit.id);
         if (rv && rv.error) throw rv.error;
+        if (upd.service) { s.unit.service = upd.service; if (upd.parts) s.unit.parts = upd.parts; }   // tækjasagan (466) les þetta
       } catch (e) {
         _skraVillu('sott-verklidur', 'verkliður ' + (s.unit.serial || s.unit.id) + ' var EKKI merktur ' + newStatus, e);
       }
@@ -1404,7 +1551,8 @@
   // Public API
   window.PickupCheckout = {
     open: openPickupModal,
-    _sendSala: { erSendSala, vidbotarSala, finalizePickup }   // fyrir próf/greiningu (17.11.2026)
+    _sendSala: { erSendSala, vidbotarSala, finalizePickup },   // fyrir próf/greiningu (17.11.2026)
+    _thj: { linurAnOafhentra, vidbotAfhent, erThjTaekis }       // rofinn Yfirferð | Hleðsla | Ónýtt (17.11.2026)
   };
 
   console.log('[pickup-checkout] installed — Sótt ✓ opnar pickup modal');

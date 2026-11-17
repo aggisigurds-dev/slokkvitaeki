@@ -85,22 +85,14 @@
   // ── hleðsla ⇄ yfirferð (Agnar 03.11.2026: „of erfitt að breyta milli hleðslu og yfirferðar") ──
   // Áður: ⋯ › Breyta tegund / þjónustu › 30 þjónustur í lista › Vista — og það breytti AÐEINS tækinu;
   // sölulínan (verðið) stóð, svo yfirferð var rukkuð sem hleðsla. Þjónustu-vörurnar eru sóttar einu sinni.
-  let THJ = null, thjP = null;
-  const BAKAD = /\s*·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl\.?\s*$/i;   // pos.js bakar línuafslátt í heitið
-  const thjLykill = s => String(s || '').replace(BAKAD, '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const thjAf = n => /hleðsla/i.test(n || '') ? 'hleðsla' : /yfirferð/i.test(n || '') ? 'yfirferð' : '';
-  const thjMot = (n, t) => String(n || '').replace(BAKAD, '').replace(/hleðsla|yfirferð/i, t).trim();   // „Duft 6 kg. ABC hleðsla" ⇄ „… yfirferð"
-  const thjVara = n => (THJ || []).find(p => thjLykill(p.nafn) === thjLykill(n)) || null;
+  // 17.11.2026: pörunin tæki ↔ vara ↔ sölulína er í 518 (ThjSkipti) — ein heimild, sú sama og afhendingin (121) notar.
+  // Hér var áður parað eftir HEITI („… hleðsla" ⇄ „… yfirferð"). Það fann hvorki „Léttvatnstæki 6L. yfirferð" á móti
+  // „Léttvatnstækis 6L. hleðsla" (26 af 56 tækjum á verkstæði þann dag) né „CO₂ 5 kg. yfirferd" (án ð): rofann
+  // vantaði eða hann sagði „Fann ekki". Nú parað eftir tegund + stærð + þjónustu.
+  const TH = () => window.ThjSkipti || null;
+  const thjLysa = u => { const T = TH(); return T ? T.lysaTaeki(u) : { fl: '', st: '', teg: '' }; };
+  const thjAf = u => thjLysa(u).teg;   // 'hleðsla' | 'yfirferð' | ''
   const mVsk = p => (+p.verd_an_vsk || 0) * (1 + (p.vsk_prosenta == null ? 24 : +p.vsk_prosenta) / 100);
-  function saekjaThj() {
-    if (THJ) return Promise.resolve(THJ);
-    if (!thjP) thjP = DB.sb.from('vorur').select('id,nafn,flokkur,virkt,verd_an_vsk,vsk_prosenta').then(r => {
-      if (r.error) throw r.error;
-      THJ = (r.data || []).filter(p => p.virkt !== false && /þjón/i.test(p.flokkur || ''));
-      return THJ;
-    }).catch(e => { thjP = null; throw e; });
-    return thjP;
-  }
   let host = null, rot = null, _notaT = null, _framhja = null, _tegundFraVsp = false;   // _framhja: verk sem var beðið um í eldri glugga
 
   // ── stíll (úr Verkspjald.dc.html, Brunastál) ─────────────────────────────
@@ -406,7 +398,7 @@ input,textarea{font-family:inherit}
             (sk === 1 ? '<button type="button" role="menuitem" data-a="tegund" data-j="' + j.id + '" data-u="' + u.id + '">Breyta tegund / þjónustu</button>' : '') +
             (sk === 1 ? '<button type="button" role="menuitem" class="eyda" data-a="eyda" data-j="' + j.id + '" data-u="' + u.id + '">Eyða tæki</button>' : '') +
             '</div>' : '') +
-          (sk === 1 && thjAf(u.service) ? thjHtml(j, u) : '') +
+          (sk === 1 && thjAf(u) ? thjHtml(j, u) : '') +
           (S.rnr === u.id ? '<div class="rnr"><input class="reitur mono" data-k="rnr" data-u="' + u.id + '" value="' + esc(u.serial || '') + '" aria-label="Raðnúmer"><button type="button" class="vbtn ok" data-a="rnr-vista" data-j="' + j.id + '" data-u="' + u.id + '">Vista</button><button type="button" class="vbtn" data-a="rnr">Hætta við</button></div>' : '') +
           (u.service && u.service !== heitiTaekis(u) ? '<div class="tomt">' + esc(u.service) + '</div>' : '') +
           (parts.length ? '<table class="vk-l">' + parts.map((p, i) => {
@@ -423,7 +415,7 @@ input,textarea{font-family:inherit}
       }
       return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
         '<button type="button" class="vk-h" data-a="opna" data-u="' + u.id + '" aria-expanded="' + opid + '">' +
-          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + (thjAf(u.service) ? ' · ' + thjAf(u.service) : '') + '</div>' +
+          '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + (thjAf(u) ? ' · ' + thjAf(u) : '') + '</div>' +
             // Saga tækisins (460) — „nýtt 2024 · skoðað 2025 · hlaðið 2026".
             (window.TaekiSaga ? TaekiSaga.linaHtml(u) : '') + '</span>' +
           '<span class="grow"></span>' + (parts.length && !opid ? '<span class="plata">' + parts.length + ' hl.</span>' : '') +
@@ -435,12 +427,13 @@ input,textarea{font-family:inherit}
   }
 
   function thjHtml(j, u) {
-    const nu = thjAf(u.service);
-    if (!THJ) saekjaThj().then(teikna, () => {});   // verðin birtast þegar listinn lendir
+    const T = TH(), d = thjLysa(u), nu = d.teg, listi = T && T.listi();
+    if (T && !listi) T.saekja().then(teikna, () => {});   // verðin birtast þegar listinn lendir
     return '<div class="thj" role="group" aria-label="Þjónusta">' + ['hleðsla', 'yfirferð'].map(t => {
-      const v = thjVara(thjMot(u.service, t)), a = t === nu;
+      const v = T ? T.vara(d, t) : null, a = t === nu;
+      // Óvirkur þegar listinn er kominn og engin slík vara er til fyrir tækið (t.d. CO₂ 9 kg. á aðeins áfyllingu).
       return '<button type="button" class="vbtn' + (a ? ' nyt' : '') + '" data-a="thj" data-t="' + t + '" data-j="' + j.id + '" data-u="' + u.id + '" aria-pressed="' + a + '"' +
-        (S.thjVinnur ? ' disabled' : '') + '>' + (t === 'hleðsla' ? 'Hleðsla' : 'Yfirferð') + (v ? '<span class="v">' + kr(mVsk(v)) + '</span>' : '') + '</button>';
+        (S.thjVinnur || (listi && !v && !a) ? ' disabled' : '') + '>' + (t === 'hleðsla' ? 'Hleðsla' : 'Yfirferð') + (v ? '<span class="v">' + kr(mVsk(v)) + '</span>' : '') + '</button>';
     }).join('') + '</div>';
   }
 
@@ -603,15 +596,16 @@ input,textarea{font-family:inherit}
   //    isUnsentFinal); farin sala → Leiðrétta sölu. Tækið vistast fyrst og er skilað ef salan vistast ekki.
   async function skiptaThj(jid, uid, t) {
     const { j, u } = finna(jid, uid);
-    if (!u || S.thjVinnur || !thjAf(u.service) || thjAf(u.service) === t) return;
+    const T = TH(), d = u ? thjLysa(u) : null;
+    if (!u || !T || S.thjVinnur || !d.teg || d.teg === t) return;
     S.thjVinnur = u.id; teikna();
     try {
-      await saekjaThj();
-      const gamla = String(u.service || ''), nyttHeiti = thjMot(gamla, t), ny = thjVara(nyttHeiti), gv = thjVara(gamla);
-      if (!ny) { alert('Fann ekki „' + nyttHeiti + '" í vörulistanum — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.'); return; }
+      await T.saekja();
+      const gamla = String(u.service || ''), ny = T.vara(d, t), gv = T.varaNu(gamla, d);
+      if (!ny) { alert('Engin ' + t + ' er til í vörulistanum fyrir þetta tæki (' + heitiTaekis(u) + ') — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.'); return; }
       const nyNafn = String(ny.nafn).trim(), vsk = ny.vsk_prosenta == null ? 24 : +ny.vsk_prosenta, anVsk = +ny.verd_an_vsk || 0;
       const parts = Array.isArray(u.parts) ? u.parts : [];
-      const pi = parts.findIndex(p => thjLykill(p.nafn) === thjLykill(gamla));
+      const pi = parts.findIndex(p => T.lykill(p.nafn) === T.lykill(gamla) || (!!T.lysa(p.nafn).teg && T.sama(T.lysa(p.nafn), d)));
       const sn = salaNumAf(j);
       if (pi >= 0 || !sn) {
         const patch = { service: nyNafn };
@@ -628,13 +622,9 @@ input,textarea{font-family:inherit}
           alert('Salan ' + sn + ' er farin út (greidd, krafa eða reikningur sendur) — ekkert breyttist. Breyttu henni með Leiðrétta sölu.'); return;
         }
         const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
-        let li = gv ? linur.findIndex(l => +l.product_id === +gv.id && thjLykill(l.desc) === thjLykill(gamla)) : -1;
-        if (li < 0) li = linur.findIndex(l => thjLykill(l.desc) === thjLykill(gamla));
+        const li = T.finnaLinu(linur, gamla, d);
         if (li < 0) { alert('Fann ekki línuna „' + gamla + '" á sölunni ' + sn + ' — ekkert breyttist. Breyttu í Afhendingu › Breyta línum.'); return; }
-        const L = linur[li], bm = BAKAD.exec(L.desc || ''), bakad = bm ? Math.max(0, Math.min(100, parseFloat(bm[1].replace(',', '.')) || 0)) : 0;
-        const nyL = Object.assign({}, L, { qty: 1, desc: nyNafn + (bm ? bm[0] : ''), product_id: ny.id, vsk_pct: vsk,
-          unit_price_ex_vat: bakad ? Math.round(anVsk * (1 - bakad / 100) * 100) / 100 : anVsk });
-        if ((+L.qty || 1) > 1) { L.qty = (+L.qty) - 1; linur.splice(li + 1, 0, nyL); } else linur[li] = nyL;
+        T.skiptaLinu(linur, li, ny);   // ein eining færð yfir á nýju vöruna; lína með magn > 1 klofnar, afsláttur heldur sér
         let ex = 0, vs = 0;
         linur.forEach(l => { const e = (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - (+l.discount_pct || 0) / 100); ex += e; vs += e * ((+l.vsk_pct || 24) / 100); });
         const t0 = ex + vs, a0 = Math.max(0, Math.round(+s.afslattur || 0)), g0 = Math.round(+s.samtals || 0) + a0;
