@@ -630,3 +630,36 @@ Never read `index.html`, large `js/patches/*`, `js/pos.js`, `dist/`, or `graphif
 Start with `git fetch origin && git status -sb`. Never run `node deploy.js`. Run `node tools/audit-all.cjs` before every push. Read `docs/ORYGGISNET.md` first; route guarded paths (invoice OUT `10`/`233`/`254`, kennitala `121`/`pos.js`, `payday-push`, readiness `153`/`187`) through `netvordur`.
 
 The 4-machine deploy rule still holds: pull the default branch first, push to deploy. Cursor Cloud is another machine. Same rule.
+
+## Innskráning lotunnar — ALDREI biðja Agnar að skrá sig inn (17.11.2026)
+
+Hver Claude-lota hefur sinn eigin vafra og sínar eigin kökur. Agnar vinnur oft úr síma og kemst þá
+**alls ekki** í vafrann hjá lotunni. Hans orð 17.11: „þetta bara að þurfa að skrá sig inn gegnum
+browserinn hjá hverju sessioni á báðar síðurnar … ef ég er að vinna gegnum símann, þá kemst ég ekkert
+inn á browserinn hjá sessions.“
+
+Lotan skráir sig því inn SJÁLF. Myntaðu undirritaða `hub_user`-köku með Supabase (þjónustuhlutverk):
+
+```sql
+select kaka, notandi, rola, rennur_ut from innri.lotu_koku(1, 12);   -- uid 1 = Agnar (Admin), 12 klst.
+```
+
+**Sama kaka gildir á BÁÐUM vefjum** (slokkvitaeki og brunaholf staðfesta hana bæði gegn
+`hub_adgangar_stilling.session_secret`).
+
+Í vafra lotunnar: opnaðu fyrst slóð á réttu léni (t.d. `/innskraning.html`), settu svo kökuna og
+endurhlaðið:
+
+```js
+document.cookie = 'hub_user=<kaka>; path=/; max-age=43200; samesite=lax';
+location.replace('/');
+```
+
+Úr skel eða `fetch`: hausinn `Cookie: hub_user=<kaka>`.
+
+**ALDREI:** skrifa kökuna eða `session_secret` í skrá, commit, annál, skjáskot eða svar til Agnars —
+kakan ER innskráning sem Admin. Myntaðu nýja þegar þarf í stað þess að geyma hana.
+Skemað `innri` er ekki opið PostgREST, svo fallið næst hvorki með publishable-lykli né RPC.
+
+Mælt 17.11 kl. 16:55: `/api/afgreidsla` (SL) og `/api/odin` (BH) svara 401 án kökunnar og 200 með;
+fölsuð kaka fær 401.
