@@ -5362,7 +5362,7 @@
         '</div></div>' +
         sannanirHtml() +
         // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
-        (window.VipVakt ? VipVakt.html(n) : '') +
+        (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
         // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
         // 506 Einkaritarinn — morgunyfirlit: forgangsröðun, vikan í tölum, samningar, topp vikunnar, áminningar.
