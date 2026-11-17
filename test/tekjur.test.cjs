@@ -142,21 +142,54 @@ test('tekjur-beint: Kröfu yfirlit lokað (lota 13) → pípa ómæld með stö�
   } finally { HUB.hubApiToki = gamalt.t; HUB.HUB_TOKI_HAUS = gamalt.h; }
 });
 
-test('tekjur-beint: óinnskráður fær 401 og ekkert er lesið', async () => {
-  const H = require('../netlify/functions/_starfshlid.cjs');
-  const gamalt = H.starfsmadur;
-  H.starfsmadur = async () => ({ villa: { statusCode: 401, body: '{}' }, nafn: null });
-  let kallad = false; global.fetch = async () => { kallad = true; throw new Error('má ekki lesa'); };
+// Raunverulega hliðið (_starfshlid.stjornandi) keyrir; aðeins svar notendaskrárinnar (hub-adgangar GET) er hermt.
+function notandi(svar) {
+  const HUB = require('../netlify/functions/hub-adgangar.cjs');
+  const gamalt = HUB.handler;
+  HUB.handler = async () => (svar === 'nidri' ? { statusCode: 500, body: '{}' } : { statusCode: 200, body: JSON.stringify(svar) });
+  return () => { HUB.handler = gamalt; };
+}
+const ADMIN = { gate: true, authed: true, user: { nafn: 'Prófari', rola: 'Admin' } };
+
+test('tekjur-beint: aðeins stjórnandi — óinnskráður 401, önnur rola 403, notendaskrá niðri 503; ekkert lesið nema Admin', async () => {
+  for (const [lysing, svar, kodi] of [
+    ['óinnskráður', { gate: true, authed: false, user: null }, 401],
+    ['Starfsmaður', { gate: true, authed: true, user: { nafn: 'X', rola: 'Starfsmaður' } }, 403],
+    ['Afgreiðsla', { gate: true, authed: true, user: { nafn: 'X', rola: 'Afgreiðsla' } }, 403],
+    ['notendaskrá svarar ekki', 'nidri', 503],
+  ]) {
+    const aftur = notandi(svar);
+    let kallad = false; global.fetch = async () => { kallad = true; throw new Error('má ekki lesa'); };
+    try {
+      for (const ev of [{ httpMethod: 'GET', headers: {} }, { httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'forsenda', felag: 'slokkvitaeki', lykill: 'laun', kr: 1 }) }]) {
+        const r = await TB.handler(ev);
+        assert.equal(r.statusCode, kodi, lysing + ' ' + ev.httpMethod);
+      }
+      assert.equal(kallad, false, lysing + ': ekkert lesið né skrifað');
+    } finally { aftur(); }
+  }
+  const aftur = notandi(ADMIN);
   try {
+    stub({});
     const r = await TB.handler({ httpMethod: 'GET', headers: {} });
-    assert.equal(r.statusCode, 401); assert.equal(kallad, false);
-  } finally { H.starfsmadur = gamalt; }
+    assert.equal(r.statusCode, 200, 'Admin fær svar');
+  } finally { aftur(); }
+});
+
+test('tekjur-beint: 500 sendir aldrei hrátexta úr Supabase-svari í vafrann', async () => {
+  const aftur = notandi(ADMIN);
+  const villa = console.error; console.error = () => {};
+  try {
+    global.fetch = async () => ({ ok: false, status: 500, text: async () => 'permission denied for table solur LEYNDARMAL', json: async () => ({}) });
+    const r = await TB.handler({ httpMethod: 'GET', headers: {} });
+    assert.equal(r.statusCode, 500);
+    assert.doesNotMatch(r.body, /LEYNDARMAL|permission|solur|supabase/i);
+    assert.match(JSON.parse(r.body).error, /reyndu aftur/);
+  } finally { aftur(); console.error = villa; }
 });
 
 test('tekjur-beint: forsenda vistuð á félag, ógild tala hafnað, 0 er gilt', async () => {
-  const H = require('../netlify/functions/_starfshlid.cjs');
-  const gamalt = H.starfsmadur;
-  H.starfsmadur = async () => ({ villa: null, nafn: 'Prófari' });
+  const aftur = notandi(ADMIN);
   try {
     const h = { kv: { brunaholf: { laun: 5 } } }; stub(h);
     const bad = await TB.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'forsenda', felag: 'bæði', lykill: 'laun', kr: 1 }) });
@@ -169,7 +202,7 @@ test('tekjur-beint: forsenda vistuð á félag, ógild tala hafnað, 0 er gilt',
     assert.equal(h.vistad.value.slokkvitaeki.laun, 1250000);
     assert.equal(h.vistad.value.slokkvitaeki.skrad.af, 'Prófari');
     assert.deepEqual(h.vistad.value.brunaholf, { laun: 5 }, 'hitt félagið óbreytt');
-  } finally { H.starfsmadur = gamalt; }
+  } finally { aftur(); }
 });
 
 // ── 512 flísarnar: bila mjúklega — 401/500/net/óvænt snið gefa eina villulínu, aldrei hrun á Tekjum/Bókhaldi ─────────
@@ -203,6 +236,9 @@ test('512: 401 → „Skráðu þig inn", 500 → villulína, net niðri → vil
   }
   const { TB } = flisar(svarHttp(200, {}));
   assert.doesNotThrow(() => TB.mount(null), 'ekkert hólf → ekkert gerist');
+  const f403 = flisar(svarHttp(403, { error: 'Aðeins fyrir stjórnanda' }));
+  f403.TB.mount(f403.el); await bida();
+  assert.equal(f403.el.innerHTML, '', '403 (ekki stjórnandi): flísarnar hverfa, engin villulína');
 });
 
 test('512: ómælt Brunahólf (tómur lestur) og Kröfu yfirlit lokað → „ómælt" á flísunum, ekki 0', async () => {
@@ -220,4 +256,33 @@ test('512: ómælt Brunahólf (tómur lestur) og Kröfu yfirlit lokað → „ó
   assert.equal((bh.match(/<span>ómælt<\/span>/g) || []).length, 5, 'mánuður, ár, síðasti mánuður, pípa og hagnaður: ómælt');
   assert.match(bh, /reikningalesturinn skilaði engu/); assert.match(bh, /Kröfu yfirlit Brunahólfs svaraði ekki/);
   assert.doesNotMatch(bh, /<span>0 kr<\/span>/);
+});
+
+test('512: 200 með röngu sniði (vantar hluta) hrynur ekki — villulína; Tekjur og Bókhald vefja mount í try', async () => {
+  const halft = { maelt_at: '2026-11-17T04:00:00Z', slokkvitaeki: { manudur: '2026-11', fyrri_man: '2026-10' }, brunaholf: null };
+  const { TB, el } = flisar(svarHttp(200, halft));
+  assert.doesNotThrow(() => TB.mount(el));
+  await bida();
+  assert.match(el.innerHTML, /Tekjur í beinni: /);
+  // kallendurnir: villa í mount má ekki stöðva teikningu síðunnar
+  const tk = fs.readFileSync(path.join(__dirname, '..', 'js', 'tekjur.js'), 'utf8');
+  const bk = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '11-bokhalds-yfirlit.js'), 'utf8');
+  for (const [nafn, src] of [['tekjur.js', tk], ['11-bokhalds-yfirlit.js', bk]]) {
+    const kall = src.split('\n').filter((l) => /TekjurBeint\.mount\(/.test(l));
+    assert.ok(kall.length >= 1, nafn + ' kallar á mount');
+    for (const l of kall) assert.match(l, /try\s*\{.*TekjurBeint\.mount\(.*\}\s*catch/, nafn + ': mount vafið í try/catch á sömu línu');
+  }
+  // og teikningin heldur áfram á eftir (bindOverviewEvents kallað eftir mount í tekjur.js)
+  assert.ok(tk.indexOf('bindOverviewEvents();', tk.indexOf('TekjurBeint.mount(')) > 0);
+});
+
+test('tekjur.js: fjöldi sölu telur reikninga eins og 489 — hvorki is_credit né credit_of', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'tekjur.js'), 'utf8');
+  const win = {};
+  vm.runInNewContext(src, { window: win, console: { log() {}, warn() {}, error() {} }, document: { readyState: 'complete', getElementById() { return null; }, querySelector() { return null; }, addEventListener() {} }, setTimeout, clearTimeout, setInterval() {} }, { filename: 'tekjur.js' });
+  const r = win.TekjurReglur;
+  const rows = [{ id: 1, status: 'final' }, { id: 2, status: 'final', is_credit: true }, { id: 3, status: 'final', credit_of: 1 }, { id: 4, status: 'final', is_credit: true, credit_of: 1 }];
+  assert.deepEqual(rows.filter(r.erReikningur).map((x) => x.id), [1]);
+  const s489 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '489-vinnusamantekt.js'), 'utf8');
+  assert.match(s489, /if \(!erKredit\(x\) && x\.credit_of == null\) \{ m\.n\+\+/, '489 telur sömu reikninga');
 });

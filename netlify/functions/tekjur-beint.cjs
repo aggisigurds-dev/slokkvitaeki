@@ -1,5 +1,6 @@
 // tekjur-beint.cjs — Tekjur í beinni (lota 4, 17.11.2026, Agnar: „finna út tekjur og hagnað nokkuð svona live").
 //
+//   Aðeins STJÓRNANDI (rola Admin): óinnskráður 401, önnur rola 403 (kóðarýni 17.11.2026).
 //   GET  /api/tekjur-beint                                   → { slokkvitaeki, brunaholf, skilgreining, maelt_at }
 //   POST { action:'forsenda', felag, lykill, kr }            → sama og GET   lykill = laun | annar; kr = tala ≥ 0 eða null
 //
@@ -132,7 +133,8 @@ async function vistaForsendu(b, nafn) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (!P.dbReady()) return P.json(503, { error: 'Supabase env vantar' });
-  const hver = await H.starfsmadur(event);
+  // Aðeins stjórnandi (Admin): tekjur og hagnaður beggja félaga + forsendur Agnars. Óinnskráður 401, önnur rola 403.
+  const hver = await H.stjornandi(event);
   if (hver.villa) return hver.villa;
   try {
     if (event.httpMethod === 'GET') return P.json(200, await lesa());
@@ -142,8 +144,9 @@ exports.handler = async (event) => {
     if (b.action === 'forsenda') return await vistaForsendu(b, hver.nafn);
     return P.json(400, { error: 'Óþekkt aðgerð' });
   } catch (e) {
+    // Hrátexti úr Supabase-svari fer aldrei í vafrann — aðeins í fallaskrána.
     console.error('[tekjur-beint]', e);
-    return P.json(500, { error: String((e && e.message) || e).slice(0, 200) });
+    return P.json(500, { error: 'Tekjur náðust ekki — reyndu aftur eftir smá stund' });
   }
 };
 exports._lesa = lesa;

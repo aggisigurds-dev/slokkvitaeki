@@ -27,6 +27,8 @@
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (x.r.status === 401) throw new Error('Skráðu þig inn til að sjá tekjur í beinni');
+        // 403 = innskráður en ekki stjórnandi: flísarnar eru ekki fyrir hann — ekkert sýnt, engin villulína.
+        if (x.r.status === 403) throw Object.assign(new Error('Aðeins fyrir stjórnanda'), { fela: true });
         if (!x.r.ok) throw new Error(x.j.error || ('villa ' + x.r.status));
         _d = x.j; _at = Date.now(); _villa = null; return _d;
       })
@@ -134,7 +136,7 @@
     if (_d) { try { teikna(el, _d); } catch (_) { _d = null; } }
     if (!_d) el.innerHTML = '<div class="tkb"><div class="tkb-nedst" style="font-size:12px">Sæki tekjur í beinni …</div></div>';
     saekja(!!fersk).then(function (d) { if (el.isConnected !== false) teikna(el, d); })
-      .catch(function (e) { villa(el, _villa || (e && e.message) || String(e)); });
+      .catch(function (e) { if (e && e.fela) { el.innerHTML = ''; return; } villa(el, _villa || (e && e.message) || String(e)); });
   }
 
   window.TekjurBeint = { mount: mount, _teikna: teikna, _kr: kr, _mkr: mkr };

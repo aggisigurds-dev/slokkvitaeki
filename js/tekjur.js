@@ -18,7 +18,9 @@ function _pmTexti(m){
     gildar: function(rows, voidIds){
       var v = {}; (voidIds||[]).forEach(function(i){ v[String(i)] = 1; });
       return (rows||[]).filter(function(s){ return s && s.status === 'final' && !(s.credit_of != null && v[String(s.credit_of)]); });
-    }
+    },
+    // Fjöldi sölu telur REIKNINGA: hvorki kreditnóta (is_credit) né vísun á aðra sölu (credit_of) — sama og 489.
+    erReikningur: function(s){ return !!s && s.is_credit !== true && s.credit_of == null; }
   };
   function gildar(){
     return window.TekjurReglur.gildar(_sales, _sales.filter(function(s){ return s.status === 'void'; }).map(function(s){ return s.id; }));
@@ -31,7 +33,7 @@ function _pmTexti(m){
 
   async function loadSales(force){
     if(_loaded && !force) return;   // cache — don't refetch the whole table on every poll
-    var rows = await DB.fetchAll(function(from, to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status,credit_of').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); }).catch(function(e){
+    var rows = await DB.fetchAll(function(from, to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status,credit_of,is_credit').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); }).catch(function(e){
       if (typeof window.logProblem === 'function') window.logProblem('tekjur', 'solur_load_failed: ' + String((e && e.message) || e).slice(0, 160));
       return null;
     });
@@ -119,7 +121,7 @@ function _pmTexti(m){
         '<div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildartekjur</div><div class="stat-card__value">'+fmtKr(totalRev)+'</div></div></div>' +
         '<div class="stat-card"><span class="stat-card__icon">📄</span><div><div class="stat-card__label">Án VSK</div><div class="stat-card__value">'+fmtKr(totalEx)+'</div></div></div>' +
         '<div class="stat-card stat-card--amber"><span class="stat-card__icon">🧾</span><div><div class="stat-card__label">VSK samtals</div><div class="stat-card__value">'+fmtKr(totalVsk)+'</div></div></div>' +
-        '<div class="stat-card stat-card--green"><span class="stat-card__icon">🛒</span><div><div class="stat-card__label">Fjöldi sölur</div><div class="stat-card__value">'+_g.filter(function(x){return x.credit_of==null;}).length+'</div></div></div>' +
+        '<div class="stat-card stat-card--green"><span class="stat-card__icon">🛒</span><div><div class="stat-card__label">Fjöldi sölur</div><div class="stat-card__value">'+_g.filter(window.TekjurReglur.erReikningur).length+'</div></div></div>' +
       '</div>' +
       // Chart
       '<div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +

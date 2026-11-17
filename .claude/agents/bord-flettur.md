@@ -830,3 +830,5 @@ verk, með þessum mun:
   skilaði engu felldi þá teikninguna. Lagað í cba87ebb: núll-athugunin er fyrsta lína fallsins.
 - Regla: teiknifall í einingu gerir aldrei ráð fyrir að valinn hlutur sé til. Prófaðu tóma ástandið (tóm sía,
   0 raðir, enginn valinn) áður en eining er birt.
+
+- **17.11.2026** — Lota 4 (17.11.2026): markmiðsrönd Ráðgjafans (_radgjafinn tekjur()) les tekjuregluna úr _tekjur.cjs — Brunahólf eftir útgáfudegi (ekki gjalddaga), kreditnóta á bakfærða sölu ekki talin; tómur lestur (t.d. RLS á invoices) er ÓMÆLDUR (null), aldrei 0. Tekjur í beinni (/api/tekjur-beint, 512-flísar á Tekjum/Bókhaldi) er aðeins fyrir stjórnanda (_starfshlid.stjornandi: 401/403). Breyttu tekjureglu á einum stað (_tekjur.cjs), ekki í borðunum. (netlify/functions/_radgjafinn.cjs, netlify/functions/_tekjur.cjs)
