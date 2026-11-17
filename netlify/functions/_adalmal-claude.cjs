@@ -226,7 +226,8 @@ const SKEMA = {
   },
 };
 
-async function kalla(gogn, { lykill = process.env.ANTHROPIC_API_KEY } = {}) {
+// kerfiAuki (17.11.2026, Merkja og keyra 519): agent-skrá + merki línunnar bætt aftan við KERFI — sama kall, sömu reglur.
+async function kalla(gogn, { lykill = process.env.ANTHROPIC_API_KEY, kerfiAuki = '' } = {}) {
   if (!lykill) throw new Error('ANTHROPIC_API_KEY vantar á Netlify');
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -235,7 +236,7 @@ async function kalla(gogn, { lykill = process.env.ANTHROPIC_API_KEY } = {}) {
       model: MODEL, max_tokens: 8000,
       output_config: { effort: 'medium', format: { type: 'json_schema', schema: SKEMA } },
       fallbacks: 'default',
-      system: KERFI,
+      system: KERFI + (kerfiAuki ? '\n\n' + String(kerfiAuki).slice(0, 4000) : ''),
       messages: [{ role: 'user', content: 'Í dag er ' + dagsIs(new Date().toISOString()) + '. Atriðið, fyrirmæli Agnars og gögnin (JSON):\n' + JSON.stringify(gogn) }],
     }),
     signal: AbortSignal.timeout(4 * 60 * 1000),

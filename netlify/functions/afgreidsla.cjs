@@ -46,6 +46,8 @@ const H = require('./_radgjafinn-hlid.cjs');
 const V = require('./_vip-postur.cjs');   // sama VIP-pörun og VIP-vaktin (513) — netfang, lén, kt; aldrei eftir nafni
 const HUB = require('./hub-adgangar.cjs');
 const CL = require('./_adalmal-claude.cjs');
+const M = require('./_merkja.cjs');
+const PSV = require('./_postsvar-rod.cjs');   // póstsvar Claude → röð í afgreidsla (sameiginlegt með 519)      // 519 Merkja og keyra — merki á línum Þjónustuborðsins (sama Biddu Claude-vél)
 const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
 
 const THROSKULDUR_KR = 10000;
@@ -497,6 +499,56 @@ async function kveikjaClaude(lykill, nonce) {
   if (r.status !== 202 && r.status !== 200) throw new Error('bakgrunnsfallið svaraði ' + r.status);
 }
 
+// Póstsvar Claude → „tilbúið verk“ í Afgreiðslu (Agnar sendir þaðan með rauða takkanum, eftir sömu athuganir og allt annað).
+// Sameiginlegt: „Biddu Claude“ (claude_samthykkja á Aðalmálum) og Merkja og keyra (_merkja.cjs, eftir mat Óðins).
+// Kastar kyrrt(…) ef pósturinn sendist ekki héðan eða drögin standast ekki athuganir — ekkert verður til þá (úrelt röð).
+async function postsvarAfgreidsla(t, afh, createdBy) {
+  const nyRod = await PSV.bua(t, afh, createdBy);
+  const ath2 = await athuga(nyRod);
+  if (!ath2.ok) {
+    await breyta(`afgreidsla?id=eq.${nyRod.id}`, { stada: 'urelt', astaeda: ath2.urelt || ('Athugun stóðst ekki: ' + ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')).slice(0, 300) });
+    throw kyrrt('Póstsvarið stenst ekki athuganir: ' + (ath2.urelt || ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')));
+  }
+  return nyRod.id;
+}
+
+// 519 Merkja og keyra: ræsir SAMA bakgrunnsfall og „Biddu Claude“ með { merki_id, nonce }. Staðbundið (ADALMAL_CLAUDE_INNI=1)
+// keyrir vinnan í sama ferli án þess að bíða — eins og kveikjaClaude.
+async function kveikjaMerki(id, nonce) {
+  if (process.env.ADALMAL_CLAUDE_INNI === '1') { M.vinnaMerki(id, nonce).catch(() => {}); return; }
+  const grunnur = String(process.env.URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
+  const r = await fetch(grunnur + '/.netlify/functions/adalmal-claude-background', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ merki_id: id, nonce }), signal: AbortSignal.timeout(8000) });
+  if (r.status !== 202 && r.status !== 200) throw new Error('bakgrunnsfallið svaraði ' + r.status);
+}
+// POST { adgerd:'merkja', mal_id, merki|null, athugasemd?, due_at? }  → merki á línu (null tekur það af)
+// POST { adgerd:'merkja_keyra' }                                      → allt merkt í röð til agenta (Veit ekki/Rannsaka fremst)
+// GET  ?merkingar=1                                                   → { merkingar[], teljari, claude_virkt }
+// notandi() sem bregst skilar 'óþekkt' — merking má þá ALDREI vistast (hún lenti undir merkt_af='óþekkt' og sæist aldrei).
+const OTHEKKT = () => P.json(503, { error: 'Náði ekki að staðfesta hver þú ert — ekkert var skráð. Reyndu aftur eftir augnablik.' });
+async function merkingarSvar(hver, extra) {
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
+  const l = await M.listi(hver);
+  return P.json(200, Object.assign({ ok: true, merkingar: l.map(M.synilegt), teljari: M.teljari(l), claude_virkt: await claudeVirkt() }, extra || {}));
+}
+async function merkja(b, event) {
+  const hver = await notandi(event);
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
+  try {
+    if (b.adgerd === 'merkja') {
+      const m = await M.vista(b, hver);
+      return await merkingarSvar(hver, { merking: m ? M.synilegt(m) : null });
+    }
+    // Keyra notar SAMA rofa og „Biddu Claude“ (app_kv adalmal_claude) — ekkert fer til Claude meðan hann er af.
+    if (!(await claudeVirkt())) return P.json(409, { error: 'Agentarnir eru ekki komnir í gagnið (rofinn „Biddu Claude“ er af) — ekkert var keyrt.' });
+    const r = await M.keyra(hver, { kveikja: kveikjaMerki });
+    return await merkingarSvar(hver, { keyrsla: r });
+  } catch (e) {
+    if (e && e.kodi) return P.json(e.kodi, { error: e.message });
+    return P.json(500, { error: String((e && e.message) || e).slice(0, 300) });
+  }
+}
+
 async function verkefnalistiStofna(title, description) {
   const ny = await P.sbPost('verkefnalisti', { title: String(title).slice(0, 200), description: String(description).slice(0, 4000), status: 'beidni',
     category: 'allt', assigned_agent: 'claude-code', vefur: 'sameiginlegt', priority: 2 }).then(sbJson);
@@ -624,26 +676,10 @@ async function adalmal(b, event) {
         samthykkt = { at: nuIso, af: hver, verkefnalisti_id: vl.id };
         skilabod = 'Komið á Verkefnalistann: „' + t.titill + '".';
       } else {
-        const e = (await lesa(`email_digest?select=id,account,folder,sender_name,sender_email,subject,received_at,thread_id,message_id,body_preview&id=eq.${Number(t.post && t.post.digest_id)}&limit=1`))[0];
-        if (!e || !POSTHOLF.test(String(e.account || '')) || !e.message_id || !e.thread_id) throw kyrrt('Pósturinn sem svarið á við fannst ekki eða sendist ekki héðan');
-        if (/sent/i.test(String(e.folder || '')) || CL.erSjalfvirkt(e.sender_email)) throw kyrrt('Þessum pósti er ekki svarað (frá okkur sjálfum eða sjálfvirkum sendanda)');
-        const efni = /^re:/i.test(String(e.subject || '')) ? String(e.subject) : 'RE: ' + String(e.subject || '');
-        const pg = { account: String(e.account).toLowerCase(), to: [String(e.sender_email || '').toLowerCase()], subject: efni, texti: t.texti, mal_id: null,
-          svar_vid: { digest_id: e.id, thread_id: e.thread_id, message_id: e.message_id, received_at: e.received_at, fra: e.sender_name || e.sender_email, efni: e.subject || '', texti: String(e.body_preview || '').slice(0, 1500) } };
         const afh = [{ texti: 'Claude skrifaði drögin að beiðni þinni á Aðalmálum' + (c0.fyrirmaeli ? ' („' + c0.fyrirmaeli.slice(0, 160) + '“)' : '') + '. Lestu þau og breyttu áður en þú sendir.', heimild: 'Biddu Claude · ' + malRef + ' · ' + dags }]
           .concat((c0.stadreyndir || []).slice(0, 5).map((s) => { const o = s.heimildir.map((id) => c0.heimildir[id]).find((x) => x && x.opna); return Object.assign({ texti: s.texti, heimild: s.heimildir.map((id) => (c0.heimildir[id] || {}).lysing || id).join(' · ') }, o ? { opna: o.opna } : {}); }));
-        const nafn = String(e.sender_name || e.sender_email || '').split(/[<·]/)[0].trim();
-        const ny = await P.sbPost('afgreidsla', { lykill: 'svar:' + e.message_id, tegund: 'tolvupostur', titill: ('Svara ' + nafn + ': ' + (e.subject || '')).slice(0, 200),
-          takki: ('Senda svar til ' + nafn).slice(0, 80), hvad_gerist: 'Svar fer frá ' + pg.account + ' til ' + pg.to[0] + ', í sama þræði („' + efni + '“). Ekkert annað breytist.',
-          af_hverju: afh, gogn: pg, virdi_kr: null, forgangur: 15, created_by: 'claude' });
-        if (ny.status === 409) throw kyrrt('Svar við þessum pósti er þegar í Afgreiðslu (eða var afgreitt) — ákvörðun stendur');
-        const nyRod = (await sbJson(ny))[0];
-        const ath2 = await athuga(nyRod);
-        if (!ath2.ok) {
-          await breyta(`afgreidsla?id=eq.${nyRod.id}`, { stada: 'urelt', astaeda: ath2.urelt || ('Athugun stóðst ekki: ' + ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')).slice(0, 300) });
-          throw kyrrt('Póstsvarið stenst ekki athuganir: ' + (ath2.urelt || ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')));
-        }
-        samthykkt = { at: nuIso, af: hver, afgreidsla_id: nyRod.id };
+        const afgId = await postsvarAfgreidsla(t, afh, 'claude');
+        samthykkt = { at: nuIso, af: hver, afgreidsla_id: afgId };
         skilabod = 'Svarið er komið í „Tilbúið til afgreiðslu" — lestu það og sendu með rauða takkanum.';
       }
       n.claude = Object.assign({}, c0, { samthykkt });
@@ -705,6 +741,11 @@ exports.handler = async (event) => {
   const g = await H.hlid(event); if (g) return g;   // aðeins innskráður stjórnandi
 
   if (event.httpMethod === 'GET') {
+    // 519: merkingarnar einar (teljarinn kannar þær á nokkurra sekúndna fresti meðan umferð er í keyrslu) — án tilbúnu verkanna.
+    const qs0 = event.queryStringParameters || {};
+    if (qs0.merkingar != null && qs0.adalmal == null) {
+      try { return await merkingarSvar(await notandi(event)); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
+    }
     try {
       const [tilb, saga] = await Promise.all([
         lesa('afgreidsla?select=*&stada=eq.tilbuid&order=forgangur.asc,created_at.asc&limit=50'),
@@ -742,6 +783,7 @@ exports.handler = async (event) => {
   if (b.adgerd === 'adalmal') {
     try { return await adalmal(b, event); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
   }
+  if (b.adgerd === 'merkja' || b.adgerd === 'merkja_keyra') return merkja(b, event);
   const id = Number(b.id);
   if (!Number.isInteger(id) || id <= 0) return P.json(400, { error: 'id vantar' });
   try {
@@ -824,4 +866,5 @@ module.exports._amLykill = amLykill;
 module.exports._synilegtAdalmal = synilegtAdalmal;
 module.exports._sameina = SAM;
 module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)
-module.exports._leysaTilvisanir = leysaTilvisanir;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
+module.exports._leysaTilvisanir = leysaTilvisanir;
+module.exports._merkja = merkja;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
