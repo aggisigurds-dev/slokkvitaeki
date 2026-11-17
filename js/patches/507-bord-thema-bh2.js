@@ -296,6 +296,48 @@
       H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:rgba(255,255,255,.18);background:#0b2d5f}',
       H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#123a73}',
 
+      /* Tilbúin verk (511) — einingin var eina borðið sem hélt Boss-efninu undir V2: rjómaflötur, messingplötur og
+       * gulllykill. Hér fær hún sama mál og hitt borðið (hvít spjöld, navy blek, EINN appelsínugulur lykill).
+       * Breyturnar (--gface, --disp, --gline, --key) eru þegar V2 að ofan, svo aðeins hörðu gildin eru leiðrétt. */
+      H + ' .baf-f{border:0;border-radius:999px;background:#fff;box-shadow:' + RAMMI + ';font:500 13px var(--body);color:#101e43}',
+      H + ' .baf-f b{font-family:var(--body)}',
+      H + ' .baf-f[aria-pressed="true"]{background:#0b2d5f;border-color:transparent;color:#fff;box-shadow:none}',
+      H + ' .baf-v{border-top-color:#e7ecf3}',
+      H + ' .baf-r:hover{background:#f6f9fd}',
+      H + ' .baf-v.opid>.baf-r{background:#f3f6fb}',
+      H + ' .baf-teg{border-radius:6px;border-color:#d8dee9;font:600 9.5px var(--body);color:#5a6882}',
+      H + ' .baf-kr,' + H + ' .baf-h,' + H + ' .baf-am,' + H + ' .baf-meta,' + H + ' .baf-dl dt,' + H + ' .baf-grein{font-family:var(--body)}',
+      H + ' .baf-d{border-top:1px solid #e7ecf3;background:#f6f9fd}',
+      H + ' .baf-k h3{font:600 11px var(--body);letter-spacing:.08em;color:#5a6882}',
+      // Haus opna verksins: Poppins 700 og hvítar flísar með mjúkum skugga — enginn hvítur textaskuggi á ljósum fleti.
+      H + ' .baf-kick{font:600 11px var(--body);letter-spacing:.14em;color:#c2410c}',
+      H + ' .baf-kick::before{display:none}',
+      H + ' .baf-sp{font-weight:700;letter-spacing:-.01em;text-shadow:none}',
+      H + ' .baf-kt{border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ',0 1px 2px rgba(2,25,60,.06)}',
+      H + ' .baf-kt span{font:600 10px var(--body);letter-spacing:.08em}',
+      H + ' .baf-kt b{font-weight:700;color:#101e43}',
+      H + ' .baf-kt b i{font:500 11px var(--body)}',
+      // Merki rakanna og skrefatölurnar: appelsínugult í stað messings, hringlaga tala með hvítu letri.
+      H + ' .baf-rok li::before{top:8px;width:5px;height:5px;border:0;border-radius:50%;background:#ff6702}',
+      H + ' .baf-nr{border:0;border-radius:999px;background:' + APP + ';color:#fff;font:700 10.5px var(--body);box-shadow:none}',
+      H + ' .baf-sk{border-color:#d8dee9;border-radius:10px;background:#fff}',
+      H + ' .baf-sk pre,' + H + ' .baf-g,' + H + ' .baf-rok,' + H + ' .baf-skref{font-family:var(--body)}',
+      H + ' .baf-ta{border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';font-family:var(--body)}',
+      H + ' .baf-ta:focus-visible{outline:3px solid rgba(255,103,2,.45);outline-offset:0}',
+      H + ' .baf-ok{color:#166534}' ,
+      H + ' .baf-nei,' + H + ' .baf-stopp,' + H + ' .baf-mk .x{color:#b91c1c}',
+      H + ' .baf-msg.villa{border-color:#f5c2c0;background:#fef2f2;color:#b91c1c}',
+      H + ' .baf-ft{border-top-color:#e7ecf3}',
+      // Einn appelsínugulur lykill á spjaldið; vopnaði takkinn verður navy svo breytingin sjáist.
+      H + ' .btn.baf-go{border:0;border-radius:10px;background:' + APP + ';color:#fff;font-weight:600;text-shadow:none;box-shadow:' + GLOD + '}',
+      H + ' .btn.baf-go:hover{background:#ec5300}',
+      H + ' .btn.baf-go[disabled]{background:#c9d3e3;border:0;color:#fff;box-shadow:none}',
+      H + ' .btn.baf-vopn{border:0;background:#0b2d5f;color:#fff;box-shadow:0 0 0 3px rgba(255,103,2,.45)}',
+      H + ' .baf-meira{border-top-color:#e7ecf3;font-family:var(--body)}',
+      H + ' .baf-meira:hover{background:#f6f9fd}',
+      H + ' .baf-tomt{font-family:var(--body)}',
+      H + ' .baf-bid{background:linear-gradient(90deg,#eef3fb,#dfe8f5,#eef3fb)}',
+
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',
       H + ' .t5-thema{margin-left:0}',

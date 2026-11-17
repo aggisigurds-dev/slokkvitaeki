@@ -67,7 +67,9 @@ test('opið verk: rök með heimild og tengli, efni, athuganir og takkinn', asyn
   BA.samantekt(); await BA.S.loading;
   smella(BA, 'opna', 22);
   const h = BA.listi();
-  assert.match(h, /Hvað gerist þegar þú ýtir/);
+  assert.match(h, /Þetta gerist þegar þú ýtir/);
+  assert.match(h, /baf-hd/);          // haus með spurningunni yfir báðum dálkum
+  assert.match(h, /baf-kt/);          // tölu-flís (áætlað virði / aldur)
   assert.match(h, /href="https:\/\/mail\.google\.com\/mail\/u\/#all\/abc" target="_blank" rel="noopener">Pósturinn í Gmail ↗/);
   assert.match(h, /data-baf-texti="22" data-ritun="1"[^>]*>Góðan dag\.<\/textarea>/, 'svarið er í reit sem má breyta og 368 frestar teikningu á (data-ritun)');
   assert.match(h, /data-baf="framkvaema" data-id="22"[^>]*>Senda svarið<\/button>/);

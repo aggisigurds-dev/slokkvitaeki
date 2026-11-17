@@ -113,6 +113,28 @@
   var linur = function (t) { var n = 0; String(t || '').split('\n').forEach(function (l) { n += Math.max(1, Math.ceil(l.length / 80)); }); return Math.max(8, Math.min(24, n + 2)); };
   var athNu = function (v) { return v.id in S.athDrog ? S.athDrog[v.id] : (v.athugasemd || ''); };
 
+  /* Hvað gerist: þjónninn skrifar eina málsgrein. Hún er brotin í númeruð skref á setningaskilum — punktur OG
+   * stór stafur á eftir, svo „60.000 kr.) og" eða „drög #342" klofni ekki. Ein setning helst sem venjuleg lína. */
+  var SKREF_RX = /\.\s+(?=[A-ZÁÐÉÍÓÚÝÞÆÖ])/;
+  function skrefHtml(t) {
+    var s = String(t == null ? '' : t).trim();
+    if (!s) return '';
+    var p = s.split(SKREF_RX).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (p.length < 2) return '<div class="baf-g">' + esc(s) + '</div>';
+    return '<ol class="baf-skref">' + p.map(function (x, i) {
+      return '<li><span class="baf-nr" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(/[.!?]$/.test(x) ? x : x + '.') + '</span></li>';
+    }).join('') + '</ol>';
+  }
+  var dagarFra = function (iso) { var d = new Date(iso); if (isNaN(d)) return null; return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000)); };
+  // Tvær flísar efst: það sem verkið snýst um í krónum og hve lengi það hefur beðið. Báðar úr röðinni sjálfri.
+  function kpiHtml(v) {
+    var t = [], n = v.virdi_kr == null || !isFinite(Number(v.virdi_kr)) ? null : Math.round(Number(v.virdi_kr)).toLocaleString('is-IS');
+    if (n) t.push('<div class="baf-kt"><span>Áætlað virði</span><b>' + n + ' <i>kr.</i></b></div>');
+    var d = dagarFra(v.created_at);
+    if (d != null) t.push('<div class="baf-kt"><span>Á borðinu</span><b>' + (d === 0 ? 'Í dag' : d + ' <i>d.</i>') + '</b></div>');
+    return t.length ? '<div class="baf-kpi">' + t.join('') + '</div>' : '';
+  }
+
   /* ── TEIKNING ──────────────────────────────────────────────────────────────────────────────── */
   function samantekt() {
     tryggja();
@@ -192,9 +214,13 @@
   function opidHtml(v) {
     var upptekid = S.busy === v.id, vopnF = S.vopnad === 'framkvaema:' + v.id, vopnS = S.vopnad === 'sleppa:' + v.id, erSam = v.tegund === 'sameina';
     var h = '<div class="baf-d" id="baf-d-' + v.id + '">';
+    // Haus yfir báða dálka: það sem er verið að biðja um, og tölurnar sem segja hvað það snýst um. Agnar 16.11.2026:
+    // „skýrara hvað er verið að biðja um, og sé ekki bara textabók sem er erfitt að ná að sjá aðalatriðin."
+    h += '<div class="baf-hd"><div class="baf-hdt"><span class="baf-kick">Það sem þú ákveður</span>' +
+      '<h2 class="baf-sp">' + esc(v.titill) + '</h2></div>' + kpiHtml(v) + '</div>';
     // Tveir dálkar þegar einingin er breið (bogaskjárinn): rökin vinstra megin, efnið og athugasemdin hægra megin.
-    h += '<div class="baf-c"><section class="baf-k"><h3>Hvað gerist þegar þú ýtir</h3><div class="baf-g">' + esc(v.hvad_gerist) + '</div></section>';
-    h += rokHtml(v.af_hverju) + athHtml(v.athuganir, v.id) + '</div><div class="baf-c">' + efniHtml(v);
+    h += '<div class="baf-c">' + rokHtml(v.af_hverju) + athHtml(v.athuganir, v.id) + '</div>';
+    h += '<div class="baf-c"><section class="baf-k"><h3>Þetta gerist þegar þú ýtir</h3>' + skrefHtml(v.hvad_gerist) + '</section>' + efniHtml(v);
     h += '<section class="baf-k"><h3>Athugasemd þín</h3><textarea class="baf-ta lagur" data-baf-ath="' + v.id + '" data-ritun="1" spellcheck="true" maxlength="2000" aria-label="Athugasemd á verkið" ' +
       'placeholder="Til Claude og Tonys — vistast á verkið, t.d. „bíða til mánaðamóta“ eða verðið sem á að standa">' + esc(athNu(v)) + '</textarea>' +
       '<div class="baf-af"><button type="button" class="btn iv sm" data-baf="ath-vista" data-id="' + v.id + '"' + (S.athBusy === v.id ? ' disabled' : '') + '>' + (S.athBusy === v.id ? 'Vista…' : 'Vista athugasemd') + '</button>' +
@@ -359,8 +385,26 @@
       '.baf-k{margin-top:13px}',
       '.baf-k h3{margin:0 0 5px;font:600 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}',
       '.baf-g{font-size:13px;line-height:1.5;color:var(--ink);max-width:92ch}',
-      '.baf-rok{margin:0;padding:0 0 0 18px;font-size:13px;line-height:1.5;color:var(--ink);max-width:92ch}',
-      '.baf-rok li{margin:0 0 7px}',
+      // Haus opna verksins: kicker með gullstriki, spurningin í Playfair og tölu-flísarnar.
+      '.baf-hd{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-top:12px}',
+      '.baf-hdt{flex:999 1 320px;min-width:0;display:flex;flex-direction:column;gap:6px}',
+      '.baf-kick{display:flex;align-items:center;gap:9px;font:700 10.5px var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--g8)}',
+      '.baf-kick::before{content:"";flex:none;width:26px;height:2px;background:var(--gline);box-shadow:0 1px 0 #fff}',
+      '.baf-sp{margin:0;font:800 clamp(18px,2.1cqi,25px)/1.22 var(--disp);letter-spacing:-.02em;color:var(--ink);text-shadow:0 1px 0 #fff;overflow-wrap:anywhere}',
+      '.baf-kpi{flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px}',
+      '.baf-kt{display:flex;flex-direction:column;gap:1px;min-width:98px;padding:7px 12px;border:1px solid var(--rule3);border-radius:4px;background:var(--key);box-shadow:var(--keysh)}',
+      '.baf-kt span{font:700 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}',
+      '.baf-kt b{font:800 23px/1.1 var(--disp);letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.baf-kt b i{font:600 11px var(--mono);font-style:normal;color:var(--mute)}',
+      // Rökin: ferkantað gullmerki í stað kúlu, heimildin undir í mono (.baf-h).
+      '.baf-rok{list-style:none;margin:0;padding:0;font-size:13px;line-height:1.5;color:var(--ink);max-width:92ch}',
+      '.baf-rok li{position:relative;margin:0 0 8px;padding-left:15px}',
+      '.baf-rok li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;background:var(--gface);border:1px solid #7a5a12;border-radius:1px}',
+      // Hvað gerist: númeruð skref með gullplötu, svo röðin sjáist í stað einnar málsgreinar.
+      '.baf-skref{list-style:none;margin:0;padding:0;font-size:13px;line-height:1.5;color:var(--ink);max-width:92ch}',
+      '.baf-skref li{display:flex;align-items:flex-start;gap:9px;margin:0 0 7px}',
+      '.baf-nr{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;margin-top:1px;padding:0 5px;' +
+        'font:600 10.5px var(--mono);color:#2e2004;border:1px solid #5a4410;border-radius:2px;background:var(--gface);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}',
       '.baf-h{display:block;margin-top:1px;font:11px/1.4 var(--mono);color:var(--mute)}',
       '.baf-lk{color:var(--g8);font-weight:700;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}',
       '.baf-sk{padding:9px 11px;border:1px solid var(--rule);border-radius:4px;background:#fffdf7;max-width:92ch}',
@@ -386,8 +430,10 @@
       '.baf-ft{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule2)}',
       '.baf-grow{flex:1 1 auto}',
       '.baf-stopp{font-size:12px;font-weight:700;color:#8a1c12}',
-      '.btn.baf-go{min-height:40px;border:1px solid #6d0f12;border-top-color:#e2574c;border-radius:5px;background:linear-gradient(#c3271c,#a1161a);color:#fff;font-weight:800;white-space:normal;text-align:center;' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 5px rgba(22,21,19,.35)}',
+      // Einn gulllykill á spjaldið (boss-btn.gold uppskriftin) — hinir takkarnir eru fílabein.
+      '.btn.baf-go{min-height:42px;border:1px solid #5a4410;border-top-color:#f7e6b8;border-bottom-color:#2e2004;border-radius:5px;background:var(--gface);color:var(--ink);font-weight:800;' +
+        'white-space:normal;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.35);' +
+        'box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 4px rgba(60,40,0,.5),0 3px 7px rgba(22,21,19,.4)}',
       '.btn.baf-go[disabled]{cursor:not-allowed;background:#b9b3a6;border-color:#9a9383;color:#fff;box-shadow:none;filter:none;opacity:1}',
       '.btn.baf-vopn{border-color:#b8892e;background:#161513;color:#f7e6b8;font-weight:800;box-shadow:0 0 0 2px rgba(184,137,46,.45)}',
       '.baf-tomt{padding:14px 16px;font-size:13px;color:var(--mute)}',
@@ -395,9 +441,10 @@
       '.baf-meira:hover{background:rgba(241,237,228,.55)}.baf-meira:focus-visible{outline:2px solid var(--g6);outline-offset:-2px}',
       '.baf-tomt b{color:var(--ink)}',
       '@media (prefers-reduced-motion:no-preference){.btn.baf-go{transition:filter 120ms,background-color 120ms}}',
-      '@container baf (min-width: 980px){.baf-d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}.baf-d>.baf-msg,.baf-ft{grid-column:1 / -1}}',
+      '@container baf (min-width: 980px){.baf-d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}.baf-d>.baf-msg,.baf-ft,.baf-hd{grid-column:1 / -1}}',
       '@container baf (max-width: 620px){.baf-r{grid-template-columns:56px minmax(0,1fr) 16px;row-gap:3px}.baf-mk{grid-column:2;grid-row:2}.baf-chev{grid-column:3;grid-row:1}' +
-        '.baf-d{padding:2px 12px 14px}.baf-ft .btn{flex:1 1 auto}.baf-grow{display:none}.btn.baf-go{flex:1 1 100%;min-height:44px}}'
+        '.baf-d{padding:2px 12px 14px}.baf-ft .btn{flex:1 1 auto}.baf-grow{display:none}.btn.baf-go{flex:1 1 100%;min-height:46px}' +
+        '.baf-sp{font-size:19px}.baf-kpi{flex:1 1 100%}.baf-kt{flex:1 1 0;min-width:0}}'
     ].join('');
   }
   function festa(root) {
