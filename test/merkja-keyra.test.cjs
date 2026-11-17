@@ -201,7 +201,7 @@ test('lykkjan: röð til agenta (Veit ekki fyrst), Nei → Charlize, hámark umf
 
 test('merki á línu sem agent vinnur í er hafnað (409); taka af = tekid_af, engu eytt', async () => {
   const fake = F.bua({ thjonustubeidni: [{ id: 31, title: 'Mál', status: 'nytt' }],
-    bord_merkingar: [{ id: 1, bord: 'thjonustubord', lina: 'mal:31', mal_id: 31, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu' }] });
+    bord_merkingar: [{ id: 1, bord: 'thjonustubord', lina: 'mal:31', mal_id: 31, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu', keyrt_at: new Date().toISOString() }] });
   const aftur = F.tengja(P, fake);
   try {
     await assert.rejects(() => M.vista({ mal_id: 31, merki: 'nei' }, 'Agnar'), (e) => e.kodi === 409);
@@ -343,4 +343,102 @@ test('óþekktur notandi (notandi() brást): ekkert vistast, 503', async () => {
     assert.strictEqual(g.statusCode, 503);
     assert.strictEqual((fake.T.bord_merkingar || []).length, 0);
   } finally { aftur(); H.hlid = fyrr.hlid; HUB.handler = fyrr.hub; }
+});
+
+/* ── Endurrýni 17.11.2026 ─────────────────────────────────────────────── */
+test('E1 Keyra: atriði sem kastar (leiðarvísir eða PATCH) fellir EKKI umferðina — hin fara og eru talin', async () => {
+  const mal = Array.from({ length: 4 }, (_, i) => ({ id: 100 + i, title: 'Krafa ógreitt ' + i, status: 'nytt' }));
+  const fake = F.bua({ thjonustubeidni: mal });
+  const aftur = F.tengja(P, fake);
+  const leid0 = L.leid;
+  L.stilla(REG);
+  try {
+    for (const x of mal) await M.vista({ mal_id: x.id, merki: 'keyra' }, 'Agnar');
+    const radir = fake.T.bord_merkingar;
+    // Leiðarvísirinn kastar á máli 101; PATCH-ið kastar á máli 102
+    L.leid = async (texti, o) => { if (/ógreitt 1\b/.test(texti)) throw new Error('registry bilaði'); return leid0(texti, o); };
+    const p0 = P.sbPatch;
+    P.sbPatch = async (qs, body) => { const r = radir.find((x) => qs.startsWith('bord_merkingar?id=eq.' + x.id + '&')); if (r && r.mal_id === 102 && body.stada === 'i_keyrslu') throw new Error('Supabase 503'); return p0(qs, body); };
+    const kveikt = [];
+    const r = await M.keyra('Agnar', { kveikja: async (id) => kveikt.push(id) });
+    P.sbPatch = p0;
+    assert.strictEqual(r.sent, 3, JSON.stringify(r));
+    const af = (mid) => radir.find((x) => x.mal_id === mid);
+    assert.deepStrictEqual([af(100).stada, af(101).stada, af(102).stada, af(103).stada], ['i_keyrslu', 'i_keyrslu', 'merkt', 'i_keyrslu']);
+    assert.deepStrictEqual([af(101).agent, !!af(101).agent_leid.gat], ['jarvis', true], 'leiðarvísir sem brást → jarvis heldur keflinu');
+  } finally { L.leid = leid0; aftur(); L.stilla(null); }
+});
+
+async function umferdMedEinni(fake, mid, merki) {
+  await M.vista({ mal_id: mid, merki }, 'Agnar');
+  const k = [];
+  await M.keyra('Agnar', { kveikja: async (id, n) => k.push([id, n]) });
+  return k[0];
+}
+const VERK_SVAR = { svar: { svar: 'Gera X.', stadreyndir: [{ texti: 'Staðfest', heimildir: ['F1'] }], tillaga: { tegund: 'verk', titill: 'Verk sem þarf', lysing: 'Lýsing verksins sem er nógu löng', post_id: '', texti: '' }, omaelt: [] }, model: 'stub' };
+const SAFNA = async () => ({ gogn: { gogn: [{ id: 'F1' }] }, kort: { F1: { lysing: 'Fyrirtæki X', opna: null } } });
+
+test('E2 munaðarlaust verk: röð sem tiltekt felldi meðan agentinn vann → hvorki tilbúið verk né úrskurður', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 111, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { safna: CL.safna, kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    const [id, nonce] = await umferdMedEinni(fake, 111, 'keyra');
+    CL.safna = SAFNA;
+    CL.kalla = async () => { fake.T.bord_merkingar.find((x) => x.id === id).stada = 'vantar_svar'; return VERK_SVAR; };   // tiltekt á meðan
+    const r = await M.vinnaMerki(id, nonce);
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual((fake.T.afgreidsla || []).length, 0, 'ekkert munaðarlaust verk');
+    assert.strictEqual((fake.T.odin_urskurdir || []).length, 0, 'enginn úrskurður');
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+test('E2b röðin deyr á sömu sekúndu og skilin skrást → verkið merkt úrelt og úrskurðurinn afturkallaður (engu eytt)', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 112, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { safna: CL.safna, kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    const [id, nonce] = await umferdMedEinni(fake, 112, 'keyra');
+    CL.safna = SAFNA; CL.kalla = async () => VERK_SVAR;
+    const p0 = P.sbPatch;
+    P.sbPatch = async (qs, body) => { if (qs.startsWith('bord_merkingar?id=eq.' + id) && body.stada === 'klarad') fake.T.bord_merkingar.find((x) => x.id === id).stada = 'vantar_svar'; return p0(qs, body); };
+    const r = await M.vinnaMerki(id, nonce);
+    P.sbPatch = p0;
+    assert.strictEqual(r.ok, false);
+    assert.deepStrictEqual(fake.T.afgreidsla.map((a) => a.stada), ['urelt']);
+    assert.ok(fake.T.odin_urskurdir[0].afturkallad_at, 'úrskurður afturkallaður');
+    assert.ok(!fake.skrif.some((x) => x.m === 'DELETE'));
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+test('E3 mál í geymslu (archived_at) telst lokað: ekkert Claude-kall, vantar_svar', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 113, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    const [id, nonce] = await umferdMedEinni(fake, 113, 'keyra');
+    fake.T.thjonustubeidni[0].archived_at = new Date().toISOString();
+    let kallad = 0; CL.kalla = async () => { kallad++; return VERK_SVAR; };
+    await M.vinnaMerki(id, nonce);
+    const rod = fake.T.bord_merkingar.find((x) => x.id === id);
+    assert.deepStrictEqual([rod.stada, kallad], ['vantar_svar', 0]);
+    assert.match(rod.astaeda, /geymslu/);
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+test('E4 tiltekt bregst: föst röð læsir samt ekki línuna — vista fellir hana beint og ný merking gengur', async () => {
+  const gamalt = new Date(Date.now() - M.FAST_MS - 60000).toISOString();
+  const fake = F.bua({ thjonustubeidni: [{ id: 114, title: 'Mál', status: 'nytt' }],
+    bord_merkingar: [{ id: 1, bord: 'thjonustubord', lina: 'mal:114', mal_id: 114, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu', keyrt_at: gamalt }] });
+  const aftur = F.tengja(P, fake);
+  const p0 = P.sbPatch;
+  P.sbPatch = async (qs, body) => { if (/keyrt_at=lt\./.test(qs)) throw new Error('tiltekt brást'); return p0(qs, body); };
+  try {
+    const ny = await M.vista({ mal_id: 114, merki: 'veit_ekki' }, 'Agnar');
+    assert.strictEqual(ny.stada, 'merkt');
+    assert.deepStrictEqual(fake.T.bord_merkingar.map((x) => x.stada), ['vantar_svar', 'merkt']);
+  } finally { P.sbPatch = p0; aftur(); }
 });

@@ -175,8 +175,10 @@ async function vista(b, hver, nu = new Date()) {
   const due = merki === 'snooze' ? snoozeDags(b.due_at, nu) : null;
   const lina = linaAf(mid);
   await tiltekt(hver, nu);
-  const eldri = await lesa(`bord_merkingar?select=id,stada&bord=eq.${BORD}&lina=eq.${encodeURIComponent(lina)}&merkt_af=eq.${encodeURIComponent(hver)}&stada=in.(${VIRKAR.join(',')})&limit=5`);
-  if (eldri.some((x) => x.stada === 'i_keyrslu')) throw villa('Agent er að vinna í þessari línu — niðurstaðan birtist hér.', 409);
+  const eldri = await lesa(`bord_merkingar?select=id,stada,keyrt_at,claude&bord=eq.${BORD}&lina=eq.${encodeURIComponent(lina)}&merkt_af=eq.${encodeURIComponent(hver)}&stada=in.(${VIRKAR.join(',')})&limit=5`);
+  // Lesið í gegnum tiltektarsýnina: föst keyrsla læsir ekki línuna þótt tiltekt hafi brugðist (hún er felld hér beint).
+  if (eldri.some((x) => x.stada === 'i_keyrslu' && !erFost(x, nu))) throw villa('Agent er að vinna í þessari línu — niðurstaðan birtist hér.', 409);
+  for (const x of eldri.filter((y) => erFost(y, nu))) await breyta(`bord_merkingar?id=eq.${x.id}&stada=eq.i_keyrslu`, { stada: 'vantar_svar', astaeda: FAST_ASTAEDA, lokid_at: nu.toISOString() });
   let mal = null;
   if (merki) {
     mal = (await lesa(`thjonustubeidni?select=id,title,status,deleted_at&id=eq.${mid}&limit=1`))[0];
@@ -216,8 +218,11 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
     malIds.length ? lesa(`thjonustubeidni?select=id,title,type,summary,customer_nafn,status&id=in.(${malIds.join(',')})`).catch(() => []) : [],
     (leidOpt.g ? Promise.resolve(leidOpt.g) : LEID.saekja(leidOpt)).then((g) => ({ g }), (e) => ({ villa: String((e && e.message) || e).slice(0, 120) })),
   ]);
+  // Endurrýni 17.11.2026: hvert atriði ber sína eigin villu — eitt sem kastar (PATCH, leiðarvísir, Charlize) fellir ALDREI
+  // umferðina, því hin eru þegar farin af stað. Talið er það sem fór raunverulega af stað.
   const neiNidur = await Promise.all(merkt.filter((x) => x.merki === 'nei').map(async (m) => {
-    const tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso });
+    let tekin = [];
+    try { tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso }); } catch (_) { return 0; }   // stendur merkt → næsta umferð
     if (!tekin.length) return 0;
     try {
       const cid = await charlizeNei(m, hver);
@@ -233,12 +238,17 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
   const sentNidur = await Promise.all(valin.map(async (m) => {
     const mal = malar.find((x) => Number(x.id) === Number(m.mal_id));
     const texti = [mal && mal.type, mal && mal.title, mal && mal.customer_nafn, mal && mal.summary, m.mal_titill || '', m.athugasemd || ''].filter(Boolean).join('\n');
-    const leid = leidG.g ? await LEID.leid(texti, Object.assign({}, leidOpt, { g: leidG.g }))
-      : { agent: LEID.VARA, stig: 0, ord: [], gat: true, villa: 'Leiðarvísirinn svaraði ekki: ' + leidG.villa };
+    const vara = (v) => ({ agent: LEID.VARA, stig: 0, ord: [], gat: true, villa: v });
+    let leid;
+    try { leid = leidG.g ? await LEID.leid(texti, Object.assign({}, leidOpt, { g: leidG.g })) : vara('Leiðarvísirinn svaraði ekki: ' + leidG.villa); }
+    catch (e) { leid = vara('Leiðarvísirinn brást á þessu atriði: ' + String((e && e.message) || e).slice(0, 120)); }   // jarvis heldur keflinu
     const nonce = CL.nyNonce();
-    const tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso, agent: leid.agent,
-      agent_leid: { stig: leid.stig, ord: leid.ord, gat: leid.gat, adrir: leid.adrir || [], villa: leid.villa || null },
-      claude: { stada: 'i_vinnslu', nonce, at: nuIso, af: hver, persona: { emoji: leid.emoji, lysing: leid.lysing, serhaefing: leid.serhaefing, aldrei: leid.aldrei } } });
+    let tekin = [];
+    try {
+      tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso, agent: leid.agent,
+        agent_leid: { stig: leid.stig, ord: leid.ord, gat: leid.gat, adrir: leid.adrir || [], villa: leid.villa || null },
+        claude: { stada: 'i_vinnslu', nonce, at: nuIso, af: hver, persona: { emoji: leid.emoji, lysing: leid.lysing, serhaefing: leid.serhaefing, aldrei: leid.aldrei } } });
+    } catch (_) { return 0; }   // PATCH brást: stendur merkt og fer í næstu umferð
     if (!tekin.length) return 0;
     try { await kveikja(m.id, nonce); return 1; }
     catch (e) {
@@ -306,9 +316,10 @@ async function vinnaMerki(id, nonce) {
   const skrifa = (body) => breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.i_keyrslu&claude->>nonce=eq.${encodeURIComponent(nonce)}`, body);
   let c;
   try {
-    const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type,deleted_at&id=eq.${Number(m.mal_id)}&limit=1`))[0];
+    const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type,deleted_at,archived_at&id=eq.${Number(m.mal_id)}&limit=1`))[0];
     if (!mal || mal.deleted_at) throw new Error('Málið fannst ekki lengur');
-    if (mal.status === 'lokad') throw new Error('Málinu var lokað áður en agentinn komst að — ekkert unnið');   // sama og 492f
+    // Lokað EÐA í geymslu telst lokað (sama og 492f / afgreidsla.cjs) — ekkert Claude-kall.
+    if (mal.status === 'lokad' || mal.archived_at) throw new Error('Málinu var lokað eða það sett í geymslu áður en agentinn komst að — ekkert unnið');
     const texti = [mal.title, mal.customer_nafn, mal.summary, String(mal.notes || '').slice(0, 2500)].filter(Boolean).join('\n');
     const s = await CL.safna({ texti, hluti_heiti: 'Þjónustuborð' }, mal, fyrirmaeliFyrir(m));
     const k = await CL.kalla(s.gogn, { kerfiAuki: kerfiAuki(m, c0.persona) });
@@ -317,6 +328,10 @@ async function vinnaMerki(id, nonce) {
   } catch (e) {
     c = { stada: 'villa', nonce, at: c0.at, villa: String((e && e.message) || e).slice(0, 300), lokid_at: new Date().toISOString() };
   }
+  // Endurrýni 17.11.2026: tilbúið verk og úrskurður verða AÐEINS til ef röðin er enn lifandi (i_keyrslu + sama nonce).
+  // Annars (tiltekt merkti hana dauða) varð til munaðarlaust verk í afgreidsla sem línan vissi ekki af.
+  const lifir = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.i_keyrslu&claude->>nonce=eq.${encodeURIComponent(nonce)}`, {}).then((r) => r.length > 0, () => false);
+  if (!lifir) return { ok: false, astaeda: 'röðin var ekki lengur í keyrslu (tiltekt eða ný merking) — ekkert búið til' };
   // ÓÐINN
   const mat = metaSkil(c, m.merki);
   let afgId = null;
@@ -328,8 +343,16 @@ async function vinnaMerki(id, nonce) {
   const nidurstada = { tegund: mat.marktaekt ? mat.tegund : null, svar: String(c.svar || c.villa || '').slice(0, 900), tillaga: c.tillaga ? c.tillaga.tegund : null,
     stadreyndir: (c.stadreyndir || []).length, omaelt: (c.omaelt || []).slice(0, 4) };
   const claudeVista = Object.assign({}, c, { persona: c0.persona });
-  await skrifa({ stada: mat.marktaekt ? 'klarad' : 'vantar_svar', lokid_at: new Date().toISOString(), afgreidsla_id: afgId, claude: claudeVista, nidurstada,
-    astaeda: mat.marktaekt ? null : mat.astaeda, odin_mat: { marktaekt: mat.marktaekt, tegund: mat.tegund || null, astaeda: mat.astaeda || null, urskurdur_id: uid, at: new Date().toISOString() } });
+  const skrifad = await skrifa({ stada: mat.marktaekt ? 'klarad' : 'vantar_svar', lokid_at: new Date().toISOString(), afgreidsla_id: afgId, claude: claudeVista, nidurstada,
+    astaeda: mat.marktaekt ? null : mat.astaeda, odin_mat: { marktaekt: mat.marktaekt, tegund: mat.tegund || null, astaeda: mat.astaeda || null, urskurdur_id: uid, at: new Date().toISOString() } })
+    .then((r) => r.length > 0, () => false);
+  if (!skrifad) {
+    // Röðin dó á milli (sjaldgæft: tiltekt á sömu sekúndu). Verk og úrskurður víkja — merkt, engu eytt.
+    const nuIso = new Date().toISOString();
+    if (afgId) await breyta(`afgreidsla?id=eq.${afgId}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: 'Merkingin #' + m.id + ' var ekki lengur í keyrslu þegar svarið kom — merktu línuna aftur' }).catch(() => {});
+    if (uid) await breyta(`odin_urskurdir?id=eq.${uid}`, { afturkallad_at: nuIso, afturkallad_af: 'merkja (röðin dauð)' }).catch(() => {});
+    return { ok: false, astaeda: 'röðin dó áður en skilin skráðust — verk og úrskurður merkt úrelt', afgreidsla_id: null };
+  }
   return { ok: true, marktaekt: mat.marktaekt, afgreidsla_id: afgId };
 }
 

@@ -15,7 +15,8 @@
  *   GET  ?merkingar=1                         → { merkingar[], teljari, claude_virkt }
  *   POST { adgerd:'merkja', mal_id, merki|null, athugasemd?, due_at? }
  *   POST { adgerd:'merkja_keyra' }            → agentar fá verkin í bakgrunni; niðurstaðan → Tilbúin verk (511)
- * Aðeins innskráður stjórnandi (hlið afgreidsla.cjs). Án hans (401/403) teiknast ekkert — borðið er óbreytt.
+ * Aðeins innskráður stjórnandi (hlið afgreidsla.cjs). Án hans (401/403) stendur ein lína efst („aðeins fyrir innskráðan
+ * stjórnanda“) og engin merki á línunum; villa (500/netvilla) líka ein lína. Ný sókn í mesta lagi á mínútu fresti.
  * Meðan umferð er í keyrslu er kannað á 6 s fresti (aðeins merkingarnar, ekki tilbúnu verkin) og hætt þegar hún er búin.
  * Ekkert hér sendir neitt út: lokasmellurinn er alltaf Agnars í Tilbúnum verkum.
  * ============================================================================================================== */
@@ -231,7 +232,7 @@
     if (n !== EIGANDI) return '';
     if (!S.sott || Date.now() - S.sott > RETRY_MS) { if (!S.bid) hlada(); }
     if (!S.virkt) {
-      if (S.lokad) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span>Merkja og keyra: aðeins fyrir innskráðan stjórnanda (' + S.lokad + '). Skráðu þig inn til að merkja línur.</span></section>';
+      if (S.lokad) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span>Merkja og keyra: aðeins fyrir innskráðan stjórnanda (' + S.lokad + ') — merkin sjást ekki í þessum vafra.</span></section>';
       if (S.villa && S.sott) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span style="color:#b5522a">Merkja og keyra náði ekki í merkingarnar: ' + esc(S.villa) + ' — reyni aftur eftir mínútu.</span></section>';
       return '';
     }
