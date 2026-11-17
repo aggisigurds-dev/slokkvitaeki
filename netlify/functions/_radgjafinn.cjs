@@ -37,6 +37,7 @@
 // Engin netföng eru í kóðanum (repóið er opinbert) — aðeins lén félaganna og kennitala Center Hotels (opinber).
 // Engar rekstrartölur heldur: grunnlínan býr í app_kv, ekki hér.
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

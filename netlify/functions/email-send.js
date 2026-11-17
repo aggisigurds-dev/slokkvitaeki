@@ -14,6 +14,7 @@
  *   lesinn úr localStorage vafrans — er HORFIN: leyndarmál búa á þjóninum, ekki í vafra
  *   (regla Agnars 15.10.2026). Berist `apiKey` samt í body er honum hent, aldrei notaður.
  */
+import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
   if (req.method !== 'POST' && req.method !== 'GET') {

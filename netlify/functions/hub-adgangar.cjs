@@ -68,6 +68,17 @@ async function posturToki(stillingGefin) {
   const m = Math.floor(Date.now() / 60000);
   return m + '.' + posturSig(st.session_secret, m);
 }
+// x-hub-toki (Powerplan lota 13, 17.11.2026): aðgangur að föllum Brunahólfs, sem krefjast nú innskráningar EÐA þessa tóka
+// (brunaholf/netlify/functions/_vord.js). Sama snið og póst-tókinn en annar tilgangur ('hub-api|'), svo póst-tóki opnar
+// ekki önnur föll og öfugt. Myntaður HÉR einum stað; /api/bh-toki réttir hann innskráðum vafra, bh-kall.cjs þjónum.
+const HUB_TOKI_HAUS = 'x-hub-toki';
+const hubApiSig = (secret, m) => crypto.createHmac('sha256', String(secret)).update('hub-api|' + m).digest('hex');
+async function hubApiToki(stillingGefin) {
+  const st = stillingGefin || await getStilling().catch(() => null);
+  if (!st || !st.session_secret) return '';
+  const m = Math.floor(Date.now() / 60000);
+  return m + '.' + hubApiSig(st.session_secret, m);
+}
 async function erPosturToki(event) {
   const h = (event && event.headers) || {};
   const [mStr, sig] = String(h[POSTUR_HAUS] || '').split('.');
@@ -400,4 +411,6 @@ exports._test = { normNn, normKt, normSimi, encPw, decPw, SIDUR, okSida, HUB_ARF
 
 exports.posturToki = posturToki;
 exports.erPosturToki = erPosturToki;
+exports.hubApiToki = hubApiToki;
+exports.HUB_TOKI_HAUS = HUB_TOKI_HAUS;
 exports.POSTUR_HAUS = POSTUR_HAUS;

@@ -32,6 +32,7 @@
 
 // import, ekki require: package.json er "type": "module" og fallið notar
 // `export default` eins og hin ESM-föllin (tv-summary, postur-triage).
+import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 import fs from 'node:fs';
 import path from 'node:path';
 

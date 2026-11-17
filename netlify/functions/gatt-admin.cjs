@@ -16,6 +16,7 @@
 // ⚠️ Innri síða — arfar (skort á) auðkenningu hub-sins; á að vera á bak við
 // væntanlega hub-innskráningu. Öll skrif nota service-role (aldrei í vafra).
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
 const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
 const crypto = require('crypto');

@@ -8,6 +8,7 @@
 // reikninga í Payday og setur solur.paid_at → greiddar kröfur færast sjálfkrafa í
 // „Greiddar". Aðeins keyrt á PRODUCTION (áætlanir keyra ekki á deploy-previews).
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 exports.handler = async () => {
   const base = (process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
   try {

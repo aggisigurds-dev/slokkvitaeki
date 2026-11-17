@@ -29,6 +29,7 @@
  * til í sql/2026-08-31_assistant_memory.sql — KEYRÐU HANA FYRST.
  */
 
+import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const AI_URL = 'https://api.anthropic.com/v1/messages';
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

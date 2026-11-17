@@ -26,6 +26,7 @@
 // Mælt 07.11.2026: fjórir Heimaleigu-staðir (Midtown 61, Máni 54, Ice Apartments 8,
 // Höfuðstöðvar 6 = 129 tæki) stóðu með skoðun frá okt. 2025 og voru bókaðir 10.–11.11.
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
 
 const nu = () => new Date();
