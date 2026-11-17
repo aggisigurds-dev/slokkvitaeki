@@ -81,8 +81,10 @@
   async function saekjaGogn(c) {
     const g = {};
     const verk = {
-      solur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,created_at,paid_at,krafa_sent_at,dk_invoice_id,vidskiptategund,status,is_credit,hidden,greitt_med,linur')
+      solur: () => DB.fetchAll((a, b) => c.from('solur').select('id,samtals,upphaed_an_vsk,credit_of,created_at,paid_at,krafa_sent_at,dk_invoice_id,vidskiptategund,status,is_credit,hidden,greitt_med,linur')
         .gte('created_at', manudur(-1).toISOString()).neq('status', 'void').order('id').range(a, b)),
+      // Bakfærðar sölur: kreditnóta á bakfærða sölu telst ekki (sama regla og netlify/functions/_tekjur.cjs, lota 4 17.11.2026).
+      solurVoid: () => DB.fetchAll((a, b) => c.from('solur').select('id').eq('status', 'void').order('id').range(a, b)),
       // EIN SKILGREINING (Agnar 15.11.2026: „Ein skilgreining fyrst"): sömu sýnir og Tony (506), combo-yfirlit og verðirnir.
       // Mæling Natalie 15.11.2026: eigin útreikningur hér taldi kreditfærða frumreikninga sem útistandandi — 19 „ósendar"
       // voru 3 sendanlegar, 46 „ógreiddar" voru 32 í innheimtu + 5 á bið (hitt kreditfært eða fellt í Payday).
@@ -151,11 +153,17 @@
 
   /* ── mælingarnar — hver skilar { sev, tala, undir, punktar[] } ────────────────────────────── */
   const erKredit = r => r.is_credit === true;
-  function tekjurManadar(rows) {
+  // 17.11.2026 (lota 4): `lokid` var fjarlægt í 3bc9aab4 en tekjumælingin kallaði enn á það → ReferenceError og flísin
+  // sýndi villu. Nú sama skilgreining og Tekjur/Bókhald/Ráðgjafinn (netlify/functions/_tekjur.cjs): final-sölur ÁN VSK,
+  // kreditnótur (neikvæðar) DRAGAST FRÁ, bakfært og drög úti, kreditnóta á bakfærða sölu ekki talin. Fjöldi = reikningar.
+  const lokid = r => r.status === 'final';
+  function tekjurManadar(rows, voidRows) {
     const mb = manudur().getTime(), r = { nu: { all: 0, uttekt: 0, bud: 0, annad: 0, n: 0, nu: 0, nb: 0 }, fyrri: { all: 0, uttekt: 0, bud: 0, annad: 0, n: 0, nu: 0, nb: 0 } };
-    rows.filter(lokid).forEach(x => {
-      const m = Date.parse(x.created_at) >= mb ? r.nu : r.fyrri, k = x.vidskiptategund === 'uttekt' ? 'uttekt' : x.vidskiptategund === 'bud' ? 'bud' : 'annad', v = Number(x.samtals) || 0;
-      m.all += v; m[k] += v; m.n++; if (k === 'uttekt') m.nu++; if (k === 'bud') m.nb++;
+    const bakf = new Set((voidRows || []).map(x => String(x.id)));
+    rows.filter(x => lokid(x) && !(x.credit_of != null && bakf.has(String(x.credit_of)))).forEach(x => {
+      const m = Date.parse(x.created_at) >= mb ? r.nu : r.fyrri, k = x.vidskiptategund === 'uttekt' ? 'uttekt' : x.vidskiptategund === 'bud' ? 'bud' : 'annad', v = Number(x.upphaed_an_vsk) || 0;
+      m.all += v; m[k] += v;
+      if (!erKredit(x) && x.credit_of == null) { m.n++; if (k === 'uttekt') m.nu++; if (k === 'bud') m.nb++; }
     });
     return r;
   }
@@ -179,8 +187,8 @@
 
   const MAEL = [
     /* ── Peningar ── */
-    { id: 'tekjur', hopur: 'Peningar', heiti: 'Tekjur · mánuður á móti síðasta', slod: { view: 'income', t: 'Tekjur' }, maela: g => {
-      const t = tekjurManadar(kraefst(g.solur.v, 'solur')), n = t.nu, f = t.fyrri, dagur = new Date().getUTCDate();
+    { id: 'tekjur', hopur: 'Peningar', heiti: 'Tekjur án VSK · mánuður á móti síðasta', slod: { view: 'income', t: 'Tekjur' }, maela: g => {
+      const t = tekjurManadar(kraefst(g.solur.v, 'solur'), g.solurVoid && g.solurVoid.ok ? g.solurVoid.v : []), n = t.nu, f = t.fyrri, dagur = new Date().getUTCDate();
       const spa = n.all / hluti(), hlutf = f.all ? spa / f.all : 1;
       const sev = dagur < 8 ? 'upp' : hlutf < THR.tekjurAlv ? 'alv' : hlutf < THR.tekjurAthuga ? 'athuga' : 'ok';
       // 10.11.2026: undirtextinn bar hráa mánaðartölu saman við HEILAN síðasta mánuð („−86,8 %" á 10. degi) þótt ljósið dæmi eftir

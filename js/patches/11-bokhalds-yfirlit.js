@@ -673,7 +673,7 @@
     for (const s of real) {
       customers.add(s.customer_id || s.customer || '');
     }
-    cards.push({ lbl: 'Heildarsala', val: fmtKr(totalSamtals), cls: 'accent', sub: real.length + (real.length === 1 ? ' sala' : ' sölur') });
+    cards.push({ lbl: 'Heildarsala', val: fmtKr(totalSamtals), cls: 'accent', sub: real.length + (real.length === 1 ? ' sala' : ' sölur') + (_loadedMode === 'recent' && !getRangeFromInputs().from && !getRangeFromInputs().to ? ' · nýjustu 400, ekki tímabil' : '') });
     cards.push({ lbl: 'Án VSK', val: fmtKr(totalEx) });
     // VSK by rate
     const sortedRates = [...byRate.keys()].sort((a,b) => b - a);
