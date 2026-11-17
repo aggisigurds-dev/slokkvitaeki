@@ -789,8 +789,8 @@
   // þar sem ferðin hefur ekki þegar handslegið verð (trip.drive / trip.skyrslugerd). Kynslóðin sem lendir á miðri síðu (önnur
   // vél vistar) berst um AppSettings.onChange; breytist gildi er 129 beðin um að teikna töfluna aftur.
   var SVD_LYKILL = 'slokk_visit_defaults';
-  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };   // sama og 129 — röð hleðslu skiptir ekki máli
-  var SVD_KODI = { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };   // sjálfgildin í kóðanum — það sem gildir þegar ekkert er vistað á þjóni
+  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };   // sama og 129 — röð hleðslu skiptir ekki máli
+  var SVD_KODI = { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };   // sjálfgildin í kóðanum — það sem gildir þegar ekkert er vistað á þjóni
   // Hluturinn er ALLTAF byggður upp á nýtt úr kóðanum + því sem er á þjóni (ekki lagt ofan á það sem var), svo gildi sem hverfur af
   // þjóni (eða úrelt staðbundið skyndiminni AppSettings) skilur ekki eftir gamla tölu í úttektinni.
   function svdBeita() {
@@ -1080,7 +1080,7 @@
     // Akstur og Skýrslugerð (Agnar 09.11.2026: „vantar … Akstur og skýrslugerð, verðin sem eru default í úttektarskoðuninni" og svo
     // „öll verð og textar eiga að vera breytilegir"): sjálfgildi úttektarinnar — verð OG heiti á reikningslínu — búa í
     // app_settings.slokk_visit_defaults (sjá svdBeita) og eru lögð ofan á window.SlokkVisitDefaults sem 129, 165 og 488 lesa.
-    var D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+    var D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };
     function fastRad(lykill, nafnKodi, an, telur) {
       var nafn = D[lykill + '_heiti'] || nafnKodi;
       return '<tr data-fast="' + lykill + '"><td style="font-weight:700;color:#0f172a">' +
