@@ -834,6 +834,53 @@ Próf:
 - `test/skyrsla-ein-heimild-sala.test.cjs`, 14 próf; 10 af 14 féllu á gamla kóðanum (master 0d902321; hin 4 prófa kjarnann einan, sem var ekki til).
 - `test/skyrsla-fylgir-solu.test.cjs`.
 
+### Reiknings-PDF fylgir sölu — ein regla (17.11.2026)
+
+Agnar 17.11.2026 (skjámynd): „það er ennþá vitlaus kennitala á bölv reikningnum“. Það sem opnaðist var PDF-afrit GAMLA
+reikningsins (kreditfærður, gömul kt). Nýja salan átti sitt eigið, rétta PDF. Þrjár ástæður:
+- **Parið** (`document_pairs`, DB-gikkurinn `auto_pair_customer_document`): FYRSTI reikningur ársins á staðnum tekur
+  sætið og losnar aldrei, ekki einu sinni við kredit. Fyrirtækjaspjaldið (199) og „Skýrsla og reikningur saman“ sýndu
+  hann sem reikning ársins.
+- **Kreditfærður reikningur var ómerktur** alls staðar: í spjaldinu, í Afgreiðslu („Reikningur R-… (PDF)“) og í gáttinni.
+  Gáttin fann kreditnótuna aðeins ef hún var sjálf í listanum, en hún á sér enga skjalaröð.
+- **Vistunin (233)**: „afrit með þessu R-númeri er til → sleppa“, svo ósend sala sem breyttist (kt leiðrétt, línur)
+  hélt PDF-i á gömlu kt. Auk þess prentaði PDF-ið kt STAÐARINS, ekki kt sölunnar sem Payday rukkar.
+
+**Ein regla:** `js/patches/517-reikningur-solu.js` (UMD). Þjónsafritið `netlify/functions/_reikningur-solu.cjs` er
+nákvæmlega sama skrá, og prófið krefst þess (`cp` eftir hverja breytingu).
+- `velja(sale, vidhengi, skjol)` velur PDF-afrit ÞESSARAR sölu: nákvæmlega sama R-númer, ekki leyst af hólmi, nýjast
+  vinnur. Aldrei „fyrsta skjal ársins“.
+- `bera(sale, pdf, {kredit})`:
+  - R-númer og kt stöðva;
+  - upphæð og nafn eru viðvörun;
+  - kreditfærð sala stöðvar.
+- `kreditMap`: kreditfærsla er staðreynd í `solur` (`credit_of` EÐA `kredit_a`, ógild nóta telst ekki), svo hún gildir
+  aftur í tímann án merkingar.
+
+**Hvar reglan er notuð:**
+
+| Staður | Hvað gerist |
+|---|---|
+| 199 fyrirtækjaspjaldið | Kreditfærður reikningur er grár, yfirstrikaður, „kreditfært (R-…)“ (opnast enn, engu eytt), hvorki valinn sem reikningur ársins né talinn í Hreyfingum. Kreditnótan og eldri, leyst afrit eru ekki kandídatar. Bendi parið á kreditfærðan reikning og EINN gildur er til fær parið hann (`savePair`, sama og „🔗 Tengja“; `matched_by='kredit_skipti'`, gamla skjalið í `notes`). |
+| 311/253 pörin | Kreditfærð sala er ekki reikningur ársins. |
+| 233 vistun | Ósend sala: afrit sem stemmir ekki (kt, R-nr, upphæð) víkur fyrir nýju. Það gamla fær `leyst_af` (111 supersede), skjalaröðin fær nýju slóðina og gamla slóðin fer í `notes`. Send sala: afritið stendur. PDF-ið prentar kaupanda SÖLUNNAR (`kaupandi()`). |
+| 517 eftir breytingu | `sale-edited`/`sala-breytt` → 233 með `adeinsEfTil`. Gerist sjálfkrafa, því reikningur ber engan handskrifaðan texta (öfugt við skýrsluna). |
+| 254 tölvupóstur | Kreditfærður reikningur fer aldrei í póst. Vistað afrit er notað aðeins ef R-nr og kt stemma (upphæð ein víkur → afritið gildir); annars er PDF-ið teiknað úr sölunni. |
+| 166 sendiglugginn | Reitur „🧾 Reikningurinn“: R-nr · kt · nafn · upphæð sem Payday fær, og hvort PDF-afritið stemmir. Rautt + „🧾 Endurgera PDF-afrit úr sölunni“. Payday-sendingin notar EKKI app-PDF-ið og er ekki stöðvuð. |
+| afgreidsla.cjs | Tengill á kreditfærðan reikning: „Reikningur R-… (PDF) — KREDITFÆRÐUR með R-…, gildir ekki“. |
+| gatt.cjs | Kreditnóturnar eru sóttar sérstaklega (`credit_of`/`kredit_a`). Kreditfærður reikningur sést kúnnanum ekki. |
+
+**Vörður og endurspilun:**
+- `tools/audit-reikningur-solu.cjs`: RAUTT ef ósend reikningssala ber PDF á annarri kt eða öðru R-númeri.
+  ⚠ fyrir upphæð, vantar, og pör á kreditfærðum reikningi.
+- `tools/endurspilun-reikningur-pdf.cjs [ár]`: gamla valið á móti nýju á öllum sölum ársins.
+
+Mælt 17.11.2026 á 1.001 lokasölu (466 með PDF):
+- 13 sendar á annarri kt og 15 sendar með aðra upphæð; 0 ósendar.
+- 29 kreditfærðar með ómerkt PDF.
+- 10 pör héldu kreditfærðum reikningi: 6 fá gildan, 4 bíða nýs reiknings.
+- Tölvupóstur: 42 breytast (13 kt + 29 kredit).
+
 ### Hvað er sannað (17.11.2026)
 
 - Aðeins hreinu föll „Leiðrétta“ (5 próf í `test/sala-leidretting.test.cjs`).

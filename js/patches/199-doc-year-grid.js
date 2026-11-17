@@ -570,8 +570,19 @@
   // frumrit — sölu-reikningurinn gildir. Þau víkja: salan verður aðaleintakið
   // og skjalið sést sem dauft ⚠-merki með skýringu (ekkert eytt).
   var SUSPECT_FOUND = /^(cowork-regen|cowork-payday-backfill|cowork-backfill|claude-code:fasi0)/i;
+  // 17.11.2026 (517, Agnar: „ennþá vitlaus kennitala á bölv reikningnum"): kreditfærður reikningur stóð ómerktur við hlið
+  // þess nýja og parið hélt honum sem reikningi ársins. Nú: grátt, yfirstrikað, „kreditfært (R-…)" — opnast enn (engu eytt).
+  function kreditChip(inner, kredit, idWrap, isAtt){
+    var t='Kreditfærður með '+kredit+' — þetta PDF er EKKI gildandi reikningur.';
+    var html='<span class="sk-doc inv kredit" title="'+esc(t)+'">'+inner+' <b>· kreditfært ('+esc(kredit)+')</b></span>';
+    return isAtt ? attWrap(html, idWrap) : docWrapFc(html, idWrap);
+  }
   function invDocChip(d, srcByNum){
     var u=docUrl(d); var lab=invLabel(d.invoice_number);
+    if(d && d._kredit){
+      var _in = u ? '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:line-through">🧾 '+esc(lab)+'</a>' : '<s>🧾 '+esc(lab)+'</s>';
+      return kreditChip(_in, d._kredit, d.id, false);
+    }
     // Reikninga-tegund (2026-08-22, Agnar): táknið á reikninga-chippi fylgir
     // vidskiptategund — 🧯 slökkvitæki (uttekt) · 🔥 brunakerfi · 🏪 almennt/búð (bud).
     var _teg=(d&&d.vidskiptategund)||(function(){ var k=numKey(d&&d.invoice_number); var e=k?srcByNum[k]:null; return (e&&typeof e==='object')?e.teg:null; })();
@@ -617,7 +628,9 @@
     return '<span class="sk-doc stolpi s-'+esc(st)+'" title="'+esc(d.stolpi_skyring||'Stólpi')+'">'+txt+'</span>';
   }
   function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
-  function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
+  function invAttChip(a, kredit){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i);
+    if(kredit) return kreditChip('<button type="button" class="sk-doc-in" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'" style="all:unset;cursor:pointer;text-decoration:line-through">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', kredit, a.id, true);
+    return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
 
   // 2026-08-11 (ósk Agnars — „connections between these buttons is needed and
@@ -1169,7 +1182,7 @@
       if(k==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push({_att:a});
       else if(k==='slokkvikerfi') (slkByY[y]=slkByY[y]||[]).push({_att:a});
       else if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
-      else if(k==='reikningur') pushInvByService({_att:a}, y);
+      else if(k==='reikningur'){ if(!a.leyst_af) pushInvByService({_att:a}, y); }   // 17.11.2026 (517): eldra afrit sem nýtt leysti af hólmi er ekki reikningur
     });
 
     // ── brunakerfis-skoðanir beint eftir fyrirtaeki_id ──
@@ -1251,6 +1264,21 @@
       Object.keys(byY).forEach(function(y){ byY[y] = dedupBucket(byY[y]); });
     });
     samn = dedupSamn(samn);
+    // 17.11.2026 (517): hvaða reikningar ársins hafa verið kreditfærðir? (solur credit_of / kredit_a — gildir aftur í tímann.)
+    try{
+      if(window.ReikningurSolu && ReikningurSolu.saekjaKredit){
+        var _rn=function(x){ return x.invoice_number ? String(x.invoice_number) : ((String((x._att&&x._att.name)||x.name||'').match(/R-\d{6}/)||[])[0]||''); };
+        var _nums=[];
+        [invUtByY, invBrByY, invSlkByY].forEach(function(byY){ Object.keys(byY).forEach(function(y){ (byY[y]||[]).forEach(function(x){ var n=_rn(x); if(n) _nums.push(n); }); }); });
+        var _km=await ReikningurSolu.saekjaKredit(SB(), _nums), _kk={};
+        Object.keys(_km).forEach(function(n){ var k=numKey(n); if(k) _kk[k]=_km[n]; });
+        var _kn={}; Object.keys(_km).forEach(function(n){ var k=numKey(_km[n]); if(k) _kn[k]=1; });   // kreditnóturnar sjálfar
+        [invUtByY, invBrByY, invSlkByY].forEach(function(byY){ Object.keys(byY).forEach(function(y){
+          // kreditnóta (eða neikvæð upphæð) er ekki reikningur ársins — hún fellur burt eins og (CREDIT)-raðirnar (isVoidInvoiceDoc)
+          byY[y]=(byY[y]||[]).filter(function(x){ var k=numKey(_rn(x)); return !(k && _kn[k]) && !(x.amount!=null && Number(x.amount)<0); });
+          byY[y].forEach(function(x){ var k=numKey(_rn(x)); if(k && _kk[k]) x._kredit=_kk[k]; }); }); });
+      }
+    }catch(_){}
 
     // ── Payday greitt/ógreitt-staða per reikningsnúmer (bara sýnt þegar öruggt
     // er hvaða Payday-krafa svarar til hvers reiknings — annars sleppt frekar
@@ -1461,6 +1489,11 @@
           if(or&&or.inv&&or.inv.id!=null) _taken[or.inv.id]=1;
         });
         invArr=invArr.filter(function(x){ return x._att || x.id==null || !_taken[x.id]; });
+        // 17.11.2026 (517): kreditfærðir reikningar víkja úr valinu (sýndir sér, merktir). Áður hélt parið (fyrsti reikningur
+        // ársins, document_pairs) kreditfærða reikningnum sem „reikningi ársins" eftir að nýr kom á nýja kennitölu.
+        var invKredit=invArr.filter(function(x){ return x && x._kredit; });
+        invArr=invArr.filter(function(x){ return !(x && x._kredit); });
+        var _parKredit = !!(stored && stored.invoice_doc_id!=null && invKredit.some(function(x){ return !x._att && x.id===stored.invoice_doc_id; }));
         var inv=null;
         if(stored&&stored.invoice_doc_id!=null){
           inv=invArr.find(function(x){ return !x._att && x.id===stored.invoice_doc_id; })||null;
@@ -1477,8 +1510,17 @@
             return !!k && saleIdByNum[k]===stored.solur_id;
           })||null;
         }
-        var autoSave=false;
+        var autoSave=false, kreditSkipti=null;
         if(!inv && repArr.length===1 && invArr.length===1 && otherArr.length===0){ inv=invArr[0]; autoSave=!stored; }
+        // Parið benti á kreditfærðan reikning og EINN gildur reikningur (eitt R-númer) er eftir → hann tekur sætið.
+        if(_parKredit){
+          if(!inv){
+            var _gk={}; invArr.forEach(function(x){ var k=numKey(chipInvNum(x)); if(k) _gk[k]=1; });
+            if(Object.keys(_gk).length===1) inv=invArr.find(function(x){ return !x._att && x.id!=null; })||invArr[0]||null;
+          }
+          // parið fær gilda reikninginn (líka þegar hann var valinn hér að ofan) — skjalaröðin með sama R-númeri ef valið var viðhengi
+          if(inv) kreditSkipti = (!inv._att && inv.id!=null) ? inv : (invArr.find(function(x){ return !x._att && x.id!=null && numKey(x.invoice_number)===numKey(chipInvNum(inv)); })||null);
+        }
         var ambiguous = !inv && invArr.length>=1;
         if(autoSave && baseId && !svc.ekkiVista){
           var rep=repArr[0];
@@ -1486,7 +1528,14 @@
             savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
           }
         }
-        resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr };
+        // Sama aðgerð og „🔗 Tengja" (savePair), afturkræf: gamla skjalið stendur í notes og matched_by segir hvers vegna.
+        if(kreditSkipti && baseId && !svc.ekkiVista && !kreditSkipti._att && kreditSkipti.id!=null){
+          var _gamalt=invKredit.find(function(x){ return !x._att && x.id===stored.invoice_doc_id; });
+          savePair(baseId, y, svc.kind, coId, { invoice_doc_id: kreditSkipti.id, solur_id: null, matched_by: 'kredit_skipti',
+            status: (stored.report_doc_id!=null ? 'klarad' : 'vantar_skyrslu'),
+            notes: 'Reikningur parsins (skjal #' + stored.invoice_doc_id + ', ' + ((_gamalt&&_gamalt.invoice_number)||'?') + ') var kreditfærður með ' + ((_gamalt&&_gamalt._kredit)||'?') + ' — ' + new Date().toISOString().slice(0,10) });
+        }
+        resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr, invKredit:invKredit };
       });
     });
     section._repByY = repByY; section._bruByY = bruByY; section._invByY = invUtByY;
@@ -1516,7 +1565,7 @@
     function svcInvHtml(y, svc, forCompact){
       var r=resolved[y+'|'+svc.kind];
       if(r.inv){
-        var chip = r.inv._att?invAttChip(r.inv._att):invDocChip(r.inv, srcByNum);
+        var chip = r.inv._att?invAttChip(r.inv._att, r.inv._kredit):invDocChip(r.inv, srcByNum);
         var st=paydayStatusFor(r.inv);
         var stBadge = st ? ('<span class="sk-svc-pay '+(st.paid?'ok':'due')+'">'+(st.paid?'✓ Greitt':'⚠ Ógreitt')+'</span>') : '';
         var amt = (!forCompact && r.inv.amount!=null) ? ('<span class="sk-svc-amt">'+fmtKrLoc(r.inv.amount)+' kr</span>') : '';
@@ -1524,11 +1573,13 @@
       }
       if(svc.ekkiVista){
         // Enginn upphleðslu-/tengitakki hér: „+ reikningur" myndi vista skrá sem félli í 🧯-dálkinn.
-        if(r.invCandidates && r.invCandidates.length) return r.invCandidates.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x, srcByNum); }).join('');
+        if(r.invCandidates && r.invCandidates.length) return r.invCandidates.map(function(x){ return x._att?invAttChip(x._att, x._kredit):invDocChip(x, srcByNum); }).join('');
         return '<span class="sk-doc prog" title="Reikningsdrög verða til úr kostnaðarlínunum í 🍳-flipanum">'+(y===NOW?'⏳ enginn reikningur enn':'enginn reikningur')+'</span>';
       }
-      if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
-      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
+      // 17.11.2026 (517): kreditfærðir reikningar ársins sjást (merktir) — en þeir eru ekki val og ekki „reikningur ársins".
+      var _kr=(r.invKredit||[]).map(function(x){ return x._att?invAttChip(x._att, x._kredit):invDocChip(x, srcByNum); }).join('');
+      if(r.ambiguous) return _kr+manualLinkHtml(y, svc, r.invCandidates);
+      return _kr+addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
     }
     // 30.09.2026 — orðalag líðandi árs þegar EKKERT skjal er komið. Sjá lengri
     // skýringu við stöðumerkið að neðan: „Í vinnslu" var notað um tómið sjálft.
@@ -1684,7 +1735,9 @@
                    brunakerfi:{i:'🔥',t:'Brunakerfi'}, slokkvikerfi:{i:'🍳',t:'Slökkvikerfi'} };
     var hreyfHtml='';
     if(hreyf.length){
-      var summa = hreyf.reduce(function(n,x){ return n + (x.upph||0); }, 0);
+      // 17.11.2026 (517): kreditfærður reikningur er sýndur (yfirstrikaður) en ekki talinn með — kreditnótan á sér enga skjalaröð.
+      var nKredit = hreyf.filter(function(x){ return x.d && x.d._kredit; }).length;
+      var summa = hreyf.reduce(function(n,x){ return n + ((x.d && x.d._kredit) ? 0 : (x.upph||0)); }, 0);
       var vantarUpph = hreyf.filter(function(x){ return x.upph==null; }).length;
       hreyfHtml =
         '<div class="sk-strip" style="align-items:flex-start">'+
@@ -1701,7 +1754,7 @@
                 '</span></div>';
             }).join('')+
             '<div style="display:flex;align-items:center;gap:8px;padding:5px 0 0">'+
-              '<span class="sk-sub" style="flex:1 1 auto">'+hreyf.length+' reikningar'+
+              '<span class="sk-sub" style="flex:1 1 auto">'+(hreyf.length-nKredit)+' reikningar'+(nKredit?' · '+nKredit+' kreditfærður (ekki talinn)':'')+
                 (vantarUpph? ' · '+vantarUpph+' án skráðrar upphæðar' : '')+'</span>'+
               '<span class="sk-sub" style="font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums">'+
                 esc(fmtKrLoc(summa))+' kr</span>'+
@@ -2227,6 +2280,7 @@
       '.sk-doc.rep.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d}',
       '.sk-doc.inv.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d;padding:4px 7px}',
       '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
+      '.sk-doc.inv.kredit{background:#f3f4f6;color:#6b7280;border-color:#d1d5db;border-style:dashed}',
       '.sk-doc.pd{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe;cursor:default}',
       '.sk-doc.stolpi{cursor:help;font-weight:600;font-size:10.5px;padding:3px 7px}',
       '.sk-doc.stolpi.s-greitt{background:#f0fdf4;color:#166534;border-color:#bbf7d0}',

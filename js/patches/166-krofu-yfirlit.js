@@ -2854,6 +2854,7 @@
           '<div style="font-size:17px;font-weight:800;color:#11141c;margin-bottom:4px">🏦 Senda kröfu í Payday</div>' +
           '<div style="font-size:13px;color:#334155">' + esc((sale && sale.num) || '') + ' · ' + esc((sale && sale.customer_nafn) || '') + ' · <b class="ky-num">' + fmtKr(sale && sale.samtals) + '</b></div>' +
           reportHtml +
+          '<div id="_ky-send-reikn"></div>' +
           '<div id="_ky-send-skyrsla"></div>' +
           '<div id="_ky-send-afh"></div>' +
           '<div style="font-size:12px;color:#64748b;margin-bottom:16px">Sendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".</div>' +
@@ -2882,6 +2883,7 @@
       const ob = wrap.querySelector('#_ky-send-open');
       if (ob) ob.addEventListener('click', () => { openSkyrsla(res).catch(e => alert('Villa: ' + (e.message || e))); });
       if (sale && sale.id) synaAfhendingu(wrap.querySelector('#_ky-send-afh'), sale);
+      if (sale && sale.id) synaReikning(wrap.querySelector('#_ky-send-reikn'), sale);
       if (sale && sale.id && (sale.source === 'uttekt' || sale.source === 'vinnublad')) synaSkyrslu(wrap.querySelector('#_ky-send-skyrsla'), sale);
     });
   }
@@ -2891,6 +2893,60 @@
   // sami dómur og sendingin sjálf notar. Stemmi hún ekki: rauður reitur, ástæðurnar og takki „Búa til nýja skýrslu"
   // (516 SkyrslaSolu.endurnyja). Sendingin stöðvast þá með þessari skýrslu; „án skýrslu" er áfram í boði. Bilun í
   // athuguninni breytir engu öðru í glugganum.
+  // 17.11.2026 (517 — Agnar: „ennþá vitlaus kennitala á bölv reikningnum"): reikningurinn sem fer út. Payday býr hann til
+  // úr SÖLUNNI (R-númer · kt · nafn · upphæð — sýnt hér svo það sjáist fyrir sendingu). PDF-afritið sem appið geymir (opnast
+  // á fyrirtækjaspjaldinu, fer í tölvupóst) er borið við söluna með sömu reglu og alls staðar (ReikningurSolu): rautt ef það
+  // er á annarri kt / öðru R-númeri eða salan er kreditfærð, gult ef upphæð eða nafn víkur. „Endurgera PDF" = 233 (nýtt afrit,
+  // það gamla merkt „leyst af hólmi", engu eytt). Payday-sendingin sjálf notar ekki PDF-afritið og er því ekki stöðvuð hér.
+  async function synaReikning(box, sale) {
+    if (!box || !window.ReikningurSolu) return;
+    const RS = window.ReikningurSolu;
+    const sb = getSB();
+    if (!sb) return;
+    let s = null, docs = [], km = {};
+    try {
+      const r = await sb.from('solur').select('*').eq('id', sale.id).single();
+      s = r && r.data;
+      if (!s || !s.num) return;
+      const out = await Promise.all([
+        sb.from('customer_documents').select('id,invoice_number,storage_path,amount,is_duplicate,doc_type').eq('invoice_number', s.num).then(x => (x && x.data) || [], () => []),
+        RS.saekjaKredit(sb, [s.num]),
+      ]);
+      docs = out[0]; km = out[1] || {};
+    } catch (_) { return; }
+    if (!box.isConnected) return;
+    const vid = (s.customer_id && window.CompanyAttachments && CompanyAttachments.list) ? (CompanyAttachments.list(s.customer_id) || []) : [];
+    const pdf = RS.velja(s, vid, docs);
+    const dom = RS.bera(s, pdf, { kredit: km[s.num] || null });
+    const ktd = RS.ktTolur(s.customer_kt);
+    const hvad = '<b>' + esc(s.num) + '</b> · ' + esc(s.customer_nafn || '') + (ktd.length === 10 ? ' · kt ' + ktd.slice(0, 6) + '-' + ktd.slice(6) : '') +
+      ' · ' + esc(Math.round(Number(s.samtals) || 0).toLocaleString('de-DE')) + ' kr';
+    const stodva = dom.misraemi.filter(m => m.stodvar), vara = dom.misraemi.filter(m => !m.stodvar && m.svid !== 'vantar');
+    let h;
+    if (!stodva.length && !vara.length) {
+      h = '<div class="_ky-rk-ok" style="margin:-6px 0 12px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12.5px;color:#14532d">' +
+        '🧾 Reikningurinn: ' + hvad + ' — Payday býr hann til úr sölunni.' + (pdf ? ' <b>✓ PDF-afritið stemmir.</b>' : ' Ekkert PDF-afrit vistað í appinu.') + '</div>';
+    } else {
+      const lit = stodva.length ? { bg: '#fef2f2', bd: '#fecaca', c: '#991b1b', t: '⚠ PDF-afrit reikningsins stemmir EKKI við söluna' } : { bg: '#fffbeb', bd: '#fde68a', c: '#78350f', t: '⚠ Athugaðu PDF-afrit reikningsins' };
+      const kredit = dom.misraemi.some(m => m.svid === 'kredit');
+      const mega = !kredit && RS.urelt(dom) && s.customer_id && !s.krafa_sent_at && window.UttektInvoicePdf && UttektInvoicePdf.saveForSale;
+      h = '<div class="_ky-rk-villa" style="margin:-6px 0 12px;padding:11px 14px;background:' + lit.bg + ';border:1px solid ' + lit.bd + ';border-radius:10px;font-size:12.5px;color:' + lit.c + ';line-height:1.45">' +
+        '<b>' + (kredit ? '⚠ Þessi reikningur var kreditfærður' : lit.t) + '.</b><div style="margin:4px 0 2px">🧾 ' + hvad + '</div>' +
+        '<ul style="margin:6px 0 8px 18px;padding:0">' + stodva.concat(vara).map(m => '<li>' + esc(m.texti) + '</li>').join('') + '</ul>' +
+        (kredit ? '<div>Ekki senda — búðu til nýjan reikning í staðinn.</div>'
+          : '<div style="margin-bottom:8px">Payday býr reikninginn til úr sölunni sjálfri (hér að ofan), svo krafan fer á rétta kennitölu — en PDF-afritið sem opnast á fyrirtækjaspjaldinu og fer í tölvupósti er rangt.</div>') +
+        (mega ? '<button type="button" class="_ky-rk-ny" style="padding:7px 12px;border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">🧾 Endurgera PDF-afrit úr sölunni</button>' : '') +
+      '</div>';
+    }
+    box.innerHTML = h;
+    const nb = box.querySelector('._ky-rk-ny');
+    if (nb) nb.addEventListener('click', async () => {
+      nb.disabled = true; nb.textContent = '⏳ Teikna nýtt PDF…';
+      try { await UttektInvoicePdf.saveForSale(s.customer_id, s, { adeinsEfTil: true }); } catch (e) { alert('PDF-afritið vistaðist ekki: ' + ((e && e.message) || e)); }
+      synaReikning(box, sale);
+    });
+  }
+
   async function synaSkyrslu(box, sale) {
     if (!box) return;
     let j = null;

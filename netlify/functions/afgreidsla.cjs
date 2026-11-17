@@ -62,6 +62,23 @@ const kr = (n) => Math.round(Number(n) || 0);
 
 async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 160)}`); return r.json(); }
 const lesa = (qs) => P.sbGet(qs).then(sbJson);
+
+// 17.11.2026 (Agnar: „ennþá vitlaus kennitala á bölv reikningnum“): Afgreiðsla #55 tengdi á PDF GAMLA reikningsins sem
+// „Reikningur R-… (PDF)“ — kreditfærðan, á gömlu kennitölunni. Kreditfærður reikningur er nú merktur í tenglinum (opnast enn,
+// engu eytt). Sama regla og alls staðar: 517 ReikningurSolu.kreditMap (solur credit_of / kredit_a).
+const RS = require('./_reikningur-solu.cjs');
+async function kreditFyrir(nums) {
+  const n = [...new Set((nums || []).filter((x) => /^R-\d{6}$/.test(String(x || ''))))];
+  if (!n.length) return {};
+  try {
+    const solur = await lesa(`solur?select=id,num&num=in.(${n.join(',')})`);
+    const ids = solur.map((x) => x.id).filter((x) => x != null);
+    const ors = [`kredit_a.in.(${n.join(',')})`].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : []);
+    const kn = await lesa(`solur?select=num,credit_of,kredit_a,status,is_credit&is_credit=eq.true&or=(${ors.join(',')})`);
+    return RS.kreditMap(kn, solur);
+  } catch (_) { return {}; }
+}
+const reiknTexti = (nr, km) => 'Reikningur ' + nr + ' (PDF)' + (km && km[nr] ? ' — KREDITFÆRÐUR með ' + km[nr] + ', gildir ekki' : '');
 const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date().toISOString() }, body)).then(sbJson);
 
 // Tóki fyrir póstsendinguna þjóna á milli. 16.11.2026: myntaður í hub-adgangar.cjs með session_secret úr sameiginlega
@@ -231,7 +248,9 @@ async function leysaTilvisanir(refs) {
   ]);
   const rnr = [...new Set(solur.map((s) => s.num).concat(R.filter((r) => r.tegund === 'payday' && r.felag === 'slokkvitaeki').map((r) => String(r.numer || '')))
     .filter((x) => /^[RK]-\d{3,8}$/.test(x)))];
-  const reikn = rnr.length ? await lesa(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${rnr.join(',')})&order=id.desc`).catch(() => []) : [];
+  const [reikn, km] = rnr.length ? await Promise.all([
+    lesa(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${rnr.join(',')})&order=id.desc`).catch(() => []),
+    kreditFyrir(rnr)]) : [[], {}];
   const reiknPdf = (nr) => { const d = reikn.find((x) => x.invoice_number === nr && !x.is_duplicate) || reikn.find((x) => x.invoice_number === nr); return d ? skjalSlod(d) : ''; };
   return (r) => {
     if (!r || typeof r !== 'object') return null;
@@ -239,13 +258,13 @@ async function leysaTilvisanir(refs) {
     if (r.tegund === 'sala') {
       const s = solur.find((x) => x.id === Number(r.id)); if (!s || !s.num) return null;
       const pdf = reiknPdf(s.num);
-      return pdf ? { url: pdf, texti: 'Reikningur ' + s.num + ' (PDF)' } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' };
+      return pdf ? { url: pdf, texti: reiknTexti(s.num, km), kreditfaert: km[s.num] || null } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' + (km[s.num] ? ' — KREDITFÆRÐ með ' + km[s.num] : '') };
     }
     if (r.tegund === 'post') { const p = postar.find((x) => x.id === Number(r.id)); const u = p && gmailSlod(p.account, p.thread_id); return u ? { url: u, texti: 'Pósturinn í Gmail' } : null; }
     if (r.tegund === 'payday') {
       const nr = String(r.numer || '').trim(); if (!nr) return null;
       if (r.felag === 'brunaholf' && /^\d{1,7}$/.test(nr)) return { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(nr), texti: 'Payday-reikningur ' + nr + ' (PDF)' };
-      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: 'Reikningur ' + nr + ' (PDF)' } : null; }
+      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: reiknTexti(nr, km), kreditfaert: km[nr] || null } : null; }
       return null;
     }
     // Aðeins OPIÐ mál fær slóð — lokað mál sést ekki á borðinu og tengillinn lofaði þá einhverju sem gerist ekki.
@@ -261,15 +280,16 @@ async function reikningsTenglar(malIds) {
   const mal = await lesa(`thjonustubeidni?select=notes&id=in.(${tolur(malIds).join(',')})`);
   const nr = [...new Set(mal.map((m) => String(m.notes || '').match(/\bR-\d{3,6}\b/g) || []).flat())].slice(0, 200);
   const slokk = nr.filter((x) => /^R-\d{6}$/.test(x)), bru = nr.filter((x) => /^R-\d{3,4}$/.test(x)).map((x) => x.slice(2));
-  const [docs, inv] = await Promise.all([
+  const [docs, inv, km] = await Promise.all([
     slokk.length ? lesa(`customer_documents?select=invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${slokk.join(',')})&order=id.desc`) : [],
     bru.length ? lesa(`invoices?select=tilvisun&source=eq.payday&payday_uuid=not.is.null&tilvisun=in.(${bru.join(',')})`) : [],
+    kreditFyrir(slokk),
   ]);
   const ut = {};
   for (const n of slokk) {
     const d = docs.find((x) => x.invoice_number === n && !x.is_duplicate) || docs.find((x) => x.invoice_number === n);
     const u = d && skjalSlod(d);
-    if (u) ut[n] = { url: u, texti: 'Reikningur ' + n + ' (PDF)' };
+    if (u) ut[n] = { url: u, texti: reiknTexti(n, km), kreditfaert: km[n] || null };
   }
   for (const t of new Set(inv.map((x) => String(x.tilvisun)))) ut['R-' + t] = { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(t), texti: 'Payday-reikningur ' + t + ' (PDF, Brunahólf)' };
   return ut;
@@ -796,3 +816,4 @@ module.exports._amLykill = amLykill;
 module.exports._synilegtAdalmal = synilegtAdalmal;
 module.exports._sameina = SAM;
 module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)
+module.exports._leysaTilvisanir = leysaTilvisanir;   // 17.11.2026: prófin (kreditfærður reikningur merktur)

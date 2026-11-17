@@ -19,7 +19,8 @@ const GY = require('./_gatt-years.cjs');
 const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 const BGR = require('./_gatt-bgr.cjs');
-const SVD = require('./_gatt-serkjor.cjs');   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
+const SVD = require('./_gatt-serkjor.cjs');
+const RS = require('./_reikningur-solu.cjs');   // 17.11.2026: kreditfærður reikningur (credit_of / kredit_a) — sama regla og appið (517)   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -1466,6 +1467,15 @@ exports.handler = async (event) => {
           rows.forEach((s) => { idByNr[normNr(s.num)] = s.id; if (s.status === 'void' || s.is_credit) ut.add(normNr(s.num)); });
           const kreditud = new Set(rows.filter((s) => s.credit_of != null).map((s) => s.credit_of));
           Object.keys(idByNr).forEach((n) => { if (kreditud.has(idByNr[n])) ut.add(n); });
+          // 17.11.2026: kreditnótan er sjaldnast sjálf í listanum (hún á ekkert skjal) — þá fannst credit_of hennar aldrei og
+          // kreditfærði reikningurinn (gamla kennitalan, eftir endurgerð á nýja kt) sást kúnnanum sem reikningur.
+          const ids = rows.map((s) => s.id).filter((x) => x != null);
+          const nrs = rows.map((s) => s.num).filter((x) => /^R-\d{6}$/.test(String(x || '')));
+          if (ids.length || nrs.length) {
+            const ors = [].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : [], nrs.length ? [`kredit_a.in.(${nrs.join(',')})`] : []);
+            const kr = await P.sbGet(`solur?is_credit=eq.true&or=(${ors.join(',')})&select=num,credit_of,kredit_a,status,is_credit`).catch(() => ({ ok: false }));
+            if (kr && kr.ok) Object.keys(RS.kreditMap(await kr.json(), rows)).forEach((n) => ut.add(normNr(n)));
+          }
           for (let i = invoices.length - 1; i >= 0; i--) { if (invoices[i]._kredit || ut.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
         }
       }

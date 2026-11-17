@@ -85,6 +85,18 @@
     if (subId != null && String(subId).trim() !== '') parts.push('#' + String(subId).trim());
     return parts.join(' - ') + '.pdf';
   }
+  // 17.11.2026 (517): kaupandinn á PDF-inu er sá sem SALAN rukkar (sale.customer_kt — sama og Payday fær). Áður prentaði
+  // PDF-ið kt staðarins (co.kennitala) óháð sölunni; mælt 17.11: 13 PDF-afrit 2026 báru aðra kt en salan.
+  // Nafn og heimilisfang staðarins gilda aðeins þegar kt hans er kt sölunnar (sama vörn og payday-push _siteOk).
+  function kaupandi(sale, co) {
+    var sk = String((sale && sale.customer_kt) || '').replace(/\D/g, ''), ck = String((co && co.kennitala) || '').replace(/\D/g, '');
+    var sami = !(sk.length === 10) || sk === ck;
+    return {
+      nafn: sami ? ((co && co.nafn) || (sale && sale.customer_nafn) || '') : ((sale && sale.customer_nafn) || (co && co.nafn) || ''),
+      kennitala: sk.length === 10 ? sk : ck,
+      heimilisfang: sami ? ((co && co.heimilisfang) || '') : '',
+    };
+  }
   function isoYear(s) { var m = /(\d{4})/.exec(String(s || '')); return m ? m[1] : String(new Date().getFullYear()); }
   function ddmmyyyy(s) {
     var d = s ? new Date(s) : new Date(); if (isNaN(d)) d = new Date();
@@ -266,15 +278,16 @@
 
     // ── Meta-röð: kaupandi (vinstri) | reiknings-haus (hægri) ──
     var leftY = y, rightY = y;
+    var kp = kaupandi(sale, co);
     doc.setTextColor(20).setFont('helvetica', 'bold').setFontSize(11);
-    doc.text(pdfText((co && co.nafn) || sale.customer_nafn || '—'), M, leftY); leftY += 6;
+    doc.text(pdfText(kp.nafn || '—'), M, leftY); leftY += 6;
     doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(40);
-    if (co && co.heimilisfang) {
-      String(co.heimilisfang).split(/,\s*/).filter(Boolean).forEach(function (ln) {
+    if (kp.heimilisfang) {
+      String(kp.heimilisfang).split(/,\s*/).filter(Boolean).forEach(function (ln) {
         doc.text(pdfText(ln), M, leftY); leftY += 5;
       });
     }
-    if (co && co.kennitala) { doc.text('kt. ' + fmtKtDash(co.kennitala), M, leftY); leftY += 5; }
+    if (kp.kennitala) { doc.text('kt. ' + fmtKtDash(kp.kennitala), M, leftY); leftY += 5; }
     var vg = vegnaLine(sale.athugasemdir);
     if (vg) {
       leftY += 2;
@@ -525,7 +538,7 @@
       }
     } catch (e) { console.warn('[233] reikn-brú', e && e.message); }
     try {
-      var q = await SB.from('customer_documents').select('id,storage_path').eq('invoice_number', rnum).or('is_duplicate.is.null,is_duplicate.eq.false').order('id', { ascending: true }).limit(5);
+      var q = await SB.from('customer_documents').select('id,storage_path,notes').eq('invoice_number', rnum).or('is_duplicate.is.null,is_duplicate.eq.false').order('id', { ascending: true }).limit(5);
       // Lestur ÁÐUR en skrifað er: brotinn lestur (RLS/net) má aldrei líta út eins og „engin röð" → tvítekning.
       if (!q || q.error) throw (q && q.error) || new Error('lestur customer_documents brást');
       var rows = q.data || [];
@@ -536,6 +549,13 @@
           if (!row.storage_path) {
             var u0 = await SB.from('customer_documents').update({ storage_path: sp, link_ok: true, link_status: '200', link_checked_at: new Date().toISOString() }).eq('id', row.id).select('id');
             if (!u0 || u0.error || !(u0.data && u0.data.length)) throw (u0 && u0.error) || new Error('storage_path skrifaðist ekki á röð ' + row.id);
+          }
+          else if (opts && opts.leysirAf && opts.leysirAf.indexOf(String(row.storage_path)) >= 0 && row.storage_path !== sp) {
+            // 17.11.2026 (517): salan breyttist eftir að PDF-ið var gert — röðin bendir nú á nýja afritið; gamla skráin stendur.
+            var u1 = await SB.from('customer_documents').update({ storage_path: sp, amount: Math.round(Number(sale.samtals) || 0) || null,
+              notes: (String(row.notes || '') + ' · eldra PDF-afrit (stemmdi ekki við söluna): ' + row.storage_path).trim(),
+              link_ok: true, link_status: '200', link_checked_at: new Date().toISOString() }).eq('id', row.id).select('id');
+            if (!u1 || u1.error || !(u1.data && u1.data.length)) throw (u1 && u1.error) || new Error('nýja slóðin skrifaðist ekki á röð ' + row.id);
           }
           else if (opts && opts.endurgera && er254Slod(row.storage_path) && row.storage_path !== sp) {
             var u = await SB.from('customer_documents').update({ storage_path: sp, link_ok: true, link_status: '200', link_checked_at: new Date().toISOString() }).eq('id', row.id).select('id');
@@ -564,20 +584,33 @@
     var rnum = String(sale.num || '');
     // Tvíritunarvörn: kanónískt afrit með þessu R-númeri er þegar til → sleppa. Gamalt 254-snið telst ekki afrit
     // þegar endurgera er beðið um (það er einmitt það sem á að skipta út).
-    var gomul254 = [];
+    // 17.11.2026 (517 — sama regla og úttektarskýrslan): afrit sem er þegar til gildir AÐEINS ef það stemmir við söluna
+    // (R-númer, kt, upphæð). Ósend sala sem var breytt (kt leiðrétt, línur, afsláttur) fær NÝTT PDF og það gamla er merkt
+    // „leyst af hólmi" — engu eytt. Áður: „afrit með þessu R-númeri er til → sleppa", svo PDF-ið hélt gömlu kennitölunni.
+    // Send sala: afritið stendur óbreytt (útgefinn reikningur) — gagnavörðurinn segir frá misræmi.
+    // opts.adeinsEfTil: aðeins endurnýja (517 eftir breytingu) — aldrei búa til fyrsta afrit þar sem ekkert var.
+    var RS = window.ReikningurSolu || null;
+    var gomul254 = [], urelt = [];
     try {
       var have = (CompanyAttachments.list ? CompanyAttachments.list(coId) : []) || [];
-      var med = rnum ? have.filter(function (a) { return a && a.name && a.name.indexOf(rnum) >= 0; }) : [];
+      var med = rnum ? have.filter(function (a) { return a && a.name && !a.leyst_af && (RS ? RS.rnumSama(a.name, rnum) : a.name.indexOf(rnum) >= 0); }) : [];
       gomul254 = med.filter(er254Snid);
       var kanon = med.filter(function (a) { return !er254Snid(a); });
-      if (kanon.length) return null;
-      if (gomul254.length && !opts.endurgera) return null;
+      if (kanon.length) {
+        if (!RS || sale.krafa_sent_at || sale.invoiced_at || sale.is_credit) return null;
+        var skjolR = [];
+        try { var qd = SB ? await SB.from('customer_documents').select('id,invoice_number,storage_path,amount,is_duplicate,doc_type').eq('invoice_number', rnum) : null; skjolR = (qd && qd.data) || []; } catch (_) {}
+        if (!RS.urelt(RS.bera(sale, RS.velja(sale, kanon, skjolR), {}))) return null;
+        urelt = kanon;
+      } else if (opts.adeinsEfTil && !gomul254.length) return null;
+      if (gomul254.length && !opts.endurgera && !urelt.length) return null;
     } catch (_) {}
     var meta = null, villa = '';
     for (var tilraun = 1; tilraun <= 3 && !meta; tilraun++) {
       try {
         var blob = await buildInvoiceBlob(sale, co);
-        var fname = docName(co.nafn, co.kennitala, ar, sale.num || 'reikningur', coId);
+        var _kp = kaupandi(sale, co);
+        var fname = docName(_kp.nafn, _kp.kennitala, ar, sale.num || 'reikningur', coId);
         var file = new File([blob], fname, { type: 'application/pdf' });
         var m = await CompanyAttachments.upload(coId, file, { year: ar, kind: 'reikningur' });
         if (!m || !m.path) throw new Error('upphleðsla skilaði engu');
@@ -593,7 +626,13 @@
     if (window.Toast && Toast.show) Toast.show('🧾 Reikningur ' + rnum + ' vistaður í skjöl (' + ar + ')');
     // Röðin + Drive — beðið (með tímamörkum) svo Kröfu yfirlit, gáttin og ársnetið sjái afritið strax.
     var skrad = {};
-    try { skrad = (await skraRod(co, sale, meta, ar, opts)) || {}; } catch (e) { console.warn('[233] skraRod', e && e.message); }
+    var _ropts = urelt.length ? Object.assign({}, opts, { leysirAf: urelt.map(function (a) { return 'samningar/' + String(a.path || a.storage_path || '').replace(/^samningar\//, ''); }) }) : opts;
+    try { skrad = (await skraRod(co, sale, meta, ar, _ropts)) || {}; } catch (e) { console.warn('[233] skraRod', e && e.message); }
+    // Eldra afritið víkur — merkt „leyst af hólmi" (111 supersede), skráin stendur. Aðeins eftir að nýja er sannreynt og skráð.
+    if (urelt.length && CompanyAttachments.supersede) {
+      try { await CompanyAttachments.supersede(coId, urelt.map(function (a) { return a.id; }), meta.name || ('Reikningur ' + rnum)); } catch (e) { console.warn('[233] supersede', e && e.message); }
+      if (window.Toast && Toast.show) Toast.show('🧾 Nýtt PDF-afrit af ' + rnum + ' — það gamla stemmdi ekki við söluna og er merkt „leyst af hólmi".');
+    }
     // Gamla 254-afritið víkur — AÐEINS núna, eftir að nýja er sannreynt og skráð: viðhengið (ef það var skráð sem
     // slíkt) og/eða skráin sjálf í Storage sem röðin benti á (fjöldakeyrslan 18.07 skráði aðeins röð, ekkert viðhengi).
     if (opts.endurgera) {
@@ -633,6 +672,6 @@
     hreinsa: function (s) { return String(s == null ? '' : s).replace(/[\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim(); },
   };
 
-  window.UttektInvoicePdf = { saveForSale: saveForSale, buildInvoiceBlob: buildInvoiceBlob };
+  window.UttektInvoicePdf = { saveForSale: saveForSale, buildInvoiceBlob: buildInvoiceBlob, kaupandi: kaupandi };
   console.log('[patch-233] úttekt invoice PDF auto-save installed');
 })();
