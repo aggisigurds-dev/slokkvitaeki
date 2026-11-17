@@ -36,7 +36,40 @@
   // yfir tölu-dálkana, sést AÐEINS á kúndavefnum þar sem geymda PDF-ið er birt).
   // Því: undirskrift ₂ → 2, og mínus/þankastrik (− U+2212 úr „−20% afsl.", – —)
   // → venjulegt bandstrik.
-  function pdfText(s) { return String(s == null ? '' : s).replace(/₂/g, '2').replace(/[−–—]/g, '-'); }
+  //
+  // 17.11.2026 (Agnar, R-000800 Center Laugavegur: „gölluðu font reikningum"): lagfæringin 26.08 (d3b3b19b) tók
+  // AÐEINS ₂ − – —. Mælt staf fyrir staf á jsPDF 2.5.1 (sama CDN og hér að ofan): Helvetica skrifar Latin-1
+  // (U+0020–U+00FF) og 27 WinAnsi-tákn — ALLT annað fellir strenginn í UTF-16. „höfn↔Hafnarfjörður" (R-000599,
+  // vistað 24.10) brotnaði þannig eftir lagfæringuna. Nú fer hver stafur utan mengisins í gegnum vörpun (tafla →
+  // stafur án kommu → bil/ekkert) og í versta falli '?', svo enginn strengur getur fallið í UTF-16 framar.
+  var PDF_WINANSI = 'ŒœŠšŸŽžƒˆ˜–—‘’‚“”„†‡•…‰‹›€™';
+  var PDF_VARP = {
+    '−': '-', '‐': '-', '‑': '-', '‒': '-', '―': '-', '⁃': '-',
+    '←': '<-', '→': '->', '↔': '<->', '⇒': '=>', '⇔': '<=>', '≈': '~', '≤': '<=',
+    '≥': '>=', '≠': '!=', '′': "'", '″': '"', '⁄': '/', '∕': '/', '✓': 'v',
+    '✔': 'v', '✗': 'x', '✘': 'x', 'Ł': 'L', 'ł': 'l', 'Đ': 'D', 'đ': 'd',
+    'ı': 'i', '⁰': '0', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9',
+    '№': 'nr.', '℃': '°C', '㎡': 'm²', '㎥': 'm³', '\t': ' ', '\r': '',
+  };
+  function pdfStafur(c) {
+    var k = c.codePointAt(0);
+    if (c === '\n' || (k >= 0x20 && k <= 0xff) || PDF_WINANSI.indexOf(c) >= 0) return c;
+    if (Object.prototype.hasOwnProperty.call(PDF_VARP, c)) return PDF_VARP[c];
+    if (k >= 0x2080 && k <= 0x2089) return String(k - 0x2080);                         // ₀–₉ (₂ í CO₂)
+    var n = c.normalize ? c.normalize('NFKD').replace(/[̀-ͯ]/g, '') : '';     // ą → a, ő → o, ﬁ → fi
+    if (n && n !== c && Array.from(n).every(function (x) { var q = x.codePointAt(0); return (q >= 0x20 && q <= 0xff) || PDF_WINANSI.indexOf(x) >= 0; })) return n;
+    if (/\s/.test(c)) return ' ';                                                      // þunn/hörð bil
+    if ((k >= 0x200b && k <= 0x200f) || k === 0x2060 || k === 0xfeff || (k >= 0xfe00 && k <= 0xfe0f) || k < 0x20) return '';
+    if (k > 0xffff || (k >= 0x2600 && k <= 0x27bf)) return '';                       // tákn/emoji
+    return '?';
+  }
+  function pdfText(s) {
+    var t = String(s == null ? '' : s).replace(/₂/g, '2').replace(/[−–—]/g, '-');
+    if (!/[^\n\x20-\xff]/.test(t)) return t;
+    return Array.from(t).map(pdfStafur).join('');
+  }
+  // Sama varpa fyrir aðra jsPDF-smiði (168/273/275/386 nota enn staðalletrið) — og prófið.
+  window.PdfTexti = { texti: pdfText };
   function fmtKr(n) {
     var v = Math.round(Number(n) || 0); var s = Math.abs(v).toString(), p = [];
     while (s.length > 3) { p.unshift(s.slice(-3)); s = s.slice(0, -3); } p.unshift(s);
@@ -221,9 +254,9 @@
       doc.text(pdfText(B.name), M, y + 4);
     }
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(40);
-    doc.text(pdfText(B.name) + '    VSK nr. ' + B.vsk, RX, y, { align: 'right' });
+    doc.text(pdfText(B.name + '    VSK nr. ' + B.vsk), RX, y, { align: 'right' });
     doc.setTextColor(90);
-    doc.text('Kt. ' + B.kt, RX, y + 5, { align: 'right' });
+    doc.text(pdfText('Kt. ' + B.kt), RX, y + 5, { align: 'right' });
     doc.text(pdfText(B.addr1), RX, y + 10, { align: 'right' });
     doc.text(pdfText(B.addr2), RX, y + 15, { align: 'right' });
 
@@ -307,7 +340,7 @@
       byRate[key].ex += ex; byRate[key].vsk += ex * pct / 100;
       var ref = l.ref || (l.product_id ? String(l.product_id) : '');
       var wrapped = doc.splitTextToSize(pdfText(l.desc || ''), cQtyR - cDescX - 6);
-      doc.text(String(ref || ''), cNumX, y);
+      doc.text(pdfText(ref || ''), cNumX, y);
       doc.text(wrapped, cDescX, y);
       doc.text(String(qty), cQtyR, y, { align: 'right' });
       doc.text(fmtKr(unitGross), cUnitR, y, { align: 'right' });
@@ -395,8 +428,8 @@
       opts = opts || {};
       doc.setFont('helvetica', opts.bold ? 'bold' : 'normal').setFontSize(opts.big ? 12 : 9.8);
       doc.setTextColor(opts.red ? 185 : 20, opts.red ? 28 : 20, opts.red ? 28 : 20);
-      doc.text(lbl, tLabelR, y, { align: 'right' });
-      doc.text(val, tValR, y, { align: 'right' });
+      doc.text(pdfText(lbl), tLabelR, y, { align: 'right' });
+      doc.text(pdfText(val), tValR, y, { align: 'right' });
       y += opts.big ? 8 : 5.4;
       doc.setTextColor(20);
     }
