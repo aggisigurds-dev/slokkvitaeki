@@ -9,6 +9,7 @@
 // Vafrinn fær ALDREI hráan/opinberan bucket-hlekk né skjal annars félags.
 
 const P = require('./_portal.cjs');
+const HUB = require('./hub-adgangar.cjs'); // skjal-tóki á Drive-tilvísunina til Brunahólfs (lota 13)
 
 const SIGN_TTL = 120; // sekúndur — mínútur, aldrei langt (leka-vörn)
 
@@ -86,7 +87,10 @@ exports.handler = async (event) => {
     //     Drive-PDF án notenda-auðkenningar (server-hlið Google OAuth). Eignarhald
     //     skjalsins er þegar sannreynt hér að ofan svo aðeins skjöl félagsins berast.
     if (doc.drive_file_id && !String(doc.drive_file_id).startsWith('sb:')) {
-      return { statusCode: 302, headers: { Location: `https://brunaholf.netlify.app/api/skjal?id=${encodeURIComponent(doc.drive_file_id)}`, 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' }, body: '' };
+      // Lota 13 (17.11.2026): /api/skjal lokast óinnskráðum — skjal-tóki (aðeins þetta skjal, 10 mín) fylgir.
+      const st = await HUB.skjalToki(doc.drive_file_id).catch(() => '');
+      const slod = `https://brunaholf.netlify.app/api/skjal?id=${encodeURIComponent(doc.drive_file_id)}` + (st ? `&st=${encodeURIComponent(st)}` : '');
+      return { statusCode: 302, headers: { Location: slod, 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' }, body: '' };
     }
 
     return P.json(404, { error: 'Engin skrá tengd þessu skjali' });

@@ -90,35 +90,54 @@ test('_bh-toki.cjs: aðeins föll á brunaholf.netlify.app fá hausinn', async (
 const KODI = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '514-bh-bru.js'), 'utf8');
 const BH = 'https://brunaholf.netlify.app';
 const GILDUR = '29000000.' + 'b'.repeat(64);
-function gluggi({ tokiSvar = { toki: GILDUR, gildir_ms: 540000 }, tokiStada = 200 } = {}) {
-  const kollud = [], hlustar = [];
+function gluggi({ tokiSvar = { toki: GILDUR, gildir_ms: 540000 }, tokiStada = 200, hausHafnad = false } = {}) {
+  const kollud = [], hlustar = [], hausar = [];
   const w = {
     location: { href: 'https://slokkvitaeki.netlify.app/', origin: 'https://slokkvitaeki.netlify.app' },
     URL, Headers, Request, Promise,
     addEventListener(t, f) { if (t === 'message') hlustar.push(f); },
-    fetch: async (input) => {
+    fetch: async (input, init) => {
       const u = String(typeof input === 'string' || input instanceof URL ? input : input.url);
-      kollud.push(u);
+      const hx = new Headers((init && init.headers) || {}).get('x-hub-toki');
+      if (hausHafnad && hx) throw new TypeError('Failed to fetch');   // eldri Brunahólf: forspurn hafnar hausnum
+      kollud.push(u); hausar.push(hx);
       if (u === '/api/bh-toki') return { ok: tokiStada === 200, status: tokiStada, json: async () => tokiSvar };
       return { ok: true, status: 200 };
     },
   };
   w.window = w;
   vm.runInNewContext(KODI, w);
-  return { w, kollud, hlustar };
+  return { w, kollud, hlustar, hausar };
 }
-test('514: fetch á föll Brunahólfs fær _hubtoki (einu sinni sóttur); annað óbreytt', async () => {
+test('514: GET á föll Brunahólfs fær tókann í HAUS (ekki slóð); POST fær _hubtoki; einu sinni sóttur; annað óbreytt', async () => {
   const g = gluggi();
   await g.w.fetch('https://brunaholf.netlify.app/api/krofu-yfirlit-bru?ar=2026');
-  await g.w.fetch('https://brunaholf.netlify.app/api/worksites');
+  await g.w.fetch('https://brunaholf.netlify.app/api/worksites', { method: 'POST', body: '{}' });
   await g.w.fetch('/api/postur-senda');
   await g.w.fetch('https://brunaholf.netlify.app/jarvis.html');
   assert.equal(g.kollud.filter(u => u === '/api/bh-toki').length, 1);
-  const bh = g.kollud.filter(u => u.startsWith(BH + '/api/'));
-  assert.ok(bh.every(u => new URL(u).searchParams.get('_hubtoki') === GILDUR));
-  assert.equal(new URL(bh[0]).searchParams.get('ar'), '2026');
+  const i1 = g.kollud.indexOf(BH + '/api/krofu-yfirlit-bru?ar=2026');
+  assert.ok(i1 >= 0, 'GET-slóðin óbreytt (enginn tóki í slóð)');
+  assert.equal(g.hausar[i1], GILDUR, 'GET ber tókann í haus');
+  const post = g.kollud.find(u => u.startsWith(BH + '/api/worksites'));
+  assert.equal(new URL(post).searchParams.get('_hubtoki'), GILDUR, 'POST ber tókann í færibreytu');
   assert.ok(g.kollud.includes('/api/postur-senda'));
   assert.ok(g.kollud.includes(BH + '/jarvis.html'));
+});
+test('514: eldri Brunahólf hafnar haus-forspurn → GET reynt einu sinni aftur með _hubtoki', async () => {
+  const g = gluggi({ hausHafnad: true });
+  await g.w.fetch('https://brunaholf.netlify.app/api/worksites?x=1');
+  const bh = g.kollud.filter(u => u.startsWith(BH + '/api/'));
+  assert.equal(bh.length, 1);
+  assert.equal(new URL(bh[0]).searchParams.get('_hubtoki'), GILDUR);
+  assert.equal(new URL(bh[0]).searchParams.get('x'), '1');
+});
+test('skjal-tóki: bundinn einu skjali, gildir 10 mín, staðfestanlegur eins og Brunahólf gerir', async () => {
+  const st = await HUB.skjalToki('drive-abc');
+  const [expStr, sig] = st.split('.'); const exp = Number(expStr), nu = Math.floor(Date.now() / 1000);
+  assert.ok(exp > nu + 500 && exp <= nu + 600);
+  assert.equal(sig, crypto.createHmac('sha256', LEYND).update('skjal|drive-abc|' + exp).digest('hex'));
+  assert.notEqual(sig, crypto.createHmac('sha256', LEYND).update('skjal|drive-ANNAD|' + exp).digest('hex'));
 });
 test('514: bilar /api/bh-toki (401) fer kallið samt, óbreytt', async () => {
   const g = gluggi({ tokiStada: 401, tokiSvar: { need_login: true } });

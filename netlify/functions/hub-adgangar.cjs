@@ -79,6 +79,14 @@ async function hubApiToki(stillingGefin) {
   const m = Math.floor(Date.now() / 60000);
   return m + '.' + hubApiSig(st.session_secret, m);
 }
+// Skjal-tóki (lota 13): kúnnagáttin (gatt-doc.cjs) vísar kúnna á Brunahólfs /api/skjal?id=…&st=… — gildir AÐEINS fyrir
+// það skjal og 10 mín (brunaholf _vord.js erGildurSkjalToki). Eignarhald skjalsins er sannreynt í gatt-doc áður.
+async function skjalToki(id, stillingGefin) {
+  const st = stillingGefin || await getStilling().catch(() => null);
+  if (!st || !st.session_secret || !id) return '';
+  const exp = Math.floor(Date.now() / 1000) + 600;
+  return exp + '.' + crypto.createHmac('sha256', String(st.session_secret)).update('skjal|' + String(id) + '|' + exp).digest('hex');
+}
 async function erPosturToki(event) {
   const h = (event && event.headers) || {};
   const [mStr, sig] = String(h[POSTUR_HAUS] || '').split('.');
@@ -412,5 +420,6 @@ exports._test = { normNn, normKt, normSimi, encPw, decPw, SIDUR, okSida, HUB_ARF
 exports.posturToki = posturToki;
 exports.erPosturToki = erPosturToki;
 exports.hubApiToki = hubApiToki;
+exports.skjalToki = skjalToki;
 exports.HUB_TOKI_HAUS = HUB_TOKI_HAUS;
 exports.POSTUR_HAUS = POSTUR_HAUS;
