@@ -126,11 +126,24 @@
       return '<li>' + esc(r && r.texti) + ((r && r.heimild) || sl ? '<span class="baf-h">' + esc((r && r.heimild) || '') + (sl ? ' ' + sl : '') + '</span>' : '') + '</li>';
     }).join('') + '</ul></section>';
   }
-  function athHtml(a) {
+  // Óstaðfest ágiskun (x.agiskun) fær tvo takka: staðfesta netfangið, eða taka það út og senda án þess (kóðarýni 17.11.2026).
+  function athHtml(a, id) {
     if (!a || !a.length) return '';
     return '<section class="baf-k"><h3>Athuganir — keyrðar núna</h3><ul class="baf-ath">' + a.map(function (x) {
-      return '<li><span class="' + (x.ok ? 'baf-ok' : 'baf-nei') + '" aria-label="' + (x.ok ? 'Í lagi' : 'Ekki í lagi') + '">' + (x.ok ? '✓' : '✗') + '</span><span>' + esc(x.texti) + '</span></li>';
+      return '<li><span class="' + (x.ok ? 'baf-ok' : 'baf-nei') + '" aria-label="' + (x.ok ? 'Í lagi' : 'Ekki í lagi') + '">' + (x.ok ? '✓' : '✗') + '</span><span>' + esc(x.texti) +
+        (x.agiskun && !x.ok && id ? '<span class="baf-agisk" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button type="button" class="btn iv sm" data-baf="agiskun" data-val="stadfesta" data-id="' + id + '" data-netfang="' + esc(x.agiskun) + '">Staðfesta netfangið</button>' +
+          '<button type="button" class="btn iv sm" data-baf="agiskun" data-val="fjarlaegja" data-id="' + id + '" data-netfang="' + esc(x.agiskun) + '">Taka það út og senda án þess</button></span>' : '') + '</span></li>';
     }).join('') + '</ul></section>';
+  }
+  function agiskun(v, nf, val) {
+    if (!nf || !window.confirm(val === 'stadfesta' ? 'Staðfesta að ' + nf + ' sé rétt netfang? Staðfestingin er skráð á þig.' : 'Taka ' + nf + ' úr viðtakendum? Pósturinn fer þá án þess.')) return null;
+    afvopna(); S.busy = v.id; S.skilabod = null; notify();
+    return kall({ id: v.id, adgerd: 'agiskun', netfang: nf, val: val }).then(function (j) {
+      S.busy = null;
+      if (j._status === 200 && j.verk) { for (var k in j.verk) v[k] = j.verk[k]; S.skilabod = { id: v.id, ok: true, texti: val === 'stadfesta' ? nf + ' staðfest' : nf + ' tekið út' }; }
+      else S.skilabod = { id: v.id, texti: j.error || ('Villa ' + j._status) };
+      notify();
+    }).catch(function (e) { S.busy = null; S.skilabod = { id: v.id, texti: 'Netvilla — óvíst hvort breytingin vistaðist: ' + String((e && e.message) || e) }; notify(); });
   }
   function efniHtml(v) {
     if (v.tegund === 'tolvupostur') {
@@ -172,7 +185,7 @@
     var h = '<div class="baf-d" id="baf-d-' + v.id + '">';
     // Tveir dálkar þegar einingin er breið (bogaskjárinn): rökin vinstra megin, efnið og athugasemdin hægra megin.
     h += '<div class="baf-c"><section class="baf-k"><h3>Hvað gerist þegar þú ýtir</h3><div class="baf-g">' + esc(v.hvad_gerist) + '</div></section>';
-    h += rokHtml(v.af_hverju) + athHtml(v.athuganir) + '</div><div class="baf-c">' + efniHtml(v);
+    h += rokHtml(v.af_hverju) + athHtml(v.athuganir, v.id) + '</div><div class="baf-c">' + efniHtml(v);
     h += '<section class="baf-k"><h3>Athugasemd þín</h3><textarea class="baf-ta lagur" data-baf-ath="' + v.id + '" data-ritun="1" spellcheck="true" maxlength="2000" aria-label="Athugasemd á verkið" ' +
       'placeholder="Til Claude og Tonys — vistast á verkið, t.d. „bíða til mánaðamóta“ eða verðið sem á að standa">' + esc(athNu(v)) + '</textarea>' +
       '<div class="baf-af"><button type="button" class="btn iv sm" data-baf="ath-vista" data-id="' + v.id + '"' + (S.athBusy === v.id ? ' disabled' : '') + '>' + (S.athBusy === v.id ? 'Vista…' : 'Vista athugasemd') + '</button>' +
@@ -298,6 +311,7 @@
     if (a === 'sleppa') return sleppa(v);
     if (a === 'seinna') return seinna(v);
     if (a === 'ath-vista') return vistaAth(v);
+    if (a === 'agiskun') return agiskun(v, el.getAttribute('data-netfang'), el.getAttribute('data-val'));
     return null;
   }
   function innslattur(e) {

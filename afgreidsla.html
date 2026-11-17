@@ -202,10 +202,13 @@ ul.ath svg{flex:0 0 18px;margin-top:1px}
       return '<li>' + esc(r.texti) + (r.heimild || r.slod ? '<span class="heimild">' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</span>' : '') + '</li>';
     }).join('') + '</ul></section>';
   }
+  // Óstaðfest ágiskun (x.agiskun): staðfesta netfangið, eða taka það út og senda án þess (kóðarýni 17.11.2026).
   function athHtml(a) {
     if (!a || !a.length) return '';
     return '<section class="kafli"><h3>Athuganir — keyrðar núna</h3><ul class="ath">' + a.map(function (x) {
-      return '<li>' + (x.ok ? JA : NEI) + '<span>' + esc(x.texti) + '</span></li>';
+      return '<li>' + (x.ok ? JA : NEI) + '<span>' + esc(x.texti) +
+        (x.agiskun && !x.ok ? '<span class="agisk" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button type="button" class="btn silfur" data-a="agiskun" data-val="stadfesta" data-netfang="' + esc(x.agiskun) + '">Staðfesta netfangið</button>' +
+          '<button type="button" class="btn silfur" data-a="agiskun" data-val="fjarlaegja" data-netfang="' + esc(x.agiskun) + '">Taka það út og senda án þess</button></span>' : '') + '</span></li>';
     }).join('') + '</ul></section>';
   }
   function athugasemdHtml(v) {
@@ -328,6 +331,18 @@ ul.ath svg{flex:0 0 18px;margin-top:1px}
     if (!v) return;
     if (a === 'framkvaema') { framkvaema(v); return; }
     if (a === 'ath-vista') { vistaAthugasemd(v); return; }
+    if (a === 'agiskun') {
+      var nf = b.getAttribute('data-netfang'), val = b.getAttribute('data-val');
+      if (!nf || !window.confirm(val === 'stadfesta' ? 'Staðfesta að ' + nf + ' sé rétt netfang? Staðfestingin er skráð á þig.' : 'Taka ' + nf + ' úr viðtakendum? Pósturinn fer þá án þess.')) return;
+      S.busy = true; S.vopnad = null; teikna();
+      api({ body: { id: v.id, adgerd: 'agiskun', netfang: nf, val: val } }).then(function (j) {
+        S.busy = false;
+        if (j._status === 200 && j.verk) { for (var k in j.verk) v[k] = j.verk[k]; S.skilabod = { ok: true, texti: val === 'stadfesta' ? nf + ' staðfest' : nf + ' tekið út' }; }
+        else S.skilabod = { ok: false, texti: j.error || 'Villa' };
+        teikna();
+      }).catch(function (e) { S.busy = false; S.skilabod = { ok: false, texti: 'Netvilla — óvíst hvort breytingin vistaðist: ' + e.message }; teikna(); });
+      return;
+    }
     if (a === 'seinna') { api({ body: { id: v.id, adgerd: 'seinna' } }).then(function () { S.skilabod = null; return hlada(); }); return; }
     if (a === 'sleppa') {
       var astaeda = window.prompt('Ekki þess virði — kemur aldrei aftur. Ástæða (má sleppa):', v.athugasemd || '');

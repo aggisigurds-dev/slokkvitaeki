@@ -290,3 +290,27 @@ test('sameina: höfnunartakkinn segir aftur-í-vinnu og sendir sleppa með athug
   await smella(BA, 'sleppa', 70);                 // seinni sendir
   assert.deepStrictEqual(kollud.filter((k) => k.method === 'POST')[0].body, { id: 70, adgerd: 'sleppa', varanlegt: true, astaeda: 'Nota annað orð' });
 });
+
+// Kóðarýni 17.11.2026: óstaðfest ágiskun er rauð og ber tvo takka — staðfesta, eða taka netfangið út og senda án þess.
+test('ágiskun: rauð athugun með tveimur tökkum; staðfesting sendir adgerd agiskun og uppfærir verkið', async () => {
+  const ag = { texti: '⚠ ÁGISKUN, óstaðfest: bokhald@example.is', ok: false, agiskun: 'bokhald@example.is' };
+  const { BA, kollud, heimur } = hlada((m, b) => b && b.adgerd === 'agiskun'
+    ? { status: 200, json: { ok: true, verk: verk({ athuganir: [{ texti: 'Ágiskað netfang staðfest af Agnar: bokhald@example.is', ok: true }], ok: true }) } }
+    : { status: 200, json: { tilbuin: [verk({ athuganir: [ag], ok: false })] } });
+  BA.samantekt(); await BA.S.loading;
+  smella(BA, 'opna', 22);
+  const h = BA.listi();
+  assert.match(h, /data-baf="agiskun" data-val="stadfesta" data-id="22" data-netfang="bokhald@example\.is"/);
+  assert.match(h, /data-baf="agiskun" data-val="fjarlaegja" data-id="22" data-netfang="bokhald@example\.is"/);
+  assert.match(h, /baf-nei[^]*ÁGISKUN/, 'ágiskunin er rauð (✗), ekki grænt ✓');
+  heimur.window = { confirm: () => true };
+  await smella(BA, 'agiskun', 22, { 'data-netfang': 'bokhald@example.is', 'data-val': 'stadfesta' });
+  await bida();
+  const k = kollud.find((x) => x.body && x.body.adgerd === 'agiskun');
+  assert.deepStrictEqual(k && k.body, { id: 22, adgerd: 'agiskun', netfang: 'bokhald@example.is', val: 'stadfesta' });
+  assert.match(BA.listi(), /staðfest af Agnar/);
+  heimur.window = { confirm: () => false };
+  const fyrir = kollud.length;
+  await smella(BA, 'agiskun', 22, { 'data-netfang': 'bokhald@example.is', 'data-val': 'fjarlaegja' });
+  assert.strictEqual(kollud.length, fyrir, 'hætt við í staðfestingarglugga → ekkert kall');
+});

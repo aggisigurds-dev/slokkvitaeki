@@ -84,6 +84,48 @@ async function lesaPostholf(account) {
   return inn && ut;
 }
 
+// ── Viðtakendur (kóðarýni 17.11.2026) ─────────────────────────────────────────────────────────────────────────────────
+// Hvert netfang í to/cc verður að eiga UPPRUNA: (a) í pósti (sendandi eða viðtakandi skeytis í email_digest), (b) í
+// fyrirtækjaskrá, (c) samþykktur tengiliður, eða (d) skráð heimild á verkinu sjálfu (`gogn.heimildir_netfanga`
+// { netfang: 'hvaðan' }, t.d. vefur félagsins) — sýnd orðrétt. Ágiskun (`gogn.agiskun`) stendur RAUÐ þar til innskráður
+// stjórnandi staðfestir hana (`adgerd:'agiskun', val:'stadfesta'`) eða tekur netfangið út (`val:'fjarlaegja'`); þá fer
+// pósturinn án þess. Netfang án uppruna sem er EKKI merkt ágiskun stöðvar líka — það var gatið sem rýnin fann.
+const erSvar = (sv) => !!(sv && (sv.message_id || sv.thread_id || sv.digest_id));
+const vidtakendur = (g) => [...new Set([].concat(g.to || [], g.cc || []).map(addr).filter(Boolean))];
+async function upprunaNetfangs(e) {
+  const k = encodeURIComponent(e);
+  const [p, f, t] = await Promise.all([
+    lesa(`email_digest?select=id&or=(sender_email.ilike.${k},to_addresses.ilike.*${k}*)&limit=1`),
+    lesa(`fyrirtaeki?select=id&deleted_at=is.null&netfang=ilike.*${k}*&limit=1`),
+    lesa(`charlize_contacts?select=id&netfang=ilike.${k}&status=eq.approved&limit=1`),
+  ]);
+  return p.length ? 'í pósti' : f.length ? 'í fyrirtækjaskrá' : t.length ? 'samþykktur tengiliður' : null;
+}
+let _uppruni = upprunaNetfangs;   // prófin skipta um (module.exports._setjaUppruna) — enginn gagnagrunnur í prófum
+async function vidtakendaAthuganir(g) {
+  const ut = [];
+  const vidt = vidtakendur(g);
+  const agiskun = new Set([].concat(g.agiskun || []).map(addr).filter(Boolean));
+  const stadfest = new Map([].concat(g.agiskun_stadfest || []).map((x) => [addr(x && x.netfang), x]).filter((x) => x[0]));
+  const heimildir = {}; Object.entries(g.heimildir_netfanga || {}).forEach(([k, v]) => { if (addr(k)) heimildir[addr(k)] = String(v || '').slice(0, 200); });
+  const thekkt = [];
+  for (const e of vidt) {
+    if (agiskun.has(e)) {
+      const s = stadfest.get(e);
+      ut.push(s ? { texti: 'Ágiskað netfang staðfest af ' + (s.af || '?') + ' ' + String(s.at || '').slice(0, 16).replace('T', ' ') + ': ' + e, ok: true }
+        : { texti: '⚠ ÁGISKUN, óstaðfest: ' + e + ' — staðfestu netfangið eða taktu það út áður en sent er', ok: false, agiskun: e });
+      continue;
+    }
+    if (heimildir[e]) { ut.push({ texti: e + ' — heimild skráð á verkið: ' + heimildir[e], ok: true }); continue; }
+    let u = null, villa = false;
+    try { u = await _uppruni(e); } catch (_) { villa = true; }
+    if (u) thekkt.push(e + ' (' + u + ')');
+    else ut.push({ texti: villa ? 'Náði ekki að fletta upp ' + e + ' — ekkert sent' : e + ': hvorki í pósti, fyrirtækjaskrá né tengiliðaskrá og ekki merkt ágiskun — ekkert sent fyrr en uppruni er skráður', ok: false });
+  }
+  if (thekkt.length) ut.unshift({ texti: 'Viðtakendur með uppruna: ' + thekkt.join(', '), ok: true });
+  return ut;
+}
+
 async function athuga(row, { lesaNu = false } = {}) {
   const g = row.gogn || {};
   const a = [];   // { texti, ok }
@@ -107,16 +149,18 @@ async function athuga(row, { lesaNu = false } = {}) {
       if (nyrri.length) urelt = fra_okkur.length ? 'Þráðnum hefur þegar verið svarað (' + String(fra_okkur[0].received_at).slice(0, 16).replace('T', ' ') + ')'
         : 'Nýtt skeyti kom í þráðinn ' + String(nyrri[0].received_at).slice(0, 16).replace('T', ' ') + ' — svarið á ekki lengur við';
       a.push({ texti: urelt || 'Ekkert nýrra skeyti í þræðinum — þú svarar því nýjasta', ok: !urelt });
-    } else if (g.nytt === true) {
-      // 17.11.2026: NÝR póstur, ekki svar (t.d. skýrsla til félags sem hefur aldrei skrifað okkur — Dekkjasalan #1646).
+    } else if (g.nytt === true && !erSvar(sv)) {
+      // 17.11.2026: NÝR póstur, ekki svar (t.d. skýrsla til félags sem hefur aldrei skrifað okkur).
       // Enginn þráður til að bera saman við; verkið verður að bera `nytt: true` berum orðum, annars gildir reglan að neðan.
       a.push({ texti: 'Nýr póstur — ekki svar í þræði, svo „nýjasta skeytið“ á ekki við', ok: true });
+    } else if (g.nytt === true) {
+      // Kóðarýni 17.11.2026: `nytt` mátti ekki opna leið framhjá reglu 1 fyrir póst sem er í raun SVAR (svar_vid sett,
+      // sendingin setur inReplyTo) en vantar þráðinn. Annaðhvort hreinn nýr póstur (ekkert svar_vid) eða svar með þræði.
+      a.push({ texti: 'Merkt sem nýr póstur en ber svar við skeyti (svar_vid) án þráðar — ekki hægt að staðfesta að svarið sé við nýjasta skeytið. Ekkert sent.', ok: false });
     } else {
       a.push({ texti: 'Þráður óþekktur — ekki hægt að staðfesta að svarið sé við nýjasta skeytið', ok: false });
     }
-    // Netfang sem enginn póstur né skrá staðfestir (t.d. ágiskun Agnars) stendur sýnilegt: takkinn = hann staðfestir það.
-    const agiskun = [].concat(g.agiskun || []).map(addr).filter(Boolean);
-    if (agiskun.length) a.push({ texti: '⚠ ÁGISKUN, ekki staðfest úr pósti né skrá: ' + agiskun.join(', ') + ' — sendu aðeins ef þú samþykkir það', ok: true });
+    a.push(...await vidtakendaAthuganir(g));
     // Er pósthólfið nýlesið? Annars getur „ósvarað" verið rangt.
     if (lesaNu) {
       a.push({ texti: lesid ? 'Pósthólfið lesið núna, rétt áður en sent er' : 'Náði ekki að lesa pósthólfið núna — ekkert sent', ok: !!lesid });
@@ -656,6 +700,27 @@ exports.handler = async (event) => {
       await breyta(`afgreidsla?id=eq.${id}`, { gogn });
       return P.json(200, { ok: true, verk: await synilegt(Object.assign(r, { gogn })) });
     }
+    // Ágiskað netfang (kóðarýni 17.11.2026): staðfesta það, eða taka það úr to/cc og senda án þess. Hver og hvenær skráð.
+    if (b.adgerd === 'agiskun') {
+      const r = (await lesa(`afgreidsla?select=*&id=eq.${id}&stada=eq.tilbuid&limit=1`))[0];
+      if (!r) return P.json(409, { error: 'Verkið er ekki lengur opið' });
+      if (r.tegund !== 'tolvupostur') return P.json(400, { error: 'Aðeins tölvupóstur hefur viðtakendur' });
+      const e = addr(b.netfang), g0 = r.gogn || {};
+      const ag = [].concat(g0.agiskun || []).map(addr).filter(Boolean);
+      if (!e || ag.indexOf(e) < 0) return P.json(400, { error: 'Netfangið er ekki merkt ágiskun á þessu verki' });
+      const hver = await notandi(event), nu = new Date().toISOString();
+      const gogn = Object.assign({}, g0);
+      if (b.val === 'stadfesta') {
+        gogn.agiskun_stadfest = [].concat(g0.agiskun_stadfest || []).filter((x) => addr(x && x.netfang) !== e).concat([{ netfang: e, af: hver, at: nu }]);
+      } else if (b.val === 'fjarlaegja') {
+        gogn.to = [].concat(g0.to || []).filter((x) => addr(x) !== e);
+        gogn.cc = [].concat(g0.cc || []).filter((x) => addr(x) !== e);
+        gogn.agiskun = ag.filter((x) => x !== e);
+        gogn.agiskun_fjarlaegt = [].concat(g0.agiskun_fjarlaegt || []).concat([{ netfang: e, af: hver, at: nu }]);
+      } else return P.json(400, { error: 'val: stadfesta eða fjarlaegja' });
+      await breyta(`afgreidsla?id=eq.${id}&stada=eq.tilbuid`, { gogn });
+      return P.json(200, { ok: true, verk: await synilegt(Object.assign(r, { gogn })) });
+    }
     // Athugasemd Agnars á verkið (16.11.2026: „sett athugasemd"). Vistast á röðina í hvaða stöðu sem er, lesin til baka;
     // Tony og lotur lesa hana (`select … from afgreidsla where athugasemd is not null`). Tómur texti hreinsar.
     if (b.adgerd === 'athugasemd') {
@@ -698,6 +763,7 @@ exports.handler = async (event) => {
 
 module.exports.THROSKULDUR_KR = THROSKULDUR_KR;
 module.exports._athuga = athuga;
+module.exports._setjaUppruna = (fn) => { _uppruni = fn || upprunaNetfangs; };
 module.exports._posturToki = posturToki;
 module.exports._prufaSending = prufaSending;
 module.exports._amLykill = amLykill;
