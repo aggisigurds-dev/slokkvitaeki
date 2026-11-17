@@ -4,7 +4,7 @@
 // Agnar 17.11.2026: „Mátt reyna laga þetta svo það sé ekki alltaf vesen.“ Prófin hér:
 //   1. kjarninn (_skyrsla-solu.cjs): val og dómur — kt, nafn, staður, tæki, ár; rekstrarfélag sem greiðir fyrir stað;
 //   2. payday-push á HERMDU neti: slóð úr vafranum er hunsuð (gamla tengingin), athugunarhamur kallar aldrei á Payday,
-//      lögmætur greiðandi ≠ staður er ekki stöðvaður, nafn eitt og sér stöðvar;
+//      lögmætur greiðandi ≠ staður er ekki stöðvaður, nafn EÐA kt eitt og sér stöðvar ekki, „senda samt" virkar;
 //   3. 516 SkyrslaSolu í hermdum vafra: breyting á sölu → spurt → „Búa til skýrslu" → CIR_NY + 168 opnað;
 //   4. gagnavörðurinn (tools/audit-skyrsla-solu.cjs --profa).
 // Gervikennitölur (ekki raunfélög). Ekkert raunkall, ekkert sent.
@@ -124,14 +124,53 @@ test('payday-push skyrsla_athugun: dómurinn án Payday-kalls og án niðurhals 
   const r2 = await keyra({ sala: sala(), vidhengi: [gamla, sk(KT_B, 'Nýja félagið ehf', Date.now())] }, { skyrsla_athugun: true });
   assert.strictEqual(r2.j.skyrsla.stemmir, true, JSON.stringify(r2.j.skyrsla));
 });
-test('payday-push: annar greiðandi en staðurinn er EKKI stöðvaður; nafn eitt og sér (sama kt) stöðvar', async () => {
+test('payday-push: annar greiðandi en staðurinn er EKKI stöðvaður; nafn eitt og sér (sama kt) er viðvörun, ekki stöðvun', async () => {
   const rf = await keyra({ sala: sala({ customer_kt: KT_C, customer_nafn: 'Rekstrarfélagið hf' }), vidhengi: [sk(KT_B, 'Nýja félagið ehf', Date.now())],
     site: { id: 9, nafn: 'Nýja félagið ehf', kennitala: KT_B, netfang: null, heimilisfang: 'Gervigata 1' },
     base: { id: 5, nafn: 'Rekstrarfélagið hf', kennitala: KT_C, netfang: null } }, { dry: true });
   assert.strictEqual(rf.res.statusCode, 200, JSON.stringify(rf.j));
-  const rn = await keyra({ sala: sala(), vidhengi: [sk(KT_B, 'Allt annað nafn', Date.now())] }, {});
-  assert.strictEqual(rn.res.statusCode, 409, JSON.stringify(rn.j)); assert.strictEqual(rn.j.gate, 'skyrsla_stemmir');
-  assert.ok(rn.j.misraemi.some((m) => m.svid === 'nafn')); assert.strictEqual(rn.payday.filter((x) => x.url.includes('/invoices')).length, 0);
+  const rn = await keyra({ sala: sala(), vidhengi: [sk(KT_B, 'Allt annað nafn', Date.now())] }, { dry: true });
+  assert.strictEqual(rn.res.statusCode, 200, JSON.stringify(rn.j));
+  assert.deepStrictEqual(rn.j.skyrsla.misraemi.map((m) => [m.svid, m.stodvar]), [['nafn', false]]);
+});
+
+// ── Rekstrarfélög og greiðandaskipti (stjórnlotan 17.11.2026) ───────────────────────────────────
+// Raundæmi (nafnlaust): eign fór af einum greiðanda á annan (kt staðarins breyttist, nafnið ekki); eign sem
+// rekstrarfélag rekur rukkast á annað félag; húsfélag með umsjónarfélag; stafsetningarafbrigði sama staðar.
+test('rekstrarfélag/greiðandaskipti: skýrsla STAÐARINS á kt fyrri greiðanda og sama nafni → EKKI stöðvuð (viðvörun)', async () => {
+  const stadur = { id: 9, nafn: 'Gervileiga - Gervigata 16', kennitala: KT_C, netfang: null, heimilisfang: 'Gervigata 16' };
+  const skyrsla = sk(KT_A, 'Gervileiga ehf', Date.now() - 100 * 864e5);
+  skyrsla.name = 'Gervileiga ehf - Gervigata 16,, ' + KT_A + ' - ' + ar + ' - mars -.pdf';   // eldra skráarnafnasnið, eins og raundæmið
+  const r = await keyra({ sala: sala({ customer_kt: KT_C, customer_nafn: 'Greiðandinn ehf.' }), vidhengi: [skyrsla], site: stadur,
+    base: { id: 5, nafn: 'Greiðandinn ehf.', kennitala: KT_C, netfang: null } }, {});
+  assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.j));
+  assert.strictEqual(r.payday.filter((x) => x.url.includes('/invoices')).length, 1, 'krafan fór (hermt)');
+  const ath = await keyra({ sala: sala({ customer_kt: KT_C, customer_nafn: 'Greiðandinn ehf.' }), vidhengi: [skyrsla], site: stadur }, { skyrsla_athugun: true });
+  assert.strictEqual(ath.j.skyrsla.stodvar, false);
+  assert.deepStrictEqual(ath.j.skyrsla.misraemi.map((m) => m.svid), ['kt']);
+});
+test('stafsetningarafbrigði sama staðar („Gervilundur" / „Gervalundur 13-15, húsfélag") + kt fyrri greiðanda → ekki stöðvað', () => {
+  assert.strictEqual(SS.nafnStemmir('Gervilundur', 'Gervalundur 13-15,húsfélag'), true);
+  assert.strictEqual(SS.nafnStemmir('Kaffibúð Gervi', 'Kaffihús Gervi ehf.'), false, 'ólík orð eru ekki stafsetningarvilla');
+  const r = SS.bera(sala({ customer_nafn: 'Gervalundur 13-15,húsfélag' }), sk(KT_A, 'Gervilundur', Date.now()), { site: { nafn: 'Gervalundur 13-15,húsfélag', kennitala: KT_B } });
+  assert.strictEqual(r.stodvar, false, JSON.stringify(r.misraemi));
+});
+test('staðurinn SJÁLFUR skipti um kt OG nafn → 409; „staðfesta og senda samt" (force_skyrsla) → sent, skráð í svarinu', async () => {
+  const st = { sala: sala(), vidhengi: [sk(KT_A, 'Gamla félagið', Date.now() - 40 * 864e5)] };
+  const nei = await keyra(st, {});
+  assert.strictEqual(nei.res.statusCode, 409, JSON.stringify(nei.j)); assert.strictEqual(nei.j.gate, 'skyrsla_stemmir');
+  assert.match(nei.j.error, /staðfestu og sendu samt/);
+  assert.strictEqual(nei.payday.filter((x) => x.url.includes('/invoices')).length, 0);
+  const ja = await keyra(st, { force_skyrsla: true });
+  assert.strictEqual(ja.res.statusCode, 200, JSON.stringify(ja.j));
+  assert.strictEqual(ja.j.skyrsla_yfirskrifud, true);
+  assert.strictEqual(ja.payday.filter((x) => x.url.includes('/invoices')).length, 1);
+});
+test('166: „senda samt" — hak í rauða reitnum og spurning við 409 skyrsla_stemmir; sendingin ber force_skyrsla aðeins ef hakað/staðfest', () => {
+  const k = fs.readFileSync(path.join(ROT, 'js/patches/166-krofu-yfirlit.js'), 'utf8');
+  assert.match(k, /id="_ky-sk-samt"/);
+  assert.match(k, /force_skyrsla: !!\(wrap\.querySelector\('#_ky-sk-samt'\) && wrap\.querySelector\('#_ky-sk-samt'\)\.checked\)/);
+  assert.match(k, /j\.gate === 'skyrsla_stemmir'\) \{[\s\S]{0,700}okText: 'Senda samt', cancelText: 'Hætta við'[\s\S]{0,300}senda\(\{ force_skyrsla: true \}\)/);
 });
 test('payday-push: skjalaröð ársins (customer_documents) án viðhengis fer um SAMA dóm', async () => {
   const skjal = { storage_path: 'samningar/company_attachments/9/1_gomul.pdf', year: +ar, doc_date: ar + '-10-07',
@@ -213,4 +252,10 @@ test('142: „sale-edited" ber auðkenni sölunnar (close() núllar _sale — á
   const eftir = k.slice(i, i + 700);
   assert.ok(eftir.indexOf('close();') > 0 && eftir.indexOf('close();') < eftir.indexOf("new CustomEvent('sale-edited'"), 'lesið á undan close()');
   assert.match(eftir, /new CustomEvent\('sale-edited', \{ detail: \{ id: _vistadId, finalize \} \}\)/);
+});
+test('516: kt EÐA nafn eitt og sér (nýr greiðandi) truflar ekki — engin spurning eftir Vista', async () => {
+  const v = vafri(athSvar({ skyrsla: { stemmir: false, stodvar: false, misraemi: [{ svid: 'kt', stodvar: false, texti: 'x' }], lysing: {} } }), true);
+  v.doc.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: 92001 } }));
+  await bida();
+  assert.strictEqual(v.skra.confirm.length, 0);
 });

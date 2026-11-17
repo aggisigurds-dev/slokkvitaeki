@@ -2140,6 +2140,7 @@
               sale_id: id,
               attach_report: choice.attach,
               // 17.11.2026: engin slóð úr vafranum — payday-push velur skýrsluna út frá SÖLUNNI á sendistund (_skyrsla-solu.cjs).
+              force_skyrsla: choice.force_skyrsla || undefined,   // aðeins ef notandinn hakaði sjálfur við „senda samt"
               email_override: choice.email_override || undefined,   // aðeins ef notandinn staðfesti tillöguna
             }, auka || {})),
           });
@@ -2150,6 +2151,17 @@
             if (!samt) { b.disabled = false; b.textContent = 'Krafa send'; await load(_state.month); return; }
             b.textContent = '⏳ Sendir…';
             r = await senda({ force_duplicate: true });
+            j = await r.json().catch(() => ({}));
+          }
+          // 17.11.2026: skýrslan stemmir ekki við söluna (staðurinn sjálfur skipti um kt OG nafn). Sá sem veit betur
+          // staðfestir og sendir samt — hann festist aldrei. „Hætta við" sendir ekkert.
+          if (r.status === 409 && j && j.gate === 'skyrsla_stemmir') {
+            const msg = '⚠ Úttektarskýrslan stemmir ekki við söluna.\n\n' + String(j.error || '') +
+              '\n\nSenda kröfuna SAMT með þessari skýrslu? (Veldu „Hætta við" til að búa fyrst til nýja skýrslu eða senda án skýrslu.)';
+            const samt = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { okText: 'Senda samt', cancelText: 'Hætta við' }) : confirm(msg);
+            if (!samt) { b.disabled = false; b.textContent = 'Krafa send'; await load(_state.month); return; }
+            b.textContent = '⏳ Sendir…';
+            r = await senda({ force_skyrsla: true });
             j = await r.json().catch(() => ({}));
           }
           if (!r.ok || !j.ok) {
@@ -2854,6 +2866,7 @@
           attach: cb ? !!cb.checked : true,
           path: (res.att && res.att.path) || (res.doc && res.doc.storage_path) || null,
           email_override: /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(tNf) ? tNf : null,
+          force_skyrsla: !!(wrap.querySelector('#_ky-sk-samt') && wrap.querySelector('#_ky-sk-samt').checked),   // aðeins hak notandans
         });
       });
       const ob = wrap.querySelector('#_ky-send-open');
@@ -2892,6 +2905,9 @@
         '<b>' + lit.t + '.</b><div style="margin:4px 0 2px">📄 ' + hvad + '</div>' +
         '<ul style="margin:6px 0 8px 18px;padding:0">' + stodva.concat(vara).map(m => '<li>' + esc(m.texti) + '</li>').join('') + '</ul>' +
         (stodva.length ? '<div style="margin-bottom:8px">Sending með þessari skýrslu stöðvast. Búðu til nýja — hún fær nafn, kennitölu og tæki sölunnar og fylgir þá kröfunni; sú gamla er merkt „leyst af hólmi", engu eytt.</div>' : '') +
+        (stodva.length ? '<label style="display:flex;align-items:flex-start;gap:7px;margin:0 0 8px;cursor:pointer;font-weight:600">' +
+          '<input type="checkbox" id="_ky-sk-samt" style="width:15px;height:15px;margin-top:2px;cursor:pointer;flex-shrink:0">' +
+          '<span>Ég hef farið yfir skýrsluna og hún er rétt (t.d. staðurinn fékk nýjan greiðanda) — senda hana samt.</span></label>' : '') +
         (j.customer_id ? '<button type="button" class="_ky-sk-ny" style="padding:7px 12px;border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">📄 Búa til nýja skýrslu</button>' : '') +
       '</div>';
     }

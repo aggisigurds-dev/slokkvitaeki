@@ -37,12 +37,28 @@ const FORM = /\b(ehf|hf|sf|slf|ses|ohf|bs|svf|húsfélag|husfelag|félag)\b/g;
 function nafnNorm(x) {
   return String(x || '').toLowerCase().replace(/[.,;:()\-–—_/"„“'´`]/g, ' ').replace(FORM, ' ').replace(/\s+/g, ' ').trim();
 }
+// Stafsetningarafbrigði sama staðar (t.d. „Xarlind" / „Xalind 13-15, húsfélag") — mælt 17.11.2026 á raunskýrslu:
+// fyrsta orðið má víkja um 1 staf (5+ stafir) eða 2 (9+ stafir). Ólík fyrirtækjaheiti („…búð"/„…verslun") víkja meira.
+function fjarlaegd(a, b) {
+  const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 3;
+  let fyrri = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const nu = [i];
+    for (let j = 1; j <= n; j++) nu[j] = Math.min(fyrri[j] + 1, nu[j - 1] + 1, fyrri[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    fyrri = nu;
+  }
+  return fyrri[n];
+}
 function nafnStemmir(a, b) {
   const x = nafnNorm(a), y = nafnNorm(b);
   if (!x || !y) return null;                       // óvíst
   if (x === y) return true;
   const st = x.length <= y.length ? x : y, la = st === x ? y : x;
-  return st.length >= 4 && la.indexOf(st) >= 0;    // „galtarlind" ⊂ „galtarlind 13 15"
+  if (st.length >= 4 && la.indexOf(st) >= 0) return true;    // „gervilind" ⊂ „gervilind 13 15"
+  const fx = x.split(' ').find((w) => !/^\d/.test(w)) || '', fy = y.split(' ').find((w) => !/^\d/.test(w)) || '';
+  const lengd = Math.min(fx.length, fy.length);
+  if (lengd >= 5) { const f = fjarlaegd(fx, fy); if (f <= (lengd >= 9 ? 2 : 1)) return true; }
+  return false;
 }
 
 // Tæki á sölu: línur sem eru þjónusta við tæki („Yfirferð · …", „Hleðsla · …", „Nýtt · …", eða gamla sniðið
@@ -76,8 +92,9 @@ function velja(sale, vidhengi, site) {
 }
 
 // Ber skýrsluna saman við söluna. Skilar { stemmir, stodvar, misraemi[], lysing }.
-//   stodvar  — kt, nafn eða staður stemma ekki: krafan má ekki fara með þessa skýrslu (payday-push 409).
-//   viðvörun — ár, tæki eða viðbót (skýrslan eldri en viðbótarsalan): sýnt á sendiskjá og í verði.
+//   stodvar  — skýrslan er um ANNAN stað: bæði kt og nafn önnur (staðurinn skipti um auðkenni), eða #staður annar.
+//              payday-push stöðvar (409) — nema sá sem sendir staðfesti og sendi samt (force_skyrsla).
+//   viðvörun — kt EÐA nafn eitt og sér (nýr greiðandi, leiðrétt kt, nafnabreyting), ár, tæki eða viðbót.
 // ctx: { site (fyrirtaeki-staðurinn), base (customers_base greiðandinn), facts (arsskodun_report_facts ársins), vidbot (bool) }
 function bera(sale, sk, ctx) {
   ctx = ctx || {};
@@ -90,19 +107,32 @@ function bera(sale, sk, ctx) {
   };
   const mis = [];
   if (!sk) return { stemmir: false, stodvar: false, misraemi: [{ svid: 'engin', stodvar: false, texti: 'Engin úttektarskýrsla fannst fyrir söluna.' }], lysing: null };
-  // 1) Kennitala: kt skýrslunnar verður að vera kt sölunnar — eða kt staðarins þegar annar greiðir (rekstrarfélag/eigandi).
+  // 1–2) Er skýrslan um SAMA stað og salan? (stjórnlotan 17.11.2026: rekstrarfélög, umsjónarfélög og greiðandaskipti.)
+  //   Skýrslan er um STAÐINN sem var skoðaður (hún ber kt og nafn staðarins eins og það var þegar hún var gerð). Kt
+  //   greiðanda á sölu má vera önnur (rekstrarfélag/umsjónarfélag), og staður getur skipt um greiðanda og kt (dæmi:
+  //   eign fer af einum greiðanda á annan) án þess að vera annar staður. Þá er skýrslan RÉTT, bara með kt fyrri greiðanda.
+  //   Staðurinn SJÁLFUR hefur skipt um auðkenni aðeins þegar BÆÐI kt og nafn skýrslunnar eru önnur en sölunnar OG
+  //   staðarins. Þá stöðvar þetta (t.d. ný verslun tók við húsnæði annarrar). Annað hvort eitt → viðvörun, ekki stöðvun.
   const ktS = ktTolur(sale && sale.customer_kt), ktSt = ktTolur(site && site.kennitala);
-  if (L.kt && (ktS.length === 10 || ktSt.length === 10) && L.kt !== ktS && L.kt !== ktSt) {
-    mis.push({ svid: 'kt', stodvar: true, skyrsla: ktBil(L.kt), sala: ktBil(ktS || ktSt),
-      texti: 'Skýrslan er á kennitölu ' + ktBil(L.kt) + ', en salan er á ' + ktBil(ktS || ktSt) + '.' });
-  }
-  // 2) Nafn: nafnið á skýrslunni verður að vera nafn sölunnar, staðarins eða greiðandans (aðeins dæmt þegar það sést).
+  const ktMis = !!(L.kt && (ktS.length === 10 || ktSt.length === 10) && L.kt !== ktS && L.kt !== ktSt);
+  let nafnMis = false;
   if (L.nafn) {
     const v = [sale && sale.customer_nafn, site && site.nafn, base && base.nafn].map((n) => nafnStemmir(L.nafn, n));
-    if (v.some((x) => x === false) && !v.some((x) => x === true)) {
-      mis.push({ svid: 'nafn', stodvar: true, skyrsla: L.nafn, sala: (sale && sale.customer_nafn) || (site && site.nafn) || '',
-        texti: 'Skýrslan er á nafninu „' + L.nafn + '", en salan er á „' + ((sale && sale.customer_nafn) || (site && site.nafn) || '') + '".' });
-    }
+    nafnMis = v.some((x) => x === false) && !v.some((x) => x === true);
+  }
+  const audkenni = ktMis && nafnMis;   // staðurinn sjálfur er annar en sá sem skýrslan er um
+  const salaNafn = (sale && sale.customer_nafn) || (site && site.nafn) || '';
+  if (ktMis) {
+    mis.push({ svid: 'kt', stodvar: audkenni, skyrsla: ktBil(L.kt), sala: ktBil(ktS || ktSt),
+      texti: audkenni
+        ? 'Skýrslan er á kennitölu ' + ktBil(L.kt) + ', en salan er á ' + ktBil(ktS || ktSt) + '.'
+        : 'Skýrslan ber kennitölu ' + ktBil(L.kt) + ' en salan og staðurinn ' + ktBil(ktS || ktSt) + ' — nafnið stemmir, svo þetta er líklega sami staður með nýjan greiðanda eða leiðrétta kt.' });
+  }
+  if (nafnMis) {
+    mis.push({ svid: 'nafn', stodvar: audkenni, skyrsla: L.nafn, sala: salaNafn,
+      texti: audkenni
+        ? 'Skýrslan er á nafninu „' + L.nafn + '", en salan er á „' + salaNafn + '".'
+        : 'Skýrslan ber nafnið „' + L.nafn + '" en salan „' + salaNafn + '" — kennitalan stemmir, svo nafnið hefur líklega breyst.' });
   }
   // 3) Staður: #<staður> í nafni skýrslunnar verður að vera staður sölunnar.
   if (L.stadur != null && sale && sale.customer_id != null && +L.stadur !== +sale.customer_id) {
@@ -140,7 +170,7 @@ function bera(sale, sk, ctx) {
 function skilabod(r) {
   if (!r || r.stemmir) return '';
   return r.misraemi.map((m) => m.texti).join(' ') +
-    (r.stodvar ? ' Búðu til nýja úttektarskýrslu á staðnum („Búa til úttektarskýrslu") — hún fær nafn og kennitölu sölunnar og fylgir þá kröfunni sjálfkrafa. Eða sendu kröfuna án skýrslu.' : '');
+    (r.stodvar ? ' Búðu til nýja úttektarskýrslu á staðnum („Búa til úttektarskýrslu") — hún fær nafn og kennitölu sölunnar og fylgir þá kröfunni sjálfkrafa. Eða sendu kröfuna án skýrslu — eða, ef þú veist að skýrslan er rétt, staðfestu og sendu samt.' : '');
 }
 
 module.exports = { lysa, velja, bera, skilabod, taekiISolu, nafnStemmir, nafnNorm, ktTolur, ktBil, annadKerfi };

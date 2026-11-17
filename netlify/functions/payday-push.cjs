@@ -267,7 +267,14 @@ exports.handler = async (event) => {
     // Tveir raunreikningar 16.–17.11: reikningur endurgerður á NÝJA kennitölu eftir kredit, en eina úttektarskýrsla ársins
     // var sú gamla (gamalt nafn, gömul kt). Dómurinn (kt · nafn · staður) er úr _skyrsla-solu.cjs — sama fall og sendiskjárinn
     // og gagnavörðurinn nota. Stöðvað líka í dry-run, svo glugginn segir frá því strax. „Án skýrslu" er áfram í boði.
-    if (attachment && _skVal && _skVal.r.stodvar) {
+    // force_skyrsla: sá sem sendir hefur SÉÐ viðvörunina í sendiglugganum og staðfest að skýrslan sé rétt (stjórnlotan
+    // 17.11.2026: „skýr leið fram hjá fyrir þann sem veit betur"). Sama mynstur og force_duplicate — meðvituð ákvörðun,
+    // aldrei sjálfgefin. Skráð í svarinu (skyrsla_yfirskrifud) og í logg fallsins.
+    const _skyrslaSamt = !!body.force_skyrsla;
+    if (attachment && _skVal && _skVal.r.stodvar && _skyrslaSamt) {
+      console.warn('[payday-push] skyrsla_stemmir YFIRSKRIFAÐ af notanda — sala ' + sale.id + ' (' + (sale.num || '') + '): ' + _skVal.r.misraemi.filter((m) => m.stodvar).map((m) => m.svid).join('+'));
+    }
+    if (attachment && _skVal && _skVal.r.stodvar && !_skyrslaSamt) {
       const _sk = _skVal.r.lysing || {};
       const _kt = _skVal.r.misraemi.find((m) => m.svid === 'kt');
       return json(409, {
@@ -429,6 +436,7 @@ exports.handler = async (event) => {
       email_used: payload.sendEmail ? (custEmail || null) : null,
       email_synced: custResult.email_synced || null,
       attached_report: attachment ? { name: attachment.name, bytes: attachment.bytes.length } : null,
+      skyrsla_yfirskrifud: !!(attachment && _skVal && _skVal.r.stodvar && body.force_skyrsla),
       attach_skip_reason: attachment ? null : attachSkipReason,
     });
   } catch (e) {

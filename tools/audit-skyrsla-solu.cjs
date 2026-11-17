@@ -10,9 +10,11 @@
  * DÓMURINN er ekki skrifaður hér: hann er netlify/functions/_skyrsla-solu.cjs (velja + bera) — SAMA fall og payday-push
  * notar þegar krafan er send og sendiskjárinn sýnir. Breytist reglan, breytist hún alls staðar í einu.
  *
- *   RAUTT  kt · nafn · staður stemma ekki (sendingin stöðvast), eða salan er með fleiri tæki en skýrslan (tækjum bætt við
+ *   RAUTT  skýrslan er um ANNAN stað — bæði kt og nafn önnur en sölunnar og staðarins, eða #staður annar (sendingin
+ *          stöðvast nema staðfest sé), eða salan er með fleiri tæki en skýrslan (tækjum bætt við
  *          án nýrrar skýrslu — tölur skýrslunnar aðeins notaðar ef þær eru úr ÞESSARI skýrslu).
- *   ⚠      skýrsla annars árs, eða viðbótarsala sem bíður nýrrar skýrslu (488 — hliðið í payday-push stöðvar hana).
+ *   ⚠      kt EÐA nafn eitt og sér (nýr greiðandi á stað, rekstrarfélag, leiðrétt kt, nafnabreyting), skýrsla annars árs,
+ *          eða viðbótarsala sem bíður nýrrar skýrslu (488 — hliðið í payday-push stöðvar hana).
  *
  * Mengið: status final, ekki kredit, ekki falin, ekki kreditfærð (credit_of), engin sendimerki (dk_invoice_id,
  * invoiced_at, krafa_sent_at), source uttekt/vinnublad, ár sölunnar = í ár eða í fyrra. Staður sem vill EKKI skýrslu
@@ -35,7 +37,7 @@ const KEY = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 
 // Úttakið fer í opinber CI-logg (repóið er opið): aðeins auðkenni (R-númer, sala, staður) og HVAÐ stemmir ekki —
 // aldrei kennitala eða nafn kúnna. Gildin sjálf sjást í sendiglugganum (166) og í payday-push-svarinu.
-const SVID = { kt: 'kennitala skýrslunnar er önnur en sölunnar', nafn: 'nafnið á skýrslunni er annað en á sölunni',
+const SVID = { kt: 'kennitala skýrslunnar er önnur en sölunnar og staðarins', nafn: 'nafnið á skýrslunni er annað en á sölunni og staðnum',
   stadur: 'skýrslan er um annan stað', ar: 'skýrslan er frá öðru ári en salan', vidbot: 'viðbótarsala bíður nýrrar skýrslu (eldri en viðbótin)' };
 const lysaMis = (m) => m.svid === 'taeki' ? 'salan er með ' + m.sala + ' tæki en skýrslan ' + m.skyrsla + ' (tækjum bætt við án nýrrar skýrslu)' : (SVID[m.svid] || m.svid);
 
@@ -45,7 +47,8 @@ function daema(g) {
   const r = SS.bera(g.sale, sk, { site: g.site, base: g.base, facts: g.facts, vidbot: !!g.vidbot });
   const merki = (g.sale.num || ('#' + g.sale.id)) + ' (sala ' + g.sale.id + ', staður #' + g.sale.customer_id + ')';
   const rautt = r.misraemi.filter((m) => m.stodvar || m.svid === 'taeki').map((m) => merki + ': ' + lysaMis(m));
-  const gult = r.misraemi.filter((m) => !m.stodvar && (m.svid === 'ar' || m.svid === 'vidbot')).map((m) => merki + ': ' + lysaMis(m));
+  // kt EÐA nafn eitt og sér (nýr greiðandi, leiðrétt kt, rekstrarfélag, nafnabreyting) er ⚠, ekki rautt — stjórnlotan 17.11.2026.
+  const gult = r.misraemi.filter((m) => !m.stodvar && m.svid !== 'taeki' && m.svid !== 'engin').map((m) => merki + ': ' + lysaMis(m) + (m.svid === 'kt' || m.svid === 'nafn' ? ' (hitt stemmir — líklega sami staður)' : ''));
   return { rautt, gult, skyrsla: r.lysing && r.lysing.nafn };
 }
 
@@ -68,8 +71,11 @@ if (process.argv.includes('--profa')) {
   if (!(gamla.rautt.length === 2 && /kennitala/.test(gamla.rautt[0]) && /nafnið/.test(gamla.rautt[1]) && !/681299|Gamla/.test(gamla.rautt.join(' ')))) villur.push('gömul skýrsla á annarri kt/nafni varð ekki rauð: ' + JSON.stringify(gamla));
   if (leyst.rautt.length) villur.push('skýrsla leyst af hólmi dæmdist samt: ' + leyst.rautt.join(' | '));
   if (!(taeki.rautt.length === 1 && /5 tæki en skýrslan 2/.test(taeki.rautt[0]))) villur.push('fleiri tæki en í skýrslu varð ekki rautt: ' + JSON.stringify(taeki));
+  // Nýr greiðandi á SAMA stað (nafn stemmir, kt fyrri greiðanda) — rekstrarfélag/greiðandaskipti: ⚠, ekki rautt.
+  const greidandi = daema({ sale: sala, site, vidhengi: [sk('681299-0099', 'Nýja félagið', Date.now() - 864e5)] });
+  if (greidandi.rautt.length || !greidandi.gult.length) villur.push('nýr greiðandi á sama stað varð rautt eða þögult: ' + JSON.stringify(greidandi));
   if (villur.length) { console.log('RED sjálfspróf: ' + villur.join(' · ')); process.exit(1); }
-  console.log('✅ sjálfspróf: rétt skýrsla → grænt · gömul kt+nafn → 2 rauð (án kúnnagagna í úttaki) · leyst af hólmi → grænt · 5 tæki á móti 2 → rautt.');
+  console.log('✅ sjálfspróf: rétt skýrsla → grænt · gömul kt+nafn → 2 rauð (án kúnnagagna í úttaki) · leyst af hólmi → grænt · 5 tæki á móti 2 → rautt · nýr greiðandi á sama stað → ⚠ ekki rautt.');
   process.exit(0);
 }
 

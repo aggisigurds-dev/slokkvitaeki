@@ -649,15 +649,31 @@ Slóð úr vafranum er hunsuð fyrir úttektarsölur.
 
 | Svið | Regla | Afleiðing |
 |---|---|---|
-| kt | kt skýrslunnar er kt sölunnar EÐA staðarins (þegar annar greiðir) | stöðvar (`skyrsla_stemmir`, 409) |
-| nafn | nafnið á skýrslunni passar við sölu, stað eða greiðanda (félagaform og greinarmerki skipta ekki máli) | stöðvar |
+| kt + nafn | BÆÐI kt og nafn skýrslunnar eru önnur en sölunnar OG staðarins, svo staðurinn sjálfur skipti um auðkenni | stöðvar (`skyrsla_stemmir`, 409) |
+| kt eingöngu | kt er önnur en nafnið stemmir (nýr greiðandi á staðnum, rekstrarfélag eða leiðrétt kt) | viðvörun (gult), ekki stöðvun |
+| nafn eingöngu | nafnið er annað en kt stemmir (nafnabreyting). Félagaform, greinarmerki og 1–2 stafa stafsetningarafbrigði teljast sama nafn | viðvörun |
 | staður | `#id` í skráarnafni er staður sölunnar | stöðvar |
 | tæki | fleiri tæki á sölu en í skýrslu, og tölurnar eru úr ÞESSARI skýrslu (`arsskodun_report_facts` lesið eftir vistun) | viðvörun á skjá, RAUTT í verði |
 | ár | skýrsla annars árs | viðvörun |
 | viðbót | viðbótarsala og skýrslan er eldri en hún (488) | `vidbot_skyrsla` stöðvar eins og áður |
 
-Ef nafn eða kt sjást ekki í skráarnafninu (handhlaðin skjöl) er það „óvíst“ og ekki stöðvað. Mælt á 276 úttektarsölum
-2026: þrjár stöðvast (tvær sendar, ein ósend) og engin ranglega.
+Ef nafn eða kt sjást ekki í skráarnafninu (handhlaðin skjöl) er það „óvíst“ og ekki stöðvað.
+
+**Rekstrarfélög og greiðandaskipti** (stjórnlotan 17.11.2026). Skýrslan er um STAÐINN. Hún ber kt og nafn staðarins eins og
+það var þegar hún var gerð. Kt greiðanda á sölu má vera önnur, og staður má skipta um greiðanda (og þar með kt) án þess að
+verða annar staður. Hvorugt stöðvar.
+
+Mælt á raungögnum 17.11.2026, aðeins með lestri:
+- Í 275 af 276 úttektarsölum ársins er `customer_base_id` sölunnar sá sami og staðarins, því hver staður ber grunn
+  greiðandans. 58 þeirra eru á grunnum með rekstrarfélagsmerki.
+- Fyrsta útgáfan (aðeins kt sölunnar) hefði stöðvað 4 sölur, þar af eina þar sem greiðandi var annar en staðurinn.
+- Núverandi regla stöðvar 2 (staðurinn skipti um kt OG nafn), og 1 verður viðvörun.
+- Átta staðir eiga 2026-skýrslu á annarri kt en staðurinn ber nú. Næsta sala ársins stöðvast á 3 þeirra (kt og nafn
+  önnur), en hinir 5 fá viðvörun.
+
+**Leið fram hjá:** sending kröfu má stöðva, Vista aldrei. Í rauða reitnum er hak: „Ég hef farið yfir skýrsluna og hún er
+rétt … senda hana samt“. Fái sendingin 409 `skyrsla_stemmir` spyr glugginn „Senda samt“. Þá fer `force_skyrsla: true` með,
+og payday-push sendir, skráir `skyrsla_yfirskrifud` í svarinu og skrifar í logg fallsins. Hakið er aldrei sjálfgefið.
 
 **Ein leið eftir breytingu:** `js/patches/516-skyrsla-solu.js`, `SkyrslaSolu.eftirBreytingu(saleId)`. Fallið spyr payday-push
 og býður „Búa til skýrslu“ ef kt, nafn, staður eða tæki stemma ekki. Það gerir ekkert sjálfvirkt og blokkar ekkert.

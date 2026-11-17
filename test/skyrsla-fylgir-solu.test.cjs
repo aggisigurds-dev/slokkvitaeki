@@ -65,7 +65,7 @@ const sala = (kt) => ({ id: 91001, num: 'R-GERVI-1', customer_kt: kt, customer_n
   samtals: 12400, status: 'final', source: 'uttekt', created_at: new Date().toISOString(), linur: [{ nafn: 'Yfirferð', magn: 1, verd: 10000 }] });
 
 test('endurgerður reikningur á nýja kt + aðeins gamla skýrslan → sending STÖÐVUÐ með skýrum skilaboðum (líka dry)', async () => {
-  const st = { sala: sala(KT_NY), vidhengi: [skyrsla(KT_GAMLA, Date.now() - 40 * 864e5)] };
+  const st = { sala: sala(KT_NY), vidhengi: [skyrsla(KT_GAMLA, Date.now() - 40 * 864e5, 'Gamla nafnið ehf')] };   // staðurinn sjálfur annar: kt OG nafn
   for (const body of [{ dry: true }, {}]) {
     const r = await keyra(st, body);
     assert.strictEqual(r.res.statusCode, 409, JSON.stringify(r.j));
@@ -87,7 +87,7 @@ test('ný skýrsla á réttri kt til → hún fylgir, líka þótt gamla sé á 
 });
 
 test('send án skýrslu (attach_report:false) er áfram leyfð — hliðið stöðvar aðeins RANGA skýrslu', async () => {
-  const st = { sala: sala(KT_NY), vidhengi: [skyrsla(KT_GAMLA, Date.now() - 40 * 864e5)] };
+  const st = { sala: sala(KT_NY), vidhengi: [skyrsla(KT_GAMLA, Date.now() - 40 * 864e5, 'Gamla nafnið ehf')] };   // staðurinn sjálfur annar: kt OG nafn
   const r = await keyra(st, { dry: true, attach_report: false });
   assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.j));
 });

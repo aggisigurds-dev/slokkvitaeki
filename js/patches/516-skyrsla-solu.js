@@ -44,9 +44,10 @@
     return true;
   }
 
-  // Á að bjóða nýja skýrslu? Kt, nafn eða staður stemma ekki (stodvar), eða tækjum fjölgaði. Engin skýrsla / annað ár /
-  // viðbót: nei — þá er venjulega skýrsluskrefið (eða 488) eftir, og sendiskjárinn segir frá.
-  const BJODA = { kt: 1, nafn: 1, stadur: 1, taeki: 1 };
+  // Á að bjóða nýja skýrslu? Skýrslan er um ANNAN stað (stodvar: kt OG nafn önnur, eða #staður), eða tækjum fjölgaði.
+  // Kt EÐA nafn eitt og sér (nýr greiðandi, leiðrétt kt, rekstrarfélag) truflar ekki — sendiskjárinn sýnir það gult.
+  // Engin skýrsla / annað ár / viðbót: nei — þá er venjulega skýrsluskrefið (eða 488) eftir.
+  const bjoda = (m) => m.stodvar || m.svid === 'taeki';
 
   const _iGangi = new Set();
   // opts.alltafNy (165 endurgerð — önnur úttekt ársins): ný úttekt = ný skýrsla, líka þótt sú gamla stemmi að nafni og kt.
@@ -57,7 +58,7 @@
       let j;
       try { j = await athuga(saleId); } catch (_) { return null; }   // athugunin brást → engin truflun; sendiskjárinn spyr aftur
       if (!j.fylgir || j.send || !j.skyrsla || !j.customer_id) return j;
-      const mis = (j.skyrsla.misraemi || []).filter((m) => BJODA[m.svid]);
+      const mis = (j.skyrsla.misraemi || []).filter(bjoda);
       const alltaf = !!(opts && opts.alltafNy);
       if (!mis.length && !alltaf) return j;
       const sk = j.skyrsla.lysing;
