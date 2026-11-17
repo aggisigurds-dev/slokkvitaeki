@@ -47,7 +47,9 @@ if (/localStorage\.setItem/.test(kodi)) brot.push('488 skrifar í localStorage �
 
 const p168 = lesa('js/patches/168-company-inspection-report.js');
 if (!/window\.CIR_VIDBOT/.test(p168) || !/vidbot_skyrsla_eldri_eftir/.test(p168)) brot.push('168 tekur ekki við af eldri skýrslu ársins eftir viðbótarúttekt (CIR_VIDBOT)');
-if (!/CompanyAttachments\.delete\(co\.id, a\)/.test(p168)) brot.push('168 fjarlægir ekki eldri skýrslu ársins');
+// 17.11.2026 (Agnar: „engu eytt"): eldri skýrslan er MERKT leyst af hólmi (111 supersede) í stað þess að vera eytt — hún fylgir aldrei kröfu.
+if (!/_vb && _docRowOk\)[\s\S]{0,900}CompanyAttachments\.supersede\(co\.id, eldri\.map/.test(p168)) brot.push('168 tekur ekki við af eldri skýrslu ársins eftir viðbót (merkja leyst af hólmi)');
+if (/CompanyAttachments\.delete\(co\.id/.test(p168)) brot.push('168 EYÐIR eldri skýrslu — á að merkja hana leysta af hólmi (engu eytt)');
 if (!/window\.CtcPricing\s*=/.test(lesa('js/patches/129-company-total-cost.js'))) brot.push('129 flytur ekki út CtcPricing.normalizeTypeFamily');
 if (!/window\.VisitWorkflowReikn\s*=\s*\{[^}]*totalsFromLinur/.test(lesa('js/patches/165-visit-workflow.js'))) brot.push('165 flytur ekki út VisitWorkflowReikn.totalsFromLinur');
 
@@ -59,7 +61,7 @@ const iFersk = klaraKodi.indexOf('saekja(coId, true)');
 if (iConf < 0 || iFersk < iConf) brot.push('klara() les ekki stöðuna ferskt EFTIR confirm() — annað tæki getur hafa gert viðbótina');
 if (!/from\('uttaeki'\)\.select\('id,status,fyrirtaeki_id,created_at'\)\.in\('id'/.test(klaraKodi)) brot.push('klara() endurles ekki tækin eftir staðfestingu — reikningur byggður úr gamalli mynd');
 if (!/utanVerkbeidna\(.*,\s*true\)/.test(klaraKodi)) brot.push('klara() athugar ekki verkbeiðnir LOKAÐ (strict) — tæki á verkbeiðni gætu tvírukkast');
-if (!/await CompanyInspectionReport\.open\(coId\)/.test(klaraKodi) || !/bidaSkyrslu\(coId, sala\)/.test(klaraKodi)) brot.push('klara() bíður ekki eftir að ný skýrsla vistist (bidaSkyrslu)');
+if (!/await nySkyrsla\(coId\)/.test(klaraKodi) || !/SkyrslaSolu\.endurnyja\(coId/.test(kodi) || !/bidaSkyrslu\(coId, sala\)/.test(klaraKodi)) brot.push('klara() bíður ekki eftir að ný skýrsla vistist (bidaSkyrslu)');
 if (!/rk\.vantar \|\| rk\.hopur/.test(kodi)) brot.push('Klára er ekki læst þegar afsláttarhópur náðist ekki (rk.hopur)');
 if (!/gate:\s*'vidbot_skyrsla'/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push stöðvar ekki viðbótarkröfu með gamalli/engri skýrslu (gate vidbot_skyrsla)');
 if (!/if \(!attachReport\) return json\(409, \{ gate: 'vidbot_skyrsla'/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push leyfir attach_report=false á viðbótarkröfu (gamla gatið: hliðið var hunsað)');
@@ -70,7 +72,7 @@ if (!/addUnitsOnSite\(c\.nafn \|\| '', type, size, count, c\.id\)/.test(lesa('js
 if (!/not like ''Viðbótarúttekt við %''/.test(lesa('sql/2026-10-29_heilsucheck_vidbot_uttekt.sql'))) brot.push('sql/2026-10-29_heilsucheck_vidbot_uttekt.sql vantar (heilsucheck telur viðbót sem tvítekna úttekt)');
 if (!/async function parReikningur/.test(kodi) || !/from\('document_pairs'\)/.test(kodi) || !/vidbot_par_brast/.test(kodi)) brot.push('488 sér ekki reikning ársins gegnum document_pairs (samreikningar / Payday-skjöl) — staðir án eigin sölu fá aldrei kassann');
 if (/parReikningur[\s\S]{0,2500}\.insert\(/.test(kodi.slice(kodi.indexOf('async function parReikningur'), kodi.indexOf('async function parReikningur') + 3500))) brot.push('parReikningur má aðeins LESA (engin skrif í document_pairs/solur)');
-if (!p168.includes("' - úttektarskýrsla - #' + co.id +")) brot.push('168 eyðir fleiru en nákvæmlega úttektarskýrslunni sem appið bjó til (… - úttektarskýrsla - #<id>.pdf) — handinnhlaðin skjöl eiga að vera í friði');
+if (!p168.includes("' - úttektarskýrsla - #' + co.id +")) brot.push('168 merkir fleira en nákvæmlega úttektarskýrsluna sem appið bjó til (… - úttektarskýrsla - #<id>.pdf) — handinnhlaðin skjöl eiga að vera í friði');
 if (!/sala_nums/.test(kodi) || !/vidbot_merking_brast/.test(kodi)) brot.push('488 skráir ekki númer viðbótarsölunnar (vidbot_uttekt.<fyrirtæki>.sala_nums) — krafa_note er ritanlegt í Kröfu yfirliti og hliðið má ekki hvíla á því einu');
 if (!/sala_nums/.test(lesa('netlify/functions/payday-push.cjs'))) brot.push('payday-push les ekki sala_nums — hliðið hvílir á ritanlegum krafa_note');
 if (!/vidbot_skyrsla_vistun_brast/.test(p168)) brot.push('168 skráir ekki bilaða vistun viðbótarskýrslu (logProblem)');

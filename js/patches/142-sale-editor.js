@@ -1120,11 +1120,14 @@
       if (ktClean && !ktVartalaOk(ktClean)) Toast.show('⚠ Vistað — en kennitalan ' + kt + ' er EKKI gild (vartalan stemmir ekki). Krafan strandar í Payday — leiðréttu kennitöluna.');
       else Toast.show(finalize ? '✓ Sala kláruð · birtist í Bókhaldi' : '✓ Drög vistuð');
     }
+    // 17.11.2026: close() núllar _sale — áður fór 'sale-edited' ALLTAF með id: null, svo enginn hlustandi vissi hvaða sala
+    // breyttist (516 SkyrslaSolu þarf það til að spyrja hvort skýrslan stemmi enn). Auðkennið er lesið á undan.
+    const _vistadId = _sale && _sale.id;
     close();
     // Refresh open views
     try { window.App && App.refreshAll && App.refreshAll(); } catch (_) {}
     try { window.DB && DB.loadAll && DB.loadAll(); } catch (_) {}
-    try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: _sale && _sale.id, finalize } })); } catch (_) {}
+    try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: _vistadId, finalize } })); } catch (_) {}
   }
 
   // ── Public API ────────────────────────────────────────────────────────────

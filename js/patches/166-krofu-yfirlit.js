@@ -2139,7 +2139,7 @@
             body: JSON.stringify(Object.assign({
               sale_id: id,
               attach_report: choice.attach,
-              report_storage_path: (choice.attach && choice.path) || undefined,
+              // 17.11.2026: engin slóð úr vafranum — payday-push velur skýrsluna út frá SÖLUNNI á sendistund (_skyrsla-solu.cjs).
               email_override: choice.email_override || undefined,   // aðeins ef notandinn staðfesti tillöguna
             }, auka || {})),
           });
@@ -2824,15 +2824,6 @@
               (!isUttekt ? '<span style="font-size:11.5px;color:#b45309">NB: Payday festir skýrsluna aðeins á úttektar- og slökkvikerfiskröfur.</span>' : '') +
             '</div>' +
           '</div>';
-        // 17.11.2026: skýrslan er á ANNARRI kennitölu en reikningurinn (endurgerður reikningur á nýja kt) — sagt hreint út
-        // ÁÐUR en ýtt er á Senda. payday-push stöðvar sendingu með henni (gate skyrsla_kt); „án skýrslu" er áfram leyft.
-        if (res.ktMisraemi) {
-          const _kb = d => String(d).slice(0, 6) + '-' + String(d).slice(6);
-          reportHtml = '<div id="_ky-send-ktvilla" style="margin:14px 0 -6px;padding:11px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:13px;color:#991b1b;line-height:1.45">' +
-            '<b>⚠ Skýrslan er á rangri kennitölu.</b> Hún er á ' + esc(_kb(res.ktMisraemi.skyrsla)) + ', en reikningurinn er á ' + esc(_kb(res.ktMisraemi.reikningur)) + '. ' +
-            'Búðu til nýja úttektarskýrslu á fyrirtækinu („Búa til úttektarskýrslu" → Vista) — hún fær rétta kennitölu og fylgir þá kröfunni. ' +
-            'Sending með þessari skýrslu stöðvast.</div>' + reportHtml;
-        }
       } else {
         reportHtml = '<div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;font-size:13px;color:#64748b">📄 Engin ' + skNafn.toLowerCase() + ' fundin fyrir ' + esc(res.year) + ' — sending er samt leyfð.</div>';
       }
@@ -2841,6 +2832,7 @@
           '<div style="font-size:17px;font-weight:800;color:#11141c;margin-bottom:4px">🏦 Senda kröfu í Payday</div>' +
           '<div style="font-size:13px;color:#334155">' + esc((sale && sale.num) || '') + ' · ' + esc((sale && sale.customer_nafn) || '') + ' · <b class="ky-num">' + fmtKr(sale && sale.samtals) + '</b></div>' +
           reportHtml +
+          '<div id="_ky-send-skyrsla"></div>' +
           '<div id="_ky-send-afh"></div>' +
           '<div style="font-size:12px;color:#64748b;margin-bottom:16px">Sendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".</div>' +
           '<div style="display:flex;justify-content:flex-end;gap:8px">' +
@@ -2867,6 +2859,48 @@
       const ob = wrap.querySelector('#_ky-send-open');
       if (ob) ob.addEventListener('click', () => { openSkyrsla(res).catch(e => alert('Villa: ' + (e.message || e))); });
       if (sale && sale.id) synaAfhendingu(wrap.querySelector('#_ky-send-afh'), sale);
+      if (sale && sale.id && (sale.source === 'uttekt' || sale.source === 'vinnublad')) synaSkyrslu(wrap.querySelector('#_ky-send-skyrsla'), sale);
+    });
+  }
+
+  // 17.11.2026 (Agnar: „svo það sé ekki alltaf vesen“): sendiskjárinn sýnir HVAÐA skýrsla fylgir (nafn, kt, dagsetning,
+  // tæki) og hvort hún stemmir við söluna — svarið kemur frá payday-push (skyrsla_athugun, _skyrsla-solu.cjs), sama val og
+  // sami dómur og sendingin sjálf notar. Stemmi hún ekki: rauður reitur, ástæðurnar og takki „Búa til nýja skýrslu"
+  // (516 SkyrslaSolu.endurnyja). Sendingin stöðvast þá með þessari skýrslu; „án skýrslu" er áfram í boði. Bilun í
+  // athuguninni breytir engu öðru í glugganum.
+  async function synaSkyrslu(box, sale) {
+    if (!box) return;
+    let j = null;
+    try {
+      j = window.SkyrslaSolu ? await SkyrslaSolu.athuga(sale.id) : null;
+    } catch (_) { j = null; }
+    if (!box.isConnected) return;
+    if (!j || !j.skyrsla) { box.innerHTML = ''; return; }
+    const r = j.skyrsla, L = r.lysing;
+    const dags = x => { const d = String(x || '').slice(0, 10).split('-'); return d.length === 3 ? d[2] + '.' + d[1] + '.' + d[0] : ''; };
+    if (!L) { box.innerHTML = ''; return; }   // engin skýrsla — reiturinn að ofan segir það þegar
+    const hvad = '<b>' + esc(L.fyrirtaeki || L.nafn || 'Úttektarskýrsla') + '</b>' + (L.kt ? ' · kt ' + esc(L.kt) : '') +
+      (L.dags ? ' · vistuð ' + esc(dags(L.dags)) : '') + (L.taeki != null ? ' · ' + esc(String(L.taeki)) + ' tæki' : '');
+    const stodva = (r.misraemi || []).filter(m => m.stodvar), vara = (r.misraemi || []).filter(m => !m.stodvar && m.svid !== 'engin');
+    let h;
+    if (r.stemmir) {
+      h = '<div class="_ky-sk-ok" style="margin:-6px 0 12px;padding:9px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:12.5px;color:#14532d">' +
+        '📄 Fylgir: ' + hvad + ' — <b>✓ stemmir við söluna</b> (kennitala, nafn, staður).</div>';
+    } else {
+      const lit = stodva.length ? { bg: '#fef2f2', bd: '#fecaca', c: '#991b1b', t: '⚠ Skýrslan stemmir EKKI við söluna' } : { bg: '#fffbeb', bd: '#fde68a', c: '#78350f', t: '⚠ Athugaðu skýrsluna' };
+      h = '<div class="_ky-sk-villa" style="margin:-6px 0 12px;padding:11px 14px;background:' + lit.bg + ';border:1px solid ' + lit.bd + ';border-radius:10px;font-size:12.5px;color:' + lit.c + ';line-height:1.45">' +
+        '<b>' + lit.t + '.</b><div style="margin:4px 0 2px">📄 ' + hvad + '</div>' +
+        '<ul style="margin:6px 0 8px 18px;padding:0">' + stodva.concat(vara).map(m => '<li>' + esc(m.texti) + '</li>').join('') + '</ul>' +
+        (stodva.length ? '<div style="margin-bottom:8px">Sending með þessari skýrslu stöðvast. Búðu til nýja — hún fær nafn, kennitölu og tæki sölunnar og fylgir þá kröfunni; sú gamla er merkt „leyst af hólmi", engu eytt.</div>' : '') +
+        (j.customer_id ? '<button type="button" class="_ky-sk-ny" style="padding:7px 12px;border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">📄 Búa til nýja skýrslu</button>' : '') +
+      '</div>';
+    }
+    box.innerHTML = h;
+    const nb = box.querySelector('._ky-sk-ny');
+    if (nb) nb.addEventListener('click', () => {
+      nb.disabled = true; nb.textContent = '⏳ Opna skýrslugerð…';
+      const hv = document.getElementById('_ky-send-cancel'); if (hv) hv.click();   // = „Hætta við“ (ekkert sent); sendu aftur þegar skýrslan er vistuð
+      SkyrslaSolu.endurnyja(j.customer_id, { astaeda: 'sendiskjar' }).catch(e => alert('Skýrslugerðin opnaðist ekki: ' + ((e && e.message) || e)));
     });
   }
 

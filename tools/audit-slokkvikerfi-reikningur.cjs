@@ -31,7 +31,8 @@ const pp = lesa('netlify/functions/payday-push.cjs');
 // 20.10.2026: gáttin hleypir líka 'vinnublad' í gegn (SARA-drög = úttektarreikningur) og vörðurinn KREFST þess núna — annars kæmi „skýrslu vantar á vinnublaðskröfur“ aftur án þess að nokkuð yrði rautt.
 // 05.10.2026: gáttin hleypir líka 'brunakerfi' í gegn — sá fær AÐEINS findBrunakerfiPdf (skýrslan úr sínu kerfi)
 if (!/if \(sale\.source !== 'uttekt' && sale\.source !== 'slokkvikerfi' && sale\.source !== 'brunakerfi' && sale\.source !== 'vinnublad'\) \{\s*attachSkipReason/.test(pp)) brot.push('payday-push: skýrslugáttin hleypir öðru en uttekt/slokkvikerfi/brunakerfi í gegn (eða finnst ekki)');
-if (!/sale\.source === 'slokkvikerfi'\s*\?\s*await findSlokkvikerfiPdf\(sale\)\s*:\s*sale\.source === 'brunakerfi'\s*\?\s*await findBrunakerfiPdf\(sale\)\s*:\s*await findReportPdf\(sale, body\.report_storage_path\)/.test(pp)) brot.push('payday-push: slökkvikerfis-/brunakerfissala sækir ekki skýrslu um sitt eigið fall (findSlokkvikerfiPdf / findBrunakerfiPdf)');
+// 17.11.2026: úttektar-/vinnublaðssala fer um skyrslaFyrirSolu (ein heimild, _skyrsla-solu.cjs) — slóð úr vafranum er ekki notuð.
+if (!/sale\.source === 'slokkvikerfi'\s*\?\s*await findSlokkvikerfiPdf\(sale\)\s*:\s*sale\.source === 'brunakerfi'\s*\?\s*await findBrunakerfiPdf\(sale\)\s*:[\s\S]{0,600}?_skVal = await skyrslaFyrirSolu\(sale, site, customer,/.test(pp)) brot.push('payday-push: slökkvikerfis-/brunakerfissala sækir ekki skýrslu um sitt eigið fall (findSlokkvikerfiPdf / findBrunakerfiPdf)');
 const fbk = fall(pp, 'findBrunakerfiPdf');
 if (!fbk) brot.push('payday-push: findBrunakerfiPdf finnst ekki');
 else {
@@ -64,7 +65,13 @@ else {
 
 // (2b) 05.10.2026 (netvordur) — „skýrslurnar haldast við reikningana úr sínu kerfi": nafnasían á viðhengjum, hólfareglan
 //      í Pör-bandinu (253/311 — Senda-pakkinn er OUT-leið) og varpið source→tegund í gagnagrunninum
-if (!/annadKerfi\(a\)/.test(fall(pp, 'findReportPdf') || '')) brot.push('payday-push: findReportPdf síar ekki brunakerfis-/slökkvikerfisnefnd viðhengi frá slökkvitækjaskýrslu');
+// 17.11.2026: valið er í kjarnanum (_skyrsla-solu.cjs velja) — hann verður að sía annað kerfi, og payday-push verður að nota hann.
+{
+  const kjarni = lesa('netlify/functions/_skyrsla-solu.cjs');
+  const velja = fall(kjarni, 'velja') || '';
+  if (!/!annadKerfi\(a\)/.test(velja)) brot.push('_skyrsla-solu: velja síar ekki brunakerfis-/slökkvikerfisnefnd viðhengi frá slökkvitækjaskýrslu');
+  if (!/SS\.velja\(sale,/.test(fall(pp, 'skyrslaFyrirSolu') || '')) brot.push('payday-push: skyrslaFyrirSolu velur ekki skýrslu um kjarnann (SS.velja) — síunin gildir þá ekki');
+}
 for (const f of ['js/patches/253-sala-customer-history.js', 'js/patches/311-doc-pairs-band.js']) {
   const src = lesa(f);
   if (!/const passarHolfi = /.test(src) || (src.match(/passarHolfi\(key, /g) || []).length < 2) brot.push(f.split('/').pop() + ': Pör-bandið setur skjal úr pari í hólf án þess að athuga kerfi þess (passarHolfi)');

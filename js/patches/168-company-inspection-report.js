@@ -485,7 +485,10 @@
       // sjálfvirka vistunin sleppir því ekki þótt skýrsla ársins sé til, og eldri skýrsla ársins er fjarlægð eftir vistun
       // (eldri ÚTTEKTARSKÝRSLA ársins, búin til af appinu, er fjarlægð svo ekki sitji tvær hlið við hlið; handinnhlaðin skjöl eru látin í friði).
       const _vb = !!(window.CIR_VIDBOT && String(window.CIR_VIDBOT.coId) === String(co.id) && Date.now() < window.CIR_VIDBOT.until);
-      if (auto && !_vb) {
+      // 17.11.2026 (516 SkyrslaSolu.endurnyja): sala var leiðrétt/endurgerð/færð á aðra kt/fékk fleiri tæki — NÝ skýrsla er
+      // beðin um, svo sjálfvirka vistunin sleppir ekki þótt skýrsla ársins sé til (eins og viðbótin). Eldri er merkt leyst af hólmi.
+      const _ny = !!(window.CIR_NY && String(window.CIR_NY.coId) === String(co.id) && Date.now() < window.CIR_NY.until);
+      if (auto && !_vb && !_ny) {
         try {
           const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
           // 17.11.2026 (tveir raunreikningar 16.–17.11): reikningur endurgerður á NÝJA kt, en
@@ -580,16 +583,17 @@
             console.warn('[uttektarskyrsla] customer_documents', e);
             try { if (window.logProblem) window.logProblem('uttektarskyrsla_docrow_failed', 'co ' + co.id + ' ár ' + ar + ': ' + String((e && e.message) || e)); } catch (_) {}
           }
-          // Viðbótarúttekt (488): eldri úttektarskýrsla ársins (sú sem appið bjó til) er fjarlægð EFTIR að skjalaröðin vísar á nýju
-          // skýrsluna — annars gæti hún bent á eydda skrá. Mistakist skjalaröðin er ekkert eytt og CIR_VIDBOT helst (Vista aftur).
+          // Viðbótarúttekt (488): eldri úttektarskýrsla ársins (sú sem appið bjó til) tekur ekki lengur þátt EFTIR að skjalaröðin
+          // vísar á nýju skýrsluna. Mistakist skjalaröðin er ekkert snert og CIR_VIDBOT helst (Vista aftur).
+          // 17.11.2026 (Agnar: „engu eytt"; sama leið og allar breytingar á sölu): eldri skýrslan er MERKT „leyst af hólmi"
+          // (111 supersede) í stað þess að vera eytt — hún fylgir aldrei kröfu framar (payday-push/166/_skyrsla-solu sía hana).
           if (_vb && _docRowOk) {
             try {
               const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
               const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
-                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
-              let eftir = 0;
-              for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
-              if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
+              const ok = eldri.length ? await CompanyAttachments.supersede(co.id, eldri.map(a => a.id), meta.name || fname) : true;
+              if (ok !== true && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eldri.length + ' eldri skýrsla ' + ar + ' ómerkt (leyst af hólmi)');
             } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
             finally { window.CIR_VIDBOT = null; }
           } else if (!_vb && meta.id) {
@@ -604,6 +608,7 @@
                 if (ok !== true && window.logProblem) window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + eldri.length + ' eldri skýrsla ' + ar + ' ómerkt');
               }
             } catch (e) { try { window.logProblem && window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
+            finally { if (_ny) window.CIR_NY = null; }
           }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +

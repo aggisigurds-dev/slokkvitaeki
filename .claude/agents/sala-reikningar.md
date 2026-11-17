@@ -501,6 +501,9 @@ Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar �
   þá takka ýtir Agnar einn. Það er verklagsregla, ekki aðgangsstýring: takkinn er opinn öllum innskráðum (166:2104).
 - Sala er aldrei eydd. Hún er ógilt (`void`), kreditfærð eða „sleppt“ (369).
 - Eftir hvert skrif er lesið til baka úr ferskri `solur`-röð. „Vistað“ í viðmótinu er ekki sönnun.
+- **Úttektarskýrslan sem fylgir kröfunni ræðst af SÖLUNNI þegar krafan er send** (kt, nafn, staður, tæki, ár), ekki af
+  eldri tengingu. Eftir hverja breytingu á úttektarsölu spyr appið hvort skýrslan stemmi og býður nýja ef ekki. Sjá
+  „Skýrslan sem fylgir — ein heimild“ neðst í handbókinni. **SANNAÐ** (17.11.2026)
 
 ### 1. Breyta reikningi
 
@@ -516,6 +519,10 @@ Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar �
    (`commit`, 142:1005–1018), og `payday-push` tæki þá netfang, heimilisfang og síma gamla kúnnans (PP:147, 406–423). Uppfærðu
    `customer_base_id` beint og lestu til baka (regla 31). Ógild kt fær viðvörun í ritlinum frá 17.11.2026 (6a92a99f), en vistun er ekki stöðvuð. **ÓSANNAÐ**
 5. Sannreyna: `solur` ber nýju gildin og sendimerkin þrjú eru enn `null`.
+6. **Skýrslan:** eftir Vista spyr appið (516 `SkyrslaSolu`) payday-push hvort skýrslan stemmi enn. Ef ekki (önnur kt
+   eða nafn á staðnum, eða tækjum fjölgaði): svara „Búa til skýrslu“. Ný skýrsla verður til, og sú gamla er merkt
+   „leyst af hólmi“ (engu eytt). „Seinna“ er leyft, en þá stöðvast sendingin með röngu skýrslunni. **SANNAÐ** (vafri 17.11:
+   tækjum bætt við → spurt → ný skýrsla)
 
 **B. Sendur reikningur: „✏️ Leiðrétta“.**
 1. Opna sendan reikning (læstur ritill), smella á „✏️ Leiðrétta“ og svo „Búa til drög“. Ný `solur`-röð verður til
@@ -525,6 +532,8 @@ Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar �
 2. Breyta drögunum og smella á „Klára sölu“. **ÓSANNAÐ**
 3. **KREDITFÆRA GAMLA FYRST** (blái borðinn „Kreditfæra R-…“ á drögunum), áður en nýi reikningurinn fer. **ÓSANNAÐ**
 4. Agnar sendir nýja reikninginn úr Kröfuyfirliti. **ÓSANNAÐ**
+5. **Skýrslan:** þegar drögin eru vistuð eða kláruð fer salan um sama skref og 1A.6. Sendiskjárinn sýnir hvaða skýrsla
+   fylgir og hvort hún stemmir.
 
 > ⚠ **Gat, lesið í kóða 17.11.2026, ekki keyrt.** Leiðréttingardrögin (`status='drog'`, `greitt_med='reikningur'`)
 > birtast undir „Ósendar“. `payday-push` stöðvar þau ekki heldur: síurnar 166:714 og PP:122 útiloka aðeins `void`. Því má
@@ -564,6 +573,9 @@ Sannreyna:
 ### 3. Færa á aðra kennitölu
 
 **A. Ósend sala:** breyta kt í ritlinum og fylgja skrefi 1A.4 (`customer_base_id` beint). **ÓSANNAÐ**
+Skýrslan: ef kt og nafn STAÐARINS standa óbreytt (annar greiðandi, t.d. rekstrarfélag) stemmir skýrslan áfram, því hún er
+um staðinn. Ef staðurinn sjálfur fékk nýja kt eða nafn þarf nýja skýrslu. Appið spyr eftir Vista (1A.6). Annars: opna
+staðinn og velja „Búa til úttektarskýrslu“.
 
 **B. Sendur reikningur: Kröfu-vinnugluggi `faera_kt` (369).** Forathugun: salan er ógreidd, `final`, ekki kreditfærð og
 stendur SENT eða DRAFT í Payday (369:718–720).
@@ -576,6 +588,10 @@ stendur SENT eða DRAFT í Payday (369:718–720).
    - (c) uppfæra söluna: kt, nafn, `customer_base_id`, `customer_id` og athugasemd,
    - (d) salan situr ósend í Kröfuyfirliti.
 4. Málið fer í `i_yfirferd_agnars` og Agnar sendir á nýja greiðandann. **ÓSANNAÐ**
+5. **Skýrslan (🤖-þrep, á undan i_yfirferd_agnars):** Claude breytir sölunni beint, svo enginn vafraatburður fer af
+   stað. Ef kt eða nafn staðarins breyttist: opna staðinn, velja „Búa til úttektarskýrslu“ og lesa svo `tools/audit-skyrsla-solu.cjs`
+   (á að vera grænn fyrir þessa sölu). Gleymist þetta stöðvar payday-push sendinguna (`gate: 'skyrsla_stemmir'`) og
+   sendiskjárinn sýnir rauðan reit með takka.
 
 RÖNG leið: „Kredit + endurútgáfa“ (26) færir ekki kt. Athugið að 369:159/162 segir að sú leið kalli ekki á Payday. Það er
 úrelt síðan 08.10.2026, því fullt ógreitt kredit afturkallar nú.
@@ -601,7 +617,10 @@ Sala birtist undir „Ósendar“ þegar þetta á allt við (166:709–714):
    - „→ Í kröfu“ úr „Sést hvergi“: einstefna, sem setur `final` ef salan var drög (166:3568),
    - Leiðrétta eða Kredit + breyta,
    - 369-mál.
-2. Undirbúa: kt er gild, `customer_base_id` er sett, upphæðin rétt og skýrslan valin. **ÓSANNAÐ**
+2. Undirbúa: kt er gild, `customer_base_id` er sett og upphæðin rétt. **ÓSANNAÐ** Skýrslan er EKKI valin í vafranum
+   lengur. Sendiskjárinn sýnir þá sem þjónninn velur, með fyrirtæki, kt, vistunardag og tækjafjölda, og hvort hún
+   stemmir. Rauður reitur þýðir að hún stemmir ekki; þá er ýtt á „📄 Búa til nýja skýrslu“ (glugginn lokast, ekkert er
+   sent) og svo sent aftur. **SANNAÐ** (vafri 17.11.2026)
 3. Agnar ýtir á „Krafa send“ eða „🏦 Senda valdar í Payday“. Hliðin í PP eru í þessari röð: þegar send, writeback brast,
    void, `customer_base_id` vantar (422) og tvírukkun (409). **ÓSANNAÐ**
 
@@ -609,10 +628,69 @@ Sannreyna eftir sendingu:
 - `dk_invoice_id`, `krafa_sent_at` og `invoiced_at` eru sett og `status='final'`,
 - `payday_invoices_slokk` sýnir SENT eftir næstu sókn.
 
+### Skýrslan sem fylgir — ein heimild (17.11.2026)
+
+Agnar 17.11.2026: „[kúnni] er ennþá með ranga skýrslu“ og „Mátt reyna laga þetta svo það sé ekki alltaf
+vesen.“ Reikningur var endurgerður á nýja kt eftir kredit, en gamla skýrslan (gamalt nafn, gömul kt) fylgdi áfram.
+
+**Gamla tengingin, þrír staðir:**
+- `payday-push` festi FYRSTU skýrslu ársins, eða slóð sem vafrinn hafði geymt (`report_storage_path`).
+- 166 valdi eins.
+- 168 taldi hvaða skýrslu ársins sem var „✓ Vistuð“ og gerði Vista óvirkt, svo ný skýrsla varð aldrei til.
+
+**Ein heimild:** `netlify/functions/_skyrsla-solu.cjs`. Föllin `velja` og `bera` eru hrein. Þrír nota þau:
+- `payday-push`: við sendingu, og í hamnum `skyrsla_athugun`, sem kallar ekki á Payday;
+- sendiskjárinn í 166;
+- gagnavörðurinn `tools/audit-skyrsla-solu.cjs`.
+
+Slóð úr vafranum er hunsuð fyrir úttektarsölur.
+
+**Dómurinn** (`bera`):
+
+| Svið | Regla | Afleiðing |
+|---|---|---|
+| kt | kt skýrslunnar er kt sölunnar EÐA staðarins (þegar annar greiðir) | stöðvar (`skyrsla_stemmir`, 409) |
+| nafn | nafnið á skýrslunni passar við sölu, stað eða greiðanda (félagaform og greinarmerki skipta ekki máli) | stöðvar |
+| staður | `#id` í skráarnafni er staður sölunnar | stöðvar |
+| tæki | fleiri tæki á sölu en í skýrslu, og tölurnar eru úr ÞESSARI skýrslu (`arsskodun_report_facts` lesið eftir vistun) | viðvörun á skjá, RAUTT í verði |
+| ár | skýrsla annars árs | viðvörun |
+| viðbót | viðbótarsala og skýrslan er eldri en hún (488) | `vidbot_skyrsla` stöðvar eins og áður |
+
+Ef nafn eða kt sjást ekki í skráarnafninu (handhlaðin skjöl) er það „óvíst“ og ekki stöðvað. Mælt á 276 úttektarsölum
+2026: þrjár stöðvast (tvær sendar, ein ósend) og engin ranglega.
+
+**Ein leið eftir breytingu:** `js/patches/516-skyrsla-solu.js`, `SkyrslaSolu.eftirBreytingu(saleId)`. Fallið spyr payday-push
+og býður „Búa til skýrslu“ ef kt, nafn, staður eða tæki stemma ekki. Það gerir ekkert sjálfvirkt og blokkar ekkert.
+
+Leiðirnar og hvað þær gera:
+- **142 ritillinn** (Vista, Drög, Klára; Leiðrétta-drög; færa kt á ósendri sölu; gleymdur afsláttur; tækjum bætt við):
+  atburðurinn `sale-edited`. Hann bar `id: null` fram til 17.11 og ber nú auðkennið.
+- **165 Klára heimsókn:** önnur úttekt ársins (`__uvSecondReason`) býður alltaf nýja skýrslu.
+- **488 viðbót:** `SkyrslaSolu.endurnyja` (eigið merki CIR_VIDBOT helst).
+- **166 sendiskjárinn:** takkinn „📄 Búa til nýja skýrslu“.
+- **430 verkspjald og 11 bókhaldsyfirlit:** senda líka `sale-edited` með auðkenni.
+
+**Ný skýrsla** verður aðeins til um `SkyrslaSolu.endurnyja(coId)`:
+- Merkið `CIR_NY` lætur 168 vista nýja skýrslu þótt skýrsla sé til.
+- Eldri app-skýrslur ársins á staðnum eru merktar `leyst_af` / `leyst_af_dags` með `CompanyAttachments.supersede` (111). Það gildir líka um viðbót.
+- **Engu er eytt.** Ársreiturinn sýnir „Skoðun (úrelt)“.
+- Til að afturkalla: fjarlægja `leyst_af`.
+- `customer_documents`-röð ársins (það sem gáttin les) uppfærist á nýju skýrsluna, svo úrelt skýrsla sést aldrei í gáttinni.
+
+**Rautt í verðinum `audit-skyrsla-solu`:** ósend sala með skýrslu sem stemmir ekki. Úttakið sýnir aðeins R-númer, sölu, stað
+og svið, aldrei kt eða nöfn, því CI-loggið er opinbert. Lagfæring: opna staðinn og velja „Búa til úttektarskýrslu“, eða ýta á
+„📄 Búa til nýja skýrslu“ í sendiglugganum.
+
+Próf:
+- `test/skyrsla-ein-heimild-sala.test.cjs`, 14 próf; 10 af 14 féllu á gamla kóðanum (master 0d902321; hin 4 prófa kjarnann einan, sem var ekki til).
+- `test/skyrsla-fylgir-solu.test.cjs`.
+
 ### Hvað er sannað (17.11.2026)
 
 - Aðeins hreinu föll „Leiðrétta“ (5 próf í `test/sala-leidretting.test.cjs`).
 - Ekkert próf í `test/` nær yfir vistun úr ritli, kreditfærslu, kt-flutning, Kröfuyfirlit né `payday-push`.
+- Skýrslan sem fylgir (ein heimild): kjarni, payday-push (hermt net), 516 (hermdur vafri) og keðjan í vafra á Test fyrirtæki
+  17.11.2026. Ferlið: sendiskjár rauður → ný skýrsla → sendiskjár „✓ stemmir“; ritill, tækjum bætt við → spurt → ný skýrsla.
 - Stöðuverðir í `tools/` sanna kóðamynstur, ekki flæði: `audit-kredit-afturkollun`, `audit-krofu-vinnugluggi`,
   `audit-osendar-krofur`, `audit-payday-tvirukkun` og `audit-einstefna-krofu`.
 

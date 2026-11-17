@@ -69,7 +69,7 @@ test('endurgerður reikningur á nýja kt + aðeins gamla skýrslan → sending 
   for (const body of [{ dry: true }, {}]) {
     const r = await keyra(st, body);
     assert.strictEqual(r.res.statusCode, 409, JSON.stringify(r.j));
-    assert.strictEqual(r.j.gate, 'skyrsla_kt');
+    assert.strictEqual(r.j.gate, 'skyrsla_stemmir');
     assert.match(r.j.error, new RegExp(KT_GAMLA + '.*' + KT_NY));
     assert.match(r.j.error, /Búa til úttektarskýrslu/);
     assert.strictEqual(r.reikningar.length, 0, 'ekkert má fara til Payday');
@@ -77,7 +77,7 @@ test('endurgerður reikningur á nýja kt + aðeins gamla skýrslan → sending 
 });
 
 test('ný skýrsla á réttri kt til → hún fylgir, líka þótt gamla sé á undan í listanum', async () => {
-  const gamla = skyrsla(KT_GAMLA, Date.now() - 40 * 864e5), ny = skyrsla(KT_NY, Date.now() - 60e3, 'Nýtt nafn ehf');
+  const gamla = skyrsla(KT_GAMLA, Date.now() - 40 * 864e5, 'Gamla nafnið ehf'), ny = skyrsla(KT_NY, Date.now() - 60e3);
   const st = { sala: sala(KT_NY), vidhengi: [gamla, ny] };
   const r = await keyra(st, {});   // hermd sending — sannreynir HVAÐA skrá var sótt og fest
   assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.j));
@@ -102,24 +102,23 @@ test('rétt skýrsla eins og áður (sama kt) → engin breyting á hegðun', as
 const fs = require('node:fs');
 const K166 = fs.readFileSync(path.join(ROT, 'js/patches/166-krofu-yfirlit.js'), 'utf8');
 const K165 = fs.readFileSync(path.join(ROT, 'js/patches/165-visit-workflow.js'), 'utf8');
-test('166: skýrsla á sömu kt gengur fyrir, nýjasta svo; rangri kt flaggað og sagt frá í sendiglugganum', () => {
+test('166: listavísirinn velur skýrslu á sömu kt, nýjustu og aldrei leysta af hólmi; sendiglugginn spyr ÞJÓNINN (ein heimild)', () => {
   assert.match(K166, /const hit = cand\.find\(a => ktS\.length === 10 && ktN\(a\) === ktS\) \|\| cand\[0\];/);
   assert.match(K166, /\.sort\(\(a, b\) => String\(\(b && b\.uploaded_at\) \|\| ''\)\.localeCompare/);
-  assert.match(K166, /ktMisraemi: \(ktS\.length === 10 && ktN\(hit\) && ktN\(hit\) !== ktS\)/);
-  assert.match(K166, /if \(res\.ktMisraemi\) \{[\s\S]{0,400}Skýrslan er á rangri kennitölu/);
+  assert.match(K166, /async function synaSkyrslu\(box, sale\)[\s\S]{0,300}SkyrslaSolu\.athuga\(sale\.id\)/);
+  assert.doesNotMatch(K166, /report_storage_path:/, 'engin slóð úr vafranum fer með sendingunni');
 });
-test('165: eftir „Klára heimsókn" er bent á nýja skýrslu (endurgerð / önnur kt) — aldrei sjálfvirkt, Vista ekki blokkað', () => {
-  const i = K165.indexOf('await finalizeVisit(ctx);');
-  assert.ok(i > 0 && /close\(\);\s*bendaANyjaSkyrslu\(ctx\.coId\);/.test(K165.slice(i, i + 200)), 'kall eftir lokun reiknings');
-  assert.match(K165, /async function bendaANyjaSkyrslu\(coId\)/);
-  assert.match(K165, /okText: 'Búa til skýrslu', cancelText: 'Seinna'/);
-  assert.match(K165, /CompanyInspectionReport\.open\(coId\)/);
+test('165: eftir „Klára heimsókn" fer nýja salan um SkyrslaSolu (516) — aldrei sjálfvirkt, Vista ekki blokkað', () => {
+  const i = K165.indexOf('const _fv = await finalizeVisit(ctx);');
+  assert.ok(i > 0 && /close\(\);\s*bendaANyjaSkyrslu\(ctx\.coId, _fv && _fv\.saleId\);/.test(K165.slice(i, i + 200)), 'kall eftir lokun reiknings');
+  assert.match(K165, /async function bendaANyjaSkyrslu\(coId, saleId\)[\s\S]{0,500}SkyrslaSolu\.eftirBreytingu\(saleId/);
+  assert.match(K165, /return \{ saleId, saleNum \};/);
 });
 
 test('skýrsla merkt „leyst af hólmi" (leyst_af) fylgir ALDREI kröfu, þótt hún sé nýjust og á réttri kt', async () => {
   const msR = Date.now() - 864e5, msU = Date.now() - 60e3;
-  const rett = skyrsla(KT_NY, msR, 'Rétt ehf');
-  const urelt = Object.assign(skyrsla(KT_NY, msU, 'Urelt ehf'), { leyst_af: 'ný skýrsla.pdf', leyst_af_dags: new Date().toISOString() });
+  const rett = skyrsla(KT_NY, msR);
+  const urelt = Object.assign(skyrsla(KT_NY, msU), { leyst_af: 'ný skýrsla.pdf', leyst_af_dags: new Date().toISOString() });
   const r = await keyra({ sala: sala(KT_NY), vidhengi: [urelt, rett] }, {});
   assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.j));
   assert.ok(r.nidurhal.length >= 1 && r.nidurhal.every((u) => u.includes('/' + msR + '_') && !u.includes('/' + msU + '_')), 'sótt: ' + r.nidurhal.join(' | '));
@@ -129,7 +128,7 @@ test('skýrsla merkt „leyst af hólmi" (leyst_af) fylgir ALDREI kröfu, þótt
 const K168 = fs.readFileSync(path.join(ROT, 'js/patches/168-company-inspection-report.js'), 'utf8');
 const K111 = fs.readFileSync(path.join(ROT, 'js/patches/111-company-attachments.js'), 'utf8');
 test('168: gömul skýrsla á ANNARRI kt stöðvar ekki nýja skýrslu („✓ Vistuð" aðeins ef sama kt) og Vista er aldrei óvirkt þar', () => {
-  const i = K168.indexOf('if (auto && !_vb) {');
+  const i = K168.indexOf('if (auto && !_vb && !_ny) {');
   assert.ok(i > 0);
   const vordur = K168.slice(i, K168.indexOf('const orig = _cirSaveBtn', i));
   assert.match(vordur, /_samaKt = a => _ktCo\.length !== 10 \|\| !_ktN\(a\) \|\| _ktN\(a\) === _ktCo/);

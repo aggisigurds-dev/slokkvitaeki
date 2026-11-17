@@ -502,7 +502,7 @@
     const annadVidbot = 'Viðbótarúttekt: ' + rk.taeki.length + ' ný tæki (' + Object.keys(_tm).map(l => _tm[l] + ' ' + l).join(', ') + ') bættust við eftir reikning ' + data.latest.num + ' og eru með í skýrslunni.';
     window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || null, year: new Date().getFullYear(), annad: annadVidbot };
     let opnadist = true;
-    try { if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar'); await CompanyInspectionReport.open(coId); }
+    try { await nySkyrsla(coId); }
     catch (e) { opnadist = false; skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); opnaAftur(coId, sala, 'Skýrslan opnaðist ekki: ' + (e.message || e)); }
     toast('✓ Viðbótarreikningur ' + sala.num + ' búinn til (ósendur) — beðið eftir nýju skýrslunni');
     ST.busy = false; ST.open = false; ST.akstur = false; ST.skyrsla = false; ST.sig = '';
@@ -519,7 +519,7 @@
   function opnaAftur(coId, sala, astaeda) {
     if (confirm('Viðbótarreikningur ' + sala.num + ' er búinn til. ' + astaeda + '\n\nNý skýrsla verður að vera vistuð áður en krafan fer út (kerfið stöðvar hana annars).\n\nOpna skýrsluna núna?')) {
       window.CIR_VIDBOT = { coId, until: Date.now() + 15 * 60 * 1000, sala: sala.num, month: ST.manudur || (window.CIR_VIDBOT && window.CIR_VIDBOT.month) || null, year: new Date().getFullYear(), annad: (window.CIR_VIDBOT && window.CIR_VIDBOT.annad) || null };
-      try { CompanyInspectionReport.open(coId); } catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80)); }
+      try { nySkyrsla(coId).catch(e => skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80))); } catch (e) { skra('vidbot_skyrsla_brast', 'co ' + coId + ' ' + sala.num + ' (aftur): ' + String((e && e.message) || e).slice(0, 80)); }
       bidaSkyrslu(coId, sala);
     }
   }
@@ -537,6 +537,14 @@
       if (!all.length || (r.data || []).length >= 1000) return;
       await VisitWorkflowReikn.afritEftirUttekt(coId, { units: all, servicedIds: all.map(u => u.id) }, sala.num);
     } catch (e) { skra('vidbot_afrit_brast', 'co ' + coId + ' ' + sala.num + ': ' + String((e && e.message) || e).slice(0, 100)); }
+  }
+
+  // 17.11.2026 (Agnar: „svo það sé ekki alltaf vesen"): ný skýrsla verður til um EINA leið — 516 SkyrslaSolu.endurnyja,
+  // sú sama og ritillinn (142), endurgerð (165) og sendiskjárinn (166) nota. CIR_VIDBOT er sett á undan og gildir áfram.
+  async function nySkyrsla(coId) {
+    if (window.SkyrslaSolu && SkyrslaSolu.endurnyja) return SkyrslaSolu.endurnyja(coId, { astaeda: 'vidbot' });
+    if (!window.CompanyInspectionReport) throw new Error('CompanyInspectionReport vantar');
+    return CompanyInspectionReport.open(coId);
   }
 
   async function bidaSkyrslu(coId, sala) {
