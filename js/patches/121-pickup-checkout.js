@@ -694,7 +694,17 @@
       const totals = dlg.querySelector('#_pkc-totals');
       const original = sale && sale.samtals ? +sale.samtals : 0;
       const diff = t.grand - original;
-      totals.innerHTML =
+      // 17.11.2026 (60d00882): sala komin í Payday — upphæð hennar breytist ekki við afhendingu; aðeins viðbótin er rukkuð
+      // hér (á nýja sölu). Án þessa sýndi glugginn heildina og kortið gat verið rukkað fyrir reikning sem er þegar í banka.
+      const sendS = erSendSala(sale) === true;
+      const rukkaNu = sendS ? vidbotarSala(pickupExtras.map(ex => ({ ...ex, qty: ex.qty || 1 })), pickupDiscReplace ? (+pickupDiscountPct || 0) : 0, pickupDiscReplace ? (+pickupDiscountKr || 0) : 0).samtals : 0;
+      const sendBordi = !sendS ? '' :
+        '<div style="margin-bottom:8px;padding:8px 10px;border-radius:8px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:12.5px;line-height:1.4">' +
+          '<b>⚠ ' + esc(sale.num || 'Salan') + ' er þegar komin í Payday.</b> Upphæð hennar breytist ekki hér' +
+          (t.takenCount < t.totalUnits ? ' (tæki sem fara ekki út: kredit er ákvörðun Agnars)' : '') + '. ' +
+          (pickupExtras.length ? 'Viðbótin fer á nýja sölu — <b>rukkaðu aðeins ' + esc(fmtKr(rukkaNu)) + ' núna</b>.' : 'Ekkert á að rukka hér.') +
+        '</div>';
+      totals.innerHTML = sendBordi +
         '<div style="display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px;font-variant-numeric:tabular-nums">' +
           (original ? '<div style="color:#64748b">Upphafleg upphæð:</div><div style="color:#64748b;text-align:right">' + esc(fmtKr(original)) + '</div>' : '') +
           '<div style="color:#475569">' + t.takenCount + ' tæki á ' + esc(fmtKr(t.perUnit)) + ' = </div>' +
@@ -876,6 +886,73 @@
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
+  /* ── SEND SALA (17.11.2026, Verkefnalisti 60d00882 · Óðinn #33) ───────────────────────────────────────────────
+   * Sala sem er KOMIN Í PAYDAY/DK (SaleEditor.erIPayday í 142 — ein heimild) er LÆST. Leið A hér að neðan breytti
+   * línum og upphæðum hennar við afhendingu (viðbót eða tæki tekin af) en Payday-reikningurinn stóð óbreyttur — viðbótin
+   * rukkaðist aldrei (R-000476/603/647/690, mælt 13.09). Reikningur er aldrei leiðréttur né kreditfærður sjálfkrafa:
+   *   • línur, upphæðir, afsláttur, greiðsla og kúnni sendu sölunnar standa — aðeins athugasemd bætist við;
+   *   • viðbót fer á NÝJA sölu (ekkert num → set_reikningur_num gefur nýtt R-númer), ósenda → Kröfuyfirlit, Agnar sendir;
+   *   • tæki sem ekki fóru út eru skráð í athugasemd — kredit er ákvörðun Agnars (Kröfu-vinnugluggi), aldrei hér.
+   * Sama regla og læsingin í 142-sale-editor (isLocked). Prófað í test/sott-send-sala.test.cjs. */
+  // Heimildin er 142 (SaleEditor.erIPayday) — ekki endurreiknuð hér. null = óvíst (142 ekki hlaðinn): finalizePickup
+  // stöðvar þá frekar en að breyta sölu sem gæti verið send; glugginn sýnir enga viðvörun.
+  function erSendSala(sale) {
+    if (!(sale && sale.id)) return false;
+    const SE = window.SaleEditor;
+    return SE && typeof SE.erIPayday === 'function' ? SE.erIPayday(sale) : null;
+  }
+  // Viðbótarlínur einar og sér: fullt verð á línu, afsláttur afhendingar (% + föst kr) á viðbótina eina — EKKI afsláttur
+  // upprunasölunnar (hann tilheyrir sendum reikningi). Sama reikniregla og finalizePickup (vsk tekur afrúnunina).
+  function vidbotarSala(extras, discountPct, discountKrManual) {
+    const linur = (extras || []).map(ex => ({ desc: ex.name, qty: ex.qty, unit_price_ex_vat: ex.unit_price_ex_vat, vsk_pct: ex.vsk_pct, type: 'product' }));
+    const ex = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
+    const vsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 24) / 100), 0);
+    const brutto = Math.round(ex + vsk);
+    const pctKr = Math.round(brutto * Math.max(0, Math.min(100, +discountPct || 0)) / 100);
+    const fastKr = Math.max(0, Math.min(brutto - pctKr, Math.round(+discountKrManual || 0)));
+    const afslattur = pctKr + fastKr;
+    const samtals = Math.max(0, brutto - afslattur);
+    const factor = (ex + vsk) > 0 ? samtals / (ex + vsk) : 1;
+    const anVsk = Math.round(ex * factor);
+    return { linur, upphaed_an_vsk: anVsk, vsk_upphaed: samtals - anVsk, afslattur, samtals };
+  }
+  // Skrifar afhendingu á senda sölu: athugasemd á hana + (ef viðbót) ný sala. Skilar { vidbot: nýja salan | null }.
+  async function vistaSendaSolu(SB, sale, o) {
+    const sentNote = '\n⚠ Salan var þegar komin í Payday — línum og upphæð EKKI breytt við afhendingu' +
+      (o.ekkiAfhent > 0 ? '; ' + o.ekkiAfhent + ' tæki fóru ekki út — kredit er ákvörðun Agnars (Kröfu-vinnugluggi)' : '') +
+      ((o.extras || []).length ? '; viðbótin fór á nýja sölu' : '');
+    const r = await SB.from('solur').update({ athugasemdir: (sale.athugasemdir || '') + (o.ktAuditNote || '') + o.auditNote + sentNote }).eq('id', sale.id);
+    if (r && r.error) throw r.error;
+    if (!(o.extras || []).length) return { vidbot: null };
+    const v = vidbotarSala(o.extras, o.discountPct, o.discountKrManual);
+    const greittNu = ['kort', 'reidufe', 'pening'].includes(String(o.payMethod || ''));
+    const nySala = {
+      starfsmadur: 'Verkstæði',
+      source: 'sott',
+      customer_nafn: sale.customer_nafn || '',
+      customer_id: sale.customer_id || null,
+      linur: v.linur,
+      upphaed_an_vsk: v.upphaed_an_vsk,
+      vsk_upphaed: v.vsk_upphaed,
+      afslattur: v.afslattur,
+      samtals: v.samtals,
+      greitt_med: greittNu ? o.payMethod : 'reikningur',
+      paid_at: greittNu ? new Date().toISOString() : null,
+      athugasemdir: 'Viðbót við afhendingu á ' + (sale.num || 'sölu ' + sale.id) + ' (sú sala var þegar komin í Payday)' + o.auditNote,
+      status: 'final'
+    };
+    if (sale.customer_kt || o.customerKt) nySala.customer_kt = sale.customer_kt || o.customerKt;
+    if (sale.customer_base_id) nySala.customer_base_id = sale.customer_base_id;
+    let ri = await SB.from('solur').insert(nySala).select().single();
+    if (ri && ri.error && /status/i.test(ri.error.message || '')) {
+      const { status, ...rest } = nySala;
+      ri = await SB.from('solur').insert(rest).select().single();
+    }
+    if (ri && ri.error) throw ri.error;
+    return { vidbot: (ri && ri.data) || null };
+  }
+  /* ── /SEND SALA ── */
+
   async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote, replaceOrigDisc) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
@@ -1057,7 +1134,12 @@
     const ktAuditNote = (customerInfo && customerInfo.kt && customerInfo.kt.replace(/[^0-9]/g,'') !== '9999999999')
       ? '\nKt: ' + customerInfo.kt
       : '';
-    if (sale && sale.id) {
+    const sendSala = erSendSala(sale);
+    if (sendSala === null) throw new Error('Söluritillinn er ekki hlaðinn, svo ekki sést hvort salan er komin í Payday — endurhlaðið síðuna og reynið aftur.');
+    if (sendSala) {
+      // Send sala (17.11.2026): línur og upphæðir standa; viðbót á nýja sölu — sjá SEND SALA ofar.
+      await vistaSendaSolu(SB, sale, { extras, payMethod, discountPct: discPct, discountKrManual, auditNote, ktAuditNote, ekkiAfhent: unchecked, customerKt: customerKtToSave });
+    } else if (sale && sale.id) {
       // Path A: update the existing draft sale → final.
       const updates = {
         status: 'final',
@@ -1321,7 +1403,8 @@
 
   // Public API
   window.PickupCheckout = {
-    open: openPickupModal
+    open: openPickupModal,
+    _sendSala: { erSendSala, vidbotarSala, finalizePickup }   // fyrir próf/greiningu (17.11.2026)
   };
 
   console.log('[pickup-checkout] installed — Sótt ✓ opnar pickup modal');

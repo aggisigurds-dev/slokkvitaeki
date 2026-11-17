@@ -136,6 +136,9 @@
       && !sale.invoiced_at && !sale.krafa_sent_at && !sale.dk_invoice_id;
   }
   function isLocked(sale) { return !isDraft(sale) && !isUnsentFinal(sale); }
+  // 17.11.2026 (Verkefnalisti 60d00882): EIN heimild um „salan er komin í Payday/DK" — reikningur sem má aldrei breyta
+  // sjálfkrafa. 121 (Sótt ✓) les hana héðan í stað þess að endurreikna merkin (audit-ein-heimild-krofur).
+  function erIPayday(sale) { return !!sale && !!(sale.invoiced_at || sale.krafa_sent_at || sale.dk_invoice_id); }
 
   // ── LEIÐRÉTTING Á LOKUÐUM REIKNINGI (16.11.2026) ──────────────────────────
   // Agnar: „Allt gersamlega læst og ónothæft í real live vinnslu" · „þarf að vera með Claude í hverju einasta atriði".
@@ -1126,7 +1129,7 @@
 
   // ── Public API ────────────────────────────────────────────────────────────
   window.SaleEditor = {
-    openById, openByNum, openFromJob, isDraft, isLocked,
+    openById, openByNum, openFromJob, isDraft, isLocked, erIPayday,
     // hrein föll, birt fyrir tools/test-sala-ritill-verk.cjs
     _verkLinurTilStofnunar: verkLinurTilStofnunar, _linurTilVistunar: linurTilVistunar,
     // 16.11.2026: leiðrétting á lokuðum reikningi — hrein föll birt fyrir test/sala-leidretting.test.cjs
