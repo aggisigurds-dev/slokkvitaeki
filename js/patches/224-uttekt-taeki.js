@@ -462,10 +462,14 @@
       if(window.Toast&&Toast.show) Toast.show('⚠ Staðfesting tækjalistans komst EKKI á þjóninn — hún sést aðeins í þessu tæki.');
     }
   }
+  // 17.11.2026 (álagspróf umferð 2): læsingin hélt EKKI í Brunastál-útlitinu (fasta þemanu) — 404 setur
+  // `html[data-thm-preset=brunastal] #companies-main .ut-list.b404 .b404-h .ut-svc{pointer-events:unset}` með hærri
+  // specificity, svo staða breyttist eftir „Staðfesta lista". Mælt í vafra: pointer-events auto, smellur fór í gegn.
+  // Nú !important á lásnum.
   (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
     s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
       +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
-      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}'
+      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none!important;opacity:.5}'
       // Dagsetningarreitir (síðasta/næsta skoðun) eru ALLTAF breytanlegir — líka á lokuðum lista.
       // Skýrsla gæti verið gerð í öðrum mánuði en skoðunin fór fram (t.d. apríl gleymdist í september).
       +'.ut-list.locked .ut-bulk-datewrap{opacity:1!important;pointer-events:auto!important}';
@@ -526,6 +530,10 @@
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('.ut-listlock'))){
+      // 17.11.2026 (álagspróf umferð 2): TVÍSMELLUR á „Staðfesta lista" læsti og OPNAÐI strax aftur — listinn stóð
+      // óstaðfestur (hægt að breyta stöðum), en textinn var þegar saminn og „Tækjalisti staðfestur" fór á og af í
+      // samstillingunni. Annar smellur innan 700 ms er hunsaður; viljandi opnun (seinni smellur) virkar áfram.
+      var nuT=Date.now(); if(nuT-(window.__utLasT||0)<700) return; window.__utLasT=nuT;
       var lco=+b.dataset.co, k='sk_ut_lock_'+lco, on=false;
       try{ on=localStorage.getItem(k)==='1'; }catch(_){}
       try{ on?localStorage.removeItem(k):localStorage.setItem(k,'1'); }catch(_){}

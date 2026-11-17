@@ -2,8 +2,10 @@
  *
  * Föll Brunahólfs krefjast nú innskráningar á Brunahólfi EÐA tíma-tóka (brunaholf/netlify/functions/_vord.js).
  * Þessi vafri á ekki Brunahólfs-kökuna (annar vefur). Í staðinn:
- *   1. fetch á https://brunaholf.netlify.app/api/… (og /.netlify/functions/…) fær færibreytuna _hubtoki=<tóki>.
- *      Færibreyta en ekki haus: þá þarf engin föll Brunahólfs að leyfa nýjan haus í CORS-forspurn.
+ *   1. fetch á https://brunaholf.netlify.app/api/… (og /.netlify/functions/…) fær tókann:
+ *      GET/HEAD → hausinn x-hub-toki (lendir ekki í annálum; vörður Brunahólfs svarar CORS-forspurninni). Hafni eldri
+ *      útgáfa Brunahólfs forspurninni (TypeError) er reynt einu sinni aftur með færibreytunni _hubtoki=.
+ *      POST o.fl. → færibreytan _hubtoki= (engin endurtekning, svo bilað net getur aldrei tvísent skrif).
  *   2. innfelldar Brunahólfs-síður (iframe, ?embed=1) biðja um tókann: { type:'hub-toki', id } → svar
  *      { type:'hub-toki-svar', id, toki, gildir_ms } (brunaholf/js/hub-bru.js). Aðeins skeyti frá brunaholf-uppruna.
  * Tókinn kemur úr /api/bh-toki (krefst innskráningar appsins) og er geymdur þar til mínúta er eftir af gildistímanum.
@@ -47,8 +49,18 @@
     if (!erBhFall(url)) return upphaflegt(input, init);
     return saekja().then(function (t) {
       if (!t) return upphaflegt(input, init);
-      if (typeof input === 'string' || input instanceof URL) return upphaflegt(medToka(url, t), init);
-      return upphaflegt(new Request(medToka(url, t), input), init);
+      var medFaeribreytu = function () {
+        if (typeof input === 'string' || input instanceof URL) return upphaflegt(medToka(url, t), init);
+        return upphaflegt(new Request(medToka(url, t), input), init);
+      };
+      var adferd = String((init && init.method) || (input && typeof input === 'object' && input.method) || 'GET').toUpperCase();
+      if (adferd !== 'GET' && adferd !== 'HEAD') return medFaeribreytu();
+      var hausar = new Headers((init && init.headers) || (input && typeof input === 'object' && input.headers) || {});
+      if (!hausar.has('x-hub-toki')) hausar.set('x-hub-toki', t);
+      return upphaflegt(input, Object.assign({}, init || {}, { headers: hausar })).catch(function (e) {
+        if (e && e.name === 'AbortError') throw e;
+        return medFaeribreytu();
+      });
     });
   };
 

@@ -14,7 +14,7 @@ SQL-lestur: Supabase MCP execute_sql (lesaðeins). Kúnnaminnið: `select charli
 
 ## Félagið og hótelin (customers_base #146 · eitt kt · 11 staðir · afsláttarhópur „Center Hotels“ tier 2)
 
-| Staður (fid · stadur_nr) | Heimilisfang | Tæki 2026 | Slökkvitæki skoðuð | Brunakerfi (Georg brunakerfi@simnet.is) |
+| Staður (fid · stadur_nr) | Heimilisfang | Tæki 2026 | Slökkvitæki skoðuð | Brunakerfi (Georg; netfang í #2674) |
 |---|---|---|---|---|
 | Miðgarður (192 · 1) | Laugavegur 120 | 38 | ágúst (2023–26) | sept 2025 → **2026 VANTAR, frestur 11.11.2026** |
 | Plaza (193 · 2) | Aðalstræti 4-6 (skýrslur segja 6, kerfi 4) | 80 | ágúst | des 2025 → 2026 áætl. des (frestur 08.02.2027) |
@@ -30,11 +30,11 @@ SQL-lestur: Supabase MCP execute_sql (lesaðeins). Kúnnaminnið: `select charli
 
 254 tæki alls (72 slöngur). Þekja er alltaf á stað (fyrirtaeki_id), aldrei á kt — ein skýrsla á Grandi málar ekki Klöpp.
 
-**Tengiliðir** (allt @centerhotels.com): **Melissa M. Munguia** dor@, 823-8490, Director of Rooms — skoðanir, skýrslur,
-kvartanir; oft fjarverandi (fjarvistarsvar vísar á reservations@). **Lydia Ruth Þrastardóttir** gjaldkeri@, 595-8513 —
-reikningar og eindagar, biður reglulega um frest. Katrín bokari@ (skeytamiðlun), reikningar@ (reikningspóstur), Ólafur St.
-Hauksson oli@ 840-0950 (fasteignir, Framkvæmdafélagið Skjaldbreið), Pedro Santos hmthingholt@ 595-8530, Steingrímur
-hmmidgardur@ 618-2052. Guðbjörg Ólafsdóttir (gudbjorg@, 2019–2020) stendur enn sem tengiliður á öllum stöðum í grunni — úrelt.
+**Tengiliðir** (hlutverk; netföng og símar: Tengiliðir og netföng: kúnnaminni Charlize #2674, `select charlize_yfirlit('450905-1430');` — aldrei í þessa skrá, opið repó):
+**Melissa** (Director of Rooms) — skoðanir, skýrslur, kvartanir; oft fjarverandi (fjarvistarsvar vísar á bókunardeild). **Lydia**
+(gjaldkeri) — reikningar og eindagar, biður reglulega um frest. Katrín (bókari, skeytamiðlun), sameiginlegt reikningahólf
+(reikningspóstur), Ólafur (fasteignir, Framkvæmdafélagið Skjaldbreið), Pedro (hótelstjóri Þingholts), Steingrímur (hótelstjóri
+Miðgarðs). Guðbjörg (2019–2020) stendur enn sem tengiliður á öllum stöðum í grunni — úrelt.
 
 ## Samningar og verð
 
@@ -101,7 +101,7 @@ slóðin er afhent; 1bls: fjarlægja Þverholts-línuna. Saga 2023–2026 skrá�
 
 1. Les þessa skrá fyrst, svo `charlize_yfirlit('450905-1430')` og pending-raðir í charlize_inbox (#959–#965, #877, #895).
 2. Athugar hvað gerðist síðan „Síðast uppfært“: solur/payday_invoices_slokk á kt, customer_documents fyrir fid 192–201/1750/1627,
-   thjonustubeidni, email_digest (from/to like '%centerhotels.com%', sleppa aggisigurds@gmail.com).
+   thjonustubeidni, email_digest (from/to like '%centerhotels.com%', sleppa Gmail-hólfi Agnars).
 3. Svarar með hóteli og fid í hverri línu — aldrei „Center“ eitt og sér; þekja og skýrslur per stað.
 4. Reikningur/krafa → `sala-reikningar` + `rukkari`; skýrsla → `sara-coworker`/`skjol`; kt/staðir → `kunnaskra`; gáttin →
    `thjonustugatt`; stemmir ekki → `natalie`; póstsvar → `postur` (drög, Agnar sendir). Réttir keflið með því sem er þegar vitað.
