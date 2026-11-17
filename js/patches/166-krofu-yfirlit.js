@@ -2679,8 +2679,16 @@
         for (const coId of candidateIds) {
           const atts = CompanyAttachments.list(coId) || [];
           // 05.10.2026: viðhengi með brunakerfis-/slökkvikerfisnafni er aldrei slökkvitækjaskýrsla (gömul kind 'skyrsla')
-          const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr && !/brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String(a.name || '')));
-          if (hit) return { found: true, kind: 'att', coId, att: hit, year: yr };
+          // 17.11.2026 (tveir raunreikningar): reikningur endurgerður á NÝJA kt eftir kredit tók gömlu skýrsluna (gamalt nafn,
+          // gömul kt) af því hún var sú eina/fyrsta. Nú: skýrsla á sömu kt og reikningurinn gengur fyrir, svo nýjasta; stemmi
+          // kt skýrslunnar ekki er það merkt (ktMisraemi) og sendiglugginn segir frá — payday-push stöðvar þá sendinguna.
+          const ktS = String(kt || '').replace(/\D/g, '');
+          const ktN = a => { const m = /(\d{6})-(\d{4})/.exec(String((a && a.name) || '')); return m ? m[1] + m[2] : ''; };
+          const cand = atts.filter(a => a && a.kind === 'skyrsla' && !a.leyst_af && String(a.year || '') === yr && !/brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String(a.name || '')))
+            .sort((a, b) => String((b && b.uploaded_at) || '').localeCompare(String((a && a.uploaded_at) || '')));
+          const hit = cand.find(a => ktS.length === 10 && ktN(a) === ktS) || cand[0];
+          if (hit) return { found: true, kind: 'att', coId, att: hit, year: yr,
+            ktMisraemi: (ktS.length === 10 && ktN(hit) && ktN(hit) !== ktS) ? { skyrsla: ktN(hit), reikningur: ktS } : null };
         }
       }
     } catch (_) {}
@@ -2816,6 +2824,15 @@
               (!isUttekt ? '<span style="font-size:11.5px;color:#b45309">NB: Payday festir skýrsluna aðeins á úttektar- og slökkvikerfiskröfur.</span>' : '') +
             '</div>' +
           '</div>';
+        // 17.11.2026: skýrslan er á ANNARRI kennitölu en reikningurinn (endurgerður reikningur á nýja kt) — sagt hreint út
+        // ÁÐUR en ýtt er á Senda. payday-push stöðvar sendingu með henni (gate skyrsla_kt); „án skýrslu" er áfram leyft.
+        if (res.ktMisraemi) {
+          const _kb = d => String(d).slice(0, 6) + '-' + String(d).slice(6);
+          reportHtml = '<div id="_ky-send-ktvilla" style="margin:14px 0 -6px;padding:11px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:13px;color:#991b1b;line-height:1.45">' +
+            '<b>⚠ Skýrslan er á rangri kennitölu.</b> Hún er á ' + esc(_kb(res.ktMisraemi.skyrsla)) + ', en reikningurinn er á ' + esc(_kb(res.ktMisraemi.reikningur)) + '. ' +
+            'Búðu til nýja úttektarskýrslu á fyrirtækinu („Búa til úttektarskýrslu" → Vista) — hún fær rétta kennitölu og fylgir þá kröfunni. ' +
+            'Sending með þessari skýrslu stöðvast.</div>' + reportHtml;
+        }
       } else {
         reportHtml = '<div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;font-size:13px;color:#64748b">📄 Engin ' + skNafn.toLowerCase() + ' fundin fyrir ' + esc(res.year) + ' — sending er samt leyfð.</div>';
       }

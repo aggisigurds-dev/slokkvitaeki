@@ -466,8 +466,11 @@
       const nm = String(f.name || '');
       const c = kind === 'reikningur'
         ? { bg: '#f0fdf4', bd: '#bbf7d0', col: '#15803d', ico: '🧾', lab: (nm.match(/R-?\s?\d{3,}/i) || ['Reikningur'])[0].replace(/\s+/g, '') }
-        : { bg: '#f5f3ff', bd: '#ddd6fe', col: '#6d28d9', ico: '📄', lab: 'Skoðun' };
-      return '<button class="' + (prev ? '_cat-open' : '_cat-download') + '" data-id="' + esc(f.id) + '" title="' + esc(nm) + '" ' +
+        : (f.leyst_af
+          ? { bg: '#f3f4f6', bd: '#d1d5db', col: '#6b7280', ico: '📄', lab: 'Skoðun (úrelt)' }   // 17.11.2026: leyst af hólmi — fylgir ekki kröfu
+          : { bg: '#f5f3ff', bd: '#ddd6fe', col: '#6d28d9', ico: '📄', lab: 'Skoðun' });
+      const tit = f.leyst_af ? nm + ' — leyst af hólmi: ' + f.leyst_af : nm;
+      return '<button class="' + (prev ? '_cat-open' : '_cat-download') + '" data-id="' + esc(f.id) + '" title="' + esc(tit) + '" ' +
         'style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;' +
         'background:' + c.bg + ';border:1px solid ' + c.bd + ';color:' + c.col + '">' + c.ico + ' ' + esc(c.lab) + '</button>';
     };
@@ -862,8 +865,24 @@
     return ok;
   }
 
+  // 17.11.2026 (skýrsla fylgir sölu): ný úttektarskýrsla tekur við af eldri skýrslu sama árs — sú eldri er MERKT
+  // (leyst_af = heiti nýju skýrslunnar + dagsetning), aldrei eytt. Kröfusendingin (166 / payday-push) festir aldrei
+  // merkta skýrslu við kröfu, og ársreiturinn sýnir hana grána sem „úrelt". Afturkræft: fjarlægja leyst_af-reitinn.
+  async function supersede(coId, ids, byName) {
+    const want = new Set((ids || []).filter(Boolean));
+    if (!want.size) return true;
+    const list = getCompanyAttachments(coId);
+    let n = 0;
+    list.forEach(f => { if (f && want.has(f.id) && !f.leyst_af) { f.leyst_af = String(byName || 'ný skýrsla'); f.leyst_af_dags = new Date().toISOString(); n++; } });
+    if (!n) return true;
+    const ok = await saveCompanyAttachments(coId, list);
+    try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {}
+    return ok;
+  }
+
   window.CompanyAttachments = {
     setKind: setKind,
+    supersede: supersede,
     list: getCompanyAttachments,
     upload: uploadAttachment,
     pick: pickAttachment,

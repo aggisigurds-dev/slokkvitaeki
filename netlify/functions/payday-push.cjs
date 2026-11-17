@@ -252,6 +252,23 @@ exports.handler = async (event) => {
       }
     }
 
+    // ── Skýrslan verður að vera um SAMA greiðanda og reikningurinn (17.11.2026) ─────────────────────
+    // Tveir raunreikningar 16.–17.11: reikningur endurgerður á NÝJA kennitölu eftir kredit, en
+    // eina úttektarskýrsla ársins var sú gamla (gamalt nafn, gömul kt) — hún hefði fylgt kröfunni. Úttektarskýrslan ber kt
+    // í skráarnafninu („Nafn - Heimilisfang - 000000-0000 - Ár - mánuður - úttektarskýrsla - #id"). Stemmi hún ekki við
+    // reikninginn er sendingin stöðvuð (líka í dry-run, svo sendiglugginn segir frá því strax). „Án skýrslu" er áfram í boði.
+    if (attachment && (sale.source === 'uttekt' || sale.source === 'vinnublad')) {
+      const _ktS = ktTolur(sale.customer_kt), _ktR = ktUrNafni(attachment.name);
+      if (_ktS.length === 10 && _ktR && _ktR !== _ktS) {
+        return json(409, {
+          gate: 'skyrsla_kt', skyrsla: attachment.name, kt_skyrslu: ktBil(_ktR), kt_reiknings: ktBil(_ktS),
+          error: 'Úttektarskýrslan sem myndi fylgja kröfunni („' + attachment.name + '") er á kennitölu ' + ktBil(_ktR) +
+            ', en reikningurinn er á ' + ktBil(_ktS) + '. Búðu til nýja úttektarskýrslu á fyrirtækinu („Búa til úttektarskýrslu" → Vista) — ' +
+            'hún fær rétta kennitölu og fylgir þá kröfunni sjálfkrafa. Eða sendu kröfuna án skýrslu.',
+        });
+      }
+    }
+
     // ── Delivery method ────────────────────────────────────────────────────
     // Priority: explicit body.delivery (tests) > the customer's saved preference
     // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > buildPayload's
@@ -1002,6 +1019,11 @@ async function createInvoice(token, payload, attachment) {
 //   2. AppSettings.company_attachments[customer_id] — kind='skyrsla', matching year
 //   3. customer_documents.storage_path (Drive-indexed rows that were mirrored)
 // All live in the Supabase `samningar` storage bucket. Returns null if none.
+// Kennitala: aðeins tölustafir. Úr skráarnafni úttektarskýrslu (168): fyrsta „000000-0000"; '' ef engin.
+function ktTolur(x) { return String(x || '').replace(/\D/g, ''); }
+function ktUrNafni(nafn) { const m = /(\d{6})-(\d{4})/.exec(String(nafn || '')); return m ? m[1] + m[2] : ''; }
+function ktBil(d) { d = ktTolur(d); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : d; }
+
 async function findReportPdf(sale, explicitPath) {
   let path = explicitPath || null;
   const year = String(new Date(sale.created_at).getFullYear());
@@ -1014,8 +1036,15 @@ async function findReportPdf(sale, explicitPath) {
       // líka sem kind 'skyrsla' (Bílabúð Benna 2026 endurmerkt 05.10). Viðhengi sem heitir brunakerfis-/slökkvikerfis-
       // skýrsla er aldrei slökkvitækjaskýrsla úttektarreiknings, hvað sem kind segir.
       const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
-      const hit = list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year || '') === year)
-               || list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a)); // any skýrsla if the year doesn't line up
+      // 17.11.2026: skýrsla á SÖMU kennitölu og reikningurinn gengur fyrir (endurgerður reikningur á nýja kt má ekki taka
+      // gömlu skýrsluna bara af því hún er fyrst); innan sama flokks ræður nýjasta upphleðsla. Engu eytt — eldri skýrsla
+      // hættir einfaldlega að fylgja þegar ný og rétt er til. Stemmi engin, stöðvar hliðið (skyrsla_kt) sendinguna.
+      const ktS = ktTolur(sale.customer_kt);
+      const nyjast = (a, b) => String((b && b.uploaded_at) || '').localeCompare(String((a && a.uploaded_at) || ''));
+      const skyrslur = list.filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af).slice().sort(nyjast); // leyst_af: ný skýrsla tók við (168/111), fylgir aldrei kröfu
+      const iAr = skyrslur.filter(a => String(a.year || '') === year);
+      const ktEins = a => ktS.length === 10 && ktUrNafni(a.name) === ktS;
+      const hit = iAr.find(ktEins) || iAr[0] || skyrslur.find(ktEins) || skyrslur[0]; // any skýrsla if the year doesn't line up
       if (hit && hit.path) path = hit.path;
     }
   }
@@ -1104,7 +1133,7 @@ async function fetchAppSettings() {
 }
 async function fetchReportDoc(coId, year) {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&doc_type=in.(uttektarskyrsla,uttektarsk%C3%BDrsla)&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&select=storage_path&limit=1`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&doc_type=in.(uttektarskyrsla,uttektarsk%C3%BDrsla)&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&select=storage_path&order=created_at.desc&limit=1`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
     if (!r.ok) return null;

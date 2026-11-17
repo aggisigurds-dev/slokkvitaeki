@@ -488,8 +488,16 @@
       if (auto && !_vb) {
         try {
           const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
-          if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar)) {
-            if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; }
+          // 17.11.2026 (tveir raunreikningar 16.–17.11): reikningur endurgerður á NÝJA kt, en
+          // „Búa til úttektarskýrslu" sagði strax „✓ Vistuð sem 2026" og GERÐI VISTUNARHNAPPINN ÓVIRKAN — gamla skýrslan
+          // (gamalt nafn, gömul kt) taldist skýrsla ársins, svo ný og rétt skýrsla varð ALDREI til. Nú telst aðeins skýrsla
+          // á SÖMU kennitölu og staðurinn ber (eða þar sem kt sést ekki) vera „þegar til". Og handvirki takkinn er ekki
+          // gerður óvirkur — athugasemdin hér að ofan lofaði því („Handvirki takkinn vistar samt"), kóðinn gerði það ekki.
+          const _ktCo = String(co.kennitala || '').replace(/[^0-9]/g, '');
+          const _ktN = a => { const m = /(\d{6})-(\d{4})/.exec(String((a && a.name) || '')); return m ? m[1] + m[2] : ''; };
+          const _samaKt = a => _ktCo.length !== 10 || !_ktN(a) || _ktN(a) === _ktCo;
+          if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar && _samaKt(a))) {
+            if (_cirSaveBtn) { _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; _cirSaveBtn.title = 'Skýrsla ársins er til — smelltu til að vista NÝJA (t.d. eftir breytingu)'; }
             _rfSync(); // skýrslan er þegar til — tölurnar samstillast samt (idempotent)
             return;
           }
@@ -584,6 +592,18 @@
               if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
             } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
             finally { window.CIR_VIDBOT = null; }
+          } else if (!_vb && meta.id) {
+            // 17.11.2026 (skýrsla fylgir sölu): ný skýrsla tekur við — eldri úttektarskýrslur ársins sem appið bjó til á
+            // þessum stað eru MERKTAR „leyst af hólmi" (111 supersede), ekki eyddar. Þær fylgja þá aldrei kröfu framar.
+            try {
+              const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
+              const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
+              if (eldri.length && CompanyAttachments.supersede) {
+                const ok = await CompanyAttachments.supersede(co.id, eldri.map(a => a.id), meta.name || fname);
+                if (ok !== true && window.logProblem) window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + eldri.length + ' eldri skýrsla ' + ar + ' ómerkt');
+              }
+            } catch (e) { try { window.logProblem && window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
           }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +

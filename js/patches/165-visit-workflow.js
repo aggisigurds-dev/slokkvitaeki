@@ -522,6 +522,7 @@
       try {
         await finalizeVisit(ctx);
         close();
+        bendaANyjaSkyrslu(ctx.coId);   // 17.11.2026 — sjá fallið: endurgerður reikningur / ný kt → ný skýrsla strax
       } catch (e) {
         confirmBtn.disabled = false;
         confirmBtn.textContent = '✓ Staðfesta — búa til reikning';
@@ -573,6 +574,37 @@
   }
 
   // ── Actual save — runs only after the user confirms in the preview ─────
+  // 17.11.2026 (tveir raunreikningar — Agnar: „gengið hræðilega"): reikningur endurgerður
+  // eftir kredit á NÝJA kennitölu varð til hér, en úttektarskýrslan er sérstakt skref (168) og enginn bjó hana til — eina
+  // skýrsla ársins var sú gamla (gamalt nafn, gömul kt) og hún fylgdi kröfunni. Nú, strax eftir reikninginn: sé þetta
+  // önnur úttekt ársins (328 setti __uvSecondReason) EÐA ber skýrsla ársins aðra kt en staðurinn → spurt hvort búa eigi
+  // til nýja skýrslu núna (opnar 168). Aldrei sjálfvirkt, aldrei blokkað: „Seinna" skilur allt eftir; payday-push
+  // stöðvar þá sendingu með rangri skýrslu (gate skyrsla_kt). Gamla skýrslan er ekki snert — hún hættir bara að fylgja.
+  async function bendaANyjaSkyrslu(coId) {
+    try {
+      const co = ((window.Companies && Companies.list) || []).find(c => c && +c.id === +coId) || {};
+      const ktS = String(co.kennitala || '').replace(/\D/g, '');
+      const ar = String(new Date().getFullYear());
+      const ktN = a => { const m = /(\d{6})-(\d{4})/.exec(String((a && a.name) || '')); return m ? m[1] + m[2] : ''; };
+      const skyrslur = ((window.CompanyAttachments && CompanyAttachments.list ? CompanyAttachments.list(coId) : []) || [])
+        .filter(a => a && a.kind === 'skyrsla' && String(a.year || '') === ar && !/brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String(a.name || '')));
+      const rett = ktS.length === 10 && skyrslur.some(a => ktN(a) === ktS);
+      const sr = window.__uvSecondReason;
+      const endurgerd = !!(sr && String(sr.coId) === String(coId) && Date.now() - (sr.at || 0) < 30 * 60000);
+      const rongKt = skyrslur.length > 0 && ktS.length === 10 && !rett;
+      if (!endurgerd && !rongKt) return;
+      const kb = d => d.slice(0, 6) + '-' + d.slice(6);
+      const msg = rongKt
+        ? 'Úttektarskýrsla ársins er á kennitölu ' + kb(ktN(skyrslur[0]) || '') + ', en reikningurinn sem var að verða til er á ' + kb(ktS) + '.\n\n' +
+          'Búa til NÝJA úttektarskýrslu núna? Hún fær rétta kennitölu og nafn og fylgir kröfunni. Gamla skýrslan er ekki snert — hún hættir bara að fylgja.'
+        : 'Þetta var önnur úttekt ársins (' + String(sr.why || 'endurgerð') + ').\n\n' +
+          'Búa til NÝJA úttektarskýrslu núna svo hún stemmi við nýja reikninginn? Gamla skýrslan er ekki snert — hún hættir bara að fylgja.';
+      const ok = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { okText: 'Búa til skýrslu', cancelText: 'Seinna' }) : confirm(msg);
+      if (ok && window.CompanyInspectionReport && CompanyInspectionReport.open) CompanyInspectionReport.open(coId);
+      else if (window.Toast && Toast.show) Toast.show('⚠ Mundu nýja úttektarskýrslu áður en krafan er send — sending með rangri skýrslu stöðvast.');
+    } catch (e) { try { console.warn('[visit-workflow] ný skýrsla?', e); } catch (_) {} }
+  }
+
   async function finalizeVisit({ coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd }) {
     // 0. TVÍTÖKUVÖRN (2026-08-01) — rótin að BGT/Rafha tvítökunum: „Klára heimsókn"
     //    var ýtt tvisvar (aðskildar forskoðanir, mínútum í sundur) og EKKERT stöðvaði
