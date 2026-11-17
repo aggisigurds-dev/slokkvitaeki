@@ -146,6 +146,29 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
   eigin sætum (0xe8 ð, 0x69 á, 0xa0 æ, 0x74 í, 0x79 ó, 0x7e ú, 0x7c ö, 0xec þ, 0xea ý, 0x70 é, 0xcb Í …). Afkóðunin er í
   `../scripts/bunadargreining/skutuvogur-4/afkoda.py`; brunavarnatextinn og rauðu táknstafirnir lásust þannig nákvæmt.
 
+## Gildrur sem mældust 17.11.2026 (Benni/Nesdekk-lotan)
+
+- **Sjálfvirka greiningin getur skrifað RUSL og hún leysir handlesna greiningu af hólmi.** Krókháls 9 (532): Turbo-takkinn bjó til
+  greiningu id 60 með 8 atriðum merktum „Handslökkvitæki" sem báru `tegund` „Segulloki · í bið" — hún las Nýtt-segullokamerki sem
+  slökkvitæki og skilaði 0 blöðum, 0 texta, 0 heimildum. Breiðhöfði 13 (219): sjálfvirk greining id 59 (05.11) leysti af hólmi
+  handlesna id 58 (04.11) og tapaði ORÐUÐUM staðsetningum og þremur af fjórum heimildum. **Áður en tölum virkrar greiningar er
+  treyst: lestu `af`, `tegund`, fjölda blaða/heimilda.** Handlesin greining er alltaf betri á skönnunum.
+- **Innskráningarhliðið stöðvaði PDF-gerð á ÖLLUM stöðum.** `pdf_ur_appinu.cjs` og `vista_vidhengi.cjs` opna appið í hausalausum
+  vafra; hliðið sendi þá á `innskraning.html` og `#co-bgr` / `window.CompanyAttachments` fundust aldrei (90 s timeout). Lagað með
+  `/api/hub-adgangar` → 404, sama leið og teikningaprófin nota (commit 908a086a).
+- **Samnefnt viðhengi er ekki yfirskrifað — og `skyrsla` lítur samt út fyrir að hafa tekist.** `vista_vidhengi.cjs` hefur engan
+  yfirskriftarrofa: finni hún skrá með sama nafni prentar hún „þegar til — ekkert gert" og `skyrsla` prentar ENGU að síður
+  línuna „Viðhengi: … (370 KB) | … (381 KB)" — sem er listi yfir skrárnar sem FYRIR eru. Mælt 17.11.2026: Dalshraun 10 fékk
+  þannig enga uppfærða skýrslu (gömlu skrárnar frá 29.10 stóðu eftir, 12 atriði, þótt ný greining hefði 19), og ég las
+  útprentunina ranglega sem árangur. **Staðfestu á `storage.objects` (fatan `samningar`, `company_attachments/<cid>/`) hvort
+  skráin er í raun ný** — berðu saman `created_at`, ekki bara nafnið. Að skipta út = eyða skjali viðskiptavinar → spyrja Agnar.
+- **Endurteiknuð blöð.** Dalshraun 10 (1853): þrjú af fjórum blöðum á Teikningu eru endurteiknuð (blaðið segir sjálft
+  „Endurteiknað (ChatGPT) … brunahólfun ekki merkt"). Herbergjaskipan stemmdi við samþykkta aðaluppdrætti 1991, en uppruni
+  brunavarnamerkjanna er óstaðfestur. Lestu alltaf hvað blaðið segir um sjálft sig áður en tákn af því eru talin.
+- **Álmur verða að standa í hæðarheitinu.** Landspítali Fossvogi (1911): hæðir hétu „Kjallari" og „6. hæð" en titilreitir blaðanna
+  sögðu „E-ÁLMA GRUNNMYND KJALLARI BREYTTUR" og „E-ÁLMA GRUNNMYND 6.HÆÐ STÆKKUN" — endurnefnt 17.11. Húsið hefur a.m.k. A-, B-, E-
+  og G-álmu; G-álma (bráðamóttakan) á enga hæð á borðinu. Tæknimaður finnur ekki álmu sem starfsfólkið kallar öðru nafni.
+
 ## Viðmiðunarstaðir
 
 | Staður | company_id | Greining | Athugasemd |
