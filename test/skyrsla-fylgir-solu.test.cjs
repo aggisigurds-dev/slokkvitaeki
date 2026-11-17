@@ -54,8 +54,11 @@ async function keyra(st, body) {
   try {
     Object.assign(process.env, { SUPABASE_URL: SB, SUPABASE_SERVICE_ROLE_KEY: 'gervi', PAYDAY_CLIENT_ID: 'gervi', PAYDAY_CLIENT_SECRET: 'gervi', PAYDAY_API_BASE: API });
     delete process.env.EDGE_SHARED_KEY;
+    // Lota 13 (17.11.2026): payday-push krefst innskráðs starfsmanns. Notendaskráin (hub-adgangar GET) er hermd: kaka → inni.
+    const HUB = require(path.join(ROT, 'netlify/functions/hub-adgangar.cjs'));
+    HUB.handler = async (e) => ({ statusCode: 200, body: JSON.stringify(/hub_user=/.test(String((e.headers || {}).cookie || '')) ? { authed: true, user: { nafn: 'Prufa', rola: 'Starfsmaður' } } : { authed: false, user: null }) });
     const p = path.join(ROT, 'netlify/functions/payday-push.cjs'); delete require.cache[require.resolve(p)];
-    const res = await require(p).handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(Object.assign({ sale_id: st.sala.id }, body || {})) });
+    const res = await require(p).handler({ httpMethod: 'POST', headers: { cookie: 'hub_user=prufa' }, body: JSON.stringify(Object.assign({ sale_id: st.sala.id }, body || {})) });
     let j = {}; try { j = JSON.parse(res.body); } catch (_) {}
     return { res, j, reikningar: log.filter((x) => x.url.startsWith(API) && x.url.includes('/invoices') && x.m === 'POST'),
       nidurhal: log.filter((x) => x.url.includes('/storage/v1/object/samningar/')).map((x) => decodeURIComponent(x.url)) };

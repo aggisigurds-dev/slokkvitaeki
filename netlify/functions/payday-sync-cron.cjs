@@ -9,13 +9,14 @@
 // „Greiddar". Aðeins keyrt á PRODUCTION (áætlanir keyra ekki á deploy-previews).
 
 require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
+const HUB = require('./hub-adgangar.cjs'); // lota 13: innri tóki (x-sl-toki) á sendiföll þessa vefs
 exports.handler = async () => {
   const base = (process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
   try {
     const r = await fetch(base + '/api/payday-sync-paid', {
       method: 'POST',
       // x-eldklar-key: innri keðja virkar áfram þegar EDGE_SHARED_KEY-gátt er virkjuð.
-      headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' },
+      headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '', ...(await HUB.innriHausar()) },
       body: '{}',
     });
     const data = await r.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + r.status + ')' }));
@@ -27,7 +28,7 @@ exports.handler = async () => {
     try {
       const m = await fetch(base + '/api/payday-pull-slokk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' },
+        headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '', ...(await HUB.innriHausar()) },
         body: '{}',
       });
       mirror = await m.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + m.status + ')' }));
@@ -57,7 +58,7 @@ exports.handler = async () => {
         try {
           const pr = await fetch(base + '/api/email-send', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(await HUB.innriHausar()) }, // lota 13: email-send krefst starfsmanns eða innri tóka
             body: JSON.stringify({ from: 'onboarding@resend.dev', to: ['aggisigurds@gmail.com'], subject: efni, html }),
           });
           // 18.09.2026: fetch kastar EKKI á 4xx/5xx — staðan og svartextinn fara í loggið. Eftirlitið fellir aldrei greiðslusamstillinguna.

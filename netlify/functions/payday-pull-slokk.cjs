@@ -41,6 +41,8 @@ function json(code, obj) {
   return { statusCode: code, headers: { ...cors(), 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
 }
 
+const H = require('./_starfshlid.cjs');   // lota 13: starfsmannahliðið (eða innri tóki)
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors(), body: '' };
 
@@ -50,6 +52,12 @@ exports.handler = async (event) => {
     const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
     if (got !== KEY) return json(401, { error: 'unauthorized' });
   }
+
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): probe/dry-GET skilaði hráum Payday-reikningum (nöfn, fjárhæðir) óinnskráðum
+  // og POST keyrði samstillingu. Nú: innskráður starfsmaður (vafrinn, sami uppruni) EÐA innri tóki x-sl-toki frá
+  // payday-sync-cron (áætlað, án köku). Annars 401; notendaskráin niðri → 503.
+  const _hlid = await H.krefjastStarfsmannsEdaInnri(event);
+  if (_hlid) return { ..._hlid, headers: { ...cors(), ...(_hlid.headers || {}) } };
 
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return json(405, { error: 'GET eða POST only' });
   if (!CLIENT_ID || !CLIENT_SECRET) return json(500, { error: 'PAYDAY_CLIENT_ID / PAYDAY_CLIENT_SECRET vantar í Netlify env vars.' });

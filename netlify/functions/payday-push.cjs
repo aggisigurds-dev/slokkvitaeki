@@ -28,6 +28,8 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 // 17.11.2026: EIN heimild um hvaða úttektarskýrsla fylgir sölu og hvort hún stemmir (sama fall í verði og sendiskjá).
 const SS = require('./_skyrsla-solu.cjs');
+const H = require('./_starfshlid.cjs');   // lota 13: starfsmannahliðið
+const _starfshlid = (event) => H.krefjastStarfsmanns(event);
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CLIENT_ID = process.env.PAYDAY_CLIENT_ID;
 const CLIENT_SECRET = process.env.PAYDAY_CLIENT_SECRET;
@@ -45,6 +47,13 @@ exports.handler = async (event) => {
     const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
     if (got !== KEY) return json(401, { error: 'unauthorized' });
   }
+
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): fallið sendir reikninga og kröfur í Payday og svaraði óinnskráðum (söluauðkenni
+  // eru hlaupandi tölur, repóið er opið). Nú: innskráður starfsmaður appsins — vafrinn (sami uppruni, kakan fylgir) og
+  // afgreidsla.cjs (kallar í ferli með hausum vafrans) — annars 401; notendaskráin niðri → 503. Enginn þjónn kallar hingað
+  // án köku, svo innri tóki er EKKI tekinn gildur (minnstu réttindi).
+  const _hlid = await _starfshlid(event);
+  if (_hlid) return { ..._hlid, headers: { ...cors(), ...(_hlid.headers || {}) } };
 
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return json(500, { error: 'PAYDAY_CLIENT_ID / PAYDAY_CLIENT_SECRET vantar í Netlify env vars.' });

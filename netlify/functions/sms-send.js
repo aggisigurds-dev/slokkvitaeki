@@ -21,6 +21,7 @@
  * Gátt: sama default-open EDGE_SHARED_KEY-gáttin og email-send.js — þvinguð AÐEINS
  * þegar EDGE_SHARED_KEY er sett (290-api-key-header.js setur hausinn sjálfkrafa).
  */
+import H from './_starfshlid.cjs'; // lota 13 (17.11.2026): starfsmannahliðið
 const JSON_H = { 'Content-Type': 'application/json' };
 
 function cors() {
@@ -96,7 +97,14 @@ export default async (req) => {
     if (got !== KEY) return svar({ error: 'unauthorized' }, 401);
   }
 
-  const sid   = (process.env.TWILIO_SID   || '').trim();
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): SMS kostar og fer á hvaða númer sem er; upprunaathugunin og þakið hér að neðan
+  // stöðva ekki skriftu sem falsar Origin. Nú: innskráður starfsmaður appsins (33/33a, sami uppruni) — annars 401,
+  // notendaskráin niðri → 503. Enginn þjónn kallar hingað (sjálfvirku SMS-in fara um _sms-sjalfvirkt.cjs beint), svo innri
+  // tóki er EKKI tekinn gildur.
+  const hlid = await H.vefHlid(req, { hausar: cors() });
+  if (hlid) return hlid;
+
+  const sid   =(process.env.TWILIO_SID   || '').trim();
   const token = (process.env.TWILIO_TOKEN || '').trim();
   const from  = (process.env.TWILIO_FROM  || '').trim();
   const stillt = !!(sid && token && from);

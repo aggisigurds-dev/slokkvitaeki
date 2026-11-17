@@ -94,6 +94,9 @@ function hlada() {
     PAYDAY_API_BASE: API,
   });
   delete process.env.EDGE_SHARED_KEY;
+  // Lota 13 (17.11.2026): payday-push krefst innskráðs starfsmanns. Notendaskráin (hub-adgangar GET) er hermd: kaka → inni.
+  const HUB = require(path.join(ROT, 'netlify/functions/hub-adgangar.cjs'));
+  HUB.handler = async (e) => ({ statusCode: 200, body: JSON.stringify(/hub_user=/.test(String((e.headers || {}).cookie || '')) ? { authed: true, user: { nafn: 'Prufa', rola: 'Starfsmaður' } } : { authed: false, user: null }) });
   const f = path.join(ROT, 'netlify/functions/payday-push.cjs');
   delete require.cache[require.resolve(f)];
   return require(f);
@@ -111,7 +114,7 @@ async function keyra(nafn, st, bodyAuka) {
   const { net, log } = smidaNet(st);
   globalThis.fetch = net;
   const mod = hlada();
-  const res = await mod.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(Object.assign({ sale_id: st.sala.id, attach_report: false }, bodyAuka || {})) });
+  const res = await mod.handler({ httpMethod: 'POST', headers: { cookie: 'hub_user=prufa' }, body: JSON.stringify(Object.assign({ sale_id: st.sala.id, attach_report: false }, bodyAuka || {})) });
   let j = {}; try { j = JSON.parse(res.body); } catch (_) {}
   const reikningar = log.filter(x => x.url.startsWith(API) && x.url.includes('/invoices') && x.m === 'POST');
   return { nafn, res, j, log, reikningar,
