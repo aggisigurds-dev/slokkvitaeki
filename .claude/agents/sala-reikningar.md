@@ -489,7 +489,7 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
 
 Agnar 16.11.2026: „Gekk hræðilega í dag.“ Handbókin er lesin úr kóðanum: `142-sale-editor.js`, `26-credit-invoice.js`,
 `92`, `166-krofu-yfirlit.js`, `369-krofu-vinnugluggi.js` og `netlify/functions/payday-push.cjs` (PP). Hún styðst líka við
-reglur 30–33 í `odin_reglur`. Merkin þýða:
+reglur 30–33 í `odin_reglur`. Línutilvísanir í 142 og 166 miðast við master a624ffc2 (17.11.2026); í `payday-push` (PP) hafa línur hliðrast um allt að ~25 eftir 039ee4cc, svo leitaðu þar eftir fallsheiti (`clearSaleInvoiced`, `markSaleInvoiced`, `takaFra`). Merkin þýða:
 - **SANNAÐ**: próf í `test/` eða keyrt í lotu 6.
 - **ÓSANNAÐ**: lesið í kóða, ekki keyrt.
 
@@ -506,16 +506,15 @@ Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar �
 
 **A. Ósend sala eða drög (ritillinn, 142).** Breytanlegt er:
 - drög,
-- eða `final` + ógreidd + ekki kredit + `invoiced_at`, `krafa_sent_at` og `dk_invoice_id` öll tóm (142:104–118).
+- eða `final` + ógreidd + ekki kredit + `invoiced_at`, `krafa_sent_at` og `dk_invoice_id` öll tóm (142: `isDraft` / `isUnsentFinal`).
 
 1. Opna söluna með „Breyta“ í Kröfuyfirliti (166:2182) eða í Drögum. **ÓSANNAÐ**
-2. Breyta línum, afslætti, nafni eða athugasemd. Afsláttur fer á EINN stað: línu-prósentu EÐA krónur (142:208–222,
-   915–925). **ÓSANNAÐ**
+2. Breyta línum, afslætti, nafni eða athugasemd. Afsláttur fer á EINN stað: línu-prósentu EÐA krónur (afsláttarbökun í `commit`, 142). **ÓSANNAÐ**
 3. Smella á „Vista breytingar“, „Vista sem drög“ eða „Klára sölu“. **„Klára sölu“ sendir ekkert**, þótt staðfestingin
-   spyrji „…og senda krafa?“ (142:933). **ÓSANNAÐ**
+   spyrji „…og senda krafa?“ (142:961). **ÓSANNAÐ**
 4. **Ef kt var breytt:** ritillinn vistar AÐEINS `customer_kt` og nafn. `customer_base_id` og `customer_id` standa óbreytt
-   (142:947–977), og `payday-push` tæki þá netfang, heimilisfang og síma gamla kúnnans (PP:147, 406–423). Uppfærðu
-   `customer_base_id` beint og lestu til baka (regla 31). Kt er heldur ekki vartöluprófuð í ritlinum (142:909). **ÓSANNAÐ**
+   (`commit`, 142:1005–1018), og `payday-push` tæki þá netfang, heimilisfang og síma gamla kúnnans (PP:147, 406–423). Uppfærðu
+   `customer_base_id` beint og lestu til baka (regla 31). Ógild kt fær viðvörun í ritlinum frá 17.11.2026 (6a92a99f), en vistun er ekki stöðvuð. **ÓSANNAÐ**
 5. Sannreyna: `solur` ber nýju gildin og sendimerkin þrjú eru enn `null`.
 
 **B. Sendur reikningur: „✏️ Leiðrétta“.**
@@ -524,11 +523,11 @@ Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar �
    ekkert úr sendingarsögunni. **SANNAÐ** (`test/sala-leidretting.test.cjs`, 5 próf á hreinu föllunum; smellir og
    `insert` eru ekki prófuð)
 2. Breyta drögunum og smella á „Klára sölu“. **ÓSANNAÐ**
-3. **KREDITFÆRA GAMLA FYRST** (blái borðinn „Kreditfæra R-…“, 142:422–441), áður en nýi reikningurinn fer. **ÓSANNAÐ**
+3. **KREDITFÆRA GAMLA FYRST** (blái borðinn „Kreditfæra R-…“ á drögunum), áður en nýi reikningurinn fer. **ÓSANNAÐ**
 4. Agnar sendir nýja reikninginn úr Kröfuyfirliti. **ÓSANNAÐ**
 
 > ⚠ **Gat, lesið í kóða 17.11.2026, ekki keyrt.** Leiðréttingardrögin (`status='drog'`, `greitt_med='reikningur'`)
-> birtast undir „Ósendar“. `payday-push` stöðvar þau ekki heldur: síurnar 166:713 og PP:122 útiloka aðeins `void`. Því má
+> birtast undir „Ósendar“. `payday-push` stöðvar þau ekki heldur: síurnar 166:714 og PP:122 útiloka aðeins `void`. Því má
 > senda nýja reikninginn ÁÐUR en sá gamli er kreditfærður, og það er tvírukkun nema tvírukkunarhliðið (PP:134) grípi.
 > Mælt 17.11.: 0 slík drög til. Röðin í skrefum 3→4 er því vörnin þar til kóðinn er lagaður.
 
@@ -540,7 +539,7 @@ Sannreyna:
 ### 2. Kreditfæra
 
 1. Opna „↩ Bakfæra (kreditreikningur)“ í ⋯-valmyndinni í Kröfuyfirliti (166:2222) eða „Kreditfæra“ í læstum ritli
-   (142:887). **ÓSANNAÐ**
+   (142). **ÓSANNAÐ**
 2. Haka við línur, skrifa ástæðu og smella á „✓ Gefa út kreditreikning“ (26:116–193). **ÓSANNAÐ**
 3. Ný `solur`-röð verður til: `is_credit=true`, `credit_of=<móðir>`, neikvæð `samtals`, númer `K…`, `status='final'`.
    Kreditnótan sjálf fer EKKI í Payday (26:244–375). **ÓSANNAÐ**
