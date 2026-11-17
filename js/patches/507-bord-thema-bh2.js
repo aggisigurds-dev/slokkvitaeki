@@ -384,6 +384,42 @@
       H + ' .more{padding:10px 16px 14px;font:400 12.5px var(--body);color:' + MUTED + '}',
       H + ' .sectm{font:400 12.5px var(--body);color:' + MUTED + '}',
 
+      /* ── Afgangurinn af borðinu (skannað 17.11.2026) ───────────────────────────────────────────
+       * Skönnun á öllum einingum að hörðum Boss-gildum (rjómi, messing, brúnsvart, Playfair) fann
+       * fimm staði sem V2-lagið náði ekki yfir. Þeir eru hér, allir á tókena kerfisins. */
+
+      // Kröfu-vinnuglugginn (369, eining 22 „Forgangslisti krafna") — var allur í Boss að innan.
+      H + ' .kvbann{border-radius:10px;background:' + WARN_TINT + ';color:' + WARN_INK + '}',
+      H + ' .kvrow{border-top-color:' + LINE_SOFT + '}',
+      H + ' .kvrow.kvvirk{background:' + ROW_HOVER + '}',
+      H + ' .kvt,' + H + ' .kvst{border-radius:999px;font-family:var(--body);letter-spacing:.04em}',
+      H + ' .kvst.st-tilbuid_i_vinnslu,' + H + ' .kvst.st-i_vinnslu{border-color:transparent;background:#0b2d5f;color:#fff}',
+      H + ' .kvst.st-i_yfirferd_agnars{border-color:#f8b98c;background:#ffeee0;color:#c2410c}',
+      H + ' .kvst.st-lokid{border-color:#bdeab6;background:' + OK_TINT + ';color:' + OK_INK + '}',
+      H + ' .kv-x{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.08);border-radius:10px}',
+      H + ' .kv-x:hover{background:rgba(255,255,255,.16)}',
+      H + ' .kv-upph{color:#ff8a1f}',                         // orange-hi, 7:1 á navy-900
+      H + ' .kvt2{color:#c9d3e3}',                            // on-navy-muted í stað gulls
+      H + ' .kv-nr{color:#fff}',
+      H + ' .kvf{border-radius:999px;font-family:var(--body)}',
+      H + ' .kvf.ok{border-color:#bdeab6;background:' + OK_TINT + ';color:' + OK_INK + '}',
+      H + ' .kvf.nei{border-color:#f6c9c2;background:' + BAD_TINT + ';color:' + BAD_INK + '}',
+      H + ' .kvf.agnar{border-color:#f8b98c;background:#ffeee0;color:#c2410c}',
+      H + ' .kvf.vinnsla{border-color:transparent;background:#0b2d5f;color:#fff}',
+
+      // Einkaritarinn (506) og Ráðgjafinn (506-radgjafinn): Playfair-fyrirsögn → h2 kerfisins.
+      H + ' .ek-fyrir,' + H + ' .rg-fyrir{font:700 22px/1.25 var(--body);letter-spacing:-.01em;color:' + INK + ';border-bottom-color:' + LINE_SOFT + '}',
+
+      // Tölvupóstar (448): „lokið"-merkið bar Boss-grænt.
+      H + ' .tp .tp-m._lokid{border-color:#bdeab6;color:' + OK_INK + '}',
+      // Erindi (449c): vinstri rönd erindisins á info-bláa kerfisins.
+      H + ' .er .er-kassi._erindi{border-left-color:#2f6fe4}',
+      // Vinnusamantekt (489): stjörnuhnappurinn var gullinn.
+      H + ' .samt-stj:hover{background:' + ROW_HOVER + ';color:#ff6702}',
+      H + ' .samt-stj.on{color:#ff6702}',
+      // Frestir/listar: valin lína á sama bláa og .mrow.
+      H + ' .frow[aria-current="true"]{background:#eef3fb}',
+
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',
       H + ' .t5-thema{margin-left:0}',
