@@ -66,17 +66,42 @@ const INNFLUTT_SKILL = /^(design-|mobile-|graphic-design$|grill-me$|brief-to-tas
 function fail(msg) { console.log('RED: ' + msg); process.exit(1); }
 
 // Git-köll per repó, með skyndiminni — JSON-hamurinn spyr um ~400 skrár.
-const _gitCache = new Map();
-function gitI(cwd, a) {
-  const k = cwd + '\u0000' + a;
-  if (_gitCache.has(k)) return _gitCache.get(k);
-  let s = '';
-  try { s = execSync('git ' + a, { cwd, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (_) { s = ''; }
-  _gitCache.set(k, s);
-  return s;
+// ÁÐUR: eitt `git log --format=%ct -- "<skrá>"` PER tilvísaða skrá → hundruð
+// git-ferla, sem fóru yfir 60s tímaút tools/audit-all.cjs undir álagi. NÚ:
+// EITT `git log` per repó byggir kort skrá→öll commit-tímamerki (nýjast
+// fyrst); allar fyrirspurnir lesa úr kortinu. Mælt 17.11.2026 (--json, bæði repó):
+// gamla 47 mín 43 s undir álagi → nýja 26 s. Á frosnu commiti (e0292338, 224 skrár sem
+// agentar vísa í): NÝJASTA tímamerki eins í 224/224 — það er allt sem úrskurðurinn les
+// (agTs, commitTsI). Fjöldi commita (`skrif` í JSON) er hærri í 24 skrám: commit á
+// hliðargrein sem `git log -- <skrá>` felur með sögu-einföldun telst hér með.
+const _gitCache = new Map();          // cwd → Map(rel → [ts(ms), nýjast fyrst])
+function gitCommitMap(cwd) {
+  if (_gitCache.has(cwd)) return _gitCache.get(cwd);
+  const map = new Map();
+  let raw = '';
+  // %x01 fremst á hverri commit-línu aðgreinir hana frá skráarlínum (líka í
+  // tómum commitum og merge-commitum sem sýna engar skrár). `-c` (combined
+  // diff) telur skrá í merge-commiti AÐEINS ef hún breyttist frá ÖLLUM
+  // foreldrum — nákvæmlega sama og sjálfgefin slóðar-einföldun
+  // `git log -- <skrá>` gerir, svo talning OG nýjasta tímamerki haldast óbreytt.
+  // core.quotePath=false → íslenskar slóðir koma óskeyttar og stemma við `rel`.
+  try {
+    raw = execSync('git -c core.quotePath=false log --format=%x01%ct --name-only -c',
+      { cwd, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 }).toString();
+  } catch (_) { raw = ''; }
+  let ts = 0;
+  for (const line of raw.split('\n')) {
+    if (line.charCodeAt(0) === 1) { ts = +line.slice(1) * 1000; continue; }  // ný commit-lína
+    if (!line) continue;                                                     // auð lína
+    let a = map.get(line);
+    if (!a) map.set(line, (a = []));
+    a.push(ts);                                                              // nýjast fyrst (git-röð)
+  }
+  _gitCache.set(cwd, map);
+  return map;
 }
 // Öll commit-tímamerki skrárinnar, nýjast fyrst. [] = aldrei committuð.
-const commitLog = (cwd, rel) => gitI(cwd, `log --format=%ct -- "${rel}"`).split('\n').filter(Boolean).map((s) => +s * 1000);
+const commitLog = (cwd, rel) => gitCommitMap(cwd).get(rel) || [];
 const commitTsI = (cwd, rel) => { const l = commitLog(cwd, rel); return l.length ? l[0] : 0; };
 const dags = (t) => (t ? new Date(t).toISOString().slice(0, 10) : '—');
 

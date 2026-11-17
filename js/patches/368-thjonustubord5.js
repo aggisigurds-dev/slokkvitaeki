@@ -334,7 +334,7 @@
     if (h.rymi === SAMT_HAM) return S.rows.filter(r => iHam(r, k) && erSamthykki(r)).length;
     if (h.rymi === 'vinnublod') return vbrListi(n).filter(vbrBidur).length;
     if (h.rymi === 'erindi') return (window.ErindiSimi && ErindiSimi.loaded()) ? ErindiSimi.talning() : '';
-    if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && (x.hluti === 'bidur' || x.hluti === 'claude' || x.hluti === 'undirbuid')).length : '';
+    if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && (x.hluti === 'vip' || x.hluti === 'bidur' || x.hluti === 'claude' || x.hluti === 'undirbuid')).length : '';
     if (h.board) return S.rows.filter(r => iHam(r, k) && (isFree(r) || onBoardOf(r, n))).length;
     if (k === 'samskipti') return S.rows.filter(r => isPost(r) && !r.svarad_at).length;
     if (k === 'krofur') return S.counts.krofur == null ? '' : S.counts.krofur;
@@ -5361,6 +5361,8 @@
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
         sannanirHtml() +
+        // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
+        (window.VipVakt ? VipVakt.html(n) : '') +
         // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
         // 506 Einkaritarinn — morgunyfirlit: forgangsröðun, vikan í tölum, samningar, topp vikunnar, áminningar.
@@ -6914,6 +6916,8 @@
       setTimeout(() => { try { const b = rot().querySelector('[data-t5="mod-open"][data-m="' + k + '"]'), s = b && b.closest('section'); if (s) s.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {} }, 40);
       return true;
     },
+    // 513 VIP-vakt: „↩ Svara" opnar Tölvupósta-haminn. false ef hamurinn er ekki til eða falinn hjá þeim sem situr við borðið.
+    opnaHam: k => { const n = nu(); if (!M(k) || hamFalinnHja(n, k)) return false; const c = cfg(); c.mode = k; S.filter = (M(k) || MODES.thjonusta).filter || 'allt'; S.synd = PAGE; S.view = 'master'; render(); vistaCfg({ mode: c.mode }); return true; },
     opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); }
   };
   window.Samthykkja = {

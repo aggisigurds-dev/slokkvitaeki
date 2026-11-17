@@ -74,14 +74,24 @@
   const VAL_LYKILL = 'samkeppni_val';
   let _vistaT = null, _afturFengid = false, _bidurVal = false;
   let _birgjarListi = null;    // listinn sem „Hvar kaupa" sýndi síðast (með síum) — CSV-útflutningur les hann
+  // 17.11.2026 (audit-vistun-timarar): biðin (500 ms) var ekki tæmd við lokun/flipaskipti — síðasta valið gat tapast.
+  // vistaNuna() er sama skrif; pagehide/visibilitychange keyra það strax ef bið er í gangi.
+  function vistaNuna() {
+    if (!_vistaT) return;
+    clearTimeout(_vistaT); _vistaT = null;
+    _vistaSkrif();
+  }
+  window.addEventListener('pagehide', vistaNuna);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') vistaNuna(); });
   function vista() {
     _snert = true;
     clearTimeout(_vistaT);
-    _vistaT = setTimeout(() => {
+    _vistaT = setTimeout(() => { _vistaT = null; _vistaSkrif(); }, 500);
+  }
+  function _vistaSkrif() {
       try {
         if (window.AppSettings && AppSettings.save) AppSettings.save({ [VAL_LYKILL]: JSON.stringify({ f: _flipi, q: _q, fl: _flokkur, se: _seljandi, la: _land, F, rod: _rod, sort: _sort, opin: _opinSia }) });
       } catch (_) { /* vistast ekki — valið gildir samt í þessum glugga */ }
-    }, 500);
   }
   function saekjaVal() {
     if (_afturFengid || _snert) return false;
@@ -121,8 +131,8 @@
       try {
         const sb = window.DB && window.DB.sb;
         if (sb) {
-          const { data, error } = await sb.from('vorur').select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,kostnadarverd,listaverd,birgi,virkt').limit(2000);
-          if (error) throw error;
+          // 17.11.2026 (audit-pagination): .limit(2000) gaf í mesta lagi 1000 raðir þegjandi — flett í staðinn.
+          const data = await window.DB.fetchAll((from, to) => sb.from('vorur').select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,kostnadarverd,listaverd,birgi,virkt').order('id').range(from, to));
           _okkar = {};
           (data || []).forEach((v) => { _okkar[v.id] = v; });
         }

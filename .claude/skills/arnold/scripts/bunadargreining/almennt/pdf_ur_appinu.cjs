@@ -10,6 +10,9 @@ const CID = process.argv[2], UT = process.argv[3], BASE = process.argv[4] || 'ht
   const ctx = await b.newContext({ viewport: { width: 1500, height: 1050 } });
   await ctx.route('**/*', (route) => {
     const r = route.request();
+    // Innskráningarhliðið sendir hausalausan vafra á innskraning.html og prófíllinn hleðst aldrei (mælt 17.11.2026: #co-bgr fannst
+    // aldrei á 90 s, aðeins „Innskráning — Slökkvitæki"). 404 á hub-adgangar = sama leið og teikningaprófin nota; engin innskráning.
+    if (/\/(api|\.netlify\/functions)\/hub-adgangar/.test(r.url())) return route.fulfill({ status: 404, body: '{}', contentType: 'application/json' });
     if (!['GET', 'HEAD', 'OPTIONS'].includes(r.method()) && /supabase\.co\/(rest|storage)/.test(r.url())) return route.fulfill({ status: 403, body: '{"message":"próf"}', contentType: 'application/json' });
     const u = r.url();
     if (BASE.includes('localhost') && u.startsWith(BASE) && /\/(\.netlify\/functions|api)\//.test(new URL(u).pathname)) return route.fetch({ url: u.replace(BASE, 'https://slokkvitaeki.netlify.app') }).then((res) => route.fulfill({ response: res }), () => route.abort());
