@@ -71,7 +71,7 @@ async function get(slod) {
     [solur, kredit, st] = await Promise.all([
       get('solur?select=id,num,customer_id,customer_kt,customer_nafn,samtals,created_at,status,krafa_sent_at,invoiced_at,dk_invoice_id' +
         '&status=eq.final&is_credit=is.false&hidden=not.is.true&greitt_med=eq.reikningur&customer_id=not.is.null&created_at=gte.' + (nu - 1) + '-01-01&order=id'),
-      get('solur?select=num,credit_of,kredit_a,status,is_credit&is_credit=is.true'),
+      get('solur?select=num,credit_of,kredit_a,status,is_credit,samtals&is_credit=is.true'),
       get('app_settings?id=eq.1&select=att:settings->company_attachments'),
     ]);
     [docs, pairs] = await Promise.all([

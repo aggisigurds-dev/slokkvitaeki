@@ -30,7 +30,7 @@ async function get(slod) {
 (async () => {
   const [solur, kredit, st, docs, pairs] = await Promise.all([
     get(`solur?select=id,num,customer_id,customer_kt,customer_nafn,samtals,greitt_med,krafa_sent_at,invoiced_at,dk_invoice_id,status,is_credit&created_at=gte.${AR}-01-01&created_at=lt.${AR + 1}-01-01&order=id`),
-    get('solur?select=num,credit_of,kredit_a,status,is_credit&is_credit=is.true'),
+    get('solur?select=num,credit_of,kredit_a,status,is_credit,samtals&is_credit=is.true'),
     get('app_settings?id=eq.1&select=att:settings->company_attachments'),
     get(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,amount,is_duplicate,doc_type,fyrirtaeki_id,year,vidskiptategund,notes&doc_type=eq.reikningur&year=eq.${AR}`),
     get(`document_pairs?select=id,year,fyrirtaeki_id,invoice_doc_id,service_type&year=eq.${AR}`),

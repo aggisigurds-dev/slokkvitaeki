@@ -889,6 +889,17 @@ Mælt 17.11.2026 á 1.001 lokasölu (466 með PDF):
 - 10 pör héldu kreditfærðum reikningi: 6 fá gildan, 4 bíða nýs reiknings.
 - Tölvupóstur: 42 breytast (13 kt + 29 kredit).
 
+**Hlutakredit** (óháð rýni 17.11.2026): reikningur telst kreditfærður AÐEINS þegar kreditnótur hans ná yfir alla upphæðina
+(`kreditStada` í 517, ±2 kr). Hlutakreditaður reikningur gildir alls staðar:
+- á kúnnavefnum (`kreditad_ad_hluta`), í pörum og í pósti;
+- á spjaldinu með „kreditað að hluta −X kr“;
+- Hreyfingar draga kreditið frá aðeins þegar skjalið ber brúttóupphæðina.
+Allir sem spyrja um kredit sækja `samtals`, og prófið krefst þess.
+
+**Parið skiptir aldrei sjálft** (regla hússins: ekkert tengist sjálfkrafa). Bendi parið á kreditfærðan reikning sýnir spjaldið gilda
+reikninginn og takkann „🔗 Festa R-… sem reikning ársins“. Smellur og staðfesting kalla á `savePair` (`kredit_skipti`), og `notes`
+skráir hver og hvenær.
+
 **Reikningur sem er ekki í Sölu** (Stólpi R-10xxxx, eða aðeins skráður í skjalasafnið). 199 `openInvFromSale` → `openInvAnnad`,
 fyrir bæði 👁 í veljaranum og 🧾-flísina. Fallið opnar PDF-ið eftir reikningsnúmeri úr `customer_documents`, sömu heimild og
 „KOMIN“-línan. Finnist ekkert PDF segir það: „Reikningur R-… er úr Stólpa … PDF fannst ekki í skjalasafninu“, með dagsetningu,

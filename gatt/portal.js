@@ -300,7 +300,9 @@
         return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: r.heimilisfang || '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, eining: r.eining || (r.tegund === 'brunakerfi' ? 'einingar' : 'tæki'), ar: r.ar, skodun: r.skodun || null, texti: r.texti || null, vidbot: r.vidbot || null };
       }),
       invoices: (d.invoices || []).map(function (i) {
-        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null, fid: i.fid != null ? Number(i.fid) : null };
+        // 17.11.2026: hlutakreditaður reikningur gildir og stendur — kreditið nefnt í lýsingunni (þjónninn: kreditad_ad_hluta).
+        var kh = i.kreditad_ad_hluta, khTxt = kh ? 'Kreditað að hluta: ' + Math.round(Number(kh.upphaed) || 0).toLocaleString('de-DE') + ' kr' + (kh.notur && kh.notur.length ? ' (' + kh.notur.join(', ') + ')' : '') : '';
+        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: [i.lysing || '', khTxt].filter(Boolean).join(' · '), upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null, fid: i.fid != null ? Number(i.fid) : null };
       }),
       messages: d.messages || [],
       erindi: d.erindi || [],
