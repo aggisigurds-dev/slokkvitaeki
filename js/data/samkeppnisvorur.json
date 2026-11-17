@@ -12469,7 +12469,27 @@
      "slod": "https://is.openprocurements.com/cpv/35111320/"
     }
    ],
-   "dags": "2026-11-17"
+   "dags": "2026-11-17",
+   "atburdir": [
+    {
+     "dags": "2026-11-29",
+     "tegund": "urslit",
+     "texti": "Tilboð bindandi í 45 daga, til um 29.11.2026. Leita að niðurstöðutilkynningu á TED eftir það: þar koma sigurvegari og verð.",
+     "vissa": "auglysing"
+    },
+    {
+     "dags": "2028-09",
+     "tegund": "utbod",
+     "texti": "Nýtt útboð þarf fyrir 30.11.2028 ef samningur er ekki framlengdur. ÁTVR auglýsti síðast 11.9.2026 fyrir samningsstart 1.12.2026.",
+     "vissa": "alyktad"
+    },
+    {
+     "dags": "2028-11-30",
+     "tegund": "lok",
+     "texti": "Samningstími lýkur án framlengingar. Með báðum 12 mánaða framlengingum lýkur hann 30.11.2030.",
+     "vissa": "auglysing"
+    }
+   ]
   },
   {
    "kaupandi": "Reykjavíkurborg",
@@ -12596,7 +12616,27 @@
      "slod": "https://reykjavik.is/sites/default/files/2023-05/15727%20Rammasamningur%20um%20eftirlit%20%C3%A1%20sl%C3%B6kkvit%C3%A6kjum%20NI%C3%90URSTA%C3%90A.pdf"
     }
    ],
-   "dags": "2026-11-17"
+   "dags": "2026-11-17",
+   "atburdir": [
+    {
+     "dags": "2027-03",
+     "tegund": "utbod",
+     "texti": "Útboðsauglýsing næsta rammasamnings ætti að birtast á útboðsvef borgarinnar og TED um mars 2027. Árið 2023 var auglýst 6.3. og tilboð opnuð 18.4. (sex vikur á milli).",
+     "vissa": "alyktad"
+    },
+    {
+     "dags": "2027-04",
+     "tegund": "utbod",
+     "texti": "Opnun tilboða áætluð mars–apríl 2027. Fyrri opnanir: 30.3.2015, 11.4.2019, 18.4.2023.",
+     "vissa": "alyktad"
+    },
+    {
+     "dags": "2027-05-13",
+     "tegund": "lok",
+     "texti": "Samningur 15727 rennur út (48 mánuðir, engin framlenging). Fyrri samningur rann út 13.5.2023.",
+     "vissa": "alyktad"
+    }
+   ]
   },
   {
    "kaupandi": "Landspítali (Ríkiskaup fyrir hönd Landspítala)",
@@ -12798,7 +12838,21 @@
      "slod": "https://island.is/s/fjarsyslan/rammasamningar-og-rammasamnings-utbod"
     }
    ],
-   "dags": "2026-11-17"
+   "dags": "2026-11-17",
+   "atburdir": [
+    {
+     "dags": "2026-Q4",
+     "tegund": "utbod",
+     "texti": "Fjársýslan áætlar nýtt útboð „Q4“ (staða „Undirbúningi“), ár ótilgreint. Líklega nú í haust, því samningurinn rennur út 1.8.2027. Nær ekki til slökkvitækja, aðeins vöktunar brunaboða o.fl.",
+     "vissa": "alyktad"
+    },
+    {
+     "dags": "2027-08-01",
+     "tegund": "lok",
+     "texti": "Rammasamningur RK 14.25 rennur út (allar framlengingar nýttar).",
+     "vissa": "stadfest"
+    }
+   ]
   }
  ],
  "utbod_leit": [

@@ -225,6 +225,17 @@
       .samk-tk.on{background:#0f172a;color:#fff;border-color:#0f172a}
       .samk-tilb{margin:0;padding:0;list-style:none;display:grid;gap:2px;min-width:240px}
       .samk-vef{white-space:normal;max-width:300px;min-width:180px;line-height:1.4}
+      .samk-tl{list-style:none;margin:0 0 14px;padding:0 0 0 20px;border-left:3px solid #cbd5e1;display:grid;gap:10px}
+      .samk-tl-i,.samk-tl-nu{position:relative}
+      .samk-tl-i{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;padding:9px 12px;display:grid;gap:3px}
+      .samk-tl-i::before,.samk-tl-nu::before{content:'';position:absolute;left:-30px;top:13px;width:12px;height:12px;border-radius:50%;background:#94a3b8;border:2px solid var(--bg1);box-shadow:0 0 0 1px #94a3b8}
+      .samk-tl-i.utbod::before{background:#16a34a;box-shadow:0 0 0 1px #16a34a}
+      .samk-tl-i.urslit::before{background:#2563eb;box-shadow:0 0 0 1px #2563eb}
+      .samk-tl-i.lok::before{background:#dc2626;box-shadow:0 0 0 1px #dc2626}
+      .samk-tl-nu{font-size:12px;font-weight:700;color:#b91c1c;padding:2px 0}
+      .samk-tl-nu::before{background:#b91c1c;box-shadow:0 0 0 3px #fecaca;top:5px}
+      .samk-tl-d{font-weight:700;font-size:13.5px;color:var(--ink1)}
+      .samk-vef2{white-space:normal;line-height:1.45;max-width:760px}
       .samk-det{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;margin:0 0 14px}
       .samk-det summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--ink1)}
       @media(max-width:900px){.samk-tafla{display:block;overflow-x:auto;white-space:nowrap}}
@@ -613,7 +624,7 @@
 
   // ── 6. Útboð — opinber útboð á eftirliti með slökkvitækjum (Agnar 17.11.2026) ──────────────────────────────────────
   // Gögn: _g.utbod (útboð með tilboðum), _g.utbod_leit (hvar var leitað), _g.utbod_vefir (hvar má fylgjast með). Aðeins lestur.
-  const UTB_TEGUND = { sveitarfelag: 'Sveitarfélag', rikid: 'Ríkið', spitali: 'Spítali / heilbrigðisstofnun', stofnun: 'Stofnun', opinbert_fyrirtaeki: 'Opinbert fyrirtæki' };
+  const UTB_TEGUND = { sveitarfelag: 'Sveitarfélag', rikid: 'Ríkið', spitali: 'Spítali / heilbrigðisstofnun', stofnun: 'Stofnun', opinbert_fyrirtaeki: 'Opinbert fyrirtæki', erlent: 'Erlent viðmið' };
   const UTB_STADA = { opid: 'Opið núna', bid_urslita: 'Beðið úrslita', i_gildi: 'Samningur í gildi', lokid: 'Lokið', runnid_ut: 'Runnið út', othekkt: 'Óþekkt' };
   const UTB_STADA_LIT = { opid: 'gu', bid_urslita: 'gu', i_gildi: 'gr' };
   const UTB_LEIT = { fannst: 'Útboð fannst', ekkert: 'Ekkert fannst', ekki_adgengilegt: 'Ekki aðgengilegt' };
@@ -624,6 +635,48 @@
   const heimildirHtml = (l) => (l || []).map((h) => tengill(h.slod, h.texti)).join('<br>');
   const dagsRennur = (t) => (t.rennur_ut ? dags(t.rennur_ut) + (t.rennur_ut_vissa === 'alyktad' ? ' (ályktað)' : t.rennur_ut_vissa === 'auglysing' ? ' (skv. útboðsauglýsingu)' : '') : '');
   const manudirTil = (iso) => { const d = new Date(iso + 'T00:00:00'); return Number.isNaN(d.getTime()) ? null : Math.round((d.getTime() - Date.now()) / (30.44 * 864e5)); };
+  // Tímatafla: atburðir (t.atburdir, annars samningslok úr t.rennur_ut) í tímaröð. Dagsnið: YYYY-MM-DD, YYYY-MM eða YYYY-Qn.
+  const MANUDIR = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+  function evDags(s) {
+    const x = String(s || '');
+    let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(x);
+    if (m) { const t = Date.UTC(+m[1], +m[2] - 1, +m[3]); return { t, fra: t, til: t + 864e5 - 1, label: `${+m[3]}. ${MANUDIR[+m[2] - 1]} ${m[1]}` }; }
+    m = /^(\d{4})-(\d{2})$/.exec(x);
+    if (m) { const fra = Date.UTC(+m[1], +m[2] - 1, 1), til = Date.UTC(+m[1], +m[2], 1) - 1; return { t: Math.round((fra + til) / 2), fra, til, label: `${MANUDIR[+m[2] - 1]} ${m[1]}` }; }
+    m = /^(\d{4})-Q([1-4])$/.exec(x);
+    if (m) { const fra = Date.UTC(+m[1], (+m[2] - 1) * 3, 1), til = Date.UTC(+m[1], +m[2] * 3, 1) - 1; return { t: Math.round((fra + til) / 2), fra, til, label: `${m[2]}. ársfjórðungur ${m[1]}` }; }
+    return null;
+  }
+  const TL_TEGUND = { utbod: ['Útboð', 'gr'], urslit: ['Úrslit væntanleg', ''], lok: ['Samningur rennur út', 'gu'] };
+  const TL_VISSA = { stadfest: ['staðfest', 'gr'], alyktad: ['ályktað', 'gu'], auglysing: ['skv. auglýsingu', 'gr'] };
+  function timataflaHtml(rows) {
+    const nu = Date.now();
+    const ev = [];
+    rows.filter((x) => x.t.tegund_kaupanda !== 'erlent').forEach((x) => {
+      const t = x.t;
+      const l = Array.isArray(t.atburdir) && t.atburdir.length ? t.atburdir
+        : (t.rennur_ut && t.stada !== 'runnid_ut' && t.stada !== 'lokid' ? [{ dags: t.rennur_ut, tegund: 'lok', texti: 'Samningur rennur út.', vissa: t.rennur_ut_vissa }] : []);
+      l.forEach((e) => { const d = evDags(e.dags); if (d && d.til >= nu) ev.push({ e, d, t }); });
+    });
+    if (!ev.length) return '';
+    ev.sort((a, b) => a.d.t - b.d.t || a.t.kaupandi.localeCompare(b.t.kaupandi, 'is'));
+    const rel = (d) => {
+      if (d.fra <= nu && d.til >= nu && d.til - d.fra > 864e5) return 'yfirstandandi tímabil';
+      const m = Math.round((d.t - nu) / (30.44 * 864e5));
+      return m < 1 ? 'innan mánaðar' : 'eftir ' + m + ' mán.';
+    };
+    const idag = new Date();
+    const li = ev.map(({ e, d, t }) => {
+      const [tt, tc] = TL_TEGUND[e.tegund] || TL_TEGUND.utbod;
+      const v = TL_VISSA[e.vissa];
+      return `<li class="samk-tl-i ${esc(e.tegund)}"><div class="samk-tl-d">${esc(d.label)} <span class="samk-sm">· ${esc(rel(d))}</span></div>
+        <div><span class="samk-pill ${tc}">${esc(tt)}</span> <b>${esc(t.kaupandi)}</b>${t.nr ? ' <span class="samk-sm">nr. ' + esc(t.nr) + '</span>' : ''}${v ? ` <span class="samk-pill ${v[1]}">${esc(v[0])}</span>` : ''}</div>
+        <div class="samk-sm samk-vef2">${esc(e.texti)}</div></li>`;
+    }).join('');
+    return `<div class="samk-h" style="margin-top:0">Tímatafla: næstu úrslit, útboð og samningslok</div>
+      <ol class="samk-tl"><li class="samk-tl-nu">Í dag · ${idag.getDate()}. ${MANUDIR[idag.getMonth()]} ${idag.getFullYear()}</li>${li}</ol>
+      <p class="samk-note" style="margin-top:-6px">Græn merking „staðfest“ eða „skv. auglýsingu“ kemur úr gögnum kaupanda. Gul merking „ályktað“ er mín ályktun af gildistíma og fyrri umferðum, ekki tilkynning frá kaupanda.</p>`;
+  }
   const tilbodHtml = (x) => {
     const l = [...(x.t.tilbod || [])].sort((a, b) => (a.verd == null ? 1 : b.verd == null ? -1 : a.verd - b.verd));
     if (!l.length) return '<span class="samk-sm">Tilboð ekki birt</span>';
@@ -635,7 +688,7 @@
     const leitAllt = Array.isArray(_g.utbod_leit) ? _g.utbod_leit : [];
     const vefirAllt = Array.isArray(_g.utbod_vefir) ? _g.utbod_vefir : [];
     const rows = allt.map((t) => ({ seljandi: t.kaupandi, nafn: t.titill, athugasemd: [t.nr, t.tegund, t.athugasemd, t.gildistimi, t.naesta_utbod, (t.tilbod || []).map((b) => b.bjodandi).join(' ')].join(' '), t }))
-      .filter(passar).filter((x) => { const t = x.t; return (!F.utTegund || t.tegund_kaupanda === F.utTegund) && (!F.utStada || t.stada === F.utStada) && (!F.utTilbod || tilbodMedVerd(t).length > 0) && (!F.utNaest || t.rennur_ut || t.naesta_utbod); });
+      .filter(passar).filter((x) => { const t = x.t; return (!F.utTegund || t.tegund_kaupanda === F.utTegund) && (!F.utStada || t.stada === F.utStada) && (!F.utTilbod || tilbodMedVerd(t).length > 0) && (!F.utNaest || t.rennur_ut || t.naesta_utbod || (t.atburdir && t.atburdir.length)); });
     const tilRows = [];
     rows.forEach((x) => (x.t.tilbod || []).forEach((b) => tilRows.push({ t: x.t, b })));
     const opin = rows.filter((x) => x.t.stada === 'opid').length;
@@ -654,7 +707,8 @@
         <div style="margin-top:8px">${heimildirHtml(t.heimildir)}</div>
       </div>`;
     };
-    const naestHtml = naest.length ? `<div class="samk-h" style="margin-top:0">Næsta útboð og samningar sem renna út</div><div class="samk-grid">${naest.map(kortNaest).join('')}</div>` : '';
+    const naestHtml = naest.length ? `<div class="samk-h">Nánar um samningana sem renna út</div><div class="samk-grid">${naest.map(kortNaest).join('')}</div>` : '';
+    const tlHtml = timataflaHtml(rows);
 
     // Verðþróun milli umferða: aðeins þegar karfan er sú sama (sama kaupandi, sama körfuheiti) — annars er ekki hægt að bera tölurnar saman
     const prof = {};
@@ -723,7 +777,7 @@
 
     return `${kpiHtml}
       <p class="samk-note">Opinber útboð á eftirliti með slökkvitækjum og öðrum eldvarnarbúnaði: hverjir buðu og hvað, hver fékk samninginn, gildistími og hvenær næsta útboð ætti að koma. Hjá Reykjavík eru verðin „samtals vegið einingaverð án VSK“ yfir verðkörfu með 32 liðum. Það er viðmið til að raða tilboðum, <b>ekki verð á einu tæki</b>, og vogtölurnar eru ekki birtar, svo ekki er hægt að bera töluna beint saman við okkar verð. Eining hvers verðs stendur undir því. Stærð útboðs er aðeins til þar sem kaupandi birti áætlun. Lokadagsetning er merkt „ályktað“ þar sem hún er ekki staðfest í gögnum kaupanda. ${esc(_g.utbod_leitad || '')}</p>
-      ${naestHtml}${throunHtml}
+      ${tlHtml}${naestHtml}${throunHtml}
       <div class="samk-h">Útboð${csvTakki('utbod')}</div>${tafla('utbod', cols, rows)}
       <div class="samk-h">Tilboð bjóðenda${csvTakki('utbod_tilbod')}</div>${tafla('utbod_tilbod', cols2, tilRows)}
       ${leitHtml}${vefirHtml}`;
