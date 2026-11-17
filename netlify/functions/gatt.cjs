@@ -20,7 +20,25 @@ const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 const BGR = require('./_gatt-bgr.cjs');
 const SVD = require('./_gatt-serkjor.cjs');
-const RS = require('./_reikningur-solu.cjs');   // 17.11.2026: kreditfærður reikningur (credit_of / kredit_a) — sama regla og appið (517)   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
+const RS = require('./_reikningur-solu.cjs');   // 17.11.2026: kreditfærður reikningur (credit_of / kredit_a) — sama regla og appið (517)
+
+// Óháð rýni 17.11.2026 (2): reikningur hverfur af kúnnavefnum AÐEINS ef hann er void, er sjálfur kreditnóta, eða kreditnótur
+// ná yfir ALLA upphæðina. Hlutakreditaður reikningur (t.d. 8.432 kr, kreditað 1.426) gildir og stendur, með `kreditad_ad_hluta`
+// { upphaed, notur } — áður hvarf hann alveg (credit_of var talið fullt kredit). rows: solur-raðir reikninganna í listanum
+// (id, num, status, is_credit, samtals); kn: kreditnótur sem vísa á þá. Breytir `invoices` á staðnum.
+function kreditSia(invoices, rows, kn) {
+  const ut = new Set();
+  (rows || []).forEach((s) => { if (s && (s.status === 'void' || s.is_credit)) ut.add(normNr(s.num)); });
+  const st = RS.kreditStada((kn || []).concat((rows || []).filter((s) => s && s.is_credit)), rows || []);
+  const hluti = {};
+  Object.keys(st).forEach((n) => { if (st[n].full) ut.add(normNr(n)); else hluti[normNr(n)] = { upphaed: Math.round(st[n].kreditad), notur: st[n].notur }; });
+  for (let i = invoices.length - 1; i >= 0; i--) {
+    const k = normNr(invoices[i].nr);
+    if (invoices[i]._kredit || ut.has(k)) invoices.splice(i, 1);
+    else if (hluti[k]) invoices[i].kreditad_ad_hluta = hluti[k];
+  }
+  return invoices;
+}   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -1377,7 +1395,7 @@ exports.handler = async (event) => {
       const nrs = [...new Set(nrsIn.map((n) => n && String(n).replace(/"/g, '')).filter(Boolean))];
       if (!nrs.length) return null;
       const quoted = nrs.map((n) => `"${n}"`).join(',');
-      return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of`).catch(() => ({ ok: false }));
+      return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of,kredit_a,samtals`).catch(() => ({ ok: false }));
     };
     let voidP = null;
     try {
@@ -1463,20 +1481,16 @@ exports.handler = async (event) => {
         const sv = await svP;
         if (sv.ok) {
           const rows = await sv.json();
-          const ut = new Set(), idByNr = {};
-          rows.forEach((s) => { idByNr[normNr(s.num)] = s.id; if (s.status === 'void' || s.is_credit) ut.add(normNr(s.num)); });
-          const kreditud = new Set(rows.filter((s) => s.credit_of != null).map((s) => s.credit_of));
-          Object.keys(idByNr).forEach((n) => { if (kreditud.has(idByNr[n])) ut.add(n); });
-          // 17.11.2026: kreditnótan er sjaldnast sjálf í listanum (hún á ekkert skjal) — þá fannst credit_of hennar aldrei og
-          // kreditfærði reikningurinn (gamla kennitalan, eftir endurgerð á nýja kt) sást kúnnanum sem reikningur.
+          // 17.11.2026: kreditnótan er sjaldnast sjálf í listanum (hún á ekkert skjal) — þær eru sóttar sérstaklega.
           const ids = rows.map((s) => s.id).filter((x) => x != null);
           const nrs = rows.map((s) => s.num).filter((x) => /^R-\d{6}$/.test(String(x || '')));
+          let kn = [];
           if (ids.length || nrs.length) {
             const ors = [].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : [], nrs.length ? [`kredit_a.in.(${nrs.join(',')})`] : []);
-            const kr = await P.sbGet(`solur?is_credit=eq.true&or=(${ors.join(',')})&select=num,credit_of,kredit_a,status,is_credit`).catch(() => ({ ok: false }));
-            if (kr && kr.ok) Object.keys(RS.kreditMap(await kr.json(), rows)).forEach((n) => ut.add(normNr(n)));
+            const kr = await P.sbGet(`solur?is_credit=eq.true&or=(${ors.join(',')})&select=num,credit_of,kredit_a,status,is_credit,samtals`).catch(() => ({ ok: false }));
+            if (kr && kr.ok) kn = await kr.json();
           }
-          for (let i = invoices.length - 1; i >= 0; i--) { if (invoices[i]._kredit || ut.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
+          kreditSia(invoices, rows, kn);
         }
       }
     } catch (_) {}
@@ -1597,3 +1611,4 @@ exports.handler = async (event) => {
     return P.json(500, { error: String((e && e.message) || e) });
   }
 };
+exports._kreditSia = kreditSia;   // prófin (óháð rýni 17.11.2026 — hlutakredit)

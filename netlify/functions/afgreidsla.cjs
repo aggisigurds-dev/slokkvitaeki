@@ -71,14 +71,22 @@ async function kreditFyrir(nums) {
   const n = [...new Set((nums || []).filter((x) => /^R-\d{6}$/.test(String(x || ''))))];
   if (!n.length) return {};
   try {
-    const solur = await lesa(`solur?select=id,num&num=in.(${n.join(',')})`);
+    const solur = await lesa(`solur?select=id,num,samtals&num=in.(${n.join(',')})`);
     const ids = solur.map((x) => x.id).filter((x) => x != null);
     const ors = [`kredit_a.in.(${n.join(',')})`].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : []);
-    const kn = await lesa(`solur?select=num,credit_of,kredit_a,status,is_credit&is_credit=eq.true&or=(${ors.join(',')})`);
-    return RS.kreditMap(kn, solur);
+    const kn = await lesa(`solur?select=num,credit_of,kredit_a,status,is_credit,samtals&is_credit=eq.true&or=(${ors.join(',')})`);
+    return RS.kreditStada(kn, solur);   // óháð rýni 17.11 (2): fullt kredit ≠ hlutakredit
   } catch (_) { return {}; }
 }
-const reiknTexti = (nr, km) => 'Reikningur ' + nr + ' (PDF)' + (km && km[nr] ? ' — KREDITFÆRÐUR með ' + km[nr] + ', gildir ekki' : '');
+// km = kreditStada: fullt kredit → „gildir ekki"; hlutakredit → reikningurinn gildir, kreditið nefnt.
+const kr_ = (n) => Math.round(Number(n) || 0).toLocaleString('de-DE');
+const reiknTexti = (nr, km) => {
+  const e = km && km[nr];
+  if (!e) return 'Reikningur ' + nr + ' (PDF)';
+  return e.full ? 'Reikningur ' + nr + ' (PDF) — KREDITFÆRÐUR með ' + e.notur.join(', ') + ', gildir ekki'
+    : 'Reikningur ' + nr + ' (PDF) — kreditað að hluta (−' + kr_(e.kreditad) + ' kr, ' + e.notur.join(', ') + ')';
+};
+const kreditNr = (km, nr) => (km && km[nr] && km[nr].full) ? km[nr].notur.join(', ') : null;
 const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date().toISOString() }, body)).then(sbJson);
 
 // Tóki fyrir póstsendinguna þjóna á milli. 16.11.2026: myntaður í hub-adgangar.cjs með session_secret úr sameiginlega
@@ -258,13 +266,13 @@ async function leysaTilvisanir(refs) {
     if (r.tegund === 'sala') {
       const s = solur.find((x) => x.id === Number(r.id)); if (!s || !s.num) return null;
       const pdf = reiknPdf(s.num);
-      return pdf ? { url: pdf, texti: reiknTexti(s.num, km), kreditfaert: km[s.num] || null } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' + (km[s.num] ? ' — KREDITFÆRÐ með ' + km[s.num] : '') };
+      return pdf ? { url: pdf, texti: reiknTexti(s.num, km), kreditfaert: kreditNr(km, s.num) } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' + (kreditNr(km, s.num) ? ' — KREDITFÆRÐ með ' + kreditNr(km, s.num) : '') };
     }
     if (r.tegund === 'post') { const p = postar.find((x) => x.id === Number(r.id)); const u = p && gmailSlod(p.account, p.thread_id); return u ? { url: u, texti: 'Pósturinn í Gmail' } : null; }
     if (r.tegund === 'payday') {
       const nr = String(r.numer || '').trim(); if (!nr) return null;
       if (r.felag === 'brunaholf' && /^\d{1,7}$/.test(nr)) return { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(nr), texti: 'Payday-reikningur ' + nr + ' (PDF)' };
-      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: reiknTexti(nr, km), kreditfaert: km[nr] || null } : null; }
+      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: reiknTexti(nr, km), kreditfaert: kreditNr(km, nr) } : null; }
       return null;
     }
     // Aðeins OPIÐ mál fær slóð — lokað mál sést ekki á borðinu og tengillinn lofaði þá einhverju sem gerist ekki.
@@ -289,7 +297,7 @@ async function reikningsTenglar(malIds) {
   for (const n of slokk) {
     const d = docs.find((x) => x.invoice_number === n && !x.is_duplicate) || docs.find((x) => x.invoice_number === n);
     const u = d && skjalSlod(d);
-    if (u) ut[n] = { url: u, texti: reiknTexti(n, km), kreditfaert: km[n] || null };
+    if (u) ut[n] = { url: u, texti: reiknTexti(n, km), kreditfaert: kreditNr(km, n) };
   }
   for (const t of new Set(inv.map((x) => String(x.tilvisun)))) ut['R-' + t] = { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(t), texti: 'Payday-reikningur ' + t + ' (PDF, Brunahólf)' };
   return ut;

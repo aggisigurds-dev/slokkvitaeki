@@ -74,17 +74,21 @@ test('5. Afgreiðsla: „Reikningur R-… (PDF)“ á kreditfærða söluna segi
   const orig = P.sbGet;
   P.sbGet = async (qs) => {
     const svar = (d) => ({ ok: true, status: 200, json: async () => d, text: async () => JSON.stringify(d) });
-    if (/^solur\?select=id,num&id=in/.test(qs)) return svar([{ id: 1, num: 'R-009001' }, { id: 2, num: 'R-009002' }]);
-    if (/^solur\?select=id,num&num=in/.test(qs)) return svar([{ id: 1, num: 'R-009001' }, { id: 2, num: 'R-009002' }]);
-    if (/^solur\?select=num,credit_of/.test(qs)) return svar([{ num: 'R-009003', credit_of: 1, kredit_a: 'R-009001', is_credit: true, status: 'final' }]);
-    if (/^customer_documents/.test(qs)) return svar([{ id: 10, invoice_number: 'R-009001', storage_path: 'samningar/a.pdf' }, { id: 11, invoice_number: 'R-009002', storage_path: 'samningar/b.pdf' }]);
+    if (/^solur\?select=id,num&id=in/.test(qs)) return svar([{ id: 1, num: 'R-009001' }, { id: 2, num: 'R-009002' }, { id: 4, num: 'R-009004' }]);
+    if (/^solur\?select=id,num(,samtals)?&num=in/.test(qs)) return svar([{ id: 1, num: 'R-009001', samtals: 1000 }, { id: 2, num: 'R-009002', samtals: 2000 }, { id: 4, num: 'R-009004', samtals: 8432 }]);
+    if (/^solur\?select=num,credit_of/.test(qs)) return svar([{ num: 'R-009003', credit_of: 1, kredit_a: 'R-009001', is_credit: true, status: 'final', samtals: -1000 },
+      { num: 'R-009005', credit_of: 4, is_credit: true, status: 'final', samtals: -1426 }]);
+    if (/^customer_documents/.test(qs)) return svar([{ id: 10, invoice_number: 'R-009001', storage_path: 'samningar/a.pdf' }, { id: 11, invoice_number: 'R-009002', storage_path: 'samningar/b.pdf' }, { id: 12, invoice_number: 'R-009004', storage_path: 'samningar/c.pdf' }]);
     return svar([]);
   };
   try {
     const A = require('../netlify/functions/afgreidsla.cjs');
     assert.ok(A._leysaTilvisanir, 'afgreidsla.cjs flytur út _leysaTilvisanir');
-    const leysa = await A._leysaTilvisanir([{ tegund: 'sala', id: 1 }, { tegund: 'sala', id: 2 }]);
+    const leysa = await A._leysaTilvisanir([{ tegund: 'sala', id: 1 }, { tegund: 'sala', id: 2 }, { tegund: 'sala', id: 4 }]);
     const gamall = leysa({ tegund: 'sala', id: 1 }), nyr = leysa({ tegund: 'sala', id: 2 });
+    const hluti = leysa({ tegund: 'sala', id: 4 });
+    assert.match(hluti.texti, /R-009004 \(PDF\) — kreditað að hluta \(−1\.426 kr, R-009005\)/, 'hlutakredit: gildir, kreditið nefnt');
+    assert.strictEqual(hluti.kreditfaert, null);
     assert.match(gamall.texti, /R-009001 \(PDF\) — KREDITFÆRÐUR með R-009003, gildir ekki/);
     assert.strictEqual(gamall.kreditfaert, 'R-009003');
     assert.strictEqual(nyr.texti, 'Reikningur R-009002 (PDF)');
@@ -211,8 +215,54 @@ test('9. fyrirtækjaspjaldið (199), pörin (311/253) og gáttin nota kreditregl
   const s199 = fs.readFileSync(path.join(ROT, 'js/patches/199-doc-year-grid.js'), 'utf8');
   assert.match(s199, /ReikningurSolu\.saekjaKredit/);
   assert.match(s199, /invArr=invArr\.filter\(function\(x\)\{ return !\(x && x\._kredit\); \}\)/, 'kreditfærður reikningur er aldrei valinn sem reikningur ársins');
-  assert.match(s199, /matched_by: 'kredit_skipti'/);
+  // Óháð rýni 17.11 (2): parið er ALDREI skrifað við opnun spjalds — kredit_skipti aðeins í smell-hlustaranum, með staðfestingu og hver.
+  const iSmelli = s199.indexOf("var ksEl=e.target.closest('[data-kredit-skipti]')");
+  assert.ok(iSmelli > 0, 'tillögutakkinn hefur smell-hlustara');
+  const kallKredit = [...s199.matchAll(/savePair\([^;]*?matched_by: 'kredit_skipti'/g)].map((m) => m.index);
+  assert.ok(kallKredit.length === 1 && kallKredit[0] > iSmelli, 'savePair(kredit_skipti) aðeins í smell-hlustaranum');
+  assert.match(s199.slice(iSmelli, iSmelli + 2500), /Confirm\.show|confirm\(/);
+  assert.match(s199.slice(iSmelli, iSmelli + 2500), /festur af '\+hver/);
   for (const f of ['311-doc-pairs-band.js', '253-sala-customer-history.js']) assert.match(fs.readFileSync(path.join(ROT, 'js/patches', f), 'utf8'), /if \(_kred\[s\.num\]\) return;/, f);
   const g = fs.readFileSync(path.join(ROT, 'netlify/functions/gatt.cjs'), 'utf8');
-  assert.match(g, /RS\.kreditMap\(await kr\.json\(\), rows\)/, 'gáttin sækir kreditnóturnar sjálfar');
+  assert.match(g, /select=num,credit_of,kredit_a,status,is_credit,samtals/, 'gáttin sækir kreditnóturnar sjálfar, með upphæð');
+});
+
+// ── Óháð rýni 17.11.2026 (2): HLUTAKREDIT er ekki kreditfærsla ──────────────────────────────────────────────
+test('10. kreditStada: aðeins fullt kredit fellir reikning — hluti gildir (R-000911- og R-001025-líkur)', () => {
+  const solur = [{ id: 1, num: 'R-009011', samtals: '8432' }, { id: 2, num: 'R-009025', samtals: '29047' }, { id: 3, num: 'R-009030', samtals: '10000' }, { id: 4, num: 'R-009040', samtals: '0' }];
+  const kn = [{ num: 'R-009012', credit_of: 1, is_credit: true, samtals: '-1426' },          // 1.426 af 8.432
+              { num: 'R-009026', credit_of: 2, is_credit: true, samtals: '-16820' },         // 16.820 af 29.047
+              { num: 'R-009031', credit_of: 3, is_credit: true, samtals: '-6000' },          // tvær nótur = full upphæð
+              { num: 'R-009032', kredit_a: 'R-009030', is_credit: true, samtals: '-4000' },
+              { num: 'R-009041', credit_of: 4, is_credit: true, samtals: '-8410' }];         // yfirkredit á 0-reikning
+  assert.deepStrictEqual(RS.kreditMap(kn, solur), { 'R-009030': 'R-009031, R-009032', 'R-009040': 'R-009041' });
+  const st = RS.kreditStada(kn, solur);
+  assert.strictEqual(st['R-009011'].full, false); assert.strictEqual(st['R-009011'].kreditad, 1426);
+  assert.strictEqual(st['R-009025'].full, false); assert.strictEqual(st['R-009025'].kreditad, 16820);
+  assert.strictEqual(st['R-009030'].full, true);
+});
+
+test('11. kúnnavefurinn (gatt.cjs): hlutakreditaður reikningur stendur með athugasemd; fullt kreditaður hverfur', () => {
+  process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://gervi.supabase.co';
+  const G = require('../netlify/functions/gatt.cjs');
+  const rows = [{ id: 1, num: 'R-009011', status: 'final', is_credit: false, samtals: '8432' }, { id: 2, num: 'R-009025', status: 'final', is_credit: false, samtals: '29047' },
+                { id: 3, num: 'R-009030', status: 'final', is_credit: false, samtals: '10000' }];
+  const kn = [{ num: 'R-009012', credit_of: 1, is_credit: true, status: 'final', samtals: '-1426' }, { num: 'R-009026', credit_of: 2, is_credit: true, status: 'final', samtals: '-16820' },
+              { num: 'R-009031', credit_of: 3, is_credit: true, status: 'final', samtals: '-10000' }];
+  const ut = G._kreditSia([{ nr: 'R-009011' }, { nr: 'R-009025' }, { nr: 'R-009030' }], rows, kn);
+  assert.deepStrictEqual(ut.map((i) => i.nr), ['R-009011', 'R-009025']);
+  assert.deepStrictEqual(ut[0].kreditad_ad_hluta, { upphaed: 1426, notur: ['R-009012'] });
+  assert.deepStrictEqual(ut[1].kreditad_ad_hluta, { upphaed: 16820, notur: ['R-009026'] });
+  const portal = fs.readFileSync(path.join(ROT, 'gatt/portal.js'), 'utf8');
+  assert.match(portal, /Kreditað að hluta: /, 'framendinn sýnir kreditið');
+});
+
+test('12. allir sem spyrja um kredit sækja upphæðirnar (annars telst hluti fullt)', () => {
+  const les = (f) => fs.readFileSync(path.join(ROT, f), 'utf8');
+  assert.match(les('js/patches/517-reikningur-solu.js'), /select\('num,credit_of,kredit_a,status,is_credit,samtals'\)/);
+  assert.match(les('js/patches/517-reikningur-solu.js'), /select\('id,num,samtals'\)/);
+  assert.match(les('netlify/functions/afgreidsla.cjs'), /select=num,credit_of,kredit_a,status,is_credit,samtals/);
+  assert.match(les('netlify/functions/afgreidsla.cjs'), /select=id,num,samtals&num=in/);
+  assert.match(les('netlify/functions/gatt.cjs'), /select=id,num,status,is_credit,credit_of,kredit_a,samtals/);
+  for (const t of ['tools/audit-reikningur-solu.cjs', 'tools/endurspilun-reikningur-pdf.cjs']) assert.match(les(t), /credit_of,kredit_a,status,is_credit,samtals/, t);
 });

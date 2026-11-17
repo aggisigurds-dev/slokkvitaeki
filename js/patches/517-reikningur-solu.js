@@ -85,15 +85,42 @@
   }
 
   // kreditnotur: solur-raðir með is_credit (credit_of, kredit_a, num, status). solur: [{id,num}] reikninganna sem spurt er um.
-  function kreditMap(kreditnotur, solur) {
-    var numById = {};
-    (Array.isArray(solur) ? solur : []).forEach(function (s) { if (s && s.id != null) numById[String(s.id)] = String(s.num || ''); });
-    var ut = {};
+  // Óháð rýni 17.11.2026 (2): HLUTAKREDIT er ekki kreditfærsla. Reikningur telst kreditfærður AÐEINS þegar kreditnótur
+  // hans ná yfir alla upphæðina (±2 kr). Mælt: af 57 kreditnótum voru 5 að hluta — t.d. R-000911 (8.432 kr, kreditað 1.426)
+  // og R-001025 (29.047, kreditað 16.820) hurfu af kúnnavefnum og töldust 0 kr á árspjaldinu. Hlutakreditaður reikningur
+  // gildir og er sýndur með athugasemd um kreditið.
+  // kreditStada(kreditnotur, solur) → { 'R-…': { notur:['R-k',…], kreditad: kr, upphaed: kr|null, full: bool } }
+  //   solur: reikningarnir sem spurt er um ({id, num, samtals}); kreditnotur: {num, credit_of, kredit_a, status, is_credit, samtals}.
+  //   Vanti upphæð reikningsins (samtals) telst kreditið fullt — gamla hegðunin; allir kallarar sækja samtals (prófað).
+  function kreditStada(kreditnotur, solur) {
+    var numById = {}, upphById = {};
+    (Array.isArray(solur) ? solur : []).forEach(function (s) {
+      if (!s || !s.num) return;
+      if (s.id != null) numById[String(s.id)] = String(s.num);
+      upphById[String(s.num)] = (s.samtals == null || s.samtals === '') ? null : Number(s.samtals);
+    });
+    var ut = {}, sed = {};
     (Array.isArray(kreditnotur) ? kreditnotur : []).forEach(function (k) {
       if (!k || k.status === 'void' || (k.is_credit === false)) return;
+      var knr = String(k.num || 'kreditreikningur');
       var a = (k.credit_of != null && numById[String(k.credit_of)]) || String(k.kredit_a || '');
-      if (RNUM.test(a) && !ut[a]) ut[a] = String(k.num || 'kreditreikningur');
+      if (!RNUM.test(a) || sed[a + '|' + knr]) return;
+      sed[a + '|' + knr] = 1;
+      var e = ut[a] || (ut[a] = { notur: [], kreditad: 0, upphaed: (a in upphById) ? upphById[a] : null, full: false, upphaedOthekkt: false });
+      e.notur.push(knr);
+      if (k.samtals == null || k.samtals === '') e.upphaedOthekkt = true; else e.kreditad += Math.abs(Number(k.samtals) || 0);
     });
+    Object.keys(ut).forEach(function (a) {
+      var e = ut[a];
+      e.full = (e.upphaed == null || e.upphaedOthekkt) ? true : (e.upphaed <= 0 || e.kreditad >= e.upphaed - 2);
+      delete e.upphaedOthekkt;
+    });
+    return ut;
+  }
+  // Aðeins FULLT kreditfærðir reikningar: { 'R-…': 'R-k[, R-k2]' }.
+  function kreditMap(kreditnotur, solur) {
+    var st = kreditStada(kreditnotur, solur), ut = {};
+    Object.keys(st).forEach(function (a) { if (st[a].full) ut[a] = st[a].notur.join(', '); });
     return ut;
   }
 
@@ -131,20 +158,21 @@
   }
 
   // Vafri: sækir kreditstöðu reikninganna nums (Supabase-biðlari sb). Skilar { 'R-…': 'R-kredit' }. Villa → {} (ekkert merkt).
-  async function saekjaKredit(sb, nums) {
+  // opts.stada: skila kreditStada (full + hluti) í stað kreditMap (aðeins fullt).
+  async function saekjaKredit(sb, nums, opts) {
     var n = (Array.isArray(nums) ? nums : []).map(String).filter(function (x) { return RNUM.test(x); });
     n = n.filter(function (x, i) { return n.indexOf(x) === i; });
     if (!sb || !n.length) return {};
     try {
-      var s = await sb.from('solur').select('id,num').in('num', n);
+      var s = await sb.from('solur').select('id,num,samtals').in('num', n);
       var solur = (s && s.data) || [];
       var ids = solur.map(function (x) { return x.id; });
-      var qs = [sb.from('solur').select('num,credit_of,kredit_a,status,is_credit').eq('is_credit', true).in('kredit_a', n)];
-      if (ids.length) qs.push(sb.from('solur').select('num,credit_of,kredit_a,status,is_credit').eq('is_credit', true).in('credit_of', ids));
+      var qs = [sb.from('solur').select('num,credit_of,kredit_a,status,is_credit,samtals').eq('is_credit', true).in('kredit_a', n)];
+      if (ids.length) qs.push(sb.from('solur').select('num,credit_of,kredit_a,status,is_credit,samtals').eq('is_credit', true).in('credit_of', ids));
       var rr = await Promise.all(qs);
       var kn = [];
       rr.forEach(function (r) { ((r && r.data) || []).forEach(function (x) { kn.push(x); }); });
-      return kreditMap(kn, solur);
+      return (opts && opts.stada) ? kreditStada(kn, solur) : kreditMap(kn, solur);
     } catch (_) { return {}; }
   }
 
@@ -170,7 +198,7 @@
     } finally { setTimeout(function () { delete _iGangi[saleId]; }, 3000); }
   }
 
-  var api = { lysa: lysa, rnumSama: rnumSama, velja: velja, bera: bera, urelt: urelt, kreditMap: kreditMap, saekjaKredit: saekjaKredit, ktTolur: ktTolur, nafnNorm: nafnNorm, eftirBreytingu: eftirBreytingu };
+  var api = { lysa: lysa, rnumSama: rnumSama, velja: velja, bera: bera, urelt: urelt, kreditMap: kreditMap, kreditStada: kreditStada, saekjaKredit: saekjaKredit, ktTolur: ktTolur, nafnNorm: nafnNorm, eftirBreytingu: eftirBreytingu };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root && !root.ReikningurSolu) {
     root.ReikningurSolu = api;

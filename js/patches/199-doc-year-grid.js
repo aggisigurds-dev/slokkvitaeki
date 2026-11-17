@@ -577,6 +577,11 @@
     var html='<span class="sk-doc inv kredit" title="'+esc(t)+'">'+inner+' <b>· kreditfært ('+esc(kredit)+')</b></span>';
     return isAtt ? attWrap(html, idWrap) : docWrapFc(html, idWrap);
   }
+  function hlutiMerki(x){
+    var h=x && x._kreditHluti; if(!h) return '';
+    var t='Kreditað að hluta: '+fmtKrLoc(h.kreditad)+' kr af '+(h.upphaed!=null?fmtKrLoc(h.upphaed)+' kr':'?')+' ('+h.notur.join(', ')+') — reikningurinn gildir fyrir mismuninn.';
+    return '<span class="sk-doc stolpi s-kredit" title="'+esc(t)+'">kreditað að hluta −'+esc(fmtKrLoc(h.kreditad))+' kr</span>';
+  }
   function invDocChip(d, srcByNum){
     var u=docUrl(d); var lab=invLabel(d.invoice_number);
     if(d && d._kredit){
@@ -599,7 +604,7 @@
           : ('bakfyllt/endurgert eintak: ' + String(d.found_by||''));
         return docWrapFc(
           '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikninginn úr Sölu — Kröfuyfirlits-eintakið gildir">'+_ico+' '+esc(lab)+'</button>' +
-          '<span class="sk-doc inv miss" title="⚠ '+esc(_why)+' — sölu-reikningurinn er rétthærri. Smelltu á ✕ til að fjarlægja skráninguna.">⚠</span>',
+          '<span class="sk-doc inv miss" title="⚠ '+esc(_why)+' — sölu-reikningurinn er rétthærri. Smelltu á ✕ til að fjarlægja skráninguna.">⚠</span>'+hlutiMerki(d),
           d.id);
       }
     }
@@ -616,7 +621,7 @@
     } else {
       chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">'+_ico+' '+esc(lab)+'</span>';
     }
-    chip += stolpiMerki(d);
+    chip += stolpiMerki(d) + hlutiMerki(d);
     return docWrapFc(chip, d.id);
   }
   // 2026-09-11 (Agnar): reikningar úr Stólpa (tímabil fyrri eigenda) bera stöðu úr Stólpa-bókinni og
@@ -628,7 +633,8 @@
     return '<span class="sk-doc stolpi s-'+esc(st)+'" title="'+esc(d.stolpi_skyring||'Stólpi')+'">'+txt+'</span>';
   }
   function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
-  function invAttChip(a, kredit){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i);
+  function invAttChip(a, kredit, hluti){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i);
+    if(hluti && !kredit) return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>'+hlutiMerki({_kreditHluti:hluti}), a.id);
     if(kredit) return kreditChip('<button type="button" class="sk-doc-in" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'" style="all:unset;cursor:pointer;text-decoration:line-through">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', kredit, a.id, true);
     return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
@@ -785,12 +791,13 @@
   async function openInvAnnad(num, coId, d){
     var sb=SB(), rows=[];
     try{
-      var r=await sb.from('customer_documents').select('id,invoice_number,storage_path,drive_file_id,amount,doc_date,year,notes,stolpi_stada,stolpi_skyring,vidskiptategund').eq('invoice_number', num);
+      var r=await sb.from('customer_documents').select('id,invoice_number,storage_path,drive_file_id,amount,doc_date,year,notes,stolpi_stada,stolpi_skyring,vidskiptategund,is_duplicate').eq('invoice_number', num);
       rows=(r&&r.data)||[];
     }catch(_){}
-    var medPdf=rows.filter(function(x){ return !!docUrl(x); })[0];
+    // Rýni 17.11: frumrit (ekki is_duplicate) gengur fyrir afriti.
+    var medPdf=rows.filter(function(x){ return !!docUrl(x) && !x.is_duplicate; })[0] || rows.filter(function(x){ return !!docUrl(x); })[0];
     if(medPdf){ window.open(docUrl(medPdf), '_blank', 'noopener'); return 'pdf'; }
-    var x=d||rows[0]||null;
+    var x=d||rows.filter(function(r){ return !r.is_duplicate; })[0]||rows[0]||null;
     var stolpi=erStolpaNr(num) || /st[óo]lp/i.test(String((x&&x.notes)||'')) || !!(x&&x.stolpi_stada);
     var bitar=[];
     var _dm=/^(\d{4})-(\d{2})-(\d{2})/.exec(String((x&&x.doc_date)||''));
@@ -1300,13 +1307,17 @@
         var _rn=function(x){ return x.invoice_number ? String(x.invoice_number) : ((String((x._att&&x._att.name)||x.name||'').match(/R-\d{6}/)||[])[0]||''); };
         var _nums=[];
         [invUtByY, invBrByY, invSlkByY].forEach(function(byY){ Object.keys(byY).forEach(function(y){ (byY[y]||[]).forEach(function(x){ var n=_rn(x); if(n) _nums.push(n); }); }); });
-        var _km=await ReikningurSolu.saekjaKredit(SB(), _nums), _kk={};
-        Object.keys(_km).forEach(function(n){ var k=numKey(n); if(k) _kk[k]=_km[n]; });
-        var _kn={}; Object.keys(_km).forEach(function(n){ var k=numKey(_km[n]); if(k) _kn[k]=1; });   // kreditnóturnar sjálfar
+        (docs||[]).forEach(function(d){ if(d && d.doc_type==='reikningur' && d.invoice_number) _nums.push(String(d.invoice_number)); });   // Hreyfingar (líka búðarsala)
+        // Óháð rýni 17.11 (2): aðeins FULLT kredit fellir reikning; hlutakreditaður gildir og fær athugasemd (_kreditHluti).
+        var _ks=await ReikningurSolu.saekjaKredit(SB(), _nums, { stada:true }), _kk={}, _kh={}, _kn={};
+        Object.keys(_ks).forEach(function(n){ var k=numKey(n), e=_ks[n]; if(!k) return;
+          if(e.full) _kk[k]=e.notur.join(', '); else _kh[k]=e;
+          e.notur.forEach(function(kn){ var kk=numKey(kn); if(kk) _kn[kk]=1; }); });   // kreditnóturnar sjálfar
         [invUtByY, invBrByY, invSlkByY].forEach(function(byY){ Object.keys(byY).forEach(function(y){
           // kreditnóta (eða neikvæð upphæð) er ekki reikningur ársins — hún fellur burt eins og (CREDIT)-raðirnar (isVoidInvoiceDoc)
           byY[y]=(byY[y]||[]).filter(function(x){ var k=numKey(_rn(x)); return !(k && _kn[k]) && !(x.amount!=null && Number(x.amount)<0); });
-          byY[y].forEach(function(x){ var k=numKey(_rn(x)); if(k && _kk[k]) x._kredit=_kk[k]; }); }); });
+          byY[y].forEach(function(x){ var k=numKey(_rn(x)); if(k && _kk[k]) x._kredit=_kk[k]; else if(k && _kh[k]) x._kreditHluti=_kh[k]; }); }); });
+        (docs||[]).forEach(function(d){ if(!d || d.doc_type!=='reikningur') return; var k=numKey(d.invoice_number); if(k && _kk[k]) d._kredit=_kk[k]; else if(k && _kh[k]) d._kreditHluti=_kh[k]; });
       }
     }catch(_){}
 
@@ -1558,14 +1569,16 @@
             savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
           }
         }
-        // Sama aðgerð og „🔗 Tengja" (savePair), afturkræf: gamla skjalið stendur í notes og matched_by segir hvers vegna.
+        // Óháð rýni 17.11 (2): parið er ALDREI skrifað við það eitt að spjaldið opnist (regla hússins: ekkert tengist
+        // sjálfkrafa). Spjaldið SÝNIR gilda reikninginn og býður „🔗 Festa sem reikning ársins" — notandinn staðfestir og
+        // savePair skráir hver og hvenær (notes) — sama aðgerð og „🔗 Tengja".
+        var tillaga=null;
         if(kreditSkipti && baseId && !svc.ekkiVista && !kreditSkipti._att && kreditSkipti.id!=null){
           var _gamalt=invKredit.find(function(x){ return !x._att && x.id===stored.invoice_doc_id; });
-          savePair(baseId, y, svc.kind, coId, { invoice_doc_id: kreditSkipti.id, solur_id: null, matched_by: 'kredit_skipti',
-            status: (stored.report_doc_id!=null ? 'klarad' : 'vantar_skyrslu'),
-            notes: 'Reikningur parsins (skjal #' + stored.invoice_doc_id + ', ' + ((_gamalt&&_gamalt.invoice_number)||'?') + ') var kreditfærður með ' + ((_gamalt&&_gamalt._kredit)||'?') + ' — ' + new Date().toISOString().slice(0,10) });
+          tillaga={ nyrId: kreditSkipti.id, nyrNr: kreditSkipti.invoice_number||chipInvNum(kreditSkipti), gamallId: stored.invoice_doc_id,
+                    gamallNr: (_gamalt&&_gamalt.invoice_number)||'?', kredit: (_gamalt&&_gamalt._kredit)||'?', repId: stored.report_doc_id };
         }
-        resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr, invKredit:invKredit };
+        resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr, invKredit:invKredit, kreditTillaga:tillaga };
       });
     });
     section._repByY = repByY; section._bruByY = bruByY; section._invByY = invUtByY;
@@ -1595,7 +1608,11 @@
     function svcInvHtml(y, svc, forCompact){
       var r=resolved[y+'|'+svc.kind];
       if(r.inv){
-        var chip = r.inv._att?invAttChip(r.inv._att, r.inv._kredit):invDocChip(r.inv, srcByNum);
+        var chip = r.inv._att?invAttChip(r.inv._att, r.inv._kredit, r.inv._kreditHluti):invDocChip(r.inv, srcByNum);
+        if(r.kreditTillaga && !forCompact){
+          var tl=r.kreditTillaga;
+          chip += '<button type="button" class="sk-link-btn" data-kredit-skipti="'+y+'|'+svc.kind+'" title="'+esc('Parið (skýrsla + reikningur '+y+') bendir enn á '+tl.gamallNr+', sem var kreditfærður með '+tl.kredit+'. Smelltu til að festa '+tl.nyrNr+' sem reikning ársins — skráð hver og hvenær.')+'">🔗 Festa '+esc(tl.nyrNr)+' sem reikning ársins</button>';
+        }
         var st=paydayStatusFor(r.inv);
         var stBadge = st ? ('<span class="sk-svc-pay '+(st.paid?'ok':'due')+'">'+(st.paid?'✓ Greitt':'⚠ Ógreitt')+'</span>') : '';
         var amt = (!forCompact && r.inv.amount!=null) ? ('<span class="sk-svc-amt">'+fmtKrLoc(r.inv.amount)+' kr</span>') : '';
@@ -1767,7 +1784,8 @@
     if(hreyf.length){
       // 17.11.2026 (517): kreditfærður reikningur er sýndur (yfirstrikaður) en ekki talinn með — kreditnótan á sér enga skjalaröð.
       var nKredit = hreyf.filter(function(x){ return x.d && x.d._kredit; }).length;
-      var summa = hreyf.reduce(function(n,x){ return n + ((x.d && x.d._kredit) ? 0 : (x.upph||0)); }, 0);
+      var _hlutiFra = function(x){ var h=x.d && x.d._kreditHluti; return (h && x.upph!=null && h.upphaed!=null && Math.abs(x.upph - h.upphaed) <= 2) ? (h.kreditad||0) : 0; };
+      var summa = hreyf.reduce(function(n,x){ return n + ((x.d && x.d._kredit) ? 0 : (x.upph||0) - _hlutiFra(x)); }, 0);
       var vantarUpph = hreyf.filter(function(x){ return x.upph==null; }).length;
       hreyfHtml =
         '<div class="sk-strip" style="align-items:flex-start">'+
@@ -2030,6 +2048,26 @@
       // year) where the auto-heuristic wouldn't guess confidently. Persists
       // into document_pairs with matched_by='manual' so it's a durable link
       // from here on, same as the auto-resolved case.
+      // Óháð rýni 17.11 (2): parskipti eftir kredit — aðeins við smell og staðfestingu; skráð hver og hvenær.
+      var ksEl=e.target.closest('[data-kredit-skipti]');
+      if(ksEl){
+        e.preventDefault();
+        var kk=ksEl.getAttribute('data-kredit-skipti').split('|'), kr=section._resolved && section._resolved[+kk[0]+'|'+kk[1]];
+        var tl=kr && kr.kreditTillaga; if(!tl) return;
+        var hver=(window.CurrentUser && CurrentUser.name) || (function(){ try{ var pr=window.UserAuth&&UserAuth.getProfile&&UserAuth.getProfile(); return pr&&(pr.nafn||pr.name||pr.email); }catch(_){ return null; } })() || 'óþekktur notandi';
+        var spurn='Festa '+tl.nyrNr+' sem reikning ársins '+kk[0]+'?\n\nParið bendir núna á '+tl.gamallNr+', sem var kreditfærður með '+tl.kredit+'. Gamla tengingin er skráð í athugasemd parsins (afturkræft).';
+        var ja=(window.Confirm && Confirm.show) ? await Confirm.show(spurn, { okText:'Festa', cancelText:'Hætta við' }) : confirm(spurn);
+        if(!ja) return;
+        var bId=null; try{ bId=await baseIdFyrirFelag(coId, (getCompany(coId)||{}).kennitala); }catch(_){}
+        if(!bId){ alert('Fyrirtækið er ekki tengt grunnskrá (customers_base).'); return; }
+        ksEl.disabled=true; ksEl.textContent='Vista…';
+        var okk=await savePair(bId, +kk[0], kk[1], coId, { invoice_doc_id: tl.nyrId, solur_id: null, matched_by: 'kredit_skipti',
+          status: (tl.repId!=null ? 'klarad' : 'vantar_skyrslu'),
+          notes: 'Reikningur parsins (skjal #'+tl.gamallId+', '+tl.gamallNr+') var kreditfærður með '+tl.kredit+'; '+tl.nyrNr+' festur af '+hver+' '+new Date().toISOString().slice(0,16).replace('T',' ') });
+        if(!okk){ alert('Tenging vistaðist ekki — reyndu aftur.'); ksEl.disabled=false; ksEl.textContent='🔗 Festa '+tl.nyrNr+' sem reikning ársins'; return; }
+        render(section, coId);
+        return;
+      }
       var linkSaveEl=e.target.closest('[data-link-save]');
       if(linkSaveEl){
         e.preventDefault();

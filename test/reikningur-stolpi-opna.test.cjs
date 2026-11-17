@@ -78,3 +78,11 @@ test('4. sala sem er til → opnast úr sölunni eins og áður', async () => {
   assert.deepStrictEqual(k.atburdir.yfirlag, ['R-009007']);
   assert.strictEqual(k.atburdir.alert.length, 0);
 });
+
+test('5. frumrit gengur fyrir afriti (is_duplicate) — rýni 17.11', async () => {
+  const k = keyra({ skjol: [
+    { id: 7, invoice_number: 'R-109993', storage_path: 'samningar/afrit.pdf', is_duplicate: true, amount: '1000', year: 2024 },
+    { id: 8, invoice_number: 'R-109993', storage_path: 'samningar/frumrit.pdf', is_duplicate: false, amount: '1000', year: 2024 }] });
+  await k.opna('R-109993', 201);
+  assert.deepStrictEqual(k.atburdir.open, ['https://gervi/storage/samningar/frumrit.pdf']);
+});
