@@ -30,7 +30,17 @@ const cp = require('child_process');
 const ROT = path.resolve(__dirname, '..');
 const GRUNNLINA = 0;
 
-const skrar = cp.execSync('git ls-files', { cwd: ROT, encoding: 'utf8' })
+// 17.11.2026: án try/catch HRUNDI vörðurinn (stack trace, exit 1 sem „villa") þar sem git vantar eða
+// mappan er ekki repó — t.d. afrit af vinnutrénu í verða-sjálfprófi. Sama og audit-utgafumerki: sleppa
+// fallega, stöðva ekkert. Tómur listi úr git (engin rakin skrá) er hins vegar mæling og fer áfram.
+let gitListi;
+try {
+  gitListi = cp.execSync('git ls-files', { cwd: ROT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+} catch (_) {
+  console.log('ℹ️  git svarar ekki hér — vörðurinn sleppir mælingu (ekkert stöðvað).');
+  process.exit(0);
+}
+const skrar = gitListi
   .split('\n')
   .filter((f) => /\.(js|html)$/.test(f))
   .filter((f) => !/(^|\/)(_attic|node_modules|dist)\//.test(f))

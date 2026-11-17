@@ -69,7 +69,11 @@ function fail(msg) { console.log('RED: ' + msg); process.exit(1); }
 // ÁÐUR: eitt `git log --format=%ct -- "<skrá>"` PER tilvísaða skrá → hundruð
 // git-ferla, sem fóru yfir 60s tímaút tools/audit-all.cjs undir álagi. NÚ:
 // EITT `git log` per repó byggir kort skrá→öll commit-tímamerki (nýjast
-// fyrst); allar fyrirspurnir lesa úr kortinu. Sama niðurstaða, millisek. nákvæm.
+// fyrst); allar fyrirspurnir lesa úr kortinu. Mælt 17.11.2026 (--json, bæði repó):
+// gamla 47 mín 43 s undir álagi → nýja 26 s. Á frosnu commiti (e0292338, 224 skrár sem
+// agentar vísa í): NÝJASTA tímamerki eins í 224/224 — það er allt sem úrskurðurinn les
+// (agTs, commitTsI). Fjöldi commita (`skrif` í JSON) er hærri í 24 skrám: commit á
+// hliðargrein sem `git log -- <skrá>` felur með sögu-einföldun telst hér með.
 const _gitCache = new Map();          // cwd → Map(rel → [ts(ms), nýjast fyrst])
 function gitCommitMap(cwd) {
   if (_gitCache.has(cwd)) return _gitCache.get(cwd);

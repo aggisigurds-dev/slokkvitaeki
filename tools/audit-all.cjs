@@ -27,8 +27,37 @@ let audits = fs.readdirSync(dir)
   .sort();
 
 const alls = audits.length;
+// Gagnavörður = les lifandi gögn. Greint á þremur merkjum, ekki aðeins fetch( —
+// 17.11.2026: sjö gagnaverðir láku inn í kóða-netið af því þeir ná í gögn um
+// `node:https` (reikningstexti) eða sameiginlegan hjálpara (`_grunnlina-syn.cjs`:
+// krafa-ekki-send, kredit-an-endurgerdar, skeytamidlun-vantar, skodun-gleymd,
+// taekjatolur-misraemi, verk-an-reiknings). Gagnadrift felldi þá ýtingu kóða sem
+// snerti ekkert af því. Þeir keyra áfram í fullu settinu (CI-gagnaþrepið).
+//   1. fetch(  ·  2. require('https'/'http'/'node:https'/'node:http')
+//   3. require('./_hjalpari.cjs') sem sjálfur er gagnavörður (endurkvæmt).
+// Gervislóðir (`https://x.supabase.co`) í textastreng gera vörð EKKI að gagnaverði.
+const NET_MERKI = /fetch\s*\(|require\(\s*['"](?:node:)?https?['"]\s*\)/;
+const _netMinni = new Map();
+function notarNet(f, leid = new Set()) {
+  if (_netMinni.has(f)) return _netMinni.get(f);
+  if (leid.has(f)) return false;                       // hringtilvísun — ekki net af þeim sökum
+  leid.add(f);
+  let txt = '';
+  try { txt = fs.readFileSync(path.join(dir, f), 'utf8'); } catch (_) { return false; }
+  let svar = NET_MERKI.test(txt);
+  if (!svar) {
+    const re = /require\(\s*['"]\.\/(_[^'"]+?)(?:\.cjs)?['"]\s*\)/g;
+    let m;
+    while (!svar && (m = re.exec(txt))) svar = notarNet(m[1] + '.cjs', leid);
+  }
+  _netMinni.set(f, svar);
+  return svar;
+}
+module.exports = { notarNet };
+if (require.main !== module) return;
+
 if (adeinsStatic) {
-  audits = audits.filter(f => !/fetch\s*\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
+  audits = audits.filter(f => !notarNet(f));
 }
 
 if (!audits.length) { console.log('No audits found.'); process.exit(0); }
@@ -55,12 +84,20 @@ const merkja = (teg, titill, texti) => {
   if (!iCI) return;
   console.log('::' + teg + ' title=' + einLina(titill).replace(/[,:]/g, ' ') + '::' + einLina(texti));
 };
+// 17.11.2026 — TÍMAÚT ER EKKI ÚRSKURÐUR. Undir álagi (margar lotur á sömu vél) féllu 8 af 77 kóða-vörðum á 60 s
+// tímaúti (spawnSync ETIMEDOUT) án þess að nokkuð væri að kóðanum, og stöðvuðu ýtingu. Sjálfheilun: vörður sem tímist
+// út fær EITT endurkall með 3× fresti. Standist hann þá er hann grænn, merktur „eftir tímaút“; tímist hann aftur út
+// er það skráð sem villa (ekki rautt) svo flökt og raunveruleg bilun aðgreinist í sögunni.
+const FRESTUR = +process.env.AUDIT_FRESTUR_MS || 60000;   // umhverfisbreytan aðeins fyrir test/audit-all-static.test.cjs
+const keyraVord = (a, ms) => execFileSync('node', [path.join(dir, a)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: ms });
+const erTimaut = (e) => !!e && (e.code === 'ETIMEDOUT' || /ETIMEDOUT/.test(String(e.message || '')));
 for (const a of audits) {
   process.stdout.write('  ' + a.padEnd(30) + ' ');
   const t0 = Date.now();
   try {
-    const out = execFileSync('node', [path.join(dir, a)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 });
-    const last = out.trim().split('\n').filter(Boolean).pop() || 'ok';
+    let out, endurkall = false;
+    try { out = keyraVord(a, FRESTUR); } catch (e1) { if (!erTimaut(e1)) throw e1; endurkall = true; out = keyraVord(a, FRESTUR * 3); }
+    const last = (out.trim().split('\n').filter(Boolean).pop() || 'ok') + (endurkall ? ' (eftir tímaút — endurkallað)' : '');
     console.log('✅  ' + last.slice(0, 90));
     nidurstodur.push({ audit: a, stada: 'graent', skilabod: last.slice(0, 400), ms: Date.now() - t0 });
   } catch (e) {
@@ -71,7 +108,8 @@ for (const a of audits) {
     merkja('error', a, last);
     nidurstodur.push({
       audit: a,
-      stada: /^RED:/.test(last) || /\bRED\b/.test(last) ? 'rautt' : 'villa',
+      // 17.11.2026: „RAUTT“ (íslenskir verðir) telst líka rautt; aðeins hrun og tímaút eru „villa“.
+      stada: !erTimaut(e) && (/^RED:/.test(last) || /\bRED\b/.test(last) || /RAUTT/.test(last)) ? 'rautt' : 'villa',
       skilabod: last.slice(0, 400), ms: Date.now() - t0
     });
   }

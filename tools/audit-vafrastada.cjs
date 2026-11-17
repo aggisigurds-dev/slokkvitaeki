@@ -94,8 +94,12 @@ const BANN = [
 //     og er eytt við innskráningu; innskráður notandi vistar allt á þjóninn. Tímabundin staða skv. reglunni 15.10.2026.
 //   LS_NN (vefur/site/ritill.js): notandanafnið sem síðast skráði sig inn í ritilinn, til að forfylla innskráningarreitinn
 //     („hver er við vélina"). Ekkert lykilorð og engin innskráning er geymd í vafranum: hún er cookie-ið hub_user frá þjóninum.
+//   adm_drog (js/patches/492-adalmal.js, 17.11.2026 — 91 → 92): ÓSEND drög að texta í reitum Aðalmáls (svar, athugasemd,
+//     beiðni til Claude) svo innsláttur tapist ekki við endurteikningu. Svarið sjálft, ákvörðunin og athugasemdin fara á
+//     þjóninn (/api/afgreidsla) þegar ýtt er á takkann, og drögunum er þá eytt. Sami flokkur og SS_PRUFA hér að ofan.
+//     Lykillinn kom inn 16.11 (8d50e57b) án þess að grunnlínan væri hækkuð — CI-kóðanetið var rautt þaðan í frá.
 // Hækkað af því lyklarnir standast regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 41, ui: 53 }, slokkvitaeki: { ls: 91, ui: 0 } };
+const GRUNNLINA = { brunaholf: { ls: 41, ui: 53 }, slokkvitaeki: { ls: 92, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
@@ -115,11 +119,11 @@ function lyklar(dir) {
   return { ls: ls.size, ui: ui.size, lsSet: ls };
 }
 
-let raudt = 0; const linur = [];
+let raudt = 0, bann = 0; const linur = [];
 for (const b of BANN) {
   const root = b.repo === 'brunaholf' ? BH : HER; const f = path.join(root, b.skra);
   if (!fs.existsSync(f)) continue;
-  if (b.re.test(fs.readFileSync(f, 'utf8'))) { raudt++; linur.push('❌ BANNMYNSTUR ' + b.repo + '/' + b.skra + ': ' + b.hvad); }
+  if (b.re.test(fs.readFileSync(f, 'utf8'))) { raudt++; bann++; linur.push('❌ BANNMYNSTUR ' + b.repo + '/' + b.skra + ': ' + b.hvad); }
 }
 const nidurstodur = [];
 for (const [nafn, dir] of [['brunaholf', BH], ['slokkvitaeki', HER]]) {
@@ -130,5 +134,5 @@ for (const [nafn, dir] of [['brunaholf', BH], ['slokkvitaeki', HER]]) {
   nidurstodur.push(`${nafn} ls ${k.ls}/${g.ls} ui ${k.ui}/${g.ui}${ok ? '' : ' ⬆ NÝR VAFRA-LYKILL — er þetta staða gagna? þá á þjóninn'}`);
 }
 for (const l of linur) console.log(l);
-console.log((raudt ? '❌ RAUTT' : '✅ GRÆNT') + ' vafra-staða: ' + nidurstodur.join(' · ') + ' · bannmynstur ' + (raudt ? 'fundust' : '0'));
+console.log((raudt ? '❌ RAUTT' : '✅ GRÆNT') + ' vafra-staða: ' + nidurstodur.join(' · ') + ' · bannmynstur ' + bann);   // 17.11.2026: sagði „fundust“ líka þegar aðeins grunnlínan fór yfir
 process.exit(raudt ? 1 : 0);
