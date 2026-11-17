@@ -12749,7 +12749,7 @@
    "kaupandi": "Fjársýslan (miðlægur rammasamningur ríkisins)",
    "tegund_kaupanda": "rikid",
    "nr": "RK 14.25",
-   "titill": "Öryggisþjónusta. Flokkur 1 mönnuð öryggisgæsla, flokkur 2 fjargæsla (vöktun öryggiskerfa frá stjórnstöð, að lágmarki brunaboð, innbrot, vatnsleki, gasleki, ásamt tengingu, viðhaldi og prófunum búnaðar), flokkur 3 flutningur verðmæta.",
+   "titill": "Öryggisþjónusta (nær EKKI til eftirlits með slökkvitækjum, aðeins vöktun brunaboða o.fl.). Öryggisþjónusta. Flokkur 1 mönnuð öryggisgæsla, flokkur 2 fjargæsla (vöktun öryggiskerfa frá stjórnstöð, að lágmarki brunaboð, innbrot, vatnsleki, gasleki, ásamt tengingu, viðhaldi og prófunum búnaðar), flokkur 3 flutningur verðmæta.",
    "tegund": "rammasamningur",
    "opnun": "",
    "staerd": "",
@@ -12851,14 +12851,6 @@
    "slod": "https://www.midlaegirsamningar.is/is/oryggisthjonusta"
   },
   {
-   "kaupandi": "Fjársýslan (áður Ríkiskaup) – rammasamningar og miðlægir samningar",
-   "tegund_kaupanda": "rikid",
-   "nidurstada": "ekkert",
-   "hvar_leitad": "midlaegirsamningar.is (heildarlisti allra gildandi miðlægra samninga; RK 14.25, RK 14.01 Þjónusta iðnmeistara og RK 12.02 Rafvörur og lýsing lesin), island.is fyrirhuguð útboð á miðlægum samningum (áætlun 2026, birt 26.03.2026), Niðurstöður útboða, Opnunarskýrslur, TED.",
-   "athugasemd": "Enginn miðlægur rammasamningur ríkisins er um slökkvitæki, eftirlit slökkvitækja, brunaviðvörunarkerfi eða neyðarlýsingu, og ekkert slíkt er á áætlun 2026. Næst kemst RK 14.25 Öryggisþjónusta (vöktun brunaboða), sjá útboðsfærslu. Í gildi eru m.a. RK 18.01 brunatryggingar og RK 14.01 iðnmeistarar, hvorugt nær til eftirlits eða þjónustu við eldvarnarbúnað. Niðurstöðusíða og opnunarskýrslur Fjársýslunnar sýna ekkert á þessu sviði. Ríkisstofnanir kaupa því slökkvitækjaþjónustu hver fyrir sig.",
-   "slod": "https://www.midlaegirsamningar.is/"
-  },
-  {
    "kaupandi": "Fjársýslan (áður Ríkiskaup): opnunarskýrslur og rammasamningar",
    "tegund_kaupanda": "rikid",
    "nidurstada": "ekkert",
@@ -12881,14 +12873,6 @@
    "hvar_leitad": "island.is/s/fsre/opnunarskyrslur og island.is/s/fsre/auglysingar-og-utbod (lesið 17.11.2026), TED (kaupandi FSRE/Ríkiskaup, CPV 35111xxx, 50413200, 31625xxx).",
    "athugasemd": "Opnunarskýrslur og auglýsingar FSRE eru byggingar- og leiguhúsnæðisverk (hjúkrunarheimili, fangelsi, þakendurnýjun, rannsóknardeild o.fl.); ekkert um eftirlit eða þjónustu við slökkvitæki eða brunakerfi. Brunaviðvörun og slökkvibúnaður eru innan stærri byggingarverka þar, ekki sér útboð.",
    "slod": "https://island.is/s/fsre/opnunarskyrslur"
-  },
-  {
-   "kaupandi": "FSRE (Framkvæmdasýslan, Ríkiseignir)",
-   "tegund_kaupanda": "rikid",
-   "nidurstada": "ekkert",
-   "hvar_leitad": "Niðurstöður útboða á island.is (fyrsta síða, frá febrúar 2026).",
-   "athugasemd": "Aðeins byggingarframkvæmdir (hjúkrunarheimili, jarðvinna, leiguhúsnæði). Ekkert um eldvarnaþjónustu. Eldri niðurstöður ekki skoðaðar.",
-   "slod": "https://island.is/s/fsre/nidurstodur-utboda"
   },
   {
    "kaupandi": "Garðabær",
@@ -12953,14 +12937,6 @@
    "hvar_leitad": "Leitarvél, TED.",
    "athugasemd": "Ekkert fannst. Eigin vefur ekki lesinn.",
    "slod": ""
-  },
-  {
-   "kaupandi": "Landspítali",
-   "tegund_kaupanda": "spitali",
-   "nidurstada": "ekkert",
-   "hvar_leitad": "island.is/s/landspitali/innkaupadeild/utbod-verdfyrirspurnir-aaetlun-og-fleira (lesið 17.11.2026), TED (can-standard frá september 2026 lesin, öll Landspítalaútboð), leitarvél.",
-   "athugasemd": "Innkaupadeild auglýsir útboð á utbodsvefur.is og birtir áætlun fyrir lyfjaútboð (ÝL 92–97) en ekkert um eldvarnir. TED haust 2026 sýnir aðeins lyf, tæki, lín, ræstingu, úrgang og lyftur. Útboð Nýs Landspítala (NLSH) eru byggingarverk; nlsh.is/utbodi svaraði 429 og var ekki lesið.",
-   "slod": "https://island.is/s/landspitali/innkaupadeild/utbod-verdfyrirspurnir-aaetlun-og-fleira"
   },
   {
    "kaupandi": "Landspítali / Nýr Landspítali",
@@ -13083,14 +13059,6 @@
    "slod": "https://www.arborg.is/"
   },
   {
-   "kaupandi": "TED (EES-tilkynningar frá Íslandi)",
-   "tegund_kaupanda": "rikid",
-   "nidurstada": "fannst",
-   "hvar_leitad": "TED API (api.ted.europa.eu, opið, án innskráningar): kaupandi = Ísland og CPV 50413200, 35111xxx, 35120000/35121000, 31625xxx, 79711000, 79993xxx, 71317xxx, 50xxxxxx, auk textaleitar (extinguisher, fire alarm, fire protection, emergency lighting) og lesinna can-standard-tilkynninga frá september 2026.",
-   "athugasemd": "Aðeins ÁTVR 628409-2026 (11.09.2026) er EES-útboð ríkisaðila á eftirliti slökkvitækja. Annað á CPV 50413200: ekkert. Reykjavíkurborg á TED-færslur sem líklega eru fyrri umferðirnar (113737-2019 og 226028-2019; 134985-2023 og 280665-2023), ekki rannsakaðar áfram þar sem annar rannsakandi tekur sveitarfélög. Engin forauglýsing eða úrslit á TED fyrir slökkvitækjaþjónustu ríkisins.",
-   "slod": "https://ted.europa.eu/en/notice/628409-2026/html"
-  },
-  {
    "kaupandi": "TED (ted.europa.eu, API)",
    "tegund_kaupanda": "stofnun",
    "nidurstada": "fannst",
@@ -13104,14 +13072,6 @@
    "nidurstada": "ekki_adgengilegt",
    "hvar_leitad": "Forsíða lesin einu sinni (76 opin útboð 17.11.2026) og leitarniðurstöður leitarvélar með lénasíu. robots.txt hefur Disallow: / (öll vélræn skönnun bönnuð), svo engin frekari skönnun.",
    "athugasemd": "Á forsíðu er ÁTVR 03/2026 (lokið) eina útboðið um slökkvitæki; annað er óskylt (dælubíll Slökkviliðs Akureyrar, vátryggingar o.fl.). Lokin og eldri útboð úr skjalasafni sjást ekki vélrænt.",
-   "slod": "https://utbodsvefur.is/"
-  },
-  {
-   "kaupandi": "utbodsvefur.is (sameiginlegur útboðsvefur)",
-   "tegund_kaupanda": "stofnun",
-   "nidurstada": "ekki_adgengilegt",
-   "hvar_leitad": "Forsíða (76 opin útboð 17.11.2026) og sex leitarsíur (slokkvitaeki, slökkvitæki, eldvarnir, eldvarnar, brunaviðvörun, atvr).",
-   "athugasemd": "Ekkert opið útboð um slökkvitæki eða eldvarnaeftirlit (ein niðurstaða á brunaviðvörun er rafkerfi NLSH, byggingarverk). Vefurinn sýnir aðeins opin útboð, svo ÁTVR 3/2026 birtist ekki. robots.txt vefsins segir Disallow: / fyrir alla skriðla; ég sótti forsíðu og leitarsíurnar sex áður en ég las robots.txt og hætti þá. Skjalasafn vefsins er ekki skrapað. Næsta leit ætti að nota TED og vefi kaupenda.",
    "slod": "https://utbodsvefur.is/"
   },
   {

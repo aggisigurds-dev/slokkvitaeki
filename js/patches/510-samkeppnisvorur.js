@@ -648,7 +648,7 @@
       return `<div class="samk-kort">
         <h4>${esc(t.kaupandi)} · nr. ${esc(t.nr)}</h4>
         <div class="samk-sm">${esc(t.titill)}</div>
-        <div class="l"><span class="samk-pill gu">Samningur rennur út ≈ ${esc(dagsRennur(t))}${m != null && m > 0 ? ' · eftir ' + m + ' mán.' : ''}</span></div>
+        <div class="l"><span class="samk-pill gu">${t.stada === 'bid_urslita' ? 'Samningstími á að ljúka' : 'Samningur rennur út'} ≈ ${esc(dagsRennur(t))}${m != null && m > 0 ? ' · eftir ' + m + ' mán.' : ''}</span></div>
         ${t.naesta_utbod ? `<div style="font-size:13px;color:var(--ink2)">${esc(t.naesta_utbod)}</div>` : ''}
         ${t.gildistimi ? `<div class="samk-sm" style="margin-top:4px">Gildistími: ${esc(t.gildistimi)}</div>` : ''}
         <div style="margin-top:8px">${heimildirHtml(t.heimildir)}</div>
@@ -711,7 +711,7 @@
     ];
     const nF = leitRows.filter((l) => l.nidurstada === 'fannst').length;
     const leitHtml = leitRows.length ? `<div class="samk-h">Hvar var leitað</div>
-      <details class="samk-det"${_utLeitOpid ? ' open' : ''}><summary onclick="event.preventDefault();window.Samkeppni._leitToggle()">${leitRows.length} ${leitRows.length === 1 ? 'staður' : 'staðir'} (kaupendur og útboðsgáttir) · ${nF} með útboð um slökkvitæki · ${leitRows.length - nF} án þess (smelltu til að ${_utLeitOpid ? 'fela' : 'sýna'})</summary>
+      <details class="samk-det"${_utLeitOpid ? ' open' : ''}><summary onclick="event.preventDefault();window.Samkeppni._leitToggle()">${leitRows.length} ${leitRows.length === 1 ? 'staður' : 'staðir'} (kaupendur og útboðsgáttir) · ${nF} þar sem útboð fannst · ${leitRows.length - nF} þar sem ekkert fannst eða síða ekki aðgengileg (smelltu til að ${_utLeitOpid ? 'fela' : 'sýna'})</summary>
       <p class="samk-note" style="margin-top:8px">${csvTakki('utbod_leit')} Þar sem ekkert fannst er það skráð líka. „Ekki aðgengilegt“ þýðir að síðan svarar ekki sjálfvirkum fyrirspurnum og þarf að skoða í vafra.</p>
       ${tafla('utbod_leit', cols3, leitRows)}</details>` : '';
 
