@@ -138,25 +138,66 @@ test('VIP-merkið á þjóninum: sama pörun og VIP-vaktin', () => {
   assert.strictEqual(Af._vipFyrir({ to: ['skrifstofa@daemi.example.is'] }, 'tolvupostur', null), null);
 });
 
-test('261: síðan er í PAGES, heimasíða Þjónustuborðs-appsins og fremst í vistuðum lista (insertOnce __tlb1)', () => {
-  const s = fs.readFileSync(path.join(ROT, 'js/patches/261-app-profiles.js'), 'utf8');
-  assert.match(s, /\{ k: 'tilbuin-verk',\s+label: 'Tilbúin verk/);
-  assert.match(s, /manifest: '\/manifest-verkefni\.json', home: 'tilbuin-verk'/);
-  assert.match(s, /defaults: \['tilbuin-verk', 'bord', /);
-  assert.match(s, /insertOnce\('__tlb1',\s+'tilbuin-verk', null, 'verkefni'\)/);
-  assert.match(s, /var ki = afterKey === null \? -2 : arr\.indexOf\(afterKey\);\s+arr\.splice\(ki === -2 \? 0 :/);
-  const a = fs.readFileSync(path.join(ROT, 'tools/audit-app-sidulisti.cjs'), 'utf8');
-  assert.match(a, /__tlb1: 1/);
-  const h = fs.readFileSync(path.join(ROT, 'index.html'), 'utf8');
-  assert.ok(h.indexOf('511-bord-afgreidsla.js') < h.indexOf('515-tilbuin-simi.js'), '515 verður að hlaðast á eftir 511');
+// ── 261: Tilbúin verk aðeins hjá stjórnanda (kóðarýni 17.11.2026) ─────────────────────────────────────────────────────
+// Síðuvalið (app_profiles_json) er SAMEIGINLEGT öllum. Fyrsta útgáfan gerði síðuna að heimasíðu appsins og skrifaði hana
+// fremst í vistaða listann — allir hefðu lent á henni og venjulegur starfsmaður fengið 403. Nú ræður róla innskráðs
+// notanda við keyrslu; ekkert er vistað.
+const S261 = fs.readFileSync(path.join(ROT, 'js/patches/261-app-profiles.js'), 'utf8');
+function bita(upphaf, lok) {
+  const i = S261.indexOf(upphaf); assert.ok(i >= 0, 'fann ekki: ' + upphaf);
+  const j = S261.indexOf(lok, i); assert.ok(j > i, 'fann ekki lok: ' + lok);
+  return S261.slice(i, j);
+}
+function skel(rola, vistad) {
+  const kodi = bita('  var STJORNANDA_SIDUR = ', '  // ── app-mode shell (bottom nav + header)') +
+    bita('  function skelSidur(a) {', '  // 05.10.2026: skelin er byggð við ræsingu');
+  const PAGES = { 'tilbuin-verk': 1, bord: 1, adalmal: 1, samthykkja: 1, 'krofu-yfirlit': 1 };
+  const APP = { key: 'verkefni', home: 'bord', stjornandaFremst: 'tilbuin-verk', defaults: ['bord', 'adalmal'] };
+  const ctx = { window: { __hubNotandiP: Promise.resolve(rola == null ? { authed: false } : { authed: true, user: { rola } }) },
+    pagesFor: () => vistad.slice(), pageByKey: (k) => PAGES[k] ? { k } : null, effectiveApp: () => APP, ACTIVE: null, isStandalone: () => false,
+    _skelSidur: null, _curPage: null, buildShell: () => {}, goPage: () => {} };
+  vm.createContext(ctx);
+  vm.runInContext(kodi + '\nthis.skelSidur = skelSidur; this.leyfdarSidur = leyfdarSidur; this.saekjaRolu = saekjaRolu; this.erStjornandi = erStjornandi;', ctx);
+  return { ctx, APP };
+}
+const VISTAD = ['krofu-yfirlit', 'bord', 'adalmal', 'samthykkja'];
+
+test('stjórnandi (Admin): Tilbúin verk fremst, borðið næst — fókuslásinn leyfir síðuna', async () => {
+  const { ctx, APP } = skel('Admin', VISTAD);
+  ctx.saekjaRolu(); await new Promise((r) => setTimeout(r, 0));
+  assert.strictEqual(ctx.erStjornandi(), true);
+  assert.deepStrictEqual(Array.from(ctx.skelSidur(APP)).slice(0, 3), ['tilbuin-verk', 'bord', 'krofu-yfirlit']);
+  assert.ok(Array.from(ctx.leyfdarSidur('verkefni')).includes('tilbuin-verk'));
 });
 
-test('261 skelSidur: heimasíðan fremst; sé hún tekin út fer varaheimasíðan (borðið) fremst, ekki fyrsta vistaða síðan', () => {
-  const s = fs.readFileSync(path.join(ROT, 'js/patches/261-app-profiles.js'), 'utf8');
-  const i = s.indexOf('function skelSidur(a) {'), j = s.indexOf('\n  }\n', i);
-  const skel = (listi) => new Function('pagesFor', s.slice(i, j + 4) + '; return skelSidur;')(() => listi.slice());
-  const app = { key: 'verkefni', home: 'tilbuin-verk', homeVara: 'bord', defaults: [] };
-  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala', 'bord', 'tilbuin-verk'])(app).slice(0, 2), ['tilbuin-verk', 'krofu-yfirlit']);
-  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala', 'bord'])(app)[0], 'bord');
-  assert.deepStrictEqual(skel(['krofu-yfirlit', 'sala'])(app)[0], 'krofu-yfirlit');
+test('starfsmaður: borðið fremst, enginn Tilbúin-flipi — líka þótt síðan standi í vistaða listanum', async () => {
+  for (const rola of ['Starfsmaður', 'Verkstjóri', '']) {
+    const { ctx, APP } = skel(rola, VISTAD.concat(['tilbuin-verk']));
+    ctx.saekjaRolu(); await new Promise((r) => setTimeout(r, 0));
+    const p = Array.from(ctx.skelSidur(APP));
+    assert.strictEqual(p[0], 'bord', rola);
+    assert.ok(!p.includes('tilbuin-verk'), rola + ': flipinn má ekki sjást');
+    assert.ok(!Array.from(ctx.leyfdarSidur('verkefni')).includes('tilbuin-verk'), rola + ': fókuslásinn má ekki opna síðuna');
+  }
+});
+
+test('óþekkt róla (óinnskráður / staðan ekki komin) = ekki stjórnandi', async () => {
+  const a = skel(null, VISTAD);
+  a.ctx.saekjaRolu(); await new Promise((r) => setTimeout(r, 0));
+  assert.strictEqual(a.ctx.skelSidur(a.APP)[0], 'bord');
+  const b = skel('Admin', VISTAD);   // rólan ekki sótt enn
+  assert.strictEqual(b.ctx.skelSidur(b.APP)[0], 'bord');
+});
+
+test('ekkert í sameiginlega síðuvalinu breytist: heimasíðan er borðið, engin flutningur/innsetning fyrir Tilbúin verk', () => {
+  assert.match(S261, /manifest: '\/manifest-verkefni\.json', home: 'bord',/);
+  assert.match(S261, /stjornandaFremst: 'tilbuin-verk',/);
+  assert.ok(!/defaults: \['tilbuin-verk'/.test(S261), 'Tilbúin verk mega ekki vera í defaults');
+  assert.ok(!/__tlb1/.test(S261), 'enginn flutningur (insertOnce) sem skrifar í app_settings');
+  const pf = bita('  function pagesFor(key) {', '  function saveCfg(');
+  assert.ok(!/tilbuin-verk/.test(pf), 'pagesFor má ekki bæta síðunni í listann');
+  assert.ok(!/__tlb1/.test(fs.readFileSync(path.join(ROT, 'tools/audit-app-sidulisti.cjs'), 'utf8')));
+  assert.match(S261, /if \(_rola === undefined && Date\.now\(\) - _rolaT0 < 3000\) \{ setTimeout\(tick, 120\); return; \}/);
+  const h = fs.readFileSync(path.join(ROT, 'index.html'), 'utf8');
+  assert.ok(h.indexOf('511-bord-afgreidsla.js') < h.indexOf('515-tilbuin-simi.js'), '515 verður að hlaðast á eftir 511');
 });
