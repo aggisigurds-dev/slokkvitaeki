@@ -57,11 +57,15 @@ const LEYFDAR = [
 
 const ROT = path.join(__dirname, '..');                 // …/slokkvitaeki
 const HEIMA = path.join(ROT, '..');                     // …/ (bæði repóin)
+// 17.11.2026 (lota 9): slóðin er reiknuð frá rót HVERS repós, ekki frá …/<repó-nafn>. Áður varð vörðurinn RAUÐUR
+// (10 „nýjar" útfærslur) í hverju git-vinnutré sem heitir ekki „slokkvitaeki" (t.d. C:/projects/slokk-lota9) — slóðin
+// varð „slokkvitaeki/../slokk-lota9/js/…" og passaði ekki við LEYFDAR. Engin útfærsla hafði bæst við.
+const BH = path.join(HEIMA, 'brunaholf');
 const MOPPUR = [
-  ['slokkvitaeki', path.join(ROT, 'js')],
-  ['slokkvitaeki', path.join(ROT, 'gatt')],
-  ['brunaholf', path.join(HEIMA, 'brunaholf', 'js')],
-  ['brunaholf', path.join(HEIMA, 'brunaholf', 'netlify', 'functions')],
+  ['slokkvitaeki', ROT, path.join(ROT, 'js')],
+  ['slokkvitaeki', ROT, path.join(ROT, 'gatt')],
+  ['brunaholf', BH, path.join(BH, 'js')],
+  ['brunaholf', BH, path.join(BH, 'netlify', 'functions')],
 ];
 
 function skrar(dir) {
@@ -76,11 +80,11 @@ function skrar(dir) {
 }
 
 const fundnar = [];
-for (const [repo, dir] of MOPPUR) {
+for (const [repo, rot, dir] of MOPPUR) {
   for (const p of skrar(dir)) {
     const t = fs.readFileSync(p, 'utf8');
     if (t.includes('krafa_sent_at') && t.includes('dk_invoice_id') && t.includes('greitt_med')) {
-      fundnar.push(repo + '/' + path.relative(path.join(HEIMA, repo), p).split(path.sep).join('/'));
+      fundnar.push(repo + '/' + path.relative(rot, p).split(path.sep).join('/'));
     }
   }
 }
