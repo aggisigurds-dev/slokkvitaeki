@@ -181,6 +181,14 @@ input,textarea{font-family:inherit}
 .hbar .hfj{font-family:${MONO};font-size:11.5px;color:#4a5363;min-width:64px}
 .hbar .vbtn.sm{align-self:center}
 .hbar .vbtn.eyd{color:#b42318}
+/* Þröngur Tækja-dálkur (sími, eða tveggja dálka spjald á 980 px síma): heiti + ör á einni línu, rofinn í fullri breidd undir.
+   Gámafyrirspurn, ekki @media — sími Agnars teiknar síðuna í tölvubreidd, svo skjábreiddin segir ekki hvað dálkurinn er breiður. */
+.hopur{container-type:inline-size}
+@container (max-width:600px){
+.vk-r .vk-h.st{order:2;padding-right:10px}.vk-r .vk-h.st .plata{display:none}
+.vk-r .seg{order:3;flex:1 1 100%;margin:0 12px 8px 0}.vk-r .seg button{flex:1;height:36px}
+.hbar .grow{display:none}.hbar .hfj{flex:1 1 auto}.hbar [data-a="nytt-taeki"]{order:1}.hbar .seg{order:2;flex:1 1 auto}.hbar .seg button{flex:1;height:34px}.hbar .eyd{order:3}
+}
 .vk-b{padding:0 12px 10px 16px;display:flex;flex-direction:column;gap:6px;border-top:1px solid rgba(20,24,34,.08)}
 .vk-act{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:6px;padding-top:8px}
 .vbtn{height:36px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:${SILFUR};box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#1f2530;padding:0 10px}
