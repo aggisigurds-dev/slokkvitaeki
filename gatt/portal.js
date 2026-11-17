@@ -318,7 +318,27 @@
   // engin regla lengur, og „Heimaleiga - " sat á 15 af 18. Nú dugar að meirihlutinn beri forskeytið; eigandanafn
   // missir svigann („S&H Invest ehf. (Heimaleiga - Laugavegur 46)" → „S&H Invest ehf.").
   // (skýrslur/reikningar fá sömu meðferð svo síun eftir eign haldist rétt).
+  // 17.11.2026 (lota 10): eign sem ber AÐEINS félagsnafnið („Dæmi ehf" á Dæmigötu 9) sást í eignalistanum
+  // undir nafni félagsins sjálfs — ekki hægt að þekkja hana frá hinum. Þá verður gatan heitið („Dæmigata 9"). Aðeins ef
+  // nafnið er einkvæmt; skýrslur og reikningar fá sama heiti svo síun eftir eign haldist rétt.
+  function gataSemHeiti(o) {
+    var alls = (o.buildings || []).concat(o.eignir_utan || []);
+    if (alls.length < 2) return;
+    var fold = function (x) { return String(x || '').toLowerCase().replace(/[^a-z0-9áðéíóúýþæö]+/g, ' ').trim(); };
+    var felag = fold(o.account && o.account.name);
+    if (!felag) return;
+    alls.forEach(function (b) {
+      if (fold(b.nafn) !== felag || !b.heimilisfang) return;
+      if (alls.filter(function (x) { return x.nafn === b.nafn; }).length !== 1) return;
+      var gata = String(b.heimilisfang).split(',')[0].replace(/\s+\d{3}\s+\D+$/, '').trim();
+      if (!gata) return;
+      var gamalt = b.nafn; b.nafn = gata;
+      (o.reports || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
+      (o.invoices || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
+    });
+  }
   function afskeyta(o) {
+    gataSemHeiti(o);
     var alls = (o.buildings || []).concat(o.eignir_utan || []);
     var nofn = alls.map(function (b) { return b.nafn || ''; });
     var cnt = {}, pre = null, best = 0;
@@ -331,6 +351,7 @@
     (o.reports || []).forEach(function (r) { r.bygging = kl(r.bygging); });
     (o.invoices || []).forEach(function (r) { r.bygging = kl(r.bygging); });
   }
+  var EKKI_SKRAD = 'ekki skráð';   // 17.11.2026: sama orðalag alls staðar þar sem gögn vantar (ekki 0, ekki autt)
   var MONTHS_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
   function lastDocYear(arr) {
     var m = 0;
@@ -383,6 +404,8 @@
     else if (b.i_thjonustu !== false) add('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
     if (sgB) out.push(['Kerfi', sagaMerki(sgB.m)]);
     else if (b.br) add('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+    // 17.11.2026 (lota 10): brunakerfi í þjónustu en engin skoðun skráð → „ekki skráð", ekki autt.
+    if (b.br && !out.some(function (x) { return x[0] === 'Kerfi'; })) out.push(['Kerfi', EKKI_SKRAD]);
     return out;
   }
   // Tvær línur þegar húsið er í báðum þjónustum — slökk og brunakerfi ráða
@@ -396,7 +419,10 @@
       lines.push(lbl + ': ' + (yr ? (month < 10 ? '0' : '') + month + '/' + yr : MONTHS_IS[month - 1]));
     }
     if (b.i_thjonustu !== false) line('Tæki', b.skodun_manudur, lastDocYear(b.ar_slokk) || b.sidasta_ar);
-    if (b.bru_i_thjonustu) line('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+    if (b.bru_i_thjonustu) {
+      var n0 = lines.length; line('Kerfi', b.bru_skodun_manudur, lastDocYear(b.ar_bru));
+      if (lines.length === n0) lines.push('Kerfi: ' + EKKI_SKRAD);   // 17.11.2026: í þjónustu en enginn skoðunarmánuður skráður
+    }
     return lines.join('|');
   }
 
@@ -487,6 +513,7 @@
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
     if (data.account && data.account.name) $('#htag').innerHTML = 'Þjónustuvefur · <b>' + esc(data.account.name) + '</b>';
     renderCards(data.stats);
+    try { renderProfill(data); } catch (e) { var pf = $('#yf-profill'); if (pf) pf.hidden = true; }
     renderYfirlit(data.buildings);
     // 26.10.2026: djúptenging ?eign=<fyrirtaeki.id> úr fyrirtækjasíðu appsins (486) — opnar eignasíðuna beint
     try {
@@ -676,6 +703,55 @@
     }
   }
 
+  // 17.11.2026 (lota 10, Agnar: „gera flottan profile"): félagið í hnotskurn efst á Yfirliti.
+  // AÐEINS gögn sem /api/gatt skilaði fyrir ÞETTA base_id (data.account + data.buildings + reports) — ekkert nýtt sótt,
+  // engir tengiliðir (gáttir geta verið opnar án lykilorðs). Það sem vantar stendur „ekki skráð", aldrei 0.
+  function renderProfill(d) {
+    var box = $('#yf-profill'); if (!box) return;
+    var B = (d && d.buildings) || [], A = (d && d.account) || {};
+    if (!B.length || !A.name) { box.hidden = true; return; }
+    var es = '<span class="pf-es">' + EKKI_SKRAD + '</span>';
+    var sum = function (f) { var n = 0, til = false; B.forEach(function (b) { var x = f(b); if (x != null && x !== '' && !isNaN(+x)) { n += +x; til = true; } }); return til ? n : null; };
+    var tal = function (n, et, ft) { return n == null ? es : '<b>' + n.toLocaleString('is-IS') + '</b> ' + (n === 1 ? et : ft); };
+    var kts = []; B.forEach(function (b) { if (b.greidandi_kt && kts.indexOf(b.greidandi_kt) < 0) kts.push(b.greidandi_kt); });
+    // Rekstrarfélag (dæmi mælt 17.11: 13 kennitölur): haus sýnir kt félagsins SJÁLFS og fjölda félaga, ekki allar kennitölur.
+    var eigin = []; B.forEach(function (b) { if (b.greidandi_kt && b.greidandi === A.name && eigin.indexOf(b.greidandi_kt) < 0) eigin.push(b.greidandi_kt); });
+    var ktTxt = !kts.length ? 'kt. ' + es
+      : kts.length === 1 ? 'kt. ' + esc(kts[0])
+      : (eigin.length === 1 ? 'kt. ' + esc(eigin[0]) + ' · ' : '') + 'rekstrarfélag · ' + kts.length + ' félög';
+    var FLOG = 6, flogur = B.slice(0, FLOG).map(function (b) { return '<span>' + esc(b.nafn || b.heimilisfang || '') + '</span>'; }).join('') +
+      (B.length > FLOG ? '<span>+' + (B.length - FLOG) + '</span>' : '');
+    var slokk = B.filter(function (b) { return b.i_thjonustu !== false; }).length, bru = B.filter(function (b) { return b.br; }).length;
+    // næsta skoðun: fyrsta MM/ÁÁÁÁ í nt sem er ekki liðin
+    var nu = new Date(), nuI = nu.getFullYear() * 12 + nu.getMonth() + 1, naest = null;
+    B.forEach(function (b) {
+      String(b.nt || '').split('|').forEach(function (l) {
+        var m = /^(.+?):\s*(\d{2})\/(\d{4})\s*$/.exec(l.trim()); if (!m) return;
+        var i = +m[3] * 12 + +m[2];
+        if (i >= nuI && (!naest || i < naest.i)) naest = { i: i, txt: m[2] + '/' + m[3], hvad: m[1] === 'Kerfi' ? 'brunakerfi' : 'slökkvitæki', eign: b.nafn };
+      });
+    });
+    var R = (d.reports || []), arR = R.map(function (r) { return +r.ar || 0; }).filter(Boolean);
+    var teikn = sum(function (b) { return Array.isArray(b.teikning) && b.teikning.length ? b.teikning.length : null; });
+    var bgr = B.filter(function (b) { return b.bgr; }).length;
+    var rod = function (lbl, val) { return '<div class="pf-rod"><span class="pf-lbl">' + esc(lbl) + '</span><span class="pf-val">' + val + '</span></div>'; };
+    box.innerHTML =
+      '<div class="pf-haus"><div><div class="pf-yfir">Félagið</div><div class="pf-nafn">' + esc(A.name) + '</div>' +
+        '<div class="pf-kt">' + ktTxt + '</div></div>' +
+        '<div class="pf-eignir">' + flogur + '</div></div>' +
+      '<div class="pf-grid">' +
+        rod('Eignir í þjónustu', tal(B.length, 'eign', 'eignir') + ' · slökkvitæki á ' + slokk + ' · brunakerfi á ' + bru) +
+        rod('Búnaður', tal(sum(function (b) { return b.sl; }), 'slökkvitæki', 'slökkvitæki') + ' · ' + tal(sum(function (b) { return b.slo; }), 'brunaslanga', 'brunaslöngur') +
+          (bru ? ' · ' + (sum(function (b) { return b.bru_ein; }) != null ? tal(sum(function (b) { return b.bru_ein; }), 'brunakerfiseining', 'brunakerfiseiningar') : 'brunakerfiseiningar ' + es) : '') +
+          // samtala úr hluta eignanna má ekki líta út fyrir að vera heildin: nefna eignir með brunakerfi en enga einingatölu
+          (function () { var v = B.filter(function (b) { return b.br && b.bru_ein == null; }); return v.length && v.length < bru ? ' <span class="pf-es">(' + EKKI_SKRAD + ' á ' + v.map(function (b) { return esc(b.nafn || ''); }).join(', ') + ')</span>' : ''; })()) +
+        rod('Næsta skoðun', naest ? '<b>' + esc(naest.txt) + '</b> · ' + esc(naest.hvad) + ' · ' + esc(naest.eign || '') : es) +
+        rod('Skýrslur', R.length ? '<b>' + R.length + '</b> · nýjust ' + Math.max.apply(null, arR.length ? arR : [0]) : es) +
+        rod('Teikningar', teikn != null ? tal(teikn, 'blað', 'blöð') : es) +
+        rod('Búnaðargreining', bgr ? 'á <b>' + bgr + '</b> af ' + B.length + ' eignum' : es) +
+      '</div>';
+    box.hidden = false;
+  }
   function renderCards(stats) {
     $('#cards').innerHTML = (stats || []).map(function (c) {
       return '<div class="sc' + (c.dark ? ' dark' : '') + '">' + icon(c.k) + '<div class="k">' + esc(c.k) + '</div>' +
@@ -1359,6 +1435,9 @@
     var sidast = {}; sidastaSkodunLinur(b).forEach(function (p) { if (!sidast[p[0]]) sidast[p[0]] = p[1]; });
     var nextHtml = ntParts.map(function (line) {
       var kv = line.split(':'); var lbl = kv.shift().trim(), val = kv.join(':').trim();
+      if (val === EKKI_SKRAD && (sidast[lbl] || EKKI_SKRAD) === EKKI_SKRAD) {
+        return '<div><span class="lbl">' + esc(lbl) + ':</span> <b>ekki skráð</b> <span class="dim">— engin skoðun skráð hjá okkur</span></div>';
+      }
       return '<div><span class="lbl">' + esc(lbl) + ':</span> skoðað síðast <b>' + esc(sidast[lbl] || '—') + '</b> <span class="dim">·</span> skoðað næst <b>' + esc(val) + '</b></div>';
     }).join('');
     var yrs = ["'23", "'24", "'25", "'26"];
