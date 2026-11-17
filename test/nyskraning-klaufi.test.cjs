@@ -91,3 +91,19 @@ test('153: röng vartala á kt stöðvuð áður en vistað er', () => {
   const athugun = dlg.indexOf('!ktGild(data.kennitala)'), innsetning = dlg.indexOf(".from('fyrirtaeki').insert(");
   assert.ok(athugun > 0 && athugun < innsetning, 'kt-athugun kemur á undan insert');
 });
+
+// ── 114: „Afgreiðsla án stofnunar" í kassanum ─────────────────────────────
+// Mælt í vafra 17.11.2026: leit að 4201150680 (röng vartala) → „Afgreiðsla án stofnunar — Kennitalan fer á reikninginn" →
+// solur.customer_kt = 420115-0680, engin viðvörun. Eftir lagfæringu: viðvörun og kennitalan fylgir ekki.
+const K114 = fs.readFileSync(path.join(ROT, 'js/patches/114-unified-pos-search.js'), 'utf8');
+test('114: ógild kt fer EKKI á reikning um „Afgreiðsla án stofnunar"', () => {
+  const m = K114.match(/const ktVartalaOk = \(d\) => \{[\s\S]*?\n        \};/);
+  assert.ok(m, 'ktVartalaOk vantar');
+  const ok = vm.runInNewContext('(' + m[0].replace(/^const ktVartalaOk = /, '').replace(/;$/, '') + ')');
+  assert.strictEqual(ok('4201150670'), true);
+  assert.strictEqual(ok('4201150680'), false);
+  assert.match(K114, /const ogildKt = qDigits\.length === 10 && qDigits !== '9999999999' && !ktVartalaOk\(qDigits\);/);
+  assert.match(K114, /const ostofnKt = \(qDigits\.length === 10 && qDigits !== '9999999999' && !ogildKt\) \? qDigits : '';/,
+    'ostofnKt má ekki taka við ógildri kennitölu');
+  assert.match(K114, /_ups-ogild-kt[\s\S]{0,300}er ekki gild kennitala/, 'viðvörun sýnd');
+});
