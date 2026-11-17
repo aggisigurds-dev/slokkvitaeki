@@ -82,7 +82,16 @@
   const APP = 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)';
   const RAMMI = 'inset 0 0 0 1px #d8dee9';
   const FOKUS = 'outline:3px solid rgba(255,103,2,.45);outline-offset:0;box-shadow:inset 0 0 0 1px #ff6702';
-  const LEITARTAKN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6882' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E\")";
+  /* Tókenar úr hönnunarkerfinu Brunahólf V2 (artifact AkDa6kxwo6S8kzgUgCmUGZ, project/tokens.json, útgáfa 2).
+   * Skrifaðir hér með nafni kerfisins svo næsta lota sjái strax hvaðan gildið kemur og reki ekki frá því.
+   * Agnar 17.11.2026: „uppfæra designsystemið svo þetta haldist yfir það sem skráð er". */
+  const OK_TINT = '#ddfada', OK_INK = '#166534';      // ok-tint / ok-ink
+  const WARN_TINT = '#feecd2', WARN_INK = '#9a3412';  // warn-tint / warn-ink
+  const BAD_TINT = '#fee2de', BAD_INK = '#b91c1c';    // bad-tint / bad-ink
+  const DUE_TINT = '#fde5a4', DUE_INK = '#7a4b00';    // due-tint / due-ink — „í 69 daga"
+  const LINE_SOFT = '#e7ecf3', ROW_HOVER = '#f6f9fd'; // line-soft / row-hover
+  const INK = '#101e43', INK2 = '#2e4064', MUTED = '#5a6882';
+  const LEITARTAKN ="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6882' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E\")";
 
   function css() {
     return [
@@ -352,10 +361,28 @@
       H + ' .mmb-bar--lagt i{background:linear-gradient(90deg,#991b1b,#b91c1c)}',
       H + ' .mmb-versnad{color:#b91c1c}',
       H + ' .mmb-tr{border-radius:6px;border:1px dashed #c3ccd9;color:#5a6882;font-family:var(--body);letter-spacing:.06em}',
-      H + ' .mmb-tr--rett{border:1px solid #a7e8c5;color:#166534;background:#ecfdf3}',
-      H + ' .mmb-tr--rangt{border:1px solid #f5c2c0;color:#b91c1c;background:#fef2f2}',
-      H + ' .mmb-tr--oljost{border:1px solid #f8b98c;color:#c2410c;background:#ffeee0}',
+      H + ' .mmb-tr--rett{border:1px solid #bdeab6;color:' + OK_INK + ';background:' + OK_TINT + '}',
+      H + ' .mmb-tr--rangt{border:1px solid #f6c9c2;color:' + BAD_INK + ';background:' + BAD_TINT + '}',
+      H + ' .mmb-tr--oljost{border:1px solid #f6d3a6;color:' + WARN_INK + ';background:' + WARN_TINT + '}',
       H + ' .mmb-mn--lokid{color:#5a6882}',
+
+      /* Listalínurnar (Forgangsmál 28 og aðrir listar sem nota lrowHtml) á mál hönnunarkerfisins:
+       * TaskList-línan er heiti í body-strong með eign/eiganda í small undir, og tíminn hægra megin.
+       * Aldurinn „12D" var ber mono-tala; hann verður due-pillan sem kerfið á fyrir tíma („í 69 daga"),
+       * og kaflafyrirsagnirnar verða label (11px 600 0.08em). Stöðuorðið sjálft stendur í fyrirsögn
+       * kaflans („Þarf að bregðast við" / „Ný skilaboð"), svo liturinn stendur aldrei einn. */
+      H + ' .sect{padding:12px 16px 6px;font:600 11px/1.2 var(--body);letter-spacing:.08em;color:' + INK2 + '}',
+      H + ' .lrow{padding:12px 16px;border-top-color:' + LINE_SOFT + '}',
+      H + ' .lrow:hover{background:' + ROW_HOVER + '}',
+      H + ' .lrow b{font:600 14px/1.4 var(--body);color:' + INK + '}',
+      H + ' .lrow .s{font:400 12.5px/1.4 var(--body);color:' + MUTED + '}',
+      H + ' .pprev{font:400 12.5px/1.45 var(--body);color:' + INK2 + ';margin-top:5px}',
+      H + ' .age{display:inline-block;padding:2px 9px;border-radius:999px;font:600 11px/1.3 var(--body);' +
+        'letter-spacing:0;background:' + DUE_TINT + ';color:' + DUE_INK + '}',
+      H + ' .age.warm{background:' + WARN_TINT + ';color:' + WARN_INK + '}',
+      H + ' .age.hot{background:' + BAD_TINT + ';color:' + BAD_INK + '}',
+      H + ' .more{padding:10px 16px 14px;font:400 12.5px var(--body);color:' + MUTED + '}',
+      H + ' .sectm{font:400 12.5px var(--body);color:' + MUTED + '}',
 
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',
