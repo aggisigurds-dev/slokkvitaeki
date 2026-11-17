@@ -32,15 +32,32 @@
   function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function fmtKr(n) { if (!n&&n!==0) return '—'; var s=Math.round(n).toString(),r=[];while(s.length>3){r.unshift(s.slice(-3));s=s.slice(0,-3);}r.unshift(s);return r.join('.')+' kr'; }
 
+  // 17.11.2026 (verk 87c972cf): Brunastál C bannar emoji — táknin eru inline SVG (currentColor, stroke).
+  const IKONAR = {
+    eldur: '<path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3-1-3 0-6 0-8z"/>',
+    bjalla: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    lykill: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+    pera: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+    stjarna: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3l-5.5 2.9 1-6.2L3 9.6l6.2-.9z"/>',
+    nidur: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/>',
+    tengill: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    penni: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/>',
+    rusl: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    kassi: '<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>',
+    tafla: '<path d="M3 5h18v14H3zM3 10h18M3 15h18M9 5v14"/>',
+    spjold: '<path d="M3 4h8v7H3zM13 4h8v7h-8zM3 13h8v7H3zM13 13h8v7h-8z"/>'
+  };
+  const ik = (n, st, fyllt) => `<svg class="stk-ik" viewBox="0 0 24 24" width="${st || 14}" height="${st || 14}" fill="${fyllt ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${IKONAR[n] || ''}</svg>`;
+
   const NYJAR = 'Nýjar vörur';   // 12.10.2026: hugmyndir að vörum sem við erum að pæla í að selja — raðir í `birgdir` með þessum flokki
   const CATEGORIES = ['almennt','þrýstimælir','þrýstihnöttur','kragi','duft','gas','froða','vatn','skrúfur','slöngur','annað', NYJAR];
   // Hamirnir efst (Agnar 12.10.2026: „flest sem er í birgðum eru söluvörur fyrir slökkvitæki. nokkur efst eru fyrir
   // brunakerfi. en fínt að geta síðan skipt í fleiri hama… Slökkvitækjabirgðir, brunakerfis, Verkstæði, Nýjar vörur").
   const HAMIR = [
-    ['slokkvitaeki', '🧯 Slökkvitæki', 'Söluvörur úr Vörum og þjónustu — birgðastaðan er sú sama og þar og á Sölu.'],
-    ['brunakerfi',   '🚨 Brunakerfi',  'Brunakerfisbúnaður — seldur gegnum Brunakerfis skoðun, ekki á Sölu.'],
-    ['verkstaedi',   '🔧 Verkstæði',   'Efni og varahlutir verkstæðisins sem eru ekki seldir sem vörur.'],
-    ['nyjar',        '💡 Nýjar vörur', 'Vörur sem við erum að pæla í að fara að selja — nafn, tengill birgja, verð og minnispunktar. ★ = panta prufu.']
+    ['slokkvitaeki', 'Slökkvitæki', 'Söluvörur úr Vörum og þjónustu — birgðastaðan er sú sama og þar og á Sölu.', 'eldur'],
+    ['brunakerfi',   'Brunakerfi',  'Brunakerfisbúnaður — seldur gegnum Brunakerfis skoðun, ekki á Sölu.', 'bjalla'],
+    ['verkstaedi',   'Verkstæði',   'Efni og varahlutir verkstæðisins sem eru ekki seldir sem vörur.', 'lykill'],
+    ['nyjar',        'Nýjar vörur', 'Vörur sem við erum að pæla í að fara að selja — nafn, tengill birgja, verð og minnispunktar. Stjarnan = panta prufu.', 'pera']
   ];
   // Fimmti glugginn „★ Þarf að panta" (Agnar 12.10): allt stjörnumerkt úr öllum hömum á einum stað.
   const PANTA_HAM = 'panta';
@@ -218,7 +235,7 @@
     if (!SB) {
       _bidDB = (_bidDB || 0) + 1;
       if (_bidDB <= 25) { el.innerHTML = '<div class="loading-state">Tengist gagnagrunni…</div>'; setTimeout(load, 300); return; }
-      el.innerHTML = '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">Gagngrunnur ekki tengdur</div><button class="btn btn-primary btn-sm" onclick="Stock.load()" style="margin-top:10px">Reyna aftur</button></div>'; _bidDB = 0; return;
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">' + ik('kassi', 34) + '</div><div class="es-title">Gagngrunnur ekki tengdur</div><button class="btn btn-primary btn-sm" onclick="Stock.load()" style="margin-top:10px">Reyna aftur</button></div>'; _bidDB = 0; return;
     }
     _bidDB = 0;
     // Í Innflutningi heldur flipinn sínu (507 uppfærir sig sjálfur eftir færslu) — enginn hleðsluskjár yfir hann.
@@ -226,7 +243,7 @@
     const { data, error } = await SB.from('birgdir').select('*').order('nafn');
     if (error && error.code === '42P01') {
       el.innerHTML = `<div style="padding:32px;max-width:560px">
-        <div style="font-size:16px;font-weight:700;margin-bottom:10px">📦 Birgðir — uppsetning vantar</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:10px">Birgðir — uppsetning vantar</div>
         <p style="font-size:13px;color:var(--ink3)">Búðu til töfluna í Supabase SQL Editor:</p>
         <pre style="background:var(--bg2);border-radius:8px;padding:14px;font-size:11px;overflow-x:auto">CREATE TABLE IF NOT EXISTS birgdir (
   id BIGSERIAL PRIMARY KEY, nafn TEXT NOT NULL,
@@ -281,7 +298,7 @@
   // ── 12.10.2026 (Agnar: „bæta við stjörnu sem lætur þetta birtast efst fyrir vörur sem við þurfum að panta" og „vill
   // geta sett inn linka líka"): ★ pöntunarmerki og 🔗 slóð birgja á hverja vöru — hvort sem hún býr í `vorur` eða
   // `birgdir`. Geymt í app_settings.birgdir_meta[k] = { panta, slod } svo það sé samstillt milli véla (sama leið og 418/419).
-  const PANTA = '★ Þarf að panta';
+  const PANTA = 'Þarf að panta';
   const _metaLocal = {};
   const metaAll = () => { try { return (window.AppSettings && AppSettings.path && AppSettings.path('birgdir_meta')) || {}; } catch (_) { return {}; } };
   const meta = k => Object.assign({}, metaAll()[k] || {}, _metaLocal[k] || {});
@@ -297,7 +314,7 @@
     const n = !meta(k).panta;
     _metaLocal[k] = Object.assign({}, _metaLocal[k] || {}, { panta: n });
     render();
-    if (await vistaMeta(k, { panta: n })) Toast.show(n ? '★ Sett efst — þarf að panta' : 'Tekið af pöntunarlista');
+    if (await vistaMeta(k, { panta: n })) Toast.show(n ? 'Sett efst — þarf að panta' : 'Tekið af pöntunarlista');
     render();
   }
   async function setjaSlod(k) {
@@ -306,7 +323,7 @@
     if (s == null) return;
     const v = s.trim();
     if (v && !/^https?:\/\//i.test(v)) { Toast.show('Slóðin þarf að byrja á http:// eða https://'); return; }
-    if (await vistaMeta(k, { slod: v })) Toast.show(v ? '🔗 Tengill vistaður' : 'Tengill fjarlægður');
+    if (await vistaMeta(k, { slod: v })) Toast.show(v ? 'Tengill vistaður' : 'Tengill fjarlægður');
     render();
   }
   const hostur = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return 'tengill'; } };
@@ -357,11 +374,11 @@
     const flis = (lbl, val, n, virk, fall) => `<button type="button" class="btn btn-sm ${virk ? 'btn-primary' : 'btn-outline'}" onclick="window.Stock.${fall}(${JSON.stringify(val).replace(/"/g, '&quot;')})" style="white-space:nowrap">${esc(lbl)}${n == null ? '' : ` <span style="opacity:.65;font-weight:600">${n}</span>`}</button>`;
     // Hamarnir: fjöldi í hverjum + fjöldi stjörnumerktra (þarf að panta) í hverjum.
     // Með leit sýna flipateljararnir fjölda LEITARNIÐURSTAÐNA í hverjum ham og enginn flipi er „á" (leitað er alls staðar).
-    const hamFlis = ([v, l]) => { const iV = _items.filter(i => passarHam(i, v) && passarLeit(i)); const n = iV.length; const p = iV.filter(erPanta).length;
-      return `<button type="button" class="stk-ham${_hamur === v && !q ? ' on' : ''}" onclick="window.Stock._setHam('${v}')" title="${q ? n + ' niðurstöður hér' : ''}">${esc(l)} <span class="stk-ham-n">${n}</span>${p ? `<span class="stk-ham-p" title="${p} þarf að panta">★ ${p}</span>` : ''}</button>`; };
+    const hamFlis = ([v, l, , ic]) => { const iV = _items.filter(i => passarHam(i, v) && passarLeit(i)); const n = iV.length; const p = iV.filter(erPanta).length;
+      return `<button type="button" class="stk-ham${_hamur === v && !q ? ' on' : ''}" onclick="window.Stock._setHam('${v}')" title="${q ? n + ' niðurstöður hér' : ''}">${ic ? ik(ic, 14) : ''}${esc(l)} <span class="stk-ham-n">${n}</span>${p ? `<span class="stk-ham-p" title="${p} þarf að panta">${ik('stjarna', 10, true)} ${p}</span>` : ''}</button>`; };
     const nyr = _hamur === 'nyjar' ? '+ Ný hugmynd' : _hamur === 'verkstaedi' ? '+ Ný vara' : '+ Ný söluvara';
     const nPantaLeit = q ? _items.filter(i => erPanta(i) && passarLeit(i)).length : nPanta;
-    const pantaFlis = `<button type="button" class="stk-ham stk-ham-panta${iPanta && !q ? ' on' : ''}" onclick="window.Stock._setHam('${PANTA_HAM}')" title="Allt stjörnumerkt úr öllum hömum">★ Þarf að panta <span class="stk-ham-n">${nPantaLeit}</span></button>`;
+    const pantaFlis = `<button type="button" class="stk-ham stk-ham-panta${iPanta && !q ? ' on' : ''}" onclick="window.Stock._setHam('${PANTA_HAM}')" title="Allt stjörnumerkt úr öllum hömum">${ik('stjarna', 13, true)}Þarf að panta <span class="stk-ham-n">${nPantaLeit}</span></button>`;
 
     // Innflutningur (507): flipinn á sinn eigin hnút, #innf-rot. Hér er aðeins hausinn teiknaður; hnúturinn lifir
     // endurteikningar 36 (leit, Stock.load eftir færslu) svo reitir, fókus og skrun innflutningsins haldast.
@@ -374,7 +391,7 @@
     const samkFlis = `<button type="button" class="stk-ham${iSamk ? ' on' : ''}" onclick="window.Stock._setHam('${SAMK_HAM}')" title="Verð samkeppnisaðila, ódýrara innkaup, birgjar og verðin sem við höfum borgað">Samkeppnisaðilar – Vörur <span class="stk-ham-n" id="samk-ham-n">${nSamk == null ? '' : nSamk}</span></button>`;
     const toppur = takkar => `<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-        <div style="font-size:19px;font-weight:600">📦 Birgðir</div>
+        <div style="font-size:19px;font-weight:600">Birgðir</div>
         <div class="stk-hamar">${HAMIR.map(hamFlis).join('')}</div>
         <div class="stk-hamar stk-hamar-panta">${pantaFlis}</div>
         <div class="stk-hamar">${innflFlis}</div>
@@ -417,11 +434,17 @@
       return;
     }
 
-    let html = toppur(`<div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">⬇ CSV</button>
+    stilarC();
+    const syn = synin();
+    let html = toppur(`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="stk-rofi" role="group" aria-label="Sýn listans">
+          <button type="button" aria-pressed="${syn === 'tafla'}" onclick="window.Stock._setSyn('tafla')" title="Tafla — allir dálkar, verð breytt beint">${ik('tafla', 14)}Tafla</button>
+          <button type="button" aria-pressed="${syn === 'spjold'}" onclick="window.Stock._setSyn('spjold')" title="Spjöld — ein vara á spjaldi, hentar síma">${ik('spjold', 14)}Spjöld</button>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">${ik('nidur', 14)} CSV</button>
         ${iPanta ? '' : `<button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>`}
       </div>`) + `
-    <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `🔍 Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#dc2626;font-weight:600">${lowCount} undir lágmarki ⚠</span>` : ''}${nPanta ? ` &middot; <span style="color:#b45309;font-weight:600">★ ${nPanta} þarf að panta</span>` : ''}</div>
+    <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#b42318;font-weight:600">${lowCount} undir lágmarki</span>` : ''}${nPanta ? ` &middot; <span style="color:#8a5a00;font-weight:600">${ik('stjarna', 11, true)} ${nPanta} þarf að panta</span>` : ''}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
       ${leitarreitur}
       <div style="display:flex;gap:6px;flex-wrap:wrap">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
@@ -432,22 +455,25 @@
     </div>` : ''}`;
 
     if (!items.length) {
-      const tomt = iPanta ? 'Ekkert stjörnumerkt — ★ á línu setur vöru hingað' : _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
-      html += '<div class="empty-state"><div class="es-icon">📦</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : tomt) + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á „' + esc(nyr) + '" til að bæta við') + '</div></div>';
+      const tomt = iPanta ? 'Ekkert stjörnumerkt — stjarnan á línu setur vöru hingað' : _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
+      html += '<div class="empty-state"><div class="es-icon">' + ik('kassi', 34) + '</div><div class="es-title">' + (q || _catFilter || _stada ? 'Ekkert fannst' : tomt) + '</div><div class="es-sub">' + (q || _catFilter || _stada ? 'Breyttu leitinni eða síunni' : 'Smelltu á „' + esc(nyr) + '" til að bæta við') + '</div></div>';
+    } else if (syn === 'spjold') {
+      // 17.11.2026 (verk a65d87c2): spjaldasýn — sami hópurinn og taflan, ein vara á spjaldi.
+      html += '<div class="stk-plata">';
+      hopadir(items, iPanta).forEach(([f, rodir]) => {
+        html += `<div class="stk-hopband${f === PANTA ? ' stk-hopband--panta' : ''}">${esc(f)} <span>· ${rodir.length}</span></div><div class="stk-spjold">${rodir.map(spjald).join('')}</div>`;
+      });
+      html += '</div>';
     } else {
       toflustilar();   // fastur haus + fastur nafnadalkur (12.10.2026)
-      html += `<div class="tcard"><table class="dtbl"><thead><tr>
+      html += `<div class="stk-plata"><div class="tcard"><table class="dtbl"><thead><tr>
         <th style="width:46px"></th><th>Nafn</th><th>Magn</th><th title="Selt frá upphafi kerfisins (maí 2026), nettó eftir kreditreikninga">Selt</th><th>Lágmark</th><th>Eining</th><th title="Það sem greitt var, eftir afslátt, án VSK — Enter eða smella út vistar">Kaupverð (án VSK)</th><th title="Listaverð birgjans án VSK (fyrir afslátt) — Enter eða smella út vistar">Listaverð (án VSK)</th><th title="Söluverð með VSK — sama verð og í Vörum og þjónustu og á Sölu. Enter eða smella út vistar.">Söluverð (m/VSK)</th><th title="(söluverð án VSK − kaupverð) / kaupverð">Álagning</th><th>Birgir</th><th style="position:sticky;right:0;background:inherit"></th>
       </tr></thead><tbody>`;
-      const hopar = {};
-      // Stjörnumerktar vörur safnast í einn hóp EFST, óháð flokki. Í „★ Þarf að panta"-glugganum er hópað eftir ham.
-      items.forEach(i => { const f = iPanta ? hamHeiti(i) : erPanta(i) ? PANTA : (i.flokkur || 'almennt'); (hopar[f] = hopar[f] || []).push(i); });
-      Object.keys(hopar).sort((a, b) => (a === PANTA ? -1 : b === PANTA ? 1 : flokkRod(a, b))).forEach(f => {
-        const pantaStill = f === PANTA ? 'background:#fef3c7;color:#92400e;' : 'background:var(--bg2);color:var(--ink2);';
-        html += `<tr class="stk-hopur"><td colspan="12" style="${pantaStill}font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 10px">${esc(f)} <span style="opacity:.6;font-weight:600">· ${hopar[f].length}</span>${f === BRUNAKERFI ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}${f === PANTA ? '<span style="text-transform:none;letter-spacing:0;font-weight:500;opacity:.7;margin-left:8px">stjarnan á línunni tekur af listanum</span>' : ''}</td></tr>`;
-        hopar[f].forEach(i => { html += rod(i); });
+      hopadir(items, iPanta).forEach(([f, rodir]) => {
+        html += `<tr class="stk-hopur${f === PANTA ? ' stk-hopur--panta' : ''}"><td colspan="12">${esc(f)} <span class="stk-hopur-n">· ${rodir.length}</span>${f === BRUNAKERFI ? '<span class="stk-hopur-sk">selt gegnum Brunakerfis skoðun, ekki á Sölu</span>' : ''}${f === PANTA ? '<span class="stk-hopur-sk">stjarnan á línunni tekur af listanum</span>' : ''}</td></tr>`;
+        rodir.forEach(i => { html += rod(i); });
       });
-      html += '</tbody></table></div>';
+      html += '</tbody></table></div></div>';
     }
     // Stöðugt viðmót (388): leitarreiturinn heldur fókus og bendli, og skrunið helst, þegar listinn er endurteiknaður.
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(el) : null;
@@ -455,6 +481,137 @@
     if (aftur) aftur();
     tengjaVerd(el);
     fyllaMyndir();
+  }
+
+  // Sama hópun í töflu og spjöldum: stjörnumerkt EFST, óháð flokki; í „Þarf að panta"-glugganum eftir ham.
+  function hopadir(items, iPanta) {
+    const hopar = {};
+    items.forEach(i => { const f = iPanta ? hamHeiti(i) : erPanta(i) ? PANTA : (i.flokkur || 'almennt'); (hopar[f] = hopar[f] || []).push(i); });
+    return Object.keys(hopar).sort((a, b) => (a === PANTA ? -1 : b === PANTA ? 1 : flokkRod(a, b))).map(f => [f, hopar[f]]);
+  }
+
+  // Sýnin (17.11.2026, verk a65d87c2): Tafla eða Spjöld. Vistuð á þjóninum per tækjaflokk (Vidmot) — sama á öllum
+  // símum og sama á öllum tölvum. Sjálfgefið: spjöld á síma, tafla á tölvu.
+  const SYN_V = 'birgdir.syn';
+  function synin() {
+    let sjalfg = 'tafla';
+    try { if (window.Vidmot && Vidmot.taeki && Vidmot.taeki() === 'simi') sjalfg = 'spjold'; } catch (_) {}
+    let v = sjalfg;
+    try { if (window.Vidmot && Vidmot.lesaTaeki) v = Vidmot.lesaTaeki(SYN_V, sjalfg); } catch (_) {}
+    return v === 'spjold' ? 'spjold' : 'tafla';
+  }
+  function setjaSyn(v) {
+    v = v === 'spjold' ? 'spjold' : 'tafla';
+    try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(SYN_V, v); } catch (_) {}
+    render();
+  }
+
+  // Spjald: nafn + mynd, magn stórt, kaup / sala / álagning í einni línu, ± Nota og stjarnan sem 44 px takkar.
+  function spjald(i) {
+    const otalid = i.magn == null;
+    const lagt = !otalid && i.lagmark != null && i.magn > 0 && i.magn <= i.lagmark;
+    const tomt = !otalid && i.magn <= 0;
+    const kq = "'" + i.k + "'";
+    const vara = i.uppruni === 'vorur';
+    const opna = vara ? ` onclick="window.Stock._opnaVoru(${i.id})" title="Opna í Vörum og þjónustu" role="button" tabindex="0"` : '';
+    const src = vara ? _myndir[i.id] : '';
+    const mynd = vara
+      ? `<img data-stk-mynd="${i.id}" alt="" loading="lazy" ${src ? `src="${esc(src)}"` : ''} class="stk-spj-mynd" style="display:${src ? 'block' : 'none'}"><div data-stk-autt="${i.id}" class="stk-spj-mynd stk-spj-mynd--autt" style="display:${src ? 'none' : 'flex'}">${ik('kassi', 20)}</div>`
+      : `<div class="stk-spj-mynd stk-spj-mynd--autt">${ik('lykill', 20)}</div>`;
+    const panta = !!meta(i.k).panta;
+    const kv = Number(i.verd_an_vsk) || 0;
+    const sv = vara ? medVsk(i) : null;
+    const al = (vara && kv > 0 && i.sv != null && i.sv > 0) ? Math.round((i.sv - kv) / kv * 100) : null;
+    const verd = [
+      `<span>Kaup <b>${kv > 0 ? fmtKr(kv) : '—'}</b></span>`,
+      vara ? `<span>Sala <b>${sv == null ? '—' : fmtKr(sv)}</b></span>` : '',
+      al == null ? '' : `<span>Álagning <b class="${al < 0 ? 'stk-al--rautt' : al < 15 ? 'stk-al--gult' : 'stk-al--graent'}">${al}%</b></span>`
+    ].filter(Boolean).join('<i>·</i>');
+    return `<div class="stk-spj${panta ? ' stk-spj--panta' : ''}" data-k="${esc(i.k)}">
+      <div class="stk-spj-topp">
+        <div class="stk-spj-myndhaldari"${opna}>${mynd}</div>
+        <div class="stk-spj-nafn"${opna}><b>${esc(i.nafn)}</b><span>${esc(vara ? (i.flokkur || '') : 'verkstæði')}${i.birgi ? ' · ' + esc(i.birgi) : ''}</span></div>
+        <button type="button" class="stk-spj-tk stk-spj-tk--ik${panta ? ' stk-tk--gull' : ''}" onclick="Stock.togglePanta(${kq})" title="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta — setja efst'}" aria-label="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta'}" aria-pressed="${panta}">${ik('stjarna', 18, panta)}</button>
+      </div>
+      <div class="stk-spj-mid">
+        <div class="stk-spj-magn${tomt || lagt ? ' stk-spj-magn--rautt' : ''}">${otalid ? '<em>ótalið</em>' : esc(String(i.magn))}<span>${esc(i.eining || 'stk')}</span></div>
+        ${lagt ? '<span class="stk-plate stk-plate--rautt">undir lágmarki</span>' : tomt ? '<span class="stk-plate stk-plate--rautt">tómt</span>' : ''}
+        <button type="button" class="stk-spj-tk stk-spj-tk--nota" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja">± Nota</button>
+      </div>
+      <div class="stk-spj-verd">${verd}</div>
+    </div>`;
+  }
+
+  // Brunastál C (17.11.2026, verk 87c972cf) — sömu tákn og Innflutningur (507): stálplata, málmband, tafla C,
+  // silfurplötur. Fjögur gervi-auðkenni: appham (261) blæs annars upp takka og reiti með !important.
+  function stilarC() {
+    if (document.getElementById('stk-c-css')) return;
+    const MONO = '"JetBrains Mono",ui-monospace,monospace', DISPLAY = '"Playfair Display",Georgia,serif';
+    const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+    const STAL_IMG = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+    const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
+    const V = '#view-birgdir:not(#_stk1):not(#_stk2):not(#_stk3):not(#_stk4) ';
+    const st = document.createElement('style');
+    st.id = 'stk-c-css';
+    st.textContent = [
+      V + '.stk-ik{flex:none;vertical-align:-2px}',
+      V + '.stk-ham{gap:6px}',
+      // Stálplatan og hvíta spjaldið
+      V + '.stk-plata{background-color:#e2e6ec;background-image:' + STAL_IMG + ';border:1px solid #000;border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 10px 28px -10px rgba(10,14,22,.45);padding:10px;min-width:0}',
+      V + '.stk-plata>.tcard{background:#fff!important;border:1px solid #000!important;border-radius:12px!important;box-shadow:0 18px 40px -12px rgba(10,14,22,.5),0 2px 6px rgba(10,14,22,.12)!important;margin:0!important}',
+      // Tafla C: ljós haus, mono hástafir
+      V + '.stk-plata .dtbl thead th{background:#eef1f6!important;color:#3a4250!important;font-family:' + MONO + '!important;font-size:10.5px!important;font-weight:700!important;letter-spacing:.08em;text-transform:uppercase;padding:9px 8px!important;white-space:nowrap;border-bottom:1px solid #d5dbe4!important;text-shadow:none!important}',
+      V + '.stk-plata .dtbl tbody td{border-top:1px solid #e4e8ef;color:#141822}',
+      // Hópband: málmur, mono hástafir; „Þarf að panta" með gulli
+      V + '.stk-plata .dtbl tr.stk-hopur>td,' + V + '.stk-hopband{background:' + METAL + '!important;color:#fff!important;font-family:' + MONO + '!important;font-size:11px!important;font-weight:700!important;letter-spacing:.14em;text-transform:uppercase;padding:8px 14px!important;border-bottom:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
+      V + '.stk-hopur-n,' + V + '.stk-hopband span{color:#c9ced8;font-weight:600}',
+      V + '.stk-hopur-sk{text-transform:none;letter-spacing:0;font-weight:500;color:#c9ced8;margin-left:8px;font-family:"IBM Plex Sans",system-ui,sans-serif}',
+      V + '.stk-plata .dtbl tr.stk-hopur--panta>td,' + V + '.stk-hopband--panta{color:#d9b762!important}',
+      // Takkar í röðinni: silfurplötur
+      V + '.stk-tk{height:30px!important;min-height:30px!important;padding:0 10px!important;border-radius:6px!important;font-size:12px!important;font-weight:600!important;display:inline-flex!important;align-items:center;justify-content:center;gap:5px;white-space:nowrap;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14)!important;color:#1f2530!important;text-decoration:none!important;line-height:1!important}',
+      V + '.stk-tk--ik{width:30px!important;padding:0!important}',
+      V + '.stk-tk--gull{color:#8a5a00!important;background:linear-gradient(180deg,#fff6db 0%,#f1d98f 100%)!important;border-color:rgba(138,90,0,.35)!important}',
+      V + '.stk-tk--daufur{color:#8a93a3!important}',
+      V + '.stk-tk--rautt{color:#b42318!important}',
+      V + '.stk-tk:focus-visible,' + V + '.stk-spj-tk:focus-visible{outline:2px solid #b42318;outline-offset:2px}',
+      V + '.stk-gull{color:#b7791f}',
+      // Silfurplata (merki)
+      V + '.stk-plate{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.12);background:' + SILVER + ';font-family:' + MONO + ';font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#1f2530;white-space:nowrap}',
+      V + '.stk-plate--rautt{background:#fff1f0;border-color:rgba(180,35,24,.35);color:#b42318}',
+      // Rofi: Tafla | Spjöld — dökkur bakki, valið = silfur
+      V + '.stk-rofi{display:inline-flex;gap:3px;background:#1c1e23;border:1px solid #000;border-radius:9px;padding:3px;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}',
+      V + '.stk-rofi button{height:32px!important;min-height:32px!important;padding:0 11px!important;border:0!important;border-radius:6px!important;background:transparent!important;color:#c9ced8!important;font-size:12px!important;font-weight:600!important;white-space:nowrap;display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;box-shadow:none!important}',
+      V + '.stk-rofi button[aria-pressed="true"]{background:' + SILVER + '!important;color:#141822!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important}',
+      // Spjöldin
+      V + '.stk-hopband{border-radius:10px;margin:0 0 8px;border:1px solid #000}',
+      V + '.stk-spjold{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:10px;margin:0 0 14px}',
+      V + '.stk-spj{background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 10px 24px -12px rgba(10,14,22,.45),0 2px 5px rgba(10,14,22,.1);padding:10px 12px 11px;display:grid;gap:8px;min-width:0;color:#141822}',
+      V + '.stk-spj--panta{box-shadow:inset 0 0 0 2px #d9b762,0 10px 24px -12px rgba(10,14,22,.45)}',
+      V + '.stk-spj-topp{display:flex;align-items:center;gap:10px;min-width:0}',
+      V + '.stk-spj-myndhaldari{flex:none;cursor:pointer}',
+      V + '.stk-spj-mynd{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#eef1f6}',
+      V + '.stk-spj-mynd--autt{display:flex;align-items:center;justify-content:center;color:#8a93a3}',
+      V + '.stk-spj-nafn{flex:1;min-width:0;display:grid;gap:2px;cursor:pointer}',
+      V + '.stk-spj-nafn b{font-size:16px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}',
+      V + '.stk-spj-nafn span{font-size:12px;color:#5b6472;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V + '.stk-spj-mid{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      V + '.stk-spj-magn{font-family:' + DISPLAY + ';font-weight:800;font-size:30px;line-height:1;color:#141822;font-variant-numeric:lining-nums}',
+      V + '.stk-spj-magn span{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:13px;font-weight:600;color:#5b6472;margin-left:6px}',
+      V + '.stk-spj-magn em{font-style:normal;font-size:18px;color:#5b6472}',
+      V + '.stk-spj-magn--rautt{color:#b42318}',
+      V + '.stk-spj-tk{height:44px!important;min-height:44px!important;min-width:44px;padding:0 14px!important;border-radius:9px!important;font-size:14px!important;font-weight:700!important;display:inline-flex!important;align-items:center;justify-content:center;gap:6px;background:' + SILVER + '!important;border:1px solid rgba(20,24,34,.18)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.16)!important;color:#1f2530!important;cursor:pointer;line-height:1!important}',
+      V + '.stk-spj-tk--ik{width:44px;padding:0!important;flex:none}',
+      V + '.stk-spj-tk--nota{margin-left:auto}',
+      V + '.stk-spj-tk.stk-tk--gull{color:#8a5a00!important;background:linear-gradient(180deg,#fff6db 0%,#f1d98f 100%)!important}',
+      V + '.stk-spj-verd{display:flex;flex-wrap:wrap;gap:4px 8px;font-family:' + MONO + ';font-size:12.5px;color:#3a4250;border-top:1px solid #e4e8ef;padding-top:8px}',
+      V + '.stk-spj-verd b{color:#141822}',
+      V + '.stk-spj-verd i{font-style:normal;color:#a3aab6}',
+      V + '.stk-al--rautt{color:#b42318!important}' + V + '.stk-al--gult{color:#8a5a00!important}' + V + '.stk-al--graent{color:#16783f!important}',
+      // Á síma (Sími-hamur eða mjór skjár): rofinn er snertiflötur — 44 px eins og spjaldatakkarnir.
+      'html[data-viewmode="mobile"] ' + V + '.stk-rofi button{height:44px!important;min-height:44px!important}',
+      '@media (max-width:640px){' + V + '.stk-plata{padding:8px;border-radius:12px}' + V + '.stk-rofi button{height:44px!important;min-height:44px!important}}'
+    ].join('\n');
+    document.head.appendChild(st);
   }
 
   function rod(i) {
@@ -467,14 +624,14 @@
     const opna = vara ? ` onclick="window.Stock._opnaVoru(${i.id})" title="Opna í Vörum og þjónustu" style="cursor:pointer"` : '';
     const src = vara ? _myndir[i.id] : '';
     const mynd = vara
-      ? `<div${opna}><img data-stk-mynd="${i.id}" alt="" loading="lazy" ${src ? `src="${esc(src)}"` : ''} style="width:36px;height:36px;object-fit:cover;border-radius:6px;background:var(--bg2);display:${src ? 'block' : 'none'}"><div data-stk-autt="${i.id}" style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:${src ? 'none' : 'flex'};align-items:center;justify-content:center;font-size:15px;opacity:.55">📦</div></div>`
-      : '<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:15px;opacity:.4">🔧</div>';
+      ? `<div${opna}><img data-stk-mynd="${i.id}" alt="" loading="lazy" ${src ? `src="${esc(src)}"` : ''} style="width:36px;height:36px;object-fit:cover;border-radius:6px;background:var(--bg2);display:${src ? 'block' : 'none'}"><div data-stk-autt="${i.id}" style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:${src ? 'none' : 'flex'};align-items:center;justify-content:center;color:#8a93a3">${ik('kassi', 18)}</div></div>`
+      : `<div style="width:36px;height:36px;border-radius:6px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:#8a93a3">${ik('lykill', 18)}</div>`;
     const m = meta(i.k);
     const panta = !!m.panta;
     return `<tr class="stk-rod"${panta ? ' data-panta="1" style="background:#fffbeb"' : ''}>
       <td style="padding:6px 8px">${mynd}</td>
-      <td style="max-width:460px"><strong${opna}>${panta ? '<span style="color:#d97706;margin-right:4px">★</span>' : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
-      <td data-stk-magnreit="${esc(i.k)}">${magnHtml(i)}${isLow?'<span style="font-size:10px;color:#dc2626;margin-left:4px">⚠ lítið</span>':''}</td>
+      <td style="max-width:460px"><strong${opna}>${panta ? `<span class="stk-gull" style="margin-right:4px">${ik('stjarna', 12, true)}</span>` : ''}${esc(i.nafn)}</strong>${vara ? '' : '<span style="margin-left:6px;font-size:10px;color:var(--ink3)">verkstæði</span>'}${i.notes && (!vara || i.flokkur === BRUNAKERFI)?`<div style="font-size:11px;color:var(--ink3);overflow-wrap:anywhere;white-space:normal">${linkify(i.notes)}</div>`:''}</td>
+      <td data-stk-magnreit="${esc(i.k)}">${magnHtml(i)}${isLow?'<span class="stk-plate stk-plate--rautt" style="margin-left:4px">lítið</span>':''}</td>
       <td>${vara ? `<strong>${Math.round(i.selt)}</strong>${i.selt30 > 0 ? `<div style="font-size:10px;color:var(--ink3)">${Math.round(i.selt30)} sl. 30 d.</div>` : ''}` : '<span style="color:var(--ink3)">—</span>'}</td>
       <td data-stk-lagreit="${esc(i.k)}">${lagmarkHtml(i)}</td>
       <td style="color:var(--ink3)">${esc(i.eining||'stk')}</td>
@@ -484,14 +641,14 @@
       <td data-stk-al="${esc(i.k)}">${alagningHtml(i)}</td>
       <td style="color:var(--ink3)">${esc(i.birgi||'—')}</td>
       <td style="position:sticky;right:0;background:${panta ? '#fffbeb' : 'var(--bg1)'};box-shadow:-6px 0 8px -6px rgba(0,0,0,.15)"><div style="display:flex;gap:4px">
-        <button class="btn btn-ghost btn-sm" onclick="Stock.togglePanta(${kq})" title="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta — setja efst'}" style="color:#d97706;font-size:15px;line-height:1">${panta ? '★' : '☆'}</button>
+        <button class="btn btn-ghost btn-sm stk-tk stk-tk--ik${panta ? ' stk-tk--gull' : ''}" onclick="Stock.togglePanta(${kq})" title="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta — setja efst'}" aria-label="${panta ? 'Taka af pöntunarlista' : 'Þarf að panta'}" aria-pressed="${panta}">${ik('stjarna', 15, panta)}</button>
         ${m.slod
-          ? `<a class="btn btn-ghost btn-sm" href="${esc(m.slod)}" target="_blank" rel="noopener" oncontextmenu="Stock.setjaSlod(${kq});return false" title="Opna hjá birgja: ${esc(hostur(m.slod))} · hægrismella til að breyta eða fjarlægja" style="color:var(--blu);text-decoration:none">🔗</a>`
-          : `<button class="btn btn-ghost btn-sm" onclick="Stock.setjaSlod(${kq})" title="Setja inn tengil á vöruna hjá birgja" style="opacity:.55">🔗</button>`}
-        <button class="btn btn-ghost btn-sm" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja" style="color:var(--blu)">± Nota</button>
-        ${vara ? `<button class="btn btn-ghost btn-sm" onclick="window.VoruHreyfingar && VoruHreyfingar.opna(${i.id})" title="Hreyfingar vörunnar: innkaup, kostnaðarverð með útreikningi, talningar og sala">Saga</button>` : ''}
-        ${!vara ? `<button class="btn btn-ghost btn-sm" onclick="Stock.openEdit(${i.id})" title="Breyta">✎</button>
-        <button class="btn btn-ghost btn-sm" onclick="Stock.deleteItem(${i.id})" title="Eyða" style="color:#dc2626">🗑</button>` : ''}
+          ? `<a class="btn btn-ghost btn-sm stk-tk stk-tk--ik" href="${esc(m.slod)}" target="_blank" rel="noopener" oncontextmenu="Stock.setjaSlod(${kq});return false" title="Opna hjá birgja: ${esc(hostur(m.slod))} · hægrismella til að breyta eða fjarlægja" aria-label="Opna hjá birgja">${ik('tengill', 15)}</a>`
+          : `<button class="btn btn-ghost btn-sm stk-tk stk-tk--ik stk-tk--daufur" onclick="Stock.setjaSlod(${kq})" title="Setja inn tengil á vöruna hjá birgja" aria-label="Setja inn tengil">${ik('tengill', 15)}</button>`}
+        <button class="btn btn-ghost btn-sm stk-tk" onclick="Stock.openNota(${kq})" title="Nota, bæta við eða telja">± Nota</button>
+        ${vara ? `<button class="btn btn-ghost btn-sm stk-tk" onclick="window.VoruHreyfingar && VoruHreyfingar.opna(${i.id})" title="Hreyfingar vörunnar: innkaup, kostnaðarverð með útreikningi, talningar og sala">Saga</button>` : ''}
+        ${!vara ? `<button class="btn btn-ghost btn-sm stk-tk stk-tk--ik" onclick="Stock.openEdit(${i.id})" title="Breyta" aria-label="Breyta">${ik('penni', 15)}</button>
+        <button class="btn btn-ghost btn-sm stk-tk stk-tk--ik stk-tk--rautt" onclick="Stock.deleteItem(${i.id})" title="Eyða" aria-label="Eyða">${ik('rusl', 15)}</button>` : ''}
       </div></td>
     </tr>`;
   }
@@ -979,6 +1136,8 @@
     _setHam(v)    { if (!HAMIR.some(h => h[0] === v) && v !== PANTA_HAM && v !== INNFL_HAM && v !== SAMK_HAM) return; _hamur=v; _catFilter=''; geymaSiu(); render(); },
     _hamurIGlugga() { hamurIGlugga(document.getElementById('be-flokkur')?.value); },
     _setStada(v)  { _stada=v; geymaSiu(); render(); },
+    _setSyn(v)    { setjaSyn(v); },
+    _syn()        { return synin(); },
     _opnaVoru(id) { if (window.VorurOgThjonusta && VorurOgThjonusta.opna) VorurOgThjonusta.opna(id); else if (window.App) App.switchView('vorur'); }
   };
   console.log('[stock-management] installed');
