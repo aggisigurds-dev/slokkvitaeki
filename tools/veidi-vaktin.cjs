@@ -86,13 +86,36 @@ const VAKTAD = [
     adgerd: 'ég samræmi tækjaskrána við Ársskoðun þar sem munurinn er skýr og skrái hvert skref',
     lina: (r) => (r.nafn || '—') + ' · skýrsla ' + r.skyrsla_taeki + ' · skrá ' + r.taekjaskra_lifandi + ' · munur ' + (r.mismunur > 0 ? '+' : '') + r.mismunur,
     thak: 30 },
-  { syn: 'v_skeytamidlun_vantar', agent: 'bokari', kefli: 'tengingar', merki: 'veidi:skeytamidlun',
-    titill: (n) => n + ' félög með ógreidda reikninga og tóma skeytamiðlun',
-    inngangur: 'Stórir kúnnar taka ekki við reikningi nema hann berist með skeytamiðlun — annars fer hann aldrei í samþykkt og situr fastur ógreiddur. Center Hotels er dæmið: payday_delivery var tómt á öllum tólf stöðunum. Þetta er AFHENDINGARVANDI, ekki vanskil.',
-    adgerd: 'ég set skeytamiðlun á þau félög sem taka við henni og lista hin',
-    lina: (r) => (r.nafn || '—') + ' · ' + r.ogreiddir + ' ógreiddir reikningar',
-    thak: 30 },
+  /* v_skeytamidlun_vantar TEKIN ÚR VÖKTUN 17.11.2026 (lota 9, Verkefnalisti 1b6c7507): hún flaggar tómt payday_delivery,
+   * en payday-push reynir rafrænt á hverja kröfu óháð því (payday_delivery stýrir aðeins póstafriti) og sýnin telur
+   * sömu reikninga á hverjum stað sömu kt (4 × 12 hjá einu rekstrarfélagi). Raunverulega afhendingargatið — kt sem
+   * hafnar rafrænu OG hefur ekkert netfang — sést nú í payday_rafraent_hafnad og á sendiskjánum (166). */
 ];
+
+/* ÚRSKURÐUR STENDUR (17.11.2026, lota 9, Verkefnalisti 1b6c7507). Sýnirnar v_kredit_an_endurgerdar og
+ * v_verk_an_reiknings tæmast ALDREI af ákvörðunum (kredit sem var ákvörðun, verk rukkað á systurfélag). Áður:
+ * Claude/Agnar lokaði málinu með úrskurði → næsta keyrsla STOFNAÐI nýtt samþykkismál með sömu röðum. Nú: sé ekkert
+ * opið mál en til lokað mál sem MANNESKJA lokaði (lokid_af ≠ veidi-vaktin), teljast raðir þess úrskurðaðar. Aðeins
+ * raðir sem bættust við síðan vekja nýtt mál — og það mál telur aðeins þær. Vaktin skráir lykla raðanna í notes
+ * (línan ‹raðir: …›) svo næsta keyrsla geti borið saman; eldri mál án línunnar eru lesin á num/nafni í textanum. */
+const LYKLA_LINA = '‹raðir: ';
+function lykill(r) {
+  return String(r.num || r.fyrirtaeki_id || r.customer_id || r.nafn || r.id || JSON.stringify(r)).trim()
+    + (r.ar != null && !r.num ? '|' + r.ar : '');
+}
+function urskurdadarRadir(notes, rodir) {
+  const t = String(notes || '');
+  const i = t.indexOf(LYKLA_LINA);
+  if (i > -1) {
+    const lyklar = new Set(t.slice(i + LYKLA_LINA.length, t.indexOf('›', i)).split(' ¦ ').map((x) => x.trim()).filter(Boolean));
+    return rodir.filter((r) => lyklar.has(lykill(r)));
+  }
+  // Eldra mál án lyklalínu: röð telst úrskurðuð ef auðkenni hennar (R-númer eða nafn) stendur í texta málsins.
+  return rodir.filter((r) => {
+    const tok = String(r.num || r.nafn || '').trim();
+    return tok.length >= 3 && t.indexOf(tok) > -1;
+  });
+}
 
 async function sok(slod, valk) {
   const r = await fetch(URL_ + '/rest/v1/' + slod, Object.assign({ headers: H }, valk || {}));
@@ -115,13 +138,14 @@ function notur(v, rodir, summa) {
     + v.inngangur + '\n\n'
     + (summa != null ? 'SAMTALS: ' + kr(summa) + ' á ' + rodir.length + ' röðum.\n\n' : '')
     + synd.map((r) => '• ' + v.lina(r)).join('\n')
-    + (rodir.length > synd.length ? '\n… og ' + (rodir.length - synd.length) + ' til viðbótar í sýninni.' : '');
+    + (rodir.length > synd.length ? '\n… og ' + (rodir.length - synd.length) + ' til viðbótar í sýninni.' : '')
+    + '\n\n' + LYKLA_LINA + rodir.map(lykill).join(' ¦ ') + '›';
 }
 
 (async () => {
   let stofnad = 0, uppfaert = 0, lokad = 0, ohreyft = 0;
   for (const v of VAKTAD) {
-    const rodir = await sok(v.syn + '?select=*&limit=2000');
+    let rodir = await sok(v.syn + '?select=*&limit=2000');
     const summa = v.upphaed ? rodir.reduce((a, r) => a + (Number(v.upphaed(r)) || 0), 0) : null;
     // Málið er fundið á merkinu, aldrei á titli — titillinn breytist með tölunni.
     const opin = await sok('thjonustubeidni?select=id,status,title&deleted_at=is.null&status=neq.lokad&tags=cs.'
@@ -139,8 +163,26 @@ function notur(v, rodir, summa) {
       continue;
     }
 
-    const titill = v.titill(rodir.length, summa != null ? kr(summa) : '');
-    const body = { title: titill, notes: notur(v, rodir, summa), updated_at: new Date().toISOString() };
+    let urskurdur = '';
+    if (!mal) {
+      const lokud = await sok('thjonustubeidni?select=id,notes,lokid_af,lokid_at&deleted_at=is.null&status=eq.lokad&tags=cs.'
+        + encodeURIComponent(JSON.stringify([v.merki])) + '&order=lokid_at.desc.nullslast&limit=1');
+      const sidast = lokud[0];
+      if (sidast && sidast.lokid_af && sidast.lokid_af !== 'veidi-vaktin') {
+        const buid = new Set(urskurdadarRadir(sidast.notes, rodir).map(lykill));
+        const nyjar = rodir.filter((r) => !buid.has(lykill(r)));
+        if (!nyjar.length) {
+          console.log((THURR ? '[þurrt] ' : '') + 'ÚRSKURÐAÐ #' + sidast.id + ' — ' + v.syn + ': ' + rodir.length + ' raðir, engin ný síðan málinu var lokað (' + sidast.lokid_af + ')');
+          ohreyft++;
+          continue;
+        }
+        urskurdur = '#' + sidast.id + ' úrskurðaði ' + buid.size + ' raðir; aðeins ' + nyjar.length + ' nýjar eru taldar hér.';
+        rodir = nyjar;
+      }
+    }
+    const summaSynd = v.upphaed ? rodir.reduce((a, r) => a + (Number(v.upphaed(r)) || 0), 0) : null;
+    const titill = v.titill(rodir.length, summaSynd != null ? kr(summaSynd) : '');
+    const body = { title: titill, notes: (urskurdur ? urskurdur + '\n\n' : '') + notur(v, rodir, summaSynd), updated_at: new Date().toISOString() };
     if (mal) {
       /* VARÐVEITA HANDSKRIFAÐ EFNI (07.11.2026). Vaktin endurskrifar `notes` í hverri keyrslu.
          Fyrsta útgáfan hefði þurrkað út greiningu sem var bætt við málið í höndunum — netföng,
