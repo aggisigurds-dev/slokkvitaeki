@@ -44,6 +44,11 @@ test('339 Rekstrarfélög: titilhólfið heldur breidd sinni og leitin gefur eft
   assert.ok(/flex:0 1 220px!important;min-width:112px!important/.test(s), 'leitin verður að geta farið niður í 112 px (360 px skjár)');
 });
 
+test('339 Rekstrarfélög í appham: titillinn er dökkur (efsti hluti sýnarinnar er ljósgrár í appinu, hvítt mældist 2,09:1)', () => {
+  const s = les('js/patches/339-rekstrar-bruna-thjonusta-simi.js');
+  assert.ok(/A \+ RF \+ ' \.rf-ptitle' \+ P \+ '\{color:#141822!important\}'/.test(s));
+});
+
 test('útgáfumerki hækkuð á breyttu skránum (annars situr gamla útgáfan í skyndiminni)', () => {
   const h = les('index.html');
   for (const f of ['js/patches/219-bilstjori.js', 'js/patches/261-app-profiles.js', 'js/patches/333-app-page-zoom.js', 'js/mobilenav.js', 'js/patches/339-rekstrar-bruna-thjonusta-simi.js']) {

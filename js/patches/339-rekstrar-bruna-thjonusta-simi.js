@@ -64,6 +64,9 @@
          (min-width 140 px) gefur eftir. */
       both(RF + ' .rf-phead>div:not(.rf-search)' + P)
         + '{flex:0 0 auto!important;min-width:auto!important}',
+      /* 17.11.2026 (Öpp-villa 16, mælt í S26-appham): í appinu er efsti hluti sýnarinnar ljósgrár, ekki dökki borðinn sem
+         hvíti titillinn var teiknaður fyrir — „Rekstrarfélög" mældist 2,09:1. Í appham fær titillinn dökkt blek. */
+      A + RF + ' .rf-ptitle' + P + '{color:#141822!important}',
       both(RF + ' .rf-psub' + P)
         + '{display:none!important}',
       both(RF + ' .rf-search' + P)
