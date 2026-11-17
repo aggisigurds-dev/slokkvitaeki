@@ -107,9 +107,16 @@ async function athuga(row, { lesaNu = false } = {}) {
       if (nyrri.length) urelt = fra_okkur.length ? 'Þráðnum hefur þegar verið svarað (' + String(fra_okkur[0].received_at).slice(0, 16).replace('T', ' ') + ')'
         : 'Nýtt skeyti kom í þráðinn ' + String(nyrri[0].received_at).slice(0, 16).replace('T', ' ') + ' — svarið á ekki lengur við';
       a.push({ texti: urelt || 'Ekkert nýrra skeyti í þræðinum — þú svarar því nýjasta', ok: !urelt });
+    } else if (g.nytt === true) {
+      // 17.11.2026: NÝR póstur, ekki svar (t.d. skýrsla til félags sem hefur aldrei skrifað okkur — Dekkjasalan #1646).
+      // Enginn þráður til að bera saman við; verkið verður að bera `nytt: true` berum orðum, annars gildir reglan að neðan.
+      a.push({ texti: 'Nýr póstur — ekki svar í þræði, svo „nýjasta skeytið“ á ekki við', ok: true });
     } else {
       a.push({ texti: 'Þráður óþekktur — ekki hægt að staðfesta að svarið sé við nýjasta skeytið', ok: false });
     }
+    // Netfang sem enginn póstur né skrá staðfestir (t.d. ágiskun Agnars) stendur sýnilegt: takkinn = hann staðfestir það.
+    const agiskun = [].concat(g.agiskun || []).map(addr).filter(Boolean);
+    if (agiskun.length) a.push({ texti: '⚠ ÁGISKUN, ekki staðfest úr pósti né skrá: ' + agiskun.join(', ') + ' — sendu aðeins ef þú samþykkir það', ok: true });
     // Er pósthólfið nýlesið? Annars getur „ósvarað" verið rangt.
     if (lesaNu) {
       a.push({ texti: lesid ? 'Pósthólfið lesið núna, rétt áður en sent er' : 'Náði ekki að lesa pósthólfið núna — ekkert sent', ok: !!lesid });
