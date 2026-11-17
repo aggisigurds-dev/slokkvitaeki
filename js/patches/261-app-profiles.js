@@ -1310,7 +1310,8 @@
       // 8 .ky-abtn + month ◀▶ into sausages and the 52px input blows the
       // always-visible minnispunktur. Patch 166 owns compact sizes; we only
       // stop the hammer here (same pattern as #ars-main above).
-      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
+      // 17.11.2026 (Öpp-villa 18, mælt): ℹ-skýringartakkinn (._ky-sky, 41 á síðunni) var ekki í listanum og teygðist í 22×42 px sporöskju.
+      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp,body.appmode #view-krofu-yfirlit ._ky-sky{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
       'body.appmode #view-krofu-yfirlit input._ky-note{min-height:28px !important;height:28px !important;font-size:16px !important;padding:2px 8px !important}',
       'body.appmode #view-krofu-yfirlit input._ky-search,body.appmode #view-krofu-yfirlit select._ky-sort{min-height:44px !important;font-size:16px !important}',
       // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.

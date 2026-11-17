@@ -49,6 +49,11 @@ test('339 Rekstrarfélög í appham: titillinn er dökkur (efsti hluti sýnarinn
   assert.ok(/A \+ RF \+ ' \.rf-ptitle' \+ P \+ '\{color:#141822!important\}'/.test(s));
 });
 
+test('261 hamarinn: ℹ-skýringartakki Kröfu yfirlits (._ky-sky) er undanþeginn — annars 22×42 px sporaskja', () => {
+  const s = les('js/patches/261-app-profiles.js');
+  assert.ok(/body\.appmode #view-krofu-yfirlit \._ky-exp,body\.appmode #view-krofu-yfirlit \._ky-sky\{min-height:0 !important/.test(s));
+});
+
 test('útgáfumerki hækkuð á breyttu skránum (annars situr gamla útgáfan í skyndiminni)', () => {
   const h = les('index.html');
   for (const f of ['js/patches/219-bilstjori.js', 'js/patches/261-app-profiles.js', 'js/patches/333-app-page-zoom.js', 'js/mobilenav.js', 'js/patches/339-rekstrar-bruna-thjonusta-simi.js']) {
