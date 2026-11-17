@@ -19,6 +19,7 @@
 require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
 const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
+const HUB = require('./hub-adgangar.cjs'); // lota 13: innri tóki á email-send (x-sl-toki)
 const crypto = require('crypto');
 // Póstur fer gegnum slokkvitaeki /api/email-send (Resend). „from" verður að vera
 // staðfest lén í Resend — stillanlegt með PORTAL_MAIL_FROM env.
@@ -265,7 +266,7 @@ exports.handler = async (event) => {
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br>' +
         '<b>Notandanafn:</b> ' + esc(u.email || '') + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
-      const hdrs = { 'Content-Type': 'application/json' };
+      const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar()); // lota 13: email-send krefst starfsmanns eða innri tóka
       if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
       let mres;
       try {
@@ -329,7 +330,7 @@ exports.handler = async (event) => {
         '<p>Hér er aðgangur þinn að þjónustugátt Slökkvitækja ehf. fyrir ' + esc((u && u.display_name) || 'félagið') + '.</p>' +
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br><b>Notandanafn:</b> ' + esc(n.email) + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
-      const hdrs = { 'Content-Type': 'application/json' }; if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
+      const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar()); if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
       let mres; try { mres = await fetch(origin(event) + '/api/email-send', { method: 'POST', headers: hdrs, body: JSON.stringify({ from: MAIL_FROM, to: [n.email], subject: 'Aðgangur að þjónustugátt Slökkvitækja ehf.', html }) }); } catch (e) { return P.json(502, { error: 'Póstur sendist ekki' }); }
       if (!mres.ok) return P.json(502, { error: 'Póstur sendist ekki', detail: (await mres.text().catch(() => '')).slice(0, 200) });
       return P.json(200, { ok: true, sent_to: n.email });

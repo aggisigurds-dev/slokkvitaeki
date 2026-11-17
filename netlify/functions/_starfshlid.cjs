@@ -59,4 +59,29 @@ async function krefjastStarfsmanns(event) {
   return (await starfsmadur(event)).villa;
 }
 
-module.exports = { krefjastStarfsmanns, starfsmadur, stjornandi };
+// SENDIFÖLL (lota 13, 17.11.2026): innskráður starfsmaður EÐA gildur innri tóki (x-sl-toki, HUB.innriToki()) frá þjóni á
+// sama vef — áætluð föll (gatt-vikupostur, payday-sync-cron) og gatt-admin kalla án köku. Tókinn gefur sömu réttindi og
+// starfsmaður, ekki meira. Rangur eða útrunninn tóki fellur í kökuathugunina (401 án hennar), aldrei opið.
+async function krefjastStarfsmannsEdaInnri(event) {
+  let ok = false;
+  try { ok = await HUB.erInnriToki(event); } catch (_) { ok = false; }
+  if (ok) return null;
+  return await krefjastStarfsmanns(event);
+}
+
+// ESM-föll (Netlify v2: Request → Response) nota sama hlið. Skilar Response (401/503) eða null.
+//   import H from './_starfshlid.cjs';  const g = await H.vefHlid(req, { innri: true }); if (g) return g;
+function atburdurUr(req) {
+  const h = (req && req.headers) || { get: () => '' };
+  const g = (n) => String((typeof h.get === 'function' ? h.get(n) : h[n]) || '');
+  return { headers: { cookie: g('cookie'), host: g('host'), [HUB.INNRI_HAUS]: g(HUB.INNRI_HAUS) } };
+}
+async function vefHlid(req, opts) {
+  const e = atburdurUr(req);
+  const r = (opts && opts.innri) ? await krefjastStarfsmannsEdaInnri(e) : await krefjastStarfsmanns(e);
+  if (!r) return null;
+  const extra = (opts && opts.hausar) || {};
+  return new Response(r.body, { status: r.statusCode, headers: Object.assign({}, r.headers || {}, extra) });
+}
+
+module.exports = { krefjastStarfsmanns, krefjastStarfsmannsEdaInnri, starfsmadur, stjornandi, vefHlid, _atburdurUr: atburdurUr };

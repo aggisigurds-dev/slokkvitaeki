@@ -24,6 +24,7 @@ const TOKEN_PATH = process.env.PAYDAY_TOKEN_PATH || '/auth/token';
 const INVOICES_PATH = process.env.PAYDAY_INVOICES_PATH || '/invoices';
 const API_VERSION = process.env.PAYDAY_API_VERSION || 'alpha';
 const { erGreidsla } = require('./_payday-greidsla.cjs');   // 13.09.2026: kreditreikningur er aldrei greiðsla
+const H = require('./_starfshlid.cjs');   // lota 13: starfsmannahliðið (eða innri tóki)
 
 function cors() {
   return {
@@ -45,6 +46,12 @@ exports.handler = async (event) => {
     const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
     if (got !== KEY) return json(401, { error: 'unauthorized' });
   }
+
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): probe/dry-GET skilaði hráum Payday-reikningum (nöfn, fjárhæðir) óinnskráðum
+  // og POST keyrði samstillingu. Nú: innskráður starfsmaður (vafrinn, sami uppruni) EÐA innri tóki x-sl-toki frá
+  // payday-sync-cron (áætlað, án köku). Annars 401; notendaskráin niðri → 503.
+  const _hlid = await H.krefjastStarfsmannsEdaInnri(event);
+  if (_hlid) return { ..._hlid, headers: { ...cors(), ...(_hlid.headers || {}) } };
 
   const p = event.queryStringParameters || {};
   let body = {}; try { body = event.body ? JSON.parse(event.body) : {}; } catch (_) {}

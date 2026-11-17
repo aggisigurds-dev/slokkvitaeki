@@ -8,6 +8,7 @@
  * Sama default-open EDGE_SHARED_KEY-gátt og email-send / sms-send.
  */
 import K from './_sms-sjalfvirkt.cjs';
+import H from './_starfshlid.cjs'; // lota 13 (17.11.2026): starfsmannahliðið
 
 function cors() {
   return {
@@ -25,6 +26,10 @@ export default async (req) => {
   if (req.method !== 'GET') return svar({ error: 'GET only — forskoðun, sendir ekkert' }, 405);
   const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
   if (KEY && String(req.headers.get('x-eldklar-key') || '').trim() !== KEY) return svar({ error: 'unauthorized' }, 401);
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): forskoðunin sendir ekkert en sýnir nöfn, símanúmer og reikningsnúmer kúnna.
+  // Aðeins innskráður starfsmaður (SMS-stjórnborðið 33a, sami uppruni); annars 401, notendaskráin niðri → 503.
+  const hlid = await H.vefHlid(req, { hausar: cors() });
+  if (hlid) return hlid;
   try {
     const u = await K.keyra({ commit: false });
     return svar({

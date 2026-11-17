@@ -8,6 +8,7 @@
 // „Senda núna" á gatt-admin (action vikupostur-senda) kallar sendaFelagi() með thvinga:true (sendir þótt allt sé tómt).
 // Skrifar ekkert í gagnagrunninn.
 const P = require('./_portal.cjs');
+const HUB = require('./hub-adgangar.cjs'); // lota 13: innri tóki á email-send (x-sl-toki)
 const VF = require('./_gatt-verkfaeri.cjs');
 const MAIL_FROM = process.env.PORTAL_MAIL_FROM || 'Slökkvitæki ehf <noreply@slokkvitaeki.is>';
 const MAN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
@@ -123,7 +124,7 @@ async function sendaFelagi(u, opts) {
   const origin = opts.origin || 'https://slokkvitaeki.netlify.app';
   const slod = origin + '/gatt/' + (u.slug ? '?c=' + encodeURIComponent(u.slug) : '');
   const subject = 'Vikuleg samantekt — ' + felag + (efni.brynt ? ' · ' + efni.brynt + ' á eftir' : efni.n ? ' · ' + efni.n + ' atriði' : ' · allt á áætlun');
-  const hdrs = { 'Content-Type': 'application/json' };
+  const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar()); // lota 13: email-send krefst starfsmanns eða innri tóka
   if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
   let mres;
   try { mres = await fetch(origin + '/api/email-send', { method: 'POST', headers: hdrs, body: JSON.stringify({ from: MAIL_FROM, to, subject, html: html(felag, efni, slod) }) }); }
