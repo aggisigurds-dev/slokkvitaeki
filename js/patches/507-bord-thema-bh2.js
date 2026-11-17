@@ -316,7 +316,7 @@
       H + ' .baf-v.opid>.baf-r{background:#f3f6fb}',
       H + ' .baf-teg{border-radius:6px;border-color:#d8dee9;font:600 9.5px var(--body);color:#5a6882}',
       H + ' .baf-kr,' + H + ' .baf-h,' + H + ' .baf-am,' + H + ' .baf-meta,' + H + ' .baf-dl dt,' + H + ' .baf-grein{font-family:var(--body)}',
-      H + ' .baf-d{border-top:1px solid #e7ecf3;background:#f6f9fd}',
+      H + ' .baf-d{border-top:1px solid #e7ecf3;background:#fff}',
       H + ' .baf-k h3{font:600 11px var(--body);letter-spacing:.08em;color:#5a6882}',
       // Haus opna verksins: Poppins 700 og hvítar flísar með mjúkum skugga — enginn hvítur textaskuggi á ljósum fleti.
       H + ' .baf-kick{font:600 11px var(--body);letter-spacing:.14em;color:#c2410c}',

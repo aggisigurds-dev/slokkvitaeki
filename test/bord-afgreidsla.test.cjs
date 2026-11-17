@@ -69,7 +69,7 @@ test('opið verk: rök með heimild og tengli, efni, athuganir og takkinn', asyn
   const h = BA.listi();
   assert.match(h, /Þetta gerist þegar þú ýtir/);
   assert.match(h, /baf-hd/);          // haus með spurningunni yfir báðum dálkum
-  assert.match(h, /baf-kt/);          // tölu-flís (áætlað virði / aldur)
+  assert.match(h, /baf-strip/);       // staðreyndalína (Tillaga B: áætlað virði, bið, hverjum)
   assert.match(h, /href="https:\/\/mail\.google\.com\/mail\/u\/#all\/abc" target="_blank" rel="noopener">Pósturinn í Gmail ↗/);
   assert.match(h, /data-baf-texti="22" data-ritun="1"[^>]*>Góðan dag\.<\/textarea>/, 'svarið er í reit sem má breyta og 368 frestar teikningu á (data-ritun)');
   assert.match(h, /data-baf="framkvaema" data-id="22"[^>]*>Senda svarið<\/button>/);
@@ -316,3 +316,62 @@ test('ágiskun: rauð athugun með tveimur tökkum; staðfesting sendir adgerd a
   await smella(BA, 'agiskun', 22, { 'data-netfang': 'bokhald@example.is', 'data-val': 'fjarlaegja' });
   assert.strictEqual(kollud.length, fyrir, 'hætt við í staðfestingarglugga → ekkert kall');
 });
+
+// ── Tillaga B (17.11.2026): greiningin sem bæði borðið og /afgreidsla.html teikna úr ──
+test('Tillaga B: titill skiptist í aðila / spurningu / sögn og biðin er talin frá dagsetningu titilsins', () => {
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [] } }));
+  const S = BA.snid, nu = new Date(2026, 10, 17, 12);
+  const t = 'Íslensk Verkmiðlun (Ísverk): verðdæmin sem þú sendir Böðvari 17.09 hafa staðið ósvöruð í tvo mánuði — ítreka';
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(S.titill(t))), { adili: 'Íslensk Verkmiðlun (Ísverk)', spurning: 'verðdæmin sem þú sendir Böðvari 17.09 hafa staðið ósvöruð í tvo mánuði', sogn: 'ítreka' });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(S.bid({ titill: t }, nu))), { dagar: 61, fra: '17.09', texti: '61 dagur', tonn: 'r' });
+  assert.strictEqual(S.bid({ titill: 'Svara Búseta: verð í yfirferð' }, nu), null, 'engin dagsetning í titli → engin bið');
+  assert.strictEqual(S.titill('Senda kröfu R-000228 — Hópferðir GÞ ehf. (15.872 kr)').sogn, '', 'langur hali er ekki sögn');
+  assert.match(S.hausHtml({ titill: t, created_at: new Date().toISOString() }), /<mark class="baf-merk">ósvöruð í tvo mánuði<\/mark>/);
+});
+
+test('Tillaga B: tímalína úr rökunum — „Í dag" úr setningunni sem segir að ekkert hafi gerst, ÓSTAÐFEST sér', () => {
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [] } }));
+  const nu = new Date(2026, 10, 17, 12);
+  const t = BA.snid.timalina([
+    { texti: 'Brunahólf hóf samtalið 14.09.2026 með kynningu. Böðvar svaraði 15.09: 15–20 handslökkvitæki.', heimild: 'email_digest 1' },
+    { texti: 'Þú sendir 17.09 kl. 19:18 fjögur verðdæmi. Tímagjald rafvirkja 14.500 kr. + vsk. Síðan hefur ekkert komið frá Ísverk.', heimild: 'Sent Items' },
+    { texti: 'Ísverk er ekki á fyrirtækjaskrá.' },
+    { texti: 'ÓSTAÐFEST: hvort greitt var 15.05.2026.' }], nu);
+  assert.deepStrictEqual(Array.from(t.hnutar, (x) => x.merki), ['14.09', '17.09']);
+  assert.strictEqual(t.idag, 'Síðan hefur ekkert komið frá Ísverk.');
+  assert.ok(!/Síðan hefur/.test(t.hnutar[1].texti) && /vsk\.$/.test(t.hnutar[1].texti), 'setningin flyst, restin heldur punktinum');
+  assert.deepStrictEqual(Array.from(t.athugasemdir), ['Ísverk er ekki á fyrirtækjaskrá.']);
+  assert.strictEqual(t.vafi.length, 1, 'ÓSTAÐFEST verður aldrei hnútur á tímalínunni');
+  assert.deepStrictEqual(Array.from(t.heimildir, (x) => x.merki), ['14.09', '17.09']);
+});
+
+test('Tillaga B: áherslur feitletra magn en aldrei dagsetningar, númer eða ártöl — og afmá alltaf', () => {
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [] } }));
+  const h = BA.snid.aherslur('svaraði 15.09: 15–20 handslökkvitæki, um 100 skynjarar. Gjald 14.500 kr. nr. 369 hafi, Hús 1 og Hús 2, árið 2025 voru <img src=x>');
+  assert.match(h, /<b>15–20 handslökkvitæki<\/b>/);
+  assert.match(h, /<b>100 skynjarar<\/b>/);
+  assert.match(h, /<b>14\.500 kr\.<\/b>/);
+  assert.ok(!/<b>15\.09|<b>369|<b>1 og|<b>2025/.test(h));
+  assert.match(h, /&lt;img src=x&gt;/);
+});
+
+test('Tillaga B: handrit brotið í kafla eftir HÁSTAFA-heitum; símtalið opnast með köflum og staðreyndalínu', async () => {
+  const handrit = 'Nafnið gæti verið úrelt.\n\nERINDI: Reikningur nr. 369, 114.050 kr.\n\nSPYRJA:\n1. Hafið þið fengið hann?\n2. Hvenær greiðið þið?\n\nTILLAGA AÐ ÍTREKUN:\n\nSæll Jón,\n\nÉg vildi fylgja eftir.\n\nKveðja,';
+  const h0 = BordAfgreidslaSnid().handrit(handrit);
+  assert.strictEqual(h0.inngangur, 'Nafnið gæti verið úrelt.');
+  assert.deepStrictEqual(Array.from(h0.kaflar, (k) => k.heiti), ['ERINDI', 'SPYRJA', 'TILLAGA AÐ ÍTREKUN']);
+  const { BA } = hlada(() => ({ status: 200, json: { tilbuin: [verk({ tegund: 'simtal', titill: 'Jón ehf.: ósvarað síðan 01.11 — ítreka', takki: 'Búið', virdi_kr: null,
+    hvad_gerist: 'Ekkert er sent héðan. Þráðurinn er í Brunaholf@, svo svarið fer í Thunderbird.', simtal: { hverjum: 'Jón Jónsson, Jón ehf. — jon@x.is', simi: '', handrit } })] } }));
+  BA.samantekt(); await BA.S.loading;
+  smella(BA, 'opna', 22);
+  const h = BA.listi();
+  assert.match(h, /<span class="baf-sogn">ítreka<\/span>/);
+  assert.match(h, /<dt>Hverjum<\/dt><dd class="baf-sv">Jón Jónsson<\/dd><dd class="baf-su">Jón ehf\. — jon@x\.is · enginn sími skráður<\/dd>/);
+  assert.match(h, /<dt>Svarað úr<\/dt><dd class="baf-sv">Thunderbird<\/dd><dd class="baf-su">þráðurinn er í Brunaholf@<\/dd>/);
+  assert.match(h, /<dt>Áætlað virði<\/dt><dd class="baf-sv">Óþekkt<\/dd>/);
+  assert.match(h, /<b>Ekkert er sent héðan\.<\/b>/);
+  assert.match(h, /<h4>SPYRJA<\/h4><\/div><ol class="baf-hl"><li>Hafið þið fengið hann\?<\/li>/);
+  assert.match(h, /data-baf="afrita" data-id="22" data-k="2"/, 'langi kaflinn fær Afrita-takka');
+  assert.match(h, /<b class="baf-ta1">Jón ehf\.<\/b><span class="baf-sep"> · <\/span><span class="baf-rest">opið<\/span>/);
+});
+function BordAfgreidslaSnid() { return hlada(() => ({ status: 200, json: { tilbuin: [] } })).BA.snid; }

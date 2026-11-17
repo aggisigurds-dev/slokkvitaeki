@@ -113,27 +113,214 @@
   var linur = function (t) { var n = 0; String(t || '').split('\n').forEach(function (l) { n += Math.max(1, Math.ceil(l.length / 80)); }); return Math.max(8, Math.min(24, n + 2)); };
   var athNu = function (v) { return v.id in S.athDrog ? S.athDrog[v.id] : (v.athugasemd || ''); };
 
-  /* Hvað gerist: þjónninn skrifar eina málsgrein. Hún er brotin í númeruð skref á setningaskilum — punktur OG
-   * stór stafur á eftir, svo „60.000 kr.) og" eða „drög #342" klofni ekki. Ein setning helst sem venjuleg lína. */
-  var SKREF_RX = /\.\s+(?=[A-ZÁÐÉÍÓÚÝÞÆÖ])/;
-  function skrefHtml(t) {
-    var s = String(t == null ? '' : t).trim();
-    if (!s) return '';
-    var p = s.split(SKREF_RX).map(function (x) { return x.trim(); }).filter(Boolean);
-    if (p.length < 2) return '<div class="baf-g">' + esc(s) + '</div>';
-    return '<ol class="baf-skref">' + p.map(function (x, i) {
-      return '<li><span class="baf-nr" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(/[.!?]$/.test(x) ? x : x + '.') + '</span></li>';
-    }).join('') + '</ol>';
-  }
+  // (Tillaga B 17.11.2026 tók við af númeruðu skrefunum og tölu-flísunum — sjá geristHtml / linaHtml hér að neðan.)
   var dagarFra = function (iso) { var d = new Date(iso); if (isNaN(d)) return null; return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000)); };
-  // Tvær flísar efst: það sem verkið snýst um í krónum og hve lengi það hefur beðið. Báðar úr röðinni sjálfri.
-  function kpiHtml(v) {
-    var t = [], n = v.virdi_kr == null || !isFinite(Number(v.virdi_kr)) ? null : Math.round(Number(v.virdi_kr)).toLocaleString('is-IS');
-    if (n) t.push('<div class="baf-kt"><span>Áætlað virði</span><b>' + n + ' <i>kr.</i></b></div>');
-    var d = dagarFra(v.created_at);
-    if (d != null) t.push('<div class="baf-kt"><span>Á borðinu</span><b>' + (d === 0 ? 'Í dag' : d + ' <i>d.</i>') + '</b></div>');
-    return t.length ? '<div class="baf-kpi">' + t.join('') + '</div>' : '';
+
+  /* ── TILLAGA B (Agnar 17.11.2026: „renna hratt í gegnum þessa glugga" → valdi Tillögu B á Design-striganum
+   *    https://claude.ai/artifact/T3duYbnZX8poZJAmXBvK7M). Sama efni og áður, brotið upp svo augað finni aðalatriðin:
+   *    · fyrirsögnin skiptist í aðila (fyrir „:") / spurningu / sögn (stutt hali eftir „ — ") og biðin er auðkennd;
+   *    · staðreyndalína: Hverjum · Sími · Bið · Áætlað virði · Svarað úr — aðeins það sem verkið sjálft geymir;
+   *    · rökin sem tímalína (dagsetningin úr textanum), „Í dag"-hnútur úr setningu sem segir að ekkert hafi gerst,
+   *      ÓSTAÐFEST/⚠ í gulum reit, heimildirnar saman neðst merktar dagsetningu hnútsins;
+   *    · handrit símtals brotið í kafla eftir HÁSTAFA-fyrirsögnum (ERINDI:, SPYRJA:, TILLAGA AÐ ÍTREKUN: …).
+   *    Allt hér er hreint (gögn inn → HTML/gögn út) og /afgreidsla.html notar sömu föll (BordAfgreidsla.snid). */
+  var STORIR = 'A-ZÁÐÉÍÓÚÝÞÆÖ';
+  var DAGS_RX = /(^|[^\d.])(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?(?![\d])/g;
+  var IDAG_RX = /^(Síðan hefur|Ekkert svar|Ekkert hefur|Enginn hefur|Því hefur ekki|Hvergi er skráð)/;
+  var VAFI_RX = /^(ÓSTAÐFEST|⚠|ÁÐUR EN|ÁLYKTUN)/;
+  var BID_RX = /(ósvöru\S*|ósvarað\S*|ógreidd\S*|aldrei \S+|ekkert svar|ekki bókuð|óbókuð)[^,—:;(]*/i;
+  var SETN_RX = new RegExp('\\.\\s+(?=[' + STORIR + '„])');
+  var hreint = function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); };
+  // Allar dagsetningar (dd.mm eða dd.mm.áááá) í texta sem eru liðnar — án ártals er gengið út frá nýjasta liðna ári.
+  function dagsetningar(t, nu) {
+    var ut = [], m, n = nu || new Date();
+    DAGS_RX.lastIndex = 0;
+    while ((m = DAGS_RX.exec(String(t || '')))) {
+      var d = +m[2], mn = +m[3], ar = m[4] ? +m[4] : n.getFullYear();
+      if (d < 1 || d > 31 || mn < 1 || mn > 12) continue;
+      var dt = new Date(ar, mn - 1, d);
+      if (!m[4] && dt > n) dt = new Date(ar - 1, mn - 1, d);
+      if (dt > n) continue;
+      ut.push({ dt: dt, merki: String(d).padStart(2, '0') + '.' + String(mn).padStart(2, '0'), stadur: m.index + m[1].length });
+    }
+    return ut;
   }
+  var dagaOrd = function (n) { return n === 0 ? 'í dag' : n + (n % 10 === 1 && n % 100 !== 11 ? ' dagur' : ' dagar'); };
+  // Biðin = dagar frá SÍÐUSTU dagsetningu í titlinum (höfundur verksins setur þar dagsetninguna sem málið stendur á).
+  // Án dagsetningar: „í 47 daga" / „62 dögum" í titlinum gildir frá því verkið var skrifað (created_at) og hækkar síðan.
+  function bid(v, nu) {
+    var n = nu || new Date(), tonn = function (x) { return x >= 60 ? 'r' : x >= 30 ? 'y' : 'n'; };
+    var d = dagsetningar(v && v.titill, n);
+    if (!d.length) {
+      var m = /(\d{1,4})\s+(?:daga|dögum|dagar)\b/.exec(String((v && v.titill) || ''));
+      var c = v && v.created_at ? new Date(v.created_at) : null;
+      if (!m) return null;
+      var x = +m[1] + (c && !isNaN(c) ? Math.max(0, Math.floor((n - c) / 86400000)) : 0);
+      return { dagar: x, fra: null, texti: dagaOrd(x), tonn: tonn(x) };
+    }
+    var s = d[d.length - 1];
+    var dagar = Math.max(0, Math.floor((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - s.dt) / 86400000));
+    return { dagar: dagar, fra: s.merki, texti: dagaOrd(dagar), tonn: tonn(dagar) };
+  }
+  // „Aðili: spurningin — sögn" → { adili, spurning, sogn }. Hali verður sögn aðeins ef hann er stuttur (≤ 4 orð).
+  function titill(t) {
+    var s = hreint(t), adili = '', sogn = '';
+    var k = s.indexOf(': ');
+    if (k > 0 && k <= 70) { adili = s.slice(0, k); s = s.slice(k + 2); }
+    var h = s.lastIndexOf(' — ');
+    if (h > 0) { var hali = s.slice(h + 3).trim(); if (hali && hali.length <= 32 && hali.split(/\s+/).length <= 4) { sogn = hali; s = s.slice(0, h).trim(); } }
+    return { adili: adili, spurning: s, sogn: sogn };
+  }
+  // Fyrirsögnin með biðina auðkennda (<mark>) — leitað í hreinum texta, hver bútur afmáður sér.
+  function merktHtml(t) {
+    var m = BID_RX.exec(t);
+    if (!m) return esc(t);
+    var a = m.index, b = a + m[0].replace(/\s+$/, '').length;
+    return esc(t.slice(0, a)) + '<mark class="baf-merk">' + esc(t.slice(a, b)) + '</mark>' + esc(t.slice(b));
+  }
+  // Áherslur: magn með einingu („15–20 handslökkvitæki", „14.500 kr.", „41,35 klst.") feitletrað. Dagsetningar, klukka,
+  // númer (nr./R-/#) og ártöl standa óbreytt. Unnið á hreinum texta; hver bútur afmáður.
+  var TALA = '\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?';
+  var STOP = 'og|eða|til|í|á|af|við|sem|kl|um|frá|með|en|að|er|var|eru|ár|árið|hjá|fyrir|þann';
+  var AHER_RX = new RegExp('(^|[\\s(„])((?:' + TALA + ')(?:\\s?[–-]\\s?(?:' + TALA + '))?)(\\s?(?:kr\\.?|klst\\.?|m²|%)|\\s(?!(?:' + STOP + ')(?![' + STORIR.toLowerCase() + 'a-z]))[a-záðéíóúýþæö]{3,})', 'gi');
+  function aherslur(t) {
+    var s = String(t == null ? '' : t), ut = '', fra = 0, m;
+    AHER_RX.lastIndex = 0;
+    while ((m = AHER_RX.exec(s))) {
+      var a = m.index + m[1].length, tala = m[2], fyrir = s.slice(Math.max(0, a - 4), a);
+      if (/(nr\.\s|#|R-)$/.test(fyrir) || (/^(19|20)\d\d$/.test(tala) && !/kr/.test(m[3]))) continue;
+      var b = a + tala.length + m[3].length;
+      ut += esc(s.slice(fra, a)) + '<b>' + esc(s.slice(a, b)) + '</b>';
+      fra = b;
+    }
+    return ut + esc(s.slice(fra));
+  }
+  // Rökin → tímalína. Hnútur = rök með dagsetningu (sú fyrsta í textanum); ÓSTAÐFEST/⚠ og rök án dagsetningar fara
+  // í reitina undir; fyrsta setning sem segir að ekkert hafi gerst (IDAG_RX) verður „Í dag"-hnúturinn neðst.
+  function timalina(rok, nu) {
+    var hnutar = [], athugasemdir = [], vafi = [], heimildir = [], idag = null;
+    (rok || []).forEach(function (r) {
+      if (!r) return;
+      var texti = hreint(r.texti), merki = '';
+      if (!idag && !VAFI_RX.test(texti)) {
+        var setn = texti.split(SETN_RX);
+        for (var k = 0; k < setn.length; k++) {
+          if (IDAG_RX.test(setn[k].trim())) {
+            idag = setn[k].trim().replace(/([^.!?])$/, '$1.'); setn.splice(k, 1);
+            texti = setn.join('. ').replace(/\.\./g, '.').trim();
+            if (texti && !/[.!?)]$/.test(texti)) texti += '.';
+            if (!texti) merki = 'Í dag';
+            break;
+          }
+        }
+      }
+      if (texti && VAFI_RX.test(texti)) vafi.push(texti);
+      else if (texti) {
+        var d = dagsetningar(texti, nu);
+        if (d.length) { merki = d[0].merki; hnutar.push({ merki: merki, texti: texti }); }
+        else athugasemdir.push(texti);
+      }
+      if (r.heimild || r.slod) heimildir.push({ merki: merki, heimild: r.heimild || '', slod: r.slod || null });
+    });
+    return { hnutar: hnutar, idag: idag, athugasemdir: athugasemdir, vafi: vafi, heimildir: heimildir };
+  }
+  // „Hvað gerist": fyrsta setningin feitletruð, restin venjuleg.
+  function gerist(t) {
+    var s = hreint(t), p = s.split(SETN_RX);
+    var fyrsta = p.shift() || '';
+    return { fyrsta: /[.!?]$/.test(fyrsta) || !p.length ? fyrsta : fyrsta + '.', rest: p.join('. ').replace(/\.\./g, '.') };
+  }
+  // Handrit → inngangur + kaflar. Kafli byrjar á línu sem hefst á HÁSTAFA-heiti og tvípunkti („SPYRJA:", „SEGI ÞAU …:",
+  // „TILLAGA AÐ SVARI (fylltu inn verð ljósanna):" — svigi með lágstöfum má fylgja heitinu).
+  var KAFLA_RX = new RegExp('^([' + STORIR + '][' + STORIR + '0-9 ,./–-]{2,70}(?:\\s*\\([^)]{0,80}\\))?):\\s*(.*)$');
+  function handrit(t) {
+    var inn = [], kaflar = [], nuv = null;
+    String(t == null ? '' : t).replace(/\r/g, '').split('\n').forEach(function (l) {
+      var m = KAFLA_RX.exec(l.trim());
+      if (m && /[A-ZÁÐÉÍÓÚÝÞÆÖ]{3}/.test(m[1])) { nuv = { heiti: m[1].trim(), linur: m[2] ? [m[2]] : [] }; kaflar.push(nuv); return; }
+      (nuv ? nuv.linur : inn).push(l);
+    });
+    var klippa = function (a) { while (a.length && !a[0].trim()) a.shift(); while (a.length && !a[a.length - 1].trim()) a.pop(); return a.join('\n'); };
+    return { inngangur: klippa(inn), kaflar: kaflar.map(function (k) { return { heiti: k.heiti, texti: klippa(k.linur) }; }).filter(function (k) { return k.texti; }) };
+  }
+  // Hverjum: „Nafn, restin" eða „Nafn — restin" → nafnið stórt, restin smá.
+  function hverjum(t) {
+    var s = hreint(t), a = s.indexOf(', '), b = s.indexOf(' — ');
+    var k = a < 0 ? b : b < 0 ? a : Math.min(a, b);
+    return k > 0 ? { nafn: s.slice(0, k), rest: s.slice(k + (k === b ? 3 : 2)) } : { nafn: s, rest: '' };
+  }
+
+  // ── HTML-bútar Tillögu B (sömu klasar á borðinu og á /afgreidsla.html; hvor síða á sitt CSS) ──
+  function hausHtml(v, nu) {
+    var t = titill(v.titill), d = dagarFra(v.created_at);
+    return '<div class="baf-hd"><div class="baf-hdt"><div class="baf-kr2">' + (t.sogn ? '<span class="baf-sogn">' + esc(t.sogn) + '</span>' : '') +
+      '<span class="baf-kick">Það sem þú ákveður</span></div>' +
+      '<h2 class="baf-sp">' + (t.adili ? '<span class="baf-sp-a">' + esc(t.adili) + '</span>' : '') + merktHtml(t.adili ? t.spurning.charAt(0).toLocaleUpperCase('is') + t.spurning.slice(1) : t.spurning) + '</h2></div>' +
+      (d != null ? '<div class="baf-bord"><span>Á borðinu</span><b>' + (d === 0 ? 'Í dag' : esc(dagaOrd(d))) + '</b></div>' : '') + '</div>';
+  }
+  function reitur(heiti, gildi, undir, kl) {
+    return '<div class="baf-sr' + (kl ? ' ' + kl : '') + '"><dt>' + esc(heiti) + '</dt><dd class="baf-sv">' + gildi + '</dd>' + (undir ? '<dd class="baf-su">' + undir + '</dd>' : '') + '</div>';
+  }
+  function linaHtml(v, nu) {
+    // Þúsundapunktur handvirkt: /afgreidsla.html keyrir líka í vöfrum án íslenskra staðargagna (þá gæfi toLocaleString „114,050").
+    var r = [], b = bid(v, nu), virdi = v.virdi_kr == null || !isFinite(Number(v.virdi_kr)) ? null : String(Math.round(Number(v.virdi_kr))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    if (v.tegund === 'simtal') {
+      var s = v.simtal || {}, h = hverjum(s.hverjum);
+      if (h.nafn) r.push(reitur('Hverjum', esc(h.nafn), esc(h.rest) + (s.simi ? '' : (h.rest ? ' · ' : '') + 'enginn sími skráður')));
+      if (s.simi) r.push(reitur('Sími', '<a class="baf-lk" href="tel:' + esc(String(s.simi).replace(/[^\d+]/g, '')) + '">' + esc(s.simi) + '</a>'));
+    } else if (v.tegund === 'tolvupostur' && v.post) {
+      var to = v.post.to || [];
+      if (to.length) r.push(reitur('Til', esc(to[0]) + (to.length > 1 ? ' <i>+' + (to.length - 1) + '</i>' : ''), esc(v.post.subject || '')));
+    } else if (v.tegund === 'krafa' && v.krafa && v.krafa.r_numer) {
+      r.push(reitur('Reikningur', esc(v.krafa.r_numer), v.krafa.slod ? opnaHtml(v.krafa.slod) : ''));
+    }
+    if (b) r.push(reitur('Bið', esc(b.texti), b.fra ? 'síðan ' + esc(b.fra) : 'talið frá titlinum', 'baf-t-' + b.tonn));
+    r.push(reitur('Áætlað virði', virdi ? virdi + ' <i>kr.</i>' : 'Óþekkt', virdi ? '' : 'ekkert virði skráð á verkið'));
+    if (v.tegund === 'tolvupostur' && v.post && v.post.account) r.push(reitur('Sent úr', esc(v.post.account), ''));
+    else if (v.tegund === 'simtal' && /Thunderbird/.test(v.hvad_gerist || '')) {
+      var th = /[Þþ]ráðurinn er í ([^\s,(]+)/.exec(v.hvad_gerist || '');
+      r.push(reitur('Svarað úr', 'Thunderbird', th ? 'þráðurinn er í ' + esc(th[1].replace(/[.,]$/, '')) : ''));
+    }
+    return '<dl class="baf-strip">' + r.join('') + '</dl>';
+  }
+  function timalinaHtml(rok, nu, synaHeimildir) {
+    if (!rok || !rok.length) return '';
+    var t = timalina(rok, nu), h = '<section class="baf-k"><h3>Af hverju þetta er rétt</h3>';
+    var allir = t.hnutar.map(function (x, i) { return { merki: x.merki, texti: x.texti, kl: i === t.hnutar.length - 1 && !t.idag ? 'sidast' : '' }; });
+    if (t.idag) allir.push({ merki: 'Í dag', texti: t.idag, kl: 'idag' });
+    if (allir.length) h += '<ol class="baf-tl">' + allir.map(function (x) {
+      return '<li class="' + x.kl + '"><span class="baf-tld">' + esc(x.merki) + '</span><span class="baf-tlp" aria-hidden="true"></span><p>' + (x.kl === 'idag' ? esc(x.texti) : aherslur(x.texti)) + '</p></li>';
+    }).join('') + '</ol>';
+    if (t.athugasemdir.length) h += '<div class="baf-ath2">' + t.athugasemdir.map(function (x) { return '<p>' + aherslur(x) + '</p>'; }).join('') + '</div>';
+    if (t.vafi.length) h += '<div class="baf-vafi">' + t.vafi.map(function (x) { return '<p>' + aherslur(x) + '</p>'; }).join('') + '</div>';
+    if (synaHeimildir !== false && t.heimildir.length) h += '<ul class="baf-heim" aria-label="Heimildir">' + t.heimildir.map(function (x) {
+      var sl = x.slod ? opnaHtml(x.slod) : '';
+      return '<li>' + (x.merki ? '<b>' + esc(x.merki) + '</b> · ' : '') + esc(x.heimild) + (sl ? ' ' + sl : '') + '</li>';
+    }).join('') + '</ul>';
+    return h + '</section>';
+  }
+  function geristHtml(t) {
+    var g = gerist(t);
+    if (!g.fyrsta) return '';
+    return '<section class="baf-k"><h3 class="baf-sr-only">Þetta gerist þegar þú ýtir</h3><div class="baf-info">' +
+      '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>' +
+      '<div><b>' + esc(g.fyrsta) + '</b>' + (g.rest ? '<span>' + esc(g.rest) + '</span>' : '') + '</div></div></section>';
+  }
+  // Handritið í köflum. Langur kafli (≥ 3 línur eða > 180 stafir) fær reit og „Afrita"; stuttur er lína með heiti.
+  function handritHtml(t, id) {
+    var h = handrit(t);
+    if (!h.kaflar.length) h = { inngangur: '', kaflar: t ? [{ heiti: 'Handrit', texti: String(t).trim() }] : [] };
+    var ut = h.inngangur ? '<p class="baf-inn">' + esc(h.inngangur).replace(/\n+/g, ' ') + '</p>' : '';
+    return ut + h.kaflar.map(function (k, i) {
+      var linur = k.texti.split('\n'), langur = linur.length >= 3 || k.texti.length > 180;
+      var tolus = linur.length >= 2 && linur.every(function (l) { return !l.trim() || /^\d+[.)]\s/.test(l.trim()); });
+      var efni = tolus ? '<ol class="baf-hl">' + linur.filter(function (l) { return l.trim(); }).map(function (l) { return '<li>' + esc(l.trim().replace(/^\d+[.)]\s*/, '')) + '</li>'; }).join('') + '</ol>'
+        : '<div class="baf-ht">' + esc(k.texti) + '</div>';
+      return '<div class="baf-kafli' + (langur ? ' langur' : '') + '"><div class="baf-kh"><h4>' + esc(k.heiti) + '</h4>' +
+        (langur && id != null ? '<button type="button" class="btn iv sm baf-afr" data-baf="afrita" data-id="' + id + '" data-k="' + i + '">Afrita texta</button>' : '') + '</div>' + efni + '</div>';
+    }).join('');
+  }
+  function handritKafli(t, i) { var h = handrit(t); if (!h.kaflar.length) return String(t || '').trim(); var k = h.kaflar[i]; return k ? k.texti : ''; }
 
   /* ── TEIKNING ──────────────────────────────────────────────────────────────────────────────── */
   function samantekt() {
@@ -150,13 +337,6 @@
       '<a class="btn iv sm" href="/afgreidsla.html" title="Öll verkin og sagan (gert, sleppt, úrelt) á sér síðu">Saga ›</a>';
   }
 
-  function rokHtml(rok) {
-    if (!rok || !rok.length) return '';
-    return '<section class="baf-k"><h3>Af hverju þetta er rétt</h3><ul class="baf-rok">' + rok.map(function (r) {
-      var sl = r && r.slod ? opnaHtml(r.slod) : '';
-      return '<li>' + esc(r && r.texti) + ((r && r.heimild) || sl ? '<span class="baf-h">' + esc((r && r.heimild) || '') + (sl ? ' ' + sl : '') + '</span>' : '') + '</li>';
-    }).join('') + '</ul></section>';
-  }
   // Óstaðfest ágiskun (x.agiskun) fær tvo takka: staðfesta netfangið, eða taka það út og senda án þess (kóðarýni 17.11.2026).
   function athHtml(a, id) {
     if (!a || !a.length) return '';
@@ -190,10 +370,9 @@
         '<textarea class="baf-ta" data-baf-texti="' + v.id + '" data-ritun="1" rows="' + linur(textiNu(v)) + '" spellcheck="true" aria-label="Texti svarsins">' + esc(textiNu(v)) + '</textarea></section>';
     }
     if (v.tegund === 'simtal') {
+      // Tillaga B: hverjum og sími standa í staðreyndalínunni efst; hér er aðeins handritið, brotið í kafla.
       var s = v.simtal || {};
-      return '<section class="baf-k"><h3>Símtalið</h3><dl class="baf-dl"><dt>Hverjum</dt><dd>' + esc(s.hverjum) + '</dd>' +
-        (s.simi ? '<dt>Sími</dt><dd><a class="baf-lk" href="tel:' + esc(String(s.simi).replace(/[^\d+]/g, '')) + '">' + esc(s.simi) + '</a></dd>' : '') + '</dl>' +
-        (s.handrit ? '<div class="baf-sk"><pre>' + esc(s.handrit) + '</pre></div>' : '') + '</section>';
+      return s.handrit ? '<section class="baf-k"><h3 class="baf-sr-only">Símtalið</h3>' + handritHtml(s.handrit, v.id) + '</section>' : '';
     }
     if (v.tegund === 'verk') return '<section class="baf-k"><h3>Verkið</h3><div class="baf-sk"><pre>' + esc((v.verk || {}).lysing) + '</pre></div></section>';
     if (v.tegund === 'krafa' && v.krafa) {
@@ -216,15 +395,15 @@
     var h = '<div class="baf-d" id="baf-d-' + v.id + '">';
     // Haus yfir báða dálka: það sem er verið að biðja um, og tölurnar sem segja hvað það snýst um. Agnar 16.11.2026:
     // „skýrara hvað er verið að biðja um, og sé ekki bara textabók sem er erfitt að ná að sjá aðalatriðin."
-    h += '<div class="baf-hd"><div class="baf-hdt"><span class="baf-kick">Það sem þú ákveður</span>' +
-      '<h2 class="baf-sp">' + esc(v.titill) + '</h2></div>' + kpiHtml(v) + '</div>';
+    // Tillaga B (17.11.2026): sögn + aðili + spurningin með biðina auðkennda, staðreyndalína yfir báða dálka.
+    h += hausHtml(v) + linaHtml(v);
     // Tveir dálkar þegar einingin er breið (bogaskjárinn): rökin vinstra megin, efnið og athugasemdin hægra megin.
-    h += '<div class="baf-c">' + rokHtml(v.af_hverju) + athHtml(v.athuganir, v.id) + '</div>';
-    h += '<div class="baf-c"><section class="baf-k"><h3>Þetta gerist þegar þú ýtir</h3>' + skrefHtml(v.hvad_gerist) + '</section>' + efniHtml(v);
-    h += '<section class="baf-k"><h3>Athugasemd þín</h3><textarea class="baf-ta lagur" data-baf-ath="' + v.id + '" data-ritun="1" spellcheck="true" maxlength="2000" aria-label="Athugasemd á verkið" ' +
+    h += '<div class="baf-c">' + timalinaHtml(v.af_hverju) + athHtml(v.athuganir, v.id) + '</div>';
+    h += '<div class="baf-c">' + geristHtml(v.hvad_gerist) + efniHtml(v);
+    h += '<section class="baf-k"><h3><label for="baf-ath-' + v.id + '">Athugasemd þín</label></h3><div class="baf-athr"><textarea class="baf-ta lagur" id="baf-ath-' + v.id + '" data-baf-ath="' + v.id + '" data-ritun="1" spellcheck="true" maxlength="2000" ' +
       'placeholder="Til Claude og Tonys — vistast á verkið, t.d. „bíða til mánaðamóta“ eða verðið sem á að standa">' + esc(athNu(v)) + '</textarea>' +
-      '<div class="baf-af"><button type="button" class="btn iv sm" data-baf="ath-vista" data-id="' + v.id + '"' + (S.athBusy === v.id ? ' disabled' : '') + '>' + (S.athBusy === v.id ? 'Vista…' : 'Vista athugasemd') + '</button>' +
-      '<span class="baf-am" role="status">' + esc(S.athSkilabod && S.athSkilabod.id === v.id ? S.athSkilabod.texti : v.athugasemd ? 'Vistað ' + klTxt(v.athugasemd_at) + (v.athugasemd_af ? ' · ' + v.athugasemd_af : '') : '') + '</span></div></section></div>';
+      '<button type="button" class="btn iv sm" data-baf="ath-vista" data-id="' + v.id + '" aria-label="Vista athugasemd"' + (S.athBusy === v.id ? ' disabled' : '') + '>' + (S.athBusy === v.id ? 'Vista…' : 'Vista') + '</button></div>' +
+      '<div class="baf-af"><span class="baf-am" role="status">' + esc(S.athSkilabod && S.athSkilabod.id === v.id ? S.athSkilabod.texti : v.athugasemd ? 'Vistað ' + klTxt(v.athugasemd_at) + (v.athugasemd_af ? ' · ' + v.athugasemd_af : '') : '') + '</span></div></section></div>';
     if (S.skilabod && S.skilabod.id === v.id) h += '<div class="baf-msg villa" role="alert">' + esc(S.skilabod.texti) + '</div>';
     h += '<div class="baf-ft">' +
       '<button type="button" class="btn iv sm" data-baf="seinna" data-id="' + v.id + '"' + (upptekid ? ' disabled' : '') + ' title="Færir verkið aftar í röðina">Seinna</button>' +
@@ -238,12 +417,17 @@
       '</div></div>';
     return h;
   }
+  // Lína: aðilinn feitur fremst, restin venjuleg á einni línu; biðin (dagar frá dagsetningu titilsins) sem pilla aftast.
   function radHtml(v) {
-    var opid = S.opid === v.id, virdi = kr(v.virdi_kr);
-    return '<div class="baf-v' + (opid ? ' opid' : '') + '"><button type="button" class="baf-r" data-baf="opna" data-id="' + v.id + '" aria-expanded="' + opid + '"' + (opid ? ' aria-controls="baf-d-' + v.id + '"' : '') + '>' +
-      '<span class="baf-teg">' + esc(TEG[v.tegund]) + '</span><span class="baf-t">' + esc(v.titill) + '</span>' +
+    var opid = S.opid === v.id, virdi = kr(v.virdi_kr), t = titill(v.titill), b = bid(v);
+    var tx = t.adili
+      ? '<b class="baf-ta1">' + esc(t.adili) + '</b><span class="baf-sep"> · </span><span class="baf-rest">' + (opid ? 'opið' : esc(t.spurning + (t.sogn ? ' — ' + t.sogn : ''))) + '</span>'
+      : '<span class="baf-rest heil">' + esc(v.titill) + '</span>';
+    return '<div class="baf-v' + (opid ? ' opid' : '') + '"><button type="button" class="baf-r" data-baf="opna" data-id="' + v.id + '" aria-expanded="' + opid + '"' + (opid ? ' aria-controls="baf-d-' + v.id + '"' : '') + ' title="' + esc(v.titill) + '">' +
+      '<span class="baf-teg">' + esc(TEG[v.tegund]) + '</span><span class="baf-t">' + tx + '</span>' +
       '<span class="baf-mk">' + (v.ok ? '' : '<span class="x" title="Athugun stóðst ekki">✗</span>') + (v.athugasemd ? '<span title="Athugasemd: ' + esc(v.athugasemd) + '">✎</span>' : '') +
-        (virdi ? '<span class="baf-kr" title="Áætlað virði">' + virdi + '</span>' : '') + '</span>' +
+        (virdi ? '<span class="baf-kr" title="Áætlað virði">' + virdi + '</span>' : '') +
+        (b ? '<span class="baf-ald baf-t-' + b.tonn + '" title="' + esc(b.texti + (b.fra ? ' síðan ' + b.fra : '')) + '">' + esc(b.texti) + '</span>' : '') + '</span>' +
       '<span class="baf-chev" aria-hidden="true">' + (opid ? '▴' : '▾') + '</span></button>' + (opid ? opidHtml(v) : '') + '</div>';
   }
   function listi() {
@@ -333,6 +517,13 @@
     }).catch(function () {});   // drögin standa í reitnum og fara með þegar framkvæmt er
   }
 
+  // „Afrita texta" á kafla í handriti — aðeins á klippiborðið, ekkert sent og engu breytt.
+  function afrita(t) {
+    if (!t) return null;
+    var cb = rot.navigator && rot.navigator.clipboard;
+    if (!cb || !cb.writeText) { toast('Vafrinn leyfir ekki afritun — merktu textann og afritaðu', true); return null; }
+    return cb.writeText(t).then(function () { toast('Textinn er kominn á klippiborðið'); }, function () { toast('Afritun tókst ekki — merktu textann og afritaðu', true); });
+  }
   function smellur(e) {
     var el = e && e.target && e.target.closest ? e.target.closest('[data-baf]') : null;
     if (!el) return null;
@@ -341,6 +532,7 @@
     if (a === 'fl') { S.flokkur = el.getAttribute('data-f') || 'allt'; afvopna(); notify(); return null; }
     if (a === 'allt') { S.allt = !S.allt; notify(); return null; }
     if (a === 'opna') { S.opid = S.opid === id ? null : id; afvopna(); S.skilabod = null; S.athSkilabod = null; notify(); return null; }
+    if (a === 'afrita') return afrita(v && v.simtal ? handritKafli(v.simtal.handrit, Number(el.getAttribute('data-k')) || 0) : '');
     if (!v || S.busy) return null;
     if (a === 'framkvaema') return framkvaema(v);
     if (a === 'sleppa') return sleppa(v);
@@ -375,7 +567,11 @@
       '.baf-v.opid>.baf-r{background:rgba(241,237,228,.85)}',
       '.baf-bid{cursor:default;border-top:1px solid var(--rule2);background:linear-gradient(90deg,rgba(0,0,0,.025),rgba(0,0,0,.06),rgba(0,0,0,.025))}',
       '.baf-teg{font:600 9.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:3px 0;border:1px solid var(--edge2);border-radius:2px;color:var(--ink2);text-align:center;white-space:nowrap}',
-      '.baf-t{font-size:13.5px;font-weight:600;line-height:1.35;min-width:0;overflow-wrap:anywhere}',
+      // Tillaga B: ein lína á línu — aðilinn feitur, restin venjuleg; allur titillinn í title-eigindinu.
+      '.baf-t{font-size:14.5px;font-weight:400;line-height:1.4;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.baf-ta1{font-weight:700;color:var(--ink)}.baf-sep{color:var(--mute)}.baf-rest{color:var(--ink2)}.baf-rest.heil{font-weight:600;color:var(--ink)}',
+      '.baf-ald{font:700 12px var(--body);font-variant-numeric:tabular-nums;border-radius:999px;padding:3px 10px;background:#f3f6fb;color:#2e4064;white-space:nowrap}',
+      '.baf-ald.baf-t-r{background:#fee2de;color:#b91c1c}.baf-ald.baf-t-y{background:#fde5a4;color:#7a4b00}',
       '.baf-mk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);white-space:nowrap}',
       '.baf-mk .x{color:#a1161a;font-weight:800}',
       '.baf-kr{font:600 12px var(--mono);font-variant-numeric:tabular-nums;color:var(--ink2)}',
@@ -390,7 +586,7 @@
       '.baf-hdt{flex:999 1 320px;min-width:0;display:flex;flex-direction:column;gap:6px}',
       '.baf-kick{display:flex;align-items:center;gap:9px;font:700 10.5px var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--g8)}',
       '.baf-kick::before{content:"";flex:none;width:26px;height:2px;background:var(--gline);box-shadow:0 1px 0 #fff}',
-      '.baf-sp{margin:0;font:800 clamp(18px,2.1cqi,25px)/1.22 var(--disp);letter-spacing:-.02em;color:var(--ink);text-shadow:0 1px 0 #fff;overflow-wrap:anywhere}',
+      '.baf-sp{margin:0;font:800 clamp(19px,2.2cqi,28px)/1.22 var(--disp);letter-spacing:-.02em;color:var(--ink);text-shadow:0 1px 0 #fff;overflow-wrap:anywhere}',
       '.baf-kpi{flex:0 1 auto;display:flex;flex-wrap:wrap;gap:10px}',
       '.baf-kt{display:flex;flex-direction:column;gap:1px;min-width:98px;padding:7px 12px;border:1px solid var(--rule3);border-radius:4px;background:var(--key);box-shadow:var(--keysh)}',
       '.baf-kt span{font:700 9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}',
@@ -440,11 +636,75 @@
       '.baf-meira{display:block;width:100%;min-height:40px;padding:8px 14px;border:0;border-top:1px solid var(--rule2);background:none;font:600 12px var(--body);color:var(--ink2);text-align:left;cursor:pointer}',
       '.baf-meira:hover{background:rgba(241,237,228,.55)}.baf-meira:focus-visible{outline:2px solid var(--g6);outline-offset:-2px}',
       '.baf-tomt b{color:var(--ink)}',
+      bCss(),
       '@media (prefers-reduced-motion:no-preference){.btn.baf-go{transition:filter 120ms,background-color 120ms}}',
-      '@container baf (min-width: 980px){.baf-d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}.baf-d>.baf-msg,.baf-ft,.baf-hd{grid-column:1 / -1}}',
+      '@container baf (min-width: 980px){.baf-d{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:40px;align-items:start}.baf-d>.baf-msg,.baf-ft,.baf-hd,.baf-strip{grid-column:1 / -1}}',
       '@container baf (max-width: 620px){.baf-r{grid-template-columns:56px minmax(0,1fr) 16px;row-gap:3px}.baf-mk{grid-column:2;grid-row:2}.baf-chev{grid-column:3;grid-row:1}' +
+        '.baf-t{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}' +
         '.baf-d{padding:2px 12px 14px}.baf-ft .btn{flex:1 1 auto}.baf-grow{display:none}.btn.baf-go{flex:1 1 100%;min-height:46px}' +
-        '.baf-sp{font-size:19px}.baf-kpi{flex:1 1 100%}.baf-kt{flex:1 1 0;min-width:0}}'
+        '.baf-sp{font-size:19px}.baf-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.baf-tl li{grid-template-columns:44px 18px minmax(0,1fr)}}'
+    ].join('');
+  }
+  /* Tillaga B — útlit opna verksins. Sameiginlegt borðinu og /afgreidsla.html (sem setur það í <style> sjálf).
+   * Breytur borðsins (--ink, --ink2, --mute, --rule2, --edge, --body) með V2-gildin sem varagildi; litatónarnir
+   * (gult fyrir bið, rautt fyrir „í dag", blátt fyrir „hvað gerist", appelsínugult fyrir sögnina) eru úr Brunahólf V2. */
+  function bCss() {
+    var I = 'var(--ink,#101e43)', I2 = 'var(--ink2,#2e4064)', M = 'var(--mute,#5a6882)', R2 = 'var(--rule2,#e7ecf3)', B = "var(--body,Poppins,system-ui,sans-serif)";
+    return [
+      '.baf-hd{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px 20px;margin-top:14px}',
+      '.baf-hdt{flex:999 1 320px;min-width:0;display:flex;flex-direction:column;gap:8px}',
+      '.baf-kr2{display:flex;flex-wrap:wrap;align-items:center;gap:10px}',
+      '.baf-sogn{font:700 11px/1.2 ' + B + ';letter-spacing:.12em;text-transform:uppercase;color:#c2410c;background:#ffeee0;box-shadow:inset 0 0 0 1px #f8b98c;border-radius:6px;padding:5px 9px}',
+      '.baf-sp-a{display:block;margin-bottom:5px;font:600 15px/1.3 ' + B + ';letter-spacing:0;color:' + I2 + '}',
+      '.baf-merk{background:#fde5a4;color:inherit;border-radius:5px;padding:0 5px;-webkit-box-decoration-break:clone;box-decoration-break:clone}',
+      '.baf-bord{flex:none;display:flex;flex-direction:column;gap:1px;padding:7px 13px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--edge,#d8dee9)}',
+      '.baf-bord span{font:600 10px ' + B + ';letter-spacing:.08em;text-transform:uppercase;color:' + M + '}',
+      '.baf-bord b{font:700 16px/1.25 ' + B + ';color:' + I + '}',
+      '.baf-strip{margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:' + R2 + ';border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px ' + R2 + '}',
+      '.baf-sr{display:flex;flex-direction:column;gap:2px;min-width:0;padding:12px 16px;background:#f3f6fb}',
+      '.baf-sr dt{font:600 10.5px ' + B + ';letter-spacing:.08em;text-transform:uppercase;color:' + M + '}',
+      '.baf-sv{margin:0;font:700 17px/1.3 ' + B + ';color:' + I + ';overflow-wrap:anywhere}',
+      '.baf-sv i{font:500 12px ' + B + ';font-style:normal;color:' + M + '}',
+      '.baf-su{margin:0;font:12.5px/1.4 ' + B + ';color:' + M + ';overflow-wrap:anywhere}',
+      '.baf-sr.baf-t-r .baf-sv{color:#b91c1c}.baf-sr.baf-t-y .baf-sv{color:#7a4b00}',
+      '.baf-k h3.baf-sr-only,.baf-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}',
+      // Tímalínan: dagsetning · punktur á lóðréttri línu · texti. Síðasti dagsetti hnúturinn navy, „Í dag" rauður.
+      '.baf-tl{list-style:none;margin:0;padding:0;max-width:92ch}',
+      '.baf-tl li{display:grid;grid-template-columns:52px 18px minmax(0,1fr);column-gap:10px}',
+      '.baf-tld{font:700 13.5px/1.6 ' + B + ';color:' + I + ';font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.baf-tlp{position:relative}',
+      '.baf-tlp::before{content:"";position:absolute;left:4px;top:6px;width:10px;height:10px;border-radius:50%;background:#c3ccd9}',
+      '.baf-tlp::after{content:"";position:absolute;left:8px;top:19px;bottom:-5px;width:2px;background:' + R2 + '}',
+      '.baf-tl li:last-child .baf-tlp::after{display:none}',
+      '.baf-tl li.sidast .baf-tlp::before{background:#0b2d5f}',
+      '.baf-tl li.idag .baf-tld{color:#b91c1c}',
+      '.baf-tl li.idag .baf-tlp::before{left:3px;top:5px;width:12px;height:12px;background:#dc2626;box-shadow:0 0 0 4px #fee2de}',
+      '.baf-tl p{margin:0 0 14px;font:14.5px/1.6 ' + B + ';color:' + I2 + ';overflow-wrap:anywhere}',
+      '.baf-tl li:last-child p{margin-bottom:0}',
+      '.baf-tl b,.baf-ath2 b{font-weight:600;color:' + I + '}',
+      '.baf-tl li.idag p{font-weight:600;color:' + I + '}',
+      '.baf-ath2,.baf-vafi{margin-top:12px;padding:10px 13px;border-radius:10px;background:#f3f6fb;font:13.5px/1.55 ' + B + ';color:' + I2 + ';max-width:92ch;overflow-wrap:anywhere}',
+      '.baf-ath2 p,.baf-vafi p{margin:0}.baf-ath2 p+p,.baf-vafi p+p{margin-top:6px}',
+      '.baf-vafi{background:#feecd2;color:#9a3412}.baf-vafi b{font-weight:600;color:#7c2d12}',
+      '.baf-heim{list-style:none;margin:10px 0 0;padding:0;font:12px/1.45 ' + B + ';color:' + M + ';max-width:92ch;overflow-wrap:anywhere}',
+      '.baf-heim li{margin:0 0 3px}.baf-heim b{color:' + I2 + ';font-weight:600}',
+      // „Hvað gerist" í bláum reit: fyrsta setningin feit.
+      '.baf-info{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:10px;background:#ebf0fe;color:#1e3a8a;max-width:92ch}',
+      '.baf-info svg{flex:none;margin-top:2px;color:#2f6fe4}',
+      '.baf-info b{display:block;font:700 15px/1.45 ' + B + '}',
+      '.baf-info span{display:block;margin-top:2px;font:13.5px/1.5 ' + B + '}',
+      // Handritið í köflum.
+      '.baf-inn{margin:0 0 10px;font:12.5px/1.5 ' + B + ';color:' + M + ';max-width:92ch}',
+      '.baf-kafli{margin:0 0 12px;max-width:92ch}',
+      '.baf-kh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:5px}',
+      '.baf-kh h4{margin:0;font:600 10.5px/1.3 ' + B + ';letter-spacing:.08em;text-transform:uppercase;color:' + M + '}',
+      '.baf-ht{white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 ' + B + ';color:' + I + '}',
+      '.baf-hl{margin:0;padding-left:22px;font:14px/1.6 ' + B + ';color:' + I + '}.baf-hl li+li{margin-top:2px}',
+      '.baf-kafli.langur .baf-ht,.baf-kafli.langur .baf-hl{padding:14px 16px;border-radius:10px;background:#f3f6fb;box-shadow:inset 0 0 0 1px ' + R2 + '}',
+      '.baf-kafli.langur .baf-hl{padding-left:36px}',
+      '.baf-athr{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}',
+      '.baf-athr .baf-ta{flex:1 1 280px;width:auto;min-width:0}',
+      '.baf-athr .btn{min-height:44px}'
     ].join('');
   }
   function festa(root) {
@@ -482,7 +742,11 @@
     return true;
   }
 
-  var api = { version: '2026-11-17a', samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
+  // Tillaga B — hrein föll og HTML-bútar sem /afgreidsla.html notar líka (ein útgáfa af greiningunni).
+  var snid = { titill: titill, bid: bid, timalina: timalina, gerist: gerist, handrit: handrit, hverjum: hverjum, aherslur: aherslur,
+    hausHtml: hausHtml, linaHtml: linaHtml, timalinaHtml: timalinaHtml, geristHtml: geristHtml, handritHtml: handritHtml, handritKafli: handritKafli,
+    afrita: afrita, css: bCss };
+  var api = { version: '2026-11-17b', snid: snid, samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
     uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S,
     // Fyrir símasíðuna (515): sömu hjálparföll og borðið teiknar með — engin önnur útgáfa af gögnunum eða aðgerðunum.
     vakta: function (f) { if (typeof f === 'function' && vaktar.indexOf(f) < 0) vaktar.push(f); },
