@@ -194,12 +194,15 @@
       const reikningur = !mal && !okkar && !SVAR_EFNI.test(efniInn) && BIRGI_RE.test(efniInn) && !OKKAR_NAFN.test(efniInn);
       const uppfaersla = !mal && !kunni && lab.indexOf('CATEGORY_UPDATES') >= 0;   // Gmail: kvittanir, tilkynningar, kannanir — enginn bíður svars
       const bidur = !svarad && !lokid && !malLokad && sidasta.folder !== 'SENT';
-      const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
+      let hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
         : auglysing ? 'auglysing'
         : sjalfvirkt ? 'sjalfvirkt'
         : bidur ? (okkar ? 'innanhuss' : reikningur ? 'reikningar' : uppfaersla ? 'sjalfvirkt'
           : (erGmail(sidastaInn.account) || msgs.some(x => x.folder === 'SENT') ? 'bidur' : 'omaelt')) : 'buid';   // 10.11.2026: án Sent-möppu er „ósvarað“ ekki mælanlegt — ekki fullyrða það
+      // 17.11.2026 (513 VIP-vakt): ósvaraður VIP-þráður fer í ⚡ VIP efst. Þjónninn (vip-postur) ræður hvað er VIP og ósvarað;
+      // hér er aðeins lyft því sem ÞETTA borð telur líka bíða svars — ★ og Hjá Claude halda sínum stað (og fá merkið).
+      try { if ((hluti === 'bidur' || hluti === 'omaelt') && window.VipVakt && VipVakt.osvarad(k)) hluti = 'vip'; } catch (_) {}
       const mikilv = stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important);
       // Mikilvægi (11.11.2026): stjarna > þekktur kúnni > mál á borðinu / beiðni / samtal sem við höfum tekið þátt í > Gmail IMPORTANT. Jafnt → nýjast.
       const beidni = !sjalfvirkt && !auglysing && BEIDNI_RE.test(texti);
@@ -212,7 +215,7 @@
     ut.sort((a, b) => ts(b.timi) - ts(a.timi));
     return ut;
   }
-  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''],
+  const HLUTAR = [['vip', '⚡ VIP · svara innan klukkustundar', '_vip'], ['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''],
     ['innanhuss', 'Innanhúss · áframsent og minnispunktar', '_ok'], ['reikningar', 'Reikningar til okkar · greiða, ekki svara', '_ok'],
     ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok'], ['auglysing', 'Auglýsingar · fréttabréf', '_ok']];
   const FELLT = { innanhuss: true, reikningar: true, buid: true, sjalfvirkt: true, auglysing: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
@@ -406,6 +409,7 @@
   const chip = (a, v, on, texti, title) => '<button type="button" data-t5="tp-' + a + '" data-v="' + esc(v) + '" aria-pressed="' + !!on + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + texti + '</button>';
   function merkiHtml(t, allt) {
     const m = [];
+    try { if (window.VipVakt) { const v = VipVakt.chipHtml(t.k); if (v) m.push(v); } } catch (_) {}   // 513: ⚡ VIP + klukka
     t.stjornur.forEach(s => m.push('<span class="tp-m tp-stj" style="color:' + (STJ_LITUR[s] || '#d4a017') + '">' + STJORNUR[s] + '</span>'));
     (allt ? t.merki : t.merki.slice(0, 3)).forEach(l => m.push('<span class="tp-m' + (l === LOKID ? ' _lokid' : '') + '">' + esc(l) + '</span>'));
     if (!allt && t.merki.length > 3) m.push('<span class="tp-m">+' + (t.merki.length - 3) + '</span>');
@@ -474,7 +478,7 @@
         (erGmail(t.account) && t.kunni && window.ReikningaPostur && ReikningaPostur.sendaReikning ? '<button type="button" class="btn iv sm" data-t5="tp-skjol" data-v="' + esc(t.k) + '">✉ Senda reikning / skýrslu</button>' : '') +
         '<button type="button" class="btn iv sm' + (S.claudeOpid === t.k ? ' _on' : '') + '" data-t5="tp-claude-opna" data-v="' + esc(t.k) + '">🤖 Til Claude…</button>' +
         '<button type="button" class="btn iv sm' + (stj ? ' tp-gull' : '') + '" data-t5="tp-stjarna" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Tilbúið að svara — efst í listanum">' + (stj ? '★ Tilbúið' : '☆ Merkja tilbúið') + '</button>' +
-        (t.hluti === 'bidur' || t.hluti === 'omaelt' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
+        (t.hluti === 'bidur' || t.hluti === 'omaelt' || t.hluti === 'vip' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
         (erGmail(t.account) ? '<a class="btn iv sm" href="' + esc(gmailSlod(t)) + '" target="_blank" rel="noopener">Opna í Gmail ↗</a>' : '') +
         '<button type="button" class="btn iv sm" data-t5="' + (t.falid ? 'tp-afhylja' : 'tp-fela') + '" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>' + (t.falid ? 'Sýna aftur' : '✕ Fela') + '</button>' +
       '</div>' + claudeHtml(t) + svarHtml(t) + malHtml(t) +
@@ -485,7 +489,7 @@
     let w = 0; try { const v = Number(window.Vidmot ? Vidmot.lesaTaeki('bord.vbrBreidd', 0) : 0); w = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}   // sami lykill sem 368 skrifar við sleppingu
     const s = S.sia, l = siad(), val = valinn();
     const n = h => hlutaListi(l, h).length;
-    const hausTala = (S.loaded ? [n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★'].join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
+    const hausTala = (S.loaded ? [].concat(n('vip') ? [n('vip') + ' ⚡ VIP'] : []).concat([n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★']).join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
     const listi = !S.loaded ? '<div class="empty"><span class="coin" aria-hidden="true"></span>' + (S.villa ? esc(S.villa) : 'Sæki póstinn…') + '</div>'
       : !l.length ? '<div class="empty"><span class="coin" aria-hidden="true"></span>Enginn póstur passar við síuna.</div>'
       : HLUTAR.map(h => { const m = hlutaListi(l, h[0]); if (!m.length) return ''; const fela = erFellt(h[0], s);
@@ -573,6 +577,7 @@
   window.Tolvupostar = {
     S, HOLF, GMAIL_HOLF, erGmail, HLUTAR, HLUTA_L, load, loaded: () => S.loaded, loading: () => S.loading, loadedAt: () => S.loadedAt, villa: () => S.villa,
     siad, hlutaListi, finna, FELLT, erFellt, valinn, merkjaTalning, vistaSiu, rymiHtml, smellur, innslattur, saekjaNyjan,
+    endurflokka: () => { if (S.loaded) S.thraedir = byggjaThraedi(S.postar); },   // 513: VIP-gögnin komu eftir hleðslu
     tilClaude: (k, v, sky) => { const t = finna(k); return t ? adgerd(t, () => tilClaude(t, v, sky)) : Promise.resolve(); },
     stjarna: k => { const t = finna(k); return t ? adgerd(t, () => stjarna(t)) : Promise.resolve(); },
     svarad: k => { const t = finna(k); return t ? adgerd(t, () => merkjaSvarad(t)) : Promise.resolve(); },
