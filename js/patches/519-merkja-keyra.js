@@ -26,6 +26,7 @@
   const API = '/api/afgreidsla';
   const EIGANDI = 'Agnar';                    // eins og 489: sést aðeins hjá Agnari þar til fleiri fá það
   const KANNA_MS = 6000;
+  const RETRY_MS = 60000;   // sókn í mesta lagi á mínútu fresti nema umferð sé í keyrslu (KANNA_MS)
   // Röðin í glugganum er röð Agnars í beiðninni. forgangur/agent ráðast á þjóninum (_merkja.cjs MERKI).
   const MERKI = [
     ['ja', '✓', 'Já'], ['nei', '✕', 'Nei'], ['keyra', '▶', 'Keyra'], ['snooze', '💤', 'Snooze'],
@@ -34,7 +35,7 @@
   const TAKN = Object.fromEntries(MERKI.map(([k, t]) => [k, t]));
   const HEITI = Object.fromEntries(MERKI.map(([k, , h]) => [k, h]));
   const S = { virkt: false, sott: 0, bid: null, villa: null, gogn: null, idx: new Map(), opid: null, hamur: null, drog: {}, busy: {}, keyrir: false,
-    kanna: 0, fyrraBuin: null, sed: lesaSed(), listaOpinn: true };
+    kanna: 0, lokad: 0, fyrraBuin: null, sed: lesaSed(), listaOpinn: true };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const p2 = (n) => String(n).padStart(2, '0');
   const dd = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getDate()) + '.' + p2(d.getMonth() + 1); };
@@ -73,16 +74,20 @@
     S.fyrraBuin = !!t.buin;
     if (t.i_keyrslu > 0) raesaKonnun(); else stodvaKonnun();
   }
+  // Óháð rýni 17.11.2026: S.sott var aðeins sett við 200, svo 401/403/500/netvilla → teikna → html → hlada → … endalaust
+  // (400 fyrirspurnir á 250 ms). Nú er S.sott sett í ÖLLUM útkomum ÁÐUR en teiknað er; ný tilraun eftir RETRY_MS.
+  // Lokað (401/403) er sagt í einni línu, ekki þagað. test/merkja-keyra-vafri.test.cjs heldur þessu.
   async function hlada() {
     if (S.bid) return S.bid;
     S.bid = (async () => {
       try {
         const j = await kall();
-        if (j._status === 401 || j._status === 403) { S.virkt = false; S.villa = null; return; }
+        if (j._status === 401 || j._status === 403) { S.virkt = false; S.lokad = j._status; S.villa = null; return; }
+        S.lokad = 0;
         if (j._status !== 200 || j.ok !== true) { S.villa = j.error || ('Villa ' + j._status); return; }
         S.virkt = true; S.villa = null; taka(j);
-      } catch (e) { S.villa = String((e && e.message) || e); }
-      finally { S.bid = null; teikna(); }
+      } catch (e) { S.villa = 'Netvilla: ' + String((e && e.message) || e).slice(0, 120); }
+      finally { S.sott = Date.now(); S.bid = null; teikna(); }
     })();
     return S.bid;
   }
@@ -160,7 +165,7 @@
     '.mk-lst li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:5px 8px;border-radius:5px;background:#fbece5;font-size:12px;line-height:1.35;color:#7c2f12}' +
     '.mk-lst li.ok{background:#e7f2ea;color:#1f5434}.mk-lst li b{color:var(--ink,#161513)}' +
     '.mk-lst button{all:unset;cursor:pointer;text-decoration:underline;font-weight:600}' +
-    '.frow .kick,.mrow .kick{display:flex;align-items:center;flex-wrap:wrap}.sb-mk{margin-top:6px}.lrow .s .mk-m{margin-right:6px}' +
+    '.sb-mk{margin-top:6px}.lrow .s .mk-m{margin-right:6px}' +
     '@media (max-width:700px){.mk-m{min-width:30px;height:26px;font-size:12px}.mk-h{min-height:48px;font-size:12px}.mk-bar{padding:7px 9px;gap:5px 9px}.mk-run{flex:1 1 100%;justify-content:center;min-height:40px}}' +
     '</style>';
 
@@ -224,8 +229,12 @@
   function html(n) {
     _nuSidast = n || '';
     if (n !== EIGANDI) return '';
-    if (!S.sott || Date.now() - S.sott > 60000) { if (!S.bid) hlada(); }
-    if (!S.virkt) return '';
+    if (!S.sott || Date.now() - S.sott > RETRY_MS) { if (!S.bid) hlada(); }
+    if (!S.virkt) {
+      if (S.lokad) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span>Merkja og keyra: aðeins fyrir innskráðan stjórnanda (' + S.lokad + '). Skráðu þig inn til að merkja línur.</span></section>';
+      if (S.villa && S.sott) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span style="color:#b5522a">Merkja og keyra náði ekki í merkingarnar: ' + esc(S.villa) + ' — reyni aftur eftir mínútu.</span></section>';
+      return '';
+    }
     const t = (S.gogn && S.gogn.teljari) || {};
     const claudeOk = !!(S.gogn && S.gogn.claude_virkt);
     const merktN = [...S.idx.values()].filter((m) => m.stada === 'merkt').length;

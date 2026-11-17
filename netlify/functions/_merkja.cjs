@@ -24,7 +24,11 @@ const PSV = require('./_postsvar-rod.cjs');
 
 const BORD = 'thjonustubord';
 const MAX_ALDUR_MS = 15 * 60 * 1000;
-const HAMARK_UMFERD = 10;                 // atriði sem fara í eina umferð; hin bíða næstu (röðin ræður hverjum)
+const HAMARK_UMFERD = 6;                  // atriði sem fara í eina umferð; hin bíða næstu (röðin ræður hverjum)
+// Föst keyrsla (óháð rýni 17.11.2026, #2): vinnaMerki byrjar ekki eftir MAX_ALDUR_MS og Claude-kallið hefur 4 mín. þak, svo
+// röð sem stendur enn í i_keyrslu 20 mín. eftir ræsingu er dauð (fallið drepið / síðasta PATCH brást). Hún telst þá
+// vantar_svar — annars læsir EIN föst röð ▶ Keyra og merkingu á línunni að eilífu.
+const FAST_MS = MAX_ALDUR_MS + 5 * 60 * 1000;
 const SNOOZE_HAMARK_DAGAR = 366;
 
 // forgangur: lægra = fremst. agent: fer til agents í keyrslu.
@@ -61,6 +65,9 @@ function snoozeDags(due, nu = new Date()) {
 // Er snooze-ið runnið út (atriðið komið aftur)?
 const snoozeBuid = (m, nu = new Date()) => !!(m && m.stada === 'blundar' && m.due_at && Date.parse(m.due_at) <= nu.getTime());
 
+const erFost = (m, nu = new Date()) => !!(m && m.stada === 'i_keyrslu' && Date.parse(m.keyrt_at || (m.claude && m.claude.at) || 0) < nu.getTime() - FAST_MS);
+const FAST_ASTAEDA = 'Agentinn skilaði engu innan 20 mín. (keyrslan rofnaði) — merktu línuna aftur til að senda hana í nýja umferð.';
+
 // Röðin: forgangur (Veit ekki / Rannsaka betur fremst), svo elsta merkið fyrst. Stöðug.
 function rodun(listi) {
   return (listi || []).map((m, i) => ({ m, i })).sort((a, b) =>
@@ -71,7 +78,7 @@ const forgangurAf = (m) => (MERKI[m && m.merki] ? MERKI[m.merki].forgangur : 99)
 // Teljarinn efst á borðinu: merkt · í keyrslu · klárað · vantar svör (+ blundar). Klárað/vantar svör telja SÍÐUSTU umferð,
 // svo hann sjái stöðu umferðarinnar í einni línu. `buin` = síðasta umferð er búin (ekkert í keyrslu) — kveikir ljósið.
 function teljari(listi, nu = new Date()) {
-  const L = (listi || []).filter((m) => m && m.stada !== 'tekid_af');
+  const L = (listi || []).filter((m) => m && m.stada !== 'tekid_af').map((m) => (erFost(m, nu) ? Object.assign({}, m, { stada: 'vantar_svar' }) : m));
   const umferdir = [...new Set(L.filter((m) => m.umferd).sort((a, b) => Date.parse(b.keyrt_at || 0) - Date.parse(a.keyrt_at || 0)).map((m) => m.umferd))];
   const sidasta = umferdir[0] || null;
   const iU = sidasta ? L.filter((m) => m.umferd === sidasta) : [];
@@ -119,7 +126,8 @@ function metaSkil(c, merki) {
 }
 
 // Það sem vafrinn fær — aldrei nonce, aldrei hrá gögn agentsins.
-function synilegt(m) {
+function synilegt(m0) {
+  const m = erFost(m0) ? Object.assign({}, m0, { stada: 'vantar_svar', astaeda: FAST_ASTAEDA }) : m0;
   const c = m.claude || {};
   const n = m.nidurstada || {};
   return { id: m.id, lina: m.lina, mal_id: m.mal_id, mal_titill: m.mal_titill, merki: m.merki, heiti: (MERKI[m.merki] || {}).heiti || m.merki,
@@ -137,8 +145,17 @@ const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date(
 const baeta = (t, body) => P.sbPost(t, body).then(sbJson);
 const linaAf = (malId) => 'mal:' + Number(malId);
 
+// Tiltekt: fastar keyrslur þessa notanda → vantar_svar (skráð í grunninn). Keyrð í upphafi listi/vista/keyra; bili hún
+// telja teljari() og synilegt() fasta röð samt sem vantar_svar, svo ekkert læsist.
+async function tiltekt(hver, nu = new Date()) {
+  const mork = new Date(nu.getTime() - FAST_MS).toISOString();
+  return breyta(`bord_merkingar?bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.i_keyrslu&keyrt_at=lt.${encodeURIComponent('"' + mork + '"')}`,
+    { stada: 'vantar_svar', astaeda: FAST_ASTAEDA, lokid_at: nu.toISOString() }).catch(() => []);
+}
+
 // Merkingar sem vafrinn sýnir: virkar + niðurstöður síðustu 3 daga. Ein á línu (sú nýjasta).
 async function listi(hver) {
+  await tiltekt(hver);
   const fra = new Date(Date.now() - 3 * 864e5).toISOString();
   const r = await lesa(`bord_merkingar?select=*&bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=neq.tekid_af` +
     `&or=(stada.in.(merkt,i_keyrslu,blundar),updated_at.gte.${encodeURIComponent('"' + fra + '"')})&order=updated_at.desc&limit=400`);
@@ -157,6 +174,7 @@ async function vista(b, hver, nu = new Date()) {
   if (merki === 'comment' && !ath) throw villa('Athugasemdin er tóm');
   const due = merki === 'snooze' ? snoozeDags(b.due_at, nu) : null;
   const lina = linaAf(mid);
+  await tiltekt(hver, nu);
   const eldri = await lesa(`bord_merkingar?select=id,stada&bord=eq.${BORD}&lina=eq.${encodeURIComponent(lina)}&merkt_af=eq.${encodeURIComponent(hver)}&stada=in.(${VIRKAR.join(',')})&limit=5`);
   if (eldri.some((x) => x.stada === 'i_keyrslu')) throw villa('Agent er að vinna í þessari línu — niðurstaðan birtist hér.', 409);
   let mal = null;
@@ -184,39 +202,51 @@ async function charlizeNei(m, hver) {
 // ▶ KEYRA — allt sem er merkt fer í röð. Skilar { umferd, sent, bida, nei }.
 async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu = new Date() } = {}) {
   if (typeof kveikja !== 'function') throw new Error('kveikja vantar');
+  await tiltekt(hver, nu);
   const merkt = rodun(await lesa(`bord_merkingar?select=*&bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.merkt&order=forgangur.asc,merkt_at.asc&limit=200`));
   if (!merkt.length) return { umferd: null, sent: 0, bida: 0, nei: 0, skilabod: 'Ekkert er merkt.' };
   const umferd = 'u' + nu.getTime().toString(36);
   const nuIso = nu.toISOString();
-  let sent = 0, nei = 0;
   const agentVerk = merkt.filter((m) => MERKI[m.merki] && MERKI[m.merki].agent);
-  for (const m of merkt.filter((x) => x.merki === 'nei')) {
+  // Óháð rýni 17.11.2026 (#3): raðbundnar netferðir (~3 á atriði × 10) fóru yfir ~10 s þak Netlify — Agnar hefði séð
+  // „fór ekki af stað“ þótt verkin væru farin. Nú: málin í EINNI fyrirspurn, leiðarvísirinn einu sinni, atriðin samhliða.
+  const valin = agentVerk.slice(0, hamark);
+  const malIds = [...new Set(valin.map((m) => Number(m.mal_id)).filter((x) => Number.isInteger(x) && x > 0))];
+  const [malar, leidG] = await Promise.all([
+    malIds.length ? lesa(`thjonustubeidni?select=id,title,type,summary,customer_nafn,status&id=in.(${malIds.join(',')})`).catch(() => []) : [],
+    (leidOpt.g ? Promise.resolve(leidOpt.g) : LEID.saekja(leidOpt)).then((g) => ({ g }), (e) => ({ villa: String((e && e.message) || e).slice(0, 120) })),
+  ]);
+  const neiNidur = await Promise.all(merkt.filter((x) => x.merki === 'nei').map(async (m) => {
     const tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso });
-    if (!tekin.length) continue;
+    if (!tekin.length) return 0;
     try {
       const cid = await charlizeNei(m, hver);
       await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'klarad', lokid_at: new Date().toISOString(), agent: 'charlize',
         nidurstada: { tegund: 'akvordun', svar: 'Nei skráð hjá Charlize (#' + cid + ') — agentarnir leggja þetta ekki til aftur.', charlize_id: cid },
         odin_mat: { marktaekt: true, astaeda: 'Ákvörðun Agnars — engin vinna', at: new Date().toISOString() } });
-      nei++;
+      return 1;
     } catch (e) {
       await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'vantar_svar', astaeda: 'Náði ekki að skrá Nei: ' + String((e && e.message) || e).slice(0, 160), lokid_at: new Date().toISOString() }).catch(() => {});
+      return 0;
     }
-  }
-  for (const m of agentVerk.slice(0, hamark)) {
-    const texti = [m.mal_titill || '', m.athugasemd || ''].join('\n');
-    const mal = (await lesa(`thjonustubeidni?select=id,title,type,summary,customer_nafn,status&id=eq.${Number(m.mal_id)}&limit=1`).catch(() => []))[0];
-    const leid = await LEID.leid([mal && mal.type, mal && mal.title, mal && mal.customer_nafn, mal && mal.summary, texti].filter(Boolean).join('\n'), leidOpt);
+  }));
+  const sentNidur = await Promise.all(valin.map(async (m) => {
+    const mal = malar.find((x) => Number(x.id) === Number(m.mal_id));
+    const texti = [mal && mal.type, mal && mal.title, mal && mal.customer_nafn, mal && mal.summary, m.mal_titill || '', m.athugasemd || ''].filter(Boolean).join('\n');
+    const leid = leidG.g ? await LEID.leid(texti, Object.assign({}, leidOpt, { g: leidG.g }))
+      : { agent: LEID.VARA, stig: 0, ord: [], gat: true, villa: 'Leiðarvísirinn svaraði ekki: ' + leidG.villa };
     const nonce = CL.nyNonce();
     const tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso, agent: leid.agent,
       agent_leid: { stig: leid.stig, ord: leid.ord, gat: leid.gat, adrir: leid.adrir || [], villa: leid.villa || null },
       claude: { stada: 'i_vinnslu', nonce, at: nuIso, af: hver, persona: { emoji: leid.emoji, lysing: leid.lysing, serhaefing: leid.serhaefing, aldrei: leid.aldrei } } });
-    if (!tekin.length) continue;
-    try { await kveikja(m.id, nonce); sent++; }
+    if (!tekin.length) return 0;
+    try { await kveikja(m.id, nonce); return 1; }
     catch (e) {
       await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'vantar_svar', astaeda: 'Náði ekki að ræsa agentinn: ' + String((e && e.message) || e).slice(0, 160), lokid_at: new Date().toISOString() }).catch(() => {});
+      return 0;
     }
-  }
+  }));
+  const sent = sentNidur.reduce((a, b) => a + b, 0), nei = neiNidur.reduce((a, b) => a + b, 0);
   const bida = Math.max(0, agentVerk.length - hamark);
   return { umferd, sent, bida, nei, skilabod: (sent ? sent + ' atriði farin til agenta' : 'Ekkert fór til agenta') + (nei ? ' · ' + nei + ' Nei skráð' : '') + (bida ? ' · ' + bida + ' bíða næstu umferðar' : '') + '.' };
 }
@@ -272,11 +302,13 @@ async function vinnaMerki(id, nonce) {
   const m = (await lesa(`bord_merkingar?select=*&id=eq.${Number(id)}&limit=1`))[0];
   const c0 = m && m.claude;
   if (!m || m.stada !== 'i_keyrslu' || !c0 || c0.nonce !== nonce || c0.stada !== 'i_vinnslu' || Date.now() - Date.parse(c0.at) > MAX_ALDUR_MS) return { ok: false, astaeda: 'engin gild beiðni' };
-  const skrifa = (body) => breyta(`bord_merkingar?id=eq.${m.id}&claude->>nonce=eq.${encodeURIComponent(nonce)}`, body);
+  // Skilyrt á nonce OG i_keyrslu: tiltekt (FAST_MS) sem hefur merkt röðina dauða víkur ekki fyrir síðbúnu svari.
+  const skrifa = (body) => breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.i_keyrslu&claude->>nonce=eq.${encodeURIComponent(nonce)}`, body);
   let c;
   try {
-    const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type&id=eq.${Number(m.mal_id)}&limit=1`))[0];
-    if (!mal) throw new Error('Málið fannst ekki lengur');
+    const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type,deleted_at&id=eq.${Number(m.mal_id)}&limit=1`))[0];
+    if (!mal || mal.deleted_at) throw new Error('Málið fannst ekki lengur');
+    if (mal.status === 'lokad') throw new Error('Málinu var lokað áður en agentinn komst að — ekkert unnið');   // sama og 492f
     const texti = [mal.title, mal.customer_nafn, mal.summary, String(mal.notes || '').slice(0, 2500)].filter(Boolean).join('\n');
     const s = await CL.safna({ texti, hluti_heiti: 'Þjónustuborð' }, mal, fyrirmaeliFyrir(m));
     const k = await CL.kalla(s.gogn, { kerfiAuki: kerfiAuki(m, c0.persona) });
@@ -301,5 +333,5 @@ async function vinnaMerki(id, nonce) {
   return { ok: true, marktaekt: mat.marktaekt, afgreidsla_id: afgId };
 }
 
-module.exports = { MERKI, STODUR, BORD, HAMARK_UMFERD, snoozeDags, snoozeBuid, rodun, teljari, fyrirmaeliFyrir, metaSkil, synilegt, kerfiAuki,
+module.exports = { MERKI, STODUR, BORD, HAMARK_UMFERD, FAST_MS, erFost, tiltekt, snoozeDags, snoozeBuid, rodun, teljari, fyrirmaeliFyrir, metaSkil, synilegt, kerfiAuki,
   listi, vista, keyra, vinnaMerki, linaAf };

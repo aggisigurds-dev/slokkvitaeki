@@ -524,12 +524,16 @@ async function kveikjaMerki(id, nonce) {
 // POST { adgerd:'merkja', mal_id, merki|null, athugasemd?, due_at? }  → merki á línu (null tekur það af)
 // POST { adgerd:'merkja_keyra' }                                      → allt merkt í röð til agenta (Veit ekki/Rannsaka fremst)
 // GET  ?merkingar=1                                                   → { merkingar[], teljari, claude_virkt }
+// notandi() sem bregst skilar 'óþekkt' — merking má þá ALDREI vistast (hún lenti undir merkt_af='óþekkt' og sæist aldrei).
+const OTHEKKT = () => P.json(503, { error: 'Náði ekki að staðfesta hver þú ert — ekkert var skráð. Reyndu aftur eftir augnablik.' });
 async function merkingarSvar(hver, extra) {
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
   const l = await M.listi(hver);
   return P.json(200, Object.assign({ ok: true, merkingar: l.map(M.synilegt), teljari: M.teljari(l), claude_virkt: await claudeVirkt() }, extra || {}));
 }
 async function merkja(b, event) {
   const hver = await notandi(event);
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
   try {
     if (b.adgerd === 'merkja') {
       const m = await M.vista(b, hver);

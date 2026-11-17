@@ -68,13 +68,13 @@ test('snooze án dagsetningar skráist ALDREI (ekkert skrifað)', async () => {
 /* ── Teljari ─────────────────────────────────────────────────────────── */
 test('teljari: merkt · í keyrslu · klárað · vantar svör (síðasta umferð) · ljós aðeins þegar umferð er búin', () => {
   const gomul = [m({ id: 1, stada: 'klarad', umferd: 'u1', keyrt_at: '2026-11-16T10:00:00Z' }), m({ id: 2, stada: 'vantar_svar', umferd: 'u1', keyrt_at: '2026-11-16T10:00:00Z' })];
-  const ny = [m({ id: 3, stada: 'klarad', umferd: 'u2', keyrt_at: '2026-11-17T20:00:00Z', lokid_at: '2026-11-17T20:02:00Z' }), m({ id: 4, stada: 'i_keyrslu', umferd: 'u2', keyrt_at: '2026-11-17T20:00:00Z' })];
+  const ny = [m({ id: 3, stada: 'klarad', umferd: 'u2', keyrt_at: '2026-11-17T20:55:00Z', lokid_at: '2026-11-17T20:57:00Z' }), m({ id: 4, stada: 'i_keyrslu', umferd: 'u2', keyrt_at: '2026-11-17T20:55:00Z' })];
   const onnur = [m({ id: 5 }), m({ id: 6 }), m({ id: 7, stada: 'blundar', due_at: '2026-11-20T08:00:00Z' }), m({ id: 8, stada: 'tekid_af' })];
   let t = M.teljari(gomul.concat(ny, onnur), NU);
   assert.deepStrictEqual([t.merkt, t.i_keyrslu, t.klarad, t.vantar_svar, t.blundar, t.umferd, t.buin], [2, 1, 1, 0, 1, 'u2', false]);
-  ny[1].stada = 'vantar_svar'; ny[1].lokid_at = '2026-11-17T20:03:00Z';
+  ny[1].stada = 'vantar_svar'; ny[1].lokid_at = '2026-11-17T20:58:00Z';
   t = M.teljari(gomul.concat(ny, onnur), NU);
-  assert.deepStrictEqual([t.klarad, t.vantar_svar, t.i_keyrslu, t.buin, t.lokid_at], [1, 1, 0, true, '2026-11-17T20:03:00Z']);
+  assert.deepStrictEqual([t.klarad, t.vantar_svar, t.i_keyrslu, t.buin, t.lokid_at], [1, 1, 0, true, '2026-11-17T20:58:00Z']);
   assert.strictEqual(M.teljari([], NU).buin, false);
 });
 
@@ -256,4 +256,91 @@ test('Já á póstmáli → drög að svari í Afgreiðslu (Agnar sendir) — sa
     assert.deepStrictEqual([rod.stada, a.tegund, a.lykill, a.created_by, a.gogn.to[0]], ['klarad', 'tolvupostur', 'svar:<m7@x>', 'merkja', 'kunni@example.is']);
     assert.ok(!fake.skrif.some((s) => /gmail|payday|sms|senda/i.test(s.t)));
   } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+/* ── Óháð rýni 17.11.2026 ─────────────────────────────────────────────── */
+test('#2 föst keyrsla (> 20 mín.) telst vantar_svar: læsir ekki Keyra, ný merking og „Taka af“ virka, síðbúið svar skrifar ekki yfir', async () => {
+  const gamalt = new Date(Date.now() - M.FAST_MS - 60000).toISOString(), nylegt = new Date(Date.now() - 60000).toISOString();
+  const fake = F.bua({ thjonustubeidni: [{ id: 61, title: 'Mál A', status: 'nytt' }, { id: 62, title: 'Mál B', status: 'nytt' }],
+    bord_merkingar: [
+      { id: 1, bord: 'thjonustubord', lina: 'mal:61', mal_id: 61, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu', umferd: 'u1', keyrt_at: gamalt, claude: { stada: 'i_vinnslu', nonce: 'a'.repeat(32), at: gamalt } },
+      { id: 2, bord: 'thjonustubord', lina: 'mal:62', mal_id: 62, merki: 'keyra', merkt_af: 'Agnar', stada: 'i_keyrslu', umferd: 'u1', keyrt_at: nylegt, claude: { stada: 'i_vinnslu', nonce: 'b'.repeat(32), at: nylegt } }] });
+  const aftur = F.tengja(P, fake);
+  try {
+    // Hrein föll: föst röð telst vantar_svar strax, jafnvel áður en tiltekt hefur skrifað
+    const t0 = M.teljari(fake.T.bord_merkingar);
+    assert.deepStrictEqual([t0.i_keyrslu, t0.vantar_svar], [1, 1]);
+    assert.strictEqual(M.synilegt(fake.T.bord_merkingar[0]).stada, 'vantar_svar');
+    assert.match(M.synilegt(fake.T.bord_merkingar[0]).astaeda, /20 mín/);
+    // listi() tekur til í grunninum; sú nýlega stendur
+    await M.listi('Agnar');
+    assert.deepStrictEqual(fake.T.bord_merkingar.map((x) => x.stada), ['vantar_svar', 'i_keyrslu']);
+    // Ný merking á línu sem var föst gengur (ekki 409); „Taka af“ á henni líka
+    const ny = await M.vista({ mal_id: 61, merki: 'veit_ekki' }, 'Agnar');
+    assert.strictEqual(ny.stada, 'merkt');
+    assert.strictEqual(await M.vista({ mal_id: 61, merki: null }, 'Agnar'), null);
+    // Síðbúið svar á röð sem tiltekt merkti dauða skrifar ekki yfir (skilyrt á i_keyrslu)
+    const r = await P.sbPatch(`bord_merkingar?id=eq.1&stada=eq.i_keyrslu&claude->>nonce=eq.${'a'.repeat(32)}`, { stada: 'klarad' }).then((x) => x.json());
+    assert.strictEqual(r.length, 0);
+    // Keyra er ekki læst af föstu röðinni: teljarinn sýnir aðeins þá nýlegu í keyrslu
+    assert.strictEqual(M.teljari(await M.listi('Agnar')).i_keyrslu, 1);
+  } finally { aftur(); }
+});
+
+test('#3 Keyra: málin sótt í EINNI fyrirspurn, leiðarvísirinn einu sinni, atriðin ræst samhliða; hámark 6', async () => {
+  const mal = Array.from({ length: 9 }, (_, i) => ({ id: 70 + i, title: 'Krafa ógreitt ' + i, status: 'nytt' }));
+  const fake = F.bua({ thjonustubeidni: mal });
+  const aftur = F.tengja(P, fake);
+  const lestur = [];
+  const g0 = P.sbGet; P.sbGet = (qs) => { lestur.push(qs.split('?')[0]); return g0(qs); };
+  try {
+    for (const x of mal) await M.vista({ mal_id: x.id, merki: 'keyra' }, 'Agnar');
+    lestur.length = 0;
+    let saekt = 0;
+    const g = L.undirbua(REG);
+    const opid = new Set(); let mestSamtimis = 0;
+    const r = await M.keyra('Agnar', { leidOpt: { fetchFn: async () => { saekt++; return { ok: true, json: async () => REG }; }, url: 'http://gervi/registry' },
+      kveikja: async (id) => { opid.add(id); mestSamtimis = Math.max(mestSamtimis, opid.size); await new Promise((s) => setTimeout(s, 20)); opid.delete(id); } });
+    assert.strictEqual(M.HAMARK_UMFERD, 6);
+    assert.deepStrictEqual([r.sent, r.bida], [6, 3]);
+    assert.strictEqual(lestur.filter((t) => t === 'thjonustubeidni').length, 1, 'málin í einni fyrirspurn');
+    assert.ok(saekt <= 1, 'leiðarvísirinn sóttur í mesta lagi einu sinni');
+    assert.ok(mestSamtimis > 1, 'atriðin ræst samhliða, ekki hvert á eftir öðru');
+    void g;
+  } finally { P.sbGet = g0; aftur(); L.stilla(null); }
+});
+
+test('lokað mál: agentinn vinnur ekkert — vantar_svar með ástæðu (sama og 492f)', async () => {
+  const fake = F.bua({ thjonustubeidni: [{ id: 81, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  const fyrr = { kalla: CL.kalla };
+  L.stilla(REG);
+  try {
+    await M.vista({ mal_id: 81, merki: 'keyra' }, 'Agnar');
+    const k = [];
+    await M.keyra('Agnar', { kveikja: async (id, n) => k.push([id, n]) });
+    fake.T.thjonustubeidni[0].status = 'lokad';
+    let kallad = 0; CL.kalla = async () => { kallad++; throw new Error('á ekki að kalla'); };
+    await M.vinnaMerki(k[0][0], k[0][1]);
+    const rod = fake.T.bord_merkingar.find((x) => x.mal_id === 81);
+    assert.deepStrictEqual([rod.stada, kallad], ['vantar_svar', 0]);
+    assert.match(rod.astaeda, /lokað/);
+  } finally { aftur(); Object.assign(CL, fyrr); L.stilla(null); }
+});
+
+test('óþekktur notandi (notandi() brást): ekkert vistast, 503', async () => {
+  const H = require('../netlify/functions/_radgjafinn-hlid.cjs'), HUB = require('../netlify/functions/hub-adgangar.cjs');
+  const fyrr = { hlid: H.hlid, hub: HUB.handler };
+  H.hlid = async () => null;
+  HUB.handler = async () => { throw new Error('hlið svarar ekki'); };
+  const fake = F.bua({ thjonustubeidni: [{ id: 91, title: 'Mál', status: 'nytt' }] });
+  const aftur = F.tengja(P, fake);
+  const A = require('../netlify/functions/afgreidsla.cjs');
+  try {
+    const r = await A.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ adgerd: 'merkja', mal_id: 91, merki: 'ja' }) });
+    assert.strictEqual(r.statusCode, 503);
+    const g = await A.handler({ httpMethod: 'GET', headers: {}, queryStringParameters: { merkingar: '1' } });
+    assert.strictEqual(g.statusCode, 503);
+    assert.strictEqual((fake.T.bord_merkingar || []).length, 0);
+  } finally { aftur(); H.hlid = fyrr.hlid; HUB.handler = fyrr.hub; }
 });
