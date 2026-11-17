@@ -111,6 +111,25 @@
   // A reikningur that is FINAL but has NOT been sent yet (no Payday/krafa/dk push,
   // not paid, not a credit note) is safe to edit IN PLACE — nothing has left the
   // building. Lets Agnar fix a forgotten discount without a credit note.
+  // 17.11.2026 (álagspróf lotu 6): „færa reikning á aðra kt" með innsláttarvillu (691299-0089) vistaðist athugasemdalaust
+  // á ósenda kröfu — krafan hefði strandað í Payday eða farið á ranga kt. Vista er ALDREI blokkað (regla sala-reikningar);
+  // í staðinn rauð athugasemd við reitinn um leið og slegið er inn, og skýr viðvörun eftir vistun.
+  function ktVartalaOk(raw) {
+    const d = String(raw || '').replace(/\D/g, '');
+    if (d.length !== 10) return false;
+    const w = [3, 2, 7, 6, 5, 4, 3, 2]; let sum = 0;
+    for (let i = 0; i < 8; i++) sum += +d[i] * w[i];
+    let c = 11 - (sum % 11); if (c === 11) c = 0;
+    return c !== 10 && c === +d[8];
+  }
+  function ktAthuga(inp) {
+    const v = inp && _dlg && _dlg.querySelector('#_se-kt-villa');
+    if (!v) return;
+    const d = String(inp.value || '').replace(/\D/g, '');
+    const villa = d.length === 10 && !ktVartalaOk(d) ? 'Ógild kennitala — vartalan stemmir ekki. Krafan strandar í Payday.'
+      : d.length > 10 ? 'Of margir tölustafir í kennitölu.' : '';
+    v.textContent = villa; v.style.display = villa ? 'block' : 'none';
+  }
   function isUnsentFinal(sale) {
     if (!sale) return false;
     return sale.status === 'final' && !sale.is_credit && !sale.paid_at
@@ -376,7 +395,8 @@
           </div>
           <div>
             <label style="display:block;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4a5363;margin-bottom:4px">Kennitala</label>
-            <input id="_se-kt" type="text" placeholder="000000-0000" value="" ${lockedAttr} style="${inputStyle};font-family:monospace">
+            <input id="_se-kt" type="text" placeholder="000000-0000" value="" ${lockedAttr} style="${inputStyle};font-family:monospace" oninput="window.SaleEditor && SaleEditor._ktAthuga && SaleEditor._ktAthuga(this)">
+            <div id="_se-kt-villa" style="display:none;margin-top:3px;font-size:11px;font-weight:700;color:#b91c1c"></div>
           </div>
           <div>
             <label style="display:block;font-family:&quot;JetBrains Mono&quot;,ui-monospace,monospace;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4a5363;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
@@ -900,7 +920,15 @@
     });
   }
 
-  async function commit({ finalize }) {
+  // 17.11.2026 (álagspróf lotu 6): tvísmellur á Vista sendi TVÖ samtímis commit() — tvö PATCH, og verkbeiðnaafstemmingin
+  // hér að neðan les „hæsta -V<n>" ÁÐUR en hin setur inn, svo tæki-línur gætu fengið tvær verkbeiðnir. Sama vörn og
+  // pos.js checkout._busy: önnur vistun á meðan sú fyrri stendur er hunsuð (vistunin sjálf er aldrei blokkuð).
+  async function commit(o) {
+    if (commit._busy) return;
+    commit._busy = true;
+    try { return await commitEinu(o); } finally { commit._busy = false; }
+  }
+  async function commitEinu({ finalize }) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return; }
     // Sync form fields back to _sale
@@ -1084,7 +1112,11 @@
       }
     }
 
-    if (window.Toast && Toast.show) Toast.show(finalize ? '✓ Sala kláruð · birtist í Bókhaldi' : '✓ Drög vistuð');
+    if (window.Toast && Toast.show) {
+      // 17.11.2026: vistað er ALDREI blokkað — en ógild kennitala má ekki fara framhjá þeim sem vistar.
+      if (ktClean && !ktVartalaOk(ktClean)) Toast.show('⚠ Vistað — en kennitalan ' + kt + ' er EKKI gild (vartalan stemmir ekki). Krafan strandar í Payday — leiðréttu kennitöluna.');
+      else Toast.show(finalize ? '✓ Sala kláruð · birtist í Bókhaldi' : '✓ Drög vistuð');
+    }
     close();
     // Refresh open views
     try { window.App && App.refreshAll && App.refreshAll(); } catch (_) {}
@@ -1098,7 +1130,9 @@
     // hrein föll, birt fyrir tools/test-sala-ritill-verk.cjs
     _verkLinurTilStofnunar: verkLinurTilStofnunar, _linurTilVistunar: linurTilVistunar,
     // 16.11.2026: leiðrétting á lokuðum reikningi — hrein föll birt fyrir test/sala-leidretting.test.cjs
-    _maLeidretta: maLeidretta, _leidrettingarRod: leidrettingarRod, _isUnsentFinal: isUnsentFinal
+    _maLeidretta: maLeidretta, _leidrettingarRod: leidrettingarRod, _isUnsentFinal: isUnsentFinal,
+    // 17.11.2026: vartala kennitölu — athugasemd við reitinn (oninput) og hreint fall fyrir test/nyskraning-klaufi.test.cjs
+    _ktAthuga: ktAthuga, _ktVartalaOk: ktVartalaOk
   };
   console.log('[patch-142] sale-editor installed — window.SaleEditor.{openById,openByNum,openFromJob}');
 })();

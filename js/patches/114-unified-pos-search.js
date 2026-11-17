@@ -864,6 +864,21 @@
       // (alongside the RSK option) and for free-text name queries.
       if (!matches.length) {
         let html = '';
+        // 17.11.2026 (álagspróf lotu 6): ógild kennitala (röng vartala) fór athugasemdalaust á reikning um „Afgreiðsla án
+        // stofnunar" — mælt í vafra: solur.customer_kt = 420115-0680. Nú: viðvörun efst, og kennitalan fylgir EKKI á reikninginn
+        // (valkosturinn verður „án kennitölu"). Valkosturinn sjálfur stendur alltaf (ósk Agnars 10.11).
+        const ktVartalaOk = (d) => {
+          const w = [3, 2, 7, 6, 5, 4, 3, 2]; let sum = 0;
+          for (let i = 0; i < 8; i++) sum += +d[i] * w[i];
+          let c = 11 - (sum % 11); if (c === 11) c = 0;
+          return c !== 10 && c === +d[8];
+        };
+        const ogildKt = qDigits.length === 10 && qDigits !== '9999999999' && !ktVartalaOk(qDigits);
+        if (ogildKt) {
+          html += '<div class="_ups-ogild-kt" style="padding:10px 14px;background:#fef2f2;color:#b91c1c;font-weight:700;font-size:12.5px;border-bottom:1px solid #fecaca">' +
+            '⚠ ' + qDigits.slice(0, 6) + '-' + qDigits.slice(6) + ' er ekki gild kennitala — vartalan stemmir ekki. Athugaðu töluna.' +
+          '</div>';
+        }
         if (qDigits.length === 10) {
           html += '<div class="_ups-rsk" data-kt="' + qDigits + '" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid #e2e8f0;background:#eff6ff;color:#1e40af;font-weight:600;font-size:13px">' +
             '📋 Leita að ' + qDigits.slice(0,6) + '-' + qDigits.slice(6,10) + ' í þjóðskrá / RSK' +
@@ -880,7 +895,7 @@
           '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>' + newLabel +
         '</div>';
         // 10.11.2026 (ósk Agnars): „+ Afgreiðsla án stofnunar" — sjá openOstofnun() fyrir ofan. Í boði með fullri kt eða nafni (ekki 7–8 stafa tölu).
-        const ostofnKt = (qDigits.length === 10 && qDigits !== '9999999999') ? qDigits : '';
+        const ostofnKt = (qDigits.length === 10 && qDigits !== '9999999999' && !ogildKt) ? qDigits : '';
         const ostofnNafn = (!ostofnKt && /[A-Za-zÁÐÉÍÓÚÝÞÆÖáðéíóúýþæö]/.test(q)) ? q : '';
         // 10.11.2026 (Agnar: „varst þú ekki búinn að laga venjulegu kennitölu afgreiðsla án stofnunar" — skjáskot: 7 stafa tala fékk bara „Stofna nýjan"):
         // valkosturinn birtist ALLTAF þegar leitin finnur engan. 7 stafa tala er sími (fyllist inn í Sími); aðrar tölur → gluggi án áfyllingar.

@@ -91,3 +91,38 @@ test('153: röng vartala á kt stöðvuð áður en vistað er', () => {
   const athugun = dlg.indexOf('!ktGild(data.kennitala)'), innsetning = dlg.indexOf(".from('fyrirtaeki').insert(");
   assert.ok(athugun > 0 && athugun < innsetning, 'kt-athugun kemur á undan insert');
 });
+
+// ── 114: „Afgreiðsla án stofnunar" í kassanum ─────────────────────────────
+// Mælt í vafra 17.11.2026: leit að 4201150680 (röng vartala) → „Afgreiðsla án stofnunar — Kennitalan fer á reikninginn" →
+// solur.customer_kt = 420115-0680, engin viðvörun. Eftir lagfæringu: viðvörun og kennitalan fylgir ekki.
+const K114 = fs.readFileSync(path.join(ROT, 'js/patches/114-unified-pos-search.js'), 'utf8');
+test('114: ógild kt fer EKKI á reikning um „Afgreiðsla án stofnunar"', () => {
+  const m = K114.match(/const ktVartalaOk = \(d\) => \{[\s\S]*?\n        \};/);
+  assert.ok(m, 'ktVartalaOk vantar');
+  const ok = vm.runInNewContext('(' + m[0].replace(/^const ktVartalaOk = /, '').replace(/;$/, '') + ')');
+  assert.strictEqual(ok('4201150670'), true);
+  assert.strictEqual(ok('4201150680'), false);
+  assert.match(K114, /const ogildKt = qDigits\.length === 10 && qDigits !== '9999999999' && !ktVartalaOk\(qDigits\);/);
+  assert.match(K114, /const ostofnKt = \(qDigits\.length === 10 && qDigits !== '9999999999' && !ogildKt\) \? qDigits : '';/,
+    'ostofnKt má ekki taka við ógildri kennitölu');
+  assert.match(K114, /_ups-ogild-kt[\s\S]{0,300}er ekki gild kennitala/, 'viðvörun sýnd');
+});
+
+// ── 142: söluritill ────────────────────────────────────────────────────────
+// Mælt í vafra 17.11.2026 (skuggaröð, öll skrif stífluð): kt með innsláttarvillu vistaðist athugasemdalaust á ósenda kröfu,
+// og tvísmellur á Vista sendi tvö PATCH. Vista má ALDREI blokka (regla sala-reikningar) — því viðvörun, ekki stöðvun.
+const K142 = fs.readFileSync(path.join(ROT, 'js/patches/142-sale-editor.js'), 'utf8');
+test('142: ógild kt fær athugasemd við reitinn og viðvörun eftir vistun — vistun EKKI blokkuð', () => {
+  const m = K142.match(/function ktVartalaOk\(raw\) \{[\s\S]*?\n  \}/);
+  assert.ok(m, 'ktVartalaOk vantar');
+  const ok = vm.runInNewContext('(' + m[0] + ')');
+  assert.strictEqual(ok('691299-0079'), true);
+  assert.strictEqual(ok('691299-0089'), false);
+  assert.match(K142, /id="_se-kt"[^>]*oninput="[^"]*_ktAthuga/, 'reiturinn kallar á athugun við innslátt');
+  assert.match(K142, /if \(ktClean && !ktVartalaOk\(ktClean\)\) Toast\.show\('⚠ Vistað — en kennitalan/, 'viðvörun eftir vistun');
+  // Engin snemmbúin útganga úr vistun vegna kennitölu (það væri að blokka Vista).
+  assert.doesNotMatch(K142, /!ktVartalaOk\([^)]*\)\)\s*\{?\s*(alert\([^)]*\);\s*)?return/, 'vistun má ekki stöðvast á kennitölu');
+});
+test('142: tvísmellur á Vista = ein vistun í einu', () => {
+  assert.match(K142, /async function commit\(o\) \{\s*if \(commit\._busy\) return;\s*commit\._busy = true;\s*try \{ return await commitEinu\(o\); \} finally \{ commit\._busy = false; \}/);
+});
