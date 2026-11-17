@@ -79,6 +79,8 @@
     meira: null,         // ⋯ opið á tæki
     rnr: null,           // raðnr. í breytingu (verklidur.id)
     thjVinnur: null,     // hleðsla ⇄ yfirferð í vistun (verklidur.id)
+    valin: new Set(),    // hökuð tæki (verklidur.id) — hópaðgerðirnar efst í Tækjunum (17.11.2026)
+    vinnur: false,       // rofi / hópaðgerð / eyðing í vistun — takkarnir óvirkir á meðan
     bidTeikn: false
   };
 
@@ -163,6 +165,22 @@ input,textarea{font-family:inherit}
 .vk-h .nm{font-weight:700;font-size:14px}.vk-h .id{font-family:${MONO};font-size:11.5px;color:#4a5363;margin-top:1px}
 .vk-h .sv{font-size:12px;color:#4a5363;margin-top:1px}
 .vk-h .chev{color:#4a5363;margin-left:6px}
+.vk-r{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding-left:12px}
+.vk-r .vk-h{flex:1 1 190px;width:auto;min-width:0;padding-left:4px}
+.vk-r .vk-h.st{flex:none;padding:6px 12px 6px 0}
+.val{flex:none;width:24px;height:24px;border-radius:6px;border:1.5px solid rgba(20,24,34,.38);background:#fff;box-shadow:inset 0 1px 2px rgba(0,0,0,.12);display:inline-flex;align-items:center;justify-content:center;color:transparent;padding:0}
+.val[aria-checked="true"]{background:${SVART};border-color:#000;color:#fff}
+.val[aria-checked="mixed"]{background:#c9d0db;border-color:rgba(20,24,34,.38)}
+.val svg{width:14px;height:14px}
+.seg{display:inline-flex;flex:none;gap:2px;padding:3px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:#eef1f5;box-shadow:inset 0 1px 2px rgba(0,0,0,.08)}
+.seg button{height:30px;padding:0 11px;border-radius:7px;border:1px solid transparent;background:transparent;font-size:12.5px;font-weight:600;color:#1f2530;white-space:nowrap}
+.seg button.on{background:${SVART};border-color:#000;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.3)}
+.seg button.ony.on{background:#fff0ed;border-color:#fca5a5;color:#c0341d;box-shadow:none}
+.seg button:disabled,.hbar .vbtn:disabled{opacity:.38;pointer-events:none}
+.hbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:0 0 8px;padding:6px 8px 6px 12px;border-radius:9px;border:1px solid rgba(20,24,34,.12);background:#f3f5f8}
+.hbar .hfj{font-family:${MONO};font-size:11.5px;color:#4a5363;min-width:64px}
+.hbar .vbtn.sm{align-self:center}
+.hbar .vbtn.eyd{color:#b42318}
 .vk-b{padding:0 12px 10px 16px;display:flex;flex-direction:column;gap:6px;border-top:1px solid rgba(20,24,34,.08)}
 .vk-act{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:6px;padding-top:8px}
 .vbtn{height:36px;border-radius:9px;border:1px solid rgba(20,24,34,.16);background:${SILFUR};box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.14);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;color:#1f2530;padding:0 10px}
@@ -413,17 +431,52 @@ input,textarea{font-family:inherit}
             '<textarea class="textar" data-k="tnota" data-j="' + j.id + '" data-u="' + u.id + '" rows="1" placeholder="Athugasemd á tæki · t.d. skipti um ventil, þrýstiprófað" aria-label="Athugasemd á tæki">' + esc(u.notes || '') + '</textarea></div>' +
         '</div>';
       }
-      return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '">' +
+      // 17.11.2026 (Agnar: „mun auðveldara að breyta, bara svipað og í ársskoðun … velja nokkur eyða … og haka við hlaðið,
+      // yfirfarið, ónýtt"): hak og rofi Á röðinni, án þess að opna tækið. Röðin er því ekki lengur einn takki: hak · heiti
+      // (opnar) · rofi · staða (opnar). Eftir afhendingu (skref 3) er ekkert að breyta og röðin er eins og áður.
+      const valid = S.valin.has(u.id);
+      return '<div class="vk" style="--teg:' + tegLitur(u.type || u.service) + '"><div class="vk-r">' +
+        (sk < 3 ? '<button type="button" class="val" role="checkbox" aria-checked="' + valid + '" data-a="velja" data-u="' + u.id + '" aria-label="Velja ' + esc(u.serial || 'tæki') + '" title="Velja tækið">' + I.hak + '</button>' : '') +
         '<button type="button" class="vk-h" data-a="opna" data-u="' + u.id + '" aria-expanded="' + opid + '">' +
           '<span style="min-width:0"><div class="nm">' + esc(heitiTaekis(u)) + '</div><div class="id">' + esc(u.serial || '') + (fleiri ? ' · ' + esc(String(j.num).replace(/^.*-(V\d+)$/i, '$1')) : '') + (thjAf(u) ? ' · ' + thjAf(u) : '') + '</div>' +
             // Saga tækisins (460) — „nýtt 2024 · skoðað 2025 · hlaðið 2026".
             (window.TaekiSaga ? TaekiSaga.linaHtml(u) : '') + '</span>' +
-          '<span class="grow"></span>' + (parts.length && !opid ? '<span class="plata">' + parts.length + ' hl.</span>' : '') +
-          '<span class="plata ' + staða[0] + '"><i></i>' + staða[1] + '</span><span class="chev">' + (opid ? I.upp : I.nidur) + '</span></button>' + b + '</div>';
+          '<span class="grow"></span>' + (parts.length && !opid ? '<span class="plata">' + parts.length + ' hl.</span>' : '') + '</button>' +
+        (sk < 3 ? segHtml(j, u, sk) : '') +
+        '<button type="button" class="vk-h st" data-a="opna" data-u="' + u.id + '" aria-label="' + (opid ? 'Loka' : 'Opna') + ' ' + esc(u.serial || 'tæki') + '">' +
+          '<span class="plata ' + staða[0] + '"><i></i>' + staða[1] + '</span><span class="chev">' + (opid ? I.upp : I.nidur) + '</span></button></div>' + b + '</div>';
     }).join('');
-    return '<div class="hopur"><div class="merki">Tækin<span class="fj">' + t.length + ' tæki · smelltu til að opna</span></div>' +
-      (kort || '<div class="tomt">Engin tæki á verkinu.</div>') +
-      (sk === 1 ? '<button type="button" class="vbtn sm" data-a="nytt-taeki" data-j="' + jobs[0].id + '">' + I.plus + ' Bæta við tæki</button>' : '') + '</div>';
+    // Hausinn: velja öll · hve mörg valin · hópaðgerðir · Eyða · + Tæki. Alltaf í fullri hæð (aðgerðir óvirkar þar til
+    // eitthvað er hakað) svo raðirnar hoppi ekki við fyrsta hak.
+    const nv = t.filter(x => S.valin.has(x.u.id)).length, laest = S.vinnur || !nv;
+    const hbar = sk < 3 ? '<div class="hbar">' +
+      '<button type="button" class="val" role="checkbox" aria-checked="' + (nv && nv === t.length ? 'true' : nv ? 'mixed' : 'false') + '" data-a="velja-oll" aria-label="Velja öll tæki" title="Velja öll / ekkert"' + (t.length ? '' : ' disabled') + '>' + I.hak + '</button>' +
+      '<span class="hfj">' + (nv ? nv + ' valin' : 'Velja öll') + '</span><span class="grow"></span>' +
+      '<div class="seg" role="group" aria-label="Merkja valin tæki">' +
+        '<button type="button" data-a="hop" data-t="yfirferð"' + (laest ? ' disabled' : '') + '>Yfirferð</button>' +
+        '<button type="button" data-a="hop" data-t="hleðsla"' + (laest ? ' disabled' : '') + '>Hleðsla</button>' +
+        '<button type="button" class="ony" data-a="hop" data-t="onytt"' + (laest ? ' disabled' : '') + '>Ónýtt</button></div>' +
+      '<button type="button" class="vbtn sm eyd" data-a="eyda-valin"' + (laest ? ' disabled' : '') + '>' + I.xs + ' Eyða</button>' +
+      '<button type="button" class="vbtn sm" data-a="nytt-taeki" data-j="' + jobs[0].id + '"' + (S.vinnur ? ' disabled' : '') + '>' + I.plus + ' Tæki</button>' +
+      '</div>' : '';
+    return '<div class="hopur"><div class="merki">Tækin<span class="fj">' + t.length + ' tæki · smelltu til að opna</span></div>' + hbar +
+      (kort || '<div class="tomt">Engin tæki á verkinu.</div>') + '</div>';
+  }
+
+  // Rofinn á röðinni. Valið sést þegar tækið er afgreitt: Tilbúið → þjónustan sem það ber, Ónýtt → Ónýtt; Móttekið → ekkert.
+  // Tæki sem á hvorki hleðslu né yfirferð (t.d. CO₂ 100 gr.) fær Tilbúið | Ónýtt.
+  function segHtml(j, u, sk) {
+    const T = TH(), d = thjLysa(u), listi = T && T.listi();
+    if (T && !listi) T.saekja().then(teikna, () => {});
+    const gogn = ' data-a="merkja" data-j="' + j.id + '" data-u="' + u.id + '"' + (S.vinnur ? ' disabled' : '');
+    const buid = u.status === 'done', onytt = u.status === 'broken';
+    const t1 = d.teg ? ['yfirferð', 'hleðsla'].map(t => {
+      const a = buid && d.teg === t, til = !listi || d.teg === t || !!T.vara(d, t);
+      return '<button type="button" class="' + (a ? 'on' : '') + '" data-t="' + t + '" aria-pressed="' + a + '"' + gogn + (til || S.vinnur ? '' : ' disabled') +
+        (til ? '' : ' title="Engin ' + t + ' er til í vörulistanum fyrir þetta tæki"') + '>' + (t === 'hleðsla' ? 'Hleðsla' : 'Yfirferð') + '</button>';
+    }).join('') : '<button type="button" class="' + (buid ? 'on' : '') + '" data-t="tilbuid" aria-pressed="' + buid + '"' + gogn + '>Tilbúið</button>';
+    return '<div class="seg" role="group" aria-label="Þjónusta á ' + esc(u.serial || 'tæki') + '">' + t1 +
+      '<button type="button" class="ony' + (onytt ? ' on' : '') + '" data-t="onytt" aria-pressed="' + onytt + '"' + gogn + '>Ónýtt</button></div>';
   }
 
   function thjHtml(j, u) {
@@ -588,77 +641,245 @@ input,textarea{font-family:inherit}
     teikna();
   }
 
-  // Hleðsla ⇄ yfirferð á einu tæki: tækið (verklidur.service) og það sem rukkar fyrir það breytast SAMAN.
+  // Hleðsla ⇄ yfirferð: tækið (verklidur.service) og það sem rukkar fyrir það breytast SAMAN.
   //  · Tæki sem bætt var við á verkstæðinu (78 saveNewUnit) ber verðið í verklidur.parts → skipt þar.
   //  · Annars ein lína á sölunni (sama vara) → ný vara og verð. Línuafsláttur heldur sér; sölu-afslátturinn
   //    fylgir nýja verðinu sé hann heil prósenta (sami lestur og 121, ±0,06 — afsláttur er á félaginu),
   //    annars sama kr-talan. Samtölur eins og 142 recomputeTotals. AÐEINS meðan salan er ósend (regla 142
-  //    isUnsentFinal); farin sala → Leiðrétta sölu. Tækið vistast fyrst og er skilað ef salan vistast ekki.
+  //    isUnsentFinal); farin sala → Leiðrétta sölu. Tækin vistast fyrst og er skilað ef salan vistast ekki.
+  // 17.11.2026: eitt fall fyrir eitt tæki og mörg (hópaðgerðin) — ein sókn á söluna, allar línur færðar í minni, ein vistun.
+  function samtolurSolu(s, linur) {
+    let ex = 0, vs = 0;
+    linur.forEach(l => { const e = (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - (+l.discount_pct || 0) / 100); ex += e; vs += e * ((+l.vsk_pct || 24) / 100); });
+    const t0 = ex + vs, a0 = Math.max(0, Math.round(+s.afslattur || 0)), g0 = Math.round(+s.samtals || 0) + a0;
+    const pr = a0 && g0 > 0 ? 100 * a0 / g0 : 0, prH = pr && Math.abs(pr - Math.round(pr)) < 0.06 ? Math.round(pr) : 0;
+    const afsl = Math.max(0, Math.min(Math.round(t0), prH ? Math.round(Math.round(t0) * prH / 100) : a0));
+    const samtals = Math.round(t0) - afsl, exR = Math.round(ex * (t0 > 0 ? samtals / t0 : 1));
+    return { linur, upphaed_an_vsk: exR, vsk_upphaed: samtals - exR, samtals, afslattur: afsl };
+  }
+  const salaLaest = s => !!(s.is_credit || s.paid_at || s.invoiced_at || s.krafa_sent_at || s.dk_invoice_id || !(s.status === 'final' || s.status === 'drog' || !s.status));
+  // Skrifar breyttar línur á ÓSENDA sölu, skilyrt á gömlu samtöluna (hafi einhver breytt henni á meðan uppfærist engin röð),
+  // og les til baka. Skilar '' eða ástæðu.
+  async function vistaSolu(s, upd) {
+    const rs = await DB.sb.from('solur').update(upd).eq('id', s.id).eq('samtals', s.samtals).is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null);
+    if (rs.error) return rs.error.message || 'villa';
+    const rv = await DB.sb.from('solur').select('samtals').eq('id', s.id).maybeSingle();
+    if (rv.error || !rv.data || Math.round(+rv.data.samtals) !== upd.samtals) return 'henni var breytt á sama tíma — opnaðu verkið aftur';
+    return '';
+  }
+  const saekjaFerskaSolu = sn => DB.sb.from('solur').select('*').eq('num', sn).maybeSingle();
+  // Ber tækið verð sitt sjálft (þjónustan í verklidur.parts)? Skilar sæti hlutarins eða −1.
+  const thjHlutur = (T, u, d) => (Array.isArray(u.parts) ? u.parts : []).findIndex(p =>
+    T.lykill(p.nafn) === T.lykill(u.service) || (!!T.lysa(p.nafn).teg && T.sama(T.lysa(p.nafn), d)));
+
+  // Skilar { breytt: [tæki], vantar: [tæki án slíkrar vöru], olina: [tæki án línu á sölunni], villa }. Villa = ekkert breyttist.
+  async function skiptaMorgum(par, t) {
+    const T = TH(), ut = { breytt: [], vantar: [], olina: [], villa: '' };
+    if (!T) { ut.villa = 'Pörun þjónustu (518) er ekki hlaðin — endurhladdu síðunni.'; return ut; }
+    await T.saekja();
+    const plan = [];
+    par.forEach(({ j, u }) => {
+      const d = thjLysa(u);
+      if (!d.teg || d.teg === t) return;
+      const ny = T.vara(d, t);
+      if (!ny) { ut.vantar.push(u); return; }
+      const pi = thjHlutur(T, u, d);
+      plan.push({ j, u, d, ny, gamla: String(u.service || ''), parts: Array.isArray(u.parts) ? u.parts : [], pi, nyNafn: String(ny.nafn).trim(), gv: T.varaNu(u.service, d), aLinu: pi < 0 && !!salaNumAf(j) });
+    });
+    if (!plan.length) return ut;
+    const aLinu = plan.filter(p => p.aLinu);
+    let s = null, upd = null;
+    if (aLinu.length) {
+      const sn = salaNumAf(aLinu[0].j);
+      const sr = await saekjaFerskaSolu(sn);
+      if (sr.error) throw sr.error;
+      s = sr.data;
+      if (!s) { ut.villa = 'Salan ' + sn + ' fannst ekki — ekkert breyttist.'; return ut; }
+      if (salaLaest(s)) { ut.villa = 'Salan ' + sn + ' er farin út (greidd, krafa eða reikningur sendur) — ekkert breyttist. Breyttu henni með Leiðrétta sölu.'; return ut; }
+      const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
+      aLinu.forEach(p => {
+        const li = T.finnaLinu(linur, p.gamla, p.d);
+        if (li < 0) { p.sleppa = true; ut.olina.push(p.u); } else T.skiptaLinu(linur, li, p.ny);   // ein eining færð; lína með magn > 1 klofnar
+      });
+      if (aLinu.some(p => !p.sleppa)) upd = samtolurSolu(s, linur);
+    }
+    const skrifad = [];
+    for (const p of plan) {
+      if (p.sleppa) continue;
+      const patch = { service: p.nyNafn };
+      if (p.pi >= 0) {
+        patch.parts = p.parts.slice();
+        patch.parts[p.pi] = Object.assign({}, p.parts[p.pi], { vara_id: p.ny.id, nafn: p.nyNafn, verd_an_vsk: +p.ny.verd_an_vsk || 0, vsk_prosenta: p.ny.vsk_prosenta == null ? 24 : +p.ny.vsk_prosenta });
+      }
+      const r = await DB.sb.from('verklidur').update(patch).eq('id', p.u.id);
+      if (r.error) { ut.villa = 'Vistaðist ekki: ' + r.error.message + '.'; break; }
+      p.patch = patch; skrifad.push(p);
+    }
+    const soluVilla = (!ut.villa && upd) ? await vistaSolu(s, upd) : '';
+    if (ut.villa || soluVilla) {
+      let oskilad = 0;
+      for (const p of skrifad) {
+        const back = { service: p.gamla }; if (p.pi >= 0) back.parts = p.parts;
+        const a = await DB.sb.from('verklidur').update(back).eq('id', p.u.id);
+        if (a.error) oskilad++;
+      }
+      if (soluVilla) ut.villa = 'Salan ' + s.num + ' vistaðist ekki (' + soluVilla + ').';
+      ut.villa += oskilad ? '\n\nATH: ' + oskilad + ' tæki standa á nýju þjónustunni — breyttu þeim til baka.' : ' Ekkert breyttist.';
+      return ut;
+    }
+    skrifad.forEach(p => Object.assign(p.u, p.patch));
+    if (upd) {
+      Object.assign(s, upd);
+      if (S.salaNum === s.num) { S.sala = s; S.salaSott = Date.now(); }
+      try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: s.id } })); } catch (_) {}
+    }
+    // verkbeidni.verd (pos.js: verð m. vsk á verkið) — sjá samtalaSolu án sölu og 121 þegar engin lína er.
+    for (const p of skrifad) {
+      if (!(p.gv && (+p.j.verd || 0) > 0)) continue;
+      const verd = Math.max(0, Math.round((+p.j.verd || 0) - mVsk(p.gv) + mVsk(p.ny)));
+      const rj = await DB.sb.from('verkbeidnir').update({ verd }).eq('id', p.j.id);
+      if (!rj.error) p.j.verd = verd;
+    }
+    ut.breytt = skrifad.map(p => p.u);
+    return ut;
+  }
+  const hvadSleppt = (r, t) => (r.vantar.length ? '\n· ' + r.vantar.length + ' tæki eiga enga ' + t + ' í vörulistanum (' + r.vantar.slice(0, 3).map(heitiTaekis).join(', ') + ')' : '') +
+    (r.olina.length ? '\n· ' + r.olina.length + ' tæki fundu enga línu á sölunni (' + r.olina.slice(0, 3).map(u => u.serial || heitiTaekis(u)).join(', ') + ') — breyttu í Afhendingu › Breyta línum' : '');
+
+  // Rofinn í opna tækinu (Hleðsla | Yfirferð með verði): skiptir aðeins um þjónustu, staðan stendur.
   async function skiptaThj(jid, uid, t) {
     const { j, u } = finna(jid, uid);
-    const T = TH(), d = u ? thjLysa(u) : null;
-    if (!u || !T || S.thjVinnur || !d.teg || d.teg === t) return;
+    if (!u || S.thjVinnur || S.vinnur || !thjAf(u) || thjAf(u) === t) return;
     S.thjVinnur = u.id; teikna();
     try {
-      await T.saekja();
-      const gamla = String(u.service || ''), ny = T.vara(d, t), gv = T.varaNu(gamla, d);
-      if (!ny) { alert('Engin ' + t + ' er til í vörulistanum fyrir þetta tæki (' + heitiTaekis(u) + ') — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.'); return; }
-      const nyNafn = String(ny.nafn).trim(), vsk = ny.vsk_prosenta == null ? 24 : +ny.vsk_prosenta, anVsk = +ny.verd_an_vsk || 0;
-      const parts = Array.isArray(u.parts) ? u.parts : [];
-      const pi = parts.findIndex(p => T.lykill(p.nafn) === T.lykill(gamla) || (!!T.lysa(p.nafn).teg && T.sama(T.lysa(p.nafn), d)));
-      const sn = salaNumAf(j);
-      if (pi >= 0 || !sn) {
-        const patch = { service: nyNafn };
-        if (pi >= 0) { patch.parts = parts.slice(); patch.parts[pi] = Object.assign({}, parts[pi], { vara_id: ny.id, nafn: nyNafn, verd_an_vsk: anVsk, vsk_prosenta: vsk }); }
-        const r = await DB.sb.from('verklidur').update(patch).eq('id', u.id);
-        if (r.error) { alert('Vistaðist ekki: ' + r.error.message); return; }
-        Object.assign(u, patch);
-      } else {
-        const sr = await DB.sb.from('solur').select('*').eq('num', sn).maybeSingle();
-        if (sr.error) throw sr.error;
-        const s = sr.data;
-        if (!s) { alert('Salan ' + sn + ' fannst ekki — ekkert breyttist.'); return; }
-        if (s.is_credit || s.paid_at || s.invoiced_at || s.krafa_sent_at || s.dk_invoice_id || !(s.status === 'final' || s.status === 'drog' || !s.status)) {
-          alert('Salan ' + sn + ' er farin út (greidd, krafa eða reikningur sendur) — ekkert breyttist. Breyttu henni með Leiðrétta sölu.'); return;
-        }
-        const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
-        const li = T.finnaLinu(linur, gamla, d);
-        if (li < 0) { alert('Fann ekki línuna „' + gamla + '" á sölunni ' + sn + ' — ekkert breyttist. Breyttu í Afhendingu › Breyta línum.'); return; }
-        T.skiptaLinu(linur, li, ny);   // ein eining færð yfir á nýju vöruna; lína með magn > 1 klofnar, afsláttur heldur sér
-        let ex = 0, vs = 0;
-        linur.forEach(l => { const e = (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - (+l.discount_pct || 0) / 100); ex += e; vs += e * ((+l.vsk_pct || 24) / 100); });
-        const t0 = ex + vs, a0 = Math.max(0, Math.round(+s.afslattur || 0)), g0 = Math.round(+s.samtals || 0) + a0;
-        const pr = a0 && g0 > 0 ? 100 * a0 / g0 : 0, prH = pr && Math.abs(pr - Math.round(pr)) < 0.06 ? Math.round(pr) : 0;
-        const afsl = Math.max(0, Math.min(Math.round(t0), prH ? Math.round(Math.round(t0) * prH / 100) : a0));
-        const samtals = Math.round(t0) - afsl, exR = Math.round(ex * (t0 > 0 ? samtals / t0 : 1));
-        const upd = { linur, upphaed_an_vsk: exR, vsk_upphaed: samtals - exR, samtals, afslattur: afsl };
-        const ru = await DB.sb.from('verklidur').update({ service: nyNafn }).eq('id', u.id);
-        if (ru.error) { alert('Vistaðist ekki: ' + ru.error.message); return; }
-        // Skilyrt á gömlu samtöluna: hafi einhver breytt sölunni á meðan uppfærist engin röð.
-        const rs = await DB.sb.from('solur').update(upd).eq('id', s.id).eq('samtals', s.samtals).is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null);
-        const rv = rs.error ? null : await DB.sb.from('solur').select('samtals').eq('id', s.id).maybeSingle();
-        if (rs.error || !rv || rv.error || !rv.data || Math.round(+rv.data.samtals) !== samtals) {
-          const aftur = await DB.sb.from('verklidur').update({ service: gamla }).eq('id', u.id);
-          alert('Salan ' + sn + ' vistaðist ekki (' + ((rs.error && rs.error.message) || 'henni var breytt á sama tíma — opnaðu verkið aftur') + ').' +
-            (aftur.error ? '\n\nATH: tækið stendur á „' + nyNafn + '" — breyttu því til baka.' : ' Ekkert breyttist.'));
-          return;
-        }
-        u.service = nyNafn;
-        Object.assign(s, upd);
-        if (S.salaNum === sn) { S.sala = s; S.salaSott = Date.now(); }
-        try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: s.id } })); } catch (_) {}
-      }
-      // verkbeidni.verd (pos.js: verð m. vsk á verkið) — sjá samtalaSolu án sölu og 121 þegar engin lína er.
-      if (gv && (+j.verd || 0) > 0) {
-        const verd = Math.max(0, Math.round((+j.verd || 0) - mVsk(gv) + mVsk(ny)));
-        const rj = await DB.sb.from('verkbeidnir').update({ verd }).eq('id', j.id);
-        if (!rj.error) j.verd = verd;
-      }
-      toast(heitiTaekis(u) + ' → ' + t);
+      const r = await skiptaMorgum([{ j, u }], t);
+      if (r.villa) alert(r.villa);
+      else if (r.vantar.length) alert('Engin ' + t + ' er til í vörulistanum fyrir þetta tæki (' + heitiTaekis(u) + ') — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.');
+      else if (r.olina.length) alert('Fann ekki línuna „' + (u.service || '') + '" á sölunni — ekkert breyttist. Breyttu í Afhendingu › Breyta línum.');
+      else toast(heitiTaekis(u) + ' → ' + t);
     } catch (e) {
       alert('Villa — ' + String((e && e.message) || e));
     } finally {
       S.thjVinnur = null;
+      try { if (window.Workshop && Workshop.render) Workshop.render(); } catch (_) {}
+      teikna();
+    }
+  }
+
+  // Staða margra tækja í einu skrifi (78 setUnitStatus skrifar eitt í einu og teiknar borðið í hvert sinn).
+  // Fyrsta afgreidda tækið færir verkið úr Móttekið í Í vinnslu, eins og þar — aldrei sjálfkrafa í Afgreiðslu.
+  async function setjaStodu(par, status) {
+    if (!par.length) return true;
+    const r = await DB.sb.from('verklidur').update({ status }).in('id', par.map(x => x.u.id));
+    if (r.error) { alert('Staðan vistaðist ekki: ' + r.error.message); return false; }
+    par.forEach(x => { x.u.status = status; });
+    if (status === 'done' || status === 'broken') {
+      for (const j of new Set(par.map(x => x.j))) {
+        if (j.status === 'received') { try { await DB.updateJobStatus(j.id, 'inprogress'); } catch (_) {} }
+      }
+    }
+    return true;
+  }
+
+  // Rofinn á röðinni (einn = true) og hópaðgerðin efst: val = 'yfirferð' | 'hleðsla' | 'tilbuid' | 'onytt'.
+  //  · Yfirferð / Hleðsla: tækið fær þá þjónustu (og verð hennar, sjá skiptaMorgum) og verður Tilbúið.
+  //  · Ónýtt: tækið verður Ónýtt. · Smellur á valið á einu tæki tekur merkinguna af (á verkstæðinu; í afhendingu stendur hún).
+  async function merkja(par, val, einn) {
+    if (S.vinnur || S.thjVinnur || !par.length) return;
+    const job = DB.getJob(S.id), sk = job ? skref(verkin(job)) : 1;
+    const u0 = par[0].u;
+    const virkt = einn && (val === 'onytt' ? u0.status === 'broken' : (u0.status === 'done' && (val === 'tilbuid' || thjAf(u0) === val)));
+    if (virkt && sk !== 1) return;
+    S.vinnur = true; teikna();
+    try {
+      let ny = virkt ? 'received' : (val === 'onytt' ? 'broken' : 'done'), sleppt = '';
+      if (!virkt && (val === 'yfirferð' || val === 'hleðsla')) {
+        const r = await skiptaMorgum(par, val);
+        if (r.villa) { alert(r.villa); return; }
+        const ut = r.vantar.concat(r.olina);
+        if (ut.length) { par = par.filter(x => ut.indexOf(x.u) < 0); sleppt = hvadSleppt(r, val); }
+      }
+      const breyta = par.filter(x => x.u.status !== ny);
+      if (!(await setjaStodu(breyta, ny))) return;
+      if (!einn) S.valin = new Set();
+      if (sleppt) alert((par.length ? par.length + ' tæki merkt. ' : '') + 'Óbreytt:' + sleppt);
+      else toast(einn ? heitiTaekis(u0) + ' → ' + (virkt ? 'móttekið' : val === 'onytt' ? 'ónýtt' : val === 'tilbuid' ? 'tilbúið' : val) : par.length + ' tæki → ' + (val === 'onytt' ? 'ónýtt' : val));
+    } catch (e) {
+      alert('Villa — ' + String((e && e.message) || e));
+    } finally {
+      S.vinnur = false;
+      try { if (window.Workshop && Workshop.render) Workshop.render(); } catch (_) {}
+      teikna();
+    }
+  }
+
+  // Eyða tækjum (eitt úr ⋯ eða mörg hökuð). Tækin fara í „Eydd tæki" (status 'eytt', endurheimtanleg — 78 restoreUnit).
+  // Á ÓSENDRI sölu fer lína tækisins með því: hún er tekin af reikningnum og geymd á tækinu (verklidur.parts), svo
+  // endurheimt tæki ber verðið sitt aftur inn í afhendinguna (121 rukkar parts). Áður stóð línan eftir og kúnninn var
+  // rukkaður fyrir tæki sem var ekki til. Sala sem er farin út breytist aldrei hér. Spurt er einu sinni, með upphæðinni.
+  async function eydaTaekjum(par) {
+    if (S.vinnur || S.thjVinnur || !par.length) return;
+    S.vinnur = true; teikna();
+    try {
+      const T = TH(), sn = salaNumAf(par[0].j), flutt = new Map();
+      let s = null, upd = null, anLinu = 0;
+      if (sn && T) {
+        const sr = await saekjaFerskaSolu(sn);
+        if (sr.error) throw sr.error;
+        s = sr.data;
+      }
+      if (s && !salaLaest(s)) {
+        const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
+        par.forEach(({ u }) => {
+          const d = thjLysa(u);
+          if (thjHlutur(T, u, d) >= 0) return;   // verðið býr á tækinu og fer með því
+          const li = T.finnaLinu(linur, u.service, d);
+          if (li < 0) { anLinu++; return; }
+          const Ln = linur[li];
+          flutt.set(u.id, { vara_id: Ln.product_id != null ? Ln.product_id : null, nafn: String(Ln.desc || '').replace(T.BAKAD, '').trim(),
+            verd_an_vsk: Math.round((+Ln.unit_price_ex_vat || 0) * (1 - (+Ln.discount_pct || 0) / 100) * 100) / 100, vsk_prosenta: Ln.vsk_pct == null ? 24 : +Ln.vsk_pct, qty: 1 });
+          if ((+Ln.qty || 1) > 1) Ln.qty = (+Ln.qty) - 1; else linur.splice(li, 1);
+        });
+        if (flutt.size) upd = samtolurSolu(s, linur);
+      }
+      const n = par.length;
+      const msg = (n === 1 ? 'Eyða þessu tæki af verkinu?' : 'Eyða ' + n + ' tækjum af verkinu?') +
+        '\n' + (n === 1 ? 'Það fer' : 'Þau fara') + ' í „Eydd tæki" — hægt að endurheimta síðar.' +
+        (upd ? '\n\n' + (flutt.size === 1 ? 'Línan fer' : flutt.size + ' línur fara') + ' af reikningnum ' + s.num + ': ' + kr(s.samtals) + ' → ' + kr(upd.samtals) + '.' : '') +
+        (s && salaLaest(s) ? '\n\nReikningurinn ' + s.num + ' er farinn út og breytist ekki.' : '') +
+        (anLinu ? '\n' + anLinu + ' tæki eiga enga línu á reikningnum — hann breytist ekki fyrir þau.' : '');
+      const ok = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { danger: true, okText: 'Eyða' }) : window.confirm(msg);
+      if (!ok) return;
+      const eyttAt = new Date().toISOString(), skrifad = [];
+      let villa = '';
+      for (const { u } of par) {
+        const patch = { status: 'eytt', eytt_at: eyttAt };
+        if (flutt.has(u.id)) patch.parts = (Array.isArray(u.parts) ? u.parts : []).concat([flutt.get(u.id)]);
+        const r = await DB.sb.from('verklidur').update(patch).eq('id', u.id);
+        if (r.error) { villa = 'Eyðingin vistaðist ekki: ' + r.error.message + '.'; break; }
+        skrifad.push({ u, patch, fyrri: { status: u.status, eytt_at: u.eytt_at || null, parts: Array.isArray(u.parts) ? u.parts : [] } });
+      }
+      const soluVilla = (!villa && upd) ? await vistaSolu(s, upd) : '';
+      if (villa || soluVilla) {
+        let oskilad = 0;
+        for (const x of skrifad) { const a = await DB.sb.from('verklidur').update(x.fyrri).eq('id', x.u.id); if (a.error) oskilad++; }
+        alert((soluVilla ? 'Salan ' + s.num + ' vistaðist ekki (' + soluVilla + ').' : villa) +
+          (oskilad ? '\n\nATH: ' + oskilad + ' tæki standa í „Eydd tæki" — endurheimtu þau þar.' : ' Engu var eytt.'));
+        return;
+      }
+      skrifad.forEach(x => Object.assign(x.u, x.patch));
+      if (upd) {
+        Object.assign(s, upd);
+        if (S.salaNum === s.num) { S.sala = s; S.salaSott = Date.now(); }
+        try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: s.id } })); } catch (_) {}
+      }
+      skrifad.forEach(x => { S.valin.delete(x.u.id); if (S.opid === x.u.id) S.opid = null; });
+      S.meira = null;
+      toast(n === 1 ? 'Tæki sett í „Eydd tæki"' : n + ' tæki sett í „Eydd tæki"');
+    } catch (e) {
+      alert('Villa — ' + String((e && e.message) || e));
+    } finally {
+      S.vinnur = false;
       try { if (window.Workshop && Workshop.render) Workshop.render(); } catch (_) {}
       teikna();
     }
@@ -703,6 +924,12 @@ input,textarea{font-family:inherit}
       case 'rnr': { const uid = el.dataset.u ? +el.dataset.u : null; S.rnr = uid && S.rnr !== uid ? uid : null; S.meira = null; teikna(); if (S.rnr) { const i = rot.querySelector('[data-k="rnr"]'); if (i) { i.focus(); i.select(); } } return; }
       case 'rnr-vista': vistaRnr(el.dataset.j, el.dataset.u); return;
       case 'thj': skiptaThj(el.dataset.j, el.dataset.u, el.dataset.t); return;
+      // 17.11.2026: hak, rofi á röð og hópaðgerðir
+      case 'velja': { const uid = +el.dataset.u; if (S.valin.has(uid)) S.valin.delete(uid); else S.valin.add(uid); teikna(); return; }
+      case 'velja-oll': { const t = taekin(verkin(job)); S.valin = t.every(x => S.valin.has(x.u.id)) ? new Set() : new Set(t.map(x => x.u.id)); teikna(); return; }
+      case 'merkja': { const f = finna(el.dataset.j, el.dataset.u); if (f.u) merkja([f], el.dataset.t, true); return; }
+      case 'hop': merkja(taekin(verkin(job)).filter(x => S.valin.has(x.u.id)), el.dataset.t, false); return;
+      case 'eyda-valin': eydaTaekjum(taekin(verkin(job)).filter(x => S.valin.has(x.u.id))); return;
       case 'tegund': {
         // Sjaldgæft: þjónustuval 78 (ensureSvcProducts/svcOptionsHtml) er lokað inni í 78 — gamla breyta-formið opnast
         // OFAN Á spjaldinu (.bw-ov z 9000); þegar því er lokað teiknar Workshop.render okkur aftur.
@@ -715,7 +942,7 @@ input,textarea{font-family:inherit}
         }
         return;
       }
-      case 'eyda': { S.meira = null; const ok = await Workshop.deleteUnit(+el.dataset.j, +el.dataset.u); if (ok && S.opid === +el.dataset.u) S.opid = null; teikna(); return; }
+      case 'eyda': { const f = finna(el.dataset.j, el.dataset.u); if (f.u) eydaTaekjum([f]); return; }   // sama leið og hópeyðingin (línan fer með tækinu)
       case 'nytt-taeki': Workshop.addUnit(+el.dataset.j); return;   // lítill gluggi (78, z 9000) — Workshop.render teiknar okkur
       case 'senda': {
         // Takkinn er aðeins virkur þegar ÖLL tæki eru Tilbúin eða Ónýt (teikningin). 78 sendGroupToAfgreidsla telur
@@ -786,7 +1013,7 @@ input,textarea{font-family:inherit}
     const job = window.DB && DB.getJob ? DB.getJob(id) : null;
     if (!job) return false;
     const nytt = S.id !== id;
-    if (nytt) { S.opid = null; S.meira = null; S.rnr = null; S.prenta = false; S.prentaBreyta = false; S.simi = null; S.sala = null; S.salaNum = ''; S.salaVilla = ''; }
+    if (nytt) { S.opid = null; S.meira = null; S.rnr = null; S.prenta = false; S.prentaBreyta = false; S.simi = null; S.sala = null; S.salaNum = ''; S.salaVilla = ''; S.valin = new Set(); S.vinnur = false; }
     S.id = id;
     if (unitId != null) S.opid = +unitId;
     else if (nytt) { const t = taekin(verkin(job)); if (t.length === 1) S.opid = t[0].u.id; }
