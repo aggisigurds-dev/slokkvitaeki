@@ -121,6 +121,14 @@ Með töflunni fylgja ✖- og ⚠-línurnar sem Agnar þarf að vita. **Án töf
 Tólið les ekki hvað kúnninn fékk frá Payday eftir sendingu. Eftir að Agnar sendir: `… <R-nr> --send`, og Payday-spegillinn
 (`payday_invoices_slokk`) eftir næstu sókn.
 
+### Kóði og birting (stjórnlotan 17.11.2026, 12:45)
+**Órýndur kóði fer aldrei á master.** Hvaða lota sem er getur birt master með birtingarmerki, og þá fer allt með. Það
+gerðist 17.11.2026 kl. 12:29: ein lota birti sitt verk og allt órýnt á master fór í loftið með því.
+- Kóði (app, föll, tól, próf) fer á grein. Ýttu greininni og segðu stjórnlotunni til. Hún setur greinina í óháða rýni og
+  sameinar sjálf.
+- Aðeins hrein skjöl (agentaskrár, docs) mega fara beint á master, og þá án birtingarmerkis.
+- Gildir líka um lagfæringar sem lokaathugunin kallar á.
+
 ## Charlize — lestu fyrst
 Áður en þú breytir sölu, reikningi, verði eða afslætti eða fullyrðir um greiðslustöðu: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki', 'baedi') and topic in ('solur', 'payday', 'reikningar', 'verd', 'verdlisti', 'vorur', 'afslattarhopar', 'sala', 'teya', 'krofur', 'rukkun', 'postur') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
 
