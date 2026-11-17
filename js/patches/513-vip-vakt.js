@@ -151,7 +151,9 @@
   function html(n) {
     if (!S.sott && !S.bid && !S.villa) hlada();
     festa(rot());
-    if (S.villa === 'innskraning' || (!S.gogn && !S.villa)) return '';
+    if (!S.gogn && !S.villa) return '';
+    // Óinnskráður: ein lína, aldrei þögn — annars heldur sá sem situr við borðið að ekkert VIP-mál bíði.
+    if (S.villa === 'innskraning') return '<section class="vip _tomt" aria-label="VIP-vakt"><header><b>⚡ VIP-vakt</b><span class="vip-inn">Innskráningu vantar til að sjá VIP-póstinn ·</span> <a href="/innskraning.html?next=' + encodeURIComponent(location.pathname + location.hash) + '">Skrá inn ›</a></header></section>';
     if (!S.gogn) return '<section class="vip"><header><b>⚡ VIP-vakt</b><span class="vip-inn">Náði ekki í VIP-póstinn: ' + esc(S.villa) + '</span></header></section>';
     const l = S.gogn.thraedir || [], f = S.gogn.felog || [];
     const yfir = l.filter((t) => klukka(t.mottekid, new Date(), t.svartimi).litur === 'rautt').length;

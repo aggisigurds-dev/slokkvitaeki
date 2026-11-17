@@ -16,7 +16,7 @@ function hlada(fetchSvar) {
     navigator: {}, document: { visibilityState: 'visible', addEventListener() {}, createElement: () => ({}) },
     fetch: async (u) => { kallad.push(u); const s = fetchSvar(u); return { ok: s.status === 200, status: s.status, json: async () => s.body }; },
   };
-  win.window = win;
+  win.window = win; win.location = { pathname: "/", hash: "#bord" };
   vm.createContext(win);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/patches/513-vip-vakt.js'), 'utf8'), win);
   return { win, kallad };
@@ -48,14 +48,15 @@ test('borðinn: ósvaraðir þræðir með klukku og lit, Svara á Gmail, Uppkas
   assert.match(h, /⚠ Óvíst hvort svarað/);
 });
 
-test('tómt: ein lína „ekkert ósvarað“; innskráning vantar (401): ekkert teiknað', async () => {
+test('tómt: ein lína „ekkert ósvarað“; innskráning vantar (401): ein lína með innskráningartengli, engin gögn', async () => {
   const a = hlada(() => ({ status: 200, body: {} }));
   a.win.VipVakt._setja(gogn([]));
   assert.match(a.win.VipVakt.html('Agnar'), /ekkert ósvarað/);
   const b = hlada(() => ({ status: 401, body: { error: 'Innskráning starfsmanns vantar', need_login: true } }));
   b.win.VipVakt.html('Agnar');              // fyrsta kall ræsir sóknina
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
-  assert.strictEqual(b.win.VipVakt.html('Agnar'), '');
+  const h = b.win.VipVakt.html('Agnar');
+  assert.match(h, /Innskráningu vantar/); assert.match(h, /innskraning\.html/); assert.doesNotMatch(h, /data-vipk/);
   assert.ok(b.kallad.some((u) => u === '/api/vip-postur'));
 });
 
