@@ -302,6 +302,8 @@
       invoices: (d.invoices || []).map(function (i) {
         return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '', stada: i.stada || null, fid: i.fid != null ? Number(i.fid) : null };
       }),
+      // 17.11.2026 (3ea52600): þjónustusamningar — sýndir í Skjöl-sýninni og á eignasíðunni eins og skýrslur.
+      samningar: (d.samningar || []).map(function (s) { return { docId: s.docId, dags: s.dags || s.ar, bygging: s.bygging || '', heimilisfang: s.heimilisfang || '' }; }),
       messages: d.messages || [],
       erindi: d.erindi || [],
       items: d.items || [],
@@ -334,7 +336,7 @@
       if (!gata) return;
       var gamalt = b.nafn; b.nafn = gata;
       (o.reports || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
-      (o.invoices || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
+      (o.invoices || []).concat(o.samningar || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
     });
     // Forskeyti sem ER nafn félagsins sjálfs („Dæmi - Prófgata" hjá „Dæmi ehf") fer alltaf af — líka þegar meirihluta-
     // reglan í afskeyta() á ekki við (rekstrarfélag þar sem eignir systkinafélaga bera önnur nöfn). Aðeins einkvæm útkoma.
@@ -346,7 +348,7 @@
       if (alls.some(function (x) { return x !== b && x.nafn === eftir; })) return;
       b.nafn = eftir;
       (o.reports || []).forEach(function (r) { if (r.bygging === n) r.bygging = eftir; });
-      (o.invoices || []).forEach(function (r) { if (r.bygging === n) r.bygging = eftir; });
+      (o.invoices || []).concat(o.samningar || []).forEach(function (r) { if (r.bygging === n) r.bygging = eftir; });
     });
   }
   function afskeyta(o) {
@@ -361,7 +363,7 @@
     function kl(x) { return (x && String(x).indexOf(pre) === 0) ? String(x).slice(pre.length) : x; }
     alls.forEach(function (b) { b.nafn = kl(b.nafn); });
     (o.reports || []).forEach(function (r) { r.bygging = kl(r.bygging); });
-    (o.invoices || []).forEach(function (r) { r.bygging = kl(r.bygging); });
+    (o.invoices || []).concat(o.samningar || []).forEach(function (r) { r.bygging = kl(r.bygging); });
   }
   var EKKI_SKRAD = 'ekki skráð';   // 17.11.2026: sama orðalag alls staðar þar sem gögn vantar (ekki 0, ekki autt)
   var MONTHS_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
@@ -853,7 +855,17 @@
         // 25.10.2026: skýrsla án skjals (docId null) sýnir „skjal vantar" í stað dauðs PDF-hlekks; má samt biðja um skýrsluna.
         '<td class="r">' + (r.docId || state.demo ? docLink('PDF', r.docId) : '<span class="dim" title="Skjalið er ekki í skjalasafninu — biddu um það hér til hliðar.">skjal vantar</span>') +
           '<a href="#" class="frest sk-bidja" data-sk-gogn="' + (r.docId || '') + '" data-sk-b="' + esc(r.bygging) + '" data-sk-t="' + esc(r.tegund) + '" data-sk-d="' + esc(fmtDate(r.dags)) + '">' + (r.docId ? 'Biðja um uppfærða' : 'Biðja um skýrsluna') + '</a></td></tr>';
-    }).join('') || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
+    }).join('');
+    // 17.11.2026 (3ea52600): þjónustusamningar sömu eignar á eftir skýrslunum — sami PDF-hlekkur (gatt-doc sannreynir eignarhald).
+    var sam = (state.data.samningar || []).filter(function (s) { return !filter || s.bygging === filter; });
+    var samHtml = sam.map(function (s) {
+      return '<tr class="sk-samn"><td class="num">' + esc(fmtDate(s.dags)) + '</td>' +
+        '<td><span class="bname" style="font-size:17px">' + (s.bygging ? esc(s.bygging) : '<span class="dim">—</span>') + '</span></td>' +
+        '<td class="dim">' + (s.heimilisfang ? esc(s.heimilisfang) : '<span class="dim">—</span>') + '</td>' +
+        '<td>' + tegundPilla('Þjónustusamningur') + '</td><td class="num"><span class="dim">—</span></td><td class="sk-txt"><span class="dim">—</span></td>' +
+        '<td class="r">' + (s.docId || state.demo ? docLink('PDF', s.docId) : '<span class="dim">skjal vantar</span>') + '</td></tr>';
+    }).join('');
+    $('#sk-body').innerHTML = ($('#sk-body').innerHTML + samHtml) || '<tr><td colspan="7" class="empty">Engar skýrslur skráðar</td></tr>';
     foot('#sk-foot', rows.length, (state.data.reports || []).length, ['skýrsla', 'skýrslur'], ['skýrslu', 'skýrslum'], filter);
   }
 
@@ -1541,6 +1553,13 @@
         (reps.length ? reps.map(function (r) {
           return '<div class="drow"><span class="dd">' + esc(skManTxt(r)) + '</span><span class="grow">' + tegundPilla(r.tegund) + (r.magn != null ? ' <span class="dim">' + esc(r.magn) + ' ' + esc(r.eining || 'tæki') + '</span>' : '') + '</span>' + docLink('PDF', r.docId) + '</div>';
         }).join('') : '<div class="dempty">Engar skýrslur skráðar.</div>') + '</div></section>';
+      var sams = (state.data.samningar || []).filter(function (r) { return r.bygging === b.nafn; });
+      if (sams.length) {
+        html += '<section class="dsec"><h4>Þjónustusamningar <span class="cnt">' + tala(sams.length, 'samningur', 'samningar') + '</span></h4><div class="dpanel">' +
+          sams.map(function (r) {
+            return '<div class="drow"><span class="dd">' + esc(fmtDate(r.dags)) + '</span><span class="grow">' + tegundPilla('Þjónustusamningur') + '</span>' + (r.docId || state.demo ? docLink('PDF', r.docId) : '') + '</div>';
+          }).join('') + '</div></section>';
+      }
       var invs = (state.data.invoices || []).filter(function (r) { return r.bygging === b.nafn; });
       if (invs.length) {
         html += '<section class="dsec"><h4>Reikningar <span class="cnt">' + tala(invs.length, 'reikningur', 'reikningar') + '</span></h4><div class="dpanel">' +

@@ -1303,6 +1303,14 @@ exports.handler = async (event) => {
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
+    // 17.11.2026 (Verkefnalisti 3ea52600 — Agnar 27.08: „would be good to have þjónustusamningar hér … linked from the companys
+    // profile like the others"): þjónustusamningar félagsins (customer_documents doc_type 'samningur') — sama síun á félag og
+    // skýrslur og reikningar (docs hér að ofan), gatt-doc sannreynir eignarhald hvers skjals við opnun. Leigutaki fær enga.
+    const samningar = dedupeDocs(docs.filter((d) => d.doc_type === 'samningur' && !d.is_duplicate), (d) => 'id:' + d.id)
+      .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, dags: d.doc_date || null, ar: d.year || null,
+        bygging: nafnById[d.fyrirtaeki_id] || '', heimilisfang: adrById[d.fyrirtaeki_id] || '' }))
+      .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
+
     // 23.10.2026 (Agnar: „skrá lýsingu"): skjal úr Stólpa-tímanum á enga solur-röð, svo Lýsing stóð auð þótt
     // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
@@ -1580,7 +1588,7 @@ exports.handler = async (event) => {
       serkjor,
       account: { name: name || '', base_id: Number(baseId), theme: theme, open: openMode, netfang: session ? (session.email || '') : '', details: showDetails, syn: syn, stillingar: (acct && acct.stillingar && typeof acct.stillingar === 'object') ? acct.stillingar : {},
         notandi: session ? { nafn: session.name || '', hlutverk, eignir: leyfd ? [...leyfd] : null, staff: !!session.staff } : null },
-      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, messages, erindi, items, checklist, vidhald, skrar,
+      stats, buildings: onBoard, eignir_utan: eignirUtan, reports, invoices: leigutaki ? [] : invoices, samningar: leigutaki ? [] : samningar, messages, erindi, items, checklist, vidhald, skrar,
       // teikningar fylgja líka eignum utan þjónustu (eignirUtan.teikning) svo punktar virki þar
     });
   } catch (e) {
