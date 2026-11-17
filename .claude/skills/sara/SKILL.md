@@ -226,7 +226,7 @@ einu INSERT í `solur` — gikkirnir sjá um restina:
 - `solur_set_num` gefur næsta R-númer (senda `num` ekki með).
 - `trg_vidskiptategund` → `uttekt`; `trg_solur_fill_base_id` fyllir `customer_base_id`.
 - Línur: `[{"qty":n,"desc":"<heiti úr SARA.linur>","vsk_pct":24,"unit_price_ex_vat":v}]`
-  + `Akstur` × `sara.akstur` (3.600) + `Skýrslugerð` (5.600). **0 kr í SARA-línu þýðir ÓVERÐLAGT, ekki ókeypis** — línan fer með (verð úr verðskrá/tilboði) eða málið stoppar; sleppt 0-kr lína kostaði Duft 6 kg hleðslu (6.782 kr án vsk) á Tjarnarból 2 12.10.2026.
+  + `Akstur` × `sara.akstur` (3.600) + `Skýrslugerð` (4.600 — staðfest 16.11.2026). **0 kr í SARA-línu þýðir ÓVERÐLAGT, ekki ókeypis** — línan fer með (verð úr verðskrá/tilboði) eða málið stoppar; sleppt 0-kr lína kostaði Duft 6 kg hleðslu (6.782 kr án vsk) á Tjarnarból 2 12.10.2026.
 - `upphaed_an_vsk` = Σ qty×v · `vsk_upphaed` = round(×0,24) · `samtals` = summa.
 - `source='vinnublad'`, `status='final'`, `greitt_med='reikningur'`, `krafa_sent_at` null
   → birtist ÓSENT í Kröfuyfirliti; Agnar sendir.

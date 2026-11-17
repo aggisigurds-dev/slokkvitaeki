@@ -13,7 +13,7 @@
 // tools/test-gatt-serkjor.cjs ber þau saman svo þau fari ekki í sundur.
 'use strict';
 
-const SVD_KODI = { akstur: 3600, skyrslugerd: 5600 };
+const SVD_KODI = { akstur: 3600, skyrslugerd: 4600 };
 const SVD_HEITI = { akstur: 'Akstur', skyrslugerd: 'Skýrslugerð' };
 
 function tala(v, kodi) {

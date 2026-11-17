@@ -239,7 +239,7 @@
   }
 
   function sjalfgildi(trip) {
-    const D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+    const D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };
     return {
       akstur: trip.drive != null ? +trip.drive : D.akstur,
       skyrslugerd: trip.skyrslugerd != null ? +trip.skyrslugerd : D.skyrslugerd

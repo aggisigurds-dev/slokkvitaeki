@@ -112,7 +112,7 @@
       { t: 'Afsláttur á línu bakast í einingarverðið og „ · −X% afsl." bætist við lýsinguna — aldrei bæði á línu og í afslætti.', heim: 'bokari.md:58-68' },
       { t: 'Röð afsláttar: tilboðsverð → afsláttarhópur → afslattur_pct.', heim: 'REIKNINGALOTA.md:100-110' },
       { t: 'Afsláttur birgja birtist aldrei á reikningi kúnna.', heim: 'Charlize #410' },
-      { t: 'Akstur 2× ef eitthvað fór í hleðslu, annars 1×. Akstur 3.600 kr, skýrslugerð 5.600 kr án vsk.', heim: 'verd.md:3-27 · Charlize #480, #482' },
+      { t: 'Akstur 2× ef eitthvað fór í hleðslu, annars 1×. Akstur 3.600 kr, skýrslugerð 4.600 kr án vsk (staðfest 16.11.2026).', heim: 'verd.md:3-27 · Charlize #480, #482' },
       { t: 'Reikningur rukkar ekki reykskynjara, en skýrslan telur þá. Rafhlaðan er innifalin í „Yfirferð Reykskynjari".', heim: 'Charlize #438, #504' }
     ] },
     { heiti: '„Vegna"-línan og krafan', reglur: [

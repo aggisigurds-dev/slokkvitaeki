@@ -19,7 +19,11 @@
   // HÉÐAN. Áður voru tölurnar harðkóðaðar á báðum stöðum; ég breytti töflunni
   // (3600/5600) en gleymdi reikningnum (3000/3500) svo þeir sögðu sitt hvað og
   // misræmis-vörnin stöðvaði staðfestingu. Nú er aðeins EINN staður að breyta.
-  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+  // 17.11.2026 (álagspróf umferð 3): kóðasjálfgildið var 5.600 — gamla verðið. Agnar staðfesti 16.11 að Skýrslugerð sé 4.600 og það
+  // stendur í app_settings.slokk_visit_defaults. En náist app_settings EKKI (2,3 MB röð; 85 fellur þá þegjandi á sjálfgildi) fór
+  // 5.600 á reikninginn — endurgert í vafra. Sama tala er nú á ÖLLUM fimm stöðunum (129, 165, 410, 488, _gatt-serkjor);
+  // test/skyrslugerd-ein-heimild.test.cjs fellur ef þær víkja hver frá annarri. Lifandi verðið býr áfram í app_settings.
+  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };
 
   let _services = null;
   let _servicesPromise = null;

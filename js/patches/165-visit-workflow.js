@@ -234,7 +234,7 @@
     // sitt hvað. Fallback-tölurnar hér eru aðeins öryggisnet ef 129 hefur ekki
     // hlaðist — collectVisit keyrir við notanda-smell, löngu eftir hleðslu, svo
     // í reynd ræður alltaf 129-heimildin.
-    const _D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+    const _D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };
     return {
       units,
       servicedIds,
