@@ -1930,6 +1930,10 @@
     else { hideFrame(); navTo(k); }    // native slökkvitæki view
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
+    // 17.11.2026 (Öpp-villa 8, mælt): milli iframe-síðna breytist hvorki hash né sýn, svo 333 sá nýja 'f:<k>'-lykilinn
+    // ekki fyrr en í 700 ms vaktinni — ramminn birtist ~750 ms í stærð fyrri síðu og hoppaði svo. Nú strax, eftir að
+    // flipaljósið er komið á (333 les lykilinn af því).
+    try { if (window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta(); } catch (_) {}
   }
   // 02.11.2026: EN-app (lang:'en') sendir ?lang=en inn á römmuðu síðuna (brunathettingar.html les það) — sett á undan #hash.
   function withLang(url) {

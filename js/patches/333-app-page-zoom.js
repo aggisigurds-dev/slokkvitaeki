@@ -365,11 +365,14 @@
       /* HÆÐ SÝNAR ÞEGAR HÚN ER SMÆKKUÐ (05.10.2026, mynd frá starfsmanni: Brunakerfis skoðun sýndi eitt spjald og autt þar
          fyrir neðan). 230 neglir height:100vh!important á .view.active (hún skrunar sjálf). Sé sýnin smækkuð (zoom < 1 —
          sími í VENJULEGRI breidd, þar er króm-hlutfallið 1 og síðustærðin t.d. 0,7) er 100vh í hennar eigin hnitum aðeins
-         70 % af skjánum: listinn endaði á miðjum skjá. Hæðin er því deilt með zoominu þegar það er undir 1. Yfir 1
-         (Tölvusíðu-hamur, S26) er deilt með 1 — óbreytt. Sérhæfnin (3 auðkenni í :not + 4 klasar + 2 tög) slær 230 út. */
+         70 % af skjánum: listinn endaði á miðjum skjá. Hæðin er því deilt með zoominu. Sérhæfnin (3 auðkenni í :not +
+         4 klasar + 2 tög) slær 230 út.
+         17.11.2026 (Öpp-villa 9, mælt í S26-hermun 980×1940 ×2,38): áður var aðeins deilt undir 1. Yfir 1 varð sýnin hærri
+         en skjárinn — Þjónustuborð í Boss (zoom 1,67) náði niður í 3.240 px á 1.940 px skjá, body skrunaði líka (tvöfalt
+         skrun) og neðsti þriðjungur sýnarinnar sást aldrei. Nú er deilt með zoominu í báðar áttir: sýnin = skjárinn. */
       'html.app-page-zoomed body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop),'
         + 'html.app-page-zoomed[data-viewmode="mobile"] body .view.active:not(#view-field):not(#view-counter):not(#view-workshop){'
-        + 'height:calc(100vh / min(1, var(--app-page-zoom, 1)))!important}',
+        + 'height:calc(100vh / var(--app-page-zoom, 1))!important}',
       'html.app-page-zoomed body.appmode .view.active{'
         + 'padding-top:calc(50px / var(--app-page-zoom))!important;'
         + 'padding-bottom:calc((140px + env(safe-area-inset-bottom,0px)) / var(--app-page-zoom))!important}',

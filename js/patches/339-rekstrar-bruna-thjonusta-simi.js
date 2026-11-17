@@ -59,11 +59,16 @@
         + '-webkit-overflow-scrolling:touch}',
       both(RF + ' .rf-ptitle' + P)
         + '{font-size:18px!important;line-height:1.15!important}',
+      /* 17.11.2026 (verk a125f4ba, mælt 390 px): titilhólfið ber inline min-width:0 og minnkaði niður í ~90 px —
+         leitarreiturinn lagðist yfir „Rekstrarfélög" („Rekstrarfél…"). Titillinn heldur nú eigin breidd og leitin
+         (min-width 140 px) gefur eftir. */
+      both(RF + ' .rf-phead>div:not(.rf-search)' + P)
+        + '{flex:0 0 auto!important;min-width:auto!important}',
       both(RF + ' .rf-psub' + P)
         + '{display:none!important}',
       both(RF + ' .rf-search' + P)
         + '{margin-left:0!important;width:min(220px,52vw)!important;height:36px!important;'
-        + 'flex:0 1 220px!important;min-width:140px!important}',
+        + 'flex:0 1 220px!important;min-width:112px!important}',   // 17.11.2026: 140 → 112 svo titillinn og leitin rúmist á 360 px
       both(RF + ' .rf-search input' + P)
         + '{font-size:16px!important;min-height:0!important;height:auto!important}',
       both(RF + ' .rf-phead .rf-btn' + P) + ','

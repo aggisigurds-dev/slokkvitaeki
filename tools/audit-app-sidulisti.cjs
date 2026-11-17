@@ -97,8 +97,11 @@ const GAMALT = { fjarmal: ['krofu-yfirlit', 'arsskodun', 'br-gerdreikninga'], ve
   }
   krefst(s333, /if \(lifandi && lifandi\.k === k\) \{ lifandi = null; klMerki\(''\); \}\s+\/\/ vistuð stærð tekur við/, '333: sleðinn (setS) verður að fella tímabundnu klípuna — annars sést vistaða stærðin ekki');
   krefst(s333, /if \(lifandi && !kl && lifandi\.k !== vk && lifandi\.k !== \(g \? 'm:' \+ g\.id : ''\)\) \{ lifandi = null; klMerki\(''\); \}/, '333: tímabundna klípan verður að falla þegar farið er af síðunni');
-  // sýnin fyllir skjáinn þótt síðan sé minnkuð (230 neglir height:100vh á .view.active)
-  krefst(s333, /height:calc\(100vh \/ min\(1, var\(--app-page-zoom, 1\)\)\)!important/, '333: minnkuð sýn (síðustærð < 100 %) verður að fá hæð 100vh / zoom — annars er neðri hluti skjásins auður og listinn klipptur');
+  // sýnin = skjárinn í báðar áttir (230 neglir height:100vh á .view.active): minnkuð sýn (< 100 %) má ekki enda á miðjum
+  // skjá, og stækkuð sýn (> 100 %, S26) má ekki ná niður fyrir skjáinn — Öpp-villa 9, 17.11.2026: Þjónustuborð í Boss
+  // (zoom 1,67) var 3.240 px á 1.940 px skjá, neðsti þriðjungurinn sást aldrei og body skrunaði líka.
+  krefst(s333, /height:calc\(100vh \/ var\(--app-page-zoom, 1\)\)!important/, '333: sýnin verður að fá hæð 100vh / zoom — minnkuð endar annars á miðjum skjá, stækkuð nær niður fyrir skjáinn');
+  if (/height:calc\(100vh \/ min\(1,/.test(s333)) villur.push('333: hæð sýnar má ekki deila aðeins undir 1 (min(1, …)) — stækkuð sýn (S26) verður þá hærri en skjárinn');
 
   if (villur.length) { console.log('RED  APP-SÍÐULISTI — ' + villur.length + ' brot:\n  · ' + villur.join('\n  · ')); process.exit(1); }
   console.log('APP-SÍÐULISTI GRÆNT — flutningur síðulistans skrifar aðeins ofan á gildi lesið af þjóninum (4 tilvik keyrð); gamla yfirlitið er hvergi heimasíða; klípa út vistar ekki síðustærð.');
