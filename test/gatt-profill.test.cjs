@@ -118,3 +118,18 @@ test('prófíll rekstrarfélags: kt félagsins sjálfs + fjöldi félaga, mest 6
   assert.strictEqual((el.innerHTML.match(/<span>Eign \d<\/span>/g) || []).length, 6);
   assert.match(el.innerHTML, /<span>\+3<\/span>/);
 });
+
+test('forskeyti sem er nafn félagsins sjálfs fer af, líka án meirihluta (rekstrarfélag)', () => {
+  const c = samhengi();
+  const o = { account: { name: 'Dæmi ehf' },
+    buildings: [{ nafn: 'Dæmi - Prófgata', heimilisfang: 'Prófgata 41' }, { nafn: 'Dæmi ehf', heimilisfang: 'Dæmigata 9, 110 Reykjavík' },
+      { nafn: 'Systir, Lager', heimilisfang: 'Lagergata 13' }, { nafn: 'Systir, Hraun 10', heimilisfang: 'Hraun 10' }],
+    reports: [{ bygging: 'Dæmi - Prófgata' }], invoices: [] };
+  c.gataSemHeiti(o);
+  assert.strictEqual(JSON.stringify(o.buildings.map((b) => b.nafn)), JSON.stringify(['Prófgata', 'Dæmigata 9', 'Systir, Lager', 'Systir, Hraun 10']));
+  assert.strictEqual(o.reports[0].bygging, 'Prófgata');
+  // forskeyti annars félags fer EKKI af
+  const o2 = { account: { name: 'Dæmi ehf' }, buildings: [{ nafn: 'Annað - Gata 1' }, { nafn: 'Dæmi - Gata 2' }] };
+  c.gataSemHeiti(o2);
+  assert.strictEqual(JSON.stringify(o2.buildings.map((b) => b.nafn)), JSON.stringify(['Annað - Gata 1', 'Gata 2']));
+});

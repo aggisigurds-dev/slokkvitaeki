@@ -336,6 +336,18 @@
       (o.reports || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
       (o.invoices || []).forEach(function (r) { if (r.bygging === gamalt) r.bygging = gata; });
     });
+    // Forskeyti sem ER nafn félagsins sjálfs („Dæmi - Prófgata" hjá „Dæmi ehf") fer alltaf af — líka þegar meirihluta-
+    // reglan í afskeyta() á ekki við (rekstrarfélag þar sem eignir systkinafélaga bera önnur nöfn). Aðeins einkvæm útkoma.
+    alls.forEach(function (b) {
+      var n = String(b.nafn || ''), i = n.indexOf(' - ');
+      if (i < 1) return;
+      var fyrir = fold(n.slice(0, i)), eftir = n.slice(i + 3).trim();
+      if (!fyrir || !eftir || felag.indexOf(fyrir) !== 0) return;
+      if (alls.some(function (x) { return x !== b && x.nafn === eftir; })) return;
+      b.nafn = eftir;
+      (o.reports || []).forEach(function (r) { if (r.bygging === n) r.bygging = eftir; });
+      (o.invoices || []).forEach(function (r) { if (r.bygging === n) r.bygging = eftir; });
+    });
   }
   function afskeyta(o) {
     gataSemHeiti(o);
