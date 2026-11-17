@@ -12,6 +12,9 @@ if (!+CID || !fs.existsSync(SKRA) || !NAFN || /\b20[2-3]\d\b/.test(NAFN)) { cons
   const leyft = [], hafnad = [];
   await ctx.route('**/*', (route) => {
     const r = route.request(), u = r.url();
+    // Innskráningarhliðið sendir hausalausan vafra á innskraning.html og appið hleðst aldrei (mælt 17.11.2026: beðið árangurslaust
+    // eftir window.CompanyAttachments í 90 s). 404 á hub-adgangar = sama leið og teikningaprófin nota; engin innskráning.
+    if (/\/(api|\.netlify\/functions)\/hub-adgangar/.test(u)) return route.fulfill({ status: 404, body: '{}', contentType: 'application/json' });
     if (['GET', 'HEAD', 'OPTIONS'].includes(r.method()) || !/supabase\.co/.test(u)) return route.continue();
     const body = r.postData() || '';
     let ok = u.includes('/storage/v1/object/samningar/company_attachments/' + CID + '/');
