@@ -6,6 +6,7 @@
 //   1. bakfært (void) og drög teljast aldrei; kreditnótur dragast frá; kreditnóta á bakfærða sölu telst ekki;
 //   2. Brunahólf eftir útgáfudegi, gjalddagi aðeins ef útgáfudag vantar; aðeins PAID/SENT;
 //   3. Slökkvitæki fyrir 05.2026 er ÓMÆLT (null), ekki 0; hagnaður án forsendna er null, aldrei 0;
+//   4. endapunkturinn er lokaður óinnskráðum og sendir aðeins samtölur (engin nöfn).
 // Gögnin hér eru tilbúin (engin raunveruleg nöfn, kennitölur eða upphæðir — repóið er opið).
 'use strict';
 const test = require('node:test');
@@ -64,4 +65,159 @@ test('hagnaður: null (ómælt) án forsendna — aldrei 0; reiknaður þegar b�
   const h = T.hagnadur(1000, { laun: 400, annar: 100 });
   assert.equal(h.kr, 500); assert.deepEqual(h.vantar, []);
   assert.equal(T.hagnadur(1000, { laun: 0, annar: 0 }).kr, 1000, 'skráð 0 er gild tala');
+});
+
+// ── endapunkturinn: lokaður óinnskráðum, les rétta töflu, skilar samtölum ──────────────────────────────────────────────
+function stub(h) {
+  global.fetch = async (url, init = {}) => {
+    const u = new URL(url);
+    const svar = (d, ok = true) => ({ ok, status: ok ? 200 : 500, text: async () => (d == null ? '' : JSON.stringify(d)), json: async () => d });
+    if (u.hostname.includes('brunaholf')) {
+      h.bhHaus = (init.headers || {})['x-hub-toki'] || null;
+      if (h.bhLokad) return { ok: false, status: 401, text: async () => '{}', json: async () => ({}) };
+      return h.bhNidri ? svar(null, false) : svar({ tier2: { total: 1240.4, n: 2 } });
+    }
+    const t = u.pathname.split('/').pop(), q = u.searchParams;
+    if (Number(q.get('offset') || 0) > 0) return svar([]);
+    if (t === 'app_kv' && (init.method || 'GET') === 'POST') { h.vistad = JSON.parse(init.body); return svar(null); }
+    if (t === 'app_kv') return svar(h.kv ? [{ value: h.kv }] : []);
+    if (t === 'solur' && q.get('status') === 'eq.void') return svar([{ id: 2 }]);
+    if (t === 'solur' && q.get('status') === 'eq.drog') { assert.equal(q.get('hidden'), 'is.false'); return svar([{ upphaed_an_vsk: 70 }, { upphaed_an_vsk: 30 }]); }
+    if (t === 'solur' && q.get('select').includes('linur')) return svar([{ status: F, created_at: '2026-10-05T00:00:00Z', linur: [{ product_id: 7, qty: 1, unit_price_ex_vat: 100 }] }]);
+    if (t === 'solur') return svar([
+      { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-10-02T00:00:00Z' },
+      { id: 9, status: F, upphaed_an_vsk: 400, created_at: '2026-11-02T00:00:00Z' },
+      { id: 5, status: F, upphaed_an_vsk: -500, credit_of: 2, created_at: '2026-11-03T00:00:00Z' },
+    ]);
+    if (t === 'invoices' && h.invoicesTomt) return svar([]);
+    if (t === 'invoices') { assert.match(q.get('or'), /utgafudagur/); return svar([{ status: 'PAID', source: 'payday', hofudstoll: 300, utgafudagur: '2026-11-01', gjalddagi: '2026-11-10' }]); }
+    if (t === 'vorur') return svar([{ id: 7, kostnadarverd: 40 }]);
+    throw new Error('óvænt slóð ' + url);
+  };
+}
+process.env.SUPABASE_URL = 'https://dummy.supabase.co'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'x';
+const TB = require('../netlify/functions/tekjur-beint.cjs');
+
+test('tekjur-beint: tölur hvors félags sér, pípa, framlegð, hagnaður ómældur — og engin nöfn í svarinu', async () => {
+  const h = {}; stub(h);
+  const d = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.equal(d.slokkvitaeki.manudur_til_dags, 400, 'kreditnóta á bakfærða sölu (2) ekki dregin frá');
+  assert.equal(d.slokkvitaeki.fyrri_manudur, 1000);
+  assert.equal(d.slokkvitaeki.ar_til_dags, 1400); assert.equal(d.slokkvitaeki.ar_fra, '2026-05');
+  assert.deepEqual(d.slokkvitaeki.pipa, { heiti: 'Drög (ekki reikningsfært)', kr_an_vsk: 100, fjoldi: 2 });
+  assert.equal(d.slokkvitaeki.framlegd_voru.fyrri_manudur.framlegd, 60);
+  assert.equal(d.slokkvitaeki.hagnadur.kr, null); assert.equal(d.slokkvitaeki.hagnadur.vantar.length, 2);
+  assert.equal(d.brunaholf.manudur_til_dags, 300); assert.equal(d.brunaholf.fyrri_manudur, 0);
+  assert.equal(d.brunaholf.pipa.kr_m_vsk, 1240);
+  assert.doesNotMatch(JSON.stringify(d), /customer|nafn|kt/i, 'aðeins samtölur fara út');
+  h.bhNidri = true;
+  const d2 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.equal(d2.brunaholf.pipa.kr_m_vsk, null, 'Kröfu yfirlit niðri → ómælt, ekki 0');
+});
+
+test('tekjur-beint: tómur reikningalestur (aðgangsregla á invoices) er ÓMÆLDUR — null með ástæðu, aldrei 0', async () => {
+  const h = { invoicesTomt: true }; stub(h);
+  const d = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.equal(d.brunaholf.manudur_til_dags, null); assert.equal(d.brunaholf.fyrri_manudur, null); assert.equal(d.brunaholf.ar_til_dags, null);
+  assert.match(d.brunaholf.omaelt, /skilaði engu/);
+  assert.equal(d.brunaholf.hagnadur.kr, null);
+  assert.equal(d.slokkvitaeki.manudur_til_dags, 400, 'hitt félagið mælist áfram');
+  assert.equal(d.slokkvitaeki.omaelt, undefined);
+});
+
+test('tekjur-beint: Kröfu yfirlit lokað (lota 13) → pípa ómæld með stöðukóða; tóki x-hub-toki sendur þegar hann er til', async () => {
+  const HUB = require('../netlify/functions/hub-adgangar.cjs');
+  const gamalt = { t: HUB.hubApiToki, h: HUB.HUB_TOKI_HAUS };
+  try {
+    const h = { bhLokad: true }; stub(h);
+    HUB.hubApiToki = undefined;
+    const d = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+    assert.equal(d.brunaholf.pipa.kr_m_vsk, null); assert.match(d.brunaholf.pipa.omaelt, /401/);
+    assert.equal(h.bhHaus, null, 'án hubApiToki er enginn tóki sendur');
+    HUB.hubApiToki = async () => '29000000.abc'; HUB.HUB_TOKI_HAUS = 'x-hub-toki';
+    h.bhLokad = false;
+    const d2 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+    assert.equal(h.bhHaus, '29000000.abc', 'tókinn fer í hausinn x-hub-toki');
+    assert.equal(d2.brunaholf.pipa.kr_m_vsk, 1240);
+  } finally { HUB.hubApiToki = gamalt.t; HUB.HUB_TOKI_HAUS = gamalt.h; }
+});
+
+test('tekjur-beint: óinnskráður fær 401 og ekkert er lesið', async () => {
+  const H = require('../netlify/functions/_starfshlid.cjs');
+  const gamalt = H.starfsmadur;
+  H.starfsmadur = async () => ({ villa: { statusCode: 401, body: '{}' }, nafn: null });
+  let kallad = false; global.fetch = async () => { kallad = true; throw new Error('má ekki lesa'); };
+  try {
+    const r = await TB.handler({ httpMethod: 'GET', headers: {} });
+    assert.equal(r.statusCode, 401); assert.equal(kallad, false);
+  } finally { H.starfsmadur = gamalt; }
+});
+
+test('tekjur-beint: forsenda vistuð á félag, ógild tala hafnað, 0 er gilt', async () => {
+  const H = require('../netlify/functions/_starfshlid.cjs');
+  const gamalt = H.starfsmadur;
+  H.starfsmadur = async () => ({ villa: null, nafn: 'Prófari' });
+  try {
+    const h = { kv: { brunaholf: { laun: 5 } } }; stub(h);
+    const bad = await TB.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'forsenda', felag: 'bæði', lykill: 'laun', kr: 1 }) });
+    assert.equal(bad.statusCode, 400);
+    const bad2 = await TB.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'forsenda', felag: 'slokkvitaeki', lykill: 'laun', kr: -4 }) });
+    assert.equal(bad2.statusCode, 400);
+    const ok = await TB.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ action: 'forsenda', felag: 'slokkvitaeki', lykill: 'laun', kr: '1.250.000' }) });
+    assert.equal(ok.statusCode, 200);
+    assert.equal(h.vistad.key, 'tekjur_forsendur');
+    assert.equal(h.vistad.value.slokkvitaeki.laun, 1250000);
+    assert.equal(h.vistad.value.slokkvitaeki.skrad.af, 'Prófari');
+    assert.deepEqual(h.vistad.value.brunaholf, { laun: 5 }, 'hitt félagið óbreytt');
+  } finally { H.starfsmadur = gamalt; }
+});
+
+// ── 512 flísarnar: bila mjúklega — 401/500/net/óvænt snið gefa eina villulínu, aldrei hrun á Tekjum/Bókhaldi ─────────
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+function flisar(fetchSvar) {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '512-tekjur-beint.js'), 'utf8');
+  const el = { innerHTML: '', dataset: {}, isConnected: true, addEventListener() {}, querySelector() { return null; } };
+  const doc = { getElementById() { return null; }, createElement() { return {}; }, head: { appendChild() {} } };
+  const win = {};
+  vm.runInNewContext(src, { window: win, document: doc, fetch: fetchSvar, Promise, Date, String, Number, Math, JSON, Error, Array }, { filename: '512' });
+  return { TB: win.TekjurBeint, el };
+}
+const bida = () => new Promise((r) => setTimeout(r, 20));
+const svarHttp = (status, j) => async () => ({ status, ok: status >= 200 && status < 300, json: async () => j });
+
+test('512: 401 → „Skráðu þig inn", 500 → villulína, net niðri → villulína, óvænt snið → villulína; mount kastar aldrei', async () => {
+  for (const [lysing, f, vaent] of [
+    ['401', svarHttp(401, { error: 'Innskráning starfsmanns vantar' }), /Skráðu þig inn/],
+    ['500', svarHttp(500, { error: 'Supabase 500' }), /Tekjur í beinni: Supabase 500/],
+    ['net', async () => { throw new Error('Failed to fetch'); }, /Tekjur í beinni: Failed to fetch/],
+    ['200 tómt', svarHttp(200, {}), /Tekjur í beinni: /],
+    ['200 ekki JSON', async () => ({ status: 200, ok: true, json: async () => { throw new SyntaxError('x'); } }), /Tekjur í beinni: /],
+  ]) {
+    const { TB, el } = flisar(f);
+    assert.doesNotThrow(() => TB.mount(el), lysing);
+    await bida();
+    assert.match(el.innerHTML, vaent, lysing);
+    assert.doesNotMatch(el.innerHTML, /\b0 kr\b/, lysing + ': aldrei 0');
+  }
+  const { TB } = flisar(svarHttp(200, {}));
+  assert.doesNotThrow(() => TB.mount(null), 'ekkert hólf → ekkert gerist');
+});
+
+test('512: ómælt Brunahólf (tómur lestur) og Kröfu yfirlit lokað → „ómælt" á flísunum, ekki 0', async () => {
+  const d = {
+    maelt_at: '2026-11-17T04:00:00Z', skilgreining: {},
+    slokkvitaeki: { manudur: '2026-11', manudur_til_dags: 400, fyrri_man: '2026-10', fyrri_manudur: 1000, ar_til_dags: 1400, ar_fra: '2026-05',
+      pipa: { kr_an_vsk: 0, fjoldi: 0 }, framlegd_voru: { fyrri_manudur: { framlegd: 60, thak_pct: 10 } }, hagnadur: { kr: null } },
+    brunaholf: { manudur: '2026-11', manudur_til_dags: null, fyrri_man: '2026-10', fyrri_manudur: null, ar_til_dags: null, ar_fra: '2026-01',
+      omaelt: 'reikningalesturinn skilaði engu', pipa: { heiti: 'Ósent', kr_m_vsk: null, omaelt: 'Kröfu yfirlit Brunahólfs svaraði ekki' }, hagnadur: { kr: null } },
+  };
+  const { TB, el } = flisar(svarHttp(200, d));
+  TB.mount(el); await bida();
+  const bh = el.innerHTML.split('Brunahólf<small>')[1];
+  assert.ok(bh, 'Brunahólfsröðin teiknast');
+  assert.equal((bh.match(/<span>ómælt<\/span>/g) || []).length, 5, 'mánuður, ár, síðasti mánuður, pípa og hagnaður: ómælt');
+  assert.match(bh, /reikningalesturinn skilaði engu/); assert.match(bh, /Kröfu yfirlit Brunahólfs svaraði ekki/);
+  assert.doesNotMatch(bh, /<span>0 kr<\/span>/);
 });

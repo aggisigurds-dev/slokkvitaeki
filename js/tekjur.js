@@ -112,6 +112,8 @@ function _pmTexti(m){
           '<button id="tekjur-xlsx" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📊 Excel</button>' +
         '</div>' +
       '</div>' +
+      // 512: Tekjur í beinni — bæði félög sér, án VSK (lota 4, 17.11.2026)
+      '<div id="tekjur-beint-income"></div>' +
       // Summary cards — theme stat-spjöld
       '<div class="stat-row">' +
         '<div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildartekjur</div><div class="stat-card__value">'+fmtKr(totalRev)+'</div></div></div>' +
@@ -171,6 +173,7 @@ function _pmTexti(m){
         }).join('') : '<div style="color:#94a3b8;text-align:center;padding:40px">Engar sölur skráðar</div>') +
       '</div>' +
     '</main></div></div>';
+    try { if(window.TekjurBeint) window.TekjurBeint.mount(document.getElementById('tekjur-beint-income')); } catch(_e){}
     bindOverviewEvents();
   }
 
