@@ -72,3 +72,29 @@ test('tímaút er endurkallað einu sinni og flökt fellir ekki netið', () => {
     assert.strictEqual(r.status, 0, 'flökt eitt og sér fellir ekki netið: ' + r.stdout);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
+
+test('RED-línan ræður, ekki síðasta lína (ráðlegging á eftir úrskurði)', () => {
+  // 17.11.2026: 7 af 19 gagnarauðum skráðust sem „villa" af því vörðurinn prentaði ráðleggingu á eftir RED-línunni.
+  const os = require('node:os');
+  const { spawnSync } = require('node:child_process');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'oryggisnet-'));
+  try {
+    fs.copyFileSync(path.join(TOOLS, 'audit-all.cjs'), path.join(tmp, 'audit-all.cjs'));
+    fs.writeFileSync(path.join(tmp, 'audit-rad.cjs'), "console.log('RED: 3 NÝJAR raðir');console.log('Ekki hækka grunnlínuna til að þagga niður í verðinum.');process.exit(1);");
+    fs.writeFileSync(path.join(tmp, 'audit-hrun.cjs'), "throw new Error('bilað');");
+    const r = spawnSync(process.execPath, [path.join(tmp, 'audit-all.cjs'), '--static'], { encoding: 'utf8' });
+    assert.match(r.stdout, /audit-rad\.cjs\s+❌\s+RED: 3 NÝJAR raðir/, r.stdout);
+    assert.doesNotMatch(r.stdout, /audit-hrun\.cjs\s+❌\s+RED/);
+    assert.strictEqual(r.status, 1);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test('flokka(): tímaút og hrun = villa; exit 1 með eða án RED-línu = rautt', () => {
+  const { flokka } = require(path.join(TOOLS, 'audit-all.cjs'));
+  const e1 = { status: 1 };
+  assert.deepStrictEqual(flokka(e1, 'RED: 3 NÝJAR\nEkki hækka grunnlínuna.'), { stada: 'rautt', skilabod: 'RED: 3 NÝJAR' });
+  assert.strictEqual(flokka(e1, '❌ RAUTT  1 eydd vara\n  smáatriði').stada, 'rautt');
+  assert.strictEqual(flokka(e1, 'ÓSENDAR KRÖFUR (4):\n  id 1 …\nAfgreiddu í Kröfu yfirliti.').stada, 'rautt');
+  assert.strictEqual(flokka({ code: 'ETIMEDOUT' }, '').stada, 'villa');
+  assert.strictEqual(flokka(e1, "Error: bilað\n    at Object.<anonymous> (/x/audit-x.cjs:1:7)\n    at Module._compile (node:internal/modules/cjs/loader:1:2)").stada, 'villa');
+});

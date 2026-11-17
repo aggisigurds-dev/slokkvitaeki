@@ -53,7 +53,20 @@ function notarNet(f, leid = new Set()) {
   _netMinni.set(f, svar);
   return svar;
 }
-module.exports = { notarNet };
+// 17.11.2026 — flokkun falls. Áður réð SÍÐASTA lína: margir verðir prenta RED-línuna og svo ráðleggingu („Ekki hækka
+// grunnlínuna …"), og aðrir prenta aðeins lista og hætta með exit 1 — 7 af 19 gagnarauðum skráðust því sem „villa" í
+// oryggisnet_keyrslur og úrskurðurinn faldist. Nú: tímaút og hrun (stack trace) eru „villa"; annað fall er úrskurður
+// („rautt"), og fyrsta RED/RAUTT-línan er skilaboðin ef hún er til.
+function flokka(e, out) {
+  const linur = String(out || '').split('\n').filter(Boolean);
+  const timaut = !!e && (e.code === 'ETIMEDOUT' || /ETIMEDOUT/.test(String(e.message || '')));
+  const hrun = /^\s+at .+:\d+(:\d+)?\)?\s*$/m.test(String(out || '')) && /\b\w*Error\b/.test(String(out || ''));
+  const raudLina = linur.find((l) => /^\s*(❌\s*)?RED\b|\bRED:|❌ RAUTT|^\s*RAUTT/.test(l));
+  const stada = timaut || hrun ? 'villa' : 'rautt';
+  const skilabod = (stada === 'rautt' && raudLina) || linur.slice(-1)[0] || (e && e.message) || 'error';
+  return { stada, skilabod };
+}
+module.exports = { notarNet, flokka };
 if (require.main !== module) return;
 
 if (adeinsStatic) {
@@ -103,13 +116,12 @@ for (const a of audits) {
   } catch (e) {
     failed++;
     const out = String((e.stdout || '') + (e.stderr || '')).trim();
-    const last = out.split('\n').filter(Boolean).slice(-1)[0] || (e.message || 'error');
+    const { stada, skilabod: last } = flokka(e, out);
     console.log('❌  ' + last.slice(0, 90));
     merkja('error', a, last);
     nidurstodur.push({
       audit: a,
-      // 17.11.2026: „RAUTT“ (íslenskir verðir) telst líka rautt; aðeins hrun og tímaút eru „villa“.
-      stada: !erTimaut(e) && (/^RED:/.test(last) || /\bRED\b/.test(last) || /RAUTT/.test(last)) ? 'rautt' : 'villa',
+      stada,
       skilabod: last.slice(0, 400), ms: Date.now() - t0
     });
   }
