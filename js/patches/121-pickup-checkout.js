@@ -208,9 +208,13 @@
         'background:transparent!important;box-shadow:none!important;color:#1f2530!important;font:600 12.5px/1 "IBM Plex Sans",system-ui,sans-serif!important;text-shadow:none!important;cursor:pointer;white-space:nowrap}' +
       K + '._pkc-thj.on{background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important;border-color:#000!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 2px rgba(0,0,0,.3)!important}' +
       K + '._pkc-thj._pkc-onytt.on{background:#fff0ed!important;border-color:#fca5a5!important;color:#c0341d!important;box-shadow:none!important}' +
-      K + '._pkc-thj:disabled{opacity:.38!important;pointer-events:none}';
+      K + '._pkc-thj:disabled{opacity:.38!important;pointer-events:none}' +
+      K + '._pkc-line-disc.virk{border-color:#f59e0b!important;background:#fffbeb!important;color:#92400e!important}' +
+      K + '._pkc-line-tot.afsl{color:#b45309!important}';
     document.head.appendChild(st);
   }
+  // Samtala einnar sölulínu m. vsk, að frádregnum línuafslætti (17.11.2026). Sama regla og calcTotals/finalizePickup.
+  const linuTot = l => (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100) * (1 + ((l.vsk_pct == null ? 24 : +l.vsk_pct)) / 100);
   let pickupNote = '';         // free-text athugasemd appended to audit trail
   // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
   // nr 9847265"). Surfaced in the Sótt window so the operator can edit it and
@@ -513,7 +517,8 @@
           const q = +l.qty || 0;
           const price = +l.unit_price_ex_vat || 0;
           const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
-          const lineTot = q * price * (1 + vsk / 100);
+          const disc = Math.max(0, Math.min(100, +l.discount_pct || 0));
+          const lineTot = linuTot(l);
           html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.desc || l.name || 'Lína') + '</div>' +
@@ -522,6 +527,14 @@
                 '<span>kr m. vsk (' + vsk + '%)</span>' +
               '</div>' +
             '</div>' +
+            // 17.11.2026 (Agnar: „það vantar líka Línu afslátt, að geta gefið á einstaka hluti"): afsláttur á EINA línu.
+            // Hann býr í line.discount_pct — reiturinn sem Sölu-ritillinn (142) notar — svo calcTotals og finalizePickup
+            // lásu hann þegar (finalize bakar hann í verðið og bætir „· −N% afsl." aftan við heitið, 165-venjan).
+            // Afslátturinn neðst (% / kr) reiknast áfram ofan á, á heildina.
+            '<div style="display:flex;align-items:center;gap:4px">' +
+              '<input data-li="' + li + '" type="number" min="0" max="100" step="1" value="' + (disc || '') + '" placeholder="0" title="Afsláttur á þessa línu" aria-label="Afsláttur á ' + esc(l.desc || 'línu') + '" class="_pkc-line-disc' + (disc ? ' virk' : '') + '" style="width:52px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:center;font-variant-numeric:tabular-nums">' +
+              '<span style="color:#94a3b8;font-size:12px">%</span>' +
+            '</div>' +
             // 2026-08-19 (ósk Agnars): qty is now inline-editable so the operator
             // can bill the ACTUAL amount delivered — e.g. a 100gr CO₂ line entered
             // as ×26 but only 20 were really filled. Mirrors the extras-qty input.
@@ -529,11 +542,11 @@
               '<input class="_pkc-line-qty" data-li="' + li + '" type="number" min="1" step="1" value="' + q + '" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:center;font-variant-numeric:tabular-nums">' +
               '<span style="color:#94a3b8;font-size:12px">×</span>' +
             '</div>' +
-            '<div class="_pkc-line-tot" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;min-width:80px;text-align:right">' + esc(fmtKr(lineTot)) + '</div>' +
+            '<div class="_pkc-line-tot' + (disc ? ' afsl' : '') + '" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;min-width:80px;text-align:right">' + esc(fmtKr(lineTot)) + '</div>' +
           '</div>';
         });
         html += '</div>' +
-          '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Breyttu einingaverði m. vsk (fullt verð sem viðskiptavinur greiðir) — uppfærist strax í samtölunni. Afsláttur að neðan reiknast ofan á þetta.</div>' +
+          '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Breyttu einingaverði m. vsk (fullt verð sem viðskiptavinur greiðir) eða gefðu afslátt á stöku línu (%) — uppfærist strax í samtölunni. Afsláttur neðst reiknast ofan á þetta, á heildina.</div>' +
         '</div>';
       }
 
@@ -706,12 +719,24 @@
             renderTotals();
             const cell = inp.closest('div[style*="padding:9px"]');
             const totEl = cell && cell.querySelector('._pkc-line-tot');
-            if (totEl) {
-              const l = saleLinur[li];
-              const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
-              totEl.textContent = fmtKr((+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + vsk / 100));
-            }
+            if (totEl) totEl.textContent = fmtKr(linuTot(saleLinur[li]));
           }
+        });
+      });
+      // 17.11.2026: afsláttur á stöku línu. Skrifar í line.discount_pct (sama reit og 142) — calcTotals og
+      // finalizePickup lesa hann þaðan, svo forskoðun og vistun fylgja sjálfkrafa. Tómur reitur = enginn afsláttur.
+      body.querySelectorAll('._pkc-line-disc').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const li = +inp.dataset.li, l = saleLinur[li];
+          if (!l) return;
+          const v = parseFloat(String(inp.value).replace(',', '.'));
+          l.discount_pct = Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0;
+          const lit = l.discount_pct > 0;
+          inp.classList.toggle('virk', lit);
+          renderTotals();
+          const cell = inp.closest('div[style*="padding:9px"]');
+          const totEl = cell && cell.querySelector('._pkc-line-tot');
+          if (totEl) { totEl.textContent = fmtKr(linuTot(l)); totEl.classList.toggle('afsl', lit); }
         });
       });
       // Wire qty edit on the original sale lines (2026-08-19, ósk Agnars).
@@ -732,11 +757,7 @@
             renderTotals();
             const cell = inp.closest('div[style*="padding:9px"]');
             const totEl = cell && cell.querySelector('._pkc-line-tot');
-            if (totEl) {
-              const l = saleLinur[li];
-              const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
-              totEl.textContent = fmtKr((+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + vsk / 100));
-            }
+            if (totEl) totEl.textContent = fmtKr(linuTot(saleLinur[li]));
           }
         });
       });

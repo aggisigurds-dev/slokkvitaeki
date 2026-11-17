@@ -680,9 +680,9 @@ input,textarea{font-family:inherit}
   const thjHlutur = (T, u, d) => (Array.isArray(u.parts) ? u.parts : []).findIndex(p =>
     T.lykill(p.nafn) === T.lykill(u.service) || (!!T.lysa(p.nafn).teg && T.sama(T.lysa(p.nafn), d)));
 
-  // Skilar { breytt: [tæki], vantar: [tæki án slíkrar vöru], olina: [tæki án línu á sölunni], villa }. Villa = ekkert breyttist.
+  // Skilar { breytt, vantar: [tæki án slíkrar vöru], olina: [tæki án línu], laest: [tæki á greiddri/sendri sölu], villa }.
   async function skiptaMorgum(par, t) {
-    const T = TH(), ut = { breytt: [], vantar: [], olina: [], villa: '' };
+    const T = TH(), ut = { breytt: [], vantar: [], olina: [], laest: [], villa: '', laestSala: '' };
     if (!T) { ut.villa = 'Pörun þjónustu (518) er ekki hlaðin — endurhladdu síðunni.'; return ut; }
     await T.saekja();
     const plan = [];
@@ -703,13 +703,21 @@ input,textarea{font-family:inherit}
       if (sr.error) throw sr.error;
       s = sr.data;
       if (!s) { ut.villa = 'Salan ' + sn + ' fannst ekki — ekkert breyttist.'; return ut; }
-      if (salaLaest(s)) { ut.villa = 'Salan ' + sn + ' er farin út (greidd, krafa eða reikningur sendur) — ekkert breyttist. Breyttu henni með Leiðrétta sölu.'; return ut; }
-      const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
-      aLinu.forEach(p => {
-        const li = T.finnaLinu(linur, p.gamla, p.d);
-        if (li < 0) { p.sleppa = true; ut.olina.push(p.u); } else T.skiptaLinu(linur, li, p.ny);   // ein eining færð; lína með magn > 1 klofnar
-      });
-      if (aLinu.some(p => !p.sleppa)) upd = samtolurSolu(s, linur);
+      if (salaLaest(s)) {
+        // 17.11.2026 (Agnar: „ég get ekki ýtt á yfirferð" — R-001313 var greidd með korti): greidd eða send sala
+        // STÖÐVAR EKKI skráninguna á tækinu. Reikningurinn er aldrei leiðréttur sjálfkrafa (sama regla og 121 á
+        // Payday-sölu), en tækið á að bera það sem raunverulega var gert. Áður neitaði rofinn alfarið, og þar sem
+        // flestar Sótt-sölur eru greiddar með korti virkaði hann nánast hvergi á verkstæðinu.
+        aLinu.forEach(p => { p.laest = true; ut.laest.push(p.u); });
+        ut.laestSala = s.num || '';
+      } else {
+        const linur = (Array.isArray(s.linur) ? s.linur : []).map(l => Object.assign({}, l));
+        aLinu.forEach(p => {
+          const li = T.finnaLinu(linur, p.gamla, p.d);
+          if (li < 0) { p.sleppa = true; ut.olina.push(p.u); } else T.skiptaLinu(linur, li, p.ny);   // ein eining færð; lína með magn > 1 klofnar
+        });
+        if (aLinu.some(p => !p.sleppa)) upd = samtolurSolu(s, linur);
+      }
     }
     const skrifad = [];
     for (const p of plan) {
@@ -743,7 +751,7 @@ input,textarea{font-family:inherit}
     }
     // verkbeidni.verd (pos.js: verð m. vsk á verkið) — sjá samtalaSolu án sölu og 121 þegar engin lína er.
     for (const p of skrifad) {
-      if (!(p.gv && (+p.j.verd || 0) > 0)) continue;
+      if (p.laest || !(p.gv && (+p.j.verd || 0) > 0)) continue;   // læst sala: verðið á verkinu fylgir reikningnum, sem stendur
       const verd = Math.max(0, Math.round((+p.j.verd || 0) - mVsk(p.gv) + mVsk(p.ny)));
       const rj = await DB.sb.from('verkbeidnir').update({ verd }).eq('id', p.j.id);
       if (!rj.error) p.j.verd = verd;
@@ -751,6 +759,8 @@ input,textarea{font-family:inherit}
     ut.breytt = skrifad.map(p => p.u);
     return ut;
   }
+  // Reikningurinn stóð — segjum frá því í stað þess að þegja (tækin breyttust samt).
+  const laestNota = r => r.laest.length ? ' · reikningurinn ' + (r.laestSala || '') + ' er greiddur/sendur og breytist ekki' : '';
   const hvadSleppt = (r, t) => (r.vantar.length ? '\n· ' + r.vantar.length + ' tæki eiga enga ' + t + ' í vörulistanum (' + r.vantar.slice(0, 3).map(heitiTaekis).join(', ') + ')' : '') +
     (r.olina.length ? '\n· ' + r.olina.length + ' tæki fundu enga línu á sölunni (' + r.olina.slice(0, 3).map(u => u.serial || heitiTaekis(u)).join(', ') + ') — breyttu í Afhendingu › Breyta línum' : '');
 
@@ -764,7 +774,7 @@ input,textarea{font-family:inherit}
       if (r.villa) alert(r.villa);
       else if (r.vantar.length) alert('Engin ' + t + ' er til í vörulistanum fyrir þetta tæki (' + heitiTaekis(u) + ') — ekkert breyttist. Notaðu ⋯ › Breyta tegund / þjónustu.');
       else if (r.olina.length) alert('Fann ekki línuna „' + (u.service || '') + '" á sölunni — ekkert breyttist. Breyttu í Afhendingu › Breyta línum.');
-      else toast(heitiTaekis(u) + ' → ' + t);
+      else toast(heitiTaekis(u) + ' → ' + t + laestNota(r));
     } catch (e) {
       alert('Villa — ' + String((e && e.message) || e));
     } finally {
@@ -800,18 +810,19 @@ input,textarea{font-family:inherit}
     if (virkt && sk !== 1) return;
     S.vinnur = true; teikna();
     try {
-      let ny = virkt ? 'received' : (val === 'onytt' ? 'broken' : 'done'), sleppt = '';
+      let ny = virkt ? 'received' : (val === 'onytt' ? 'broken' : 'done'), sleppt = '', laest = '';
       if (!virkt && (val === 'yfirferð' || val === 'hleðsla')) {
         const r = await skiptaMorgum(par, val);
         if (r.villa) { alert(r.villa); return; }
         const ut = r.vantar.concat(r.olina);
         if (ut.length) { par = par.filter(x => ut.indexOf(x.u) < 0); sleppt = hvadSleppt(r, val); }
+        laest = laestNota(r);
       }
       const breyta = par.filter(x => x.u.status !== ny);
       if (!(await setjaStodu(breyta, ny))) return;
       if (!einn) S.valin = new Set();
       if (sleppt) alert((par.length ? par.length + ' tæki merkt. ' : '') + 'Óbreytt:' + sleppt);
-      else toast(einn ? heitiTaekis(u0) + ' → ' + (virkt ? 'móttekið' : val === 'onytt' ? 'ónýtt' : val === 'tilbuid' ? 'tilbúið' : val) : par.length + ' tæki → ' + (val === 'onytt' ? 'ónýtt' : val));
+      else toast((einn ? heitiTaekis(u0) + ' → ' + (virkt ? 'móttekið' : val === 'onytt' ? 'ónýtt' : val === 'tilbuid' ? 'tilbúið' : val) : par.length + ' tæki → ' + (val === 'onytt' ? 'ónýtt' : val)) + laest);
     } catch (e) {
       alert('Villa — ' + String((e && e.message) || e));
     } finally {

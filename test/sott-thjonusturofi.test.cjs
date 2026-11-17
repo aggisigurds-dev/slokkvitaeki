@@ -209,3 +209,17 @@ test('finalizePickup: þjónusta viðbætts tækis skipt — verðið í viðbó
   assert.equal(v2.service, 'Duft 6 kg. ABC hleðsla');
   assert.deepEqual(m(v2.parts), [{ vara_id: 1, nafn: 'Duft 6 kg. ABC hleðsla', verd_an_vsk: 8000, vsk_prosenta: 24, qty: 1 }]);
 });
+
+test('línuafsláttur á stöku línu: forskoðun og vistun baka hann inn (17.11.2026)', async () => {
+  const { SB, kollud } = hermdurSB(); const { P } = hlada(SB);
+  const sale = { id: 9, num: 'R-000009', status: 'drog', customer_nafn: 'Prófun ehf', samtals: 24800, upphaed_an_vsk: 20000, vsk_upphaed: 4800, afslattur: 0, athugasemdir: '',
+    linur: [lina('Duft 6 kg. ABC hleðsla', 1, 10000, 1), lina('Duft 6 kg. ABC hleðsla', 1, 10000, 1)] };
+  sale.linur[0].discount_pct = 20;   // það sem reiturinn í glugganum skrifar
+  const us = [taeki(1, 'Duft 6 kg. ABC hleðsla', 'Duft ABC', '6 kg'), taeki(2, 'Duft 6 kg. ABC hleðsla', 'Duft ABC', '6 kg')];
+  await P._sendSala.finalizePickup({ num: 'R-000009-V1', customer: 'Prófun ehf' }, sale, us, [], 'reikningur', null, null, 0, 0, '', false);
+  const g = kollud.find((k) => k.tafla === 'solur' && k.adgerd === 'update').gogn;
+  assert.deepEqual(m(g.linur.map((l) => l.desc + ' @' + l.unit_price_ex_vat)), ['Duft 6 kg. ABC hleðsla · −20% afsl. @8000', 'Duft 6 kg. ABC hleðsla @10000']);
+  assert.equal(g.samtals, 22320, '(8.000 + 10.000) × 1,24');
+  assert.equal(g.upphaed_an_vsk + g.vsk_upphaed, g.samtals);
+  assert.ok(g.linur.every((l) => l.discount_pct === undefined), 'afslátturinn er bakaður, ekki geymdur tvisvar');
+});
