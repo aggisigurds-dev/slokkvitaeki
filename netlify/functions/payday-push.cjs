@@ -275,9 +275,28 @@ exports.handler = async (event) => {
     payload.sendEmail = hasEmail && delivery !== 'electronic';
 
     const custEmail = payload.customer.email || (customer && customer.netfang) || '';
+
+    // 17.11.2026 (lota 9, Óðins regla #10): MINNI á höfnun rafræns reiknings per kennitölu. Línan að ofan þvingar XML
+    // á hverja sendingu, svo kúnni sem Payday hefur sagt „does not accept electronic invoices" um fékk nýja höfnun og
+    // nýtt borðmál í HVERT sinn. Nú: sé kt í payday_rafraent_hafnad (virkt) er XML-tilrauninni sleppt og reikningurinn
+    // fer eins og varaleiðin hér að neðan hefði sent hann — krafa í banka + póstur ef netfang er til. Ekkert nýtt mál.
+    // force_electronic:true reynir XML samt (kúnni skráður í skeytamiðlun síðan); ný höfnun endurnýjar minnið.
+    const ktSolu = digits(sale.customer_kt || (customer && customer.kennitala) || '');
+    const rafraentHafnad = body.force_electronic ? null : await lesaRafraentHafnad(ktSolu);
+    if (rafraentHafnad) {
+      payload.createElectronicInvoice = false;
+      payload.sendEmail = !!custEmail;
+    }
+
     const deliveryLabel = () => payload.createElectronicInvoice
       ? (payload.sendEmail ? 'both' : 'electronic')
       : (payload.sendEmail ? 'email' : 'none');
+    const rafraentSleppt = rafraentHafnad
+      ? { hafnad_fyrst: rafraentHafnad.fyrst_hafnad_at || null, hafnad_sidast: rafraentHafnad.sidast_hafnad_at || null, fjoldi: rafraentHafnad.fjoldi || 1 }
+      : null;
+    // 17.11.2026 (lota 9): netfang vantar → TILLAGA að varanetfangi bokhald@<lén kúnnans> fyrir sendiskjáinn (166).
+    // Aðeins sýnd sem ágiskun; notandinn staðfestir og sendir hana þá sem email_override. Aldrei notuð sjálfkrafa hér.
+    const netfangTillaga = (dry && !hasEmail && !body.email_override) ? await finnaNetfangsTillogu(ktSolu) : null;
     if (dry) return json(200, {
       ok: true, dry: true, mode, payload, sale, customer,
       attachment: attachment ? { name: attachment.name, bytes: attachment.bytes.length, path: attachment.path } : null,
@@ -285,6 +304,9 @@ exports.handler = async (event) => {
       attach_skip_reason: attachSkipReason,
       delivery: deliveryLabel(),
       delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : 'auto'),
+      has_email: hasEmail,
+      rafraent_sleppt: rafraentSleppt,
+      netfang_tillaga: netfangTillaga,
     });
 
     // 21.09.2026 (úttekt): FRÁTEKT. Gáttin efst les „þegar send?" en merkið er skrifað mörgum sekúndum síðar — tvær vélar
@@ -319,6 +341,8 @@ exports.handler = async (event) => {
         payload.sendEmail = !!custEmail;
         fellBackToNonElectronic = true;
         xmlVilla = msg;
+        // 17.11.2026 (lota 9): muna höfnunina á kennitöluna svo næsta sending sleppi XML (ekkert nýtt mál þá).
+        if (/does not accept/i.test(msg)) await munaRafraentHafnad(ktSolu, sale.id, msg);
         try {
           created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
@@ -373,6 +397,7 @@ exports.handler = async (event) => {
       ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
       xml_villa: fellBackToNonElectronic ? xmlVilla.slice(0, 500) : null,
       bord_mal_id,
+      rafraent_sleppt: rafraentSleppt,
       // Hvað var raunverulega afhent + á hvaða netfang — svo UI og log sýni það.
       delivery: deliveryLabel(),
       email_used: payload.sendEmail ? (custEmail || null) : null,
@@ -1108,6 +1133,77 @@ async function writeCachedToken(value) {
     },
     body: JSON.stringify({ key: 'payday_oauth_slokk', value, updated_at: new Date().toISOString() }),
   });
+}
+
+// ---- Minni: kúnni hafnar rafrænum reikningi (lota 9, 17.11.2026) ------------
+// payday_rafraent_hafnad (sql/payday_rafraent_hafnad.sql): kt → fyrsta/síðasta höfnun. Minnið er VIÐBÓT: bilun í
+// lestri þýðir að XML er reynt eins og áður (varaleiðin grípur höfnunina); bilun í skrift fellir aldrei sendingu.
+// Hvort tveggja með 3 s þaki. Taflan er lokuð vafranum — aðeins þjónustulykillinn hér les hana.
+const _gildKt = kt => /^\d{10}$/.test(String(kt || '')) && kt !== '9999999999';
+async function lesaRafraentHafnad(kt) {
+  if (!_gildKt(kt)) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/payday_rafraent_hafnad?kt=eq.${kt}&virkt=is.true&select=fyrst_hafnad_at,sidast_hafnad_at,fjoldi&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: ctl.signal,
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return (Array.isArray(rows) && rows[0]) || null;
+  } catch (_) { return null; } finally { clearTimeout(timer); }
+}
+async function munaRafraentHafnad(kt, saleId, villa) {
+  if (!_gildKt(kt)) return false;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/payday_muna_rafraent_hafnad`, {
+      method: 'POST', signal: ctl.signal,
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_kt: kt,
+        p_sala_id: Number.isFinite(Number(saleId)) ? Number(saleId) : null,
+        p_villa: String(villa || '').replace(/(?<!\d)\d{6}[-\s_]?\d{4}(?!\d)/g, '[kt]').slice(0, 500),
+      }),
+    });
+    return r.ok;
+  } catch (_) { return false; } finally { clearTimeout(timer); }
+}
+
+// ---- Varanetfang: bokhald@<lén kúnnans> sem TILLAGA (lota 9, 17.11.2026) -----
+// Hugmynd Agnars 16.11.: vanti netfang, stinga upp á bokhald@<lén>. Lénið kemur úr charlize_contacts (lén sem hafa
+// sést í pósti við kennitöluna). Ekki stungið upp á: ókeypis póstþjónustum (gmail, simnet …) — þar er „bokhald@" ekki
+// til — né léni sem er á 3+ kennitölum: það er umsjónar-/rekstrarfélag (eignaumsjon.is o.þ.h.), ekki kúnninn sjálfur.
+// Skilar { netfang, len, heimild, agiskun:true } eða null. Fer AÐEINS í dry-svarið; sendiskjárinn lætur staðfesta.
+const _ALMENN_LEN = /^(?:gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|mac|aol|proton|protonmail|simnet|internet|visir|mi|isl|talnet|centrum|hive|vodafone|siminn|snerpa|eldklar|brunaholf)\.[a-z.]+$/i;
+async function finnaNetfangsTillogu(kt) {
+  if (!_gildKt(kt)) return null;
+  const ktDash = kt.slice(0, 6) + '-' + kt.slice(6);
+  const hdr = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/charlize_contacts?kennitala=in.(${kt},${ktDash})&len=not.is.null&select=len,status,faerslur&limit=50`, { headers: hdr, signal: ctl.signal });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const stig = new Map();
+    for (const x of (Array.isArray(rows) ? rows : [])) {
+      const len = String(x.len || '').trim().toLowerCase();
+      if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(len) || _ALMENN_LEN.test(len)) continue;
+      const s = (x.status === 'approved' ? 1000 : 0) + (Number(x.faerslur) || 0);
+      stig.set(len, Math.max(stig.get(len) || 0, s));
+    }
+    const rodun = [...stig.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+    for (const len of rodun.slice(0, 3)) {
+      const q = await fetch(`${SUPABASE_URL}/rest/v1/charlize_contacts?len=eq.${encodeURIComponent(len)}&select=kennitala&limit=200`, { headers: hdr, signal: ctl.signal });
+      if (!q.ok) return null;
+      const kts = new Set((await q.json()).map(y => digits(y.kennitala)).filter(Boolean));
+      if (kts.size >= 3) continue;   // umsjónarfélag — ekki lén kúnnans
+      return { netfang: 'bokhald@' + len, len, heimild: 'charlize_contacts', agiskun: true };
+    }
+    return null;
+  } catch (_) { return null; } finally { clearTimeout(timer); }
 }
 
 // ---- helpers ---------------------------------------------------------------

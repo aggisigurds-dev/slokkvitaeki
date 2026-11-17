@@ -2140,6 +2140,7 @@
               sale_id: id,
               attach_report: choice.attach,
               report_storage_path: (choice.attach && choice.path) || undefined,
+              email_override: choice.email_override || undefined,   // aðeins ef notandinn staðfesti tillöguna
             }, auka || {})),
           });
           let r = await senda();
@@ -2501,6 +2502,7 @@
   function deliveryNote(j) {
     if (!j) return '';
     if (j.fellBackToNonElectronic) return ' — rafrænt hafnað, sent í pósti' + (j.email_used ? ' á ' + j.email_used : '');
+    if (j.rafraent_sleppt) return ' — rafrænt sleppt (kúnni hafnar rafrænu)' + (j.email_used ? ', ✉ ' + j.email_used : ', ⚠ aðeins krafa í banka');
     if (j.delivery === 'both') return ' — ⚡ rafrænt + ✉ ' + (j.email_used || 'póstafrit');
     if (j.delivery === 'electronic') return ' — ⚡ rafrænt (ekkert póstafrit)';
     if (j.delivery === 'email') return ' — ✉ ' + (j.email_used || 'tölvupóstur');
@@ -2822,6 +2824,7 @@
           '<div style="font-size:17px;font-weight:800;color:#11141c;margin-bottom:4px">🏦 Senda kröfu í Payday</div>' +
           '<div style="font-size:13px;color:#334155">' + esc((sale && sale.num) || '') + ' · ' + esc((sale && sale.customer_nafn) || '') + ' · <b class="ky-num">' + fmtKr(sale && sale.samtals) + '</b></div>' +
           reportHtml +
+          '<div id="_ky-send-afh"></div>' +
           '<div style="font-size:12px;color:#64748b;margin-bottom:16px">Sendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".</div>' +
           '<div style="display:flex;justify-content:flex-end;gap:8px">' +
             '<button type="button" id="_ky-send-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">Hætta við</button>' +
@@ -2834,11 +2837,62 @@
       wrap.querySelector('#_ky-send-cancel').addEventListener('click', () => done(null));
       wrap.querySelector('#_ky-send-go').addEventListener('click', () => {
         const cb = wrap.querySelector('#_ky-send-attach');
-        done({ attach: cb ? !!cb.checked : true, path: (res.att && res.att.path) || (res.doc && res.doc.storage_path) || null });
+        // Varanetfangið fer AÐEINS með ef notandinn hakaði sjálfur við það (ágiskun, aldrei sjálfgefið).
+        const tOk = wrap.querySelector('#_ky-send-tillaga-ok');
+        const tIn = wrap.querySelector('#_ky-send-tillaga');
+        const tNf = (tOk && tOk.checked && tIn) ? String(tIn.value || '').trim() : '';
+        done({
+          attach: cb ? !!cb.checked : true,
+          path: (res.att && res.att.path) || (res.doc && res.doc.storage_path) || null,
+          email_override: /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(tNf) ? tNf : null,
+        });
       });
       const ob = wrap.querySelector('#_ky-send-open');
       if (ob) ob.addEventListener('click', () => { openSkyrsla(res).catch(e => alert('Villa: ' + (e.message || e))); });
+      if (sale && sale.id) synaAfhendingu(wrap.querySelector('#_ky-send-afh'), sale);
     });
+  }
+
+  // 17.11.2026 (lota 9): sendiskjárinn spyr payday-push (dry — ekkert fer út, Payday ekki kallað) hvernig krafan
+  // afhendist: (a) kt sem hefur hafnað rafrænum reikningi → XML sleppt, sagt fyrirfram; (b) ekkert netfang → viðvörun
+  // og, sé lén kúnnans þekkt, TILLAGA bokhald@<lén> merkt sem ágiskun. Hakið er AF sjálfgefið; ekkert er notað nema
+  // notandinn haki við. Bilun í athuguninni breytir engu — glugginn virkar þá eins og áður.
+  async function synaAfhendingu(box, sale) {
+    if (!box) return;
+    let j = null;
+    try {
+      const r = await fetch('/api/payday-push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sale_id: sale.id, dry: true, attach_report: false }),
+      });
+      j = await r.json().catch(() => null);
+      if (!r.ok || !j || !j.ok) return;
+    } catch (_) { return; }
+    if (!box.isConnected) return;
+    const dags = x => { const d = String(x || '').slice(0, 10).split('-'); return d.length === 3 ? d[2] + '.' + d[1] + '.' + d[0] : ''; };
+    let h = '';
+    if (j.rafraent_sleppt) {
+      h += '<div class="_ky-afh-rafr" style="margin:0 0 10px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:12.5px;color:#1e3a8a">' +
+        '⚡ <b>Rafrænt sleppt</b> — Payday hafnaði rafrænum reikningi fyrir þessa kennitölu' +
+        (j.rafraent_sleppt.hafnad_fyrst ? ' (fyrst ' + esc(dags(j.rafraent_sleppt.hafnad_fyrst)) + ')' : '') +
+        '. Krafan fer í banka' + (j.has_email ? ' og reikningurinn í tölvupósti.' : '.') + '</div>';
+    }
+    if (!j.has_email) {
+      h += '<div class="_ky-afh-netfang" style="margin:0 0 10px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:12.5px;color:#78350f">' +
+        '✉ <b>Ekkert netfang skráð</b> — reikningurinn og skýrslan berast kúnnanum ekki' + (j.rafraent_sleppt ? '' : ' nema hann taki við rafrænum reikningi') + '; aðeins krafa í banka.';
+      const t = j.netfang_tillaga;
+      if (t && t.netfang) {
+        h += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">' +
+          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700">' +
+            '<input type="checkbox" id="_ky-send-tillaga-ok" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">' +
+            '<span>Senda reikninginn líka á:</span></label>' +
+          '<input id="_ky-send-tillaga" type="email" value="' + esc(t.netfang) + '" style="padding:6px 9px;border:1px solid #fcd34d;border-radius:7px;font:inherit;font-size:13px;color:#11141c;background:#fff">' +
+          '<span style="font-size:11.5px;color:#92400e">⚠ Ágiskun: lénið ' + esc(t.len || '') + ' hefur sést í pósti við þessa kennitölu. Staðfestu netfangið áður en þú hakar við.</span>' +
+        '</div>';
+      }
+      h += '</div>';
+    }
+    box.innerHTML = h;
   }
 
   // ── 📱 Sími — same company cards as Skjár / Brunahólf (not 2-col tiles) ──
