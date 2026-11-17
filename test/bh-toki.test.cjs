@@ -3,7 +3,7 @@
 //      (HMAC af session_secret með tilganginum 'hub-api|', sama og brunaholf/netlify/functions/_vord.js);
 //   2. póst-tóki og hub-tóki eru ólíkir (annar opnar ekki hinn);
 //   3. _bh-toki.cjs: aðeins köll á brunaholf.netlify.app/api|/.netlify/functions fá hausinn — aldrei önnur hýsing;
-//   4. 512-bh-bru.js: fetch appsins á föll Brunahólfs fær _hubtoki; annað óbreytt; innfelld Brunahólfs-síða fær tókann
+//   4. 514-bh-bru.js: fetch appsins á föll Brunahólfs fær _hubtoki; annað óbreytt; innfelld Brunahólfs-síða fær tókann
 //      með postMessage, skeyti frá öðrum uppruna fá ekkert; bilar /api/bh-toki fer kallið samt.
 // Keyrsla: node --test test/bh-toki.test.cjs
 'use strict';
@@ -87,7 +87,7 @@ test('_bh-toki.cjs: aðeins föll á brunaholf.netlify.app fá hausinn', async (
 });
 
 // ── vafraplásturinn 512 í sýndarglugga ─────────────────────────────────────────────────────────────────────────
-const KODI = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '512-bh-bru.js'), 'utf8');
+const KODI = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '514-bh-bru.js'), 'utf8');
 const BH = 'https://brunaholf.netlify.app';
 const GILDUR = '29000000.' + 'b'.repeat(64);
 function gluggi({ tokiSvar = { toki: GILDUR, gildir_ms: 540000 }, tokiStada = 200 } = {}) {
@@ -107,7 +107,7 @@ function gluggi({ tokiSvar = { toki: GILDUR, gildir_ms: 540000 }, tokiStada = 20
   vm.runInNewContext(KODI, w);
   return { w, kollud, hlustar };
 }
-test('512: fetch á föll Brunahólfs fær _hubtoki (einu sinni sóttur); annað óbreytt', async () => {
+test('514: fetch á föll Brunahólfs fær _hubtoki (einu sinni sóttur); annað óbreytt', async () => {
   const g = gluggi();
   await g.w.fetch('https://brunaholf.netlify.app/api/krofu-yfirlit-bru?ar=2026');
   await g.w.fetch('https://brunaholf.netlify.app/api/worksites');
@@ -120,12 +120,12 @@ test('512: fetch á föll Brunahólfs fær _hubtoki (einu sinni sóttur); annað
   assert.ok(g.kollud.includes('/api/postur-senda'));
   assert.ok(g.kollud.includes(BH + '/jarvis.html'));
 });
-test('512: bilar /api/bh-toki (401) fer kallið samt, óbreytt', async () => {
+test('514: bilar /api/bh-toki (401) fer kallið samt, óbreytt', async () => {
   const g = gluggi({ tokiStada: 401, tokiSvar: { need_login: true } });
   await g.w.fetch('https://brunaholf.netlify.app/api/worksites');
   assert.ok(g.kollud.includes(BH + '/api/worksites'));
 });
-test('512: innfelld Brunahólfs-síða fær tókann; annar uppruni fær ekkert', async () => {
+test('514: innfelld Brunahólfs-síða fær tókann; annar uppruni fær ekkert', async () => {
   const g = gluggi();
   const svor = [];
   const source = { postMessage: (d, o) => svor.push({ d, o }) };

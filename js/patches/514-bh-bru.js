@@ -1,4 +1,4 @@
-/* 512-bh-bru.js — appið nær í föll Brunahólfs eftir að þau lokuðust (Powerplan lota 13, 17.11.2026).
+/* 514-bh-bru.js — appið nær í föll Brunahólfs eftir að þau lokuðust (Powerplan lota 13, 17.11.2026).
  *
  * Föll Brunahólfs krefjast nú innskráningar á Brunahólfi EÐA tíma-tóka (brunaholf/netlify/functions/_vord.js).
  * Þessi vafri á ekki Brunahólfs-kökuna (annar vefur). Í staðinn:

@@ -5,7 +5,7 @@
 // hub_user) EÐA tóka (brunaholf/netlify/functions/_vord.js). Vafrinn hér á ekki Brunahólfs-kökuna (annar vefur), svo:
 //   1. innskráning appsins er krafin (_starfshlid.cjs — sama hlið og postur-senda; 401 án hennar);
 //   2. tókinn er myntaður í hub-adgangar.cjs (HMAC af session_secret, sameiginlegu leyndarmáli beggja vefja), gildir 10 mín;
-//   3. js/patches/512-bh-bru.js setur hann á köll appsins til brunaholf.netlify.app/api/… og réttir hann innfelldum
+//   3. js/patches/514-bh-bru.js setur hann á köll appsins til brunaholf.netlify.app/api/… og réttir hann innfelldum
 //      Brunahólfs-síðum (iframe) sem biðja um hann með postMessage.
 //
 //   GET /api/bh-toki → 200 { toki, gildir_ms }  ·  401 án innskráningar  ·  503 ef leyndarmálið næst ekki
