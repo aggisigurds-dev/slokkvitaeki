@@ -10,6 +10,8 @@
  *   2. Verðsamanburður  — söluverðið okkar á móti verði samkeppnisaðila (m. VSK).
  *   3. Hvar kaupa       — birgjar innanlands og erlendis ef við verðum tómir (B2B, sendir til Íslands, sýnishorn af verði).
  *   4. Okkar innkaup    — verðin sem við höfum borgað á birgjareikningum (afsláttur birgja, nettó á stykki).
+ *   5. Útboð            — opinber útboð á eftirliti með slökkvitækjum (Reykjavík o.fl.): hverjir buðu og hvað, hver vann, gildistími, næsta útboð,
+ *                         hvar var leitað og hvar má fylgjast með (Agnar 17.11.2026). Gögn: utbod, utbod_leit, utbod_vefir í JSON-skránni.
  *
  * Gögn: /js/data/samkeppnisvorur.json (opinberar heimildir, hver lína ber slóð + dagsetningu — ómælt er „—", aldrei 0) og
  * `vorur` úr gagnagrunni (okkar verð). Aðeins LESTUR: flipinn breytir engu verði og skrifar ekkert.
@@ -42,6 +44,7 @@
   let _q = '', _flokkur = '', _seljandi = '', _land = '';
   const _sort = {};            // röðun með smelli á dálkahaus: { [töfluId]: { k, d } } (gildir aðeins um þá töflu)
   let _rod = null;             // röðun úr felliglugganum: { k, d } — gildir um allar töflur í sýninni sem hafa dálk með þessu k
+  let _utLeitOpid = false;     // „Hvar var leitað" opið á Útboð-flipanum (vistast með valinu, samstillt milli véla)
   let _opinSia = true;         // síuspjaldið opið
   let _snert = false;          // notandinn hefur snert síu/röðun — þá ræður hans val, ekki vistaða staðan
   // Síur sem eru sértækar fyrir sýn. Gildi sem jafngildir upphafsgildinu telst „engin sía".
@@ -49,7 +52,8 @@
     tegund: '', verdMin: '', verdMax: '', mynd: false, para: '', odyrVid: false, odyrKostn: false, bre: '', tilbod: false, felaUppsel: false, pakki: '', stadall: false, samMunur: '',
     thjKind: '', thjTegund: '', thjSamb: false, thjMunur: '',
     bTegund: '', bSendir: '', bNuv: false, bVerd: false, bKomid: false,
-    ikAfsl: '', ikTimabil: '', ikPara: false
+    ikAfsl: '', ikTimabil: '', ikPara: false,
+    utTegund: '', utStada: '', utTilbod: false, utNaest: false
   };
   const F = Object.assign({}, SIUR_FRUM);
   const SIUR_FLIPI = {
@@ -57,7 +61,8 @@
     samanb: ['tegund', 'verdMin', 'verdMax', 'samMunur', 'bre', 'pakki', 'mynd', 'odyrVid', 'odyrKostn', 'tilbod', 'felaUppsel', 'stadall'],
     thjonusta: ['thjKind', 'thjTegund', 'verdMin', 'verdMax', 'thjSamb', 'thjMunur'],
     birgjar: ['bTegund', 'bSendir', 'bNuv', 'bVerd', 'bKomid'],
-    innkaup: ['ikAfsl', 'ikTimabil', 'ikPara']
+    innkaup: ['ikAfsl', 'ikTimabil', 'ikPara'],
+    utbod: ['utTegund', 'utStada', 'utTilbod', 'utNaest']
   };
   // Röðunarvalkostir per sýn: [heiti, dálkalykill, átt]. Valkostur gildir um hverja töflu í sýninni sem hefur dálk með þessum lykli.
   const RODUN = {
@@ -65,7 +70,8 @@
     samanb: [['Sjálfgefið', null, 1], ['Okkar vara A–Ö', 'vara', 1], ['Við dýrari en markaðurinn fyrst', 'mun', -1], ['Við ódýrari en markaðurinn fyrst', 'mun', 1], ['Okkar verð — hæst fyrst', 'ok', -1], ['Okkar verð — lægst fyrst', 'ok', 1], ['Lægsta verð á markaði — lægst fyrst', 'lag', 1], ['Flest verð á markaði', 'fj', -1]],
     thjonusta: [['Sjálfgefið', null, 1], ['Aðili A–Ö', 'ad', 1], ['Þjónusta A–Ö', 'thj', 1], ['Verð — lægst fyrst', 'verd', 1], ['Verð — hæst fyrst', 'verd', -1], ['Við dýrari en þeir fyrst', 'mun', -1], ['Við ódýrari en þeir fyrst', 'mun', 1], ['Nýjast sótt', 'dags', -1]],
     birgjar: [['Sjálfgefið (innanlands fyrst)', null, 1], ['Nafn A–Ö', 'nafn', 1], ['Land A–Ö', 'land', 1], ['Flest sýnishorn af verði', 'syn', -1], ['Ódýrast komið til okkar', 'komid', 1], ['Sendir til Íslands fyrst', 'sendir', 1]],
-    innkaup: [['Sjálfgefið', null, 1], ['Birgir A–Ö', 'selj', 1], ['Vara A–Ö', 'vara', 1], ['Síðast keypt — nýjast fyrst', 'dags', -1], ['Mesti afsláttur', 'afsl', -1], ['Verð sem við borguðum — hæst fyrst', 'net', -1], ['Verð sem við borguðum — lægst fyrst', 'net', 1], ['Oftast keypt', 'fj', -1], ['Mest ódýrara á markaði', 'mark', 1]]
+    innkaup: [['Sjálfgefið', null, 1], ['Birgir A–Ö', 'selj', 1], ['Vara A–Ö', 'vara', 1], ['Síðast keypt — nýjast fyrst', 'dags', -1], ['Mesti afsláttur', 'afsl', -1], ['Verð sem við borguðum — hæst fyrst', 'net', -1], ['Verð sem við borguðum — lægst fyrst', 'net', 1], ['Oftast keypt', 'fj', -1], ['Mest ódýrara á markaði', 'mark', 1]],
+    utbod: [['Sjálfgefið (nýjasta opnun fyrst)', null, 1], ['Kaupandi A–Ö', 'kaup', 1], ['Opnun tilboða — nýjast fyrst', 'opn', -1], ['Opnun tilboða — elst fyrst', 'opn', 1], ['Lægsta tilboð — lægst fyrst', 'lag', 1], ['Flest tilboð', 'fj', -1], ['Rennur út — næst fyrst', 'rennur', 1], ['Bjóðandi A–Ö (tilboðatafla)', 'bj', 1], ['Verð — lægst fyrst (tilboðatafla)', 'verd', 1]]
   };
 
   // ── Vistun á vali (samstillt milli véla — AppSettings, aldrei localStorage; reglan 15.10.2026) ──────────────────────
@@ -90,7 +96,7 @@
   }
   function _vistaSkrif() {
       try {
-        if (window.AppSettings && AppSettings.save) AppSettings.save({ [VAL_LYKILL]: JSON.stringify({ f: _flipi, q: _q, fl: _flokkur, se: _seljandi, la: _land, F, rod: _rod, sort: _sort, opin: _opinSia }) });
+        if (window.AppSettings && AppSettings.save) AppSettings.save({ [VAL_LYKILL]: JSON.stringify({ f: _flipi, q: _q, fl: _flokkur, se: _seljandi, la: _land, F, rod: _rod, sort: _sort, opin: _opinSia, ul: _utLeitOpid }) });
       } catch (_) { /* vistast ekki — valið gildir samt í þessum glugga */ }
   }
   function saekjaVal() {
@@ -109,6 +115,7 @@
       Object.keys(_sort).forEach((k) => delete _sort[k]);
       if (o.sort && typeof o.sort === 'object') Object.keys(o.sort).forEach((k) => { const s = o.sort[k]; if (s && typeof s.k === 'string') _sort[k] = { k: s.k, d: s.d === -1 ? -1 : 1 }; });
       if (typeof o.opin === 'boolean') _opinSia = o.opin;
+      if (typeof o.ul === 'boolean') _utLeitOpid = o.ul;
       return true;
     } catch (_) { return false; }
   }
@@ -216,6 +223,10 @@
       .samk-tk{border:1px solid var(--brd);background:var(--bg1);color:var(--ink1);border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
       .samk-tk:hover{background:var(--bg2)}
       .samk-tk.on{background:#0f172a;color:#fff;border-color:#0f172a}
+      .samk-tilb{margin:0;padding:0;list-style:none;display:grid;gap:2px;min-width:240px}
+      .samk-vef{white-space:normal;max-width:300px;min-width:180px;line-height:1.4}
+      .samk-det{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;margin:0 0 14px}
+      .samk-det summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--ink1)}
       @media(max-width:900px){.samk-tafla{display:block;overflow-x:auto;white-space:nowrap}}
     `;
     document.head.appendChild(s);
@@ -600,8 +611,126 @@
       ${tafla('thjonusta', cols, rows)}`;
   }
 
+  // ── 6. Útboð — opinber útboð á eftirliti með slökkvitækjum (Agnar 17.11.2026) ──────────────────────────────────────
+  // Gögn: _g.utbod (útboð með tilboðum), _g.utbod_leit (hvar var leitað), _g.utbod_vefir (hvar má fylgjast með). Aðeins lestur.
+  const UTB_TEGUND = { sveitarfelag: 'Sveitarfélag', rikid: 'Ríkið', spitali: 'Spítali / heilbrigðisstofnun', stofnun: 'Stofnun', opinbert_fyrirtaeki: 'Opinbert fyrirtæki' };
+  const UTB_STADA = { opid: 'Opið núna', bid_urslita: 'Beðið úrslita', i_gildi: 'Samningur í gildi', lokid: 'Lokið', runnid_ut: 'Runnið út', othekkt: 'Óþekkt' };
+  const UTB_STADA_LIT = { opid: 'gu', bid_urslita: 'gu', i_gildi: 'gr' };
+  const UTB_LEIT = { fannst: 'Útboð fannst', ekkert: 'Ekkert fannst', ekki_adgengilegt: 'Ekki aðgengilegt' };
+  const UTB_FLOKKUR_TEGUND = { sveitarfelag: 'Sveitarfélög', rikid: 'Ríkið' };
+  const tilbodMedVerd = (t) => (t.tilbod || []).filter((b) => b.verd != null);
+  const lagstaTilbod = (t) => { const v = tilbodMedVerd(t).map((b) => b.verd); return v.length ? Math.min(...v) : null; };
+  const einStutt = (t) => (/vegi/i.test(t.eining_verds || '') ? 'vegið einingaverð án VSK' : /heildarver/i.test(t.eining_verds || '') ? 'heildarverð samnings' : 'eining: sjá útboð');
+  const heimildirHtml = (l) => (l || []).map((h) => tengill(h.slod, h.texti)).join('<br>');
+  const dagsRennur = (t) => (t.rennur_ut ? dags(t.rennur_ut) + (t.rennur_ut_vissa === 'alyktad' ? ' (ályktað)' : t.rennur_ut_vissa === 'auglysing' ? ' (skv. útboðsauglýsingu)' : '') : '');
+  const manudirTil = (iso) => { const d = new Date(iso + 'T00:00:00'); return Number.isNaN(d.getTime()) ? null : Math.round((d.getTime() - Date.now()) / (30.44 * 864e5)); };
+  const tilbodHtml = (x) => {
+    const l = [...(x.t.tilbod || [])].sort((a, b) => (a.verd == null ? 1 : b.verd == null ? -1 : a.verd - b.verd));
+    if (!l.length) return '<span class="samk-sm">Tilboð ekki birt</span>';
+    return `<ul class="samk-tilb">${l.map((b) => `<li class="${b.sigurvegari ? 'samk-gott' : ''}">${esc(b.bjodandi)} — ${b.verd != null ? thus(b.verd) + ' kr' : 'verð ekki birt'}${b.stig != null ? ' · ' + esc(b.stig) + ' stig' : ''}${b.sigurvegari ? ' ✓ samið við' : ''}</li>`).join('')}</ul>${x.t.eining_verds ? `<div class="samk-sm samk-vef">${esc(x.t.eining_verds)}</div>` : ''}`;
+  };
+  function utbod() {
+    const allt = _g && Array.isArray(_g.utbod) ? _g.utbod : [];
+    if (!allt.length) return '<div class="samk-tomt">Engin útboð hafa verið skráð enn.</div>';
+    const leitAllt = Array.isArray(_g.utbod_leit) ? _g.utbod_leit : [];
+    const vefirAllt = Array.isArray(_g.utbod_vefir) ? _g.utbod_vefir : [];
+    const rows = allt.map((t) => ({ seljandi: t.kaupandi, nafn: t.titill, athugasemd: [t.nr, t.tegund, t.athugasemd, t.gildistimi, t.naesta_utbod, (t.tilbod || []).map((b) => b.bjodandi).join(' ')].join(' '), t }))
+      .filter(passar).filter((x) => { const t = x.t; return (!F.utTegund || t.tegund_kaupanda === F.utTegund) && (!F.utStada || t.stada === F.utStada) && (!F.utTilbod || tilbodMedVerd(t).length > 0) && (!F.utNaest || t.rennur_ut || t.naesta_utbod); });
+    const tilRows = [];
+    rows.forEach((x) => (x.t.tilbod || []).forEach((b) => tilRows.push({ t: x.t, b })));
+    const opin = rows.filter((x) => x.t.stada === 'opid').length;
+    const kpiHtml = kpi([[rows.length, 'útboð skráð'], [new Set(rows.map((x) => x.t.kaupandi)).size, 'kaupendur með útboð'], [tilRows.filter((r) => r.b.verd != null).length, 'tilboð með birtu verði'], [opin, 'opin útboð núna', opin ? 'g' : ''], [(_g.utbod_leit || []).length, 'staðir sem leitað var á']]);
+
+    // Næstu útboð: samningar sem renna út, næsti fyrst
+    const naest = rows.filter((x) => x.t.rennur_ut && x.t.stada !== 'runnid_ut' && x.t.stada !== 'lokid').map((x) => x.t).sort((a, b) => a.rennur_ut.localeCompare(b.rennur_ut));
+    const kortNaest = (t) => {
+      const m = manudirTil(t.rennur_ut);
+      return `<div class="samk-kort">
+        <h4>${esc(t.kaupandi)} · nr. ${esc(t.nr)}</h4>
+        <div class="samk-sm">${esc(t.titill)}</div>
+        <div class="l"><span class="samk-pill gu">Samningur rennur út ≈ ${esc(dagsRennur(t))}${m != null && m > 0 ? ' · eftir ' + m + ' mán.' : ''}</span></div>
+        ${t.naesta_utbod ? `<div style="font-size:13px;color:var(--ink2)">${esc(t.naesta_utbod)}</div>` : ''}
+        ${t.gildistimi ? `<div class="samk-sm" style="margin-top:4px">Gildistími: ${esc(t.gildistimi)}</div>` : ''}
+        <div style="margin-top:8px">${heimildirHtml(t.heimildir)}</div>
+      </div>`;
+    };
+    const naestHtml = naest.length ? `<div class="samk-h" style="margin-top:0">Næsta útboð og samningar sem renna út</div><div class="samk-grid">${naest.map(kortNaest).join('')}</div>` : '';
+
+    // Verðþróun milli umferða: aðeins þegar karfan er sú sama (sama kaupandi, sama körfuheiti) — annars er ekki hægt að bera tölurnar saman
+    const prof = {};
+    allt.filter((t) => t.karfa).forEach((t) => tilbodMedVerd(t).forEach((b) => {
+      const k = t.kaupandi + ' · ' + t.karfa;
+      prof[k] = prof[k] || {};
+      (prof[k][b.bjodandi] = prof[k][b.bjodandi] || []).push({ opn: t.opnun || '', verd: b.verd });
+    }));
+    const throun = [];
+    Object.keys(prof).forEach((k) => Object.keys(prof[k]).forEach((bj) => {
+      const l = prof[k][bj].sort((a, b) => String(a.opn).localeCompare(String(b.opn)));
+      if (l.length < 2) return;
+      const fyrst = l[0], sidast = l[l.length - 1];
+      throun.push({ k, bj, l, mun: ((sidast.verd - fyrst.verd) / fyrst.verd) * 100 });
+    }));
+    const throunHtml = throun.length ? `<div class="samk-h">Verðþróun milli umferða (sama karfa)</div><div class="samk-afsl">${throun.map((x) => `<div class="samk-kort" style="padding:10px 12px"><b>${esc(x.bj)}</b><div class="samk-sm">${esc(x.k)}</div><div class="l">${x.l.map((p) => `<span class="samk-pill">${esc(String(p.opn).slice(0, 4))}: ${thus(p.verd)} kr</span>`).join('<span class="samk-sm">→</span>')}<span class="samk-pill ${x.mun < -1 ? 'gr' : x.mun > 1 ? 'gu' : ''}">${pct(x.mun)}</span></div></div>`).join('')}</div>` : '';
+
+    const cols = [
+      { k: 'kaup', t: 'Kaupandi', v: (x) => x.t.kaupandi, h: (x) => `<div class="samk-nafn">${esc(x.t.kaupandi)}</div><div class="samk-sm">${esc(UTB_TEGUND[x.t.tegund_kaupanda] || '')}</div>` },
+      { k: 'utb', t: 'Útboð', v: (x) => x.t.titill, h: (x) => `<div class="samk-nafn">${x.t.nr ? 'Nr. ' + esc(x.t.nr) : ''}${x.t.tegund ? (x.t.nr ? ' · ' : '') + esc(x.t.tegund) : ''}</div><div class="samk-vef">${esc(x.t.titill)}</div>` },
+      { k: 'opn', t: 'Opnun tilboða', v: (x) => x.t.opnun || null, h: (x) => (x.t.opnun ? esc(dags(x.t.opnun)) : '<span class="samk-sm">—</span>') },
+      // ATH: dálkahaus má ekki innihalda „staða"/„stada" (líka „Niðurstaða") — 00-legacy.js (l. 2899) breytir þá hverri töflu í tækjastöðu-fellilista sem skrifar í uttaeki
+      { k: 'stada', t: 'Ástand', v: (x) => UTB_STADA[x.t.stada] || '', h: (x) => `<span class="samk-pill ${UTB_STADA_LIT[x.t.stada] || ''}">${esc(UTB_STADA[x.t.stada] || '—')}</span>` },
+      { k: 'tilb', t: 'Tilboð (eining verðs undir)', h: tilbodHtml },
+      { k: 'lag', t: 'Lægsta tilboð', r: 1, v: (x) => lagstaTilbod(x.t), h: (x) => kr(lagstaTilbod(x.t)) },
+      { k: 'fj', t: 'Fjöldi tilboða', r: 1, v: (x) => (x.t.tilbod || []).length, h: (x) => String((x.t.tilbod || []).length) },
+      { k: 'staerd', t: 'Áætluð stærð', c: (x) => x.t.staerd || '', h: (x) => (x.t.staerd ? `<div class="samk-sm samk-vef">${esc(x.t.staerd)}</div>` : '<span class="samk-sm">ekki birt</span>') },
+      { k: 'gild', t: 'Gildistími og lok', v: (x) => x.t.rennur_ut || null, c: (x) => [x.t.gildistimi, x.t.rennur_ut ? 'Rennur út ≈ ' + dagsRennur(x.t) : ''].filter(Boolean).join(' · '), h: (x) => `${x.t.rennur_ut ? `<b>≈ ${esc(dagsRennur(x.t))}</b>` : ''}${x.t.gildistimi ? `<div class="samk-sm samk-vef">${esc(x.t.gildistimi)}</div>` : '<span class="samk-sm">—</span>'}` },
+      { k: 'naest', t: 'Næsta útboð', c: (x) => x.t.naesta_utbod || '', h: (x) => (x.t.naesta_utbod ? `<div class="samk-vef">${esc(x.t.naesta_utbod)}</div>` : '<span class="samk-sm">—</span>') },
+      { k: 'ath', t: 'Athugasemd', c: (x) => x.t.athugasemd || '', h: (x) => (x.t.athugasemd ? `<div class="samk-sm samk-vef">${esc(x.t.athugasemd)}</div>` : '') },
+      { k: 'heim', t: 'Heimildir', c: (x) => (x.t.heimildir || []).map((h) => h.slod).join(' '), h: (x) => heimildirHtml(x.t.heimildir) }
+    ];
+    const yfirLagsta = (r) => { const l = lagstaTilbod(r.t); return r.b.verd != null && l ? ((r.b.verd - l) / l) * 100 : null; };
+    const adrirValdir = (r) => (r.t.tilbod || []).some((b) => b.sigurvegari);
+    const cols2 = [
+      { k: 'bj', t: 'Bjóðandi', v: (x) => x.b.bjodandi, h: (x) => `<span class="${x.b.sigurvegari ? 'samk-gott' : ''}">${esc(x.b.bjodandi)}</span>` },
+      { k: 'kaup', t: 'Kaupandi', v: (x) => x.t.kaupandi, h: (x) => esc(x.t.kaupandi) },
+      { k: 'opn', t: 'Útboð', v: (x) => x.t.opnun || null, h: (x) => `${x.t.nr ? 'Nr. ' + esc(x.t.nr) : ''}<div class="samk-sm">${esc(dags(x.t.opnun))}</div>` },
+      { k: 'verd', t: 'Verð', r: 1, v: (x) => x.b.verd, h: (x) => (x.b.verd != null ? `<b>${kr(x.b.verd)}</b><div class="samk-sm">${esc(einStutt(x.t))}</div>` : '<span class="samk-sm">ekki birt</span>') },
+      { k: 'yfir', t: 'Yfir lægsta', r: 1, v: yfirLagsta, h: (x) => { const y = yfirLagsta(x); return y == null ? '<span class="samk-sm">—</span>' : Math.abs(y) < 0.05 ? '<span class="samk-gott">lægst</span>' : pct(y); } },
+      { k: 'stig', t: 'Stig', r: 1, v: (x) => x.b.stig, h: (x) => (x.b.stig != null ? esc(x.b.stig) : '<span class="samk-sm">—</span>') },
+      { k: 'nid', t: 'Úrslit', h: (x) => (x.b.sigurvegari ? '<span class="samk-pill gr">Samið við</span>' : adrirValdir(x) ? '<span class="samk-sm">Ekki valið</span>' : '<span class="samk-sm">ekki skráð</span>') }
+    ];
+
+    // Hvar var leitað (líka þar sem ekkert fannst — það sparar næstu leit)
+    const hey = (l) => norm([l.kaupandi, l.hvar_leitad, l.athugasemd, l.nidurstada].join(' '));
+    const leitRows = leitAllt.filter((l) => (!_seljandi || l.kaupandi === _seljandi) && (!F.utTegund || l.tegund_kaupanda === F.utTegund) && (!_q || _q.split(/\s+/).every((t) => hey(l).includes(norm(t)))));
+    const cols3 = [
+      { k: 'kaup', t: 'Kaupandi', v: (x) => x.kaupandi, h: (x) => `<div class="samk-nafn">${esc(x.kaupandi)}</div><div class="samk-sm">${esc(UTB_TEGUND[x.tegund_kaupanda] || '')}</div>` },
+      { k: 'nid', t: 'Útkoma', v: (x) => UTB_LEIT[x.nidurstada] || '', h: (x) => `<span class="samk-pill ${x.nidurstada === 'fannst' ? 'gr' : x.nidurstada === 'ekki_adgengilegt' ? 'gu' : ''}">${esc(UTB_LEIT[x.nidurstada] || '')}</span>` },
+      { k: 'hvar', t: 'Hvar leitað', h: (x) => `<div class="samk-vef">${esc(x.hvar_leitad || '')}</div>` },
+      { k: 'ath', t: 'Athugasemd', h: (x) => `<div class="samk-sm samk-vef">${esc(x.athugasemd || '')}</div>` },
+      { k: 'url', t: 'Síða', c: (x) => x.slod || '', h: (x) => tengill(x.slod, 'Opna') }
+    ];
+    const nF = leitRows.filter((l) => l.nidurstada === 'fannst').length;
+    const leitHtml = leitRows.length ? `<div class="samk-h">Hvar var leitað</div>
+      <details class="samk-det"${_utLeitOpid ? ' open' : ''}><summary onclick="event.preventDefault();window.Samkeppni._leitToggle()">${leitRows.length} ${leitRows.length === 1 ? 'staður' : 'staðir'} (kaupendur og útboðsgáttir) · ${nF} með útboð um slökkvitæki · ${leitRows.length - nF} án þess (smelltu til að ${_utLeitOpid ? 'fela' : 'sýna'})</summary>
+      <p class="samk-note" style="margin-top:8px">${csvTakki('utbod_leit')} Þar sem ekkert fannst er það skráð líka. „Ekki aðgengilegt“ þýðir að síðan svarar ekki sjálfvirkum fyrirspurnum og þarf að skoða í vafra.</p>
+      ${tafla('utbod_leit', cols3, leitRows)}</details>` : '';
+
+    // Hvar má fylgjast með útboðum — tenglar á útboðsvefi og innkaupasíður
+    const vefir = vefirAllt.filter((v) => (!F.utTegund || v.flokkur === 'Útboðsgáttir' || v.flokkur === UTB_FLOKKUR_TEGUND[F.utTegund])
+      && (!_q || _q.split(/\s+/).every((t) => norm([v.nafn, v.lysing, v.flokkur].join(' ')).includes(norm(t)))));
+    const flokkar = [...new Set(vefir.map((v) => v.flokkur))];
+    const vefirHtml = vefir.length ? `<div class="samk-h">Hvar má fylgjast með útboðum</div>${flokkar.map((f) => `<div class="samk-sm" style="margin:10px 0 6px;font-weight:700">${esc(f)}</div><div class="samk-grid">${vefir.filter((v) => v.flokkur === f).map((v) => `<div class="samk-kort"><h4>${esc(v.nafn)}</h4><div style="font-size:13px;color:var(--ink2)">${esc(v.lysing)}</div><div style="margin-top:8px">${tengill(v.slod, 'Opna')}</div></div>`).join('')}</div>`).join('')}` : '';
+
+    return `${kpiHtml}
+      <p class="samk-note">Opinber útboð á eftirliti með slökkvitækjum og öðrum eldvarnarbúnaði: hverjir buðu og hvað, hver fékk samninginn, gildistími og hvenær næsta útboð ætti að koma. Hjá Reykjavík eru verðin „samtals vegið einingaverð án VSK“ yfir verðkörfu með 32 liðum. Það er viðmið til að raða tilboðum, <b>ekki verð á einu tæki</b>, og vogtölurnar eru ekki birtar, svo ekki er hægt að bera töluna beint saman við okkar verð. Eining hvers verðs stendur undir því. Stærð útboðs er aðeins til þar sem kaupandi birti áætlun. Lokadagsetning er merkt „ályktað“ þar sem hún er ekki staðfest í gögnum kaupanda. ${esc(_g.utbod_leitad || '')}</p>
+      ${naestHtml}${throunHtml}
+      <div class="samk-h">Útboð${csvTakki('utbod')}</div>${tafla('utbod', cols, rows)}
+      <div class="samk-h">Tilboð bjóðenda${csvTakki('utbod_tilbod')}</div>${tafla('utbod_tilbod', cols2, tilRows)}
+      ${leitHtml}${vefirHtml}`;
+  }
+
   // ── Skel og teikning ─────────────────────────────────────────────────────────────────────────────────────────────
-  const FLIPAR = [['odyrara', 'Ódýrara innkaup'], ['samanb', 'Verðsamanburður'], ['thjonusta', 'Þjónustuverð'], ['birgjar', 'Hvar kaupa'], ['innkaup', 'Okkar innkaup']];
+  const FLIPAR = [['odyrara', 'Ódýrara innkaup'], ['samanb', 'Verðsamanburður'], ['thjonusta', 'Þjónustuverð'], ['utbod', 'Útboð'], ['birgjar', 'Hvar kaupa'], ['innkaup', 'Okkar innkaup']];
 
   function valmyndir() {
     const m = _g && Array.isArray(_g.vorur) ? _g.vorur : [];
@@ -613,6 +742,10 @@
       const ad = [...new Set(((_g && _g.thjonusta) || []).map((t) => t.vendor).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'is'));
       return sel('samk-selj', _seljandi, 'Allir aðilar', ad, '_selj');
     }
+    if (_flipi === 'utbod') {
+      const kaup = uniq([...((_g && _g.utbod) || []).map((t) => t.kaupandi), ...((_g && _g.utbod_leit) || []).map((l) => l.kaupandi)]);
+      return sel('samk-selj', _seljandi, 'Allir kaupendur', kaup, '_selj');
+    }
     if (_flipi === 'birgjar') return `<select class="samk-sel" onchange="window.Samkeppni._land(this.value)"><option value="">Öll lönd</option><option value="is"${_land === 'is' ? ' selected' : ''}>Innanlands</option><option value="erl"${_land === 'erl' ? ' selected' : ''}>Erlendis</option></select>`;
     return (_flipi === 'innkaup' ? '' : sel('samk-flokkur', _flokkur, 'Allir flokkar', flokkar, '_flokk')) + sel('samk-selj', _seljandi, 'Allir seljendur', selj, '_selj');
   }
@@ -623,6 +756,7 @@
     try {
       if (_flipi === 'samanb') return samanburdur();
       if (_flipi === 'thjonusta') return thjonusta();
+      if (_flipi === 'utbod') return utbod();
       if (_flipi === 'birgjar') return birgjar();
       if (_flipi === 'innkaup') return innkaup();
       return odyrara();
@@ -630,9 +764,9 @@
   }
 
   // ── Síur og röðun: spjald, valmerki, röðunarval ──────────────────────────────────────────────────────────────────
-  const TOFLUR_FLIPA = { odyrara: ['odyrara', 'mogul', 'utan'], samanb: ['samanb'], thjonusta: ['thjonusta'], innkaup: ['innkaup'], birgjar: [] };
-  const SIU_HEITI = { tegund: 'Tegund seljanda', para: 'Pörun við okkar vörur', bre: 'Frá síðustu mælingu', pakki: 'Pakkning', samMunur: 'Staða okkar', thjKind: 'Þjónusta', thjTegund: 'Tegund tækis', thjMunur: 'Staða okkar', bTegund: 'Tegund birgis', bSendir: 'Sendir til Íslands', ikAfsl: 'Afsláttur', ikTimabil: 'Tímabil' };
-  const SIU_ROFI = { mynd: 'Aðeins með mynd', odyrVid: 'Ódýrara en við seljum á (m. VSK)', odyrKostn: 'Ódýrara en við kaupum á (án VSK)', tilbod: 'Aðeins tilboð', felaUppsel: 'Fela uppseldar', stadall: 'Staðall tilgreindur (EN/ISO/CE)', thjSamb: 'Aðeins sambærilegt við okkar þjónustu', bNuv: 'Núverandi birgjar', bVerd: 'Með verði á vörum', bKomid: 'Með áætluðu komuverði', ikPara: 'Aðeins pöruð við vöru á markaði' };
+  const TOFLUR_FLIPA = { odyrara: ['odyrara', 'mogul', 'utan'], samanb: ['samanb'], thjonusta: ['thjonusta'], innkaup: ['innkaup'], birgjar: [], utbod: ['utbod', 'utbod_tilbod', 'utbod_leit'] };
+  const SIU_HEITI = { tegund: 'Tegund seljanda', para: 'Pörun við okkar vörur', bre: 'Frá síðustu mælingu', pakki: 'Pakkning', samMunur: 'Staða okkar', thjKind: 'Þjónusta', thjTegund: 'Tegund tækis', thjMunur: 'Staða okkar', bTegund: 'Tegund birgis', bSendir: 'Sendir til Íslands', ikAfsl: 'Afsláttur', ikTimabil: 'Tímabil', utTegund: 'Tegund kaupanda', utStada: 'Staða útboðs' };
+  const SIU_ROFI = { mynd: 'Aðeins með mynd', odyrVid: 'Ódýrara en við seljum á (m. VSK)', odyrKostn: 'Ódýrara en við kaupum á (án VSK)', tilbod: 'Aðeins tilboð', felaUppsel: 'Fela uppseldar', stadall: 'Staðall tilgreindur (EN/ISO/CE)', thjSamb: 'Aðeins sambærilegt við okkar þjónustu', bNuv: 'Núverandi birgjar', bVerd: 'Með verði á vörum', bKomid: 'Með áætluðu komuverði', ikPara: 'Aðeins pöruð við vöru á markaði', utTilbod: 'Aðeins þar sem tilboð eru birt', utNaest: 'Aðeins með næsta útboð eða lokadagsetningu' };
   const uniq = (a) => [...new Set(a.filter(Boolean))].sort((x, y) => String(x).localeCompare(String(y), 'is'));
   function valkostirSiu(k) {
     const m = _g && Array.isArray(_g.vorur) ? _g.vorur : [];
@@ -649,6 +783,8 @@
       case 'bTegund': return uniq(((_g && _g.birgjar) || []).map((b) => b.tegund)).map((t) => [t, tegundHeiti(t)]);
       case 'bSendir': return [['já', 'Já (staðfest)'], ['nei', 'Nei'], ['óvíst', 'Óvíst']];
       case 'ikAfsl': return [['10', '10 % eða meira'], ['20', '20 % eða meira'], ['25', '25 % eða meira'], ['30', '30 % eða meira'], ['35', '35 % eða meira']];
+      case 'utTegund': return uniq([...((_g && _g.utbod) || []).map((t) => t.tegund_kaupanda), ...((_g && _g.utbod_leit) || []).map((l) => l.tegund_kaupanda)]).map((t) => [t, UTB_TEGUND[t] || t]);
+      case 'utStada': return uniq(((_g && _g.utbod) || []).map((t) => t.stada)).map((s) => [s, UTB_STADA[s] || s]);
       case 'ikTimabil': return [['6', 'Síðustu 6 mánuðir'], ['12', 'Síðustu 12 mánuðir'], ['18', 'Síðustu 18 mánuðir'], ['24', 'Síðustu 24 mánuðir'], ['36', 'Síðustu 36 mánuðir']];
       default: return [];
     }
@@ -674,8 +810,8 @@
   function chipsHtml() {
     const l = [];
     if (_q) l.push(['Leit: ' + _q, 'q']);
-    if (_flokkur && _flipi !== 'birgjar' && _flipi !== 'thjonusta' && _flipi !== 'innkaup') l.push(['Flokkur: ' + _flokkur, 'flokkur']);
-    if (_seljandi) l.push([(_flipi === 'thjonusta' ? 'Aðili: ' : _flipi === 'innkaup' ? 'Birgir: ' : 'Seljandi: ') + _seljandi, 'seljandi']);
+    if (_flokkur && _flipi !== 'birgjar' && _flipi !== 'thjonusta' && _flipi !== 'innkaup' && _flipi !== 'utbod') l.push(['Flokkur: ' + _flokkur, 'flokkur']);
+    if (_seljandi) l.push([(_flipi === 'thjonusta' ? 'Aðili: ' : _flipi === 'innkaup' ? 'Birgir: ' : _flipi === 'utbod' ? 'Kaupandi: ' : 'Seljandi: ') + _seljandi, 'seljandi']);
     if (_land && _flipi === 'birgjar') l.push([_land === 'is' ? 'Innanlands' : 'Erlendis', 'land']);
     virkarSiur().filter(erVirk).forEach((k) => l.push([chipTexti(k), k]));
     return l.map(([t, k]) => `<button type="button" class="samk-chip" onclick="window.Samkeppni._hreinsa('${k}')" title="Taka þessa síu af">${esc(t)} ×</button>`).join('');
@@ -723,7 +859,7 @@
     const st = _rot.querySelector('#samk-stada');
     if (st && _g) {
       const n = (_g.vorur || []).length, s = new Set((_g.vorur || []).map((r) => r.seljandi)).size;
-      st.textContent = `Verð sótt ${dags(_g.sott)} af opinberum vefsíðum · ${n} vörur frá ${s} seljendum · ${(_g.birgjar || []).length} birgjar${(_g.thjonusta || []).length ? ' · ' + _g.thjonusta.length + ' þjónustuverð' : ''}`;
+      st.textContent = `Verð sótt ${dags(_g.sott)} af opinberum vefsíðum · ${n} vörur frá ${s} seljendum · ${(_g.birgjar || []).length} birgjar${(_g.thjonusta || []).length ? ' · ' + _g.thjonusta.length + ' þjónustuverð' : ''}${(_g.utbod || []).length ? ' · ' + _g.utbod.length + ' útboð' : ''}`;
     }
   }
 
@@ -786,6 +922,7 @@
       uppfaera(); vista();
     },
     _siaToggle() { _opinSia = !_opinSia; uppfaera(); vista(); },
+    _leitToggle() { _utLeitOpid = !_utLeitOpid; uppfaeraEfni(); vista(); },
     _rodun(i) {
       if (i === '' || i == null) return;
       const o = (RODUN[_flipi] || [])[Number(i)];

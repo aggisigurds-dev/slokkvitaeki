@@ -12424,5 +12424,780 @@
   "CZK": 5.6,
   "heimild": "ECB viðmiðunargengi (eurofxref-daily.xml, sótt beint af ecb.europa.eu): 1 EUR = 136,80 ISK; 0,8345 GBP; 11,0950 SEK; 7,4752 DKK; 4,4030 PLN; 24,428 CZK. Krossgengi ISK = 136,80 / gengi gjaldmiðils.",
   "dags": "2026-11-16"
- }
+ },
+ "utbod": [
+  {
+   "kaupandi": "Áfengis- og tóbaksverslun ríkisins (ÁTVR)",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nr": "3/2026",
+   "titill": "Fjarvöktun og þjónustuúttektir bruna- og innbrotaviðvörunarkerfa – Eftirlit og viðhald slökkvitækja (á ensku: Alarm monitoring, servicing of fire and intruder alarm systems, and maintenance of fire extinguishers)",
+   "tegund": "EES-útboð",
+   "opnun": "2026-10-16",
+   "staerd": "",
+   "stada": "bid_urslita",
+   "gildistimi": "01.12.2026–30.11.2028 (24 mánuðir); heimild til að framlengja tvisvar, 12 mánuði í senn (allt að 30.11.2030)",
+   "naesta_utbod": "Afleitt af TED-auglýsingunni, ekki ágiskun: ef samningur er ekki framlengdur nýtt útboð fyrir 30.11.2028; ef báðar framlengingar eru nýttar fyrir 30.11.2030.",
+   "rennur_ut": "2028-11-30",
+   "rennur_ut_vissa": "auglysing",
+   "karfa": "",
+   "eining_verds": "Óþekkt. TED-auglýsingin birtir hvorki áætlað verðmæti né vægi verðs; útboðsgögn eru aðeins í Tendsign (innskráning, ekki opnuð). Hvort boðið er sem verð á tæki, á yfirferð eða heildarverð á ári er því ekki vitað.",
+   "tilbod": [],
+   "athugasemd": "EINA útboð ríkisaðila sem fannst sem nær beint til eftirlits og viðhalds slökkvitækja (CPV 50413200 og 35111320 skráð ásamt 79711000 vöktun, 31625000 brunaboð, 50610000, 79713000). Innifelur samkvæmt auglýsingu fjarvöktun brunaboða og innbrotsboða með viðbragði öryggisvarða, reglubundið þjónustueftirlit og prófanir kerfanna, og eftirlit og viðhald slökkvitækja og brunaslöngukefla í húsnæði ÁTVR (staðsetning skráð IS001 og IS002 = höfuðborgarsvæði og landsbyggð). Tilboðsfrestur 15.10.2026 (23:59 UTC skv. TED), opnun 16.10.2026, fyrirspurnafrestur til 06.10.2026. Tilboð bindandi í 45 daga frá fresti (til um 29.11.2026), svo val á bjóðanda ætti að liggja fyrir um mánaðamótin. Staða 17.11.2026: engin úrslitatilkynning (can-standard) komin á TED, bjóðendur og tilboðsupphæðir eru hvergi birtar í opinberri heimild sem ég hafði aðgang að, og sigurvegari er óþekktur. Ekki ályktað hverjir buðu. Annað ÁTVR-útboð sama mánuðinn (öryggisgæsla í verslunum, TED 623410-2026) er utan efnis.",
+   "heimildir": [
+    {
+     "texti": "ted.europa.eu 1",
+     "slod": "https://ted.europa.eu/en/notice/628409-2026/html"
+    },
+    {
+     "texti": "ted.europa.eu 2",
+     "slod": "https://ted.europa.eu/en/notice/628409-2026/xml"
+    },
+    {
+     "texti": "utbodsvefur.is — útboðið skráð þar",
+     "slod": "https://utbodsvefur.is/"
+    },
+    {
+     "texti": "tendsign.com — útboðsgögn",
+     "slod": "https://tendsign.com/doc.aspx?MeFormsNoticeId=98946"
+    },
+    {
+     "texti": "ted.europa.eu 1",
+     "slod": "https://ted.europa.eu/en/notice/-/detail/628409-2026"
+    },
+    {
+     "texti": "is.openprocurements.com 4",
+     "slod": "https://is.openprocurements.com/cpv/35111320/"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Reykjavíkurborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nr": "16103, 16104, 16105, 16107",
+   "titill": "Þjónustusamningur raflagna, hverfaskiptur; í verklýsingu er reglubundið eftirlit með leiðar- og neyðarlýsingu",
+   "tegund": "EES-útboð",
+   "opnun": "2025-03-28",
+   "staerd": "",
+   "stada": "i_gildi",
+   "gildistimi": "2025-04-15 til 2029-04-15 (TED, útboð 16104); samningar gerðir 30.04.2025.",
+   "naesta_utbod": "",
+   "rennur_ut": "",
+   "rennur_ut_vissa": "",
+   "karfa": "",
+   "eining_verds": "Ekki birt í TED: samningsverð skráð 0 og sjá útboðsgögn. Útboðsgögn á utbod.reykjavik.is voru ekki sótt.",
+   "tilbod": [
+    {
+     "bjodandi": "Straumkul ehf + Raflýsing ehf. (sameiginlegt tilboð, útboð 16104)",
+     "verd": null,
+     "stig": null,
+     "saeti": null,
+     "sigurvegari": true
+    }
+   ],
+   "athugasemd": "Nefnd í úrslitatilkynningum (sigurvegarar/sigurhópar, skipting á milli lota ekki greind nánar): 16103: Straumkul ehf, 11 tilboð; 16104: Straumkul ehf og Raflýsing ehf, 9 og 8 tilboð í tveimur tilkynningum; 16105: Raflýsing ehf., Þelamörk ehf., Ljóstvistar ehf., 11 tilboð; 16107: Raflýsing ehf., Straumkul ehf, Þelamörk ehf., 8 tilboð. Opnunardagur er fyrir 16104; hinar loturnar ekki lesnar. Orðið neyðarlýsing kom fram í öllum níu TED-tilkynningunum þessara fjögurra útboða, en verklýsinguna las ég aðeins í 16104. Þýðing: eftirlit með neyðarlýsingu í borgarhúsum er hjá rafverktökum, ekki í slökkvitækjasamningnum (15727).",
+   "heimildir": [
+    {
+     "texti": "ted.europa.eu 1",
+     "slod": "https://ted.europa.eu/en/notice/120781-2025/xml"
+    },
+    {
+     "texti": "ted.europa.eu 2",
+     "slod": "https://ted.europa.eu/en/notice/432540-2026/xml"
+    },
+    {
+     "texti": "ted.europa.eu 3",
+     "slod": "https://ted.europa.eu/en/notice/435802-2026/xml"
+    },
+    {
+     "texti": "ted.europa.eu 4",
+     "slod": "https://ted.europa.eu/en/notice/436162-2026/xml"
+    },
+    {
+     "texti": "ted.europa.eu 5",
+     "slod": "https://ted.europa.eu/en/notice/410087-2025/xml"
+    },
+    {
+     "texti": "ted.europa.eu 6",
+     "slod": "https://ted.europa.eu/en/notice/465779-2026/xml"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Reykjavíkurborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nr": "15727",
+   "titill": "Rammasamningur um eftirlit á slökkvitækjum og öðrum eldvarnarbúnaði",
+   "tegund": "EES-útboð",
+   "opnun": "2023-04-18",
+   "staerd": "Ekki birt. TED-tilkynningarnar frá 2023 sýna aðeins staðgengilsgildið 1 kr. Til viðmiðunar áætlaði borgin um 10 m kr á ári í fyrri umferðinni (2019).",
+   "stada": "i_gildi",
+   "gildistimi": "Fjögur ár (48 mánuðir) frá gildistöku, án framlengingar samkvæmt útboðsauglýsingu á TED. Samþykkt í innkaupa- og framkvæmdaráði 27.4.2023. Uppsegjanlegur með þriggja mánaða fyrirvara, í fyrsta lagi níu mánuðum eftir gildistöku.",
+   "naesta_utbod": "Opnun tilboða áætluð mars–apríl 2027. Fyrri opnanir voru 30.3.2015, 11.4.2019 og 18.4.2023 (síðast um þremur vikum áður en fyrri samningur rann út 13.5.2023). Ályktað af mynstrinu, borgin hefur ekki birt dagsetningu. Ekkert framlengingarákvæði er í samningnum, svo nýtt útboð þarf þegar hann rennur út.",
+   "rennur_ut": "2027-05-13",
+   "rennur_ut_vissa": "alyktad",
+   "karfa": "32 liðir",
+   "eining_verds": "Samtals vegið einingaverð án VSK yfir verðkörfu með 32 vöruliðum (tilboðsskrá). Viðmið til að raða tilboðum, ekki verð á einu tæki eða einni þjónustu. Liðalisti og vogtölur eru ekki birt.",
+   "tilbod": [
+    {
+     "bjodandi": "Ólafur Gíslason & Co hf.",
+     "verd": 1912,
+     "stig": null,
+     "saeti": 1,
+     "sigurvegari": true
+    },
+    {
+     "bjodandi": "Öryggismiðstöð Íslands hf.",
+     "verd": 2980,
+     "stig": null,
+     "saeti": 2,
+     "sigurvegari": false
+    },
+    {
+     "bjodandi": "Securitas hf.",
+     "verd": 5560,
+     "stig": null,
+     "saeti": 3,
+     "sigurvegari": false
+    },
+    {
+     "bjodandi": "Nortek ehf.",
+     "verd": 6304,
+     "stig": null,
+     "saeti": 4,
+     "sigurvegari": false
+    }
+   ],
+   "athugasemd": "Samið við lægsta einingaverðið (grein 0.8 útboðsgagna og matsviðmið „lægsta verð“ á TED). Heildarvelta, magn og kostnaðaráætlun eru ekki birt. Fyrri samningur rann út 13.5.2023, svo lokadagsetningin er ályktuð: í bréfinu stendur aðeins „fjögur ár frá því að samningur kemst á“.",
+   "heimildir": [
+    {
+     "texti": "Bréf innkaupaskrifstofu 18.4.2023",
+     "slod": "https://fundur.reykjavik.is/sites/default/files/agenda-items/Erindi_til_Innkaupa-_og_framkv%C3%A6mdar%C3%A1%C3%B0s_v15727%20%281%29.pdf"
+    },
+    {
+     "texti": "Opnun tilboða",
+     "slod": "https://reykjavik.is/sites/default/files/2023-04/15727%20Rammasamningur%20um%20eftirlit%20%C3%A1%20sl%C3%B6kkvit%C3%A6kjum%20og%20%C3%B6%C3%B0rum%20eldvarnarb%C3%BAna%C3%B0i.pdf"
+    },
+    {
+     "texti": "Fundargerð 27.4.2023",
+     "slod": "https://reykjavik.is/en/node/34041"
+    },
+    {
+     "texti": "TED, útboðsauglýsing 6.3.2023",
+     "slod": "https://ted.europa.eu/en/notice/134985-2023/xml"
+    },
+    {
+     "texti": "TED, niðurstaða",
+     "slod": "https://ted.europa.eu/en/notice/280665-2023/xml"
+    },
+    {
+     "texti": "reykjavik.is 1",
+     "slod": "https://reykjavik.is/sites/default/files/2023-05/15727%20Rammasamningur%20um%20eftirlit%20%C3%A1%20sl%C3%B6kkvit%C3%A6kjum%20NI%C3%90URSTA%C3%90A.pdf"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Landspítali (Ríkiskaup fyrir hönd Landspítala)",
+   "tegund_kaupanda": "spitali",
+   "nr": "20913",
+   "titill": "Úttektir og eftirlit brunaviðvörunarkerfa (reglubundnar prófanir sjálfvirkra brunaviðvörunarkerfa og skýrslur)",
+   "tegund": "EES-útboð",
+   "opnun": "2019-06-14",
+   "staerd": "Kostnaðaráætlun 30 m kr; samningsverð Nortek 25,26 m kr (heildarverð, VSK-staða og tímabil óþekkt).",
+   "stada": "runnid_ut",
+   "gildistimi": "24 mánuðir með 2 framlengingum um 12 mánuði (TED). Samningur gerður 25.06.2019; upphafsdagur ekki birtur, svo hámark 48 mánuðir lýkur í síðasta lagi um mitt ár 2023 (afleitt).",
+   "naesta_utbod": "",
+   "rennur_ut": "",
+   "rennur_ut_vissa": "",
+   "karfa": "",
+   "eining_verds": "Heildarverð samnings í ISK (VAL_TOTAL í verðlaunatilkynningu). Kostnaðaráætlun 30.000.000 ISK. Hvort talan er með eða án VSK og hvort hún nær yfir 24 mánuði eða hámarkstíma kemur ekki fram. Ekki verð á einingu.",
+   "tilbod": [
+    {
+     "bjodandi": "Nortek ehf.",
+     "verd": 25259680,
+     "stig": null,
+     "saeti": 1,
+     "sigurvegari": true
+    }
+   ],
+   "athugasemd": "3 tilboð bárust en aðeins sigurvegari er nafngreindur í TED. Valforsenda: lægsta verð (can-tilkynning); auglýsingin sagði hagkvæmasta tilboð. Þetta er brunaviðvörunarkerfi, ekki slökkvitæki. Nortek vann hér en var hæsta tilboð af fjórum í Reykjavík 15727 árið 2023 (6.304 kr). Ekkert framhaldsútboð fannst á TED eða í opnunarskýrslum Fjársýslunnar frá apríl 2024.",
+   "heimildir": [
+    {
+     "texti": "ted.europa.eu 1",
+     "slod": "https://ted.europa.eu/en/notice/233202-2019/xml"
+    },
+    {
+     "texti": "ted.europa.eu 2",
+     "slod": "https://ted.europa.eu/en/notice/350745-2019/xml"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Reykjavíkurborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nr": "14413",
+   "titill": "Rammasamningur um eftirlit með slökkvitækjum og öðrum eldvarnarbúnaði",
+   "tegund": "EES-útboð",
+   "opnun": "2019-04-11",
+   "staerd": "Um 10 m kr á ári. Áætlun kaupanda í TED-tilkynningu 226028-2019 („estimated cost on a yearly basis approx 10,0 m ISK“), VSK-staða ekki tilgreind. Þetta er eina birta stærðin.",
+   "stada": "runnid_ut",
+   "gildistimi": "48 mánuðir án framlengingar samkvæmt TED. Gilti til 13.5.2023 samkvæmt lista Reykjavíkurborgar um miðlæga samninga.",
+   "naesta_utbod": "",
+   "rennur_ut": "",
+   "rennur_ut_vissa": "",
+   "karfa": "32 liðir",
+   "eining_verds": "Vegið meðalverð yfir 32 þjónustuliði samkvæmt tilboðsskrá. VSK-staða er ekki tilgreind í skjalinu.",
+   "tilbod": [
+    {
+     "bjodandi": "Ólafur Gíslason & Co hf.",
+     "verd": 2579,
+     "stig": 82,
+     "saeti": 1,
+     "sigurvegari": true
+    },
+    {
+     "bjodandi": "Öryggismiðstöð Íslands hf.",
+     "verd": 3050,
+     "stig": 78,
+     "saeti": 2,
+     "sigurvegari": false
+    }
+   ],
+   "athugasemd": "Aðeins tvö tilboð. Samið við þann sem fékk flest stig (82 af 100). Innkauparáð samþykkti 2.5.2019. Verð bjóðenda eru ekki í TED-tilkynningunni (samningsverð skráð sem 1 kr, staðgengill).",
+   "heimildir": [
+    {
+     "texti": "Niðurstaða útboðs 14413",
+     "slod": "https://fundur.reykjavik.is/sites/default/files/agenda-items/14413_nidurstada_ikd_eftirlit_slokkvitaekja.pdf"
+    },
+    {
+     "texti": "Fundur innkauparáðs",
+     "slod": "https://reykjavik.is/en/node/30851"
+    },
+    {
+     "texti": "Miðlægir samningar (gildir til 13.5.2023)",
+     "slod": "https://reykjavik.is/sites/default/files/skrifstofur_radhuss/innkaupadeild/birgjasamningar_fyrir_ytri_vef_78.pdf"
+    },
+    {
+     "texti": "TED, útboðsauglýsing 2019",
+     "slod": "https://ted.europa.eu/en/notice/113737-2019/xml"
+    },
+    {
+     "texti": "TED, niðurstaða 2019",
+     "slod": "https://ted.europa.eu/en/notice/226028-2019/xml"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Reykjavíkurborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nr": "13381",
+   "titill": "Rammasamningur um eftirlit með slökkvitækjum og öðrum eldvarnarbúnaði",
+   "tegund": "EES-útboð",
+   "opnun": "2015-03-30",
+   "staerd": "",
+   "stada": "lokid",
+   "gildistimi": "",
+   "naesta_utbod": "",
+   "rennur_ut": "",
+   "rennur_ut_vissa": "",
+   "karfa": "",
+   "eining_verds": "Vegið meðalverð. VSK-staða og samsetning körfunnar eru ekki tilgreind í opnunarskýrslunni.",
+   "tilbod": [
+    {
+     "bjodandi": "Slökkvitækjaþjónustan ehf.",
+     "verd": 1282,
+     "stig": null,
+     "saeti": 1,
+     "sigurvegari": false
+    },
+    {
+     "bjodandi": "Securitas hf.",
+     "verd": 2239,
+     "stig": null,
+     "saeti": 2,
+     "sigurvegari": false
+    },
+    {
+     "bjodandi": "Öryggismiðstöð Íslands",
+     "verd": 2282,
+     "stig": null,
+     "saeti": 3,
+     "sigurvegari": false
+    },
+    {
+     "bjodandi": "Nortek ehf.",
+     "verd": 2761,
+     "stig": null,
+     "saeti": 4,
+     "sigurvegari": false
+    }
+   ],
+   "athugasemd": "Opnunarskýrslan sýnir aðeins vegið meðalverð. Hver fékk samninginn kemur ekki fram í henni og karfan er óstaðfest, svo þessar tölur eru ekki sambærilegar við 2019 og 2023.",
+   "heimildir": [
+    {
+     "texti": "Opnunarskýrsla 30.3.2015",
+     "slod": "https://reykjavik.is/sites/default/files/skrifstofur_radhuss/innkaupadeild/Samanburdarskrar/2015/13381_rammasamningur_um_eftirlit_med_slokkvitaekjum_og_odrum_eldvarnarbunadi.pdf"
+    }
+   ],
+   "dags": "2026-11-17"
+  },
+  {
+   "kaupandi": "Fjársýslan (miðlægur rammasamningur ríkisins)",
+   "tegund_kaupanda": "rikid",
+   "nr": "RK 14.25",
+   "titill": "Öryggisþjónusta. Flokkur 1 mönnuð öryggisgæsla, flokkur 2 fjargæsla (vöktun öryggiskerfa frá stjórnstöð, að lágmarki brunaboð, innbrot, vatnsleki, gasleki, ásamt tengingu, viðhaldi og prófunum búnaðar), flokkur 3 flutningur verðmæta.",
+   "tegund": "rammasamningur",
+   "opnun": "",
+   "staerd": "",
+   "stada": "i_gildi",
+   "gildistimi": "01.08.2022–01.08.2027. Upphaflega 2 ár með heimild til þriggja 1 árs framlenginga; framlengdur í þriðja sinn og gildir til 01.08.2027.",
+   "naesta_utbod": "Fjársýslan birtir í áætlun sinni um miðlæga samninga (2026) nýtt útboð á RK 14.25 sem „Q4“, staða „Undirbúningi“ (stefnumótun við nýjan samning hafin). Ár er ekki tilgreint á áætlunarsíðunni; núverandi samningur rennur út 01.08.2027. Áætlunin er birt með fyrirvara um breytingar.",
+   "rennur_ut": "2027-08-01",
+   "rennur_ut_vissa": "stadfest",
+   "karfa": "",
+   "eining_verds": "Vantar. Verð og kjör eru aðeins sýnileg innskráðum kaupendum á midlaegirsamningar.is. Verðbreytingar heimilar við +/-5% gengisbreytingu, óskir á sex mánaða fresti. Verkefni umfram 200 klst. eru boðin út í örútboði milli rammasamningshafa.",
+   "tilbod": [
+    {
+     "bjodandi": "Nortek ehf.",
+     "verd": null,
+     "stig": null,
+     "saeti": null,
+     "sigurvegari": true
+    },
+    {
+     "bjodandi": "Securitas hf.",
+     "verd": null,
+     "stig": null,
+     "saeti": null,
+     "sigurvegari": true
+    },
+    {
+     "bjodandi": "Öryggismiðstöð Íslands hf.",
+     "verd": null,
+     "stig": null,
+     "saeti": null,
+     "sigurvegari": true
+    }
+   ],
+   "athugasemd": "Samið var við þrjá seljendur í öllum þremur flokkum (sigurvegari = rammasamningshafi, ekki einn vinningshafi). EKKI eftirlit með slökkvitækjum: aðeins vöktun og viðhald viðvörunarbúnaðar (brunaboð) er í flokki 2. Opnunardagur og tilboðsverð upphaflega útboðsins fundust ekki. A-hluta stofnanir ríkisins eiga að kaupa af miðlægum samningum Fjársýslunnar þegar samningur nær yfir þjónustuna, aðrir opinberir aðilar geta gerst áskrifendur (skv. island.is).",
+   "heimildir": [
+    {
+     "texti": "midlaegirsamningar.is 1",
+     "slod": "https://www.midlaegirsamningar.is/is/oryggisthjonusta"
+    },
+    {
+     "texti": "island.is 2",
+     "slod": "https://island.is/fyrirhugud-utbod-a-midlaegum-samningum"
+    },
+    {
+     "texti": "island.is 3",
+     "slod": "https://island.is/s/fjarsyslan/rammasamningar-og-rammasamnings-utbod"
+    }
+   ],
+   "dags": "2026-11-17"
+  }
+ ],
+ "utbod_leit": [
+  {
+   "kaupandi": "Akraneskaupstaður",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit.",
+   "athugasemd": "Opið útboð um raforkukaup, annars ekkert. Opinber brunavarnaáætlun nefnir að Eldvörn ehf. reki slökkvitækjaþjónustu á svæðinu (keppinautur á staðnum, ekki útboð).",
+   "slod": "https://www.akranes.is/"
+  },
+  {
+   "kaupandi": "Akureyrarbær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit; útboðssíða fannst ekki á giskaðri slóð (404).",
+   "athugasemd": "Opin útboð á utbodsvefur.is 17.11.2026 eru dælubifreið fyrir Slökkvilið Akureyrar, hýsing rekstrar og vátryggingar, ekkert um slökkvitæki eða eftirlit.",
+   "slod": "https://www.akureyri.is/"
+  },
+  {
+   "kaupandi": "Alþingi",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Leitarvél, TED.",
+   "athugasemd": "Ekkert fannst um útboð á eldvarnarþjónustu. Eigin vefur ekki lesinn.",
+   "slod": ""
+  },
+  {
+   "kaupandi": "ÁTVR (Vínbúðin)",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "fannst",
+   "hvar_leitad": "TED, openprocurements.com (CPV-síður), tilraun til að opna Tendsign.",
+   "athugasemd": "Sjá útboðsskrá: 3/2026, skilafrestur 15.10.2026, úrslit óbirt. Tendsign-gögn krefjast innskráningar og voru ekki opnuð.",
+   "slod": "https://ted.europa.eu/en/notice/-/detail/628409-2026"
+  },
+  {
+   "kaupandi": "Fjarðabyggð",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit.",
+   "athugasemd": "Aðeins brunavarnaáætlun og gjaldskrá slökkviliðs (fast gjald 35.949 kr fyrir endurkomu vegna eftirlits). Ekkert útboð fannst.",
+   "slod": "https://www.fjardabyggd.is/ibuar/oryggi/slokkvilid"
+  },
+  {
+   "kaupandi": "Fjársýslan – RK 14.25 Öryggisþjónusta, kjör og verð",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "midlaegirsamningar.is/is/oryggisthjonusta",
+   "athugasemd": "Verð og kjör rammasamningsins eru aðeins sýnileg innskráðum kaupendum; ekki skráð inn, samkvæmt reglum. Verð seljenda því vantar.",
+   "slod": "https://www.midlaegirsamningar.is/is/oryggisthjonusta"
+  },
+  {
+   "kaupandi": "Fjársýslan (áður Ríkiskaup) – rammasamningar og miðlægir samningar",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "midlaegirsamningar.is (heildarlisti allra gildandi miðlægra samninga; RK 14.25, RK 14.01 Þjónusta iðnmeistara og RK 12.02 Rafvörur og lýsing lesin), island.is fyrirhuguð útboð á miðlægum samningum (áætlun 2026, birt 26.03.2026), Niðurstöður útboða, Opnunarskýrslur, TED.",
+   "athugasemd": "Enginn miðlægur rammasamningur ríkisins er um slökkvitæki, eftirlit slökkvitækja, brunaviðvörunarkerfi eða neyðarlýsingu, og ekkert slíkt er á áætlun 2026. Næst kemst RK 14.25 Öryggisþjónusta (vöktun brunaboða), sjá útboðsfærslu. Í gildi eru m.a. RK 18.01 brunatryggingar og RK 14.01 iðnmeistarar, hvorugt nær til eftirlits eða þjónustu við eldvarnarbúnað. Niðurstöðusíða og opnunarskýrslur Fjársýslunnar sýna ekkert á þessu sviði. Ríkisstofnanir kaupa því slökkvitækjaþjónustu hver fyrir sig.",
+   "slod": "https://www.midlaegirsamningar.is/"
+  },
+  {
+   "kaupandi": "Fjársýslan (áður Ríkiskaup): opnunarskýrslur og rammasamningar",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Opnunarskýrslur á island.is (108 skýrslur, apríl 2024 til nóv. 2026), listi Samninga Fjársýslunnar, Rammasamningar og rammasamningsútboð, Örútboð.",
+   "athugasemd": "Engin skýrsla eða samningur um slökkvitæki, eldvarnir eða brunaviðvörun. Ráð: island.is svaraði 200 með curl og vafra-User-Agent (WebFetch gefur 403), og opnunarskýrslusíðan er ein síða með öllum skýrslum. Eldra en apríl 2024 (Ríkiskaup) er aðeins á TED: Landspítali 2019 (brunaviðvörun).",
+   "slod": "https://island.is/s/rikiskaup/opnunarskyrslur"
+  },
+  {
+   "kaupandi": "Framhaldsskólar",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Leitarvél, FSRE opnunarskýrslur, TED.",
+   "athugasemd": "Ekkert um eldvarnarþjónustu. FSRE: Menntaskólinn á Akureyri þakendurnýjun, Fjölbrautaskóli Suðurlands þakgluggar (byggingarverk).",
+   "slod": "https://island.is/s/fsre/opnunarskyrslur"
+  },
+  {
+   "kaupandi": "Framkvæmdasýslan – Ríkiseignir (FSRE)",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "island.is/s/fsre/opnunarskyrslur og island.is/s/fsre/auglysingar-og-utbod (lesið 17.11.2026), TED (kaupandi FSRE/Ríkiskaup, CPV 35111xxx, 50413200, 31625xxx).",
+   "athugasemd": "Opnunarskýrslur og auglýsingar FSRE eru byggingar- og leiguhúsnæðisverk (hjúkrunarheimili, fangelsi, þakendurnýjun, rannsóknardeild o.fl.); ekkert um eftirlit eða þjónustu við slökkvitæki eða brunakerfi. Brunaviðvörun og slökkvibúnaður eru innan stærri byggingarverka þar, ekki sér útboð.",
+   "slod": "https://island.is/s/fsre/opnunarskyrslur"
+  },
+  {
+   "kaupandi": "FSRE (Framkvæmdasýslan, Ríkiseignir)",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Niðurstöður útboða á island.is (fyrsta síða, frá febrúar 2026).",
+   "athugasemd": "Aðeins byggingarframkvæmdir (hjúkrunarheimili, jarðvinna, leiguhúsnæði). Ekkert um eldvarnaþjónustu. Eldri niðurstöður ekki skoðaðar.",
+   "slod": "https://island.is/s/fsre/nidurstodur-utboda"
+  },
+  {
+   "kaupandi": "Garðabær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Útboðssíða bæjarins (opin og lokin útboð frá maí 2026), TED, vefleit.",
+   "athugasemd": "Á síðunni 17.11.2026: þjónusta og viðhald gatnalýsingar (opið til 03.11.2026, nú lokið), Haustbraut 2, hreinsun gatna, vetrarþjónusta, frístundaakstur o.fl. Engin orð um slökkvi, eldvarnir eða brunavarnir. Á TED aðeins LED-lýsing 2024 og Klaustrið 2024. Bærinn birtir útboðsgögn á eigin síðu.",
+   "slod": "https://www.gardabaer.is/framkvaemdir/utbod"
+  },
+  {
+   "kaupandi": "Hafnarfjarðarbær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Útboðssíða bæjarins (opin og eldri útboð, 10 nýjustu frá sept. 2024), TED (enskt og íslenskt fulltexta og CPV-leit), vefleit í fundargerðum bæjarráðs og innkauparáðs.",
+   "athugasemd": "Opin útboð: engin. Eldri útboð á síðunni eru vetrarþjónusta, vegmerking, vátryggingar, knatthús, malbik, sorphirða o.fl., ekkert um slökkvitæki. Fundargerðagáttin (ibuagatt) er ekki leitarbær með curl og hnappurinn Sýna fleiri var ekki opnaður, svo fundargerðir eru ekki tæmandi leitaðar. Innkaupareglur bæjarins: verðfyrirspurn skylda á kaupum um 1 til 15,5 m kr (smærri kaup gætu verið óopinber).",
+   "slod": "https://www.hafnarfjordur.is/stjornsysla/utbod/"
+  },
+  {
+   "kaupandi": "Háskóli Íslands, Háskólinn á Akureyri og aðrir háskólar",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Leitarvél, TED, FSRE opnunarskýrslur, kærunefnd útboðsmála (úrskurðir 2026).",
+   "athugasemd": "Ekkert um eldvarnarþjónustu. Eina útboð HÍ sem kom upp var örútboð á húsgögnum (kærunefnd, mál 42/2025). FSRE: þakendurnýjun Háskólans á Akureyri 24-0462. Eigin útboðssíður háskólanna ekki lesnar.",
+   "slod": "https://island.is/s/fsre/opnunarskyrslur"
+  },
+  {
+   "kaupandi": "Heilbrigðisstofnanir: HSS, HSU, HVE, HSN",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "Leitarvél (með lénasíu), TED, FSRE-skrár. Eigin vefir ekki lesnir.",
+   "athugasemd": "Ekkert fannst um slökkvitæki eða brunakerfi. Sami fyrirvari og hjá SAk: innanlandsútboð sjást ekki. FSRE-skrár um þessar stofnanir eru húsnæðislýsingar og byggingarverk.",
+   "slod": "https://island.is/s/fsre/opnunarskyrslur"
+  },
+  {
+   "kaupandi": "Isavia",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "TED (Isavia-útboð með CPV 50413200, 35111xxx, 31625xxx, 79711000, 50xxxxxx), leitarvél, utbod.isavia.is/aspx/Tenders/Current, kefairport.com/corporate/procurement.",
+   "athugasemd": "Á TED fannst ekkert um slökkvitæki eða brunakerfi (aðeins lyftur og rennistigar 30978-2022, sprengjuleit, flughlöð, eldsneyti). Útboðskerfi Isavia (In-Tend) skilar engu lesanlegu án skráningar.",
+   "slod": "https://utbod.isavia.is/aspx/Tenders/Current"
+  },
+  {
+   "kaupandi": "Kópavogsbær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "TED, vefleit (kopavogur.is og fundargerðir), tilraun til að opna fundargerðagátt og útboðssíðu.",
+   "athugasemd": "Fundargerðagáttin (thjonustugatt) krefst innskráningar (Íslykill) og ég skráði mig ekki inn; útboðssíða fannst ekki á giskuðum slóðum (404); útboð fara um Tendsign. Á TED fannst aðeins rammasamningur um iðnmeistara (2025) og gatnalýsing, ekkert um eldvarnir. Ekkert fannst, en leit í fundargerðum og Tendsign er ófullnægjandi.",
+   "slod": "https://thjonustugatt.kopavogur.is/meetingsearch/"
+  },
+  {
+   "kaupandi": "Kærunefnd útboðsmála",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Vefleit eftir úrskurðum um slökkvitæki og eldvarnarbúnað.",
+   "athugasemd": "Enginn úrskurður fannst um slökkvitækjaútboð. Úrskurðir sem komu upp snúast um annað (knatthús Hauka o.fl.).",
+   "slod": "https://www.stjornarradid.is/gogn/urskurdir-og-alit-/"
+  },
+  {
+   "kaupandi": "Landhelgisgæslan",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Leitarvél, TED.",
+   "athugasemd": "Ekkert fannst. Eigin vefur ekki lesinn.",
+   "slod": ""
+  },
+  {
+   "kaupandi": "Landspítali",
+   "tegund_kaupanda": "spitali",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "island.is/s/landspitali/innkaupadeild/utbod-verdfyrirspurnir-aaetlun-og-fleira (lesið 17.11.2026), TED (can-standard frá september 2026 lesin, öll Landspítalaútboð), leitarvél.",
+   "athugasemd": "Innkaupadeild auglýsir útboð á utbodsvefur.is og birtir áætlun fyrir lyfjaútboð (ÝL 92–97) en ekkert um eldvarnir. TED haust 2026 sýnir aðeins lyf, tæki, lín, ræstingu, úrgang og lyftur. Útboð Nýs Landspítala (NLSH) eru byggingarverk; nlsh.is/utbodi svaraði 429 og var ekki lesið.",
+   "slod": "https://island.is/s/landspitali/innkaupadeild/utbod-verdfyrirspurnir-aaetlun-og-fleira"
+  },
+  {
+   "kaupandi": "Landspítali / Nýr Landspítali",
+   "tegund_kaupanda": "spitali",
+   "nidurstada": "fannst",
+   "hvar_leitad": "TED (brunaviðvörun, eldvarnir, neyðarlýsing), vefleit.",
+   "athugasemd": "Eina fundið: Úttektir og eftirlit brunaviðvörunarkerfa 2019 (sjá útboðsskrá). Opið útboð um rafkerfi meðferðarkjarna (NLSH) er byggingarverk, ekki eftirlit.",
+   "slod": "https://ted.europa.eu/en/notice/350745-2019/xml"
+  },
+  {
+   "kaupandi": "Landsvirkjun",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "landsvirkjun.com/tenders (lesið 17.11.2026), TED, leitarvél.",
+   "athugasemd": "Síðan listar opin og afgreidd útboð (virkjanaverk, eftirlit, vinnubúðir); ekkert um slökkvitæki eða brunakerfi.",
+   "slod": "https://www.landsvirkjun.com/tenders"
+  },
+  {
+   "kaupandi": "Mosfellsbær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit (mos.is og opinstjornsysla.mos.is); útboðssíða fannst ekki á giskaðri slóð (404).",
+   "athugasemd": "Á TED aðeins LED-götulýsing og rammasamningur um iðnmeistara (2024). Fundargerðir ekki leitaðar beint (gátt gaf 403 á rót).",
+   "slod": "https://opinstjornsysla.mos.is/meetingsearch/"
+  },
+  {
+   "kaupandi": "Múlaþing",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Útboðssíða sveitarfélagsins, TED, vefleit.",
+   "athugasemd": "Útboðssíðan sýnir ekkert um slökkvitæki eða eldvarnir (eitt Brunavarnir er aðeins valmyndartengill). Skoðunaráætlun slökkviliðs 2026 er ekki útboð.",
+   "slod": "https://www.mulathing.is/is/stjornsysla/utbod"
+  },
+  {
+   "kaupandi": "Orkuveita Reykjavíkur og dótturfélög (Veitur, ON)",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED, utbodsvefur.is forsíða, leitarvél.",
+   "athugasemd": "Veitur auglýstu rammasamning um þjónustu og viðhald vél- og rafbúnaðar (VEU-2609-0063, TED 679193-2026, 753778-2026, 791413-2026) sem nefnir ekki eldvarnir. Ekkert um slökkvitæki.",
+   "slod": "https://utbodsvefur.is/"
+  },
+  {
+   "kaupandi": "Reykjanesbær og Brunavarnir Suðurnesja",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED, vefleit í fundargerðum bæjarráðs og stjórnar Brunavarna Suðurnesja.",
+   "athugasemd": "Á TED aðeins slökkvibifreiðar fyrir Brunavarnir Suðurnesja (2025). Fundargerðir nefna brunavarnaáætlun 2026–2029, ekkert innkaup á slökkvitækjaþjónustu.",
+   "slod": "https://www.reykjanesbaer.is/"
+  },
+  {
+   "kaupandi": "Reykjavíkurborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "fannst",
+   "hvar_leitad": "reykjavik.is (opnun tilboða og niðurstöður útboða 2023–2026, miðlægir samningar), utbodsvefur.is, TED",
+   "athugasemd": "Þrjár umferðir (2015, 2019, 2023). Ekkert nýrra útboð um slökkvitæki í opnunum og niðurstöðum 2025–2026.",
+   "slod": "https://reykjavik.is/utbod/midlaegir-samningar"
+  },
+  {
+   "kaupandi": "RÚV",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "utbodsvefur.is forsíða, leitarvél.",
+   "athugasemd": "Aðeins Vátryggingar fyrir RÚV (Fjársýslan 23442, frestur 27.11.2026) sást; ekkert um eldvarnir.",
+   "slod": "https://utbodsvefur.is/"
+  },
+  {
+   "kaupandi": "Seltjarnarnesbær",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit.",
+   "athugasemd": "Á TED aðeins LED-götulýsing (VEAT 2024). Útboðssíða fannst ekki á giskaðri slóð (404).",
+   "slod": "https://ted.europa.eu/"
+  },
+  {
+   "kaupandi": "Sjúkrahúsið á Akureyri",
+   "tegund_kaupanda": "spitali",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "Leitarvél (með lénasíu), TED. Eigin vefur ekki lesinn.",
+   "athugasemd": "Ekkert fannst. Þjónusta af þessu tagi er líklega undir EES-mörkum og sést þá aðeins á utbodsvefur.is, sem bannar vélræna skönnun (robots.txt Disallow: /), svo ekkert fannst útilokar ekki innanlandsútboð eða verðfyrirspurn.",
+   "slod": "https://utbodsvefur.is/"
+  },
+  {
+   "kaupandi": "Sjúkratryggingar",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED haust 2026, leitarvél.",
+   "athugasemd": "Aðeins upplýsingatækniútboð (hýsing og rekstur) sáust.",
+   "slod": ""
+  },
+  {
+   "kaupandi": "Slökkvilið höfuðborgarsvæðisins (SHS)",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED, vefleit, vefur SHS.",
+   "athugasemd": "Á TED aðeins slökkvibifreiðar, loftpressa, kafarabíll og hlífðarfatnaður (innkaup gegnum Reykjavík). Ekkert um slökkvitækjaþjónustu. Útboðssíða á shs.is fannst ekki á giskaðri slóð (404).",
+   "slod": "https://www.shs.is/"
+  },
+  {
+   "kaupandi": "Stjórnarráðið og ráðuneyti",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Leitarvél, kærunefnd útboðsmála (úrskurðir 2022–2026 á stjornarradid.is), TED.",
+   "athugasemd": "Enginn úrskurður eða útboð um slökkvitæki eða eldvarnarbúnað.",
+   "slod": "https://www.stjornarradid.is/"
+  },
+  {
+   "kaupandi": "Strætó bs.",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "Vefleit og giskuð útboðsslóð (404).",
+   "athugasemd": "Ekkert fannst. Útboðssíða Strætó var ekki skoðuð til hlítar.",
+   "slod": "https://www.straeto.is/"
+  },
+  {
+   "kaupandi": "Sveitarfélagið Árborg",
+   "tegund_kaupanda": "sveitarfelag",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED og vefleit; útboðssíða fannst ekki á giskaðri slóð (404).",
+   "athugasemd": "Ekkert um slökkvitæki eða eldvarnir fannst.",
+   "slod": "https://www.arborg.is/"
+  },
+  {
+   "kaupandi": "TED (EES-tilkynningar frá Íslandi)",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "fannst",
+   "hvar_leitad": "TED API (api.ted.europa.eu, opið, án innskráningar): kaupandi = Ísland og CPV 50413200, 35111xxx, 35120000/35121000, 31625xxx, 79711000, 79993xxx, 71317xxx, 50xxxxxx, auk textaleitar (extinguisher, fire alarm, fire protection, emergency lighting) og lesinna can-standard-tilkynninga frá september 2026.",
+   "athugasemd": "Aðeins ÁTVR 628409-2026 (11.09.2026) er EES-útboð ríkisaðila á eftirliti slökkvitækja. Annað á CPV 50413200: ekkert. Reykjavíkurborg á TED-færslur sem líklega eru fyrri umferðirnar (113737-2019 og 226028-2019; 134985-2023 og 280665-2023), ekki rannsakaðar áfram þar sem annar rannsakandi tekur sveitarfélög. Engin forauglýsing eða úrslit á TED fyrir slökkvitækjaþjónustu ríkisins.",
+   "slod": "https://ted.europa.eu/en/notice/628409-2026/html"
+  },
+  {
+   "kaupandi": "TED (ted.europa.eu, API)",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "fannst",
+   "hvar_leitad": "Fulltexti (ensk og íslensk orð: fire extinguisher, fire alarm, fire protection, fire safety, fire detection, emergency lighting, slökkvitæki, eldvarnir, brunaviðvörun, neyðarlýsing o.fl.) og CPV-flokkar 35111xxx, 50413200, 31625xxx, 79711000, 50610000, allt með kaupanda á Íslandi.",
+   "athugasemd": "Niðurstaða: ÁTVR 2026, Landspítali 2019, Reykjavík 14413 og 15727, Reykjavík raflagnir (neyðarlýsing). Harpa 2020 (EVAC-neyðarhljóðkerfi tengt brunaviðvörun, 40 m kr) er hljóðkerfi, ekki slökkvitæki. Útboð undir EES-viðmiðum sjást ekki á TED, svo smærri verðfyrirspurnir sveitarfélaga fundust ekki hér. Íslensk fulltextaleit stemmar ekki beygingar (aðeins nákvæm orð).",
+   "slod": "https://ted.europa.eu/"
+  },
+  {
+   "kaupandi": "utbodsvefur.is",
+   "tegund_kaupanda": "rikid",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "Forsíða lesin einu sinni (76 opin útboð 17.11.2026) og leitarniðurstöður leitarvélar með lénasíu. robots.txt hefur Disallow: / (öll vélræn skönnun bönnuð), svo engin frekari skönnun.",
+   "athugasemd": "Á forsíðu er ÁTVR 03/2026 (lokið) eina útboðið um slökkvitæki; annað er óskylt (dælubíll Slökkviliðs Akureyrar, vátryggingar o.fl.). Lokin og eldri útboð úr skjalasafni sjást ekki vélrænt.",
+   "slod": "https://utbodsvefur.is/"
+  },
+  {
+   "kaupandi": "utbodsvefur.is (sameiginlegur útboðsvefur)",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "Forsíða (76 opin útboð 17.11.2026) og sex leitarsíur (slokkvitaeki, slökkvitæki, eldvarnir, eldvarnar, brunaviðvörun, atvr).",
+   "athugasemd": "Ekkert opið útboð um slökkvitæki eða eldvarnaeftirlit (ein niðurstaða á brunaviðvörun er rafkerfi NLSH, byggingarverk). Vefurinn sýnir aðeins opin útboð, svo ÁTVR 3/2026 birtist ekki. robots.txt vefsins segir Disallow: / fyrir alla skriðla; ég sótti forsíðu og leitarsíurnar sex áður en ég las robots.txt og hætti þá. Skjalasafn vefsins er ekki skrapað. Næsta leit ætti að nota TED og vefi kaupenda.",
+   "slod": "https://utbodsvefur.is/"
+  },
+  {
+   "kaupandi": "Útboð ÁTVR 3/2026, bjóðendur og verð",
+   "tegund_kaupanda": "opinbert_fyrirtaeki",
+   "nidurstada": "ekki_adgengilegt",
+   "hvar_leitad": "TED (engin can-standard 17.11.2026), útboðsvefur, Tendsign (aðeins innskráning).",
+   "athugasemd": "Hvorki tilboðsupphæðir né bjóðendur eru birt opinberlega enn. Athuga aftur þegar ÁTVR birtir úrslit (TED can-standard eða tilkynning); tilboð eru bindandi til um 29.11.2026.",
+   "slod": "https://ted.europa.eu/en/notice/628409-2026/html"
+  },
+  {
+   "kaupandi": "Vegagerðin",
+   "tegund_kaupanda": "stofnun",
+   "nidurstada": "ekkert",
+   "hvar_leitad": "TED, leitarvél, vegagerdin.is (útboðssíða /utbod gaf 404).",
+   "athugasemd": "Aðeins vega-, vetrarþjónustu- og bílaútboð á TED. Ekkert um eldvarnir.",
+   "slod": "https://www.vegagerdin.is/"
+  }
+ ],
+ "utbod_vefir": [
+  {
+   "nafn": "Útboðsvefurinn",
+   "flokkur": "Útboðsgáttir",
+   "slod": "https://utbodsvefur.is/",
+   "lysing": "Öll opin útboð opinberra aðila á Íslandi á einum stað. Síaðu á kaupanda eða leitarorð eins og „slökkvitæki“, „eldvarnarbúnaður“ og „brunaviðvörunarkerfi“. island.is segir að hægt sé að skrá fyrirtæki á póstlista útboðsvefsins og fá tilkynningar um ný útboð sem passa við starfsemina."
+  },
+  {
+   "nafn": "TendSign (Fjársýslan / Mercell)",
+   "flokkur": "Útboðsgáttir",
+   "slod": "https://tendsign.is",
+   "lysing": "Útboðskerfið þar sem útboðsgögn eru sótt og tilboðum skilað. Skráning veitir aðgang að útboðsgögnum og skuldbindur ekki til að bjóða. Fyrirspurnir og svör fara um kerfið og sjást öllum bjóðendum."
+  },
+  {
+   "nafn": "Að taka þátt í útboði (island.is)",
+   "flokkur": "Útboðsgáttir",
+   "slod": "https://island.is/ad-taka-thatt-i-utbodi",
+   "lysing": "Leiðbeiningar island.is fyrir seljendur: skráning í TendSign, póstlisti útboðsvefsins og hvernig tilboðum er skilað."
+  },
+  {
+   "nafn": "TED, EES-útboð",
+   "flokkur": "Útboðsgáttir",
+   "slod": "https://ted.europa.eu/en/",
+   "lysing": "Útboð yfir viðmiðunarmörkum EES. Leitarorð: CPV 35111300 (slökkvitæki) og 50413200 (viðhald slökkvibúnaðar), land Ísland."
+  },
+  {
+   "nafn": "Fjársýslan, rammasamningar og rammasamningsútboð",
+   "flokkur": "Ríkið",
+   "slod": "https://island.is/s/fjarsyslan/rammasamningar-og-rammasamnings-utbod",
+   "lysing": "Rammasamningar ríkisins og áætlun um ný rammasamningsútboð. A-hluta stofnanir ríkisins eiga að kaupa samkvæmt þeim þegar samningur nær yfir vöruna eða þjónustuna. island.is svarar ekki sjálfvirkum fyrirspurnum, opnaðu síðuna í vafra."
+  },
+  {
+   "nafn": "Ríkiskaup, opnunarskýrslur",
+   "flokkur": "Ríkið",
+   "slod": "https://island.is/s/rikiskaup/opnunarskyrslur",
+   "lysing": "Opnunarskýrslur útboða ríkisins. Skýrslan sýnir aðeins tilboðin, ekki hver fékk samninginn."
+  },
+  {
+   "nafn": "Ríkiskaup, niðurstöður útboða",
+   "flokkur": "Ríkið",
+   "slod": "https://island.is/s/rikiskaup/nidurstoedur-utboda",
+   "lysing": "Niðurstöður útboða ríkisins. Opnaðu í vafra, island.is svarar ekki sjálfvirkum fyrirspurnum."
+  },
+  {
+   "nafn": "Reykjavíkurborg, útboð og innkaup",
+   "flokkur": "Sveitarfélög",
+   "slod": "https://reykjavik.is/utbod",
+   "lysing": "Auglýst útboð, opnun tilboða og niðurstöður (listar eftir ári) og miðlægir samningar borgarinnar."
+  },
+  {
+   "nafn": "Reykjavíkurborg, miðlægir samningar",
+   "flokkur": "Sveitarfélög",
+   "slod": "https://reykjavik.is/utbod/midlaegir-samningar",
+   "lysing": "Þar stendur „Eftirlit með slökkvitækjum og eldvarnarbúnaði“ undir „Ýmis þjónusta“. Borgarstofnanir verða að kaupa samkvæmt miðlægum samningum. Næsta útboð ætti að birtast hér og á útboðsvefnum."
+  },
+  {
+   "nafn": "Hafnarfjarðarbær, útboð",
+   "flokkur": "Sveitarfélög",
+   "slod": "https://hafnarfjordur.is/stjornsysla/stjornkerfi/utbod/",
+   "lysing": "Útboðssíða bæjarins. Google-yfirlit 17.11.2026 fann engar opinberar upplýsingar um rammasamning um eftirlit með slökkvitækjum fyrir Hafnarfjörð. Bærinn kaupir slíka þjónustu sjálfur eða gegnum rammasamninga Ríkiskaupa/Fjársýslunnar."
+  },
+  {
+   "nafn": "Garðabær, útboð í auglýsingu",
+   "flokkur": "Sveitarfélög",
+   "slod": "https://www.gardabaer.is/framkvaemdir/utbod",
+   "lysing": "Útboðssíða bæjarins með opnum og lokuðum útboðum (gatnalýsing, gatnahreinsun, vetrarþjónusta, byggingar o.fl.)."
+  }
+ ],
+ "utbod_leitad": "Leitað 17.11.2026 á opnunar- og niðurstöðusíðum Reykjavíkur, utbodsvefur.is, TED og útboðsvefjum og fundargerðum annarra kaupenda (sjá „Hvar var leitað“). Aðeins opinberar heimildir."
 }
