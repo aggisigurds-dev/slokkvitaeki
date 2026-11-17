@@ -53,6 +53,7 @@ const MAX_RAD = 10;                           // Agnar 15.11.2026: „helst ekki
 const MAX_PLAN = 10;
 const FLOKKAR_RADA = ['peningar', 'áhætta', 'tækifæri', 'umbót', 'plan'];
 const PLAN_STODUR = ['á áætlun', 'á eftir', 'lokið', 'ómælt'];
+const TK = require('./_tekjur.cjs');            // ein tekjuskilgreining (lota 4, 17.11.2026)
 const SL_FRA = '2026-05';                     // solur hefst 04.05.2026 (yfirtakan); eldri mánuðir eru ÓMÆLDIR, ekki 0
 const MAN_FJOLDI = 13;                        // tekjur: núverandi mánuður + 12 á undan
 
@@ -236,27 +237,35 @@ const manudur = (s) => String(s || '').slice(0, 7);
 //   Slökkvitæki: solur status=final, upphaed_an_vsk, kreditnótur DREGNAR FRÁ (þær eru neikvæðar), eftir created_at-mánuði.
 //     489-borðið sleppir kreditnótum (telur „sala með vsk") og tvítelur þannig endurgerða reikninga — því ekki sú tala.
 //     Mánuðir fyrir SL_FRA eru í stolpi_reikningar (fyrri eigandi) → null, aldrei 0.
-//   Brunahólf: Payday invoices (source=payday, PAID/SENT), hofudstoll (án VSK), eftir gjalddaga-mánuði. BRÁÐABIRGÐA:
-//     ekkert borð telur tekjur Brunahólfs og invoiceDate er ekki vistað (payday-pull.js) — Agnar samþykkir skilgreininguna.
+//   Brunahólf: Payday invoices (source=payday, PAID/SENT), hofudstoll (án VSK), eftir ÚTGÁFUDEGI (utgafudagur; gjalddagi
+//     aðeins ef hann vantar). Lota 4 (17.11.2026): gjalddaga-skilgreiningin stóðst ekki rýni — hún færði t.d. septemberreikninga
+//     (útg. 30.09) í október; ág–okt taldist um 10 % of hátt eftir gjalddaga. Reglurnar búa í _tekjur.cjs.
+//   Slökkvitæki: kreditnóta sem vísar á BAKFÆRÐA sölu telst ekki (upprunasalan er þegar úti) — sama regla og tekjur-beint.
 // Markmiðið = 2× grunnlínan (samtals á mánuði) úr planinu; vanti planið er markmiðið null (ómælt), aldrei uppspunnið.
 async function tekjur(nu, aaetlun) {
   const t = new Date(nu);
   const fra = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - (MAN_FJOLDI - 1), 1));
-  const [sl, bh] = await Promise.all([
-    sbOll(`solur?select=upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${iso(fra)}&order=id.asc`),
-    sbOll(`invoices?select=hofudstoll,gjalddagi&source=eq.payday&status=in.(PAID,SENT)&gjalddagi=gte.${iso(fra).slice(0, 10)}&order=id.asc`),
+  const d0 = iso(fra).slice(0, 10);
+  const [sl, bh, voidIds] = await Promise.all([
+    sbOll(`solur?select=upphaed_an_vsk,created_at,status,credit_of&status=eq.final&created_at=gte.${iso(fra)}&order=id.asc`),
+    sbOll(`invoices?select=hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${d0},and(utgafudagur.is.null,gjalddagi.gte.${d0}))&order=id.asc`),
+    sbOll('solur?select=id&status=eq.void&order=id.asc').then((r) => r.map((x) => x.id)),
   ]);
+  const slMan = TK.slokkvitaekiManudir(sl, voidIds), bhMan = TK.brunaholfManudir(bh);
+  // Tómur lestur er EKKI 0 (lota 4, 17.11.2026): bæði félög gefa út reikninga í hverjum mánuði, svo engin röð á öllu
+  // bilinu þýðir að lesturinn brást (aðgangsregla, rangur lykill) — þá ómælt (null), ekki 0 sem helmingar markmiðsröndina.
+  const slTomt = !sl.length, bhTomt = !bh.length;
   const nuMan = manudur(iso(t));
   const man = {};
   for (let i = 0; i < MAN_FJOLDI; i++) {
     const m = manudur(iso(new Date(Date.UTC(fra.getUTCFullYear(), fra.getUTCMonth() + i, 1))));
-    man[m] = { man: m, slokkvitaeki: m >= SL_FRA ? 0 : null, brunaholf: 0 };
+    man[m] = { man: m, slokkvitaeki: m >= SL_FRA && !slTomt ? 0 : null, brunaholf: bhTomt ? null : 0 };
   }
-  for (const r of sl) { const m = man[manudur(r.created_at)]; if (m && m.slokkvitaeki != null) m.slokkvitaeki += Number(r.upphaed_an_vsk) || 0; }
-  for (const r of bh) { const m = man[manudur(r.gjalddagi)]; if (m) m.brunaholf += Number(r.hofudstoll) || 0; }
+  for (const k of Object.keys(slMan)) { const m = man[k]; if (m && m.slokkvitaeki != null) m.slokkvitaeki += slMan[k]; }
+  for (const k of Object.keys(bhMan)) { const m = man[k]; if (m && m.brunaholf != null) m.brunaholf += bhMan[k]; }
   const manudir = Object.values(man).filter((x) => x.man <= nuMan).map((x) => ({
-    man: x.man, slokkvitaeki: x.slokkvitaeki == null ? null : kr(x.slokkvitaeki), brunaholf: kr(x.brunaholf),
-    samtals: x.slokkvitaeki == null ? null : kr(x.slokkvitaeki + x.brunaholf), hluti_manadar: x.man === nuMan,
+    man: x.man, slokkvitaeki: x.slokkvitaeki == null ? null : kr(x.slokkvitaeki), brunaholf: x.brunaholf == null ? null : kr(x.brunaholf),
+    samtals: x.slokkvitaeki == null || x.brunaholf == null ? null : kr(x.slokkvitaeki + x.brunaholf), hluti_manadar: x.man === nuMan,
   }));
   const heilir = manudir.filter((x) => !x.hluti_manadar && x.samtals != null).slice(-3);   // síðustu 3 HEILU mánuðir
   const sum = (k) => heilir.reduce((a, x) => a + x[k], 0);
@@ -274,7 +283,7 @@ async function tekjur(nu, aaetlun) {
     markmid_fyrir: (g && g.markmid_fyrir) || '2027-11',
     hagnadur: null,
     hagnadur_ath: 'ómælt: laun eru ekki í kerfinu, bankagögn eru mánaða gömul og kostnaðarverð vantar á flestar vörur',
-    skilgreining: 'Án VSK. Slökkvitæki: sölur (final), kreditnótur dregnar frá; fyrir 05.2026 ómælt. Brunahólf (bráðabirgða): Payday-reikningar greiddir eða sendir, höfuðstóll eftir gjalddaga.',
+    skilgreining: 'Án VSK. Slökkvitæki: sölur (final), kreditnótur dregnar frá; fyrir 05.2026 ómælt. Brunahólf: Payday-reikningar greiddir eða sendir, höfuðstóll eftir útgáfudegi.',
   };
 }
 
