@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 15:04 · 2569 virkar staðreyndir — 1464 prentaðar hér
+Sótt 2026-11-18 15:16 · 2570 virkar staðreyndir — 1465 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (946 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -101,11 +101,11 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [brunaholf](#brunaholf) | 29 |
 | [arsskodun](#arsskodun) | 29 |
 | [oryggi](#oryggi) | 28 |
+| [gatt](#gatt) | 25 |
 | [bord](#bord) | 25 |
 | [bord-flettur](#bord-flettur) | 25 |
 | [villuleit](#villuleit) | 25 |
 | [skyrslur](#skyrslur) | 25 |
-| [gatt](#gatt) | 24 |
 | [deploy](#deploy) | 24 |
 | [vefsida](#vefsida) | 24 |
 | [oryggisnet](#oryggisnet) | 22 |
@@ -1261,6 +1261,74 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Netlify PAT rennur út milli lota og sækist í User Settings -> Applications -> Personal access tokens.
   <br><sub>2026-08-07 · baedi · agnar · chat</sub>
 
+### gatt
+
+- **Gáttin takkar + haus 18.11.2026 (afde4e2 + e45c3e4): appelsínugulu takkarnir (.gbtn/.kbtn, 12 stk.) voru 10,5–11,5 px með hvítu letri = 3,37:1; hönnunarkerfið leyfir hvítt á appelsínugulu AÐEINS í feitu 14px+, svo textinn fór í 14/700 og lágu takkarnir hækkuðu um 2 px (breiddin var rúm: minnsti takki 146 px fyrir 12 stafi, enginn texti sker sig eftir á). Litlu takkarnir sem eftir standa undir 14 px eru EKKI appelsínugulir (.ysia-síur, .pdf) og bera dökkt letur á ljósu, 7:1. TVÆR GILDRUR mældar: (1) gáttin keyrir á data-theme='blar', EKKI 'premium' — fyrsta útgáfa reglunnar bar html[data-theme='premium'] eins og reglurnar í kring og hafði ENGIN áhrif; margar eldri reglur í premium-v2.css eiga því alls ekki við lifandi gáttina. Nýju reglurnar eru bundnar við #portal/#drawer, sem slær líka <style> sem JS skýtur inn (auðkenni > klasi, óháð röð). (2) HAUSINN flæddi út: tiglar + leitarreitur + hnappar í flex-röð með nowrap enduðu á 1.251 px í 970 px glugga, svo síðan skrunaði lárétt á venjulegri fartölvu. Lagað með flex-wrap undir 1.280 px: mælt 955/970 eftir, leit innan gluggans, haus 175 px, og á 375 px engin skrun og enginn takki út fyrir.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gáttin + Viðskiptavinavefir 18.11.2026 (cd17449): birtusópur á þjónustugáttinni (forsíða, innskráning, allir átta flipar í /gatt/?demo=1). NIÐURSTAÐA: ekkert navy-á-navy — gáttin fylgir kerfinu (hvít spjöld á ljósbláu), ólíkt Þjónustuborðinu sem hafði navy ofan á navy. Tvennt lagað þar sem litur ætlaður ljósum fleti stóð á navy: .pf-es (amber-ink #b45309) í navy haus félagsins, 'kt. ekki skráð' = 2,88:1 → #f59e5b (6,84:1 mælt lifandi); .ysia.on (accent-orange á obsidian) í Yfirliti/Vinnusvæði = 2,96:1 → sama amber (9,92:1). Reglurnar í gatt/premium-v2.css, scope-aðar (.pf-haus .pf-es, .yf-s/.vh-sia .ysia.on) því .pf-es er LÍKA notað á ljósum fleti þar sem amber-ink er réttur. ÓLAGAÐ og bíður ákvörðunar Agnars: .gbtn-takkarnir eru hvítir á appelsínugulu í 10,5–11,5 px = 3,37:1 (kerfið leyfir hvítt á orange aðeins feitt 14px+) og .kicker/tenglar #cc4411 á #f1f3f6 = 4,29:1 — hvort tveggja snertir útlit kúnnamegin og er ekki mitt að ákveða einhliða. VIÐSKIPTAVINAVEFIR (/gatt-admin/): þrír merktir takkar komust ekki fyrir í 168 px aðgerðadálki á 970 px glugga, brotnuðu í þrjár línur og drógu hverja röð í 124 px; aukaaðgerðir urðu táknhnappar (.btn--ic 30x28, title + aria-label), aðgangsdálkurinn fékk width:1% (var fjórðungur breiddarinnar með '—' í flestum röðum), innra bil 14→9 px, heiti 18→16,5 px, wrap-media færð úr 1500 px í 820 px. Mælt: röð 124 → 63 px (79 þegar heitið er tvær línur). GILDRA: dev-þjónninn hefur engin /api-föll, svo /gatt-admin/ er TÓM á localhost — útlitið var mælt með tilbúnum röðum sem bera nákvæmlega sama mark og admin.js skrifar, og svo sannreynt á lifandi gögnum.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gátt V2 — símayfirferð 10.11.2026: mæling á láréttu flæði (scrollWidth, element út fyrir skjá) sagði ALLT Í LAGI á níu síðum í þremur breiddum, en skjáskot fundu fimm raunveruleg atriði: síuhnappar (.chips) fylltu 512–552 px áður en taflan sást, #v2-dtabs (margin-top -30px) huldi yfirlitsreiti eignar, haustexti rakst á stöðumerki, hvítur hetjutexti á ljósri mynd og Opinn aðgangur-borðinn yfir efni. Flæðimæling finnur ekki skörun, sóun á plássi né læsileika — skoða alltaf skjáskot á 390 px. Lagfæringar aftast í gatt/premium-v2.css.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gátt — normalize-gildran (bitið tvisvar: serkjor 26.10 og banner_global_url 10.11.2026): normalize() í gatt/portal.js hleypir aðeins upptöldum lyklum úr /api/gatt-svarinu inn í state.data. Nýr reitur sem þjónninn skilar hverfur þegjandi og eiginleikinn virðist virka í API-prófi en birtist aldrei. Aðalbanner úr stjórnborði vistaðist rétt en sást aldrei fyrr en lyklinum var bætt í normalize. Prófa alltaf Gatt.state.data í vafranum, ekki bara fetch á API-ið.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gátt Sérkjör sýnir almenna verðskrá nema samið sé um annað: listaverð Aksturs og Skýrslugerðar kemur úr slokk_visit_defaults, og samningsverð (cfg.akstur / cfg.skyrsla) eða flatur afsláttur leggst ofan á.**
+  <br>netlify/functions/_gatt-serkjor.cjs (aksturSkyrsla) + gatt.cjs. Próf: node tools/test-gatt-serkjor.cjs (25 próf). Agnar 09.11.2026: „hafa almennt samkvæmt verðskrá, nema þegar samið er um annað."
+  <br><sub>2026-11-10 · slokkvitaeki · kóði + Agnar 09.11.2026 · claude-code</sub>
+- **Gátt: Senda verkbeiðni á eignasíðu opnar teikninguna (Verkbeiðnir-flipi, eignin valin) AÐEINS ef eignin á teikningu með mynd; án teikningar opnast erindisformið. Það er ætluð varaleið (verkbeidniATeikningu í gatt/portal.js), ekki bilun — prófa á eign með teikningu (t.d. Blue Mountain hjá Heimaleigu), ekki Hamraborg 7 jarðhæð sem á enga.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gátt innskráning — CSS-gildra: þrjár skrár hlaðast í röð (login-v2.css, login-premium-landing.css, login-premium-faithful.css) og seinni tvær nota !important. Regla með lægri specificity tapar þótt hún sé síðar í skránni (mælt 10.11.2026: #login .lcard .fld input vann á #login .lp-fieldbox input → texti ofan á tákni í netfangsreit). Lagfæring fer aftast í faithful-skrána með hærri specificity; mæla getComputedStyle, ekki lesa CSS.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustugátt: nýskráning á /gatt/ er BEIÐNI, aldrei sjálfvirkur aðgangur (Agnar 08.11.2026). POST /api/gatt-adgangur (gatt-adgangur.cjs) stofnar mál í thjonustubeidni með source gatt-nyskraning (tag tilbod ef tilboðstexti fylgir); kt sem passar við nákvæmlega eitt félag tengir málið, annars ótengt. Starfsmaður stofnar aðganginn á gatt-admin. Ein opnunarsíða fyrir alla kúnna: slokkvitaeki.netlify.app/gatt/ — takki á brunaholf.is vísar þangað, gatt.brunaholf.is er ekki til.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gattin: THRIGGJA VIKNA ADRAGANDI ad 'Ogreitt'-vidvorun (Agnar 07.11.2026: 'matt setja 3 vikna seinkun a vidvorun ef hun er ennthá ogreidd'). Glugginn i gatt.cjs stadaAf() er nu 21-75 dagar fra krafa_sent_at: yngra en 21 dagur = EKKERT merki (kunninn er enn i skilum og a ekki ad fa onotalega kvedju fyrir reikning i fullkomnu lagi), eldra en 75 = ekkert merki (obreytt, paid_at dregst a eftir Payday-afstemmingu). Maelt: 11 reikningar missa merkid (4-18 daga), 18 halda thvi, thar a medal Center-reikningarnir fjorir a 30-33 dogum. Reglan er a EINUM stad. LIKA 07.11: enginn leki milli kunna fannst i gattinni (leitad ad skjolum eins kunna hja odrum i ollum 6 adgongum, 0 radir); 4 af 6 adgongum hafa aldrei verid notadir; 14 storir kunnar eiga engan adgang (Brynja 120 taeki, Colas 81, Slettuvegur 73, IKEA 73); 166 taeki a 6 stodum bera lidna naestu skodun, Steypustodin Ishella med 10 manada tof.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **Charlize-færslan 11.10.2026 segir að Eignagátt-áætlunin liggi í docs/HT-11.10-EIGNAGATT.md — sú skrá finnst hvorki í C:\projects\slokkvitaeki\docs né C:\projects\brunaholf\docs (04.11). Eina gáttarskjalið í slokk/docs er GATT-CENTER-HOTEL-THARFAGREINING-20261019.md.**
+  <br>ls docs í báðum repóum 04.11.2026. Skráin gæti legið á öðrum branch eða verið aldrei commituð — ekki athugað með git (lesaðeins-lota). · Staðfest 07.11.2026 (Claude): git log --all í báðum repóum finnur docs/HT-11.10-EIGNAGATT.md hvergi, á engri grein. Skráin var aldrei commituð — líklega aðeins til
+  <br><sub>2026-11-07 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Gáttin: Um eignina-flipinn les húsatölur úr b.hus (Ársskoðun ræður), ekki fjölda teikningablaða — (b.teikning||[]).length var notað sem hæðafjöldi og Bríetartún 9-11 sýndi 15 í stað 12 (cde6463d, 07.11.2026). Engin húsatala skráð -> fjórði reiturinn sýnir teikningafjöldann MERKTAN sem blöð. Og fmtTala reiknar íslenska talnasniðið sjálf: toLocaleString('is-IS') féll til baka á en-US í vafranum og sýndi 12,298 m2 og 2,001.2 m2.**
+  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
+- **/api/gatt-slug?site=<fyrirtaeki.id> er óvarið (engin requireStaff) og skilar slug opinnar gáttar fyrir hvaða stað sem er — með ~1926 id-um má telja upp allar opnu gáttirnar án þess að giska á nafn. Notað af 486-gatt-hlekkur á fyrirtækjasíðunni.** _(unverified)_
+  <br>netlify/functions/gatt-slug.cjs (26.10.2026) les portal_users active=true&pass_hash=is.null; hæsta fyrirtaeki.id 1926 (04.11). Lokun þarf að fara um oryggi (t.d. requireStaff eða aðeins innan appsins).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Allar 6 Þjónustugáttirnar (portal_users, base 146/293/676/720/866/1211) eru virkar MEÐ ENGU lykilorði (pass_hash null á 6/6) og því í „opnum aðgangi“: /gatt/?c=<slug> þjónar raungögnum félagsins án innskráningar með hlutverkið stjórnandi (les reikninga, skýrslur, sérkjör og getur skrifað: skilaboð→mál, eldvarnabók, ný eign). Slug = slugify(félagsnafn) og er því giskanlegt.** _(unverified)_
+  <br>Mælt 04.11.2026: select á portal_users (active=true 6/6, pass_hash null 6/6, netfang 1/6). Kóði: gatt.cjs:149-166 (openMode), gatt-status.cjs (open = active && !pass_hash), gatt-admin.cjs:25,153 (slugify(name)). Stuttslóðir /g/:slug og /heimaleiga í slokkvitaeki netlify.toml:116-124. Opið: Þjónustub
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Ef PORTAL_JWT_SECRET vantar í Netlify skila allar innskráningar þjónustuvefsins 503.** _(unverified)_
+  <br>Brunahólf Kerfisstaða 26.08.
+  <br><sub>2026-11-04 · brunaholf · artifact: https://claude.ai/artifact/PchokyB1N4FV4pzfK2pTt7 · skjol</sub>
+- **Í þjónustuvefnum kemur base_id úr innskráningar-tokeni, aldrei úr slóð eða beiðni, og skjöl eru afhent með skammlífum signed URL eftir eignarhaldsprófun.** _(unverified)_
+  <br>Þjónustuvefur — Byggingaráætlun 22.08.
+  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
+- **Þjónustuvefur viðskiptavina (/gatt/) býr á Brunahólf og les gögn eingöngu gegnum server-fall með service-role lykli; anon-lykill fer aldrei í kúnnasíðu.** _(unverified)_
+  <br>Þjónustuvefur — Byggingaráætlun 22.08.
+  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
+- **agent_logs með agent='gatt-admin', action='opna-sem-kunni' er spor starfsmanns sem opnar gátt kúnna („Opna sem kúnni“, einnota 2-mín hlekkur → staff-session). 37 raðir 04.11: base 146 ×19 (09.10–02.11), 293 ×9, 1211 ×9. Kúnnarnir sjálfir hafa nær ekkert notað gáttina: 0 portal_notendur, 0 eldvarnabók, 0 QR-mál, einu gatt-málin (#1200/#1201) voru prufur lokaðar 29.10.** _(unverified)_
+  <br>gatt-admin.cjs:197-207 (impersonate → agent_logs), gatt-login.cjs GET ?imp=. portal_messages: 2 skilaboð frá 12.10 (base 1211) enn read_by_staff=false þó málin séu lokuð.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
+- **Dálkarnir show_details og syn á portal_users eru notaðir í kóða en hafa enga migration-skrá í sql/ (voru sett með MCP) - MIGRATION-gat.** _(likely)_
+  <br>[gotcha; agents: oryggi, kunnaskra] Líka óskjalfest: einstakur lykill portal_users_base_id_key sést aðeins sem athugasemd í gatt-admin.cjs.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **GET /api/gatt merkir starfsmannaskilaboð sem read_by_customer, svo notaðu það aldrei til að prófa viðskiptavini sem eiga skilaboð frá starfsfólki.** _(likely)_
+  <br>[gotcha; agents: framendi, oryggi] Þess vegna prófa lotur með ?demo=1&theme=X&details=0 (engin innskráning, ekkert skrifað).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
+- **Hver portal-aðgangur (portal_users.base_id) bindur sig við eitt customers_base (rekstrarfélag með kennitölu) og sér allar byggingar þess (fyrirtaeki með customer_base_id); RLS er á án policies svo aðeins service-role kemst að.** _(likely)_
+  <br>[how-to; agents: kunnaskra, oryggi] Center Hótel er með um 10 byggingar. Opin spurning 25.10: á gátt Heimaleigu að sýna allt rekstrarfélagið (17 staði) eða hvert félag fyrir sig.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
+- **Lifandi Þjónustugáttin (gatt, gatt-admin, gatt.cjs) býr í slokkvitaeki-repóinu, ekki í brunaholf.**
+  <br>[decision; agents: framendi, joker, oryggi] Agnar 10.10: 'notaðu það frekar' um slokkvitaeki-eintakið. Skrár: gatt/index.html, gatt/portal.js, gatt/eignagatt.js, gatt/verkfaeri.js, gatt-admin/index.html, gatt-admin/admin.js, netlify/functions/gatt.cjs, _gatt-verkfaeri.cjs.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
+- **Þjónustugáttin (Þjónustuvefur) á sér eina rétta útgáfu í slokkvitaeki-repo (slokkvitaeki.netlify.app/gatt/?c=<slug> og /gatt-admin/); brunaholf-útgáfan er úrelt og á að áframsendast.** _(likely)_
+  <br>[decision; agents: framendi, tengingar] Agnar staðfesti 10.10 'það var einhver ruglingur á repos'. Verkið 11.10: 301-áframsending á /gatt* og /gatt-admin* úr brunaholf (Agnar: 'Oki merge'); tilraunagrein gatt-utlit-1010 í worktree brunaholf-wt-gatt mátti henda. Heimild…
+  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 229502cb 2026-10-11 · claude-code</sub>
+- **Eignagátt 11.10 kvöld: gatt/eignagatt.js (hleðst Á UNDAN portal.js, notar window.Gatt) = verkbeiðnapunktar á teikningu + Mitt vinnusvæði (verkefni, dagatal, kort+Landeignaskrá→Bæta við eign, CSV, skjöl/hlekkir). gatt.cjs POST action punktur/lokid/hnit/ny_eign/item*; myndir í einkamáls-bucket gatt (undirritaðar). Okkar hlið = gatt-admin „Verkbeiðnir af vef" + /api/verkbeidni-lokid (status lokad eins og 368, tilkynning í portal_messages, ENGINN póstur skv. Agnari). Migration sql/2026-10-11_verkbeidnapunktar.sql ÓBEITT (leyfisvörn) — skrif virka ekki fyrr en hún er keyrð; GET fellur á gamla valið á meðan. HUB_STAFF_PASSWORD vantar í Netlify → gatt-admin opinn án innskráningar.**
+  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **HT-11.10 Eignagátt: áætlun um að stækka Þjónustugátt (/gatt) í eignaumsjónar-/samræmiskerfi fyrir stóra kúnna (Reitir ~150 eignir) liggur í docs/HT-11.10-EIGNAGATT.md (11.10.2026). Kjarni: eign sem eigin tafla (landnr, ekki á fyrirtaeki), portal_felog + notendur með hlutverkum í stað eins base_id, skoðunardagatal þvert á öll kerfi úr stadur_kerfi/flokkar_krofur, eldvarnabók skv. 723/2017 gr. 26. Aldrei opinn hamur fyrir stór félög; requireStaff er fail-open ef HUB_STAFF_PASSWORD vantar.** _(unverified)_
+  <br>· LEIÐRÉTT 07.11.2026 (Claude): staðsetningin stenst EKKI. git log --all í slokkvitaeki og brunaholf finnur docs/HT-11.10-EIGNAGATT.md hvergi. Efni áætlunarinnar getur staðið en skjalið er ekki þar.
+  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuvefurinn (/gatt/) taldi ekki Brunaslöngur — framendinn harðkóðaði spjaldið sem þankastrik og API-ið sótti ekki equipment.brunaslongur**
+  <br>Sýnishornið (?demo=1 Center Hótel) sýnir 77 slöngur. Lifandi Center Hótel sýndi þankastrik og 245 slökkvitæki (slöngur innifaldar í total_devices). Lagað í PR 799: skýrsla fyrst, v_uttaeki_fid_rollup.bsl sem vara; slökkvitæki = total_devices minus slo. Plaza 44+39, heild 168+77. Heimaleiga 25 slöngu
+  <br><sub>2026-08-30 · slokkvitaeki · kóði · chat</sub>
+
 ### bord
 
 - **Þjónustuborðið (368) hefur REGLUHAMI frá 18.11.2026 (birt be68fee + 9a7aa87): sérsniðinn hamur í app_settings.thjonustubord5.hamir má bera regla = { merki: [nákvæm merki], forskeyti: [merki sem byrja svona], kunni: [nafn kúnna byrjar svona], titill: [orð í titli], samthykki: true, lysing }. reglaTekur() velur málin við teikningu — ekkert er skrifað á málin. Fyrsti slíki hamurinn er „Brunahólf“ (id hmbrunaholf1, eigandi Agnar): merkt bh:…, mál í ham:hmbhthj01, kúnni sem heitir Brunahólf…, eða „brunaþétt“/„brunahólf“ í titli; sýnir líka það sem bíður samþykkis Agnars. Mælt við birtingu: 15 mál (13 á borði Agnars, 2 á Master).**
@@ -1512,72 +1580,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
 - **05.10.2026 (Agnar: dagsetningarnar inn í brunakerfis skoðun alveg risastórar, og þurfa ekki að vera · átti bara að líta út eins og PDF-ið): gamli Umfyllingar-kóðinn í 00-legacy (addRefillColumn) tók ALLAR töflur í #companies-main, las th úr innfelldum töflum og hengdi input type=date á hverja línu. Eftir að skýrslublað brunakerfis (273 renderSheet) birtist inni í prófílnum (274 #_bkc-blad) lenti það á blaðinu: 42 reitir, hver 237x42 px (149 vefur þá í DD/MM/ÁÁÁÁ). Lagað: sleppir #_bkc-blad/.b274-blad/yfirlögum og notar aðeins eigin haus (table.tHead) og eigin línur (table.tBodies). Mælt með E:/pascal-profun/blad-dags.cjs á fid 1612: lifandi 42, nýtt 0; Slökkvitækja-flipinn 0 í báðum (dálkurinn hittir enga töflu þar lengur). Vörður: audit-umfylling-toflur.cjs. ATH: 00-legacy.js er með blönduð línulok (LF/CRLF) — leitarstrengir í plástrum þurfa að prófa bæði.**
   <br><sub>2026-10-05 · slokkvitaeki · claude-code · claude-code</sub>
-
-### gatt
-
-- **Gáttin + Viðskiptavinavefir 18.11.2026 (cd17449): birtusópur á þjónustugáttinni (forsíða, innskráning, allir átta flipar í /gatt/?demo=1). NIÐURSTAÐA: ekkert navy-á-navy — gáttin fylgir kerfinu (hvít spjöld á ljósbláu), ólíkt Þjónustuborðinu sem hafði navy ofan á navy. Tvennt lagað þar sem litur ætlaður ljósum fleti stóð á navy: .pf-es (amber-ink #b45309) í navy haus félagsins, 'kt. ekki skráð' = 2,88:1 → #f59e5b (6,84:1 mælt lifandi); .ysia.on (accent-orange á obsidian) í Yfirliti/Vinnusvæði = 2,96:1 → sama amber (9,92:1). Reglurnar í gatt/premium-v2.css, scope-aðar (.pf-haus .pf-es, .yf-s/.vh-sia .ysia.on) því .pf-es er LÍKA notað á ljósum fleti þar sem amber-ink er réttur. ÓLAGAÐ og bíður ákvörðunar Agnars: .gbtn-takkarnir eru hvítir á appelsínugulu í 10,5–11,5 px = 3,37:1 (kerfið leyfir hvítt á orange aðeins feitt 14px+) og .kicker/tenglar #cc4411 á #f1f3f6 = 4,29:1 — hvort tveggja snertir útlit kúnnamegin og er ekki mitt að ákveða einhliða. VIÐSKIPTAVINAVEFIR (/gatt-admin/): þrír merktir takkar komust ekki fyrir í 168 px aðgerðadálki á 970 px glugga, brotnuðu í þrjár línur og drógu hverja röð í 124 px; aukaaðgerðir urðu táknhnappar (.btn--ic 30x28, title + aria-label), aðgangsdálkurinn fékk width:1% (var fjórðungur breiddarinnar með '—' í flestum röðum), innra bil 14→9 px, heiti 18→16,5 px, wrap-media færð úr 1500 px í 820 px. Mælt: röð 124 → 63 px (79 þegar heitið er tvær línur). GILDRA: dev-þjónninn hefur engin /api-föll, svo /gatt-admin/ er TÓM á localhost — útlitið var mælt með tilbúnum röðum sem bera nákvæmlega sama mark og admin.js skrifar, og svo sannreynt á lifandi gögnum.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gátt V2 — símayfirferð 10.11.2026: mæling á láréttu flæði (scrollWidth, element út fyrir skjá) sagði ALLT Í LAGI á níu síðum í þremur breiddum, en skjáskot fundu fimm raunveruleg atriði: síuhnappar (.chips) fylltu 512–552 px áður en taflan sást, #v2-dtabs (margin-top -30px) huldi yfirlitsreiti eignar, haustexti rakst á stöðumerki, hvítur hetjutexti á ljósri mynd og Opinn aðgangur-borðinn yfir efni. Flæðimæling finnur ekki skörun, sóun á plássi né læsileika — skoða alltaf skjáskot á 390 px. Lagfæringar aftast í gatt/premium-v2.css.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gátt — normalize-gildran (bitið tvisvar: serkjor 26.10 og banner_global_url 10.11.2026): normalize() í gatt/portal.js hleypir aðeins upptöldum lyklum úr /api/gatt-svarinu inn í state.data. Nýr reitur sem þjónninn skilar hverfur þegjandi og eiginleikinn virðist virka í API-prófi en birtist aldrei. Aðalbanner úr stjórnborði vistaðist rétt en sást aldrei fyrr en lyklinum var bætt í normalize. Prófa alltaf Gatt.state.data í vafranum, ekki bara fetch á API-ið.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gátt Sérkjör sýnir almenna verðskrá nema samið sé um annað: listaverð Aksturs og Skýrslugerðar kemur úr slokk_visit_defaults, og samningsverð (cfg.akstur / cfg.skyrsla) eða flatur afsláttur leggst ofan á.**
-  <br>netlify/functions/_gatt-serkjor.cjs (aksturSkyrsla) + gatt.cjs. Próf: node tools/test-gatt-serkjor.cjs (25 próf). Agnar 09.11.2026: „hafa almennt samkvæmt verðskrá, nema þegar samið er um annað."
-  <br><sub>2026-11-10 · slokkvitaeki · kóði + Agnar 09.11.2026 · claude-code</sub>
-- **Gátt: Senda verkbeiðni á eignasíðu opnar teikninguna (Verkbeiðnir-flipi, eignin valin) AÐEINS ef eignin á teikningu með mynd; án teikningar opnast erindisformið. Það er ætluð varaleið (verkbeidniATeikningu í gatt/portal.js), ekki bilun — prófa á eign með teikningu (t.d. Blue Mountain hjá Heimaleigu), ekki Hamraborg 7 jarðhæð sem á enga.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gátt innskráning — CSS-gildra: þrjár skrár hlaðast í röð (login-v2.css, login-premium-landing.css, login-premium-faithful.css) og seinni tvær nota !important. Regla með lægri specificity tapar þótt hún sé síðar í skránni (mælt 10.11.2026: #login .lcard .fld input vann á #login .lp-fieldbox input → texti ofan á tákni í netfangsreit). Lagfæring fer aftast í faithful-skrána með hærri specificity; mæla getComputedStyle, ekki lesa CSS.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustugátt: nýskráning á /gatt/ er BEIÐNI, aldrei sjálfvirkur aðgangur (Agnar 08.11.2026). POST /api/gatt-adgangur (gatt-adgangur.cjs) stofnar mál í thjonustubeidni með source gatt-nyskraning (tag tilbod ef tilboðstexti fylgir); kt sem passar við nákvæmlega eitt félag tengir málið, annars ótengt. Starfsmaður stofnar aðganginn á gatt-admin. Ein opnunarsíða fyrir alla kúnna: slokkvitaeki.netlify.app/gatt/ — takki á brunaholf.is vísar þangað, gatt.brunaholf.is er ekki til.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gattin: THRIGGJA VIKNA ADRAGANDI ad 'Ogreitt'-vidvorun (Agnar 07.11.2026: 'matt setja 3 vikna seinkun a vidvorun ef hun er ennthá ogreidd'). Glugginn i gatt.cjs stadaAf() er nu 21-75 dagar fra krafa_sent_at: yngra en 21 dagur = EKKERT merki (kunninn er enn i skilum og a ekki ad fa onotalega kvedju fyrir reikning i fullkomnu lagi), eldra en 75 = ekkert merki (obreytt, paid_at dregst a eftir Payday-afstemmingu). Maelt: 11 reikningar missa merkid (4-18 daga), 18 halda thvi, thar a medal Center-reikningarnir fjorir a 30-33 dogum. Reglan er a EINUM stad. LIKA 07.11: enginn leki milli kunna fannst i gattinni (leitad ad skjolum eins kunna hja odrum i ollum 6 adgongum, 0 radir); 4 af 6 adgongum hafa aldrei verid notadir; 14 storir kunnar eiga engan adgang (Brynja 120 taeki, Colas 81, Slettuvegur 73, IKEA 73); 166 taeki a 6 stodum bera lidna naestu skodun, Steypustodin Ishella med 10 manada tof.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **Charlize-færslan 11.10.2026 segir að Eignagátt-áætlunin liggi í docs/HT-11.10-EIGNAGATT.md — sú skrá finnst hvorki í C:\projects\slokkvitaeki\docs né C:\projects\brunaholf\docs (04.11). Eina gáttarskjalið í slokk/docs er GATT-CENTER-HOTEL-THARFAGREINING-20261019.md.**
-  <br>ls docs í báðum repóum 04.11.2026. Skráin gæti legið á öðrum branch eða verið aldrei commituð — ekki athugað með git (lesaðeins-lota). · Staðfest 07.11.2026 (Claude): git log --all í báðum repóum finnur docs/HT-11.10-EIGNAGATT.md hvergi, á engri grein. Skráin var aldrei commituð — líklega aðeins til
-  <br><sub>2026-11-07 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Gáttin: Um eignina-flipinn les húsatölur úr b.hus (Ársskoðun ræður), ekki fjölda teikningablaða — (b.teikning||[]).length var notað sem hæðafjöldi og Bríetartún 9-11 sýndi 15 í stað 12 (cde6463d, 07.11.2026). Engin húsatala skráð -> fjórði reiturinn sýnir teikningafjöldann MERKTAN sem blöð. Og fmtTala reiknar íslenska talnasniðið sjálf: toLocaleString('is-IS') féll til baka á en-US í vafranum og sýndi 12,298 m2 og 2,001.2 m2.**
-  <br><sub>2026-11-07 · slokkvitaeki · claude-code · claude-code</sub>
-- **/api/gatt-slug?site=<fyrirtaeki.id> er óvarið (engin requireStaff) og skilar slug opinnar gáttar fyrir hvaða stað sem er — með ~1926 id-um má telja upp allar opnu gáttirnar án þess að giska á nafn. Notað af 486-gatt-hlekkur á fyrirtækjasíðunni.** _(unverified)_
-  <br>netlify/functions/gatt-slug.cjs (26.10.2026) les portal_users active=true&pass_hash=is.null; hæsta fyrirtaeki.id 1926 (04.11). Lokun þarf að fara um oryggi (t.d. requireStaff eða aðeins innan appsins).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Allar 6 Þjónustugáttirnar (portal_users, base 146/293/676/720/866/1211) eru virkar MEÐ ENGU lykilorði (pass_hash null á 6/6) og því í „opnum aðgangi“: /gatt/?c=<slug> þjónar raungögnum félagsins án innskráningar með hlutverkið stjórnandi (les reikninga, skýrslur, sérkjör og getur skrifað: skilaboð→mál, eldvarnabók, ný eign). Slug = slugify(félagsnafn) og er því giskanlegt.** _(unverified)_
-  <br>Mælt 04.11.2026: select á portal_users (active=true 6/6, pass_hash null 6/6, netfang 1/6). Kóði: gatt.cjs:149-166 (openMode), gatt-status.cjs (open = active && !pass_hash), gatt-admin.cjs:25,153 (slugify(name)). Stuttslóðir /g/:slug og /heimaleiga í slokkvitaeki netlify.toml:116-124. Opið: Þjónustub
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Ef PORTAL_JWT_SECRET vantar í Netlify skila allar innskráningar þjónustuvefsins 503.** _(unverified)_
-  <br>Brunahólf Kerfisstaða 26.08.
-  <br><sub>2026-11-04 · brunaholf · artifact: https://claude.ai/artifact/PchokyB1N4FV4pzfK2pTt7 · skjol</sub>
-- **Í þjónustuvefnum kemur base_id úr innskráningar-tokeni, aldrei úr slóð eða beiðni, og skjöl eru afhent með skammlífum signed URL eftir eignarhaldsprófun.** _(unverified)_
-  <br>Þjónustuvefur — Byggingaráætlun 22.08.
-  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
-- **Þjónustuvefur viðskiptavina (/gatt/) býr á Brunahólf og les gögn eingöngu gegnum server-fall með service-role lykli; anon-lykill fer aldrei í kúnnasíðu.** _(unverified)_
-  <br>Þjónustuvefur — Byggingaráætlun 22.08.
-  <br><sub>2026-11-04 · baedi · artifact: https://claude.ai/artifact/N7mvPuokfwZeyNqtczY7X1 · skjol</sub>
-- **agent_logs með agent='gatt-admin', action='opna-sem-kunni' er spor starfsmanns sem opnar gátt kúnna („Opna sem kúnni“, einnota 2-mín hlekkur → staff-session). 37 raðir 04.11: base 146 ×19 (09.10–02.11), 293 ×9, 1211 ×9. Kúnnarnir sjálfir hafa nær ekkert notað gáttina: 0 portal_notendur, 0 eldvarnabók, 0 QR-mál, einu gatt-málin (#1200/#1201) voru prufur lokaðar 29.10.** _(unverified)_
-  <br>gatt-admin.cjs:197-207 (impersonate → agent_logs), gatt-login.cjs GET ?imp=. portal_messages: 2 skilaboð frá 12.10 (base 1211) enn read_by_staff=false þó málin séu lokuð.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: greining-04.11:08-thjonustugatt.inbox.json · greining-08</sub>
-- **Dálkarnir show_details og syn á portal_users eru notaðir í kóða en hafa enga migration-skrá í sql/ (voru sett með MCP) - MIGRATION-gat.** _(likely)_
-  <br>[gotcha; agents: oryggi, kunnaskra] Líka óskjalfest: einstakur lykill portal_users_base_id_key sést aðeins sem athugasemd í gatt-admin.cjs.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **GET /api/gatt merkir starfsmannaskilaboð sem read_by_customer, svo notaðu það aldrei til að prófa viðskiptavini sem eiga skilaboð frá starfsfólki.** _(likely)_
-  <br>[gotcha; agents: framendi, oryggi] Þess vegna prófa lotur með ?demo=1&theme=X&details=0 (engin innskráning, ekkert skrifað).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
-- **Hver portal-aðgangur (portal_users.base_id) bindur sig við eitt customers_base (rekstrarfélag með kennitölu) og sér allar byggingar þess (fyrirtaeki með customer_base_id); RLS er á án policies svo aðeins service-role kemst að.** _(likely)_
-  <br>[how-to; agents: kunnaskra, oryggi] Center Hótel er með um 10 byggingar. Opin spurning 25.10: á gátt Heimaleigu að sýna allt rekstrarfélagið (17 staði) eða hvert félag fyrir sig.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6975db46 2026-10-11 · claude-code</sub>
-- **Lifandi Þjónustugáttin (gatt, gatt-admin, gatt.cjs) býr í slokkvitaeki-repóinu, ekki í brunaholf.**
-  <br>[decision; agents: framendi, joker, oryggi] Agnar 10.10: 'notaðu það frekar' um slokkvitaeki-eintakið. Skrár: gatt/index.html, gatt/portal.js, gatt/eignagatt.js, gatt/verkfaeri.js, gatt-admin/index.html, gatt-admin/admin.js, netlify/functions/gatt.cjs, _gatt-verkfaeri.cjs.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-11 · claude-code</sub>
-- **Þjónustugáttin (Þjónustuvefur) á sér eina rétta útgáfu í slokkvitaeki-repo (slokkvitaeki.netlify.app/gatt/?c=<slug> og /gatt-admin/); brunaholf-útgáfan er úrelt og á að áframsendast.** _(likely)_
-  <br>[decision; agents: framendi, tengingar] Agnar staðfesti 10.10 'það var einhver ruglingur á repos'. Verkið 11.10: 301-áframsending á /gatt* og /gatt-admin* úr brunaholf (Agnar: 'Oki merge'); tilraunagrein gatt-utlit-1010 í worktree brunaholf-wt-gatt mátti henda. Heimild…
-  <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 229502cb 2026-10-11 · claude-code</sub>
-- **Eignagátt 11.10 kvöld: gatt/eignagatt.js (hleðst Á UNDAN portal.js, notar window.Gatt) = verkbeiðnapunktar á teikningu + Mitt vinnusvæði (verkefni, dagatal, kort+Landeignaskrá→Bæta við eign, CSV, skjöl/hlekkir). gatt.cjs POST action punktur/lokid/hnit/ny_eign/item*; myndir í einkamáls-bucket gatt (undirritaðar). Okkar hlið = gatt-admin „Verkbeiðnir af vef" + /api/verkbeidni-lokid (status lokad eins og 368, tilkynning í portal_messages, ENGINN póstur skv. Agnari). Migration sql/2026-10-11_verkbeidnapunktar.sql ÓBEITT (leyfisvörn) — skrif virka ekki fyrr en hún er keyrð; GET fellur á gamla valið á meðan. HUB_STAFF_PASSWORD vantar í Netlify → gatt-admin opinn án innskráningar.**
-  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **HT-11.10 Eignagátt: áætlun um að stækka Þjónustugátt (/gatt) í eignaumsjónar-/samræmiskerfi fyrir stóra kúnna (Reitir ~150 eignir) liggur í docs/HT-11.10-EIGNAGATT.md (11.10.2026). Kjarni: eign sem eigin tafla (landnr, ekki á fyrirtaeki), portal_felog + notendur með hlutverkum í stað eins base_id, skoðunardagatal þvert á öll kerfi úr stadur_kerfi/flokkar_krofur, eldvarnabók skv. 723/2017 gr. 26. Aldrei opinn hamur fyrir stór félög; requireStaff er fail-open ef HUB_STAFF_PASSWORD vantar.** _(unverified)_
-  <br>· LEIÐRÉTT 07.11.2026 (Claude): staðsetningin stenst EKKI. git log --all í slokkvitaeki og brunaholf finnur docs/HT-11.10-EIGNAGATT.md hvergi. Efni áætlunarinnar getur staðið en skjalið er ekki þar.
-  <br><sub>2026-10-11 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuvefurinn (/gatt/) taldi ekki Brunaslöngur — framendinn harðkóðaði spjaldið sem þankastrik og API-ið sótti ekki equipment.brunaslongur**
-  <br>Sýnishornið (?demo=1 Center Hótel) sýnir 77 slöngur. Lifandi Center Hótel sýndi þankastrik og 245 slökkvitæki (slöngur innifaldar í total_devices). Lagað í PR 799: skýrsla fyrst, v_uttaeki_fid_rollup.bsl sem vara; slökkvitæki = total_devices minus slo. Plaza 44+39, heild 168+77. Heimaleiga 25 slöngu
-  <br><sub>2026-08-30 · slokkvitaeki · kóði · chat</sub>
 
 ### deploy
 
