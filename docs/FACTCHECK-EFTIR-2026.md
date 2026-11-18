@@ -430,3 +430,15 @@ félögum listans eftir 11.11. Ný lína („Sannreynt 18.11.2026 … endurmæli
 | 212 | Hjálparsveit skáta | R-001315 (17.11, 81.147 kr.) er **DRÖG** og ber hvorki skýrslugerð né akstur → verkstæðisþjónusta, ekki úttekt: 14 léttvatn af 30 á lista, 1 CO₂ 2 kg, og 1 duft 2 kg **sem er ekki á tækjalista** | Fyrri úrskurður stendur (pósthólf sem heimilisfang, punktur rangur); engin úttekt 2026. **Enn á síunni** |
 
 Sían telur nú **167** (var 168): þrjú félög fóru af henni og tvö ný komu á hana eftir 11.11 — þau tvö eru ómæld.
+
+## Ný á síuna 18.11.2026 — tvö félög sem bættust við eftir 11.11
+
+Sían telur 167; þrjú af upphaflegu 168 fóru af henni (úttekt 2026 kláruð) og þessi tvö komu á hana.
+Bæði mæld 18.11 og bæði með frávik. Úrskurður skráður í `review_note` eins og hinir, afrit fyrst.
+
+| id | Félag | A kt↔nafn↔hf | B skýrsla | C/D punktur og mynd | E tæki | F/G póstur og staða | Frávik |
+|---|---|---|---|---|---|---|---|
+| 1612 | Bílabúð Benna – Fiskislóð | Rekstrarfélag (2 staðir á kt): A á ekki við. Nafn og kt stemma; lögheimili Krókháls 9 | Skýrsla ágúst 2026, **stíluð á Fiskislóð 41 með réttri kt** (9 léttvatn + 5 slöngur) | Punktur réttur; handsett mynd, ÓSNERT | **LISTI ≠ SKÝRSLA**: listi 13 léttvatn + 1 CO₂ 5 kg + 5 slöngur, skýrsla 9 léttvatn + 5 slöngur. `arsskodun_report_facts` endurspeglar listann, ekki skýrsluna | Netfang staðfest, síðasti póstur 03.07.2026. Brunakerfi 2026 lokið (R-001081). Mál #1414 og #1630 opin | **Úttektin er órukkuð** (#1414, endurmælt 16.11 á 59.280 kr.) · **year_factcheck-nótan er röng**: segir skýrsluna stílaða á Krókháls 9, en hún er á Fiskislóð 41 · listi ≠ skýrsla · tveir Stólpa-reikningar enn „opið við yfirtöku“ |
+| 1941 | Barónsstígur 18 – Heimaleiga | **KT AFSKRÁÐ**: 460504-2520 er Sirius ehf., afskráð 30.10.2012. Engin önnur Heimaleigu-röð ber þessa kt (Heimaleiga notar 510117-0690 á sex staði) | Engin skýrsla | Engin geokóðun; handsett mynd, ÓSNERT | Tvö tæki (1 léttvatn 6 L, 1 duft 6 kg), **bæði merkt lánuð** frá 16.11.2026. Engin sala, enginn reikningur | Ekkert netfang, enginn póstur. Röðin stofnuð 09.11.2026; kom á síuna þegar vettvangsárið 2026 var sett | Afskráð kennitala · engin úttekt og engin gögn · tækin lánuð, ekki í þjónustu · plan_note geymir aðgangskóða að íbúðunum (ekki afritað hingað — repóin eru opinber) |
+
+**Staða 18.11.2026: 170 raðir bera úrskurð** (168 frá 11.11 + þessar tvær). Sían sjálf telur 167.
