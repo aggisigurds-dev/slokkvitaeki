@@ -39,6 +39,11 @@ const SIMI = /(?:\+|(?<![A-Za-z]-)\b00)\d{1,3}[\s.-]?(?:\d[\s.-]?){6,12}\d\b|(?<
 const hylja = (t) => String(t == null ? '' : t).replace(NETFANG, '[netfang]').replace(IBAN, '[bankareikningur]').replace(BANKI, '[bankareikningur]')
   .replace(KENNITALA, '[kennitala]').replace(SIMI, '[sími]');
 const stytta = (t, n) => hylja(t).replace(/\s+/g, ' ').trim().slice(0, n);
+// 18.11.2026 — EINA undantekningin frá hylja: kennitala LÖGAÐILA. Í íslenskri kennitölu er fyrsti tölustafapar
+// dagur mánaðar, +40 hjá lögaðila (41–71); einstaklingur er 01–31. Félagskennitala er opinber úr fyrirtækjaskrá;
+// kennitala EINSTAKLINGS er áfram hulin, líka þegar hún stendur í fyrirtaeki-röð (sjálfstæður rekstur).
+// Ástæða: án hennar getur agent sem er beðinn um kennitölu aldrei svarað (mælt: mál #882, umferð umwldzl6c).
+const erFelagsKt = (kt) => { const d = Number(String(kt == null ? '' : kt).replace(/\D/g, '').slice(0, 2)); return d >= 41 && d <= 71; };
 
 async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 160)}`); return r.json(); }
 const lesa = (qs) => P.sbGet(qs).then(sbJson);
@@ -115,10 +120,16 @@ async function safna(atridi, mal, fyrirmaeli) {
     const f = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
     for (const x of f) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
   }
-  // 18.11.2026: kennitala og heimilisfang FYLGJA fyrirtækinu. Áður fékk agentinn aðeins nafn + í þjónustu, svo mál
-  // sem snúast um kennitölu (t.d. #882 Hárbeitt) voru óleysanleg — hann sá hana hvergi. Mælt í umferð umwldzl6c.
-  for (const f of fyr.slice(0, 4)) baeta('F', { lysing: 'Fyrirtæki ' + stytta(f.nafn, 60) + (f.kennitala ? ' (kt. ' + f.kennitala + ')' : ''),
-    nafn: stytta(f.nafn, 100), kennitala: f.kennitala || null, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu });
+  // 18.11.2026: kennitala lögaðila og heimilisfang fylgja nú fyrirtækinu. Áður fékk agentinn aðeins nafn + í þjónustu
+  // og kennitalan var hulin alls staðar, svo mál sem snúast um kennitölu (t.d. #882 Hárbeitt) voru óleysanleg.
+  // Kennitala einstaklings er áfram hulin — þá segir `kennitala_hulin` agentinum að hún sé TIL, svo hann álykti
+  // ekki að engin sé skráð. Mælt í umferð umwldzl6c.
+  for (const f of fyr.slice(0, 4)) {
+    const kt = erFelagsKt(f.kennitala) ? String(f.kennitala).trim() : null;
+    baeta('F', Object.assign({ lysing: 'Fyrirtæki ' + stytta(f.nafn, 60) + (kt ? ' (kt. ' + kt + ')' : ''),
+      nafn: stytta(f.nafn, 100), kennitala: kt, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu },
+      !kt && f.kennitala ? { kennitala_hulin: 'Kennitala er skráð en er einstaklingskennitala og því hulin' } : {}));
+  }
 
   // Brunahólfs-verk eftir nafni verkstaðar: tímar (Tímavera, 90 dagar, eftir mánuði) og reikningsdrög — svo „órukkaðir tímar"
   // og „engin drög" séu mæld, ekki endursögð úr yfirlitinu.
