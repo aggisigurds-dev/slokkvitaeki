@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 19:31 · 2575 virkar staðreyndir — 1470 prentaðar hér
+Sótt 2026-11-18 19:46 · 2576 virkar staðreyndir — 1471 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (946 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -2812,6 +2812,31 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sjá verd.md: brunaslanga verður að hafa stærð (30/25/20 m). Þrjú tæki hjá Hagstáli (id 9144-9146) eru með size NULL. Val á stærð á alltaf að segja Agnari frá.
   <br><sub>2026-09-09 · slokkvitaeki · sql · claude-code</sub>
 
+### vorur
+
+- **Birgdir og Vorur og thjonusta 18.11.2026 (0eafc4a): maelt med tools/birtumaeling.cjs a lifandi sidum. BADAR sidur eru hreinar af birtuskilum ad kalla - 121 og 156 textabrot, 7 og 5 foll, og thau eru oll smatt umgjordartexti (vidmotsrofinn 📱/🖥 1,86 og 2,73, klukkulinan 3,02, build-stimpillinn 3,26, lysingarlinan a Birgdum 3,19). Ekkert af tessu er innihald sidunnar. LAGAD: .page-title i css/theme-scoped.css kreisti sidutitilinn. Maelt a Vorum og thjonustu: .page-title__lead fekk 160 px og h1 inni i honum 103 px, svo "Vorur og thjonusta" braust i THRJAR linur (86 px) medan takkablokkin tok afganginn. Nu flex-wrap a rodinni og flex:1 1 280px a lead - titillinn er ein lina (29 px) og takkarnir fara nidur fyrir hann. Gildir um allar sidur sem nota .page-title. NY MAELIGILDRA, su fimmta: -webkit-text-fill-color MALAR, ekki color. Titillinn "Birgdir" hefur color #11141c en fill #ffffff og er hvitur a skjanum; toolid las 1,35:1 og hefdi sent mig ad laga texta sem er i lagi. Sama atti vid um undirtextann a Vorum (color #1e293b fra patch 313, fill #c9d0da fra patch 409). Patch 409 setur fill a ALLA sidutitla i appinu, svo thetta snertir hverja einustu sidu. Tolid les nu fill thegar hann er annar en color. EFTIR STENDUR, utlit en ekki villa: Vorur og thjonusta ber threttan takka i niu litum (verdlistarnir fa lit ur sinum eigin `litur`-reit i 502, sem Agnar stillir sjalfur: teal, appelsina, fjola, grafit, ljosblar, gull...). Thad er stillingin hans, ekki villa, svo eg breytti engu. Tillaga ef hann vill: halda litnum sem litlu merki (taknreit eda vinstri rond) en gefa ollum tokkunum sama flot, svo rodin lesist sem hopur og einn adgerdartakki (+ Ny vara/thjonusta) se sa eini sem sker sig ur. Birgdir: fjorar stafladar stjornrodir (~230 px) adur en gogn byrja; taflan sjalf er 1.405 px og skrunar inni i .tcard, sem er i lagi.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Kostnaðarverð (vorur.kostnadarverd) nær aðeins yfir 11–31 % af línusölu á mánuði (okt 2026: 11,3 %). Framlegð er því aðeins mælanleg á litlum hluta sölunnar; hagnaður er ómældur án launa- og kostnaðartalna úr bókhaldi.**
+  <br>Mælt maí–nóv 2026 á final-sölum án kreditnóta, línur með product_id og kostnadarverd>0. kostnadur-taflan (pósthengi eldklar@) er ófullkomin: okt 11 raðir, nóv 0.
+  <br><sub>2026-11-17 · slokkvitaeki · lota 4 Powerplan, SQL 17.11.2026 · claude-code</sub>
+- **Þegar vörum eða flokkum er steypt saman (t.d. '6-12 kg' í '6 kg') má það aldrei raska eldri vinnu eða talningu.**
+  <br>[rule; agents: sala-reikningar, kunnaskra] Agnar samþykkti sameininguna með fyrirvaranum 'passaðu að það rugli ekki eldri vinnu eða talningu' og bað svo um að koma reglu á óreiðuna í verðlistanum.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 731f63e0 2026-10-14 · claude-code</sub>
+- **Kaupverð brunakerfisvara er línuupphæð deilt með magni eftir afslátt, ekki listaverð; listaverð og söluverð eru oftast sama talan í brunakerfi.**
+  <br>[rule; agents: sala-reikningar, rukkari] Agnar 05.10: XP95 kostaði 7.241 kr með 20% afslætti, ekki 9.051 kr; á við allar sex vörurnar sem hann setti inn um morguninn. Kaupverð fundin úr Kostnaður-reikningum (Öryggismiðstöð).
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
+- **Verdlistagluggarnir i 410 (Vorur og thjonusta) eru fimm sidan 14.10: slokkvitaeki (ein rod per tegund+staerd, Yfirferd og Hledsla hlid vid hlid, sjalfgefid eftir tegund, Verd + ✎ Vara opnar voruna), brunakerfi (verd breytanleg beint, + Baeta vid nedst, ✎ Breyta verdlista i haus fyrir tengingar), slokkvikerfi (tengd vara + verd + ✎ Vara), verkstaedi (flokkurinn Varahlutir, birgdir, ✎ Vara, + Ny vara), vinnulidir (frjals listi i app_settings.vinnulidir_verdlisti, sad med Uppsetning a slokkvitaeki / a skilti, tengingar sidar). Sameiginlegt form: sia + fjoldaplata efst, tafla, + Baeta vid nedst. Takkarnir i 469 i malmlitum: blar, raudur, ljosblar, grafit, dokkgull, graenn (Ny vara). Profun: AppSettings.save stubbad i forskodun.**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Brunak. verd-glugginn (410) breytir verdum beint (reitir, change vistar um BrunakerfiSkyrsla.savePriceItems - sama app_settings.brunakerfi_verdlisti og ritillinn, sami ureldingarvordur) og baetir vid lid nedst; tengingar/heiti afram i ritlinum (✎ Breyta verdlista). 273 opnar priceItems/savePriceItems. Profun: stubba AppSettings.save = async()=>true i forskodunarflipa, ekkert skrifad. SW heldur gamla index.html - afskra SW eda ?_v= til ad sja nyja pappa. Vinna rafvirkja 14.500 an vsk sett i listann 14.10 med SQL.**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Léttvatn 9 L hleðsla (14.10.2026): vorur 444 'Léttvatnstækis 9L. hleðsla' 9.450 m/vsk (Agnar), tengd Léttvatn|9 L|hledsla. Áður datt hleðsla 9 L á yfirferðarvöru 426 (4.500). Eina eldra dæmið: R-104879 20 stk á 6.700 (gamla verðskráin).**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Léttvatn 2 L þjónusta (14.10.2026): vorur 442 'Léttvatnstæki 2L. yfirferð' 3.600 og 443 'Léttvatnstækis 2L. hleðsla' 5.200 m/vsk (sama og Duft 2 kg, Agnar valdi), skráð í thjonustu_tengingar Léttvatn|2L|yfirferd/hledsla. Stærðarvörður 129 heldur 6 L tækjunum á 19/27 (hermt með raunföllunum).**
+  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Gagnagrunns-vörður fellir HLJÓÐLEGA innsetningu í vorur ef nafnið er á app_settings sala.deleted_product_names**
+  <br>trg_vorur_hafna_eyddum → vorur_hafna_eyddum() (BEFORE INSERT, SECURITY DEFINER), sett upp 03.09.2026. Röðin fer EKKI inn og er skráð í vorur_hafnad_log. RETURN NULL en ekki RAISE — undantekning hefði fellt heila lotu-innsetningu sáningarinnar og þar með líka löglegar nýjar vörur. ÞETTA ER ÁSTÆÐAN ef
+  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
+
 ### kjarni
 
 - **Ragnarök-hringurinn (ApocalypseRing) á Stjórnstöð snýst ALLTAF hægt — líka með prefers-reduced-motion (þá 0,6× hraði, aðeins ljósið stöðvast). Agnar vill hægu hreyfinguna; í síma með „Fjarlægja hreyfimyndir" stóð hann kyrr.**
@@ -2922,29 +2947,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
 - **tools/greina-hop.cjs keyrir Greiningu fasteignar (451) fyrir heilan hóp: bygging-uppl → eign-röð í fasteign_greining → bygging-ocr-beiðni (≤6 skjöl, sleppt ef beiðni bíður fyrir landnúmerið). 14.10 01:33: brunakerfi + Heimaleiga = 39 heimilisföng, 33 eign-raðir, 28 OCR-beiðnir (143 skjöl) í röð á skrifstofutölvunni; staðir með mörg blöð (Seljavegur 2: 39, Bríetartún: 49) þurfa endurkeyrslu þegar röðin tæmist. Fundust ekki: Vegamótastígur 9 (Midtown), 17. júnítorg, Borealis; óviss: Laugavegur 16, Dalbrekka 4-6. PostgREST skilar mest 1000 röðum — fyrirtaeki eru 1.234, alltaf getAll.**
   <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-
-### vorur
-
-- **Kostnaðarverð (vorur.kostnadarverd) nær aðeins yfir 11–31 % af línusölu á mánuði (okt 2026: 11,3 %). Framlegð er því aðeins mælanleg á litlum hluta sölunnar; hagnaður er ómældur án launa- og kostnaðartalna úr bókhaldi.**
-  <br>Mælt maí–nóv 2026 á final-sölum án kreditnóta, línur með product_id og kostnadarverd>0. kostnadur-taflan (pósthengi eldklar@) er ófullkomin: okt 11 raðir, nóv 0.
-  <br><sub>2026-11-17 · slokkvitaeki · lota 4 Powerplan, SQL 17.11.2026 · claude-code</sub>
-- **Þegar vörum eða flokkum er steypt saman (t.d. '6-12 kg' í '6 kg') má það aldrei raska eldri vinnu eða talningu.**
-  <br>[rule; agents: sala-reikningar, kunnaskra] Agnar samþykkti sameininguna með fyrirvaranum 'passaðu að það rugli ekki eldri vinnu eða talningu' og bað svo um að koma reglu á óreiðuna í verðlistanum.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 731f63e0 2026-10-14 · claude-code</sub>
-- **Kaupverð brunakerfisvara er línuupphæð deilt með magni eftir afslátt, ekki listaverð; listaverð og söluverð eru oftast sama talan í brunakerfi.**
-  <br>[rule; agents: sala-reikningar, rukkari] Agnar 05.10: XP95 kostaði 7.241 kr með 20% afslætti, ekki 9.051 kr; á við allar sex vörurnar sem hann setti inn um morguninn. Kaupverð fundin úr Kostnaður-reikningum (Öryggismiðstöð).
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 17c4cd7a 2026-10-05 · claude-code</sub>
-- **Verdlistagluggarnir i 410 (Vorur og thjonusta) eru fimm sidan 14.10: slokkvitaeki (ein rod per tegund+staerd, Yfirferd og Hledsla hlid vid hlid, sjalfgefid eftir tegund, Verd + ✎ Vara opnar voruna), brunakerfi (verd breytanleg beint, + Baeta vid nedst, ✎ Breyta verdlista i haus fyrir tengingar), slokkvikerfi (tengd vara + verd + ✎ Vara), verkstaedi (flokkurinn Varahlutir, birgdir, ✎ Vara, + Ny vara), vinnulidir (frjals listi i app_settings.vinnulidir_verdlisti, sad med Uppsetning a slokkvitaeki / a skilti, tengingar sidar). Sameiginlegt form: sia + fjoldaplata efst, tafla, + Baeta vid nedst. Takkarnir i 469 i malmlitum: blar, raudur, ljosblar, grafit, dokkgull, graenn (Ny vara). Profun: AppSettings.save stubbad i forskodun.**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Brunak. verd-glugginn (410) breytir verdum beint (reitir, change vistar um BrunakerfiSkyrsla.savePriceItems - sama app_settings.brunakerfi_verdlisti og ritillinn, sami ureldingarvordur) og baetir vid lid nedst; tengingar/heiti afram i ritlinum (✎ Breyta verdlista). 273 opnar priceItems/savePriceItems. Profun: stubba AppSettings.save = async()=>true i forskodunarflipa, ekkert skrifad. SW heldur gamla index.html - afskra SW eda ?_v= til ad sja nyja pappa. Vinna rafvirkja 14.500 an vsk sett i listann 14.10 med SQL.**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Léttvatn 9 L hleðsla (14.10.2026): vorur 444 'Léttvatnstækis 9L. hleðsla' 9.450 m/vsk (Agnar), tengd Léttvatn|9 L|hledsla. Áður datt hleðsla 9 L á yfirferðarvöru 426 (4.500). Eina eldra dæmið: R-104879 20 stk á 6.700 (gamla verðskráin).**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Léttvatn 2 L þjónusta (14.10.2026): vorur 442 'Léttvatnstæki 2L. yfirferð' 3.600 og 443 'Léttvatnstækis 2L. hleðsla' 5.200 m/vsk (sama og Duft 2 kg, Agnar valdi), skráð í thjonustu_tengingar Léttvatn|2L|yfirferd/hledsla. Stærðarvörður 129 heldur 6 L tækjunum á 19/27 (hermt með raunföllunum).**
-  <br><sub>2026-10-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Gagnagrunns-vörður fellir HLJÓÐLEGA innsetningu í vorur ef nafnið er á app_settings sala.deleted_product_names**
-  <br>trg_vorur_hafna_eyddum → vorur_hafna_eyddum() (BEFORE INSERT, SECURITY DEFINER), sett upp 03.09.2026. Röðin fer EKKI inn og er skráð í vorur_hafnad_log. RETURN NULL en ekki RAISE — undantekning hefði fellt heila lotu-innsetningu sáningarinnar og þar með líka löglegar nýjar vörur. ÞETTA ER ÁSTÆÐAN ef
-  <br><sub>2026-09-03 · slokkvitaeki · kóði · claude-code</sub>
 
 ### sync
 
