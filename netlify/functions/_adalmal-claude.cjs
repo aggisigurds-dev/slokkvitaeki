@@ -43,7 +43,8 @@ const stytta = (t, n) => hylja(t).replace(/\s+/g, ' ').trim().slice(0, n);
 // dagur mánaðar, +40 hjá lögaðila (41–71); einstaklingur er 01–31. Félagskennitala er opinber úr fyrirtækjaskrá;
 // kennitala EINSTAKLINGS er áfram hulin, líka þegar hún stendur í fyrirtaeki-röð (sjálfstæður rekstur).
 // Ástæða: án hennar getur agent sem er beðinn um kennitölu aldrei svarað (mælt: mál #882, umferð umwldzl6c).
-const erFelagsKt = (kt) => { const d = Number(String(kt == null ? '' : kt).replace(/\D/g, '').slice(0, 2)); return d >= 41 && d <= 71; };
+// Krafist er FULLRAR 10 stafa kennitölu: stytt eða skemmt gildi („4101") er ekki kennitala og fer ekki óhulið.
+const erFelagsKt = (kt) => { const t = String(kt == null ? '' : kt).replace(/\D/g, ''); if (t.length !== 10) return false; const d = Number(t.slice(0, 2)); return d >= 41 && d <= 71; };
 
 async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 160)}`); return r.json(); }
 const lesa = (qs) => P.sbGet(qs).then(sbJson);
@@ -333,4 +334,4 @@ async function vinna(lykill, nonce) {
   }
 }
 
-module.exports = { vinna, safna, stadfesta, kalla, hylja, nofnI, nyNonce, erSjalfvirkt, MODEL, SKEMA, KERFI, POSTHOLF };
+module.exports = { vinna, safna, stadfesta, kalla, hylja, erFelagsKt, nofnI, nyNonce, erSjalfvirkt, MODEL, SKEMA, KERFI, POSTHOLF };
