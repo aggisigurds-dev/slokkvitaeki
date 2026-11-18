@@ -5,7 +5,7 @@
 // HVERS VEGNA FALL: mælingarnar eru reiknaðar í vafranum (29 mæliföll í 489) og áttu enga sögu — hver heimsókn sá aðeins
 // töluna núna. Vafrinn sendir því tölur dagsins hingað eftir hverja mælingu; taflan `vinnusamantekt_saga` geymir EINA röð á
 // mælingu á dag (fyrsta gildi dagsins + það nýjasta). Taflan er RLS-læst án reglna, svo aðeins þetta fall (þjónustuhlutverk)
-// les og skrifar, og það krefst innskráningar starfsmanns (_starfshlid.cjs) eins og önnur föll borðsins.
+// les og skrifar, og það krefst innskráningar STJÓRNANDA (_starfshlid.cjs, sama regla og tekjur-beint).
 //
 //   GET  /api/vinnusamantekt-saga                       → { ok, i_dag, fyrri: { <maeling>: { gildi, dags } }, fyrst: { <maeling>: gildi } }
 //   POST /api/vinnusamantekt-saga { maelingar: [{ id, gildi, tala, sev }] } → skráir tölur dagsins, skilar sama og GET (+ skrad)
@@ -54,7 +54,9 @@ function vidmid(rodir, iDag) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return P.json(405, { error: 'GET eða POST' });
-  const g = await H.krefjastStarfsmanns(event);
+  // Aðeins STJÓRNANDI: Vinnusamantektin sést aðeins á borði Agnars, og sagan stýrir örvunum sem hann les. Annar
+  // innskráður notandi á hvorki að lesa tölurnar né geta skrifað gildi inn í þær (rýni 18.11.2026).
+  const g = (await H.stjornandi(event)).villa;
   if (g) return g;
   const iDag = dagsUtc();
   try {

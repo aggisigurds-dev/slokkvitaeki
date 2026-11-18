@@ -75,15 +75,21 @@
    * og fyrsta gildi dagsins. Borin er saman FYRSTA TALAN í birtingarstrengnum („11 · 8,3 m.kr“ → 11, „2,0 m.kr“ → 2,0) —
    * sama tala og augað les fyrst. Örin er hlutlaus á lit: upp er gott í tekjum en vont í ósendum kröfum. */
   const SAGA = { fyrri: {}, fyrst: {}, iDag: null, sentAt: 0, sentLykill: '' };
-  // Íslenskt snið: punktur er þúsundaskil, komma aukastafir. „1.206.643 kr“ → 1206643 · „8,3“ → 8.3 · „438 af 646“ → 438.
+  // Íslenskt snið: punktur er þúsundaskil, komma aukastafir. „1.206.643 kr“ → 1206643 · „438 af 646“ → 438.
+  // UPPHÆÐ ER BORIN SAMAN Í KRÓNUM: mkr() skrifar „950.000 kr“ undir milljón en „1,2 m.kr“ yfir henni, svo sama mæling
+  // skiptir um einingu milli daga — án umreiknings hefði 1,2 verið borið saman við 950000 (rýni 18.11.2026). `g` er því
+  // grunngildið (krónur ef eining er til), `studull` segir í hvaða einingu talan er SÝND. kr()/mkr() nota Unicode-mínus.
   function talaGildi(tala) {
-    const m = String(tala == null ? '' : tala).match(/(-?\d{1,3}(?:\.\d{3})+|-?\d+)(?:,(\d+))?\s*(m\.kr|þ\.kr|kr|%)?/);
+    const m = String(tala == null ? '' : tala).replace(/[−–]/g, '-').match(/(-?\d{1,3}(?:\.\d{3})+|-?\d+)(?:,(\d+))?\s*(m\.kr|þ\.kr|kr|%)?/);
     if (!m) return null;
-    const g = Number(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : ''));
-    return Number.isFinite(g) ? { g, aukast: m[2] ? m[2].length : 0, ein: m[3] || '' } : null;
+    const ein = m[3] || '', studull = ein === 'm.kr' ? 1e6 : ein === 'þ.kr' ? 1e3 : 1;
+    const g = Number(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : '')) * studull;
+    return Number.isFinite(g) ? { g: Math.round(g * 1000) / 1000, aukast: m[2] ? m[2].length : 0, ein, studull } : null;
   }
   const fraTexti = dags => { const gaer = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return dags === gaer ? 'frá í gær' : 'frá ' + String(dags).slice(8, 10) + '.' + String(dags).slice(5, 7) + '.'; };
   // Breyting mælingar frá viðmiði, eða null ef ekkert viðmið er til (fyrsta mæling fyrsta dags, eða tala sem er ekki tala).
+  // Breytingin er sýnd í einingu núgildis („▲ 0,3 m.kr“); upphæðarbreyting sem hyrfi í námundun („0,0 m.kr“) í krónum.
+  const is = (n, a) => n.toLocaleString('de-DE', { minimumFractionDigits: a, maximumFractionDigits: a });
   function breyting(id, tala) {
     const nu = talaGildi(tala); if (!nu) return null;
     const f = SAGA.fyrri[id], idag = SAGA.fyrst[id];
@@ -92,8 +98,10 @@
     else if (idag != null && Number.isFinite(idag)) { vid = idag; fra = 'í dag'; }
     else return null;
     const d = Math.round((nu.g - vid) * 1000) / 1000, att = d > 0 ? 'upp' : d < 0 ? 'nidur' : 'eins';
-    const abs = Math.abs(d).toLocaleString('de-DE', { minimumFractionDigits: nu.aukast, maximumFractionDigits: nu.aukast });
-    const stutt = att === 'eins' ? '' : (att === 'upp' ? '▲ ' : '▼ ') + abs + (nu.ein ? ' ' + nu.ein : '');
+    const syn = Math.abs(d) / nu.studull, peningar = nu.ein === 'm.kr' || nu.ein === 'þ.kr' || nu.ein === 'kr';
+    const hverfur = peningar && nu.studull > 1 && Number(syn.toFixed(nu.aukast)) === 0;
+    const abs = hverfur ? is(Math.round(Math.abs(d)), 0) + ' kr' : is(syn, nu.aukast) + (nu.ein ? ' ' + nu.ein : '');
+    const stutt = att === 'eins' ? '' : (att === 'upp' ? '▲ ' : '▼ ') + abs;
     return { d, att, fra, stutt, texti: att === 'eins' ? 'óbreytt ' + fra : stutt + ' ' + fra };
   }
   const breytingHtml = (id, tala, klasi) => {

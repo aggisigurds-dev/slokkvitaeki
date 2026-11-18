@@ -27,10 +27,11 @@ function radHtmlFall(opna) {
   // ekkert merki teiknast og þessi próf mæla áfram aðeins röðun og punktalista.
   const tg = SRC.match(/function talaGildi\(tala\) \{[\s\S]*?\n  \}/);
   const ft = SRC.match(/^\s*const fraTexti = [^\n]*$/m);
+  const isF = SRC.match(/^\s*const is = \(n, a\) => [^\n]*$/m);
   const br = SRC.match(/function breyting\(id, tala\) \{[\s\S]*?\n  \}/);
   const bh = SRC.match(/const breytingHtml = \(id, tala, klasi\) => \{[\s\S]*?\n  \};/);
-  assert.ok(esc && sev && hamark && fall && tg && ft && br && bh, 'náði ekki föllunum úr 489');
-  return new Function('S', 'window', 'SAGA', [esc[0], sev[0], hamark[0], tg[0], ft[0], br[0], bh[0], fall[0]].join('\n') + '\nreturn radHtml;')({ opna: opna || {} }, {}, { fyrri: {}, fyrst: {} });
+  assert.ok(esc && sev && hamark && fall && tg && ft && isF && br && bh, 'náði ekki föllunum úr 489');
+  return new Function('S', 'window', 'SAGA', [esc[0], sev[0], hamark[0], tg[0], ft[0], isF[0], br[0], bh[0], fall[0]].join('\n') + '\nreturn radHtml;')({ opna: opna || {} }, {}, { fyrri: {}, fyrst: {} });
 }
 const M = { id: 'verkferli', heiti: 'Verkferli tilbúin til keyrslu', slod: {} };
 const rod = (n) => ({ sev: 'upp', tala: n + ' ferli', undir: 'án skýrslu', punktar: Array.from({ length: n }, (_, i) => ({ feitt: 'Ferli ' + (i + 1), texti: ' · lýsing' })) });

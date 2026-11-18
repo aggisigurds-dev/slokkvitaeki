@@ -15,7 +15,7 @@ delete process.env.HUB_STAFF_PASSWORD;
 
 const LEYND = 'stub-leynd', V = '2026-11-01';
 const STILLING = { id: 1, pw_hash: 'stub-hash', session_secret: LEYND, pw_changed_at: V, krefjast_slokk: true, krefjast: true };
-const NOTANDI = { id: 7, virkur: true, notandanafn: 'PR', nafn: 'Prufa', rola: 'Starfsmaður' };
+const NOTANDI = { id: 7, virkur: true, notandanafn: 'PR', nafn: 'Prufa', rola: 'Admin' };
 const ST = { rodir: [], skrif: [], lestur: [] };
 const svar = (j, s = 200) => ({ ok: s < 400, status: s, headers: new Headers({ 'content-type': 'application/json' }), json: async () => j, text: async () => JSON.stringify(j) });
 global.fetch = async (url, o = {}) => {
@@ -45,6 +45,13 @@ test('hliðið: óinnskráður fær 401 og ekkert er lesið né skrifað', async
   assert.equal((await kalla('POST', { maelingar: [{ id: 'villur', gildi: 28 }] }, false)).status, 401);
   assert.equal(ST.skrif.length + ST.lestur.length, 0);
   assert.equal((await kalla('DELETE', null)).status, 405);
+  // Innskráður starfsmaður sem er EKKI stjórnandi: 403, hvorki lestur né skrif (sagan stýrir örvunum hjá Agnari).
+  NOTANDI.rola = 'Starfsmaður';
+  try {
+    assert.equal((await kalla('GET')).status, 403);
+    assert.equal((await kalla('POST', { maelingar: [{ id: 'villur', gildi: 1 }] })).status, 403);
+    assert.equal(ST.skrif.length + ST.lestur.length, 0);
+  } finally { NOTANDI.rola = 'Admin'; }
 });
 
 test('hreinsa: aðeins þekkt auðkenni og endanlegar tölur, hver mæling einu sinni, þak á fjölda', () => {
@@ -103,31 +110,38 @@ function ur489(saga) {
   const esc = SRC.match(/^\s*const esc = [^\n]*$/m);
   const tg = SRC.match(/function talaGildi\(tala\) \{[\s\S]*?\n  \}/);
   const ft = SRC.match(/^\s*const fraTexti = [^\n]*$/m);
+  const isF = SRC.match(/^\s*const is = \(n, a\) => [^\n]*$/m);
   const br = SRC.match(/function breyting\(id, tala\) \{[\s\S]*?\n  \}/);
   const bh = SRC.match(/const breytingHtml = \(id, tala, klasi\) => \{[\s\S]*?\n  \};/);
-  assert.ok(esc && tg && ft && br && bh, 'náði ekki föllunum úr 489');
-  return new Function('SAGA', esc[0] + '\n' + tg[0] + '\n' + ft[0] + '\n' + br[0] + '\n' + bh[0] + '\nreturn { talaGildi, breyting, breytingHtml };')(saga);
+  assert.ok(esc && tg && ft && isF && br && bh, 'náði ekki föllunum úr 489');
+  return new Function('SAGA', [esc[0], tg[0], ft[0], isF[0], br[0], bh[0]].join('\n') + '\nreturn { talaGildi, breyting, breytingHtml };')(saga);
 }
 
-test('talaGildi: fyrsta talan í strengnum, íslenskt snið (punktur þúsund, komma aukastafir)', () => {
+test('talaGildi: fyrsta talan í strengnum, íslenskt snið — og upphæð ALLTAF í krónum', () => {
   const { talaGildi } = ur489({ fyrri: {}, fyrst: {} });
-  const g = (t) => { const x = talaGildi(t); return x ? [x.g, x.aukast, x.ein] : null; };
-  assert.deepEqual(g('2,0 m.kr'), [2, 1, 'm.kr']);
-  assert.deepEqual(g('11 · 8,3 m.kr'), [11, 0, '']);
-  assert.deepEqual(g('2 · 47.302 kr'), [2, 0, '']);
-  assert.deepEqual(g('47.302 kr'), [47302, 0, 'kr']);
-  assert.deepEqual(g('1.206.643 kr.'), [1206643, 0, 'kr']);
-  assert.deepEqual(g('438 af 646'), [438, 0, '']);
-  assert.deepEqual(g('16 af 19'), [16, 0, '']);
-  assert.deepEqual(g('28 ólíkar'), [28, 0, '']);
-  assert.deepEqual(g('5 þessa viku'), [5, 0, '']);
-  assert.deepEqual(g('91 ný · 63 hlaðin · 87 yfirfarin'), [91, 0, '']);
-  for (const t of ['—', '', null, undefined, 'ekki mælt']) assert.equal(g(t), null, String(t));
+  const g = (t) => { const x = talaGildi(t); return x ? [x.g, x.aukast, x.ein, x.studull] : null; };
+  assert.deepEqual(g('2,0 m.kr'), [2000000, 1, 'm.kr', 1e6]);
+  assert.deepEqual(g('950.000 kr'), [950000, 0, 'kr', 1]);          // sama mæling undir milljón — sama eining í grunni
+  assert.deepEqual(g('47.302 kr'), [47302, 0, 'kr', 1]);
+  assert.deepEqual(g('1.206.643 kr.'), [1206643, 0, 'kr', 1]);
+  assert.deepEqual(g('12 þ.kr'), [12000, 0, 'þ.kr', 1e3]);
+  assert.deepEqual(g('11 · 8,3 m.kr'), [11, 0, '', 1]);             // fyrsta talan er fjöldinn, ekki upphæðin
+  assert.deepEqual(g('2 · 47.302 kr'), [2, 0, '', 1]);
+  assert.deepEqual(g('438 af 646'), [438, 0, '', 1]);
+  assert.deepEqual(g('16 af 19'), [16, 0, '', 1]);
+  assert.deepEqual(g('28 ólíkar'), [28, 0, '', 1]);
+  assert.deepEqual(g('5 þessa viku'), [5, 0, '', 1]);
+  assert.deepEqual(g('91 ný · 63 hlaðin · 87 yfirfarin'), [91, 0, '', 1]);
+  // kr()/mkr() skrifa Unicode-mínus (U+2212): neikvæð tala má ekki lesast jákvæð.
+  assert.deepEqual(g('\u22123,7 m.kr'), [-3700000, 1, 'm.kr', 1e6]);
+  assert.deepEqual(g('-3,7 m.kr'), [-3700000, 1, 'm.kr', 1e6]);
+  assert.deepEqual(g('\u221212.500 kr'), [-12500, 0, 'kr', 1]);
+  for (const t of ['—', '', null, undefined, 'ekki mælt', '…']) assert.equal(g(t), null, String(t));
 });
 
 test('breyting: borið saman við fyrri dag; fyrsta daginn við fyrstu mælingu dagsins; annars ekkert', () => {
   const gaer = dagur(-1);
-  const f = ur489({ fyrri: { villur: { gildi: 30, dags: gaer }, postur: { gildi: 5, dags: '2026-11-14' }, tekjur: { gildi: 1.9, dags: gaer }, bord: { gildi: 161, dags: gaer } }, fyrst: { nytt: 7, villur: 28 } });
+  const f = ur489({ fyrri: { villur: { gildi: 30, dags: gaer }, postur: { gildi: 5, dags: '2026-11-14' }, tekjur: { gildi: 1900000, dags: gaer }, bord: { gildi: 161, dags: gaer } }, fyrst: { nytt: 7, villur: 28 } });
   let b = f.breyting('villur', '24 ólíkar');                       // fyrri dagur vinnur yfir fyrstu mælingu dagsins
   assert.deepEqual([b.d, b.att, b.texti, b.stutt], [-6, 'nidur', '▼ 6 frá í gær', '▼ 6']);
   b = f.breyting('postur', '8 þessa viku');                         // borðið var ekki opnað í gær → dagsetning í stað „í gær“
@@ -142,6 +156,26 @@ test('breyting: borið saman við fyrri dag; fyrsta daginn við fyrstu mælingu 
   assert.equal(f.breyting('villur', '—'), null);                    // ómælt → ekkert merki
 });
 
+test('breyting: upphæð sem skiptir um einingu milli daga er borin saman í krónum (rýni 18.11.2026)', () => {
+  const gaer = dagur(-1);
+  const f = ur489({ fyrri: { a: { gildi: 900000, dags: gaer }, b: { gildi: 990000, dags: gaer }, c: { gildi: 1200000, dags: gaer },
+    d: { gildi: -3700000, dags: gaer }, e: { gildi: 47302, dags: gaer } }, fyrst: {} });
+  // Í gær „900.000 kr“, í dag „1,2 m.kr“: +300.000 kr — EKKI 1,2 − 900000.
+  let b = f.breyting('a', '1,2 m.kr');
+  assert.deepEqual([b.d, b.att, b.stutt], [300000, 'upp', '▲ 0,3 m.kr']);
+  // Breyting sem hyrfi í námundun („0,0 m.kr“) er sýnd í krónum.
+  b = f.breyting('b', '1,0 m.kr');
+  assert.deepEqual([b.d, b.att, b.stutt], [10000, 'upp', '▲ 10.000 kr']);
+  // Yfir mörkin í hina áttina: í gær 1,2 m.kr, í dag „950.000 kr“.
+  b = f.breyting('c', '950.000 kr');
+  assert.deepEqual([b.d, b.att, b.stutt], [-250000, 'nidur', '▼ 250.000 kr']);
+  // Neikvæð tala með Unicode-mínus: −3,7 → −2,0 er HÆKKUN.
+  b = f.breyting('d', '\u22122,0 m.kr');
+  assert.deepEqual([b.d, b.att, b.stutt], [1700000, 'upp', '▲ 1,7 m.kr']);
+  b = f.breyting('e', '50.000 kr');
+  assert.deepEqual([b.d, b.att, b.stutt], [2698, 'upp', '▲ 2.698 kr']);
+});
+
 test('breytingHtml: mælirinn fær fullan texta, röðin stutta ör, óbreytt röð ekkert — og allt flúið', () => {
   const gaer = dagur(-1);
   const f = ur489({ fyrri: { villur: { gildi: 30, dags: gaer }, bord: { gildi: 161, dags: gaer } }, fyrst: {} });
@@ -151,6 +185,9 @@ test('breytingHtml: mælirinn fær fullan texta, röðin stutta ör, óbreytt r�
   assert.match(f.breytingHtml('bord', '161', 'vs-mcd'), /data-att="eins"[^>]*>óbreytt frá í gær</);
   assert.equal(f.breytingHtml('bord', '161', 'vs-d'), '');           // röð sem stendur í stað fær ekkert merki
   assert.equal(f.breytingHtml('okunn', '5', 'vs-mcd'), '');
+  // Þótt birtingarstrengur bæri HTML kemst aðeins talan og einingin í merkið.
+  const x = f.breytingHtml('villur', '24 <img src=x onerror=alert(1)>', 'vs-mcd');
+  assert.ok(x.length > 0 && !/<img|onerror/.test(x), x);
 });
 
 test('489 er tengt: sendir eftir mælingu, teiknar í mæli og röð, og sagan getur aldrei fellt samantektina', () => {
