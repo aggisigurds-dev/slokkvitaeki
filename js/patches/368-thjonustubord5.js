@@ -379,7 +379,7 @@
   const mittFellt = () => vmLesa(MITT_FELLT_LYKILL, false) === true;
 
   const S = {
-    rows: [], names: {}, loaded: false, loading: false, err: '', loadedAt: null,
+    rows: [], names: {}, felag: {}, loaded: false, loading: false, err: '', loadedAt: null,
     view: 'master', filter: 'allt', synd: PAGE, sel: {}, cfgOpen: false, open: {}, post: {},
     counts: { sara: null, krofur: null }, composer: false, busy: {}, linkForm: false, linkEdit: false,
     leit: { q: '', fyr: [], opid: false, idx: -1 }, ny: { q: '', fyr: null, tillogur: [], opid: false, idx: -1 },
@@ -541,15 +541,22 @@
     let bunka = null;
     const urelt = () => gen !== _loadGen;
     try {
-      const [r, rs, rk] = await Promise.all([
+      const [r, rs, rk, rf] = await Promise.all([
         c.from('thjonustubeidni').select(SEL).is('deleted_at', null).is('archived_at', null)
           .or('status.is.null,status.neq.lokad').order('created_at', { ascending: false }).limit(800),
         c.from('sara_yfirferd').select('stada'),
-        c.from('solur').select('id', { count: 'exact', head: true }).eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void')
+        c.from('solur').select('id', { count: 'exact', head: true }).eq('greitt_med', 'reikningur').is('paid_at', null).neq('status', 'void'),
+        // 18.11.2026: félagið sem átti pósthólfið sem erindið barst í (regluhamir, sjá reglaTekur). Sótt þegar einhver
+        // hamur spyr um það, eða meðan stillingarnar eru ekki komnar svo fyrsta teikning sé rétt. Bregðist sóknin
+        // stendur síðasta svar og reglan fellur á merki, kúnna og titil.
+        (!stillingarTilbunar() || serHamir().some(h => h.regla && h.regla.felag))
+          ? c.from('v_thjb_felag').select('id,felag').limit(2000) : Promise.resolve({ data: null, error: null })
       ]);
       if (urelt()) return;
       if (r.error) throw r.error;
       const rows = r.data || [];
+      const felag = (rf && !rf.error && Array.isArray(rf.data)) ? rf.data.reduce((m, x) => { m[x.id] = x.felag; return m; }, {}) : S.felag;
+      if (JSON.stringify(felag) !== JSON.stringify(S.felag)) { S.felag = felag; breytt = true; }
       const sara = rs.error ? null : (rs.data || []).reduce((m, x) => { m[x.stada] = (m[x.stada] || 0) + 1; return m; }, {});
       const krofur = rk.error ? null : rk.count;
       const ids = [...new Set(rows.filter(x => !x.customer_nafn && x.customer_base_id).map(x => x.customer_base_id))].filter(id => !(id in S.names));
@@ -726,12 +733,14 @@
     return id === 'thjonusta' || iHamGrunnur(r, id);
   }
   // 18.11.2026 (Agnar: „sér Ham … bara á Agnari sem er bara fyrir verkefnin í Brunahólf"): hamur með `regla` tekur mál
-  // eftir því hverju þau tilheyra — ekkert er skrifað á málin sjálf. merki = nákvæm merki (t.d. ham:<annar hamur>) ·
+  // eftir því hverju þau tilheyra — ekkert er skrifað á málin sjálf. felag = félagið sem átti pósthólfið sem erindið
+  // barst í (S.felag úr sýninni v_thjb_felag, sql/2026-11-18_v_thjb_felag.sql — anon les ekki email_digest.account
+  // fyrir Brunahólfs-póst, svo sýnin skilar aðeins id + felag) · merki = nákvæm merki (t.d. ham:<annar hamur>) ·
   // forskeyti = merki sem byrja svona (bh:…) · kunni = nafn kúnnans byrjar svona · titill = orð í titli. Reglan býr í
-  // gögnum hamsins (thjonustubord5.hamir[].regla). Pósthólfið sem erindið barst í er EKKI í reglunni: anon les ekki
-  // email_digest.account fyrir Brunahólfs-póst (RLS), svo slík mál þurfa merkið bh:… eða ham:<hamur> til að lenda hér.
+  // gögnum hamsins (thjonustubord5.hamir[].regla).
   function reglaTekur(r, g) {
     const tags = tagList(r), listi = x => (Array.isArray(x) ? x : []).filter(Boolean);
+    if (g.felag && S.felag[r.id] === g.felag) return true;
     if (listi(g.merki).some(t => tags.indexOf(t) >= 0)) return true;
     if (listi(g.forskeyti).some(f => tags.some(t => t.indexOf(f) === 0))) return true;
     const kn = lagt(r.customer_nafn), ti = lagt(r.title);
