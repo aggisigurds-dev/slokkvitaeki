@@ -94,6 +94,35 @@ ol.atridi{list-style:none;margin:0;padding:0}ol.atridi li+li{border-top:1px soli
 .b-dalkar{display:grid;grid-template-columns:minmax(0,1fr);gap:4px 48px;margin-top:8px}
 @media (min-width:1280px){.b-dalkar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
 .b-dalkar>div{min-width:0}
+/* DYR (18.11.2026, Agnar: „þetta á að vera portal, sendir mig þá þangað sem ég get gert eitthvað beint“): takkarnir efst í
+   liðnum opna málið, reikninginn eða félagið í appinu, eða hringja. Fyrsti takkinn er aðalleiðin. Sömu bekkir og 511 teiknar. */
+.baf-dy{margin:16px 0 0;display:flex;flex-direction:column;gap:12px}
+.baf-dyrr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.baf-dyr{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 14px 10px 16px;border-radius:12px;border:1.5px solid #c8d3e6;background:#fff;color:#12284c;font:700 15px/1.25 var(--sans);text-decoration:none;box-shadow:0 1px 2px rgba(18,40,76,.08);-webkit-tap-highlight-color:transparent}
+.baf-dyr:hover{border-color:#12284c;background:#f3f6fb}
+.baf-dyr:focus-visible{outline:3px solid #f08a24;outline-offset:2px}
+.baf-dyr-o{flex:none;font-size:20px;line-height:1;color:#f08a24;font-weight:800}
+.baf-dyr-a{background:#12284c;border-color:#12284c;color:#fff;box-shadow:0 6px 16px rgba(18,40,76,.28)}
+.baf-dyr-a:hover{background:#0b1c38;border-color:#0b1c38}
+.baf-dyr-a .baf-dyr-o{color:#ffb55c}
+.baf-dyr-s{background:#0f7a3d;border-color:#0f7a3d;color:#fff}
+.baf-dyr-s:hover{background:#0b5f2f;border-color:#0b5f2f}
+.baf-dyr-s .baf-dyr-o{color:#d7f5e3}
+.baf-dyr-f{font:600 12.5px var(--sans);color:#5b6b85}
+.baf-dl{border:1px solid #d6deec;border-radius:12px;background:#fff;overflow:hidden}
+.baf-dl-h{padding:10px 14px;background:#f3f6fb;font:700 12.5px var(--sans);letter-spacing:.02em;color:#2e4064;border-bottom:1px solid #d6deec}
+.baf-dl ol{list-style:none;margin:0;padding:0}
+.baf-dl li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;padding:10px 14px;border-bottom:1px solid #e9eef6}
+.baf-dl li:last-child{border-bottom:0}
+.baf-dl-n{grid-column:1;font:700 15px/1.3 var(--sans);color:#12284c;text-decoration:none;overflow-wrap:anywhere}
+a.baf-dl-n:hover{text-decoration:underline}
+.baf-dl-n span{color:#f08a24}
+.baf-dl-x{color:#5b6b85;font-weight:600}
+.baf-dl-a{grid-column:1;font:500 12.5px/1.35 var(--sans);color:#5b6b85;overflow-wrap:anywhere}
+.baf-dl-s{grid-column:2;grid-row:1 / span 2;align-self:center;min-height:40px;display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;background:#e6f6ec;color:#0b5f2f;font:700 13px var(--sans);text-decoration:none;white-space:nowrap}
+.baf-dl details{border-top:1px solid #e9eef6}
+.baf-dl summary{padding:11px 14px;cursor:pointer;font:700 13.5px var(--sans);color:#12284c}
+@media (max-width:560px){.baf-dyr{flex:1 1 100%}}
 .baf-k,.kafli{margin:20px 0 0}
 .baf-k>h3,.kafli>h3{margin:0 0 10px;font:600 11px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink5)}
 .baf-hd{margin-top:0}
@@ -156,7 +185,7 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
   <div class="stalplata"><div id="rot" aria-live="polite"></div></div>
 </main>
 <!-- Tillaga B: sama greining og sömu bútar og Þjónustuborðið teiknar (BordAfgreidsla.snid). Skráin keyrir ekkert við hleðslu. -->
-<script src="/js/patches/511-bord-afgreidsla.js?v=20261117c"></script>
+<script src="/js/patches/511-bord-afgreidsla.js?v=20261118a"></script>
 <script>
 (function () {
   'use strict';

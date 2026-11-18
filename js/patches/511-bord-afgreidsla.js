@@ -265,6 +265,41 @@
       '<h2 class="baf-sp">' + (t.adili ? '<span class="baf-sp-a">' + esc(t.adili) + '</span>' : '') + merktHtml(t.adili ? t.spurning.charAt(0).toLocaleUpperCase('is') + t.spurning.slice(1) : t.spurning) + '</h2></div>' +
       (d != null ? '<div class="baf-bord"><span>Á borðinu</span><b>' + (d === 0 ? 'Í dag' : esc(dagaOrd(d))) + '</b></div>' : '') + '</div>';
   }
+  /* DYR (18.11.2026, Agnar: „þetta á að vera portal, sendir mig þá þangað sem ég get gert eitthvað beint“ · „ég vil helst
+   * geta gert allt beint þaðan af borðinu“). Þjónninn (_afgreidsla-dyr.cjs) breytir auðkennum liðarins — máli, reikningi,
+   * félagi, símanúmeri — í dyr { teg, id, heiti, slod }. Hér verða þær takkar EFST í liðnum. Í appinu grípur 521 (Gatt)
+   * smellinn um data-gatt og opnar færsluna ofan á borðinu; á /afgreidsla.html er slóðin sjálf notuð.
+   * Slóð sem er hvorki tel: né afstæð slóð á þennan vef verður ekki að tengli. */
+  var dyraSlod = function (s) { s = String(s || ''); return /^tel:\+?\d{7,15}$/.test(s) || /^\/(?![\/\\])[^\s"'<>\\]*$/.test(s) ? s : ''; };
+  var breidur = function () { try { return !rot.Gatt && rot.matchMedia && rot.matchMedia('(min-width: 900px)').matches; } catch (_) { return false; } };
+  function dyrTakki(x, fyrsti) {
+    var sl = dyraSlod(x && x.slod);
+    if (!sl || !x.heiti) return '';
+    var simi = x.teg === 'simi';
+    return '<a class="baf-dyr' + (fyrsti ? ' baf-dyr-a' : '') + (simi ? ' baf-dyr-s' : '') + '" href="' + esc(sl) + '"' +
+      (!simi && x.teg && x.id ? ' data-gatt="' + esc(x.teg + ':' + x.id) + '"' : '') + (!simi && breidur() ? ' target="_blank" rel="noopener"' : '') + '>' +
+      '<span class="baf-dyr-t">' + esc(x.heiti) + '</span><span class="baf-dyr-o" aria-hidden="true">' + (simi ? '📞' : '›') + '</span></a>';
+  }
+  function dyrLina(f) {
+    var sl = dyraSlod(f && f.slod), sm = dyraSlod(f && f.simi);
+    var nafn = sl ? '<a class="baf-dl-n" href="' + esc(sl) + '"' + (f.teg && f.id ? ' data-gatt="' + esc(f.teg + ':' + f.id) + '"' : '') + (breidur() ? ' target="_blank" rel="noopener"' : '') + '>' + esc(f.nafn) + '&nbsp;<span aria-hidden="true">›</span></a>'
+      : '<span class="baf-dl-n baf-dl-x" title="Félagið fannst ekki í kerfinu">' + esc(f.nafn) + '</span>';
+    return '<li>' + nafn + (f.auka ? '<span class="baf-dl-a">' + esc(f.auka) + '</span>' : '') +
+      (sm ? '<a class="baf-dl-s" href="' + esc(sm) + '" aria-label="Hringja í ' + esc(f.nafn) + '">📞 ' + esc(f.simanumer || '') + '</a>' : '') + '</li>';
+  }
+  function dyrHtml(v) {
+    var d = ((v && v.dyr) || []).map(function (x, i) { return dyrTakki(x, i === 0); }).filter(Boolean);
+    var l = ((v && v.listi) || []).filter(function (f) { return f && f.nafn; });
+    if (!d.length && !l.length) return '';
+    var h = '<div class="baf-dy" role="group" aria-label="Opna beint">';
+    if (d.length) h += '<div class="baf-dyrr">' + d.join('') + (v.fleiri_reikningar ? '<span class="baf-dyr-f">+' + Number(v.fleiri_reikningar) + ' reikningar nefndir í lýsingunni</span>' : '') + '</div>';
+    if (l.length) {
+      var SYND = 8;
+      h += '<div class="baf-dl"><div class="baf-dl-h">' + l.length + ' ' + (l.length === 1 ? 'félag' : 'félög') + ' — smelltu á nafn til að opna það</div><ol>' + l.slice(0, SYND).map(dyrLina).join('') + '</ol>' +
+        (l.length > SYND ? '<details><summary>Sýna hin ' + (l.length - SYND) + '</summary><ol start="' + (SYND + 1) + '">' + l.slice(SYND).map(dyrLina).join('') + '</ol></details>' : '') + '</div>';
+    }
+    return h + '</div>';
+  }
   function reitur(heiti, gildi, undir, kl) {
     return '<div class="baf-sr' + (kl ? ' ' + kl : '') + '"><dt>' + esc(heiti) + '</dt><dd class="baf-sv">' + gildi + '</dd>' + (undir ? '<dd class="baf-su">' + undir + '</dd>' : '') + '</div>';
   }
@@ -288,7 +323,7 @@
       var th = /[Þþ]ráðurinn er í ([^\s,(]+)/.exec(v.hvad_gerist || '');
       r.push(reitur('Svarað úr', 'Thunderbird', th ? 'þráðurinn er í ' + esc(th[1].replace(/[.,]$/, '')) : ''));
     }
-    return '<dl class="baf-strip">' + r.join('') + '</dl>';
+    return dyrHtml(v) + '<dl class="baf-strip">' + r.join('') + '</dl>';
   }
   function timalinaHtml(rok, nu, synaHeimildir) {
     if (!rok || !rok.length) return '';
@@ -560,6 +595,32 @@
     return a ? vistaTexta(finna(Number(a))) : null;
   }
 
+  // DYR (18.11.2026): takkarnir sem opna staðinn þar sem verkið er unnið — fyrsti takkinn er aðalleiðin. Sér breyta svo
+  // símasíðan (515), sem teiknar án borðsins, fái sömu stíla um api.dyrCss().
+  var DYR_CSS = [
+      '.baf-dy{margin:14px 0 0;display:flex;flex-direction:column;gap:12px}',
+      '.baf-dyrr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}',
+      '.baf-dyr{display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:9px 14px 9px 16px;border-radius:10px;border:1.5px solid #c8d3e6;background:#fff;' +
+        'color:#12284c;font:700 15px/1.25 var(--body, Poppins, system-ui, sans-serif);text-decoration:none;box-shadow:0 1px 2px rgba(18,40,76,.08);-webkit-tap-highlight-color:transparent}',
+      '.baf-dyr:hover{border-color:#12284c;background:#f3f6fb}.baf-dyr:focus-visible{outline:3px solid #f08a24;outline-offset:2px}',
+      '.baf-dyr-o{flex:none;font-size:19px;line-height:1;color:#f08a24;font-weight:800}',
+      '.baf-dyr-a{background:#12284c;border-color:#12284c;color:#fff;box-shadow:0 4px 14px rgba(18,40,76,.25)}.baf-dyr-a:hover{background:#0b1c38;border-color:#0b1c38}',
+      '.baf-dyr-a .baf-dyr-o{color:#ffb55c}',
+      '.baf-dyr-s{background:#0f7a3d;border-color:#0f7a3d;color:#fff}.baf-dyr-s:hover{background:#0b5f2f;border-color:#0b5f2f}.baf-dyr-s .baf-dyr-o{color:#d7f5e3}',
+      '.baf-dyr-f{font:600 12.5px var(--body, system-ui);color:#5b6b85}',
+      '.baf-dl{border:1px solid #d6deec;border-radius:10px;background:#fff;overflow:hidden}',
+      '.baf-dl-h{padding:9px 14px;background:#f3f6fb;font:700 12.5px var(--body, system-ui);letter-spacing:.02em;color:#2e4064;border-bottom:1px solid #d6deec}',
+      '.baf-dl ol{list-style:none;margin:0;padding:0}',
+      '.baf-dl li{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:1px;align-items:center;padding:9px 14px;border-bottom:1px solid #e9eef6}',
+      '.baf-dl li:last-child{border-bottom:0}',
+      '.baf-dl-n{grid-column:1;font:700 14.5px/1.3 var(--body, system-ui);color:#12284c;text-decoration:none;overflow-wrap:anywhere}a.baf-dl-n:hover{text-decoration:underline}',
+      '.baf-dl-n span{color:#f08a24}.baf-dl-x{color:#5b6b85;font-weight:600}',
+      '.baf-dl-a{grid-column:1;font:500 12.5px/1.35 var(--body, system-ui);color:#5b6b85;overflow-wrap:anywhere}',
+      '.baf-dl-s{grid-column:2;grid-row:1 / span 2;align-self:center;min-height:38px;display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;background:#e6f6ec;color:#0b5f2f;' +
+        'font:700 13px var(--body, system-ui);text-decoration:none;white-space:nowrap}',
+      '.baf-dl details{border-top:1px solid #e9eef6}.baf-dl summary{padding:10px 14px;cursor:pointer;font:700 13.5px var(--body, system-ui);color:#12284c}',
+      '@media (max-width:560px){.baf-dyr{flex:1 1 100%}}'
+  ].join('');
   function css() {
     return [
       '.baf{display:flex;flex-direction:column;container-type:inline-size;container-name:baf}',
@@ -610,6 +671,7 @@
         'font:600 11.5px var(--mono);color:#2e2004;border:1px solid #5a4410;border-radius:2px;background:var(--gface);box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}',
       '.baf-h{display:block;margin-top:1px;font:12px/1.4 var(--mono);color:var(--mute)}',
       '.baf-lk{color:var(--g8);font-weight:700;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}',
+      DYR_CSS,   // dyrnar (sjá DYR_CSS að ofan — 515 notar sömu stíla)
       '.baf-sk{padding:9px 11px;border:1px solid var(--rule);border-radius:4px;background:#fffdf7;max-width:92ch}',
       '.baf-sk pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.5 var(--body);color:var(--ink2);max-height:260px;overflow:auto}',
       '.baf-skot{display:block;max-width:100%;height:auto;border:1px solid var(--rule);border-radius:4px;background:#fff}',
@@ -751,13 +813,13 @@
 
   // Tillaga B — hrein föll og HTML-bútar sem /afgreidsla.html notar líka (ein útgáfa af greiningunni).
   var snid = { titill: titill, bid: bid, timalina: timalina, gerist: gerist, handrit: handrit, hverjum: hverjum, aherslur: aherslur, merktHtml: merktHtml,
-    hausHtml: hausHtml, linaHtml: linaHtml, timalinaHtml: timalinaHtml, geristHtml: geristHtml, handritHtml: handritHtml, handritKafli: handritKafli,
+    hausHtml: hausHtml, linaHtml: linaHtml, dyrHtml: dyrHtml, dyrCss: function () { return DYR_CSS; }, timalinaHtml: timalinaHtml, geristHtml: geristHtml, handritHtml: handritHtml, handritKafli: handritKafli,
     afrita: afrita, css: bCss };
   var api = { version: '2026-11-17b', snid: snid, samantekt: samantekt, listi: listi, takkar: takkar, festa: festa, opna: opna,
     uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S,
     // Fyrir símasíðuna (515): sömu hjálparföll og borðið teiknar með — engin önnur útgáfa af gögnunum eða aðgerðunum.
     vakta: function (f) { if (typeof f === 'function' && vaktar.indexOf(f) < 0) vaktar.push(f); },
-    tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, kr: kr, TEG: TEG };
+    tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, dyrHtml: dyrHtml, dyrCss: function () { return DYR_CSS; }, kr: kr, TEG: TEG };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

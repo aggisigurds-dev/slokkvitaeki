@@ -116,7 +116,8 @@
         return '<li>' + (i ? esc(x.texti) : '') + (x.heimild || sl ? '<span class="h">' + esc(x.heimild || '') + (sl ? ' ' + sl : '') + '</span>' : '') + '</li>';
       }).join('') + '</ul></details>';
   }
-  function efniHtml(v, a, texti) {
+  function efniHtml(v, a, texti) { return (a && a.dyrHtml ? a.dyrHtml(v) : '') + efniAn(v, a, texti); }   // 18.11.2026: dyr efst (521 Gatt opnar ofan á síðunni)
+  function efniAn(v, a, texti) {
     if (v.tegund === 'tolvupostur' && v.post) {
       var e = eydur(texti), sv = v.svar_vid;
       return (sv ? '<details class="ts-rok"><summary>Skeytið sem þú svarar · ' + esc(sv.fra) + '</summary><div class="ts-skeyti"><b>' + esc(sv.efni) + '</b><pre>' + esc(sv.texti) + '</pre></div></details>' : '') +
@@ -293,7 +294,7 @@
   }
   function injectCss() {
     if (document.getElementById('_ts515-css')) return;
-    var st = document.createElement('style'); st.id = '_ts515-css'; st.textContent = css();
+    var st = document.createElement('style'); st.id = '_ts515-css'; st.textContent = css() + (window.BordAfgreidsla && BordAfgreidsla.dyrCss ? BordAfgreidsla.dyrCss() : '');   // + dyrnar (511)
     (document.head || document.documentElement).appendChild(st);
   }
   function ensureView() {
