@@ -58,6 +58,7 @@ test('sonnun: 1. dagur mánaðar = aðeins mánuðurinn var skráður → mánu�
     assert.ok(!/undefined|NaN|null/.test(x.t + x.tt), d + ' → ' + x.t + ' | ' + x.tt);
   }
   assert.equal(F.sonnun(kort({ skodud: { n: 2, sidast: 'rusl' } }))[0].t, '🔧 2 tæki skoðuð');
+  for (const d of ['2026-13-01', '2026-00-10', '2026-05-00', '2026-05-40']) assert.equal(F.sonnun(kort({ skodud: { n: 2, sidast: d } }))[0].t, '🔧 2 tæki skoðuð', d);
 });
 
 test('Á dagskrá: félög með sönnun raðast efst undir fyrirsögn, hin á eftir', () => {
@@ -107,7 +108,11 @@ test('„✓ Búið“ í skúffunni þarf TVO smelli: fyrri smellur vopnar aðe
   assert.ok(!/data-act="buid"/.test(F.drawerRows(listi, true)));
   // Smellahlustunin: fyrri smellur merkir EKKERT, seinni kallar á markBuid og afvopnar; skúffurofinn afvopnar líka.
   assert.match(SRC, /else if \(act === 'buidspyrja'\) \{ _buidSpurt = id; render\(\); \}/);
-  assert.match(SRC, /else if \(act === 'buid'\) \{ _buidSpurt = null; markBuid\(id\); \}/);
+  assert.match(SRC, /else if \(act === 'buid'\) markBuid\(id\);/);
+  // Endurrýni: HVER smellur á spjaldatakka afvopnar fyrst (Í vinnslu → Afmerkja skilaði annars vopnaðri röð).
+  const hl = SRC.slice(SRC.indexOf("v.querySelectorAll('._sv-act')"));
+  const afv = hl.indexOf('_buidSpurt = null;'), fyrsta = hl.indexOf("if (act === 'open')");
+  assert.ok(afv > 0 && fyrsta > 0 && afv < fyrsta, 'afvopnun verður að standa á undan aðgerðunum í smellahlustuninni');
   assert.match(SRC, /_openBuid = !_openBuid;\r?\n\s*_buidSpurt = null;/);
 });
 

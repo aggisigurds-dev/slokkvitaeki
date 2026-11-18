@@ -457,8 +457,9 @@
       // MÁNUÐURINN skráður (eldri skrá). Þá er mánuðurinn sýndur, ekki dagur sem enginn skráði.
       const MAN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
       const s = String(sk.sidast || ''), dd = s.slice(8, 10), man = MAN[+s.slice(5, 7) - 1];
-      const adeinsMan = dd === '01' && !!man;
-      const hvenaer = !/^\d{4}-\d{2}-\d{2}$/.test(s) ? '' : adeinsMan ? ' í ' + man : ' ' + dd + '.' + s.slice(5, 7) + '.';
+      const gilt = /^\d{4}-\d{2}-\d{2}$/.test(s) && !!man && +dd >= 1 && +dd <= 31;   // „2026-13-01“ gefur enga dagsetningu
+      const adeinsMan = gilt && dd === '01';
+      const hvenaer = !gilt ? '' : adeinsMan ? ' í ' + man : ' ' + dd + '.' + s.slice(5, 7) + '.';
       ut.push({ k: 'taeki', t: '🔧 ' + sk.n + (sk.n === 1 ? ' tæki skoðað' : ' tæki skoðuð') + hvenaer,
         tt: sk.n + ' tæki bera skoðunardag á árinu ' + curYear + (hvenaer ? ' (síðast' + hvenaer + (adeinsMan ? ' — aðeins mánuðurinn er skráður' : '') + ')' : '') + '. Dagurinn getur komið úr eldri skrá — vísbending, ekki staðfesting.' });
     }
@@ -1639,11 +1640,12 @@
     v.querySelectorAll('._sv-act').forEach(bn => bn.addEventListener('click', e => {
       e.stopPropagation();
       const id = +bn.dataset.id, act = bn.dataset.act;
+      _buidSpurt = null;   // hver smellur á spjaldatakka afvopnar „✓ Búið“ (endurrýni 18.11.2026) — aðeins 'buidspyrja' vopnar
       if (act === 'open') openCompany(id);
       else if (act === 'report') openReport(id);
       else if (act === 'start') startVinnsla(id);
       else if (act === 'buidspyrja') { _buidSpurt = id; render(); }
-      else if (act === 'buid') { _buidSpurt = null; markBuid(id); }
+      else if (act === 'buid') markBuid(id);
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);
       else if (act === 'removedone') { markBuid(id).then((ok) => { if (ok) toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); }); }
