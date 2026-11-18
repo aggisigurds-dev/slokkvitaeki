@@ -5787,14 +5787,10 @@
         (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
         (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
-        // 489 Vinnusamantekt — ein samantekt með ljósum eftir alvarleika, aðeins hjá Agnari (489 ákveður það sjálf).
-        (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
-        // 506 Einkaritarinn — morgunyfirlit: forgangsröðun, vikan í tölum, samningar, topp vikunnar, áminningar.
-        (window.Einkaritari ? Einkaritari.html(n) : '') +
-        // 506 Ráðgjafinn — fréttir úr póstinum við Heimaleigu og Center Hotels + ráð dagsins, aðeins hjá Agnari (506 ákveður það sjálf).
-        (window.Radgjafinn ? Radgjafinn.html(n) : '') +
-        // 493 Tengill á Agentanetið í Jarvis (brunaholf) + Charlize-biðstofuna — aðeins hjá Agnari, nýr flipi.
-        (window.AgentanetTengill ? AgentanetTengill.html(n) : '') +
+        // 18.11.2026 (Agnar: „færa dagskránna og stikurnar upp … setja hitt fyrir neðan"): stóru yfirlits-
+        // spjöldin (489 Vinnusamantekt, 506 Einkaritari + Ráðgjafinn, 493 Agentanet) eru nú NEÐST á borðinu,
+        // fyrir neðan hamaröðina og einingarnar — sjá blokkina neðan við `layout`. Þannig standa hamurinn
+        // (stikurnar) og einingin (Dagskráin) beint undir flýtileiðunum, eins og hann bað um. Efnið er óbreytt.
         (stjornStika ? leitHtml() : '') +
         (stjornStika && S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
@@ -5814,6 +5810,11 @@
         // 368aa: KPI-spjöldin eiga við borðið — einingahamir og vinnusvæði bera sínar eigin tölur.
         (mode.board && !baraMitt ? '<div class="kpis">' + kpiHtml(master, mine) + '</div>' : '') +
         layout +
+        // Yfirlitsspjöldin færð hingað niður 18.11.2026 (sjá athugasemd ofar) — fyrir neðan hamaröðina og einingarnar.
+        (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
+        (window.Einkaritari ? Einkaritari.html(n) : '') +
+        (window.Radgjafinn ? Radgjafinn.html(n) : '') +
+        (window.AgentanetTengill ? AgentanetTengill.html(n) : '') +
       '</div></div>';
 
     // Hálfskrifaður texti (nýtt mál, flýtileið) og fókus lifa endurteikningu af.
