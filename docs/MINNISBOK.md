@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 11:45 · 2539 virkar staðreyndir — 1447 prentaðar hér
+Sótt 2026-11-18 11:47 · 2541 virkar staðreyndir — 1449 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 157 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -3101,6 +3101,24 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **v_krofu_forskodun (12.09.2026): forskoðun ósendra krafna með sömu skilgreiningu og Kröfuyfirlit 166 — rautt (void, 999999-9999, ógild eða óþekkt kt, ótengd sala, tvíýtt úttekt), gult (bíður á borði, ekkert netfang, önnur kt staðar, einstaklingskt, 45+ dagar), grænt. Búðarsala fær aldrei tvítaks-flagg. Merkin sjást í Kröfuyfirliti → Ósendar kröfur.**
   <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
+### tengilidir
+
+- **Hafnað 18.11.2026 (afturkræft: reject, status → pending): 7 pending raðir (charlize_contacts 888–894) sem tengdu nordural.is (Norðurál, brunaþéttingar Brunahólf-megin, ekki í customers_base) við Norður Travel Services ehf. (base 960) af nafnalíkingu. AH Pípulagnir áfram ósamþykkt (#2487). Ekki samþykkja heimaleiga.is, eignarekstur.is eða eignaumsjon.is netföng sem viðbótarnetföng: umsjónarlén tengja viljandi ekki (umsjonar_len, #2282); dimka@heimaleiga.is (id 3) á að vera pending. Pending raðir með kennitölu sem á enga röð í customers_base: 136 raðir hjá 22 greiðendum (Brunahólf-megin: GG verk, Eykt, Mannverk, Fagraf, Alva o.fl.) — þær tengja engan póst í v_kunni_postur því viewið lyklast á customers_base; samþykkt þeirra gerir ekkert fyrr en röð er til þar (ákvörðun Agnars, ekki stofnað).**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Annar hringur viðbótarnetfanga 18.11.2026 (Agnar: „tengja nýjar upplýsingar um viðskiptavini og samskipti inn á kúnnaskrá“). Mælt: af um 17.700 póstum í email_digest tengjast 3.612 viðskiptavini í v_kunni_postur (um 20 %). Leit að ótengdum netföngum eftir kennitölu í texta gefur aðallega RANGT: eigin félög (base 1110 og 330), umsjónaraðila sem nefnir tugi húsfélaga (eignaumsjon.is 72 félög), innheimtu, banka og fjöldapóst (‚Staða lok 2019‘ með kt-lista, einn póstur á netfang). Sía sem skilaði réttu: netfang með nákvæmlega EINU félagi, tveir eða fleiri póstar í báðar áttir, efnið snýst um félagið sjálft, ekki bókhalds- eða endurskoðunarlén og ekki markaðspóstur — og LESA efnislínu og sendanda áður en skráð er (gildra 5). Skráð 9 viðbótarnetföng (Bolasmiðjan, Stigahlíð 10, Tjarnasel 2, Kaldidalur, Norðurturn, Lux.apartments, Harka, H.Vellir, Flyðrugrandi 2-10; contact-id 2232–2239 og 1314), tengdir póstar 3.572 → 3.612, audit-vidbotarnetfong grænt. Sleppt: Vallarbraut (aðallega markaðspóstur), Búllan Dalvegi (eigandinn skrifar líka um aðrar eignir), bókhaldsstofur (fylgi.is o.fl. þjóna mörgum). Afrit: app_kv backup_20261118_tengilidir_vidbot2.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Agnar veitti 16.11.2026 umboð til að samþykkja tengiliðalistann („matt bara tengja eins marga og þú getur"): 387 tengiliðir samþykktir/tengdir þann dag — 356 bíðandi raðir sem stóðust örugga síu, 28 netföng úr netfangsreitum með fleiri en eitt netfang (bætt við um /api/tengilidir add) og 3 ótengdir sendendur með kennitölu félagsins í eigin pósti. Niðurstaða mæld á v_kunni_postur: tengdir póstar 2.262 → 2.436, félög með tengdan póst 315 → 329, 0 tengingar töpuðust (borið saman par fyrir par).**
+  <br>Örugg sía = kennitalan er í customers_base, netfangið ekki samþykkt á öðru félagi, ekki okkar lén, og flokkurinn er: netfang þegar skráð á félagið / sama lén og skráð eða samþykkt netfang (lén aðeins hjá einu félagi) / deilt lén rekstrarfélags / kt í netfangi / „lén líkist heiti" eftir handvirka yfi
+  <br><sub>2026-11-16 · kerfi · lota 16.11.2026 (claude-fable-5-2): magnsamþykkt tengiliða · —</sub>
+- **Samþykktarlisti tengiliða = charlize_contacts status pending (Tengiliðir-síðan, js/patches/310-tengilidir.js; skrif um brunaholf /api/tengilidir). Mælt 16.11.2026: 531 bíðandi með kennitölu + 1.252 án. Samþykkt viðbótarnetfang birtist í Samskiptum prófílsins (286 les v_kunni_postur) — sannreynt á lifandi síðu á 5 félögum. UNDANTEKNING: netfang á umsjónarléni (umsjonar_len: eignaumsjon.is, eignarekstur.is, rekstrarumsjon.is, heimaleiga.is) tengir EKKI á netfangið þótt það sé samþykkt, nema það sé plús-netfang með kennitölu; sá póstur ratar aðeins á hús um húslykil í efni (bh_umsjonarpostur_endurreikna) og aðeins ef skráð netfang hússins er á sama umsjónarléni.**
+  <br>Prófun 16.11.2026 (6 samþykktir um API): sama lén og skráð netfang 1→19 póstar; lén líkist heiti 0→4; plús-kt hjá Eignaumsjón 0→1; frípóstnetfang sem stóð í fjölnetfangareit 0→1; rekstrarfélag 3→14; umsjónaraðili 0→0 (tengiliðurinn skrifar um 7 hús, enginn þeirra 18 pósta tengdur húsi — húslykill „Á
+  <br><sub>2026-11-16 · kerfi · lota 16.11.2026 (claude-fable-5-2): samþykktarlisti tengiliða prófaður · —</sub>
+- **Netfang Slökkvitækis út á við er slokkvitaeki@brunaholf.is frá 11.11.2026 (Agnar). Því var breytt á öllum stöðum sem viðskiptavinur sér; kerfið sendir og les þó ÁFRAM úr Gmail-hólfinu eldklar@eldklar.is.**
+  <br>Breytt: 33 staðir í kóða (prenthausar, undirskriftir pósta, skjalasniðmát, gátt, vefverslun, AI-svör) og app_settings: branding.email, email.signature, skjalasnidmat[0] og [3] (afrit í backup_20261111_app_settings_netfang). EKKI breytt: email_digest.account, Gmail-sendandi (240/254/487, hub MAIL_FRO
+  <br><sub>2026-11-11 · baedi · kóði + SQL 11.11.2026 · claude-code</sub>
+- **charlize_contacts: company-mail les með síunni 'kennitala not null AND status <> rejected'. Kennitala á PENDING-færslu telst því FULL TENGING strax — það er engin 'tillaga'-staða sem er hunsuð. Aldrei skrifa ágiskaða kennitölu þangað inn í von um að Agnar samþykki fyrst.**
+  <br><sub>2026-09-09 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### birgdir
 
 - **Birgðir: sýnin Tafla | Spjöld er geymd per tækjaflokk í Vidmot (birgdir.syn); sjálfgefið spjöld á síma, tafla á tölvu. Spjaldið sýnir aðeins — verð og magn er breytt í töflunni og með ± Nota.**
@@ -3434,20 +3452,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Windows-slóðir með bili (t.d. C:\Program Files\nodejs\node.exe) þurfa gæsalappir þegar child_process.spawn er keyrt með shell:true á Windows, annars fellur keyrsla á „'C:\Program' is not recognized".**
   <br>Mælt 15.–16.11.2026 (lota 2ef635f0): skipun „Keyra póst-brúna" (nr. 5) af hubbnum féll kl. 00:29 á þessari villu því heartbeat.js kallaði spawn(process.execPath,...) óumlukinn. Lagfæring: q()-fallið sem setur gæsalappir um slóð/arg með bili, spawn(q(cmd), args.map(q), {cwd, shell:win}). Commit 9299a
   <br><sub>2026-11-16 · kerfi · kóði · claude-code</sub>
-
-### tengilidir
-
-- **Agnar veitti 16.11.2026 umboð til að samþykkja tengiliðalistann („matt bara tengja eins marga og þú getur"): 387 tengiliðir samþykktir/tengdir þann dag — 356 bíðandi raðir sem stóðust örugga síu, 28 netföng úr netfangsreitum með fleiri en eitt netfang (bætt við um /api/tengilidir add) og 3 ótengdir sendendur með kennitölu félagsins í eigin pósti. Niðurstaða mæld á v_kunni_postur: tengdir póstar 2.262 → 2.436, félög með tengdan póst 315 → 329, 0 tengingar töpuðust (borið saman par fyrir par).**
-  <br>Örugg sía = kennitalan er í customers_base, netfangið ekki samþykkt á öðru félagi, ekki okkar lén, og flokkurinn er: netfang þegar skráð á félagið / sama lén og skráð eða samþykkt netfang (lén aðeins hjá einu félagi) / deilt lén rekstrarfélags / kt í netfangi / „lén líkist heiti" eftir handvirka yfi
-  <br><sub>2026-11-16 · kerfi · lota 16.11.2026 (claude-fable-5-2): magnsamþykkt tengiliða · —</sub>
-- **Samþykktarlisti tengiliða = charlize_contacts status pending (Tengiliðir-síðan, js/patches/310-tengilidir.js; skrif um brunaholf /api/tengilidir). Mælt 16.11.2026: 531 bíðandi með kennitölu + 1.252 án. Samþykkt viðbótarnetfang birtist í Samskiptum prófílsins (286 les v_kunni_postur) — sannreynt á lifandi síðu á 5 félögum. UNDANTEKNING: netfang á umsjónarléni (umsjonar_len: eignaumsjon.is, eignarekstur.is, rekstrarumsjon.is, heimaleiga.is) tengir EKKI á netfangið þótt það sé samþykkt, nema það sé plús-netfang með kennitölu; sá póstur ratar aðeins á hús um húslykil í efni (bh_umsjonarpostur_endurreikna) og aðeins ef skráð netfang hússins er á sama umsjónarléni.**
-  <br>Prófun 16.11.2026 (6 samþykktir um API): sama lén og skráð netfang 1→19 póstar; lén líkist heiti 0→4; plús-kt hjá Eignaumsjón 0→1; frípóstnetfang sem stóð í fjölnetfangareit 0→1; rekstrarfélag 3→14; umsjónaraðili 0→0 (tengiliðurinn skrifar um 7 hús, enginn þeirra 18 pósta tengdur húsi — húslykill „Á
-  <br><sub>2026-11-16 · kerfi · lota 16.11.2026 (claude-fable-5-2): samþykktarlisti tengiliða prófaður · —</sub>
-- **Netfang Slökkvitækis út á við er slokkvitaeki@brunaholf.is frá 11.11.2026 (Agnar). Því var breytt á öllum stöðum sem viðskiptavinur sér; kerfið sendir og les þó ÁFRAM úr Gmail-hólfinu eldklar@eldklar.is.**
-  <br>Breytt: 33 staðir í kóða (prenthausar, undirskriftir pósta, skjalasniðmát, gátt, vefverslun, AI-svör) og app_settings: branding.email, email.signature, skjalasnidmat[0] og [3] (afrit í backup_20261111_app_settings_netfang). EKKI breytt: email_digest.account, Gmail-sendandi (240/254/487, hub MAIL_FRO
-  <br><sub>2026-11-11 · baedi · kóði + SQL 11.11.2026 · claude-code</sub>
-- **charlize_contacts: company-mail les með síunni 'kennitala not null AND status <> rejected'. Kennitala á PENDING-færslu telst því FULL TENGING strax — það er engin 'tillaga'-staða sem er hunsuð. Aldrei skrifa ágiskaða kennitölu þangað inn í von um að Agnar samþykki fyrst.**
-  <br><sub>2026-09-09 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### radgjafinn
 
