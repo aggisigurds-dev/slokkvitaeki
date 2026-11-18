@@ -452,7 +452,7 @@
       else setTimeout(() => { _skodTilraun = 0; _skodLoaded = false; }, 60000);
       return;
     }
-    render();
+    try { render(); } catch (e) { try { console.warn('[190] teikning eftir tækjasókn brást', e); } catch (_) {} }   // kölluð af klukku: má ekki verða að óhöndluðu loforði
   }
   // Vísbendingar um að úttekt ársins sé gerð, sterkasta fyrst. Hrein: les aðeins spjaldið (r).
   function sonnun(r) {
