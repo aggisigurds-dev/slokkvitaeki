@@ -82,7 +82,7 @@
   /* ── Verktakar ── */
   function vtStada(r) {
     var g = r.gogn, t = dagar(g.tryggingar_til), s = dagar(g.samningur_til), out = [];
-    if (g.tryggingar_til) out.push(t < 0 ? '<span class="kst vantar">Tryggingar útrunnar ' + esc(fmtDate(g.tryggingar_til)) + '</span>' : t <= 60 ? '<span class="kst til">Tryggingar til ' + esc(fmtDate(g.tryggingar_til)) + '</span>' : '<span class="kst okkar">Tryggingar í gildi</span>');
+    if (g.tryggingar_til) out.push(t < 0 ? '<span class="kst vantar">Tryggingar útrunnar ' + esc(fmtDate(g.tryggingar_til)) + '</span>' : t <= 60 ? '<span class="kst til">Tryggingar til ' + esc(fmtDate(g.tryggingar_til)) + '</span>' : '<span class="kst gott">Tryggingar í gildi</span>');
     else out.push('<span class="kst oskrad">Tryggingar óskráðar</span>');
     if (g.samningur_til) out.push(s < 0 ? '<span class="kst vantar">Samningur rann út</span>' : s <= 60 ? '<span class="kst til">Samningur til ' + esc(fmtDate(g.samningur_til)) + '</span>' : '');
     return out.join('');

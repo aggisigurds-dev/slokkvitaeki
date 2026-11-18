@@ -1082,7 +1082,7 @@
     $('#vbt-list').innerHTML = L.filter(vbtPassar).slice(0, 24).map(function (b) {
       var e = b.eign || {}, n = erindi().filter(function (x) { return x.fid === b.id && x.stada !== 'lokid'; }).length;
       return '<button type="button" class="vbt-c" data-vbt-pick="' + b.id + '"><i' + (e.mynd ? ' style="background-image:url(' + esc(imgW(e.mynd, 200)) + ')"' : '') + '></i><span><b>' + esc(b.nafn) + '</b><small>' + esc(b.heimilisfang || '') + (b.teikning && b.teikning.length ? ' · ' + b.teikning.length + (b.teikning.length === 1 ? ' teikning' : ' teikningar') : ' · engin teikning') + '</small></span>' +
-        (n ? '<span class="kst til">' + n + ' opin</span>' : (inni.indexOf(b) > -1 ? '<span class="kst okkar">Í þjónustu</span>' : '')) + '</button>';
+        (n ? '<span class="kst til">' + n + ' opin</span>' : (inni.indexOf(b) > -1 ? '<span class="kst gott">Í þjónustu</span>' : '')) + '</button>';
     }).join('') || '<div class="egp-e">Engin eign passar við „' + esc(vbtQ) + '".</div>';
     if (vbtB && L.indexOf(vbtB) < 0) vbtB = null;
     $('#vbt-eign').classList.toggle('hidden', !vbtB);

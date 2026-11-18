@@ -896,7 +896,7 @@ exports.handler = async (event) => {
         // 07.11.2026: `krafa_note` fylgir með svo gáttin geti virt ⏸ BÍÐA-merkinguna sem Agnar
         // notar þegar — sjá stadaAf() neðar. Hún var ekki sótt áður og því þagði biðmerkingin.
         solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
-        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags,vidskiptategund&order=dags.desc&limit=300`) : null,
+        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,kt,dags,upphaed,stada,greitt_dags,vidskiptategund&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
         vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
         items: syn.vinnusvaedi ? itemsFelags().catch(() => null) : null,
@@ -1458,6 +1458,21 @@ exports.handler = async (event) => {
             const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
             const nyjar = rows3.filter((x) => !byNr3[normNr(x.reikn_nr)]);
             const rl = {};
+            // 18.11.2026 (Agnar: „vill að allt sé útfyllt þarna og ekkert tómt að óþörfu"): Stólpa-reikningur frá fyrri eigendum
+            // á ekkert skjal, svo eignin er óþekkt. Í stað auðs reits er greiðandinn sýndur — kennitalan á reikningnum er
+            // staðreynd, eignin er það ekki. Finnist eign í reikningslestri ræður hún.
+            // 18.11.2026 (Agnar: „forritaðu að þetta sé bara sjálfvirkt og tengt við bara ársskoðunina og upplýsingarnar
+            // okkar, brunakerfisþjónustuna"): tegund Stólpa-reiknings er ekki handskráð per gátt. Hún er leidd af
+            // þjónustunni sjálfri: brunakerfisþjónusta = app_settings.brunakerfi_customers (sama heimild og flipinn),
+            // fyrsta brunakerfissala hópsins = elsti reikningur með tegund „brunakerfi". Reikningur sem er ELDRI en hún
+            // getur ekki verið brunakerfi; sé hópurinn á annað borð í slökkvitækjaþjónustu (úttekt/skýrsla til) er hann úttekt.
+            // Handskráð stolpi_reikningar.vidskiptategund ræður alltaf ef hún er til.
+            const bruDagar = invoices.filter((i) => i.tegund === 'brunakerfi' && i.dags).map((i) => i.dags).sort();
+            const bruFra = bruDagar[0] || null;
+            const erBruna = !!bruFra || siteIds.some((id) => bruMap && bruMap[id]);
+            const erSlokk = invoices.some((i) => i.tegund === 'uttekt') || siteIds.some((id) => slokkYearsByFy[id] && slokkYearsByFy[id].size);
+            const sjalfvirkTeg = (dagsetning) => (erSlokk && (!erBruna || (bruFra && dagsetning < bruFra)) ? 'uttekt' : null);
+            const ktBase = {}; Object.keys(hopur.ktById || {}).forEach((bid) => { const k = String((hopur.ktById || {})[bid] || '').replace(/\D/g, ''); if (k.length === 10 && hopur.nofn[bid]) ktBase[k] = hopur.nofn[bid]; });
             if (nyjar.length) {
               const lst = nyjar.map((x) => '"R-' + String(x.reikn_nr).replace(/"/g, '') + '"').join(',');
               const rr = await P.sbGet(`reikningslestur?reikningur_nr=in.(${lst})&select=reikningur_nr,fyrirtaeki_id,vegna`);
@@ -1473,11 +1488,11 @@ exports.handler = async (event) => {
               if (kredit) return;
               const y = rl[n];
               if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
-              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
+              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || ktBase[String(x.kt || '').replace(/\D/g, '')] || '',
                 upphaed: x.upphaed != null ? Number(x.upphaed) : null, // 18.11.2026 (Agnar: „Mátt líka skrá tegundirnar af reikningum"): Stólpa-reikningar bera engar línur, svo tegundin
                 // er handskráð í stolpi_reikningar.vidskiptategund (sama orðasafn og customer_documents). Vanti hana: „—" eins og áður.
                 // 18.11.2026: vanti »vegna«-texta (reikningslestur) er lýsingin tegundin sjálf, eins og í solur-röðinni að ofan.
-                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' })[x.vidskiptategund] || '', tegund: x.vidskiptategund || null, stada: greitt ? 'greitt' : null });
+                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' })[x.vidskiptategund || sjalfvirkTeg(dags)] || '', tegund: x.vidskiptategund || sjalfvirkTeg(dags) || null, stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
           }
