@@ -185,8 +185,12 @@ test('Á dagskrá: ◇-merkið stendur á undan tökkunum og glugginn UNDIR rö�
 test('190 er tengt við Merkja og keyra: eigið eintak (verkstaedi / fyrirtaeki_id), aðeins hjá Agnari, smellir og teljari', () => {
   const st = SRC.slice(SRC.indexOf('function mkv()'), SRC.indexOf('const mkBar ='));
   assert.match(st, /MK\.buaTil\(\{ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: VIEW_ID, sedLykill: 'merkja_sed_verkst',/);
-  // Gátin er sjálfgefna gátin úr 519 (n === 'Agnar'): hvorki `ma` né `nu` má yfirskrifa hér — annars sæju aðrir stjórnendur tólið.
-  assert.ok(!/\bma:|\bnu:/.test(st), 'eintak verkstæðisins má ekki yfirskrifa aðgangsgátina');
+  // Gátin: `ma` er sjálfgefna gátin úr 519 (n === 'Agnar') og má ekki yfirskrifa; `nu` kemur frá INNSKRÁÐA notandanum
+  // (mkHver), ekki „Ég er“-valinu sem er sjálfgefið „Agnar“ á tækjum þar sem enginn hefur valið (350).
+  assert.ok(!/\bma:/.test(st), 'eintak verkstæðisins má ekki yfirskrifa aðgangsgátina');
+  assert.match(st, /nu: \(\) => mkHver\(\),/);
+  assert.match(SRC, /const MK_MA = \[1, 10\];/, 'aðeins Agnar (uid 1) og Lota (uid 10)');
+  assert.ok(!/Samthykkja/.test(SRC.slice(SRC.indexOf('const mkHver = '), SRC.indexOf('const mkMerki = '))), 'gátin má ekki byggja á „Ég er“-valinu');
   assert.match(SRC, /const mkBar = \(\) => \{ try \{ const m = mkv\(\); return m \? m\.html\(mkHver\(\)\) : ''; \} catch \(_\) \{ return ''; \} \};/);
   assert.match(st, /teikna: \(\) => \{ const v = viewEl\(\); if \(v && v\.classList\.contains\('active'\)\) render\(\); \},/, 'teiknar aðeins virka sýn');
   assert.match(st, /opna: \(id\) => openCompany\(id\),/);
@@ -201,10 +205,10 @@ test('190 er tengt við Merkja og keyra: eigið eintak (verkstaedi / fyrirtaeki_
   }
 });
 
-test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og teljarinn sækir merkingar verkstæðisins', async () => {
+test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og sækir SÍNAR merkingar — og aðeins innskráður Agnar (eða Lota) sér það', async () => {
   const vm = require('node:vm');
   const K519 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '519-merkja-keyra.js'), 'utf8');
-  const st = SRC.slice(SRC.indexOf('  let _mkv = null;'), SRC.indexOf('  function note(r) {'));
+  const st = SRC.slice(SRC.indexOf('  const MK_MA = '), SRC.indexOf('  function note(r) {'));
   const kollud = [], haus = [];
   const h = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
   h.window = h; h.setInterval = () => 0; h.clearInterval = () => {};
@@ -212,10 +216,18 @@ test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og teljarinn sæ
     createElement: () => ({}), head: { appendChild: (e) => haus.push(e) } };
   h.fetch = (url, o) => { kollud.push({ url, body: o && o.body ? JSON.parse(o.body) : null }); return Promise.resolve({ status: 200, json: () => Promise.resolve({ ok: true, claude_virkt: true,
     merkingar: [{ id: 1, bord: 'verkstaedi', fyrirtaeki_id: 1934, merki: 'yfirfara', stada: 'merkt' }], teljari: { merkt: 1 } }) }); };
-  h.Samthykkja = { nu: () => 'Agnar' };
+  h.Samthykkja = { nu: () => 'Agnar' };   // „Ég er“-valið segir ALLTAF Agnar hér (sjálfgefið á óvalinni tölvu) — það má ekki ráða
+  let innskradur = { notandi: { id: 3, nafn: 'Annar stjórnandi', rola: 'Admin' }, skoda: null };
+  h.Adgangsstyring = { stada: () => innskradur };
   let teikn = 0;
   vm.runInNewContext(K519 + '\n;(() => { const VIEW_ID = "view-thjonustu-verkstaedi"; const toast = () => {}; const viewEl = () => ({ classList: { contains: () => true } });' +
     ' const openCompany = () => {}; const render = () => { window.__teikn(); };\n' + st + '\n window.__v = { mkMerki, mkGluggi, mkBar, mkv }; })();', Object.assign(h, { __teikn: () => { teikn++; } }), { filename: '190+519' });
+  // Annar stjórnandi (uid 3) á tölvu þar sem „Ég er“ stendur á Agnar: EKKERT teiknað og EKKERT sótt.
+  assert.strictEqual(h.__v.mkBar(), ''); assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '');
+  await new Promise((r) => setTimeout(r, 40));
+  assert.strictEqual(kollud.length, 0, 'ekkert má sækja fyrir aðra en Agnar');
+  // Agnar sjálfur (uid 1) innskráður.
+  innskradur = { notandi: { id: 1, nafn: 'Agnar', rola: 'Admin' }, skoda: null };
   assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '', 'ekkert merki fyrr en þjónninn hefur hleypt inn');
   assert.strictEqual(h.__v.mkBar(), '');                      // fyrsta teikning ræsir sóknina
   await new Promise((r) => setTimeout(r, 80));
@@ -225,8 +237,14 @@ test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og teljarinn sæ
   assert.match(h.__v.mkMerki({ id: 1934 }), /data-t5="mk-opna" data-id="1934" data-s="merkt"/);
   assert.strictEqual(h.MerkjaKeyra.verkstaedi, h.__v.mkv());
   assert.strictEqual(haus.length, 1, 'útlitið sett einu sinni');
-  // Annar en Agnar við borðið: ekkert.
-  h.Samthykkja.nu = () => 'Anni';
+  // Lota (uid 10) má prófa; „Skoða sem“, annar notandi, óinnskráð eða Adgangsstyring ókomin → ekkert.
+  innskradur = { notandi: { id: 10 }, skoda: null };
+  assert.match(h.__v.mkBar(), /▶ Keyra/);
+  for (const x of [{ notandi: { id: 1 }, skoda: { id: 5 } }, { notandi: { id: 6 }, skoda: null }, { notandi: null, skoda: null }, null]) {
+    innskradur = x;
+    assert.strictEqual(h.__v.mkBar(), '', JSON.stringify(x)); assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '', JSON.stringify(x));
+  }
+  delete h.Adgangsstyring;
   assert.strictEqual(h.__v.mkBar(), ''); assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '');
 });
 

@@ -1242,8 +1242,12 @@
    * Lítið ◇ á hverju spjaldi í vinnslu og hverri röð í „Á dagskrá“ → sömu átta hökin (Já · Nei · Keyra · Snooze · Veit ekki ·
    * Rannsaka betur · Comment · Yfirfara) → ▶ Keyra efst → agentinn fær verkstæðisstöðu, skjöl, sölur og tæki ÞESS STAÐAR
    * (_adalmal-claude.cjs uttektargogn) → Óðinn metur → tilbúið verk í Afgreiðslu. Ekkert fer út og ekkert er merkt búið:
-   * lokasmellurinn er alltaf Agnars. Sést AÐEINS hjá Agnari (sama gát og 519/489: „Ég er“-valið + innskráður stjórnandi) —
-   * aðrir starfsmenn sjá verkstæðið óbreytt og ekkert er sótt fyrir þá. */
+   * lokasmellurinn er alltaf Agnars. Sést AÐEINS hjá Agnari — aðrir starfsmenn sjá verkstæðið óbreytt og ekkert er sótt
+   * fyrir þá. GÁTIN ER INNSKRÁÐI NOTANDINN (Adgangsstyring.stada), ekki „Ég er“-valið sem 519/489 nota á Þjónustuborðinu:
+   * það val er eitt gildi á TÖLVU og sjálfgefið „Agnar“ þar sem enginn hefur valið (350), svo á verkstæðinu — sem allir
+   * nota — hefðu aðrir stjórnendur (Annþór, Bjarndís) fengið tólið og almennir starfsmenn villulínu. uid 1 er Agnar;
+   * uid 10 er „Lota (Claude)“, svo lotur geti prófað (merkingar hverrar lotu eru hennar eigin, merkt_af). „Skoða sem“ felur. */
+  const MK_MA = [1, 10];
   let _mkv = null;
   function mkv() {
     if (_mkv) return _mkv;
@@ -1251,6 +1255,7 @@
       const MK = window.MerkjaKeyra;
       if (!MK || typeof MK.buaTil !== 'function') return null;
       _mkv = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: VIEW_ID, sedLykill: 'merkja_sed_verkst',
+        nu: () => mkHver(),
         toast: (m) => toast(m),
         teikna: () => { const v = viewEl(); if (v && v.classList.contains('active')) render(); },
         rot: () => viewEl(),
@@ -1276,7 +1281,14 @@
     } catch (_) { _mkv = null; }
     return _mkv;
   }
-  const mkHver = () => { try { return (window.Samthykkja && Samthykkja.nu) ? String(Samthykkja.nu() || '') : ''; } catch (_) { return ''; } };
+  // 'Agnar' (gát 519: n === 'Agnar') aðeins þegar innskráði notandinn má sjá tólið; annars '' → ekkert teiknað, ekkert sótt.
+  const mkHver = () => {
+    try {
+      const st = window.Adgangsstyring && Adgangsstyring.stada ? Adgangsstyring.stada() : null;
+      const n = st && !st.skoda ? st.notandi : null;
+      return n && MK_MA.indexOf(Number(n.id)) > -1 ? 'Agnar' : '';
+    } catch (_) { return ''; }
+  };
   const mkMerki = r => { try { const m = mkv(); return m ? m.merki(r) : ''; } catch (_) { return ''; } };
   const mkGluggi = r => { try { const m = mkv(); return m ? m.gluggi(r) : ''; } catch (_) { return ''; } };
   const mkBar = () => { try { const m = mkv(); return m ? m.html(mkHver()) : ''; } catch (_) { return ''; } };
