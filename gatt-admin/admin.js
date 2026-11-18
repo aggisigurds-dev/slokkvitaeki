@@ -538,7 +538,7 @@
       h += '<form class="vsvara" data-vsvara="' + v.id + '">' +
         '<div class="rad"><input class="inp" data-s="to" type="email" placeholder="Til (netfang)" value="' + esc(to) + '"><input class="inp" data-s="efni" placeholder="Efni" value="' + esc(svarEfni(v)) + '"></div>' +
         '<textarea class="inp" data-s="texti" placeholder="Svar til kúnnans…" maxlength="8000"></textarea>' +
-        '<div class="rad"><label class="chk"><input type="checkbox" data-s="loka"> Loka málinu um leið</label><span class="vhint">Fer frá Slökkvitæki ehf.; svar kúnnans kemur í eldklar@eldklar.is. Birtist líka sem „Svarað" í gáttinni.</span>' +
+        '<div class="rad"><label class="chk"><input type="checkbox" data-s="loka"> Loka málinu um leið</label><span class="vhint">Fer frá eldklar@eldklar.is (Gmail) í sama þræði og lendir í Sent. Birtist líka sem „Svarað" í gáttinni.</span>' +
         '<button class="btn btn--sm btn--accent" type="submit" style="margin-left:auto">Senda svar</button></div></form>';
     }
     return h;

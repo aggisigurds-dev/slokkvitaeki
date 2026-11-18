@@ -437,9 +437,11 @@ exports.handler = async (event) => {
       return P.json(200, { ok: true, status: m.status });
     }
 
-    // Svara máli MEÐ PÓSTI (18.11.2026). Agnar ýtir sjálfur á Senda — ekkert fer sjálfvirkt. Sendandi = staðfesta Resend-lénið
-    // (MAIL_FROM), svar-til = pósthólfið sem samtalið býr í (eldklar@eldklar.is), svo svar kúnnans lendir í sama þræði.
-    // Á eftir: svar + svarad_at á málinu (kúnninn sér það í gáttinni sem „Svarað"), lína aftast í notes, valfrjálst lokað.
+    // Svara máli MEÐ PÓSTI (18.11.2026). Agnar ýtir sjálfur á Senda — ekkert fer sjálfvirkt.
+    // Agnar 18.11: „ég er ekki með resend … á að koma frá eldklar@eldklar.is". Því fer svarið um SÖMU leið og allur annar
+    // póstur appsins: brunaholf /api/gmail-send með póst-tóka (sjá postur-senda.cjs), úr Gmail-pósthólfinu eldklar@eldklar.is.
+    // Þá lendir það í Sent og (með inReplyTo) í sama þræði hjá báðum. Á eftir: svar + svarad_at á málinu (kúnninn sér það í
+    // gáttinni sem „Svarað"), lína aftast í notes, valfrjálst lokað.
     if (action === 'svara-post') {
       const id = parseInt(body.id, 10), to = String(body.to || '').trim(), efni = String(body.efni || '').trim().slice(0, 200), texti = String(body.texti || '').trim().slice(0, 8000), loka = !!body.loka;
       if (!id || !texti) return P.json(400, { error: 'Svarið er tómt' });
@@ -448,17 +450,22 @@ exports.handler = async (event) => {
       const m0 = gr.ok ? (await gr.json())[0] : null;
       if (!m0) return P.json(404, { error: 'Mál fannst ekki' });
       const af = String(body.af || 'Slökkvitæki ehf.').slice(0, 60);
-      const svarTil = process.env.PORTAL_REPLY_TO || 'eldklar@eldklar.is';
+      const fraHolf = 'eldklar@eldklar.is';
       const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;white-space:pre-wrap">' + esc(texti) + '</div>';
-      // bcc á pósthólfið: svarið fer ekki um Gmail, svo afritið er eina leiðin til að það sjáist í samtalinu þar.
-      const payload = { from: MAIL_FROM, to: [to], reply_to: svarTil, bcc: [svarTil], subject: efni || ('Re: ' + String(m0.title || '').replace(/\s+—\s+[^—]*$/, '')), html, text: texti };
-      if (body.message_id) payload.headers = { 'In-Reply-To': String(body.message_id).slice(0, 300), References: String(body.message_id).slice(0, 300) };
-      const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar());
-      if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
-      let mres;
-      try { mres = await fetch(origin(event) + '/api/email-send', { method: 'POST', headers: hdrs, body: JSON.stringify(payload) }); }
-      catch (e) { return P.json(502, { error: 'Póstur sendist ekki', detail: String((e && e.message) || e) }); }
-      if (!mres.ok) { const t = await mres.text().catch(() => ''); return P.json(502, { error: 'Póstur sendist ekki', detail: t.slice(0, 300) }); }
+      const payload = { account: fraHolf, from: 'Slökkvitæki ehf <' + fraHolf + '>', to: [to], subject: efni || ('Re: ' + String(m0.title || '').replace(/\s+—\s+[^—]*$/, '')), html };
+      if (body.message_id) payload.inReplyTo = String(body.message_id).slice(0, 300);
+      const toki = await HUB.posturToki().catch(() => null);
+      if (!toki) return P.json(503, { error: 'Náði ekki í póstlykilinn — pósturinn var EKKI sendur. Reyndu aftur.' });
+      const ac = new AbortController(), teljari = setTimeout(() => ac.abort(), 8500);
+      let mres, mj = {};
+      try {
+        mres = await fetch('https://brunaholf.netlify.app/api/gmail-send', { method: 'POST', signal: ac.signal,
+          headers: { [HUB.POSTUR_HAUS]: toki, 'content-type': 'application/json', 'user-agent': 'slokkvitaeki-gatt-admin' }, body: JSON.stringify(payload) });
+        mj = await mres.json().catch(() => ({}));
+      } catch (e) {
+        return P.json(ac.signal.aborted ? 504 : 502, { error: ac.signal.aborted ? 'Póstþjónninn svaraði ekki í tæka tíð — pósturinn GÆTI hafa farið. Athugaðu Sent í eldklar@eldklar.is áður en þú sendir aftur.' : 'Póstur sendist ekki: ' + String((e && e.message) || e).slice(0, 120) });
+      } finally { clearTimeout(teljari); }
+      if (!mres.ok || !mj.ok) return P.json(502, { error: 'Póstur sendist ekki', detail: String(mj.message || mj.error || ('HTTP ' + mres.status)).slice(0, 300) });
       const nu = new Date().toISOString(), dags = nu.slice(8, 10) + '.' + nu.slice(5, 7) + '.' + nu.slice(0, 4);
       const patch = { svar: texti.slice(0, 2000), svarad_at: nu, updated_at: nu,
         notes: String(m0.notes || '') + '\n\n— Svarað með pósti ' + dags + ' (' + af + ' → ' + to + '): ' + texti.replace(/\s+/g, ' ').slice(0, 300) };
