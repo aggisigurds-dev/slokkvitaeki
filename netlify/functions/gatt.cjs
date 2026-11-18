@@ -1476,7 +1476,8 @@ exports.handler = async (event) => {
               invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
                 upphaed: x.upphaed != null ? Number(x.upphaed) : null, // 18.11.2026 (Agnar: „Mátt líka skrá tegundirnar af reikningum"): Stólpa-reikningar bera engar línur, svo tegundin
                 // er handskráð í stolpi_reikningar.vidskiptategund (sama orðasafn og customer_documents). Vanti hana: „—" eins og áður.
-                lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: x.vidskiptategund || null, stada: greitt ? 'greitt' : null });
+                // 18.11.2026: vanti »vegna«-texta (reikningslestur) er lýsingin tegundin sjálf, eins og í solur-röðinni að ofan.
+                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' })[x.vidskiptategund] || '', tegund: x.vidskiptategund || null, stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
           }
