@@ -76,7 +76,7 @@ if (sam) {
 }
 
 // Enginn skrifar framhjá skrifa(): eina upsert-kallið á töfluna í 375 er inni í skrifa(), og 433 / 383 nota það.
-krefst(s375, /if \(f && Array\.isArray\(f\.haedir\) && f\.haedir\.length && \(!s \|\| timi\(f\.updated_at\) !== s\.t\)\) \{\s+row\.haedir = sameinaVidFerska\(row\.haedir, f\.haedir, s\);/, '375: skrifa() verður að lesa röðina ferska og sameina þegar einhver annar hefur skrifað síðan þessi vafri sá hana');
+krefst(s375, /if \(f && Array\.isArray\(f\.haedir\) && f\.haedir\.length && \(!s \|\| timi\(f\.updated_at\) !== s\.t\)\) \{\s+(?:einkvaemAudkenni\(f\.haedir\);\s+)?row\.haedir = sameinaVidFerska\(row\.haedir, f\.haedir, s\);/, '375: skrifa() verður að lesa röðina ferska og sameina þegar einhver annar hefur skrifað síðan þessi vafri sá hana');
 krefst(s375, /skrifa\(cid, row\)\.then\(function \(r\) \{/, '375: Vista (serverUpsert) verður að fara um skrifa()');
 krefst(s375, /sja\(cid, row\.updated_at, row\.haedir\);\s+var plan = FloorPlan\.plans\[cid\]/, '375: sókn raðarinnar verður að skrá hvað þessi vafri sá (sja) — annars er ekkert til að bera saman við');
 krefst(s375, /if \(sameinad\) uppfaeraRitil\(cid, row\);/, '375: eftir sameinuð skrif verður ritillinn að fá niðurstöðuna — annars byggja næstu skrif á úreltu minni og skrifa yfir');

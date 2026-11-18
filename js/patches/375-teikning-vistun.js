@@ -106,6 +106,27 @@
     });
     return ut;
   }
+  /* 18.11.2026 (yfirferð teikninga): 16 merki í 8 húsum báru SAMA auðkenni á 2–6 hæðum (tillögur „n:…" úr greiningu
+   * 22.10). Sameiningin hér að ofan telur auðkenni einstakt yfir allar hæðir („tæki er aðeins á einni hæð"), svo þegar
+   * önnur vél vistaði féllu eintökin á hinum hæðunum þegjandi burt. Reglan er sú sama og gagnaleiðréttingin sama dag:
+   * fyrsta hæðin heldur auðkenninu, hinar fá „-h<röð hæðar, 1 = fyrsta>". Ákveðin regla, svo vafri og þjónn gefi sama nafn.
+   * Aðeins tillögur/ný merki (ekki tölustafa-auðkenni skráðra tækja — þar er tvítak villa sem á að sjást, ekki fela). */
+  function einkvaemAudkenni(haedir) {
+    if (!Array.isArray(haedir)) return 0;
+    var sed = {}, n = 0;
+    haedir.forEach(function (h, i) {
+      if (!h || !Array.isArray(h.markers)) return;
+      var her = {};
+      h.markers.forEach(function (m) {
+        if (!m || m.unitId == null) return;
+        var k = String(m.unitId);
+        if (/^\d+$/.test(k)) return;
+        if (sed[k] != null && sed[k] !== i && !her[k]) { m.unitId = k + '-h' + (i + 1); n++; }
+        else { sed[k] = i; her[k] = 1; }
+      });
+    });
+    return n;
+  }
   // Skilar loforði um { error, sameinad }. row = { company_id, markers, image_url, updated_at, haedir? }.
   function skrifa(cid, row) {
     return new Promise(function (res) {
@@ -126,9 +147,11 @@
         }, function (e) { res({ error: e || new Error('náði ekki í þjóninn') }); });
       };
       if (!Array.isArray(row.haedir) || !row.haedir.length) { senda(false); return; }
+      if (einkvaemAudkenni(row.haedir)) row.markers = (row.haedir[0] && row.haedir[0].markers) || row.markers;
       DB.sb.from(TAFLA).select('haedir,updated_at').eq('company_id', cid).limit(1).then(function (r) {
         var f = r && !r.error && r.data && r.data[0], s = _sed[cid] || null;
         if (f && Array.isArray(f.haedir) && f.haedir.length && (!s || timi(f.updated_at) !== s.t)) {
+          einkvaemAudkenni(f.haedir);
           row.haedir = sameinaVidFerska(row.haedir, f.haedir, s);
           row.markers = (row.haedir[0] && row.haedir[0].markers) || [];
           row.image_url = (row.haedir[0] && typeof row.haedir[0].image_url === 'string' && row.haedir[0].image_url) || row.image_url || null;
@@ -138,7 +161,7 @@
       }, function () { senda(false); });
     });
   }
-  window.TeiknVistun = { skrifa: skrifa, sja: sja, sameinaVidFerska: sameinaVidFerska };
+  window.TeiknVistun = { skrifa: skrifa, sja: sja, sameinaVidFerska: sameinaVidFerska, einkvaemAudkenni: einkvaemAudkenni };
 
   function serverUpsert(cid, plan) {
     if (!cid || !plan || !window.DB || !DB.sb) return;

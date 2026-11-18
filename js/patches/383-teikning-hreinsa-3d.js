@@ -4130,7 +4130,10 @@
       try {
         const FP = FPx(), cid = FP && FP.companyId;
         if (!cid || !modalSynnilegt() || G.rodKomin !== cid || !window.DB || !DB.sb) { console.info('[383] sjálfvistun sleppt (' + (astaeda || '') + '): röð þjónsins ekki komin eða glugginn lokaður'); return; }
-        const r = await DB.sb.from('teikning_bord').select('haedir').eq('company_id', cid).limit(1);
+        // 18.11.2026: les updated_at líka og skrifar aðeins sé röðin óbreytt síðan (sama vörn og 474) — áður gat skrif annarrar
+        // vélar á þessum ~100 ms milli lesturs og skrifa horfið. Önnur vél á milli → lesið aftur og reynt einu sinni enn.
+       for (let reyna = 0; reyna < 2; reyna++) {
+        const r = await DB.sb.from('teikning_bord').select('haedir,updated_at').eq('company_id', cid).limit(1);
         if (r.error || !r.data || !r.data.length || !Array.isArray(r.data[0].haedir) || !r.data[0].haedir.length) return;
         const minar = {}; haedir().forEach(h => { if (h && h.id) minar[h.id] = h; });
         let breytt = 0;
@@ -4146,11 +4149,14 @@
         });
         if (!breytt) return;
         const uppf = new Date().toISOString();
-        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: uppf }).eq('company_id', cid).select('company_id');
-        if (u.error || !u.data || !u.data.length) throw new Error((u.error && u.error.message) || 'ekkert skrifað');
+        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: uppf }).eq('company_id', cid).eq('updated_at', r.data[0].updated_at).select('company_id');
+        if (u.error) throw new Error(u.error.message || 'ekkert skrifað');
+        if (!u.data || !u.data.length) { if (reyna) throw new Error('röðinni var breytt á meðan, tvisvar'); continue; }
         // 375 þarf að vita að ÞESSI vafri skrifaði röðina — annars teldi næsta merkjavistun að önnur vél hefði gert það.
         try { if (window.TeiknVistun && TeiknVistun.sja) TeiknVistun.sja(cid, uppf, nyjar); } catch (_) {}
         segja('✓ Vistað' + (astaeda ? ' — ' + astaeda : ''));
+        return;
+       }
       } catch (e) { console.warn('[383] sjálfvistun', e); }
     }, 1200);
   }
