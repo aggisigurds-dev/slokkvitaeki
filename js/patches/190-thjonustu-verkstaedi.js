@@ -1291,7 +1291,20 @@
   };
   const mkMerki = r => { try { const m = mkv(); return m ? m.merki(r) : ''; } catch (_) { return ''; } };
   const mkGluggi = r => { try { const m = mkv(); return m ? m.gluggi(r) : ''; } catch (_) { return ''; } };
-  const mkBar = () => { try { const m = mkv(); return m ? m.html(mkHver()) : ''; } catch (_) { return ''; } };
+  // Innskráningin (495) berst ósamstillt og lætur 190 ekki vita, og 519 hleðst á eftir 190. Sé annað hvort ókomið við
+  // teikningu er athugað aftur eftir 1,5 s og 5 s og teiknað EINU SINNI þegar bæði eru komin — annars vantaði ◇ þar til
+  // eitthvað annað endurteiknaði (óháð rýni 18.11.2026). Tvær klukkur í mesta lagi, aldrei sókn fyrir aðra en Agnar.
+  let _mkBid = 0;   // 0 = ekki beðið · 1 = bíður · 2 = komið og teiknað
+  function mkBida() {
+    if (_mkBid) return;
+    _mkBid = 1;
+    [1500, 5000].forEach(ms => setTimeout(() => {
+      if (_mkBid === 2 || !mkv() || !mkHver()) return;
+      _mkBid = 2;
+      const v = viewEl(); if (v && v.classList.contains('active')) render();
+    }, ms));
+  }
+  const mkBar = () => { try { const m = mkv(), n = mkHver(); if (!m || !n) mkBida(); return m ? m.html(n) : ''; } catch (_) { return ''; } };
   function note(r) {
     return '<textarea class="sv-note" data-id="' + r.id + '" rows="2" placeholder="Minnispunktur…">' + esc(r.note || '') + '</textarea>';
   }

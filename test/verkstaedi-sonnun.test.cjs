@@ -191,7 +191,7 @@ test('190 er tengt við Merkja og keyra: eigið eintak (verkstaedi / fyrirtaeki_
   assert.match(st, /nu: \(\) => mkHver\(\),/);
   assert.match(SRC, /const MK_MA = \[1, 10\];/, 'aðeins Agnar (uid 1) og Lota (uid 10)');
   assert.ok(!/Samthykkja/.test(SRC.slice(SRC.indexOf('const mkHver = '), SRC.indexOf('const mkMerki = '))), 'gátin má ekki byggja á „Ég er“-valinu');
-  assert.match(SRC, /const mkBar = \(\) => \{ try \{ const m = mkv\(\); return m \? m\.html\(mkHver\(\)\) : ''; \} catch \(_\) \{ return ''; \} \};/);
+  assert.match(SRC, /const mkBar = \(\) => \{ try \{ const m = mkv\(\), n = mkHver\(\); if \(!m \|\| !n\) mkBida\(\); return m \? m\.html\(n\) : ''; \} catch \(_\) \{ return ''; \} \};/);
   assert.match(st, /teikna: \(\) => \{ const v = viewEl\(\); if \(v && v\.classList\.contains\('active'\)\) render\(\); \},/, 'teiknar aðeins virka sýn');
   assert.match(st, /opna: \(id\) => openCompany\(id\),/);
   // Teljarinn stendur ofan við listana; smellir á mk-* fara til eintaksins og stöðva bólun (spjaldið má ekki opnast).
@@ -209,8 +209,9 @@ test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og sækir SÍNAR
   const vm = require('node:vm');
   const K519 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '519-merkja-keyra.js'), 'utf8');
   const st = SRC.slice(SRC.indexOf('  const MK_MA = '), SRC.indexOf('  function note(r) {'));
-  const kollud = [], haus = [];
-  const h = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
+  const kollud = [], haus = [], langir = [];
+  // Langar klukkur (≥ 1 s: biðin eftir innskráningu, mkBida) eru gripnar svo prófið bíði ekki eftir þeim; stuttar keyra.
+  const h = { setTimeout: (f, ms) => (ms >= 1000 ? (langir.push({ f, ms }), 0) : setTimeout(f, ms)), clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
   h.window = h; h.setInterval = () => 0; h.clearInterval = () => {};
   h.document = { hidden: false, addEventListener() {}, getElementById: (id) => (id === '_sv-mk' ? (haus.length ? {} : null) : { classList: { contains: () => true } }),
     createElement: () => ({}), head: { appendChild: (e) => haus.push(e) } };
@@ -246,6 +247,53 @@ test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og sækir SÍNAR
   }
   delete h.Adgangsstyring;
   assert.strictEqual(h.__v.mkBar(), ''); assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '');
+  // Biðin eftir innskráningu (fyrsta teikningin var hjá uid 3): TVÆR klukkur alls, sama hve oft er teiknað.
+  assert.deepStrictEqual(langir.map((x) => x.ms), [1500, 5000]);
+});
+
+test('innskráningin berst SEINT (495 er ósamstillt og lætur 190 ekki vita): ◇ birtist sjálft, einu sinni, án sóknar fyrir aðra', async () => {
+  const vm = require('node:vm');
+  const K519 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '519-merkja-keyra.js'), 'utf8');
+  const st = SRC.slice(SRC.indexOf('  const MK_MA = '), SRC.indexOf('  function note(r) {'));
+  function heimur() {
+    const o = { kollud: [], langir: [], teikn: 0, innskradur: { notandi: null, skoda: null }, virk: true };
+    const h = { setTimeout: (f, ms) => (ms >= 1000 ? (o.langir.push({ f, ms }), 0) : setTimeout(f, ms)), clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
+    h.window = h; h.setInterval = () => 0; h.clearInterval = () => {};
+    h.document = { hidden: false, addEventListener() {}, getElementById: (id) => (id === '_sv-mk' ? null : { classList: { contains: () => true } }), createElement: () => ({}), head: { appendChild() {} } };
+    h.fetch = (url) => { o.kollud.push(url); return Promise.resolve({ status: 200, json: () => Promise.resolve({ ok: true, claude_virkt: true, merkingar: [], teljari: {} }) }); };
+    h.Adgangsstyring = { stada: () => o.innskradur };
+    h.__teikn = () => { o.teikn++; }; h.__virk = () => o.virk;
+    vm.runInNewContext(K519 + '\n;(() => { const VIEW_ID = "view-thjonustu-verkstaedi"; const toast = () => {}; const viewEl = () => ({ classList: { contains: () => window.__virk() } });' +
+      ' const openCompany = () => {}; const render = () => { window.__teikn(); };\n' + st + '\n window.__v = { mkMerki, mkBar, mkv }; })();', h, { filename: '190+519' });
+    o.v = h.__v;
+    return o;
+  }
+  // (a) Agnar: síðan teiknuð áður en innskráningin er komin.
+  const a = heimur();
+  assert.strictEqual(a.v.mkBar(), ''); a.v.mkBar(); a.v.mkBar();
+  assert.deepStrictEqual(a.langir.map((x) => x.ms), [1500, 5000], 'tvær klukkur, ekki ein á hverja teikningu');
+  a.langir[0].f();                                   // 1,5 s: enn ekkert
+  assert.strictEqual(a.teikn, 0);
+  a.innskradur = { notandi: { id: 1 }, skoda: null };  // innskráningin berst
+  a.langir[1].f();                                   // 5 s: komið → teiknað EINU SINNI
+  assert.strictEqual(a.teikn, 1);
+  a.langir[0].f(); a.langir[1].f();
+  assert.strictEqual(a.teikn, 1, 'aldrei teiknað aftur vegna biðarinnar');
+  // (b) Kemur strax á fyrri klukku → seinni klukkan gerir ekkert.
+  const b = heimur();
+  b.v.mkBar(); b.innskradur = { notandi: { id: 1 }, skoda: null };
+  b.langir[0].f(); b.langir[1].f();
+  assert.strictEqual(b.teikn, 1);
+  // (c) Annar notandi: klukkurnar slá, ekkert teiknað og EKKERT sótt.
+  const c = heimur();
+  c.v.mkBar(); c.innskradur = { notandi: { id: 6 }, skoda: null };
+  c.langir.forEach((x) => x.f()); await new Promise((r) => setTimeout(r, 30));
+  assert.deepStrictEqual([c.teikn, c.kollud.length], [0, 0]);
+  // (d) Agnar farinn af verkstæðinu þegar innskráningin berst: ekki teiknað í óvirka sýn.
+  const d = heimur();
+  d.v.mkBar(); d.innskradur = { notandi: { id: 1 }, skoda: null }; d.virk = false;
+  d.langir.forEach((x) => x.f());
+  assert.strictEqual(d.teikn, 0);
 });
 
 /* ── Sóknin sjálf, keyrð (ekki strengjaleit): loadSkodud úr skránni með gervi-DB, gervi-klukku og talningu á render ── */
