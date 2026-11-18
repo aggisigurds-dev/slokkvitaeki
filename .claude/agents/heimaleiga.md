@@ -219,5 +219,12 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   í hleðslu, „Ónýtt?", 2× ný LV, vantar tæki í kjallara; Laugavegur 18 36 LV + 1 duft + 4 slöngur (skrá 115), 6 með hring+striki, „7× ný".
   **Sirius ehf (Barónsstígur) afskráður 2012** — enginn reikningur fyrr en greiðandi er staðfestur. Eva 13.11: inneign Heimaleigu 20.703 án vsk upp í HQ.
   Ekkert skráð í úttektir enn: eyðing tækja sem eru ekki á blaði þarf samþykki Agnars (sjálfvirk vörn stöðvaði eyðingu).
+  **Síðar 18.11 (Agnar samþykkti eyðingu):** HQ Grensásvegur 7 (269) skráð „í vinnslu": 1 duft 6 kg + 1 LV + 1 CO₂ (5→2 kg), allt yfirferð
+  2.000 (sérkjör), akstur 1×2.400, skýrslugerð 0, afsl. 0 → 8.400 án vsk / 10.416 m. vsk; 2 LV + 2 slöngur eytt; staðsetning tækja → Grensásvegur 7.
+  Inneign 20.703 EKKI dregin frá (bíður Agnars). „loaned" á Barónsstíg = Á verkstæði (í hleðslu), ekki lánstæki (Charlize kerfi/uttaeki).
+  **Laugavegur 18 rannsakaður 18.11 — regla 2 hér að ofan er að hluta röng:** 115 tækin (869: 54 + 1486: 61) eru sama húsið talið tvisvar
+  (2025-skýrslur 1523/1669 ná yfir allt húsið). Blaðið 10.11 = 41 tæki. Staðirnir eru áfram tveir (tveir greiðendur) en tækjum skal SKIPT
+  eftir herbergjalista Dimku (75346): Máni 10 + 3 ný (232, 335, 430), Midtown 13 + 1 nýtt (202), sameign 13 LV + duft + 4 slöngur → IHC.
+  Bjarndís 75831: 6 tekin (4 hleðsla, 2 ónýt), lánstæki á staðnum. Hæðaskipting „3.–6. / 1.–2." í staðsetningum er röng. Bíður Agnars.
 
 Síðast uppfært: 18.11.2026
