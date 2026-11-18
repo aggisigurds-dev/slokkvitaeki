@@ -160,12 +160,62 @@ test('190 er tengt: tækin eru sótt einu sinni, spjaldið ber vísbendingarnar 
   assert.match(SRC, /hasReik: hasReik,/);
   assert.match(SRC, /skodud: _skodByCo \? \(_skodByCo\.get\(String\(co\.id\)\) \|\| null\) : null,/);
   assert.match(SRC, /const dSonnun = b\.dagskra\.filter\(r => r\.doneDocs \|\| sonnun\(r\)\.length\)\.length;/);
-  // Sóknarvilla má ekki verða að „0 tæki skoðuð“: catch skilar án þess að setja kortið.
-  const l = SRC.match(/async function loadSkodud\(\) \{[\s\S]*?\n  \}/)[0];
-  const c = l.slice(l.indexOf('} catch (_) {'));
-  assert.ok(/return;/.test(c) && c.indexOf('return;') < c.indexOf('render();'), 'catch verður að skila ÁÐUR en teiknað er');
-  assert.ok(!/_skodByCo\s*=/.test(c), 'catch má ekki setja kortið');
-  // … og sóknin reynir aftur seinna (óháð rýni: áður þurfti að endurhlaða vafrann), án þess að verða að lykkju.
-  assert.match(c, /setTimeout\(\(\) => \{ _skodLoaded = false; \}, 60000\);/);
-  assert.match(l, /if \(!sb\) throw new Error/);
+});
+
+/* ── Sóknin sjálf, keyrð (ekki strengjaleit): loadSkodud úr skránni með gervi-DB, gervi-klukku og talningu á render ── */
+function sokn(DB) {
+  const l = SRC.match(/\n  async function loadSkodud\(\) \{[\s\S]*?\n  \}/);
+  const bid = SRC.match(/^\s*const skodBid = [^\n]*$/m);
+  const kortF = SRC.match(/\n  function skodudKort\(rows, ar, iDag\) \{[\s\S]*?\n  \}/);
+  assert.ok(l && bid && kortF, 'náði ekki loadSkodud/skodBid/skodudKort úr 190');
+  const timar = [], st = { render: 0, varad: 0 };
+  const api = new Function('window', 'DB', 'curYear', 'setTimeout', 'render', 'console',
+    ['let _skodByCo = null, _skodLoaded = true, _skodTilraun = 0;', bid[0], kortF[0], l[0],
+      'return { loadSkodud, skodBid, kort: () => _skodByCo, hladid: () => _skodLoaded, tilraun: () => _skodTilraun };'].join('\n'))(
+    { get DB() { return DB.til ? DB : undefined; } }, DB, AR, (fn, ms) => { timar.push({ fn, ms }); }, () => { st.render++; }, { warn: () => { st.varad++; } });
+  return { api, timar, st };
+}
+const RADIR = [{ fyrirtaeki_id: 7, last_insp: AR + '-03-04', status: 'active', created_at: '2024-01-01T00:00:00+00:00' }];
+
+test('skodBid: 2, 4, 8, 16, 32 s — svo hætt', () => {
+  const { api } = sokn({ til: false });
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map(api.skodBid), [2000, 4000, 8000, 16000, 32000, null, null]);
+});
+
+test('loadSkodud: síðan opnuð BEINT á verkstæðinu — gagnatengingin er ekki til við fyrstu teikningu, sóknin reynir sjálf aftur', async () => {
+  // Mælt í loftinu 18.11.2026 (c717f43): flísarnar birtust fyrst eftir mínútu. Nú: ný tilraun eftir 2 s án nýrrar teikningar.
+  const DB = { til: false, sb: null, fetchAll: async () => RADIR };
+  const { api, timar, st } = sokn(DB);
+  await api.loadSkodud();
+  assert.equal(api.kort(), null, 'bilun má aldrei verða að tómu korti („0 tæki skoðuð“)');
+  assert.equal(st.render, 0, 'ekkert teiknað við bilun');
+  assert.equal(timar.length, 1); assert.equal(timar[0].ms, 2000);
+  assert.equal(api.hladid(), true, 'render() má ekki ræsa aðra sókn samhliða þeirri sem bíður');
+  DB.til = true; DB.sb = {};                      // tengingin komin
+  await timar[0].fn();                            // klukkan slær
+  assert.deepEqual(api.kort().get('7'), { n: 1, sidast: AR + '-03-04' });
+  assert.equal(st.render, 1, 'teiknað einu sinni þegar gögnin koma');
+  assert.equal(timar.length, 1, 'engin frekari tilraun eftir að sóknin tókst');
+  assert.equal(api.tilraun(), 0);
+});
+
+test('loadSkodud: viðvarandi bilun — fimm sjálfvirkar tilraunir, svo aðeins við teikningu að mínútu liðinni (aldrei lykkja)', async () => {
+  const DB = { til: true, sb: {}, fetchAll: async () => { throw new Error('netvilla'); } };
+  const { api, timar, st } = sokn(DB);
+  await api.loadSkodud();
+  for (let i = 0; i < 5; i++) await timar[i].fn();
+  assert.deepEqual(timar.map((t) => t.ms), [2000, 4000, 8000, 16000, 32000, 60000]);
+  assert.equal(api.kort(), null); assert.equal(st.render, 0);
+  assert.equal(api.hladid(), true);
+  await timar[5].fn();                            // mínúta liðin: flaggið losnar, næsta TEIKNING ræsir nýja sókn
+  assert.equal(api.hladid(), false); assert.equal(api.tilraun(), 0);
+  assert.equal(timar.length, 6, 'mínútuklukkan ræsir ekki sókn sjálf');
+  assert.equal(st.varad, 6, 'hver bilun sést í console (áður þögul)');
+});
+
+test('loadSkodud: fetchAll vantar → sama leið og bilun, ekkert kastast út', async () => {
+  const DB = { til: true, sb: {} };
+  const { api, timar } = sokn(DB);
+  await api.loadSkodud();
+  assert.equal(api.kort(), null); assert.equal(timar[0].ms, 2000);
 });
