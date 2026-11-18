@@ -305,6 +305,9 @@
     return Object.assign({}, MODES.mitt, { l: n + ' · mitt vinnuborð', first,
       breidd: (v && v.breidd && typeof v.breidd === 'object') ? v.breidd : {} });
   }
+  // Er „Í dag" (31) kveikt hjá þeim sem situr við borðið? Eitt val fyrir allt: tekinn af í „Velja einingar" (mitt.idagAf)
+  // hverfur borðinn úr ÖLLUM hömum, enda er hann ekki eign eins hams heldur efsta lag borðsins.
+  const idagVirkt = () => { const v = P(CFG_KEY + '.by_staff.' + nu() + '.mitt'); return !(v && v.idagAf); };
   function M(id) {
     if (id === MITT_HAM) return mittHamur();
     if (MODES[id]) return MODES[id];
@@ -349,7 +352,9 @@
     return '';
   }
   // [kveikt, sjálfgefið opið] — flest samanbrotið. Forstillt eftir starfsmanni; hver og einn breytir í ⚙.
-  const SJALFGEFID = { dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0], tilbuin: [0, 0] };
+  // 18.11.2026: 'idag' (31) er hér af því að hún stendur í öllum hömum — eining sem vantar í SJALFGEFID á sér engan
+  // `mods`-reit og isOpen féll á henni um leið og hún birtist utan hams sem taldi hana í `first`. [sýnd, opin]
+  const SJALFGEFID = { idag: [1, 1], dagskra: [1, 0], skipulag: [0, 0], vinnublod: [0, 0], postsvor: [0, 0], akstur: [0, 0], krofur: [0, 0], krofumal: [0, 0], frestir: [1, 0], nyjast: [0, 0], saga: [1, 1], breyta: [1, 0], forgangur: [0, 0], nymal: [0, 0], brunakerfi: [0, 0], starfsmenn: [0, 0], ivinnslu: [0, 0], gleymt: [0, 0], bakfaersla: [0, 0], afgreidsla: [0, 0], aridandi: [0, 0], checklisti: [0, 0], checklisti2: [0, 0], stjornumerkt: [0, 0], forgangsmal: [0, 0], skipulag2: [0, 0], markmid: [1, 0], einkaritari: [1, 0], tilbuin: [0, 0] };
   const FYRIR = {
     'Agnar': { skipulag: [1, 1], vinnublod: [1, 0], krofur: [1, 0] },
     'Bjarndís': { vinnublod: [1, 1], postsvor: [1, 0] },
@@ -453,7 +458,8 @@
   function isOpen(k) {
     if (SERVER_OPID.indexOf(k) >= 0) return chkOpid(k);   // samanbrot checklistanna og Stjörnumerkts býr á þjóni (ekki í S.open)
     const key = openKey(k);
-    if (!(key in S.open)) S.open[key] = inMode(k) ? true : k === 'krofumal' ? cfg().mode === 'krofur' : !!cfg().mods[k][1];
+    // (cfg().mods[k] || []) — eining sem er ekki í SJALFGEFID á engan reit og mátti ekki fella borðið í heild (18.11.2026).
+    if (!(key in S.open)) S.open[key] = inMode(k) ? true : k === 'krofumal' ? cfg().mode === 'krofur' : !!(cfg().mods[k] || [])[1];
     return S.open[key];
   }
 
@@ -5499,7 +5505,10 @@
     // eins og hinar, annars væri ekkert hægt að færa hana. Taki Agnar hana af í „Velja einingar" hverfur borðinn með.
     const einingaRodOll = radar ? (S.hamForm.rod || []) : mode.first;
     const einingaRod = radar ? einingaRodOll : einingaRodOll.filter(k => k !== 'idag');
-    const idagBordi = (!radar && einingaRodOll.indexOf('idag') >= 0) ? einingHtml('idag') : '';
+    // 18.11.2026 — „Í dag" stendur í ÖLLUM hömum, ekki aðeins á mitt vinnuborð (Agnar: „Í dag á öll borð").
+    // Borðinn er því ekki bundinn einingaröð hamsins: hann fylgir manninum, ekki borðinu sem er opið. Eina leiðin
+    // til að slökkva á honum er áfram að taka eininguna af í „Velja einingar" (mitt.idagAf), sem gildir þá alls staðar.
+    const idagBordi = (!radar && idagVirkt()) ? einingHtml('idag') : '';
     /* 18.11.2026 — FLIPAR Í STAÐ STAFLA (lag 3 af hönnunartillögunni). Einingarnar lágu hver undir annarri: átta
      * einingar = átta skjáir og það sem var neðst sást aldrei. Nú ber einingahamurinn flipa — ein eining í einu í
      * fullri breidd — og síðasti flipinn „Allt" sýnir gamla staflann óbreyttan fyrir þá sem vilja hann. Valið er
@@ -5548,7 +5557,8 @@
     // Athugið: `bara_mitt` er vistað per STARFSMANN, ekki per ham (sjá cfg-vistun),
     // svo valið fylgir manni inn í alla hami. Það er hluti af því af hverju þetta
     // kom á óvart — hakið hvarf í ham sem maður hafði ekki snert.
-    const topHtml = rymi || eininga || (baraMitt && !mode.ser) || einingarIMidju || radar ? '' : mode.first.map(einingHtml).join('');
+    // 'idag' er aldrei í reininni heldur: hann er borði efst (idagBordi) og mætti annars tvisvar á sama skjá.
+    const topHtml = rymi || eininga || (baraMitt && !mode.ser) || einingarIMidju || radar ? '' : mode.first.filter(k => k !== 'idag').map(einingHtml).join('');
 
     const selMarkup = rymi || (eininga && !selEininga) ? '' : selHtml(eininga ? selEininga : selRow);
     const nyleg = master.filter(r => ageDays(r) <= 30).length;
