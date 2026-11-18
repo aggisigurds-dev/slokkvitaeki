@@ -77,6 +77,9 @@ const SAFNA = `(() => {
     if (!sjanlegt(e, cs)) return;
     const beint = [...e.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim().length > 1);
     if (!beint.length) return;
+    // Samanbrotið <details> heldur börnum sínum í trénu með gild hnit þótt ekkert sé málað. Mælt á Deginum í
+    // hubbnum: 53 „ósýnilegir" hlutir reyndust allir inni í lokuðu „Yfirlit yfir alla samstillingartakka".
+    if (e.closest && e.closest('details:not([open])')) return;
     const r = e.getBoundingClientRect();
     if (r.width < 4 || r.height < 6) return;
     /* KLIPPT AF SKRUNKASSA. Hliðarstika hubbsins skrunar inni í sér; hlutir sem eru utan hennar hafa samt gild
