@@ -69,6 +69,62 @@
   const HOP_LYKILL = 'vinnusamantekt.maelar';
   const notify = () => { try { if (window.Bord368 && Bord368.render) Bord368.render(); } catch (_) {} };
 
+  /* ── UPP EÐA NIÐUR (18.11.2026) — Agnar: „hafa líka þarna í kössunum nýtt í dag hvort talan fer upp eða niður“ ──────
+   * Mælingarnar áttu enga sögu: hver heimsókn sá aðeins töluna núna. Eftir hverja mælingu fara tölur dagsins á
+   * /api/vinnusamantekt-saga (ein röð á mælingu á dag, RLS-læst tafla) og svarið ber viðmiðin: nýjasta gildi FYRRI dags
+   * og fyrsta gildi dagsins. Borin er saman FYRSTA TALAN í birtingarstrengnum („11 · 8,3 m.kr“ → 11, „2,0 m.kr“ → 2,0) —
+   * sama tala og augað les fyrst. Örin er hlutlaus á lit: upp er gott í tekjum en vont í ósendum kröfum. */
+  const SAGA = { fyrri: {}, fyrst: {}, iDag: null, sentAt: 0, sentLykill: '' };
+  // Íslenskt snið: punktur er þúsundaskil, komma aukastafir. „1.206.643 kr“ → 1206643 · „438 af 646“ → 438.
+  // UPPHÆÐ ER BORIN SAMAN Í KRÓNUM: mkr() skrifar „950.000 kr“ undir milljón en „1,2 m.kr“ yfir henni, svo sama mæling
+  // skiptir um einingu milli daga — án umreiknings hefði 1,2 verið borið saman við 950000 (rýni 18.11.2026). `g` er því
+  // grunngildið (krónur ef eining er til), `studull` segir í hvaða einingu talan er SÝND. kr()/mkr() nota Unicode-mínus.
+  function talaGildi(tala) {
+    const m = String(tala == null ? '' : tala).replace(/[−–]/g, '-').match(/(-?\d{1,3}(?:\.\d{3})+|-?\d+)(?:,(\d+))?\s*(m\.kr|þ\.kr|kr|%)?/);
+    if (!m) return null;
+    const ein = m[3] || '', studull = ein === 'm.kr' ? 1e6 : ein === 'þ.kr' ? 1e3 : 1;
+    const g = Number(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : '')) * studull;
+    return Number.isFinite(g) ? { g: Math.round(g * 1000) / 1000, aukast: m[2] ? m[2].length : 0, ein, studull } : null;
+  }
+  const fraTexti = dags => { const gaer = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return dags === gaer ? 'frá í gær' : 'frá ' + String(dags).slice(8, 10) + '.' + String(dags).slice(5, 7) + '.'; };
+  // Breyting mælingar frá viðmiði, eða null ef ekkert viðmið er til (fyrsta mæling fyrsta dags, eða tala sem er ekki tala).
+  // Breytingin er sýnd í einingu núgildis („▲ 0,3 m.kr“); upphæðarbreyting sem hyrfi í námundun („0,0 m.kr“) í krónum.
+  const is = (n, a) => n.toLocaleString('de-DE', { minimumFractionDigits: a, maximumFractionDigits: a });
+  function breyting(id, tala) {
+    const nu = talaGildi(tala); if (!nu) return null;
+    const f = SAGA.fyrri[id], idag = SAGA.fyrst[id];
+    let vid, fra;
+    if (f && Number.isFinite(f.gildi)) { vid = f.gildi; fra = fraTexti(f.dags); }
+    else if (idag != null && Number.isFinite(idag)) { vid = idag; fra = 'í dag'; }
+    else return null;
+    const d = Math.round((nu.g - vid) * 1000) / 1000, att = d > 0 ? 'upp' : d < 0 ? 'nidur' : 'eins';
+    const syn = Math.abs(d) / nu.studull, peningar = nu.ein === 'm.kr' || nu.ein === 'þ.kr' || nu.ein === 'kr';
+    const hverfur = peningar && nu.studull > 1 && Number(syn.toFixed(nu.aukast)) === 0;
+    const abs = hverfur ? is(Math.round(Math.abs(d)), 0) + ' kr' : is(syn, nu.aukast) + (nu.ein ? ' ' + nu.ein : '');
+    const stutt = att === 'eins' ? '' : (att === 'upp' ? '▲ ' : '▼ ') + abs;
+    return { d, att, fra, stutt, texti: att === 'eins' ? 'óbreytt ' + fra : stutt + ' ' + fra };
+  }
+  const breytingHtml = (id, tala, klasi) => {
+    const b = breyting(id, tala), t = b && (klasi === 'vs-d' ? b.stutt : b.texti);
+    return t ? '<span class="' + klasi + '" data-att="' + b.att + '" title="' + esc(b.att === 'eins' ? 'Óbreytt ' + b.fra : (b.att === 'upp' ? 'Hækkaði um ' : 'Lækkaði um ') + b.stutt.slice(2) + ' ' + b.fra) + '">' + esc(t) + '</span>' : '';
+  };
+  // Tölur dagsins á þjóninn. Sama tala fer aftur aðeins á 10 mín. fresti; breytt tala fer strax. Bili kallið (401, net)
+  // sýna mælarnir töluna eina eins og áður — sagan má aldrei fella samantektina.
+  async function sagaSenda() {
+    const res = S.res; if (!res) return;
+    const l = MAEL.map(m => { const r = res[m.id], t = r && r.sev !== 'oma' ? talaGildi(r.tala) : null; return t ? { id: m.id, gildi: t.g, tala: String(r.tala).slice(0, 80), sev: r.sev } : null; }).filter(Boolean);
+    if (!l.length) return;
+    const lykill = l.map(x => x.id + '=' + x.gildi).join('|');
+    if (lykill === SAGA.sentLykill && Date.now() - SAGA.sentAt < 10 * 60000) return;
+    SAGA.sentLykill = lykill; SAGA.sentAt = Date.now();
+    try {
+      const r = await fetch('/api/vinnusamantekt-saga', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ maelingar: l }) });
+      if (!r.ok) return;
+      const j = await r.json();
+      if (j && j.ok) { SAGA.fyrri = j.fyrri || {}; SAGA.fyrst = j.fyrst || {}; SAGA.iDag = j.i_dag || null; notify(); }
+    } catch (_) {}
+  }
+
   const bhGet = async slod => {
     const r = await fetch(BH + slod, { cache: 'no-store' });
     if (!r.ok) throw new Error(slod + ' svaraði ' + r.status);
@@ -487,6 +543,7 @@
         catch (e) { res[m.id] = { sev: 'oma', tala: '—', undir: 'Náði ekki að mæla: ' + ((e && (e.message || e.details)) || e), punktar: [] }; }
       }));
       S.res = res;
+      sagaSenda();   // upp/niður-sagan — ekki beðið eftir henni
     } catch (e) { S.villa = (e && e.message) || String(e); }
     // S.at er líka sett þegar sókn bilar: annars kallaði hver teikning á nýja sókn og þær mynduðu lykkju.
     S.at = Date.now(); S.loading = false; notify();
@@ -531,6 +588,8 @@
     '.vs-mcs{margin-left:auto;font-weight:700;letter-spacing:.08em}' +
     '.vs-mc[data-sev="alv"] .vs-mcs{color:#8d2f12}.vs-mc[data-sev="athuga"] .vs-mcs{color:#6d5010}' +
     '.vs-mcn{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}' +
+    '.vs-mcd{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.04em;color:var(--ink)}.vs-mcd[data-att="eins"]{font-weight:400;color:var(--mute)}' +
+    '.vs-d{margin-left:7px;font-size:12px;font-weight:700;color:var(--ink2);white-space:nowrap}' +
     '.vs-mcu{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.vs-mcx{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}' +
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
@@ -560,7 +619,7 @@
     const tog = mj ? '<button type="button" class="vs-tog" data-t5="vs-rad" data-id="' + esc(m.id) + '" aria-expanded="' + opin + '" aria-label="' + (opin ? 'Fela' : 'Sýna') + ' smáatriði og aðgerðir" title="' + (opin ? 'Fela' : 'Sýna') + ' smáatriði, Fela og Skýring">' + (opin ? '▾' : '▸') + '</button>' : '';
     return '<div class="vs-r' + (falinn ? ' falid' : '') + '" data-sev="' + r.sev + '">' +
       '<span class="vs-led" data-sev="' + r.sev + '" role="img" aria-label="' + sv[0] + '" title="' + sv[0] + '"></span>' +
-      '<div class="vs-l1">' + tengill + ((r.sev === 'alv' || r.sev === 'athuga') ? '<span class="vs-w">' + sv[0] + '</span>' : '') + '<span class="vs-n">' + esc(r.tala) + '</span>' + tog + '</div>' +
+      '<div class="vs-l1">' + tengill + ((r.sev === 'alv' || r.sev === 'athuga') ? '<span class="vs-w">' + sv[0] + '</span>' : '') + '<span class="vs-n">' + esc(r.tala) + breytingHtml(m.id, r.tala, 'vs-d') + '</span>' + tog + '</div>' +
       (r.undir ? '<div class="vs-u">' + esc(r.undir) + '</div>' : '') +
       (opin ? (efni ? '<ul class="vs-p">' + (klippt ? pk.slice(0, PUNKTAR_SYNDIR) : pk).map(p => '<li>' + (p && typeof p === 'object' ? '<strong>' + esc(p.feitt) + '</strong>' + esc(p.texti || '') : esc(p)) + '</li>').join('') + meira + (skyr ? '<li>' + skyr + '</li>' : '') + '</ul>' : '') +
         '<div class="vs-a">' + (api ? api.felaTakki(f).replace(/^ · /, '') : '') + '</div>' : '') + '</div>';
@@ -619,14 +678,17 @@
     const opinn = h => opnirNu.indexOf(h.n) >= 0;
     const maelar = hopar.length ? '<div class="vs-mb">' + hopar.map(h => {
       const a = h.adal;
+      const hreyf = h.l.map(x => breyting(x.m.id, x.r.tala)).filter(Boolean), upp = hreyf.filter(b => b.att === 'upp').length, nid = hreyf.filter(b => b.att === 'nidur').length;
+      const hreyfT = (upp || nid) ? ' · ' + [upp ? upp + ' ▲' : '', nid ? nid + ' ▼' : ''].filter(Boolean).join(' ') : '';
       const telja = [h.alv ? h.alv + ' alvarlegt' : '', h.ath ? h.ath + ' athuga' : ''].filter(Boolean).join(' · ') || 'ekkert rautt';
       return '<button type="button" class="vs-mc" data-sev="' + h.sev + '" data-t5="vs-hop" data-h="' + esc(h.n) + '" aria-expanded="' + opinn(h) + '" title="' + (opinn(h) ? 'Fela' : 'Sýna') + ' mælingarnar í ' + esc(h.n) + '">' +
         '<span class="vs-mch">' + esc(h.n) + '<span class="vs-mcs">' + esc(telja) + '</span></span>' +
         '<span class="vs-mcn">' + esc(a ? a.r.tala : '—') + '</span>' +
+        (a ? breytingHtml(a.m.id, a.r.tala, 'vs-mcd') : '') +
         (a ? '<span class="vs-mcu">' + esc(a.m.heiti) + '</span>' : '') +
         '<span class="vs-mcx">' + (opinn(h)
-          ? '<b>Opið</b> · ' + h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + ' ▴'
-          : h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + ' · opna ▾') + '</span>' +
+          ? '<b>Opið</b> · ' + h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + esc(hreyfT) + ' ▴'
+          : h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + esc(hreyfT) + ' · opna ▾') + '</span>' +
       '</button>';
     }).join('') + '</div>' : '';
     const opnir = hopar.filter(opinn);
@@ -663,5 +725,5 @@
     return false;
   }
 
-  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-18' };
+  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, SAGA, talaGildi, breyting, version: '2026-11-18b' };
 })();

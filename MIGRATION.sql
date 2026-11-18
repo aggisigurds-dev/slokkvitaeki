@@ -442,3 +442,36 @@ ALTER TABLE fyrirtaeki     ADD COLUMN IF NOT EXISTS afslattur_pct NUMERIC DEFAUL
 -- ============================================================
 -- Done! All tables and columns are now ready.
 -- ============================================================
+
+-- ── 18.11.2026 — vinnusamantekt_saga: dagleg saga mælinganna í Vinnusamantekt (489) ───────────────────────────
+-- Agnar: „hafa líka þarna í kössunum nýtt í dag hvort talan fer upp eða niður“. Ein röð á mælingu á dag: fyrst_gildi
+-- er fyrsta mæling dagsins, gildi sú nýjasta. Upphæðir eru geymdar í KRÓNUM. Aðeins þjónustuhlutverk les og skrifar
+-- (fallið netlify/functions/vinnusamantekt-saga.cjs, sem krefst stjórnanda). Þegar keyrt í grunninum 18.11.2026.
+create table if not exists public.vinnusamantekt_saga (
+  dags        date        not null,
+  maeling     text        not null check (maeling ~ '^[a-z0-9_:-]{1,60}$'),
+  gildi       numeric     not null,
+  tala        text        check (tala is null or length(tala) <= 80),
+  sev         text        check (sev is null or sev in ('alv','athuga','ok','upp','oma')),
+  fyrst_gildi numeric     not null,
+  fyrst_at    timestamptz not null default now(),
+  at          timestamptz not null default now(),
+  primary key (dags, maeling)
+);
+alter table public.vinnusamantekt_saga enable row level security;   -- engar reglur, viljandi
+
+create or replace function public.vs_saga_skra(p_dags date, p_maelingar jsonb)
+returns integer language plpgsql security invoker set search_path = public as $$
+declare n integer;
+begin
+  insert into public.vinnusamantekt_saga (dags, maeling, gildi, tala, sev, fyrst_gildi)
+  select p_dags, x->>'id', (x->>'gildi')::numeric, left(x->>'tala', 80), nullif(x->>'sev',''), (x->>'gildi')::numeric
+  from jsonb_array_elements(p_maelingar) x
+  where (x->>'id') ~ '^[a-z0-9_:-]{1,60}$' and (x->>'gildi') ~ '^-?[0-9]+(\.[0-9]+)?$'
+  on conflict (dags, maeling) do update
+    set gildi = excluded.gildi, tala = excluded.tala, sev = excluded.sev, at = now();
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.vs_saga_skra(date, jsonb) from public, anon, authenticated;
+grant execute on function public.vs_saga_skra(date, jsonb) to service_role;
