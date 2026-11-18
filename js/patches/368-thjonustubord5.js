@@ -317,12 +317,19 @@
     // en birtist aldrei, því lesturinn byggði haminn upp án hennar.
     return h ? { l: String(h.l), board: h.board !== false, filter: 'allt', ser: true, first: (Array.isArray(h.first) ? h.first : []).filter(k => MODS[k]),
       breidd: (h.breidd && typeof h.breidd === 'object') ? h.breidd : {}, eigandi: h.eigandi ? String(h.eigandi) : '',
+      // 18.11.2026: `regla` — hamur sem tekur mál eftir því hverju þau tilheyra (sjá reglaTekur). Kemur aðeins úr gögnunum.
+      regla: (h.regla && typeof h.regla === 'object') ? h.regla : null,
       flokkar: Array.isArray(h.flokkar) ? h.flokkar : [], merki: Array.isArray(h.merki) ? h.merki : [] } : null;
   }
   // 19.09.2026: hamur með `eigandi` sést aðeins í hamaröð þess starfsmanns — hinir fá ekki röðina sína
   // fulla af hömum annarra. M(id) þekkir haminn áfram, svo mál tengd honum týnast ekki.
   const hamSest = h => !h.eigandi || lagt(h.eigandi) === lagt(nu());
-  const hamaListi = () => Object.keys(MODES).concat(serHamir().filter(hamSest).map(h => h.id));
+  // 18.11.2026: eigin hamir (með `eigandi`) standa næst á eftir „mitt vinnuborð". Hamastikan skrunar þegar hún er
+  // lengri en skjárinn og sérsniðnir hamir voru aftast — mælt hjá Agnari: „BH · Þjónustubeiðnir" var utan skjás.
+  const hamaListi = () => {
+    const k = Object.keys(MODES), ser = serHamir().filter(hamSest);
+    return k.slice(0, 1).concat(ser.filter(h => h.eigandi).map(h => h.id), k.slice(1), ser.filter(h => !h.eigandi).map(h => h.id));
+  };
   // 01.10.2026 (Agnar: „geti slökkt á að það sé alltaf allt sjáanlegt fyrir ákveðna starfsmenn … eins og fyrir
   // Anna … svo hann sjái bara Anni · mitt vinnuborð til að byrja með og + hamur, velja einingar"): hamir sem eru
   // faldir í hamaröð starfsmanns, by_staff.<nafn>.falnir_hamir = [id]. Listi yfir FALDA (ekki sýnilega), svo hamur
@@ -714,8 +721,22 @@
     if (h.rymi === SAMT_HAM) return bidurSvars(r) && onBoardOf(r, nu());
     // Vinnusvæði tekur AÐEINS sín merktu mál (mælt 13.09.: 103 í stað 30); einingahamur engin.
     if (h.rymi || !h.board) return false;
-    if (bidurSvars(r) && onBoardOf(r, nu())) return false;
+    // Regluhamur með samthykki:true sýnir líka það sem bíður svars — hann er sýn yfir eitt félag, ekki annar staður fyrir málið.
+    if (bidurSvars(r) && onBoardOf(r, nu()) && !(h.regla && h.regla.samthykki)) return false;
     return id === 'thjonusta' || iHamGrunnur(r, id);
+  }
+  // 18.11.2026 (Agnar: „sér Ham … bara á Agnari sem er bara fyrir verkefnin í Brunahólf"): hamur með `regla` tekur mál
+  // eftir því hverju þau tilheyra — ekkert er skrifað á málin sjálf. merki = nákvæm merki (t.d. ham:<annar hamur>) ·
+  // forskeyti = merki sem byrja svona (bh:…) · kunni = nafn kúnnans byrjar svona · titill = orð í titli. Reglan býr í
+  // gögnum hamsins (thjonustubord5.hamir[].regla). Pósthólfið sem erindið barst í er EKKI í reglunni: anon les ekki
+  // email_digest.account fyrir Brunahólfs-póst (RLS), svo slík mál þurfa merkið bh:… eða ham:<hamur> til að lenda hér.
+  function reglaTekur(r, g) {
+    const tags = tagList(r), listi = x => (Array.isArray(x) ? x : []).filter(Boolean);
+    if (listi(g.merki).some(t => tags.indexOf(t) >= 0)) return true;
+    if (listi(g.forskeyti).some(f => tags.some(t => t.indexOf(f) === 0))) return true;
+    const kn = lagt(r.customer_nafn), ti = lagt(r.title);
+    if (kn && listi(g.kunni).some(f => kn.indexOf(lagt(f)) === 0)) return true;
+    return !!ti && listi(g.titill).some(f => ti.indexOf(lagt(f)) >= 0);
   }
   function iHamGrunnur(r, id) {
     const sk = skyrirHamir(r);
@@ -723,6 +744,7 @@
     if (id === 'thjonusta') return !sk.length;
     const h = M(id);
     if (!h) return false;
+    if (h.regla && reglaTekur(r, h.regla)) return true;
     if (id === 'samskipti' && isPost(r)) return true;
     if (r.type && (h.tegundir || []).indexOf(r.type) >= 0) return true;
     if (r.flokkur && h.flokkar.indexOf(r.flokkur) >= 0) return true;
@@ -5486,8 +5508,8 @@
         (ppl.indexOf(n) >= 0 ? '<option value="' + esc(n) + '" selected>Mitt borð (' + esc(n) + ')</option>' : '') +
         '<option value="">Master</option>' + ppl.filter(x => x !== n).map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('') + '</select></label>' +
       // 368aa: innbyggðu hamirnir raða málum sjálfir — val á ham aðeins þegar sérsniðnir hamir eru til.
-      (serHamir().length ? '<label class="nylbl"><span class="lbl">Hamur</span><select data-k="nh" aria-label="Hamur">' +
-        '<option value="">Enginn sérhamur</option>' + serHamir().map(h => '<option value="' + esc(h.id) + '"' + (h.id === cfg().mode ? ' selected' : '') + '>' + esc(h.l) + '</option>').join('') + '</select></label>' : '') +
+      (serHamir().filter(hamSest).length ? '<label class="nylbl"><span class="lbl">Hamur</span><select data-k="nh" aria-label="Hamur">' +
+        '<option value="">Enginn sérhamur</option>' + serHamir().filter(hamSest).map(h => '<option value="' + esc(h.id) + '"' + (h.id === cfg().mode ? ' selected' : '') + '>' + esc(h.l) + '</option>').join('') + '</select></label>' : '') +
       '<textarea data-k="nl" rows="2" placeholder="Lýsing (valfrjálst)" aria-label="Lýsing"></textarea>' +
       '<label class="nylbl"><span class="lbl">Frestur</span><input type="date" data-k="nd" aria-label="Frestur"></label>' +
       '<label class="nychk"><input type="checkbox" data-k="ni"> Áríðandi</label>' +
@@ -6452,13 +6474,15 @@
             : 'Veldu haminn til að geta dregið einingarnar til og breytt stærð þeirra.') + '</span></div>' +
         '<div class="hgrp"><span class="lbl">Taka sjálfkrafa með mál í flokki</span>' + Object.keys(FLOKKAR).map(k => hak('hf_', k, FLOKKAR[k], h && h.flokkar.indexOf(k) >= 0)).join('') + '</div>' +
         '<div class="hgrp"><span class="lbl">… eða með merki</span>' + Object.keys(MERKI).map(k => hak('hg_', k, MERKI[k], h && h.merki.indexOf(k) >= 0)).join('') + '</div>' +
+        (h && h.regla && h.regla.lysing ? '<p class="hnote"><b>Sjálfvirk regla:</b> ' + esc(h.regla.lysing) + '</p>' : '') +
         '<p class="hnote">Mál tengjast líka beint: opnaðu mál og smelltu á haminn undir „Hamir". Beint tengt mál fer af Þjónustu.</p>' +
         '<div class="nybtn">' + (h ? '<button type="button" class="btn iv sm" data-t5="ham-eyda" data-mode="' + esc(F.id) + '">🗑 Eyða ham</button><span class="grow"></span>' : '') +
           '<button type="button" class="btn gold sm" data-t5="ham-vista">' + (h ? 'Vista breytingar' : 'Stofna ham') + '</button></div>' +
       '</div></section>';
   }
   function hamirHtml(r) {
-    const tags = tagList(r), serL = serHamir().map(h => h.id);
+    // 18.11.2026: hamur annars starfsmanns (eigandi) sést heldur ekki hér — nema málið sé þegar tengt honum beint.
+    const tags = tagList(r), serL = serHamir().filter(h => hamSest(h) || tags.indexOf(HAM_MERKI + h.id) >= 0).map(h => h.id);
     // 368aa: innbyggðu hamirnir raða málum sjálfir — aðeins sérsniðnir hamir (+ Hamur) taka mál sem tengd eru beint.
     if (!serL.length) return '';
     return '<div class="hchips"><span class="slabel">Hamir</span>' + serL.map(k => {
@@ -6971,6 +6995,8 @@
         const breidd = {};
         rod.forEach(k => { const b = (F.breidd || {})[k]; if (gildBreidd(b)) breidd[k] = b; });
         const gildi = { id: hid, l: nafn, board: bordMed, first: rod, breidd: breidd, flokkar: valin('hf_'), merki: valin('hg_'), eigandi: baraEg ? (fyrri.eigandi || nu()) : '' };
+        // 18.11.2026: reglan (regla) er ekki í ritlinum — hún fylgir hamnum óbreytt í gegnum „Breyta ham", annars hyrfi hún við vistun.
+        if (fyrri.regla) gildi.regla = fyrri.regla;
         if (!bordMed && !gildi.first.length) { toast('Veldu að minnsta kosti eina einingu — hamurinn yrði annars auður.', true); return; }
         el.disabled = true;
         vistaHamir(l => { const i = l.findIndex(x => x.id === hid); if (i >= 0) l[i] = gildi; else l.push(gildi); return l; },
