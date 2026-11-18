@@ -496,9 +496,13 @@
     '.vs{margin:0 0 14px;padding:0}.vs-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-bottom:1px solid var(--rule)}' +
     '.vs-h h2{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase}.vs-sum{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;font-weight:600}' +
     '.vs-sum span{display:inline-flex;align-items:center;gap:6px}.vs-mute{color:var(--mute);font-weight:400}' +
-    '.vs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:0}' +
-    '.vs-g{padding:10px 14px 12px;border-bottom:1px solid var(--rule2);min-width:0}.vs-g>h3{margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
-    '.vs-r{display:grid;grid-template-columns:18px minmax(0,1fr);gap:2px 9px;padding:7px 0;border-top:1px dashed var(--rule2)}.vs-r:first-of-type{border-top:0}' +
+    // 18.11.2026 (Agnar, með skjáskot af auðum flötum: „geturðu raðað þessu eitthvað betur“): hóparnir voru grid-reitir, svo
+    // hver röð teygðist í hæð hæsta hóps (1.318 px) og „Kerfi“ sat einn á eigin röð — samantektin var 1.751 px á 1920 px skjá.
+    // Nú flæða RAÐIRNAR í dálka eins og í blaði: dálkarnir fyllast jafnt (1.054 px, mælt). Röð brotnar aldrei og fyrirsögn
+    // hóps fylgir alltaf fyrstu röð sinni; hópur má halda áfram efst í næsta dálki. Á síma er dálkurinn einn eins og áður.
+    '.vs-grid{columns:330px;column-gap:0;column-rule:1px solid var(--rule2)}' +
+    '.vs-g{padding:10px 14px 12px;border-bottom:1px solid var(--rule2);min-width:0}.vs-g>h3{margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);break-after:avoid;-webkit-column-break-after:avoid}' +
+    '.vs-r{display:grid;grid-template-columns:18px minmax(0,1fr);gap:2px 9px;padding:7px 0;border-top:1px dashed var(--rule2);break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}.vs-r:first-of-type{border-top:0}' +
     '.vs-led{--c:#a39a88;display:inline-block;width:13px;height:13px;margin-top:3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.75),var(--c) 55%);box-shadow:0 0 0 1px rgba(0,0,0,.32)}' +
     '.vs-led[data-sev="alv"]{--c:#d0301c;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 9px #d0301c}.vs-led[data-sev="athuga"]{--c:#e0a100;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 8px #e0a100}.vs-led[data-sev="ok"]{--c:#2f9e57;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 7px #2f9e57}.vs-led[data-sev="upp"]{--c:#6b88ad}.vs-sum .vs-led{margin-top:0}' +
     '.vs-l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}.vs-t{all:unset;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--edge)}.vs-t:hover,.vs-t:focus-visible{border-bottom-color:var(--ink);outline:0}' +
@@ -507,12 +511,16 @@
     '.vs-p{grid-column:2;margin:1px 0 0;padding:0 0 0 14px;list-style:disc;font-size:11.5px;color:var(--mute)}.vs-p li{margin:1px 0}.vs-p li>strong{font-weight:700;color:var(--ink)}.vs-p .skyr{display:inline}' +
     '.vs-a{grid-column:2;font-size:11.5px;color:var(--mute)}.vs-r.falid{opacity:.6}.vs-tomt{padding:12px 14px;color:var(--mute);font-size:13px}.vs-f{padding:6px 14px 10px}' +
     '.vs-tog{all:unset;cursor:pointer;padding:0 8px;font-size:13px;color:var(--mute)}.vs-tog:focus-visible{outline:2px solid var(--ink)}' +
+    '.vs-p li.vs-meira{list-style:none;margin:3px 0 0 -14px}.vs-fl{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--ink2);border-bottom:1px solid var(--edge)}.vs-fl:hover,.vs-fl:focus-visible{color:var(--ink);border-bottom-color:var(--ink)}' +
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
 
   // Á síma (≤ 760 px) eru raðirnar samanbrotnar: ljós, heiti, tala og ein lína — punktarnir og Fela/Skýring opnast með ▸.
   // Á breiðum skjá er allt opið. Opnun lifir endurteikningu (S.opna) — annars lokaðist röðin í hvert sinn sem borðið teiknast.
   const mjor = () => { try { return !!(window.matchMedia && matchMedia('(max-width: 760px)').matches); } catch (_) { return false; } };
 
+  // 18.11.2026: langur punktalisti hélt heilum dálki uppi (Verkferli: 13 ferli = 727 px af 1.318). Á breiðum skjá sjást
+  // fyrstu PUNKTAR_SYNDIR og hnappur opnar hina — sami rofi og samanbrotið á síma (S.opna), svo opnun lifir endurteikningu.
+  const PUNKTA_HAMARK = 6, PUNKTAR_SYNDIR = 4;
   function radHtml(m, r, falinn, mj) {
     const sv = SEV[r.sev] || SEV.oma, api = window.Bord368 && Bord368.felaApi;
     const f = { l: 'yfirlit:mael:' + m.id, e: 'yfirlit', d: m.heiti, falinn: !!falinn };
@@ -525,12 +533,15 @@
     // Opinn skýringarritill heldur röðinni opinni — annars hyrfi textinn sem verið er að skrifa.
     const opin = !mj || S.opna[m.id] === true || /skyrrit/.test(skyr);
     const efni = (r.punktar && r.punktar.length) || skyr;
+    const pk = r.punktar || [], langt = !mj && pk.length > PUNKTA_HAMARK, klippt = langt && S.opna[m.id] !== true;
+    const meira = langt ? '<li class="vs-meira"><button type="button" class="vs-fl" data-t5="vs-rad" data-id="' + esc(m.id) + '" aria-expanded="' + !klippt + '">' +
+      (klippt ? '▸ Sýna alla ' + pk.length : '▾ Sýna færri') + '</button></li>' : '';
     const tog = mj ? '<button type="button" class="vs-tog" data-t5="vs-rad" data-id="' + esc(m.id) + '" aria-expanded="' + opin + '" aria-label="' + (opin ? 'Fela' : 'Sýna') + ' smáatriði og aðgerðir" title="' + (opin ? 'Fela' : 'Sýna') + ' smáatriði, Fela og Skýring">' + (opin ? '▾' : '▸') + '</button>' : '';
     return '<div class="vs-r' + (falinn ? ' falid' : '') + '" data-sev="' + r.sev + '">' +
       '<span class="vs-led" data-sev="' + r.sev + '" role="img" aria-label="' + sv[0] + '" title="' + sv[0] + '"></span>' +
       '<div class="vs-l1">' + tengill + ((r.sev === 'alv' || r.sev === 'athuga') ? '<span class="vs-w">' + sv[0] + '</span>' : '') + '<span class="vs-n">' + esc(r.tala) + '</span>' + tog + '</div>' +
       (r.undir ? '<div class="vs-u">' + esc(r.undir) + '</div>' : '') +
-      (opin ? (efni ? '<ul class="vs-p">' + (r.punktar || []).map(p => '<li>' + (p && typeof p === 'object' ? '<strong>' + esc(p.feitt) + '</strong>' + esc(p.texti || '') : esc(p)) + '</li>').join('') + (skyr ? '<li>' + skyr + '</li>' : '') + '</ul>' : '') +
+      (opin ? (efni ? '<ul class="vs-p">' + (klippt ? pk.slice(0, PUNKTAR_SYNDIR) : pk).map(p => '<li>' + (p && typeof p === 'object' ? '<strong>' + esc(p.feitt) + '</strong>' + esc(p.texti || '') : esc(p)) + '</li>').join('') + meira + (skyr ? '<li>' + skyr + '</li>' : '') + '</ul>' : '') +
         '<div class="vs-a">' + (api ? api.felaTakki(f).replace(/^ · /, '') : '') + '</div>' : '') + '</div>';
   }
 
@@ -581,5 +592,5 @@
     return false;
   }
 
-  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-16' };
+  window.Vinnusamantekt = { html, load, smellur, S, MAEL, THR, EIGANDI, version: '2026-11-18' };
 })();
