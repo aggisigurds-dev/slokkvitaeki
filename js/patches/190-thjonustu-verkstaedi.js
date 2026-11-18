@@ -430,20 +430,29 @@
     });
     return m;
   }
+  // Bið fyrir næstu SJÁLFVIRKU tilraun (ms): 2, 4, 8, 16, 32 s — svo null (hætt; ný tilraun við teikningu að mínútu liðinni).
+  const skodBid = n => (n < 5 ? 2000 * Math.pow(2, n) : null);
+  let _skodTilraun = 0;
   async function loadSkodud() {
     try {
-      const sb = (window.DB && DB.sb); if (!sb) throw new Error('DB.sb vantar');
+      const sb = (window.DB && DB.sb); if (!sb || typeof DB.fetchAll !== 'function') throw new Error('gagnatengingin er ekki tilbúin');
       const iDag = new Date().toISOString().slice(0, 10);
       const rows = await DB.fetchAll((from, to) => sb.from('uttaeki')
         .select('fyrirtaeki_id,last_insp,status,created_at').gte('last_insp', curYear + '-01-01').lte('last_insp', iDag)
         .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
       _skodByCo = skodudKort(rows, curYear, iDag);
-    } catch (_) {
-      // Sóknarvilla → engin vísbending, ENGIN núll-fullyrðing. Ný tilraun við næstu teikningu eftir mínútu (ekki lykkja).
-      setTimeout(() => { _skodLoaded = false; }, 60000);
+      _skodTilraun = 0;
+    } catch (e) {
+      // Sóknarvilla → engin vísbending, ENGIN núll-fullyrðing. Mælt í loftinu 18.11.2026 (c717f43): sé síðan opnuð BEINT á
+      // verkstæðinu er teiknað áður en DB.sb er til, og tækjaflísarnar birtust þá fyrst eftir mínútu. Nú reynir sóknin
+      // sjálf aftur (2–32 s); dugi það ekki, við næstu teikningu að mínútu liðinni. Aldrei lykkja: ein tilraun í einu.
+      const bid = skodBid(_skodTilraun++);
+      try { console.warn('[190] skoðuð tæki náðust ekki (tilraun ' + _skodTilraun + '): ' + ((e && e.message) || e)); } catch (_) {}
+      if (bid != null) setTimeout(loadSkodud, bid);
+      else setTimeout(() => { _skodTilraun = 0; _skodLoaded = false; }, 60000);
       return;
     }
-    render();
+    try { render(); } catch (e) { try { console.warn('[190] teikning eftir tækjasókn brást', e); } catch (_) {} }   // kölluð af klukku: má ekki verða að óhöndluðu loforði
   }
   // Vísbendingar um að úttekt ársins sé gerð, sterkasta fyrst. Hrein: les aðeins spjaldið (r).
   function sonnun(r) {
