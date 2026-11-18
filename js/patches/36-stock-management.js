@@ -301,6 +301,7 @@
   const PANTA = 'Þarf að panta';
   const _metaLocal = {};
   const metaAll = () => { try { return (window.AppSettings && AppSettings.path && AppSettings.path('birgdir_meta')) || {}; } catch (_) { return {}; } };
+  const talningaMeta = () => { try { return (window.AppSettings && AppSettings.path && AppSettings.path('birgdir_talning')) || null; } catch (_) { return null; } };
   const meta = k => Object.assign({}, metaAll()[k] || {}, _metaLocal[k] || {});
   const erPanta = i => !!meta(i.k).panta;
   async function vistaMeta(k, patch) {
@@ -445,6 +446,7 @@
         ${iPanta ? '' : `<button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>`}
       </div>`) + `
     <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#b42318;font-weight:600">${lowCount} undir lágmarki</span>` : ''}${nPanta ? ` &middot; <span style="color:#8a5a00;font-weight:600">${ik('stjarna', 11, true)} ${nPanta} þarf að panta</span>` : ''}</div>
+    ${!q && _hamur === 'slokkvitaeki' ? (() => { const t = talningaMeta(); if (!t) return ''; const ld = t.linur || []; return `<div style="font-size:12px;color:var(--ink3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg2,#f7f7f8);border-radius:6px;line-height:1.6">Rauntalning ${esc(t.dags)}:${ld.map(l => ` <span style="white-space:nowrap">${esc(l.nafn)} ${l.eldri ? l.eldri + ' eldri + ' + l.nyrri + ' nýrri' : l.nyrri + ' nýrri'} = ${l.samtals}</span>`).join(' &middot;')}</div>`; })() : ''}
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
       ${leitarreitur}
       <div style="display:flex;gap:6px;flex-wrap:wrap">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
