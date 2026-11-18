@@ -48,6 +48,7 @@ const HUB = require('./hub-adgangar.cjs');
 const CL = require('./_adalmal-claude.cjs');
 const M = require('./_merkja.cjs');
 const PSV = require('./_postsvar-rod.cjs');   // póstsvar Claude → röð í afgreidsla (sameiginlegt með 519)      // 519 Merkja og keyra — merki á línum Þjónustuborðsins (sama Biddu Claude-vél)
+const DYR = require('./_afgreidsla-dyr.cjs');   // 18.11.2026: dyr á hverjum lið — beint á staðinn þar sem verkið er unnið
 const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
 
 const THROSKULDUR_KR = 10000;
@@ -328,7 +329,15 @@ async function vipVisir() {
   return V.byggjaVisi(radir, tengl);
 }
 
-async function synilegt(row, visir) {
+// V = niðurstaða DYR.saekja fyrir ALLA liðina (ein umferð í GET). Vanti hana (stakt verk eftir vistun) er flett upp fyrir þennan eina.
+/* Keyrir fn á hverju staki, mest n í einu, og skilar niðurstöðunum Í SÖMU RÖÐ. Kasti eitt, kastar heildin (eins og áður). */
+async function iHopum(listi, n, fn) {
+  const ut = new Array(listi.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, listi.length) }, async () => { while (i < listi.length) { const k = i++; ut[k] = await fn(listi[k]); } }));
+  return ut;
+}
+async function synilegt(row, visir, V) {
   const ath = await athuga(row);
   const g = row.gogn || {};
   const rok = Array.isArray(row.af_hverju) ? row.af_hverju : [];
@@ -342,6 +351,8 @@ async function synilegt(row, visir) {
     virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by,
     forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
     athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
+  // Dyr: takkar sem opna málið, reikninginn, félagið eða hringja — bregðist uppflettingin kemur liðurinn samt, án dyra.
+  try { Object.assign(o, DYR.dyrFyrir(row, V || await DYR.saekja([row], lesa).catch(() => null))); } catch (_) { o.dyr = []; o.listi = []; }
   if (row.tegund === 'tolvupostur') {
     o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).filter(Boolean).map((v) => v.filename),
       // 18.11.2026 (Agnar: „sýnt þarna í svarinu skjalið svo ég geti alltaf opnað það og staðfest“): sama skjal og
@@ -786,8 +797,12 @@ exports.handler = async (event) => {
       ]);
       const tilbuin = [];
       const visir = await vipVisir().catch(() => null);   // VIP-merkið bregst → verkin koma samt, án merkis
-      for (const r of tilb) {
-        const s = await synilegt(r, visir);
+      // 18.11.2026: liðirnir voru unnir EINN Í EINU (50 liðir × athuganir og tilvísanir = 13 s; Agnar: „Afgreiðslan virkar
+      // ekki“). Nú átta samhliða, í sömu röð, og dyr allra liða eru sóttar í einni umferð.
+      const V = await DYR.saekja(tilb, lesa).catch(() => null);
+      const syn = await iHopum(tilb, 8, (r) => synilegt(r, visir, V));
+      for (let k = 0; k < tilb.length; k++) {
+        const r = tilb[k], s = syn[k];
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }
         tilbuin.push(s);
       }
