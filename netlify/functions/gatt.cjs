@@ -896,7 +896,7 @@ exports.handler = async (event) => {
         // 07.11.2026: `krafa_note` fylgir með svo gáttin geti virt ⏸ BÍÐA-merkinguna sem Agnar
         // notar þegar — sjá stadaAf() neðar. Hún var ekki sótt áður og því þagði biðmerkingin.
         solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
-        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`) : null,
+        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags,vidskiptategund&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
         vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
         items: syn.vinnusvaedi ? itemsFelags().catch(() => null) : null,
@@ -1474,7 +1474,9 @@ exports.handler = async (event) => {
               const y = rl[n];
               if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
               invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
-                upphaed: x.upphaed != null ? Number(x.upphaed) : null, lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: null, stada: greitt ? 'greitt' : null });
+                upphaed: x.upphaed != null ? Number(x.upphaed) : null, // 18.11.2026 (Agnar: „Mátt líka skrá tegundirnar af reikningum"): Stólpa-reikningar bera engar línur, svo tegundin
+                // er handskráð í stolpi_reikningar.vidskiptategund (sama orðasafn og customer_documents). Vanti hana: „—" eins og áður.
+                lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: x.vidskiptategund || null, stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
           }
