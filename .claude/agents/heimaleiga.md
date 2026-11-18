@@ -212,4 +212,12 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   - FLEIRI tillögur: Bríetartún íbúðir 2026 (6) og húsfélag 2026 (4), sem eru kreditreikningar og afrit, og Freyjugata 2026 (2).
   - Ekkert var tengt. Listinn er í powerplan_lotur lota 6 (tolur.reikningur_pdf_fylgir_solu.stolpi). Heimild: lota 6, stjórnlotan.
 
-Síðast uppfært: 17.11.2026
+- 18.11.2026 · **Vinnublöð skoðana nóv. 2026 (Agnar sendi skönnun) + sérkjörin í appið.** Agnar 18.11: „Heimaleigu verðsamkomulagi, nær yfir öll
+  þeirra fasteignir og undirkennitölur" → sérkjör 30.10 sett í `company_pricing` á 22 lykla (Charlize kerfi/verd; afrit
+  `backup_20261118_company_pricing_heimaleiga`). Skoðanir: Laugavegur 18 (Máni+Midtown) 10.11, Ice + HQ (Grensásvegur 7) 11.11, Barónsstígur 16.11.
+  Blöðin: Ice 1 duft + 13 LV (6 hleðslur) + 1 CO₂ 5 kg (skrá 8); HQ 1 duft + 1 LV + 1 CO₂ 2 kg (skrá 6 frá Grensásvegi 14); Barónsstígur duft + LV
+  í hleðslu, „Ónýtt?", 2× ný LV, vantar tæki í kjallara; Laugavegur 18 36 LV + 1 duft + 4 slöngur (skrá 115), 6 með hring+striki, „7× ný".
+  **Sirius ehf (Barónsstígur) afskráður 2012** — enginn reikningur fyrr en greiðandi er staðfestur. Eva 13.11: inneign Heimaleigu 20.703 án vsk upp í HQ.
+  Ekkert skráð í úttektir enn: eyðing tækja sem eru ekki á blaði þarf samþykki Agnars (sjálfvirk vörn stöðvaði eyðingu).
+
+Síðast uppfært: 18.11.2026
