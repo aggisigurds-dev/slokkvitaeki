@@ -442,3 +442,16 @@ Bæði mæld 18.11 og bæði með frávik. Úrskurður skráður í `review_note
 | 1941 | Barónsstígur 18 – Heimaleiga | **KT AFSKRÁÐ**: 460504-2520 er Sirius ehf., afskráð 30.10.2012. Engin önnur Heimaleigu-röð ber þessa kt (Heimaleiga notar 510117-0690 á sex staði) | Engin skýrsla | Engin geokóðun; handsett mynd, ÓSNERT | Tvö tæki (1 léttvatn 6 L, 1 duft 6 kg), **bæði merkt lánuð** frá 16.11.2026. Engin sala, enginn reikningur | Ekkert netfang, enginn póstur. Röðin stofnuð 09.11.2026; kom á síuna þegar vettvangsárið 2026 var sett | Afskráð kennitala · engin úttekt og engin gögn · tækin lánuð, ekki í þjónustu · plan_note geymir aðgangskóða að íbúðunum (ekki afritað hingað — repóin eru opinber) |
 
 **Staða 18.11.2026: 170 raðir bera úrskurð** (168 frá 11.11 + þessar tvær). Sían sjálf telur 167.
+
+## Leiðrétt 18.11.2026 — röng Ársskoðunar-nóta á Bílabúð Benna, Fiskislóð (1612)
+
+Nótan var skrifuð 23.08.2026, ÁÐUR en úttektarskýrslan fyrir Fiskislóð barst, og sagði ranglega að engin
+slökkvitækjaúttekt væri til og að skýrslan væri stíluð á Krókháls 9. Skýrslan (skjal 9996, ágúst 2026, Binni)
+er stíluð á Fiskislóð 41 með réttri kennitölu og ber 9 léttvatnstæki og 5 brunaslöngur.
+
+| | Var | Er nú |
+|---|---|---|
+| **Nóta** | „Engin slökkvitækjaúttekt á Fiskislóð 2026 — skýrslan 2026 er stíluð á Krókháls 9 og öll 13 tækin liggja þar“ | Skýrslan fyrir Fiskislóð 41 er til; það sem vantar er **reikningurinn**, ekki úttektin (mál #1414, 59.280 kr.). Misræmi lista og skýrslu tekið fram |
+| **Staða** | `gap` | **`gap`, óbreytt** — árið telst ekki afgreitt fyrr en rukkað er, og félagið helst á síunni |
+
+Afrit af gömlu röðinni: `backup_20261118_year_factcheck`. Lína bætt við `review_note` á röð 1612. Lesið til baka.
