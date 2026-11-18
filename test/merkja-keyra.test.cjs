@@ -144,6 +144,21 @@ test('erFelagsKt: lögaðili 41–71 sleppur óhulinn, einstaklingur og rusl ekk
   assert.match(CL.hylja('Hárbeitt kt. 680499-3009'), /\[kennitala\]/);
 });
 
+/* ── Nöfn með tölustöfum finnast þegar ehf./hf. fylgir (18.11.2026, mál #1601) ── */
+test('nofnI: „D27 ehf." finnst, en húsnúmer og reikningsnúmer eru áfram ekki nöfn', () => {
+  // Þetta er málið sem skilaði tómu svari: félagið fannst ekki, svo engin fyrirtækjafletting fór fram.
+  assert.deepStrictEqual(CL.nofnI('D27 ehf.: samningur undirritaður 31.05, fyrsta úttekt ógerð'), ['D27']);
+  assert.deepStrictEqual(CL.nofnI('B2 ehf og C3 hf. sendu reikning'), ['B2', 'C3']);
+  // Aðeins með ehf./hf. beint á eftir — annars væri hvert húsnúmer og hvert R-númer orðið að fyrirtækjanafni.
+  const sudur = CL.nofnI('Suðurvangur 19a: reikningur R-001141 ógreiddur, gæti verið á rangri kennitölu');
+  assert.ok(sudur.includes('Suðurvangur'), 'Suðurvangur á að finnast');
+  assert.ok(!sudur.some((x) => /\d/.test(x)), 'ekkert nafn með tölustaf án ehf./hf.: ' + JSON.stringify(sudur));
+  assert.ok(!CL.nofnI('Krafan R-001149 er ógreidd').some((x) => /\d/.test(x)), 'R-númer er ekki nafn');
+  // Óbreytt hegðun á venjulegum nöfnum.
+  assert.deepStrictEqual(CL.nofnI('Hárbeitt: finna rétta kennitölu'), ['Hárbeitt']);
+  assert.deepStrictEqual(CL.nofnI('Ferðafélag Íslands: R-000328 og R-000377 eru sama salan?'), ['Ferðafélag Íslands']);
+});
+
 /* ── Enda í enda á gervigrunni: merkja → keyra → agent → Óðinn → tilbúið verk ── */
 test('lykkjan: röð til agenta (Veit ekki fyrst), Nei → Charlize, hámark umferðar, marktækt → afgreidsla, hálfsvar → vantar_svar', async () => {
   const fake = F.bua({ thjonustubeidni: [

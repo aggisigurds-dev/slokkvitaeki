@@ -65,10 +65,17 @@ const ALMENN = new Set(['Agnar', 'Claude', 'Payday', 'Brunahólf', 'Brunahólfs'
 // ruslpóst („Hvað kostar …") og óskylda þekkingu.
 const SETNINGARORD = /^(Hvað|Hver|Hverjir|Hvenær|Hvernig|Hvar|Hvort|Hvaða|Getur|Getum|Geturðu|Skrifaðu|Gerðu|Settu|Sendu|Athugaðu|Finndu|Skoðaðu|Svaraðu|Hringdu|Ég|Við|Það|Þetta|Þú|Má|Mátt|Er|Eru|Var|Kannski|Bara|Já|Nei|Takk|Láttu|Búðu|Taktu|Farðu)$/;
 function nofnI(t) {
-  const m = String(t || '').match(/\b[A-ZÁÐÉÍÓÚÝÞÆÖ][a-záðéíóúýþæö]+(?:\s+(?:[A-ZÁÐÉÍÓÚÝÞÆÖ][a-záðéíóúýþæö]+|ehf\.?|hf\.?))?/g) || [];
+  const s = String(t || '');
+  const m = s.match(/\b[A-ZÁÐÉÍÓÚÝÞÆÖ][a-záðéíóúýþæö]+(?:\s+(?:[A-ZÁÐÉÍÓÚÝÞÆÖ][a-záðéíóúýþæö]+|ehf\.?|hf\.?))?/g) || [];
   const n = eins(m.map((x) => x.trim().replace(/\s+(ehf|hf)\.?$/, '')).filter((x) => x.length >= 4 && !ALMENN.has(x) && !ALMENN.has(x.split(/\s+/)[0]) && !SETNINGARORD.test(x.split(/\s+/)[0])));
+  // 18.11.2026: nafn með tölustaf („D27 ehf.") fannst alls ekki — gamla mynstrið krefst lágstafa á eftir hástaf og
+  // lengdin >= 4 felldi það hvort eð er. Mál #1601 fékk þá ENGIN gögn um félagið (mælt, umferð umwlen29w).
+  // Tekið AÐEINS þegar ehf./hf. fylgir beint á eftir, svo „Suðurvangur 19a" og „R-001141" sleppa áfram.
+  const felog = eins((s.match(/\b[A-ZÁÐÉÍÓÚÝÞÆÖ][A-ZÁÐÉÍÓÚÝÞÆÖa-záðéíóúýþæö0-9]*\d[A-Za-z0-9]*(?=\s+(?:ehf|hf)\.?(?!\w))/g) || [])
+    .filter((x) => !ALMENN.has(x) && !SETNINGARORD.test(x)));
+  const allt = eins(felog.concat(n));
   // Beygingar: „Tindaseli" fellur undir „Tindasel" — styttra nafnið dugar í ilike-leit.
-  return n.filter((x) => !n.some((y) => y !== x && x.startsWith(y))).slice(0, 5);
+  return allt.filter((x) => !allt.some((y) => y !== x && x.startsWith(y))).slice(0, 5);
 }
 
 /* ── 1. GÖGNIN — það sem atriðið og fyrirmælin nefna, sótt beint úr frumheimildum ──────────────────────────── */
@@ -121,13 +128,21 @@ async function safna(atridi, mal, fyrirmaeli) {
     const f = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
     for (const x of f) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
   }
+  // 18.11.2026: „#1355" í nótum getur verið FYRIRTÆKI, ekki mál. Nótur #882 vísa þannig á Hárbeitt, en malIds las það
+  // sem mál-id og vélin sótti thjonustubeidni #1355 = Landspítalann, sem agentinn nefndi svo í svarinu. Nú er líka
+  // flett upp fyrirtæki með sömu númerum og BÆÐI merkt skýrt (lýsingin ber númerið), svo agentinn velji það sem á við.
+  // AFTAST viljandi: nafnaflettingin er áreiðanlega merkið og má ekki víkja fyrir númerum sem reyndust vera mál.
+  if (malIds.length) {
+    const fId = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&id=in.(${malIds.join(',')})`);
+    for (const x of fId) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
+  }
   // 18.11.2026: kennitala lögaðila og heimilisfang fylgja nú fyrirtækinu. Áður fékk agentinn aðeins nafn + í þjónustu
   // og kennitalan var hulin alls staðar, svo mál sem snúast um kennitölu (t.d. #882 Hárbeitt) voru óleysanleg.
   // Kennitala einstaklings er áfram hulin — þá segir `kennitala_hulin` agentinum að hún sé TIL, svo hann álykti
   // ekki að engin sé skráð. Mælt í umferð umwldzl6c.
-  for (const f of fyr.slice(0, 4)) {
+  for (const f of fyr.slice(0, 6)) {
     const kt = erFelagsKt(f.kennitala) ? String(f.kennitala).trim() : null;
-    baeta('F', Object.assign({ lysing: 'Fyrirtæki ' + stytta(f.nafn, 60) + (kt ? ' (kt. ' + kt + ')' : ''),
+    baeta('F', Object.assign({ lysing: 'Fyrirtæki #' + f.id + ' ' + stytta(f.nafn, 60) + (kt ? ' (kt. ' + kt + ')' : ''), fyrirtaeki_id: f.id,
       nafn: stytta(f.nafn, 100), kennitala: kt, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu },
       !kt && f.kennitala ? { kennitala_hulin: 'Kennitala er skráð en er einstaklingskennitala og því hulin' } : {}));
   }
