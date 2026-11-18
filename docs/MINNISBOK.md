@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 11:30 · 2537 virkar staðreyndir — 1445 prentaðar hér
+Sótt 2026-11-18 11:45 · 2539 virkar staðreyndir — 1447 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 157 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -1771,6 +1771,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### bord
 
+- **Í dag (eining 31) stendur í ÖLLUM hömum Þjónustuborðsins frá 18.11.2026 (birt a2967fb), ekki aðeins á mitt vinnuborð: idagBordi er ekki lengur bundinn mode.first heldur idagVirkt() sem les mitt.idagAf — eitt val sem slekkur alls staðar. 'idag' er síað úr einingaristinni OG úr topHtml (vinstri rein) svo hann mæti ekki tvisvar. GILDRA SEM ÞETTA AFHJÚPAÐI: isOpen() las cfg().mods[k][1] beint og eining sem vantar í SJALFGEFID á engan slíkan reit — teikning borðsins féll í heild ('Cannot read properties of undefined') um leið og einingin birtist utan hams sem taldi hana í first. Lagað tvennt: idag skráð í SJALFGEFID [1,1] og isOpen les (cfg().mods[k] || [])[1]. Regla: ný eining sem á að standa utan hams VERÐUR að vera í SJALFGEFID.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Leturkvarði Þjónustuborðsins settur 18.11.2026 (birt a9ef4ac): allar leturstærðir hækkaðar um eitt þrep í fimm skrám sem teikna borðið — 368 (grind), 489 (Vinnusamantekt), 507 (V2-þemað), 511 (Tilbúin verk), 520 (Í dag). Kvarðinn: 9,5->11 · 10->11,5 · 10,5->11,5 · 11->12 · 11,5->12,5 · 12->13 · 12,5->13,5 · 13->14; .t5 grunnur 13->14 px og línubil 1,45->1,5; 252 stærðir alls. Fyrirsagnir yfir 14 px standa óbreyttar svo stigveldið hélst. MÆLT fyrir: 159 af 416 textahlutum undir 11,5 px, 16 í 9,5, sjö ólíkar stærðir á bilinu 9,5-13. Eftir: gólf 11 px, meginmál 12-14. GILDRA: scrollHeight > clientHeight á texta er EKKI klipping þegar overflow er visible — mælitækið taldi línubil sem klippingu (h1, .plate, .lbl voru öll í lagi). V2-þemað (507) ber eigin stærðir og þarf alltaf sömu breytingu og 368.**
   <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Þjónustuborðið fékk flipa í stað stafla 18.11.2026 (lag 3, birt a8c799f): einingahamurinn (mitt vinnuborð) ber nú flipastiku — ein eining í einu í fullri breidd — og síðasti flipinn 'Allt · N' sýnir gamla staflann. Valið vistast á þjóni per ham í by_staff.<nafn>.flipi.<hamur> (readCfg skilar flipi-hlut, data-t5='flipi'). Engir flipar í raðham (radar) því þá þarf allt að sjást við drátt; 'Í dag' er borði fyrir ofan og á engan flipa. CSS: .flipar/.flipi í t5-stílnum, .modgrid.einn>.modcell spannar fulla breidd. Mælt: borðið 7.354 px -> 2.346 px með einn flipa, 5.786 px á 'Allt'. Sama dag voru kaflaheiti Vinnusamantektar stækkuð í 18-19 px (Playfair/Poppins með gullpunkti) og opinn mælir fékk 2px gullramma + orðið 'Opið' — Agnar áttaði sig illa á hvaða flokki var kveikt á.**
@@ -4083,6 +4085,12 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Claude-session sem „vaktar" draft-PR vekur sig sjálft á klukkutíma fresti þar til PR-ið er merge-að/lokað — yfir nótt getur það étið stóran hluta vikunýtingarinnar (8.8.: 50%→75% á einni nóttu, session á Opus max effort með ~30M token samhengi).**
   <br>Lausn: merge-a/loka draft-PR-um áður en lagst er á koddann, eða segja sessioninu að hætta að fylgjast með. Vakningar sjást og slökkvast með list_triggers/delete_trigger. Gömul risa-session (500M+ cache-lestrar) eru líka dýr í endurvakningu — nýtt lítið session per verk er ódýrara.
   <br><sub>2026-08-08 · kerfi · claude-code · claude-code</sub>
+
+### akvordun
+
+- **Stóreldhúsið 2026: Agnar ákvað 17.11.2026 að rukka EKKI leiguna á slökkvitækjum sem voru lánuð á sýningunni 3.–6.11.2026. Þrjú félög höfðu staðfest pöntun (Ölgerðin kt 680126-0110, Kjarnafæði Norðlenska kt 581289-1899, Fræðslusetur/Iban kt 551203-2980) en engin þeirra voru skráð í kerfið og engir reikningar verða gerðir. Leiguverð sem var í boði: 740 kr/dag léttvatn 6L, 384 kr/dag CO₂ 5kg (m.vsk). Eclipse ehf. (kt 660525-0760) var eina félagið sem fékk leigureikning áður (R-000940, 873.646 kr, greitt 02.10.2026).**
+  <br>Póstur á slokkvitaeki@brunaholf.is skoðaður 17.11.2026; 12-pósta þráður um Stóreldhúsið leigumöguleika. Ákvörðunin felur burt borðsmál #1594 (Stóreldhúsið leiga órukkuð) úr yfirferð 10.11.
+  <br><sub>2026-11-18 · slokkvitaeki · Póstskoðun Agnar + Claude 17.11.2026 · Claude</sub>
 
 ### sala-reikningar
 
