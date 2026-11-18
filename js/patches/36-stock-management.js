@@ -112,6 +112,20 @@
       .stock-ok   { color: #16a34a; font-weight: 600; }
       .stock-zero { color: #dc2626; font-weight: 700; background: #fee2e2; padding: 1px 6px; border-radius: 4px; }
       .stk-hamar { display:inline-flex; gap:4px; background:var(--bg2); border:1px solid var(--brd); border-radius:10px; padding:3px; flex-wrap:wrap }
+      /* 18.11.2026 — böndin fyrir ofan töfluna. Lýsingin og rauntalningin deila einni línu; talningin
+         er samanbrotin því hún er dagsett nóta, ekki fyrirsögn. Leit, stöður og flokkar standa saman
+         í einni síuröð í stað tveggja banda. */
+      .stk-undir { display:flex; align-items:baseline; gap:4px 16px; flex-wrap:wrap; margin:-4px 0 10px; font-size:13px; color:var(--ink3) }
+      .stk-undir .stk-lysing { flex:1 1 320px; min-width:0 }
+      .stk-tal { flex:0 0 auto; font-size:12px; max-width:100% }
+      .stk-tal > summary { cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border:1px solid var(--brd); border-radius:999px; background:var(--bg2,#f7f7f8); color:var(--ink2); font-weight:600; white-space:nowrap }
+      .stk-tal > summary::-webkit-details-marker { display:none }
+      .stk-tal > summary::after { content:"▾"; font-size:10px; opacity:.7 }
+      .stk-tal[open] > summary::after { content:"▴" }
+      .stk-tal > summary:hover { background:var(--bg1) }
+      .stk-tal-efni { margin:6px 0 0; padding:8px 10px; background:var(--bg2,#f7f7f8); border-radius:6px; line-height:1.6 }
+      .stk-siur { display:flex; gap:8px 10px; flex-wrap:wrap; align-items:center; margin-bottom:12px }
+      .stk-siur > .stk-stodur, .stk-siur > .stk-flokkar { display:flex; gap:6px; flex-wrap:wrap }
       .stk-ham { border:0; background:transparent; font:inherit; font-size:12.5px; font-weight:700; color:var(--ink2); padding:6px 12px; border-radius:8px; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px }
       .stk-ham:hover { background:var(--bg1) }
       .stk-ham.on { background:#0f172a; color:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25) }
@@ -445,16 +459,13 @@
         <button class="btn btn-outline btn-sm" onclick="Stock.exportCsv()">${ik('nidur', 14)} CSV</button>
         ${iPanta ? '' : `<button class="btn btn-primary btn-sm" onclick="Stock.openNew()">${esc(nyr)}</button>`}
       </div>`) + `
-    <div style="font-size:13px;color:var(--ink3);margin:-4px 0 12px">${q ? `Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#b42318;font-weight:600">${lowCount} undir lágmarki</span>` : ''}${nPanta ? ` &middot; <span style="color:#8a5a00;font-weight:600">${ik('stjarna', 11, true)} ${nPanta} þarf að panta</span>` : ''}</div>
-    ${!q && _hamur === 'slokkvitaeki' ? (() => { const t = talningaMeta(); if (!t) return ''; const ld = t.linur || []; return `<div style="font-size:12px;color:var(--ink3);margin:-6px 0 10px;padding:8px 10px;background:var(--bg2,#f7f7f8);border-radius:6px;line-height:1.6">Rauntalning ${esc(t.dags)}:${ld.map(l => ` <span style="white-space:nowrap">${esc(l.nafn)} ${l.eldri ? l.eldri + ' eldri + ' + l.nyrri + ' nýrri' : l.nyrri + ' nýrri'} = ${l.samtals}</span>`).join(' &middot;')}</div>`; })() : ''}
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <div class="stk-undir"><div class="stk-lysing">${q ? `Leitað í öllum hömum &middot; ${leitad.length} niðurstöður` : esc(hamLysing) + ' &middot; ' + iHam.length + ' hlutir'}${lowCount > 0 ? ` &middot; <span style="color:#b42318;font-weight:600">${lowCount} undir lágmarki</span>` : ''}${nPanta ? ` &middot; <span style="color:#8a5a00;font-weight:600">${ik('stjarna', 11, true)} ${nPanta} þarf að panta</span>` : ''}</div>
+    ${!q && _hamur === 'slokkvitaeki' ? (() => { const t = talningaMeta(); if (!t) return ''; const ld = t.linur || []; return `<details class="stk-tal"><summary>Rauntalning ${esc(t.dags)}${ld.length ? ' &middot; ' + ld.length + (ld.length === 1 ? ' vara' : ' vörur') : ''}</summary><div class="stk-tal-efni">${ld.map(l => `<span style="white-space:nowrap">${esc(l.nafn)} ${l.eldri ? l.eldri + ' eldri + ' + l.nyrri + ' nýrri' : l.nyrri + ' nýrri'} = ${l.samtals}</span>`).join(' &middot; ')}</div></details>`; })() : ''}</div>
+    <div class="stk-siur">
       ${leitarreitur}
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
-    </div>
-    ${cats.length > 1 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-      ${flis('Allir flokkar', '', leitad.filter(passarStodu).length, !_catFilter, '_setCat')}
-      ${cats.map(c => flis(c, c, fjoldi[c] || 0, _catFilter === c, '_setCat')).join('')}
-    </div>` : ''}`;
+      <div class="stk-stodur">${STODUR.map(([v, l]) => flis(l, v, null, _stada === v, '_setStada')).join('')}</div>
+      ${cats.length > 1 ? `<div class="stk-flokkar">${flis('Allir flokkar', '', leitad.filter(passarStodu).length, !_catFilter, '_setCat')}${cats.map(c => flis(c, c, fjoldi[c] || 0, _catFilter === c, '_setCat')).join('')}</div>` : ''}
+    </div>`;
 
     if (!items.length) {
       const tomt = iPanta ? 'Ekkert stjörnumerkt — stjarnan á línu setur vöru hingað' : _hamur === 'nyjar' ? 'Engar hugmyndir skráðar enn' : _hamur === 'verkstaedi' ? 'Ekkert skráð á verkstæðinu' : 'Engar birgðir skráðar';
