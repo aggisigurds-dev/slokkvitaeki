@@ -41,6 +41,10 @@ const LEYFT = [
   { skra: 'js/patches/153-arsskodun.js', mynstur: 'h(ó|o)w*',
     af: 'óútkljáð: „hæ hó"-prufufærslusían. `\\w*` myndi líka fella „hæ hopp…" — þrengra mynstrið tapar engri ' +
         'raunverulegri nótu. 153 er vörðuð leið; ekki breyta án Agnars og netvarðar.' },
+  { skra: 'tools/birtumaeling.cjs', mynstur: '\\\\s+',
+    af: 'viljandi: línurnar eru INNI í sniðstrengnum SAFNA (`(() => { … })()`), sem er keyrður í vafranum. Þar verður ' +
+        '`\\\\s` í frumkóðanum að `\\s` í kóðanum sem keyrir, svo mynstrið er rétt. Vörðurinn var rauður á hverri ýtingu ' +
+        'frá 18.11.2026 kl. 18:11 vegna þessa; færist kóðinn út úr sniðstrengnum á að laga mynstrið og taka færsluna út.' },
 ];
 
 function finnaSystur() {
