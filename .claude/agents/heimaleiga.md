@@ -226,5 +226,13 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   (2025-skýrslur 1523/1669 ná yfir allt húsið). Blaðið 10.11 = 41 tæki. Staðirnir eru áfram tveir (tveir greiðendur) en tækjum skal SKIPT
   eftir herbergjalista Dimku (75346): Máni 10 + 3 ný (232, 335, 430), Midtown 13 + 1 nýtt (202), sameign 13 LV + duft + 4 slöngur → IHC.
   Bjarndís 75831: 6 tekin (4 hleðsla, 2 ónýt), lánstæki á staðnum. Hæðaskipting „3.–6. / 1.–2." í staðsetningum er röng. Bíður Agnars.
+  **Skiptingin eftir teikningu (Agnar 18.11, síðar):** Yfirlits-hæð 869 í `teikning_bord` (mynd Midtown-floor-plan-8K, 6000×4243) hefur
+  rauðan, grænan og bláan kassa. **Grænt = Máni / Laugaverk:** í græna kassanum standa nákvæmlega herbergin á lista Dimku (232, 234, 530–534);
+  á 3. og 4. hæð er enginn kassi en sama vinstri álma (330–337, 430–434). **Rautt + blátt + kjallari = Midtown / IHC** (öll önnur herbergi).
+  Merki (unitId = uttaeki.id): Laugaverk 23568, 23581–23583, 23585–23589, 23598, 23599, 23605, 23606 + „Vantar" 23584 (335), 23607 (232),
+  23608 (430); IHC 23569–23577, 23579, 23580, 23590–23597, 23600–23602 + „Vantar" 23578 (202), 23604 (gangur við 210), 23609 (móttaka 1. h.).
+  Óljóst: 23603 á veggnum milli bláa og græna á 1. hæð; 23610 ekki staðsett (utan teikningar). **Allar 4 nýju brunaslöngurnar eru í grænu álmunni.**
+  **Fjólublátt tákn = „Vantar" (tækið vantar á staðinn, 433/434), EKKI útskipt tæki;** 4 af 6 eru herbergin sem Bjarndís sagði tóm (202, 232, 335, 430).
+  37 tæki á staðnum (43 − 6) = blaðið (36 LV + 1 duft). Ekkert flutt eða eytt enn — bíður samþykkis Agnars.
 
 Síðast uppfært: 18.11.2026
