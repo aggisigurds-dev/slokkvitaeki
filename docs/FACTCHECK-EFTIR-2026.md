@@ -416,3 +416,17 @@ Agnar: „leiðrétta“. Afrit í `backup_20261111_sannreyna_heimilisfang`, lí
 | 1397 | Tannlæknastofan Smárinn | „201 Kópavogi“ | Hlíðasmára 14, 201 Kópavogi | Úttektarskýrsla des. 2023 og Fyrirtækjaskrá |
 
 Punktur og húsmynd þessara raða eru óbreytt; geokóðun þarf að keyra aftur á nýju heimilisföngin.
+
+## Endurmæling 18.11.2026 — fjögur félög sem fengu ný gögn eftir 11.11
+
+Reglan í skillinu: endurmæla þegar ný skýrsla eða reikningur bætist við. Sex ný skjöl og fjórar sölur fundust á
+félögum listans eftir 11.11. Ný lína („Sannreynt 18.11.2026 … endurmæling") bætt aftan við `review_note`, afrit fyrst.
+
+| id | Félag | Hvað gerðist | Niðurstaða |
+|---|---|---|---|
+| 679 | Efnalaug Garðabæjar | **Úttekt gerð 12.11**: R-001293 (30.887 kr., skýrslugerð + akstur), skýrsla nóv. 2026, kt rétt. Listi = skýrsla = reikningur (1 LV, 1 duft 6 kg, 2 CO₂ 5 kg); dufttækið bættist við frá 2024 | Frávikið „2025 sleppt“ útkljáð; **farið af síunni**. Eftir: ekkert netfang · engin húsmynd (færsla án slóðar) · `arsskodun_report_facts` segir ár 2026 en `drive_file_id` bendir á skýrsluna frá 2024 · ritvillan „Garðartorg“ |
+| 1890 | Istanbul Market | **Úttekt gerð 17.11**: R-001316 (15.557 kr., skýrslugerð + akstur), skýrsla kt rétt, 1 brunaslanga. Listi = skýrsla = reikningur | Frávikið „aðeins brunakerfi“ útkljáð; **farið af síunni**. Húsmynd skoðuð: Grensásvegur 10, rétt hús. Eftir: skoðunarmánuður skráður 10 (handvirkt) en skoðað í nóvember |
+| 1934 | Húsfélagið Birkimelur 10a–10c | **Tilboðið framkvæmt 17.11**: R-001317, 498.011 kr. (tilboð var 499.730) — 21 samtengjanlegur reykskynjari, 18 ný léttvatnstæki, 3 ný CO₂ 5 kg, 3 skilti, 5 vinnustundir, skýrslugerð, akstur. Skýrsla kt rétt; listi = skýrsla = reikningur | Frávikið „tilboði ósvarað“ útkljáð; **farið af síunni**. Eftir: póstnúmer vantar á röðina OG í skýrsluna (Birkimelur 10 = 107 Reykjavík) · enginn geopunktur · **mál #55 er enn opið þótt verkinu sé lokið** |
+| 212 | Hjálparsveit skáta | R-001315 (17.11, 81.147 kr.) er **DRÖG** og ber hvorki skýrslugerð né akstur → verkstæðisþjónusta, ekki úttekt: 14 léttvatn af 30 á lista, 1 CO₂ 2 kg, og 1 duft 2 kg **sem er ekki á tækjalista** | Fyrri úrskurður stendur (pósthólf sem heimilisfang, punktur rangur); engin úttekt 2026. **Enn á síunni** |
+
+Sían telur nú **167** (var 168): þrjú félög fóru af henni og tvö ný komu á hana eftir 11.11 — þau tvö eru ómæld.
