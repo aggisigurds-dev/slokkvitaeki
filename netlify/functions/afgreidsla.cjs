@@ -343,10 +343,10 @@ async function synilegt(row, visir) {
     forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
     athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
   if (row.tegund === 'tolvupostur') {
-    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename),
+    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).filter(Boolean).map((v) => v.filename),
       // 18.11.2026 (Agnar: „sýnt þarna í svarinu skjalið svo ég geti alltaf opnað það og staðfest“): sama skjal og
       // sendingin sækir, sem tengill. `vidhengi` (nöfnin ein) stendur áfram fyrir eldri sýnir.
-      vidhengi_opna: (g.vidhengi || []).filter(Boolean).map((v) => ({ nafn: v.filename || 'skjal', url: vidhengiSlod(v) })) };
+      vidhengi_opna: (g.vidhengi || []).filter(Boolean).map(vidhengiSyn) };
     o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500),
       slod: (g.svar_vid.digest_id && leysa({ tegund: 'post', id: g.svar_vid.digest_id })) || (gmailSlod(g.account, g.svar_vid.thread_id) ? { url: gmailSlod(g.account, g.svar_vid.thread_id), texti: 'Pósturinn í Gmail' } : null) } : null;
   } else if (row.tegund === 'simtal') {
@@ -363,12 +363,30 @@ async function synilegt(row, visir) {
 
 // Slóðin sem opnar NÁKVÆMLEGA skjalið sem gmail-send hengir við: `url` (opin slóð, t.d. Supabase Storage) eða
 // `driveId` (Drive-skrá). `content` (base64, teiknað í vafra) á enga slóð → null og nafnið birtist eitt.
-// Aðeins http(s): aldrei javascript:, data: eða //annar-vefur — þetta endar í href hjá Agnari.
+// Slóðin kemur úr gogn.vidhengi, sem agentar skrifa, og endar í href hjá Agnari sem sér aðeins skráarheitið.
+// Því fær AÐEINS https-slóð á traustan hýsil tengil (eigin Supabase-geymsla, Drive, vefirnir tveir) — aldrei
+// javascript:, data:, //annar-vefur, notandi@hýsill né óþekktur vefur (rýni 18.11.2026: vefveiðaflötur).
+const TRAUSTIR_HYSLAR = (() => {
+  const h = new Set(['drive.google.com', 'docs.google.com', 'slokkvitaeki.netlify.app', 'brunaholf.netlify.app']);
+  try { h.add(new URL(process.env.SUPABASE_URL).host.toLowerCase()); } catch (_) { /* env vantar (próf) */ }
+  return h;
+})();
+function hysillAf(url) {
+  try { const u = new URL(String(url)); return (u.username || u.password) ? null : u.host.toLowerCase(); } catch (_) { return null; }
+}
 function vidhengiSlod(v) {
   if (!v) return null;
-  if (typeof v.url === 'string' && /^https?:\/\/[^\s"'<>]+$/i.test(v.url)) return v.url;
+  if (typeof v.url === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(v.url)) { const h = hysillAf(v.url); return h && TRAUSTIR_HYSLAR.has(h) ? v.url : null; }
   if (v.driveId != null && /^[\w-]{10,}$/.test(String(v.driveId))) return 'https://drive.google.com/file/d/' + String(v.driveId) + '/view';
   return null;
+}
+// Það sem sýnin fær: nafn + slóð. Slóð á ÓÞEKKTAN vef fær ekki tengil heldur viðvörun með nafni vefsins, svo það
+// óvenjulega sjáist í stað þess að felast á bak við skráarheiti. (Sendingin sjálf er óbreytt — hún les g.vidhengi.)
+function vidhengiSyn(v) {
+  const nafn = (v && v.filename) || 'skjal';
+  const url = vidhengiSlod(v);
+  if (url || !v || typeof v.url !== 'string' || !v.url) return { nafn, url };
+  return { nafn: nafn + ' — ⚠ slóð á ' + (hysillAf(v.url) || 'óþekktan vef') + ', opnast ekki héðan', url: null };
 }
 
 /* ── FRAMKVÆMD ──────────────────────────────────────────────────────────────────────────────────────────── */
@@ -882,3 +900,4 @@ module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)
 module.exports._leysaTilvisanir = leysaTilvisanir;
 module.exports._merkja = merkja;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
 module.exports._vidhengiSlod = vidhengiSlod;   // 18.11.2026: viðhengi sem tengill í svarinu
+module.exports._vidhengiSyn = vidhengiSyn;

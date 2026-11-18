@@ -178,7 +178,7 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
   var klTxt = function (iso) { var d = new Date(iso); if (isNaN(d)) return ''; var p = function (n) { return String(n).padStart(2, '0'); }; return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' kl. ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
   // Slóð frá þjóninum → tengill sem opnast í nýjum flipa. Aðeins http(s) eða slóð á þessum vef.
   var opnaHtml = function (s) {
-    if (!s || !s.url || !/^(https?:\/\/|\/)/.test(s.url)) return '';
+    if (!s || !s.url || !/^(https?:\/\/|\/(?!\/))/.test(String(s.url))) return '';
     return '<a class="opna" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.texti || 'Opna') + ' ↗</a>';
   };
   // Viðhengi svarsins sem TENGLAR á sama skjal og sendingin sækir (18.11.2026) — Agnar opnar og staðfestir áður en
