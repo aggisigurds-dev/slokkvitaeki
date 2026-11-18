@@ -21,8 +21,10 @@ function ur190() {
   const kortF = SRC.match(/\n  function skodudKort\(rows, ar, iDag\) \{[\s\S]*?\n  \}/);
   assert.ok(sonnun && flis && haus && rodir && btn && kortF, 'náði ekki sonnun/snFlis/snHaus/drawerRows/btn/skodudKort úr 190');
   const esc = "const esc = s => String(s == null ? '' : s).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));";
-  return new Function('curYear', ['let _buidSpurt = null;', esc, btn[0], sonnun[0], kortF[0], flis[0], haus[0], rodir[0]].join('\n') +
-    '\nreturn { sonnun, drawerRows, skodudKort, spyrja: (id) => { _buidSpurt = id; } };')(AR);
+  // mkMerki / mkGluggi (Merkja og keyra, 519-eintak verkstæðisins): tóm sjálfgefið — eins og hjá öllum öðrum en Agnari.
+  return new Function('curYear', ['let _buidSpurt = null; let _mk = { merki: () => "", gluggi: () => "" };',
+    'const mkMerki = (r) => _mk.merki(r), mkGluggi = (r) => _mk.gluggi(r);', esc, btn[0], sonnun[0], kortF[0], flis[0], haus[0], rodir[0]].join('\n') +
+    '\nreturn { sonnun, drawerRows, skodudKort, spyrja: (id) => { _buidSpurt = id; }, mk: (o) => { _mk = o || { merki: () => "", gluggi: () => "" }; } };')(AR);
 }
 const F = ur190();
 const kort = (o) => Object.assign({ id: 1, nafn: 'Félag', units: 0, doneDocs: false, docs: null, hasReik: false, skodud: null }, o);
@@ -160,6 +162,72 @@ test('190 er tengt: tækin eru sótt einu sinni, spjaldið ber vísbendingarnar 
   assert.match(SRC, /hasReik: hasReik,/);
   assert.match(SRC, /skodud: _skodByCo \? \(_skodByCo\.get\(String\(co\.id\)\) \|\| null\) : null,/);
   assert.match(SRC, /const dSonnun = b\.dagskra\.filter\(r => r\.doneDocs \|\| sonnun\(r\)\.length\)\.length;/);
+});
+
+/* ── Merkja og keyra á verkstæðinu (18.11.2026): merkið á hverri „Á dagskrá“-röð og spjaldi, glugginn undir ───────── */
+test('Á dagskrá: ◇-merkið stendur á undan tökkunum og glugginn UNDIR röðinni; „Búið í ár“ fær hvorugt', () => {
+  const listi = [kort({ id: 10, nafn: 'Engin merki' }), kort({ id: 11, nafn: 'Aðeins tæki', skodud: { n: 4, sidast: '2026-09-02' } }), kort({ id: 12, nafn: 'Fullt par', doneDocs: true, docs: { skyrsla: {}, reik: {} }, hasReik: true })];
+  F.mk({ merki: (r) => '<button class="mk-m" data-t5="mk-opna" data-id="' + r.id + '">◇</button>', gluggi: (r) => (r.id === 11 ? '<div class="mk-g">GLUGGI</div>' : '') });
+  try {
+    const h = F.drawerRows(listi, true);
+    for (const id of [10, 11, 12]) {
+      const m = h.indexOf('data-t5="mk-opna" data-id="' + id + '"'), t = h.indexOf('class="_sv-act"', m);
+      assert.ok(m > 0 && t > m, 'merkið á röð ' + id + ' á að standa á undan tökkunum');
+    }
+    assert.strictEqual((h.match(/data-t5="mk-opna"/g) || []).length, 3, 'eitt merki á röð');
+    // Glugginn kemur beint á eftir lokun raðarinnar sem á hann — ekki inni í henni (röðin er flex-lína).
+    assert.match(h, /data-act="buidspyrja" data-id="11"[^<]*>✓ Búið<\/button><\/span><\/div><div class="mk-g">GLUGGI<\/div>/);
+    const b = F.drawerRows([kort({ id: 3, nafn: 'C' })], false);
+    assert.ok(!/mk-m|mk-g/.test(b), '„Búið í ár“ er ekki merkt: ' + b);
+  } finally { F.mk(null); }
+});
+
+test('190 er tengt við Merkja og keyra: eigið eintak (verkstaedi / fyrirtaeki_id), aðeins hjá Agnari, smellir og teljari', () => {
+  const st = SRC.slice(SRC.indexOf('function mkv()'), SRC.indexOf('const mkBar ='));
+  assert.match(st, /MK\.buaTil\(\{ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: VIEW_ID, sedLykill: 'merkja_sed_verkst',/);
+  // Gátin er sjálfgefna gátin úr 519 (n === 'Agnar'): hvorki `ma` né `nu` má yfirskrifa hér — annars sæju aðrir stjórnendur tólið.
+  assert.ok(!/\bma:|\bnu:/.test(st), 'eintak verkstæðisins má ekki yfirskrifa aðgangsgátina');
+  assert.match(SRC, /const mkBar = \(\) => \{ try \{ const m = mkv\(\); return m \? m\.html\(mkHver\(\)\) : ''; \} catch \(_\) \{ return ''; \} \};/);
+  assert.match(st, /teikna: \(\) => \{ const v = viewEl\(\); if \(v && v\.classList\.contains\('active'\)\) render\(\); \},/, 'teiknar aðeins virka sýn');
+  assert.match(st, /opna: \(id\) => openCompany\(id\),/);
+  // Teljarinn stendur ofan við listana; smellir á mk-* fara til eintaksins og stöðva bólun (spjaldið má ekki opnast).
+  assert.match(SRC, /\n      mkBar\(\) \+ dagskraDrawer \+ buidDrawer \+ body \+ '<\/div>';/);
+  assert.match(SRC, /v\.querySelectorAll\('\[data-t5\^="mk-"\]'\)\.forEach\(el => el\.addEventListener\('click', e => \{ e\.stopPropagation\(\); const m = mkv\(\); if \(m\) m\.smellur\(el, e\); \}\)\);/);
+  // Öll þrjú spjaldaútlitin (listi, spjöld, breitt) bera merkið í takkaröðinni og gluggann undir henni.
+  for (const f of ['vinnslaActs', 'spjActs', 'vinnslaActsWide']) {
+    const k = SRC.slice(SRC.indexOf('function ' + f + '(r) {'));
+    const b = k.slice(0, k.indexOf('\n  }'));
+    assert.ok(/mkMerki\(r\)/.test(b) && /'<\/div>' \+ mkGluggi\(r\);/.test(b), f + ' vantar merkið eða gluggann');
+  }
+});
+
+test('190 + 519 saman í vm: verkstæðið býr til SITT eintak og teljarinn sækir merkingar verkstæðisins', async () => {
+  const vm = require('node:vm');
+  const K519 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '519-merkja-keyra.js'), 'utf8');
+  const st = SRC.slice(SRC.indexOf('  let _mkv = null;'), SRC.indexOf('  function note(r) {'));
+  const kollud = [], haus = [];
+  const h = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
+  h.window = h; h.setInterval = () => 0; h.clearInterval = () => {};
+  h.document = { hidden: false, addEventListener() {}, getElementById: (id) => (id === '_sv-mk' ? (haus.length ? {} : null) : { classList: { contains: () => true } }),
+    createElement: () => ({}), head: { appendChild: (e) => haus.push(e) } };
+  h.fetch = (url, o) => { kollud.push({ url, body: o && o.body ? JSON.parse(o.body) : null }); return Promise.resolve({ status: 200, json: () => Promise.resolve({ ok: true, claude_virkt: true,
+    merkingar: [{ id: 1, bord: 'verkstaedi', fyrirtaeki_id: 1934, merki: 'yfirfara', stada: 'merkt' }], teljari: { merkt: 1 } }) }); };
+  h.Samthykkja = { nu: () => 'Agnar' };
+  let teikn = 0;
+  vm.runInNewContext(K519 + '\n;(() => { const VIEW_ID = "view-thjonustu-verkstaedi"; const toast = () => {}; const viewEl = () => ({ classList: { contains: () => true } });' +
+    ' const openCompany = () => {}; const render = () => { window.__teikn(); };\n' + st + '\n window.__v = { mkMerki, mkGluggi, mkBar, mkv }; })();', Object.assign(h, { __teikn: () => { teikn++; } }), { filename: '190+519' });
+  assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '', 'ekkert merki fyrr en þjónninn hefur hleypt inn');
+  assert.strictEqual(h.__v.mkBar(), '');                      // fyrsta teikning ræsir sóknina
+  await new Promise((r) => setTimeout(r, 80));
+  assert.deepStrictEqual(kollud.map((k) => k.url), ['/api/afgreidsla?merkingar=1&bord=verkstaedi']);
+  assert.ok(teikn >= 1, 'sóknin endurteiknar verkstæðið');
+  assert.match(h.__v.mkBar(), /▶ Keyra \(1\)/);
+  assert.match(h.__v.mkMerki({ id: 1934 }), /data-t5="mk-opna" data-id="1934" data-s="merkt"/);
+  assert.strictEqual(h.MerkjaKeyra.verkstaedi, h.__v.mkv());
+  assert.strictEqual(haus.length, 1, 'útlitið sett einu sinni');
+  // Annar en Agnar við borðið: ekkert.
+  h.Samthykkja.nu = () => 'Anni';
+  assert.strictEqual(h.__v.mkBar(), ''); assert.strictEqual(h.__v.mkMerki({ id: 1934 }), '');
 });
 
 /* ── Sóknin sjálf, keyrð (ekki strengjaleit): loadSkodud úr skránni með gervi-DB, gervi-klukku og talningu á render ── */

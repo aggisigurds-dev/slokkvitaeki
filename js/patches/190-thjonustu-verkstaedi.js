@@ -1236,6 +1236,50 @@
       return '<button class="sv-mark" data-id="' + r.id + '" data-mark="' + k + '" title="' + esc(label) + (on ? ' — smelltu til að afmerkja' : '') + '"' + st + '>' + (on ? '● ' : '') + esc(label) + '</button>';
     }).join('') + '</div>';
   }
+  /* ── MERKJA OG KEYRA Á VERKSTÆÐINU (18.11.2026) ────────────────────────────────────────────────────────────────
+   * Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu, til að hjálpa mér að útkljá þau mál“ → „Bæði“ (sönnunin
+   * í „Á dagskrá“ OG agentarnir). Sama vél og á Þjónustuborðinu (519), EIGIÐ eintak: bord 'verkstaedi', línan er FÉLAGIÐ.
+   * Lítið ◇ á hverju spjaldi í vinnslu og hverri röð í „Á dagskrá“ → sömu átta hökin (Já · Nei · Keyra · Snooze · Veit ekki ·
+   * Rannsaka betur · Comment · Yfirfara) → ▶ Keyra efst → agentinn fær verkstæðisstöðu, skjöl, sölur og tæki ÞESS STAÐAR
+   * (_adalmal-claude.cjs uttektargogn) → Óðinn metur → tilbúið verk í Afgreiðslu. Ekkert fer út og ekkert er merkt búið:
+   * lokasmellurinn er alltaf Agnars. Sést AÐEINS hjá Agnari (sama gát og 519/489: „Ég er“-valið + innskráður stjórnandi) —
+   * aðrir starfsmenn sjá verkstæðið óbreytt og ekkert er sótt fyrir þá. */
+  let _mkv = null;
+  function mkv() {
+    if (_mkv) return _mkv;
+    try {
+      const MK = window.MerkjaKeyra;
+      if (!MK || typeof MK.buaTil !== 'function') return null;
+      _mkv = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: VIEW_ID, sedLykill: 'merkja_sed_verkst',
+        toast: (m) => toast(m),
+        teikna: () => { const v = viewEl(); if (v && v.classList.contains('active')) render(); },
+        rot: () => viewEl(),
+        opna: (id) => openCompany(id),
+        heiti: (m) => String(m.mal_titill || 'Félag #' + m.fyrirtaeki_id),
+        opnaTexti: 'Opna félagið' });
+      MK.verkstaedi = _mkv;
+      // Útlit merkisins hér (519 ber grunn-CSS-ið með teljaranum): stærri snertiflötur í takkaröð spjaldsins.
+      if (!document.getElementById('_sv-mk')) {
+        const st = document.createElement('style'); st.id = '_sv-mk';
+        const V = '#' + VIEW_ID;
+        st.textContent = [
+          V + ' .mk-m{height:32px;min-width:36px;margin:0;padding:0 8px;border-radius:9px;font-size:14px;flex:0 0 auto}',
+          V + ' .mk-m:not([data-s]){border-color:rgba(20,24,34,.2);background:#fff;color:#3a4250}',
+          V + ' .sv-drawer-row .mk-m{height:28px;min-width:32px;font-size:13px}',
+          V + ' .mk-g{margin:8px 0 4px;max-width:560px;text-align:left;color:#161513}',
+          V + ' .sv-drawer>.mk-g{margin:0 14px 10px}',
+          V + ' .mk-bar{margin:0 0 14px;border-radius:12px}',
+          '@media (max-width:700px){' + V + ' .mk-m{height:40px;min-width:44px}' + V + ' .sv-drawer-row .mk-m{height:36px;min-width:40px}}',
+        ].join('');
+        document.head.appendChild(st);
+      }
+    } catch (_) { _mkv = null; }
+    return _mkv;
+  }
+  const mkHver = () => { try { return (window.Samthykkja && Samthykkja.nu) ? String(Samthykkja.nu() || '') : ''; } catch (_) { return ''; } };
+  const mkMerki = r => { try { const m = mkv(); return m ? m.merki(r) : ''; } catch (_) { return ''; } };
+  const mkGluggi = r => { try { const m = mkv(); return m ? m.gluggi(r) : ''; } catch (_) { return ''; } };
+  const mkBar = () => { try { const m = mkv(); return m ? m.html(mkHver()) : ''; } catch (_) { return ''; } };
   function note(r) {
     return '<textarea class="sv-note" data-id="' + r.id + '" rows="2" placeholder="Minnispunktur…">' + esc(r.note || '') + '</textarea>';
   }
@@ -1245,7 +1289,7 @@
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '" style="' + btn('#ede9fe','#5b21b6','#ddd6fe') + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>' +
       '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu" style="' + btn('#fef2f2','#b91c1c','#fecaca') + '">✕ Afmerkja</button>' +
-      '</div>';
+      mkMerki(r) + '</div>' + mkGluggi(r);
   }
   function nameBlock(r, big) {
     return '<div><div class="sv-nm" style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
@@ -1359,9 +1403,10 @@
       '<button class="_sv-act" data-act="open" data-id="' + r.id + '" title="Opna fyrirtækjasíðuna">' + SPJ_IKON.opna + 'Opna</button>' +
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '" title="Opna úttektarskýrsluna">' + SPJ_IKON.skyrsla + 'Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Merkja verkið búið í ár">' + SPJ_IKON.hak + 'Búið</button>' +
+      mkMerki(r) +
       '<span class="sv-spj-bil"></span>' +
       '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">' + SPJ_IKON.x + 'Afmerkja</button>' +
-      '</div>';
+      '</div>' + mkGluggi(r);
   }
   // Í-vinnslu kort — cards mode (Brunastál C: málmhaus + húsmynd)
   function gridCard(r) {
@@ -1388,7 +1433,7 @@
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '">✓ Búið</button>' +
       '<button class="_sv-act sv-unmarkw" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">✕ Afmerkja</button>' +
-      '</div>';
+      mkMerki(r) + '</div>' + mkGluggi(r);
   }
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
@@ -1487,6 +1532,7 @@
           (withStart && r.doneDocs ? ' <span title="Þegar með úttektarskýrslu + reikning fyrir ' + curYear + '" style="font-size:10.5px;font-weight:700;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:1px 6px;white-space:nowrap">⚠️ skjöl komin</span>' : '') +
           sn.map(snFlis).join('') + '</span>' +
           '<span class="mn">' + (r.units > 0 ? '🧯 ' + r.units : '') + '</span>' +
+          (withStart ? mkMerki(r) : '') +
           (withStart && r.doneDocs
             ? '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7','#14532d','#86efac') + '">✔️ Fjarlægja</button>'
             : withStart && sn.length
@@ -1500,7 +1546,7 @@
             : withStart
             ? '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Hefja vinnslu</button>'
             : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>') +
-        '</div>'); };
+        '</div>' + (withStart ? mkGluggi(r) : '')); };
       if (!withStart) return list.map(rodHtml).join('');
       const full = list.filter(r => r.doneDocs), hluta = list.filter(r => !r.doneDocs && sonnun(r).length), hin = list.filter(r => !r.doneDocs && !sonnun(r).length);
       if (!full.length && !hluta.length) return hin.map(rodHtml).join('');
@@ -1620,10 +1666,12 @@
           '<div class="b190-man" role="group" aria-label="Sía eftir skrefi">' + skrefSulur + '</div>' +
         '</div>' +
       '</div>' +
-      dagskraDrawer + buidDrawer + body + '</div>';
+      mkBar() + dagskraDrawer + buidDrawer + body + '</div>';
     if (_leitFokus) { const si = v.querySelector('.sv-search'); if (si) { si.focus(); try { si.setSelectionRange(_leitFokus[0], _leitFokus[1]); } catch (_) {} } }
 
 
+    // Merkja og keyra (519, eintak verkstæðisins): smellir á ◇, hökin, ▶ Keyra o.fl.
+    v.querySelectorAll('[data-t5^="mk-"]').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); const m = mkv(); if (m) m.smellur(el, e); }));
     // view-mode toggle
     v.querySelectorAll('.sv-seg button').forEach(bn => bn.addEventListener('click', () => setMode(bn.dataset.mode)));
     // skref-sía
