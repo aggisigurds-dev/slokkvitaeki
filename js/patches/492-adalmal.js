@@ -55,6 +55,23 @@
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   const DISP = '"Playfair Display",Georgia,serif';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  /* 18.11.2026 — LESTUR Á FLATRI SETNINGU (Agnar: „hörmulegt að lesa svona. gersamlega bara flatur texti").
+   * Línurnar í „Tilbúið til afgreiðslu" eru ein setning hver: aðili, staða, upphæð, aldur og aðgerð, allt á
+   * sömu þyngd — t.d. „Hertz (Bílaleiga Flugleiða): R-001071 upp á 114.050 kr. hefur verið ógreiddur í 47 daga
+   * — staðfesta að reikningurinn hafi borist". Augað hefur hvergi að grípa.
+   * Textinn er ÓBREYTTUR; hann er aðeins brotinn upp eftir á:
+   *   · aðilinn — allt fram að fyrsta tvípunkti innan 70 stafa — verður feitur,
+   *   · upphæðir og dagafjöldi fá töflutölustafi svo tölur raðist undir tölur.
+   * Unnið á ESCAPE-UÐUM streng, svo ekkert sem kemur úr gögnunum getur orðið að marki. */
+  function sundur(txt) {
+    let t = esc(txt);
+    const k = t.indexOf(': ');
+    if (k > 0 && k < 70 && !/[.!?]/.test(t.slice(0, k))) t = '<b class="ad-adili">' + t.slice(0, k) + '</b>' + t.slice(k);
+    t = t.replace(/\d[\d.]*(?:,\d+)? kr\.?/g, m => '<span class="ad-tala">' + m + '</span>');
+    t = t.replace(/\b\d+(?:[–-]\d+)? (?:daga|dagar|dögum|mánuði|mánuðum)\b/g, m => '<span class="ad-ald">' + m + '</span>');
+    return t;
+  }
   const p2 = n => String(n).padStart(2, '0');
   const dags = iso => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
   const kl = iso => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getHours()) + ':' + p2(d.getMinutes()); };
@@ -327,6 +344,13 @@
       V + ' .ad-afr+.ad-afr{border-top:1px solid rgba(20,24,34,.1)}',
       V + ' .ad-afr>button.haus{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:8px 12px;border:0;background:none;text-align:left;cursor:pointer;color:#1f2530;font:600 14px/1.35 ' + SANS + '}',
       V + ' .ad-afr>button.haus .t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}' + V + ' .ad-afr>button.haus .k{font:600 11.5px ' + MONO + ';color:#525b6b;white-space:nowrap}',
+      // 18.11.2026 — stigveldi í flötu línunni: aðilinn fremst og feitur, smáatriðin léttari, tölur í
+      // töflutölustöfum svo 114.050 og 134.446 raðist undir hvor aðra þegar augað rennur niður listann.
+      V + ' .ad-afr>button.haus .t{font-weight:500;color:#3a4250}',
+      V + ' .ad-afr>button.haus .t .ad-adili{font-weight:800;color:#11141c}',
+      V + ' .ad-tala{font-variant-numeric:tabular-nums;font-weight:700;color:#1f2530}',
+      V + ' .ad-ald{font-variant-numeric:tabular-nums;color:#6b7380}',
+      V + ' .ad-rok li .ad-adili{font-weight:800;color:#11141c}',
       V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 10px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
       V + ' .ad-afk{padding:4px 14px 12px}' + V + ' .ad-afk h4{margin:10px 0 5px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
       V + ' .ad-gerist{font:600 15px/1.4 ' + SANS + ';background:#f4f6f9;border:1px solid rgba(20,24,34,.14);border-left:4px solid #7a0b0e;border-radius:8px;padding:9px 11px}',
@@ -522,7 +546,7 @@
   const opnaHtml = sl => (sl && sl.url && /^(https?:\/\/|\/)/.test(sl.url) ? '<a class="ad-opna" href="' + esc(sl.url) + '" target="_blank" rel="noopener">' + esc(sl.texti || 'Opna') + ' ↗</a>' : '');
   function afKortHtml(v) {
     let h = '<div class="ad-afk"><h4>Hvað gerist þegar þú ýtir</h4><div class="ad-gerist">' + esc(v.hvad_gerist) + '</div>';
-    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + esc(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
+    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + sundur(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
     if (v.tegund === 'tolvupostur') {
       if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + (v.svar_vid.slod ? ' · ' + opnaHtml(v.svar_vid.slod) : '') + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
       const p = v.post || {};
@@ -563,7 +587,7 @@
     if (S.afSkilabod) x += '<div class="ad-sk _' + (S.afSkilabod.ok ? 'ok' : 'v') + '" role="status">' + esc(S.afSkilabod.texti) + '</div>';
     x += '<ol>' + t.map(v => {
       const opid = S.afOpid === v.id;
-      return '<li class="ad-afr"><button type="button" class="haus" data-adm="afopna" data-id="' + v.id + '" aria-expanded="' + opid + '"><span class="ad-plata">' + esc(TEG[v.tegund] || v.tegund) + '</span><span class="t">' + esc(v.titill) + '</span>' +
+      return '<li class="ad-afr"><button type="button" class="haus" data-adm="afopna" data-id="' + v.id + '" aria-expanded="' + opid + '"><span class="ad-plata">' + esc(TEG[v.tegund] || v.tegund) + '</span><span class="t">' + sundur(v.titill) + '</span>' +
         (v.ok ? '' : '<span class="k" style="color:#a1161a">✗ athugun</span>') + '<span class="pil">' + (opid ? '▾' : '▸') + '</span></button>' + (opid ? afKortHtml(v) : '') + '</li>';
     }).join('') + '</ol></section>';
     return x;
