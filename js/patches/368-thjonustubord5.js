@@ -1240,14 +1240,28 @@
       '.nt textarea:focus{outline:2px solid var(--g5);outline-offset:1px}',
       '.nt textarea::placeholder{color:var(--mute);opacity:.5}',
       '.well.ntwell{padding:10px 12px}.well.ntwell .nt{margin:0}',
-      '.nt.dark textarea{border:1px solid #2f2c26;background:#0b0b0a;color:#efe9da;box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}',
-      '.nt.dark textarea::placeholder{color:#7b7466;opacity:.8}',
+      // 18.11.2026 (Agnar: „Textasvæðin sem við skrifum þurfa að vera hvít með svörtum stöfum"). Reiturinn sem
+      // maður skrifar í er hvítur hvað sem flöturinn undir honum er — dökkur reitur á dökku spjaldi las eins og
+      // tilvitnun, ekki eins og staður til að skrifa á.
+      '.nt.dark textarea{border:1px solid rgba(255,255,255,.22);background:#fff;color:#111;box-shadow:none}',
+      '.nt.dark textarea::placeholder{color:#6f685c;opacity:.75}',
+      // Lesútgáfa lýsingarinnar: tímalínan á hvítu, óháð hamnum sem er valinn (hún er efni, ekki rammi).
+      '.nt.dark.les{gap:7px}',
+      '.nt-tl{margin:1px 0 0;padding:9px 11px;border-radius:6px;background:#fff;color:#101e43;max-height:320px;overflow:auto}',
+      '.nt-tl .sb-tld{font-size:12.5px;color:#101e43}',
+      '.nt-tl p{margin:0 0 9px;font-size:13.5px;line-height:1.55;color:#2e4064}',
+      '.nt-tl li:last-child p{margin-bottom:0}',
+      '.nt-tl b{color:#101e43}',
+      '.nt .nt-rita{align-self:flex-start}',
       '.ntst{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--mute)}',
       '.ntst.villa{color:var(--terra);letter-spacing:0;font-family:var(--body);font-size:12.5px}',
       '.ntst.ok{color:var(--green)}.ntst.vistar,.ntst.bid{color:var(--gink)}',
       '.nt.dark .ntst{color:var(--on3)}.nt.dark .ntst.ok{color:#7fbf95}.nt.dark .ntst.villa{color:#e08b6a}',
       '.mfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}',
-      '.sel{background:var(--slab);border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;color:var(--on);box-shadow:var(--slabsh);padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}',
+      // 18.11.2026 — þéttara (Agnar: „mátt líka þétta hann betur"): 14/18/18 → 11/14/13 og bil 12 → 8.
+      '.sel{background:var(--slab);border:1px solid #000;border-top:3px solid transparent;border-image:var(--gline) 1;border-image-width:3px 0 0 0;border-radius:5px;color:var(--on);box-shadow:var(--slabsh);padding:11px 14px 13px;display:flex;flex-direction:column;gap:8px;min-width:0}',
+      '.smeta2{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:8px;align-items:start;min-width:0}',
+      '.smeta2:empty{display:none}',
       '.sel.inline{margin:0 10px 12px}',
       // Á tölvu límist valið mál við skjáinn á meðan skrunað er niður listann.
       '.sel.side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}',
@@ -1277,7 +1291,7 @@
       '.naesta{margin:4px 0 2px;font-size:13.5px;line-height:1.45;color:var(--ink2)}.naesta b{font-weight:700;color:var(--ink)}',
       '.naesta.buid,.naesta.buid b{color:var(--green)}.naesta.lik b{color:var(--gink)}',
       '.samt-sonn{font-weight:600}.samt-sonn.ok{color:var(--green)}',
-      '.well{border:1px solid #000;border-radius:4px;background:var(--dwell);box-shadow:var(--dwellsh);padding:12px 14px}',
+      '.well{border:1px solid #000;border-radius:4px;background:var(--dwell);box-shadow:var(--dwellsh);padding:9px 12px}',
       '.well p{margin:7px 0 0;font-size:14px;line-height:1.6;color:#efe9da;white-space:pre-line;overflow-wrap:anywhere;max-height:260px;overflow:auto}',
       '.sacts{display:flex;gap:8px;flex-wrap:wrap}',
       '.sel .empty{color:var(--on3)}',
@@ -1463,16 +1477,18 @@
       '.skn::placeholder,.skt::placeholder{color:var(--mute);opacity:.14}',
       '.skgrid.yfir{outline:2px dashed var(--g6);outline-offset:4px;border-radius:6px}',
       '.sknew{cursor:grab}.sknew:active{cursor:grabbing}',
-      '.saga{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.saga{display:flex;flex-direction:column;gap:5px;padding:8px 11px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      // Spjald án gagna er ein lína: enginn innri dálkur, ekkert bil undir hausnum.
+      '.saga.tomt,.fskjol.tomt{gap:0;padding:6px 11px}',
       '.saga.buid{border-color:rgba(74,160,106,.6);box-shadow:inset 3px 0 0 #4aa06a}',
       '.sg-h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}.sg-buid{font-size:13px;font-weight:700;color:#8fd3a6}',
       '.sg-r{height:26px;padding:0 10px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on2);font:600 12.5px var(--body);cursor:pointer}.sg-r[disabled]{opacity:.6;cursor:progress}',
       '.sg-l{display:flex;flex-direction:column;gap:3px;font-size:13.5px;color:var(--on2)}.sg-l b{color:var(--on)}',
       '.sg-l em{font-style:normal;font-weight:700}.sg-l em.ok{color:#8fd3a6}.sg-l em.bid{color:#e8b06a}.sg-m{font-size:12px;color:var(--on3)}',
       '.lpick{display:block;padding:0;margin:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}.lpick:hover b{text-decoration:underline;text-decoration-color:var(--g6);text-underline-offset:3px}',
-      '.bm-t{align-self:flex-start}.bm{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.bm-t{align-self:flex-start}.bm{display:flex;flex-direction:column;gap:8px;padding:9px 11px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
       '.bm label{display:flex;flex-direction:column;gap:3px;min-width:0}.bm-r{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}',
-      '.bm input,.bm textarea,.bm select{padding:6px 9px;border:1px solid #3a3732;border-radius:4px;background:#1c1b18;color:var(--on);font:14px var(--body)}.bm textarea{resize:vertical;min-height:70px}',
+      '.bm input,.bm textarea,.bm select{padding:6px 9px;border:1px solid #3a3732;border-radius:4px;background:#fff;color:#111;font:14px var(--body)}.bm textarea{resize:vertical;min-height:70px}',
       '.bm .bm-c{flex-direction:row;align-items:center;gap:6px;color:var(--on2);font-size:14px}',
       '.hchips{display:flex;align-items:center;flex-wrap:wrap;gap:6px}',
       '.hchip{height:26px;padding:0 10px;border:1px solid #3a3732;border-radius:13px;background:#1c1b18;color:var(--on2);font:600 12.5px var(--body);cursor:pointer}',
@@ -1503,7 +1519,7 @@
       '.hrrow input{margin:3px 0 0;width:16px;height:16px;cursor:pointer}.hrinfo{display:flex;flex-direction:column;gap:2px;min-width:0}.hrinfo .s{font-size:13px;color:var(--mute);overflow-wrap:anywhere}',
       '.tfbanner{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 6px;padding:8px 12px;border:1px solid var(--g6);border-radius:5px;background:#fff8e6;font-size:14px;font-weight:600;color:var(--ink)}',
       '.tftak{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
-      '.fskjol{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
+      '.fskjol{display:flex;flex-direction:column;gap:5px;padding:8px 11px;border:1px solid #2a2823;border-radius:4px;background:#11100e}',
       '.fsupp{display:inline-flex;align-items:center;cursor:pointer}.fslist{display:flex;flex-direction:column;gap:4px}',
       '.fsrow{display:flex;align-items:center;gap:8px;min-width:0}.fsrow .clink{overflow-wrap:anywhere}',
       '.err{padding:10px 14px;border:1px solid rgba(181,82,42,.45);border-radius:4px;background:#fff7f2;color:var(--terra);font-size:13.5px}',
@@ -1803,11 +1819,19 @@
     '</div>';
   }
   const kr = x => Math.round(Number(x) || 0).toLocaleString('is-IS').replace(/,/g, '.') + ' kr.';
+  /* 18.11.2026 — Saga fyrirtækisins og Fylgiskjöl standa HLIÐ VIÐ HLIÐ (Agnar: „hann er svo plássfrekur",
+   * með ör af Sögu-reitnum yfir í auða svæðið við hliðina). Hvorugt fyllir 700 px breidd: Saga er ein til þrjár
+   * línur og Fylgiskjöl oftast engin. Hvort í sinni fullu breidd gerði tvær hæðir úr einni. Undir 560 px fer
+   * ristin í eina súlu af sjálfu sér (auto-fit). Tómur vafningur fellur út, svo bilið yfir hann myndast ekki. */
+  const smeta2 = innihald => (innihald ? '<div class="smeta2">' + innihald + '</div>' : '');
+
   function sagaHtml(r) {
     if (!isOn('saga') || !r.customer_base_id) return '';
     const v = S.virkni[r.customer_base_id], eftir = virkniEftir(r), linur = [];
-    if (v === undefined) linur.push('<span class="sg-m">Sæki sögu fyrirtækisins…</span>');
-    else if (!v) linur.push('<span class="sg-m">Engin sala né skýrsla skráð hjá þessu fyrirtæki.</span>');
+    // 18.11.2026 (Agnar: „mikil fyrirferð af engum gögnum"): hleðsla og tómt svar eru EIN lína í hausnum,
+    // ekki spjald með eigin brún og eigin innra bili. Spjaldið er fyrir gögn; skilaboð eru bara skilaboð.
+    if (v === undefined) linur.push('<span class="sg-m">Sæki…</span>');
+    else if (!v) linur.push('<span class="sg-m">Engin sala né skýrsla skráð.</span>');
     else {
       const rk = v.sidasti_reikningur, sl = v.sidasta_sala, sk = v.sidasta_skyrsla;
       if (rk) linur.push('<span>🧾 <b>Reikningur ' + esc(rk.num || '') + '</b> · ' + esc(fmtD(rk.dags)) + ' · ' + kr(rk.samtals) + ' · ' +
@@ -1815,11 +1839,13 @@
       if (sl && (!rk || sl.id !== rk.id)) linur.push('<span>🛒 <b>Sala ' + esc(sl.num || '') + '</b> · ' + esc(fmtD(sl.dags)) + ' · ' + kr(sl.samtals) + '</span>');
       if (sk) linur.push('<span>📄 <b>' + (sk.doc_type === 'brunakerfi' ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + '</b> · ' + esc(fmtD(sk.dags)) + '</span>');
     }
-    return '<div class="saga' + (eftir ? ' buid' : '') + '">' +
+    const tomt = !v;
+    return '<div class="saga' + (eftir ? ' buid' : '') + (tomt ? ' tomt' : '') + '">' +
       '<div class="sg-h"><span class="slabel">Saga fyrirtækisins</span>' +
         (eftir ? '<span class="sg-buid">✓ Líklega afgreitt — ' + esc(eftir.join(' og ')) + ' eftir að málið varð til</span>' : '') +
+        (tomt ? linur.join('') : '') +
         '<span class="grow"></span><button type="button" class="sg-r" data-t5="virkni-uppf"' + (S.virkniBid ? ' disabled' : '') + ' title="Reikna sölur, reikninga og skýrslur upp á nýtt">' + (S.virkniBid ? 'Uppfæri…' : '↻ Uppfæra') + '</button></div>' +
-      '<div class="sg-l">' + linur.join('') + '</div>' +
+      (tomt ? '' : '<div class="sg-l">' + linur.join('') + '</div>') +
       /* 15.10.2026: stóð sem eigin lína beint undir hinum stimplinum. Tveir */
       /* tímastimplar hlið við hlið segja ekkert — hann lifir í hjálpartextanum. */
       '' +
@@ -2208,12 +2234,32 @@
       sonnLina(r) + '</div>';
   }
 
+  /* 18.11.2026 — TÍMALÍNA Í MÁLGLUGGANUM (Agnar: „Kanski notast við tímalínuna þarna eins og þú gerðir á öðrum
+   * stöðum á þjónustuborðinu"). Lýsingin er oftast dagsettar málsgreinar — „16.10.2026 (bergthor@reising.is): …",
+   * „GREINING 08.11.2026: …", „— Undirbúið 16.11.2026 (Claude, postur): …" — og þær lágu í skrunandi reit þar sem
+   * hvergi sást hvað gerðist hvenær. Sami þáttari og Samþykkja-spjaldið notar (sbSaga) les þær í hnúta, svo málið
+   * les sig eins og saga. Reiturinn hverfur ekki: „✎ Skrifa" opnar hann (sama S.ntOpid og hvíta kortið notar).
+   * Texti sem ber engar dagsetningar fær reitinn beint eins og áður — enginn les tómt box sem tímalínu. */
+  function ntTlHtml(r) {
+    const hnutar = sbSaga(ntGildi(r));
+    // Þrír hnútar er lágmarkið: með einum eða tveimur segir tímalínan minna en textinn sem hún leysir af.
+    if (hnutar.length < 3) return '';
+    return '<ul class="sb-tl nt-tl">' + hnutar.map((n, i) =>
+      '<li' + (i === hnutar.length - 1 ? ' sidast' : '') + '><span class="sb-tld">' + esc(n.merki) + '</span><span class="sb-tlp"></span>' +
+      '<p>' + (n.hver ? '<b>' + esc(n.hver) + '</b> ' : '') + esc(n.texti) + '</p></li>').join('') + '</ul>';
+  }
+
   // kort = á hvítu spjaldi · dark = í svarta spjaldinu
   function notaHtml(r, cls, label) {
     const g = ntGildi(r);
-    return '<div class="nt' + (cls ? ' ' + cls : '') + '">' +
-      '<div class="nthead"><span class="slabel">' + esc(label || 'Lýsing og athugasemdir') + '</span>' +
-      '<span class="grow"></span>' + ntStadaHtml(r.id) + '</div>' +
+    const haus = '<div class="nthead"><span class="slabel">' + esc(label || 'Lýsing og athugasemdir') + '</span>' +
+      '<span class="grow"></span>' + ntStadaHtml(r.id) + '</div>';
+    if (cls === 'dark' && !S.ntOpid[r.id]) {
+      const tl = ntTlHtml(r);
+      if (tl) return '<div class="nt dark les">' + haus + tl +
+        '<button type="button" class="sg-r nt-rita" data-t5="nt-opna" data-id="' + r.id + '" title="Opna reitinn og skrifa — vistast sjálfkrafa">✎ Skrifa · allur textinn</button></div>';
+    }
+    return '<div class="nt' + (cls ? ' ' + cls : '') + '">' + haus +
       '<textarea data-nt="notes" data-id="' + r.id + '"' + (cls === 'kort' ? ' data-nt-kort="1"' : '') +
         ' rows="' + ntRadir(g) + '" aria-label="Lýsing og athugasemdir"' +
         ' placeholder="Skrifaðu hér — vistast sjálfkrafa. Ctrl+Enter vistar strax.">' + esc(g) + '</textarea></div>';
@@ -2349,7 +2395,7 @@
       adgerdirHtml(r)) + (erSamthykki(r) || svarBidur(r) ? heimildirHtml(r, 't5') : '') +
       /* Aðeins svar-málin: aðaltakkinn ber þá sama texta og næsta skref. */
       stadaHtml(r, { adalAdgerd: getaSvarad ? 'svara' : '' }) +
-      sagaHtml(r) + skjolHtml(r) + well +
+      smeta2(sagaHtml(r) + skjolHtml(r)) + well +
       // póstmál: málið SJÁLFT er staðurinn (↩ Svara í sama þræði) — enginn „Opna" takki sem vísar á sig sjálft
       '<div class="sacts">' + (post ? '' : stadTakki(r, 'btn ' + (erBuid(r) ? 'iv' : 'gold') + (minn ? ' lg' : ''))) + (minn && erSamthykki(r) ? (erBuid(r) && !opt.bMeira ? b('gold lg', 'done', '✓ Loka — afgreitt') : '') + (opt.bMeira ? '' : samtTakkar(r, ' lg')) + rukkaTakki + fyr : taka + svara + lokid + skila + rukkaTakki + fyr) + '</div>' + (minn && erSamthykki(r) && !opt.bMeira ? skyRitillHtml(r) : '') +
       '<div class="sacts sm2">' + setja + (!r.fyrirtaeki_id ? b('iv', 'tf-leita', '🏢 Tengja fyrirtæki') : '') + b('iv', 'sk-add', '📋 Á skipulagsborð') + (jm => jm ? b('iv', 'vd-opna', '🗓 ' + fmtD(jm.date) + (jm._n !== nu() ? ' · ' + jm._n : '')) : b('iv', 'vd-add', '🗓 Á dagskrá'))(jobOfMal(r.id)) +
@@ -4400,7 +4446,8 @@
   const erMynd = f => !!(f && f.url) && (/^image\//.test(String(f.mime_type || '')) || /\.(jpe?g|png|gif|webp)(\?|$)/i.test(String(f.name || f.url || '')));
   function skjolHtml(r) {
     const g = gogn('skjol:' + r.id, () => saekjaSkjol(r.id), 120000), bid = !!(S.skjolBid && S.skjolBid[r.id]), listi = g.data || [];
-    return '<div class="fskjol"><div class="sg-h"><span class="slabel">📎 Fylgiskjöl' + (g.data ? ' (' + listi.length + ')' : '') + '</span><span class="grow"></span>' +
+    const tomtFs = !!(g.data && !listi.length && !g.villa);
+    return '<div class="fskjol' + (tomtFs ? ' tomt' : '') + '"><div class="sg-h"><span class="slabel">📎 Fylgiskjöl' + (g.data ? ' (' + listi.length + ')' : '') + '</span><span class="grow"></span>' +
         '<label class="sg-r fsupp" data-t5="skjal-velja">' + (bid ? 'Hleð upp…' : '+ Bæta við skjölum') + '<input type="file" multiple data-t5-skjal="' + r.id + '" hidden' + (bid ? ' disabled' : '') + '></label></div>' +
       (g.villa ? '<div class="sg-m">Náði ekki í fylgiskjölin: ' + esc(g.villa) + '</div>'
         : !g.data ? '<div class="sg-m">Sæki fylgiskjöl…</div>'
@@ -4412,7 +4459,7 @@
               : '<button type="button" class="sx" data-t5="skjal-eyda" data-id="' + r.id + '" data-fid="' + f.id + '" aria-label="Eyða ' + esc(f.name || 'skjali') + '">✕</button></div>')).join('') + '</div>' +
           listi.filter(f => !f._eldra && erMynd(f)).map(f => '<a class="fsmynd" href="' + esc(f.url) + '" target="_blank" rel="noopener" title="Opna ' + esc(f.name || 'myndina') + ' í fullri stærð">' +
             '<img src="' + esc(f.url) + '" alt="' + esc(f.name || 'Mynd') + '" loading="lazy"></a>').join('')
-        : '<div class="sg-m">Engin fylgiskjöl á þessu máli.</div>') +
+        : '') +
     '</div>';
   }
   /* 01.11.2026 — HEIMILDIR (Agnar: „ég hef ekki hingað til treyst samþykktarborðinu, finnst vanta oft meiri sannanir,

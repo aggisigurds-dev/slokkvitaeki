@@ -261,14 +261,32 @@
       H + ' .sel,' + H + ' .vbr-svar{border:0;border-image:none;border-radius:14px;background:#011f40;box-shadow:' + SH + '}',
       H + ' .sel .age.warm{color:#ff8a1f}',
       H + ' .sel .age.hot{color:#ffb4a2}',
-      H + ' .well,' + H + ' .saga,' + H + ' .bm,' + H + ' .fskjol{border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#02193c;box-shadow:none}',
-      H + ' .well p{color:#e6ecf5}',
+      /* 18.11.2026 (Agnar: „eginlega allt of mikið blátt í sama lit, mátt lísa upp textaglugga"). Spjaldið var
+       * navy #011f40 og HVER einasti reitur inni í því navy #02193c — tveir litir sem muna 6 í birtu, svo
+       * málglugginn las sem einn flötur. Hönnunarkerfið sjálft segir annað: ramminn er navy, efnið situr á
+       * ljósum spjöldum. Hér er því rammanum haldið og innihaldinu lyft upp á surface-2 (#f3f6fb) með ink-texta.
+       * Birtuhlutfall mælt: ink #101e43 á #f3f6fb = 15,3:1, ink-2 #2e4064 = 8,9:1, orange-ink #c2410c = 4,9:1. */
+      H + ' .well,' + H + ' .saga,' + H + ' .bm,' + H + ' .fskjol{border:1px solid #d8dee9;border-radius:10px;background:#f3f6fb;box-shadow:none;color:#101e43}',
+      H + ' .well p{color:#101e43}',
+      H + ' .well .slabel,' + H + ' .saga .slabel,' + H + ' .bm .slabel,' + H + ' .fskjol .slabel{color:#c2410c}',
+      H + ' .saga .sg-l,' + H + ' .fskjol .sg-m,' + H + ' .saga .sg-m,' + H + ' .well .sg-m{color:#2e4064}',
+      H + ' .saga .sg-l b{color:#101e43}',
+      H + ' .saga .sg-l em.ok{color:#166534}' + H + ' .saga .sg-l em.bid{color:#9a3412}',
+      H + ' .saga .sg-buid{color:#166534}',
+      H + ' .well .clink.dk,' + H + ' .fskjol .clink.dk{color:#c2410c;text-decoration-color:rgba(194,65,12,.45)}',
+      // Takkarnir í hausum ljósu reitanna (↻ Uppfæra, + Bæta við skjölum, ✕, ✎ Skrifa) fylgja fletinum.
+      H + ' .saga .sg-r,' + H + ' .fskjol .sg-r,' + H + ' .well .sg-r,' + H + ' .fskjol .sx{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .saga .sg-r:hover,' + H + ' .fskjol .sg-r:hover,' + H + ' .well .sg-r:hover{background:#e9f0fa}',
+      H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .bm label>span,' + H + ' .bm .bm-c{color:#2e4064}',
       H + ' .fsmynd{border-color:rgba(255,255,255,.12)}',
       H + ' .sacts.sm2{border-top-color:rgba(255,255,255,.14)}',
       H + ' .vbr-mynd{border:0;border-radius:10px;background:#011f40}',
       H + ' .slot.on{background:#0b2d5f;border-color:#0b2d5f}',
       H + ' .nt textarea{border-radius:10px;background:#fff;box-shadow:none}',
-      H + ' .nt.dark textarea{border-color:rgba(255,255,255,.16);background:#02193c;color:#fff;box-shadow:none}',
+      H + ' .nt.dark textarea{border-color:#d8dee9;background:#fff;color:#101e43;box-shadow:none}',
+      H + ' .nt.dark .ntst{color:#2e4064}',
+      H + ' .nt-tl{background:#fff;box-shadow:inset 0 0 0 1px #e3e9f2}',
       H + ' .nt.dark textarea:focus,' + H + ' .bm textarea:focus,' + H + ' .bm input:focus{border-color:#ff6702;box-shadow:0 0 0 3px rgba(255,103,2,.35)}',
       H + ' .t5toast{border:0;border-radius:10px;background:#011f40;box-shadow:' + SH + '}',
       H + ' .t5toast .undo{border:0;border-radius:8px;background:' + APP + ';color:#fff}',
