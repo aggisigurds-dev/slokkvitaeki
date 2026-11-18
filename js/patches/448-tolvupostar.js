@@ -544,7 +544,22 @@
         '.tp .tp-vidh-box{margin:8px 0;padding:8px 10px;border:1px solid var(--rule2);border-radius:4px;background:rgba(0,0,0,.03);font-size:12.5px}.tp .tp-vidh-box>b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}.tp .tp-vidh-box .s{color:var(--ink2);font-size:11.5px}.tp .tp-vidh-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 0;cursor:pointer}.tp .tp-vidh-l input{width:16px;height:16px;margin:0}.tp .tp-vidh-l._ekki{opacity:.6}.tp .tp-vidh-l a{color:#1f6b3c;font-weight:600}.tp .tp-vidh-vantar{margin-top:6px;padding:6px 8px;border-left:3px solid #c0392b;background:rgba(192,57,43,.08);color:#7a1f14;line-height:1.45}',
         '.tp .tp-skeytin{display:flex;flex-direction:column;gap:10px;margin-top:14px}.tp .tp-skeyti{padding:12px 14px;border:1px solid var(--rule2);border-radius:6px;background:#fff}.tp .tp-skeyti._okkar{background:rgba(232,203,122,.12);border-color:rgba(184,137,46,.4)}.tp .tp-skeyti header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;font-size:12.5px}.tp .tp-skeyti header .s{color:var(--mute);font-size:11.5px}.tp .tp-skeyti header time{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mute)}',
         '.tp .tp-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere}.tp .tp-vidh{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
-        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}'
+        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}',
+        // 18.11.2026 (Agnar: „fara yfir fleiri svona svör/samþykktar glugga“): sama þétta form og Samþykkja — glugginn stendur á skjánum (sticky),
+        // þráðurinn (skeytin) vinstra megin og svarið/málið hægra megin, takkarnir lágir; langur texti skrunast inni í kassanum.
+        '@container t5 (min-width: 901px){',
+          '.tp .tp-sel{scroll-margin-top:150px;max-height:calc(100vh - 168px);overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;align-content:start;padding:12px 16px}',
+          '.tp .tp-sel>*{min-width:0;grid-column:1 / -1}',
+          '.tp .tp-sel .vbr-titill{font-size:18px;line-height:1.3;margin:0}.tp .tp-sel .vbr-meta{margin:0}.tp .tp-haus{gap:3px}',
+          '.tp .tp-takkar{margin-top:0;gap:6px}.tp .tp-takkar._adal{padding-bottom:8px}.tp .tp-takkar .btn{min-height:40px}',
+          '.tp .tp-svar,.tp .tp-claude,.tp .tp-mal{margin-top:0;padding:8px 12px}',
+          '.tp .tp-sel>.tp-skeytin{grid-column:1;grid-row:3 / span 4;margin-top:0;max-height:calc(100vh - 360px);overflow-y:auto;padding-right:4px}',
+          '.tp .tp-sel>.tp-svar,.tp .tp-sel>.tp-claude,.tp .tp-sel>.tp-mal{grid-column:2}',
+          '.tp .tp-ta{height:min(22vh,170px);margin:0 0 6px;padding:6px 10px}.tp .tp-inp{margin:0 0 6px;padding:6px 10px}',
+          '.tp .tp-nota{max-height:min(18vh,150px)}.tp .tp-skeyti{padding:8px 12px}',
+          // Svartakkarnir festast neðst í glugganum þegar innihaldið er hærra en skjárinn.
+          '.tp .tp-svar .tp-takkar,.tp .tp-claude .tp-takkar{position:sticky;bottom:0;z-index:1;background:#fbf8ef;padding:6px 0}',
+        '}'
       ].join('\n');
       root.appendChild(st);
     } catch (_) {}
