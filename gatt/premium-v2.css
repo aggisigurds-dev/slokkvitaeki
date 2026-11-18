@@ -642,3 +642,18 @@ html[data-theme="premium"] #v2-top .v2-topnav{padding-right:26px;-webkit-mask-im
    Báðir fá ljósa amberinn sem hausinn notar þegar fyrir yfirskriftina (#f59e5b á #16294a = 5,6:1). */
 .pf-haus .pf-es{color:#f59e5b}
 .yf-s .ysia.on,.vh-sia .ysia.on{color:#f59e5b}
+
+/* 18.11.2026 (Agnar: „Já, laga takkana") — appelsínugulu takkarnir voru 10,5–11,5 px með hvítu letri.
+   Hönnunarkerfið leyfir hvítt á appelsínugulu AÐEINS í feitu 14 px+ („hvítt á orange er 2,9:1 … notað með
+   feitum texta 14px+"); þessir stóðu fyrir neðan þá línu og mældust 3,37:1 á 10,5 px. Textinn fer í 14/700
+   og takkarnir hækka lítillega svo hann fái rými — breiddin var hvort eð er rúm (minnstu takkarnir mældust
+   146 px fyrir 12 stafi). Reglurnar eru bundnar við #portal/#drawer (auðkenni slær klasa) því grunnreglurnar koma úr <style> sem JS
+   skýtur inn og vinnur annars á röð. ATH: gáttin keyrir á data-theme="blar", EKKI "premium" — eldri reglur með
+   html[data-theme="premium"] eiga því ekki við hana. */
+#portal :is(.gbtn,.kbtn),
+#portal .msg-compose button,
+#portal #yf-rail button[type=submit],
+#drawer .gbtn{font-size:14px;font-weight:700;letter-spacing:0}
+#portal :is(.gbtn,.kbtn).sm{height:34px;padding:0 14px;font-size:14px}
+#portal .efoot :is(.gbtn,.kbtn){height:40px;font-size:14px}
+#portal .ck-add .gbtn{height:38px;padding:0 14px;font-size:14px}
