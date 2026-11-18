@@ -1328,14 +1328,16 @@ exports.handler = async (event) => {
     )
       .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
         fid: d.fyrirtaeki_id != null ? Number(d.fyrirtaeki_id) : null,   // 06.11.2026: eignin → greiðandinn í hópuðu sýninni
-        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null,
+        // 18.11.2026: sé skjalið ekki tengt eign er greiðandinn sýndur (customer_base_id) í stað auðs reits.
+        bygging: nafnById[d.fyrirtaeki_id] || (d.customer_base_id != null ? (hopur.nofn[d.customer_base_id] || '') : '') || '', upphaed: d.amount != null ? d.amount : null,
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
     // 23.10.2026 (Agnar: „skrá lýsingu"): skjal úr Stólpa-tímanum á enga solur-röð, svo Lýsing stóð auð þótt
     // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
-    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' };
+    // 18.11.2026 (Agnar: „ekkert tómt að óþörfu"): „ovisst" er líka tegund — reitur sem segir „Óvíst" er sannari en auður reitur.
+    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð', ovisst: 'Óvíst' };
     invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
     // 26.10.2026 (hraði): solur-fyllingin hér að neðan fer af stað NÚNA, samhliða reikningslestrinum. Mengið er
     //    yfirmengi þess sem stæði eftir (lesturinn fyllir aðeins lýsingu/byggingu, fyllingin aðeins tóma reiti) → sama svar.
@@ -1492,7 +1494,7 @@ exports.handler = async (event) => {
                 upphaed: x.upphaed != null ? Number(x.upphaed) : null, // 18.11.2026 (Agnar: „Mátt líka skrá tegundirnar af reikningum"): Stólpa-reikningar bera engar línur, svo tegundin
                 // er handskráð í stolpi_reikningar.vidskiptategund (sama orðasafn og customer_documents). Vanti hana: „—" eins og áður.
                 // 18.11.2026: vanti »vegna«-texta (reikningslestur) er lýsingin tegundin sjálf, eins og í solur-röðinni að ofan.
-                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || ({ uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' })[x.vidskiptategund || sjalfvirkTeg(dags)] || '', tegund: x.vidskiptategund || sjalfvirkTeg(dags) || null, stada: greitt ? 'greitt' : null });
+                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || TEG_L[x.vidskiptategund || sjalfvirkTeg(dags) || 'ovisst'] || '', tegund: x.vidskiptategund || sjalfvirkTeg(dags) || 'ovisst', stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
           }
