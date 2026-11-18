@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 11:19 · 2536 virkar staðreyndir — 1444 prentaðar hér
+Sótt 2026-11-18 11:30 · 2537 virkar staðreyndir — 1445 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 157 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -2686,6 +2686,38 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>[how-to; agents: 3dJoker, tengingar] Bíða eftir Vercel kjarni-3dwork pass áður en merge. Vercel Agent Review er ekki blokkandi.
   <br><sub>2026-11-04 · kerfi · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-15 · claude-code</sub>
 
+### thema
+
+- **Brunahólf V2 hönnunarkerfið (claude.ai/artifact/AkDa6kxwo6S8kzgUgCmUGZ) uppfært 18.11.2026 (útgáfa 15) með leturkvarðanum af Þjónustuborðinu: nýr stíll section-title 18/700 (kaflaheiti, aldrei hástafir), small 12,5->13, label 11->12, nýr meta 11,5 sem GÓLF kerfisins (aðeins hástafamerki, ekkert lesmál undir 12). Einnig shadow-valid (innri appelsínurammi á opnu/völdu spjaldi) og maelir-w 228px. Nýr kafli project/vinnubord.md lýsir lögunum þremur (Í dag / Staðan / Listarnir) með þökunum, gildrunum og banni — svo næsta vinnuborð byrji ekki upp á nýtt. Reglan: hástafir þurfa MEIRA letur en lágstafir, ekki minna.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Frá 06.11.2026 er Brunahólf Premium sjálfgefið útlit Þjónustugáttarinnar; núverandi gáttir og nýjar gáttir nota premium nema annað þema sé valið sérstaklega.**
+  <br>Ákvörðun Agnars með markmynd 06.11.2026. Sex portal_users-raðir voru færðar úr blar í premium og dálksjálfgefið breytt í premium. Premium heldur navy hliðarstiku, appelsínugulum áherslum, byggingarhaus, KPI-spjöldum, eignatöflu og hægri rein.
+  <br><sub>2026-11-06 · slokkvitaeki · Agnar, markmynd 06.11.2026 · cursor</sub>
+- **Miðakerfi - Brunastál ræður öllum útlitsbreytingum í Slökkvitæki-appinu: engin emoji, engir bláir takkar, málmhausar með hnoðum, stálplata og silfur/málm-takkar.** _(likely)_
+  <br>[rule; agents: thema, joker] Design system artifact: https://claude.ai/code/artifact/a75833f9-83df-4490-9dfd-e8c83e97f466. Brunastál er frosið 17.08.2026 samkvæmt Jarvis-spjaldi.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-05 · claude-code</sub>
+- **Í Vörur og þjónusta hafa flokkar málmliti: slökkvitæki dökkblár, brunakerfi dökkrauður, slökkvikerfi dökk ljósblár, verkstæði grafít-grár, vinnuliðir dökkgull og ný vara dökkgrænn.**
+  <br>[decision; agents: thema, joker, sala-reikningar] Sama lota: brunakerfisverðlistinn er breytanlegur beint í Vörur og þjónusta (verð inline, lína neðst, ✎ í ritil fyrir tengingar) og Verðlisti-hnappurinn í tækjastikunni var tekinn burt.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 731f63e0 2026-10-14 · claude-code</sub>
+- **Brunahólf-þemað (vefverslunin) er sérstakt hönnunarkerfi frá Brunastál; Agnar hafnaði of miklu appelsínugulu/gulli á tökkum og vill 'setja í körfu' í dökkbláu.**
+  <br>[decision; agents: joker, thema] 12.10.2026: 'Eiginlega of mikið appelsínugult með tökkunum', 'setja í körfu frekar bláa'. Design System 'Brunahólf' og canvas 'Brunahólf vefverslun'.
+  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-12 · claude-code</sub>
+- **Þjónustuskiptir er samþykktur þannig að Slökkvitæki er dökkblár málmur og Brunakerfi dökkrauður málmur, hvort alltaf í sínum lit, með bjartara LED og baklýsingu þegar valið.**
+  <br>[decision; agents: thema, joker] Samþykkt 02.10.2026; hliðarstika samþykkt líka. Verkstæði á að vera í dökk málm-bláu.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-02 · claude-code</sub>
+- **Patch 245 (Brunastál content-skin) þvingar height:42px + padding:0 14px á ÖLL .view input/select með !important — sérhver lítill inline-reitur þarf eigin !important-reglu með hærri sértækni**
+  <br>Fórnarlömb löguð 07.08.2026: karfa-magnreitur (patch 115, tölur klipptust í 46px boxi), kr/stk- og %-reitir (pos.js), sk-link-sel fellilistinn (199), rf-tbl (175 átti þegar anti-245 blokk — það er mynstrið til að herma eftir). Inline-stílar tapa fyrir !important úr stylesheet.
+  <br><sub>2026-08-08 · slokkvitaeki · kóði · claude-code</sub>
+- **Módalar sem hengjast á <body> verða að setja skýran textalit á rótina sína — erfði liturinn frá body er LJÓS undir dökku þema og textinn hverfur á hvítum spjaldbakgrunni.**
+  <br>Þetta var rót „grey on grey" skjáskotsins 7.8.2026: félagsnöfn í Samskiptaborðs-módalnum höfðu engan eigin lit og erfðu ljósan body-lit ofan á hvít kort. Lagað í PR #609 með _crm-style stílblaði.
+  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
+- **Attribute-selectorar þemanna ([style*=…]) grípa bara stíla setta með innerHTML — stílar settir með element.style.cssText serialiserast sem rgb() í style-attributinu og sleppa alveg við þema-flippið.**
+  <br>Þess vegna getur sama síða orðið hálf-flippuð: innerHTML-fletir dökkna, cssText-fletir haldast hvítir. Samskiptaborðs-módallinn (287) lenti í þessu 7.8.2026. Öruggasta leiðin fyrir módala/ný borð: skorað klasa-stílblað með skýrum lit á hverjum texta, ekkert inline og ekkert erft. Lagað í PR #609.
+  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
+- **Þemakerfin (patch 66/229/240) endurlita síður með [style*="color:#…"]-attribute-selectorum sem grípa AÐEINS húspallettuna — blek utan hennar (t.d. #111827, #6b7280) verður svart-á-svörtu í dökku þema því bakgrunnarnir flippast en textinn ekki.**
+  <br>Nota alltaf húslitina í inline-texta: #0f172a (aðal), #334155/#475569 (auka), #64748b (daufur), #94a3b8 (dauflegastur). Uppgötvað 7.8.2026 á Aksturslistanum (268) — INK var #111827 og sat eftir svartur á flippuðum dökkum kortum. Lagað í PR #609.
+  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
+
 ### ajour
 
 - **ajour-ingest tvítekur skráningar án framkvæmdadags við hverja sókn, því NULL passar ekki einkvæma vísinn (serial_number, project_name, execution_date); teldu alltaf count(distinct serial_number), aldrei count(*).**
@@ -2806,36 +2838,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Slökkvit. þjónusta — verð (patch 410, Vörur og þjónusta) er grunnverðskrá slökkvitækjaþjónustu: verð og heiti hverrar þjónustulínu eru reitir sem skrifa beint í vorur.verd_an_vsk og vorur.nafn.**
   <br>Heitið er reikningstextinn OG Gátt finnur línur á heitinu (regex í netlify/functions/gatt.cjs) — endurnefning sem tekur línu úr Gáttar-hópi spyr fyrst. Hópar: tegund → Akstur og skýrslugerð → Aðrar þjónustulínur. Agnar 09.11.2026: „öll verð og textar eiga að vera breytilegir þarna, þetta er grunnuri
   <br><sub>2026-11-10 · slokkvitaeki · kóði + Agnar 09.11.2026 · claude-code</sub>
-
-### thema
-
-- **Frá 06.11.2026 er Brunahólf Premium sjálfgefið útlit Þjónustugáttarinnar; núverandi gáttir og nýjar gáttir nota premium nema annað þema sé valið sérstaklega.**
-  <br>Ákvörðun Agnars með markmynd 06.11.2026. Sex portal_users-raðir voru færðar úr blar í premium og dálksjálfgefið breytt í premium. Premium heldur navy hliðarstiku, appelsínugulum áherslum, byggingarhaus, KPI-spjöldum, eignatöflu og hægri rein.
-  <br><sub>2026-11-06 · slokkvitaeki · Agnar, markmynd 06.11.2026 · cursor</sub>
-- **Miðakerfi - Brunastál ræður öllum útlitsbreytingum í Slökkvitæki-appinu: engin emoji, engir bláir takkar, málmhausar með hnoðum, stálplata og silfur/málm-takkar.** _(likely)_
-  <br>[rule; agents: thema, joker] Design system artifact: https://claude.ai/code/artifact/a75833f9-83df-4490-9dfd-e8c83e97f466. Brunastál er frosið 17.08.2026 samkvæmt Jarvis-spjaldi.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-05 · claude-code</sub>
-- **Í Vörur og þjónusta hafa flokkar málmliti: slökkvitæki dökkblár, brunakerfi dökkrauður, slökkvikerfi dökk ljósblár, verkstæði grafít-grár, vinnuliðir dökkgull og ný vara dökkgrænn.**
-  <br>[decision; agents: thema, joker, sala-reikningar] Sama lota: brunakerfisverðlistinn er breytanlegur beint í Vörur og þjónusta (verð inline, lína neðst, ✎ í ritil fyrir tengingar) og Verðlisti-hnappurinn í tækjastikunni var tekinn burt.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 731f63e0 2026-10-14 · claude-code</sub>
-- **Brunahólf-þemað (vefverslunin) er sérstakt hönnunarkerfi frá Brunastál; Agnar hafnaði of miklu appelsínugulu/gulli á tökkum og vill 'setja í körfu' í dökkbláu.**
-  <br>[decision; agents: joker, thema] 12.10.2026: 'Eiginlega of mikið appelsínugult með tökkunum', 'setja í körfu frekar bláa'. Design System 'Brunahólf' og canvas 'Brunahólf vefverslun'.
-  <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-12 · claude-code</sub>
-- **Þjónustuskiptir er samþykktur þannig að Slökkvitæki er dökkblár málmur og Brunakerfi dökkrauður málmur, hvort alltaf í sínum lit, með bjartara LED og baklýsingu þegar valið.**
-  <br>[decision; agents: thema, joker] Samþykkt 02.10.2026; hliðarstika samþykkt líka. Verkstæði á að vera í dökk málm-bláu.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 6db7868a 2026-10-02 · claude-code</sub>
-- **Patch 245 (Brunastál content-skin) þvingar height:42px + padding:0 14px á ÖLL .view input/select með !important — sérhver lítill inline-reitur þarf eigin !important-reglu með hærri sértækni**
-  <br>Fórnarlömb löguð 07.08.2026: karfa-magnreitur (patch 115, tölur klipptust í 46px boxi), kr/stk- og %-reitir (pos.js), sk-link-sel fellilistinn (199), rf-tbl (175 átti þegar anti-245 blokk — það er mynstrið til að herma eftir). Inline-stílar tapa fyrir !important úr stylesheet.
-  <br><sub>2026-08-08 · slokkvitaeki · kóði · claude-code</sub>
-- **Módalar sem hengjast á <body> verða að setja skýran textalit á rótina sína — erfði liturinn frá body er LJÓS undir dökku þema og textinn hverfur á hvítum spjaldbakgrunni.**
-  <br>Þetta var rót „grey on grey" skjáskotsins 7.8.2026: félagsnöfn í Samskiptaborðs-módalnum höfðu engan eigin lit og erfðu ljósan body-lit ofan á hvít kort. Lagað í PR #609 með _crm-style stílblaði.
-  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
-- **Attribute-selectorar þemanna ([style*=…]) grípa bara stíla setta með innerHTML — stílar settir með element.style.cssText serialiserast sem rgb() í style-attributinu og sleppa alveg við þema-flippið.**
-  <br>Þess vegna getur sama síða orðið hálf-flippuð: innerHTML-fletir dökkna, cssText-fletir haldast hvítir. Samskiptaborðs-módallinn (287) lenti í þessu 7.8.2026. Öruggasta leiðin fyrir módala/ný borð: skorað klasa-stílblað með skýrum lit á hverjum texta, ekkert inline og ekkert erft. Lagað í PR #609.
-  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
-- **Þemakerfin (patch 66/229/240) endurlita síður með [style*="color:#…"]-attribute-selectorum sem grípa AÐEINS húspallettuna — blek utan hennar (t.d. #111827, #6b7280) verður svart-á-svörtu í dökku þema því bakgrunnarnir flippast en textinn ekki.**
-  <br>Nota alltaf húslitina í inline-texta: #0f172a (aðal), #334155/#475569 (auka), #64748b (daufur), #94a3b8 (dauflegastur). Uppgötvað 7.8.2026 á Aksturslistanum (268) — INK var #111827 og sat eftir svartur á flippuðum dökkum kortum. Lagað í PR #609.
-  <br><sub>2026-08-07 · slokkvitaeki · kóði · claude-code</sub>
 
 ### automation
 
