@@ -100,7 +100,11 @@ const SAFNA = `(() => {
       merki: (e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\\s+/).slice(0, 2).join('.') : '')).slice(0, 46),
       texti: beint.map(n => n.textContent).join(' ').replace(/\\s+/g, ' ').trim().slice(0, 40),
       x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height,
-      litur: cs.color, fs: parseFloat(cs.fontSize) || 0, fw: +cs.fontWeight || 400,
+      /* -webkit-text-fill-color MÁLAR, ekki color. Mælt á Birgðasíðunni: titillinn „Birgðir" hefur color #11141c
+       * en fill #ffffff og er hvítur á skjánum — tólið las 1,35:1 og hefði sent mig að „laga" texta sem er í lagi.
+       * Patch 409 setur fill á alla síðutitla, svo þetta á við um hverja einustu síðu í appinu. */
+      litur: (cs.webkitTextFillColor && cs.webkitTextFillColor !== cs.color) ? cs.webkitTextFillColor : cs.color,
+      fs: parseFloat(cs.fontSize) || 0, fw: +cs.fontWeight || 400,
       bgStill: cs.backgroundColor
     });
   });
