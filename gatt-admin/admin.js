@@ -166,8 +166,12 @@
         '<td class="hide-sm acc ' + (a.email ? '' : 'none') + '">' + esc(a.email || '—') + '</td>' +
         '<td><div class="actions">' +
           '<button class="btn btn--sm btn--accent" data-act="imp" title="Opna vef kúnnans án lykilorðs">' + ic('open') + 'Opna sem kúnni</button>' +
-          '<button class="btn btn--sm" data-act="copy">' + ic('copy') + 'Hlekkur</button>' +
-          '<button class="btn btn--sm" data-act="edit" title="Aðgangur, lykilorð, þema, eignasíða og notendur">' + ic('gear') + 'Stillingar</button>' +
+          /* 18.11.2026 (Agnar: „Mátt gera þessa síðu aðeins fallegri") — aukaaðgerðirnar eru táknhnappar.
+             Mælt á 970 px glugga: þrír merktir takkar komust ekki fyrir í 168 px dálknum, brotnuðu í þrjár línur
+             og drógu HVERJA röð í 124 px. Nafnið stendur á aðgerðinni sem skiptir máli; hinar tvær bera tákn,
+             title og aria-label (skjálesari fær sama orð og áður). */
+          '<button class="btn btn--sm btn--ic" data-act="copy" title="Afrita vefslóð kúnnans" aria-label="Afrita vefslóð kúnnans">' + ic('copy') + '</button>' +
+          '<button class="btn btn--sm btn--ic" data-act="edit" title="Stillingar — aðgangur, lykilorð, þema, eignasíða og notendur" aria-label="Stillingar">' + ic('gear') + '</button>' +
         '</div></td></tr>' +
         '<tr class="edrow hidden" data-edit="' + a.id + '"><td colspan="5" style="padding:0"></td></tr>';
     }).join('');

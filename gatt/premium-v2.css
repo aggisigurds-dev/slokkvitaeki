@@ -634,3 +634,11 @@ html[data-theme="premium"] #v2-top .v2-topnav{padding-right:26px;-webkit-mask-im
 .pf-es{color:#b45309;font-style:italic;font-weight:600}
 @media (max-width:900px){.pf-grid{grid-template-columns:1fr 1fr}.pf-rod:nth-child(3n){border-right:1px solid rgba(15,23,42,.07)}.pf-rod:nth-child(2n){border-right:0}}
 @media (max-width:560px){.pf-grid{grid-template-columns:1fr}.pf-rod{border-right:0}.pf-nafn{font-size:19px}}
+
+/* 18.11.2026 — birtusópur á gáttinni (Agnar: „Skoðaðu hvort gáttin sé með sama vandamál").
+   Ekkert navy-á-navy fannst, en tveir litir sem eru ætlaðir ljósum fleti stóðu á navy:
+   · .pf-es (amber-ink #b45309) í navy haus félagsins — „kt. ekki skráð" mældist 2,88:1.
+   · .ysia.on (accent-orange) á obsidian í Yfirliti — valin sía mældist 2,96:1.
+   Báðir fá ljósa amberinn sem hausinn notar þegar fyrir yfirskriftina (#f59e5b á #16294a = 5,6:1). */
+.pf-haus .pf-es{color:#f59e5b}
+.yf-s .ysia.on,.vh-sia .ysia.on{color:#f59e5b}
