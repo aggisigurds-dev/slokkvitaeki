@@ -40,6 +40,24 @@ test('sonnun: hver vísbending fyrir sig, sterkasta fyrst, og ekkert þegar ekke
   assert.equal(F.sonnun(kort({ skodud: { n: 2, sidast: '' } }))[0].t, '🔧 2 tæki skoðuð');
 });
 
+test('sonnun: 1. dagur mánaðar = aðeins mánuðurinn var skráður → mánuðurinn sýndur, aldrei dagur sem enginn skráði', () => {
+  // Mælt í raungögnum 18.11.2026: 2.483 af 4.319 tækjum með skoðun á árinu bera 1. dag mánaðar.
+  const feb = F.sonnun(kort({ skodud: { n: 5, sidast: '2026-02-01' } }))[0];
+  assert.equal(feb.t, '🔧 5 tæki skoðuð í febrúar');
+  assert.ok(!/01\.02\./.test(feb.t + feb.tt), feb.tt);
+  assert.match(feb.tt, /síðast í febrúar — aðeins mánuðurinn er skráður/);
+  assert.equal(F.sonnun(kort({ skodud: { n: 1, sidast: '2026-06-01' } }))[0].t, '🔧 1 tæki skoðað í júní');
+  // Raunverulegur dagur stendur óbreyttur, líka 10. og 31.
+  assert.equal(F.sonnun(kort({ skodud: { n: 3, sidast: '2026-10-31' } }))[0].t, '🔧 3 tæki skoðuð 31.10.');
+  assert.match(F.sonnun(kort({ skodud: { n: 3, sidast: '2026-10-31' } }))[0].tt, /\(síðast 31\.10\.\)/);
+  // Gallaður dagur → engin dagsetning, aldrei „undefined“ eða „NaN“.
+  for (const d of ['2026-13-01', 'rusl', '2026-02', null, undefined]) {
+    const x = F.sonnun(kort({ skodud: { n: 2, sidast: d } }))[0];
+    assert.ok(!/undefined|NaN|null/.test(x.t + x.tt), d + ' → ' + x.t + ' | ' + x.tt);
+  }
+  assert.equal(F.sonnun(kort({ skodud: { n: 2, sidast: 'rusl' } }))[0].t, '🔧 2 tæki skoðuð');
+});
+
 test('Á dagskrá: félög með sönnun raðast efst undir fyrirsögn, hin á eftir', () => {
   const listi = [
     kort({ id: 10, nafn: 'Engin merki' }),

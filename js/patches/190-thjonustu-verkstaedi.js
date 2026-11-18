@@ -437,8 +437,16 @@
     if (r.docs && r.docs.skyrsla) ut.push({ k: 'skyrsla', t: '📝 Skýrsla ' + curYear, tt: 'Úttektarskýrsla ' + curYear + ' er skráð á þennan stað' });
     if (r.hasReik) ut.push({ k: 'reik', t: '🧾 Reikningur ' + curYear, tt: 'Úttektarreikningur eða krafa ' + curYear + ' er til á þennan stað' });
     const sk = r.skodud;
-    if (sk && sk.n > 0) ut.push({ k: 'taeki', t: '🔧 ' + sk.n + (sk.n === 1 ? ' tæki skoðað' : ' tæki skoðuð') + (sk.sidast ? ' ' + sk.sidast.slice(8, 10) + '.' + sk.sidast.slice(5, 7) + '.' : ''),
-      tt: sk.n + ' tæki bera skoðunardag á árinu ' + curYear + (sk.sidast ? ' (síðast ' + sk.sidast + ')' : '') + '. Dagurinn getur komið úr innflutningi — vísbending, ekki staðfesting.' });
+    if (sk && sk.n > 0) {
+      // Mælt 18.11.2026: rúmur helmingur skoðunardaga ársins er 1. dagur mánaðar (2.483 af 4.319 tækjum) — þar var aðeins
+      // MÁNUÐURINN skráður (eldri skrá). Þá er mánuðurinn sýndur, ekki dagur sem enginn skráði.
+      const MAN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+      const s = String(sk.sidast || ''), dd = s.slice(8, 10), man = MAN[+s.slice(5, 7) - 1];
+      const adeinsMan = dd === '01' && !!man;
+      const hvenaer = !/^\d{4}-\d{2}-\d{2}$/.test(s) ? '' : adeinsMan ? ' í ' + man : ' ' + dd + '.' + s.slice(5, 7) + '.';
+      ut.push({ k: 'taeki', t: '🔧 ' + sk.n + (sk.n === 1 ? ' tæki skoðað' : ' tæki skoðuð') + hvenaer,
+        tt: sk.n + ' tæki bera skoðunardag á árinu ' + curYear + (hvenaer ? ' (síðast' + hvenaer + (adeinsMan ? ' — aðeins mánuðurinn er skráður' : '') + ')' : '') + '. Dagurinn getur komið úr eldri skrá — vísbending, ekki staðfesting.' });
+    }
     return ut;
   }
 
