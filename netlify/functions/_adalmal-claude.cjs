@@ -124,22 +124,23 @@ async function safna(atridi, mal, fyrirmaeli) {
 
   // Fyrirtæki eftir nöfnum, og póstur þeirra (lén/netfang) + póstur sem nefnir nafnið (60 dagar).
   const fyr = [];
-  // 18.11.2026: „#1355" í nótum getur verið FYRIRTÆKI, ekki mál. Nótur #882 vísa þannig á Hárbeitt, en malIds las það
-  // sem mál-id og vélin sótti thjonustubeidni #1355 = Landspítalann, sem agentinn nefndi svo í svarinu. Nú er líka
-  // flett upp fyrirtæki með sömu númerum og BÆÐI merkt skýrt (lýsingin ber númerið), svo agentinn velji það sem á við.
-  if (malIds.length) {
-    const fId = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&id=in.(${malIds.join(',')})`);
-    for (const x of fId) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
-  }
   for (const n of nofn) {
     const f = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
     for (const x of f) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
+  }
+  // 18.11.2026: „#1355" í nótum getur verið FYRIRTÆKI, ekki mál. Nótur #882 vísa þannig á Hárbeitt, en malIds las það
+  // sem mál-id og vélin sótti thjonustubeidni #1355 = Landspítalann, sem agentinn nefndi svo í svarinu. Nú er líka
+  // flett upp fyrirtæki með sömu númerum og BÆÐI merkt skýrt (lýsingin ber númerið), svo agentinn velji það sem á við.
+  // AFTAST viljandi: nafnaflettingin er áreiðanlega merkið og má ekki víkja fyrir númerum sem reyndust vera mál.
+  if (malIds.length) {
+    const fId = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&id=in.(${malIds.join(',')})`);
+    for (const x of fId) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
   }
   // 18.11.2026: kennitala lögaðila og heimilisfang fylgja nú fyrirtækinu. Áður fékk agentinn aðeins nafn + í þjónustu
   // og kennitalan var hulin alls staðar, svo mál sem snúast um kennitölu (t.d. #882 Hárbeitt) voru óleysanleg.
   // Kennitala einstaklings er áfram hulin — þá segir `kennitala_hulin` agentinum að hún sé TIL, svo hann álykti
   // ekki að engin sé skráð. Mælt í umferð umwldzl6c.
-  for (const f of fyr.slice(0, 4)) {
+  for (const f of fyr.slice(0, 6)) {
     const kt = erFelagsKt(f.kennitala) ? String(f.kennitala).trim() : null;
     baeta('F', Object.assign({ lysing: 'Fyrirtæki #' + f.id + ' ' + stytta(f.nafn, 60) + (kt ? ' (kt. ' + kt + ')' : ''), fyrirtaeki_id: f.id,
       nafn: stytta(f.nafn, 100), kennitala: kt, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu },
