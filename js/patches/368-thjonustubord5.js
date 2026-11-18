@@ -5553,6 +5553,8 @@
     const now = new Date();
     const hot = S.rows.filter(r => r.important).length;
     const ppl = folk();
+    // Efsta stikan (leit, Mitt vinnuborð, Sannreyna, + Nýtt mál) er verkfæri eigandans — sjá hausinn hér að neðan.
+    const stjornStika = n === 'Agnar';
 
     // „Bara mitt borð" = tómt vinnusvæði (Agnar 11.09.2026: „Þegar bara starfsmannaborð er valið, þá á allt að vera
     // tómt"): engar einingar og engin KPI-spjöld — aðeins borðið manns sjálfs. Einingarnar eru þá heldur ekki teiknaðar,
@@ -5729,10 +5731,16 @@
           '<label class="who"><span class="lbl">Ég er</span><select data-t5="who" aria-label="Starfsmaður">' +
             (ppl.indexOf(n) < 0 ? '<option value="" selected disabled>Veldu nafn…</option>' : '') +
             ppl.map(x => '<option' + (x === n ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>' +
-          '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '"><span class="t5-emo" aria-hidden="true">⚙ </span>Mitt vinnuborð</button>' +   // 507: t5-emo hverfur í V2
+          /* 18.11.2026 (Agnar, með skjáskoti af borði Anni og krossi yfir stikuna): „má taka út efsta panelinn
+           * út hjá öllum nema hjá Agnari". Leitin, „Mitt vinnuborð", „Sannreyna" og „+ Nýtt mál" eru verkfæri
+           * eigandans — hinir vinna af borðinu sjálfu. „Ég er" stendur áfram hjá öllum, því þar velur maður sig. */
+          (stjornStika ? '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '"><span class="t5-emo" aria-hidden="true">⚙ </span>Mitt vinnuborð</button>' +   // 507: t5-emo hverfur í V2
           '<button type="button" class="btn iv" data-t5="sannreyna" title="Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum"><span class="t5-emo" aria-hidden="true">🔍 </span>Sannreyna</button>' +
-          '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
+          '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' : '') +
         '</div></div>' +
+        // 18.11.2026 — Flýtileiðir standa EFST, beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór).
+        // Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera) og voru áður neðan við hamaröðina.
+        linksHtml(c.mode) +
         sannanirHtml() +
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
@@ -5748,8 +5756,8 @@
         (window.Radgjafinn ? Radgjafinn.html(n) : '') +
         // 493 Tengill á Agentanetið í Jarvis (brunaholf) + Charlize-biðstofuna — aðeins hjá Agnari, nýr flipi.
         (window.AgentanetTengill ? AgentanetTengill.html(n) : '') +
-        leitHtml() +
-        (S.composer ? composerHtml() : '') +
+        (stjornStika ? leitHtml() : '') +
+        (stjornStika && S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
@@ -5759,7 +5767,6 @@
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +
         hamFormHtml() + hreinsunHtml() +
-        linksHtml(c.mode) +
         (ppl.indexOf(n) < 0 ? '<p class="err">„' + esc(n) + '“ er ekki starfsmaður á þessu borði' + (n === AI_WORKER ? ' — Charlize er bunkinn á Master' : '') + '. Veldu þitt nafn í „Ég er“.</p>' : '') +
         (S.cfgOpen ? '<section class="panel" aria-label="Mitt vinnuborð">' + cfgHtml() + '</section>' : '') +
         (S.err ? '<p class="err">Náði ekki í málin: ' + esc(S.err) + ' <button type="button" class="btn iv sm" data-t5="reload">Reyna aftur</button></p>' : '') +
