@@ -513,9 +513,7 @@
     '.vs-p{grid-column:2;margin:1px 0 0;padding:0 0 0 14px;list-style:disc;font-size:11.5px;color:var(--mute)}.vs-p li{margin:1px 0}.vs-p li>strong{font-weight:700;color:var(--ink)}.vs-p .skyr{display:inline}' +
     '.vs-a{grid-column:2;font-size:11.5px;color:var(--mute)}.vs-r.falid{opacity:.6}.vs-tomt{padding:12px 14px;color:var(--mute);font-size:13px}.vs-f{padding:6px 14px 10px}' +
     '.vs-tog{all:unset;cursor:pointer;padding:0 8px;font-size:13px;color:var(--mute)}.vs-tog:focus-visible{outline:2px solid var(--ink)}' +
-<<<<<<< Updated upstream
     '.vs-p li.vs-meira{list-style:none;margin:3px 0 0 -14px}.vs-fl{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--ink2);border-bottom:1px solid var(--edge)}.vs-fl:hover,.vs-fl:focus-visible{color:var(--ink);border-bottom-color:var(--ink)}' +
-=======
     /* 18.11.2026 — MÆLARNIR: einn mælir á hóp í stað 29 lína í einni röð. Spjaldið er smellanlegt og opnar sinn hóp. */
     '.vs-mb{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,228px),1fr));gap:10px;padding:12px 14px}' +
     '.vs-mc{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:11px 13px;background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--edge2);border-radius:4px;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(22,21,19,.1)}' +
@@ -527,7 +525,6 @@
     '.vs-mcn{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}' +
     '.vs-mcu{font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '.vs-mcx{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}' +
->>>>>>> Stashed changes
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
 
   // Á síma (≤ 760 px) eru raðirnar samanbrotnar: ljós, heiti, tala og ein lína — punktarnir og Fela/Skýring opnast með ▸.
@@ -600,12 +597,18 @@
       h.sev = h.l.reduce((a, x) => ((ROD_SEV[x.r.sev] || 0) > (ROD_SEV[a] || 0) ? x.r.sev : a), 'ok');
       h.adal = h.l.find(x => x.r.sev === 'alv') || h.l.find(x => x.r.sev === 'athuga') || h.l[0];
     });
+    // Sjálfgefna valið má EKKI reiknast á fyrstu teikningu: þá er ekkert mælt enn, enginn hópur ber rautt og allir
+    // mælar hefðu læst sér lokaðir (mælt 18.11.2026). Það er því aðeins fest þegar mælingarnar eru komnar (S.res).
+    const sjalfgefid = hopar.filter(h => h.alv).map(h => h.n);
     if (S.hopOpin == null) {
       let vistad = null;
       try { vistad = (window.Vidmot && Vidmot.lesaTaeki) ? Vidmot.lesaTaeki(HOP_LYKILL, null) : null; } catch (_) { vistad = null; }
-      S.hopOpin = Array.isArray(vistad) ? vistad.map(String) : hopar.filter(h => h.alv).map(h => h.n);
+      if (Array.isArray(vistad)) S.hopOpin = vistad.map(String);
+      else if (S.res) S.hopOpin = sjalfgefid;
     }
-    const opinn = h => S.hopOpin.indexOf(h.n) >= 0;
+    const opnirNu = Array.isArray(S.hopOpin) ? S.hopOpin : sjalfgefid;
+    S._sjalfg = opnirNu;
+    const opinn = h => opnirNu.indexOf(h.n) >= 0;
     const maelar = hopar.length ? '<div class="vs-mb">' + hopar.map(h => {
       const a = h.adal;
       const telja = [h.alv ? h.alv + ' alvarlegt' : '', h.ath ? h.ath + ' athuga' : ''].filter(Boolean).join(' · ') || 'ekkert rautt';
@@ -640,7 +643,7 @@
     // 18.11.2026: mælir opnaður eða falinn. Valið er viðmótsval og fer á þjóninn (Vidmot) — eins á öllum vélum.
     if (a === 'vs-hop') {
       const h = String(el.dataset.h || '');
-      if (!Array.isArray(S.hopOpin)) S.hopOpin = [];
+      if (!Array.isArray(S.hopOpin)) S.hopOpin = (S._sjalfg || []).slice();
       const i = S.hopOpin.indexOf(h);
       if (i >= 0) S.hopOpin.splice(i, 1); else S.hopOpin.push(h);
       try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(HOP_LYKILL, S.hopOpin.slice()); } catch (_) {}
