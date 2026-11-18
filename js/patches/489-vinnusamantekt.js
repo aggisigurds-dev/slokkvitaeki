@@ -64,7 +64,9 @@
   const kraefst = (l, tafla) => { if (!l || !l.length) throw new Error('engar raðir lesnar úr ' + tafla + ' — vantar líklega aðgang'); return l; };
   const synt = (a, v) => ({ sev: 'upp', tala: a, undir: v || '', punktar: [] });
 
-  const S = { res: null, at: null, loading: false, villa: null, fellt: null, bara: null, opna: {} };
+  // hopOpin: hvaða mælar eru opnir (18.11.2026). null = aldrei valið → sjálfgefið opnast þeir sem bera rautt.
+  const S = { res: null, at: null, loading: false, villa: null, fellt: null, bara: null, opna: {}, hopOpin: null };
+  const HOP_LYKILL = 'vinnusamantekt.maelar';
   const notify = () => { try { if (window.Bord368 && Bord368.render) Bord368.render(); } catch (_) {} };
 
   const bhGet = async slod => {
@@ -511,7 +513,21 @@
     '.vs-p{grid-column:2;margin:1px 0 0;padding:0 0 0 14px;list-style:disc;font-size:11.5px;color:var(--mute)}.vs-p li{margin:1px 0}.vs-p li>strong{font-weight:700;color:var(--ink)}.vs-p .skyr{display:inline}' +
     '.vs-a{grid-column:2;font-size:11.5px;color:var(--mute)}.vs-r.falid{opacity:.6}.vs-tomt{padding:12px 14px;color:var(--mute);font-size:13px}.vs-f{padding:6px 14px 10px}' +
     '.vs-tog{all:unset;cursor:pointer;padding:0 8px;font-size:13px;color:var(--mute)}.vs-tog:focus-visible{outline:2px solid var(--ink)}' +
+<<<<<<< Updated upstream
     '.vs-p li.vs-meira{list-style:none;margin:3px 0 0 -14px}.vs-fl{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--ink2);border-bottom:1px solid var(--edge)}.vs-fl:hover,.vs-fl:focus-visible{color:var(--ink);border-bottom-color:var(--ink)}' +
+=======
+    /* 18.11.2026 — MÆLARNIR: einn mælir á hóp í stað 29 lína í einni röð. Spjaldið er smellanlegt og opnar sinn hóp. */
+    '.vs-mb{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,228px),1fr));gap:10px;padding:12px 14px}' +
+    '.vs-mc{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:11px 13px;background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--edge2);border-radius:4px;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(22,21,19,.1)}' +
+    '.vs-mc[data-sev="alv"]{border-top-color:#b5522a}.vs-mc[data-sev="athuga"]{border-top-color:#b8892e}' +
+    '.vs-mc:hover{filter:brightness(1.02)}.vs-mc:focus-visible{outline:2px solid var(--g6);outline-offset:2px}' +
+    '.vs-mch{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
+    '.vs-mcs{margin-left:auto;font-weight:700;letter-spacing:.08em}' +
+    '.vs-mc[data-sev="alv"] .vs-mcs{color:#8d2f12}.vs-mc[data-sev="athuga"] .vs-mcs{color:#6d5010}' +
+    '.vs-mcn{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}' +
+    '.vs-mcu{font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '.vs-mcx{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}' +
+>>>>>>> Stashed changes
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
 
   // Á síma (≤ 760 px) eru raðirnar samanbrotnar: ljós, heiti, tala og ein lína — punktarnir og Fela/Skýring opnast með ▸.
@@ -569,15 +585,48 @@
       '<button type="button" class="btn iv sm" data-t5="vs-endurhlada"' + (S.loading ? ' disabled' : '') + ' title="Telja allt upp á nýtt úr gagnagrunninum">↻ Endurmæla</button>' +
       '<button type="button" class="btn iv sm tog" data-t5="vs-fella" aria-expanded="' + !S.fellt + '" aria-label="' + (S.fellt ? 'Opna' : 'Fella saman') + ' vinnusamantekt">' + (S.fellt ? '▾' : '▴') + '</button></header>';
     if (S.fellt) return CSS + '<section class="panel vs" aria-label="Vinnusamantekt">' + haus + '</section>';
+    /* 18.11.2026 — MÆLARNIR. Áður lágu allar 29 mælingarnar í einni flatri röð undir kaflaheitum og sjö rauðar hrópuðu
+     * samtímis. Nú ber hver hópur EINN mæli: versta ljósið í hópnum, talninguna, tölu efstu mælingarinnar og heiti
+     * hennar. Smellur opnar hópinn og þá birtast línurnar óbreyttar fyrir neðan (sama radHtml, sama Fela og Skýring).
+     * Sjálfgefið eru þeir mælar opnir sem bera rautt — hitt er saman brotið þar til smellt er. Valið vistast á þjóni
+     * (Vidmot, HOP_LYKILL) svo það er eins á öllum vélum. Mælarnir telja ALLT sem er sýnt, líka það sem „Bara rautt
+     * og gult" felur, svo talan á spjaldinu lýgur ekki þótt sían sé á. */
     const hopar = [];
-    vis.forEach(x => { let h = hopar.find(y => y.n === x.m.hopur); if (!h) hopar.push(h = { n: x.m.hopur, l: [] }); h.l.push(x); });
-    const flokkar = hopar.map(h => '<section class="vs-g" aria-label="' + esc(h.n) + '"><h3>' + esc(h.n) + '</h3>' + h.l.map(x => radHtml(x.m, x.r, false, mj)).join('') + '</section>').join('');
+    synd.forEach(x => { let h = hopar.find(y => y.n === x.m.hopur); if (!h) hopar.push(h = { n: x.m.hopur, l: [] }); h.l.push(x); });
+    const ROD_SEV = { alv: 3, athuga: 2, oma: 1, upp: 0, ok: 0 };
+    hopar.forEach(h => {
+      h.alv = h.l.filter(x => x.r.sev === 'alv').length;
+      h.ath = h.l.filter(x => x.r.sev === 'athuga').length;
+      h.sev = h.l.reduce((a, x) => ((ROD_SEV[x.r.sev] || 0) > (ROD_SEV[a] || 0) ? x.r.sev : a), 'ok');
+      h.adal = h.l.find(x => x.r.sev === 'alv') || h.l.find(x => x.r.sev === 'athuga') || h.l[0];
+    });
+    if (S.hopOpin == null) {
+      let vistad = null;
+      try { vistad = (window.Vidmot && Vidmot.lesaTaeki) ? Vidmot.lesaTaeki(HOP_LYKILL, null) : null; } catch (_) { vistad = null; }
+      S.hopOpin = Array.isArray(vistad) ? vistad.map(String) : hopar.filter(h => h.alv).map(h => h.n);
+    }
+    const opinn = h => S.hopOpin.indexOf(h.n) >= 0;
+    const maelar = hopar.length ? '<div class="vs-mb">' + hopar.map(h => {
+      const a = h.adal;
+      const telja = [h.alv ? h.alv + ' alvarlegt' : '', h.ath ? h.ath + ' athuga' : ''].filter(Boolean).join(' · ') || 'ekkert rautt';
+      return '<button type="button" class="vs-mc" data-sev="' + h.sev + '" data-t5="vs-hop" data-h="' + esc(h.n) + '" aria-expanded="' + opinn(h) + '" title="' + (opinn(h) ? 'Fela' : 'Sýna') + ' mælingarnar í ' + esc(h.n) + '">' +
+        '<span class="vs-mch">' + esc(h.n) + '<span class="vs-mcs">' + esc(telja) + '</span></span>' +
+        '<span class="vs-mcn">' + esc(a ? a.r.tala : '—') + '</span>' +
+        (a ? '<span class="vs-mcu">' + esc(a.m.heiti) + '</span>' : '') +
+        '<span class="vs-mcx">' + h.l.length + (h.l.length === 1 ? ' mæling · ' : ' mælingar · ') + (opinn(h) ? 'fela ▴' : 'opna ▾') + '</span>' +
+      '</button>';
+    }).join('') + '</div>' : '';
+    const opnir = hopar.filter(opinn);
+    const flokkar = opnir.map(h => {
+      const l = bara ? h.l.filter(x => x.r.sev === 'alv' || x.r.sev === 'athuga' || x.r.sev === 'oma') : h.l;
+      if (!l.length) return '<section class="vs-g" aria-label="' + esc(h.n) + '"><h3>' + esc(h.n) + '</h3><p class="vs-tomt" style="padding:4px 0">Ekkert rautt eða gult í þessum mæli · <button type="button" class="fela" data-t5="vs-sia">Sýna allt</button></p></section>';
+      return '<section class="vs-g" aria-label="' + esc(h.n) + '"><h3>' + esc(h.n) + '</h3>' + l.map(x => radHtml(x.m, x.r, false, mj)).join('') + '</section>';
+    }).join('');
     const faldarHtml = falin.length && api ? '<div class="vs-f">' + api.falinHtml('vs', falin.length, () => falin.map(x => radHtml(x.m, x.r, true, mj)).join('')) + '</div>' : '';
-    const faerri = synd.length - vis.length;
     return CSS + '<section class="panel vs" aria-label="Vinnusamantekt">' + haus +
       (S.villa ? '<p class="err" style="margin:8px 14px">Náði ekki að mæla: ' + esc(S.villa) + '</p>' : '') +
-      (flokkar ? '<div class="vs-grid">' + flokkar + '</div>' : '<p class="vs-tomt">' + (synd.length ? 'Ekkert er rautt eða gult.' : 'Allt er falið — opnaðu „N falin“ hér að neðan til að sýna aftur.') + '</p>') +
-      (faerri ? '<p class="vs-tomt" style="padding-top:0">' + faerri + ' línur í lagi eða upplýsing eru faldar í þessari sýn · <button type="button" class="fela" data-t5="vs-sia">Sýna allt</button></p>' : '') + faldarHtml + '</section>';
+      (hopar.length ? maelar : '<p class="vs-tomt">Allt er falið — opnaðu „N falin“ hér að neðan til að sýna aftur.</p>') +
+      (flokkar ? '<div class="vs-grid">' + flokkar + '</div>' : '') + faldarHtml + '</section>';
   }
 
   // Smellir sem 368 sendir hingað (data-t5="vs-*"). Skilar true ef smellurinn var okkar.
@@ -588,6 +637,15 @@
     if (a === 'vs-fella') { S.fellt = !S.fellt; try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(FELLT_LYKILL, S.fellt); } catch (_) {} notify(); return true; }
     if (a === 'vs-sia') { S.bara = !(S.bara == null ? mjor() : S.bara); notify(); return true; }
     if (a === 'vs-rad') { const id = el.dataset.id; S.opna[id] = !S.opna[id]; notify(); return true; }
+    // 18.11.2026: mælir opnaður eða falinn. Valið er viðmótsval og fer á þjóninn (Vidmot) — eins á öllum vélum.
+    if (a === 'vs-hop') {
+      const h = String(el.dataset.h || '');
+      if (!Array.isArray(S.hopOpin)) S.hopOpin = [];
+      const i = S.hopOpin.indexOf(h);
+      if (i >= 0) S.hopOpin.splice(i, 1); else S.hopOpin.push(h);
+      try { if (window.Vidmot && Vidmot.setjaTaeki) Vidmot.setjaTaeki(HOP_LYKILL, S.hopOpin.slice()); } catch (_) {}
+      notify(); return true;
+    }
     if (a === 'vs-opna') { try { if (window.App && App.switchView) App.switchView(el.dataset.v); } catch (_) {} return true; }
     return false;
   }
