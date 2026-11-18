@@ -96,3 +96,24 @@ Vefverslun í prufuham (`utgafa 0`, greiðsla ótengd) en efst í hliðarstiku. 
 3. Villa eða gat sem þú finnur: LAGAÐU það sjálfur ef það er innan verksins sem þú ert í og lagfæringin er afturkræf (prófa, segja frá í lokasvari). Verkefnalistinn er listi Agnars — stofnaðu röð þar AÐEINS ef hann biður um það, eða mest EINA á lotu fyrir það sem er utan verksins og of stórt til að laga núna (skrá:lína og sönnun). Annað fer í lokasvarið og charlize_knowledge, ekki á listann. (Agnar 16.11.2026: „setja allt á verkefnalista í stað þess að laga það“ · „ég vil geta sett á verkefnalista en ekki að ég fái mörg hundruð atriði á móti“; mælt: 137 ný verk á 14 dögum, 21 kláruð.)
 4. Áður en lotu lýkur: hvað veit ég núna sem næsta lota veit ekki? → charlize_knowledge (1–5 færslur), kúnnafróðleikur → scope 'kunni' með kennitölu.
 5. Boðhlaup (Agnar 04.11.2026): keflið fellur ALDREI á jörðina. Fáirðu verk utan þíns sviðs vinnurðu það ekki þegjandi og sleppir því ekki — þú réttir það eiganda síðunnar/gagnanna (síðukort, gagnakort, Tengsl) með einni línu um hvað er beðið um og hvað þú veist þegar, og segir Agnari hver tók við. Finnist enginn eigandi tekur jarvis við og skráir gat.
+
+## Erindi ↔ tölvupóstur — grunnbyggingin (18.11.2026)
+
+Agnar: „gerðu þetta bara universal leið fyrir alla í þjónustugátt, svo það verði þannig grunnbyggingin."
+
+Ein heimild um hvaða póstar tilheyra máli: sýnin **`v_beidni_postar`**. Hún sameinar þrennt:
+
+| upprun | hvaðan | hver skrifar |
+|---|---|---|
+| `adalpostur` | `thjonustubeidni.channel_ref` = `'email:<email_digest.id>'` | innsogið (448), eða lotan þegar hún stofnar erindi |
+| `skradur` | `thjonustubeidni_postar` | lotan, þegar ANNAR starfsmaður kúnnans skrifar í NÝJUM þræði um sama verk |
+| `threedi` | leitt: systkini í sama þræði | enginn — reiknað eftir sömu reglu og 448 (thread_id, annars sendandi\|efnislykill innan 30 daga) |
+
+Reglur:
+
+1. **Aðeins EITT mál má eiga aðalpóstinn.** Hamurinn Tölvupóstar (448) raðar eftir `created_at` lækkandi og tekur fyrsta málið, svo nýrra mál felur eldra mál í glugganum. Eftiráskráð erindi taka ALDREI aðalpóst af opnu vinnumáli — þau bera hann í `thjonustubeidni_postar`. Vörður: `v_beidni_postar_arekstrar` á að vera tóm.
+2. **Þráðurinn er ókeypis, þvert á þræði er handavinna.** Systkini í sama þræði koma sjálf; póstur í öðrum þræði (annar starfsmaður, annað efni) kemst aðeins inn ef einhver skráir hann, með `skyring` sem segir hvers vegna.
+3. **Ekkert er giskað.** Finnist ekki þráður sem erindið á með vissu: skildu það eftir ótengt og segðu ÓMÆLT. Dagsetning ein og sér er ekki sönnun — hjá rekstrarfélögum eru oft 5–14 póstar í sama glugga.
+4. `postur_efnislykill(text)` er sama normalisering og `efniLykill` í 448. Breytist önnur, breyttu hinni.
+
+Staðan 18.11.2026: Benna 13/13 erindi með póst, Center Hótel 14/14, Nesdekk 5/7, Heimaleiga 6/23 (2025-erindin eiga eftir lestrarferð), 0 árekstrar.
