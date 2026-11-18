@@ -5,9 +5,9 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 12:42 · 2548 virkar staðreyndir — 1451 prentaðar hér
+Sótt 2026-11-18 13:22 · 2554 virkar staðreyndir — 1453 prentaðar hér
 
-> ⚠ **Bókin er ekki allt minnið:** 157 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (940 færslur) er aldrei skrifað hingað.
+> ⚠ **Bókin er ekki allt minnið:** 158 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (943 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
 > `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:
 > `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`
@@ -83,14 +83,14 @@ Skilaðu niðurstöðu á RÉTT svið svo hún rati til þess sem á málið:
 
 Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
-> **Kúnnaminnið (scope `kunni`, 940 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
+> **Kúnnaminnið (scope `kunni`, 943 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
 > opinbert á GitHub, og kúnnaminnið ber nöfn tengiliða, netföng, símanúmer og aðgengi. Lestu það beint úr töflunni:
 > `node tools/minni.cjs --ferskt --leit "<nafn eða kennitala>"` — eða í hubbnum: Jarvis → Minnið → Kúnnaminni.
 
 | Efni | Fjöldi |
 |---|---:|
 | [kerfi](#kerfi) | 138 |
-| [postur](#postur) | 57 |
+| [postur](#postur) | 58 |
 | [solur](#solur) | 57 |
 | [teikningar](#teikningar) | 53 |
 | [skjol](#skjol) | 52 |
@@ -107,8 +107,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [deploy](#deploy) | 24 |
 | [vefsida](#vefsida) | 24 |
 | [gatt](#gatt) | 23 |
+| [bord](#bord) | 22 |
 | [oryggisnet](#oryggisnet) | 22 |
-| [uttekt](#uttekt) | 22 |
 
 ### kerfi
 
@@ -205,6 +205,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### postur
 
+- **Mál sem sögðu 'ekkert svar sést í Sent' (yfirferðin 08.11, ham:hmbhthj01) voru mæld áður en Sent var bakfyllt 17.11. Endurmælt 18.11: KRUMMA (#1561) fékk svar 29.09 með viðhengi, titillinn leiðréttur; ÍAV, Allverk, COWI, BVT, Búseti, Salblikk og Ísverk standast. Skipulagsborð (app_settings skipulagsbord.by_staff.<nafn>.cards) er frjáls texti — ekkert hægt að vinna úr honum; verk sem þarf að afgreiða eiga að vera mál á Þjónustuborði. Agnar 18.11: þessi átta mál (ÍAV #1604, Allverk #1639, COWI #1640, BVT #1564, Búseti #1227, Salblikk #1558, Ísverk #1566, KRUMMA #1561) eru hjá Agnari með samantekt og NÆSTA SKREF efst í notes; tvítak #1649 lokað. Í dag-einingin (31) með tekjum og kröfum er sjálfgefið á öllum borðum; hún er tekin af per mann með thjonustubord5.by_staff.<nafn>.mitt.idagAf=true gegnum app_settings_merge — sett hjá Anni 18.11, ekki hjá hinum.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Leiðrétting 18.11.2026 á þjónustusamningasamantektinni (#2706). (1) Talan 609 félög í þjónustu án samnings var of há: hún taldi aðeins töfluna thjonustusamningar. Rétt: af 646 hafa 175 einhverja samningsheimild (25 virkir í töflu, 150 með samningsskjal í customer_documents með doc_type samningur; alls 306 skjöl hjá 202 félögum) og 471 enga. (2) Svör í þráðum bera ekki orðið þjónustusamningur í efnislínu: leitaðu í þráðum eftir netfangi og Re:-efnislínu, ekki aðeins samningsorði. Röng flokkun „ekkert svar“: Kjarrhólmi 18 samþykkti 28.11.2025, Prikið staðfesti 06.05.2026, Birkimelur tók tilboði í síma 06.11.2026 (contact_log). (3) Framhald og athugasemdir um félag liggja í fyrirtaeki.athugasemdir/banner_note/review_note, contact_log, thjonustubeidni (fyrirtaeki_id), customer_documents og charlize_knowledge scope kunni. (4) Opið eftir þessa yfirferð: Kjarrhólmi 18 tvær kvartanir um reykskynjara (24.12.2025 og 17.03.2026) ósvaraðar í pósti; Brynja leigufélag spurði um lánstæki 16.10 án svars; NNW Álhella 7 spurði um brunaslöngur 25.09 án svars (mál 1565); Hlíðasmári 15 fyrsta úttekt og mál 64; D27 fyrsta úttekt (mál 1601); Cafe Catalína fyrsta úttekt ógerð; Laugavegur 11, Meiriháttar og Suðurhella 9 skráð aftur í þjónustu 05-06.11 en án fyrstu úttektar. (5) Aðferðargildra: samningar sendir á starfsmanna- eða sameiginlegt netfang menga leit að pósti eftir samning (sömu innri efnislínur á mörgum félögum); útiloka netföng með mörg bréf eða leita eftir léni félagsins.**
   <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Þjónustusamningar í pósti, mælt 17.11.2026 (Agnar: „mig vantar alla þjónustusamningana“): 97 bréf með samningsskjal í öllum innsognum pósti 2013-2026 (34 árið 2026), en í kerfinu vantar samning hjá 609 af 646 félögum í þjónustu (25 virkir, 12 aðeins úr Drive), svo pósturinn fyllir lítinn hluta gatsins. 87 samningsskjöl (56 pdf, 30 docx, 1 odt) dregin úr Thunderbird-pósthólfunum á skrifstofuvélinni í Documents\Þjónustusamningar úr pósti ásamt _yfirlit.csv og _samantekt.html, og 16 skönnuð afrit með almennum skráarheitum í undirmöppu (undirrituð afrit koma oft frá skanna og nafnasía missir þau; leitaðu í samningsþráðum eftir efni). Flokkun: 11 félög með virkan samning þegar; 7 aðeins með Drive-samning (Suðurhella 9 og Colas með undirritað afrit í pósti); 7 án samnings í kerfinu og án svars (Indverska matarfélagið, Kjarrhólmi 18, Meiriháttar, Birkimelur 10, Hostel B47, Krókháls 9, Krummahólar 4); Þelamörk ekki í þjónustu. Krummahólar 4 fékk yfirferð og reikning 01.12.2025 en reikningurinn er ekki tengdur félaginu (gagnagat). VILLA MÍN sömu lotu: simnet-netfang var skráð á Faglitun á kennitölunni einni saman en var netfang DG pípulagna (undirverktaki í Brunahjóls-viðgerð Faglitun); leiðrétt með /api/tengilidir aftengja (id 2229). Regla: lestu efnislínur og sendanda áður en netfang er skráð vegna kt-hits (gildra 5). Hjallabraut 35-43 (id 2230) er rétt, reikningur R-000230 sendur þangað. Postgres-gildra: \b er bakstafur í ARE (ekki orðmörk), notaðu \m \M eða \y.**
@@ -311,10 +313,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Allur útsendur póstur fer frá eldklar@eldklar.is gegnum Gmail (/api/gmail-send) — ekki Resend og ekki Microsoft Graph.**
   <br>[rule; agents: eldklar-postur, sala-reikningar, tengingar, rukkari] 03.08 Agnar: ‚we are not using resend… now only eldklar@eldklar.is like everything in slokkvitaeki‘. 20.07: allir senda-hnappar (Sala/Fyrri viðskipti, Kröfuyfirlit, Ársskoðun, Vistaðar skýrslur í brunakerfi) tengdir sömu…
   <br><sub>2026-11-04 · baedi · artifact: session-uppskera 2026-10-28: lotur 177227fe 2026-08-03, 9b70f49c 2026-07-20 · claude-code</sub>
-- **Póstur Slökkvitækis er í eldklar@eldklar.is og bokhald@eldklar.is (sendar úttektarskýrslur/reikningar fara frá eldklar@eldklar.is) — Gmail-tengið er aðeins aggisigurds@gmail.com sem geymir sjálfvirk afrit og á ALDREI að nota í leit að pósti viðskiptavina.**
-  <br>Leið að póstinum: Supabase email_digest (account/folder/to_addresses/subject/body_preview, engin viðhengi; source_path gmail-api) eða Thunderbird-mbox á PC Agnars (ImapMail/imap.gmail-1.com = eldklar, imap.gmail-3.com = bokhald; [Gmail].sbd/Sendur póstur ber viðhengin). Lesið með python+pypdf, Windo
-  <br><sub>2026-10-29 · slokkvitaeki · agnar · claude-code</sub>
-- _…og 17 til viðbótar í töflunni._
+- _…og 18 til viðbótar í töflunni._
 
 ### solur
 
@@ -1660,6 +1659,57 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Sýnishornið (?demo=1 Center Hótel) sýnir 77 slöngur. Lifandi Center Hótel sýndi þankastrik og 245 slökkvitæki (slöngur innifaldar í total_devices). Lagað í PR 799: skýrsla fyrst, v_uttaeki_fid_rollup.bsl sem vara; slökkvitæki = total_devices minus slo. Plaza 44+39, heild 168+77. Heimaleiga 25 slöngu
   <br><sub>2026-08-30 · slokkvitaeki · kóði · chat</sub>
 
+### bord
+
+- **Þjónustuborð 18.11.2026 (a5982a2): flipavalið tekur TVÆR einingar — vistaða gildið í thjonustubord5.by_staff.<hver>.flipi.<hamur> er "a", "a+b" eða "*" (allt í stafla). ＋ á ófyldum flipa setur hann við hliðina, ✕ á völdum tekur hann af (aldrei síðasta). Tveir fá .modgrid.tveir>.modcell{grid-column:span 30} af 60 dálkum og falla undir hvorn annan undir 900 px borðbreidd; ＋/✕ eru SPAN með data-t5 inni í flipa-BUTTON (hnappur í hnappi er ógilt) og þurfa flex:none, annars kremjast þeir í flex-stikunni. Gildra: fyrsta útgáfan las vistaða gildið beint í smellinum, en það er TÓMT þangað til flipi er valinn fyrst (teikningin sýnir fyrstu eininguna án þess að vista) — ＋ varð þá "skipta um flipa". Hjálparinn flipiNuna(c0) notar sama fallback og teikningin. Mælt: 1440 px → 579+579 px, 375 px → stöfluð full breidd, flipi 40 px, ＋/✕ 30 px (reiknaður stíll; rammar í símahermi vafrarúðunnar eru 0,7x og ljúga).**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Í dag (eining 31) stendur í ÖLLUM hömum Þjónustuborðsins frá 18.11.2026 (birt a2967fb), ekki aðeins á mitt vinnuborð: idagBordi er ekki lengur bundinn mode.first heldur idagVirkt() sem les mitt.idagAf — eitt val sem slekkur alls staðar. 'idag' er síað úr einingaristinni OG úr topHtml (vinstri rein) svo hann mæti ekki tvisvar. GILDRA SEM ÞETTA AFHJÚPAÐI: isOpen() las cfg().mods[k][1] beint og eining sem vantar í SJALFGEFID á engan slíkan reit — teikning borðsins féll í heild ('Cannot read properties of undefined') um leið og einingin birtist utan hams sem taldi hana í first. Lagað tvennt: idag skráð í SJALFGEFID [1,1] og isOpen les (cfg().mods[k] || [])[1]. Regla: ný eining sem á að standa utan hams VERÐUR að vera í SJALFGEFID.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Leturkvarði Þjónustuborðsins settur 18.11.2026 (birt a9ef4ac): allar leturstærðir hækkaðar um eitt þrep í fimm skrám sem teikna borðið — 368 (grind), 489 (Vinnusamantekt), 507 (V2-þemað), 511 (Tilbúin verk), 520 (Í dag). Kvarðinn: 9,5->11 · 10->11,5 · 10,5->11,5 · 11->12 · 11,5->12,5 · 12->13 · 12,5->13,5 · 13->14; .t5 grunnur 13->14 px og línubil 1,45->1,5; 252 stærðir alls. Fyrirsagnir yfir 14 px standa óbreyttar svo stigveldið hélst. MÆLT fyrir: 159 af 416 textahlutum undir 11,5 px, 16 í 9,5, sjö ólíkar stærðir á bilinu 9,5-13. Eftir: gólf 11 px, meginmál 12-14. GILDRA: scrollHeight > clientHeight á texta er EKKI klipping þegar overflow er visible — mælitækið taldi línubil sem klippingu (h1, .plate, .lbl voru öll í lagi). V2-þemað (507) ber eigin stærðir og þarf alltaf sömu breytingu og 368.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborðið fékk flipa í stað stafla 18.11.2026 (lag 3, birt a8c799f): einingahamurinn (mitt vinnuborð) ber nú flipastiku — ein eining í einu í fullri breidd — og síðasti flipinn 'Allt · N' sýnir gamla staflann. Valið vistast á þjóni per ham í by_staff.<nafn>.flipi.<hamur> (readCfg skilar flipi-hlut, data-t5='flipi'). Engir flipar í raðham (radar) því þá þarf allt að sjást við drátt; 'Í dag' er borði fyrir ofan og á engan flipa. CSS: .flipar/.flipi í t5-stílnum, .modgrid.einn>.modcell spannar fulla breidd. Mælt: borðið 7.354 px -> 2.346 px með einn flipa, 5.786 px á 'Allt'. Sama dag voru kaflaheiti Vinnusamantektar stækkuð í 18-19 px (Playfair/Poppins með gullpunkti) og opinn mælir fékk 2px gullramma + orðið 'Opið' — Agnar áttaði sig illa á hvaða flokki var kveikt á.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Vinnusamantekt (489) fékk mælana 18.11.2026 (birt a27e703, lag 2 af hönnunartillögunni): einn mælir á hvern hóp (Peningar · Vinna · Fólk og póstur · Fyrirtæki · Hunt og verkefni · Kerfi) með versta ljósinu, talningu alvarlegt/athuga, tölu efstu mælingarinnar og heiti hennar; smellur opnar hópinn og línurnar birtast óbreyttar (radHtml). Sjálfgefið opnast þeir sem bera rautt, valið vistast í Vidmot undir vinnusamantekt.maelar. GILDRA sem var mæld: sjálfgefna valið má ekki reiknast á fyrstu teikningu (S.res tómt = enginn hópur rauður = allir mælar læsast lokaðir) — það er fest fyrst þegar S.res er komið. Mælt: 29 línur -> 19 sýndar, borðið 7.354 -> 6.157 px.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborðið fékk efsta lagið 'Í dag' (eining 31, patch 520-idag.js, birt 18.11.2026 a171d62): forgangsmál + ný skilaboð af borðinu og rauðu mælingarnar úr 489, hvert með EINNI aðgerð, þak 4 mál + 3 mælingar. Teiknað sem borði fyrir ofan Vinnusamantekt (idagBordi í 368 render), ekki í einingaristinni; situr efst á 'mitt vinnuborð' án skrifa (mittHamur unshift) og hverfur varanlega ef hún er tekin af í Velja einingar (mitt.idagAf). Tilefnið var mæling á borðinu sama dag: 7.354 px (8,2 skjáir), 29 mælingar í einni röð, 7 merktar ALVARLEGT samtímis, 335 takkar, 34x 'Fela · Skýring'.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Merkja og keyra (519, lota 14, 17.11.2026): merkið ◇ á línum Þjónustuborðsins kemur úr MerkjaKeyra.merki/gluggi/stada sem 368 kallar í feedRow, mineRow, lrowHtml (allar einingalínur) og Samþykkja-spjaldinu (sbSpjaldHtml). Merkingar búa í bord_merkingar (RLS án reglna — aðeins þjónninn); vafrinn fer um /api/afgreidsla (adgerd merkja / merkja_keyra, GET ?merkingar=1). Hver situr við borðið: Samthykkja.nu() — Bord368 hefur ekki nu.**
+  <br>Grein merkja-og-keyra (5ad0bd69, b2ebd37b). Keyra notar sama bakgrunnsfall og rofa og Biddu Claude (adalmal-claude-background með merki_id; app_kv adalmal_claude). Dreifing: _merkja-leid.cjs = router.cjs skref 1–3 á brunaholf agents-registry.json. Óðinn: _merkja.cjs metaSkil → odin_urskurdir (lota m
+  <br><sub>2026-11-17 · slokkvitaeki · claude-code · claude-code</sub>
+- **Aðalmál 492f (í loftinu 16.11.2026, 63cff0e): svör og ákvarðanir Agnars á atriðum vikuyfirlitsins liggja í afgreidsla (tegund=adalmal, lykill adalmal:<mál>-<hluti>-<nr>, sama sæti og ✓-lykillinn) og í Charlize topic akvardanir-agnars (confirmed). Svar við spurningu stofnar líka verk „Svar Agnars: …" á verkefnalisti. „✦ Biddu Claude" (rofi app_kv adalmal_claude, KVEIKT eftir raunkall 9/9) geymir svar Opus í nidurstada.claude. Lestu þetta áður en nýtt yfirlit er skrifað — Nei-atriði fara ekki aftur á blað.**
+  <br>Birt 16.11.2026 05:00 eftir „Ja" Agnars; afgreidsla.cjs + _adalmal-claude.cjs + adalmal-claude-background.cjs; vörður tools/audit-adalmal-adgerdir.cjs. CHECK tegund adalmal + dálkar athugasemd (sql/2026-11-16, 2026-11-16b).
+  <br><sub>2026-11-16 · slokkvitaeki · kóði · claude-code</sub>
+- **js_error og promise_rejection á #bord (Þjónustuborð) eru SAMA rótin síðan nóv 2026: óvarin .hluti-lesning á null í borðs-render (368/446/448/489) — villan 'Cannot read properties of null (reading hluti)'. Gamla promise_rejection SW/BeforeInstallPrompt dev-suðið er horfið.** _(likely)_
+  <br>Sópun 11.11.2026 (v_app_problems_open): js_error síðast 15:16 11.11, _bundle-4.63c7260a60.js:143; promise_rejection síðast 04.11; báðar source_app=slokkvitaeki, latest_page=#bord, sama skilaboð. EKKI blint-lagað: búntið er minnkað, enginn sourcemap í repo, ekkert prófunarnet — þarf sourcemap eða sta
+  <br><sub>2026-11-11 · slokkvitaeki · sql · claude-code</sub>
+- **Ný verkfæri eins og 3dwork eiga að vera færsla á Öpp-síðunni í Slökkvitæki sem opnast í síma, ekki sidebar-borð.**
+  <br>[rule; agents: bord-flettur, framendi] 23.09: Vill helst ekki hafa það í sidebar, vildi bara geta opnað í öpp page síðu í símanum. Slökkvitæki-appið er venjulegt HTML/JS með patch-kerfi.
+  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
+- **Þjónustuborð 368 (20.09.2026): hver lína sem er MÁL ber nú ✓ Lokið · ☆/★ áríðandi · 🗑 Eyða (malAdg) — Master, Áríðandi, Frestir, Forgangur, Ný mál, Póstsvörun; ★/🗑 líka á Mitt borð og í Valið mál, 🗑 í Vinnublöðum/Samþykkja. Eyðing er mjúk (deleted_at) án staðfestingar en með Afturkalla; ✓ Lokið fékk líka Afturkalla. Áður var Eyða aðeins í einingunni Breyta máli sem er sjálfgefið slökkt. Ný línutegund sem sýnir mál á að kalla á malAdg(r).**
+  <br><sub>2026-09-20 · slokkvitaeki · claude-code · claude-code</sub>
+- **18.09.2026 (slokkvitaeki d292c83): Fyrirtæki · yfirferð (patch 198) fékk yfirflokkinn „🧯 Í ársskoðun“ (sama tafla/síur, þrengð með iArsskodun() = SAMA regla og inService() í 153 — breytist hún þar þarf hún að breytast hér; 631 fyrirtæki 18.09) og fimm nýjar síur sem mæla hvað vantar á prófílinn: Vantar síma (simi+farsimi tómt, 448), Vantar mynd (AppSettings co_bygging_mynd, 372), Tómur tækjalisti (uttaeki á fyrirtaeki_id, allt nema urelt, 27), Vantar teikningu (teikning_bord: image_url eða markers, 631 — enginn kominn), Ekki í Samskiptum (taflan samskipti_tengd = næturafrit kl. 05:35 af sýninni fyrirtaeki_samskipti, sem er of þung fyrir vafra: anon fær 500 eftir 3 s; 446). Nafnið í töflunni er hlekkur á #company/<id>. „↻ Endurhlaða allt“ sækir AppSettings + öll gögn upp á nýtt. load() bíður nú eftir DB.sb (bein slóð sýndi áður „Engin gagnabankatenging“). Prófað í vafra á lifandi síðunni.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Útlit hams er geymt sem { first: [einingalyklar í röð], breidd: { lykill: 1|2|3 } } þar sem 1=þriðjungur, 2=hálft, 3=fullt. Sett með útlitsritlinum í Breyta ham (18.09.2026). VARÚÐ: M(id) í 368 byggir haminn upp á nýtt úr geymslunni og tekur AÐEINS þá reiti sem eru nefndir þar - reitur sem gleymist í M() vistast en birtist aldrei.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Mál birtist í hamnum Samþykkja aðeins ef það ber merkið samthykki (og spurning ef það þarf svar). Mál sem bera bara eigin merki (t.d. klara-heimsokn) sitja á Master og sjást aldrei í Samþykkja, þótt þau bíði svars Agnars.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Að samþykkja vinnublað skrifar AÐEINS stöðu - það býr enga sölu til (368). Mælt 18.09.2026: þrjú vinnublöð samþykkt 13.09. af Agnari áttu enga sölu, 270.654 kr án vsk / 335.611 kr með vsk sem enginn hafði rukkað. Vörðurinn er tools/audit-vinnublad-an-solu.cjs.**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **Drög-stöðin er EKKI Drög (38) í valstikunni. Drög (38) = ókláraðar sölur, solur með status=drog, sýn #drog í js/patches/143-drog-list.js. Drög-stöðin = taflan reikningspunktar í Brunahólfs-hubbnum, aðeins aðgengileg um 📱 Öpp -> The Big Boss -> 🛒 Drög-stöð. Aldrei lofa Agnari að setja eitthvað í Drög-stöðina á máli á Þjónustuborðinu; rétta leiðin er skýrsla + reikningur sem endar ÓSENDUR í Kröfuyfirliti (patch 369).**
+  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
+- **368ab 14.09.2026: punktar Þjónustuborðs (Í vinnslu — er það búið?) — eyddir/sameinaðir staðir sleppt, reikningur telst aðeins á sama stað (solur.customer_id), bakfærðir reikningar (kredit í appi eða CANCELLED í Payday) telja ekki, og einingar sækjast aftur þegar borðið opnast (>15 s). Lokun á „Klára heimsókn“-máli býr EKKI til reikning — það gerir takkinn á prófílnum.**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **368aa 14.09.2026: Þjónustuborð — hvert atriði á EINN ham. Samþykkja = samthykki-mál á mínu borði (Tilbúið / Þarf svar (merki spurning) / Svarað · bíður Claude); Master og mitt borð = eina borðið; Samskipti, Kröfur, Vinnublöð, Skýrslur, Akstur og skipulag = aðeins sínar einingar. Samþykkismál birtast EKKI lengur á Mitt borð. summary 'Ef já: …' segir hvað Claude gerir við ✓; 'Þarf frá þér: …' er spurning.**
+  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð sem heimaskjás-app = /app/verkefni/ (manifest-verkefni.json, lykill verkefni, home bord). Endurnefnt úr „Verkefnalisti“ í „Þjónustuborð“ 12.09.2026 (ea26f22); id/start_url/scope óbreytt svo uppsett eintök haldast sama appið.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **182-thjonustuver, 183-thjonustuver-attachments og 194-eftirfylgni í dvala í _attic/patches síðan 12.09.2026 (d0d182c). 368 sýnir gömlu viðhengin (thjonustubeidni_attachments) sem „eldra". 145-todo-board stendur (41 minnismiði Agnars í settings.todo), 172 stendur (Fjármál-app).**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuborð 2 (368): Agnar er með bara_mitt=true (12.09.2026) og þá eru engar einingar teiknaðar — hvorki Skipulagsborð (með Áríðandi-lista frá ef7aef5) né Dagskrá. Verk sem stofnað er úr máli ber mal_id (303) og 🗓-takkinn hoppar á daginn.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+- **#leidsogn opnar Leiðsögn (161, view-leidsogn) síðan 12.09.2026 (218); áður leystist slóðin í view-field (falda Þjónustutæki-kortið). Leiðsögn hefur aksturslista-röð (Akstur 1/2/3) og skiptir Google Maps-leið í leggi með 9 millistoppum.**
+  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### oryggisnet
 
 - **Veiði-vaktin virðir lokað mál (lokid_af ≠ veidi-vaktin): raðir þess teljast úrskurðaðar, aðeins nýjar raðir vekja nýtt mál. v_skeytamidlun_vantar er ekki lengur vöktuð.**
@@ -1768,55 +1818,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Vinnublaðið er heimildin um hvað var unnið — tækjalistinn í kerfinu er það ekki**
   <br>Tækjafjöldi í árskoðun hefur verið rangur árum saman. Sjá sara-skillinn.
   <br><sub>2026-08-07 · slokkvitaeki · agnar · chat</sub>
-
-### bord
-
-- **Í dag (eining 31) stendur í ÖLLUM hömum Þjónustuborðsins frá 18.11.2026 (birt a2967fb), ekki aðeins á mitt vinnuborð: idagBordi er ekki lengur bundinn mode.first heldur idagVirkt() sem les mitt.idagAf — eitt val sem slekkur alls staðar. 'idag' er síað úr einingaristinni OG úr topHtml (vinstri rein) svo hann mæti ekki tvisvar. GILDRA SEM ÞETTA AFHJÚPAÐI: isOpen() las cfg().mods[k][1] beint og eining sem vantar í SJALFGEFID á engan slíkan reit — teikning borðsins féll í heild ('Cannot read properties of undefined') um leið og einingin birtist utan hams sem taldi hana í first. Lagað tvennt: idag skráð í SJALFGEFID [1,1] og isOpen les (cfg().mods[k] || [])[1]. Regla: ný eining sem á að standa utan hams VERÐUR að vera í SJALFGEFID.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Leturkvarði Þjónustuborðsins settur 18.11.2026 (birt a9ef4ac): allar leturstærðir hækkaðar um eitt þrep í fimm skrám sem teikna borðið — 368 (grind), 489 (Vinnusamantekt), 507 (V2-þemað), 511 (Tilbúin verk), 520 (Í dag). Kvarðinn: 9,5->11 · 10->11,5 · 10,5->11,5 · 11->12 · 11,5->12,5 · 12->13 · 12,5->13,5 · 13->14; .t5 grunnur 13->14 px og línubil 1,45->1,5; 252 stærðir alls. Fyrirsagnir yfir 14 px standa óbreyttar svo stigveldið hélst. MÆLT fyrir: 159 af 416 textahlutum undir 11,5 px, 16 í 9,5, sjö ólíkar stærðir á bilinu 9,5-13. Eftir: gólf 11 px, meginmál 12-14. GILDRA: scrollHeight > clientHeight á texta er EKKI klipping þegar overflow er visible — mælitækið taldi línubil sem klippingu (h1, .plate, .lbl voru öll í lagi). V2-þemað (507) ber eigin stærðir og þarf alltaf sömu breytingu og 368.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborðið fékk flipa í stað stafla 18.11.2026 (lag 3, birt a8c799f): einingahamurinn (mitt vinnuborð) ber nú flipastiku — ein eining í einu í fullri breidd — og síðasti flipinn 'Allt · N' sýnir gamla staflann. Valið vistast á þjóni per ham í by_staff.<nafn>.flipi.<hamur> (readCfg skilar flipi-hlut, data-t5='flipi'). Engir flipar í raðham (radar) því þá þarf allt að sjást við drátt; 'Í dag' er borði fyrir ofan og á engan flipa. CSS: .flipar/.flipi í t5-stílnum, .modgrid.einn>.modcell spannar fulla breidd. Mælt: borðið 7.354 px -> 2.346 px með einn flipa, 5.786 px á 'Allt'. Sama dag voru kaflaheiti Vinnusamantektar stækkuð í 18-19 px (Playfair/Poppins með gullpunkti) og opinn mælir fékk 2px gullramma + orðið 'Opið' — Agnar áttaði sig illa á hvaða flokki var kveikt á.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Vinnusamantekt (489) fékk mælana 18.11.2026 (birt a27e703, lag 2 af hönnunartillögunni): einn mælir á hvern hóp (Peningar · Vinna · Fólk og póstur · Fyrirtæki · Hunt og verkefni · Kerfi) með versta ljósinu, talningu alvarlegt/athuga, tölu efstu mælingarinnar og heiti hennar; smellur opnar hópinn og línurnar birtast óbreyttar (radHtml). Sjálfgefið opnast þeir sem bera rautt, valið vistast í Vidmot undir vinnusamantekt.maelar. GILDRA sem var mæld: sjálfgefna valið má ekki reiknast á fyrstu teikningu (S.res tómt = enginn hópur rauður = allir mælar læsast lokaðir) — það er fest fyrst þegar S.res er komið. Mælt: 29 línur -> 19 sýndar, borðið 7.354 -> 6.157 px.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborðið fékk efsta lagið 'Í dag' (eining 31, patch 520-idag.js, birt 18.11.2026 a171d62): forgangsmál + ný skilaboð af borðinu og rauðu mælingarnar úr 489, hvert með EINNI aðgerð, þak 4 mál + 3 mælingar. Teiknað sem borði fyrir ofan Vinnusamantekt (idagBordi í 368 render), ekki í einingaristinni; situr efst á 'mitt vinnuborð' án skrifa (mittHamur unshift) og hverfur varanlega ef hún er tekin af í Velja einingar (mitt.idagAf). Tilefnið var mæling á borðinu sama dag: 7.354 px (8,2 skjáir), 29 mælingar í einni röð, 7 merktar ALVARLEGT samtímis, 335 takkar, 34x 'Fela · Skýring'.**
-  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Merkja og keyra (519, lota 14, 17.11.2026): merkið ◇ á línum Þjónustuborðsins kemur úr MerkjaKeyra.merki/gluggi/stada sem 368 kallar í feedRow, mineRow, lrowHtml (allar einingalínur) og Samþykkja-spjaldinu (sbSpjaldHtml). Merkingar búa í bord_merkingar (RLS án reglna — aðeins þjónninn); vafrinn fer um /api/afgreidsla (adgerd merkja / merkja_keyra, GET ?merkingar=1). Hver situr við borðið: Samthykkja.nu() — Bord368 hefur ekki nu.**
-  <br>Grein merkja-og-keyra (5ad0bd69, b2ebd37b). Keyra notar sama bakgrunnsfall og rofa og Biddu Claude (adalmal-claude-background með merki_id; app_kv adalmal_claude). Dreifing: _merkja-leid.cjs = router.cjs skref 1–3 á brunaholf agents-registry.json. Óðinn: _merkja.cjs metaSkil → odin_urskurdir (lota m
-  <br><sub>2026-11-17 · slokkvitaeki · claude-code · claude-code</sub>
-- **Aðalmál 492f (í loftinu 16.11.2026, 63cff0e): svör og ákvarðanir Agnars á atriðum vikuyfirlitsins liggja í afgreidsla (tegund=adalmal, lykill adalmal:<mál>-<hluti>-<nr>, sama sæti og ✓-lykillinn) og í Charlize topic akvardanir-agnars (confirmed). Svar við spurningu stofnar líka verk „Svar Agnars: …" á verkefnalisti. „✦ Biddu Claude" (rofi app_kv adalmal_claude, KVEIKT eftir raunkall 9/9) geymir svar Opus í nidurstada.claude. Lestu þetta áður en nýtt yfirlit er skrifað — Nei-atriði fara ekki aftur á blað.**
-  <br>Birt 16.11.2026 05:00 eftir „Ja" Agnars; afgreidsla.cjs + _adalmal-claude.cjs + adalmal-claude-background.cjs; vörður tools/audit-adalmal-adgerdir.cjs. CHECK tegund adalmal + dálkar athugasemd (sql/2026-11-16, 2026-11-16b).
-  <br><sub>2026-11-16 · slokkvitaeki · kóði · claude-code</sub>
-- **js_error og promise_rejection á #bord (Þjónustuborð) eru SAMA rótin síðan nóv 2026: óvarin .hluti-lesning á null í borðs-render (368/446/448/489) — villan 'Cannot read properties of null (reading hluti)'. Gamla promise_rejection SW/BeforeInstallPrompt dev-suðið er horfið.** _(likely)_
-  <br>Sópun 11.11.2026 (v_app_problems_open): js_error síðast 15:16 11.11, _bundle-4.63c7260a60.js:143; promise_rejection síðast 04.11; báðar source_app=slokkvitaeki, latest_page=#bord, sama skilaboð. EKKI blint-lagað: búntið er minnkað, enginn sourcemap í repo, ekkert prófunarnet — þarf sourcemap eða sta
-  <br><sub>2026-11-11 · slokkvitaeki · sql · claude-code</sub>
-- **Ný verkfæri eins og 3dwork eiga að vera færsla á Öpp-síðunni í Slökkvitæki sem opnast í síma, ekki sidebar-borð.**
-  <br>[rule; agents: bord-flettur, framendi] 23.09: Vill helst ekki hafa það í sidebar, vildi bara geta opnað í öpp page síðu í símanum. Slökkvitæki-appið er venjulegt HTML/JS með patch-kerfi.
-  <br><sub>2026-11-04 · slokkvitaeki · artifact: session-uppskera 2026-10-28: lota 14b698a2 2026-09-23 · claude-code</sub>
-- **Þjónustuborð 368 (20.09.2026): hver lína sem er MÁL ber nú ✓ Lokið · ☆/★ áríðandi · 🗑 Eyða (malAdg) — Master, Áríðandi, Frestir, Forgangur, Ný mál, Póstsvörun; ★/🗑 líka á Mitt borð og í Valið mál, 🗑 í Vinnublöðum/Samþykkja. Eyðing er mjúk (deleted_at) án staðfestingar en með Afturkalla; ✓ Lokið fékk líka Afturkalla. Áður var Eyða aðeins í einingunni Breyta máli sem er sjálfgefið slökkt. Ný línutegund sem sýnir mál á að kalla á malAdg(r).**
-  <br><sub>2026-09-20 · slokkvitaeki · claude-code · claude-code</sub>
-- **18.09.2026 (slokkvitaeki d292c83): Fyrirtæki · yfirferð (patch 198) fékk yfirflokkinn „🧯 Í ársskoðun“ (sama tafla/síur, þrengð með iArsskodun() = SAMA regla og inService() í 153 — breytist hún þar þarf hún að breytast hér; 631 fyrirtæki 18.09) og fimm nýjar síur sem mæla hvað vantar á prófílinn: Vantar síma (simi+farsimi tómt, 448), Vantar mynd (AppSettings co_bygging_mynd, 372), Tómur tækjalisti (uttaeki á fyrirtaeki_id, allt nema urelt, 27), Vantar teikningu (teikning_bord: image_url eða markers, 631 — enginn kominn), Ekki í Samskiptum (taflan samskipti_tengd = næturafrit kl. 05:35 af sýninni fyrirtaeki_samskipti, sem er of þung fyrir vafra: anon fær 500 eftir 3 s; 446). Nafnið í töflunni er hlekkur á #company/<id>. „↻ Endurhlaða allt“ sækir AppSettings + öll gögn upp á nýtt. load() bíður nú eftir DB.sb (bein slóð sýndi áður „Engin gagnabankatenging“). Prófað í vafra á lifandi síðunni.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Útlit hams er geymt sem { first: [einingalyklar í röð], breidd: { lykill: 1|2|3 } } þar sem 1=þriðjungur, 2=hálft, 3=fullt. Sett með útlitsritlinum í Breyta ham (18.09.2026). VARÚÐ: M(id) í 368 byggir haminn upp á nýtt úr geymslunni og tekur AÐEINS þá reiti sem eru nefndir þar - reitur sem gleymist í M() vistast en birtist aldrei.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Mál birtist í hamnum Samþykkja aðeins ef það ber merkið samthykki (og spurning ef það þarf svar). Mál sem bera bara eigin merki (t.d. klara-heimsokn) sitja á Master og sjást aldrei í Samþykkja, þótt þau bíði svars Agnars.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Að samþykkja vinnublað skrifar AÐEINS stöðu - það býr enga sölu til (368). Mælt 18.09.2026: þrjú vinnublöð samþykkt 13.09. af Agnari áttu enga sölu, 270.654 kr án vsk / 335.611 kr með vsk sem enginn hafði rukkað. Vörðurinn er tools/audit-vinnublad-an-solu.cjs.**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **Drög-stöðin er EKKI Drög (38) í valstikunni. Drög (38) = ókláraðar sölur, solur með status=drog, sýn #drog í js/patches/143-drog-list.js. Drög-stöðin = taflan reikningspunktar í Brunahólfs-hubbnum, aðeins aðgengileg um 📱 Öpp -> The Big Boss -> 🛒 Drög-stöð. Aldrei lofa Agnari að setja eitthvað í Drög-stöðina á máli á Þjónustuborðinu; rétta leiðin er skýrsla + reikningur sem endar ÓSENDUR í Kröfuyfirliti (patch 369).**
-  <br><sub>2026-09-18 · slokkvitaeki · claude-code · claude-code</sub>
-- **368ab 14.09.2026: punktar Þjónustuborðs (Í vinnslu — er það búið?) — eyddir/sameinaðir staðir sleppt, reikningur telst aðeins á sama stað (solur.customer_id), bakfærðir reikningar (kredit í appi eða CANCELLED í Payday) telja ekki, og einingar sækjast aftur þegar borðið opnast (>15 s). Lokun á „Klára heimsókn“-máli býr EKKI til reikning — það gerir takkinn á prófílnum.**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **368aa 14.09.2026: Þjónustuborð — hvert atriði á EINN ham. Samþykkja = samthykki-mál á mínu borði (Tilbúið / Þarf svar (merki spurning) / Svarað · bíður Claude); Master og mitt borð = eina borðið; Samskipti, Kröfur, Vinnublöð, Skýrslur, Akstur og skipulag = aðeins sínar einingar. Samþykkismál birtast EKKI lengur á Mitt borð. summary 'Ef já: …' segir hvað Claude gerir við ✓; 'Þarf frá þér: …' er spurning.**
-  <br><sub>2026-09-14 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð sem heimaskjás-app = /app/verkefni/ (manifest-verkefni.json, lykill verkefni, home bord). Endurnefnt úr „Verkefnalisti“ í „Þjónustuborð“ 12.09.2026 (ea26f22); id/start_url/scope óbreytt svo uppsett eintök haldast sama appið.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **182-thjonustuver, 183-thjonustuver-attachments og 194-eftirfylgni í dvala í _attic/patches síðan 12.09.2026 (d0d182c). 368 sýnir gömlu viðhengin (thjonustubeidni_attachments) sem „eldra". 145-todo-board stendur (41 minnismiði Agnars í settings.todo), 172 stendur (Fjármál-app).**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuborð 2 (368): Agnar er með bara_mitt=true (12.09.2026) og þá eru engar einingar teiknaðar — hvorki Skipulagsborð (með Áríðandi-lista frá ef7aef5) né Dagskrá. Verk sem stofnað er úr máli ber mal_id (303) og 🗓-takkinn hoppar á daginn.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-- **#leidsogn opnar Leiðsögn (161, view-leidsogn) síðan 12.09.2026 (218); áður leystist slóðin í view-field (falda Þjónustutæki-kortið). Leiðsögn hefur aksturslista-röð (Akstur 1/2/3) og skiptir Google Maps-leið í leggi með 9 millistoppum.**
-  <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### vidmot
 
@@ -2497,6 +2498,42 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Þjónustuver póstar (patch 309) hópar server-hlið í public.tv_postar_list() (SECURITY DEFINER + set statement_timeout='25s'); client kallar sb.rpc('tv_postar_list'). Mælt 2026-08-19.
   <br><sub>2026-08-19 · baedi · sql · claude-code</sub>
 
+### verd
+
+- **Heimaleigu-sérkjör 30.10.2026 eru komin í app_settings.company_pricing (18.11.2026) á 22 lykla: Yfirferð 2.000, Hleðsla 4.350, Yfirferð brunaslanga 2.500, Yfirferð reykskynjari 1.500, „CO₂ 5 kg. yfirferd“ 2.000. Akstur 2.400 og skýrslugerð 0 eru EKKI í company_pricing — þau stillast per heimsókn (trip-state), og afslattur_pct 25 á staðnum leggst líka á akstur/skýrslugerð.**
+  <br>Afrit gömlu verðanna: backup_20261118_company_pricing_heimaleiga. Varan CO₂ 5 kg yfirferð heitir „yfirferd“ (án ð) og fékk því aldrei almenna „Yfirferð“-sérverðið — sér-lína bætt við. Lyklar án fyrirtækis (797, 1223, 1628) fengu líka nýju verðin.
+  <br><sub>2026-11-18 · kerfi · lota 18.11.2026 · sala-reikningar</sub>
+- **ja.is Vöruleit má ekki skrapa eða afrita í gagnagrunn: skilmálar Já banna afritun, gagnagrunnsgerð og viðskiptalega notkun án skriflegs leyfis og robots.txt bannar /vorur/. 167 raðir sem verðkönnun las þaðan 16.11.2026 voru útilokaðar úr birtu gögnunum; flipinn Samkeppnisaðilar – Vörur sýnir aðeins handvirka tengla á ja.is Vöruleit. Verð skal sótt beint af vefjum seljenda eða með skriflegu leyfi frá Já.**
+  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
+- **BRÁÐABIRGÐAVERÐ á Sprinklerkerfi (Agnar 11.11.2026: „svona í bili"): ársfjórðungsskoðun 24.000, ársskoðun 31.000 og akstur 2.676 kr. án vsk. Tekin úr þjónustusamningi samkeppnisaðila frá 15.09.2022 — á eftir að ákveða okkar eigin verð.**
+  <br>Samningurinn var vísitölubundinn (byggingarvísitala 108,3 = ágúst 2022). Í október 2026 er vísitalan 130,4 → uppreiknað 28.898 / 37.326 / 3.222 kr. Verðin eru stofn í 502 (sp-q, sp-a, sp-akstur); listi sem er vistaður á þjóninn ræður. Sama verð er skráð í Verð samkeppnisaðila.
+  <br><sub>2026-11-11 · slokkvitaeki · samningur sem Agnar sendi + Hagstofa VIS13000, 11.11.2026 · claude-code</sub>
+- **Verð frá Agnari 11.11.2026: tímavinna er 14.500 kr. + vsk. á klst. (17.980 m. vsk.) — bæði við árlega skoðun neyðar- og útgöngulýsingar og „utan tilboðs" á brunaviðvörunarkerfum. Neyðarlýsing: lágmarksgjald 2 klst. = 29.000 kr. + vsk. (35.960 m. vsk.).**
+  <br>Árleg skoðun neyðarlýsingar er SJÓNRÆN ástandsyfirferð; viðgerðir, varahlutir, rafhlöðuskipti og ljósstyrksmælingar eru ekki innifalin nema um það sé samið — hún nær ekki yfir árlega prófun á fullum endingartíma (ÍST EN 50172). Brunakerfi: viðgerðir, varahlutir, rafhlöðuskipti og breytingar gjaldfær
+  <br><sub>2026-11-11 · slokkvitaeki · verkferlar sem Agnar sendi 11.11.2026 · claude-code</sub>
+- **Verðtengingar slökkvitækja 10.11.2026 (thjonustu_tengingar): Duft án stærðar → Duft 6 kg yfirferð (vara 28) og hleðsla (vara 6) samkvæmt reglu Agnars að engin stærð = 6 kg; Léttvatn 3 L hleðsla → vara 468 (6.200 m. vsk), yfirferð → vara 454 (3.600 m. vsk). Skráð tenging gengur alltaf fyrir nafnaleit. LYKILLINN notar FJÖLSKYLDUHEITI tegundar (normalizeTypeFamily í 129 / fjolskylda í 410: Duft, CO₂, Léttvatn, Brunaslanga, Reykskynjari, Eldvarnateppi) — EKKI hrátt uttaeki.type („ABC Duft"). Snið: Duft||yfirferd (tóm stærð = tveir pípur í röð). Gildra 10.11: lykill skráður sem „ABC Duft||…" virkaði ekki, og SQL-prófun sem paraði á hráu type staðfesti aðeins eigin forsendu; verðlistaglugginn (✎ Slökkvit. þjónusta — verð) sýndi áfram STÆRÐ VANTAR. Sannreyna alltaf í glugganum sjálfum.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Handvirk aukalína (inspection_trips[fid].extras) birtist hvorki í úttektarskýrslunni né sem tæki á prófílnum — vörur sem eru raunveruleg tæki (t.d. 10 stk 3L léttvatn) eiga að vera uttaeki-raðir (type Léttvatn, size 3 L) með tengingu í thjonustu_tengingar (lykill „Léttvatn|3 L|yfirferd“ → vara 454), annars vantar þau í skýrslu, facts og tækjatölu.**
+  <br>Vara 454 „3L léttvatn yfirferð“ (2.343,55 án vsk) varð til við söluna og fékk birgdir −10 af aukalínunni; hún er enn í flokknum „Slökkvitæki“ ekki „Þjónusta“.
+  <br><sub>2026-10-29 · slokkvitaeki · sql · claude-code</sub>
+- **Center Hótel samningsverð (kt 450905-1430, úr Payday-reikningum 12.07.2024–08.04.2026; týndust við Payday→solur-skiptin): án vsk yfirferð léttvatn/duft/CO₂ 2.600, brunaslanga 2.500, hleðsla 6 kg/6 L 4.100 (Agnar mundi „4.200" — ÓÚRSKURÐAÐ), skýrslugerð 3.500, ný tæki −20 % af lista, reykskynjari (brunakerfi) 1.000/1.036 á einingu. Frumheimild: mynd í pósti Melissu (dor@centerhotels.com) 30.03.2026. Fyrstu solur-reikningar R-000668 (Klöpp) og R-000670 (Skjaldbreið) 03.08 fóru út YFIR samningsverði (~30–50 þús.). Afsláttarhópur „Center Hotels" (10 hótel) fær nú FÖST verð (fast hópsverð > hóps-% > fastur).**
+  <br>Lota 9c26b335 17.08.2026 17:17–17:48. Verðtöflur líka í docs/AFSLATTA-YFIRFERD.md að hluta.
+  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 9c26b335 · claude-code</sub>
+- **Verð-tengingar (410) lykill = fjölskylduheiti tegundar (129 normalizeTypeFamily), aldrei hrátt heiti; taeki_tegundir-skráin fæðir fellilista 73/132; grænn punktur í 129/128 = skráð tenging, ekki ágiskun. Deploy 9427e4c 24.09.2026.**
+  <br><sub>2026-09-24 · slokkvitaeki · claude-code · claude-code</sub>
+- **Rafhlaðan er INNIFALIN í „Yfirferð Reykskynjari" (2.346 kr án vsk) — 9V Rafhlaða fer ekki á reikninginn sem sér lína**
+  <br>Agnar 10.09.2026: „það er innifalið rafhlaða í reykskynjara yfirferð". Vinnublöð skrifa oft „skipti um X skynjara og batterí í Y" — Y-hlutinn er yfirferð, ekki varahlutasala. 9V Rafhlaða (466 án vsk) er til í vörulistanum en á aðeins við þegar rafhlaða er seld ein og sér, án yfirferðar.
+  <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
+- **Það er AÐEINS EITT verð á yfirferð brunaslöngu (4.346 kr án vsk / 5.389 m/vsk) — lengdin skiptir ekki máli og 30 m er bara sjálfgefna merkingin**
+  <br>Agnar 09.09.2026: „við erum bara með eitt verð á yfirferð á brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina. en er bara eitt verð". verd.md sagði áður að velja þyrfti stærð og segja Agnari frá valinu — óþarfa spurning sem á að hætta.
+  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
+- **Akstur er 3.600 kr og skýrslugerð 5.600 kr ÁN VSK — window.SlokkVisitDefaults í patch 129 er EINA heimildin; verd.md sagði 3.000/3.500 og var úrelt**
+  <br>Athugasemdin í 129 (2026-08-18) segir berum orðum að báðar leiðir (kostnaðartaflan og reikningsleiðin í 165) lesi héðan. Sara-borðið hardkóðaði gömlu tölurnar og sýndi 43.228 kr þar sem appið sagði 48.136 (Hagstál). Lagað 09.09.2026 — borðið les nú SlokkVisitDefaults.
+  <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
+- **Duft 9 kg og 12 kg skilgreinast sem 6 kg í bæði skýrslu og reikningsútreikningi — raunstærðin á blaðinu er ekki flokkur**
+  <br>Skýrslulínan „Slökkvitæki duft 6-12 kg." nær yfir 6, 9 og 12 kg. Á reikningi fara þau á 6 kg vöruna: 118 Slökkvitæki Duft 6 kg, 135 Yfirferð Duft 6-12 kg, 125 Hleðsla Duft 6-12 kg. Aðeins 2 kg duft er sérflokkur (119 / 126). Staðfest af Agnari 21.08.2026 þegar 9 kg tæki kom upp á Kirkjuvöllum 9. VIÐ
+  <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
+
 ### rekstrarfelog
 
 - **Grensásvegur 14 hjá Heimaleigu eru tveir aðskildir staðir (Höfuðstöðvar og G14) með ólíka skoðunarmánuði (3 og 11).** _(unverified)_
@@ -2620,39 +2657,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **API-LYKLA-AÐFERÐIN (Agnar 18.09.2026: „frábær leið"): þegar lykill, token eða lykilorð þarf að komast í stillingaskrá skrifar Claude skrána tilbúna með tómri línu LYKILL= og íslenskri athugasemd, opnar hana í Notepad hjá Agnari OG opnar um leið nákvæmlega réttu vefsíðuna þar sem lykillinn er sóttur. Agnar afritar, límir, vistar og segir „komið". Claude prófar strax að lykillinn virki og birtir gildið aldrei.**
   <br>Claude má ekki slá inn lykla sjálfur og Agnar á aldrei að líma lykil í spjallið. Skrefin til hans: 3–4 stuttar línur á mannamáli, engin tæknihugtök. Fyrst notað við luna-bridge 2 á skrifstofuvélinni (C:\Users\Slokkvitaeki\luna-bridge\.env, Supabase service_role). Ath: Microsoft 365 hafnar IMAP-lykil
   <br><sub>2026-09-18 · baedi · claude-code · claude-code</sub>
-
-### verd
-
-- **ja.is Vöruleit má ekki skrapa eða afrita í gagnagrunn: skilmálar Já banna afritun, gagnagrunnsgerð og viðskiptalega notkun án skriflegs leyfis og robots.txt bannar /vorur/. 167 raðir sem verðkönnun las þaðan 16.11.2026 voru útilokaðar úr birtu gögnunum; flipinn Samkeppnisaðilar – Vörur sýnir aðeins handvirka tengla á ja.is Vöruleit. Verð skal sótt beint af vefjum seljenda eða með skriflegu leyfi frá Já.**
-  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **BRÁÐABIRGÐAVERÐ á Sprinklerkerfi (Agnar 11.11.2026: „svona í bili"): ársfjórðungsskoðun 24.000, ársskoðun 31.000 og akstur 2.676 kr. án vsk. Tekin úr þjónustusamningi samkeppnisaðila frá 15.09.2022 — á eftir að ákveða okkar eigin verð.**
-  <br>Samningurinn var vísitölubundinn (byggingarvísitala 108,3 = ágúst 2022). Í október 2026 er vísitalan 130,4 → uppreiknað 28.898 / 37.326 / 3.222 kr. Verðin eru stofn í 502 (sp-q, sp-a, sp-akstur); listi sem er vistaður á þjóninn ræður. Sama verð er skráð í Verð samkeppnisaðila.
-  <br><sub>2026-11-11 · slokkvitaeki · samningur sem Agnar sendi + Hagstofa VIS13000, 11.11.2026 · claude-code</sub>
-- **Verð frá Agnari 11.11.2026: tímavinna er 14.500 kr. + vsk. á klst. (17.980 m. vsk.) — bæði við árlega skoðun neyðar- og útgöngulýsingar og „utan tilboðs" á brunaviðvörunarkerfum. Neyðarlýsing: lágmarksgjald 2 klst. = 29.000 kr. + vsk. (35.960 m. vsk.).**
-  <br>Árleg skoðun neyðarlýsingar er SJÓNRÆN ástandsyfirferð; viðgerðir, varahlutir, rafhlöðuskipti og ljósstyrksmælingar eru ekki innifalin nema um það sé samið — hún nær ekki yfir árlega prófun á fullum endingartíma (ÍST EN 50172). Brunakerfi: viðgerðir, varahlutir, rafhlöðuskipti og breytingar gjaldfær
-  <br><sub>2026-11-11 · slokkvitaeki · verkferlar sem Agnar sendi 11.11.2026 · claude-code</sub>
-- **Verðtengingar slökkvitækja 10.11.2026 (thjonustu_tengingar): Duft án stærðar → Duft 6 kg yfirferð (vara 28) og hleðsla (vara 6) samkvæmt reglu Agnars að engin stærð = 6 kg; Léttvatn 3 L hleðsla → vara 468 (6.200 m. vsk), yfirferð → vara 454 (3.600 m. vsk). Skráð tenging gengur alltaf fyrir nafnaleit. LYKILLINN notar FJÖLSKYLDUHEITI tegundar (normalizeTypeFamily í 129 / fjolskylda í 410: Duft, CO₂, Léttvatn, Brunaslanga, Reykskynjari, Eldvarnateppi) — EKKI hrátt uttaeki.type („ABC Duft"). Snið: Duft||yfirferd (tóm stærð = tveir pípur í röð). Gildra 10.11: lykill skráður sem „ABC Duft||…" virkaði ekki, og SQL-prófun sem paraði á hráu type staðfesti aðeins eigin forsendu; verðlistaglugginn (✎ Slökkvit. þjónusta — verð) sýndi áfram STÆRÐ VANTAR. Sannreyna alltaf í glugganum sjálfum.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Handvirk aukalína (inspection_trips[fid].extras) birtist hvorki í úttektarskýrslunni né sem tæki á prófílnum — vörur sem eru raunveruleg tæki (t.d. 10 stk 3L léttvatn) eiga að vera uttaeki-raðir (type Léttvatn, size 3 L) með tengingu í thjonustu_tengingar (lykill „Léttvatn|3 L|yfirferd“ → vara 454), annars vantar þau í skýrslu, facts og tækjatölu.**
-  <br>Vara 454 „3L léttvatn yfirferð“ (2.343,55 án vsk) varð til við söluna og fékk birgdir −10 af aukalínunni; hún er enn í flokknum „Slökkvitæki“ ekki „Þjónusta“.
-  <br><sub>2026-10-29 · slokkvitaeki · sql · claude-code</sub>
-- **Center Hótel samningsverð (kt 450905-1430, úr Payday-reikningum 12.07.2024–08.04.2026; týndust við Payday→solur-skiptin): án vsk yfirferð léttvatn/duft/CO₂ 2.600, brunaslanga 2.500, hleðsla 6 kg/6 L 4.100 (Agnar mundi „4.200" — ÓÚRSKURÐAÐ), skýrslugerð 3.500, ný tæki −20 % af lista, reykskynjari (brunakerfi) 1.000/1.036 á einingu. Frumheimild: mynd í pósti Melissu (dor@centerhotels.com) 30.03.2026. Fyrstu solur-reikningar R-000668 (Klöpp) og R-000670 (Skjaldbreið) 03.08 fóru út YFIR samningsverði (~30–50 þús.). Afsláttarhópur „Center Hotels" (10 hótel) fær nú FÖST verð (fast hópsverð > hóps-% > fastur).**
-  <br>Lota 9c26b335 17.08.2026 17:17–17:48. Verðtöflur líka í docs/AFSLATTA-YFIRFERD.md að hluta.
-  <br><sub>2026-10-16 · slokkvitaeki · afrit lotu 9c26b335 · claude-code</sub>
-- **Verð-tengingar (410) lykill = fjölskylduheiti tegundar (129 normalizeTypeFamily), aldrei hrátt heiti; taeki_tegundir-skráin fæðir fellilista 73/132; grænn punktur í 129/128 = skráð tenging, ekki ágiskun. Deploy 9427e4c 24.09.2026.**
-  <br><sub>2026-09-24 · slokkvitaeki · claude-code · claude-code</sub>
-- **Rafhlaðan er INNIFALIN í „Yfirferð Reykskynjari" (2.346 kr án vsk) — 9V Rafhlaða fer ekki á reikninginn sem sér lína**
-  <br>Agnar 10.09.2026: „það er innifalið rafhlaða í reykskynjara yfirferð". Vinnublöð skrifa oft „skipti um X skynjara og batterí í Y" — Y-hlutinn er yfirferð, ekki varahlutasala. 9V Rafhlaða (466 án vsk) er til í vörulistanum en á aðeins við þegar rafhlaða er seld ein og sér, án yfirferðar.
-  <br><sub>2026-09-10 · slokkvitaeki · agnar · claude-code</sub>
-- **Það er AÐEINS EITT verð á yfirferð brunaslöngu (4.346 kr án vsk / 5.389 m/vsk) — lengdin skiptir ekki máli og 30 m er bara sjálfgefna merkingin**
-  <br>Agnar 09.09.2026: „við erum bara með eitt verð á yfirferð á brunaslöngum sem varð þá bara að 30m default, veit ekki raun lengdina. en er bara eitt verð". verd.md sagði áður að velja þyrfti stærð og segja Agnari frá valinu — óþarfa spurning sem á að hætta.
-  <br><sub>2026-09-09 · slokkvitaeki · agnar · claude-code</sub>
-- **Akstur er 3.600 kr og skýrslugerð 5.600 kr ÁN VSK — window.SlokkVisitDefaults í patch 129 er EINA heimildin; verd.md sagði 3.000/3.500 og var úrelt**
-  <br>Athugasemdin í 129 (2026-08-18) segir berum orðum að báðar leiðir (kostnaðartaflan og reikningsleiðin í 165) lesi héðan. Sara-borðið hardkóðaði gömlu tölurnar og sýndi 43.228 kr þar sem appið sagði 48.136 (Hagstál). Lagað 09.09.2026 — borðið les nú SlokkVisitDefaults.
-  <br><sub>2026-09-09 · slokkvitaeki · kóði · claude-code</sub>
-- **Duft 9 kg og 12 kg skilgreinast sem 6 kg í bæði skýrslu og reikningsútreikningi — raunstærðin á blaðinu er ekki flokkur**
-  <br>Skýrslulínan „Slökkvitæki duft 6-12 kg." nær yfir 6, 9 og 12 kg. Á reikningi fara þau á 6 kg vöruna: 118 Slökkvitæki Duft 6 kg, 135 Yfirferð Duft 6-12 kg, 125 Hleðsla Duft 6-12 kg. Aðeins 2 kg duft er sérflokkur (119 / 126). Staðfest af Agnari 21.08.2026 þegar 9 kg tæki kom upp á Kirkjuvöllum 9. VIÐ
-  <br><sub>2026-08-21 · slokkvitaeki · agnar · cowork</sub>
 
 ### 3dwork
 
