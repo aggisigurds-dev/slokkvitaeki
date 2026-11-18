@@ -639,8 +639,9 @@ og bara 100 % líkur á mistökum og tjóni.“ Og 17.11: „ef ég er að vinna
 ekkert inn á browserinn hjá sessions.“ **Biddu hann ALDREI að skrá sig inn í vafra lotunnar.**
 
 Hver Claude-lota hefur sinn eigin vafra og sínar eigin kökur, svo lotan skráir sig inn SJÁLF.
-Til þess er sérstakur aðgangur: **uid 10, „Lota (Claude)“, hlutverk Starfsmaður** — ekki manneskja,
-ekki Agnar, og hann má slökkva hvenær sem er með `update hub_adgangar set virkur=false where id=10`.
+Til þess er sérstakur aðgangur: **uid 10, „Lota (Claude)“, hlutverk Admin** (Agnar hækkaði hann
+18.11.2026 svo lotur kæmust líka í borðsins eigin föll) — ekki manneskja, ekki Agnar, og hann má
+slökkva hvenær sem er með `update hub_adgangar set virkur=false where id=10`.
 
 ```sql
 select kaka, notandi, rola, rennur_ut from innri.lotu_koku(10, 2);   -- uid 10 = Lota (Claude), 2 klst.
@@ -674,7 +675,11 @@ næst hvorki með publishable-lykli né RPC.
 | BH `/api/odin` | 401 → **200** |
 | SL `/api/bh-toki` | 401 → **200** |
 | SL og BH síður (`/`, `/afgreidsla.html`) | 200 → 200 (síðurnar sjálfar eru opnar; hliðin eru í API-unum) |
-| SL `/api/afgreidsla`, SL `/api/tekjur-beint` | 401 → **403 „Aðeins fyrir stjórnanda“** |
+| SL `/api/afgreidsla`, SL `/api/tekjur-beint` | 401 → **200** (Admin-föll, opnast eftir hækkunina) |
 
-Síðustu tvær eru **Admin-only og eiga að vera það**. Starfsmannakakan opnar þær ekki og á ekki að gera
-það. Þurfi próf óhjákvæmilega Admin-fall, segðu Agnari hvaða fall og hvers vegna — ekki mynta uid 1.
+**Admin fylgir ábyrgð, ekki nýtt leyfi.** Aðgangurinn er til þess að lotan geti SÉÐ og PRÓFAÐ það sem
+hún smíðar. Allar venjulegu reglurnar standa óbreyttar og Admin-kakan víkur þeim ekki til hliðar:
+ekkert fer út úr húsi (póstur, SMS, krafa, reikningur, kredit, Payday-sending, hlekkur til kúnna),
+engu er eytt, engin fyrirtæki sameinuð, engri kennitölu né verði breytt, og borð annarra starfsmanna
+eru ósnert. Allt slíkt endar sem drög eða tilbúið verk sem Agnar ýtir á — nákvæmlega eins og áður.
+Aðgerðir skrást á „Lota (Claude)“, svo þær eru rekjanlegar og aðskildar frá Agnari sjálfum.
