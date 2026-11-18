@@ -1636,6 +1636,44 @@
       '.sb-sky-t{display:flex;justify-content:flex-end;margin-top:6px}',
       '.sb-stada{padding:12px 14px;border-radius:10px;background:#f3f6fb;font-size:14px;color:var(--ink2)}',
       '.sb-meira{margin-top:14px;border-top:1px solid #e7ecf3}',
+      // 18.11.2026 — þétt svarglugga-útlit (Agnar: „vill helst geta séð allt á einum skjá“). Gildir þegar borðið er ≥ 901 px
+      // breitt; undir því er gamla (síma-)útlitið óbreytt, nema að svörin standa á eftir málinu eins og áður.
+      '.sb{display:flex;flex-direction:column}.sb-scroll{display:contents}.sb-bar{order:0}.sb-in{order:1}.sb-ft{order:2}.sb-meira{order:3}.sb-skyrow{display:block}',
+      '.sb-bar .sb-kr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '@container t5 (min-width: 901px){',
+        '.sb{display:flex;flex-direction:column;max-height:calc(100vh - 168px);min-height:300px;scroll-margin-top:150px}',
+        '.sb-bar{flex:none;padding:6px 14px;gap:6px 10px;align-items:center}',
+        '.sb-bar-t{font-size:13px;flex:0 1 auto}.sb-nr{font-size:12.5px}',
+        '.sb-bar .btn.sm{min-height:40px;padding:0 10px}',
+        '.sb-sogn{font-size:11px;padding:3px 7px}.sb-kick{font-size:11px;letter-spacing:.14em}.sb-ari{font-size:12px;padding:2px 8px}',
+        '.sb-scroll{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}',
+        '.sb-in{padding:10px 16px 4px;gap:10px}',
+        '.sb-hd{gap:8px 14px;flex-wrap:nowrap;align-items:center}',
+        '.sb-hdt{flex:1 1 auto;gap:4px}',
+        '.sb-h{font:700 clamp(16px,1.15vw,19px)/1.28 var(--body);letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+        '.sb-h-a{display:inline;margin:0 8px 0 0;font:600 14px/1.28 var(--body)}',
+        '.sb-bord{flex-direction:row;align-items:baseline;gap:6px;padding:4px 10px;border-radius:8px}.sb-bord span{font-size:10.5px}.sb-bord b{font-size:14px}',
+        '.sb-strip{grid-template-columns:repeat(auto-fit,minmax(min(100%,138px),1fr))}',
+        '.sb-sr{padding:6px 12px;gap:0}.sb-sr dt{font-size:10.5px}.sb-sv{font-size:14.5px;line-height:1.25}',
+        '.sb-su{font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+        '.sb-cols{grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px 24px}.sb-cols>div{gap:10px}',
+        '.sb-k h4{margin-bottom:6px}',
+        '.sb-tl{max-height:min(34vh,300px);overflow-y:auto;padding-right:6px}',
+        '.sb-tl li{grid-template-columns:44px 16px minmax(0,1fr)}.sb-tl p{margin:0 0 8px;font-size:13.5px;line-height:1.45}.sb-tld{font-size:13px;line-height:1.5}',
+        '.sb-tlp::before{top:5px}.sb-tlp::after{top:17px}',
+        '.sb-info{padding:10px 12px;gap:10px;max-height:min(34vh,300px);overflow-y:auto}.sb-info b{font-size:14px;line-height:1.4}.sb-info span{font-size:13px;line-height:1.45}',
+        '.sb-meira{margin-top:6px}.sb-meira-t{min-height:40px;padding:8px 16px}',
+        '.sb-ft{flex:none;padding:8px 16px 10px;background:#fff;border-top:1px solid #e7ecf3;box-shadow:0 -6px 14px -10px rgba(2,25,60,.35)}',
+        '.sb-ft .sb-k h4{display:none}',
+        '.sb-ft .sb-svor{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,132px),1fr));gap:8px}',
+        '.sb-ft .sb-svar b i{margin-left:4px;padding:1px 5px;font-size:10px}',
+        '.sb-ft .sb-svar{min-height:46px;padding:6px 12px;gap:0;justify-content:center}',
+        '.sb-ft .sb-svar b{font-size:14px}.sb-ft .sb-svar span{font-size:12.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}',
+        '.sb-skyrow{display:flex;align-items:stretch;gap:8px;margin-top:8px}.sb-skyrow .sb-sky{flex:1 1 auto;min-width:0;margin-top:0}.sb-skyrow .sb-sky>span{display:none}',
+        '.sb-sky textarea{min-height:40px;max-height:96px;padding:8px 12px;font-size:14px;line-height:1.4}',
+        '.sb-skyrow .sb-sky-t{margin-top:0;flex:none}.sb-skyrow .sb-sky-t .btn{height:100%;min-height:40px;white-space:nowrap}',
+        '.sb-stada{padding:8px 12px}',
+      '}',
       '.sb-meira-t{display:block;width:100%;min-height:48px;padding:12px 28px;border:0;background:#fff;text-align:left;font:600 14px var(--body);color:var(--ink);cursor:pointer}',
       '.sb-meira-t:hover{background:#f6f9fd}.sb-meira-t span{margin-left:6px;font-weight:400;font-size:13.5px;color:var(--mute)}',
       '.sb-meira-in{margin:0 16px 16px;border-radius:12px}',
@@ -2621,7 +2659,7 @@
   }
   const sbMeiraOpid = r => (S.samtMeira[r.id] != null ? !!S.samtMeira[r.id] : !(erSamthykki(r) && onBoardOf(r, nu())));
   function sbReitur(heiti, gildi, undir, kl) {
-    return '<div class="sb-sr' + (kl ? ' ' + kl : '') + '"><dt>' + esc(heiti) + '</dt><dd class="sb-sv">' + gildi + '</dd>' + (undir ? '<dd class="sb-su">' + undir + '</dd>' : '') + '</div>';
+    return '<div class="sb-sr' + (kl ? ' ' + kl : '') + '"><dt>' + esc(heiti) + '</dt><dd class="sb-sv">' + gildi + '</dd>' + (undir ? '<dd class="sb-su" title="' + undir.replace(/<[^>]*>/g, '').replace(/"/g, '&quot;') + '">' + undir + '</dd>' : '') + '</div>';
   }
   function sbLinaHtml(r) {
     const c = [], hv = whereOf(r), u = upphaedMals(r), hf = heimildaFjoldi(r), s = sonn(r);
@@ -2657,15 +2695,15 @@
     const a = adgerdirUrNotu(r.notes) || { adg: [], maelt: '' };
     const af = v => { const x = a.adg.find(y => y.v === v); return x && x.texti ? x.texti : ''; };
     const SJ = { samthykkt: 'Claude vinnur málið; lokasending er alltaf þín.', vinnsla: 'Málið bíður hjá Claude; ekkert gert í bili.', hafnad: 'Málinu er lokað og ekkert gert.' };
-    const k = (v, cls, heiti) => '<button type="button" class="sb-svar ' + cls + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + '>' +
+    const k = (v, cls, heiti) => '<button type="button" class="sb-svar ' + cls + '" data-t5="samt-svar" data-v="' + v + '" data-id="' + r.id + '"' + dis(r.id) + ' title="' + esc(String(af(v) || SJ[v])) + '">' +
       '<b>' + heiti + (a.maelt === v ? ' <i>Tillaga</i>' : '') + '</b><span>' + esc((af(v) || SJ[v]).slice(0, 240)) + '</span></button>';
     if (S.samtSkyDrog[r.id] == null) S.samtSkyDrog[r.id] = skyDrogLesa(r.id);
     return '<section class="sb-k"><h4>Hvað viltu gera?</h4><div class="sb-svor">' +
       (erBuid(r) ? '<button type="button" class="sb-svar _adal" data-t5="done" data-id="' + r.id + '"' + dis(r.id) + '><b>✓ Loka — afgreitt</b><span>Gögnin sýna málið afgreitt.</span></button>' : '') +
       k('samthykkt', erBuid(r) ? '' : '_adal', '✓ Samþykkja') + k('vinnsla', '', '▶ Í vinnslu') + k('hafnad', '', '✕ Hafna') + '</div>' +
-      '<label class="sb-sky"><span>Eða skrifaðu skýringu til Claude</span>' +
-        '<textarea data-samtsky="1" data-id="' + r.id + '" rows="2" placeholder="T.d. „loka samningnum, þetta var prufufærsla“ — Claude les, endurmetur og kemur aftur.">' + esc(S.samtSkyDrog[r.id] || '') + '</textarea></label>' +
-      '<div class="sb-sky-t"><button type="button" class="btn iv" data-t5="samt-sky-senda" data-id="' + r.id + '"' + dis(r.id) + '>💬 Senda skýringu</button></div></section>';
+      '<div class="sb-skyrow"><label class="sb-sky"><span>Eða skrifaðu skýringu til Claude</span>' +
+        '<textarea data-samtsky="1" aria-label="Skýring til Claude" data-id="' + r.id + '" rows="2" placeholder="T.d. „loka samningnum, þetta var prufufærsla“ — Claude les, endurmetur og kemur aftur.">' + esc(S.samtSkyDrog[r.id] || '') + '</textarea></label>' +
+      '<div class="sb-sky-t"><button type="button" class="btn iv" data-t5="samt-sky-senda" data-id="' + r.id + '"' + dis(r.id) + '>💬 Senda skýringu</button></div></div></section>';
   }
   function sbSpjaldHtml(r, nr, alls) {
     const t = sbTitill(r), h = SB_HLUTI[samtHluti(r)] || SB_HLUTI[2], lead = t.adili || whereOf(r);
@@ -2675,23 +2713,28 @@
     const fyr = r.fyrirtaeki_id ? '<a href="#company/' + r.fyrirtaeki_id + '" class="sb-fyr" data-t5="fyr" data-id="' + r.id + '" title="Opna ' + esc(whereOf(r) || lead) + '">' + esc(lead) + ' ›</a>' : (lead ? '<span class="sb-fyr">' + esc(lead) + '</span>' : '');
     const minn = onBoardOf(r, nu()), opid = sbMeiraOpid(r);
     const sam = samantekt(r), g = s && s.gerist && sam ? s.gerist(sam) : { fyrsta: sam || '', rest: '' };
+    // 18.11.2026 (Agnar: „þjappa svarglugganum … allt á einum skjá“): merkin (SAMÞYKKJA · „Það sem þú ákveður“ · áríðandi) eru nú í
+    // sömu línu og haus/teljari, mál og upplýsingar skrunast INNI í .sb-scroll og svörin standa föst neðst (.sb-ft) — alltaf sýnileg.
+    // Engu er eytt: allar aðgerðir og allur texti er áfram á sínum stað, aðeins raðað þéttar. Sjá .sb* í CSS (≥ 901 px).
     return '<section class="sb" aria-labelledby="sb-h-' + r.id + '" aria-live="polite">' +
-      '<div class="sb-bar"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span><span class="sb-bar-t">' + (lead ? '<b>' + esc(lead) + '</b> · ' : '') + esc(minn ? 'á þínu borði' : isFree(r) ? 'á Master' : 'á borði ' + normW(r.assigned_to)) + '</span>' +
+      '<div class="sb-bar"><span class="sb-chip ' + h[1] + '">' + esc(h[0]) + '</span>' +
+        '<span class="sb-kr"><span class="sb-sogn">' + esc(sogn) + '</span><span class="sb-kick">Það sem þú ákveður</span>' + (r.important ? '<span class="sb-ari">★ Áríðandi</span>' : '') + '</span>' +
+        '<span class="sb-bar-t">' + (lead ? '<b>' + esc(lead) + '</b> · ' : '') + esc(minn ? 'á þínu borði' : isFree(r) ? 'á Master' : 'á borði ' + normW(r.assigned_to)) + '</span>' +
         '<span class="grow"></span><span class="sb-nr">' + (nr + 1) + ' af ' + alls + '</span>' +
         '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
         '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= alls - 1 ? ' disabled' : '') + '>Næsta ›</button></div>' +
-      '<div class="sb-in"><div class="sb-hd"><div class="sb-hdt"><div class="sb-kr"><span class="sb-sogn">' + esc(sogn) + '</span><span class="sb-kick">Það sem þú ákveður</span>' +
-          (r.important ? '<span class="sb-ari">★ Áríðandi</span>' : '') + '</div>' +
-          '<h3 class="sb-h" id="sb-h-' + r.id + '">' + (fyr ? '<span class="sb-h-a">' + fyr + '</span>' : '') + spH + '</h3>' + (mkMerki(r) ? '<div class="sb-mk">' + mkMerki(r) + '</div>' : '') + mkGluggi(r) + '</div>' +
+      '<div class="sb-scroll"><div class="sb-in"><div class="sb-hd"><div class="sb-hdt">' +
+          '<h3 class="sb-h" id="sb-h-' + r.id + '" title="' + esc(String(r.title || '')) + '">' + (fyr ? '<span class="sb-h-a">' + fyr + '</span>' : '') + spH + '</h3>' + (mkMerki(r) ? '<div class="sb-mk">' + mkMerki(r) + '</div>' : '') + mkGluggi(r) + '</div>' +
           '<div class="sb-bord"><span>Á borðinu</span><b>' + esc(sbDagaOrd(ageDays(r))) + '</b></div></div>' +
         sbLinaHtml(r) +
         '<div class="sb-cols"><div>' + sbSagaHtml(r) + '</div><div>' +
           (g.fyrsta ? '<div class="sb-info"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>' +
             '<div><b>' + esc(g.fyrsta) + '</b>' + (g.rest ? '<span>' + esc(g.rest.slice(0, 500)) + '</span>' : '') + '</div></div>' : '') +
-          sbSvorHtml(r) + '</div></div></div>' +
+          '</div></div></div>' +
       '<div class="sb-meira"><button type="button" class="sb-meira-t" data-t5="samt-meira" data-id="' + r.id + '" aria-expanded="' + opid + '">' + (opid ? '▾' : '▸') +
         ' Meira um málið <span>lýsing og athugasemdir · heimildir · saga fyrirtækisins · fylgiskjöl · setja á · dagskrá · eyða</span></button>' +
-        (opid ? '<div class="sel sb-meira-in">' + selHtml(r, { rymi: true, bMeira: true }) + '</div>' : '') + '</div>' +
+        (opid ? '<div class="sel sb-meira-in">' + selHtml(r, { rymi: true, bMeira: true }) + '</div>' : '') + '</div></div>' +
+      '<div class="sb-ft">' + sbSvorHtml(r) + '</div>' +
     '</section>';
   }
 
