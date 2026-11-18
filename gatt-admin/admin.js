@@ -500,12 +500,88 @@
   var STADA = { nytt: 'Nýtt', i_vinnslu: 'Í vinnslu', bedid: 'Beðið', tilbuid: 'Tilbúið', lokad: 'Lokið', klarad: 'Lokið' };
   var verkSia = 'opin';
   function verkTitill(t) { return String(t || '').replace(/\s+af þjónustuvef/i, '').replace(/\s+—\s+[^—]*$/, '').trim() || 'Verkbeiðni'; }
+  // 18.11.2026 — Agnar: „hvernig á ég að svara fyrirspurnum þegar ég sé ekki textann … ég á að geta svarað og sent þaðan".
+  // Sýnir innri nótuna, upprunalega póstinn með þræðinum, og „Svara með pósti" (sent um /api/gatt-admin svara-post).
+  function dagsTimi(s) { if (!s) return ''; var d = new Date(s); return isNaN(d) ? '' : (('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear() + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2)); }
+  function svarNetfang(v) {
+    // Sendandi tengda póstsins fyrst (kúnninn sem spurði) — þráðurinn getur borið undirverktaka (Brynjar í #1669).
+    var p = v.postur;
+    if (p && p.postur && !p.postur.okkar && p.postur.netfang) return p.postur.netfang;
+    if (p && p.thradur) { for (var i = 0; i < p.thradur.length; i++) if (!p.thradur[i].okkar && p.thradur[i].netfang) return p.thradur[i].netfang; }
+    return v.netfang_ur_beidni || '';
+  }
+  function svarEfni(v) {
+    var e = v.postur && v.postur.postur && v.postur.postur.efni;
+    if (e) return /^\s*(re|sv)\s*:/i.test(e) ? e.replace(/^\s*(re|sv)\s*:\s*/i, 'Re: ') : 'Re: ' + e;
+    return 'Re: ' + verkTitill(v.title).replace(/^[^—]+—\s*/, '');
+  }
+  function postHtml(y, opid) {
+    var vh = y.vidhengi ? ' · 📎 ' + esc(Array.isArray(y.vidhengi) ? y.vidhengi.join(', ') : (typeof y.vidhengi === 'string' ? y.vidhengi : 'viðhengi')) : '';
+    return '<summary><b>' + esc(y.fra || '') + '</b><small>' + esc(dagsTimi(y.dags)) + ' · ' + esc(y.efni || '') + vh + '</small></summary><div class="vptexti">' + esc(y.texti || '(tómt meginmál)') + '</div>';
+  }
+  function textiHtml(v, lok) {
+    var h = '';
+    if (v.notes && v.notes !== v.summary) h += '<div class="vnota"><b>Innri nóta — sést ekki hjá kúnna</b>' + esc(v.notes) + '</div>';
+    var p = v.postur;
+    if (p && p.postur) {
+      var adrir = (p.thradur || []).filter(function (y) { return y.id !== p.postur.id; });
+      // Sé tengdi pósturinn stutt áminning („Minni á þetta") opnast næsti póstur kúnnans líka, svo spurningin sjálf sést.
+      var opnaNaesta = String(p.postur.texti || '').length < 400, opnad = false;
+      h += '<details class="vpostur" open>' + postHtml(p.postur) +
+        (adrir.length ? adrir.map(function (y) { var o = opnaNaesta && !opnad && !y.okkar; if (o) opnad = true; return '<details class="vpth' + (y.okkar ? ' okkar' : '') + '"' + (o ? ' open' : '') + '>' + postHtml(y) + '</details>'; }).join('') : '') + '</details>';
+    } else if (v.source === 'email' && !p) {
+      h += '<div class="vnota"><b>Pósturinn</b>Upprunalegi pósturinn er ekki tengdur þessu máli.</div>';
+    }
+    if (v.svarad_at) h += '<div class="vsvarad">Svarað ' + esc(dagsTimi(v.svarad_at)) + (v.svar ? ':\n' + esc(v.svar) : '') + '</div>';
+    if (!lok) {
+      var to = svarNetfang(v);
+      h += '<form class="vsvara" data-vsvara="' + v.id + '">' +
+        '<div class="rad"><input class="inp" data-s="to" type="email" placeholder="Til (netfang)" value="' + esc(to) + '"><input class="inp" data-s="efni" placeholder="Efni" value="' + esc(svarEfni(v)) + '"></div>' +
+        '<textarea class="inp" data-s="texti" placeholder="Svar til kúnnans…" maxlength="8000"></textarea>' +
+        '<div class="rad"><label class="chk"><input type="checkbox" data-s="loka"> Loka málinu um leið</label><span class="vhint">Fer frá Slökkvitæki ehf.; svar kúnnans kemur í eldklar@eldklar.is. Birtist líka sem „Svarað" í gáttinni.</span>' +
+        '<button class="btn btn--sm btn--accent" type="submit" style="margin-left:auto">Senda svar</button></div></form>';
+    }
+    return h;
+  }
+  function wireSvara(el) {
+    el.querySelectorAll('form[data-vsvara]').forEach(function (f) {
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var id = parseInt(f.getAttribute('data-vsvara'), 10), g = function (k) { return f.querySelector('[data-s="' + k + '"]'); };
+        var to = g('to').value.trim(), efni = g('efni').value.trim(), texti = g('texti').value.trim(), loka = g('loka').checked;
+        if (!texti) { toast('Skrifaðu svarið fyrst'); g('texti').focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(to)) { toast('Netfang viðtakanda vantar'); g('to').focus(); return; }
+        if (!confirm('Senda svarið á ' + to + '?' + (loka ? '\nMálinu verður líka lokað.' : ''))) return;
+        var v = (state.verk || []).filter(function (x) { return x.id === id; })[0] || {};
+        var btn = f.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'Sendi…';
+        api({ action: 'svara-post', id: id, to: to, efni: efni, texti: texti, loka: loka, message_id: v.postur && v.postur.message_id || null, af: 'Slökkvitæki ehf.' })
+          .then(function (res) {
+            if (res.ok) { toast('Sent á ' + res.sent_to + (res.vistun ? ' — ' + res.vistun : '')); load(); }
+            else { toast((res.error || 'Villa') + (res.detail ? ': ' + res.detail : '')); btn.disabled = false; btn.textContent = 'Senda svar'; }
+          }).catch(function () { toast('Netvilla'); btn.disabled = false; btn.textContent = 'Senda svar'; });
+      };
+    });
+  }
   function myndir(L, eftir) {
     if (!L || !L.length) return '';
     return '<div class="vmyndir">' + L.map(function (m) { return '<a class="vth' + (eftir ? ' eftir' : '') + '" href="' + esc(m.url) + '" target="_blank" rel="noopener"><img src="' + esc(m.url) + '" alt="" loading="lazy">' + (eftir ? '<span>Eftir</span>' : '') + '</a>'; }).join('') + '</div>';
   }
   function renderVerk() {
     var el = $('#verkPanel'); if (!el) return;
+    // Hálfskrifað svar má ekki hverfa þegar listinn er endurteiknaður (load() eftir aðgerð annars staðar á síðunni).
+    var drog = {};
+    el.querySelectorAll('form[data-vsvara]').forEach(function (f) {
+      var d = {}; f.querySelectorAll('[data-s]').forEach(function (i) { d[i.getAttribute('data-s')] = i.type === 'checkbox' ? i.checked : i.value; });
+      if (d.texti) drog[f.getAttribute('data-vsvara')] = d;
+    });
+    var _render = renderVerkInnra(el);
+    Object.keys(drog).forEach(function (id) {
+      var f = el.querySelector('form[data-vsvara="' + id + '"]'); if (!f) return;
+      Object.keys(drog[id]).forEach(function (k) { var i = f.querySelector('[data-s="' + k + '"]'); if (i) { if (i.type === 'checkbox') i.checked = drog[id][k]; else i.value = drog[id][k]; } });
+    });
+    return _render;
+  }
+  function renderVerkInnra(el) {
     var L = (state.verk || []).filter(function (v) { return verkSia === 'oll' || (verkSia === 'opin' ? !/^(lokad|klarad)$/.test(v.status) : v.abyrgd !== 'okkar'); });
     var opin = (state.verk || []).filter(function (v) { return !/^(lokad|klarad)$/.test(v.status); }).length;
     var ein = (state.verk || []).filter(function (v) { return v.einkunn; }), medal = ein.length ? (ein.reduce(function (s, v) { return s + v.einkunn; }, 0) / ein.length) : 0;
@@ -519,9 +595,10 @@
           (lok ? '<span class="vst lok">Lokið ' + esc(fmtDate(v.lokid_at || v.updated_at)) + (v.lokid_af ? ' · ' + esc(v.lokid_af) : '') + '</span>' + (v.einkunn ? '<span class="vek" title="Einkunn kúnnans' + (v.einkunn_ath ? ': ' + esc(v.einkunn_ath) : '') + '">' + '★'.repeat(v.einkunn) + '<i>' + '★'.repeat(5 - v.einkunn) + '</i>' + (v.einkunn_ath ? ' <small>„' + esc(v.einkunn_ath) + '"</small>' : '') + '</span>' : '')
             : '<select class="inp vsel" data-vstada="' + v.id + '"><option value="nytt"' + (v.status === 'nytt' ? ' selected' : '') + '>Nýtt</option><option value="i_vinnslu"' + (v.status === 'i_vinnslu' ? ' selected' : '') + '>Í vinnslu</option></select>') + '</div>' +
         (v.summary ? '<p class="vsum">' + esc(v.summary) + '</p>' : '') +
+        textiHtml(v, lok) +
         '<div class="vbody">' + (v.punktur && v.haed && v.haed.mynd ? '<div class="vkort" data-vkort="' + v.id + '"><canvas></canvas><span class="vk-l">' + esc(v.haed.nafn || '') + '</span></div>' : '') +
           '<div class="vmed">' + myndir(v.myndir) + myndir(v.eftirmyndir, true) + (v.lokid_lysing ? '<div class="vlok">' + esc(v.lokid_lysing) + '</div>' : '') +
-          (!lok ? '<form class="vloka" data-vloka="' + v.id + '"><input class="inp" placeholder="Hvað var gert (sést hjá kúnna)" maxlength="1000"><label class="btn btn--sm"><input type="file" accept="image/*" capture="environment" hidden>' + ic('eye') + '<span>Eftirmynd</span></label><span class="vfile"></span><button class="btn btn--sm btn--accent" type="submit">Lagað — loka</button></form>' : '') + '</div></div></div>';
+          (!lok ? '<form class="vloka" data-vloka="' + v.id + '" title="Lokar málinu. Textinn og myndin birtast kúnnanum í gáttinni — enginn póstur fer."><input class="inp" placeholder="Loka án pósts: hvað var gert (birtist í gáttinni)" maxlength="1000"><label class="btn btn--sm"><input type="file" accept="image/*" capture="environment" hidden>' + ic('eye') + '<span>Eftirmynd</span></label><span class="vfile"></span><button class="btn btn--sm" type="submit">Loka máli</button></form>' : '') + '</div></div></div>';
     }).join('');
     wireVerk(el);
     L.forEach(function (v) { if (v.punktur && v.haed && v.haed.mynd) teiknaKort(el.querySelector('[data-vkort="' + v.id + '"] canvas'), v); });
@@ -544,6 +621,7 @@
     img.src = v.haed.mynd;
   }
   function wireVerk(el) {
+    wireSvara(el);
     el.querySelectorAll('[data-vsia]').forEach(function (b) { b.onclick = function () { verkSia = b.getAttribute('data-vsia'); renderVerk(); }; });
     el.querySelectorAll('[data-vstada]').forEach(function (s) {
       s.onchange = function () { api({ action: 'verk-stada', id: parseInt(s.getAttribute('data-vstada'), 10), status: s.value }).then(function (res) { if (res.ok) { toast('Staða vistuð — kúnninn sér hana'); load(); } else toast(res.error || 'Villa'); }); };
