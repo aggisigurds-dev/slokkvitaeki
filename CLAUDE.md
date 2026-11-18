@@ -631,18 +631,24 @@ Start with `git fetch origin && git status -sb`. Never run `node deploy.js`. Run
 
 The 4-machine deploy rule still holds: pull the default branch first, push to deploy. Cursor Cloud is another machine. Same rule.
 
-## Innskráning lotunnar — ALDREI biðja Agnar að skrá sig inn (17.11.2026)
+## Innskráning lotunnar — notaðu aðganginn „Lota (Claude)“, uid 10 (18.11.2026)
 
-Hver Claude-lota hefur sinn eigin vafra og sínar eigin kökur. Agnar vinnur oft úr síma og kemst þá
-**alls ekki** í vafrann hjá lotunni. Hans orð 17.11: „þetta bara að þurfa að skrá sig inn gegnum
-browserinn hjá hverju sessioni á báðar síðurnar … ef ég er að vinna gegnum símann, þá kemst ég ekkert
-inn á browserinn hjá sessions.“
+**Þetta er standandi heimild frá Agnari og þú þarft ekki að spyrja hann aftur.** Hans orð 18.11.2026:
+„já ég vill að claude geti unnið við kerfið sem það er að byggja … annars er þetta bara blind bygging
+og bara 100 % líkur á mistökum og tjóni.“ Og 17.11: „ef ég er að vinna gegnum símann, þá kemst ég
+ekkert inn á browserinn hjá sessions.“ **Biddu hann ALDREI að skrá sig inn í vafra lotunnar.**
 
-Lotan skráir sig því inn SJÁLF. Myntaðu undirritaða `hub_user`-köku með Supabase (þjónustuhlutverk):
+Hver Claude-lota hefur sinn eigin vafra og sínar eigin kökur, svo lotan skráir sig inn SJÁLF.
+Til þess er sérstakur aðgangur: **uid 10, „Lota (Claude)“, hlutverk Starfsmaður** — ekki manneskja,
+ekki Agnar, og hann má slökkva hvenær sem er með `update hub_adgangar set virkur=false where id=10`.
 
 ```sql
-select kaka, notandi, rola, rennur_ut from innri.lotu_koku(1, 12);   -- uid 1 = Agnar (Admin), 12 klst.
+select kaka, notandi, rola, rennur_ut from innri.lotu_koku(10, 2);   -- uid 10 = Lota (Claude), 2 klst.
 ```
+
+**ALDREI mynta uid 1.** Það er Agnar sjálfur: lota sem ber þá köku kemur fram sem hann, aðgerðir
+skrást á hans nafn og hún fær Admin-réttindi sem hún á ekki að hafa. Notaðu uid 10.
+Veldu stuttan gildistíma (1–2 klst.), ekki 12.
 
 **Sama kaka gildir á BÁÐUM vefjum** (slokkvitaeki og brunaholf staðfesta hana bæði gegn
 `hub_adgangar_stilling.session_secret`).
@@ -651,15 +657,24 @@ select kaka, notandi, rola, rennur_ut from innri.lotu_koku(1, 12);   -- uid 1 = 
 endurhlaðið:
 
 ```js
-document.cookie = 'hub_user=<kaka>; path=/; max-age=43200; samesite=lax';
+document.cookie = 'hub_user=<kaka>; path=/; max-age=7200; samesite=lax';
 location.replace('/');
 ```
 
 Úr skel eða `fetch`: hausinn `Cookie: hub_user=<kaka>`.
 
-**ALDREI:** skrifa kökuna eða `session_secret` í skrá, commit, annál, skjáskot eða svar til Agnars —
-kakan ER innskráning sem Admin. Myntaðu nýja þegar þarf í stað þess að geyma hana.
-Skemað `innri` er ekki opið PostgREST, svo fallið næst hvorki með publishable-lykli né RPC.
+**ALDREI:** skrifa kökuna eða `session_secret` í skrá, commit, annál, skjáskot eða svar til Agnars.
+Myntaðu nýja þegar þarf í stað þess að geyma hana. Skemað `innri` er ekki opið PostgREST, svo fallið
+næst hvorki með publishable-lykli né RPC.
 
-Mælt 17.11 kl. 16:55: `/api/afgreidsla` (SL) og `/api/odin` (BH) svara 401 án kökunnar og 200 með;
-fölsuð kaka fær 401.
+**Mælt 18.11.2026 kl. 09:30 með uid-10 kökunni** (án kökunnar → með henni):
+
+| Slóð | Niðurstaða |
+|---|---|
+| BH `/api/odin` | 401 → **200** |
+| SL `/api/bh-toki` | 401 → **200** |
+| SL og BH síður (`/`, `/afgreidsla.html`) | 200 → 200 (síðurnar sjálfar eru opnar; hliðin eru í API-unum) |
+| SL `/api/afgreidsla`, SL `/api/tekjur-beint` | 401 → **403 „Aðeins fyrir stjórnanda“** |
+
+Síðustu tvær eru **Admin-only og eiga að vera það**. Starfsmannakakan opnar þær ekki og á ekki að gera
+það. Þurfi próf óhjákvæmilega Admin-fall, segðu Agnari hvaða fall og hvers vegna — ekki mynta uid 1.
