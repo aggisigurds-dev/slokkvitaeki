@@ -97,7 +97,17 @@ function grisjaHaed(h, syn) {
     out.skurdur = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? { x: h.skurdur.x, y: h.skurdur.y, w: h.skurdur.w, h: h.skurdur.h } : null;
     out.merki = mk.filter((m) => m && isFinite(+m.x) && isFinite(+m.y)).map((m) => [+m.x, +m.y, merkiLysing(m).c]);
   }
-  if (syn.threed && vm) out.threed = { url: vm.url, b: vm.b || null, h: vm.h || null };
+  if (syn.threed && vm) {
+    out.threed = { url: vm.url, b: vm.b || null, h: vm.h || null };
+    // 18.11.2026 (Agnar: „Slökkvitækin eru ekki að koma fram … á 3d myndirnar"): 3D-myndin er vistuð ÁN tækja (445) og appið
+    // teiknar þau ofan á með vörpun hennar. Gáttin fékk aðeins slóðina. Nú fylgir vörpunin (cam = P·V, heild, rammi, kort)
+    // og merkin, svo gáttin teikni þau á sama stað og appið.
+    const k = vm.kort;
+    if (Array.isArray(vm.cam) && vm.cam.length === 16 && Array.isArray(vm.heild) && Array.isArray(vm.rammi) && k && vm.b > 0 && vm.h > 0) {
+      out.threed.vp = { cam: vm.cam, heild: [vm.heild[0], vm.heild[1]], rammi: [vm.rammi[0], vm.rammi[1]], kort: { sx: k.sx, sy: k.sy, sw: k.sw || 0, sh: k.sh || 0, f: k.f, gw: k.gw, gh: k.gh } };
+      if (!out.merki) out.merki = mk.filter((m) => m && isFinite(+m.x) && isFinite(+m.y)).map((m) => [+m.x, +m.y, merkiLysing(m).c]);
+    }
+  }
   if (syn.greining) {
     const taeki = {}, merki = {};
     mk.forEach((m) => { const d = merkiLysing(m); const box = d.merki ? merki : taeki; box[d.l] = box[d.l] || { n: 0, c: d.c }; box[d.l].n++; });

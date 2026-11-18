@@ -1367,7 +1367,51 @@
       return c;
     });
   }
+  // 3D-myndin (föst vinnumynd, vistuð án tækja) á striga með merkjunum ofan á — sama vörpun og 445 í appinu:
+  // dílar frummyndar → heimur (kort) → mynd (cam = P·V, heild, rammi). Merkin standa á gólfinu (y = 0).
+  function varpa3d(vp, u, v) {
+    var k = vp.kort, e = vp.cam, wx = (u - k.sx) * k.f - k.gw / 2, wz = (v - k.sy) * k.f - k.gh / 2;
+    var cx = e[0] * wx + e[8] * wz + e[12], cy = e[1] * wx + e[9] * wz + e[13], cw = e[3] * wx + e[11] * wz + e[15];
+    return [(cx / cw + 1) / 2 * vp.heild[0] - vp.rammi[0], (1 - cy / cw) / 2 * vp.heild[1] - vp.rammi[1]];
+  }
+  var myndir3d = {};
+  function hladaMynd3d(url) {
+    if (!myndir3d[url]) myndir3d[url] = new Promise(function (res, rej) {
+      var i = new Image(); i.crossOrigin = 'anonymous';   // svo niðurhalið (toBlob) megi lesa strigann
+      i.onload = function () { res(i); }; i.onerror = function () { delete myndir3d[url]; rej(new Error('mynd')); };
+      i.src = url;
+    });
+    return myndir3d[url];
+  }
+  function ma3dMerki(f) { return !!(f && f.threed && f.threed.vp && f.merki && f.merki.length); }
+  function teikna3d(c, f, hamark) {
+    return hladaMynd3d(f.threed.url).then(function (img) {
+      var nb = img.naturalWidth || img.width, nh = img.naturalHeight || img.height, vp = f.threed.vp;
+      var k = Math.min(1, (hamark || 1100) / Math.max(nb, nh));
+      c.width = Math.max(1, Math.round(nb * k)); c.height = Math.max(1, Math.round(nh * k));
+      var x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+      var kx = c.width / (f.threed.b || nb), ky = c.height / (f.threed.h || nh), r = Math.max(4.5, c.width / 110);
+      (f.merki || []).forEach(function (m) {
+        var mx = +m[0], my = +m[1];
+        if (!isFinite(mx) || !isFinite(my)) return;
+        if (mx <= 1 && my <= 1) { mx = vp.kort.sx + mx * vp.kort.sw; my = vp.kort.sy + my * vp.kort.sh; }   // eldri hlutfallsmerki
+        var q = varpa3d(vp, mx, my), px = q[0] * kx, py = q[1] * ky;
+        if (!isFinite(px) || !isFinite(py) || px < -r || py < -r || px > c.width + r || py > c.height + r) return;
+        x.beginPath(); x.arc(px, py, r, 0, 2 * Math.PI);
+        x.fillStyle = m[2] || '#e11d2e'; x.fill();
+        x.lineWidth = Math.max(1.5, r * 0.4); x.strokeStyle = '#fff'; x.stroke();
+      });
+      return c;
+    });
+  }
   function synaHaed(box, f, ham, hamark) {
+    if (ham === '3d' && ma3dMerki(f)) {
+      var c3 = document.createElement('canvas'); c3.setAttribute('aria-label', '3D · ' + (f.nafn || ''));
+      box.innerHTML = '<div class="ft">Sæki 3D-mynd…</div>';
+      teikna3d(c3, f, hamark).then(function () { box.innerHTML = ''; box.appendChild(c3); },
+        function () { box.innerHTML = '<img alt="3D · ' + esc(f.nafn) + '" src="' + esc(f.threed.url) + '">'; });   // næst ekki á striga: myndin ein, eins og áður
+      return;
+    }
     if (ham === '3d' && f.threed) {
       box.innerHTML = '<img alt="3D · ' + esc(f.nafn) + '" src="' + esc(f.threed.url) + '">';
       box.firstChild.onerror = function () { box.innerHTML = '<div class="ft">3D-myndin fannst ekki</div>'; };
@@ -1389,6 +1433,13 @@
   }
   // Sækja: 3D = vistaða myndin; teikning = hæðin teiknuð í hárri upplausn með merkjunum (PNG)
   function saekja(b, f, ham) {
+    if (ham === '3d' && ma3dMerki(f)) {
+      var c3 = document.createElement('canvas');
+      teikna3d(c3, f, 3200).then(function () {
+        c3.toBlob(function (bl) { if (bl) vistaBlob(bl, nafnSkrar(b, f, ' (3D).jpg')); else toast('Ekki tókst að sækja myndina'); }, 'image/jpeg', 0.92);
+      }, function () { window.open(f.threed.url, '_blank', 'noopener'); });
+      return;
+    }
     if (ham === '3d' && f.threed) {
       fetch(f.threed.url).then(function (r) { if (!r.ok) throw 0; return r.blob(); })
         .then(function (bl) { vistaBlob(bl, nafnSkrar(b, f, f.threed.ending || ' (3D).jpg')); }, function () { window.open(f.threed.url, '_blank', 'noopener'); });
