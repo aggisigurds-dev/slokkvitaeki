@@ -422,7 +422,9 @@
       const x = v && v.mods && Array.isArray(v.mods[k]) ? v.mods[k] : base[k];
       mods[k] = [x[0] ? 1 : 0, x[1] ? 1 : 0];
     });
-    return { mode: lendingarHamur(n, v && M(v.mode) ? v.mode : ''), mods, baraMitt: !!(v && v.bara_mitt) };
+    // flipi: hvaða eining er opin í hverjum einingaham (18.11.2026). '*' = allar í stafla eins og áður.
+    return { mode: lendingarHamur(n, v && M(v.mode) ? v.mode : ''), mods, baraMitt: !!(v && v.bara_mitt),
+      flipi: (v && v.flipi && typeof v.flipi === 'object') ? v.flipi : {} };
   }
   function cfg() {
     const n = nu();
@@ -1096,6 +1098,16 @@
       // Vörpunin heldur nákvæmlega gömlu útliti: 1 → 12·6·4, 2 → 12·6·6, 3 → alltaf fullt.
       // 25.09.2026: 60 dálkar (sama útlit — 12·5) svo ⅖ (24) og ⅗ (36) gangi upp við hlið ⅓ (20), ½ (30) og 1/1 (60).
       '.modgrid{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));gap:14px;align-items:start}',
+      /* 18.11.2026 — flipar í stað stafla í einingaham. Valin eining fær alla breiddina. */
+      '.flipar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}',
+      '.flipi{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border:1px solid var(--edge);border-bottom-color:var(--edge2);border-radius:4px;background:var(--key);box-shadow:var(--keysh);font:600 12.5px var(--body);color:var(--ink);cursor:pointer;white-space:nowrap}',
+      '.flipi:hover{filter:brightness(1.04)}',
+      '.flipi .fln{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;color:var(--mute)}',
+      '.flipi[aria-selected="true"]{background:var(--gside);border-color:#7a5a12;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.25)}',
+      '.flipi[aria-selected="true"] .fln{color:#3e2c06}',
+      '.flipi:focus-visible{outline:2px solid var(--g6);outline-offset:2px}',
+      '.modgrid.einn>.modcell{grid-column:1 / -1}',
+      '@container t5 (max-width: 760px){.flipar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.flipi{flex:0 0 auto;height:40px}}',
       '.modcell{min-width:0;container:rail / inline-size;grid-column:span 60}',
       '.modgrid>.sel.inline{grid-column:1 / -1}',
       '.modcell{position:relative}',
@@ -5485,6 +5497,22 @@
     const einingaRodOll = radar ? (S.hamForm.rod || []) : mode.first;
     const einingaRod = radar ? einingaRodOll : einingaRodOll.filter(k => k !== 'idag');
     const idagBordi = (!radar && einingaRodOll.indexOf('idag') >= 0) ? einingHtml('idag') : '';
+    /* 18.11.2026 — FLIPAR Í STAÐ STAFLA (lag 3 af hönnunartillögunni). Einingarnar lágu hver undir annarri: átta
+     * einingar = átta skjáir og það sem var neðst sást aldrei. Nú ber einingahamurinn flipa — ein eining í einu í
+     * fullri breidd — og síðasti flipinn „Allt" sýnir gamla staflann óbreyttan fyrir þá sem vilja hann. Valið er
+     * vistað á þjóni per ham (flipi.<hamur>) svo það er eins á öllum vélum. Í raðham (þar sem einingar eru dregnar
+     * til) eru engir flipar: þá verður allt að sjást í einu. „Í dag" er borði fyrir ofan og á engan flipa. */
+    const flipaFaert = eininga && !radar && einingaRod.length > 1;
+    const flipiVistad = String((c.flipi || {})[c.mode] || '');
+    const flipiNu = !flipaFaert ? '*' : (flipiVistad === '*' ? '*' : (einingaRod.indexOf(flipiVistad) >= 0 ? flipiVistad : einingaRod[0]));
+    const flipiEin = flipaFaert && flipiNu !== '*';
+    const synRod = flipiEin ? einingaRod.filter(k => k === flipiNu) : einingaRod;
+    const flipaHtml = () => (!flipaFaert ? '' :
+      '<div class="flipar" role="tablist" aria-label="Einingar vinnuborðsins">' +
+        einingaRod.map(k => '<button type="button" class="flipi" role="tab" data-t5="flipi" data-m="' + esc(k) + '" aria-selected="' + (flipiNu === k) + '">' +
+          '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + '</button>').join('') +
+        '<button type="button" class="flipi allt" role="tab" data-t5="flipi" data-m="*" aria-selected="' + (flipiNu === '*') + '" title="Sýna allar einingar í stafla eins og áður">Allt · ' + einingaRod.length + '</button>' +
+      '</div>');
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
       // Báðir checklistar og litla skipulagsborðið í sömu röð án vistaðrar breiddar: skipta röðinni (18+18+24) — annars sprytti þriðja einingin í nýja röð.
@@ -5569,8 +5597,8 @@
           mineHtml +
           '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
-      : '<div class="modgrid' + (radar ? ' radar' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
-          einingaRod.map(frumaHtml).join('') + '</div>' +
+      : flipaHtml() + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin ? ' einn' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
+          synRod.map(frumaHtml).join('') + '</div>' +
           (mode.mitt && !einingaRod.length ? emptyHtml('Vinnuborðið þitt er autt. Smelltu á „✎ Velja einingar" til að setja á það það sem þú vilt hafa hjá þér. Málin eru í hamnum „Master og mitt borð".') : '');
 
     const haegri = selEininga ? '<section class="sel side" aria-live="polite">' + selMarkup + '</section>' : '';
@@ -6543,6 +6571,14 @@
         vmSetja(MITT_FELLT_LYKILL, !mittFellt());
         render();
         return;
+      // 18.11.2026: skipt um flipa í einingaham. Valið er viðmótsval og fer á þjóninn — eins á öllum vélum.
+      case 'flipi': {
+        const c0 = cfg();
+        c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: m });
+        render();
+        vistaCfg({ flipi: { [c0.mode]: m } });
+        return;
+      }
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;
       case 'ham-syn': {
         // 01.10.2026: fela/sýna ham í hamaröð starfsmannsins sem er valinn í „Ég er". Allur listinn er vistaður

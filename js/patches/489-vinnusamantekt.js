@@ -496,14 +496,17 @@
   const SEV = { alv: ['Alvarlegt', 3], athuga: ['Athuga', 2], ok: ['Í lagi', 1], upp: ['Upplýsing', 0], oma: ['Ekki mælt', -1] };
   const CSS = '<style>' +
     '.vs{margin:0 0 14px;padding:0}.vs-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:11px 14px;border-bottom:1px solid var(--rule)}' +
-    '.vs-h h2{margin:0;font-size:12px;letter-spacing:.16em;text-transform:uppercase}.vs-sum{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;font-weight:600}' +
+    /* 18.11.2026 (Agnar: „stækkaðu fyrirsagnirnar, kaflaheitin, átta mig illa á á hvaða flokki er kveikt"): haus og
+     * kaflaheiti í Playfair eins og aðrir titlar borðsins, og opni mælirinn ber gullramma svo sést hverju er kveikt á. */
+    '.vs-h h2{margin:0;font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.01em;text-transform:none;text-shadow:0 1px 0 #fff}.vs-sum{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;font-weight:600}' +
     '.vs-sum span{display:inline-flex;align-items:center;gap:6px}.vs-mute{color:var(--mute);font-weight:400}' +
     // 18.11.2026 (Agnar, með skjáskot af auðum flötum: „geturðu raðað þessu eitthvað betur“): hóparnir voru grid-reitir, svo
     // hver röð teygðist í hæð hæsta hóps (1.318 px) og „Kerfi“ sat einn á eigin röð — samantektin var 1.751 px á 1920 px skjá.
     // Nú flæða RAÐIRNAR í dálka eins og í blaði: dálkarnir fyllast jafnt (1.054 px, mælt). Röð brotnar aldrei og fyrirsögn
     // hóps fylgir alltaf fyrstu röð sinni; hópur má halda áfram efst í næsta dálki. Á síma er dálkurinn einn eins og áður.
     '.vs-grid{columns:330px;column-gap:0;column-rule:1px solid var(--rule2)}' +
-    '.vs-g{padding:10px 14px 12px;border-bottom:1px solid var(--rule2);min-width:0}.vs-g>h3{margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);break-after:avoid;-webkit-column-break-after:avoid}' +
+    '.vs-g{padding:10px 14px 12px;border-bottom:1px solid var(--rule2);min-width:0}.vs-g>h3{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:0 0 5px;border-bottom:1px solid var(--rule);font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.01em;text-transform:none;color:var(--ink);text-shadow:0 1px 0 #fff;break-after:avoid;-webkit-column-break-after:avoid}' +
+    '.vs-g>h3::before{content:"";flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:var(--gside);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 0 0 1px rgba(122,90,18,.5)}' +
     '.vs-r{display:grid;grid-template-columns:18px minmax(0,1fr);gap:2px 9px;padding:7px 0;border-top:1px dashed var(--rule2);break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}.vs-r:first-of-type{border-top:0}' +
     '.vs-led{--c:#a39a88;display:inline-block;width:13px;height:13px;margin-top:3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.75),var(--c) 55%);box-shadow:0 0 0 1px rgba(0,0,0,.32)}' +
     '.vs-led[data-sev="alv"]{--c:#d0301c;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 9px #d0301c}.vs-led[data-sev="athuga"]{--c:#e0a100;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 8px #e0a100}.vs-led[data-sev="ok"]{--c:#2f9e57;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 0 7px #2f9e57}.vs-led[data-sev="upp"]{--c:#6b88ad}.vs-sum .vs-led{margin-top:0}' +
@@ -519,12 +522,17 @@
     '.vs-mc{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:11px 13px;background:var(--panel);border:1px solid var(--rule);border-top:3px solid var(--edge2);border-radius:4px;box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(22,21,19,.1)}' +
     '.vs-mc[data-sev="alv"]{border-top-color:#b5522a}.vs-mc[data-sev="athuga"]{border-top-color:#b8892e}' +
     '.vs-mc:hover{filter:brightness(1.02)}.vs-mc:focus-visible{outline:2px solid var(--g6);outline-offset:2px}' +
-    '.vs-mch{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
+    '.vs-mch{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}' +
+    '.vs-mc[aria-expanded="true"]{background:var(--panel);box-shadow:inset 0 0 0 2px #c9a54a,inset 0 1px 0 #fff,0 1px 2px rgba(22,21,19,.14),0 6px 10px -6px rgba(22,21,19,.22)}' +
+    '.vs-mc[aria-expanded="true"] .vs-mch{color:var(--ink)}' +
+    '.vs-mc[aria-expanded="false"]{background:var(--strip)}' +
+    '.vs-mc[aria-expanded="false"] .vs-mcn{color:var(--ink2)}' +
+    '.vs-mcx b{font-weight:700;color:#6d5010}' +
     '.vs-mcs{margin-left:auto;font-weight:700;letter-spacing:.08em}' +
     '.vs-mc[data-sev="alv"] .vs-mcs{color:#8d2f12}.vs-mc[data-sev="athuga"] .vs-mcs{color:#6d5010}' +
     '.vs-mcn{font-family:var(--disp);font-size:26px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}' +
     '.vs-mcu{font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-    '.vs-mcx{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}' +
+    '.vs-mcx{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}' +
     '@media (max-width:760px){.vs-n{margin-left:0;flex-basis:auto}.vs-l1{flex-wrap:nowrap}.vs-t{flex:1 1 auto;min-width:0}.vs-w{display:none}.vs-r[data-sev="alv"] .vs-n,.vs-r[data-sev="athuga"] .vs-n{font-size:15px}}</style>';
 
   // Á síma (≤ 760 px) eru raðirnar samanbrotnar: ljós, heiti, tala og ein lína — punktarnir og Fela/Skýring opnast með ▸.
@@ -616,7 +624,9 @@
         '<span class="vs-mch">' + esc(h.n) + '<span class="vs-mcs">' + esc(telja) + '</span></span>' +
         '<span class="vs-mcn">' + esc(a ? a.r.tala : '—') + '</span>' +
         (a ? '<span class="vs-mcu">' + esc(a.m.heiti) + '</span>' : '') +
-        '<span class="vs-mcx">' + h.l.length + (h.l.length === 1 ? ' mæling · ' : ' mælingar · ') + (opinn(h) ? 'fela ▴' : 'opna ▾') + '</span>' +
+        '<span class="vs-mcx">' + (opinn(h)
+          ? '<b>Opið</b> · ' + h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + ' ▴'
+          : h.l.length + (h.l.length === 1 ? ' mæling' : ' mælingar') + ' · opna ▾') + '</span>' +
       '</button>';
     }).join('') + '</div>' : '';
     const opnir = hopar.filter(opinn);
