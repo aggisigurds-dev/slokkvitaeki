@@ -120,6 +120,9 @@
         tabBtn('allt','Allt · '+counts.allt) +
         tabBtn('vorur','Vörur · '+counts.vorur) +
         tabBtn('thjonusta','Þjónusta · '+counts.thjonusta) +
+        // Birgðir-hlekkur (18.11.2026, Agnar): birgðastaðan á söluvörum býr á Birgðum
+        // (vorur.birgdir) — héðan er leiðin þangað. Silfur úr Brunastáli, engin emoji.
+        birgdirTakki() +
       '</div>' +
       // Undirflokkar — ein skrunanleg lína af chippum (sími-fyrst: aldrei margra lína veggur)
       '<div style="display:flex;gap:6px;align-items:center;overflow-x:auto;white-space:nowrap;padding-bottom:6px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin">' +
@@ -140,6 +143,26 @@
       'style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:9px 13px;border-radius:9px;' +
       'font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:12.5px;' +
       'display:inline-flex;align-items:center;gap:6px">'+takn+' '+label+'</button>';
+  }
+
+  // Hlekkur á Birgðir, hægra megin á flipalínunni. Silfurtakki úr Brunastáli
+  // (ferkantaður, IBM Plex 600, tákn í stroke-SVG) — ekki nýtt útlit.
+  function birgdirTakki(){
+    return '<button id="vorur-birgdir" type="button" title="Opna Birgðir — birgðastaða söluvara" ' +
+      'style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:8px 14px;' +
+      'border-radius:3px;border:1px solid rgba(20,24,34,.18);' +
+      'background:linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%);' +
+      'box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(0,0,0,.1);' +
+      'color:#2b313c;font-family:\'IBM Plex Sans\',system-ui,-apple-system,sans-serif;' +
+      'font-weight:600;font-size:12.5px;cursor:pointer">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9Z"/><path d="m3 7.5 9 4.5 9-4.5"/><path d="M12 12v9"/></svg>' +
+      'Birgðir' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.55">' +
+        '<path d="m9 6 6 6-6 6"/></svg>' +
+    '</button>';
   }
 
   function tabBtn(key,label){
@@ -302,6 +325,11 @@
     });
     var nb = document.getElementById('vorur-new');
     if(nb) nb.addEventListener('click',function(){openEditor(null);});
+    var bb = document.getElementById('vorur-birgdir');
+    if(bb) bb.addEventListener('click',function(){
+      if(window.App && typeof App.switchView === 'function') App.switchView('birgdir');
+      else location.hash = '#birgdir';
+    });
     var search = document.getElementById('vorur-search');
     if(search){
       search.addEventListener('input',function(e){
