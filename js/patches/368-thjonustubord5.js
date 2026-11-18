@@ -440,6 +440,18 @@
   }
   // Smá-plástur (bara það sem breyttist) — deepMerge í 85 sameinar hlutina, svo ein breyting
   // étur aldrei aðra sem var vistuð á annarri vél.
+  /* 18.11.2026 — hvaða flipar eru opnir NÚNA, með SAMA fallback og teikningin notar. Þetta er ekki þægindi: fyrsta
+   * útgáfan af ＋ las vistaða gildið beint, og það er TÓMT þangað til Agnar velur flipa í fyrsta sinn (teikningin
+   * sýnir þá fyrstu eininguna án þess að vista). ＋ varð því „skipta um flipa" í staðinn fyrir „bæta við hliðina".
+   * Mælt á Kröfur-ham 18.11: smellur á ＋ skrifaði "krofur" eitt í stað "forgangsmal+krofur". */
+  function flipiNuna(c0) {
+    const v = String((c0.flipi || {})[c0.mode] || '');
+    if (v === '*') return [];
+    const rod = ((M(c0.mode) || MODES.thjonusta).first || []).filter(k => k !== 'idag');
+    const val = v.split('+').filter(k => rod.indexOf(k) >= 0).slice(0, 2);
+    return val.length ? val : (rod[0] ? [rod[0]] : []);
+  }
+
   async function vistaCfg(hluti, skilabod) {
     const n = nu();
     _vistar++;
@@ -1115,7 +1127,14 @@
       '.flipi[aria-selected="true"]{background:var(--gside);border-color:#7a5a12;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.25)}',
       '.flipi[aria-selected="true"] .fln{color:#3e2c06}',
       '.flipi:focus-visible{outline:2px solid var(--g6);outline-offset:2px}',
+      // ＋ / ✕ inni í flipanum: SPAN, ekki BUTTON (hnappur í hnappi er ógilt) — sama mynstur og ★ á samþykkisspjaldi.
+      '.flipi .flp,.flipi .flx{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;margin:0 -5px 0 1px;border-radius:3px;font-size:12px;font-weight:700;color:var(--mute);cursor:pointer}',
+      '.flipi .flp:hover,.flipi .flx:hover{background:rgba(0,0,0,.09);color:var(--ink)}',
+      '.flipi[aria-selected="true"] .flx{color:#3e2c06}',
       '.modgrid.einn>.modcell{grid-column:1 / -1}',
+      // 18.11.2026 — tveir flipar saman: hálf ristin á hvorn (60 dálkar / 2). Þrengist borðið undir 900 px fara þeir
+      // undir hvorn annan — 30 dálkar á 760 px borði eru 350 px og þar ber lista hvorki heiti né tölu í sömu línu.
+      '.modgrid.tveir>.modcell{grid-column:span 30}',
       '@container t5 (max-width: 760px){.flipar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.flipi{flex:0 0 auto;height:40px}}',
       '.modcell{min-width:0;container:rail / inline-size;grid-column:span 60}',
       '.modgrid>.sel.inline{grid-column:1 / -1}',
@@ -1619,6 +1638,9 @@
       // Í mjóum reit (sími, ~400 px) varð allt borðið 826 px breitt og view-bord (overflow-x:hidden úr 263 mobile-baseline) klippti 99 texta/98 takka
       // utan skjás. Sími-skipulagið (≤760 px) hefur aðeins eitt spjald í röð (span 60), svo dálkabilið er óþarft — línubilið helst 14 px.
       '@container t5 (max-width: 760px){.modgrid{column-gap:0}}',
+      '@container t5 (max-width: 900px){.modgrid.tveir>.modcell{grid-column:1 / -1}}',
+      // Á síma er flipinn 40 px og ＋/✕ sitja inni í honum: 30 px snertiflötur, annars er hann minni en fingurinn.
+      '@container t5 (max-width: 760px){.flipi .flp,.flipi .flx{min-width:30px;height:30px;font-size:14px}}',
       // Sama úttekt: Hamur-stikan (11 flipar, 1614 px) er overflow:hidden → „Test", „Afgreiðsla / Útköl", „Reikningsbeiðnir" utan skjás og ekki hægt að skruna.
       // AÐEINS í app-sniði (body.appmode); tölvuútlit utan apps óbreytt.
       ':host-context(body.appmode) .seg.modeseg{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
@@ -5514,16 +5536,35 @@
      * fullri breidd — og síðasti flipinn „Allt" sýnir gamla staflann óbreyttan fyrir þá sem vilja hann. Valið er
      * vistað á þjóni per ham (flipi.<hamur>) svo það er eins á öllum vélum. Í raðham (þar sem einingar eru dregnar
      * til) eru engir flipar: þá verður allt að sjást í einu. „Í dag" er borði fyrir ofan og á engan flipa. */
+    /* 18.11.2026 — TVEIR FLIPAR SAMAN (Agnar: „Já, tveir flipar"). Valið er ekki lengur ein eining heldur ALLT AÐ
+     * TVEIR: vistaða gildið er "a" eða "a+b" (eða "*" = allt í stafla). Tvennt sem þetta leysir: Dagskrá og Tilbúin
+     * verk eru lesin saman (hvað er á dagskrá ↔ hvað er tilbúið að afgreiða), og flipi fyrir sig þýddi að annað
+     * hvarf þegar hitt var opnað. Þakið er tvö — þrjár einingar í 60-dálka ristinni verða 20 dálkar hver og þá eru
+     * þær orðnar staflinn aftur, bara þrengri. „＋" á ófyldum flipa bætir honum við hliðina; „✕" á völdum flipa
+     * tekur hann af (aldrei síðasta — þá stæði ekkert eftir). */
     const flipaFaert = eininga && !radar && einingaRod.length > 1;
     const flipiVistad = String((c.flipi || {})[c.mode] || '');
-    const flipiNu = !flipaFaert ? '*' : (flipiVistad === '*' ? '*' : (einingaRod.indexOf(flipiVistad) >= 0 ? flipiVistad : einingaRod[0]));
-    const flipiEin = flipaFaert && flipiNu !== '*';
-    const synRod = flipiEin ? einingaRod.filter(k => k === flipiNu) : einingaRod;
+    const flipiVal = (!flipaFaert || flipiVistad === '*') ? [] :
+      (flipiVistad.split('+').filter(k => einingaRod.indexOf(k) >= 0).slice(0, 2));
+    // Ógilt eða tómt vistað gildi (eining tekin af borðinu síðan valið var vistað) → fyrsti flipinn, ekki hrun.
+    const flipiSyn = (!flipaFaert || flipiVistad === '*') ? [] : (flipiVal.length ? flipiVal : [einingaRod[0]]);
+    const flipiEin = flipiSyn.length === 1;
+    const flipiTveir = flipiSyn.length === 2;
+    const synRod = flipiSyn.length ? einingaRod.filter(k => flipiSyn.indexOf(k) >= 0) : einingaRod;
     const flipaHtml = () => (!flipaFaert ? '' :
       '<div class="flipar" role="tablist" aria-label="Einingar vinnuborðsins">' +
-        einingaRod.map(k => '<button type="button" class="flipi" role="tab" data-t5="flipi" data-m="' + esc(k) + '" aria-selected="' + (flipiNu === k) + '">' +
-          '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + '</button>').join('') +
-        '<button type="button" class="flipi allt" role="tab" data-t5="flipi" data-m="*" aria-selected="' + (flipiNu === '*') + '" title="Sýna allar einingar í stafla eins og áður">Allt · ' + einingaRod.length + '</button>' +
+        einingaRod.map(k => {
+          const valid = flipiSyn.indexOf(k) >= 0;
+          // ✕ aðeins þegar tveir eru opnir (annars tæki hann síðasta flipann af); ＋ aðeins þegar einn er opinn.
+          const stj = (valid && flipiTveir)
+            ? '<span class="flx" data-t5="flipi-minus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Loka þessari einingu — hin stendur eftir">✕</span>'
+            : ((!valid && flipiEin)
+              ? '<span class="flp" data-t5="flipi-plus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Sýna þessa einingu VIÐ HLIÐINA á þeirri sem er opin">＋</span>'
+              : '');
+          return '<button type="button" class="flipi" role="tab" data-t5="flipi" data-m="' + esc(k) + '" aria-selected="' + valid + '">' +
+            '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + stj + '</button>';
+        }).join('') +
+        '<button type="button" class="flipi allt" role="tab" data-t5="flipi" data-m="*" aria-selected="' + (!flipiSyn.length) + '" title="Sýna allar einingar í stafla eins og áður">Allt · ' + einingaRod.length + '</button>' +
       '</div>');
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
@@ -5610,7 +5651,7 @@
           mineHtml +
           '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
-      : flipaHtml() + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin ? ' einn' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
+      : flipaHtml() + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin ? ' einn' : '') + (flipiTveir ? ' tveir' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
           synRod.map(frumaHtml).join('') + '</div>' +
           (mode.mitt && !einingaRod.length ? emptyHtml('Vinnuborðið þitt er autt. Smelltu á „✎ Velja einingar" til að setja á það það sem þú vilt hafa hjá þér. Málin eru í hamnum „Master og mitt borð".') : '');
 
@@ -6590,6 +6631,29 @@
         c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: m });
         render();
         vistaCfg({ flipi: { [c0.mode]: m } });
+        return;
+      }
+      /* 18.11.2026 — ＋ og ✕ á flipa: tveir saman. Vistaða gildið er "a+b"; röðin er einingaröð hamsins, ekki
+       * smelluröðin, svo flipi B við hlið A liggi eins og hann liggur í „Allt". ✕ skilar einum eftir. */
+      case 'flipi-plus': {
+        const c0 = cfg();
+        const nuna = flipiNuna(c0);
+        if (!m || nuna.indexOf(m) >= 0 || nuna.length >= 2) return;
+        const rodun = (M(c0.mode) && M(c0.mode).first) || [];
+        const par = nuna.concat([m]).sort((a, b) => rodun.indexOf(a) - rodun.indexOf(b)).join('+');
+        c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: par });
+        render();
+        vistaCfg({ flipi: { [c0.mode]: par } });
+        return;
+      }
+      case 'flipi-minus': {
+        const c0 = cfg();
+        const eftir = flipiNuna(c0).filter(x => x !== m);
+        if (!eftir.length) return;
+        const v = eftir.join('+');
+        c0.flipi = Object.assign({}, c0.flipi || {}, { [c0.mode]: v });
+        render();
+        vistaCfg({ flipi: { [c0.mode]: v } });
         return;
       }
       case 'cfg': S.cfgOpen = !S.cfgOpen; render(); return;
