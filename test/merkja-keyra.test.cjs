@@ -118,6 +118,30 @@ test('Óðinn: hálfsvar telst ALDREI klárað; marktækt verk/póstur/útskýri
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'veit_ekki').tegund, 'utskyring');
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'ja').marktaekt, false);
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Símtalið bíður þegar í Afgreiðslu #23.', stadreyndir: st(1, 'A1'), tillaga: { tegund: 'ekkert' } }, 'keyra').tegund, 'visun');
+  // 18.11.2026: varnarpróf — „ekkert“ með ómældum lið er ÁFRAM gild útskýring og áfram gild vísun.
+  // (Fyrsta tilraun 18.11 felldi hvort tveggja; óháð rýni fann það og greinin var tekin út aftur.)
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Málið stenst: greitt 12.09 og ekkert útistandandi samkvæmt gögnunum.', stadreyndir: st(2),
+    tillaga: { tegund: 'ekkert' }, omaelt: ['Engin gögn um 2023'] }, 'yfirfara').tegund, 'utskyring');
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Símtalið bíður þegar í Afgreiðslu #23.', stadreyndir: st(1, 'A1'),
+    tillaga: { tegund: 'ekkert' }, omaelt: ['Engin gögn um símtalið sjálft'] }, 'keyra').tegund, 'visun');
+});
+
+/* ── Kennitala til agentsins: aðeins lögaðili, aldrei einstaklingur (18.11.2026) ── */
+test('erFelagsKt: lögaðili 41–71 sleppur óhulinn, einstaklingur og rusl ekki', () => {
+  // Lögaðili = dagur + 40, svo 41 (1. dagur) og 71 (31. dagur) eru mörkin.
+  for (const kt of ['680499-3009', '680599-3009', '4101901234', '710190-1234', '530269-7609']) {
+    assert.strictEqual(CL.erFelagsKt(kt), true, kt + ' á að teljast lögaðili');
+  }
+  // Einstaklingur (01–31), kerfiskennitölur (80/90) og dagar sem eru ekki til (40, 72).
+  for (const kt of ['120385-2389', '310190-1234', '010190-1234', '401190-1234', '720190-1234', '800190-1234', '900190-1234']) {
+    assert.strictEqual(CL.erFelagsKt(kt), false, kt + ' má ALDREI fara óhulin');
+  }
+  // Stytt, skemmt eða ekkert: ekki kennitala, fer ekki óhulið.
+  for (const kt of [null, undefined, '', '4101', '5551234', '680499-30099', 'bull', 0, {}]) {
+    assert.strictEqual(CL.erFelagsKt(kt), false, JSON.stringify(kt) + ' er ekki gild kennitala');
+  }
+  // hylja hylur áfram allar kennitölur í frjálsum texta — undantekningin er aðeins reiturinn sjálfur.
+  assert.match(CL.hylja('Hárbeitt kt. 680499-3009'), /\[kennitala\]/);
 });
 
 /* ── Enda í enda á gervigrunni: merkja → keyra → agent → Óðinn → tilbúið verk ── */
