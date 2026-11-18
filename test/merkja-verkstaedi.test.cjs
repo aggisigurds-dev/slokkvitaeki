@@ -27,7 +27,8 @@ const REG = { list: [
 
 const AR = new Date().getFullYear();
 const D = (mm, dd) => AR + '-' + mm + '-' + dd;
-const FELAG = { id: 1934, nafn: 'Húsfélagið Prufugata 10', kennitala: '5601973149', heimilisfang: 'Prufugata 10', netfang: null, er_i_thjonustu: true, deleted_at: null };
+const FELAG = { id: 1934, nafn: 'Húsfélagið Prufugata 10', kennitala: '5601973149', heimilisfang: 'Prufugata 10', netfang: null, er_i_thjonustu: true, deleted_at: null,
+  banner_note: 'Hringja í formann, sími 555 1234' };
 const GRUNNUR = () => ({
   fyrirtaeki: [FELAG, { id: 1935, nafn: 'Systurfélag sömu kt', kennitala: '5601973149', deleted_at: null }, { id: 77, nafn: 'Eytt félag', deleted_at: '2026-01-01T00:00:00Z' }],
   thjonustubeidni: [{ id: 1934, title: 'Mál með sama númer og félagið', status: 'nytt' }],
@@ -53,7 +54,7 @@ const GRUNNUR = () => ({
     { id: 6, fyrirtaeki_id: 1935, last_insp: D('05', '05'), status: 'active', created_at: '2024-03-01T10:00:00+00:00' },            // systkini
   ],
 });
-const STADA = { co_id: 1934, inspect_month: 9, listi_stadfest_ar: AR, field_inspected_year: 0, last_year_inspected: 0, ['steps_' + AR]: { taekjalisti: true, uttekt: true, reikningur: false }, sv_note: 'Hringja í formann, sími 555 1234' };
+const STADA = { co_id: 1934, inspect_month: 9, listi_stadfest_ar: AR, field_inspected_year: 0, last_year_inspected: 0, ['steps_' + AR]: { taekjalisti: true, uttekt: true, reikningur: false }, sv_note: 'GAMALL reitur sem á ekki að vinna' };
 
 // Gervið + RPC-ið verkst_stada (gervið kann ekki rpc). `brotid` lætur valdar töflur bregðast.
 function setja(fraeVid, { stada = STADA, brotid = [] } = {}) {
@@ -138,18 +139,53 @@ test('keyra: ▶ Keyra á verkstæðinu sendir AÐEINS félögin; merki Þjónus
   } finally { aftur(); L.stilla(null); }
 });
 
-test('Nei á félagi → ákvörðun hjá Charlize sem nefnir FÉLAGIÐ (ekki „mál #null“)', async () => {
+test('Nei á félagi → skráð á línuna EINA: engin varanleg ákvörðun hjá Charlize, enginn agent (óháð rýni 18.11.2026)', async () => {
+  // Charlize-færsla „Ekki leggja þetta til aftur“ án árs og efnis læsist inn í öll mál sem nefna nafn félagsins og rennur
+  // aldrei út — næsta ár gæti agent vikið sér undan lögmætri úttektarvinnu. Á Þjónustuborðinu (mál) er hún óbreytt.
   const { fake, aftur } = setja();
   L.stilla(REG);
   try {
     await M.vista({ bord: 'verkstaedi', fyrirtaeki_id: 1934, merki: 'nei', athugasemd: 'Sagt upp' }, 'Agnar');
     const r = await M.keyra('Agnar', { bord: 'verkstaedi', kveikja: async () => { throw new Error('á ekki að ræsa agent'); } });
     assert.deepStrictEqual([r.sent, r.nei], [0, 1]);
-    const c = fake.T.charlize_knowledge[0];
-    assert.match(c.fact, /NEI við fyrirtæki #1934 á ÞjónustuVerkstæðinu/); assert.match(c.fact, /Húsfélagið Prufugata 10/); assert.match(c.fact, /Sagt upp/);
-    assert.ok(!/null|undefined/.test(c.fact + c.detail), c.fact + ' | ' + c.detail);
-    assert.match(c.detail, /fyrirtaeki #1934/);
+    assert.strictEqual((fake.T.charlize_knowledge || []).length, 0, 'engin Charlize-færsla fyrir Nei á félagi');
+    const rod = fake.T.bord_merkingar.find((x) => x.fyrirtaeki_id === 1934);
+    assert.deepStrictEqual([rod.stada, rod.agent, rod.athugasemd], ['klarad', null, 'Sagt upp']);
+    assert.match(rod.nidurstada.svar, /Nei skráð á félagið — ekkert unnið og ekkert sent agent/);
+    assert.ok(!/Charlize \(#/.test(rod.nidurstada.svar));
+    assert.deepStrictEqual([...new Set(fake.skrif.map((s) => s.t))], ['bord_merkingar']);
+    // Mál á Þjónustuborðinu: Nei verður ÁFRAM ákvörðun hjá Charlize.
+    await M.vista({ mal_id: 1934, merki: 'nei' }, 'Agnar');
+    await M.keyra('Agnar', { kveikja: async () => {} });
+    assert.strictEqual(fake.T.charlize_knowledge.length, 1);
+    assert.match(fake.T.charlize_knowledge[0].fact, /NEI við mál #1934 á Þjónustuborðinu/);
   } finally { aftur(); L.stilla(null); }
+});
+
+test('tiltekt: borðið fer í slóð og er ALLTAF annað föstu gildanna, hver sem kallar', async () => {
+  const { fake, aftur } = setja();
+  try {
+    await M.tiltekt('Agnar', new Date(), 'verkstaedi&stada=eq.merkt');
+    await M.tiltekt('Agnar', new Date(), 'verkstaedi');
+    assert.deepStrictEqual(fake.skrif.map((s) => (s.qs.match(/bord=eq\.([^&]*)/) || [])[1]), ['thjonustubord', 'verkstaedi']);
+  } finally { aftur(); }
+});
+
+test('margar sölur: aðeins reikningssölur eru lesnar (eins og 190) og náist mörkin er það SAGT, ekki þagað', async () => {
+  const g = GRUNNUR();
+  // 5 kortasölur (búð) og MORK_SOLUR reikningssölur til viðbótar → mörkin nást.
+  for (let i = 0; i < 5; i++) g.solur.push({ id: 7000 + i, num: 'R-00700' + i, customer_id: 1934, customer_nafn: 'x', samtals: 1000, created_at: D('10', '0' + (i + 1)) + 'T09:00:00+00:00', status: 'paid', is_credit: false, hidden: false, vidskiptategund: 'bud', greitt_med: 'kort' });
+  for (let i = 0; i < CL.MORK_SOLUR; i++) g.solur.push({ id: 8000 + i, num: 'R-008' + String(i).padStart(3, '0'), customer_id: 1934, customer_nafn: 'x', samtals: 2000, created_at: D('01', '15') + 'T09:00:00+00:00', status: 'open', is_credit: false, hidden: false, vidskiptategund: 'uttekt', greitt_med: 'reikningur' });
+  const { aftur } = setja(g);
+  try {
+    const gogn = (await CL.safna({ texti: 'Úttekt', hluti_heiti: 'ÞjónustuVerkstæði' }, { id: null, title: 'x' }, '', { fyrirtaeki: FELAG })).gogn.gogn;
+    const so = gogn.find((x) => 'uttektarreikningar_arsins' in x);
+    assert.match(so.klippt, /talan gæti verið of lág/);
+    assert.ok(!gogn.some((x) => /^R-00700/.test(String(x.sala || ''))), 'kortasala (búð) á ekki heima í úttektargögnunum');
+    // Án klippingar er reiturinn ekki til (ekki „klippt: false“ sem agent gæti mislesið).
+    const { aftur: a2 } = setja();
+    try { assert.ok(!('klippt' in JSON.parse(JSON.stringify((await CL.safna({ texti: 'Úttekt', hluti_heiti: 'x' }, { id: null, title: 'x' }, '', { fyrirtaeki: FELAG })).gogn.gogn.find((x) => 'uttektarreikningar_arsins' in x))))); } finally { a2(); }
+  } finally { aftur(); }
 });
 
 /* ── Gögnin sem agentinn fær: raunveruleg söfnun á gervigrunni ─────────────────── */
@@ -180,6 +216,7 @@ test('vinnaMerki á félagi: agentinn fær verkstæðisstöðu, skjöl, sölur o
     assert.match(kerfi, /FÉLAG Á ÞJÓNUSTUVERKSTÆÐINU \(fyrirtæki #1934\)/);
     assert.ok(!/LÍNA Á ÞJÓNUSTUBORÐINU|mál #null/.test(kerfi), kerfi);
     assert.match(kerfi, /ALDREI til að merkja „búið“ nema skýrsla EÐA reikningur ársins sé í gögnunum/);
+    assert.match(kerfi, /Þar sem fyrirmælin segja „málið“ er átt við ÚTTEKT ÁRSINS hjá þessu félagi/);
     assert.match(kerfi, /ÞÚ VINNUR SEM AGENTINN 🚀 elon-musk/); assert.match(kerfi, /Sameina hótel á kt/);
     assert.match(fengid.fyrirmaeli, /YFIRFARA/); assert.match(fengid.fyrirmaeli, /ATHUGASEMD AGNARS: Er þetta ekki búið\?/);
     assert.deepStrictEqual([fengid.atridi.hluti, fengid.mal.id], ['ÞjónustuVerkstæði', null]);
@@ -194,7 +231,7 @@ test('vinnaMerki á félagi: agentinn fær verkstæðisstöðu, skjöl, sölur o
     assert.deepStrictEqual(st.skref_hokud, ['Tækjalisti staðfestur', 'Úttekt búin']);
     assert.deepStrictEqual(st.skref_afhokud, ['Reikningur sendur']);
     assert.deepStrictEqual([st.skodunarmanudur, st.taekjalisti_stadfestur_ar], [9, AR]);
-    assert.ok(/Hringja í formann/.test(st.athugasemd) && !/555 1234/.test(st.athugasemd), st.athugasemd);
+    assert.ok(/Hringja í formann/.test(st.athugasemd) && !/555 1234/.test(st.athugasemd) && !/GAMALL/.test(st.athugasemd), st.athugasemd);   // banner_note vinnur
 
     // Skjöl: tvítekið skjal og skjal systkinis teljast ekki; brunakerfisreikningur er EKKI úttektarreikningur.
     const sk = fengid.gogn.find((x) => 'uttektarskyrsla_arsins' in x);

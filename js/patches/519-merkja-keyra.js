@@ -327,7 +327,9 @@
     root.addEventListener('change', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mkDags && t.value) merkja(Number(t.dataset.mkDags), 'snooze', { due_at: t.value }); });
   }
   setInterval(tengjaRot, 1500);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.virkt) hlada(); });
+  // Eintak annars borðs (c.bord) sækir aðeins þegar SÍN sýn er virk; Þjónustuborðið er óbreytt (sótti alltaf).
+  const synVirk = () => { try { const v = document.getElementById(c.view); return !!(v && v.classList.contains('active')); } catch (_) { return false; } };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.virkt && (!c.bord || synVirk())) hlada(); });
 
   return { html, merki, gluggi, stada, smellur, hlada, S, MERKI, version: '519b' };
   }   // buaTil

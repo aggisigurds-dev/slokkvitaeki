@@ -493,7 +493,7 @@ returns jsonb
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
   select (settings->'arsskodun_customers'->(p_id::text))
            - 'equipment' - 'equipment_manual' - 'history' - 'skyrslur_tengdar'

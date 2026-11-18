@@ -155,6 +155,7 @@ const linaFelags = (id) => 'fyrirtaeki:' + Number(id);
 // Tiltekt: fastar keyrslur þessa notanda → vantar_svar (skráð í grunninn). Keyrð í upphafi listi/vista/keyra; bili hún
 // telja teljari() og synilegt() fasta röð samt sem vantar_svar, svo ekkert læsist.
 async function tiltekt(hver, nu = new Date(), bord = BORD) {
+  bord = bordAf(bord);   // fer í slóð — aldrei annað en föstu gildin tvö, hver sem kallar
   const mork = new Date(nu.getTime() - FAST_MS).toISOString();
   return breyta(`bord_merkingar?bord=eq.${bord}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.i_keyrslu&keyrt_at=lt.${encodeURIComponent('"' + mork + '"')}`,
     { stada: 'vantar_svar', astaeda: FAST_ASTAEDA, lokid_at: nu.toISOString() }).catch(() => []);
@@ -209,9 +210,9 @@ async function vista(b, hver, nu = new Date()) {
 // Charlize: Nei verður ákvörðun sem agentarnir lesa (sama og Aðalmál 492: „Ekki leggja þetta til aftur“).
 async function charlizeNei(m, hver) {
   const r = await baeta('charlize_knowledge', { scope: 'baedi', topic: 'akvardanir-agnars',
-    fact: ((erFelagslina(m) ? 'Agnar merkti NEI við fyrirtæki #' + m.fyrirtaeki_id + ' á ÞjónustuVerkstæðinu (' : 'Agnar merkti NEI við mál #' + m.mal_id + ' á Þjónustuborðinu (') + new Date().toISOString().slice(0, 10) + '): „' + (m.mal_titill || '') + '“' +
+    fact: ('Agnar merkti NEI við mál #' + m.mal_id + ' á Þjónustuborðinu (' + new Date().toISOString().slice(0, 10) + '): „' + (m.mal_titill || '') + '“' +
       (m.athugasemd ? ' — Athugasemd Agnars: ' + m.athugasemd : '') + ' — Ekki leggja þetta til aftur nema ný staðreynd komi fram (ákvörðun stendur).').slice(0, 1800),
-    detail: ('Heimild: bord_merkingar #' + m.id + ' (Merkja og keyra) · ' + (erFelagslina(m) ? 'fyrirtaeki #' + m.fyrirtaeki_id : 'thjonustubeidni #' + m.mal_id) + ' · skráð af ' + hver).slice(0, 2000),
+    detail: ('Heimild: bord_merkingar #' + m.id + ' (Merkja og keyra) · thjonustubeidni #' + m.mal_id + ' · skráð af ' + hver).slice(0, 2000),
     source: 'agnar', confidence: 'confirmed', status: 'active', agent: 'claude-code' });
   return r[0] && r[0].id;
 }
@@ -241,6 +242,16 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
     try { tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso }); } catch (_) { return 0; }   // stendur merkt → næsta umferð
     if (!tekin.length) return 0;
     try {
+      // Óháð rýni 18.11.2026: á verkstæðinu er línan FÉLAGIÐ — þar er engin tiltekin tillaga til að hafna. Charlize-færsla
+      // („Ekki leggja þetta til aftur“) væri án árs og efnis, læsist inn í öll mál sem nefna nafn félagsins (nafnaleit í
+      // safna, akvordun_agnars) og rynni aldrei út — næsta ár gæti agent vikið sér undan lögmætri úttektarvinnu. Nei á
+      // félagi er því AÐEINS skráð á línuna: ekkert unnið, ekkert sent agent, engin varanleg ákvörðun.
+      if (erFelagslina(m)) {
+        await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'klarad', lokid_at: new Date().toISOString(), agent: null,
+          nidurstada: { tegund: 'akvordun', svar: 'Nei skráð á félagið — ekkert unnið og ekkert sent agent. (Á verkstæðinu er Nei ekki varanleg ákvörðun.)' },
+          odin_mat: { marktaekt: true, astaeda: 'Nei á félagi — engin vinna, engin Charlize-færsla', at: new Date().toISOString() } });
+        return 1;
+      }
       const cid = await charlizeNei(m, hver);
       await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'klarad', lokid_at: new Date().toISOString(), agent: 'charlize',
         nidurstada: { tegund: 'akvordun', svar: 'Nei skráð hjá Charlize (#' + cid + ') — agentarnir leggja þetta ekki til aftur.', charlize_id: cid },
@@ -290,7 +301,8 @@ function kerfiAuki(m, persona) {
       '(ársskoðun slökkvitækja) hjá hverju félagi í þjónustu: farið á staðinn → tækjalisti → úttekt → skýrsla → send → reikningur. Agnar merkti félagið „' + heiti +
       '“ og ýtti á Keyra. Svaraðu um ÞETTA félag og ÞENNAN stað: er úttekt ársins gerð, er skýrslan til, er reikningurinn sendur og greiddur — og hvað vantar. ' +
       'Gögnin U… (verkstæðisstaða, skjöl, sölur, tæki), K… (skjöl) og S… (sölur) eru mæld beint fyrir þennan stað. Færsla merkt ÓMÆLT þýðir að sóknin brást, ' +
-      'EKKI að ekkert sé til. Skoðunardagur tækja er vísbending, aldrei staðfesting ein og sér. Leggðu ALDREI til að merkja „búið“ nema skýrsla EÐA reikningur ársins sé í gögnunum.'
+      'EKKI að ekkert sé til. Skoðunardagur tækja er vísbending, aldrei staðfesting ein og sér. Leggðu ALDREI til að merkja „búið“ nema skýrsla EÐA reikningur ársins sé í gögnunum. ' +
+      'Þar sem fyrirmælin segja „málið“ er átt við ÚTTEKT ÁRSINS hjá þessu félagi; „næsta skref“ er næsta óunna skref hennar (skýrsla, sending, reikningur) samkvæmt gögnunum.'
     : 'Í ÞETTA SINN: atriðið er LÍNA Á ÞJÓNUSTUBORÐINU (mál #' + m.mal_id + '), ekki vikuyfirlit. Agnar merkti hana „' + heiti + '“ og ýtti á Keyra.',
     'ÞÚ VINNUR SEM AGENTINN ' + (p.emoji ? p.emoji + ' ' : '') + (m.agent || LEID.VARA) + (p.lysing ? ' — ' + p.lysing : '') + '.',
     (p.serhaefing && p.serhaefing.length ? 'SÉRHÆFING: ' + p.serhaefing.join(' · ') : ''),
@@ -346,7 +358,7 @@ async function vinnaMerki(id, nonce) {
     let s;
     if (erFelagslina(m)) {
       // Félag á ÞjónustuVerkstæðinu: gögnin eru mæld fyrir ÞENNAN stað (CL.uttektargogn) — verkstæðisstaða, skjöl, sölur, tæki.
-      const f = (await lesa(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu,deleted_at&id=eq.${Number(m.fyrirtaeki_id)}&limit=1`))[0];
+      const f = (await lesa(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu,banner_note,deleted_at&id=eq.${Number(m.fyrirtaeki_id)}&limit=1`))[0];
       if (!f || f.deleted_at) throw new Error('Félagið fannst ekki lengur');
       const texti = ['Úttekt ársins (ársskoðun slökkvitækja) — ' + f.nafn, m.athugasemd || ''].filter(Boolean).join('\n');
       s = await CL.safna({ texti, hluti_heiti: 'ÞjónustuVerkstæði' }, { id: null, title: 'ÞjónustuVerkstæði · ' + f.nafn }, fyrirmaeliFyrir(m), { fyrirtaeki: f });
