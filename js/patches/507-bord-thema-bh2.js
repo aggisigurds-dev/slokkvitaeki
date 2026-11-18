@@ -145,6 +145,9 @@
       H + ' .btn.iv:hover{background:#f6f9fd}',
       H + ' .btn.gold,' + H + ' .acts>.btn:nth-of-type(3){border:0;background:' + APP + ';color:#fff;font-weight:600;text-shadow:none;box-shadow:' + GLOD + '}',
       H + ' .btn.gold:hover,' + H + ' .acts>.btn:nth-of-type(3):hover{background:#ec5300}',
+      H + ' .btn.gold.sm{font-size:14px}',
+      // Númer einingarinnar á VIRKA flipanum var gullbrúnt (#3e2c06) úr Boss-hamnum — 3,70:1 á appelsínugulu í 11 px.
+      H + ' .flipi[aria-selected="true"] .fln{color:#02193c}',
       H + ' .btn[aria-pressed="true"]{background:#0b2d5f;color:#fff;box-shadow:none}',
 
       // Leit.
@@ -164,7 +167,7 @@
       H + ' .seg.modeseg button{flex:1 0 auto;height:40px;padding:0 16px;border-radius:10px;font:600 14px var(--body)}',
       H + ' .seg.modeseg button:hover{background:#f6f9fd}',
       H + ' .seg.modeseg button[aria-pressed="true"]{background:linear-gradient(180deg,#ff8a1f,#ec5300);color:#fff;box-shadow:' + GLOD + '}',
-      H + ' .seg .c{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:#ff6702;color:#fff;font:700 12px/1 var(--body);letter-spacing:0}',
+      H + ' .seg .c{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:#ff6702;color:#02193c;font:700 12px/1 var(--body);letter-spacing:0}',
       H + ' .seg button[aria-pressed="true"] .c{background:#fff;color:#c2410c}',
 
       // Flýtileiðir = hvítt spjald með flísum.
@@ -259,8 +262,6 @@
       // Mælt á borði Anni: hver litur í gull/rjóma-sviði (litblær 36–62°) og Playfair/Plex-letur í öllum hömum.
       // Valið mál, brunnar og dökk spjöld: svart stál → navy.
       H + ' .sel,' + H + ' .vbr-svar{border:0;border-image:none;border-radius:14px;background:#011f40;box-shadow:' + SH + '}',
-      H + ' .sel .age.warm{color:#ff8a1f}',
-      H + ' .sel .age.hot{color:#ffb4a2}',
       /* 18.11.2026 (Agnar: „eginlega allt of mikið blátt í sama lit, mátt lísa upp textaglugga"). Spjaldið var
        * navy #011f40 og HVER einasti reitur inni í því navy #02193c — tveir litir sem muna 6 í birtu, svo
        * málglugginn las sem einn flötur. Hönnunarkerfið sjálft segir annað: ramminn er navy, efnið situr á
@@ -320,8 +321,9 @@
       H + ' #yf499 .yf-titill,' + H + ' #yf499 .yf-stada,' + H + ' #yf499 .yf-flokkur,' + H + ' #yf499 .yf-m,' + H + ' #yf499 .yf-t,' + H + ' #yf499 .yf-p{font-family:var(--body)}',
       H + ' #yf499 .yf-keyra:not(#_yA):not(#_yB):not(#_yC):not(#_yD):not(#_yE){font-family:var(--body)!important;border-radius:8px}',
       // Stýringar í dökku spjöldunum (Valið mál, skráning, flýtival): brúnsvart #1c1b18 → navy-700 með hárlínu.
-      H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:rgba(255,255,255,.18);background:#0b2d5f}',
-      H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#123a73}',
+      H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#e9f0fa}',
+      H + ' .setja .slabel{color:#c9d3e3}',
 
       /* Tilbúin verk (511) — einingin var eina borðið sem hélt Boss-efninu undir V2: rjómaflötur, messingplötur og
        * gulllykill. Hér fær hún sama mál og hitt borðið (hvít spjöld, navy blek, EINN appelsínugulur lykill).
