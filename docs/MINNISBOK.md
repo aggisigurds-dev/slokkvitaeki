@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 18:14 · 2574 virkar staðreyndir — 1469 prentaðar hér
+Sótt 2026-11-18 19:31 · 2575 virkar staðreyndir — 1470 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (946 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -101,7 +101,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 | [brunaholf](#brunaholf) | 29 |
 | [arsskodun](#arsskodun) | 29 |
 | [oryggi](#oryggi) | 28 |
-| [bord](#bord) | 26 |
+| [bord](#bord) | 27 |
 | [gatt](#gatt) | 26 |
 | [bord-flettur](#bord-flettur) | 25 |
 | [villuleit](#villuleit) | 25 |
@@ -1263,6 +1263,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### bord
 
+- **Hub birtuskil 18.11.2026, framhald (2d2f7e5 + 5938010): graa aukaletrid i Krofu yfirliti var EINN litur #8f8776 ur --text-dim sem stod fyrir 3.094 af 3.112 follum. Hubburinn a sjalfur regluna sem var brotin - theme.css: --muted #6f685c er merkt "5.3:1 golf fyrir gagnatexta" og --muted-2 #8f8776 "ADEINS placeholders/skil, aldrei gogn" - en flipinn notadi --text-dim og --muted-2 fyrir gogn. --text-dim for i #6f685c i LJOSA themanu; lina 190 (dokka themad) er obreytt thvi thar er liturinn a svortu. .kf-cl og .kf-cx foru i --muted. Maelt eftir: Krofu yfirlit 3.112 fall vard 6, oll 4,47:1 sem er 0,03 undir a dekksta rjomapappirnum. Lika lagad: .kf-cv.blue 4,15 i --blue-deep, og .kf-chip.on hvitt a gulli 3,16 i #1e1502 (sama lausn og .boss-perotag notar). Yfirlit: 0 fall af 192. OLAGAD og bidur akvordunar: Dagurinn (gullitadir tenglar #b8892e a hvitu 3,15:1 og .dg-mbox-stat #8f8776 3,56:1, alls 22 foll) og Vinnubok (boss-plate #3e2c06 a gulli 2,09:1 og .vb-corner-val.dim 3,31:1, alls 57 foll). TOLID: sleppir nu efni i samanbrotnu details - 53 "osynilegir" hlutir a Deginum voru allir inni i lokudu details sem heldur gildum hnitum an thess ad mala.**
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Birtumæling á dílum 18.11.2026 (tól: slokkvitaeki/tools/birtumaeling.cjs, kvörðun tools/birtumaeling-profun.html, d810f92): tekur skjáskot af allri síðunni með Playwright (NODE_PATH=C:\Users\Slokkvitaeki\luna-bridge\node_modules) og les raunverulega díla í stað computed style. Fjórar leiðréttingar þurfti áður en það mældi rétt, hver mæld: (1) bakgrunnur = algengasti litur reitsins EN litum nálægt CSS-lit textans er sleppt — annars varð stórt letur í þröngum reit að 'bakgrunni' (klukkan í hubbnum mældist 1,00:1); (2) textalitur kemur úr CSS þegar hann er ógegnsær, því dílar ráða ekki við ólgandi bakgrunn (gullni valmyndarliðurinn mældist 1,42:1 í stað ~8); dílar ráða þegar color er transparent (background-clip:text); (3) kjarni stafanna = dílar ≥ 0,85 × mesta frávik, annars dró mýking meðaltalið í bakgrunninn (281 fall af 323 á gátt sem lítur vel út); (4) hlutir sem skrunkassi klippir eru felldir út (17 valmyndarliðir töldust 'ósýnilegir'). Skuggarætur fylgja með. Kvörðun eftir á: 21,00→21,00, 6,31→6,31, 4,54→4,54, 2,92→2,92, 2,04→2,04; klipptur texti les ~10% lágt. NIÐURSTAÐA Á HUBBNUM: ekkert dökkt-á-dökku. Yfirlit 192 brot → 0 fall eftir lagfæringu (gullu stöðumerkin 2,34:1 → gold-800; kaflanúmer 4,40:1 → #9f4419; 8e54608). Kröfu yfirlit: 4.621 brot, 3.112 föll en AÐEINS 28 ólíkir hópar — 2.935 þeirra eru EITT grátt letur á hvítu í 3,56:1 (kf-btn og small), sem er kerfisval og bíður ákvörðunar Agnars; .kf-exp bar color:var(--blue-bg), bakgrunnslit, sem letur = 1,11:1 ósýnilegt og var lagað (d85f2f0). Vinnubók: boss-plate 2,09:1 og .dim-gildi 3,31:1 ómæld enn. LÆRDÓMUR: telja ÓLÍKA hópa, ekki tilvik — 3.112 'föll' voru 28 vandamál.**
   <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Þjónustuborðið (368) hefur REGLUHAMI frá 18.11.2026 (birt be68fee + 9a7aa87): sérsniðinn hamur í app_settings.thjonustubord5.hamir má bera regla = { merki: [nákvæm merki], forskeyti: [merki sem byrja svona], kunni: [nafn kúnna byrjar svona], titill: [orð í titli], samthykki: true, lysing }. reglaTekur() velur málin við teikningu — ekkert er skrifað á málin. Fyrsti slíki hamurinn er „Brunahólf“ (id hmbrunaholf1, eigandi Agnar): merkt bh:…, mál í ham:hmbhthj01, kúnni sem heitir Brunahólf…, eða „brunaþétt“/„brunahólf“ í titli; sýnir líka það sem bíður samþykkis Agnars. Mælt við birtingu: 15 mál (13 á borði Agnars, 2 á Master).**
