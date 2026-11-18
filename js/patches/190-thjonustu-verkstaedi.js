@@ -412,22 +412,37 @@
    * eða merkja búin. EKKERT er merkt sjálfkrafa: vísbending er ekki staðfesting (skoðunardagur tækja getur komið úr
    * innflutningi), svo Agnar ákveður hverja röð. */
   let _skodByCo = null, _skodLoaded = false;   // Map<String(co.id), { n, sidast }> — tæki með last_insp á árinu
+  let _buidSpurt = null;                        // félag þar sem „✓ Búið“ í skúffunni bíður seinni smellsins
+  // Hrein: tækjaraðir → Map<félag, { n, sidast }>. Óháð rýni 18.11.2026 (mælt í raungögnum sama dag): af 4.319 tækjum með
+  // skoðunardag á árinu eru 688 með skoðunardag = SKRÁNINGARDAG (nýtt tæki fær uppsetningardaginn sem skoðun, db.js) og 86
+  // úrelt. Hvorugt er skoðun → talið frá. Dagur fram í tímann telst heldur aldrei „skoðað“.
+  function skodudKort(rows, ar, iDag) {
+    const m = new Map();
+    (rows || []).forEach(u => {
+      if (!u || u.fyrirtaeki_id == null) return;
+      const k = String(u.fyrirtaeki_id), d = String(u.last_insp || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d.slice(0, 4) !== String(ar) || d > iDag) return;
+      if (String(u.status || '').toLowerCase() === 'urelt') return;
+      if (String(u.created_at || '').slice(0, 10) === d) return;   // nýskráning, ekki skoðun
+      const e = m.get(k) || { n: 0, sidast: '' };
+      e.n++; if (d > e.sidast) e.sidast = d;
+      m.set(k, e);
+    });
+    return m;
+  }
   async function loadSkodud() {
     try {
-      const sb = (window.DB && DB.sb); if (!sb) return;
+      const sb = (window.DB && DB.sb); if (!sb) throw new Error('DB.sb vantar');
+      const iDag = new Date().toISOString().slice(0, 10);
       const rows = await DB.fetchAll((from, to) => sb.from('uttaeki')
-        .select('fyrirtaeki_id,last_insp').gte('last_insp', curYear + '-01-01')
+        .select('fyrirtaeki_id,last_insp,status,created_at').gte('last_insp', curYear + '-01-01').lte('last_insp', iDag)
         .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
-      const m = new Map();
-      (rows || []).forEach(u => {
-        const k = String(u.fyrirtaeki_id), d = String(u.last_insp || '').slice(0, 10);
-        if (!k || k === 'null' || k === 'undefined' || d.slice(0, 4) !== String(curYear)) return;
-        const e = m.get(k) || { n: 0, sidast: '' };
-        e.n++; if (d > e.sidast) e.sidast = d;
-        m.set(k, e);
-      });
-      _skodByCo = m;
-    } catch (_) { return; }   // sóknarvilla → engin vísbending, ENGIN núll-fullyrðing
+      _skodByCo = skodudKort(rows, curYear, iDag);
+    } catch (_) {
+      // Sóknarvilla → engin vísbending, ENGIN núll-fullyrðing. Ný tilraun við næstu teikningu eftir mínútu (ekki lykkja).
+      setTimeout(() => { _skodLoaded = false; }, 60000);
+      return;
+    }
     render();
   }
   // Vísbendingar um að úttekt ársins sé gerð, sterkasta fyrst. Hrein: les aðeins spjaldið (r).
@@ -1468,7 +1483,10 @@
             ? '<span style="display:inline-flex;gap:6px;flex:0 0 auto">' +
               '<button class="_sv-act" data-act="open" data-id="' + r.id + '" title="Opna fyrirtækjasíðuna og staðfesta áður en merkt er" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>' +
               '<button class="_sv-act" data-act="start" data-id="' + r.id + '" title="Setja á verkstæðið — skrefin sem vantar (skýrsla, reikningur) sjást þar" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Í vinnslu</button>' +
-              '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Úttekt ' + curYear + ' er frágengin — færa í „Búið í ár“" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button></span>'
+              // Tveir smellir (óháð rýni 18.11.2026): „✓ Búið“ við hlið „Opna“ má ekki skrá félag búið af einum röngum smelli.
+              (String(_buidSpurt) === String(r.id)
+                ? '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Seinni smellur: færa í „Búið í ár“" style="' + btn('#15803d','#ffffff','#14532d') + '">✓ Staðfesta búið</button>'
+                : '<button class="_sv-act" data-act="buidspyrja" data-id="' + r.id + '" title="Úttekt ' + curYear + ' er frágengin — færa í „Búið í ár“ (tveir smellir)" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>') + '</span>'
             : withStart
             ? '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Hefja vinnslu</button>'
             : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>') +
@@ -1614,6 +1632,7 @@
     // collapse/expand sides
     v.querySelectorAll('[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
+      _buidSpurt = null;
       render();
     }));
     // card actions
@@ -1623,7 +1642,8 @@
       if (act === 'open') openCompany(id);
       else if (act === 'report') openReport(id);
       else if (act === 'start') startVinnsla(id);
-      else if (act === 'buid') markBuid(id);
+      else if (act === 'buidspyrja') { _buidSpurt = id; render(); }
+      else if (act === 'buid') { _buidSpurt = null; markBuid(id); }
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);
       else if (act === 'removedone') { markBuid(id).then((ok) => { if (ok) toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); }); }

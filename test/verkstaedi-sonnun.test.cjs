@@ -18,9 +18,11 @@ function ur190() {
   const haus = SRC.match(/^\s*const snHaus = [^\n]*$/m);
   const rodir = SRC.match(/\n    function drawerRows\(list, withStart\) \{[\s\S]*?\n    \}/);
   const btn = SRC.match(/^\s*function btn\(bg, tx, bd\) \{[^\n]*$/m);
-  assert.ok(sonnun && flis && haus && rodir && btn, 'náði ekki sonnun/snFlis/snHaus/drawerRows/btn úr 190');
+  const kortF = SRC.match(/\n  function skodudKort\(rows, ar, iDag\) \{[\s\S]*?\n  \}/);
+  assert.ok(sonnun && flis && haus && rodir && btn && kortF, 'náði ekki sonnun/snFlis/snHaus/drawerRows/btn/skodudKort úr 190');
   const esc = "const esc = s => String(s == null ? '' : s).replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));";
-  return new Function('curYear', [esc, btn[0], sonnun[0], flis[0], haus[0], rodir[0]].join('\n') + '\nreturn { sonnun, drawerRows };')(AR);
+  return new Function('curYear', ['let _buidSpurt = null;', esc, btn[0], sonnun[0], kortF[0], flis[0], haus[0], rodir[0]].join('\n') +
+    '\nreturn { sonnun, drawerRows, skodudKort, spyrja: (id) => { _buidSpurt = id; } };')(AR);
 }
 const F = ur190();
 const kort = (o) => Object.assign({ id: 1, nafn: 'Félag', units: 0, doneDocs: false, docs: null, hasReik: false, skodud: null }, o);
@@ -82,13 +84,53 @@ test('Á dagskrá: takkarnir ráðast af sönnuninni — og ekkert merkist sjál
   ], true);
   const takkar = (id) => [...h.matchAll(new RegExp('data-act="([a-z]+)" data-id="' + id + '"', 'g'))].map((m) => m[1]);
   assert.deepEqual(takkar(10), ['start']);                       // óbreytt: „▶ Hefja vinnslu“
-  assert.deepEqual(takkar(11), ['open', 'start', 'buid']);       // hluta-sönnun: opna og staðfesta, svo í vinnslu EÐA búið — Agnar velur
+  assert.deepEqual(takkar(11), ['open', 'start', 'buidspyrja']);  // hluta-sönnun: opna og staðfesta, svo í vinnslu EÐA búið — Agnar velur
   assert.deepEqual(takkar(12), ['removedone']);                  // fullt par: „✔️ Fjarlægja“ eins og áður
   assert.match(h, /data-sonnun="1" style="flex-wrap:wrap;row-gap:6px"><span class="nm">Aðeins tæki/);
   assert.match(h, /🔧 4 tæki skoðuð 02\.09\./);
   assert.ok(!/data-sonnun="\d+"><span class="nm">Engin merki/.test(h));
   // Röð án sönnunar er NÁKVÆMLEGA eins og fyrir breytinguna.
   assert.ok(h.includes('<div class="sv-drawer-row"><span class="nm">Engin merki</span>'), h.slice(-400));
+});
+
+test('„✓ Búið“ í skúffunni þarf TVO smelli: fyrri smellur vopnar aðeins þá röð', () => {
+  const listi = [kort({ id: 11, nafn: 'A', skodud: { n: 4, sidast: '2026-09-02' } }), kort({ id: 14, nafn: 'B', hasReik: true })];
+  const takkar = (h, id) => [...h.matchAll(new RegExp('data-act="([a-z]+)" data-id="' + id + '"', 'g'))].map((m) => m[1]);
+  const fyrir = F.drawerRows(listi, true);
+  assert.ok(!/data-act="buid"/.test(fyrir), 'enginn takki má merkja búið í einum smelli');
+  F.spyrja(14);
+  const eftir = F.drawerRows(listi, true);
+  assert.deepEqual(takkar(eftir, 14), ['open', 'start', 'buid']);
+  assert.deepEqual(takkar(eftir, 11), ['open', 'start', 'buidspyrja']);   // hin röðin er óvopnuð
+  assert.match(eftir, /Staðfesta búið/);
+  F.spyrja(null);
+  assert.ok(!/data-act="buid"/.test(F.drawerRows(listi, true)));
+  // Smellahlustunin: fyrri smellur merkir EKKERT, seinni kallar á markBuid og afvopnar; skúffurofinn afvopnar líka.
+  assert.match(SRC, /else if \(act === 'buidspyrja'\) \{ _buidSpurt = id; render\(\); \}/);
+  assert.match(SRC, /else if \(act === 'buid'\) \{ _buidSpurt = null; markBuid\(id\); \}/);
+  assert.match(SRC, /_openBuid = !_openBuid;\r?\n\s*_buidSpurt = null;/);
+});
+
+test('skodudKort: aðeins raunveruleg skoðun telst — ekki nýskráning, úrelt tæki, annað ár né dagur fram í tímann', () => {
+  const I = '2026-11-18';
+  const m = F.skodudKort([
+    { fyrirtaeki_id: 7, last_insp: '2026-09-24', status: 'active', created_at: '2024-03-01T10:00:00+00:00' },
+    { fyrirtaeki_id: 7, last_insp: '2026-10-02', status: 'Í lagi', created_at: '2024-03-01T10:00:00+00:00' },
+    { fyrirtaeki_id: 7, last_insp: '2026-10-05', status: 'urelt', created_at: '2024-03-01T10:00:00+00:00' },      // úrelt
+    { fyrirtaeki_id: 7, last_insp: '2026-10-09', status: 'active', created_at: '2026-10-09T08:12:00+00:00' },     // nýskráð þann dag
+    { fyrirtaeki_id: 7, last_insp: '2026-12-01', status: 'active', created_at: '2024-03-01T10:00:00+00:00' },     // fram í tímann
+    { fyrirtaeki_id: 7, last_insp: '2025-12-30', status: 'active', created_at: '2024-03-01T10:00:00+00:00' },     // annað ár
+    { fyrirtaeki_id: 8, last_insp: '2026-02-01', status: null, created_at: null },
+    { fyrirtaeki_id: 9, last_insp: '2026-05-05', status: 'URELT', created_at: null },
+    { fyrirtaeki_id: null, last_insp: '2026-05-05' }, { fyrirtaeki_id: 10, last_insp: 'rusl' }, null,
+  ], 2026, I);
+  assert.deepEqual([...m.keys()].sort(), ['7', '8']);
+  assert.deepEqual(m.get('7'), { n: 2, sidast: '2026-10-02' });
+  assert.deepEqual(m.get('8'), { n: 1, sidast: '2026-02-01' });
+  assert.equal(F.skodudKort(null, 2026, I).size, 0);
+  // Dagurinn í dag telst (skoðað í morgun), morgundagurinn ekki.
+  assert.equal(F.skodudKort([{ fyrirtaeki_id: 1, last_insp: I, created_at: '2020-01-01T00:00:00Z' }], 2026, I).size, 1);
+  assert.equal(F.skodudKort([{ fyrirtaeki_id: 1, last_insp: '2026-11-19', created_at: '2020-01-01T00:00:00Z' }], 2026, I).size, 0);
 });
 
 test('óbreytt þegar engin sönnun er til, og „Búið í ár“-skúffan er ósnert', () => {
@@ -108,13 +150,17 @@ test('nafn og vísbendingar eru flúin', () => {
 
 test('190 er tengt: tækin eru sótt einu sinni, spjaldið ber vísbendingarnar og flísin telur þær', () => {
   assert.match(SRC, /if \(!_skodLoaded\) \{ _skodLoaded = true; loadSkodud\(\); \}/);
-  assert.match(SRC, /\.select\('fyrirtaeki_id,last_insp'\)\.gte\('last_insp', curYear \+ '-01-01'\)/);
+  assert.match(SRC, /\.select\('fyrirtaeki_id,last_insp,status,created_at'\)\.gte\('last_insp', curYear \+ '-01-01'\)\.lte\('last_insp', iDag\)/);
+  assert.match(SRC, /_skodByCo = skodudKort\(rows, curYear, iDag\);/);
   assert.match(SRC, /hasReik: hasReik,/);
   assert.match(SRC, /skodud: _skodByCo \? \(_skodByCo\.get\(String\(co\.id\)\) \|\| null\) : null,/);
   assert.match(SRC, /const dSonnun = b\.dagskra\.filter\(r => r\.doneDocs \|\| sonnun\(r\)\.length\)\.length;/);
   // Sóknarvilla má ekki verða að „0 tæki skoðuð“: catch skilar án þess að setja kortið.
   const l = SRC.match(/async function loadSkodud\(\) \{[\s\S]*?\n  \}/)[0];
-  assert.match(l, /\} catch \(_\) \{ return; \}/);
-  // „✓ Búið“ í skúffunni notar sömu aðgerð og spjöldin (markBuid) — engin ný skrifleið.
-  assert.match(SRC, /else if \(act === 'buid'\) markBuid\(id\);/);
+  const c = l.slice(l.indexOf('} catch (_) {'));
+  assert.ok(/return;/.test(c) && c.indexOf('return;') < c.indexOf('render();'), 'catch verður að skila ÁÐUR en teiknað er');
+  assert.ok(!/_skodByCo\s*=/.test(c), 'catch má ekki setja kortið');
+  // … og sóknin reynir aftur seinna (óháð rýni: áður þurfti að endurhlaða vafrann), án þess að verða að lykkju.
+  assert.match(c, /setTimeout\(\(\) => \{ _skodLoaded = false; \}, 60000\);/);
+  assert.match(l, /if \(!sb\) throw new Error/);
 });
