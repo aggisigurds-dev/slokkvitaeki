@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 00:16 · 2531 virkar staðreyndir — 1439 prentaðar hér
+Sótt 2026-11-18 08:51 · 2531 virkar staðreyndir — 1439 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 157 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (935 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -112,6 +112,9 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### kerfi
 
+- **Einkaritarinn (506) deployed 16.11.2026 via PR #993 á slokkvitaeki. Spjald beint undir Vinnusamantekt á Þjónustuborði Agnars, skrifað kl. 06:45 alla daga af netlify/functions/einkaritari-cron.cjs → einkaritari-background.cjs → Claude. Fimm hlutar: Í dag (3-5 atriði), Vikan í tölum (greitt/sent/nýir), Samningar (Heimaleiga/Center), Topp 10 vikunnar, Áminningar. Gögn úr sömu heimildum og borðið (solur, Payday, combo-yfirlit). Vistað í app_kv, lykill einkaritari (staðreyndirnar í einkaritari_gogn, lás einkaritari_las, prufa einkaritari_prufa) — engin tafla einkaritari_samantekt er til. app_kv: RLS á, engar stefnur, enginn anon-aðgangur; lesið gegnum /api/einkaritari. Spjaldið 506 í js/patches/506-einkaritari.js.**
+  <br>Leiðrétt 18.11.2026: eldri færsla (2480) sagði „Tafla einkaritari_samantekt". Mælt: information_schema hefur enga slíka töflu; _einkaritari-stadreyndir.cjs:25 LYKILL='einkaritari'; app_kv-röðin einkaritari uppfærð 2026-11-18 06:46. Ráðgjafinn er í sömu töflu undir lyklinum radgjafinn.
+  <br><sub>2026-11-18 · slokkvitaeki · claude-code · claude-code</sub>
 - **Kúnnaminni skráist með einni skipun frá 16.11.2026: node tools/minni.cjs --skra "…" --topic <efni> --scope kunni --kt <kt félags> [--fid <fyrirtaeki.id>] [--base <customers_base.id>] [--thurrt]. Tólið skráir kennitöluna MEÐ bandstriki, neitar kennitölu einstaklings (þá --fid). Símanúmer og netföng tengiliða mega standa í kúnnaminni (Agnar 16.11.2026). charlize_yfirlit(kt) les kúnnaminni með NÁKVÆMUM samanburði á kennitölu, svo færsla án bandstriks finnst ekki þar.**
   <br>Mælt 16.11.2026: 79 kúnnaminnis-færslur (id 2532 til 2610) báru kennitölu án bandstriks og 14 félög áttu minni í báðum sniðum (176 félög talin eftir streng, 162 í raun). Þær voru samræmdar á bandstrik sama dag; eftir það 910 færslur á 162 félögum, allar með bandstriki. Skrifirðu kúnnaminni með SQL: 
   <br><sub>2026-11-16 · baedi · lota 32e6afff (lotuúttekt 16.11.2026) · claude-code</sub>
@@ -120,8 +123,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Markmið-einingin (368-thjonustubord5.js lína 342): sjálfgefin staða breytt úr [0, 0] (óvirkt) í [1, 0] (virkt) 16.11.2026 svo ný markmið séu virk sjálfkrafa. 29 ómæld markmið greind — ekkert þeirra er sjálfvirkt mælanlegt (öll krefjast handvirkrar mælingar eða Agnars mats).**
   <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
 - **encodeURI villa lagað 16.11.2026 í brunaholf: encodeURI() kóðar EKKI # (og ?, &, +) — Supabase Storage URL klippist þegar skráarnafn inniheldur #. Lagfæring: encPath = p => p.split('/').map(encodeURIComponent).join('/') — splittar á /, kóðar hvert segment, sameinar aftur. Lagað í eydublod.js (8 köll), raddminni.js (2), pdf-store.js (2). Slokkvitaeki repo var hreint (engin encodeURI á storage paths). Deployed með [deploy] commit á brunaholf main.**
-  <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
-- **Einkaritarinn (506) deployed 16.11.2026 via PR #993 á slokkvitaeki. Spjald beint undir Vinnusamantekt á Þjónustuborði Agnars, skrifað kl. 06:45 alla daga af netlify/functions/einkaritari-cron.cjs → einkaritari-background.cjs → Claude. Fimm hlutar: Í dag (3-5 atriði), Vikan í tölum (greitt/sent/nýir), Samningar (Heimaleiga/Center), Topp 10 vikunnar, Áminningar. Gögn úr sömu heimildum og borðið (solur, Payday, combo-yfirlit). Tafla einkaritari_samantekt (RLS á, enginn anon-aðgangur). Spjaldið 506 í js/patches/506-einkaritari.js.**
   <br><sub>2026-11-16 · slokkvitaeki · claude-code · claude-code</sub>
 - **Lotugreining 16.11.2026: Agnar biður oftast um (af 1.280 eiginlegum beiðnum) að fara yfir/athuga/„er þetta búið“ (12 %), skjal/lista/samantekt (10 %), útlitsbreytingar (10 %), skráningu gagna (5 %), tölur (5 %), lagfæringu á bilun (5 %). Verkefnalistinn: 175 í stöðu beidni, 137 ný á 14 dögum, 21 kláruð.**
   <br>Flöskuhálsinn er framkvæmd, ekki inntak: verk klárast aðeins þegar hann situr í spjalli. Lausn í smíðum: verkefnavakt (luna-bridge, sama mynstur og arnold-vaktin) sem vinnur eitt verk í einu á grein og skilar til samþykkis í „Tilbúin verk“ á borðinu. Tölurnar eru lykilorðaflokkun + úrtak, ekki handf
@@ -2744,8 +2745,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Ragnarök-hringurinn (ApocalypseRing) á Stjórnstöð snýst ALLTAF hægt — líka með prefers-reduced-motion (þá 0,6× hraði, aðeins ljósið stöðvast). Agnar vill hægu hreyfinguna; í síma með „Fjarlægja hreyfimyndir" stóð hann kyrr.**
   <br>Ákveðið 17.11.2026 (main 54ceb0c), víkur frá Fenrir-reglunni „animation:none". Miðjan = KJARNI-merkið (public/kjarni/apocalypse/kjarni-merki.webp, emblem-prop). Stærð clamp(340px,27vw,490px), sími min(300px,78vw).
   <br><sub>2026-11-17 · baedi · lota 17.11.2026 Ragnarök-hringir · kjarni-vefur</sub>
-- **Fenrir-útlitið á Stjórnstöð Kjarna (/kjarni) = RagnarokView + Fenrir-lag: skin "fenrir" í skins.ts; StationChrome og layout-skriftan setja data-kjarni-skin="ragnarok" OG data-fenrir á html, svo Ragnarök-reglurnar gilda og ragnarok/kjarni-fenrir.css leggst ofan á (.rgk[data-fenrir]).**
-  <br>Í loftinu 17.11.2026 (main f04f432). Fenrir sýnir tölureiti (.fnk-stats) undir hetjunni í stað .rgk-stats, felur emoji á ArtCraft/OfficeCraft og hefur bg public/kjarni/fenrir/bg-molten-peaks.webp. Ragnarök áfram sjálfgefið. Ný kort/tól á Stjórnstöð: athuga bæði útlitin.
+- **Fenrir er SJÁLFGEFIÐ útlit á Stjórnstöð Kjarna (/kjarni) frá 18.11.2026 (DEFAULT_SKIN = fenrir, lykill kjarni_skin_v3). Fenrir = RagnarokView + Fenrir-lag: StationChrome og layout-skriftan setja data-kjarni-skin="ragnarok" OG data-fenrir á html; readSkin les data-fenrir sem fenrir; ragnarok/kjarni-fenrir.css leggst ofan á (.rgk[data-fenrir]).**
+  <br>Í loftinu 17.–18.11.2026 (main 43929a7). Fenrir: rauðglóandi málmgull (--fn-metal), hraunrák undir titli og hraunsprunga neðst í hetju (--fn-lava, fnk-hraun), bg public/kjarni/fenrir/bg-molten-peaks.webp, engin emoji á ArtCraft/OfficeCraft. Tölureitaröðin undir hetjunni var fjarlægð 18.11. (Agnar) —
   <br><sub>2026-11-17 · baedi · lota 17.11.2026 Ragnarök-hringir · kjarni-vefur</sub>
 - **kjarni_*-töflurnar eru ekki tómar (reltuples=-1 þýðir aðeins að þær hafi aldrei verið analyze-aðar): sites 3, stillingar 9, skjol 5, sidur 1, admin 1, pantanir 1 og fyrirspurnir 1 (báðar uppruni=test), lesin 0, ocr_snid 0 — allt frá 12.–18.08, síðasta innskráning 11.09.**
   <br>Notendur: kjarni_stillingar (Banner, SiteHeader, RdNav, /stjorn), kjarni_sites (/kjarni MasterClient, /s/[slug]), kjarni_sidur (/[slug], SidurEditor), kjarni_pantanir (/verslun), kjarni_fyrirspurnir (ContactForm á /), kjarni_admin.leyni = lykilorðshlið SECURITY DEFINER-fallanna kjarni_get_*/kjarni_s

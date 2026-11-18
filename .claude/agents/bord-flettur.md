@@ -757,14 +757,23 @@ Tvö spjöld undir Vinnusamantekt á Þjónustuborði Agnars, bæði í patch-n�
 
 - **`506-radgjafinn.js`** (15.11.2026): Morgunráð Tony Stark — top 10 mál vikunnar, forgangsröðun
   dagsins og ráðleggingar ráðgjafans. Bakendi: `netlify/functions/_radgjafinn.cjs`. Skrifað af
-  scheduled task (kl. 06:45) eða „↻ Skrifa aftur". Vistað í `einkaritari_samantekt`. Spjaldið er
-  aðeins sýnilegt Agnari (staff-hlið).
+  Netlify-áætlunarfallinu `radgjafinn-morgun` (kl. 06:45) eða „↻ Skrifa aftur". Vistað í
+  `app_kv`, lykill `radgjafinn`. Spjaldið er aðeins sýnilegt Agnari (staff-hlið).
 - **`506-einkaritari.js`** (16.11.2026): Einkaritarinn — vikan í tölum (greitt, kröfur sendar, nýir
   í þjónustu), staða samninga (Heimaleiga, Center Hotels), áminningar og dagskrá. Mældar tölur úr
-  gagnagrunni; texti skrifaður af Claude úr staðreyndunum. Sama bakendi og vistun.
+  gagnagrunni; texti skrifaður af Claude úr staðreyndunum. Eigin bakendi, sama mynstur og Ráðgjafinn:
+  `einkaritari-cron.cjs` (kl. 06:45) ræsir `einkaritari-background.cjs`; staðreyndirnar í
+  `_einkaritari-stadreyndir.cjs`; lestur `einkaritari.cjs`.
+- **Vistun (leiðrétt 18.11.2026):** báðir í töflunni `app_kv`, ekki í sértöflu — taflan
+  `einkaritari_samantekt` er EKKI til. Einkaritarinn: lykill `einkaritari` (`{ nyjast, saga, sidasta_villa }`),
+  staðreyndirnar að baki í `einkaritari_gogn`, lás `einkaritari_las`. Ráðgjafinn: `radgjafinn`, `radgjafinn_gogn`,
+  `radgjafinn_las`. `app_kv` hefur RLS á og engar stefnur, svo vefslykillinn les ekkert; lesið gegnum `/api/einkaritari`
+  og `/api/radgjafinn` (hlið `_radgjafinn-hlid.cjs`).
 - **Staðsetning:** beint undir 489 (Vinnusamantekt) á Þjónustuborði. Tengd í `368-thjonustubord5.js`
   á línu ~5337. `<script>` tag í `index.html`.
-- **Prófun:** `?dry=1` á POST `/api/einkaritari` skilar forskoðun án vistunar.
+- **Prófun:** `/api/einkaritari` er aðeins GET (POST → 405). Skrif eru POST á
+  `/.netlify/functions/einkaritari-background`; `?dry=1` (eða `?prufa=1`) skrifar í `einkaritari_prufa` í stað
+  `einkaritari`, svo það er vistað, bara ekki ofan í morgunskrifin. Prufuna má lesa með GET `/api/einkaritari?prufa=1`.
 
 ## Tilbúin verk á Þjónustuborðinu — eining 30 (511, 16.11.2026)
 
