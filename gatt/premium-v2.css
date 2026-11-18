@@ -665,3 +665,7 @@ html[data-theme="premium"] #v2-top .v2-topnav{padding-right:26px;-webkit-mask-im
 @media (max-width:1280px){
   header .hin nav{flex-wrap:wrap;row-gap:10px}
 }
+
+/* 18.11.2026 — virki tígullinn í valmyndinni (hvítt á appelsínugulu) var 14,5px/500. Kerfið leyfir hvítt á
+   appelsínugulu aðeins í FEITU 14px+ (þess eigin takki er 14/600); 500 er undir þeirri línu. */
+#portal a.tab.on,#portal .tab.on{font-weight:600}
