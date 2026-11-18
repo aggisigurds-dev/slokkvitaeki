@@ -343,7 +343,10 @@ async function synilegt(row, visir) {
     forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
     athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
   if (row.tegund === 'tolvupostur') {
-    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename) };
+    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename),
+      // 18.11.2026 (Agnar: „sýnt þarna í svarinu skjalið svo ég geti alltaf opnað það og staðfest“): sama skjal og
+      // sendingin sækir, sem tengill. `vidhengi` (nöfnin ein) stendur áfram fyrir eldri sýnir.
+      vidhengi_opna: (g.vidhengi || []).filter(Boolean).map((v) => ({ nafn: v.filename || 'skjal', url: vidhengiSlod(v) })) };
     o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500),
       slod: (g.svar_vid.digest_id && leysa({ tegund: 'post', id: g.svar_vid.digest_id })) || (gmailSlod(g.account, g.svar_vid.thread_id) ? { url: gmailSlod(g.account, g.svar_vid.thread_id), texti: 'Pósturinn í Gmail' } : null) } : null;
   } else if (row.tegund === 'simtal') {
@@ -356,6 +359,16 @@ async function synilegt(row, visir) {
     o.sameina = SAM.synilegt(g);
   }
   return o;
+}
+
+// Slóðin sem opnar NÁKVÆMLEGA skjalið sem gmail-send hengir við: `url` (opin slóð, t.d. Supabase Storage) eða
+// `driveId` (Drive-skrá). `content` (base64, teiknað í vafra) á enga slóð → null og nafnið birtist eitt.
+// Aðeins http(s): aldrei javascript:, data: eða //annar-vefur — þetta endar í href hjá Agnari.
+function vidhengiSlod(v) {
+  if (!v) return null;
+  if (typeof v.url === 'string' && /^https?:\/\/[^\s"'<>]+$/i.test(v.url)) return v.url;
+  if (v.driveId != null && /^[\w-]{10,}$/.test(String(v.driveId))) return 'https://drive.google.com/file/d/' + String(v.driveId) + '/view';
+  return null;
 }
 
 /* ── FRAMKVÆMD ──────────────────────────────────────────────────────────────────────────────────────────── */
@@ -868,3 +881,4 @@ module.exports._sameina = SAM;
 module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)
 module.exports._leysaTilvisanir = leysaTilvisanir;
 module.exports._merkja = merkja;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
+module.exports._vidhengiSlod = vidhengiSlod;   // 18.11.2026: viðhengi sem tengill í svarinu
