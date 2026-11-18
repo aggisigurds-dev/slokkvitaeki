@@ -180,6 +180,10 @@
   ];
 
   const MODS = {
+    // 18.11.2026 (hönnunaryfirferð: borðið mælir en forgangsraðar ekki — 29 mælingar, sjö rauðar í einu, 8,2 skjáir).
+    // Efsta lagið: aðeins það sem þarf Agnar í dag, hver lína með EINNI aðgerð. Teikningin er í 520 (BordIDag);
+    // málin koma úr idagMal() hér, rauðu línurnar úr Vinnusamantekt (489). Ekkert nýtt sótt.
+    idag:      { n: '31', t: 'Í dag', d: 'Það sem þarf þig í dag: forgangsmál, ný skilaboð og rauðar mælingar — hvert með einni aðgerð. Þak: fjögur mál og þrjár mælingar.' },
     dagskra:   { n: '01', t: 'Dagskrá', d: 'Vikan í einni sýn. Plús skráir verk á daginn.' },
     skipulag:  { n: '05', t: 'Skipulagsborð', d: 'Spjöldin þín af skipulagsborðinu.' },
     // 25.09.2026 (Agnar: „3 nýjar einingar … Checklista einfaldan sem er 2/5 breidd vinstra megin og minni
@@ -262,7 +266,7 @@
   // 18.09.2026: skipulag bættist við — skrifflötur sem nýtist ekki í hálfri breidd
   // (spjöldin kremjast). BREIDAR er nú
   // aðeins SJÁLFGEFIÐ gildi: notandinn ræður breiddinni sjálfur í „Breyta ham".
-  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir', 'tilbuin'];
+  const BREIDAR = ['dagskra', 'krofumal', 'akstur', 'starfsmenn', 'skipulag', 'postbeidnir', 'tilbuin', 'idag'];
   // Breidd einingar: 1 = þriðjungur · 2 = hálft · 3 = fullt. Sjá .modcell[data-sp].
   // 25.09.2026: tvö þrep til viðbótar — 4 = ⅖ og 5 = ⅗ (checklisti vinstra megin, lítið skipulagsborð hægra
   // megin). Ristin er 60 dálkar svo bæði þriðjungar og fimmtungar gangi upp. Röð þrepanna frá mjóu í breitt:
@@ -294,6 +298,10 @@
   function mittHamur() {
     const n = nu(), v = P(CFG_KEY + '.by_staff.' + n + '.mitt');
     const first = (v && Array.isArray(v.first) ? v.first : MITT_SJALFGEFID).filter(k => MODS[k]);
+    // 18.11.2026: „Í dag" (31) stendur efst á vinnuborðinu án þess að vistaðri röð sé breytt — ekkert skrifað hér
+    // (regla 15.10.2026: skrif á þjón aðeins við raunverulegan smell). Sé hún tekin af í „Velja einingar" vistast
+    // idagAf og þá kemur hún ekki aftur.
+    if (!(v && v.idagAf) && first.indexOf('idag') < 0) first.unshift('idag');
     return Object.assign({}, MODES.mitt, { l: n + ' · mitt vinnuborð', first,
       breidd: (v && v.breidd && typeof v.breidd === 'object') ? v.breidd : {} });
   }
@@ -4713,9 +4721,37 @@
       '</div>';
     }).join('') + '</div></div>';
   }
+  /* Í DAG (eining 31, 18.11.2026) — gögnin fyrir 520. Engin ný sókn: sömu mál og eining 28 sýnir, sami Fela-lykill
+   * (`forgangsmal:mal:<id>`), svo falið mál er falið á báðum stöðum. Teikningin og þökin eru í 520 (BordIDag). */
+  function idagMal() {
+    const n = nu(), hefur = (r, m) => tagList(r).indexOf(m) >= 0;
+    const min = S.rows.filter(r => onBoardOf(r, n) || isFree(r));
+    const lyk = r => 'forgangsmal:mal:' + r.id;
+    const dagar = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : null; };
+    const lina = r => {
+      const s = String(r.summary || '').trim(), sam = (s && !/^DRAFT\|/.test(s)) ? s : '';
+      if (!sam && isPost(r)) { const p = postForskodun(r); if (p) return String(p).replace(/<[^>]*>/g, '').slice(0, 200); }
+      const t = sam || (String(r.notes || '').split('\n').find(x => x.trim()) || '').trim();
+      return t.slice(0, 200);
+    };
+    const mk = (r, teg) => ({ id: r.id, teg, titill: String(r.title || '').slice(0, 200), lina: lina(r), dagar: dagar(r) });
+    const synd = l => fela(l, lyk).synd;
+    return {
+      forgang: synd(min.filter(r => hefur(r, 'forgangsmal')).sort(rodun)).map(r => mk(r, 'forgang')),
+      skilabod: synd(min.filter(r => hefur(r, 'skilabod') && !hefur(r, 'forgangsmal')).sort((a, b) => tStamp(b.created_at) - tStamp(a.created_at))).map(r => mk(r, 'skilabod'))
+    };
+  }
   function bottomHtml(k) {
     const n = nu();
     if (CHK_FELT.indexOf(k) >= 0) return checklistiHtml(k);
+    if (k === 'idag') {
+      // Efsta lagið (520). Alltaf opið — eining sem segir „það sem þarf þig núna" má ekki vera samanbrotin.
+      const BID = window.BordIDag;
+      if (!BID) return modPanel(k, 'Ekki hlaðið', emptyHtml('Í dag (520) hefur ekki hlaðist — endurhlaðið síðuna.'), '', true);
+      BID.festa(rot());
+      const ctx = idagMal();
+      return modPanel(k, esc(BID.samantekt(ctx)), BID.listi(ctx), BID.takkar(), true);
+    }
     if (k === 'stjornumerkt') return stjornumerktHtml(k);
     if (k === 'forgangsmal') {
       /* FORGANGSMÁL (eining 28, 11.11.2026) — handvalið af Claude, ekkert sjálfvirkt. ENGIN NÝ TAFLA: venjuleg mál á borði
@@ -5443,7 +5479,12 @@
     // einingarnar sjálfar ritillinn: dregnar til, stækkaðar og minnkaðar á staðnum.
     // Þær fara þá alltaf í ristina í miðjunni (í mjórri rein væri ekkert að draga).
     const radar = !!(S.hamForm && S.hamForm.id && S.hamForm.id === c.mode);
-    const einingaRod = radar ? (S.hamForm.rod || []) : mode.first;
+    // 18.11.2026 — „Í dag" (31) er EFSTA LAGIÐ: hún er teiknuð sem borði yfir öllu öðru, ekki inni í ristinni, svo það
+    // sem þarf þig núna standi fyrir ofan mælingarnar. Í raðham (þar sem einingar eru dregnar til) situr hún í ristinni
+    // eins og hinar, annars væri ekkert hægt að færa hana. Taki Agnar hana af í „Velja einingar" hverfur borðinn með.
+    const einingaRodOll = radar ? (S.hamForm.rod || []) : mode.first;
+    const einingaRod = radar ? einingaRodOll : einingaRodOll.filter(k => k !== 'idag');
+    const idagBordi = (!radar && einingaRodOll.indexOf('idag') >= 0) ? einingHtml('idag') : '';
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
       // Báðir checklistar og litla skipulagsborðið í sömu röð án vistaðrar breiddar: skipta röðinni (18+18+24) — annars sprytti þriðja einingin í nýja röð.
@@ -5564,6 +5605,8 @@
           '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' +
         '</div></div>' +
         sannanirHtml() +
+        // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
+        idagBordi +
         // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
         (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
@@ -6742,7 +6785,8 @@
           S.hamForm = null;
           // `first` er fylki: deepMerge sameinar hluti en skiptir fylkjum út, svo afhakað hverfur. `breidd` er hlutur
           // og gæti haldið gömlum lyklum — þeir eru meinlausir, breiddAf les aðeins einingar sem eru í `first`.
-          vistaCfg({ mitt: { first: rod, breidd: breidd } }, 'Vinnuborðið þitt er vistað').then(render);
+          // 18.11.2026: „Í dag" (31) er sett efst sjálfkrafa í mittHamur(); sé hún tekin af hér þarf að muna það.
+          vistaCfg({ mitt: { first: rod, breidd: breidd, idagAf: rod.indexOf('idag') < 0 } }, 'Vinnuborðið þitt er vistað').then(render);
           render();
           return;
         }
