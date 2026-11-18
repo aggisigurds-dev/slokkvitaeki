@@ -108,18 +108,18 @@
   /* ── stíll og smellir festir á skuggarót borðsins (sama mynstur og 511) ─────────── */
   function css() {
     return '.idg{padding:0}' +
-      '.idg-sect{padding:9px 16px 5px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
+      '.idg-sect{padding:9px 16px 5px;font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}' +
       '.idg-r{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:11px 16px;border-top:1px solid var(--rule2)}' +
-      '.idg-m{flex:0 0 auto;padding:2px 8px;border:1px solid var(--edge);border-radius:2px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}' +
+      '.idg-m{flex:0 0 auto;padding:2px 8px;border:1px solid var(--edge);border-radius:2px;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}' +
       '.idg-m[data-sev="alv"]{border-color:var(--terra);color:#8d2f12}' +
       '.idg-m[data-sev="athuga"]{border-color:var(--g8);color:#6d5010}' +
       '.idg-t{flex:999 1 280px;min-width:0;display:flex;flex-direction:column;gap:2px}' +
       '.idg-t>b{font-size:13.5px;font-weight:600;color:var(--ink)}' +
-      '.idg-u{font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-      '.idg-n{flex:0 0 auto;font-family:var(--mono);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}' +
+      '.idg-u{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.idg-n{flex:0 0 auto;font-family:var(--mono);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}' +
       '.idg-b{flex:0 0 auto;min-height:36px;text-decoration:none}' +
-      '.idg-meir{padding:9px 16px 11px;border-top:1px solid var(--rule2);font-size:12px;color:var(--mute)}' +
-      '.idg-tomt{padding:12px 16px;font-size:13px;color:var(--mute)}' +
+      '.idg-meir{padding:9px 16px 11px;border-top:1px solid var(--rule2);font-size:13px;color:var(--mute)}' +
+      '.idg-tomt{padding:12px 16px;font-size:14px;color:var(--mute)}' +
       '@media (max-width:640px){.idg-u{white-space:normal}.idg-b{flex:1 1 100%}}';
   }
   function smellur(e) {
