@@ -112,10 +112,13 @@ async function safna(atridi, mal, fyrirmaeli) {
   // Fyrirtæki eftir nöfnum, og póstur þeirra (lén/netfang) + póstur sem nefnir nafnið (60 dagar).
   const fyr = [];
   for (const n of nofn) {
-    const f = await lesaHljott(`fyrirtaeki?select=id,nafn,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
+    const f = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
     for (const x of f) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
   }
-  for (const f of fyr.slice(0, 4)) baeta('F', { lysing: 'Fyrirtæki ' + stytta(f.nafn, 60), nafn: stytta(f.nafn, 100), i_thjonustu: !!f.er_i_thjonustu });
+  // 18.11.2026: kennitala og heimilisfang FYLGJA fyrirtækinu. Áður fékk agentinn aðeins nafn + í þjónustu, svo mál
+  // sem snúast um kennitölu (t.d. #882 Hárbeitt) voru óleysanleg — hann sá hana hvergi. Mælt í umferð umwldzl6c.
+  for (const f of fyr.slice(0, 4)) baeta('F', { lysing: 'Fyrirtæki ' + stytta(f.nafn, 60) + (f.kennitala ? ' (kt. ' + f.kennitala + ')' : ''),
+    nafn: stytta(f.nafn, 100), kennitala: f.kennitala || null, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu });
 
   // Brunahólfs-verk eftir nafni verkstaðar: tímar (Tímavera, 90 dagar, eftir mánuði) og reikningsdrög — svo „órukkaðir tímar"
   // og „engin drög" séu mæld, ekki endursögð úr yfirlitinu.

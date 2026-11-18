@@ -117,6 +117,11 @@ function metaSkil(c, merki) {
   if (!st.length) return { marktaekt: false, astaeda: 'Agentinn fann ekkert í gögnunum sem styður svar.' + omTexti };
   if ((Number(c.hent) || 0) >= 3 && (Number(c.hent) || 0) > st.length) return { marktaekt: false, astaeda: 'Flestar staðhæfingar agentsins höfðu enga heimild og var hent.' + omTexti };
   const t = c.tillaga || {};
+  // 18.11.2026: agentinn fær fyrirmæli um að velja „ekkert“ og telja upp í `omaelt` það sem hann fékk ekki.
+  // Geri hann það BÆÐI er umferðin ekki kláruð — hún vantar svar. Áður slapp slíkt í gegn sem „utskyring“
+  // (mælt: merking #1, umferð umwldzl6c, mál #882) og varð tilbúið verk sem sagði ekkert nema að gögnin vantaði.
+  // „ekkert“ ÁN omaelt stendur áfram (t.d. Yfirfara sem endar á „málið stenst, engin aðgerð“).
+  if (t.tegund === 'ekkert' && om.length) return { marktaekt: false, astaeda: 'Agentinn fann ekkert marktækt í gögnunum og sagði það sjálfur.' + omTexti };
   if (t.tegund === 'verk' && t.titill && t.lysing) return { marktaekt: true, tegund: 'verk' };
   if (t.tegund === 'tolvupostur' && t.texti && t.post) return { marktaekt: true, tegund: 'tolvupostur' };
   const heim = st.flatMap((s) => s.heimildir);

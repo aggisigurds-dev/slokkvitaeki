@@ -118,6 +118,15 @@ test('Óðinn: hálfsvar telst ALDREI klárað; marktækt verk/póstur/útskýri
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'veit_ekki').tegund, 'utskyring');
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Þetta snýst um X. Y er búið, Z vantar samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'ja').marktaekt, false);
   assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Símtalið bíður þegar í Afgreiðslu #23.', stadreyndir: st(1, 'A1'), tillaga: { tegund: 'ekkert' } }, 'keyra').tegund, 'visun');
+  // 18.11.2026 (raunumferð umwldzl6c, mál #882): agentinn valdi „ekkert“ OG taldi upp gögnin sem hann fékk ekki.
+  // Það er ekki klárað þótt staðreyndirnar séu tvær og svarið langt — hann sagði sjálfur að kjarnann vantaði.
+  const ekkert = M.metaSkil({ stada: 'tilbuid', svar: 'Í gögnunum sem ég fékk er hvorki kennitala Hárbeitt né Hárnet ehf., svo ég get ekki staðfest tenginguna.',
+    stadreyndir: st(2), tillaga: { tegund: 'ekkert' }, omaelt: ['Kennitala Hárbeitt er ekki í gögnunum', 'Engin gögn um Hárnet ehf.'] }, 'rannsaka');
+  assert.strictEqual(ekkert.marktaekt, false);
+  assert.match(ekkert.astaeda, /sagði það sjálfur/);
+  assert.match(ekkert.astaeda, /Kennitala Hárbeitt/);
+  // „ekkert“ ÁN omaelt er áfram gild útskýring (Yfirfara sem endar á „málið stenst“).
+  assert.strictEqual(M.metaSkil({ stada: 'tilbuid', svar: 'Málið stenst: greitt 12.09 og ekkert útistandandi samkvæmt gögnunum.', stadreyndir: st(2), tillaga: { tegund: 'ekkert' } }, 'yfirfara').tegund, 'utskyring');
 });
 
 /* ── Enda í enda á gervigrunni: merkja → keyra → agent → Óðinn → tilbúið verk ── */
