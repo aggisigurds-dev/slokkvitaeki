@@ -119,13 +119,17 @@
     const fra = new Date(Date.now() - DAGAR * 864e5).toISOString();
     S._p = (async () => {
       try {
-        const [p, a, h, m] = await Promise.all([
+        const [p, a, h, m, tp] = await Promise.all([
           c.from('email_digest').select('id,message_id,account,folder,thread_id,sender_name,sender_email,to_addresses,subject,snippet,body_preview,received_at,labels,has_attachment,attachment_names,is_question')
             .in('account', HOLF.concat(['Slokkvitaeki@brunaholf.is'])).gte('received_at', fra).order('received_at', { ascending: false }).limit(1000),
           c.from('reikninga_postur_activity').select('message_id,kind').limit(1000),
           c.from('reikninga_postur_hidden').select('message_id').limit(1000),
           c.from('thjonustubeidni').select('id,title,status,tags,notes,channel_ref,assigned_to,svarad_at,fyrirtaeki_id,customer_nafn,updated_at,created_by,created_at')
-            .like('channel_ref', 'email:%').is('deleted_at', null).order('created_at', { ascending: false }).limit(1000)
+            .like('channel_ref', 'email:%').is('deleted_at', null).order('created_at', { ascending: false }).limit(1000),
+          // 18.11.2026 (Agnar: „þú mátt líka setja frá mörgum starfsmönnum inn á sömu erindið“): channel_ref ber einn aðalpóst
+          // og er óbreyttur (240, 368 og 309 lesa hann strangt). Auðkenni hinna póstanna — þá sem aðrir starfsmenn kúnnans
+          // sendu um sama verk í öðrum þræði — liggja í thjonustubeidni_postar og eru lesin hér svo hvaða þráður sem er finni málið.
+          c.from('thjonustubeidni_postar').select('beidni_id,email_id').limit(4000)
         ]);
         if (p.error) throw p.error;
         S.postar = p.data || [];
@@ -133,6 +137,15 @@
         S.hidden = new Set(((h.data) || []).map(x => x.message_id));
         S.mal = new Map();
         ((m.data) || []).forEach(r => { const id = String(r.channel_ref || '').slice(6); if (id && !S.mal.has(id)) S.mal.set(id, r); });
+        // Aukatengingarnar ofan á: málið er fundið en byggt á id-i úr channel_ref, svo hér er flett upp í sömu röð.
+        // Aðalpósturinn víkur aldrei — við skrifum aðeins í lykla sem eru lausir.
+        try {
+          const malById = new Map(); S.mal.forEach(r => { if (r && r.id != null) malById.set(Number(r.id), r); });
+          ((tp && tp.data) || []).forEach(x => {
+            const r = malById.get(Number(x.beidni_id)), k = String(x.email_id);
+            if (r && k && !S.mal.has(k)) S.mal.set(k, r);
+          });
+        } catch (_) {}
         // Fylgiskjöl málanna (04.11.2026) — tvær fyrirspurnir fyrir öll mál listans, aldrei ein per mál. Bregðist þær er listinn samt sýndur.
         S.skjol = new Map();
         try {
