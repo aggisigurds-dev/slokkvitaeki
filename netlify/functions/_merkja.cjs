@@ -23,6 +23,12 @@ const LEID = require('./_merkja-leid.cjs');
 const PSV = require('./_postsvar-rod.cjs');
 
 const BORD = 'thjonustubord';
+// 18.11.2026 — ÞjónustuVerkstæðið (190): SAMA vél, önnur lína. Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu,
+// til að hjálpa mér að útkljá þau mál“. Þar er línan FÉLAG (fyrirtaeki_id), ekki mál. Borðin eru aðskilin (bord), svo ▶ Keyra
+// á öðru sendir aldrei merki hins. Óþekkt borð → Þjónustuborðið (519 sendir ekkert borð og á að haldast óbreytt).
+const BORD_VERKST = 'verkstaedi';
+const bordAf = (b) => (String(b == null ? '' : b) === BORD_VERKST ? BORD_VERKST : BORD);
+const erFelagslina = (m) => !!(m && m.bord === BORD_VERKST);
 const MAX_ALDUR_MS = 15 * 60 * 1000;
 const HAMARK_UMFERD = 6;                  // atriði sem fara í eina umferð; hin bíða næstu (röðin ræður hverjum)
 // Föst keyrsla (óháð rýni 17.11.2026, #2): vinnaMerki byrjar ekki eftir MAX_ALDUR_MS og Claude-kallið hefur 4 mín. þak, svo
@@ -130,7 +136,7 @@ function synilegt(m0) {
   const m = erFost(m0) ? Object.assign({}, m0, { stada: 'vantar_svar', astaeda: FAST_ASTAEDA }) : m0;
   const c = m.claude || {};
   const n = m.nidurstada || {};
-  return { id: m.id, lina: m.lina, mal_id: m.mal_id, mal_titill: m.mal_titill, merki: m.merki, heiti: (MERKI[m.merki] || {}).heiti || m.merki,
+  return { id: m.id, bord: m.bord || BORD, lina: m.lina, mal_id: m.mal_id, fyrirtaeki_id: m.fyrirtaeki_id || null, mal_titill: m.mal_titill, merki: m.merki, heiti: (MERKI[m.merki] || {}).heiti || m.merki,
     athugasemd: m.athugasemd || null, due_at: m.due_at || null, stada: m.stada, snooze_buid: snoozeBuid(m), forgangur: m.forgangur,
     umferd: m.umferd || null, agent: m.agent || null, gat: !!(m.agent_leid && m.agent_leid.gat), merkt_at: m.merkt_at, keyrt_at: m.keyrt_at || null,
     lokid_at: m.lokid_at || null, astaeda: m.astaeda || null, afgreidsla_id: m.afgreidsla_id || null,
@@ -144,20 +150,23 @@ const lesa = (qs) => P.sbGet(qs).then(sbJson);
 const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date().toISOString() }, body)).then(sbJson);
 const baeta = (t, body) => P.sbPost(t, body).then(sbJson);
 const linaAf = (malId) => 'mal:' + Number(malId);
+const linaFelags = (id) => 'fyrirtaeki:' + Number(id);
 
 // Tiltekt: fastar keyrslur þessa notanda → vantar_svar (skráð í grunninn). Keyrð í upphafi listi/vista/keyra; bili hún
 // telja teljari() og synilegt() fasta röð samt sem vantar_svar, svo ekkert læsist.
-async function tiltekt(hver, nu = new Date()) {
+async function tiltekt(hver, nu = new Date(), bord = BORD) {
+  bord = bordAf(bord);   // fer í slóð — aldrei annað en föstu gildin tvö, hver sem kallar
   const mork = new Date(nu.getTime() - FAST_MS).toISOString();
-  return breyta(`bord_merkingar?bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.i_keyrslu&keyrt_at=lt.${encodeURIComponent('"' + mork + '"')}`,
+  return breyta(`bord_merkingar?bord=eq.${bord}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.i_keyrslu&keyrt_at=lt.${encodeURIComponent('"' + mork + '"')}`,
     { stada: 'vantar_svar', astaeda: FAST_ASTAEDA, lokid_at: nu.toISOString() }).catch(() => []);
 }
 
 // Merkingar sem vafrinn sýnir: virkar + niðurstöður síðustu 3 daga. Ein á línu (sú nýjasta).
-async function listi(hver) {
-  await tiltekt(hver);
+async function listi(hver, bord = BORD) {
+  bord = bordAf(bord);
+  await tiltekt(hver, new Date(), bord);
   const fra = new Date(Date.now() - 3 * 864e5).toISOString();
-  const r = await lesa(`bord_merkingar?select=*&bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=neq.tekid_af` +
+  const r = await lesa(`bord_merkingar?select=*&bord=eq.${bord}&merkt_af=eq.${encodeURIComponent(hver)}&stada=neq.tekid_af` +
     `&or=(stada.in.(merkt,i_keyrslu,blundar),updated_at.gte.${encodeURIComponent('"' + fra + '"')})&order=updated_at.desc&limit=400`);
   const sedar = new Set(), ut = [];
   for (const m of r) { if (sedar.has(m.lina)) continue; sedar.add(m.lina); ut.push(m); }
@@ -166,28 +175,35 @@ async function listi(hver) {
 
 // Merki á línu. merki=null tekur merkið af (stada 'tekid_af' — engu eytt).
 async function vista(b, hver, nu = new Date()) {
-  const mid = Number(b.mal_id);
+  // Verkstæðið: línan er félag (b.fyrirtaeki_id). Þjónustuborðið: mál (b.mal_id) — óbreytt.
+  const bord = bordAf(b.bord), felag = bord === BORD_VERKST;
+  const mid = Number(felag ? b.fyrirtaeki_id : b.mal_id);
   if (!Number.isInteger(mid) || mid <= 0) throw villa('Línan er ekki rétt tilgreind');
   const merki = b.merki == null || b.merki === '' ? null : String(b.merki);
   if (merki && !MERKI[merki]) throw villa('Óþekkt merki');
   const ath = String(b.athugasemd || '').trim().slice(0, 1500);
   if (merki === 'comment' && !ath) throw villa('Athugasemdin er tóm');
   const due = merki === 'snooze' ? snoozeDags(b.due_at, nu) : null;
-  const lina = linaAf(mid);
-  await tiltekt(hver, nu);
-  const eldri = await lesa(`bord_merkingar?select=id,stada,keyrt_at,claude&bord=eq.${BORD}&lina=eq.${encodeURIComponent(lina)}&merkt_af=eq.${encodeURIComponent(hver)}&stada=in.(${VIRKAR.join(',')})&limit=5`);
+  const lina = felag ? linaFelags(mid) : linaAf(mid);
+  await tiltekt(hver, nu, bord);
+  const eldri = await lesa(`bord_merkingar?select=id,stada,keyrt_at,claude&bord=eq.${bord}&lina=eq.${encodeURIComponent(lina)}&merkt_af=eq.${encodeURIComponent(hver)}&stada=in.(${VIRKAR.join(',')})&limit=5`);
   // Lesið í gegnum tiltektarsýnina: föst keyrsla læsir ekki línuna þótt tiltekt hafi brugðist (hún er felld hér beint).
   if (eldri.some((x) => x.stada === 'i_keyrslu' && !erFost(x, nu))) throw villa('Agent er að vinna í þessari línu — niðurstaðan birtist hér.', 409);
   for (const x of eldri.filter((y) => erFost(y, nu))) await breyta(`bord_merkingar?id=eq.${x.id}&stada=eq.i_keyrslu`, { stada: 'vantar_svar', astaeda: FAST_ASTAEDA, lokid_at: nu.toISOString() });
   let mal = null;
-  if (merki) {
+  if (merki && felag) {
+    const f = (await lesa(`fyrirtaeki?select=id,nafn,deleted_at&id=eq.${mid}&limit=1`))[0];
+    if (!f || f.deleted_at) throw villa('Félagið fannst ekki', 404);
+    mal = { title: f.nafn };
+  } else if (merki) {
     mal = (await lesa(`thjonustubeidni?select=id,title,status,deleted_at&id=eq.${mid}&limit=1`))[0];
     if (!mal || mal.deleted_at) throw villa('Málið fannst ekki', 404);
   }
   for (const x of eldri) await breyta(`bord_merkingar?id=eq.${x.id}&stada=in.(merkt,blundar)`, { stada: 'tekid_af' });
   if (!merki) return null;
-  const ny = await baeta('bord_merkingar', { bord: BORD, lina, mal_id: mid, mal_titill: String(mal.title || '').slice(0, 200), merki, athugasemd: ath || null,
-    due_at: due, merkt_af: hver, merkt_at: nu.toISOString(), stada: merki === 'snooze' ? 'blundar' : 'merkt', forgangur: MERKI[merki].forgangur });
+  const ny = await baeta('bord_merkingar', Object.assign({ bord, lina, mal_id: felag ? null : mid, mal_titill: String(mal.title || '').slice(0, 200), merki, athugasemd: ath || null,
+    due_at: due, merkt_af: hver, merkt_at: nu.toISOString(), stada: merki === 'snooze' ? 'blundar' : 'merkt', forgangur: MERKI[merki].forgangur },
+    felag ? { fyrirtaeki_id: mid } : {}));
   return ny[0];
 }
 
@@ -202,10 +218,11 @@ async function charlizeNei(m, hver) {
 }
 
 // ▶ KEYRA — allt sem er merkt fer í röð. Skilar { umferd, sent, bida, nei }.
-async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu = new Date() } = {}) {
+async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu = new Date(), bord = BORD } = {}) {
   if (typeof kveikja !== 'function') throw new Error('kveikja vantar');
-  await tiltekt(hver, nu);
-  const merkt = rodun(await lesa(`bord_merkingar?select=*&bord=eq.${BORD}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.merkt&order=forgangur.asc,merkt_at.asc&limit=200`));
+  bord = bordAf(bord);
+  await tiltekt(hver, nu, bord);
+  const merkt = rodun(await lesa(`bord_merkingar?select=*&bord=eq.${bord}&merkt_af=eq.${encodeURIComponent(hver)}&stada=eq.merkt&order=forgangur.asc,merkt_at.asc&limit=200`));
   if (!merkt.length) return { umferd: null, sent: 0, bida: 0, nei: 0, skilabod: 'Ekkert er merkt.' };
   const umferd = 'u' + nu.getTime().toString(36);
   const nuIso = nu.toISOString();
@@ -225,6 +242,16 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
     try { tekin = await breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.merkt`, { stada: 'i_keyrslu', umferd, keyrt_at: nuIso }); } catch (_) { return 0; }   // stendur merkt → næsta umferð
     if (!tekin.length) return 0;
     try {
+      // Óháð rýni 18.11.2026: á verkstæðinu er línan FÉLAGIÐ — þar er engin tiltekin tillaga til að hafna. Charlize-færsla
+      // („Ekki leggja þetta til aftur“) væri án árs og efnis, læsist inn í öll mál sem nefna nafn félagsins (nafnaleit í
+      // safna, akvordun_agnars) og rynni aldrei út — næsta ár gæti agent vikið sér undan lögmætri úttektarvinnu. Nei á
+      // félagi er því AÐEINS skráð á línuna: ekkert unnið, ekkert sent agent, engin varanleg ákvörðun.
+      if (erFelagslina(m)) {
+        await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'klarad', lokid_at: new Date().toISOString(), agent: null,
+          nidurstada: { tegund: 'akvordun', svar: 'Nei skráð á félagið — ekkert unnið og ekkert sent agent. (Á verkstæðinu er Nei ekki varanleg ákvörðun.)' },
+          odin_mat: { marktaekt: true, astaeda: 'Nei á félagi — engin vinna, engin Charlize-færsla', at: new Date().toISOString() } });
+        return 1;
+      }
       const cid = await charlizeNei(m, hver);
       await breyta(`bord_merkingar?id=eq.${m.id}`, { stada: 'klarad', lokid_at: new Date().toISOString(), agent: 'charlize',
         nidurstada: { tegund: 'akvordun', svar: 'Nei skráð hjá Charlize (#' + cid + ') — agentarnir leggja þetta ekki til aftur.', charlize_id: cid },
@@ -237,7 +264,10 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
   }));
   const sentNidur = await Promise.all(valin.map(async (m) => {
     const mal = malar.find((x) => Number(x.id) === Number(m.mal_id));
-    const texti = [mal && mal.type, mal && mal.title, mal && mal.customer_nafn, mal && mal.summary, m.mal_titill || '', m.athugasemd || ''].filter(Boolean).join('\n');
+    // Félag á verkstæðinu: síðuheitið fer í textann, svo leiðarvísirinn rétti keflið EIGANDA síðunnar (boðhlaupsreglan).
+    const texti = erFelagslina(m)
+      ? ['ÞjónustuVerkstæði', 'Úttekt ársins — ársskoðun slökkvitækja: úttektarskýrsla og reikningur', m.mal_titill || '', m.athugasemd || ''].filter(Boolean).join('\n')
+      : [mal && mal.type, mal && mal.title, mal && mal.customer_nafn, mal && mal.summary, m.mal_titill || '', m.athugasemd || ''].filter(Boolean).join('\n');
     const vara = (v) => ({ agent: LEID.VARA, stig: 0, ord: [], gat: true, villa: v });
     let leid;
     try { leid = leidG.g ? await LEID.leid(texti, Object.assign({}, leidOpt, { g: leidG.g })) : vara('Leiðarvísirinn svaraði ekki: ' + leidG.villa); }
@@ -265,7 +295,15 @@ async function keyra(hver, { kveikja, hamark = HAMARK_UMFERD, leidOpt = {}, nu =
 const fmtD = (iso) => { const d = new Date(iso); const p = (n) => String(n).padStart(2, '0'); return isNaN(d) ? '' : p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear(); };
 function kerfiAuki(m, persona) {
   const p = persona || {};
-  return ['Í ÞETTA SINN: atriðið er LÍNA Á ÞJÓNUSTUBORÐINU (mál #' + m.mal_id + '), ekki vikuyfirlit. Agnar merkti hana „' + ((MERKI[m.merki] || {}).heiti || m.merki) + '“ og ýtti á Keyra.',
+  const heiti = (MERKI[m.merki] || {}).heiti || m.merki;
+  return [erFelagslina(m)
+    ? 'Í ÞETTA SINN: atriðið er FÉLAG Á ÞJÓNUSTUVERKSTÆÐINU (fyrirtæki #' + m.fyrirtaeki_id + '), ekki vikuyfirlit. Verkstæðið heldur utan um ÚTTEKT ÁRSINS ' +
+      '(ársskoðun slökkvitækja) hjá hverju félagi í þjónustu: farið á staðinn → tækjalisti → úttekt → skýrsla → send → reikningur. Agnar merkti félagið „' + heiti +
+      '“ og ýtti á Keyra. Svaraðu um ÞETTA félag og ÞENNAN stað: er úttekt ársins gerð, er skýrslan til, er reikningurinn sendur og greiddur — og hvað vantar. ' +
+      'Gögnin U… (verkstæðisstaða, skjöl, sölur, tæki), K… (skjöl) og S… (sölur) eru mæld beint fyrir þennan stað. Færsla merkt ÓMÆLT þýðir að sóknin brást, ' +
+      'EKKI að ekkert sé til. Skoðunardagur tækja er vísbending, aldrei staðfesting ein og sér. Leggðu ALDREI til að merkja „búið“ nema skýrsla EÐA reikningur ársins sé í gögnunum. ' +
+      'Þar sem fyrirmælin segja „málið“ er átt við ÚTTEKT ÁRSINS hjá þessu félagi; „næsta skref“ er næsta óunna skref hennar (skýrsla, sending, reikningur) samkvæmt gögnunum.'
+    : 'Í ÞETTA SINN: atriðið er LÍNA Á ÞJÓNUSTUBORÐINU (mál #' + m.mal_id + '), ekki vikuyfirlit. Agnar merkti hana „' + heiti + '“ og ýtti á Keyra.',
     'ÞÚ VINNUR SEM AGENTINN ' + (p.emoji ? p.emoji + ' ' : '') + (m.agent || LEID.VARA) + (p.lysing ? ' — ' + p.lysing : '') + '.',
     (p.serhaefing && p.serhaefing.length ? 'SÉRHÆFING: ' + p.serhaefing.join(' · ') : ''),
     (p.aldrei && p.aldrei.length ? 'ALDREI: ' + p.aldrei.join(' · ') : ''),
@@ -277,7 +315,8 @@ function lysingVerks(m, c) {
 }
 async function tilbuidVerk(m, c, mat, hver) {
   const heiti = (MERKI[m.merki] || {}).heiti || m.merki;
-  const malRef = 'Þjónustuborð · mál #' + m.mal_id;
+  const felag = erFelagslina(m);
+  const malRef = felag ? 'ÞjónustuVerkstæði · fyrirtæki #' + m.fyrirtaeki_id : 'Þjónustuborð · mál #' + m.mal_id;
   const afh = (c.stadreyndir || []).slice(0, 6).map((s) => { const o = s.heimildir.map((id) => c.heimildir[id]).find((x) => x && x.opna); return Object.assign({ texti: s.texti, heimild: s.heimildir.map((id) => (c.heimildir[id] || {}).lysing || id).join(' · ') }, o ? { opna: o.opna } : {}); });
   afh.unshift({ texti: 'Agentinn ' + (m.agent || LEID.VARA) + ' vann þetta af merkinu „' + heiti + '“ (Merkja og keyra). Óðinn mat svarið marktækt.', heimild: malRef + ' · merking #' + m.id });
   if (mat.tegund === 'tolvupostur') {
@@ -289,11 +328,11 @@ async function tilbuidVerk(m, c, mat, hver) {
   const erVerk = mat.tegund === 'verk';
   const lysing = lysingVerks(m, c);
   const ny = await baeta('afgreidsla', { lykill: 'merki:' + m.id + ':' + (m.umferd || 'u'), tegund: 'verk',
-    titill: ((erVerk ? t.titill : heiti + ': ' + (m.mal_titill || 'mál #' + m.mal_id))).slice(0, 200),
+    titill: ((erVerk ? t.titill : heiti + ': ' + (m.mal_titill || (felag ? 'fyrirtæki #' + m.fyrirtaeki_id : 'mál #' + m.mal_id)))).slice(0, 200),
     takki: erVerk ? 'Setja á Verkefnalistann' : 'Lesið — loka',
     hvad_gerist: erVerk ? 'Verkið fer á Verkefnalistann (' + (m.agent || 'claude-code') + ' vinnur það). Ekkert fer út.' : 'Merkt lesið. Ekkert annað gerist og ekkert fer út.',
     af_hverju: afh, virdi_kr: null, forgangur: (MERKI[m.merki] || {}).forgangur || 40, created_by: 'merkja', stada: 'tilbuid',
-    gogn: Object.assign({ lysing: erVerk ? t.lysing + '\n\n' + lysing : lysing, merking_id: m.id, mal_id: m.mal_id },
+    gogn: Object.assign({ lysing: erVerk ? t.lysing + '\n\n' + lysing : lysing, merking_id: m.id, mal_id: m.mal_id }, felag ? { fyrirtaeki_id: m.fyrirtaeki_id } : {},
       erVerk ? { verkefnalisti: { title: t.titill, description: (t.lysing + '\n\n' + lysing + '\n\nAgnar merkti „' + heiti + '“ á ' + malRef + ' (' + fmtD(m.merkt_at) + ', ' + hver + '). Heimild: bord_merkingar #' + m.id + '.').slice(0, 4000),
         category: 'allt', assigned_agent: m.agent || 'claude-code', vefur: 'slokkvitaeki', priority: 2 } } : {}) });
   return ny[0] && ny[0].id;
@@ -316,12 +355,21 @@ async function vinnaMerki(id, nonce) {
   const skrifa = (body) => breyta(`bord_merkingar?id=eq.${m.id}&stada=eq.i_keyrslu&claude->>nonce=eq.${encodeURIComponent(nonce)}`, body);
   let c;
   try {
-    const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type,deleted_at,archived_at&id=eq.${Number(m.mal_id)}&limit=1`))[0];
-    if (!mal || mal.deleted_at) throw new Error('Málið fannst ekki lengur');
-    // Lokað EÐA í geymslu telst lokað (sama og 492f / afgreidsla.cjs) — ekkert Claude-kall.
-    if (mal.status === 'lokad' || mal.archived_at) throw new Error('Málinu var lokað eða það sett í geymslu áður en agentinn komst að — ekkert unnið');
-    const texti = [mal.title, mal.customer_nafn, mal.summary, String(mal.notes || '').slice(0, 2500)].filter(Boolean).join('\n');
-    const s = await CL.safna({ texti, hluti_heiti: 'Þjónustuborð' }, mal, fyrirmaeliFyrir(m));
+    let s;
+    if (erFelagslina(m)) {
+      // Félag á ÞjónustuVerkstæðinu: gögnin eru mæld fyrir ÞENNAN stað (CL.uttektargogn) — verkstæðisstaða, skjöl, sölur, tæki.
+      const f = (await lesa(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu,banner_note,deleted_at&id=eq.${Number(m.fyrirtaeki_id)}&limit=1`))[0];
+      if (!f || f.deleted_at) throw new Error('Félagið fannst ekki lengur');
+      const texti = ['Úttekt ársins (ársskoðun slökkvitækja) — ' + f.nafn, m.athugasemd || ''].filter(Boolean).join('\n');
+      s = await CL.safna({ texti, hluti_heiti: 'ÞjónustuVerkstæði' }, { id: null, title: 'ÞjónustuVerkstæði · ' + f.nafn }, fyrirmaeliFyrir(m), { fyrirtaeki: f });
+    } else {
+      const mal = (await lesa(`thjonustubeidni?select=id,title,status,summary,notes,customer_nafn,type,deleted_at,archived_at&id=eq.${Number(m.mal_id)}&limit=1`))[0];
+      if (!mal || mal.deleted_at) throw new Error('Málið fannst ekki lengur');
+      // Lokað EÐA í geymslu telst lokað (sama og 492f / afgreidsla.cjs) — ekkert Claude-kall.
+      if (mal.status === 'lokad' || mal.archived_at) throw new Error('Málinu var lokað eða það sett í geymslu áður en agentinn komst að — ekkert unnið');
+      const texti = [mal.title, mal.customer_nafn, mal.summary, String(mal.notes || '').slice(0, 2500)].filter(Boolean).join('\n');
+      s = await CL.safna({ texti, hluti_heiti: 'Þjónustuborð' }, mal, fyrirmaeliFyrir(m));
+    }
     const k = await CL.kalla(s.gogn, { kerfiAuki: kerfiAuki(m, c0.persona) });
     const v = await CL.stadfesta(k.svar, s);
     c = Object.assign({ stada: 'tilbuid', nonce, at: c0.at, lokid_at: new Date().toISOString(), model: k.model, fjoldi_gagna: s.gogn.gogn.length }, v);
@@ -356,5 +404,5 @@ async function vinnaMerki(id, nonce) {
   return { ok: true, marktaekt: mat.marktaekt, afgreidsla_id: afgId };
 }
 
-module.exports = { MERKI, STODUR, BORD, HAMARK_UMFERD, FAST_MS, erFost, tiltekt, snoozeDags, snoozeBuid, rodun, teljari, fyrirmaeliFyrir, metaSkil, synilegt, kerfiAuki,
+module.exports = { MERKI, STODUR, BORD, BORD_VERKST, bordAf, erFelagslina, linaFelags, HAMARK_UMFERD, FAST_MS, erFost, tiltekt, snoozeDags, snoozeBuid, rodun, teljari, fyrirmaeliFyrir, metaSkil, synilegt, kerfiAuki,
   listi, vista, keyra, vinnaMerki, linaAf };

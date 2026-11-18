@@ -475,3 +475,30 @@ begin
 end $$;
 revoke all on function public.vs_saga_skra(date, jsonb) from public, anon, authenticated;
 grant execute on function public.vs_saga_skra(date, jsonb) to service_role;
+
+-- ── 18.11.2026 — Merkja og keyra á ÞjónustuVerkstæðinu (190): línan er FÉLAG, ekki mál ─────────────────────────
+-- Viðbót eingöngu (keyrt á lifandi grunni 18.11.2026 sem bord_merkingar_fyrirtaeki_og_verkst_stada): nýr dálkur
+-- (núll á eldri röðum) og lesfall. Verkstæðið notar bord = 'verkstaedi' og lina = 'fyrirtaeki:<id>'.
+alter table public.bord_merkingar
+  add column if not exists fyrirtaeki_id bigint references public.fyrirtaeki(id) on delete set null;
+create index if not exists bord_merkingar_fyrirtaeki
+  on public.bord_merkingar (fyrirtaeki_id) where fyrirtaeki_id is not null;
+comment on column public.bord_merkingar.fyrirtaeki_id is
+  'Félagið sem merkt var á ÞjónustuVerkstæðinu (bord = verkstaedi, lina = fyrirtaeki:<id>). Núll á málslínum Þjónustuborðsins.';
+
+-- Verkstæðisstaða EINS félags úr app_settings (arsskodun_customers er 766 kB í heild — agentinn fær aðeins sitt félag,
+-- án tækjalista og sögu). Aðeins þjónustulykillinn má kalla á fallið.
+create or replace function public.verkst_stada(p_id bigint)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select (settings->'arsskodun_customers'->(p_id::text))
+           - 'equipment' - 'equipment_manual' - 'history' - 'skyrslur_tengdar'
+  from public.app_settings
+  where id = 1
+$$;
+revoke all on function public.verkst_stada(bigint) from public, anon, authenticated;
+grant execute on function public.verkst_stada(bigint) to service_role;

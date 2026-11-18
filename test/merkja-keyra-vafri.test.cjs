@@ -105,3 +105,93 @@ test('aðrir en Agnar: ekkert teiknað og ekkert sótt', async () => {
   assert.strictEqual(kollud.length, 0);
   assert.strictEqual(MK.merki({ id: 11 }), '');
 });
+
+/* ── 18.11.2026: verksmiðjan — sama vél á ÞjónustuVerkstæðinu (190), línan er FÉLAG ─────────────────────────── */
+const GOGN_V = () => ({ ok: true, claude_virkt: true, merkingar: [
+  { id: 7, bord: 'verkstaedi', fyrirtaeki_id: 1934, mal_id: null, merki: 'yfirfara', stada: 'merkt', heiti: 'Yfirfara', mal_titill: 'Húsfélagið <b>Prufa</b>' },
+  { id: 8, bord: 'verkstaedi', fyrirtaeki_id: 55, mal_id: null, merki: 'keyra', stada: 'klarad', umferd: 'u9', afgreidsla_id: 120, mal_titill: 'Annað félag' }],
+  teljari: { merkt: 1, i_keyrslu: 0, klarad: 1, vantar_svar: 0, blundar: 0, umferd: 'u9', buin: true, lokid_at: '2026-11-18T12:00:00Z' } });
+
+test('verksmiðjan: eintak verkstæðisins sendir bord + fyrirtaeki_id; Þjónustuborðið sendir EKKERT borð (óbreytt köll)', async () => {
+  const opnad = [], teiknad = { n: 0 };
+  const { MK, kollud, heimur } = hlada((url) => ({ status: 200, json: /bord=verkstaedi/.test(url) ? GOGN_V() : GOGN() }));
+  assert.strictEqual(typeof MK.buaTil, 'function');
+  const V = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: 'view-thjonustu-verkstaedi', sedLykill: 'merkja_sed_verkst',
+    toast: () => {}, teikna: () => { teiknad.n++; }, rot: () => null, opna: (id) => opnad.push(id), heiti: (m) => String(m.mal_titill || 'Félag #' + m.fyrirtaeki_id), opnaTexti: 'Opna félagið' });
+  V.html('Agnar'); MK.html('Agnar'); await bida(120);
+  // Tvær sóknir, hvor á sitt borð.
+  assert.deepStrictEqual(kollud.map((k) => k.url).sort(), ['/api/afgreidsla?merkingar=1', '/api/afgreidsla?merkingar=1&bord=verkstaedi']);
+  // Ástandið er aðskilið: félag 1934 er merkt á verkstæðinu, ekki á borðinu (og mál 11 öfugt).
+  assert.match(V.merki({ id: 1934 }), /data-t5="mk-opna" data-id="1934" data-s="merkt"/);
+  assert.match(MK.merki({ id: 1934 }), />◇<\/button>/);
+  assert.match(V.merki({ id: 11 }), />◇<\/button>/);
+  assert.match(MK.merki({ id: 11 }), /data-s="merkt"/);
+  assert.notStrictEqual(V.S, MK.S);
+  // Teljarinn nefnir FÉLAGIÐ, afmáð, og takkinn opnar félagið.
+  const h = V.html('Agnar');
+  assert.match(h, /✓ Annað félag/); assert.match(h, /Tilbúið verk #120/); assert.match(h, /data-t5="mk-mal" data-id="55">Opna félagið<\/button>/);
+  assert.ok(!/Opna málið/.test(h));
+  V.smellur({ dataset: { t5: 'mk-mal', id: '55' } });
+  assert.deepStrictEqual(opnad, [55]);
+  // Merking á félagi: fyrirtaeki_id + bord í kallinu, aldrei mal_id.
+  kollud.length = 0;
+  V.smellur({ dataset: { t5: 'mk-opna', id: '77' } });
+  V.smellur({ dataset: { t5: 'mk-merki', id: '77', v: 'rannsaka' } });
+  await bida(60);
+  assert.deepStrictEqual(kollud.map((k) => [k.method, k.body]), [['POST', { adgerd: 'merkja', fyrirtaeki_id: 77, merki: 'rannsaka', bord: 'verkstaedi' }]]);
+  kollud.length = 0;
+  V.smellur({ dataset: { t5: 'mk-keyra' } }); await bida(60);
+  assert.deepStrictEqual(kollud.map((k) => k.body), [{ adgerd: 'merkja_keyra', bord: 'verkstaedi' }]);
+  // Þjónustuborðið: nákvæmlega sömu köll og áður — ekkert `bord`.
+  kollud.length = 0;
+  MK.smellur({ dataset: { t5: 'mk-opna', id: '99' } });
+  MK.smellur({ dataset: { t5: 'mk-merki', id: '99', v: 'keyra' } });
+  await bida(60);
+  assert.deepStrictEqual(kollud.map((k) => k.body), [{ adgerd: 'merkja', mal_id: 99, merki: 'keyra' }]);
+  assert.ok(teiknad.n >= 1, 'eintakið teiknar SITT borð');
+  assert.strictEqual(heimur.MerkjaKeyra, MK);
+});
+
+test('verksmiðjan: eintak verkstæðisins sést aðeins hjá Agnari — aðrir fá ekkert teiknað og ekkert er sótt fyrir þá', async () => {
+  const { MK, kollud } = hlada(() => ({ status: 200, json: GOGN_V() }), { nu: 'Anni' });
+  const V = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: 'x', teikna: () => {}, toast: () => {}, rot: () => null, opna: () => {} });
+  assert.strictEqual(V.html('Anni'), ''); assert.strictEqual(V.html(''), ''); assert.strictEqual(V.html(undefined), '');
+  await bida(50);
+  assert.strictEqual(kollud.length, 0);
+  assert.strictEqual(V.merki({ id: 1934 }), ''); assert.strictEqual(V.gluggi({ id: 1934 }), '');
+});
+
+test('verksmiðjan: 403 á verkstæðinu → ein lína og engin lykkja, eins og á borðinu', async () => {
+  let teikn = 0;
+  const { MK, kollud } = hlada(() => ({ status: 403, json: { error: 'Admin' } }));
+  let V = null;
+  V = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: 'x', teikna: () => { if (++teikn < 500) V.html('Agnar'); }, toast: () => {}, rot: () => null, opna: () => {} });
+  V.html('Agnar'); await bida(250);
+  assert.strictEqual(kollud.length, 1, 'fyrirspurnir: ' + kollud.length + ' (teikningar ' + teikn + ')');
+  assert.ok(teikn <= 2);
+  assert.match(V.html('Agnar'), /aðeins fyrir innskráðan stjórnanda \(403\)/);
+  assert.strictEqual(V.merki({ id: 1934 }), '');
+});
+
+test('fókus á flipann: Þjónustuborðið sækir alltaf (óbreytt); eintak annars borðs aðeins þegar SÍN sýn er virk', async () => {
+  const kollud = [], hlust = [];
+  let virkSyn = 'view-bord';
+  const h = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number };
+  h.window = h; h.setInterval = () => 0; h.clearInterval = () => {};
+  h.document = { hidden: false, addEventListener: (t, f) => { if (t === 'visibilitychange') hlust.push(f); }, getElementById: (id) => ({ classList: { contains: () => id === virkSyn } }) };
+  h.fetch = (url) => { kollud.push(url); return Promise.resolve({ status: 200, json: () => Promise.resolve({ ok: true, claude_virkt: true, merkingar: [], teljari: {} }) }); };
+  h.Samthykkja = { nu: () => 'Agnar' };
+  h.Bord368 = { toast() {}, root: () => null };
+  h.Thjonustubord5 = { render() {} };
+  vm.runInNewContext(KODI, h, { filename: SKRA });
+  const V = h.MerkjaKeyra.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: 'view-thjonustu-verkstaedi', teikna() {}, toast() {}, rot: () => null, opna() {} });
+  h.MerkjaKeyra.html('Agnar'); V.html('Agnar'); await bida(60);
+  assert.strictEqual(kollud.length, 2);
+  assert.strictEqual(hlust.length, 2, 'einn hlustandi á eintak');
+  kollud.length = 0;
+  hlust.forEach((f) => f()); await bida(40);                       // Agnar er á Þjónustuborðinu
+  assert.deepStrictEqual(kollud, ['/api/afgreidsla?merkingar=1'], 'verkstæðið sækir ekki þegar hann er annars staðar');
+  kollud.length = 0; virkSyn = 'view-thjonustu-verkstaedi';
+  hlust.forEach((f) => f()); await bida(40);                       // nú á verkstæðinu
+  assert.deepStrictEqual(kollud.sort(), ['/api/afgreidsla?merkingar=1', '/api/afgreidsla?merkingar=1&bord=verkstaedi']);
+});

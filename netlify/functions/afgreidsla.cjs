@@ -553,13 +553,15 @@ async function kveikjaMerki(id, nonce) {
   if (r.status !== 202 && r.status !== 200) throw new Error('bakgrunnsfallið svaraði ' + r.status);
 }
 // POST { adgerd:'merkja', mal_id, merki|null, athugasemd?, due_at? }  → merki á línu (null tekur það af)
+//   18.11.2026 — ÞjónustuVerkstæðið (190): { …, bord:'verkstaedi', fyrirtaeki_id } í stað mal_id; GET ?merkingar=1&bord=verkstaedi;
+//   { adgerd:'merkja_keyra', bord:'verkstaedi' }. Borðin eru aðskilin: án `bord` gildir Þjónustuborðið (519 óbreytt).
 // POST { adgerd:'merkja_keyra' }                                      → allt merkt í röð til agenta (Veit ekki/Rannsaka fremst)
 // GET  ?merkingar=1                                                   → { merkingar[], teljari, claude_virkt }
 // notandi() sem bregst skilar 'óþekkt' — merking má þá ALDREI vistast (hún lenti undir merkt_af='óþekkt' og sæist aldrei).
 const OTHEKKT = () => P.json(503, { error: 'Náði ekki að staðfesta hver þú ert — ekkert var skráð. Reyndu aftur eftir augnablik.' });
-async function merkingarSvar(hver, extra) {
+async function merkingarSvar(hver, extra, bord) {
   if (!hver || hver === 'óþekkt') return OTHEKKT();
-  const l = await M.listi(hver);
+  const l = await M.listi(hver, M.bordAf(bord));
   return P.json(200, Object.assign({ ok: true, merkingar: l.map(M.synilegt), teljari: M.teljari(l), claude_virkt: await claudeVirkt() }, extra || {}));
 }
 async function merkja(b, event) {
@@ -568,12 +570,12 @@ async function merkja(b, event) {
   try {
     if (b.adgerd === 'merkja') {
       const m = await M.vista(b, hver);
-      return await merkingarSvar(hver, { merking: m ? M.synilegt(m) : null });
+      return await merkingarSvar(hver, { merking: m ? M.synilegt(m) : null }, b.bord);
     }
     // Keyra notar SAMA rofa og „Biddu Claude“ (app_kv adalmal_claude) — ekkert fer til Claude meðan hann er af.
     if (!(await claudeVirkt())) return P.json(409, { error: 'Agentarnir eru ekki komnir í gagnið (rofinn „Biddu Claude“ er af) — ekkert var keyrt.' });
-    const r = await M.keyra(hver, { kveikja: kveikjaMerki });
-    return await merkingarSvar(hver, { keyrsla: r });
+    const r = await M.keyra(hver, { kveikja: kveikjaMerki, bord: M.bordAf(b.bord) });
+    return await merkingarSvar(hver, { keyrsla: r }, b.bord);
   } catch (e) {
     if (e && e.kodi) return P.json(e.kodi, { error: e.message });
     return P.json(500, { error: String((e && e.message) || e).slice(0, 300) });
@@ -775,7 +777,7 @@ exports.handler = async (event) => {
     // 519: merkingarnar einar (teljarinn kannar þær á nokkurra sekúndna fresti meðan umferð er í keyrslu) — án tilbúnu verkanna.
     const qs0 = event.queryStringParameters || {};
     if (qs0.merkingar != null && qs0.adalmal == null) {
-      try { return await merkingarSvar(await notandi(event)); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
+      try { return await merkingarSvar(await notandi(event), null, qs0.bord); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
     }
     try {
       const [tilb, saga] = await Promise.all([

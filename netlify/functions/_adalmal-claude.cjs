@@ -78,8 +78,114 @@ function nofnI(t) {
   return allt.filter((x) => !allt.some((y) => y !== x && x.startsWith(y))).slice(0, 5);
 }
 
+// Dálkar sem valdir eru úr solur. ALLIR verða að vera til (sjá prófið): einn rangur dálkur → 400 → engin sölufærsla.
+const SOLUR_DALKAR = 'id,num,customer_nafn,samtals,created_at,status,is_credit,hidden,krafa_sent_at,paid_at';
+
+/* ── ÚTTEKT ÁRSINS fyrir EITT félag (18.11.2026 — Merkja og keyra á ÞjónustuVerkstæðinu, 190) ───────────────────
+ * Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu, til að hjálpa mér að útkljá þau mál“. Agentinn fær það
+ * sem verkstæðið sjálft les, mælt beint fyrir ÞENNAN STAÐ (fyrirtaeki_id — aldrei kennitölu; systkini á sömu kt eru
+ * aðrir staðir): verkstæðisstöðuna, skjöl, sölur og tæki. Sókn sem bregst verður að „ÓMÆLT“-færslu — aldrei að tómum
+ * lista, því „engin skýrsla er til“ og „náði ekki í skýrslurnar“ eru ólík svör. */
+const OMAELT = Symbol('omaelt');
+const lesaEda = (qs) => lesa(qs).catch(() => OMAELT);
+// Sama regla og ÞjónustuVerkstæðið (190) og Ársskoðun (187): brunakerfi, búð og slökkvikerfi eru EKKI slökkvitækjaúttekt.
+const erUttektTeg = (teg) => { const t = String(teg || '').toLowerCase(); return t !== 'brunakerfi' && t !== 'bud' && t !== 'slokkvikerfi'; };
+// Sama talning og skodudKort í 190 (prófið ber þær saman): úrelt tæki, nýskráning (skoðunardagur = skráningardagur) og
+// dagur fram í tímann teljast ekki skoðun.
+function taekjatalning(rows, ar, iDag) {
+  const t = { virk: 0, urelt: 0, skodud: 0, nyskrad: 0, sidast: '' };
+  for (const u of rows || []) {
+    if (!u) continue;
+    if (String(u.status || '').toLowerCase() === 'urelt') { t.urelt++; continue; }
+    t.virk++;
+    const d = String(u.last_insp || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d.slice(0, 4) !== String(ar) || d > iDag) continue;
+    if (String(u.created_at || '').slice(0, 10) === d) { t.nyskrad++; continue; }
+    t.skodud++; if (d > t.sidast) t.sidast = d;
+  }
+  return t;
+}
+const SKREF = [['farid', 'Farið á verkstað'], ['averkstaedi', 'Á verkstæði'], ['taekjalisti', 'Tækjalisti staðfestur'], ['uttekt', 'Úttekt búin'],
+  ['skyrsla', 'Skýrsla tilbúin'], ['send', 'Skýrsla send'], ['reikningur', 'Reikningur sendur']];
+const UTTEKT_SOLUR = 'id,num,customer_nafn,samtals,created_at,status,is_credit,hidden,krafa_sent_at,invoiced_at,dk_invoice_id,paid_at,vidskiptategund,greitt_med';
+const UTTEKT_SKJOL = 'id,doc_type,year,doc_date,invoice_number,amount,vidskiptategund,created_at,is_duplicate';
+const UTTEKT_TAEKI = 'last_insp,status,created_at';
+const MORK_SKJOL = 60, MORK_SOLUR = 40;
+async function uttektargogn(f, baeta, { nu, sedSolur } = {}) {
+  nu = nu || new Date();
+  const ar = nu.getFullYear(), iDag = nu.toISOString().slice(0, 10), id = Number(f.id);
+  if (!Number.isInteger(id) || id <= 0) return;
+  const [st, skjol, sol, taeki] = await Promise.all([
+    P.sbPost('rpc/verkst_stada', { p_id: id }).then(sbJson).catch(() => OMAELT),
+    // Óháð rýni 18.11.2026: mörkin voru 12 — eitt félag á 296 sölur frá í fyrra og þá hefði talningin klippst. Nú aðeins
+    // reikningssölur (sama sía og 190; mest 11 á félag, mælt) með rýmri mörk, og náist mörkin samt er það SAGT (klippt).
+    lesaEda(`customer_documents?select=${UTTEKT_SKJOL}&fyrirtaeki_id=eq.${id}&year=gte.${ar - 1}&doc_type=in.(uttektarskyrsla,reikningur)&order=year.desc,created_at.desc&limit=${MORK_SKJOL}`),
+    lesaEda(`solur?select=${UTTEKT_SOLUR}&customer_id=eq.${id}&greitt_med=eq.reikningur&created_at=gte.${ar - 1}-01-01&order=created_at.desc&limit=${MORK_SOLUR}`),
+    lesaEda(`uttaeki?select=${UTTEKT_TAEKI}&fyrirtaeki_id=eq.${id}&limit=1000`),
+  ]);
+  const omaelt = (hvad) => baeta('U', { lysing: hvad + ' — ÓMÆLT', omaelt: 'Náði ekki í þessi gögn (sókn brást). Dragðu enga ályktun af því að þau vanti — nefndu það í `omaelt`.' });
+  const strengur = (v) => (typeof v === 'string' ? v : '');
+
+  if (st === OMAELT) omaelt('Verkstæðisstaða ' + ar);
+  else {
+    const a = st && typeof st === 'object' ? st : {};
+    const fy = Number(a.field_inspected_year) || 0, ly = Number(a.last_year_inspected) || 0, sk = (a['steps_' + ar] && typeof a['steps_' + ar] === 'object') ? a['steps_' + ar] : {};
+    baeta('U', { lysing: 'ÞjónustuVerkstæði · staða ' + ar,
+      verkstaedisstada: ly === ar ? 'merkt BÚIÐ í ár' : fy === ar ? 'Í VINNSLU (á verkstæðinu)' : 'á dagskrá — hvorki í vinnslu né merkt búið',
+      skref_hokud: SKREF.filter(([k]) => sk[k] === true).map(([, h]) => h), skref_afhokud: SKREF.filter(([k]) => sk[k] === false).map(([, h]) => h),
+      skodunarmanudur: Number(a.inspect_month) || null, taekjalisti_stadfestur_ar: Number(a.listi_stadfest_ar) || null,
+      athugasemd: stytta(strengur(f.banner_note) || strengur(a.sv_note) || strengur(a.note), 300) || null,   // minnispunktur spjaldsins býr í fyrirtaeki.banner_note (190)
+      ath: 'Skref sem enginn hefur hakað standa í hvorugum listanum — verkstæðið leiðir þau þá af skjölum og reikningum.' });
+  }
+
+  if (skjol === OMAELT) omaelt('Skjöl ' + (ar - 1) + '–' + ar);
+  else {
+    const gild = skjol.filter((d) => d && !d.is_duplicate);
+    const erSk = (d) => d.doc_type === 'uttektarskyrsla', erRe = (d) => d.doc_type === 'reikningur' && erUttektTeg(d.vidskiptategund);
+    baeta('U', { lysing: 'Skjöl á staðnum ' + (ar - 1) + '–' + ar, uttektarskyrsla_arsins: gild.some((d) => erSk(d) && Number(d.year) === ar),
+      uttektarreikningur_arsins_i_skjolum: gild.some((d) => erRe(d) && Number(d.year) === ar),
+      uttektarskyrsla_i_fyrra: gild.some((d) => erSk(d) && Number(d.year) === ar - 1), fjoldi_skjala: gild.length,
+      klippt: skjol.length >= MORK_SKJOL ? 'Aðeins ' + MORK_SKJOL + ' nýjustu skjölin voru lesin — eldri gætu vantað' : undefined });
+    for (const d of gild.slice(0, 8)) {
+      baeta('K', { lysing: (erSk(d) ? 'Úttektarskýrsla ' : 'Reikningsskjal ') + d.year + (d.invoice_number ? ' · ' + stytta(d.invoice_number, 20) : ''), skjal: erSk(d) ? 'úttektarskýrsla' : 'reikningur',
+        ar: Number(d.year) || null, dags: d.doc_date || null, reikningsnumer: d.invoice_number ? stytta(d.invoice_number, 30) : null, upphaed_kr: d.amount != null ? Number(d.amount) : null,
+        uttektarreikningur: erSk(d) ? null : erUttektTeg(d.vidskiptategund), vidskiptategund: d.vidskiptategund || null, skrad: dagsIs(d.created_at) }, { tegund: 'skjal', id: d.id });
+    }
+  }
+
+  if (sol === OMAELT) omaelt('Sölur ' + (ar - 1) + '–' + ar);
+  else {
+    const syn = sol.filter((x) => x && !x.hidden);
+    const ogild = (x) => !!x.is_credit || ['void', 'cancelled', 'canceled', 'credit'].includes(String(x.status || '').toLowerCase());
+    const send = (x) => !!(x.krafa_sent_at || x.invoiced_at || x.dk_invoice_id);
+    const arsins = syn.filter((x) => String(x.created_at || '').slice(0, 4) === String(ar) && !ogild(x) && erUttektTeg(x.vidskiptategund) && x.greitt_med === 'reikningur');
+    baeta('U', { lysing: 'Sölur á staðnum ' + ar, uttektarreikningar_arsins: arsins.length, thar_af_sendir: arsins.filter(send).length, thar_af_greiddir: arsins.filter((x) => x.paid_at).length,
+      klippt: sol.length >= MORK_SOLUR ? 'Aðeins ' + MORK_SOLUR + ' nýjustu reikningssölurnar voru lesnar — talan gæti verið of lág' : undefined,
+      ath: 'Talið eins og verkstæðið gerir: reikningssölur ársins á ÞESSUM stað, án kredit/ógildra og án brunakerfis-, búðar- og slökkvikerfissölu.' });
+    for (const x of syn.slice(0, 8)) {
+      if (sedSolur && sedSolur.has(x.num)) continue;
+      baeta('S', { lysing: 'Sala ' + x.num + ' · ' + stytta(x.customer_nafn, 60), sala: x.num, kunni: stytta(x.customer_nafn, 80), samtals_kr: Number(x.samtals) || 0, dags: String(x.created_at || '').slice(0, 10),
+        stada: x.status, kredit: !!x.is_credit, ogild: ogild(x), greidslumati: x.greitt_med || null, uttektarreikningur: erUttektTeg(x.vidskiptategund), vidskiptategund: x.vidskiptategund || null,
+        krafa_send: x.krafa_sent_at ? dagsIs(x.krafa_sent_at) : (x.invoiced_at ? dagsIs(x.invoiced_at) : null), greidd: x.paid_at ? dagsIs(x.paid_at) : null }, { tegund: 'sala', id: x.id });
+    }
+  }
+
+  if (taeki === OMAELT) omaelt('Tæki á staðnum');
+  else {
+    const t = taekjatalning(taeki, ar, iDag);
+    baeta('U', { lysing: 'Tæki á staðnum', taeki_virk: t.virk, taeki_urelt: t.urelt, skodud_a_arinu: t.skodud, nyskrad_a_arinu: t.nyskrad,
+      sidasta_skodun: !t.sidast ? null : t.sidast.slice(8) === '01' ? t.sidast.slice(0, 7) + ' (aðeins mánuðurinn er skráður)' : t.sidast,
+      klippt_vid_1000: taeki.length >= 1000 || undefined,
+      ath: 'Skoðunardagur tækja getur komið úr eldri skrá — vísbending um úttekt, EKKI staðfesting. Nýskráð tæki (skoðunardagur = skráningardagur) teljast ekki skoðuð.' });
+  }
+}
+
 /* ── 1. GÖGNIN — það sem atriðið og fyrirmælin nefna, sótt beint úr frumheimildum ──────────────────────────── */
-async function safna(atridi, mal, fyrirmaeli) {
+// auka.fyrirtaeki (18.11.2026): línan er FÉLAG á ÞjónustuVerkstæðinu — félagið sjálft fer fremst (eftir id, ekki nafnaleit)
+// og úttekt ársins er mæld fyrir þann stað (uttektargogn).
+async function safna(atridi, mal, fyrirmaeli, auka) {
+  mal = mal || {};
+  const felag = auka && auka.fyrirtaeki && auka.fyrirtaeki.id != null ? auka.fyrirtaeki : null;
   const texti = atridi.texti + '\n' + (fyrirmaeli || '');
   const gogn = [], kort = {}, teljari = {};
   const baeta = (pre, obj, opna) => { teljari[pre] = (teljari[pre] || 0) + 1; const id = pre + teljari[pre]; gogn.push(Object.assign({ id }, obj)); kort[id] = { lysing: obj.lysing || id, opna: opna || null, hrar: obj._hrar || null }; delete obj._hrar; return id; };
@@ -91,7 +197,10 @@ async function safna(atridi, mal, fyrirmaeli) {
   const nofn = nofnI(texti);
 
   const [solur, ogreidd, oSend, pdSlokk, bru, malR, drog] = await Promise.all([
-    r6.length ? lesaHljott(`solur?select=id,num,customer_nafn,samtals,dags,status,is_credit,hidden,krafa_sent_at,paid_at&num=in.(${r6.join(',')})`) : [],
+    // 18.11.2026: valið var „…samtals,dags,status…“ — `dags` er EKKI dálkur í solur (400), og lesaHljott gleypti villuna, svo
+    // agentinn fékk ALDREI sölufærslu (mælt: 0 S-heimildir í öllum umferðum, þótt Payday-færslur sömu R-númera kæmu).
+    // test/adalmal-claude-dalkar.test.cjs heldur dálkalistum þessarar skrár við raunverulega dálka.
+    r6.length ? lesaHljott(`solur?select=${SOLUR_DALKAR}&num=in.(${r6.join(',')})`) : [],
     r6.length ? lesaHljott(`v_krafa_ogreidd?select=num,samtals,dagar,kreditfaerdur,payday_stada,i_bid,flokkur&num=in.(${r6.join(',')})`) : [],
     r6.length ? lesaHljott(`v_krafa_ekki_send_adgerd?select=num,samtals,dagar,kreditfaerdur,i_bid,payday_stada&num=in.(${r6.join(',')})`) : [],
     r6.length ? lesaHljott(`payday_invoices_slokk?select=number,status,amount_total,due_date,paid_date,reference,customer_name&reference=in.(${r6.join(',')})`) : [],
@@ -103,7 +212,7 @@ async function safna(atridi, mal, fyrirmaeli) {
 
   for (const s of solur) {
     const og = ogreidd.find((x) => x.num === s.num), os = oSend.find((x) => x.num === s.num);
-    baeta('S', { lysing: 'Sala ' + s.num + ' · ' + stytta(s.customer_nafn, 60), sala: s.num, kunni: stytta(s.customer_nafn, 80), samtals_kr: Number(s.samtals) || 0, dags: s.dags,
+    baeta('S', { lysing: 'Sala ' + s.num + ' · ' + stytta(s.customer_nafn, 60), sala: s.num, kunni: stytta(s.customer_nafn, 80), samtals_kr: Number(s.samtals) || 0, dags: String(s.created_at || '').slice(0, 10),
       stada: s.status, kredit: !!s.is_credit, falin: !!s.hidden, krafa_send: s.krafa_sent_at ? dagsIs(s.krafa_sent_at) : null, greidd: s.paid_at ? dagsIs(s.paid_at) : null,
       ogreidd_flokkur: og ? og.flokkur : null, ogreidd_dagar: og ? og.dagar : null, a_bid: !!((og && og.i_bid) || (os && os.i_bid)), osend_krafa_tilbuin: !!os }, { tegund: 'sala', id: s.id });
   }
@@ -124,6 +233,7 @@ async function safna(atridi, mal, fyrirmaeli) {
 
   // Fyrirtæki eftir nöfnum, og póstur þeirra (lén/netfang) + póstur sem nefnir nafnið (60 dagar).
   const fyr = [];
+  if (felag) fyr.push(felag);
   for (const n of nofn) {
     const f = await lesaHljott(`fyrirtaeki?select=id,nafn,kennitala,heimilisfang,netfang,er_i_thjonustu&deleted_at=is.null&nafn=ilike.${encodeURIComponent(ilike(n))}&limit=2`);
     for (const x of f) if (!fyr.some((y) => y.id === x.id)) fyr.push(x);
@@ -146,6 +256,7 @@ async function safna(atridi, mal, fyrirmaeli) {
       nafn: stytta(f.nafn, 100), kennitala: kt, heimilisfang: stytta(f.heimilisfang, 120) || null, i_thjonustu: !!f.er_i_thjonustu },
       !kt && f.kennitala ? { kennitala_hulin: 'Kennitala er skráð en er einstaklingskennitala og því hulin' } : {}));
   }
+  if (felag) await uttektargogn(felag, baeta, { nu: auka.nu, sedSolur: new Set(solur.map((x) => x.num)) });
 
   // Brunahólfs-verk eftir nafni verkstaðar: tímar (Tímavera, 90 dagar, eftir mánuði) og reikningsdrög — svo „órukkaðir tímar"
   // og „engin drög" séu mæld, ekki endursögð úr yfirlitinu.
@@ -201,13 +312,14 @@ async function safna(atridi, mal, fyrirmaeli) {
   }
 
   // Ákvarðanir og þekking: allt um nöfnin, og ákvarðanir Agnars sem nefna málið.
-  const ksiur = nofn.map((n) => `fact.ilike.${qi(n)}`).concat([`fact.ilike.${qi('#' + mal.id)}`]);
-  const thekking = await lesaHljott(`v_charlize_active?select=id,topic,fact,created_at&or=(${encodeURIComponent(ksiur.join(','))})&order=created_at.desc&limit=14`);
+  const ksiur = nofn.map((n) => `fact.ilike.${qi(n)}`).concat(mal.id != null ? [`fact.ilike.${qi('#' + mal.id)}`] : [])
+    .concat(felag ? [`fact.ilike.${qi('fyrirtæki #' + felag.id)}`] : []);
+  const thekking = !ksiur.length ? [] : await lesaHljott(`v_charlize_active?select=id,topic,fact,created_at&or=(${encodeURIComponent(ksiur.join(','))})&order=created_at.desc&limit=14`);
   for (const k of thekking) baeta('C', { lysing: 'Charlize #' + k.id + ' (' + k.topic + ')', charlize: k.id, efni: k.topic, akvordun_agnars: k.topic === 'akvardanir-agnars' || /ekki spyrja aftur|ákvörðun/i.test(k.fact),
     stadreynd: stytta(k.fact, 700), skrad: dagsIs(k.created_at) });
 
   return {
-    gogn: { atridi: { hluti: atridi.hluti_heiti, texti: stytta(atridi.texti, 1500) }, mal: { id: mal.id, titill: stytta(mal.title, 200) }, fyrirmaeli: stytta(fyrirmaeli, 1500) || '(engin — leggðu til næsta skref)', gogn },
+    gogn: { atridi: { hluti: atridi.hluti_heiti, texti: stytta(atridi.texti, 1500) }, mal: { id: mal.id == null ? null : mal.id, titill: stytta(mal.title, 200) }, fyrirmaeli: stytta(fyrirmaeli, 1500) || '(engin — leggðu til næsta skref)', gogn },
     kort,
   };
 }
@@ -349,4 +461,5 @@ async function vinna(lykill, nonce) {
   }
 }
 
-module.exports = { vinna, safna, stadfesta, kalla, hylja, erFelagsKt, nofnI, nyNonce, erSjalfvirkt, MODEL, SKEMA, KERFI, POSTHOLF };
+module.exports = { vinna, safna, stadfesta, kalla, hylja, erFelagsKt, nofnI, nyNonce, erSjalfvirkt, MODEL, SKEMA, KERFI, POSTHOLF,
+  uttektargogn, taekjatalning, erUttektTeg, SOLUR_DALKAR, UTTEKT_SOLUR, UTTEKT_SKJOL, UTTEKT_TAEKI, MORK_SKJOL, MORK_SOLUR };

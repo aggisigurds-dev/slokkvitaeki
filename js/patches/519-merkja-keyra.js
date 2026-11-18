@@ -19,6 +19,12 @@
  * stjórnanda“) og engin merki á línunum; villa (500/netvilla) líka ein lína. Ný sókn í mesta lagi á mínútu fresti.
  * Meðan umferð er í keyrslu er kannað á 6 s fresti (aðeins merkingarnar, ekki tilbúnu verkin) og hætt þegar hún er búin.
  * Ekkert hér sendir neitt út: lokasmellurinn er alltaf Agnars í Tilbúnum verkum.
+ *
+ * 18.11.2026 — FLEIRI BORÐ (Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu, til að hjálpa mér að útkljá þau
+ * mál“ → „Bæði“): vélin er nú verksmiðja, MerkjaKeyra.buaTil(stilling) → sjálfstætt eintak með eigið ástand og eigin sókn.
+ * Þjónustuborðið er sjálfgefna eintakið (window.MerkjaKeyra sjálft, NÁKVÆMLEGA sömu köll og áður — ekkert `bord` sent).
+ * ÞjónustuVerkstæðið (190) býr til sitt eintak: bord 'verkstaedi', línan er FÉLAG (fyrirtaeki_id), sést hjá innskráðum
+ * stjórnanda. Stillingin: { bord, lykill, view, sedLykill, nu, ma, toast, teikna, rot, opna, heiti, opnaTexti }.
  * ============================================================================================================== */
 (() => {
   if (window.__merkjaKeyra519) return;
@@ -35,35 +41,54 @@
   ];
   const TAKN = Object.fromEntries(MERKI.map(([k, t]) => [k, t]));
   const HEITI = Object.fromEntries(MERKI.map(([k, , h]) => [k, h]));
-  const S = { virkt: false, sott: 0, bid: null, villa: null, gogn: null, idx: new Map(), opid: null, hamur: null, drog: {}, busy: {}, keyrir: false,
-    kanna: 0, lokad: 0, fyrraBuin: null, sed: lesaSed(), listaOpinn: true };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const p2 = (n) => String(n).padStart(2, '0');
   const dd = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getDate()) + '.' + p2(d.getMonth() + 1); };
   const kl = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getHours()) + ':' + p2(d.getMinutes()); };
   const ymd = (d) => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
   const bord = () => window.Bord368 || null;
-  // Hver situr við borðið: Samthykkja.nu (368) — sama og „Ég er“-valið. html(n) fær það líka beint frá 368.
+  // Sjálfgefin stilling = Þjónustuborðið (368), eins og 519a.
+  const BORDID = {
+    bord: null,                 // sent sem `bord` í köllum; null = ekkert sent (þjónninn les það sem Þjónustuborðið)
+    lykill: 'mal_id',           // hvað línan heitir í merkingunni og í köllum
+    view: 'view-bord',          // könnun (6 s) aðeins meðan þessi sýn er virk
+    sedLykill: 'merkja_sed',
+    // Hver situr við borðið: Samthykkja.nu (368) — sama og „Ég er“-valið. html(n) fær það líka beint frá 368.
+    nu: (sidast) => { try { return (window.Samthykkja && Samthykkja.nu) ? Samthykkja.nu() : sidast; } catch (_) { return sidast; } },
+    ma: (n) => n === EIGANDI,   // eins og 489: sést aðeins hjá Agnari þar til fleiri fá það
+    toast: (m, w) => { try { if (bord() && bord().toast) return bord().toast(m, w); } catch (_) {} console[w ? 'warn' : 'log']('[519] ' + m); },
+    teikna: () => { try { if (window.Thjonustubord5 && Thjonustubord5.render) Thjonustubord5.render(); } catch (_) {} },
+    rot: () => { try { return bord() && bord().root ? bord().root() : null; } catch (_) { return null; } },
+    opna: (id) => { try { if (bord() && bord().opnaMal) bord().opnaMal(id); } catch (_) {} },
+    heiti: (m) => String(m.mal_titill || 'Mál #' + m.mal_id),
+    opnaTexti: 'Opna málið',
+  };
+
+  function buaTil(stilling) {
+  const c = Object.assign({}, BORDID, stilling || {});
   let _nuSidast = '';
-  const nuNafn = () => { try { return (window.Samthykkja && Samthykkja.nu) ? Samthykkja.nu() : _nuSidast; } catch (_) { return _nuSidast; } };
-  const toast = (m, w) => { try { if (bord() && bord().toast) return bord().toast(m, w); } catch (_) {} console[w ? 'warn' : 'log']('[519] ' + m); };
-  const teikna = () => { try { if (window.Thjonustubord5 && Thjonustubord5.render) Thjonustubord5.render(); } catch (_) {} };
+  const nuNafn = () => c.nu(_nuSidast);
+  const leyft = () => !!c.ma(nuNafn());
+  const toast = (m, w) => c.toast(m, w);
+  const teikna = () => c.teikna();
   // „Séð“ á umferð: viðmótsval vistað um Vidmot (472 — EITT gildi á þjóninum fyrir allar vélar, aldrei localStorage), svo
   // ljósið sem hann slökkti í símanum logi ekki áfram á tölvunni. Án Vidmot lifir það aðeins í minni.
-  function lesaSed() { try { return (window.Vidmot && Vidmot.lesa) ? String(Vidmot.lesa('merkja_sed', '') || '') : ''; } catch (_) { return ''; } }
-  function vistaSed(u) { S.sed = u || ''; try { if (window.Vidmot && Vidmot.setja) Vidmot.setja('merkja_sed', S.sed); } catch (_) {} }
+  function lesaSed() { try { return (window.Vidmot && Vidmot.lesa) ? String(Vidmot.lesa(c.sedLykill, '') || '') : ''; } catch (_) { return ''; } }
+  function vistaSed(u) { S.sed = u || ''; try { if (window.Vidmot && Vidmot.setja) Vidmot.setja(c.sedLykill, S.sed); } catch (_) {} }
+  const S = { virkt: false, sott: 0, bid: null, villa: null, gogn: null, idx: new Map(), opid: null, hamur: null, drog: {}, busy: {}, keyrir: false,
+    kanna: 0, lokad: 0, fyrraBuin: null, sed: lesaSed(), listaOpinn: true };
 
   /* ── Þjónninn ───────────────────────────────────────────────────────── */
   async function kall(body) {
-    const r = await fetch(API + (body ? '' : '?merkingar=1'), { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
-      headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(API + (body ? '' : '?merkingar=1' + (c.bord ? '&bord=' + encodeURIComponent(c.bord) : '')), { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
+      headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(c.bord ? Object.assign({}, body, { bord: c.bord }) : body) : undefined });
     const j = await r.json().catch(() => ({}));
     return Object.assign(j && typeof j === 'object' ? j : {}, { _status: r.status });
   }
   function taka(j) {
     if (!j || !Array.isArray(j.merkingar)) return;
     S.gogn = j;
-    S.idx = new Map(j.merkingar.map((m) => [Number(m.mal_id), m]));
+    S.idx = new Map(j.merkingar.map((m) => [Number(m[c.lykill]), m]));
     S.sott = Date.now();
     const t = j.teljari || {};
     // Umferð sem var í keyrslu er búin → tilkynning (sama hugsun og VIP-klukkan: sést án þess að leita).
@@ -92,7 +117,7 @@
     })();
     return S.bid;
   }
-  function raesaKonnun() { if (S.kanna) return; S.kanna = setInterval(() => { if (document.hidden) return; const v = document.getElementById('view-bord'); if (v && v.classList.contains('active')) hlada(); }, KANNA_MS); }
+  function raesaKonnun() { if (S.kanna) return; S.kanna = setInterval(() => { if (document.hidden) return; const v = document.getElementById(c.view); if (v && v.classList.contains('active')) hlada(); }, KANNA_MS); }
   function stodvaKonnun() { if (S.kanna) { clearInterval(S.kanna); S.kanna = 0; } }
 
   async function merkja(id, merki, extra) {
@@ -100,12 +125,12 @@
     S.busy[id] = true;
     // Strax á skjáinn (borðið á ekki að bíða eftir þjóninum); þjónninn ræður svo.
     const fyrri = S.idx.get(id);
-    if (merki) S.idx.set(id, Object.assign({}, fyrri || {}, { mal_id: id, merki, stada: merki === 'snooze' ? 'blundar' : 'merkt', due_at: extra && extra.due_at, _bid: true }));
+    if (merki) S.idx.set(id, Object.assign({}, fyrri || {}, { [c.lykill]: id, merki, stada: merki === 'snooze' ? 'blundar' : 'merkt', due_at: extra && extra.due_at, _bid: true }));
     else S.idx.delete(id);
     S.opid = null; S.hamur = null;
     teikna();
     try {
-      const j = await kall(Object.assign({ adgerd: 'merkja', mal_id: id, merki: merki || null }, extra || {}));
+      const j = await kall(Object.assign({ adgerd: 'merkja', [c.lykill]: id, merki: merki || null }, extra || {}));
       if (j._status !== 200) { if (fyrri) S.idx.set(id, fyrri); else S.idx.delete(id); toast(j.error || ('Merkið vistaðist ekki (' + j._status + ')'), true); }
       else { taka(j); if (merki === 'comment' || (extra && extra.athugasemd)) delete S.drog[id]; }
     } catch (e) { if (fyrri) S.idx.set(id, fyrri); else S.idx.delete(id); toast('Merkið vistaðist ekki: ' + ((e && e.message) || e), true); }
@@ -172,7 +197,7 @@
 
   // Merkið á línunni (368 kallar þetta í feedRow/mineRow). Tómt hjá öðrum en Agnari eða án stjórnandaaðgangs.
   function merki(r) {
-    if (!r || !r.id || !S.virkt || nuNafn() !== EIGANDI) return '';
+    if (!r || !r.id || !S.virkt || !leyft()) return '';
     const m = S.idx.get(Number(r.id));
     let s = '', inni = '◇', titill = 'Merkja — Já · Nei · Keyra · Snooze · Veit ekki · Rannsaka betur · Comment · Yfirfara';
     if (m) {
@@ -189,7 +214,7 @@
 
   // Stöðutákn án smells — í Samþykkja-listanum, þar sem listaatriðið sjálft er hnappur (merkið er á spjaldi valda málsins).
   function stada(r) {
-    if (!r || !S.virkt || nuNafn() !== EIGANDI) return '';
+    if (!r || !S.virkt || !leyft()) return '';
     const m = S.idx.get(Number(r.id));
     if (!m) return '';
     const s = m.snooze_buid ? 'snooze_buid' : m.stada;
@@ -200,7 +225,7 @@
   // Glugginn undir línunni (368 kallar þetta aftast í línunni). Teiknaður úr ástandi — lifir endurteikningu borðsins.
   function gluggi(r) {
     const id = Number(r && r.id);
-    if (!id || S.opid !== id || !S.virkt || nuNafn() !== EIGANDI) return '';
+    if (!id || S.opid !== id || !S.virkt || !leyft()) return '';
     const m = S.idx.get(id) || null;
     const virkt = m && ['merkt', 'blundar'].includes(m.stada) ? m.merki : null;
     let ut = '<div class="mk-g" role="group" aria-label="Merkja línu">';
@@ -229,7 +254,7 @@
   // Teljarinn + ▶ Keyra + ljósið, ein lína efst á borðinu (368 kallar þetta undir VIP-vaktinni).
   function html(n) {
     _nuSidast = n || '';
-    if (n !== EIGANDI) return '';
+    if (!c.ma(n)) return '';
     if (!S.sott || Date.now() - S.sott > RETRY_MS) { if (!S.bid) hlada(); }
     if (!S.virkt) {
       if (S.lokad) return CSS + '<section class="mk-bar" aria-label="Merkja og keyra"><span class="mk-led" aria-hidden="true"></span><span>Merkja og keyra: aðeins fyrir innskráðan stjórnanda (' + S.lokad + ') — merkin sjást ekki í þessum vafra.</span></section>';
@@ -257,9 +282,9 @@
     const umf = t.umferd ? [...S.idx.values()].filter((m) => m.umferd === t.umferd && (m.stada === 'vantar_svar' || m.stada === 'klarad')) : [];
     if (umf.length && t.umferd !== S.sed) {
       umf.sort((a, b) => (a.stada === 'vantar_svar' ? 0 : 1) - (b.stada === 'vantar_svar' ? 0 : 1));
-      ut += '<ul class="mk-lst">' + umf.slice(0, 8).map((m) => '<li class="' + (m.stada === 'klarad' ? 'ok' : '') + '"><b>' + esc(m.stada === 'klarad' ? '✓' : '!') + ' ' + esc(String(m.mal_titill || 'Mál #' + m.mal_id).slice(0, 80)) + '</b>' +
+      ut += '<ul class="mk-lst">' + umf.slice(0, 8).map((m) => '<li class="' + (m.stada === 'klarad' ? 'ok' : '') + '"><b>' + esc(m.stada === 'klarad' ? '✓' : '!') + ' ' + esc(String(c.heiti(m)).slice(0, 80)) + '</b>' +
         '<span>' + esc(m.stada === 'klarad' ? (m.afgreidsla_id ? 'Tilbúið verk #' + m.afgreidsla_id : (m.svar || 'Klárað')).slice(0, 140) : (m.astaeda || 'Vantar svar').slice(0, 220)) + '</span>' +
-        '<button type="button" data-t5="mk-mal" data-id="' + Number(m.mal_id) + '">Opna málið</button></li>').join('') +
+        '<button type="button" data-t5="mk-mal" data-id="' + Number(m[c.lykill]) + '">' + esc(c.opnaTexti) + '</button></li>').join('') +
         (umf.length > 8 ? '<li>… og ' + (umf.length - 8) + ' til viðbótar á línunum sjálfum</li>' : '') + '</ul>';
     }
     return ut + '</section>';
@@ -288,23 +313,28 @@
     if (a === 'mk-af') { merkja(id, null); return true; }
     if (a === 'mk-keyra') { keyra(); return true; }
     if (a === 'mk-sed') { vistaSed((S.gogn && S.gogn.teljari && S.gogn.teljari.umferd) || ''); teikna(); return true; }
-    if (a === 'mk-mal') { try { if (bord() && bord().opnaMal) bord().opnaMal(id); } catch (_) {} return true; }
+    if (a === 'mk-mal') { try { c.opna(id); } catch (_) {} return true; }
     return false;
   }
 
   // Textareitur og dagsetning lifa í ástandinu (ekki DOM): endurteikning borðsins tekur þau með sér.
   let _tengt = null;
   function tengjaRot() {
-    let root = null; try { root = bord() && bord().root ? bord().root() : null; } catch (_) {}
+    let root = null; try { root = c.rot(); } catch (_) {}
     if (!root || _tengt === root) return;
     _tengt = root;
     root.addEventListener('input', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mk === 'ath') S.drog[Number(t.dataset.id)] = t.value; });
     root.addEventListener('change', (e) => { const t = e.target; if (t && t.dataset && t.dataset.mkDags && t.value) merkja(Number(t.dataset.mkDags), 'snooze', { due_at: t.value }); });
   }
   setInterval(tengjaRot, 1500);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.virkt) hlada(); });
+  // Eintak annars borðs (c.bord) sækir aðeins þegar SÍN sýn er virk; Þjónustuborðið er óbreytt (sótti alltaf).
+  const synVirk = () => { try { const v = document.getElementById(c.view); return !!(v && v.classList.contains('active')); } catch (_) { return false; } };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.virkt && (!c.bord || synVirk())) hlada(); });
 
-  window.MerkjaKeyra = { html, merki, gluggi, stada, smellur, hlada, S, MERKI, version: '519a' };
+  return { html, merki, gluggi, stada, smellur, hlada, S, MERKI, version: '519b' };
+  }   // buaTil
+
+  window.MerkjaKeyra = Object.assign(buaTil(), { buaTil });
   console.log('[519-merkja-keyra] installed');
 })();
 /* === END MERKJA OG KEYRA === */
