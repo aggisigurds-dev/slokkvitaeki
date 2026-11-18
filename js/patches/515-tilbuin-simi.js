@@ -32,6 +32,17 @@
   var P = { sia: 'allt', rokOpin: {}, bida: false, kl: 0 };
   var A = function () { return rot.BordAfgreidsla || null; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
+  // Viðhengi svarsins sem TENGLAR á sama skjal og sendingin sækir (18.11.2026) — Agnar opnar og staðfestir í símanum
+  // áður en hann sendir. Aðeins http(s); viðhengi án slóðar og eldri þjónn án vidhengi_opna birtast sem nafn.
+  var vidhengiHtml = function (p) {
+    var o = p && p.vidhengi_opna;
+    if (!o || !o.length) return esc(((p && p.vidhengi) || []).join(', '));
+    return o.map(function (x) {
+      return x.url && /^https?:\/\//.test(String(x.url))
+        ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">📎 ' + esc(x.nafn || 'skjal') + ' ↗</a>'
+        : esc(x.nafn || 'skjal');
+    }).join(' · ');
+  };
   var kr = function (v) { return v == null || !isFinite(Number(v)) || Number(v) <= 0 ? '' : Math.round(Number(v)).toLocaleString('is-IS') + ' kr.'; };
 
   /* ── HREIN FÖLL (prófuð í test/tilbuin-simi.test.cjs) ─────────────────────────────────────────── */
@@ -109,7 +120,7 @@
     if (v.tegund === 'tolvupostur' && v.post) {
       var e = eydur(texti), sv = v.svar_vid;
       return (sv ? '<details class="ts-rok"><summary>Skeytið sem þú svarar · ' + esc(sv.fra) + '</summary><div class="ts-skeyti"><b>' + esc(sv.efni) + '</b><pre>' + esc(sv.texti) + '</pre></div></details>' : '') +
-        '<div class="ts-efni-h">Efni: <b>' + esc(v.post.subject) + '</b>' + ((v.post.vidhengi || []).length ? ' · viðhengi: ' + esc(v.post.vidhengi.join(', ')) : '') + '</div>' +
+        '<div class="ts-efni-h">Efni: <b>' + esc(v.post.subject) + '</b>' + ((v.post.vidhengi || []).length ? ' · viðhengi: ' + vidhengiHtml(v.post) : '') + '</div>' +
         (e.length ? '<div class="ts-eyda" role="alert">Fylltu inn: ' + e.map(function (x) { return '<code>' + esc(x) + '</code>'; }).join(' ') + '</div>' : '') +
         '<textarea class="ts-ta' + (e.length ? ' _eyda' : '') + '" data-baf-texti="' + v.id + '" data-ritun="1" rows="' + (a && a.linur ? a.linur(texti) : 10) + '" spellcheck="true" aria-label="Textinn sem fer út">' + esc(texti) + '</textarea>';
     }

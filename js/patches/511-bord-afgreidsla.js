@@ -54,6 +54,13 @@
     if (!s || !s.url || !/^(https?:\/\/|\/(?!\/))/.test(String(s.url))) return '';
     return '<a class="baf-lk" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.texti || 'Opna') + ' ↗</a>';
   };
+  // Viðhengi svarsins sem TENGLAR á sama skjal og sendingin sækir (18.11.2026) — Agnar opnar og staðfestir áður en
+  // hann sendir. Viðhengi án slóðar (teiknað í vafra) og eldri þjónn án vidhengi_opna birtast sem nafn eins og áður.
+  var vidhengiHtml = function (p) {
+    var o = p && p.vidhengi_opna;
+    if (!o || !o.length) return esc(((p && p.vidhengi) || []).join(', '));
+    return o.map(function (x) { return opnaHtml({ url: x.url, texti: '📎 ' + (x.nafn || 'skjal') }) || esc(x.nafn || 'skjal'); }).join(' · ');
+  };
   // Skjáskot (verkefnavaktin): aðeins https-slóð (public bucket) verður að mynd — aldrei data:/javascript:/annar vefur.
   var mynd = function (url) {
     if (!url || !/^https:\/\/[^\s"'<>]+$/.test(String(url))) return '';
@@ -366,7 +373,7 @@
       }
       return h + '<section class="baf-k"><h3>Svarið — þú mátt breyta því</h3><dl class="baf-dl"><dt>Frá</dt><dd>' + esc(p.account) + '</dd><dt>Til</dt><dd>' + esc((p.to || []).join(', ')) + '</dd>' +
         ((p.cc || []).length ? '<dt>Afrit</dt><dd>' + esc(p.cc.join(', ')) + '</dd>' : '') + '<dt>Efni</dt><dd>' + esc(p.subject) + '</dd>' +
-        ((p.vidhengi || []).length ? '<dt>Viðhengi</dt><dd>' + esc(p.vidhengi.join(', ')) + '</dd>' : '') + '</dl>' +
+        ((p.vidhengi || []).length ? '<dt>Viðhengi</dt><dd>' + vidhengiHtml(p) + '</dd>' : '') + '</dl>' +
         '<textarea class="baf-ta" data-baf-texti="' + v.id + '" data-ritun="1" rows="' + linur(textiNu(v)) + '" spellcheck="true" aria-label="Texti svarsins">' + esc(textiNu(v)) + '</textarea></section>';
     }
     if (v.tegund === 'simtal') {
