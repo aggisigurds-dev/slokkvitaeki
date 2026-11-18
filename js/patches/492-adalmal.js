@@ -64,6 +64,23 @@
    *   · aðilinn — allt fram að fyrsta tvípunkti innan 70 stafa — verður feitur,
    *   · upphæðir og dagafjöldi fá töflutölustafi svo tölur raðist undir tölur.
    * Unnið á ESCAPE-UÐUM streng, svo ekkert sem kemur úr gögnunum getur orðið að marki. */
+  /* 18.11.2026 — SANNINDAMERKIÐ FREMST Í RÖKUM (Agnar: „Já, rökin líka").
+   * Rökin undir „Af hverju þetta er rétt" byrja mörg á hástafaorði sem segir hversu traust þau eru:
+   * ÓSTAÐFEST, STAÐFEST, MÆLT, MAT, ÁLYKTUN, ÓSANNREYNT, ÓVÍST, ÁÆTLUN, ATH. Mælt í afgreidsla.af_hverju
+   * 18.11.2026: ÓSTAÐFEST 18, STAÐFEST 2, MAT 2, ÓSANNREYNT 2, ÁÆTLUN 2, ÓVÍST 1, ATH 1, MÆLT 1, ÁLYKTUN 1.
+   * Merkið lá inni í málsgreininni og hvarf í henni. Það fer núna fremst sem pilla með lit eftir því hvort
+   * rökin standa á mælingu eða ágiskun — sama regla og gildir annars staðar: mælt með heimild, eða ÓMÆLT. */
+  const ROK_MERKI = { 'STAÐFEST': '_ok', 'MÆLT': '_ok', 'SANNREYNT': '_ok',
+    'ÓSTAÐFEST': '_vidv', 'ÓSANNREYNT': '_vidv', 'ÓVÍST': '_vidv', 'ÓMÆLT': '_vidv',
+    'MAT': '_mat', 'ÁLYKTUN': '_mat', 'ÁÆTLUN': '_aaet', 'ATH': '_ath', 'NIÐURSTAÐA': '_ath' };
+  function rokTexti(txt) {
+    const r = String(txt ?? '');
+    const m = r.match(/^([A-ZÁÐÉÍÓÚÝÞÆÖ][A-ZÁÐÉÍÓÚÝÞÆÖ ]{1,22})([:,])\s*/);
+    if (!m) return sundur(r);
+    const heiti = m[1].trim();
+    return '<span class="ad-rmerki ' + (ROK_MERKI[heiti] || '_ath') + '">' + esc(heiti) + '</span>' + sundur(r.slice(m[0].length));
+  }
+
   function sundur(txt) {
     let t = esc(txt);
     const k = t.indexOf(': ');
@@ -354,7 +371,17 @@
       V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 10px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
       V + ' .ad-afk{padding:4px 14px 12px}' + V + ' .ad-afk h4{margin:10px 0 5px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
       V + ' .ad-gerist{font:600 15px/1.4 ' + SANS + ';background:#f4f6f9;border:1px solid rgba(20,24,34,.14);border-left:4px solid #7a0b0e;border-radius:8px;padding:9px 11px}',
-      V + ' .ad-rok{margin:0;padding:0;list-style:none}' + V + ' .ad-rok li{padding:4px 0 4px 14px;position:relative;font-size:13.5px;border-top:1px dashed rgba(20,24,34,.14)}' + V + ' .ad-rok li:first-child{border-top:0}',
+      // 18.11.2026 — rökin fá loft (4 px -> 8 px, línubil 1,55) svo málsgreinarnar renni ekki saman,
+      // og sannindamerkið fremst verður pilla í stað hástafa inni í textanum.
+      V + ' .ad-rok{margin:0;padding:0;list-style:none}' + V + ' .ad-rok li{padding:8px 0 8px 14px;position:relative;font-size:13.5px;line-height:1.55;border-top:1px dashed rgba(20,24,34,.14)}' + V + ' .ad-rok li:first-child{border-top:0}',
+      V + ' .ad-rok li::before{top:15px}',
+      V + ' .ad-rmerki{display:inline-block;margin:0 7px 0 0;padding:1px 7px;border-radius:3px;border:1px solid;font:700 9.5px ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;vertical-align:1px;white-space:nowrap}',
+      V + ' .ad-rmerki._ok{background:#e7f3ea;border-color:#9cc9a6;color:#14532d}',
+      V + ' .ad-rmerki._vidv{background:#fdecd6;border-color:#e0b07a;color:#7c3a06}',
+      V + ' .ad-rmerki._mat{background:#f3f0e6;border-color:#cbbf9c;color:#5a4a16}',
+      V + ' .ad-rmerki._aaet{background:#eaf0fb;border-color:#a8bedf;color:#1d3b63}',
+      V + ' .ad-rmerki._ath{background:#f1f3f6;border-color:#c5ccd6;color:#3a4250}',
+      V + ' .ad-rok small{margin-top:3px}',
       V + ' .ad-rok li::before{content:"";position:absolute;left:3px;top:11px;width:5px;height:5px;border-radius:50%;background:#3a4250}' + V + ' .ad-rok small{display:block;font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
@@ -546,7 +573,7 @@
   const opnaHtml = sl => (sl && sl.url && /^(https?:\/\/|\/)/.test(sl.url) ? '<a class="ad-opna" href="' + esc(sl.url) + '" target="_blank" rel="noopener">' + esc(sl.texti || 'Opna') + ' ↗</a>' : '');
   function afKortHtml(v) {
     let h = '<div class="ad-afk"><h4>Hvað gerist þegar þú ýtir</h4><div class="ad-gerist">' + esc(v.hvad_gerist) + '</div>';
-    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + sundur(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
+    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + rokTexti(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
     if (v.tegund === 'tolvupostur') {
       if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + (v.svar_vid.slod ? ' · ' + opnaHtml(v.svar_vid.slod) : '') + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
       const p = v.post || {};
