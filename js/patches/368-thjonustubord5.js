@@ -752,6 +752,14 @@
     return h.merki.some(t => tags.indexOf(t) >= 0);
   }
   const hamRows = () => { const m = cfg().mode; return S.rows.filter(r => iHam(r, m)); };
+  // 18.11.2026: regluhamur sýnir aðeins sín mál. Þegar skipt er Í hann víkur valið mál sem tilheyrir honum ekki, og
+  // teikningin velur þá fyrsta málið á borðinu í hamnum. Mál sem er opnað eftir á (leit, eining) helst valið.
+  function valIHam() {
+    const m = cfg().mode, h = M(m), n = nu();
+    if (!h || !h.regla) return;
+    const sr = S.rows.find(r => r.id === S.sel[n]);
+    if (sr && !iHam(sr, m)) delete S.sel[n];
+  }
   const masterRows = () => hamRows().filter(r => isFree(r) && !onBoardOf(r, nu())).sort(rodun);
   const mineRows = () => hamRows().filter(r => onBoardOf(r, nu())).sort(rodun);
   const ageDays = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : 0; };
@@ -6695,6 +6703,7 @@
         S.filter = (M(c.mode) || MODES.thjonusta).filter || 'allt';
         S.synd = PAGE;
         S.view = 'master';
+        valIHam();
         render();
         vistaCfg({ mode: c.mode });
         return;
@@ -7361,7 +7370,7 @@
       return true;
     },
     // 513 VIP-vakt: „↩ Svara" opnar Tölvupósta-haminn. false ef hamurinn er ekki til eða falinn hjá þeim sem situr við borðið.
-    opnaHam: k => { const n = nu(); if (!M(k) || hamFalinnHja(n, k)) return false; const c = cfg(); c.mode = k; S.filter = (M(k) || MODES.thjonusta).filter || 'allt'; S.synd = PAGE; S.view = 'master'; render(); vistaCfg({ mode: c.mode }); return true; },
+    opnaHam: k => { const n = nu(); if (!M(k) || hamFalinnHja(n, k)) return false; const c = cfg(); c.mode = k; S.filter = (M(k) || MODES.thjonusta).filter || 'allt'; S.synd = PAGE; S.view = 'master'; valIHam(); render(); vistaCfg({ mode: c.mode }); return true; },
     opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); }
   };
   window.Samthykkja = {
