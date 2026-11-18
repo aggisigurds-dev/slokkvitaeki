@@ -23,8 +23,14 @@ function radHtmlFall(opna) {
   const sev = SRC.match(/^\s*const SEV = [^\n]*$/m);
   const hamark = SRC.match(/^\s*const PUNKTA_HAMARK = [^\n]*$/m);
   const fall = SRC.match(/function radHtml\(m, r, falinn, mj\) \{[\s\S]*?\n  \}/);
-  assert.ok(esc && sev && hamark && fall, 'náði ekki esc/SEV/PUNKTA_HAMARK/radHtml úr 489');
-  return new Function('S', 'window', esc[0] + '\n' + sev[0] + '\n' + hamark[0] + '\n' + fall[0] + '\nreturn radHtml;')({ opna: opna || {} }, {});
+  // radHtml teiknar líka upp/niður-merkið (18.11.2026) — föllin sem það kallar á fylgja með; sagan er tóm hér, svo
+  // ekkert merki teiknast og þessi próf mæla áfram aðeins röðun og punktalista.
+  const tg = SRC.match(/function talaGildi\(tala\) \{[\s\S]*?\n  \}/);
+  const ft = SRC.match(/^\s*const fraTexti = [^\n]*$/m);
+  const br = SRC.match(/function breyting\(id, tala\) \{[\s\S]*?\n  \}/);
+  const bh = SRC.match(/const breytingHtml = \(id, tala, klasi\) => \{[\s\S]*?\n  \};/);
+  assert.ok(esc && sev && hamark && fall && tg && ft && br && bh, 'náði ekki föllunum úr 489');
+  return new Function('S', 'window', 'SAGA', [esc[0], sev[0], hamark[0], tg[0], ft[0], br[0], bh[0], fall[0]].join('\n') + '\nreturn radHtml;')({ opna: opna || {} }, {}, { fyrri: {}, fyrst: {} });
 }
 const M = { id: 'verkferli', heiti: 'Verkferli tilbúin til keyrslu', slod: {} };
 const rod = (n) => ({ sev: 'upp', tala: n + ' ferli', undir: 'án skýrslu', punktar: Array.from({ length: n }, (_, i) => ({ feitt: 'Ferli ' + (i + 1), texti: ' · lýsing' })) });
