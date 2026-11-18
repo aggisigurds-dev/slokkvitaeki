@@ -6228,10 +6228,12 @@
     tillaga.sort((a, b) => fahRod(a.k) - fahRod(b.k));
     const hs = haedir();
     tillaga.forEach(t => {
-      t.til = hs.some(h => h && ((h.nafn && fahLykill(h.nafn) === t.k) || (h.image_url && fahUrl(h.image_url) === fahUrl(t.image_url) && (!t.skurdur || !h.skurdur || skorunSkurda(h.skurdur, t.skurdur) > 0.6))));
+      t.til = hs.some(h => h && ((h.nafn && fahLykill(h.nafn) === t.k && !fahTom(h)) || (h.image_url && fahUrl(h.image_url) === fahUrl(t.image_url) && (!t.skurdur || !h.skurdur || skorunSkurda(h.skurdur, t.skurdur) > 0.6))));
     });
     return { tillaga, snid: snid.map(x => ({ image_url: '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl), lysing: x.d.lysing || '', dags: x.d.dags || '', snid: !!x.f.snid, utlit: !!x.f.utlit })), grunnBlod: grunn.length };
   }
+  // 18.11.2026 (Álhella 7): tóm hæð (engin mynd, engin merki) er ekki „til" — „Finna allt húsið" fyllir hana í stað þess að sleppa henni.
+  const fahTom = h => !!h && !h.image_url && !(h.markers || []).length;
   function fahBeita(tl, valdar) {
     const hs = haedir(), nyjar = [];
     const virkId = virkHaed() && virkHaed().id;
@@ -6242,7 +6244,9 @@
       const h = { id: nyttId(), nafn: t.nafn, image_url: t.image_url, markers: [], skurdur: t.skurdur ? { x: t.skurdur.x, y: t.skurdur.y, w: t.skurdur.w, h: t.skurdur.h } : null, veggir: [], pdfVeggir: [], uppruni: { af: 'finna-allt-husid', leid: t.leid, blad: t.blad.lysing, dags: t.blad.dags } };
       if (h.skurdur) h.sjalf = true;
       if (snidBlod.length) h.snidBlod = snidBlod;
-      hs.push(h); nyjar.push(h); nyHer(h.id);
+      const tom = hs.findIndex(q => fahTom(q) && q.nafn && fahLykill(q.nafn) === t.k);
+      if (tom >= 0) hs.splice(tom, 1, h); else hs.push(h);
+      nyjar.push(h); nyHer(h.id);
     });
     if (!nyjar.length) return 0;
     // röð: Kjallari, 1., 2. … Ris — stöðug (hæðir með óþekkt heiti halda sínum stað innbyrðis)

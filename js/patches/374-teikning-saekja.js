@@ -85,7 +85,14 @@
     // úr titlinum ef APIið gaf engar hæðir: „2.-7. hæð", „1. hæð, 2. hæð, 3. hæð"
     if (!haed.length) {
       if (bilM) { for (var k = +bilM[1]; k <= +bilM[2] && k - +bilM[1] < 30; k++) haed.push(k); }
-      else { var r = /(\d+)\.\s*h(æ|ae)ð/g, q; while ((q = r.exec(tl))) haed.push(+q[1]); }
+      else {
+        // 18.11.2026 (Álhella 7: „grunnmynd 1. og 2. hæð" gaf aðeins 2. hæð og 1. hæð stóð tóm): upptalning á undan
+        // síðustu tölunni telst með — „1. og 2. hæð", „1., 2. og 3. hæð", „1 og 2. hæð".
+        var r = /((?:\d{1,2}\.?\s*(?:,|og|&|\+)\s*)*)(\d{1,2})\.\s*h(æ|ae)ð/g, q;
+        while ((q = r.exec(tl))) {
+          (q[1].match(/\d{1,2}/g) || []).concat([q[2]]).forEach(function (n) { if (haed.indexOf(+n) < 0) haed.push(+n); });
+        }
+      }
     }
     var kj = !!d.kjallari || /kjallar/.test(tl), ris = !!d.ris || /(^|[^a-zþæöðáéíóúý])ris(i|h(æ|ae)ð)?([^a-zþæöðáéíóúý]|$)/.test(tl);
     var grunn = !!d.grunnmynd || /grunnmynd/.test(tl);
