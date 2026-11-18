@@ -116,4 +116,4 @@ Reglur:
 3. **Ekkert er giskað.** Finnist ekki þráður sem erindið á með vissu: skildu það eftir ótengt og segðu ÓMÆLT. Dagsetning ein og sér er ekki sönnun — hjá rekstrarfélögum eru oft 5–14 póstar í sama glugga.
 4. `postur_efnislykill(text)` er sama normalisering og `efniLykill` í 448. Breytist önnur, breyttu hinni.
 
-Staðan 18.11.2026: Benna 13/13 erindi með póst, Center Hótel 14/14, Nesdekk 5/7, Heimaleiga 6/23 (2025-erindin eiga eftir lestrarferð), 0 árekstrar.
+Staðan 18.11.2026 eftir lestrarferð: **60 af 72** gátt-erindum bera póst, 433 tengingar, 0 árekstrar. Benna 13/13, Center Hótel 14/14, Heimaleiga 22/23, Nesdekk 5/7. Ótengd eftir: tvö innri Nesdekk-mál (#1675, #1676, enginn póstur til), tvö prófunarerindi Reita, og sex Heimaleigu-mál um kröfur/reikninga frá Eignaumsjón (#1311, #1313, #1316, #1321, #1322, #1327) auk #1307 sem er ÓMÆLT (sjá nótu á málinu).
