@@ -270,7 +270,7 @@
    * félagi, símanúmeri — í dyr { teg, id, heiti, slod }. Hér verða þær takkar EFST í liðnum. Í appinu grípur 521 (Gatt)
    * smellinn um data-gatt og opnar færsluna ofan á borðinu; á /afgreidsla.html er slóðin sjálf notuð.
    * Slóð sem er hvorki tel: né afstæð slóð á þennan vef verður ekki að tengli. */
-  var dyraSlod = function (s) { s = String(s || ''); return /^tel:\+?\d{7,15}$/.test(s) || /^\/(?!\/)[^\s"'<>]*$/.test(s) ? s : ''; };
+  var dyraSlod = function (s) { s = String(s || ''); return /^tel:\+?\d{7,15}$/.test(s) || /^\/(?![\/\\])[^\s"'<>\\]*$/.test(s) ? s : ''; };
   var breidur = function () { try { return !rot.Gatt && rot.matchMedia && rot.matchMedia('(min-width: 900px)').matches; } catch (_) { return false; } };
   function dyrTakki(x, fyrsti) {
     var sl = dyraSlod(x && x.slod);

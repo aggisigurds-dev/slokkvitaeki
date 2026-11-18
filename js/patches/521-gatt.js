@@ -21,6 +21,9 @@
  *      viðkomandi fall sé komið (mest 10 s), færslan opnuð og ?opna= tekið úr slóðinni. /?mal=N#bord (492e) og
  *      #company/N (235/357) virka áfram óbreytt.
  *
+ * ÞEKKT TAKMÖRK: krafa, gleymt og arsskodun opna glugga sem þarf gögn síðunnar sinnar; séu þau ekki hlaðin getur fallið
+ * skilað án þess að neitt opnist og Gáttin veit það ekki. Enginn liður notar þær dyr enn (gogn.dyr, 0 af 50 þann 18.11.2026).
+ *
  * ÖRYGGI: opnun SKRIFAR EKKERT — þetta kallar aðeins á opnunarföll sem til eru. Tegundin verður að vera á listanum og
  * auðkennið jákvæð heiltala; allt annað er hunsað þegjandi. Finnist fallið ekki innan tímamarka: Toast, ekkert kast. */
 (() => {
@@ -35,6 +38,7 @@
   const segja = (texti) => { try { if (window.Toast && Toast.show) Toast.show(texti, 'warn'); else console.warn('[521] ' + texti); } catch (_) {} };
   const aBordi = () => { try { return !!(window.App && (App.currentView === 'bord' || /^#?bord$/.test(location.hash || ''))); } catch (_) { return false; } };
 
+  const SAGT = 'sagt';   // opnunarfallið neitaði og sagði notandanum sjálft hvers vegna — Gáttin yfirskrifar það ekki
   const LEIDIR = {
     async mal(id) {
       const B = await bida(() => window.App && App.switchView && window.Bord368 && Bord368.opnaMal && Bord368);
@@ -52,8 +56,8 @@
     async sala(id) {
       const O = await bida(() => window.OpnaSolu && OpnaSolu.opna && OpnaSolu);
       if (!O) return false;
-      const r = await O.opna(id);   // kastar aldrei; segir sjálft frá í Toast ef salan finnst ekki
-      return !!(r && r.ok !== false);
+      const r = await O.opna(id);   // kastar aldrei; segir SJÁLFT frá í Toast (salan finnst ekki, ritillinn er opinn …)
+      return r && r.ok === false ? SAGT : true;
     },
     async krafa(id) {
       const K = await bida(() => window.KrofuVinnugluggi && KrofuVinnugluggi.opnaSolu && KrofuVinnugluggi);
@@ -87,6 +91,7 @@
     if (!Object.prototype.hasOwnProperty.call(LEIDIR, t) || !n) return false;
     let ok = false;
     try { ok = await LEIDIR[t](n); } catch (e) { console.warn('[521] opnun brást', t, n, e); ok = false; }
+    if (ok === SAGT) return false;
     if (!ok) segja('Náði ekki að opna ' + (HEITI[t] || 'færsluna') + ' — reyndu aftur eftir augnablik');
     return ok;
   }
@@ -95,7 +100,10 @@
 
   // Takki eða tengill hvar sem er í appinu: data-gatt="<teg>:<id>" → opnast hér, án þess að síðan endurhlaðist.
   document.addEventListener('click', (e) => {
-    const el = e.target && e.target.closest ? e.target.closest('[data-gatt]') : null;
+    // Þjónustuborðið (368) teiknar í opinni skuggarót: á document sést e.target þá sem #view-bord. composedPath()[0] er
+    // takkinn sjálfur. Án þessa flakkaði tengillinn og appið endurhlóðst (rýni 18.11.2026, sannreynt í vafra).
+    const upphaf = (e.composedPath && e.composedPath()[0]) || e.target;
+    const el = upphaf && upphaf.closest ? upphaf.closest('[data-gatt]') : null;
     if (!el) return;
     const m = /^([a-z]+):(\d+)$/.exec(el.getAttribute('data-gatt') || '');
     if (!m || !Object.prototype.hasOwnProperty.call(LEIDIR, m[1])) return;
@@ -109,11 +117,12 @@
     try { v = new URLSearchParams(location.search).get('opna') || ''; } catch (_) {}
     const m = /^([a-z]+):(\d+)$/.exec(v);
     if (!m) return;
-    try { const u = new URL(location.href); u.searchParams.delete('opna'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) {}
-    opna(m[1], m[2]);
+    // Færibreytan er tekin úr slóðinni EFTIR að opnun hefur verið reynd, svo hún lifi innskráningu (next=) og endurhleðslu af.
+    const hreinsa = () => { try { const u = new URL(location.href); u.searchParams.delete('opna'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) {} };
+    opna(m[1], m[2]).then(hreinsa, hreinsa);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(urSlod, 300)); else setTimeout(urSlod, 300);
 
-  window.Gatt = { opna, slod, tegundir: Object.keys(LEIDIR), version: '521a' };
-  console.log('[521a] Gátt — opnar mál, félag, sölu, kröfu, ársskoðun og verkbeiðni beint');
+  window.Gatt = { opna, slod, tegundir: Object.keys(LEIDIR), version: '521b' };
+  console.log('[521b] Gátt — opnar mál, félag, sölu, kröfu, ársskoðun og verkbeiðni beint');
 })();

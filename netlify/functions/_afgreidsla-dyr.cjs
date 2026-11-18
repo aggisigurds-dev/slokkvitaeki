@@ -27,10 +27,20 @@ const einstok = (a) => [...new Set(a)];
 const heil = (x) => { const n = Number(x); return Number.isInteger(n) && n > 0 ? n : 0; };
 const stutt = (s, n) => { const t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
 
-/* Símanúmer → tel:-slóð. Fyrsta íslenska númerið í strengnum (7 stafir, með eða án +354 / bila / bandstriks). */
+/* Símanúmer → tel:-slóð. Fyrsta ÍSLENSKA númerið í strengnum: sjö stafir með bilum eða bandstrikum hvar sem er
+ * („555 1234“, „555-12-34“), með eða án +354 / 00354 („+354 555 12 34“, „+3545551234“). Númer með öðrum landskóða verður
+ * EKKI að íslensku númeri (rýni 18.11.2026: „+1 555 123 4567“ varð áður tel:+3541234567) — það fær engan takka. */
 function simaslod(s) {
-  const m = /(?:\+?354[\s-]?)?\b(\d{3})[\s-]?(\d{4})\b/.exec(String(s || ''));
-  return m ? { slod: 'tel:+354' + m[1] + m[2], numer: m[1] + ' ' + m[2] } : null;
+  for (const m of String(s || '').matchAll(/(\+|00)?\d[\d \-]{4,18}\d/g)) {
+    const stafir = m[0].replace(/\D/g, ''), forskeyti = !!m[1];
+    let n = '';
+    if (forskeyti) { const an = m[1] === '00' ? stafir.slice(2) : stafir; if (an.length === 10 && an.slice(0, 3) === '354') n = an.slice(3); }
+    else if (stafir.length === 7) n = stafir;
+    else if (stafir.length === 10 && stafir.slice(0, 3) === '354') n = stafir.slice(3);
+    else { const f = /^(\d{3})[ -]?(\d{4})(?= |$)/.exec(m[0]); if (f && stafir.length % 7 === 0) n = f[1] + f[2]; }   // „555 1234 555 9999“ → fyrra númerið
+    if (n) return { slod: 'tel:+354' + n, numer: n.slice(0, 3) + ' ' + n.slice(3) };
+  }
+  return null;
 }
 
 /* Auðkennin sem liðurinn ber. Titillinn ræður mestu: reikningurinn eða málið sem STENDUR Í TITLINUM er það sem liðurinn
@@ -40,7 +50,9 @@ function audkenni(row) {
   const titill = String((row && row.titill) || '');
   const annad = [typeof row.af_hverju === 'string' ? row.af_hverju : JSON.stringify(row.af_hverju || ''), row.hvad_gerist, g.lysing].map((x) => String(x || '')).join(' ');
   const malUr = (t) => [...t.matchAll(MAL)].map((m) => heil(m[1])).filter(Boolean);
-  const mal = einstok([heil(g.mal_id), ...malUr(titill), ...malUr(annad)].filter(Boolean)).slice(0, MEST_MAL);
+  let mal = einstok([heil(g.mal_id), ...malUr(titill)].filter(Boolean));
+  if (!mal.length) mal = einstok(malUr(annad));   // rök og lýsing gilda aðeins ef hvorki gögnin né titillinn nefna mál
+  mal = mal.slice(0, MEST_MAL);
   const gognR = [g.r_numer].concat(Array.isArray(g.reikningar) ? g.reikningar.map((x) => (x && typeof x === 'object' ? (x.num || x.numer || x.r_numer) : x)) : [])
     .map((x) => String(x || '')).filter((x) => /^R-\d{6}$/.test(x));
   let r = einstok(titill.match(RNR) || []);
@@ -67,11 +79,13 @@ async function saekja(rows, lesa) {
   const saleIds = einstok(A.map((a) => a.sale_id).concat(eigin(['sala', 'krafa'])).filter(Boolean));
   const kts = einstok(A.map((a) => a.kt).filter(Boolean));
   const ktGildi = kts.flatMap((k) => [k, k.slice(0, 6) + '-' + k.slice(6)]);
-  const [mal, solurNum, solurId, ktFelog] = await Promise.all([
+  const vbIds = einstok(eigin(['verkbeidni']).filter(Boolean));
+  const [mal, solurNum, solurId, ktFelog, verkb] = await Promise.all([
     malIds.length ? tryggt(lesa(`thjonustubeidni?select=id,status,deleted_at,archived_at,fyrirtaeki_id&id=in.(${malIds.join(',')})`)) : [],
     nums.length ? tryggt(lesa(`solur?select=id,num,customer_id&num=in.(${nums.join(',')})`)) : [],
     saleIds.length ? tryggt(lesa(`solur?select=id,num,customer_id&id=in.(${saleIds.join(',')})`)) : [],
     ktGildi.length ? tryggt(lesa(`fyrirtaeki?select=id,nafn,kennitala&deleted_at=is.null&kennitala=in.(${ktGildi.join(',')})`)) : [],
+    vbIds.length ? tryggt(lesa(`verkbeidnir?select=id&id=in.(${vbIds.join(',')})`)) : [],
   ]);
   const solur = solurNum.concat(solurId);
   const fIds = einstok([].concat(
@@ -82,7 +96,7 @@ async function saekja(rows, lesa) {
   for (let i = 0; i < fIds.length; i += 150) {   // langur listi → í bútum, svo slóðin verði ekki of löng
     felog.push(...await tryggt(lesa(`fyrirtaeki?select=id,nafn&deleted_at=is.null&id=in.(${fIds.slice(i, i + 150).join(',')})`)));
   }
-  return { mal, solur, ktFelog, felog };
+  return { mal, solur, ktFelog, felog, verkb };
 }
 
 const slodFyrir = (teg, id) => (teg === 'mal' ? '/?mal=' + id + '#bord' : teg === 'felag' ? '/#company/' + id : '/?opna=' + teg + ':' + id + '#bord');
@@ -91,7 +105,7 @@ const HEITI = { krafa: 'Vinna kröfuna', gleymt: 'Gleymst að rukka?', arsskodun
 /* Dyr eins liðar úr því sem saekja() fann. Röðin er röð takkanna: símtalið fyrst (það ER verkið í símtalslið), svo dyr
  * sem agentinn setti sjálfur, málið, reikningurinn, félagið. */
 function dyrFyrir(row, V) {
-  const a = audkenni(row), v = V || { mal: [], solur: [], ktFelog: [], felog: [] };
+  const a = audkenni(row), v = Object.assign({ mal: [], solur: [], ktFelog: [], felog: [], verkb: [] }, V || {});
   const dyr = [], sed = new Set();
   const baeta = (teg, id, heiti) => { const k = teg + ':' + id; if (!id || sed.has(k)) return; sed.add(k); dyr.push({ teg, id, heiti: stutt(heiti, 60), slod: slodFyrir(teg, id) }); };
   const felag = (id) => v.felog.find((f) => heil(f.id) === heil(id));
@@ -103,6 +117,7 @@ function dyrFyrir(row, V) {
     if (d.teg === 'mal' && !v.mal.some((m) => heil(m.id) === heil(d.id) && m.status !== 'lokad' && !m.deleted_at && !m.archived_at)) continue;
     if (['felag', 'gleymt', 'arsskodun'].includes(d.teg) && !felag(d.id)) continue;
     if (['sala', 'krafa'].includes(d.teg) && !v.solur.some((x) => heil(x.id) === heil(d.id))) continue;
+    if (d.teg === 'verkbeidni' && !v.verkb.some((x) => heil(x.id) === heil(d.id))) continue;
     baeta(d.teg, heil(d.id), d.heiti || HEITI[d.teg] || (d.teg === 'mal' ? 'Opna mál #' + heil(d.id) : d.teg === 'sala' ? 'Opna reikninginn' : 'Opna félagið'));
   }
 

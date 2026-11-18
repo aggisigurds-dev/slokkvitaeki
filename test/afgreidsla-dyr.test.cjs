@@ -27,6 +27,7 @@ const GRUNNUR = {
   thjonustubeidni: [{ id: 1, status: 'opid', deleted_at: null, archived_at: null, fyrirtaeki_id: 10 }, { id: 2, status: 'lokad', deleted_at: null, archived_at: null, fyrirtaeki_id: 10 },
     { id: 3, status: 'opid', deleted_at: '2026-01-01', archived_at: null, fyrirtaeki_id: 20 }],
   solur: [{ id: 501, num: 'R-000111', customer_id: 10 }, { id: 502, num: 'R-000222', customer_id: 20 }],
+  verkbeidnir: [{ id: 900 }],
   fyrirtaeki: [{ id: 10, nafn: 'Prufufélag A ehf.', kennitala: '6001011230' }, { id: 20, nafn: 'Prufufélag B, Aðalgata 1', kennitala: '550505-1230' },
     { id: 21, nafn: 'Prufufélag B, Hliðargata 2', kennitala: '550505-1230' }, { id: 30, nafn: 'Prufufélag C <b>', kennitala: '410101-2340' }],
 };
@@ -46,7 +47,8 @@ test('auðkenni: titillinn ræður — reikningur og mál sem standa í titlinum
   const a = D.audkenni(lidur({ titill: 'Prufufélag: R-000111 ógreiddur (mál #1)', hvad_gerist: 'Sjá líka R-000222 og mál #2',
     af_hverju: [{ texti: 'R-000333 var greiddur' }], gogn: { mal_id: 7, kt: '410101-2340', lysing: 'R-000444' } }));
   assert.deepEqual(a.reikn, ['R-000111'], 'aðeins reikningurinn í titlinum — hinir eru samhengi');
-  assert.deepEqual(a.mal, [7, 1, 2]);
+  assert.deepEqual(a.mal, [7, 1], 'málið í gögnunum og titlinum — mál #2 í rökunum er samhengi og verður EKKI takki');
+  assert.deepEqual(D.audkenni(lidur({ titill: 'Félag: úttekt unnin', hvad_gerist: 'Sjá mál #2 og mál #1' })).mal, [2, 1], 'nefni hvorki gögn né titill mál gildir textinn');
   assert.equal(a.kt, '4101012340');
   const b = D.audkenni(lidur({ titill: 'Fjórtán sölur telja sem útistandandi', hvad_gerist: 'R-000001 R-000002 R-000003 R-000004 R-000005' }));
   assert.deepEqual(b.reikn, ['R-000001', 'R-000002', 'R-000003']); assert.equal(b.fleiriReikn, 2);
@@ -59,7 +61,9 @@ test('símanúmer → tel:-slóð: íslenskt sjö stafa númer með eða án +35
   assert.deepEqual(D.simaslod('555 1234'), { slod: 'tel:+3545551234', numer: '555 1234' });
   assert.equal(D.simaslod('+354 555-1234 (skiptiborð)').slod, 'tel:+3545551234');
   assert.equal(D.simaslod('5551234 eða 555 9999').slod, 'tel:+3545551234', 'fyrsta númerið');
-  for (const x of ['', null, 'enginn sími', '12345', 'netfang@example.is']) assert.equal(D.simaslod(x), null, String(x));
+  for (const x of ['+354 555 12 34', '+3545551234', '00354 555-1234', '555-12-34', '555 1234 555 9999']) assert.equal((D.simaslod(x) || {}).slod, 'tel:+3545551234', x);
+  for (const x of ['', null, 'enginn sími', '12345', 'netfang@example.is', '+1 555 123 4567', '+45 55 51 23 45', 'kt 410101-2340']) assert.equal(D.simaslod(x), null, String(x));
+  // Erlent númer má ALDREI verða að íslensku númeri (áður varð „+1 555 123 4567“ að tel:+3541234567).
 });
 
 test('símtalsliður: Hringja er FYRSTI takkinn, svo málið, reikningurinn og félagið sem reikningurinn tilheyrir', async () => {
@@ -83,10 +87,10 @@ test('ALDREI rangar dyr: lokað/eytt mál, reikningur sem finnst ekki, kennitala
 
 test('dyr sem agent setur sjálfur (gogn.dyr): aðeins þekkt tegund, heiltala og færsla sem finnst', async () => {
   const r = await dyr(lidur({ titill: 'Úttekt unnin en enginn reikningur', gogn: { dyr: [
-    { teg: 'gleymt', id: 10, heiti: 'Gleymst að rukka? — Prufufélag A' }, { teg: 'arsskodun', id: 20 }, { teg: 'krafa', id: 501 },
+    { teg: 'gleymt', id: 10, heiti: 'Gleymst að rukka? — Prufufélag A' }, { teg: 'arsskodun', id: 20 }, { teg: 'krafa', id: 501 }, { teg: 'verkbeidni', id: 900 }, { teg: 'verkbeidni', id: 901 },
     { teg: 'felag', id: 99 }, { teg: 'sala', id: 777 }, { teg: 'slod', id: 1, slod: 'https://annar-vefur.example' }, { teg: 'mal', id: 2 }, { teg: 'mal', id: 'x' }, null, 'rusl'] } }));
-  assert.deepEqual(teg(r), ['gleymt:10', 'arsskodun:20', 'krafa:501']);
-  assert.deepEqual(r.dyr.map((d) => d.slod), ['/?opna=gleymt:10#bord', '/?opna=arsskodun:20#bord', '/?opna=krafa:501#bord']);
+  assert.deepEqual(teg(r), ['gleymt:10', 'arsskodun:20', 'krafa:501', 'verkbeidni:900'], 'verkbeiðni 901 er ekki til → engar dyr');
+  assert.deepEqual(r.dyr.map((d) => d.slod), ['/?opna=gleymt:10#bord', '/?opna=arsskodun:20#bord', '/?opna=krafa:501#bord', '/?opna=verkbeidni:900#bord']);
   assert.equal(r.dyr[1].heiti, 'Opna ársskoðunina');
   assert.ok(r.dyr.every((d) => /^\/[?#]/.test(d.slod)), 'engin slóð út fyrir þennan vef');
 });
@@ -115,7 +119,7 @@ test('saekja: ein umferð fyrir alla liði, langur listi í bútum, og bilun í 
   assert.ok(kollud.filter((s) => s.startsWith('fyrirtaeki')).every((s) => s.includes('deleted_at=is.null')), 'eydd félög eru aldrei dyr');
   assert.deepEqual(teg(D.dyrFyrir(rows[0], V)), ['mal:1', 'sala:501', 'felag:10']);
   const bilad = await D.saekja(rows, async () => { throw new Error('grunnurinn svarar ekki'); });
-  assert.deepEqual(bilad, { mal: [], solur: [], ktFelog: [], felog: [] });
+  assert.deepEqual(bilad, { mal: [], solur: [], ktFelog: [], felog: [], verkb: [] });
   assert.deepEqual(D.dyrFyrir(rows[0], bilad).dyr, []);
   assert.deepEqual(D.dyrFyrir(rows[0], null).dyr, [], 'engin uppfletting → engar dyr, ekkert kast');
 });
@@ -132,7 +136,8 @@ test('takkarnir: fyrsti er aðaltakki, símtal hringir, appdyr bera data-gatt; h
   const h = B.snid.dyrHtml({ dyr: [{ teg: 'simi', id: 0, heiti: 'Hringja í Jón · 555 1234', slod: 'tel:+3545551234' }, { teg: 'mal', id: 1, heiti: 'Opna mál #1', slod: '/?mal=1#bord' },
     { teg: 'sala', id: 501, heiti: 'Opna <reikning>', slod: '/?opna=sala:501#bord' }, { teg: 'felag', id: 10, heiti: 'Ill slóð', slod: 'javascript:alert(1)' },
     { teg: 'felag', id: 11, heiti: 'Annar vefur', slod: '//annar-vefur.example/x' }, { teg: 'felag', id: 12, heiti: 'Full slóð', slod: 'https://annar-vefur.example/' },
-    { teg: 'felag', id: 13, heiti: 'Gæsalappir', slod: '/#company/13" onclick="x' }, { teg: 'felag', id: 14, heiti: '', slod: '/#company/14' }], fleiri_reikningar: 2 });
+    { teg: 'felag', id: 13, heiti: 'Gæsalappir', slod: '/#company/13" onclick="x' }, { teg: 'felag', id: 14, heiti: '', slod: '/#company/14' },
+    { teg: 'felag', id: 15, heiti: 'Bakstrik', slod: '/\\annar-vefur.example/x' }, { teg: 'felag', id: 16, heiti: 'Bakstrik inni', slod: '/a\\b' }], fleiri_reikningar: 2 });
   assert.equal((h.match(/<a class="baf-dyr/g) || []).length, 3, 'aðeins þrjár öruggar dyr: ' + h);
   assert.match(h, /<a class="baf-dyr baf-dyr-a baf-dyr-s" href="tel:\+3545551234">/, 'símtalið er fyrst og aðaltakki, án data-gatt');
   assert.match(h, /href="\/\?mal=1#bord" data-gatt="mal:1"/); assert.match(h, /data-gatt="sala:501"/);
@@ -186,7 +191,7 @@ test('Gatt.opna: hver tegund kallar á sitt opnunarfall; óþekkt tegund eða ó
   assert.deepEqual(kollud, ['mal:7', 'felag:7', 'sala:7', 'krafa:7', 'gleymt:7', 'arsskodun:7', 'verkbeidni:7']);
   for (const [t, id] of [['eyda', 7], ['constructor', 7], ['__proto__', 7], ['sala', 0], ['sala', -1], ['sala', '7;x'], ['sala', 1.5], ['', 7], [null, null]]) assert.equal(await G.opna(t, id), false, t + ':' + id);
   assert.equal(kollud.length, 7, 'ekkert opnunarfall kallað fyrir ógilt inntak');
-  assert.equal(await G.opna('sala', 404), false); assert.ok(sagt.some((s) => /Náði ekki að opna reikninginn/.test(s)), 'notandinn fær að vita ef opnun bregst');
+  assert.equal(await G.opna('sala', 404), false); assert.deepEqual(sagt, [], 'OpnaSolu neitaði og sagði sjálft hvers vegna — Gáttin yfirskrifar skýringuna ekki');
   assert.deepEqual([G.slod('mal', 3), G.slod('felag', 4), G.slod('sala', 5)], ['/?mal=3#bord', '/#company/4', '/?opna=sala:5#bord']);
   assert.deepEqual([G.slod('sala', 5), G.slod('felag', 4), G.slod('mal', 3)], [D.slodFyrir('sala', 5), D.slodFyrir('felag', 4), D.slodFyrir('mal', 3)], 'sama slóðasnið og þjónninn býr til');
 });
@@ -208,8 +213,16 @@ test('Gatt: smellur á data-gatt í appinu opnar færsluna á staðnum (engin en
   assert.equal(smella('krafa:501'), 1);
   await new Promise((r) => setTimeout(r, 30));
   assert.deepEqual(kollud, ['krafa:501']);
+  // Þjónustuborðið (368) teiknar í opinni skuggarót: e.target er þá hýsillinn (#view-bord, án data-gatt) og takkinn sést
+  // aðeins í composedPath()[0]. Án þess flakkaði tengillinn og appið endurhlóðst (rýni 18.11.2026).
+  const iSkugga = { stodvad: 0, preventDefault() { this.stodvad++; }, stopPropagation() {}, target: { closest: () => null },
+    composedPath: () => [{ closest: () => ({ getAttribute: () => 'mal:77' }) }, {}] };
+  hlustarar.click(iSkugga);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(iSkugga.stodvad, 1, 'smellurinn er gripinn þótt takkinn sé í skuggarót');
+  assert.deepEqual(kollud, ['krafa:501', 'mal:77']);
   for (const g of [null, 'krafa', 'eyda:5', 'krafa:x', 'krafa:5 onclick']) assert.equal(smella(g), 0, String(g));
-  assert.equal(kollud.length, 1);
+  assert.equal(kollud.length, 2);
 });
 
 test('Gatt: opnunarfall sem hleðst seinna (búntarnir koma hver á eftir öðrum) er beðið eftir og svo kallað', async () => {
