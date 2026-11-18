@@ -199,3 +199,29 @@ test('489 er tengt: sendir eftir mælingu, teiknar í mæli og röð, og sagan g
   assert.match(s, /try \{[\s\S]*\} catch \(_\) \{\}/, 'netvilla má ekki kastast upp');
   assert.match(s, /if \(!r\.ok\) return;/, '401/500 → engin saga, engin villa');
 });
+
+/* ── Villumælingin telur aðeins ÓLEYSTAR villur (18.11.2026) ── */
+test('villur: lagaðar villur telja ekki og lita ekki ljósið; þær standa í undirlínunni', () => {
+  const m = SRC.match(/\{ id: 'villur', hopur: 'Kerfi'[\s\S]*?maela: g => \{([\s\S]*?)\n    \} \}/);
+  assert.ok(m, 'náði ekki villumælingunni úr 489');
+  const dagsF = SRC.match(/^\s*const dags = [^\n]*$/m), padF = SRC.match(/^\s*const pad = [^\n]*$/m);
+  assert.ok(dagsF && padF);
+  const nu = Date.now(), iso = (ms) => new Date(ms).toISOString();
+  const maela = (villur) => new Function('g', 'THR', 'vika', padF[0] + '\n' + dagsF[0] + '\n' + m[1])(
+    { villur: { v: { villur, counts: { opnar: villur.filter((x) => !x.leyst_at).length } } } }, { nyjarVillurAlv: 5 }, () => new Date(nu - 3 * 864e5));
+  const v = (o) => Object.assign({ skilabod: 'Villa', fjoldi: 1, fyrst_at: iso(nu - 864e5), sidast_at: iso(nu - 3600e3), leyst_at: null }, o);
+  // 6 nýjar í vikunni, 4 þeirra lagaðar → 2 ólíkar, gult (ekki rautt), og „4 lagaðar í vikunni“.
+  let r = maela([v({}), v({}), v({ leyst_at: iso(nu) }), v({ leyst_at: iso(nu) }), v({ leyst_at: iso(nu) }), v({ leyst_at: iso(nu) })]);
+  assert.equal(r.tala, '2 ólíkar'); assert.equal(r.sev, 'athuga');
+  assert.match(r.undir, /^2 nýjar · 4 lagaðar í vikunni · síðasta vika 0 · óleystar alls 2$/);
+  assert.equal(r.punktar.length, 3);                                  // tvær óleystar + skýringarlínan
+  // Allt lagað → grænt og 0.
+  r = maela([v({ leyst_at: iso(nu) })]);
+  assert.equal(r.tala, '0 ólíkar'); assert.equal(r.sev, 'ok'); assert.match(r.undir, /1 löguð í vikunni/);
+  // Fimm óleystar nýjar → áfram rautt, eins og áður.
+  r = maela([v({}), v({}), v({}), v({}), v({})]);
+  assert.equal(r.tala, '5 ólíkar'); assert.equal(r.sev, 'alv'); assert.ok(!/lagað|löguð/.test(r.undir));
+  // Eldri villa (ekki séð í vikunni) telst í „síðasta vika“, ekki í tölunni.
+  r = maela([v({}), v({ fyrst_at: iso(nu - 9 * 864e5), sidast_at: iso(nu - 8 * 864e5) })]);
+  assert.equal(r.tala, '1 ólíkar'); assert.match(r.undir, /síðasta vika 1/);
+});

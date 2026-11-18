@@ -509,8 +509,12 @@
     } },
     { id: 'villur', hopur: 'Kerfi', heiti: 'Villur í kerfinu í vikunni', slod: { url: BH + '/kerfisheilsa.html', t: 'Kerfisheilsa' }, maela: g => {
       // /api/villur (service role): villur er RLS-varin án anon-reglna og má ekki lesa gegnum anon-lykilinn.
-      const v0 = vika().getTime(), l = g.villur.v.villur || [], nu = l.filter(x => Date.parse(x.sidast_at) >= v0), ny = nu.filter(x => Date.parse(x.fyrst_at) >= v0);
-      return { sev: ny.length >= THR.nyjarVillurAlv ? 'alv' : (ny.length || nu.length) ? 'athuga' : 'ok', tala: nu.length + ' ólíkar', undir: ny.length + (ny.length === 1 ? ' ný' : ' nýjar') + ' · síðasta vika ' + (l.length - nu.length) + ' · óleystar alls ' + ((g.villur.v.counts || {}).opnar != null ? g.villur.v.counts.opnar : l.filter(x => !x.leyst_at).length),
+      // 18.11.2026: aðeins ÓLEYSTAR villur telja og lita ljósið. Áður taldi mælingin allt sem sást í vikunni, líka villur sem
+      // voru lagaðar og merktar leystar — fjórar voru lagaðar 18.11 og talan stóð samt í 28 og ljósið rautt. Komi villa
+      // aftur opnar /api/villur hana sjálft (leyst_at núllast), svo lagfæring sem heldur ekki sést strax aftur.
+      const v0 = vika().getTime(), l = g.villur.v.villur || [], iViku = l.filter(x => Date.parse(x.sidast_at) >= v0);
+      const nu = iViku.filter(x => !x.leyst_at), ny = nu.filter(x => Date.parse(x.fyrst_at) >= v0), lagad = iViku.length - nu.length;
+      return { sev: ny.length >= THR.nyjarVillurAlv ? 'alv' : (ny.length || nu.length) ? 'athuga' : 'ok', tala: nu.length + ' ólíkar', undir: ny.length + (ny.length === 1 ? ' ný' : ' nýjar') + (lagad ? ' · ' + lagad + (lagad === 1 ? ' löguð' : ' lagaðar') + ' í vikunni' : '') + ' · síðasta vika ' + (l.length - iViku.length) + ' · óleystar alls ' + ((g.villur.v.counts || {}).opnar != null ? g.villur.v.counts.opnar : l.filter(x => !x.leyst_at).length),
         punktar: nu.slice(0, 4).map(x => x.skilabod + ' · ' + x.fjoldi + ' alls frá ' + dags(x.fyrst_at)).concat(['talan geymir heildarfjölda og síðasta dag, ekki fjölda í vikunni']) };
     } }
   ];
