@@ -234,5 +234,17 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   Óljóst: 23603 á veggnum milli bláa og græna á 1. hæð; 23610 ekki staðsett (utan teikningar). **Allar 4 nýju brunaslöngurnar eru í grænu álmunni.**
   **Fjólublátt tákn = „Vantar" (tækið vantar á staðinn, 433/434), EKKI útskipt tæki;** 4 af 6 eru herbergin sem Bjarndís sagði tóm (202, 232, 335, 430).
   37 tæki á staðnum (43 − 6) = blaðið (36 LV + 1 duft). Ekkert flutt eða eytt enn — bíður samþykkis Agnars.
+  **FRAMKVÆMT 18.11 (Agnar: „tvírit af sömu teikningunni með tækjum sem tilheyra hvoru … það sem er skipt á milli þeirra
+  skiptirðu jafnt … skýring að t.d. 14 voru á sameiginlegu svæði og 7 fara á hvort"):** sameign blaðsins = 13 LV + 1 duft = 14
+  → 7/7; slöngur 4 → 2/2. **Laugaverk (869):** 10 herbergjatæki + 7 sameign (05, 06, græni gangur 4. h., 03 á 1. h., 23610, 23592, 23593)
+  + 3 Vantar (232, 335, 430) + slöngur 21936/21937 (2. og 3. h.). **IHC (1486):** 13 herbergjatæki + 7 sameign (23602 kjallari,
+  23575 = líklega duftið á 3. h., 23597 gangur 5. h., 23594–23596 og 23590/91 á 4. h.) + 3 Vantar (202, gangur við 210, móttaka)
+  + slöngur 21938/21939. 23 FC869-raðir fluttar 869 → 1486; staðsetning „Laugavegur 18, 101 Reykjavík“ (hæðatalan tekin af).
+  Teikning: Yfirlit Mána heldur 22 merkjum; tvírit (haed id `hmwavmvfw2rn-ihc`) bætt á teikningu 1486 með 25 merkjum.
+  Sannreynt í appinu (uid 10): Máni Merkt inn 20 + 2 slöngur, Vantar 3; Midtown 23 + 2, Vantar 3.
+  Afrit: `backup_20261118_lv18_teikning`, `backup_20261118_lv18_uttaeki`. **Óleyst:** 11 FC869-raðir (23611–23621, „Ekki merkt" á Mána)
+  og 56 AE-léttvatn (21880–21935) á Midtown eru tvítalning → **merktar „urelt" 18.11 með samþykki Agnars** (virkt: Máni 20 LV + 2
+  slöngur, Midtown 23 LV + CO₂ + 2 slöngur; sannreynt í appinu);
+  CO₂ 21879 (yfirstrikað á blaðinu) óákveðið; 23575 sem duft og 9 L á 72/74 ekki breytt — gert við skráningu úttektar.
 
 Síðast uppfært: 18.11.2026
