@@ -2223,7 +2223,8 @@
         return '<div class="egp-r"><span class="egd' + (s.n.seint ? ' seint' : '') + '"><b>' + esc(MAN_STUTT[s.n.m - 1]) + '</b>' + s.n.y + '</span>' +
           '<div class="egt"><b>' + esc(s.b.nafn) + '</b><span>' + esc(s.heiti) + '</span></div>' +
           // 23.10.2026 (Agnar: „Breyta okkar í Með skoðun"): pillan segir hvað gerist, ekki hver á það
-          (s.n.seint ? '<span class="kst vantar">Á eftir</span>' : '<span class="kst okkar">Með skoðun</span>') + '</div>';
+          // 18.11.2026 (Agnar): „Með skoðun" er jákvæð staða → grænt (.kst.gott), ekki appelsínugult eins og .kst.okkar
+          (s.n.seint ? '<span class="kst vantar">Á eftir</span>' : '<span class="kst gott">Með skoðun</span>') + '</div>';
       }).join('') : '<div class="egp-e">Engin skoðun á dagskrá næstu 12 mánuði. Skoðunarmánuður er settur við fyrstu úttekt.</div>') + '</div>');
     _naestuHtml = syn.erindi ? naestuHtml : '';
     if (!syn.erindi) panels.push(naestuHtml);   // án Senda erindi-dálks: Næstu skoðanir helst í aðalgrindinni
