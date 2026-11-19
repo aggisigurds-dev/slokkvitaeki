@@ -525,7 +525,10 @@
     if (!SA || !SA.loaded || !SA.loaded()) return null;
     const t = { tilbuid: 0, spurn: 0, claude: 0, eldst: 0 };   // eldst = dagar frá svari Agnars (updated_at), ekki frá stofnun málsins
     try {
-      SA.listi().forEach(r => { const h = SA.hluti(r); if (h === 0) t.tilbuid++; else if (h === 1) t.spurn++; else if (h === 2) { t.claude++; t.eldst = Math.max(t.eldst, dagarSidan(r.updated_at || r.created_at)); } });
+      // 19.11.2026: mál í snooze eru ekki á listanum og mega ekki telja hér heldur — annars sagði spjaldið „4 bíða samþykkis"
+      // þegar borðið sýndi 3. (Snooze-skrifið hækkar líka updated_at, svo `eldst` núllaðist og alvarleikinn féll.)
+      SA.listi().filter(r => !(SA.erSnoozad && SA.erSnoozad(r)))
+        .forEach(r => { const h = SA.hluti(r); if (h === 0) t.tilbuid++; else if (h === 1) t.spurn++; else if (h === 2) { t.claude++; t.eldst = Math.max(t.eldst, dagarSidan(r.updated_at || r.created_at)); } });
     } catch (_) { return null; }
     return t;
   }

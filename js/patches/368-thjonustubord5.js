@@ -350,7 +350,8 @@
   function hamTala(k) {
     const h = M(k), n = nu();
     if (!h) return '';
-    if (h.rymi === SAMT_HAM) return S.rows.filter(r => iHam(r, k) && erSamthykki(r)).length;
+    // Snooze telst ekki með (19.11.2026, rýni): annars sagði hnappurinn „Samþykkja 4" þegar listinn sýndi 3.
+    if (h.rymi === SAMT_HAM) return S.rows.filter(r => iHam(r, k) && erSamthykki(r) && !erSnoozad(r)).length;
     if (h.rymi === 'vinnublod') return vbrListi(n).filter(vbrBidur).length;
     if (h.rymi === 'erindi') return (window.ErindiSimi && ErindiSimi.loaded()) ? ErindiSimi.talning() : '';
     if (h.rymi === 'tolvupostar') return (window.Tolvupostar && Tolvupostar.loaded()) ? Tolvupostar.S.thraedir.filter(x => !x.falid && (x.hluti === 'vip' || x.hluti === 'bidur' || x.hluti === 'claude' || x.hluti === 'undirbuid')).length : '';
@@ -1125,7 +1126,7 @@
       /* 19.11.2026 (Agnar: „Hama stjórnstikan er kramin"). `.seg` ber overflow:hidden, svo hamir sem komust ekki fyrir í
        * einni línu voru KLIPPTIR af — á tölvu var hvorki hægt að skruna að þeim né sjá þá (mælt: „Skýrslur" hálfur undir
        * „+ Hamur"). Hamaröðin brýtur nú um í fleiri línur og ekkert er falið. Appsniðið skrunar áfram (sjá ofar). */
-      '.seg.modeseg{flex-wrap:wrap;overflow:visible;max-width:100%}',
+      '.seg.modeseg{flex-wrap:wrap;max-width:100%}',
       '.seg.modeseg button{border-top:1px solid var(--edge)}.seg.modeseg button:first-child{border-top:0}',
       '.seg.sm button{height:26px;padding:0 9px;font-size:12.5px}',
       '.seg .c{font-family:var(--mono);font-size:11.5px;margin-left:5px;font-variant-numeric:tabular-nums}',
@@ -1745,12 +1746,13 @@
       '@container t5 (max-width: 760px){.flipi .flp,.flipi .flx{min-width:30px;height:30px;font-size:14px}}',
       // Sama úttekt: Hamur-stikan (11 flipar, 1614 px) er overflow:hidden → „Test", „Afgreiðsla / Útköl", „Reikningsbeiðnir" utan skjás og ekki hægt að skruna.
       // AÐEINS í app-sniði (body.appmode); tölvuútlit utan apps óbreytt.
-      ':host-context(body.appmode) .seg.modeseg{max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
+      // 19.11.2026: umbrotið er TÖLVUÚTLIT eitt (sjá .seg.modeseg ofar). Appsniðið skrunar áfram í einni línu, óbreytt.
+      ':host-context(body.appmode) .seg.modeseg{flex-wrap:nowrap;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
       '@container t5 (min-width: 761px){.sel.inline{display:none}}',
       '@container t5 (max-width: 760px){' +
         '.t5{padding:12px 10px 24px}.h1{font-size:30px}' +
         '.acts{width:100%}.who{flex:1 1 100%}.who select{width:100%}.acts .btn{flex:1}' +
-        '.modes .lbl{display:none}.seg.modeseg{display:flex;width:100%;overflow-x:auto}.seg.modeseg button{flex:1 0 auto;height:38px;padding:0 12px}' +
+        '.modes .lbl{display:none}.seg.modeseg{display:flex;flex-wrap:nowrap;width:100%;overflow-x:auto}.seg.modeseg button{flex:1 0 auto;height:38px;padding:0 12px;border-top:0}' +
         '.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kv{font-size:26px}' +
         '.board{display:flex;flex-direction:column;gap:14px}.board>*{min-width:0;max-width:100%}' +
         '.phone-seg{display:flex;width:100%}.phone-seg button{flex:1;height:40px;font-size:14px}' +
@@ -2811,9 +2813,13 @@
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
         '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' + samtRodHtml() + samtTeljariHtml(hlutar) +
         '<div class="vbr-items">' + (!listi.length
+          // Tóm lína segir frá snoozinu (rýni 19.11.2026): annars stóð „Ekkert mál passar við síuna" þegar allt var í snooze.
           ? emptyHtml(samtRodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.'
             : samtRodun === 'snooze' ? 'Ekkert mál er í snooze. Hnappurinn „💤 Snooze viku" á spjaldinu ýtir máli á undan sér í ' + SNOOZE_DAGAR + ' daga.'
-            : 'Ekkert mál passar við síuna.') + '<button type="button" class="btn iv sm" data-t5="samt-allt">Sýna öll mál</button>'
+            : samtSnoozeFjoldi() ? 'Ekkert mál passar við síuna — ' + samtSnoozeFjoldi() + ' bíða í snooze.'
+            : 'Ekkert mál passar við síuna.') +
+            (samtRodun !== 'snooze' && samtSnoozeFjoldi() ? '<button type="button" class="btn iv sm" data-t5="samt-rod" data-v="snooze">Sýna snooze (' + samtSnoozeFjoldi() + ')</button> ' : '') +
+            '<button type="button" class="btn iv sm" data-t5="samt-allt">Sýna öll mál</button>'
           : samtRodun === 'sjalf'
             ? hlutar.map(h => { const m = h[1].filter(r => samtSia === 'allt' || String(h[2]) === samtSia); return m.length ? '<div class="vbr-sect" data-h="' + h[2] + '">' + h[0] + ' · ' + m.length + '</div>' + m.map(item).join('') : ''; }).join('')
             : listi.map(item).join('')) + '</div>' +
@@ -5884,7 +5890,8 @@
          * einingar" og innbyggðir hamir opna „Mitt vinnuborð", þar sem einingarnar eru valdar. */
         (mode.ser || mode.mitt
           ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '"><span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>'
-          : '<button type="button" class="btn iv sm" data-t5="cfg" aria-expanded="' + S.cfgOpen + '" title="Velja hvaða einingar standa á borðinu"><span class="t5-emo" aria-hidden="true">⚙ </span>Velja einingar</button>') +
+          // Aðeins eigandi borðsins (rýni 19.11.2026): „Mitt vinnuborð" var tekið af hinum 18.11 og má ekki laumast aftur inn hér.
+          : stjornStika ? '<button type="button" class="btn iv sm" data-t5="cfg" aria-expanded="' + S.cfgOpen + '" title="Velja hvaða einingar standa á borðinu"><span class="t5-emo" aria-hidden="true">⚙ </span>Velja einingar</button>' : '') +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +

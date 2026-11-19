@@ -64,12 +64,38 @@ test('368: snooze-mál er utan listans nema í eigin síu, og talan stendur á h
   assert.match(T368, /if \(samtRodun === 'postur' \|\| samtRodun === 'snooze'\) \{ samtRodun = 'nyjast';/);
 });
 
+// Rýni 19.11.2026: teljararnir mega ekki telja það sem listinn sýnir ekki, og tóma línan á að segja frá snoozinu.
+test('teljarar stemma: hamahnappur, Vinnusamantekt og tóma línan vita af snoozinu', () => {
+  assert.match(T368, /if \(h\.rymi === SAMT_HAM\) return S\.rows\.filter\(r => iHam\(r, k\) && erSamthykki\(r\) && !erSnoozad\(r\)\)\.length;/, 'hamahnappurinn');
+  assert.match(T368, /samtSnoozeFjoldi\(\) \? 'Ekkert mál passar við síuna — ' \+ samtSnoozeFjoldi\(\) \+ ' bíða í snooze\.'/);
+  assert.match(T368, /data-t5="samt-rod" data-v="snooze">Sýna snooze/, 'leið úr tómu línunni inn í snoozið');
+  assert.match(lesa('js/patches/489-vinnusamantekt.js'), /SA\.listi\(\)\.filter\(r => !\(SA\.erSnoozad && SA\.erSnoozad\(r\)\)\)/);
+  // „Velja einingar"-takkinn er eigandans eins — spjaldið var tekið af hinum 18.11.
+  assert.match(T368, /: stjornStika \? '<button type="button" class="btn iv sm" data-t5="cfg"/);
+  // Umbrotið er tölvuútlit eitt; appsniðið og þröngi hamurinn skruna áfram í einni línu.
+  assert.match(T368, /:host-context\(body\.appmode\) \.seg\.modeseg\{flex-wrap:nowrap;/);
+  assert.match(T368, /\.seg\.modeseg\{display:flex;flex-wrap:nowrap;width:100%;overflow-x:auto\}/);
+});
+
+// Ólesið pósthólf gefur engar raðir — einmitt þá má viðvörunin ekki hverfa með borðanum (rýni 19.11.2026).
+test('VIP-vaktin þegir tóm, en ALDREI þegar hólf er ólesið', () => {
+  const t = lesa('js/patches/513-vip-vakt.js');
+  assert.match(t, /if \(!l\.length && \/⚠\/\.test\(inn\)\) return '<section class="vip _tomt"/);
+  assert.match(t, /if \(!l\.length\) return '';/);
+  assert.ok(t.indexOf("if (!l.length && /⚠/.test(inn))") < t.indexOf("if (!l.length) return '';"), 'viðvörunin er athuguð Á UNDAN þögninni');
+});
+
 test('446 (sími): engin eigin skilgreining — hún kemur úr 368', () => {
   assert.match(T446, /const snoozad = \(r, A\) => !!\(A && A\.erSnoozad && A\.erSnoozad\(r\)\);/);
   assert.match(T446, /rodun === 'snooze' \? snoozad\(r, A\) : !snoozad\(r, A\)/);
   assert.match(T446, /A\.snooza\(id, d\)/, 'skrifið er 368-megin, ekki afritað hingað');
   assert.match(T446, /\['snooze', 'Snooze',/);
   assert.ok(!/snooze_til\s*\)\s*>\s*Date\.now\(\)/.test(T446), '446 má ekki reikna snooze sjálft');
+  // Bregðist skrifið má takkinn ekki standa dauður á „Augnablik…" (rýni 19.11.2026): hann er endurstilltur og villan sögð.
+  assert.match(T446, /if \(!ok\) \{ b\.disabled = false; b\.textContent = fyrri;[^\n]*Toast\.show/);
+  assert.match(T446, /if \(r\) r\._h = '';/, 'teikningin er þvinguð — annars sést ekkert gerast');
+  assert.match(T446, /RADANIR\.filter\(x => x\[0\] !== 'snooze' \|\| \(A && A\.erSnoozad\)\)/, 'gamalt 368 í skyndiminni: enginn snooze-flipi');
+  assert.match(T446, /\.sm-snz\{display:inline-flex;align-items:center;height:36px/, 'hnappurinn er jafn stór og hinir');
   assert.match(T368, /erSnoozad, snoozeDagar: SNOOZE_DAGAR, snoozeDagarEftir,/, '368 réttir símanum regluna');
   assert.match(T368, /snooza: \(id, dagar\) => \{/);
 });
@@ -86,9 +112,10 @@ test('efsta lag borðsins: „Í dag" er farinn, VIP og Merkja-og-keyra þegja �
 
 // 19.11.2026 — Agnar: „Hama stjórnstikan er kramin og vantar breytitakkann.“
 test('hamaröðin: brotnar um (ekkert klippt af) og ber alltaf breytitakka', () => {
-  assert.match(T368, /'\.seg\.modeseg\{flex-wrap:wrap;overflow:visible;max-width:100%\}'/, '.seg er overflow:hidden — modeseg verður að sleppa úr því');
-  const m = /\(mode\.ser \|\| mode\.mitt\n([\s\S]{0,700}?)\n\s*'<span class="grow">/.exec(T368);
+  // `.seg` ber overflow:hidden; með umbroti flæðir ekkert út fyrir, svo hornin haldast rúnnuð og ekkert er klippt af.
+  assert.match(T368, /'\.seg\.modeseg\{flex-wrap:wrap;max-width:100%\}'/);
+  const m = /\(mode\.ser \|\| mode\.mitt\n([\s\S]{0,900}?)\n\s*'<span class="grow">/.exec(T368);
   assert.ok(m, 'breytitakka-blokkin fannst ekki');
   assert.match(m[1], /data-t5="ham-breyta"/); assert.match(m[1], /data-t5="cfg"/, 'innbyggður hamur fær líka takka');
-  assert.ok(!/\? '<button[\s\S]{0,400}' : ''\)/.test(m[1]), 'enginn armur skilar tómu — takkinn stendur alltaf');
+  assert.match(m[1], /: stjornStika \?/, 'en aðeins eigandi borðsins');
 });
