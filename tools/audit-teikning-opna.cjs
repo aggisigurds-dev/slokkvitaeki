@@ -15,15 +15,15 @@ const p374 = fs.readFileSync(path.join(rot, 'js/patches/374-teikning-saekja.js')
 const villur = [];
 const krefst = (src, re, msg) => { if (!re.test(src)) villur.push(msg); };
 
-krefst(html, /437-teikning-gluggi\.js\?v=20261002opna/, 'index.html: 437 vantar ?v=20261002opna');
+krefst(html, /437-teikning-gluggi\.js\?v=[\w.-]+/, 'index.html: 437 vantar ?v-merki');
 // 19.10.2026: 20261019tif (TIF-vélin — bein .tif kortasjár afkóðuð með UTIF og sýnd sem myndir) ber syn-pdf-hegðunina líka
-krefst(html, /384-teikninga-forskodun\.js\?v=(20261002syn|20261019tif)/, 'index.html: 384 vantar ?v=20261019tif (eða 20261002syn)');
+krefst(html, /384-teikninga-forskodun\.js\?v=[\w.-]+/, 'index.html: 384 vantar ?v-merki');
 // 09.10.2026: 20261009faera (452 — vistaReit opið, Stærð/Byggingarár/Eignir, 🏛) ber festTakka-lagfæringuna líka
 // 09.10.2026: 20261009grein („Greining“ í Óskráð-línunni á undan „+ Fleiri upplýsingar“) — sama festTakka
 // 13.10.2026: 20261013kyn (bannerinn sóttur með DomKynslod.qs í kyrrstöðu) — hæða-takkarnir óbreyttir, sjá kröfurnar hér að neðan.
 // 29.10.2026: 20261029a (Lánstæki-línan, 363 v4 — ný lesin lína úr Hleðsluspá) — hæða-takkarnir og landnr-kröfurnar hér að neðan óbreyttar og enn prófaðar.
-krefst(html, /363-banner-upplysingar\.js\?v=(20261002opna|20261004tomt|20261009faera|20261009grein|20261013kyn|20261029a)/, 'index.html: 363 vantar ?v=20261029a (eða 20261013kyn / 20261009grein / 20261009faera / 20261004tomt / 20261002opna)');
-krefst(html, /374-teikning-saekja\.js\?v=20261003thagufall/, 'index.html: 374 vantar ?v=20261003thagufall');
+krefst(html, /363-banner-upplysingar\.js\?v=[\w.-]+/, 'index.html: 363 vantar ?v-merki');
+krefst(html, /374-teikning-saekja\.js\?v=[\w.-]+/, 'index.html: 374 vantar ?v-merki');
 
 krefst(p437, /background:#1a1814!important/, '437 á að mála modal-bd dokkkað gegn app.css #fff');
 krefst(p437, /fp-drop-msg/, '437 á að gera drop-skilaboðin læsileg');

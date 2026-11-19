@@ -246,5 +246,9 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   og 56 AE-léttvatn (21880–21935) á Midtown eru tvítalning → **merktar „urelt" 18.11 með samþykki Agnars** (virkt: Máni 20 LV + 2
   slöngur, Midtown 23 LV + CO₂ + 2 slöngur; sannreynt í appinu);
   CO₂ 21879 (yfirstrikað á blaðinu) óákveðið; 23575 sem duft og 9 L á 72/74 ekki breytt — gert við skráningu úttektar.
+  **Hvaða 2 eru ónýt? (spurt 19.11):** vinnublaðið greinir það EKKI — öll sex tekin tækin eru merkt eins (hringur í h-dálki + strik
+  í y-dálki): Laugaverk fyrir utan 337 og herbergi 330; IHC herbergi 302, 301, 401 og hæð −1. Ekkert í `lanstaeki`, `lanstaeki_saga`,
+  `verkbeidnir`, `verkdagbok` né pósti eftir 10.11. Bjarndís 10.11: ónýt „vegna aldurs“, verkstæðið metur endanlega → svarið er á
+  tækjunum sjálfum á verkstæðinu (framleiðsluár), ekki í gögnunum.
 
 Síðast uppfært: 18.11.2026
