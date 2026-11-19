@@ -81,7 +81,11 @@ function skrar(rot) {
 const LIT = /(?<![\w)\]])\/(?![\/*\s])((?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n\[])+)\/([gimsuy]{0,6})(?=\s*[.,;)\]}:]|\s*$)/g;
 // Ein yfirferð frá vinstri: `\x`-runa fyrst (svo `\[` opni ekki gervi-klasa sem gleypir það sem á eftir kemur), þá `[…]`.
 const RUNA_EDA_KLASI = /\\.|\[(?:\\.|[^\]\\])*\]/g;
-const GRUNUR = /(?:(?<![A-Za-zÀ-ÿ])[dswDSW][+*]|(?<![A-Za-zÀ-ÿ])[dw]\{\d|(?<=[A-Za-zÀ-ÿ])s\*(?=[^A-Za-zÀ-ÿ]|$))/;
+/* Síðasti hlutinn (19.11.2026): EINN hástafur sem stendur fremst í valkosti og ber `d+`/`s+`/`w+` á eftir sér —
+ * `/^(O|M|G|Pd+|[HC]R)$/` í _radgjafinn.cjs. Þar er „P“ heimildarkóði og `d+` átti að vera `\d+`; mynstrið passaði
+ * því aldrei við „P1“ og peningaráð með þeirri heimild var hent ÞEGJANDI frá 15. til 19.11.2026. Gamla reglan sá
+ * þetta ekki af því hún sleppir öllu sem stendur á eftir bókstaf (til að fella ekki „Teiknings*“). */
+const GRUNUR = /(?:(?<![A-Za-zÀ-ÿ])[dswDSW][+*]|(?<![A-Za-zÀ-ÿ])[dw]\{\d|(?<=[A-Za-zÀ-ÿ])s\*(?=[^A-Za-zÀ-ÿ]|$)|(?<=[(|^])[A-Z][dsw][+*])/;
 const RX_STRENGUR = /RegExp\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
 const STAKT = /(?<!\\)\\[dswbDSWB]/;
 
