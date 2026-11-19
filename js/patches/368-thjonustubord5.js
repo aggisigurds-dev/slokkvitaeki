@@ -197,6 +197,9 @@
     // 11.11.2026 (Agnar: „top priority niðurstöður … sem Forgangsmál inn á þjónustuborðið mitt … auk ný skilaboð, sem eru
     // mikilvæg, handvalið bara frá Claude“): mál á eigin borði með merkinu `forgangsmal` eða `skilabod`. Sjá forgangsmalHtml.
     forgangsmal: { n: '28', t: 'Forgangsmál', d: 'Handvalið af Claude: það sem skiptir mestu núna og mikilvæg ný skilaboð. Opna, ljúka og fela á línunni.' },
+    // 19.11.2026 (Agnar, um Anna sem fann mál #1686 aðeins með leit: „er kanski hægt að setja það inn í nýtt svona“):
+    // öll opin mál á borði starfsmannsins eða sem hann fylgir, óháð ham. Sjá bottomHtml 'minmal'.
+    minmal:     { n: '32', t: 'Mín mál', d: 'Öll opin mál á þínu borði og þau sem þú fylgir, sama í hvaða ham þau eru. Smellur opnar málið hægra megin.' },
     // 16.11.2026 (Agnar: „Settu þetta í sér lista inn á þjónustuborðið. Hjá hinum sem er efst“): markmiðslistinn (508 MarkmidBord).
     markmid:    { n: '29', t: 'Markmið', d: 'Markmiðslistinn: flokkarnir með framvindu, opnanlegir. Smellur á markmið opnar það á síðunni Markmið.' },
     // 16.11.2026 (Agnar: „Gerðu bara þjónustuborðið öflugra sem vinnuborð“): forunnu verkin úr Afgreiðslu framkvæmd Á borðinu (511 BordAfgreidsla).
@@ -772,7 +775,10 @@
     if (sr && !iHam(sr, m)) delete S.sel[n];
   }
   const masterRows = () => hamRows().filter(r => isFree(r) && !onBoardOf(r, nu())).sort(rodun);
-  const mineRows = () => hamRows().filter(r => onBoardOf(r, nu())).sort(rodun);
+  // Fylgjandi (Agnar 19.11.2026, mál #1686: „láttu verða sýnilegt á báðum“): mál með merkinu `fylgjandi:<nafn>` birtist líka á
+  // borði þess nafns. Eigandinn (assigned_to) er óbreyttur; aðeins listinn „Mitt borð“ sýnir málið, engin réttindi breytast.
+  const fylgir = (r, n) => Array.isArray(r.tags) && r.tags.some(t => lagt(t) === 'fylgjandi:' + lagt(n));
+  const mineRows = () => hamRows().filter(r => onBoardOf(r, nu()) || fylgir(r, nu())).sort(rodun);
   const ageDays = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : 0; };
   const ageCls = a => (a >= 14 ? 'hot' : a <= 2 ? 'warm' : '');
   const whereOf = r => r.customer_nafn || S.names[r.customer_base_id] || '';
@@ -4997,6 +5003,27 @@
       const body = hluti('Þarf að bregðast við', F, 'forg') + hluti('Ný skilaboð', K, 'skil') ||
         emptyHtml('Ekkert forgangsmál og engin ný skilaboð. Hér birtist aðeins það sem Claude handvelur.');
       return modPanel(k, F.synd.length + ' forgangsmál · ' + K.synd.length + ' skilaboð' + falinSum(F.falin.length + K.falin.length), body, '');
+    }
+    if (k === 'minmal') {
+      /* MÍN MÁL (eining 32, 19.11.2026). Mál sést annars aðeins í ham sem tekur það (iHam), svo starfsmaður sem hefur falið
+       * hamina sína (Anni: aðeins „BH · Þjónustubeiðnir“) sá ekki mál á eigin borði án leitar. Hér: öll opin mál þar sem
+       * assigned_to er hann eða merkið `fylgjandi:<nafn>` (sama og mineRows, án hamasíunnar). Engin ný sókn — S.rows. */
+      const L = S.rows.filter(r => r.status !== 'lokad' && (onBoardOf(r, n) || fylgir(r, n))).sort(rodun);
+      const lyk = r => 'minmal:mal:' + r.id;
+      const X = fela(L, lyk);
+      const lina = r => {
+        const s = String(r.summary || '').trim(), sam = (s && !/^DRAFT\|/.test(s)) ? s : '';
+        if (!sam && isPost(r)) { const p = postForskodun(r); if (p) return p; }
+        const t = sam || (String(r.notes || '').split('\n').find(x => x.trim()) || '').trim();
+        return t ? '<span class="pprev" title="' + esc(t.slice(0, 600)) + '">' + esc(t.slice(0, 200)) + (t.length > 200 ? '…' : '') + '</span>' : '';
+      };
+      const rod = (r, falinn) => lrowHtml(r, '', { l: lyk(r), e: k, d: r.title, falinn }, lina(r));
+      const body = (X.synd.length || X.falin.length)
+        ? X.synd.slice(0, 25).map(r => rod(r)).join('') +
+          (X.synd.length > 25 ? '<div class="more">+ ' + (X.synd.length - 25) + ' til viðbótar</div>' : '') +
+          falinHtml('minmal:mal', X.falin.length, () => X.falin.map(r => rod(r, true)).join(''))
+        : emptyHtml('Ekkert opið mál á þínu borði.');
+      return modPanel(k, X.synd.length + ' opin mál' + falinSum(X.falin.length), body, '');
     }
     if (k === 'skipulag' || k === 'skipulag2') {   // 24 = sömu spjöld, önnur sjálfgefin breidd
       // Agnar 11.09.2026: „algjörlega læst og tilgangslaust" · „opna á allt og customizable, geta eytt hlutum
