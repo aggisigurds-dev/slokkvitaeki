@@ -170,7 +170,10 @@
       else if (r.status === 403) { S.af.leyfi = false; S.af.villa = 'Aðeins stjórnandi getur svarað og afgreitt á Aðalmálum.'; }
       else if (!r.ok) throw new Error(j.error || ('svar ' + r.status));
       else {
-        S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = j.tilbuin || [];
+        // 19.11.2026: bókunarpóstar og -símtöl (flokkur 'bokun') eiga eigin ham í Afgreiðslunni og fara ekki í þennan lista —
+        // hér stendur aðeins fjöldinn, með tengli í flokkinn.
+        const allt = j.tilbuin || [];
+        S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = allt.filter(v => v.flokkur !== 'bokun'); S.af.bokanir = allt.length - S.af.tilbuin.length;
         const am = {}; (j.adalmal || []).forEach(x => { am[x.lykill] = x; }); S.af.am = am;
         S.af.tilv = j.tilvisanir || {};
         S.af.claudeVirkt = !!j.claude_virkt;
@@ -616,7 +619,9 @@
     const t = S.af.tilbuin;
     let x = S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
     if (!t.length && !S.afSkilabod) return x;
-    x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span><a href="/afgreidsla.html" title="Allt sem var gert, sleppt eða úrelt">Saga ›</a></div>';
+    x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span>' +
+      (S.af.bokanir ? '<a href="/afgreidsla.html?f=bokun" title="Bókunarpóstar og bókunarsímtöl — eigin flokkur í Afgreiðslunni">Bókanir ' + S.af.bokanir + ' ›</a>' : '') +
+      '<a href="/afgreidsla.html" title="Allt sem var gert, sleppt eða úrelt">Saga ›</a></div>';
     if (S.afSkilabod) x += '<div class="ad-sk _' + (S.afSkilabod.ok ? 'ok' : 'v') + '" role="status">' + esc(S.afSkilabod.texti) + '</div>';
     x += '<ol>' + t.map(v => {
       const opid = S.afOpid === v.id;
