@@ -196,7 +196,7 @@
       'clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));color:#fff}' +
     G + ' .p2-kp:has(> .cap.g),' + G + ' .p2-kp.ramm-g{--fr:' + R_GRAENT + ';--in:' + INNI_GRAENT + ';--tl:linear-gradient(90deg,#06331a,#7fe0a8 50%,#06331a);--hn:' + HN_GRAENT + ';--hg:0 0 6px 1px rgba(35,163,90,.6);--led:#3cc47c;--ledg:0 0 0 3px rgba(60,196,124,.16),0 0 10px rgba(60,196,124,.8)}' +
     G + ' .p2-kp:has(> .cap.r){--fr:' + R_RAUTT + ';--in:' + INNI_RAUTT + ';--tl:linear-gradient(90deg,#380506,#ff9d95 50%,#380506);--hn:' + HN_RAUTT + ';--hg:0 0 6px 1px rgba(226,85,85,.6);--led:#f0584c;--ledg:0 0 0 3px rgba(240,88,76,.18),0 0 10px rgba(240,88,76,.85)}' +
-    G + ' .p2-kp:has(> .cap.y),' + G + ' .p2-kp.ramm-a,' + G + ' .p2-kp.p2-kp-taeki:has(> .cap){--fr:' + R_GULL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05);--hn:' + HN_GULL + ';--hg:0 0 6px 1px rgba(240,168,60,.7);--led:#e0a93e;--ledg:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)}' +
+    G + ' .p2-kp:has(> .cap.y),' + G + ' .p2-kp.ramm-a{--fr:' + R_GULL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05);--hn:' + HN_GULL + ';--hg:0 0 6px 1px rgba(240,168,60,.7);--led:#e0a93e;--ledg:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)}' +
     G + ' .p2-kp > .in{position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));background-image:var(--in)!important;background-color:#0a0a0c;padding:16px 20px 16px!important;gap:10px!important;height:100%;box-sizing:border-box;color:#fff}' +
     G + ' .p2-kp > .in::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tl);pointer-events:none}' +
     G + ' .p2-kp .hn{position:absolute;width:6px;height:6px;border-radius:50%;z-index:2;pointer-events:none;background:var(--hn);box-shadow:var(--hg)}' +
@@ -208,7 +208,6 @@
     /* talan */
     G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:40px!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
     G + ' .p2-kp .bigl{font-family:' + SERIF + ';font-size:16px!important;font-weight:700;color:#d9dee6!important;margin-left:4px}' +
-    G + ' .p2-kp.p2-kp-taeki .big{color:#f3d98a!important;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)}' +
     /* línur og skýringar í letri plötunnar */
     G + ' .p2-kp .sm{font:400 12.5px ' + MONO + '!important;color:#d5dbe6!important;line-height:1.5}' +
     G + ' .p2-kp .sm b,' + G + ' .p2-kp .leg2 b{color:#fff!important;font-weight:700}' +
@@ -236,7 +235,7 @@
     G + ' .p2-kp .khd .lb{white-space:normal!important;line-height:1.35}' +
     G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px;margin-right:16px}' +
     G + ' .p2-kpi.tvaer > .p2-kp-taeki,' + G + ' .p2-kpi.tvaer > .p2-kp-bk{grid-row:span 2}' +
-    G + ' .p2-kp.p2-kp-taeki .big{font-size:44px!important}' +
+    G + ' .p2-kpi.tvaer.s3 > .p2-kp:last-child{grid-column:span 2}' +
     G + ' .p2-kp .big.ord{font-size:28px!important;letter-spacing:-.01em}' +
     G + ' .p2-kp .big.gul{color:#f3d98a!important}' +
     G + ' .p2-kp .sm,' + G + ' .p2-kp .ft{display:flex!important;flex-wrap:wrap;gap:2px 14px;align-items:center}' +
@@ -682,11 +681,29 @@
     if (!slong && kefli) aths.push('Brunaslöngur: ' + (kefli.hver + ' — ' + kefli.stada).toLowerCase());
     if (!reyk && d.reykTeikn) aths.push(d.reykTeikn + ' reykskynjarar á teikningu, 0 skráðir');
     else if (!reyk && reykK) aths.push('Reykskynjarar: ' + (reykK.hver + ' — ' + reykK.stada).toLowerCase());
-    if (nT) k.push('<div class="p2-kp p2-kp-taeki"><div class="cap g"></div><div class="in"><span class="lb">Búnaður</span><div><span class="big">' + nT + '</span> <span class="bigl">tæki · ' + teg.length + (teg.length === 1 ? ' gerð' : ' gerðir') + '</span></div>' +
-      '<div class="bar2" role="img" aria-label="' + esc(teg.map(function (g) { return g + ' ' + d.gerdir[g]; }).join(', ')) + '">' + teg.map(function (g, i) { return '<i style="flex:' + d.gerdir[g] + ' 1 0;background:' + litur(g, i) + '"></i>'; }).join('') + '</div>' +
-      '<div class="leg2">' + teg.slice(0, 8).map(function (g, i) { return '<span><i class="dot" style="background:' + litur(g, i) + '"></i>' + esc(g) + ' <b class="p2-n">' + d.gerdir[g] + '</b></span>'; }).join('') + '</div>' +
-      (teg.length > 8 ? '<span class="ft">+' + (teg.length - 8) + ' gerðir í viðbót</span>' : '') +
-      (aths.length ? '<div class="aths">' + aths.map(function (a) { return '<span>' + esc(a) + '</span>'; }).join('') + '</div>' : '') + '</div></div>');
+    /* Agnar 19.11.2026 (mynd: ör frá „Síðasta úttekt“ inn í tækjaplötuna): „brunakerfið fær aðeins of mikla athygli miðað
+       við slökkvitæki … láta slökkvitæki vera svipað uppbyggt og brunakerfið“. Slökkvitækjaplatan ber nú sömu lög og
+       brunakerfisplatan: staða, mánaðarborði, þrjár flísar, tækjasúla og síðasta úttekt. Sérplata úttektar fellur út. */
+    var Ms = MAN[(d.skodMan || '').toLowerCase()] || 0, Ys = new Date().getFullYear();
+    var buidS = /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === Ys;
+    var stS = manStada(Ms, buidS) || (d.utrunnin ? 'r' : 'g');
+    var dagS = 0; if (stS === 'r' && Ms) { var idS = new Date(); idS.setHours(0, 0, 0, 0); dagS = Math.max(1, Math.round((idS - new Date(Ys, Ms, 0)) / 864e5)); }
+    var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
+    if (nT) {
+      var storS = stS === 'r' ? (dagS ? '<div><span class="big">+' + dagS + '</span> <span class="bigl">dagar yfir</span></div>' : '<div><span class="big">' + d.utrunnin + '</span> <span class="bigl">útrunnin</span></div>')
+        : stS === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'
+        : buidS ? '<div><span class="big ord">Skoðað ' + Ys + '</span></div>'
+        : '<div><span class="big ord">Í lagi</span></div>';
+      k.push('<div class="p2-kp p2-kp-taeki"><div class="cap ' + (stS === 'r' ? 'r' : stS === 'y' ? 'y' : 'g') + '"></div><div class="in"><div class="khd"><span class="lb">Slökkvitæki</span>' + manPilla(Ms, stS, 'Skoðunarmánuður slökkvitækja') + '</div>' +
+        storS + manBordi(Ms, stS) +
+        '<div class="flis3"><span><small>Tæki</small><b class="p2-n">' + nT + '</b></span><span><small>Síðast</small><b class="p2-n">' + esc(d.sidast || '—') + '</b></span><span><small>Næst</small><b class="p2-n">' + esc(d.naest || '—') + '</b></span></div>' +
+        '<div class="bar2" role="img" aria-label="' + esc(teg.map(function (g) { return g + ' ' + d.gerdir[g]; }).join(', ')) + '">' + teg.map(function (g, i) { return '<i style="flex:' + d.gerdir[g] + ' 1 0;background:' + litur(g, i) + '"></i>'; }).join('') + '</div>' +
+        '<div class="leg2">' + teg.slice(0, 8).map(function (g, i) { return '<span><i class="dot" style="background:' + litur(g, i) + '"></i>' + esc(g) + ' <b class="p2-n">' + d.gerdir[g] + '</b></span>'; }).join('') + '</div>' +
+        (teg.length > 8 ? '<span class="ft">+' + (teg.length - 8) + ' gerðir í viðbót</span>' : '') +
+        (su ? '<span class="sm"><span class="fx">Síðasta úttekt <b class="p2-n">' + tugir(su.upph) + ' kr</b></span>' + [su.nr, su.dags].filter(Boolean).map(fx).join('') + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</span>' : '') +
+        (d.utrunnin && stS !== 'r' ? '<span class="sm"><span class="p2-pl rd">' + d.utrunnin + ' útrunnin</span></span>' : '') +
+        (aths.length ? '<div class="aths">' + aths.map(function (a) { return '<span>' + esc(a) + '</span>'; }).join('') + '</div>' : '') + '</div></div>');
+    }
     var b = bkStada(d);
     if (b) {
       var stor = b.st === 'r' ? '<div><span class="big">+' + b.dagar + '</span> <span class="bigl">dagar yfir</span></div>'
@@ -702,9 +719,6 @@
         (b.notes ? '<span class="nota" title="' + esc(b.notes) + '">„' + esc(b.notes.length > 70 ? b.notes.slice(0, 68) + '…' : b.notes) + '“</span>' : '') +
         '</div></div>');
     }
-    var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
-    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><div class="khd"><span class="lb">Síðasta úttekt</span>' + manPilla(MAN[(d.skodMan || '').toLowerCase()] || 0, manStada(MAN[(d.skodMan || '').toLowerCase()] || 0, /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === new Date().getFullYear()), 'Skoðunarmánuður slökkvitækja') + '</div><div><span class="big">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
-      '<span class="sm p2-n">' + [su.nr, su.dags].filter(Boolean).map(fx).join('') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
     /* Agnar 19.11.2026: „afhverju 2025, en ekki 2026“ → líðandi ár; fyrra ár stendur undir til samanburðar */
     var ar = new Date().getFullYear(), slt = 0, bkr = 0, fyrra = 0;
     d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += r.upph; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
@@ -722,7 +736,7 @@
     /* ── KERFI Á STAÐNUM (Agnar 19.11.2026: „vantar inn brunakerfin ofl“) — öll kerfi úr „Kerfi og þjónusta" (450)
        sem rönd undir kössunum: samantekt (okkar / hjá öðrum / vantar / óvitað), súla og ein flís á hvert kerfi
        með stöðu. Lesið úr title-texta plötunnar; ekkert skrifað. */
-    if (d.kerfi && d.kerfi.length) {
+    if (false && d.kerfi && d.kerfi.length) {   /* Agnar 19.11.2026 strikaði yfir röndina — ekki teiknuð */
       var hop = function (x) { var h = (x.hver + ' ' + x.stada).toLowerCase(); return /okkar/.test(h) ? 'ok' : /vantar/.test(h) ? 'va' : /öðrum/.test(h) ? 'an' : 'ov'; };
       var HOP = { ok: ['Okkar', '#22c06a'], an: ['Hjá öðrum', '#5b8def'], va: ['Vantar', '#f0584c'], ov: ['Óvitað', '#f2c35a'] };
       var tal = { ok: 0, an: 0, va: 0, ov: 0 }; d.kerfi.forEach(function (x) { tal[hop(x)]++; });
@@ -891,8 +905,8 @@
     if (kp) { var kk = kpi(d).map(function (x) { return x.replace(/^(<div class="p2-kp[^"]*">)/, '$1' + HNODIN); });
       var _st = kk.filter(function (x) { return /p2-kp-(taeki|bk)/.test(x); }), _sm = kk.filter(function (x) { return !/p2-kp-(taeki|bk|kerfi)/.test(x); });
       var _tv = _st.length && _sm.length > 2;
-      kp.classList.toggle('tvaer', !!_tv);
-      if (_tv) kp.style.gridTemplateColumns = _st.map(function (x) { return /p2-kp-bk/.test(x) ? 'minmax(0,1.6fr)' : 'minmax(0,1.5fr)'; }).concat(['minmax(0,1fr)', 'minmax(0,1fr)']).join(' ');
+      kp.classList.toggle('tvaer', !!_tv); kp.classList.toggle('s3', _sm.length === 3);
+      if (_tv) kp.style.gridTemplateColumns = _st.map(function (x) { return 'minmax(0,1.6fr)'; }).concat(['minmax(0,1fr)', 'minmax(0,1fr)']).join(' ');
       else kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
     t.innerHTML = teikn(d);
     var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
