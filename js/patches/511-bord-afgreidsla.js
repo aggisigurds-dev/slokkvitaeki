@@ -27,8 +27,16 @@
   var FERSKT_MS = 5 * 60 * 1000, VOPN_MS = 6000;
   var THAK = 8;   // línur sýndar í einu — einingin má ekki ýta dagskránni langt niður; „sýna öll" opnar restina
   var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk', sameina: 'Breyting' };
-  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'], sameina: ['breyting', 'breytingar'] };
-  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk', 'sameina'];
+  var FLOKKHEITI = { bokun: 'Bókanir' };   // flokkar sem eru ekki tegund verks
+  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'], sameina: ['breyting', 'breytingar'], bokun: ['bókun', 'bókanir'] };
+  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk', 'sameina', 'bokun'];
+  // HAMURINN „BÓKANIR“ (19.11.2026, Agnar: „geturðu sett auka ham fyrir svona“ — bókunarpóstar og bókunarsímtöl). Liður með
+  // flokkur 'bokun' (gogn.flokkur á þjóninum) býr í eigin flokki og er EKKI í „Allt“ né tegundaflokkunum, svo bókanirnar
+  // drukkni ekki í hinum verkunum og hin verkin ekki í þeim.
+  var erBokun = function (v) { return !!v && v.flokkur === 'bokun'; };
+  var iFlokki = function (v, k) { return k === 'bokun' ? erBokun(v) : !erBokun(v) && (!k || k === 'allt' || v.tegund === k); };
+  var teljaFlokka = function (l) { var t = { allt: 0 }; (l || []).forEach(function (v) { if (erBokun(v)) { t.bokun = (t.bokun || 0) + 1; return; } t.allt++; t[v.tegund] = (t[v.tegund] || 0) + 1; }); return t; };
+
 
   var S = { tilbuin: null, villa: null, loading: null, at: 0, flokkur: 'allt', opid: null, vopnad: null, vopnT: null,
     busy: null, skilabod: null, athDrog: {}, textaDrog: {}, athBusy: null, athSkilabod: null, allt: false };
@@ -102,7 +110,7 @@
   }
 
   function finna(id) { var l = S.tilbuin || []; for (var k = 0; k < l.length; k++) if (l[k].id === id) return l[k]; return null; }
-  function sia() { var l = S.tilbuin || []; return S.flokkur === 'allt' ? l : l.filter(function (v) { return v.tegund === S.flokkur; }); }
+  function sia() { return (S.tilbuin || []).filter(function (v) { return iFlokki(v, S.flokkur); }); }
   function fjarlaegja(id) {
     S.tilbuin = (S.tilbuin || []).filter(function (v) { return v.id !== id; });
     if (S.opid === id) S.opid = null;
@@ -368,9 +376,8 @@
   function samantekt() {
     tryggja();
     if (!S.tilbuin) return S.villa ? (S.villa.inn ? 'Innskráning vantar' : 'Náði ekki í verkin') : 'Sæki verkin…';
-    var n = S.tilbuin.length, tel = {};
-    if (!n) return 'Allt afgreitt' + (S.loading ? ' · uppfæri…' : '');
-    S.tilbuin.forEach(function (v) { tel[v.tegund] = (tel[v.tegund] || 0) + 1; });
+    var tel = teljaFlokka(S.tilbuin), n = tel.allt;
+    if (!S.tilbuin.length) return 'Allt afgreitt' + (S.loading ? ' · uppfæri…' : '');
     return n + ' tilbúin' + FLOKKAR.slice(1).filter(function (k) { return tel[k]; }).map(function (k) { return ' · ' + tel[k] + ' ' + FLEIRT[k][tel[k] === 1 ? 0 : 1]; }).join('') +
       (S.loading ? ' · uppfæri…' : '');
   }
@@ -480,10 +487,9 @@
     var h = '<div class="baf">';
     if (S.villa) h += '<div class="baf-msg villa" role="status">' + esc(S.villa.texti) + ' — sýni síðustu stöðu' + (S.at ? ' frá ' + klTxt(new Date(S.at).toISOString()) : '') + '.</div>';
     if (!S.tilbuin.length) return h + '<div class="baf-tomt"><b>Allt afgreitt.</b> Ný verk birtast hér þegar þau eru tilbúin og standast athuganirnar.</div></div>';
-    var tel = { allt: S.tilbuin.length };
-    S.tilbuin.forEach(function (v) { tel[v.tegund] = (tel[v.tegund] || 0) + 1; });
+    var tel = teljaFlokka(S.tilbuin);
     h += '<div class="baf-fl" role="group" aria-label="Flokkar verka">' + FLOKKAR.filter(function (k) { return k === 'allt' || tel[k] || S.flokkur === k; }).map(function (k) {
-      return '<button type="button" class="baf-f" data-baf="fl" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : TEG[k]) + ' <b>' + (tel[k] || 0) + '</b></button>';
+      return '<button type="button" class="baf-f" data-baf="fl" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : (TEG[k] || FLOKKHEITI[k])) + ' <b>' + (tel[k] || 0) + '</b></button>';
     }).join('') + '</div>';
     var l = sia(), synd = S.allt || l.length <= THAK ? l : l.slice(0, THAK);
     // Opið verk er alltaf sýnt, líka þegar það er neðan við þakið (opnað úr Einkaritaranum).
@@ -819,7 +825,8 @@
     uppfaera: function () { S.at = 0; return hlada(); }, smellur: smellur, innslattur: innslattur, ur_reit: ur_reit, S: S,
     // Fyrir símasíðuna (515): sömu hjálparföll og borðið teiknar með — engin önnur útgáfa af gögnunum eða aðgerðunum.
     vakta: function (f) { if (typeof f === 'function' && vaktar.indexOf(f) < 0) vaktar.push(f); },
-    tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, dyrHtml: dyrHtml, dyrCss: function () { return DYR_CSS; }, kr: kr, TEG: TEG };
+    tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, dyrHtml: dyrHtml, dyrCss: function () { return DYR_CSS; }, kr: kr, TEG: TEG,
+    erBokun: erBokun, iFlokki: iFlokki, teljaFlokka: teljaFlokka };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
