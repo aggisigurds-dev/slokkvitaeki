@@ -173,7 +173,6 @@
     '#companies-main .p2-bygg{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:linear-gradient(180deg,#232833,#141822);color:#fff;border-radius:12px}' +
     '#companies-main .p2-bygg .t{font:700 11px ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#d9dee6}' +
     '#companies-main .p2-bygg .u{flex:1;min-width:0;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;color:#fff}' +
-    '#companies-main .p2-kp:has(.man) .lb{padding-right:48px}' +
     '#companies-main .p2-kp .man.st-g{background:linear-gradient(180deg,#22c06a,#0a4a26)}' +
     '#companies-main .p2-kp .man.st-y{background:linear-gradient(180deg,#f2c35a,#9a6a14);color:#1a1300}' +
     '#companies-main .p2-kp .man.st-r{background:linear-gradient(180deg,#f0584c,#6b0b0b)}' +
@@ -202,13 +201,12 @@
     G + ' .p2-kp > .in::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tl);pointer-events:none}' +
     G + ' .p2-kp .hn{position:absolute;width:6px;height:6px;border-radius:50%;z-index:2;pointer-events:none;background:var(--hn);box-shadow:var(--hg)}' +
     G + ' .p2-kp .cap{display:none!important}' +
-    G + ' .p2-kp > .in{container-type:inline-size}' +
     G + ' .p2-kp .in > div:has(> .big){white-space:nowrap;display:flex;align-items:baseline;gap:2px}' +
     /* merki með LED */
     G + ' .p2-kp .lb{display:flex!important;align-items:center;gap:9px;white-space:nowrap;font:700 10.5px ' + MONO + '!important;letter-spacing:.18em!important;text-transform:uppercase;color:#d9dee6!important;min-width:0}' +
     G + ' .p2-kp .lb::before{content:"";width:7px;height:7px;border-radius:50%;flex:none;background:var(--led);box-shadow:var(--ledg)}' +
     /* talan */
-    G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:min(34px,17cqw)!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
+    G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:40px!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
     G + ' .p2-kp .bigl{font-family:' + SERIF + ';font-size:16px!important;font-weight:700;color:#d9dee6!important;margin-left:4px}' +
     G + ' .p2-kp.p2-kp-taeki .big{color:#f3d98a!important;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)}' +
     /* línur og skýringar í letri plötunnar */
@@ -236,7 +234,15 @@
     G + ' .p2-kp .man,' + G + ' .p2-kp .p2-pl{display:inline-flex!important;align-items:center;height:22px;padding:0 8px!important;border-radius:3px!important;border:1px solid #000;font:700 10.5px ' + MONO + '!important;letter-spacing:.08em;text-transform:uppercase;color:#fff!important;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18);background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important}' +
     G + ' .p2-kp .khd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}' +
     G + ' .p2-kp .khd .lb{white-space:normal!important;line-height:1.35}' +
-    G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px}' +
+    G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px;margin-right:16px}' +
+    G + ' .p2-kpi.tvaer > .p2-kp-taeki,' + G + ' .p2-kpi.tvaer > .p2-kp-bk{grid-row:span 2}' +
+    G + ' .p2-kp.p2-kp-taeki .big{font-size:44px!important}' +
+    G + ' .p2-kp .big.ord{font-size:28px!important;letter-spacing:-.01em}' +
+    G + ' .p2-kp .big.gul{color:#f3d98a!important}' +
+    G + ' .p2-kp .sm,' + G + ' .p2-kp .ft{display:flex!important;flex-wrap:wrap;gap:2px 14px;align-items:center}' +
+    G + ' .p2-kp .fx{white-space:nowrap}' +
+    /* Joker 6: aðeins aðalplatan í gulli; viðvörun = stálrammi + gull-LED */
+    G + ' .p2-kp:has(> .cap.y):not(.p2-kp-taeki),' + G + ' .p2-kp.ramm-a{--fr:' + R_STAL + ';--hn:' + HN_STAL + ';--hg:0 1px 1px rgba(0,0,0,.7);--tl:linear-gradient(90deg,#3b3f46,#e2e6ec 50%,#3b3f46)}' +
     G + ' .p2-kp .man.st-g,' + G + ' .p2-kp .p2-pl:not(.am):not(.rd){background:' + R_GRAENT + '!important;border-color:rgba(0,0,0,.6)}' +
     G + ' .p2-kp .man.st-y,' + G + ' .p2-kp .p2-pl.am{background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}' +
     G + ' .p2-kp .man.st-r,' + G + ' .p2-kp .p2-pl.rd{background:' + R_RAUTT + '!important}' +
@@ -375,7 +381,18 @@
     '#companies-main .p2-mynd{order:4}#companies-main .p2-athug{order:5;margin-top:0;padding:10px 14px 14px}' +
     '#companies-main .p2-kv .k{width:96px}' +
     '#companies-main .p2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
-    '#companies-main .p2-kp-taeki,#companies-main .p2-kp-bk{grid-column:1/-1}' +
+    '#companies-main .p2-kp-taeki,#companies-main .p2-kp-bk{grid-column:1/-1;grid-row:auto!important}' +
+    '#companies-main .p2-kpi{padding:10px 6px!important;gap:10px!important}' +
+    '#companies-main .p2-kpi > .p2-kp:not(.p2-kp-kerfi):not(.p2-kp-taeki):not(.p2-kp-bk):nth-last-child(2):nth-child(odd){grid-column:1/-1}' +
+    '#companies-main .p2-kp .lb{font-size:13px!important}' +
+    G + ' .p2-kpi > .p2-kp:not(.p2-kp-taeki):not(.p2-kp-bk) .big:not(.ord){font-size:30px!important}' +
+    G + ' .p2-kpi > .p2-kp .big.ord{font-size:24px!important}' +
+    '#companies-main .p2-kp .sm,#companies-main .p2-kp .ft,#companies-main .p2-kp .leg2,#companies-main .p2-kp .aths{font-size:15px!important}' +
+    '#companies-main .p2-kp .flis3 small{font-size:12px!important}' +
+    '#companies-main .p2-kp .flis3 b{font-size:15px!important}' +
+    '#companies-main .p2-kp .flis3 span{height:58px!important}' +
+    '#companies-main .p2-kp .man{font-size:12.5px!important;height:26px!important}' +
+    '#companies-main .p2-kp-kerfi .kf b{font-size:15px!important}#companies-main .p2-kp-kerfi .kf small{font-size:12.5px!important}#companies-main .p2-kp-kerfi .kf{height:56px!important}' +
     '#companies-main .p2-mono{display:none}' +
     '#companies-main .p2-dalk{border-right:0;border-bottom:1px solid #c3cad5;padding:0 14px 10px;margin-bottom:10px}' +
     '#companies-main .p2-mynd{padding:0 14px}' +
@@ -636,6 +653,7 @@
     for (var i = 1; i <= 12; i++) h += '<i class="' + (i === M ? 'on st-' + st : '') + (i === cm ? ' nu' : '') + '" title="' + MAN_STUTT[i - 1] + '"></i>';
     return '<div class="mbord" role="img" aria-label="Skoðunarmánuður ' + (M ? MAN_STUTT[M - 1] : 'óþekktur') + ', líðandi mánuður ' + MAN_STUTT[cm - 1] + '">' + h + '</div>';
   }
+  function fx(t) { return '<span class="fx">' + esc(t) + '</span>'; }
   function kr(n) { return tugir(n) + ' kr'; }
 
   function kpi(d) {
@@ -672,35 +690,35 @@
     var b = bkStada(d);
     if (b) {
       var stor = b.st === 'r' ? '<div><span class="big">+' + b.dagar + '</span> <span class="bigl">dagar yfir</span></div>'
-        : b.st === 'y' ? '<div><span class="big" style="font-size:24px">Á dagskrá</span></div>'
-        : b.buid ? '<div><span class="big" style="font-size:24px">Skoðað ' + b.Y + '</span></div>'
-        : '<div><span class="big" style="font-size:24px">Í lagi</span></div>';
+        : b.st === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'
+        : b.buid ? '<div><span class="big ord">Skoðað ' + b.Y + '</span></div>'
+        : '<div><span class="big ord">Í lagi</span></div>';
       var skTxt = b.sk && b.sk.ar ? 'Skýrsla ' + b.sk.ar + ': ' + (b.sk.status === 'final' ? 'lokið' : 'drög') + (b.sk.nr ? ' · nr ' + b.sk.nr : '') : 'Engin skýrsla ' + b.Y + ' enn';
       k.push('<div class="p2-kp p2-kp-bk"><div class="cap ' + (b.st === 'r' ? 'r' : b.st === 'y' ? 'y' : 'g') + '"></div><div class="in"><div class="khd"><span class="lb">Brunakerfi</span>' + manPilla(b.M, b.st, 'Skoðunarmánuður brunakerfis') + '</div>' +
         stor + manBordi(b.M, b.st) +
         '<div class="flis3"><span><small>Einingar</small><b class="p2-n">' + (b.ein || '—') + '</b></span><span><small>Síðast</small><b class="p2-n" title="' + esc(b.last) + '">' + esc(b.lastS || '—') + '</b></span><span><small>Næst</small><b class="p2-n">' + esc(b.naest || '—') + '</b></span></div>' +
-        '<span class="sm">' + esc(b.kerfi) + ' · ' + esc(skTxt) + (b.ivinnslu ? ' <span class="p2-pl am">Í vinnslu ' + b.Y + '</span>' : '') + '</span>' +
-        (b.velta || b.veltaF ? '<span class="sm">Velta ' + b.Y + ' <b class="p2-n">' + tugir(b.velta) + ' kr</b>' + (b.veltaF ? ' · ' + (b.Y - 1) + ' ' + tugir(b.veltaF) : '') + '</span>' : '') +
+        '<span class="sm">' + fx(b.kerfi) + fx(skTxt) + (b.ivinnslu ? '<span class="p2-pl am">Í vinnslu ' + b.Y + '</span>' : '') + '</span>' +
+        (b.velta || b.veltaF ? '<span class="sm"><span class="fx">Velta ' + b.Y + ' <b class="p2-n">' + tugir(b.velta) + ' kr</b></span>' + (b.veltaF ? fx((b.Y - 1) + ': ' + tugir(b.veltaF) + ' kr') : '') + '</span>' : '') +
         (b.notes ? '<span class="nota" title="' + esc(b.notes) + '">„' + esc(b.notes.length > 70 ? b.notes.slice(0, 68) + '…' : b.notes) + '“</span>' : '') +
         '</div></div>');
     }
     var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
-    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><div class="khd"><span class="lb">Síðasta úttekt</span>' + manPilla(MAN[(d.skodMan || '').toLowerCase()] || 0, manStada(MAN[(d.skodMan || '').toLowerCase()] || 0, /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === new Date().getFullYear()), 'Skoðunarmánuður slökkvitækja') + '</div><div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
-      '<span class="sm p2-n">' + [su.nr, su.dags].filter(Boolean).map(esc).join(' · ') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
+    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><div class="khd"><span class="lb">Síðasta úttekt</span>' + manPilla(MAN[(d.skodMan || '').toLowerCase()] || 0, manStada(MAN[(d.skodMan || '').toLowerCase()] || 0, /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === new Date().getFullYear()), 'Skoðunarmánuður slökkvitækja') + '</div><div><span class="big">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
+      '<span class="sm p2-n">' + [su.nr, su.dags].filter(Boolean).map(fx).join('') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
     /* Agnar 19.11.2026: „afhverju 2025, en ekki 2026“ → líðandi ár; fyrra ár stendur undir til samanburðar */
     var ar = new Date().getFullYear(), slt = 0, bkr = 0, fyrra = 0;
     d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += r.upph; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
-    if (slt + bkr || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big" style="font-size:34px">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
-      (slt && bkr ? '<div class="bar" role="img" aria-label="Slökkvitæki og brunakerfi"><i style="width:' + (100 * slt / (slt + bkr)).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / (slt + bkr)).toFixed(1) + '%;background:#a01818"></i></div><span class="sm">Slt ' + tugir(slt) + ' · Bk ' + tugir(bkr) + '</span>' : '') +
-      (fyrra ? '<span class="sm">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b>' + (slt + bkr ? ' · ' + (slt + bkr >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * (slt + bkr) / fyrra) + '%' : '') + '</span>' : '') +
+    if (slt + bkr || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
+      (slt && bkr ? '<div class="bar" role="img" aria-label="Slökkvitæki og brunakerfi"><i style="width:' + (100 * slt / (slt + bkr)).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / (slt + bkr)).toFixed(1) + '%;background:#a01818"></i></div><span class="sm">' + fx('Slt ' + tugir(slt)) + fx('Bk ' + tugir(bkr)) + '</span>' : '') +
+      (fyrra ? '<span class="sm"><span class="fx">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b></span>' + (slt + bkr ? fx((slt + bkr >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * (slt + bkr) / fyrra) + '% af ' + (ar - 1)) : '') + '</span>' : '') +
       (d.hreyfAlls ? '<span class="ft">alls ' + esc(d.hreyfAlls) + '</span>' : '') + '</div></div>');
     if (d.skjol && d.skjol.alls) { var S = d.skjol;
       k.push('<div class="p2-kp"><div class="cap ' + (S.vantar ? 'y' : 'g') + '"></div><div class="in"><span class="lb">Skjöl</span><div><span class="big">' + S.komin + '</span> <span class="bigl">af ' + S.alls + '</span></div>' +
         '<div class="bar" role="img" aria-label="Komin, í vinnslu, vantar"><i style="width:' + (100 * S.komin / S.alls).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * S.vinnsla / S.alls).toFixed(1) + '%;background:#c48a1f"></i><i style="width:' + (100 * S.vantar / S.alls).toFixed(1) + '%;background:#a01818"></i></div>' +
-        '<span class="ft">' + S.vantar + ' vantar' + (S.vinnsla ? ' · ' + S.vinnsla + ' í vinnslu' : '') + '</span></div></div>'); }
+        '<span class="ft">' + fx(S.vantar + ' vantar') + (S.vinnsla ? fx(S.vinnsla + ' í vinnslu') : '') + '</span></div></div>'); }
     if (d.sam) { var o = d.sam.opin.a || ''; var ok = !o || /ekkert|^0\b/i.test(o);
-      k.push('<div class="p2-kp ' + (ok ? 'ramm-g' : 'ramm-a') + '"><div class="cap ' + (ok ? 'g' : 'y') + '"></div><div class="in"><span class="lb">Samskipti</span><div><span class="big" style="font-size:24px;color:' + (ok ? '#0b6b3a' : '#845400') + '">' + (ok ? 'Í lagi' : 'Svar bíður') + '</span></div>' +
-        '<span class="sm">' + esc(o || 'ekkert ósvarað') + (d.sam.opin.b ? ' · ' + esc(d.sam.opin.b) : '') + '</span>' + (d.sam.tala ? '<span class="ft">' + esc(d.sam.tala) + ' færslur / 12 mán.</span>' : '') + '</div></div>'); }
+      k.push('<div class="p2-kp ' + (ok ? 'ramm-g' : 'ramm-a') + '"><div class="cap ' + (ok ? 'g' : 'y') + '"></div><div class="in"><span class="lb">Samskipti</span><div><span class="big ord' + (ok ? '' : ' gul') + '">' + (ok ? 'Í lagi' : 'Svar bíður') + '</span></div>' +
+        '<span class="sm">' + fx(o || 'ekkert ósvarað') + (d.sam.opin.b ? fx(d.sam.opin.b) : '') + '</span>' + (d.sam.tala ? '<span class="ft">' + fx(d.sam.tala + ' færslur / 12 mán.') + '</span>' : '') + '</div></div>'); }
     /* ── KERFI Á STAÐNUM (Agnar 19.11.2026: „vantar inn brunakerfin ofl“) — öll kerfi úr „Kerfi og þjónusta" (450)
        sem rönd undir kössunum: samantekt (okkar / hjá öðrum / vantar / óvitað), súla og ein flís á hvert kerfi
        með stöðu. Lesið úr title-texta plötunnar; ekkert skrifað. */
@@ -870,7 +888,12 @@
     var ga = g.querySelector('.p2-gl-a'); if (ga) ga.innerHTML = gluggi(d);
     var ms = document.getElementById('p2-msimi'); var gm = ga && ga.querySelector('.p2-mynd'); if (ms && gm) ms.innerHTML = gm.outerHTML;
     var kp = document.getElementById('p2-kpi');
-    if (kp) { var kk = kpi(d).map(function (x) { return x.replace(/^(<div class="p2-kp[^"]*">)/, '$1' + HNODIN); }); kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
+    if (kp) { var kk = kpi(d).map(function (x) { return x.replace(/^(<div class="p2-kp[^"]*">)/, '$1' + HNODIN); });
+      var _st = kk.filter(function (x) { return /p2-kp-(taeki|bk)/.test(x); }), _sm = kk.filter(function (x) { return !/p2-kp-(taeki|bk|kerfi)/.test(x); });
+      var _tv = _st.length && _sm.length > 2;
+      kp.classList.toggle('tvaer', !!_tv);
+      if (_tv) kp.style.gridTemplateColumns = _st.map(function (x) { return /p2-kp-bk/.test(x) ? 'minmax(0,1.6fr)' : 'minmax(0,1.5fr)'; }).concat(['minmax(0,1fr)', 'minmax(0,1fr)']).join(' ');
+      else kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
     t.innerHTML = teikn(d);
     var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
     var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
