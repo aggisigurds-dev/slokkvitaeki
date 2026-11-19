@@ -157,10 +157,19 @@
     if (!S.gogn) return '<section class="vip"><header><b>⚡ VIP-vakt</b><span class="vip-inn">Náði ekki í VIP-póstinn: ' + esc(S.villa) + '</span></header></section>';
     const l = S.gogn.thraedir || [], f = S.gogn.felog || [];
     const yfir = l.filter((t) => klukka(t.mottekid, new Date(), t.svartimi).litur === 'rautt').length;
+    const inn = innlesturHtml(S.gogn);
     const haus = '<header><b>⚡ VIP-vakt</b><span class="vip-tala">' + (l.length ? l.length + ' ósvarað' + (yfir ? ' · ' + yfir + ' yfir tíma' : '') : 'ekkert ósvarað') + '</span>' +
       '<span class="vip-fel-l" title="' + esc(f.map((x) => x.nafn + ' (' + x.radir + ' raðir · ' + x.svartimi + ' mín.)').join(', ')) + '">' + f.length + ' félög</span>' +
-      innlesturHtml(S.gogn) + (S.skilabod ? '<span class="vip-sk">' + esc(S.skilabod) + '</span>' : '') + '</header>';
-    return '<section class="vip' + (l.length ? '' : ' _tomt') + '" aria-label="VIP-vakt">' + haus + (l.length ? '<ul>' + l.map(rodHtml).join('') + '</ul>' : '') + '</section>';
+      inn + (S.skilabod ? '<span class="vip-sk">' + esc(S.skilabod) + '</span>' : '') + '</header>';
+    /* Ólesið pósthólf gefur ENGAR raðir — einmitt þá má viðvörunin ekki þagna með borðanum (rýni 19.11.2026).
+     * „⚠ slokkvitaeki@ ólesið síðan …" á hvergi annan stað, svo hún stendur ein þegar ekkert bíður. */
+    if (!l.length && /⚠/.test(inn)) return '<section class="vip _tomt" aria-label="VIP-vakt"><header><b>⚡ VIP-vakt</b>' + inn + '</header></section>';
+    /* 19.11.2026 — ÞÖGN ÞEGAR EKKERT BÍÐUR. Agnar um tómu línuna („⚡ VIP-VAKT · ekkert ósvarað · 4 félög · Gmail lesið
+     * kl. …"): „Þetta er ekki tengt við neitt." Hún bar enga aðgerð og ekkert sem hægt var að opna, en stóð alltaf efst.
+     * Vaktin birtist nú AÐEINS þegar VIP-póstur bíður svars — þá með þræðinum, klukkunni og tökkunum eins og áður.
+     * Villa og innskráningarleysi standa áfram (ofar í fallinu): þá VEIT vaktin ekki hvort eitthvað bíður. */
+    if (!l.length) return '';
+    return '<section class="vip" aria-label="VIP-vakt">' + haus + '<ul>' + l.map(rodHtml).join('') + '</ul></section>';
   }
   function css() {
     return [

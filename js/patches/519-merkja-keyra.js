@@ -267,6 +267,10 @@
     const keyrir = (t.i_keyrslu || 0) > 0;
     if (!S.sed) S.sed = lesaSed();
     const ljos = keyrir ? 'keyrir' : t.buin && t.umferd !== S.sed ? ((t.vantar_svar || 0) ? 'buin_vs' : 'buin') : '';
+    /* 19.11.2026 — ÞÖGN ÞEGAR ALLT ER NÚLL. Agnar um línuna „0 merkt · 0 í keyrslu · 0 klárað · 0 vantar svör · ▶ Keyra":
+     * „Þetta er ekki tengt við neitt." Takkinn er óvirkur þegar ekkert er merkt, svo línan sagði ekkert og gerði ekkert.
+     * Hún birtist nú um leið og eitthvað er merkt, er í keyrslu, blundar eða bíður svars — og hverfur þegar ekkert er eftir. */
+    if (!merktN && !ljos && !S.villa && !['merkt', 'i_keyrslu', 'klarad', 'vantar_svar', 'blundar', 'snooze_buid'].some((k) => (t[k] || 0) > 0)) return '';
     const tala = (k, h, cls) => '<span class="mk-t' + (cls ? ' ' + cls : '') + '"><b>' + (t[k] || 0) + '</b>' + h + '</span>';
     let ut = CSS + '<section class="mk-bar" aria-label="Merkja og keyra" role="status">' +
       '<span class="mk-led" data-l="' + ljos + '" aria-hidden="true"></span>' +
