@@ -382,6 +382,15 @@
       return;
     }
 
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): vörn í viðbót við sjálfgefna valið — hafi
+    // notandinn samt valið „— velja —" (hreinsar trip.undirritun í null) er
+    // heimsókn stöðvuð hér, ekki kláruð með ógildri skýrslu.
+    if (!String(loadTrip(coId).undirritun || '').trim()) {
+      alert('Veldu hver undirritar f.h. Slökkvitækis (efst hægra megin) áður en heimsókn er kláruð — annars verður skýrslan ógild.');
+      return;
+    }
+
     const today = todayIso();
     const next = addMonthsIso(today, 12);
 
@@ -754,8 +763,19 @@
     // 10.11.2026 (Agnar): hver skrifar undir „Fyrir hönd Slökkvitæki ehf" á skýrslunni. Nafnið skrifað þar til undirskriftarmynd
     // er komin (app_settings.undirskriftir[nafn]); þá kemur myndin sjálfkrafa. Vistast í trip.undirritun (samstillist milli véla).
     const _coU = getCompanyId();
-    const _curU = (_coU && loadTrip(_coU).undirritun) || '';
     const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+    const _tripU0 = _coU ? loadTrip(_coU) : {};
+    let _curU = (_tripU0.undirritun || '').trim();
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): sjálfgefið á fyrsta nafn listans (Agnar
+    // Sigurðsson) um leið og heimsókn hefst, svo reiturinn standi aldrei auður
+    // óvart. Skrifað strax í trip-state (ekki bara birt), svo 168 (skýrslan)
+    // sjái sama gildi þótt notandinn snerti aldrei þetta val.
+    if (!_curU && _coU) {
+      _curU = _listU[0] || 'Agnar Sigurðsson';
+      _tripU0.undirritun = _curU;
+      saveTrip(_coU, _tripU0);
+    }
     bar.innerHTML =
       '<label style="display:flex;align-items:center;gap:6px;margin-right:auto;font-size:12px;font-weight:700;color:#334155">✍ Undirritar f.h. Slökkvitækis' +
       '<select id="_vw-undirritun" style="padding:8px 10px;border:1px solid #94a3b8;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#0f172a">' +

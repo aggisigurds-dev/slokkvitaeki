@@ -45,6 +45,10 @@ const LEYFT = [
     af: 'viljandi: línurnar eru INNI í sniðstrengnum SAFNA (`(() => { … })()`), sem er keyrður í vafranum. Þar verður ' +
         '`\\\\s` í frumkóðanum að `\\s` í kóðanum sem keyrir, svo mynstrið er rétt. Vörðurinn var rauður á hverri ýtingu ' +
         'frá 18.11.2026 kl. 18:11 vegna þessa; færist kóðinn út úr sniðstrengnum á að laga mynstrið og taka færsluna út.' },
+  { skra: 'tools/simasopur.cjs', mynstur: '\\\\s+',
+    af: 'viljandi: sama og birtumaeling — línurnar eru INNI í sniðstrengnum SKANNA (`(() => { … })()`, línur 52–107) sem er ' +
+        'keyrður í vafranum, þar sem `\\\\s` verður að `\\s`. Skráin kom á master með auto-sync 19.11.2026 kl. 01:50 og ' +
+        'vörðurinn var rauður á hverri ýtingu þaðan í frá. Færist kóðinn út úr sniðstrengnum: laga mynstrið og taka þetta út.' },
 ];
 
 function finnaSystur() {

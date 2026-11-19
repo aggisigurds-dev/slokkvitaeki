@@ -329,6 +329,12 @@
         textiUppruni = 'ovist'; textiFyrri = _fyrri.name || null;
       }
     }
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): öryggisnet fyrir þessa skýrslu óháð 165 —
+    // hafi hvorug leiðin hér að ofan (þessi vél eða fyrra viðhengi) skilað nafni,
+    // sjálfgefið á fyrsta nafn listans (Agnar Sigurðsson) svo skýrsla fari aldrei
+    // út undirritunarlaus.
+    if (!undirritun) undirritun = UNDIRRITENDUR[0] || 'Agnar Sigurðsson';
     const undirskrift = undirritun ? undirskriftarMynd(undirritun) : '';
     // 29.10.2026: viðbótarskýrsla (488) bætir einni setningu um nýju tækin aftan við „Annað" — texti sem fyrir er stendur óbreyttur.
     const annadMed = (_vb0 && _vb0.annad && annad.indexOf(_vb0.annad) < 0) ? (annad ? annad + ' ' : '') + _vb0.annad : annad;

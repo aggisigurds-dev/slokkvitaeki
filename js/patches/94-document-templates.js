@@ -85,13 +85,18 @@
       <div style="font-size:12.5px;font-weight:700;color:#b91c1c">Samþykki staðfest með tölvupósti</div>
       <div style="font-size:13px;font-weight:700;margin:4px 0 2px">slokkvitaeki@brunaholf.is</div>
       <div style="height:38px;display:flex;align-items:flex-end;justify-content:center;font-weight:700;font-size:13px">{{sig_slokkvitaeki}}{{starfsmadur}}</div>
-      <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:left">Fyrir hönd Brunahólf Slökkvitæki ehf.:</div>
+      <!-- 19.11.2026 (Agnar: "má færa fyrir hönd textann aðeins meira til hægri
+           svo hún sé akkurat fyrir miðju"): text-align:left skildi línuna eftir
+           vinstrijafnaða undir miðjaðri undirskriftinni fyrir ofan — center hér
+           miðjar hana undir sömu línu í stað þess að ýta henni til hægri með
+           handahófskenndu letri. -->
+      <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:center">Fyrir hönd Brunahólf Slökkvitæki ehf.:</div>
     </div>
     <div style="text-align:center">
       <div style="font-size:12.5px;font-weight:700;color:#b91c1c">Samþykki staðfest með tölvupósti</div>
       <div style="font-size:13px;font-weight:700;margin:4px 0 2px">{{netfang}}</div>
       <div style="height:38px;display:flex;align-items:flex-end;justify-content:center">{{sig_vidskiptavinur}}</div>
-      <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:left">Fyrir hönd fyrirtækis/húsfélags:</div>
+      <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:center">Fyrir hönd fyrirtækis/húsfélags:</div>
     </div>
   </div>
 
@@ -695,6 +700,22 @@
         if (v && typeof v === 'string' && v.startsWith('data:image/')) {
           return '<img src="' + v + '" alt="undirritun" style="max-height:55px;max-width:100%;display:inline-block">';
         }
+        // 19.11.2026: sig_slokkvitaeki stores a NAME chosen from the staff
+        // dropdown (not drawn ink) — look the signature image up fresh here
+        // rather than at save time, so a signature uploaded later
+        // (app_settings.undirskriftir) appears on documents already saved with
+        // just the name, exactly like 168's úttektarskýrsla. No image yet →
+        // the plain name, never a blank box with a name picked and nothing shown.
+        if (k === 'sig_slokkvitaeki' && v && typeof v === 'string') {
+          const img = (window.UttektUndirritun && UttektUndirritun.mynd) ? UttektUndirritun.mynd(v) : '';
+          if (img) return '<img src="' + img + '" alt="undirritun" style="max-height:55px;max-width:100%;display:inline-block">';
+          // Avoid printing the name twice when this template also shows it via a
+          // separate {{starfsmadur}} field right next to this one (the dropdown
+          // sets both at once, see the select's change handler) — only fall back
+          // to printing the name here when no such field exists to carry it.
+          const sameAsStarfsmadur = typeof values.starfsmadur === 'string' && values.starfsmadur.trim() === v.trim();
+          return sameAsStarfsmadur ? '' : '<span style="font-weight:700">' + esc(v) + '</span>';
+        }
         return ''; // empty when no signature drawn
       }
 
@@ -1169,6 +1190,24 @@
             '</div>';
           }
           if (f.type === 'signature') {
+            // 19.11.2026 (Agnar: „undirskriftin sem var sett inn á úttektarskýrslurnar
+            // frá Ársskoðun líka inn á Þjónustusamninga … velja starfsmennina … og
+            // undirskriftin kemur þarna"): Slökkvitækis EIGIN undirritun velur úr
+            // sama starfsmannalista og Ársskoðun (165/168), og vistaða myndin
+            // (app_settings.undirskriftir[nafn]) kemur sjálfkrafa — sjá fillTemplate.
+            // Aðrar sig_* undirritanir (kúnni, skoðunarmaður, útgerð o.fl.) eru áfram
+            // handteiknaðar — þær eru ekki starfsmenn okkar og eiga enga mynd í listanum.
+            const _undL = (window.UttektUndirritun && Array.isArray(UttektUndirritun.listi)) ? UttektUndirritun.listi : null;
+            if (f.key === 'sig_slokkvitaeki' && _undL) {
+              return '<div style="margin-bottom:14px">' +
+                '<label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">' + esc(f.label) + '</label>' +
+                '<select data-sig-select="' + esc(f.key) + '" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;background:#fff;color:#0f172a">' +
+                  '<option value="">— veldu —</option>' +
+                  _undL.map(n => '<option value="' + esc(n) + '"' + (n === v ? ' selected' : '') + '>' + esc(n) + '</option>').join('') +
+                '</select>' +
+                '<div style="font-size:11px;color:#94a3b8;margin-top:3px">Undirskriftin kemur sjálfkrafa sé hún til (sama og á úttektarskýrslum); annars stendur nafnið eitt.</div>' +
+              '</div>';
+            }
             return '<div style="margin-bottom:14px">' +
               '<label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:3px">' + esc(f.label) + '</label>' +
               '<div data-sig-field="' + esc(f.key) + '" class="_dt-sig-wrap" style="border:1px dashed #94a3b8;border-radius:6px;background:#fff;position:relative;height:90px;cursor:crosshair">' +
@@ -1257,6 +1296,25 @@
         canvas.addEventListener('touchstart', start, { passive: false });
         canvas.addEventListener('touchmove', move, { passive: false });
         canvas.addEventListener('touchend', end);
+      });
+
+      // Wire the Slökkvitæki-own signature picker (sig_slokkvitaeki): choosing a
+      // name stores it as the field value (the image, if any, is looked up fresh
+      // at render time — see fillTemplate) and mirrors it into the separate
+      // "starfsmadur" text field when this template has one, so the two stay in
+      // sync the way the preview line {{sig_slokkvitaeki}}{{starfsmadur}} expects
+      // instead of asking the user to type the same name twice.
+      formEl.querySelectorAll('select[data-sig-select]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const key = sel.dataset.sigSelect;
+          values[key] = sel.value;
+          if (key === 'sig_slokkvitaeki' && fields.some(ff => ff.key === 'starfsmadur')) {
+            values.starfsmadur = sel.value;
+            const nameInp = formEl.querySelector('input[data-field="starfsmadur"]');
+            if (nameInp) nameInp.value = sel.value;
+          }
+          updatePreview();
+        });
       });
 
       // Wire signature clear buttons

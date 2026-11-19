@@ -185,7 +185,7 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
   <div class="stalplata"><div id="rot" aria-live="polite"></div></div>
 </main>
 <!-- Tillaga B: sama greining og sömu bútar og Þjónustuborðið teiknar (BordAfgreidsla.snid). Skráin keyrir ekkert við hleðslu. -->
-<script src="/js/patches/511-bord-afgreidsla.js?v=20261118a"></script>
+<script src="/js/patches/511-bord-afgreidsla.js?v=20261119b"></script>
 <script>
 (function () {
   'use strict';
@@ -200,7 +200,19 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
   if (B && B.css) { var bst = document.createElement('style'); bst.id = 'b-still'; bst.textContent = B.css(); document.head.appendChild(bst); }
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); };
   var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk', adalmal: 'Aðalmál' };
-  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk'];
+  var FLOKKAR = ['allt', 'dagsverk', 'tolvupostur', 'krafa', 'simtal', 'verk', 'bokun'];
+  var FLOKKHEITI = { dagsverk: 'Dagsverk', bokun: 'Bókanir' };
+  // SÉRFLOKKAR (19.11.2026). „Bókanir“ (Agnar: „geturðu sett auka ham fyrir svona“ — bókunarpóstar og bókunarsímtöl) og
+  // „Dagsverk“ (Agnar: „svona auka dagsvinnuplatform“ — verk dagsins, hvert með stöðu og dyrum). Liður með flokk úr
+  // SERFLOKKAR (gogn.flokkur á þjóninum) býr í eigin flokki og er EKKI í „Allt“ né tegundaflokkunum, svo hann drukkni
+  // ekki í hinum verkunum og hin verkin ekki í honum. Gildin: [eintala, fleirtala, heiti flokksins].
+  var SERFLOKKAR = { dagsverk: ['dagsverk', 'dagsverk', 'Dagsverk'], bokun: ['bókun', 'bókanir', 'Bókanir'] };
+  var serflokkur = function (v) { return v && Object.prototype.hasOwnProperty.call(SERFLOKKAR, v.flokkur) ? v.flokkur : null; };
+  var erBokun = function (v) { return serflokkur(v) === 'bokun'; };
+  var iFlokki = function (v, k) { var s = serflokkur(v); return Object.prototype.hasOwnProperty.call(SERFLOKKAR, k) ? s === k : !s && (!k || k === 'allt' || v.tegund === k); };
+  var teljaFlokka = function (l) { var t = { allt: 0 }; (l || []).forEach(function (v) { var s = serflokkur(v), k = s || v.tegund; if (!s) t.allt++; t[k] = (t[k] || 0) + 1; }); return t; };
+  var serTexti = function (tel) { return Object.keys(SERFLOKKAR).filter(function (k) { return tel[k]; }).map(function (k) { return ' · ' + tel[k] + ' ' + SERFLOKKAR[k][tel[k] === 1 ? 0 : 1]; }).join(''); };
+
   var STADA = { framkvaemt: 'Gert', sleppt: 'Sleppt', ekki_thess_virdi: 'Ekki þess virði', urelt: 'Úrelt', villa: 'Villa', i_vinnslu: 'Í vinnslu' };
   var JA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-label="Í lagi"><circle cx="9" cy="9" r="8" fill="#1b6b2d"/><path d="M5 9.3l2.6 2.6L13 6.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var NEI = '<svg width="18" height="18" viewBox="0 0 18 18" aria-label="Ekki í lagi"><circle cx="9" cy="9" r="8" fill="#a1161a"/><path d="M6 6l6 6M12 6l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -235,13 +247,19 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
       S.tilbuin = j.tilbuin || []; S.saga = j.saga || []; S.throskuldur = j.throskuldur || S.throskuldur;
       // 16.11.2026: djúptengill /afgreidsla.html?v=<id> (takkinn „Afgreiða ›" í Einkaritaranum, 506) opnar það verk beint.
       // Aðeins við fyrstu hleðslu — eftir það ræður val notandans.
-      if (!S._djup) { S._djup = true; try { var qv = Number(new URLSearchParams(location.search).get('v')); if (qv) S.val = qv; } catch (_) {} }
+      // 19.11.2026 (rýni): sé verkið í sérflokki (Bókanir, Dagsverk) fann valid() það ekki í „Allt“ og valdi ANNAÐ verk (með rauða
+      // takkanum) — því er skipt í flokk verksins. ?f=dagsverk / ?f=bokun opnar flokkinn beint (tenglarnir á Aðalmálum, 492).
+      if (!S._djup) { S._djup = true; try {
+        var qs = new URLSearchParams(location.search), qv = Number(qs.get('v')), qf = qs.get('f');
+        if (qf && FLOKKAR.indexOf(qf) > -1) S.flokkur = qf;
+        if (qv) { S.val = qv; var qs0 = serflokkur(S.tilbuin.filter(function (x) { return x.id === qv; })[0]); if (qs0) S.flokkur = qs0; }
+      } catch (_) {} }
       teikna();
     }).catch(function (e) { if (String(e.message) !== 'Innskráning') rot.innerHTML = '<div class="villa-sida">Náði ekki í verkin: ' + esc(e.message) + '</div>'; });
   }
 
   // Síaði listinn og valda verkið (eftir auðkenni — sætið breytist þegar verk hverfur eða flokki er skipt).
-  function sia() { return S.flokkur === 'allt' ? S.tilbuin : S.tilbuin.filter(function (v) { return v.tegund === S.flokkur; }); }
+  function sia() { return S.tilbuin.filter(function (v) { return iFlokki(v, S.flokkur); }); }
   function valid() {
     var l = sia(), v = null;
     for (var k = 0; k < l.length; k++) if (l[k].id === S.val) v = l[k];
@@ -251,15 +269,14 @@ ul.rok .heimild{display:block;font:12px/1.4 var(--sans);color:var(--ink5);margin
   function saeti(v) { var l = sia(); for (var k = 0; k < l.length; k++) if (l[k] === v) return k; return -1; }
 
   function undirlina() {
-    var n = S.tilbuin.length;
-    document.getElementById('undir').textContent = n ? (n + ' tilbúin · takkinn framkvæmir það sem á honum stendur') : 'Ekkert bíður';
+    var tel = teljaFlokka(S.tilbuin), n = tel.allt;
+    document.getElementById('undir').textContent = S.tilbuin.length ? (n + ' tilbúin' + serTexti(tel) + ' · takkinn framkvæmir það sem á honum stendur') : 'Ekkert bíður';
   }
 
   function listiHtml() {
-    var tel = { allt: S.tilbuin.length };
-    S.tilbuin.forEach(function (v) { tel[v.tegund] = (tel[v.tegund] || 0) + 1; });
+    var tel = teljaFlokka(S.tilbuin);
     var h = '<div class="flokkar" role="group" aria-label="Flokkar">' + FLOKKAR.filter(function (k) { return k === 'allt' || tel[k] || S.flokkur === k; }).map(function (k) {
-      return '<button type="button" class="flk' + (S.flokkur === k ? ' val' : '') + '" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : TEG[k]) + ' <b>' + (tel[k] || 0) + '</b></button>';
+      return '<button type="button" class="flk' + (S.flokkur === k ? ' val' : '') + '" data-f="' + k + '" aria-pressed="' + (S.flokkur === k) + '">' + (k === 'allt' ? 'Allt' : (TEG[k] || FLOKKHEITI[k])) + ' <b>' + (tel[k] || 0) + '</b></button>';
     }).join('') + '</div>';
     var l = sia();
     h += l.length ? '<ol class="atridi">' + l.map(function (v) {

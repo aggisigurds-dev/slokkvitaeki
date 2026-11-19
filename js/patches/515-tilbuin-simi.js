@@ -24,8 +24,19 @@
   if (rot.TilbuinSimi) return;
 
   var VIEW_ID = 'view-tilbuin-verk', NAV_KEY = 'tilbuin-verk';
-  var FLOKKAR = ['allt', 'tolvupostur', 'simtal', 'krafa', 'verk', 'sameina'];
-  var HEITI = { allt: 'Allt', tolvupostur: 'Póstur', simtal: 'Símtal', krafa: 'Krafa', verk: 'Verk', sameina: 'Breyting' };
+  var FLOKKAR = ['allt', 'dagsverk', 'tolvupostur', 'simtal', 'krafa', 'verk', 'sameina', 'bokun'];
+  // SÉRFLOKKAR (19.11.2026). „Bókanir“ (Agnar: „geturðu sett auka ham fyrir svona“ — bókunarpóstar og bókunarsímtöl) og
+  // „Dagsverk“ (Agnar: „svona auka dagsvinnuplatform“ — verk dagsins, hvert með stöðu og dyrum). Liður með flokk úr
+  // SERFLOKKAR (gogn.flokkur á þjóninum) býr í eigin flokki og er EKKI í „Allt“ né tegundaflokkunum, svo hann drukkni
+  // ekki í hinum verkunum og hin verkin ekki í honum. Gildin: [eintala, fleirtala, heiti flokksins].
+  var SERFLOKKAR = { dagsverk: ['dagsverk', 'dagsverk', 'Dagsverk'], bokun: ['bókun', 'bókanir', 'Bókanir'] };
+  var serflokkur = function (v) { return v && Object.prototype.hasOwnProperty.call(SERFLOKKAR, v.flokkur) ? v.flokkur : null; };
+  var erBokun = function (v) { return serflokkur(v) === 'bokun'; };
+  var iFlokki = function (v, k) { var s = serflokkur(v); return Object.prototype.hasOwnProperty.call(SERFLOKKAR, k) ? s === k : !s && (!k || k === 'allt' || v.tegund === k); };
+  var teljaFlokka = function (l) { var t = { allt: 0 }; (l || []).forEach(function (v) { var s = serflokkur(v), k = s || v.tegund; if (!s) t.allt++; t[k] = (t[k] || 0) + 1; }); return t; };
+  var serTexti = function (tel) { return Object.keys(SERFLOKKAR).filter(function (k) { return tel[k]; }).map(function (k) { return ' · ' + tel[k] + ' ' + SERFLOKKAR[k][tel[k] === 1 ? 0 : 1]; }).join(''); };
+
+  var HEITI = { allt: 'Allt', tolvupostur: 'Póstur', simtal: 'Símtal', krafa: 'Krafa', verk: 'Verk', sameina: 'Breyting', bokun: 'Bókanir', dagsverk: 'Dagsverk' };
   // Sama regla og þjónninn (afgreidsla.cjs EYDA) — prófið heldur þeim eins.
   var EYDA = /\[[^\]\n]{1,60}\]/g;
 
@@ -60,11 +71,9 @@
       return hopur(x) - hopur(y) || fx - fy || (Number(y.virdi_kr) || 0) - (Number(x.virdi_kr) || 0) || a[1] - b[1];
     }).map(function (p) { return p[0]; });
   }
-  function sia(listi, f) { return !f || f === 'allt' ? (listi || []) : (listi || []).filter(function (v) { return v.tegund === f; }); }
+  function sia(listi, f) { return (listi || []).filter(function (v) { return iFlokki(v, f); }); }
   function teljarar(listi) {
-    var t = { allt: (listi || []).length };
-    (listi || []).forEach(function (v) { t[v.tegund] = (t[v.tegund] || 0) + 1; });
-    return t;
+    return teljaFlokka(listi);
   }
   // Hvað stöðvar takkann? null = má framkvæma. Þjónninn ræður (v.ok); hér bætast við eyður í drögunum sem enn hafa
   // ekki farið á þjóninn og óstaðfest ágiskun, svo ástæðan standi skýrt á spjaldinu.
@@ -91,9 +100,10 @@
 
   /* ── TEIKNING ───────────────────────────────────────────────────────────────────────────────── */
   function hausHtml(a) {
-    var S = a ? a.S : null, n = S && S.tilbuin ? S.tilbuin.length : null;
+    // Talan í hausnum er sú sama og „Allt“ sýnir; sérflokkarnir (Dagsverk, Bókanir) eru taldir sér. Flipateljarinn telur allt.
+    var S = a ? a.S : null, tel = S && S.tilbuin ? teljaFlokka(S.tilbuin) : null, n = tel ? tel.allt : null, ser = tel ? serTexti(tel) : '';
     var st = !S ? 'Hleð…' : S.loading && !S.tilbuin ? 'Sæki verkin…' : n == null ? (S.villa ? S.villa.texti : 'Sæki verkin…') :
-      (n ? n + ' tilbúin' : 'Allt afgreitt') + (S.loading ? ' · uppfæri…' : S.at ? ' · sótt kl. ' + new Date(S.at).toTimeString().slice(0, 5) : '');
+      (n || ser ? n + ' tilbúin' + ser : 'Allt afgreitt') + (S.loading ? ' · uppfæri…' : S.at ? ' · sótt kl. ' + new Date(S.at).toTimeString().slice(0, 5) : '');
     return '<div class="ts-haus"><div><div class="tt">Tilbúin verk</div><div class="st" role="status">' + esc(st) + '</div></div>' +
       '<button type="button" class="ts-uppf" data-baf="uppf" aria-label="Sækja nýjustu stöðu" title="Sækja nýjustu stöðu">' +
       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button></div>';
@@ -368,7 +378,7 @@
     rot.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
   }
 
-  var api = { version: '515', open: open, render: render, eydur: eydur, rada: rada, sia: sia, teljarar: teljarar, stodvun: stodvun, hopur: hopur, vidtakandi: vidtakandi, EYDA: EYDA, P: P, _spjald: spjaldHtml, _meginmal: meginmal };
+  var api = { version: '515', open: open, render: render, eydur: eydur, rada: rada, sia: sia, teljarar: teljarar, stodvun: stodvun, hopur: hopur, vidtakandi: vidtakandi, EYDA: EYDA, P: P, _spjald: spjaldHtml, _meginmal: meginmal, _haus: hausHtml };
   rot.TilbuinSimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document !== 'undefined' && document.addEventListener) {
