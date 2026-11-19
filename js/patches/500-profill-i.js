@@ -56,6 +56,24 @@
   var GRAENN = 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)';
   var MONO = '"JetBrains Mono",ui-monospace,monospace';
   var SERIF = '"Playfair Display",Georgia,serif';
+  var SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
+  /* Brunastál C — gildi hetjuspjalda Ársskoðunar (414) */
+  var STRIPE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px)';
+  var INNI_STAL = STRIPE + ',linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  var INNI_RAUTT = STRIPE + ',linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)';
+  var INNI_GRAENT = STRIPE + ',linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)';
+  var R_STAL = 'linear-gradient(145deg,#0a0a0c 0%,#4a4e57 20%,#1d1f24 45%,#6a6f79 62%,#15161a 85%,#0a0a0c 100%)';
+  var R_GULL = 'linear-gradient(145deg,#3d2b05 0%,#d3ab4e 20%,#ffe9b0 35%,#a67f22 52%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)';
+  var R_GRAENT = 'linear-gradient(145deg,#010d05 0%,#0e5a2e 25%,#16783f 50%,#0e5a2e 75%,#010f06 100%)';
+  var R_RAUTT = 'linear-gradient(145deg,#0d0102 0%,#380506 18%,#6c0d10 38%,#971515 50%,#6c0d10 62%,#380506 82%,#0d0102 100%)';
+  var HN_STAL = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
+  var HN_GULL = 'radial-gradient(circle at 40% 35%,#fff3c4 0%,#f0a83c 45%,#7a4a08 100%)';
+  var HN_GRAENT = 'radial-gradient(circle at 40% 35%,#d8ffe6 0%,#23a35a 45%,#073a1d 100%)';
+  var HN_RAUTT = 'radial-gradient(circle at 40% 35%,#ffd6d0 0%,#e25555 45%,#5a0a0a 100%)';
+  var GR = 'linear-gradient(180deg,#63b88c 0%,#1f6f42 35%,#0c3d22 60%,#1a5a35 100%)';
+  var GU = 'linear-gradient(180deg,#e2c67a 0%,#9c7c2c 35%,#5c4412 60%,#8c6c24 100%)';
+  var RA = 'linear-gradient(180deg,#d97878 0%,#8a2020 35%,#4a0d0d 60%,#7a1a1a 100%)';
+  var HNODIN = '<span class="hn" style="top:9px;left:9px" aria-hidden="true"></span><span class="hn" style="top:9px;right:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;left:26px" aria-hidden="true"></span><span class="hn" style="bottom:9px;right:9px" aria-hidden="true"></span>';
 
   var TABS = [
     ['skjol', 'Skjöl og reikningar'],
@@ -169,29 +187,83 @@
     '#companies-main .p2-kp .flis3 b{display:block;font-size:11.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '#companies-main .p2-kp .nota{font-size:11.5px;font-style:italic;color:#c3cad5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
     '#companies-main .p2-merkid.am{background:linear-gradient(145deg,#2a1d02 0%,#5a3f08 30%,#9a6a14 55%,#3a2804 100%)}' +
-    /* ── málmplöturnar ── */
-    '#companies-main .p2-kpi{background:linear-gradient(180deg,#1b1e24,#121418)!important;border-top:1px solid #000}' +
-    '#companies-main .p2-kp{--led:#8a93a3;color:#e6e9ee;border-radius:4px!important;background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px),linear-gradient(160deg,#30343c,#1a1c21 70%)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.18),0 12px 24px -14px rgba(0,0,0,.9)!important;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}' +
-    '#companies-main .p2-kp::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,#dfe5ee 0 1.4px,rgba(0,0,0,.6) 1.6px 2.4px,transparent 2.6px) left 7px top 7px/7px 7px no-repeat,radial-gradient(circle,#dfe5ee 0 1.4px,rgba(0,0,0,.6) 1.6px 2.4px,transparent 2.6px) right 7px top 7px/7px 7px no-repeat,radial-gradient(circle,#dfe5ee 0 1.4px,rgba(0,0,0,.6) 1.6px 2.4px,transparent 2.6px) left 7px bottom 7px/7px 7px no-repeat,radial-gradient(circle,#dfe5ee 0 1.4px,rgba(0,0,0,.6) 1.6px 2.4px,transparent 2.6px) right 7px bottom 7px/7px 7px no-repeat}' +
-    '#companies-main .p2-kp:has(> .cap.g){--led:#22c06a;background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 1px,transparent 1px 5px),linear-gradient(160deg,#165c37,#0a2a19 70%)!important}' +
-    '#companies-main .p2-kp:has(> .cap.r){--led:#ff5a4c;background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 1px,transparent 1px 5px),linear-gradient(160deg,#6a1414,#2a0606 70%)!important}' +
-    '#companies-main .p2-kp:has(> .cap.y){--led:#f2c35a;box-shadow:inset 0 0 0 1.5px #c9a03c,inset 0 1px 0 rgba(255,255,255,.18),0 12px 24px -14px rgba(0,0,0,.9)!important}' +
-    '#companies-main .p2-kpi .p2-kp.p2-kp-taeki.p2-kp{--led:#f2c35a;box-shadow:inset 0 0 0 1.5px #b8922f,inset 0 1px 0 rgba(255,255,255,.18),0 12px 24px -14px rgba(0,0,0,.9)!important;background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px),linear-gradient(160deg,#30343c,#1a1c21 70%)!important}' +
-    '#companies-main .p2-kp .cap{display:none}' +
-    '#companies-main .p2-kp .in{padding:14px 16px 14px!important}' +
-    '#companies-main .p2-kp .lb{color:#d9dee6!important;display:flex;align-items:center;gap:8px}' +
-    '#companies-main .p2-kp .lb::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--led);box-shadow:0 0 6px var(--led);flex:none}' +
-    '#companies-main .p2-kp .big{color:#fff!important}' +
-    '#companies-main .p2-kp .bigl{color:#d9dee6!important}' +
-    '#companies-main .p2-kp .sm{color:#c3cad5!important}' +
-    '#companies-main .p2-kp .sm b,#companies-main .p2-kp .leg2 b{color:#fff!important}' +
-    '#companies-main .p2-kp .ft{color:#aab2bf!important}' +
-    '#companies-main .p2-kp .leg2{color:#d9dee6!important}' +
-    '#companies-main .p2-kp .aths{color:#f2c35a!important}' +
-    '#companies-main .p2-kp .bar,#companies-main .p2-kp .bar2{background:rgba(0,0,0,.35)}' +
-    '#companies-main .p2-kp.ramm-g,#companies-main .p2-kp.ramm-a{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 12px 24px -14px rgba(0,0,0,.9)!important}' +
-    '#companies-main .p2-kp.ramm-g{--led:#22c06a;background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 1px,transparent 1px 5px),linear-gradient(160deg,#165c37,#0a2a19 70%)!important}' +
-    '#companies-main .p2-kp.ramm-a{--led:#f2c35a;box-shadow:inset 0 0 0 1.5px #c9a03c,0 12px 24px -14px rgba(0,0,0,.9)!important}' +
+    /* ── PLÖTURNAR: Brunastál C, sama útfærsla og hetjuspjöld Ársskoðunar (414 · .b414-k/.b414-i/.hn) ──
+       Agnar 19.11.2026: „ekki rétta hönnunin … léleg útgáfa, lítill punktur, enginn dýpt“ → engin eftirlíking, heldur
+       gildin úr 414: 2 px málmrammi (gull/grænt/rautt/stál), tvö skorin horn (18/16 px), burstuð innri plata, 3 px
+       ljósrönd efst, fjögur hnoð með glóð, LED með geislabaug, Playfair 40–44 px með skugga, innfelldar málmsúlur. */
+    '#companies-main .p2-kpi{background:linear-gradient(180deg,#e8ebf0,#d6dbe3)!important;padding:16px!important;gap:14px!important}' +
+    G + ' .p2-kp{--fr:' + R_STAL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3b3f46,#e2e6ec 50%,#3b3f46);--hn:' + HN_STAL + ';--hg:0 1px 1px rgba(0,0,0,.7);--led:#8f98a8;--ledg:none;' +
+      'background:var(--fr)!important;background-color:#0a0a0c!important;padding:2px!important;border-radius:0!important;overflow:visible!important;box-shadow:none!important;' +
+      'clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));color:#fff}' +
+    G + ' .p2-kp:has(> .cap.g),' + G + ' .p2-kp.ramm-g{--fr:' + R_GRAENT + ';--in:' + INNI_GRAENT + ';--tl:linear-gradient(90deg,#06331a,#7fe0a8 50%,#06331a);--hn:' + HN_GRAENT + ';--hg:0 0 6px 1px rgba(35,163,90,.6);--led:#3cc47c;--ledg:0 0 0 3px rgba(60,196,124,.16),0 0 10px rgba(60,196,124,.8)}' +
+    G + ' .p2-kp:has(> .cap.r){--fr:' + R_RAUTT + ';--in:' + INNI_RAUTT + ';--tl:linear-gradient(90deg,#380506,#ff9d95 50%,#380506);--hn:' + HN_RAUTT + ';--hg:0 0 6px 1px rgba(226,85,85,.6);--led:#f0584c;--ledg:0 0 0 3px rgba(240,88,76,.18),0 0 10px rgba(240,88,76,.85)}' +
+    G + ' .p2-kp:has(> .cap.y),' + G + ' .p2-kp.ramm-a,' + G + ' .p2-kp.p2-kp-taeki:has(> .cap){--fr:' + R_GULL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05);--hn:' + HN_GULL + ';--hg:0 0 6px 1px rgba(240,168,60,.7);--led:#e0a93e;--ledg:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)}' +
+    G + ' .p2-kp > .in{position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));background-image:var(--in)!important;background-color:#0a0a0c;padding:16px 20px 16px!important;gap:10px!important;height:100%;box-sizing:border-box;color:#fff}' +
+    G + ' .p2-kp > .in::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tl);pointer-events:none}' +
+    G + ' .p2-kp .hn{position:absolute;width:6px;height:6px;border-radius:50%;z-index:2;pointer-events:none;background:var(--hn);box-shadow:var(--hg)}' +
+    G + ' .p2-kp .cap{display:none!important}' +
+    G + ' .p2-kp > .in{container-type:inline-size}' +
+    G + ' .p2-kp .in > div:has(> .big){white-space:nowrap;display:flex;align-items:baseline;gap:2px}' +
+    /* merki með LED */
+    G + ' .p2-kp .lb{display:flex!important;align-items:center;gap:9px;white-space:nowrap;font:700 10.5px ' + MONO + '!important;letter-spacing:.18em!important;text-transform:uppercase;color:#d9dee6!important;min-width:0}' +
+    G + ' .p2-kp .lb::before{content:"";width:7px;height:7px;border-radius:50%;flex:none;background:var(--led);box-shadow:var(--ledg)}' +
+    /* talan */
+    G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:min(34px,17cqw)!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
+    G + ' .p2-kp .bigl{font-family:' + SERIF + ';font-size:16px!important;font-weight:700;color:#d9dee6!important;margin-left:4px}' +
+    G + ' .p2-kp.p2-kp-taeki .big{color:#f3d98a!important;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)}' +
+    /* línur og skýringar í letri plötunnar */
+    G + ' .p2-kp .sm{font:400 12.5px ' + MONO + '!important;color:#d5dbe6!important;line-height:1.5}' +
+    G + ' .p2-kp .sm b,' + G + ' .p2-kp .leg2 b{color:#fff!important;font-weight:700}' +
+    G + ' .p2-kp .ft{font:400 11.5px ' + MONO + '!important;color:#c9d0da!important}' +
+    G + ' .p2-kp .leg2{font:400 11.5px ' + MONO + '!important;color:#d5dbe6!important;gap:6px 16px!important}' +
+    G + ' .p2-kp .leg2 .dot{width:9px!important;height:9px!important;border-radius:2px!important;border:1px solid rgba(0,0,0,.4)}' +
+    G + ' .p2-kp .aths{font:400 11.5px ' + MONO + '!important;color:#f3d98a!important}' +
+    G + ' .p2-kp .nota{font:italic 400 12px ' + SANS + '!important;color:#c9d0da!important}' +
+    /* súlur: innfelldar, málmgradient ofan á lit hvers búts */
+    G + ' .p2-kp .bar,' + G + ' .p2-kp .bar2{height:11px!important;border-radius:4px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important;display:flex;gap:2px!important;overflow:hidden}' +
+    G + ' .p2-kp .bar i,' + G + ' .p2-kp .bar2 i{border-radius:0!important;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.06) 38%,rgba(0,0,0,.28) 62%,rgba(255,255,255,.08) 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important}' +
+    /* flísar (eins og .b414-f) */
+    G + ' .p2-kp .flis3{gap:6px!important}' +
+    G + ' .p2-kp .flis3 span{display:flex;flex-direction:column;justify-content:center;gap:2px;height:48px;box-sizing:border-box;padding:6px 8px!important;border-radius:6px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.1)!important}' +
+    G + ' .p2-kp .flis3 small{font:700 9.5px ' + MONO + '!important;letter-spacing:.14em!important;color:#a9b1bf!important}' +
+    G + ' .p2-kp .flis3 b{font:700 12px ' + MONO + '!important;color:#fff!important}' +
+    /* mánaðarborðinn: 12 innfelld hólf, skoðunarmánuður í málmlit, líðandi mánuður rammaður */
+    G + ' .p2-kp .mbord{gap:3px!important}' +
+    G + ' .p2-kp .mbord i{height:10px!important;border-radius:2px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important}' +
+    G + ' .p2-kp .mbord i.on.st-g{background:' + GR + '!important}' + G + ' .p2-kp .mbord i.on.st-y{background:' + GU + '!important}' + G + ' .p2-kp .mbord i.on.st-r{background:' + RA + '!important}' +
+    G + ' .p2-kp .mbord i.nu{outline:1.5px solid #f3d98a!important;outline-offset:1px}' +
+    /* plötur (mánuður, Greitt, Í vinnslu …) eins og .b414-p */
+    G + ' .p2-kp .man,' + G + ' .p2-kp .p2-pl{display:inline-flex!important;align-items:center;height:22px;padding:0 8px!important;border-radius:3px!important;border:1px solid #000;font:700 10.5px ' + MONO + '!important;letter-spacing:.08em;text-transform:uppercase;color:#fff!important;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18);background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)!important}' +
+    G + ' .p2-kp .khd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}' +
+    G + ' .p2-kp .khd .lb{white-space:normal!important;line-height:1.35}' +
+    G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px}' +
+    G + ' .p2-kp .man.st-g,' + G + ' .p2-kp .p2-pl:not(.am):not(.rd){background:' + R_GRAENT + '!important;border-color:rgba(0,0,0,.6)}' +
+    G + ' .p2-kp .man.st-y,' + G + ' .p2-kp .p2-pl.am{background:linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)!important;text-shadow:0 1px 1px rgba(0,0,0,.5)}' +
+    G + ' .p2-kp .man.st-r,' + G + ' .p2-kp .p2-pl.rd{background:' + R_RAUTT + '!important}' +
+
+    G + ' .p2-kp.p2-kp-kerfi{grid-column:1/-1}' +
+    G + ' .p2-kp-kerfi .kh{display:flex;align-items:center;gap:14px;flex-wrap:wrap}' +
+    G + ' .p2-kp-kerfi .kfl{font:700 11px "JetBrains Mono",monospace;letter-spacing:.08em;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:2px 7px;color:#fff}' +
+    G + ' .p2-kp-kerfi .ksum{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto;font-size:13.5px;color:#e6e9ee}' +
+    G + ' .p2-kp-kerfi .ksum span{display:inline-flex;align-items:center;gap:6px}' +
+    G + ' .p2-kp-kerfi .ksum .dot{width:9px;height:9px;border-radius:50%;display:inline-block}' +
+    G + ' .p2-kp-kerfi .ksum b{color:#fff;font-size:15px}' +
+    G + ' .p2-kp-kerfi .kflis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}' +
+    G + ' .p2-kp-kerfi .kf{display:grid;grid-template-columns:10px minmax(0,1fr);column-gap:8px;align-items:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 9px;min-width:0}' +
+    G + ' .p2-kp-kerfi .kf i{grid-row:1/span 2;width:10px;height:10px;border-radius:50%;box-shadow:0 0 6px currentColor}' +
+    G + ' .p2-kp-kerfi .kf b{font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    G + ' .p2-kp-kerfi .kf small{font-size:11.5px;color:#c9d0da;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    G + ' .p2-kp-kerfi .kf-va{border-color:rgba(240,88,76,.55);background:rgba(120,16,16,.35)}' +
+    G + ' .p2-kp-kerfi .kf-ok{border-color:rgba(34,192,106,.45)}' +
+    G + ' .p2-kp-kerfi .kf{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.1)!important;height:46px;box-sizing:border-box}' +
+    G + ' .p2-kp-kerfi .kf i{width:8px!important;height:8px!important}' +
+    G + ' .p2-kp-kerfi .kf b{font:600 13px ' + SANS + '!important}' +
+    G + ' .p2-kp-kerfi .kf small{font:400 10.5px ' + MONO + '!important;color:#a9b1bf!important;letter-spacing:.02em}' +
+    G + ' .p2-kp-kerfi .kf-va{border-color:rgba(240,88,76,.6)!important;background:rgba(150,20,20,.28)!important}' +
+    G + ' .p2-kp-kerfi .kf-ok{border-color:rgba(60,196,124,.45)!important}' +
+    G + ' .p2-kp-kerfi .ksum{font:400 11.5px ' + MONO + '!important;color:#d5dbe6!important}' +
+    G + ' .p2-kp-kerfi .ksum .dot{border-radius:2px!important}' +
+    G + ' .p2-kp-kerfi .kfl{font:700 10.5px ' + MONO + '!important;height:22px;display:inline-flex;align-items:center;border-radius:3px!important;border:1px solid rgba(255,255,255,.3)!important;background:transparent!important}' +
     '#companies-main .p2-kp .man{position:absolute;top:14px;right:12px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#3a4250,#141822);border-radius:5px;padding:3px 8px}' +
     '#companies-main .p2-kp .cap.g{background:linear-gradient(90deg,#0a4a26,#22c06a,#0a4a26)}' +
     '#companies-main .p2-kp .cap.y{background:linear-gradient(90deg,#9a6a14,#f2c35a,#9a6a14)}' +
@@ -303,7 +375,7 @@
     '#companies-main .p2-mynd{order:4}#companies-main .p2-athug{order:5;margin-top:0;padding:10px 14px 14px}' +
     '#companies-main .p2-kv .k{width:96px}' +
     '#companies-main .p2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
-    '#companies-main .p2-kp-taeki{grid-column:1/-1}' +
+    '#companies-main .p2-kp-taeki,#companies-main .p2-kp-bk{grid-column:1/-1}' +
     '#companies-main .p2-mono{display:none}' +
     '#companies-main .p2-dalk{border-right:0;border-bottom:1px solid #c3cad5;padding:0 14px 10px;margin-bottom:10px}' +
     '#companies-main .p2-mynd{padding:0 14px}' +
@@ -424,6 +496,11 @@
       var rest = (p[2] || '').split(' — ');
       return { heiti: p[0] || txt(c), krafa: p[1] || '', hver: rest[0] || '', stada: rest[1] || '', led: /rautt/.test((sel(c, 'i') || {}).className || '') ? 'rd' : (/graent/.test((sel(c, 'i') || {}).className || '') ? 'ok' : 'am') };
     }).filter(function (x) { return x.heiti && !/^(Slökkvitæki|Brunaviðvörunarkerfi)$/i.test(x.heiti); });
+    d.kerfi = allt(m, '#_kt450 .kt-raema .kt-k').map(function (c) {
+      var p = (c.getAttribute('title') || '').split(' · '); var rest = (p[2] || '').split(' — ');
+      return { heiti: p[0] || txt(c), stutt: txt(c), krafa: p[1] || '', hver: rest[0] || '', stada: rest[1] || '' };
+    }).filter(function (x) { return x.heiti; });
+    d.kerfiFl = txt(sel(m, '#_kt450 .kt-raema .ssp-plata[title="Notkunarflokkur"]'));
     var bkT = sel(m, '#_sks-tabs ._sks-tab[data-flipi="bru"] ._sks-tu');
     var _fid = window._currentCompanyId;
     var _bkAll = (window.AppSettings && AppSettings.path) ? (AppSettings.path('brunakerfi_customers') || {}) : {};
@@ -599,7 +676,7 @@
         : b.buid ? '<div><span class="big" style="font-size:24px">Skoðað ' + b.Y + '</span></div>'
         : '<div><span class="big" style="font-size:24px">Í lagi</span></div>';
       var skTxt = b.sk && b.sk.ar ? 'Skýrsla ' + b.sk.ar + ': ' + (b.sk.status === 'final' ? 'lokið' : 'drög') + (b.sk.nr ? ' · nr ' + b.sk.nr : '') : 'Engin skýrsla ' + b.Y + ' enn';
-      k.push('<div class="p2-kp p2-kp-bk"><div class="cap ' + (b.st === 'r' ? 'r' : b.st === 'y' ? 'y' : 'g') + '"></div><div class="in"><span class="lb">Brunakerfi</span>' + manPilla(b.M, b.st, 'Skoðunarmánuður brunakerfis') +
+      k.push('<div class="p2-kp p2-kp-bk"><div class="cap ' + (b.st === 'r' ? 'r' : b.st === 'y' ? 'y' : 'g') + '"></div><div class="in"><div class="khd"><span class="lb">Brunakerfi</span>' + manPilla(b.M, b.st, 'Skoðunarmánuður brunakerfis') + '</div>' +
         stor + manBordi(b.M, b.st) +
         '<div class="flis3"><span><small>Einingar</small><b class="p2-n">' + (b.ein || '—') + '</b></span><span><small>Síðast</small><b class="p2-n" title="' + esc(b.last) + '">' + esc(b.lastS || '—') + '</b></span><span><small>Næst</small><b class="p2-n">' + esc(b.naest || '—') + '</b></span></div>' +
         '<span class="sm">' + esc(b.kerfi) + ' · ' + esc(skTxt) + (b.ivinnslu ? ' <span class="p2-pl am">Í vinnslu ' + b.Y + '</span>' : '') + '</span>' +
@@ -608,12 +685,14 @@
         '</div></div>');
     }
     var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
-    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><span class="lb">Síðasta úttekt</span>' + manPilla(MAN[(d.skodMan || '').toLowerCase()] || 0, manStada(MAN[(d.skodMan || '').toLowerCase()] || 0, /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === new Date().getFullYear()), 'Skoðunarmánuður slökkvitækja') + '<div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
+    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><div class="khd"><span class="lb">Síðasta úttekt</span>' + manPilla(MAN[(d.skodMan || '').toLowerCase()] || 0, manStada(MAN[(d.skodMan || '').toLowerCase()] || 0, /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === new Date().getFullYear()), 'Skoðunarmánuður slökkvitækja') + '</div><div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
       '<span class="sm p2-n">' + [su.nr, su.dags].filter(Boolean).map(esc).join(' · ') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
-    var ar = new Date().getFullYear() - 1, slt = 0, bkr = 0;
-    d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y || +y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
-    if (slt + bkr) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big" style="font-size:26px">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
+    /* Agnar 19.11.2026: „afhverju 2025, en ekki 2026“ → líðandi ár; fyrra ár stendur undir til samanburðar */
+    var ar = new Date().getFullYear(), slt = 0, bkr = 0, fyrra = 0;
+    d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += r.upph; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
+    if (slt + bkr || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big" style="font-size:34px">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
       (slt && bkr ? '<div class="bar" role="img" aria-label="Slökkvitæki og brunakerfi"><i style="width:' + (100 * slt / (slt + bkr)).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / (slt + bkr)).toFixed(1) + '%;background:#a01818"></i></div><span class="sm">Slt ' + tugir(slt) + ' · Bk ' + tugir(bkr) + '</span>' : '') +
+      (fyrra ? '<span class="sm">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b>' + (slt + bkr ? ' · ' + (slt + bkr >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * (slt + bkr) / fyrra) + '%' : '') + '</span>' : '') +
       (d.hreyfAlls ? '<span class="ft">alls ' + esc(d.hreyfAlls) + '</span>' : '') + '</div></div>');
     if (d.skjol && d.skjol.alls) { var S = d.skjol;
       k.push('<div class="p2-kp"><div class="cap ' + (S.vantar ? 'y' : 'g') + '"></div><div class="in"><span class="lb">Skjöl</span><div><span class="big">' + S.komin + '</span> <span class="bigl">af ' + S.alls + '</span></div>' +
@@ -622,6 +701,25 @@
     if (d.sam) { var o = d.sam.opin.a || ''; var ok = !o || /ekkert|^0\b/i.test(o);
       k.push('<div class="p2-kp ' + (ok ? 'ramm-g' : 'ramm-a') + '"><div class="cap ' + (ok ? 'g' : 'y') + '"></div><div class="in"><span class="lb">Samskipti</span><div><span class="big" style="font-size:24px;color:' + (ok ? '#0b6b3a' : '#845400') + '">' + (ok ? 'Í lagi' : 'Svar bíður') + '</span></div>' +
         '<span class="sm">' + esc(o || 'ekkert ósvarað') + (d.sam.opin.b ? ' · ' + esc(d.sam.opin.b) : '') + '</span>' + (d.sam.tala ? '<span class="ft">' + esc(d.sam.tala) + ' færslur / 12 mán.</span>' : '') + '</div></div>'); }
+    /* ── KERFI Á STAÐNUM (Agnar 19.11.2026: „vantar inn brunakerfin ofl“) — öll kerfi úr „Kerfi og þjónusta" (450)
+       sem rönd undir kössunum: samantekt (okkar / hjá öðrum / vantar / óvitað), súla og ein flís á hvert kerfi
+       með stöðu. Lesið úr title-texta plötunnar; ekkert skrifað. */
+    if (d.kerfi && d.kerfi.length) {
+      var hop = function (x) { var h = (x.hver + ' ' + x.stada).toLowerCase(); return /okkar/.test(h) ? 'ok' : /vantar/.test(h) ? 'va' : /öðrum/.test(h) ? 'an' : 'ov'; };
+      var HOP = { ok: ['Okkar', '#22c06a'], an: ['Hjá öðrum', '#5b8def'], va: ['Vantar', '#f0584c'], ov: ['Óvitað', '#f2c35a'] };
+      var tal = { ok: 0, an: 0, va: 0, ov: 0 }; d.kerfi.forEach(function (x) { tal[hop(x)]++; });
+      var rodun = ['ok', 'va', 'an', 'ov'];
+      var nK = d.kerfi.length;
+      k.push('<div class="p2-kp p2-kp-kerfi"><div class="cap s"></div><div class="in">' +
+        '<div class="kh"><span class="lb">Kerfi á staðnum</span>' + (d.kerfiFl ? '<span class="kfl">' + esc(d.kerfiFl) + '</span>' : '') +
+        '<span class="ksum">' + rodun.filter(function (h) { return tal[h]; }).map(function (h) { return '<span><i class="dot" style="background:' + HOP[h][1] + '"></i>' + HOP[h][0] + ' <b class="p2-n">' + tal[h] + '</b></span>'; }).join('') + '</span></div>' +
+        '<div class="bar2" role="img" aria-label="' + rodun.map(function (h) { return HOP[h][0] + ' ' + tal[h]; }).join(', ') + '">' + rodun.filter(function (h) { return tal[h]; }).map(function (h) { return '<i style="flex:' + tal[h] + ' 1 0;background:' + HOP[h][1] + '"></i>'; }).join('') + '</div>' +
+        '<div class="kflis">' + d.kerfi.slice().sort(function (a, b) { return rodun.indexOf(hop(a)) - rodun.indexOf(hop(b)); }).map(function (x) {
+          var h = hop(x);
+          return '<span class="kf kf-' + h + '" title="' + esc(x.heiti + ' · ' + x.krafa + ' · ' + x.hver + (x.stada ? ' — ' + x.stada : '')) + '"><i style="background:' + HOP[h][1] + '"></i><b>' + esc(x.heiti) + '</b><small>' + esc((x.hver + (x.stada ? ' · ' + x.stada : '')).replace(/^Skylt · /, '')) + (/skylt/i.test(x.krafa) ? ' · skylt' : '') + '</small></span>';
+        }).join('') + '</div>' +
+        '</div></div>');
+    }
     return k;
   }
 
@@ -772,7 +870,7 @@
     var ga = g.querySelector('.p2-gl-a'); if (ga) ga.innerHTML = gluggi(d);
     var ms = document.getElementById('p2-msimi'); var gm = ga && ga.querySelector('.p2-mynd'); if (ms && gm) ms.innerHTML = gm.outerHTML;
     var kp = document.getElementById('p2-kpi');
-    if (kp) { var kk = kpi(d); kp.style.gridTemplateColumns = kk.map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,2fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.5fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
+    if (kp) { var kk = kpi(d).map(function (x) { return x.replace(/^(<div class="p2-kp[^"]*">)/, '$1' + HNODIN); }); kp.style.gridTemplateColumns = kk.filter(function (x) { return !/p2-kp-kerfi/.test(x); }).map(function (x, i) { return /p2-kp-taeki/.test(x) ? 'minmax(0,1.7fr)' : /p2-kp-bk/.test(x) ? 'minmax(0,1.75fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
     t.innerHTML = teikn(d);
     var ar = document.getElementById('p2-adrar'); if (ar) ar.innerHTML = adrar(d);
     var sb = document.getElementById('p2-samsk'); if (sb) sb.innerHTML = samskiptiMarkup(d);
