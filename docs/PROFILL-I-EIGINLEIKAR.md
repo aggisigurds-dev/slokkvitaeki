@@ -111,3 +111,24 @@ Lifandi síðan sjálf var EKKI smellprófuð (krefst innskráningar); allt hér
 Staðfest óbreytt: rofinn af ⇒ gamli prófíllinn; 7 flipar rétt; Samskipti (Póstsaga/Samtal/Svara opnar `_rp-modal`); 375 px og
 980 px viewmode=mobile án láréttrar skrunar; engar JS-villur.
 „Næst 14/01/2027" úr hönnunarskjámyndinni finnst EKKI í `uttaeki.next_insp` fyrir 443 (lægsta = 01/12/2026) — glugginn sýnir 01/12/2026.
+
+## 8. Hönnun A í Brunastáli (19.11.2026), sem Agnar valdi („Ju smidadu þetta“)
+
+Hönnunin er á Design-strigaborðinu „Fyrirtækjaprófíll J“, artboard `Hugmynd-A.dc.html`. Áfram er þetta eingöngu framsetning: ekkert er skrifað og allt er lesið úr DOM gamla prófílsins.
+
+| Hluti | Heimild (DOM) |
+|---|---|
+| Haus: brunakerfismerki (rautt ef árleg skoðun er fram yfir) | 274 `._sks-tab[data-flipi="bru"] ._sks-tu` („skoðað DD/MM/YYYY“). Dagar fram yfir = í dag − (síðast + 1 ár) |
+| `#p2-kpi` Slökkvitæki: fjöldi og súla eftir tegund og stærð | 404 `.ut-row .ut-t` (slöngur og reykskynjarar taldir sér) |
+| Slöngur / reyk | sömu línur. Ef 0 er staðan tekin úr þjónustulista 450 (kefli, reykskynjarar). Ef kt450 nefnir „N reykskynjarar“ (á teikningu) er sú tala sýnd |
+| Brunakerfi | eins og haus-merkið. Kassinn birtist aðeins ef kerfið er skráð |
+| Síðasta úttekt | 403 `.b403-hreyf .b403-skjal-lina.hreyf` (fyrsta Úttekt með upphæð), „Greitt“ = `.s-greitt` eða textinn |
+| Viðskipti {í fyrra} | sömu línur, árið í fyrra, skipt Slt/Bk eftir `.teg`. „alls“ er `.b403-hint` sem passar við `^[\d.]+ kr$` |
+| Skjöl | 403 `.b403-skyring` (Komin / Í vinnslu / Vantar + „· N skjöl“) |
+| Samskipti | 286, eins og fyrr. Grænn rammi = ekkert ósvarað, gulur = „Svar bíður“ |
+| Gluggi: Húsið | prófílborðinn (`h`), annars 468 `[data-bs="buk"]` `data-html` `.ssp-lina` |
+| Á staðnum | teikningar = fjöldi `._bupp-teikn`. Búnaðargr. = 477 `[data-bgm="undir"]`. Séruppdr. = summa `fjoldi` í `._serupp[data-sig]`. Notkun = 450 `.ssp-plata[title="Notkunarflokkur"]` |
+| Stór mynd (2 raðir) + Búnaðargreining + **Teikningar** (rauður) | Teikningar kemur í stað Hreyfinga. Hreyfingaryfirlit er í ⋯ (`._hy-takki`) |
+| Athugasemd | 2 línur undir dálkunum þremur, inni í glugganum. „Allir reitir“ opnar gamla borðann |
+
+Prófað staðbundið 19.11.2026 (skrif hleruð) á 192, 443, 117 og 186. Tölurnar stemma við gamla prófílinn (38 tæki 31/5/2, úttekt 189.054, 2025 565.754 = 114.452 + 451.302, skjöl 13/18). Engar JS-villur komu upp og allir takkar eru til. Á síma (375 px) er engin lárétt skrun og kassarnir raðast í tvo dálka. Án `?prof=2` er prófíllinn óbreyttur.
