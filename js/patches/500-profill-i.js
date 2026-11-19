@@ -116,6 +116,8 @@
     '#companies-main .p2-skod[data-s="am"]{background:linear-gradient(150deg,#5a3f08,#9a6a14)}' +
     '#companies-main .p2-skod[data-s="rd"]{background:linear-gradient(150deg,#5b1010,#a01818)}' +
     '#companies-main .p2-skod b{font:800 18px/1 ' + SERIF + ';display:block}' +
+    /* hvítur texti á lituðu merki, líka þegar annað þema litar <b>/<small> (Agnar 19.11: „texti sést ekki") */
+    G + ' .p2-skod b,' + G + ' .p2-merkid b{color:#fff!important}' + G + ' .p2-skod small,' + G + ' .p2-merkid small,' + G + ' .p2-merkid .t{color:#e6e9ee!important}' +
     '#companies-main .p2-skod small{font:11.5px ' + MONO + ';color:#d9dee6;margin-top:2px;display:block}' +
     '#companies-main .p2-glugg{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.1fr) 520px;grid-template-rows:auto auto;gap:0;padding:14px 0 0;background:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0,#dce1e8);border-radius:0 0 14px 14px;color:#11141c;box-shadow:0 22px 40px -22px rgba(0,0,0,.75),0 0 0 1px rgba(20,24,34,.35)}' +
     '#companies-main .p2-dalk{padding:0 18px;border-right:1px solid #c3cad5;min-width:0}' +
@@ -150,6 +152,8 @@
     '#companies-main .p2-kp.ramm-g{box-shadow:0 0 0 2px #16783f,0 10px 22px -14px rgba(0,0,0,.55)}' +
     '#companies-main .p2-kp.ramm-a{box-shadow:0 0 0 2px #c48a1f,0 10px 22px -14px rgba(0,0,0,.55)}' +
     '#companies-main .p2-kp .cap{height:5px}' +
+    '#companies-main .p2-kp:has(.man) .lb{padding-right:48px}' +
+    '#companies-main .p2-kp .man{position:absolute;top:14px;right:12px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#3a4250,#141822);border-radius:5px;padding:3px 8px}' +
     '#companies-main .p2-kp .cap.g{background:linear-gradient(90deg,#0a4a26,#22c06a,#0a4a26)}' +
     '#companies-main .p2-kp .cap.y{background:linear-gradient(90deg,#9a6a14,#f2c35a,#9a6a14)}' +
     '#companies-main .p2-kp .cap.r{background:linear-gradient(90deg,#6b0b0b,#f0584c,#6b0b0b)}' +
@@ -447,6 +451,15 @@
     var yfir = b.dagar != null && b.dagar > 0;
     return '<div class="p2-merkid' + (yfir ? ' rd' : '') + '"><div><div class="t">BRUNAKERFI</div><b>' + (yfir ? (new Date().getFullYear()) + ' óskoðað' : 'Í lagi') + '</b>' + (b.sidast ? '<small>síðast ' + esc(b.sidast) + '</small>' : '') + '</div></div>';
   }
+  /* brunakerfismánuður: platan „🔥 BRUNAKERFI SEP" á skjalaspjaldinu (470), annars mánuður síðustu skoðunar */
+  var MAN_STUTT = ['Jan', 'Feb', 'Mar', 'Apr', 'Maí', 'Jún', 'Júl', 'Ágú', 'Sep', 'Okt', 'Nóv', 'Des'];
+  function bkMan(b) {
+    var m = document.getElementById('companies-main');
+    var pl = m && m.querySelector('._dyg-section .sk-month-pill.b470-bk');
+    var t = pl ? (pl.textContent || '').replace(/[^A-Za-zÁÉÍÓÚÝÞÆÖÐáéíóúýþæöð ]/g, '').replace(/brunakerfi/i, '').trim() : '';
+    if (t) return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+    var x = b && /\d{2}\/(\d{2})\/\d{4}/.exec(b.sidast || ''); return x ? MAN_STUTT[+x[1] - 1] : '';
+  }
   function kr(n) { return tugir(n) + ' kr'; }
 
   function kpi(d) {
@@ -467,12 +480,12 @@
     k.push('<div class="p2-kp"><div class="cap ' + (slong || reyk ? 'g' : 'y') + '"></div><div class="in"><span class="lb">Slöngur / reyk</span>' + sr + '</div></div>');
     var b = bkStada(d);
     if (b) { var yf = b.dagar != null && b.dagar > 0;
-      k.push('<div class="p2-kp"><div class="cap ' + (yf ? 'r' : 'g') + '"></div><div class="in"><span class="lb">Brunakerfi</span>' +
+      k.push('<div class="p2-kp"><div class="cap ' + (yf ? 'r' : 'g') + '"></div><div class="in"><span class="lb">Brunakerfi</span>' + (bkMan(b) ? '<span class="man" title="Skoðunarmánuður brunakerfis">' + esc(bkMan(b)) + '</span>' : '') +
         (yf ? '<div><span class="big" style="color:#a01818">+' + b.dagar + '</span> <span class="bigl">dagar yfir</span></div>' : '<div><span class="big" style="font-size:24px">Í lagi</span></div>') +
         '<span class="sm">' + esc(b.kerfi) + (b.sidast ? ' · síðast <b class="p2-n">' + esc(b.sidast) + '</b>' : '') + '</span>' +
         '<span class="p2-pl ' + (yf ? 'rd' : '') + '">' + (yf ? new Date().getFullYear() + ' óskoðað' : 'skoðað á tíma') + '</span></div></div>'); }
     var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
-    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><span class="lb">Síðasta úttekt</span><div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
+    if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><span class="lb">Síðasta úttekt</span>' + (d.skodMan ? '<span class="man" title="Skoðunarmánuður: ' + esc(d.skodMan) + '">' + esc(d.skodMan.slice(0, 3)) + '</span>' : '') + '<div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
       '<span class="sm p2-n">' + esc(su.nr) + (su.dags ? ' · ' + esc(su.dags) : '') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
     var ar = new Date().getFullYear() - 1, slt = 0, bkr = 0;
     d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y || +y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });

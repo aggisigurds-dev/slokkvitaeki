@@ -1631,7 +1631,13 @@
     // 30.09.2026 — orðalag líðandi árs þegar EKKERT skjal er komið. Sjá lengri
     // skýringu við stöðumerkið að neðan: „Í vinnslu" var notað um tómið sjálft.
     // Hér er sama regla: „Í vinnslu" aðeins þegar úttektin er skráð gerð.
-    function _repHafid(y){ var s=fcStatus(coId,y); return s==='claude'||s==='gap'; }
+    /* 19.11.2026 (Agnar): „ætti bara að koma í vinnslu þarna ef fyrirtækið er merkt í vinnslu í eitthvað af
+       þjónustunum“. Áður kviknaði „⏳ Í vinnslu“ af staðreyndayfirferðinni (fcStatus claude/gap), sem á við flest
+       félög. Nú gildir EINA reglan um í vinnslu (476 IVinnslu.er), sú sama og í Ársskoðun og á Þjónustuverkstæðinu.
+       Sé 476 ekki hlaðinn: gamla reglan. */
+    function _repHafid(y){
+      if (window.IVinnslu && typeof IVinnslu.er === 'function') { try { return !!IVinnslu.er(coId); } catch(_){} }
+      var s=fcStatus(coId,y); return s==='claude'||s==='gap'; }
     function _repMerki(y){ return _repHafid(y) ? '⏳ Í vinnslu' : 'engin skýrsla enn'; }
     function _repTitill(y){ return _repHafid(y)
       ? 'Úttekt skráð gerð — skýrsla ársins á eftir að berast'
