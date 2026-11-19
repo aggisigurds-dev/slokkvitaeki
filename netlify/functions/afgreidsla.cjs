@@ -796,8 +796,9 @@ exports.handler = async (event) => {
         lesa('afgreidsla?select=*&stada=eq.tilbuid&gogn->>flokkur=eq.bokun&order=forgangur.asc,created_at.asc&limit=60'),
         lesa('afgreidsla?select=*&stada=neq.tilbuid&order=updated_at.desc&limit=40'),
       ]);
-      // 19.11.2026: hamurinn „Bókanir“ — bókunarliðir (gogn.flokkur = 'bokun') fremst í svarinu, hinir á eftir; viðmótið skilur þá að.
-      const tilb = bokanir.concat(onnur);
+      // 19.11.2026: hamurinn „Bókanir“ — bókunarliðir (gogn.flokkur = 'bokun') AFTAST í svarinu, hin verkin fremst í sömu röð og
+      // áður; viðmótið skilur þá að. (Aftast, svo sá sem les listann ósíaðan fái venjulegu verkin fyrst — rýni 19.11.)
+      const tilb = onnur.concat(bokanir);
       const tilbuin = [];
       const visir = await vipVisir().catch(() => null);   // VIP-merkið bregst → verkin koma samt, án merkis
       // 18.11.2026: liðirnir voru unnir EINN Í EINU (50 liðir × athuganir og tilvísanir = 13 s; Agnar: „Afgreiðslan virkar

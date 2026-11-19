@@ -76,5 +76,46 @@ test('þjónninn: bókanir sóttar sér með eigið þak; aðeins gildið „bok
   assert.match(t, /stada=eq\.tilbuid&or=\(gogn->>flokkur\.is\.null,gogn->>flokkur\.neq\.bokun\)&order=forgangur\.asc,created_at\.asc&limit=50/, 'önnur verk: sama 50-þak og áður, án bókana');
   assert.match(t, /stada=eq\.tilbuid&gogn->>flokkur=eq\.bokun&order=forgangur\.asc,created_at\.asc&limit=60/, 'bókanir: eigin fyrirspurn');
   assert.match(t, /flokkur: g\.flokkur === 'bokun' \? 'bokun' : null/, 'ekkert annað gildi úr gogn verður flokkur í viðmótinu');
-  assert.match(t, /const tilb = bokanir\.concat\(onnur\);/);
+  assert.match(t, /const tilb = onnur\.concat\(bokanir\);/, 'venjulegu verkin fremst: sá sem les listann ósíaðan fær þau fyrst');
+});
+
+// Rýni 19.11.2026: tengill á tiltekið verk (Einkaritarinn 506 „Afgreiða ›“, /afgreidsla.html?v=<id>) setti flokkinn alltaf á
+// „Allt“. Bókun er ekki þar, svo borðið sýndi ekkert og sér síðan valdi ANNAÐ verk með rauða takkanum.
+test('tengill á bókun opnar flokkinn „Bókanir“ — aldrei annað verk', () => {
+  const heimur = { setTimeout, clearTimeout, console, fetch: () => Promise.reject(new Error('ekkert net í prófi')) };
+  let teiknad = 0;
+  heimur.Bord368 = { opnaEiningu: (k) => k === 'tilbuin', render: () => { teiknad++; }, root: () => null, toast: () => {} };
+  vm.runInNewContext(lesa('js/patches/511-bord-afgreidsla.js'), heimur);
+  const B = heimur.BordAfgreidsla;
+  B.S.tilbuin = GOGN.slice(); B.S.at = Date.now(); B.S.loading = null;
+  assert.equal(B.opna(1), true); assert.equal(B.S.flokkur, 'bokun'); assert.equal(B.S.opid, 1);
+  assert.ok(/Prufufélag\s*1/.test(B.listi().replace(/<[^>]+>/g, ' ')), 'bókunin sem beðið var um er í listanum');
+  assert.equal(B.opna(3), true); assert.equal(B.S.flokkur, 'allt', 'venjulegt verk opnast áfram í „Allt“'); assert.equal(B.S.opid, 3);
+  B.S.flokkur = 'bokun';
+  assert.equal(B.opna(999), true); assert.equal(B.S.flokkur, 'allt', 'verk sem er farið úr röðinni: „Allt“, ekkert opnað');
+  assert.ok(teiknad >= 3);
+
+  // /afgreidsla.html?v=<id>: sama regla, í frumkóða síðunnar (hún keyrir ekki utan vafra)
+  const html = lesa('afgreidsla.html');
+  assert.match(html, /if \(qv\) \{ S\.val = qv; if \(erBokun\(S\.tilbuin\.filter\(function \(x\) \{ return x\.id === qv; \}\)\[0\]\)\) S\.flokkur = 'bokun'; \}/);
+  assert.match(html, /if \(qf && FLOKKAR\.indexOf\(qf\) > -1\) S\.flokkur = qf;/, '?f=bokun opnar flokkinn (tengillinn á Aðalmálum)');
+});
+
+test('símasíðan (515) og Aðalmál (492): bókanir taldar sér og fara ekki í lista hinna verkanna', () => {
+  const w = { setTimeout, clearTimeout, console, fetch: () => Promise.reject(new Error('ekkert net í prófi')) };
+  w.window = w;
+  vm.runInNewContext(lesa('js/patches/511-bord-afgreidsla.js'), w);
+  vm.runInNewContext(lesa('js/patches/515-tilbuin-simi.js'), w);
+  const A = w.BordAfgreidsla, T = w.TilbuinSimi;
+  const texti = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  A.S.tilbuin = GOGN.slice(); A.S.at = 0; A.S.loading = null;
+  assert.match(texti(T._haus(A)), /4 tilbúin · 2 bókanir/, 'hausinn sýnir sömu tölu og „Allt“');
+  A.S.tilbuin = [lidur(9, 'simtal', 'bokun')];
+  assert.match(texti(T._haus(A)), /0 tilbúin · 1 bókun/, 'aðeins bókun eftir: ekki „Allt afgreitt“');
+  A.S.tilbuin = [];
+  assert.match(texti(T._haus(A)), /Allt afgreitt/);
+
+  const a492 = lesa('js/patches/492-adalmal.js');
+  assert.match(a492, /S\.af\.tilbuin = allt\.filter\(v => v\.flokkur !== 'bokun'\); S\.af\.bokanir = allt\.length - S\.af\.tilbuin\.length;/);
+  assert.match(a492, /href="\/afgreidsla\.html\?f=bokun"/);
 });

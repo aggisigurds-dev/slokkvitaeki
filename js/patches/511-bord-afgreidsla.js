@@ -804,6 +804,8 @@
     S.flokkur = 'allt'; afvopna(); S.skilabod = null;
     var syna = function () {
       if (id && S.tilbuin && !finna(id)) { toast('Verkið er ekki lengur í röðinni.', true); id = null; }
+      // 19.11.2026 (rýni): bókun býr í flokknum „Bókanir“, ekki í „Allt“ — án þessa opnaðist einingin en röðin var ekki í listanum.
+      S.flokkur = id && erBokun(finna(id)) ? 'bokun' : 'allt';
       if (id) S.opid = id;
       notify();
       setTimeout(function () {
