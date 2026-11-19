@@ -132,3 +132,11 @@ Hönnunin er á Design-strigaborðinu „Fyrirtækjaprófíll J“, artboard `Hu
 | Athugasemd | 2 línur undir dálkunum þremur, inni í glugganum. „Allir reitir“ opnar gamla borðann |
 
 Prófað staðbundið 19.11.2026 (skrif hleruð) á 192, 443, 117 og 186. Tölurnar stemma við gamla prófílinn (38 tæki 31/5/2, úttekt 189.054, 2025 565.754 = 114.452 + 451.302, skjöl 13/18). Engar JS-villur komu upp og allir takkar eru til. Á síma (375 px) er engin lárétt skrun og kassarnir raðast í tvo dálka. Án `?prof=2` er prófíllinn óbreyttur.
+
+## 9. Sjálfgefið fyrir alla (19.11.2026)
+
+Agnar sagði 19.11.2026: „keyra þessa breytingu á allt“ … „allir sem eru skráðir inn sem viðskiptavinur“.
+- `erKveikt()` er nú satt nema slóðin beri `?prof=1`. ⋯ → „Skipta yfir í gamla útlitið“ setur `?prof=1`, og það helst á meðan flett er í appinu. Ekkert er geymt í vafranum.
+- Brunakerfi (147) og Ársskoðun (153) opna `_openCompanySafe` og fá því nýja prófílinn sjálfkrafa.
+- Allir viðskiptavinir, gagnagæðaborðinn og leiðsögnin (157/159/161) kölluðu á `VidskDetail.show` (viðskiptavinasíðuna, 158). Patch 500 beinir því falli á `_openCompanySafe`. Upprunalega fallið er geymt og opnast úr ⋯ → „Viðskiptavinasíða (eldri)“, því þar eru áskriftartakkarnir (Fyrirtækjaþjónusta/Brunakerfi). Engu var eytt.
+- Prófað staðbundið á 11 handahófskenndum félögum, þar af 2 utan þjónustu: engar JS-villur, allir 7 flipar og lárétt skrun 0. Líka prófað: Allir viðskiptavinir → röð → „Opna kúnna-síðu“ → nýi prófíllinn → ⋯ → eldri síða.

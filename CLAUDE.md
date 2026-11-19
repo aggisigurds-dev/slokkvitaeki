@@ -263,7 +263,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Viðskiptavini, kennitölur, DB-skema, sameiningu, kerfis-kort, póst-merki | `kunnaskra` |
 | **Spurt um eitt félag** („hvað vitum við um X", staða, heimilisfang, tæki, skýrsla) — lesa FYRST `fyrirtaeki.review_note`: línan „Sannreynt <dags> (<keyrsla>): …" ber úrskurð yfirferðarinnar (168 raðir „Eftir 2026", 11.11.2026). Ekki mæla aftur nema Agnar biðji eða ný skýrsla/reikningur hafi bæst við | `docs/FACTCHECK-EFTIR-2026.md` + skill `sannreyna-fyrirtaeki` |
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
-| **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn `?prof=2` (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
+| **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn, sjálfgefinn síðan 19.11.2026; `?prof=1` = gamli (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
 | AI-aðstoðarmanninn (Customer brief, watchlist, Aðstoðarmiðstöð) | `adstod` |
 | Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun — hönnuðurinn 🃏 | `joker` |

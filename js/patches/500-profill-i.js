@@ -22,13 +22,31 @@
   if (window.__profill500) return;
   window.__profill500 = true;
 
-  /* ---------- rofi: ?prof=2 í slóðinni (engin vafra-geymsla; slóðin heldur honum meðan flett er í appinu) ---------- */
+  /* ---------- rofi: SJÁLFGEFIÐ á fyrir alla síðan 19.11.2026 (Agnar: „keyra þessa breytingu á allt“); ?prof=1 sýnir gamla útlitið. Áður: ?prof=2 í slóðinni (engin vafra-geymsla; slóðin heldur honum meðan flett er í appinu) ---------- */
   function erKveikt() {
-    try { return new URLSearchParams(location.search).get('prof') === '2'; } catch (e) { return false; }
+    try { return new URLSearchParams(location.search).get('prof') !== '1'; } catch (e) { return false; }
   }
   var KVEIKT = erKveikt();
   window.Prof2 = { kveikt: function () { return KVEIKT; } };
   if (!KVEIKT) return;
+
+  /* Allir viðskiptavinir o.fl. opnuðu viðskiptavinasíðuna (158). Agnar 19.11.2026: „allir sem eru skráðir inn sem
+     viðskiptavinur“ fá sama prófíl → VidskDetail.show beinist á fyrirtækjaprófílinn. Upprunalega fallið lifir í ⋯
+     („Viðskiptavinasíða (eldri)“) því þar eru áskriftartakkarnir. Engu eytt. */
+  var GAMLA_KUNNASIDA = null;
+  function beinaKunnasidu() {
+    var V = window.VidskDetail;
+    if (!V || typeof V.show !== 'function' || V.show.__p2) return !!(V && V.show && V.show.__p2);
+    GAMLA_KUNNASIDA = V.show;
+    var nytt = function (coId) {
+      if (coId && typeof window._openCompanySafe === 'function') return window._openCompanySafe(coId);
+      return GAMLA_KUNNASIDA.apply(this, arguments);
+    };
+    nytt.__p2 = true;
+    V.show = nytt;
+    return true;
+  }
+  if (!beinaKunnasidu()) { var _bk = 0, _bt = setInterval(function () { if (beinaKunnasidu() || ++_bk > 60) clearInterval(_bt); }, 500); }
 
   var F = ':not(#_p2a):not(#_p2b):not(#_p2c)';
   var M = 'html body #companies-main.p2' + F;
@@ -660,12 +678,14 @@
       ['Hreyfingaryfirlit', '._hy-takki'],
       ['Póstafrit', '.sk-mailpref'],
       ['Eyða', '._co-delete'],
+      ['Viðskiptavinasíða (eldri)', '#companies-main'],
       ['Gamla útlitið', '#companies-main']
     ];
     var v = document.createElement('div'); v.className = 'p2-valm'; v.setAttribute('role', 'menu');
     var html = '';
     atridi.forEach(function (a, i) {
       if (a[0] === 'Gamla útlitið') { html += '<hr><button type="button" role="menuitem" data-i="' + i + '">Skipta yfir í gamla útlitið</button>'; return; }
+      if (a[0] === 'Viðskiptavinasíða (eldri)') { if (GAMLA_KUNNASIDA && window._currentCompanyId) html += '<button type="button" role="menuitem" data-i="' + i + '">Viðskiptavinasíða (eldri)</button>'; return; }
       var el = sel(m, a[1]); if (!el) return;
       var t = txt(el).replace(/^[^\wÁ-ÿ]+/, '') || a[0];
       if (i === 0) t = 'Þjónustusamningur';
@@ -684,7 +704,8 @@
     v.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-i]'); if (!b) return;
       var a = atridi[+b.getAttribute('data-i')]; loka();
-      if (a[0] === 'Gamla útlitið') { var u = new URL(location.href); u.searchParams.delete('prof'); location.href = u.toString(); return; }
+      if (a[0] === 'Gamla útlitið') { var u = new URL(location.href); u.searchParams.set('prof', '1'); location.href = u.toString(); return; }
+      if (a[0] === 'Viðskiptavinasíða (eldri)') { if (GAMLA_KUNNASIDA) GAMLA_KUNNASIDA(window._currentCompanyId); return; }
       var el = sel(m, a[1]); if (el) el.click();
     });
     var fyrsti = v.querySelector('button'); if (fyrsti) fyrsti.focus();
