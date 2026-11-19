@@ -24,22 +24,21 @@ const { execFileSync } = require('child_process');
 
 const rot = path.join(__dirname, '..');
 
-// Stakar skriftur í framleiðslu — sjá hausinn.
-const STAKAR = [
-  'js/villuvakt.js',
-  'js/features.js',
-  'js/scanner.js',
-  'js/demoseed.js',
-  'js/patches/309-problem-registry.js',
-  'js/patches/145-companies-diagnose.js',
-  'js/patches/365-vistun-utskolun.js',
-  'js/patches/369-krofu-vinnugluggi.js',
-  // 30.09.2026: þessar tvær eru birtar STAKAR (grep á dist/index.html) en vantaði hér.
-  'js/patches/24-contact-log.js',
-  'js/patches/306-thjonustu-mob.js',
-];
-
 const html = fs.readFileSync(path.join(rot, 'index.html'), 'utf8');
+
+/* Listinn er LESINN ÚR index.html, ekki skrifaður hér (19.11.2026).
+ *
+ * VILLAN SEM ÞETTA LAGAR: handskrifaði listinn taldi ellefu skrár, en index.html birtir yfir hundrað
+ * STAKAR skriftur með ?v-merki — þar á meðal Þjónustuborðið sjálft (368). Þegar borðinu var breytt
+ * 19.11.2026 og það birt stóð merkið áfram `?v=20261118b`, svo vafrinn sótti gærdagsins skrá. Kóðinn
+ * var réttur, birtingin tókst, vörðurinn var grænn — og Agnar sá enga breytingu. Nákvæmlega sú villa
+ * sem þessi vörður var skrifaður gegn, en listinn náði ekki yfir skrána.
+ *
+ * Nú er hver skrifta sem index.html hleður stök (ekki `_bundle`) mæld, svo listinn getur ekki orðið
+ * úreltur aftur. `build-dist.js` bunkar samliggjandi skriftur í `_bundle-N.<hash>.js` og þær bera
+ * sitt eigið efnishass — þær eiga ekkert erindi hingað. */
+const STAKAR = [...new Set([...html.matchAll(/src="\/(js\/[^"?]+\.js)\?v=/g)].map((m) => m[1]))]
+  .filter((s) => !/_bundle/.test(s));
 
 function merkiFyrir(skra) {
   const re = new RegExp('src="/' + skra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\?v=([^"]+)"');
@@ -65,8 +64,14 @@ function merkiDags(merki) {
   return null;
 }
 
-const gomul = [], vantar = [], oskilj = [];
+const gomul = [], vantar = [], oskilj = [], skuld = [];
 let skodad = 0;
+/* 19.11.2026 — vörðurinn FELLIR á því sem var breytt síðustu þrjár vikur, en TELUR aðeins eldri skuldina.
+ * Ástæðan: þegar listinn var lesinn úr index.html (sjá hausinn) komu í ljós tugir skráa frá vorinu með úrelt
+ * merki. Þær eru raunverulegt vandamál en ekki NÝTT vandamál, og rauður vörður á hverri ýtingu sendir póst á
+ * Agnar og þaggar sjálfan sig. Þriggja vikna glugginn grípur nákvæmlega þá villu sem þetta snýst um: skrá sem
+ * var breytt í þessari viku og birt án þess að merkið fylgdi, svo vafrinn heldur gömlu útgáfunni. */
+const MORK = new Date(Date.now() - 21 * 864e5).toISOString().slice(0, 10);
 
 for (const skra of STAKAR) {
   if (!fs.existsSync(path.join(rot, skra))) continue;
@@ -80,7 +85,7 @@ for (const skra of STAKAR) {
     process.exit(0);
   }
   skodad++;
-  if (breytt > dags) gomul.push(`${skra}  ?v=${merki} (${dags}) en síðast breytt ${breytt}`);
+  if (breytt > dags) (breytt >= MORK ? gomul : skuld).push(`${skra}  ?v=${merki} (${dags}) en síðast breytt ${breytt}`);
 }
 
 // 18.09.2026 — GRUNNUR KLÓN GERIR ÞENNAN VÖRÐ BLINDAN.
@@ -109,6 +114,7 @@ if (gomul.length || vantar.length) {
   process.exit(1);
 }
 
-console.log(`✅ Útgáfumerki í lagi — ${skodad} stakar skriftur bera merki sem er jafn nýtt og efnið` +
+console.log(`✅ Útgáfumerki í lagi — ${skodad} stakar skriftur, engin breytt síðustu 3 vikur með úrelt merki` +
+  (skuld.length ? `. ⚠ ELDRI SKULD: ${skuld.length} skrár bera merki sem er eldra en efnið (breytt fyrir ${MORK}); þær eru ekki felldar hér` : '') +
   (oskilj.length ? ` (${oskilj.length} án læsilegrar dagsetningar: ${oskilj.join(', ')})` : '') + '.');
 process.exit(0);
