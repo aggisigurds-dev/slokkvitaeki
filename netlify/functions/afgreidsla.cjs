@@ -218,7 +218,9 @@ async function athuga(row, { lesaNu = false } = {}) {
     for (const x of s.a) a.push(x);
     if (s.urelt) urelt = s.urelt;
   }
-  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa' && row.tegund !== 'sameina') {
+  // Sérflokkarnir (Dagsverk, Bókanir) eru handvaldir af Agnari, ekki raðað eftir virði — þröskuldurinn á ekki við þá
+  // (rýni 19.11.2026: dagsverk með lága upphæð fékk óvirkan takka og 409 við framkvæmd).
+  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa' && row.tegund !== 'sameina' && !SERFLOKKAR.includes((row.gogn || {}).flokkur)) {
     a.push({ texti: 'Undir þröskuldi (' + THROSKULDUR_KR.toLocaleString('is-IS') + ' kr) — ekki þess virði', ok: false });
   }
   return { athuganir: a, ok: !urelt && a.every((x) => x.ok), urelt };
@@ -340,6 +342,7 @@ async function iHopum(listi, n, fn) {
 // Sérflokkar (19.11.2026): liðir með gogn.flokkur úr þessum lista eiga eigin ham í viðmótinu (511/515/afgreidsla.html) og eru
 // sóttir sér. Ekkert annað gildi úr gogn (sem agentar skrifa) verður flokkur.
 const SERFLOKKAR = ['dagsverk', 'bokun'];
+const SER_THAK = 60;   // þak á HVERN sérflokk fyrir sig
 
 async function synilegt(row, visir, V) {
   const ath = await athuga(row);
@@ -795,20 +798,21 @@ exports.handler = async (event) => {
       try { return await merkingarSvar(await notandi(event), null, qs0.bord); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
     }
     try {
-      const [onnur, ser, saga] = await Promise.all([
+      const [onnur, serRadir, saga] = await Promise.all([
         lesa('afgreidsla?select=*&stada=eq.tilbuid&or=(gogn->>flokkur.is.null,gogn->>flokkur.not.in.(' + SERFLOKKAR.join(',') + '))&order=forgangur.asc,created_at.asc&limit=50'),
-        lesa('afgreidsla?select=*&stada=eq.tilbuid&gogn->>flokkur=in.(' + SERFLOKKAR.join(',') + ')&order=forgangur.asc,created_at.asc&limit=100'),
+        // Hver sérflokkur hefur SITT þak (rýni 19.11.2026): deildu þeir einu þaki gátu bókanir ýtt nýjum dagsverkum út þegjandi.
+        Promise.all(SERFLOKKAR.map((f) => lesa('afgreidsla?select=*&stada=eq.tilbuid&gogn->>flokkur=eq.' + f + '&order=forgangur.asc,created_at.asc&limit=' + SER_THAK))),
         lesa('afgreidsla?select=*&stada=neq.tilbuid&order=updated_at.desc&limit=40'),
       ]);
       // 19.11.2026: sérflokkarnir (Dagsverk, Bókanir) AFTAST í svarinu, hin verkin fremst í sömu röð og áður; viðmótið
       // skilur þá að. (Aftast, svo sá sem les listann ósíaðan fái venjulegu verkin fyrst — rýni 19.11.)
-      const tilb = onnur.concat(ser);
+      const tilb = onnur.concat([].concat(...serRadir));
       const tilbuin = [];
       const visir = await vipVisir().catch(() => null);   // VIP-merkið bregst → verkin koma samt, án merkis
       // 18.11.2026: liðirnir voru unnir EINN Í EINU (50 liðir × athuganir og tilvísanir = 13 s; Agnar: „Afgreiðslan virkar
       // ekki“). Nú átta samhliða, í sömu röð, og dyr allra liða eru sóttar í einni umferð.
       const V = await DYR.saekja(tilb, lesa).catch(() => null);
-      const syn = await iHopum(tilb, 16, (r) => synilegt(r, visir, V));   // 16 samhliða: allt að 150 liðir (50 + 100 í sérflokkum)
+      const syn = await iHopum(tilb, 16, (r) => synilegt(r, visir, V));   // 16 samhliða: allt að 170 liðir (50 + 60 á hvorn sérflokk)
       for (let k = 0; k < tilb.length; k++) {
         const r = tilb[k], s = syn[k];
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }

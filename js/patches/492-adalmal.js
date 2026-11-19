@@ -618,7 +618,9 @@
     if (S.af.leyfi !== true) return S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
     const t = S.af.tilbuin;
     let x = S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
-    if (!t.length && !S.afSkilabod) return x;
+    // Rýni 19.11.2026: hausinn ber tenglana í sérflokkana, svo hann má ekki hverfa þótt ENGIN venjuleg verk bíði —
+    // annars sást „Dagsverk 5 ›“ hvergi þegar allt annað var afgreitt.
+    if (!t.length && !S.afSkilabod && !S.af.dagsverk && !S.af.bokanir) return x;
     x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span>' +
       (S.af.dagsverk ? '<a href="/afgreidsla.html?f=dagsverk" title="Verk dagsins — eigin flokkur í Afgreiðslunni">Dagsverk ' + S.af.dagsverk + ' ›</a>' : '') +
       (S.af.bokanir ? '<a href="/afgreidsla.html?f=bokun" title="Bókunarpóstar og bókunarsímtöl — eigin flokkur í Afgreiðslunni">Bókanir ' + S.af.bokanir + ' ›</a>' : '') +

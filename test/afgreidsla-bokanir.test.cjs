@@ -95,9 +95,13 @@ test('þjónninn: sérflokkar sóttir sér með eigið þak; aðeins þekkt gild
   const t = lesa('netlify/functions/afgreidsla.cjs');
   assert.match(t, /const SERFLOKKAR = \['dagsverk', 'bokun'\];/);
   assert.match(t, /stada=eq\.tilbuid&or=\(gogn->>flokkur\.is\.null,gogn->>flokkur\.not\.in\.\(' \+ SERFLOKKAR\.join\(','\) \+ '\)\)&order=forgangur\.asc,created_at\.asc&limit=50'/, 'önnur verk: sama 50-þak og áður, án sérflokka');
-  assert.match(t, /stada=eq\.tilbuid&gogn->>flokkur=in\.\(' \+ SERFLOKKAR\.join\(','\) \+ '\)&order=forgangur\.asc,created_at\.asc&limit=100'/, 'sérflokkar: eigin fyrirspurn');
+  // Hver sérflokkur fær SITT þak — annars gátu bókanir ýtt nýjum dagsverkum út þegjandi (rýni 19.11.2026).
+  assert.match(t, /SERFLOKKAR\.map\(\(f\) => lesa\('afgreidsla\?select=\*&stada=eq\.tilbuid&gogn->>flokkur=eq\.' \+ f \+ '&order=forgangur\.asc,created_at\.asc&limit=' \+ SER_THAK\)\)/, 'ein fyrirspurn á hvern sérflokk');
+  assert.match(t, /const SER_THAK = 60;/);
   assert.match(t, /flokkur: SERFLOKKAR\.includes\(g\.flokkur\) \? g\.flokkur : null/, 'ekkert annað gildi úr gogn verður flokkur í viðmótinu');
-  assert.match(t, /const tilb = onnur\.concat\(ser\);/, 'venjulegu verkin fremst: sá sem les listann ósíaðan fær þau fyrst');
+  assert.match(t, /const tilb = onnur\.concat\(\[\]\.concat\(\.\.\.serRadir\)\);/, 'venjulegu verkin fremst: sá sem les listann ósíaðan fær þau fyrst');
+  // Þröskuldurinn (virdi_kr undir mörkum = „ekki þess virði") á ekki við handvalda sérflokka — hann gerði takkann óvirkan.
+  assert.match(t, /row\.tegund !== 'sameina' && !SERFLOKKAR\.includes\(\(row\.gogn \|\| \{\}\)\.flokkur\)\) \{/);
 });
 
 // Rýni 19.11.2026: tengill á tiltekið verk (Einkaritarinn 506 „Afgreiða ›“, /afgreidsla.html?v=<id>) setti flokkinn alltaf á
@@ -144,4 +148,6 @@ test('símasíðan (515) og Aðalmál (492): sérflokkar taldir sér og fara ekk
   const a492 = lesa('js/patches/492-adalmal.js');
   assert.match(a492, /S\.af\.tilbuin = allt\.filter\(v => v\.flokkur !== 'bokun' && v\.flokkur !== 'dagsverk'\); S\.af\.bokanir = telja\('bokun'\); S\.af\.dagsverk = telja\('dagsverk'\);/);
   assert.match(a492, /href="\/afgreidsla\.html\?f=bokun"/); assert.match(a492, /href="\/afgreidsla\.html\?f=dagsverk"/);
+  // Hausinn ber tenglana, svo hann má ekki hverfa þegar engin VENJULEG verk bíða (rýni 19.11.2026).
+  assert.match(a492, /if \(!t\.length && !S\.afSkilabod && !S\.af\.dagsverk && !S\.af\.bokanir\) return x;/);
 });
