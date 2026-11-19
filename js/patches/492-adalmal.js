@@ -382,6 +382,12 @@
       V + ' .ad-rmerki._aaet{background:#eaf0fb;border-color:#a8bedf;color:#1d3b63}',
       V + ' .ad-rmerki._ath{background:#f1f3f6;border-color:#c5ccd6;color:#3a4250}',
       V + ' .ad-rok small{margin-top:3px}',
+      /* 18.11.2026 — snertifletir á síma. Mælt með tools/simasopur.cjs í 390 px: „Á borðið" var 19 px hár
+       * og hausar hlutanna 22 px. Fingur hittir ekki 19 px. Lágmarkið er 36 px í símaham; á tölvu stendur
+       * þéttari hæðin óbreytt, því þar er bendill. */
+      'html[data-viewmode="mobile"] ' + V + ' .ad-haus button{min-height:36px;padding:0 12px}',
+      'html[data-viewmode="mobile"] ' + V + ' .ad-hl>button.haus{min-height:38px}',
+      'html[data-viewmode="mobile"] ' + V + ' .ad-afr>button.haus{min-height:44px}',
       V + ' .ad-rok li::before{content:"";position:absolute;left:3px;top:11px;width:5px;height:5px;border-radius:50%;background:#3a4250}' + V + ' .ad-rok small{display:block;font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
