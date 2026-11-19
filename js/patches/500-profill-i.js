@@ -67,8 +67,8 @@
   var css =
     M + '{display:flex!important;flex-direction:column}' +
     G + ' > *{flex:none!important;min-height:0}' +
-    G + ' > #p2-haus,' + G + ' > #p2-kpi,' + G + ' > #p2-glugg,' + G + ' > #p2-samsk,' + G + ' > #p2-teikn,' + G + ' > #p2-adrar{overflow:visible!important}' +
-    G + ' > #p2-haus{order:1}' + G + ' > #p2-kpi{order:2}' + G + ' > #p2-glugg{order:3}' + G + ' > .co-banner{order:4}' +
+    G + ' > #p2-haus,' + G + ' > #p2-msimi,' + G + ' > #p2-kpi,' + G + ' > #p2-glugg,' + G + ' > #p2-samsk,' + G + ' > #p2-teikn,' + G + ' > #p2-adrar{overflow:visible!important}' +
+    G + ' > #p2-haus,' + G + ' > #p2-msimi{order:1}' + G + ' > #p2-kpi{order:2}' + G + ' > #p2-glugg{order:3}' + G + ' > .co-banner{order:4}' +
     G + ' > #p2-samsk,' + G + ' > ._samskipti-host{order:5}' + G + ' > #p2-flipar{order:6}' + G + ' > #p2-teikn{order:7}' + G + ' > #p2-adrar{order:8}' +
     G + ' > [data-p2t]:not(#p2-teikn):not(#p2-adrar){order:9}' + G + ' > *:not([id^="p2-"]):not(.co-banner):not(._samskipti-host):not([data-p2t]){order:10}' +
     G + ' > div:first-child{display:none!important}' +
@@ -114,6 +114,7 @@
     '#companies-main .p2-ck{width:16px;height:16px;border-radius:5px;background:linear-gradient(145deg,#06331a,#16783f);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;align-self:center;box-shadow:0 0 0 2px rgba(22,120,63,.18)}' +
     '#companies-main .p2-meira{border:0;background:none;color:#525b6b;font-weight:600;cursor:pointer;padding:0 2px;font-size:12.5px}' +
     '#companies-main .p2-gl-a{display:contents}' +
+    '#companies-main .p2-msimi{display:none}' +
     '#companies-main .p2-d1{grid-column:1;grid-row:1}#companies-main .p2-d2{grid-column:2;grid-row:1}#companies-main .p2-d3{grid-column:3;grid-row:1}' +
     '#companies-main .p2-mynd{grid-column:4;grid-row:1/span 2;display:flex;flex-direction:column;gap:10px;padding:0 14px 14px}' +
     '#companies-main .p2-mynd .ram{position:relative;flex:1;min-height:300px;border-radius:10px;background:#c3cad5 center/cover no-repeat;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 10px 20px -12px rgba(0,0,0,.6)}' +
@@ -246,7 +247,12 @@
     '#companies-main .p2-tbl .rad.hd{display:none}' +
     '#companies-main .p2-teikn .hl{flex-direction:column;gap:2px}' +
     '#companies-main ._afsl-box ._ahop-sel{max-width:100%;min-width:0;box-sizing:border-box}' +
-    '#companies-main .p2-til{min-height:44px}';
+    '#companies-main .p2-til{min-height:44px}' +
+    /* síminn: myndin efst, undir hausnum (Agnar 19.11.2026) */
+    '#companies-main .p2-msimi{display:block;padding:12px 12px 4px;background:linear-gradient(180deg,#e8ebf0,#d6dbe3);border-top:1px solid #000}' +
+    '#companies-main .p2-msimi .p2-mynd{padding:0}' +
+    '#companies-main .p2-msimi .p2-mynd .ram{min-height:220px}' +
+    '#companies-main .p2-glugg .p2-mynd{display:none}';
 
   function stilar() {
     if (document.getElementById('p2-css')) return;
@@ -550,12 +556,12 @@
     var banner = sel(m, '.co-banner');
     var h = document.getElementById('p2-haus');
     if (!h || h.parentNode !== m) {
-      ['p2-haus', 'p2-kpi', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
+      ['p2-haus', 'p2-msimi', 'p2-kpi', 'p2-glugg', 'p2-athug', 'p2-samsk', 'p2-flipar', 'p2-teikn', 'p2-adrar'].forEach(function (id) { var o = document.getElementById(id); if (o && o.parentNode) o.parentNode.removeChild(o); });
       h = document.createElement('div'); h.id = 'p2-haus'; h.className = 'p2-haus p2-nytt';
       var g = document.createElement('div'); g.id = 'p2-glugg'; g.className = 'p2-glugg p2-nytt';
       var kp = document.createElement('div'); kp.id = 'p2-kpi'; kp.className = 'p2-kpi p2-nytt';
       g.innerHTML = '<div class="p2-gl-a"></div>';
-      banner.insertAdjacentElement('beforebegin', h); h.insertAdjacentElement('afterend', kp); kp.insertAdjacentElement('afterend', g);
+      banner.insertAdjacentElement('beforebegin', h); var ms = document.createElement('div'); ms.id = 'p2-msimi'; ms.className = 'p2-msimi p2-nytt'; h.insertAdjacentElement('afterend', ms); ms.insertAdjacentElement('afterend', kp); kp.insertAdjacentElement('afterend', g);
       var at = document.createElement('div'); at.id = 'p2-athug'; at.className = 'p2-athug p2-nytt';
       at.innerHTML = '<span aria-hidden="true" style="margin-top:8px">✎</span><textarea rows="2" aria-label="Athugasemd" placeholder="Athugasemd… (vistast sjálfkrafa)"></textarea><button type="button" class="alt" data-p2="opna-gamalt">Allir reitir</button>';
       g.appendChild(at);
@@ -586,7 +592,7 @@
     KAFLAR.forEach(function (k) { var e = sel(m, k[0]); if (e && e.parentNode === m && e.getAttribute('data-p2t') !== k[1]) e.setAttribute('data-p2t', k[1]); });
     /* allt annað sem var beint barn og er enn sýnilegt í gamla prófílnum án flipa → Aðrar þjónustur (Nýr staður, Bæta við tæki …) */
     allt(m, ':scope > div').forEach(function (e) {
-      if (e.id === 'p2-haus' || e.id === 'p2-kpi' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn' || e.id === 'p2-adrar') return;
+      if (e.id === 'p2-haus' || e.id === 'p2-msimi' || e.id === 'p2-kpi' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn' || e.id === 'p2-adrar') return;
       if (e === m.firstElementChild || e.classList.contains('co-banner') || e.classList.contains('_samskipti-host') || e.hasAttribute('data-p2t')) return;
       if (e.classList.contains('info-grid') || e.id === 't485-top') return;
       if (/Nýr staður/.test(e.textContent)) e.setAttribute('data-p2t', 'adrar');
@@ -610,6 +616,7 @@
     var afturH = window.Stodugt && Stodugt.vernda ? Stodugt.vernda(h) : null;
     h.innerHTML = haus(d); if (afturH) afturH();
     var ga = g.querySelector('.p2-gl-a'); if (ga) ga.innerHTML = gluggi(d);
+    var ms = document.getElementById('p2-msimi'); var gm = ga && ga.querySelector('.p2-mynd'); if (ms && gm) ms.innerHTML = gm.outerHTML;
     var kp = document.getElementById('p2-kpi');
     if (kp) { var kk = kpi(d); kp.style.gridTemplateColumns = kk.map(function (x, i) { return i === 0 && /Slökkvitæki/.test(x) ? 'minmax(0,1.4fr)' : 'minmax(0,1fr)'; }).join(' '); kp.innerHTML = kk.join(''); }
     t.innerHTML = teikn(d);
