@@ -772,7 +772,10 @@
     if (sr && !iHam(sr, m)) delete S.sel[n];
   }
   const masterRows = () => hamRows().filter(r => isFree(r) && !onBoardOf(r, nu())).sort(rodun);
-  const mineRows = () => hamRows().filter(r => onBoardOf(r, nu())).sort(rodun);
+  // Fylgjandi (Agnar 19.11.2026, mál #1686: „láttu verða sýnilegt á báðum“): mál með merkinu `fylgjandi:<nafn>` birtist líka á
+  // borði þess nafns. Eigandinn (assigned_to) er óbreyttur; aðeins listinn „Mitt borð“ sýnir málið, engin réttindi breytast.
+  const fylgir = (r, n) => Array.isArray(r.tags) && r.tags.some(t => lagt(t) === 'fylgjandi:' + lagt(n));
+  const mineRows = () => hamRows().filter(r => onBoardOf(r, nu()) || fylgir(r, nu())).sort(rodun);
   const ageDays = r => { const t = tStamp(r.created_at); return t ? Math.max(0, Math.floor((Date.now() - t) / 864e5)) : 0; };
   const ageCls = a => (a >= 14 ? 'hot' : a <= 2 ? 'warm' : '');
   const whereOf = r => r.customer_nafn || S.names[r.customer_base_id] || '';
