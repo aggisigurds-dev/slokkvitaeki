@@ -114,6 +114,10 @@ test('efsta lag borðsins: „Í dag" er farinn, VIP og Merkja-og-keyra þegja �
 test('hamaröðin: brotnar um (ekkert klippt af) og ber alltaf breytitakka', () => {
   // `.seg` ber overflow:hidden; með umbroti flæðir ekkert út fyrir, svo hornin haldast rúnnuð og ekkert er klippt af.
   assert.match(T368, /'\.seg\.modeseg\{flex-wrap:wrap;max-width:100%\}'/);
+  // 19.11.2026 (Agnar: „fylla þetta út í gluggann“): röðin tekur það sem eftir er af línunni, bilið ekki.
+  assert.match(T368, /'\.modes>\.seg\.modeseg\{flex:1 1 auto;min-width:0\}'/);
+  assert.match(T368, /'\.modes>\.grow\{flex:0 0 0\}'/);
+  assert.match(lesa('js/patches/507-bord-thema-bh2.js'), /\.seg\.modeseg\{flex:1 1 auto;/, 'V2-þemað (507) má ekki halda sinni eigin breidd');
   const m = /\(mode\.ser \|\| mode\.mitt\n([\s\S]{0,900}?)\n\s*'<span class="grow">/.exec(T368);
   assert.ok(m, 'breytitakka-blokkin fannst ekki');
   assert.match(m[1], /data-t5="ham-breyta"/); assert.match(m[1], /data-t5="cfg"/, 'innbyggður hamur fær líka takka');
