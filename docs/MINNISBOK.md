@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-18 21:51 · 2582 virkar staðreyndir — 1477 prentaðar hér
+Sótt 2026-11-19 01:41 · 2584 virkar staðreyndir — 1479 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (946 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -3253,6 +3253,21 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Leitaðu bæði á kennitölu og nafnbroti áður en nýr kúnni er stofnaður.
   <br><sub>2026-08-07 · brunaholf · sql · chat</sub>
 
+### profill
+
+- **Fyrirtækjaprófíll ?prof=2 fékk hönnun A í Brunastáli 19.11.2026 (patch 500 v20261119e): 7 lykiltölukassar #p2-kpi, gluggi Staður/Húsið/Á staðnum + stór mynd með Teikningar-takka (Hreyfingaryfirlit fært í ⋯), athugasemd 2 línur. Heimildir per reit í docs/PROFILL-I-EIGINLEIKAR.md §8.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtækjaprófíll: Agnar valdi 19.11.2026 Hugmynd A (lifandi mælaborð) í Brunastáli, ekki Brunahólf V2. Útlitið er á Design-striganum https://claude.ai/artifact/KifUibJ7RZxGyKXHkLcZGk (borð Hugmynd-A): ein röð lykiltalna (slökkvitæki eftir tegund og stærð, slöngur/reykskynjarar, brunakerfi, síðasta úttekt, viðskipti á ári, skjöl, samskiptastaða), gluggi með stórri mynd + Búnaðargreining/Teikningar, tveggja lína athugasemd, flipar neðst. Ekki enn smíðað í ?prof=2.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Tækjatölur á prófíl eru sýndar eftir TEGUND: flokkahausar tækjalistans (.ut-grp-h: Léttvatn/Duft/CO₂/Slanga N tæki). 'N slökkvitæki' í haus listans telur slöngur með (207: 62 = 43+1+18 slöngur) — ekki sýna þá tölu sem fjölda slökkvitækja.**
+  <br>Fannst 10.11.2026 við samanburð gamalt/nýtt: 207 Heilsustofnun, 186 Miklatorg (Duft 15 + CO₂ 58), 117 (Léttvatn 1 + CO₂ 1).
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuflipar á prófíl (274): #_sks-tabs með data-flipi='ars' (slökkvitæki) og 'bru' (brunakerfi); brunakerfis-spjaldið er #_sks-bru, beint barn #companies-main. Texti flipans (._sks-tu) ber 'N einingar' og 'skoðað DD/MM/YYYY' — eina heimildin á prófílnum fyrir brunakerfi í 'Búnaður í þjónustu'.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtækjaprófíll hönnun I = js/patches/500-profill-i.js á bak við ?prof=2 (engin vafra-geymsla). Hreint framsetningarlag: les DOM gamla prófílsins (363/404/403/286/450/274), skrifar ekkert, allir takkar eru umboð (click á upprunalega takkann). Röng tala þar = röng í gamla prófílnum. Skrá yfir hvar hver reitur endaði: docs/PROFILL-I-EIGINLEIKAR.md.**
+  <br>Agnar samþykkti hönnun I 09.11.2026; birt 10.11.2026 (master e0b937a og áfram). Flipar eru CSS-sýnileiki (data-p2t) + flex/order, enginn hnútur fluttur. Nýr kafli í #companies-main sést í öllum flipum þar til hann fær línu í KAFLAR.
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### fyrirtaeki
 
 - **Steypustöðin-Vatnskarðsnámur (fid 414, kt 531093-2409) — rekstrarfelog-parun 18.11.2026: ÞETTA ER EINI STAÐURINN á kt 531093-2409 (renna-rekstrarfelag.cjs staðfestir 'staðir 1'), svo það er EKKI tvískipting við Hólabrú-staðinn (fid 1727, önnur kt 660707-0420 — ólíkt því sem fyrri athugasemd gaf í skyn). Bæði PDF-skýrslur sem lýsa staðnum í texta (2023 og 2024) segja hann vera 'Hólaskarð/Hólabrú malarnáma Hvalfirði', ekki skráða heimilisfangið 'Álfhellu 1, 221 Hafnarfjörður'. Nýrri gögn (2025-2026 reikningar/hleðslusaga) lýsa bílaverkstæði, sem stemmir við Álfhellu-heimilisfangið. EKKERT breytt — spurningin (flutti þjónustan eða er heimilisfangið rangt?) sett sem viðbót við opið mál #1381 á Þjónustuborðinu í stað nýs máls.**
@@ -3803,17 +3818,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **Í Kröfuyfirliti má velja mörg ósend drög (þrep 2) og sameina í eitt þar sem allar tímabækur verða ein tímabók og einn efnislisti.**
   <br>[decision; agents: rukkari, bokari, kunnaskra] 03.08 Agnar. Aðeins gerð-drög (inv_key draftinv|<verkstaður>|<mán>, invoice_drafts) má sameina. Sama sniðmát vill hann við sameiningu afrita fyrirtækja: haka við bæði og velja ‚Sameina‘ í haus (13.06).
   <br><sub>2026-11-04 · brunaholf · artifact: session-uppskera 2026-10-28: lotur 177227fe, 532a8e1d · claude-code</sub>
-
-### profill
-
-- **Tækjatölur á prófíl eru sýndar eftir TEGUND: flokkahausar tækjalistans (.ut-grp-h: Léttvatn/Duft/CO₂/Slanga N tæki). 'N slökkvitæki' í haus listans telur slöngur með (207: 62 = 43+1+18 slöngur) — ekki sýna þá tölu sem fjölda slökkvitækja.**
-  <br>Fannst 10.11.2026 við samanburð gamalt/nýtt: 207 Heilsustofnun, 186 Miklatorg (Duft 15 + CO₂ 58), 117 (Léttvatn 1 + CO₂ 1).
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuflipar á prófíl (274): #_sks-tabs með data-flipi='ars' (slökkvitæki) og 'bru' (brunakerfi); brunakerfis-spjaldið er #_sks-bru, beint barn #companies-main. Texti flipans (._sks-tu) ber 'N einingar' og 'skoðað DD/MM/YYYY' — eina heimildin á prófílnum fyrir brunakerfi í 'Búnaður í þjónustu'.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fyrirtækjaprófíll hönnun I = js/patches/500-profill-i.js á bak við ?prof=2 (engin vafra-geymsla). Hreint framsetningarlag: les DOM gamla prófílsins (363/404/403/286/450/274), skrifar ekkert, allir takkar eru umboð (click á upprunalega takkann). Röng tala þar = röng í gamla prófílnum. Skrá yfir hvar hver reitur endaði: docs/PROFILL-I-EIGINLEIKAR.md.**
-  <br>Agnar samþykkti hönnun I 09.11.2026; birt 10.11.2026 (master e0b937a og áfram). Flipar eru CSS-sýnileiki (data-p2t) + flex/order, enginn hnútur fluttur. Nýr kafli í #companies-main sést í öllum flipum þar til hann fær línu í KAFLAR.
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### afslattur
 
