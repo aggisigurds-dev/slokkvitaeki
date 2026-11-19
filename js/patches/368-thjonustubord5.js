@@ -5767,7 +5767,11 @@
           const stj = (valid && flipiTveir)
             ? '<span class="flx" data-t5="flipi-minus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Loka þessari einingu — hin stendur eftir">✕</span>'
             : ((!valid && flipiEin)
-              ? '<span class="flp" data-t5="flipi-plus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Sýna þessa einingu VIÐ HLIÐINA á þeirri sem er opin">＋</span>'
+              // 19.11.2026: lendi Dagskráin fremst í parinu stendur hún yfir alla breiddina og hin fyrir neðan (sjá `efst`).
+              ? '<span class="flp" data-t5="flipi-plus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="' +
+                ((k === 'dagskra' || flipiSyn[0] === 'dagskra') && einingaRod.indexOf('dagskra') < einingaRod.indexOf(k === 'dagskra' ? flipiSyn[0] : k)
+                  ? 'Sýna þessa einingu líka — Dagskráin stendur yfir alla breiddina og hin fyrir neðan'
+                  : 'Sýna þessa einingu VIÐ HLIÐINA á þeirri sem er opin') + '">＋</span>'
               : '');
           return '<button type="button" class="flipi" role="tab" data-t5="flipi" data-m="' + esc(k) + '" aria-selected="' + valid + '">' +
             '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + stj + '</button>';
