@@ -301,7 +301,8 @@
     // 18.11.2026: „Í dag" (31) stendur efst á vinnuborðinu án þess að vistaðri röð sé breytt — ekkert skrifað hér
     // (regla 15.10.2026: skrif á þjón aðeins við raunverulegan smell). Sé hún tekin af í „Velja einingar" vistast
     // idagAf og þá kemur hún ekki aftur.
-    if (!(v && v.idagAf) && first.indexOf('idag') < 0) first.unshift('idag');
+    // 19.11.2026: „Í dag" er ekki lengur sett sjálfkrafa á vinnuborðið (sjá idagBordi) — aðeins ef hún stendur í vistaðri röð.
+    void v;
     return Object.assign({}, MODES.mitt, { l: n + ' · mitt vinnuborð', first,
       breidd: (v && v.breidd && typeof v.breidd === 'object') ? v.breidd : {} });
   }
@@ -510,7 +511,7 @@
   }
 
   /* ── gögn ── */
-  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url,sonnun,sonnun_at';
+  const SEL = 'id,title,notes,summary,status,type,important,due_at,created_at,updated_at,source,channel_ref,assigned_to,customer_base_id,fyrirtaeki_id,customer_nafn,svarad_at,tags,flokkur,attachment_url,sonnun,sonnun_at,snooze_til,snooze_af';
   let _sig = '', _aftur = false, _dbBid = 0, _dbT = 0, _loadGen = 0;
   // Könnunin á 60 s fresti teiknar AÐEINS ef eitthvað breyttist — annars myndi hún rugla skrun
   // í pósti sem verið er að lesa. Sóttímanum er skipt út beint.
@@ -1121,6 +1122,11 @@
       '.seg button:first-child{border-left:0}',
       '.seg button[aria-pressed="true"]{background:var(--gside);font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.25)}',
       '.seg.modeseg button{height:36px;padding:0 16px;font-size:14px}',
+      /* 19.11.2026 (Agnar: „Hama stjórnstikan er kramin"). `.seg` ber overflow:hidden, svo hamir sem komust ekki fyrir í
+       * einni línu voru KLIPPTIR af — á tölvu var hvorki hægt að skruna að þeim né sjá þá (mælt: „Skýrslur" hálfur undir
+       * „+ Hamur"). Hamaröðin brýtur nú um í fleiri línur og ekkert er falið. Appsniðið skrunar áfram (sjá ofar). */
+      '.seg.modeseg{flex-wrap:wrap;overflow:visible;max-width:100%}',
+      '.seg.modeseg button{border-top:1px solid var(--edge)}.seg.modeseg button:first-child{border-top:0}',
       '.seg.sm button{height:26px;padding:0 9px;font-size:12.5px}',
       '.seg .c{font-family:var(--mono);font-size:11.5px;margin-left:5px;font-variant-numeric:tabular-nums}',
       // Síurnar í haus Master-borðs voru 17 px breiðari en síminn (mælt á 375 px) — skruna í sínum reit.
@@ -1570,6 +1576,9 @@
       '.vbr{display:grid;grid-template-columns:var(--vbr-w,290px) minmax(0,1fr);gap:18px;align-items:start}',
       '.vbr-grip{position:absolute;top:0;right:0;width:10px;height:100%;cursor:col-resize;z-index:2;touch-action:none}.vbr-grip::after{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:transparent}.vbr-grip:hover::after,.vbr-grip.virk::after{background:var(--g6)}',
       '.samt-rod{display:flex;flex-wrap:wrap;gap:5px;padding:9px 12px 0}.samt-rod button{height:26px;padding:0 9px;border-radius:5px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;font-size:12px;font-weight:600;color:inherit;cursor:pointer}.samt-rod button[aria-pressed="true"]{background:#1f2530;color:#fff;border-color:#000}.samt-teljari button[aria-pressed="true"]{outline:2px solid #1f2530;outline-offset:1px}',
+      // Snooze-hnappurinn ber uppsafnaða töluna (19.11.2026) — merkið dofnar í núlli svo það hrópi ekki að engu.
+      '.samt-rod button.samt-sn b{display:inline-block;min-width:16px;margin-left:3px;padding:0 4px;border-radius:4px;background:rgba(31,37,48,.1);font-size:11.5px}',
+      '.samt-rod button.samt-sn[aria-pressed="true"] b{background:rgba(255,255,255,.22)}',
       '.heim{margin:10px 0;padding:8px 11px;border:1px solid var(--rule2);border-radius:6px;font-size:13.5px;line-height:1.45}.heim .hh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding-bottom:4px}.heim .hr{padding:5px 0;border-top:1px solid var(--rule2);overflow-wrap:anywhere}.heim .hm{opacity:.72}.heim .ht{display:inline-block;padding:0 5px;border-radius:3px;background:#a3241b;color:#fff;font-weight:700;font-size:12px}.heim a,.heim .hl{font:inherit;font-weight:700;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer}',
       '.samt-teljari{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px 12px 6px}.samt-teljari button{display:flex;align-items:center;gap:7px;min-height:36px;padding:4px 9px;border-radius:7px;border:1px solid var(--rule2);background:rgba(255,255,255,.55);font:inherit;color:inherit;text-align:left;cursor:pointer}.samt-teljari button b{font-size:17px;line-height:1;min-width:22px;text-align:center}.samt-teljari button small{display:block;font:500 11.5px var(--mono);color:var(--mute)}.samt-teljari button._gull b{color:#8a6218}.samt-teljari button._ok b{color:#16783f}.samt-teljari button._claude{grid-column:1 / -1;background:linear-gradient(180deg,#1f6b3c,#145229);color:#fff;border-color:#0b3519}.samt-teljari button._claude small{color:#bfe3c9}',
       '.vbr-list{position:sticky;top:12px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;overflow:hidden}',
@@ -2502,7 +2511,17 @@
     /* 09.10.2026 (Agnar: „geturðu látið svara tölvupóstum í samþykktir bara sýna tölvupósta sem ég á eftir að svara").
      * „Svara pósti" var RÖÐUN — hún lyfti póstmálum efst en skildi öll hin eftir fyrir neðan, svo listinn var jafn
      * langur og áður. Nú er hún SÍA: aðeins póstmál sem enginn hefur svarað. Hinar fimm eru áfram raðanir. */
-    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']];
+    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst'],
+    /* 19.11.2026 (Agnar: „snooze takka inn á samþykktir í viku og setja uppsafnað snooze þarna, t.d. við hliðina á svara
+     * pósti"). SÍA sem sýnir það sem er í snooze — talan á hnappnum er uppsafnaða snoozið. */
+    ['snooze', 'Snooze', 'SÍA: mál sem þú ýttir á undan þér — þau koma sjálf aftur þegar tíminn er liðinn']];
+  /* SNOOZE (19.11.2026). Málið hverfur úr Samþykkja þar til `snooze_til` er liðinn og kemur þá sjálft aftur: engu er lokað,
+   * engu eytt og ekkert svar skráð. Vistað á ÞJÓNINUM (thjonustubeidni.snooze_til) en ekki í vafranum — vélarnar eru fjórar
+   * og vafrastaða samstillist aldrei milli þeirra (Charlize #406). `snooze_af` geymir hver ýtti á takkann. */
+  const SNOOZE_DAGAR = 7;
+  const snoozeStund = r => { const t = Date.parse((r && r.snooze_til) || ''); return isFinite(t) ? t : 0; };
+  const erSnoozad = r => snoozeStund(r) > Date.now();
+  const snoozeDagarEftir = r => Math.max(0, Math.ceil((snoozeStund(r) - Date.now()) / 86400000));
   /* Hvað telst svarað? Tvennt, og hvorugt er ágiskun:
    *  · `svarad_at` — borðið sjálft skrifar það þegar svar er sent héðan.
    *  · `sonnun.styrkur = 'svarad'` — þjónninn (thjb_sonnun_reikna) fann ÚTSENDAN póst á sendandann
@@ -2541,8 +2560,11 @@
   const samtSiaLes = () => { const v = String(vmLesa(SAMT_SIA_LYKILL, 'allt')); return ['-1', '0', '1', '2'].indexOf(v) >= 0 ? v : 'allt'; };
   let samtSia = samtSiaLes();
   document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SAMT_SIA_LYKILL) samtSia = samtSiaLes(); } catch (_) {} });
-  const samtRodHtml = () => '<div class="samt-rod" role="tablist" aria-label="Röðun">' + SAMT_RADANIR.map(x =>
-    '<button type="button" data-t5="samt-rod" data-v="' + x[0] + '" aria-pressed="' + (samtRodun === x[0]) + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
+  // Snooze-hnappurinn ber uppsafnaða töluna (Agnar 19.11.2026) og stendur alltaf, líka í núlli — svo hann hverfi ekki
+  // undan þeim sem er að leita að málinu sem hann ýtti á undan sér.
+  const samtRodHtml = () => { const sn = samtSnoozeFjoldi(); return '<div class="samt-rod" role="tablist" aria-label="Röðun">' + SAMT_RADANIR.map(x =>
+    '<button type="button" data-t5="samt-rod" data-v="' + x[0] + '" aria-pressed="' + (samtRodun === x[0]) + '"' + (x[0] === 'snooze' ? ' class="samt-sn"' : '') +
+    ' title="' + esc(x[2]) + '">' + esc(x[1]) + (x[0] === 'snooze' ? ' <b>' + sn + '</b>' : '') + '</button>').join('') + '</div>'; };
   // Teljarar eins og á símasíðunni: grænn = svarað og Claude á eftir að vinna úr (hluti 2), sundurliðað eftir svari.
   function samtTeljariHtml(hlutar) {
     const n = h => (hlutar.find(x => x[2] === h) || [0, []])[1].length;
@@ -2594,7 +2616,10 @@
    * fyrir sig; síminn fær hrálistann og síar sjálfur með sömu reglu (`postOsvarad`). */
   const samtRadari = (a, b) => (samtRodun === 'sjalf' ? samtHluti(a) - samtHluti(b) : samtRada(a, b)) || rodunSamt(a, b);
   // Án teljarasíu: teljararnir sjálfir og hausinn telja þetta, svo tölurnar hverfi ekki þegar sía er á.
-  const samtGrunnur = () => S.rows.filter(r => iHam(r, SAMT_HAM) && (samtRodun !== 'postur' || postOsvarad(r))).sort(samtRadari);
+  // Snooze-málin eru UTAN listans alls staðar nema í eigin síu — og þá eru þau þar ein (19.11.2026).
+  const samtGrunnur = () => S.rows.filter(r => iHam(r, SAMT_HAM) && (samtRodun === 'snooze' ? erSnoozad(r) : !erSnoozad(r))
+    && (samtRodun !== 'postur' || postOsvarad(r))).sort(samtRadari);
+  const samtSnoozeFjoldi = () => S.rows.filter(r => iHam(r, SAMT_HAM) && erSnoozad(r)).length;
   const samtListi = (n, osiad) => (osiad ? S.rows.filter(r => iHam(r, SAMT_HAM)).sort(samtRadari)
     : samtGrunnur().filter(r => samtSia === 'allt' || String(samtHluti(r)) === samtSia));
   // 448 teiknar Tölvupósta-rýmið; sækir sjálft við fyrstu opnun og kallar render() hér þegar gögnin lenda.
@@ -2721,6 +2746,13 @@
         '<span class="sb-kr"><span class="sb-sogn">' + esc(sogn) + '</span><span class="sb-kick">Það sem þú ákveður</span>' + (r.important ? '<span class="sb-ari">★ Áríðandi</span>' : '') + '</span>' +
         '<span class="sb-bar-t">' + (lead ? '<b>' + esc(lead) + '</b> · ' : '') + esc(minn ? 'á þínu borði' : isFree(r) ? 'á Master' : 'á borði ' + normW(r.assigned_to)) + '</span>' +
         '<span class="grow"></span><span class="sb-nr">' + (nr + 1) + ' af ' + alls + '</span>' +
+        /* SNOOZE (19.11.2026, Agnar: „snooze takka inn á samþykktir í viku"). Hvorki svar né lokun: málið hverfur úr
+         * listanum og kemur sjálft aftur eftir vikuna. Talan á „Snooze"-hnappnum efst segir hve mörg bíða þannig. */
+        (erSnoozad(r)
+          ? '<button type="button" class="btn iv sm" data-t5="samt-snooze" data-v="0" data-id="' + r.id + '"' + dis(r.id) +
+            ' title="Taka úr snooze — málið fer strax aftur í listann">⏰ Í snooze · ' + snoozeDagarEftir(r) + ' d.</button>'
+          : '<button type="button" class="btn iv sm" data-t5="samt-snooze" data-v="' + SNOOZE_DAGAR + '" data-id="' + r.id + '"' + dis(r.id) +
+            ' title="Ýta málinu á undan sér í ' + SNOOZE_DAGAR + ' daga — það hverfur af listanum og kemur sjálft aftur. Engu er lokað og engu svarað.">💤 Snooze viku</button>') +
         '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="-1"' + (nr <= 0 ? ' disabled' : '') + '>‹ Fyrra</button>' +
         '<button type="button" class="btn iv sm" data-t5="samt-fara" data-v="1"' + (nr >= alls - 1 ? ' disabled' : '') + '>Næsta ›</button></div>' +
       '<div class="sb-scroll"><div class="sb-in"><div class="sb-hd"><div class="sb-hdt">' +
@@ -2779,7 +2811,9 @@
       '<aside class="panel vbr-list" aria-label="Bíður svars">' +
         '<header class="phead">' + plate('✓') + '<h2 class="ptitle">Samþykkja</h2><span class="sum">' + hlutar[1][1].length + ' tilbúin · ' + hlutar[2][1].length + ' spurningar · ' + hlutar[3][1].length + ' hjá Claude' + (hlutar[0][1].length ? ' · ' + hlutar[0][1].length + ' afgreitt' : '') + '</span></header>' + samtRodHtml() + samtTeljariHtml(hlutar) +
         '<div class="vbr-items">' + (!listi.length
-          ? emptyHtml(samtRodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.' : 'Ekkert mál passar við síuna.') + '<button type="button" class="btn iv sm" data-t5="samt-allt">Sýna öll mál</button>'
+          ? emptyHtml(samtRodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.'
+            : samtRodun === 'snooze' ? 'Ekkert mál er í snooze. Hnappurinn „💤 Snooze viku" á spjaldinu ýtir máli á undan sér í ' + SNOOZE_DAGAR + ' daga.'
+            : 'Ekkert mál passar við síuna.') + '<button type="button" class="btn iv sm" data-t5="samt-allt">Sýna öll mál</button>'
           : samtRodun === 'sjalf'
             ? hlutar.map(h => { const m = h[1].filter(r => samtSia === 'allt' || String(h[2]) === samtSia); return m.length ? '<div class="vbr-sect" data-h="' + h[2] + '">' + h[0] + ' · ' + m.length + '</div>' + m.map(item).join('') : ''; }).join('')
             : listi.map(item).join('')) + '</div>' +
@@ -5661,7 +5695,11 @@
     // 18.11.2026 — „Í dag" stendur í ÖLLUM hömum, ekki aðeins á mitt vinnuborð (Agnar: „Í dag á öll borð").
     // Borðinn er því ekki bundinn einingaröð hamsins: hann fylgir manninum, ekki borðinu sem er opið. Eina leiðin
     // til að slökkva á honum er áfram að taka eininguna af í „Velja einingar" (mitt.idagAf), sem gildir þá alls staðar.
-    const idagBordi = (!radar && idagVirkt()) ? einingHtml('idag') : '';
+    /* 19.11.2026 — TEKINN AF BORÐINU. Agnar: „Ég næ ekkert að nota þetta, né collapsað það, svo mátt bara færa þetta í
+     * burtu." Borðinn stóð efst í öllum hömum og varð ekki lokað. Einingin sjálf (520) stendur óbreytt og kemur aftur
+     * með einni línu hér, sé hún tekin upp aftur. `idagVirkt` og `mitt.idagAf` eru hér áfram af sömu ástæðu. */
+    void idagVirkt;
+    const idagBordi = '';
     /* 18.11.2026 — FLIPAR Í STAÐ STAFLA (lag 3 af hönnunartillögunni). Einingarnar lágu hver undir annarri: átta
      * einingar = átta skjáir og það sem var neðst sást aldrei. Nú ber einingahamurinn flipa — ein eining í einu í
      * fullri breidd — og síðasti flipinn „Allt" sýnir gamla staflann óbreyttan fyrir þá sem vilja hann. Valið er
@@ -5840,7 +5878,13 @@
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
             (t === '' ? '' : '<span class="c">' + t + '</span>') + '</button>'; }).join('') +
         '</div><button type="button" class="btn iv sm" data-t5="ham-ny" aria-expanded="' + !!(S.hamForm && !S.hamForm.id) + '">+ Hamur</button>' +
-        (mode.ser || mode.mitt ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '">' + '<span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>' : '') +
+        /* 19.11.2026 (Agnar: „Hama stjórnstikan er kramin og vantar breytitakkann"). Breytitakkinn stóð AÐEINS á
+         * sérsniðnum hömum og vinnuborðinu — í innbyggðum ham (Skýrslur, Kröfur …) var engin leið héðan að því að
+         * velja einingar. Nú stendur alltaf einn takki: sérsniðinn hamur fær „Breyta ham", vinnuborðið „Velja
+         * einingar" og innbyggðir hamir opna „Mitt vinnuborð", þar sem einingarnar eru valdar. */
+        (mode.ser || mode.mitt
+          ? '<button type="button" class="btn iv sm" data-t5="ham-breyta" data-mode="' + esc(c.mode) + '"><span class="t5-emo" aria-hidden="true">✎ </span>' + (mode.mitt ? 'Velja einingar' : 'Breyta ham') + '</button>'
+          : '<button type="button" class="btn iv sm" data-t5="cfg" aria-expanded="' + S.cfgOpen + '" title="Velja hvaða einingar standa á borðinu"><span class="t5-emo" aria-hidden="true">⚙ </span>Velja einingar</button>') +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +
@@ -6701,9 +6745,24 @@
       case 'samt-meira': { const r0 = S.rows.find(x => x.id === id); S.samtMeira[id] = !(r0 ? sbMeiraOpid(r0) : S.samtMeira[id]); render(); return; }
       case 'samt-rod': samtRodun = el.dataset.v; vmSetja(SAMT_ROD_LYKILL, samtRodun); render(); return;
       case 'samt-sia': samtSia = samtSia === el.dataset.v ? 'allt' : el.dataset.v; vmSetja(SAMT_SIA_LYKILL, samtSia); render(); return;
+      /* SNOOZE (19.11.2026): data-v = dagar (0 = taka úr snooze). Hvorki svar, lokun né eyðing — aðeins dagsetning á málið.
+       * Skrifað á ÞJÓNINN svo snooze á einni vél gildi á þeim öllum, og alltaf með afturköllun. */
+      case 'samt-snooze': {
+        const r = S.rows.find(x => x.id === id);
+        if (!r) return;
+        const dagar = Number(el.dataset.v || 0), adur = r.snooze_til || null, adurAf = r.snooze_af || null;
+        const nytt = dagar > 0 ? new Date(Date.now() + dagar * 864e5).toISOString() : null;
+        act(id, async () => {
+          const rows = await patchRow(id, { snooze_til: nytt, snooze_af: dagar > 0 ? nu() : null });
+          if (!rows.length) throw new Error('málið fannst ekki');
+          toast(dagar > 0 ? 'Í snooze — kemur sjálft aftur ' + fmtD(nytt) : 'Tekið úr snooze — málið er aftur í listanum',
+            false, () => act(id, async () => { await patchRow(id, { snooze_til: adur, snooze_af: adurAf }); toast('Afturkallað'); }));
+        });
+        return;
+      }
       case 'samt-allt':
         samtSia = 'allt'; vmSetja(SAMT_SIA_LYKILL, samtSia);
-        if (samtRodun === 'postur') { samtRodun = 'nyjast'; vmSetja(SAMT_ROD_LYKILL, samtRodun); }
+        if (samtRodun === 'postur' || samtRodun === 'snooze') { samtRodun = 'nyjast'; vmSetja(SAMT_ROD_LYKILL, samtRodun); }
         render();
         return;
       case 'samt-fara': {
@@ -7437,6 +7496,17 @@
     // 368ab — símasíðan (446) sýnir sömu ákvörðunarblokk. Greiningin á aðeins að eiga sér EINN
     // stað; væri hún afrituð þangað myndu útgáfurnar reka í sundur um leið og orðalagið breytist.
     adgerdir: adgerdirUrNotu, postOsvarad, heimildir: heimildirHtml, heimildaFjoldi,
+    /* SNOOZE (19.11.2026) — símasíðan (446) notar sömu skilgreiningu og sama skrif. `snooza(id, dagar)`: dagar > 0 setur
+     * í snooze, 0 tekur úr. Skilar loforði sem er satt þegar þjónninn hefur staðfest. */
+    erSnoozad, snoozeDagar: SNOOZE_DAGAR, snoozeDagarEftir,
+    snooza: (id, dagar) => {
+      const r = S.rows.find(x => x.id === Number(id));
+      if (!r) return Promise.resolve(false);
+      const d = Number(dagar) || 0;
+      return patchRow(Number(id), { snooze_til: d > 0 ? new Date(Date.now() + d * 864e5).toISOString() : null, snooze_af: d > 0 ? nu() : null })
+        .then(rows => { if (rows.length) { r.snooze_til = d > 0 ? new Date(Date.now() + d * 864e5).toISOString() : null; } return !!rows.length; })
+        .then(ok => load(true).then(() => ok, () => ok));
+    },
     velja: id => { try { S.sel[nu()] = id; S.samtVal = id; } catch (_) {} },
     // 08.10.2026 — sönnunarmyndir á spjöldin í símanum (Agnar: „screenshot feature þarna inn til sönnunar eða
     // staðfestingar"): EIN fyrirspurn fyrir allan listann (thjonustubeidni_files .in(ids)), ekki ein per mál.

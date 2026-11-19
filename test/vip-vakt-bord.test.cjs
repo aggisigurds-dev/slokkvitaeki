@@ -48,10 +48,16 @@ test('borðinn: ósvaraðir þræðir með klukku og lit, Svara á Gmail, Uppkas
   assert.match(h, /⚠ Óvíst hvort svarað/);
 });
 
-test('tómt: ein lína „ekkert ósvarað“; innskráning vantar (401): ein lína með innskráningartengli, engin gögn', async () => {
+// 19.11.2026 (Agnar um tómu línuna „⚡ VIP-VAKT · ekkert ósvarað · 4 félög …“): „Þetta er ekki tengt við neitt.“ Hún bar
+// enga aðgerð en stóð alltaf efst á borðinu. Vaktin þegir nú þegar ekkert bíður — en ALDREI þegar hún veit ekki (401/villa).
+test('tómt: ENGINN borði; innskráning vantar (401): ein lína með innskráningartengli, engin gögn', async () => {
   const a = hlada(() => ({ status: 200, body: {} }));
   a.win.VipVakt._setja(gogn([]));
-  assert.match(a.win.VipVakt.html('Agnar'), /ekkert ósvarað/);
+  assert.strictEqual(a.win.VipVakt.html('Agnar'), '', 'ekkert ósvarað → ekkert teiknað');
+  a.win.VipVakt._setja(gogn([thradur(10)]));
+  const med = a.win.VipVakt.html('Agnar');
+  assert.match(med, /1 ósvarað/, 'bíði eitthvað stendur vaktin óbreytt');
+  assert.match(med, /data-vip="svarad"/, 'og ber sínar aðgerðir');
   const b = hlada(() => ({ status: 401, body: { error: 'Innskráning starfsmanns vantar', need_login: true } }));
   b.win.VipVakt.html('Agnar');              // fyrsta kall ræsir sóknina
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));

@@ -160,7 +160,12 @@
     const haus = '<header><b>⚡ VIP-vakt</b><span class="vip-tala">' + (l.length ? l.length + ' ósvarað' + (yfir ? ' · ' + yfir + ' yfir tíma' : '') : 'ekkert ósvarað') + '</span>' +
       '<span class="vip-fel-l" title="' + esc(f.map((x) => x.nafn + ' (' + x.radir + ' raðir · ' + x.svartimi + ' mín.)').join(', ')) + '">' + f.length + ' félög</span>' +
       innlesturHtml(S.gogn) + (S.skilabod ? '<span class="vip-sk">' + esc(S.skilabod) + '</span>' : '') + '</header>';
-    return '<section class="vip' + (l.length ? '' : ' _tomt') + '" aria-label="VIP-vakt">' + haus + (l.length ? '<ul>' + l.map(rodHtml).join('') + '</ul>' : '') + '</section>';
+    /* 19.11.2026 — ÞÖGN ÞEGAR EKKERT BÍÐUR. Agnar um tómu línuna („⚡ VIP-VAKT · ekkert ósvarað · 4 félög · Gmail lesið
+     * kl. …"): „Þetta er ekki tengt við neitt." Hún bar enga aðgerð og ekkert sem hægt var að opna, en stóð alltaf efst.
+     * Vaktin birtist nú AÐEINS þegar VIP-póstur bíður svars — þá með þræðinum, klukkunni og tökkunum eins og áður.
+     * Villa og innskráningarleysi standa áfram (ofar í fallinu): þá VEIT vaktin ekki hvort eitthvað bíður. */
+    if (!l.length) return '';
+    return '<section class="vip" aria-label="VIP-vakt">' + haus + '<ul>' + l.map(rodHtml).join('') + '</ul></section>';
   }
   function css() {
     return [
