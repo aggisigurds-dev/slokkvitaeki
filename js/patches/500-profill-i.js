@@ -194,10 +194,31 @@
     G + ' .p2-kp{--fr:' + R_STAL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3b3f46,#e2e6ec 50%,#3b3f46);--hn:' + HN_STAL + ';--hg:0 1px 1px rgba(0,0,0,.7);--led:#8f98a8;--ledg:none;' +
       'background:var(--fr)!important;background-color:#0a0a0c!important;padding:2px!important;border-radius:0!important;overflow:visible!important;box-shadow:none!important;' +
       'clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));filter:drop-shadow(0 14px 24px rgba(10,14,22,.45));color:#fff}' +
-    G + ' .p2-kp:has(> .cap.g),' + G + ' .p2-kp.ramm-g{--fr:' + R_GRAENT + ';--in:' + INNI_GRAENT + ';--tl:linear-gradient(90deg,#06331a,#7fe0a8 50%,#06331a);--hn:' + HN_GRAENT + ';--hg:0 0 6px 1px rgba(35,163,90,.6);--led:#3cc47c;--ledg:0 0 0 3px rgba(60,196,124,.16),0 0 10px rgba(60,196,124,.8)}' +
-    G + ' .p2-kp:has(> .cap.r){--fr:' + R_RAUTT + ';--in:' + INNI_RAUTT + ';--tl:linear-gradient(90deg,#380506,#ff9d95 50%,#380506);--hn:' + HN_RAUTT + ';--hg:0 0 6px 1px rgba(226,85,85,.6);--led:#f0584c;--ledg:0 0 0 3px rgba(240,88,76,.18),0 0 10px rgba(240,88,76,.85)}' +
-    G + ' .p2-kp:has(> .cap.y),' + G + ' .p2-kp.ramm-a{--fr:' + R_GULL + ';--in:' + INNI_STAL + ';--tl:linear-gradient(90deg,#3d2b05,#ffe9b0 50%,#3d2b05);--hn:' + HN_GULL + ';--hg:0 0 6px 1px rgba(240,168,60,.7);--led:#e0a93e;--ledg:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)}' +
-    G + ' .p2-kp > .in{position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));background-image:var(--in)!important;background-color:#0a0a0c;padding:16px 20px 16px!important;gap:10px!important;height:100%;box-sizing:border-box;color:#fff}' +
+    G + ' .p2-kp:has(> .cap.g),' + G + ' .p2-kp.ramm-g{--led:#3cc47c;--ledg:0 0 0 3px rgba(60,196,124,.16),0 0 10px rgba(60,196,124,.8)}' +
+    G + ' .p2-kp:has(> .cap.r){--led:#f0584c;--ledg:0 0 0 3px rgba(240,88,76,.18),0 0 10px rgba(240,88,76,.85)}' +
+    G + ' .p2-kp:has(> .cap.y),' + G + ' .p2-kp.ramm-a{--led:#e0a93e;--ledg:0 0 0 3px rgba(246,181,69,.18),0 0 10px rgba(246,181,69,.85)}' +
+    /* ── GLUGGINN SEM HLUTI AF HEILDINNI (Agnar 19.11.2026: „láta næsta hluta með myndinni og upplýsingunum svolítið vera
+       part af hinu, meiri heild“) — sama beð og plöturnar, og glugginn sjálfur er stór stálplata í Brunastáli C: 2 px
+       málmrammi og skorin horn (::before), burstuð innri plata með hnoðum (::after), ljós texti. Engin hnút færður. */
+    G + ' .p2-glugg{position:relative;isolation:isolate;background:linear-gradient(180deg,#d6dbe3,#cdd3dc)!important;padding:22px 20px 36px!important;border:0!important;box-shadow:none!important;color:#fff}' +
+    G + ' .p2-glugg::before{content:"";position:absolute;z-index:-2;left:16px;right:16px;top:0;bottom:16px;background:' + R_STAL + ';clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px))}' +
+    G + ' .p2-glugg::after{content:"";position:absolute;z-index:-1;left:18px;right:18px;top:2px;bottom:18px;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));' +
+      'background:linear-gradient(90deg,#3b3f46,#e2e6ec 50%,#3b3f46) top/100% 3px no-repeat,radial-gradient(circle,#eef1f5 0 1.2px,#8a919c 1.6px,#2a2d33 2.6px,transparent 3px) left 7px top 8px/6px 6px no-repeat,radial-gradient(circle,#eef1f5 0 1.2px,#8a919c 1.6px,#2a2d33 2.6px,transparent 3px) right 24px top 8px/6px 6px no-repeat,radial-gradient(circle,#eef1f5 0 1.2px,#8a919c 1.6px,#2a2d33 2.6px,transparent 3px) left 24px bottom 7px/6px 6px no-repeat,radial-gradient(circle,#eef1f5 0 1.2px,#8a919c 1.6px,#2a2d33 2.6px,transparent 3px) right 7px bottom 7px/6px 6px no-repeat,' + INNI_STAL + '}' +
+    G + ' .p2-sec{color:#d9dee6!important;font-weight:700!important;letter-spacing:.18em!important;border-bottom-color:rgba(255,255,255,.12)!important}' +
+    G + ' .p2-kv{border-bottom-color:rgba(255,255,255,.07)!important}' +
+    G + ' .p2-kv .k{color:#a9b1bf!important}' +
+    G + ' .p2-kv .v{color:#fff!important}' +
+    G + ' .p2-kv .v a{color:#f3d98a!important}' +
+    G + ' .p2-kv .v [style*="#845400"]{color:#f3d98a!important}' + G + ' .p2-kv .v [style*="#a01818"]{color:#ff8a80!important}' +
+    G + ' .p2-meira{color:#c9d0da!important}' +
+    G + ' .p2-dalk{border-right-color:rgba(255,255,255,.1)!important}' +
+    G + ' .p2-athug{border-top-color:rgba(255,255,255,.12)!important;color:#d9dee6}' +
+    G + ' .p2-athug textarea{background:rgba(0,0,0,.38)!important;color:#fff!important;border:1px solid rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.7)!important}' +
+    G + ' .p2-athug textarea::placeholder{color:#8e97a6!important}' +
+    G + ' .p2-athug .alt{color:#d9dee6!important}' +
+    G + ' .p2-mynd .ram{box-shadow:0 0 0 1px rgba(255,255,255,.2),0 12px 24px -10px rgba(0,0,0,.9)!important;border-radius:6px!important}' +
+    G + ' .p2-kpi{padding-bottom:16px!important}' +
+    G + ' .p2-kp > .in{position:relative;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px));background-image:var(--in)!important;background-color:#0a0a0c;padding:12px 18px 12px!important;gap:7px!important;height:100%;box-sizing:border-box;color:#fff}' +
     G + ' .p2-kp > .in::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--tl);pointer-events:none}' +
     G + ' .p2-kp .hn{position:absolute;width:6px;height:6px;border-radius:50%;z-index:2;pointer-events:none;background:var(--hn);box-shadow:var(--hg)}' +
     G + ' .p2-kp .cap{display:none!important}' +
@@ -206,7 +227,7 @@
     G + ' .p2-kp .lb{display:flex!important;align-items:center;gap:9px;white-space:nowrap;font:700 10.5px ' + MONO + '!important;letter-spacing:.18em!important;text-transform:uppercase;color:#d9dee6!important;min-width:0}' +
     G + ' .p2-kp .lb::before{content:"";width:7px;height:7px;border-radius:50%;flex:none;background:var(--led);box-shadow:var(--ledg)}' +
     /* talan */
-    G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:40px!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
+    G + ' .p2-kp .big{font-family:' + SERIF + '!important;font-size:34px!important;font-weight:800;line-height:1;letter-spacing:-.02em;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.35);white-space:nowrap}' +
     G + ' .p2-kp .bigl{font-family:' + SERIF + ';font-size:16px!important;font-weight:700;color:#d9dee6!important;margin-left:4px}' +
     /* línur og skýringar í letri plötunnar */
     G + ' .p2-kp .sm{font:400 12.5px ' + MONO + '!important;color:#d5dbe6!important;line-height:1.5}' +
@@ -217,16 +238,16 @@
     G + ' .p2-kp .aths{font:400 11.5px ' + MONO + '!important;color:#f3d98a!important}' +
     G + ' .p2-kp .nota{font:italic 400 12px ' + SANS + '!important;color:#c9d0da!important}' +
     /* súlur: innfelldar, málmgradient ofan á lit hvers búts */
-    G + ' .p2-kp .bar,' + G + ' .p2-kp .bar2{height:11px!important;border-radius:4px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important;display:flex;gap:2px!important;overflow:hidden}' +
+    G + ' .p2-kp .bar,' + G + ' .p2-kp .bar2{height:9px!important;border-radius:4px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important;display:flex;gap:2px!important;overflow:hidden}' +
     G + ' .p2-kp .bar i,' + G + ' .p2-kp .bar2 i{border-radius:0!important;min-width:6px;background-image:linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.06) 38%,rgba(0,0,0,.28) 62%,rgba(255,255,255,.08) 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)!important}' +
     /* flísar (eins og .b414-f) */
     G + ' .p2-kp .flis3{gap:6px!important}' +
-    G + ' .p2-kp .flis3 span{display:flex;flex-direction:column;justify-content:center;gap:2px;height:48px;box-sizing:border-box;padding:6px 8px!important;border-radius:6px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.1)!important}' +
+    G + ' .p2-kp .flis3 span{display:flex;flex-direction:column;justify-content:center;gap:1px;height:38px;box-sizing:border-box;padding:4px 8px!important;border-radius:6px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.1)!important}' +
     G + ' .p2-kp .flis3 small{font:700 9.5px ' + MONO + '!important;letter-spacing:.14em!important;color:#a9b1bf!important}' +
     G + ' .p2-kp .flis3 b{font:700 12px ' + MONO + '!important;color:#fff!important}' +
     /* mánaðarborðinn: 12 innfelld hólf, skoðunarmánuður í málmlit, líðandi mánuður rammaður */
     G + ' .p2-kp .mbord{gap:3px!important}' +
-    G + ' .p2-kp .mbord i{height:10px!important;border-radius:2px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important}' +
+    G + ' .p2-kp .mbord i{height:7px!important;border-radius:2px!important;background:#131316!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)!important}' +
     G + ' .p2-kp .mbord i.on.st-g{background:' + GR + '!important}' + G + ' .p2-kp .mbord i.on.st-y{background:' + GU + '!important}' + G + ' .p2-kp .mbord i.on.st-r{background:' + RA + '!important}' +
     G + ' .p2-kp .mbord i.nu{outline:1.5px solid #f3d98a!important;outline-offset:1px}' +
     /* plötur (mánuður, Greitt, Í vinnslu …) eins og .b414-p */
@@ -236,7 +257,7 @@
     G + ' .p2-kp .man{position:static!important;flex:none;margin-top:-3px;margin-right:16px}' +
     G + ' .p2-kpi.tvaer > .p2-kp-taeki,' + G + ' .p2-kpi.tvaer > .p2-kp-bk{grid-row:span 2}' +
     G + ' .p2-kpi.tvaer.s3 > .p2-kp:last-child{grid-column:span 2}' +
-    G + ' .p2-kp .big.ord{font-size:28px!important;letter-spacing:-.01em}' +
+    G + ' .p2-kp .big.ord{font-size:24px!important;letter-spacing:-.01em}' +
     G + ' .p2-kp .big.gul{color:#f3d98a!important}' +
     G + ' .p2-kp .sm,' + G + ' .p2-kp .ft{display:flex!important;flex-wrap:wrap;gap:2px 14px;align-items:center}' +
     G + ' .p2-kp .fx{white-space:nowrap}' +
@@ -382,6 +403,8 @@
     '#companies-main .p2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
     '#companies-main .p2-kp-taeki,#companies-main .p2-kp-bk{grid-column:1/-1;grid-row:auto!important}' +
     '#companies-main .p2-kpi{padding:10px 6px!important;gap:10px!important}' +
+    G + ' .p2-glugg{padding:18px 12px 30px!important}' + G + ' .p2-glugg::before{left:6px;right:6px;bottom:10px}' + G + ' .p2-glugg::after{left:8px;right:8px;bottom:12px}' +
+    G + ' .p2-dalk{border-bottom-color:rgba(255,255,255,.1)!important}' +
     '#companies-main .p2-kpi > .p2-kp:not(.p2-kp-kerfi):not(.p2-kp-taeki):not(.p2-kp-bk):nth-last-child(2):nth-child(odd){grid-column:1/-1}' +
     '#companies-main .p2-kp .lb{font-size:13px!important}' +
     G + ' .p2-kpi > .p2-kp:not(.p2-kp-taeki):not(.p2-kp-bk) .big:not(.ord){font-size:30px!important}' +
