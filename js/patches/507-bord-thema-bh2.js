@@ -163,7 +163,7 @@
       H + ' .seg button[aria-pressed="true"]{background:#0b2d5f;color:#fff;font-weight:600;box-shadow:none}',
       H + ' .seg.sm{padding:2px;gap:2px;border-radius:8px}',
       H + ' .seg.sm button{height:26px;padding:0 10px;font-size:13px;border-radius:6px}',
-      H + ' .seg.modeseg{flex:1 1 640px;display:flex;background:#fff;border-radius:14px;padding:6px;box-shadow:' + SH + '}',
+      H + ' .seg.modeseg{flex:1 1 auto;display:flex;background:#fff;border-radius:14px;padding:6px;box-shadow:' + SH + '}',
       H + ' .seg.modeseg button{flex:1 0 auto;height:40px;padding:0 16px;border-radius:10px;font:600 14px var(--body)}',
       H + ' .seg.modeseg button:hover{background:#f6f9fd}',
       H + ' .seg.modeseg button[aria-pressed="true"]{background:linear-gradient(180deg,#ff8a1f,#ec5300);color:#fff;box-shadow:' + GLOD + '}',

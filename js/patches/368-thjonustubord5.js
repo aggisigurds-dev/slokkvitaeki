@@ -1127,6 +1127,10 @@
        * einni línu voru KLIPPTIR af — á tölvu var hvorki hægt að skruna að þeim né sjá þá (mælt: „Skýrslur" hálfur undir
        * „+ Hamur"). Hamaröðin brýtur nú um í fleiri línur og ekkert er falið. Appsniðið skrunar áfram (sjá ofar). */
       '.seg.modeseg{flex-wrap:wrap;max-width:100%}',
+      /* 19.11.2026 (Agnar: „fylla þetta út í gluggann“): hamaröðin endaði í miðjum skjá og auða plássið hægra megin fór
+       * í `.grow`-bilið. Hún tekur nú það sem eftir er af línunni og takkarnir standa við hægri brúnina. */
+      '.modes>.seg.modeseg{flex:1 1 auto;min-width:0}',
+      '.modes>.grow{flex:0 0 0}',
       '.seg.modeseg button{border-top:1px solid var(--edge)}.seg.modeseg button:first-child{border-top:0}',
       '.seg.sm button{height:26px;padding:0 9px;font-size:12.5px}',
       '.seg .c{font-family:var(--mono);font-size:11.5px;margin-left:5px;font-variant-numeric:tabular-nums}',
