@@ -78,7 +78,7 @@
     ['#_kt450', 'bk adrar'],
     ['#_bs468', 'bygg'],
     ['#co-fp-section', 'teikn'],
-    ['#_bgm477', 'teikn'],
+    ['#_bgm477', 'bygg teikn'],
     ['._afsl-box', 'kjor']
   ];
 
@@ -87,8 +87,8 @@
     G + ' > *{flex:none!important;min-height:0}' +
     G + ' > #p2-haus,' + G + ' > #p2-msimi,' + G + ' > #p2-kpi,' + G + ' > #p2-glugg,' + G + ' > #p2-samsk,' + G + ' > #p2-teikn,' + G + ' > #p2-adrar{overflow:visible!important}' +
     G + ' > #p2-haus,' + G + ' > #p2-msimi{order:1}' + G + ' > #p2-kpi{order:2}' + G + ' > #p2-glugg{order:3}' + G + ' > .co-banner{order:4}' +
-    G + ' > #p2-samsk,' + G + ' > ._samskipti-host{order:5}' + G + ' > #p2-flipar{order:6}' + G + ' > #p2-teikn{order:7}' + G + ' > #p2-adrar{order:8}' +
-    G + ' > [data-p2t]:not(#p2-teikn):not(#p2-adrar){order:9}' + G + ' > *:not([id^="p2-"]):not(.co-banner):not(._samskipti-host):not([data-p2t]){order:10}' +
+    G + ' > #p2-samsk,' + G + ' > ._samskipti-host{order:5}' + G + ' > #p2-flipar{order:6}' + G + ' > #p2-teikn{order:7}' + G + ' > #p2-adrar{order:8}' + G + ' > #p2-bygg{order:8}' +
+    G + ' > [data-p2t]:not(#p2-teikn):not(#p2-adrar):not(#p2-bygg){order:9}' + G + ' > *:not([id^="p2-"]):not(.co-banner):not(._samskipti-host):not([data-p2t]){order:10}' +
     G + ' > div:first-child{display:none!important}' +
     G + ' > .co-banner:not(.p2-open){display:none!important}' +
     G + ' > .p2-gomul{display:none!important}' +
@@ -152,6 +152,9 @@
     '#companies-main .p2-kp.ramm-g{box-shadow:0 0 0 2px #16783f,0 10px 22px -14px rgba(0,0,0,.55)}' +
     '#companies-main .p2-kp.ramm-a{box-shadow:0 0 0 2px #c48a1f,0 10px 22px -14px rgba(0,0,0,.55)}' +
     '#companies-main .p2-kp .cap{height:5px}' +
+    '#companies-main .p2-bygg{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:linear-gradient(180deg,#232833,#141822);color:#fff;border-radius:12px}' +
+    '#companies-main .p2-bygg .t{font:700 11px ' + MONO + ';letter-spacing:.16em;text-transform:uppercase;color:#d9dee6}' +
+    '#companies-main .p2-bygg .u{flex:1;min-width:0;font:600 13.5px "IBM Plex Sans",system-ui,sans-serif;color:#fff}' +
     '#companies-main .p2-kp:has(.man) .lb{padding-right:48px}' +
     '#companies-main .p2-kp .man{position:absolute;top:14px;right:12px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#3a4250,#141822);border-radius:5px;padding:3px 8px}' +
     '#companies-main .p2-kp .cap.g{background:linear-gradient(90deg,#0a4a26,#22c06a,#0a4a26)}' +
@@ -265,6 +268,7 @@
     '#companies-main .p2-kv .k{width:96px}' +
     '#companies-main .p2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
     '#companies-main .p2-kp-taeki{grid-column:1/-1}' +
+    '#companies-main .p2-mono{display:none}' +
     '#companies-main .p2-dalk{border-right:0;border-bottom:1px solid #c3cad5;padding:0 14px 10px;margin-bottom:10px}' +
     '#companies-main .p2-mynd{padding:0 14px}' +
     '#companies-main .p2-mynd .ram{min-height:170px}' +
@@ -647,7 +651,7 @@
     KAFLAR.forEach(function (k) { var e = sel(m, k[0]); if (e && e.parentNode === m && e.getAttribute('data-p2t') !== k[1]) e.setAttribute('data-p2t', k[1]); });
     /* allt annað sem var beint barn og er enn sýnilegt í gamla prófílnum án flipa → Aðrar þjónustur (Nýr staður, Bæta við tæki …) */
     allt(m, ':scope > div').forEach(function (e) {
-      if (e.id === 'p2-haus' || e.id === 'p2-msimi' || e.id === 'p2-kpi' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn' || e.id === 'p2-adrar') return;
+      if (e.id === 'p2-haus' || e.id === 'p2-msimi' || e.id === 'p2-bygg' || e.id === 'p2-kpi' || e.id === 'p2-glugg' || e.id === 'p2-athug' || e.id === 'p2-samsk' || e.id === 'p2-flipar' || e.id === 'p2-teikn' || e.id === 'p2-adrar') return;
       if (e === m.firstElementChild || e.classList.contains('co-banner') || e.classList.contains('_samskipti-host') || e.hasAttribute('data-p2t')) return;
       if (e.classList.contains('info-grid') || e.id === 't485-top') return;
       if (/Nýr staður/.test(e.textContent)) e.setAttribute('data-p2t', 'adrar');
@@ -784,13 +788,34 @@
     }
   }
 
+  /* Byggingarupplýsingar (Agnar 19.11.2026): „setja búnaðargreiningarhnappinn inn í byggingarupplýsingar og verður
+     síðan allt opið þar þegar búið er að opna greininguna einu sinni“. Stika efst í flipanum með takkanum (umboð á
+     #bgr-takki) og samantekt greiningarinnar. Myndaspjaldið 477 sýnir sig líka í flipanum, og allar hæðir eru opnaðar
+     sjálfkrafa. Greiningin sjálf er vistuð í grunninum, svo hún stendur þar við hverja heimsókn. Engin skrif héðan. */
+  function byggStika(m) {
+    /* hnúturinn er settur einu sinni aftast og aldrei færður; CSS `order:8` setur hann efst í flipanum (á undan 9) */
+    var st = document.getElementById('p2-bygg');
+    if (!st) { st = document.createElement('div'); st.id = 'p2-bygg'; st.className = 'p2-bygg p2-nytt'; st.setAttribute('data-p2t', 'bygg'); }
+    if (st.parentNode !== m) m.appendChild(st);
+    var til = !!sel(m, '#bgr-takki');
+    var und = txt(sel(m, '#_bgm477 [data-bgm="undir"]'));
+    var html = '<span class="t">Búnaðargreining</span><span class="u">' + esc(und || (til ? 'Engin greining vistuð enn' : '')) + '</span>' +
+      (til ? '<button type="button" class="p2-til p2-gr" data-p2="bgr">' + (und ? 'Opna greininguna' : 'Búnaðargreining') + '</button>' : '');
+    if (st.__h !== html) { st.innerHTML = html; st.__h = html; }
+    if (m.getAttribute('data-p2tab') === 'bygg') {
+      var fl = sel(m, '#_bgm477 [data-bgm="fleiri"]');
+      var fid = window._currentCompanyId;
+      if (fl && !fl.hidden && fl.getAttribute('aria-expanded') !== 'true' && m.__p2bgmOpid !== fid) { m.__p2bgmOpid = fid; fl.click(); }
+    }
+  }
+
   function tikk() {
     if (document.hidden) return;
     var m = document.getElementById('companies-main');
     if (!m || !sel(m, ':scope > .co-banner') || !sel(m, '.co-banner-name')) return;
     stilar();
     if (!m.classList.contains('p2')) m.classList.add('p2');
-    byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m);
+    byggja(m); merkja(m); samskiptaBox(m); athugasemd(m); endurteikna(m); byggStika(m);
   }
 
   setInterval(tikk, 600);
