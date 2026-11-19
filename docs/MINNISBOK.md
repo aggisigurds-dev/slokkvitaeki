@@ -5,7 +5,7 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-19 16:13 · 2591 virkar staðreyndir — 1484 prentaðar hér
+Sótt 2026-11-19 17:24 · 2592 virkar staðreyndir — 1485 prentaðar hér
 
 > ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (948 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
@@ -3063,6 +3063,25 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br>Mælt 12.08.2026: 2026 = 206 af 279 skýrslum með reikning tengdan (73,8%). 2025 = 1 af 238, þótt 95 þeirra eigi reikning á sömu kt í customer_documents. Reikningasafn 2025 (326 skjöl) er því nánast ósnert af pöruninni. Bakfylling þarf að keyra pörunina á year=2025 sérstaklega.
   <br><sub>2026-08-12 · brunaholf · sql · cowork</sub>
 
+### profill
+
+- **199 _repHafid: '⏳ Í vinnslu' á skýrslulínu fylgir nú IVinnslu.er (476), ekki fcStatus claude/gap (Agnar 19.11.2026: kom á flest félög). Prófíll 500: Búnaðarkassi með slöngum og reykskynjurum (litur eftir tegund eins og tækjalisti), mánuður í horni úttektar- og brunakerfiskassa, Búnaðargreining (477) líka í flipanum Byggingarupplýsingar með stiku #p2-bygg og allar hæðir opnaðar sjálfkrafa.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Nýi fyrirtækjaprófíllinn (patch 500, hönnun A) er SJÁLFGEFINN fyrir alla síðan 19.11.2026 (Agnar: keyra á allt / allir viðskiptavinir). ?prof=1 = gamla útlitið. VidskDetail.show (158) beinist á _openCompanySafe; gamla viðskiptavinasíðan í ⋯ 'Viðskiptavinasíða (eldri)'.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtækjaprófíll ?prof=2 fékk hönnun A í Brunastáli 19.11.2026 (patch 500 v20261119e): 7 lykiltölukassar #p2-kpi, gluggi Staður/Húsið/Á staðnum + stór mynd með Teikningar-takka (Hreyfingaryfirlit fært í ⋯), athugasemd 2 línur. Heimildir per reit í docs/PROFILL-I-EIGINLEIKAR.md §8.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtækjaprófíll: Agnar valdi 19.11.2026 Hugmynd A (lifandi mælaborð) í Brunastáli, ekki Brunahólf V2. Útlitið er á Design-striganum https://claude.ai/artifact/KifUibJ7RZxGyKXHkLcZGk (borð Hugmynd-A): ein röð lykiltalna (slökkvitæki eftir tegund og stærð, slöngur/reykskynjarar, brunakerfi, síðasta úttekt, viðskipti á ári, skjöl, samskiptastaða), gluggi með stórri mynd + Búnaðargreining/Teikningar, tveggja lína athugasemd, flipar neðst. Ekki enn smíðað í ?prof=2.**
+  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
+- **Tækjatölur á prófíl eru sýndar eftir TEGUND: flokkahausar tækjalistans (.ut-grp-h: Léttvatn/Duft/CO₂/Slanga N tæki). 'N slökkvitæki' í haus listans telur slöngur með (207: 62 = 43+1+18 slöngur) — ekki sýna þá tölu sem fjölda slökkvitækja.**
+  <br>Fannst 10.11.2026 við samanburð gamalt/nýtt: 207 Heilsustofnun, 186 Miklatorg (Duft 15 + CO₂ 58), 117 (Léttvatn 1 + CO₂ 1).
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Þjónustuflipar á prófíl (274): #_sks-tabs með data-flipi='ars' (slökkvitæki) og 'bru' (brunakerfi); brunakerfis-spjaldið er #_sks-bru, beint barn #companies-main. Texti flipans (._sks-tu) ber 'N einingar' og 'skoðað DD/MM/YYYY' — eina heimildin á prófílnum fyrir brunakerfi í 'Búnaður í þjónustu'.**
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+- **Fyrirtækjaprófíll hönnun I = js/patches/500-profill-i.js á bak við ?prof=2 (engin vafra-geymsla). Hreint framsetningarlag: les DOM gamla prófílsins (363/404/403/286/450/274), skrifar ekkert, allir takkar eru umboð (click á upprunalega takkann). Röng tala þar = röng í gamla prófílnum. Skrá yfir hvar hver reitur endaði: docs/PROFILL-I-EIGINLEIKAR.md.**
+  <br>Agnar samþykkti hönnun I 09.11.2026; birt 10.11.2026 (master e0b937a og áfram). Flipar eru CSS-sýnileiki (data-p2t) + flex/order, enginn hnútur fluttur. Nýr kafli í #companies-main sést í öllum flipum þar til hann fær línu í KAFLAR.
+  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
+
 ### samkeppni
 
 - **Útboðsrannsókn 17.11.2026 (3 agentar, TED+fundargerðir+Norðurlönd), allt í Útboð-flipanum (510): (1) Vöktun brunakerfa Reykjavíkur: 14158 (2018, 60 mán+2) Öryggismiðstöð 88,74 m kr m. VSK vs Securitas 129,25 m; 16146 (2025, lægsta verð 100 %) Securitas 109,79 m m. VSK vs Öryggismiðstöð 110,67 m (0,8 % munur), gildir 1.7.2025–30.6.2029, nýtt útboð ætti að opnast ~maí 2029. (2) Slökkvitæki Reykjavíkur: ÓG vann 2019 og 2023, Slökkvitækjaþjónustan ehf vann 2015 (innkauparáð 17.4.2015, fundur 342). SHS 14480 (2019) björgunar- og slökkvibúnaður: ÓG eina tilboðið 13,92 m kr. (3) Ríkið kaupir stofnun fyrir stofnun án útboðs (Opnir reikningar ríkisins 2018–30.10.2026): Slökkvitækjaþjónusta Austurlands 9,4 m kr, Aðgát 11,6 m (HÍ), Eldvarnir ehf 10,7 m (LHG), Slökkvitækjaþjónusta Suðurlands 3,8 m, Slökkvitæki ehf 2,2 m — yfirleitt 1–2 m kr á ári á seljanda, markaður dreifður. (4) Norðurlandaviðmið (TED): 1.400–7.900 kr á tæki á ári (miðgildi ~5.000), verðmæti eru rammahámark/áætlun og ná oft yfir meira en eftirlit; Oslobygg 10.220 tæki 18–25 m NOK á 4 árum. (5) Næstu atburðir: Fjársýslan RK 14.25 nýtt útboð „Q4“ (haust 2026?) rennur út 1.8.2027; ÁTVR úrslit á TED eftir ~29.11.2026; Reykjavík 15727 auglýsing ~mars 2027, opnun ~apríl 2027, lok 13.5.2027 (48 mán án framlengingar, lægsta verð). Enginn kaupandi nema Reykjavík, ÁTVR og Landspítali (brunaboð 2019) hefur birt slökkvitækjaútboð á TED 2015–2026; hjá sveitarfélögum fannst ekkert (aðeins leitarvél, ekki fundargerðagáttir). GILDRA: scratchpad er sameiginlegur milli agenta — einn agent keyrði build.cjs annars og tæmdi samk-F-skynjarar2.json (skaðlaust, vörurnar eru í repo).**
@@ -3144,23 +3163,6 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
   <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
 - **v_krofu_forskodun (12.09.2026): forskoðun ósendra krafna með sömu skilgreiningu og Kröfuyfirlit 166 — rautt (void, 999999-9999, ógild eða óþekkt kt, ótengd sala, tvíýtt úttekt), gult (bíður á borði, ekkert netfang, önnur kt staðar, einstaklingskt, 45+ dagar), grænt. Búðarsala fær aldrei tvítaks-flagg. Merkin sjást í Kröfuyfirliti → Ósendar kröfur.**
   <br><sub>2026-09-12 · slokkvitaeki · claude-code · claude-code</sub>
-
-### profill
-
-- **Nýi fyrirtækjaprófíllinn (patch 500, hönnun A) er SJÁLFGEFINN fyrir alla síðan 19.11.2026 (Agnar: keyra á allt / allir viðskiptavinir). ?prof=1 = gamla útlitið. VidskDetail.show (158) beinist á _openCompanySafe; gamla viðskiptavinasíðan í ⋯ 'Viðskiptavinasíða (eldri)'.**
-  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fyrirtækjaprófíll ?prof=2 fékk hönnun A í Brunastáli 19.11.2026 (patch 500 v20261119e): 7 lykiltölukassar #p2-kpi, gluggi Staður/Húsið/Á staðnum + stór mynd með Teikningar-takka (Hreyfingaryfirlit fært í ⋯), athugasemd 2 línur. Heimildir per reit í docs/PROFILL-I-EIGINLEIKAR.md §8.**
-  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fyrirtækjaprófíll: Agnar valdi 19.11.2026 Hugmynd A (lifandi mælaborð) í Brunastáli, ekki Brunahólf V2. Útlitið er á Design-striganum https://claude.ai/artifact/KifUibJ7RZxGyKXHkLcZGk (borð Hugmynd-A): ein röð lykiltalna (slökkvitæki eftir tegund og stærð, slöngur/reykskynjarar, brunakerfi, síðasta úttekt, viðskipti á ári, skjöl, samskiptastaða), gluggi með stórri mynd + Búnaðargreining/Teikningar, tveggja lína athugasemd, flipar neðst. Ekki enn smíðað í ?prof=2.**
-  <br><sub>2026-11-19 · slokkvitaeki · claude-code · claude-code</sub>
-- **Tækjatölur á prófíl eru sýndar eftir TEGUND: flokkahausar tækjalistans (.ut-grp-h: Léttvatn/Duft/CO₂/Slanga N tæki). 'N slökkvitæki' í haus listans telur slöngur með (207: 62 = 43+1+18 slöngur) — ekki sýna þá tölu sem fjölda slökkvitækja.**
-  <br>Fannst 10.11.2026 við samanburð gamalt/nýtt: 207 Heilsustofnun, 186 Miklatorg (Duft 15 + CO₂ 58), 117 (Léttvatn 1 + CO₂ 1).
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Þjónustuflipar á prófíl (274): #_sks-tabs með data-flipi='ars' (slökkvitæki) og 'bru' (brunakerfi); brunakerfis-spjaldið er #_sks-bru, beint barn #companies-main. Texti flipans (._sks-tu) ber 'N einingar' og 'skoðað DD/MM/YYYY' — eina heimildin á prófílnum fyrir brunakerfi í 'Búnaður í þjónustu'.**
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
-- **Fyrirtækjaprófíll hönnun I = js/patches/500-profill-i.js á bak við ?prof=2 (engin vafra-geymsla). Hreint framsetningarlag: les DOM gamla prófílsins (363/404/403/286/450/274), skrifar ekkert, allir takkar eru umboð (click á upprunalega takkann). Röng tala þar = röng í gamla prófílnum. Skrá yfir hvar hver reitur endaði: docs/PROFILL-I-EIGINLEIKAR.md.**
-  <br>Agnar samþykkti hönnun I 09.11.2026; birt 10.11.2026 (master e0b937a og áfram). Flipar eru CSS-sýnileiki (data-p2t) + flex/order, enginn hnútur fluttur. Nýr kafli í #companies-main sést í öllum flipum þar til hann fær línu í KAFLAR.
-  <br><sub>2026-11-10 · slokkvitaeki · claude-code · claude-code</sub>
 
 ### tengilidir
 
