@@ -1740,6 +1740,8 @@
       '@container t5 (min-width: 2600px){.layout{grid-template-columns:minmax(320px,380px) minmax(0,1fr) minmax(340px,420px)}' +
         '.layout.nol{grid-template-columns:minmax(0,1fr) minmax(340px,420px)}.layout.nor{grid-template-columns:minmax(320px,380px) minmax(0,1fr)}.layout.nol.nor{grid-template-columns:minmax(0,1fr)}}',
       '@container t5 (min-width: 1600px){.layout.nol.selh{grid-template-columns:minmax(0,1fr) minmax(380px,560px)}}',
+      // 19.11.2026: Dagskráin (og fliparnir) yfir alla breiddina, líka þegar „Valið mál" stendur hægra megin.
+      '.layout>.efst{grid-column:1 / -1;min-width:0;container:main / inline-size}',
       '@container t5 (max-width: 1599px){.layout.selh .rail.right{order:-1}}',
       '@container t5 (max-width: 760px){.layout.selh .rail.right{display:none}}',
       '@container main (min-width: 1500px){.board{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"master mine sel"}}',
@@ -5765,7 +5767,11 @@
           const stj = (valid && flipiTveir)
             ? '<span class="flx" data-t5="flipi-minus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Loka þessari einingu — hin stendur eftir">✕</span>'
             : ((!valid && flipiEin)
-              ? '<span class="flp" data-t5="flipi-plus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="Sýna þessa einingu VIÐ HLIÐINA á þeirri sem er opin">＋</span>'
+              // 19.11.2026: lendi Dagskráin fremst í parinu stendur hún yfir alla breiddina og hin fyrir neðan (sjá `efst`).
+              ? '<span class="flp" data-t5="flipi-plus" data-m="' + esc(k) + '" role="button" tabindex="-1" title="' +
+                ((k === 'dagskra' || flipiSyn[0] === 'dagskra') && einingaRod.indexOf('dagskra') < einingaRod.indexOf(k === 'dagskra' ? flipiSyn[0] : k)
+                  ? 'Sýna þessa einingu líka — Dagskráin stendur yfir alla breiddina og hin fyrir neðan'
+                  : 'Sýna þessa einingu VIÐ HLIÐINA á þeirri sem er opin') + '">＋</span>'
               : '');
           return '<button type="button" class="flipi" role="tab" data-t5="flipi" data-m="' + esc(k) + '" aria-selected="' + valid + '">' +
             '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + stj + '</button>';
@@ -5794,6 +5800,8 @@
         (radar ? ' draggable="true" data-hdrag="' + esc(k) + '"' : '') + '>' + bar + einingHtml(k) + res + skipt + '</div>';
     }
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
+    // 19.11.2026: Dagskráin fremst í einingahamnum fær eigin röð yfir alla breiddina — sjá `efst` við .layout hér að neðan.
+    const dskLyft = eininga && !radar && synRod[0] === 'dagskra';
     const midjuEiningar = (einingarIMidju || radar) && einingaRod.length ? ristHtml(einingaRod) : '';
     // 18.09.2026 — HÉR HVARF DAGSKRÁIN. `baraMitt` núllaði einingar hamsins, svo
     // „Afgreiðsla / Útköll" (board:true, first:[dagskra,skipulag], bara_mitt:true)
@@ -5857,13 +5865,25 @@
           mineHtml +
           '<section class="sel side colsel" aria-live="polite">' + selMarkup + '</section>' +
         '</div>'
-      : flipaHtml() + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin ? ' einn' : '') + (flipiTveir ? ' tveir' : '') + '">' + (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
-          synRod.map(frumaHtml).join('') + '</div>' +
+      : (dskLyft ? '' : flipaHtml()) + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin || (flipiTveir && dskLyft) ? ' einn' : '') + (flipiTveir && !dskLyft ? ' tveir' : '') + '">' +
+          (selEininga && !dskLyft ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
+          (dskLyft ? synRod.slice(1) : synRod).map(frumaHtml).join('') + '</div>' +
           (mode.mitt && !einingaRod.length ? emptyHtml('Vinnuborðið þitt er autt. Smelltu á „✎ Velja einingar" til að setja á það það sem þú vilt hafa hjá þér. Málin eru í hamnum „Master og mitt borð".') : '');
 
     const haegri = selEininga ? '<section class="sel side" aria-live="polite">' + selMarkup + '</section>' : '';
+    /* 19.11.2026 — DAGSKRÁIN YFIR ALLA BREIDDINA. Agnar, með skjáskoti þar sem „Valið mál" hafði kramið vikuna í mjóa
+     * dálka (eitt orð í línu): „Dagskrá línan á að vera bara breitt yfir án truflunar". Sé Dagskráin fremst í
+     * einingunum sem sjást er hún tekin úr ristinni og teiknuð sem eigin röð í .layout, ofan við skiptinguna
+     * einingar | Valið mál, og spannar báða dálkana (.layout>.efst). Fliparnir fylgja með upp svo þeir standi áfram
+     * efst. Undir 1600 px er .layout dálkur og „Valið mál" fer fremst (order:-1) eins og áður; á síma (≤760) stendur
+     * innbyggða spjaldið (.sel.inline) fyrir ofan vikuna eins og það stóð fyrir ofan ristina. Í raðham situr
+     * Dagskráin í ristinni eins og hinar, annars væri ekki hægt að draga hana. */
+    const efst = !dskLyft ? '' : '<div class="efst">' + flipaHtml() +
+      (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
+      '<div class="modgrid einn"><div class="modcell" data-sp="3">' + einingHtml('dagskra') + '</div></div></div>';
     const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (haegri ? ' selh' : ' nor') + '">' +
       (topHtml ? '<aside class="rail left" aria-label="Einingar hamsins">' + topHtml + '</aside>' : '') +
+      efst +
       '<div class="main">' + board + '</div>' +
       (haegri ? '<aside class="rail right" aria-label="Valið mál">' + haegri + '</aside>' : '') +
     '</div>';
