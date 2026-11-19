@@ -114,6 +114,7 @@
     '#companies-main .p2-ck{width:16px;height:16px;border-radius:5px;background:linear-gradient(145deg,#06331a,#16783f);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none;align-self:center;box-shadow:0 0 0 2px rgba(22,120,63,.18)}' +
     '#companies-main .p2-meira{border:0;background:none;color:#525b6b;font-weight:600;cursor:pointer;padding:0 2px;font-size:12.5px}' +
     '#companies-main .p2-gl-a{display:contents}' +
+    '#companies-main .p2-d1{grid-column:1;grid-row:1}#companies-main .p2-d2{grid-column:2;grid-row:1}#companies-main .p2-d3{grid-column:3;grid-row:1}' +
     '#companies-main .p2-mynd{grid-column:4;grid-row:1/span 2;display:flex;flex-direction:column;gap:10px;padding:0 14px 14px}' +
     '#companies-main .p2-mynd .ram{position:relative;flex:1;min-height:300px;border-radius:10px;background:#c3cad5 center/cover no-repeat;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 10px 20px -12px rgba(0,0,0,.6)}' +
     '#companies-main .p2-mynd .tak{display:flex;gap:6px}' +
@@ -228,7 +229,9 @@
     '#companies-main .p2-nm{flex:1 1 55%!important}' +
     '#companies-main .p2-skod{order:5;flex:1 0 100%}' +
     '#companies-main .p2-glugg{grid-template-columns:1fr;grid-template-rows:none;padding:10px 0}' +
-    '#companies-main .p2-mynd,#companies-main .p2-athug{grid-column:auto;grid-row:auto}' +
+    '#companies-main .p2-mynd,#companies-main .p2-athug,#companies-main .p2-d1,#companies-main .p2-d2,#companies-main .p2-d3{grid-column:1!important;grid-row:auto!important}' +
+    '#companies-main .p2-mynd{order:4}#companies-main .p2-athug{order:5;margin-top:0;padding:10px 14px 14px}' +
+    '#companies-main .p2-kv .k{width:96px}' +
     '#companies-main .p2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))!important}' +
     '#companies-main .p2-dalk{border-right:0;border-bottom:1px solid #c3cad5;padding:0 14px 10px;margin-bottom:10px}' +
     '#companies-main .p2-mynd{padding:0 14px}' +
@@ -242,6 +245,7 @@
     '#companies-main .p2-tbl .rad{grid-template-columns:1fr 1fr}' +
     '#companies-main .p2-tbl .rad.hd{display:none}' +
     '#companies-main .p2-teikn .hl{flex-direction:column;gap:2px}' +
+    '#companies-main ._afsl-box ._ahop-sel{max-width:100%;min-width:0;box-sizing:border-box}' +
     '#companies-main .p2-til{min-height:44px}';
 
   function stilar() {
@@ -356,6 +360,17 @@
       return { teg: txt(sel(r, '.teg')), dags: txt(sel(r, '.dags')), nr: txt(sel(r, 'a.sk-doc.inv')), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(r, '.s-greitt') || /greitt/i.test(txt(r)) };
     });
     d.hreyfAlls = ''; allt(m, '._dyg-section .b403-kafli .b403-hint').forEach(function (e) { var t = txt(e); if (!d.hreyfAlls && /^[\d.]+\s*kr$/.test(t)) d.hreyfAlls = t; });
+    if (!d.hreyf.length) {
+      /* síminn: 403 teiknar ársblokkir (.sk-yrblock) í stað hreyfingalistans */
+      allt(m, '._dyg-section .sk-yrblock').forEach(function (bl) {
+        var ar = (sel(bl, '.sk-yr') || {}).getAttribute ? sel(bl, '.sk-yr').getAttribute('data-yr') : '';
+        allt(bl, '.sk-svc-card').forEach(function (c) {
+          var nr = sel(c, 'a.sk-doc.inv'); if (!nr) return;
+          var u = txt(sel(c, '.sk-svc-amt')).replace(/[^\d]/g, '');
+          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt') });
+        });
+      });
+    }
     d.bgm = txt(sel(m, '#_bgm477 [data-bgm="undir"]'));
     d.bs = {};
     var bsB = sel(m, '#_bs468 [data-bs="buk"]');
@@ -474,7 +489,7 @@
     var chips = (d.teiknN ? '<span>' + d.teiknN + ' HÆÐIR</span>' : '') + (d.bgm ? '<span>' + esc(d.bgm.split(' · ').slice(1).join(' · ').toUpperCase()) + '</span>' : '');
     var mynd = '<div class="p2-mynd"><div class="ram" ' + (d.mynd ? 'style="background-image:url(\'' + esc(d.mynd) + '\')"' : '') + '><span class="lbl">' + esc(d.heimilisfang || 'Mynd') + '</span>' + (chips ? '<span class="chips">' + chips + '</span>' : '') + '</div>' +
       '<div class="tak"><button type="button" class="p2-til p2-gr" data-p2="bgr">Búnaðargreining</button><button type="button" class="p2-til p2-rd" data-p2="opna-teikn">Teikningar</button></div></div>';
-    return '<div class="p2-dalk" style="grid-column:1;grid-row:1">' + dalkur1 + '</div><div class="p2-dalk" style="grid-column:2;grid-row:1">' + dalkur2 + '</div><div class="p2-dalk" style="grid-column:3;grid-row:1">' + dalkur3 + '</div>' + mynd;
+    return '<div class="p2-dalk p2-d1">' + dalkur1 + '</div><div class="p2-dalk p2-d2">' + dalkur2 + '</div><div class="p2-dalk p2-d3">' + dalkur3 + '</div>' + mynd;
   }
 
   function adrar(d) {
