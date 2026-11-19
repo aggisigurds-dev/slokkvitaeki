@@ -4909,15 +4909,33 @@
   // með 1,15 / 0,87 sama hve lítill hann var — snertiflötur sendir tugi atburða í einni sveiflu (25 litlir = 1200 %,
   // mælt á lifandi síðu) og tveggja fingra renna, sem á að FÆRA, þysjaði. Nú: músarhjól (heil skref) = eitt þysjunarskref;
   // ctrl+hjól (klípa á snertifleti) þysjar í hlutfalli við hreyfinguna; öll önnur renna færir teikninguna.
-  // Sama regla í 445 (vinnumyndin).
+  // Sama regla í 445 (vinnumyndin) — hún kallar á window.TeiknHjolAdgerd.
+  //
+  // 19.11.2026 (Agnar: „Geturðu látið scrollhjólið á músinni zooma inn á teikningar"): hjólið FÆRÐI teikninguna á mörgum
+  // músum. Músarhjól taldist aðeins „heilt skref" ef wheelDeltaY var margfeldi af 120 OG hreyfingin ≥ 50 dílar — það
+  // bregst á fínskrefa-hjólum (Logitech MX o.fl. með mjúku skruni: wheelDeltaY 15/30/60), við mikla skjástækkun í Windows
+  // og þegar Windows skrunar 1 línu (deltaY 33). Nú:
+  //   · heilt hjólaskref (deltaMode línur/síður, eða wheelDeltaY margfeldi af 120 — óháð stærð deltaY) = eitt skref;
+  //   · ctrl+hjól (klípa á snertifleti) þysjar í hlutfalli við hreyfinguna, eins og áður;
+  //   · LÁRÉTT hreyfing (deltaX) markar hreyfinguna sem snertiflöt/hliðarskrun — hún og allt sem fylgir henni án hlés
+  //     (< 250 ms) FÆRIR teikninguna;
+  //   · annað lóðrétt skrun (fínskrefa-hjól, lóðrétt renna) þysjar MJÚKT í hlutfalli við hreyfinguna, svo tugir smáatburða
+  //     verða ekki að 1200 % eins og 21.10 (hver atburður: e^(−dy·0,0015), mest ×1,18 / ×0,85).
+  const HJOL = { t: 0, snerti: false };
   function hjolAdgerd(e) {
     const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1, dx = e.deltaX * k, dy = e.deltaY * k;
     const wd = typeof e.wheelDeltaY === 'number' ? e.wheelDeltaY : null;
-    const skref = e.deltaMode !== 0 || (dx === 0 && Math.abs(dy) >= 50 && (wd === null ? Number.isInteger(dy) : wd !== 0 && Math.abs(wd) % 120 === 0));
-    if (skref) return { f: dy < 0 ? 1.15 : 0.87 };
+    const nu = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (nu - HJOL.t > 250) HJOL.snerti = false;
+    HJOL.t = nu;
     if (e.ctrlKey) return { f: Math.min(1.25, Math.max(0.8, Math.exp(-dy * 0.01))) };
-    return { dx: -dx, dy: -dy };
+    const tikk = dx === 0 && dy !== 0 && (e.deltaMode !== 0 || (wd !== null && wd !== 0 && Math.abs(wd) % 120 === 0));
+    if (tikk) return { f: dy < 0 ? 1.15 : 0.87 };
+    if (Math.abs(dx) > 0.5) HJOL.snerti = true;
+    if (HJOL.snerti || dy === 0) return { dx: -dx, dy: -dy };
+    return { f: Math.min(1.18, Math.max(0.85, Math.exp(-dy * 0.0015))) };
   }
+  window.TeiknHjolAdgerd = hjolAdgerd;
   function zFaera(dx, dy) {
     const zk = zKv(fpEl('fp-main'));
     Z.x += dx / zk; Z.y += dy / zk; Z.sjalf = false; zBeita();
