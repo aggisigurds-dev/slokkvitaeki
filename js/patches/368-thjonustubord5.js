@@ -5870,6 +5870,8 @@
         sannanirHtml() +
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
+        // 522 Pósthólfin (19.11.2026) — hvenær hvert hólf var lesið, hvort lesarinn virkar og ↻ á þau sem má lesa héðan.
+        (() => { try { return window.Postholf ? Postholf.html() : ''; } catch (_) { return ''; } })() +
         // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
         (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
@@ -6662,6 +6664,7 @@
     if (a && a.indexOf('vs-') === 0 && window.Vinnusamantekt) { if (Vinnusamantekt.smellur(el, e)) return; }   // 489 Vinnusamantekt
     if (a && a.indexOf('ek-') === 0 && window.Einkaritari) { if (Einkaritari.smellur(el, e)) return; }   // 506 Einkaritarinn
     if (a && a.indexOf('rg-') === 0 && window.Radgjafinn) { if (Radgjafinn.smellur(el, e)) return; }   // 506 Ráðgjafinn
+    if (a && a.indexOf('ph-') === 0 && window.Postholf) { if (Postholf.smellur(el, e)) return; }   // 522 Pósthólfin
     if (a && a.indexOf('er-') === 0 && window.ErindiSimi) { if (ErindiSimi.smellurT5(el)) return; }   // 449c Erindi
     if (a && a.indexOf('mk-') === 0 && window.MerkjaKeyra) { if (MerkjaKeyra.smellur(el, e)) return; }   // 519 Merkja og keyra
     const c = cfg();

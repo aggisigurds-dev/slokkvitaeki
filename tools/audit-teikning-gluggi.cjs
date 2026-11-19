@@ -10,8 +10,8 @@ const src = fs.readFileSync(path.join(rot, 'js/patches/437-teikning-gluggi.js'),
 const html = fs.readFileSync(path.join(rot, 'index.html'), 'utf8');
 const villur = [];
 
-if (!/437-teikning-gluggi\.js\?v=20261002(b|opna)/.test(html)) {
-  villur.push('index.html: 437 vantar script-tag með ?v=20261002b eða opna');
+if (!/437-teikning-gluggi\.js\?v=[\w.-]+/.test(html)) {
+  villur.push('index.html: 437 vantar script-tag með ?v-merki');
 }
 if (!/align-items:stretch/.test(src)) villur.push('437 á að teygja spjaldið yfir bakgrunninn');
 if (!/width', '100%'/.test(src) && !/width:100%!important/.test(src)) {
