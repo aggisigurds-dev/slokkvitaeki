@@ -27,15 +27,19 @@
   var FERSKT_MS = 5 * 60 * 1000, VOPN_MS = 6000;
   var THAK = 8;   // línur sýndar í einu — einingin má ekki ýta dagskránni langt niður; „sýna öll" opnar restina
   var TEG = { tolvupostur: 'Póstur', krafa: 'Krafa', simtal: 'Símtal', verk: 'Verk', sameina: 'Breyting' };
-  var FLOKKHEITI = { bokun: 'Bókanir' };   // flokkar sem eru ekki tegund verks
-  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'], sameina: ['breyting', 'breytingar'], bokun: ['bókun', 'bókanir'] };
-  var FLOKKAR = ['allt', 'tolvupostur', 'krafa', 'simtal', 'verk', 'sameina', 'bokun'];
-  // HAMURINN „BÓKANIR“ (19.11.2026, Agnar: „geturðu sett auka ham fyrir svona“ — bókunarpóstar og bókunarsímtöl). Liður með
-  // flokkur 'bokun' (gogn.flokkur á þjóninum) býr í eigin flokki og er EKKI í „Allt“ né tegundaflokkunum, svo bókanirnar
-  // drukkni ekki í hinum verkunum og hin verkin ekki í þeim.
-  var erBokun = function (v) { return !!v && v.flokkur === 'bokun'; };
-  var iFlokki = function (v, k) { return k === 'bokun' ? erBokun(v) : !erBokun(v) && (!k || k === 'allt' || v.tegund === k); };
-  var teljaFlokka = function (l) { var t = { allt: 0 }; (l || []).forEach(function (v) { if (erBokun(v)) { t.bokun = (t.bokun || 0) + 1; return; } t.allt++; t[v.tegund] = (t[v.tegund] || 0) + 1; }); return t; };
+  var FLOKKHEITI = { dagsverk: 'Dagsverk', bokun: 'Bókanir' };   // flokkar sem eru ekki tegund verks
+  var FLEIRT = { tolvupostur: ['póstur', 'póstar'], krafa: ['krafa', 'kröfur'], simtal: ['símtal', 'símtöl'], verk: ['verk', 'verk'], sameina: ['breyting', 'breytingar'], bokun: ['bókun', 'bókanir'], dagsverk: ['dagsverk', 'dagsverk'] };
+  var FLOKKAR = ['allt', 'dagsverk', 'tolvupostur', 'krafa', 'simtal', 'verk', 'sameina', 'bokun'];
+  // SÉRFLOKKAR (19.11.2026). „Bókanir“ (Agnar: „geturðu sett auka ham fyrir svona“ — bókunarpóstar og bókunarsímtöl) og
+  // „Dagsverk“ (Agnar: „svona auka dagsvinnuplatform“ — verk dagsins, hvert með stöðu og dyrum). Liður með flokk úr
+  // SERFLOKKAR (gogn.flokkur á þjóninum) býr í eigin flokki og er EKKI í „Allt“ né tegundaflokkunum, svo hann drukkni
+  // ekki í hinum verkunum og hin verkin ekki í honum. Gildin: [eintala, fleirtala, heiti flokksins].
+  var SERFLOKKAR = { dagsverk: ['dagsverk', 'dagsverk', 'Dagsverk'], bokun: ['bókun', 'bókanir', 'Bókanir'] };
+  var serflokkur = function (v) { return v && Object.prototype.hasOwnProperty.call(SERFLOKKAR, v.flokkur) ? v.flokkur : null; };
+  var erBokun = function (v) { return serflokkur(v) === 'bokun'; };
+  var iFlokki = function (v, k) { var s = serflokkur(v); return Object.prototype.hasOwnProperty.call(SERFLOKKAR, k) ? s === k : !s && (!k || k === 'allt' || v.tegund === k); };
+  var teljaFlokka = function (l) { var t = { allt: 0 }; (l || []).forEach(function (v) { var s = serflokkur(v), k = s || v.tegund; if (!s) t.allt++; t[k] = (t[k] || 0) + 1; }); return t; };
+  var serTexti = function (tel) { return Object.keys(SERFLOKKAR).filter(function (k) { return tel[k]; }).map(function (k) { return ' · ' + tel[k] + ' ' + SERFLOKKAR[k][tel[k] === 1 ? 0 : 1]; }).join(''); };
 
 
   var S = { tilbuin: null, villa: null, loading: null, at: 0, flokkur: 'allt', opid: null, vopnad: null, vopnT: null,
@@ -804,8 +808,8 @@
     S.flokkur = 'allt'; afvopna(); S.skilabod = null;
     var syna = function () {
       if (id && S.tilbuin && !finna(id)) { toast('Verkið er ekki lengur í röðinni.', true); id = null; }
-      // 19.11.2026 (rýni): bókun býr í flokknum „Bókanir“, ekki í „Allt“ — án þessa opnaðist einingin en röðin var ekki í listanum.
-      S.flokkur = id && erBokun(finna(id)) ? 'bokun' : 'allt';
+      // 19.11.2026 (rýni): liður í sérflokki (Bókanir, Dagsverk) er ekki í „Allt“ — án þessa opnaðist einingin en röðin var ekki í listanum.
+      S.flokkur = (id && serflokkur(finna(id))) || 'allt';
       if (id) S.opid = id;
       notify();
       setTimeout(function () {
@@ -828,7 +832,7 @@
     // Fyrir símasíðuna (515): sömu hjálparföll og borðið teiknar með — engin önnur útgáfa af gögnunum eða aðgerðunum.
     vakta: function (f) { if (typeof f === 'function' && vaktar.indexOf(f) < 0) vaktar.push(f); },
     tryggja: tryggja, finna: finna, textiNu: textiNu, athNu: athNu, linur: linur, athHtml: athHtml, opnaHtml: opnaHtml, dyrHtml: dyrHtml, dyrCss: function () { return DYR_CSS; }, kr: kr, TEG: TEG,
-    erBokun: erBokun, iFlokki: iFlokki, teljaFlokka: teljaFlokka };
+    erBokun: erBokun, iFlokki: iFlokki, teljaFlokka: teljaFlokka, serflokkur: serflokkur, serTexti: serTexti, SERFLOKKAR: SERFLOKKAR };
   rot.BordAfgreidsla = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
