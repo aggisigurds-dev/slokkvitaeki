@@ -279,12 +279,20 @@
     var gE = sel(m, '.b486-gatt'); d.gatt = gE ? { href: gE.getAttribute('href'), t: txt(gE) || 'Þjónustugátt ↗' } : null;
     var sc = sel(m, '._samskipti-card');
     if (sc) {
-      var tl = allt(sc, '._skx-tile'); var tv = function (i, q) { return tl[i] ? txt(sel(tl[i], q)) : ''; };
+      var tl = allt(sc, '._skx-tile');
+      var flis = function (re) { for (var i = 0; i < tl.length; i++) if (re.test(txt(sel(tl[i], 'b')))) return tl[i]; return null; };
+      var fOpin = flis(/^opin mál/i), fTeng = flis(/^tengili/i);
+      var tSpan = fTeng ? txt(sel(fTeng, 'span')) : '', tSmall = fTeng ? txt(sel(fTeng, 'small')) : '';
+      var allTeng = (tSpan + ' ' + tSmall);
+      var netf = (allTeng.match(/[^\s,·]+@[^\s,·]+/) || [''])[0];
+      var simi = ((tSmall.match(/\+?\d[\d\s-]{5,}\d/) || [''])[0]).trim();
+      var telA = fTeng ? sel(fTeng, 'a[href^="tel:"]') : null;
       var ny = sel(sc, '._skx-nyjast'); var meta = ny ? allt(ny, '._skx-meta > span') : [];
       d.sam = {
         tala: txt(sel(sc, '.b405-talning .tala')),
-        opin: { a: tv(2, 'span'), b: tv(2, 'small') },
-        tengi: { a: tv(3, 'span'), b: tv(3, 'small'), tel: tl[3] && sel(tl[3], 'a') ? sel(tl[3], 'a').getAttribute('href') : '' },
+        opin: { a: fOpin ? txt(sel(fOpin, 'span')) : '', b: fOpin ? txt(sel(fOpin, 'small')) : '' },
+        tengi: { nafn: (tSpan && !/@/.test(tSpan)) ? tSpan : '', a: netf, b: simi, tel: telA ? telA.getAttribute('href') : '' },
+        has: { svara: !!sel(sc, '._skx-svara'), nyr: !!sel(sc, '._skx-nyr'), mark: !!sel(sc, '._ssk-mark'), saga: !!sel(sc, '._ssk-toggle'), meira: !!sel(sc, '.b411-samsk-meira') },
         fra: meta.filter(function (x) { return x.className.indexOf('_skx-chip') < 0 && !/^·$/.test(txt(x)); }).slice(0, 2).map(txt),
         chips: meta.filter(function (x) { return /kunni|okkur|osvarad/.test(x.className); }).map(txt),
         subj: ny ? txt(sel(ny, '._skx-subj')).replace(/[▾▸]\s*$/, '').trim() : '',
@@ -399,26 +407,26 @@
     var bidur = x.chips.some(function (c) { return /ósvarað/i.test(c); });
     var nafnFra = x.fra[0] || d.nafn || '';
     var ini = nafnFra.split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
-    var sima = (x.tengi.b || '').replace(/^[^\d+]+/, '');
+    var sima = x.tengi.b || '';
     var yf = function (k, v, tengill) { return v ? '<div class="r"><span>' + esc(k) + '</span><b>' + (tengill || esc(v)) + '</b></div>' : ''; };
     return '<div class="hd">SAMSKIPTI</div><div class="gr">' +
       '<div class="c1"><div class="kass">' +
         (x.opin.a ? '<div><span>Opin mál</span><b>' + esc(x.opin.a) + '</b></div>' : '') +
         (x.opin.b ? '<div><span>Beiðnir</span><b>' + esc(x.opin.b.replace(/\s*opnar beiðnir/, '')) + '</b></div>' : '') +
         (x.tala ? '<div><span>Færslur síðustu 12 mán.</span><b>' + esc(x.tala) + '</b></div>' : '') + '</div>' +
-        '<button type="button" class="p2-til p2-gr" data-p2="sam-nyr">+ Nýr póstur</button>' +
-        '<button type="button" class="p2-til" data-p2="sam-saga">Póstsaga</button>' +
-        '<button type="button" class="p2-til" data-p2="sam-afgr">Merkja afgreitt</button>' +
+        (x.has.nyr ? '<button type="button" class="p2-til p2-gr" data-p2="sam-nyr">+ Nýr póstur</button>' : '') +
+        (x.has.saga ? '<button type="button" class="p2-til" data-p2="sam-saga">Póstsaga</button>' : '') +
+        (x.has.mark ? '<button type="button" class="p2-til" data-p2="sam-afgr">Merkja afgreitt</button>' : '') +
         (x.imp ? '<button type="button" class="p2-til" data-p2="sam-imp">' + esc(x.imp) + '</button>' : '') +
-        '<button type="button" class="p2-til" data-p2="sam-meira">Meira</button></div>' +
+        (x.has.meira ? '<button type="button" class="p2-til" data-p2="sam-meira">Meira</button>' : '') + '</div>' +
       '<div class="c2"><div class="flip" role="tablist"><button type="button" role="tab" data-p2="sam-tab-samtal" aria-selected="true">Samtal</button>' +
         '<button type="button" role="tab" data-p2="sam-tab-allt" aria-selected="false">Allar færslur</button>' +
         '<button type="button" role="tab" data-p2="sam-tab-vinna" aria-selected="false">Vinnusaga</button></div>' +
         (x.subj || x.txt ? '<div class="msg"><span class="av' + (fraKunna ? '' : ' ok') + '">' + esc(ini) + '</span><div class="tx"><b>' + esc(nafnFra) + '</b> <span class="m">' + esc(x.fra[1] || '') + '</span>' +
           (x.subj ? '<div class="l"><b>' + esc(x.subj) + '</b></div>' : '') + (x.txt ? '<div class="l">' + esc(x.txt) + '</div>' : '') + '</div>' +
           (bidur ? '<span class="p2-pl am">Svar bíður</span>' : '<span class="p2-pl">' + (fraKunna ? 'Svarað' : 'Frá okkur') + '</span>') + '</div>' : '<div class="msg"><div class="tx">Engin samskipti skráð</div></div>') +
-        '<div class="svar"><button type="button" class="inn" data-p2="sam-svara">Skrifa svar til ' + esc(d.nafn) + '…</button><button type="button" class="p2-til p2-gr" data-p2="sam-svara">Svara</button></div></div>' +
-      '<div class="c3"><div class="yf"><div class="t">YFIRLIT SAMSKIPTA</div>' + yf('Aðili', d.nafn) + yf('Tengiliður', d.tengilidur) +
+        (x.has.svara ? '<div class="svar"><button type="button" class="inn" data-p2="sam-svara">Skrifa svar til ' + esc(d.nafn) + '…</button><button type="button" class="p2-til p2-gr" data-p2="sam-svara">Svara</button></div>' : '') + '</div>' +
+      '<div class="c3"><div class="yf"><div class="t">YFIRLIT SAMSKIPTA</div>' + yf('Aðili', d.nafn) + yf('Tengiliður', d.tengilidur || x.tengi.nafn) +
         yf('Netfang', x.tengi.a) + yf('Sími', sima, sima ? '<a href="' + esc(x.tengi.tel || 'tel:' + sima) + '" class="p2-n">' + esc(sima) + '</a>' : '') + '</div>' +
         (x.sigs.length ? '<div class="yf"><div class="t">MERKI Í PÓSTSÖGU</div><div class="sig">' + x.sigs.map(function (g) { return '<span>' + esc(g) + '</span>'; }).join('') + '</div></div>' : '') + '</div>' +
       '</div>';
@@ -527,14 +535,17 @@
       ['Merkja mikilvægt', '._imp-toggle'],
       ['Endurnýja', '#_co-endurnyja'],
       ['Póstafrit', '.sk-mailpref'],
-      ['Eyða', '._co-delete']
+      ['Eyða', '._co-delete'],
+      ['Gamla útlitið', '#companies-main']
     ];
     var v = document.createElement('div'); v.className = 'p2-valm'; v.setAttribute('role', 'menu');
     var html = '';
     atridi.forEach(function (a, i) {
+      if (a[0] === 'Gamla útlitið') { html += '<hr><button type="button" role="menuitem" data-i="' + i + '">Skipta yfir í gamla útlitið</button>'; return; }
       var el = sel(m, a[1]); if (!el) return;
       var t = txt(el).replace(/^[^\wÁ-ÿ]+/, '') || a[0];
       if (i === 0) t = 'Þjónustusamningur';
+      if (a[0] === 'Gamla útlitið') { html += '<hr><button type="button" role="menuitem" data-i="' + i + '">Skipta yfir í gamla útlitið</button>'; return; }
       html += (a[0] === 'Eyða' ? '<hr>' : '') + '<button type="button" role="menuitem" data-i="' + i + '"' + (a[0] === 'Eyða' ? ' class="eyda"' : '') + '>' + esc(t) + '</button>';
     });
     v.innerHTML = html;
@@ -548,7 +559,9 @@
     document.addEventListener('mousedown', ut, true); document.addEventListener('keydown', lyk, true);
     v.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-i]'); if (!b) return;
-      var a = atridi[+b.getAttribute('data-i')]; var el = sel(m, a[1]); loka(); if (el) el.click();
+      var a = atridi[+b.getAttribute('data-i')]; loka();
+      if (a[0] === 'Gamla útlitið') { var u = new URL(location.href); u.searchParams.delete('prof'); location.href = u.toString(); return; }
+      var el = sel(m, a[1]); if (el) el.click();
     });
     var fyrsti = v.querySelector('button'); if (fyrsti) fyrsti.focus();
   }
