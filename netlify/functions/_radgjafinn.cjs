@@ -524,7 +524,9 @@ function stadfesta(svar, f) {
   // Agnar 15.11.2026: „einbeitum okkur bara á stærstu málum. Og að allt sé rannsakað vel." Tony keyrir án tóla og getur ekki
   // rannsakað — því tvær FASTAR reglur hér, ekki bara í textanum: (1) peningaráð þarf MÆLDA heimild (O, P…, M, HR/CR, G) — þekking
   // (HK/CK) ein og sér dugar ekki; (2) hálfvissa („virðist", „líklega", „sennilega", „trúlega") er ekki rannsakað mál → hent.
-  const MAELD = /^(O|M|G|Pd+|[HC]R)$/;
+  // 19.11.2026: stóð `Pd+` — týnt bakskástrik. „P1“ komst því ALDREI í gegn sem mæld heimild og peningaráð með
+  // P-línu (t.d. „krafa ekki send, 47.302 kr“) var hent þegjandi. Villan kom inn með reglunni sjálfri 15.11.
+  const MAELD = /^(O|M|G|P\d+|[HC]R)$/;
   const HALFVISSA = /(^|[^a-záðéíóúýþæö])(virðist|virðast|líklega|sennilega|trúlega)([^a-záðéíóúýþæö]|$)/i;
   const rad = (Array.isArray(svar && svar.rad) ? svar.rad : []).map((x) => ({
     flokkur: FLOKKAR_RADA.includes(x && x.flokkur) ? x.flokkur : 'umbót',

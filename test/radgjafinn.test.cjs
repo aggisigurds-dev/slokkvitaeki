@@ -254,6 +254,23 @@ test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, m
   assert.equal(s.postar.H1.efni, 'Skoðun Norðurhús'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
 });
 
+// 19.11.2026 (traustmæling): reglan „peningaráð þarf MÆLDA heimild" stóð með `Pd+` — týnt bakskástrik. „P1" komst því
+// aldrei í gegn og peningaráð með P-línu var hent ÞEGJANDI frá 15.11. Hér er hver mæld heimild prófuð, ekki aðeins O og G.
+test('stadfesta: P-línur eru mældar heimildir (Pd+ var bakskástrikslaust og felldi þær allar)', async () => {
+  const h = heimur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const rad = (heimildir) => [{ flokkur: 'peningar', titill: 'Peningaráð', af_hverju: 'x', fyrsta_skref: 'y', heimildir }];
+  for (const hm of ['O', 'M', 'G', 'P1', 'P2', 'P12', 'HR', 'CR']) {
+    const s = R.stadfesta({ ...GOTT, rad: rad([hm]), heimaleiga: { stada: '', frettir: [] }, center: { stada: '', frettir: [] }, betri_leid: null }, f);
+    assert.equal(s.rad.length, 1, hm + ' á að teljast mæld heimild');
+  }
+  // Þekking ein og sér dugar áfram ekki á peningaráði — reglan sjálf er óbreytt.
+  for (const hm of ['HK1', 'CK2', 'Pd']) {
+    const s = R.stadfesta({ ...GOTT, rad: rad([hm]), heimaleiga: { stada: '', frettir: [] }, center: { stada: '', frettir: [] }, betri_leid: null }, f);
+    assert.equal(s.rad.length, 0, hm + ' má ekki duga sem mæld heimild');
+  }
+});
+
 test('stadfesta: engin betri leið (tómur listi, vantar eða ekki listi) → null, ekkert hent', async () => {
   const h = heimur(); stub(h);
   const f = await R.safna({ nu: NU });
