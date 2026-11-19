@@ -166,6 +166,13 @@
     '#companies-main .p2-kp .ft{font:11px ' + MONO + ';color:#4a5363;margin-top:auto}' +
     '#companies-main .p2-kp .bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#dfe3ea;box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}' +
     '#companies-main .p2-kp .bar i{display:block;height:100%}' +
+    /* tækjasúla eins og í tækjalistanum (Agnar 19.11.2026): aðskildir ávalir bútar + tegundir í einni línu */
+    '#companies-main .p2-kp .bar2{display:flex;gap:4px;height:10px}' +
+    '#companies-main .p2-kp .bar2 i{display:block;min-width:8px;border-radius:5px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}' +
+    '#companies-main .p2-kp .leg2{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:#3a4250}' +
+    '#companies-main .p2-kp .leg2 span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}' +
+    '#companies-main .p2-kp .leg2 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}' +
+    '#companies-main .p2-kp .leg2 b{color:#11141c}' +
     '#companies-main .p2-kp .leg{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:3px 7px;align-items:center;font-size:12.5px}' +
     '#companies-main .p2-kp .sw{width:9px;height:9px;border-radius:2px;display:inline-block}' +
     '#companies-main .p2-kp .p2-pl{font-size:11.5px;font-weight:700;color:#fff;border-radius:99px;padding:2px 9px;align-self:flex-start;background:linear-gradient(150deg,#1f9d57,#0a4a26)}' +
@@ -464,13 +471,24 @@
 
   function kpi(d) {
     var k = [];
-    var teg = Object.keys(d.gerdir).filter(function (g) { return !/slang|slöng|kefli|reykskynj/i.test(g); }).sort(function (a, b) { return d.gerdir[b] - d.gerdir[a]; });
+    /* Agnar 19.11.2026: brunaslöngur og reykskynjarar teljast með í tækjatölunni, eins og í tækjalistanum; slökkvitæki fyrst, svo slöngur, svo skynjarar */
+    var _hop = function (g) { return /slang|slöng|kefli/i.test(g) ? 1 : /reykskynj/i.test(g) ? 2 : 0; };
+    var teg = Object.keys(d.gerdir).sort(function (a, b) { return (_hop(a) - _hop(b)) || (d.gerdir[b] - d.gerdir[a]); });
     var nT = teg.reduce(function (s, g) { return s + d.gerdir[g]; }, 0);
     var LIT = ['#0ea5e9', '#b91c1c', '#6b0b0b', '#2563eb', '#16783f', '#845400'];
+    /* litur eftir TEGUND, eins og í tækjalistanum: léttvatn blátt, CO₂ rautt, duft gult, froða grænt; dekkri tónn fyrir næstu stærð */
+    var _tegN = {};
+    function litur(g, i) {
+      var k = /slang|slöng|kefli/i.test(g) ? 's' : /reykskynj/i.test(g) ? 'r' : /létt|vatn/i.test(g) ? 'v' : /co/i.test(g) ? 'c' : /duft|abc/i.test(g) ? 'd' : /froð|foam/i.test(g) ? 'f' : /feit|f-?flokk|wet/i.test(g) ? 'w' : '';
+      var T = { s: ['#14b8a6', '#0f766e'], r: ['#8a93a3', '#4a5363'], v: ['#0ea5e9', '#0369a1'], c: ['#dc2626', '#7f1d1d'], d: ['#e0a020', '#9a6a14'], f: ['#16a34a', '#14532d'], w: ['#7c3aed', '#4c1d95'] };
+      if (!k) return LIT[i % LIT.length];
+      if (_tegN[g] == null) { _tegN[g] = Object.keys(_tegN).filter(function (x) { return _tegN[x].k === k; }).length; _tegN[g] = { k: k, n: _tegN[g] }; }
+      return T[k][Math.min(_tegN[g].n, 1)];
+    }
     if (nT) k.push('<div class="p2-kp" style="flex:1.4"><div class="cap g"></div><div class="in"><span class="lb">Slökkvitæki</span><div><span class="big">' + nT + '</span> <span class="bigl">tæki · ' + teg.length + (teg.length === 1 ? ' gerð' : ' gerðir') + '</span></div>' +
-      '<div class="bar" role="img" aria-label="Tæki eftir tegund">' + teg.map(function (g, i) { return '<i style="width:' + (100 * d.gerdir[g] / nT).toFixed(1) + '%;background:' + LIT[i % LIT.length] + '"></i>'; }).join('') + '</div>' +
-      '<div class="leg">' + teg.slice(0, 4).map(function (g, i) { return '<i class="sw" style="background:' + LIT[i % LIT.length] + '"></i><span>' + esc(g) + '</span><b class="p2-n">×' + d.gerdir[g] + '</b>'; }).join('') + '</div>' +
-      (teg.length > 4 ? '<span class="ft">+' + (teg.length - 4) + ' gerðir í viðbót</span>' : '') + '</div></div>');
+      '<div class="bar2" role="img" aria-label="' + esc(teg.map(function (g) { return g + ' ' + d.gerdir[g]; }).join(', ')) + '">' + teg.map(function (g, i) { return '<i style="flex:' + d.gerdir[g] + ' 1 0;background:' + litur(g, i) + '"></i>'; }).join('') + '</div>' +
+      '<div class="leg2">' + teg.slice(0, 6).map(function (g, i) { return '<span><i class="dot" style="background:' + litur(g, i) + '"></i>' + esc(g) + ' <b class="p2-n">' + d.gerdir[g] + '</b></span>'; }).join('') + '</div>' +
+      (teg.length > 6 ? '<span class="ft">+' + (teg.length - 6) + ' gerðir í viðbót</span>' : '') + '</div></div>');
     var slong = 0, reyk = 0;
     Object.keys(d.gerdir).forEach(function (g) { if (/slang|slöng|kefli/i.test(g)) slong += d.gerdir[g]; else if (/reykskynj/i.test(g)) reyk += d.gerdir[g]; });
     var kefli = d.thj.filter(function (x) { return /slöngukefli/i.test(x.heiti); })[0];
@@ -486,7 +504,7 @@
         '<span class="p2-pl ' + (yf ? 'rd' : '') + '">' + (yf ? new Date().getFullYear() + ' óskoðað' : 'skoðað á tíma') + '</span></div></div>'); }
     var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
     if (su) k.push('<div class="p2-kp"><div class="cap g"></div><div class="in"><span class="lb">Síðasta úttekt</span>' + (d.skodMan ? '<span class="man" title="Skoðunarmánuður: ' + esc(d.skodMan) + '">' + esc(d.skodMan.slice(0, 3)) + '</span>' : '') + '<div><span class="big" style="font-size:26px">' + tugir(su.upph) + '</span> <span class="bigl">kr</span></div>' +
-      '<span class="sm p2-n">' + esc(su.nr) + (su.dags ? ' · ' + esc(su.dags) : '') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
+      '<span class="sm p2-n">' + [su.nr, su.dags].filter(Boolean).map(esc).join(' · ') + '</span>' + (su.greitt ? '<span class="p2-pl">Greitt</span>' : '') + '</div></div>');
     var ar = new Date().getFullYear() - 1, slt = 0, bkr = 0;
     d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y || +y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
     if (slt + bkr) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big" style="font-size:26px">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
