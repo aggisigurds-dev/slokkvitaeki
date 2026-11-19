@@ -46,7 +46,29 @@ function merkiFyrir(skra) {
   return m ? m[1] : null;
 }
 
+/* Síðasta breyting hverrar skrár — EIN git-keyrsla fyrir allt (19.11.2026).
+ * Áður var `git log -1 -- <skrá>` keyrt fyrir hverja skrá. Með handskrifaða listanum (11 skrár) var það ekkert;
+ * með listanum úr index.html (532 skrár) tók vörðurinn margar mínútur og féll á tímamörkum audit-all — þ.e. hann
+ * varð ómælanlegur, sem er versta tegund varðar. Hér er öll sagan lesin í einni ferð og flett upp í korti. */
+let _kort = null;
+function kortBreytinga() {
+  if (_kort) return _kort;
+  _kort = {};
+  try {
+    const ut = execFileSync('git', ['log', '--since=' + new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10), '--name-only', '--format=%x00%cs'], { cwd: rot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    let dags = null;
+    for (const lina of ut.split('\n')) {
+      if (lina.startsWith('\u0000')) { dags = lina.slice(1).trim(); continue; }
+      const s = lina.trim();
+      if (s && dags && !_kort[s]) _kort[s] = dags;     // fyrsta (nýjasta) dagsetning hverrar skráar gildir
+    }
+  } catch (_) { _kort = null; }
+  return _kort;
+}
 function sidastBreytt(skra) {
+  // Skrá sem er ekki í kortinu hefur ekki breyst í glugganum — það er svar, ekki þögn (null þýðir „git svarar ekki“).
+  const k = kortBreytinga();
+  if (k) return k[skra] || '1970-01-01';
   try {
     // 18.09.2026: í GRUNNUM klón (git clone --depth 1, sem actions/checkout gerir
     // sjálfgefið) er aðeins einn commit til, svo þetta skilar HEAD-dagsetningu
