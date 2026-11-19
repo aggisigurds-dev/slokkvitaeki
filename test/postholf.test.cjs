@@ -51,10 +51,9 @@ test('„lesið“ kemur úr keyrslum lesarans — ekki úr póstinum', () => {
 test('þrjú þrep, mæld á bilinu sem lesarinn á að keyra á', async () => {
   const P = require('../netlify/functions/_portal.cjs');
   const upphaflegt = P.sbGet;
-  const svar = (keyrslur) => (qs) => {
-    if (/automation_runs/.test(qs)) return Promise.resolve(keyrslur);
-    return Promise.resolve([]);                      // enginn póstur í grunni — breytir engu um stöðuna
-  };
+  // sbGet skilar RESPONSE, ekki röðum. Fyrsta útgáfan gleymdi .json() og stikan varð öll rauð í loftinu þótt prófið
+  // væri grænt — af því að prófið hermdi eftir röðum. Hermunin er því Response-lík, eins og alvaran.
+  const svar = (keyrslur) => (qs) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(/automation_runs/.test(qs) ? keyrslur : []) });
   try {
     // luna-bridge á 15 mín. fresti: 10 mín. = í lagi, 40 mín. = seinn, 5 klst. = villa.
     for (const [min, vaent] of [[10, 'ok'], [40, 'seinn'], [300, 'villa']]) {

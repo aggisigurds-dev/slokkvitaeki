@@ -37,9 +37,14 @@ const HOLF = [
 ];
 const lag = (s) => String(s || '').trim().toLowerCase();
 
+// ATH: P.sbGet skilar Response, ekki röðum (19.11.2026 — fyrsta útgáfa gleymdi .json() og stikan varð öll rauð í loftinu
+// þótt prófið væri grænt, því prófið hermdi eftir sbGet með hráum fylkjum. Prófið hermir nú eftir Response).
 async function lesa(qs) {
   const r = await P.sbGet(qs);
-  return Array.isArray(r) ? r : [];
+  if (!r || typeof r.json !== 'function') throw new Error('sbGet skilaði ekki svari');
+  if (!r.ok) throw new Error('Supabase ' + r.status);
+  const j = await r.json().catch(() => null);
+  return Array.isArray(j) ? j : [];
 }
 
 /* Síðasta KEYRSLA sem las hólfið: nýjasta heppnaða röðin þar sem hólfið er nefnt í `detail`.
