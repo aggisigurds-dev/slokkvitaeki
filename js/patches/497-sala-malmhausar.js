@@ -105,7 +105,7 @@
     C + ' .-n{font:500 11.5px/1 ' + MONO + '!important;color:#5b6472!important}',
     C + ' .-chip[aria-pressed="true"] .-n{color:#d9dee6!important}',
     C + ' .-chip.-tomt{opacity:.5}',
-    C + ' .-hop{font:700 10.5px/1 ' + MONO + '!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#525b6b!important;margin:0 2px 0 4px!important}',
+    C + ' .-hop{font:700 11.5px/1 ' + MONO + '!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#525b6b!important;margin:0 2px 0 4px!important}',
     C + ' .-skil{width:1px!important;height:22px!important;background:rgba(20,24,34,.16)!important;margin:0 2px!important}',
     // sími / app: ein lárétt skrunanleg röð (sparar hæð), sömu flísar
     mob(C) + '{flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;margin-bottom:8px!important;scrollbar-width:none}',
