@@ -242,6 +242,21 @@
   }
 
   // ── gögnin ────────────────────────────────────────────────────────────────
+  // Sjö töflurnar í einni umferð. Sama segð er keyrð tvisvar þegar fyrri umferð finnur ekkert og
+  // leitarorðið er broddstafalaust (sjá varaleiðina í leitaGogn), svo hún er hér á einum stað.
+  function soekja(SB, safe, like) {
+    return Promise.all([
+      safe(SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').or(`nafn.ilike.%${like}%,kennitala.ilike.%${like}%,heimilisfang.ilike.%${like}%`).limit(6)),
+      safe(SB.from('thjonustubeidni').select('id,title,customer_nafn,status,assigned_to').is('deleted_at', null).is('archived_at', null)
+        .or(`title.ilike.%${like}%,summary.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
+      safe(SB.from('solur').select('id,num,customer_nafn,samtals').or(`num.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
+      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,doc_type,fyrirtaeki_id').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(6)),
+      safe(SB.from('verkbeidnir').select('id,num,customer,status').or(`num.ilike.%${like}%,customer.ilike.%${like}%`).limit(5)),
+      safe(SB.from('uttaeki').select('id,serial,client,type').or(`serial.ilike.%${like}%,client.ilike.%${like}%`).limit(5)),
+      safe(SB.from('tilbod').select('id,num,company_nafn,samtals').or(`num.ilike.%${like}%,company_nafn.ilike.%${like}%`).limit(4))
+    ]);
+  }
+
   async function leitaGogn(q) {
     // Teljarinn er hækkaður FYRST. Væri það gert eftir „of stutt"-vörðinn gæti svar við „hotel"
     // skilað sér eftir að notandinn strokaði niður í „h" (sú leit fer aldrei í gegn) og teiknað
@@ -256,17 +271,25 @@
     // ilike fann hvergi. Orðin eru nú tengd með % svo þau megi standa í þessari röð með hverju sem er á milli.
     const like = q.trim().replace(/[%,()*"']/g, ' ').split(/\s+/).filter(Boolean).join('%');
     if (!like) { renderResults(''); return; }
-    const [co, mal, inv, doc, job, dev, qt] = await Promise.all([
-      safe(SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').or(`nafn.ilike.%${like}%,kennitala.ilike.%${like}%,heimilisfang.ilike.%${like}%`).limit(6)),
-      safe(SB.from('thjonustubeidni').select('id,title,customer_nafn,status,assigned_to').is('deleted_at', null).is('archived_at', null)
-        .or(`title.ilike.%${like}%,summary.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
-      safe(SB.from('solur').select('id,num,customer_nafn,samtals').or(`num.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
-      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,doc_type,fyrirtaeki_id').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(6)),
-      safe(SB.from('verkbeidnir').select('id,num,customer,status').or(`num.ilike.%${like}%,customer.ilike.%${like}%`).limit(5)),
-      safe(SB.from('uttaeki').select('id,serial,client,type').or(`serial.ilike.%${like}%,client.ilike.%${like}%`).limit(5)),
-      safe(SB.from('tilbod').select('id,num,company_nafn,samtals').or(`num.ilike.%${like}%,company_nafn.ilike.%${like}%`).limit(4))
-    ]);
-    if (minn !== keyrsla) return;              // nýrri innsláttur kom á meðan
+    let [co, mal, inv, doc, job, dev, qt] = await soekja(SB, safe, like);
+    if (minn !== keyrsla) return;
+    // ilike í Postgres er BRODDSTAFANÆM: „steypustod" finnur ekki „Steypustöðin". Agnar skrifar
+    // oftast án broddstafa úr símanum, svo sú leit skilaði engu (mælt í loftinu 20.11.2026).
+    // Finnist ekkert OG sé ekkert broddstafað í leitarorðinu er reynt aftur með `_` (einn stafur)
+    // í stað hvers stafs sem á sér íslenska mynd: „steypustod" → „st__p_st__", sem hittir
+    // „Steypustöðin". Aðeins VARALEIÐ: hún keyrir ekki nema fyrri umferð hafi fundið ekkert,
+    // svo venjuleg leit verður aldrei víðari en hún á að vera.
+    if (![co, mal, inv, doc, job, dev, qt].some(x => (x.data || []).length) && !/[áéíóúýðþæö]/i.test(q)) {
+      // Aðeins stafirnir sem standa fyrir íslenska mynd: a(á) e(é) i(í) o(ó/ö) u(ú) y(ý) d(ð).
+      // „t" er EKKI með — þ er ritað „th" í tveimur stöfum og `_` er einn stafur, svo það myndi
+      // aðeins víkka leitina að óþörfu.
+      const vitt = like.replace(/[aeiouyd]/gi, '_');
+      if (vitt !== like) {
+        const aftur = await soekja(SB, safe, vitt);
+        if (minn !== keyrsla) return;
+        [co, mal, inv, doc, job, dev, qt] = aftur;
+      }
+    }
     const kr = n => (n == null ? '' : Math.round(n).toLocaleString('is-IS') + ' kr');
     const r = sidurFyrir(gildi);
     (co.data || []).forEach(x => r.push({ type: 'co', icon: '🏢', title: x.nafn, meta: x.kennitala || x.heimilisfang || '', opna: () => opnaFyrirtaeki(x.id) }));

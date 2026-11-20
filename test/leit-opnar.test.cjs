@@ -332,6 +332,56 @@ test('#18 svar sem kemur eftir að glugganum var lokað er ekki teiknað', async
   assert.ok(skra['gs-results'].innerHTML.indexOf('Seinkað félag') < 0, 'teiknað í lokaðan glugga');
 });
 
+// ilike í Postgres er broddstafanæm. Agnar skrifar úr símanum án broddstafa, svo „steypustod"
+// skilaði ENGU þótt „Steypustöðin Vatnskarðsnámur" sé til (mælt í loftinu 20.11.2026).
+// Þessi SB skilar engu fyrir nákvæma orðið en finnur félagið um leið og `_` er komið í segðina.
+// ATH.: dálkaheitin sjálf bera `_` (customer_nafn, file_name), svo prófið má ALDREI leita að stökum
+// `_` í segðinni — það væri satt í hverri einustu fyrirspurn. Mælt er á víkkaða GILDINU.
+const VIKKAD = 'st__p_st__';
+function SBmedBroddstafi(saga) {
+  const q = () => {
+    let sidasta = '';
+    const o = {
+      select: () => o, is: () => o,
+      or: (s) => { sidasta = s; saga.push(s); return o; },
+      limit: () => Promise.resolve({ data: sidasta.indexOf(VIKKAD) > -1 ? [{ id: 9, nafn: 'Steypustöðin Vatnskarðsnámur' }] : [] })
+    };
+    return o;
+  };
+  return { from: () => q() };
+}
+
+test('#19 broddstafalaust orð finnur félagið samt — en aðeins sem varaleið', async () => {
+  const { G, heimur, skra } = hlada();
+  const saga = [];
+  heimur.DB = { sb: SBmedBroddstafi(saga) };
+  G.open();
+  await G.leita('steypustod');
+  assert.ok(saga.some((s) => s.indexOf('steypustod') > -1), 'nákvæma umferðin var ekki keyrð FYRST');
+  assert.ok(saga.some((s) => s.indexOf(VIKKAD) > -1), 'varaleiðin notaði ekki _ í stað stafa');
+  assert.strictEqual(saga.length, 14, 'nákvæmlega tvær umferðir, sjö töflur hvor: ' + saga.length);
+  assert.ok(skra['gs-results'].innerHTML.indexOf('Steypustöðin') > -1, 'félagið fannst ekki');
+});
+
+test('#20 varaleiðin keyrir EKKI þegar fyrri umferð fann eitthvað', async () => {
+  const { G, heimur } = hlada();
+  const saga = [];
+  heimur.DB = { sb: hægurSB(0, 'Fannst strax') };      // skilar alltaf gögnum
+  heimur.DB.sb.from = ((f) => (t) => { const o = f(t); const gamalt = o.or; o.or = (s) => { saga.push(s); return gamalt(s); }; return o; })(heimur.DB.sb.from);
+  G.open();
+  await G.leita('steypustod');
+  assert.strictEqual(saga.length, 7, 'víkkaða leitin keyrði að óþörfu: ' + saga.length + ' segðir í stað 7');
+});
+
+test('#21 broddstafað orð fer aldrei í víkkuðu leiðina', async () => {
+  const { G, heimur } = hlada();
+  const saga = [];
+  heimur.DB = { sb: SBmedBroddstafi(saga) };           // finnur aldrei neitt án `_`
+  G.open();
+  await G.leita('steypustöðin');
+  assert.strictEqual(saga.length, 7, 'víkkaða leitin keyrði á broddstafaðri leit: ' + saga.length + ' segðir');
+});
+
 // ── 4. Hnapparnir ────────────────────────────────────────────────────────────
 // Á síma ræður DOM-röðin (391 stílar stikuna aðeins frá 901px). Væri hnappnum bætt aftast lenti hann
 // á eftir öllum hnöppum stikunnar, neðst í skúffu sem þarf að skruna — mælt á 375px: y=780 af 812.
