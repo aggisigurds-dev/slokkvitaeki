@@ -26,11 +26,16 @@ const NAV = [
   { view: 'soluyfirlit', texti: 'Söluyfirlit' },
   { view: 'companies', texti: 'Fyrirtækjaþjónusta' },
   // keppir við „Brunahólf — Kerfis-kort“ um leitarorðið „kerfiskort“ (hittir aðeins á stytt „kerfis“)
-  { view: 'brunaskra', texti: 'Brunakerfis skoðun' }
+  { view: 'brunaskra', texti: 'Brunakerfis skoðun' },
+  // heiti hnapps kemur úr gögnum (starfsmannanöfn, merki) og má aldrei rata ómeðhöndlað í teikninguna
+  { view: 'ohreint', texti: '<img src=x onerror=alert(1)>' }
 ];
 const HAMIR = [{ m: 'thjonusta', texti: 'Mál' }, { m: 'peningar', texti: 'Kröfur' }];
 const EININGAR = [{ k: 'dagskra', t: 'Dagskrá' }, { k: 'postholf', t: 'Pósthólfið' }, { k: 'tilbuin', t: 'Tilbúin verk' }];
 
+// Lítil skrá yfir það sem getElementById á að skila. ensureModal býr til gluggann og skrifar
+// innihaldið sem HTML-streng, svo reitirnir inni í honum eru skráðir hér fyrirfram — annars
+// kemst prófið aldrei að renderResults, sem er einmitt þar sem v1 féll (öryggi + data-idx).
 function el(tag, yfir) {
   const e = Object.assign({
     tagName: tag, style: { cssText: '' }, dataset: {}, innerHTML: '', textContent: '', _smellir: 0,
@@ -46,20 +51,26 @@ function hlada({ medOpenCompanySafe = true } = {}) {
   const mælt = { openCo: [], opnaMal: [], opnaHam: [], switchView: [] };
   const navEl = NAV.map(n => el('button', { textContent: n.texti, dataset: { view: n.view } }));
   const hamEl = HAMIR.map(h => el('button', { textContent: h.texti, dataset: { mode: h.m, t5: 'mode' } }));
-  const topbar = el('div');
-  const body = el('body');
   const head = el('head');
+  const skraSetja = (c) => { if (c && c.id) skra[c.id] = c; return c; };
+  const vidbot = { appendChild(c) { this.children.push(c); return skraSetja(c); } };
+  const topbar = el('div', vidbot);
+  const body = el('body', vidbot);
 
   const heimur = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number, parseInt };
   heimur.window = heimur;
   heimur.location = { hash: '', href: '' };
   mælt.replaceState = [];
   heimur.history = { replaceState: (a, b, u) => mælt.replaceState.push(u) };
+  const skra = {
+    'gs-input': el('input', { value: '', focus() {} }),
+    'gs-results': el('div')
+  };
   heimur.document = {
     readyState: 'complete', head, body,
     addEventListener() {},
     createElement: (t) => el(t),
-    getElementById: () => null,
+    getElementById: (id) => skra[id] || null,
     querySelector: (sel) => {
       if (sel === '.topbar') return topbar;
       if (sel.indexOf('verkbord') > -1) return navEl[0];
@@ -77,11 +88,24 @@ function hlada({ medOpenCompanySafe = true } = {}) {
     opnaHam: (k) => { mælt.opnaHam.push(k); return true; },
     toast: (t) => mælt.toast.push(t),
     einingar: () => EININGAR.slice(),
+    hamir: () => HAMIR.map(h => ({ k: h.m, l: h.texti })),
     // „postholf" er EKKI á borði þess sem situr við það — opnaEiningu skilar false
     opnaEiningu: (k) => { mælt.opnaEiningu.push(k); return k !== 'postholf'; }
   };
   vm.runInNewContext(KODI, heimur, { filename: SKRA });
-  return { G: heimur.GlobalSearch, mælt, heimur, navEl, hamEl, topbar, body };
+  return { G: heimur.GlobalSearch, mælt, heimur, navEl, hamEl, topbar, body, skra };
+}
+
+// Supabase-keðja sem svarar eftir `bid` ms: .select().is().or().limit() → loforð.
+function hægurSB(bid, nafn) {
+  const q = () => {
+    const o = {
+      select: () => o, or: () => o, is: () => o,
+      limit: () => new Promise((r) => setTimeout(() => r({ data: [{ id: 1, nafn, kennitala: '000000-0000' }] }), bid))
+    };
+    return o;
+  };
+  return { from: () => q() };
 }
 
 // ── 1. Síðurnar finnast, og án broddstafa ────────────────────────────────────
@@ -127,7 +151,11 @@ test('#3 nákvæmt heiti raðast fremst („sala“ á undan „Söluyfirlit“)
 test('#4 tómur reitur sýnir ALLAR síður: stikan + hamirnir + stöku síðurnar', () => {
   const { G } = hlada();
   const allt = G.sidurFyrir('', G.sidur());
-  assert.strictEqual(allt.length, NAV.length + HAMIR.length + EININGAR.length + 7, 'fjöldi: ' + allt.length);
+  // Stöku síðurnar eru taldar úr listanum sjálfum: handskrifuð tala fór rautt í hvert sinn sem
+  // síðu var bætt við STAKAR, sem er ekki afturför heldur viðhald.
+  const stakar = allt.filter(x => x.meta === 'Sér síða' || x.meta === 'Annar vefur').length;
+  assert.ok(stakar >= 5, 'stöku síðurnar: ' + stakar);
+  assert.strictEqual(allt.length, NAV.length + HAMIR.length + EININGAR.length + stakar, 'fjöldi: ' + allt.length);
   assert.ok(allt.some(x => x.meta === 'Hamur á Þjónustuborðinu'), 'hamirnir vantar');
   assert.ok(allt.some(x => x.meta === 'Eining á Þjónustuborðinu'), 'einingarnar vantar');
   assert.ok(allt.some(x => x.title === 'Afgreiðsla — tilbúin verk'), 'stöku síðurnar vantar');
@@ -135,12 +163,23 @@ test('#4 tómur reitur sýnir ALLAR síður: stikan + hamirnir + stöku síðurn
 
 // Einingar borðsins (Dagskrá, Pósthólfið, Tilbúin verk …) eru það sem hann horfir á allan daginn,
 // en þær eru hvorki hnappur í stikunni né hamur. „postholfid“ skilaði engu áður en þetta kom.
-test('#4b eining finnst á beygðu heiti og opnast með opnaEiningu', () => {
-  const { G, mælt } = hlada();
+test('#4b eining finnst á beygðu heiti, borðið opnað fyrst og svo einingin', () => {
+  const { G, mælt, navEl } = hlada();
   const r = G.sidurFyrir('postholfid', G.sidur());
   assert.strictEqual(r[0].title, 'Pósthólfið', 'fann ekki eininguna: ' + r.map(x => x.title).join(', '));
   r[0].opna();
+  assert.strictEqual(navEl[0]._smellir, 1, 'Þjónustuborðs-hnappurinn var ekki smelltur fyrst');
   assert.deepStrictEqual(mælt.opnaEiningu, ['postholf']);
+});
+
+// Hamir og einingar mega ekki hverfa úr leitinni þótt borðið hafi aldrei verið teiknað: á ferskri
+// hleðslu er skugga-rót 368 ekki tengd. Listinn kemur því úr Bord368.hamir()/einingar(), ekki af skjánum.
+test('#4d hamir og einingar finnast þótt skugga-rót borðsins sé ekki til', () => {
+  const { G, heimur } = hlada();
+  heimur.Bord368.root = () => null;                    // eins og áður en render() keyrir í fyrsta sinn
+  const allt = G.sidurFyrir('', G.sidur());
+  assert.strictEqual(allt.filter(x => x.meta === 'Hamur á Þjónustuborðinu').length, HAMIR.length);
+  assert.strictEqual(allt.filter(x => x.meta === 'Eining á Þjónustuborðinu').length, EININGAR.length);
 });
 
 test('#4c eining sem er EKKI á borði notandans: sagt frá, ekki þagað', () => {
@@ -153,11 +192,15 @@ test('#4c eining sem er EKKI á borði notandans: sagt frá, ekki þagað', () =
   assert.deepStrictEqual(d.mælt.toast, []);
 });
 
-test('#5 hamur opnast með Bord368.opnaHam, ekki með því að skipta um síðu', () => {
-  const { G, mælt } = hlada();
+// 368 render() hættir samstundis sé borðssýnin ekki virk, en opnaHam/opnaEiningu skila SAMT true.
+// Stæði notandinn á Tekjum og smellti á „Kröfur" gerðist því ekki neitt — og ekkert var sagt heldur.
+// Fyrri útgáfa þessa prófs mældi aðeins að opnaHam væri kallað og festi þannig gallann (rýni 20.11.2026).
+test('#5 hamur: borðið er opnað FYRST og svo skipt um ham', () => {
+  const { G, mælt, navEl } = hlada();
   const r = G.sidurFyrir('krofur', G.sidur()).find(x => x.meta === 'Hamur á Þjónustuborðinu');
   assert.ok(r, 'fann ekki haminn');
   r.opna();
+  assert.strictEqual(navEl[0]._smellir, 1, 'Þjónustuborðs-hnappurinn var ekki smelltur fyrst');
   assert.deepStrictEqual(mælt.opnaHam, ['peningar']);
 });
 
@@ -238,7 +281,47 @@ test('#13 skjal opnast á félaginu sínu þegar það er tengt', () => {
   assert.deepStrictEqual(mælt.switchView, ['companies']);
 });
 
-// ── 3. Hnapparnir ────────────────────────────────────────────────────────────
+// ── 3. Teikningin sjálf — þar sem v1 féll ────────────────────────────────────
+// Prófin hér að ofan mæla opnunarföllin. Þau komast aldrei að renderResults, svo afturför í
+// `esc()` eða í data-idx-tengingunni færi óséð — og það er einmitt gallaflokkurinn sem v1 féll á.
+test('#16 teikningin: hvert heiti er umflúið og raðnúmerin stemma', () => {
+  const { G, skra } = hlada();
+  G.open();                                            // tómur reitur → allar síður teiknaðar
+  const html = skra['gs-results'].innerHTML;
+  assert.ok(html.indexOf('<img src=x') < 0, 'ómeðhöndlað <img> rataði í teikninguna');
+  assert.ok(html.indexOf('&lt;img src=x onerror=alert(1)&gt;') > -1, 'hættulega heitið var ekki umflúið');
+  const idx = [...html.matchAll(/data-idx="(\d+)"/g)].map((m) => Number(m[1]));
+  assert.deepStrictEqual(idx, idx.map((_, i) => i), 'raðnúmerin eru ekki samfelld frá 0');
+  assert.ok(html.indexOf('Síður og hamir') > -1, 'hópheitið vantar');
+});
+
+// Mælt í rýni 20.11.2026: svar við „hotel" skilaði sér eftir að notandinn strokaði niður í „h"
+// (sú leit fer aldrei í gegn) og var teiknað — listinn sýndi þá niðurstöður sem áttu ekkert skylt
+// við það sem stóð í reitnum.
+test('#17 gamalt svar yfirskrifar ekki nýrra', async () => {
+  const { G, heimur, skra } = hlada();
+  heimur.DB = { sb: hægurSB(250, 'Seinkað félag') };
+  G.open();
+  const p = G.leita('hotel');                          // fer af stað, svarar eftir 250 ms
+  G.leita('h');                                        // of stutt: hættir strax EN hækkar teljarann
+  await p;
+  await bida(400);
+  assert.ok(skra['gs-results'].innerHTML.indexOf('Seinkað félag') < 0,
+    'gamla svarið var teiknað ofan í nýrri leit');
+});
+
+test('#18 svar sem kemur eftir að glugganum var lokað er ekki teiknað', async () => {
+  const { G, heimur, skra } = hlada();
+  heimur.DB = { sb: hægurSB(250, 'Seinkað félag') };
+  G.open();
+  const p = G.leita('hotel');
+  G.close();
+  await p;
+  await bida(400);
+  assert.ok(skra['gs-results'].innerHTML.indexOf('Seinkað félag') < 0, 'teiknað í lokaðan glugga');
+});
+
+// ── 4. Hnapparnir ────────────────────────────────────────────────────────────
 test('#14 bæði stikuhnappurinn og fasti símahnappurinn verða til', async () => {
   const { topbar, body } = hlada();
   await bida(1400);

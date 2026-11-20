@@ -7545,9 +7545,11 @@
     // 513 VIP-vakt: „↩ Svara" opnar Tölvupósta-haminn. false ef hamurinn er ekki til eða falinn hjá þeim sem situr við borðið.
     opnaHam: k => { const n = nu(); if (!M(k) || hamFalinnHja(n, k)) return false; const c = cfg(); c.mode = k; S.filter = (M(k) || MODES.thjonusta).filter || 'allt'; S.synd = PAGE; S.view = 'master'; valIHam(); render(); vistaCfg({ mode: c.mode }); return true; },
     opnaMal: id => { const c = cfg(); c.mode = 'thjonusta'; S.filter = MODES.thjonusta.filter || 'allt'; S.synd = PAGE; S.view = 'master'; S.sel[nu()] = id; render(); vistaCfg({ mode: c.mode }); },
-    // 56 Alheimsleitin: heiti ALLRA eininga, líka þeirra sem eru ekki í hamnum sem er opinn — annars
-    // fyndist aðeins það sem er þegar á skjánum, og „pósthólfið" ætti sér ekkert svar. Opnað með opnaEiningu.
-    einingar: () => Object.keys(MODS).map(k => ({ k, t: (MODS[k] && MODS[k].t) || k })).filter(x => x.t)
+    // 56 Alheimsleitin: heiti ALLRA eininga og hama, líka þeirra sem eru ekki á skjánum. Væri lesið
+    // úr skugga-rótinni fyndist aðeins það sem er þegar teiknað — og á ferskri hleðslu er rótin ekki
+    // einu sinni tengd (rot() kallast fyrst úr render()), svo leitin væri tóm þar til borðið er opnað.
+    einingar: () => Object.keys(MODS).map(k => ({ k, t: (MODS[k] && MODS[k].t) || k })),
+    hamir: () => { const n = nu(); return hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => ({ k, l: (M(k) || {}).l || k })); }
   };
   window.Samthykkja = {
     // Hrálistinn — 446 á sína eigin síu og má ekki erfa þessa.

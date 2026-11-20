@@ -66,16 +66,21 @@
       if (!t || t.length > 40) return;
       ut.push({ type: 'sida', icon: '→', title: t, meta: 'Hliðarstika', key: norm(t), opna: () => b.click() });
     });
-    // 2) hamir Þjónustuborðsins (skugga-rót 368)
+    // 2) hamir Þjónustuborðsins. Listinn kemur úr 368 (hamir()) en ekki af skjánum: á ferskri hleðslu
+    //    er skugga-rótin ekki tengd (368 rot() kallast fyrst úr render()), og þá væru hamirnir ekki
+    //    í leitinni fyrr en borðið hefði verið opnað einu sinni — þvert á „tómur reitur sýnir allt".
     try {
-      const rot = window.Bord368 && window.Bord368.root && window.Bord368.root();
-      if (rot) rot.querySelectorAll('[data-t5="mode"]').forEach(b => {
-        const k = b.dataset.mode;
-        const t = (b.textContent || '').replace(/\s+/g, ' ').trim().replace(/\s*\d+$/, '');
-        if (!k || !t) return;
+      const H = window.Bord368 && window.Bord368.hamir;
+      const listi = typeof H === 'function' ? H() : [];
+      listi.forEach(h => {
+        if (!h || !h.k) return;
+        const t = String(h.l || h.k).replace(/\s+/g, ' ').trim().replace(/\s*\d+$/, '');
         ut.push({
-          type: 'sida', icon: '→', title: t, meta: 'Hamur á Þjónustuborðinu', key: norm(t + ' ' + k),
-          opna: () => { if (!(window.Bord368 && window.Bord368.opnaHam && window.Bord368.opnaHam(k))) b.click(); }
+          type: 'sida', icon: '→', title: t, meta: 'Hamur á Þjónustuborðinu', key: norm(t + ' ' + h.k),
+          opna: () => aBordid(() => {
+            if (!(window.Bord368 && typeof Bord368.opnaHam === 'function')) return false;
+            if (!Bord368.opnaHam(h.k)) toastEkki(t);
+          })
         });
       });
     } catch (_) {}
@@ -85,7 +90,10 @@
       const E = window.Bord368 && window.Bord368.einingar;
       if (typeof E === 'function') E().forEach(e => ut.push({
         type: 'sida', icon: '→', title: e.t, meta: 'Eining á Þjónustuborðinu', key: norm(e.t + ' ' + e.k),
-        opna: () => { if (!(window.Bord368.opnaEiningu && window.Bord368.opnaEiningu(e.k))) toastEkki(e.t); }
+        opna: () => aBordid(() => {
+          if (!(window.Bord368 && typeof Bord368.opnaEiningu === 'function')) return false;
+          if (!Bord368.opnaEiningu(e.k)) toastEkki(e.t);
+        })
       }));
     } catch (_) {}
     // 4) stakar síður
@@ -123,15 +131,21 @@
       .gs-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
       .gs-hint{padding:8px 20px;font-size:11px;color:#94a3b8;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex:0 0 auto}
       .gs-hint kbd{background:#e2e8f0;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px}
-      @media (max-width:900px){
+      /* Sjálfgefið FALINN — svo hnappurinn standi ekki óstílaður í flæði síðunnar á brotabreiddinni
+         milli 900 og 901 px (0,98 px bilið lokað hér). Birtist aðeins í símaútliti. */
+      #gs-fab{display:none}
+      @media (max-width:900.98px){
         .gs-overlay{padding-top:24px}
         .gs-hint{display:none}
-        #gs-fab{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:9998;width:52px;height:52px;border-radius:50%;
+        /* bottom 78px: #pat-launch („AI-flokka póst", 308) situr á right 18 / bottom 18 með z-index
+           100070 og #_pe-float (262) á right 14 / bottom 18 — lúpan lenti undir hvorum tveggja.
+           326 leysti sama árekstur með 78 px, svo sama hæð er notuð hér. */
+        #gs-fab{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:100075;
+          width:52px;height:52px;border-radius:50%;
           border:1px solid rgba(0,0,0,.25);background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;
           display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;padding:0}
-        .gs-overlay.show ~ #gs-fab,body.gs-opin #gs-fab{display:none}
+        #gs-fab.gs-falinn{display:none}
       }
-      @media (min-width:901px){#gs-fab{display:none}}
     `;
     document.head.appendChild(s);
   }
@@ -158,7 +172,8 @@
     });
     inp.addEventListener('keydown', e => {
       if (e.key === 'Escape') close();
-      else if (e.key === 'ArrowDown') { e.preventDefault(); selectedIdx = Math.min(selectedIdx + 1, results.length - 1); renderResults(); }
+      // Math.max(0, …): á tómum lista varð selectedIdx -1 og Enter gerði ekkert þar til ýtt var aftur.
+      else if (e.key === 'ArrowDown') { e.preventDefault(); selectedIdx = Math.max(0, Math.min(selectedIdx + 1, results.length - 1)); renderResults(); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); selectedIdx = Math.max(selectedIdx - 1, 0); renderResults(); }
       else if (e.key === 'Enter') { e.preventDefault(); openResult(results[selectedIdx]); }
     });
@@ -169,7 +184,10 @@
     SIDUR = sidur();
     gildi = '';
     document.getElementById('gs-modal').classList.add('show');
-    document.body.classList.add('gs-opin');
+    // Klasi á hnappinn sjálfan, EKKI á <body>: body-klasinn kveikti á MutationObserver-um annarra
+    // plástra (341/353/440) við hverja opnun — nákvæmlega það sem plástur 87 brenndi sig á.
+    const f = document.getElementById('gs-fab');
+    if (f) f.classList.add('gs-falinn');
     const inp = document.getElementById('gs-input');
     inp.value = '';
     synaStrax();
@@ -178,7 +196,9 @@
   function close() {
     const m = document.getElementById('gs-modal');
     if (m) { m.classList.remove('show'); document.getElementById('gs-input').value = ''; }
-    document.body.classList.remove('gs-opin');
+    const f = document.getElementById('gs-fab');
+    if (f) f.classList.remove('gs-falinn');
+    keyrsla++;                       // svar sem er á leiðinni má ekki teikna í lokaðan glugga
     results = []; selectedIdx = 0; gildi = '';
   }
 
@@ -226,10 +246,13 @@
 
   // ── gögnin ────────────────────────────────────────────────────────────────
   async function leitaGogn(q) {
+    // Teljarinn er hækkaður FYRST. Væri það gert eftir „of stutt"-vörðinn gæti svar við „hotel"
+    // skilað sér eftir að notandinn strokaði niður í „h" (sú leit fer aldrei í gegn) og teiknað
+    // niðurstöður sem eiga ekkert skylt við það sem stendur í reitnum — mælt í rýni 20.11.2026.
+    const minn = ++keyrsla;
     if (!q || q.trim().length < 2) return;
     const SB = getSB();
     if (!SB) { renderResults(''); return; }
-    const minn = ++keyrsla;
     const safe = async p => { try { return await p; } catch (e) { return { data: [] }; } };
     // „Benna, Fiskislóð" og „Hótel (Borgarnes)" skiluðu ENGU (mælt 20.11.2026): kommur og svigar voru
     // hreinsuð burt — þau mega ekki fara óbreytt í PostgREST-segðina — og eftir stóð tvöfalt bil sem
@@ -274,15 +297,28 @@
     if (typeof window._openCompanySafe === 'function') window._openCompanySafe(id);
     else hash('#company/' + id);
   }
-  function opnaMal(id) {
-    // Borðið verður að vera uppsett áður en málið er valið (368 opnaMal teiknar sjálft).
+  // 368 render() hættir samstundis sé borðssýnin ekki virk (`!v.classList.contains('active')`), og
+  // opnaHam/opnaEiningu skila SAMT true. Smellur á ham eða einingu þegar notandinn stendur á Tekjum
+  // gerði því nákvæmlega ekkert — sami gallinn og þessi útgáfa var smíðuð til að laga (rýni 20.11.2026).
+  // Því er borðið alltaf opnað fyrst og aðgerðin keyrð á eftir; skili `gera` false er reynt aftur
+  // þar til borðið er komið upp.
+  function aBordid(gera) {
     const b = document.querySelector('.vnav-btn[data-view="verkbord"]');
     if (b) b.click(); else sv('bord');
-    const reyna = (n) => {
-      if (window.Bord368 && typeof Bord368.opnaMal === 'function') { Bord368.opnaMal(id); return; }
-      if (n < 20) setTimeout(() => reyna(n + 1), 150);
+    let n = 0;
+    const reyna = () => {
+      let komst = true;
+      try { komst = gera() !== false; } catch (e) { console.warn('[leit] borðsaðgerð brást', e); }
+      if (!komst && ++n < 20) setTimeout(reyna, 150);
     };
-    reyna(0);
+    reyna();
+  }
+
+  function opnaMal(id) {
+    aBordid(() => {
+      if (!(window.Bord368 && typeof Bord368.opnaMal === 'function')) return false;
+      Bord368.opnaMal(id);
+    });
   }
   // Reikningurinn opnast í sprettiglugga (235 kallar window.open). Sé leiðin keyrð um location.hash
   // kemur hún í NÝRRI lotu — smell-keðjan er rofin og sprettigluggavörnin stöðvar hann þegjandi
