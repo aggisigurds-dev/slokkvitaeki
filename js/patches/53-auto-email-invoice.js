@@ -32,7 +32,7 @@
   function buildEmailBody(invoice) {
     const co = getSetting('company_name', 'Slökkvitæki ehf');
     const phone = getSetting('company_phone', '');
-    const intro = getSetting('email_intro', 'Sæll/sæl,\n\nMeðfylgjandi er reikningur.');
+    const intro = getSetting('email_intro', 'Góðan daginn,\n\nMeðfylgjandi er reikningur.');
     const lines = [];
     lines.push(intro);
     lines.push('');

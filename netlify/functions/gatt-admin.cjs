@@ -297,7 +297,7 @@ exports.handler = async (event) => {
       const url = origin(event) + '/gatt/?c=' + u.slug;
       const pw = (typeof body.password === 'string' && body.password) ? body.password : null;
       const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222">' +
-        '<p>Sæl/l,</p>' +
+        '<p>Góðan daginn,</p>' +
         '<p>Hér er aðgangur að þjónustuvef Slökkvitækja ehf. þar sem þú sérð stöðu brunavarna, úttektarskýrslur og reikninga fyrir ' + esc(u.display_name || 'félagið') + '.</p>' +
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br>' +
         '<b>Notandanafn:</b> ' + esc(u.email || '') + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
@@ -362,7 +362,7 @@ exports.handler = async (event) => {
       const u = ur.ok ? (await ur.json())[0] : null;
       const url = origin(event) + '/gatt/?c=' + ((u && u.slug) || '');
       const pw = (typeof body.password === 'string' && body.password) ? body.password : null;
-      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222"><p>Sæl/l' + (n.nafn ? ' ' + esc(n.nafn) : '') + ',</p>' +
+      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222"><p>Góðan daginn,</p>' +
         '<p>Hér er aðgangur þinn að þjónustugátt Slökkvitækja ehf. fyrir ' + esc((u && u.display_name) || 'félagið') + '.</p>' +
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br><b>Notandanafn:</b> ' + esc(n.email) + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';

@@ -790,7 +790,7 @@
     lokaBak();
     const okkar = (S.post[a.id] || []).find(m => m.folder === 'SENT' && m.message_id);
     const efni = valk.efni || (a.herferd && a.herferd !== 'Samstarf' ? a.herferd : 'Brunavarnir — ' + a.nafn);
-    const avarp = a.tengilidur ? 'Sæl/l ' + a.tengilidur.split(/\s+og\s+/)[0] + ',' : 'Góðan dag,';
+    const avarp = 'Góðan daginn,';
     const texti = valk.texti || (a.stada === 'rangt'
       ? avarp + '\n\nVið sendum ykkur erindi ' + fmtD(a.fyrst_sent_at) + ' sem skilaði sér ekki. Við hjá Brunahólfi Slökkvitæki ehf. sjáum um reglubundna yfirferð slökkvitækja, brunaslangna og annarra brunavarna og langar að kanna hvort þið væruð opin fyrir tilboði í þjónustuna.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · slokkvitaeki@brunaholf.is'
       : avarp + '\n\nVið sendum ykkur línu ' + fmtD(a.fyrst_sent_at) + ' um reglubundna yfirferð brunavarna og langar að heyra hvort erindið hafi borist og hvort einhver tími henti til að taka stutt spjall.\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nsími 565-4080 · slokkvitaeki@brunaholf.is');

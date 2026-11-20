@@ -1511,12 +1511,9 @@
   // Uppkast að svari. Forskrifað svo ekki þurfi að byrja á auðu blaði, en það
   // er UPPKAST — reiturinn er opinn og textinn fer ekki óskoðaður.
   function uppkast(m, sale) {
-    // `sender_name` er stundum netfangið sjálft (mælt: „Sæl(l)
-    // hussjodurinn@hussjodurinn.is,"). Nafn sem inniheldur @ eða punkt á
-    // undan léni er ekki nafn — þá er hlutlaus kveðja réttari en röng.
-    const hrátt = String(m.sender_name || '').trim();
-    const nafn = (!hrátt || hrátt.indexOf('@') >= 0) ? '' : hrátt.split(/\s+/)[0];
-    const kvedja = nafn ? 'Sæl(l) ' + nafn + ',' : 'Góðan daginn,';
+    // Ávarpið er alltaf „Góðan daginn," (Agnar 20.11.2026: „Sæl(l)" var ekki flott). Áður var fornafn sendanda
+    // notað, en `sender_name` er stundum netfangið sjálft (mælt: „Sæl(l) hussjodurinn@hussjodurinn.is,").
+    const kvedja = 'Góðan daginn,';
     const hvad = sale && sale.num ? 'reikningur ' + sale.num : 'umbeðin skjöl';
     return kvedja + '\n\nMeðfylgjandi er ' + hvad + ' eins og beðið var um.' +
       '\n\nKveðja,\nBrunahólf Slökkvitæki ehf.';
@@ -1570,12 +1567,16 @@
   }
   function buildEmailHtml(sale, co, note) {
     const noteHtml = note ? '<p style="color:#334155;font-size:13.5px;white-space:pre-wrap;margin:0 0 14px">' + esc(note) + '</p>' : '';
+    // Ávarpið kemur EINU sinni (Agnar 20.11.2026: „Allstaðar“ — „Góðan daginn“): uppkastið byrjar á „Góðan daginn,“ og þá
+    // sleppir umgjörðin sínu eigin ávarpi. Áður stóð „Sæl/l,“ efst og „Sæl(l) …,“ rétt undir því.
+    const avarpHtml = /^\s*(Góðan dag|Sæl|Kæri|Kæra|Halló)/i.test(note || '') ? '' :
+      '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Góðan daginn,</p>';
     return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:22px;color:#0f172a">' +
       '<div style="background:#C93C1D;padding:16px 20px;border-radius:10px 10px 0 0"><h1 style="margin:0;color:#fff;font-size:18px">Brunahólf Slökkvitæki ehf</h1>' +
       '<p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">Reikningur ' + esc(sale.num || '') + '</p></div>' +
       '<div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 10px 10px">' +
-        '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Sæl/l,</p>' +
+        avarpHtml +
         noteHtml +
         '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Meðfylgjandi er reikningur <strong>' + esc(sale.num || '') + '</strong>' +
           (co && co.nafn ? ' fyrir ' + esc(co.nafn) : '') + ', að upphæð <strong>' + fmtKr(sale.samtals) + '</strong>.</p>' +

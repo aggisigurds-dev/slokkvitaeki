@@ -120,8 +120,8 @@
 
   // ── Staðlaður texti (má breyta í ritlinum áður en sent er) ────────────────
   function standardText(kind, opts) {
-    const nafn = (opts && opts.nafn) || '';
-    const hi = 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',';
+    // Ávarpið er alltaf „Góðan daginn," (Agnar 20.11.2026: „Sæl(l)" var ekki flott). `opts.nafn` er ekki lengur notað í ávarpið.
+    const hi = 'Góðan daginn,';
     const sign = '\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
     if (kind === 'skyrsla') {
       return hi + '\n\n' +

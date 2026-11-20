@@ -11,9 +11,9 @@
 
   // Default templates seeded if none exist
   const DEFAULTS = [
-    { id:'def1', kind:'email', name:'Áminning um ógreitt', subject:'Áminning — reikningur frá Slökkvitæki ehf', body:'Sæll/sæl,\n\nVið viljum minna á reikning sem virðist enn ógreiddur. Vinsamlegast farið yfir og greiðið eða hafið samband ef einhver vandamál.\n\nBestu kveðjur,\nSlökkvitæki ehf' },
-    { id:'def2', kind:'email', name:'Tilboðs-eftirfylgni', subject:'Höfum við átt samband?', body:'Sæll/sæl,\n\nVið sendum þér tilboð fyrir nokkru og vildum bara fylgja eftir til að athuga hvort þú hefur einhverjar spurningar.\n\nMeð kveðju,\nSlökkvitæki ehf' },
-    { id:'def3', kind:'email', name:'Þjónustudagur staðfestur', subject:'Staðfesting á þjónustu', body:'Sæll/sæl,\n\nÞetta er staðfesting á þjónustudegi. Tæknimaður okkar mun mæta á tilskildum tíma.\n\nKveðja,\nSlökkvitæki ehf' },
+    { id:'def1', kind:'email', name:'Áminning um ógreitt', subject:'Áminning — reikningur frá Slökkvitæki ehf', body:'Góðan daginn,\n\nVið viljum minna á reikning sem virðist enn ógreiddur. Vinsamlegast farið yfir og greiðið eða hafið samband ef einhver vandamál.\n\nBestu kveðjur,\nSlökkvitæki ehf' },
+    { id:'def2', kind:'email', name:'Tilboðs-eftirfylgni', subject:'Höfum við átt samband?', body:'Góðan daginn,\n\nVið sendum þér tilboð fyrir nokkru og vildum bara fylgja eftir til að athuga hvort þú hefur einhverjar spurningar.\n\nMeð kveðju,\nSlökkvitæki ehf' },
+    { id:'def3', kind:'email', name:'Þjónustudagur staðfestur', subject:'Staðfesting á þjónustu', body:'Góðan daginn,\n\nÞetta er staðfesting á þjónustudegi. Tæknimaður okkar mun mæta á tilskildum tíma.\n\nKveðja,\nSlökkvitæki ehf' },
     { id:'def4', kind:'note', name:'Tækin í lagi', body:'Tækin í lagi, næsta skoðun eftir ár.' },
     { id:'def5', kind:'note', name:'Þrýstingur lágur', body:'Þrýstingur lágur — endurfylling þarf.' },
     { id:'def6', kind:'note', name:'Sigli rofnað', body:'Sigli rofnað — þarf nýtt sigli og skráningu.' },

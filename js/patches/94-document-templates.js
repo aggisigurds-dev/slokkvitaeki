@@ -1449,7 +1449,7 @@
           pop.querySelector('#_dt-sendlink-mail').onclick = () => {
             const subj = encodeURIComponent('Brunakerfi skoðun — ' + verkkaupi);
             const body = encodeURIComponent(
-              'Sæll/sæl,\n\nHér er tengill til að fylla út árlega skoðun á brunakerfinu hjá ' + verkkaupi + ':\n\n' + url +
+              'Góðan daginn,\n\nHér er tengill til að fylla út árlega skoðun á brunakerfinu hjá ' + verkkaupi + ':\n\n' + url +
               '\n\nGildir í 14 daga.\n\nKveðja,\nSlökkvitæki ehf'
             );
             window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
