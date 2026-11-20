@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="is"><meta charset="utf-8"><title>Birtumæling — kvörðun</title>
+<!-- Kvörðunarspjald fyrir tools/birtumaeling.cjs. Hvert hólf ber LITAPAR SEM ER REIKNAÐ FYRIRFRAM, svo hægt sé að
+     bera mælinguna saman við rétt svar í stað þess að trúa henni. Textinn í hverju hólfi er hlutfallið sjálft.
+     Keyrsla:  NODE_PATH=…\luna-bridge\node_modules node tools/birtumaeling.cjs file:///…/birtumaeling-profun.html --allt -->
+<style>
+  body{margin:0;font:400 16px/1.5 system-ui,sans-serif;background:#fff;display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+  div{padding:22px 16px}
+  .p1{background:#ffffff;color:#000000}            /* 21,00 */
+  .p2{background:#ffffff;color:#767676}            /* 4,54  — rétt við mörkin */
+  .p3{background:#ffffff;color:#949494}            /* 3,03  — fall */
+  .p4{background:#011f40;color:#ffffff}            /* 15,99 */
+  .p5{background:#ff6702;color:#ffffff;font-weight:700}  /* 2,92 — skráð frávik kerfisins */
+  .p6{background:#ff6702;color:#02193c;font-weight:700}  /* 5,96 */
+  .p7{background:#f3f6fb;color:#101e43}            /* 15,33 */
+  .p8{background:#feecd2;color:#ff8a1f}            /* 2,04 — gamla aldursmerkið */
+  .p9{background:#feecd2;color:#9a3412}            /* 6,31 — eftir lagfæringu */
+  .p10{background:linear-gradient(90deg,#011f40,#0b2d5f);color:#ffffff}  /* halli: ~14 á dekkri enda */
+  .p11{background:#011f40;color:#0b2d5f}           /* 1,42 — navy á navy, ólæsilegt */
+  .p12{background:#ffffff;color:transparent;background-clip:text;-webkit-background-clip:text;background-image:linear-gradient(#c9a54a,#8f6a1c)} /* klipptur texti á hvítu: ~3,6 */
+  .smatt{font-size:10.5px}
+</style>
+<div class="p1">21,00 svart á hvítu</div>
+<div class="p2">4,54 grátt á hvítu</div>
+<div class="p3">3,03 ljósgrátt á hvítu</div>
+<div class="p4">15,99 hvítt á navy</div>
+<div class="p5">2,92 hvítt á appelsínugulu</div>
+<div class="p6">5,96 navy á appelsínugulu</div>
+<div class="p7">15,33 ink á ljósbláu</div>
+<div class="p8">2,04 ljóst amber á tint</div>
+<div class="p9">6,31 dökkt amber á tint</div>
+<div class="p10">14 hvítt á halla</div>
+<div class="p11">1,42 navy á navy</div>
+<div class="p12">3,6 klipptur gulltexti</div>
+<div class="p2 smatt">4,54 í 10,5 px — smátt letur</div>
+<div class="p4 smatt">15,99 í 10,5 px — smátt ljóst á dökku</div>
+<div class="p9 smatt">6,31 í 10,5 px</div>
+</html>

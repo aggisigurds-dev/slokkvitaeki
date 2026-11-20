@@ -26,7 +26,7 @@ Agnar (15.11.2026): *„samkeppnisaðila njósnara — Black Widow — finnur ve
 | `service_competitors` | þjónustuaðilar brunaviðvörunarkerfa (vörumerki, markhópar, 24h, leyfi) | 6 |
 | `competitor_meta` | `last_scrape`, `row_count`, `source_notes` | síðast 22.05.2026 |
 | `vorur` | okkar verð (`verd_an_vsk`, `vsk_prosenta`, `listaverd`) | 143 virkar vörur |
-| `js/data/samkeppnisvorur.json` | flipinn **Samkeppnisaðilar – Vörur** í Birgðum (patch 510): 668 opinber verð með mynd og slóð frá 25 seljendum + 59 birgjar/aðilar ef við verðum tómir + 59 opinber þjónustuverð (flipinn Þjónustuverð) + innflutningur með komuverði | sótt 16.11.2026. ALDREI úr ja.is (skilmálar Já banna afritun); okkar innkaupaverð eru í `app_kv` lykli `samkeppni_innkaup` (ekki í repo, opið) |
+| `js/data/samkeppnisvorur.json` | flipinn **Samkeppnisaðilar – Vörur** í Birgðum (patch 510): 668 opinber verð með mynd og slóð frá 25 seljendum + 59 birgjar/aðilar ef við verðum tómir + 59 opinber þjónustuverð (flipinn Þjónustuverð) + innflutningur með komuverði + flipinn **Útboð** (16 íslensk útboð með tilboðum bjóðenda: slökkvitæki Reykjavíkur 2015/2019/2023, ÁTVR 2026, vöktun brunakerfa Reykjavíkur 2018/2025, Landspítali 2019, RK 14.25 o.fl.; tímatafla næstu útboða, næsta Reykjavíkurútboð ≈ mars–apríl 2027; 7 greiðsluyfirlit ríkisstofnana til seljenda; 18 norræn viðmið; 77 staðir leitað á; 11 útboðsvefir) | sótt 16.11.2026 (útboð 17.11.2026). ALDREI úr ja.is (skilmálar Já banna afritun); okkar innkaupaverð eru í `app_kv` lykli `samkeppni_innkaup` (ekki í repo, opið) |
 
 Hubbinn sýnir þetta í flipanum **Verðsamanburður** (`brunaholf/index.html` `renderCompetitors`, `/api/competitors`).
 Fyrsta verkið er því að **endurnýja verðin**: þau eru hálfs árs gömul.
@@ -37,6 +37,8 @@ Fyrsta verkið er því að **endurnýja verðin**: þau eru hálfs árs gömul.
 - Opinber útboð og niðurstöður þeirra (opinberir innkaupaaðilar og sveitarfélög birta tilboðsupphæðir).
 - Fyrirtækjaskrá og opinberir ársreikningar (velta, starfsmenn), og hvað kúnnar segja okkur sjálfir í pósti („X bauð
   okkur Y kr"). Pósturinn er lesinn um `postur`, og tilvitnunin fylgir með.
+
+**Útboð, leiðir sem virka (17.11.2026):** TED hefur opið API án lykils (`POST https://api.ted.europa.eu/v3/notices/search`, `buyer-country=ISL`, CPV 35111300 og 50413200; íslensk beyging stemmir ekki í fulltextaleit). island.is svarar `curl` með vafra-User-Agent þótt WebFetch fái 403. utbodsvefur.is bannar skrið í robots.txt: lesa forsíðuna í mesta lagi, ekki skrapa skjalasafnið. Útboðsgögn í Tendsign þurfa innskráningu, ekki opna þau. Stærð útboðs er aðeins til þar sem kaupandi birti áætlun (Reykjavík 2019: um 10 m kr á ári, TED 226028-2019). Dálkahaus í töflum má aldrei innihalda „staða“ (líka „Niðurstaða“): 00-legacy.js breytir þeirri töflu í tækjastöðu-fellilista sem skrifar í `uttaeki`.
 
 **Aldrei:** þykjast vera kúnni til að fá tilboð, skrá sig inn á lokuð svæði, brjóta notkunarskilmála vefja eða senda
 fyrirspurnir í nafni annarra. Engin samskipti við keppinauta um verð: það getur verið **ólögmætt samráð**. Vafi →

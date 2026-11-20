@@ -11,7 +11,7 @@ Reiturinn er neðst í reikningsblokkinni, við hliðina á Skýrslugerð.
 ### Upphæðirnar — EIN heimild, ekki þessi skrá
 
 `window.SlokkVisitDefaults` í `129-company-total-cost.js`: **akstur 3.600 kr, skýrslugerð
-5.600 kr, hvort tveggja ÁN VSK.** Bæði kostnaðartaflan og reikningsleiðin (165) lesa þaðan.
+4.600 kr (Agnar staðfesti 16.11.2026; 5.600 var gamla verðið), hvort tveggja ÁN VSK.** Bæði kostnaðartaflan og reikningsleiðin (165) lesa þaðan.
 
 Þessi skrá sagði 3.000/3.500 fram til 09.09.2026 og var úrelt: Sara-borðið afritaði þær
 tölur og sagði Hagstál 43.228 kr þar sem appið sagði **48.136**. **Lestu breytuna, ekki

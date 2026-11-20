@@ -84,7 +84,7 @@
     'krofu-yfirlit': 'money', income: 'money', 'br-krofur': 'money', 'br-krofuyfirlit': 'money', 'br-skuldunautar': 'money',
     'br-fjarmalyfirlit': 'money', 'br-gerdreikninga': 'money', 'br-reikningagerd': 'money',
     'bokhalds-yfirlit': 'chart', kostnadur: 'chart', 'br-efniskostnadur': 'chart',
-    'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', vasinn: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
+    'tilbuin-verk': 'check', 'reikninga-postur': 'mail', tolvupostar: 'mail', erindi: 'inbox', vasinn: 'inbox', hreyfingarlisti: 'list', 'br-hreyfingar': 'list',
     companies: 'building', rekstrarfelog: 'building', 'br-verkkaupar': 'building', vidskiptavinir: 'users',
     sala: 'cart', bord: 'grid', 'minar-sidur': 'grid', arsskodun: 'check', 'br-yfirferd': 'check',
     thjonustuverk: 'wrench', 'thjonustu-verkstaedi': 'wrench', 'br-verkstadir': 'wrench',
@@ -111,6 +111,7 @@
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'bord',             label: 'Þjónustuborð',          short: 'Borð',       emoji: '🔧' },   // Þjónustuborð 2 (368), kveikt 11.09.2026
+    { k: 'tilbuin-verk',     label: 'Tilbúin verk · afgreiða í símanum', short: 'Tilbúin', emoji: '⚡' },   // 515 (17.11.2026) — símasíða Afgreiðslu (forunnin verk, takkinn framkvæmir)
     { k: 'samthykkja',       label: 'Samþykkja',             short: 'Samþykkja',  emoji: '✅' },   // 446 (08.10.2026) — símasíða Samþykkja-hamsins
     { k: 'tolvupostar',      label: 'Tölvupóstar',           short: 'Póstar',     emoji: '✉️' },   // 449 (09.10.2026) — símasíða Tölvupósta-hamsins
     { k: 'erindi',           label: 'Erindi · tilbúin svör',  short: 'Erindi',     emoji: '📨' },   // 449c (19.10.2026) — erindi úr pósti: gögn, eyður og svartexti Claude
@@ -235,6 +236,10 @@
     // slóð /app/verkefni/ óbreytt, svo uppsett eintök haldast sama appið).
     { key: 'verkefni', emoji: '📋', name: 'Þjónustuborð', color: '#0b0b0d', dark: '#000000',
       manifest: '/manifest-verkefni.json', home: 'bord',
+      // 17.11.2026 (Agnar: „símaview sér öpp síðu … í þjónustuver öpp og sé fremst þar"; kóðarýni sama dag): Tilbúin verk
+      // (515) fremst — AÐEINS hjá stjórnanda, ákveðið við keyrslu (sjá STJORNANDA_SIDUR / skelSidur). Síðuvalið er
+      // sameiginlegt öllum, svo það er ekki snert; aðrir opna á borðinu eins og áður og sjá ekki flipann.
+      stjornandaFremst: 'tilbuin-verk',
       blurb: 'Þjónustuborð — Master borð, mitt borð og eftirfylgni',
       defaults: ['bord', 'adalmal', 'samthykkja', 'tolvupostar', 'erindi', 'arsskodun', 'reikninga-postur', 'br-thjonustugatt'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#0b0b0d', dark: '#000000',
@@ -747,7 +752,7 @@
     var a = APP_BY_KEY[key]; if (!a) return null;
     var ov = loadOverrides()[key] || {};
     var e = {
-      key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
+      key: a.key, manifest: a.manifest, home: a.home, stjornandaFremst: a.stjornandaFremst || null, standalone: a.standalone, defaults: a.defaults, custom: !!a.custom,
       emoji: ov.emoji || a.emoji, name: ov.name || a.name, blurb: ov.blurb || a.blurb,
       // 2026-09-08: táknið úr safninu fylgir sömu leið og hitt útlitið, svo það
       // birtist samstundis á spjaldi, haus, splash OG í manifestinu.
@@ -1310,7 +1315,8 @@
       // 8 .ky-abtn + month ◀▶ into sausages and the 52px input blows the
       // always-visible minnispunktur. Patch 166 owns compact sizes; we only
       // stop the hammer here (same pattern as #ars-main above).
-      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
+      // 17.11.2026 (Öpp-villa 18, mælt): ℹ-skýringartakkinn (._ky-sky, 41 á síðunni) var ekki í listanum og teygðist í 22×42 px sporöskju.
+      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp,body.appmode #view-krofu-yfirlit ._ky-sky{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
       'body.appmode #view-krofu-yfirlit input._ky-note{min-height:28px !important;height:28px !important;font-size:16px !important;padding:2px 8px !important}',
       'body.appmode #view-krofu-yfirlit input._ky-search,body.appmode #view-krofu-yfirlit select._ky-sort{min-height:44px !important;font-size:16px !important}',
       // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.
@@ -1628,6 +1634,34 @@
     }); });
   }
 
+  // ── róla innskráðs notanda (17.11.2026, kóðarýni) ─────────────────────────────
+  // Tilbúin verk (515) eru aðeins fyrir stjórnanda — sama regla og /api/afgreidsla (_radgjafinn-hlid: rola 'Admin').
+  // Síðuvalið (app_profiles_json) er SAMEIGINLEGT öllum, svo ekkert er vistað: rólan ræður við keyrslu hvort síðan sést
+  // og hvort hún er fremst. Rólan kemur úr innskráningarstöðunni sem 475 sækir einu sinni (window.__hubNotandiP).
+  // Óþekkt róla (stöðuna vantar, net, óinnskráður) = EKKI stjórnandi: síðan sést þá ekki og enginn fær 403-skilaboð.
+  var STJORNANDA_SIDUR = { 'tilbuin-verk': 1 };
+  var _rola;          // undefined = ekki komin · '' = ekki stjórnandi · annars rolan
+  var _rolaT0 = Date.now();
+  function erStjornandi() { return _rola === 'Admin'; }
+  function saekjaRolu() {
+    if (_rola !== undefined || saekjaRolu.b) return;
+    var p = window.__hubNotandiP; if (!p || typeof p.then !== 'function') return;
+    saekjaRolu.b = true;
+    p.then(function (st) { _rola = st && st.authed && st.user && st.user.rola ? String(st.user.rola) : ''; }, function () { _rola = ''; })
+      .then(function () {
+        // Kom rólan eftir að skelin var byggð (hægt net): byggja aftur. Stjórnandi sem var enn á fyrstu síðunni fer á sína.
+        try {
+          if (!ACTIVE || isStandalone(ACTIVE) || _skelSidur == null) return;
+          var a = effectiveApp(ACTIVE); if (!a) return;
+          var ny = skelSidur(a);
+          if (ny.join('|') === _skelSidur) return;
+          var varFyrst = !_curPage || _skelSidur.split('|')[0] === _curPage;
+          buildShell();
+          if (varFyrst && erStjornandi() && a.stjornandaFremst && ny[0] === a.stjornandaFremst) goPage(ny[0]);
+        } catch (_) {}
+      });
+  }
+
   // ── app-mode shell (bottom nav + header) ─────────────────────────────────────
   var _curPage = null;
   var _bootAt = Date.now();
@@ -1638,11 +1672,18 @@
     // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
     // Verkefnalista-appið (verkbord) fékk krofu-yfirlit fremst þegar það var valið
     // með — og opnaðist ranglega á Fjármála-skjánum. Hífum home fremst í nav + boot.
+    // Síður stjórnandans (Tilbúin verk) sjást aðeins honum — líka þótt þær standi í vistaða listanum.
+    pages = pages.filter(function (k) { return !STJORNANDA_SIDUR[k] || erStjornandi(); });
     if (a.home && pages.indexOf(a.home) > 0) {
       pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
     }
+    var fr = a.stjornandaFremst;
+    if (fr && erStjornandi() && pageByKey(fr)) pages = [fr].concat(pages.filter(function (k) { return k !== fr; }));
     return pages;
   }
+  // Síðurnar sem appið leyfir þessum notanda (fókuslásinn og ?page= nota sama lista og skelin, svo síða stjórnandans
+  // kastist ekki til baka hjá honum og opnist ekki hjá öðrum).
+  function leyfdarSidur(key) { var a = effectiveApp(key); return a ? skelSidur(a) : []; }
   // 05.10.2026: skelin er byggð við ræsingu af SKYNDIMINNI AppSettings (85). Hafi síðulistinn breyst á annarri vél
   // sat gamli listinn í botnstikunni þar til appið var opnað í ANNAÐ sinn (mælt: 3 flipar á skjánum, 8 í minni).
   // Nú er skelin endurbyggð þegar listinn sem hún var byggð af er ekki lengur sá sem gildir.
@@ -1758,7 +1799,7 @@
         var navDead = !nav || !nav.isConnected || !nav.querySelector('._app-tab');
         var hdrDead = !hdr || !hdr.isConnected;
         if (navDead || hdrDead) { buildShell(); return; }
-        if (getComputedStyle(nav).display === 'none') nav.style.display = 'grid';
+        if (getComputedStyle(nav).display === 'none') nav.style.display = 'flex';   // 17.11.2026 (lota 9, Öpp-villa 12): stikan er flex-lína (CSS #_app-nav) — 'grid' án dálka staflaði hnöppunum lóðrétt yfir hálfan skjáinn
         if (getComputedStyle(hdr).display === 'none') hdr.style.display = 'flex';
         syncFrameBottom();
       } catch (_) {}
@@ -1930,6 +1971,10 @@
     else { hideFrame(); navTo(k); }    // native slökkvitæki view
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
+    // 17.11.2026 (Öpp-villa 8, mælt): milli iframe-síðna breytist hvorki hash né sýn, svo 333 sá nýja 'f:<k>'-lykilinn
+    // ekki fyrr en í 700 ms vaktinni — ramminn birtist ~750 ms í stærð fyrri síðu og hoppaði svo. Nú strax, eftir að
+    // flipaljósið er komið á (333 les lykilinn af því).
+    try { if (window.AppPageZoom && AppPageZoom.endurmeta) AppPageZoom.endurmeta(); } catch (_) {}
   }
   // 02.11.2026: EN-app (lang:'en') sendir ?lang=en inn á römmuðu síðuna (brunathettingar.html les það) — sett á undan #hash.
   function withLang(url) {
@@ -1974,7 +2019,7 @@
       // app mode: if someone navigates to a page NOT in the app, snap back
       // (standalone apps like Bílstjóri handle their own lock in patch 219)
       if (ACTIVE && !isStandalone(ACTIVE)) {
-        var allowed = pagesFor(ACTIVE); if (!allowed.length) allowed = (APP_BY_KEY[ACTIVE] || {}).defaults || [];
+        var allowed = leyfdarSidur(ACTIVE); if (!allowed.length) allowed = (APP_BY_KEY[ACTIVE] || {}).defaults || [];
         var _app = APP_BY_KEY[ACTIVE] || {};
         var _home = (_app.home && allowed.indexOf(_app.home) !== -1) ? _app.home : allowed[0];
         // Óheimil síða (t.d. sjálfgefinn krofu-yfirlit-landari á boot) → snappa á
@@ -2046,6 +2091,9 @@
       // seinna og shellið byggðist þá ALDREI; vaktarinn tekur líka við eftirá.
       (function tick() {
         if (document.querySelector('.vnav-btn') && window.App && window.App.switchView) {
+          // Rólan ræður fremstu síðunni (stjórnandi → Tilbúin verk) — beðið í mest 3 s, svo opnað sem ekki-stjórnandi.
+          saekjaRolu();
+          if (_rola === undefined && Date.now() - _rolaT0 < 3000) { setTimeout(tick, 120); return; }
           // ?page=<lykill> — notað af símaramma-forskoðuninni í Öpp-fylkinu svo
           // ramminn lendi á RÉTTU síðunni en ekki heimasíðu appsins.
           //
@@ -2055,7 +2103,11 @@
           // buildShell var því kastað til baka — mælt: lenti á krofu-yfirlit.
           try {
             var want = new URLSearchParams(location.search).get('page');
-            if (want && pageByKey(want) && pagesFor(ACTIVE).indexOf(want) !== -1) _curPage = want;
+            if (want && pageByKey(want) && leyfdarSidur(ACTIVE).indexOf(want) !== -1) _curPage = want;
+            // Stjórnandi opnar á sinni fremstu síðu (Tilbúin verk). Á meðan beðið var eftir rólunni gat ræsilandarinn
+            // smellt á heimasíðuna (borðið) og sett _curPage — mælt 17.11: flipinn var fremstur en borðið opið.
+            var _aR = effectiveApp(ACTIVE);
+            if (!(want && pageByKey(want)) && _aR && _aR.stjornandaFremst && erStjornandi() && pageByKey(_aR.stjornandaFremst)) _curPage = _aR.stjornandaFremst;
           } catch (_) {}
           buildShell();
           startShellGuard(); return;

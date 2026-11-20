@@ -11,6 +11,20 @@ function _pmTexti(m){
   console.log('[Tekjur v2] Script loaded');
   var _sales = [];
   var _loaded = false;
+  // 17.11.2026 (lota 4): samtölurnar töldu BAKFÆRÐAR (void) sölur með (ág–okt rúm milljón of hátt). Nú telja tölur og
+  // súlurit aðeins gildar sölur: final, kreditnótur (neikvæðar) dregnar frá, kreditnóta á bakfærða sölu ekki talin —
+  // sama regla og netlify/functions/_tekjur.cjs. Listinn „Allar sölur" sýnir áfram allt (líka bakfært) til uppflettingar.
+  window.TekjurReglur = {
+    gildar: function(rows, voidIds){
+      var v = {}; (voidIds||[]).forEach(function(i){ v[String(i)] = 1; });
+      return (rows||[]).filter(function(s){ return s && s.status === 'final' && !(s.credit_of != null && v[String(s.credit_of)]); });
+    },
+    // Fjöldi sölu telur REIKNINGA: hvorki kreditnóta (is_credit) né vísun á aðra sölu (credit_of) — sama og 489.
+    erReikningur: function(s){ return !!s && s.is_credit !== true && s.credit_of == null; }
+  };
+  function gildar(){
+    return window.TekjurReglur.gildar(_sales, _sales.filter(function(s){ return s.status === 'void'; }).map(function(s){ return s.id; }));
+  }
   var _view = 'overview'; // 'overview' | 'detail'
   var _selectedSale = null;
 
@@ -19,7 +33,7 @@ function _pmTexti(m){
 
   async function loadSales(force){
     if(_loaded && !force) return;   // cache — don't refetch the whole table on every poll
-    var rows = await DB.fetchAll(function(from, to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); }).catch(function(e){
+    var rows = await DB.fetchAll(function(from, to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status,credit_of,is_credit').neq('status','drog').order('created_at',{ascending:false}).order('id').range(from, to); }).catch(function(e){
       if (typeof window.logProblem === 'function') window.logProblem('tekjur', 'solur_load_failed: ' + String((e && e.message) || e).slice(0, 160));
       return null;
     });
@@ -29,7 +43,7 @@ function _pmTexti(m){
 
   function getMonthlyData(){
     var months = {};
-    _sales.forEach(function(s){
+    gildar().forEach(function(s){
       var d = new Date(s.created_at);
       var key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       if(!months[key]) months[key] = {key:key, year:d.getFullYear(), month:d.getMonth(), count:0, total:0, vsk:0, exVat:0, sales:[]};
@@ -44,7 +58,7 @@ function _pmTexti(m){
 
   function getProductBreakdown(){
     var items = {};
-    _sales.forEach(function(s){
+    gildar().forEach(function(s){
       var linur = s.linur;
       if(!Array.isArray(linur)) return;
       linur.forEach(function(l){
@@ -63,9 +77,10 @@ function _pmTexti(m){
     v.dataset.tkRendered = '1';
     var monthly = getMonthlyData();
     var breakdown = getProductBreakdown();
-    var totalRev = _sales.reduce(function(s,x){return s+(x.samtals||0);},0);
-    var totalVsk = _sales.reduce(function(s,x){return s+(x.vsk_upphaed||0);},0);
-    var totalEx = _sales.reduce(function(s,x){return s+(x.upphaed_an_vsk||0);},0);
+    var _g = gildar();
+    var totalRev = _g.reduce(function(s,x){return s+(x.samtals||0);},0);
+    var totalVsk = _g.reduce(function(s,x){return s+(x.vsk_upphaed||0);},0);
+    var totalEx = _g.reduce(function(s,x){return s+(x.upphaed_an_vsk||0);},0);
     var moNames = ['jan','feb','mar','apr','maí','jún','júl','ágú','sep','okt','nóv','des'];
 
     // Build bar chart SVG
@@ -99,12 +114,14 @@ function _pmTexti(m){
           '<button id="tekjur-xlsx" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📊 Excel</button>' +
         '</div>' +
       '</div>' +
+      // 512: Tekjur í beinni — bæði félög sér, án VSK (lota 4, 17.11.2026)
+      '<div id="tekjur-beint-income"></div>' +
       // Summary cards — theme stat-spjöld
       '<div class="stat-row">' +
         '<div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildartekjur</div><div class="stat-card__value">'+fmtKr(totalRev)+'</div></div></div>' +
         '<div class="stat-card"><span class="stat-card__icon">📄</span><div><div class="stat-card__label">Án VSK</div><div class="stat-card__value">'+fmtKr(totalEx)+'</div></div></div>' +
         '<div class="stat-card stat-card--amber"><span class="stat-card__icon">🧾</span><div><div class="stat-card__label">VSK samtals</div><div class="stat-card__value">'+fmtKr(totalVsk)+'</div></div></div>' +
-        '<div class="stat-card stat-card--green"><span class="stat-card__icon">🛒</span><div><div class="stat-card__label">Fjöldi sölur</div><div class="stat-card__value">'+_sales.length+'</div></div></div>' +
+        '<div class="stat-card stat-card--green"><span class="stat-card__icon">🛒</span><div><div class="stat-card__label">Fjöldi sölur</div><div class="stat-card__value">'+_g.filter(window.TekjurReglur.erReikningur).length+'</div></div></div>' +
       '</div>' +
       // Chart
       '<div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
@@ -158,6 +175,7 @@ function _pmTexti(m){
         }).join('') : '<div style="color:#94a3b8;text-align:center;padding:40px">Engar sölur skráðar</div>') +
       '</div>' +
     '</main></div></div>';
+    try { if(window.TekjurBeint) window.TekjurBeint.mount(document.getElementById('tekjur-beint-income')); } catch(_e){}
     bindOverviewEvents();
   }
 

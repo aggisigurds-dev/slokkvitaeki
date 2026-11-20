@@ -300,9 +300,9 @@
       inni += '<div class="er-kassi"><b>Gögn og forsendur</b><div class="er-texti">' + esc(notaAn(r) || '(engin lýsing)') + '</div></div>';
       if (t || h === 'undirbuid' || h === 'annad') {
         inni += '<div class="er-kassi _svar"><b>↩ Svar' + (d ? ' · frá ' + esc(S.fra[r.id] || d.account) : '') + '</b>' +
-          '<label class="er-lbl">Til</label><input class="er-inp" data-er-in="til" data-v="' + r.id + '" value="' + esc(S.til[r.id] != null ? S.til[r.id] : tilSjalfgefid(d)) + '" inputmode="email" placeholder="netfang">' +
-          '<label class="er-lbl">Afrit (cc) — valfrjálst</label><input class="er-inp" data-er-in="cc" data-v="' + r.id + '" value="' + esc(S.cc[r.id] || '') + '" inputmode="email">' +
-          '<label class="er-lbl">Efni</label><input class="er-inp" data-er-in="efni" data-v="' + r.id + '" value="' + esc(S.efni[r.id] != null ? S.efni[r.id] : efniSjalfgefid(r, d)) + '">' +
+          '<div class="er-rad"><div class="er-f"><label class="er-lbl">Til</label><input class="er-inp" data-er-in="til" data-v="' + r.id + '" value="' + esc(S.til[r.id] != null ? S.til[r.id] : tilSjalfgefid(d)) + '" inputmode="email" placeholder="netfang"></div>' +
+          '<div class="er-f"><label class="er-lbl">Afrit (cc) — valfrjálst</label><input class="er-inp" data-er-in="cc" data-v="' + r.id + '" value="' + esc(S.cc[r.id] || '') + '" inputmode="email"></div>' +
+          '<div class="er-f _efni"><label class="er-lbl">Efni</label><input class="er-inp" data-er-in="efni" data-v="' + r.id + '" value="' + esc(S.efni[r.id] != null ? S.efni[r.id] : efniSjalfgefid(r, d)) + '"></div></div>' +
           '<label class="er-lbl">Texti</label><textarea class="er-ta" id="_er-ta-' + r.id + '" data-er-in="drog" data-v="' + r.id + '" rows="12" placeholder="Svartexti — yfirfarðu áður en þú sendir.">' + esc(t) + '</textarea>' +
           '<div class="er-eydur" id="_er-ey-' + r.id + '">' + eydaHtml(r.id, e) + '</div>' +
           '<div class="er-takkar"><button type="button" data-er="vista" data-v="' + r.id + '"' + (b ? ' disabled' : '') + '>💾 Vista uppkast</button>' +
@@ -437,7 +437,23 @@
         '.er .er-eydur{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.er .er-eydur button{padding:3px 10px;border-radius:4px;border:1px solid #b8892e;background:#f6ebcc;color:#6b4a0c;font:600 12px var(--body);cursor:pointer}.er .er-eydur ._ok{font-size:12px;color:#2f7a4a}',
         '.er .er-takkar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.er .er-takkar button,.er .er-takkar a{padding:7px 12px;border-radius:5px;border:1px solid var(--edge);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:var(--ink);font:600 12.5px var(--body);cursor:pointer;text-decoration:none}',
         '.er .er-takkar ._gull{background:linear-gradient(180deg,#e8cb7a,#c9a24a);border-color:#8a6218;color:#1c1608}.er .er-takkar ._graen{background:linear-gradient(180deg,#2d8a4e,#1f6b3c);border-color:#0b3519;color:#fff}.er .er-takkar ._on{background:#1f2530;color:#fff;border-color:#000}.er .er-takkar ._raut{background:linear-gradient(180deg,#c4452f,#a8321f);border-color:#6e1c10;color:#fff}.er .er-takkar button:disabled{opacity:.45;cursor:not-allowed}.er .er-takkar ._breid{flex:1 1 100%}',
-        '.er .samt-teljari button._gull{grid-column:1 / -1}.er .phead .sum{white-space:normal}.er .er-uppf{margin-left:auto}'
+        '.er .samt-teljari button._gull{grid-column:1 / -1}.er .phead .sum{white-space:normal}.er .er-uppf{margin-left:auto}',
+        // 18.11.2026 (Agnar: „fara yfir fleiri svona svör/samþykktar glugga“): sama þétta form og Samþykkja — glugginn stendur á skjánum (sticky),
+        // erindið og forsendurnar hlið við hlið, Til/Afrit/Efni í einni röð, takkar í einni röð; langur texti skrunast inni í kassanum.
+        '@container t5 (min-width: 901px){',
+          '.er .er-sel{scroll-margin-top:150px;max-height:calc(100vh - 168px);overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;align-content:start;padding:12px 16px}',
+          '.er .er-sel>*{min-width:0;grid-column:1 / -1}',
+          '.er .er-sel .vbr-titill{font-size:18px;line-height:1.3;margin:0}.er .er-sel .vbr-meta{margin:0}.er .er-undir{margin:0}',
+          '.er .er-sel>.er-kassi{margin-top:0;padding:8px 12px}.er .er-sel>.er-kassi._erindi,.er .er-sel>.er-kassi:not(._svar):not(._erindi){grid-column:auto}',
+          '.er .er-sel>.er-kassi._erindi~.er-kassi:not(._svar){grid-column:auto}',
+          '.er .er-texti{max-height:min(22vh,190px)}',
+          '.er .er-sel>.er-kassi._svar{grid-column:1 / -1}',
+          '.er .er-rad{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:0 10px}.er .er-rad .er-inp{margin:2px 0 6px;padding:6px 9px}',
+          '.er .er-ta{min-height:0;height:min(21vh,160px);margin:2px 0 6px;padding:6px 10px}',
+          '.er .er-takkar{margin-top:6px;gap:6px;display:flex}.er .er-takkar button,.er .er-takkar a{min-height:40px;flex:1 1 0}',
+          // Takkarnir festast neðst í glugganum þegar innihaldið er hærra en skjárinn — svarið er alltaf innan seilingar.
+          '.er .er-sel>.er-takkar{order:1}.er .er-sel>.er-kassi{order:2}.er .er-sel>.er-kassi._svar{order:3}.er .er-sel>.er-kassi:has([data-t5="er-claude"]){order:4}.er .er-kassi._svar .er-takkar{position:sticky;bottom:0;z-index:1;background:#fbf3dd;padding:6px 0}',
+        '}'
       ].join('\n');
       root.appendChild(st);
     } catch (_) {}

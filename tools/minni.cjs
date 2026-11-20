@@ -39,6 +39,11 @@
  *                                         docs/MINNISBOK.md (til að committa)
  *   node tools/minni.cjs --skra "<staðreynd>" --topic X [--scope Y] [--detail Z]
  *                                         skrifar NÝJA staðreynd í Supabase
+ *   node tools/minni.cjs --skra "<staðreynd>" --topic taeki --scope kunni --kt <kt félags> [--fid 123] [--base 45]
+ *                                         KÚNNAMINNI: staðreynd um EITT félag. --kt er kennitala
+ *                                         lögaðila (skráð með bandstriki); staður sem er skráður á
+ *                                         einstakling fær --fid í staðinn. --thurrt prentar röðina
+ *                                         án þess að skrifa.
  *
  * ── HVAÐ ÞETTA GERIR ALDREI ───────────────────────────────────────────────
  * Skrifar aldrei yfir staðreynd og eyðir aldrei. Úrelt staðreynd fær
@@ -356,12 +361,56 @@ function leita(md, ord, ferskt) {
       confidence: flagg('--confidence') || 'confirmed',
       agent: 'claude-code',
     };
+
+    /* Kúnnaminni (16.11.2026). Áður tók --skra enga kennitölu, svo „--scope kunni" bjó til færslu sem
+       charlize_yfirlit(kt) og v_charlize_kunni fundu aldrei — eina leiðin var handskrifað SQL. Reglurnar
+       eru úr .claude/skills/charlize/references/kunnaminni.md: kennitala lögaðila er lykillinn, og
+       kennitölur einstaklinga fara ekki í töflu sem vefurinn getur lesið. Símanúmer og netföng tengiliða mega standa
+       (Agnar 16.11.2026). */
+    const heil = (nafn) => {
+      const v = flagg(nafn);
+      if (v == null) return null;
+      if (!/^\d+$/.test(v)) { console.error(`${nafn} á að vera heiltala (fékk „${v}")`); process.exit(1); }
+      return parseInt(v, 10);
+    };
+    const kt = flagg('--kt'), fid = heil('--fid'), base = heil('--base');
+    if (kt != null) {
+      const t = String(kt).replace(/\D/g, '');
+      if (t.length !== 10) { console.error('--kt á að vera 10 tölustafir, með eða án bandstriks'); process.exit(1); }
+      // Lögaðili ber 4–7 í fyrsta sæti (dagurinn + 40).
+      if (!/^[4-7]/.test(t)) {
+        console.error('--kt lítur út eins og kennitala EINSTAKLINGS. Hún fer ekki í kúnnaminni.');
+        console.error('Sé staðurinn skráður á einstakling: notaðu --fid <fyrirtaeki.id> í staðinn.');
+        process.exit(1);
+      }
+      rad.kennitala = t.slice(0, 6) + '-' + t.slice(6);
+    }
+    if (fid != null) rad.fyrirtaeki_id = fid;
+    if (base != null) rad.customer_base_id = base;
+    if (rad.scope === 'kunni') {
+      if (!rad.kennitala && rad.fyrirtaeki_id == null) {
+        console.error('Vantar: --kt <kennitala félags> (eða --fid <fyrirtaeki.id>) með --scope kunni.');
+        console.error('Kúnnaminni án lykils finnst aldrei aftur þegar félagið er opnað.');
+        process.exit(1);
+      }
+      const texti = fact + ' ' + (rad.detail || '');
+      if (/(?<!\d)(?:[0-3]\d{5}-?\d{4})(?!\d)/.test(texti)) {
+        console.error('Textinn ber kennitölu einstaklings. Taktu hana út — hlutverk dugar („gjaldkeri", „húsvörður").');
+        process.exit(1);
+      }
+      // Símanúmer og netföng tengiliða MEGA standa í kúnnaminni (Agnar 16.11.2026: „símanúmer tengiliða er fínt líka").
+    }
+    if (arg.includes('--thurrt')) {
+      console.log('ÞURRT — ekkert skrifað. Röðin sem færi inn:');
+      console.log(JSON.stringify(rad, null, 2));
+      return;
+    }
     const r = await fetch(`${url}/rest/v1/charlize_knowledge`, {
       method: 'POST', headers: { ...h, Prefer: 'return=representation' }, body: JSON.stringify(rad),
     });
     if (!r.ok) { console.error('VILLA', r.status, (await r.text()).slice(0, 300)); process.exit(1); }
     const [ny] = await r.json();
-    console.log(`✅ Skráð (id ${ny.id}) í ${rad.topic}: ${fact}`);
+    console.log(`✅ Skráð (id ${ny.id}) í ${rad.topic}${rad.scope === 'kunni' ? ' · kúnnaminni ' + (rad.kennitala || 'fid ' + rad.fyrirtaeki_id) : ''}: ${fact}`);
     console.log('   Keyrðu `node tools/minni.cjs --uppfaera` til að koma því í git-eintakið.');
     return;
   }

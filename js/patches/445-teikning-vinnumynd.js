@@ -466,12 +466,19 @@
     });
     // Músarhjól = eitt þysjunarskref; klípa á snertifleti (ctrl+hjól) í hlutfalli við hreyfinguna; renna á snertifleti FÆRIR
     // (21.10.2026: hver smáatburður margfaldaði áður með 1,15 / 0,87 — sama regla og í 383 hjolAdgerd).
+    // 19.11.2026: sama flokkun og 383 (window.TeiknHjolAdgerd) — músarhjól þysjar líka á fínskrefa-hjólum og við
+    // skjástækkun; lárétt renna á snertifleti færir.
     c.addEventListener('wheel', e => {
       e.preventDefault(); e.stopPropagation();
+      const p = skjaHnit(e);
+      if (typeof window.TeiknHjolAdgerd === 'function') {
+        const a = window.TeiknHjolAdgerd(e);
+        if (a.f) thysja(a.f, p.x, p.y); else { V.x += a.dx / p.zk; V.y += a.dy / p.zk; }
+        return;
+      }
       const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1, dx = e.deltaX * k, dy = e.deltaY * k;
       const wd = typeof e.wheelDeltaY === 'number' ? e.wheelDeltaY : null;
       const skref = e.deltaMode !== 0 || (dx === 0 && Math.abs(dy) >= 50 && (wd === null ? Number.isInteger(dy) : wd !== 0 && Math.abs(wd) % 120 === 0));
-      const p = skjaHnit(e);
       if (skref) thysja(dy < 0 ? 1.15 : 0.87, p.x, p.y);
       else if (e.ctrlKey) thysja(Math.min(1.25, Math.max(0.8, Math.exp(-dy * 0.01))), p.x, p.y);
       else { V.x -= dx / p.zk; V.y -= dy / p.zk; }

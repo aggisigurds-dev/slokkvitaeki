@@ -30,7 +30,7 @@ const VORUR = [
 let l = aksturSkyrsla(undefined, VORUR);
 ok('tvær línur: skýrsla + akstur', l.length === 2 && af(l, 'skyrsla') && af(l, 'akstur'));
 ok('Akstur án stillingar = 3.600 (ekki 3.500 úr vorur)', af(l, 'akstur').v.verd_an_vsk === 3600);
-ok('Skýrslugerð án stillingar = 5.600 (ekki 3.500 úr vorur)', af(l, 'skyrsla').v.verd_an_vsk === 5600);
+ok('Skýrslugerð án stillingar = 4.600 (ekki 3.500 úr vorur; 5.600 var gamla verðið, Agnar staðfesti 4.600 16.11.2026)', af(l, 'skyrsla').v.verd_an_vsk === 4600);
 ok('heiti sjálfgefin „Akstur" / „Skýrslugerð"', af(l, 'akstur').v.nafn === 'Akstur' && af(l, 'skyrsla').v.nafn === 'Skýrslugerð');
 ok('vara_id fundið úr vorur (136 / 148) — aðeins „Skýrslugerð…" í flokknum Vinna og akstur, ekki Þjónusta-línan 177', af(l, 'akstur').v.id === 136 && af(l, 'skyrsla').v.id === 148);
 ok('flokkur línunnar fyrir baeta()/ROD er skyrsla / akstur', af(l, 'skyrsla').flokkur === 'skyrsla' && af(l, 'akstur').flokkur === 'akstur');
@@ -43,12 +43,12 @@ ok('heiti úr þjóni, bil felld saman', af(l, 'akstur').v.nafn === 'Akstur (út
 
 // 3) rusl á þjóni fellur á sjálfgildin — aldrei NaN / neikvætt / tómt heiti
 l = aksturSkyrsla({ akstur: 'abc', skyrslugerd: -5, akstur_heiti: '   ', skyrslugerd_heiti: 42 }, VORUR);
-ok('óleyfilegt verð → sjálfgildi', af(l, 'akstur').v.verd_an_vsk === 3600 && af(l, 'skyrsla').v.verd_an_vsk === 5600);
+ok('óleyfilegt verð → sjálfgildi', af(l, 'akstur').v.verd_an_vsk === 3600 && af(l, 'skyrsla').v.verd_an_vsk === 4600);
 ok('tómt/ótextaheiti → sjálfgefið heiti', af(l, 'akstur').v.nafn === 'Akstur' && af(l, 'skyrsla').v.nafn === 'Skýrslugerð');
 l = aksturSkyrsla({ akstur: 0 }, VORUR);
 ok('0 er leyfilegt verð (línan hverfur þá í baeta: fulltAn = 0)', af(l, 'akstur').v.verd_an_vsk === 0);
 l = aksturSkyrsla({ akstur: null, skyrslugerd: '' }, VORUR);
-ok('null / tómt = sjálfgildi', af(l, 'akstur').v.verd_an_vsk === 3600 && af(l, 'skyrsla').v.verd_an_vsk === 5600);
+ok('null / tómt = sjálfgildi', af(l, 'akstur').v.verd_an_vsk === 3600 && af(l, 'skyrsla').v.verd_an_vsk === 4600);
 
 // 4) vorur-línurnar horfnar / endurnefndar → gáttin missir EKKI línurnar (áður fóru þær þegjandi)
 l = aksturSkyrsla({ akstur: 3700 }, []);

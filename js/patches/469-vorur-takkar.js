@@ -41,6 +41,33 @@
   // 12:29: fimmti takkinn, Vinnuliðir (410 FLOKKAR.vinnulidir), dökkgull — dekkri en slökkvikerfis-gullið svo þeir þekkist í sundur
   const DOKKGULL = 'linear-gradient(145deg,#0f0a02 0%,#2e2004 22%,#6b4a0c 45%,#9c7420 53%,#3a2806 74%,#0f0a02 100%)';
   st.textContent += '\n' + S + '.vorur-teng[data-teng="vinnulidir"]{' + takki(DOKKGULL, '#120c02') + '}';
+  /* === SKIPULAG RAÐARINNAR (18.11.2026) ====================================================================
+   * Agnar 18.11.2026 um Vörur og þjónustu: „eitthvað breyta skipulaginu."
+   *
+   * Mælt þann dag: ÞRETTÁN hlutir lágu í einni röð í hausnum — ellefu verðlistar (leiðsögn: Sprinklerkerfi,
+   * Neyðarljós, Eldvarnaeftirlit, Reyklosun, Stigleiðsla, Háfakerfi, Slökkvit. verð, Brunak. verð,
+   * Slökkvikerfis verð, Verkstæði verð, Vinnuliðir) og TVÆR aðgerðir (＋ Nýr verðlisti, + Ný vara/þjónusta),
+   * allt í sömu stærð og þyngd. Röðin sagði því ekkert um hvað væri hvað.
+   *
+   * Litirnir standa óbreyttir — þeir eru hans eigin val (14.10.2026 hér að ofan, og `litur`-reiturinn í 502).
+   * Það sem breytist er RÖÐIN: verðlistarnir verða einn merktur hópur og aðgerðirnar fara á sína eigin línu
+   * fyrir neðan. Gert með `order` og línuskilum úr gervieindum, ekki DOM-færslu: 502 skýtur sínum tökkum
+   * inn í þessa röð aftur í hvert sinn sem listarnir breytast, svo hlutur sem er færður annað kemur aftur. */
+  const R = 'html body #view-vorur .page-title__tools:not(#_v469d):not(#_v469e):not(#_v469f)';
+  st.textContent += [
+    '',
+    R + '{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px 9px!important;row-gap:10px!important}',
+    // 1. merkimiði yfir verðlistana
+    R + '::before{content:"Verðlistar";order:1;flex:0 0 auto;align-self:center;font-family:' + SANS + ';font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:2px}',
+    // 2. verðlistarnir sjálfir — leiðsögn
+    R + ' .vl5-takki,' + R + ' .vorur-teng{order:2}',
+    // 3. línuskil: aðgerðirnar eiga ekki heima innan um listana
+    R + '::after{content:"";order:3;flex:0 0 100%;height:0;margin:0}',
+    // 4. aðgerðirnar neðst, hægra megin
+    R + ' .vl5-ny{order:4;margin-left:auto}',
+    R + ' #vorur-new{order:5}'
+  ].join('\n');
+
   const AUKA = [
     ['verkstaedi', '🔧 Verkstæði verð', 'Varahlutirnir sem verkstæðið notar — verð, birgðir og ✎ beint á vöruna'],
     ['vinnulidir', '🛠 Vinnuliðir', 'Vinna sem er ekki vara: uppsetning á slökkvitæki, á skilti … — verð ákveðin hér, tengingar síðar']

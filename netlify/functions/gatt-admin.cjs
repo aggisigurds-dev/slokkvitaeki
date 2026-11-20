@@ -16,8 +16,10 @@
 // ⚠️ Innri síða — arfar (skort á) auðkenningu hub-sins; á að vera á bak við
 // væntanlega hub-innskráningu. Öll skrif nota service-role (aldrei í vafra).
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
 const H = require('./_starfshlid.cjs');   // starfsmannahliðið (15.11.2026)
+const HUB = require('./hub-adgangar.cjs'); // lota 13: innri tóki á email-send (x-sl-toki)
 const crypto = require('crypto');
 // Póstur fer gegnum slokkvitaeki /api/email-send (Resend). „from" verður að vera
 // staðfest lén í Resend — stillanlegt með PORTAL_MAIL_FROM env.
@@ -46,7 +48,9 @@ const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 async function verkListi() {
   const since = new Date(Date.now() - 30 * 864e5).toISOString();
-  const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at,einkunn,einkunn_ath,einkunn_at';
+  // notes + channel_ref + svar (18.11.2026): Agnar „hvernig á ég að svara fyrirspurnum þegar ég sé ekki textann". Innri
+  // nótan og upprunalegi pósturinn fylgja NÚ með — þetta er innri síða (starfshlið); gatt.cjs (kúnnahliðin) sækir hvorugt.
+  const sel = 'id,customer_base_id,fyrirtaeki_id,title,summary,notes,channel_ref,source,svar,svarad_at,status,created_at,updated_at,tags,punktur,myndir,eftirmyndir,abyrgd,lokid_at,lokid_af,lokid_lysing,tilkynnt_at,einkunn,einkunn_ath,einkunn_at';
   const filt = 'and=(or(source.eq.gatt,tags.cs.' + encodeURIComponent('["gatt"]') + '),or(status.not.in.(lokad,klarad),updated_at.gte.' + encodeURIComponent(since) + '))';
   const r = await P.sbGet(`thjonustubeidni?${filt}&deleted_at=is.null&select=${sel}&order=created_at.desc&limit=150`);
   if (!r.ok) return [];
@@ -70,14 +74,48 @@ async function verkListi() {
     }
   }
   const mynd = (L) => (Array.isArray(L) ? L : []).map((m) => m && m.path && slod[m.path] ? { url: slod[m.path], at: m.at || null, af: m.af || null } : null).filter(Boolean);
+  const postar = await postThraedir(rows);
   return rows.map((x) => {
     const f = fnafn[x.fyrirtaeki_id] || {}, hs = haedir[x.fyrirtaeki_id] || [];
     const haed = x.punktur && hs[x.punktur.haed] ? hs[x.punktur.haed] : null;
     return { id: x.id, base_id: x.customer_base_id, fid: x.fyrirtaeki_id, eign: f.nafn || '', heimilisfang: f.heimilisfang || '', title: x.title, summary: x.summary || '',
       status: x.status, abyrgd: x.abyrgd || 'okkar', tags: Array.isArray(x.tags) ? x.tags : [], created_at: x.created_at, updated_at: x.updated_at,
       punktur: x.punktur || null, haed, myndir: mynd(x.myndir), eftirmyndir: mynd(x.eftirmyndir), lokid_at: x.lokid_at, lokid_af: x.lokid_af, lokid_lysing: x.lokid_lysing, tilkynnt_at: x.tilkynnt_at,
-      einkunn: x.einkunn || null, einkunn_ath: x.einkunn_ath || null, einkunn_at: x.einkunn_at || null };
+      einkunn: x.einkunn || null, einkunn_ath: x.einkunn_ath || null, einkunn_at: x.einkunn_at || null,
+      notes: x.notes || '', source: x.source || '', svar: x.svar || null, svarad_at: x.svarad_at || null,
+      postur: postar[x.id] || null, netfang_ur_beidni: netfangUrTexta(x.summary || x.notes) };
   });
+}
+// Netfang úr nýskráningarbeiðni („Netfang: x@y.is") — svo hægt sé að svara henni líka.
+function netfangUrTexta(t) { const m = String(t || '').match(/Netfang:\s*([^\s<>,;]+@[^\s<>,;]+\.[a-z]{2,})/i); return m ? m[1] : null; }
+// Upprunalegur póstur máls: channel_ref = 'email:<email_digest.id>'. Skilar póstinum sjálfum + þræðinum (sama efni án Re:/RE:/Fwd:,
+// nýjast fyrst, mest 8) svo Agnar sjái allt samtalið áður en hann svarar.
+function grunnEfni(s) { return String(s || '').replace(/^\s*((re|sv|fw|fwd|aw)\s*:\s*)+/i, '').trim(); }
+async function postThraedir(rows) {
+  const tengsl = {};
+  rows.forEach((x) => { const m = /^email:(\d+)$/.exec(String(x.channel_ref || '')); if (m) tengsl[x.id] = +m[1]; });
+  const ids = [...new Set(Object.values(tengsl))];
+  if (!ids.length) return {};
+  const cols = 'id,sender_name,sender_email,to_addresses,subject,body_preview,received_at,has_attachment,attachment_names,message_id';
+  const r = await P.sbGet(`email_digest?id=in.(${ids.join(',')})&select=${cols}`);
+  if (!r.ok) return {};
+  const poss = {}; (await r.json()).forEach((e) => { poss[e.id] = e; });
+  const thraedir = {};
+  await Promise.all(Object.values(poss).map(async (e) => {
+    const g = grunnEfni(e.subject); if (g.length < 6) { thraedir[e.id] = [e]; return; }
+    const q = '*' + g.replace(/[*,()]/g, ' ').slice(0, 80) + '*';
+    const tr = await P.sbGet(`email_digest?subject=ilike.${encodeURIComponent(q)}&select=${cols}&order=received_at.desc&limit=8`);
+    const L = tr.ok ? await tr.json() : [];
+    thraedir[e.id] = L.some((y) => y.id === e.id) ? L : [e].concat(L);
+  }));
+  const ut = {};
+  Object.keys(tengsl).forEach((mid) => {
+    const e = poss[tengsl[mid]]; if (!e) return;
+    const fra = (y) => ({ id: y.id, fra: y.sender_name || y.sender_email, netfang: y.sender_email, til: y.to_addresses || null, efni: y.subject, dags: y.received_at,
+      texti: String(y.body_preview || '').slice(0, 4000), vidhengi: y.has_attachment ? (y.attachment_names || true) : null, okkar: /@(eldklar\.is|brunaholf\.is|slokkvitaeki\.is)$/i.test(y.sender_email || '') });
+    ut[mid] = { postur: fra(e), thradur: (thraedir[e.id] || [e]).map(fra), message_id: e.message_id || null };
+  });
+  return ut;
 }
 function pubRow(r) { // aldrei skila pass_hash í vafra
   return { id: r.id, base_id: r.base_id, slug: r.slug, email: r.email || '', hasPassword: !!r.pass_hash,
@@ -259,12 +297,12 @@ exports.handler = async (event) => {
       const url = origin(event) + '/gatt/?c=' + u.slug;
       const pw = (typeof body.password === 'string' && body.password) ? body.password : null;
       const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222">' +
-        '<p>Sæl/l,</p>' +
+        '<p>Góðan daginn,</p>' +
         '<p>Hér er aðgangur að þjónustuvef Slökkvitækja ehf. þar sem þú sérð stöðu brunavarna, úttektarskýrslur og reikninga fyrir ' + esc(u.display_name || 'félagið') + '.</p>' +
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br>' +
         '<b>Notandanafn:</b> ' + esc(u.email || '') + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
-      const hdrs = { 'Content-Type': 'application/json' };
+      const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar()); // lota 13: email-send krefst starfsmanns eða innri tóka
       if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
       let mres;
       try {
@@ -324,11 +362,11 @@ exports.handler = async (event) => {
       const u = ur.ok ? (await ur.json())[0] : null;
       const url = origin(event) + '/gatt/?c=' + ((u && u.slug) || '');
       const pw = (typeof body.password === 'string' && body.password) ? body.password : null;
-      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222"><p>Sæl/l' + (n.nafn ? ' ' + esc(n.nafn) : '') + ',</p>' +
+      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222"><p>Góðan daginn,</p>' +
         '<p>Hér er aðgangur þinn að þjónustugátt Slökkvitækja ehf. fyrir ' + esc((u && u.display_name) || 'félagið') + '.</p>' +
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br><b>Notandanafn:</b> ' + esc(n.email) + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
-      const hdrs = { 'Content-Type': 'application/json' }; if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
+      const hdrs = Object.assign({ 'Content-Type': 'application/json' }, await HUB.innriHausar()); if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
       let mres; try { mres = await fetch(origin(event) + '/api/email-send', { method: 'POST', headers: hdrs, body: JSON.stringify({ from: MAIL_FROM, to: [n.email], subject: 'Aðgangur að þjónustugátt Slökkvitækja ehf.', html }) }); } catch (e) { return P.json(502, { error: 'Póstur sendist ekki' }); }
       if (!mres.ok) return P.json(502, { error: 'Póstur sendist ekki', detail: (await mres.text().catch(() => '')).slice(0, 200) });
       return P.json(200, { ok: true, sent_to: n.email });
@@ -397,6 +435,44 @@ exports.handler = async (event) => {
       if (!m) return P.json(404, { error: 'Mál fannst ekki' });
       try { await P.sbPost('portal_messages', { base_id: m.customer_base_id, sender: 'starf', body: 'Svar við erindi: ' + String(m.title || '').replace(/\s+af þjónustuvef.*$/i, '') + '\n' + svar, author_name: af, read_by_staff: true }); } catch (_) {}
       return P.json(200, { ok: true, status: m.status });
+    }
+
+    // Svara máli MEÐ PÓSTI (18.11.2026). Agnar ýtir sjálfur á Senda — ekkert fer sjálfvirkt.
+    // Agnar 18.11: „ég er ekki með resend … á að koma frá eldklar@eldklar.is". Því fer svarið um SÖMU leið og allur annar
+    // póstur appsins: brunaholf /api/gmail-send með póst-tóka (sjá postur-senda.cjs), úr Gmail-pósthólfinu eldklar@eldklar.is.
+    // Þá lendir það í Sent og (með inReplyTo) í sama þræði hjá báðum. Á eftir: svar + svarad_at á málinu (kúnninn sér það í
+    // gáttinni sem „Svarað"), lína aftast í notes, valfrjálst lokað.
+    if (action === 'svara-post') {
+      const id = parseInt(body.id, 10), to = String(body.to || '').trim(), efni = String(body.efni || '').trim().slice(0, 200), texti = String(body.texti || '').trim().slice(0, 8000), loka = !!body.loka;
+      if (!id || !texti) return P.json(400, { error: 'Svarið er tómt' });
+      if (!/^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/i.test(to)) return P.json(400, { error: 'Netfang viðtakanda er ekki gilt' });
+      const gr = await P.sbGet(`thjonustubeidni?id=eq.${id}&deleted_at=is.null&select=id,customer_base_id,title,notes,status&limit=1`);
+      const m0 = gr.ok ? (await gr.json())[0] : null;
+      if (!m0) return P.json(404, { error: 'Mál fannst ekki' });
+      const af = String(body.af || 'Slökkvitæki ehf.').slice(0, 60);
+      const fraHolf = 'eldklar@eldklar.is';
+      const html = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#222;white-space:pre-wrap">' + esc(texti) + '</div>';
+      const payload = { account: fraHolf, from: 'Slökkvitæki ehf <' + fraHolf + '>', to: [to], subject: efni || ('Re: ' + String(m0.title || '').replace(/\s+—\s+[^—]*$/, '')), html };
+      if (body.message_id) payload.inReplyTo = String(body.message_id).slice(0, 300);
+      const toki = await HUB.posturToki().catch(() => null);
+      if (!toki) return P.json(503, { error: 'Náði ekki í póstlykilinn — pósturinn var EKKI sendur. Reyndu aftur.' });
+      const ac = new AbortController(), teljari = setTimeout(() => ac.abort(), 8500);
+      let mres, mj = {};
+      try {
+        mres = await fetch('https://brunaholf.netlify.app/api/gmail-send', { method: 'POST', signal: ac.signal,
+          headers: { [HUB.POSTUR_HAUS]: toki, 'content-type': 'application/json', 'user-agent': 'slokkvitaeki-gatt-admin' }, body: JSON.stringify(payload) });
+        mj = await mres.json().catch(() => ({}));
+      } catch (e) {
+        return P.json(ac.signal.aborted ? 504 : 502, { error: ac.signal.aborted ? 'Póstþjónninn svaraði ekki í tæka tíð — pósturinn GÆTI hafa farið. Athugaðu Sent í eldklar@eldklar.is áður en þú sendir aftur.' : 'Póstur sendist ekki: ' + String((e && e.message) || e).slice(0, 120) });
+      } finally { clearTimeout(teljari); }
+      if (!mres.ok || !mj.ok) return P.json(502, { error: 'Póstur sendist ekki', detail: String(mj.message || mj.error || ('HTTP ' + mres.status)).slice(0, 300) });
+      const nu = new Date().toISOString(), dags = nu.slice(8, 10) + '.' + nu.slice(5, 7) + '.' + nu.slice(0, 4);
+      const patch = { svar: texti.slice(0, 2000), svarad_at: nu, updated_at: nu,
+        notes: String(m0.notes || '') + '\n\n— Svarað með pósti ' + dags + ' (' + af + ' → ' + to + '): ' + texti.replace(/\s+/g, ' ').slice(0, 300) };
+      if (loka) Object.assign(patch, { status: 'lokad', lokid_at: nu, lokid_af: af, lokid_lysing: texti.slice(0, 1000) });
+      const pr = await P.sbPatch(`thjonustubeidni?id=eq.${id}&select=id,status`, patch);
+      if (!pr.ok) return P.json(200, { ok: true, sent_to: to, vistun: 'Pósturinn fór en málið uppfærðist ekki' });
+      return P.json(200, { ok: true, sent_to: to, status: loka ? 'lokad' : m0.status });
     }
 
     if (action === 'reply-msg') {

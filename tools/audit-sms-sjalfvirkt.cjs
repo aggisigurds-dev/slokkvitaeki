@@ -197,8 +197,13 @@ const enginTvo = (g) => { const t = g.saga.filter(r => r.uppruni === 'sjalfvirkt
 
   // 11. sms-send.js
   const smsSend = (await import(pathToFileURL(path.join(rot, 'netlify/functions/sms-send.js')).href)).default;
-  const bidja = (hdr, n) => smsSend(new Request('https://slokkvitaeki.netlify.app/api/sms-send', { method: 'POST', headers: { 'content-type': 'application/json', ...hdr }, body: JSON.stringify({ to: '6991234', body: 'prufa' }) }));
+  // Lota 13 (17.11.2026): sms-send krefst innskráðs starfsmanns. Notendaskráin (hub-adgangar GET) er hermd: kaka → inni.
+  const HUB = require(path.join(rot, 'netlify/functions/hub-adgangar.cjs'));
+  HUB.handler = async (e) => ({ statusCode: 200, body: JSON.stringify(/hub_user=/.test(String((e.headers || {}).cookie || '')) ? { authed: true, user: { nafn: 'Prufa', rola: 'Starfsmaður' } } : { authed: false, user: null }) });
+  const bidja = (hdr, n) => smsSend(new Request('https://slokkvitaeki.netlify.app/api/sms-send', { method: 'POST', headers: { 'content-type': 'application/json', cookie: 'hub_user=prufa', ...hdr }, body: JSON.stringify({ to: '6991234', body: 'prufa' }) }));
   g = gervi({ virkt: false, verk: [] });
+  let r0 = await bidja({ origin: 'https://slokkvitaeki.netlify.app', cookie: '' });
+  athuga(r0.status === 401 && g.twilio.length === 0, '11-. án innskráningar → 401, ekkert sent (lota 13)');
   let r1 = await bidja({ origin: 'https://evil.example' });
   athuga(r1.status === 403 && g.twilio.length === 0, '11a. röng upprunavefsíða → 403, ekkert sent');
   r1 = await bidja({});

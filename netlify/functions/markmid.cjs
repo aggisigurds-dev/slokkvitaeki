@@ -17,6 +17,7 @@
 // nýjustu útgáfunni (aðgerðirnar eru „setja X" eða „bæta við", svo endurtekning er örugg).
 // Kostnaður: eitt kall per opnun síðunnar og per smell; morgunmælingin (markmid-cron.cjs) einu sinni á dag.
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const P = require('./_portal.cjs');
 const H = require('./_starfshlid.cjs');
 const R = require('./_markmid-reikna.cjs');

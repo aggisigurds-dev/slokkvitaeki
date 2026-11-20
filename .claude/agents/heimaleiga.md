@@ -18,33 +18,33 @@ fyrir hinar kennitölurnar). Tómt = óskráð, villa = villa.
 | Eign (fid) · vörumerki | Heimilisfang | Greiðandi · kt (base) | Skoðunarmán. · tæki í grunni |
 |---|---|---|---|
 | Blue Mountain Apartments (1483) | Urðarhvarf 2, Kóp. | Heimaleiga ehf · 510117-0690 (293). Húsið á **U2 ehf · 510496-2489** (= „SAB ehf.“ í grunni, base 303, engin eign) sem greiddi 2023 (R-104473). Tillaga um Aegina sem greiðanda FELLD 02.09.2026 | júlí · 42 |
-| Icelandic Apartments (1622) | Urðarhvarf 4, Kóp. | **Aegina ehf. · 681013-0830** (784), bókhald alvin@fylgi.is — staðfest af Dimku 14.08.2025 og 25.09.2026 | sept. · 40 |
+| Icelandic Apartments (1622) | Urðarhvarf 4, Kóp. | **Aegina ehf. · 681013-0830** (784), bókhald (netfang í #2673) — staðfest af Dimku 14.08.2025 og 25.09.2026 | sept. · 40 |
 | Höfuðstöðvar (269) | Grensásvegur 14 | Heimaleiga ehf — þjónustusamningur undirritaður 07.11.2024 (Sölvi), doc 10343 | ágúst/sept. · 6 |
 | G14 ehf (204) | Grensásvegur 14 (húseigandi) | **G14 ehf · 510809-0170** (308) — brunakerfi + slökkvitæki, eigin samningur | nóv./feb. · 7 |
 | Máni Apartments (869) | Laugavegur 18, 3.–6. hæð | **Laugaverk ehf. · 680396-2219** (1261) frá 15.11.2026 — Dimka 06.11 | **júlí** · 54 (FC869-raðnr) |
 | Midtown Hotel (1486) | Laugavegur 18, 1.–2. hæð (fyrirtaeki segir Vegamótastígur 9, finnst ekki í Staðfangaskrá) | **IHC ehf. · 630693-2419** (1262) frá 15.11.2026 — Dimka 06.11 | **október** · 61 (AE20260728-raðnr) |
 | Iceland Comfort Apartments (1488) | Hamraborg 7, Kóp. | Heimaleiga ehf | júní/júlí · 15 |
-| Hamraborg 7, jarðhæð (1851) | Hamraborg 7, Kóp. | **Eldsalir ehf. · 491117-1840** (1210), ingi@kaskur.is — beiðni Dimku 06.10.2026 | sept. · 5 |
-| Ice Apartments (1484) | Laugavegur 1B | **365 hf. · 480702-2390** (1263), kfj@365.is, frá 15.11.2026 — Dimka 10.11 | okt./nóv. · 8 |
+| Hamraborg 7, jarðhæð (1851) | Hamraborg 7, Kóp. | **Eldsalir ehf. · 491117-1840** (1210), netfang í #2673 — beiðni Dimku 06.10.2026 | sept. · 5 |
+| Ice Apartments (1484) | Laugavegur 1B | **365 hf. · 480702-2390** (1263), netfang í #2673, frá 15.11.2026 — Dimka 10.11 | okt./nóv. · 8 |
 | Barónsstígur 18 (1941) | Barónsstígur 18 (3 íbúðir) | **Sirius ehf · 460504-2520** (1264) frá 15.11.2026 — Dimka 09.11 | — · 2 (skráð 16.11) · staður stofnaður 09.11; heitir „Baronstígur 18“ í `fyrirtaeki` (án ó, eitt s) — leit að „Barónsstígur“/„Heimaleiga“ finnur hann ekki, leitaðu á 1941; engin teikning vistuð 16.11 |
 | Bríetartún 9–11, íbúðir (443) | Bríetartún 9–11 (35 + 13 íbúðir) | Heimaleiga ehf — Sölvi CEO 26.01.2026: „bara ekki húsfélagið sem á að greiða“ | desember · 48 |
 | Bríetartún 9–11, sameign (1487) | Bríetartún 9 og 11 | **Húsfélagið Bríetartún 9-11 · 540119-0660** (394), reikningar@eignaumsjon.is — en 2025-reikningurinn (R-107527) fór á Heimaleigu | október · 8 |
 | Freyjugata 16 (1485) | Freyjugata 16 | **EA Law Practice ehf. · 650222-0400** (681 — staðurinn tengdur þangað 15.11.2026, bar áður 293; fid 857 Skipholt 50D er greiðandaröð, er_i_thjonustu=false, ekki staður) | mars · 5 |
-| Laugavegur 46 · 46heima (305) | Laugavegur 46 | **S&H Invest ehf. · 641115-0100** (676), v@waterfrontconsult.com, rafrænt á hans kt | mars · 6 |
+| Laugavegur 46 · 46heima (305) | Laugavegur 46 | **S&H Invest ehf. · 641115-0100** (676), netfang í #2673, rafrænt á hans kt | mars · 6 |
 | S30 Apartments (243) | Ármúli 13A (reikningur á Smáratorg 3) | **S30 ehf. · 711096-2059** (866) | janúar · 65 |
-| Mannheimar · TYR Apartments (626) | Grettisgata 62 | **Mannheimar ehf · 680169-6409** (769), mannheimar.ehf@gmail.com | janúar · 8 |
+| Mannheimar · TYR Apartments (626) | Grettisgata 62 | **Mannheimar ehf · 680169-6409** (769), netfang í #2673 | janúar · 8 |
 | Dalbrekka 4–6 (1621) | Dalbrekka 4-6, Kóp. | Heimaleiga ehf — Dimka 07.05.2026: „only the hallways … not the underground parking“ | maí/ágúst · 48 |
 | Dalbrekka 4–6, bílskúr (1645) | Dalbrekka 4-6, Kóp. | rukkað á Heimaleigu (R-000705) **gegn fyrirmælum Dimku** — greitt samt, aldrei rætt | júlí/ágúst · 16 |
 | Laugavegur 42 · Iðun apartments (835) | Laugavegur 42 | **Húsfélagið Laugavegi 42 · 611096-2599** (586, rekstrarfelag=Eignaumsjón, sést hjá Heimaleigu um AppSettings.buildings) — Dimka 11.02.2026 | febrúar · 10 |
 
 - Ármúli 13 (sameign) og Ármúli 13A (S30) eru sitt hvor staðurinn. Norðurstígur 5a var tekinn úr hópnum 21.08.2026.
 - fid 916 „S&H Invest ehf.“ er draugaröð (kt/base null). Charlize #170 („sjö kennitölur“) er úrelt: grunnurinn telur 11.
-- **Hver er hver:** **Dimka Dimitrova** (dimka@ og vidhald@heimaleiga.is, 449 4949), Operations Coordinator — pantar skoðanir, gefur
-  aðgangskóða, segir hver greiðir hvaða reikning, biður um skýrslur (ítrekar 2–4×). **Eva Mareksdóttir** (eva@, 696 3636) — Slökkvilið
-  (mál 25-6977), verð/kjör, samningur, undirritun skýrslna. **Erna Ósk Ingvarsdóttir** COO (erna@, 691 9687) — tilboð 2025, spurði um
-  neyðarlýsingu/rennihurðir/rýmingaræfingu 09.07.2025 (svar fannst ekki). **Sölvi Melax** CEO (solvi@, 848 2696) — samningur 2024,
-  Bríetartúns-ákvörðun, bað 07.11.2024 um verðskrá fyrir ~500 íbúðir (svar fannst ekki). Róbert Melax (varamaður), Eyþór Ingason
-  (hafnaði verði 2024: „betra tilboð annars staðar“), Ásgeir (Grettisgata 2022). dimka@/vidhald@ eru enn PENDING í charlize_contacts síðan 07.08.
+- **Hver er hver:** **Dimka** (rekstrarstjóri, Operations Coordinator) — pantar skoðanir, gefur
+  aðgangskóða, segir hver greiðir hvaða reikning, biður um skýrslur (ítrekar 2–4×). **Eva** — Slökkvilið
+  (mál 25-6977), verð/kjör, samningur, undirritun skýrslna. **Erna** (COO) — tilboð 2025, spurði um
+  neyðarlýsingu/rennihurðir/rýmingaræfingu 09.07.2025 (svar fannst ekki). **Sölvi** (CEO) — samningur 2024,
+  Bríetartúns-ákvörðun, bað 07.11.2024 um verðskrá fyrir ~500 íbúðir (svar fannst ekki). Róbert (varamaður), Eyþór
+  (hafnaði verði 2024: „betra tilboð annars staðar“), Ásgeir (Grettisgata 2022). Netföng og símar allra: Tengiliðir og netföng: kúnnaminni Charlize #2673 (`select charlize_yfirlit('510117-0690');`) — aldrei í þessa skrá (opið repó). Pósthólf rekstrarstjórans eru enn PENDING í charlize_contacts síðan 07.08.
 
 ## Reglurnar sem bíta
 
@@ -79,7 +79,7 @@ Allur listinn með skýringu á hverri röð: artifact „Hreyfingarlisti Heimal
 - **Urðarhvarf 4:** R-107254 á Heimaleigu 01.09.2025 → Dimka 10.09: „as per my previous email“ → kredit R-107299 + R-107300 á Aegina 10.09,
   greitt 01.10.2025. 2026: R-001053 151.900 á Aegina ✓. Skýrsla 2023 (7877) á engan reikning (pör #124/#1679).
 - **Hamraborg 7 jarðhæð:** 24.09.2026 var 11 tækjum eytt af ICA-prófílnum og tæki leigjenda sett inn; R-001029 52.519 á Heimaleigu →
-  Dimka 06.10: Eldsalir ehf., ingi@kaskur.is → Payday 374 felld, kredit R-001108, **R-001109 á Eldsali 08.10, greitt 22.10.2026**.
+  Dimka 06.10: Eldsalir ehf. → Payday 374 felld, kredit R-001108, **R-001109 á Eldsali 08.10, greitt 22.10.2026**.
   Inbox #382/#945 (pending) segir „þjónusta Heimaleigu“ almennt á Eldsali — óstaðfest, mál #1116 afgreiddi einn reikning.
 - **Höfuðstöðvar:** R-107256 32.573 → kredit R-107266 → R-107267 27.900 daginn eftir (sept 2025). Engin skoðun 2026 (par #1425).
 - **G14:** R-107992 (brunakerfi 80.487) + R-107993 (slökkvitæki 50.362) 10.03.2026 opnir við yfirtöku → teljast greiddir fyrri eigendum.
@@ -137,7 +137,7 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
 
 1. Les þessa skrá fyrst, svo `charlize_yfirlit` fyrir kennitöluna sem málið snertir og pending-raðir í charlize_inbox.
 2. Athugar hvað gerðist síðan „Síðast uppfært“: `solur`/`payday_invoices_slokk` fyrir base-id 293,784,394,681,1210,308,769,676,866,303,586;
-   `customer_documents`, `thjonustubeidni` og `email_digest` (from/to like '%heimaleiga.is%', sleppa aggisigurds@gmail.com).
+   `customer_documents`, `thjonustubeidni` og `email_digest` (from/to like '%heimaleiga.is%', sleppa Gmail-hólfi Agnars).
 3. Svarar með eign, fid og kennitölu greiðanda í hverri línu — aldrei „Heimaleiga“ eitt og sér.
 4. Reikningur/krafa → `sala-reikningar` + `rukkari`; skýrsla/skjal → `sara-coworker`/`skjol`; kt/sameining → `kunnaskra`; gáttin →
    `thjonustugatt`; stemmir ekki → `natalie`; póstsvar → `postur` (drög, Agnar sendir). Réttir keflið með því sem er þegar vitað.
@@ -202,8 +202,53 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   **Freyjugata 16 (1485) → EA Law 681** (staðurinn bar áður base 293). Rekstrarfélags-byggingalistinn (Barónsstígur 18) ber nú kt Siriusar.
   Gátt 293 sér 14 greiðendur með réttri kt; audit-customer-base RAUTT → GRÆNT. Engar sölur á þessa staði síðan 01.11 — engin reikningur á
   röngum greiðanda. Afrit: `backup_20261115_heimaleiga_greidendur`. Charlize scope kunni (5 færslur). Reikninganetfang Laugaverks, IHC og
-  Siriusar ekki gefið — dimka@ eins og aðrir greiðendur hópsins.
+  Siriusar ekki gefið — pósthólf rekstrarstjórans (#2673) eins og aðrir greiðendur hópsins.
 
-- 16.11.2026 · **Staðfest í loftinu + stöku AI-tillögur lokaðar.** Agnar bað aftur („geturðu kíkt á póstinn og fært allar eignirnar á nýju kennitölurnar") — verkið var ÞEGAR gert 15.11; fid 869/1486/1484 bera Laugaverk 680396-2219 / IHC 630693-2419 / 365 hf. 480702-2390 í bæði `kennitala` OG `customer_base_id` (staðfest lifandi). Pósturinn ber ekkert nýtt um greiðendur (nýjasti Heimaleigu-póstur 13.11 = Eva um inneign/endurgreiðslu, mál #1329/#1377). Lokaði afturkræft #1580 (stofna greiðendur), #1608 (Mani/Midtown/ICE) og #1614 (ICE→365) sem þegar-framkvæmdum (bakk-heimaleiga-tillogur-2026-11-16.json). OPIÐ enn: reikninganetfang Laugaverks + IHC ógefin (sjálfgefið dimka@) — drög að pósti til Dimku eftir þeim útbúin 16.11 (mál #1633, `undirbuid`, Agnar sendir); #1290 Midtown-tækjafjöldi (61→10) er sérmál, ósnert.
+- 16.11.2026 · **Staðfest í loftinu + stöku AI-tillögur lokaðar.** Agnar bað aftur („geturðu kíkt á póstinn og fært allar eignirnar á nýju kennitölurnar") — verkið var ÞEGAR gert 15.11; fid 869/1486/1484 bera Laugaverk 680396-2219 / IHC 630693-2419 / 365 hf. 480702-2390 í bæði `kennitala` OG `customer_base_id` (staðfest lifandi). Pósturinn ber ekkert nýtt um greiðendur (nýjasti Heimaleigu-póstur 13.11 = Eva um inneign/endurgreiðslu, mál #1329/#1377). Lokaði afturkræft #1580 (stofna greiðendur), #1608 (Mani/Midtown/ICE) og #1614 (ICE→365) sem þegar-framkvæmdum (bakk-heimaleiga-tillogur-2026-11-16.json). OPIÐ enn: reikninganetfang Laugaverks + IHC ógefin (sjálfgefið pósthólf rekstrarstjórans) — drög að pósti til Dimku eftir þeim útbúin 16.11 (mál #1633, `undirbuid`, Agnar sendir); #1290 Midtown-tækjafjöldi (61→10) er sérmál, ósnert.
 
-Síðast uppfært: 16.11.2026
+- 17.11.2026 · **„VANTAR“-árspjöld.** Mælt í vafra án skrifa: 6 árspjöld á Heimaleigu-stöðum standa á „VANTAR“ með veljara.
+  - EIN tillaga, kt og ár stemma, upphæð ekki borin við skýrslu: G14 2024 sl + bk (R-106013, R-106012) og
+    Icelandic Apartments 2025 (R-107300, sami reikningur tvítalinn sem skjalaröð + viðhengi).
+  - FLEIRI tillögur: Bríetartún íbúðir 2026 (6) og húsfélag 2026 (4), sem eru kreditreikningar og afrit, og Freyjugata 2026 (2).
+  - Ekkert var tengt. Listinn er í powerplan_lotur lota 6 (tolur.reikningur_pdf_fylgir_solu.stolpi). Heimild: lota 6, stjórnlotan.
+
+- 18.11.2026 · **Vinnublöð skoðana nóv. 2026 (Agnar sendi skönnun) + sérkjörin í appið.** Agnar 18.11: „Heimaleigu verðsamkomulagi, nær yfir öll
+  þeirra fasteignir og undirkennitölur" → sérkjör 30.10 sett í `company_pricing` á 22 lykla (Charlize kerfi/verd; afrit
+  `backup_20261118_company_pricing_heimaleiga`). Skoðanir: Laugavegur 18 (Máni+Midtown) 10.11, Ice + HQ (Grensásvegur 7) 11.11, Barónsstígur 16.11.
+  Blöðin: Ice 1 duft + 13 LV (6 hleðslur) + 1 CO₂ 5 kg (skrá 8); HQ 1 duft + 1 LV + 1 CO₂ 2 kg (skrá 6 frá Grensásvegi 14); Barónsstígur duft + LV
+  í hleðslu, „Ónýtt?", 2× ný LV, vantar tæki í kjallara; Laugavegur 18 36 LV + 1 duft + 4 slöngur (skrá 115), 6 með hring+striki, „7× ný".
+  **Sirius ehf (Barónsstígur) afskráður 2012** — enginn reikningur fyrr en greiðandi er staðfestur. Eva 13.11: inneign Heimaleigu 20.703 án vsk upp í HQ.
+  Ekkert skráð í úttektir enn: eyðing tækja sem eru ekki á blaði þarf samþykki Agnars (sjálfvirk vörn stöðvaði eyðingu).
+  **Síðar 18.11 (Agnar samþykkti eyðingu):** HQ Grensásvegur 7 (269) skráð „í vinnslu": 1 duft 6 kg + 1 LV + 1 CO₂ (5→2 kg), allt yfirferð
+  2.000 (sérkjör), akstur 1×2.400, skýrslugerð 0, afsl. 0 → 8.400 án vsk / 10.416 m. vsk; 2 LV + 2 slöngur eytt; staðsetning tækja → Grensásvegur 7.
+  Inneign 20.703 EKKI dregin frá (bíður Agnars). „loaned" á Barónsstíg = Á verkstæði (í hleðslu), ekki lánstæki (Charlize kerfi/uttaeki).
+  **Laugavegur 18 rannsakaður 18.11 — regla 2 hér að ofan er að hluta röng:** 115 tækin (869: 54 + 1486: 61) eru sama húsið talið tvisvar
+  (2025-skýrslur 1523/1669 ná yfir allt húsið). Blaðið 10.11 = 41 tæki. Staðirnir eru áfram tveir (tveir greiðendur) en tækjum skal SKIPT
+  eftir herbergjalista Dimku (75346): Máni 10 + 3 ný (232, 335, 430), Midtown 13 + 1 nýtt (202), sameign 13 LV + duft + 4 slöngur → IHC.
+  Bjarndís 75831: 6 tekin (4 hleðsla, 2 ónýt), lánstæki á staðnum. Hæðaskipting „3.–6. / 1.–2." í staðsetningum er röng. Bíður Agnars.
+  **Skiptingin eftir teikningu (Agnar 18.11, síðar):** Yfirlits-hæð 869 í `teikning_bord` (mynd Midtown-floor-plan-8K, 6000×4243) hefur
+  rauðan, grænan og bláan kassa. **Grænt = Máni / Laugaverk:** í græna kassanum standa nákvæmlega herbergin á lista Dimku (232, 234, 530–534);
+  á 3. og 4. hæð er enginn kassi en sama vinstri álma (330–337, 430–434). **Rautt + blátt + kjallari = Midtown / IHC** (öll önnur herbergi).
+  Merki (unitId = uttaeki.id): Laugaverk 23568, 23581–23583, 23585–23589, 23598, 23599, 23605, 23606 + „Vantar" 23584 (335), 23607 (232),
+  23608 (430); IHC 23569–23577, 23579, 23580, 23590–23597, 23600–23602 + „Vantar" 23578 (202), 23604 (gangur við 210), 23609 (móttaka 1. h.).
+  Óljóst: 23603 á veggnum milli bláa og græna á 1. hæð; 23610 ekki staðsett (utan teikningar). **Allar 4 nýju brunaslöngurnar eru í grænu álmunni.**
+  **Fjólublátt tákn = „Vantar" (tækið vantar á staðinn, 433/434), EKKI útskipt tæki;** 4 af 6 eru herbergin sem Bjarndís sagði tóm (202, 232, 335, 430).
+  37 tæki á staðnum (43 − 6) = blaðið (36 LV + 1 duft). Ekkert flutt eða eytt enn — bíður samþykkis Agnars.
+  **FRAMKVÆMT 18.11 (Agnar: „tvírit af sömu teikningunni með tækjum sem tilheyra hvoru … það sem er skipt á milli þeirra
+  skiptirðu jafnt … skýring að t.d. 14 voru á sameiginlegu svæði og 7 fara á hvort"):** sameign blaðsins = 13 LV + 1 duft = 14
+  → 7/7; slöngur 4 → 2/2. **Laugaverk (869):** 10 herbergjatæki + 7 sameign (05, 06, græni gangur 4. h., 03 á 1. h., 23610, 23592, 23593)
+  + 3 Vantar (232, 335, 430) + slöngur 21936/21937 (2. og 3. h.). **IHC (1486):** 13 herbergjatæki + 7 sameign (23602 kjallari,
+  23575 = líklega duftið á 3. h., 23597 gangur 5. h., 23594–23596 og 23590/91 á 4. h.) + 3 Vantar (202, gangur við 210, móttaka)
+  + slöngur 21938/21939. 23 FC869-raðir fluttar 869 → 1486; staðsetning „Laugavegur 18, 101 Reykjavík“ (hæðatalan tekin af).
+  Teikning: Yfirlit Mána heldur 22 merkjum; tvírit (haed id `hmwavmvfw2rn-ihc`) bætt á teikningu 1486 með 25 merkjum.
+  Sannreynt í appinu (uid 10): Máni Merkt inn 20 + 2 slöngur, Vantar 3; Midtown 23 + 2, Vantar 3.
+  Afrit: `backup_20261118_lv18_teikning`, `backup_20261118_lv18_uttaeki`. **Óleyst:** 11 FC869-raðir (23611–23621, „Ekki merkt" á Mána)
+  og 56 AE-léttvatn (21880–21935) á Midtown eru tvítalning → **merktar „urelt" 18.11 með samþykki Agnars** (virkt: Máni 20 LV + 2
+  slöngur, Midtown 23 LV + CO₂ + 2 slöngur; sannreynt í appinu);
+  CO₂ 21879 (yfirstrikað á blaðinu) óákveðið; 23575 sem duft og 9 L á 72/74 ekki breytt — gert við skráningu úttektar.
+  **Hvaða 2 eru ónýt? (spurt 19.11):** vinnublaðið greinir það EKKI — öll sex tekin tækin eru merkt eins (hringur í h-dálki + strik
+  í y-dálki): Laugaverk fyrir utan 337 og herbergi 330; IHC herbergi 302, 301, 401 og hæð −1. Ekkert í `lanstaeki`, `lanstaeki_saga`,
+  `verkbeidnir`, `verkdagbok` né pósti eftir 10.11. Bjarndís 10.11: ónýt „vegna aldurs“, verkstæðið metur endanlega → svarið er á
+  tækjunum sjálfum á verkstæðinu (framleiðsluár), ekki í gögnunum.
+
+Síðast uppfært: 18.11.2026

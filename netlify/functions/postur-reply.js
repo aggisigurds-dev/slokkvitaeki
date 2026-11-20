@@ -54,7 +54,7 @@ export default async (req) => {
     'þjónustar slökkvitæki og brunakerfi). Netfang okkar er slokkvitaeki@brunaholf.is, kt 600508-0400. ' +
     'Semdu STUTT, hlýlegt og fagmannlegt SVAR á íslensku við póstinum hér að neðan. ' +
     'Reglur:\n' +
-    '- Ávarpaðu viðtakanda eðlilega (t.d. „Sæl/l" eða nafn ef við á).\n' +
+    '- Byrjaðu ALLTAF á „Góðan daginn,“ — aldrei „Sæl/l“ eða „Sæl(l)“ — og ekki á nafni viðtakanda.\n' +
     '- Svaraðu beint því sem spurt er um. Ef beðið er um reikning/afrit, staðfestu að við sendum hann.\n' +
     '- EKKI finna upp upphæðir, reikningsnúmer eða dagsetningar — notaðu aðeins það sem kemur fram í samhenginu. Ef upplýsingar vantar, biddu kurteislega um þær.\n' +
     '- Ekki lofa neinu sem þú veist ekki (t.d. nákvæmri dagsetningu leiðréttingar).\n' +

@@ -41,6 +41,14 @@ const LEYFT = [
   { skra: 'js/patches/153-arsskodun.js', mynstur: 'h(ó|o)w*',
     af: 'óútkljáð: „hæ hó"-prufufærslusían. `\\w*` myndi líka fella „hæ hopp…" — þrengra mynstrið tapar engri ' +
         'raunverulegri nótu. 153 er vörðuð leið; ekki breyta án Agnars og netvarðar.' },
+  { skra: 'tools/birtumaeling.cjs', mynstur: '\\\\s+',
+    af: 'viljandi: línurnar eru INNI í sniðstrengnum SAFNA (`(() => { … })()`), sem er keyrður í vafranum. Þar verður ' +
+        '`\\\\s` í frumkóðanum að `\\s` í kóðanum sem keyrir, svo mynstrið er rétt. Vörðurinn var rauður á hverri ýtingu ' +
+        'frá 18.11.2026 kl. 18:11 vegna þessa; færist kóðinn út úr sniðstrengnum á að laga mynstrið og taka færsluna út.' },
+  { skra: 'tools/simasopur.cjs', mynstur: '\\\\s+',
+    af: 'viljandi: sama og birtumaeling — línurnar eru INNI í sniðstrengnum SKANNA (`(() => { … })()`, línur 52–107) sem er ' +
+        'keyrður í vafranum, þar sem `\\\\s` verður að `\\s`. Skráin kom á master með auto-sync 19.11.2026 kl. 01:50 og ' +
+        'vörðurinn var rauður á hverri ýtingu þaðan í frá. Færist kóðinn út úr sniðstrengnum: laga mynstrið og taka þetta út.' },
 ];
 
 function finnaSystur() {
@@ -73,7 +81,11 @@ function skrar(rot) {
 const LIT = /(?<![\w)\]])\/(?![\/*\s])((?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n\[])+)\/([gimsuy]{0,6})(?=\s*[.,;)\]}:]|\s*$)/g;
 // Ein yfirferð frá vinstri: `\x`-runa fyrst (svo `\[` opni ekki gervi-klasa sem gleypir það sem á eftir kemur), þá `[…]`.
 const RUNA_EDA_KLASI = /\\.|\[(?:\\.|[^\]\\])*\]/g;
-const GRUNUR = /(?:(?<![A-Za-zÀ-ÿ])[dswDSW][+*]|(?<![A-Za-zÀ-ÿ])[dw]\{\d|(?<=[A-Za-zÀ-ÿ])s\*(?=[^A-Za-zÀ-ÿ]|$))/;
+/* Síðasti hlutinn (19.11.2026): EINN hástafur sem stendur fremst í valkosti og ber `d+`/`s+`/`w+` á eftir sér —
+ * `/^(O|M|G|Pd+|[HC]R)$/` í _radgjafinn.cjs. Þar er „P“ heimildarkóði og `d+` átti að vera `\d+`; mynstrið passaði
+ * því aldrei við „P1“ og peningaráð með þeirri heimild var hent ÞEGJANDI frá 15. til 19.11.2026. Gamla reglan sá
+ * þetta ekki af því hún sleppir öllu sem stendur á eftir bókstaf (til að fella ekki „Teiknings*“). */
+const GRUNUR = /(?:(?<![A-Za-zÀ-ÿ])[dswDSW][+*]|(?<![A-Za-zÀ-ÿ])[dw]\{\d|(?<=[A-Za-zÀ-ÿ])s\*(?=[^A-Za-zÀ-ÿ]|$)|(?<=[(|^])[A-Z][dsw][+*])/;
 const RX_STRENGUR = /RegExp\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g;
 const STAKT = /(?<!\\)\\[dswbDSWB]/;
 

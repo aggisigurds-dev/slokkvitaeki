@@ -65,7 +65,7 @@ else if (/!\s*HUB_PW\s*\)\s*return\s+null/.test(rs[1]) || !/return\s+json\(\s*40
 // 2b. alltaf beðið eftir hliðinu
 for (const f of fallSkrar) {
   const t = lesa(path.join(DIR, f));
-  const re = /(?:=|return)\s*(?!await\b)(P\.requireStaff|H\.krefjastStarfsmanns|krefjastStarfsmanns)\s*\(/g;
+  const re = /(?:=|return)\s*(?!await\b)(P\.requireStaff|H\.krefjastStarfsmanns|krefjastStarfsmanns|H\.starfsmadur|H\.stjornandi)\s*\(/g;
   let m;
   while ((m = re.exec(t))) {
     const lina = t.slice(0, m.index).split('\n').length;

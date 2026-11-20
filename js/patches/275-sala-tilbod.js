@@ -212,7 +212,8 @@
   }
 
   function bodyText(nafn) {
-    return 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',\n\n' +
+    // Ávarpið er alltaf „Góðan daginn," (Agnar 20.11.2026: „Sæl(l)" var ekki flott); `nafn` er ekki lengur notað.
+    return 'Góðan daginn,\n\n' +
       'Meðfylgjandi er tilboð frá Brunahólf slökkvitæki ehf.\n\n' +
       'Tilboðið gildir í 30 daga. Ef spurningar vakna, eða þið viljið staðfesta tilboðið, er velkomið að svara þessum pósti eða hringja í síma 565-4080.\n\n' +
       'Kær kveðja,\nBrunahólf slökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';

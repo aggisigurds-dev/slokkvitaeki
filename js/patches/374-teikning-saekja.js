@@ -85,7 +85,14 @@
     // úr titlinum ef APIið gaf engar hæðir: „2.-7. hæð", „1. hæð, 2. hæð, 3. hæð"
     if (!haed.length) {
       if (bilM) { for (var k = +bilM[1]; k <= +bilM[2] && k - +bilM[1] < 30; k++) haed.push(k); }
-      else { var r = /(\d+)\.\s*h(æ|ae)ð/g, q; while ((q = r.exec(tl))) haed.push(+q[1]); }
+      else {
+        // 18.11.2026 (Álhella 7: „grunnmynd 1. og 2. hæð" gaf aðeins 2. hæð og 1. hæð stóð tóm): upptalning á undan
+        // síðustu tölunni telst með — „1. og 2. hæð", „1., 2. og 3. hæð", „1 og 2. hæð".
+        var r = /((?:\d{1,2}\.?\s*(?:,|og|&|\+)\s*)*)(\d{1,2})\.\s*h(æ|ae)ð/g, q;
+        while ((q = r.exec(tl))) {
+          (q[1].match(/\d{1,2}/g) || []).concat([q[2]]).forEach(function (n) { if (haed.indexOf(+n) < 0) haed.push(+n); });
+        }
+      }
     }
     var kj = !!d.kjallari || /kjallar/.test(tl), ris = !!d.ris || /(^|[^a-zþæöðáéíóúý])ris(i|h(æ|ae)ð)?([^a-zþæöðáéíóúý]|$)/.test(tl);
     var grunn = !!d.grunnmynd || /grunnmynd/.test(tl);
@@ -127,9 +134,13 @@
   // sjást ekki og líka eftir að glugginn lokaðist. Nú: aðeins kort sem eru (nær) í sjónmáli, 3 í einu, og hætt ef kortið er farið.
   function fyllaKortThumbs(o, syna) {
     var F = window.TeikningaForskodun; if (!F || !F.thumbAf) return;
-    var bid = [], virk = 0, MAX = 3;
+    // 18.11.2026 (Álhella 7, 52 blöð): þrjár í einu ofan í hleðslu borðsins stöðvuðu síðuna í allt að 0,6 s í senn (mælt, alls
+    // 5,4 s af 21 s) — smellir á kortin komust ekki að. Nú ein í einu með 40 ms andrými, og smellur á kort stöðvar biðröðina.
+    var bid = [], virk = 0, MAX = 1, stopp = false;
+    if (o.__thStodva) { try { o.__thStodva(); } catch (_) {} }
+    o.__thStodva = function () { stopp = true; bid.length = 0; try { if (io) io.disconnect(); } catch (_) {} };
     function naest() {
-      while (virk < MAX && bid.length) {
+      while (!stopp && virk < MAX && bid.length) {
         var el = bid.shift();
         if (!el.isConnected) continue;
         var d = syna.find(function (x) { return x.infoUrl === el.getAttribute('data-url'); });
@@ -140,11 +151,11 @@
             if (!src || !el.isConnected) return;
             el.style.cssText = 'height:120px;background:#fff url(\'' + src + '\') center/contain no-repeat';
             el.textContent = '';
-          }).catch(function () {}).then(function () { virk--; naest(); });
+          }).catch(function () {}).then(function () { virk--; setTimeout(naest, 40); });
         })(el, d);
       }
     }
-    function aeskja(el) { if (el.__thBeidid) return; el.__thBeidid = true; bid.push(el); naest(); }
+    function aeskja(el) { if (stopp || el.__thBeidid) return; el.__thBeidid = true; bid.push(el); naest(); }
     var io = window.IntersectionObserver ? new IntersectionObserver(function (fl) {
       fl.forEach(function (f) { if (f.isIntersecting) { io.unobserve(f.target); aeskja(f.target); } });
     }, { rootMargin: '240px' }) : null;
@@ -294,6 +305,7 @@
     if (allar) allar.onclick = function () { synaLista(dr, !allarSyndar, eign); };
     o.querySelectorAll('.fp-teikn-kort').forEach(function (k) {
       k.onclick = function () {
+        if (o.__thStodva) o.__thStodva();   // valið blað á þráðinn — smámyndir hinna bíða
         var d = syna.find(function (x) { return x.infoUrl === k.getAttribute('data-url'); });
         // snið / útlit (engin grunnmynd á blaðinu) verða ekki hæð — aðeins skoðuð
         if (d && flokkaBlad(d).adeinsSnidUtlit) { synaSkodun(k.getAttribute('data-url'), k.getAttribute('data-label')); return; }

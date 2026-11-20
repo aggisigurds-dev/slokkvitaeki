@@ -279,7 +279,8 @@
     var N = naestu(b), d = new Date(), nu = d.getFullYear() * 12 + (d.getMonth() + 1);
     var seint = N.filter(function (x) { return x.idx < nu; });
     var ham, hed, und;
-    var skrad = !!String((b && b.nt) || '').trim();
+    // 17.11.2026: lína „Kerfi: ekki skráð" (portal.js) er EKKI skráð skoðun — annars fengi eign án nokkurrar skoðunar „í skilum".
+    var skrad = String((b && b.nt) || '').split('|').some(function (l) { return l.trim() && !/:\s*ekki skráð\s*$/.test(l); });
     if (!skrad) { ham = 'obekkt'; hed = 'Ekki skráð'; und = 'Skoðunarmánuður er ekki skráður á eignina.'; }
     else if (seint.length) { ham = 'seint'; hed = 'Skoðun á eftirtíma'; und = seint.length === 1 ? 'Ein skoðun er komin fram yfir skoðunarmánuð.' : seint.length + ' skoðanir eru komnar fram yfir skoðunarmánuð.'; }
     else { ham = 'ok'; hed = 'Skoðun í skilum'; und = 'Engin skoðun er komin fram yfir skoðunarmánuð.'; }

@@ -86,6 +86,7 @@ jobs:
       # Blokkerandi: þessir lesa KÓÐANN sem var verið að ýta. Falli þeir er það
       # ýtingin sem olli því, og þá á keyrslan að falla.
       - name: Kóða-verðir (engin gagnatenging)
+        id: kodi
         run: node tools/audit-all.cjs --static
 
       # 23.09.2026 — ÞETTA ÞREP ÞAGGAÐI NIÐUR ALLT ÖRYGGISNETIÐ Í VIKU.
@@ -98,8 +99,12 @@ jobs:
       #
       # Ekki blokkerandi: þessir mæla ÁSTAND GAGNA sem ýtingin snerti ekki.
       # Niðurstaðan er skráð í oryggisnet_keyrslur hvort sem hún er græn eða rauð.
+      # 17.11.2026: `if: !cancelled()` — án þess SLEPPTI GitHub þessu þrepi þegar kóða-verðirnir féllu (sjálfgefið
+      # skilyrði er success()). Kóðanetið var rautt 10.–17.11 (gagnaverðir sem láku inn í --static + vafrastada), svo
+      # ekkert skráðist í oryggisnet_keyrslur í viku og Jarvis sýndi stöðuna frá 10.11. Sama þögn og 23.09.
       - name: Gagna-verðir (fella ekki keyrsluna — sjá haus)
         id: gogn
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: node tools/audit-all.cjs --skra --uppruni=ci
 
@@ -125,12 +130,18 @@ jobs:
                 }
               })
               .catch(e => console.log("::warning title=Öryggisnetið::Náði ekki að staðfesta skráningu: " + e.message));
-          ' >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          ' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || true
+        # 17.11.2026: var `>> $GITHUB_STEP_SUMMARY` — ::warning-línan lenti þá í samantektarskránni og varð ALDREI
+        # viðvörun; þrepið var grænt alla vikuna sem ekkert skráðist. tee sendir hana líka á stdout þar sem GitHub les hana.
 
       - name: Samantekt
         if: always()
         run: |
-          echo "✅ Kóða-verðir: grænt (annars hefði keyrslan fallið hér að ofan)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.kodi.outcome }}" = "success" ]; then
+            echo "✅ Kóða-verðir: grænt" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Kóða-verðir: RAUTT — ýtingin braut kóðaábyrgð (sjá annotations)" >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "${{ steps.gogn.outcome }}" = "failure" ]; then
             echo "::warning title=Rauður gagnavörður::Ástand í gögnunum er rautt. Það stöðvar ekki ýtinguna — sjá oryggisnet_keyrslur."
             echo "⚠ Gagnaverðir: RAUTT — ástand gagna, ekki þessi ýting" >> "$GITHUB_STEP_SUMMARY"

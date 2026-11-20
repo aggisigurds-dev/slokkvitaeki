@@ -14,6 +14,8 @@
  *   lesinn úr localStorage vafrans — er HORFIN: leyndarmál búa á þjóninum, ekki í vafra
  *   (regla Agnars 15.10.2026). Berist `apiKey` samt í body er honum hent, aldrei notaður.
  */
+import './_bh-toki.cjs'; // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
+import H from './_starfshlid.cjs'; // lota 13 (17.11.2026): starfsmannahliðið
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
   if (req.method !== 'POST' && req.method !== 'GET') {
@@ -33,6 +35,11 @@ export default async (req) => {
       });
     }
   }
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): fallið sendir póst í nafni fyrirtækisins og svaraði óinnskráðum. Nú: innskráður
+  // starfsmaður (vafrinn, sami uppruni) EÐA innri tóki x-sl-toki frá þjóni á sama vef (gatt-admin, gatt-vikupostur,
+  // payday-sync-cron). Annars 401; notendaskráin niðri → 503.
+  const hlid = await H.vefHlid(req, { innri: true, hausar: cors() });
+  if (hlid) return hlid;
   const apiKey = String((process && process.env && process.env.RESEND_API_KEY) || '').trim();
   if (req.method === 'GET') {
     // Staða fyrir Stillingar-síðuna (29): „stillt á þjóni: já/nei".

@@ -48,8 +48,10 @@
   }
 
   function isValidPhone(raw) {
+    // 17.11.2026 (álagspróf lotu 6): „abc" taldist AUTT (engir tölustafir) og vistaðist sem símanúmer.
+    // Autt = í lagi (valfrjálst); texti án nægra tölustafa = ógilt.
+    if (!String(raw || '').trim()) return true;
     const s = String(raw || '').replace(/[^0-9]/g, '');
-    if (!s) return true;
     return s.length >= 7;
   }
 
@@ -94,7 +96,7 @@
     if (!input || input.dataset.fvPhoneBound) return;
     input.dataset.fvPhoneBound = '1';
     input.addEventListener('blur', () => {
-      setError(input, isValidPhone(input.value) ? '' : 'Síminn er of stuttur');
+      setError(input, isValidPhone(input.value) ? '' : 'Símanúmer þarf minnst 7 tölustafi');
     });
   }
 
@@ -116,7 +118,7 @@
       setError(em, 'Ógilt netfang'); ok = false;
     }
     if (ph && !isValidPhone(ph.value)) {
-      setError(ph, 'Síminn er of stuttur'); ok = false;
+      setError(ph, 'Símanúmer þarf minnst 7 tölustafi'); ok = false;
     }
     return ok;
   }

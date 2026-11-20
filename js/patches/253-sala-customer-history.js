@@ -405,7 +405,12 @@
           .or('customer_kt.eq.' + ktb + ',customer_kt.eq.' + ktDashed(ktb))
           .in('source', ['uttekt', 'brunakerfi']).neq('status', 'void').order('created_at', { ascending: false }).limit(400);   // 05.10.2026: ógilt (R-001076) tók sæti R-001082 — nýjasti gildi reikningurinn
       }
+      // 17.11.2026 (517): kreditfærður reikningur er ekki reikningur ársins — parið fór annars með GAMLA reikninginn
+      // (gömul kt) þótt nýr hefði verið gerður, eða sýndi kreditfærðan sem gildan áður en sá nýi kom.
+      const _kred = (window.ReikningurSolu && ReikningurSolu.saekjaKredit)
+        ? await ReikningurSolu.saekjaKredit(sb, (sr && sr.data || []).map(s => s.num)).catch(() => ({})) : {};
       (sr && sr.data || []).forEach(s => {
+        if (_kred[s.num]) return;
         if (s.source === 'uttekt' && window.VidbotUttekt && VidbotUttekt.erVidbot(s.num, s.krafa_note)) return;   // viðbótarreikningur (488) er ekki aðalreikningur ársins
         const y = String(s.created_at || '').slice(0, 4);
         const k = (s.source || '') + '|' + y;

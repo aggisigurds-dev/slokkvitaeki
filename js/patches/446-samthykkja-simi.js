@@ -45,8 +45,12 @@
      * samþykktir bara sýna tölvupósta sem ég á eftir að svara" — hún var RÖÐUN (lyfti þeim efst en
      * listinn var jafn langur) og er nú SÍA. Skilgreiningin á „ósvarað" kemur úr 368 svo síminn og
      * tölvan séu sammála; hún hvílir á mælingu þjónsins á útsendum pósti, ekki merki. */
-    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst']
+    ['postur', 'Svara pósti', 'SÍA: aðeins tölvupóstar sem enginn hefur svarað — nýjast fyrst'],
+    /* 19.11.2026 (Agnar: „snooze takka inn á samþykktir í viku og setja uppsafnað snooze þarna"). Skilgreiningin og
+     * skrifið eiga EINN stað — 368 (`Samthykkja.erSnoozad` / `.snooza`) — svo sími og borð séu aldrei ósammála. */
+    ['snooze', 'Snooze', 'SÍA: mál sem þú ýttir á undan þér — þau koma sjálf aftur þegar tíminn er liðinn']
   ];
+  const snoozad = (r, A) => !!(A && A.erSnoozad && A.erSnoozad(r));
   let rodun = 'nyjast';
   const rodLes = () => { try { const v = window.Vidmot ? Vidmot.lesa(ROD_LYKILL, 'nyjast') : 'nyjast'; return RADANIR.some(x => x[0] === v) ? v : 'nyjast'; } catch (_) { return 'nyjast'; } };
   try { if (window.Vidmot) Vidmot.flytja(ROD_LYKILL, 'samthykkja_rodun', v => (RADANIR.some(x => x[0] === v) ? v : undefined)); } catch (_) {}
@@ -62,10 +66,15 @@
   document.addEventListener('vidmot-breytt', e => { try { if (e.detail && e.detail.lykill === SIA_LYKILL) sia = siaLes(); } catch (_) {} });
   const ts = s => { const n = Date.parse(s || ''); return isFinite(n) ? n : 0; };
   // „Svara pósti" sían framkvæmd FYRST, svo teljarar og hausinn telji aðeins það sem sést.
-  const synilegt = (listi, A) => ((rodun === 'postur' && A.postOsvarad) ? listi.filter(A.postOsvarad) : listi);
+  // Snooze-málin eru UTAN listans alls staðar nema í eigin síu — og þá eru þau þar ein (19.11.2026).
+  const synilegt = (listi, A) => {
+    const l = (A && A.erSnoozad) ? listi.filter(r => (rodun === 'snooze' ? snoozad(r, A) : !snoozad(r, A))) : listi;
+    return (rodun === 'postur' && A.postOsvarad) ? l.filter(A.postOsvarad) : l;
+  };
   function rada(listi, A) {
     // „Svara pósti" er sía, ekki röðun — og hún er framkvæmd FYRST, svo teljarar og hlutar telji
     // aðeins það sem sést. Sé 368 eldri útgáfa (A.postOsvarad vantar) stendur gamla hegðunin.
+    if (rodun === 'snooze') return listi.slice().sort((a, b) => ts(a.snooze_til) - ts(b.snooze_til));   // næsta sem vaknar efst
     if (rodun === 'postur' && A && A.postOsvarad) {
       return listi.filter(A.postOsvarad).sort((a, b) => ts(b.created_at) - ts(a.created_at));
     }
@@ -80,7 +89,10 @@
     else if (rodun === 'postur') { const p = r => (r.source === 'email' || /^email:/.test(String(r.channel_ref || ''))) ? 1 : 0; l.sort((a, b) => (p(b) - p(a)) || (p(a) ? ts(b.created_at) - ts(a.created_at) : 0) || d(a, b)); }
     return l;
   }
-  const rodHtml = () => '<div class="sm-rod" role="tablist" aria-label="Röðun">' + RADANIR.map(x => '<button type="button" data-sm="rod" data-v="' + x[0] + '" class="' + (rodun === x[0] ? '_on' : '') + '" title="' + esc(x[2]) + '">' + esc(x[1]) + '</button>').join('') + '</div>';
+  // Snooze-hnappurinn ber uppsafnaða töluna (Agnar 19.11.2026) og stendur alltaf, líka í núlli.
+  const rodHtml = (hrar, A) => { const sn = (hrar || []).filter(r => snoozad(r, A)).length;
+    // Sé 368 eldri útgáfa (skyndiminni vafrans) kann hún ekki snooze — þá er flipinn ekki sýndur, svo hann sýni ekki ÖLL málin.
+    return '<div class="sm-rod" role="tablist" aria-label="Röðun">' + RADANIR.filter(x => x[0] !== 'snooze' || (A && A.erSnoozad)).map(x => '<button type="button" data-sm="rod" data-v="' + x[0] + '" class="' + (rodun === x[0] ? '_on' : '') + '" title="' + esc(x[2]) + '">' + esc(x[1]) + (x[0] === 'snooze' ? ' ' + sn : '') + '</button>').join('') + '</div>'; };
   const sky = {};                  // skýringar í ritun per mál
   let _poll = 0;
 
@@ -141,6 +153,9 @@
       V + ' .sm-lysing .k{font-family:' + MONO + ';font-size:10px;letter-spacing:.14em;color:#6b7483;margin:10px 0 4px}',
       V + ' .sm-lysing .t{font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1f2530;max-height:260px;overflow:auto}',
       V + ' .sm-lysing .opna{display:inline-flex;align-items:center;height:36px;padding:0 12px;margin-top:10px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12.5px ' + SANS + ';text-decoration:none;cursor:pointer}',
+      // Snooze-hnappurinn stendur við hliðina á „Opna á Þjónustuborði" og á að vera jafn stór (36 px snertiflötur).
+      V + ' .sm-snz{display:inline-flex;align-items:center;height:36px;padding:0 12px;margin:10px 0 0 8px;border-radius:8px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#1f2530;font:700 12.5px ' + SANS + ';cursor:pointer}',
+      V + ' .sm-snz[disabled]{opacity:.6;cursor:progress}',
       // 446c „Þetta gerist" — beint fyrir ofan svarhnappana, sami lestur og á borðinu.
       V + ' .sm-adg{margin:0 12px 10px;padding:10px 12px;border:1px solid rgba(20,24,34,.16);border-radius:9px;background:linear-gradient(180deg,#fbfcfe,#eef1f6)}',
       V + ' .sm-adg .r{display:flex;gap:9px;align-items:baseline;padding:4px 0;font-size:12.5px;line-height:1.45;color:#39414f}',
@@ -256,6 +271,9 @@
         (op && A.heimildir ? A.heimildir(r, 'sm') : '') +
         (r.notes ? '<div class="k">LÝSING OG ATHUGASEMDIR</div><div class="t">' + esc(r.notes) + '</div>' : '<div class="k">ENGIN LÝSING</div>') +
         '<a class="opna" href="#bord" data-sm="bord" data-id="' + r.id + '">Opna á Þjónustuborði ›</a>' +
+        // Snooze (19.11.2026): hvorki svar né lokun — málið hverfur af listanum og kemur sjálft aftur.
+        (A.snooza ? '<button type="button" class="sm-snz" data-sm="snooze" data-v="' + (snoozad(r, A) ? 0 : (A.snoozeDagar || 7)) + '" data-id="' + r.id + '"' + (bid ? ' disabled' : '') + '>' +
+          (snoozad(r, A) ? '⏰ Taka úr snooze' + (A.snoozeDagarEftir ? ' (' + A.snoozeDagarEftir(r) + ' d. eftir)' : '') : '💤 Snooze í viku') + '</button>' : '') +
       '</div>' + adg + svor + '</article>';
   }
 
@@ -286,7 +304,9 @@
       const listi = sia === 'allt' ? synileg : synileg.filter(r => String(A.hluti(r)) === sia);
       const HL = [['Þegar afgreitt samkvæmt gögnum — bara loka', -1, '_ok'], ['Tilbúið — bara samþykkja', 0, '_gull'], ['Þarf svar frá þér', 1, ''], ['Svarað · bíður Claude', 2, '']];
       if (!hrar.length) body = '<div class="sm-tomt">Ekkert bíður svars hjá ' + esc(n) + '.<br>Nýjar tillögur birtast hér um leið og þær eru tilbúnar.</div>';
-      else if (!listi.length) body = '<div class="sm-tomt">' + (rodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.' : 'Ekkert mál passar við síuna.') + '<br><button type="button" class="uppf" data-sm="allt">Sýna öll mál</button></div>';
+      else if (!listi.length) body = '<div class="sm-tomt">' + (rodun === 'postur' ? 'Enginn ósvaraður póstur bíður þín hér.'
+        : rodun === 'snooze' ? 'Ekkert mál er í snooze. Opnaðu mál og ýttu á „💤 Snooze í viku" til að ýta því á undan þér.'
+        : 'Ekkert mál passar við síuna.') + '<br><button type="button" class="uppf" data-sm="allt">Sýna öll mál</button></div>';
       else {
         const skjol = A.skjolMap ? A.skjolMap(listi.map(r => r.id)) : null;   // ein fyrirspurn, skyndiminni í 368
         if (A.erMynd) A_erMynd = A.erMynd;
@@ -300,7 +320,7 @@
     const t = A ? [listi.filter(r => A.hluti(r) === 0).length + ' tilbúin', listi.filter(r => A.hluti(r) === 1).length + ' spurningar', listi.filter(r => A.hluti(r) === 2).length + ' hjá Claude'].join(' · ') : '';
     const sott = (A && A.loadedAt && A.loadedAt()) ? ' · sótt kl. ' + String(A.loadedAt().getHours()).padStart(2, '0') + ':' + String(A.loadedAt().getMinutes()).padStart(2, '0') : '';
     const html = '<div class="sm-haus"><div><div class="tt">Samþykkja</div><div class="st">' + esc(t + (A && A.loading && A.loading() ? ' · sæki…' : sott)) + '</div></div>' +
-      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && hrar.length ? rodHtml() + teljariHtml(listi, A) : '') + body;
+      '<span class="hver">' + esc(n || '—') + '</span><button type="button" class="uppf" data-sm="uppf" title="Sækja aftur">↻</button></div>' + (A && A.loaded() && hrar.length ? rodHtml(hrar, A) + teljariHtml(listi, A) : '') + body;
     // Skrunstaða og fókus (textarea í ritun) lifa teikninguna — 388 Stodugt.vernda ef hann er til.
     const aftur = (window.Stodugt && Stodugt.vernda) ? Stodugt.vernda(root) : null;
     if (root._h !== html) { root.innerHTML = html; root._h = html; }
@@ -313,7 +333,24 @@
     const a = b.dataset.sm, id = +b.dataset.id;
     if (a === 'uppf') { saekja(A, true); return; }
     if (a === 'sia') { sia = sia === b.dataset.v ? 'allt' : b.dataset.v; try { if (window.Vidmot) Vidmot.setja(SIA_LYKILL, sia); } catch (_) {} render(); return; }
-    if (a === 'allt') { sia = 'allt'; try { if (window.Vidmot) { Vidmot.setja(SIA_LYKILL, sia); if (rodun === 'postur') { rodun = 'nyjast'; Vidmot.setja(ROD_LYKILL, rodun); } } } catch (_) {} render(); return; }
+    if (a === 'allt') { sia = 'allt'; try { if (window.Vidmot) { Vidmot.setja(SIA_LYKILL, sia); if (rodun === 'postur' || rodun === 'snooze') { rodun = 'nyjast'; Vidmot.setja(ROD_LYKILL, rodun); } } } catch (_) {} render(); return; }
+    // Snooze: 368 á skrifið og sækir listann aftur; hér er aðeins beðið og teiknað.
+    /* Snooze: 368 á skrifið og sækir listann aftur. Bregðist það er HTML-ið óbreytt og `render()` skrifar ekki (root._h),
+     * svo takkinn stóð dauður á „Augnablik…" án skýringar (rýni 19.11.2026) — hér er hann endurstilltur og villan sögð. */
+    if (a === 'snooze') {
+      e.preventDefault();
+      if (!A.snooza) return;
+      const d = Number(b.dataset.v || 0), fyrri = b.textContent;
+      b.disabled = true; b.textContent = 'Augnablik…';
+      const lokid = (ok, villa) => {
+        const r = document.getElementById('_sm446-root');
+        if (!ok) { b.disabled = false; b.textContent = fyrri; if (window.Toast && Toast.show) Toast.show(villa || 'Snooze vistaðist ekki — reyndu aftur', 'warn'); }
+        if (r) r._h = '';      // þvinga teikningu, annars sést ekkert gerast
+        render();
+      };
+      A.snooza(id, d).then((ok) => lokid(ok !== false), (e2) => lokid(false, 'Snooze vistaðist ekki: ' + ((e2 && e2.message) || e2)));
+      return;
+    }
     if (a === 'rod') { rodun = b.dataset.v; try { if (window.Vidmot) Vidmot.setja(ROD_LYKILL, rodun); } catch (_) {} render(); return; }
     if (a === 'heim-sala') { e.preventDefault(); if (window.OpnaSolu && OpnaSolu.opna) OpnaSolu.opna(id); return; }
     if (a === 'bord') { e.preventDefault(); try { A.velja(id); } catch (_) {} if (window.App && App.switchView) App.switchView('bord'); else location.hash = '#bord'; return; }

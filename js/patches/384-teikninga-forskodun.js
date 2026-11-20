@@ -194,6 +194,17 @@
     d._sidur = doc.numPages;
     return url;
   }
+  // 18.11.2026 (Agnar, Álhella 7, 52 blöð: „Ekki hægt að ýta á þarna, og frosnar allt"): með intent 'print' keyrir pdf.js
+  // alla síðuna í einni örverkakeðju — smellir komast ekki að fyrr en síðan er búin. gefaAd setur hvern kafla (≈15 ms) í
+  // nýtt verk í atburðalykkjunni (MessageChannel: enginn 4 ms lágmarksbiðtími eins og setTimeout).
+  const gefaAd = (() => {
+    let ras = null; const bid = [];
+    return (afram) => {
+      if (!ras) { try { ras = new MessageChannel(); ras.port1.onmessage = () => { const f = bid.shift(); if (f) f(); }; } catch (_) { ras = false; } }
+      if (!ras) { setTimeout(afram, 0); return; }
+      bid.push(afram); ras.port2.postMessage(0);
+    };
+  })();
   async function thumbAf(d) {
     if (!d) return '';
     if (d.thumb) return d.thumb;
@@ -213,9 +224,12 @@
     const cx = cv.getContext('2d');
     cx.fillStyle = '#fff';
     cx.fillRect(0, 0, cv.width, cv.height);
-    await sida.render({ canvasContext: cx, viewport: vp, intent: 'print' }).promise;
+    const verk = sida.render({ canvasContext: cx, viewport: vp, intent: 'print' });
+    verk.onContinue = gefaAd;
+    await verk.promise;
     const url = cv.toDataURL('image/jpeg', 0.72);
     _thumbs.set(d.infoUrl, url);
+    try { doc.destroy(); } catch (_) {}   // skjalið lifði annars í vinnuþræðinum — 52 opin skjöl eftir einn lista
     return url;
   }
   let thumbKedja = Promise.resolve();

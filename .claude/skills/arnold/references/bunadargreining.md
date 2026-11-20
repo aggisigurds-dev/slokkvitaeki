@@ -146,6 +146,29 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
   eigin sætum (0xe8 ð, 0x69 á, 0xa0 æ, 0x74 í, 0x79 ó, 0x7e ú, 0x7c ö, 0xec þ, 0xea ý, 0x70 é, 0xcb Í …). Afkóðunin er í
   `../scripts/bunadargreining/skutuvogur-4/afkoda.py`; brunavarnatextinn og rauðu táknstafirnir lásust þannig nákvæmt.
 
+## Gildrur sem mældust 17.11.2026 (Benni/Nesdekk-lotan)
+
+- **Sjálfvirka greiningin getur skrifað RUSL og hún leysir handlesna greiningu af hólmi.** Krókháls 9 (532): Turbo-takkinn bjó til
+  greiningu id 60 með 8 atriðum merktum „Handslökkvitæki" sem báru `tegund` „Segulloki · í bið" — hún las Nýtt-segullokamerki sem
+  slökkvitæki og skilaði 0 blöðum, 0 texta, 0 heimildum. Breiðhöfði 13 (219): sjálfvirk greining id 59 (05.11) leysti af hólmi
+  handlesna id 58 (04.11) og tapaði ORÐUÐUM staðsetningum og þremur af fjórum heimildum. **Áður en tölum virkrar greiningar er
+  treyst: lestu `af`, `tegund`, fjölda blaða/heimilda.** Handlesin greining er alltaf betri á skönnunum.
+- **Innskráningarhliðið stöðvaði PDF-gerð á ÖLLUM stöðum.** `pdf_ur_appinu.cjs` og `vista_vidhengi.cjs` opna appið í hausalausum
+  vafra; hliðið sendi þá á `innskraning.html` og `#co-bgr` / `window.CompanyAttachments` fundust aldrei (90 s timeout). Lagað með
+  `/api/hub-adgangar` → 404, sama leið og teikningaprófin nota (commit 908a086a).
+- **Samnefnt viðhengi er ekki yfirskrifað — og `skyrsla` lítur samt út fyrir að hafa tekist.** `vista_vidhengi.cjs` hefur engan
+  yfirskriftarrofa: finni hún skrá með sama nafni prentar hún „þegar til — ekkert gert" og `skyrsla` prentar ENGU að síður
+  línuna „Viðhengi: … (370 KB) | … (381 KB)" — sem er listi yfir skrárnar sem FYRIR eru. Mælt 17.11.2026: Dalshraun 10 fékk
+  þannig enga uppfærða skýrslu (gömlu skrárnar frá 29.10 stóðu eftir, 12 atriði, þótt ný greining hefði 19), og ég las
+  útprentunina ranglega sem árangur. **Staðfestu á `storage.objects` (fatan `samningar`, `company_attachments/<cid>/`) hvort
+  skráin er í raun ný** — berðu saman `created_at`, ekki bara nafnið. Að skipta út = eyða skjali viðskiptavinar → spyrja Agnar.
+- **Endurteiknuð blöð.** Dalshraun 10 (1853): þrjú af fjórum blöðum á Teikningu eru endurteiknuð (blaðið segir sjálft
+  „Endurteiknað (ChatGPT) … brunahólfun ekki merkt"). Herbergjaskipan stemmdi við samþykkta aðaluppdrætti 1991, en uppruni
+  brunavarnamerkjanna er óstaðfestur. Lestu alltaf hvað blaðið segir um sjálft sig áður en tákn af því eru talin.
+- **Álmur verða að standa í hæðarheitinu.** Landspítali Fossvogi (1911): hæðir hétu „Kjallari" og „6. hæð" en titilreitir blaðanna
+  sögðu „E-ÁLMA GRUNNMYND KJALLARI BREYTTUR" og „E-ÁLMA GRUNNMYND 6.HÆÐ STÆKKUN" — endurnefnt 17.11. Húsið hefur a.m.k. A-, B-, E-
+  og G-álmu; G-álma (bráðamóttakan) á enga hæð á borðinu. Tæknimaður finnur ekki álmu sem starfsfólkið kallar öðru nafni.
+
 ## Viðmiðunarstaðir
 
 | Staður | company_id | Greining | Athugasemd |
@@ -156,6 +179,10 @@ Handlesin greining (Claude/Arnold) er alltaf betri á skönnunum: hún les skýr
 | Garðyrkjufélag Íslands, Síðumúli 1 | 1198 | id 5, 20.10.2026 | aðaluppdráttur 08.12.2020 (skönnun, 3 hæðir á einu blaði): **ÚT 15** (6+5+4) + 2 „!“ (stjórnstöð/útstöð, engin skýring); **slökkvitæki EKKI teiknuð** („staðsett í samráði við SHS“) → 6 TILLÖGUR (2 á hæð við stigagang/útgang, 165.BR1); skráð 3 tæki án staðar; brunakerfisteikning finnst ekki í skjalasafni; hvaða hæðir félagið notar óstaðfest; séruppdrættir (5004) = lagnir/raf/burður 1981–2022 |
 | Heimaleiga - Máni Apartments, Laugavegur 18 (3.–6. hæð) | 869 | id 7, 20.10.2026 | aðaluppdrættir 24.04.2018 (blað 3/7 + 4/7, skönnun; verk 200801003, rev. C: opnað milli Laugavegs 18 og Vegamótastígs 7 vegna flóttaleiða): **ÚT 14** (3+4+4+3; ÚT = „útljós og neyðarlýsing“), **engin SL/BS/R teiknuð**, byggingarlýsing: „sjálfvirkt brunaviðvörunarkerfi í öllu húsinu“; 54 léttvatn skráð án staðar → engin Nýtt-merki, `teikning_bord` ósnert; skráin (54 léttvatn) ≠ júlí-2025 úttektin (52 + CO₂ + 1 slanga). Ein-síðu PDF (4 hæðir hlið við hlið) + hver hæð á sér blaði í Viðhengi. **Gildra:** `gogn.py` skrifaði JSON í cp1252 → „�“ í staðsetningum í DB (lagað með `vista.cjs --uppfaera`); `json.dump(..., open(f, 'w', encoding='utf-8'))` er skylda |
 | Heimaleiga - Ice Apartments, Laugavegur 1 (bakhús MHL 04) | 1484 | id 10, 21.10.2026 — **fyrsta verkið úr verkhringrásinni** (`bgr_verk.cjs`) | aðaluppdrættir 1.02 (08.09.2015) og 1.03 (01.03.2016), skönnun, engin skýring á blaði: **20 ÚT** (6+6+6+2, líka við björgunarop) + **15 R** (túlkað reykskynjari, skýring vantar) á kjallara (jarðhæð bakhúss) og 1.–3. hæð; engin SL/BS; 8 skráð tæki án staðar → greining-only; 2 PDF í Viðhengi |
+| Bílabúð Benna, Krókháls 9 | 532 | id 65, 17.11.2026 — **vigur með dulkóðuðu textalagi (+29)** | 115 atriði á 3 hæðum: 17 HSL + 59 R + 39 ÚT (kjallari 7/25/16, 1. hæð 7/27/17, milligólf 3/7/6). Aðaluppdrættir RCM 20.07.2023 (samþ. 15.08.2023, USK23060184); byggingarlýsing G001 ber TÁKNASKÝRINGU (HSL/R/ÚT/NL/BO) — lestu hana fyrst. Blöðin eru A+B-helmingar sem voru saumaðir saman (sjá `sameina-blod.md`), svo hvert blað þurfti að skrá á ramma sameinuðu myndarinnar (kvarði 0,8175/0,8525, 7 af 8 sniðmátum sammála). Raflagna-séruppdrættir BN057064/BN043725 skráðir en merktir ógildir. **Hönnun sýnir 17 slökkvitæki, skráð eru 13 (+4 slöngur) — ÓSTAÐFESTUR mismunur.** Slöngutákn eru spíralar án texta og fundust ekki. Leysti af hólmi sjálfvirka id 60 (8 segulloka talda slökkvitæki) |
+| Nesdekk, Breiðhöfða 13 | 219 | id 64, 17.11.2026 — **vigur, tvöföld staðfesting** | Gildandi gögn eru teikningasett samþ. **28.10.2025** (USK24040063, Arkiteó) með textalagi; borðið situr á ÚRELTRI 2018-skönnun (Tvíhorf) — blöðin tvö eru sér blöð greiningarinnar, borðið ósnert. Táknin úr textalaginu gáfu NÁKVÆMLEGA sömu 20 tákn og handlesturinn 2022 (innan 44 díla). 50 atriði: 11 slökkvitæki + 5 slöngukefli (skráð tæki talin, hönnunarstaður án tækis tvítelur ekki) + 16 ÚT + 16 R + 1 bjalla. R-tákn eru TÚLKUN (engin skýringartafla á blaði) og merkt sem slíkt. Leysti af hólmi sjálfvirka id 59 (tómir staðir, garbled OCR) og handlesna id 58 |
+| Bílabúð Benna, Fiskislóð 41 | 1612 | id 61, 17.11.2026 (áður id 36, 21.10) | 30 atriði óbreytt (10 HSL + 20 ÚT), staðfest með sjálfstæðum endurlestri. Bætt við: brunavarnatexti úr byggingarlýsingu Brunahönnunar slf (mál 22-056, samþ. 28.11.2023) í 10 köflum, heimildir 2 → 5. **Slöngur: byggingarlýsingin nefnir þær („í dekkjalager skv. teikningu") en EKKERT BRSL-tákn er í textalaginu** — í athugasemd, ekki í listanum (vista krefst hnita) |
+| Nesdekk, Dalshraun 10 | 1853 | id 62, 17.11.2026 (áður id 48, 29.10) | 19 atriði: 5 SL + 7 ÚT + 6 NL + 1 stjórnstöð (var 12). ÚT 6 → 7 og sex NL-merki bættust við af vandaðri lestri, ekki af öðru blaði. **Blöðin á Teikningu eru ENDURTEIKNUÐ** (sjá gildrur hér að ofan). Samantektin segir „útgangar 13" því greiningin á ekkert svið fyrir neyðarlýsingu — sundurliðunin er á hverju atriði |
 | Sunnukriki 3 (Mosfellsbær) | — | ekki vistuð (ekkert félag) | Hóptíma stúdíó 2026: 2 SLT, 6 RS, 3 ÚT; brunakerfi 1. h. 7 + 24 R; gögnin í `../scripts/bunadargreining/sunnukriki-3/greining_sunnukriki.json` |
 
 ## 3D-mynd af greiningu (21.10.2026, Skútuvogur 4 — Agnar: „settu búnaðargreininguna inn á svona" = Blender-myndin með gráu steypugólfi)

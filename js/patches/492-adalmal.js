@@ -55,6 +55,40 @@
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif';
   const DISP = '"Playfair Display",Georgia,serif';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  /* 18.11.2026 — LESTUR Á FLATRI SETNINGU (Agnar: „hörmulegt að lesa svona. gersamlega bara flatur texti").
+   * Línurnar í „Tilbúið til afgreiðslu" eru ein setning hver: aðili, staða, upphæð, aldur og aðgerð, allt á
+   * sömu þyngd — t.d. „Hertz (Bílaleiga Flugleiða): R-001071 upp á 114.050 kr. hefur verið ógreiddur í 47 daga
+   * — staðfesta að reikningurinn hafi borist". Augað hefur hvergi að grípa.
+   * Textinn er ÓBREYTTUR; hann er aðeins brotinn upp eftir á:
+   *   · aðilinn — allt fram að fyrsta tvípunkti innan 70 stafa — verður feitur,
+   *   · upphæðir og dagafjöldi fá töflutölustafi svo tölur raðist undir tölur.
+   * Unnið á ESCAPE-UÐUM streng, svo ekkert sem kemur úr gögnunum getur orðið að marki. */
+  /* 18.11.2026 — SANNINDAMERKIÐ FREMST Í RÖKUM (Agnar: „Já, rökin líka").
+   * Rökin undir „Af hverju þetta er rétt" byrja mörg á hástafaorði sem segir hversu traust þau eru:
+   * ÓSTAÐFEST, STAÐFEST, MÆLT, MAT, ÁLYKTUN, ÓSANNREYNT, ÓVÍST, ÁÆTLUN, ATH. Mælt í afgreidsla.af_hverju
+   * 18.11.2026: ÓSTAÐFEST 18, STAÐFEST 2, MAT 2, ÓSANNREYNT 2, ÁÆTLUN 2, ÓVÍST 1, ATH 1, MÆLT 1, ÁLYKTUN 1.
+   * Merkið lá inni í málsgreininni og hvarf í henni. Það fer núna fremst sem pilla með lit eftir því hvort
+   * rökin standa á mælingu eða ágiskun — sama regla og gildir annars staðar: mælt með heimild, eða ÓMÆLT. */
+  const ROK_MERKI = { 'STAÐFEST': '_ok', 'MÆLT': '_ok', 'SANNREYNT': '_ok',
+    'ÓSTAÐFEST': '_vidv', 'ÓSANNREYNT': '_vidv', 'ÓVÍST': '_vidv', 'ÓMÆLT': '_vidv',
+    'MAT': '_mat', 'ÁLYKTUN': '_mat', 'ÁÆTLUN': '_aaet', 'ATH': '_ath', 'NIÐURSTAÐA': '_ath' };
+  function rokTexti(txt) {
+    const r = String(txt ?? '');
+    const m = r.match(/^([A-ZÁÐÉÍÓÚÝÞÆÖ][A-ZÁÐÉÍÓÚÝÞÆÖ ]{1,22})([:,])\s*/);
+    if (!m) return sundur(r);
+    const heiti = m[1].trim();
+    return '<span class="ad-rmerki ' + (ROK_MERKI[heiti] || '_ath') + '">' + esc(heiti) + '</span>' + sundur(r.slice(m[0].length));
+  }
+
+  function sundur(txt) {
+    let t = esc(txt);
+    const k = t.indexOf(': ');
+    if (k > 0 && k < 70 && !/[.!?]/.test(t.slice(0, k))) t = '<b class="ad-adili">' + t.slice(0, k) + '</b>' + t.slice(k);
+    t = t.replace(/\d[\d.]*(?:,\d+)? kr\.?/g, m => '<span class="ad-tala">' + m + '</span>');
+    t = t.replace(/\b\d+(?:[–-]\d+)? (?:daga|dagar|dögum|mánuði|mánuðum)\b/g, m => '<span class="ad-ald">' + m + '</span>');
+    return t;
+  }
   const p2 = n => String(n).padStart(2, '0');
   const dags = iso => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getDate()) + '.' + p2(d.getMonth() + 1) + '.' + d.getFullYear(); };
   const kl = iso => { const d = new Date(iso); return isNaN(d) ? '' : p2(d.getHours()) + ':' + p2(d.getMinutes()); };
@@ -136,7 +170,10 @@
       else if (r.status === 403) { S.af.leyfi = false; S.af.villa = 'Aðeins stjórnandi getur svarað og afgreitt á Aðalmálum.'; }
       else if (!r.ok) throw new Error(j.error || ('svar ' + r.status));
       else {
-        S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = j.tilbuin || [];
+        // 19.11.2026: liðir í sérflokki (Dagsverk, Bókanir) eiga eigin ham í Afgreiðslunni og fara ekki í þennan lista —
+        // hér stendur aðeins fjöldinn, með tengli í flokkinn.
+        const allt = j.tilbuin || [], telja = (k) => allt.filter(v => v.flokkur === k).length;
+        S.af.leyfi = true; S.af.villa = null; S.af.tilbuin = allt.filter(v => v.flokkur !== 'bokun' && v.flokkur !== 'dagsverk'); S.af.bokanir = telja('bokun'); S.af.dagsverk = telja('dagsverk');
         const am = {}; (j.adalmal || []).forEach(x => { am[x.lykill] = x; }); S.af.am = am;
         S.af.tilv = j.tilvisanir || {};
         S.af.claudeVirkt = !!j.claude_virkt;
@@ -327,10 +364,33 @@
       V + ' .ad-afr+.ad-afr{border-top:1px solid rgba(20,24,34,.1)}',
       V + ' .ad-afr>button.haus{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;padding:8px 12px;border:0;background:none;text-align:left;cursor:pointer;color:#1f2530;font:600 14px/1.35 ' + SANS + '}',
       V + ' .ad-afr>button.haus .t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}' + V + ' .ad-afr>button.haus .k{font:600 11.5px ' + MONO + ';color:#525b6b;white-space:nowrap}',
+      // 18.11.2026 — stigveldi í flötu línunni: aðilinn fremst og feitur, smáatriðin léttari, tölur í
+      // töflutölustöfum svo 114.050 og 134.446 raðist undir hvor aðra þegar augað rennur niður listann.
+      V + ' .ad-afr>button.haus .t{font-weight:500;color:#3a4250}',
+      V + ' .ad-afr>button.haus .t .ad-adili{font-weight:800;color:#11141c}',
+      V + ' .ad-tala{font-variant-numeric:tabular-nums;font-weight:700;color:#1f2530}',
+      V + ' .ad-ald{font-variant-numeric:tabular-nums;color:#6b7380}',
+      V + ' .ad-rok li .ad-adili{font-weight:800;color:#11141c}',
       V + ' .ad-plata{flex:none;display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:3px;border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);font:700 10px ' + MONO + ';letter-spacing:.06em;text-transform:uppercase;color:#1f2530}',
       V + ' .ad-afk{padding:4px 14px 12px}' + V + ' .ad-afk h4{margin:10px 0 5px;font:700 10.5px ' + MONO + ';letter-spacing:.12em;text-transform:uppercase;color:#3a4250}',
       V + ' .ad-gerist{font:600 15px/1.4 ' + SANS + ';background:#f4f6f9;border:1px solid rgba(20,24,34,.14);border-left:4px solid #7a0b0e;border-radius:8px;padding:9px 11px}',
-      V + ' .ad-rok{margin:0;padding:0;list-style:none}' + V + ' .ad-rok li{padding:4px 0 4px 14px;position:relative;font-size:13.5px;border-top:1px dashed rgba(20,24,34,.14)}' + V + ' .ad-rok li:first-child{border-top:0}',
+      // 18.11.2026 — rökin fá loft (4 px -> 8 px, línubil 1,55) svo málsgreinarnar renni ekki saman,
+      // og sannindamerkið fremst verður pilla í stað hástafa inni í textanum.
+      V + ' .ad-rok{margin:0;padding:0;list-style:none}' + V + ' .ad-rok li{padding:8px 0 8px 14px;position:relative;font-size:13.5px;line-height:1.55;border-top:1px dashed rgba(20,24,34,.14)}' + V + ' .ad-rok li:first-child{border-top:0}',
+      V + ' .ad-rok li::before{top:15px}',
+      V + ' .ad-rmerki{display:inline-block;margin:0 7px 0 0;padding:1px 7px;border-radius:3px;border:1px solid;font:700 9.5px ' + MONO + ';letter-spacing:.1em;text-transform:uppercase;vertical-align:1px;white-space:nowrap}',
+      V + ' .ad-rmerki._ok{background:#e7f3ea;border-color:#9cc9a6;color:#14532d}',
+      V + ' .ad-rmerki._vidv{background:#fdecd6;border-color:#e0b07a;color:#7c3a06}',
+      V + ' .ad-rmerki._mat{background:#f3f0e6;border-color:#cbbf9c;color:#5a4a16}',
+      V + ' .ad-rmerki._aaet{background:#eaf0fb;border-color:#a8bedf;color:#1d3b63}',
+      V + ' .ad-rmerki._ath{background:#f1f3f6;border-color:#c5ccd6;color:#3a4250}',
+      V + ' .ad-rok small{margin-top:3px}',
+      /* 18.11.2026 — snertifletir á síma. Mælt með tools/simasopur.cjs í 390 px: „Á borðið" var 19 px hár
+       * og hausar hlutanna 22 px. Fingur hittir ekki 19 px. Lágmarkið er 36 px í símaham; á tölvu stendur
+       * þéttari hæðin óbreytt, því þar er bendill. */
+      'html[data-viewmode="mobile"] body #' + VIEW_ID + ' .ad-haus button{min-height:36px;padding:0 12px}',
+      'html[data-viewmode="mobile"] body #' + VIEW_ID + ' .ad-hl>button.haus{min-height:38px}',
+      'html[data-viewmode="mobile"] body #' + VIEW_ID + ' .ad-afr>button.haus{min-height:44px}',
       V + ' .ad-rok li::before{content:"";position:absolute;left:3px;top:11px;width:5px;height:5px;border-radius:50%;background:#3a4250}' + V + ' .ad-rok small{display:block;font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti{background:#f7f8fa;border:1px solid rgba(20,24,34,.14);border-radius:8px;padding:9px 11px;font-size:13px}' + V + ' .ad-skeyti .m{font:11px ' + MONO + ';color:#6b7380}',
       V + ' .ad-skeyti pre{margin:4px 0 0;white-space:pre-wrap;font:13px/1.45 ' + SANS + ';color:#3a4250;max-height:180px;overflow:auto}',
@@ -522,7 +582,7 @@
   const opnaHtml = sl => (sl && sl.url && /^(https?:\/\/|\/)/.test(sl.url) ? '<a class="ad-opna" href="' + esc(sl.url) + '" target="_blank" rel="noopener">' + esc(sl.texti || 'Opna') + ' ↗</a>' : '');
   function afKortHtml(v) {
     let h = '<div class="ad-afk"><h4>Hvað gerist þegar þú ýtir</h4><div class="ad-gerist">' + esc(v.hvad_gerist) + '</div>';
-    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + esc(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
+    if ((v.af_hverju || []).length) h += '<h4>Af hverju þetta er rétt</h4><ul class="ad-rok">' + v.af_hverju.map(r => '<li>' + rokTexti(r.texti) + (r.heimild || r.slod ? '<small>' + esc(r.heimild || '') + (r.slod ? ' ' + opnaHtml(r.slod) : '') + '</small>' : '') + '</li>').join('') + '</ul>';
     if (v.tegund === 'tolvupostur') {
       if (v.svar_vid) h += '<h4>Skeytið sem þú svarar (það nýjasta í þræðinum)</h4><div class="ad-skeyti"><div class="m">' + esc(v.svar_vid.fra) + ' · ' + esc(v.svar_vid.dags) + (v.svar_vid.slod ? ' · ' + opnaHtml(v.svar_vid.slod) : '') + '</div><b>' + esc(v.svar_vid.efni) + '</b><pre>' + esc(v.svar_vid.texti) + '</pre></div>';
       const p = v.post || {};
@@ -558,12 +618,17 @@
     if (S.af.leyfi !== true) return S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
     const t = S.af.tilbuin;
     let x = S.af.villa ? '<div class="ad-villa">' + esc(S.af.villa) + '</div>' : '';
-    if (!t.length && !S.afSkilabod) return x;
-    x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span><a href="/afgreidsla.html" title="Allt sem var gert, sleppt eða úrelt">Saga ›</a></div>';
+    // Rýni 19.11.2026: hausinn ber tenglana í sérflokkana, svo hann má ekki hverfa þótt ENGIN venjuleg verk bíði —
+    // annars sást „Dagsverk 5 ›“ hvergi þegar allt annað var afgreitt.
+    if (!t.length && !S.afSkilabod && !S.af.dagsverk && !S.af.bokanir) return x;
+    x += '<section class="ad-af" aria-label="Tilbúið til afgreiðslu"><div class="ad-af-h">⚡ Tilbúið til afgreiðslu · ' + t.length + '<small>takkinn framkvæmir það sem á honum stendur</small><span class="grow"></span>' +
+      (S.af.dagsverk ? '<a href="/afgreidsla.html?f=dagsverk" title="Verk dagsins — eigin flokkur í Afgreiðslunni">Dagsverk ' + S.af.dagsverk + ' ›</a>' : '') +
+      (S.af.bokanir ? '<a href="/afgreidsla.html?f=bokun" title="Bókunarpóstar og bókunarsímtöl — eigin flokkur í Afgreiðslunni">Bókanir ' + S.af.bokanir + ' ›</a>' : '') +
+      '<a href="/afgreidsla.html" title="Allt sem var gert, sleppt eða úrelt">Saga ›</a></div>';
     if (S.afSkilabod) x += '<div class="ad-sk _' + (S.afSkilabod.ok ? 'ok' : 'v') + '" role="status">' + esc(S.afSkilabod.texti) + '</div>';
     x += '<ol>' + t.map(v => {
       const opid = S.afOpid === v.id;
-      return '<li class="ad-afr"><button type="button" class="haus" data-adm="afopna" data-id="' + v.id + '" aria-expanded="' + opid + '"><span class="ad-plata">' + esc(TEG[v.tegund] || v.tegund) + '</span><span class="t">' + esc(v.titill) + '</span>' +
+      return '<li class="ad-afr"><button type="button" class="haus" data-adm="afopna" data-id="' + v.id + '" aria-expanded="' + opid + '"><span class="ad-plata">' + esc(TEG[v.tegund] || v.tegund) + '</span><span class="t">' + sundur(v.titill) + '</span>' +
         (v.ok ? '' : '<span class="k" style="color:#a1161a">✗ athugun</span>') + '<span class="pil">' + (opid ? '▾' : '▸') + '</span></button>' + (opid ? afKortHtml(v) : '') + '</li>';
     }).join('') + '</ol></section>';
     return x;

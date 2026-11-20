@@ -19,7 +19,26 @@ const GY = require('./_gatt-years.cjs');
 const M = require('./_gatt-myndir.cjs');
 const VF = require('./_gatt-verkfaeri.cjs');
 const BGR = require('./_gatt-bgr.cjs');
-const SVD = require('./_gatt-serkjor.cjs');   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
+const SVD = require('./_gatt-serkjor.cjs');
+const RS = require('./_reikningur-solu.cjs');   // 17.11.2026: kreditfærður reikningur (credit_of / kredit_a) — sama regla og appið (517)
+
+// Óháð rýni 17.11.2026 (2): reikningur hverfur af kúnnavefnum AÐEINS ef hann er void, er sjálfur kreditnóta, eða kreditnótur
+// ná yfir ALLA upphæðina. Hlutakreditaður reikningur (t.d. 8.432 kr, kreditað 1.426) gildir og stendur, með `kreditad_ad_hluta`
+// { upphaed, notur } — áður hvarf hann alveg (credit_of var talið fullt kredit). rows: solur-raðir reikninganna í listanum
+// (id, num, status, is_credit, samtals); kn: kreditnótur sem vísa á þá. Breytir `invoices` á staðnum.
+function kreditSia(invoices, rows, kn) {
+  const ut = new Set();
+  (rows || []).forEach((s) => { if (s && (s.status === 'void' || s.is_credit)) ut.add(normNr(s.num)); });
+  const st = RS.kreditStada((kn || []).concat((rows || []).filter((s) => s && s.is_credit)), rows || []);
+  const hluti = {};
+  Object.keys(st).forEach((n) => { if (st[n].full) ut.add(normNr(n)); else hluti[normNr(n)] = { upphaed: Math.round(st[n].kreditad), notur: st[n].notur }; });
+  for (let i = invoices.length - 1; i >= 0; i--) {
+    const k = normNr(invoices[i].nr);
+    if (invoices[i]._kredit || ut.has(k)) invoices.splice(i, 1);
+    else if (hluti[k]) invoices[i].kreditad_ad_hluta = hluti[k];
+  }
+  return invoices;
+}   // Akstur/Skýrslugerð í Sérkjör — listaverðið úr verðskránni (09.11.2026)
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
@@ -78,7 +97,17 @@ function grisjaHaed(h, syn) {
     out.skurdur = h.skurdur && h.skurdur.w > 8 && h.skurdur.h > 8 ? { x: h.skurdur.x, y: h.skurdur.y, w: h.skurdur.w, h: h.skurdur.h } : null;
     out.merki = mk.filter((m) => m && isFinite(+m.x) && isFinite(+m.y)).map((m) => [+m.x, +m.y, merkiLysing(m).c]);
   }
-  if (syn.threed && vm) out.threed = { url: vm.url, b: vm.b || null, h: vm.h || null };
+  if (syn.threed && vm) {
+    out.threed = { url: vm.url, b: vm.b || null, h: vm.h || null };
+    // 18.11.2026 (Agnar: „Slökkvitækin eru ekki að koma fram … á 3d myndirnar"): 3D-myndin er vistuð ÁN tækja (445) og appið
+    // teiknar þau ofan á með vörpun hennar. Gáttin fékk aðeins slóðina. Nú fylgir vörpunin (cam = P·V, heild, rammi, kort)
+    // og merkin, svo gáttin teikni þau á sama stað og appið.
+    const k = vm.kort;
+    if (Array.isArray(vm.cam) && vm.cam.length === 16 && Array.isArray(vm.heild) && Array.isArray(vm.rammi) && k && vm.b > 0 && vm.h > 0) {
+      out.threed.vp = { cam: vm.cam, heild: [vm.heild[0], vm.heild[1]], rammi: [vm.rammi[0], vm.rammi[1]], kort: { sx: k.sx, sy: k.sy, sw: k.sw || 0, sh: k.sh || 0, f: k.f, gw: k.gw, gh: k.gh } };
+      if (!out.merki) out.merki = mk.filter((m) => m && isFinite(+m.x) && isFinite(+m.y)).map((m) => [+m.x, +m.y, merkiLysing(m).c]);
+    }
+  }
   if (syn.greining) {
     const taeki = {}, merki = {};
     mk.forEach((m) => { const d = merkiLysing(m); const box = d.merki ? merki : taeki; box[d.l] = box[d.l] || { n: 0, c: d.c }; box[d.l].n++; });
@@ -867,7 +896,7 @@ exports.handler = async (event) => {
         // 07.11.2026: `krafa_note` fylgir með svo gáttin geti virt ⏸ BÍÐA-merkinguna sem Agnar
         // notar þegar — sjá stadaAf() neðar. Hún var ekki sótt áður og því þagði biðmerkingin.
         solur: g(`solur?${BF('customer_base_id')}&status=eq.final&greitt_med=eq.reikningur&select=num,samtals,created_at,paid_at,krafa_sent_at,krafa_note,customer_id,customer_nafn,is_credit,source&order=created_at.desc&limit=600`),
-        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,dags,upphaed,stada,greitt_dags&order=dags.desc&limit=300`) : null,
+        stolpi: ktsQ.length ? g(`stolpi_reikningar?kt=in.(${ktsQ.map((k) => '"' + k + '"').join(',')})&tegund=eq.reikningur&dags=gte.${fra3Q}&select=reikn_nr,kt,dags,upphaed,stada,greitt_dags,vidskiptategund&order=dags.desc&limit=300`) : null,
         messages: g(`portal_messages?base_id=eq.${baseId}&select=sender,body,author_name,created_at&order=created_at.asc`),
         vorur: (syn.serkjor && acct && acct.stillingar && acct.stillingar.serkjor) ? g(`vorur?or=(virkt.is.true,virkt.is.null)&flokkur=in.(${['Þjónusta', 'Slökkvitæki', 'Vinna og akstur'].map((x) => '"' + encodeURIComponent(x) + '"').join(',')})&select=id,nafn,verd_an_vsk,vsk_prosenta,flokkur,rodun,forsida&order=flokkur.asc,rodun.asc.nullslast,nafn.asc`) : null,
         items: syn.vinnusvaedi ? itemsFelags().catch(() => null) : null,
@@ -1299,14 +1328,16 @@ exports.handler = async (event) => {
     )
       .map((d) => ({ docId: (d.storage_path || d.drive_file_id) ? d.id : null, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
         fid: d.fyrirtaeki_id != null ? Number(d.fyrirtaeki_id) : null,   // 06.11.2026: eignin → greiðandinn í hópuðu sýninni
-        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null,
+        // 18.11.2026: sé skjalið ekki tengt eign er greiðandinn sýndur (customer_base_id) í stað auðs reits.
+        bygging: nafnById[d.fyrirtaeki_id] || (d.customer_base_id != null ? (hopur.nofn[d.customer_base_id] || '') : '') || '', upphaed: d.amount != null ? d.amount : null,
         lysing: '', tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
     // 23.10.2026 (Agnar: „skrá lýsingu"): skjal úr Stólpa-tímanum á enga solur-röð, svo Lýsing stóð auð þótt
     // þjónustutegundin (vidskiptategund) væri þekkt. Lýsing = tegundin (Úttekt / Brunakerfi / Búð); vanti hana,
     // „Vegna"-línan úr reikningslestri. Eign úr reikningslestri þegar skjalið sjálft er ekki tengt byggingu.
-    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð' };
+    // 18.11.2026 (Agnar: „ekkert tómt að óþörfu"): „ovisst" er líka tegund — reitur sem segir „Óvíst" er sannari en auður reitur.
+    const TEG_L = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', bud: 'Búð', ovisst: 'Óvíst' };
     invoices.forEach((i) => { if (!i.lysing && i.tegund && TEG_L[i.tegund]) i.lysing = TEG_L[i.tegund]; });
     // 26.10.2026 (hraði): solur-fyllingin hér að neðan fer af stað NÚNA, samhliða reikningslestrinum. Mengið er
     //    yfirmengi þess sem stæði eftir (lesturinn fyllir aðeins lýsingu/byggingu, fyllingin aðeins tóma reiti) → sama svar.
@@ -1376,7 +1407,7 @@ exports.handler = async (event) => {
       const nrs = [...new Set(nrsIn.map((n) => n && String(n).replace(/"/g, '')).filter(Boolean))];
       if (!nrs.length) return null;
       const quoted = nrs.map((n) => `"${n}"`).join(',');
-      return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of`).catch(() => ({ ok: false }));
+      return P.sbGet(`solur?num=in.(${quoted})&select=id,num,status,is_credit,credit_of,kredit_a,samtals`).catch(() => ({ ok: false }));
     };
     let voidP = null;
     try {
@@ -1429,6 +1460,21 @@ exports.handler = async (event) => {
             const byNr3 = {}; invoices.forEach((i) => { const n = normNr(i.nr); if (n) byNr3[n] = i; });
             const nyjar = rows3.filter((x) => !byNr3[normNr(x.reikn_nr)]);
             const rl = {};
+            // 18.11.2026 (Agnar: „vill að allt sé útfyllt þarna og ekkert tómt að óþörfu"): Stólpa-reikningur frá fyrri eigendum
+            // á ekkert skjal, svo eignin er óþekkt. Í stað auðs reits er greiðandinn sýndur — kennitalan á reikningnum er
+            // staðreynd, eignin er það ekki. Finnist eign í reikningslestri ræður hún.
+            // 18.11.2026 (Agnar: „forritaðu að þetta sé bara sjálfvirkt og tengt við bara ársskoðunina og upplýsingarnar
+            // okkar, brunakerfisþjónustuna"): tegund Stólpa-reiknings er ekki handskráð per gátt. Hún er leidd af
+            // þjónustunni sjálfri: brunakerfisþjónusta = app_settings.brunakerfi_customers (sama heimild og flipinn),
+            // fyrsta brunakerfissala hópsins = elsti reikningur með tegund „brunakerfi". Reikningur sem er ELDRI en hún
+            // getur ekki verið brunakerfi; sé hópurinn á annað borð í slökkvitækjaþjónustu (úttekt/skýrsla til) er hann úttekt.
+            // Handskráð stolpi_reikningar.vidskiptategund ræður alltaf ef hún er til.
+            const bruDagar = invoices.filter((i) => i.tegund === 'brunakerfi' && i.dags).map((i) => i.dags).sort();
+            const bruFra = bruDagar[0] || null;
+            const erBruna = !!bruFra || siteIds.some((id) => bruMap && bruMap[id]);
+            const erSlokk = invoices.some((i) => i.tegund === 'uttekt') || siteIds.some((id) => slokkYearsByFy[id] && slokkYearsByFy[id].size);
+            const sjalfvirkTeg = (dagsetning) => (erSlokk && (!erBruna || (bruFra && dagsetning < bruFra)) ? 'uttekt' : null);
+            const ktBase = {}; Object.keys(hopur.ktById || {}).forEach((bid) => { const k = String((hopur.ktById || {})[bid] || '').replace(/\D/g, ''); if (k.length === 10 && hopur.nofn[bid]) ktBase[k] = hopur.nofn[bid]; });
             if (nyjar.length) {
               const lst = nyjar.map((x) => '"R-' + String(x.reikn_nr).replace(/"/g, '') + '"').join(',');
               const rr = await P.sbGet(`reikningslestur?reikningur_nr=in.(${lst})&select=reikningur_nr,fyrirtaeki_id,vegna`);
@@ -1444,8 +1490,11 @@ exports.handler = async (event) => {
               if (kredit) return;
               const y = rl[n];
               if (leyfd && !(y && y.fyrirtaeki_id != null && leyfd.has(Number(y.fyrirtaeki_id)))) return;
-              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || '',
-                upphaed: x.upphaed != null ? Number(x.upphaed) : null, lysing: y && y.vegna ? String(y.vegna).slice(0, 90) : '', tegund: null, stada: greitt ? 'greitt' : null });
+              invoices.push({ docId: null, nr: 'R-' + x.reikn_nr, dags, ar: null, fid: y && y.fyrirtaeki_id != null ? Number(y.fyrirtaeki_id) : null, bygging: (y && nafnById[y.fyrirtaeki_id]) || ktBase[String(x.kt || '').replace(/\D/g, '')] || '',
+                upphaed: x.upphaed != null ? Number(x.upphaed) : null, // 18.11.2026 (Agnar: „Mátt líka skrá tegundirnar af reikningum"): Stólpa-reikningar bera engar línur, svo tegundin
+                // er handskráð í stolpi_reikningar.vidskiptategund (sama orðasafn og customer_documents). Vanti hana: „—" eins og áður.
+                // 18.11.2026: vanti »vegna«-texta (reikningslestur) er lýsingin tegundin sjálf, eins og í solur-röðinni að ofan.
+                lysing: (y && y.vegna ? String(y.vegna).slice(0, 90) : '') || TEG_L[x.vidskiptategund || sjalfvirkTeg(dags) || 'ovisst'] || '', tegund: x.vidskiptategund || sjalfvirkTeg(dags) || 'ovisst', stada: greitt ? 'greitt' : null });
             });
             invoices.sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
           }
@@ -1462,11 +1511,16 @@ exports.handler = async (event) => {
         const sv = await svP;
         if (sv.ok) {
           const rows = await sv.json();
-          const ut = new Set(), idByNr = {};
-          rows.forEach((s) => { idByNr[normNr(s.num)] = s.id; if (s.status === 'void' || s.is_credit) ut.add(normNr(s.num)); });
-          const kreditud = new Set(rows.filter((s) => s.credit_of != null).map((s) => s.credit_of));
-          Object.keys(idByNr).forEach((n) => { if (kreditud.has(idByNr[n])) ut.add(n); });
-          for (let i = invoices.length - 1; i >= 0; i--) { if (invoices[i]._kredit || ut.has(normNr(invoices[i].nr))) invoices.splice(i, 1); }
+          // 17.11.2026: kreditnótan er sjaldnast sjálf í listanum (hún á ekkert skjal) — þær eru sóttar sérstaklega.
+          const ids = rows.map((s) => s.id).filter((x) => x != null);
+          const nrs = rows.map((s) => s.num).filter((x) => /^R-\d{6}$/.test(String(x || '')));
+          let kn = [];
+          if (ids.length || nrs.length) {
+            const ors = [].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : [], nrs.length ? [`kredit_a.in.(${nrs.join(',')})`] : []);
+            const kr = await P.sbGet(`solur?is_credit=eq.true&or=(${ors.join(',')})&select=num,credit_of,kredit_a,status,is_credit,samtals`).catch(() => ({ ok: false }));
+            if (kr && kr.ok) kn = await kr.json();
+          }
+          kreditSia(invoices, rows, kn);
         }
       }
     } catch (_) {}
@@ -1587,3 +1641,4 @@ exports.handler = async (event) => {
     return P.json(500, { error: String((e && e.message) || e) });
   }
 };
+exports._kreditSia = kreditSia;   // prófin (óháð rýni 17.11.2026 — hlutakredit)

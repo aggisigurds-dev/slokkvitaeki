@@ -234,7 +234,7 @@
     // sitt hvað. Fallback-tölurnar hér eru aðeins öryggisnet ef 129 hefur ekki
     // hlaðist — collectVisit keyrir við notanda-smell, löngu eftir hleðslu, svo
     // í reynd ræður alltaf 129-heimildin.
-    const _D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+    const _D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 4600 };
     return {
       units,
       servicedIds,
@@ -382,6 +382,15 @@
       return;
     }
 
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): vörn í viðbót við sjálfgefna valið — hafi
+    // notandinn samt valið „— velja —" (hreinsar trip.undirritun í null) er
+    // heimsókn stöðvuð hér, ekki kláruð með ógildri skýrslu.
+    if (!String(loadTrip(coId).undirritun || '').trim()) {
+      alert('Veldu hver undirritar f.h. Slökkvitækis (efst hægra megin) áður en heimsókn er kláruð — annars verður skýrslan ógild.');
+      return;
+    }
+
     const today = todayIso();
     const next = addMonthsIso(today, 12);
 
@@ -520,8 +529,9 @@
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Vinn úr…';
       try {
-        await finalizeVisit(ctx);
+        const _fv = await finalizeVisit(ctx);
         close();
+        bendaANyjaSkyrslu(ctx.coId, _fv && _fv.saleId);   // 17.11.2026 — sjá fallið: endurgerður reikningur / ný kt → ný skýrsla strax
       } catch (e) {
         confirmBtn.disabled = false;
         confirmBtn.textContent = '✓ Staðfesta — búa til reikning';
@@ -573,6 +583,21 @@
   }
 
   // ── Actual save — runs only after the user confirms in the preview ─────
+  // 17.11.2026 (tveir raunreikningar — Agnar: „gengið hræðilega"; svo: „svo það sé ekki alltaf vesen“): reikningur
+  // endurgerður eftir kredit á NÝJA kennitölu varð til hér, en enginn bjó til nýja úttektarskýrslu og sú gamla fylgdi.
+  // Nú fer þetta um SAMA fall og allar aðrar breytingar á sölu: SkyrslaSolu (516) spyr payday-push hvort skýrslan sem fylgir
+  // nýja reikningnum stemmi (kt · nafn · staður · tæki) og býður nýja ef ekki. Önnur úttekt ársins (328 setti
+  // __uvSecondReason) = ný skýrsla líka þótt sú gamla stemmi (alltafNy). Aldrei sjálfvirkt, aldrei blokkað.
+  async function bendaANyjaSkyrslu(coId, saleId) {
+    try {
+      if (!saleId || !window.SkyrslaSolu) return;
+      const sr = window.__uvSecondReason;
+      const endurgerd = !!(sr && String(sr.coId) === String(coId) && Date.now() - (sr.at || 0) < 30 * 60000);
+      await SkyrslaSolu.eftirBreytingu(saleId, endurgerd ? 'endurgerd' : 'uttekt',
+        endurgerd ? { alltafNy: true, texti: 'Þetta var önnur úttekt ársins (' + String(sr.why || 'endurgerð') + ').' } : null);
+    } catch (e) { try { console.warn('[visit-workflow] ný skýrsla?', e); } catch (_) {} }
+  }
+
   async function finalizeVisit({ coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd }) {
     // 0. TVÍTÖKUVÖRN (2026-08-01) — rótin að BGT/Rafha tvítökunum: „Klára heimsókn"
     //    var ýtt tvisvar (aðskildar forskoðanir, mínútum í sundur) og EKKERT stöðvaði
@@ -725,6 +750,7 @@
     if (window.Companies && typeof Companies.openDetail === 'function') {
       setTimeout(() => Companies.openDetail(coId), 200);
     }
+    return { saleId, saleNum };   // 17.11.2026: kallandinn spyr SkyrslaSolu (516) um skýrslu nýju sölunnar
   }
 
   function injectButtons() {
@@ -737,8 +763,19 @@
     // 10.11.2026 (Agnar): hver skrifar undir „Fyrir hönd Slökkvitæki ehf" á skýrslunni. Nafnið skrifað þar til undirskriftarmynd
     // er komin (app_settings.undirskriftir[nafn]); þá kemur myndin sjálfkrafa. Vistast í trip.undirritun (samstillist milli véla).
     const _coU = getCompanyId();
-    const _curU = (_coU && loadTrip(_coU).undirritun) || '';
     const _listU = (window.UttektUndirritun && UttektUndirritun.listi) || ['Agnar Sigurðsson', 'Bjarndís', 'Brynjar'];
+    const _tripU0 = _coU ? loadTrip(_coU) : {};
+    let _curU = (_tripU0.undirritun || '').trim();
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): sjálfgefið á fyrsta nafn listans (Agnar
+    // Sigurðsson) um leið og heimsókn hefst, svo reiturinn standi aldrei auður
+    // óvart. Skrifað strax í trip-state (ekki bara birt), svo 168 (skýrslan)
+    // sjái sama gildi þótt notandinn snerti aldrei þetta val.
+    if (!_curU && _coU) {
+      _curU = _listU[0] || 'Agnar Sigurðsson';
+      _tripU0.undirritun = _curU;
+      saveTrip(_coU, _tripU0);
+    }
     bar.innerHTML =
       '<label style="display:flex;align-items:center;gap:6px;margin-right:auto;font-size:12px;font-weight:700;color:#334155">✍ Undirritar f.h. Slökkvitækis' +
       '<select id="_vw-undirritun" style="padding:8px 10px;border:1px solid #94a3b8;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#0f172a">' +

@@ -4,6 +4,14 @@ description: Rukkarinn — spegill í slokkvitaeki af heimaagentinum í brunahol
 tools: Bash, Read, Grep, Glob, WebFetch
 ---
 
+## Hver á verkið (Agnar 17.11.2026)
+- **Þú** lest og leggur til: hvað er tilbúið, hvað vantar, hver ákveður. Þú skrifar aldrei í sölu, reikning, kröfu eða
+  Payday. Eina skrif þitt er tillaga í Drög-stöðina.
+- **`sala-reikningar`** býr til, leiðréttir, kreditfærir og færir reikninga eftir „Verkferli reikninga — SKYLDA“ og
+  lýkur hverju verki með `node tools/reikningur-lokaathugun.cjs <R-nr>`. Reikningur sem hefur ekki staðist þá athugun er
+  ekki „tilbúinn að senda“ í þínu svari.
+- **`sara-coworker`** skráir úttektina og skilar „í vinnslu“; hún klárar aldrei reikning. **Enginn sendir**; Agnar sendir.
+
 ## Charlize — lestu fyrst
 Áður en þú fullyrðir um stöðu reikninga, krafna eða greiðslna: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki', 'baedi') and topic in ('rukkun', 'krofur', 'reikningar', 'solur', 'payday', 'postur') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
 

@@ -718,10 +718,12 @@
    Þær gilda því ekki í data-app="bilstjori". */
 /* 08.10.2026: Bílstjóri sem FLIPI í appi (261 PAGES) — app-hausinn (50 px) og botnstikan (#_app-nav) eru fixed
    ofan á öllu (z 2147481001). Yfirlagið og dokkan víkja fyrir þeim; --bs-navh er mæld hæð stikunnar (show/resize). */
-body.appmode:not([data-app="bilstjori"]) #${VIEW_ID}{top:50px!important}
+/* 17.11.2026 (Öpp-villa 10): hausinn er ekki 50 px — í S26-ham er hann 52 × krómhlutfall ≈ 124 px (mælt) og huldi efsta hlutann.
+   --bs-hdrh er mæld neðri brún #_app-hdr (maelaNav), 50 px aðeins til vara. */
+body.appmode:not([data-app="bilstjori"]) #${VIEW_ID}{top:var(--bs-hdrh,50px)!important}
 body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID}{bottom:var(--bs-navh,84px)!important}
 body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID} .bt .dock,body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) #${VIEW_ID} .dock{bottom:var(--bs-navh,84px)!important}
-body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) ._bs-sheet{top:50px!important;bottom:var(--bs-navh,84px)!important}
+body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) ._bs-sheet{top:var(--bs-hdrh,50px)!important;bottom:var(--bs-navh,84px)!important}
 body.appmode:not(.appmode-nonav):not([data-app="bilstjori"]) ._bs-sheet .dock{bottom:var(--bs-navh,84px)!important}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}
@@ -824,6 +826,11 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       const h = (n && document.body.classList.contains('appmode') && !document.body.classList.contains('appmode-nonav') && getComputedStyle(n).display !== 'none') ? Math.round(n.getBoundingClientRect().height) : 0;
       const v = h ? h + 'px' : '';
       if (document.documentElement.style.getPropertyValue('--bs-navh') !== v) { if (v) document.documentElement.style.setProperty('--bs-navh', v); else document.documentElement.style.removeProperty('--bs-navh'); }
+      // Hausinn mældur eins og stikan (Öpp-villa 10) — fast top:50px faldi efsta hluta Bílstjórans undir hausnum í S26-ham.
+      const hd = document.getElementById('_app-hdr');
+      const t = (hd && document.body.classList.contains('appmode') && getComputedStyle(hd).display !== 'none') ? Math.round(hd.getBoundingClientRect().bottom) : 0;
+      const tv = t > 0 ? t + 'px' : '';
+      if (document.documentElement.style.getPropertyValue('--bs-hdrh') !== tv) { if (tv) document.documentElement.style.setProperty('--bs-hdrh', tv); else document.documentElement.style.removeProperty('--bs-hdrh'); }
     } catch (_) {}
   }
   addEventListener('resize', () => { if (document.body.classList.contains('bs-active')) maelaNav(); });

@@ -40,7 +40,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `bokari` | 💰 Samantha | brunaholf | `.claude/agents/bokari.md` (kj afrit) | `taxti` · `VSK` · `NLSH` · `uppgjör` · `stemmir tala` · `krafa` (með sala) | Baka afslátt í línu **og** geyma í `afslattur`. Stofna eða senda reikning. |
 | `rukkari` | 🦆 Jóakim aðalönd | brunaholf (spegill í slokkvitaeki + ~/.claude/agents) | `.claude/agents/rukkari.md` | `rukka` · `rukkunarmál` · `reikningalota` · `klára reikninga` · `hvað er tilbúið að senda` · `nýjustu póstar` · `sækja úr pósti` (kafli „Póstur → punktar“ — áður agent `eldklar-postur`) · `ósent` · `ógreitt` · `útistandandi` | Senda eða skrifa sjálfur í drög, sölur eða Payday. Giska á tölu. Spyrja um það sem stendur í REIKNINGALOTA.md. |
 | `sara-organizer` | 🗂️ Sara (pör) | brunaholf | `.claude/agents/sara-organizer.md` (kj afrit) | `para` · `þekja` · `gloppa` · `vantar að rukka` | Giska á pörun. Stofna/breyta reikningi. Senda póst. Sameina rekstrarfélaga-staði. |
-| `sara-coworker` | 🗂️ Sara (skýrslur) | slokkvitaeki | `.claude/agents/sara-coworker.md` (kj afrit, styttra) | `skýrsla` · `úttekt` · `fylla skýrslu` | Yfirskrifa texta sem er þegar í reit. Baka afslátt **og** `afslattur`. Segja „vistað" án lesturs til baka. Hengja brunakerfi á úttekt. Sameina staði. |
+| `sara-coworker` | 🗂️ Sara (skýrslur) | slokkvitaeki | `.claude/agents/sara-coworker.md` (kj afrit, styttra) | `skýrsla` · `úttekt` · `fylla skýrslu` | Yfirskrifa texta sem er þegar í reit. Baka afslátt **og** `afslattur`. Segja „vistað" án lesturs til baka. Hengja brunakerfi á úttekt. Sameina staði. Klára reikning (Klára heimsókn / Klára sölu / kredit) — skilar „í vinnslu“ til `sala-reikningar`. |
 | `kunnaskra` | ❄️ Charlize | **bæði** | bh `.claude/agents/kunnaskra.md` (hryggurinn) · slokk sama nafn (app-hlið) · kj = bh-afrit | `kennitala` · `kt` · `999999` · `customers_base` · `rekstrarfélag` · `sameina` · `tvítak` · `Tengireglan` · `hits[0]` · `companyForBld` | Sameina staði rekstrarfélags. Giska / núlla `fyrirtaeki_id`. Eyða/skrifa yfir kúnnaröð án Agnars. Rugla `fyrirtaeki_id` við kennitölu. |
 | `skjol` | 🎙️ Freeman | brunaholf | `.claude/agents/skjol.md` (kj afrit) | `Drive` · `PDF` · `endurnefna` · `skjal` | Eyða Drive-skrá (`files.delete`). Treysta skráarheiti. Giska á fyrirtæki. |
 | `gagnaleidslur` | 🥊 Statham | brunaholf | `.claude/agents/gagnaleidslur.md` (kj afrit, styttra) | `Tímavera` · `Ajour` · `Redder` · `innsog` | Merkja rautt af hráu „cancel". Giska rekstrarfélags-systur. |
@@ -56,7 +56,7 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `elon-musk` | ⚡ Elon Musk | slokkvitaeki | `.claude/agents/elon-musk.md` + skill sama nafn (**ekki** í kjarni) | `árs` · `ársreitur` · `pera` · `FULLBÚIÐ` · `VANTAR` · `SOURCE` · `FILTER` | Endurstíla `._yr`. Sameina hótel á kt. `hits[0]`. `node deploy.js`. Vista allan Ársskoðun-blob. |
 | `prentun` | 🏷️ DeVito | slokkvitaeki | `.claude/agents/prentun.md` (kj afrit) | `prentun` · `QR` · `miði` · `Brother` · `raðnúmer` | Gamla QR-fallback (falskur QR). Geyma QR í dálk. |
 | `kort` | 🗺️ Ramsay | slokkvitaeki | `.claude/agents/kort.md` (kj afrit) | `kort` · `pinnar` · `geocode` · `Leaflet` · `kill-dots` | Vektor-merki (á að vera `L.divIcon`). Rugla við `bord-flettur` (síðurnar). |
-| `sala-reikningar` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/sala-reikningar.md` (kj afrit) | `reikningur` · `sala` · `POS` · `Payday` · `dkPlus` · `afsláttur` · `krafa` | Afsláttur á tvo vegu. Blokka Vista. Yfirskrifa úttektartexta. Leiða vottun af tækjalista. |
+| `sala-reikningar` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/sala-reikningar.md` (kj afrit) · tól `tools/reikningur-lokaathugun.cjs` | `reikningur` · `sala` · `POS` · `Payday` · `dkPlus` · `afsláttur` · `krafa` · `kreditfæra` · `endurgera reikning` · `færa á kennitölu` · `rangur greiðandi` · `lokaathugun` | Afsláttur á tvo vegu. Blokka Vista. Yfirskrifa úttektartexta. Leiða vottun af tækjalista. Segja reikning tilbúinn án lokaathugunar (tafla til Agnars). |
 | `thema` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/thema.md` (kj afrit) | `þema` · `skinna` · `Brunastál` · `theme.css` | Endurvekja þemaskipti (frosið 17.08.2026) án Agnars. |
 | `samthykktir` | 🕵️ Columbo | slokkvitaeki + **`~/.claude/agents`** | `.claude/agents/samthykktir.md` (spegill í heimamöppu — ANNARS er hann ekki kallanlegur, sbr. 09.10.2026) | `klára svörin` · `yfirfara svör` · `vinna úr Samþykkja` · `ég er búinn að svara` · `afgreiða samþykktir` · `hvað bíður Claude` · `svörin mín á þjónustuborðinu` | Framkvæma án þess að endurmæla forsenduna (9 af 93 voru röng 08.10.2026). Gera meira en ✓ lofaði. Loka máli án mælingar. Senda póst eða kröfu — lokasending er Agnars. |
 | `odin` | 👁️ Óðinn | slokkvitaeki (frumrit) + brunaholf (afrit) | `.claude/agents/odin.md` · reglubók `odin_reglur` · úrskurðir `odin_urskurdir` | `Óðinn` · `Odin` · `kenna Óðni` · `reglubók Óðins` · `samþykkja fyrir mig` · `augljósar samþykktir` · `fara yfir samþykktirnar` · `fara yfir verkefnalistann` · `vörður tilkynnir` | Veita sjálfum sér heimild. Senda póst, kröfu eða reikning án reglu frá Agnari. Loka máli án mælingar. Fylla borð Agnars eða Verkefnalistann. |
@@ -64,6 +64,16 @@ Teljarinn **153/187** (tilbúið-staða) er **óbreyttur**. Hann er ekki hluti a
 | `adstod` | *(ekkert sæti)* | slokkvitaeki | `.claude/agents/adstod.md` (kj afrit) | `watchlist` · `banner` · `aðstoð` | (Fasi 2 AI-tips er óunninn; ekki lofa honum.) |
 
 ---
+
+## Reikningar: hver á verkið (Agnar 17.11.2026)
+
+| Agent | Gerir | Gerir aldrei |
+|---|---|---|
+| `sala-reikningar` | Býr til, leiðréttir, kreditfærir og færir reikninga eftir „Verkferli reikninga — SKYLDA“ (efst í skránni) og lýkur hverju verki með `node tools/reikningur-lokaathugun.cjs <R-nr>` + töflu til Agnars | Sendir kröfu. Segir „tilbúið“ án lokaathugunar. |
+| `sara-coworker` | Skráir úttekt af vinnublaði og skýrslutexta, skilar heimsókninni „💾 Vista / í Vinnslu“ | Klárar reikning (Klára heimsókn / Klára sölu / Búa til úttektarskýrslu / kredit). |
+| `rukkari` | Les og leggur til (tilbúið / vantar / hver ákveður); eina skrifið er tillaga í Drög-stöðina | Skrifar í sölu, reikning, kröfu eða Payday. Sendir. |
+
+Enginn þeirra sendir; Agnar sendir kröfur úr Kröfuyfirliti. Óðins-reglur #30–33 og #49 vísa í sama verkferli.
 
 ## Skills sem hindra klúður
 

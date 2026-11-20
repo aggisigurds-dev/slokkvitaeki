@@ -39,11 +39,16 @@
 // HLIÐ: aðeins innskráður stjórnandi (sama hlið og Ráðgjafinn: _radgjafinn-hlid.cjs). Lás: framkvæmd tekur röðina skilyrt
 // tilbuid → i_vinnslu áður en nokkuð fer út, svo tvísmellur sendir aldrei tvisvar. Pósthólf: aðeins eldklar@ og bokhald@.
 
+require('./_bh-toki.cjs'); // lota 13: köll á föll Brunahólfs fá tíma-tóka (x-hub-toki)
 const crypto = require('crypto');
 const P = require('./_portal.cjs');
 const H = require('./_radgjafinn-hlid.cjs');
+const V = require('./_vip-postur.cjs');   // sama VIP-pörun og VIP-vaktin (513) — netfang, lén, kt; aldrei eftir nafni
 const HUB = require('./hub-adgangar.cjs');
 const CL = require('./_adalmal-claude.cjs');
+const M = require('./_merkja.cjs');
+const PSV = require('./_postsvar-rod.cjs');   // póstsvar Claude → röð í afgreidsla (sameiginlegt með 519)      // 519 Merkja og keyra — merki á línum Þjónustuborðsins (sama Biddu Claude-vél)
+const DYR = require('./_afgreidsla-dyr.cjs');   // 18.11.2026: dyr á hverjum lið — beint á staðinn þar sem verkið er unnið
 const SAM = require('./_afgreidsla-sameina.cjs');   // tegund 'sameina' (Verkefnavaktin) — hrein rökfræði, prófanleg sér
 
 const THROSKULDUR_KR = 10000;
@@ -60,6 +65,31 @@ const kr = (n) => Math.round(Number(n) || 0);
 
 async function sbJson(r) { if (!r.ok) throw new Error(`Supabase ${r.status}: ${(await r.text()).slice(0, 160)}`); return r.json(); }
 const lesa = (qs) => P.sbGet(qs).then(sbJson);
+
+// 17.11.2026 (Agnar: „ennþá vitlaus kennitala á bölv reikningnum“): Afgreiðsla #55 tengdi á PDF GAMLA reikningsins sem
+// „Reikningur R-… (PDF)“ — kreditfærðan, á gömlu kennitölunni. Kreditfærður reikningur er nú merktur í tenglinum (opnast enn,
+// engu eytt). Sama regla og alls staðar: 517 ReikningurSolu.kreditMap (solur credit_of / kredit_a).
+const RS = require('./_reikningur-solu.cjs');
+async function kreditFyrir(nums) {
+  const n = [...new Set((nums || []).filter((x) => /^R-\d{6}$/.test(String(x || ''))))];
+  if (!n.length) return {};
+  try {
+    const solur = await lesa(`solur?select=id,num,samtals&num=in.(${n.join(',')})`);
+    const ids = solur.map((x) => x.id).filter((x) => x != null);
+    const ors = [`kredit_a.in.(${n.join(',')})`].concat(ids.length ? [`credit_of.in.(${ids.join(',')})`] : []);
+    const kn = await lesa(`solur?select=num,credit_of,kredit_a,status,is_credit,samtals&is_credit=eq.true&or=(${ors.join(',')})`);
+    return RS.kreditStada(kn, solur);   // óháð rýni 17.11 (2): fullt kredit ≠ hlutakredit
+  } catch (_) { return {}; }
+}
+// km = kreditStada: fullt kredit → „gildir ekki"; hlutakredit → reikningurinn gildir, kreditið nefnt.
+const kr_ = (n) => Math.round(Number(n) || 0).toLocaleString('de-DE');
+const reiknTexti = (nr, km) => {
+  const e = km && km[nr];
+  if (!e) return 'Reikningur ' + nr + ' (PDF)';
+  return e.full ? 'Reikningur ' + nr + ' (PDF) — KREDITFÆRÐUR með ' + e.notur.join(', ') + ', gildir ekki'
+    : 'Reikningur ' + nr + ' (PDF) — kreditað að hluta (−' + kr_(e.kreditad) + ' kr, ' + e.notur.join(', ') + ')';
+};
+const kreditNr = (km, nr) => (km && km[nr] && km[nr].full) ? km[nr].notur.join(', ') : null;
 const breyta = (qs, body) => P.sbPatch(qs, Object.assign({ updated_at: new Date().toISOString() }, body)).then(sbJson);
 
 // Tóki fyrir póstsendinguna þjóna á milli. 16.11.2026: myntaður í hub-adgangar.cjs með session_secret úr sameiginlega
@@ -82,6 +112,48 @@ async function lesaPostholf(account) {
     .then((r) => r.ok).catch(() => false);
   const [inn, ut] = await Promise.all([k(''), k('&folder=sent')]);
   return inn && ut;
+}
+
+// ── Viðtakendur (kóðarýni 17.11.2026) ─────────────────────────────────────────────────────────────────────────────────
+// Hvert netfang í to/cc verður að eiga UPPRUNA: (a) í pósti (sendandi eða viðtakandi skeytis í email_digest), (b) í
+// fyrirtækjaskrá, (c) samþykktur tengiliður, eða (d) skráð heimild á verkinu sjálfu (`gogn.heimildir_netfanga`
+// { netfang: 'hvaðan' }, t.d. vefur félagsins) — sýnd orðrétt. Ágiskun (`gogn.agiskun`) stendur RAUÐ þar til innskráður
+// stjórnandi staðfestir hana (`adgerd:'agiskun', val:'stadfesta'`) eða tekur netfangið út (`val:'fjarlaegja'`); þá fer
+// pósturinn án þess. Netfang án uppruna sem er EKKI merkt ágiskun stöðvar líka — það var gatið sem rýnin fann.
+const erSvar = (sv) => !!(sv && (sv.message_id || sv.thread_id || sv.digest_id));
+const vidtakendur = (g) => [...new Set([].concat(g.to || [], g.cc || []).map(addr).filter(Boolean))];
+async function upprunaNetfangs(e) {
+  const k = encodeURIComponent(e);
+  const [p, f, t] = await Promise.all([
+    lesa(`email_digest?select=id&or=(sender_email.ilike.${k},to_addresses.ilike.*${k}*)&limit=1`),
+    lesa(`fyrirtaeki?select=id&deleted_at=is.null&netfang=ilike.*${k}*&limit=1`),
+    lesa(`charlize_contacts?select=id&netfang=ilike.${k}&status=eq.approved&limit=1`),
+  ]);
+  return p.length ? 'í pósti' : f.length ? 'í fyrirtækjaskrá' : t.length ? 'samþykktur tengiliður' : null;
+}
+let _uppruni = upprunaNetfangs;   // prófin skipta um (module.exports._setjaUppruna) — enginn gagnagrunnur í prófum
+async function vidtakendaAthuganir(g) {
+  const ut = [];
+  const vidt = vidtakendur(g);
+  const agiskun = new Set([].concat(g.agiskun || []).map(addr).filter(Boolean));
+  const stadfest = new Map([].concat(g.agiskun_stadfest || []).map((x) => [addr(x && x.netfang), x]).filter((x) => x[0]));
+  const heimildir = {}; Object.entries(g.heimildir_netfanga || {}).forEach(([k, v]) => { if (addr(k)) heimildir[addr(k)] = String(v || '').slice(0, 200); });
+  const thekkt = [];
+  for (const e of vidt) {
+    if (agiskun.has(e)) {
+      const s = stadfest.get(e);
+      ut.push(s ? { texti: 'Ágiskað netfang staðfest af ' + (s.af || '?') + ' ' + String(s.at || '').slice(0, 16).replace('T', ' ') + ': ' + e, ok: true }
+        : { texti: '⚠ ÁGISKUN, óstaðfest: ' + e + ' — staðfestu netfangið eða taktu það út áður en sent er', ok: false, agiskun: e });
+      continue;
+    }
+    if (heimildir[e]) { ut.push({ texti: e + ' — heimild skráð á verkið: ' + heimildir[e], ok: true }); continue; }
+    let u = null, villa = false;
+    try { u = await _uppruni(e); } catch (_) { villa = true; }
+    if (u) thekkt.push(e + ' (' + u + ')');
+    else ut.push({ texti: villa ? 'Náði ekki að fletta upp ' + e + ' — ekkert sent' : e + ': hvorki í pósti, fyrirtækjaskrá né tengiliðaskrá og ekki merkt ágiskun — ekkert sent fyrr en uppruni er skráður', ok: false });
+  }
+  if (thekkt.length) ut.unshift({ texti: 'Viðtakendur með uppruna: ' + thekkt.join(', '), ok: true });
+  return ut;
 }
 
 async function athuga(row, { lesaNu = false } = {}) {
@@ -107,9 +179,18 @@ async function athuga(row, { lesaNu = false } = {}) {
       if (nyrri.length) urelt = fra_okkur.length ? 'Þráðnum hefur þegar verið svarað (' + String(fra_okkur[0].received_at).slice(0, 16).replace('T', ' ') + ')'
         : 'Nýtt skeyti kom í þráðinn ' + String(nyrri[0].received_at).slice(0, 16).replace('T', ' ') + ' — svarið á ekki lengur við';
       a.push({ texti: urelt || 'Ekkert nýrra skeyti í þræðinum — þú svarar því nýjasta', ok: !urelt });
+    } else if (g.nytt === true && !erSvar(sv)) {
+      // 17.11.2026: NÝR póstur, ekki svar (t.d. skýrsla til félags sem hefur aldrei skrifað okkur).
+      // Enginn þráður til að bera saman við; verkið verður að bera `nytt: true` berum orðum, annars gildir reglan að neðan.
+      a.push({ texti: 'Nýr póstur — ekki svar í þræði, svo „nýjasta skeytið“ á ekki við', ok: true });
+    } else if (g.nytt === true) {
+      // Kóðarýni 17.11.2026: `nytt` mátti ekki opna leið framhjá reglu 1 fyrir póst sem er í raun SVAR (svar_vid sett,
+      // sendingin setur inReplyTo) en vantar þráðinn. Annaðhvort hreinn nýr póstur (ekkert svar_vid) eða svar með þræði.
+      a.push({ texti: 'Merkt sem nýr póstur en ber svar við skeyti (svar_vid) án þráðar — ekki hægt að staðfesta að svarið sé við nýjasta skeytið. Ekkert sent.', ok: false });
     } else {
       a.push({ texti: 'Þráður óþekktur — ekki hægt að staðfesta að svarið sé við nýjasta skeytið', ok: false });
     }
+    a.push(...await vidtakendaAthuganir(g));
     // Er pósthólfið nýlesið? Annars getur „ósvarað" verið rangt.
     if (lesaNu) {
       a.push({ texti: lesid ? 'Pósthólfið lesið núna, rétt áður en sent er' : 'Náði ekki að lesa pósthólfið núna — ekkert sent', ok: !!lesid });
@@ -137,7 +218,9 @@ async function athuga(row, { lesaNu = false } = {}) {
     for (const x of s.a) a.push(x);
     if (s.urelt) urelt = s.urelt;
   }
-  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa' && row.tegund !== 'sameina') {
+  // Sérflokkarnir (Dagsverk, Bókanir) eru handvaldir af Agnari, ekki raðað eftir virði — þröskuldurinn á ekki við þá
+  // (rýni 19.11.2026: dagsverk með lága upphæð fékk óvirkan takka og 409 við framkvæmd).
+  if (row.virdi_kr != null && kr(row.virdi_kr) < THROSKULDUR_KR && row.tegund !== 'krafa' && row.tegund !== 'sameina' && !SERFLOKKAR.includes((row.gogn || {}).flokkur)) {
     a.push({ texti: 'Undir þröskuldi (' + THROSKULDUR_KR.toLocaleString('is-IS') + ' kr) — ekki þess virði', ok: false });
   }
   return { athuganir: a, ok: !urelt && a.every((x) => x.ok), urelt };
@@ -178,7 +261,9 @@ async function leysaTilvisanir(refs) {
   ]);
   const rnr = [...new Set(solur.map((s) => s.num).concat(R.filter((r) => r.tegund === 'payday' && r.felag === 'slokkvitaeki').map((r) => String(r.numer || '')))
     .filter((x) => /^[RK]-\d{3,8}$/.test(x)))];
-  const reikn = rnr.length ? await lesa(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${rnr.join(',')})&order=id.desc`).catch(() => []) : [];
+  const [reikn, km] = rnr.length ? await Promise.all([
+    lesa(`customer_documents?select=id,invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${rnr.join(',')})&order=id.desc`).catch(() => []),
+    kreditFyrir(rnr)]) : [[], {}];
   const reiknPdf = (nr) => { const d = reikn.find((x) => x.invoice_number === nr && !x.is_duplicate) || reikn.find((x) => x.invoice_number === nr); return d ? skjalSlod(d) : ''; };
   return (r) => {
     if (!r || typeof r !== 'object') return null;
@@ -186,13 +271,13 @@ async function leysaTilvisanir(refs) {
     if (r.tegund === 'sala') {
       const s = solur.find((x) => x.id === Number(r.id)); if (!s || !s.num) return null;
       const pdf = reiknPdf(s.num);
-      return pdf ? { url: pdf, texti: 'Reikningur ' + s.num + ' (PDF)' } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' };
+      return pdf ? { url: pdf, texti: reiknTexti(s.num, km), kreditfaert: kreditNr(km, s.num) } : { url: '/#sale/' + encodeURIComponent(s.num), texti: 'Salan ' + s.num + ' í appinu' + (kreditNr(km, s.num) ? ' — KREDITFÆRÐ með ' + kreditNr(km, s.num) : '') };
     }
     if (r.tegund === 'post') { const p = postar.find((x) => x.id === Number(r.id)); const u = p && gmailSlod(p.account, p.thread_id); return u ? { url: u, texti: 'Pósturinn í Gmail' } : null; }
     if (r.tegund === 'payday') {
       const nr = String(r.numer || '').trim(); if (!nr) return null;
       if (r.felag === 'brunaholf' && /^\d{1,7}$/.test(nr)) return { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(nr), texti: 'Payday-reikningur ' + nr + ' (PDF)' };
-      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: 'Reikningur ' + nr + ' (PDF)' } : null; }
+      if (r.felag === 'slokkvitaeki') { const u = reiknPdf(nr); return u ? { url: u, texti: reiknTexti(nr, km), kreditfaert: kreditNr(km, nr) } : null; }
       return null;
     }
     // Aðeins OPIÐ mál fær slóð — lokað mál sést ekki á borðinu og tengillinn lofaði þá einhverju sem gerist ekki.
@@ -208,22 +293,58 @@ async function reikningsTenglar(malIds) {
   const mal = await lesa(`thjonustubeidni?select=notes&id=in.(${tolur(malIds).join(',')})`);
   const nr = [...new Set(mal.map((m) => String(m.notes || '').match(/\bR-\d{3,6}\b/g) || []).flat())].slice(0, 200);
   const slokk = nr.filter((x) => /^R-\d{6}$/.test(x)), bru = nr.filter((x) => /^R-\d{3,4}$/.test(x)).map((x) => x.slice(2));
-  const [docs, inv] = await Promise.all([
+  const [docs, inv, km] = await Promise.all([
     slokk.length ? lesa(`customer_documents?select=invoice_number,storage_path,drive_file_id,is_duplicate&doc_type=eq.reikningur&invoice_number=in.(${slokk.join(',')})&order=id.desc`) : [],
     bru.length ? lesa(`invoices?select=tilvisun&source=eq.payday&payday_uuid=not.is.null&tilvisun=in.(${bru.join(',')})`) : [],
+    kreditFyrir(slokk),
   ]);
   const ut = {};
   for (const n of slokk) {
     const d = docs.find((x) => x.invoice_number === n && !x.is_duplicate) || docs.find((x) => x.invoice_number === n);
     const u = d && skjalSlod(d);
-    if (u) ut[n] = { url: u, texti: 'Reikningur ' + n + ' (PDF)' };
+    if (u) ut[n] = { url: u, texti: reiknTexti(n, km), kreditfaert: kreditNr(km, n) };
   }
   for (const t of new Set(inv.map((x) => String(x.tilvisun)))) ut['R-' + t] = { url: 'https://brunaholf.netlify.app/api/payday-invoice-pdf?tilvisun=' + encodeURIComponent(t), texti: 'Payday-reikningur ' + t + ' (PDF, Brunahólf)' };
   return ut;
 }
 
 // Það sem skjárinn fær — ekkert úr gögnunum sem skjárinn þarf ekki.
-async function synilegt(row) {
+// VIP (17.11.2026, símasíðan 515): á verkið við félag á VIP-vaktinni? Pósturinn: viðtakendur (to, cc) paraðir eins og
+// VIP-vaktin parar sendanda; önnur verk: kennitala í gögnunum. Skilar aðeins félagsheiti og leið — aldrei tengiliðum.
+function vipFyrir(g, tegund, visir) {
+  if (!visir || !g) return null;
+  if (tegund === 'tolvupostur') {
+    for (const a of [].concat(g.to || [], g.cc || [])) {
+      const p = V.para({ sender_email: a }, visir);
+      if (p && p.felag) return { felag: p.felag.nafn, hvernig: p.hvernig };
+    }
+  }
+  const kt = String(g.kennitala || g.kt || '').replace(/\D/g, '');
+  const f = kt.length === 10 && visir.kt ? visir.kt.get(kt) : null;
+  return f ? { felag: f.nafn, hvernig: 'kennitala' } : null;
+}
+async function vipVisir() {
+  const radir = await lesa('fyrirtaeki?select=id,nafn,kennitala,netfang,vip,vip_svartimi_min&vip=eq.true&deleted_at=is.null&order=id');
+  const kts = [...new Set(radir.map((r) => String(r.kennitala || '').replace(/\D/g, '')).filter((k) => k.length === 10))];
+  const ktForm = kts.flatMap((k) => [k, k.slice(0, 6) + '-' + k.slice(6)]);
+  const tengl = ktForm.length ? await lesa('charlize_contacts?select=kennitala,netfang,len,status&kennitala=in.(' + ktForm.map(encodeURIComponent).join(',') + ')') : [];
+  return V.byggjaVisi(radir, tengl);
+}
+
+// V = niðurstaða DYR.saekja fyrir ALLA liðina (ein umferð í GET). Vanti hana (stakt verk eftir vistun) er flett upp fyrir þennan eina.
+/* Keyrir fn á hverju staki, mest n í einu, og skilar niðurstöðunum Í SÖMU RÖÐ. Kasti eitt, kastar heildin (eins og áður). */
+async function iHopum(listi, n, fn) {
+  const ut = new Array(listi.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, listi.length) }, async () => { while (i < listi.length) { const k = i++; ut[k] = await fn(listi[k]); } }));
+  return ut;
+}
+// Sérflokkar (19.11.2026): liðir með gogn.flokkur úr þessum lista eiga eigin ham í viðmótinu (511/515/afgreidsla.html) og eru
+// sóttir sér. Ekkert annað gildi úr gogn (sem agentar skrifa) verður flokkur.
+const SERFLOKKAR = ['dagsverk', 'bokun'];
+const SER_THAK = 60;   // þak á HVERN sérflokk fyrir sig
+
+async function synilegt(row, visir, V) {
   const ath = await athuga(row);
   const g = row.gogn || {};
   const rok = Array.isArray(row.af_hverju) ? row.af_hverju : [];
@@ -232,12 +353,18 @@ async function synilegt(row) {
   if (row.tegund === 'tolvupostur' && g.svar_vid && g.svar_vid.digest_id) sjalfgefid.push({ tegund: 'post', id: g.svar_vid.digest_id });
   if (row.tegund === 'krafa' && g.sale_id) sjalfgefid.push({ tegund: 'sala', id: g.sale_id });
   const leysa = await leysaTilvisanir(rok.map((x) => x && x.opna).concat(sjalfgefid)).catch(() => () => null);
-  const o = { id: row.id, tegund: row.tegund, titill: row.titill, takki: row.takki, hvad_gerist: row.hvad_gerist,
+  const o = { id: row.id, tegund: row.tegund, flokkur: SERFLOKKAR.includes(g.flokkur) ? g.flokkur : null, titill: row.titill, takki: row.takki, hvad_gerist: row.hvad_gerist,
     af_hverju: rok.map((x) => { const s = x && x.opna ? leysa(x.opna) : null; return s ? Object.assign({}, x, { slod: s }) : x; }),
     virdi_kr: row.virdi_kr, created_at: row.created_at, created_by: row.created_by,
+    forgangur: row.forgangur == null ? null : Number(row.forgangur), vip: vipFyrir(g, row.tegund, visir),
     athugasemd: row.athugasemd || null, athugasemd_af: row.athugasemd_af || null, athugasemd_at: row.athugasemd_at || null, ...ath };
+  // Dyr: takkar sem opna málið, reikninginn, félagið eða hringja — bregðist uppflettingin kemur liðurinn samt, án dyra.
+  try { Object.assign(o, DYR.dyrFyrir(row, V || await DYR.saekja([row], lesa).catch(() => null))); } catch (_) { o.dyr = []; o.listi = []; }
   if (row.tegund === 'tolvupostur') {
-    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).map((v) => v.filename) };
+    o.post = { account: g.account, to: g.to || [], cc: g.cc || [], subject: g.subject || '', texti: g.texti || '', vidhengi: (g.vidhengi || []).filter(Boolean).map((v) => v.filename),
+      // 18.11.2026 (Agnar: „sýnt þarna í svarinu skjalið svo ég geti alltaf opnað það og staðfest“): sama skjal og
+      // sendingin sækir, sem tengill. `vidhengi` (nöfnin ein) stendur áfram fyrir eldri sýnir.
+      vidhengi_opna: (g.vidhengi || []).filter(Boolean).map(vidhengiSyn) };
     o.svar_vid = g.svar_vid ? { fra: g.svar_vid.fra || '', dags: String(g.svar_vid.received_at || '').slice(0, 16).replace('T', ' '), efni: g.svar_vid.efni || '', texti: String(g.svar_vid.texti || '').slice(0, 1500),
       slod: (g.svar_vid.digest_id && leysa({ tegund: 'post', id: g.svar_vid.digest_id })) || (gmailSlod(g.account, g.svar_vid.thread_id) ? { url: gmailSlod(g.account, g.svar_vid.thread_id), texti: 'Pósturinn í Gmail' } : null) } : null;
   } else if (row.tegund === 'simtal') {
@@ -250,6 +377,34 @@ async function synilegt(row) {
     o.sameina = SAM.synilegt(g);
   }
   return o;
+}
+
+// Slóðin sem opnar NÁKVÆMLEGA skjalið sem gmail-send hengir við: `url` (opin slóð, t.d. Supabase Storage) eða
+// `driveId` (Drive-skrá). `content` (base64, teiknað í vafra) á enga slóð → null og nafnið birtist eitt.
+// Slóðin kemur úr gogn.vidhengi, sem agentar skrifa, og endar í href hjá Agnari sem sér aðeins skráarheitið.
+// Því fær AÐEINS https-slóð á traustan hýsil tengil (eigin Supabase-geymsla, Drive, vefirnir tveir) — aldrei
+// javascript:, data:, //annar-vefur, notandi@hýsill né óþekktur vefur (rýni 18.11.2026: vefveiðaflötur).
+const TRAUSTIR_HYSLAR = (() => {
+  const h = new Set(['drive.google.com', 'docs.google.com', 'slokkvitaeki.netlify.app', 'brunaholf.netlify.app']);
+  try { h.add(new URL(process.env.SUPABASE_URL).host.toLowerCase()); } catch (_) { /* env vantar (próf) */ }
+  return h;
+})();
+function hysillAf(url) {
+  try { const u = new URL(String(url)); return (u.username || u.password) ? null : u.host.toLowerCase(); } catch (_) { return null; }
+}
+function vidhengiSlod(v) {
+  if (!v) return null;
+  if (typeof v.url === 'string' && /^https:\/\/[^\s"'<>]+$/i.test(v.url)) { const h = hysillAf(v.url); return h && TRAUSTIR_HYSLAR.has(h) ? v.url : null; }
+  if (v.driveId != null && /^[\w-]{10,}$/.test(String(v.driveId))) return 'https://drive.google.com/file/d/' + String(v.driveId) + '/view';
+  return null;
+}
+// Það sem sýnin fær: nafn + slóð. Slóð á ÓÞEKKTAN vef fær ekki tengil heldur viðvörun með nafni vefsins, svo það
+// óvenjulega sjáist í stað þess að felast á bak við skráarheiti. (Sendingin sjálf er óbreytt — hún les g.vidhengi.)
+function vidhengiSyn(v) {
+  const nafn = (v && v.filename) || 'skjal';
+  const url = vidhengiSlod(v);
+  if (url || !v || typeof v.url !== 'string' || !v.url) return { nafn, url };
+  return { nafn: nafn + ' — ⚠ slóð á ' + (hysillAf(v.url) || 'óþekktan vef') + ', opnast ekki héðan', url: null };
 }
 
 /* ── FRAMKVÆMD ──────────────────────────────────────────────────────────────────────────────────────────── */
@@ -393,6 +548,58 @@ async function kveikjaClaude(lykill, nonce) {
   if (r.status !== 202 && r.status !== 200) throw new Error('bakgrunnsfallið svaraði ' + r.status);
 }
 
+// Póstsvar Claude → „tilbúið verk“ í Afgreiðslu (Agnar sendir þaðan með rauða takkanum, eftir sömu athuganir og allt annað).
+// Sameiginlegt: „Biddu Claude“ (claude_samthykkja á Aðalmálum) og Merkja og keyra (_merkja.cjs, eftir mat Óðins).
+// Kastar kyrrt(…) ef pósturinn sendist ekki héðan eða drögin standast ekki athuganir — ekkert verður til þá (úrelt röð).
+async function postsvarAfgreidsla(t, afh, createdBy) {
+  const nyRod = await PSV.bua(t, afh, createdBy);
+  const ath2 = await athuga(nyRod);
+  if (!ath2.ok) {
+    await breyta(`afgreidsla?id=eq.${nyRod.id}`, { stada: 'urelt', astaeda: ath2.urelt || ('Athugun stóðst ekki: ' + ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')).slice(0, 300) });
+    throw kyrrt('Póstsvarið stenst ekki athuganir: ' + (ath2.urelt || ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')));
+  }
+  return nyRod.id;
+}
+
+// 519 Merkja og keyra: ræsir SAMA bakgrunnsfall og „Biddu Claude“ með { merki_id, nonce }. Staðbundið (ADALMAL_CLAUDE_INNI=1)
+// keyrir vinnan í sama ferli án þess að bíða — eins og kveikjaClaude.
+async function kveikjaMerki(id, nonce) {
+  if (process.env.ADALMAL_CLAUDE_INNI === '1') { M.vinnaMerki(id, nonce).catch(() => {}); return; }
+  const grunnur = String(process.env.URL || 'https://slokkvitaeki.netlify.app').replace(/\/+$/, '');
+  const r = await fetch(grunnur + '/.netlify/functions/adalmal-claude-background', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ merki_id: id, nonce }), signal: AbortSignal.timeout(8000) });
+  if (r.status !== 202 && r.status !== 200) throw new Error('bakgrunnsfallið svaraði ' + r.status);
+}
+// POST { adgerd:'merkja', mal_id, merki|null, athugasemd?, due_at? }  → merki á línu (null tekur það af)
+//   18.11.2026 — ÞjónustuVerkstæðið (190): { …, bord:'verkstaedi', fyrirtaeki_id } í stað mal_id; GET ?merkingar=1&bord=verkstaedi;
+//   { adgerd:'merkja_keyra', bord:'verkstaedi' }. Borðin eru aðskilin: án `bord` gildir Þjónustuborðið (519 óbreytt).
+// POST { adgerd:'merkja_keyra' }                                      → allt merkt í röð til agenta (Veit ekki/Rannsaka fremst)
+// GET  ?merkingar=1                                                   → { merkingar[], teljari, claude_virkt }
+// notandi() sem bregst skilar 'óþekkt' — merking má þá ALDREI vistast (hún lenti undir merkt_af='óþekkt' og sæist aldrei).
+const OTHEKKT = () => P.json(503, { error: 'Náði ekki að staðfesta hver þú ert — ekkert var skráð. Reyndu aftur eftir augnablik.' });
+async function merkingarSvar(hver, extra, bord) {
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
+  const l = await M.listi(hver, M.bordAf(bord));
+  return P.json(200, Object.assign({ ok: true, merkingar: l.map(M.synilegt), teljari: M.teljari(l), claude_virkt: await claudeVirkt() }, extra || {}));
+}
+async function merkja(b, event) {
+  const hver = await notandi(event);
+  if (!hver || hver === 'óþekkt') return OTHEKKT();
+  try {
+    if (b.adgerd === 'merkja') {
+      const m = await M.vista(b, hver);
+      return await merkingarSvar(hver, { merking: m ? M.synilegt(m) : null }, b.bord);
+    }
+    // Keyra notar SAMA rofa og „Biddu Claude“ (app_kv adalmal_claude) — ekkert fer til Claude meðan hann er af.
+    if (!(await claudeVirkt())) return P.json(409, { error: 'Agentarnir eru ekki komnir í gagnið (rofinn „Biddu Claude“ er af) — ekkert var keyrt.' });
+    const r = await M.keyra(hver, { kveikja: kveikjaMerki, bord: M.bordAf(b.bord) });
+    return await merkingarSvar(hver, { keyrsla: r }, b.bord);
+  } catch (e) {
+    if (e && e.kodi) return P.json(e.kodi, { error: e.message });
+    return P.json(500, { error: String((e && e.message) || e).slice(0, 300) });
+  }
+}
+
 async function verkefnalistiStofna(title, description) {
   const ny = await P.sbPost('verkefnalisti', { title: String(title).slice(0, 200), description: String(description).slice(0, 4000), status: 'beidni',
     category: 'allt', assigned_agent: 'claude-code', vefur: 'sameiginlegt', priority: 2 }).then(sbJson);
@@ -520,26 +727,10 @@ async function adalmal(b, event) {
         samthykkt = { at: nuIso, af: hver, verkefnalisti_id: vl.id };
         skilabod = 'Komið á Verkefnalistann: „' + t.titill + '".';
       } else {
-        const e = (await lesa(`email_digest?select=id,account,folder,sender_name,sender_email,subject,received_at,thread_id,message_id,body_preview&id=eq.${Number(t.post && t.post.digest_id)}&limit=1`))[0];
-        if (!e || !POSTHOLF.test(String(e.account || '')) || !e.message_id || !e.thread_id) throw kyrrt('Pósturinn sem svarið á við fannst ekki eða sendist ekki héðan');
-        if (/sent/i.test(String(e.folder || '')) || CL.erSjalfvirkt(e.sender_email)) throw kyrrt('Þessum pósti er ekki svarað (frá okkur sjálfum eða sjálfvirkum sendanda)');
-        const efni = /^re:/i.test(String(e.subject || '')) ? String(e.subject) : 'RE: ' + String(e.subject || '');
-        const pg = { account: String(e.account).toLowerCase(), to: [String(e.sender_email || '').toLowerCase()], subject: efni, texti: t.texti, mal_id: null,
-          svar_vid: { digest_id: e.id, thread_id: e.thread_id, message_id: e.message_id, received_at: e.received_at, fra: e.sender_name || e.sender_email, efni: e.subject || '', texti: String(e.body_preview || '').slice(0, 1500) } };
         const afh = [{ texti: 'Claude skrifaði drögin að beiðni þinni á Aðalmálum' + (c0.fyrirmaeli ? ' („' + c0.fyrirmaeli.slice(0, 160) + '“)' : '') + '. Lestu þau og breyttu áður en þú sendir.', heimild: 'Biddu Claude · ' + malRef + ' · ' + dags }]
           .concat((c0.stadreyndir || []).slice(0, 5).map((s) => { const o = s.heimildir.map((id) => c0.heimildir[id]).find((x) => x && x.opna); return Object.assign({ texti: s.texti, heimild: s.heimildir.map((id) => (c0.heimildir[id] || {}).lysing || id).join(' · ') }, o ? { opna: o.opna } : {}); }));
-        const nafn = String(e.sender_name || e.sender_email || '').split(/[<·]/)[0].trim();
-        const ny = await P.sbPost('afgreidsla', { lykill: 'svar:' + e.message_id, tegund: 'tolvupostur', titill: ('Svara ' + nafn + ': ' + (e.subject || '')).slice(0, 200),
-          takki: ('Senda svar til ' + nafn).slice(0, 80), hvad_gerist: 'Svar fer frá ' + pg.account + ' til ' + pg.to[0] + ', í sama þræði („' + efni + '“). Ekkert annað breytist.',
-          af_hverju: afh, gogn: pg, virdi_kr: null, forgangur: 15, created_by: 'claude' });
-        if (ny.status === 409) throw kyrrt('Svar við þessum pósti er þegar í Afgreiðslu (eða var afgreitt) — ákvörðun stendur');
-        const nyRod = (await sbJson(ny))[0];
-        const ath2 = await athuga(nyRod);
-        if (!ath2.ok) {
-          await breyta(`afgreidsla?id=eq.${nyRod.id}`, { stada: 'urelt', astaeda: ath2.urelt || ('Athugun stóðst ekki: ' + ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')).slice(0, 300) });
-          throw kyrrt('Póstsvarið stenst ekki athuganir: ' + (ath2.urelt || ath2.athuganir.filter((a) => !a.ok).map((a) => a.texti).join('; ')));
-        }
-        samthykkt = { at: nuIso, af: hver, afgreidsla_id: nyRod.id };
+        const afgId = await postsvarAfgreidsla(t, afh, 'claude');
+        samthykkt = { at: nuIso, af: hver, afgreidsla_id: afgId };
         skilabod = 'Svarið er komið í „Tilbúið til afgreiðslu" — lestu það og sendu með rauða takkanum.';
       }
       n.claude = Object.assign({}, c0, { samthykkt });
@@ -601,14 +792,29 @@ exports.handler = async (event) => {
   const g = await H.hlid(event); if (g) return g;   // aðeins innskráður stjórnandi
 
   if (event.httpMethod === 'GET') {
+    // 519: merkingarnar einar (teljarinn kannar þær á nokkurra sekúndna fresti meðan umferð er í keyrslu) — án tilbúnu verkanna.
+    const qs0 = event.queryStringParameters || {};
+    if (qs0.merkingar != null && qs0.adalmal == null) {
+      try { return await merkingarSvar(await notandi(event), null, qs0.bord); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
+    }
     try {
-      const [tilb, saga] = await Promise.all([
-        lesa('afgreidsla?select=*&stada=eq.tilbuid&order=forgangur.asc,created_at.asc&limit=50'),
+      const [onnur, serRadir, saga] = await Promise.all([
+        lesa('afgreidsla?select=*&stada=eq.tilbuid&or=(gogn->>flokkur.is.null,gogn->>flokkur.not.in.(' + SERFLOKKAR.join(',') + '))&order=forgangur.asc,created_at.asc&limit=50'),
+        // Hver sérflokkur hefur SITT þak (rýni 19.11.2026): deildu þeir einu þaki gátu bókanir ýtt nýjum dagsverkum út þegjandi.
+        Promise.all(SERFLOKKAR.map((f) => lesa('afgreidsla?select=*&stada=eq.tilbuid&gogn->>flokkur=eq.' + f + '&order=forgangur.asc,created_at.asc&limit=' + SER_THAK))),
         lesa('afgreidsla?select=*&stada=neq.tilbuid&order=updated_at.desc&limit=40'),
       ]);
+      // 19.11.2026: sérflokkarnir (Dagsverk, Bókanir) AFTAST í svarinu, hin verkin fremst í sömu röð og áður; viðmótið
+      // skilur þá að. (Aftast, svo sá sem les listann ósíaðan fái venjulegu verkin fyrst — rýni 19.11.)
+      const tilb = onnur.concat([].concat(...serRadir));
       const tilbuin = [];
-      for (const r of tilb) {
-        const s = await synilegt(r);
+      const visir = await vipVisir().catch(() => null);   // VIP-merkið bregst → verkin koma samt, án merkis
+      // 18.11.2026: liðirnir voru unnir EINN Í EINU (50 liðir × athuganir og tilvísanir = 13 s; Agnar: „Afgreiðslan virkar
+      // ekki“). Nú átta samhliða, í sömu röð, og dyr allra liða eru sóttar í einni umferð.
+      const V = await DYR.saekja(tilb, lesa).catch(() => null);
+      const syn = await iHopum(tilb, 16, (r) => synilegt(r, visir, V));   // 16 samhliða: allt að 170 liðir (50 + 60 á hvorn sérflokk)
+      for (let k = 0; k < tilb.length; k++) {
+        const r = tilb[k], s = syn[k];
         if (s.urelt) { await breyta(`afgreidsla?id=eq.${r.id}&stada=eq.tilbuid`, { stada: 'urelt', astaeda: s.urelt }).catch(() => {}); continue; }
         tilbuin.push(s);
       }
@@ -637,6 +843,7 @@ exports.handler = async (event) => {
   if (b.adgerd === 'adalmal') {
     try { return await adalmal(b, event); } catch (e) { return P.json(500, { error: String((e && e.message) || e).slice(0, 300) }); }
   }
+  if (b.adgerd === 'merkja' || b.adgerd === 'merkja_keyra') return merkja(b, event);
   const id = Number(b.id);
   if (!Number.isInteger(id) || id <= 0) return P.json(400, { error: 'id vantar' });
   try {
@@ -647,6 +854,27 @@ exports.handler = async (event) => {
       if (r.tegund !== 'tolvupostur') return P.json(400, { error: 'Aðeins texti tölvupósts er vistaður' });
       const gogn = Object.assign({}, r.gogn, { texti: String(b.texti || '').slice(0, 20000) });
       await breyta(`afgreidsla?id=eq.${id}`, { gogn });
+      return P.json(200, { ok: true, verk: await synilegt(Object.assign(r, { gogn })) });
+    }
+    // Ágiskað netfang (kóðarýni 17.11.2026): staðfesta það, eða taka það úr to/cc og senda án þess. Hver og hvenær skráð.
+    if (b.adgerd === 'agiskun') {
+      const r = (await lesa(`afgreidsla?select=*&id=eq.${id}&stada=eq.tilbuid&limit=1`))[0];
+      if (!r) return P.json(409, { error: 'Verkið er ekki lengur opið' });
+      if (r.tegund !== 'tolvupostur') return P.json(400, { error: 'Aðeins tölvupóstur hefur viðtakendur' });
+      const e = addr(b.netfang), g0 = r.gogn || {};
+      const ag = [].concat(g0.agiskun || []).map(addr).filter(Boolean);
+      if (!e || ag.indexOf(e) < 0) return P.json(400, { error: 'Netfangið er ekki merkt ágiskun á þessu verki' });
+      const hver = await notandi(event), nu = new Date().toISOString();
+      const gogn = Object.assign({}, g0);
+      if (b.val === 'stadfesta') {
+        gogn.agiskun_stadfest = [].concat(g0.agiskun_stadfest || []).filter((x) => addr(x && x.netfang) !== e).concat([{ netfang: e, af: hver, at: nu }]);
+      } else if (b.val === 'fjarlaegja') {
+        gogn.to = [].concat(g0.to || []).filter((x) => addr(x) !== e);
+        gogn.cc = [].concat(g0.cc || []).filter((x) => addr(x) !== e);
+        gogn.agiskun = ag.filter((x) => x !== e);
+        gogn.agiskun_fjarlaegt = [].concat(g0.agiskun_fjarlaegt || []).concat([{ netfang: e, af: hver, at: nu }]);
+      } else return P.json(400, { error: 'val: stadfesta eða fjarlaegja' });
+      await breyta(`afgreidsla?id=eq.${id}&stada=eq.tilbuid`, { gogn });
       return P.json(200, { ok: true, verk: await synilegt(Object.assign(r, { gogn })) });
     }
     // Athugasemd Agnars á verkið (16.11.2026: „sett athugasemd"). Vistast á röðina í hvaða stöðu sem er, lesin til baka;
@@ -691,8 +919,14 @@ exports.handler = async (event) => {
 
 module.exports.THROSKULDUR_KR = THROSKULDUR_KR;
 module.exports._athuga = athuga;
+module.exports._setjaUppruna = (fn) => { _uppruni = fn || upprunaNetfangs; };
 module.exports._posturToki = posturToki;
 module.exports._prufaSending = prufaSending;
 module.exports._amLykill = amLykill;
 module.exports._synilegtAdalmal = synilegtAdalmal;
-module.exports._sameina = SAM;   // tegund 'sameina' (Verkefnavaktin)
+module.exports._sameina = SAM;
+module.exports._vipFyrir = vipFyrir;   // tegund 'sameina' (Verkefnavaktin)
+module.exports._leysaTilvisanir = leysaTilvisanir;
+module.exports._merkja = merkja;   // 17.11.2026: prófin (kreditfærður reikningur merktur)
+module.exports._vidhengiSlod = vidhengiSlod;   // 18.11.2026: viðhengi sem tengill í svarinu
+module.exports._vidhengiSyn = vidhengiSyn;

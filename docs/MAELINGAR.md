@@ -383,7 +383,7 @@ tekin af grunnlínu → RAUTT; R-001071 tekin af B2-grunnlínu → RAUTT; mynstr
 
 ## 20. Rautt úr uppsetningu mælandans — ekki úr kerfinu
 
-**Mælt 31.10. og 10.11.2026.** Þrisvar sagði tækið eitthvað um MIG, ekki kerfið:
+**Mælt 31.10. og 10.11.2026.** Fjórum sinnum sagði tækið eitthvað um MIG, ekki kerfið:
 
 - `audit-agentar` sagði „4 dauðir vísar" í fersku eintaki í scratch-möppu. Systur-repóið hét þar `bh`, ekki
   `brunaholf`, svo vörðurinn fann það ekki. Með `ln -s bh brunaholf` við hliðina: grænt. Uppsetningin verður að
@@ -393,6 +393,10 @@ tekin af grunnlínu → RAUTT; R-001071 tekin af B2-grunnlínu → RAUTT; mynstr
 - Supabase `apply_migration` bað um staðfestingu sem birtist ekki á tækinu sem Agnar var á (31.10. og 10.11.) og
   rann út á 230 s. Svarið „timed out" segir ekki hvort eitthvað keyrði — ég las stöðuna á eftir (`relrowsecurity`,
   `pg_indexes`) í bæði skiptin: ekkert hafði keyrt. **Lestu stöðuna, ekki villuboðin** (sbr. kafla 11).
+
+- CI varð rautt á tveimur vörðum sem voru grænir hjá mér (10.11.). `audit-regex-bakstrik` les systur-repóið, og CI
+  klónar `brunaholf` main — lagfæringin þar var enn á grein. `audit-agentar` telur aðeins COMMITTAÐAR skrár, svo hann
+  var grænn fyrir commit og rauður eftir. **Sameinaðu systur-repóið fyrst og keyrðu verðina aftur eftir commit.**
 
 Og fjórða, af annarri gerð: úttekt sem liggur í tíu daga er ekki lengur lýsing á kerfinu. 10.11. voru 354 commit
 komin á master Slökkvitækis og 131 á main Brunahólfs frá 31.10., RLS-lausar töflur 288 í stað 232, og Agnar hafði

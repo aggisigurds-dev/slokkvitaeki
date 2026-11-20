@@ -635,7 +635,7 @@
       stockChip + img + iconDiv +
       '<div class="pos-tile-name" style="font-weight:600;font-size:12px;color:#0f172a;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:29px">'+esc(item.nafn)+'</div>' +
       '<div class="pos-tile-price" style="font-size:14px;color:#0f172a;font-weight:800;line-height:1.1">'+fmtKr(verd)+'</div>' +
-      '<div class="pos-tile-exvat" style="font-size:10px;color:#94a3b8;font-weight:500;margin-top:1px">'+fmtKr(item.verd_an_vsk)+' án vsk</div>' +
+      '<div class="pos-tile-exvat" style="font-size:11.5px;color:#94a3b8;font-weight:500;margin-top:1px">'+fmtKr(item.verd_an_vsk)+' án vsk</div>' +
     '</button>';
   }
   // Forsíðu-sía + röðun (Agnar 26.08, stillt í Vörur og þjónusta modalnum):

@@ -26,6 +26,10 @@
 //   PAYDAY_API_VERSION  — default 'alpha'
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
+// 17.11.2026: EIN heimild um hvaða úttektarskýrsla fylgir sölu og hvort hún stemmir (sama fall í verði og sendiskjá).
+const SS = require('./_skyrsla-solu.cjs');
+const H = require('./_starfshlid.cjs');   // lota 13: starfsmannahliðið
+const _starfshlid = (event) => H.krefjastStarfsmanns(event);
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CLIENT_ID = process.env.PAYDAY_CLIENT_ID;
 const CLIENT_SECRET = process.env.PAYDAY_CLIENT_SECRET;
@@ -43,6 +47,13 @@ exports.handler = async (event) => {
     const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
     if (got !== KEY) return json(401, { error: 'unauthorized' });
   }
+
+  // STARFSMANNAHLIÐ (lota 13, 17.11.2026): fallið sendir reikninga og kröfur í Payday og svaraði óinnskráðum (söluauðkenni
+  // eru hlaupandi tölur, repóið er opið). Nú: innskráður starfsmaður appsins — vafrinn (sami uppruni, kakan fylgir) og
+  // afgreidsla.cjs (kallar í ferli með hausum vafrans) — annars 401; notendaskráin niðri → 503. Enginn þjónn kallar hingað
+  // án köku, svo innri tóki er EKKI tekinn gildur (minnstu réttindi).
+  const _hlid = await _starfshlid(event);
+  if (_hlid) return { ..._hlid, headers: { ...cors(), ...(_hlid.headers || {}) } };
 
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return json(500, { error: 'PAYDAY_CLIENT_ID / PAYDAY_CLIENT_SECRET vantar í Netlify env vars.' });
@@ -102,6 +113,24 @@ exports.handler = async (event) => {
   try {
     const sale = await fetchSale(saleId);
     if (!sale) return json(404, { error: 'Sala fannst ekki: ' + saleId });
+
+    // ── skyrsla_athugun (17.11.2026): „hvaða skýrsla fylgir þessari sölu og stemmir hún?" ─────────────────────────
+    // Sendiskjárinn (166) og breytingaleiðirnar (516: ritill, endurgerð, viðbót …) spyrja HÉR, svo svarið er sama
+    // val og sama dómur og sendingin sjálf notar. Engar gáttir, ekkert niðurhal, ekkert til Payday — aðeins lestur.
+    if (body.skyrsla_athugun) {
+      let aSite = null, aBase = null;
+      if (sale.customer_id) { try { aSite = await fetchFyrirtaeki(sale.customer_id); } catch (_) {} }
+      if (sale.customer_base_id) { try { aBase = await fetchCustomerBase(sale.customer_base_id); } catch (_) {} }
+      const erUttekt = sale.source === 'uttekt' || sale.source === 'vinnublad';
+      const v = erUttekt ? await skyrslaFyrirSolu(sale, aSite, aBase, await erVidbotSala(sale)) : null;
+      return json(200, {
+        ok: true, athugun: true, sale_id: sale.id, num: sale.num || null, source: sale.source || null, customer_id: sale.customer_id || null,
+        fylgir: !!(erUttekt && !(aSite && aSite.skyrsla_med_krofu === false)),
+        send: !!(sale.dk_invoice_id || sale.invoiced_at),
+        skyrsla: v ? Object.assign({}, v.r, { path: (v.sk && (v.sk.path || v.sk.storage_path)) || null }) : null,
+        skilabod: v ? SS.skilabod(v.r) : '',
+      });
+    }
     if (sale.dk_invoice_id || sale.invoiced_at) {
       return json(409, { error: 'Sala þegar í reikningi (' + (sale.dk_invoice_id || sale.invoiced_at) + ')' });
     }
@@ -190,13 +219,13 @@ exports.handler = async (event) => {
     // source 'slokkvikerfi' (386) er líka skoðunarreikningur — en HANS skýrsla er aðeins slökkvikerfisskýrslan sem
     // skoðunin vísar á (findSlokkvikerfiPdf), aldrei slökkvitækjaskýrsla staðarins og aldrei slóð frá vafranum.
     const attachReport = body.attach_report !== false; // default on
-    let attachment = null, attachSkipReason = null;
+    let attachment = null, attachSkipReason = null, _skVal = null, _skNidurhalVilla = null;
     if (attachReport) {
       // 05.10.2026 (Agnar: „skýrslurnar haldast við reikningana úr sínu kerfi"): source 'brunakerfi' (273/291) fær
       // AÐEINS brunakerfisskýrsluna sem úttektin vísar á (findBrunakerfiPdf) — áður fór hann án skýrslu.
       // 20.10.2026 (Agnar: „vantaði skýrslurnar við einhverjar“): sala úr samþykktu vinnublaði (source 'vinnublad', SARA-drög,
       // vidskiptategund 'uttekt') ER úttektarreikningur — hún fór til Payday ÁN skýrslu þótt skýrslan væri til og Kröfu yfirlit segði
-      // „fylgir kröfunni“. Fær nú úttektarskýrsluna eins og 'uttekt' (findReportPdf: viðhengi staðar og árs). 'pos' fær hana enn aldrei.
+      // „fylgir kröfunni“. Fær nú úttektarskýrsluna eins og 'uttekt' (skyrslaFyrirSolu: viðhengi staðar og árs). 'pos' fær hana enn aldrei.
       if (sale.source !== 'uttekt' && sale.source !== 'slokkvikerfi' && sale.source !== 'brunakerfi' && sale.source !== 'vinnublad') {
         attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
       } else if (site && site.skyrsla_med_krofu === false) {
@@ -209,14 +238,18 @@ exports.handler = async (event) => {
             ? await findSlokkvikerfiPdf(sale)
             : sale.source === 'brunakerfi'
               ? await findBrunakerfiPdf(sale)
-              : await findReportPdf(sale, body.report_storage_path).catch(async function (e) {
-                // Slóð úr skyndiminni vafrans getur vísað á skrá sem var skipt út (ný skýrsla) — fall þá á nýjustu skýrslu ársins
-                // í stað þess að senda kröfuna án skýrslu.
-                if (!body.report_storage_path) throw e;
-                const _a = await findReportPdf(sale, null);
-                if (_a && String(_a.name || '').indexOf(String(new Date(sale.created_at).getFullYear())) >= 0) return _a;   // aldrei skýrsla annars árs
-                throw e;
-              });
+              : await (async function () {
+                // 17.11.2026 (Agnar: „svo það sé ekki alltaf vesen“): SALAN ræður á sendistund — kt, nafn, staður, ár, tæki.
+                // Slóð sem vafrinn sendir (report_storage_path, geymd þegar glugginn opnaðist) er HUNSUÐ fyrir úttektarsölur:
+                // hún var „gamla tengingin" sem varð eftir þegar sölunni var breytt. Sjá _skyrsla-solu.cjs.
+                _skVal = await skyrslaFyrirSolu(sale, site, customer, await erVidbotSala(sale));
+                const v = _skVal.sk;
+                if (!v) return null;
+                // Óháð rýni 17.11.2026: mistakist niðurhal VALINNAR skýrslu má krafan ALDREI fara þegjandi án hennar —
+                // villan er geymd og hliðið skyrsla_nidurhal (hér að neðan) stöðvar sendinguna með skýrum skilaboðum.
+                try { return await downloadReport(v.path || v.storage_path); }
+                catch (e) { _skNidurhalVilla = String((e && e.message) || e); return null; }
+              })();
           if (!attachment) attachSkipReason = sale.source === 'slokkvikerfi'
             ? 'engin slökkvikerfisskýrsla fannst fyrir þennan reikning/ár'
             : sale.source === 'brunakerfi'
@@ -228,28 +261,52 @@ exports.handler = async (event) => {
       attachSkipReason = 'attach_report=false';
     }
 
+    // ── Valin skýrsla náðist ekki úr geymslu (óháð rýni 17.11.2026) ───────────────────────────────
+    // Áður fór krafan þá ÞEGJANDI án skýrslu (villan varð attachSkipReason). Nú stöðvast hún, líka í dry-run, og segir
+    // hvaða skýrsla náðist ekki. Leiðir áfram: reyna aftur, búa til nýja skýrslu, eða senda „án skýrslu" (attach_report:false).
+    if (!attachment && _skVal && _skVal.sk && _skNidurhalVilla) {
+      const _nm = (_skVal.r && _skVal.r.lysing && _skVal.r.lysing.nafn) || _skVal.sk.name || _skVal.sk.path || _skVal.sk.storage_path;
+      return json(409, {
+        gate: 'skyrsla_nidurhal', skyrsla: _skVal.r && _skVal.r.lysing, villa: _skNidurhalVilla.slice(0, 300),
+        error: 'Úttektarskýrslan sem á að fylgja kröfunni („' + _nm + '") náðist ekki úr geymslunni (' + _skNidurhalVilla.slice(0, 120) + '). ' +
+          'Krafan var EKKI send. Reyndu aftur eftir smá stund, búðu til nýja skýrslu á staðnum („Búa til úttektarskýrslu"), eða sendu kröfuna án skýrslu.',
+      });
+    }
+
     // ── Viðbótarúttekt (patch 488, 28.10.2026) ──────────────────────────────
     // Viðbótarreikningur (krafa_note „Viðbótarúttekt við R-…") á að fara út með NÝRRI aðalskýrslu — þeirri sem var
     // búin til eftir að viðbótin varð til og telur ÖLL tæki. Finnist engin skýrsla, eða sú nýjasta er eldri en salan,
     // er sendingin stöðvuð (409) í stað þess að senda gömlu skýrsluna með nýrri kröfu. Slóðin ber tímastimpil
     // (company_attachments/<id>/<ms>_nafn.pdf) — sá er upphleðslutíminn. Hak fyrirtækis „án skýrslu með kröfu" er virt.
-    let _vbSala = /^Viðbótarúttekt við /.test(String(sale.krafa_note || ''));
-    if (!_vbSala && sale.source === 'uttekt' && sale.customer_id) {
-      // krafa_note er ritanlegt í Kröfu yfirliti — 488 skráir líka númer viðbótarsölunnar í app_settings (vidbot_uttekt.<fyrirtæki>.sala_nums).
-      try {
-        const _st = await fetchAppSettings();
-        const _lst = _st && _st.vidbot_uttekt && _st.vidbot_uttekt[String(sale.customer_id)] && _st.vidbot_uttekt[String(sale.customer_id)].sala_nums;
-        _vbSala = Array.isArray(_lst) && _lst.map(String).indexOf(String(sale.num)) >= 0;
-      } catch (_) { /* hliðið er viðbót — brestur hér má ekki fella venjulega sendingu */ }
-    }
+    // 17.11.2026: hvort salan sé viðbót og hvort skýrslan sé nýrri en hún kemur úr sama dómi og skýrsluvalið (_skyrsla-solu bera(): 'vidbot').
+    const _vbSala = await erVidbotSala(sale);
     if (sale.source === 'uttekt' && _vbSala &&
         !(site && site.skyrsla_med_krofu === false)) {
       if (!attachReport) return json(409, { gate: 'vidbot_skyrsla', error: 'Viðbótarreikningur fer aðeins út með nýrri úttektarskýrslu — „án skýrslu" er læst fyrir hann. Hakaðu við „fylgir skýrsla" og sendu aftur.' });
-      const _ts = attachment && /\/(\d{10,13})_[^/]*$/.exec(String(attachment.path || ''));
-      const _fra = Date.parse(sale.created_at) - 120000;
-      if (!attachment || !_ts || +_ts[1] < _fra) {
+      if (!attachment || !_skVal || _skVal.r.misraemi.some((m) => m.svid === 'vidbot')) {
         return json(409, { gate: 'vidbot_skyrsla', error: 'Viðbótarreikningur má ekki fara út fyrr en NÝ úttektarskýrsla ársins (með öllum tækjum) er vistuð — nýjasta skýrslan er eldri en viðbótin eða finnst ekki. Opnaðu fyrirtækið, ýttu á Skýrsla og Vista, og sendu svo aftur.' });
       }
+    }
+
+    // ── Skýrslan verður að STEMMA við söluna (17.11.2026) ───────────────────────────────────────────
+    // Tveir raunreikningar 16.–17.11: reikningur endurgerður á NÝJA kennitölu eftir kredit, en eina úttektarskýrsla ársins
+    // var sú gamla (gamalt nafn, gömul kt). Dómurinn (kt · nafn · staður) er úr _skyrsla-solu.cjs — sama fall og sendiskjárinn
+    // og gagnavörðurinn nota. Stöðvað líka í dry-run, svo glugginn segir frá því strax. „Án skýrslu" er áfram í boði.
+    // force_skyrsla: sá sem sendir hefur SÉÐ viðvörunina í sendiglugganum og staðfest að skýrslan sé rétt (stjórnlotan
+    // 17.11.2026: „skýr leið fram hjá fyrir þann sem veit betur"). Sama mynstur og force_duplicate — meðvituð ákvörðun,
+    // aldrei sjálfgefin. Skráð í svarinu (skyrsla_yfirskrifud) og í logg fallsins.
+    const _skyrslaSamt = !!body.force_skyrsla;
+    if (attachment && _skVal && _skVal.r.stodvar && _skyrslaSamt) {
+      console.warn('[payday-push] skyrsla_stemmir YFIRSKRIFAÐ af notanda — sala ' + sale.id + ' (' + (sale.num || '') + '): ' + _skVal.r.misraemi.filter((m) => m.stodvar).map((m) => m.svid).join('+'));
+    }
+    if (attachment && _skVal && _skVal.r.stodvar && !_skyrslaSamt) {
+      const _sk = _skVal.r.lysing || {};
+      const _kt = _skVal.r.misraemi.find((m) => m.svid === 'kt');
+      return json(409, {
+        gate: 'skyrsla_stemmir', skyrsla: _sk, misraemi: _skVal.r.misraemi,
+        kt_skyrslu: _kt ? _kt.skyrsla : null, kt_reiknings: _kt ? _kt.sala : null,
+        error: 'Úttektarskýrslan sem myndi fylgja kröfunni („' + (_sk.nafn || attachment.name) + '") stemmir ekki við söluna. ' + SS.skilabod(_skVal.r),
+      });
     }
 
     // ── Delivery method ────────────────────────────────────────────────────
@@ -275,16 +332,39 @@ exports.handler = async (event) => {
     payload.sendEmail = hasEmail && delivery !== 'electronic';
 
     const custEmail = payload.customer.email || (customer && customer.netfang) || '';
+
+    // 17.11.2026 (lota 9, Óðins regla #10): MINNI á höfnun rafræns reiknings per kennitölu. Línan að ofan þvingar XML
+    // á hverja sendingu, svo kúnni sem Payday hefur sagt „does not accept electronic invoices" um fékk nýja höfnun og
+    // nýtt borðmál í HVERT sinn. Nú: sé kt í payday_rafraent_hafnad (virkt) er XML-tilrauninni sleppt og reikningurinn
+    // fer eins og varaleiðin hér að neðan hefði sent hann — krafa í banka + póstur ef netfang er til. Ekkert nýtt mál.
+    // force_electronic:true reynir XML samt (kúnni skráður í skeytamiðlun síðan); ný höfnun endurnýjar minnið.
+    const ktSolu = digits(sale.customer_kt || (customer && customer.kennitala) || '');
+    const rafraentHafnad = body.force_electronic ? null : await lesaRafraentHafnad(ktSolu);
+    if (rafraentHafnad) {
+      payload.createElectronicInvoice = false;
+      payload.sendEmail = !!custEmail;
+    }
+
     const deliveryLabel = () => payload.createElectronicInvoice
       ? (payload.sendEmail ? 'both' : 'electronic')
       : (payload.sendEmail ? 'email' : 'none');
+    const rafraentSleppt = rafraentHafnad
+      ? { hafnad_fyrst: rafraentHafnad.fyrst_hafnad_at || null, hafnad_sidast: rafraentHafnad.sidast_hafnad_at || null, fjoldi: rafraentHafnad.fjoldi || 1 }
+      : null;
+    // 17.11.2026 (lota 9): netfang vantar → TILLAGA að varanetfangi bokhald@<lén kúnnans> fyrir sendiskjáinn (166).
+    // Aðeins sýnd sem ágiskun; notandinn staðfestir og sendir hana þá sem email_override. Aldrei notuð sjálfkrafa hér.
+    const netfangTillaga = (dry && !hasEmail && !body.email_override) ? await finnaNetfangsTillogu(ktSolu) : null;
     if (dry) return json(200, {
       ok: true, dry: true, mode, payload, sale, customer,
       attachment: attachment ? { name: attachment.name, bytes: attachment.bytes.length, path: attachment.path } : null,
+      skyrsla: _skVal ? _skVal.r : null,
       would_attach: !!attachment,
       attach_skip_reason: attachSkipReason,
       delivery: deliveryLabel(),
       delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : 'auto'),
+      has_email: hasEmail,
+      rafraent_sleppt: rafraentSleppt,
+      netfang_tillaga: netfangTillaga,
     });
 
     // 21.09.2026 (úttekt): FRÁTEKT. Gáttin efst les „þegar send?" en merkið er skrifað mörgum sekúndum síðar — tvær vélar
@@ -319,6 +399,8 @@ exports.handler = async (event) => {
         payload.sendEmail = !!custEmail;
         fellBackToNonElectronic = true;
         xmlVilla = msg;
+        // 17.11.2026 (lota 9): muna höfnunina á kennitöluna svo næsta sending sleppi XML (ekkert nýtt mál þá).
+        if (/does not accept/i.test(msg)) await munaRafraentHafnad(ktSolu, sale.id, msg);
         try {
           created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
@@ -373,11 +455,13 @@ exports.handler = async (event) => {
       ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
       xml_villa: fellBackToNonElectronic ? xmlVilla.slice(0, 500) : null,
       bord_mal_id,
+      rafraent_sleppt: rafraentSleppt,
       // Hvað var raunverulega afhent + á hvaða netfang — svo UI og log sýni það.
       delivery: deliveryLabel(),
       email_used: payload.sendEmail ? (custEmail || null) : null,
       email_synced: custResult.email_synced || null,
       attached_report: attachment ? { name: attachment.name, bytes: attachment.bytes.length } : null,
+      skyrsla_yfirskrifud: !!(attachment && _skVal && _skVal.r.stodvar && body.force_skyrsla),
       attach_skip_reason: attachment ? null : attachSkipReason,
     });
   } catch (e) {
@@ -971,35 +1055,49 @@ async function createInvoice(token, payload, attachment) {
 }
 
 // ── Report (úttektarskýrsla) PDF lookup + download ───────────────────────────
-// Resolves the inspection report PDF for a sale and returns its bytes. Caller
-// MUST have already verified sale.source is 'uttekt' or 'vinnublad' (safety gate). Source order:
-//   1. explicit storage_path (test / client-provided)
-//   2. AppSettings.company_attachments[customer_id] — kind='skyrsla', matching year
-//   3. customer_documents.storage_path (Drive-indexed rows that were mirrored)
-// All live in the Supabase `samningar` storage bucket. Returns null if none.
-async function findReportPdf(sale, explicitPath) {
-  let path = explicitPath || null;
+// Kallari HEFUR staðfest að sale.source sé 'uttekt' eða 'vinnublad' (öryggishlið). Valið (17.11.2026):
+//   1. AppSettings.company_attachments[customer_id] — kind='skyrsla', valið af _skyrsla-solu.cjs (sölunni ræður)
+//   2. customer_documents.storage_path (skjalaröð ársins) ef staðurinn á ekkert skýrsluviðhengi
+// Slóð frá vafranum (report_storage_path) er EKKI lengur notuð fyrir úttektarsölur. Allt í `samningar`-fötunni.
+// 17.11.2026: skýrsluval fyrir úttektar-/vinnublaðssölu — EIN heimild (_skyrsla-solu.cjs velja + bera). Viðhengi staðarins
+// fyrst (skýrsla á kt sölunnar/staðarins, ekki leyst af hólmi, ár sölunnar, nýjust); annars skjalaröð ársins (customer_documents).
+// Skilar { sk, r }: sk = valin skýrsla (name/path eða storage_path), r = dómurinn { stemmir, stodvar, misraemi, lysing }.
+async function skyrslaFyrirSolu(sale, site, base, vidbot) {
   const year = String(new Date(sale.created_at).getFullYear());
   const coId = sale.customer_id;
-  if (!path && coId) {
-    const settings = await fetchAppSettings();
+  let sk = null;
+  if (coId) {
+    // Óháð rýni 17.11.2026 (galli 1): skjalaröð ársins er sótt FYRIR valið — hún er varaleiðin þegar nýjasta viðhengi
+    // ársins er Drive-tengill (ekki sækjanlegt), og skýrsla ársins gengur alltaf fyrir skýrslu annars árs.
+    const [settings, cd] = await Promise.all([fetchAppSettings(), fetchReportDoc(coId, year)]);
     const list = settings && settings.company_attachments && settings.company_attachments[String(coId)];
-    if (Array.isArray(list)) {
-      // 05.10.2026 („skýrslurnar haldast við reikningana úr sínu kerfi"): fyrir 29.07 vistaði 273 brunakerfisskýrslur
-      // líka sem kind 'skyrsla' (Bílabúð Benna 2026 endurmerkt 05.10). Viðhengi sem heitir brunakerfis-/slökkvikerfis-
-      // skýrsla er aldrei slökkvitækjaskýrsla úttektarreiknings, hvað sem kind segir.
-      const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
-      const hit = list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year || '') === year)
-               || list.find(a => a && a.kind === 'skyrsla' && !annadKerfi(a)); // any skýrsla if the year doesn't line up
-      if (hit && hit.path) path = hit.path;
-    }
+    const skjal = (cd && cd.storage_path) ? { name: cd.notes || '', storage_path: cd.storage_path, year: String(cd.year || year), doc_date: cd.doc_date || null, uppruni: 'skjal' } : null;
+    sk = SS.velja(sale, Array.isArray(list) ? list : [], site, skjal);
   }
-  if (!path && coId) {
-    const cd = await fetchReportDoc(coId, year);
-    if (cd && cd.storage_path) path = cd.storage_path;
-  }
-  if (!path) return null;
-  return downloadReport(path);
+  const facts = (sk && coId) ? await fetchReportFacts(coId, year) : null;
+  return { sk, r: SS.bera(sale, sk, { site, base, facts, vidbot: !!vidbot }) };
+}
+// Er salan viðbótarreikningur (488)? krafa_note, eða númerið skráð í app_settings vidbot_uttekt.<staður>.sala_nums
+// (krafa_note er ritanlegt í Kröfu yfirliti). Brestur hér fellir aldrei venjulega sendingu.
+async function erVidbotSala(sale) {
+  if (/^Viðbótarúttekt við /.test(String(sale.krafa_note || ''))) return true;
+  if (sale.source !== 'uttekt' || !sale.customer_id) return false;
+  try {
+    const st = await fetchAppSettings();
+    const lst = st && st.vidbot_uttekt && st.vidbot_uttekt[String(sale.customer_id)] && st.vidbot_uttekt[String(sale.customer_id)].sala_nums;
+    return Array.isArray(lst) && lst.map(String).indexOf(String(sale.num)) >= 0;
+  } catch (_) { return false; }
+}
+// Tölur skýrslunnar (patch 270 _rfSync skrifar þær þegar skýrslan er vistuð) — notaðar til að bera tækjafjölda saman.
+async function fetchReportFacts(coId, year) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/arsskodun_report_facts?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&report_year=eq.${encodeURIComponent(year)}&select=total_devices,report_year,parsed_at&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return (Array.isArray(rows) && rows[0]) || null;
+  } catch (_) { return null; }
 }
 
 // Slökkvikerfisreikningur (source 'slokkvikerfi', 386): skýrslan sem skoðunin sjálf vísar á —
@@ -1079,7 +1177,7 @@ async function fetchAppSettings() {
 }
 async function fetchReportDoc(coId, year) {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&doc_type=in.(uttektarskyrsla,uttektarsk%C3%BDrsla)&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&select=storage_path&limit=1`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&doc_type=in.(uttektarskyrsla,uttektarsk%C3%BDrsla)&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&select=storage_path,notes,year,doc_date&order=created_at.desc&limit=1`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
     if (!r.ok) return null;
@@ -1108,6 +1206,77 @@ async function writeCachedToken(value) {
     },
     body: JSON.stringify({ key: 'payday_oauth_slokk', value, updated_at: new Date().toISOString() }),
   });
+}
+
+// ---- Minni: kúnni hafnar rafrænum reikningi (lota 9, 17.11.2026) ------------
+// payday_rafraent_hafnad (sql/payday_rafraent_hafnad.sql): kt → fyrsta/síðasta höfnun. Minnið er VIÐBÓT: bilun í
+// lestri þýðir að XML er reynt eins og áður (varaleiðin grípur höfnunina); bilun í skrift fellir aldrei sendingu.
+// Hvort tveggja með 3 s þaki. Taflan er lokuð vafranum — aðeins þjónustulykillinn hér les hana.
+const _gildKt = kt => /^\d{10}$/.test(String(kt || '')) && kt !== '9999999999';
+async function lesaRafraentHafnad(kt) {
+  if (!_gildKt(kt)) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/payday_rafraent_hafnad?kt=eq.${kt}&virkt=is.true&select=fyrst_hafnad_at,sidast_hafnad_at,fjoldi&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: ctl.signal,
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return (Array.isArray(rows) && rows[0]) || null;
+  } catch (_) { return null; } finally { clearTimeout(timer); }
+}
+async function munaRafraentHafnad(kt, saleId, villa) {
+  if (!_gildKt(kt)) return false;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/payday_muna_rafraent_hafnad`, {
+      method: 'POST', signal: ctl.signal,
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_kt: kt,
+        p_sala_id: Number.isFinite(Number(saleId)) ? Number(saleId) : null,
+        p_villa: String(villa || '').replace(/(?<!\d)\d{6}[-\s_]?\d{4}(?!\d)/g, '[kt]').slice(0, 500),
+      }),
+    });
+    return r.ok;
+  } catch (_) { return false; } finally { clearTimeout(timer); }
+}
+
+// ---- Varanetfang: bokhald@<lén kúnnans> sem TILLAGA (lota 9, 17.11.2026) -----
+// Hugmynd Agnars 16.11.: vanti netfang, stinga upp á bokhald@<lén>. Lénið kemur úr charlize_contacts (lén sem hafa
+// sést í pósti við kennitöluna). Ekki stungið upp á: ókeypis póstþjónustum (gmail, simnet …) — þar er „bokhald@" ekki
+// til — né léni sem er á 3+ kennitölum: það er umsjónar-/rekstrarfélag (eignaumsjon.is o.þ.h.), ekki kúnninn sjálfur.
+// Skilar { netfang, len, heimild, agiskun:true } eða null. Fer AÐEINS í dry-svarið; sendiskjárinn lætur staðfesta.
+const _ALMENN_LEN = /^(?:gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|mac|aol|proton|protonmail|simnet|internet|visir|mi|isl|talnet|centrum|hive|vodafone|siminn|snerpa|eldklar|brunaholf)\.[a-z.]+$/i;
+async function finnaNetfangsTillogu(kt) {
+  if (!_gildKt(kt)) return null;
+  const ktDash = kt.slice(0, 6) + '-' + kt.slice(6);
+  const hdr = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 3000);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/charlize_contacts?kennitala=in.(${kt},${ktDash})&len=not.is.null&select=len,status,faerslur&limit=50`, { headers: hdr, signal: ctl.signal });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const stig = new Map();
+    for (const x of (Array.isArray(rows) ? rows : [])) {
+      const len = String(x.len || '').trim().toLowerCase();
+      if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(len) || _ALMENN_LEN.test(len)) continue;
+      const s = (x.status === 'approved' ? 1000 : 0) + (Number(x.faerslur) || 0);
+      stig.set(len, Math.max(stig.get(len) || 0, s));
+    }
+    const rodun = [...stig.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+    for (const len of rodun.slice(0, 3)) {
+      const q = await fetch(`${SUPABASE_URL}/rest/v1/charlize_contacts?len=eq.${encodeURIComponent(len)}&select=kennitala&limit=200`, { headers: hdr, signal: ctl.signal });
+      if (!q.ok) return null;
+      const kts = new Set((await q.json()).map(y => digits(y.kennitala)).filter(Boolean));
+      if (kts.size >= 3) continue;   // umsjónarfélag — ekki lén kúnnans
+      return { netfang: 'bokhald@' + len, len, heimild: 'charlize_contacts', agiskun: true };
+    }
+    return null;
+  } catch (_) { return null; } finally { clearTimeout(timer); }
 }
 
 // ---- helpers ---------------------------------------------------------------

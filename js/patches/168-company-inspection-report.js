@@ -284,11 +284,12 @@
     });
 
     const trip = loadTripState(coId);
-    const annad = (trip.notes || '').trim();
-    const athugasemdir = (trip.athugasemdir_skyrsla || '').trim() || 'Engar athugasemdir';
-    const skodunaradili = (trip.skodunaradili || '').trim() || SKODUNARADILI_SJALFGEFINN;
-    const undirritun = (trip.undirritun || '').trim();
-    const undirskrift = undirritun ? undirskriftarMynd(undirritun) : '';
+    let annad = (trip.notes || '').trim();
+    let athugasemdir = (trip.athugasemdir_skyrsla || '').trim() || 'Engar athugasemdir';
+    let skodunaradili = (trip.skodunaradili || '').trim() || SKODUNARADILI_SJALFGEFINN;
+    let undirritun = (trip.undirritun || '').trim();
+    // Er handskrifaður texti skoðunarmannsins á ÞESSARI vél? („Annað", athugasemdir, undirritun búa aðeins í localStorage.)
+    const _textiHer = !!(String(trip.notes || '').trim() || String(trip.athugasemdir_skyrsla || '').trim() || String(trip.undirritun || '').trim());
 
     const now = new Date();
     // 2026-06-02: Agnar asked for the inspection date in dd.mm.yyyy instead of
@@ -306,13 +307,43 @@
     const manudur = _vb0 ? MONTHS_IS[_vb0.month - 1] : ((vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()]);
     const arYear  = _vb0 ? _vb0.year : ((vd && vd.year) ? vd.year : now.getFullYear());
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
+    // 17.11.2026 (óháð rýni, galli 2 — regla eigandans: handskrifaður úttektartexti er ALDREI yfirskrifaður):
+    // „Annað", athugasemdir og undirritun búa í localStorage á vél skoðunarmannsins. Sé ný skýrsla gerð á ANNARRI vél (t.d.
+    // endurgerð eftir nýja kt, úr sendiglugganum) fengi hún „—", „Engar athugasemdir" og enga undirritun og leysti þá
+    // handskrifuðu af hólmi. Nú: textinn er geymdur MEÐ hverri nýrri skýrslu (viðhengið, `texti`) og tekinn þaðan þegar
+    // hann er ekki á vélinni. Eldri skýrslur (fyrir þessa breytingu) bera hann ekki → „óvíst": ný skýrsla vistast þá ALDREI
+    // sjálfkrafa, glugginn segir hvað tapast, og gamla skýrslan fylgir kröfunni áfram þar til notandinn velur.
+    let textiUppruni = _textiHer ? 'vel' : 'enginn', textiFyrri = null;
+    if (!_textiHer) {
+      const _fyrri = ((window.CompanyAttachments && CompanyAttachments.list ? CompanyAttachments.list(coId) : []) || [])
+        .filter(a => a && a.kind === 'skyrsla' && !a.leyst_af && String(a.year) === String(arYear) && !/brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String(a.name || '')))
+        .sort((a, b) => String((b && b.uploaded_at) || '').localeCompare(String((a && a.uploaded_at) || '')))[0] || null;
+      if (_fyrri && _fyrri.texti && typeof _fyrri.texti === 'object') {
+        const t = _fyrri.texti;
+        annad = String(t.annad || '').trim();
+        athugasemdir = String(t.athugasemdir || '').trim() || 'Engar athugasemdir';
+        if (String(t.skodunaradili || '').trim()) skodunaradili = String(t.skodunaradili).trim();
+        undirritun = String(t.undirritun || '').trim();
+        textiUppruni = 'fyrri'; textiFyrri = _fyrri.name || null;
+      } else if (_fyrri) {
+        textiUppruni = 'ovist'; textiFyrri = _fyrri.name || null;
+      }
+    }
+    // 19.11.2026 (Agnar: „má ekki senda skýrslurnar út án þess að sé merkt við,
+    // þá eru skýrslurnar ógildar"): öryggisnet fyrir þessa skýrslu óháð 165 —
+    // hafi hvorug leiðin hér að ofan (þessi vél eða fyrra viðhengi) skilað nafni,
+    // sjálfgefið á fyrsta nafn listans (Agnar Sigurðsson) svo skýrsla fari aldrei
+    // út undirritunarlaus.
+    if (!undirritun) undirritun = UNDIRRITENDUR[0] || 'Agnar Sigurðsson';
+    const undirskrift = undirritun ? undirskriftarMynd(undirritun) : '';
     // 29.10.2026: viðbótarskýrsla (488) bætir einni setningu um nýju tækin aftan við „Annað" — texti sem fyrir er stendur óbreyttur.
     const annadMed = (_vb0 && _vb0.annad && annad.indexOf(_vb0.annad) < 0) ? (annad ? annad + ' ' : '') + _vb0.annad : annad;
     // 2026-07-16: mánaðar-index (1-12) fyrir ReportFactsSync (patch 270).
     const _mi = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudur).toLowerCase());
     const monthIdx = _mi >= 0 ? _mi + 1 : now.getMonth() + 1;
 
-    const ctx = { co, counts, annad: annadMed, athugasemdir, skodunaradili, undirritun, undirskrift, monthPhrase, ar: arYear, monthIdx };
+    const ctx = { co, counts, annad: annadMed, athugasemdir, skodunaradili, undirritun, undirskrift, monthPhrase, ar: arYear, monthIdx,
+      textiUppruni, textiFyrri, texti: { annad: annadMed, athugasemdir, skodunaradili, undirritun } };
     const html = buildReportHtml(ctx);
     showModal(html, co, opts, ctx);
   }
@@ -462,6 +493,21 @@
     // (arsskodun_report_facts + uttaeki-samræming + arsskodun-blob) — áður las
     // facts-pípan bara Drive-PDF svo prófílar/listar héldu gömlum tölum.
     // Best-effort: má aldrei stöðva vistun (ALLTAF LEYFA VISTUN).
+    // 17.11.2026 (galli 2): borði efst í glugganum þegar handskrifaði textinn vantar (sjálfvirk vistun gerð óvirk).
+    function _cirTextiBordi() {
+      try {
+        if (dlg.querySelector('#_cir-texti-vidvorun')) return;
+        const d = document.createElement('div');
+        d.id = '_cir-texti-vidvorun';
+        d.style.cssText = 'margin:0 0 10px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:9px;font:13px/1.45 system-ui,sans-serif;color:#78350f';
+        d.innerHTML = '<b>⚠ Skýrslan var EKKI vistuð sjálfkrafa.</b> Handskrifaður texti skoðunarmannsins („Annað", athugasemdir, undirritun) ' +
+          'úr skýrslunni „' + esc(ctx.textiFyrri || 'fyrri skýrslan') + '" er ekki á þessari vél og ekki geymdur á þjóni — ný skýrsla yrði án hans. ' +
+          'Gamla skýrslan fylgir kröfunni áfram. Skrifaðu textann aftur (Kostnaðartaflan → úttektartexti / athugasemdir / undirritun) og opnaðu skýrsluna aftur, ' +
+          'eða ýttu á Vista til að vista hana samt án textans.';
+        const inn = dlg.firstElementChild || dlg;
+        inn.insertBefore(d, inn.firstChild);
+      } catch (_) {}
+    }
     function _rfSync() {
       try {
         if (window.ReportFactsSync && ReportFactsSync.sync) {
@@ -485,15 +531,34 @@
       // sjálfvirka vistunin sleppir því ekki þótt skýrsla ársins sé til, og eldri skýrsla ársins er fjarlægð eftir vistun
       // (eldri ÚTTEKTARSKÝRSLA ársins, búin til af appinu, er fjarlægð svo ekki sitji tvær hlið við hlið; handinnhlaðin skjöl eru látin í friði).
       const _vb = !!(window.CIR_VIDBOT && String(window.CIR_VIDBOT.coId) === String(co.id) && Date.now() < window.CIR_VIDBOT.until);
-      if (auto && !_vb) {
+      // 17.11.2026 (516 SkyrslaSolu.endurnyja): sala var leiðrétt/endurgerð/færð á aðra kt/fékk fleiri tæki — NÝ skýrsla er
+      // beðin um, svo sjálfvirka vistunin sleppir ekki þótt skýrsla ársins sé til (eins og viðbótin). Eldri er merkt leyst af hólmi.
+      const _ny = !!(window.CIR_NY && String(window.CIR_NY.coId) === String(co.id) && Date.now() < window.CIR_NY.until);
+      if (auto && !_vb && !_ny) {
         try {
           const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
-          if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar)) {
-            if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; }
+          // 17.11.2026 (tveir raunreikningar 16.–17.11): reikningur endurgerður á NÝJA kt, en
+          // „Búa til úttektarskýrslu" sagði strax „✓ Vistuð sem 2026" og GERÐI VISTUNARHNAPPINN ÓVIRKAN — gamla skýrslan
+          // (gamalt nafn, gömul kt) taldist skýrsla ársins, svo ný og rétt skýrsla varð ALDREI til. Nú telst aðeins skýrsla
+          // á SÖMU kennitölu og staðurinn ber (eða þar sem kt sést ekki) vera „þegar til". Og handvirki takkinn er ekki
+          // gerður óvirkur — athugasemdin hér að ofan lofaði því („Handvirki takkinn vistar samt"), kóðinn gerði það ekki.
+          const _ktCo = String(co.kennitala || '').replace(/[^0-9]/g, '');
+          const _ktN = a => { const m = /(\d{6})-(\d{4})/.exec(String((a && a.name) || '')); return m ? m[1] + m[2] : ''; };
+          const _samaKt = a => _ktCo.length !== 10 || !_ktN(a) || _ktN(a) === _ktCo;
+          if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar && _samaKt(a))) {
+            if (_cirSaveBtn) { _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; _cirSaveBtn.title = 'Skýrsla ársins er til — smelltu til að vista NÝJA (t.d. eftir breytingu)'; }
             _rfSync(); // skýrslan er þegar til — tölurnar samstillast samt (idempotent)
             return;
           }
         } catch (_) {}
+      }
+      // 17.11.2026 (óháð rýni, galli 2): handskrifaði textinn úr fyrri skýrslu er hvorki á þessari vél né geymdur á þjóni.
+      if (ctx && ctx.textiUppruni === 'ovist') {
+        if (auto) { _cirTextiBordi(); return; }   // ALDREI sjálfvirkt — gamla skýrslan fylgir áfram
+        const msg = 'Handskrifaður texti skoðunarmannsins („Annað", athugasemdir, undirritun) úr skýrslunni „' + (ctx.textiFyrri || 'fyrri skýrslan') +
+          '" er EKKI á þessari vél og ekki geymdur á þjóni.\n\nNý skýrsla verður án hans og leysir þá gömlu af hólmi (hún er ekki eytt, en fylgir ekki kröfu framar).\n\nVista samt?';
+        const ja = (window.Confirm && Confirm.show) ? await Confirm.show(msg, { okText: 'Vista samt', cancelText: 'Hætta við' }) : confirm(msg);
+        if (!ja) return;
       }
       const orig = _cirSaveBtn ? _cirSaveBtn.textContent : '';
       if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '⏳ Vista…'; }
@@ -517,7 +582,8 @@
         const _sub = co.id != null ? '#' + co.id : '';
         const fname = [n, _addr, ktDash, ar, _mIS, 'úttektarskýrsla', _sub].filter(Boolean).join(' - ') + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
-        const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
+        // 17.11.2026: textinn fylgir viðhenginu svo næsta skýrsla (hvaða vél sem er) geti tekið hann upp — sjá textiUppruni.
+        const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla', texti: (ctx && ctx.texti) || null });
         if (meta) {
           _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
           // ── 2026-07-29 (Agnar: „reyna láta skýrsluna haldast betur … og hún á
@@ -572,18 +638,32 @@
             console.warn('[uttektarskyrsla] customer_documents', e);
             try { if (window.logProblem) window.logProblem('uttektarskyrsla_docrow_failed', 'co ' + co.id + ' ár ' + ar + ': ' + String((e && e.message) || e)); } catch (_) {}
           }
-          // Viðbótarúttekt (488): eldri úttektarskýrsla ársins (sú sem appið bjó til) er fjarlægð EFTIR að skjalaröðin vísar á nýju
-          // skýrsluna — annars gæti hún bent á eydda skrá. Mistakist skjalaröðin er ekkert eytt og CIR_VIDBOT helst (Vista aftur).
+          // Viðbótarúttekt (488): eldri úttektarskýrsla ársins (sú sem appið bjó til) tekur ekki lengur þátt EFTIR að skjalaröðin
+          // vísar á nýju skýrsluna. Mistakist skjalaröðin er ekkert snert og CIR_VIDBOT helst (Vista aftur).
+          // 17.11.2026 (Agnar: „engu eytt"; sama leið og allar breytingar á sölu): eldri skýrslan er MERKT „leyst af hólmi"
+          // (111 supersede) í stað þess að vera eytt — hún fylgir aldrei kröfu framar (payday-push/166/_skyrsla-solu sía hana).
           if (_vb && _docRowOk) {
             try {
               const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
               const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
-                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
-              let eftir = 0;
-              for (const a of eldri) { if (!(await CompanyAttachments.delete(co.id, a))) eftir++; }
-              if (eftir && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eftir + ' eldri skýrsla ' + ar + ' fjarlægðist ekki');
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
+              const ok = eldri.length ? await CompanyAttachments.supersede(co.id, eldri.map(a => a.id), meta.name || fname) : true;
+              if (ok !== true && window.logProblem) window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + eldri.length + ' eldri skýrsla ' + ar + ' ómerkt (leyst af hólmi)');
             } catch (e) { try { window.logProblem && window.logProblem('vidbot_skyrsla_eldri_eftir', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
             finally { window.CIR_VIDBOT = null; }
+          } else if (!_vb && meta.id) {
+            // 17.11.2026 (skýrsla fylgir sölu): ný skýrsla tekur við — eldri úttektarskýrslur ársins sem appið bjó til á
+            // þessum stað eru MERKTAR „leyst af hólmi" (111 supersede), ekki eyddar. Þær fylgja þá aldrei kröfu framar.
+            try {
+              const annadKerfi = a => /brunakerfi|brunavi[ðd]v[öo]run|sl[öo]kkvikerfi/i.test(String((a && a.name) || ''));
+              const eldri = ((CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [])
+                .filter(a => a && a.kind === 'skyrsla' && !annadKerfi(a) && !a.leyst_af && String(a.year) === ar && a.id !== meta.id && new RegExp(' - úttektarskýrsla - #' + co.id + '\\.pdf$', 'i').test(String(a.name || '')));
+              if (eldri.length && CompanyAttachments.supersede) {
+                const ok = await CompanyAttachments.supersede(co.id, eldri.map(a => a.id), meta.name || fname);
+                if (ok !== true && window.logProblem) window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + eldri.length + ' eldri skýrsla ' + ar + ' ómerkt');
+              }
+            } catch (e) { try { window.logProblem && window.logProblem('skyrsla_leyst_af_brast', 'co ' + co.id + ': ' + String((e && e.message) || e).slice(0, 120)); } catch (_) {} }
+            finally { if (_ny) window.CIR_NY = null; }
           }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +

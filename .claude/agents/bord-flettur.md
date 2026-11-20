@@ -757,14 +757,23 @@ Tvö spjöld undir Vinnusamantekt á Þjónustuborði Agnars, bæði í patch-n�
 
 - **`506-radgjafinn.js`** (15.11.2026): Morgunráð Tony Stark — top 10 mál vikunnar, forgangsröðun
   dagsins og ráðleggingar ráðgjafans. Bakendi: `netlify/functions/_radgjafinn.cjs`. Skrifað af
-  scheduled task (kl. 06:45) eða „↻ Skrifa aftur". Vistað í `einkaritari_samantekt`. Spjaldið er
-  aðeins sýnilegt Agnari (staff-hlið).
+  Netlify-áætlunarfallinu `radgjafinn-morgun` (kl. 06:45) eða „↻ Skrifa aftur". Vistað í
+  `app_kv`, lykill `radgjafinn`. Spjaldið er aðeins sýnilegt Agnari (staff-hlið).
 - **`506-einkaritari.js`** (16.11.2026): Einkaritarinn — vikan í tölum (greitt, kröfur sendar, nýir
   í þjónustu), staða samninga (Heimaleiga, Center Hotels), áminningar og dagskrá. Mældar tölur úr
-  gagnagrunni; texti skrifaður af Claude úr staðreyndunum. Sama bakendi og vistun.
+  gagnagrunni; texti skrifaður af Claude úr staðreyndunum. Eigin bakendi, sama mynstur og Ráðgjafinn:
+  `einkaritari-cron.cjs` (kl. 06:45) ræsir `einkaritari-background.cjs`; staðreyndirnar í
+  `_einkaritari-stadreyndir.cjs`; lestur `einkaritari.cjs`.
+- **Vistun (leiðrétt 18.11.2026):** báðir í töflunni `app_kv`, ekki í sértöflu — taflan
+  `einkaritari_samantekt` er EKKI til. Einkaritarinn: lykill `einkaritari` (`{ nyjast, saga, sidasta_villa }`),
+  staðreyndirnar að baki í `einkaritari_gogn`, lás `einkaritari_las`. Ráðgjafinn: `radgjafinn`, `radgjafinn_gogn`,
+  `radgjafinn_las`. `app_kv` hefur RLS á og engar stefnur, svo vefslykillinn les ekkert; lesið gegnum `/api/einkaritari`
+  og `/api/radgjafinn` (hlið `_radgjafinn-hlid.cjs`).
 - **Staðsetning:** beint undir 489 (Vinnusamantekt) á Þjónustuborði. Tengd í `368-thjonustubord5.js`
   á línu ~5337. `<script>` tag í `index.html`.
-- **Prófun:** `?dry=1` á POST `/api/einkaritari` skilar forskoðun án vistunar.
+- **Prófun:** `/api/einkaritari` er aðeins GET (POST → 405). Skrif eru POST á
+  `/.netlify/functions/einkaritari-background`; `?dry=1` (eða `?prufa=1`) skrifar í `einkaritari_prufa` í stað
+  `einkaritari`, svo það er vistað, bara ekki ofan í morgunskrifin. Prufuna má lesa með GET `/api/einkaritari?prufa=1`.
 
 ## Tilbúin verk á Þjónustuborðinu — eining 30 (511, 16.11.2026)
 
@@ -830,3 +839,14 @@ verk, með þessum mun:
   skilaði engu felldi þá teikninguna. Lagað í cba87ebb: núll-athugunin er fyrsta lína fallsins.
 - Regla: teiknifall í einingu gerir aldrei ráð fyrir að valinn hlutur sé til. Prófaðu tóma ástandið (tóm sía,
   0 raðir, enginn valinn) áður en eining er birt.
+
+- **17.11.2026** — Lota 4 (17.11.2026): markmiðsrönd Ráðgjafans (_radgjafinn tekjur()) les tekjuregluna úr _tekjur.cjs — Brunahólf eftir útgáfudegi (ekki gjalddaga), kreditnóta á bakfærða sölu ekki talin; tómur lestur (t.d. RLS á invoices) er ÓMÆLDUR (null), aldrei 0. Tekjur í beinni (/api/tekjur-beint, 512-flísar á Tekjum/Bókhaldi) er aðeins fyrir stjórnanda (_starfshlid.stjornandi: 401/403). Breyttu tekjureglu á einum stað (_tekjur.cjs), ekki í borðunum. (netlify/functions/_radgjafinn.cjs, netlify/functions/_tekjur.cjs)
+- **17.11.2026** — Föll Brunahólfs krefjast nú innskráningar þar EÐA tíma-tóka (Powerplan lota 13; brunaholf/_vord.js). index.html hleður js/patches/514-bh-bru.js SAMSTILLT strax á eftir config.js: fetch á brunaholf.netlify.app/api fær ?_hubtoki= úr /api/bh-toki (innskráning appsins) og innfelldar Brunahólfs-síður fá tókann með postMessage. afgreidsla.cjs (og önnur þjónaföll sem kalla á BH) require('./_bh-toki.cjs') → x-hub-toki sjálfkrafa. GILDRA fyrir borðið: <a href>/<img> á föll Brunahólfs fá EKKI tóka — sæktu með fetch eða bhSlodMedToka(url). Hamur í app_kv hub_vord (skraning/lokad).
+
+- **17.11.2026** — 17.11.2026: Bílstjóri sem FLIPI í appi (219) les nú mælda neðri brún #_app-hdr (--bs-hdrh, sett í maelaNav við show/resize) í stað fasts top:50px — á S26 er hausinn 124 px og huldi titilinn. Í goPage (261) er AppPageZoom.endurmeta() kallað á eftir flipaljósinu svo iframe-síða birtist strax í eigin stærð. Bakk-lögin ósnert.
+
+- **17.11.2026** — 17.11.2026: Tilbúin verk fást nú líka sem símasíða (515-tilbuin-simi.js, #tilbuin-verk). Hún á ENGA eigin sendileið — teiknar úr BordAfgreidsla.S (511) og skráir sig með BordAfgreidsla.vakta(render); takkarnir bera data-baf og fara í sömu föll og eining 30 (framkvaema í tveimur smellum, sleppa, seinna, ath-vista, agiskun). 511.notify kallar nú á vaktarana eftir Bord368.render, og toast fellur á Toast.show þegar borðið er ekki til (síminn). Breytir þú 511 → keyrðu test/tilbuin-simi.test.cjs líka.
+
+- **17.11.2026** — 17.11.2026 (kóðarýni): Tilbúin verk (515) eru stjórnandans eins í öppunum — 261 ákveður við keyrslu úr rólu innskráðs notanda (window.__hubNotandiP, rola 'Admin') hvort flipinn sést og er fremstur; síðuvalið er sameiginlegt og er ekki snert. Starfsmaður opnar Þjónustuborðs-appið á borðinu eins og áður (sannreynt í vafra með báðum rólum).
+
+- **18.11.2026** — Regluhamir á Þjónustuborðinu (368): sérsniðinn hamur í `thjonustubord5.hamir` má bera `regla` = { merki: [nákvæm merki, t.d. `ham:hmbhthj01`], forskeyti: [merki sem byrja svona, t.d. `bh:`], kunni: [nafn kúnnans byrjar svona], titill: [orð í titli], samthykki: true (sýna líka það sem bíður svars eigandans), lysing: texti í „Breyta ham“ }. `reglaTekur()` í `iHamGrunnur` metur hana við teikningu — EKKERT er skrifað á málin. Reglan er ekki í ritlinum: `M(id)` les hana og `ham-vista` ber hana óbreytta áfram (annars hyrfi hún við „Breyta ham“). Fyrsti slíki hamurinn er „Brunahólf“ (id `hmbrunaholf1`, eigandi Agnar; ósk hans 18.11: „sér Ham … bara á Agnari sem er bara fyrir verkefnin í Brunahólf“). Hamir með `eigandi` standa nú næst á eftir „mitt vinnuborð“ í `hamaListi()` — stikan skrunar og sérsniðnir hamir aftast voru utan skjás (mælt: „BH · Þjónustubeiðnir“ sást ekki hjá Agnari). `hamirHtml` og hamavalið í „+ Nýtt mál“ sía nú líka á `hamSest`, svo hamur annars starfsmanns sést hvergi. PÓSTHÓLFIÐ: `regla.felag` (`brunaholf`) tekur mál sem bárust í pósthólf félagsins. Anon les ekki `email_digest.account` fyrir Brunahólfs-póst (RLS), svo borðið les sýnina `v_thjb_felag` (id + felag, `sql/2026-11-18_v_thjb_felag.sql`) í `load()` og geymir í `S.felag`; sýnin les viljandi fram hjá RLS og Agnar samþykkti hana sérstaklega 18.11.2026. Bregðist sóknin stendur síðasta svar og reglan fellur á merki, kúnna og titil.

@@ -435,7 +435,9 @@
       if (/Hreyfingar/i.test(lt) && r) {
         var rows = Array.prototype.slice.call(r.children);
         var last = rows[rows.length - 1];
-        dalkur('v').appendChild(kafli('Hreyfingar', [el('span', 'b403-pill', (rows.length - 1) + ' reikningar'), el('span', 'b403-lina'), el('span', 'b403-hint', last ? txt(last.lastElementChild) : '')]));
+        // 17.11.2026 (517): kreditfærður reikningur (yfirstrikaður) telst ekki með — summan neðst sleppir honum líka (199)
+        var nGild = rows.slice(0, -1).filter(function (rw) { return !rw.querySelector('.kredit'); }).length;
+        dalkur('v').appendChild(kafli('Hreyfingar', [el('span', 'b403-pill', nGild + ' reikningar'), el('span', 'b403-lina'), el('span', 'b403-hint', last ? txt(last.lastElementChild) : '')]));
         var hreyf = el('div', 'b403-hreyf');
         rows.slice(0, -1).forEach(function (rw) {
           rw.classList.add('b403-skjal-lina', 'hreyf');

@@ -61,9 +61,11 @@
     const d = CM && CM.data ? CM.data(fid) : null;
     const st = (CM && CM.status ? CM.status(fid) : null) || 'none';
     const f = flags(fid);
-    return { d, st, imp: !!f.mail_important, off: !!f.mail_off };
+    // 513 VIP-vakt (17.11.2026): fyrirtaeki.vip — ósvaraður póstur frá félaginu fer efst á Þjónustuborðið með klukku.
+    let vip = null; try { vip = window.VipVakt && VipVakt.coHladid() ? VipVakt.erVipCo(fid) : undefined; } catch (_) { vip = undefined; }
+    return { d, st, imp: !!f.mail_important, off: !!f.mail_off, vip };
   }
-  const sigOf = (s) => [s.st, s.d ? (s.d.received_at || '') : '', s.d && s.d.signals ? s.d.signals.length : 0, s.imp ? 1 : 0, s.off ? 1 : 0].join('|');
+  const sigOf = (s) => [s.st, s.d ? (s.d.received_at || '') : '', s.d && s.d.signals ? s.d.signals.length : 0, s.imp ? 1 : 0, s.off ? 1 : 0, s.vip === undefined ? '?' : s.vip ? 'v' + s.vip.vip_svartimi_min : 0].join('|');
 
   function stripHtml(fid, s) {
     const sigs = (s.d && Array.isArray(s.d.signals) ? s.d.signals : []).slice(0, 4);
@@ -72,6 +74,7 @@
         (s.off && s.st !== 'red' ? ' <span style="font-weight:400;color:#94a3b8">(ósvarað-merki slökkt)</span>' : '') + '</span>' +
       sigs.map(g => '<span class="_smx-sig" title="' + esc((g.subject || '') + (g.received_at ? ' · ' + fmtD(g.received_at) : '')) + '">' + esc(SIG[g.type] || g.type) + (g.received_at ? ' · ' + esc(monYr(g.received_at)) : '') + '</span>').join('') +
       '<span style="flex:1"></span>' +
+      (s.vip === undefined ? '' : '<button type="button" class="_smx-vip" style="' + PILL + ';border:1px solid ' + (s.vip ? '#c0392b' : '#e2e8f0') + ';background:' + (s.vip ? '#fdecea' : '#f8fafc') + ';color:' + (s.vip ? '#7a1f14' : '#334155') + '" title="VIP-vakt: ósvaraður póstur frá félaginu efst á Þjónustuborðinu með klukku">' + (s.vip ? '⚡ VIP · svar innan ' + (s.vip.vip_svartimi_min || 60) + ' mín. · afmerkja' : '⚡ Setja á VIP-vakt') + '</button>') +
       '<button type="button" class="_smx-imp" style="' + PILL + ';border:1px solid ' + (s.imp ? '#fde68a' : '#e2e8f0') + ';background:' + (s.imp ? '#fef3c7' : '#f8fafc') + ';color:#334155">' + (s.imp ? '⭐ Mikilvægt · afmerkja' : '☆ Merkja mikilvægt') + '</button>' +
       (s.st === 'red' ? '<button type="button" class="_smx-mute" style="' + PILL + ';border:1px solid #e2e8f0;background:#f8fafc;color:#334155" title="Slökkva rauða ósvarað-merkið á þessum kúnna">🔕 Slökkva ósvarað</button>' : '');
   }
@@ -131,6 +134,16 @@
       const ok = window.CompanyMail && CompanyMail.setImportant ? await CompanyMail.setImportant(fid, !s.imp) : false;
       if (window.Toast && Toast.show) Toast.show(ok ? (!s.imp ? '⭐ Merkt mikilvægt' : '☆ Afmerkt') : '⚠ Vistun mistókst');
       try { CompanyMail.onListRender(); } catch (_) {}
+      strip.dataset.sig = ''; inject(card, fid);
+    });
+    const vipB = strip.querySelector('._smx-vip');
+    if (vipB) vipB.addEventListener('click', async e => {
+      e.stopPropagation();
+      // Afmerking spyr fyrst (félagið hverfur af vaktinni); merking ekki — hún er afturkræf með sama takka.
+      if (s.vip && !window.confirm('Taka félagið af VIP-vaktinni? Póstur frá því hættir að birtast efst á Þjónustuborðinu.')) return;
+      vipB.disabled = true;
+      const ok = window.VipVakt && VipVakt.setjaCo ? await VipVakt.setjaCo(fid, !s.vip) : false;
+      if (window.Toast && Toast.show) Toast.show(ok ? (!s.vip ? '⚡ Komið á VIP-vakt' : 'Tekið af VIP-vakt') : '⚠ Vistun mistókst');
       strip.dataset.sig = ''; inject(card, fid);
     });
     const mute = strip.querySelector('._smx-mute');

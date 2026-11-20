@@ -68,6 +68,8 @@ Nýi prófíllinn er FRAMSETNING ofan á þann gamla — `js/patches/500-profill
    | lög, samningar, fyrning | `logfraedingur` |
 3. **Skrá:** áður en lotu lýkur, ein færsla per staðreynd í `charlize_knowledge` (scope `kunni`, kennitala með
    bandstriki, customer_base_id/fyrirtaeki_id ef þekkt). Óstaðfest fer í `charlize_inbox`.
+   Skipunin (16.11.2026): `node tools/minni.cjs --skra "…" --topic <efni> --scope kunni --kt <kt> [--fid <id>]` — hún
+   setur bandstrikið, neitar kennitölu einstaklings; símanúmer og netföng tengiliða mega standa (Agnar 16.11.2026). Leitaðu fyrst: `--ferskt --leit "<nafn>"`.
    **Lota sem snerti kt og skrifaði 0 kunni-færslur er ólokið minni** — það mælir `charlize_sessions`.
 
 ## Skilaform

@@ -5399,7 +5399,28 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
     if (!prefill.hint && window.NyskraningVorn && typeof NyskraningVorn.festaKtNote === 'function') {
       try { NyskraningVorn.festaKtNote(bg.querySelector('input[data-f="kennitala"]'), { onSkoda: () => bg.querySelector('._ars-new-save').click() }); } catch (_) {}
     }
-    bg.querySelector('._ars-new-save').addEventListener('click', async () => {
+    // 17.11.2026 (álagspróf lotu 6, „klaufskur starfsmaður"): þrír smellir á Vista hér settu inn ÞRJÚ eins fyrirtæki
+    // (smellifallið er async og bíður eftir 490 + staðarnúmeri áður en það setur inn — engin læsing, engin einkvæmniskorða
+    // á fyrirtaeki). Og röng vartala á kennitölu fór í gegn (patch 17 ver aðeins „+ Nýtt fyrirtæki"-formið). Nú: ein
+    // vistun í einu, hnappurinn óvirkur á meðan, og sama vartöluregla og 17.
+    const ktGild = (raw) => {
+      const s = String(raw || '').replace(/\D/g, '');
+      if (s.length !== 10) return false;
+      const w = [3, 2, 7, 6, 5, 4, 3, 2];
+      let sum = 0;
+      for (let i = 0; i < 8; i++) sum += +s[i] * w[i];
+      let c = 11 - (sum % 11);
+      if (c === 11) c = 0;
+      return c !== 10 && c === +s[8];
+    };
+    const vistaHnappur = bg.querySelector('._ars-new-save');
+    let vistarUpptekid = false;
+    vistaHnappur.addEventListener('click', async () => {
+      if (vistarUpptekid) return;
+      vistarUpptekid = true; vistaHnappur.disabled = true;
+      try { await vistaNytt(); } finally { vistarUpptekid = false; if (bg.isConnected) vistaHnappur.disabled = false; }
+    });
+    const vistaNytt = async () => {
       const errEl = bg.querySelector('._ars-new-err');
       errEl.style.display = 'none';
       const data = {};
@@ -5409,6 +5430,11 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
       });
       if (!data.nafn) {
         errEl.textContent = 'Nafn er nauðsynlegt.';
+        errEl.style.display = 'block';
+        return;
+      }
+      if (data.kennitala && !ktGild(data.kennitala)) {
+        errEl.textContent = 'Ógild kennitala — vartalan stemmir ekki. Athugaðu töluna, eða skildu reitinn eftir auðan.';
         errEl.style.display = 'block';
         return;
       }
@@ -5498,7 +5524,7 @@ V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:var(--ars-yr-empt
           openDetail(nyId);
         }, 100);
       }
-    });
+    };
     document.body.appendChild(bg);
   }
 

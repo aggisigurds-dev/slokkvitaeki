@@ -73,6 +73,7 @@ node tools/minni.cjs solur              # bara það efni
 node tools/minni.cjs --leit "payday krafa"   # leit þvert á öll efnin (yfir 200) — þegar þú veist ekki hvað efnið heitir
 node tools/minni.cjs --ferskt           # beint úr Supabase
 node tools/minni.cjs --skra "<staðreynd>" --topic <efni>
+node tools/minni.cjs --skra "<staðreynd um EITT félag>" --topic taeki --scope kunni --kt <kt>   # kúnnaminni (aldrei í git)
 node tools/minni.cjs --uppfaera         # endurskrifa docs/MINNISBOK.md + committa
 ```
 
@@ -262,7 +263,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Viðskiptavini, kennitölur, DB-skema, sameiningu, kerfis-kort, póst-merki | `kunnaskra` |
 | **Spurt um eitt félag** („hvað vitum við um X", staða, heimilisfang, tæki, skýrsla) — lesa FYRST `fyrirtaeki.review_note`: línan „Sannreynt <dags> (<keyrsla>): …" ber úrskurð yfirferðarinnar (168 raðir „Eftir 2026", 11.11.2026). Ekki mæla aftur nema Agnar biðji eða ný skýrsla/reikningur hafi bæst við | `docs/FACTCHECK-EFTIR-2026.md` + skill `sannreyna-fyrirtaeki` |
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
-| **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn `?prof=2` (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
+| **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn, sjálfgefinn síðan 19.11.2026; `?prof=1` = gamli (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
 | AI-aðstoðarmanninn (Customer brief, watchlist, Aðstoðarmiðstöð) | `adstod` |
 | Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun — hönnuðurinn 🃏 | `joker` |
@@ -633,3 +634,56 @@ Never read `index.html`, large `js/patches/*`, `js/pos.js`, `dist/`, or `graphif
 Start with `git fetch origin && git status -sb`. Never run `node deploy.js`. Run `node tools/audit-all.cjs` before every push. Read `docs/ORYGGISNET.md` first; route guarded paths (invoice OUT `10`/`233`/`254`, kennitala `121`/`pos.js`, `payday-push`, readiness `153`/`187`) through `netvordur`.
 
 The 4-machine deploy rule still holds: pull the default branch first, push to deploy. Cursor Cloud is another machine. Same rule.
+
+## Innskráning lotunnar — notaðu aðganginn „Lota (Claude)“, uid 10 (18.11.2026)
+
+**Þetta er standandi heimild frá Agnari og þú þarft ekki að spyrja hann aftur.** Hans orð 18.11.2026:
+„já ég vill að claude geti unnið við kerfið sem það er að byggja … annars er þetta bara blind bygging
+og bara 100 % líkur á mistökum og tjóni.“ Og 17.11: „ef ég er að vinna gegnum símann, þá kemst ég
+ekkert inn á browserinn hjá sessions.“ **Biddu hann ALDREI að skrá sig inn í vafra lotunnar.**
+
+Hver Claude-lota hefur sinn eigin vafra og sínar eigin kökur, svo lotan skráir sig inn SJÁLF.
+Til þess er sérstakur aðgangur: **uid 10, „Lota (Claude)“, hlutverk Admin** (Agnar hækkaði hann
+18.11.2026 svo lotur kæmust líka í borðsins eigin föll) — ekki manneskja, ekki Agnar, og hann má
+slökkva hvenær sem er með `update hub_adgangar set virkur=false where id=10`.
+
+```sql
+select kaka, notandi, rola, rennur_ut from innri.lotu_koku(10, 2);   -- uid 10 = Lota (Claude), 2 klst.
+```
+
+**ALDREI mynta uid 1.** Það er Agnar sjálfur: lota sem ber þá köku kemur fram sem hann, aðgerðir
+skrást á hans nafn og hún fær Admin-réttindi sem hún á ekki að hafa. Notaðu uid 10.
+Veldu stuttan gildistíma (1–2 klst.), ekki 12.
+
+**Sama kaka gildir á BÁÐUM vefjum** (slokkvitaeki og brunaholf staðfesta hana bæði gegn
+`hub_adgangar_stilling.session_secret`).
+
+Í vafra lotunnar: opnaðu fyrst slóð á réttu léni (t.d. `/innskraning.html`), settu svo kökuna og
+endurhlaðið:
+
+```js
+document.cookie = 'hub_user=<kaka>; path=/; max-age=7200; samesite=lax';
+location.replace('/');
+```
+
+Úr skel eða `fetch`: hausinn `Cookie: hub_user=<kaka>`.
+
+**ALDREI:** skrifa kökuna eða `session_secret` í skrá, commit, annál, skjáskot eða svar til Agnars.
+Myntaðu nýja þegar þarf í stað þess að geyma hana. Skemað `innri` er ekki opið PostgREST, svo fallið
+næst hvorki með publishable-lykli né RPC.
+
+**Mælt 18.11.2026 kl. 09:30 með uid-10 kökunni** (án kökunnar → með henni):
+
+| Slóð | Niðurstaða |
+|---|---|
+| BH `/api/odin` | 401 → **200** |
+| SL `/api/bh-toki` | 401 → **200** |
+| SL og BH síður (`/`, `/afgreidsla.html`) | 200 → 200 (síðurnar sjálfar eru opnar; hliðin eru í API-unum) |
+| SL `/api/afgreidsla`, SL `/api/tekjur-beint` | 401 → **200** (Admin-föll, opnast eftir hækkunina) |
+
+**Admin fylgir ábyrgð, ekki nýtt leyfi.** Aðgangurinn er til þess að lotan geti SÉÐ og PRÓFAÐ það sem
+hún smíðar. Allar venjulegu reglurnar standa óbreyttar og Admin-kakan víkur þeim ekki til hliðar:
+ekkert fer út úr húsi (póstur, SMS, krafa, reikningur, kredit, Payday-sending, hlekkur til kúnna),
+engu er eytt, engin fyrirtæki sameinuð, engri kennitölu né verði breytt, og borð annarra starfsmanna
+eru ósnert. Allt slíkt endar sem drög eða tilbúið verk sem Agnar ýtir á — nákvæmlega eins og áður.
+Aðgerðir skrást á „Lota (Claude)“, svo þær eru rekjanlegar og aðskildar frá Agnari sjálfum.

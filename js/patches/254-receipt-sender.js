@@ -120,8 +120,8 @@
 
   // ── Staðlaður texti (má breyta í ritlinum áður en sent er) ────────────────
   function standardText(kind, opts) {
-    const nafn = (opts && opts.nafn) || '';
-    const hi = 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',';
+    // Ávarpið er alltaf „Góðan daginn," (Agnar 20.11.2026: „Sæl(l)" var ekki flott). `opts.nafn` er ekki lengur notað í ávarpið.
+    const hi = 'Góðan daginn,';
     const sign = '\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
     if (kind === 'skyrsla') {
       return hi + '\n\n' +
@@ -432,10 +432,28 @@
     const sale = r.data;
     const rnum = String(sale.num || '');
     const coId = sale.customer_id;
+    // 17.11.2026 (517 — reiknings-PDF ræðst af SÖLUNNI): kreditfærður reikningur fer ALDREI í póst sem reikningur, og vistað
+    // afrit er aðeins notað ef það stemmir við söluna (nákvæmt R-númer og kt, ekki leyst af hólmi). Annars er PDF-ið
+    // teiknað úr sölunni sjálfri. Áður: fyrsta viðhengi sem bar R-númerið í nafninu, óháð kt og kreditfærslu.
+    const RS = window.ReikningurSolu || null;
+    if (RS && rnum) {
+      const km = await RS.saekjaKredit(sb, [rnum]).catch(() => ({}));
+      if (km && km[rnum]) {
+        try { if (window.Toast && Toast.show) Toast.show('⚠ ' + rnum + ' var kreditfærður með ' + km[rnum] + ' — PDF-ið fylgir ekki.'); } catch (_) {}
+        return null;
+      }
+    }
     if (coId && rnum && window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.getPublicUrl) {
       try {
         const have = CompanyAttachments.list(coId) || [];
-        const saved = have.find(a => a && a.kind === 'reikningur' && a.name && a.name.indexOf(rnum) >= 0);
+        let saved = null;
+        if (RS) {
+          const d = await sb.from('customer_documents').select('id,invoice_number,storage_path,amount,is_duplicate,doc_type').eq('invoice_number', rnum).then((x) => (x && x.data) || [], () => []);
+          const v = RS.velja(sale, have, d);
+          saved = (v && v.uppruni === 'vidhengi' && RS.bera(sale, v, {}).stemmir) ? v : null;   // kt/R-númer stemma; upphæð ein víkur → afritið gildir (sendur reikningur)
+        } else {
+          saved = have.find(a => a && a.kind === 'reikningur' && a.name && a.name.indexOf(rnum) >= 0);
+        }
         if (saved && saved.path) {
           const url = await CompanyAttachments.getPublicUrl(saved.path);
           if (url) {

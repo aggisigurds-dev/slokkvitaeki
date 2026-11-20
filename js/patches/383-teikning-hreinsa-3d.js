@@ -4130,7 +4130,10 @@
       try {
         const FP = FPx(), cid = FP && FP.companyId;
         if (!cid || !modalSynnilegt() || G.rodKomin !== cid || !window.DB || !DB.sb) { console.info('[383] sjálfvistun sleppt (' + (astaeda || '') + '): röð þjónsins ekki komin eða glugginn lokaður'); return; }
-        const r = await DB.sb.from('teikning_bord').select('haedir').eq('company_id', cid).limit(1);
+        // 18.11.2026: les updated_at líka og skrifar aðeins sé röðin óbreytt síðan (sama vörn og 474) — áður gat skrif annarrar
+        // vélar á þessum ~100 ms milli lesturs og skrifa horfið. Önnur vél á milli → lesið aftur og reynt einu sinni enn.
+       for (let reyna = 0; reyna < 2; reyna++) {
+        const r = await DB.sb.from('teikning_bord').select('haedir,updated_at').eq('company_id', cid).limit(1);
         if (r.error || !r.data || !r.data.length || !Array.isArray(r.data[0].haedir) || !r.data[0].haedir.length) return;
         const minar = {}; haedir().forEach(h => { if (h && h.id) minar[h.id] = h; });
         let breytt = 0;
@@ -4146,11 +4149,14 @@
         });
         if (!breytt) return;
         const uppf = new Date().toISOString();
-        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: uppf }).eq('company_id', cid).select('company_id');
-        if (u.error || !u.data || !u.data.length) throw new Error((u.error && u.error.message) || 'ekkert skrifað');
+        const u = await DB.sb.from('teikning_bord').update({ haedir: nyjar, updated_at: uppf }).eq('company_id', cid).eq('updated_at', r.data[0].updated_at).select('company_id');
+        if (u.error) throw new Error(u.error.message || 'ekkert skrifað');
+        if (!u.data || !u.data.length) { if (reyna) throw new Error('röðinni var breytt á meðan, tvisvar'); continue; }
         // 375 þarf að vita að ÞESSI vafri skrifaði röðina — annars teldi næsta merkjavistun að önnur vél hefði gert það.
         try { if (window.TeiknVistun && TeiknVistun.sja) TeiknVistun.sja(cid, uppf, nyjar); } catch (_) {}
         segja('✓ Vistað' + (astaeda ? ' — ' + astaeda : ''));
+        return;
+       }
       } catch (e) { console.warn('[383] sjálfvistun', e); }
     }, 1200);
   }
@@ -4903,15 +4909,33 @@
   // með 1,15 / 0,87 sama hve lítill hann var — snertiflötur sendir tugi atburða í einni sveiflu (25 litlir = 1200 %,
   // mælt á lifandi síðu) og tveggja fingra renna, sem á að FÆRA, þysjaði. Nú: músarhjól (heil skref) = eitt þysjunarskref;
   // ctrl+hjól (klípa á snertifleti) þysjar í hlutfalli við hreyfinguna; öll önnur renna færir teikninguna.
-  // Sama regla í 445 (vinnumyndin).
+  // Sama regla í 445 (vinnumyndin) — hún kallar á window.TeiknHjolAdgerd.
+  //
+  // 19.11.2026 (Agnar: „Geturðu látið scrollhjólið á músinni zooma inn á teikningar"): hjólið FÆRÐI teikninguna á mörgum
+  // músum. Músarhjól taldist aðeins „heilt skref" ef wheelDeltaY var margfeldi af 120 OG hreyfingin ≥ 50 dílar — það
+  // bregst á fínskrefa-hjólum (Logitech MX o.fl. með mjúku skruni: wheelDeltaY 15/30/60), við mikla skjástækkun í Windows
+  // og þegar Windows skrunar 1 línu (deltaY 33). Nú:
+  //   · heilt hjólaskref (deltaMode línur/síður, eða wheelDeltaY margfeldi af 120 — óháð stærð deltaY) = eitt skref;
+  //   · ctrl+hjól (klípa á snertifleti) þysjar í hlutfalli við hreyfinguna, eins og áður;
+  //   · LÁRÉTT hreyfing (deltaX) markar hreyfinguna sem snertiflöt/hliðarskrun — hún og allt sem fylgir henni án hlés
+  //     (< 250 ms) FÆRIR teikninguna;
+  //   · annað lóðrétt skrun (fínskrefa-hjól, lóðrétt renna) þysjar MJÚKT í hlutfalli við hreyfinguna, svo tugir smáatburða
+  //     verða ekki að 1200 % eins og 21.10 (hver atburður: e^(−dy·0,0015), mest ×1,18 / ×0,85).
+  const HJOL = { t: 0, snerti: false };
   function hjolAdgerd(e) {
     const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1, dx = e.deltaX * k, dy = e.deltaY * k;
     const wd = typeof e.wheelDeltaY === 'number' ? e.wheelDeltaY : null;
-    const skref = e.deltaMode !== 0 || (dx === 0 && Math.abs(dy) >= 50 && (wd === null ? Number.isInteger(dy) : wd !== 0 && Math.abs(wd) % 120 === 0));
-    if (skref) return { f: dy < 0 ? 1.15 : 0.87 };
+    const nu = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (nu - HJOL.t > 250) HJOL.snerti = false;
+    HJOL.t = nu;
     if (e.ctrlKey) return { f: Math.min(1.25, Math.max(0.8, Math.exp(-dy * 0.01))) };
-    return { dx: -dx, dy: -dy };
+    const tikk = dx === 0 && dy !== 0 && (e.deltaMode !== 0 || (wd !== null && wd !== 0 && Math.abs(wd) % 120 === 0));
+    if (tikk) return { f: dy < 0 ? 1.15 : 0.87 };
+    if (Math.abs(dx) > 0.5) HJOL.snerti = true;
+    if (HJOL.snerti || dy === 0) return { dx: -dx, dy: -dy };
+    return { f: Math.min(1.18, Math.max(0.85, Math.exp(-dy * 0.0015))) };
   }
+  window.TeiknHjolAdgerd = hjolAdgerd;
   function zFaera(dx, dy) {
     const zk = zKv(fpEl('fp-main'));
     Z.x += dx / zk; Z.y += dy / zk; Z.sjalf = false; zBeita();
@@ -6228,10 +6252,12 @@
     tillaga.sort((a, b) => fahRod(a.k) - fahRod(b.k));
     const hs = haedir();
     tillaga.forEach(t => {
-      t.til = hs.some(h => h && ((h.nafn && fahLykill(h.nafn) === t.k) || (h.image_url && fahUrl(h.image_url) === fahUrl(t.image_url) && (!t.skurdur || !h.skurdur || skorunSkurda(h.skurdur, t.skurdur) > 0.6))));
+      t.til = hs.some(h => h && ((h.nafn && fahLykill(h.nafn) === t.k && !fahTom(h)) || (h.image_url && fahUrl(h.image_url) === fahUrl(t.image_url) && (!t.skurdur || !h.skurdur || skorunSkurda(h.skurdur, t.skurdur) > 0.6))));
     });
     return { tillaga, snid: snid.map(x => ({ image_url: '/.netlify/functions/teikn-mynd?url=' + encodeURIComponent(x.d.infoUrl), lysing: x.d.lysing || '', dags: x.d.dags || '', snid: !!x.f.snid, utlit: !!x.f.utlit })), grunnBlod: grunn.length };
   }
+  // 18.11.2026 (Álhella 7): tóm hæð (engin mynd, engin merki) er ekki „til" — „Finna allt húsið" fyllir hana í stað þess að sleppa henni.
+  const fahTom = h => !!h && !h.image_url && !(h.markers || []).length;
   function fahBeita(tl, valdar) {
     const hs = haedir(), nyjar = [];
     const virkId = virkHaed() && virkHaed().id;
@@ -6242,7 +6268,9 @@
       const h = { id: nyttId(), nafn: t.nafn, image_url: t.image_url, markers: [], skurdur: t.skurdur ? { x: t.skurdur.x, y: t.skurdur.y, w: t.skurdur.w, h: t.skurdur.h } : null, veggir: [], pdfVeggir: [], uppruni: { af: 'finna-allt-husid', leid: t.leid, blad: t.blad.lysing, dags: t.blad.dags } };
       if (h.skurdur) h.sjalf = true;
       if (snidBlod.length) h.snidBlod = snidBlod;
-      hs.push(h); nyjar.push(h); nyHer(h.id);
+      const tom = hs.findIndex(q => fahTom(q) && q.nafn && fahLykill(q.nafn) === t.k);
+      if (tom >= 0) hs.splice(tom, 1, h); else hs.push(h);
+      nyjar.push(h); nyHer(h.id);
     });
     if (!nyjar.length) return 0;
     // röð: Kjallari, 1., 2. … Ris — stöðug (hæðir með óþekkt heiti halda sínum stað innbyrðis)

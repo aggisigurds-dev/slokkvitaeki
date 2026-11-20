@@ -308,6 +308,7 @@
             <div class="by-sub" style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:2px">Yfirlit yfir allar sölur með VSK-sundurliðun og útflutningi til CSV fyrir bókhald og skattaskil</div>
           </div>
 
+          <div id="tekjur-beint-bokhald"></div>
           <div class="by-summary" id="by-summary"></div>
 
           <div class="by-filters">
@@ -673,8 +674,12 @@
     for (const s of real) {
       customers.add(s.customer_id || s.customer || '');
     }
-    cards.push({ lbl: 'Heildarsala', val: fmtKr(totalSamtals), cls: 'accent', sub: real.length + (real.length === 1 ? ' sala' : ' sölur') });
-    cards.push({ lbl: 'Án VSK', val: fmtKr(totalEx) });
+    // 17.11.2026 (lota 4, kóðarýni): Bókhald reiknar EFTIR SINNI REGLU (allar færslur hleðslunnar/tímabilsins, m. VSK,
+    // kreditnótur meðtaldar — líka á bakfærðar sölur, faldar úti) og sýnir því aðra tölu en Tekjur í beinni fyrir ofan
+    // (tekjuregla _tekjur.cjs). Reglunni er EKKI breytt hér — spjöldin segja hvað talan er.
+    const nyjust400 = _loadedMode === 'recent' && !getRangeFromInputs().from && !getRangeFromInputs().to;
+    cards.push({ lbl: 'Heildarsala m. VSK', val: fmtKr(totalSamtals), cls: 'accent', sub: real.length + (real.length === 1 ? ' færsla' : ' færslur') + (nyjust400 ? ' · nýjustu 400, ekki tímabil' : ' · valið tímabil') + ' · bókhaldsyfirlit' });
+    cards.push({ lbl: 'Án VSK', val: fmtKr(totalEx), sub: 'sömu færslur · kredit meðtalið, líka á bakfært · ekki tekjuregla flísanna' });
     // VSK by rate
     const sortedRates = [...byRate.keys()].sort((a,b) => b - a);
     for (const rate of sortedRates) {
@@ -685,7 +690,7 @@
     // Drafts card — only when drög are currently shown.
     if (drafts.length) {
       const draftSum = drafts.reduce((a, s) => a + (s.total || 0), 0);
-      cards.push({ lbl: '📝 Drög', val: fmtKr(draftSum), cls: 'warn', sub: drafts.length + (drafts.length === 1 ? ' óklárað' : ' ókláruð') + ' · ekki í tekjum' });
+      cards.push({ lbl: '📝 Drög', val: fmtKr(draftSum), cls: 'warn', sub: drafts.length + (drafts.length === 1 ? ' óklárað' : ' ókláruð') + ' · m. VSK' + (nyjust400 ? ' · af nýjustu 400' : '') + ' · ekki í tekjum' });
     }
     // 3D metallic stat cards (matches Hreyfingarlisti / Kröfu yfirlit).
     const CS = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
@@ -1030,6 +1035,9 @@
   async function init() {
     if (initialized) return;
     initialized = true;
+    // 512: Tekjur í beinni efst (lota 4, 17.11.2026) — strax, áður en sölurnar hlaðast; samtölurnar hér fyrir neðan
+    // fylgja völdu tímabili, flísarnar ekki.
+    try { if (window.TekjurBeint) window.TekjurBeint.mount(document.getElementById('tekjur-beint-bokhald')); } catch (_) {}
     try {
       await loadAllSales();
     } catch (e) {

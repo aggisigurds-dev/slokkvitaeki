@@ -442,3 +442,63 @@ ALTER TABLE fyrirtaeki     ADD COLUMN IF NOT EXISTS afslattur_pct NUMERIC DEFAUL
 -- ============================================================
 -- Done! All tables and columns are now ready.
 -- ============================================================
+
+-- ── 18.11.2026 — vinnusamantekt_saga: dagleg saga mælinganna í Vinnusamantekt (489) ───────────────────────────
+-- Agnar: „hafa líka þarna í kössunum nýtt í dag hvort talan fer upp eða niður“. Ein röð á mælingu á dag: fyrst_gildi
+-- er fyrsta mæling dagsins, gildi sú nýjasta. Upphæðir eru geymdar í KRÓNUM. Aðeins þjónustuhlutverk les og skrifar
+-- (fallið netlify/functions/vinnusamantekt-saga.cjs, sem krefst stjórnanda). Þegar keyrt í grunninum 18.11.2026.
+create table if not exists public.vinnusamantekt_saga (
+  dags        date        not null,
+  maeling     text        not null check (maeling ~ '^[a-z0-9_:-]{1,60}$'),
+  gildi       numeric     not null,
+  tala        text        check (tala is null or length(tala) <= 80),
+  sev         text        check (sev is null or sev in ('alv','athuga','ok','upp','oma')),
+  fyrst_gildi numeric     not null,
+  fyrst_at    timestamptz not null default now(),
+  at          timestamptz not null default now(),
+  primary key (dags, maeling)
+);
+alter table public.vinnusamantekt_saga enable row level security;   -- engar reglur, viljandi
+
+create or replace function public.vs_saga_skra(p_dags date, p_maelingar jsonb)
+returns integer language plpgsql security invoker set search_path = public as $$
+declare n integer;
+begin
+  insert into public.vinnusamantekt_saga (dags, maeling, gildi, tala, sev, fyrst_gildi)
+  select p_dags, x->>'id', (x->>'gildi')::numeric, left(x->>'tala', 80), nullif(x->>'sev',''), (x->>'gildi')::numeric
+  from jsonb_array_elements(p_maelingar) x
+  where (x->>'id') ~ '^[a-z0-9_:-]{1,60}$' and (x->>'gildi') ~ '^-?[0-9]+(\.[0-9]+)?$'
+  on conflict (dags, maeling) do update
+    set gildi = excluded.gildi, tala = excluded.tala, sev = excluded.sev, at = now();
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.vs_saga_skra(date, jsonb) from public, anon, authenticated;
+grant execute on function public.vs_saga_skra(date, jsonb) to service_role;
+
+-- ── 18.11.2026 — Merkja og keyra á ÞjónustuVerkstæðinu (190): línan er FÉLAG, ekki mál ─────────────────────────
+-- Viðbót eingöngu (keyrt á lifandi grunni 18.11.2026 sem bord_merkingar_fyrirtaeki_og_verkst_stada): nýr dálkur
+-- (núll á eldri röðum) og lesfall. Verkstæðið notar bord = 'verkstaedi' og lina = 'fyrirtaeki:<id>'.
+alter table public.bord_merkingar
+  add column if not exists fyrirtaeki_id bigint references public.fyrirtaeki(id) on delete set null;
+create index if not exists bord_merkingar_fyrirtaeki
+  on public.bord_merkingar (fyrirtaeki_id) where fyrirtaeki_id is not null;
+comment on column public.bord_merkingar.fyrirtaeki_id is
+  'Félagið sem merkt var á ÞjónustuVerkstæðinu (bord = verkstaedi, lina = fyrirtaeki:<id>). Núll á málslínum Þjónustuborðsins.';
+
+-- Verkstæðisstaða EINS félags úr app_settings (arsskodun_customers er 766 kB í heild — agentinn fær aðeins sitt félag,
+-- án tækjalista og sögu). Aðeins þjónustulykillinn má kalla á fallið.
+create or replace function public.verkst_stada(p_id bigint)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select (settings->'arsskodun_customers'->(p_id::text))
+           - 'equipment' - 'equipment_manual' - 'history' - 'skyrslur_tengdar'
+  from public.app_settings
+  where id = 1
+$$;
+revoke all on function public.verkst_stada(bigint) from public, anon, authenticated;
+grant execute on function public.verkst_stada(bigint) to service_role;

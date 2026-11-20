@@ -82,7 +82,16 @@
   const APP = 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)';
   const RAMMI = 'inset 0 0 0 1px #d8dee9';
   const FOKUS = 'outline:3px solid rgba(255,103,2,.45);outline-offset:0;box-shadow:inset 0 0 0 1px #ff6702';
-  const LEITARTAKN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6882' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E\")";
+  /* Tókenar úr hönnunarkerfinu Brunahólf V2 (artifact AkDa6kxwo6S8kzgUgCmUGZ, project/tokens.json, útgáfa 2).
+   * Skrifaðir hér með nafni kerfisins svo næsta lota sjái strax hvaðan gildið kemur og reki ekki frá því.
+   * Agnar 17.11.2026: „uppfæra designsystemið svo þetta haldist yfir það sem skráð er". */
+  const OK_TINT = '#ddfada', OK_INK = '#166534';      // ok-tint / ok-ink
+  const WARN_TINT = '#feecd2', WARN_INK = '#9a3412';  // warn-tint / warn-ink
+  const BAD_TINT = '#fee2de', BAD_INK = '#b91c1c';    // bad-tint / bad-ink
+  const DUE_TINT = '#fde5a4', DUE_INK = '#7a4b00';    // due-tint / due-ink — „í 69 daga"
+  const LINE_SOFT = '#e7ecf3', ROW_HOVER = '#f6f9fd'; // line-soft / row-hover
+  const INK = '#101e43', INK2 = '#2e4064', MUTED = '#5a6882';
+  const LEITARTAKN ="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6882' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E\")";
 
   function css() {
     return [
@@ -110,14 +119,14 @@
       H + ' .head>div:first-child>a.btn{top:18px!important;right:24px!important}',
       H + ' .t5-hl .btn,' + H + ' .head>div:first-child>a.btn{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}',
       H + ' .t5-hl .btn:hover,' + H + ' .head>div:first-child>a.btn:hover{background:rgba(255,255,255,.16)}',
-      H + ' .kicker{color:#fff;font:600 12px/1.2 var(--body);letter-spacing:.18em;margin:0 0 10px}',
+      H + ' .kicker{color:#fff;font:600 13px/1.2 var(--body);letter-spacing:.18em;margin:0 0 10px}',
       H + ' .kicker::before{display:none}',
       H + ' .h1{font:700 44px/1.1 var(--body);letter-spacing:-.02em;color:#fff;text-shadow:0 2px 12px rgba(2,25,60,.4);margin:0}',
       H + ' .meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin:10px 0 0;font:500 13px/1.4 var(--body);letter-spacing:0;text-transform:none;color:#c9d3e3}',
       H + ' .acts{display:contents}',
       H + ' .acts>.who{grid-row:1;grid-column:2/-1;justify-self:end;align-self:end;margin:0 8px 40px 0;flex-direction:row;align-items:center;gap:10px;position:relative;z-index:2}',
       // Merkið lendir ofan á upplýstri byggingunni í myndinni — dökk undirlögn svo það lesist.
-      H + ' .who .lbl{white-space:nowrap;padding:5px 9px;border-radius:6px;background:rgba(2,25,60,.72);color:#fff;font:600 11px/1.2 var(--body);letter-spacing:.08em}',
+      H + ' .who .lbl{white-space:nowrap;padding:5px 9px;border-radius:6px;background:rgba(2,25,60,.72);color:#fff;font:600 12px/1.2 var(--body);letter-spacing:.08em}',
       H + ' .who select{height:40px;min-width:170px;padding:0 12px;border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';font:600 14px var(--body);color:#101e43}',
       H + ' .acts>.btn{grid-row:2;align-self:center;position:relative;z-index:2}',
       H + ' .acts>.btn:nth-of-type(1){grid-column:2}',
@@ -136,6 +145,9 @@
       H + ' .btn.iv:hover{background:#f6f9fd}',
       H + ' .btn.gold,' + H + ' .acts>.btn:nth-of-type(3){border:0;background:' + APP + ';color:#fff;font-weight:600;text-shadow:none;box-shadow:' + GLOD + '}',
       H + ' .btn.gold:hover,' + H + ' .acts>.btn:nth-of-type(3):hover{background:#ec5300}',
+      H + ' .btn.gold.sm{font-size:14px}',
+      // Númer einingarinnar á VIRKA flipanum var gullbrúnt (#3e2c06) úr Boss-hamnum — 3,70:1 á appelsínugulu í 11 px.
+      H + ' .flipi[aria-selected="true"] .fln{color:#02193c}',
       H + ' .btn[aria-pressed="true"]{background:#0b2d5f;color:#fff;box-shadow:none}',
 
       // Leit.
@@ -150,12 +162,12 @@
       H + ' .seg button{height:34px;padding:0 14px;border:0;border-radius:8px;background:transparent;font:500 13.5px var(--body);color:#101e43}',
       H + ' .seg button[aria-pressed="true"]{background:#0b2d5f;color:#fff;font-weight:600;box-shadow:none}',
       H + ' .seg.sm{padding:2px;gap:2px;border-radius:8px}',
-      H + ' .seg.sm button{height:26px;padding:0 10px;font-size:12px;border-radius:6px}',
-      H + ' .seg.modeseg{flex:1 1 640px;display:flex;background:#fff;border-radius:14px;padding:6px;box-shadow:' + SH + '}',
+      H + ' .seg.sm button{height:26px;padding:0 10px;font-size:13px;border-radius:6px}',
+      H + ' .seg.modeseg{flex:1 1 auto;display:flex;background:#fff;border-radius:14px;padding:6px;box-shadow:' + SH + '}',
       H + ' .seg.modeseg button{flex:1 0 auto;height:40px;padding:0 16px;border-radius:10px;font:600 14px var(--body)}',
       H + ' .seg.modeseg button:hover{background:#f6f9fd}',
       H + ' .seg.modeseg button[aria-pressed="true"]{background:linear-gradient(180deg,#ff8a1f,#ec5300);color:#fff;box-shadow:' + GLOD + '}',
-      H + ' .seg .c{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:#ff6702;color:#fff;font:700 11px/1 var(--body);letter-spacing:0}',
+      H + ' .seg .c{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:8px;padding:0 6px;border-radius:999px;background:#ff6702;color:#02193c;font:700 12px/1 var(--body);letter-spacing:0}',
       H + ' .seg button[aria-pressed="true"] .c{background:#fff;color:#c2410c}',
 
       // Flýtileiðir = hvítt spjald með flísum.
@@ -163,7 +175,7 @@
       H + ' .links>.lbl{margin-right:6px;font:600 14px/1 var(--body);letter-spacing:0;text-transform:none;color:#101e43}',
       H + ' .lk{height:34px;gap:8px;padding:0 16px 0 6px;border:0;border-radius:999px;background:#fff;box-shadow:' + RAMMI + ';font:500 13px var(--body);color:#101e43}',
       H + ' .lk:hover{filter:none;background:#f6f9fd}',
-      H + ' .lk-ic{width:22px;height:22px;background:#ffeee0;color:#c2410c;box-shadow:inset 0 0 0 1px #f8b98c;font:700 11px/1 var(--body)}',
+      H + ' .lk-ic{width:22px;height:22px;background:#ffeee0;color:#c2410c;box-shadow:inset 0 0 0 1px #f8b98c;font:700 12px/1 var(--body)}',
 
       // Spjöld (Panel): hvít, skuggi, navy-haus. Í hausnum snúast textalitirnir við; stýringar halda dökku.
       H + ' .panel{border:0;border-radius:14px;background:#fff;box-shadow:' + SH + '}',
@@ -171,9 +183,9 @@
       H + ' .phead:last-child{border-radius:14px}',
       H + ' .phead .btn,' + H + ' .phead .seg,' + H + ' .phead select,' + H + ' .phead input:not(.chktitill),' + H + ' .phead .tag{--ink:#101e43;--ink2:#2e4064;--mute:#5a6882}',
       H + ' .ptitle{font:600 16px/1.3 var(--body);letter-spacing:0;text-shadow:none;color:#fff}',
-      H + ' .plate,' + H + ' .plate.dark{padding:0;border:0;background:none;box-shadow:none;text-shadow:none;color:#c9d3e3;font:600 11px/1 var(--body);letter-spacing:.08em}',
+      H + ' .plate,' + H + ' .plate.dark{padding:0;border:0;background:none;box-shadow:none;text-shadow:none;color:#c9d3e3;font:600 12px/1 var(--body);letter-spacing:.08em}',
       H + ' .sum{font-family:var(--body);letter-spacing:.02em}',
-      H + ' .phead .sum{font:500 12.5px/1.2 var(--body);letter-spacing:0;text-transform:none;color:#c9d3e3}',
+      H + ' .phead .sum{font:500 13.5px/1.2 var(--body);letter-spacing:0;text-transform:none;color:#c9d3e3}',
       H + ' .phead .lbl{color:#c9d3e3}',
       H + ' .phead select{height:34px;padding:0 10px;border:0;border-radius:8px;background:#fff;box-shadow:' + RAMMI + ';font:500 13px var(--body);color:#101e43}',
       H + ' .phead .btn.iv{box-shadow:none}',
@@ -189,28 +201,28 @@
       H + ' .week{gap:12px;padding:16px}',
       H + ' .day{padding:10px;border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';color:#101e43}',
       H + ' .day.today{background:#fff;color:#101e43;box-shadow:inset 0 0 0 2px #ff6702}',
-      H + ' .dn,' + H + ' .day:not(.today) .dn{font:600 11px/1.2 var(--body);letter-spacing:.08em;color:#2e4064}',
+      H + ' .dn,' + H + ' .day:not(.today) .dn{font:600 12px/1.2 var(--body);letter-spacing:.08em;color:#2e4064}',
       H + ' .dd{font:700 18px/1 var(--body)}',
       H + ' .today .dd{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,#ff8a1f,#ec5300);color:#02193c;font-size:14px}',
       H + ' .dplus,' + H + ' .today .dplus{width:28px;height:28px;border:0;border-radius:8px;background:#fff;box-shadow:' + RAMMI + ';color:#101e43;font:600 16px/1 var(--body)}',
       H + ' .dplus:hover{background:#f6f9fd}',
       H + ' .dnone,' + H + ' .today .dnone{color:#5a6882}',
       // border-left-color flokksins kemur inline úr 368; ramminn hverfur en liturinn lifir og punkturinn erfir hann.
-      H + ' .job,' + H + ' .today .job{position:relative;padding:8px 10px 8px 24px;border:0;border-radius:8px;background:#f3f6fb;color:#2e4064;font:12.5px/1.4 var(--body)}',
+      H + ' .job,' + H + ' .today .job{position:relative;padding:8px 10px 8px 24px;border:0;border-radius:8px;background:#f3f6fb;color:#2e4064;font:13.5px/1.4 var(--body)}',
       H + ' .job::before{content:"";position:absolute;left:10px;top:13px;width:0;height:8px;border-left:8px solid;border-left-color:inherit;border-radius:50%}',
-      H + ' .job b,' + H + ' .today .job b{font:600 12.5px/1.4 var(--body);color:#101e43}',
+      H + ' .job b,' + H + ' .today .job b{font:600 13.5px/1.4 var(--body);color:#101e43}',
       H + ' .job small{color:#5a6882}',
       H + ' .dnota textarea{min-height:56px;padding:8px 10px;border:0;border-radius:8px;background:#fff;box-shadow:' + RAMMI + ';font:13px/1.45 var(--body);color:#101e43}',
       H + ' .dnota textarea:hover{background:#f6f9fd}',
       H + ' .dnota textarea:focus{' + FOKUS + ';background:#fff}',
       H + ' .dnota textarea::placeholder,' + H + ' .ovbox textarea::placeholder{color:#5a6882;opacity:1}',
-      H + ' .legend{gap:6px 18px;padding:0 16px 12px;font-size:12.5px;color:#2e4064}',
+      H + ' .legend{gap:6px 18px;padding:0 16px 12px;font-size:13.5px;color:#2e4064}',
 
       // Þarf að gera í vikunni (500).
       H + ' .ov{padding:0 16px 16px}',
       H + ' .ovh{padding:14px 0 10px;border-top:1px solid #e7ecf3}',
-      H + ' .ovh h3{font:600 11px/1.2 var(--body);letter-spacing:.08em;color:#2e4064}',
-      H + ' .ovh span{font-size:12.5px;color:#5a6882}',
+      H + ' .ovh h3{font:600 12px/1.2 var(--body);letter-spacing:.08em;color:#2e4064}',
+      H + ' .ovh span{font-size:13.5px;color:#5a6882}',
       H + ' .ovgrid{gap:12px}',
       H + ' .ovbox textarea{min-height:60px;padding:10px 12px;border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';font:13.5px/1.45 var(--body);color:#101e43}',
       H + ' .ovbox textarea:hover{background:#f6f9fd}',
@@ -234,7 +246,7 @@
       H + ' .skt{font:13.5px/1.5 var(--body);color:#2e4064}',
       H + ' .skt:focus{background:#f6f9fd}',
       H + ' .skb{border:0;border-radius:6px;background:#fff;box-shadow:' + RAMMI + ';color:#2e4064}',
-      H + ' .skmc{height:22px;padding:0 9px;border-radius:999px;background:#f3f6fb;color:#2e4064;font:600 11.5px/22px var(--body);letter-spacing:0}',
+      H + ' .skmc{height:22px;padding:0 9px;border-radius:999px;background:#f3f6fb;color:#2e4064;font:600 12.5px/22px var(--body);letter-spacing:0}',
       H + ' .skmb{border:0;border-radius:6px;background:#fff;box-shadow:' + RAMMI + '}',
       H + ' .sknew{border-radius:10px;font:600 13px var(--body)}',
       H + ' .sknew:hover{background:#f6f9fd}',
@@ -250,16 +262,32 @@
       // Mælt á borði Anni: hver litur í gull/rjóma-sviði (litblær 36–62°) og Playfair/Plex-letur í öllum hömum.
       // Valið mál, brunnar og dökk spjöld: svart stál → navy.
       H + ' .sel,' + H + ' .vbr-svar{border:0;border-image:none;border-radius:14px;background:#011f40;box-shadow:' + SH + '}',
-      H + ' .sel .age.warm{color:#ff8a1f}',
-      H + ' .sel .age.hot{color:#ffb4a2}',
-      H + ' .well,' + H + ' .saga,' + H + ' .bm,' + H + ' .fskjol{border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#02193c;box-shadow:none}',
-      H + ' .well p{color:#e6ecf5}',
+      /* 18.11.2026 (Agnar: „eginlega allt of mikið blátt í sama lit, mátt lísa upp textaglugga"). Spjaldið var
+       * navy #011f40 og HVER einasti reitur inni í því navy #02193c — tveir litir sem muna 6 í birtu, svo
+       * málglugginn las sem einn flötur. Hönnunarkerfið sjálft segir annað: ramminn er navy, efnið situr á
+       * ljósum spjöldum. Hér er því rammanum haldið og innihaldinu lyft upp á surface-2 (#f3f6fb) með ink-texta.
+       * Birtuhlutfall mælt: ink #101e43 á #f3f6fb = 15,3:1, ink-2 #2e4064 = 8,9:1, orange-ink #c2410c = 4,9:1. */
+      H + ' .well,' + H + ' .saga,' + H + ' .bm,' + H + ' .fskjol{border:1px solid #d8dee9;border-radius:10px;background:#f3f6fb;box-shadow:none;color:#101e43}',
+      H + ' .well p{color:#101e43}',
+      H + ' .well .slabel,' + H + ' .saga .slabel,' + H + ' .bm .slabel,' + H + ' .fskjol .slabel{color:#c2410c}',
+      H + ' .saga .sg-l,' + H + ' .fskjol .sg-m,' + H + ' .saga .sg-m,' + H + ' .well .sg-m{color:#2e4064}',
+      H + ' .saga .sg-l b{color:#101e43}',
+      H + ' .saga .sg-l em.ok{color:#166534}' + H + ' .saga .sg-l em.bid{color:#9a3412}',
+      H + ' .saga .sg-buid{color:#166534}',
+      H + ' .well .clink.dk,' + H + ' .fskjol .clink.dk{color:#c2410c;text-decoration-color:rgba(194,65,12,.45)}',
+      // Takkarnir í hausum ljósu reitanna (↻ Uppfæra, + Bæta við skjölum, ✕, ✎ Skrifa) fylgja fletinum.
+      H + ' .saga .sg-r,' + H + ' .fskjol .sg-r,' + H + ' .well .sg-r,' + H + ' .fskjol .sx{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .saga .sg-r:hover,' + H + ' .fskjol .sg-r:hover,' + H + ' .well .sg-r:hover{background:#e9f0fa}',
+      H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .bm label>span,' + H + ' .bm .bm-c{color:#2e4064}',
       H + ' .fsmynd{border-color:rgba(255,255,255,.12)}',
       H + ' .sacts.sm2{border-top-color:rgba(255,255,255,.14)}',
       H + ' .vbr-mynd{border:0;border-radius:10px;background:#011f40}',
       H + ' .slot.on{background:#0b2d5f;border-color:#0b2d5f}',
       H + ' .nt textarea{border-radius:10px;background:#fff;box-shadow:none}',
-      H + ' .nt.dark textarea{border-color:rgba(255,255,255,.16);background:#02193c;color:#fff;box-shadow:none}',
+      H + ' .nt.dark textarea{border-color:#d8dee9;background:#fff;color:#101e43;box-shadow:none}',
+      H + ' .nt.dark .ntst{color:#2e4064}',
+      H + ' .nt-tl{background:#fff;box-shadow:inset 0 0 0 1px #e3e9f2}',
       H + ' .nt.dark textarea:focus,' + H + ' .bm textarea:focus,' + H + ' .bm input:focus{border-color:#ff6702;box-shadow:0 0 0 3px rgba(255,103,2,.35)}',
       H + ' .t5toast{border:0;border-radius:10px;background:#011f40;box-shadow:' + SH + '}',
       H + ' .t5toast .undo{border:0;border-radius:8px;background:' + APP + ';color:#fff}',
@@ -293,8 +321,124 @@
       H + ' #yf499 .yf-titill,' + H + ' #yf499 .yf-stada,' + H + ' #yf499 .yf-flokkur,' + H + ' #yf499 .yf-m,' + H + ' #yf499 .yf-t,' + H + ' #yf499 .yf-p{font-family:var(--body)}',
       H + ' #yf499 .yf-keyra:not(#_yA):not(#_yB):not(#_yC):not(#_yD):not(#_yE){font-family:var(--body)!important;border-radius:8px}',
       // Stýringar í dökku spjöldunum (Valið mál, skráning, flýtival): brúnsvart #1c1b18 → navy-700 með hárlínu.
-      H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:rgba(255,255,255,.18);background:#0b2d5f}',
-      H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#123a73}',
+      H + ' .sx,' + H + ' .sg-r,' + H + ' .hchip:not(.on),' + H + ' .setja select,' + H + ' .bm input,' + H + ' .bm textarea,' + H + ' .bm select{border-color:#d8dee9;background:#fff;color:#101e43}',
+      H + ' .sx:hover,' + H + ' .sg-r:hover,' + H + ' .hchip:not(.on):hover{background:#e9f0fa}',
+      H + ' .setja .slabel{color:#c9d3e3}',
+
+      /* Tilbúin verk (511) — einingin var eina borðið sem hélt Boss-efninu undir V2: rjómaflötur, messingplötur og
+       * gulllykill. Hér fær hún sama mál og hitt borðið (hvít spjöld, navy blek, EINN appelsínugulur lykill).
+       * Breyturnar (--gface, --disp, --gline, --key) eru þegar V2 að ofan, svo aðeins hörðu gildin eru leiðrétt. */
+      H + ' .baf-f{border:0;border-radius:999px;background:#fff;box-shadow:' + RAMMI + ';font:500 13px var(--body);color:#101e43}',
+      H + ' .baf-f b{font-family:var(--body)}',
+      H + ' .baf-f[aria-pressed="true"]{background:#0b2d5f;border-color:transparent;color:#fff;box-shadow:none}',
+      H + ' .baf-v{border-top-color:#e7ecf3}',
+      H + ' .baf-r:hover{background:#f6f9fd}',
+      H + ' .baf-v.opid>.baf-r{background:#f3f6fb}',
+      H + ' .baf-teg{border-radius:6px;border-color:#d8dee9;font:600 11px var(--body);color:#5a6882}',
+      H + ' .baf-kr,' + H + ' .baf-h,' + H + ' .baf-am,' + H + ' .baf-meta,' + H + ' .baf-dl dt,' + H + ' .baf-grein{font-family:var(--body)}',
+      H + ' .baf-d{border-top:1px solid #e7ecf3;background:#fff}',
+      H + ' .baf-k h3{font:600 12px var(--body);letter-spacing:.08em;color:#5a6882}',
+      // Haus opna verksins: Poppins 700 og hvítar flísar með mjúkum skugga — enginn hvítur textaskuggi á ljósum fleti.
+      H + ' .baf-kick{font:600 12px var(--body);letter-spacing:.14em;color:#c2410c}',
+      H + ' .baf-kick::before{display:none}',
+      H + ' .baf-sp{font-weight:700;letter-spacing:-.01em;text-shadow:none}',
+      H + ' .baf-kt{border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ',0 1px 2px rgba(2,25,60,.06)}',
+      H + ' .baf-kt span{font:600 11.5px var(--body);letter-spacing:.08em}',
+      H + ' .baf-kt b{font-weight:700;color:#101e43}',
+      H + ' .baf-kt b i{font:500 12px var(--body)}',
+      // Merki rakanna og skrefatölurnar: appelsínugult í stað messings, hringlaga tala með hvítu letri.
+      H + ' .baf-rok li::before{top:8px;width:5px;height:5px;border:0;border-radius:50%;background:#ff6702}',
+      H + ' .baf-nr{border:0;border-radius:999px;background:' + APP + ';color:#fff;font:700 11.5px var(--body);box-shadow:none}',
+      H + ' .baf-sk{border-color:#d8dee9;border-radius:10px;background:#fff}',
+      H + ' .baf-sk pre,' + H + ' .baf-g,' + H + ' .baf-rok,' + H + ' .baf-skref{font-family:var(--body)}',
+      H + ' .baf-ta{border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';font-family:var(--body)}',
+      H + ' .baf-ta:focus-visible{outline:3px solid rgba(255,103,2,.45);outline-offset:0}',
+      H + ' .baf-ok{color:#166534}' ,
+      H + ' .baf-nei,' + H + ' .baf-stopp,' + H + ' .baf-mk .x{color:#b91c1c}',
+      H + ' .baf-msg.villa{border-color:#f5c2c0;background:#fef2f2;color:#b91c1c}',
+      H + ' .baf-ft{border-top-color:#e7ecf3}',
+      // Einn appelsínugulur lykill á spjaldið; vopnaði takkinn verður navy svo breytingin sjáist.
+      H + ' .btn.baf-go{border:0;border-radius:10px;background:' + APP + ';color:#fff;font-weight:600;text-shadow:none;box-shadow:' + GLOD + '}',
+      H + ' .btn.baf-go:hover{background:#ec5300}',
+      H + ' .btn.baf-go[disabled]{background:#c9d3e3;border:0;color:#fff;box-shadow:none}',
+      H + ' .btn.baf-vopn{border:0;background:#0b2d5f;color:#fff;box-shadow:0 0 0 3px rgba(255,103,2,.45)}',
+      H + ' .baf-meira{border-top-color:#e7ecf3;font-family:var(--body)}',
+      H + ' .baf-meira:hover{background:#f6f9fd}',
+      H + ' .baf-tomt{font-family:var(--body)}',
+      H + ' .baf-bid{background:linear-gradient(90deg,#eef3fb,#dfe8f5,#eef3fb)}',
+
+      /* Markmið (508) — sama gat og var á Tilbúnum verkum: einingin er á borði Agnars (og hans borð er á V2),
+       * en 507 átti enga reglu fyrir `.mmb-*`, svo rjómahover, hlý merki og dökkrauð „versnað“ stóðu eftir
+       * inni í navy-borðinu. Letrið fylgdi strax (var(--mono) er Poppins í V2) — hér eru hörðu gildin. */
+      H + ' .mmb-fl{border-top-color:#e7ecf3}',
+      H + ' .mmb-fl:hover{background:#f6f9fd}',
+      H + ' .mmb-fl--bid{background:linear-gradient(90deg,#eef3fb,#dfe8f5,#eef3fb)}',
+      H + ' .mmb-ml{background:#f6f9fd;border-top-color:#e7ecf3}',
+      H + ' .mmb-m{border-top-color:#e7ecf3}',
+      H + ' .mmb-bar{background:#dbe3ee;box-shadow:inset 0 1px 2px rgba(2,25,60,.14)}',
+      H + ' .mmb-bar i{background:linear-gradient(90deg,#166534,#1d7a44)}',
+      H + ' .mmb-bar--byrjun i{background:#c9d3e3}',
+      H + ' .mmb-bar--lagt i{background:linear-gradient(90deg,#991b1b,#b91c1c)}',
+      H + ' .mmb-versnad{color:#b91c1c}',
+      H + ' .mmb-tr{border-radius:6px;border:1px dashed #c3ccd9;color:#5a6882;font-family:var(--body);letter-spacing:.06em}',
+      H + ' .mmb-tr--rett{border:1px solid #bdeab6;color:' + OK_INK + ';background:' + OK_TINT + '}',
+      H + ' .mmb-tr--rangt{border:1px solid #f6c9c2;color:' + BAD_INK + ';background:' + BAD_TINT + '}',
+      H + ' .mmb-tr--oljost{border:1px solid #f6d3a6;color:' + WARN_INK + ';background:' + WARN_TINT + '}',
+      H + ' .mmb-mn--lokid{color:#5a6882}',
+
+      /* Listalínurnar (Forgangsmál 28 og aðrir listar sem nota lrowHtml) á mál hönnunarkerfisins:
+       * TaskList-línan er heiti í body-strong með eign/eiganda í small undir, og tíminn hægra megin.
+       * Aldurinn „12D" var ber mono-tala; hann verður due-pillan sem kerfið á fyrir tíma („í 69 daga"),
+       * og kaflafyrirsagnirnar verða label (11px 600 0.08em). Stöðuorðið sjálft stendur í fyrirsögn
+       * kaflans („Þarf að bregðast við" / „Ný skilaboð"), svo liturinn stendur aldrei einn. */
+      H + ' .sect{padding:12px 16px 6px;font:600 12px/1.2 var(--body);letter-spacing:.08em;color:' + INK2 + '}',
+      H + ' .lrow{padding:12px 16px;border-top-color:' + LINE_SOFT + '}',
+      H + ' .lrow:hover{background:' + ROW_HOVER + '}',
+      H + ' .lrow b{font:600 14px/1.4 var(--body);color:' + INK + '}',
+      H + ' .lrow .s{font:400 13.5px/1.4 var(--body);color:' + MUTED + '}',
+      H + ' .pprev{font:400 13.5px/1.45 var(--body);color:' + INK2 + ';margin-top:5px}',
+      H + ' .age{display:inline-block;padding:2px 9px;border-radius:999px;font:600 12px/1.3 var(--body);' +
+        'letter-spacing:0;background:' + DUE_TINT + ';color:' + DUE_INK + '}',
+      H + ' .age.warm{background:' + WARN_TINT + ';color:' + WARN_INK + '}',
+      H + ' .age.hot{background:' + BAD_TINT + ';color:' + BAD_INK + '}',
+      H + ' .more{padding:10px 16px 14px;font:400 13.5px var(--body);color:' + MUTED + '}',
+      H + ' .sectm{font:400 13.5px var(--body);color:' + MUTED + '}',
+
+      /* ── Afgangurinn af borðinu (skannað 17.11.2026) ───────────────────────────────────────────
+       * Skönnun á öllum einingum að hörðum Boss-gildum (rjómi, messing, brúnsvart, Playfair) fann
+       * fimm staði sem V2-lagið náði ekki yfir. Þeir eru hér, allir á tókena kerfisins. */
+
+      // Kröfu-vinnuglugginn (369, eining 22 „Forgangslisti krafna") — var allur í Boss að innan.
+      H + ' .kvbann{border-radius:10px;background:' + WARN_TINT + ';color:' + WARN_INK + '}',
+      H + ' .kvrow{border-top-color:' + LINE_SOFT + '}',
+      H + ' .kvrow.kvvirk{background:' + ROW_HOVER + '}',
+      H + ' .kvt,' + H + ' .kvst{border-radius:999px;font-family:var(--body);letter-spacing:.04em}',
+      H + ' .kvst.st-tilbuid_i_vinnslu,' + H + ' .kvst.st-i_vinnslu{border-color:transparent;background:#0b2d5f;color:#fff}',
+      H + ' .kvst.st-i_yfirferd_agnars{border-color:#f8b98c;background:#ffeee0;color:#c2410c}',
+      H + ' .kvst.st-lokid{border-color:#bdeab6;background:' + OK_TINT + ';color:' + OK_INK + '}',
+      H + ' .kv-x{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.08);border-radius:10px}',
+      H + ' .kv-x:hover{background:rgba(255,255,255,.16)}',
+      H + ' .kv-upph{color:#ff8a1f}',                         // orange-hi, 7:1 á navy-900
+      H + ' .kvt2{color:#c9d3e3}',                            // on-navy-muted í stað gulls
+      H + ' .kv-nr{color:#fff}',
+      H + ' .kvf{border-radius:999px;font-family:var(--body)}',
+      H + ' .kvf.ok{border-color:#bdeab6;background:' + OK_TINT + ';color:' + OK_INK + '}',
+      H + ' .kvf.nei{border-color:#f6c9c2;background:' + BAD_TINT + ';color:' + BAD_INK + '}',
+      H + ' .kvf.agnar{border-color:#f8b98c;background:#ffeee0;color:#c2410c}',
+      H + ' .kvf.vinnsla{border-color:transparent;background:#0b2d5f;color:#fff}',
+
+      // Einkaritarinn (506) og Ráðgjafinn (506-radgjafinn): Playfair-fyrirsögn → h2 kerfisins.
+      H + ' .ek-fyrir,' + H + ' .rg-fyrir{font:700 22px/1.25 var(--body);letter-spacing:-.01em;color:' + INK + ';border-bottom-color:' + LINE_SOFT + '}',
+
+      // Tölvupóstar (448): „lokið"-merkið bar Boss-grænt.
+      H + ' .tp .tp-m._lokid{border-color:#bdeab6;color:' + OK_INK + '}',
+      // Erindi (449c): vinstri rönd erindisins á info-bláa kerfisins.
+      H + ' .er .er-kassi._erindi{border-left-color:#2f6fe4}',
+      // Vinnusamantekt (489): stjörnuhnappurinn var gullinn.
+      H + ' .samt-stj:hover{background:' + ROW_HOVER + ';color:#ff6702}',
+      H + ' .samt-stj.on{color:#ff6702}',
+      // Frestir/listar: valin lína á sama bláa og .mrow.
+      H + ' .frow[aria-current="true"]{background:#eef3fb}',
 
       // Rofinn [Boss | V2] í meta-línunni.
       '.t5-thema{vertical-align:middle;margin-left:10px;text-transform:none;letter-spacing:0}',

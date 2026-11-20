@@ -40,7 +40,8 @@ part-dups eru þegar 17+ talsins. Skrifaðu hana alltaf, líka þótt `customer_
 - **Aðgangskóðar, lyklaboxkóðar, lykilorð.** RLS er slökkt á töflunum — anon-lykillinn les
   allt. Kóði sem opnar hús fer ekki í töflu sem vefurinn getur lesið. Skrifaðu „lyklabox við
   bakdyr, kóði hjá Agnari", ekki kóðann.
-- **Kennitölur eða símanúmer einstaklinga.** Fyrirtækjakennitala já, persónukennitala nei.
+- **Kennitölur einstaklinga.** Fyrirtækjakennitala já, persónukennitala nei. Símanúmer og netföng TENGILIÐA
+  mega standa (Agnar 16.11.2026: „símanúmer tengiliða er fínt líka").
   Tengiliður er „rekstrarstjóri", ekki nafn + númer + heimilisfang.
 - **Skoðanir á fólki.** „Erfiður kúnni" hjálpar engum og les illa ef það birtist á skjá hjá
   kúnnanum sjálfum. Skrifaðu hegðunina sem skiptir máli: „vill staðfestingu í tölvupósti
@@ -53,7 +54,7 @@ part-dups eru þegar 17+ talsins. Skrifaðu hana alltaf, líka þótt `customer_
 ```sql
 select topic, fact, detail, confidence, created_at
 from v_charlize_kunni
-where kennitala = '4203932269'
+where kennitala = '420393-2269'
 order by topic, created_at desc;
 ```
 
@@ -62,11 +63,20 @@ og skrifaðu fyrstu færsluna eftir heimsóknina.
 
 ## Að skrifa
 
-Besti tíminn er strax eftir heimsókn eða eftir samskipti sem komu á óvart:
+Besti tíminn er strax eftir heimsókn eða eftir samskipti sem komu á óvart. Ein skipun (16.11.2026):
+
+```bash
+node tools/minni.cjs --skra "Komast þarf um bakdyr — aðalinngangur er læstur utan opnunartíma" \
+  --topic adgengi --scope kunni --kt 420393-2269 --fid 123 --detail "Móttakan hleypir inn ef hringt er á undan."
+```
+
+Tólið skráir kennitöluna MEÐ bandstriki (það er sniðið sem `charlize_yfirlit(kt)` les — nákvæmur samanburður),
+neitar kennitölu einstaklings (notaðu þá `--fid`). `--thurrt` sýnir röðina án þess að skrifa.
+Sama með SQL (kennitalan þá líka með bandstriki):
 
 ```sql
 insert into charlize_knowledge (scope, topic, kennitala, fact, detail, source, agent)
-values ('kunni','adgengi','4203932269',
+values ('kunni','adgengi','420393-2269',
         'Komast þarf um bakdyr — aðalinngangur er læstur utan opnunartíma',
         'Móttakan hleypir inn ef hringt er á undan.',
         'agnar','chat');

@@ -68,6 +68,50 @@ async function posturToki(stillingGefin) {
   const m = Math.floor(Date.now() / 60000);
   return m + '.' + posturSig(st.session_secret, m);
 }
+// x-hub-toki (Powerplan lota 13, 17.11.2026): aðgangur að föllum Brunahólfs, sem krefjast nú innskráningar EÐA þessa tóka
+// (brunaholf/netlify/functions/_vord.js). Sama snið og póst-tókinn en annar tilgangur ('hub-api|'), svo póst-tóki opnar
+// ekki önnur föll og öfugt. Myntaður HÉR einum stað; /api/bh-toki réttir hann innskráðum vafra, bh-kall.cjs þjónum.
+const HUB_TOKI_HAUS = 'x-hub-toki';
+const hubApiSig = (secret, m) => crypto.createHmac('sha256', String(secret)).update('hub-api|' + m).digest('hex');
+async function hubApiToki(stillingGefin) {
+  const st = stillingGefin || await getStilling().catch(() => null);
+  if (!st || !st.session_secret) return '';
+  const m = Math.floor(Date.now() / 60000);
+  return m + '.' + hubApiSig(st.session_secret, m);
+}
+// Skjal-tóki (lota 13): kúnnagáttin (gatt-doc.cjs) vísar kúnna á Brunahólfs /api/skjal?id=…&st=… — gildir AÐEINS fyrir
+// það skjal og 10 mín (brunaholf _vord.js erGildurSkjalToki). Eignarhald skjalsins er sannreynt í gatt-doc áður.
+async function skjalToki(id, stillingGefin) {
+  const st = stillingGefin || await getStilling().catch(() => null);
+  if (!st || !st.session_secret || !id) return '';
+  const exp = Math.floor(Date.now() / 1000) + 600;
+  return exp + '.' + crypto.createHmac('sha256', String(st.session_secret)).update('skjal|' + String(id) + '|' + exp).digest('hex');
+}
+// INNRI TÓKI SLÖKKVITÆKIS (lota 13, 17.11.2026): sendiföllin á ÞESSUM vef (email-send o.fl.) krefjast nú innskráðs
+// starfsmanns. Þjónaföll á sama vef sem kalla á þau án köku (gatt-admin, gatt-vikupostur, payday-sync-cron — áætluð föll
+// keyra án notanda) senda þennan tóka í staðinn. Sama snið og póst-tókinn, annar tilgangur ('sl-innri|'), svo póst-tóki
+// eða hub-tóki opnar ekki sendiföllin og öfugt. Aldrei þjónustulykillinn í haus.
+const INNRI_HAUS = 'x-sl-toki';
+const INNRI_GILDIR_MIN = 10;
+const innriSig = (secret, m) => crypto.createHmac('sha256', String(secret)).update('sl-innri|' + m).digest('hex');
+async function innriToki(stillingGefin) {
+  const st = stillingGefin || await getStilling().catch(() => null);
+  if (!st || !st.session_secret) return '';
+  const m = Math.floor(Date.now() / 60000);
+  return m + '.' + innriSig(st.session_secret, m);
+}
+// Hausar til að kalla á sendifall af þjóni: { 'x-sl-toki': … } — tómur hlutur ef tókinn næst ekki (þá fær kallið 401/503,
+// aldrei opið).
+async function innriHausar() { const t = await innriToki().catch(() => ''); return t ? { [INNRI_HAUS]: t } : {}; }
+async function erInnriToki(event) {
+  const h = (event && event.headers) || {};
+  const [mStr, sig] = String(h[INNRI_HAUS] || h[INNRI_HAUS.toUpperCase()] || '').split('.');
+  const m = Number(mStr), nu = Math.floor(Date.now() / 60000);
+  if (!Number.isInteger(m) || m < nu - INNRI_GILDIR_MIN || m > nu + 1 || !/^[0-9a-f]{64}$/.test(sig || '')) return false;
+  const st = await getStilling().catch(() => null);
+  if (!st || !st.session_secret) return false;
+  return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(innriSig(st.session_secret, m), 'hex'));
+}
 async function erPosturToki(event) {
   const h = (event && event.headers) || {};
   const [mStr, sig] = String(h[POSTUR_HAUS] || '').split('.');
@@ -400,4 +444,11 @@ exports._test = { normNn, normKt, normSimi, encPw, decPw, SIDUR, okSida, HUB_ARF
 
 exports.posturToki = posturToki;
 exports.erPosturToki = erPosturToki;
+exports.hubApiToki = hubApiToki;
+exports.skjalToki = skjalToki;
+exports.HUB_TOKI_HAUS = HUB_TOKI_HAUS;
 exports.POSTUR_HAUS = POSTUR_HAUS;
+exports.innriToki = innriToki;
+exports.innriHausar = innriHausar;
+exports.erInnriToki = erInnriToki;
+exports.INNRI_HAUS = INNRI_HAUS;

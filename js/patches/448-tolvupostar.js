@@ -119,13 +119,17 @@
     const fra = new Date(Date.now() - DAGAR * 864e5).toISOString();
     S._p = (async () => {
       try {
-        const [p, a, h, m] = await Promise.all([
+        const [p, a, h, m, tp] = await Promise.all([
           c.from('email_digest').select('id,message_id,account,folder,thread_id,sender_name,sender_email,to_addresses,subject,snippet,body_preview,received_at,labels,has_attachment,attachment_names,is_question')
             .in('account', HOLF.concat(['Slokkvitaeki@brunaholf.is'])).gte('received_at', fra).order('received_at', { ascending: false }).limit(1000),
           c.from('reikninga_postur_activity').select('message_id,kind').limit(1000),
           c.from('reikninga_postur_hidden').select('message_id').limit(1000),
           c.from('thjonustubeidni').select('id,title,status,tags,notes,channel_ref,assigned_to,svarad_at,fyrirtaeki_id,customer_nafn,updated_at,created_by,created_at')
-            .like('channel_ref', 'email:%').is('deleted_at', null).order('created_at', { ascending: false }).limit(1000)
+            .like('channel_ref', 'email:%').is('deleted_at', null).order('created_at', { ascending: false }).limit(1000),
+          // 18.11.2026 (Agnar: „þú mátt líka setja frá mörgum starfsmönnum inn á sömu erindið“): channel_ref ber einn aðalpóst
+          // og er óbreyttur (240, 368 og 309 lesa hann strangt). Auðkenni hinna póstanna — þá sem aðrir starfsmenn kúnnans
+          // sendu um sama verk í öðrum þræði — liggja í thjonustubeidni_postar og eru lesin hér svo hvaða þráður sem er finni málið.
+          c.from('thjonustubeidni_postar').select('beidni_id,email_id').limit(4000)
         ]);
         if (p.error) throw p.error;
         S.postar = p.data || [];
@@ -133,6 +137,15 @@
         S.hidden = new Set(((h.data) || []).map(x => x.message_id));
         S.mal = new Map();
         ((m.data) || []).forEach(r => { const id = String(r.channel_ref || '').slice(6); if (id && !S.mal.has(id)) S.mal.set(id, r); });
+        // Aukatengingarnar ofan á: málið er fundið en byggt á id-i úr channel_ref, svo hér er flett upp í sömu röð.
+        // Aðalpósturinn víkur aldrei — við skrifum aðeins í lykla sem eru lausir.
+        try {
+          const malById = new Map(); S.mal.forEach(r => { if (r && r.id != null) malById.set(Number(r.id), r); });
+          ((tp && tp.data) || []).forEach(x => {
+            const r = malById.get(Number(x.beidni_id)), k = String(x.email_id);
+            if (r && k && !S.mal.has(k)) S.mal.set(k, r);
+          });
+        } catch (_) {}
         // Fylgiskjöl málanna (04.11.2026) — tvær fyrirspurnir fyrir öll mál listans, aldrei ein per mál. Bregðist þær er listinn samt sýndur.
         S.skjol = new Map();
         try {
@@ -194,12 +207,15 @@
       const reikningur = !mal && !okkar && !SVAR_EFNI.test(efniInn) && BIRGI_RE.test(efniInn) && !OKKAR_NAFN.test(efniInn);
       const uppfaersla = !mal && !kunni && lab.indexOf('CATEGORY_UPDATES') >= 0;   // Gmail: kvittanir, tilkynningar, kannanir — enginn bíður svars
       const bidur = !svarad && !lokid && !malLokad && sidasta.folder !== 'SENT';
-      const hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
+      let hluti = tags.indexOf('undirbuid') >= 0 ? 'undirbuid'
         : (svarTag && mal.status !== 'lokad') ? 'claude'
         : auglysing ? 'auglysing'
         : sjalfvirkt ? 'sjalfvirkt'
         : bidur ? (okkar ? 'innanhuss' : reikningur ? 'reikningar' : uppfaersla ? 'sjalfvirkt'
           : (erGmail(sidastaInn.account) || msgs.some(x => x.folder === 'SENT') ? 'bidur' : 'omaelt')) : 'buid';   // 10.11.2026: án Sent-möppu er „ósvarað“ ekki mælanlegt — ekki fullyrða það
+      // 17.11.2026 (513 VIP-vakt): ósvaraður VIP-þráður fer í ⚡ VIP efst. Þjónninn (vip-postur) ræður hvað er VIP og ósvarað;
+      // hér er aðeins lyft því sem ÞETTA borð telur líka bíða svars — ★ og Hjá Claude halda sínum stað (og fá merkið).
+      try { if ((hluti === 'bidur' || hluti === 'omaelt') && window.VipVakt && VipVakt.osvarad(k)) hluti = 'vip'; } catch (_) {}
       const mikilv = stj.size > 0 || msgs.some(x => (x.labels || []).indexOf('IMPORTANT') >= 0) || !!(mal && mal.important);
       // Mikilvægi (11.11.2026): stjarna > þekktur kúnni > mál á borðinu / beiðni / samtal sem við höfum tekið þátt í > Gmail IMPORTANT. Jafnt → nýjast.
       const beidni = !sjalfvirkt && !auglysing && BEIDNI_RE.test(texti);
@@ -212,7 +228,7 @@
     ut.sort((a, b) => ts(b.timi) - ts(a.timi));
     return ut;
   }
-  const HLUTAR = [['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''],
+  const HLUTAR = [['vip', '⚡ VIP · svara innan klukkustundar', '_vip'], ['undirbuid', '★ Tilbúið að svara — Claude undirbjó', '_gull'], ['claude', 'Hjá Claude', '_claude'], ['bidur', 'Bíður svars', ''], ['omaelt', 'slokkvitaeki@ · svör sjást ekki hér (Sent ótengt)', ''],
     ['innanhuss', 'Innanhúss · áframsent og minnispunktar', '_ok'], ['reikningar', 'Reikningar til okkar · greiða, ekki svara', '_ok'],
     ['buid', 'Svarað · lokið', '_ok'], ['sjalfvirkt', 'Sjálfvirkt · tilkynningar', '_ok'], ['auglysing', 'Auglýsingar · fréttabréf', '_ok']];
   const FELLT = { innanhuss: true, reikningar: true, buid: true, sjalfvirkt: true, auglysing: true };   // samanbrotnir hlutar — „sýna“ opnar, lifir ekki endurhleðslu
@@ -406,6 +422,7 @@
   const chip = (a, v, on, texti, title) => '<button type="button" data-t5="tp-' + a + '" data-v="' + esc(v) + '" aria-pressed="' + !!on + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + texti + '</button>';
   function merkiHtml(t, allt) {
     const m = [];
+    try { if (window.VipVakt) { const v = VipVakt.chipHtml(t.k); if (v) m.push(v); } } catch (_) {}   // 513: ⚡ VIP + klukka
     t.stjornur.forEach(s => m.push('<span class="tp-m tp-stj" style="color:' + (STJ_LITUR[s] || '#d4a017') + '">' + STJORNUR[s] + '</span>'));
     (allt ? t.merki : t.merki.slice(0, 3)).forEach(l => m.push('<span class="tp-m' + (l === LOKID ? ' _lokid' : '') + '">' + esc(l) + '</span>'));
     if (!allt && t.merki.length > 3) m.push('<span class="tp-m">+' + (t.merki.length - 3) + '</span>');
@@ -474,7 +491,7 @@
         (erGmail(t.account) && t.kunni && window.ReikningaPostur && ReikningaPostur.sendaReikning ? '<button type="button" class="btn iv sm" data-t5="tp-skjol" data-v="' + esc(t.k) + '">✉ Senda reikning / skýrslu</button>' : '') +
         '<button type="button" class="btn iv sm' + (S.claudeOpid === t.k ? ' _on' : '') + '" data-t5="tp-claude-opna" data-v="' + esc(t.k) + '">🤖 Til Claude…</button>' +
         '<button type="button" class="btn iv sm' + (stj ? ' tp-gull' : '') + '" data-t5="tp-stjarna" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Tilbúið að svara — efst í listanum">' + (stj ? '★ Tilbúið' : '☆ Merkja tilbúið') + '</button>' +
-        (t.hluti === 'bidur' || t.hluti === 'omaelt' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
+        (t.hluti === 'bidur' || t.hluti === 'omaelt' || t.hluti === 'vip' ? '<button type="button" class="btn iv sm" data-t5="tp-svarad" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + ' title="Svarað annars staðar (t.d. í Gmail)">✓ Merkja svarað</button>' : '') +
         (erGmail(t.account) ? '<a class="btn iv sm" href="' + esc(gmailSlod(t)) + '" target="_blank" rel="noopener">Opna í Gmail ↗</a>' : '') +
         '<button type="button" class="btn iv sm" data-t5="' + (t.falid ? 'tp-afhylja' : 'tp-fela') + '" data-v="' + esc(t.k) + '"' + (b ? ' disabled' : '') + '>' + (t.falid ? 'Sýna aftur' : '✕ Fela') + '</button>' +
       '</div>' + claudeHtml(t) + svarHtml(t) + malHtml(t) +
@@ -485,7 +502,7 @@
     let w = 0; try { const v = Number(window.Vidmot ? Vidmot.lesaTaeki('bord.vbrBreidd', 0) : 0); w = v > 0 ? Math.min(760, Math.max(230, v)) : 0; } catch (_) {}   // sami lykill sem 368 skrifar við sleppingu
     const s = S.sia, l = siad(), val = valinn();
     const n = h => hlutaListi(l, h).length;
-    const hausTala = (S.loaded ? [n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★'].join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
+    const hausTala = (S.loaded ? [].concat(n('vip') ? [n('vip') + ' ⚡ VIP'] : []).concat([n('bidur') + ' bíða', n('claude') + ' hjá Claude', n('undirbuid') + ' ★']).join(' · ') : (S.villa ? '⚠️ ' + S.villa : 'sæki…')) + (S.loadedAt ? ' · sótt kl. ' + kl(S.loadedAt) : '');
     const listi = !S.loaded ? '<div class="empty"><span class="coin" aria-hidden="true"></span>' + (S.villa ? esc(S.villa) : 'Sæki póstinn…') + '</div>'
       : !l.length ? '<div class="empty"><span class="coin" aria-hidden="true"></span>Enginn póstur passar við síuna.</div>'
       : HLUTAR.map(h => { const m = hlutaListi(l, h[0]); if (!m.length) return ''; const fela = erFellt(h[0], s);
@@ -527,7 +544,22 @@
         '.tp .tp-vidh-box{margin:8px 0;padding:8px 10px;border:1px solid var(--rule2);border-radius:4px;background:rgba(0,0,0,.03);font-size:12.5px}.tp .tp-vidh-box>b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}.tp .tp-vidh-box .s{color:var(--ink2);font-size:11.5px}.tp .tp-vidh-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 0;cursor:pointer}.tp .tp-vidh-l input{width:16px;height:16px;margin:0}.tp .tp-vidh-l._ekki{opacity:.6}.tp .tp-vidh-l a{color:#1f6b3c;font-weight:600}.tp .tp-vidh-vantar{margin-top:6px;padding:6px 8px;border-left:3px solid #c0392b;background:rgba(192,57,43,.08);color:#7a1f14;line-height:1.45}',
         '.tp .tp-skeytin{display:flex;flex-direction:column;gap:10px;margin-top:14px}.tp .tp-skeyti{padding:12px 14px;border:1px solid var(--rule2);border-radius:6px;background:#fff}.tp .tp-skeyti._okkar{background:rgba(232,203,122,.12);border-color:rgba(184,137,46,.4)}.tp .tp-skeyti header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;font-size:12.5px}.tp .tp-skeyti header .s{color:var(--mute);font-size:11.5px}.tp .tp-skeyti header time{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mute)}',
         '.tp .tp-texti{white-space:pre-wrap;font-size:13.5px;line-height:1.55;color:var(--ink);overflow-wrap:anywhere}.tp .tp-vidh{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--ink2)}',
-        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}'
+        '.tp .tp-uppf{margin-left:auto}.tp .phead .sum{white-space:normal}.tp .tp-sel{padding:18px 20px}.tp .samt-teljari button._gull{grid-column:1 / -1}',
+        // 18.11.2026 (Agnar: „fara yfir fleiri svona svör/samþykktar glugga“): sama þétta form og Samþykkja — glugginn stendur á skjánum (sticky),
+        // þráðurinn (skeytin) vinstra megin og svarið/málið hægra megin, takkarnir lágir; langur texti skrunast inni í kassanum.
+        '@container t5 (min-width: 901px){',
+          '.tp .tp-sel{scroll-margin-top:150px;max-height:calc(100vh - 168px);overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;align-content:start;padding:12px 16px}',
+          '.tp .tp-sel>*{min-width:0;grid-column:1 / -1}',
+          '.tp .tp-sel .vbr-titill{font-size:18px;line-height:1.3;margin:0}.tp .tp-sel .vbr-meta{margin:0}.tp .tp-haus{gap:3px}',
+          '.tp .tp-takkar{margin-top:0;gap:6px}.tp .tp-takkar._adal{padding-bottom:8px}.tp .tp-takkar .btn{min-height:40px}',
+          '.tp .tp-svar,.tp .tp-claude,.tp .tp-mal{margin-top:0;padding:8px 12px}',
+          '.tp .tp-sel>.tp-skeytin{grid-column:1;grid-row:3 / span 4;margin-top:0;max-height:calc(100vh - 360px);overflow-y:auto;padding-right:4px}',
+          '.tp .tp-sel>.tp-svar,.tp .tp-sel>.tp-claude,.tp .tp-sel>.tp-mal{grid-column:2}',
+          '.tp .tp-ta{height:min(22vh,170px);margin:0 0 6px;padding:6px 10px}.tp .tp-inp{margin:0 0 6px;padding:6px 10px}',
+          '.tp .tp-nota{max-height:min(18vh,150px)}.tp .tp-skeyti{padding:8px 12px}',
+          // Svartakkarnir festast neðst í glugganum þegar innihaldið er hærra en skjárinn.
+          '.tp .tp-svar .tp-takkar,.tp .tp-claude .tp-takkar{position:sticky;bottom:0;z-index:1;background:#fbf8ef;padding:6px 0}',
+        '}'
       ].join('\n');
       root.appendChild(st);
     } catch (_) {}
@@ -573,6 +605,7 @@
   window.Tolvupostar = {
     S, HOLF, GMAIL_HOLF, erGmail, HLUTAR, HLUTA_L, load, loaded: () => S.loaded, loading: () => S.loading, loadedAt: () => S.loadedAt, villa: () => S.villa,
     siad, hlutaListi, finna, FELLT, erFellt, valinn, merkjaTalning, vistaSiu, rymiHtml, smellur, innslattur, saekjaNyjan,
+    endurflokka: () => { if (S.loaded) S.thraedir = byggjaThraedi(S.postar); },   // 513: VIP-gögnin komu eftir hleðslu
     tilClaude: (k, v, sky) => { const t = finna(k); return t ? adgerd(t, () => tilClaude(t, v, sky)) : Promise.resolve(); },
     stjarna: k => { const t = finna(k); return t ? adgerd(t, () => stjarna(t)) : Promise.resolve(); },
     svarad: k => { const t = finna(k); return t ? adgerd(t, () => merkjaSvarad(t)) : Promise.resolve(); },

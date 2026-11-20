@@ -59,9 +59,12 @@
   // ───────────────────────────── gögn ─────────────────────────────
   async function hlada() {
     const s = sb(); if (!s) return false;
-    const r = await s.from(TAFLA).select('*').eq('eytt', false).order('dags', { ascending: false, nullsFirst: false }).limit(3000);
-    if (r.error) { toast('Náði ekki í verð samkeppnisaðila'); return false; }
-    _radir = r.data || []; return true;
+    // 17.11.2026 (audit-pagination): .limit(3000) skilaði í mesta lagi 1000 röðum ÞEGJANDI (PostgREST-þak). Flett í staðinn.
+    try {
+      _radir = await DB.fetchAll((from, to) => s.from(TAFLA).select('*').eq('eytt', false)
+        .order('dags', { ascending: false, nullsFirst: false }).order('id').range(from, to));
+    } catch (_) { toast('Náði ekki í verð samkeppnisaðila'); return false; }
+    return true;
   }
   // Vísitala byggingarkostnaðar, allir mánuðir (Hagstofa, VIS13000). Enginn Content-Type-haus: þá er þetta einföld beiðni án
   // forskoðunar (sjá 503). Lesaðeins; null ef ekki næst.

@@ -101,9 +101,9 @@
       from_email: 'eldklar@eldklar.is',
       reply_to: '',
       reikningur_subject: 'Reikningur frá Slökkvitæki ehf — {invoiceNum}',
-      reikningur_body: 'Sæl/sæll {customerName},\n\nMeðfylgjandi er reikningur {invoiceNum} að upphæð {amount}.\n\nGreiðslukröfur birtast í heimabankanum þínum innan örfárra daga.\n\nKveðja,\n{companyName}',
+      reikningur_body: 'Góðan daginn,\n\nMeðfylgjandi er reikningur {invoiceNum} að upphæð {amount}.\n\nGreiðslukröfur birtast í heimabankanum þínum innan örfárra daga.\n\nKveðja,\n{companyName}',
       reminder_subject: 'Áminning — reikningur {invoiceNum} ógreidd',
-      reminder_body: 'Sæl/sæll {customerName},\n\nReikningur {invoiceNum} að upphæð {amount} er enn ógreiddur.\n\nVinsamlegast greiðið við fyrsta tækifæri.\n\nKveðja,\n{companyName}',
+      reminder_body: 'Góðan daginn,\n\nReikningur {invoiceNum} að upphæð {amount} er enn ógreiddur.\n\nVinsamlegast greiðið við fyrsta tækifæri.\n\nKveðja,\n{companyName}',
       signature: 'Slökkvitæki ehf · 565-4080 · slokkvitaeki@brunaholf.is'
     },
     backup: {

@@ -93,7 +93,9 @@ function stub(h, opt = {}) {
     if (tafla === 'v_krafa_ogreidd') return svar(sida(h.ogreidd || []));
     if (tafla === 'v_krafa_ekki_send_adgerd') { const d = h.adgerd || []; return { ...svar(d), headers: { get: (k) => (k.toLowerCase() === 'content-range' && h.adgerd ? '0-0/' + d.length : null) } }; }
     if (tafla === 'solur' && q.get('status') === 'eq.final') return svar(sida(h.tekjur_sl));
-    if (tafla === 'invoices' && q.get('gjalddagi')) return svar(sida(h.tekjur_bh));
+    if (tafla === 'solur' && q.get('status') === 'eq.void') return svar(sida(h.void_sl || []));
+    // 17.11.2026 (lota 4): tekjur Brunahólfs eftir útgáfudegi — sían er or=(utgafudagur…,and(utgafudagur.is.null,gjalddagi…)).
+    if (tafla === 'invoices' && (q.get('gjalddagi') || (q.get('or') || '').includes('utgafudagur'))) return svar(sida(h.tekjur_bh));
     if (tafla === 'email_digest') {
       const len = Object.keys(h.postar).find((d) => q.get('and').includes(d));
       assert.match(q.get('and'), /account\.ilike\."\*@eldklar\.is",account\.ilike\."\*@brunaholf\.is"/, 'SQL-sían takmarkar við pósthólf félaganna');
@@ -250,6 +252,23 @@ test('stadfesta: atriðum án gildrar heimildar hent, ókunn auðkenni síuð, m
   assert.deepEqual(s.rad[0].heimildir, ['C1', 'F1']);
   assert.deepEqual(Object.keys(s.postar).sort(), ['C1', 'H1', 'H2', 'H3'], 'aðeins póstar sem eru notaðir — H3 kemur úr betri leiðinni');
   assert.equal(s.postar.H1.efni, 'Skoðun Norðurhús'); assert.equal(s.postar.H1.dags, NU.toISOString().slice(0, 10).replace(/\d\d$/, (d) => String(d - 1).padStart(2, '0')));
+});
+
+// 19.11.2026 (traustmæling): reglan „peningaráð þarf MÆLDA heimild" stóð með `Pd+` — týnt bakskástrik. „P1" komst því
+// aldrei í gegn og peningaráð með P-línu var hent ÞEGJANDI frá 15.11. Hér er hver mæld heimild prófuð, ekki aðeins O og G.
+test('stadfesta: P-línur eru mældar heimildir (Pd+ var bakskástrikslaust og felldi þær allar)', async () => {
+  const h = heimur(); stub(h);
+  const f = await R.safna({ nu: NU });
+  const rad = (heimildir) => [{ flokkur: 'peningar', titill: 'Peningaráð', af_hverju: 'x', fyrsta_skref: 'y', heimildir }];
+  for (const hm of ['O', 'M', 'G', 'P1', 'P2', 'P12', 'HR', 'CR']) {
+    const s = R.stadfesta({ ...GOTT, rad: rad([hm]), heimaleiga: { stada: '', frettir: [] }, center: { stada: '', frettir: [] }, betri_leid: null }, f);
+    assert.equal(s.rad.length, 1, hm + ' á að teljast mæld heimild');
+  }
+  // Þekking ein og sér dugar áfram ekki á peningaráði — reglan sjálf er óbreytt.
+  for (const hm of ['HK1', 'CK2', 'Pd']) {
+    const s = R.stadfesta({ ...GOTT, rad: rad([hm]), heimaleiga: { stada: '', frettir: [] }, center: { stada: '', frettir: [] }, betri_leid: null }, f);
+    assert.equal(s.rad.length, 0, hm + ' má ekki duga sem mæld heimild');
+  }
 });
 
 test('stadfesta: engin betri leið (tómur listi, vantar eða ekki listi) → null, ekkert hent', async () => {
@@ -557,13 +576,18 @@ const PLAN = { utgafa: 1, samthykkt: false, timabil: { fra: '2026-11-16', til: '
     { id: 'A2', titill: 'Bóka gleymdar skoðanir', eigandi: 'spider-man', maelikvardi: 'skoðun gleymd', markmid_vikur: 'v4: −40' }] };
 function heimurTekjur() {
   const h = heimur();
+  const F = 'final';
   h.tekjur_sl = [
-    { upphaed_an_vsk: 100000, created_at: '2026-10-05T10:00:00Z' }, { upphaed_an_vsk: -20000, created_at: '2026-10-07T10:00:00Z' },
-    { upphaed_an_vsk: 50000, created_at: '2026-09-10T10:00:00Z' }, { upphaed_an_vsk: 70000, created_at: '2026-08-10T10:00:00Z' },
-    { upphaed_an_vsk: 999, created_at: '2026-11-02T10:00:00Z' },
+    { status: F, upphaed_an_vsk: 100000, created_at: '2026-10-05T10:00:00Z' }, { status: F, upphaed_an_vsk: -20000, created_at: '2026-10-07T10:00:00Z', credit_of: 1 },
+    { status: F, upphaed_an_vsk: 50000, created_at: '2026-09-10T10:00:00Z' }, { status: F, upphaed_an_vsk: 70000, created_at: '2026-08-10T10:00:00Z' },
+    { status: F, upphaed_an_vsk: 999, created_at: '2026-11-02T10:00:00Z' },
+    // kreditnóta á BAKFÆRÐA sölu (777) telst ekki — upprunasalan er þegar úti (lota 4, 17.11.2026)
+    { status: F, upphaed_an_vsk: -5000, created_at: '2026-10-08T10:00:00Z', credit_of: 777 },
   ];
+  h.void_sl = [{ id: 777 }];
   h.tekjur_bh = [
-    { hofudstoll: 1000000, gjalddagi: '2026-10-20' }, { hofudstoll: 500000, gjalddagi: '2026-09-01' },
+    // útgefinn 31.10 með gjalddaga í nóvember → OKTÓBERTEKJA (útgáfudagur ræður, ekki gjalddagi)
+    { hofudstoll: 1000000, gjalddagi: '2026-11-09', utgafudagur: '2026-10-31' }, { hofudstoll: 500000, gjalddagi: '2026-09-01' },
     { hofudstoll: 300000, gjalddagi: '2026-08-01' }, { hofudstoll: 200000, gjalddagi: '2026-04-01' },
   ];
   h.kv.radgjafinn_aaetlun = JSON.parse(JSON.stringify(PLAN));
@@ -595,7 +619,7 @@ test('tekjur: kreditnótur dregnar frá, síðustu 3 HEILU mánuðir, markmið =
   const nov = m.manudir.find((x) => x.man === '2026-11');
   assert.equal(nov.hluti_manadar, true); assert.equal(nov.slokkvitaeki, 999);
   assert.equal(m.hagnadur, null, 'hagnaður er ómældur — null, aldrei 0');
-  assert.match(m.skilgreining, /bráðabirgða/);
+  assert.match(m.skilgreining, /útgáfudegi/); assert.doesNotMatch(m.skilgreining, /gjalddaga/);
 });
 
 test('tekjur: mánuðir fyrir yfirtöku (05.2026) eru ÓMÆLDIR hjá Slökkvitæki — null, ekki 0, og ekki í meðaltali; ekkert plan → ekkert markmið', async () => {
@@ -606,6 +630,14 @@ test('tekjur: mánuðir fyrir yfirtöku (05.2026) eru ÓMÆLDIR hjá Slökkvitæ
   assert.deepEqual(m.sidustu3.manudir, ['2026-05', '2026-06']);
   assert.equal(m.markmid_a_manudi, null, 'án grunnlínu er ekkert markmið reiknað');
   assert.equal(m.hlutfall_af_markmidi, null);
+});
+
+test('tekjur: tómur lestur er ÓMÆLDUR, ekki 0 — Brunahólf null þegar invoices skilar engu (aðgangsregla), ekkert markmiðshlutfall', async () => {
+  const h = heimurTekjur(); h.tekjur_bh = []; stub(h);
+  const m = await R.tekjur(new Date(NU), h.kv.radgjafinn_aaetlun);
+  assert.ok(m.manudir.length && m.manudir.every((x) => x.brunaholf === null && x.samtals === null), 'Brunahólf og samtala null, aldrei 0');
+  assert.ok(m.manudir.some((x) => x.slokkvitaeki > 0), 'Slökkvitæki mælist áfram');
+  assert.deepEqual(m.sidustu3.manudir, []); assert.equal(m.sidustu3.a_manudi, null); assert.equal(m.hlutfall_af_markmidi, null);
 });
 
 test('safna: allur reksturinn — peningalínur (combo-yfirlit), sjálfvirkni sem brást, úttektarplan, planið; ómælt skráð, ekki 0', async () => {

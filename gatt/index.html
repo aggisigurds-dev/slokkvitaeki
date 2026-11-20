@@ -790,6 +790,10 @@
   /* koparlitur án málmrandar: í 22px plötu las dökka miðjuröndin í --m-face sem yfirstrikun */
   .kst.okkar{background:linear-gradient(180deg,rgba(var(--glow),.10),rgba(var(--glow),.22));border-color:rgba(var(--glow),.6);color:var(--deep)}
   .kst.okkar::before{background:var(--accent);opacity:1;box-shadow:0 0 5px rgba(var(--glow),.7)}
+  /* 18.11.2026 (Agnar: „Með skoðun ætti frekar að vera grænt, heldur en rautt"): jákvæð staða fær húsgrænt (--good),
+     ekki appelsínugula merkislitinn sem .kst.okkar notar. Sama bygging og .kst.okkar svo pillan hagar sér eins. */
+  .kst.gott{background:linear-gradient(180deg,rgba(31,122,68,.10),rgba(31,122,68,.22));border-color:rgba(31,122,68,.55);color:var(--good)}
+  .kst.gott::before{background:var(--good);opacity:1;box-shadow:0 0 5px rgba(31,122,68,.6)}
   .kst.til{background:var(--obsidian);border-color:#000;color:#e6e2da}
   .kst.vantar{background:linear-gradient(180deg,#d9534a,#a8231c);border-color:#6e100d;color:#fff}
   .kst.oskrad{border-style:dashed;color:var(--dim);background:transparent}
@@ -1672,6 +1676,7 @@
       <div class="kicker" id="yf-kicker">Staða brunavarna</div>
       <h2 class="page">Yfirlit</h2>
       <div class="cards" id="cards"></div>
+      <section class="pf-kort" id="yf-profill" hidden aria-label="Félagið"></section>
       <div class="yf-layout"><div class="yf-main">
       <div class="yf-tools" id="yf-tools"></div>
       <div class="tbl-wrap" id="yf-tbl"><table>
@@ -2020,13 +2025,13 @@
 <link rel="stylesheet" href="/gatt/premium-hero.css?v=20261106b">
 <link rel="stylesheet" href="/gatt/premium-reference.css?v=20261106c">
 <link rel="stylesheet" href="/gatt/premium-polish-v2.css?v=20261106d">
-<script src="/gatt/portal.js?v=20261110ban"></script>
+<script src="/gatt/portal.js?v=20261118td"></script>
 <script src="/gatt/premium-hero.js?v=20261106b" defer></script>
-<link rel="stylesheet" href="/gatt/premium-v2.css?v=20261110e">
+<link rel="stylesheet" href="/gatt/premium-v2.css?v=20261118tigull3">
 <link rel="stylesheet" href="/gatt/login-v2.css?v=20261109breidd">
 <link rel="stylesheet" href="/gatt/login-premium-landing.css?v=20261109b">
 <link rel="stylesheet" href="/gatt/login-premium-faithful.css?v=20261110g">
-<script src="/gatt/premium-v2.js?v=20261109a" defer></script>
+<script src="/gatt/premium-v2.js?v=20261117a" defer></script>
 <script src="/gatt/login-premium-faithful.js?v=20261109c" defer></script>
 </body>
 </html>

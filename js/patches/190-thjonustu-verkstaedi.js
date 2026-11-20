@@ -403,6 +403,78 @@
     render();
   }
 
+  /* ── SÖNNUN UM ÚTTEKT ÁRSINS (18.11.2026) ─────────────────────────────────────────────────────────────────────
+   * Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu, til að hjálpa mér að útkljá þau mál“ — og valdi bæði
+   * tengingu við niðurstöðurnar og við agentana. Yfirferð sama dag fann að 19 af 100 félögum með útrunna úttekt báru
+   * merki um að úttekt ársins væri þegar gerð (skýrsla, reikningur eða tæki með skoðun skráða á árinu) án þess að vera
+   * merkt — verkið hafði dottið af borðinu. Áður sást aðeins FULLT par (skýrsla + reikningur → „Fjarlægja“). Nú sést
+   * hver vísbending á röðinni og félög með sönnun raðast efst í „Á dagskrá“, með tökkum til að setja þau í vinnslu
+   * eða merkja búin. EKKERT er merkt sjálfkrafa: vísbending er ekki staðfesting (skoðunardagur tækja getur komið úr
+   * innflutningi), svo Agnar ákveður hverja röð. */
+  let _skodByCo = null, _skodLoaded = false;   // Map<String(co.id), { n, sidast }> — tæki með last_insp á árinu
+  let _buidSpurt = null;                        // félag þar sem „✓ Búið“ í skúffunni bíður seinni smellsins
+  // Hrein: tækjaraðir → Map<félag, { n, sidast }>. Óháð rýni 18.11.2026 (mælt í raungögnum sama dag): af 4.319 tækjum með
+  // skoðunardag á árinu eru 688 með skoðunardag = SKRÁNINGARDAG (nýtt tæki fær uppsetningardaginn sem skoðun, db.js) og 86
+  // úrelt. Hvorugt er skoðun → talið frá. Dagur fram í tímann telst heldur aldrei „skoðað“.
+  function skodudKort(rows, ar, iDag) {
+    const m = new Map();
+    (rows || []).forEach(u => {
+      if (!u || u.fyrirtaeki_id == null) return;
+      const k = String(u.fyrirtaeki_id), d = String(u.last_insp || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d.slice(0, 4) !== String(ar) || d > iDag) return;
+      if (String(u.status || '').toLowerCase() === 'urelt') return;
+      if (String(u.created_at || '').slice(0, 10) === d) return;   // nýskráning, ekki skoðun
+      const e = m.get(k) || { n: 0, sidast: '' };
+      e.n++; if (d > e.sidast) e.sidast = d;
+      m.set(k, e);
+    });
+    return m;
+  }
+  // Bið fyrir næstu SJÁLFVIRKU tilraun (ms): 2, 4, 8, 16, 32 s — svo null (hætt; ný tilraun við teikningu að mínútu liðinni).
+  const skodBid = n => (n < 5 ? 2000 * Math.pow(2, n) : null);
+  let _skodTilraun = 0;
+  async function loadSkodud() {
+    try {
+      const sb = (window.DB && DB.sb); if (!sb || typeof DB.fetchAll !== 'function') throw new Error('gagnatengingin er ekki tilbúin');
+      const iDag = new Date().toISOString().slice(0, 10);
+      const rows = await DB.fetchAll((from, to) => sb.from('uttaeki')
+        .select('fyrirtaeki_id,last_insp,status,created_at').gte('last_insp', curYear + '-01-01').lte('last_insp', iDag)
+        .not('fyrirtaeki_id', 'is', null).order('id').range(from, to));
+      _skodByCo = skodudKort(rows, curYear, iDag);
+      _skodTilraun = 0;
+    } catch (e) {
+      // Sóknarvilla → engin vísbending, ENGIN núll-fullyrðing. Mælt í loftinu 18.11.2026 (c717f43): sé síðan opnuð BEINT á
+      // verkstæðinu er teiknað áður en DB.sb er til, og tækjaflísarnar birtust þá fyrst eftir mínútu. Nú reynir sóknin
+      // sjálf aftur (2–32 s); dugi það ekki, við næstu teikningu að mínútu liðinni. Aldrei lykkja: ein tilraun í einu.
+      const bid = skodBid(_skodTilraun++);
+      try { console.warn('[190] skoðuð tæki náðust ekki (tilraun ' + _skodTilraun + '): ' + ((e && e.message) || e)); } catch (_) {}
+      if (bid != null) setTimeout(loadSkodud, bid);
+      else setTimeout(() => { _skodTilraun = 0; _skodLoaded = false; }, 60000);
+      return;
+    }
+    try { render(); } catch (e) { try { console.warn('[190] teikning eftir tækjasókn brást', e); } catch (_) {} }   // kölluð af klukku: má ekki verða að óhöndluðu loforði
+  }
+  // Vísbendingar um að úttekt ársins sé gerð, sterkasta fyrst. Hrein: les aðeins spjaldið (r).
+  function sonnun(r) {
+    const ut = [];
+    if (!r) return ut;
+    if (r.docs && r.docs.skyrsla) ut.push({ k: 'skyrsla', t: '📝 Skýrsla ' + curYear, tt: 'Úttektarskýrsla ' + curYear + ' er skráð á þennan stað' });
+    if (r.hasReik) ut.push({ k: 'reik', t: '🧾 Reikningur ' + curYear, tt: 'Úttektarreikningur eða krafa ' + curYear + ' er til á þennan stað' });
+    const sk = r.skodud;
+    if (sk && sk.n > 0) {
+      // Mælt 18.11.2026: rúmur helmingur skoðunardaga ársins er 1. dagur mánaðar (2.483 af 4.319 tækjum) — þar var aðeins
+      // MÁNUÐURINN skráður (eldri skrá). Þá er mánuðurinn sýndur, ekki dagur sem enginn skráði.
+      const MAN = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+      const s = String(sk.sidast || ''), dd = s.slice(8, 10), man = MAN[+s.slice(5, 7) - 1];
+      const gilt = /^\d{4}-\d{2}-\d{2}$/.test(s) && !!man && +dd >= 1 && +dd <= 31;   // „2026-13-01“ gefur enga dagsetningu
+      const adeinsMan = gilt && dd === '01';
+      const hvenaer = !gilt ? '' : adeinsMan ? ' í ' + man : ' ' + dd + '.' + s.slice(5, 7) + '.';
+      ut.push({ k: 'taeki', t: '🔧 ' + sk.n + (sk.n === 1 ? ' tæki skoðað' : ' tæki skoðuð') + hvenaer,
+        tt: sk.n + ' tæki bera skoðunardag á árinu ' + curYear + (hvenaer ? ' (síðast' + hvenaer + (adeinsMan ? ' — aðeins mánuðurinn er skráður' : '') + ')' : '') + '. Dagurinn getur komið úr eldri skrá — vísbending, ekki staðfesting.' });
+    }
+    return ut;
+  }
+
   /* 09.11.2026 (Agnar: „ýkt snilld að fá bútinn af skýrslunni þangað inn sem við á … collapsed"):
    * útklippur af skönnuðum vinnublöðum (röðin sem á við fyrirtækið) sem SAMANBROTINN hluti á spjaldinu, undir
    * nótunni og yfir Opna/Skýrsla. Gögnin eru á þjóninum (tafla vinnublad_utklippur, myndir í verkbord-files/
@@ -952,6 +1024,8 @@
         hasDraft: hasDraft,
         doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
         reik2026: hasReikDoc,   // customer_documents á ÞESSUM stað — ekki kt-payday
+        hasReik: hasReik,       // reikningur EÐA krafa ársins á þessum stað (sönnun, 18.11.2026)
+        skodud: _skodByCo ? (_skodByCo.get(String(co.id)) || null) : null,   // { n, sidast } — tæki með skoðun skráða á árinu
         netfang: co.netfang || '',   // fyrir ✉️ senda-glugga
         adr: co.heimilisfang || co.heimilisFang || '',   // undir húsmyndinni á Spjöld (21.10.2026)
         docs: docs,   // {skyrsla,reik} ársins, fyrirtaeki_id
@@ -1162,6 +1236,75 @@
       return '<button class="sv-mark" data-id="' + r.id + '" data-mark="' + k + '" title="' + esc(label) + (on ? ' — smelltu til að afmerkja' : '') + '"' + st + '>' + (on ? '● ' : '') + esc(label) + '</button>';
     }).join('') + '</div>';
   }
+  /* ── MERKJA OG KEYRA Á VERKSTÆÐINU (18.11.2026) ────────────────────────────────────────────────────────────────
+   * Agnar: „bætt þarna inn á þjónustuverkstæði síðunni, tengingu, til að hjálpa mér að útkljá þau mál“ → „Bæði“ (sönnunin
+   * í „Á dagskrá“ OG agentarnir). Sama vél og á Þjónustuborðinu (519), EIGIÐ eintak: bord 'verkstaedi', línan er FÉLAGIÐ.
+   * Lítið ◇ á hverju spjaldi í vinnslu og hverri röð í „Á dagskrá“ → sömu átta hökin (Já · Nei · Keyra · Snooze · Veit ekki ·
+   * Rannsaka betur · Comment · Yfirfara) → ▶ Keyra efst → agentinn fær verkstæðisstöðu, skjöl, sölur og tæki ÞESS STAÐAR
+   * (_adalmal-claude.cjs uttektargogn) → Óðinn metur → tilbúið verk í Afgreiðslu. Ekkert fer út og ekkert er merkt búið:
+   * lokasmellurinn er alltaf Agnars. Sést AÐEINS hjá Agnari — aðrir starfsmenn sjá verkstæðið óbreytt og ekkert er sótt
+   * fyrir þá. GÁTIN ER INNSKRÁÐI NOTANDINN (Adgangsstyring.stada), ekki „Ég er“-valið sem 519/489 nota á Þjónustuborðinu:
+   * það val er eitt gildi á TÖLVU og sjálfgefið „Agnar“ þar sem enginn hefur valið (350), svo á verkstæðinu — sem allir
+   * nota — hefðu aðrir stjórnendur (Annþór, Bjarndís) fengið tólið og almennir starfsmenn villulínu. uid 1 er Agnar;
+   * uid 10 er „Lota (Claude)“, svo lotur geti prófað (merkingar hverrar lotu eru hennar eigin, merkt_af). „Skoða sem“ felur. */
+  const MK_MA = [1, 10];
+  let _mkv = null;
+  function mkv() {
+    if (_mkv) return _mkv;
+    try {
+      const MK = window.MerkjaKeyra;
+      if (!MK || typeof MK.buaTil !== 'function') return null;
+      _mkv = MK.buaTil({ bord: 'verkstaedi', lykill: 'fyrirtaeki_id', view: VIEW_ID, sedLykill: 'merkja_sed_verkst',
+        nu: () => mkHver(),
+        toast: (m) => toast(m),
+        teikna: () => { const v = viewEl(); if (v && v.classList.contains('active')) render(); },
+        rot: () => viewEl(),
+        opna: (id) => openCompany(id),
+        heiti: (m) => String(m.mal_titill || 'Félag #' + m.fyrirtaeki_id),
+        opnaTexti: 'Opna félagið' });
+      MK.verkstaedi = _mkv;
+      // Útlit merkisins hér (519 ber grunn-CSS-ið með teljaranum): stærri snertiflötur í takkaröð spjaldsins.
+      if (!document.getElementById('_sv-mk')) {
+        const st = document.createElement('style'); st.id = '_sv-mk';
+        const V = '#' + VIEW_ID;
+        st.textContent = [
+          V + ' .mk-m{height:32px;min-width:36px;margin:0;padding:0 8px;border-radius:9px;font-size:14px;flex:0 0 auto}',
+          V + ' .mk-m:not([data-s]){border-color:rgba(20,24,34,.2);background:#fff;color:#3a4250}',
+          V + ' .sv-drawer-row .mk-m{height:28px;min-width:32px;font-size:13px}',
+          V + ' .mk-g{margin:8px 0 4px;max-width:560px;text-align:left;color:#161513}',
+          V + ' .sv-drawer>.mk-g{margin:0 14px 10px}',
+          V + ' .mk-bar{margin:0 0 14px;border-radius:12px}',
+          '@media (max-width:700px){' + V + ' .mk-m{height:40px;min-width:44px}' + V + ' .sv-drawer-row .mk-m{height:36px;min-width:40px}}',
+        ].join('');
+        document.head.appendChild(st);
+      }
+    } catch (_) { _mkv = null; }
+    return _mkv;
+  }
+  // 'Agnar' (gát 519: n === 'Agnar') aðeins þegar innskráði notandinn má sjá tólið; annars '' → ekkert teiknað, ekkert sótt.
+  const mkHver = () => {
+    try {
+      const st = window.Adgangsstyring && Adgangsstyring.stada ? Adgangsstyring.stada() : null;
+      const n = st && !st.skoda ? st.notandi : null;
+      return n && MK_MA.indexOf(Number(n.id)) > -1 ? 'Agnar' : '';
+    } catch (_) { return ''; }
+  };
+  const mkMerki = r => { try { const m = mkv(); return m ? m.merki(r) : ''; } catch (_) { return ''; } };
+  const mkGluggi = r => { try { const m = mkv(); return m ? m.gluggi(r) : ''; } catch (_) { return ''; } };
+  // Innskráningin (495) berst ósamstillt og lætur 190 ekki vita, og 519 hleðst á eftir 190. Sé annað hvort ókomið við
+  // teikningu er athugað aftur eftir 1,5 s og 5 s og teiknað EINU SINNI þegar bæði eru komin — annars vantaði ◇ þar til
+  // eitthvað annað endurteiknaði (óháð rýni 18.11.2026). Tvær klukkur í mesta lagi, aldrei sókn fyrir aðra en Agnar.
+  let _mkBid = 0;   // 0 = ekki beðið · 1 = bíður · 2 = komið og teiknað
+  function mkBida() {
+    if (_mkBid) return;
+    _mkBid = 1;
+    [1500, 5000].forEach(ms => setTimeout(() => {
+      if (_mkBid === 2 || !mkv() || !mkHver()) return;
+      _mkBid = 2;
+      const v = viewEl(); if (v && v.classList.contains('active')) render();
+    }, ms));
+  }
+  const mkBar = () => { try { const m = mkv(), n = mkHver(); if (!m || !n) mkBida(); return m ? m.html(n) : ''; } catch (_) { return ''; } };
   function note(r) {
     return '<textarea class="sv-note" data-id="' + r.id + '" rows="2" placeholder="Minnispunktur…">' + esc(r.note || '') + '</textarea>';
   }
@@ -1171,7 +1314,7 @@
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '" style="' + btn('#ede9fe','#5b21b6','#ddd6fe') + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>' +
       '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu" style="' + btn('#fef2f2','#b91c1c','#fecaca') + '">✕ Afmerkja</button>' +
-      '</div>';
+      mkMerki(r) + '</div>' + mkGluggi(r);
   }
   function nameBlock(r, big) {
     return '<div><div class="sv-nm" style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
@@ -1285,9 +1428,10 @@
       '<button class="_sv-act" data-act="open" data-id="' + r.id + '" title="Opna fyrirtækjasíðuna">' + SPJ_IKON.opna + 'Opna</button>' +
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '" title="Opna úttektarskýrsluna">' + SPJ_IKON.skyrsla + 'Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Merkja verkið búið í ár">' + SPJ_IKON.hak + 'Búið</button>' +
+      mkMerki(r) +
       '<span class="sv-spj-bil"></span>' +
       '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">' + SPJ_IKON.x + 'Afmerkja</button>' +
-      '</div>';
+      '</div>' + mkGluggi(r);
   }
   // Í-vinnslu kort — cards mode (Brunastál C: málmhaus + húsmynd)
   function gridCard(r) {
@@ -1314,7 +1458,7 @@
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '">✓ Búið</button>' +
       '<button class="_sv-act sv-unmarkw" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">✕ Afmerkja</button>' +
-      '</div>';
+      mkMerki(r) + '</div>' + mkGluggi(r);
   }
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
@@ -1347,6 +1491,7 @@
     if (!window.__fjLiveOpnad && window.FjarmalLive && FjarmalLive.publish) { window.__fjLiveOpnad = true; setTimeout(() => { try { FjarmalLive.publish(); } catch (_) {} }, 6000); }
     // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
+    if (!_skodLoaded) { _skodLoaded = true; loadSkodud(); }   // tæki með skoðun skráða á árinu → vísbending í „Á dagskrá“
     if (!_verkstLoaded) { _verkstLoaded = true; loadVerkst(); }   // óskiluð tæki á verkstæðinu → ein fyrirspurn, endurteiknar
     else if (!_verkstBusy && Date.now() - _verkstAt > 20000) loadVerkst();   // ný tæki á verkstæði sjást án endurhleðslu
     if (!_vbLoaded) { _vbLoaded = true; loadVinnublad(); }          // útklippur af vinnublöðum → ein fyrirspurn, endurteiknar
@@ -1402,20 +1547,36 @@
     const dagskraSum = _dagskraRaw.reduce((s, r) => s + (+r.tekjur || 0), 0);
 
     // Collapsible side drawers (collapsed by default).
+    // 18.11.2026: í „Á dagskrá“ raðast félög með SÖNNUN um gerða úttekt efst — fullt par fyrst, svo hluta-sönnun.
+    const snFlis = sn => '<span class="sv-sn" title="' + esc(sn.tt) + '" style="font-size:10.5px;font-weight:700;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:1px 6px;white-space:nowrap;margin-left:5px">' + esc(sn.t) + '</span>';
+    const snHaus = (t, lit) => '<div class="sv-drawer-sub" style="padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:.04em;color:' + (lit ? '#1e3a8a;background:#eff6ff;border-bottom:1px solid #bfdbfe' : '#6b7280;background:#f8fafc;border-bottom:1px solid rgba(20,24,34,.06)') + '">' + t + '</div>';
     function drawerRows(list, withStart) {
       if (!list.length) return '<div class="sv-drawer-row"><span class="mn">Ekkert hér.</span></div>';
-      return list.map(r =>
-        '<div class="sv-drawer-row"><span class="nm">' + esc(r.nafn) +
+      const rodHtml = r => { const sn = withStart && !r.doneDocs ? sonnun(r) : []; return (
+        '<div class="sv-drawer-row"' + (sn.length ? ' data-sonnun="' + sn.length + '" style="flex-wrap:wrap;row-gap:6px"' : '') + '><span class="nm">' + esc(r.nafn) +
           (withStart && r.doneDocs ? ' <span title="Þegar með úttektarskýrslu + reikning fyrir ' + curYear + '" style="font-size:10.5px;font-weight:700;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:1px 6px;white-space:nowrap">⚠️ skjöl komin</span>' : '') +
-          '</span>' +
+          sn.map(snFlis).join('') + '</span>' +
           '<span class="mn">' + (r.units > 0 ? '🧯 ' + r.units : '') + '</span>' +
+          (withStart ? mkMerki(r) : '') +
           (withStart && r.doneDocs
             ? '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7','#14532d','#86efac') + '">✔️ Fjarlægja</button>'
+            : withStart && sn.length
+            ? '<span style="display:inline-flex;gap:6px;flex:0 0 auto">' +
+              '<button class="_sv-act" data-act="open" data-id="' + r.id + '" title="Opna fyrirtækjasíðuna og staðfesta áður en merkt er" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>' +
+              '<button class="_sv-act" data-act="start" data-id="' + r.id + '" title="Setja á verkstæðið — skrefin sem vantar (skýrsla, reikningur) sjást þar" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Í vinnslu</button>' +
+              // Tveir smellir (óháð rýni 18.11.2026): „✓ Búið“ við hlið „Opna“ má ekki skrá félag búið af einum röngum smelli.
+              (String(_buidSpurt) === String(r.id)
+                ? '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" title="Seinni smellur: færa í „Búið í ár“" style="' + btn('#15803d','#ffffff','#14532d') + '">✓ Staðfesta búið</button>'
+                : '<button class="_sv-act" data-act="buidspyrja" data-id="' + r.id + '" title="Úttekt ' + curYear + ' er frágengin — færa í „Búið í ár“ (tveir smellir)" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>') + '</span>'
             : withStart
             ? '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Hefja vinnslu</button>'
             : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>') +
-        '</div>'
-      ).join('');
+        '</div>' + (withStart ? mkGluggi(r) : '')); };
+      if (!withStart) return list.map(rodHtml).join('');
+      const full = list.filter(r => r.doneDocs), hluta = list.filter(r => !r.doneDocs && sonnun(r).length), hin = list.filter(r => !r.doneDocs && !sonnun(r).length);
+      if (!full.length && !hluta.length) return hin.map(rodHtml).join('');
+      return snHaus('🔎 LÍKLEGA BÚIN — merki um úttekt ' + curYear + ' eru til · ' + (full.length + hluta.length), true) + full.concat(hluta).map(rodHtml).join('') +
+        (hin.length ? snHaus('ENGIN MERKI UM ÚTTEKT ' + curYear + ' · ' + hin.length, false) + hin.map(rodHtml).join('') : '');
     }
     const dagskraDrawer = _openDagskra
       ? '<div class="sv-drawer"><div style="padding:10px 14px;font-size:12px;font-weight:700;color:#a16207;background:#fffbeb;border-bottom:1px solid #fde68a">⏳ Á DAGSKRÁ — hefja næsta</div>' + drawerRows(b.dagskra, true) + '</div>'
@@ -1450,6 +1611,7 @@
     const [vNum, vUnit] = krUnit(vinnslaSum);
     const vUttektSum = b.vinnsla.filter(r => r.steps && r.steps.uttekt).reduce((t, r) => t + (+r.tekjur || 0), 0);
     const dSum = fmtSum(dagskraSum) || '—';
+    const dSonnun = b.dagskra.filter(r => r.doneDocs || sonnun(r).length).length;   // 18.11.2026: líklega búin en ómerkt
     const totAll = vn;   // sama þýði og spjöldin — ein tala, einn uppruni
     const skrefSulur = STEP_DEFS.map(([k, lbl, short]) => {
       const st = _stepF[k] || '';
@@ -1508,6 +1670,7 @@
             '<div class="b190-t">' + dn + '<small>staðir</small></div>' +
             '<div class="b190-s" role="img" aria-label="Á dagskrá af fyrirtækjum í þjónustu"><span class="ra" style="width:' + pctOf(dn, ovN) + '"></span></div>' +
             '<div class="b190-l"><span>≈ <b>' + dSum + '</b> eftir</span></div>' +
+            (dSonnun ? '<div class="b190-l" title="Skýrsla, reikningur eða tæki með skoðun skráða á árinu — opnaðu listann, þau standa efst"><span><b>' + dSonnun + '</b> með merki um úttekt ' + curYear + '</span></div>' : '') +
             opna('dagskra', _openDagskra) +
           '</div></div>' +
           // Búin í ár (grænt)
@@ -1528,10 +1691,12 @@
           '<div class="b190-man" role="group" aria-label="Sía eftir skrefi">' + skrefSulur + '</div>' +
         '</div>' +
       '</div>' +
-      dagskraDrawer + buidDrawer + body + '</div>';
+      mkBar() + dagskraDrawer + buidDrawer + body + '</div>';
     if (_leitFokus) { const si = v.querySelector('.sv-search'); if (si) { si.focus(); try { si.setSelectionRange(_leitFokus[0], _leitFokus[1]); } catch (_) {} } }
 
 
+    // Merkja og keyra (519, eintak verkstæðisins): smellir á ◇, hökin, ▶ Keyra o.fl.
+    v.querySelectorAll('[data-t5^="mk-"]').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); const m = mkv(); if (m) m.smellur(el, e); }));
     // view-mode toggle
     v.querySelectorAll('.sv-seg button').forEach(bn => bn.addEventListener('click', () => setMode(bn.dataset.mode)));
     // skref-sía
@@ -1550,15 +1715,18 @@
     // collapse/expand sides
     v.querySelectorAll('[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
+      _buidSpurt = null;
       render();
     }));
     // card actions
     v.querySelectorAll('._sv-act').forEach(bn => bn.addEventListener('click', e => {
       e.stopPropagation();
       const id = +bn.dataset.id, act = bn.dataset.act;
+      _buidSpurt = null;   // hver smellur á spjaldatakka afvopnar „✓ Búið“ (endurrýni 18.11.2026) — aðeins 'buidspyrja' vopnar
       if (act === 'open') openCompany(id);
       else if (act === 'report') openReport(id);
       else if (act === 'start') startVinnsla(id);
+      else if (act === 'buidspyrja') { _buidSpurt = id; render(); }
       else if (act === 'buid') markBuid(id);
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);

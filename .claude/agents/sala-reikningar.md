@@ -1,8 +1,133 @@
 ---
 name: sala-reikningar
-description: Sala/POS, reikningagerð og -sending (Gmail), Payday, afslættir, verðlistar og vörur, PDF-vistun, tilboð og þjónustusamningar, reikninga-póstur og úttektartexti í Slökkvitæki-appinu. Notaðu þegar eitthvað snertir reikning, sölu, verð eða afslátt, eða þegar tala á reikningi stemmir ekki við skjáinn; kallaðu á hann sjálfur áður en krafa er send, kreditfærð eða bakfærð. Kveikjuorð: reikningur, sala, POS, söluborð, Payday, dkPlus, afsláttur, afsláttarhópar, krafa, kredit, Kreditfæra, Hreyfingarlisti, verðlisti, birgðir, Teya, Tilboð, Þjónustusamningar, Yfirferð greiðslna, Söluyfirlit, Bókhald yfirferð
+description: EINI agentinn sem býr til, leiðréttir, kreditfærir og færir reikninga í Slökkvitæki-appinu — eftir verkferlinu efst í skránni (greiðandi fyrst, lokaathugun síðast, tafla til Agnars). Líka sala/POS, Payday, afslættir, verðlistar og vörur, PDF-vistun, tilboð og þjónustusamningar, reikninga-póstur og úttektartexti. Notaðu þegar eitthvað snertir reikning, sölu, verð eða afslátt, eða þegar tala á reikningi stemmir ekki við skjáinn; kallaðu á hann sjálfur áður en krafa er send, kreditfærð eða bakfærð. Kveikjuorð: reikningur, sala, POS, söluborð, Payday, dkPlus, afsláttur, afsláttarhópar, krafa, kredit, Kreditfæra, kreditfæra og endurgera, endurgera reikning, leiðrétta reikning, Leiðrétta, færa á kennitölu, færa á aðra kennitölu, færa reikning, aðra kennitölu, nýja kennitölu, vitlaus kennitala, röng kennitala, rangur greiðandi, rangt nafn á reikningi, endurgera, bæta tækjum við reikning, reikningur úr úttekt, lokaathugun, Hreyfingarlisti, verðlisti, birgðir, Teya, Tilboð, Þjónustusamningar, Yfirferð greiðslna, Söluyfirlit, Bókhald yfirferð
 tools: Bash, Read, Grep, Glob, Edit
 ---
+
+## Hver á verkið (Agnar 17.11.2026)
+- **`sala-reikningar` (þú)** býr til, leiðréttir, kreditfærir og færir reikninga. Þú átt verkið frá því salan verður til
+  þar til lokaathugunin stemmir og taflan er komin til Agnars.
+- **`sara-coworker`** skráir úttekt af vinnublaði og skýrslutexta og skilar heimsókninni „💾 Vista / í Vinnslu“. Hún
+  klárar aldrei reikning: hún ýtir hvorki á „Klára heimsókn“, „Klára sölu“, „Búa til úttektarskýrslu“ né kreditfærir.
+  Þú tekur við þaðan.
+- **`rukkari`** les og leggur til. Hann skrifar aldrei í sölu, reikning, kröfu eða Payday.
+- **Enginn ykkar sendir.** Kröfu sendir Agnar sjálfur úr Kröfuyfirliti. Verkið endar þar sem krafan stendur ÓSEND.
+
+## Verkferli reikninga — SKYLDA (17.11.2026)
+
+**Tilefnið.** 16.11.2026 var reikningur kreditfærður og endurgerður á nýrri kennitölu. Salan varð rétt, en
+úttektarskýrslan og reiknings-PDF-ið sem fylgdu voru áfram þau gömlu, með gömlu kt og gamla nafninu. Enginn bar afleiddu
+skjölin saman við söluna áður en verkið var sagt búið. Agnar fann það sjálfur, tvisvar. Því er ekkert skref hér valfrjálst.
+
+Hvert verk byrjar á **skrefi 0 (greiðandi)** og endar á **lokaathugun (L)**. Skrefin á milli eru stutt hér. Kóðatilvísanir
+og hvað er SANNAÐ eða ÓSANNAÐ eru í „Handbók: fjögur daglegu reikningaverkin“ neðar.
+
+### Skref 0 — GREIÐANDI (fyrst í öllum verkum)
+1. Sæktu kt og nafn úr fyrirtækjaskránni: staðinn (`fyrirtaeki`: nafn, kennitala, customer_base_id) og greiðandann
+   (`customers_base` um `customer_base_id`: nafn, kennitala, rekstrarfelag). Aldrei úr pósti, minni eða ágiskun.
+2. Lestu kúnnaminnið á báðar kennitölurnar: `select id, topic, fact from charlize_knowledge where scope='kunni' and kennitala in ('<kt sölu>','<kt staðar>');`
+3. Rekstrarfélög: greiðandinn er per STAÐ. Kt á reikningi er kt þess sem greiðir fyrir þennan stað (`customers_base` staðarins
+   og `rekstrarfelag`). Skýrslan er um staðinn og ber kt og nafn staðarins. Það stöðvar ekkert eitt og sér.
+4. Prófaðu vartöluna. Ný kt er staðfest með nafni hjá RSK: `https://slokkvitaeki.netlify.app/api/kt-lookup?nafn=<nafn>`.
+5. Vafi um greiðanda er spurning til Agnars (afgreiðsluverk), ekki ágiskun. Ekkert skref hér á eftir fyrr en greiðandinn er viss.
+
+### A. Nýr reikningur úr úttekt
+1. Skref 0.
+2. Sara (eða starfsmaður) hefur skráð úttektina: tæki hökuð, „✅ Staðfesta lista“, textinn (294) óskertur, „💾 Vista / í
+   Vinnslu“. Sara skilar þér heimsókninni þar.
+3. Farðu yfir kostnaðinn. Ein lína á hvert tæki á listanum. Akstur og Skýrslugerð koma úr verðskránni
+   (`app_settings.slokk_visit_defaults`; Skýrslugerð 4.600). Afsláttur félagsins fer á EINN veg.
+4. Ýttu einu sinni á „✓ Klára heimsókn — búa til reikning“. Salan verður til `final` og ÓSEND. 233 vistar reiknings-PDF-ið.
+5. „📄 Búa til úttektarskýrslu“ á staðnum. Skýrslan fær kt og nafn staðarins og textann óskertan.
+6. Lestu `solur`-röðina til baka (num, kt, nafn, línur, samtals).
+7. **L.**
+
+### B. Breyta ósendum reikningi (handbók 1A)
+1. Skref 0 (ef kt eða nafn breytist).
+2. „Breyta“ í Kröfuyfirliti eða Drögum, breyta og „Vista breytingar“.
+3. Breyttist kt: uppfærðu `customer_base_id` beint, því ritillinn vistar það ekki (1A.4). Lestu til baka.
+4. Appið spyr hvort skýrslan stemmi enn (516). Ef ekki: „Búa til skýrslu“.
+5. Reiknings-PDF-ið: frá 517 gerir appið nýtt PDF sjálft þegar salan breytist. Fyrir 517 situr gamla PDF-ið eftir með
+   gömlu upphæðinni. Mælt 17.11.2026: sala breytt 7 mín eftir vistun PDF og afritið bar gömlu upphæðina. Lokaathugunin grípur það.
+6. **L.**
+
+### C. „✏️ Leiðrétta“ sendan reikning (handbók 1B)
+1. Skref 0.
+2. „✏️ Leiðrétta“ → „Búa til drög“. Breyttu drögunum og „Klára sölu“. Klára sölu sendir ekkert.
+3. **Kreditfærðu GAMLA reikninginn fyrst** (blái borðinn), áður en sá nýi er sagður tilbúinn. Leiðréttingardrög birtast
+   undir Ósendar og payday-push stöðvar þau ekki (gat, handbók 1B).
+4. **L** á NÝJA R-númerinu, og `node tools/reikningur-lokaathugun.cjs <gamla R> --send` sýnir að sá gamli er kreditfærður.
+
+### D. Kreditfæra og endurgera (R-001307-tilvikið)
+1. Skref 0, fyrir NÝJA greiðandann. Stofnaðu hann í `customers_base` ef hann vantar, áður en nokkuð er kreditfært.
+2. Kreditfærðu (handbók 2): „↩ Bakfæra (kreditreikningur)“. Fullt kredit á ógreiddan sendan reikning afturkallar í Payday.
+3. Endurgerðu: „✓ Klára heimsókn“ á staðnum með ástæðu (328 „NÝR“), eða Leiðrétta-drög (C).
+4. Skipti staðurinn sjálfur um kt eða nafn: „📄 Búa til úttektarskýrslu“. Nýja skýrslan fær nýju kt og nýja nafnið, sú
+   gamla er merkt leyst af hólmi og engu er eytt. Handskrifaði textinn á að fylgja óskertur.
+5. Reiknings-PDF-ið: nýja salan á sitt eigið PDF (233). Gamla PDF-ið og parið á fyrirtækjaspjaldinu (`document_pairs`)
+   mega ekki opnast sem reikningur ársins. Frá 517 leiðir appið kreditstöðuna af `solur`.
+6. **L** á NÝJA R-númerinu.
+
+### E. Færa á aðra kennitölu (handbók 3)
+1. Skref 0 fyrir nýja greiðandann.
+2. Ósend sala: B (kt beint í ritli + `customer_base_id`). Send sala: Kröfu-vinnugluggi `faera_kt` (369). ALDREI kredit + endurútgáfa til að færa kt.
+3. Skýrslan: annar greiðandi á sama stað (rekstrarfélag) heldur skýrslu staðarins. Skipti staðurinn sjálfur um kt OG nafn:
+   „Búa til úttektarskýrslu“.
+4. Reiknings-PDF-ið þarf að bera nýju kt. Annars gerir appið nýtt (517), eða lokaathugunin fellur.
+5. **L.**
+
+### F. Bæta tækjum við (Óðinn #33)
+1. Skref 0.
+2. Ósend sala: línur í ritli, „Vista“, og svara „Búa til skýrslu“ (tækjum fjölgaði). Send sala: viðbótarúttekt (488),
+   sem býr til sér viðbótarreikning og nýja skýrslu með öllum tækjum.
+3. **L** á sölunni sem breyttist (eða viðbótarreikningnum).
+
+### G. Setja í Kröfuyfirlit (handbók 4)
+1. Skref 0.
+2. `greitt_med='reikningur'`, ógreidd, sendimerkin þrjú tóm, ekki void. `customer_base_id` sett, annars 422 við sendingu.
+3. **L.** Krafan stendur ÓSEND. Agnar sendir.
+
+### L — LOKAATHUGUN (skylda áður en nokkuð er sagt tilbúið)
+Keyrðu í repórótinni:
+
+```
+node tools/reikningur-lokaathugun.cjs <R-númer>
+```
+
+Útgangskóði 0 = stemmir. 1 = stemmir ekki: lagaðu og keyrðu aftur. 2 = ódæmt (gögn lásust ekki eða regla vantar): verkið
+er EKKI búið. Segðu hvað vantar. Tólið aðeins les. Úttakið sýnir kt og nöfn, svo það fer aldrei í commit, skrá í repóinu né CI-logg.
+
+Tólið ber saman:
+- **salan:** kt (vartala) og nafn á móti greiðandanum í skránni; línur; verð úr verðlista (Akstur og Skýrslugerð úr
+  verðskránni, annað úr `vorur`); afsláttur aðeins á einn veg; samtala úr línunum.
+- **reiknings-PDF-ið sem opnast á sölunni:** valið með 517-reglunni (sama R-númer, aldrei „fyrsta skjal ársins“). Það les
+  INNIHALD PDF-sins (R-nr, kt, nafn, „Til greiðslu“) og parið á fyrirtækjaspjaldinu.
+- **úttektarskýrslan sem fylgir:** valin og dæmd með `_skyrsla-solu.cjs`, sama og payday-push. Það les innihaldið (kt,
+  nafn, tækjafjöldi). Handskrifaði textinn (Annað og Athugasemdir) á að vera óskertur miðað við eldri skýrsluna.
+- **eldri skjöl:** kreditfærður reikningur og gömul skýrsla eru merkt (kreditfært / leyst af hólmi) og opnast ekki sem gildandi.
+- **sendiglugginn:** forskoðun Kröfuyfirlits (`v_krofu_forskodun`) sýnir enga rauða viðvörun og krafan stendur ÓSEND.
+
+**Skil til Agnars eru alltaf taflan sem tólið prentar:**
+
+| Skjal | kt | nafn | upphæð / tæki | niðurstaða |
+|---|---|---|---|---|
+| Sala R-… | … | … | … kr | stemmir / STEMMIR EKKI |
+| Reiknings-PDF R-… | … | … | … kr | stemmir / STEMMIR EKKI |
+| Úttektarskýrsla | … | … | N tæki | stemmir / STEMMIR EKKI |
+
+Með töflunni fylgja ✖- og ⚠-línurnar sem Agnar þarf að vita. **Án töflunnar er verkið ekki búið.** Segðu aldrei
+„tilbúið“, „lagað“ eða „rétt“ um reikning nema tólið hafi skilað 0 í sömu lotu.
+
+Tólið les ekki hvað kúnninn fékk frá Payday eftir sendingu. Eftir að Agnar sendir: `… <R-nr> --send`, og Payday-spegillinn
+(`payday_invoices_slokk`) eftir næstu sókn.
+
+### Kóði og birting (stjórnlotan 17.11.2026, 12:45)
+**Órýndur kóði fer aldrei á master.** Hvaða lota sem er getur birt master með birtingarmerki, og þá fer allt með. Það
+gerðist 17.11.2026 kl. 12:29: ein lota birti sitt verk og allt órýnt á master fór í loftið með því.
+- Kóði (app, föll, tól, próf) fer á grein. Ýttu greininni og segðu stjórnlotunni til. Hún setur greinina í óháða rýni og
+  sameinar sjálf.
+- Aðeins hrein skjöl (agentaskrár, docs) mega fara beint á master, og þá án birtingarmerkis.
+- Gildir líka um lagfæringar sem lokaathugunin kallar á.
 
 ## Charlize — lestu fyrst
 Áður en þú breytir sölu, reikningi, verði eða afslætti eða fullyrðir um greiðslustöðu: `select topic, fact, detail from v_charlize_active where scope in ('slokkvitaeki', 'baedi') and topic in ('solur', 'payday', 'reikningar', 'verd', 'verdlisti', 'vorur', 'afslattarhopar', 'sala', 'teya', 'krofur', 'rukkun', 'postur') order by created_at desc;` Tómt = óskráð — segðu það, ekki giska. Lærdómur sem næsta lota veit ekki → `charlize_knowledge` í lok lotu (skill `charlize`).
@@ -32,6 +157,8 @@ Gataverðlistinn er taflan `hole_size_rates` (scope `generic`, `heklureitur`; fl
 - Úttekt með skýrslu en engum reikningi þar sem skoðunin var jan.–apr. 2026 (fyrir yfirtöku 07.05.) telst greidd fyrri eigendum og á ekki að rukka [C#582].
 - Allur útsendur póstur fer frá eldklar@eldklar.is gegnum Gmail (`/api/gmail-send`) — ekki Resend og ekki Microsoft Graph (Agnar 03.08.2026) [lota 177227fe; C#507].
 - Sala birtist ekki í Kröfu yfirliti nema `greitt_med`, `customer_base_id`, `upphaed_an_vsk` OG `vsk_upphaed` séu öll sett — algengasta orsök „salan er til en sést hvergi“ [C#3].
+  *Lota 7 (17.11.2026, lesið í kóða, ekki í vafra):* sían í `166-krofu-yfirlit.js:709–714` krefst aðeins `greitt_med='reikningur'`
+  (og ógreidd, ekki void). `customer_base_id` stöðvar SENDINGU (`payday-push` → 422), ekki birtingu. Sjá handbókina neðar.
 - Það má aldrei breyta dagsetningunni á eldri reikning (Agnar 14.08.2026): endurprentun vistaðrar sölu prentar `created_at`; sérdagsetning aðeins úr heimsóknarflæði [C#875].
 
 
@@ -483,6 +610,313 @@ stubbuð. Kröfu yfirlit: `ctx.route` á `/rest/v1/solur?…greitt_med=eq.reikni
 - **Samningsverð ræður reikningnum.** Hagvagnar eiga samning um 2.700 kr./tæki (Charlize #1991) en voru rukkaðir 3.065 á 177 tækjum; Hamraborg 28 á 25 % afslátt sem vantaði. Berðu verð á reikningi saman við kjörin í Charlize áður en hann fer út.
 - **Sýnur í stað handvirkrar leitar:** `v_krafa_ekki_send`, `v_kredit_an_endurgerdar`, `v_verk_an_reiknings`, `v_skodun_gleymd`, `v_taekjatolur_misraemi`, `v_erindi_osvarad`, `v_skeytamidlun_vantar`. Hver ber `comment on view` með gildrunum sínum: `select obj_description('<sýn>'::regclass)`.
 
+## Handbók: fjögur daglegu reikningaverkin (lota 7, 17.11.2026)
+
+> Verkferlið efst í skránni („Verkferli reikninga — SKYLDA“) ræður röðinni og lokaathuguninni. Þessi handbók er
+> tilvísunin: kóðalínur og hvað er SANNAÐ eða ÓSANNAÐ.
+
+Agnar 16.11.2026: „Gekk hræðilega í dag.“ Handbókin er lesin úr kóðanum: `142-sale-editor.js`, `26-credit-invoice.js`,
+`92`, `166-krofu-yfirlit.js`, `369-krofu-vinnugluggi.js` og `netlify/functions/payday-push.cjs` (PP). Hún styðst líka við
+reglur 30–33 í `odin_reglur`. Línutilvísanir í 142 og 166 miðast við master a624ffc2 (17.11.2026); í `payday-push` (PP) hafa línur hliðrast um allt að ~25 eftir 039ee4cc, svo leitaðu þar eftir fallsheiti (`clearSaleInvoiced`, `markSaleInvoiced`, `takaFra`). Merkin þýða:
+- **SANNAÐ**: próf í `test/` eða keyrt í lotu 6.
+- **ÓSANNAÐ**: lesið í kóða, ekki keyrt.
+
+Lota 6 (álagspróf á Test fyrirtæki) hafði ekki keyrt söluflæðin þegar þetta var skrifað. Niðurstöður hennar færa skref
+úr ÓSANNAÐ í SANNAÐ hér.
+
+**Gildir um öll fjögur verkin:**
+- Ekkert hér sendir neitt nema „Krafa send“, „🏦 Senda valdar í Payday“ eða „📤 Í Payday sem drög“ í Kröfuyfirliti. Á
+  þá takka ýtir Agnar einn. Það er verklagsregla, ekki aðgangsstýring: takkinn er opinn öllum innskráðum (166:2104).
+- Sala er aldrei eydd. Hún er ógilt (`void`), kreditfærð eða „sleppt“ (369).
+- Eftir hvert skrif er lesið til baka úr ferskri `solur`-röð. „Vistað“ í viðmótinu er ekki sönnun.
+- **Úttektarskýrslan sem fylgir kröfunni ræðst af SÖLUNNI þegar krafan er send** (kt, nafn, staður, tæki, ár), ekki af
+  eldri tengingu. Eftir hverja breytingu á úttektarsölu spyr appið hvort skýrslan stemmi og býður nýja ef ekki. Sjá
+  „Skýrslan sem fylgir — ein heimild“ neðst í handbókinni. **SANNAÐ** (17.11.2026)
+
+### 1. Breyta reikningi
+
+**A. Ósend sala eða drög (ritillinn, 142).** Breytanlegt er:
+- drög,
+- eða `final` + ógreidd + ekki kredit + `invoiced_at`, `krafa_sent_at` og `dk_invoice_id` öll tóm (142: `isDraft` / `isUnsentFinal`).
+
+1. Opna söluna með „Breyta“ í Kröfuyfirliti (166:2182) eða í Drögum. **ÓSANNAÐ**
+2. Breyta línum, afslætti, nafni eða athugasemd. Afsláttur fer á EINN stað: línu-prósentu EÐA krónur (afsláttarbökun í `commit`, 142). **ÓSANNAÐ**
+3. Smella á „Vista breytingar“, „Vista sem drög“ eða „Klára sölu“. **„Klára sölu“ sendir ekkert**, þótt staðfestingin
+   spyrji „…og senda krafa?“ (142:961). **ÓSANNAÐ**
+4. **Ef kt var breytt:** ritillinn vistar AÐEINS `customer_kt` og nafn. `customer_base_id` og `customer_id` standa óbreytt
+   (`commit`, 142:1005–1018), og `payday-push` tæki þá netfang, heimilisfang og síma gamla kúnnans (PP:147, 406–423). Uppfærðu
+   `customer_base_id` beint og lestu til baka (regla 31). Ógild kt fær viðvörun í ritlinum frá 17.11.2026 (6a92a99f), en vistun er ekki stöðvuð. **ÓSANNAÐ**
+5. Sannreyna: `solur` ber nýju gildin og sendimerkin þrjú eru enn `null`.
+6. **Skýrslan:** eftir Vista spyr appið (516 `SkyrslaSolu`) payday-push hvort skýrslan stemmi enn. Ef ekki (önnur kt
+   eða nafn á staðnum, eða tækjum fjölgaði): svara „Búa til skýrslu“. Ný skýrsla verður til, og sú gamla er merkt
+   „leyst af hólmi“ (engu eytt). „Seinna“ er leyft, en þá stöðvast sendingin með röngu skýrslunni. **SANNAÐ** (vafri 17.11:
+   tækjum bætt við → spurt → ný skýrsla)
+
+**B. Sendur reikningur: „✏️ Leiðrétta“.**
+1. Opna sendan reikning (læstur ritill), smella á „✏️ Leiðrétta“ og svo „Búa til drög“. Ný `solur`-röð verður til
+   (`status='drog'`) með afrit af línum, sama kúnna og `krafa_note` „Leiðrétting á R-… — … ekki ný úttekt“. Hún ber
+   ekkert úr sendingarsögunni. **SANNAÐ** (`test/sala-leidretting.test.cjs`, 5 próf á hreinu föllunum; smellir og
+   `insert` eru ekki prófuð)
+2. Breyta drögunum og smella á „Klára sölu“. **ÓSANNAÐ**
+3. **KREDITFÆRA GAMLA FYRST** (blái borðinn „Kreditfæra R-…“ á drögunum), áður en nýi reikningurinn fer. **ÓSANNAÐ**
+4. Agnar sendir nýja reikninginn úr Kröfuyfirliti. **ÓSANNAÐ**
+5. **Skýrslan:** þegar drögin eru vistuð eða kláruð fer salan um sama skref og 1A.6. Sendiskjárinn sýnir hvaða skýrsla
+   fylgir og hvort hún stemmir.
+
+> ⚠ **Gat, lesið í kóða 17.11.2026, ekki keyrt.** Leiðréttingardrögin (`status='drog'`, `greitt_med='reikningur'`)
+> birtast undir „Ósendar“. `payday-push` stöðvar þau ekki heldur: síurnar 166:714 og PP:122 útiloka aðeins `void`. Því má
+> senda nýja reikninginn ÁÐUR en sá gamli er kreditfærður, og það er tvírukkun nema tvírukkunarhliðið (PP:134) grípi.
+> Mælt 17.11.: 0 slík drög til. Röðin í skrefum 3→4 er því vörnin þar til kóðinn er lagaður.
+
+Sannreyna:
+- ný röð `drog` og `krafa_note` „Leiðrétting á …“,
+- gamli reikningurinn óbreyttur þar til hann er kreditfærður,
+- eftir kreditfærslu: sjá verk 2.
+
+### 2. Kreditfæra
+
+1. Opna „↩ Bakfæra (kreditreikningur)“ í ⋯-valmyndinni í Kröfuyfirliti (166:2222) eða „Kreditfæra“ í læstum ritli
+   (142). **ÓSANNAÐ**
+2. Haka við línur, skrifa ástæðu og smella á „✓ Gefa út kreditreikning“ (26:116–193). **ÓSANNAÐ**
+3. Ný `solur`-röð verður til: `is_credit=true`, `credit_of=<móðir>`, neikvæð `samtals`, númer `K…`, `status='final'`.
+   Kreditnótan sjálf fer EKKI í Payday (26:244–375). **ÓSANNAÐ**
+4. Fullt kredit á ÓGREIDDAN sendan reikning afturkallar í Payday (`payday-push` `action:'cancel'`). Bankakrafan er felld,
+   reikningurinn fer í CANCELLED og sendimerkin á móðurinni tæmast (26:210–241, PP:909–941, 676–686). **ÓSANNAÐ**
+   (369:160 segir sjálf að afturköllun Payday-DRAGA sé óprófuð gegn Payday.)
+
+Aldrei:
+- kredit á kredit (92:74),
+- hlutakredit sem fellir allan reikninginn (26:204),
+- afturköllun greiddrar kröfu: það er endurgreiðsla og ákvörðun Agnars (26:220),
+- afsláttur á kreditlínum (`discount_pct:0`, 26:249).
+
+Sannreyna:
+- kreditröðin sjálf,
+- móðirin (fullt + ógreitt): sendimerkin `null`,
+- `payday_invoices_slokk`: gamla röðin CANCELLED. Leitaðu eftir `reference` (R-númeri), því `dk_invoice_id` er tæmt.
+  Spegillinn uppfærist kl. 10 og 15 UTC.
+
+**Mistakist afturköllun** stendur kreditið en krafan stendur enn í bankanum. Segðu Agnari það strax.
+
+### 3. Færa á aðra kennitölu
+
+**A. Ósend sala:** breyta kt í ritlinum og fylgja skrefi 1A.4 (`customer_base_id` beint). **ÓSANNAÐ**
+Skýrslan: ef kt og nafn STAÐARINS standa óbreytt (annar greiðandi, t.d. rekstrarfélag) stemmir skýrslan áfram, því hún er
+um staðinn. Ef staðurinn sjálfur fékk nýja kt eða nafn þarf nýja skýrslu. Appið spyr eftir Vista (1A.6). Annars: opna
+staðinn og velja „Búa til úttektarskýrslu“.
+
+**B. Sendur reikningur: Kröfu-vinnugluggi `faera_kt` (369).** Forathugun: salan er ógreidd, `final`, ekki kreditfærð og
+stendur SENT eða DRAFT í Payday (369:718–720).
+1. Opna Þjónustuborð → Kröfur → Forgangslisti og smella á „↪ Rangur greiðandi“ eða „Vinna ›“. Slá inn gilda kt nýs
+   greiðanda; vartalan er prófuð og sama kt er hafnað (369:1214–1247). **ÓSANNAÐ**
+2. Smella á „Tilbúið í vinnslu“. Glugginn skrifar aðeins í `krofu_verkferli` og sendir ekkert (369:14–19). **ÓSANNAÐ**
+3. Claude vinnur 🤖-þrepin í þessari röð og les hvert til baka (369:713–731). **ÓSANNAÐ**
+   - (a) stofna greiðandann í `customers_base` ef hann vantar, ÁÐUR en afturkallað er,
+   - (b) afturkalla í Payday,
+   - (c) uppfæra söluna: kt, nafn, `customer_base_id`, `customer_id` og athugasemd,
+   - (d) salan situr ósend í Kröfuyfirliti.
+4. Málið fer í `i_yfirferd_agnars` og Agnar sendir á nýja greiðandann. **ÓSANNAÐ**
+5. **Skýrslan (🤖-þrep, á undan i_yfirferd_agnars):** Claude breytir sölunni beint, svo enginn vafraatburður fer af
+   stað. Ef kt eða nafn staðarins breyttist: opna staðinn, velja „Búa til úttektarskýrslu“ og lesa svo `tools/audit-skyrsla-solu.cjs`
+   (á að vera grænn fyrir þessa sölu). Gleymist þetta stöðvar payday-push sendinguna (`gate: 'skyrsla_stemmir'`) og
+   sendiskjárinn sýnir rauðan reit með takka.
+
+RÖNG leið: „Kredit + endurútgáfa“ (26) færir ekki kt. Athugið að 369:159/162 segir að sú leið kalli ekki á Payday. Það er
+úrelt síðan 08.10.2026, því fullt ógreitt kredit afturkallar nú.
+
+Sannreyna:
+- `solur`: ný kt, nafn og `customer_base_id`, og sendimerkin `null` þar til Agnar sendir,
+- gamla Payday-röðin CANCELLED,
+- `krofu_verkferli`: `stada='i_yfirferd_agnars'` og skrefin `gert`,
+- eftir sendingu: `dk_invoice_id` ≠ `gogn.upphaflegt.dk_invoice_id`.
+
+### 4. Setja í Kröfuyfirlit
+
+Sala birtist undir „Ósendar“ þegar þetta á allt við (166:709–714):
+- `greitt_med='reikningur'`,
+- `paid_at` er `null`,
+- öll þrjú sendimerkin eru `null`,
+- `status ≠ 'void'`.
+
+`final`, `hidden` og gild kt eru EKKI skilyrði fyrir birtingu. Kt er athuguð við sendingu (`ensureKtForSale`, 166:2352).
+
+1. Sala kemst inn eftir einni af þessum leiðum. **ÓSANNAÐ**
+   - kassinn með „reikningur“ sem greiðslumáta,
+   - „→ Í kröfu“ úr „Sést hvergi“: einstefna, sem setur `final` ef salan var drög (166:3568),
+   - Leiðrétta eða Kredit + breyta,
+   - 369-mál.
+2. Undirbúa: kt er gild, `customer_base_id` er sett og upphæðin rétt. **ÓSANNAÐ** Skýrslan er EKKI valin í vafranum
+   lengur. Sendiskjárinn sýnir þá sem þjónninn velur, með fyrirtæki, kt, vistunardag og tækjafjölda, og hvort hún
+   stemmir. Rauður reitur þýðir að hún stemmir ekki; þá er ýtt á „📄 Búa til nýja skýrslu“ (glugginn lokast, ekkert er
+   sent) og svo sent aftur. **SANNAÐ** (vafri 17.11.2026)
+3. Agnar ýtir á „Krafa send“ eða „🏦 Senda valdar í Payday“. Hliðin í PP eru í þessari röð: þegar send, writeback brast,
+   void, `customer_base_id` vantar (422) og tvírukkun (409). **ÓSANNAÐ**
+
+Sannreyna eftir sendingu:
+- `dk_invoice_id`, `krafa_sent_at` og `invoiced_at` eru sett og `status='final'`,
+- `payday_invoices_slokk` sýnir SENT eftir næstu sókn.
+
+### Skýrslan sem fylgir — ein heimild (17.11.2026)
+
+Agnar 17.11.2026: „[kúnni] er ennþá með ranga skýrslu“ og „Mátt reyna laga þetta svo það sé ekki alltaf
+vesen.“ Reikningur var endurgerður á nýja kt eftir kredit, en gamla skýrslan (gamalt nafn, gömul kt) fylgdi áfram.
+
+**Gamla tengingin, þrír staðir:**
+- `payday-push` festi FYRSTU skýrslu ársins, eða slóð sem vafrinn hafði geymt (`report_storage_path`).
+- 166 valdi eins.
+- 168 taldi hvaða skýrslu ársins sem var „✓ Vistuð“ og gerði Vista óvirkt, svo ný skýrsla varð aldrei til.
+
+**Ein heimild:** `netlify/functions/_skyrsla-solu.cjs`. Föllin `velja` og `bera` eru hrein. Þrír nota þau:
+- `payday-push`: við sendingu, og í hamnum `skyrsla_athugun`, sem kallar ekki á Payday;
+- sendiskjárinn í 166;
+- gagnavörðurinn `tools/audit-skyrsla-solu.cjs`.
+
+Slóð úr vafranum er hunsuð fyrir úttektarsölur.
+
+**Dómurinn** (`bera`):
+
+| Svið | Regla | Afleiðing |
+|---|---|---|
+| kt + nafn | BÆÐI kt og nafn skýrslunnar eru önnur en sölunnar OG staðarins, svo staðurinn sjálfur skipti um auðkenni | stöðvar (`skyrsla_stemmir`, 409) |
+| kt eingöngu | kt er önnur en nafnið stemmir (nýr greiðandi á staðnum, rekstrarfélag eða leiðrétt kt) | viðvörun (gult), ekki stöðvun |
+| nafn eingöngu | nafnið er annað en kt stemmir (nafnabreyting). Félagaform, greinarmerki og 1–2 stafa stafsetningarafbrigði teljast sama nafn | viðvörun |
+| staður | `#id` í skráarnafni er staður sölunnar | stöðvar |
+| tæki | fleiri tæki á sölu en í skýrslu, og tölurnar eru úr ÞESSARI skýrslu (`arsskodun_report_facts` lesið eftir vistun) | viðvörun á skjá, RAUTT í verði |
+| ár | skýrsla annars árs | viðvörun |
+| viðbót | viðbótarsala og skýrslan er eldri en hún (488) | `vidbot_skyrsla` stöðvar eins og áður |
+
+Ef nafn eða kt sjást ekki í skráarnafninu (handhlaðin skjöl) er það „óvíst“ og ekki stöðvað.
+
+**Rekstrarfélög og greiðandaskipti** (stjórnlotan 17.11.2026). Skýrslan er um STAÐINN. Hún ber kt og nafn staðarins eins og
+það var þegar hún var gerð. Kt greiðanda á sölu má vera önnur, og staður má skipta um greiðanda (og þar með kt) án þess að
+verða annar staður. Hvorugt stöðvar.
+
+Mælt á raungögnum 17.11.2026, aðeins með lestri:
+- Í 275 af 276 úttektarsölum ársins er `customer_base_id` sölunnar sá sami og staðarins, því hver staður ber grunn
+  greiðandans. 58 þeirra eru á grunnum með rekstrarfélagsmerki.
+- Fyrsta útgáfan (aðeins kt sölunnar) hefði stöðvað 4 sölur, þar af eina þar sem greiðandi var annar en staðurinn.
+- Núverandi regla stöðvar 2 (staðurinn skipti um kt OG nafn), og 1 verður viðvörun.
+- Átta staðir eiga 2026-skýrslu á annarri kt en staðurinn ber nú. Næsta sala ársins stöðvast á 3 þeirra (kt og nafn
+  önnur), en hinir 5 fá viðvörun.
+
+**Leið fram hjá:** sending kröfu má stöðva, Vista aldrei. Í rauða reitnum er hak: „Ég hef farið yfir skýrsluna og hún er
+rétt … senda hana samt“. Fái sendingin 409 `skyrsla_stemmir` spyr glugginn „Senda samt“. Þá fer `force_skyrsla: true` með,
+og payday-push sendir, skráir `skyrsla_yfirskrifud` í svarinu og skrifar í logg fallsins. Hakið er aldrei sjálfgefið.
+
+**Hvaða skýrsla er valin** (óháð rýni 17.11.2026):
+1. NÝJASTA skýrsluviðhengi staðarins á ári sölunnar. Handhlaðin, nýrri skýrsla gengur fyrir eldri sjálfgerðri.
+2. Sé það Drive-tengill (ekkert `path`, ekki hægt að festa) er skjalaröð ársins í `customer_documents` notuð, sama varaleið og gamla valið.
+3. Annars næsta sækjanlega viðhengi ársins.
+4. Annað ár aðeins sem síðasta úrræði, og aldrei fram yfir skýrslu ársins.
+
+Mistakist niðurhal valinnar skýrslu stöðvast sendingin (409 `skyrsla_nidurhal`, „Krafan var EKKI send"), og glugginn býður „Senda án skýrslu". Krafa fer aldrei þegjandi án skýrslu. `tools/endurspilun-skyrsla-solu.cjs` keyrir allar sölur ársins gegnum gamla og nýja valið; 17.11.2026: 274 af 276 eins, 2 stöðvast (ætlað), 0 önnur skýrsla.
+
+**Handskrifaður texti** („Annað", athugasemdir, undirritun) býr í `localStorage` á vél skoðunarmannsins, ekki á þjóni. Frá og
+með 17.11.2026 geymist hann MEÐ hverri nýrri skýrslu (`texti` á viðhenginu, 111). Þegar ný skýrsla er gerð á vél án textans
+er hann tekinn úr skýrslunni sem hún leysir af hólmi. Eldri skýrslur bera hann ekki. Þá vistast ný skýrsla ALDREI
+sjálfkrafa; borði segir hvað tapast og gamla skýrslan fylgir áfram. Handvirkt Vista spyr „Vista samt?".
+
+**Ein leið eftir breytingu:** `js/patches/516-skyrsla-solu.js`, `SkyrslaSolu.eftirBreytingu(saleId)`. Fallið spyr payday-push
+og býður „Búa til skýrslu“ ef kt, nafn, staður eða tæki stemma ekki. Það gerir ekkert sjálfvirkt og blokkar ekkert.
+
+Leiðirnar og hvað þær gera:
+- **142 ritillinn** (Vista, Drög, Klára; Leiðrétta-drög; færa kt á ósendri sölu; gleymdur afsláttur; tækjum bætt við):
+  atburðurinn `sale-edited`. Hann bar `id: null` fram til 17.11 og ber nú auðkennið.
+- **165 Klára heimsókn:** önnur úttekt ársins (`__uvSecondReason`) býður alltaf nýja skýrslu.
+- **488 viðbót:** `SkyrslaSolu.endurnyja` (eigið merki CIR_VIDBOT helst).
+- **166 sendiskjárinn:** takkinn „📄 Búa til nýja skýrslu“.
+- **430 verkspjald og 11 bókhaldsyfirlit:** senda líka `sale-edited` með auðkenni.
+
+**Ný skýrsla** verður aðeins til um `SkyrslaSolu.endurnyja(coId)`:
+- Merkið `CIR_NY` lætur 168 vista nýja skýrslu þótt skýrsla sé til.
+- Eldri app-skýrslur ársins á staðnum eru merktar `leyst_af` / `leyst_af_dags` með `CompanyAttachments.supersede` (111). Það gildir líka um viðbót.
+- **Engu er eytt.** Ársreiturinn sýnir „Skoðun (úrelt)“.
+- Til að afturkalla: fjarlægja `leyst_af`.
+- `customer_documents`-röð ársins (það sem gáttin les) uppfærist á nýju skýrsluna, svo úrelt skýrsla sést aldrei í gáttinni.
+
+**Rautt í verðinum `audit-skyrsla-solu`:** ósend sala með skýrslu sem stemmir ekki. Úttakið sýnir aðeins R-númer, sölu, stað
+og svið, aldrei kt eða nöfn, því CI-loggið er opinbert. Lagfæring: opna staðinn og velja „Búa til úttektarskýrslu“, eða ýta á
+„📄 Búa til nýja skýrslu“ í sendiglugganum.
+
+Próf:
+- `test/skyrsla-ein-heimild-sala.test.cjs`, 14 próf; 10 af 14 féllu á gamla kóðanum (master 0d902321; hin 4 prófa kjarnann einan, sem var ekki til).
+- `test/skyrsla-fylgir-solu.test.cjs`.
+
+### Reiknings-PDF fylgir sölu — ein regla (17.11.2026)
+
+Agnar 17.11.2026 (skjámynd): „það er ennþá vitlaus kennitala á bölv reikningnum“. Það sem opnaðist var PDF-afrit GAMLA
+reikningsins (kreditfærður, gömul kt). Nýja salan átti sitt eigið, rétta PDF. Þrjár ástæður:
+- **Parið** (`document_pairs`, DB-gikkurinn `auto_pair_customer_document`): FYRSTI reikningur ársins á staðnum tekur
+  sætið og losnar aldrei, ekki einu sinni við kredit. Fyrirtækjaspjaldið (199) og „Skýrsla og reikningur saman“ sýndu
+  hann sem reikning ársins.
+- **Kreditfærður reikningur var ómerktur** alls staðar: í spjaldinu, í Afgreiðslu („Reikningur R-… (PDF)“) og í gáttinni.
+  Gáttin fann kreditnótuna aðeins ef hún var sjálf í listanum, en hún á sér enga skjalaröð.
+- **Vistunin (233)**: „afrit með þessu R-númeri er til → sleppa“, svo ósend sala sem breyttist (kt leiðrétt, línur)
+  hélt PDF-i á gömlu kt. Auk þess prentaði PDF-ið kt STAÐARINS, ekki kt sölunnar sem Payday rukkar.
+
+**Ein regla:** `js/patches/517-reikningur-solu.js` (UMD). Þjónsafritið `netlify/functions/_reikningur-solu.cjs` er
+nákvæmlega sama skrá, og prófið krefst þess (`cp` eftir hverja breytingu).
+- `velja(sale, vidhengi, skjol)` velur PDF-afrit ÞESSARAR sölu: nákvæmlega sama R-númer, ekki leyst af hólmi, nýjast
+  vinnur. Aldrei „fyrsta skjal ársins“.
+- `bera(sale, pdf, {kredit})`:
+  - R-númer og kt stöðva;
+  - upphæð og nafn eru viðvörun;
+  - kreditfærð sala stöðvar.
+- `kreditMap`: kreditfærsla er staðreynd í `solur` (`credit_of` EÐA `kredit_a`, ógild nóta telst ekki), svo hún gildir
+  aftur í tímann án merkingar.
+
+**Hvar reglan er notuð:**
+
+| Staður | Hvað gerist |
+|---|---|
+| 199 fyrirtækjaspjaldið | Kreditfærður reikningur er grár, yfirstrikaður, „kreditfært (R-…)“ (opnast enn, engu eytt), hvorki valinn sem reikningur ársins né talinn í Hreyfingum. Kreditnótan og eldri, leyst afrit eru ekki kandídatar. Bendi parið á kreditfærðan reikning og EINN gildur er til fær parið hann (`savePair`, sama og „🔗 Tengja“; `matched_by='kredit_skipti'`, gamla skjalið í `notes`). |
+| 311/253 pörin | Kreditfærð sala er ekki reikningur ársins. |
+| 233 vistun | Ósend sala: afrit sem stemmir ekki (kt, R-nr, upphæð) víkur fyrir nýju. Það gamla fær `leyst_af` (111 supersede), skjalaröðin fær nýju slóðina og gamla slóðin fer í `notes`. Send sala: afritið stendur. PDF-ið prentar kaupanda SÖLUNNAR (`kaupandi()`). |
+| 517 eftir breytingu | `sale-edited`/`sala-breytt` → 233 með `adeinsEfTil`. Gerist sjálfkrafa, því reikningur ber engan handskrifaðan texta (öfugt við skýrsluna). |
+| 254 tölvupóstur | Kreditfærður reikningur fer aldrei í póst. Vistað afrit er notað aðeins ef R-nr og kt stemma (upphæð ein víkur → afritið gildir); annars er PDF-ið teiknað úr sölunni. |
+| 166 sendiglugginn | Reitur „🧾 Reikningurinn“: R-nr · kt · nafn · upphæð sem Payday fær, og hvort PDF-afritið stemmir. Rautt + „🧾 Endurgera PDF-afrit úr sölunni“. Payday-sendingin notar EKKI app-PDF-ið og er ekki stöðvuð. |
+| afgreidsla.cjs | Tengill á kreditfærðan reikning: „Reikningur R-… (PDF) — KREDITFÆRÐUR með R-…, gildir ekki“. |
+| gatt.cjs | Kreditnóturnar eru sóttar sérstaklega (`credit_of`/`kredit_a`). Kreditfærður reikningur sést kúnnanum ekki. |
+
+**Vörður og endurspilun:**
+- `tools/audit-reikningur-solu.cjs`: RAUTT ef ósend reikningssala ber PDF á annarri kt eða öðru R-númeri.
+  ⚠ fyrir upphæð, vantar, og pör á kreditfærðum reikningi.
+- `tools/endurspilun-reikningur-pdf.cjs [ár]`: gamla valið á móti nýju á öllum sölum ársins.
+
+Mælt 17.11.2026 á 1.001 lokasölu (466 með PDF):
+- 13 sendar á annarri kt og 15 sendar með aðra upphæð; 0 ósendar.
+- 29 kreditfærðar með ómerkt PDF.
+- 10 pör héldu kreditfærðum reikningi: 6 fá gildan, 4 bíða nýs reiknings.
+- Tölvupóstur: 42 breytast (13 kt + 29 kredit).
+
+**Hlutakredit** (óháð rýni 17.11.2026): reikningur telst kreditfærður AÐEINS þegar kreditnótur hans ná yfir alla upphæðina
+(`kreditStada` í 517, ±2 kr). Hlutakreditaður reikningur gildir alls staðar:
+- á kúnnavefnum (`kreditad_ad_hluta`), í pörum og í pósti;
+- á spjaldinu með „kreditað að hluta −X kr“;
+- Hreyfingar draga kreditið frá aðeins þegar skjalið ber brúttóupphæðina.
+Allir sem spyrja um kredit sækja `samtals`, og prófið krefst þess.
+
+**Parið skiptir aldrei sjálft** (regla hússins: ekkert tengist sjálfkrafa). Bendi parið á kreditfærðan reikning sýnir spjaldið gilda
+reikninginn og takkann „🔗 Festa R-… sem reikning ársins“. Smellur og staðfesting kalla á `savePair` (`kredit_skipti`), og `notes`
+skráir hver og hvenær.
+
+**Reikningur sem er ekki í Sölu** (Stólpi R-10xxxx, eða aðeins skráður í skjalasafnið). 199 `openInvFromSale` → `openInvAnnad`,
+fyrir bæði 👁 í veljaranum og 🧾-flísina. Fallið opnar PDF-ið eftir reikningsnúmeri úr `customer_documents`, sömu heimild og
+„KOMIN“-línan. Finnist ekkert PDF segir það: „Reikningur R-… er úr Stólpa … PDF fannst ekki í skjalasafninu“, með dagsetningu,
+upphæð og athugasemd. Það segir aldrei „fannst ekki í Sölu“.
+
+Athugið: vafrinn má ekki lesa `stolpi_reikningar`, því RLS er á án reglna. Upplýsingarnar koma því úr skjalaröðinni.
+Prófið er `test/reikningur-stolpi-opna.test.cjs`.
+
+### Hvað er sannað (17.11.2026)
+
+- Aðeins hreinu föll „Leiðrétta“ (5 próf í `test/sala-leidretting.test.cjs`).
+- Ekkert próf í `test/` nær yfir vistun úr ritli, kreditfærslu, kt-flutning, Kröfuyfirlit né `payday-push`.
+- Skýrslan sem fylgir (ein heimild): kjarni, payday-push (hermt net), 516 (hermdur vafri) og keðjan í vafra á Test fyrirtæki
+  17.11.2026. Ferlið: sendiskjár rauður → ný skýrsla → sendiskjár „✓ stemmir“; ritill, tækjum bætt við → spurt → ný skýrsla.
+- Stöðuverðir í `tools/` sanna kóðamynstur, ekki flæði: `audit-kredit-afturkollun`, `audit-krofu-vinnugluggi`,
+  `audit-osendar-krofur`, `audit-payday-tvirukkun` og `audit-einstefna-krofu`.
+
 ## Grunnreglur allra agenta (04.11.2026)
 1. Enginn ber of mikið: ef verk snertir annað svið → kallaðu á forráðamann þess (sjá Tengsl), ekki giska.
 2. Veiddu úr þínum töflum (gagnakortið í docs/AGENTASKRA.md) og skráðu reglur sem bíta í charlize_knowledge (topic = þitt heiti).
@@ -689,3 +1123,11 @@ QR-miðaglugginn (`_qrlc_modal`) opnast eftir sölu og hylur ÁFRAM.
 - **16.11.2026** — PDF úr 176 klipptist hægra megin þegar haldarinn var 794 px: breiddin á að vera (210 − 2 × MARGIN_MM) mm svo hún passi við mm-spássíur html2pdf (lagað 53adc900). [C#2508] (js/patches/176-company-report-email.js)
 
 - **16.11.2026** — Payday-höfnun á rafrænum reikningi er nær alltaf kúnnans megin (60 af 61 mælt 16.11.2026: viðtakandi tekur ekki við rafrænum reikningum). Ekki galli í payday-push; reikningurinn fer þá í pósti, og án netfangs aðeins sem bankakrafa. [C#2504]
+
+- **17.11.2026** — 17.11.2026 (samantekt á breytingum í skrám sem ég gæti, lesið úr commitum): (1) Skýrslugerð — kóðasjálfgildið er nú 4.600 í 129 (SlokkVisitDefaults), 165, 410 (×3), 488 og _gatt-serkjor; lifandi verðið býr áfram í app_settings.slokk_visit_defaults og test/skyrslugerd-ein-heimild.test.cjs fellur ef afritin víkja hvert frá öðru (589b40fe). Náist app_settings ekki fellur appið á sjálfgildið — þess vegna verður það að vera rétta verðið. (2) 142 SaleEditor.erIPayday(sale) er EIN heimild um „komin í Payday/DK“ (invoiced_at/krafa_sent_at/dk_invoice_id); Sótt ✓ (121) breytir aldrei upphæð sendrar sölu — viðbót fer á nýja sölu (66467be3, test/sott-send-sala.test.cjs). (3) combo-yfirlit kallar á Brunahólf með x-hub-toki (_bh-toki.cjs, e6f61448). (4) 36 Birgðir: listinn í Brunastáli C + spjaldasýn; verð og magn eru áfram vistuð með sömu föllum úr töflunni — spjaldið sýnir aðeins (e881e36c).
+
+- **17.11.2026** — Reiknings-PDF (233, jsPDF 2.5.1 + Helvetica) skrifar AÐEINS Latin-1 + 27 WinAnsi-tákn (mælt staf fyrir staf); einn stafur utan þess (−, ↔, →, ł, emoji) og ALLUR strengurinn fer í UTF-16 → „H l e ð s l a“ teygt yfir FJÖLDI/EININGAV. Hver texti í 233 fer gegnum pdfText (window.PdfTexti.texti) — nýr doc.text með breytilegum texta án hans fellir test/reikningur-pdf-letur. Gölluð eldri afrit endurgerast með ÚTGÁFU smiðsins sem bjó þau til + vörpuninni (núll frávik), aldrei núverandi útgáfu (framsetning breyttist 10.07, 10.08, 17.09). (js/patches/233-uttekt-pdf-autosave.js)
+
+- **17.11.2026** — 17.11.2026 — Sótt (121) og Verkspjald (430): hleðsla ⇄ yfirferð parast eftir tegund + stærð + þjónustu í 518 (ThjSkipti), ekki heiti. Vörulistinn er ósamkvæmur: Léttvatnstækis 6L. hleðsla á móti Léttvatnstæki 6L. yfirferð, CO₂ 5 kg. yfirferd án ð, eldri verkliðir bera aðeins orðið. Í Sótt: rofi Yfirferð | Hleðsla | Ónýtt á hverju tæki; Ónýtt = hak af = ekki rukkað og dregur SÍNA línu frá; valið vistast við Klára (verklidur.service + athugasemd á sölu).
+
+- **20.11.2026** — 20.11.2026: ávarp í öllum póstum sem appið býr til er nú Góðan daginn (var Sæl(l), Sæl/l, Sæll/sæl): 254 standardText, 240 uppkast og HTML-umgjörð (ávarp einu sinni), 275 tilboð, 176 skýrsla, 53, 62, 85, 94, 487 Hunter, gatt-admin og postur-reply. Texta sem fer út má ekki breyta án þess að bumpa ?v= í index.html (audit-utgafumerki) og netvörður fer yfir 254.
