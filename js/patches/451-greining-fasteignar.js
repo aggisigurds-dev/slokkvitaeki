@@ -2602,15 +2602,22 @@
     const snid = fl.snid.nyjar[0] || fl.snid.eldri[0] || adal.find((x) => /sni[ðd]/i.test(x.txt) && !(heild && x.d.infoUrl === heild.d.infoUrl));
     const lagnir = sl.flokkar.get('lagnir');
     const udi = lagnir.find((x) => /[úu][ðd]akerf|sprinkl|vatns[úu][ðd]/i.test(blodTexti(x.d))) || lagnir[0];
+    // Úðakerfi/sprinkler fær SÉR línu (Agnar 20.11.2026, Blásalir 22). Áður kom hún aðeins fram ef ENGIN brunavarnablöð
+    // voru til (gamla línan var `if (!bruna.length) …`), svo í húsum með bæði brunavarnir og úðakerfi — t.d. Blásalir 22
+    // (Vatnsúðakerfi (sprinkler), SPR-blöð) — sást úðakerfið aldrei. Nú er það sjálfstæð lína og hámarkið hækkar í 6 svo
+    // það ýtir ekki hinum fimm út.
+    const erUdi = !!(udi && /[úu][ðd]akerf|sprinkl|vatns[úu][ðd]/i.test(blodTexti(udi.d)));
+    const hamark = erUdi ? 6 : 5;
     if (bruna.length) baeta(bruna[0], 'Brunavarnir');
+    if (erUdi) baeta(udi, 'Vatnsúðakerfi (sprinkler)');
     baeta(heild, 'Húsið í heild');
     if (raf) baeta(raf, raf.tafla ? 'Raflagnir — töflur' : 'Raflagnir');
     baeta(utlit, 'Útlit');
     baeta(snid, 'Snið');
-    if (!bruna.length) baeta(udi, /[úu][ðd]akerf|sprinkl/i.test(udi ? blodTexti(udi.d) : '') ? 'Vatnsúðakerfi' : 'Lagnir');
-    // færri en 5 → fyllt úr öðrum flokkum í gagnsemisröð
-    ['yfirlit', 'loft', 'lagnir', 'burdur', 'annad'].forEach((k) => { if (val.length < 5) (sl.flokkar.get(k) || []).some((x) => val.length < 5 && baeta(x, SER_HEITI[k])); });
-    return val.slice(0, 5);
+    if (!bruna.length && !erUdi) baeta(udi, 'Lagnir');
+    // færri en hámark → fyllt úr öðrum flokkum í gagnsemisröð
+    ['yfirlit', 'loft', 'lagnir', 'burdur', 'annad'].forEach((k) => { if (val.length < hamark) (sl.flokkar.get(k) || []).some((x) => val.length < hamark && baeta(x, SER_HEITI[k])); });
+    return val.slice(0, hamark);
   }
   function adrarHtml(g, t, fl, sl) {
     const val = veljaAdrar(g, t, fl, sl);
