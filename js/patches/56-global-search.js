@@ -200,7 +200,7 @@
       safe(SB.from('thjonustubeidni').select('id,title,customer_nafn,status,assigned_to').is('deleted_at', null).is('archived_at', null)
         .or(`title.ilike.%${like}%,summary.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
       safe(SB.from('solur').select('id,num,customer_nafn,samtals').or(`num.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
-      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,fyrirtaeki_id,storage_path').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(6)),
+      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,doc_type,fyrirtaeki_id').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(6)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').or(`num.ilike.%${like}%,customer.ilike.%${like}%`).limit(5)),
       safe(SB.from('uttaeki').select('id,serial,client,type').or(`serial.ilike.%${like}%,client.ilike.%${like}%`).limit(5)),
       safe(SB.from('tilbod').select('id,num,company_nafn,samtals').or(`num.ilike.%${like}%,company_nafn.ilike.%${like}%`).limit(4))
@@ -211,7 +211,12 @@
     (co.data || []).forEach(x => r.push({ type: 'co', icon: '🏢', title: x.nafn, meta: x.kennitala || x.heimilisfang || '', opna: () => opnaFyrirtaeki(x.id) }));
     (mal.data || []).forEach(x => r.push({ type: 'mal', icon: '📋', title: x.title || '#' + x.id, meta: [x.customer_nafn, x.assigned_to, x.status].filter(Boolean).join(' · '), opna: () => opnaMal(x.id) }));
     (inv.data || []).forEach(x => r.push({ type: 'inv', icon: '📄', title: (x.num || '#' + x.id) + ' — ' + (x.customer_nafn || ''), meta: kr(x.samtals), opna: () => opnaSolu(x) }));
-    (doc.data || []).forEach(x => r.push({ type: 'doc', icon: '📁', title: x.file_name || 'Skjal #' + x.id, meta: [x.customer_name, x.year].filter(Boolean).join(' · '), opna: () => opnaSkjal(x) }));
+    // 640 skjöl af 4.220 bera ekkert file_name — „Skjal #10103" segir ekkert, svo tegund og ár taka við.
+    (doc.data || []).forEach(x => r.push({
+      type: 'doc', icon: '📁',
+      title: x.file_name || [x.customer_name, x.doc_type, x.year].filter(Boolean).join(' · ') || 'Skjal #' + x.id,
+      meta: [x.customer_name, x.doc_type, x.year].filter(Boolean).join(' · '), opna: () => opnaSkjal(x)
+    }));
     (job.data || []).forEach(x => r.push({ type: 'job', icon: '🔧', title: (x.num || '#' + x.id) + ' — ' + (x.customer || ''), meta: x.status || '', opna: () => opnaVerkbeidni(x) }));
     (dev.data || []).forEach(x => r.push({ type: 'dev', icon: '🔥', title: (x.serial || '#' + x.id) + ' — ' + (x.type || ''), meta: x.client || '', opna: () => opnaTaeki(x) }));
     (qt.data || []).forEach(x => r.push({ type: 'qt', icon: '📝', title: (x.num || '#' + x.id) + ' — ' + (x.company_nafn || ''), meta: kr(x.samtals), opna: () => { sv('tilbod'); } }));
@@ -238,7 +243,22 @@
     };
     reyna(0);
   }
-  function opnaSolu(x) { if (x.num) hash('#sale/' + x.num); else sv('income'); }
+  // Reikningurinn opnast í sprettiglugga (235 kallar window.open). Sé leiðin keyrð um location.hash
+  // kemur hún í NÝRRI lotu — smell-keðjan er rofin og sprettigluggavörnin stöðvar hann þegjandi
+  // (mælt í loftinu 20.11.2026: hash rétt, sýn rétt, enginn reikningur). Því er opnunin kölluð
+  // BEINT í sama smelli og slóðin skrifuð án hashchange. Hinar leiðirnar (#unit, #verkbeidni,
+  // #company) opna glugga innan síðunnar og mega fara um hash eins og áður.
+  function opnaSolu(x) {
+    if (!x.num) { sv('income'); return; }
+    const R = window.SubRoutes && SubRoutes._routes && SubRoutes._routes.sale;
+    if (R && typeof R.open === 'function') {
+      if (R.parent) sv(R.parent);
+      try { history.replaceState(null, '', '#sale/' + x.num); } catch (_) {}
+      R.open(x.num);
+      return;
+    }
+    hash('#sale/' + x.num);
+  }
   function opnaVerkbeidni(x) { if (x.num) hash('#verkbeidni/' + x.num); else sv('workshop'); }
   function opnaTaeki(x) { if (x.serial) hash('#unit/' + x.serial); else sv('field'); }
   function opnaSkjal(x) {

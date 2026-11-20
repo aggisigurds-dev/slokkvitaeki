@@ -50,6 +50,8 @@ function hlada({ medOpenCompanySafe = true } = {}) {
   const heimur = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number, parseInt };
   heimur.window = heimur;
   heimur.location = { hash: '', href: '' };
+  mælt.replaceState = [];
+  heimur.history = { replaceState: (a, b, u) => mælt.replaceState.push(u) };
   heimur.document = {
     readyState: 'complete', head, body,
     addEventListener() {},
@@ -130,6 +132,20 @@ test('#8 reikningur opnast um #sale/<num> (235), ekki á Tekjum', () => {
   G._opna.sala({ id: 7, num: 'R-000244' });
   assert.strictEqual(heimur.location.hash, '#sale/R-000244');
   assert.deepStrictEqual(mælt.switchView, []);
+});
+
+// 20.11.2026, mælt í loftinu: slóðin var rétt og sýnin rétt — en reikningurinn birtist ALDREI.
+// 235 opnar hann með window.open; fari opnunin um location.hash kemur hún í nýrri lotu, smell-keðjan
+// er rofin og sprettigluggavörnin stöðvar hann þegjandi. Þetta próf heldur opnuninni í sama smelli.
+test('#8b reikningur: opnunin er kölluð BEINT í smellinum, ekki um hashchange', () => {
+  const { G, heimur, mælt } = hlada();
+  const kallad = [];
+  heimur.SubRoutes = { _routes: { sale: { parent: 'bokhalds-yfirlit', open: (n) => kallad.push(n) } } };
+  G._opna.sala({ id: 7, num: 'R-000244' });
+  assert.deepStrictEqual(kallad, ['R-000244'], 'opnunin var ekki kölluð beint');
+  assert.deepStrictEqual(mælt.switchView, ['bokhalds-yfirlit'], 'foreldrasýnin var ekki opnuð');
+  assert.deepStrictEqual(mælt.replaceState, ['#sale/R-000244'], 'slóðin var ekki skrifuð án hashchange');
+  assert.strictEqual(heimur.location.hash, '', 'skrifaði í location.hash og rauf smell-keðjuna');
 });
 
 test('#9 tæki opnast um #unit/<serial> og verkbeiðni um #verkbeidni/<num>', () => {
