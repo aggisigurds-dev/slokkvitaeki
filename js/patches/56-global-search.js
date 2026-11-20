@@ -78,7 +78,8 @@
     }));
     // sama heiti tvisvar (stikan + hamur) — fyrra eintakið stendur
     const sed = new Set();
-    return ut.filter(r => { const k = r.type + '|' + r.key; if (sed.has(k)) return false; sed.add(k); return true; });
+    return ut.filter(r => { const k = r.type + '|' + r.key; if (sed.has(k)) return false; sed.add(k); return true; })
+      .map(r => { r.key2 = r.key.replace(/ /g, ''); return r; });
   }
 
   let SIDUR = [];
@@ -165,6 +166,22 @@
   }
 
   // ── síðurnar: svara áður en nokkuð er sótt ────────────────────────────────
+  // Íslenskan beygist og Agnar skrifar greininn með: „Þjonustubordid", „bidstofan", „reikningana".
+  // Mælt í loftinu 20.11.2026: „Þjonustubordid" skilaði ENGU af því að orðið er LENGRA en heitið sem
+  // leitað er í. Því má sleppa tveimur stöfum aftan af orði sem er 6 stafir eða lengra.
+  // Endingarnar eru mislangar („-ið" 2, „-urnar" 4, og stofninn sjálfur breytist: kröfu → kröfur),
+  // svo reynt er að stytta orðið aftan frá — aldrei meira en fjóra stafi og aldrei niður fyrir fjóra.
+  // key2 er heitið án bila: „Kerfis-kort" verður „kerfiskort", sem er það sem hann slær inn.
+  const hittir = (r, w) => {
+    if (r.key.indexOf(w) > -1 || r.key2.indexOf(w) > -1) return true;
+    const minnst = Math.max(4, w.length - 4);
+    for (let i = w.length - 1; i >= minnst; i--) {
+      const s = w.slice(0, i);
+      if (r.key.indexOf(s) > -1 || r.key2.indexOf(s) > -1) return true;
+    }
+    return false;
+  };
+
   function sidurFyrir(q, listi) {
     const L = listi || SIDUR;
     const n = norm(q);
@@ -172,7 +189,7 @@
     const ord = n.split(' ').filter(Boolean);
     return L
       .map(r => {
-        if (!ord.every(o => r.key.indexOf(o) > -1)) return null;
+        if (!ord.every(o => hittir(r, o))) return null;
         // nákvæmt upphaf fremst, svo „sala" skili Sölu en ekki „Söluyfirliti" fyrst
         return { r, v: r.key === n ? 0 : r.key.indexOf(n) === 0 ? 1 : 2 };
       })
@@ -194,7 +211,11 @@
     if (!SB) { renderResults(''); return; }
     const minn = ++keyrsla;
     const safe = async p => { try { return await p; } catch (e) { return { data: [] }; } };
-    const like = q.trim().replace(/[%,()]/g, ' ');
+    // „Benna, Fiskislóð" og „Hótel (Borgarnes)" skiluðu ENGU (mælt 20.11.2026): kommur og svigar voru
+    // hreinsuð burt — þau mega ekki fara óbreytt í PostgREST-segðina — og eftir stóð tvöfalt bil sem
+    // ilike fann hvergi. Orðin eru nú tengd með % svo þau megi standa í þessari röð með hverju sem er á milli.
+    const like = q.trim().replace(/[%,()*"']/g, ' ').split(/\s+/).filter(Boolean).join('%');
+    if (!like) { renderResults(''); return; }
     const [co, mal, inv, doc, job, dev, qt] = await Promise.all([
       safe(SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').or(`nafn.ilike.%${like}%,kennitala.ilike.%${like}%,heimilisfang.ilike.%${like}%`).limit(6)),
       safe(SB.from('thjonustubeidni').select('id,title,customer_nafn,status,assigned_to').is('deleted_at', null).is('archived_at', null)

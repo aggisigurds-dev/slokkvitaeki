@@ -91,6 +91,22 @@ test('#2 „krofu“ finnur Kröfu yfirlit og merkitalan fylgir ekki heitinu', (
   assert.ok(heiti.every(h => !/\s\d+$/.test(h)), 'merkitala hékk í heitinu: ' + heiti.join(', '));
 });
 
+// Mælt í loftinu 20.11.2026: „Þjonustubordid“ (greinirinn með, eins og Agnar skrifar) skilaði ENGU,
+// því orðið er LENGRA en heitið sem leitað er í. Og „kerfiskort“ fann ekki „Brunahólf — Kerfis-kort“,
+// því bilið milli „kerfis“ og „kort“ stóð á milli.
+test('#2b beygt orð með greini finnur síðuna („Þjonustubordid“)', () => {
+  const { G } = hlada();
+  const S = G.sidur();
+  assert.strictEqual(G.sidurFyrir('Þjonustubordid', S)[0].title, 'Þjónustuborð');
+  assert.strictEqual(G.sidurFyrir('krofurnar', S).length > 0, true, '„krofurnar“ fann ekkert');
+});
+
+test('#2c heiti með bandstrik/bil finnst sem eitt orð („kerfiskort“)', () => {
+  const { G } = hlada();
+  const r = G.sidurFyrir('kerfiskort', G.sidur());
+  assert.ok(r.some(x => x.title === 'Brunahólf — Kerfis-kort'), 'fann ekki Kerfis-kortið');
+});
+
 test('#3 nákvæmt heiti raðast fremst („sala“ á undan „Söluyfirlit“)', () => {
   const { G } = hlada();
   const r = G.sidurFyrir('sala', G.sidur());
