@@ -140,7 +140,10 @@
       @media (max-width:900.98px){
         .gs-overlay{padding-top:24px}
         .gs-hint{display:none}
-        #gs-trigger{order:-1;flex:none;width:auto;min-height:44px;margin:8px 10px 4px;padding:0 12px;gap:9px;
+        /* ENGIN `order` hér: DOM-staðan (næst á eftir .brand) ræður. `order:-1` lyfti reitnum upp
+           fyrir merkið, þar sem #_mnav_btn (hamborgarinn, fastur á top:9 með z-index 9999) liggur
+           ofan á honum — mælt á 375px: smellur lenti á hamborgaranum, ekki á leitinni. */
+        #gs-trigger{flex:none;width:auto;min-height:44px;margin:8px 10px 4px;padding:0 12px;gap:9px;
           background:#1d1f25;border:1px solid rgba(0,0,0,.6);border-radius:10px;color:#9aa3b2;
           font:400 15px/1 inherit;text-align:left;box-shadow:inset 0 2px 5px rgba(0,0,0,.45)}
         #gs-trigger span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
