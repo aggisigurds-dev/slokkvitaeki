@@ -39,7 +39,11 @@ const EININGAR = [{ k: 'dagskra', t: 'Dagskrá' }, { k: 'postholf', t: 'Pósthó
 function el(tag, yfir) {
   const e = Object.assign({
     tagName: tag, style: { cssText: '' }, dataset: {}, innerHTML: '', textContent: '', _smellir: 0,
-    children: [], appendChild(c) { this.children.push(c); return c; }, setAttribute() {}, addEventListener() {},
+    children: [], appendChild(c) { this.children.push(c); return c; }, setAttribute() {},
+    // raunveruleg skrá yfir hlustendur svo prófið geti slegið inn eins og notandi gerir
+    _hlust: {},
+    addEventListener(t, f) { (this._hlust[t] = this._hlust[t] || []).push(f); },
+    slaInn(gildi) { this.value = gildi; (this._hlust.input || []).forEach((f) => f({ target: this })); },
     querySelector: () => null, querySelectorAll: () => [],
     classList: { add() {}, remove() {}, contains: () => false, toggle() {} },
     onclick: null, click() { this._smellir++; if (this.onclick) this.onclick(); }
@@ -380,6 +384,38 @@ test('#21 broddstafað orð fer aldrei í víkkuðu leiðina', async () => {
   G.open();
   await G.leita('steypustöðin');
   assert.strictEqual(saga.length, 7, 'víkkaða leitin keyrði á broddstafaðri leit: ' + saga.length + ' segðir');
+});
+
+// Mælt á 375px í loftinu: smellur á „Hótel Varmaland" opnaði félagið rétt — en valmyndarskúffan
+// lá áfram OFAN Á því og notandinn hefði þurft að loka henni sjálfur.
+test('#22 á síma lokast valmyndarskúffan þegar niðurstaða er opnuð', () => {
+  const { G, heimur, skra, mælt } = hlada();
+  let smellt = 0;
+  skra['_mnav_btn'] = el('button', { id: '_mnav_btn', click() { smellt++; } });
+  heimur.document.body.classList.contains = (c) => c === 'mobile-nav-open';
+  G.open();
+  G._opnaNidurstodu(G.sidurFyrir('sala', G.sidur())[0]);
+  assert.strictEqual(smellt, 1, 'skúffan var ekki lokuð — hún liggur þá ofan á síðunni sem opnaðist');
+  assert.deepStrictEqual(mælt.switchView, [], 'síðuhnappurinn á að sjá um opnunina, ekki switchView');
+});
+
+test('#23 skúffan er ekki snert þegar hún er lokuð fyrir (tölvuskjár)', () => {
+  const { G, skra } = hlada();
+  let smellt = 0;
+  skra['_mnav_btn'] = el('button', { id: '_mnav_btn', click() { smellt++; } });
+  G.open();                                           // body ber EKKI 'mobile-nav-open'
+  G._opnaNidurstodu(G.sidurFyrir('sala', G.sidur())[0]);
+  assert.strictEqual(smellt, 0, 'smellti á valmyndarhnappinn að óþörfu — það OPNAR skúffuna');
+});
+
+test('#24 tómur listi segir hvað var leitað að og hvað má slá inn', async () => {
+  const { G, skra } = hlada();
+  G.open();
+  skra['gs-input'].slaInn('zxqw');                    // slegið inn eins og notandi gerir
+  await bida(500);                                    // 220 ms töf + teikning
+  const html = skra['gs-results'].innerHTML;
+  assert.ok(html.indexOf('zxqw') > -1, 'orðið sem leitað var að kemur ekki fram: ' + html.slice(0, 90));
+  assert.ok(html.indexOf('kennitölu') > -1, 'ekki sagt hvað má slá inn: ' + html.slice(0, 90));
 });
 
 // ── 4. Hnapparnir ────────────────────────────────────────────────────────────
