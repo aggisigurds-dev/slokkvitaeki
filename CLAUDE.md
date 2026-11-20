@@ -270,7 +270,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
-| Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn með tenglum í `.claude/skills/arnold/references/` | skill `arnold` 💪 |
+| Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn í `.claude/skills/arnold/references/`. **Yfirmaður Expendables** — sendir á Dolph/Terry/Wesley/Randy þegar tilboð er beðið um | agent+skill `arnold` 💪 |
 | **Tilboð í brunaviðvörunarkerfi** — 372 kúnnar, reiknivélin (200), verðlisti, EN 54 | `dolph-lundgren` 🔫 (Arnolds Expendables) |
 | **Tilboð í sprinkler / vatnsúðakerfi** — 246 kúnnar, samningur (503), EN 12845, verðlisti (vantar verð) | `terry-crews` 💪 (Arnolds Expendables) |
 | **Tilboð í slökkvikerfi eldhús** — 79 kúnnar, EN 16282, Ansul, kæfikerfi (vantar reiknivél) | `wesley-snipes` 🗡️ (Arnolds Expendables) |
