@@ -24,7 +24,9 @@ const NAV = [
   { view: 'bokhalds-yfirlit', texti: 'Bókhalds yfirlit' },
   { view: 'sala', texti: 'Sala' },
   { view: 'soluyfirlit', texti: 'Söluyfirlit' },
-  { view: 'companies', texti: 'Fyrirtækjaþjónusta' }
+  { view: 'companies', texti: 'Fyrirtækjaþjónusta' },
+  // keppir við „Brunahólf — Kerfis-kort“ um leitarorðið „kerfiskort“ (hittir aðeins á stytt „kerfis“)
+  { view: 'brunaskra', texti: 'Brunakerfis skoðun' }
 ];
 const HAMIR = [{ m: 'thjonusta', texti: 'Mál' }, { m: 'peningar', texti: 'Kröfur' }];
 
@@ -101,10 +103,12 @@ test('#2b beygt orð með greini finnur síðuna („Þjonustubordid“)', () =>
   assert.strictEqual(G.sidurFyrir('krofurnar', S).length > 0, true, '„krofurnar“ fann ekkert');
 });
 
-test('#2c heiti með bandstrik/bil finnst sem eitt orð („kerfiskort“)', () => {
+test('#2c heiti með bandstrik/bil finnst sem eitt orð („kerfiskort“) og raðast ofar en stytt hitta', () => {
   const { G } = hlada();
   const r = G.sidurFyrir('kerfiskort', G.sidur());
-  assert.ok(r.some(x => x.title === 'Brunahólf — Kerfis-kort'), 'fann ekki Kerfis-kortið');
+  assert.ok(r.length, 'fann ekkert');
+  assert.strictEqual(r[0].title, 'Brunahólf — Kerfis-kort',
+    'heitið sem geymir orðið HEILT á að standa fremst, á undan þeim sem hittu á stytt orð: ' + r.map(x => x.title).join(', '));
 });
 
 test('#3 nákvæmt heiti raðast fremst („sala“ á undan „Söluyfirlit“)', () => {

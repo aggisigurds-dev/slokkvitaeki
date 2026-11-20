@@ -190,8 +190,11 @@
     return L
       .map(r => {
         if (!ord.every(o => hittir(r, o))) return null;
-        // nákvæmt upphaf fremst, svo „sala" skili Sölu en ekki „Söluyfirliti" fyrst
-        return { r, v: r.key === n ? 0 : r.key.indexOf(n) === 0 ? 1 : 2 };
+        // Röðun: nákvæmt heiti → heiti sem byrjar á orðinu → orðið stendur óstytt í heitinu →
+        // aðeins stytt orð hitti. Án síðasta þrepsins skilaði „kerfiskort" fyrst „Brunakerfis skoðun"
+        // (hitti á stytt „kerfis") en ekki „Brunahólf — Kerfis-kort" sem geymir orðið heilt.
+        const heilt = ord.every(o => r.key.indexOf(o) > -1 || r.key2.indexOf(o) > -1);
+        return { r, v: r.key === n ? 0 : r.key.indexOf(n) === 0 ? 1 : heilt ? 2 : 3 };
       })
       .filter(Boolean)
       .sort((a, b) => a.v - b.v || a.r.title.length - b.r.title.length)
