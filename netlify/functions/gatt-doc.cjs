@@ -67,7 +67,11 @@ exports.handler = async (event) => {
       const slash = sp.indexOf('/');
       const bucket = slash > -1 ? sp.slice(0, slash) : sp;
       const objectPath = slash > -1 ? sp.slice(slash + 1) : '';
-      const sign = await fetch(`${P.SUPABASE_URL}/storage/v1/object/sign/${bucket}/${encodeURI(objectPath)}`, {
+      // encodeURI sleppir # ? & + — skráarnafn með „#" (t.d. „Úttekt #12.pdf") sleit slóðinni og
+      // skjalið opnaðist aldrei hjá viðskiptavininum. Hver hluti er kóðaður fyrir sig svo skástrikin
+      // standi eftir sem skástrik. Sama lagfæring var gerð annars staðar 2026-11; þessi stóð eftir.
+      const encPath = objectPath.split('/').map(encodeURIComponent).join('/');
+      const sign = await fetch(`${P.SUPABASE_URL}/storage/v1/object/sign/${bucket}/${encPath}`, {
         method: 'POST',
         headers: { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ expiresIn: SIGN_TTL }),
