@@ -5,9 +5,9 @@
 > Breyting hér tapast við næstu uppfærslu. Til að bæta við staðreynd:
 > `node tools/minni.cjs --skra "..." --topic <efni>`
 
-Sótt 2026-11-19 19:42 · 2593 virkar staðreyndir — 1486 prentaðar hér
+Sótt 2026-11-20 09:24 · 2596 virkar staðreyndir — 1486 prentaðar hér
 
-> ⚠ **Bókin er ekki allt minnið:** 159 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (948 færslur) er aldrei skrifað hingað.
+> ⚠ **Bókin er ekki allt minnið:** 160 eldri staðreyndum er sleppt (mest 40 í hverju efni) og kúnnaminnið (950 færslur) er aldrei skrifað hingað.
 > Finnist ekkert hér er það ekki sönnun um að ekkert sé skráð — leitaðu í allri töflunni:
 > `node tools/minni.cjs --ferskt --leit "<orð>"` — eða spurðu grunninn beint:
 > `select topic, fact, detail from v_charlize_active where topic = '<efni>' or fact ilike '%<orð>%' order by created_at desc;`
@@ -83,14 +83,14 @@ Skilaðu niðurstöðu á RÉTT svið svo hún rati til þess sem á málið:
 
 Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
-> **Kúnnaminnið (scope `kunni`, 948 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
+> **Kúnnaminnið (scope `kunni`, 950 færslur) er EKKI í þessari skrá.** Skráin er committuð í repó sem er
 > opinbert á GitHub, og kúnnaminnið ber nöfn tengiliða, netföng, símanúmer og aðgengi. Lestu það beint úr töflunni:
 > `node tools/minni.cjs --ferskt --leit "<nafn eða kennitala>"` — eða í hubbnum: Jarvis → Minnið → Kúnnaminni.
 
 | Efni | Fjöldi |
 |---|---:|
 | [kerfi](#kerfi) | 138 |
-| [postur](#postur) | 59 |
+| [postur](#postur) | 60 |
 | [solur](#solur) | 57 |
 | [teikningar](#teikningar) | 53 |
 | [skjol](#skjol) | 52 |
@@ -205,6 +205,8 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 
 ### postur
 
+- **Lota sem sendir svar að beiðni Agnars: inReplyTo = email_digest.message_id innkomna póstsins í SAMA hólfi og sendir (þá threaded:true), viðhengi {filename, driveId}, svo insert í reikninga_postur_activity (message_id, kind reply) fyrir hvert eintak innkomna póstsins, annars telur Reikningsbeiðna-ljósið (380) hann ósvaraðan. Landnám/Reikningshald R-001267 fór 19.11.2026 sem nýr póstur án merkis; lagað eftir á. Ávarp í öllum póstum er nú Góðan daginn (Agnar 20.11.2026, Allstaðar). Sjá postur.md.**
+  <br><sub>2026-11-20 · slokkvitaeki · claude-code · claude-code</sub>
 - **Agnar 18.11.2026 (síðdegis): „mátt setja hin málin inn á borðið hjá Annþóri … mjög skipulagt … punkta inn texta, það er ekki hægt að senda með pósti úr Brunahólf ennþá“. Brunahólfsmálin fóru því á borð Anna: ÍAV #1604, ALL Verk #1639, BVT #1564 og Rafís #1638 (áður hjá Agnari, sbr. #2735), auk nýs máls #1678 (LSH Fossvogur: hringja í Einar). COWI/ÞG #1640 er áfram hjá Agnari. Borð Anna er Dagskrá + Checklisti + Skipulagsborð: punktalistinn er á spjaldinu „ósvarað úr brunahólf“ (skipulagsbord.by_staff.Anni.cards, id sbmwiz3lop07t) og í fjórum óákveðnu-reitum Dagskrár (oakvedin r1–r4); svartextar sjást undir flipanum Erindi (mál með ---SVAR---). Snið mála: „▶ NÆSTA SKREF“ efst, 3–5 punktar (Hver · Hvað · Staða), „— Eldri nótur —“, svo ---SVAR---.**
   <br>Afrit fyrir breytingu: backup_20261118_mal_bord_anna (8 mál) og backup_20261118_anni_skipulag. Skrifað um app_settings_merge í einni setningu (spjöldin lesin og skrifuð í sömu setningu). Afgreiðsla #66, #67, #77, #78 merkt úrelt (færð á borð Anna / Bjarndís hringir í Kefas 23.11). COWI-yfirlitið (PD
   <br><sub>2026-11-18 · baedi · agnar · claude-code</sub>
@@ -310,10 +312,7 @@ Ein setning = ein staðreynd. Uppspretta og vissa fylgja hverri.
 - **v_kunni_netfong (póstur → kúnni) er byggð á customers_base/fyrirtaeki (Slökkvitæki) — Brunahólfs-kúnnar tengjast ekki: ytri mannlegur póstur í Brunaholf@ INBOX síðustu 90 daga 259 af 287 ótengdir (t.d. landspitali.is, istak.is).**
   <br>Öll 4 rekstrarhólfin 90 d: 561 af 684 ótengdir (eldklar 146/228, bokhald@eldklar 94/105, bokhald@brunaholf 62/64). Flest ótengd lén eru birgjar/kerfi (teya.com, ritsyn.is, iskraft.is, samskipti.is, inkasso.is, payday.is, redder.is) — vantar flokk „birgir/kerfi“. charlize_contacts hefur gmail.com sem
   <br><sub>2026-11-04 · baedi · artifact: greining-04.11:06-postur-samskipti.inbox.json · greining-06</sub>
-- **email_digest er upsertað með on_conflict=message_id og Prefer resolution=merge-duplicates bæði í bridge.js og gmail-ingest.js — sami póstur í tveimur möppum eða hólfum verður EIN röð þar sem síðasti ritari ræður account og folder.**
-  <br>Áður en undirmöppur eru teknar inn þarf sér dálk (t.d. mappur text[]) eða hliðartöflu (message_id, account, folder) og ignore-duplicates fyrir undirmöppu-raðir, annars flakka INBOX/SENT-gildi og síur í 240/309/448/postleit brotna.
-  <br><sub>2026-11-04 · baedi · artifact: greining-04.11:06-postur-samskipti.inbox.json · greining-06</sub>
-- _…og 19 til viðbótar í töflunni._
+- _…og 20 til viðbótar í töflunni._
 
 ### solur
 
