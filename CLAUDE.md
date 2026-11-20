@@ -270,6 +270,10 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
 | Hvar búnaður á að vera, lög og reglur brunavarna (byggingarreglugerð, neyðarlýsing, eldvarnaeftirlit, hverjir eru skyldugir), byggingarlýsing/skráningartafla, sameign í fjölbýli — reglusafn með tenglum í `.claude/skills/arnold/references/` | skill `arnold` 💪 |
+| **Tilboð í brunaviðvörunarkerfi** — 372 kúnnar, reiknivélin (200), verðlisti, EN 54 | `dolph-lundgren` 🔫 (Arnolds Expendables) |
+| **Tilboð í sprinkler / vatnsúðakerfi** — 246 kúnnar, samningur (503), EN 12845, verðlisti (vantar verð) | `terry-crews` 💪 (Arnolds Expendables) |
+| **Tilboð í slökkvikerfi eldhús** — 79 kúnnar, EN 16282, Ansul, kæfikerfi (vantar reiknivél) | `wesley-snipes` 🗡️ (Arnolds Expendables) |
+| **Teikning → tilboð**, búnaðargreining → sérfræðingur, fjölkerfatilboð, v_stadur_kerfi tækifæri | `randy-couture` 🤼 (Arnolds Expendables) |
 | **Texti sem fer úr kerfinu** — póstur, skýrslur, reikningslínur, „vegna", kröfulýsing, svör, SMS: hvaðan, hvaða texti, hvar skráður, reglur Agnars. Númerin SV-01…SV-27 standa í haus hvers sendingarglugga | síðan `#svarstod` (gögn í `js/patches/447a-svarstod-gogn.js`) + `sala-reikningar` |
 | **Svör Agnars á Þjónustuborðinu** — „klára svörin", „yfirfara svör", „ég er búinn að svara", „vinna úr Samþykkja", „hvað bíður Claude" 🕵️ | `samthykktir` |
 | Sama villumynstur víðar (systkini-kt, röng join, falskt grænt) | skill `villuleit` + `variant-analysis` (+ `natalie` til að mæla, `netvordur` ef vörðuð leið) |

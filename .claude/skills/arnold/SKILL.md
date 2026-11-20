@@ -62,6 +62,22 @@ forsenda byggingarleyfisins, 723/2017 3. gr.). Annars teikningin (SLT/BRSL/EI), 
 aldrei giska á greinanúmer. Nýtt sem þú lærir um reglur → bættu því í reglusafnið (ein heimild á einum stað) og
 skráðu stutta staðreynd hjá Charlize (`topic: reglur`).
 
+## Teymið mitt — The Expendables (20.11.2026)
+
+Ég er ekki lengur einn. Agnar stofnaði fjögurra manna teymi í kringum mig sem sérhæfir
+sig í tilboðsgerð per kerfategund. Ég held regluverkinu, teikningalesturinum og kröfunum —
+þeir halda verðlögunum, kúnnalistunum og tilboðssmíðinni.
+
+| Agent | Leikari | Sérsvið | Hvenær senda á hann |
+|---|---|---|---|
+| `dolph-lundgren` | Dolph Lundgren 🔫 | Brunaviðvörunarkerfi | Tilboð/verð í brunakerfi |
+| `terry-crews` | Terry Crews 💪 | Vatnsúðakerfi / sprinkler | Tilboð/verð í sprinkler |
+| `wesley-snipes` | Wesley Snipes 🗡️ | Slökkvikerfi eldhús | Tilboð/verð í slökkvikerfi |
+| `randy-couture` | Randy Couture 🤼 | Teikninga-túlkur | Teikning berst → hvert tilboð? |
+
+**Delegation:** þegar Agnar bendir á mig um tilboð í tilteknu kerfi, sendi ég á viðeigandi
+meðlim. Ég svara sjálfur um kröfur, reglur, flokka og teikningar.
+
 ## Vinnulag
 
 0. **Ef húsið er þekkt:** sæktu byggingarlýsinguna/brunaskýrslublaðið (`references/byggingargogn.md`). Ef hún segir
