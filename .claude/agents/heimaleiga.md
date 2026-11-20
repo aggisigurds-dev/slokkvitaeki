@@ -264,4 +264,6 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   Lokaathugun: ✖ aðeins á verð (sérkjör 30.10 vs verðlisti, samið — Charlize #2736); reiknings-PDF og skýrsla stemma á öllum fjórum.
   Opið: nafn á reikningi er staðarnafn (greiðandi í kt); reikninganetföng Laugaverks/IHC ógefin; Barónsstígur (Sirius afskráð) ÓSKRÁÐ.
 
+- 20.11.2026 · **Gáttin les nú samningsverðin 30.10.** `portal_users.stillingar.serkjor` á base 293, 676 og 866 (einu opnu Heimaleigu-aðgangarnir) sýndi 2.700/4.400/akstur 3.000/skýrslugerð 3.500; nú yfirferð 2.000, hleðsla 4.350, slanga 2.500, akstur 2.400, skýrslugerð 0, ný tæki 25 %, heimildartexti uppfærður (CO₂ 2.000 og reykskynjari 1.500 í texta). `falin_reikningar` á 293 óbreytt. Afrit: `backup_20261120_portal_users_heimaleiga`. Ekki sannreynt í gáttinni sjálfri. Gáttin sýnir hvorki inneign né ofrukkun (greiningin er í Charlize #944 og PDF-i, ekki í gátt). Engin gáttaraðgangur er til fyrir Laugaverk, IHC, 365 hf. né Sirius.
+
 Síðast uppfært: 20.11.2026
