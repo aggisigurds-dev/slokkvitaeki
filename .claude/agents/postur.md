@@ -218,3 +218,20 @@ Agnar bað um að para nýju Thunderbird-möppurnar við félög í þjónustu �
 - **Samþykktarlistinn:** sjá `.claude/skills/charlize/references/tengilidir.md` (örugg sía + 9 gildrur). 387 samþykktir 16.11.2026,
   tengdir póstar 2.262 → 2.436, 0 töpuð tenging. Prófaðu 5–6 ólík tilvik á lifandi prófíl (`_openCompanySafe(id)`, lestu `._samskipti-host`) áður en magn.
 - **Aukaverkun sem þú átt að segja frá:** birgjapóstur (reikningar til okkar) á félagi sem er líka kúnni gerir „Ósvarað" rangt.
+
+## Lota sendir svar að beiðni Agnars — í þræði og merkt „svarað" (20.11.2026)
+Agnar 20.11.2026 (Landnám / Reikningshald, R-001267): „Mátt reyna að láta það koma sem svar við póstinum hennar inn í innbox
+pósthólfanna, svo við sjáum þar að þessu hafi verið svarað, svona framvegis þegar hægt er." Fyrsta sendingin fór sem NÝR póstur
+(`threaded:false`, annar þráður en innhólfspósturinn) og var ekki skráð svarað, svo beiðnin stóð áfram opin: Reikningsbeiðna-ljósið
+(patch 380) telur INBOX-póst sem passar reikningsbeiðna-regluna og á hvorki röð í `reikninga_postur_hidden` né `reikninga_postur_activity`.
+Þegar lota sendir (aðeins að beiðni Agnars) gegnum `/api/postur-senda` (kaka uid 10, sjá ~/.claude/CLAUDE.md):
+1. **`inReplyTo` = `email_digest.message_id`** póstsins sem liggur í SAMA pósthólfi og sendir. gmail-send leitar að honum þar
+   (`rfc822msgid:`) og setur In-Reply-To, References og threadId; finnist hann ekki fer svarið samt, án threadId, og viðvörun fylgir.
+   Sé svarað áframsendingu í eldklar@ er það message_id áframsendingarinnar.
+2. **Viðhengi** `{ filename, driveId }` (Drive-id úr `customer_documents.drive_file_id`). Gott svar: `warnings:[]` og `threaded:true`.
+3. **Merktu svarað:** `insert into reikninga_postur_activity (message_id, kind) values (<message_id innkomna>, 'reply')` fyrir HVERT
+   eintak innkomna póstsins (bæði hólfin sé hann áframsendur). Án þess telur appið beiðnina ósvaraða.
+4. **Lokaðu Þjónustuborðsmálinu** með sönnun (Sent-röðin í `email_digest`, id og tími).
+5. **Ávarp** alltaf „Góðan daginn," — „Sæl(l)" og „Sæl/l" eru farin úr öllum póstum appsins (Agnar 20.11.2026: „Allstaðar").
+- **Mæling á ósvöruðum beiðnum:** sama regla og ljósið (380) á INBOX síðustu 60 daga. Appið sjálft skoðar ekki Sent — svar úr Thunderbird
+  eða úr öðru hólfi (t.d. slokkvitaeki@) sést þar sem ósvarað. Berðu saman við SENT (`thread_id` eða viðtakandi) áður en þú segir „ósvarað".
