@@ -54,7 +54,18 @@ function hlada({ medOpenCompanySafe = true } = {}) {
   const head = el('head');
   const skraSetja = (c) => { if (c && c.id) skra[c.id] = c; return c; };
   const vidbot = { appendChild(c) { this.children.push(c); return skraSetja(c); } };
-  const topbar = el('div', vidbot);
+  const brand = el('div', { className: 'brand' });
+  const topbar = el('div', Object.assign({}, vidbot, {
+    querySelector: (sel) => (sel === '.brand' ? brand : null),
+    insertBefore(c, vid) {
+      const i = this.children.indexOf(vid);
+      this.children.splice(i < 0 ? this.children.length : i, 0, c);
+      return skraSetja(c);
+    }
+  }));
+  // .brand og næsti systkinhnútur á eftir honum — insertBefore þarf nextSibling til að vera til
+  topbar.children.push(brand, el('nav', { className: 'view-nav' }));
+  brand.nextSibling = topbar.children[1];
   const body = el('body', vidbot);
 
   const heimur = { setTimeout, clearTimeout, console, Date, Promise, JSON, Math, Object, Array, Map, Set, String, Number, parseInt };
@@ -322,20 +333,25 @@ test('#18 svar sem kemur eftir að glugganum var lokað er ekki teiknað', async
 });
 
 // ── 4. Hnapparnir ────────────────────────────────────────────────────────────
-test('#14 bæði stikuhnappurinn og fasti símahnappurinn verða til', async () => {
+// Á síma ræður DOM-röðin (391 stílar stikuna aðeins frá 901px). Væri hnappnum bætt aftast lenti hann
+// á eftir öllum hnöppum stikunnar, neðst í skúffu sem þarf að skruna — mælt á 375px: y=780 af 812.
+test('#14 leitarhnappurinn fer NÆST Á EFTIR merkinu, ekki aftast í stikuna', async () => {
   const { topbar, body } = hlada();
   await bida(1400);
-  assert.ok(topbar.children.some(c => c.id === 'gs-trigger'), 'stikuhnappinn vantar');
-  assert.ok(body.children.some(c => c.id === 'gs-fab'), 'símahnappinn vantar');
+  const i = topbar.children.findIndex(c => c.id === 'gs-trigger');
+  assert.ok(i > -1, 'stikuhnappinn vantar');
+  assert.strictEqual(i, 1, 'hnappurinn á að koma strax á eftir .brand, er í sæti ' + i);
+  assert.ok(!body.children.some(c => c.id === 'gs-fab'),
+    'fljótandi hnappur má ekki vera til: hægra hornið ber sex fyrir og #_ad-fab liggur ofan á honum');
 });
 
-test('#15 ensureBtn keyrir tvisvar en býr hnappana aðeins til einu sinni', async () => {
+test('#15 ensureBtn keyrir tvisvar en býr hnappinn aðeins til einu sinni', async () => {
   const { topbar, body, heimur } = hlada();
   const finna = (id) => topbar.children.concat(body.children).filter(c => c.id === id);
   await bida(1400);
-  // getElementById skilar núna hnöppunum sem eru til, eins og í vafranum
-  heimur.document.getElementById = (id) => finna(id)[0] || null;
+  // getElementById skilar núna hnappnum sem er til, eins og í vafranum
+  const adur = heimur.document.getElementById;
+  heimur.document.getElementById = (id) => finna(id)[0] || adur(id);
   await bida(1900);
   assert.strictEqual(finna('gs-trigger').length, 1);
-  assert.strictEqual(finna('gs-fab').length, 1);
 });

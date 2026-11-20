@@ -131,20 +131,20 @@
       .gs-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
       .gs-hint{padding:8px 20px;font-size:11px;color:#94a3b8;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex:0 0 auto}
       .gs-hint kbd{background:#e2e8f0;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px}
-      /* Sjálfgefið FALINN — svo hnappurinn standi ekki óstílaður í flæði síðunnar á brotabreiddinni
-         milli 900 og 901 px (0,98 px bilið lokað hér). Birtist aðeins í símaútliti. */
-      #gs-fab{display:none}
+      /* Síma- og spjaldútlit: 391 klæðir hnappinn aðeins frá 901px, svo hér fyrir neðan var hann
+         óstílaður og sat AFTAST í stikunni — á eftir 63 hnöppum. Hann er nú settur næst á eftir
+         merkinu (sjá ensureBtn) og lítur út eins og leitarreitur.
+         Enginn fljótandi hnappur: hægra hornið ber nú þegar sex fasta hnappi og #_ad-fab (z-index
+         2147481000) lá beint ofan á lúpunni — mælt á 375px 20.11.2026. Sjöundi hnappurinn þar
+         hefði verið ósýnilegur og í vegi. */
       @media (max-width:900.98px){
         .gs-overlay{padding-top:24px}
         .gs-hint{display:none}
-        /* bottom 78px: #pat-launch („AI-flokka póst", 308) situr á right 18 / bottom 18 með z-index
-           100070 og #_pe-float (262) á right 14 / bottom 18 — lúpan lenti undir hvorum tveggja.
-           326 leysti sama árekstur með 78 px, svo sama hæð er notuð hér. */
-        #gs-fab{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:100075;
-          width:52px;height:52px;border-radius:50%;
-          border:1px solid rgba(0,0,0,.25);background:linear-gradient(180deg,#3d4048 0%,#1c1e23 100%);color:#fff;
-          display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer;padding:0}
-        #gs-fab.gs-falinn{display:none}
+        #gs-trigger{order:-1;flex:none;width:auto;min-height:44px;margin:8px 10px 4px;padding:0 12px;gap:9px;
+          background:#1d1f25;border:1px solid rgba(0,0,0,.6);border-radius:10px;color:#9aa3b2;
+          font:400 15px/1 inherit;text-align:left;box-shadow:inset 0 2px 5px rgba(0,0,0,.45)}
+        #gs-trigger span{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        #gs-trigger kbd{display:none}
       }
     `;
     document.head.appendChild(s);
@@ -184,10 +184,6 @@
     SIDUR = sidur();
     gildi = '';
     document.getElementById('gs-modal').classList.add('show');
-    // Klasi á hnappinn sjálfan, EKKI á <body>: body-klasinn kveikti á MutationObserver-um annarra
-    // plástra (341/353/440) við hverja opnun — nákvæmlega það sem plástur 87 brenndi sig á.
-    const f = document.getElementById('gs-fab');
-    if (f) f.classList.add('gs-falinn');
     const inp = document.getElementById('gs-input');
     inp.value = '';
     synaStrax();
@@ -196,8 +192,6 @@
   function close() {
     const m = document.getElementById('gs-modal');
     if (m) { m.classList.remove('show'); document.getElementById('gs-input').value = ''; }
-    const f = document.getElementById('gs-fab');
-    if (f) f.classList.remove('gs-falinn');
     keyrsla++;                       // svar sem er á leiðinni má ekki teikna í lokaðan glugga
     results = []; selectedIdx = 0; gildi = '';
   }
@@ -386,28 +380,22 @@
   // ── hnappar: stikan (391 klæðir hann) og fastur hnappur á síma ────────────
   const LUPA = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
   function ensureBtn() {
-    if (!document.getElementById('gs-trigger')) {
-      const topbar = document.querySelector('.topbar') || document.querySelector('header');
-      if (topbar) {
-        const btn = document.createElement('button');
-        btn.id = 'gs-trigger';
-        btn.type = 'button';
-        btn.title = 'Leita eða fara á… (Ctrl+K)';
-        btn.style.cssText = 'background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:8px;padding:6px 12px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;margin:0 6px';
-        btn.innerHTML = LUPA + '<span>Leita eða fara á…</span>';
-        btn.onclick = open;
-        topbar.appendChild(btn);
-      }
-    }
-    if (!document.getElementById('gs-fab') && document.body) {
-      const fab = document.createElement('button');
-      fab.id = 'gs-fab';
-      fab.type = 'button';
-      fab.setAttribute('aria-label', 'Leita eða fara á…');
-      fab.innerHTML = LUPA;
-      fab.onclick = open;
-      document.body.appendChild(fab);
-    }
+    if (document.getElementById('gs-trigger')) return;
+    const topbar = document.querySelector('.topbar') || document.querySelector('header');
+    if (!topbar) return;
+    const btn = document.createElement('button');
+    btn.id = 'gs-trigger';
+    btn.type = 'button';
+    btn.title = 'Leita eða fara á… (Ctrl+K)';
+    btn.style.cssText = 'background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:8px;padding:6px 12px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;margin:0 6px';
+    btn.innerHTML = LUPA + '<span>Leita eða fara á…</span>';
+    btn.onclick = open;
+    // Næst á eftir merkinu, ekki aftast: á síma ræður DOM-röðin (391 stílar aðeins frá 901px) og
+    // hnappurinn lenti á eftir öllum 63 hnöppum stikunnar, neðst í skúffu sem þarf að skruna.
+    // Á tölvuskjá ræður `order:1` úr 391 eftir sem áður, svo staðan þar breytist ekki.
+    const merki = topbar.querySelector('.brand');
+    if (merki && merki.nextSibling) topbar.insertBefore(btn, merki.nextSibling);
+    else topbar.appendChild(btn);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(ensureBtn, 1200));
   else setTimeout(ensureBtn, 1200);
