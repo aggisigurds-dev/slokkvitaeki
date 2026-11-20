@@ -32,6 +32,14 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const getSB = () => window.DB && window.DB.sb;
 
+  // Eining getur verið til en ekki á borði þess sem situr við það (opnaEiningu skilar false).
+  // Þá á að SEGJA það — þögn er einmitt það sem gerði leitina ónothæfa.
+  const toastEkki = t => {
+    const skilabod = '„' + t + '“ er ekki á borðinu þínu — bættu henni við með „Velja einingar“.';
+    try { if (window.Bord368 && typeof Bord368.toast === 'function') { Bord368.toast(skilabod); return; } } catch (_) {}
+    try { alert(skilabod); } catch (_) {}
+  };
+
   // Broddstafir og sérstafir burt svo „thjonustubord" hitti „Þjónustuborð".
   const norm = s => String(s == null ? '' : s).toLowerCase()
     .replace(/[áà]/g, 'a').replace(/[éè]/g, 'e').replace(/[íì]/g, 'i').replace(/[óò]/g, 'o')
@@ -71,7 +79,16 @@
         });
       });
     } catch (_) {}
-    // 3) stakar síður
+    // 3) einingar borðsins (Dagskrá, Pósthólf, Tilbúin verk …) — líka þær sem eru í öðrum ham.
+    //    opnaEiningu skiptir sjálft um ham ef þarf og skilar false sé einingin ekki á borði þess sem situr við það.
+    try {
+      const E = window.Bord368 && window.Bord368.einingar;
+      if (typeof E === 'function') E().forEach(e => ut.push({
+        type: 'sida', icon: '→', title: e.t, meta: 'Eining á Þjónustuborðinu', key: norm(e.t + ' ' + e.k),
+        opna: () => { if (!(window.Bord368.opnaEiningu && window.Bord368.opnaEiningu(e.k))) toastEkki(e.t); }
+      }));
+    } catch (_) {}
+    // 4) stakar síður
     STAKAR.forEach(s => ut.push({
       type: 'sida', icon: '→', title: s.l, meta: /^https?:/.test(s.u) ? 'Annar vefur' : 'Sér síða',
       key: norm(s.l + ' ' + s.o), opna: () => { location.href = s.u; }

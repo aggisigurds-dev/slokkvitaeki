@@ -29,6 +29,7 @@ const NAV = [
   { view: 'brunaskra', texti: 'Brunakerfis skoðun' }
 ];
 const HAMIR = [{ m: 'thjonusta', texti: 'Mál' }, { m: 'peningar', texti: 'Kröfur' }];
+const EININGAR = [{ k: 'dagskra', t: 'Dagskrá' }, { k: 'postholf', t: 'Pósthólfið' }, { k: 'tilbuin', t: 'Tilbúin verk' }];
 
 function el(tag, yfir) {
   const e = Object.assign({
@@ -68,10 +69,16 @@ function hlada({ medOpenCompanySafe = true } = {}) {
   };
   heimur.App = { switchView: (v) => mælt.switchView.push(v) };
   if (medOpenCompanySafe) heimur._openCompanySafe = (id) => mælt.openCo.push(id);
+  mælt.opnaEiningu = []; mælt.toast = [];
+  heimur.alert = (t) => mælt.toast.push(t);
   heimur.Bord368 = {
     root: () => ({ querySelectorAll: (sel) => (sel === '[data-t5="mode"]' ? hamEl : []) }),
     opnaMal: (id) => mælt.opnaMal.push(id),
-    opnaHam: (k) => { mælt.opnaHam.push(k); return true; }
+    opnaHam: (k) => { mælt.opnaHam.push(k); return true; },
+    toast: (t) => mælt.toast.push(t),
+    einingar: () => EININGAR.slice(),
+    // „postholf" er EKKI á borði þess sem situr við það — opnaEiningu skilar false
+    opnaEiningu: (k) => { mælt.opnaEiningu.push(k); return k !== 'postholf'; }
   };
   vm.runInNewContext(KODI, heimur, { filename: SKRA });
   return { G: heimur.GlobalSearch, mælt, heimur, navEl, hamEl, topbar, body };
@@ -120,9 +127,30 @@ test('#3 nákvæmt heiti raðast fremst („sala“ á undan „Söluyfirlit“)
 test('#4 tómur reitur sýnir ALLAR síður: stikan + hamirnir + stöku síðurnar', () => {
   const { G } = hlada();
   const allt = G.sidurFyrir('', G.sidur());
-  assert.strictEqual(allt.length, NAV.length + HAMIR.length + 7, 'fjöldi: ' + allt.length);
+  assert.strictEqual(allt.length, NAV.length + HAMIR.length + EININGAR.length + 7, 'fjöldi: ' + allt.length);
   assert.ok(allt.some(x => x.meta === 'Hamur á Þjónustuborðinu'), 'hamirnir vantar');
+  assert.ok(allt.some(x => x.meta === 'Eining á Þjónustuborðinu'), 'einingarnar vantar');
   assert.ok(allt.some(x => x.title === 'Afgreiðsla — tilbúin verk'), 'stöku síðurnar vantar');
+});
+
+// Einingar borðsins (Dagskrá, Pósthólfið, Tilbúin verk …) eru það sem hann horfir á allan daginn,
+// en þær eru hvorki hnappur í stikunni né hamur. „postholfid“ skilaði engu áður en þetta kom.
+test('#4b eining finnst á beygðu heiti og opnast með opnaEiningu', () => {
+  const { G, mælt } = hlada();
+  const r = G.sidurFyrir('postholfid', G.sidur());
+  assert.strictEqual(r[0].title, 'Pósthólfið', 'fann ekki eininguna: ' + r.map(x => x.title).join(', '));
+  r[0].opna();
+  assert.deepStrictEqual(mælt.opnaEiningu, ['postholf']);
+});
+
+test('#4c eining sem er EKKI á borði notandans: sagt frá, ekki þagað', () => {
+  const { G, mælt } = hlada();
+  G.sidurFyrir('postholfid', G.sidur())[0].opna();      // opnaEiningu skilar false fyrir 'postholf'
+  assert.strictEqual(mælt.toast.length, 1, 'ekkert var sagt');
+  assert.match(mælt.toast[0], /Velja einingar/);
+  const d = hlada();
+  d.G.sidurFyrir('dagskra', d.G.sidur())[0].opna();     // þessi er á borðinu — engin skilaboð
+  assert.deepStrictEqual(d.mælt.toast, []);
 });
 
 test('#5 hamur opnast með Bord368.opnaHam, ekki með því að skipta um síðu', () => {
