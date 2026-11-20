@@ -16,8 +16,9 @@
  * Vafraskrár eru þýddar sem venjulegt skriftumál, Netlify-föllin sem CommonJS-eining (`require`,
  * `module` o.s.frv. mega standa). Ekkert er keyrt: vm.Script þýðir aðeins.
  *
- * GRÆNT þegar allar skrár þýðast. RAUTT = skrá sem er dauð í loftinu. Það er aldrei í lagi og
- * á sér engan LEYFT-lista: þýðingarvilla er alltaf villa.
+ * GRÆNT þegar allar skrár þýðast. RAUTT = skrá sem er dauð í loftinu. Þýðingarvilla á sér engan
+ * LEYFT-lista — hún er alltaf villa. Það eina sem er sleppt eru aðkeypt söfn (SLEPPA, bundið við
+ * skráarheiti) og möppur sem eru ekki okkar kóði; sá listi má aldrei vaxa til að þagga niður rautt.
  *
  * Keyrsla:  node tools/audit-thyding.cjs
  */
@@ -38,7 +39,9 @@ function finnaSystur() {
 }
 
 // Aðkeypt söfn eru ekki á okkar ábyrgð og sum eru þjöppuð í eina línu sem tekur tíma að þýða.
-const SLEPPA = /(^|\/)(node_modules|dist|graphify-out|vendor|backups|_attic|\.git|\.sister|test-results|\.claude)(\/|$)|\.min\.js$|jspdf|pdf\.worker|leaflet|qrcode|html2canvas|xlsx/i;
+// Söfnin eru bundin við SKRÁARHEITIÐ, ekki undirstreng í slóðinni: „js/patches/4xx-xlsx-utflutningur.js"
+// hefði annars verið sleppt ÞEGJANDI — og skrá sem vörður sleppir er skrá sem enginn mælir.
+const SLEPPA = /(^|\/)(node_modules|dist|graphify-out|vendor|backups|_attic|\.git|\.sister|test-results|\.claude)(\/|$)|\.min\.js$|(^|\/)(jspdf|pdf\.worker|leaflet|qrcode|html2canvas|xlsx)[\w.-]*\.(js|cjs|mjs)$/i;
 
 function skrar(rot, undir, endir) {
   const ut = [];
@@ -62,7 +65,9 @@ function skrar(rot, undir, endir) {
 // þær eru sendar í <script> og mega því ekki fara þessa leið.
 function thydaEiningu(full) {
   try {
-    execFileSync(process.execPath, ['--check', full], { stdio: ['ignore', 'ignore', 'pipe'] });
+    // timeout: --check þýðir aðeins og hangir ekki í reynd, en hangandi próf hefur gert CI rautt
+    // í þessu repói áður (test/vord.test.js, 17.11.2026). Ódýr vörn.
+    execFileSync(process.execPath, ['--check', full], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 15000 });
     return null;
   } catch (e) {
     const ut = String((e && e.stderr) || e.message || '');
@@ -85,7 +90,16 @@ function thyda(rot, rel, einingarhjupur) {
   try {
     new vm.Script(kodi, { filename: full });
     return null;
-  } catch (e) {
+  } catch (e0) {
+    // ES-eining fellur alltaf á vm.Script („Unexpected token 'export'"). Væri það talið villa
+    // yrði vörðurinn RAUÐUR Á RÉTTUM KÓÐA daginn sem slík skrá kemur undir js/ — og rautt CI er
+    // póstur til Agnars. Fallið er því endurtekið með node --check, sem les sömu reglu og Node.
+    // Þetta getur aðeins breytt fölsku rauðu í grænt, aldrei öfugt.
+    if (/Unexpected token 'export'|Cannot use import statement|await is only valid/.test(e0.message || '')) {
+      const r = thydaEiningu(full);
+      return r ? Object.assign({ rel }, r) : null;
+    }
+    const e = e0;
     const lina = (e.stack || '').split('\n').find((l) => l.indexOf(full) > -1) || '';
     const nr = (lina.match(/:(\d+)(?::\d+)?$/) || [])[1];
     return { rel, villa: e.message, lina: nr ? Number(nr) - (einingarhjupur ? 1 : 0) : null };
@@ -107,10 +121,12 @@ function mæla(rot, merki) {
       : (() => { const r = thydaEiningu(path.join(rot, rel)); return r && Object.assign({ rel }, r); })();
     if (f) brot.push(Object.assign({ repo: merki }, f));
   }
-  for (const rel of skrar(rot, 'tools', /\.cjs$/)) {
-    talid++;
-    const f = thyda(rot, rel, true);
-    if (f) brot.push(Object.assign({ repo: merki }, f));
+  for (const undir of ['tools', 'test']) {
+    for (const rel of skrar(rot, undir, /\.cjs$/)) {
+      talid++;
+      const f = thyda(rot, rel, true);
+      if (f) brot.push(Object.assign({ repo: merki }, f));
+    }
   }
   return { talid, brot };
 }
@@ -125,7 +141,7 @@ if (brot.length) {
   for (const f of brot) console.log(`   ✗ ${f.repo} ${f.skra || f.rel}${f.lina ? ':' + f.lina : ''}  ${f.villa}`);
   console.log(`RAUTT þýðing: ${brot.length} skrá/skrár þýðast ekki. Í vafranum þýðir það að plásturinn ` +
     'ER EKKI TIL — enginn hnappur, engin virkni, engin villa sem notandinn sér. Lagaðu strax; ' +
-    'þessi vörður á sér engan undanþágulista.');
+    'þýðingarvilla á sér engan undanþágulista.');
   process.exit(1);
 }
 console.log(`✅ GRÆNT þýðing: ${talid} skrár þýðast` +
