@@ -127,8 +127,12 @@
       .gs-group-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;padding:6px 20px}
       .gs-item{padding:11px 20px;cursor:pointer;font-size:13.5px;color:#0f172a;line-height:1.35}
       .gs-item:hover,.gs-item.selected{background:#eff6ff;color:#1d4ed8}
-      .gs-item .meta{font-size:11px;color:#94a3b8;margin-top:2px}
-      .gs-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px}
+      /* Skráarnöfn skjala eru löng („Hótel — Varmaland (Borgarnes) - Varmaland, 311 Borgarnes -
+         541218-2110 - úttektarskýrsla-2025.pdf") og tóku þrjár línur hver á 375px — sex skjöl
+         fylltu þá skjáinn og ýttu öllu öðru niður. Tvær línur, svo afgangur falli af. */
+      .gs-item>div:first-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+      .gs-item .meta{font-size:11px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .gs-empty{padding:40px 20px;text-align:center;color:#94a3b8;font-size:13px;line-height:1.5}
       .gs-hint{padding:8px 20px;font-size:11px;color:#94a3b8;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex:0 0 auto}
       .gs-hint kbd{background:#e2e8f0;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px}
       /* Síma- og spjaldútlit: 391 klæðir hnappinn aðeins frá 901px, svo hér fyrir neðan var hann
@@ -250,7 +254,9 @@
       safe(SB.from('thjonustubeidni').select('id,title,customer_nafn,status,assigned_to').is('deleted_at', null).is('archived_at', null)
         .or(`title.ilike.%${like}%,summary.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
       safe(SB.from('solur').select('id,num,customer_nafn,samtals').or(`num.ilike.%${like}%,customer_nafn.ilike.%${like}%`).limit(6)),
-      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,doc_type,fyrirtaeki_id').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(6)),
+      // Skjölin eru 4.220 og eitt félag á oft tugi þeirra — sex í senn fylltu símaskjáinn og ýttu
+      // málum, reikningum og verkum niður fyrir brún. Fjögur duga til að sýna að þau séu til.
+      safe(SB.from('customer_documents').select('id,file_name,customer_name,year,doc_type,fyrirtaeki_id').or(`file_name.ilike.%${like}%,customer_name.ilike.%${like}%`).limit(4)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').or(`num.ilike.%${like}%,customer.ilike.%${like}%`).limit(5)),
       safe(SB.from('uttaeki').select('id,serial,client,type').or(`serial.ilike.%${like}%,client.ilike.%${like}%`).limit(5)),
       safe(SB.from('tilbod').select('id,num,company_nafn,samtals').or(`num.ilike.%${like}%,company_nafn.ilike.%${like}%`).limit(4))
@@ -370,7 +376,12 @@
     const root = document.getElementById('gs-results');
     if (!root) return;
     if (!results.length) {
-      root.innerHTML = '<div class="gs-empty">' + (fotur ? esc(fotur) : 'Engar niðurstöður') + '</div>';
+      // „Engar niðurstöður" eitt og sér segir ekki hvað má slá inn. Orðið sem var leitað að er
+      // haft með svo hann sjái hvort hann hafi slegið feil.
+      const ekkert = gildi.trim()
+        ? 'Engar niðurstöður fyrir „' + esc(gildi.trim()) + '“.<br>Prófaðu nafn, kennitölu, reikningsnúmer eða heiti síðu.'
+        : 'Engar niðurstöður';
+      root.innerHTML = '<div class="gs-empty">' + (fotur ? esc(fotur) : ekkert) + '</div>';
       return;
     }
     let html = '';
@@ -396,6 +407,17 @@
   function openResult(r) {
     if (!r) return;
     close();
+    // Á síma situr skúffan opin YFIR síðunni sem var verið að opna. Mælt á 375px 20.11.2026:
+    // smellur á „Hótel Varmaland" opnaði félagið rétt (#company/494) en valmyndin lá áfram ofan á
+    // því og hann hefði þurft að loka henni sjálfur. Notaður er hnappur appsins svo innri staða
+    // þess haldist rétt — ekki klasinn tekinn af í laumi. Escape lokar EKKI skúffunni: þá er
+    // notandinn enn að fletta í henni.
+    try {
+      if (document.body && document.body.classList.contains('mobile-nav-open')) {
+        const m = document.getElementById('_mnav_btn');
+        if (m) m.click();
+      }
+    } catch (_) {}
     try { r.opna(); } catch (e) { console.warn('[leit] opnun brást', e); }
   }
 
@@ -430,7 +452,7 @@
   // sidurFyrir og _opna eru flutt út svo prófið (test/leit-opnar.test.cjs) mæli ÞESSAR
   // föllin sjálf — ekki eftirlíkingu af þeim. Opnunarleiðirnar eru kjarni v2.
   window.GlobalSearch = {
-    open, close, leita: leitaGogn, sidur, sidurFyrir, _norm: norm,
+    open, close, leita: leitaGogn, sidur, sidurFyrir, _norm: norm, _opnaNidurstodu: openResult,
     _opna: { fyrirtaeki: opnaFyrirtaeki, mal: opnaMal, sala: opnaSolu, verkbeidni: opnaVerkbeidni, taeki: opnaTaeki, skjal: opnaSkjal }
   };
   console.log('[global-search] v2 installed');
