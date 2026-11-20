@@ -251,4 +251,19 @@ Framkvæmd: skoðanir Máni, Midtown, HQ, Ice, Bríetartún; lykilorð á gátti
   `verkbeidnir`, `verkdagbok` né pósti eftir 10.11. Bjarndís 10.11: ónýt „vegna aldurs“, verkstæðið metur endanlega → svarið er á
   tækjunum sjálfum á verkstæðinu (framleiðsluár), ekki í gögnunum.
 
-Síðast uppfært: 18.11.2026
+- 20.11.2026 · **Skoðanir nóv. skráðar og reikningar gerðir (allt `final`, ÓSENT, skýrslur vistaðar, Agnar samþykkti lesturinn).** Blöðin lesin
+  af skönnunum (`~/.claude/uploads/dd0b43dd…`): Ice 13 LV (6 hleðsla) + 1 duft + 1 CO₂ 5 kg · HQ 1 duft + 1 LV + 1 CO₂ 2 kg · Laugavegur 18 36 LV
+  (4 hleðsla + 2 tekin ónýt) + 1 duft + 4 slöngur, „7× ný LV". Afrit `backup_20261120_heimaleiga_uttaeki`.
+  **R-001330 Ice → 365 hf.** 60.636 m. vsk (6 hl. 4.350, 7 yf. 2.000, CO₂ 2.000, duft 2.000, akstur 2×2.400; 6 LV + duft bætt við tækjaskrá).
+  **R-001331 HQ → Heimaleiga ehf** 2.976 m. vsk (inneign 6.000 án vsk sem 100% línuafsláttur á 3 yfirferðarlínur; akstur 2.400 stendur af því
+  EINN afsláttarvegur gildir; afgangur inneignar 14.703 án vsk ónotaður, í krafa_note + Charlize #2789; mál #1329/#1377 Bríetartún ósnert).
+  **R-001333 Máni → Laugaverk** 95.210 m. vsk (1 hl., 15 yf., 4 ný á 8.758 [−25% línuafsl.], 2 slöngur, akstur 1×2.400) · **R-001334 Midtown → IHC**
+  86.758 m. vsk (3 hl., 15 yf., 2 ný, 2 slöngur, duft, akstur 1×2.400). „Ónýtt" 1 á hvort félag (Agnar: tækjanúmer skipta ekki máli) = tæki
+  sett á „Nýtt" (skipt út); ný tæki: Máni 232/335/430 + 1 í stað ónýts, Midtown 202 + 1 í stað ónýts = 6, en blaðið segir 7× → 7. tækið óútskýrt.
+  Akstur 1 ferð á hvort (2 samtals). 23575 breytt í ABC Duft 6 kg; 23604, 23609 (Vantar án blaðs) og CO₂ 21879 (yfirstrikað) → status `urelt`.
+  Lokaathugun: ✖ aðeins á verð (sérkjör 30.10 vs verðlisti, samið — Charlize #2736); reiknings-PDF og skýrsla stemma á öllum fjórum.
+  Opið: nafn á reikningi er staðarnafn (greiðandi í kt); reikninganetföng Laugaverks/IHC ógefin; Barónsstígur (Sirius afskráð) ÓSKRÁÐ.
+
+- 20.11.2026 · **Gáttin les nú samningsverðin 30.10.** `portal_users.stillingar.serkjor` á base 293, 676 og 866 (einu opnu Heimaleigu-aðgangarnir) sýndi 2.700/4.400/akstur 3.000/skýrslugerð 3.500; nú yfirferð 2.000, hleðsla 4.350, slanga 2.500, akstur 2.400, skýrslugerð 0, ný tæki 25 %, heimildartexti uppfærður (CO₂ 2.000 og reykskynjari 1.500 í texta). `falin_reikningar` á 293 óbreytt. Afrit: `backup_20261120_portal_users_heimaleiga`. Ekki sannreynt í gáttinni sjálfri. Gáttin sýnir hvorki inneign né ofrukkun (greiningin er í Charlize #944 og PDF-i, ekki í gátt). Engin gáttaraðgangur er til fyrir Laugaverk, IHC, 365 hf. né Sirius.
+
+Síðast uppfært: 20.11.2026

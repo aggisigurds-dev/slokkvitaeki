@@ -102,7 +102,12 @@ const SKANNA = `(() => {
       if (!ytri && r.height > 0 && r.height < 36 && r.width > 8) ut.snerti.push({ k: merki(e), h: Math.round(r.height), w: Math.round(r.width), t: (e.textContent || e.value || '').replace(/\\s+/g, ' ').trim().slice(0, 24) });
     }
   });
-  return { ut, sidaUtfyrir: document.documentElement.scrollWidth > W + 2,
+  // SÍÐUZOOM (333): .view.active ber CSS zoom sem Agnar stillir per síðu og vistar á þjóninum.
+  // Allt sem mælt er hér að ofan er FYRIR þá margföldun — 13 px letur á síðu í 0,48 teiknast sem ~6 px.
+  // Án þessarar tölu er sópurinn marklaus um "of smátt" á síma.
+  const vv = document.querySelector(".view.active");
+  const zoom = vv ? (getComputedStyle(vv).zoom || "1") : "1";
+  return { ut, zoom, sidaUtfyrir: document.documentElement.scrollWidth > W + 2,
     sw: document.documentElement.scrollWidth, w: W, viewmode: document.documentElement.getAttribute('data-viewmode') };
 })()`;
 
@@ -145,7 +150,11 @@ async function keyra() {
   for (const [syn, r] of Object.entries(allt)) {
     if (!r || !r.ut) { console.log('\n— ' + syn + ': ekkert mælt'); continue; }
     const u = r.ut;
-    console.log('\n═══ ' + syn + ' ' + (r.viewmode === 'mobile' ? '' : '(viewmode=' + r.viewmode + '!) ') +
+    const z = parseFloat(r.zoom) || 1;
+    if (z && z !== 1) console.log('\n  ⚠ SÍÐUZOOM ' + z + ' — allt hér að neðan er FYRIR þá margföldun: ' +
+      '13 px letur teiknast sem ' + (13 * z).toFixed(1) + ' px og 40 px takki sem ' + Math.round(40 * z) + ' px. ' +
+      'Talan er vistuð stilling (333, app_settings.simi_sidustaerd) og engin CSS-lagfæring innan síðunnar vinnur gegn henni.');
+    console.log('\n═══ ' + syn + ' [zoom ' + z + '] ' + (r.viewmode === 'mobile' ? '' : '(viewmode=' + r.viewmode + '!) ') +
       '· of smátt ' + u.ofSmatt.length + ' · aðvörun ' + u.advorun.length + ' · út fyrir ' + u.utfyrir.length +
       ' · kreist ' + u.kreist.length + ' · snertifletir ' + u.snerti.length + (r.sidaUtfyrir ? ' · SÍÐAN SKRUNAR LÁRÉTT (' + r.sw + '/' + r.w + ')' : ''));
     const syna = (titill, listi, lykill, lina) => {

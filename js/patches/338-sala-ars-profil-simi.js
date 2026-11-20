@@ -85,12 +85,12 @@
         + '{grid-column:auto!important;grid-row:auto!important;'
         + 'width:28px!important;height:28px!important}',
       both('#view-sala .pos-tile-name' + P)
-        + '{grid-column:auto!important;min-height:0!important;font-size:11px!important;'
+        + '{grid-column:auto!important;min-height:0!important;font-size:12.5px!important;'  /* 19.11.2026: var 11 px */
         + 'line-height:1.15!important;max-height:2.4em!important}',
       both('#view-sala .pos-tile-price' + P)
-        + '{grid-column:auto!important;font-size:13px!important;font-weight:800!important}',
+        + '{grid-column:auto!important;font-size:14px!important;font-weight:800!important}',  /* 19.11.2026: var 13 px */
       both('#view-sala .pos-tile-exvat' + P)
-        + '{grid-column:auto!important;font-size:10px!important}',
+        + '{grid-column:auto!important;font-size:12px!important}',  /* 19.11.2026: var 10 px — undir gólfi kerfisins */
       both('#view-sala .pos-cart' + P)
         + '{padding:10px!important;border-radius:12px!important}',
       both('#view-sala .pos-cart>div:first-child' + P) + strip,
