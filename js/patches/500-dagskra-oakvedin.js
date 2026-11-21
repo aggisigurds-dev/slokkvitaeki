@@ -23,7 +23,8 @@
 (() => {
   if (window.ThbOakvedin) return;
 
-  /* 21.11.2026 (teikning Agnars af Dagskránni): tólf reitir í þremur dálkum í stað fjögurra í tveimur. r1–r4 eru
+  /* 21.11.2026 (teikning Agnars af Dagskránni): tólf reitir í þremur dálkum í stað fjögurra í tveimur — um kvöldið
+   * fjórir dálkar × þrjár raðir beint undir dögunum (Agnar: „4x3 línur … strax undir dagskránni hluti af þeim glugga"). r1–r4 eru
    * sömu reitir og áður (sami texti, sami geymslustaður); r5–r12 bætast við. Reitirnir eru ÁFRAM textareitir, ekki
    * einnar línu <input>: input hendir línuskiptum, og r1–r4 bera margra lína texta sem má ekki skerðast við vistun.
    * Reitur er ein lína þegar textinn er ein lína og vex með línunum. */
@@ -119,8 +120,11 @@
         '.ovh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:5px 0 4px;border-top:1px solid var(--edge)}',
         '.ovh h3{margin:0;font:700 11.5px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}',
         '.ovh span{font-size:11.5px;color:var(--mute)}',
-        '.ovgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}',
+        // 21.11.2026 (Agnar: „hafa 4x3 línur með þessum atriðum strax undir dagskránni"): fjórir dálkar × þrjár raðir;
+        // þrír dálkar í meðalbreidd, tveir í mjóum dálki, einn á síma.
+        '.ovgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}',
         '.ovbox textarea{field-sizing:content;max-height:240px}',
+        '@container rail (max-width: 1100px){.ovgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}',
         '@container rail (max-width: 760px){.ovgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
         '.ovbox{position:relative;min-width:0}',
         '.ovbox textarea{width:100%;min-height:40px;display:block;padding:4px 6px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
