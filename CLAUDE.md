@@ -154,6 +154,22 @@ að laga núna. Mælt 16.11: 175 verk biðu, 137 ný á 14 dögum en 21 kláruð
 verkefnalista en ekki að ég fái mörg hundruð atriði á verkefnalistann á móti." Það sem þú finnur og lagar ekki fer
 í lokasvarið og `charlize_knowledge`. (Þetta kemur í stað gömlu grunnreglu 3 „villa/bug/gat → röð í verkefnalisti".)
 
+**🚰 KRANVÖRNIN ER NÚNA Í GRUNNINUM (21.11.2026, `sql/kranvorn.sql`).** Þakið og tvítekningarvörnin eru ekki
+lengur heiðursorð — kveikjur á `thjonustubeidni` og `verkefnalisti` framkvæma þær. Það sem þú þarft að vita:
+- **Mál sem er þegar til verður ekki til aftur.** Sami `channel_ref`, sami `ai:lykill` eða sama félag með sama
+  erindi opið → þitt mál fer EKKI inn, nóta með öllum þínum texta fer á málið sem er til og tagið
+  `kranvorn:maelt:<n>` hækkar. Þriðja mælingin merkir málið `important` + `kranvorn:fyrir-agnar`.
+- **Verk á Verkefnalistann** fer aðeins inn sé `category='villa'`, markmið nefnt í `description`, skjámynd á
+  verkinu, eða `[AGNAR]`-merkið fremst (Afgreiðslan setur það). Annars fer röðin EKKI inn og textinn bíður í
+  `kranvorn_log`. PostgREST skilar þá engri röð — það er ekki villa í kóðanum þínum, það er þakið.
+- **Vaktarping** (`created_by` með vakt/audit/cron/sjalfprof) verður mál aðeins ef það snertir peninga,
+  kennitölu eða kúnna sem bíður. Annars fer það á `heilsuspjald`.
+- **Mál úr pósti eldri en 21 dags** verður ekki til (`app_kv` → `kranvorn.postur_dagar`).
+- Maður sem skrifar sjálfur (`created_by` ekki vélarnafn) sleppur ALLTAF inn. Allt er afturkræft:
+  `select kranvorn_af()` slekkur, `select kranvorn_a()` kveikir. Vörður: `tools/audit-kranvorn.cjs`.
+- Mælt 20.11: ~310 ný mál á 21 degi, 2 frá manni. Stærsti kraninn (`ai-uppfaerslur`, 3–7 „AI-tillaga" á dag
+  kl. 06:23) keyrir á ANNARRI VÉL og er ekki í þessu repói — þess vegna er vörnin í grunninum.
+
 **Eftir á:** segðu í einni línu hvað var sameinað eða birt og hvernig það var sannreynt. SAMÞYKKISÞAKIÐ hér að
 neðan gildir áfram. Commit og push aðeins þegar prófin sýna „fail 0" (keðjaðu með `if`, ekki `;`).
 
