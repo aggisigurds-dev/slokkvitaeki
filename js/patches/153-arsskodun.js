@@ -2573,6 +2573,25 @@
     const estDoneThisYear = arsAll
       .filter(c => isDoneYear(c, curYear))
       .reduce((s, c) => s + virdiOf(c), 0);
+    // 21.11.2026 — Yfirsýnarröndin efst á Þjónustuborði Agnars og Annþórs (523) sýnir virði ársþjónustunnar. EIN
+    // skilgreining: talan hér (allt borðið, óháð síum — sama og hetjan og Búið-flagan án síu). 523 geymir hana á þjóni
+    // aðeins þegar hún breytist, og röndin sýnir hvenær hún var síðast reiknuð.
+    try {
+      if (window.YfirsynRond && YfirsynRond.geymaArs) {
+        YfirsynRond.geymaArs({
+          ar: curYear, total: Math.round(totalEstimate), buid: Math.round(estDoneThisYear),
+          stadir: arsAll.length, buidStadir: arsAll.filter(c => isDoneYear(c, curYear)).length,
+          // óbúið OG skoðunarmánuðurinn kominn — sama regla og „komin á tíma" (sy.aTima), en yfir allt borðið
+          komin: arsAll.filter(c => {
+            if (isDoneYear(c, curYear)) return false;
+            if (+(c._ars.field_inspected_year || 0) === curYear) return false;
+            const m = +c._ars.inspect_month || 0;
+            return m > 0 && m <= (today.getMonth() + 1);
+          }).length,
+          raun: raunFjoldi,
+        });
+      }
+    } catch (_) {}
 
     // 2026-05-17 (Luna): per-month / per-filter revenue summary shown below
     // the list. Lets the user see "if I do all of May's inspections, that's X kr".

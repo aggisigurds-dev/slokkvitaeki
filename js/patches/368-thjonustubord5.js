@@ -1422,6 +1422,7 @@
       '.lk-skil{width:1px;height:24px;margin:0 2px;background:var(--rule2)}',
       '@container t5 (max-width: 760px){.lk-skil{display:none}}',
       (window.ThbOakvedin ? ThbOakvedin.css() : ''),   // 500: „Þarf að gera í vikunni" (óákveðin verk)
+      (window.YfirsynRond ? YfirsynRond.css() : ''),   // 523: Yfirsýnarröndin (Agnar og Anni)
       '.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:12px 14px}',
       '.pcard{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
       '.pcard b{font-size:14px;line-height:1.3;overflow-wrap:anywhere}.pcard span{font-size:13px;color:var(--ink2);line-height:1.4;overflow-wrap:anywhere}',
@@ -1855,7 +1856,8 @@
     if (!document.getElementById('t5-bordi-burt')) {
       const sb = document.createElement('style');
       sb.id = 't5-bordi-burt';
-      const T = 'html:not([data-viewmode="mobile"]):has(#view-bord.active) ';
+      // html.syn-bord ⇔ #view-bord.active — 440-kyrrd heldur klasanum réttum (:has() á <html> ógilti stíl alls skjalsins).
+      const T = 'html.syn-bord:not([data-viewmode="mobile"]) ';
       sb.textContent = '@media (min-width: 761px){' +
         T + '#bstal-banner,' + T + '#bstal-ember{display:none!important}' +
         T + '#view-bord.active:not(#_t5b1):not(#_t5b2):not(#_t5b3){padding-top:12px!important}}';
@@ -6224,6 +6226,9 @@
         // 21.11.2026: niðurstöður Sannreyna (sannanirHtml) standa nú undir takkanum í „Annað á borðinu" (nedstHtml).
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
+        // 21.11.2026 — 523 Yfirsýnarröndin (Agnar: „Master yfirsýn banner … fyrir Agnar og Annþórs þjónustuborð"): lykiltölur
+        // beggja félaga beint undir Flýtileiðum. 523 ræður sjálf hverjir sjá hana (Agnar, Anni) og sækir tölurnar.
+        (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: master.length, mine: mine.length }) : ''; } catch (_) { return ''; } })() +
         // 21.11.2026: Pósthólfin (522) og VIP-vakt (513) eru færð NEÐST, samanbrotin — sjá nedstHtml() neðan við `layout`.
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
         (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
@@ -7037,6 +7042,7 @@
     if (a && a.indexOf('ph-') === 0 && window.Postholf) { if (Postholf.smellur(el, e)) return; }   // 522 Pósthólfin
     if (a && a.indexOf('er-') === 0 && window.ErindiSimi) { if (ErindiSimi.smellurT5(el)) return; }   // 449c Erindi
     if (a && a.indexOf('mk-') === 0 && window.MerkjaKeyra) { if (MerkjaKeyra.smellur(el, e)) return; }   // 519 Merkja og keyra
+    if (a && a.indexOf('yr-') === 0 && window.YfirsynRond) { if (YfirsynRond.smellur(el, e)) return; }   // 523 Yfirsýnarröndin
     const c = cfg();
     const krefstStillinga = () => { if (stillingarTilbunar()) return true; toast('Stillingarnar eru enn að hlaðast — reyndu aftur eftir augnablik.', true); return false; };
     const nyttId = () => 'lk' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);

@@ -49,7 +49,7 @@
     const html = document.documentElement;
     const NMO = window.__NativeMutationObserver || window.MutationObserver;
     const setja = (klasi, a) => { if (html.classList.contains(klasi) !== a) html.classList.toggle(klasi, a); };
-    let salaVakt = null;
+    let salaVakt = null, bordVakt = null;
     const samstilla = () => {
       const sala = document.getElementById('view-sala');
       setja('syn-sala', !!(sala && sala.classList.contains('active')));
@@ -58,6 +58,14 @@
       if (sala && salaVakt !== sala) {            // sýnin er smíðuð af sala.js eftir ræsingu → vakta klasann á HENNI
         salaVakt = sala;
         try { new NMO(samstilla).observe(sala, { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
+      }
+      // 21.11.2026: html.syn-bord ⇔ #view-bord.active (368 felur Brunastál-borðann á Þjónustuborðinu á tölvu) — var
+      // html:has(#view-bord.active), sem kyrrðarvörðurinn felldi.
+      const bord = document.getElementById('view-bord');
+      setja('syn-bord', !!(bord && bord.classList.contains('active')));
+      if (bord && bordVakt !== bord) {
+        bordVakt = bord;
+        try { new NMO(samstilla).observe(bord, { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
       }
     };
     const byrja = () => {
