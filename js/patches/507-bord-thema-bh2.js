@@ -449,6 +449,9 @@
        * Leitarreiturinn og takkarnir þrír eru farnir úr röð 2, svo hvíta spjaldið sem lá undir þeim fer líka
        * (annars stæði autt hvítt spjald á milli hetjunnar og Flýtileiða). */
       H + ' .col::before{display:none}',
+      // Hetjan hefur margin-bottom:-36px og lá því 20 px yfir Flýtileiðum þegar hvíta spjaldið fór (rýni 21.11, mælt
+      // á 375/1440/1920 px) — smellur á efri hluta flísanna lenti í hetjunni. Flýtileiðir standa nú ofan á henni.
+      H + ' .links{position:relative;z-index:2}',
       H + ' .lk-skil{background:#d8dee9}',
       // Dagskráin eftir teikningu Agnars 21.11: „Dagskrá | 21.–27. nóvember", dagar sem spjöld með „+ Bæta við",
       // verk sem ljósblá spjöld með lit tegundar til vinstri, ótímasett sem þriggja dálka rist af línum.
@@ -481,6 +484,8 @@
       H + ' .ovh{padding:4px 4px 8px;border-top:0}',
       H + ' .ovgrid{gap:1px;border:1px solid #e7ecf3;border-radius:10px;overflow:hidden;background:#e7ecf3}',
       H + ' .ovbox{background:#fff}',
+      // Stöðumerkið („Vistað kl. …") efst í hægra horni svo það liggi ekki yfir einu textalínunni í 36 px reit.
+      H + ' .ovst{top:3px;bottom:auto;right:6px;padding:0 4px;border-radius:4px;font-size:10.5px}',
       // field-sizing: reiturinn vex með textanum (margra lína nótur r1–r4 skerast hvorki né fá skrunstiku).
       H + ' .ovbox textarea{min-height:36px;max-height:240px;padding:8px 12px;border:0;border-radius:0;background:#fff;box-shadow:none;font:14px/1.45 var(--body);resize:none;field-sizing:content}',
       H + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;box-shadow:none}',

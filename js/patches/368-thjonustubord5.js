@@ -1389,6 +1389,7 @@
       '.nedst-sr span{flex:1 1 240px;font-size:13px;color:var(--mute)}',
       '.lk-akt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-left:auto}',
       '.lk-skil{width:1px;height:24px;margin:0 2px;background:var(--rule2)}',
+      '@container t5 (max-width: 760px){.lk-skil{display:none}}',
       (window.ThbOakvedin ? ThbOakvedin.css() : ''),   // 500: „Þarf að gera í vikunni" (óákveðin verk)
       '.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:12px 14px}',
       '.pcard{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
@@ -3705,7 +3706,7 @@
      * (@container rail ≤560 px) er vikan listi og breiddin skiptir ekki máli. */
     const eigD = dagskraSyn();
     const hefurEfni = d => d.jobs.length > 0 || String(S.dnDrog[eigD + '|' + d.key] != null ? S.dnDrog[eigD + '|' + d.key] : dagNota(eigD, d.key)).trim() !== '';
-    const mjor = d => (d.wd === 0 || d.wd === 6) && !hefurEfni(d);
+    const mjor = d => !d.today && (d.wd === 0 || d.wd === 6) && !hefurEfni(d);   // dagurinn í dag mjókkar aldrei (rýni 21.11)
     const mjoir = days.some(d => !mjor(d) && hefurEfni(d)) ? days.map(mjor) : days.map(() => false);
     const vikuDalkar = mjoir.some(Boolean) ? ' style="grid-template-columns:' + mjoir.map(x => x ? 'minmax(84px,.55fr)' : 'minmax(0,1fr)').join(' ') + '"' : '';
     const body = '<div class="week"' + vikuDalkar + '>' + days.map((d, i) =>
@@ -4598,7 +4599,7 @@
       const ru = await c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, patch)).eq('id', id).select('id,fyrirtaeki_id');
       if (ru.error) throw ru.error;
       if (!ru.data || !ru.data.length || ru.data[0].fyrirtaeki_id !== rf.data.id) throw new Error('las ekki til baka');
-      S.tengjaVid = null;
+      S.tengjaVid = null; S.leit.q = '';   // 21.11: leitarreiturinn hverfur þegar tengingin tókst
       toast('Tengt við ' + rf.data.nafn, false, () => act(id, async () => {
         const rb = await c.from('thjonustubeidni').update(Object.assign({ updated_at: new Date().toISOString() }, fyrri)).eq('id', id).select('id');
         toast(rb.error || !(rb.data || []).length ? 'Afturköllun tókst ekki' : 'Tengingin var tekin af', !!rb.error);
@@ -5560,9 +5561,11 @@
     const sannreyna = !stjorn ? '' :
       '<div class="nedst-sr"><b>Sannreyna</b><span>Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum</span>' +
         '<button type="button" class="btn iv sm" data-t5="sannreyna">Sannreyna</button></div>';
+    // Niðurstöður Sannreyna birtast beint undir takkanum (rýni 21.11: efst sást ekkert gerast við smell neðst).
+    const sannanir = (() => { try { return sannanirHtml(); } catch (_) { return ''; } })();
     return '<section class="nedst" aria-label="Annað á borðinu">' +
-      '<div class="nedst-hd"><h2>Annað á borðinu</h2><span>Fært hingað niður · smelltu til að opna</span></div>' +
-      vipLina + ph + '<div class="nedst-yf"></div>' + sannreyna + (einingar || '') +
+      '<div class="nedst-hd"><h2>Annað á borðinu</h2><span>Fært hingað niður</span></div>' +
+      vipLina + ph + '<div class="nedst-yf"></div>' + sannreyna + sannanir + (einingar || '') +
     '</section>';
   }
 
@@ -6002,7 +6005,7 @@
         // 18.11.2026 — Flýtileiðir standa EFST, beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór).
         // Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera) og voru áður neðan við hamaröðina.
         linksHtml(c.mode, stjornStika) +
-        sannanirHtml() +
+        // 21.11.2026: niðurstöður Sannreyna (sannanirHtml) standa nú undir takkanum í „Annað á borðinu" (nedstHtml).
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
         // 21.11.2026: Pósthólfin (522) og VIP-vakt (513) eru færð NEÐST, samanbrotin — sjá nedstHtml() neðan við `layout`.
@@ -6012,8 +6015,10 @@
         // spjöldin (489 Vinnusamantekt, 506 Einkaritari + Ráðgjafinn, 493 Agentanet) eru nú NEÐST á borðinu,
         // fyrir neðan hamaröðina og einingarnar — sjá blokkina neðan við `layout`. Þannig standa hamurinn
         // (stikurnar) og einingin (Dagskráin) beint undir flýtileiðunum, eins og hann bað um. Efnið er óbreytt.
-        // 21.11.2026: leitarreiturinn farinn (rautt á skjáskoti Agnars). tfBanner fylgdi leitinni og stendur áfram.
-        (stjornStika && S.tengjaVid ? tfBanner() : '') +
+        // 21.11.2026: leitarreiturinn er farinn af borðinu (rautt á skjáskoti Agnars). Tvær leiðir nota hann þó enn —
+        // „Finna <nafn>" á máli án fyrirtækis (opnaFyrirtaekiMals) og „Leita að fyrirtæki" í Hreinsa (tf-leita) — svo
+        // hann birtist AÐEINS meðan önnur hvor er í gangi (rýni 21.11: án þess enduðu þær í blindgötu).
+        (stjornStika && (S.tengjaVid || String(S.leit.q || '').trim()) ? leitHtml() : '') +
         (stjornStika && S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
@@ -6121,6 +6126,7 @@
     const nafn = whereOf(r);
     if (!nafn) { toast('Þetta mál er ekki tengt fyrirtæki.', true); return; }
     S.leit.q = nafn;
+    render();   // 21.11.2026: leitarreiturinn birtist aðeins þegar hann er notaður — teikna strax svo hann sé til hér
     leita('lq', nafn);
     const root = rot(), f = root && root.querySelector('[data-k="lq"]');
     if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
@@ -6799,6 +6805,8 @@
     if ((S.leit.opid || S.ny.opid) && !(e.target.closest && e.target.closest('.leit, .nyfyr'))) {
       S.leit.opid = false;
       S.ny.opid = false;
+      // 21.11.2026: leitarreiturinn birtist aðeins meðan hann er notaður (q eða tengjaVid) — smellur utan hans felur hann.
+      if (!S.tengjaVid) S.leit.q = '';
       if (!el) { render(); return; }
     }
     if (!el || el.tagName === 'SELECT') return;
@@ -7363,14 +7371,15 @@
         const r = S.rows.find(x => x.id === id);
         if (!r) return;
         S.tengjaVid = id;
-        const q = whereOf(r) || String(r.title || '').slice(0, 40), f0 = root.querySelector('[data-k="lq"]');
-        if (f0) f0.value = q;                                  // áður en teiknað er — drögin taka gildið með sér
+        const q = whereOf(r) || String(r.title || '').slice(0, 40);
+        S.leit.q = q;
+        render();   // 21.11.2026: leitarreiturinn birtist aðeins þegar hann er notaður (sjá teikninguna) — strax hér
         leita('lq', q);
         const f = root.querySelector('[data-k="lq"]');
         if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
         return;
       }
-      case 'tf-haetta': S.tengjaVid = null; render(); return;
+      case 'tf-haetta': S.tengjaVid = null; S.leit.q = ''; render(); return;   // 21.11: leitarreiturinn hverfur með
       case 'vb-sia': S.vbSia = el.dataset.v; render(); return;
       case 'vb-opna': S.vbOpin = S.vbOpin || {}; S.vbOpin[el.dataset.vb] = !S.vbOpin[el.dataset.vb]; render(); return;
       case 'vb-stada': vbStada(+el.dataset.vb, el.dataset.v); return;
@@ -7595,7 +7604,7 @@
     if (e.key === 'Enter' && (k === 'nt' || k === 'nc')) { e.preventDefault(); const b = root.querySelector('[data-t5="composer-save"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && k === 'hn') { e.preventDefault(); const b = root.querySelector('[data-t5="ham-vista"]'); if (b && !b.disabled) b.click(); }
     if (e.key === 'Enter' && (k === 'ln' || k === 'lu')) { e.preventDefault(); const b = root.querySelector('[data-t5="link-save"]'); if (b && !b.disabled) b.click(); }
-    if (e.key === 'Escape' && S.tengjaVid && !S.leit.opid) { S.tengjaVid = null; render(); return; }
+    if (e.key === 'Escape' && S.tengjaVid && !S.leit.opid) { S.tengjaVid = null; S.leit.q = ''; render(); return; }
     if (e.key === 'Escape' && (S.leit.opid || S.ny.opid)) { S.leit.opid = false; S.ny.opid = false; render(); return; }
     if (e.key === 'Escape' && (S.composer || S.cfgOpen || S.linkForm)) { S.composer = false; S.cfgOpen = false; S.linkForm = false; render(); }
   }
