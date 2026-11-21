@@ -159,11 +159,16 @@ async function greittInn() {
   // aðeins tölustafir: Payday-tilvísun er númer, og þá getur ekkert úr lyklinum brotið PostgREST-fyrirspurnina
   const handKeys = hand.map(h => ({ tilv: (/^payday\|(\d{1,12})$/.exec(h.inv_key || '') || [])[1], paid_at: h.paid_at })).filter(h => h.tilv);
   if (handKeys.length) {
-    const inv = await sbOll(`invoices?select=id,tilvisun,upphaed_total,status&source=eq.payday&tilvisun=in.(${handKeys.map(h => h.tilv).join(',')})&order=id.asc`);
+    const inv = await sbOll(`invoices?select=id,tilvisun,upphaed_total,status,utgafudagur&source=eq.payday&tilvisun=in.(${handKeys.map(h => h.tilv).join(',')})&order=id.asc`);
     const eftirTilv = new Map(inv.map(i => [String(i.tilvisun), i]));
     handKeys.forEach(h => {
       const i = eftirTilv.get(String(h.tilv));
-      if (!i || i.status === 'PAID') return;                                  // Payday telur hann greiddan → þegar talinn
+      // Aðeins SENT (PAID er þegar talinn í Payday; CANCELLED/CREDIT var aldrei greiðsla) og merktur innan 120 daga frá
+      // útgáfu — sama regla og rekstrarskýrsla Brunahólfs (rýni 21.11: tiltekt 06.07.2026 merkti 7 reikninga frá
+      // 2022–25 greidda í einu; sá smellur er ekki innborgun þann dag).
+      if (!i || i.status !== 'SENT' || !i.utgafudagur || !(kr(i.upphaed_total) > 0)) return;
+      const dagar = (Date.parse(dagur(h.paid_at)) - Date.parse(dagur(i.utgafudagur))) / 86400000;
+      if (!(dagar >= 0 && dagar <= 120)) return;
       iMan(dagur(h.paid_at), m => { m.bh_hand += kr(i.upphaed_total); m.bh_hand_reikn.push('R-' + h.tilv); });
     });
   }
