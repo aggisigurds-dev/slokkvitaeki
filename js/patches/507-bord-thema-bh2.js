@@ -493,6 +493,12 @@
       H + ' .ovbox textarea{min-height:36px;max-height:240px;padding:8px 12px;border:0;border-radius:0;background:#fff;box-shadow:none;font:14px/1.45 var(--body);resize:none;field-sizing:content}',
       H + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;box-shadow:none}',
       H + ' .ovbox textarea::placeholder{font-style:italic;color:#5a6882}',
+      // ⅓-dálkurinn við Dagskrána og VIP-mál (368, 21.11.2026).
+      H + ' .efst-grip::before{background:#d8dee9}',
+      H + ' .efst-grip:hover::before,' + H + ' .efst-grip.dregur::before{background:#ff6702}',
+      H + ' .vipm-h{border-top-color:#e7ecf3}',
+      H + ' .vipm-h b{font:600 14px/1.3 var(--body);color:#101e43}',
+      H + ' .vipm-h span{color:#5a6882}',
       // „Annað á borðinu" (368 nedstHtml).
       H + ' .nedst-hd h2{font:700 18px/1.2 var(--body);color:#101e43}',
       H + ' .nedst-hd span{font-size:13px;color:#5a6882}',
