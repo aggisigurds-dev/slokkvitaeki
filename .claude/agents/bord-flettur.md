@@ -688,7 +688,8 @@ umferðum undir límdu stikuna. Teiknað EINU SINNI þegar öll gögn eru komin.
   þegar borðið sýndi 39.
 - **Prófun:** lifandi síðan er á bak við innskráningu starfsfólks [C#2261, C#2236]. Án innskráningar má staðfesta birtingu með `build.json`
   og leit að `__adalmal492` í `_bundle-*.js` (lifandi `index.html` nefnir ekki patch-skrána því build-dist búntar). Eftir innskráningu:
-  `window.Adalmal.version` á að vera `'492e'`. Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
+  `window.Adalmal.version` á að vera `'492f'` (mælt 21.11.2026 í 492-adalmal.js:838; stóð `'492e'` hér eftir 492f-umferðina).
+  Lokað mál er prófað staðbundið með því að hlera fyrirspurnina og skila röðinni með status
   `nytt` í vafranum einum — aldrei opna málið í grunninum til að prófa.
 - **Gagnvirkt (492d, 16.11.2026 — Agnar: „ég get ekki gert rassgat þarna eða látið þig vita svörin eða svarað póstum").**
   Allt fer um SÖMU vél og Afgreiðslan: `/api/afgreidsla` (aðeins innskráður stjórnandi; 492 talar aldrei sjálft við töflurnar).
@@ -852,3 +853,19 @@ verk, með þessum mun:
 - **18.11.2026** — Regluhamir á Þjónustuborðinu (368): sérsniðinn hamur í `thjonustubord5.hamir` má bera `regla` = { merki: [nákvæm merki, t.d. `ham:hmbhthj01`], forskeyti: [merki sem byrja svona, t.d. `bh:`], kunni: [nafn kúnnans byrjar svona], titill: [orð í titli], samthykki: true (sýna líka það sem bíður svars eigandans), lysing: texti í „Breyta ham“ }. `reglaTekur()` í `iHamGrunnur` metur hana við teikningu — EKKERT er skrifað á málin. Reglan er ekki í ritlinum: `M(id)` les hana og `ham-vista` ber hana óbreytta áfram (annars hyrfi hún við „Breyta ham“). Fyrsti slíki hamurinn er „Brunahólf“ (id `hmbrunaholf1`, eigandi Agnar; ósk hans 18.11: „sér Ham … bara á Agnari sem er bara fyrir verkefnin í Brunahólf“). Hamir með `eigandi` standa nú næst á eftir „mitt vinnuborð“ í `hamaListi()` — stikan skrunar og sérsniðnir hamir aftast voru utan skjás (mælt: „BH · Þjónustubeiðnir“ sást ekki hjá Agnari). `hamirHtml` og hamavalið í „+ Nýtt mál“ sía nú líka á `hamSest`, svo hamur annars starfsmanns sést hvergi. PÓSTHÓLFIÐ: `regla.felag` (`brunaholf`) tekur mál sem bárust í pósthólf félagsins. Anon les ekki `email_digest.account` fyrir Brunahólfs-póst (RLS), svo borðið les sýnina `v_thjb_felag` (id + felag, `sql/2026-11-18_v_thjb_felag.sql`) í `load()` og geymir í `S.felag`; sýnin les viljandi fram hjá RLS og Agnar samþykkti hana sérstaklega 18.11.2026. Bregðist sóknin stendur síðasta svar og reglan fellur á merki, kúnna og titil.
 
 - **20.11.2026** — 20.11.2026 — Borðið teiknar EKKI nema sýnin sé virk: render() hættir strax á `!v.classList.contains('active')` (368), en opnaHam/opnaEiningu skila SAMT true. Kallandi utan borðsins (t.d. Alheimsleitin 56) sem treystir á skilagildið heldur að hann hafi opnað eitthvað — en ekkert gerist og notandinn fær enga skýringu. Opnaðu borðið FYRST (smelltu á .vnav-btn[data-view="verkbord"]) og keyrðu aðgerðina á eftir, með endurtilraun; opnaMal gerði þetta alltaf, hinar tvær ekki. 368 flytur nú líka út hamir() og einingar() (úr MODS/hamaListi) svo leit og önnur viðmót fái heiti ALLRA hama og eininga — ekki aðeins þeirra sem eru teiknaðar. Skugga-rótin (root()) er ekki tengd fyrr en render() hefur keyrt einu sinni, svo listar sem lesa af skjánum eru tómir á ferskri hleðslu. (js/patches/368-thjonustubord5.js, js/patches/56-global-search.js)
+
+- **21.11.2026** — 492-adalmal.js:152 — loadAf() keyrir aðeins ef OPIÐ adalmal-mál finnst: án yfirlits sést hvorki „Tilbúið til afgreiðslu" né aðgerðatakkar (akv krefst S.af.leyfi===true, :531, sem er null þar til þjónn svarar).
+
+- **21.11.2026** — 492:787 (og 491) setja inline display:none á ALLAR sýnur. Kjarnans switchView víxlar aðeins .active (modal.js:401) og .view.active er án !important → sýn sem birtir sig ekki sjálf verður hvít. 166:571 hreinsar display='' viljandi.
+
+- **21.11.2026** — 511-bord-afgreidsla.js:97 — röð með tegund sem vantar í TEG (:29) fellur þegjandi úr listanum. Ný tegund þarf TEG + FLOKKAR + FLEIRT í sama skrefi, annars kastar samantekt() (:385) og tekur teikningu borðsins með sér.
+
+- **21.11.2026** — 511: þrjár ólíkar slóðareglur á sömu gögnum — opnaHtml (:66) tekur https: og /-slóð, mynd (:78) AÐEINS https:, dyraSlod (:285) aðeins tel: eða /-slóð. Dyr með algildri https-slóð verða að engu án skilaboða.
+
+- **21.11.2026** — 448-tolvupostar.js:124/128 — limit(1000) á email_digest (60 d) og á email:%-málin, raðað desc: fari málin yfir 1000 týnast ÞAU ELSTU úr S.mal, þræðir missa málið sitt og afgreitt birtist aftur í „Bíður svars".
+
+- **21.11.2026** — 448-tolvupostar.js:114 — load(thvinga) notar aldrei thvinga; sé sókn í gangi fæst HÚN til baka. „Þegar svarað"-vörnin í senda() (:396-400) getur þá dæmt út frá gögnum sem voru sótt fyrir gmail-ingest.
+
+- **21.11.2026** — _radgjafinn.cjs:498 — stadfesta() hendir atriði sem vitnar í auðkenni utan til-settsins, sem er byggt á því sem safna() NÁÐI: hluti sem brást (omaelt) tekur ráðin sín með. Peningaráð þarf MAELD-heimild (:529).
+
+- **21.11.2026** — _radgjafinn.cjs:600 — skrifa() skilar {sleppt} (ekki villu) ef ↻ kemur innan BID_MIN=5 mín. eða morgunskrif innan 60 mín.: „ekkert gerðist" er rétt hegðun. prufa:true notar eigin lykil OG eigin lás.
