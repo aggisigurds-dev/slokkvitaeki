@@ -1401,7 +1401,12 @@
       '.efst-rod3>.modcell{min-width:0;grid-column:auto}',
       // Checklistinn (20+ atriði) og VIP-málin skruna innan síns kassa, hausinn stendur kyrr — aðeins þegar dálkarnir
       // standa hlið við hlið (>1100 px): á síma skrunar síðan sjálf (rýni 21.11).
-      '@container main (min-width: 1101px){.efst-rod3 .mod{max-height:480px;overflow:auto;overscroll-behavior:contain}.efst-rod3 .mod>.phead{position:sticky;top:0;z-index:3}}',
+      // Hámarkshæðin er --rod3h (dregin með .efst-hgrip, Vidmot bord.efst.h, sjálfgefið 480 px).
+      '@container main (min-width: 1101px){.efst-rod3 .mod{max-height:var(--rod3h,480px);overflow:auto;overscroll-behavior:contain}.efst-rod3 .mod>.phead{position:sticky;top:0;z-index:3}}',
+      '.efst-hgrip{display:block;width:100%;height:16px;margin:2px 0 0;padding:0;border:0;background:transparent;cursor:row-resize;position:relative;touch-action:none}',
+      '.efst-hgrip::before{content:"";position:absolute;left:50%;top:6px;width:64px;height:4px;margin-left:-32px;border-radius:2px;background:var(--rule2);opacity:.7}',
+      '.efst-hgrip:hover::before,.efst-hgrip.dregur::before{opacity:1;background:var(--g5);width:96px;margin-left:-48px}',
+      '@container main (max-width: 1100px){.efst-hgrip{display:none}}',
       '.efst-grip{align-self:stretch;width:14px;min-height:80px;padding:0;border:0;background:transparent;cursor:col-resize;position:relative;touch-action:none}',
       '.efst-grip::before{content:"";position:absolute;left:5px;top:50%;width:4px;height:52px;margin-top:-26px;border-radius:2px;background:var(--rule2);opacity:.7}',
       '.efst-grip:hover::before,.efst-grip.dregur::before{opacity:1;background:var(--g5)}',
@@ -1872,6 +1877,7 @@
     r.addEventListener('pointerdown', onVbrGrip);   // 09.10.2026 — breidd Samþykkja-listans
     r.addEventListener('pointerdown', onEfstGrip);  // 21.11.2026 — breidd ⅓-dálksins við Dagskrána
     r.addEventListener('dblclick', onEfstGripTvi);
+    r.addEventListener('pointerdown', onEfstHaedNidur);   // 21.11.2026 — hæð kassaraðarinnar undir dagatalinu
     r.addEventListener('pointerdown', chkDragNidur);
     r.addEventListener('change', onChange);
     r.addEventListener('keydown', onKey);
@@ -2694,7 +2700,40 @@
     };
     g.addEventListener('pointermove', hreyfa); g.addEventListener('pointerup', sleppa); g.addEventListener('pointercancel', sleppa);
   }
+  /* 21.11.2026 — hæð kassaraðarinnar (Checklisti | VIP-mál | ótímasett). Agnar: „ég get ekki dregið kassann niður".
+   * Stikan undir röðinni dregin upp/niður: allir þrír kassarnir fá sömu hámarkshæð (220–1600 px), vistað í Vidmot við
+   * sleppingu. Tvísmellur → 480 px. Aðeins vinstri hnappur. */
+  function onEfstHaedNidur(e) {
+    const g = e.target && e.target.closest ? e.target.closest('.efst-hgrip') : null;
+    if (!g || (e.button != null && e.button !== 0)) return;
+    const efstEl = g.closest('.efst'), rad = efstEl && efstEl.querySelector('.efst-rod3');
+    if (!rad) return;
+    e.preventDefault();
+    g.classList.add('dregur');
+    try { g.setPointerCapture(e.pointerId); } catch (_) {}
+    const y0 = e.clientY, h0 = efstHaed();
+    let h = null;
+    const hreyfa = ev => {
+      h = Math.round(Math.min(EFST_H_MAX, Math.max(EFST_H_MIN, h0 + (ev.clientY - y0))));
+      rad.style.setProperty('--rod3h', h + 'px');
+    };
+    const sleppa = () => {
+      g.classList.remove('dregur');
+      g.removeEventListener('pointermove', hreyfa); g.removeEventListener('pointerup', sleppa); g.removeEventListener('pointercancel', sleppa);
+      if (h != null) vmSetja(EFST_H_LYKILL, h);
+    };
+    g.addEventListener('pointermove', hreyfa); g.addEventListener('pointerup', sleppa); g.addEventListener('pointercancel', sleppa);
+  }
   function onEfstGripTvi(e) {
+    const hg = e.target && e.target.closest ? e.target.closest('.efst-hgrip') : null;
+    if (hg) {
+      e.preventDefault();
+      vmSetja(EFST_H_LYKILL, EFST_H_SJALF);
+      const rad = hg.closest('.efst') && hg.closest('.efst').querySelector('.efst-rod3');
+      if (rad) rad.style.setProperty('--rod3h', EFST_H_SJALF + 'px');
+      render();
+      return;
+    }
     const g = e.target && e.target.closest ? e.target.closest('.efst-grip') : null;
     if (!g) return;
     e.preventDefault();
@@ -5688,6 +5727,9 @@
     c2 = Math.min(100 - c1 - EFST_MIN, Math.max(EFST_MIN, c2));
     return [Math.round(c1), Math.round(c2)];
   }
+  // Hæð kassaraðarinnar (px) — dregin með .efst-hgrip.
+  const EFST_H_LYKILL = 'bord.efst.h', EFST_H_SJALF = 480, EFST_H_MIN = 220, EFST_H_MAX = 1600;
+  const efstHaed = () => Math.round(Math.min(EFST_H_MAX, Math.max(EFST_H_MIN, Number(vmLesa(EFST_H_LYKILL, EFST_H_SJALF)) || EFST_H_SJALF)));
   // Satt meðan Dagskráin er teiknuð í þriggja dálka skipulaginu: óákveðnu reitirnir fara þá í eigin einingu (oakvedin).
   let _dskAnOak = false;
   // Sett í bottomHtml('vipmal') í hverri teikningu; nedstHtml les það (og núllstillir) — VIP-pósturinn þá ekki tvisvar,
@@ -6132,13 +6174,15 @@
       (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
       '<div class="modgrid einn"><div class="modcell" data-sp="3">' + dskHtml + '</div></div>' +
       (hlidDalkur
-        ? '<div class="efst-rod3" style="--c1:' + rod3c1 + '%;--c2:' + rod3c2 + '%">' +
+        ? '<div class="efst-rod3" style="--c1:' + rod3c1 + '%;--c2:' + rod3c2 + '%;--rod3h:' + efstHaed() + 'px">' +
             '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[0]) + '</div>' +
             '<button type="button" class="efst-grip" data-g="1" aria-label="Draga til að breikka eða mjókka Checklistann" title="Dragðu til hliðar — tvísmelltu til að fá ⅓ á hvern"></button>' +
             '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[1]) + '</div>' +
             '<button type="button" class="efst-grip" data-g="2" aria-label="Draga til að breikka eða mjókka VIP-málin" title="Dragðu til hliðar — tvísmelltu til að fá ⅓ á hvern"></button>' +
             '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[2]) + '</div>' +
-          '</div>'
+          '</div>' +
+          // 21.11.2026 (Agnar, með ör niður frá Checklistanum: „ég get ekki dregið kassann niður"): hæð raðarinnar dregin.
+          '<button type="button" class="efst-hgrip" aria-label="Draga upp eða niður til að breyta hæð kassanna" title="Dragðu niður til að lengja kassana — tvísmelltu til að fá sjálfgefna hæð"></button>'
         : '') +
       '</div>';
     const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (haegri ? ' selh' : ' nor') + '">' +
