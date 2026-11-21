@@ -201,7 +201,7 @@
     // öll opin mál á borði starfsmannsins eða sem hann fylgir, óháð ham. Sjá bottomHtml 'minmal'.
     minmal:     { n: '32', t: 'Mín mál', d: 'Öll opin mál á þínu borði og þau sem þú fylgir, sama í hvaða ham þau eru. Smellur opnar málið hægra megin.' },
     // 21.11.2026 (Agnar: „Dagskrá boxin og eiginlega vip málin. 1/3 wide adjustable"): ósvaraður VIP-póstur (513) og öll
-    // opin mál VIP-félaganna (fyrirtaeki.vip), flokkuð eftir félagi. Stendur í miðdálkinum undir dagatalinu (efst-rod3).
+    // opin mál VIP-félaganna (fyrirtaeki.vip), flokkuð eftir félagi. Stendur í hægri dálkinum undir dagatalinu (efst-rod3).
     vipmal:     { n: '33', t: 'VIP-mál', d: 'Ósvaraður VIP-póstur og öll opin mál VIP-félaganna (Heimaleiga, Center Hótel, Bílabúð Benna, Nesdekk), flokkuð eftir félagi.' },
     // 21.11.2026 (Agnar: „dagskrá dagatalið á alltaf að vera full wide, checklist fyrir neðan til vinstri, Vip í miðjunni
     // og dagskrá kassarnir til hægri"): óákveðnu reitir vikunnar (500) sem eigin eining, hægri dálkur undir dagatalinu.
@@ -2694,7 +2694,7 @@
     };
     g.addEventListener('pointermove', hreyfa); g.addEventListener('pointerup', sleppa); g.addEventListener('pointercancel', sleppa);
   }
-  /* 21.11.2026 — hæð kassaraðarinnar (Checklisti | VIP-mál | ótímasett). Agnar: „ég get ekki dregið kassann niður".
+  /* 21.11.2026 — hæð kassaraðarinnar (Checklisti | VIP-mál; ótímasett var þriðji dálkurinn fyrr um daginn). Agnar: „ég get ekki dregið kassann niður".
    * Stikan undir röðinni dregin upp/niður: allir þrír kassarnir fá sömu hámarkshæð (220–1600 px), vistað í Vidmot við
    * sleppingu. Tvísmellur → 480 px. Aðeins vinstri hnappur. */
   function onEfstHaedNidur(e) {

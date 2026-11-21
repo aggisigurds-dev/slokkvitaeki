@@ -1,12 +1,12 @@
 /* === DAGSKRÁ · ÓÁKVEÐIN VERK VIKUNNAR v1 (09.11.2026) ===
  *
- * Neðst í Dagskrár-einingu Þjónustuborðs (368 `dagskraHtml`, undir skýringarlínunni): kaflinn
- * „Þarf að gera í vikunni — Ekki ákveðið hvenær". Fjórir textareitir í 2×2 grind fyrir frjálsan texta.
+ * Í Dagskrár-einingu Þjónustuborðs (368 `dagskraHtml`, beint undir dögunum): kaflinn „Í vikunni, ótímasett".
+ * Tólf textareitir (r1–r12) í 4×3 grind fyrir frjálsan texta (upphaflega fjórir í 2×2, 09.11.2026).
  *
  * GÖGN (regla Agnars: allt sem er skrifað vistast á þjóni, aldrei bara í tækinu):
  *   skipulagsbord.by_staff.<eigandi>.oakvedin.{r1,r2,r3,r4} = texti
  * <eigandi> er SAMI og fyrir dagnóturnar (368 `dagskraSyn()`): „Allir" = sameiginlegur listi (sjálfgefið),
- * annars listi þess starfsmanns sem valinn er í Dagskrár-valmyndinni. Fjórir fastir reitir á eiganda.
+ * annars listi þess starfsmanns sem valinn er í Dagskrár-valmyndinni. Tólf fastir reitir á eiganda.
  * Hlutur (ekki fylki) svo deepMerge í AppSettings.save sameinar PER REIT — vistun eins reits getur ekki
  * étið reit sem annar maður breytti á annarri vél.
  *
@@ -124,7 +124,8 @@
         // þrír dálkar í meðalbreidd, tveir í mjóum dálki, einn á síma.
         '.ovgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}',
         '.ovbox textarea{field-sizing:content;max-height:240px}',
-        '@container rail (max-width: 1100px){.ovgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}',
+        // 860 px (ekki 1100): 4×3 heldur líka á minni fartölvu (rýni 21.11) — reitur er þá ~210 px.
+        '@container rail (max-width: 860px){.ovgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}',
         '@container rail (max-width: 760px){.ovgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
         '.ovbox{position:relative;min-width:0}',
         '.ovbox textarea{width:100%;min-height:40px;display:block;padding:4px 6px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
