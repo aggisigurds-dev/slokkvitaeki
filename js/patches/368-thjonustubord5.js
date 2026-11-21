@@ -201,8 +201,11 @@
     // öll opin mál á borði starfsmannsins eða sem hann fylgir, óháð ham. Sjá bottomHtml 'minmal'.
     minmal:     { n: '32', t: 'Mín mál', d: 'Öll opin mál á þínu borði og þau sem þú fylgir, sama í hvaða ham þau eru. Smellur opnar málið hægra megin.' },
     // 21.11.2026 (Agnar: „Dagskrá boxin og eiginlega vip málin. 1/3 wide adjustable"): ósvaraður VIP-póstur (513) og öll
-    // opin mál VIP-félaganna (fyrirtaeki.vip), flokkuð eftir félagi. Stendur í ⅓-dálkinum við Dagskrána (efst-rad).
+    // opin mál VIP-félaganna (fyrirtaeki.vip), flokkuð eftir félagi. Stendur í miðdálkinum undir dagatalinu (efst-rod3).
     vipmal:     { n: '33', t: 'VIP-mál', d: 'Ósvaraður VIP-póstur og öll opin mál VIP-félaganna (Heimaleiga, Center Hótel, Bílabúð Benna, Nesdekk), flokkuð eftir félagi.' },
+    // 21.11.2026 (Agnar: „dagskrá dagatalið á alltaf að vera full wide, checklist fyrir neðan til vinstri, Vip í miðjunni
+    // og dagskrá kassarnir til hægri"): óákveðnu reitir vikunnar (500) sem eigin eining, hægri dálkur undir dagatalinu.
+    oakvedin:   { n: '34', t: 'Í vikunni, ótímasett', d: 'Tólf reitir fyrir það sem á að gera í vikunni en er ekki ákveðið hvenær (sömu reitir og neðst í Dagskránni).' },
     // 16.11.2026 (Agnar: „Settu þetta í sér lista inn á þjónustuborðið. Hjá hinum sem er efst“): markmiðslistinn (508 MarkmidBord).
     markmid:    { n: '29', t: 'Markmið', d: 'Markmiðslistinn: flokkarnir með framvindu, opnanlegir. Smellur á markmið opnar það á síðunni Markmið.' },
     // 16.11.2026 (Agnar: „Gerðu bara þjónustuborðið öflugra sem vinnuborð“): forunnu verkin úr Afgreiðslu framkvæmd Á borðinu (511 BordAfgreidsla).
@@ -1392,18 +1395,19 @@
       '.nedst-sr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 14px;border:1px solid var(--rule);border-radius:6px;background:var(--key)}',
       '.nedst-sr span{flex:1 1 240px;font-size:13px;color:var(--mute)}',
       '.lk-akt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-left:auto}',
-      // 21.11.2026 — ⅓-dálkurinn við Dagskrána (efst-rad) og VIP-mál (eining 33).
-      '.efst-rad{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(280px,var(--hlid,33%));align-items:start}',
-      '.efst-hlid{display:flex;flex-direction:column;gap:14px;min-width:0}',
-      '.efst-hlid>.modcell{min-width:0}',
-      // Checklistinn (20+ atriði) ýtti VIP-málum út af skjánum: hvor kassi skrunar innan sín, hausinn stendur kyrr.
-      // Aðeins þegar dálkurinn stendur við hliðina (>1100 px): á síma skrunar síðan sjálf (rýni 21.11: strok á 430 px kassa
-      // sem fyllir skjáinn skrunuðu ekki síðunni).
-      '@container main (min-width: 1101px){.efst-hlid .mod{max-height:430px;overflow:auto;overscroll-behavior:contain}.efst-hlid .mod>.phead{position:sticky;top:0;z-index:3}}',
+      // 21.11.2026 — þrír dálkar undir dagatalinu (efst-rod3): Checklisti | VIP-mál (eining 33) | ótímasett (eining 34).
+      '.efst-rod3{display:grid;grid-template-columns:minmax(0,var(--c1,33%)) 14px minmax(0,var(--c2,33%)) 14px minmax(0,1fr);align-items:start;margin-top:14px}',
+      '.efst-rod3>.modcell{min-width:0}',
+      // Checklistinn (20+ atriði) og VIP-málin skruna innan síns kassa, hausinn stendur kyrr — aðeins þegar dálkarnir
+      // standa hlið við hlið (>1100 px): á síma skrunar síðan sjálf (rýni 21.11).
+      '@container main (min-width: 1101px){.efst-rod3 .mod{max-height:480px;overflow:auto;overscroll-behavior:contain}.efst-rod3 .mod>.phead{position:sticky;top:0;z-index:3}}',
       '.efst-grip{align-self:stretch;width:14px;min-height:80px;padding:0;border:0;background:transparent;cursor:col-resize;position:relative;touch-action:none}',
       '.efst-grip::before{content:"";position:absolute;left:5px;top:50%;width:4px;height:52px;margin-top:-26px;border-radius:2px;background:var(--rule2);opacity:.7}',
       '.efst-grip:hover::before,.efst-grip.dregur::before{opacity:1;background:var(--g5)}',
-      '@container main (max-width: 1100px){.efst-rad{grid-template-columns:minmax(0,1fr);row-gap:14px}.efst-grip{display:none}}',
+      '@container main (max-width: 1100px){.efst-rod3{grid-template-columns:minmax(0,1fr);row-gap:14px}.efst-grip{display:none}}',
+      // Í eigin einingu sér hausinn spjaldsins um titil og fjölda — innri haus 500 víkur.
+      '.ov-ein .ovh{display:none}',
+      '.ov-ein .ov{padding:10px 12px 12px}',
       '.vipm-post{padding:0 0 10px}',
       '.vipm-post .vip{margin:0}',
       '.vipm-h{display:flex;align-items:baseline;gap:8px;padding:10px 14px 4px;border-top:1px solid var(--rule)}',
@@ -2657,26 +2661,35 @@
   try { if (window.Vidmot) Vidmot.flytja(VBR_BREIDD_LYKILL + '@' + Vidmot.taeki(), 'thjonustubord_vbr_breidd', v => (vbrKlemma(v) || undefined)); } catch (_) {}
   vbrBreidd = vbrLes();
   document.addEventListener('vidmot-breytt', e => { try { if (e.detail && window.Vidmot && e.detail.lykill === VBR_BREIDD_LYKILL + '@' + Vidmot.taeki()) vbrBreidd = vbrLes(); } catch (_) {} });
-  /* 21.11.2026 — skilalínan milli Dagskrár og ⅓-dálksins (Checklisti + VIP-mál). Breiddin er hlutfall af röðinni
-   * (20–60 %), svo hún passar á öllum skjástærðum; vistuð í Vidmot aðeins við sleppingu. Tvísmellur → ⅓. */
+  /* 21.11.2026 — skilalínurnar tvær í þriggja dálka röðinni undir dagatalinu (Checklisti | VIP-mál | ótímasett).
+   * Lína 1 færir mörkin milli dálka 1 og 2, lína 2 milli 2 og 3. Breiddir eru % af röðinni (passa öllum skjám), klemmdar
+   * svo hver dálkur haldi a.m.k. EFST_MIN; vistaðar í Vidmot aðeins við sleppingu. Aðeins vinstri hnappur. Tvísmellur → ⅓. */
   function onEfstGrip(e) {
     const g = e.target && e.target.closest ? e.target.closest('.efst-grip') : null;
-    if (!g) return;
-    const rad = g.closest('.efst-rad');
+    if (!g || (e.button != null && e.button !== 0)) return;
+    const rad = g.closest('.efst-rod3');
     if (!rad) return;
     e.preventDefault();
     g.classList.add('dregur');
     try { g.setPointerCapture(e.pointerId); } catch (_) {}
-    let p = null;
+    const nr = g.dataset.g === '2' ? 2 : 1;
+    let [c1, c2] = efstBreiddir(), breytt = false;
     const hreyfa = ev => {
       const r0 = rad.getBoundingClientRect();
-      p = Math.round(Math.min(60, Math.max(20, (r0.right - ev.clientX) / r0.width * 100)));
-      rad.style.setProperty('--hlid', p + '%');
+      const x = (ev.clientX - r0.left) / r0.width * 100;
+      if (nr === 1) {
+        c1 = Math.round(Math.min(100 - c2 - EFST_MIN, Math.max(EFST_MIN, x)));   // dálkur 2 heldur breidd; dálkur 3 tekur muninn
+      } else {
+        c2 = Math.round(Math.min(100 - c1 - EFST_MIN, Math.max(EFST_MIN, x - c1)));
+      }
+      breytt = true;
+      rad.style.setProperty('--c1', c1 + '%');
+      rad.style.setProperty('--c2', c2 + '%');
     };
     const sleppa = () => {
       g.classList.remove('dregur');
       g.removeEventListener('pointermove', hreyfa); g.removeEventListener('pointerup', sleppa); g.removeEventListener('pointercancel', sleppa);
-      if (p != null) vmSetja(EFST_HLID_LYKILL, p);
+      if (breytt) { vmSetja(EFST_C1_LYKILL, c1); vmSetja(EFST_C2_LYKILL, c2); }
     };
     g.addEventListener('pointermove', hreyfa); g.addEventListener('pointerup', sleppa); g.addEventListener('pointercancel', sleppa);
   }
@@ -2684,10 +2697,10 @@
     const g = e.target && e.target.closest ? e.target.closest('.efst-grip') : null;
     if (!g) return;
     e.preventDefault();
-    vmSetja(EFST_HLID_LYKILL, 33);
-    // Beint á röðina: render() bíður meðan fókus er í reit (t.d. checklista) — dálkurinn á samt að hoppa strax (rýni 21.11).
-    const rad = g.closest('.efst-rad');
-    if (rad) rad.style.setProperty('--hlid', '33%');
+    vmSetja(EFST_C1_LYKILL, 33); vmSetja(EFST_C2_LYKILL, 33);
+    // Beint á röðina: render() bíður meðan fókus er í reit (t.d. checklista) — dálkarnir eiga samt að hoppa strax.
+    const rad = g.closest('.efst-rod3');
+    if (rad) { rad.style.setProperty('--c1', '33%'); rad.style.setProperty('--c2', '33%'); }
     render();
   }
   function onVbrGrip(e) {
@@ -3780,7 +3793,8 @@
       '</div>').join('') + '</div>' +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '') +
       // 09.11.2026 (Agnar): fjórir textareitir fyrir verk vikunnar sem er ekki ákveðið hvenær — 500-dagskra-oakvedin.js, vistað á þjóni.
-      (open && window.ThbOakvedin ? ThbOakvedin.html(dagskraSyn()) : '');
+      // 21.11.2026: í þriggja dálka skipulaginu (efst-rod3) standa reitirnir í eigin einingu til hægri (oakvedin), ekki hér.
+      (open && !_dskAnOak && window.ThbOakvedin ? ThbOakvedin.html(dagskraSyn()) : '');
     const syn = dagskraSyn();
     const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
       dagskraFolk().map(x => '<option value="' + esc(x) + '"' + (x === syn ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>';
@@ -5112,6 +5126,13 @@
         emptyHtml('Ekkert forgangsmál og engin ný skilaboð. Hér birtist aðeins það sem Claude handvelur.');
       return modPanel(k, F.synd.length + ' forgangsmál · ' + K.synd.length + ' skilaboð' + falinSum(F.falin.length + K.falin.length), body, '');
     }
+    if (k === 'oakvedin') {
+      // Í vikunni, ótímasett (eining 34) — sama 500-eining og neðst í Dagskránni, sami eigandi (Dagskrár-valið), alltaf opin.
+      const eig = dagskraSyn();
+      if (!window.ThbOakvedin) return modPanel(k, 'Ekki hlaðið', emptyHtml('Reitirnir (500) hafa ekki hlaðist — endurhlaðið síðuna.'), '', true);
+      const f = ThbOakvedin.fjoldi ? ThbOakvedin.fjoldi(eig) : 0;
+      return modPanel(k, (eig !== DN_EIG ? eig + ' · ' : '') + f + ' atriði', '<div class="ov-ein">' + ThbOakvedin.html(eig) + '</div>', '', true);
+    }
     if (k === 'vipmal') {
       /* VIP-MÁL (eining 33, 21.11.2026). Efst ósvaraður VIP-póstur (513 VipVakt — sama og stóð efst á borðinu fram til
        * 21.11). Undir: ÖLL opin mál félaga sem eru merkt VIP (fyrirtaeki.vip), flokkuð eftir kennitölu — staðir
@@ -5655,8 +5676,19 @@
   const NEDST_LYKILL = k => 'bord.nedst.' + k;
   const nedstOpid = k => vmLesa(NEDST_LYKILL(k), false) === true;
   // 21.11.2026: ⅓-dálkurinn við Dagskrána. Fastar hér svo bæði render og smellir noti þær.
-  const HLID_EININGAR = ['checklisti', 'vipmal'];
-  const EFST_HLID_LYKILL = 'bord.efst.hlid';
+  // 21.11.2026 (seinna): þrír dálkar undir dagatalinu — vinstri, miðja, hægri (Agnar).
+  const HLID_EININGAR = ['checklisti', 'vipmal', 'oakvedin'];
+  const EFST_C1_LYKILL = 'bord.efst.c1', EFST_C2_LYKILL = 'bord.efst.c2';
+  const EFST_MIN = 18;   // engin dálkur mjórri en 18 % af röðinni
+  // Breiddir dálka 1 og 2 í %; dálkur 3 fær afganginn. Klemmt svo allir þrír haldi a.m.k. EFST_MIN.
+  function efstBreiddir() {
+    let c1 = Number(vmLesa(EFST_C1_LYKILL, 33)) || 33, c2 = Number(vmLesa(EFST_C2_LYKILL, 33)) || 33;
+    c1 = Math.min(100 - 2 * EFST_MIN, Math.max(EFST_MIN, c1));
+    c2 = Math.min(100 - c1 - EFST_MIN, Math.max(EFST_MIN, c2));
+    return [Math.round(c1), Math.round(c2)];
+  }
+  // Satt meðan Dagskráin er teiknuð í þriggja dálka skipulaginu: óákveðnu reitirnir fara þá í eigin einingu (oakvedin).
+  let _dskAnOak = false;
   // Sett í bottomHtml('vipmal') í hverri teikningu; nedstHtml les það (og núllstillir) — VIP-pósturinn þá ekki tvisvar,
   // sama hvar VIP-mál stendur (⅓-dálkinum eða ristinni). Rýni 21.11.
   let _vipmalTeiknad = false;
@@ -6086,16 +6118,26 @@
      * Í öllum einingahömum þar sem Dagskráin er efst — líka Akstri, þar sem Checklistinn var ekki — og aðeins á borði
      * eigandans. Einingarnar tvær fara þá úr ristinni fyrir neðan svo ekkert standi tvisvar. Í mjóum glugga
      * (@container main ≤1100 px) fer dálkurinn undir Dagskrána. */
-    const hlidBreidd = Math.min(60, Math.max(20, Number(vmLesa(EFST_HLID_LYKILL, 33)) || 33));
+    /* 21.11.2026, seinna sama dag — ÞRÍR DÁLKAR UNDIR DAGATALINU. Agnar: „dagskrá dagatalið á alltaf að vera full wide,
+     * checklist fyrir neðan til vinstri, Vip í miðjunni og dagskrá kassarnir til hægri". Dagatalið (vikan) stendur eitt
+     * yfir alla breiddina; undir því .efst-rod3: Checklisti | VIP-mál | Í vikunni, ótímasett (eining 34 — reitirnir sem
+     * stóðu neðst í Dagskránni). Tvær skilalínur dregnar til; breiddirnar (% af röðinni) í Vidmot, tvísmellur → ⅓ hver. */
+    const [rod3c1, rod3c2] = efstBreiddir();
+    _dskAnOak = hlidDalkur;
+    const dskHtml = dskLyft ? einingHtml('dagskra') : '';
+    _dskAnOak = false;
     const efst = !dskLyft ? '' : '<div class="efst">' + flipaHtml() +
       (selEininga ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
+      '<div class="modgrid einn"><div class="modcell" data-sp="3">' + dskHtml + '</div></div>' +
       (hlidDalkur
-        ? '<div class="efst-rad" style="--hlid:' + hlidBreidd + '%">' +
-            '<div class="modgrid einn"><div class="modcell" data-sp="3">' + einingHtml('dagskra') + '</div></div>' +
-            '<button type="button" class="efst-grip" aria-label="Draga til að breikka eða mjókka dálkinn með Checklistanum og VIP-málum" title="Dragðu til hliðar — tvísmelltu til að fá ⅓ aftur"></button>' +
-            '<div class="efst-hlid">' + HLID_EININGAR.map(k => '<div class="modcell" data-sp="3">' + einingHtml(k) + '</div>').join('') + '</div>' +
+        ? '<div class="efst-rod3" style="--c1:' + rod3c1 + '%;--c2:' + rod3c2 + '%">' +
+            '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[0]) + '</div>' +
+            '<button type="button" class="efst-grip" data-g="1" aria-label="Draga til að breikka eða mjókka Checklistann" title="Dragðu til hliðar — tvísmelltu til að fá ⅓ á hvern"></button>' +
+            '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[1]) + '</div>' +
+            '<button type="button" class="efst-grip" data-g="2" aria-label="Draga til að breikka eða mjókka VIP-málin" title="Dragðu til hliðar — tvísmelltu til að fá ⅓ á hvern"></button>' +
+            '<div class="modcell" data-sp="3">' + einingHtml(HLID_EININGAR[2]) + '</div>' +
           '</div>'
-        : '<div class="modgrid einn"><div class="modcell" data-sp="3">' + einingHtml('dagskra') + '</div></div>') +
+        : '') +
       '</div>';
     const layout = '<div class="layout' + (topHtml ? '' : ' nol') + (haegri ? ' selh' : ' nor') + '">' +
       (topHtml ? '<aside class="rail left" aria-label="Einingar hamsins">' + topHtml + '</aside>' : '') +

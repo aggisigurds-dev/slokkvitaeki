@@ -87,6 +87,11 @@
       tm[key] = setTimeout(() => { delete tm[key]; vista(key); }, 700);
     },
     focusout(el) { if (el && el.dataset && el.dataset.ov) skolaLykil(el.dataset.ov); },
+    // 21.11.2026: fjöldi útfylltra reita (drög á undan þjóni) — 368 setur hann í haus einingarinnar „Í vikunni, ótímasett".
+    fjoldi(eig) {
+      eig = eig || 'Allir';
+      return REITIR.filter(r => { const k = eig + '|' + r; return String(drog[k] != null ? drog[k] : lesa(eig, r)).trim() !== ''; }).length;
+    },
     skola() {
       Object.keys(tm).forEach(skolaLykil);
       // Óvistuð drög sem bíða endurtekningar fara líka núna (pagehide / app-skipti).
