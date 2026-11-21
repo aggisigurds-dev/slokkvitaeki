@@ -2712,9 +2712,12 @@
     g.classList.add('dregur');
     try { g.setPointerCapture(e.pointerId); } catch (_) {}
     const y0 = e.clientY, h0 = efstHaed();
+    // Ekki dregið lengra en efni hæsta kassans — annars yrði dautt svæði (max-height hreyfir ekkert umfram efnið). Rýni 21.11.
+    const efni = Math.max(EFST_H_MIN, ...[...rad.querySelectorAll('.mod')].map(m => m.scrollHeight || 0));
+    const hamark = Math.min(EFST_H_MAX, Math.max(h0, efni));
     let h = null;
     const hreyfa = ev => {
-      h = Math.round(Math.min(EFST_H_MAX, Math.max(EFST_H_MIN, h0 + (ev.clientY - y0))));
+      h = Math.round(Math.min(hamark, Math.max(EFST_H_MIN, h0 + (ev.clientY - y0))));
       rad.style.setProperty('--rod3h', h + 'px');
     };
     const sleppa = () => {
