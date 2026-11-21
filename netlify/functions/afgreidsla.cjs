@@ -476,7 +476,7 @@ async function framkvaema(id, body, event) {
     } else if (row.tegund === 'verk' && row.gogn.verkefnalisti) {
       // Verk fer á Verkefnalistann (grunnregla agentanna: „aldrei laga framhjá listanum").
       const v = row.gogn.verkefnalisti;
-      const ny = await P.sbPost('verkefnalisti', { title: String(v.title || row.titill).slice(0, 200), description: String(v.description || '').slice(0, 4000),
+      const ny = await P.sbPost('verkefnalisti', { title: String(v.title || row.titill).slice(0, 200), description: '[AGNAR] ' + String(v.description || '').slice(0, 3980),
         status: 'beidni', category: v.category || 'villa', assigned_agent: v.assigned_agent || 'claude-code', vefur: v.vefur || 'slokkvitaeki', priority: v.priority || 2 }).then(sbJson);
       nidurstada = { verkefnalisti_id: ny[0] && ny[0].id, athugasemd: 'Sett á Verkefnalistann' };
     } else if (row.tegund === 'sameina') {
@@ -601,7 +601,10 @@ async function merkja(b, event) {
 }
 
 async function verkefnalistiStofna(title, description) {
-  const ny = await P.sbPost('verkefnalisti', { title: String(title).slice(0, 200), description: String(description).slice(0, 4000), status: 'beidni',
+  // [AGNAR]-merkið: kranvörnin (sql/kranvorn.sql, 21.11.2026) hleypir aðeins verki á
+  // Verkefnalistann sem er skráð villa, tengist markmiði eða kemur af því AGNAR ýtti á
+  // takkann. Afgreiðslan er sá takki, svo merkið fer fremst í description.
+  const ny = await P.sbPost('verkefnalisti', { title: String(title).slice(0, 200), description: '[AGNAR] ' + String(description).slice(0, 3980), status: 'beidni',
     category: 'allt', assigned_agent: 'claude-code', vefur: 'sameiginlegt', priority: 2 }).then(sbJson);
   if (!ny[0] || !ny[0].id) throw new Error('Verkefnalistinn skilaði engri röð');
   return ny[0];
