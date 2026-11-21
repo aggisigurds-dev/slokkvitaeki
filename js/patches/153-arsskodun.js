@@ -2574,11 +2574,13 @@
       .filter(c => isDoneYear(c, curYear))
       .reduce((s, c) => s + virdiOf(c), 0);
     // 21.11.2026 — Yfirsýnarröndin efst á Þjónustuborði Agnars og Annþórs (523) sýnir virði ársþjónustunnar. EIN
-    // skilgreining: talan hér (allt borðið, óháð síum — sama og hetjan og Búið-flagan án síu). 523 geymir hana á þjóni
-    // aðeins þegar hún breytist, og röndin sýnir hvenær hún var síðast reiknuð.
+    // skilgreining: sama tala og hetjan hér (arsAll — mánaðar-, stöðu- og póstnúmerasíur hafa ekki áhrif). „Fela slepptu"
+    // hefur áhrif á hetjuna og því líka hér (skráð með); meðan leitað er hunsar arsAll þá stillingu, svo þá er EKKERT
+    // geymt (rýni 21.11: annars flakkaði geymda talan við hverja leit). 523 geymir aðeins þegar talan breytist.
     try {
-      if (window.YfirsynRond && YfirsynRond.geymaArs) {
+      if (window.YfirsynRond && YfirsynRond.geymaArs && !state.search.trim()) {
         YfirsynRond.geymaArs({
+          fela_slepptu: !!state.hideSkipped,
           ar: curYear, total: Math.round(totalEstimate), buid: Math.round(estDoneThisYear),
           stadir: arsAll.length, buidStadir: arsAll.filter(c => isDoneYear(c, curYear)).length,
           // óbúið OG skoðunarmánuðurinn kominn — sama regla og „komin á tíma" (sy.aTima), en yfir allt borðið

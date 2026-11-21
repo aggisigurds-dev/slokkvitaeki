@@ -20,6 +20,16 @@ const HUB = require('./hub-adgangar.cjs');
 
 const BH = (process.env.BRUNAHOLF_URL || 'https://brunaholf.netlify.app').replace(/\/$/, '');
 const DAGUR = 86400000;
+const LEYFT = ['Agnar', 'Annþór', 'Lota'];   // fornöfn í notendaskránni (hub_adgangar): Agnar Sigurðsson, Annþór Kristján Karlsson, Lota (Claude)
+// Föll Brunahólfs sem verða lokuð óinnskráðum (lota 13): þjónninn sendir tóka eins og tekjur-beint gerir.
+async function bhHausar() {
+  const headers = { accept: 'application/json' };
+  if (typeof HUB.hubApiToki === 'function') {
+    const toki = await HUB.hubApiToki().catch(() => '');
+    if (toki) headers[HUB.HUB_TOKI_HAUS || 'x-hub-toki'] = toki;
+  }
+  return headers;
+}
 
 async function sb(slod) {
   const r = await fetch(`${P.SUPABASE_URL}/rest/v1/${slod}`, {
@@ -62,18 +72,14 @@ async function rekstur(event) {
 
 // Kröfu yfirlit Brunahólfs — sama kall og tekjur-beint (x-hub-toki ef til).
 async function krofurBh() {
-  const headers = { accept: 'application/json' };
-  if (typeof HUB.hubApiToki === 'function') {
-    const toki = await HUB.hubApiToki().catch(() => '');
-    if (toki) headers[HUB.HUB_TOKI_HAUS || 'x-hub-toki'] = toki;
-  }
-  const r = await fetch(`${BH}/api/krofu-yfirlit-bru`, { headers });
+  const r = await fetch(`${BH}/api/krofu-yfirlit-bru`, { headers: await bhHausar() });
   if (!r.ok) return { omaelt: `Kröfu yfirlit Brunahólfs svaraði ${r.status}` };
   const d = await r.json();
   const t1 = d && d.tier1, t2 = d && d.tier2;
   if (!t1 || !t2) return { omaelt: 'Kröfu yfirlit Brunahólfs: óvænt snið' };
   const ogr = [];
-  (t1.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden) ogr.push(i); }));
+  // sama mengi og samtala Kröfu yfirlits: hvorki faldar né kláraðar (done) kröfur
+  (t1.debtors || []).forEach(db => (db.invoices || []).forEach(i => { if (!i.hidden && !i.done) ogr.push(i); }));
   // Aldur = dagar frá gjalddaga reiknings (sama og aldursskipting fullu yfirsýnarinnar).
   const eldri = ogr.filter(i => (dagarFra(i.gjalddagi) || 0) > 45);
   const staerst = ogr.slice().sort((a, b) => kr(b.amount) - kr(a.amount))[0] || null;
@@ -113,7 +119,7 @@ async function sidastSl() {
   return x ? { nr: 'R-' + (x.number || ''), kunni: x.customer_name || '', kr: kr(x.amount_total), dags: x.paid_date } : { omaelt: 'engin greiðsla fannst' };
 }
 async function sidastBh() {
-  const r = await fetch(`${BH}/api/krofu-greidslur?n=1`, { headers: { accept: 'application/json' } });
+  const r = await fetch(`${BH}/api/krofu-greidslur?n=1`, { headers: await bhHausar() });
   if (!r.ok) return { omaelt: `Greiðslur Brunahólfs svöruðu ${r.status}` };
   const d = await r.json();
   const x = d && Array.isArray(d.rows) ? d.rows[0] : null;   // { tilvisun, customer_name, upphaed_total, greidsla_date }
@@ -150,9 +156,10 @@ async function greittInn() {
   const voidIds = new Set(voidR.map(r => Number(r.id)));
   bud.forEach(r => { if (r.credit_of != null && voidIds.has(Number(r.credit_of))) return; iMan(dagur(r.paid_at || r.created_at), m => { m.sl_bud += kr(r.samtals); }); });
   bhp.forEach(r => iMan(dagur(r.greidsla_date), m => { m.bh_payday += kr(r.upphaed_total); }));
-  const handKeys = hand.map(h => ({ tilv: (/^payday\|(.+)$/.exec(h.inv_key || '') || [])[1], paid_at: h.paid_at })).filter(h => h.tilv);
+  // aðeins tölustafir: Payday-tilvísun er númer, og þá getur ekkert úr lyklinum brotið PostgREST-fyrirspurnina
+  const handKeys = hand.map(h => ({ tilv: (/^payday\|(\d{1,12})$/.exec(h.inv_key || '') || [])[1], paid_at: h.paid_at })).filter(h => h.tilv);
   if (handKeys.length) {
-    const inv = await sbOll(`invoices?select=id,tilvisun,upphaed_total,status&source=eq.payday&tilvisun=in.(${handKeys.map(h => encodeURIComponent(h.tilv)).join(',')})&order=id.asc`);
+    const inv = await sbOll(`invoices?select=id,tilvisun,upphaed_total,status&source=eq.payday&tilvisun=in.(${handKeys.map(h => h.tilv).join(',')})&order=id.asc`);
     const eftirTilv = new Map(inv.map(i => [String(i.tilvisun), i]));
     handKeys.forEach(h => {
       const i = eftirTilv.get(String(h.tilv));
@@ -177,10 +184,14 @@ async function timavera() {
   const telja = d => new Set(l.filter(r => r.date === d && r.employee).map(r => r.employee)).size;
   const klst = (fra, til) => Math.round(l.filter(r => r.date >= fra && r.date <= til).reduce((a, r) => a + (Number(r.hours) || 0), 0) * 10) / 10;
   const starfsm = (fra, til) => new Set(l.filter(r => r.date >= fra && r.date <= til && r.employee).map(r => r.employee)).size;
+  // Samanburður við SÖMU vikudaga í fyrri viku (rýni 21.11: mán–dagsins í dag á móti allri síðustu viku sýndi ~▼90 % á
+  // mánudögum). Heil síðasta vika fylgir líka (svika_oll).
+  const samaTil = new Date(Date.parse(fmMan) + vd * DAGUR).toISOString().slice(0, 10);
   return {
-    idag: telja(d0), igaer: telja(d1),
+    idag: telja(d0), igaer: telja(d1), vikudagur: vd,
     vika: { fra: man, til: d0, klst: klst(man, d0), starfsmenn: starfsm(man, d0) },
-    svika: { fra: fmMan, til: sun, klst: klst(fmMan, sun) },
+    svika: { fra: fmMan, til: samaTil, klst: klst(fmMan, samaTil) },
+    svika_oll: { fra: fmMan, til: sun, klst: klst(fmMan, sun) },
   };
 }
 
@@ -190,6 +201,10 @@ exports.handler = async (event) => {
   if (!P.dbReady()) return P.json(503, { error: 'Supabase env vantar' });
   const hver = await H.stjornandi(event);
   if (hver.villa) return hver.villa;
+  // Röndin er Agnars og Annþórs (beiðni Agnars) — sá sem er INNSKRÁÐUR ræður, ekki „Ég er"-valið á tölvunni (rýni 21.11:
+  // annar stjórnandi við vél Agnars sæi annars allt). Lota (Claude) er prófunaraðgangur lotunnar (uid 10, Admin).
+  const fornafn = String(hver.nafn || '').trim().split(/\s+/)[0];
+  if (!LEYFT.includes(fornafn)) return P.json(403, { error: 'Yfirsýnin er aðeins fyrir Agnar og Annþór', bannad: true });
   const [rek, kbh, ksl, os, ssl, sbh, mt, gi] = await Promise.all([
     mael('Rekstrarskýrslan', () => rekstur(event)),
     mael('Kröfu yfirlit Brunahólfs', krofurBh),

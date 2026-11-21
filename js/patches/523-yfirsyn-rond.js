@@ -23,7 +23,7 @@
   const HAM_LYKILL = 'bord.yfirsyn';
   const NYTT = 10 * 60000;              // sótt aftur eftir 10 mín. þegar borðið teiknast
   const REKSTUR_URL = 'https://brunaholf.netlify.app/rekstur';
-  const S = { d: null, villa: null, loading: false, at: 0 };
+  const S = { d: null, villa: null, loading: false, at: 0, bannad: false };
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fin = x => typeof x === 'number' && isFinite(x);
@@ -47,7 +47,8 @@
     try {
       const r = await fetch('/api/yfirsyn', { credentials: 'same-origin', cache: 'no-store' });
       if (r.status === 401) S.villa = 'Innskráning vantar — skráðu þig inn til að sjá tölurnar';
-      else if (r.status === 403) S.villa = 'Aðeins stjórnandi sér yfirsýnina';
+      // 403: innskráður er ekki Agnar eða Annþór (eða ekki stjórnandi) — þá hverfur röndin alveg, engin villa á borðinu.
+      else if (r.status === 403) { S.bannad = true; S.d = null; S.villa = null; }
       else if (!r.ok) S.villa = 'Yfirsýnin náðist ekki (' + r.status + ') — reynt aftur eftir 10 mín.';
       else { S.d = await r.json(); S.villa = null; }
     } catch (_) { S.villa = 'Yfirsýnin náðist ekki — netið?'; }
@@ -60,9 +61,9 @@
   function geymaArs(v) {
     try {
       if (!v || !fin(v.total) || v.total <= 0 || !window.AppSettings || !AppSettings.save) return;
-      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.komin].join('|');
+      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.komin, v.fela_slepptu].join('|');
       const nu = AppSettings.path ? AppSettings.path('yfirsyn_ars') : null;
-      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.komin].join('|') : '';
+      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.komin, nu.fela_slepptu].join('|') : '';
       if (lykill === nuLykill || lykill === arsSent) return;
       arsSent = lykill;
       AppSettings.save({ yfirsyn_ars: Object.assign({}, v, { reiknad_at: new Date().toISOString() }) });
@@ -199,7 +200,7 @@
     const p = pct(nu.alls, medal);
     const max = Math.max(...M.map(m => m.alls || 0), medal || 0) || 1;
     const h = val => Math.max(2, Math.round(val / max * 46));
-    const sund = m => esc(MAN[manOf(m.fra)] || '') + ' ' + mkr(m.alls) + ' m (Payday SL ' + mkr(m.sl_payday) + ' · búð ' + mkr(m.sl_bud) + ' · Payday BH ' + mkr(m.bh_payday) + (m.bh_hand ? ' · merkt greitt BH ' + mkr(m.bh_hand) + ': ' + m.bh_hand_reikn.join(', ') : '') + ')';
+    const sund = m => esc(MAN[manOf(m.fra)] || '') + ' ' + mkr(m.alls) + ' m (Payday SL ' + mkr(m.sl_payday) + ' · búð ' + mkr(m.sl_bud) + ' · Payday BH ' + mkr(m.bh_payday) + (m.bh_hand ? ' · merkt greitt BH ' + mkr(m.bh_hand) + ': ' + esc((m.bh_hand_reikn || []).join(', ')) : '') + ')';
     return '<div class="yr-k" title="Greitt inn MEÐ VSK, bæði félög — peningarnir sem komu inn.\n' + M.map(sund).join('\n') + '\nStrikalína = meðaltal síðustu þriggja heilu mánaða (' + mkr(medal) + ' m). ' + lidid + ' % af mánuðinum liðið.">' +
       '<span class="yr-kl">' + ic('inn') + 'Greitt inn<em>m. vsk</em></span>' +
       '<span class="yr-kn">' + mkr(nu.alls) + '<small>m</small></span>' +
@@ -236,28 +237,37 @@
     '</div>';
   }
 
+  // Vikan: tímar og tekjur bornar saman við SÖMU vikudaga í fyrri viku (rýni 21.11 — annars ▼~90 % á mánudögum).
+  // Göt og reikningar eru aðeins til fyrir heilar vikur: tígullinn sýnir þá alla síðustu viku og ör/litur bíður föstudags.
   function vikanHtml(rek, tv) {
     if (!ok(rek)) return omaelt('Vikan', rek && rek.omaelt);
-    const T = rek.timabil;
-    const klst = ok(tv) ? tv.vika.klst : null, klstF = ok(tv) ? tv.svika.klst : null;
+    const T = rek.timabil, sv = rek.samanburdur && rek.samanburdur.vika;
+    const klst = ok(tv) ? tv.vika.klst : null, klstF = ok(tv) ? tv.svika.klst : null, klstOll = ok(tv) && tv.svika_oll ? tv.svika_oll.klst : null;
     const dk = (fin(klst) && fin(klstF) && klstF > 0) ? Math.round((klst - klstF) / klstF * 100) : null;
-    const rukk = pct(rek.bh.klst[1], klst), rukkF = pct(rek.bh.klst[2], klstF);
+    const rukk = pct(rek.bh.klst[1], klst), rukkF = pct(rek.bh.klst[2], klstOll);
     const reikn = (rek.sl.sentN[1] || 0) + (rek.bh.bokunN[1] || 0), reiknF = (rek.sl.sentN[2] || 0) + (rek.bh.bokunN[2] || 0);
-    const mal = (nu, fyrr, gildi, nafn, titill) => {
+    const tekNu = sv ? (sv.nu.sl || 0) + (sv.nu.bh || 0) : rek.badir.tekjur[1];
+    const tekFyrr = sv ? (sv.fyrr.sl || 0) + (sv.fyrr.bh || 0) : null;
+    const vikudagur = ok(tv) && fin(tv.vikudagur) ? tv.vikudagur : (new Date().getDay() + 6) % 7;
+    const heilVika = vikudagur >= 4;   // frá föstudegi er vikan nógu heil til að bera saman við alla síðustu viku
+    const mal = (nu, fyrr, gildi, nafn, titill, mPct, hlutlaust) => {
       const max = Math.max(nu || 0, fyrr || 0) || 1, upp = (nu || 0) >= (fyrr || 0);
       const mun = fin(nu) && fin(fyrr) ? nu - fyrr : null;
-      return '<div class="yr-well" title="' + esc(titill) + '"><span class="yr-v">' + gildi + (mun != null && mun !== 0 ? '<s class="' + (upp ? 'yr-up' : 'yr-dn') + '">' + (upp ? '▲' : '▼') + (nafn === 'tekjur vikunnar' ? Math.abs(pct(nu, fyrr) - 100) + ' %' : Math.abs(Math.round(mun))) + '</s>' : '') + '</span>' +
-        '<span class="yr-db"><i class="' + (upp ? 'yr-u' : 'yr-d') + '" style="width:' + ((nu || 0) / max * 100).toFixed(0) + '%"></i><b style="left:' + ((fyrr || 0) / max * 100).toFixed(0) + '%"></b></span><span class="yr-n">' + esc(nafn) + '</span></div>';
+      const munTxt = mPct ? (fyrr > 0 ? Math.abs(Math.round((nu - fyrr) / fyrr * 100)) + ' %' : '') : Math.abs(Math.round(mun || 0));
+      const sya = !hlutlaust && mun != null && mun !== 0 && munTxt !== '';
+      return '<div class="yr-well" title="' + esc(titill) + '"><span class="yr-v">' + gildi + (sya ? '<s class="' + (upp ? 'yr-up' : 'yr-dn') + '">' + (upp ? '▲' : '▼') + munTxt + '</s>' : '') + '</span>' +
+        '<span class="yr-db"><i class="' + (hlutlaust ? 'yr-h' : (upp ? 'yr-u' : 'yr-d')) + '" style="width:' + ((nu || 0) / max * 100).toFixed(0) + '%"></i>' + (fin(fyrr) ? '<b style="left:' + ((fyrr || 0) / max * 100).toFixed(0) + '%"></b>' : '') + '</span><span class="yr-n">' + esc(nafn) + '</span></div>';
     };
     const vika = (dd(T[1].fra) + '–' + dd(T[1].til)).replace(/^(\d+)\.\d+–/, '$1.–');
-    return '<div class="yr-k" title="Vikan ' + esc(dd(T[1].fra)) + '–' + esc(dd(T[1].til)) + ' á móti ' + esc(dd(T[2].fra)) + '–' + esc(dd(T[2].til)) + '. Hvíti tígullinn = síðasta vika.">' +
+    const merki = (sv && sv.merki) || 'sömu daga í fyrri viku';
+    return '<div class="yr-k" title="Vikan ' + esc(dd(T[1].fra)) + '–' + esc(dd(T[1].til)) + '. Tímar og tekjur á móti ' + esc(merki) + '; göt og reikningar á móti allri síðustu viku (' + esc(dd(T[2].fra)) + '–' + esc(dd(T[2].til)) + '). Hvíti tígullinn = viðmiðið.">' +
       '<span class="yr-kl">' + ic('klukka') + 'Vikan<em>' + esc(vika) + '</em></span>' +
-      '<span class="yr-row"><span class="yr-kn">' + (fin(klst) ? isk(klst) : '—') + '<small>klst</small></span>' + (dk != null ? '<span class="yr-kp ' + (dk >= 0 ? 'yr-g' : 'yr-r') + '">' + (dk >= 0 ? '▲ ' : '▼ ') + Math.abs(dk) + ' %</span>' : '') + (fin(klstF) ? '<span class="yr-ks" title="' + (ok(tv) ? tv.vika.starfsmenn + ' starfsmenn í vikunni' : '') + '">síðast ' + isk(klstF) + '</span>' : '') + '</span>' +
+      '<span class="yr-row"><span class="yr-kn">' + (fin(klst) ? isk(klst) : '—') + '<small>klst</small></span>' + (dk != null ? '<span class="yr-kp ' + (dk >= 0 ? 'yr-g' : 'yr-r') + '" title="Á móti ' + esc(merki) + '">' + (dk >= 0 ? '▲ ' : '▼ ') + Math.abs(dk) + ' %</span>' : '') + (fin(klstF) ? '<span class="yr-ks" title="' + esc(merki) + (ok(tv) ? ' · ' + tv.vika.starfsmenn + ' starfsmenn í vikunni' : '') + '">síðast ' + isk(klstF) + '</span>' : '') + '</span>' +
       '<div class="yr-vk">' +
-        mal(rek.badir.tekjur[1], rek.badir.tekjur[2], mkr(rek.badir.tekjur[1]) + '<small>m</small>', 'tekjur vikunnar', 'Virði vikunnar án vsk: BH tímar ' + mkr(rek.bh.tima[1]) + ' · BH göt ' + mkr((rek.bh.lshV[1] || 0) + (rek.bh.hekV[1] || 0)) + ' · SL ' + mkr(rek.sl.tekjur[1]) + ' m · síðasta vika ' + mkr(rek.badir.tekjur[2]) + ' m') +
-        mal(rukk, rukkF, (rukk != null ? rukk + ' %' : '—'), 'rukkanlegt', 'Rukkanlegir tímar ' + isk(rek.bh.klst[1]) + ' af ' + isk(klst) + ' (síðast ' + isk(rek.bh.klst[2]) + ' af ' + isk(klstF) + ')') +
-        mal(rek.bh.got[1], rek.bh.got[2], isk(rek.bh.got[1]), 'göt kláruð', 'Göt kláruð í vikunni (Ajour) · síðast ' + isk(rek.bh.got[2])) +
-        mal(reikn, reiknF, isk(reikn), 'reikn. sendir', 'Reikningar sendir: SL ' + (rek.sl.sentN[1] || 0) + ' (síðast ' + (rek.sl.sentN[2] || 0) + ') · BH ' + (rek.bh.bokunN[1] || 0) + ' (síðast ' + (rek.bh.bokunN[2] || 0) + ')') +
+        mal(tekNu, tekFyrr, mkr(tekNu) + '<small>m</small>', 'tekjur vikunnar', 'Virði vikunnar án vsk: BH tímar ' + mkr(rek.bh.tima[1]) + ' · BH göt ' + mkr((rek.bh.lshV[1] || 0) + (rek.bh.hekV[1] || 0)) + ' · SL ' + mkr(rek.sl.tekjur[1]) + ' m · ' + merki + ' ' + mkr(tekFyrr) + ' m', true) +
+        mal(rukk, rukkF, (rukk != null ? rukk + ' %' : '—'), 'rukkanlegt', 'Rukkanlegir tímar ' + isk(rek.bh.klst[1]) + ' af ' + isk(klst) + ' · síðasta vika ' + isk(rek.bh.klst[2]) + ' af ' + isk(klstOll)) +
+        mal(rek.bh.got[1], rek.bh.got[2], isk(rek.bh.got[1]), 'göt kláruð', 'Göt kláruð í vikunni (Ajour) · öll síðasta vika ' + isk(rek.bh.got[2]), false, !heilVika) +
+        mal(reikn, reiknF, isk(reikn), 'reikn. sendir', 'Reikningar sendir: SL ' + (rek.sl.sentN[1] || 0) + ' (öll síðasta vika ' + (rek.sl.sentN[2] || 0) + ') · BH send í bókun ' + (rek.bh.bokunN[1] || 0) + ' (' + (rek.bh.bokunN[2] || 0) + ')', false, !heilVika) +
       '</div>' +
       '<span class="yr-kf">' + heimildLed(rek, 'Tímavera') + 'Tímavera<s>|</s>' + heimildLed(rek, 'Ajour (göt)') + 'göt: Ajour ' + esc(dd(rek.ferskleiki && rek.ferskleiki.ajour && rek.ferskleiki.ajour.nyjast)) + '</span>' +
     '</div>';
@@ -356,7 +366,7 @@
     '</defs></svg>';
 
   function html(n, ctx) {
-    if (EIGENDUR.indexOf(n) < 0) return '';
+    if (EIGENDUR.indexOf(n) < 0 || S.bannad) return '';
     if (!S.loading && (!S.at || Date.now() - S.at > NYTT)) setTimeout(() => load(), 0);
     const ham = vmLesa(HAM_LYKILL, 'rond') === 'lina' ? 'lina' : 'rond';
     const D = S.d, rek = D && D.rekstur;
@@ -480,6 +490,7 @@
       '.yr-db i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}',
       '.yr-db b{position:absolute;top:-1px;width:7px;height:7px;margin-left:-3.5px;border-radius:1px;background:linear-gradient(135deg,#fff,#b9c6dc);transform:rotate(45deg);box-shadow:0 0 0 1.5px #08234a,0 0 6px rgba(255,255,255,.6)}',
       '.yr-u{background:linear-gradient(90deg,#166534,#4ade80);box-shadow:0 0 8px rgba(74,222,128,.7)}.yr-d{background:linear-gradient(90deg,#991b1b,#f87171);box-shadow:0 0 8px rgba(248,113,113,.7)}',
+      '.yr-h{background:linear-gradient(90deg,#3b5379,#a9bbd8);box-shadow:0 0 6px rgba(169,187,216,.5)}',
       // neðsta röðin
       '.yr-foot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:0 14px 14px}',
       '.yr-fl{display:flex;align-items:center;gap:10px;min-width:0;height:44px;padding:0 8px 0 14px;border-radius:13px;background:rgba(0,6,18,.55);border:1px solid rgba(160,190,235,.16);box-shadow:inset 0 2px 5px rgba(0,0,0,.7)}',
