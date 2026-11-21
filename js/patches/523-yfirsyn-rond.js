@@ -61,9 +61,9 @@
   function geymaArs(v) {
     try {
       if (!v || !fin(v.total) || v.total <= 0 || !window.AppSettings || !AppSettings.save) return;
-      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.komin, v.fela_slepptu].join('|');
+      const lykill = [v.ar, v.total, v.buid, v.stadir, v.buidStadir, v.eftirStadir, v.komin, v.fela_slepptu].join('|');
       const nu = AppSettings.path ? AppSettings.path('yfirsyn_ars') : null;
-      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.komin, nu.fela_slepptu].join('|') : '';
+      const nuLykill = nu ? [nu.ar, nu.total, nu.buid, nu.stadir, nu.buidStadir, nu.eftirStadir, nu.komin, nu.fela_slepptu].join('|') : '';
       if (lykill === nuLykill || lykill === arsSent) return;
       arsSent = lykill;
       AppSettings.save({ yfirsyn_ars: Object.assign({}, v, { reiknad_at: new Date().toISOString() }) });
@@ -115,7 +115,7 @@
     const arP = Math.max(0, Math.min(1, (nu - upph) / (naest - upph)));
     const punkt = (f, r) => { const h = Math.PI * (1 - f); return [(58 + r * Math.cos(h)).toFixed(1), (58 - r * Math.sin(h)).toFixed(1)]; };
     const [kx, ky] = punkt(p, 46), [y1x, y1y] = punkt(arP, 37), [y2x, y2y] = punkt(arP, 57);
-    const eftir = a.total - a.buid, eftirSt = (a.stadir || 0) - (a.buidStadir || 0);
+    const eftir = a.total - a.buid, eftirSt = fin(a.eftirStadir) ? a.eftirStadir : (a.stadir || 0) - (a.buidStadir || 0);
     const gamalt = a.reiknad_at ? dagarSidan(a.reiknad_at) : null;
     return '<div class="yr-k yr-hero" title="Virði ársþjónustu ' + esc(a.ar) + ' (Ársskoðun): ' + isk(a.total) + ' kr · búið ' + isk(a.buid) + ' kr á ' + isk(a.buidStadir) + ' stöðum · eftir ' + isk(eftir) + ' kr á ' + isk(eftirSt) + ' stöðum. Hvíta strikið = hve mikið er liðið af árinu.">' +
       '<span class="yr-kl">' + ic('ars') + 'Ársþjónusta ' + esc(a.ar) + '</span>' +

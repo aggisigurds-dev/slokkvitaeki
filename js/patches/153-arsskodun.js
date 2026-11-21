@@ -2574,22 +2574,17 @@
       .filter(c => isDoneYear(c, curYear))
       .reduce((s, c) => s + virdiOf(c), 0);
     // 21.11.2026 — Yfirsýnarröndin efst á Þjónustuborði Agnars og Annþórs (523) sýnir virði ársþjónustunnar. EIN
-    // skilgreining: sama tala og hetjan hér (arsAll — mánaðar-, stöðu- og póstnúmerasíur hafa ekki áhrif). „Fela slepptu"
-    // hefur áhrif á hetjuna og því líka hér (skráð með); meðan leitað er hunsar arsAll þá stillingu, svo þá er EKKERT
-    // geymt (rýni 21.11: annars flakkaði geymda talan við hverja leit). 523 geymir aðeins þegar talan breytist.
+    // skilgreining: sömu tölur og síðan sýnir — virðið úr hetjunni (arsAll) og staðafjöldinn úr spjöldunum Búið/Eftir
+    // (sy: 459 búið + 162 eftir, 91 komin á tíma 21.11). Geymt AÐEINS þegar engin sía né leit er virk (siaVirk), því þá
+    // eru spjöldin allt borðið (rýni 21.11: annars flakkaði geymda talan við hverja leit/síu). „Fela slepptu" er skráð
+    // með. 523 geymir aðeins þegar tölurnar breytast.
     try {
-      if (window.YfirsynRond && YfirsynRond.geymaArs && !state.search.trim()) {
+      if (window.YfirsynRond && YfirsynRond.geymaArs && !siaVirk) {
         YfirsynRond.geymaArs({
           fela_slepptu: !!state.hideSkipped,
           ar: curYear, total: Math.round(totalEstimate), buid: Math.round(estDoneThisYear),
-          stadir: arsAll.length, buidStadir: arsAll.filter(c => isDoneYear(c, curYear)).length,
-          // óbúið OG skoðunarmánuðurinn kominn — sama regla og „komin á tíma" (sy.aTima), en yfir allt borðið
-          komin: arsAll.filter(c => {
-            if (isDoneYear(c, curYear)) return false;
-            if (+(c._ars.field_inspected_year || 0) === curYear) return false;
-            const m = +c._ars.inspect_month || 0;
-            return m > 0 && m <= (today.getMonth() + 1);
-          }).length,
+          buidStadir: sy.done, eftirStadir: sy.pending2026, stadir: sy.done + sy.pending2026,
+          komin: sy.aTima,   // óbúið og skoðunarmánuðurinn kominn eða liðinn
           raun: raunFjoldi,
         });
       }
