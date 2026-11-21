@@ -1054,7 +1054,7 @@
     for (let i = 0; i < 7; i++) {
       const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i), key = ymd(d);
       out.push({
-        key, d: DAG[d.getDay()], n: d.getDate(), today: i === 0,
+        key, d: DAG[d.getDay()], n: d.getDate(), today: i === 0, wd: d.getDay(), m: d.getMonth(),
         jobs: jobs.filter(j => String(j.date || '').slice(0, 10) === key)
           .sort((a, b) => (a.allday ? 0 : 1) - (b.allday ? 0 : 1) || String(a.time || '').localeCompare(String(b.time || '')))
       });
@@ -1370,6 +1370,25 @@
       '.job b{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink)}.job small{font-size:12px;color:var(--mute)}',
       '.today .job{background:rgba(255,255,255,.06);border-color:#2a2823;color:var(--on2)}.today .job b{color:var(--on)}',
       '.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:0 16px 12px;font-size:12.5px;color:var(--mute)}.legend span{display:inline-flex;align-items:center;gap:6px}',
+      // 21.11.2026: „+ Bæta við" er orðið í V2 (507); í Boss stendur takkinn „+" eins og áður.
+      '.dpt{display:none}',
+      // 21.11.2026 — „Annað á borðinu" (nedstHtml): það sem Agnar færði neðst, samanbrotið.
+      '.nedst{display:flex;flex-direction:column;gap:10px;margin:18px 0 14px}',
+      '.nedst-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:0 2px}',
+      '.nedst-hd h2{margin:0;font:700 17px/1.2 var(--body);color:var(--ink)}',
+      '.nedst-hd span{font-size:12.5px;color:var(--mute)}',
+      '.nl{display:flex;align-items:flex-start;gap:8px;min-width:0}',
+      '.nl-h{flex:none;width:32px;height:32px;margin-top:6px;padding:0;border:1px solid var(--rule2);border-radius:6px;background:var(--key);color:var(--ink);font:700 13px/1 var(--body);cursor:pointer}',
+      '.nl-inn{flex:1;min-width:0}',
+      '.nl-inn>.vip{margin:0}',
+      '.nl:not(.opin) .vip>:not(header){display:none}',
+      '.nedst>.ph{margin:0}',
+      '.nedst-yf:empty{display:none}',
+      '.nedst-yf>#yf499{margin:0}',
+      '.nedst-sr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 14px;border:1px solid var(--rule);border-radius:6px;background:var(--key)}',
+      '.nedst-sr span{flex:1 1 240px;font-size:13px;color:var(--mute)}',
+      '.lk-akt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-left:auto}',
+      '.lk-skil{width:1px;height:24px;margin:0 2px;background:var(--rule2)}',
       (window.ThbOakvedin ? ThbOakvedin.css() : ''),   // 500: „Þarf að gera í vikunni" (óákveðin verk)
       '.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:12px 14px}',
       '.pcard{display:flex;flex-direction:column;gap:4px;padding:10px 11px;border:1px solid var(--rule);border-bottom-color:var(--edge);border-radius:4px;background:linear-gradient(180deg,#fff,#fbf9f5);box-shadow:var(--keysh);min-width:0}',
@@ -1793,6 +1812,22 @@
       l.rel = 'stylesheet';
       l.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Mono:wght@500;600&display=swap';
       document.head.appendChild(l);
+    }
+    /* 21.11.2026 (Agnar, rautt á skjáskoti: „mátt taka bara brunahólf bannerinn burt af þjónustuborð"): Brunastál-
+     * borðinn (230 #bstal-banner, fastur efst) er falinn MEÐAN Þjónustuborðið er opið og bilið sem 230 tekur frá fyrir
+     * hann (padding-top 148/112/56 px) fer með. Aðrar síður halda borðanum óbreyttum. :not(#…)-þrennan gefur
+     * reglunni 5 auðkenni (230 hefur 3, css/mobile.css 4).
+     * AÐEINS Á TÖLVU: á síma (Sími-hamur eða ≤760 px) stimpla mobilenav.js og 314 pinPad bilið fyrir símaborðann og
+     * hamborgaratakkann sem innlínustíl (86 px !important) — mælt á 375 px 21.11: borðinn hvarf en bilið stóð eftir sem
+     * autt dökkt band. Síminn heldur því borðanum í þessum hluta; hann er tekinn sér síðar. */
+    if (!document.getElementById('t5-bordi-burt')) {
+      const sb = document.createElement('style');
+      sb.id = 't5-bordi-burt';
+      const T = 'html:not([data-viewmode="mobile"]):has(#view-bord.active) ';
+      sb.textContent = '@media (min-width: 761px){' +
+        T + '#bstal-banner,' + T + '#bstal-ember{display:none!important}' +
+        T + '#view-bord.active:not(#_t5b1):not(#_t5b2):not(#_t5b3){padding-top:12px!important}}';
+      document.head.appendChild(sb);
     }
     const r = v.attachShadow({ mode: 'open' });
     if (window.ThbOakvedin) ThbOakvedin.rot = rot;
@@ -3664,11 +3699,21 @@
         ? '<button type="button" class="job" data-t5="job-edit" data-jid="' + esc(j.id) + '" style="border-left-color:' + vdLitur(j.type) + '" title="' + esc(j.type || '') + ' — smelltu til að breyta">' + inni + '</button>'
         : '<span class="job" style="border-left-color:' + vdLitur(j.type) + '">' + inni + '</span>';
     };
-    const body = '<div class="week">' + days.map(d =>
-      '<div class="day' + (d.today ? ' today' : '') + '">' +
+    /* 21.11.2026 (Agnar: „Laugardagur og sunnudagar mættu alveg dragast aðeins saman þegar mikill texti er
+     * annarsstaðar"): auður helgardagur (engin verk, engin nóta) fær 0,55 af breidd virks dags — en aðeins þegar
+     * einhver annar dagur ber verk eða nótu. Helgardagur sem fær verk breikkar aftur sjálfur. Í mjóum dálki
+     * (@container rail ≤560 px) er vikan listi og breiddin skiptir ekki máli. */
+    const eigD = dagskraSyn();
+    const hefurEfni = d => d.jobs.length > 0 || String(S.dnDrog[eigD + '|' + d.key] != null ? S.dnDrog[eigD + '|' + d.key] : dagNota(eigD, d.key)).trim() !== '';
+    const mjor = d => (d.wd === 0 || d.wd === 6) && !hefurEfni(d);
+    const mjoir = days.some(d => !mjor(d) && hefurEfni(d)) ? days.map(mjor) : days.map(() => false);
+    const vikuDalkar = mjoir.some(Boolean) ? ' style="grid-template-columns:' + mjoir.map(x => x ? 'minmax(84px,.55fr)' : 'minmax(0,1fr)').join(' ') + '"' : '';
+    const body = '<div class="week"' + vikuDalkar + '>' + days.map((d, i) =>
+      '<div class="day' + (d.today ? ' today' : '') + (mjoir[i] ? ' mjor' : '') + '">' +
         '<div class="dh"><button type="button" class="dlink" data-t5="mod-open" data-m="dagskra" aria-label="' + d.d + ' ' + d.n + '., ' + d.jobs.length + ' verk">' +
           '<span class="dn">' + d.d + '</span><span class="dd">' + d.n + '</span></button><span class="grow"></span>' +
-          '<button type="button" class="dplus" data-t5="job-new" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+</button></div>' +
+          // 21.11.2026: „+ Bæta við" eftir teikningu Agnars (V2). Í Boss-þemanu er orðið falið og takkinn er „+" eins og áður.
+          '<button type="button" class="dplus" data-t5="job-new" data-date="' + d.key + '" aria-label="Skrá verk ' + d.d + ' ' + d.n + '.">+<span class="dpt"> Bæta við</span></button></div>' +
         '<div class="djobs">' + (open
           // 18.09.2026 (Agnar: „open to write, easy edit"): dagurinn er reitur, ekki
           // eyðublað. „Ekkert skráð" var endapunktur — nú er þar hægt að skrifa.
@@ -3683,7 +3728,11 @@
     const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
       dagskraFolk().map(x => '<option value="' + esc(x) + '"' + (x === syn ? ' selected' : '') + '>' + esc(x) + '</option>').join('') + '</select></label>';
     const action = val + '<button type="button" class="btn gold sm" data-t5="job-new" data-date="' + days[0].key + '">+ Skrá verk</button>';
-    return modPanel('dagskra', (syn !== DN_EIG ? syn + ' · ' : '') + days[0].jobs.length + ' í dag · ' + total + ' næstu 7 daga', body, action, true);
+    // 21.11.2026 (teikning Agnars): „Dagskrá | 21.–27. nóvember" — vikan sem sést, ekki talning. Talningin er í title.
+    const d0 = days[0], d6 = days[6];
+    const vika = d0.m === d6.m ? d0.n + '.–' + d6.n + '. ' + MAN[d6.m] : d0.n + '. ' + MAN[d0.m] + ' – ' + d6.n + '. ' + MAN[d6.m];
+    return modPanel('dagskra', (syn !== DN_EIG ? syn + ' · ' : '') + vika, body, action, true)
+      .replace('<span class="sum">', '<span class="sum" title="' + d0.jobs.length + ' í dag · ' + total + ' næstu 7 daga">');
   }
   /* ── einingar sem sækja gögn: latar, geymdar í 5 mín (engin sókn við hverja 60 s könnun) ── */
   const G = {};
@@ -5492,7 +5541,32 @@
       card('Frestur liðinn', lidinn, 'á þínu borði') + card('Áríðandi', hot, 'opin áríðandi mál', true);
   }
 
-  function linksHtml(mode) {
+  /* 21.11.2026 — „ANNAÐ Á BORÐINU". Agnar, með skjáskoti þar sem hann hafði litað borðið: rautt má fara, grænt stendur,
+   * blátt „færa neðst í collapsed" — „þori ekki að henda neinu út strax, frekar færðu það niður allt … neðst á síðuna".
+   * Hingað fara því VIP-vakt (513), Pósthólf (522), Verkferlis-yfirlit (499 festir sig sjálft í raufina .nedst-yf),
+   * Sannreyna og einingar sem eru færðar neðst (Checklisti 2, sjá nedstEiningar í render). Ekkert er hent og ekkert
+   * verk breytist — aðeins staðurinn. VIP-vaktin er samanbrotin sjálfgefið, en haus hennar („1 ósvarað · 1 yfir tíma")
+   * stendur alltaf, svo áríðandi póstur týnist ekki. Opið/lokað er geymt með Vidmot: eins á öllum vélum. */
+  const NEDST_LYKILL = k => 'bord.nedst.' + k;
+  const nedstOpid = k => vmLesa(NEDST_LYKILL(k), false) === true;
+  function nedstHtml(n, stjorn, einingar) {
+    const vip = (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í VIP-vakt má aldrei fella borðið
+    const ph = (() => { try { return window.Postholf ? Postholf.html() : ''; } catch (_) { return ''; } })();
+    const vipOp = nedstOpid('vip');
+    const vipLina = !vip ? '' :
+      '<div class="nl' + (vipOp ? ' opin' : '') + '">' +
+        '<button type="button" class="nl-h" data-t5="nedst-tog" data-k="vip" aria-expanded="' + vipOp + '" aria-label="' + (vipOp ? 'Fella VIP-vakt saman' : 'Opna VIP-vakt') + '">' + (vipOp ? '▾' : '▸') + '</button>' +
+        '<div class="nl-inn">' + vip + '</div></div>';
+    const sannreyna = !stjorn ? '' :
+      '<div class="nedst-sr"><b>Sannreyna</b><span>Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum</span>' +
+        '<button type="button" class="btn iv sm" data-t5="sannreyna">Sannreyna</button></div>';
+    return '<section class="nedst" aria-label="Annað á borðinu">' +
+      '<div class="nedst-hd"><h2>Annað á borðinu</h2><span>Fært hingað niður · smelltu til að opna</span></div>' +
+      vipLina + ph + '<div class="nedst-yf"></div>' + sannreyna + (einingar || '') +
+    '</section>';
+  }
+
+  function linksHtml(mode, stjorn) {
     const all = linksFor(nu());
     const synileg = all.filter(l => !Array.isArray(l.modes) || !l.modes.length || l.modes.indexOf(mode) >= 0);
     const falin = all.length - synileg.length;
@@ -5531,6 +5605,11 @@
       '<span class="grow"></span>' +
       '<button type="button" class="btn iv sm" data-t5="link-add" aria-expanded="' + S.linkForm + '">+ Festa tengil</button>' +
       (all.length ? '<button type="button" class="btn iv sm" data-t5="link-edit" aria-pressed="' + S.linkEdit + '">' + (S.linkEdit ? 'Búið' : 'Breyta') + '</button>' : '') +
+      // 21.11.2026: tveir takkar úr leitarlínunni sem fór (aðeins eigandi borðsins, eins og áður — stjornStika).
+      // Hópurinn brotnar saman niður í næstu línu og stendur þar hægra megin (margin-left:auto á hópnum, ekki á stökum).
+      (stjorn ? '<span class="lk-akt"><span class="lk-skil" aria-hidden="true"></span>' +
+        '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '"><span class="t5-emo" aria-hidden="true">⚙ </span>Mitt vinnuborð</button>' +
+        '<button type="button" class="btn gold" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button></span>' : '') +
       '</section>' + form;
   }
 
@@ -5802,6 +5881,11 @@
     const ristHtml = rod => '<div class="modgrid' + (radar ? ' radar' : '') + '">' + rod.map(frumaHtml).join('') + '</div>';
     // 19.11.2026: Dagskráin fremst í einingahamnum fær eigin röð yfir alla breiddina — sjá `efst` við .layout hér að neðan.
     const dskLyft = eininga && !radar && synRod[0] === 'dagskra';
+    // 21.11.2026 (Agnar: „þori ekki að henda neinu út strax … færðu það niður … neðst á síðuna collapse"): þegar allar
+    // einingar sjást („Allt") fer Checklisti 2 í „Annað á borðinu" neðst í stað ristarinnar. Flipinn hans stendur
+    // áfram: sé hann valinn einn og sér birtist einingin í ristinni eins og áður. Í raðham eru allar í ristinni.
+    const NEDST_EIN = ['checklisti2'];
+    const nedstEiningar = eininga && !radar && !flipiSyn.length && einingaRod.length > 1 ? einingaRod.filter(k => NEDST_EIN.indexOf(k) >= 0) : [];
     const midjuEiningar = (einingarIMidju || radar) && einingaRod.length ? ristHtml(einingaRod) : '';
     // 18.09.2026 — HÉR HVARF DAGSKRÁIN. `baraMitt` núllaði einingar hamsins, svo
     // „Afgreiðsla / Útköll" (board:true, first:[dagskra,skipulag], bara_mitt:true)
@@ -5867,7 +5951,7 @@
         '</div>'
       : (dskLyft ? '' : flipaHtml()) + '<div class="modgrid' + (radar ? ' radar' : '') + (flipiEin || (flipiTveir && dskLyft) ? ' einn' : '') + (flipiTveir && !dskLyft ? ' tveir' : '') + '">' +
           (selEininga && !dskLyft ? '<div class="sel inline">' + selMarkup + '</div>' : '') +
-          (dskLyft ? synRod.slice(1) : synRod).map(frumaHtml).join('') + '</div>' +
+          (dskLyft ? synRod.slice(1) : synRod).filter(k => nedstEiningar.indexOf(k) < 0).map(frumaHtml).join('') + '</div>' +
           (mode.mitt && !einingaRod.length ? emptyHtml('Vinnuborðið þitt er autt. Smelltu á „✎ Velja einingar" til að setja á það það sem þú vilt hafa hjá þér. Málin eru í hamnum „Master og mitt borð".') : '');
 
     const haegri = selEininga ? '<section class="sel side" aria-live="polite">' + selMarkup + '</section>' : '';
@@ -5911,27 +5995,25 @@
           /* 18.11.2026 (Agnar, með skjáskoti af borði Anni og krossi yfir stikuna): „má taka út efsta panelinn
            * út hjá öllum nema hjá Agnari". Leitin, „Mitt vinnuborð", „Sannreyna" og „+ Nýtt mál" eru verkfæri
            * eigandans — hinir vinna af borðinu sjálfu. „Ég er" stendur áfram hjá öllum, því þar velur maður sig. */
-          (stjornStika ? '<button type="button" class="btn iv" data-t5="cfg" aria-expanded="' + S.cfgOpen + '"><span class="t5-emo" aria-hidden="true">⚙ </span>Mitt vinnuborð</button>' +   // 507: t5-emo hverfur í V2
-          '<button type="button" class="btn iv" data-t5="sannreyna" title="Telja allt upp á nýtt úr gagnagrunninum og bera saman við það sem stendur á skjánum"><span class="t5-emo" aria-hidden="true">🔍 </span>Sannreyna</button>' +
-          '<button type="button" class="btn iv" data-t5="composer" aria-expanded="' + S.composer + '">+ Nýtt mál</button>' : '') +
+          /* 21.11.2026 (Agnar, skjáskot með litum: rautt út, blátt neðst samanbrotið, grænt stendur): leitarreiturinn
+           * er farinn, „Mitt vinnuborð" og „+ Nýtt mál" standa nú neðst í Flýtileiða-spjaldinu (linksHtml) og
+           * „Sannreyna" er í „Annað á borðinu" neðst (nedstHtml). Takkarnir og verkin á bak við þá eru óbreytt. */
         '</div></div>' +
         // 18.11.2026 — Flýtileiðir standa EFST, beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór).
         // Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera) og voru áður neðan við hamaröðina.
-        linksHtml(c.mode) +
+        linksHtml(c.mode, stjornStika) +
         sannanirHtml() +
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
-        // 522 Pósthólfin (19.11.2026) — hvenær hvert hólf var lesið, hvort lesarinn virkar og ↻ á þau sem má lesa héðan.
-        (() => { try { return window.Postholf ? Postholf.html() : ''; } catch (_) { return ''; } })() +
-        // 513 VIP-vakt (17.11.2026) — ósvaraður póstur frá VIP-félögum EFST, með klukku frá móttöku. Tómt þar til gögnin koma.
-        (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })() +   // 513: villa í VIP-vakt má aldrei fella borðið
+        // 21.11.2026: Pósthólfin (522) og VIP-vakt (513) eru færð NEÐST, samanbrotin — sjá nedstHtml() neðan við `layout`.
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
         (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
         // 18.11.2026 (Agnar: „færa dagskránna og stikurnar upp … setja hitt fyrir neðan"): stóru yfirlits-
         // spjöldin (489 Vinnusamantekt, 506 Einkaritari + Ráðgjafinn, 493 Agentanet) eru nú NEÐST á borðinu,
         // fyrir neðan hamaröðina og einingarnar — sjá blokkina neðan við `layout`. Þannig standa hamurinn
         // (stikurnar) og einingin (Dagskráin) beint undir flýtileiðunum, eins og hann bað um. Efnið er óbreytt.
-        (stjornStika ? leitHtml() : '') +
+        // 21.11.2026: leitarreiturinn farinn (rautt á skjáskoti Agnars). tfBanner fylgdi leitinni og stendur áfram.
+        (stjornStika && S.tengjaVid ? tfBanner() : '') +
         (stjornStika && S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
@@ -5957,6 +6039,8 @@
         // 368aa: KPI-spjöldin eiga við borðið — einingahamir og vinnusvæði bera sínar eigin tölur.
         (mode.board && !baraMitt ? '<div class="kpis">' + kpiHtml(master, mine) + '</div>' : '') +
         layout +
+        // 21.11.2026 — „Annað á borðinu": það sem Agnar merkti blátt (færa neðst, samanbrotið) — ekkert hent.
+        nedstHtml(n, stjornStika, nedstEiningar.map(einingHtml).join('')) +
         // Yfirlitsspjöldin færð hingað niður 18.11.2026 (sjá athugasemd ofar) — fyrir neðan hamaröðina og einingarnar.
         (window.Vinnusamantekt ? Vinnusamantekt.html(n) : '') +
         (window.Einkaritari ? Einkaritari.html(n) : '') +
@@ -5986,7 +6070,15 @@
     // ekki út á hýsilinn. Án þessa hoppar borðið á topp við hvert render().
     const hostSkr = _skrunad.has(v);
     const hostTop = hostSkr ? v.scrollTop : 0, hostLeft = hostSkr ? v.scrollLeft : 0;
+    // 21.11.2026: Verkferlis-yfirlitið (499) býr í raufinni .nedst-yf neðst. innerHTML fjarlægir það úr skjalinu,
+    // en hnúturinn sjálfur (með atburðum og svari) lifir í þessari breytu og fer aftur í nýju raufina hér að neðan.
+    const yfHnutur = root.getElementById ? root.getElementById('yf499') : null;
     mount.innerHTML = html;
+    if (yfHnutur) {
+      const yfRauf = mount.querySelector('.nedst-yf');
+      if (yfRauf) { if (yfHnutur.parentNode !== yfRauf) yfRauf.appendChild(yfHnutur); }
+      else if (!yfHnutur.isConnected) root.insertBefore(yfHnutur, root.firstChild);
+    }
     v.dataset.t5sel = String(selId);
     skiptiMerkja(root);
     if (hostSkr) {
@@ -6885,6 +6977,12 @@
         vmSetja(MITT_FELLT_LYKILL, !mittFellt());
         render();
         return;
+      // 21.11.2026: opna/fella línu í „Annað á borðinu" (nedstHtml). Viðmótsval, fer á þjóninn — eins á öllum vélum.
+      case 'nedst-tog': {
+        const k = el.dataset.k;
+        if (k) { vmSetja(NEDST_LYKILL(k), !nedstOpid(k)); render(); }
+        return;
+      }
       // 18.11.2026: skipt um flipa í einingaham. Valið er viðmótsval og fer á þjóninn — eins á öllum vélum.
       case 'flipi': {
         const c0 = cfg();

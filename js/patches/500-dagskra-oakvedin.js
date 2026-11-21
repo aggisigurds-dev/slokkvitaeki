@@ -23,7 +23,11 @@
 (() => {
   if (window.ThbOakvedin) return;
 
-  const REITIR = ['r1', 'r2', 'r3', 'r4'];
+  /* 21.11.2026 (teikning Agnars af Dagskránni): tólf reitir í þremur dálkum í stað fjögurra í tveimur. r1–r4 eru
+   * sömu reitir og áður (sami texti, sami geymslustaður); r5–r12 bætast við. Reitirnir eru ÁFRAM textareitir, ekki
+   * einnar línu <input>: input hendir línuskiptum, og r1–r4 bera margra lína texta sem má ekki skerðast við vistun.
+   * Reitur er ein lína þegar textinn er ein lína og vex með línunum. */
+  const REITIR = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8', 'r9', 'r10', 'r11', 'r12'];
   const drog = {};     // 'eig|r1' -> texti sem hefur ekki enn verið staðfestur af þjóni
   const stada = {};    // 'eig|r1' -> { t: 'bid'|'vistar'|'ok', s: texti }
   const tm = {}, retry = {};
@@ -94,12 +98,14 @@
         const key = eig + '|' + r;
         const g = drog[key] != null ? drog[key] : lesa(eig, r);
         const st = stada[key];
+        const linur = Math.min(8, Math.max(1, String(g).split('\n').length));
         return '<div class="ovbox">' +
-          '<textarea data-ov="' + esc(key) + '" rows="2" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
+          '<textarea data-ov="' + esc(key) + '" rows="' + linur + '" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
           '<span class="ovst ' + (st ? st.t : '') + '" data-ovst="' + esc(key) + '">' + esc(st ? st.s : '') + '</span></div>';
       };
+      const fjoldi = REITIR.filter(r => { const k = eig + '|' + r; return String(drog[k] != null ? drog[k] : lesa(eig, r)).trim() !== ''; }).length;
       return '<div class="ov">' +
-        '<div class="ovh"><h3>Þarf að gera í vikunni</h3><span>Ekki ákveðið hvenær</span></div>' +
+        '<div class="ovh"><h3>Í vikunni, ótímasett</h3><span>' + (fjoldi ? fjoldi + ' atriði' : 'Ekki ákveðið hvenær') + '</span></div>' +
         '<div class="ovgrid">' + REITIR.map(reitur).join('') + '</div></div>';
     },
     css() {
@@ -108,7 +114,9 @@
         '.ovh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;padding:5px 0 4px;border-top:1px solid var(--edge)}',
         '.ovh h3{margin:0;font:700 11.5px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}',
         '.ovh span{font-size:11.5px;color:var(--mute)}',
-        '.ovgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}',
+        '.ovgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}',
+        '.ovbox textarea{field-sizing:content;max-height:240px}',
+        '@container rail (max-width: 760px){.ovgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
         '.ovbox{position:relative;min-width:0}',
         '.ovbox textarea{width:100%;min-height:40px;display:block;padding:4px 6px;border:1px solid var(--rule2);border-radius:4px;background:rgba(255,253,247,.6);font:12.5px/1.45 var(--body);color:var(--ink);resize:vertical;white-space:pre-wrap;box-sizing:border-box}',
         '.ovbox textarea:hover{background:#fffdf7}',

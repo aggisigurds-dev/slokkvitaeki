@@ -267,8 +267,13 @@
     if (!rot) return false;
     if (!rot.getElementById || !rot.querySelector) return false;
     var minn = rot.querySelector('#' + ID);
+    // 21.11.2026 (Agnar: Verkferlis-yfirlitið „neðst í collapsed"): heimilið er raufin .nedst-yf í „Annað á borðinu"
+    // (368 nedstHtml). 368 setur hnútinn aftur í raufina eftir hverja teikningu; hér er hann aðeins settur þangað í
+    // fyrsta sinn. Án raufar (gömul 368 í skyndiminni) er gamla heimilið efst í rótinni áfram.
+    var rauf = rot.querySelector('.nedst-yf');
     // Snertu DOM AÐEINS þegar hnúturinn er raunverulega farinn eða á röngum stað.
-    if (minn && rot.firstElementChild === minn) return true;
+    if (minn && rauf && minn.parentNode === rauf) return true;
+    if (minn && !rauf && rot.firstElementChild === minn) return true;
 
     if (!rot.querySelector('#' + ID + '-st')) {
       var st = document.createElement('style');
@@ -289,7 +294,8 @@
         if (l) l.classList.toggle('opin');
       });
     }
-    rot.insertBefore(minn, rot.firstChild);
+    if (rauf) rauf.appendChild(minn);
+    else rot.insertBefore(minn, rot.firstChild);
     return true;
   }
 

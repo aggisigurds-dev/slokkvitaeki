@@ -445,6 +445,53 @@
       H + ' .t5-thema{margin-left:0}',
 
       // Mjór skjár: grindin í þrjá jafna dálka — leit í heilli línu, takkarnir þrír undir.
+      /* ── 21.11.2026 — MILLIVEGURINN (Agnar, skjáskot: rautt út, blátt neðst samanbrotið, grænt stendur) ────────
+       * Leitarreiturinn og takkarnir þrír eru farnir úr röð 2, svo hvíta spjaldið sem lá undir þeim fer líka
+       * (annars stæði autt hvítt spjald á milli hetjunnar og Flýtileiða). */
+      H + ' .col::before{display:none}',
+      H + ' .lk-skil{background:#d8dee9}',
+      // Dagskráin eftir teikningu Agnars 21.11: „Dagskrá | 21.–27. nóvember", dagar sem spjöld með „+ Bæta við",
+      // verk sem ljósblá spjöld með lit tegundar til vinstri, ótímasett sem þriggja dálka rist af línum.
+      H + ' .mod[aria-label="Dagskrá"] .phead .plate,' + H + ' .dgsyn .lbl{display:none}',
+      H + ' .mod[aria-label="Dagskrá"] .phead .sum{padding-left:14px;border-left:1px solid rgba(255,255,255,.28);font:400 16px/1.2 var(--body);color:#c9d3e3}',
+      H + ' .week{gap:8px;padding:12px 12px 10px}',
+      H + ' .day{gap:6px;padding:8px 10px 10px}',
+      H + ' .day.today{background:#fff1e6;box-shadow:inset 0 0 0 1px #f8b98c}',
+      H + ' .day.today .dn{color:#c2410c}',
+      H + ' .today .dd{width:26px;height:26px;background:#ff6702;color:#fff;font-size:14px}',
+      H + ' .day.mjor:not(.today){background:#f3f6fb}',
+      H + ' .dplus,' + H + ' .today .dplus{width:auto;min-width:28px;height:28px;padding:0 4px;border:0;border-radius:8px;background:transparent;box-shadow:none;color:#2f6fe4;font:500 12.5px/1 var(--body);white-space:nowrap}',
+      H + ' .dplus:hover{background:#ebf0fe}',
+      H + ' .dpt{display:inline}',
+      H + ' .day.mjor .dpt{display:none}',
+      H + ' .day.mjor .dplus{font-size:16px;font-weight:600}',
+      H + ' .job,' + H + ' .today .job{padding:6px 10px;border:0;border-left:3px solid #2f6fe4;border-radius:6px;background:#ebf0fe;color:#101e43;font:13px/1.4 var(--body)}',
+      H + ' .job::before{display:none}',
+      H + ' .job b,' + H + ' .today .job b{font:700 13.5px/1.4 var(--body);color:#101e43}',
+      // Dagnótan heldur sér (ekkert hent), en er án ramma: dagurinn lítur út eins og á teikningunni og smellur í
+      // auðan flöt dagsins skrifar nótu. Leiðbeiningin „Skrifaðu hér…" birtist við sveimu eða fókus.
+      H + ' .djobs{flex:1}',
+      H + ' .dnota{flex:1}',
+      H + ' .dnota textarea{min-height:40px;padding:4px 2px;border:0;border-radius:6px;background:transparent;box-shadow:none;resize:none;field-sizing:content}',
+      H + ' .dnota textarea:hover{background:transparent}',
+      H + ' .dnota textarea::placeholder{color:transparent}',
+      H + ' .day:hover .dnota textarea::placeholder,' + H + ' .dnota textarea:focus::placeholder{color:#5a6882}',
+      H + ' .legend{display:none}',
+      H + ' .ov{padding:0 12px 12px}',
+      H + ' .ovh{padding:4px 4px 8px;border-top:0}',
+      H + ' .ovgrid{gap:1px;border:1px solid #e7ecf3;border-radius:10px;overflow:hidden;background:#e7ecf3}',
+      H + ' .ovbox{background:#fff}',
+      // field-sizing: reiturinn vex með textanum (margra lína nótur r1–r4 skerast hvorki né fá skrunstiku).
+      H + ' .ovbox textarea{min-height:36px;max-height:240px;padding:8px 12px;border:0;border-radius:0;background:#fff;box-shadow:none;font:14px/1.45 var(--body);resize:none;field-sizing:content}',
+      H + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;box-shadow:none}',
+      H + ' .ovbox textarea::placeholder{font-style:italic;color:#5a6882}',
+      // „Annað á borðinu" (368 nedstHtml).
+      H + ' .nedst-hd h2{font:700 18px/1.2 var(--body);color:#101e43}',
+      H + ' .nedst-hd span{font-size:13px;color:#5a6882}',
+      H + ' .nl-h{width:36px;height:36px;margin-top:4px;border:0;border-radius:10px;background:#fff;box-shadow:' + RAMMI + ';color:#101e43}',
+      H + ' .nedst-sr{padding:12px 16px;border:0;border-radius:14px;background:#fff;box-shadow:' + SH + '}',
+      H + ' .nedst-sr span{color:#5a6882}',
+
       '@container t5 (max-width: 760px){' +
         H + ' .col{grid-template-columns:repeat(3,minmax(0,1fr))}' +
         // „Ég er" í eigin línu neðst í hetjunni, undir meta-línunni — annars hylur það rofann [Boss | V2].
