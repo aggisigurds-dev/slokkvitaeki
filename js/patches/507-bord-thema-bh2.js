@@ -497,6 +497,7 @@
       H + ' .efst-grip::before{background:#d8dee9}',
       H + ' .efst-grip:hover::before,' + H + ' .efst-grip.dregur::before{background:#ff6702}',
       H + ' .vipm-h{border-top-color:#e7ecf3}',
+      H + ' .ov-ein .ov{padding:12px}',   // eining 34: efri spássía sem V2-reglan .ov tók af
       H + ' .vipm-h b{font:600 14px/1.3 var(--body);color:#101e43}',
       H + ' .vipm-h span{color:#5a6882}',
       // „Annað á borðinu" (368 nedstHtml).

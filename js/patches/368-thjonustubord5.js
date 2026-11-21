@@ -1397,7 +1397,8 @@
       '.lk-akt{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-left:auto}',
       // 21.11.2026 — þrír dálkar undir dagatalinu (efst-rod3): Checklisti | VIP-mál (eining 33) | ótímasett (eining 34).
       '.efst-rod3{display:grid;grid-template-columns:minmax(0,var(--c1,33%)) 14px minmax(0,var(--c2,33%)) 14px minmax(0,1fr);align-items:start;margin-top:14px}',
-      '.efst-rod3>.modcell{min-width:0}',
+      // grid-column:auto — grunnreglan .modcell{grid-column:span 60} hefði annars staflað dálkunum (rýni 21.11, mælt).
+      '.efst-rod3>.modcell{min-width:0;grid-column:auto}',
       // Checklistinn (20+ atriði) og VIP-málin skruna innan síns kassa, hausinn stendur kyrr — aðeins þegar dálkarnir
       // standa hlið við hlið (>1100 px): á síma skrunar síðan sjálf (rýni 21.11).
       '@container main (min-width: 1101px){.efst-rod3 .mod{max-height:480px;overflow:auto;overscroll-behavior:contain}.efst-rod3 .mod>.phead{position:sticky;top:0;z-index:3}}',
@@ -6123,7 +6124,8 @@
      * yfir alla breiddina; undir því .efst-rod3: Checklisti | VIP-mál | Í vikunni, ótímasett (eining 34 — reitirnir sem
      * stóðu neðst í Dagskránni). Tvær skilalínur dregnar til; breiddirnar (% af röðinni) í Vidmot, tvísmellur → ⅓ hver. */
     const [rod3c1, rod3c2] = efstBreiddir();
-    _dskAnOak = hlidDalkur;
+    // Reitirnir standa í einingu 34 þegar hún er á skjánum (hér undir dagatalinu, eða valin í ristina) — aldrei tvisvar.
+    _dskAnOak = hlidDalkur || synRod.indexOf('oakvedin') >= 0;
     const dskHtml = dskLyft ? einingHtml('dagskra') : '';
     _dskAnOak = false;
     const efst = !dskLyft ? '' : '<div class="efst">' + flipaHtml() +
