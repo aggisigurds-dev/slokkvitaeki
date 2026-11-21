@@ -208,7 +208,7 @@
         M.map((m, i) => '<div' + (i === 3 ? ' class="yr-nu"' : '') + '>' + (i === 3 && medal && m.alls < medal ? '<span class="yr-ghost" style="bottom:' + h(m.alls) + 'px;height:' + (h(medal) - h(m.alls)) + 'px"></span>' : '') + '<i style="height:' + h(m.alls || 0) + 'px"></i></div>').join('') +
       '</div>' +
       '<div class="yr-mo">' + M.map((m, i) => '<span' + (i === 3 ? ' class="yr-nu"' : '') + '>' + esc(MAN[manOf(m.fra)] || '') + '<b>' + mkr(m.alls, 1) + '</b></span>').join('') + '</div>' +
-      '<span class="yr-kf">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'Payday BH + merkt greitt</span>' +
+      '<span class="yr-kf" title="Payday SL og BH + BH-reikningar merktir greiddir í Kröfu yfirliti">' + heimildLed(rek, 'Payday SL') + 'Payday SL<s>|</s>' + heimildLed(rek, 'Greiðslur BH') + 'BH</span>' +
     '</div>';
   }
 
@@ -302,7 +302,7 @@
     return '<header class="yr-top">' +
       '<div class="yr-brand"><span class="yr-mark">Yfirsýn</span><span class="yr-upd">' + led(S.villa ? 'or' : 'gr') + (S.loading && !S.d ? 'Sæki tölur…' : 'Uppfært ' + (S.d ? klukka(S.d.maelt_at) : '')) + '</span></div>' +
       '<div class="yr-chips">' +
-        (ctx && fin(ctx.master) ? '<span class="yr-chip" title="Opin mál á Master · á þínu borði">Opin mál <b>' + isk(ctx.master) + '</b>' + (fin(ctx.mine) ? ' · þín <b>' + isk(ctx.mine) + '</b>' : '') + '</span>' : '') +
+        (ctx && fin(ctx.master) ? '<span class="yr-chip" title="Opin mál á borðinu · þar af á þínu borði">Opin mál <b>' + isk(ctx.master) + '</b>' + (fin(ctx.mine) ? ' · þín <b>' + isk(ctx.mine) + '</b>' : '') + '</span>' : '') +
         (ok(tv) ? '<span class="yr-chip" title="Starfsmenn með skráða tíma í Tímaveru">' + led(tv.idag ? 'gr' : 'gy') + isk(tv.idag) + ' við vinnu · <b>' + isk(tv.igaer) + '</b> í gær</span>' : '') +
         (hm.length ? '<span class="yr-chip" title="' + esc(hm.map(h => h.n + ': ' + h.t).join(' · ')) + '">Heimildir ' + hm.map(h => led(h.lit)).join('') + '</span>' : '') +
       '</div>' +

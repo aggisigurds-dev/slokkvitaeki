@@ -6228,7 +6228,8 @@
         idagBordi +
         // 21.11.2026 — 523 Yfirsýnarröndin (Agnar: „Master yfirsýn banner … fyrir Agnar og Annþórs þjónustuborð"): lykiltölur
         // beggja félaga beint undir Flýtileiðum. 523 ræður sjálf hverjir sjá hana (Agnar, Anni) og sækir tölurnar.
-        (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: master.length, mine: mine.length }) : ''; } catch (_) { return ''; } })() +
+        // Opin mál = öll opin mál á borðinu (S.rows); þín = þau sem eru á borði n (master/mine eru tóm í einingahömum).
+        (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: S.rows.length, mine: S.rows.filter(r => onBoardOf(r, n)).length }) : ''; } catch (_) { return ''; } })() +
         // 21.11.2026: Pósthólfin (522) og VIP-vakt (513) eru færð NEÐST, samanbrotin — sjá nedstHtml() neðan við `layout`.
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
         (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
