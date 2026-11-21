@@ -452,6 +452,9 @@
       // Hetjan hefur margin-bottom:-36px og lá því 20 px yfir Flýtileiðum þegar hvíta spjaldið fór (rýni 21.11, mælt
       // á 375/1440/1920 px) — smellur á efri hluta flísanna lenti í hetjunni. Flýtileiðir standa nú ofan á henni.
       H + ' .links{position:relative;z-index:2}',
+      // Leitarreiturinn birtist nú aðeins við „Finna"/tengingu — hann flæðir á eftir Flýtileiðum með „Veldu fyrirtæki…"-
+      // borðanum í stað fastrar raðar 2 (sem setti hann fyrir ofan Flýtileiðir og borðann fyrir neðan).
+      H + ' .leit{grid-row:auto;grid-column:1/-1}',
       H + ' .lk-skil{background:#d8dee9}',
       // Dagskráin eftir teikningu Agnars 21.11: „Dagskrá | 21.–27. nóvember", dagar sem spjöld með „+ Bæta við",
       // verk sem ljósblá spjöld með lit tegundar til vinstri, ótímasett sem þriggja dálka rist af línum.

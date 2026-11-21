@@ -5681,11 +5681,11 @@
     st.idx = -1;
     if (k === 'nc') st.fyr = null;                         // nýr innsláttur = ekkert fyrirtæki valið
     clearTimeout(_leitT);
-    if (String(q || '').trim().length < 2) { if (k === 'nc') st.tillogur = []; else st.fyr = []; st.opid = false; render(); return; }
+    if (String(q || '').trim().length < 2) { if (k === 'nc') st.tillogur = []; else { st.fyr = []; S.leitBid = false; } st.opid = false; render(); return; }
     _leitT = setTimeout(async () => {
       const nidur = await finnaFyrirtaeki(String(q).trim());
       if (nr !== _leitNr) return;
-      if (k === 'nc') S.ny.tillogur = nidur; else S.leit.fyr = nidur;
+      if (k === 'nc') S.ny.tillogur = nidur; else { S.leit.fyr = nidur; S.leitBid = false; }   // 21.11: opid tekur við
       st.opid = true;
       render();
     }, 160);
@@ -6017,8 +6017,10 @@
         // (stikurnar) og einingin (Dagskráin) beint undir flýtileiðunum, eins og hann bað um. Efnið er óbreytt.
         // 21.11.2026: leitarreiturinn er farinn af borðinu (rautt á skjáskoti Agnars). Tvær leiðir nota hann þó enn —
         // „Finna <nafn>" á máli án fyrirtækis (opnaFyrirtaekiMals) og „Leita að fyrirtæki" í Hreinsa (tf-leita) — svo
-        // hann birtist AÐEINS meðan önnur hvor er í gangi (rýni 21.11: án þess enduðu þær í blindgötu).
-        (stjornStika && (S.tengjaVid || String(S.leit.q || '').trim()) ? leitHtml() : '') +
+        // hann birtist AÐEINS meðan önnur hvor er í gangi (rýni 21.11: án þess enduðu þær í blindgötu): á meðan verið er
+        // að tengja (tengjaVid), leit er á leiðinni (leitBid) eða listinn er opinn (opid). Val, Esc og smellur utan loka
+        // listanum — og þá hverfur reiturinn líka (önnur rýni 21.11: q-skilyrði lét hann sitja fastan eftir val).
+        (stjornStika && (S.tengjaVid || S.leitBid || S.leit.opid) ? leitHtml() : '') +
         (stjornStika && S.composer ? composerHtml() : '') +
         '<div class="modes"><span class="lbl">Hamur</span><div class="seg modeseg" role="group" aria-label="Hamur">' +
           hamaListi().filter(k => !hamFalinnHja(n, k)).map(k => { const t = hamTala(k); return '<button type="button" data-t5="mode" data-mode="' + esc(k) + '" aria-pressed="' + (c.mode === k) + '">' + esc(M(k).l) +
@@ -6126,7 +6128,8 @@
     const nafn = whereOf(r);
     if (!nafn) { toast('Þetta mál er ekki tengt fyrirtæki.', true); return; }
     S.leit.q = nafn;
-    render();   // 21.11.2026: leitarreiturinn birtist aðeins þegar hann er notaður — teikna strax svo hann sé til hér
+    S.leitBid = true;   // 21.11.2026: reiturinn sést þar til listinn opnast (leita() hreinsar flaggið)
+    render();           // teikna strax svo reiturinn sé til hér fyrir fókus og skrun
     leita('lq', nafn);
     const root = rot(), f = root && root.querySelector('[data-k="lq"]');
     if (f) { f.focus(); f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
