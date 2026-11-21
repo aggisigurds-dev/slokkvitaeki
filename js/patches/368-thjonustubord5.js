@@ -6220,16 +6220,18 @@
            * er farinn, „Mitt vinnuborð" og „+ Nýtt mál" standa nú neðst í Flýtileiða-spjaldinu (linksHtml) og
            * „Sannreyna" er í „Annað á borðinu" neðst (nedstHtml). Takkarnir og verkin á bak við þá eru óbreytt. */
         '</div></div>' +
-        // 18.11.2026 — Flýtileiðir standa EFST, beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór).
-        // Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera) og voru áður neðan við hamaröðina.
+        // 21.11.2026 — 523 Yfirsýnarröndin (Agnar: „Master yfirsýn banner … fyrir Agnar og Annþórs þjónustuborð"): lykiltölur
+        // beggja félaga. 523 ræður sjálf hverjir sjá hana (Agnar, Anni) og sækir tölurnar. Opin mál = öll opin mál á borðinu
+        // (S.rows); þín = þau sem eru á borði n (master/mine eru tóm í einingahömum).
+        // 21.11.2026 (Agnar, skjáskot með grænum örvum: „mátt svissa þessu í leiðinni"): röndin stendur nú EFST, beint undir
+        // borðanum, og Flýtileiðir fyrir neðan hana — áður var röðin öfug.
+        (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: S.rows.length, mine: S.rows.filter(r => onBoardOf(r, n)).length }) : ''; } catch (_) { return ''; } })() +
+        // 18.11.2026 — Flýtileiðir standa beint undir borðanum (Agnar, með ör af þeim upp í stikuna sem fór); frá 21.11 undir
+        // Yfirsýnarröndinni. Þær eru leiðin út úr borðinu (Keldan, Drive, Payday, Tímavera).
         linksHtml(c.mode, stjornStika) +
         // 21.11.2026: niðurstöður Sannreyna (sannanirHtml) standa nú undir takkanum í „Annað á borðinu" (nedstHtml).
         // 520 Í dag — efsta lagið: forgangsmál, ný skilaboð og rauðar mælingar, hvert með einni aðgerð.
         idagBordi +
-        // 21.11.2026 — 523 Yfirsýnarröndin (Agnar: „Master yfirsýn banner … fyrir Agnar og Annþórs þjónustuborð"): lykiltölur
-        // beggja félaga beint undir Flýtileiðum. 523 ræður sjálf hverjir sjá hana (Agnar, Anni) og sækir tölurnar.
-        // Opin mál = öll opin mál á borðinu (S.rows); þín = þau sem eru á borði n (master/mine eru tóm í einingahömum).
-        (() => { try { return window.YfirsynRond ? YfirsynRond.html(n, { master: S.rows.length, mine: S.rows.filter(r => onBoardOf(r, n)).length }) : ''; } catch (_) { return ''; } })() +
         // 21.11.2026: Pósthólfin (522) og VIP-vakt (513) eru færð NEÐST, samanbrotin — sjá nedstHtml() neðan við `layout`.
         // 519 Merkja og keyra — teljari (merkt · í keyrslu · klárað · vantar svör), ▶ Keyra og ljós þegar umferð er búin.
         (() => { try { return window.MerkjaKeyra ? MerkjaKeyra.html(n) : ''; } catch (_) { return ''; } })() +
