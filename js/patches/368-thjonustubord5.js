@@ -1397,13 +1397,14 @@
       '.efst-hlid{display:flex;flex-direction:column;gap:14px;min-width:0}',
       '.efst-hlid>.modcell{min-width:0}',
       // Checklistinn (20+ atriði) ýtti VIP-málum út af skjánum: hvor kassi skrunar innan sín, hausinn stendur kyrr.
-      '.efst-hlid .mod{max-height:430px;overflow:auto;overscroll-behavior:contain}',
-      '.efst-hlid .mod>.phead{position:sticky;top:0;z-index:3}',
+      // Aðeins þegar dálkurinn stendur við hliðina (>1100 px): á síma skrunar síðan sjálf (rýni 21.11: strok á 430 px kassa
+      // sem fyllir skjáinn skrunuðu ekki síðunni).
+      '@container main (min-width: 1101px){.efst-hlid .mod{max-height:430px;overflow:auto;overscroll-behavior:contain}.efst-hlid .mod>.phead{position:sticky;top:0;z-index:3}}',
       '.efst-grip{align-self:stretch;width:14px;min-height:80px;padding:0;border:0;background:transparent;cursor:col-resize;position:relative;touch-action:none}',
       '.efst-grip::before{content:"";position:absolute;left:5px;top:50%;width:4px;height:52px;margin-top:-26px;border-radius:2px;background:var(--rule2);opacity:.7}',
       '.efst-grip:hover::before,.efst-grip.dregur::before{opacity:1;background:var(--g5)}',
       '@container main (max-width: 1100px){.efst-rad{grid-template-columns:minmax(0,1fr);row-gap:14px}.efst-grip{display:none}}',
-      '.vipm-post{padding:8px 10px 0}',
+      '.vipm-post{padding:0 0 10px}',
       '.vipm-post .vip{margin:0}',
       '.vipm-h{display:flex;align-items:baseline;gap:8px;padding:10px 14px 4px;border-top:1px solid var(--rule)}',
       '.vipm-h b{font:700 13.5px/1.3 var(--body);color:var(--ink)}',
@@ -2684,6 +2685,9 @@
     if (!g) return;
     e.preventDefault();
     vmSetja(EFST_HLID_LYKILL, 33);
+    // Beint á röðina: render() bíður meðan fókus er í reit (t.d. checklista) — dálkurinn á samt að hoppa strax (rýni 21.11).
+    const rad = g.closest('.efst-rad');
+    if (rad) rad.style.setProperty('--hlid', '33%');
     render();
   }
   function onVbrGrip(e) {
@@ -5134,19 +5138,27 @@
       hopar.forEach(h => h.ids.forEach(id => hopurMals.set(id, h)));
       S.rows.filter(r => r.status !== 'lokad' && hopurMals.has(String(r.fyrirtaeki_id))).sort(rodun)
         .forEach(r => hopurMals.get(String(r.fyrirtaeki_id)).mal.push(r));
-      const rod = r => lrowHtml(r, '', { l: 'vipmal:mal:' + r.id, e: k, d: r.title }, '');
-      const listi = [...hopar.values()].sort((a, b) => b.mal.length - a.mal.length || a.nafn.localeCompare(b.nafn, 'is'));
-      const allsOpin = listi.reduce((s, h) => s + h.mal.length, 0);
+      // „Fela" eins og í Mín mál (rýni 21.11: lykillinn vistaðist en röðin stóð áfram og var talin).
+      const lyk = r => 'vipmal:mal:' + r.id;
+      const allFalin = [];
+      hopar.forEach(h => { const X = fela(h.mal, lyk); h.synd = X.synd; allFalin.push(...X.falin); });
+      const rod = (r, falinn) => lrowHtml(r, '', { l: lyk(r), e: k, d: r.title, falinn }, '');
+      const listi = [...hopar.values()].sort((a, b) => b.synd.length - a.synd.length || a.nafn.localeCompare(b.nafn, 'is'));
+      const allsOpin = listi.reduce((s, h) => s + h.synd.length, 0);
+      // Talan í hausnum = raðirnar sem sjást (regla V2): allt að 25 á félag, eins og Mín mál.
       const hopHtml = listi.map(h =>
-        '<div class="vipm-h"><b>' + esc(h.nafn) + '</b><span>' + h.mal.length + ' opin</span></div>' +
-        h.mal.slice(0, 6).map(rod).join('') +
-        (h.mal.length > 6 ? '<div class="more">+ ' + (h.mal.length - 6) + ' til viðbótar</div>' : '')).join('');
-      const body = (vipPostur ? '<div class="vipm-post">' + vipPostur + '</div>' : '') +
-        (!S.loaded ? emptyHtml('Sæki mál…')
-          : g.villa && !g.data ? emptyHtml('Náði ekki í VIP-félögin: ' + esc(g.villa))
-          : !g.data ? emptyHtml('Sæki VIP-félögin…')
-          : (hopHtml || emptyHtml('Ekkert félag er merkt VIP.')));
-      return modPanel(k, allsOpin + ' opin mál · ' + listi.length + ' félög', body, '');
+        '<div class="vipm-h"><b>' + esc(h.nafn) + '</b><span>' + h.synd.length + ' opin</span></div>' +
+        h.synd.slice(0, 25).map(r => rod(r)).join('') +
+        (h.synd.length > 25 ? '<div class="more">+ ' + (h.synd.length - 25) + ' til viðbótar</div>' : '')).join('') +
+        falinHtml('vipmal:mal', allFalin.length, () => allFalin.map(r => rod(r, true)).join(''));
+      const body = !S.loaded ? emptyHtml('Sæki mál…')
+        : g.villa && !g.data ? emptyHtml('Náði ekki í VIP-félögin: ' + esc(g.villa))
+        : !g.data ? emptyHtml('Sæki VIP-félögin…')
+        : (listi.length ? hopHtml : emptyHtml('Ekkert félag er merkt VIP.'));
+      // Ósvaraður VIP-póstur stendur UTAN spjaldsins, svo hann sést líka þegar VIP-mál er fellt saman (rýni 21.11).
+      _vipmalTeiknad = true;
+      return (vipPostur ? '<div class="vipm-post">' + vipPostur + '</div>' : '') +
+        modPanel(k, allsOpin + ' opin mál · ' + listi.length + ' félög' + falinSum(allFalin.length), body, '');
     }
     if (k === 'minmal') {
       /* MÍN MÁL (eining 32, 19.11.2026). Mál sést annars aðeins í ham sem tekur það (iHam), svo starfsmaður sem hefur falið
@@ -5645,8 +5657,13 @@
   // 21.11.2026: ⅓-dálkurinn við Dagskrána. Fastar hér svo bæði render og smellir noti þær.
   const HLID_EININGAR = ['checklisti', 'vipmal'];
   const EFST_HLID_LYKILL = 'bord.efst.hlid';
+  // Sett í bottomHtml('vipmal') í hverri teikningu; nedstHtml les það (og núllstillir) — VIP-pósturinn þá ekki tvisvar,
+  // sama hvar VIP-mál stendur (⅓-dálkinum eða ristinni). Rýni 21.11.
+  let _vipmalTeiknad = false;
   function nedstHtml(n, stjorn, einingar, vipUppi) {
-    // vipUppi: VIP-pósturinn stendur í VIP-málum í ⅓-dálkinum efst — ekki tvisvar á sama skjá.
+    // vipUppi: VIP-pósturinn stendur í VIP-málum (eining 33) annars staðar á skjánum — ekki tvisvar.
+    vipUppi = vipUppi || _vipmalTeiknad;
+    _vipmalTeiknad = false;
     const vip = vipUppi ? '' : (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í VIP-vakt má aldrei fella borðið
     const ph = (() => { try { return window.Postholf ? Postholf.html() : ''; } catch (_) { return ''; } })();
     const vipOp = nedstOpid('vip');
