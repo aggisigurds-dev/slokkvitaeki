@@ -386,8 +386,16 @@
     const bgDecl = (v, fixed) => String(v).indexOf('css:') === 0
       ? 'background:' + v.slice(4) + ' !important'
       : 'background-image:url(' + v + ') !important;background-size:cover !important;background-position:center !important' + (fixed ? ';background-attachment:fixed !important' : '');
-    if (state.bg && state.bg.all) css += 'body{' + bgDecl(state.bg.all, true) + '}\n';
-    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n'; }
+    // 22.11.2026: 230/245 mála `.view` með html[data-thm-preset=brunastal] + !important,
+    // svo `body{…}` og jafnvel `#view-x{…}` sáust ekki. Bakgrunnur Stílstjóra verður
+    // að mála `.view` með a.m.k. sömu sértækni — annars virkar galleríið ekki.
+    const bgAllSel = 'html[data-thm-preset="brunastal"] .view,html[data-thm-preset="brunastal"] body .view,body';
+    if (state.bg && state.bg.all) css += bgAllSel + '{' + bgDecl(state.bg.all, true) + '}\n';
+    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) {
+      if (state.bg.pages[vid]) {
+        css += 'html[data-thm-preset="brunastal"] #' + vid + '.view,#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n';
+      }
+    }
     paintDocs().forEach(d => {
       try {
         let st = d.getElementById(STYLE_ID);
@@ -2421,6 +2429,13 @@
     registerCard: (id, impl) => {
       if (!id || !impl) return;
       cards[id] = impl;
+      if (document.getElementById(PANEL_ID)) renderPanel();
+    },
+    // Bakgrunnur ofan á F/BG-safnið (524: V2 Brunastál). Sýnist í „Bakgrunnar".
+    addBg: (name, cssVal) => {
+      if (!name || !cssVal) return;
+      if (BG_GALLERY.some(g => g[0] === name || g[1] === cssVal)) return;
+      BG_GALLERY.unshift([name, cssVal]);
       if (document.getElementById(PANEL_ID)) renderPanel();
     },
     // Lesa/skrifa svæðis-stillingar utan frá (t.d. úr applier sem keyrir á

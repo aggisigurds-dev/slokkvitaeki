@@ -33,9 +33,8 @@ grunnstillingu, eyða öðrum þemum og þemu-veseninu"):
   öryggisventil gegn akkerislausum selectorum (sjá c6fc57c).
 - Vilji menn þemaskipti aftur: endurvekja 220/230 úr git fyrir 2026-08-17
   (commit cd54337 hefur gömlu skrárnar í foreldra sínum).
-- **Brunastál V2 (22.11.2026, 524):** Agnar: bara bakgrunnur `.view` (`stal.jpg`
-  + `#071018`). Ekki HUD, ekki letur, ekki spjöld. `html[data-bstal-v2="1"]`.
-  Default C. **Ekki í loftinu** — ekkert `[deploy]`.
+- **Brunastál V2 (22.11.2026):** bakgrunnur í Stílstjóra → Bakgrunnar →
+  „V2 Brunastál" (`stal.jpg`). 262 addBg. **Ekki `[deploy]`.**
 
 ### Samræming þemans — mælt og skjalfest, bíður ákvörðunar (29.08.2026)
 
