@@ -157,3 +157,23 @@ test('skilgreiningarnar í ⓘ: allar til, innheimtuhlutfall og greiðsluhraði 
   assert.match(Y.SKILGREINING.innheimtuhlutfall, /greitt ÷ \(greitt \+ gjaldfallið ógreitt\)/);
   assert.match(Y.SKILGREINING.greidsluhradi, /miðgildi daga/);
 });
+
+test('unnid_manudur: líðandi mánuður í hlutum — skoðanir 3.000 · verkstæði 5.000 · verslun 700 (ólík gildi, ekki núll); samtals = man[last].unnid; tæki 4 + 1; röng mánuðarbreyta eða víxlaðir reitir falla', () => {
+  const lin = (desc, qty, p) => ({ desc, qty, unit_price_ex_vat: p });
+  const sala = (o) => ({ id: 1, num: 'R-000001', status: 'final', vidskiptategund: 'uttekt', credit_of: null, upphaed_an_vsk: 1000, created_at: '2026-11-10T10:00:00Z', customer_base_id: 7, customer_id: 70, greitt_med: 'reikningur', linur: [], ...o });
+  const solur = [
+    sala({ id: 1, num: 'R-000001', upphaed_an_vsk: 3000, linur: [lin('Yfirferð · Duft 6 kg. ABC', 4, 750)] }),                                   // skoðun í nóvember (skýrsla nóvember)
+    sala({ id: 2, num: 'R-000002', vidskiptategund: 'bud', upphaed_an_vsk: 5000, created_at: '2026-10-29T10:00:00Z', linur: [lin('Hleðsla · X', 1, 5000)] }), // verkstæði: V-hlutinn telst á klart_at (nóvember)
+    sala({ id: 3, num: 'R-000003', vidskiptategund: 'bud', upphaed_an_vsk: 700, created_at: '2026-11-15T10:00:00Z', greitt_med: 'kort' }),            // verslun í nóvember
+    sala({ id: 4, num: 'R-000004', vidskiptategund: 'bud', upphaed_an_vsk: 111, created_at: '2026-10-05T10:00:00Z', greitt_med: 'kort' }),            // verslun í október (á ekki að slæðast með)
+  ];
+  const g = { solur, voidIds: [], frumsolur: [], payday: null, paydayOmaelt: 'prófun',
+    skyrslur: [{ id: 50, doc_type: 'uttektarskyrsla', doc_date: '2026-11-10', customer_base_id: 7, fyrirtaeki_id: 70, is_duplicate: false, skodun_ar_man: null, notes: 'Prófunarfyrirtæki - 0000000000 - 2026 - nóvember - úttektarskýrsla - #1.pdf' }],
+    verkbeidnir: [{ id: 1, num: 'R-000002-V1', status: 'collected', verd: 6200, klart_at: '2026-11-02T08:00:00Z' }],
+    verklidir: [{ job_id: 1, service: 'Duft 2 kg. ABC hleðsla' }] };
+  const r = Y.reksturSl(g, NU);
+  assert.deepEqual(r.unnid_manudur, { man: '2026-11', skodanir: 3000, verkstaedi: 5000, verslun: 700, samtals: 8700, taeki: 5 });
+  assert.equal(r.man[6].man, '2026-11'); assert.equal(r.man[6].unnid, r.unnid_manudur.samtals, 'ein tala fyrir sama mánuð');
+  assert.equal(r.man[5].unnid, 111, 'október á sínar tölur — líðandi mánuður er ekki október');
+  assert.doesNotMatch(JSON.stringify(r.unnid_manudur), /customer|nafn|kennitala|\b\d{10}\b/i);
+});

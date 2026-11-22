@@ -188,20 +188,20 @@ test('Yfirsýnarröndin (523): „Unnið í mánuðinum“ hjá hvoru félagi ke
   const Y = rondIVm(false); Y.S.r = REKSTUR();
   const h = Y.html('Agnar', {});
   assert.match(h, /Unnið í nóvember<em>án vsk<\/em>/);
-  assert.match(h, /2,10<small>m Slökkvitæki<\/small>/); assert.match(h, /úttektir <b>1,20<\/b> · verkstæði <b>0,50<\/b>/); assert.match(h, /verslun <b>0,40<\/b> · 1\.234 tæki/);
-  assert.match(h, /7,00<small>m Brunahólf<\/small>/); assert.match(h, /reikningsfært <b>3,00<\/b> m/); assert.match(h, /ógefið út <b>4,00<\/b> m/);
+  assert.match(h, /2,10<small>m Slökkvitæki<\/small>/); assert.match(h, /úttektir <b>1,20 m<\/b> · verkstæði <b>0,50 m<\/b>/); assert.match(h, /verslun <b>0,40 m<\/b> · 1\.234 tæki/);
+  assert.match(h, /7,00<small>m Brunahólf<\/small>/); assert.match(h, /reikningsfært <b>3,00 m<\/b>/); assert.match(h, /ógefið út <b>4,00 m<\/b>/);
   assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir"/); assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/#fjarmalyfirlit"[^>]*>Fjármála-yfirlit →</);
   assert.match(h, /göt: Ajour/, 'ferskleikaflögur haldast'); assert.match(h, /Tímavera<s>\|<\/s>/);
   assert.match(h, /Þessi vika“ og „Síðasta vika/, 'ⓘ vísar vikutölunum á Rekstrarskýrsluna'); assert.match(h, /félögin eru aldrei lögð saman/);
   assert.doesNotMatch(h, /Vikan<em>/, 'engin VIKAN-flís'); assert.doesNotMatch(h, /9,10|9,1\d/, 'engin samlögð tala beggja félaga (2,10 + 7,00)');
-  assert.match(src, /SL sala <b>' \+ mkr\(sl\)/, '„Virði“-flísin segir að SL sé eftir söludegi'); assert.match(src, /BH unnið <b>' \+ mkr\(bh\)/);
+  assert.match(src, /SL sala <b>' \+ mkr\(sl\)/, '„Virði“-flísin segir að SL sé eftir söludegi'); assert.match(src, /BH <b>' \+ mkr\(bh\)/, 'stutt lína — skýringin er í title'); assert.doesNotMatch(src, /aria-label="' \+ esc\('Unnið í/, 'hlekkurinn heitir eftir innihaldinu (tölunum)');
 });
 
 test('Yfirsýnarröndin (523): ómælt með ástæðu, aldrei 0 — SL ómælt, BH ógefið út ≤ 0, BH reikningsfært vantar, gögn ekki komin, Lína-hamur', () => {
   let Y = rondIVm(false);
   Y.S.r = REKSTUR({ slokkvitaeki: { omaelt: 'Slökkvitækjahluti náðist ekki' }, brunaholf: { man: [MAN_NU(-300000)] } });
   let h = Y.html('Agnar', {});
-  assert.match(h, /Slökkvitæki <small>ómælt<\/small>/); assert.match(h, /Slökkvitækjahluti náðist ekki/); assert.match(h, /ógefið út ekkert/, 'reikningsfært umfram unnið → „ekkert“, ekki neikvæð tala');
+  assert.match(h, /Slökkvitæki <small>ómælt<\/small>/); assert.match(h, /Slökkvitækjahluti náðist ekki/); assert.match(h, /ógefið út <b>ekkert<\/b> <small[^>]*>\(umfram 0,30 m\)/, 'reikningsfært umfram unnið → „ekkert“, ekki neikvæð tala');
   Y = rondIVm(false); Y.S.r = REKSTUR({ brunaholf: { man: [{ ...MAN_NU(null, null), ogefid: null }] } });
   h = Y.html('Agnar', {});
   assert.match(h, /reikningsfært ómælt/); assert.match(h, /ógefið út ómælt/);
@@ -217,4 +217,19 @@ test('Yfirsýnarröndin (523): ómælt með ástæðu, aldrei 0 — SL ómælt, 
   const l = Y.html('Agnar', {});
   assert.match(l, /Unnið <b>SL 2,10 m · BH 7,00 m<\/b>/); assert.doesNotMatch(l, />Vikan </, 'Lína-hamur: „Vikan“-flaga farin');
   assert.equal(rondIVm(false).html('Gestur', {}), '', 'aðeins Agnar og Anni sjá röndina');
+});
+
+test('Yfirsýnarröndin (523): lítil og neikvæð gildi birtast í krónum (aldrei „0,00“ eða „-0,00“); bilun við endurnýjun er sýnileg í flísinni', () => {
+  let Y = rondIVm(false);
+  Y.S.r = REKSTUR({ slokkvitaeki: { man: [{ man: '2026-11', unnid: -300 }], unnid_manudur: { man: '2026-11', skodanir: 0, verkstaedi: 3200, verslun: -300, samtals: -300, taeki: -2 },
+    setning: { setning: 'x', aaetlun: null } } });
+  let h = Y.html('Agnar', {});
+  assert.doesNotMatch(h, /-0,00|>0,00</, 'ekkert „0,00“ sem lítur út eins og núll þegar gildið er lítið');
+  assert.match(h, /−300<small>kr Slökkvitæki<\/small>/); assert.match(h, /verkstæði <b>3\.200 kr<\/b>/); assert.match(h, /verslun <b>−300 kr<\/b> · −2 tæki/); assert.match(h, /úttektir <b>0,00 m<\/b>/, 'raunverulegt núll er „0,00“');
+  Y = rondIVm(false); Y.S.r = { ...REKSTUR(), maelt_at: '2026-11-22T09:30:00Z' }; Y.S.rVilla = 'Reksturinn svaraði 500';
+  h = Y.html('Agnar', {});
+  assert.match(h, /tölur frá kl\. \d\d:\d\d — endurnýjun mistókst/); assert.match(h, /Síðasta endurnýjun mistókst: Reksturinn svaraði 500/);
+  assert.match(h, /2,10<small>m Slökkvitæki/, 'gömlu tölurnar standa en eru merktar');
+  Y = rondIVm(false); Y.S.r = REKSTUR(); Y.S.rVilla = null;
+  assert.doesNotMatch(Y.html('Agnar', {}), /endurnýjun mistókst/);
 });

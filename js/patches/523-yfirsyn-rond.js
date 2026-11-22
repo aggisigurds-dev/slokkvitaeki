@@ -189,7 +189,7 @@
     return '<div class="yr-k" title="Virði ' + esc(MANUDUR[mi] || '') + ' án vsk, uppsafnað dag fyrir dag: SL tekjur ' + isk(sl) + ' kr + BH áunnið ' + isk(bh) + ' kr. Strikalína = allur ' + esc(fyrriNafn) + ' (' + isk(fyrr) + ' kr). ' + lidid + ' % af mánuðinum liðið.">' +
       '<span class="yr-kl">' + ic('virdi') + 'Virði ' + esc(MANUDUR[mi] || '') + '<em>án vsk</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + mkr(v) + '<small>m</small></span>' + (p != null ? '<span class="yr-kp ' + (p >= lidid ? 'yr-g' : 'yr-o') + '" style="margin-left:auto">' + p + ' % af ' + esc(MAN[manOf(T[4].fra)] || '') + '.</span>' : '') + '</span>' +
-      '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">SL sala <b>' + mkr(sl) + '</b> · BH unnið <b>' + mkr(bh) + '</b></span>' +
+      '<span class="yr-ks" title="SL = tekjur eftir söludegi (önnur regla en „Unnið í mánuðinum“, sem miðar við skoðunarmánuð/klart_at). BH = unnið, sama tala og í „Unnið í mánuðinum“.">SL sala <b>' + mkr(sl) + '</b> · BH <b>' + mkr(bh) + '</b></span>' +
       '<div class="yr-scr"><svg viewBox="0 0 240 66" aria-hidden="true">' + helgar +
         '<rect x="' + (dagurNu / dim * 240).toFixed(1) + '" y="0" width="' + (240 - dagurNu / dim * 240).toFixed(1) + '" height="' + B + '" fill="url(#yrFut)"/>' +
         '<line x1="0" y1="' + fyrrY + '" x2="240" y2="' + fyrrY + '" stroke="#9fb0cc" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>' + bars +
@@ -257,6 +257,10 @@
   // Félögin eru ALDREI lögð saman. Slökkvitæki: úttektir · verkstæði · verslun (án vsk) + fjöldi tækja (kreditnóta á dag frumsölu; skoðunarmánuður/klart_at).
   // Brunahólf: unnið (tímar × taxti + göt, áætlun) og undir því reikningsfært / ógefið út. Ómælt með ástæðu — aldrei 0. Smellur → Tekjuliðir í Rekstrarskýrslu.
   // Vikutölur (tímar, göt, reikningar vikunnar) fóru með VIKAN-flísinni: þær eru í Rekstrarskýrslunni undir „Þessi vika“ og „Síðasta vika“.
+  // Upphæð í milljónum (2 sæti) frá 5.000 kr.; undir því í krónum (annars sýnir mkr „0,00“ eða „-0,00“ sem lítur út eins og núll). Raunverulegt núll er „0,00“.
+  const minus = t => String(t).replace('-', '−');
+  const stor = n => (n === 0 || Math.abs(n) >= 5000) ? { t: minus(mkr(n)), e: 'm' } : { t: minus(isk(n)), e: 'kr' };
+  const smatt = n => { if (!fin(n)) return 'ómælt'; const x = stor(n); return x.t + ' ' + x.e; };
   function samtalsHtml(rek) {
     const r = S.r;
     const lnk = REKSTUR_URL + '#tekjulidir', fjarm = 'https://brunaholf.netlify.app/#fjarmalyfirlit';
@@ -271,18 +275,18 @@
       const sl = r.slokkvitaeki, um = sl && !sl.omaelt ? sl.unnid_manudur : null;
       const wSl = um && fin(um.samtals)
         ? '<div class="yr-well" title="' + esc('Slökkvitæki — ' + nm + ' til dags, án vsk: úttektir ' + isk(um.skodanir) + ' kr · verkstæði ' + isk(um.verkstaedi) + ' kr · verslun ' + isk(um.verslun) + ' kr · samtals ' + isk(um.samtals) + ' kr · ' + isk(um.taeki) + ' tæki') + '">' +
-          '<span class="yr-v">' + mkr(um.samtals) + '<small>m Slökkvitæki</small></span>' +
-          '<span class="yr-n">úttektir <b>' + mkr(um.skodanir) + '</b> · verkstæði <b>' + mkr(um.verkstaedi) + '</b></span>' +
-          '<span class="yr-n">verslun <b>' + mkr(um.verslun) + '</b> · ' + isk(um.taeki) + ' tæki</span></div>'
+          '<span class="yr-v">' + stor(um.samtals).t + '<small>' + stor(um.samtals).e + ' Slökkvitæki</small></span>' +
+          '<span class="yr-n">úttektir <b>' + smatt(um.skodanir) + '</b> · verkstæði <b>' + smatt(um.verkstaedi) + '</b></span>' +
+          '<span class="yr-n">verslun <b>' + smatt(um.verslun) + '</b> · ' + isk(um.taeki).replace('-', '−') + ' tæki</span></div>'
         : om('Slökkvitæki', (sl && sl.omaelt) || 'samtala mánaðarins vantar');
       const bh = r.brunaholf, m = bh && bh.man && bh.man[bh.man.length - 1];
       let wBh;
       if (m && fin(m.unnid)) {
-        const rf = fin(m.reikningsfaert) ? '<b>' + mkr(m.reikningsfaert) + '</b> m' : 'ómælt';
-        const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + mkr(m.ogefid) + '</b> m' : 'ekkert';
+        const rf = fin(m.reikningsfaert) ? '<b>' + smatt(m.reikningsfaert) + '</b>' : 'ómælt';
+        const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <small title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</small>';
         const h = m.hlutar || {};
         wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (tímar ' + isk(h.tima) + ' · Landspítalagöt ' + isk(h.landspitali) + ' · Heklureitsgöt ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
-          '<span class="yr-v">' + mkr(m.unnid) + '<small>m Brunahólf</small></span>' +
+          '<span class="yr-v">' + stor(m.unnid).t + '<small>' + stor(m.unnid).e + ' Brunahólf</small></span>' +
           '<span class="yr-n">reikningsfært ' + rf + '</span><span class="yr-n">ógefið út ' + og + '</span></div>';
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
@@ -291,10 +295,11 @@
       'Unnið í ' + nm + ' til dags, án vsk — félögin eru aldrei lögð saman. Slökkvitæki: úttektir í skoðunarmánuði, verkstæði þegar tækið er klárt, verslun; kreditnóta fylgir degi frumsölunnar. ' +
       'Brunahólf: stimplaðir tímar × taxti + kláruð göt (áætlun); reikningsfært = Payday-reikningar útgefnir í mánuðinum; ógefið út = unnið − reikningsfært. ' +
       'Virði mánaðarins sýnir SL eftir söludegi (önnur regla); BH er sama talan og hér. Vikutölurnar (tímar, göt, reikningar) eru í Rekstrarskýrslunni undir „Þessi vika“ og „Síðasta vika“. Smelltu til að opna Tekjuliði.';
-    return '<div class="yr-k yr-sam" title="' + esc(tit) + '">' +
-      '<a class="yr-samlnk" href="' + lnk + '" target="_blank" rel="noopener" aria-label="' + esc('Unnið í ' + nm + ' hjá hvoru félagi — opna Tekjuliði í Rekstrarskýrslu') + '">' +
+    const gamalt = r && S.rVilla ? '<span class="yr-n" title="' + esc('Síðasta endurnýjun mistókst: ' + S.rVilla) + '">' + led('or') + 'tölur frá kl. ' + esc(klukka(r.maelt_at)) + ' — endurnýjun mistókst</span>' : '';
+    return '<div class="yr-k yr-sam" title="' + esc(tit + (gamalt ? '\nSíðasta endurnýjun mistókst: ' + S.rVilla : '')) + '">' +
+      '<a class="yr-samlnk" href="' + lnk + '" target="_blank" rel="noopener">' +
         '<span class="yr-kl">' + ic('klukka') + 'Unnið í ' + esc(nm) + '<em>án vsk</em></span>' +
-        '<div class="yr-vk yr-vk1">' + wells + '</div></a>' + kf + '</div>';
+        '<div class="yr-vk yr-vk1">' + wells + '</div></a>' + gamalt + kf + '</div>';
   }
 
   function osottHtml(D, rek) {
@@ -366,7 +371,7 @@
     if (!r) return '';
     const um = r.slokkvitaeki && !r.slokkvitaeki.omaelt ? r.slokkvitaeki.unnid_manudur : null;
     const bm = r.brunaholf && r.brunaholf.man && r.brunaholf.man[r.brunaholf.man.length - 1];
-    const a = um && fin(um.samtals) ? 'SL ' + mkr(um.samtals) + ' m' : 'SL ómælt', b = bm && fin(bm.unnid) ? 'BH ' + mkr(bm.unnid) + ' m' : 'BH ómælt';
+    const a = um && fin(um.samtals) ? 'SL ' + smatt(um.samtals) : 'SL ómælt', b = bm && fin(bm.unnid) ? 'BH ' + smatt(bm.unnid) : 'BH ómælt';
     return '<span class="yr-chip" title="Unnið í ' + esc(MANUDUR[manOf(r.idag)] || 'mánuðinum') + ' til dags, án vsk — félögin eru aldrei lögð saman">Unnið <b>' + a + ' · ' + b + '</b></span>';
   }
 
