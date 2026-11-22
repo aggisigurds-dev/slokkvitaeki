@@ -14,61 +14,37 @@ const H = require('./_starfshlid.cjs');
 const HUB = require('./hub-adgangar.cjs');
 const T = require('./_tekjur.cjs');
 const Y = require('./_rekstur-yfirlit.cjs');
+const TL = require('./_tekjulidir.cjs');
 
 const BH = (process.env.BRUNAHOLF_URL || 'https://brunaholf.netlify.app').replace(/\/$/, '');
 const KR = (n) => Math.round(Number(n) || 0);
 const dagur = (x) => String(x || '').slice(0, 10);
 
-async function sb(slod, init = {}) {
-  const r = await fetch(`${P.SUPABASE_URL}/rest/v1/${slod}`, {
-    ...init,
-    headers: { apikey: P.SUPABASE_KEY, Authorization: `Bearer ${P.SUPABASE_KEY}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
-  });
-  const t = await r.text();
-  if (!r.ok) throw new Error(`${r.status} ${slod.split('?')[0]}: ${t.slice(0, 160)}`);
-  return t ? JSON.parse(t) : null;
-}
-async function sbOll(slod, init) {
-  const ut = [];
-  for (let off = 0; off < 50000; off += 1000) {
-    const r = await sb(`${slod}&limit=1000&offset=${off}`, init);
-    ut.push(...r);
-    if (r.length < 1000) break;
-  }
-  return ut;
-}
+const { sbOll, lesaSolugogn } = require('./_sl-lestur.cjs');
 const timeout = () => (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined);
 const astaeda = (nafn, e) => (e && e.name === 'TimeoutError' ? `${nafn} svaraði of seint` : `${nafn} náðist ekki`);
 
 // ── Slökkvitæki ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function lesaSl(nu) {
-  const init = (() => { const s = timeout(); return s ? { signal: s } : undefined; })();
-  const fra = T.SL_FRA + '-01';
-  const [solur, voidIds, skyrslur, verkbeidnir, verklidir, payday, osentRadir] = await Promise.all([
-    sbOll(`solur?select=id,num,status,credit_of,is_credit,vidskiptategund,upphaed_an_vsk,created_at,paid_at,greitt_med,customer_base_id,customer_id,linur&status=eq.final&created_at=gte.${fra}&order=id.asc`, init),
-    sbOll('solur?select=id&status=eq.void&order=id.asc', init).then((r) => r.map((x) => x.id)),
-    sbOll('customer_documents?select=id,doc_type,doc_date,customer_base_id,fyrirtaeki_id,is_duplicate,skodun_ar_man,notes&doc_type=in.(uttektarskyrsla,brunakerfi,slokkvikerfi)&source=eq.app&is_duplicate=not.is.true&doc_date=gte.2026-02-01&order=id.asc', init),
-    sbOll(`verkbeidnir?select=id,num,status,verd,klart_at,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
-    sbOll(`verklidur?select=job_id,service,status,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
-    sbOll(`payday_invoices_slokk?select=status,amount_ex,amount_total,created_date,due_date,paid_date,updated_at&created_date=gte.${Y.INNHEIMTA_FRA}&order=id.asc`, init),
-    // ósent núna = sama mengi og „ósent“ í yfirsyn.cjs (v_krafa_ekki_send_adgerd, m. VSK) — raunveruleg staða „unnið en ekki sent“
-    sbOll('v_krafa_ekki_send_adgerd?select=num,samtals&order=num.asc', init).catch(() => null),
-  ]);
-  if (!solur.length) return { omaelt: 'sölulesturinn skilaði engu' };
-  if (!skyrslur.length) return { omaelt: 'skýrslulesturinn skilaði engu — án hans yrði allt „án skýrslu“' };
-  if (!verkbeidnir.length || !verklidir.length) return { omaelt: 'verkstæðislesturinn skilaði engu' };
-  // frumsölur kreditnótna sem vantar í lesturinn (nóta fylgir frumsölu — Agnar 22.11.2026)
-  const hef = new Set(solur.map((r) => String(r.id))), voidSet = new Set(voidIds.map(String));
-  const vantar = [...new Set(solur.filter((r) => r.credit_of != null && !hef.has(String(r.credit_of)) && !voidSet.has(String(r.credit_of))).map((r) => Number(r.credit_of)).filter((n) => Number.isInteger(n) && n > 0))];
-  let frumsolur = [];
-  try { for (let i = 0; i < vantar.length; i += 150) frumsolur.push(...await sbOll(`solur?select=id,created_at,paid_at,greitt_med&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`, init)); } catch (e) { frumsolur = []; }
+  let g;
+  try { g = await lesaSolugogn({ payday: true, paydayFra: Y.INNHEIMTA_FRA, osent: true, vorur: true, vorurValfrjalst: true }, (() => { const s = timeout(); return s ? { signal: s } : undefined; })()); }
+  catch (e) { if (/skilaði engu/.test(String(e && e.message))) return { omaelt: e.message }; throw e; }
+  const { solur, voidIds, skyrslur, verkbeidnir, verklidir, payday, osentRadir, frumsolur, vorur } = g;
   const nuIso = nu.toISOString();
   const paydayOk = payday.length > 0;
   const r = Y.reksturSl({ solur, voidIds, frumsolur, skyrslur, verkbeidnir, verklidir, payday: paydayOk ? payday : null, paydayOmaelt: 'Payday-lesturinn skilaði engu' }, nuIso);
+  let tekjulidirTopp = null;
+  if (Array.isArray(vorur) && vorur.length) {
+    try {
+      const tl = TL.tekjulidir({ solur, voidIds, frumsolur, skyrslur, verkbeidnir, verklidir, vorur }, nuIso);
+      const m = tl.nu_manudur;
+      tekjulidirTopp = { man: m, samtals: tl.samtals_man[m] || 0, topp: TL.toppFlokkar(tl, m, 5), stemmir: tl.stemmir, heild: tl.heild };
+    } catch (e) { tekjulidirTopp = { omaelt: 'tekjuliðir náðust ekki' }; }
+  } else tekjulidirTopp = { omaelt: 'vörulistinn náðist ekki — án hans eru flokkarnir ekki réttir' };
   const idag = dagur(nuIso);
   const inn = paydayOk ? Y.ogreittOgInnheimta(payday, idag, Y.INNHEIMTA_FRA) : null;
   return {
-    man: r.man, ogefid_uppsafnad: r.ogefid_uppsafnad, ogefid_manudir: r.ogefid_manudir, kredit_an_frumsolu: r.kredit_an_frumsolu,
+    man: r.man, kredit_an_frumsolu: r.kredit_an_frumsolu, tekjulidir: tekjulidirTopp,
     ogreitt: inn ? { kr_an_vsk: inn.sent_kr, kr_m_vsk: inn.sent_m_vsk, n: inn.sent_n, gjaldfallid_kr: inn.gjaldfallid_kr, gjaldfallid_n: inn.gjaldfallid_n, yfir45_kr: inn.yfir45_kr, yfir45_n: inn.yfir45_n,
       osent: Array.isArray(osentRadir) ? { kr_m_vsk: osentRadir.reduce((a, x) => a + KR(x.samtals), 0), n: osentRadir.length } : { omaelt: 'ósent-lesturinn náðist ekki' } }
       : { omaelt: 'Payday-lesturinn skilaði engu' },

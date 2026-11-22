@@ -43,6 +43,8 @@
   region = "dub"
 [functions.rekstur-yfirlit]
   region = "dub"
+[functions.tekjulidir]
+  region = "dub"
 [functions.hreyfingaryfirlit]
   region = "dub"
   included_files = ["netlify/functions/_verkbord-sync.cjs", "netlify/functions/_sms-sjalfvirkt.cjs"]

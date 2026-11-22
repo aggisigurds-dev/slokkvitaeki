@@ -130,6 +130,21 @@ const tomMan = () => ({
   mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0, skyrslur_klaradar: 0, skyrslur_sidbuin: 0 },
 });
 
+// hlutar sölu → hlutföll á mánuði. 'i_vinnslu' = verkstæði sem er ekki klárt (telst ekki enn), 'fyrir_yfirtoku' = skoðun fyrir 05.2026.
+function dreifingUr(hlutar, san, nuMan) {
+  const ut = {};
+  const summa = hlutar.reduce((a, h) => a + h.kr, 0);
+  for (const h of hlutar) {
+    let m = h.mat === 'i_vinnslu' ? 'i_vinnslu' : (h.man > nuMan ? nuMan : h.man);
+    if (m !== 'i_vinnslu' && m < T.SL_FRA) m = 'fyrir_yfirtoku';
+    const w = summa !== 0 ? h.kr / summa : 0;
+    const k = m + '|' + (h.fl === 'verkstaedi' ? 'v' : 'g');           // verkstæðishluti (V) sér: tekjuliðir setja hann á hleðslu-/yfirferðarlínur fyrst
+    ut[k] = (ut[k] || 0) + w;
+  }
+  const l = Object.keys(ut).filter((k) => ut[k] !== 0).map((k) => ({ man: k.split('|')[0], fl: k.split('|')[1] === 'v' ? 'verkstaedi' : 'grunn', hlutfall: ut[k] }));
+  return l.length ? l : [{ man: hlutar.length ? (hlutar[hlutar.length - 1].man || 'i_vinnslu') : 'i_vinnslu', fl: 'grunn', hlutfall: 1 }];
+}
+
 // g = { solur, voidIds, skyrslur, verkbeidnir, verklidir } → { man:{'YYYY-MM': …}, annad:{ i_vinnslu_kr, fyrir_yfirtoku_kr, ostemmt_kr, ostemmt_fjoldi } }
 function unnidManudir(g, nuIso) {
   const nuMan = T.manudur(nuIso);
@@ -182,6 +197,7 @@ function unnidManudir(g, nuIso) {
   };
 
   const frumsolur = {};           // id → { hlutar:[{man,fl,kr,mat}], skodMan, san }
+  const dreifing = {};            // sala → [{ man, hlutfall }] — hvaða mánuði salan skiptist á (tekjuliðir nota sömu reglur og Unnið)
   const reikna = (s) => {
     const san = Number(s.upphaed_an_vsk) || 0;
     const solMan = T.manudur(s.created_at);
@@ -216,6 +232,7 @@ function unnidManudir(g, nuIso) {
   for (const s of gildar) {
     if (s.credit_of != null) continue;
     const r = frumsolur[s.id] = reikna(s);
+    dreifing[s.id] = dreifingUr(r.hlutar, r.san, nuMan);
     for (const h of r.hlutar) {
       if (h.mat === 'i_vinnslu') continue;
       const hm = h.man > nuMan ? nuMan : h.man;
@@ -245,6 +262,9 @@ function unnidManudir(g, nuIso) {
     if (s.credit_of == null) continue;
     const kr = Number(s.upphaed_an_vsk) || 0;
     const o = fjoldiOrg(s.credit_of);
+    dreifing[s.id] = o && dreifing[s.credit_of] ? dreifing[s.credit_of]
+      : adkomnar.get(String(s.credit_of)) ? [{ man: (T.manudur(adkomnar.get(String(s.credit_of)).created_at) < T.SL_FRA ? 'fyrir_yfirtoku' : T.manudur(adkomnar.get(String(s.credit_of)).created_at)), hlutfall: 1 }]
+        : [{ man: (T.manudur(s.created_at) < T.SL_FRA ? 'fyrir_yfirtoku' : T.manudur(s.created_at)), hlutfall: 1 }];
     if (o && o.san) {
       const f = kr / o.san;
       for (const h of o.hlutar) { if (h.mat === 'i_vinnslu') { annad.i_vinnslu_kr += h.kr * f; continue; } lagt(h.man > nuMan ? nuMan : h.man, h.fl, h.kr * f, h.mat); }
@@ -261,7 +281,7 @@ function unnidManudir(g, nuIso) {
   }
   for (const s of gildar) if (s.credit_of == null && s.is_credit === true) annad.kredit_an_frumsolu += 1;   // is_credit án credit_of
   for (const km of Object.keys(klaradar)) { mm(km).mat.skyrslur_klaradar = klaradar[km].n; mm(km).mat.skyrslur_sidbuin = klaradar[km].sidbuin; }
-  return { man, annad };
+  return { man, annad, dreifing };
 }
 
 // ── samantekt fyrir svarið: aðeins samtölur, engin nöfn ──────────────────────────────────────────────────────────────────

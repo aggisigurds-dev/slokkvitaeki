@@ -476,6 +476,7 @@ function rkData() {
     maelt_at: '2026-11-22T04:00:00Z', idag: '2026-11-22',
     slokkvitaeki: { man: slMan, kredit_an_frumsolu: 1, ferskleiki: { payday_samstillt: '2026-11-21T03:00:00Z', nyjasti_reikningur: '2026-11-18' },
       ogreitt: { kr_an_vsk: 2730762, kr_m_vsk: 3386140, n: 29, gjaldfallid_kr: 1743464, gjaldfallid_n: 22, yfir45_kr: 40000, yfir45_n: 2, osent: { kr_m_vsk: 292882, n: 6 } },
+      tekjulidir: { man: '2026-11', samtals: 2103182, stemmir: true, topp: [{ id: '01', heiti: 'Yfirferð', kr: 640000, hlutfall: 30.4 }, { id: '02', heiti: 'Hleðsla', kr: 410000, hlutfall: 19.5 }, { id: '03', heiti: 'Ný slökkvitæki (vörulisti)', kr: 300000, hlutfall: 14.3 }] },
       innheimta: { hlutfall: 92.5, hradi_midgildi: 10, hradi_n: 391, greitt_kr: 21465433, gjaldfallid_kr: 1743464, fra: '2026-06-30' },
       setning: { setning: 'Nóvember til dags: unnið 2,10 m — 41 % af október-heild (5,18 m) og 71 % mánaðarins er liðinn (15 af 21 vinnudögum).', aaetlun: { kr: 2944455, hlutfall_fyrri: 57, texti: 'ÁÆTLUN (línuleg, ekki spá): sömu vinnudagar áfram → mánuðurinn endar í um 2,94 m (57 % af október-heild).' } } },
     brunaholf: { man: bhMan,
@@ -513,6 +514,8 @@ test('512: „Hvernig gengur reksturinn?“ — hvort félag sér, sjö mánuði
   assert.doesNotMatch(h, /uppsafnað/, 'uppsafnað „ógefið út“ er ekki sýnt (rýni 22.11)');
   assert.match(slHluti, /<td class="tkb-om" title="júlí ber reikninga fyrir vinnu úr júní[^"]*">ómælt<\/td>/, 'júlí: ógefið út ómælt með ástæðu');
   assert.match(slHluti, /Ósent núna \(unnið, krafa ekki send, m\. VSK\): <b>292\.882 kr<\/b> \(6 kröfur\)/); assert.match(bhHluti, /Ósent núna: <b>ómælt<\/b> — ósent vantar í Kröfu yfirliti/);
+  assert.match(slHluti, /Tekjuliðir · nóvember til dags: <b>Yfirferð<\/b> 640\.000 kr \(30,4 %\) · <b>Hleðsla<\/b> 410\.000 kr \(19,5 %\) · <b>Ný slökkvitæki \(vörulisti\)<\/b> 300\.000 kr \(14,3 %\) · <a href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir" target="_blank" rel="noopener">Sjá alla tekjuliði →<\/a>/, 'topp flokkar + tengill á kaflann');
+  assert.doesNotMatch(bhHluti, /Tekjuliðir/, 'tekjuliðir eru aðeins Slökkvitækis');
   assert.match(h, /Payday Slökkvitækis samstillt 21\.11\. \(nýjasti reikningur 18\.11\.\)/); assert.match(h, /‡ 1 kreditnóta án frumsölu/);
   // hagnaður ómældur með tengli í innsláttarformið — aldrei 0
   assert.match(slHluti, /Hagnaður: <b>ómælt<\/b> — vantar laun og annan kostnað · <a data-tkb-hagn="slokkvitaeki">skrá laun og kostnað<\/a>/);
@@ -537,6 +540,10 @@ test('512: reksturinn bregst → „Ómælt — ástæða“ í blokkinni og fl�
   const f403 = flisar(svarURL({ status: 200, j: TKP }, { status: 403, j: { error: 'x' } }));
   f403.TB.mount(f403.el); await bida();
   assert.doesNotMatch(f403.el.innerHTML, /Hvernig gengur reksturinn/); assert.match(f403.el.innerHTML, /Slökkvitæki<small>söluskráð/);
+  // tekjuliðir ómældir → „ómælt“ með ástæðu og tengill stendur
+  const dt = rkData(); dt.slokkvitaeki.tekjulidir = { omaelt: 'vörulistinn náðist ekki' };
+  const e = flisar(svarURL({ status: 200, j: TKP }, { status: 200, j: dt })); e.TB.mount(e.el); await bida();
+  assert.match(e.el.innerHTML, /Tekjuliðir: <b>ómælt<\/b> — vörulistinn náðist ekki · <a href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir"/);
   // félag ómælt (ómælt í heild) → „Ómælt — ástæða“ fyrir það félag, hitt stendur
   const d = rkData(); d.brunaholf = { omaelt: 'Rekstur Brunahólfs svaraði of seint' };
   const c = flisar(svarURL({ status: 200, j: TKP }, { status: 200, j: d })); c.TB.mount(c.el); await bida();

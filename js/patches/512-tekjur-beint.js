@@ -173,6 +173,15 @@
     else ogTxt = 'Ógreitt núna (Kröfu yfirlit, m. VSK): <b>' + esc(mkrS(og.kr_m_vsk)) + '</b> (' + esc(String(og.n)) + ' reikn.) · gjaldfallið <b>' + esc(mkrS(og.gjaldfallid_kr_m_vsk)) + '</b> (' + esc(String(og.gjaldfallid_n)) + ') · yfir 45 d <b>' + esc(mkrS(og.yfir45_kr_m_vsk)) + '</b> (' + esc(String(og.yfir45_n)) + ')';
     var osTxt = !os ? '' : os.omaelt ? '<p class="tkb-rk-l">Ósent núna: <b>ómælt</b> — ' + esc(os.omaelt) + '</p>'
       : '<p class="tkb-rk-l">Ósent núna (unnið, krafa ekki send, m. VSK): <b>' + esc(mkrS(os.kr_m_vsk)) + '</b> (' + esc(String(os.n)) + ' ' + (os.n === 1 ? 'krafa' : 'kröfur') + ')' + ibox(sk.ogefid || '') + '</p>';
+    // Tekjuliðir (fasi 3): 3–5 stærstu flokkarnir í líðandi mánuði + tengill á allan kaflann í Rekstrarskýrslunni (kaka hub_user gildir á báðum vefjum)
+    var tl = b.tekjulidir, tlTxt = '';
+    if (tl) {
+      var tlLink = ' · <a href="https://brunaholf.netlify.app/rekstur#tekjulidir" target="_blank" rel="noopener">Sjá alla tekjuliði →</a>';
+      if (tl.omaelt) tlTxt = '<p class="tkb-rk-l">Tekjuliðir: <b>ómælt</b> — ' + esc(tl.omaelt) + tlLink + '</p>';
+      else tlTxt = '<p class="tkb-rk-l">Tekjuliðir · ' + esc(manNafn(tl.man)) + ' til dags: ' + (tl.topp || []).slice(0, 5).map(function (x) {
+        return '<b>' + esc(x.heiti) + '</b> ' + esc(mkrS(x.kr)) + (x.hlutfall != null ? ' (' + esc(String(x.hlutfall).replace('.', ',')) + ' %)' : '');
+      }).join(' · ') + tlLink + '</p>';
+    }
     var innTxt = inn.omaelt ? 'Innheimtuhlutfall <b>ómælt</b> · greiðsluhraði <b>ómælt</b> — ' + esc(inn.omaelt)
       : 'Innheimtuhlutfall <b>' + (inn.hlutfall != null ? esc(String(inn.hlutfall).replace('.', ',')) + ' %' : 'ómælt') + '</b>' + ibox(sk.innheimtuhlutfall || '') +
         ' · greiðsluhraði <b>' + (inn.hradi_midgildi != null ? esc(String(inn.hradi_midgildi).replace('.', ',')) + ' dagar' : 'ómælt') + '</b>' + ibox(sk.greidsluhradi || '') +
@@ -182,7 +191,7 @@
       '<p>' + esc(set.setning || '') + ibox(sk.setning || '') + '</p>' +
       (set.aaetlun ? '<p class="tkb-aaetl">' + esc(set.aaetlun.texti) + '</p>' : '') +
       '<table><tr><th>Mánuður</th><th>Unnið' + ibox(sk.unnid || '') + '</th><th>Reikningsfært' + ibox(sk.reikningsfaert || '') + '</th><th>Greitt' + ibox(sk.greitt || '') + '</th><th>Ógefið út</th></tr>' + rows + '</table>' +
-      osTxt +
+      osTxt + tlTxt +
       '<p class="tkb-rk-l">' + ogTxt + ' · <a data-tkb-ga="krofu-yfirlit">Kröfu yfirlit →</a></p>' +
       '<p class="tkb-rk-l">' + innTxt + '</p>' +
       '<p class="tkb-rk-l">' + hag + ' · <a data-tkb-hagn="' + felag + '">skrá laun og kostnað</a>' + ibox(sk.hagnadur || '') + '</p>' +
