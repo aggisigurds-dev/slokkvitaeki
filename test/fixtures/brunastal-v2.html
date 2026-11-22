@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<title>Brunastál V2 — leturpróf</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&family=Space+Grotesk:wght@500;600&family=Playfair+Display:wght@700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* 245-lögn: IBM Plex með !important — V2 á að slá þetta. */
+  .view, .view .btn, .view .card { font-family: "IBM Plex Sans", sans-serif !important; }
+  .view h1 { font-family: "IBM Plex Sans", sans-serif !important; }
+  .kr { font-family: "JetBrains Mono", monospace !important; }
+  .view { padding: 24px; background: #9ba1ad; min-height: 100vh; }
+  .card { padding: 16px; background: #fff; border-radius: 16px; }
+  .btn { padding: 8px 16px; }
+</style>
+</head>
+<body>
+<div class="view">
+  <h1 id="titill">Sala</h1>
+  <div class="card" id="spjald">
+    <button class="btn btn-primary" type="button" id="takki">Vista</button>
+    <p class="kr" id="upphaed">12.345 kr</p>
+  </div>
+</div>
+<script src="/js/patches/524-brunastal-v2.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "Brunastál V2",
+  "version": 1,
+  "heimild": "mockups/brunastal.html + css/theme-handoff/theme.css",
+  "athugasemd": "Rétt útlit. 230 lóðar þessi letur en setur IBM Plex ofan á. 245 þvingar Plex með !important. V2 er yfirlag html[data-bstal-v2=1], ekki ný síða og ekki 11-preseta.",
+  "fonts": {
+    "ui": "Space Grotesk",
+    "wordmark": "Sora",
+    "display": "Playfair Display",
+    "mono": "Space Mono",
+    "google": "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  },
+  "colors": {
+    "accent": "#c92a2a",
+    "accent2": "#f0584c",
+    "glow": "rgba(160,16,16,.55)",
+    "ring": "rgba(190,32,28,.55)",
+    "plate": "#eef1f6",
+    "steelTop": "#060607",
+    "steelMid": "#aeb4be",
+    "steelBottom": "#9ba1ad"
+  },
+  "gradients": {
+    "btn": "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)",
+    "page": "linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)",
+    "plate": "linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)",
+    "metalBlack": "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)"
+  }
+}

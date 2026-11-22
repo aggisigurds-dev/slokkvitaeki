@@ -282,7 +282,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | **Fyrirtækjaprófíllinn** — hvar hver reitur/takki er, nýi prófíllinn, sjálfgefinn síðan 19.11.2026; `?prof=1` = gamli (patch 500: gluggi, Samskipti, sjö flipar; les DOM gamla prófílsins, skrifar ekkert) | `docs/PROFILL-I-EIGINLEIKAR.md` + `fyrirtaeki` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
 | AI-aðstoðarmanninn (Customer brief, watchlist, Aðstoðarmiðstöð) | `adstod` |
-| Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun — hönnuðurinn 🃏 | `joker` |
+| Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun, Brunastál V2 — hönnuðurinn 🃏 | `joker` |
 | QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
 | Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 | Ársskoðun-perur, 📅 SOURCE vs FILTER, FULLBÚIÐ, útreikningar, skjöl, öll borð, data-elon, as-built (`docs/RAFKERFI.md`) | `elon-musk` |
