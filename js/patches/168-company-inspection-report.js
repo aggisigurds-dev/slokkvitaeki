@@ -618,6 +618,19 @@
                 customer_name: n || null, source: 'app', found_by: 'uttektarskyrsla-app',
                 notes: fname
               };
+              // 22.11.2026 (Agnar: skoðun telst í MÁNUÐI skoðunarinnar): stöðlum skoðunarmánuðinn ('YYYY-MM') við vistun svo Tekjur í beinni
+              // (_unnid-sl.cjs) þurfi ekki að þátta skráarnafnið. Sama raunhæfa bil og þar: aldrei eftir deginum í dag, sjaldan eldri en ár;
+              // óraunhæft → ekkert sett (þjónninn þáttar þá nafnið eða notar dagsetningu skýrslunnar). Gömlum röðum er ekki breytt.
+              try {
+                const _mi = ctx && +ctx.monthIdx, _nu = new Date(), _rm = _nu.getFullYear() * 12 + _nu.getMonth();
+                if (_mi >= 1 && _mi <= 12) {
+                  let _y = +ar > 2000 ? +ar : _nu.getFullYear();
+                  const _ok = (v) => v <= _rm && v >= _rm - 11;
+                  if (!_ok(_y * 12 + _mi - 1)) { _y = _nu.getFullYear(); if (!_ok(_y * 12 + _mi - 1)) _y -= 1; }
+                  const _n = _y * 12 + _mi - 1;
+                  if (_n <= _rm && _n >= _rm - 11) rec.skodun_ar_man = _y + '-' + String(_mi).padStart(2, '0');
+                }
+              } catch (_) { /* skoðunarmánuður er bónus — vistunin má aldrei stranda á honum */ }
               const ex = await sb.from('customer_documents')
                 .select('id').eq('fyrirtaeki_id', co.id).eq('year', +ar)
                 .eq('doc_type', 'uttektarskyrsla').limit(1);
