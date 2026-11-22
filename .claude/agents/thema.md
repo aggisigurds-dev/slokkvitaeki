@@ -33,10 +33,9 @@ grunnstillingu, eyða öðrum þemum og þemu-veseninu"):
   öryggisventil gegn akkerislausum selectorum (sjá c6fc57c).
 - Vilji menn þemaskipti aftur: endurvekja 220/230 úr git fyrir 2026-08-17
   (commit cd54337 hefur gömlu skrárnar í foreldra sínum).
-- **Brunastál V2 (22.11.2026, 524):** dökk navy HUD (Poppins, #ff8a1f, gler,
-  kopar-rammi) ofan á frosna C. **ekki** 11-preseta og **ekki** Space Grotesk
-  ofan á ljóst C. `html[data-bstal-v2="1"]`. Eignir: `img/bstal-v2/`. Mockup:
-  `mockups/bstal-v2/`. Default er C.
+- **Brunastál V2 (22.11.2026, 524):** Agnar: bara bakgrunnur `.view` (`stal.jpg`
+  + `#071018`). Ekki HUD, ekki letur, ekki spjöld. `html[data-bstal-v2="1"]`.
+  Default C. **Ekki í loftinu** — ekkert `[deploy]`.
 
 ### Samræming þemans — mælt og skjalfest, bíður ákvörðunar (29.08.2026)
 

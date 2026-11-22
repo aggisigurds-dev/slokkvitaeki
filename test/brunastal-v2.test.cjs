@@ -1,8 +1,8 @@
-// Próf: Brunastál V2 dökk navy HUD (524) + vikudagsetning sem Ajour-flís (523).
+// Próf: Brunastál V2 er bara bakgrunnur á .view (524). Ekkert HUD, ekkert [deploy].
 //   node --test test/brunastal-v2.test.cjs
 'use strict';
 const test = require('node:test');
-const assert = require('node:assert');
+const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -60,21 +60,16 @@ function hlaða(search, stillingar) {
   return { ctx, html, stillingar };
 }
 
-test('tókenar: Poppins, appelsínugul eldglóð, navy — ekki rauður C-accent', () => {
-  assert.equal(TOKENS.fonts.ui, 'Poppins');
-  assert.equal(TOKENS.colors.accent, '#ff8a1f');
-  assert.equal(TOKENS.colors.navy, '#071018');
-  assert.ok(TOKENS.assets.rammi.includes('bstal-v2/rammi'));
-});
-
-test('524 notar Poppins og navy HUD, ekki IBM Plex né Space Grotesk sem UI', () => {
-  assert.ok(SRC.includes('Poppins'));
-  assert.ok(SRC.includes('#ff8a1f'));
-  assert.ok(SRC.includes('/img/bstal-v2/bordi.png'));
+test('eitt atriði: bakgrunnur .view, ekki HUD', () => {
+  assert.ok(SRC.includes('.view{background:url('));
   assert.ok(SRC.includes('/img/bstal-v2/stal.jpg'));
-  assert.equal((SRC.match(/Space Grotesk/g) || []).length, 1, 'Space Grotesk aðeins í athugasemd um ranga tilraun');
-  const virkur = SRC.split('\n').filter(l => !/^\s*\*/.test(l) && !/^\s*\/\*/.test(l)).join('\n');
-  assert.ok(!virkur.includes('IBM Plex'));
+  assert.ok(SRC.includes('#071018'));
+  assert.ok(!SRC.includes('#bstal-banner'));
+  assert.ok(!SRC.includes('btn-primary'));
+  assert.ok(!SRC.includes('#view-arsskodun'));
+  assert.ok(!SRC.includes('Poppins'));
+  assert.ok(!SRC.includes('fonts.googleapis.com'));
+  assert.equal((SRC.match(/\.view\{/g) || []).length, 1);
 });
 
 test('yfirlag: data-bstal-v2, engin Theme.set, ekkert localStorage', () => {
@@ -110,9 +105,9 @@ test('Vikan-dagsetning er yr-dags (Ajour-flís), án vsk er venjulegt em', () =>
 });
 
 test('eignir V2 eru í img/bstal-v2', () => {
-  for (const f of ['rammi.png', 'bordi.png', 'stal.jpg', 'eldglod.jpg', 'bygging.jpg']) {
-    assert.ok(fs.existsSync(path.join(ROOT, 'img/bstal-v2', f)), f);
-  }
+  assert.ok(fs.existsSync(path.join(ROOT, 'img/bstal-v2', 'stal.jpg')));
+  assert.equal(TOKENS.colors.navy, '#071018');
+  assert.ok(TOKENS.assets.stal.includes('bstal-v2/stal'));
 });
 
 test('index.html lóðar 524', () => {

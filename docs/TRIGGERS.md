@@ -79,7 +79,7 @@ base 293, Hlaðvarpinn, Steypustöðin 2026.
 | `öryggisnet` / `er óhætt` / `brýtur þetta` / `audit-all` | `netvordur` | Kortið + `node tools/audit-all.cjs`. SAFE eða CUTS-A-WIRE. |
 | `útlit` / `sími` / `mobile` / `þröngt` / `endurhanna` | `joker` | Farsímaskjár, appham, takkar, letur. Ekki grind (það er 153). |
 | `þema` / `skinna` / `Brunastál` / `theme.css` | `thema` | Hönnunarkerfi + per-page skeletons. |
-| `brunastal v2` / `rétta útlitið` / `Space Grotesk` | `joker` + `thema` | V2 er overlay 524, ekki HTML-endurskrift. Tókenar `css/theme-handoff/brunastal-v2.tokens.json`. |
+| `brunastal v2` / `rétta útlitið` / `Space Grotesk` | `joker` + `thema` | V2 er í bili bara bakgrunnur `.view` (524). Ekki HUD, ekki `[deploy]`. |
 | `flipi` / `borð` / `nav` / `bílstjóri` / `aksturslisti` / `bakk` | `bord-flettur` | Nýr flipi, deep-link, bakk (3 lög). |
 | `muna` / `skrá` / `Charlize` / `hvernig var þetta` | `charlize` | Lesa áður en breytt er, skrifa áður en lokað er. |
 | `Drive` / `PDF` / `endurnefna` / `skjal` | `skjol` *(brunaholf)* / `cowork-doc-sweep` | Skjöl, möppur, filename-snið. Aldrei eyða. |

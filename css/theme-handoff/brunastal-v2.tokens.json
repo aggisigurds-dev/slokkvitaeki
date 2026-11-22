@@ -2,7 +2,7 @@
   "name": "Brunastál V2",
   "version": 2,
   "heimild": "Agnar mockup 22.11.2026: mockups/bstal-v2/arsskodun.jpg + rekstrarskyrsla.jpg + chrome img/bstal-v2/",
-  "athugasemd": "Dökkt navy HUD, appelsínugul eldglóð, gler-spjöld. EKKI Space Grotesk ofan á ljóst C og EKKI 11-preseta. Yfirlag html[data-bstal-v2=1], krókar óbreyttir. Sama litamál og Brunahólf V2 (507) en yfir alla síðuna.",
+  "athugasemd": "22.11 Agnar: bara bakgrunnur .view, ekki HUD, ekki deploy. Tókenar standa fyrir seinna. Yfirlag html[data-bstal-v2=1].",
   "fonts": {
     "ui": "Poppins",
     "wordmark": "Poppins",
