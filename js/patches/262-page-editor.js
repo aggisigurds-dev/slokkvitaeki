@@ -750,6 +750,7 @@
       '#' + PANEL_ID + ' .pe-kit-compare table{width:100%;min-width:615px;table-layout:fixed;border-spacing:0 5px}',
       '#' + PANEL_ID + ' .pe-kit-compare th{font-size:13px;text-align:left;padding:5px 8px}',
       '#' + PANEL_ID + ' .pe-kit-compare td{padding:0 5px;vertical-align:top}',
+      '#' + PANEL_ID + ' .pk-item-number{display:inline-block;margin:0 0 5px;padding:2px 6px;border-radius:4px;background:#e9eff7;color:#334b6a;font:700 11px/1.3 ui-monospace,monospace}',
       '#' + PANEL_ID + ' .pe-kit-compare .pk-row-title th{padding-top:12px;border-top:1px solid #d8e0ed;color:#475569}',
       '#' + PANEL_ID + ' .pk-card,#' + PANEL_ID + ' .pk-controls{display:grid;gap:6px;padding:9px;background:var(--pk-paper);color:var(--pk-ink);border:1px solid var(--pk-border);border-radius:10px}',
       '#' + PANEL_ID + ' .pk-system-1 .pk-card{border-radius:6px;box-shadow:inset 0 -2px 0 #d9dfe8}',
@@ -1412,24 +1413,25 @@
       ['#111923','#19232e','#f5f8fc','#465261','#ffad31','#c4f9d9','#174630']
     ];
     const rows = [
-      ['Venjulegt spjald', '<div class="pk-card"><strong>Staður og samband</strong><div class="pk-data"><span>Heimilisfang</span><b>Dæmigata 12</b><span>Tengiliður</span><b>Verkstæði</b></div></div>'],
-      ['Mælispjald', '<div class="pk-card"><small>Til afhendingar</small><strong class="pk-number">12</strong><div class="pk-track" role="img" aria-label="Þrír fjórðu"><i></i></div></div>'],
-      ['Verkspjald og staða', '<div class="pk-card pk-work"><small>R-024 · Verkstæði</small><strong>Skoðun slökkvitækja</strong><span class="pk-badge">Tilbúið</span></div>'],
-      ['Dagskrárkassi', '<div class="pk-card"><div class="pk-card-head">Dagskrá</div><div class="pk-days"><span>MÁN 23<small>09:00 · Skoðun</small></span><span>ÞRI 24</span></div></div>'],
-      ['Haus og banner', '<div class="pk-banner"><small>Þjónusta</small><strong>Yfirlit fyrirtækis</strong></div>'],
-      ['Takkar og flipar', '<div class="pk-controls"><span class="pk-action">Skrá verk</span><span class="pk-tab">Yfirlit</span><span class="pk-tab">Saga</span></div>'],
-      ['Verð og samantekt', '<div class="pk-card"><small>Samtals</small><strong class="pk-number">24.900 kr</strong><small>20.081 kr án VSK</small></div>']
+      ['Kassi 01', 'Upplýsingar', '<div class="pk-card"><strong>Staður og samband</strong><div class="pk-data"><span>Heimilisfang</span><b>Dæmigata 12</b><span>Tengiliður</span><b>Verkstæði</b></div></div>'],
+      ['Kassi 02', 'Mælispjald', '<div class="pk-card"><small>Til afhendingar</small><strong class="pk-number">12</strong><div class="pk-track" role="img" aria-label="Þrír fjórðu"><i></i></div></div>'],
+      ['Kassi 03', 'Verkspjald og staða', '<div class="pk-card pk-work"><small>R-024 · Verkstæði</small><strong>Skoðun slökkvitækja</strong><span class="pk-badge">Tilbúið</span></div>'],
+      ['Kassi 04', 'Dagskrá', '<div class="pk-card"><div class="pk-card-head">Dagskrá</div><div class="pk-days"><span>MÁN 23<small>09:00 · Skoðun</small></span><span>ÞRI 24</span></div></div>'],
+      ['Banner 01', 'Aðalborði', '<div class="pk-banner"><small>Þjónusta</small><strong>Yfirlit fyrirtækis</strong></div>'],
+      ['Stýringar 01', 'Takkar og flipar', '<div class="pk-controls"><span class="pk-action">Skrá verk</span><span class="pk-tab">Yfirlit</span><span class="pk-tab">Saga</span></div>'],
+      ['Kassi 05', 'Verðsamantekt', '<div class="pk-card"><small>Samtals</small><strong class="pk-number">24.900 kr</strong><small>20.081 kr án VSK</small></div>']
     ];
     const heading = DESIGN_SYSTEMS.map(kit => '<th scope="col">' + esc(kit.name) + '</th>').join('');
-    const body = rows.map(([label, example]) => {
+    const body = rows.map(([number, role, example]) => {
       const cells = DESIGN_SYSTEMS.map((kit,i) => {
         const [paper, surface, ink, border, accent, statusInk, statusBg] = colors[i];
         const style = kitStylePreview({'--pk-paper':paper,'--pk-surface':surface,'--pk-ink':ink,'--pk-border':border,
           '--pk-accent':accent,'--pk-status':statusInk,'--pk-status-bg':statusBg,'--pk-header':kit.tokens.background,
           '--pk-action':kit.parts[i === 1 ? 3 : 1].style.background});
-        return '<td class="pk-system-' + i + '" style="' + style + '">' + example + '</td>';
+        return '<td class="pk-system-' + i + '" style="' + style + '" aria-label="' + esc(number + ' · ' + kit.name) + '">' +
+          '<span class="pk-item-number">' + esc(number) + '</span>' + example + '</td>';
       }).join('');
-      return '<tr class="pk-row-title"><th colspan="3" scope="rowgroup">' + label + '</th></tr><tr>' + cells + '</tr>';
+      return '<tr class="pk-row-title"><th colspan="3" scope="rowgroup">' + esc(role) + '</th></tr><tr>' + cells + '</tr>';
     }).map(group => '<tbody>' + group + '</tbody>').join('');
     return '<div class="pe-kit-compare" role="region" aria-label="Hönnunarkerfi hlið við hlið" tabindex="0">' +
       '<table><thead><tr>' + heading + '</tr></thead>' + body + '</table></div>';
