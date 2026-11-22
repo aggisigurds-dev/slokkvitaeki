@@ -63,12 +63,13 @@ async function bhOsent() {
 // kláruð göt). Skýrslan krefst hub_user-kökunnar; sama undirritaða kakan gildir á báðum vefjum, svo kaka kallandans er send
 // áfram (aðeins hún). Náist hún ekki: ómælt með ástæðu, aldrei 0. Útgáfudagstalan (invoices) heitir nú „Reikningsfært".
 async function bhUnnid(event) {
+  if (event === false) return null;          // „Vista forsendu“ þarf ekki skýrsluna — viðmótið heldur fyrri Unnið-tölu
   try {
     const hra = (event && event.headers && (event.headers.cookie || event.headers.Cookie)) || '';
     const m = /(?:^|;\s*)hub_user=([^;]+)/.exec(String(hra));
     if (!m) return { omaelt: 'innskráningarkökuna vantar' };
-    // Tímamörk: skýrslan tekur nokkrar sekúndur og má aldrei seinka eða fella Tekjur-flísina — þá er Unnið ómælt, hitt stendur.
-    const sig = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined;
+    // Tímamörk (5 s): skýrslan tekur nokkrar sekúndur og má aldrei seinka eða fella Tekjur-flísina — þá er Unnið ómælt, hitt stendur.
+    const sig = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined;
     const r = await fetch(`${BH}/api/rekstrarskyrsla`, { headers: { cookie: `hub_user=${m[1]}`, accept: 'application/json' }, signal: sig });
     if (!r.ok) return { omaelt: `Rekstrarskýrsla Brunahólfs svaraði ${r.status}` };
     const j = await r.json();
@@ -94,20 +95,21 @@ async function lesa(nu = new Date(), event = null) {
   const fm = T.fyrriMan(nuIso.slice(0, 7));
   const fraBil = (fm + '-01') < fraSl ? fm + '-01' : fraSl;                 // nær alltaf yfir síðasta mánuð líka
   const fraBh = (fm + '-01') < `${ar}-01-01` ? fm + '-01' : `${ar}-01-01`;
-  const [sl, voidIds, bh, drog, forsendur, osent, unnid] = await Promise.all([
+  const unnidP = bhUnnid(event);               // ræst strax, svo 5 s bið seinkar ekki hinum lestrunum (rýni 22.11)
+  const [sl, voidIds, bh, drog, forsendur, osent] = await Promise.all([
     sbOll(`solur?select=id,status,credit_of,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fraBil}&order=id.asc`),
     sbOll('solur?select=id&status=eq.void&order=id.asc').then((r) => r.map((x) => x.id)),
     sbOll(`invoices?select=status,source,hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fraBh},and(utgafudagur.is.null,gjalddagi.gte.${fraBh}))&order=id.asc`),
     sbOll('solur?select=upphaed_an_vsk&status=eq.drog&hidden=is.false&order=id.asc'),
     lesaForsendur(),
     bhOsent(),
-    bhUnnid(event),
   ]);
   // Framlegð vöru (aðeins Slökkvitæki): síðasti heili mánuður + líðandi mánuður, línur með kostnaðarverði.
   const [linur, vorur] = await Promise.all([
     sbOll(`solur?select=status,credit_of,linur,created_at&status=eq.final&credit_of=is.null&created_at=gte.${fm}-01&order=id.asc`),
     sbOll('vorur?select=id,kostnadarverd&kostnadarverd=gt.0&order=id.asc'),
   ]);
+  const unnid = await unnidP;                  // kastar aldrei (allur búkurinn í try)
   const kv = {};
   for (const v of vorur) kv[String(v.id)] = Number(v.kostnadarverd);
   const iMan = (m) => linur.filter((r) => T.manudur(r.created_at) === m);
@@ -158,7 +160,7 @@ async function vistaForsendu(b, nafn, event) {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ key: KV, value, updated_at: new Date().toISOString() }),
   });
-  return P.json(200, await lesa(undefined, event));
+  return P.json(200, await lesa(undefined, false));   // án skýrslunnar: viðmótið heldur Unnið-töluna frá síðustu opnun
 }
 
 exports.handler = async (event) => {

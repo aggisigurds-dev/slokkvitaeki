@@ -116,7 +116,11 @@
           .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); });
       });
     });
-    kall.then(function (j) { _d = j; _at = Date.now(); _opid[felag] = false; teikna(el, j); })
+    kall.then(function (j) {
+      // Vista skilar án Unnið (skýrslan er þung): haldið tölunni frá síðustu opnun (rýni 22.11).
+      if (j && j.brunaholf && j.brunaholf.unnid == null && _d && _d.brunaholf) j.brunaholf.unnid = _d.brunaholf.unnid;
+      _d = j; _at = Date.now(); _opid[felag] = false; teikna(el, j);
+    })
       .catch(function (e) { form.insertAdjacentHTML('beforeend', '<span style="color:#b91c1c">Vistaðist ekki: ' + esc(e.message || e) + '</span>'); });
   }
 

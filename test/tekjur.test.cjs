@@ -74,6 +74,8 @@ function stub(h) {
     const svar = (d, ok = true) => ({ ok, status: ok ? 200 : 500, text: async () => (d == null ? '' : JSON.stringify(d)), json: async () => d });
     if (u.hostname.includes('brunaholf') && u.pathname.includes('rekstrarskyrsla')) {
       h.unnidKaka = (init.headers || {}).cookie || null;
+      h.unnidSignal = !!init.signal; h.unnidKall = (h.unnidKall || 0) + 1;
+      if (h.unnidKastar) throw new Error('net niðri');
       if (h.unnidLokad) return { ok: false, status: 401, text: async () => '{}', json: async () => ({}) };
       if (h.unnidOvaent) return svar({ bh: {} });
       return svar({ timabil: [{}, {}, {}, { fra: '2026-11-01', til: '2026-11-17' }, {}, {}, {}],
@@ -141,6 +143,17 @@ test('tekjur-beint: Brunahólf „Unnið" úr Rekstrarskýrslu — kaka kallanda
   h.unnidLokad = false; h.unnidOvaent = true;
   const d4 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), ev);
   assert.match(d4.brunaholf.unnid.omaelt, /óvænt snið/);
+  // tímamörk fylgja kallinu (rýni 22.11), og net niðri/tímamörk → ómælt, aldrei kast
+  h.unnidOvaent = false;
+  await TB._lesa(new Date('2026-11-17T01:00:00Z'), ev);
+  assert.equal(h.unnidSignal, true, 'AbortSignal.timeout fylgir fetch');
+  h.unnidKastar = true;
+  const d5 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), ev);
+  assert.match(d5.brunaholf.unnid.omaelt, /náðist ekki/); assert.equal(d5.brunaholf.manudur_til_dags, 300, 'hitt stendur');
+  // „Vista forsendu“ (event=false) sækir ekki skýrsluna: unnid null, ekkert kall
+  h.unnidKastar = false; h.unnidKall = 0;
+  const d6 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), false);
+  assert.equal(d6.brunaholf.unnid, null); assert.equal(h.unnidKall, 0, 'skýrslan ekki kölluð við Vista');
 });
 
 test('tekjur-beint: tómur reikningalestur (aðgangsregla á invoices) er ÓMÆLDUR — null með ástæðu, aldrei 0', async () => {
@@ -284,6 +297,24 @@ test('512: ómælt Brunahólf (tómur lestur) og Kröfu yfirlit lokað → „ó
   assert.equal((bh.match(/<span>ómælt<\/span>/g) || []).length, 6, 'Unnið (nýtt 21.11), mánuður, ár, síðasti mánuður, pípa og hagnaður: ómælt');
   assert.match(bh, /reikningalesturinn skilaði engu/); assert.match(bh, /Kröfu yfirlit Brunahólfs svaraði ekki/);
   assert.doesNotMatch(bh, /<span>0 kr<\/span>/);
+});
+
+test('512: Unnið og Greitt teiknast með tölum, Greitt fellur út þegar það er null, útgáfudagstalan heitir Reikningsfært', async () => {
+  const gr = (greitt) => ({
+    maelt_at: '2026-11-22T04:00:00Z', skilgreining: {},
+    slokkvitaeki: { manudur: '2026-11', manudur_til_dags: 400, fyrri_man: '2026-10', fyrri_manudur: 1000, ar_til_dags: 1400, ar_fra: '2026-05',
+      pipa: { kr_an_vsk: 0, fjoldi: 0 }, framlegd_voru: { fyrri_manudur: { framlegd: 60, thak_pct: 10 } }, hagnadur: { kr: null } },
+    brunaholf: { manudur: '2026-11', manudur_til_dags: 3034316, fyrri_man: '2026-10', fyrri_manudur: 11755921, ar_til_dags: 30000000, ar_fra: '2026-01',
+      unnid: { manudur_til_dags: 10799465, fyrri_manudur: 6616706, greitt_manudur_til_dags: greitt, fra: '2026-11-01', til: '2026-11-21', ajour_til: '2026-11-18' },
+      pipa: { heiti: 'Ósent', kr_m_vsk: 100, fjoldi: 1 }, hagnadur: { kr: null } },
+  });
+  const a = flisar(svarHttp(200, gr(609867))); a.TB.mount(a.el); await bida();
+  const bh = a.el.innerHTML.split('Brunahólf<small>')[1];
+  assert.match(bh, /Unnið · [^<]*til dags/); assert.match(bh, /tkb-unnid/); assert.match(bh, /göt til 18\.11/);
+  assert.match(bh, /Reikningsfært · [^<]*til dags/); assert.match(bh, /Greitt · [^<]*til dags/);
+  assert.doesNotMatch(bh, /<span>ómælt<\/span>[^]*?Unnið/, 'Unnið er mælt');
+  const b = flisar(svarHttp(200, gr(null))); b.TB.mount(b.el); await bida();
+  assert.doesNotMatch(b.el.innerHTML.split('Brunahólf<small>')[1], /Greitt · /, 'Greitt hverfur þegar það er null — ekki 0');
 });
 
 test('512: 200 með röngu sniði (vantar hluta) hrynur ekki — villulína; Tekjur og Bókhald vefja mount í try', async () => {
