@@ -149,7 +149,12 @@ function reksturSl(g, nuIso) {
     if (m === PAYDAY_SL_FRA) { r.ogefid = null; r.ogefid_omaelt = 'júlí ber reikninga fyrir vinnu úr júní (Payday hófst 30.06) — munurinn á unnið og reikningsfært segir ekkert hér'; }
     return r;
   });
-  return { man, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad };
+  // 22.11.2026 (fasi 3c): samtala líðandi mánaðar í hlutum (skoðanir · verkstæði · verslun · samtals + fjöldi tækja) fyrir „Samtals“-flísina á Yfirsýnarrönd.
+  // Sama samantekt og man[].unnid (samtals.kr === man[last].unnid), svo flísin og „Hvernig gengur reksturinn?“ geta aldrei sýnt tvær tölur fyrir sama mánuð.
+  const nuM = mans[mans.length - 1], sm = U.manudSamantekt(un.man[nuM]), tk = sm.samtals.taeki;
+  const unnid_manudur = { man: nuM, skodanir: kr(sm.skodanir.kr), verkstaedi: kr(sm.verkstaedi.kr), verslun: kr(sm.verslun.kr), samtals: kr(sm.samtals.kr),
+    taeki: (tk.yfirferd || 0) + (tk.hledsla || 0) + (tk.nytt || 0) };
+  return { man, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad, unnid_manudur };
 }
 
 // ── Mánaðaröð Brunahólfs ─────────────────────────────────────────────────────────────────────────────────────────────────────────

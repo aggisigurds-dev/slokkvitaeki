@@ -44,7 +44,7 @@ async function lesaSl(nu) {
   const idag = dagur(nuIso);
   const inn = paydayOk ? Y.ogreittOgInnheimta(payday, idag, Y.INNHEIMTA_FRA) : null;
   return {
-    man: r.man, kredit_an_frumsolu: r.kredit_an_frumsolu, tekjulidir: tekjulidirTopp,
+    man: r.man, kredit_an_frumsolu: r.kredit_an_frumsolu, tekjulidir: tekjulidirTopp, unnid_manudur: r.unnid_manudur,
     ogreitt: inn ? { kr_an_vsk: inn.sent_kr, kr_m_vsk: inn.sent_m_vsk, n: inn.sent_n, gjaldfallid_kr: inn.gjaldfallid_kr, gjaldfallid_n: inn.gjaldfallid_n, yfir45_kr: inn.yfir45_kr, yfir45_n: inn.yfir45_n,
       osent: Array.isArray(osentRadir) ? { kr_m_vsk: osentRadir.reduce((a, x) => a + KR(x.samtals), 0), n: osentRadir.length } : { omaelt: 'ósent-lesturinn náðist ekki' } }
       : { omaelt: 'Payday-lesturinn skilaði engu' },

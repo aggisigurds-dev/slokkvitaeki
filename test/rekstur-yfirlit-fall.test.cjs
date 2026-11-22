@@ -90,6 +90,10 @@ test('rekstur-yfirlit: hvort félag sér — mánuðir, setning, ógreitt, innhe
   assert.equal(sl.ogreitt.kr_an_vsk, 1000); assert.equal(sl.ogreitt.n, 2); assert.equal(sl.ogreitt.gjaldfallid_kr, 700); assert.equal(sl.ogreitt.gjaldfallid_n, 1);
   assert.equal(sl.innheimta.hlutfall, Math.round(1000 * 4000 / 4700) / 10); assert.equal(sl.innheimta.hradi_midgildi, 10);
   const bh = d.brunaholf;
+  const um = sl.unnid_manudur;
+  assert.equal(um.man, '2026-11'); assert.equal(um.samtals, nov.unnid, 'ein tala fyrir sama mánuð: samtala flísarinnar = man[last].unnid');
+  assert.equal(um.skodanir + um.verkstaedi + um.verslun, um.samtals, 'hlutarnir leggjast í samtöluna (innan félags)');
+  assert.ok(Number.isInteger(um.taeki) && um.taeki >= 0 && Number.isInteger(um.skodanir));
   assert.equal(bh.man.length, 7); assert.equal(bh.man[6].unnid, 7000000); assert.equal(bh.man[6].greitt, 3500000);
   assert.equal(bh.man[6].reikningsfaert, 3000000, 'útgáfudagur'); assert.equal(bh.man[5].reikningsfaert, 11000000);
   assert.equal(bh.man[6].ogefid, 7000000 - 3000000);
@@ -159,11 +163,58 @@ test('rekstur-yfirlit: aðeins stjórnandi — óinnskráður 401, önnur rola 4
   } finally { aftur(); }
 });
 
-test('Yfirsýnarröndin (523): „tekjur vikunnar“ víkur fyrir „unnið í mánuðinum“ úr /api/rekstur-yfirlit — ómælt með ástæðu, aldrei 0, félögin sér', () => {
+// ── Yfirsýnarröndin (523): VIKAN-flísin víkur fyrir „Unnið í mánuðinum“ (fasi 3c, 22.11.2026) ──
+// Röndin er keyrð í vm með tilbúnu `window`: html() fær tilbúin gögn og skilar HTML sem við skoðum.
+function rondIVm(lina) {
+  const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '523-yfirsyn-rond.js'), 'utf8');
+  const ctx = { console, fetch: async () => ({ ok: false, status: 500 }), setTimeout: () => 0, Vidmot: { lesa: () => (lina ? 'lina' : 'rond'), setja() {} } };
+  ctx.window = ctx; vm.createContext(ctx); vm.runInContext(src, ctx);
+  const Y = ctx.window.YfirsynRond;
+  Y.S.at = Date.now(); Y.S.rAt = Date.now(); Y.S.loading = false;
+  Y.S.d = { maelt_at: '2026-11-22T10:00:00Z', rekstur: { omaelt: 'prófun', ferskleiki: undefined }, greitt: { omaelt: 'x' }, krofur: { sl: { omaelt: 'x' }, bh: { omaelt: 'x' } }, osott: { omaelt: 'x' }, sidast: {} };
+  return Y;
+}
+const MAN_NU = (ogefid, rf = 3000000) => ({ man: '2026-11', unnid: 7000000, reikningsfaert: rf, greitt: 3500000, ogefid, hlutar: { tima: 4000000, landspitali: 2800000, heklureitur: 200000 } });
+const REKSTUR = (over) => ({ idag: '2026-11-22', slokkvitaeki: { man: [{ man: '2026-11', unnid: 2100000 }], unnid_manudur: { man: '2026-11', skodanir: 1200000, verkstaedi: 500000, verslun: 400000, samtals: 2100000, taeki: 1234 },
+  setning: { setning: 'Nóvember til dags: unnið 2,10 m', aaetlun: { texti: 'ÁÆTLUN (línuleg, ekki spá): um 2,94 m' } } },
+brunaholf: { man: [MAN_NU(4000000)], setning: { setning: 'Nóvember til dags: unnið 7,00 m', aaetlun: null } }, ...(over || {}) });
+
+test('Yfirsýnarröndin (523): „Unnið í mánuðinum“ hjá hvoru félagi kemur í stað VIKAN — hlutar SL, reikningsfært/ógefið út BH, tengill á Tekjuliði og Fjármála-yfirlit, félögin aldrei lögð saman', () => {
   const fs = require('node:fs'), path = require('node:path');
   const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '523-yfirsyn-rond.js'), 'utf8');
-  assert.doesNotMatch(src, /'tekjur vikunnar'/, 'gamla flísin er farin');
-  assert.match(src, /fetch\('\/api\/rekstur-yfirlit'/); assert.match(src, /unnidFlis\(\) \+/); assert.match(src, /ladaRekstur\(force\)/);
-  assert.match(src, /<small>ómælt<\/small>/); assert.match(src, /Félögin eru aldrei lögð saman/); assert.match(src, /ekki einkunn/);
-  assert.match(src, /S\.rVilla \? 'Unnið í mánuðinum: ómælt — '/);
+  assert.doesNotMatch(src, /vikanHtml|unnidFlis|'tekjur vikunnar'/, 'gamla VIKAN-flísin er farin');
+  assert.match(src, /fetch\('\/api\/rekstur-yfirlit'/); assert.match(src, /samtalsHtml\(rek\) \+ osottHtml/); assert.match(src, /ladaRekstur\(force\)/);
+  const Y = rondIVm(false); Y.S.r = REKSTUR();
+  const h = Y.html('Agnar', {});
+  assert.match(h, /Unnið í nóvember<em>án vsk<\/em>/);
+  assert.match(h, /2,10<small>m Slökkvitæki<\/small>/); assert.match(h, /úttektir <b>1,20<\/b> · verkstæði <b>0,50<\/b>/); assert.match(h, /verslun <b>0,40<\/b> · 1\.234 tæki/);
+  assert.match(h, /7,00<small>m Brunahólf<\/small>/); assert.match(h, /reikningsfært <b>3,00<\/b> m/); assert.match(h, /ógefið út <b>4,00<\/b> m/);
+  assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/rekstur#tekjulidir"/); assert.match(h, /href="https:\/\/brunaholf\.netlify\.app\/#fjarmalyfirlit"[^>]*>Fjármála-yfirlit →</);
+  assert.match(h, /göt: Ajour/, 'ferskleikaflögur haldast'); assert.match(h, /Tímavera<s>\|<\/s>/);
+  assert.match(h, /Þessi vika“ og „Síðasta vika/, 'ⓘ vísar vikutölunum á Rekstrarskýrsluna'); assert.match(h, /félögin eru aldrei lögð saman/);
+  assert.doesNotMatch(h, /Vikan<em>/, 'engin VIKAN-flís'); assert.doesNotMatch(h, /9,10|9,1\d/, 'engin samlögð tala beggja félaga (2,10 + 7,00)');
+  assert.match(src, /SL sala <b>' \+ mkr\(sl\)/, '„Virði“-flísin segir að SL sé eftir söludegi'); assert.match(src, /BH unnið <b>' \+ mkr\(bh\)/);
+});
+
+test('Yfirsýnarröndin (523): ómælt með ástæðu, aldrei 0 — SL ómælt, BH ógefið út ≤ 0, BH reikningsfært vantar, gögn ekki komin, Lína-hamur', () => {
+  let Y = rondIVm(false);
+  Y.S.r = REKSTUR({ slokkvitaeki: { omaelt: 'Slökkvitækjahluti náðist ekki' }, brunaholf: { man: [MAN_NU(-300000)] } });
+  let h = Y.html('Agnar', {});
+  assert.match(h, /Slökkvitæki <small>ómælt<\/small>/); assert.match(h, /Slökkvitækjahluti náðist ekki/); assert.match(h, /ógefið út ekkert/, 'reikningsfært umfram unnið → „ekkert“, ekki neikvæð tala');
+  Y = rondIVm(false); Y.S.r = REKSTUR({ brunaholf: { man: [{ ...MAN_NU(null, null), ogefid: null }] } });
+  h = Y.html('Agnar', {});
+  assert.match(h, /reikningsfært ómælt/); assert.match(h, /ógefið út ómælt/);
+  Y = rondIVm(false); Y.S.r = REKSTUR({ brunaholf: { omaelt: 'Rekstur Brunahólfs náðist ekki', man: [{ man: '2026-11', unnid: null, omaelt: 'Rekstrarskýrsla Brunahólfs náðist ekki' }] } });
+  h = Y.html('Agnar', {});
+  assert.match(h, /Brunahólf <small>ómælt<\/small>/); assert.match(h, /Rekstrarskýrsla Brunahólfs náðist ekki/); assert.match(h, /2,10<small>m Slökkvitæki/, 'hitt félagið stendur');
+  Y = rondIVm(false); Y.S.r = null; Y.S.rVilla = 'Reksturinn svaraði 502';
+  h = Y.html('Agnar', {});
+  assert.match(h, /<small>ómælt<\/small>/); assert.match(h, /Reksturinn svaraði 502/); assert.doesNotMatch(h, /0,00/, 'engin núll-tala þegar gögn vantar');
+  Y = rondIVm(false); Y.S.r = null; Y.S.rVilla = null;
+  assert.match(Y.html('Agnar', {}), /sæki samtölu mánaðarins/);
+  Y = rondIVm(true); Y.S.r = REKSTUR();
+  const l = Y.html('Agnar', {});
+  assert.match(l, /Unnið <b>SL 2,10 m · BH 7,00 m<\/b>/); assert.doesNotMatch(l, />Vikan </, 'Lína-hamur: „Vikan“-flaga farin');
+  assert.equal(rondIVm(false).html('Gestur', {}), '', 'aðeins Agnar og Anni sjá röndina');
 });
