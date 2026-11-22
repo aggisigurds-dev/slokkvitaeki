@@ -44,13 +44,15 @@ const astaeda = (nafn, e) => (e && e.name === 'TimeoutError' ? `${nafn} svaraði
 async function lesaSl(nu) {
   const init = (() => { const s = timeout(); return s ? { signal: s } : undefined; })();
   const fra = T.SL_FRA + '-01';
-  const [solur, voidIds, skyrslur, verkbeidnir, verklidir, payday] = await Promise.all([
+  const [solur, voidIds, skyrslur, verkbeidnir, verklidir, payday, osentRadir] = await Promise.all([
     sbOll(`solur?select=id,num,status,credit_of,is_credit,vidskiptategund,upphaed_an_vsk,created_at,paid_at,greitt_med,customer_base_id,customer_id,linur&status=eq.final&created_at=gte.${fra}&order=id.asc`, init),
     sbOll('solur?select=id&status=eq.void&order=id.asc', init).then((r) => r.map((x) => x.id)),
     sbOll('customer_documents?select=id,doc_type,doc_date,customer_base_id,fyrirtaeki_id,is_duplicate,skodun_ar_man,notes&doc_type=in.(uttektarskyrsla,brunakerfi,slokkvikerfi)&source=eq.app&is_duplicate=not.is.true&doc_date=gte.2026-02-01&order=id.asc', init),
     sbOll(`verkbeidnir?select=id,num,status,verd,klart_at,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
     sbOll(`verklidur?select=job_id,service,status,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
-    sbOll(`payday_invoices_slokk?select=status,amount_ex,amount_total,created_date,due_date,paid_date&created_date=gte.${Y.INNHEIMTA_FRA}&order=id.asc`, init),
+    sbOll(`payday_invoices_slokk?select=status,amount_ex,amount_total,created_date,due_date,paid_date,updated_at&created_date=gte.${Y.INNHEIMTA_FRA}&order=id.asc`, init),
+    // ósent núna = sama mengi og „ósent“ í yfirsyn.cjs (v_krafa_ekki_send_adgerd, m. VSK) — raunveruleg staða „unnið en ekki sent“
+    sbOll('v_krafa_ekki_send_adgerd?select=num,samtals&order=num.asc', init).catch(() => null),
   ]);
   if (!solur.length) return { omaelt: 'sölulesturinn skilaði engu' };
   if (!skyrslur.length) return { omaelt: 'skýrslulesturinn skilaði engu — án hans yrði allt „án skýrslu“' };
@@ -59,7 +61,7 @@ async function lesaSl(nu) {
   const hef = new Set(solur.map((r) => String(r.id))), voidSet = new Set(voidIds.map(String));
   const vantar = [...new Set(solur.filter((r) => r.credit_of != null && !hef.has(String(r.credit_of)) && !voidSet.has(String(r.credit_of))).map((r) => Number(r.credit_of)).filter((n) => Number.isInteger(n) && n > 0))];
   let frumsolur = [];
-  try { for (let i = 0; i < vantar.length; i += 150) frumsolur.push(...await sbOll(`solur?select=id,created_at,paid_at&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`, init)); } catch (e) { frumsolur = []; }
+  try { for (let i = 0; i < vantar.length; i += 150) frumsolur.push(...await sbOll(`solur?select=id,created_at,paid_at,greitt_med&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`, init)); } catch (e) { frumsolur = []; }
   const nuIso = nu.toISOString();
   const paydayOk = payday.length > 0;
   const r = Y.reksturSl({ solur, voidIds, frumsolur, skyrslur, verkbeidnir, verklidir, payday: paydayOk ? payday : null, paydayOmaelt: 'Payday-lesturinn skilaði engu' }, nuIso);
@@ -67,8 +69,11 @@ async function lesaSl(nu) {
   const inn = paydayOk ? Y.ogreittOgInnheimta(payday, idag, Y.INNHEIMTA_FRA) : null;
   return {
     man: r.man, ogefid_uppsafnad: r.ogefid_uppsafnad, ogefid_manudir: r.ogefid_manudir, kredit_an_frumsolu: r.kredit_an_frumsolu,
-    ogreitt: inn ? { kr_an_vsk: inn.sent_kr, kr_m_vsk: inn.sent_m_vsk, n: inn.sent_n, gjaldfallid_kr: inn.gjaldfallid_kr, gjaldfallid_n: inn.gjaldfallid_n, yfir45_kr: inn.yfir45_kr, yfir45_n: inn.yfir45_n }
+    ogreitt: inn ? { kr_an_vsk: inn.sent_kr, kr_m_vsk: inn.sent_m_vsk, n: inn.sent_n, gjaldfallid_kr: inn.gjaldfallid_kr, gjaldfallid_n: inn.gjaldfallid_n, yfir45_kr: inn.yfir45_kr, yfir45_n: inn.yfir45_n,
+      osent: Array.isArray(osentRadir) ? { kr_m_vsk: osentRadir.reduce((a, x) => a + KR(x.samtals), 0), n: osentRadir.length } : { omaelt: 'ósent-lesturinn náðist ekki' } }
       : { omaelt: 'Payday-lesturinn skilaði engu' },
+    // ferskleiki Payday-gagnanna: líðandi mánuður getur sýnt of lítið reikningsfært ef samstillingin er gömul (rýni 22.11)
+    ferskleiki: paydayOk ? { payday_samstillt: payday.reduce((a, x) => (x.updated_at && x.updated_at > a ? x.updated_at : a), '') || null, nyjasti_reikningur: payday.reduce((a, x) => (x.created_date && x.created_date > a ? x.created_date : a), '') || null } : null,
     innheimta: inn ? { hlutfall: inn.hlutfall, hradi_midgildi: inn.hradi_midgildi, hradi_n: inn.hradi_n, greitt_kr: inn.greitt_kr, gjaldfallid_kr: inn.gjaldfallid_kr, fra: inn.fra } : { omaelt: 'Payday-lesturinn skilaði engu' },
   };
 }
@@ -112,6 +117,7 @@ async function bhOgreitt() {
     kr_m_vsk: KR(t1.total), n: Number(t1.n) || 0,
     gjaldfallid_kr_m_vsk: fallin.reduce((a, i) => a + KR(i.amount), 0), gjaldfallid_n: fallin.length,
     yfir45_kr_m_vsk: eldri.reduce((a, i) => a + KR(i.amount), 0), yfir45_n: eldri.length,
+    osent: d.tier2 && Number.isFinite(Number(d.tier2.total)) ? { kr_m_vsk: KR(d.tier2.total), n: Number(d.tier2.n) || 0 } : { omaelt: 'ósent vantar í Kröfu yfirliti' },
   };
 }
 async function mael(nafn, f) {
@@ -136,9 +142,7 @@ async function lesa(nu, event) {
   let slut = sl;
   if (!sl.omaelt) slut = { ...sl, setning: setningFyrir(sl.man, nuIso) };
   // Brunahólf: unnið/greitt úr rekstur-manudir, reikningsfært úr invoices — hvort fyrir sig ómælt með ástæðu
-  const bhr = bhRf.omaelt ? null : bhRf.rows;
-  const bh = Y.reksturBh(bhM.omaelt ? null : bhM.man, bhr, nuIso, bhM.omaelt);
-  if (bhr === null) bh.man.forEach((x) => { x.reikningsfaert = null; x.ogefid = null; x.omaelt = x.omaelt || bhRf.omaelt; });
+  const bh = Y.reksturBh(bhM.omaelt ? null : bhM.man, bhRf.omaelt ? null : bhRf.rows, nuIso, bhM.omaelt, bhRf.omaelt);
   const bhut = {
     ...bh,
     ogreitt: bhOg,

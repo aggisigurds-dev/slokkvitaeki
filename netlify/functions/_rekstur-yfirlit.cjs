@@ -118,9 +118,10 @@ function reksturSl(g, nuIso) {
   const bud = {};
   const b = (m) => (bud[m] = bud[m] || { rf: 0, gr: 0 });
   for (const r of T.slokkvitaekiGildar(g.solur, g.voidIds)) {
-    if (r.greitt_med !== 'kort' && r.greitt_med !== 'reidufe') continue;
     const fs = r.credit_of != null ? dagar.get(String(r.credit_of)) : null;
     const src = fs || r;
+    const gm = fs && fs.greitt_med != null ? fs.greitt_med : r.greitt_med;        // greiðslumáti FRUMSÖLUNNAR ræður (rýni 22.11)
+    if (gm !== 'kort' && gm !== 'reidufe') continue;
     const upph = Number(r.upphaed_an_vsk) || 0;
     const m1 = T.manudur(src.created_at), m2 = T.manudur(src.paid_at || src.created_at);
     if (m1) b(m1).rf += upph;
@@ -133,7 +134,6 @@ function reksturSl(g, nuIso) {
     if (r.status === 'PAID' || r.status === 'SENT') { const m = T.manudur(r.created_date); if (m) pay.rf[m] = (pay.rf[m] || 0) + ex; }
     if (r.status === 'PAID' && r.paid_date) { const m = T.manudur(r.paid_date); if (m) pay.gr[m] = (pay.gr[m] || 0) + ex; }
   }
-  let ogefidUppsafnad = 0, maeldir = 0;
   const man = mans.map((m) => {
     const sam = U.manudSamantekt(un.man[m]);
     const unnid = kr(sam.samtals.kr);
@@ -144,27 +144,31 @@ function reksturSl(g, nuIso) {
     }
     const bb = bud[m] || { rf: 0, gr: 0 };
     const rf = kr((pay.rf[m] || 0) + bb.rf), gr = kr((pay.gr[m] || 0) + bb.gr);
-    ogefidUppsafnad += unnid - rf; maeldir++;
-    return { ...e, reikningsfaert: rf, greitt: gr, ogefid: unnid - rf, hlutar: { rf_payday: kr(pay.rf[m] || 0), rf_verslun: kr(bb.rf), gr_payday: kr(pay.gr[m] || 0), gr_verslun: kr(bb.gr) } };
+    const r = { ...e, reikningsfaert: rf, greitt: gr, ogefid: unnid - rf, hlutar: { rf_payday: kr(pay.rf[m] || 0), rf_verslun: kr(bb.rf), gr_payday: kr(pay.gr[m] || 0), gr_verslun: kr(bb.gr) } };
+    // Fyrsti Payday-mánuðurinn ber reikninga fyrir VINNU ÚR JÚNÍ (Payday hófst 30.06): munurinn segir ekkert um „ógefið út“ — ómældur (rýni 22.11).
+    if (m === PAYDAY_SL_FRA) { r.ogefid = null; r.ogefid_omaelt = 'júlí ber reikninga fyrir vinnu úr júní (Payday hófst 30.06) — munurinn á unnið og reikningsfært segir ekkert hér'; }
+    return r;
   });
-  return { man, ogefid_uppsafnad: maeldir ? kr(ogefidUppsafnad) : null, ogefid_manudir: maeldir, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad };
+  return { man, kredit_an_frumsolu: un.annad.kredit_an_frumsolu, un_annad: un.annad };
 }
 
 // ── Mánaðaröð Brunahólfs ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 // bhMan = svar rekstur-manudir.js .man (sjö tímabil, eftir fra) eða null (ómælt); invoices = Payday-raðir (brunaholfManudir)
-function reksturBh(bhMan, reikningsfaertRadir, nuIso, omaeltAstaeda) {
+function reksturBh(bhMan, reikningsfaertRadir, nuIso, omaeltAstaeda, rfOmaelt) {
   const mans = sjoManudir(nuIso);
-  const rf = T.brunaholfManudir(reikningsfaertRadir || []);
+  const rfOk = Array.isArray(reikningsfaertRadir) && reikningsfaertRadir.length > 0;
+  const rf = T.brunaholfManudir(rfOk ? reikningsfaertRadir : []);
   const eftirMan = new Map((bhMan || []).map((x) => [String(x.fra).slice(0, 7), x]));
-  let ogefidUppsafnad = 0, maeldir = 0;
   const man = mans.map((m) => {
     const x = eftirMan.get(m);
-    const reikn = kr(rf[m] || 0);
+    const reikn = rfOk ? kr(rf[m] || 0) : null;
+    const rfAstaeda = rfOk ? null : (rfOmaelt || 'reikningalesturinn skilaði engu');
     if (!x) return { man: m, unnid: null, reikningsfaert: reikn, greitt: null, ogefid: null, omaelt: omaeltAstaeda || 'Rekstrarskýrsla Brunahólfs náðist ekki' };
-    ogefidUppsafnad += x.unnid - reikn; maeldir++;
-    return { man: m, unnid: kr(x.unnid), reikningsfaert: reikn, greitt: kr(x.greitt), ogefid: kr(x.unnid) - reikn, hlutar: { tima: x.unnid_hlutar && x.unnid_hlutar.tima, landspitali: x.unnid_hlutar && x.unnid_hlutar.landspitali, heklureitur: x.unnid_hlutar && x.unnid_hlutar.heklureitur } };
+    const e = { man: m, unnid: kr(x.unnid), reikningsfaert: reikn, greitt: kr(x.greitt), ogefid: reikn == null ? null : kr(x.unnid) - reikn, hlutar: { tima: x.unnid_hlutar && x.unnid_hlutar.tima, landspitali: x.unnid_hlutar && x.unnid_hlutar.landspitali, heklureitur: x.unnid_hlutar && x.unnid_hlutar.heklureitur } };
+    if (rfAstaeda) e.omaelt = rfAstaeda;
+    return e;
   });
-  return { man, ogefid_uppsafnad: maeldir ? kr(ogefidUppsafnad) : null, ogefid_manudir: maeldir };
+  return { man };
 }
 
 // Skilgreiningarnar sem birtast í ⓘ — ein heimild, prófuð (engin ný regla falin í viðmótinu).
@@ -172,7 +176,7 @@ const SKILGREINING = {
   unnid: 'UNNIÐ er verkið sem var unnið í mánuðinum, hvenær sem reikningurinn er sendur. Slökkvitæki: skoðanir (ársþjónusta, brunakerfi, slökkvikerfi) í mánuði skoðunarinnar, verkstæði þegar tækið er klárt og sent í afgreiðslu, og verslun. Brunahólf: stimplaðir tímar × taxti verkstaðar + kláruð göt (áætlun, eins og Rekstrarskýrslan).',
   reikningsfaert: 'REIKNINGSFÆRT er það sem var SENT út í mánuðinum (Payday-reikningar eftir útgáfudegi; Slökkvitæki að viðbættri verslun á söludegi) — þetta er talan sem Payday-mælaborðið sýnir.',
   greitt: 'GREITT er það sem kom inn í mánuðinum (Payday-greiðsludagur; verslun eftir greiðsludegi; Brunahólf að viðbættum reikningum sem eru skráðir greiddir í Kröfu yfirliti innan 120 daga frá útgáfu).',
-  ogefid: 'ÓGEFIÐ ÚT er unnið að frádregnu reikningsfærðu: vinna sem er unnin en reikningur hefur ekki verið sendur fyrir (eða var sendur í öðrum mánuði). Neikvætt = reikningar fyrir fyrri vinnu voru sendir í þessum mánuði.',
+  ogefid: 'ÓGEFIÐ ÚT er unnið að frádregnu reikningsfærðu í mánuðinum — flæði, ekki staða: neikvætt þýðir að reikningar fyrir fyrri vinnu voru sendir í mánuðinum. Staðan núna (unnið en ekki sent) er „Ósent núna“ fyrir neðan.',
   innheimtuhlutfall: 'INNHEIMTUHLUTFALL = greitt ÷ (greitt + gjaldfallið ógreitt), á reikningum útgefnum frá 30.06.2026, án vsk. Gjaldfallið = sent, ógreitt og gjalddagi liðinn. 94 % þýðir að af því sem er fallið í gjalddaga eða greitt er 94 % greitt.',
   greidsluhradi: 'GREIÐSLUHRAÐI = miðgildi daga frá útgáfu reiknings til greiðslu, á reikningum greiddum síðustu 90 daga. Helmingur reikninga er greiddur á skemmri tíma.',
   setning: 'Hlutföllin eru unnið til dags ÷ heildarunnið í síðasta mánuði, og liðnir vinnudagar (mán–fös, frídagar ekki dregnir frá) ÷ vinnudagar mánaðarins. ÁÆTLUNIN er línulegur framreikningur á sömu vinnudögum — ekki spá og ekki fullyrðing um að allt sé í lagi.',

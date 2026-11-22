@@ -466,7 +466,7 @@ function rkData() {
   const slMan = [
     man('2026-05', 1000000, null, null, { omaelt: 'Slökkvitæki fór í Payday 30.06.2026 — reikningar fyrir þann tíma eru ekki í þessum gögnum' }),
     man('2026-06', 2000000, null, null, { omaelt: 'Slökkvitæki fór í Payday 30.06.2026 — reikningar fyrir þann tíma eru ekki í þessum gögnum' }),
-    man('2026-07', 4000000, 4900000, 4800000), man('2026-08', 4200000, 4200000, 4100000), man('2026-09', 4500000, 5200000, 5000000),
+    man('2026-07', 4000000, 4900000, 4800000, { ogefid: null, ogefid_omaelt: 'júlí ber reikninga fyrir vinnu úr júní (Payday hófst 30.06)' }), man('2026-08', 4200000, 4200000, 4100000), man('2026-09', 4500000, 5200000, 5000000),
     man('2026-10', 5178689, 5700000, 4600000, { mat: { an_skyrslu_kr: 79745, aaetlad_kr: 160108 }, hlutar: { rf_payday: 4700000, rf_verslun: 1000000, gr_payday: 3900000, gr_verslun: 700000 } }),
     man('2026-11', 2103182, 2146000, 709000),
   ];
@@ -474,12 +474,12 @@ function rkData() {
   bhMan[5] = man('2026-10', 9280000, 11760000, 5000000);
   return {
     maelt_at: '2026-11-22T04:00:00Z', idag: '2026-11-22',
-    slokkvitaeki: { man: slMan, ogefid_uppsafnad: -1234567, ogefid_manudir: 5,
-      ogreitt: { kr_an_vsk: 2730762, kr_m_vsk: 3386140, n: 29, gjaldfallid_kr: 1743464, gjaldfallid_n: 22, yfir45_kr: 40000, yfir45_n: 2 },
+    slokkvitaeki: { man: slMan, kredit_an_frumsolu: 1, ferskleiki: { payday_samstillt: '2026-11-21T03:00:00Z', nyjasti_reikningur: '2026-11-18' },
+      ogreitt: { kr_an_vsk: 2730762, kr_m_vsk: 3386140, n: 29, gjaldfallid_kr: 1743464, gjaldfallid_n: 22, yfir45_kr: 40000, yfir45_n: 2, osent: { kr_m_vsk: 292882, n: 6 } },
       innheimta: { hlutfall: 92.5, hradi_midgildi: 10, hradi_n: 391, greitt_kr: 21465433, gjaldfallid_kr: 1743464, fra: '2026-06-30' },
       setning: { setning: 'Nóvember til dags: unnið 2,10 m — 41 % af október-heild (5,18 m) og 71 % mánaðarins er liðinn (15 af 21 vinnudögum).', aaetlun: { kr: 2944455, hlutfall_fyrri: 57, texti: 'ÁÆTLUN (línuleg, ekki spá): sömu vinnudagar áfram → mánuðurinn endar í um 2,94 m (57 % af október-heild).' } } },
-    brunaholf: { man: bhMan, ogefid_uppsafnad: 4000000, ogefid_manudir: 7,
-      ogreitt: { kr_m_vsk: 6510000, n: 10, gjaldfallid_kr_m_vsk: 4200000, gjaldfallid_n: 4, yfir45_kr_m_vsk: 1100000, yfir45_n: 1 },
+    brunaholf: { man: bhMan,
+      ogreitt: { kr_m_vsk: 6510000, n: 10, gjaldfallid_kr_m_vsk: 4200000, gjaldfallid_n: 4, yfir45_kr_m_vsk: 1100000, yfir45_n: 1, osent: { omaelt: 'ósent vantar í Kröfu yfirliti' } },
       innheimta: { hlutfall: 88.5, hradi_midgildi: 14.5, hradi_n: 20, greitt_kr: 1000, gjaldfallid_kr: 130, fra: '2026-06-30' },
       setning: { setning: 'Nóvember til dags: unnið 8,60 m — 93 % af október-heild (9,28 m) og 71 % mánaðarins er liðinn (15 af 21 vinnudögum).', aaetlun: null } },
     skilgreining: { unnid: 'UNNIÐ-skýring', reikningsfaert: 'REIKNINGSFÆRT-skýring', greitt: 'GREITT-skýring', ogefid: 'ÓGEFIÐ-skýring', innheimtuhlutfall: 'INNHEIMTU-skýring', greidsluhradi: 'HRAÐA-skýring', setning: 'SETNINGAR-skýring', hagnadur: 'HAGNAÐAR-skýring' },
@@ -510,7 +510,10 @@ test('512: „Hvernig gengur reksturinn?“ — hvort félag sér, sjö mánuði
   assert.match(slHluti, /data-tkb-ga="krofu-yfirlit"/);
   assert.match(slHluti, /Innheimtuhlutfall <b>92,5 %<\/b> <span class="tkb-i" title="INNHEIMTU-skýring">ⓘ<\/span> · greiðsluhraði <b>10 dagar<\/b> <span class="tkb-i" title="HRAÐA-skýring">ⓘ<\/span>/);
   assert.match(bhHluti, /greiðsluhraði <b>14,5 dagar<\/b>/);
-  assert.match(slHluti, /Ógefið út, uppsafnað \(5 mán\.\): <b class="tkb-ne">−1,23 m<\/b>/);
+  assert.doesNotMatch(h, /uppsafnað/, 'uppsafnað „ógefið út“ er ekki sýnt (rýni 22.11)');
+  assert.match(slHluti, /<td class="tkb-om" title="júlí ber reikninga fyrir vinnu úr júní[^"]*">ómælt<\/td>/, 'júlí: ógefið út ómælt með ástæðu');
+  assert.match(slHluti, /Ósent núna \(unnið, krafa ekki send, m\. VSK\): <b>292\.882 kr<\/b> \(6 kröfur\)/); assert.match(bhHluti, /Ósent núna: <b>ómælt<\/b> — ósent vantar í Kröfu yfirliti/);
+  assert.match(h, /Payday Slökkvitækis samstillt 21\.11\. \(nýjasti reikningur 18\.11\.\)/); assert.match(h, /‡ 1 kreditnóta án frumsölu/);
   // hagnaður ómældur með tengli í innsláttarformið — aldrei 0
   assert.match(slHluti, /Hagnaður: <b>ómælt<\/b> — vantar laun og annan kostnað · <a data-tkb-hagn="slokkvitaeki">skrá laun og kostnað<\/a>/);
   assert.match(bhHluti, /data-tkb-hagn="brunaholf"/);

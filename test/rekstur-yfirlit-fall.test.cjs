@@ -35,7 +35,7 @@ function stub(h) {
     if (u.hostname.includes('brunaholf') && u.pathname.includes('krofu-yfirlit-bru')) {
       h.bhToki = (init.headers || {})['x-hub-toki'] || null;
       if (h.ogreittLokad) return svar({}, false, 401);
-      return svar({ tier1: { total: 9000000, n: 3, debtors: [{ invoices: [
+      return svar({ tier2: { total: 500000, n: 2 }, tier1: { total: 9000000, n: 3, debtors: [{ invoices: [
         { amount: 5000000, gjalddagi: '2026-09-01' }, { amount: 3000000, gjalddagi: '2026-11-10' }, { amount: 1000000, gjalddagi: '2026-12-20' }, { amount: 777, gjalddagi: '2026-01-01', hidden: true },
       ] }] } });
     }
@@ -52,13 +52,14 @@ function stub(h) {
         { id: 4, num: 'R-000004', status: F, vidskiptategund: 'bud', credit_of: 500, upphaed_an_vsk: -300, created_at: '2026-11-03T00:00:00Z', paid_at: '2026-11-03T00:00:00Z', greitt_med: 'kort', linur: [] },
       ]);
     }
+    if (t === 'v_krafa_ekki_send_adgerd') return svar(h.osentNidri ? { message: 'kaboom' } : [{ num: 'R-1', samtals: 1240 }, { num: 'R-2', samtals: 2480 }], !h.osentNidri, h.osentNidri ? 500 : 200);
     if (t === 'customer_documents') return svar(h.skyrslurTomar ? [] : [{ id: 1, doc_type: 'uttektarskyrsla', doc_date: '2026-10-03', customer_base_id: 7, fyrirtaeki_id: 70, is_duplicate: false, notes: 'x' }]);
     if (t === 'verkbeidnir') return svar([{ id: 51, num: 'R-009999-V1', status: 'collected', verd: 1240, klart_at: null, eytt_at: null }]);
     if (t === 'verklidur') return svar([{ job_id: 51, service: 'Duft 2 kg. ABC hleðsla', status: 'done', eytt_at: null }]);
     if (t === 'payday_invoices_slokk') {
       if (h.paydayTomt) return svar([]);
       return svar([
-        { status: 'PAID', amount_ex: 4000, amount_total: 4960, created_date: '2026-10-14', paid_date: '2026-10-24', due_date: '2026-10-21' },
+        { status: 'PAID', amount_ex: 4000, amount_total: 4960, created_date: '2026-10-14', paid_date: '2026-10-24', due_date: '2026-10-21', updated_at: '2026-11-21T03:00:00Z' },
         { status: 'SENT', amount_ex: 700, amount_total: 868, created_date: '2026-11-05', due_date: '2026-11-12' },
         { status: 'SENT', amount_ex: 300, amount_total: 372, created_date: '2026-11-18', due_date: '2026-11-25' },
       ]);
@@ -94,6 +95,9 @@ test('rekstur-yfirlit: hvort félag sér — mánuðir, setning, ógreitt, innhe
   assert.equal(bh.man[6].ogefid, 7000000 - 3000000);
   assert.equal(bh.ogreitt.kr_m_vsk, 9000000); assert.equal(bh.ogreitt.gjaldfallid_kr_m_vsk, 8000000, 'gjalddagi liðinn (falið undanskilið)'); assert.equal(bh.ogreitt.yfir45_kr_m_vsk, 5000000);
   assert.equal(bh.innheimta.hlutfall, 88.5);
+  assert.deepEqual(sl.ogreitt.osent, { kr_m_vsk: 3720, n: 2 }, 'ósent núna SL = v_krafa_ekki_send_adgerd'); assert.deepEqual(bh.ogreitt.osent, { kr_m_vsk: 500000, n: 2 }, 'ósent núna BH = Kröfu yfirlit þrep 2');
+  assert.deepEqual(sl.ferskleiki, { payday_samstillt: '2026-11-21T03:00:00Z', nyjasti_reikningur: '2026-11-18' });
+  assert.equal(sl.man[2].ogefid, null, 'júlí: ógefið út ómælt (ber reikninga fyrir júnívinnu)'); assert.match(sl.man[2].ogefid_omaelt, /júní/);
   assert.match(bh.setning.setning, /^Nóvember til dags: unnið 7,00 m — 70 % af október-heild \(6,00 m\)/.source ? /unnið 7,00 m/ : /x/);
   assert.ok(d.skilgreining.innheimtuhlutfall && d.skilgreining.greidsluhradi);
   assert.doesNotMatch(JSON.stringify(d), /customer|nafn|kennitala|\b\d{10}\b/i, 'aðeins samtölur fara út — engin nöfn né kennitölur (ath.: „október“ ber stafina kt, svo /kt/ prófið á ekki við hér)');
@@ -124,6 +128,9 @@ test('rekstur-yfirlit: hver heimild sér — Brunahólf niðri/lokað/óvænt sn
   h.reikningarTomir = true;
   const dr = await RY._lesa(NU, EV);
   assert.equal(dr.brunaholf.man[6].reikningsfaert, null); assert.match(dr.brunaholf.man[6].omaelt, /reikningalesturinn skilaði engu/); assert.equal(dr.brunaholf.man[6].unnid, 7000000, 'unnið stendur'); h.reikningarTomir = false;
+  h.osentNidri = true;
+  const dos = await RY._lesa(NU, EV);
+  assert.match(dos.slokkvitaeki.ogreitt.osent.omaelt, /náðist ekki/); assert.equal(dos.slokkvitaeki.man.length, 7, 'ósent bregst → hitt stendur'); h.osentNidri = false;
   h.nidriTafla = 'payday_invoices_slokk';
   const dn = await RY._lesa(NU, EV);
   assert.match(dn.slokkvitaeki.omaelt, /náðist ekki/); assert.doesNotMatch(JSON.stringify(dn), /kaboom/, 'hrátexti úr Supabase fer aldrei út');

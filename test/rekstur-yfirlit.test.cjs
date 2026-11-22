@@ -92,8 +92,15 @@ test('reksturSl: unnið / reikningsfært (Payday + verslun) / greitt, ógefið �
   assert.equal(jun.reikningsfaert, null); assert.equal(jun.greitt, null); assert.equal(jun.ogefid, null);
   assert.match(jun.omaelt, /Payday 30\.06\.2026/); assert.equal(jun.unnid, 800, 'Unnið er mælt þótt Payday vanti');
   assert.equal(r.man.length, 7);
-  const uppsafnad = r.man.filter((x) => x.ogefid != null).reduce((a, x) => a + x.ogefid, 0);
-  assert.equal(r.ogefid_uppsafnad, uppsafnad); assert.equal(r.ogefid_manudir, 5);
+  assert.equal(r.ogefid_uppsafnad, undefined, 'uppsafnað „ógefið út“ er ekki til (rýni 22.11: það var rangt að stærð og formerki — júlí ber reikninga fyrir júnívinnu)');
+});
+
+test('reksturSl: fyrsti Payday-mánuðurinn (júlí) ber reikninga fyrir júnívinnu → „ógefið út“ ómælt með ástæðu, en reikningsfært og greitt sýnd', () => {
+  const r = Y.reksturSl({ solur: [sala({ id: 1, upphaed_an_vsk: 500, created_at: '2026-07-10T10:00:00Z' })], voidIds: [], frumsolur: [], skyrslur: [], verkbeidnir: [], verklidir: [],
+    payday: [{ status: 'PAID', amount_ex: 9000, created_date: '2026-07-02', paid_date: '2026-07-20' }] }, NU);
+  const jul = r.man.find((x) => x.man === '2026-07');
+  assert.equal(jul.reikningsfaert, 9000 + 500); assert.equal(jul.ogefid, null); assert.match(jul.ogefid_omaelt, /júní/);
+  assert.notEqual(r.man.find((x) => x.man === '2026-08').ogefid, null, 'ágúst: munurinn er mældur');
 });
 
 test('reksturSl: kreditnóta á búðarsölu fylgir frumsölunni (reikningsfært og greitt), líka þegar frumsalan kemur úr frumsolur', () => {
@@ -112,6 +119,11 @@ test('reksturSl: kreditnóta á búðarsölu fylgir frumsölunni (reikningsfært
   assert.equal(m('2026-10').reikningsfaert, 0, 'október (mánuður nótunnar): ekkert');
   assert.equal(m('2026-08').reikningsfaert, -200, 'nóta úr frumsolur á ágúst'); assert.equal(m('2026-11').reikningsfaert, 0);
   assert.equal(r.kredit_an_frumsolu, 0);
+  // greiðslumáti FRUMSÖLUNNAR ræður: nóta skráð „á reikning“ á kortasölu jafnast samt út í versluninni (rýni 22.11)
+  const g2 = { solur: [sala({ id: 1, upphaed_an_vsk: 1000, created_at: '2026-09-20T10:00:00Z', paid_at: '2026-09-21T10:00:00Z' }), sala({ id: 2, credit_of: 1, upphaed_an_vsk: -1000, greitt_med: 'reikningur', paid_at: null, created_at: '2026-10-05T10:00:00Z' })],
+    voidIds: [], skyrslur: [], verkbeidnir: [], verklidir: [], payday: [], frumsolur: [] };
+  const r2 = Y.reksturSl(g2, NU);
+  assert.equal(r2.man.find((y) => y.man === '2026-09').reikningsfaert, 0, 'sala (kort) og nóta (á reikning) jafnast út');
 });
 
 test('reksturBh: sjö mánuðir eftir fra, reikningsfært eftir útgáfudegi (aðeins PAID/SENT); kallið brást → unnið/greitt ómælt með ástæðu en reikningsfært stendur', () => {
@@ -131,7 +143,11 @@ test('reksturBh: sjö mánuðir eftir fra, reikningsfært eftir útgáfudegi (a�
   assert.equal(nov.reikningsfaert, 3030000); assert.equal(nov.greitt, 4740000);
   assert.equal(sep.unnid, null, 'BH-gögn vantar fyrir september → ómælt, ekki 0'); assert.match(sep.omaelt, /náðist ekki/); assert.equal(sep.reikningsfaert, 0, 'mælt og 0');
   const bilad = Y.reksturBh(null, radir, NU, 'Rekstrarskýrsla Brunahólfs svaraði 401');
-  assert.equal(bilad.man.every((x) => x.unnid === null && x.greitt === null), true); assert.equal(bilad.ogefid_uppsafnad, null);
+  assert.equal(bilad.man.every((x) => x.unnid === null && x.greitt === null), true); assert.equal(bilad.ogefid_uppsafnad, undefined);
+  // reikningalestur skilaði engu (null) → reikningsfært og ógefið út ÓMÆLT (ekki 0 og ekki „allt unnið ógefið“) — rýni 22.11
+  const tomur = Y.reksturBh(bhMan, null, NU, null, 'reikningalesturinn skilaði engu');
+  const tn = tomur.man.find((x) => x.man === '2026-11');
+  assert.equal(tn.reikningsfaert, null); assert.equal(tn.ogefid, null); assert.equal(tn.unnid, 10800000, 'unnið stendur'); assert.match(tn.omaelt, /reikningalesturinn skilaði engu/);
   assert.equal(bilad.man.find((x) => x.man === '2026-11').reikningsfaert, 3030000);
   assert.match(bilad.man[0].omaelt, /401/);
 });
