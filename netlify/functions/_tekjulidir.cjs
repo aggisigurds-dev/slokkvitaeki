@@ -137,7 +137,7 @@ function tekjulidir(g, nuIso) {
       for (const l of linur) {
         const q = Number(l.qty != null ? l.qty : 1) || 0, p = Number(l.unit_price_ex_vat) || 0;
         const vara = solulinaVara(l, kort);
-        hlutir.push({ id: flokkaLinu(l, vt, vara), val: (q * p * san) / summa, q, heiti: heitiLinu(l, vara), vara: !!vara });
+        hlutir.push({ id: flokkaLinu(l, vt, vara), val: (q * p * san) / summa, q, heiti: heitiLinu(l, vara), vara: !!vara && vara.flokkur !== 'Ýmsar vörur' });   // „Ýmsar vörur“ geta borið heiti kúnna: þær lúta n≥2-reglunni eins og ótengdar línur
       }
     } else if (san !== 0) {
       hlutir.push({ id: flokkaLinu({}, vt, null), val: san, q: 0, heiti: '(sala án lína)', vara: false });   // sala án verðlína: öll upphæðin í einn flokk eftir sölutegund
@@ -146,7 +146,9 @@ function tekjulidir(g, nuIso) {
     const tegund = TEGUND_UR_VT[vt] || 'annad';
     // Verkstæðishluti sölu (V, færist á klart_at) fer FYRST á línur sem eru verkstæðisvinna (yfirferð, hleðsla, CO₂); það sem er eftir af honum
     // og allt hitt dreifist hlutfallslega eftir mánaðahlutum sölunnar (heildin óbreytt).
-    const vH = dr.filter((d) => d.fl === 'verkstaedi'), gH = dr.filter((d) => d.fl !== 'verkstaedi');
+    // blönduð formerki (t.d. kredit-lína í sölu): V-fyrst á ekki við — hlutfallsleg dreifing á alla mánaðahluta (heildin óbreytt)
+    const blandad = hlutir.some((h) => h.val !== 0 && san !== 0 && Math.sign(h.val) !== Math.sign(san));
+    const vH = blandad ? [] : dr.filter((d) => d.fl === 'verkstaedi'), gH = blandad ? dr : dr.filter((d) => d.fl !== 'verkstaedi');
     const wv = vH.reduce((a, d) => a + d.hlutfall, 0), wg = gH.reduce((a, d) => a + d.hlutfall, 0);
     let laug = Math.abs(wv * san);                                          // V-pottur (án formerkis)
     const skipt = hlutir.map((h) => ({ h, v: 0 }));
@@ -183,7 +185,7 @@ function tekjulidir(g, nuIso) {
     const f = fl[d.id] || { man: {}, stk_man: {} };
     const man = {};
     for (const m of manudir) man[m] = kr(f.man[m]);
-    const e = { id: d.id, heiti: d.heiti, hopur: d.hopur, man, samtals: kr(sumMan(f.man)), i_vinnslu: kr(f.man.i_vinnslu), fyrir_yfirtoku: kr(f.man.fyrir_yfirtoku) };
+    const e = { id: d.id, heiti: d.heiti, hopur: d.hopur, man, samtals: manudir.reduce((a, m) => a + man[m], 0), i_vinnslu: kr(f.man.i_vinnslu), fyrir_yfirtoku: kr(f.man.fyrir_yfirtoku) };
     if (TAEKJAFLOKKAR.has(d.id)) { e.stk = Math.round(Object.keys(f.stk_man).reduce((a, m) => a + f.stk_man[m], 0)); }
     // topp 8: línur sem koma fyrir ≥ 2 sinnum eða eru tengdar vörulista (stakar, ótengdar línur geta verið texti sem á ekki að sjást) — afgangur = „stakar línur“
     const lista = [...(topp[d.id] || new Map()).values()];
@@ -211,7 +213,7 @@ function tekjulidir(g, nuIso) {
   const heild = samtals + iVinnslu + fyrirYf;
   return {
     manudir, flokkar, hopar, solutegundir, samtals_man: samtalsMan, samtals, i_vinnslu: iVinnslu, fyrir_yfirtoku: fyrirYf, heild,
-    heild_solur: kr(heildSolur), stemmir: Math.abs(heild - kr(heildSolur)) <= 5,
+    heild_solur: kr(heildSolur), stemmir: Math.abs(heild - kr(heildSolur)) <= 30,    // rúnun á 15 × 9 reitum getur munað fáeinum krónum; raðir leggjast alltaf upp (samtals = Σ rúnnaðra reita)
     kredit_an_frumsolu: un.annad.kredit_an_frumsolu, nu_manudur: nuMan,
   };
 }

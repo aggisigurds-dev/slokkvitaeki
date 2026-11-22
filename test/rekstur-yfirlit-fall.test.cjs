@@ -158,3 +158,12 @@ test('rekstur-yfirlit: aðeins stjórnandi — óinnskráður 401, önnur rola 4
     assert.equal((await RY.handler({ httpMethod: 'POST', headers: {} })).statusCode, 405);
   } finally { aftur(); }
 });
+
+test('Yfirsýnarröndin (523): „tekjur vikunnar“ víkur fyrir „unnið í mánuðinum“ úr /api/rekstur-yfirlit — ómælt með ástæðu, aldrei 0, félögin sér', () => {
+  const fs = require('node:fs'), path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '523-yfirsyn-rond.js'), 'utf8');
+  assert.doesNotMatch(src, /'tekjur vikunnar'/, 'gamla flísin er farin');
+  assert.match(src, /fetch\('\/api\/rekstur-yfirlit'/); assert.match(src, /unnidFlis\(\) \+/); assert.match(src, /ladaRekstur\(force\)/);
+  assert.match(src, /<small>ómælt<\/small>/); assert.match(src, /Félögin eru aldrei lögð saman/); assert.match(src, /ekki einkunn/);
+  assert.match(src, /S\.rVilla \? 'Unnið í mánuðinum: ómælt — '/);
+});

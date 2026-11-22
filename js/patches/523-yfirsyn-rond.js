@@ -23,7 +23,7 @@
   const HAM_LYKILL = 'bord.yfirsyn';
   const NYTT = 10 * 60000;              // sótt aftur eftir 10 mín. þegar borðið teiknast
   const REKSTUR_URL = 'https://brunaholf.netlify.app/rekstur';
-  const S = { d: null, villa: null, loading: false, at: 0, bannad: false };
+  const S = { d: null, villa: null, loading: false, at: 0, bannad: false, r: null, rVilla: null, rLoading: false, rAt: 0 };
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fin = x => typeof x === 'number' && isFinite(x);
@@ -54,6 +54,37 @@
     } catch (_) { S.villa = 'Yfirsýnin náðist ekki — netið?'; }
     S.loading = false; S.at = Date.now();
     notify();
+    if (!S.bannad && S.d) ladaRekstur(force);        // „Unnið“ í mánuðinum kemur sér (þungt: Payday, Tímavera, Ajour) og seinkar ekki röndinni
+  }
+
+  // 22.11.2026 (Agnar: „skipta út t.d. vikutekjum fyrir þína samantekt“): flísin „tekjur vikunnar“ víkur fyrir „unnið í mánuðinum“ hjá hvoru félagi
+  // (úr /api/rekstur-yfirlit — sama og „Hvernig gengur reksturinn?“ á Tekjum): unnið til dags og % af síðasta mánuði; áætlunin er MERKT í title.
+  async function ladaRekstur(force) {
+    if (S.rLoading) return;
+    if (!force && S.rAt && Date.now() - S.rAt < NYTT) return;
+    S.rLoading = true;
+    try {
+      const r = await fetch('/api/rekstur-yfirlit', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { S.rVilla = 'Reksturinn svaraði ' + r.status; }
+      else { const j = await r.json(); if (j && j.slokkvitaeki && j.brunaholf) { S.r = j; S.rVilla = null; } else S.rVilla = 'óvænt snið'; }
+    } catch (_) { S.rVilla = 'Reksturinn náðist ekki — netið?'; }
+    S.rLoading = false; S.rAt = Date.now();
+    notify();
+  }
+  // flís: tvær línur (SL / BH) — „unnið til dags · % af síðasta mánuði“; ómælt með ástæðu (aldrei 0); engin ör/litur: hlutfallið er ekki einkunn
+  function unnidFlis() {
+    const r = S.r;
+    const lina = (nafn, b) => {
+      if (!b || b.omaelt || !b.setning) return '<span class="yr-v">' + esc(nafn) + ' <small>ómælt</small></span>';
+      const m = b.man && b.man[b.man.length - 1], s = b.setning;
+      if (!m || !fin(m.unnid)) return '<span class="yr-v">' + esc(nafn) + ' <small>ómælt</small></span>';
+      return '<span class="yr-v">' + mkr(m.unnid) + '<small>m ' + esc(nafn) + '</small>' + (s.hlutfall_fyrri != null ? '<s class="yr-h2" title="% af síðasta mánuði">' + s.hlutfall_fyrri + ' %</s>' : '') + '</span>';
+    };
+    if (!r) return '<div class="yr-well" title="' + esc(S.rVilla ? 'Unnið í mánuðinum: ómælt — ' + S.rVilla : 'Sæki unnið í mánuðinum …') + '"><span class="yr-v">' + (S.rVilla ? '<small>ómælt</small>' : '<small>…</small>') + '</span><span class="yr-n">unnið í mánuðinum</span></div>';
+    const tit = ['slokkvitaeki', 'brunaholf'].map(k => { const b = r[k]; return (k === 'slokkvitaeki' ? 'Slökkvitæki: ' : 'Brunahólf: ') + (b && b.setning ? b.setning.setning + (b.setning.aaetlun ? ' ' + b.setning.aaetlun.texti : '') : 'ómælt'); }).join('\n');
+    const nm = MANUDUR[manOf(r.idag)] || '';
+    return '<div class="yr-well" title="' + esc(tit + '\nFélögin eru aldrei lögð saman. Án VSK. Hlutfallið er unnið til dags ÷ allt unnið í síðasta mánuði — ekki einkunn.') + '">' +
+      lina('SL', r.slokkvitaeki) + lina('BH', r.brunaholf) + '<span class="yr-n">unnið í ' + esc(nm) + ' til dags · % af síðasta mán.</span></div>';
   }
 
   // 153 (Ársskoðun) kallar þetta þegar hún reiknar virðið. Geymt á þjóni aðeins ef tölurnar breyttust.
@@ -264,7 +295,7 @@
       '<span class="yr-kl">' + ic('klukka') + 'Vikan<em>' + esc(vika) + '</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + (fin(klst) ? isk(klst) : '—') + '<small>klst</small></span>' + (dk != null ? '<span class="yr-kp ' + (dk >= 0 ? 'yr-g' : 'yr-r') + '" title="Á móti ' + esc(merki) + '">' + (dk >= 0 ? '▲ ' : '▼ ') + Math.abs(dk) + ' %</span>' : '') + (fin(klstF) ? '<span class="yr-ks" title="' + esc(merki) + (ok(tv) ? ' · ' + tv.vika.starfsmenn + ' starfsmenn í vikunni' : '') + '">síðast ' + isk(klstF) + '</span>' : '') + '</span>' +
       '<div class="yr-vk">' +
-        mal(tekNu, tekFyrr, mkr(tekNu) + '<small>m</small>', 'tekjur vikunnar', 'Virði vikunnar án vsk: BH tímar ' + mkr(rek.bh.tima[1]) + ' · BH göt ' + mkr((rek.bh.lshV[1] || 0) + (rek.bh.hekV[1] || 0)) + ' · SL ' + mkr(rek.sl.tekjur[1]) + ' m · ' + merki + ' ' + mkr(tekFyrr) + ' m', true) +
+        unnidFlis() +
         mal(rukk, rukkF, (rukk != null ? rukk + ' %' : '—'), 'rukkanlegt', 'Rukkanlegir tímar ' + isk(rek.bh.klst[1]) + ' af ' + isk(klst) + ' · síðasta vika ' + isk(rek.bh.klst[2]) + ' af ' + isk(klstOll)) +
         mal(rek.bh.got[1], rek.bh.got[2], isk(rek.bh.got[1]), 'göt kláruð', 'Göt kláruð í vikunni (Ajour) · öll síðasta vika ' + isk(rek.bh.got[2]), false, !heilVika) +
         mal(reikn, reiknF, isk(reikn), 'reikn. sendir', 'Reikningar sendir: SL ' + (rek.sl.sentN[1] || 0) + ' (öll síðasta vika ' + (rek.sl.sentN[2] || 0) + ') · BH send í bókun ' + (rek.bh.bokunN[1] || 0) + ' (' + (rek.bh.bokunN[2] || 0) + ')', false, !heilVika) +
@@ -484,6 +515,7 @@
       '.yr-vk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}',
       '.yr-well{display:flex;flex-direction:column;gap:4px;min-width:0;padding:7px 9px 6px}',
       '.yr-v{display:flex;align-items:baseline;gap:5px;font-size:16px;font-weight:600;line-height:1.1;white-space:nowrap}.yr-v small{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-v s{text-decoration:none;font-size:11px;font-weight:600}',
+      '.yr-h2{color:#b8c6dd;font-weight:500}',
       '.yr-up{color:#4ade80;text-shadow:0 0 8px rgba(74,222,128,.55)}.yr-dn{color:#ff8f86;text-shadow:0 0 8px rgba(248,113,113,.55)}',
       '.yr-n{font-size:11px;color:#a9b8d0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.yr-db{position:relative;height:5px;border-radius:999px;background:rgba(0,0,0,.5);box-shadow:inset 0 1px 2px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.07)}',

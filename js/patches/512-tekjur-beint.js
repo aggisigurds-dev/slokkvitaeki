@@ -178,9 +178,10 @@
     if (tl) {
       var tlLink = ' · <a href="https://brunaholf.netlify.app/rekstur#tekjulidir" target="_blank" rel="noopener">Sjá alla tekjuliði →</a>';
       if (tl.omaelt) tlTxt = '<p class="tkb-rk-l">Tekjuliðir: <b>ómælt</b> — ' + esc(tl.omaelt) + tlLink + '</p>';
+      else if (!(tl.topp || []).length) tlTxt = '<p class="tkb-rk-l">Tekjuliðir · ' + esc(manNafn(tl.man)) + ' til dags: engin sala enn' + tlLink + '</p>';
       else tlTxt = '<p class="tkb-rk-l">Tekjuliðir · ' + esc(manNafn(tl.man)) + ' til dags: ' + (tl.topp || []).slice(0, 5).map(function (x) {
         return '<b>' + esc(x.heiti) + '</b> ' + esc(mkrS(x.kr)) + (x.hlutfall != null ? ' (' + esc(String(x.hlutfall).replace('.', ',')) + ' %)' : '');
-      }).join(' · ') + tlLink + '</p>';
+      }).join(' · ') + (tl.stemmir === false ? ' · <b>heildin stemmir ekki við sölur</b>' : '') + tlLink + '</p>';
     }
     var innTxt = inn.omaelt ? 'Innheimtuhlutfall <b>ómælt</b> · greiðsluhraði <b>ómælt</b> — ' + esc(inn.omaelt)
       : 'Innheimtuhlutfall <b>' + (inn.hlutfall != null ? esc(String(inn.hlutfall).replace('.', ',')) + ' %' : 'ómælt') + '</b>' + ibox(sk.innheimtuhlutfall || '') +

@@ -121,3 +121,20 @@ test('topp 8: vörulistalínur og endurteknir textar sýndir, STAKAR ótengdar l
   assert.equal(TL.toppFlokkar(r, '2026-11', 3)[0].id, flo(r, '03').samtals >= flo(r, '04').samtals ? '03' : '04');
   assert.ok(TL.SKILGREINING.almennt && TL.SKILGREINING.fyrirvarar && TL.SKILGREINING.manudir && TL.SKILGREINING.afslattur);
 });
+
+test('rýni 22.11: blönduð formerki með V-hluta tapa engu; „Ýmsar vörur“ sýndar aðeins ef n ≥ 2; raðir leggjast upp í rúnnuðum reitum', () => {
+  // sala 80 kr: Skilti +100, Hleðsla −20 — allt sem V-hluti (klart_at í nóvember): heildin = salan, ekkert tapast
+  const s = sala({ id: 950, num: 'R-009950', created_at: '2026-10-29T10:00:00Z', upphaed_an_vsk: 80, linur: [lin('Skilti flöt', 1, 100), lin('Hleðsla · Duft 6 kg. ABC hleðsla', 1, -20)] });
+  const vb = [{ id: 60, num: 'R-009950-V1', status: 'collected', verd: 99.2, klart_at: '2026-11-03T08:00:00Z' }];   // 80 án vsk
+  const r = TL.tekjulidir(g({ solur: [s], verkbeidnir: vb }), NU);
+  assert.equal(r.samtals, 80); assert.equal(r.heild_solur, 80); assert.equal(r.stemmir, true);
+  // „Ýmsar vörur“ (gætu borið heiti kúnna) — ein lína sýnd ekki með nafni
+  const vorur2 = VORUR.concat([{ id: 77, nafn: 'Eitthvað Fyrirtæki ehf.', flokkur: 'Ýmsar vörur', virkt: true }]);
+  const r2 = TL.tekjulidir({ ...g({ solur: [sala({ upphaed_an_vsk: 50, linur: [lin('Eitthvað Fyrirtæki ehf.', 1, 50, 77)] })] }), vorur: vorur2 }, NU);
+  assert.doesNotMatch(JSON.stringify(r2), /Fyrirtæki/); assert.match(JSON.stringify(flo(r2, '13').topp), /Stakar línur/);
+  // rúnun: Σ mánaða = samtals í hverjum flokki og alls
+  const margar = Array.from({ length: 30 }, (_, i) => sala({ upphaed_an_vsk: 33.33, created_at: i % 2 ? '2026-10-10T10:00:00Z' : '2026-11-10T10:00:00Z', linur: [lin('Yfirferð · A', 3, 10.1), lin('Akstur', 1, 3.3)] }));
+  const r3 = TL.tekjulidir(g({ solur: margar }), NU);
+  for (const f of r3.flokkar) assert.equal(f.samtals, r3.manudir.reduce((a, m) => a + f.man[m], 0), f.id);
+  assert.equal(r3.samtals, r3.manudir.reduce((a, m) => a + r3.samtals_man[m], 0)); assert.equal(r3.stemmir, true);
+});
