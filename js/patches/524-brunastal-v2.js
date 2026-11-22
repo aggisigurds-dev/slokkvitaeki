@@ -17,6 +17,7 @@
   const PANEL_ID = '_pe-panel';
   const PRE = 'html[data-thm-preset="brunastal"][' + ATTR + '="1"]';
   const ON = PRE + '[data-bstal-banner="on"]';
+  const ARS = PRE + ' body #view-arsskodun#view-arsskodun';
 
   const TOKENS = {
     ui: 'Poppins,system-ui,sans-serif',
@@ -152,7 +153,34 @@
       H + ' #view-arsskodun #_ars-search,' + H + ' #view-arsskodun #_ars-sort,' +
         H + ' #view-arsskodun #_ars-print,' + H + ' #view-arsskodun ._ars-vm,' +
         H + ' #view-arsskodun input,' + H + ' #view-arsskodun select' +
-        '{background:rgba(8,22,36,.9)!important;color:var(--bstal-ink)!important;border-color:rgba(255,255,255,.12)!important}'
+        '{background:rgba(8,22,36,.9)!important;color:var(--bstal-ink)!important;border-color:rgba(255,255,255,.12)!important}',
+
+      /* 230 setur .view input:not()×3 (4 attr) — auka attr hér vinnur. 240 #_ars-search. */
+      H + ' .view input:not([type=checkbox]):not([type=radio]):not([type=color]),' +
+        H + ' .view textarea,' + H + ' .view select,' +
+        H + ' #_ars-search,' + H + ' #_ars-sort' +
+        '{background:rgba(8,22,36,.9)!important;background-image:none!important;color:var(--bstal-ink)!important;' +
+        'border:1px solid rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}',
+      H + ' .view input[type="text"],' + H + ' .view input[type="search"],' +
+        H + ' .view input[type="number"],' + H + ' .view input[type="email"],' +
+        H + ' .view input[type="tel"]' +
+        '{background:rgba(8,22,36,.9)!important;color:var(--bstal-ink)!important}',
+      H + ' .view [class*="-card"]' +
+        '{background:var(--bstal-glass)!important;border:1px solid rgba(255,138,31,.16)!important;color:var(--bstal-ink)!important}',
+
+      /* 394: html body #view-arsskodun#view-arsskodun #_ars-search (3 id). */
+      ARS + ',' + ARS + '.view' +
+        '{background:url(' + TOKENS.stal + ') center/cover no-repeat,var(--bstal-navy)!important;color:var(--bstal-ink)!important}',
+      ARS + ' #_ars-search,' + ARS + ' #_ars-sort,' + ARS + ' #_ars-print,' +
+        ARS + ' input,' + ARS + ' select,' + ARS + ' textarea' +
+        '{background:rgba(8,22,36,.9)!important;background-image:none!important;color:var(--bstal-ink)!important;' +
+        'border:1px solid rgba(255,255,255,.12)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}',
+      ARS + ' .arsm-seg,' + ARS + ' ._ars-sjon,' + ARS + ' ._ars-filterstrip,' + ARS + ' ._ars-statusrow' +
+        '{background:rgba(8,22,36,.78)!important;border-color:rgba(255,255,255,.08)!important;color:var(--bstal-ink)!important}',
+      ARS + ' .arsm-seg button,' + ARS + ' ._ars-sjon button' +
+        '{background:transparent!important;color:var(--bstal-ink)!important}',
+      ARS + ' .arsm-seg button.on,' + ARS + ' ._ars-sjon button.on,' + ARS + ' .arsm-seg button[aria-pressed="true"]' +
+        '{background:var(--bstal-grad)!important;color:#fff!important}'
     ].join('\n');
   }
 
@@ -161,9 +189,11 @@
     if (!s) {
       s = document.createElement('style');
       s.id = CSS_ID;
-      document.head.appendChild(s);
     }
     if (s.textContent !== cssText()) s.textContent = cssText();
+    if (s.parentNode !== document.head || s !== document.head.lastElementChild) {
+      document.head.appendChild(s);
+    }
   }
 
   function teiknaRofa() {

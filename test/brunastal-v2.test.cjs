@@ -68,6 +68,8 @@ test('V2 er HUD: gler, tafla, appelsína — ekki bakgrunnur einn', () => {
   assert.ok(SRC.includes('Poppins'));
   assert.ok(SRC.includes('data-thm-preset="brunastal"'));
   assert.ok(SRC.includes('data-bstal-v2'));
+  assert.ok(SRC.includes('.view input:not([type=checkbox])'));
+  assert.ok(SRC.includes('#view-arsskodun#view-arsskodun'));
 });
 
 test('rofi fer efst í Stílstjóra, ekki í Sýn-rönd né Bakgrunnar', () => {
