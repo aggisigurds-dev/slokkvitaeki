@@ -12,6 +12,10 @@
 //   • Útgáfudagur, ekki gjalddagi: septemberverk sem er reikningsfært 30.09 er septembertekja þótt gjalddaginn sé í október
 //     (VSK-tímabil fylgir útgáfudegi). Gjalddagi er aðeins varaleið þar sem útgáfudag vantar (7 af 395 röðum, allar fyrir 2026).
 //   • NLSH: Payday-reikningurinn er 95 % — 5 % öryggisfé er haldið eftir og telst ekki fyrr en það er reikningsfært.
+// KREDITNÓTUR MIÐAST VIÐ DAGSETNINGU FRUMSÖLUNNAR (Agnar 22.11.2026: „0 fellur bara út“) í slokkvitaekiManudirFrumsala() hér að neðan —
+//   nóta (credit_of → frumsala) telst í mánuði frumsölunnar, svo salan og nótan jafnast út í sama mánuði (tekjur og fjöldi tækja).
+//   slokkvitaekiManudir() (nóta í sínum mánuði) er ÓBREYTT og enn notað af Ráðgjafanum (markmiðsröndin) — hún má ekki breytast fyrr en
+//   Agnar og Tony Stark samþykkja nýja grunnlínu. Skjáir Tekjur í beinni nota nýju regluna.
 // Félögin eru ALDREI lögð saman hér. Hvert þeirra er sér röð á skjánum.
 'use strict';
 
@@ -33,6 +37,26 @@ function slokkvitaekiManudir(rows, voidIds) {
     ut[m] = (ut[m] || 0) + (Number(r.upphaed_an_vsk) || 0);
   }
   return ut;
+}
+
+// → { man:{ 'YYYY-MM': kr }, kredit_an_frumsolu }  Kreditnóta (credit_of) á mánuð frumsölunnar: úr `rows` eða `frumsolur` ([{id, created_at}], sótt sér
+// þegar frumsalan er eldri en lesturinn). Finnist hún ekki — eða röð er is_credit án credit_of — heldur nótan eigin mánuði og er TALIN
+// í kredit_an_frumsolu (aldrei þögult). Kreditnóta á bakfærða sölu telst ekki (slokkvitaekiGildar), eins og áður.
+function slokkvitaekiManudirFrumsala(rows, voidIds, frumsolur) {
+  const dagur = new Map();
+  for (const f of frumsolur || []) if (f && f.id != null) dagur.set(String(f.id), f.created_at);
+  for (const r of rows || []) if (r && r.id != null) dagur.set(String(r.id), r.created_at);
+  const ut = {};
+  let an = 0;
+  for (const r of slokkvitaekiGildar(rows, voidIds)) {
+    let d = r.created_at;
+    if (r.credit_of != null) { const f = dagur.get(String(r.credit_of)); if (f) d = f; else an++; }
+    else if (r.is_credit === true) an++;
+    const m = manudur(d);
+    if (!m) continue;
+    ut[m] = (ut[m] || 0) + (Number(r.upphaed_an_vsk) || 0);
+  }
+  return { man: ut, kredit_an_frumsolu: an };
 }
 
 const BH_STODUR = new Set(['PAID', 'SENT']);
@@ -101,4 +125,4 @@ function hagnadur(tekjurMan, f) {
   return { kr: kr(tekjurMan - Number(fs.laun) - Number(fs.annar)), vantar: [], forsendur: { laun: kr(fs.laun), annar: kr(fs.annar) }, skrad: fs.skrad || null };
 }
 
-module.exports = { SL_FRA, kr, manudur, slokkvitaekiGildar, slokkvitaekiManudir, brunaholfManudir, tolur, fyrriMan, framlegdVoru, hagnadur, FORSENDUR };
+module.exports = { SL_FRA, kr, manudur, slokkvitaekiGildar, slokkvitaekiManudir, slokkvitaekiManudirFrumsala, brunaholfManudir, tolur, fyrriMan, framlegdVoru, hagnadur, FORSENDUR };

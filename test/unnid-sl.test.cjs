@@ -204,3 +204,11 @@ test('samtals: mánaðatölur + í vinnslu + utan mælingar = samtölur gömlu r
   assert.doesNotMatch(JSON.stringify(t), /customer|nafn|kt/i, 'aðeins samtölur — og engin orð með „kt“ í svarinu');
   assert.equal(U.unnidTolur(reikna({}, '2026-05-10T00:00:00Z'), '2026-05-10T00:00:00Z').fyrri_manudur, null, 'apríl er ómældur — null');
 });
+
+test('kredit án frumsölu er TALIÐ (Agnar 22.11.2026: nóta fylgir frumsölu): finnst ekki → eigin dagur og kredit_an_frumsolu; úr g.frumsolur → mánuður frumsölunnar; is_credit án credit_of talið', () => {
+  const a = reikna({ solur: [sala({ id: 61, credit_of: 7777, upphaed_an_vsk: -100, created_at: '2026-11-05T10:00:00Z' }), sala({ id: 62, is_credit: true, upphaed_an_vsk: -50, created_at: '2026-11-06T10:00:00Z' })] });
+  assert.equal(a.annad.kredit_an_frumsolu, 2); assert.equal(a.man['2026-11'].kr.arsthjonusta, -150);
+  const b = reikna({ solur: [sala({ id: 63, credit_of: 8888, upphaed_an_vsk: -100, created_at: '2026-11-05T10:00:00Z' })], frumsolur: [{ id: 8888, created_at: '2026-08-14T10:00:00Z' }] });
+  assert.equal(b.annad.kredit_an_frumsolu, 0); assert.equal(b.man['2026-08'].kr.arsthjonusta, -100, 'á mánuð frumsölunnar'); assert.equal(b.man['2026-11'], undefined);
+  assert.equal(U.unnidTolur(a, NU).kredit_an_frumsolu, 2);
+});

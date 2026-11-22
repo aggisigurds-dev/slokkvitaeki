@@ -99,7 +99,7 @@ async function slUnnid(nu, voidP) {
     const init = sig ? { signal: sig } : undefined;
     const fra = T.SL_FRA + '-01';
     const [solur, voidIds, skyrslur, verkbeidnir, verklidir] = await Promise.all([
-      sbOll(`solur?select=id,num,status,credit_of,vidskiptategund,upphaed_an_vsk,created_at,customer_base_id,customer_id,linur&status=eq.final&created_at=gte.${fra}&order=id.asc`, init),
+      sbOll(`solur?select=id,num,status,credit_of,is_credit,vidskiptategund,upphaed_an_vsk,created_at,customer_base_id,customer_id,linur&status=eq.final&created_at=gte.${fra}&order=id.asc`, init),
       voidP,
       sbOll('customer_documents?select=id,doc_type,doc_date,customer_base_id,fyrirtaeki_id,is_duplicate,skodun_ar_man,notes&doc_type=in.(uttektarskyrsla,brunakerfi,slokkvikerfi)&source=eq.app&is_duplicate=not.is.true&doc_date=gte.2026-02-01&order=id.asc', init),
       sbOll(`verkbeidnir?select=id,num,status,verd,klart_at,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
@@ -127,7 +127,7 @@ async function lesa(nu = new Date(), event = null) {
   const voidP = sbOll('solur?select=id&status=eq.void&order=id.asc').then((r) => r.map((x) => x.id));
   const slUnnidP = event === false ? Promise.resolve(null) : slUnnid(nu, voidP);   // Vista forsendu sækir ekki Unnið: viðmótið heldur fyrri tölu
   const [sl, voidIds, bh, drog, forsendur, osent] = await Promise.all([
-    sbOll(`solur?select=id,status,credit_of,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fraBil}&order=id.asc`),
+    sbOll(`solur?select=id,status,credit_of,is_credit,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fraBil}&order=id.asc`),
     voidP,
     sbOll(`invoices?select=status,source,hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fraBh},and(utgafudagur.is.null,gjalddagi.gte.${fraBh}))&order=id.asc`),
     sbOll('solur?select=upphaed_an_vsk&status=eq.drog&hidden=is.false&order=id.asc'),
@@ -145,7 +145,13 @@ async function lesa(nu = new Date(), event = null) {
   for (const v of vorur) kv[String(v.id)] = Number(v.kostnadarverd);
   const iMan = (m) => linur.filter((r) => T.manudur(r.created_at) === m);
 
-  const slMan = T.slokkvitaekiManudir(sl, voidIds);
+  // Kreditnóta miðast við dagsetningu FRUMSÖLUNNAR (Agnar 22.11.2026). Frumsala sem er eldri en lesturinn (t.d. nóta í janúar á desembersölu) er sótt sér.
+  const hef = new Set(sl.map((r) => String(r.id))), voidSet = new Set((voidIds || []).map(String));
+  const vantar = [...new Set(sl.filter((r) => r.credit_of != null && !hef.has(String(r.credit_of)) && !voidSet.has(String(r.credit_of))).map((r) => Number(r.credit_of)).filter((n) => Number.isInteger(n) && n > 0))];
+  let frumsolur = [];
+  try { for (let i = 0; i < vantar.length; i += 150) frumsolur.push(...await sbOll(`solur?select=id,created_at&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`)); } catch (e) { frumsolur = []; }
+  const slFr = T.slokkvitaekiManudirFrumsala(sl, voidIds, frumsolur);
+  const slMan = slFr.man;
   const bhMan = T.brunaholfManudir(bh);
   // Tómur lestur er EKKI 0: bæði félög gefa út reikninga í hverjum mánuði og bilið nær alltaf yfir síðasta mánuð, svo
   // engin röð þýðir að lesturinn brást (aðgangsregla, rangur lykill — mælt 17.11.2026: RLS á invoices án reglu gaf [] með
@@ -159,6 +165,7 @@ async function lesa(nu = new Date(), event = null) {
     slokkvitaeki: {
       ...slT,
       unnid: slUnnidSvar,
+      kredit_an_frumsolu: slFr.kredit_an_frumsolu,
       pipa: { heiti: 'Drög (ekki reikningsfært)', kr_an_vsk: T.kr(drog.reduce((a, r) => a + (Number(r.upphaed_an_vsk) || 0), 0)), fjoldi: drog.length },
       framlegd_voru: { fyrri_manudur: T.framlegdVoru(iMan(slT.fyrri_man), kv), manudur: T.framlegdVoru(iMan(slT.manudur), kv) },
       hagnadur: T.hagnadur(slT.fyrri_manudur, f.slokkvitaeki),
@@ -171,7 +178,7 @@ async function lesa(nu = new Date(), event = null) {
     },
     skilgreining: {
       slokkvitaeki_unnid: 'UNNIÐ (regla Agnars 21.–22.11.2026), án VSK: SKOÐANIR (ársþjónusta, brunakerfi, slökkvikerfi) telja í mánuði skoðunarinnar skv. skýrslunni, þótt ógreiddar; skýrsla gerð mánuðinum á eftir breytir því ekki. Án skýrslu: söludagur, flaggað „án skýrslu“; skýrslur með ólíkum mánuði: flaggað „óviss“. VERKSTÆÐI telst þegar tæki er skráð klárt og sent í afgreiðslu (klart_at); tómt (eldri raðir): söludagur, flaggað „áætlað“; í vinnslu telst ekki enn. Salan telur afganginn án V-hluta verkstæðis. TÆKI: yfirfarin, hlaðin og ný — skoðanir eftir skoðunarmánuði, verkstæði eftir klart_at. Samtals úr báðum.',
-      slokkvitaeki: 'Án VSK. Sölur (final) eftir skráningardegi; kreditnótur dregnar frá; bakfært og drög ekki talin; kreditnóta á bakfærða sölu ekki talin. Mælt frá yfirtöku 04.05.2026 (eldra er hjá Stólpa).',
+      slokkvitaeki: 'Án VSK. Sölur (final) eftir skráningardegi; kreditnótur dregnar frá í mánuði FRUMSÖLUNNAR (nóta og sala jafnast út); bakfært og drög ekki talin; kreditnóta á bakfærða sölu ekki talin. Mælt frá yfirtöku 04.05.2026 (eldra er hjá Stólpa).',
       brunaholf: 'Án VSK. REIKNINGSFÆRT: Payday-reikningar greiddir eða sendir, höfuðstóll, eftir útgáfudegi. NLSH: 95 % — 5 % öryggisfé telst þegar það er reikningsfært. UNNIÐ (áætlun, regla Agnars 21.11.2026): stimplaðir tímar úr Tímaveru × dagvinnutaxti verkstaðar (9.951 kr. ef verkstað vantar) + kláruð göt úr Ajour eftir Done-degi, eins og Rekstrarskýrsla Brunahólfs. Yfirvinna, efni og akstur eru ekki í Unnið. GREITT: Payday-greiddir og handfærðir reikningar (greiðsla skráð í Kröfu yfirliti).',
       hagnadur: 'Tekjur síðasta heila mánaðar − launakostnaður − annar kostnaður (tölur úr bókhaldi, slegnar inn hér). Laun eru ekki í kerfinu.',
     },

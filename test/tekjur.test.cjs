@@ -116,10 +116,15 @@ function stub(h) {
       return svar([{ job_id: 51, service: 'Duft 2 kg. ABC hleðsla', status: 'done', eytt_at: null }, { job_id: 51, service: 'Duft 6 kg. ABC hleðsla', status: 'eytt', eytt_at: null }, { job_id: 51, service: 'Duft 6 kg. ABC hleðsla', status: 'broken', eytt_at: null }]);
     }
     if (t === 'solur' && q.get('select').includes('linur')) return svar([{ status: F, created_at: '2026-10-05T00:00:00Z', linur: [{ product_id: 7, qty: 1, unit_price_ex_vat: 100 }] }]);
+    if (t === 'solur' && (q.get('id') || '').startsWith('in.')) {          // frumsölur kreditnótna sóttar sér (22.11.2026)
+      h.frumsolurSott = true;
+      return svar(h.kreditOrg === true ? [{ id: 500, created_at: '2026-08-10T00:00:00Z' }] : []);
+    }
     if (t === 'solur') return svar([
       { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-10-02T00:00:00Z' },
       { id: 9, status: F, upphaed_an_vsk: 400, created_at: '2026-11-02T00:00:00Z' },
       { id: 5, status: F, upphaed_an_vsk: -500, credit_of: 2, created_at: '2026-11-03T00:00:00Z' },
+      ...(h.kreditOrg ? [{ id: 20, status: F, upphaed_an_vsk: -700, credit_of: 500, created_at: '2026-11-03T00:00:00Z' }] : []),
     ]);
     if (t === 'invoices' && h.invoicesTomt) return svar([]);
     if (t === 'invoices') { assert.match(q.get('or'), /utgafudagur/); return svar([{ status: 'PAID', source: 'payday', hofudstoll: 300, utgafudagur: '2026-11-01', gjalddagi: '2026-11-10' }]); }
@@ -176,6 +181,49 @@ test('tekjur-beint: Brunahólf „Unnið" úr Rekstrarskýrslu — kaka kallanda
   h.unnidKastar = false; h.unnidKall = 0;
   const d6 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), false);
   assert.equal(d6.brunaholf.unnid, null); assert.equal(h.unnidKall, 0, 'skýrslan ekki kölluð við Vista');
+});
+
+// ── 22.11.2026: KREDITNÓTUR MIÐAST VIÐ DAGSETNINGU FRUMSÖLUNNAR (Agnar: „0 fellur bara út“) ──────────────────────────────────────────
+test('kredit í öðrum mánuði en frumsala: nettó 0 í mánuði frumsölunnar og 0 í mánuði nótunnar (slokkvitaekiManudirFrumsala)', () => {
+  const rows = [
+    { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-08-20T09:00:00Z' },
+    { id: 2, status: F, upphaed_an_vsk: -1000, credit_of: 1, created_at: '2026-09-04T09:00:00Z' },
+  ];
+  const r = T.slokkvitaekiManudirFrumsala(rows, []);
+  assert.equal(r.man['2026-08'], 0, 'ágúst: salan og nótan jafnast út');
+  assert.equal(r.man['2026-09'], undefined, 'september (mánuður nótunnar): ekkert');
+  assert.equal(r.kredit_an_frumsolu, 0);
+  // gamla fallið (Ráðgjafinn) er ÓBREYTT: nótan í sínum mánuði — markmiðsröndin snertist ekki
+  assert.deepEqual(T.slokkvitaekiManudir(rows, []), { '2026-08': 1000, '2026-09': -1000 });
+});
+
+test('hluta-kredit: mismunurinn er eftir í mánuði frumsölunnar; frumsala sótt sér (frumsolur); án frumsölu = eigin mánuður og TALIÐ', () => {
+  const sala = { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-08-20T09:00:00Z' };
+  const nota = { id: 2, status: F, upphaed_an_vsk: -300, credit_of: 1, created_at: '2026-09-04T09:00:00Z' };
+  assert.deepEqual(T.slokkvitaekiManudirFrumsala([sala, nota], []).man, { '2026-08': 700 });
+  // frumsalan er ekki í lestrinum (eldri en gluggi) en kemur úr frumsolur
+  const b = T.slokkvitaekiManudirFrumsala([nota], [], [{ id: 1, created_at: '2026-08-20T09:00:00Z' }]);
+  assert.deepEqual(b.man, { '2026-08': -300 }); assert.equal(b.kredit_an_frumsolu, 0);
+  // finnst hvergi → eigin mánuður, talið; is_credit án credit_of líka; kredit á bakfærða sölu er úti og ekki talin
+  const c = T.slokkvitaekiManudirFrumsala([
+    { id: 3, status: F, upphaed_an_vsk: -100, credit_of: 999, created_at: '2026-10-05T09:00:00Z' },
+    { id: 4, status: F, upphaed_an_vsk: -50, is_credit: true, created_at: '2026-10-06T09:00:00Z' },
+    { id: 5, status: F, upphaed_an_vsk: -900, credit_of: 77, created_at: '2026-10-07T09:00:00Z' },
+  ], [77]);
+  assert.deepEqual(c.man, { '2026-10': -150 }); assert.equal(c.kredit_an_frumsolu, 2);
+});
+
+test('tekjur-beint: frumsala kreditnótu sótt sér, nóta fer á mánuð frumsölunnar og „kredit án frumsölu“ er talið í svarinu', async () => {
+  const h = { kreditOrg: true }; stub(h);
+  const d = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.equal(d.slokkvitaeki.kredit_an_frumsolu, 0, 'frumsalan fannst');
+  assert.equal(h.frumsolurSott, true, 'frumsölurnar sóttar með id=in.(…) — aðeins þær sem vantar');
+  assert.equal(d.slokkvitaeki.manudur_til_dags, 400, 'nóvember: nótan (−700 á ágústsölu) er EKKI í nóvember');
+  assert.equal(d.slokkvitaeki.ar_til_dags, 700, 'ár til dags = 1000 + 400 − 700');
+  h.kreditOrg = 'finnst-ekki';
+  const d2 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.equal(d2.slokkvitaeki.kredit_an_frumsolu, 1, 'frumsalan finnst ekki → eigin mánuður og talið');
+  assert.equal(d2.slokkvitaeki.manudur_til_dags, -300, 'nóvember: 400 − 700 (eigin dagur)');
 });
 
 test('tekjur-beint: Slökkvitæki „Unnið“ — skoðanir eftir skoðunarmánuði, verkstæði á klart_at, samtals; ómælt (aldrei 0) ef lestur bregst; Vista sækir það ekki', async () => {
@@ -406,6 +454,90 @@ test('512: Slökkvitæki „unnið“ — Skoðanir · Verkstæði · Verslun ·
   // eldra svar án unnid (skyndiminni/eldri þjónn): engin Unnið-röð og engin villa
   const c = flisar(svarHttp(200, d(undefined))); c.TB.mount(c.el); await bida();
   assert.doesNotMatch(c.el.innerHTML.split('Brunahólf<small>')[0], /unnið/); assert.match(c.el.innerHTML, /Slökkvitæki<small>söluskráð/);
+});
+
+// ── 22.11.2026: „Hvernig gengur reksturinn?“ efst í Tekjur í beinni ─────────────────────────────────────────────────────────────────────
+const svarURL = (adal, rekstur) => async (url) => { const r = String(url).indexOf('rekstur-yfirlit') >= 0 ? rekstur : adal; return { status: r.status, ok: r.status >= 200 && r.status < 300, json: async () => r.j }; };
+const TKP = { maelt_at: '2026-11-22T04:00:00Z', skilgreining: {},
+  slokkvitaeki: { manudur: '2026-11', manudur_til_dags: 400, fyrri_man: '2026-10', fyrri_manudur: 1000, ar_til_dags: 1400, ar_fra: '2026-05', pipa: { kr_an_vsk: 0, fjoldi: 0 }, framlegd_voru: { fyrri_manudur: { framlegd: 60, thak_pct: 10 } }, hagnadur: { kr: null } },
+  brunaholf: { manudur: '2026-11', manudur_til_dags: 3034316, fyrri_man: '2026-10', fyrri_manudur: 11755921, ar_til_dags: 30000000, ar_fra: '2026-01', pipa: { heiti: 'Ósent', kr_m_vsk: 100, fjoldi: 1 }, hagnadur: { kr: null } } };
+function rkData() {
+  const man = (m, u, rf, gr, extra) => Object.assign({ man: m, unnid: u, reikningsfaert: rf, greitt: gr, ogefid: rf == null ? null : u - rf }, extra || {});
+  const slMan = [
+    man('2026-05', 1000000, null, null, { omaelt: 'Slökkvitæki fór í Payday 30.06.2026 — reikningar fyrir þann tíma eru ekki í þessum gögnum' }),
+    man('2026-06', 2000000, null, null, { omaelt: 'Slökkvitæki fór í Payday 30.06.2026 — reikningar fyrir þann tíma eru ekki í þessum gögnum' }),
+    man('2026-07', 4000000, 4900000, 4800000), man('2026-08', 4200000, 4200000, 4100000), man('2026-09', 4500000, 5200000, 5000000),
+    man('2026-10', 5178689, 5700000, 4600000, { mat: { an_skyrslu_kr: 79745, aaetlad_kr: 160108 }, hlutar: { rf_payday: 4700000, rf_verslun: 1000000, gr_payday: 3900000, gr_verslun: 700000 } }),
+    man('2026-11', 2103182, 2146000, 709000),
+  ];
+  const bhMan = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11'].map((m, i) => man(m, 8000000 + i * 100000, 7000000 + i * 500000, 6000000 + i * 100000, { hlutar: { tima: 1000, landspitali: 2000, heklureitur: 3000 } }));
+  bhMan[5] = man('2026-10', 9280000, 11760000, 5000000);
+  return {
+    maelt_at: '2026-11-22T04:00:00Z', idag: '2026-11-22',
+    slokkvitaeki: { man: slMan, ogefid_uppsafnad: -1234567, ogefid_manudir: 5,
+      ogreitt: { kr_an_vsk: 2730762, kr_m_vsk: 3386140, n: 29, gjaldfallid_kr: 1743464, gjaldfallid_n: 22, yfir45_kr: 40000, yfir45_n: 2 },
+      innheimta: { hlutfall: 92.5, hradi_midgildi: 10, hradi_n: 391, greitt_kr: 21465433, gjaldfallid_kr: 1743464, fra: '2026-06-30' },
+      setning: { setning: 'Nóvember til dags: unnið 2,10 m — 41 % af október-heild (5,18 m) og 71 % mánaðarins er liðinn (15 af 21 vinnudögum).', aaetlun: { kr: 2944455, hlutfall_fyrri: 57, texti: 'ÁÆTLUN (línuleg, ekki spá): sömu vinnudagar áfram → mánuðurinn endar í um 2,94 m (57 % af október-heild).' } } },
+    brunaholf: { man: bhMan, ogefid_uppsafnad: 4000000, ogefid_manudir: 7,
+      ogreitt: { kr_m_vsk: 6510000, n: 10, gjaldfallid_kr_m_vsk: 4200000, gjaldfallid_n: 4, yfir45_kr_m_vsk: 1100000, yfir45_n: 1 },
+      innheimta: { hlutfall: 88.5, hradi_midgildi: 14.5, hradi_n: 20, greitt_kr: 1000, gjaldfallid_kr: 130, fra: '2026-06-30' },
+      setning: { setning: 'Nóvember til dags: unnið 8,60 m — 93 % af október-heild (9,28 m) og 71 % mánaðarins er liðinn (15 af 21 vinnudögum).', aaetlun: null } },
+    skilgreining: { unnid: 'UNNIÐ-skýring', reikningsfaert: 'REIKNINGSFÆRT-skýring', greitt: 'GREITT-skýring', ogefid: 'ÓGEFIÐ-skýring', innheimtuhlutfall: 'INNHEIMTU-skýring', greidsluhradi: 'HRAÐA-skýring', setning: 'SETNINGAR-skýring', hagnadur: 'HAGNAÐAR-skýring' },
+  };
+}
+
+test('512: „Hvernig gengur reksturinn?“ — hvort félag sér, sjö mánuðir, unnið/reikningsfært/greitt/ógefið út, ógreitt, innheimta, setning + MERKT áætlun, hagnaður ómælt', async () => {
+  const { TB, el } = flisar(svarURL({ status: 200, j: TKP }, { status: 200, j: rkData() }));
+  TB.mount(el); await bida();
+  const h = el.innerHTML;
+  assert.match(h, /Hvernig gengur reksturinn\?/);
+  const blokk = h.split('class="tkb-rk-h"')[1].split('Slökkvitæki<small>')[0];
+  const [slHluti, bhHluti] = blokk.split('<h4>Brunahólf</h4>');
+  assert.match(slHluti, /<h4>Slökkvitæki<\/h4>/); assert.ok(bhHluti, 'Brunahólf sér hluti');
+  assert.equal((slHluti.match(/<tr/g) || []).length, 8, 'haus + sjö mánuðir (SL)'); assert.equal((bhHluti.match(/<tr/g) || []).length, 8, 'haus + sjö mánuðir (BH)');
+  assert.match(slHluti, /nóv · til dags/); assert.match(slHluti, /<td>maí<\/td>|<td>maí/); assert.match(slHluti, />Ógefið út</);
+  // setning og merkt áætlun, engin fullyrðing
+  assert.match(slHluti, /Nóvember til dags: unnið 2,10 m — 41 % af október-heild/); assert.match(slHluti, /class="tkb-aaetl">ÁÆTLUN \(línuleg, ekki spá\)/);
+  assert.doesNotMatch(bhHluti, /ÁÆTLUN/, 'engin áætlun þegar hún er null');
+  // júní og fyrr hjá SL: reikningsfært og greitt ómælt með ástæðu (title), aldrei 0
+  assert.match(slHluti, /<td class="tkb-om" title="Slökkvitæki fór í Payday 30\.06\.2026[^"]*">ómælt<\/td>/);
+  assert.doesNotMatch(slHluti.split('<tr')[8] || '', /<td>0 kr<\/td>/);
+  // neikvætt ógefið út með formerki; flögg á október (án skýrslu *, verkstæði áætlað †)
+  assert.match(bhHluti, /class="tkb-ne"[^>]*>−2,48 m<\/td>/); assert.match(slHluti, /<sup title="án skýrslu 79\.745 kr[^"]*">\*<\/sup>/); assert.match(slHluti, /<sup title="verkstæði áætlað 160\.108 kr[^"]*">†<\/sup>/);
+  // ógreitt núna (SL án vsk eins og Payday; BH Kröfu yfirlit m. VSK) + tengill, innheimta og hraði með ⓘ skilgreiningu
+  assert.match(slHluti, /Ógreitt núna \(sent, án VSK\): <b>2,73 m<\/b> \(29 reikn\.\) · gjaldfallið <b>1,74 m<\/b> \(22\)/);
+  assert.match(bhHluti, /Ógreitt núna \(Kröfu yfirlit, m\. VSK\): <b>6,51 m<\/b> \(10 reikn\.\) · gjaldfallið <b>4,20 m<\/b> \(4\)/);
+  assert.match(slHluti, /data-tkb-ga="krofu-yfirlit"/);
+  assert.match(slHluti, /Innheimtuhlutfall <b>92,5 %<\/b> <span class="tkb-i" title="INNHEIMTU-skýring">ⓘ<\/span> · greiðsluhraði <b>10 dagar<\/b> <span class="tkb-i" title="HRAÐA-skýring">ⓘ<\/span>/);
+  assert.match(bhHluti, /greiðsluhraði <b>14,5 dagar<\/b>/);
+  assert.match(slHluti, /Ógefið út, uppsafnað \(5 mán\.\): <b class="tkb-ne">−1,23 m<\/b>/);
+  // hagnaður ómældur með tengli í innsláttarformið — aldrei 0
+  assert.match(slHluti, /Hagnaður: <b>ómælt<\/b> — vantar laun og annan kostnað · <a data-tkb-hagn="slokkvitaeki">skrá laun og kostnað<\/a>/);
+  assert.match(bhHluti, /data-tkb-hagn="brunaholf"/);
+  assert.doesNotMatch(blokk, /<td>0 kr<\/td>.*Hagnaður/, 'ekkert „0 kr“ fyrir hagnað');
+  // flísarnar fyrir neðan standa
+  assert.match(h, /Slökkvitæki<small>söluskráð/); assert.match(h, /Brunahólf<small>án VSK/);
+});
+
+test('512: reksturinn bregst → „Ómælt — ástæða“ í blokkinni og flísarnar standa; 403 → blokkin hverfur; óvænt snið og net niðri hrynja ekki', async () => {
+  for (const [lysing, rk, vaent] of [
+    ['500', { status: 500, j: { error: 'Reksturinn náðist ekki — reyndu aftur eftir smá stund' } }, /Ómælt — Reksturinn náðist ekki/],
+    ['óvænt snið', { status: 200, j: { slokkvitaeki: {} } }, /Ómælt — óvænt snið/],
+  ]) {
+    const { TB, el } = flisar(svarURL({ status: 200, j: TKP }, rk));
+    assert.doesNotThrow(() => TB.mount(el), lysing); await bida();
+    assert.match(el.innerHTML, vaent, lysing); assert.match(el.innerHTML, /Slökkvitæki<small>söluskráð/, lysing + ': flísarnar standa');
+  }
+  const net = flisar(async (url) => { if (String(url).indexOf('rekstur-yfirlit') >= 0) throw new Error('Failed to fetch'); return { status: 200, ok: true, json: async () => TKP }; });
+  net.TB.mount(net.el); await bida();
+  assert.match(net.el.innerHTML, /Ómælt — Failed to fetch/); assert.match(net.el.innerHTML, /Brunahólf<small>/);
+  const f403 = flisar(svarURL({ status: 200, j: TKP }, { status: 403, j: { error: 'x' } }));
+  f403.TB.mount(f403.el); await bida();
+  assert.doesNotMatch(f403.el.innerHTML, /Hvernig gengur reksturinn/); assert.match(f403.el.innerHTML, /Slökkvitæki<small>söluskráð/);
+  // félag ómælt (ómælt í heild) → „Ómælt — ástæða“ fyrir það félag, hitt stendur
+  const d = rkData(); d.brunaholf = { omaelt: 'Rekstur Brunahólfs svaraði of seint' };
+  const c = flisar(svarURL({ status: 200, j: TKP }, { status: 200, j: d })); c.TB.mount(c.el); await bida();
+  assert.match(c.el.innerHTML, /<h4>Brunahólf<\/h4><p>Ómælt — Rekstur Brunahólfs svaraði of seint<\/p>/); assert.match(c.el.innerHTML, /Nóvember til dags: unnið 2,10 m/);
 });
 
 test('512: 200 með röngu sniði (vantar hluta) hrynur ekki — villulína; Tekjur og Bókhald vefja mount í try', async () => {

@@ -18,7 +18,8 @@
 //     mælt ~13 % sölu með verkbeiðni) helst salan öll á söludegi og er talin „óstemmd“.
 //   • FJÖLDI TÆKJA: skoðanir: línur sölunnar „Yfirferð · …“, „Hleðsla · …“, „Nýtt · …“ (qty) í skoðunarmánuðinum; verkstæði:
 //     verkliðir verkbeiðninnar (texti eins og „CO₂ 100 gr. × 26 (samtals)“ → 26 hleðslur) í mánuði klart_at. Samtals úr báðum.
-//   • Kreditnóta fylgir upprunasölunni (sama mánuði og flokki, hlutfallslega); finnist hún ekki: eigin dagur og flokkur.
+//   • Kreditnóta fylgir upprunasölunni (sama mánuði og flokki, hlutfallslega — Agnar 22.11.2026: „0 fellur bara út“, líka tæki);
+//     finnist hún ekki (eða is_credit án credit_of): eigin dagur og flokkur, TALIÐ í kredit_an_frumsolu.
 //     Bakfært (void), drög og kreditnóta á bakfærða sölu telst aldrei (eins og slokkvitaekiGildar í _tekjur.cjs).
 // Samtölur allra mánaða = samtölur gömlu reglunnar (sala er aðeins færð til, ekki bætt við). Aldrei 0 þegar gögn vantar:
 // kallandinn skilar ómælt með ástæðu (tekjur-beint.cjs).
@@ -168,7 +169,7 @@ function unnidManudir(g, nuIso) {
   }
 
   const man = {};
-  const annad = { i_vinnslu_kr: 0, fyrir_yfirtoku_kr: 0, ostemmt_kr: 0, ostemmt_fjoldi: 0 };
+  const annad = { i_vinnslu_kr: 0, fyrir_yfirtoku_kr: 0, ostemmt_kr: 0, ostemmt_fjoldi: 0, kredit_an_frumsolu: 0 };
   const mm = (m) => (man[m] = man[m] || tomMan());
   const lagt = (m, fl, kr, mat) => {
     if (!kr) return;
@@ -239,6 +240,7 @@ function unnidManudir(g, nuIso) {
   }
   // 2) kreditnótur: fylgja upprunasölunni (hlutfallslega), annars eigin degi
   const fjoldiOrg = (id) => (frumsolur[id] ? frumsolur[id] : null);
+  const adkomnar = new Map((g.frumsolur || []).filter((f) => f && f.id != null).map((f) => [String(f.id), f]));
   for (const s of gildar) {
     if (s.credit_of == null) continue;
     const kr = Number(s.upphaed_an_vsk) || 0;
@@ -249,10 +251,15 @@ function unnidManudir(g, nuIso) {
       if (o.skFl && o.skodMan >= T.SL_FRA) {
         for (const l of Array.isArray(s.linur) ? s.linur : []) { const t = taekiUrLinu(l); if (t) mm(o.skodMan).taeki_skodanir[t.f] += t.n; }   // qty er neikvætt á kreditnótu
       }
+    } else if (adkomnar.get(String(s.credit_of))) {
+      // frumsalan er eldri en lesturinn (g.frumsolur, sótt sér): nótan á mánuð hennar, flokkur eftir tegund nótunnar
+      lagt(T.manudur(adkomnar.get(String(s.credit_of)).created_at), SKODUN[s.vidskiptategund] || 'verslun', kr, null);
     } else {
+      annad.kredit_an_frumsolu += 1;       // frumsala finnst ekki: eigin dagur, talið (Agnar 22.11.2026: nóta á að fylgja frumsölu)
       lagt(T.manudur(s.created_at), SKODUN[s.vidskiptategund] || 'verslun', kr, null);
     }
   }
+  for (const s of gildar) if (s.credit_of == null && s.is_credit === true) annad.kredit_an_frumsolu += 1;   // is_credit án credit_of
   for (const km of Object.keys(klaradar)) { mm(km).mat.skyrslur_klaradar = klaradar[km].n; mm(km).mat.skyrslur_sidbuin = klaradar[km].sidbuin; }
   return { man, annad };
 }
@@ -287,7 +294,7 @@ function unnidTolur(res, nuIso) {
     fyrri_manudur: fm < T.SL_FRA ? null : manudSamantekt(res.man[fm]),
     ar_til_dags_kr: arKr,
     i_vinnslu_kr: afr(res.annad.i_vinnslu_kr), fyrir_yfirtoku_kr: afr(res.annad.fyrir_yfirtoku_kr),
-    ostemmt_kr: afr(res.annad.ostemmt_kr), ostemmt_fjoldi: res.annad.ostemmt_fjoldi,
+    ostemmt_kr: afr(res.annad.ostemmt_kr), ostemmt_fjoldi: res.annad.ostemmt_fjoldi, kredit_an_frumsolu: res.annad.kredit_an_frumsolu,
   };
 }
 

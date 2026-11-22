@@ -156,7 +156,18 @@ async function greittInn() {
   const iMan = (d, f) => { const m = manudir.find(x => d >= x.fra && d <= x.til); if (m) f(m); };
   slp.forEach(r => iMan(dagur(r.paid_date), m => { m.sl_payday += kr(r.amount_total); }));
   const voidIds = new Set(voidR.map(r => Number(r.id)));
-  bud.forEach(r => { if (r.credit_of != null && voidIds.has(Number(r.credit_of))) return; iMan(dagur(r.paid_at || r.created_at), m => { m.sl_bud += kr(r.samtals); }); });
+  // Kreditnóta á DAG FRUMSÖLUNNAR (Agnar 22.11.2026: „0 fellur bara út“): paid_at||created_at frumsölunnar. Frumsala sem er ekki í lestrinum
+  // (nóta í þessum mánuði á sölu úr eldri mánuði) er sótt sér; finnist hún ekki heldur nótan eigin degi.
+  const frumDagur = new Map(bud.map(r => [Number(r.id), r.paid_at || r.created_at]));
+  const vantar = [...new Set(bud.filter(r => r.credit_of != null && !frumDagur.has(Number(r.credit_of)) && !voidIds.has(Number(r.credit_of))).map(r => Number(r.credit_of)).filter(n => Number.isInteger(n) && n > 0))];
+  for (let i = 0; i < vantar.length; i += 150) {
+    try { (await sbOll(`solur?select=id,paid_at,created_at&id=in.(${vantar.slice(i, i + 150).join(',')})&order=id.asc`)).forEach(r => frumDagur.set(Number(r.id), r.paid_at || r.created_at)); } catch (e) { /* nótan heldur eigin degi */ }
+  }
+  bud.forEach(r => {
+    if (r.credit_of != null && voidIds.has(Number(r.credit_of))) return;
+    const d = r.credit_of != null && frumDagur.get(Number(r.credit_of)) ? frumDagur.get(Number(r.credit_of)) : (r.paid_at || r.created_at);
+    iMan(dagur(d), m => { m.sl_bud += kr(r.samtals); });
+  });
   bhp.forEach(r => iMan(dagur(r.greidsla_date), m => { m.bh_payday += kr(r.upphaed_total); }));
   // aðeins tölustafir: Payday-tilvísun er númer, og þá getur ekkert úr lyklinum brotið PostgREST-fyrirspurnina
   const handKeys = hand.map(h => ({ tilv: (/^payday\|(\d{1,12})$/.exec(h.inv_key || '') || [])[1], paid_at: h.paid_at })).filter(h => h.tilv);
