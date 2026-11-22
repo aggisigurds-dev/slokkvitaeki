@@ -67,7 +67,9 @@ async function bhUnnid(event) {
     const hra = (event && event.headers && (event.headers.cookie || event.headers.Cookie)) || '';
     const m = /(?:^|;\s*)hub_user=([^;]+)/.exec(String(hra));
     if (!m) return { omaelt: 'innskráningarkökuna vantar' };
-    const r = await fetch(`${BH}/api/rekstrarskyrsla`, { headers: { cookie: `hub_user=${m[1]}`, accept: 'application/json' } });
+    // Tímamörk: skýrslan tekur nokkrar sekúndur og má aldrei seinka eða fella Tekjur-flísina — þá er Unnið ómælt, hitt stendur.
+    const sig = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(7000) : undefined;
+    const r = await fetch(`${BH}/api/rekstrarskyrsla`, { headers: { cookie: `hub_user=${m[1]}`, accept: 'application/json' }, signal: sig });
     if (!r.ok) return { omaelt: `Rekstrarskýrsla Brunahólfs svaraði ${r.status}` };
     const j = await r.json();
     const v = j && j.bh && j.bh.virdi, g = j && j.bh && j.bh.greitt, t = j && j.timabil;
@@ -82,7 +84,7 @@ async function bhUnnid(event) {
       fra: t[3].fra || null, til: t[3].til || null,
       ajour_til: (fe.ajour && fe.ajour.nyjast) || null,
     };
-  } catch (e) { return { omaelt: 'Rekstrarskýrsla Brunahólfs náðist ekki' }; }
+  } catch (e) { return { omaelt: e && e.name === 'TimeoutError' ? 'Rekstrarskýrsla Brunahólfs svaraði of seint' : 'Rekstrarskýrsla Brunahólfs náðist ekki' }; }
 }
 
 async function lesa(nu = new Date(), event = null) {
