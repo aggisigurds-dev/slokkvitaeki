@@ -1864,7 +1864,10 @@
       document.head.appendChild(sb);
     }
     const r = v.attachShadow({ mode: 'open' });
-    if (window.ThbOakvedin) ThbOakvedin.rot = rot;
+    if (window.ThbOakvedin) {
+      ThbOakvedin.rot = rot;
+      ThbOakvedin.fyrirtaeki = { leita: finnaFyrirtaeki, opna: openCompany, render };
+    }
     const st = document.createElement('style');
     st.textContent = cssText();
     const mount = document.createElement('div');
