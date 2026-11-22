@@ -750,6 +750,13 @@
       '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
       '#' + PANEL_ID + ' .pe-kit h5{margin:12px 0 5px;font-size:12px}',
       '#' + PANEL_ID + ' .pe-kit-heading img{width:100%;max-height:110px;object-fit:cover;border-radius:4px}',
+      '#' + PANEL_ID + ' .pe-ticket-example{margin-top:9px;padding:9px;border-radius:9px}',
+      '#' + PANEL_ID + ' .pe-ticket-top{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:7px;color:#fff}',
+      '#' + PANEL_ID + ' .pe-ticket-card{display:grid;grid-template-columns:minmax(0,115px) minmax(0,1fr);max-width:560px;margin:8px auto 0;border:1px solid #abaeb9;border-left:4px solid #2563eb;border-radius:8px;background:#fff;color:#11141c;overflow:hidden}',
+      '#' + PANEL_ID + ' .pe-ticket-stub{display:grid;align-content:start;gap:6px;padding:9px;background:#f4f6f9;border-right:1px dashed #9ba1ad}',
+      '#' + PANEL_ID + ' .pe-ticket-main{display:grid;gap:4px;padding:9px}',
+      '#' + PANEL_ID + ' .pe-ticket-actions{display:flex;gap:5px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-ticket-stub span,#' + PANEL_ID + ' .pe-ticket-actions span{padding:4px 7px;line-height:1.25;font-size:11px}',
       '#' + PANEL_ID + ' .pe-kit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(106px,1fr));gap:8px}',
       '#' + PANEL_ID + ' .pe-kit-item{display:grid;text-align:left;gap:6px;min-width:0}',
       '#' + PANEL_ID + ' .pe-kit-item img{width:100%;height:40px;object-fit:cover;border-radius:4px;background:#111923}',
@@ -1095,7 +1102,8 @@
     "backgrounds": [
       {
         "label": "Bakgrunnur miðakerfis",
-        "value": "linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)"
+        "value": "linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)",
+        "sample": "linear-gradient(180deg,#060607 0 24%,#aeb4be 72%,#9ba1ad 100%)"
       },
       {
         "label": "Burstuð stálplata",
@@ -1132,6 +1140,86 @@
           "border-radius": "8px",
           "box-shadow": "none"
         }
+      },
+      {
+        "label": "Aðgerð · Sækja",
+        "style": {
+          "background": "linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Aðgerð · Brunastál",
+        "style": {
+          "background": "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Í vinnslu",
+        "style": {
+          "background": "linear-gradient(150deg,#4f74dc,#16306f)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Til afhendingar",
+        "style": {
+          "background": "linear-gradient(150deg,#1f9d57,#0a4a26)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Þarfnast athugunar",
+        "style": {
+          "background": "linear-gradient(150deg,#e0a93e,#9a6a14)",
+          "color": "#14120d",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Brýnt",
+        "style": {
+          "background": "linear-gradient(150deg,#e25555,#a01818)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Merki · Gull",
+        "style": {
+          "background": "linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Merki · Blátt stál",
+        "style": {
+          "background": "linear-gradient(145deg,#040d18 0%,#0b2440 20%,#154a7d 43%,#2f7fc9 53%,#0d2b4c 74%,#040d18 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
       }
     ]
   }, BRUNASTAL_PREMIUM];
@@ -1139,6 +1227,16 @@
 
   function kitStylePreview(style) {
     return esc(Object.entries(style).map(([property, value]) => property + ':' + value).join(';'));
+  }
+
+  function ticketKitPreview(kit) {
+    return '<div class="pe-ticket-example" aria-label="Dæmi um miðaspjald" style="background:' + kit.backgrounds[1].value + '">' +
+      '<div class="pe-ticket-top" style="background:' + kit.tokens.background + '"><strong>Afhending</strong><span>Verkstæði</span></div>' +
+      '<div class="pe-ticket-card"><div class="pe-ticket-stub"><strong>R-024</strong>' +
+      '<span style="' + kitStylePreview(kit.parts[6].style) + '">Til afhendingar</span></div>' +
+      '<div class="pe-ticket-main"><strong>Skoðun slökkvitækja</strong><small>Þrjú tæki · Dæmi</small>' +
+      '<div class="pe-ticket-actions"><span style="' + kitStylePreview(kit.parts[3].style) + '">Sækja</span>' +
+      '<span style="' + kitStylePreview(kit.parts[1].style) + '">Prenta</span></div></div></div></div>';
   }
 
   function designSystemSection() {
@@ -1150,13 +1248,13 @@
     const backgrounds = kit.backgrounds.map((item, i) =>
       '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-bg="' + i + '">' +
         (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
-          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview({background:item.value}) + '"></span>') +
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview({background:item.sample || item.value}) + '"></span>') +
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
     const parts = kit.parts.map((item, i) =>
       '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
         (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
-          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">Sýnishorn</span>') +
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">' + esc(item.label.split(' · ').pop()) + '</span>') +
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
     return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + picker +
@@ -1164,8 +1262,9 @@
         '<h4>' + esc(kit.name) + '</h4>' +
         (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
       '</div>' +
+      (designSystemIndex === 1 ? ticketKitPreview(kit) : '') +
       '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
-      '<h5>Rammar, takkar og flipar</h5>' +
+      '<h5>Rammar, takkar, flipar og stöður</h5>' +
       '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni. Vistaðu síðan útlitið sem þemapakka.</p>' +
       '<div class="pe-kit-grid">' + parts + '</div>' +
     '</section>';
