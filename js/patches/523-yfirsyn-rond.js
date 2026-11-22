@@ -292,7 +292,7 @@
     const vika = (dd(T[1].fra) + '–' + dd(T[1].til)).replace(/^(\d+)\.\d+–/, '$1.–');
     const merki = (sv && sv.merki) || 'sömu daga í fyrri viku';
     return '<div class="yr-k" title="Vikan ' + esc(dd(T[1].fra)) + '–' + esc(dd(T[1].til)) + '. Tímar og tekjur á móti ' + esc(merki) + '; göt og reikningar á móti allri síðustu viku (' + esc(dd(T[2].fra)) + '–' + esc(dd(T[2].til)) + '). Hvíti tígullinn = viðmiðið.">' +
-      '<span class="yr-kl">' + ic('klukka') + 'Vikan<em>' + esc(vika) + '</em></span>' +
+      '<span class="yr-kl">' + ic('klukka') + 'Vikan<em class="yr-dags">' + esc(vika) + '</em></span>' +
       '<span class="yr-row"><span class="yr-kn">' + (fin(klst) ? isk(klst) : '—') + '<small>klst</small></span>' + (dk != null ? '<span class="yr-kp ' + (dk >= 0 ? 'yr-g' : 'yr-r') + '" title="Á móti ' + esc(merki) + '">' + (dk >= 0 ? '▲ ' : '▼ ') + Math.abs(dk) + ' %</span>' : '') + (fin(klstF) ? '<span class="yr-ks" title="' + esc(merki) + (ok(tv) ? ' · ' + tv.vika.starfsmenn + ' starfsmenn í vikunni' : '') + '">síðast ' + isk(klstF) + '</span>' : '') + '</span>' +
       '<div class="yr-vk">' +
         unnidFlis() +
@@ -462,6 +462,8 @@
       '.yr-kl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#eef3fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.yr-kl .yr-ic{color:#ff8a1f;filter:drop-shadow(0 0 6px rgba(255,138,31,.55))}',
       '.yr-kl em{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:500;letter-spacing:0;text-transform:none;color:#a9b8d0}',
+      /* Agnar 22.11: ör frá Ajour-flís á vikudagsetninguna — appelsínugul flís, ekki fölgrár texti. */
+      '.yr-kl em.yr-dags{padding:3px 9px;border-radius:999px;background:linear-gradient(180deg,#ff8a1f,#ff6702);color:#fff;font-weight:700;font-size:11px;letter-spacing:.02em;box-shadow:0 0 0 1px rgba(255,138,31,.35),0 6px 14px -4px rgba(255,103,2,.55)}',
       '.yr-kn{font-size:31px;font-weight:600;line-height:1;letter-spacing:-.02em;color:#fff;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.6),0 0 20px rgba(130,175,255,.22)}',
       '.yr-kn small{margin-left:4px;font-size:14px;font-weight:500;letter-spacing:0;color:#b8c6dd;text-shadow:none}',
       '.yr-k2{font-size:21px;font-weight:600;line-height:1;color:#fff;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.6)}',

@@ -1,20 +1,14 @@
-/* === BRUNASTÁL V2 — yfirlag ofan á frosna C (22.11.2026) ===
+/* === BRUNASTÁL V2 — dökk navy HUD (22.11.2026) ===
  *
- * Agnar: „Er ad reyna gera brunastal v2 en gengur illa ad fa retta utlitid".
+ * Agnar sendi mockupin: Fyrirtæki í þjónustu + Rekstrarskýrsla, kopar-ramma,
+ * gler-borða, burstað navy, eldglóð. Rétt útlit er ÞAÐ — ekki Space Grotesk
+ * ofan á ljóst C (það var leturlögnin 230/245, ekki V2).
  *
  * Sama uppskrift og Brunahólf V2 (507): nafngreint yfirlag, krókar óbreyttir.
- * 220/230/245 eru FROSIN. V2 kveikir aðeins undir html[data-bstal-v2="1"].
+ * 220/230/245 eru FROSIN. V2 kveikir undir html[data-bstal-v2="1"].
  *
- * Rétt útlit = mockups/brunastal.html (Space Grotesk / Sora / Space Mono +
- * rauður málmgradient + stálplata + 4 hnoð). 230 lóðar letrið en setur
- * IBM Plex ofan á (leturlögn). 245 þvingar Plex með !important. ChatGPT-V2
- * sem endurskrifar HTML missir málminn í 325 pappa. Þetta lag leiðréttir
- * leturlögnina og setur plötuna á spjöld — endurskrifar ekkert DOM.
- *
- * Rofi [C | V2] í Stílstjóra. AppSettings brunastal_utgafa = 'c' | 'v2'
- * (eitt val, allar vélar — regla 15.10). ?bstal=v2 forskoðar án vistunar.
- *
- * Tókenar: css/theme-handoff/brunastal-v2.tokens.json
+ * Rofi [C | V2] í Stílstjóra. AppSettings brunastal_utgafa. ?bstal=v2 forskoðar.
+ * Tókenar + eignir: css/theme-handoff/brunastal-v2.tokens.json · img/bstal-v2/
  */
 (() => {
   if (window.BrunastalV2) return;
@@ -22,23 +16,28 @@
   const LYKILL = 'brunastal_utgafa';
   const ATTR = 'data-bstal-v2';
   const CSS_ID = 'bstal-v2-css';
+  const FONT_ID = 'bstal-v2-letur';
   const GRP_ID = 'pe-bstal-v2-grp';
   const H = 'html[' + ATTR + '="1"]';
+  const ON = H + '[data-bstal-banner="on"]';
 
   const TOKENS = {
-    ui: '"Space Grotesk",system-ui,sans-serif',
-    word: '"Sora",sans-serif',
-    display: '"Playfair Display",Georgia,serif',
-    mono: '"Space Mono",ui-monospace,monospace',
-    accent: '#c92a2a',
-    accent2: '#f0584c',
-    glow: 'rgba(160,16,16,.55)',
-    ring: 'rgba(190,32,28,.55)',
-    plate: '#eef1f6',
-    grad: 'linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)',
-    page: 'linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)',
-    plateImg: 'linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)',
-    metal: 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)'
+    ui: 'Poppins,system-ui,sans-serif',
+    word: 'Poppins,sans-serif',
+    display: 'Poppins,system-ui,sans-serif',
+    mono: '"JetBrains Mono",ui-monospace,monospace',
+    accent: '#ff8a1f',
+    accent2: '#ff6702',
+    glow: 'rgba(255,103,2,.45)',
+    ring: 'rgba(255,138,31,.45)',
+    navy: '#071018',
+    ink: '#e8f0f8',
+    muted: '#8aa3bb',
+    glass: 'rgba(8,22,36,.82)',
+    grad: 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)',
+    rammi: '/img/bstal-v2/rammi.png',
+    bordi: '/img/bstal-v2/bordi.png',
+    stal: '/img/bstal-v2/stal.jpg'
   };
 
   let bid = null;
@@ -64,9 +63,19 @@
 
   function virk() { return utgafa() === 'v2'; }
 
+  function letur() {
+    if (document.getElementById(FONT_ID)) return;
+    const l = document.createElement('link');
+    l.id = FONT_ID;
+    l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(l);
+  }
+
   function merkja(rot, a) {
     if (!rot) return;
     if (a) {
+      letur();
       if (rot.getAttribute(ATTR) !== '1') rot.setAttribute(ATTR, '1');
     } else if (rot.hasAttribute(ATTR)) rot.removeAttribute(ATTR);
   }
@@ -85,58 +94,67 @@
   function cssText() {
     const ui = TOKENS.ui;
     const mono = TOKENS.mono;
-    const disp = TOKENS.display;
-    const word = TOKENS.word;
     return [
       H + '{--bstal-accent:' + TOKENS.accent + ';--bstal-accent2:' + TOKENS.accent2 +
         ';--bstal-ring:' + TOKENS.ring + ';--bstal-glow:' + TOKENS.glow +
-        ';--bstal-grad:' + TOKENS.grad + ';--bstal-plate:' + TOKENS.plate +
-        ';--bstal-plate-img:' + TOKENS.plateImg +
-        ';--bstal-ui:' + ui + ';--bstal-mono:' + mono + ';--bstal-disp:' + disp + '}',
+        ';--bstal-grad:' + TOKENS.grad + ';--bstal-navy:' + TOKENS.navy +
+        ';--bstal-ink:' + TOKENS.ink + ';--bstal-muted:' + TOKENS.muted +
+        ';--bstal-glass:' + TOKENS.glass +
+        ';--bstal-ui:' + ui + ';--bstal-mono:' + mono + '}',
 
-      /* Leturlögnin: Space Grotesk slær IBM Plex (230 án !important, 245 með). */
       H + ' body,' + H + ' .view,' + H + ' .topbar,' + H + ' .vnav-btn,' + H + ' #bstal-banner,' +
         H + ' .view button,' + H + ' .view input,' + H + ' .view select,' + H + ' .view textarea,' +
-        H + ' .view .btn,' + H + ' .view .fi,' + H + ' .view .stat-label,' + H + ' .view .kpi-label,' +
-        H + ' .view .stat .label,' + H + ' .view .kpi .label,' +
-        H + ' .view .btn:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-brand):not(.btn-ghost)' +
-        '{font-family:' + ui + '!important}',
+        H + ' .view .btn,' + H + ' .view .fi' +
+        '{font-family:' + ui + '!important;color:var(--bstal-ink)}',
 
-      H + ' .view input[type="text"],' + H + ' .view input[type="search"],' +
-        H + ' .view input[type="number"],' + H + ' .view input[type="email"],' +
-        H + ' .view input[type="tel"],' + H + ' .view input[type="date"],' +
-        H + ' .view input[type="password"]' +
-        '{font-family:' + ui + '!important}',
-
-      H + ' #bstal-banner .bb-word{font-family:' + word + '!important}',
-
-      H + ' .view h1,' + H + ' .view > .main-panel > h1:first-child,' +
-        H + ' .view > h1:first-child,' + H + ' .view > .main-panel > div > h1:first-child,' +
-        H + ' .modal .modal-hd h2,' + H + ' .modal-hd h2' +
-        '{font-family:' + disp + '!important;letter-spacing:-.02em}',
-
-      /* Tölur: Space Mono eins og mockupið (230 lofaði, 245 setti JetBrains). */
-      H + ' .kr,' + H + ' .price,' + H + ' .amount,' + H + ' .kt,' + H + ' .kennitala,' +
-        H + ' .date,' + H + ' .dags,' + H + ' .mono,' + H + ' .num,' + H + ' .numeric,' +
-        H + ' .tnum,' + H + ' .stat-value,' + H + ' .kpi-value,' + H + ' .stat .value,' +
-        H + ' .kpi .value,' + H + ' #bstal-banner .bb-clock,' + H + ' #bstal-banner .bb-date,' +
-        H + ' .view-nav .vnav-btn .sb-badge,' + H + ' .view-nav .vnav-btn .badge,' +
-        H + ' .view-nav .vnav-btn .count' +
+      H + ' .kr,' + H + ' .price,' + H + ' .amount,' + H + ' .kt,' + H + ' ._kpi-n,' +
+        H + ' #bstal-banner .bb-clock' +
         '{font-family:' + mono + '!important;font-variant-numeric:tabular-nums}',
 
-      /* Stálplata á spjöldum — 245 hvítar þau flöt. Dökkar körfur ósnertar. */
+      /* Síða + hliðarstika: burstað navy, appelsínugul glóð. */
+      H + ' .view{background:url(' + TOKENS.stal + ') center/cover no-repeat,var(--bstal-navy)!important;color:var(--bstal-ink)!important}',
+      H + ' .topbar{background:linear-gradient(180deg,#0a1520,var(--bstal-navy))!important;border-right:1px solid rgba(255,138,31,.18)!important;box-shadow:8px 0 40px -12px var(--bstal-glow)!important}',
+      H + ' .vnav-btn{color:rgba(232,240,248,.72)!important}',
+      H + ' .vnav-btn.active{background:var(--bstal-grad)!important;color:#fff!important;border:1px solid var(--bstal-ring)!important;box-shadow:0 0 18px -4px var(--bstal-glow)!important}',
+      H + ' .brand-name{color:#fff!important}',
+
+      /* Borði: gler-stika + kopar-rammi úr eignunum, sléttari en 230. */
+      H + ' #bstal-banner{height:78px!important;padding:6px!important;border-radius:18px!important;' +
+        'background:url(' + TOKENS.rammi + ') center/100% 100% no-repeat!important;box-shadow:0 18px 40px -18px #000,0 0 28px -8px var(--bstal-glow)!important}',
+      H + ' #bstal-banner .bb-face{background:url(' + TOKENS.bordi + ') center/cover no-repeat,linear-gradient(180deg,#0c2436,#071018)!important;border-radius:12px!important}',
+      H + ' #bstal-banner .bb-bolt{display:none}',
+      H + ' #bstal-banner .bb-word{font-family:' + ui + '!important;letter-spacing:.12em}',
+      H + ' #bstal-banner .bb-clock{color:#ffb24d!important;text-shadow:0 0 16px var(--bstal-glow)!important}',
+      ON + ' .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:96px!important}',
+      ON + ' #view-field.active,' + ON + ' #view-counter.active,' + ON + ' #view-workshop.active{padding-top:100px!important}',
+      H + ' #bstal-ember{top:90px!important;opacity:.7}',
+
+      H + ' .view h1{color:#fff!important;font-family:' + ui + '!important;font-weight:800!important;letter-spacing:-.03em;text-shadow:0 2px 18px rgba(0,0,0,.55)!important}',
+      H + ' .view ._ars-sub{color:rgba(232,240,248,.62)!important}',
+
+      /* Gler-spjöld — 245 hvítar þau. */
       H + ' .view .card:not(.pos-cart),' + H + ' .view .panel,' + H + ' .view .section-card,' +
-        H + ' .view .surface,' + H + ' .view .box-card,' + H + ' .view .info-card,' +
-        H + ' .view .data-card,' + H + ' .view .tcard,' + H + ' .view .tile' +
-        '{background:var(--bstal-plate-img),var(--bstal-plate)!important}',
+        H + ' .view .tcard,' + H + ' .view .tile,' + H + ' .view ._ars-summary' +
+        '{background:var(--bstal-glass)!important;border:1px solid rgba(255,138,31,.16)!important;color:var(--bstal-ink)!important;' +
+        'box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 16px 32px -18px #000!important}',
 
-      /* Hnoðin í borðanum: mockup 13 px, 230 er 12. */
-      H + ' #bstal-banner .bb-bolt{width:13px;height:13px}',
-
-      /* CTA sem 245 málar svart málm fá rauða accent-hallann úr mockupinu. */
-      H + ' .view .btn-primary,' + H + ' .view .btn-brand' +
+      H + ' .view .btn-primary,' + H + ' .view .btn-brand,' + H + ' .view #_ars-new' +
         '{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;' +
-        'box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important}'
+        'box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.28)!important}',
+
+      /* Ársskoðun — mockup: fjögur gler-KPI, dökk tafla, appelsínugul CTA. */
+      H + ' #view-arsskodun ._kpi{border-radius:16px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 14px 28px -14px #000!important}',
+      H + ' #view-arsskodun ._kpi-n{font-size:28px!important}',
+      H + ' #view-arsskodun .bstal-hero{background:linear-gradient(160deg,#7a3a0c,#3a1c08 58%,#1a0c06)!important;border-color:rgba(255,138,31,.4)!important}',
+      H + ' #view-arsskodun ._ars-statusrow,' + H + ' #view-arsskodun ._ars-filterstrip' +
+        '{background:rgba(8,22,36,.7)!important;border-color:rgba(255,255,255,.08)!important}',
+      H + ' #view-arsskodun table,' + H + ' #view-arsskodun .dtbl' +
+        '{background:rgba(6,16,26,.88)!important;color:var(--bstal-ink)!important}',
+      H + ' #view-arsskodun thead th{background:#0a1824!important;color:#c5d4e4!important;border-color:rgba(255,255,255,.08)!important}',
+      H + ' #view-arsskodun tbody td{border-color:rgba(255,255,255,.06)!important;color:var(--bstal-ink)!important}',
+      H + ' #view-arsskodun #_ars-search,' + H + ' #view-arsskodun #_ars-sort,' +
+        H + ' #view-arsskodun #_ars-print,' + H + ' #view-arsskodun ._ars-vm' +
+        '{background:rgba(8,22,36,.9)!important;color:var(--bstal-ink)!important;border-color:rgba(255,255,255,.12)!important}'
     ].join('\n');
   }
 
@@ -158,7 +176,7 @@
       grp = document.createElement('div');
       grp.id = GRP_ID;
       grp.className = 'pe-grp';
-      grp.title = 'C er frosna Brunastál. V2 er yfirlag: Space Grotesk, Sora, Space Mono og stálplata úr mockupinu. Krókarnir óbreyttir.';
+      grp.title = 'C er frosna Brunastál. V2 er dökk navy HUD með appelsínugulri eldglóð (mockup Agnars 22.11). Krókarnir óbreyttir.';
       grp.innerHTML =
         '<span class="pe-grplbl">Brunastál</span>' +
         '<div class="pe-seg" role="group" aria-label="Útgáfa Brunastáls">' +

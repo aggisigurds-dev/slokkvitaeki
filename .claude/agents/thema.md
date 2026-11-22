@@ -33,12 +33,10 @@ grunnstillingu, eyða öðrum þemum og þemu-veseninu"):
   öryggisventil gegn akkerislausum selectorum (sjá c6fc57c).
 - Vilji menn þemaskipti aftur: endurvekja 220/230 úr git fyrir 2026-08-17
   (commit cd54337 hefur gömlu skrárnar í foreldra sínum).
-- **Brunastál V2 (22.11.2026, 524):** nafngreint yfirlag eins og Brunahólf V2
-  (507), **ekki** 11-preseta og **ekki** afþýðing á 220. `html[data-bstal-v2="1"]`
-  leiðréttir leturlögnina (Space Grotesk/Sora/Space Mono úr
-  `mockups/brunastal.html`; 230 lóðar þau, 245 þvingar IBM Plex). Rofi [C | V2]
-  í Stílstjóra, `AppSettings.brunastal_utgafa`, `?bstal=v2`. Tókenar:
-  `css/theme-handoff/brunastal-v2.tokens.json`. Default er C.
+- **Brunastál V2 (22.11.2026, 524):** dökk navy HUD (Poppins, #ff8a1f, gler,
+  kopar-rammi) ofan á frosna C. **ekki** 11-preseta og **ekki** Space Grotesk
+  ofan á ljóst C. `html[data-bstal-v2="1"]`. Eignir: `img/bstal-v2/`. Mockup:
+  `mockups/bstal-v2/`. Default er C.
 
 ### Samræming þemans — mælt og skjalfest, bíður ákvörðunar (29.08.2026)
 
