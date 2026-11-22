@@ -2705,6 +2705,15 @@
     const filteredRemain = Math.max(0, filteredTotal - filteredDone);
     const filteredRaunN = filteredAars.filter(erRaun).length;
     const filteredRaunKr = filteredAars.reduce((s, c) => s + (erRaun(c) ? virdiOf(c) : 0), 0);
+    // 22.11.2026 (Agnar: „Ætti að vera jafnt fjölda skoðaðra eigna. Ekki kennitalna"):
+    // viðmiðið er EIGNIN sem var skoðuð, ekki greiðandinn og ekki borðið. Skoðuð eign = á úttektarskýrslu
+    // ársins (`_docYears`), sama heimild og „búið"-staðan byggir á. Salan hangir þegar á eigninni
+    // (`solur.customer_id` → `fyrirtaeki.id`): mælt 22.11 voru 283 úttektarsölur á 268 EIGNUM en aðeins
+    // 255 kennitölum, svo einingin er rétt — það sem vantar er bil milli skoðaðra eigna og þeirra sem
+    // bera reikning, og það bil á að SJÁST í stað þess að liggja í mismun tveggja talna.
+    const skodudIAr = c => ((c._ars || {})._docYears || []).map(Number).includes(curYear);
+    const filteredSkodud = filteredAars.filter(skodudIAr).length;
+    const filteredRaunAfSkodudum = filteredAars.filter(c => skodudIAr(c) && erRaun(c)).length;
     const filteredDonePct = filteredTotal > 0 ? Math.round(filteredDone / filteredTotal * 100) : 0;
     const filterLabel = (state.months && state.months.length)
       ? monthFilterLabel(curYear)
@@ -2947,7 +2956,7 @@
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(effFilterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px" title="Virðið að neðan er summa þessara — þau í sýninni sem eiga skráð tæki. Fjöldinn í sýninni sjálfri stendur fyrir ofan listann („Sýni N af …").">${filteredAars.length} af ${filtered.length} í sýninni með skráð tæki</div>
-            <div style="font-size:11.5px;color:var(--ink3);margin-top:2px" title="Raunreiknað = reiturinn SAMTALS M. VSK neðst á úttektinni (salan þegar heimsóknin er kláruð, reiknivélin meðan hún er opin), m. vsk og kreditnótur frádregnar. Þetta er árstala hvers staðar í sýninni — ekki það sem var reikningsfært í þessum mánuði. Hitt er áætlun: Σ tæki × verð + skýrslugerð + einn akstur.">${filteredRaunN ? `🧮 ${filteredRaunN} raunreiknuð · ${fmtKr(filteredRaunKr)}` : '🧮 ekkert raunreiknað í þessari sýn — allt áætlun'}${filteredRaunN && filteredAars.length > filteredRaunN ? ` · ${filteredAars.length - filteredRaunN} áætluð` : ''}</div>
+            <div style="font-size:11.5px;color:var(--ink3);margin-top:2px" title="Viðmiðið er EIGNIN sem var skoðuð, ekki kennitalan: skoðuð eign = á úttektarskýrslu ${curYear}. Raunreiknað = reiturinn SAMTALS M. VSK neðst á úttektinni (salan þegar heimsóknin er kláruð, reiknivélin meðan hún er opin), m. vsk og kreditnótur frádregnar. Þetta er árstala hverrar eignar í sýninni — ekki það sem var reikningsfært í þessum mánuði. Eign sem var skoðuð en ber engan úttektarreikning hjá okkur er ÓUPPGERÐ, ekki núll: hún ber áætlun (Σ tæki × verð + skýrslugerð + einn akstur) þar til reikningur finnst.">${filteredSkodud ? `🧮 <b>${filteredRaunAfSkodudum} af ${filteredSkodud}</b> skoðuðum eignum raunreiknaðar${filteredSkodud > filteredRaunAfSkodudum ? ` · <b>${filteredSkodud - filteredRaunAfSkodudum}</b> skoðaðar eignir bera engan úttektarreikning hjá okkur` : ''}` : '🧮 engin skoðuð eign í þessari sýn'}${filteredRaunKr ? ` · ${fmtKr(filteredRaunKr)} raunreiknað` : ''}</div>
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
             <div style="text-align:right">
