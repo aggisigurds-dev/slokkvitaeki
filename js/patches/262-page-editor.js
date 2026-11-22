@@ -738,6 +738,11 @@
       '#' + PANEL_ID + ' .pe-content{min-height:0;overflow:auto;padding:2px 2px 10px}',
       '#' + PANEL_ID + ' .pe-hd,#' + PANEL_ID + ' .pe-actions{flex:none}',
       '#' + PANEL_ID + ' .pe-actions{margin-top:auto}',
+      '#' + PANEL_ID + ' .pe-settings-links{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}',
+      '#' + PANEL_ID + ' .pe-settings-links>div{padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:10px}',
+      '#' + PANEL_ID + ' .pe-settings-links h4{margin:0;font-size:14px}',
+      '#' + PANEL_ID + ' .pe-settings-links p{margin:4px 0 8px}',
+      '#' + PANEL_ID + ' .pe-settings-links a.pe-btn{display:inline-flex;text-decoration:none}',
       '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
       '#' + PANEL_ID + ' .pe-kit-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:center;gap:8px;padding:10px;border-radius:8px}',
       '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
@@ -1053,7 +1058,8 @@
 
   const PANEL_GROUPS = [
     ['header', 'Haus og banner'], ['backgrounds', 'Bakgrunnar'],
-    ['layout', 'Skipulag'], ['styles', 'Stílar'], ['versions', 'Þemapakkar']
+    ['layout', 'Skipulag'], ['styles', 'Stílar'], ['versions', 'Þemapakkar'],
+    ['settings', 'Stillingar']
   ];
   let panelGroup = 'backgrounds';
   let panelFull = false;
@@ -1164,7 +1170,15 @@
       backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
       layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
       styles: styleTools + cardSection() + body + presetsSection(),
-      versions: premiumLibrarySection() + versionsSection()
+      versions: premiumLibrarySection() + versionsSection(),
+      settings: '<div class="pe-settings-links">' +
+        '<div><h4>Hliðarstika</h4><p class="pe-sub">Röð, sýnileiki og skil milli valmyndarliða.</p>' +
+          '<button type="button" class="pe-btn" id="pe-sidebar-settings">Aðlaga hliðarstiku</button></div>' +
+        '<div><h4>Bakendi</h4><p class="pe-sub">Yfirlit yfir gögn og gagnalíkan.</p>' +
+          '<a class="pe-btn" id="pe-backend-settings" href="#bakendi">Opna Bakenda</a></div>' +
+        '<div><h4>Aðgangar</h4><p class="pe-sub">Notendur og heimildir í Stjórnstöð.</p>' +
+          '<a class="pe-btn" href="https://brunaholf.netlify.app/adgangar.html" target="_blank" rel="noopener">Opna Aðganga ↗</a></div>' +
+      '</div>'
     };
     p.dataset.group = panelGroup;
     p.classList.toggle('pe-full', panelFull);
@@ -2024,6 +2038,19 @@
       if (panelFull && picking) setPicking(false);
       else renderPanel();
       q('#pe-full')?.focus();
+    };
+    const sidebar = q('#pe-sidebar-settings');
+    if (sidebar) sidebar.onclick = () => {
+      if (!window.SidebarCustomizer || typeof window.SidebarCustomizer.open !== 'function') {
+        toast('Hliðarstikustillingar eru ekki tiltækar í þessari sýn.');
+        return;
+      }
+      closePanel();
+      window.SidebarCustomizer.open();
+    };
+    const backend = q('#pe-backend-settings');
+    if (backend) backend.onclick = e => {
+      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) closePanel();
     };
     const banner = q('#pe-banner-style');
     if (banner) banner.onclick = () => document.getElementById('_bd-skipta')?.click();
