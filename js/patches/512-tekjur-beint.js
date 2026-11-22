@@ -3,6 +3,10 @@
 // mánuður til dags, ár til dags, síðasti mánuður, „í pípunni" og hagnaður. Tölurnar koma úr /api/tekjur-beint
 // (reglurnar í netlify/functions/_tekjur.cjs). Ómælt er sagt ómælt — aldrei 0. Hagnaður reiknast þegar launakostnaður
 // og annar kostnaður á mánuði eru slegin inn (smelltu á Hagnaður-flísina).
+// 22.11.2026 (Agnar: tekjur Slökkvitækis miðast við unnið verk): röðin „Slökkvitæki · unnið“ — Skoðanir (ársþjónusta, brunakerfi,
+// slökkvikerfi eftir skoðunarmánuði skv. skýrslunni) · Verkstæði (þegar tæki er klárt og sent í afgreiðslu, klart_at) · Verslun ·
+// Samtals, með fjölda tækja (yfirfarin / hlaðin / ný). Það sem er „án skýrslu“, „óviss“ eða „áætlað“ er flaggað á flísinni — aldrei
+// falið — og vanti gögn er sagt ómælt með ástæðu, aldrei 0. Gamla talan (söludagur) stendur í röðinni fyrir neðan.
 // Engin MutationObserver: tekjur.js og 11-bokhalds-yfirlit.js kalla TekjurBeint.mount(el) þegar þau teikna.
 (function () {
   'use strict';
@@ -17,6 +21,7 @@
     return (neg ? '−' : '') + p.join('.') + ' kr';
   }
   function mkr(n) { return n == null ? 'ómælt' : (Math.abs(n) >= 1e6 ? (n / 1e6).toFixed(2).replace('.', ',') + ' m' : kr(n)); }
+  function tal(n) { var s = String(Math.abs(Math.round(Number(n) || 0))), p = []; while (s.length > 3) { p.unshift(s.slice(-3)); s = s.slice(0, -3); } p.unshift(s); return p.join('.'); }
   function manNafn(m) { var i = Number(String(m || '').slice(5, 7)) - 1; return MAN[i] || m; }
   function dags(iso) { var x = String(iso || ''); return x.slice(8, 10) + '.' + x.slice(5, 7) + '.'; }
 
@@ -46,6 +51,7 @@
     '.tkb-fl b{display:block;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a93a5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.tkb-fl span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:15px;font-weight:700;color:#11141c;white-space:nowrap}' +
     '.tkb-fl i{display:block;font-style:normal;font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.tkb-fl i.tkb-flagg{color:#b45309;font-weight:600}' +
     '.tkb-fl.tkb-pipa span{color:#b45309}.tkb-fl.tkb-omaelt span{color:#b45309;font-family:inherit;font-size:13px}' +
     '.tkb-fl.tkb-unnid{border-color:rgba(15,118,110,.35);background:linear-gradient(180deg,#f3fbfa,#e6f5f3)}.tkb-fl.tkb-unnid span{color:#0f766e}' +
     '.tkb-fl.tkb-smell{cursor:pointer}.tkb-fl.tkb-smell:hover{border-color:#94a3b8}' +
@@ -59,9 +65,41 @@
     var st = document.createElement('style'); st.id = 'tkb-css'; st.textContent = CSS; document.head.appendChild(st);
   }
 
-  function fl(lbl, val, sub, cls, attr) {
+  function fl(lbl, val, sub, cls, attr, flagg) {
     if (val === 'ómælt' && !/tkb-omaelt/.test(cls || '')) cls = (cls ? cls + ' ' : '') + 'tkb-omaelt';
-    return '<div class="tkb-fl' + (cls ? ' ' + cls : '') + '"' + (attr || '') + '><b title="' + esc(lbl) + '">' + esc(lbl) + '</b><span>' + esc(val) + '</span>' + (sub ? '<i title="' + esc(sub) + '">' + esc(sub) + '</i>' : '') + '</div>';
+    return '<div class="tkb-fl' + (cls ? ' ' + cls : '') + '"' + (attr || '') + '><b title="' + esc(lbl) + '">' + esc(lbl) + '</b><span>' + esc(val) + '</span>' + (sub ? '<i title="' + esc(sub) + '">' + esc(sub) + '</i>' : '') +
+      (flagg ? '<i class="tkb-flagg" title="' + esc(flagg) + '">' + esc(flagg) + '</i>' : '') + '</div>';
+  }
+  // Tæki: „yfirf. 412 · hlaðin 88 · ný 12“ (núll sleppt, allt núll → „engin tæki“)
+  function taekiTexti(t) {
+    if (!t) return '';
+    var a = [];
+    if (t.yfirferd) a.push('yfirf. ' + tal(t.yfirferd));
+    if (t.hledsla) a.push('hlaðin ' + tal(t.hledsla));
+    if (t.nytt) a.push('ný ' + tal(t.nytt));
+    return a.length ? a.join(' · ') : 'engin tæki';
+  }
+  // Slökkvitæki unnið: undirbýr flísarnar úr s.unnid (ómælt með ástæðu ef lesturinn brást — aldrei 0)
+  function unnidSl(s) {
+    var u = s.unnid;
+    if (!u) return '';
+    if (u.omaelt || !u.manudur_til_dags) return fl('Unnið', 'ómælt', (u && u.omaelt) || 'náðist ekki', 'tkb-omaelt');
+    var m = u.manudur_til_dags, f = u.fyrri_manudur, sk = m.skodanir, vk = m.verkstaedi, nm = manNafn(u.manudur);
+    var skFlagg = [];
+    if (sk.an_skyrslu_kr) skFlagg.push('án skýrslu ' + mkr(sk.an_skyrslu_kr) + (sk.an_skyrslu_fjoldi ? ' (' + sk.an_skyrslu_fjoldi + ')' : ''));
+    if (sk.oviss_kr) skFlagg.push('óviss ' + mkr(sk.oviss_kr));
+    var skTip = 'Ársþjónusta ' + mkr(sk.arsthjonusta_kr) + ' · brunakerfi ' + mkr(sk.brunakerfi_kr) + ' · slökkvikerfi ' + mkr(sk.slokkvikerfi_kr) +
+      (sk.leidrett_fjoldi ? ' · ' + sk.leidrett_fjoldi + ' með leiðréttu ári' : '');
+    var vkFlagg = vk.aaetlad_kr ? 'áætlað ' + mkr(vk.aaetlad_kr) + ' (klart_at vantar)' : '';
+    var t = '';
+    t += fl('Skoðanir · ' + nm + ' til dags', mkr(sk.kr), taekiTexti(sk.taeki), 'tkb-unnid', ' title="' + esc(skTip) + '"', skFlagg.join(' · '));
+    t += fl('Verkstæði · ' + nm + ' til dags', mkr(vk.kr), taekiTexti(vk.taeki), 'tkb-unnid', '', vkFlagg);
+    t += fl('Verslun · ' + nm + ' til dags', mkr(m.verslun.kr), 'sala án tækja úr skoðun', 'tkb-unnid');
+    t += fl('Samtals unnið · ' + nm + ' til dags', mkr(m.samtals.kr), taekiTexti(m.samtals.taeki), 'tkb-unnid');
+    if (f) t += fl('Samtals unnið · ' + manNafn(u.fyrri_man), mkr(f.samtals.kr), 'heill mánuður · skoðanir ' + mkr(f.skodanir.kr), 'tkb-unnid');
+    t += fl('Unnið · ' + u.manudur.slice(0, 4) + ' til dags', mkr(u.ar_til_dags_kr), u.ar_fra === '2026-05' ? 'frá yfirtöku 04.05' : 'frá 1. jan', 'tkb-unnid');
+    if (u.i_vinnslu_kr) t += fl('Á verkstæði núna', mkr(u.i_vinnslu_kr), 'í vinnslu · telst ekki enn', 'tkb-pipa');
+    return t;
   }
   function hagnFl(felag, h, fm) {
     if (h && h.kr != null) return fl('Hagnaður · ' + manNafn(fm), mkr(h.kr), 'tekjur − laun − annar kostn. (þínar tölur)', 'tkb-smell', ' data-tkb-hagn="' + felag + '"');
@@ -77,8 +115,9 @@
 
   function teikna(el, d) {
     var s = d.slokkvitaeki, b = d.brunaholf, fv = s.framlegd_voru && s.framlegd_voru.fyrri_manudur;
-    var rodS = '<div class="tkb-rod"><div class="tkb-fel">Slökkvitæki<small>án VSK</small></div>' +
-      fl(manNafn(s.manudur) + ' til dags', mkr(s.manudur_til_dags), s.omaelt || 'kredit dregið frá') +
+    var unnidRodS = s.unnid !== undefined && s.unnid !== null ? '<div class="tkb-rod"><div class="tkb-fel">Slökkvitæki<small>unnið · án VSK</small></div>' + unnidSl(s) + '</div>' : '';
+    var rodS = unnidRodS + '<div class="tkb-rod"><div class="tkb-fel">Slökkvitæki<small>söluskráð · án VSK</small></div>' +
+      fl(manNafn(s.manudur) + ' til dags', mkr(s.manudur_til_dags), s.omaelt || 'eftir söludegi · kredit dregið frá') +
       fl(s.manudur.slice(0, 4) + ' til dags', mkr(s.ar_til_dags), s.ar_fra === '2026-05' ? 'frá yfirtöku 04.05' : 'frá 1. jan') +
       fl(manNafn(s.fyrri_man), mkr(s.fyrri_manudur), 'heill mánuður') +
       fl('Í pípunni', mkr(s.pipa.kr_an_vsk), s.pipa.fjoldi + ' drög · ekki í tekjum', 'tkb-pipa') +
@@ -119,6 +158,7 @@
     kall.then(function (j) {
       // Vista skilar án Unnið (skýrslan er þung): haldið tölunni frá síðustu opnun (rýni 22.11).
       if (j && j.brunaholf && j.brunaholf.unnid == null && _d && _d.brunaholf) j.brunaholf.unnid = _d.brunaholf.unnid;
+      if (j && j.slokkvitaeki && j.slokkvitaeki.unnid == null && _d && _d.slokkvitaeki) j.slokkvitaeki.unnid = _d.slokkvitaeki.unnid;
       _d = j; _at = Date.now(); _opid[felag] = false; teikna(el, j);
     })
       .catch(function (e) { form.insertAdjacentHTML('beforeend', '<span style="color:#b91c1c">Vistaðist ekki: ' + esc(e.message || e) + '</span>'); });
@@ -152,5 +192,5 @@
       .catch(function (e) { if (e && e.fela) { el.innerHTML = ''; return; } villa(el, _villa || (e && e.message) || String(e)); });
   }
 
-  window.TekjurBeint = { mount: mount, _teikna: teikna, _kr: kr, _mkr: mkr };
+  window.TekjurBeint = { mount: mount, _teikna: teikna, _kr: kr, _mkr: mkr, _taekiTexti: taekiTexti };
 })();

@@ -108,8 +108,10 @@ async function krofurSl() {
 }
 
 async function osott() {
-  const l = await sbOll('verkbeidnir?select=id,verd,dropoff,created_at&status=eq.ready&eytt_at=is.null&order=id.asc');
-  const aldur = l.map(r => dagarFra(r.dropoff || r.created_at)).filter(x => x != null);
+  // Aldur ósótts miðast við hvenær tækið varð KLÁRT (klart_at, stimplað af kveikju 21.11.2026), ekki innlögn; eldri raðir án
+  // stimpils (óþekkt) halda gamla mælikvarðanum: innlögn/skráning.
+  const l = await sbOll('verkbeidnir?select=id,verd,dropoff,created_at,klart_at&status=eq.ready&eytt_at=is.null&order=id.asc');
+  const aldur = l.map(r => dagarFra(r.klart_at || r.dropoff || r.created_at)).filter(x => x != null);
   return { n: l.length, kr: summa(l, r => r.verd), elst_dagar: aldur.length ? Math.max(...aldur) : null, yfir30: aldur.filter(x => x > 30).length };
 }
 

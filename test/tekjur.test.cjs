@@ -93,6 +93,24 @@ function stub(h) {
     if (t === 'app_kv') return svar(h.kv ? [{ value: h.kv }] : []);
     if (t === 'solur' && q.get('status') === 'eq.void') return svar([{ id: 2 }]);
     if (t === 'solur' && q.get('status') === 'eq.drog') { assert.equal(q.get('hidden'), 'is.false'); return svar([{ upphaed_an_vsk: 70 }, { upphaed_an_vsk: 30 }]); }
+    // Slökkvitæki „Unnið“ (22.11.2026): sölur með tegund + skýrslur + verkbeiðnir + verkliðir; hver tafla getur brugðist sér
+    if (t === 'solur' && q.get('select').includes('vidskiptategund')) {
+      h.unnidSlSignal = !!init.signal; h.unnidSlKall = (h.unnidSlKall || 0) + 1;
+      if (h.slKastar) throw new Error('net niðri');
+      return svar([
+        { id: 1, num: 'R-000001', status: F, vidskiptategund: 'uttekt', credit_of: null, upphaed_an_vsk: 1000, created_at: '2026-10-02T00:00:00Z', customer_base_id: 7, customer_id: 70, linur: [{ desc: 'Yfirferð · A', qty: 4, unit_price_ex_vat: 250 }] },
+        { id: 9, num: 'R-000009', status: F, vidskiptategund: 'uttekt', credit_of: null, upphaed_an_vsk: 400, created_at: '2026-11-02T00:00:00Z', customer_base_id: 8, customer_id: 80, linur: [{ desc: 'Hleðsla · B', qty: 2, unit_price_ex_vat: 200 }] },
+        { id: 5, num: 'R-000005', status: F, vidskiptategund: 'uttekt', credit_of: 2, upphaed_an_vsk: -500, created_at: '2026-11-03T00:00:00Z', customer_base_id: 8, customer_id: 80, linur: [] },
+        { id: 11, num: 'R-000011', status: F, vidskiptategund: 'bud', credit_of: null, upphaed_an_vsk: 1000, created_at: '2026-10-05T00:00:00Z', customer_base_id: null, customer_id: null, linur: [{ desc: 'Hleðsla · Duft 2 kg', qty: 1, unit_price_ex_vat: 1000 }] },
+      ]);
+    }
+    if (t === 'customer_documents') {
+      assert.match(q.get('doc_type'), /uttektarskyrsla/); assert.equal(q.get('source'), 'eq.app');
+      if (h.skyrslurTomar) return svar([]);
+      return svar([{ id: 1, doc_type: 'uttektarskyrsla', doc_date: '2026-10-03', customer_base_id: 7, fyrirtaeki_id: 70, is_duplicate: false, skodun_ar_man: null, notes: 'Prófun - 0000000000 - 2026 - september - úttektarskýrsla - #1.pdf' }]);
+    }
+    if (t === 'verkbeidnir') return svar([{ id: 51, num: 'R-000011-V1', status: 'collected', verd: 1240, klart_at: '2026-11-03T08:00:00Z', eytt_at: null }]);
+    if (t === 'verklidur') return svar([{ job_id: 51, service: 'Duft 2 kg. ABC hleðsla', eytt_at: null }]);
     if (t === 'solur' && q.get('select').includes('linur')) return svar([{ status: F, created_at: '2026-10-05T00:00:00Z', linur: [{ product_id: 7, qty: 1, unit_price_ex_vat: 100 }] }]);
     if (t === 'solur') return svar([
       { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-10-02T00:00:00Z' },
@@ -154,6 +172,37 @@ test('tekjur-beint: Brunahólf „Unnið" úr Rekstrarskýrslu — kaka kallanda
   h.unnidKastar = false; h.unnidKall = 0;
   const d6 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), false);
   assert.equal(d6.brunaholf.unnid, null); assert.equal(h.unnidKall, 0, 'skýrslan ekki kölluð við Vista');
+});
+
+test('tekjur-beint: Slökkvitæki „Unnið“ — skoðanir eftir skoðunarmánuði, verkstæði á klart_at, samtals; ómælt (aldrei 0) ef lestur bregst; Vista sækir það ekki', async () => {
+  const h = {}; stub(h);
+  const d = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  const u = d.slokkvitaeki.unnid;
+  assert.equal(h.unnidSlSignal, true, 'AbortSignal.timeout (5 s) fylgir lestrunum');
+  assert.equal(u.manudur_til_dags.skodanir.kr, 400, 'sala 02.11 án skýrslu → mánuður sölunnar');
+  assert.equal(u.manudur_til_dags.skodanir.an_skyrslu_kr, 400, '… og merkt „án skýrslu“');
+  assert.equal(u.manudur_til_dags.verkstaedi.kr, 1000, 'V-hluti (1240 ÷ 1,24) á klart_at 03.11, þótt salan sé frá október');
+  assert.deepEqual(u.manudur_til_dags.verkstaedi.taeki, { yfirferd: 0, hledsla: 1, nytt: 0 });
+  assert.deepEqual(u.manudur_til_dags.skodanir.taeki, { yfirferd: 0, hledsla: 2, nytt: 0 });
+  assert.equal(u.manudur_til_dags.samtals.kr, 1400); assert.deepEqual(u.manudur_til_dags.samtals.taeki, { yfirferd: 0, hledsla: 3, nytt: 0 });
+  assert.equal(u.fyrri_manudur.samtals.kr, 0, 'salan frá 05.10 er færð á klart_at — engin tvítalning í október');
+  assert.equal(u.ar_til_dags_kr, 2400, 'september (1000 á skoðunarmánuð) + nóvember');
+  assert.equal(d.slokkvitaeki.manudur_til_dags, 400, 'gamla reglan (söludagur) er óbreytt og sér tala');
+  assert.doesNotMatch(JSON.stringify(d), /customer|nafn|kt/i, 'aðeins samtölur fara út');
+  assert.match(d.skilgreining.slokkvitaeki_unnid, /klart_at/);
+  // skýrslulestur tómur → ómælt með ástæðu (annars yrði allt „án skýrslu“), hitt stendur
+  h.skyrslurTomar = true;
+  const d2 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.match(d2.slokkvitaeki.unnid.omaelt, /skýrslulesturinn skilaði engu/); assert.equal(d2.slokkvitaeki.unnid.manudur_til_dags, undefined);
+  assert.equal(d2.slokkvitaeki.manudur_til_dags, 400, 'gamla talan stendur');
+  // net niðri → ómælt, aldrei kast
+  h.skyrslurTomar = false; h.slKastar = true;
+  const d3 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.match(d3.slokkvitaeki.unnid.omaelt, /náðist ekki/); assert.equal(d3.slokkvitaeki.fyrri_manudur, 1000);
+  // „Vista forsendu“ (event=false) sækir ekki Unnið
+  h.slKastar = false; h.unnidSlKall = 0;
+  const d4 = await TB._lesa(new Date('2026-11-17T01:00:00Z'), false);
+  assert.equal(d4.slokkvitaeki.unnid, null); assert.equal(h.unnidSlKall, 0);
 });
 
 test('tekjur-beint: tómur reikningalestur (aðgangsregla á invoices) er ÓMÆLDUR — null með ástæðu, aldrei 0', async () => {
@@ -315,6 +364,40 @@ test('512: Unnið og Greitt teiknast með tölum, Greitt fellur út þegar það
   assert.doesNotMatch(bh, /<span>ómælt<\/span>[^]*?Unnið/, 'Unnið er mælt');
   const b = flisar(svarHttp(200, gr(null))); b.TB.mount(b.el); await bida();
   assert.doesNotMatch(b.el.innerHTML.split('Brunahólf<small>')[1], /Greitt · /, 'Greitt hverfur þegar það er null — ekki 0');
+});
+
+test('512: Slökkvitæki „unnið“ — Skoðanir · Verkstæði · Verslun · Samtals með tækjum, flaggað „án skýrslu“/„óviss“/„áætlað“; ómælt með ástæðu, aldrei 0; eldra svar án unnid hrynur ekki', async () => {
+  const tk = (y, h, n) => ({ yfirferd: y, hledsla: h, nytt: n });
+  const u = {
+    manudur: '2026-11', fyrri_man: '2026-10', ar_fra: '2026-05', ar_til_dags_kr: 25000000, i_vinnslu_kr: 56000, fyrir_yfirtoku_kr: 0, ostemmt_kr: 0, ostemmt_fjoldi: 0,
+    manudur_til_dags: {
+      skodanir: { kr: 4200000, arsthjonusta_kr: 4000000, brunakerfi_kr: 200000, slokkvikerfi_kr: 0, an_skyrslu_kr: 120000, an_skyrslu_fjoldi: 3, oviss_kr: 45000, leidrett_fjoldi: 1, taeki: tk(412, 88, 12) },
+      verkstaedi: { kr: 650000, aaetlad_kr: 650000, aaetlad_taeki: 300, taeki: tk(20, 300, 0) },
+      verslun: { kr: 900000 }, samtals: { kr: 5750000, taeki: tk(432, 388, 12) },
+    },
+    fyrri_manudur: { skodanir: { kr: 6000000 }, verkstaedi: { kr: 0 }, verslun: { kr: 0 }, samtals: { kr: 8100000, taeki: tk(1, 1, 1) } },
+  };
+  const d = (unnid) => ({
+    maelt_at: '2026-11-22T04:00:00Z', skilgreining: {},
+    slokkvitaeki: { manudur: '2026-11', manudur_til_dags: 400, fyrri_man: '2026-10', fyrri_manudur: 1000, ar_til_dags: 1400, ar_fra: '2026-05',
+      unnid, pipa: { kr_an_vsk: 0, fjoldi: 0 }, framlegd_voru: { fyrri_manudur: { framlegd: 60, thak_pct: 10 } }, hagnadur: { kr: null } },
+    brunaholf: { manudur: '2026-11', manudur_til_dags: 3034316, fyrri_man: '2026-10', fyrri_manudur: 11755921, ar_til_dags: 30000000, ar_fra: '2026-01',
+      pipa: { heiti: 'Ósent', kr_m_vsk: 100, fjoldi: 1 }, hagnadur: { kr: null } },
+  });
+  const a = flisar(svarHttp(200, d(u))); a.TB.mount(a.el); await bida();
+  const sl = a.el.innerHTML.split('Brunahólf<small>')[0];
+  assert.match(sl, /Slökkvitæki<small>unnið/); assert.match(sl, /Slökkvitæki<small>söluskráð/);
+  assert.match(sl, /Skoðanir · nóvember til dags/); assert.match(sl, /Verkstæði · nóvember til dags/); assert.match(sl, /Samtals unnið · nóvember til dags/);
+  assert.match(sl, /yfirf\. 412 · hlaðin 88 · ný 12/, 'tæki skoðana'); assert.match(sl, /yfirf\. 432 · hlaðin 388 · ný 12/, 'tæki samtals');
+  assert.match(sl, /án skýrslu 120\.000 kr \(3\)/, 'án skýrslu flaggað með fjölda'); assert.match(sl, /óviss 45\.000 kr/); assert.match(sl, /áætlað 650\.000 kr \(klart_at vantar\)/);
+  assert.match(sl, /Á verkstæði núna/); assert.match(sl, /Samtals unnið · október/);
+  // ómælt með ástæðu — aldrei 0
+  const b = flisar(svarHttp(200, d({ omaelt: 'skýrslulesturinn skilaði engu' }))); b.TB.mount(b.el); await bida();
+  const slb = b.el.innerHTML.split('Brunahólf<small>')[0];
+  assert.match(slb, /<span>ómælt<\/span>/); assert.match(slb, /skýrslulesturinn skilaði engu/); assert.doesNotMatch(slb, /Skoðanir · /);
+  // eldra svar án unnid (skyndiminni/eldri þjónn): engin Unnið-röð og engin villa
+  const c = flisar(svarHttp(200, d(undefined))); c.TB.mount(c.el); await bida();
+  assert.doesNotMatch(c.el.innerHTML.split('Brunahólf<small>')[0], /unnið/); assert.match(c.el.innerHTML, /Slökkvitæki<small>söluskráð/);
 });
 
 test('512: 200 með röngu sniði (vantar hluta) hrynur ekki — villulína; Tekjur og Bókhald vefja mount í try', async () => {
