@@ -734,6 +734,128 @@
       // a target is picked — its own row for the selector chip. Fixes the
       // cramped/overlapping header when the selector text was long.
       '#' + PANEL_ID + ' .pe-hd{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}',
+      '#' + PANEL_ID + '{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}',
+      '#' + PANEL_ID + ' .pe-content{min-height:0;overflow:auto;padding:2px 2px 10px}',
+      '#' + PANEL_ID + ' .pe-hd,#' + PANEL_ID + ' .pe-actions{flex:none}',
+      '#' + PANEL_ID + ' .pe-actions{margin-top:auto}',
+      '#' + PANEL_ID + ' .pe-settings-links{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}',
+      '#' + PANEL_ID + ' .pe-settings-links>div{padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:10px}',
+      '#' + PANEL_ID + ' .pe-settings-links h4{margin:0;font-size:14px}',
+      '#' + PANEL_ID + ' .pe-settings-links p{margin:4px 0 8px}',
+      '#' + PANEL_ID + ' .pe-settings-links a.pe-btn{display:inline-flex;text-decoration:none}',
+      '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
+      '#' + PANEL_ID + ' .pe-kit-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}',
+      '#' + PANEL_ID + ' .pe-kit-switch [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-page-pair{display:grid;gap:12px;grid-template-columns:1fr}',
+      '#' + PANEL_ID + '.pe-full .pe-page-pair{grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr))}',
+      '#' + PANEL_ID + ' .pe-page-example{min-width:0;--shell:#0c1926;--nav:#0b1420;--plate:#15283a;--edge:#415874;--gold:#ffb66a;--green:#5cd283;--red:#fa7369;--blue:#65c3fb;--paper:#e8f0f8;--accent:#b64e18}',
+      '#' + PANEL_ID + ' .pe-page-example.ticket{--shell:#25262b;--nav:#121316;--plate:#292b31;--edge:#62646b;--gold:#d3ab4e;--green:#55a573;--red:#d65b59;--blue:#a8bacf;--paper:#f3f4f6;--accent:#8d222b}',
+      '#' + PANEL_ID + ' .pe-page-example h4{margin:6px 0;color:#172235;font-size:14px}',
+      '#' + PANEL_ID + ' .pe-page-shell{display:grid;grid-template-columns:minmax(68px,19%) minmax(0,1fr);gap:6px;padding:6px;border-radius:10px;background:var(--shell);color:#f7f9ff;font:11px/1.35 "IBM Plex Sans",system-ui,sans-serif}',
+      '#' + PANEL_ID + ' .pe-page-main{display:grid;gap:6px;min-width:0}',
+      '#' + PANEL_ID + ' .pe-page-area{position:relative;min-width:0;padding:8px 25px 8px 8px;border:1px solid var(--edge);border-radius:6px;background:var(--plate);overflow-wrap:anywhere}',
+      '#' + PANEL_ID + ' .pe-page-number{position:absolute;right:3px;top:3px;z-index:1;padding:1px 4px;border:1px solid #8294a9;border-radius:4px;background:#edf3fa;color:#172b45;font:700 10px/1.45 ui-monospace,monospace;cursor:pointer}',
+      '#' + PANEL_ID + ' .pe-page-number[aria-pressed=true]{background:#ffe0a4;color:#2f2312}',
+      '#' + PANEL_ID + ' .pe-page-area:has(>.pe-page-number[aria-pressed=true]){outline:2px solid #ffcb67;outline-offset:1px}',
+      '#' + PANEL_ID + ' .pe-page-nav{display:flex;flex-direction:column;gap:10px;padding-right:5px;padding-top:24px;background:var(--nav)}',
+      '#' + PANEL_ID + ' .pe-page-nav b{padding:4px;background:var(--accent);border-radius:3px}',
+      '#' + PANEL_ID + ' .pe-page-banner{background:radial-gradient(ellipse at 60% 115%,#a54b35 0%,transparent 55%),linear-gradient(120deg,var(--plate),var(--nav));border-color:var(--gold)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-banner{background:repeating-linear-gradient(106deg,#1b1c20 0 3px,#21242a 3px 5px);border-color:var(--edge)}',
+      '#' + PANEL_ID + ' .pe-page-banner strong{display:block;font-size:23px;letter-spacing:-.03em}',
+      '#' + PANEL_ID + ' .pe-page-banner small{letter-spacing:.09em;text-transform:uppercase}',
+      '#' + PANEL_ID + ' .pe-page-title,#' + PANEL_ID + ' .pe-page-filters{display:flex;justify-content:space-between;gap:5px;align-items:center;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-page-title strong{display:block;font-size:15px}',
+      '#' + PANEL_ID + ' .pe-page-cta{padding:4px 6px;border-radius:4px;background:var(--accent)}',
+      '#' + PANEL_ID + ' .pe-page-meters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}',
+      '#' + PANEL_ID + ' .pe-page-meter{display:flex;flex-direction:column;gap:4px;padding:20px 5px 6px;--meter:var(--gold);border-color:var(--meter);background:linear-gradient(150deg,color-mix(in srgb,var(--meter) 19%,var(--plate)),var(--nav))}',
+      '#' + PANEL_ID + ' .ticket .pe-page-meter{background:repeating-linear-gradient(105deg,#ffffff08 0 1px,transparent 1px 4px),linear-gradient(150deg,color-mix(in srgb,var(--meter) 15%,var(--plate)),var(--nav))}',
+      '#' + PANEL_ID + ' .pe-page-meter.done{--meter:var(--green)}#' + PANEL_ID + ' .pe-page-meter.due{--meter:var(--red)}#' + PANEL_ID + ' .pe-page-meter.total{--meter:var(--blue)}',
+      '#' + PANEL_ID + ' .pe-page-meter strong{font:700 clamp(13px,1.4vw,23px)/1 Georgia,serif;color:var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-track{height:4px;background:#0007;border-radius:9px;overflow:hidden}#' + PANEL_ID + ' .pe-page-track i{display:block;width:70%;height:100%;background:var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-filters,#' + PANEL_ID + ' .pe-page-table table{background:var(--paper);color:#18253a}',
+      '#' + PANEL_ID + ' .pe-month-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:end;gap:2px;margin-top:5px}',
+      '#' + PANEL_ID + ' .pe-month-bars div{text-align:center;min-width:0}#' + PANEL_ID + ' .pe-month-bars i{display:block;background:linear-gradient(#9faec0,#354357);border-radius:2px}',
+      '#' + PANEL_ID + ' .pe-month-bars div:nth-child(11) i{background:linear-gradient(#ffe8a0,var(--gold))}#' + PANEL_ID + ' .pe-month-bars small{font-size:8px}',
+      '#' + PANEL_ID + ' .pe-page-table strong{display:block;margin-bottom:3px}#' + PANEL_ID + ' .pe-page-table table{width:100%;border-collapse:collapse;border-radius:4px;overflow:hidden}',
+      '#' + PANEL_ID + ' .pe-page-table th,#' + PANEL_ID + ' .pe-page-table td{padding:3px 4px;border-bottom:1px solid #cbd5e1;text-align:left}',
+      '#' + PANEL_ID + ' .pe-page-table td span{color:#176642;font-weight:700}',
+      '#' + PANEL_ID + ' .pe-page-shell{gap:7px;padding:8px;background:radial-gradient(ellipse at 80% 45%,#17344b4d,transparent 75%),var(--shell);border:1px solid #172330}',
+      '#' + PANEL_ID + ' .ticket .pe-page-shell{background:linear-gradient(160deg,#202126,#38393f 55%,#24262b)}',
+      '#' + PANEL_ID + ' .pe-page-banner{display:flex;min-height:66px;align-items:center;justify-content:space-between;gap:6px;padding:8px 26px 8px 12px;background:repeating-linear-gradient(127deg,#fff1 0 1px,transparent 1px 4px),radial-gradient(ellipse at 52% 108%,#ff9b3e 0%,#9e4c27 6%,transparent 45%),linear-gradient(115deg,#211c1c,#0c2b46 58%,#0a1827);box-shadow:inset 0 0 0 1px #ffb06b66,0 2px 7px #e5672855}',
+      '#' + PANEL_ID + ' .ticket .pe-page-banner{background:linear-gradient(180deg,#101012 0%,#10101238 80%),url(/img/theme/fire-flames.png) repeat-x bottom/auto 83%,#101012;border-color:#45474b;box-shadow:inset 0 0 0 1px #ffffff24}',
+      '#' + PANEL_ID + ' .pe-page-brand img{display:block;width:min(105px,100%);height:auto;filter:drop-shadow(0 1px 3px #000)}',
+      '#' + PANEL_ID + ' .pe-page-brand small{font-weight:800;text-shadow:0 1px 3px #000}',
+      '#' + PANEL_ID + ' .pe-page-clock{display:grid;padding:4px 5px;text-align:center;background:#080a0e;border:1px solid #c885456e;border-radius:5px;color:var(--gold)}',
+      '#' + PANEL_ID + ' .pe-page-clock small{font-size:7px}#' + PANEL_ID + ' .pe-page-clock b{font:700 16px/1 ui-monospace,monospace}',
+      '#' + PANEL_ID + ' .pe-page-title{background:transparent;border-color:transparent;padding-left:2px}',
+      '#' + PANEL_ID + ' .ticket .pe-page-title strong{font-family:Georgia,serif}',
+      '#' + PANEL_ID + ' .pe-page-cta{background:linear-gradient(#e8792f,#85320a);box-shadow:inset 0 1px 0 #ffd49b66}',
+      '#' + PANEL_ID + ' .ticket .pe-page-cta{background:linear-gradient(#89192b,#400c16)}',
+      '#' + PANEL_ID + ' .pe-page-meters{grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr))}',
+      '#' + PANEL_ID + ' .pe-page-meter{border-color:color-mix(in srgb,var(--meter) 68%,#203246);box-shadow:inset 0 0 8px color-mix(in srgb,var(--meter) 20%,transparent),0 0 5px color-mix(in srgb,var(--meter) 26%,transparent)}',
+      '#' + PANEL_ID + ' .pe-page-meter::after{content:"";position:absolute;left:3px;top:4px;width:4px;height:4px;border-radius:50%;background:var(--meter);box-shadow:0 0 5px var(--meter)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-meter{box-shadow:inset 0 0 0 1px #ffffff16;border-radius:3px 10px 3px 10px}',
+      '#' + PANEL_ID + ' .pe-page-meter-label{font-weight:750;text-transform:uppercase;letter-spacing:.05em}',
+      '#' + PANEL_ID + ' .pe-page-substats{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto;font-size:8px}',
+      '#' + PANEL_ID + ' .pe-page-substats span{display:grid;padding:3px 4px;background:#ffffff12;border-radius:3px}',
+      '#' + PANEL_ID + ' .pe-page-track i{background:linear-gradient(#ffffff55,transparent),var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-filters{justify-content:flex-start;background:linear-gradient(#f5f9fc,#cddbe9)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-filters{background:linear-gradient(#fff,#e2e3e6)}',
+      '#' + PANEL_ID + ' .pe-page-filters>*{padding:2px 4px;border-right:1px solid #a0abb74f}',
+      '#' + PANEL_ID + ' .pe-page-search{flex:1;min-width:75px;background:#f5f8fc;border-radius:3px;color:#475569}',
+      '#' + PANEL_ID + ' .pe-page-table thead{background:var(--plate);color:#fff}',
+      '#' + PANEL_ID + ' .pe-page-table td span{display:inline-block;padding:2px 4px;border-radius:3px;background:#185b3e;color:#fff}',
+      '@media(max-width:540px){#' + PANEL_ID + ' .pe-page-meters{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+      '#' + PANEL_ID + ' .pe-kit-compare{overflow-x:auto;max-width:100%}',
+      '#' + PANEL_ID + ' .pe-kit-compare table{width:100%;min-width:615px;table-layout:fixed;border-spacing:0 5px}',
+      '#' + PANEL_ID + ' .pe-kit-compare th{font-size:13px;text-align:left;padding:5px 8px}',
+      '#' + PANEL_ID + ' .pe-kit-compare td{padding:0 5px;vertical-align:top}',
+      '#' + PANEL_ID + ' .pk-item-number{display:inline-block;margin:0 0 5px;padding:2px 6px;border-radius:4px;background:#e9eff7;color:#334b6a;font:700 11px/1.3 ui-monospace,monospace}',
+      '#' + PANEL_ID + ' .pe-kit-compare .pk-row-title th{padding-top:12px;border-top:1px solid #d8e0ed;color:#475569}',
+      '#' + PANEL_ID + ' .pk-card,#' + PANEL_ID + ' .pk-controls{display:grid;gap:6px;padding:9px;background:var(--pk-paper);color:var(--pk-ink);border:1px solid var(--pk-border);border-radius:10px}',
+      '#' + PANEL_ID + ' .pk-system-1 .pk-card{border-radius:6px;box-shadow:inset 0 -2px 0 #d9dfe8}',
+      '#' + PANEL_ID + ' .pk-system-2 .pk-card{box-shadow:inset 0 1px 0 #ffffff18}',
+      '#' + PANEL_ID + ' .pk-data,#' + PANEL_ID + ' .pk-days{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11.5px}',
+      '#' + PANEL_ID + ' .pk-number{font-size:21px;font-variant-numeric:tabular-nums}',
+      '#' + PANEL_ID + ' .pk-track{height:6px;border-radius:9px;background:var(--pk-surface);overflow:hidden}',
+      '#' + PANEL_ID + ' .pk-track i{display:block;width:75%;height:100%;background:var(--pk-accent)}',
+      '#' + PANEL_ID + ' .pk-work{border-left:4px solid var(--pk-accent)}',
+      '#' + PANEL_ID + ' .pk-badge{justify-self:start;padding:2px 7px;border-radius:99px;background:var(--pk-status-bg);color:var(--pk-status);font-size:11px}',
+      '#' + PANEL_ID + ' .pk-banner,#' + PANEL_ID + ' .pk-card-head{display:grid;gap:3px;padding:9px;border-radius:6px;background:var(--pk-header);color:#fff}',
+      '#' + PANEL_ID + ' .pk-days span,#' + PANEL_ID + ' .pk-tab{padding:4px;background:var(--pk-surface);border-radius:5px}',
+      '#' + PANEL_ID + ' .pk-days small{display:block}',
+      '#' + PANEL_ID + ' .pk-controls{display:flex;align-items:center;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pk-action{color:#fff;background:var(--pk-action);padding:4px 6px;border-radius:5px;font-weight:650}',
+      '#' + PANEL_ID + ' .pk-system-0 .pk-action{color:#111827}',
+      '#' + PANEL_ID + ' .pe-kit-select{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700}',
+      '#' + PANEL_ID + ' .pe-kit-select select{font:inherit;color:#172235;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:5px 7px;max-width:100%}',
+      '#' + PANEL_ID + ' .pe-kit-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:center;gap:8px;padding:10px;border-radius:8px}',
+      '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
+      '#' + PANEL_ID + ' .pe-kit h5{margin:12px 0 5px;font-size:12px}',
+      '#' + PANEL_ID + ' .pe-kit-heading img{width:100%;max-height:110px;object-fit:cover;border-radius:4px}',
+      '#' + PANEL_ID + ' .pe-library{margin:10px 0;padding:10px;border:1px solid #d8dee9;border-radius:8px;background:#f7f9fc}',
+      '#' + PANEL_ID + ' .pe-library label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}',
+      '#' + PANEL_ID + ' .pe-library input,#' + PANEL_ID + ' .pe-library select{max-width:100%;font:inherit}',
+      '#' + PANEL_ID + ' .pe-library iframe{display:block;width:100%;height:min(68vh,760px);border:1px solid #bdc9d8;border-radius:7px;background:#fff}',
+      '#' + PANEL_ID + ' .pe-library pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}',
+      '#' + PANEL_ID + ' .pe-ticket-example{margin-top:9px;padding:9px;border-radius:9px}',
+      '#' + PANEL_ID + ' .pe-ticket-top{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:7px;color:#fff}',
+      '#' + PANEL_ID + ' .pe-ticket-card{display:grid;grid-template-columns:minmax(0,115px) minmax(0,1fr);max-width:560px;margin:8px auto 0;border:1px solid #abaeb9;border-left:4px solid #2563eb;border-radius:8px;background:#fff;color:#11141c;overflow:hidden}',
+      '#' + PANEL_ID + ' .pe-ticket-stub{display:grid;align-content:start;gap:6px;padding:9px;background:#f4f6f9;border-right:1px dashed #9ba1ad}',
+      '#' + PANEL_ID + ' .pe-ticket-main{display:grid;gap:4px;padding:9px}',
+      '#' + PANEL_ID + ' .pe-ticket-actions{display:flex;gap:5px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-ticket-stub span,#' + PANEL_ID + ' .pe-ticket-actions span{padding:4px 7px;line-height:1.25;font-size:11px}',
+      '#' + PANEL_ID + ' .pe-kit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(106px,1fr));gap:8px}',
+      '#' + PANEL_ID + ' .pe-kit-item{display:grid;text-align:left;gap:6px;min-width:0}',
+      '#' + PANEL_ID + ' .pe-kit-item img{width:100%;height:40px;object-fit:cover;border-radius:4px;background:#111923}',
+      '#' + PANEL_ID + ' .pe-kit-tab{display:grid;place-items:center;height:40px;border:1px solid;border-radius:9px}',
+      '#' + PANEL_ID + ' .pe-groups{display:flex;gap:5px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-groups [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-more{position:relative;margin-left:auto}',
+      '#' + PANEL_ID + ' .pe-more>summary{cursor:pointer;padding:6px}',
+      '#' + PANEL_ID + ' .pe-more>div{position:absolute;bottom:100%;right:0;z-index:2;display:grid;gap:6px;padding:8px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;width:max-content;max-width:75vw}',
+      'html body #' + PANEL_ID + '.pe-full{inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;overflow:hidden!important;padding:12px clamp(12px,4vw,50px)!important}',
+      '#' + PANEL_ID + '.pe-full .pe-content{flex:1}',
       '#' + PANEL_ID + ' .pe-titlerow{display:flex;align-items:flex-start;gap:12px}',
       '#' + PANEL_ID + ' .pe-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       // Merktir takkahópar — hver hópur er ein rönd með lítilli yfirskrift til
@@ -944,6 +1066,532 @@
     if (document.getElementById(PANEL_ID)) renderPanel();
   }
   function applyPeViewMode(mode) { applyPlatView(mode); }
+  // Curated assets and design tokens from the Brunastál V2 Premium kit.
+  const BRUNASTAL_PREMIUM = {
+    "name": "Brunastál V2 Premium",
+    "tokens": {
+      "background": "#080D13",
+      "surface": "#111923",
+      "raised": "#19232E",
+      "text": "#F5F8FC",
+      "muted": "#A6B4C4",
+      "border": "#465261",
+      "amber": "#FFAD31",
+      "blue": "#00B9FF",
+      "panel": "18px",
+      "button": "9px"
+    },
+    "backgrounds": [
+      {
+        "label": "Dökkt stál",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiA+CjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0iciIgY3g9IjYwJSIgY3k9IjEwJSIgcj0iOTAlIj48c3RvcCBzdG9wLWNvbG9yPSIjMUEyNjMxIi8+PHN0b3Agb2Zmc2V0PSIuNDIiIHN0b3AtY29sb3I9IiMwQzEzMUIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwNTA5MEYiLz48L3JhZGlhbEdyYWRpZW50PjxwYXR0ZXJuIGlkPSJwIiB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMCA4TDggMCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utb3BhY2l0eT0iLjAxNiIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNyKSIvPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcCkiLz4KPC9zdmc+Cg==",
+        "color": "#080D13",
+        "size": "cover"
+      },
+      {
+        "label": "Kolstrefjar",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDk2IDk2IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiA+CjxkZWZzPjxwYXR0ZXJuIGlkPSJjIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxyZWN0IHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzBCMTAxNyIvPjxwYXRoIGQ9Ik0wIDAgSDEyIE0wIDAgVjEyIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS1vcGFjaXR5PSIuMDE4Ii8+PHBhdGggZD0iTS01IDExIEwxMSAtNSBNMSAxNyBMMTcgMSIgc3Ryb2tlPSIjQjFDMENGIiBzdHJva2Utb3BhY2l0eT0iLjA1NSIgc3Ryb2tlLXdpZHRoPSIxLjI1Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2MpIi8+Cjwvc3ZnPgo=",
+        "color": "#111923",
+        "size": "64px"
+      }
+    ],
+    "banner": "data:image/webp;base64,UklGRg4DAABXRUJQVlA4IAIDAABQHwCdASoyAaoAPqlUpU2mKKeiJVQIeRAVCWdu4XExApirX/zDvAbgjn/30PFpEMQWzWfIWlUZ8haVRnyFpVGfIWlUZ8haVRnyFpVGfIWlUZ8haVRnyEz20po3u10/eb94GfKDEQhy2IM9bPTbv8fLlN/1hdMWKtRfepIiBXZAKby9rPAc0OqwSb0gWp/jjhhU/0gELPANOgGQoavFkWK2WGLsY9QUAUgtvS1D4mIgsCJIwsi3oPtxa6I9lm1kzT+4MCEJKGWgdigvY3hrRAssKdL8LVoJcWS/NJ3eji4cls+FQsEEogHQQSiAdBBKIB0EEogHQQSiAdBBKIB0EEogHQIAAP7+lEgAAAAAAdnJxCc8ZjI0hd5MTHGSfvYUJK73a0mlcggJjDYCkVcs4pnH8AJQqLzS7RKh3SndS65FmmTD+bA8SmdbSItAaP+652xwdcY1DNbFByUvtLWRzV1yGtq7eUDh11m1sY85lN64Hn+8IX7tMOgAN1O4/nL0AZbGrd0MjSwsn+qXaSAK61NEb2bicCcDphNtwRALPERkTsHS9y0KuOV7wNIlWNFocl077Up7kDHSUwrn4Elbvf8WIT4NITyjP4Thu/Pqv+tlgNzVtGHX8P/9MpG7I5Pq61XYssfPKweEdLtHm3MLLz/Gk58dhQIhRVNE98TZ1s+OV6bNJGtsYNN6e4DgwUTV85K3ibCvodqrHAzs2h6TujT+gNmTj1RcvBgc4BO3uARQvyqSHv2kCV9h5BfcaXibB2kyu14gZ00cWnDr4yeIZot+ws8rl282epNzuV7/q+S5yjN4YQKbfw2NrsHh/DeasTLe0lsl8NvUQq3yEHaVCd5fu/4osq2jazGxIl87qzH/wTnPAumxZJFoPJuvkchQmJEErfaOE4mdal9fGsSIYda1Co+tQoMlZXsWhQqhLPV8C/7s52ypf/pXaTikCoBHnD0KqqQr/HiJCnVesRwdFF0IKtwbp5nREzuM6MqbZxfDzVHVE4AAEk5OBAAAAAAAAAAAAA==",
+    "parts": [
+      {
+        "label": "Rammar · gulbrúnn",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3NjAgMzYwIiB3aWR0aD0iNzYwIiBoZWlnaHQ9IjM2MCIgcm9sZT0iaW1nIj48ZGVmcz48ZmlsdGVyIGlkPSJoYWxvIiB4PSItMzAlIiB5PSItNDAlIiB3aWR0aD0iMTYwJSIgaGVpZ2h0PSIxODAlIj48ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI3Ii8+PC9maWx0ZXI+PGxpbmVhckdyYWRpZW50IGlkPSJlZGdlIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZGRTI5QSIvPjxzdG9wIG9mZnNldD0iLjIzIiBzdG9wLWNvbG9yPSIjRkZBQzI0Ii8+PHN0b3Agb2Zmc2V0PSIuNjIiIHN0b3AtY29sb3I9IiNGQzdGMDAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRkFDMjQiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iZmxhc2giIHgxPSIwIiB4Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZGQUMyNCIgc3RvcC1vcGFjaXR5PSIwIi8+PHN0b3Agb2Zmc2V0PSIuNDUiIHN0b3AtY29sb3I9IiNGRkUyOUEiIHN0b3Atb3BhY2l0eT0iLjk2Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkZBQzI0IiBzdG9wLW9wYWNpdHk9IjAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNMjQgMiBIMzIwIEwzMzUgMTUgSDY1MCBMNjY1IDIgSDczMCBMNzU4IDI5IFYxMjMgTDc0NiAxMzcgVjI2NSBMNzU4IDI3OSBWMzM1IEw3MzMgMzU4IEgyNCBMMiAzMzUgVjMwIFoiIHN0cm9rZT0idXJsKCNlZGdlKSIgc3Ryb2tlLXdpZHRoPSIxLjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjQgMiBIMzIwIEwzMzUgMTUgSDY1MCBMNjY1IDIgSDczMCBMNzU4IDI5IFYxMjMgTDc0NiAxMzcgVjI2NSBMNzU4IDI3OSBWMzM1IEw3MzMgMzU4IEgyNCBMMiAzMzUgVjMwIFoiIHN0cm9rZT0iI0ZGRTI5QSIgc3Ryb2tlLXdpZHRoPSIuNSIgb3BhY2l0eT0iLjIzIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDQpIiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMiIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSIyMyIgY3k9IjIyIiByPSIyLjIiIGZpbGw9IiNGRkUyOUEiLz48Y2lyY2xlIGN4PSI3MzYiIGN5PSIzNCIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSI3MzYiIGN5PSIzNCIgcj0iMi4yIiBmaWxsPSIjRkZFMjlBIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIzMzYiIHI9IjUuNSIgZmlsbD0iI0ZGQUMyNCIgb3BhY2l0eT0iLjMyIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIzMzYiIHI9IjIuMiIgZmlsbD0iI0ZGRTI5QSIvPjxjaXJjbGUgY3g9IjczNSIgY3k9IjMzNiIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSI3MzUiIGN5PSIzMzYiIHI9IjIuMiIgZmlsbD0iI0ZGRTI5QSIvPjwvc3ZnPg==",
+        "style": {
+          "border": "1px solid #FFAD31",
+          "border-radius": "18px",
+          "box-shadow": "0 0 22px rgba(255,173,49,.20)"
+        }
+      },
+      {
+        "label": "Takkar · blár",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyODAgNjQiIHdpZHRoPSIyODAiIGhlaWdodD0iNjQiIHJvbGU9ImltZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4Mj0iMCIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwMEI5RkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwODdBQjYiLz48L2xpbmVhckdyYWRpZW50PjxmaWx0ZXIgaWQ9InNoYWRvdyI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iNCIvPjwvZmlsdGVyPjwvZGVmcz48cmVjdCB4PSI1IiB5PSI3IiB3aWR0aD0iMjcwIiBoZWlnaHQ9IjU2IiByeD0iMTMiIGZpbGw9IiMwMEI5RkYiIG9wYWNpdHk9Ii4yNCIgZmlsdGVyPSJ1cmwoI3NoYWRvdykiLz48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iMjc2IiBoZWlnaHQ9IjYwIiByeD0iMTAiIGZpbGw9InVybCgjZykiIHN0cm9rZT0iIzAwQjlGRiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTSAxNyA2SDI2MiIgc3Ryb2tlPSIjRDBGNEZGIiBvcGFjaXR5PSIuNTUiLz48L3N2Zz4=",
+        "style": {
+          "background": "linear-gradient(180deg,#00B9FF,#111923)",
+          "color": "#F5F8FC",
+          "border": "1px solid #00B9FF",
+          "border-radius": "9px"
+        }
+      },
+      {
+        "label": "Flipar · stál",
+        "style": {
+          "background": "#19232E",
+          "color": "#F5F8FC",
+          "border": "1px solid #465261",
+          "border-radius": "9px"
+        }
+      }
+    ]
+  };
+
+  // Tokens adapted from the two supplied design-system packages.
+  const DESIGN_SYSTEMS = [{
+    "name": "Brunahólf V2",
+    "tokens": {
+      "background": "#02193c",
+      "text": "#ffffff",
+      "raised": "#f3f6fb",
+      "border": "#d8dee9"
+    },
+    "backgrounds": [
+      {
+        "label": "Ljós síða",
+        "value": "#e9f0fa"
+      },
+      {
+        "label": "Dökkblár flötur",
+        "value": "#011f40"
+      }
+    ],
+    "parts": [
+      {
+        "label": "Rammi · ljós spjöld",
+        "style": {
+          "background": "#ffffff",
+          "color": "#101e43",
+          "border": "1px solid #d8dee9",
+          "border-radius": "14px",
+          "box-shadow": "0 1px 2px rgba(2,25,60,0.06), 0 8px 24px rgba(2,25,60,0.08)"
+        }
+      },
+      {
+        "label": "Takki · appelsínugulur",
+        "style": {
+          "background": "#ff6702",
+          "color": "#02193c",
+          "border": "1px solid #f8b98c",
+          "border-radius": "10px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Flipi · ljós stika",
+        "style": {
+          "background": "#f3f6fb",
+          "color": "#101e43",
+          "border": "1px solid #d8dee9",
+          "border-radius": "10px",
+          "box-shadow": "none"
+        }
+      }
+    ]
+  }, {
+    "name": "Brunastál miðakerfi",
+    "tokens": {
+      "background": "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)",
+      "text": "#ffffff",
+      "raised": "#e2e6ec",
+      "border": "#0a0b0d"
+    },
+    "backgrounds": [
+      {
+        "label": "Bakgrunnur miðakerfis",
+        "value": "linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)",
+        "sample": "linear-gradient(180deg,#060607 0 24%,#aeb4be 72%,#9ba1ad 100%)"
+      },
+      {
+        "label": "Burstuð stálplata",
+        "value": "repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)"
+      }
+    ],
+    "parts": [
+      {
+        "label": "Rammi · stálplata",
+        "style": {
+          "background": "repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)",
+          "color": "#11141c",
+          "border": "1px solid #9ba1ad",
+          "border-radius": "10px",
+          "box-shadow": "0 10px 28px -16px rgba(25,35,60,.16)"
+        }
+      },
+      {
+        "label": "Takki · dökkur málmur",
+        "style": {
+          "background": "linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)",
+          "color": "#ffffff",
+          "border": "1px solid #0a0b0d",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Flipi · silfur",
+        "style": {
+          "background": "linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)",
+          "color": "#11141c",
+          "border": "1px solid #9ba1ad",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Aðgerð · Sækja",
+        "style": {
+          "background": "linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Aðgerð · Brunastál",
+        "style": {
+          "background": "linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Í vinnslu",
+        "style": {
+          "background": "linear-gradient(150deg,#4f74dc,#16306f)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Til afhendingar",
+        "style": {
+          "background": "linear-gradient(150deg,#1f9d57,#0a4a26)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Þarfnast athugunar",
+        "style": {
+          "background": "linear-gradient(150deg,#e0a93e,#9a6a14)",
+          "color": "#14120d",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Staða · Brýnt",
+        "style": {
+          "background": "linear-gradient(150deg,#e25555,#a01818)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Merki · Gull",
+        "style": {
+          "background": "linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Merki · Blátt stál",
+        "style": {
+          "background": "linear-gradient(145deg,#040d18 0%,#0b2440 20%,#154a7d 43%,#2f7fc9 53%,#0d2b4c 74%,#040d18 100%)",
+          "color": "#fff",
+          "border": "1px solid transparent",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      }
+    ]
+  }, BRUNASTAL_PREMIUM];
+  let designSystemIndex = 2;
+
+  function kitStylePreview(style) {
+    return esc(Object.entries(style).map(([property, value]) => property + ':' + value).join(';'));
+  }
+
+  function ticketKitPreview(kit) {
+    return '<div class="pe-ticket-example" aria-label="Dæmi um miðaspjald" style="background:' + kit.backgrounds[1].value + '">' +
+      '<div class="pe-ticket-top" style="background:' + kit.tokens.background + '"><strong>Afhending</strong><span>Verkstæði</span></div>' +
+      '<div class="pe-ticket-card"><div class="pe-ticket-stub"><strong>R-024</strong>' +
+      '<span style="' + kitStylePreview(kit.parts[6].style) + '">Til afhendingar</span></div>' +
+      '<div class="pe-ticket-main"><strong>Skoðun slökkvitækja</strong><small>Þrjú tæki · Dæmi</small>' +
+      '<div class="pe-ticket-actions"><span style="' + kitStylePreview(kit.parts[3].style) + '">Sækja</span>' +
+      '<span style="' + kitStylePreview(kit.parts[1].style) + '">Prenta</span></div></div></div></div>';
+  }
+
+  // The supplied library stays on this device. Its HTML is displayed in a
+  // script-free sandbox, never inserted into the application document.
+  let fullTicketLibrary = null;
+  let ticketComponent = 0;
+  let libraryNotice = '';
+  let libraryBusy = false;
+  let libraryRestoreChecked = false;
+
+  function openLibraryDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('stilstjori-honnunarsafn', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('libraries');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function libraryStorage(file) {
+    const db = await openLibraryDb();
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction('libraries', file ? 'readwrite' : 'readonly');
+        const store = tx.objectStore('libraries');
+        const request = file ? store.put(file, 'midakerfi') : store.get('midakerfi');
+        tx.oncomplete = () => resolve(request.result);
+        tx.onabort = () => reject(tx.error);
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally { db.close(); }
+  }
+
+  async function readTicketLibrary(file) {
+    if (file.size > 12 * 1024 * 1024) throw new Error('ZIP-skráin er of stór.');
+    const data = await file.arrayBuffer();
+    const bytes = new Uint8Array(data);
+    const view = new DataView(data);
+    const decoder = new TextDecoder();
+    const signature = (offset, value) => offset >= 0 && offset + 4 <= bytes.length && view.getUint32(offset, true) === value;
+    let end = bytes.length - 22;
+    const minimum = Math.max(0, end - 65535);
+    while (end >= minimum && !(signature(end, 0x06054b50) && end + 22 + view.getUint16(end + 20, true) === bytes.length)) end--;
+    if (end < minimum) throw new Error('Skráin er ekki gild ZIP-skrá.');
+    const count = view.getUint16(end + 10, true);
+    let offset = view.getUint32(end + 16, true);
+    if (count > 600 || view.getUint16(end + 4, true) || view.getUint16(end + 6, true)) throw new Error('ZIP-sniðið er óstutt.');
+    const entries = new Map();
+    for (let i = 0; i < count; i++) {
+      if (offset + 46 > end || !signature(offset, 0x02014b50)) throw new Error('ZIP-skráin er skemmd.');
+      const nameSize = view.getUint16(offset + 28, true);
+      const next = offset + 46 + nameSize + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+      if (next > end) throw new Error('ZIP-skráin er skemmd.');
+      const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameSize));
+      entries.set(name, {
+        flags: view.getUint16(offset + 8, true), method: view.getUint16(offset + 10, true),
+        compressed: view.getUint32(offset + 20, true), size: view.getUint32(offset + 24, true),
+        start: view.getUint32(offset + 42, true)
+      });
+      offset = next;
+    }
+
+    async function textFile(name) {
+      const entry = entries.get(name);
+      if (!entry) return '';
+      const {flags, method, compressed, size, start} = entry;
+      if (flags & 1 || size > 1024 * 1024 || start + 30 > bytes.length || !signature(start, 0x04034b50)) throw new Error('Skrá í safninu er óstudd.');
+      const begin = start + 30 + view.getUint16(start + 26, true) + view.getUint16(start + 28, true);
+      if (begin + compressed > bytes.length || (method !== 0 && method !== 8)) throw new Error('Skrá í safninu er óstudd.');
+      const input = bytes.subarray(begin, begin + compressed);
+      const stream = new Blob([input]).stream();
+      const reader = (method === 8 ? stream.pipeThrough(new DecompressionStream('deflate-raw')) : stream).getReader();
+      const output = new Uint8Array(size);
+      let position = 0;
+      try {
+        for (;;) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          if (position + value.length > size) throw new Error('Stærð skrár passar ekki við ZIP-yfirlit.');
+          output.set(value, position);
+          position += value.length;
+        }
+        if (position !== size) throw new Error('Skrá í safninu er skemmd.');
+      } finally { await reader.cancel(); }
+      return decoder.decode(output);
+    }
+
+    const manifestName = [...entries.keys()].find(name => /(^|\/)manifest\.json$/.test(name));
+    if (!manifestName) throw new Error('Manifest-skrá fannst ekki.');
+    const manifest = JSON.parse(await textFile(manifestName));
+    if (manifest.namespace !== 'Midakerfi' || !Array.isArray(manifest.components)) throw new Error('Veldu ZIP-skrána „Miðakerfi — Brunastál“.');
+    const prefix = manifestName.slice(0, -'manifest.json'.length);
+    const cover = {name:'Cover', summary:'Forsíða hönnunarsafnsins'};
+    const items = [cover, ...manifest.components].filter(item => typeof item?.name === 'string' && /^[A-Za-z0-9_-]+$/.test(item.name));
+    const library = await Promise.all(items.map(async item => ({
+      name: item.name === 'Cover' ? 'Forsíða' : item.name,
+      summary: String(item.summary || ''),
+      preview: await textFile(prefix + 'components/' + item.name + '/preview.html'),
+      docs: await textFile(prefix + 'api/components/' + item.name + '.md') ||
+        await textFile(prefix + 'components/' + item.name + '/README.md')
+    })));
+    library.push({name:'Hönnunargildi', summary:'Litir, letur, bil og aðrir tókenar úr pakkanum.', docs:await textFile(prefix + 'tokens.css')});
+    return library;
+  }
+
+  async function loadFullTicketLibrary(file) {
+    libraryBusy = true;
+    try {
+      const packageFile = file || await libraryStorage();
+      if (!packageFile) return;
+      fullTicketLibrary = await readTicketLibrary(packageFile);
+      ticketComponent = 0;
+      libraryNotice = '';
+      if (file) {
+        try { await libraryStorage(file); }
+        catch (_) { libraryNotice = 'Safnið er opið. Vistun á tækinu tókst ekki.'; }
+      }
+    } catch (error) {
+      libraryNotice = file ? error.message : 'Ekki tókst að endurheimta safnið af tækinu.';
+    } finally {
+      libraryBusy = false;
+      if (panelGroup === 'versions' && designSystemIndex === 1) renderPanel();
+    }
+  }
+
+  function fullTicketSection() {
+    const selected = fullTicketLibrary?.[ticketComponent];
+    const options = (fullTicketLibrary || []).map((item, i) =>
+      '<option value="' + i + '"' + (i === ticketComponent ? ' selected' : '') + '>' + esc(item.name) + '</option>').join('');
+    return '<div class="pe-library"><h5>Allt Miðakerfissafnið</h5>' +
+      '<label>Opna ZIP-safn <input id="pe-ticket-zip" type="file" accept=".zip,application/zip"' + (libraryBusy ? ' disabled' : '') + '></label>' +
+      '<p class="pe-sub" role="status">' + esc(libraryBusy ? 'Les safn…' : libraryNotice || (selected ? fullTicketLibrary.length + ' færslur í safni' : 'Veldu Miðakerfi — Brunastál.zip. Safnið geymist á þessu tæki.')) + '</p>' +
+      (selected ? '<label>Íhlutur <select id="pe-ticket-component">' + options + '</select></label>' +
+        (selected.summary ? '<p>' + esc(selected.summary) + '</p>' : '') +
+        (selected.preview ? '<iframe id="pe-ticket-preview" title="' + esc(selected.name) + '" sandbox referrerpolicy="no-referrer"></iframe>' : '<p class="pe-sub">Lýsing úr pakkanum</p>') +
+        (selected.docs ? '<details' + (selected.preview ? '' : ' open') + '><summary>Íhlutalýsing</summary><pre>' + esc(selected.docs) + '</pre></details>' : '') : '') +
+      '</div>';
+  }
+
+  const PAGE_AREAS = [
+    'Aðalborði', 'Hliðarstika', 'Síðutitill og aðgerðir', 'Virði ársþjónustu',
+    'Búið', 'Eftir', 'Fjöldi', 'Síur og leit', 'Skoðunarmánuðir', 'Staðatafla'
+  ];
+  let selectedPageArea = 0;
+
+  function pageThemeExample(kit, tone) {
+    function area(number, className, content) {
+      const label = String(number).padStart(2, '0') + ' · ' + PAGE_AREAS[number - 1];
+      return '<div class="pe-page-area ' + className + '" data-page-area="' + number + '">' +
+        '<button type="button" class="pe-page-number" data-select-page-area="' + number +
+        '" aria-pressed="' + (selectedPageArea === number) + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
+        String(number).padStart(2, '0') + '</button>' + content + '</div>';
+    }
+    const meters = [
+      [4, 'revenue', 'Virði ársþjónustu', '31,3 m.kr', '24,3 m.kr búið'],
+      [5, 'done', 'Búið 2026', '459', '70% af borðinu'],
+      [6, 'due', 'Eftir 2026', '162', '91 komið á tíma'],
+      [7, 'total', 'Fjöldi', '659', '612 með skráð tæki']
+    ].map(([n, tone, name, value, detail]) => area(n, 'pe-page-meter ' + tone,
+      '<small class="pe-page-meter-label">' + name + '</small><strong>' + value + '</strong>' +
+      '<span class="pe-page-track"><i></i></span><small>' + detail + '</small>' +
+      (n === 4 ? '<div class="pe-page-substats"><span>Meðalstaður <b>51.144 kr</b></span><span>Nóv <b>62 staðir</b></span><span>Áætlað / raun <b>399 · 213</b></span></div>' : '')
+    )).join('');
+    const months = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+    const volumes = [31,71,57,45,31,56,42,45,68,60,62,50];
+    return '<section class="pe-page-example ' + tone + '" aria-label="' + esc(kit.name) + '">' +
+      '<h4>' + esc(kit.name) + '</h4><div class="pe-page-shell">' +
+      area(2,'pe-page-nav','<strong>Slökkvitæki</strong><span>Þjónustuborð</span><span>Sala</span><span>Verkstæði</span><b>Fyrirtæki í þjónustu</b><span>Allir viðskiptavinir</span>') +
+      '<div class="pe-page-main">' +
+      area(1,'pe-page-banner','<div class="pe-page-brand"><img src="/img/theme/brunaholf-mark.png" alt="Brunahólf"><small>Slökkvitæki ehf.</small></div><div class="pe-page-clock"><small>Kassakerfi</small><b>15:08</b></div>') +
+      area(3,'pe-page-title','<div><small>Ársskoðun</small><strong>Fyrirtæki í þjónustu</strong></div><span class="pe-page-cta">＋ Nýtt fyrirtæki</span>') +
+      '<div class="pe-page-meters">' + meters + '</div>' +
+      area(8,'pe-page-filters','<b>Allt</b><span>Búið 2026</span><span>Eftir 2026</span><span>Í vinnslu</span><span class="pe-page-search">Leita að fyrirtæki…</span>') +
+      area(9,'pe-page-months','<strong>Skoðunarmánuður · 2026</strong><div class="pe-month-bars">' +
+        months.map((month, n) => '<div title="' + volumes[n] + '"><i style="height:' + Math.round(volumes[n] * .45) + 'px"></i><small>' + month + '</small></div>').join('') + '</div>') +
+      area(10,'pe-page-table','<strong>Staðirnir</strong><table><thead><tr><th>Fyrirtæki</th><th>Tæki</th><th>Staða</th></tr></thead><tbody>' +
+        '<tr><td>Dæmishús</td><td>59</td><td><span>Skoðað</span></td></tr><tr><td>Sýniverkstæði</td><td>37</td><td>Á dagskrá</td></tr><tr><td>Prufufélag</td><td>24</td><td><span>Skoðað</span></td></tr></tbody></table>') +
+      '</div></div></section>';
+  }
+
+  function pageThemeComparison() {
+    return '<p class="pe-sub" id="pe-page-area-caption" aria-live="polite">' +
+      (selectedPageArea ? esc('Svæði ' + selectedPageArea + ' · ' + PAGE_AREAS[selectedPageArea - 1]) : 'Veldu númer til að auðkenna sama svæði í báðum útlitum.') +
+      '</p><div class="pe-page-pair">' + pageThemeExample(DESIGN_SYSTEMS[2], 'premium') +
+      pageThemeExample(DESIGN_SYSTEMS[1], 'ticket') + '</div>';
+  }
+
+  let kitView = 'page';
+
+
+  function kitComparison() {
+    const colors = [
+      ['#ffffff','#e9f0fa','#101e43','#d8dee9','#ff6702','#166534','#ddfada'],
+      ['#ffffff','#e2e6ec','#11141c','#9ba1ad','#2563eb','#0b5a2e','#dff0e4'],
+      ['#111923','#19232e','#f5f8fc','#465261','#ffad31','#c4f9d9','#174630']
+    ];
+    const rows = [
+      ['Kassi 01', 'Upplýsingar', '<div class="pk-card"><strong>Staður og samband</strong><div class="pk-data"><span>Heimilisfang</span><b>Dæmigata 12</b><span>Tengiliður</span><b>Verkstæði</b></div></div>'],
+      ['Kassi 02', 'Mælispjald', '<div class="pk-card"><small>Til afhendingar</small><strong class="pk-number">12</strong><div class="pk-track" role="img" aria-label="Þrír fjórðu"><i></i></div></div>'],
+      ['Kassi 03', 'Verkspjald og staða', '<div class="pk-card pk-work"><small>R-024 · Verkstæði</small><strong>Skoðun slökkvitækja</strong><span class="pk-badge">Tilbúið</span></div>'],
+      ['Kassi 04', 'Dagskrá', '<div class="pk-card"><div class="pk-card-head">Dagskrá</div><div class="pk-days"><span>MÁN 23<small>09:00 · Skoðun</small></span><span>ÞRI 24</span></div></div>'],
+      ['Banner 01', 'Aðalborði', '<div class="pk-banner"><small>Þjónusta</small><strong>Yfirlit fyrirtækis</strong></div>'],
+      ['Stýringar 01', 'Takkar og flipar', '<div class="pk-controls"><span class="pk-action">Skrá verk</span><span class="pk-tab">Yfirlit</span><span class="pk-tab">Saga</span></div>'],
+      ['Kassi 05', 'Verðsamantekt', '<div class="pk-card"><small>Samtals</small><strong class="pk-number">24.900 kr</strong><small>20.081 kr án VSK</small></div>']
+    ];
+    const heading = DESIGN_SYSTEMS.map(kit => '<th scope="col">' + esc(kit.name) + '</th>').join('');
+    const body = rows.map(([number, role, example]) => {
+      const cells = DESIGN_SYSTEMS.map((kit,i) => {
+        const [paper, surface, ink, border, accent, statusInk, statusBg] = colors[i];
+        const style = kitStylePreview({'--pk-paper':paper,'--pk-surface':surface,'--pk-ink':ink,'--pk-border':border,
+          '--pk-accent':accent,'--pk-status':statusInk,'--pk-status-bg':statusBg,'--pk-header':kit.tokens.background,
+          '--pk-action':kit.parts[i === 1 ? 3 : 1].style.background});
+        return '<td class="pk-system-' + i + '" style="' + style + '" aria-label="' + esc(number + ' · ' + kit.name) + '">' +
+          '<span class="pk-item-number">' + esc(number) + '</span>' + example + '</td>';
+      }).join('');
+      return '<tr class="pk-row-title"><th colspan="3" scope="rowgroup">' + esc(role) + '</th></tr><tr>' + cells + '</tr>';
+    }).map(group => '<tbody>' + group + '</tbody>').join('');
+    return '<div class="pe-kit-compare" role="region" aria-label="Hönnunarkerfi hlið við hlið" tabindex="0">' +
+      '<table><thead><tr>' + heading + '</tr></thead>' + body + '</table></div>';
+  }
+
+  function designSystemSection() {
+    const switcher = '<div class="pe-kit-switch" aria-label="Sýn hönnunarkerfa">' +
+      [['page','Heil síða'],['compare','Stakir kassar'],['library','Stílasöfn']].map(([id,label]) =>
+        '<button type="button" class="pe-btn" data-kit-view="' + id + '" aria-pressed="' + (kitView === id) + '">' + label + '</button>'
+      ).join('') + '</div>';
+    if (kitView !== 'library') return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher +
+      (kitView === 'page' ? pageThemeComparison() : kitComparison()) + '</section>';
+    const kit = DESIGN_SYSTEMS[designSystemIndex];
+    const options = DESIGN_SYSTEMS.map((system, i) =>
+      '<option value="' + i + '"' + (i === designSystemIndex ? ' selected' : '') + '>' + esc(system.name) + '</option>'
+    ).join('');
+    const picker = '<label class="pe-kit-select">Hönnunarkerfi <select id="pe-design-system">' + options + '</select></label>';
+    const backgrounds = kit.backgrounds.map((item, i) =>
+      '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-bg="' + i + '">' +
+        (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview({background:item.sample || item.value}) + '"></span>') +
+        '<span>' + esc(item.label) + '</span></button>'
+    ).join('');
+    const parts = kit.parts.map((item, i) =>
+      '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
+        (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">' + esc(item.label.split(' · ').pop()) + '</span>') +
+        '<span>' + esc(item.label) + '</span></button>'
+    ).join('');
+    return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher + picker +
+      '<div class="pe-kit-heading" style="background:' + kit.tokens.background + ';color:' + kit.tokens.text + '">' +
+        '<h4>' + esc(kit.name) + '</h4>' +
+        (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
+      '</div>' +
+      (designSystemIndex === 1 ? fullTicketSection() + (fullTicketLibrary ? '' : ticketKitPreview(kit)) : '') +
+      '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
+      '<h5>Rammar, takkar, flipar og stöður</h5>' +
+      '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni. Vistaðu síðan útlitið sem þemapakka.</p>' +
+      '<div class="pe-kit-grid">' + parts + '</div>' +
+    '</section>';
+  }
+
+  const PANEL_GROUPS = [
+    ['header', 'Haus og banner'], ['backgrounds', 'Bakgrunnar'],
+    ['layout', 'Skipulag'], ['styles', 'Stílar'], ['versions', 'Þemapakkar'],
+    ['settings', 'Stillingar']
+  ];
+  let panelGroup = 'backgrounds';
+  let panelFull = false;
+  let pendingKitPart = null;
+
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     resolveTarget();
@@ -953,67 +1601,57 @@
       '<button data-scope="all"' + (scope === 'all' ? ' class="on"' : '') + '>Allar síður</button></div>';
     const matchSeg = '<div class="pe-seg" title="Bara þennan staka hlut, eða ALLA hluti sem líta eins út (t.d. allar raðir í töflu í einu)"><button data-match="one"' + (matchMode === 'one' ? ' class="on"' : '') + '>🎯 Bara þennan</button>' +
       '<button data-match="many"' + (matchMode === 'many' ? ' class="on"' : '') + '>📑 Alla eins</button></div>';
-    // v2-uppbygging (hönnun Agnars 26.08): tvö NÚMERUÐ þrep í stað einnar flatrar
-    // hrúgu — „1 · VELDU" (hvað ætlarðu að snerta) og „2 · BREYTTU" (stíla-söfnin).
-    // Á milli þeirra situr verkfæraspjald valins svæðis. Aðgerðir á síðuna
-    // (vista/afturkalla/resetta/bakgrunnur) færast upp í hausinn þar sem þær
-    // tilheyra — þær eiga hvorugt þrepið.
-    // ⚠️ `.pe-toolbar` verður að lifa áfram sem klasi: patchar 319/320/321 finna
-    // hann með querySelector('.pe-toolbar') og appenda sínum tökkum.
+    const previousGroup = p.dataset.group;
+    const scroll = previousGroup === panelGroup ? p.querySelector('.pe-content')?.scrollTop || 0 : 0;
+    const groupButtons = PANEL_GROUPS.map(([id, label]) =>
+      '<button type="button" class="pe-btn" data-pe-group="' + id +
+      '" aria-pressed="' + (panelGroup === id) + '">' + label + '</button>'
+    ).join('');
+    // Other editor patches append their tools to .pe-toolbar.
     const head = '<div class="pe-hd">' +
       '<div class="pe-titlerow">' +
-        '<div style="flex:1"><h3 class="pe-h">🎨 Stilla útlit</h3></div>' +
+        '<div style="flex:1"><h3 class="pe-h">Stílstjóri</h3></div>' +
+        '<button type="button" class="pe-btn" id="pe-full" aria-pressed="' + panelFull + '">' + (panelFull ? 'Minnka' : 'Heildarskjár') + '</button>' +
         '<button class="pe-btn" id="pe-dock" title="Færa stjórnborðið milli hliðar og botns">' + (dock === 'side' ? '⇓ Botn' : '⇥ Hlið') + '</button>' +
         '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
       '</div>' +
-      '<div class="pe-step">1 · Veldu</div>' +
-      '<div class="pe-pickrow">' +
+      scopeSeg +
+      '<nav class="pe-groups" aria-label="Flokkar Stílstjóra">' + groupButtons + '</nav>' +
+      '</div>';
+    const styleTools = '<div class="pe-pickrow">' +
         '<button class="pe-btn big ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
         '<button class="pe-btn big' + (multiPick ? ' on' : '') + '" id="pe-multi" title="Smelltu á nokkra hluti — sömu breytingar fara á þá alla">☑ Velja marga</button>' +
       '</div>' +
-      scopeSeg +
       zoneMapSection() +
       (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '"><b>' + esc(friendlyName(target)) + '</b> · ' + esc(targetLbl) + '</span>' +
         '<button class="pe-btn" id="pe-parent" title="Velja hlutinn UTAN um þennan (stækka valið)">⬆ Foreldri</button>' +
         (target.closest && target.closest('table') && target.tagName !== 'TABLE' ? '<button class="pe-btn" id="pe-pick-table" title="Velja töfluna í heild">📊 Taflan</button>' : '') +
         '<button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
-      (target ? '<div class="pe-grp">' + '<span class="pe-grplbl">Nákvæmni</span>' + matchSeg + '</div>' : '') +
-      '<div class="pe-grp pe-toolbar">' +
+      (target ? '<div class="pe-grp">' + '<span class="pe-grplbl">Nákvæmni</span>' + matchSeg + '</div>' : '');
+    const layoutTools = '<div class="pe-grp pe-toolbar">' +
         '<span class="pe-grplbl">Sýn</span>' +
         viewModeSegHtml() +
-      '</div>' +
       '</div>';
 
-    // „Síðan"-aðgerðirnar (vista/afturkalla/resetta/bakgrunnur) sitja NEÐST
-    // (Agnar 27.08: „færa Síðan vista síðu alveg niður"). Þær eru lokahnykkurinn
-    // — maður velur, breytir og vistar SVO — og þær ýttu verkfærunum niður fyrir
-    // brún á meðan þær sátu efst.
-    const sidanGrp = '<div class="pe-grp" style="margin-top:14px">' +
-      '<span class="pe-grplbl">Síðan</span>' +
-      '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
-      (IN_DEVFRAME ? '' : '<button class="pe-btn" id="pe-save-as-app" title="Búa til / uppfæra app-útgáfu af þessari síðu sem birtist á Öpp-síðunni">📱 Vista sem app í Öpp</button>') +
-      '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
-      '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
-      '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
-      // Zoom á SÍÐUNA sjálfa — lækkar kortin og kemur fleirum á skjáinn.
+    const zoom =
       '<span class="pe-zoom">' +
         '<button class="pe-btn" data-zoom="-10" title="Minnka um 10%">−</button>' +
         '<span class="pe-zoomv">' + curZoom() + '%</span>' +
         '<button class="pe-btn" data-zoom="10" title="Stækka um 10%">+</button>' +
         (curZoom() !== 100 ? '<button class="pe-btn" data-zoom="0" title="Aftur í 100%">↺</button>' : '') +
-      '</span>' +
-    '</div>';
-
-    const step2 = '<div class="pe-step">2 · Breyttu</div>';
+      '</span>';
+    const actions = '<div class="pe-grp pe-actions">' +
+      '<button type="button" class="pe-btn pri" id="pe-savepage" title="Vista núverandi útlit sem nafngreindan þemapakka">Vista útlit</button>' +
+      '<button type="button" class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + '>Afturkalla</button>' +
+      '<details class="pe-more"><summary>Fleira</summary><div>' +
+        (IN_DEVFRAME ? '' : '<button type="button" class="pe-btn" id="pe-save-as-app">Vista sem app í Öpp</button>') +
+        '<button type="button" class="pe-btn" id="pe-reset">Endurstilla…</button>' +
+      '</div></details></div>';
     let body;
     if (!target) {
-      body = cardSection() +
-        (activeZone && cards[activeZone] ? '' :
-          '<div class="pe-empty">Smelltu á svæði í kortinu hér að ofan — eða á <b>🎯 Velja hlut</b> og svo á texta, box eða glugga á síðunni.</div>' +
-          '<div class="pe-tip">Veldu hlut á síðunni (🎯) eða svæði hér að ofan — síðan stillirðu lit, letur eða hnappastíl fyrir neðan.</div>') +
-        step2 + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      body = '<p class="pe-sub">Veldu hlut á síðunni eða svæði hér fyrir ofan til að stilla liti, letur og ramma.</p>';
     } else {
-      body = cardSection() + step2 + '<div class="pe-grid">' +
+      body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
           sliderRow('Letur', 'font-size', 8, 54, 1) +
           sliderRow('Línuhæð', 'line-height', 90, 240, 5, '%') +
@@ -1048,9 +1686,31 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      '</div>';
     }
-    p.innerHTML = head + body + sidanGrp;
+    const bannerControl = document.getElementById('_bd-skipta');
+    const hasHeader = !!zoneEl(ALLZONES.find(zone => zone.id === 'haus'));
+    const groups = {
+      header: (bannerControl ? '<p class="pe-sub">Borðavalið gildir á öllum vélum.</p><button class="pe-btn" id="pe-banner-style">Skipta um borða</button>' : '') +
+        (hasHeader ? ' <button class="pe-btn" id="pe-header-style">Stilla haus</button>' : '') +
+        (!bannerControl && !hasHeader ? '<p class="pe-sub">Engar hausstillingar fyrir þessa sýn.</p>' : ''),
+      backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
+      layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
+      styles: styleTools + cardSection() + body + presetsSection(),
+      versions: designSystemSection() + versionsSection(),
+      settings: '<div class="pe-settings-links">' +
+        '<div><h4>Hliðarstika</h4><p class="pe-sub">Röð, sýnileiki og skil milli valmyndarliða.</p>' +
+          '<button type="button" class="pe-btn" id="pe-sidebar-settings">Aðlaga hliðarstiku</button></div>' +
+        '<div><h4>Bakendi</h4><p class="pe-sub">Yfirlit yfir gögn og gagnalíkan.</p>' +
+          '<a class="pe-btn" id="pe-backend-settings" href="#bakendi">Opna Bakenda</a></div>' +
+        '<div><h4>Aðgangar</h4><p class="pe-sub">Notendur og heimildir í Stjórnstöð.</p>' +
+          '<a class="pe-btn" href="https://brunaholf.netlify.app/adgangar.html" target="_blank" rel="noopener">Opna Aðganga ↗</a></div>' +
+      '</div>'
+    };
+    p.dataset.group = panelGroup;
+    p.classList.toggle('pe-full', panelFull);
+    p.innerHTML = head + '<div class="pe-content">' + groups[panelGroup] + '</div>' + actions;
+    p.querySelector('.pe-content').scrollTop = scroll;
     wirePanel();
     wireCard();
   }
@@ -1073,6 +1733,8 @@
       rules: JSON.parse(JSON.stringify(state.rules || [])),
       bg: JSON.parse(JSON.stringify(state.bg || { all: null, pages: {} })),
       tables: tableLookGet(),
+      zones: JSON.parse(JSON.stringify(state.zones || {})),
+      zoom: JSON.parse(JSON.stringify(state.zoom || {})),
     };
     const i = state.versions.findIndex(v => v.name === name);
     if (i >= 0) state.versions[i] = snap; else state.versions.push(snap);
@@ -1084,6 +1746,8 @@
     state.rules = JSON.parse(JSON.stringify(v.rules || []));
     state.bg = JSON.parse(JSON.stringify(v.bg || { all: null, pages: {} }));
     tableLookSet(v.tables || {});
+    if (v.zones) state.zones = JSON.parse(JSON.stringify(v.zones));
+    if (v.zoom) state.zoom = JSON.parse(JSON.stringify(v.zoom));
     persist(); renderPanel(); toast('✓ Útgáfa „' + v.name + '" virk');
   }
   function deleteVersion(i) {
@@ -1121,14 +1785,17 @@
   ];
   function applyGalleryBg(i) {
     const g = BG_GALLERY[i]; if (!g) return;
+    setGalleryBackground(g[0], g[1]);
+  }
+  function setGalleryBackground(label, background) {
     snapshot();
-    const val = 'css:' + g[1];
+    const val = 'css:' + background;
     if (scope === 'all') { state.bg.all = val; }
     else {
       const cur = activeViewEl();
       if (!cur || !cur.id) { state.bg.all = val; } else { state.bg.pages[cur.id] = val; }
     }
-    persist(); toast('🖼 ' + g[0] + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
+    persist(); renderPanel(); toast('🖼 ' + label + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
   }
   function clearGalleryBg() {
     snapshot();
@@ -1164,8 +1831,8 @@
         '<button class="pe-btn" data-ver-go="' + i + '">Virkja</button>' +
         '<button class="pe-btn" data-ver-del="' + i + '" title="Eyða" style="padding:7px 9px">🗑</button>' +
       '</div>').join('');
-    return '<details class="pe-sec" style="margin-top:10px"' + ((state.versions || []).length ? ' open' : '') + '><summary><h4>💾 Útgáfur — vista og skipta um heildar-útlit</h4></summary>' +
-      '<button class="pe-btn pri" id="pe-ver-save">＋ Vista núverandi útlit sem…</button>' +
+    return '<details class="pe-sec" style="margin-top:10px"' + ((state.versions || []).length ? ' open' : '') + '><summary><h4>Vistaðir þemapakkar</h4></summary>' +
+      '<button class="pe-btn pri" id="pe-ver-save">Vista sem þemapakka…</button>' +
       '<div style="margin-top:6px">' + (rows || '<div class="pe-sub">Engin útgáfa vistuð enn.</div>') + '</div>' +
       '<div class="pe-sub" style="margin-top:6px">Útgáfa geymir allar Stílstjóra-breytingar, bakgrunna og töflustillingar (breiddir/jöfnun/raðhæð).</div>' +
     '</details>';
@@ -1846,7 +2513,7 @@
       p.classList.toggle('pe-desk', desk);
       p.classList.toggle('pe-side', dock === 'side');
     }
-    const sideOpen = !!(p && dock === 'side' && desk);
+    const sideOpen = !!(p && !panelFull && dock === 'side' && desk);
     try {
       document.body.classList.toggle('pe-side-open', sideOpen);
       if (sideOpen) document.body.style.setProperty('--pe-side-w', (_sideW || 320) + 'px');
@@ -1878,10 +2545,48 @@
     });
     p.appendChild(rh);
   }
+  function showPanelGroup(group) {
+    panelGroup = group;
+    if (picking && group !== 'styles') setPicking(false);
+    else renderPanel();
+  }
+
   function wirePanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
+    qa('[data-pe-group]').forEach(button => button.onclick = () => {
+      const group = button.dataset.peGroup;
+      showPanelGroup(group);
+      q('[data-pe-group="' + group + '"]')?.focus();
+    });
+    q('#pe-full').onclick = () => {
+      panelFull = !panelFull;
+      if (panelFull && picking) setPicking(false);
+      else renderPanel();
+      q('#pe-full')?.focus();
+    };
+    const sidebar = q('#pe-sidebar-settings');
+    if (sidebar) sidebar.onclick = () => {
+      if (!window.SidebarCustomizer || typeof window.SidebarCustomizer.open !== 'function') {
+        toast('Hliðarstikustillingar eru ekki tiltækar í þessari sýn.');
+        return;
+      }
+      closePanel();
+      window.SidebarCustomizer.open();
+    };
+    const backend = q('#pe-backend-settings');
+    if (backend) backend.onclick = e => {
+      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) closePanel();
+    };
+    const banner = q('#pe-banner-style');
+    if (banner) banner.onclick = () => document.getElementById('_bd-skipta')?.click();
+    const header = q('#pe-header-style');
+    if (header) header.onclick = () => {
+      panelGroup = 'styles';
+      if (activeZone === 'haus') activeZone = null;
+      pickZone('haus');
+    };
     const framed = p.classList.contains('pe-framed') || !!document.getElementById('_devframe-editor');
     if (framed) {
       p.classList.add('pe-framed', 'pe-side');
@@ -1890,7 +2595,7 @@
     } else {
       p.classList.remove('pe-framed');
       syncDeskChrome(p);
-      if (dock === 'side') { p.style.width = _sideW + 'px'; ensureResizeHandle(p); }
+      if (dock === 'side') { p.style.width = _sideW + 'px'; if (!panelFull) ensureResizeHandle(p); }
       else { p.style.width = ''; }
     }
     const dk = q('#pe-dock'); if (dk) dk.onclick = () => {
@@ -1898,6 +2603,65 @@
       try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
+    qa('[data-kit-view]').forEach(button => button.onclick = () => {
+      kitView = button.dataset.kitView;
+      renderPanel();
+      q('[data-kit-view="' + button.dataset.kitView + '"]')?.focus();
+    });
+    qa('[data-select-page-area]').forEach(button => button.onclick = () => {
+      const number = Number(button.dataset.selectPageArea);
+      selectedPageArea = selectedPageArea === number ? 0 : number;
+      qa('[data-select-page-area]').forEach(marker =>
+        marker.setAttribute('aria-pressed', String(Number(marker.dataset.selectPageArea) === selectedPageArea)));
+      q('#pe-page-area-caption').textContent = selectedPageArea
+        ? 'Svæði ' + selectedPageArea + ' · ' + PAGE_AREAS[selectedPageArea - 1]
+        : 'Veldu númer til að auðkenna sama svæði í báðum útlitum.';
+    });
+    const libraryInput = q('#pe-ticket-zip');
+    if (libraryInput && !libraryRestoreChecked) {
+      libraryRestoreChecked = true;
+      libraryInput.disabled = true;
+      loadFullTicketLibrary();
+    }
+    if (libraryInput) libraryInput.onchange = () => {
+      const file = libraryInput.files[0];
+      if (file) { loadFullTicketLibrary(file); renderPanel(); }
+    };
+    const componentPicker = q('#pe-ticket-component');
+    if (componentPicker) componentPicker.onchange = () => {
+      ticketComponent = Number(componentPicker.value);
+      renderPanel();
+      q('#pe-ticket-component')?.focus();
+    };
+    const libraryPreview = q('#pe-ticket-preview');
+    if (libraryPreview) {
+      const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; style-src \'unsafe-inline\' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; form-action \'none\'; base-uri \'none\'">';
+      libraryPreview.srcdoc = csp + fullTicketLibrary[ticketComponent].preview;
+    }
+    const systemPicker = q('#pe-design-system');
+    if (systemPicker) systemPicker.onchange = () => {
+      const index = Number(systemPicker.value);
+      if (!DESIGN_SYSTEMS[index]) return;
+      designSystemIndex = index;
+      renderPanel();
+      q('#pe-design-system')?.focus();
+    };
+    qa('[data-pe-kit-bg]').forEach(button => button.onclick = () => {
+      const item = DESIGN_SYSTEMS[designSystemIndex].backgrounds[+button.dataset.peKitBg];
+      if (!item) return;
+      const background = item.value || 'url("' + item.asset + '") center / ' + item.size + ' ' + item.color;
+      setGalleryBackground(item.label, background);
+    });
+    qa('[data-pe-kit-part]').forEach(button => button.onclick = () => {
+      pendingKitPart = DESIGN_SYSTEMS[designSystemIndex].parts[+button.dataset.peKitPart] || null;
+      if (!pendingKitPart) return;
+      panelGroup = 'styles';
+      panelFull = false;
+      multiPick = false;
+      extraTargets = [];
+      setPicking(true);
+      toast('Veldu hlut fyrir „' + pendingKitPart.label + '“');
+    });
     qa('[data-bgg]').forEach(b => b.onclick = () => applyGalleryBg(+b.dataset.bgg));
     const bgc = q('#pe-bgg-clear'); if (bgc) bgc.onclick = clearGalleryBg;
     const vs = q('#pe-ver-save'); if (vs) vs.onclick = saveVersionAs;
@@ -1925,10 +2689,13 @@
       const tb = target && target.closest && target.closest('table');
       if (tb) { target = tb; rememberTarget(tb); extraTargets = []; highlight(tb); setTimeout(hideHighlight, 900); renderPanel(); }
     };
-    const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
+    const pk = q('#pe-pick'); if (pk) pk.onclick = () => {
+      if (!picking) panelFull = false;
+      setPicking(!picking);
+    };
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
-      if (multiPick && !picking) setPicking(true);   // beint í val-ham
+      if (multiPick && !picking) { panelFull = false; setPicking(true); }   // beint í val-ham
       if (!multiPick) extraTargets = [];
       renderPanel();
     };
@@ -2016,11 +2783,11 @@
   }
 
   function pickBackground() {
+    const backgroundScope = scope;
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
     inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
-      if (where !== '1' && where !== '2') return;
+      const where = backgroundScope === 'all' ? '2' : '1';
       const cur = activeViewEl();
       const id = cur && cur.id;
       if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
@@ -2043,6 +2810,7 @@
   // ── element picking ─────────────────────────────────────────────────────────
   function setPicking(on) {
     picking = on;
+    if (!on) pendingKitPart = null;
     document.body.classList.toggle('pe-picking', on);
     try {
       const fd = frameDoc();
@@ -2126,6 +2894,8 @@
       return;
     }
     target = el; rememberTarget(el);
+    const kitPart = pendingKitPart;
+    if (kitPart) applyPreset(kitPart.style);
     if (!multiPick) setPicking(false);
     // keep the highlight on the chosen element briefly
     highlight(el); setTimeout(hideHighlight, 700);
@@ -2181,6 +2951,7 @@
   }
   function closePanel() {
     const p = document.getElementById(PANEL_ID); if (p) p.remove();
+    panelFull = false;
     setPicking(false); hideHighlight();
     syncDeskChrome(null);
     renderPageLinks(true);   // ✕ hverfur og takkarnir læsast á sínum stað
