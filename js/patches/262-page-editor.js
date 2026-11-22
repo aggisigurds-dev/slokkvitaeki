@@ -744,6 +744,8 @@
       '#' + PANEL_ID + ' .pe-settings-links p{margin:4px 0 8px}',
       '#' + PANEL_ID + ' .pe-settings-links a.pe-btn{display:inline-flex;text-decoration:none}',
       '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
+      '#' + PANEL_ID + ' .pe-kit-select{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700}',
+      '#' + PANEL_ID + ' .pe-kit-select select{font:inherit;color:#172235;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:5px 7px;max-width:100%}',
       '#' + PANEL_ID + ' .pe-kit-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:center;gap:8px;padding:10px;border-radius:8px}',
       '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
       '#' + PANEL_ID + ' .pe-kit h5{margin:12px 0 5px;font-size:12px}',
@@ -1031,23 +1033,136 @@
     ]
   };
 
-  function premiumLibrarySection() {
-    const kit = BRUNASTAL_PREMIUM;
+  // Tokens adapted from the two supplied design-system packages.
+  const DESIGN_SYSTEMS = [{
+    "name": "Brunahólf V2",
+    "tokens": {
+      "background": "#02193c",
+      "text": "#ffffff",
+      "raised": "#f3f6fb",
+      "border": "#d8dee9"
+    },
+    "backgrounds": [
+      {
+        "label": "Ljós síða",
+        "value": "#e9f0fa"
+      },
+      {
+        "label": "Dökkblár flötur",
+        "value": "#011f40"
+      }
+    ],
+    "parts": [
+      {
+        "label": "Rammi · ljós spjöld",
+        "style": {
+          "background": "#ffffff",
+          "color": "#101e43",
+          "border": "1px solid #d8dee9",
+          "border-radius": "14px",
+          "box-shadow": "0 1px 2px rgba(2,25,60,0.06), 0 8px 24px rgba(2,25,60,0.08)"
+        }
+      },
+      {
+        "label": "Takki · appelsínugulur",
+        "style": {
+          "background": "#ff6702",
+          "color": "#02193c",
+          "border": "1px solid #f8b98c",
+          "border-radius": "10px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Flipi · ljós stika",
+        "style": {
+          "background": "#f3f6fb",
+          "color": "#101e43",
+          "border": "1px solid #d8dee9",
+          "border-radius": "10px",
+          "box-shadow": "none"
+        }
+      }
+    ]
+  }, {
+    "name": "Brunastál miðakerfi",
+    "tokens": {
+      "background": "linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)",
+      "text": "#ffffff",
+      "raised": "#e2e6ec",
+      "border": "#0a0b0d"
+    },
+    "backgrounds": [
+      {
+        "label": "Bakgrunnur miðakerfis",
+        "value": "linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)"
+      },
+      {
+        "label": "Burstuð stálplata",
+        "value": "repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)"
+      }
+    ],
+    "parts": [
+      {
+        "label": "Rammi · stálplata",
+        "style": {
+          "background": "repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)",
+          "color": "#11141c",
+          "border": "1px solid #9ba1ad",
+          "border-radius": "10px",
+          "box-shadow": "0 10px 28px -16px rgba(25,35,60,.16)"
+        }
+      },
+      {
+        "label": "Takki · dökkur málmur",
+        "style": {
+          "background": "linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)",
+          "color": "#ffffff",
+          "border": "1px solid #0a0b0d",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      },
+      {
+        "label": "Flipi · silfur",
+        "style": {
+          "background": "linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)",
+          "color": "#11141c",
+          "border": "1px solid #9ba1ad",
+          "border-radius": "8px",
+          "box-shadow": "none"
+        }
+      }
+    ]
+  }, BRUNASTAL_PREMIUM];
+  let designSystemIndex = 2;
+
+  function kitStylePreview(style) {
+    return esc(Object.entries(style).map(([property, value]) => property + ':' + value).join(';'));
+  }
+
+  function designSystemSection() {
+    const kit = DESIGN_SYSTEMS[designSystemIndex];
+    const options = DESIGN_SYSTEMS.map((system, i) =>
+      '<option value="' + i + '"' + (i === designSystemIndex ? ' selected' : '') + '>' + esc(system.name) + '</option>'
+    ).join('');
+    const picker = '<label class="pe-kit-select">Hönnunarkerfi <select id="pe-design-system">' + options + '</select></label>';
     const backgrounds = kit.backgrounds.map((item, i) =>
       '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-bg="' + i + '">' +
-        '<img src="' + item.asset + '" alt="" loading="lazy">' +
+        (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview({background:item.value}) + '"></span>') +
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
     const parts = kit.parts.map((item, i) =>
       '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
         (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
-          '<span class="pe-kit-tab" style="background:' + kit.tokens.raised + ';color:' + kit.tokens.text + ';border-color:' + kit.tokens.border + '">Virkur flipi</span>') +
+          '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">Sýnishorn</span>') +
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
-    return '<section class="pe-kit" aria-label="Brunastál V2 Premium">' +
+    return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + picker +
       '<div class="pe-kit-heading" style="background:' + kit.tokens.background + ';color:' + kit.tokens.text + '">' +
         '<h4>' + esc(kit.name) + '</h4>' +
-        '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' +
+        (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
       '</div>' +
       '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
       '<h5>Rammar, takkar og flipar</h5>' +
@@ -1170,7 +1285,7 @@
       backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
       layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
       styles: styleTools + cardSection() + body + presetsSection(),
-      versions: premiumLibrarySection() + versionsSection(),
+      versions: designSystemSection() + versionsSection(),
       settings: '<div class="pe-settings-links">' +
         '<div><h4>Hliðarstika</h4><p class="pe-sub">Röð, sýnileiki og skil milli valmyndarliða.</p>' +
           '<button type="button" class="pe-btn" id="pe-sidebar-settings">Aðlaga hliðarstiku</button></div>' +
@@ -2076,13 +2191,22 @@
       try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
+    const systemPicker = q('#pe-design-system');
+    if (systemPicker) systemPicker.onchange = () => {
+      const index = Number(systemPicker.value);
+      if (!DESIGN_SYSTEMS[index]) return;
+      designSystemIndex = index;
+      renderPanel();
+      q('#pe-design-system')?.focus();
+    };
     qa('[data-pe-kit-bg]').forEach(button => button.onclick = () => {
-      const item = BRUNASTAL_PREMIUM.backgrounds[+button.dataset.peKitBg];
+      const item = DESIGN_SYSTEMS[designSystemIndex].backgrounds[+button.dataset.peKitBg];
       if (!item) return;
-      setGalleryBackground(item.label, 'url("' + item.asset + '") center / ' + item.size + ' ' + item.color);
+      const background = item.value || 'url("' + item.asset + '") center / ' + item.size + ' ' + item.color;
+      setGalleryBackground(item.label, background);
     });
     qa('[data-pe-kit-part]').forEach(button => button.onclick = () => {
-      pendingKitPart = BRUNASTAL_PREMIUM.parts[+button.dataset.peKitPart] || null;
+      pendingKitPart = DESIGN_SYSTEMS[designSystemIndex].parts[+button.dataset.peKitPart] || null;
       if (!pendingKitPart) return;
       panelGroup = 'styles';
       panelFull = false;
