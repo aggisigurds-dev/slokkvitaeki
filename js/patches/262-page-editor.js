@@ -779,6 +779,32 @@
       '#' + PANEL_ID + ' .pe-page-table strong{display:block;margin-bottom:3px}#' + PANEL_ID + ' .pe-page-table table{width:100%;border-collapse:collapse;border-radius:4px;overflow:hidden}',
       '#' + PANEL_ID + ' .pe-page-table th,#' + PANEL_ID + ' .pe-page-table td{padding:3px 4px;border-bottom:1px solid #cbd5e1;text-align:left}',
       '#' + PANEL_ID + ' .pe-page-table td span{color:#176642;font-weight:700}',
+      '#' + PANEL_ID + ' .pe-page-shell{gap:7px;padding:8px;background:radial-gradient(ellipse at 80% 45%,#17344b4d,transparent 75%),var(--shell);border:1px solid #172330}',
+      '#' + PANEL_ID + ' .ticket .pe-page-shell{background:linear-gradient(160deg,#202126,#38393f 55%,#24262b)}',
+      '#' + PANEL_ID + ' .pe-page-banner{display:flex;min-height:66px;align-items:center;justify-content:space-between;gap:6px;padding:8px 26px 8px 12px;background:repeating-linear-gradient(127deg,#fff1 0 1px,transparent 1px 4px),radial-gradient(ellipse at 52% 108%,#ff9b3e 0%,#9e4c27 6%,transparent 45%),linear-gradient(115deg,#211c1c,#0c2b46 58%,#0a1827);box-shadow:inset 0 0 0 1px #ffb06b66,0 2px 7px #e5672855}',
+      '#' + PANEL_ID + ' .ticket .pe-page-banner{background:linear-gradient(180deg,#101012 0%,#10101238 80%),url(/img/theme/fire-flames.png) repeat-x bottom/auto 83%,#101012;border-color:#45474b;box-shadow:inset 0 0 0 1px #ffffff24}',
+      '#' + PANEL_ID + ' .pe-page-brand img{display:block;width:min(105px,100%);height:auto;filter:drop-shadow(0 1px 3px #000)}',
+      '#' + PANEL_ID + ' .pe-page-brand small{font-weight:800;text-shadow:0 1px 3px #000}',
+      '#' + PANEL_ID + ' .pe-page-clock{display:grid;padding:4px 5px;text-align:center;background:#080a0e;border:1px solid #c885456e;border-radius:5px;color:var(--gold)}',
+      '#' + PANEL_ID + ' .pe-page-clock small{font-size:7px}#' + PANEL_ID + ' .pe-page-clock b{font:700 16px/1 ui-monospace,monospace}',
+      '#' + PANEL_ID + ' .pe-page-title{background:transparent;border-color:transparent;padding-left:2px}',
+      '#' + PANEL_ID + ' .ticket .pe-page-title strong{font-family:Georgia,serif}',
+      '#' + PANEL_ID + ' .pe-page-cta{background:linear-gradient(#e8792f,#85320a);box-shadow:inset 0 1px 0 #ffd49b66}',
+      '#' + PANEL_ID + ' .ticket .pe-page-cta{background:linear-gradient(#89192b,#400c16)}',
+      '#' + PANEL_ID + ' .pe-page-meters{grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr))}',
+      '#' + PANEL_ID + ' .pe-page-meter{border-color:color-mix(in srgb,var(--meter) 68%,#203246);box-shadow:inset 0 0 8px color-mix(in srgb,var(--meter) 20%,transparent),0 0 5px color-mix(in srgb,var(--meter) 26%,transparent)}',
+      '#' + PANEL_ID + ' .pe-page-meter::after{content:"";position:absolute;left:3px;top:4px;width:4px;height:4px;border-radius:50%;background:var(--meter);box-shadow:0 0 5px var(--meter)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-meter{box-shadow:inset 0 0 0 1px #ffffff16;border-radius:3px 10px 3px 10px}',
+      '#' + PANEL_ID + ' .pe-page-meter-label{font-weight:750;text-transform:uppercase;letter-spacing:.05em}',
+      '#' + PANEL_ID + ' .pe-page-substats{display:flex;gap:3px;flex-wrap:wrap;margin-top:auto;font-size:8px}',
+      '#' + PANEL_ID + ' .pe-page-substats span{display:grid;padding:3px 4px;background:#ffffff12;border-radius:3px}',
+      '#' + PANEL_ID + ' .pe-page-track i{background:linear-gradient(#ffffff55,transparent),var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-filters{justify-content:flex-start;background:linear-gradient(#f5f9fc,#cddbe9)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-filters{background:linear-gradient(#fff,#e2e3e6)}',
+      '#' + PANEL_ID + ' .pe-page-filters>*{padding:2px 4px;border-right:1px solid #a0abb74f}',
+      '#' + PANEL_ID + ' .pe-page-search{flex:1;min-width:75px;background:#f5f8fc;border-radius:3px;color:#475569}',
+      '#' + PANEL_ID + ' .pe-page-table thead{background:var(--plate);color:#fff}',
+      '#' + PANEL_ID + ' .pe-page-table td span{display:inline-block;padding:2px 4px;border-radius:3px;background:#185b3e;color:#fff}',
       '@media(max-width:540px){#' + PANEL_ID + ' .pe-page-meters{grid-template-columns:repeat(2,minmax(0,1fr))}}',
       '#' + PANEL_ID + ' .pe-kit-compare{overflow-x:auto;max-width:100%}',
       '#' + PANEL_ID + ' .pe-kit-compare table{width:100%;min-width:615px;table-layout:fixed;border-spacing:0 5px}',
@@ -1458,7 +1484,9 @@
       [6, 'due', 'Eftir 2026', '162', '91 komið á tíma'],
       [7, 'total', 'Fjöldi', '659', '612 með skráð tæki']
     ].map(([n, tone, name, value, detail]) => area(n, 'pe-page-meter ' + tone,
-      '<small>' + name + '</small><strong>' + value + '</strong><span class="pe-page-track"><i></i></span><small>' + detail + '</small>'
+      '<small class="pe-page-meter-label">' + name + '</small><strong>' + value + '</strong>' +
+      '<span class="pe-page-track"><i></i></span><small>' + detail + '</small>' +
+      (n === 4 ? '<div class="pe-page-substats"><span>Meðalstaður <b>51.144 kr</b></span><span>Nóv <b>62 staðir</b></span><span>Áætlað / raun <b>399 · 213</b></span></div>' : '')
     )).join('');
     const months = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
     const volumes = [31,71,57,45,31,56,42,45,68,60,62,50];
@@ -1466,10 +1494,10 @@
       '<h4>' + esc(kit.name) + '</h4><div class="pe-page-shell">' +
       area(2,'pe-page-nav','<strong>Slökkvitæki</strong><span>Þjónustuborð</span><span>Sala</span><span>Verkstæði</span><b>Fyrirtæki í þjónustu</b><span>Allir viðskiptavinir</span>') +
       '<div class="pe-page-main">' +
-      area(1,'pe-page-banner','<strong>Brunahólf</strong><small>Slökkvitæki ehf.</small>') +
+      area(1,'pe-page-banner','<div class="pe-page-brand"><img src="/img/theme/brunaholf-mark.png" alt="Brunahólf"><small>Slökkvitæki ehf.</small></div><div class="pe-page-clock"><small>Kassakerfi</small><b>15:08</b></div>') +
       area(3,'pe-page-title','<div><small>Ársskoðun</small><strong>Fyrirtæki í þjónustu</strong></div><span class="pe-page-cta">＋ Nýtt fyrirtæki</span>') +
       '<div class="pe-page-meters">' + meters + '</div>' +
-      area(8,'pe-page-filters','<b>Allt</b><span>Búið</span><span>Eftir</span><span>Leita að fyrirtæki…</span>') +
+      area(8,'pe-page-filters','<b>Allt</b><span>Búið 2026</span><span>Eftir 2026</span><span>Í vinnslu</span><span class="pe-page-search">Leita að fyrirtæki…</span>') +
       area(9,'pe-page-months','<strong>Skoðunarmánuður · 2026</strong><div class="pe-month-bars">' +
         months.map((month, n) => '<div title="' + volumes[n] + '"><i style="height:' + Math.round(volumes[n] * .45) + 'px"></i><small>' + month + '</small></div>').join('') + '</div>') +
       area(10,'pe-page-table','<strong>Staðirnir</strong><table><thead><tr><th>Fyrirtæki</th><th>Tæki</th><th>Staða</th></tr></thead><tbody>' +
