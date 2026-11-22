@@ -268,14 +268,14 @@
     const aj = rek && rek.ferskleiki && rek.ferskleiki.ajour && rek.ferskleiki.ajour.nyjast;
     const kf = '<a class="yr-fm" href="' + fjarm + '" target="_blank" rel="noopener" title="Fjármála-yfirlit: ógreitt, ósent og unnið en ekki gefið út">Fjármála-yfirlit →</a>' +
       '<span class="yr-kf">' + heimildLed(rek, 'Tímavera') + 'Tímavera<s>|</s>' + heimildLed(rek, 'Ajour (göt)') + 'göt: Ajour ' + esc(dd(aj)) + '</span>';
-    const om = (nafn, astaeda) => '<div class="yr-well"><span class="yr-v">' + esc(nafn) + ' <small>ómælt</small></span><span class="yr-n" title="' + esc(astaeda) + '">' + esc(astaeda) + '</span></div>';
+    const om = (nafn, astaeda) => '<div class="yr-well"><span class="yr-v">' + esc(nafn) + ' <span class="yr-e">ómælt</span></span><span class="yr-n" title="' + esc(astaeda) + '">' + esc(astaeda) + '</span></div>';
     let wells;
-    if (!r) wells = '<div class="yr-well"><span class="yr-v"><small>' + (S.rVilla ? 'ómælt' : '…') + '</small></span><span class="yr-n" title="' + esc(S.rVilla || '') + '">' + esc(S.rVilla || 'sæki samtölu mánaðarins …') + '</span></div>';
+    if (!r) wells = '<div class="yr-well"><span class="yr-v"><span class="yr-e">' + (S.rVilla ? 'ómælt' : '…') + '</span></span><span class="yr-n" title="' + esc(S.rVilla || '') + '">' + esc(S.rVilla || 'sæki samtölu mánaðarins …') + '</span></div>';
     else {
       const sl = r.slokkvitaeki, um = sl && !sl.omaelt ? sl.unnid_manudur : null;
       const wSl = um && fin(um.samtals)
         ? '<div class="yr-well" title="' + esc('Slökkvitæki — ' + nm + ' til dags, án vsk: úttektir ' + isk(um.skodanir) + ' kr · verkstæði ' + isk(um.verkstaedi) + ' kr · verslun ' + isk(um.verslun) + ' kr · samtals ' + isk(um.samtals) + ' kr · ' + isk(um.taeki) + ' tæki') + '">' +
-          '<span class="yr-v">' + stor(um.samtals).t + '<small>' + stor(um.samtals).e + ' Slökkvitæki</small></span>' +
+          '<span class="yr-v">' + stor(um.samtals).t + '<span class="yr-e">' + stor(um.samtals).e + ' Slökkvitæki</span></span>' +
           '<span class="yr-n">úttektir <b>' + smatt(um.skodanir) + '</b> · verkstæði <b>' + smatt(um.verkstaedi) + '</b></span>' +
           '<span class="yr-n">verslun <b>' + smatt(um.verslun) + '</b> · ' + isk(um.taeki).replace('-', '−') + ' tæki</span></div>'
         : om('Slökkvitæki', (sl && sl.omaelt) || 'samtala mánaðarins vantar');
@@ -283,10 +283,10 @@
       let wBh;
       if (m && fin(m.unnid)) {
         const rf = fin(m.reikningsfaert) ? '<b>' + smatt(m.reikningsfaert) + '</b>' : 'ómælt';
-        const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <small title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</small>';
+        const og = !fin(m.ogefid) ? 'ómælt' : m.ogefid > 0 ? '<b>' + smatt(m.ogefid) + '</b>' : '<b>ekkert</b> <span class="yr-e" title="Reikningsfært í mánuðinum er umfram unnið — reikningar fyrir vinnu fyrri mánaða eru gefnir út núna">(umfram ' + smatt(-m.ogefid) + ')</span>';
         const h = m.hlutar || {};
         wBh = '<div class="yr-well" title="' + esc('Brunahólf — ' + nm + ' til dags, án vsk, áætlun: unnið ' + isk(m.unnid) + ' kr (tímar ' + isk(h.tima) + ' · Landspítalagöt ' + isk(h.landspitali) + ' · Heklureitsgöt ' + isk(h.heklureitur) + ') · reikningsfært ' + (fin(m.reikningsfaert) ? isk(m.reikningsfaert) + ' kr' : 'ómælt') + ' · ógefið út = unnið − reikningsfært') + '">' +
-          '<span class="yr-v">' + stor(m.unnid).t + '<small>' + stor(m.unnid).e + ' Brunahólf</small></span>' +
+          '<span class="yr-v">' + stor(m.unnid).t + '<span class="yr-e">' + stor(m.unnid).e + ' Brunahólf</span></span>' +
           '<span class="yr-n">reikningsfært ' + rf + '</span><span class="yr-n">ógefið út ' + og + '</span></div>';
       } else wBh = om('Brunahólf', (m && m.omaelt) || (bh && bh.omaelt) || 'samtala mánaðarins vantar');
       wells = wSl + wBh;
@@ -524,6 +524,7 @@
       '.yr-samlnk:focus-visible,.yr-fm:focus-visible{outline:2px solid #ffb066;outline-offset:2px}',
       '.yr-fm{align-self:flex-end;border-radius:6px;color:#ffb37a;font:600 11px Poppins,system-ui,sans-serif;text-decoration:none!important;white-space:nowrap}.yr-fm:hover{color:#ffd0a6}',
       '.yr-n b{font-weight:600;color:#fff}',
+      '.yr-v .yr-e{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-n .yr-e{font-size:10.5px;font-weight:500;color:#a9b8d0}',
       '.yr-well{display:flex;flex-direction:column;gap:4px;min-width:0;padding:7px 9px 6px}',
       '.yr-v{display:flex;align-items:baseline;gap:5px;font-size:16px;font-weight:600;line-height:1.1;white-space:nowrap}.yr-v small{font-size:11px;font-weight:500;color:#b8c6dd;margin-left:-2px}.yr-v s{text-decoration:none;font-size:11px;font-weight:600}',
       '.yr-h2{color:#b8c6dd;font-weight:500}',
