@@ -47,6 +47,7 @@
     '.tkb-fl span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:15px;font-weight:700;color:#11141c;white-space:nowrap}' +
     '.tkb-fl i{display:block;font-style:normal;font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.tkb-fl.tkb-pipa span{color:#b45309}.tkb-fl.tkb-omaelt span{color:#b45309;font-family:inherit;font-size:13px}' +
+    '.tkb-fl.tkb-unnid{border-color:rgba(15,118,110,.35);background:linear-gradient(180deg,#f3fbfa,#e6f5f3)}.tkb-fl.tkb-unnid span{color:#0f766e}' +
     '.tkb-fl.tkb-smell{cursor:pointer}.tkb-fl.tkb-smell:hover{border-color:#94a3b8}' +
     '.tkb-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px 98px;font-size:11px;color:#475569}' +
     '.tkb-form input{width:120px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px}' +
@@ -83,10 +84,18 @@
       fl('Í pípunni', mkr(s.pipa.kr_an_vsk), s.pipa.fjoldi + ' drög · ekki í tekjum', 'tkb-pipa') +
       (fv && fv.thak_pct != null ? fl('Framlegð vöru · ' + manNafn(s.fyrri_man), mkr(fv.framlegd), 'aðeins ' + String(fv.thak_pct).replace('.', ',') + ' % sölu með kostnaðarverð') : fl('Framlegð vöru', 'ómælt', 'kostnaðarverð vantar', 'tkb-omaelt')) +
       hagnFl('slokkvitaeki', s.hagnadur, s.fyrri_man) + '</div>' + (_opid.slokkvitaeki ? forsForm('slokkvitaeki', s.hagnadur) : '');
-    var rodB = '<div class="tkb-rod"><div class="tkb-fel">Brunahólf<small>án VSK</small></div>' +
-      fl(manNafn(b.manudur) + ' til dags', mkr(b.manudur_til_dags), b.omaelt || 'eftir útgáfudegi') +
-      fl(b.manudur.slice(0, 4) + ' til dags', mkr(b.ar_til_dags), 'Payday greitt + sent') +
-      fl(manNafn(b.fyrri_man), mkr(b.fyrri_manudur), 'heill mánuður') +
+    // 21.11.2026 (Agnar: Brunahólf telst eftir unnu verki skv. tímaskýrslu og Ajour Done-degi): „Unnið" er nú fyrst og útgáfudagstalan
+    // heitir „Reikningsfært". Unnið er áætlun úr Rekstrarskýrslu Brunahólfs — ómælt með ástæðu ef hún næst ekki, aldrei 0.
+    var u = b.unnid || {};
+    var unnidFl = (u.manudur_til_dags != null
+      ? fl('Unnið · ' + manNafn(b.manudur) + ' til dags', mkr(u.manudur_til_dags), 'áætlun · tímar og göt' + (u.ajour_til ? ' · göt til ' + String(u.ajour_til).slice(8, 10) + '.' + String(u.ajour_til).slice(5, 7) : ''), 'tkb-unnid') +
+        fl('Unnið · ' + manNafn(b.fyrri_man), mkr(u.fyrri_manudur), 'heill mánuður · áætlun', 'tkb-unnid')
+      : fl('Unnið', 'ómælt', u.omaelt || 'náðist ekki', 'tkb-omaelt'));
+    var greittFl = u.greitt_manudur_til_dags != null ? fl('Greitt · ' + manNafn(b.manudur) + ' til dags', mkr(u.greitt_manudur_til_dags), 'Payday + handfært') : '';
+    var rodB = '<div class="tkb-rod"><div class="tkb-fel">Brunahólf<small>án VSK</small></div>' + unnidFl +
+      fl('Reikningsfært · ' + manNafn(b.manudur) + ' til dags', mkr(b.manudur_til_dags), b.omaelt || 'eftir útgáfudegi') + greittFl +
+      fl('Reikningsfært · ' + b.manudur.slice(0, 4) + ' til dags', mkr(b.ar_til_dags), 'Payday greitt + sent') +
+      fl('Reikningsfært · ' + manNafn(b.fyrri_man), mkr(b.fyrri_manudur), 'heill mánuður') +
       (b.pipa.kr_m_vsk != null ? fl('Í pípunni (m. VSK)', mkr(b.pipa.kr_m_vsk), b.pipa.fjoldi + ' ósent · sama og Kröfu yfirlit', 'tkb-pipa') : fl('Í pípunni', 'ómælt', b.pipa.omaelt || 'náðist ekki', 'tkb-omaelt')) +
       hagnFl('brunaholf', b.hagnadur, b.fyrri_man) + '</div>' + (_opid.brunaholf ? forsForm('brunaholf', b.hagnadur) : '');
     var sk = d.skilgreining || {};

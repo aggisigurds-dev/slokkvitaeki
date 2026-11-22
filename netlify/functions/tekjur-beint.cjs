@@ -58,20 +58,48 @@ async function bhOsent() {
   } catch (e) { return { omaelt: 'Kröfu yfirlit Brunahólfs náðist ekki' }; }
 }
 
-async function lesa(nu = new Date()) {
+// Brunahólf „Unnið" (Agnar 21.11.2026: tekjur Brunahólfs miðast við hvenær verk var unnið skv. tímaskýrslu og Ajour Done-degi):
+// áunnið virði úr Rekstrarskýrslu Brunahólfs (reglurnar búa í brunaholf _rekstur.js — stimplaðir tímar × taxti verkstaðar og
+// kláruð göt). Skýrslan krefst hub_user-kökunnar; sama undirritaða kakan gildir á báðum vefjum, svo kaka kallandans er send
+// áfram (aðeins hún). Náist hún ekki: ómælt með ástæðu, aldrei 0. Útgáfudagstalan (invoices) heitir nú „Reikningsfært".
+async function bhUnnid(event) {
+  try {
+    const hra = (event && event.headers && (event.headers.cookie || event.headers.Cookie)) || '';
+    const m = /(?:^|;\s*)hub_user=([^;]+)/.exec(String(hra));
+    if (!m) return { omaelt: 'innskráningarkökuna vantar' };
+    const r = await fetch(`${BH}/api/rekstrarskyrsla`, { headers: { cookie: `hub_user=${m[1]}`, accept: 'application/json' } });
+    if (!r.ok) return { omaelt: `Rekstrarskýrsla Brunahólfs svaraði ${r.status}` };
+    const j = await r.json();
+    const v = j && j.bh && j.bh.virdi, g = j && j.bh && j.bh.greitt, t = j && j.timabil;
+    if (!Array.isArray(v) || v.length < 5 || !Number.isFinite(Number(v[3])) || !Number.isFinite(Number(v[4])) || !Array.isArray(t) || !t[3]) {
+      return { omaelt: 'Rekstrarskýrsla Brunahólfs: óvænt snið' };
+    }
+    const fe = (j && j.ferskleiki) || {};
+    return {
+      manudur_til_dags: T.kr(v[3]),
+      fyrri_manudur: T.kr(v[4]),
+      greitt_manudur_til_dags: Array.isArray(g) && Number.isFinite(Number(g[3])) ? T.kr(g[3]) : null,
+      fra: t[3].fra || null, til: t[3].til || null,
+      ajour_til: (fe.ajour && fe.ajour.nyjast) || null,
+    };
+  } catch (e) { return { omaelt: 'Rekstrarskýrsla Brunahólfs náðist ekki' }; }
+}
+
+async function lesa(nu = new Date(), event = null) {
   const nuIso = nu.toISOString();
   const ar = nuIso.slice(0, 4);
   const fraSl = `${ar}-01-01` > '2026-05-01' ? `${ar}-01-01` : '2026-05-01';
   const fm = T.fyrriMan(nuIso.slice(0, 7));
   const fraBil = (fm + '-01') < fraSl ? fm + '-01' : fraSl;                 // nær alltaf yfir síðasta mánuð líka
   const fraBh = (fm + '-01') < `${ar}-01-01` ? fm + '-01' : `${ar}-01-01`;
-  const [sl, voidIds, bh, drog, forsendur, osent] = await Promise.all([
+  const [sl, voidIds, bh, drog, forsendur, osent, unnid] = await Promise.all([
     sbOll(`solur?select=id,status,credit_of,upphaed_an_vsk,created_at&status=eq.final&created_at=gte.${fraBil}&order=id.asc`),
     sbOll('solur?select=id&status=eq.void&order=id.asc').then((r) => r.map((x) => x.id)),
     sbOll(`invoices?select=status,source,hofudstoll,gjalddagi,utgafudagur&source=eq.payday&status=in.(PAID,SENT)&or=(utgafudagur.gte.${fraBh},and(utgafudagur.is.null,gjalddagi.gte.${fraBh}))&order=id.asc`),
     sbOll('solur?select=upphaed_an_vsk&status=eq.drog&hidden=is.false&order=id.asc'),
     lesaForsendur(),
     bhOsent(),
+    bhUnnid(event),
   ]);
   // Framlegð vöru (aðeins Slökkvitæki): síðasti heili mánuður + líðandi mánuður, línur með kostnaðarverði.
   const [linur, vorur] = await Promise.all([
@@ -101,18 +129,19 @@ async function lesa(nu = new Date()) {
     },
     brunaholf: {
       ...bhT,
+      unnid,
       pipa: osent && osent.kr_m_vsk != null ? { heiti: 'Ósent (sama og Kröfu yfirlit, m. VSK)', kr_m_vsk: osent.kr_m_vsk, fjoldi: osent.fjoldi } : { heiti: 'Ósent', kr_m_vsk: null, omaelt: (osent && osent.omaelt) || 'Kröfu yfirlit Brunahólfs svaraði ekki' },
       hagnadur: T.hagnadur(bhT.fyrri_manudur, f.brunaholf),
     },
     skilgreining: {
       slokkvitaeki: 'Án VSK. Sölur (final) eftir skráningardegi; kreditnótur dregnar frá; bakfært og drög ekki talin; kreditnóta á bakfærða sölu ekki talin. Mælt frá yfirtöku 04.05.2026 (eldra er hjá Stólpa).',
-      brunaholf: 'Án VSK. Payday-reikningar greiddir eða sendir, höfuðstóll, eftir útgáfudegi. NLSH: 95 % — 5 % öryggisfé telst þegar það er reikningsfært.',
+      brunaholf: 'Án VSK. REIKNINGSFÆRT: Payday-reikningar greiddir eða sendir, höfuðstóll, eftir útgáfudegi. NLSH: 95 % — 5 % öryggisfé telst þegar það er reikningsfært. UNNIÐ (áætlun, regla Agnars 21.11.2026): stimplaðir tímar úr Tímaveru × dagvinnutaxti verkstaðar (9.951 kr. ef verkstað vantar) + kláruð göt úr Ajour eftir Done-degi, eins og Rekstrarskýrsla Brunahólfs. Yfirvinna, efni og akstur eru ekki í Unnið. GREITT: Payday-greiddir og handfærðir reikningar (greiðsla skráð í Kröfu yfirliti).',
       hagnadur: 'Tekjur síðasta heila mánaðar − launakostnaður − annar kostnaður (tölur úr bókhaldi, slegnar inn hér). Laun eru ekki í kerfinu.',
     },
   };
 }
 
-async function vistaForsendu(b, nafn) {
+async function vistaForsendu(b, nafn, event) {
   const felag = String(b.felag || ''), lykill = String(b.lykill || '');
   if (!FELOG.includes(felag)) return P.json(400, { error: 'felag: slokkvitaeki eða brunaholf' });
   if (!Object.prototype.hasOwnProperty.call(T.FORSENDUR, lykill)) return P.json(400, { error: 'lykill: laun eða annar' });
@@ -127,7 +156,7 @@ async function vistaForsendu(b, nafn) {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ key: KV, value, updated_at: new Date().toISOString() }),
   });
-  return P.json(200, await lesa());
+  return P.json(200, await lesa(undefined, event));
 }
 
 exports.handler = async (event) => {
@@ -137,11 +166,11 @@ exports.handler = async (event) => {
   const hver = await H.stjornandi(event);
   if (hver.villa) return hver.villa;
   try {
-    if (event.httpMethod === 'GET') return P.json(200, await lesa());
+    if (event.httpMethod === 'GET') return P.json(200, await lesa(undefined, event));
     if (event.httpMethod !== 'POST') return P.json(405, { error: 'Aðeins GET og POST' });
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch (_) { return P.json(400, { error: 'Ógilt JSON' }); }
-    if (b.action === 'forsenda') return await vistaForsendu(b, hver.nafn);
+    if (b.action === 'forsenda') return await vistaForsendu(b, hver.nafn, event);
     return P.json(400, { error: 'Óþekkt aðgerð' });
   } catch (e) {
     // Hrátexti úr Supabase-svari fer aldrei í vafrann — aðeins í fallaskrána.
