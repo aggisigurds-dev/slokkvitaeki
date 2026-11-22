@@ -746,6 +746,40 @@
       '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
       '#' + PANEL_ID + ' .pe-kit-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}',
       '#' + PANEL_ID + ' .pe-kit-switch [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-page-pair{display:grid;gap:12px;grid-template-columns:1fr}',
+      '#' + PANEL_ID + '.pe-full .pe-page-pair{grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr))}',
+      '#' + PANEL_ID + ' .pe-page-example{min-width:0;--shell:#0c1926;--nav:#0b1420;--plate:#15283a;--edge:#415874;--gold:#ffb66a;--green:#5cd283;--red:#fa7369;--blue:#65c3fb;--paper:#e8f0f8;--accent:#b64e18}',
+      '#' + PANEL_ID + ' .pe-page-example.ticket{--shell:#25262b;--nav:#121316;--plate:#292b31;--edge:#62646b;--gold:#d3ab4e;--green:#55a573;--red:#d65b59;--blue:#a8bacf;--paper:#f3f4f6;--accent:#8d222b}',
+      '#' + PANEL_ID + ' .pe-page-example h4{margin:6px 0;color:#172235;font-size:14px}',
+      '#' + PANEL_ID + ' .pe-page-shell{display:grid;grid-template-columns:minmax(68px,19%) minmax(0,1fr);gap:6px;padding:6px;border-radius:10px;background:var(--shell);color:#f7f9ff;font:11px/1.35 "IBM Plex Sans",system-ui,sans-serif}',
+      '#' + PANEL_ID + ' .pe-page-main{display:grid;gap:6px;min-width:0}',
+      '#' + PANEL_ID + ' .pe-page-area{position:relative;min-width:0;padding:8px 25px 8px 8px;border:1px solid var(--edge);border-radius:6px;background:var(--plate);overflow-wrap:anywhere}',
+      '#' + PANEL_ID + ' .pe-page-number{position:absolute;right:3px;top:3px;z-index:1;padding:1px 4px;border:1px solid #8294a9;border-radius:4px;background:#edf3fa;color:#172b45;font:700 10px/1.45 ui-monospace,monospace;cursor:pointer}',
+      '#' + PANEL_ID + ' .pe-page-number[aria-pressed=true]{background:#ffe0a4;color:#2f2312}',
+      '#' + PANEL_ID + ' .pe-page-area:has(>.pe-page-number[aria-pressed=true]){outline:2px solid #ffcb67;outline-offset:1px}',
+      '#' + PANEL_ID + ' .pe-page-nav{display:flex;flex-direction:column;gap:10px;padding-right:5px;padding-top:24px;background:var(--nav)}',
+      '#' + PANEL_ID + ' .pe-page-nav b{padding:4px;background:var(--accent);border-radius:3px}',
+      '#' + PANEL_ID + ' .pe-page-banner{background:radial-gradient(ellipse at 60% 115%,#a54b35 0%,transparent 55%),linear-gradient(120deg,var(--plate),var(--nav));border-color:var(--gold)}',
+      '#' + PANEL_ID + ' .ticket .pe-page-banner{background:repeating-linear-gradient(106deg,#1b1c20 0 3px,#21242a 3px 5px);border-color:var(--edge)}',
+      '#' + PANEL_ID + ' .pe-page-banner strong{display:block;font-size:23px;letter-spacing:-.03em}',
+      '#' + PANEL_ID + ' .pe-page-banner small{letter-spacing:.09em;text-transform:uppercase}',
+      '#' + PANEL_ID + ' .pe-page-title,#' + PANEL_ID + ' .pe-page-filters{display:flex;justify-content:space-between;gap:5px;align-items:center;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-page-title strong{display:block;font-size:15px}',
+      '#' + PANEL_ID + ' .pe-page-cta{padding:4px 6px;border-radius:4px;background:var(--accent)}',
+      '#' + PANEL_ID + ' .pe-page-meters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}',
+      '#' + PANEL_ID + ' .pe-page-meter{display:flex;flex-direction:column;gap:4px;padding:20px 5px 6px;--meter:var(--gold);border-color:var(--meter);background:linear-gradient(150deg,color-mix(in srgb,var(--meter) 19%,var(--plate)),var(--nav))}',
+      '#' + PANEL_ID + ' .ticket .pe-page-meter{background:repeating-linear-gradient(105deg,#ffffff08 0 1px,transparent 1px 4px),linear-gradient(150deg,color-mix(in srgb,var(--meter) 15%,var(--plate)),var(--nav))}',
+      '#' + PANEL_ID + ' .pe-page-meter.done{--meter:var(--green)}#' + PANEL_ID + ' .pe-page-meter.due{--meter:var(--red)}#' + PANEL_ID + ' .pe-page-meter.total{--meter:var(--blue)}',
+      '#' + PANEL_ID + ' .pe-page-meter strong{font:700 clamp(13px,1.4vw,23px)/1 Georgia,serif;color:var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-track{height:4px;background:#0007;border-radius:9px;overflow:hidden}#' + PANEL_ID + ' .pe-page-track i{display:block;width:70%;height:100%;background:var(--meter)}',
+      '#' + PANEL_ID + ' .pe-page-filters,#' + PANEL_ID + ' .pe-page-table table{background:var(--paper);color:#18253a}',
+      '#' + PANEL_ID + ' .pe-month-bars{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));align-items:end;gap:2px;margin-top:5px}',
+      '#' + PANEL_ID + ' .pe-month-bars div{text-align:center;min-width:0}#' + PANEL_ID + ' .pe-month-bars i{display:block;background:linear-gradient(#9faec0,#354357);border-radius:2px}',
+      '#' + PANEL_ID + ' .pe-month-bars div:nth-child(11) i{background:linear-gradient(#ffe8a0,var(--gold))}#' + PANEL_ID + ' .pe-month-bars small{font-size:8px}',
+      '#' + PANEL_ID + ' .pe-page-table strong{display:block;margin-bottom:3px}#' + PANEL_ID + ' .pe-page-table table{width:100%;border-collapse:collapse;border-radius:4px;overflow:hidden}',
+      '#' + PANEL_ID + ' .pe-page-table th,#' + PANEL_ID + ' .pe-page-table td{padding:3px 4px;border-bottom:1px solid #cbd5e1;text-align:left}',
+      '#' + PANEL_ID + ' .pe-page-table td span{color:#176642;font-weight:700}',
+      '@media(max-width:540px){#' + PANEL_ID + ' .pe-page-meters{grid-template-columns:repeat(2,minmax(0,1fr))}}',
       '#' + PANEL_ID + ' .pe-kit-compare{overflow-x:auto;max-width:100%}',
       '#' + PANEL_ID + ' .pe-kit-compare table{width:100%;min-width:615px;table-layout:fixed;border-spacing:0 5px}',
       '#' + PANEL_ID + ' .pe-kit-compare th{font-size:13px;text-align:left;padding:5px 8px}',
@@ -1404,7 +1438,54 @@
       '</div>';
   }
 
-  let compareKits = true;
+  const PAGE_AREAS = [
+    'Aðalborði', 'Hliðarstika', 'Síðutitill og aðgerðir', 'Virði ársþjónustu',
+    'Búið', 'Eftir', 'Fjöldi', 'Síur og leit', 'Skoðunarmánuðir', 'Staðatafla'
+  ];
+  let selectedPageArea = 0;
+
+  function pageThemeExample(kit, tone) {
+    function area(number, className, content) {
+      const label = String(number).padStart(2, '0') + ' · ' + PAGE_AREAS[number - 1];
+      return '<div class="pe-page-area ' + className + '" data-page-area="' + number + '">' +
+        '<button type="button" class="pe-page-number" data-select-page-area="' + number +
+        '" aria-pressed="' + (selectedPageArea === number) + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
+        String(number).padStart(2, '0') + '</button>' + content + '</div>';
+    }
+    const meters = [
+      [4, 'revenue', 'Virði ársþjónustu', '31,3 m.kr', '24,3 m.kr búið'],
+      [5, 'done', 'Búið 2026', '459', '70% af borðinu'],
+      [6, 'due', 'Eftir 2026', '162', '91 komið á tíma'],
+      [7, 'total', 'Fjöldi', '659', '612 með skráð tæki']
+    ].map(([n, tone, name, value, detail]) => area(n, 'pe-page-meter ' + tone,
+      '<small>' + name + '</small><strong>' + value + '</strong><span class="pe-page-track"><i></i></span><small>' + detail + '</small>'
+    )).join('');
+    const months = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+    const volumes = [31,71,57,45,31,56,42,45,68,60,62,50];
+    return '<section class="pe-page-example ' + tone + '" aria-label="' + esc(kit.name) + '">' +
+      '<h4>' + esc(kit.name) + '</h4><div class="pe-page-shell">' +
+      area(2,'pe-page-nav','<strong>Slökkvitæki</strong><span>Þjónustuborð</span><span>Sala</span><span>Verkstæði</span><b>Fyrirtæki í þjónustu</b><span>Allir viðskiptavinir</span>') +
+      '<div class="pe-page-main">' +
+      area(1,'pe-page-banner','<strong>Brunahólf</strong><small>Slökkvitæki ehf.</small>') +
+      area(3,'pe-page-title','<div><small>Ársskoðun</small><strong>Fyrirtæki í þjónustu</strong></div><span class="pe-page-cta">＋ Nýtt fyrirtæki</span>') +
+      '<div class="pe-page-meters">' + meters + '</div>' +
+      area(8,'pe-page-filters','<b>Allt</b><span>Búið</span><span>Eftir</span><span>Leita að fyrirtæki…</span>') +
+      area(9,'pe-page-months','<strong>Skoðunarmánuður · 2026</strong><div class="pe-month-bars">' +
+        months.map((month, n) => '<div title="' + volumes[n] + '"><i style="height:' + Math.round(volumes[n] * .45) + 'px"></i><small>' + month + '</small></div>').join('') + '</div>') +
+      area(10,'pe-page-table','<strong>Staðirnir</strong><table><thead><tr><th>Fyrirtæki</th><th>Tæki</th><th>Staða</th></tr></thead><tbody>' +
+        '<tr><td>Dæmishús</td><td>59</td><td><span>Skoðað</span></td></tr><tr><td>Sýniverkstæði</td><td>37</td><td>Á dagskrá</td></tr><tr><td>Prufufélag</td><td>24</td><td><span>Skoðað</span></td></tr></tbody></table>') +
+      '</div></div></section>';
+  }
+
+  function pageThemeComparison() {
+    return '<p class="pe-sub" id="pe-page-area-caption" aria-live="polite">' +
+      (selectedPageArea ? esc('Svæði ' + selectedPageArea + ' · ' + PAGE_AREAS[selectedPageArea - 1]) : 'Veldu númer til að auðkenna sama svæði í báðum útlitum.') +
+      '</p><div class="pe-page-pair">' + pageThemeExample(DESIGN_SYSTEMS[2], 'premium') +
+      pageThemeExample(DESIGN_SYSTEMS[1], 'ticket') + '</div>';
+  }
+
+  let kitView = 'page';
+
 
   function kitComparison() {
     const colors = [
@@ -1439,9 +1520,11 @@
 
   function designSystemSection() {
     const switcher = '<div class="pe-kit-switch" aria-label="Sýn hönnunarkerfa">' +
-      '<button type="button" class="pe-btn" data-kit-view="compare" aria-pressed="' + compareKits + '">Hlið við hlið</button>' +
-      '<button type="button" class="pe-btn" data-kit-view="library" aria-pressed="' + !compareKits + '">Stílasöfn</button></div>';
-    if (compareKits) return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher + kitComparison() + '</section>';
+      [['page','Heil síða'],['compare','Stakir kassar'],['library','Stílasöfn']].map(([id,label]) =>
+        '<button type="button" class="pe-btn" data-kit-view="' + id + '" aria-pressed="' + (kitView === id) + '">' + label + '</button>'
+      ).join('') + '</div>';
+    if (kitView !== 'library') return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher +
+      (kitView === 'page' ? pageThemeComparison() : kitComparison()) + '</section>';
     const kit = DESIGN_SYSTEMS[designSystemIndex];
     const options = DESIGN_SYSTEMS.map((system, i) =>
       '<option value="' + i + '"' + (i === designSystemIndex ? ' selected' : '') + '>' + esc(system.name) + '</option>'
@@ -2493,9 +2576,18 @@
       renderPanel();
     };
     qa('[data-kit-view]').forEach(button => button.onclick = () => {
-      compareKits = button.dataset.kitView === 'compare';
+      kitView = button.dataset.kitView;
       renderPanel();
       q('[data-kit-view="' + button.dataset.kitView + '"]')?.focus();
+    });
+    qa('[data-select-page-area]').forEach(button => button.onclick = () => {
+      const number = Number(button.dataset.selectPageArea);
+      selectedPageArea = selectedPageArea === number ? 0 : number;
+      qa('[data-select-page-area]').forEach(marker =>
+        marker.setAttribute('aria-pressed', String(Number(marker.dataset.selectPageArea) === selectedPageArea)));
+      q('#pe-page-area-caption').textContent = selectedPageArea
+        ? 'Svæði ' + selectedPageArea + ' · ' + PAGE_AREAS[selectedPageArea - 1]
+        : 'Veldu númer til að auðkenna sama svæði í báðum útlitum.';
     });
     const libraryInput = q('#pe-ticket-zip');
     if (libraryInput && !libraryRestoreChecked) {
