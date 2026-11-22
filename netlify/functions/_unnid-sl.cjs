@@ -126,7 +126,7 @@ const tomMan = () => ({
   kr: { arsthjonusta: 0, brunakerfi: 0, slokkvikerfi: 0, verkstaedi: 0, verslun: 0 },
   taeki_skodanir: { yfirferd: 0, hledsla: 0, nytt: 0 },
   taeki_verkstaedi: { yfirferd: 0, hledsla: 0, nytt: 0 },
-  mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0 },
+  mat: { an_skyrslu_kr: 0, an_skyrslu_fjoldi: 0, oviss_kr: 0, aaetlad_verk_kr: 0, aaetlad_taeki: 0, leidrett_fjoldi: 0, skyrslur_klaradar: 0, skyrslur_sidbuin: 0 },
 });
 
 // g = { solur, voidIds, skyrslur, verkbeidnir, verklidir } → { man:{'YYYY-MM': …}, annad:{ i_vinnslu_kr, fyrir_yfirtoku_kr, ostemmt_kr, ostemmt_fjoldi } }
@@ -137,6 +137,20 @@ function unnidManudir(g, nuIso) {
   for (const s of g.skyrslur || []) {
     if (!s || s.is_duplicate === true) continue;
     (skjol[s.doc_type] = skjol[s.doc_type] || []).push(s);
+  }
+  // Skýrslur KLÁRAÐAR (Agnar: „skýrslur sendar“ telja eftir raunverulegum kláradegi í kerfinu, ekki skoðunarmánuði): fjöldi appskýrslna
+  // eftir dagsetningu skýrslunnar; „síðbúnar“ = skoðunarmánuðurinn er á undan mánuðinum sem hún var kláruð í.
+  const TEGUND_UR_SKJALI = { uttektarskyrsla: 'uttekt', brunakerfi: 'brunakerfi', slokkvikerfi: 'slokkvikerfi' };
+  const klaradar = {};
+  for (const tg of Object.keys(skjol)) {
+    for (const sk of skjol[tg]) {
+      const km = T.manudur(sk.doc_date);
+      if (!km || km < T.SL_FRA || km > nuMan) continue;
+      const k = (klaradar[km] = klaradar[km] || { n: 0, sidbuin: 0 });
+      k.n++;
+      const sm = skodunarManudur(sk, TEGUND_UR_SKJALI[tg]);
+      if (sm && sm.man < km) k.sidbuin++;
+    }
   }
   const vPerSolu = {}, taekiPerVerk = {};
   for (const v of g.verkbeidnir || []) {
@@ -236,6 +250,7 @@ function unnidManudir(g, nuIso) {
       lagt(T.manudur(s.created_at), SKODUN[s.vidskiptategund] || 'verslun', kr, null);
     }
   }
+  for (const km of Object.keys(klaradar)) { mm(km).mat.skyrslur_klaradar = klaradar[km].n; mm(km).mat.skyrslur_sidbuin = klaradar[km].sidbuin; }
   return { man, annad };
 }
 
@@ -249,6 +264,7 @@ function manudSamantekt(x) {
     skodanir: {
       kr: sk, arsthjonusta_kr: afr(x.kr.arsthjonusta), brunakerfi_kr: afr(x.kr.brunakerfi), slokkvikerfi_kr: afr(x.kr.slokkvikerfi),
       an_skyrslu_kr: afr(x.mat.an_skyrslu_kr), an_skyrslu_fjoldi: x.mat.an_skyrslu_fjoldi, oviss_kr: afr(x.mat.oviss_kr), leidrett_fjoldi: x.mat.leidrett_fjoldi,
+      skyrslur_klaradar: x.mat.skyrslur_klaradar, skyrslur_sidbuin: x.mat.skyrslur_sidbuin,
       taeki: { ...x.taeki_skodanir },
     },
     verkstaedi: { kr: afr(x.kr.verkstaedi), aaetlad_kr: afr(x.mat.aaetlad_verk_kr), aaetlad_taeki: x.mat.aaetlad_taeki, taeki: { ...x.taeki_verkstaedi } },

@@ -371,7 +371,7 @@ test('512: Slökkvitæki „unnið“ — Skoðanir · Verkstæði · Verslun ·
   const u = {
     manudur: '2026-11', fyrri_man: '2026-10', ar_fra: '2026-05', ar_til_dags_kr: 25000000, i_vinnslu_kr: 56000, fyrir_yfirtoku_kr: 0, ostemmt_kr: 0, ostemmt_fjoldi: 0,
     manudur_til_dags: {
-      skodanir: { kr: 4200000, arsthjonusta_kr: 4000000, brunakerfi_kr: 200000, slokkvikerfi_kr: 0, an_skyrslu_kr: 120000, an_skyrslu_fjoldi: 3, oviss_kr: 45000, leidrett_fjoldi: 1, taeki: tk(412, 88, 12) },
+      skodanir: { kr: 4200000, arsthjonusta_kr: 4000000, brunakerfi_kr: 200000, slokkvikerfi_kr: 0, an_skyrslu_kr: 120000, an_skyrslu_fjoldi: 3, oviss_kr: 45000, leidrett_fjoldi: 1, skyrslur_klaradar: 41, skyrslur_sidbuin: 6, taeki: tk(412, 88, 12) },
       verkstaedi: { kr: 650000, aaetlad_kr: 650000, aaetlad_taeki: 300, taeki: tk(20, 300, 0) },
       verslun: { kr: 900000 }, samtals: { kr: 5750000, taeki: tk(432, 388, 12) },
     },
@@ -390,7 +390,7 @@ test('512: Slökkvitæki „unnið“ — Skoðanir · Verkstæði · Verslun ·
   assert.match(sl, /Skoðanir · nóvember til dags/); assert.match(sl, /Verkstæði · nóvember til dags/); assert.match(sl, /Samtals unnið · nóvember til dags/);
   assert.match(sl, /yfirf\. 412 · hlaðin 88 · ný 12/, 'tæki skoðana'); assert.match(sl, /yfirf\. 432 · hlaðin 388 · ný 12/, 'tæki samtals');
   assert.match(sl, /án skýrslu 120\.000 kr \(3\)/, 'án skýrslu flaggað með fjölda'); assert.match(sl, /óviss 45\.000 kr/); assert.match(sl, /áætlað 650\.000 kr \(klart_at vantar\)/);
-  assert.match(sl, /Á verkstæði núna/); assert.match(sl, /Samtals unnið · október/);
+  assert.match(sl, /Skýrslur kláraðar · nóvember<\/b><span>41<\/span>[^]*?þar af 6 síðbúnar/, 'skýrslur eftir kláradegi'); assert.match(sl, /Á verkstæði núna/); assert.match(sl, /Samtals unnið · október/);
   // ómælt með ástæðu — aldrei 0
   const b = flisar(svarHttp(200, d({ omaelt: 'skýrslulesturinn skilaði engu' }))); b.TB.mount(b.el); await bida();
   const slb = b.el.innerHTML.split('Brunahólf<small>')[0];

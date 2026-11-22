@@ -30,9 +30,13 @@ test('skoðunarmánuður: síðbúin skýrsla — Framkvæmd „júní“ á sk�
   const s = sala({ upphaed_an_vsk: 50000 });
   const r = reikna({ solur: [s], skyrslur: [skyrsla({ notes: nafn(2026, 'júní') })] });
   assert.equal(r.man['2026-06'].kr.arsthjonusta, 50000);
-  assert.equal(r.man['2026-11'], undefined, 'ekkert í nóvember — salan er færð, ekki afrituð');
+  assert.equal(U.manudSamantekt(r.man['2026-11']).samtals.kr, 0, 'engar TEKJUR í nóvember — salan er færð, ekki afrituð');
   assert.equal(r.man['2026-06'].mat.an_skyrslu_kr, 0, 'skýrsla fannst');
   assert.equal(r.man['2026-06'].mat.oviss_kr, 0);
+  // „skýrslur sendar“ telja eftir raunverulegum kláradegi: skýrslan klárast í nóvember (síðbúin: skoðun í júní)
+  assert.equal(r.man['2026-11'].mat.skyrslur_klaradar, 1); assert.equal(r.man['2026-11'].mat.skyrslur_sidbuin, 1);
+  assert.equal(U.manudSamantekt(r.man['2026-11']).skodanir.skyrslur_klaradar, 1);
+  assert.equal(U.manudSamantekt(r.man['2026-11']).skodanir.kr, 0, 'nóvember á engar skoðunartekjur — aðeins skýrslan klárast þar');
   // skýrslan gerð í mánuðinum á eftir skoðuninni
   const s2 = sala({ created_at: '2026-10-30T10:00:00Z', upphaed_an_vsk: 7000, customer_base_id: 8, customer_id: 80 });
   const r2 = reikna({ solur: [s2], skyrslur: [skyrsla({ customer_base_id: 8, fyrirtaeki_id: 80, doc_date: '2026-11-02', notes: nafn(2026, 'október') })] });
@@ -169,7 +173,9 @@ test('brunakerfi: skýrslan finnst á fyrirtaeki_id (customer_base_id tómt) og 
 
 test('skoðun fyrir yfirtöku (fyrir 05.2026) fer í „utan mælingar“ — aldrei hent, aldrei í mánuðaröðinni', () => {
   const r = reikna({ solur: [sala({ created_at: '2026-06-05T10:00:00Z', upphaed_an_vsk: 5000 })], skyrslur: [skyrsla({ doc_date: '2026-06-05', notes: nafn(2026, 'apríl') })] });
-  assert.equal(r.annad.fyrir_yfirtoku_kr, 5000); assert.deepEqual(Object.keys(r.man), []);
+  assert.equal(r.annad.fyrir_yfirtoku_kr, 5000);
+  assert.equal(Object.keys(r.man).filter((m) => m < '2026-05').length, 0, 'enginn mánuður fyrir yfirtöku í röðinni');
+  assert.equal(Object.values(r.man).reduce((a, x) => a + Object.values(x.kr).reduce((b, v) => b + v, 0), 0), 0, 'engar tekjur í mánuðaröðinni — aðeins í „utan mælingar“');
 });
 
 test('samtals: mánaðatölur + í vinnslu + utan mælingar = samtölur gömlu reglunnar (sala færð til, aldrei bætt við); aðeins samtölur í svarinu', () => {

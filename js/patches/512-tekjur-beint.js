@@ -94,6 +94,8 @@
     var t = '';
     t += fl('Skoðanir · ' + nm + ' til dags', mkr(sk.kr), taekiTexti(sk.taeki), 'tkb-unnid', ' title="' + esc(skTip) + '"', skFlagg.join(' · '));
     t += fl('Verkstæði · ' + nm + ' til dags', mkr(vk.kr), taekiTexti(vk.taeki), 'tkb-unnid', '', vkFlagg);
+    // „skýrslur sendar“ telja eftir raunverulegum kláradegi í kerfinu (Agnar 21.11), ekki skoðunarmánuði
+    if (sk.skyrslur_klaradar != null) t += fl('Skýrslur kláraðar · ' + nm, tal(sk.skyrslur_klaradar), 'þar af ' + tal(sk.skyrslur_sidbuin || 0) + ' síðbúnar · eftir kláradegi', 'tkb-unnid');
     t += fl('Verslun · ' + nm + ' til dags', mkr(m.verslun.kr), 'sala án tækja úr skoðun', 'tkb-unnid');
     t += fl('Samtals unnið · ' + nm + ' til dags', mkr(m.samtals.kr), taekiTexti(m.samtals.taeki), 'tkb-unnid');
     if (f) t += fl('Samtals unnið · ' + manNafn(u.fyrri_man), mkr(f.samtals.kr), 'heill mánuður · skoðanir ' + mkr(f.skodanir.kr), 'tkb-unnid');
