@@ -32,6 +32,10 @@
   const drog = {};     // 'eig|r1' -> texti sem hefur ekki enn verið staðfestur af þjóni
   const stada = {};    // 'eig|r1' -> { t: 'bid'|'vistar'|'ok', s: texti }
   const tm = {}, retry = {};
+  const pendingChecks = new Map();
+  const boundRoots = new WeakSet();
+  const AGNAR = ':host([data-agnar-dagskra]) .mod[aria-label="Dagskrá"]';
+  const COLORS = ['#f97342', '#28a9e2', '#7951bd', '#69a74c', '#b34e94'];
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P = k => { try { return (window.AppSettings && AppSettings.path) ? AppSettings.path(k) : null; } catch (_) { return null; } };
@@ -39,6 +43,47 @@
   const lesa = (eig, r) => { const v = P(slod(eig, r)); return typeof v === 'string' ? v : ''; };
   const klukka = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   const toast = (m, bad) => { try { if (window.Toast && Toast.show) Toast.show(m, bad ? 'error' : undefined); } catch (_) {} };
+
+  const currentText = (key, eig, r) => drog[key] != null ? drog[key] : lesa(eig, r);
+  const checkPath = (eig, r) => 'skipulagsbord.by_staff.' + eig + '.oakvedinLokid.' + r;
+  const checkedText = (key, eig, r) => pendingChecks.has(key) ? pendingChecks.get(key) : P(checkPath(eig, r));
+
+  function updateCheck(box, key) {
+    const check = box.querySelector('[data-ov-check]');
+    const input = box.querySelector('[data-ov]');
+    const [eig, r] = key.split('|');
+    const text = input.value.trim();
+    check.disabled = !text || pendingChecks.has(key);
+    check.checked = !!text && checkedText(key, eig, r) === text;
+  }
+
+  function bindChecks() {
+    const root = API.rot && API.rot();
+    if (!root || boundRoots.has(root)) return;
+    boundRoots.add(root);
+    root.addEventListener('change', async event => {
+      const check = event.target;
+      const key = check.dataset?.ovCheck;
+      if (!key || pendingChecks.has(key)) return;
+      const [eig, r] = key.split('|');
+      const box = check.closest('.ovbox');
+      const text = box.querySelector('[data-ov]').value.trim();
+      if (!text) return;
+      pendingChecks.set(key, check.checked ? text : '');
+      updateCheck(box, key);
+      let ok = false;
+      try {
+        ok = !!(await AppSettings.save({ skipulagsbord: { by_staff: {
+          [eig]: { oakvedinLokid: { [r]: pendingChecks.get(key) } }
+        } } }));
+      } catch (_) {}
+      pendingChecks.delete(key);
+      root.querySelectorAll('[data-ov-check]').forEach(input => {
+        if (input.dataset.ovCheck === key) updateCheck(input.closest('.ovbox'), key);
+      });
+      if (!ok) toast('Ekki tókst að vista stöðu atriðis.', true);
+    });
+  }
 
   function stimpla(key) {
     const root = API.rot && API.rot();
@@ -82,6 +127,8 @@
       const key = el.dataset.ov;
       if (!key) return;
       drog[key] = el.value;
+      const box = el.closest('.ovbox');
+      if (box && box.querySelector('[data-ov-check]')) updateCheck(box, key);
       stada[key] = { t: 'bid', s: 'Óvistað…' };
       stimpla(key);
       clearTimeout(tm[key]);
@@ -100,12 +147,16 @@
     },
     html(eig) {
       eig = eig || 'Allir';
+      bindChecks();
       const reitur = (r, i) => {
         const key = eig + '|' + r;
-        const g = drog[key] != null ? drog[key] : lesa(eig, r);
+        const g = currentText(key, eig, r);
         const st = stada[key];
         const linur = Math.min(8, Math.max(1, String(g).split('\n').length));
-        return '<div class="ovbox">' +
+        const text = g.trim();
+        return '<div class="ovbox" style="--ov-accent:' + COLORS[i % COLORS.length] + '">' +
+          '<input class="ovcheck" type="checkbox" data-ov-check="' + esc(key) + '" aria-label="Merkja atriði ' + (i + 1) + ' sem lokið"' +
+          (text && checkedText(key, eig, r) === text ? ' checked' : '') + (!text || pendingChecks.has(key) ? ' disabled' : '') + '>' +
           '<textarea data-ov="' + esc(key) + '" rows="' + linur + '" aria-label="Óákveðið verk vikunnar ' + (i + 1) + '" placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
           '<span class="ovst ' + (st ? st.t : '') + '" data-ovst="' + esc(key) + '">' + esc(st ? st.s : '') + '</span></div>';
       };
@@ -134,7 +185,23 @@
         '.ovbox textarea::placeholder{color:var(--mute);opacity:.45}',
         '.ovst{position:absolute;right:14px;bottom:3px;max-width:80%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none;background:rgba(255,253,247,.85);padding:0 3px;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--mute)}',
         '.ovst.ok{color:var(--green)}.ovst.vistar,.ovst.bid{color:var(--gink)}',
-        '@media (max-width:420px){.ovgrid{grid-template-columns:minmax(0,1fr)}}'
+        '@media (max-width:420px){.ovgrid{grid-template-columns:minmax(0,1fr)}}',
+        '.ovcheck{display:none}',
+        AGNAR + ' .ov{margin:0 10px 10px;padding:9px;border:1px solid #e1e7f0;border-radius:12px;background:#f3f6fb}',
+        AGNAR + ' .ovh{padding:0 0 8px;border:0;align-items:center}',
+        AGNAR + ' .ovh h3{font:700 14px/1.25 var(--body);color:#101e43;letter-spacing:0;text-transform:none}',
+        AGNAR + ' .ovh span{padding:2px 7px;border-radius:999px;background:#fce8da;color:#8a3618;font-weight:650}',
+        AGNAR + ' .ovgrid{gap:8px;border:0;overflow:visible;background:transparent}',
+        AGNAR + ' .ovbox{display:grid;grid-template-columns:30px minmax(0,1fr);align-items:start;padding-inline-start:3px;border:1px solid #dce4ef;border-radius:9px;background:#fff;box-shadow:0 2px 4px rgba(2,25,60,.06)}',
+        AGNAR + ' .ovbox::before{content:"";position:absolute;inset:6px auto 6px 3px;width:3px;border-radius:3px;background:var(--ov-accent);pointer-events:none}',
+        AGNAR + ' .ovbox:has(.ovcheck:disabled) textarea:placeholder-shown{color:#51627b}',
+        AGNAR + ' .ovbox:has(textarea:placeholder-shown)::before{background:#c2ccd9}',
+        AGNAR + ' .ovcheck{display:block;margin:10px 0 0 9px;width:16px;height:16px;accent-color:#22653e}',
+        AGNAR + ' .ovbox textarea{min-height:40px;padding:8px 8px 8px 2px;border:0;border-radius:8px;background:transparent;color:#101e43;box-shadow:none;font:500 13px/1.45 var(--body)}',
+        AGNAR + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;background:#fff}',
+        AGNAR + ' .ovbox:has(.ovcheck:checked){background:#f0f8f2}',
+        AGNAR + ' .ovcheck:checked + textarea{color:#42604e;text-decoration:line-through}',
+        AGNAR + ' .ovst:not(:empty){position:static;grid-column:2;justify-self:end;margin:0 5px 3px;line-height:1.3}'
       ].join('\n');
     }
   };
