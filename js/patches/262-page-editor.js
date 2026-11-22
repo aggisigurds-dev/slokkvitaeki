@@ -734,6 +734,17 @@
       // a target is picked — its own row for the selector chip. Fixes the
       // cramped/overlapping header when the selector text was long.
       '#' + PANEL_ID + ' .pe-hd{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}',
+      '#' + PANEL_ID + '{display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}',
+      '#' + PANEL_ID + ' .pe-content{min-height:0;overflow:auto;padding:2px 2px 10px}',
+      '#' + PANEL_ID + ' .pe-hd,#' + PANEL_ID + ' .pe-actions{flex:none}',
+      '#' + PANEL_ID + ' .pe-actions{margin-top:auto}',
+      '#' + PANEL_ID + ' .pe-groups{display:flex;gap:5px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-groups [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-more{position:relative;margin-left:auto}',
+      '#' + PANEL_ID + ' .pe-more>summary{cursor:pointer;padding:6px}',
+      '#' + PANEL_ID + ' .pe-more>div{position:absolute;bottom:100%;right:0;z-index:2;display:grid;gap:6px;padding:8px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;width:max-content;max-width:75vw}',
+      'html body #' + PANEL_ID + '.pe-full{inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;overflow:hidden!important;padding:12px clamp(12px,4vw,50px)!important}',
+      '#' + PANEL_ID + '.pe-full .pe-content{flex:1}',
       '#' + PANEL_ID + ' .pe-titlerow{display:flex;align-items:flex-start;gap:12px}',
       '#' + PANEL_ID + ' .pe-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       // Merktir takkahópar — hver hópur er ein rönd með lítilli yfirskrift til
@@ -944,6 +955,13 @@
     if (document.getElementById(PANEL_ID)) renderPanel();
   }
   function applyPeViewMode(mode) { applyPlatView(mode); }
+  const PANEL_GROUPS = [
+    ['header', 'Haus og banner'], ['backgrounds', 'Bakgrunnar'],
+    ['layout', 'Skipulag'], ['styles', 'Stílar'], ['versions', 'Þemapakkar']
+  ];
+  let panelGroup = 'backgrounds';
+  let panelFull = false;
+
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     resolveTarget();
@@ -953,67 +971,57 @@
       '<button data-scope="all"' + (scope === 'all' ? ' class="on"' : '') + '>Allar síður</button></div>';
     const matchSeg = '<div class="pe-seg" title="Bara þennan staka hlut, eða ALLA hluti sem líta eins út (t.d. allar raðir í töflu í einu)"><button data-match="one"' + (matchMode === 'one' ? ' class="on"' : '') + '>🎯 Bara þennan</button>' +
       '<button data-match="many"' + (matchMode === 'many' ? ' class="on"' : '') + '>📑 Alla eins</button></div>';
-    // v2-uppbygging (hönnun Agnars 26.08): tvö NÚMERUÐ þrep í stað einnar flatrar
-    // hrúgu — „1 · VELDU" (hvað ætlarðu að snerta) og „2 · BREYTTU" (stíla-söfnin).
-    // Á milli þeirra situr verkfæraspjald valins svæðis. Aðgerðir á síðuna
-    // (vista/afturkalla/resetta/bakgrunnur) færast upp í hausinn þar sem þær
-    // tilheyra — þær eiga hvorugt þrepið.
-    // ⚠️ `.pe-toolbar` verður að lifa áfram sem klasi: patchar 319/320/321 finna
-    // hann með querySelector('.pe-toolbar') og appenda sínum tökkum.
+    const previousGroup = p.dataset.group;
+    const scroll = previousGroup === panelGroup ? p.querySelector('.pe-content')?.scrollTop || 0 : 0;
+    const groupButtons = PANEL_GROUPS.map(([id, label]) =>
+      '<button type="button" class="pe-btn" data-pe-group="' + id +
+      '" aria-pressed="' + (panelGroup === id) + '">' + label + '</button>'
+    ).join('');
+    // Other editor patches append their tools to .pe-toolbar.
     const head = '<div class="pe-hd">' +
       '<div class="pe-titlerow">' +
-        '<div style="flex:1"><h3 class="pe-h">🎨 Stilla útlit</h3></div>' +
+        '<div style="flex:1"><h3 class="pe-h">Stílstjóri</h3></div>' +
+        '<button type="button" class="pe-btn" id="pe-full" aria-pressed="' + panelFull + '">' + (panelFull ? 'Minnka' : 'Heildarskjár') + '</button>' +
         '<button class="pe-btn" id="pe-dock" title="Færa stjórnborðið milli hliðar og botns">' + (dock === 'side' ? '⇓ Botn' : '⇥ Hlið') + '</button>' +
         '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
       '</div>' +
-      '<div class="pe-step">1 · Veldu</div>' +
-      '<div class="pe-pickrow">' +
+      scopeSeg +
+      '<nav class="pe-groups" aria-label="Flokkar Stílstjóra">' + groupButtons + '</nav>' +
+      '</div>';
+    const styleTools = '<div class="pe-pickrow">' +
         '<button class="pe-btn big ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
         '<button class="pe-btn big' + (multiPick ? ' on' : '') + '" id="pe-multi" title="Smelltu á nokkra hluti — sömu breytingar fara á þá alla">☑ Velja marga</button>' +
       '</div>' +
-      scopeSeg +
       zoneMapSection() +
       (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '"><b>' + esc(friendlyName(target)) + '</b> · ' + esc(targetLbl) + '</span>' +
         '<button class="pe-btn" id="pe-parent" title="Velja hlutinn UTAN um þennan (stækka valið)">⬆ Foreldri</button>' +
         (target.closest && target.closest('table') && target.tagName !== 'TABLE' ? '<button class="pe-btn" id="pe-pick-table" title="Velja töfluna í heild">📊 Taflan</button>' : '') +
         '<button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
-      (target ? '<div class="pe-grp">' + '<span class="pe-grplbl">Nákvæmni</span>' + matchSeg + '</div>' : '') +
-      '<div class="pe-grp pe-toolbar">' +
+      (target ? '<div class="pe-grp">' + '<span class="pe-grplbl">Nákvæmni</span>' + matchSeg + '</div>' : '');
+    const layoutTools = '<div class="pe-grp pe-toolbar">' +
         '<span class="pe-grplbl">Sýn</span>' +
         viewModeSegHtml() +
-      '</div>' +
       '</div>';
 
-    // „Síðan"-aðgerðirnar (vista/afturkalla/resetta/bakgrunnur) sitja NEÐST
-    // (Agnar 27.08: „færa Síðan vista síðu alveg niður"). Þær eru lokahnykkurinn
-    // — maður velur, breytir og vistar SVO — og þær ýttu verkfærunum niður fyrir
-    // brún á meðan þær sátu efst.
-    const sidanGrp = '<div class="pe-grp" style="margin-top:14px">' +
-      '<span class="pe-grplbl">Síðan</span>' +
-      '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
-      (IN_DEVFRAME ? '' : '<button class="pe-btn" id="pe-save-as-app" title="Búa til / uppfæra app-útgáfu af þessari síðu sem birtist á Öpp-síðunni">📱 Vista sem app í Öpp</button>') +
-      '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
-      '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
-      '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
-      // Zoom á SÍÐUNA sjálfa — lækkar kortin og kemur fleirum á skjáinn.
+    const zoom =
       '<span class="pe-zoom">' +
         '<button class="pe-btn" data-zoom="-10" title="Minnka um 10%">−</button>' +
         '<span class="pe-zoomv">' + curZoom() + '%</span>' +
         '<button class="pe-btn" data-zoom="10" title="Stækka um 10%">+</button>' +
         (curZoom() !== 100 ? '<button class="pe-btn" data-zoom="0" title="Aftur í 100%">↺</button>' : '') +
-      '</span>' +
-    '</div>';
-
-    const step2 = '<div class="pe-step">2 · Breyttu</div>';
+      '</span>';
+    const actions = '<div class="pe-grp pe-actions">' +
+      '<button type="button" class="pe-btn pri" id="pe-savepage" title="Vista núverandi útlit sem nafngreindan þemapakka">Vista útlit</button>' +
+      '<button type="button" class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + '>Afturkalla</button>' +
+      '<details class="pe-more"><summary>Fleira</summary><div>' +
+        (IN_DEVFRAME ? '' : '<button type="button" class="pe-btn" id="pe-save-as-app">Vista sem app í Öpp</button>') +
+        '<button type="button" class="pe-btn" id="pe-reset">Endurstilla…</button>' +
+      '</div></details></div>';
     let body;
     if (!target) {
-      body = cardSection() +
-        (activeZone && cards[activeZone] ? '' :
-          '<div class="pe-empty">Smelltu á svæði í kortinu hér að ofan — eða á <b>🎯 Velja hlut</b> og svo á texta, box eða glugga á síðunni.</div>' +
-          '<div class="pe-tip">Veldu hlut á síðunni (🎯) eða svæði hér að ofan — síðan stillirðu lit, letur eða hnappastíl fyrir neðan.</div>') +
-        step2 + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      body = '<p class="pe-sub">Veldu hlut á síðunni eða svæði hér fyrir ofan til að stilla liti, letur og ramma.</p>';
     } else {
-      body = cardSection() + step2 + '<div class="pe-grid">' +
+      body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
           sliderRow('Letur', 'font-size', 8, 54, 1) +
           sliderRow('Línuhæð', 'line-height', 90, 240, 5, '%') +
@@ -1048,9 +1056,23 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      '</div>';
     }
-    p.innerHTML = head + body + sidanGrp;
+    const bannerControl = document.getElementById('_bd-skipta');
+    const hasHeader = !!zoneEl(ALLZONES.find(zone => zone.id === 'haus'));
+    const groups = {
+      header: (bannerControl ? '<p class="pe-sub">Borðavalið gildir á öllum vélum.</p><button class="pe-btn" id="pe-banner-style">Skipta um borða</button>' : '') +
+        (hasHeader ? ' <button class="pe-btn" id="pe-header-style">Stilla haus</button>' : '') +
+        (!bannerControl && !hasHeader ? '<p class="pe-sub">Engar hausstillingar fyrir þessa sýn.</p>' : ''),
+      backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
+      layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
+      styles: styleTools + cardSection() + body + presetsSection(),
+      versions: versionsSection()
+    };
+    p.dataset.group = panelGroup;
+    p.classList.toggle('pe-full', panelFull);
+    p.innerHTML = head + '<div class="pe-content">' + groups[panelGroup] + '</div>' + actions;
+    p.querySelector('.pe-content').scrollTop = scroll;
     wirePanel();
     wireCard();
   }
@@ -1073,6 +1095,8 @@
       rules: JSON.parse(JSON.stringify(state.rules || [])),
       bg: JSON.parse(JSON.stringify(state.bg || { all: null, pages: {} })),
       tables: tableLookGet(),
+      zones: JSON.parse(JSON.stringify(state.zones || {})),
+      zoom: JSON.parse(JSON.stringify(state.zoom || {})),
     };
     const i = state.versions.findIndex(v => v.name === name);
     if (i >= 0) state.versions[i] = snap; else state.versions.push(snap);
@@ -1084,6 +1108,8 @@
     state.rules = JSON.parse(JSON.stringify(v.rules || []));
     state.bg = JSON.parse(JSON.stringify(v.bg || { all: null, pages: {} }));
     tableLookSet(v.tables || {});
+    if (v.zones) state.zones = JSON.parse(JSON.stringify(v.zones));
+    if (v.zoom) state.zoom = JSON.parse(JSON.stringify(v.zoom));
     persist(); renderPanel(); toast('✓ Útgáfa „' + v.name + '" virk');
   }
   function deleteVersion(i) {
@@ -1164,8 +1190,8 @@
         '<button class="pe-btn" data-ver-go="' + i + '">Virkja</button>' +
         '<button class="pe-btn" data-ver-del="' + i + '" title="Eyða" style="padding:7px 9px">🗑</button>' +
       '</div>').join('');
-    return '<details class="pe-sec" style="margin-top:10px"' + ((state.versions || []).length ? ' open' : '') + '><summary><h4>💾 Útgáfur — vista og skipta um heildar-útlit</h4></summary>' +
-      '<button class="pe-btn pri" id="pe-ver-save">＋ Vista núverandi útlit sem…</button>' +
+    return '<details class="pe-sec" style="margin-top:10px"' + ((state.versions || []).length ? ' open' : '') + '><summary><h4>Vistaðir þemapakkar</h4></summary>' +
+      '<button class="pe-btn pri" id="pe-ver-save">Vista sem þemapakka…</button>' +
       '<div style="margin-top:6px">' + (rows || '<div class="pe-sub">Engin útgáfa vistuð enn.</div>') + '</div>' +
       '<div class="pe-sub" style="margin-top:6px">Útgáfa geymir allar Stílstjóra-breytingar, bakgrunna og töflustillingar (breiddir/jöfnun/raðhæð).</div>' +
     '</details>';
@@ -1846,7 +1872,7 @@
       p.classList.toggle('pe-desk', desk);
       p.classList.toggle('pe-side', dock === 'side');
     }
-    const sideOpen = !!(p && dock === 'side' && desk);
+    const sideOpen = !!(p && !panelFull && dock === 'side' && desk);
     try {
       document.body.classList.toggle('pe-side-open', sideOpen);
       if (sideOpen) document.body.style.setProperty('--pe-side-w', (_sideW || 320) + 'px');
@@ -1878,10 +1904,35 @@
     });
     p.appendChild(rh);
   }
+  function showPanelGroup(group) {
+    panelGroup = group;
+    if (picking && group !== 'styles') setPicking(false);
+    else renderPanel();
+  }
+
   function wirePanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
+    qa('[data-pe-group]').forEach(button => button.onclick = () => {
+      const group = button.dataset.peGroup;
+      showPanelGroup(group);
+      q('[data-pe-group="' + group + '"]')?.focus();
+    });
+    q('#pe-full').onclick = () => {
+      panelFull = !panelFull;
+      if (panelFull && picking) setPicking(false);
+      else renderPanel();
+      q('#pe-full')?.focus();
+    };
+    const banner = q('#pe-banner-style');
+    if (banner) banner.onclick = () => document.getElementById('_bd-skipta')?.click();
+    const header = q('#pe-header-style');
+    if (header) header.onclick = () => {
+      panelGroup = 'styles';
+      if (activeZone === 'haus') activeZone = null;
+      pickZone('haus');
+    };
     const framed = p.classList.contains('pe-framed') || !!document.getElementById('_devframe-editor');
     if (framed) {
       p.classList.add('pe-framed', 'pe-side');
@@ -1890,7 +1941,7 @@
     } else {
       p.classList.remove('pe-framed');
       syncDeskChrome(p);
-      if (dock === 'side') { p.style.width = _sideW + 'px'; ensureResizeHandle(p); }
+      if (dock === 'side') { p.style.width = _sideW + 'px'; if (!panelFull) ensureResizeHandle(p); }
       else { p.style.width = ''; }
     }
     const dk = q('#pe-dock'); if (dk) dk.onclick = () => {
@@ -1925,10 +1976,13 @@
       const tb = target && target.closest && target.closest('table');
       if (tb) { target = tb; rememberTarget(tb); extraTargets = []; highlight(tb); setTimeout(hideHighlight, 900); renderPanel(); }
     };
-    const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
+    const pk = q('#pe-pick'); if (pk) pk.onclick = () => {
+      if (!picking) panelFull = false;
+      setPicking(!picking);
+    };
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
-      if (multiPick && !picking) setPicking(true);   // beint í val-ham
+      if (multiPick && !picking) { panelFull = false; setPicking(true); }   // beint í val-ham
       if (!multiPick) extraTargets = [];
       renderPanel();
     };
@@ -2016,11 +2070,11 @@
   }
 
   function pickBackground() {
+    const backgroundScope = scope;
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
     inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
-      if (where !== '1' && where !== '2') return;
+      const where = backgroundScope === 'all' ? '2' : '1';
       const cur = activeViewEl();
       const id = cur && cur.id;
       if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
@@ -2181,6 +2235,7 @@
   }
   function closePanel() {
     const p = document.getElementById(PANEL_ID); if (p) p.remove();
+    panelFull = false;
     setPicking(false); hideHighlight();
     syncDeskChrome(null);
     renderPageLinks(true);   // ✕ hverfur og takkarnir læsast á sínum stað
