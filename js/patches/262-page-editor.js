@@ -750,6 +750,11 @@
       '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
       '#' + PANEL_ID + ' .pe-kit h5{margin:12px 0 5px;font-size:12px}',
       '#' + PANEL_ID + ' .pe-kit-heading img{width:100%;max-height:110px;object-fit:cover;border-radius:4px}',
+      '#' + PANEL_ID + ' .pe-library{margin:10px 0;padding:10px;border:1px solid #d8dee9;border-radius:8px;background:#f7f9fc}',
+      '#' + PANEL_ID + ' .pe-library label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}',
+      '#' + PANEL_ID + ' .pe-library input,#' + PANEL_ID + ' .pe-library select{max-width:100%;font:inherit}',
+      '#' + PANEL_ID + ' .pe-library iframe{display:block;width:100%;height:min(68vh,760px);border:1px solid #bdc9d8;border-radius:7px;background:#fff}',
+      '#' + PANEL_ID + ' .pe-library pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}',
       '#' + PANEL_ID + ' .pe-ticket-example{margin-top:9px;padding:9px;border-radius:9px}',
       '#' + PANEL_ID + ' .pe-ticket-top{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:7px;color:#fff}',
       '#' + PANEL_ID + ' .pe-ticket-card{display:grid;grid-template-columns:minmax(0,115px) minmax(0,1fr);max-width:560px;margin:8px auto 0;border:1px solid #abaeb9;border-left:4px solid #2563eb;border-radius:8px;background:#fff;color:#11141c;overflow:hidden}',
@@ -1239,6 +1244,143 @@
       '<span style="' + kitStylePreview(kit.parts[1].style) + '">Prenta</span></div></div></div></div>';
   }
 
+  // The supplied library stays on this device. Its HTML is displayed in a
+  // script-free sandbox, never inserted into the application document.
+  let fullTicketLibrary = null;
+  let ticketComponent = 0;
+  let libraryNotice = '';
+  let libraryBusy = false;
+  let libraryRestoreChecked = false;
+
+  function openLibraryDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('stilstjori-honnunarsafn', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('libraries');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function libraryStorage(file) {
+    const db = await openLibraryDb();
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction('libraries', file ? 'readwrite' : 'readonly');
+        const store = tx.objectStore('libraries');
+        const request = file ? store.put(file, 'midakerfi') : store.get('midakerfi');
+        tx.oncomplete = () => resolve(request.result);
+        tx.onabort = () => reject(tx.error);
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally { db.close(); }
+  }
+
+  async function readTicketLibrary(file) {
+    if (file.size > 12 * 1024 * 1024) throw new Error('ZIP-skráin er of stór.');
+    const data = await file.arrayBuffer();
+    const bytes = new Uint8Array(data);
+    const view = new DataView(data);
+    const decoder = new TextDecoder();
+    const signature = (offset, value) => offset >= 0 && offset + 4 <= bytes.length && view.getUint32(offset, true) === value;
+    let end = bytes.length - 22;
+    const minimum = Math.max(0, end - 65535);
+    while (end >= minimum && !(signature(end, 0x06054b50) && end + 22 + view.getUint16(end + 20, true) === bytes.length)) end--;
+    if (end < minimum) throw new Error('Skráin er ekki gild ZIP-skrá.');
+    const count = view.getUint16(end + 10, true);
+    let offset = view.getUint32(end + 16, true);
+    if (count > 600 || view.getUint16(end + 4, true) || view.getUint16(end + 6, true)) throw new Error('ZIP-sniðið er óstutt.');
+    const entries = new Map();
+    for (let i = 0; i < count; i++) {
+      if (offset + 46 > end || !signature(offset, 0x02014b50)) throw new Error('ZIP-skráin er skemmd.');
+      const nameSize = view.getUint16(offset + 28, true);
+      const next = offset + 46 + nameSize + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+      if (next > end) throw new Error('ZIP-skráin er skemmd.');
+      const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameSize));
+      entries.set(name, {
+        flags: view.getUint16(offset + 8, true), method: view.getUint16(offset + 10, true),
+        compressed: view.getUint32(offset + 20, true), size: view.getUint32(offset + 24, true),
+        start: view.getUint32(offset + 42, true)
+      });
+      offset = next;
+    }
+
+    async function textFile(name) {
+      const entry = entries.get(name);
+      if (!entry) return '';
+      const {flags, method, compressed, size, start} = entry;
+      if (flags & 1 || size > 1024 * 1024 || start + 30 > bytes.length || !signature(start, 0x04034b50)) throw new Error('Skrá í safninu er óstudd.');
+      const begin = start + 30 + view.getUint16(start + 26, true) + view.getUint16(start + 28, true);
+      if (begin + compressed > bytes.length || (method !== 0 && method !== 8)) throw new Error('Skrá í safninu er óstudd.');
+      const input = bytes.subarray(begin, begin + compressed);
+      const stream = new Blob([input]).stream();
+      const reader = (method === 8 ? stream.pipeThrough(new DecompressionStream('deflate-raw')) : stream).getReader();
+      const output = new Uint8Array(size);
+      let position = 0;
+      try {
+        for (;;) {
+          const {done, value} = await reader.read();
+          if (done) break;
+          if (position + value.length > size) throw new Error('Stærð skrár passar ekki við ZIP-yfirlit.');
+          output.set(value, position);
+          position += value.length;
+        }
+        if (position !== size) throw new Error('Skrá í safninu er skemmd.');
+      } finally { await reader.cancel(); }
+      return decoder.decode(output);
+    }
+
+    const manifestName = [...entries.keys()].find(name => /(^|\/)manifest\.json$/.test(name));
+    if (!manifestName) throw new Error('Manifest-skrá fannst ekki.');
+    const manifest = JSON.parse(await textFile(manifestName));
+    if (manifest.namespace !== 'Midakerfi' || !Array.isArray(manifest.components)) throw new Error('Veldu ZIP-skrána „Miðakerfi — Brunastál“.');
+    const prefix = manifestName.slice(0, -'manifest.json'.length);
+    const cover = {name:'Cover', summary:'Forsíða hönnunarsafnsins'};
+    const items = [cover, ...manifest.components].filter(item => typeof item?.name === 'string' && /^[A-Za-z0-9_-]+$/.test(item.name));
+    const library = await Promise.all(items.map(async item => ({
+      name: item.name === 'Cover' ? 'Forsíða' : item.name,
+      summary: String(item.summary || ''),
+      preview: await textFile(prefix + 'components/' + item.name + '/preview.html'),
+      docs: await textFile(prefix + 'api/components/' + item.name + '.md') ||
+        await textFile(prefix + 'components/' + item.name + '/README.md')
+    })));
+    library.push({name:'Hönnunargildi', summary:'Litir, letur, bil og aðrir tókenar úr pakkanum.', docs:await textFile(prefix + 'tokens.css')});
+    return library;
+  }
+
+  async function loadFullTicketLibrary(file) {
+    libraryBusy = true;
+    try {
+      const packageFile = file || await libraryStorage();
+      if (!packageFile) return;
+      fullTicketLibrary = await readTicketLibrary(packageFile);
+      ticketComponent = 0;
+      libraryNotice = '';
+      if (file) {
+        try { await libraryStorage(file); }
+        catch (_) { libraryNotice = 'Safnið er opið. Vistun á tækinu tókst ekki.'; }
+      }
+    } catch (error) {
+      libraryNotice = file ? error.message : 'Ekki tókst að endurheimta safnið af tækinu.';
+    } finally {
+      libraryBusy = false;
+      if (panelGroup === 'versions' && designSystemIndex === 1) renderPanel();
+    }
+  }
+
+  function fullTicketSection() {
+    const selected = fullTicketLibrary?.[ticketComponent];
+    const options = (fullTicketLibrary || []).map((item, i) =>
+      '<option value="' + i + '"' + (i === ticketComponent ? ' selected' : '') + '>' + esc(item.name) + '</option>').join('');
+    return '<div class="pe-library"><h5>Allt Miðakerfissafnið</h5>' +
+      '<label>Opna ZIP-safn <input id="pe-ticket-zip" type="file" accept=".zip,application/zip"' + (libraryBusy ? ' disabled' : '') + '></label>' +
+      '<p class="pe-sub" role="status">' + esc(libraryBusy ? 'Les safn…' : libraryNotice || (selected ? fullTicketLibrary.length + ' færslur í safni' : 'Veldu Miðakerfi — Brunastál.zip. Safnið geymist á þessu tæki.')) + '</p>' +
+      (selected ? '<label>Íhlutur <select id="pe-ticket-component">' + options + '</select></label>' +
+        (selected.summary ? '<p>' + esc(selected.summary) + '</p>' : '') +
+        (selected.preview ? '<iframe id="pe-ticket-preview" title="' + esc(selected.name) + '" sandbox referrerpolicy="no-referrer"></iframe>' : '<p class="pe-sub">Lýsing úr pakkanum</p>') +
+        (selected.docs ? '<details' + (selected.preview ? '' : ' open') + '><summary>Íhlutalýsing</summary><pre>' + esc(selected.docs) + '</pre></details>' : '') : '') +
+      '</div>';
+  }
+
   function designSystemSection() {
     const kit = DESIGN_SYSTEMS[designSystemIndex];
     const options = DESIGN_SYSTEMS.map((system, i) =>
@@ -1262,7 +1404,7 @@
         '<h4>' + esc(kit.name) + '</h4>' +
         (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
       '</div>' +
-      (designSystemIndex === 1 ? ticketKitPreview(kit) : '') +
+      (designSystemIndex === 1 ? fullTicketSection() + (fullTicketLibrary ? '' : ticketKitPreview(kit)) : '') +
       '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
       '<h5>Rammar, takkar, flipar og stöður</h5>' +
       '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni. Vistaðu síðan útlitið sem þemapakka.</p>' +
@@ -2290,6 +2432,27 @@
       try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
+    const libraryInput = q('#pe-ticket-zip');
+    if (libraryInput && !libraryRestoreChecked) {
+      libraryRestoreChecked = true;
+      libraryInput.disabled = true;
+      loadFullTicketLibrary();
+    }
+    if (libraryInput) libraryInput.onchange = () => {
+      const file = libraryInput.files[0];
+      if (file) { loadFullTicketLibrary(file); renderPanel(); }
+    };
+    const componentPicker = q('#pe-ticket-component');
+    if (componentPicker) componentPicker.onchange = () => {
+      ticketComponent = Number(componentPicker.value);
+      renderPanel();
+      q('#pe-ticket-component')?.focus();
+    };
+    const libraryPreview = q('#pe-ticket-preview');
+    if (libraryPreview) {
+      const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'none\'; style-src \'unsafe-inline\' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; form-action \'none\'; base-uri \'none\'">';
+      libraryPreview.srcdoc = csp + fullTicketLibrary[ticketComponent].preview;
+    }
     const systemPicker = q('#pe-design-system');
     if (systemPicker) systemPicker.onchange = () => {
       const index = Number(systemPicker.value);
