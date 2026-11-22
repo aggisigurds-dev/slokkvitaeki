@@ -142,6 +142,7 @@
 
   // ── persistence ───────────────────────────────────────────────────────────
   function loadState() {
+    if (workingLook && workingLook.showing) return;
     try {
       const raw = window.AppSettings && AppSettings.path ? AppSettings.path(KEY) : null;
       if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} }, favs: [], zones: {}, zoom: {} }, JSON.parse(raw));
@@ -167,9 +168,83 @@
   // __peColorSels bar veljann en _pe-overrides ekki. Meðan breyting bíður vistunar, eða rétt eftir eigin vistun,
   // er ekkert endurhlaðið — okkar ástand er það nýjasta.
   let _lastSaveAt = 0, _dirty = false;
-  function ownChangeInFlight() { return !!_saveT || _dirty || (Date.now() - _lastSaveAt) < 2500; }
+  let workingLook = null;
+  const copyLookState = value => JSON.parse(JSON.stringify(value));
+  const savedLook = () => window.AppSettings?.path?.(KEY) ?? null;
+  const previewingLook = () => !!workingLook?.showing;
+
+  function newWorkingLook() {
+    if (_dirty || _saveT) { toast('Bíddu þar til síðasta breyting hefur vistast.'); return; }
+    const original = copyLookState(state);
+    workingLook = { original, draft: copyLookState(original), baseline: savedLook(), history: [], showing: false, publishing: false };
+    showWorkingLook(true);
+  }
+
+  function showWorkingLook(show) {
+    if (!workingLook || workingLook.publishing || workingLook.showing === show) return;
+    if (show && (_dirty || _saveT)) { toast('Bíddu þar til síðasta breyting hefur vistast.'); return; }
+    if (show) {
+      workingLook.live = state;
+      workingLook.liveHistory = undoStack.splice(0);
+      state = workingLook.draft;
+      undoStack.push(...workingLook.history);
+    } else {
+      workingLook.draft = state;
+      workingLook.history = undoStack.splice(0);
+      state = workingLook.live;
+      undoStack.push(...workingLook.liveHistory);
+    }
+    workingLook.showing = show;
+    applyCss();
+  }
+
+  function workingLookChanges() {
+    if (!workingLook) return [];
+    const {original, draft} = workingLook;
+    return [['rules','Stílar'],['bg','Bakgrunnar'],['zoom','Stækkun']].filter(([key]) =>
+      JSON.stringify(original[key]) !== JSON.stringify(draft[key])).map(([, label]) => label);
+  }
+
+  async function publishWorkingLook() {
+    if (!workingLook || workingLook.publishing) return;
+    const changes = workingLookChanges();
+    if (!changes.length) { toast('Engar útlitsbreytingar til að birta.'); return; }
+    if (savedLook() !== workingLook.baseline) {
+      toast('Virkt útlit breyttist síðan drögin voru stofnuð. Opnaðu ný drög til að vinna út frá nýjustu útgáfu.');
+      return;
+    }
+    if (!confirm('Virkja Útlit nr. 2?\n\nBreytt svæði: ' + changes.join(', ') + '\nFyrra útlit verður vistað undir Þemapökkum.')) return;
+    const edit = workingLook;
+    const next = copyLookState(edit.original);
+    for (const key of ['rules','bg','zoom']) next[key] = copyLookState(edit.draft[key]);
+    const now = new Date();
+    next.versions.push({
+      name: 'Fyrir birtingu · ' + now.toLocaleString('is-IS'), savedAt: now.toISOString(),
+      rules: edit.original.rules, bg: edit.original.bg, zones: edit.original.zones,
+      zoom: edit.original.zoom, tables: tableLookGet()
+    });
+    edit.publishing = true;
+    renderPanel();
+    let ok = false;
+    try { ok = !!(await window.AppSettings?.save?.({ [KEY]: JSON.stringify(next) })); } catch (_) {}
+    edit.publishing = false;
+    if (!ok) {
+      toast('Birting hefur ekki verið staðfest. Athugaðu stöðuna áður en þú reynir aftur.');
+      renderPanel();
+      return;
+    }
+    showWorkingLook(false);
+    workingLook = null;
+    state = next;
+    _lastSaveAt = Date.now();
+    applyCss();
+    renderPanel();
+    toast('Útlit nr. 2 virkt.');
+  }
+  function ownChangeInFlight() { return previewingLook() || !!workingLook?.publishing || !!_saveT || _dirty || (Date.now() - _lastSaveAt) < 2500; }
   function persist() {
     applyCss();
+    if (previewingLook()) { workingLook.draft = state; return; }
     _dirty = true;
     if (_saveT) clearTimeout(_saveT);
     _saveT = setTimeout(async () => {
@@ -738,6 +813,8 @@
       '#' + PANEL_ID + ' .pe-content{min-height:0;overflow:auto;padding:2px 2px 10px}',
       '#' + PANEL_ID + ' .pe-hd,#' + PANEL_ID + ' .pe-actions{flex:none}',
       '#' + PANEL_ID + ' .pe-actions{margin-top:auto}',
+      '#' + PANEL_ID + ' .pe-draft{flex:none;margin-bottom:8px;background:#edf4ff}',
+      '#' + PANEL_ID + ' .pe-draft [aria-pressed=true]{background:#1d4ed8;color:white;border-color:#1d4ed8}',
       '#' + PANEL_ID + ' .pe-settings-links{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}',
       '#' + PANEL_ID + ' .pe-settings-links>div{padding:10px;background:#fff;border:1px solid #e2e8f0;border-radius:10px}',
       '#' + PANEL_ID + ' .pe-settings-links h4{margin:0;font-size:14px}',
@@ -1640,7 +1717,18 @@
         '<button class="pe-btn" data-zoom="10" title="Stækka um 10%">+</button>' +
         (curZoom() !== 100 ? '<button class="pe-btn" data-zoom="0" title="Aftur í 100%">↺</button>' : '') +
       '</span>';
-    const actions = '<div class="pe-grp pe-actions">' +
+    const draftMode = !!workingLook;
+    const editingDraft = previewingLook();
+    const draftControls = draftMode
+      ? '<div class="pe-grp pe-draft"><strong>Útlit nr. 2</strong>' +
+        '<button class="pe-btn" id="pe-draft-show" aria-pressed="' + editingDraft + '">Vinnudrög</button>' +
+        '<button class="pe-btn" id="pe-draft-live" aria-pressed="' + !editingDraft + '">Núverandi</button>' +
+        '<button class="pe-btn pri" id="pe-draft-publish">Yfirfara og birta…</button>' +
+        '<button class="pe-btn" id="pe-draft-discard">Fleygja drögum</button></div>'
+      : '<div class="pe-grp pe-draft"><button class="pe-btn pri" id="pe-draft-new">Búa til vinnudrög</button></div>';
+    const actions = draftMode ? (editingDraft ? '<div class="pe-grp pe-actions">' +
+      '<button type="button" class="pe-btn" id="pe-undo">Afturkalla í drögum</button></div>' : '') :
+      '<div class="pe-grp pe-actions">' +
       '<button type="button" class="pe-btn pri" id="pe-savepage" title="Vista núverandi útlit sem nafngreindan þemapakka">Vista útlit</button>' +
       '<button type="button" class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + '>Afturkalla</button>' +
       '<details class="pe-more"><summary>Fleira</summary><div>' +
@@ -1697,7 +1785,7 @@
       backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
       layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
       styles: styleTools + cardSection() + body + presetsSection(),
-      versions: designSystemSection() + versionsSection(),
+      versions: designSystemSection() + (draftMode ? '<p class="pe-sub">Veldu bakgrunn eða stíl úr safni til að prófa hann í drögunum.</p>' : versionsSection()),
       settings: '<div class="pe-settings-links">' +
         '<div><h4>Hliðarstika</h4><p class="pe-sub">Röð, sýnileiki og skil milli valmyndarliða.</p>' +
           '<button type="button" class="pe-btn" id="pe-sidebar-settings">Aðlaga hliðarstiku</button></div>' +
@@ -1709,7 +1797,20 @@
     };
     p.dataset.group = panelGroup;
     p.classList.toggle('pe-full', panelFull);
-    p.innerHTML = head + '<div class="pe-content">' + groups[panelGroup] + '</div>' + actions;
+    if (draftMode) {
+      groups.header = hasHeader ? '<button class="pe-btn" id="pe-header-style">Stilla haus</button>' : '';
+      groups.backgrounds = bgGallerySection();
+      groups.layout = '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>';
+      groups.styles = styleTools + body + presetsSection();
+      groups.settings = '<p class="pe-sub">Birtu eða fleygðu drögunum til að opna aðrar stillingar.</p>';
+    }
+    const content = draftMode && !editingDraft
+      ? '<p class="pe-sub">Núverandi útlit er sýnt. Veldu Vinnudrög til að halda áfram að breyta.</p>'
+      : groups[panelGroup];
+    p.innerHTML = head + draftControls + '<div class="pe-content">' + content + '</div>' + actions;
+    if (workingLook?.publishing) {
+      p.querySelectorAll('button,select,input').forEach(control => { control.disabled = true; });
+    }
     p.querySelector('.pe-content').scrollTop = scroll;
     wirePanel();
     wireCard();
@@ -2555,6 +2656,25 @@
     const p = document.getElementById(PANEL_ID); if (!p) return;
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
+    const newDraft = q('#pe-draft-new');
+    if (newDraft) newDraft.onclick = () => { newWorkingLook(); renderPanel(); };
+    const showDraft = q('#pe-draft-show');
+    if (showDraft) showDraft.onclick = () => { showWorkingLook(true); renderPanel(); };
+    const showLive = q('#pe-draft-live');
+    if (showLive) showLive.onclick = () => {
+      if (picking) setPicking(false);
+      showWorkingLook(false); renderPanel();
+    };
+    const publishDraft = q('#pe-draft-publish');
+    if (publishDraft) publishDraft.onclick = publishWorkingLook;
+    const discardDraft = q('#pe-draft-discard');
+    if (discardDraft) discardDraft.onclick = () => {
+      if (!confirm('Fleygja vinnudrögunum?')) return;
+      if (picking) setPicking(false);
+      showWorkingLook(false);
+      workingLook = null;
+      renderPanel();
+    };
     qa('[data-pe-group]').forEach(button => button.onclick = () => {
       const group = button.dataset.peGroup;
       showPanelGroup(group);
@@ -2950,6 +3070,8 @@
     bindFramePaint();
   }
   function closePanel() {
+    if (workingLook?.publishing) return;
+    showWorkingLook(false);
     const p = document.getElementById(PANEL_ID); if (p) p.remove();
     panelFull = false;
     setPicking(false); hideHighlight();
