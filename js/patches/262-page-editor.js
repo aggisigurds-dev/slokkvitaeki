@@ -195,6 +195,7 @@
       undoStack.push(...workingLook.liveHistory);
     }
     workingLook.showing = show;
+    if (!show && savedLook() !== workingLook.baseline) loadState();
     applyCss();
   }
 
