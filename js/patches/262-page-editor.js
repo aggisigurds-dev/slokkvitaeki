@@ -738,6 +738,15 @@
       '#' + PANEL_ID + ' .pe-content{min-height:0;overflow:auto;padding:2px 2px 10px}',
       '#' + PANEL_ID + ' .pe-hd,#' + PANEL_ID + ' .pe-actions{flex:none}',
       '#' + PANEL_ID + ' .pe-actions{margin-top:auto}',
+      '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
+      '#' + PANEL_ID + ' .pe-kit-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:center;gap:8px;padding:10px;border-radius:8px}',
+      '#' + PANEL_ID + ' .pe-kit h4{margin:0;font-size:15px}',
+      '#' + PANEL_ID + ' .pe-kit h5{margin:12px 0 5px;font-size:12px}',
+      '#' + PANEL_ID + ' .pe-kit-heading img{width:100%;max-height:110px;object-fit:cover;border-radius:4px}',
+      '#' + PANEL_ID + ' .pe-kit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(106px,1fr));gap:8px}',
+      '#' + PANEL_ID + ' .pe-kit-item{display:grid;text-align:left;gap:6px;min-width:0}',
+      '#' + PANEL_ID + ' .pe-kit-item img{width:100%;height:40px;object-fit:cover;border-radius:4px;background:#111923}',
+      '#' + PANEL_ID + ' .pe-kit-tab{display:grid;place-items:center;height:40px;border:1px solid;border-radius:9px}',
       '#' + PANEL_ID + ' .pe-groups{display:flex;gap:5px;flex-wrap:wrap}',
       '#' + PANEL_ID + ' .pe-groups [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
       '#' + PANEL_ID + ' .pe-more{position:relative;margin-left:auto}',
@@ -955,12 +964,100 @@
     if (document.getElementById(PANEL_ID)) renderPanel();
   }
   function applyPeViewMode(mode) { applyPlatView(mode); }
+  // Curated assets and design tokens from the Brunastál V2 Premium kit.
+  const BRUNASTAL_PREMIUM = {
+    "name": "Brunastál V2 Premium",
+    "tokens": {
+      "background": "#080D13",
+      "surface": "#111923",
+      "raised": "#19232E",
+      "text": "#F5F8FC",
+      "muted": "#A6B4C4",
+      "border": "#465261",
+      "amber": "#FFAD31",
+      "blue": "#00B9FF",
+      "panel": "18px",
+      "button": "9px"
+    },
+    "backgrounds": [
+      {
+        "label": "Dökkt stál",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjkwMCIgdmlld0JveD0iMCAwIDE2MDAgOTAwIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiA+CjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0iciIgY3g9IjYwJSIgY3k9IjEwJSIgcj0iOTAlIj48c3RvcCBzdG9wLWNvbG9yPSIjMUEyNjMxIi8+PHN0b3Agb2Zmc2V0PSIuNDIiIHN0b3AtY29sb3I9IiMwQzEzMUIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwNTA5MEYiLz48L3JhZGlhbEdyYWRpZW50PjxwYXR0ZXJuIGlkPSJwIiB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMCA4TDggMCIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utb3BhY2l0eT0iLjAxNiIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNyKSIvPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcCkiLz4KPC9zdmc+Cg==",
+        "color": "#080D13",
+        "size": "cover"
+      },
+      {
+        "label": "Kolstrefjar",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDk2IDk2IiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiA+CjxkZWZzPjxwYXR0ZXJuIGlkPSJjIiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxyZWN0IHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgZmlsbD0iIzBCMTAxNyIvPjxwYXRoIGQ9Ik0wIDAgSDEyIE0wIDAgVjEyIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS1vcGFjaXR5PSIuMDE4Ii8+PHBhdGggZD0iTS01IDExIEwxMSAtNSBNMSAxNyBMMTcgMSIgc3Ryb2tlPSIjQjFDMENGIiBzdHJva2Utb3BhY2l0eT0iLjA1NSIgc3Ryb2tlLXdpZHRoPSIxLjI1Ii8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2MpIi8+Cjwvc3ZnPgo=",
+        "color": "#111923",
+        "size": "64px"
+      }
+    ],
+    "banner": "data:image/webp;base64,UklGRg4DAABXRUJQVlA4IAIDAABQHwCdASoyAaoAPqlUpU2mKKeiJVQIeRAVCWdu4XExApirX/zDvAbgjn/30PFpEMQWzWfIWlUZ8haVRnyFpVGfIWlUZ8haVRnyFpVGfIWlUZ8haVRnyEz20po3u10/eb94GfKDEQhy2IM9bPTbv8fLlN/1hdMWKtRfepIiBXZAKby9rPAc0OqwSb0gWp/jjhhU/0gELPANOgGQoavFkWK2WGLsY9QUAUgtvS1D4mIgsCJIwsi3oPtxa6I9lm1kzT+4MCEJKGWgdigvY3hrRAssKdL8LVoJcWS/NJ3eji4cls+FQsEEogHQQSiAdBBKIB0EEogHQQSiAdBBKIB0EEogHQIAAP7+lEgAAAAAAdnJxCc8ZjI0hd5MTHGSfvYUJK73a0mlcggJjDYCkVcs4pnH8AJQqLzS7RKh3SndS65FmmTD+bA8SmdbSItAaP+652xwdcY1DNbFByUvtLWRzV1yGtq7eUDh11m1sY85lN64Hn+8IX7tMOgAN1O4/nL0AZbGrd0MjSwsn+qXaSAK61NEb2bicCcDphNtwRALPERkTsHS9y0KuOV7wNIlWNFocl077Up7kDHSUwrn4Elbvf8WIT4NITyjP4Thu/Pqv+tlgNzVtGHX8P/9MpG7I5Pq61XYssfPKweEdLtHm3MLLz/Gk58dhQIhRVNE98TZ1s+OV6bNJGtsYNN6e4DgwUTV85K3ibCvodqrHAzs2h6TujT+gNmTj1RcvBgc4BO3uARQvyqSHv2kCV9h5BfcaXibB2kyu14gZ00cWnDr4yeIZot+ws8rl282epNzuV7/q+S5yjN4YQKbfw2NrsHh/DeasTLe0lsl8NvUQq3yEHaVCd5fu/4osq2jazGxIl87qzH/wTnPAumxZJFoPJuvkchQmJEErfaOE4mdal9fGsSIYda1Co+tQoMlZXsWhQqhLPV8C/7s52ypf/pXaTikCoBHnD0KqqQr/HiJCnVesRwdFF0IKtwbp5nREzuM6MqbZxfDzVHVE4AAEk5OBAAAAAAAAAAAAA==",
+    "parts": [
+      {
+        "label": "Rammar · gulbrúnn",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3NjAgMzYwIiB3aWR0aD0iNzYwIiBoZWlnaHQ9IjM2MCIgcm9sZT0iaW1nIj48ZGVmcz48ZmlsdGVyIGlkPSJoYWxvIiB4PSItMzAlIiB5PSItNDAlIiB3aWR0aD0iMTYwJSIgaGVpZ2h0PSIxODAlIj48ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI3Ii8+PC9maWx0ZXI+PGxpbmVhckdyYWRpZW50IGlkPSJlZGdlIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZGRTI5QSIvPjxzdG9wIG9mZnNldD0iLjIzIiBzdG9wLWNvbG9yPSIjRkZBQzI0Ii8+PHN0b3Agb2Zmc2V0PSIuNjIiIHN0b3AtY29sb3I9IiNGQzdGMDAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRkFDMjQiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iZmxhc2giIHgxPSIwIiB4Mj0iMSI+PHN0b3Agc3RvcC1jb2xvcj0iI0ZGQUMyNCIgc3RvcC1vcGFjaXR5PSIwIi8+PHN0b3Agb2Zmc2V0PSIuNDUiIHN0b3AtY29sb3I9IiNGRkUyOUEiIHN0b3Atb3BhY2l0eT0iLjk2Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkZBQzI0IiBzdG9wLW9wYWNpdHk9IjAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNMjQgMiBIMzIwIEwzMzUgMTUgSDY1MCBMNjY1IDIgSDczMCBMNzU4IDI5IFYxMjMgTDc0NiAxMzcgVjI2NSBMNzU4IDI3OSBWMzM1IEw3MzMgMzU4IEgyNCBMMiAzMzUgVjMwIFoiIHN0cm9rZT0idXJsKCNlZGdlKSIgc3Ryb2tlLXdpZHRoPSIxLjIiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMjQgMiBIMzIwIEwzMzUgMTUgSDY1MCBMNjY1IDIgSDczMCBMNzU4IDI5IFYxMjMgTDc0NiAxMzcgVjI2NSBMNzU4IDI3OSBWMzM1IEw3MzMgMzU4IEgyNCBMMiAzMzUgVjMwIFoiIHN0cm9rZT0iI0ZGRTI5QSIgc3Ryb2tlLXdpZHRoPSIuNSIgb3BhY2l0eT0iLjIzIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDQpIiBmaWxsPSJub25lIi8+PGNpcmNsZSBjeD0iMjMiIGN5PSIyMiIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSIyMyIgY3k9IjIyIiByPSIyLjIiIGZpbGw9IiNGRkUyOUEiLz48Y2lyY2xlIGN4PSI3MzYiIGN5PSIzNCIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSI3MzYiIGN5PSIzNCIgcj0iMi4yIiBmaWxsPSIjRkZFMjlBIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIzMzYiIHI9IjUuNSIgZmlsbD0iI0ZGQUMyNCIgb3BhY2l0eT0iLjMyIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIzMzYiIHI9IjIuMiIgZmlsbD0iI0ZGRTI5QSIvPjxjaXJjbGUgY3g9IjczNSIgY3k9IjMzNiIgcj0iNS41IiBmaWxsPSIjRkZBQzI0IiBvcGFjaXR5PSIuMzIiLz48Y2lyY2xlIGN4PSI3MzUiIGN5PSIzMzYiIHI9IjIuMiIgZmlsbD0iI0ZGRTI5QSIvPjwvc3ZnPg==",
+        "style": {
+          "border": "1px solid #FFAD31",
+          "border-radius": "18px",
+          "box-shadow": "0 0 22px rgba(255,173,49,.20)"
+        }
+      },
+      {
+        "label": "Takkar · blár",
+        "asset": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyODAgNjQiIHdpZHRoPSIyODAiIGhlaWdodD0iNjQiIHJvbGU9ImltZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4Mj0iMCIgeTI9IjEiPjxzdG9wIHN0b3AtY29sb3I9IiMwMEI5RkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwODdBQjYiLz48L2xpbmVhckdyYWRpZW50PjxmaWx0ZXIgaWQ9InNoYWRvdyI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iNCIvPjwvZmlsdGVyPjwvZGVmcz48cmVjdCB4PSI1IiB5PSI3IiB3aWR0aD0iMjcwIiBoZWlnaHQ9IjU2IiByeD0iMTMiIGZpbGw9IiMwMEI5RkYiIG9wYWNpdHk9Ii4yNCIgZmlsdGVyPSJ1cmwoI3NoYWRvdykiLz48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iMjc2IiBoZWlnaHQ9IjYwIiByeD0iMTAiIGZpbGw9InVybCgjZykiIHN0cm9rZT0iIzAwQjlGRiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTSAxNyA2SDI2MiIgc3Ryb2tlPSIjRDBGNEZGIiBvcGFjaXR5PSIuNTUiLz48L3N2Zz4=",
+        "style": {
+          "background": "linear-gradient(180deg,#00B9FF,#111923)",
+          "color": "#F5F8FC",
+          "border": "1px solid #00B9FF",
+          "border-radius": "9px"
+        }
+      },
+      {
+        "label": "Flipar · stál",
+        "style": {
+          "background": "#19232E",
+          "color": "#F5F8FC",
+          "border": "1px solid #465261",
+          "border-radius": "9px"
+        }
+      }
+    ]
+  };
+
+  function premiumLibrarySection() {
+    const kit = BRUNASTAL_PREMIUM;
+    const backgrounds = kit.backgrounds.map((item, i) =>
+      '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-bg="' + i + '">' +
+        '<img src="' + item.asset + '" alt="" loading="lazy">' +
+        '<span>' + esc(item.label) + '</span></button>'
+    ).join('');
+    const parts = kit.parts.map((item, i) =>
+      '<button type="button" class="pe-btn pe-kit-item" data-pe-kit-part="' + i + '">' +
+        (item.asset ? '<img src="' + item.asset + '" alt="" loading="lazy">' :
+          '<span class="pe-kit-tab" style="background:' + kit.tokens.raised + ';color:' + kit.tokens.text + ';border-color:' + kit.tokens.border + '">Virkur flipi</span>') +
+        '<span>' + esc(item.label) + '</span></button>'
+    ).join('');
+    return '<section class="pe-kit" aria-label="Brunastál V2 Premium">' +
+      '<div class="pe-kit-heading" style="background:' + kit.tokens.background + ';color:' + kit.tokens.text + '">' +
+        '<h4>' + esc(kit.name) + '</h4>' +
+        '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' +
+      '</div>' +
+      '<h5>Bakgrunnar</h5><div class="pe-kit-grid">' + backgrounds + '</div>' +
+      '<h5>Rammar, takkar og flipar</h5>' +
+      '<p class="pe-sub">Veldu stíl og smelltu á hlut á síðunni. Vistaðu síðan útlitið sem þemapakka.</p>' +
+      '<div class="pe-kit-grid">' + parts + '</div>' +
+    '</section>';
+  }
+
   const PANEL_GROUPS = [
     ['header', 'Haus og banner'], ['backgrounds', 'Bakgrunnar'],
     ['layout', 'Skipulag'], ['styles', 'Stílar'], ['versions', 'Þemapakkar']
   ];
   let panelGroup = 'backgrounds';
   let panelFull = false;
+  let pendingKitPart = null;
 
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
@@ -1067,7 +1164,7 @@
       backgrounds: '<button class="pe-btn pri" id="pe-bg">Bæta við bakgrunnsmynd</button>' + bgGallerySection(),
       layout: layoutTools + '<div class="pe-grp"><span class="pe-grplbl">Stækkun</span>' + zoom + '</div>' + tableHelpSection() + linkasafnSection(),
       styles: styleTools + cardSection() + body + presetsSection(),
-      versions: versionsSection()
+      versions: premiumLibrarySection() + versionsSection()
     };
     p.dataset.group = panelGroup;
     p.classList.toggle('pe-full', panelFull);
@@ -1147,14 +1244,17 @@
   ];
   function applyGalleryBg(i) {
     const g = BG_GALLERY[i]; if (!g) return;
+    setGalleryBackground(g[0], g[1]);
+  }
+  function setGalleryBackground(label, background) {
     snapshot();
-    const val = 'css:' + g[1];
+    const val = 'css:' + background;
     if (scope === 'all') { state.bg.all = val; }
     else {
       const cur = activeViewEl();
       if (!cur || !cur.id) { state.bg.all = val; } else { state.bg.pages[cur.id] = val; }
     }
-    persist(); toast('🖼 ' + g[0] + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
+    persist(); renderPanel(); toast('🖼 ' + label + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
   }
   function clearGalleryBg() {
     snapshot();
@@ -1949,6 +2049,21 @@
       try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
+    qa('[data-pe-kit-bg]').forEach(button => button.onclick = () => {
+      const item = BRUNASTAL_PREMIUM.backgrounds[+button.dataset.peKitBg];
+      if (!item) return;
+      setGalleryBackground(item.label, 'url("' + item.asset + '") center / ' + item.size + ' ' + item.color);
+    });
+    qa('[data-pe-kit-part]').forEach(button => button.onclick = () => {
+      pendingKitPart = BRUNASTAL_PREMIUM.parts[+button.dataset.peKitPart] || null;
+      if (!pendingKitPart) return;
+      panelGroup = 'styles';
+      panelFull = false;
+      multiPick = false;
+      extraTargets = [];
+      setPicking(true);
+      toast('Veldu hlut fyrir „' + pendingKitPart.label + '“');
+    });
     qa('[data-bgg]').forEach(b => b.onclick = () => applyGalleryBg(+b.dataset.bgg));
     const bgc = q('#pe-bgg-clear'); if (bgc) bgc.onclick = clearGalleryBg;
     const vs = q('#pe-ver-save'); if (vs) vs.onclick = saveVersionAs;
@@ -2097,6 +2212,7 @@
   // ── element picking ─────────────────────────────────────────────────────────
   function setPicking(on) {
     picking = on;
+    if (!on) pendingKitPart = null;
     document.body.classList.toggle('pe-picking', on);
     try {
       const fd = frameDoc();
@@ -2180,6 +2296,8 @@
       return;
     }
     target = el; rememberTarget(el);
+    const kitPart = pendingKitPart;
+    if (kitPart) applyPreset(kitPart.style);
     if (!multiPick) setPicking(false);
     // keep the highlight on the chosen element briefly
     highlight(el); setTimeout(hideHighlight, 700);
