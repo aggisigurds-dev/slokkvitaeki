@@ -744,6 +744,28 @@
       '#' + PANEL_ID + ' .pe-settings-links p{margin:4px 0 8px}',
       '#' + PANEL_ID + ' .pe-settings-links a.pe-btn{display:inline-flex;text-decoration:none}',
       '#' + PANEL_ID + ' .pe-kit{background:#fff;border:1px solid #d7dee8;border-radius:12px;padding:12px}',
+      '#' + PANEL_ID + ' .pe-kit-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}',
+      '#' + PANEL_ID + ' .pe-kit-switch [aria-pressed=true]{background:#1d4ed8;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-kit-compare{overflow-x:auto;max-width:100%}',
+      '#' + PANEL_ID + ' .pe-kit-compare table{width:100%;min-width:615px;table-layout:fixed;border-spacing:0 5px}',
+      '#' + PANEL_ID + ' .pe-kit-compare th{font-size:13px;text-align:left;padding:5px 8px}',
+      '#' + PANEL_ID + ' .pe-kit-compare td{padding:0 5px;vertical-align:top}',
+      '#' + PANEL_ID + ' .pe-kit-compare .pk-row-title th{padding-top:12px;border-top:1px solid #d8e0ed;color:#475569}',
+      '#' + PANEL_ID + ' .pk-card,#' + PANEL_ID + ' .pk-controls{display:grid;gap:6px;padding:9px;background:var(--pk-paper);color:var(--pk-ink);border:1px solid var(--pk-border);border-radius:10px}',
+      '#' + PANEL_ID + ' .pk-system-1 .pk-card{border-radius:6px;box-shadow:inset 0 -2px 0 #d9dfe8}',
+      '#' + PANEL_ID + ' .pk-system-2 .pk-card{box-shadow:inset 0 1px 0 #ffffff18}',
+      '#' + PANEL_ID + ' .pk-data,#' + PANEL_ID + ' .pk-days{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11.5px}',
+      '#' + PANEL_ID + ' .pk-number{font-size:21px;font-variant-numeric:tabular-nums}',
+      '#' + PANEL_ID + ' .pk-track{height:6px;border-radius:9px;background:var(--pk-surface);overflow:hidden}',
+      '#' + PANEL_ID + ' .pk-track i{display:block;width:75%;height:100%;background:var(--pk-accent)}',
+      '#' + PANEL_ID + ' .pk-work{border-left:4px solid var(--pk-accent)}',
+      '#' + PANEL_ID + ' .pk-badge{justify-self:start;padding:2px 7px;border-radius:99px;background:var(--pk-status-bg);color:var(--pk-status);font-size:11px}',
+      '#' + PANEL_ID + ' .pk-banner,#' + PANEL_ID + ' .pk-card-head{display:grid;gap:3px;padding:9px;border-radius:6px;background:var(--pk-header);color:#fff}',
+      '#' + PANEL_ID + ' .pk-days span,#' + PANEL_ID + ' .pk-tab{padding:4px;background:var(--pk-surface);border-radius:5px}',
+      '#' + PANEL_ID + ' .pk-days small{display:block}',
+      '#' + PANEL_ID + ' .pk-controls{display:flex;align-items:center;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pk-action{color:#fff;background:var(--pk-action);padding:4px 6px;border-radius:5px;font-weight:650}',
+      '#' + PANEL_ID + ' .pk-system-0 .pk-action{color:#111827}',
       '#' + PANEL_ID + ' .pe-kit-select{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700}',
       '#' + PANEL_ID + ' .pe-kit-select select{font:inherit;color:#172235;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:5px 7px;max-width:100%}',
       '#' + PANEL_ID + ' .pe-kit-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:center;gap:8px;padding:10px;border-radius:8px}',
@@ -1381,7 +1403,43 @@
       '</div>';
   }
 
+  let compareKits = true;
+
+  function kitComparison() {
+    const colors = [
+      ['#ffffff','#e9f0fa','#101e43','#d8dee9','#ff6702','#166534','#ddfada'],
+      ['#ffffff','#e2e6ec','#11141c','#9ba1ad','#2563eb','#0b5a2e','#dff0e4'],
+      ['#111923','#19232e','#f5f8fc','#465261','#ffad31','#c4f9d9','#174630']
+    ];
+    const rows = [
+      ['Venjulegt spjald', '<div class="pk-card"><strong>Staður og samband</strong><div class="pk-data"><span>Heimilisfang</span><b>Dæmigata 12</b><span>Tengiliður</span><b>Verkstæði</b></div></div>'],
+      ['Mælispjald', '<div class="pk-card"><small>Til afhendingar</small><strong class="pk-number">12</strong><div class="pk-track" role="img" aria-label="Þrír fjórðu"><i></i></div></div>'],
+      ['Verkspjald og staða', '<div class="pk-card pk-work"><small>R-024 · Verkstæði</small><strong>Skoðun slökkvitækja</strong><span class="pk-badge">Tilbúið</span></div>'],
+      ['Dagskrárkassi', '<div class="pk-card"><div class="pk-card-head">Dagskrá</div><div class="pk-days"><span>MÁN 23<small>09:00 · Skoðun</small></span><span>ÞRI 24</span></div></div>'],
+      ['Haus og banner', '<div class="pk-banner"><small>Þjónusta</small><strong>Yfirlit fyrirtækis</strong></div>'],
+      ['Takkar og flipar', '<div class="pk-controls"><span class="pk-action">Skrá verk</span><span class="pk-tab">Yfirlit</span><span class="pk-tab">Saga</span></div>'],
+      ['Verð og samantekt', '<div class="pk-card"><small>Samtals</small><strong class="pk-number">24.900 kr</strong><small>20.081 kr án VSK</small></div>']
+    ];
+    const heading = DESIGN_SYSTEMS.map(kit => '<th scope="col">' + esc(kit.name) + '</th>').join('');
+    const body = rows.map(([label, example]) => {
+      const cells = DESIGN_SYSTEMS.map((kit,i) => {
+        const [paper, surface, ink, border, accent, statusInk, statusBg] = colors[i];
+        const style = kitStylePreview({'--pk-paper':paper,'--pk-surface':surface,'--pk-ink':ink,'--pk-border':border,
+          '--pk-accent':accent,'--pk-status':statusInk,'--pk-status-bg':statusBg,'--pk-header':kit.tokens.background,
+          '--pk-action':kit.parts[i === 1 ? 3 : 1].style.background});
+        return '<td class="pk-system-' + i + '" style="' + style + '">' + example + '</td>';
+      }).join('');
+      return '<tr class="pk-row-title"><th colspan="3" scope="rowgroup">' + label + '</th></tr><tr>' + cells + '</tr>';
+    }).map(group => '<tbody>' + group + '</tbody>').join('');
+    return '<div class="pe-kit-compare" role="region" aria-label="Hönnunarkerfi hlið við hlið" tabindex="0">' +
+      '<table><thead><tr>' + heading + '</tr></thead>' + body + '</table></div>';
+  }
+
   function designSystemSection() {
+    const switcher = '<div class="pe-kit-switch" aria-label="Sýn hönnunarkerfa">' +
+      '<button type="button" class="pe-btn" data-kit-view="compare" aria-pressed="' + compareKits + '">Hlið við hlið</button>' +
+      '<button type="button" class="pe-btn" data-kit-view="library" aria-pressed="' + !compareKits + '">Stílasöfn</button></div>';
+    if (compareKits) return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher + kitComparison() + '</section>';
     const kit = DESIGN_SYSTEMS[designSystemIndex];
     const options = DESIGN_SYSTEMS.map((system, i) =>
       '<option value="' + i + '"' + (i === designSystemIndex ? ' selected' : '') + '>' + esc(system.name) + '</option>'
@@ -1399,7 +1457,7 @@
           '<span class="pe-kit-tab" aria-hidden="true" style="' + kitStylePreview(item.style) + '">' + esc(item.label.split(' · ').pop()) + '</span>') +
         '<span>' + esc(item.label) + '</span></button>'
     ).join('');
-    return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + picker +
+    return '<section class="pe-kit" aria-label="Hönnunarkerfi">' + switcher + picker +
       '<div class="pe-kit-heading" style="background:' + kit.tokens.background + ';color:' + kit.tokens.text + '">' +
         '<h4>' + esc(kit.name) + '</h4>' +
         (kit.banner ? '<img src="' + kit.banner + '" alt="Dökkur Brunastálsborði með blárri lýsingu" loading="lazy">' : '') +
@@ -2432,6 +2490,11 @@
       try { if (window.Vidmot) Vidmot.setjaTaeki('pe.dock', dock); } catch (_) {}   // raunverulegur smellur
       renderPanel();
     };
+    qa('[data-kit-view]').forEach(button => button.onclick = () => {
+      compareKits = button.dataset.kitView === 'compare';
+      renderPanel();
+      q('[data-kit-view="' + button.dataset.kitView + '"]')?.focus();
+    });
     const libraryInput = q('#pe-ticket-zip');
     if (libraryInput && !libraryRestoreChecked) {
       libraryRestoreChecked = true;
