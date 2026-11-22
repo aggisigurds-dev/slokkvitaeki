@@ -50,6 +50,7 @@
 
   function stilla(host, nafn) {
     if (!host) return;
+    host.toggleAttribute('data-agnar-dagskra', nafn === 'Agnar');
     if (thema(nafn) === 'bh2') {
       letur();
       if (host.getAttribute('data-thema') !== 'bh2') host.setAttribute('data-thema', 'bh2');
@@ -77,6 +78,7 @@
 
   // ── Yfirlagið. Allt undir H svo Boss-borðið breytist ekki um eina línu. ────────────────────────────────
   const H = ':host([data-thema="bh2"])';
+  const A = ':host([data-agnar-dagskra]) .mod[aria-label="Dagskrá"]';
   const SH = '0 1px 2px rgba(2,25,60,.06),0 8px 24px rgba(2,25,60,.08)';
   const GLOD = '0 6px 16px rgba(255,103,2,.35)';
   const APP = 'linear-gradient(180deg,#ff8a1f,#ff6702 55%,#ec5300)';
@@ -522,6 +524,48 @@
         H + ' .acts>.btn:nth-of-type(3){grid-column:3}' +
         H + ' .col::before{grid-row:2/4}' +
       '}',
+      // Dagskrá Agnars: sama stíll í báðum borðsþemum, afmarkaður við eininguna.
+      A + '{border:1px solid #dbe3ef;border-radius:16px;background:#f8fafc;box-shadow:0 8px 24px rgba(2,25,60,.10);color:#101e43}',
+      A + ' > .phead{padding:10px 16px;gap:8px 12px;border:0;border-radius:15px 15px 0 0;background:linear-gradient(164deg,transparent 0 36%,rgba(134,177,230,.13) 36.2% 52%,transparent 52.2%),linear-gradient(105deg,#092646,#0c2c52 65%,#081f3b);box-shadow:none}',
+      A + ' > .phead .plate{display:none}',
+      A + ' > .phead .ptitle{font:700 18px/1.2 var(--body);color:#fff;letter-spacing:0;text-transform:none}',
+      A + ' > .phead .ptitle::before{content:"";display:inline-block;width:13px;height:12px;margin-inline-end:8px;vertical-align:-1px;border:1.5px solid currentColor;border-radius:3px;background:linear-gradient(currentColor,currentColor) 0 3px/100% 1px no-repeat}',
+      A + ' > .phead .sum{padding-inline-start:12px;border-inline-start:1px solid #ffffff55;color:#e7edf7;font:500 14px/1.3 var(--body)}',
+      A + ' .dgsyn{margin:0}',
+      A + ' .dgsyn .lbl{display:none}',
+      A + ' .dgsyn select{min-width:106px;max-width:160px;height:34px;border:1px solid #d8dee9;border-radius:9px;background:#fff;box-shadow:none;color:#101e43}',
+      A + ' > .phead .btn.gold{min-height:34px;border:1px solid #ff8a1f;border-radius:9px;background:linear-gradient(180deg,#ea6018,#c24009);box-shadow:none;color:#fff}',
+      A + ' > .phead .tog{min-height:34px;border:1px solid #d8dee9;border-radius:9px;background:#fff;color:#101e43;box-shadow:none}',
+      A + ' .week{gap:8px;padding:10px 12px 12px}',
+      A + ' .day{gap:6px;padding:8px 10px;border:1px solid #d8dee9;border-radius:12px;background:linear-gradient(145deg,#fff,#f3f6fb);box-shadow:0 3px 7px rgba(2,25,60,.045);color:#101e43}',
+      A + ' .day.today{border-color:#f7bd9f;background:linear-gradient(150deg,#fff5ef,#fce6db);box-shadow:none}',
+      A + ' .dn{color:#2e4064}',
+      A + ' .day.today .dn{color:#a1330d}',
+      A + ' .dd{color:#101e43;font-weight:750}',
+      A + ' .today .dd{width:26px;height:26px;border-radius:50%;background:#bc400e;color:#fff}',
+      A + ' .dplus{height:28px;width:auto;min-width:24px;padding:0 3px;border:0;border-radius:7px;background:transparent;box-shadow:none;color:#174eae;font:650 12px/1 var(--body);white-space:nowrap}',
+      A + ' .dplus:hover{background:#e0eafb}',
+      A + ' .dpt{display:inline}',
+      A + ' .day.mjor .dpt{display:none}',
+      A + ' .job{min-width:0;padding:6px 8px;border:0;border-left:3px solid #2f6fe4;border-radius:8px;background:#e9f0fc;box-shadow:none;color:#101e43;font:500 12.5px/1.35 var(--body);overflow-wrap:anywhere}',
+      A + ' .job::before{display:none}',
+      A + ' .job b{font-weight:750;color:#101e43}',
+      A + ' .job small{color:#354766}',
+      A + ' .dnota textarea{border:0;border-radius:7px;background:transparent;box-shadow:none}',
+      A + ' .dnota textarea::placeholder{color:transparent}',
+      A + ' .day:hover .dnota textarea::placeholder,' + A + ' .dnota textarea:focus::placeholder{color:#51627b}',
+      A + ' .legend{display:none}',
+      A + ' .ov{margin:0 10px 10px;padding:9px;border:1px solid #e1e7f0;border-radius:12px;background:#f2f5fa}',
+      A + ' .ovh{padding:0 0 8px;border:0;align-items:center}',
+      A + ' .ovh h3{font:700 14px/1.25 var(--body);color:#101e43;text-transform:none;letter-spacing:0}',
+      A + ' .ovh span{padding:2px 7px;border-radius:999px;background:#fce8da;color:#8a3618;font-weight:650}',
+      A + ' .ovgrid{gap:7px;border:0;overflow:visible;background:transparent}',
+      A + ' .ovbox{min-width:0;border:1px solid #e1e7f0;border-radius:9px;background:#fff;box-shadow:0 2px 4px rgba(2,25,60,.05)}',
+      A + ' .ovbox textarea{min-height:40px;padding:7px 9px;border:0;border-radius:8px;background:transparent;color:#101e43;box-shadow:none;font:500 12.5px/1.45 var(--body)}',
+      A + ' .ovbox textarea::placeholder{color:#51627b;opacity:1;font-style:italic}',
+      A + ' .ovbox textarea:focus{outline:2px solid #2f6fe4;outline-offset:-2px;background:#fff}',
+      '@container rail (min-width: 1101px){' + A + ' .day{min-height:155px}' + A + ' .ovgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}',
+      '@container rail (max-width: 920px){' + A + ' .day .dpt{display:none}}',
       '@media (prefers-reduced-motion: reduce){' + H + ' .btn{transition:none}' + H + ' .btn:active{transform:none}}'
     ].join('\n');
   }
