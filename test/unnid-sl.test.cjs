@@ -123,7 +123,10 @@ test('verkstæði: V-hlutinn (verd ÷ 1,24) telst á klart_at, salan telur afgan
     { id: 71, num: s.num + '-V1', status: 'collected', verd: 4960, klart_at: '2026-11-03T08:00:00Z' },
     { id: 72, num: s.num + '-V2', status: 'ready', verd: 3224, klart_at: '2026-11-04T08:00:00Z' },
   ];
-  const vl = [{ job_id: 71, service: 'Duft 2 kg. ABC hleðsla' }, { job_id: 72, service: 'CO₂ 100 gr. × 26 (samtals)' }, { job_id: 72, service: 'Önnur þjónusta' }];
+  const vl = [{ job_id: 71, service: 'Duft 2 kg. ABC hleðsla', status: 'done' }, { job_id: 72, service: 'CO₂ 100 gr. × 26 (samtals)', status: 'done' }, { job_id: 72, service: 'Önnur þjónusta', status: 'done' },
+    // eydd, ónýt (kreditfærð) og aðeins móttekin tæki eru EKKI unnin tæki (rýni 22.11: annars ~15 % of há hleðsla)
+    { job_id: 71, service: 'Duft 6 kg. ABC hleðsla', status: 'eytt' }, { job_id: 71, service: 'Duft 6 kg. ABC hleðsla', status: 'broken' },
+    { job_id: 71, service: 'Duft 6 kg. ABC hleðsla', status: 'received' }, { job_id: 72, service: 'Duft 2 kg. ABC yfirferð', status: 'done', eytt_at: '2026-11-05T00:00:00Z' }];
   const r = reikna({ solur: [s], verkbeidnir: vb, verklidir: vl });
   assert.equal(Math.round(r.man['2026-11'].kr.verkstaedi), 6600, 'V-hlutinn á klart_at (nóvember)');
   assert.equal(Math.round(r.man['2026-10'].kr.verslun), 3400, 'afgangurinn á söludegi (október)');
@@ -153,6 +156,10 @@ test('verkstæði: V-hluti sem stemmir ekki við söluna → salan öll á sölu
   const r = reikna({ solur: [s], verkbeidnir: [{ id: 91, num: s.num + '-V1', status: 'collected', verd: 6200, klart_at: '2026-11-05T08:00:00Z' }] });   // V = 5000 án VSK > 2000
   assert.equal(r.man['2026-10'].kr.verslun, 2000); assert.equal(r.man['2026-11'], undefined);
   assert.equal(r.annad.ostemmt_fjoldi, 1); assert.equal(r.annad.ostemmt_kr, 2000);
+  // sala upp á 0 kr með V-hluta hefur ekkert til að stemma — ekki talin „óstemmd“ (rýni 22.11)
+  const n = sala({ id: 31, vidskiptategund: 'bud', upphaed_an_vsk: 0, created_at: '2026-10-21T10:00:00Z' });
+  const r0 = reikna({ solur: [n], verkbeidnir: [{ id: 92, num: n.num + '-V1', status: 'collected', verd: 1240, klart_at: null }] });
+  assert.equal(r0.annad.ostemmt_fjoldi, 0); assert.equal(heild(r0), 0);
 });
 
 test('brunakerfi: skýrslan finnst á fyrirtaeki_id (customer_base_id tómt) og fer á skoðunarmánuð; engin skýrsla → merkt „án skýrslu“; slökkvikerfi sama regla', () => {

@@ -110,7 +110,11 @@ function stub(h) {
       return svar([{ id: 1, doc_type: 'uttektarskyrsla', doc_date: '2026-10-03', customer_base_id: 7, fyrirtaeki_id: 70, is_duplicate: false, skodun_ar_man: null, notes: 'Prófun - 0000000000 - 2026 - september - úttektarskýrsla - #1.pdf' }]);
     }
     if (t === 'verkbeidnir') return svar([{ id: 51, num: 'R-000011-V1', status: 'collected', verd: 1240, klart_at: '2026-11-03T08:00:00Z', eytt_at: null }]);
-    if (t === 'verklidur') return svar([{ job_id: 51, service: 'Duft 2 kg. ABC hleðsla', eytt_at: null }]);
+    if (t === 'verklidur') {
+      assert.match(q.get('select'), /status/, 'status verkliðs sóttur — eydd/ónýt tæki talin ekki');
+      if (h.verklidirTomir) return svar([]);
+      return svar([{ job_id: 51, service: 'Duft 2 kg. ABC hleðsla', status: 'done', eytt_at: null }, { job_id: 51, service: 'Duft 6 kg. ABC hleðsla', status: 'eytt', eytt_at: null }, { job_id: 51, service: 'Duft 6 kg. ABC hleðsla', status: 'broken', eytt_at: null }]);
+    }
     if (t === 'solur' && q.get('select').includes('linur')) return svar([{ status: F, created_at: '2026-10-05T00:00:00Z', linur: [{ product_id: 7, qty: 1, unit_price_ex_vat: 100 }] }]);
     if (t === 'solur') return svar([
       { id: 1, status: F, upphaed_an_vsk: 1000, created_at: '2026-10-02T00:00:00Z' },
@@ -195,8 +199,12 @@ test('tekjur-beint: Slökkvitæki „Unnið“ — skoðanir eftir skoðunarmán
   const d2 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
   assert.match(d2.slokkvitaeki.unnid.omaelt, /skýrslulesturinn skilaði engu/); assert.equal(d2.slokkvitaeki.unnid.manudur_til_dags, undefined);
   assert.equal(d2.slokkvitaeki.manudur_til_dags, 400, 'gamla talan stendur');
+  // verkliðir tómir (aðgangsregla) → ómælt: annars yrðu tæki verkstæðis 0
+  h.skyrslurTomar = false; h.verklidirTomir = true;
+  const d2b = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
+  assert.match(d2b.slokkvitaeki.unnid.omaelt, /verkliðalesturinn skilaði engu/);
   // net niðri → ómælt, aldrei kast
-  h.skyrslurTomar = false; h.slKastar = true;
+  h.verklidirTomir = false; h.slKastar = true;
   const d3 = await TB._lesa(new Date('2026-11-17T01:00:00Z'));
   assert.match(d3.slokkvitaeki.unnid.omaelt, /náðist ekki/); assert.equal(d3.slokkvitaeki.fyrri_manudur, 1000);
   // „Vista forsendu“ (event=false) sækir ekki Unnið

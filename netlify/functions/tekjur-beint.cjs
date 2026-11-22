@@ -103,11 +103,12 @@ async function slUnnid(nu, voidP) {
       voidP,
       sbOll('customer_documents?select=id,doc_type,doc_date,customer_base_id,fyrirtaeki_id,is_duplicate,skodun_ar_man,notes&doc_type=in.(uttektarskyrsla,brunakerfi,slokkvikerfi)&source=eq.app&is_duplicate=not.is.true&doc_date=gte.2026-02-01&order=id.asc', init),
       sbOll(`verkbeidnir?select=id,num,status,verd,klart_at,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
-      sbOll(`verklidur?select=job_id,service,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
+      sbOll(`verklidur?select=job_id,service,status,eytt_at&eytt_at=is.null&created_at=gte.${fra}&order=id.asc`, init),
     ]);
     if (!solur.length) return { omaelt: 'sölulesturinn skilaði engu' };
     if (!skyrslur.length) return { omaelt: 'skýrslulesturinn skilaði engu — án hans yrði allt „án skýrslu“' };
     if (!verkbeidnir.length) return { omaelt: 'verkbeiðnalesturinn skilaði engu' };
+    if (!verklidir.length) return { omaelt: 'verkliðalesturinn skilaði engu — án hans yrðu tæki verkstæðis 0' };
     return UN.unnidTolur(UN.unnidManudir({ solur, voidIds, skyrslur, verkbeidnir, verklidir }, nu.toISOString()), nu.toISOString());
   } catch (e) {
     console.error('[tekjur-beint] unnid', e && e.message);

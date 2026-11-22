@@ -158,8 +158,11 @@ function unnidManudir(g, nuIso) {
     const snum = String(v.num || '').replace(/-V\d+$/, '');
     (vPerSolu[snum] = vPerSolu[snum] || []).push(v);
   }
+  // Verkliðir sem eru eyddir (status 'eytt' — eytt_at er sjaldan sett), ónýtir (status 'broken': kreditfært, ekki hlaðið) eða enn aðeins
+  // mótteknir ('received') eru ekki unnin tæki. Rýni 22.11: án þessa taldist hleðsla verkstæðis ~15 % of há.
+  const EKKI_UNNID = new Set(['eytt', 'broken', 'received']);
   for (const l of g.verklidir || []) {
-    if (!l || l.eytt_at) continue;
+    if (!l || l.eytt_at || EKKI_UNNID.has(String(l.status || '').toLowerCase())) continue;
     const t = taekiUrVerklid(l.service);
     if (t) (taekiPerVerk[l.job_id] = taekiPerVerk[l.job_id] || []).push(t);
   }
@@ -193,7 +196,7 @@ function unnidManudir(g, nuIso) {
     const vSumma = vHlutar.reduce((a, x) => a + x.kr, 0);
     const hlutar = [];
     let stemmir = vHlutar.length > 0 && vSumma <= san + 1 + 0.5 * vHlutar.length;
-    if (vHlutar.length && !stemmir) { annad.ostemmt_kr += san; annad.ostemmt_fjoldi += 1; }
+    if (vHlutar.length && !stemmir && san > 0) { annad.ostemmt_kr += san; annad.ostemmt_fjoldi += 1; }      // sala upp á 0 hefur ekkert til að stemma
     let afgangur = san;
     if (stemmir) {
       for (const x of vHlutar) {
