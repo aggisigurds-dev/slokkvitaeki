@@ -161,7 +161,7 @@ function tekjulidir(g, nuIso) {
       if (laug > 1e-9 && restSumma > 0) for (const y of restHlutir) y.v += Math.sign(y.h.val) * laug * ((Math.abs(y.h.val) - Math.abs(y.v)) / restSumma);
     }
     for (const x of skipt) {
-      const h = x.h, vHlutur = wv * san !== 0 ? x.v / (wv * san) : 0;       // hlutur línu af V-pottinum
+      const h = x.h, vHlutur = h.val !== 0 ? x.v / h.val : 0;              // hlutur LÍNUNNAR sem er V-hluti (fyrir stk)
       const f = flTom(h.id);
       const leggja = (m, v, q) => {
         if (!v && !q) return;

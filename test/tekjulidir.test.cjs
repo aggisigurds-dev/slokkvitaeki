@@ -138,3 +138,15 @@ test('rýni 22.11: blönduð formerki með V-hluta tapa engu; „Ýmsar vörur�
   for (const f of r3.flokkar) assert.equal(f.samtals, r3.manudir.reduce((a, m) => a + f.man[m], 0), f.id);
   assert.equal(r3.samtals, r3.manudir.reduce((a, m) => a + r3.samtals_man[m], 0)); assert.equal(r3.stemmir, true);
 });
+
+test('stk í tækjaflokkum tapast ekki þegar V-hluti nær yfir heilar línur (live-mæling 22.11: Hleðsla 1.176 á móti 1.186 áður en lagað)', () => {
+  const bud = sala({ id: 960, num: 'R-009960', created_at: '2026-10-29T10:00:00Z', upphaed_an_vsk: 1000, linur: [lin('Hleðsla · Duft 6 kg. ABC hleðsla', 10, 60), lin('Yfirferð · Duft 2 kg. ABC yfirferð', 4, 100)] });
+  const vb = [{ id: 61, num: 'R-009960-V1', status: 'collected', verd: 1240, klart_at: '2026-11-03T08:00:00Z' }];     // 1000 án vsk = öll salan
+  const r = TL.tekjulidir(g({ solur: [bud], verkbeidnir: vb }), NU);
+  assert.equal(flo(r, '02').stk, 10); assert.equal(flo(r, '01').stk, 4);
+  assert.equal(Math.round(flo(r, '02').man['2026-11']), 600); assert.equal(r.samtals, 1000);
+  // hluta-V: helmingur salan fer á klart_at-mánuð — stk skiptist en heildin helst
+  const b2 = sala({ id: 961, num: 'R-009961', created_at: '2026-10-29T10:00:00Z', upphaed_an_vsk: 1000, linur: [lin('Hleðsla · Duft 6 kg. ABC hleðsla', 10, 100)] });
+  const r2 = TL.tekjulidir(g({ solur: [b2], verkbeidnir: [{ id: 62, num: 'R-009961-V1', status: 'collected', verd: 620, klart_at: '2026-11-03T08:00:00Z' }] }), NU);   // 500 án vsk
+  assert.equal(flo(r2, '02').stk, 10); assert.equal(Math.round(flo(r2, '02').man['2026-11']), 500); assert.equal(Math.round(flo(r2, '02').man['2026-10']), 500);
+});
