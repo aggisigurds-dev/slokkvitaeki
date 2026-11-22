@@ -2660,7 +2660,15 @@
     const raunFerd = arsAll.filter(c => c._raunHeim === 'ferd').length;
     const raunKr = arsAll.reduce((s, c) => s + (erRaun(c) ? virdiOf(c) : 0), 0);
     const bunirStadir = arsAll.filter(c => isDoneYear(c, curYear));
-    const bunirAnRaun = bunirStadir.filter(c => !erRaun(c)).length;
+    const bunirAnRaunL = bunirStadir.filter(c => !erRaun(c));
+    const bunirAnRaun = bunirAnRaunL.length;
+    // 22.11.2026 (Agnar: „Erum við bara búnir með 294 úttektir í ár?"): textinn sagði ÁÐUR að staðir án
+    // raun-tölu væru „m.a. skoðanir fyrri eiganda jan.–apr." — ÓMÆLD fullyrðing og hún stóðst ekki. Mælt:
+    // af 179 slíkum eiga 164 úttektarskýrslu ársins, en 162 þeirra bera ENGA dagsetningu (hvorki doc_date
+    // né skodun_ar_man), svo kerfið getur ekki sagt hvenær verkið var unnið né hver rukkaði. Textinn segir
+    // nú það sem er mælt og ekkert umfram það.
+    const bunirAnRaunMedSkyrslu = bunirAnRaunL
+      .filter(c => ((c._ars || {})._docYears || []).map(Number).includes(curYear)).length;
     const estDoneThisYear = bunirStadir.reduce((s, c) => s + virdiOf(c), 0);
     // 21.11.2026 — Yfirsýnarröndin efst á Þjónustuborði Agnars og Annþórs (523) sýnir virði ársþjónustunnar. EIN
     // skilgreining: sömu tölur og síðan sýnir — virðið úr hetjunni (arsAll) og staðafjöldinn úr spjöldunum Búið/Eftir
@@ -2790,7 +2798,7 @@
               <button id="_ars-virdi-refresh" type="button" title="Endurreikna út frá reiknivélinni inni í fyrirtækjunum (úttektarskýrslu/reikningi). Keyrist AÐEINS þegar ýtt er á hana." style="border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:7px;width:24px;height:24px;line-height:1;cursor:pointer;font-size:13px;padding:0;flex:0 0 auto">↻</button>
             </div>
             <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKrShort(totalEstimate)}</div>
-            <div style="font-size:10.5px;color:#86efac">þar af ${fmtKrShort(estDoneThisYear)} búið${raunFjoldi ? ` · <span title="Raunreiknuð = staðir sem bera töluna úr reitnum SAMTALS M. VSK neðst á úttektinni sjálfri: ${raunSala} úr sölunni sem varð til þegar heimsóknin var kláruð, ${raunFerd} úr reiknivélinni í opinni heimsókn. Samtals ${fmtKr(raunKr)} raunreiknað, M. VSK (Tekju-flísarnar telja án vsk — tölurnar eiga ekki að stemma). Talan er öll úttekt ársins á staðnum, kreditnótur frádregnar; eigi staðurinn tvo úttektarreikninga á árinu telst árstalan hans öll á skoðunarmánuðinn sem er skráður á hann. Fullkreditfærður staður ber 0 — ekkert var rukkað. Hinir bera áætlun (Σ tæki × verð + skýrslugerð + einn akstur)${bunirAnRaun ? ` — þar af ${bunirAnRaun} merktir búnir ${curYear} sem eiga enga sölu MERKTA „úttekt" hjá okkur: flestir eru skoðanir fyrri eiganda jan.–apr., en sumir eiga sölu sem lenti á annarri tegund („óvíst") og telst því ekki hér` : ''}.${(_cache.salaUtan && _cache.salaUtan.n) ? ` ⚠ ${_cache.salaUtan.n} úttektarsölur ársins (${fmtKr(_cache.salaUtan.kr)}) hanga ekki á stað og eru hvergi taldar hér.` : ''}" style="border-bottom:1px dotted #86efac;cursor:help">${raunFjoldi} raunreiknuð</span>` : ''}</div>
+            <div style="font-size:10.5px;color:#86efac">þar af ${fmtKrShort(estDoneThisYear)} búið${raunFjoldi ? ` · <span title="Raunreiknuð = staðir sem bera töluna úr reitnum SAMTALS M. VSK neðst á úttektinni sjálfri: ${raunSala} úr sölunni sem varð til þegar heimsóknin var kláruð, ${raunFerd} úr reiknivélinni í opinni heimsókn. Samtals ${fmtKr(raunKr)} raunreiknað, M. VSK (Tekju-flísarnar telja án vsk — tölurnar eiga ekki að stemma). Talan er öll úttekt ársins á staðnum, kreditnótur frádregnar; eigi staðurinn tvo úttektarreikninga á árinu telst árstalan hans öll á skoðunarmánuðinn sem er skráður á hann. Fullkreditfærður staður ber 0 — ekkert var rukkað. Hinir bera áætlun (Σ tæki × verð + skýrslugerð + einn akstur)${bunirAnRaun ? ` — þar af ${bunirAnRaun} merktir búnir ${curYear} sem eiga ENGA sölu merkta „úttekt“ hjá okkur, og ${bunirAnRaunMedSkyrslu} af þeim eiga samt úttektarskýrslu ársins. Kerfið veit ekki hver rukkaði þá: skýrslurnar eru nær allar ódagsettar, svo hvorki fyrri eigandi né við verðum staðfest. Þetta er óuppgerður hópur, ekki tala sem vantar` : ''}.${(_cache.salaUtan && _cache.salaUtan.n) ? ` ⚠ ${_cache.salaUtan.n} úttektarsölur ársins (${fmtKr(_cache.salaUtan.kr)}) hanga ekki á stað og eru hvergi taldar hér.` : ''}" style="border-bottom:1px dotted #86efac;cursor:help">${raunFjoldi} raunreiknuð</span>` : ''}</div>
           </div>
         </div>
 
