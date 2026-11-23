@@ -109,7 +109,7 @@ Tilefni: umsýsluaðili (t.d. Eignarekstur) skrifar að húsfélag hafi verið s
 7. Leiðrétta krafan birtist ÓSEND í Kröfuyfirliti (sendiskjárinn ✓ stemmir). Gamla salan er kreditfærð.
 8. **L** á nýja R-númerinu (og `<gamla R> --send`). Taflan fylgir skilum til Agnars.
 9. Svarið: `postur` semur drög í málinu; nýi reikningurinn og nýja skýrslan sem viðhengi á málinu (`thjonustubeidni_files`), ekki merkt
-   `undirbuid` fyrr en bæði skjölin eru þar (448). Svarið er sent FRÁ `eldklar@eldklar.is` (kerfið er tengt við það hólf — Agnar 23.11.2026) sem nýr póstur til sendanda; pósturinn getur borist í `Brunaholf@` (Payday-reikningspósturinn ber Brunahólf-netfangið), en borðið les ekki það hólf (RLS) og getur ekki svarað þræðinum þaðan.
+   `undirbuid` fyrr en bæði skjölin eru þar (448). Svarið fer SEM SVAR við póstinn í því hólfi sem hann barst í (Agnar 23.11.2026; `inReplyTo` = Message-ID upprunalega póstsins). Pósturinn barst í `Brunaholf@` (borðið les það hólf ekki — RLS) og í `slokkvitaeki@brunaholf.is` (Microsoft 365). **Sendileiðir í dag: aðeins Gmail-tengd hólf, `eldklar@` og `bokhald@` (`/api/postur-senda`).** `slokkvitaeki@brunaholf.is` hefur ENGA sendileið (Graph aldrei sett upp, `RESEND_API_KEY` krefst staðfests léns) — þar til sendir Agnar svarið úr póstforritinu sínu; texti og Message-ID eru í málinu.
 10. **Agnar samþykkir og sendir.** Þrep 3–4 snerta Payday og kredit: þau hefjast þegar hann ýtir á „Tilbúið í vinnslu“ í Kröfu-vinnuglugganum
     (krofu_verkferli, tegund `annad` með þrepin í lýsingunni — `faera_kt`-þrepin keyra EKKI færa kt á sömu sölu hér). Kröfuna og svarið sendir hann sjálfur.
 
