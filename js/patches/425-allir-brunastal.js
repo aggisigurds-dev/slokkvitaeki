@@ -152,7 +152,7 @@
   ];
   var st = document.createElement('style');
   st.id = 'bstal-425';
-  st.textContent = rules.join('\n');
+  st.textContent = rules.join('\n') + '\n' + (window.BrunastalMetricCardStyles?.('b425', r) || '');
   document.head.appendChild(st);
 })();
 /* === END 425 === */
