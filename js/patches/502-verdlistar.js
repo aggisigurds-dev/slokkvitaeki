@@ -259,7 +259,7 @@
       SEL + '.' + P + '-takki{' + mt('var(--vl5-bg)', 'var(--vl5-rond)') + '}',
       SEL + '.' + P + '-takki:hover{filter:brightness(1.18)}',
       SEL + '.' + P + '-takki:active{transform:translateY(1px)}',
-      SEL + '.' + P + '-ny{' + mt('linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)', 'rgba(20,24,34,.3)') + ';color:#1f2530!important;text-shadow:none!important}',
+      SEL.replace('.page-title__tools', '.vorur-actions') + '.' + P + '-ny{' + mt('linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)', 'rgba(20,24,34,.3)') + ';color:#1f2530!important;text-shadow:none!important}',
       // glugginn
       '#' + P + '-bak{position:fixed;inset:0;z-index:12000;background:rgba(8,10,14,.66);display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow:auto;font-family:' + SANS + '}',
       '#' + P + '-gluggi{width:min(1180px,100%);background:#fff;border:1px solid #000;border-radius:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);overflow:hidden;overflow:clip;font:inherit}',
@@ -416,11 +416,13 @@
   function takkiHtml(l) { return esc(l.takn) + ' ' + esc(l.nafn); }
   function settaTakka() {
     const rod = document.querySelector('#view-vorur .page-title__tools'); if (!rod) return;
+    const adgerdir = document.querySelector('#view-vorur .vorur-actions'); if (!adgerdir) return;
     const ls = allir(false);
     const sig = ls.map(l => l.id + '|' + l.nafn + '|' + l.takn + '|' + l.litur + '|' + l.lysing).join(';');
-    if (rod.dataset.vl5Sig === sig && rod.querySelector('[data-vl5-takki]')) return;
+    if (rod.dataset.vl5Sig === sig && adgerdir.querySelector('.vl5-ny')) return;
     stilar();
     rod.querySelectorAll('[data-vl5-takki]').forEach(b => b.remove());
+    adgerdir.querySelector('.vl5-ny')?.remove();
     const fyrst = rod.firstElementChild;
     const bua = (l) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = P + '-takki'; b.setAttribute('data-vl5-takki', l.id);
@@ -433,7 +435,7 @@
     const ny = document.createElement('button'); ny.type = 'button'; ny.className = P + '-ny'; ny.setAttribute('data-vl5-takki', '_ny');
     ny.title = 'Búa til nýjan verðlista — t.d. Eldvarnareftirlit, Reyklosun, Hávakerfi, Stigleiðsla'; ny.textContent = '＋ Nýr verðlisti';
     ny.addEventListener('click', () => nyr());
-    rod.insertBefore(ny, fyrst);
+    adgerdir.prepend(ny);
     rod.dataset.vl5Sig = sig;
   }
   (function vakta() {
