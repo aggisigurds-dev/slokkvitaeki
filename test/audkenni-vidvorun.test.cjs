@@ -367,3 +367,80 @@ test('00-legacy: .single() sem skilar fylki (minnislag rest-samnyting) opnar ekk
   const L = lesa('js/patches/00-legacy.js');
   assert.match(L, /var c=r\.data;[\s\S]{0,400}?if\(Array\.isArray\(c\)\) c=c\[0\];\n\s*if\(!c\|\|c\.id==null\)\{alert\('Fyrirtaeki ekki fundid'\);return;\}/);
 });
+
+// ── Geopunktur (Agnar 23.11.2026): heimilisfang breytt → pinninn uppfærður svo Teikningar og búnaðardreifing finni staðinn ──
+function hladaGeo(opt) {
+  const d = domMed();
+  const window = {};
+  const vistad = []; const blob = []; const fetchKall = [];
+  window.ManualGeocode = opt.engin ? undefined : { vista: async (co, val, nafn) => { vistad.push({ co, val, nafn }); return true; } };
+  if (!opt.engin) {
+    window.AppSettings = { save: async (o) => { blob.push(o); return true; } };
+  }
+  const fetch = async (u) => { fetchKall.push(u); if (opt.fetchKastar) throw new Error('net'); return { ok: opt.status === undefined ? true : opt.status === 200, json: async () => opt.svar }; };
+  function AbortController() { this.signal = {}; this.abort = () => {}; }
+  const sb = { rpc: async () => ({ data: { breytt: true, tharf_adgerd: [], gert_sjalfkrafa: ['Heimilisfangið færist á greiðandann.'] } }) };
+  vm.runInNewContext(SRC, { window, document: d.doc, setTimeout: () => 0, clearTimeout: () => {}, String, Array, Object, Number, fetch, AbortController, encodeURIComponent }, { filename: '527-audkenni-vidvorun.js' });
+  return { A: window.AudkenniVidvorun, d, sb, vistad, blob, fetchKall };
+}
+const NYTT = { ...FA, heimilisfang: 'Stigahlíð 6-12, 105 Reykjavík' };
+
+test('geopunktur: Staðfangaskrá-hnit vistast sem __co__-pinni, í sameiginlega skrá og í AppSettings', async () => {
+  const { A, vistad, blob, fetchKall } = hladaGeo({ svar: { lat: 64.13340008, lon: -21.90422164, display_name: 'Stigahlíð 6, 105', source: 'stadfangaskra' } });
+  const r = await A.geopunktur({ id: 424, heimilisfang: 'Stigahlíð 6-12, 105 Reykjavík', nafn: 'Stigahlíð 6-12, húsfélag' });
+  assert.equal(r.ok, true);
+  assert.equal(fetchKall.length, 1);
+  assert.equal(fetchKall[0], '/api/geocode?q=' + encodeURIComponent('Stigahlíð 6-12, 105 Reykjavík'));
+  assert.equal(vistad.length, 1);
+  assert.equal(vistad[0].co.id, 424);
+  assert.equal(vistad[0].val.lat, 64.13340008);
+  assert.equal(vistad[0].val.lng, -21.90422164);
+  assert.deepEqual(Object.keys(blob[0].geocode_cache).sort(), ['Stigahlíð 6-12, 105 Reykjavík', '__co__:424']);
+});
+
+test('geopunktur: ólöglegt hnit (utan Íslands, NaN, vantar) er aldrei vistað; bilun kastar ekki', async () => {
+  for (const svar of [{ lat: 0, lon: 0 }, { lat: 51.5, lon: -0.1 }, { found: false, error: 'not-found' }, null, { lat: 'x', lon: 'y' }]) {
+    const { A, vistad, blob } = hladaGeo({ svar });
+    const r = await A.geopunktur({ id: 1, heimilisfang: 'X 1' });
+    assert.equal(r.ok, false);
+    assert.equal(vistad.length + blob.length, 0, 'ekkert skrifað');
+  }
+  let h = hladaGeo({ status: 503, svar: {} });
+  assert.equal((await h.A.geopunktur({ id: 1, heimilisfang: 'X 1' })).ok, false);
+  h = hladaGeo({ fetchKastar: true });
+  assert.equal((await h.A.geopunktur({ id: 1, heimilisfang: 'X 1' })).ok, false);
+  h = hladaGeo({ svar: { lat: 64.1, lon: -21.9 } });
+  assert.equal((await h.A.geopunktur({ id: 1, heimilisfang: '' })).ok, false, 'án heimilisfangs er enginn kall');
+  assert.equal(h.fetchKall.length, 0);
+  h = hladaGeo({ engin: true, svar: { lat: 64.1, lon: -21.9 } });
+  assert.equal((await h.A.geopunktur({ id: 1, heimilisfang: 'X 1' })).ok, false, 'ManualGeocode vantar → ekki sagt „uppfært“');
+});
+
+test('eftirVistun: heimilisfang breytt → geopunktur uppfærður og sagt frá í kassanum; nafn eitt og sér snertir ekki hnitin', async () => {
+  const h = hladaGeo({ svar: { lat: 64.13340008, lon: -21.90422164, source: 'stadfangaskra' } });
+  const r = await h.A.eftirVistun(h.sb, 424, FA, NYTT);
+  assert.ok(r && r.geo && r.geo.ok);
+  assert.equal(h.vistad.length, 1);
+  const box = h.d.doc.getElementById('audkenni-vidvorun');
+  assert.match(box.textContent, /Geopunktur uppfærður \(64\.13340, -21\.90422\)/);
+  const h2 = hladaGeo({ svar: { lat: 64.1, lon: -21.9 } });
+  await h2.A.eftirVistun(h2.sb, 424, FA, { ...FA, nafn: 'Annað nafn' });
+  assert.equal(h2.fetchKall.length, 0, 'nafnabreyting kallar ekki á geocode');
+});
+
+test('eftirVistun: geopunktur brást → kassinn segir það (⚠) og vísar á „Laga staðsetningu“', async () => {
+  const h = hladaGeo({ status: 503, svar: {} });
+  const r = await h.A.eftirVistun(h.sb, 424, FA, NYTT);
+  assert.ok(r && r.geo && r.geo.ok === false);
+  const box = h.d.doc.getElementById('audkenni-vidvorun');
+  assert.match(box.textContent, /Geopunktur uppfærðist ekki/);
+  assert.match(box.textContent, /Laga staðsetningu/);
+  assert.match(box.textContent, /þetta þarf mannshönd/);
+});
+
+test('178 flytur út vista (saveCoord) og 527 notar hana — ekkert annað skrifleið fyrir hnit', () => {
+  const G = lesa('js/patches/178-manual-geocode.js');
+  assert.match(G, /window\.ManualGeocode = \{ open, openMissing, coordFor, coKey, vista: saveCoord, missingCount:/);
+  assert.match(SRC, /window\.ManualGeocode\.vista\(\{ id: co\.id, heimilisfang: hf, nafn: co\.nafn \}, val,/);
+  assert.equal(/geocode_cache['"]?\)?\.(insert|upsert)|rest\/v1\/geocode_cache/.test(SRC), false, '527 skrifar aldrei beint í töfluna');
+});

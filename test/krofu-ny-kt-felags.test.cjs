@@ -41,13 +41,13 @@ const SENT = { id: 1, num: 'R-1', status: 'final', customer_kt: '520391-1859', d
 const afturkallad = { ...SENT, dk_invoice_id: null, invoiced_at: null, krafa_sent_at: null };
 const P = { status: 'SENT', number: '494', paid_date: null };
 const NYSALA = { id: 3, num: 'R-3', customer_kt: '470815-0270', status: 'final', is_credit: false, krafa_sent_at: null, invoiced_at: null, dk_invoice_id: null };
-const x0 = (o) => ({ idag: '2026-11-23', s: SENT, p: P, kreditfaert: false, kreditFullt: false, markBase: { id: 1295, nafn: 'Stigahlíð 6-12, húsfélag' },
+const x0 = (o) => ({ idag: '2026-11-23', s: SENT, p: P, kreditfaert: false, kreditFullt: false, geo: undefined, teikningar: undefined, markBase: { id: 1295, nafn: 'Stigahlíð 6-12, húsfélag' },
   stadur: { nafn: 'Stigahlíð 10, húsfélag', kennitala: '520391-1859', er_i_thjonustu: true }, nySalaKt: null, nySkyrsla: null, ...(o || {}) });
 const stada = (L, id) => { const t = L.find((z) => z.id === id); assert.ok(t, 'þrep vantar: ' + id); return t.ath; };
 
 test('röðin er afturkalla → bakfæra → færa kt → ný sala → ný skýrsla → ósend → senda', () => {
   const L = threp(M, x0(), null);
-  assert.deepEqual(Array.from(L, (z) => z.id), ['markkt', 'forathugun', 'markfelag', 'afturkalla', 'bakfaera', 'breyta_kt', 'ny_sala', 'ny_skyrsla', 'i_thjonustu', 'osend', 'senda']);
+  assert.deepEqual(Array.from(L, (z) => z.id), ['markkt', 'forathugun', 'markfelag', 'afturkalla', 'bakfaera', 'breyta_kt', 'ny_sala', 'ny_skyrsla', 'geopunktur', 'teikningar', 'i_thjonustu', 'osend', 'senda']);
   const rod = Array.from(L, (z) => z.id);
   assert.ok(rod.indexOf('afturkalla') < rod.indexOf('bakfaera'), 'FYRST afturkalla, SÍÐAN bakfæra');
   assert.ok(rod.indexOf('bakfaera') < rod.indexOf('breyta_kt') && rod.indexOf('breyta_kt') < rod.indexOf('ny_sala') && rod.indexOf('ny_sala') < rod.indexOf('ny_skyrsla'));
@@ -169,4 +169,40 @@ test('SQL: tegundarskorðan leyfir ny_kt (annars „Málið stofnaðist ekki“)
   const sql = fs.readFileSync(path.join(__dirname, '..', 'sql/2026-11-23_krofu_verkferli_ny_kt.sql'), 'utf8');
   assert.match(sql, /'faera_kt','ny_kt','gleymt'/);
   assert.match(sql, /drop constraint if exists krofu_verkferli_tegund_check/);
+});
+
+test('geopunktur: aðeins búinn þegar __co__-pinninn og heimilisfangslykillinn eru sama hnit; gamall pinni er EKKI búinn', () => {
+  const nyr = { lat: 64.1334, lng: -21.90422 };
+  let L = threp(M, x0({ geo: { co: nyr, adr: nyr } }), null);
+  assert.equal(stada(L, 'geopunktur'), true);
+  L = threp(M, x0({ geo: { co: { lat: 64.13326, lng: -21.90384 }, adr: nyr } }), null);          // pinninn enn á Stigahlíð 10 (≈ 35 m), heimilisfangið á nr. 6
+  assert.equal(stada(L, 'geopunktur'), true, '≈ 35 m er innan 60 m — sama lóð');
+  L = threp(M, x0({ geo: { co: { lat: 64.1400, lng: -21.9000 }, adr: nyr } }), null);            // pinni annars staðar
+  assert.equal(stada(L, 'geopunktur'), false, 'pinni langt frá heimilisfanginu = ekki búið (gert-merki ræður ekki)');
+  L = threp(M, x0({ geo: { co: nyr, adr: null } }), null);                                       // heimilisfangslykill vantar
+  assert.notEqual(stada(L, 'geopunktur'), true);
+  L = threp(M, x0({ geo: undefined }), null);                                                    // óvíst
+  assert.equal(stada(L, 'geopunktur'), null);
+});
+
+test('teikningar: búið þegar Staðfangaskrá finnur lóð og teikningar eru til; bilun er „óvíst“, núll teikningar er ekki búið', () => {
+  let L = threp(M, x0({ teikningar: { landnr: 107191, fjoldi: 11 } }), null);
+  assert.equal(stada(L, 'teikningar'), true);
+  L = threp(M, x0({ teikningar: { landnr: 107191, fjoldi: 0 } }), null);
+  assert.equal(stada(L, 'teikningar'), false);
+  L = threp(M, x0({ teikningar: null }), null);                                                  // bilun/tímamörk
+  assert.equal(stada(L, 'teikningar'), null);
+  L = threp(M, x0({ teikningar: undefined }), null);                                             // ekki enn komið
+  assert.equal(stada(L, 'teikningar'), null);
+});
+
+test('hleðsla: geocode_cache lesið eftir að staðurinn er þekktur; teikningaathugun óblokkandi og skrifar ekkert', () => {
+  assert.match(SRC, /const lyklar = \['__co__:' \+ fid\]\.concat\(x\.stadur\.heimilisfang \? \[x\.stadur\.heimilisfang\] : \[\]\);/);
+  assert.match(SRC, /c\.from\('geocode_cache'\)\.select\('query,lat,lng'\)\.in\('query', lyklar\)/);
+  assert.match(SRC, /if \(nyKt && x\.stadur && x\.stadur\.heimilisfang\) saekjaTeikningar\(gl, x, x\.stadur\.heimilisfang\);/);
+  assert.equal(/await saekjaTeikningar/.test(SRC), false, 'glugginn bíður ekki eftir teikningaathuguninni');
+  const f = /async function saekjaTeikningar\([\s\S]*?\n  \}\n/.exec(SRC);
+  assert.ok(f, 'saekjaTeikningar fannst ekki');
+  assert.equal(/\.(insert|update|upsert|delete)\(|method:\s*'(POST|PUT|PATCH|DELETE)'/.test(f[0]), false, 'aðeins lestur');
+  assert.match(f[0], /hus-upplysingar\?heimilisfang=/);
 });

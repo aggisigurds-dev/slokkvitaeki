@@ -423,7 +423,8 @@
     return gc[coKey(c.id)] || (c.heimilisfang && gc[c.heimilisfang]) || gc[c.nafn] || null;
   }
 
-  window.ManualGeocode = { open, openMissing, coordFor, coKey, missingCount: () => missingCompanies().length };
+  // vista: vistar hnit fyrir félag (id-lykill + heimilisfang + nafn í sameiginlega geocode_cache og staðbundið) — 527 kallar á hana þegar heimilisfang breytist.
+  window.ManualGeocode = { open, openMissing, coordFor, coKey, vista: saveCoord, missingCount: () => missingCompanies().length };
 
   // ── entry point on the Leiðsögn page ────────────────────────────────────────
   // A FIXED floating pill — never shifts the page layout or flickers when

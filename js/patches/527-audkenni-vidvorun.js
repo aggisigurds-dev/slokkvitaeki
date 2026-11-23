@@ -145,13 +145,52 @@
     } catch (_) { /* aldrei stöðva eyðublaðið */ }
   }
 
-  // 2) Eftir vistun: kassi neðst á skjánum (hverfur aðeins með „Skilið“ þegar eitthvað þarf mannshönd).
+  // 3) GEOPUNKTUR (Agnar 23.11.2026: „tengja nýja geopunktinn, uppfæra, svo teikningar geta opnað þetta líka og hægt að gera búnaðardreifingu“).
+  // Nýtt heimilisfang → hnit úr Staðfangaskrá HMS gegnum /api/geocode („6-12“ → fyrsta húsnúmer, sama regla og hus-upplysingar) →
+  //   • __co__:<id> (réttur pinni FÉLAGSINS — lifir heimilisfangsbreytingar og vinnur yfir öðrum lyklum),
+  //   • heimilisfangslykillinn í sameiginlegu geocode_cache (ManualGeocode.vista → hinar vélarnar sjá hann),
+  //   • AppSettings.geocode_cache (fastir punktar, 156/173).
+  // Kort, Leiðsögn, Bílstjóri og Teikningar (landnr úr sama heimilisfangi → búnaðardreifing) lesa þetta. Bilun → {ok:false}, aldrei villa.
+  const innanIslands = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && lat > 62.5 && lat < 67.5 && lng > -25.5 && lng < -12.5;
+  async function geopunktur(co) {
+    try {
+      const hf = trim(co && co.heimilisfang);
+      if (!co || co.id == null || !hf || typeof fetch !== 'function') return { ok: false, ast: 'ekkert heimilisfang' };
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const tmr = ctl ? setTimeout(() => ctl.abort(), 12000) : null;
+      let d = null;
+      try {
+        const r = await fetch('/api/geocode?q=' + encodeURIComponent(hf), ctl ? { signal: ctl.signal } : undefined);
+        if (r && r.ok) d = await r.json();
+      } finally { if (tmr) clearTimeout(tmr); }
+      const lat = d ? +d.lat : NaN, lng = d ? +(d.lon != null ? d.lon : d.lng) : NaN;
+      if (!innanIslands(lat, lng)) return { ok: false, ast: 'hnit fundust ekki' };
+      const val = { lat, lng };
+      let vistad = false;
+      if (window.ManualGeocode && typeof window.ManualGeocode.vista === 'function') {
+        await window.ManualGeocode.vista({ id: co.id, heimilisfang: hf, nafn: co.nafn }, val, d.display_name || null);
+        vistad = true;
+      }
+      try { if (window.AppSettings && typeof window.AppSettings.save === 'function') await window.AppSettings.save({ geocode_cache: { ['__co__:' + co.id]: val, [hf]: val } }); } catch (_) {}
+      return { ok: vistad, lat, lng, heimild: d.source || null };
+    } catch (_) { return { ok: false, ast: 'villa' }; }
+  }
+
+  // 2) Eftir vistun: kassi neðst á skjánum (hverfur aðeins með „Skilið“ þegar eitthvað þarf mannshönd). Heimilisfang breytt → geopunktur uppfærður í leiðinni.
   async function eftirVistun(sb, id, prev, vistad) {
     try {
       const m = munur(prev, vistad);
       if (!eitthvad(m)) return null;
-      const res = await athuga(sb, id, prev, vistad, true);
-      if (!res || (!res.tharf.length && !res.sjalfkrafa.length)) return null;
+      const [r0, geo] = await Promise.all([
+        athuga(sb, id, prev, vistad, true),
+        m.heimilisfang ? geopunktur({ id, heimilisfang: (vistad || {}).heimilisfang, nafn: (vistad || {}).nafn }) : Promise.resolve(null)
+      ]);
+      const res = { tharf: r0 ? r0.tharf.slice() : [], sjalfkrafa: r0 ? r0.sjalfkrafa.slice() : [] };
+      if (geo) {
+        if (geo.ok) res.sjalfkrafa.push('Geopunktur uppfærður (' + geo.lat.toFixed(5) + ', ' + geo.lng.toFixed(5) + ') — kort, Leiðsögn, Bílstjóri og Teikningar nota hann.');
+        else res.tharf.push('Geopunktur uppfærðist ekki (' + geo.ast + ') — notaðu „Laga staðsetningu“ á Leiðsögn svo Teikningar og búnaðardreifing finni staðinn.');
+      }
+      if (!res.tharf.length && !res.sjalfkrafa.length) return null;
       const gamall = document.getElementById('audkenni-vidvorun');
       if (gamall) gamall.remove();
       const tharf = res.tharf.length > 0;
@@ -169,9 +208,9 @@
       box.appendChild(takki);
       document.body.appendChild(box);
       if (!tharf) setTimeout(() => { if (box.parentNode) box.remove(); }, 9000);
-      return res;
+      return Object.assign({}, res, { geo });
     } catch (_) { return null; }
   }
 
-  window.AudkenniVidvorun = { festaVidForm, haetta, eftirVistun, athuga, munur, _digits: digits, _samhengi: () => samhengi };
+  window.AudkenniVidvorun = { festaVidForm, haetta, eftirVistun, athuga, geopunktur, munur, _digits: digits, _samhengi: () => samhengi };
 })();
