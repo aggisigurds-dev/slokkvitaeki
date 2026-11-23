@@ -25,7 +25,7 @@ function velta(hreyf, ar) {
   vm.runInNewContext('var slt = 0, bkr = 0, fyrra = 0;\n' + m[0] + '\nthis.ut = { slt: slt, bkr: bkr, fyrra: fyrra };', Object.assign(h, { RegExp }));
   return h.ut;
 }
-const R = (teg, dags, upph, kredit) => ({ teg, dags, nr: 'R-x', upph, greitt: false, kredit: !!kredit });
+const R = (teg, dags, upph, kredit, hluti) => ({ teg, dags, nr: 'R-x', upph, greitt: false, kredit: !!kredit, hluti: hluti || 0 });
 
 test('kreditfærð röð telst ekki með: R-001340 (kreditfærð) + R-001341 = 39.340, ekki 78.680', () => {
   const u = velta([R('Úttekt', '23/11/2026', 39340, false), R('Úttekt', '23/11/2026', 39340, true), R('Úttekt', '04/12/2025', 34509, false)], 2026);
@@ -45,11 +45,28 @@ test('ókreditfærðar raðir telja eins og áður (brunakerfi sér, slökkvitæ
   assert.deepEqual({ ...u }, { slt: 10000, bkr: 7000, fyrra: 3000 });
 });
 
-test('hreyfingalínan ber .kredit (borðaleið) og símaleiðin ber a.sk-doc.inv.kredit', () => {
-  assert.match(SRC, /kredit: !!sel\(r, '\.kredit'\)/);
-  assert.match(SRC, /kredit: !!sel\(c, 'a\.sk-doc\.inv\.kredit'\)/);
+test('hreyfingalínan ber .kredit + .s-kredit (borðaleið) og símaleiðin .sk-doc.inv.kredit (span, ekki a — rýni 23.11)', () => {
+  assert.match(SRC, /kredit: !!sel\(r, '\.kredit'\), hluti: kreditHluti\(sel\(r, '\.s-kredit'\)\)/);
+  assert.match(SRC, /kredit: !!sel\(c, '\.sk-doc\.inv\.kredit'\), hluti: kreditHluti\(sel\(c, '\.s-kredit'\)\)/);
+  assert.equal(/a\.sk-doc\.inv\.kredit/.test(SRC), false, 'a.sk-doc.inv.kredit gat aldrei passað — merkið er á span');
 });
 
 test('„Síðasta úttekt“ velur aldrei kreditfærðan reikning', () => {
   assert.match(SRC, /var su = d\.hreyf\.filter\(function \(r\) \{ return \/úttekt\/i\.test\(r\.teg\) && r\.upph && !r\.kredit; \}\)\[0\] \|\| d\.hreyf\.filter\(function \(r\) \{ return r\.upph && !r\.kredit; \}\)\[0\];/);
+});
+
+test('kreditað að hluta dregst frá (−N kr), aldrei undir 0, og „Síðasta úttekt“ er óbreytt', () => {
+  const u = velta([R('Úttekt', '01/02/2026', 10000, false, 4000), R('Úttekt', '02/02/2026', 500, false, 900), R('Úttekt', '03/03/2025', 8000, false, 3000)], 2026);
+  assert.equal(u.slt, 6000, '10.000 − 4.000 + max(0, 500 − 900)');
+  assert.equal(u.fyrra, 5000);
+});
+
+test('kreditHluti les tölu úr „kreditað að hluta −N kr“ (punktar sem þúsundaskil)', () => {
+  const m = /var kreditHluti = function \(e\) \{[^\n]*\};/.exec(SRC);
+  assert.ok(m, 'kreditHluti fannst ekki');
+  const ctx = { txt: (e) => e.t, parseInt, Math };
+  vm.runInNewContext(m[0] + '\nthis.f = kreditHluti;', ctx);
+  assert.equal(ctx.f({ t: 'kreditað að hluta −39.340 kr' }), 39340);
+  assert.equal(ctx.f(null), 0);
+  assert.equal(ctx.f({ t: 'ekkert' }), 0);
 });
