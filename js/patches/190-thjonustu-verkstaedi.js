@@ -600,6 +600,12 @@
       r('.b190-t small', 'font-size:16px;font-weight:700;color:#d9dee6;margin-left:6px;letter-spacing:0'),
       r('.b190-t.gull', 'color:#f3d98a;text-shadow:0 0 18px rgba(230,190,90,.35),0 1px 0 rgba(0,0,0,.7)'),
       r('.b190-t.gull small', 'color:#d3ab4e'),
+      // 23.11.2026 (Agnar: „breyta líka kössunum í Þjónustuverkstæði" — húsið/fyrsti kassinn frá Fyrirtæki í þjónustu á að vera á öllum
+      // hero-kössunum): sama hetjumynd og á Ársskoðun (414) á gull-spjaldið, dofnar í kolið til vinstri. Myndin er :root-breytan
+      // --ars-hero-img sem 414 setur; varagildið heldur málmhallanum óbreyttum ef 414 hefur ekki hlaðið. Talan í sama lit og þar.
+      r('.b190-k.gull > .b190-i', 'background-image:linear-gradient(90deg,#111519 8%,#111519ed 33%,#11151920 100%),var(--ars-hero-img,linear-gradient(#0000,#0000));background-size:auto,cover;background-position:0 0,right center;background-repeat:no-repeat;background-color:#111519'),
+      r('.b190-k.gull .b190-f', 'background:#1d2325de;border-color:#ffffff1a'),
+      r('.b190-t.gull', 'color:#ffca7c;text-shadow:none'),
       r('.b190-s', 'height:9px;border-radius:5px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7);display:flex;overflow:hidden;gap:2px;flex:none'),
       r('.b190-s.stor', 'height:12px;border-radius:4px'),
       r('.b190-s span', 'height:100%;display:block;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)'),
