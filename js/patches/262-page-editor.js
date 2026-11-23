@@ -834,6 +834,7 @@
       '#' + PANEL_ID + ' .pe-banner-word small{display:block;color:#ffad64;text-transform:uppercase;letter-spacing:.12em}',
       '#' + PANEL_ID + ' .pe-banner-sample.glod{border-bottom:2px solid #fd8341;background:linear-gradient(155deg,#20232a,#121417 67%,#743021)}',
       '#' + PANEL_ID + ' .pe-banner-sample.stal{border-top:1px solid #de5539;background:repeating-linear-gradient(105deg,#24272c 0 3px,#191b20 3px 5px)}',
+      '#' + PANEL_ID + ' .pe-banner-sample.blatt-stal,#' + PANEL_ID + ' .pe-banner-sample.kopar-mjott{border-bottom:2px solid #ee9a61}',
       '#' + PANEL_ID + ' .pe-banner-sample.hreinn{border-bottom:1px solid #d8b061;background:linear-gradient(#17181c,#0b0c0f)}',
       '#' + PANEL_ID + ' .pe-banner-sample.eldur,#' + PANEL_ID + ' .pe-banner-sample.premium-eldur{background:linear-gradient(#0c0d12,#0c0d1220),url(/img/theme/fire-flames.png) repeat-x bottom/auto 95%,#101012}',
       '#' + PANEL_ID + ' .pe-banner-sample.premium-hreinn{background:linear-gradient(135deg,#22232a,#0c0e13 55%,#6a311a)}',
@@ -2118,13 +2119,14 @@
     const api = window.BordiUtlit;
     if (!api || !document.getElementById('bstal-banner')) return '';
     const active = api.active();
-    const items = api.options().map(({id, label}) => {
+    const items = api.options().map(({id, label, sample}) => {
       const branding = id === 'premium-hreinn'
         ? '<span class="pe-banner-word">Brunahólf <small>Slökkvitæki ehf.</small></span>'
         : '<img src="/img/theme/brunaholf-mark.png" alt="" loading="lazy">';
       return '<button type="button" class="pe-btn pe-banner-card" data-banner-choice="' + id +
         '" aria-pressed="' + (id === active) + '"' + (readOnly ? ' disabled' : '') + '>' +
-        '<span class="pe-banner-sample ' + id + '" aria-hidden="true">' + branding +
+        '<span class="pe-banner-sample ' + id + '" aria-hidden="true"' +
+        (sample ? ' style="' + kitStylePreview({background:sample}) + '"' : '') + '>' + branding +
         '<span class="pe-banner-time">15:08</span></span><span>' + esc(label) + '</span></button>';
     }).join('');
     return '<section class="pe-banner-gallery" aria-label="Borðaútlit">' +
