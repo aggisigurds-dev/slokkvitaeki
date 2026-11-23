@@ -65,14 +65,16 @@
   const SLIM_ART = {
     'blatt-stal': 'linear-gradient(142deg,transparent 17%,#81c8ef26 17.2%,transparent 22%),radial-gradient(ellipse at 46% 0%,#216a8a 0%,transparent 60%),linear-gradient(102deg,#08121b,#102f41 45%,#070e14)',
     'kopar-mjott': [
-      'radial-gradient(ellipse at 29% 118%, #e4753b60, transparent 40%)',
-      'linear-gradient(152deg, transparent 19%, #dce5f20d 25%, #dce5f203 62%, transparent 69%)',
-      'linear-gradient(180deg, #24262b 0%, #191b1f 23%, #101114 57%, #151315 100%)'
+      'radial-gradient(ellipse 520px 22px at 285px calc(100% - 6px), #b53619a6, transparent 82%)',
+      'linear-gradient(137deg, transparent 76%, #ffffff05 76.2%, transparent 91%)',
+      'linear-gradient(180deg, #191a1d, #0d0e10 62%, #151214)'
     ].join(',')
   };
-  const slim = 'html[data-thm-preset="brunastal"][data-bstal-banner="on"]:not([data-bstal-mini="1"]):is([data-bordi="blatt-stal"],[data-bordi="kopar-mjott"])';
-  const underBanner = slim + ' .view.active:not(#view-field):not(#view-counter):not(#view-workshop)';
-  const specialViews = ['field','counter','workshop'].map(id => slim + ' #view-' + id + '.active').join(',');
+  const fullBanner = 'html[data-thm-preset="brunastal"][data-bstal-banner="on"]:not([data-bstal-mini="1"])';
+  const slim = fullBanner + ':is([data-bordi="blatt-stal"],[data-bordi="kopar-mjott"])';
+  const copper = fullBanner + '[data-bordi="kopar-mjott"]';
+  const underBanner = selector => selector + ' .view.active:not(#view-field):not(#view-counter):not(#view-workshop)';
+  const specialViews = selector => ['field','counter','workshop'].map(id => selector + ' #view-' + id + '.active').join(',');
   const glowLine = 'linear-gradient(90deg,#793b19,#f69149 20%,#ffd49a 31%,#944921 45%,#ffb46a 72%,#6c301b)';
   const css = [
     slim + ' ' + B + '{height:100px!important;padding:5px;border-radius:13px}',
@@ -82,19 +84,30 @@
     slim + ' ' + B + ' .bb-clockbox{padding:4px 10px}',
     slim + ' ' + B + ' .bb-clock{font-size:24px}',
     slim + ' #bstal-ember{top:112px}',
-    underBanner + '{padding-top:114px!important}',
-    specialViews + '{padding-top:118px!important}',
+    underBanner(slim) + '{padding-top:114px!important}',
+    specialViews(slim) + '{padding-top:118px!important}',
     '@media(max-width:760px){' + slim + ' ' + B + '{height:84px!important}' + slim + ' ' + B + ' .bb-logo img{height:25px}' +
       slim + ' ' + B + ' .bb-word{font-size:10px}' + slim + ' ' + B + ' .bb-clock{font-size:19px}' +
-      slim + ' #bstal-ember{top:94px}' + underBanner + '{padding-top:92px!important}' +
-      specialViews + '{padding-top:94px!important}}',
+      slim + ' #bstal-ember{top:94px}' + underBanner(slim) + '{padding-top:92px!important}' +
+      specialViews(slim) + '{padding-top:94px!important}}',
     ...Object.entries(SLIM_ART).flatMap(([id, art]) => [
       H(id) + B + ' .bb-face{background:' + art + '!important}',
       H(id) + B + ' .bb-flames{display:none!important}',
       H(id) + B + ' .bb-face::after{content:"";position:absolute;inset:auto 2px 0;height:2px;pointer-events:none;background:' + glowLine + ';box-shadow:0 0 8px #ed793b}'
     ]),
-    H('kopar-mjott') + B + ' .bb-face{box-shadow:inset 0 1px #ffffff24,inset 0 -1px #ffffff0e}',
-    H('kopar-mjott') + B + ' .bb-face::after{display:none}',
+    H('kopar-mjott') + B + ' .bb-bolt,' + H('kopar-mjott') + ' #bstal-ember{display:none!important}',
+    H('kopar-mjott') + B + '{padding:2px;border-radius:8px;box-shadow:inset 0 1px #ffffff20,0 6px 14px #0008}',
+    H('kopar-mjott') + B + ' .bb-face{border-radius:6px;box-shadow:inset 0 1px #ffffff14}',
+    H('kopar-mjott') + B + ' .bb-logo::before{display:none}',
+    H('kopar-mjott') + B + ' .bb-face::before{content:"";position:absolute;inset:0 auto 0 0;width:316px;max-width:100%;pointer-events:none;z-index:2;' +
+      'background:center/100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 316 64%27 preserveAspectRatio=%27none%27%3E%3Cdefs%3E%3ClinearGradient id=%27e%27 x2=%271%27 y2=%270%27%3E%3Cstop stop-color=%27%23533224%27/%3E%3Cstop offset=%27.84%27 stop-color=%27%23b34e2d%27/%3E%3Cstop offset=%27.90%27 stop-color=%27%23ffd19c%27/%3E%3Cstop offset=%271%27 stop-color=%27%236a3020%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=%27M1 1H313L267 53Q260 61 251 61H19Q13 61 9 56L1 46Z%27 fill=%27%23151618%27/%3E%3Cpath d=%27M1 46L9 56Q13 61 19 61H251Q260 61 267 53L313 1%27 fill=%27none%27 stroke=%27url(%23e)%27/%3E%3C/svg%3E")}',
+    H('kopar-mjott') + B + ' .bb-face::after{inset:auto 0 17.2% 265px;height:1px;background:linear-gradient(90deg,#ffc28e,#fff0c9 10%,#ff994e 29%,#aa321a 75%,#512219);box-shadow:0 0 5px 1px #ff561cac;z-index:1}',
+    '@media(min-width:761px){' + copper + ' ' + B + '{height:68px!important}' +
+      underBanner(copper) + '{padding-top:82px!important}' +
+      specialViews(copper) + '{padding-top:86px!important}}',
+    '@media(max-width:520px){' + H('kopar-mjott') + B + ' .bb-face::before{width:205px}' +
+      H('kopar-mjott') + B + ' .bb-face::after{left:172px}}',
+    'html[data-bstal-mini="1"][data-bordi="kopar-mjott"] ' + B + ' .bb-face::before,html[data-bstal-mini="1"][data-bordi="kopar-mjott"] ' + B + ' .bb-face::after{display:none}',
     H('kopar-mjott') + B + ' .bb-clockbox{background:linear-gradient(#241e1b,#111114)!important}',
     H('kopar-mjott') + B + ' .bb-clock{text-shadow:none!important}',
     /* ── sameiginlegt: glóðar-/æðaröndin er teiknuð á .bb-face, sem á engin
