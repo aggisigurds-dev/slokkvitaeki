@@ -29,10 +29,9 @@
   var SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   var DISPLAY = '"Playfair Display",Georgia,serif';
   var METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
-  var STRIPE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px)';
-  var INNI = STRIPE + ',' + METAL;
-  var INNI_RAUTT = STRIPE + ',linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)';
-  var INNI_GRAENT = STRIPE + ',linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)';
+  var INNI = METAL;
+  var INNI_RAUTT = 'linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)';
+  var INNI_GRAENT = 'linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)';
   var R_STAL = 'linear-gradient(145deg,#0a0a0c 0%,#4a4e57 20%,#1d1f24 45%,#6a6f79 62%,#15161a 85%,#0a0a0c 100%)';
   var R_GULL = 'linear-gradient(145deg,#3d2b05 0%,#d3ab4e 20%,#ffe9b0 35%,#a67f22 52%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)';
   var R_GRAENT = 'linear-gradient(145deg,#010d05 0%,#0e5a2e 25%,#16783f 50%,#0e5a2e 75%,#010f06 100%)';
@@ -115,6 +114,8 @@
     r('.b418-l .gr', 'background:#1f6f42'), r('.b418-l .gu', 'background:#9c7c2c'), r('.b418-l .st', 'background:#8f98a8'), r('.b418-l .ra', 'background:#8a2020'),
     r('.b418-tikk', 'display:flex;flex-direction:column;gap:5px;min-height:60px'),
     r('.b418-tikk .r', 'display:grid;grid-template-columns:104px minmax(0,1fr) 34px;gap:8px;align-items:center;font-family:' + MONO + ';font-size:11px;color:#d5dbe6'),
+    r('.b418-s,.b418-tikk .bar', 'display:none'),
+    r('.b418-tikk .r', 'grid-template-columns:minmax(0,1fr) auto;padding:3px 6px;border-radius:4px;background:#ffffff0d'),
     r('.b418-tikk .r b', 'color:#fff;text-align:right;font-weight:700'),
     r('.b418-tikk .bar', 'height:5px;border-radius:3px;background:#131316;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)'),
     r('.b418-tikk .bar span', 'display:block;height:100%;border-radius:3px'),
