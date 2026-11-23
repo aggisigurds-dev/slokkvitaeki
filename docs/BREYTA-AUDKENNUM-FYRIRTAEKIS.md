@@ -17,6 +17,7 @@ spjaldið sýnir gula viðvörun um það eina sem þarf mannshönd. Vistun er a
 ## 2. Hvað kerfið gerir sjálft (gagnagrunnskeðjan)
 
 Kveikjur á `fyrirtaeki` (SQL: `sql/2026-11-23_kt_breyting_faerist.sql` og `sql/2026-11-23_audkenni_vidvorun.sql`):
+(Kóðinn er þegar LIVE í grunninum 23.11.2026; SQL-skrárnar og viðvörunarkassinn á spjaldinu — patch 527 — eru á greininni `audkenni-vidvorun` þar til stjórnlotan hefur rýnt og sameinað hana.)
 
 | Breytt | Fært sjálfkrafa | Ekki fært (viðvörun) |
 |---|---|---|
