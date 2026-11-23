@@ -82,3 +82,27 @@ niðurstaðan kemur í villuboðunum.
 - `document_pairs` á lykilinn (greiðandi, ár, tegund, staður): rekist pör á situr eldra parið eftir hjá gamla greiðandanum (saga).
 - Spjald sem er endurnefnt stöðvar gömlu skýrsluna í `skyrsla_athugun` (kt OG nafn önnur) þar til ný er gerð — það er rétt hegðun.
 - Mældu á lifandi síðu eftir breytingu (spjald, Ársskoðun, Kröfuyfirlit); ekki gefa þér að það hafi tekist.
+
+## 8. Sendur reikningur á gömlu kt/nafni: leiðin í kerfinu (Kröfumál — „Ný kt félags“)
+
+Þegar félag er sameinað eða fær nýja kennitölu og reikningur er þegar SENDUR á gömlu kennitöluna (orð Agnars 23.11.2026) er til sérstök málategund í
+verkferilsglugganum (369, Þjónustuborð → Kröfur → „Vinna ›“; á reikningi: „Önnur úrræði → ⇄ Ný kt félags“). Hún á við þegar kt SJÁLFS félagsins breytist;
+gamla „↪ Rangur greiðandi“ (færa söluna á annan greiðanda, kt félagsins óbreytt) er áfram til.
+
+Röðin er föst og hvert þrep er lesið ÚR GÖGNUNUM (ekki úr merki sem einhver þarf að muna að setja):
+
+| # | Þrep | Hvernig kerfið sér að það er búið |
+|---|---|---|
+| 1 | Gild kt nýs greiðanda | vartala + öld |
+| 2 | Forathugun: ógreitt, final, Payday SENT/DRAFT | helst græn eftir bakfærslu (kreditfærð sala er á leiðinni) |
+| 3 | ⚠ **FYRST ⊘ Afturkalla** í Payday (Kröfuyfirlit) | `dk_invoice_id`, `invoiced_at`, `krafa_sent_at` tóm (Payday býr sjálft til kreditskjalið: CANCELLED + CREDIT — ekki afturkalla aftur) |
+| 4 | ⚠ **SÍÐAN ↩ Bakfæra** (kreditreikningur, allar línur) | til er kreditsala (`is_credit`, `credit_of` = salan) |
+| 5 | ⚠ Kt félagsins færð á spjaldinu (Agnar staðfestir) | `fyrirtaeki.kennitala` = nýja kt; sjálfvirka keðjan færir greiðanda, skjöl, tæki, mál og sögu |
+| 6 | Ný sala á nýja greiðandann, sömu línur | sala á staðnum á nýju kt (ekki kredit/void) |
+| 7 | Ný úttektarskýrsla með réttri kt og nafni | skýrsla ársins sem ber nýju kt í slóðinni |
+| 8 | Félagið enn í þjónustu og á nýju kt | `er_i_thjonustu` + kt á spjaldinu |
+| 9 | Nýja salan situr ÓSEND í Kröfuyfirliti | engin sent-merki |
+| 10 | Agnar fer yfir og sendir kröfuna og svarar póstinum | `krafa_sent_at` á nýju sölunni |
+
+Aðeins Agnar sendir (krafa, svar). Þrep 3–5 snerta Payday, kredit og kennitölu: Agnar samþykkir þau áður en þau eru keyrð. Kerfið stofnar málið úr forminu
+(kt nýs greiðanda + „af hverju“), sýnir hvar ferlið er statt og aldrei „búið“ þegar gögnin segja annað.
