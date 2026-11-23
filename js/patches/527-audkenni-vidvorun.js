@@ -193,7 +193,7 @@
       takki.addEventListener('click', () => box.remove());
       box.appendChild(takki);
       document.body.appendChild(box);
-      if (!tharf) setTimeout(() => { if (box.parentNode) box.remove(); }, 9000);
+      if (!tharf) setTimeout(() => { if (box.parentNode) box.remove(); }, 15000);
       return Object.assign({}, res, { geo });
     } catch (_) { return null; }
   }
