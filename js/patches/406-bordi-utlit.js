@@ -36,10 +36,11 @@
   // 15.10.2026: valið býr í Vidmot ('bordi.utlit', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
   // `bordi_utlit` er fluttur einu sinni sem upphafsgildi. Skrifað AÐEINS við smell á skiptinn (áður skrifaði hleðslan líka).
   const LYK = 'bordi.utlit';
-  const ROD = ['glod', 'stal', 'hreinn', 'eldur', 'premium-hreinn', 'premium-eldur'];
-  const NUMER = {glod:'1', stal:'2', hreinn:'3', eldur:'0', 'premium-hreinn':'4', 'premium-eldur':'5'};
+  const ROD = ['glod', 'stal', 'hreinn', 'eldur', 'premium-hreinn', 'premium-eldur', 'blatt-stal', 'kopar-mjott'];
+  const NUMER = {glod:'1', stal:'2', hreinn:'3', eldur:'0', 'premium-hreinn':'4', 'premium-eldur':'5', 'blatt-stal':'6', 'kopar-mjott':'7'};
   const HEITI = { glod: '1 · Glóð', stal: '2 · Stál', hreinn: '3 · Hreinn', eldur: '0 · Eldur (upprunalegi)',
-    'premium-hreinn': '4 · Premium hreinn', 'premium-eldur': '5 · Premium með eldi' };
+    'premium-hreinn': '4 · Premium hreinn', 'premium-eldur': '5 · Premium með eldi',
+    'blatt-stal': '6 · Blátt stál', 'kopar-mjott': '7 · Dökkur kopar' };
   try { if (window.Vidmot) Vidmot.flytja(LYK, 'bordi_utlit', v => (ROD.indexOf(v) >= 0 ? v : undefined)); } catch (_) {}
 
   function lesa() {
@@ -61,7 +62,33 @@
   const H = (v) => 'html[data-bordi="' + v + '"] ';
   const P = 'html:is([data-bordi="premium-hreinn"],[data-bordi="premium-eldur"]) ' + B;
 
+  const SLIM_ART = {
+    'blatt-stal': 'linear-gradient(142deg,transparent 17%,#81c8ef26 17.2%,transparent 22%),radial-gradient(ellipse at 46% 0%,#216a8a 0%,transparent 60%),linear-gradient(102deg,#08121b,#102f41 45%,#070e14)',
+    'kopar-mjott': 'linear-gradient(135deg,#1a1a1d 0 16%,#a5552b 16.2%,transparent 16.6%),radial-gradient(ellipse at 30% 114%,#b45123 0%,transparent 49%),repeating-linear-gradient(120deg,#ffffff06 0 1px,transparent 1px 5px),linear-gradient(#191a1d,#0b0d0f)'
+  };
+  const slim = 'html[data-thm-preset="brunastal"][data-bstal-banner="on"]:not([data-bstal-mini="1"]):is([data-bordi="blatt-stal"],[data-bordi="kopar-mjott"])';
+  const underBanner = slim + ' .view.active:not(#view-field):not(#view-counter):not(#view-workshop)';
+  const specialViews = ['field','counter','workshop'].map(id => slim + ' #view-' + id + '.active').join(',');
+  const glowLine = 'linear-gradient(90deg,#793b19,#f69149 20%,#ffd49a 31%,#944921 45%,#ffb46a 72%,#6c301b)';
   const css = [
+    slim + ' ' + B + '{height:100px!important;padding:5px;border-radius:13px}',
+    slim + ' ' + B + ' .bb-face{border-radius:9px}',
+    slim + ' ' + B + ' .bb-logo img{height:34px}',
+    slim + ' ' + B + ' .bb-word{font-size:12px;margin-top:2px}',
+    slim + ' ' + B + ' .bb-clockbox{padding:4px 10px}',
+    slim + ' ' + B + ' .bb-clock{font-size:24px}',
+    slim + ' #bstal-ember{top:112px}',
+    underBanner + '{padding-top:114px!important}',
+    specialViews + '{padding-top:118px!important}',
+    '@media(max-width:760px){' + slim + ' ' + B + '{height:84px!important}' + slim + ' ' + B + ' .bb-logo img{height:25px}' +
+      slim + ' ' + B + ' .bb-word{font-size:10px}' + slim + ' ' + B + ' .bb-clock{font-size:19px}' +
+      slim + ' #bstal-ember{top:94px}' + underBanner + '{padding-top:92px!important}' +
+      specialViews + '{padding-top:94px!important}}',
+    ...Object.entries(SLIM_ART).flatMap(([id, art]) => [
+      H(id) + B + ' .bb-face{background:' + art + '!important}',
+      H(id) + B + ' .bb-flames{display:none!important}',
+      H(id) + B + ' .bb-face::after{content:"";position:absolute;inset:auto 2px 0;height:2px;pointer-events:none;background:' + glowLine + ';box-shadow:0 0 8px #ed793b}'
+    ]),
     /* ── sameiginlegt: glóðar-/æðaröndin er teiknuð á .bb-face, sem á engin
        pseudo-element fyrir (leitað: engin ::before/::after á .bb-face) ── */
     H('glod') + B + ' .bb-flames,' + H('stal') + B + ' .bb-flames{display:none!important}',
@@ -149,7 +176,7 @@
     return true;
   }
   window.BordiUtlit = {
-    options: () => ROD.map(id => ({id, label:HEITI[id]})),
+    options: () => ROD.map(id => ({id, label:HEITI[id], sample:SLIM_ART[id]})),
     active: () => document.documentElement.getAttribute('data-bordi') || 'glod',
     select: veljaBorða
   };
@@ -176,7 +203,7 @@
       b = document.createElement('button');
       b.id = '_bd-skipta';
       b.type = 'button';
-      b.title = 'Skipta um borða — 1 Glóð · 2 Stál · 3 Hreinn · 0 Eldur · 4 Premium hreinn · 5 Premium með eldi';
+      b.title = 'Skipta um borða — ' + ROD.map(id => HEITI[id]).join(' · ');
       b.setAttribute('aria-label', 'Skipta um borða');
       b.textContent = merki();
       b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); skipta(); });
