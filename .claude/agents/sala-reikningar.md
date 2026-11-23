@@ -104,6 +104,14 @@ Tilefni: umsýsluaðili (t.d. Eignarekstur) skrifar að húsfélag hafi verið s
    `invoiced_at`, `krafa_sent_at` séu tóm. **SÍÐAN ↩ Bakfæra** (kreditreikningur; fullt kredit á ógreidda söluna). Lestu til baka.
 4. Breyttu kennitölu félagsins: greiðandi staðarins færður á nýju kt (`customers_base` + `customer_base_id` BEINT — ritillinn vistar það ekki).
    Breyting á kennitölu er staðfest af Agnari áður en hún er skrifuð; engin sameining félaga í kerfinu án hans.
+4b. **Athugaðu auðkennin (Agnar 23.11.2026: „þarf að ath hvort customer id hafi breyst líka“).** Mældu, ekki gefa þér:
+   - `customer_id` (= `fyrirtaeki.id` STAÐARINS) breytist EKKI þótt kt eða nafn spjaldsins breytist. Tæki, skjöl, skjalapör, saga, mál og verkferli hanga á því.
+     Teldu raðir á id-inu (`fyrirtaeki_id`/`customer_id`/`co_id`-dálkar) og skráðu í málið. Salan má aldrei missa `customer_id` (aldrei null).
+   - `customer_base_id` (GREIÐANDINN) breytist á nýju sölunni; `fyrirtaeki.customer_base_id` og `customer_documents.customer_base_id` vísa enn á gamla.
+     Ákveða og skrá hvort spjaldið færist á nýja greiðandann.
+   - Skýrslan: keyrðu `bera()` (`_skyrsla-solu.cjs`, eða payday-push `skyrsla_athugun`) á nýju söluna. Með `customer_id` óbreytt og spjaldið óbreytt stemmir
+     núverandi skýrsla (staðurinn er sá sami, greiðandinn annar). Sé spjaldið endurnefnt/fært á nýja kt stöðvar sendingin þar til NÝ skýrsla er gerð.
+     Ný skýrsla á nýju nafni er því afleiðing af kt-breytingu á spjaldinu (þrep 4), ekki sjálfstætt skref.
 5. Ný sala á nýja greiðandann með SÖMU línum og verðum (Leiðrétta / Klára heimsókn með ástæðu). „Klára sölu“ sendir ekkert; 517 gerir nýtt reiknings-PDF.
 6. Ný úttektarskýrsla: „Búa til úttektarskýrslu“ — fær nýju kt og nafn, handskrifaði textinn óskertur, sú gamla merkt leyst af hólmi, engu eytt.
 7. Leiðrétta krafan birtist ÓSEND í Kröfuyfirliti (sendiskjárinn ✓ stemmir). Gamla salan er kreditfærð.
