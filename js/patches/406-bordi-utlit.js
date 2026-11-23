@@ -94,7 +94,7 @@
     P + ' .bb-face::after{content:"";position:absolute;inset:auto 2px 2px;height:2px;z-index:4;pointer-events:none;background:linear-gradient(90deg,#5c2409 0%,#f08a32 16%,#ffe0a8 20%,#ec6830 38%,#812f14 78%,#271210 100%);box-shadow:0 0 9px #ff773d9c}',
     P + ' .bb-clockbox{border-color:#b9743c!important;background:linear-gradient(155deg,#1b1716,#0a0b0c)!important}',
     P + ' .bb-clock{color:#ffca83!important;text-shadow:0 0 11px #f98d3e66!important}',
-    P + ' .bb-rightwrap::before{content:"ÞJÓNUSTUGÁTT  v2.0";flex:none;white-space:nowrap;padding:6px 9px;border:1px solid #ad6734;border-radius:5px;background:#101012;color:#ffcc8c;font:650 10px/1.2 system-ui,sans-serif}',
+    P + ' .bb-rightwrap::before{content:"ÞJÓNUSTUGÁTT";flex:none;white-space:nowrap;padding:6px 9px;border:1px solid #ad6734;border-radius:5px;background:#101012;color:#ffcc8c;font:650 10px/1.2 system-ui,sans-serif}',
     '@media(max-width:1100px){' + P + ' .bb-rightwrap::before{display:none}}',
     H('premium-hreinn') + B + ' .bb-flames{display:none!important}',
     H('premium-hreinn') + B + ' .bb-logo{align-self:stretch;display:flex!important;align-items:center}',
@@ -164,7 +164,7 @@
     if (logo && !logo.querySelector('.bb-premium-word')) {
       const title = document.createElement('span');
       title.className = 'bb-premium-word';
-      title.innerHTML = '<i aria-hidden="true">🔥</i><b>BRUNAHÓLF V2</b><small>PREMIUM</small>';
+      title.innerHTML = '<i aria-hidden="true">🔥</i><b>BRUNAHÓLF</b><small>SLÖKKVITÆKI EHF.</small>';
       logo.appendChild(title);
     }
     const wrap = document.querySelector(B + ' .bb-rightwrap');
