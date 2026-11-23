@@ -251,7 +251,7 @@
       '.hu2-hak-l{display:flex;align-items:center;gap:8px;font-size:13px;color:#2b313c;min-height:40px}.hu2-hak-l input{width:18px;height:18px;margin:0}',
       // þröngt
       '@container hu2 (max-width: 980px){' + V + '.hu2-kpi{grid-template-columns:repeat(3,minmax(0,1fr))}}',
-      '@container hu2 (max-width: 760px){' + V + '.hu2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.hu2-haus{padding:14px 16px 14px 22px}' + V + '.hu2-titill h1' + K + '{font-size:24px!important}' + V + '.hu2-tafla .fela{display:none}}',
+      '@container hu2 (max-width: 760px){' + V + '.hu2-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}' + V + '.hu2-k .hu2-merki{white-space:normal;flex-wrap:wrap;overflow-wrap:anywhere}' + V + '.hu2-haus{padding:14px 16px 14px 22px}' + V + '.hu2-titill h1' + K + '{font-size:24px!important}' + V + '.hu2-tafla .fela{display:none}}',
       '@media (max-width: 700px){.hu2-spjald{width:100vw;border-left:0}.hu2-stodur{grid-template-columns:repeat(2,minmax(0,1fr))}.hu2-grid2{grid-template-columns:minmax(0,1fr)}}'
     ].join('\n');
     document.head.appendChild(s);
