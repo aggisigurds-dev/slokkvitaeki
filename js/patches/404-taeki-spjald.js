@@ -29,7 +29,7 @@
   var METAL_BTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
   var TABLE_HEAD = 'linear-gradient(180deg,#2b2f37,#15171c)';
   var SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
-  var PLATE_IMG = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  var PLATE_IMG = 'linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
   var SAEKJA = 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)';
   var RIVET = 'radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%)';
   var FAM = { duft: ['Duft', '#2563eb'], lettv: ['Léttvatn', '#38bdf8'], co2: ['CO₂', '#dc2626'], slanga: ['Slanga', '#14b8a6'], reyk: ['Reykskynjari', '#8a93a3'], annad: ['Annað', '#8a93a3'] };

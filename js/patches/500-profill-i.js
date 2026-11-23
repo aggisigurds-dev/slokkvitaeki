@@ -58,10 +58,11 @@
   var SERIF = '"Playfair Display",Georgia,serif';
   var SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   /* Brunastál C — gildi hetjuspjalda Ársskoðunar (414) */
-  var STRIPE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.05) 0 1px,transparent 1px 5px)';
-  var INNI_STAL = STRIPE + ',linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
-  var INNI_RAUTT = STRIPE + ',linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)';
-  var INNI_GRAENT = STRIPE + ',linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)';
+  // 23.11.2026 (Agnar: „taka línurnar burtu úr öllum fyrirtækjaprofilum, bara sama bakgrunn og fyrir ofan, gráa"): skálínu-áferðin
+  // (repeating-linear-gradient 108°) er farin úr hetjuspjöldunum — sami sléttur málmgrár halli og hausinn fyrir ofan (.p2-haus).
+  var INNI_STAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
+  var INNI_RAUTT = 'linear-gradient(145deg,#130506 0%,#331214 26%,#4a1a1d 50%,#240b0d 74%,#0e0405 100%)';
+  var INNI_GRAENT = 'linear-gradient(145deg,#06120a 0%,#132a1c 26%,#1b3a26 50%,#0e2216 74%,#050b07 100%)';
   var R_STAL = 'linear-gradient(145deg,#0a0a0c 0%,#4a4e57 20%,#1d1f24 45%,#6a6f79 62%,#15161a 85%,#0a0a0c 100%)';
   var R_GULL = 'linear-gradient(145deg,#3d2b05 0%,#d3ab4e 20%,#ffe9b0 35%,#a67f22 52%,#ffe9b0 68%,#d3ab4e 82%,#3d2b05 100%)';
   var R_GRAENT = 'linear-gradient(145deg,#010d05 0%,#0e5a2e 25%,#16783f 50%,#0e5a2e 75%,#010f06 100%)';
@@ -137,7 +138,7 @@
     /* hvítur texti á lituðu merki, líka þegar annað þema litar <b>/<small> (Agnar 19.11: „texti sést ekki") */
     G + ' .p2-skod b,' + G + ' .p2-merkid b{color:#fff!important}' + G + ' .p2-skod small,' + G + ' .p2-merkid small,' + G + ' .p2-merkid .t{color:#e6e9ee!important}' +
     '#companies-main .p2-skod small{font:11.5px ' + MONO + ';color:#d9dee6;margin-top:2px;display:block}' +
-    '#companies-main .p2-glugg{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.1fr) 520px;grid-template-rows:auto auto;gap:0;padding:14px 0 0;background:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0,#dce1e8);border-radius:0 0 14px 14px;color:#11141c;box-shadow:0 22px 40px -22px rgba(0,0,0,.75),0 0 0 1px rgba(20,24,34,.35)}' +
+    '#companies-main .p2-glugg{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.1fr) 520px;grid-template-rows:auto auto;gap:0;padding:14px 0 0;background:linear-gradient(180deg,#e8ebf0,#dce1e8);border-radius:0 0 14px 14px;color:#11141c;box-shadow:0 22px 40px -22px rgba(0,0,0,.75),0 0 0 1px rgba(20,24,34,.35)}' +
     '#companies-main .p2-dalk{padding:0 18px;border-right:1px solid #c3cad5;min-width:0}' +
     '#companies-main .p2-sec{font:500 10.5px ' + MONO + ';letter-spacing:.2em;text-transform:uppercase;color:#3a4250;display:flex;align-items:center;gap:8px;padding:2px 0 7px;border-bottom:1px solid #c3cad5;margin-bottom:4px}' +
     '#companies-main .p2-sec:before{content:"";width:6px;height:6px;background:#c92a2a;transform:rotate(45deg);flex:none;box-shadow:0 0 6px rgba(201,42,42,.5)}' +
@@ -165,7 +166,7 @@
     '#companies-main .p2-athug textarea{flex:1;min-width:0;height:52px;min-height:52px;max-height:120px;resize:none;line-height:20px;padding-top:5px!important;padding-bottom:5px!important;overflow-y:auto;border:0;border-radius:8px;background:#eef1f6;box-shadow:inset 0 2px 4px rgba(0,0,0,.18);padding:0 10px;font:13.5px "IBM Plex Sans",system-ui,sans-serif;color:#141822}' +
     '#companies-main .p2-athug textarea::placeholder{color:#525b6b}' +
     /* lykiltölur (hönnun A, 19.11.2026): ein röð kassa með lituðum toppi */
-    '#companies-main .p2-kpi{display:grid;gap:12px;padding:16px;background:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0,#d6dbe3);border-top:1px solid #000;color:#11141c}' +
+    '#companies-main .p2-kpi{display:grid;gap:12px;padding:16px;background:linear-gradient(180deg,#e8ebf0,#d6dbe3);border-top:1px solid #000;color:#11141c}' +
     '#companies-main .p2-kp{position:relative;background:linear-gradient(180deg,#fff,#f3f5f8);border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px rgba(20,24,34,.16),0 10px 22px -14px rgba(0,0,0,.55);display:flex;flex-direction:column;min-width:0}' +
     '#companies-main .p2-kp.ramm-g{box-shadow:0 0 0 2px #16783f,0 10px 22px -14px rgba(0,0,0,.55)}' +
     '#companies-main .p2-kp.ramm-a{box-shadow:0 0 0 2px #c48a1f,0 10px 22px -14px rgba(0,0,0,.55)}' +

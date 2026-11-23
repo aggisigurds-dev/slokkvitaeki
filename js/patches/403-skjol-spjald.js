@@ -34,8 +34,8 @@
   var METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
   var METAL_BTN = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
   var SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
-  var PLATE_IMG = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
-  var INNER_IMG = 'linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05)),repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0 1px,transparent 1px 4px)';
+  var PLATE_IMG = 'linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  var INNER_IMG = 'linear-gradient(180deg,rgba(255,255,255,.9),rgba(20,30,60,.05))';
   var SAEKJA = 'linear-gradient(145deg,#010d05 0%,#06331a 20%,#0e5a2e 43%,#16783f 53%,#073a1d 74%,#010f06 100%)';
   var BSTAL = 'linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%)';
   var GULL = 'linear-gradient(145deg,#171001 0%,#3d2b05 20%,#8a6410 43%,#d3ab4e 53%,#5a3f07 74%,#171001 100%)';

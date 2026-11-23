@@ -32,7 +32,7 @@
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   const DARK_PLATE = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
-  const STAL = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  const STAL = 'linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
   const FERSKT_MS = 30000;
   const MANUDIR = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
 

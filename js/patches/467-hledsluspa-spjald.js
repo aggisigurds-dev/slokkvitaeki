@@ -34,10 +34,13 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const sb = () => (window.DB && DB.sb) || null;
   const AR = new Date().getFullYear();
-  const OPIN_LYKILL = 'profill.hledsluspaOpin';
-  const erOpin = () => { try { return !!(window.Vidmot && Vidmot.lesa(OPIN_LYKILL, false) === true); } catch (_) { return false; } };
+  // 23.11.2026 (Agnar: „hafa bæði collapsed default"): spjaldið er LOKAÐ þegar fyrirtækjasíðan opnast. Áður vistaðist opið/lokað á
+  // þjóninn (Vidmot 'profill.hledsluspaOpin'), svo eitt „opna" gilti fyrir ÖLL fyrirtæki og sjálfgefið lokað hætti að halda. Nú er
+  // opið aðeins fyrir EITT fyrirtæki í einu (opinFid) — skipti notandinn um fyrirtæki byrjar spjaldið aftur lokað.
+  let opinFid = 0;
+  const erOpin = (el) => !!(el && el.dataset.fid && opinFid && +el.dataset.fid === opinFid);
   const stillaOpin = (el) => {
-    const o = erOpin() ? '1' : '0'; if (el.dataset.opin !== o) el.dataset.opin = o;
+    const o = erOpin(el) ? '1' : '0'; if (el.dataset.opin !== o) el.dataset.opin = o;
     const b = el.querySelector('.hsp-hnapp'); if (b) { b.setAttribute('aria-expanded', o === '1' ? 'true' : 'false'); b.title = o === '1' ? 'Loka Hleðsluspá' : 'Opna Hleðsluspá'; }
   };
 
@@ -67,7 +70,7 @@
     '.hsp-tala b{font-family:' + DISPLAY + ';font-size:30px;font-weight:800;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7);font-variant-numeric:lining-nums}',
     '.hsp-tala small{font-family:' + DISPLAY + ';font-size:14px;font-weight:700;color:rgba(255,255,255,.85)}',
     // búkur: tvær litlar töflur á stálplötu — saga eftir árum · næsta heimsókn eftir tegund
-    '.hsp-buk{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start;background:repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)}',
+    '.hsp-buk{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;align-items:start;background:linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)}',
     '.hsp-tb{' + LINE + ';overflow:hidden;min-width:0}',
     '.hsp-tb table{width:100%;border-collapse:collapse;font-family:' + MONO + ';font-size:11.5px;font-variant-numeric:tabular-nums;table-layout:auto}',
     '.hsp-tb thead th{background:' + METAL + ';color:rgba(255,255,255,.82);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;text-align:right;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
@@ -86,6 +89,23 @@
     '.hsp-teg[data-teg="lettvatn"]{--hsp-teg:#2f7fd4}.hsp-teg[data-teg="duft"]{--hsp-teg:#c9372c}.hsp-teg[data-teg="co2"]{--hsp-teg:#3a3a41}',
     '.hsp-tomt{padding:10px 12px;font-family:' + MONO + ';font-size:11px;color:#525b6b}',
     '.hsp-ath{grid-column:1 / -1;font-family:' + MONO + ';font-size:10.5px;color:#525b6b;padding:0 2px}',
+    // 23.11.2026 (Agnar: „gera tækjagreininguna meira compact"): töflurnar sitja þétt utan um efnið (ekki dreifðar yfir alla breiddina),
+    // raðir ~24 px í stað ~37 (aðrar reglur — þemað — settu 10×14 px fyllingu á hverja reit, því !important og auðkenni hér),
+    // lægri haus og minni tala. Undir 720 px stafla þær sér eins og áður.
+    '#_hsp-spjald .hsp-haus{min-height:36px!important;padding:3px 14px 3px 18px!important;gap:5px 8px!important}',
+    '#_hsp-spjald .hsp-t{font-size:14px!important}',
+    '#_hsp-spjald .hsp-tala b{font-size:24px!important}',
+    '#_hsp-spjald .hsp-tala small{font-size:12px!important}',
+    '#_hsp-spjald .hsp-buk{display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;justify-content:flex-start!important;gap:8px!important;padding:8px 10px!important}',
+    '#_hsp-spjald .hsp-tb{flex:0 0 auto!important;width:auto!important;max-width:100%!important}',
+    '#_hsp-spjald .hsp-tb table{width:auto!important;min-width:0!important;margin:0!important}',
+    '#_hsp-spjald .hsp-tb thead th{padding:3px 9px!important;font-size:9.5px!important;line-height:1.2!important;height:auto!important}',
+    '#_hsp-spjald .hsp-tb tbody td{padding:2px 9px!important;font-size:11px!important;line-height:1.2!important;height:auto!important}',
+    '#_hsp-spjald .hsp-tb tbody td:first-child{font-size:11.5px!important}',
+    '#_hsp-spjald .hsp-tb tbody td.hsp-stor{font-size:14px!important}',
+    '#_hsp-spjald .hsp-ath{flex:1 1 100%!important;font-size:10px!important;line-height:1.25!important;padding:0 2px!important}',
+    '#_hsp-spjald[data-opin="0"] .hsp-buk{display:none!important}',
+    '@container (max-width:720px){#_hsp-spjald .hsp-tb{flex:1 1 100%!important}#_hsp-spjald .hsp-tb table{width:100%!important}}',
     // sími / app (980 px): spjaldið er sjálft ílát — töflurnar stafla sér undir 640 px
     '@container (max-width:640px){.hsp-buk{grid-template-columns:minmax(0,1fr)}.hsp-t{font-size:13.5px}.hsp-tala b{font-size:24px}}'
   ].join('\n');
@@ -176,7 +196,9 @@
       '</div>';
     stillaOpin(el);
     el.querySelector('.hsp-haus').addEventListener('click', () => {
-      try { if (window.Vidmot) Vidmot.setja(OPIN_LYKILL, !erOpin()); } catch (_) {}
+      const fid = +el.dataset.fid || fidNu(document.getElementById('companies-main') || document.body);
+      if (!fid) return;
+      opinFid = erOpin(el) ? 0 : fid;
       stillaOpin(el);
     });
     return el;

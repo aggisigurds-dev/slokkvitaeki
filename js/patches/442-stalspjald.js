@@ -31,7 +31,7 @@
   const MONO = '"JetBrains Mono",ui-monospace,monospace';
   const SANS = '"IBM Plex Sans",system-ui,-apple-system,sans-serif';
   const METAL = 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)';
-  const STAL = 'repeating-linear-gradient(108deg,rgba(255,255,255,.34) 0 1px,transparent 1px 4px),linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
+  const STAL = 'linear-gradient(180deg,#e8ebf0 0%,#dce1e8 100%)';
   const SILVER = 'linear-gradient(180deg,#fdfdfe 0%,#e3e7ee 100%)';
   const MALM_TAKKI = 'linear-gradient(180deg,#3d4048 0%,#1c1e23 100%)';
   const RIVET = 'content:"";position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4f6f8 0%,#aab1bb 40%,#3b3f46 100%);box-shadow:0 1px 1px rgba(0,0,0,.7)';

@@ -37,7 +37,7 @@
           writeLocal(coId, supaVal);
           var ta = document.querySelector('.vbu-textarea[data-co-id="' + coId + '"]');
           if(ta && ta === document.activeElement) return; // user is typing, don't overwrite
-          if(ta) ta.value = supaVal;
+          if(ta) { ta.value = supaVal; ta.dispatchEvent(new Event('vbu-refresh')); }
         }
       }
       // 2026-09-11: dálkurinn var ekki til fyrr en í dag, svo textinn bjó aðeins í vafra
@@ -81,8 +81,23 @@
     statusText.className = 'vbu-status';
     statusText.style.cssText = 'font-weight:500;color:#94a3b8;text-transform:none;letter-spacing:normal;font-size:11px';
     statusText.textContent = '';
+    // 23.11.2026 (Agnar: „hafa bæði collapsed default"): hlutinn er LOKAÐUR þegar fyrirtækjasíðan opnast — fyrirsögn, stutt forskoðun
+    // á textanum (svo innihaldið týnist ekki) og hnappur hægra megin. Opið er aðeins fyrir þessa heimsókn: hver ný fyrirtækjasíða
+    // endurteiknar hlutinn og hann byrjar aftur lokaður.
+    var preview = document.createElement('span');
+    preview.className = 'vbu-preview';
+    preview.style.cssText = 'flex:1 1 auto;min-width:0;margin:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#94a3b8;text-transform:none;letter-spacing:normal;font-size:12px';
+    var chev = document.createElement('button');
+    chev.type = 'button';
+    chev.className = 'vbu-toggle';
+    chev.setAttribute('aria-label', 'Opna eða loka viðbótaupplýsingum');
+    chev.style.cssText = 'flex:none;width:26px;height:26px;margin-left:8px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;cursor:pointer';
+    chev.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transition:transform .15s"><path d="m6 9 6 6 6-6"/></svg>';
+    title.style.cursor = 'pointer';
     title.appendChild(titleText);
+    title.appendChild(preview);
     title.appendChild(statusText);
+    title.appendChild(chev);
 
     var ta = document.createElement('textarea');
     ta.className = 'vbu-textarea';
@@ -140,6 +155,22 @@
 
     section.appendChild(title);
     section.appendChild(ta);
+
+    var opid = false;
+    function stilla(){
+      ta.style.display = opid ? '' : 'none';
+      title.style.marginBottom = opid ? '8px' : '0';
+      section.style.padding = opid ? '16px' : '10px 16px';
+      chev.setAttribute('aria-expanded', opid ? 'true' : 'false');
+      chev.title = opid ? 'Loka viðbótaupplýsingum' : 'Opna viðbótaupplýsingar';
+      chev.firstChild.style.transform = opid ? 'rotate(180deg)' : '';
+      var t = String(ta.value || '').replace(/\s+/g, ' ').trim();
+      preview.textContent = opid ? '' : (t.length > 90 ? t.slice(0, 90) + '…' : t);
+    }
+    title.addEventListener('click', function(){ opid = !opid; stilla(); if(opid) { try { ta.focus(); } catch(e){} } });
+    ta.addEventListener('vbu-refresh', stilla);
+    ta.addEventListener('input', stilla);
+    stilla();
 
     // Insert AFTER the floor plan section
     fpSection.parentNode.insertBefore(section, fpSection.nextSibling);
