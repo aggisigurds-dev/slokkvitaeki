@@ -1534,9 +1534,12 @@
       heimilisfang: (vals.heimilisfang || '').trim() || null,
       simi: (vals.simi || '').trim() || null
     };
+    const gamalt = company ? Object.assign({}, company) : null;   // 527: viðmiðið ÁÐUR en listaröðin er yfirskrifuð
     if (company) Object.assign(company, upd);
     if (SB && company) {
-      try { await SB.from('fyrirtaeki').update(upd).eq('id', coId); if (window.Toast && Toast.show) Toast.show('✓ Vistað'); }
+      try { const rr = await SB.from('fyrirtaeki').update(upd).eq('id', coId); if (window.Toast && Toast.show) Toast.show('✓ Vistað');
+        // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+        if (!(rr && rr.error) && window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(SB, coId, gamalt, Object.assign({}, gamalt, upd)); }
       catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
     }
     state.editId = null;

@@ -217,7 +217,7 @@
     const ids = Object.keys(map).filter(k => !!map[k]).map(k => +k).filter(Boolean);
     let companies = [];
     if (ids.length) {
-      const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður').in('id', ids);
+      const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,netfang,athugasemdir,tengiliður,customer_base_id').in('id', ids);   // customer_base_id: viðvörun 527 þarf gamla greiðandann
       companies = (data || []).map(c => ({ ...c, _bk: map[String(c.id)] || {} }));
     }
     if (gen !== _bkLoadGen) return gen;
@@ -972,6 +972,8 @@
         };
         const r = await SB.from('fyrirtaeki').update(updateRec).eq('id', coId);
         if (r.error) { showErr('Vista mistókst: ' + r.error.message); return; }
+        // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+        try { if (window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(SB, coId, co, Object.assign({}, co, updateRec)); } catch (_) {}
         // 2026-08-13 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM (sama og 14-companies-
         // openedit.js:178 gerir). `uttaeki`/`lanstaeki` eiga engan staðar-lykil;
         // tækjalistinn finnst með `u.client === c.nafn`. Þessi brunakerfis-
