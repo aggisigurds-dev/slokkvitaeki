@@ -610,14 +610,11 @@
         const rg = await c.from('geocode_cache').select('query,lat,lng').in('query', lyklar);
         if (!rg.error) { const rad = (q) => (rg.data || []).find(z => z.query === q) || null; x.geo = { co: rad('__co__:' + fid), adr: x.stadur.heimilisfang ? rad(x.stadur.heimilisfang) : null }; }
       }
-      // Teikningar: aðeins það sem Uppfærsluborð (431 „Uppfæra eftir heimilisfangi“) hefur þegar sótt á þessari tölvu (sessionStorage bupp_skrar_v1_<id>) — engin sókn héðan.
+      // Teikningar: aðeins það sem Uppfærsluborð (431 „Uppfæra eftir heimilisfangi“) hefur þegar sótt á þessari tölvu — lesið gegnum 431, engin sókn og engin vafrageymsla héðan.
       x.teikningar = undefined;
-      if (nyKt && x.stadur && x.stadur.heimilisfang) {
-        try {
-          const j = JSON.parse(sessionStorage.getItem('bupp_skrar_v1_' + fid) || 'null');
-          const sv = j && j.svar;
-          if (sv && sv.eign && sv.eign.landnr && String(j.heimilisfang || '').trim() === String(x.stadur.heimilisfang).trim()) x.teikningar = { landnr: sv.eign.landnr, fjoldi: +((sv.teikningar || {}).fjoldi) || 0 };
-        } catch (_) { /* óvíst */ }
+      if (nyKt && x.stadur && x.stadur.heimilisfang && window.Uppfaerslubord && typeof Uppfaerslubord.husUrGeymslu === 'function') {
+        const sv = Uppfaerslubord.husUrGeymslu(fid, x.stadur.heimilisfang);
+        if (sv && sv.eign && sv.eign.landnr) x.teikningar = { landnr: sv.eign.landnr, fjoldi: +((sv.teikningar || {}).fjoldi) || 0 };
       }
       x.vantar = [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr, rnk, rsk].filter(r => r && r.error).map(r => r.error.message);
       // Gögn sem vantar mega aldrei líta út eins og „í lagi": ✓ verður „… óvíst".

@@ -442,3 +442,16 @@ test('431 flytur út uppfaeraHeimilisfang (sama aðgerð og „Uppfæra eftir he
   assert.match(SRC, /window\.Uppfaerslubord/);
   assert.equal(/rest\/v1\/geocode_cache|AppSettings/.test(SRC), false, '527 skrifar aldrei hnit sjálft');
 });
+
+test('431 husUrGeymslu skilar aðeins svari fyrir RÉTT heimilisfang og kastar aldrei', () => {
+  const U = lesa('js/patches/431-uppferslubord.js');
+  const m = /function husUrGeymslu\(id, adr\) \{[\s\S]*?\n  \}\n/.exec(U);
+  assert.ok(m, 'husUrGeymslu fannst ekki');
+  const geymsla = { bupp_skrar_v1_424: JSON.stringify({ heimilisfang: 'Stigahlíð 6-12, 105 Reykjavík', svar: { eign: { landnr: 107191 }, teikningar: { fjoldi: 11 } } }), bupp_skrar_v1_9: 'rusl{' };
+  const ctx = { sessionStorage: { getItem: (k) => (k in geymsla ? geymsla[k] : null) }, JSON, String };
+  vm.runInNewContext(m[0] + '\nthis.f = husUrGeymslu;', ctx);
+  assert.equal(ctx.f(424, 'Stigahlíð 6-12, 105 Reykjavík').eign.landnr, 107191);
+  assert.equal(ctx.f(424, 'Annað heimilisfang 1'), null, 'gamalt heimilisfang telst ekki');
+  assert.equal(ctx.f(9, 'X'), null, 'ónýtt gildi kastar ekki');
+  assert.equal(ctx.f(1, 'X'), null);
+});

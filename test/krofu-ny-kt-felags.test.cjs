@@ -199,7 +199,8 @@ test('teikningar: búið þegar Staðfangaskrá finnur lóð og teikningar eru t
 test('hleðsla: geocode_cache lesið eftir að staðurinn er þekktur; teikningar aðeins úr staðbundinni húsgeymslu — engin sókn úr borðinu', () => {
   assert.match(SRC, /const lyklar = \['__co__:' \+ fid\]\.concat\(x\.stadur\.heimilisfang \? \[x\.stadur\.heimilisfang\] : \[\]\);/);
   assert.match(SRC, /c\.from\('geocode_cache'\)\.select\('query,lat,lng'\)\.in\('query', lyklar\)/);
-  assert.match(SRC, /sessionStorage\.getItem\('bupp_skrar_v1_' \+ fid\)/);
+  assert.match(SRC, /Uppfaerslubord\.husUrGeymslu\(fid, x\.stadur\.heimilisfang\)/);
+  assert.equal(/(sessionStorage|localStorage)\.(getItem|setItem|removeItem|clear)/.test(SRC), false, '369 kallar aldrei á vafrageymslu (audit-krofu-vinnugluggi)');
   assert.equal(/hus-upplysingar|saekjaTeikningar/.test(SRC), false, '369 sækir ekki hús sjálft — Uppfærsluborð (431) ræður sóknum');
   assert.equal(/api\/geocode/.test(SRC), false);
 });

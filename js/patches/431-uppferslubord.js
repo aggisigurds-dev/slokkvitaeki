@@ -731,6 +731,14 @@
     return { adr: adr, lat: hnit.lat, lon: hnit.lon, hus: !(hus && hus.villa), husVilla: (hus && hus.villa) || null,
       landnr: (svar && svar.eign && svar.eign.landnr) || null, teikningar: (svar && svar.teikningar && +svar.teikningar.fjoldi) || 0 };
   }
+  // Les (aðeins) húsupplýsingarnar sem „Uppfæra eftir heimilisfangi“ sótti áður á þessari tölvu — fyrir verkferilsgluggann (369), sem má ekki snerta vafrageymslu sjálfur.
+  function husUrGeymslu(id, adr) {
+    try {
+      const j = JSON.parse(sessionStorage.getItem('bupp_skrar_v1_' + id) || 'null');
+      if (j && j.svar && String(j.heimilisfang || '').trim() === String(adr || '').trim()) return j.svar;
+    } catch (_) { /* óvíst */ }
+    return null;
+  }
   async function faeraGeopunkt(id) {
     const row = await lesaRod(id);
     const adr = String(row.heimilisfang || '').trim();
@@ -1152,6 +1160,7 @@
     mode: modeOf,
     open: show,
     uppfaeraHeimilisfang: uppfaeraHeimilisfang,
+    husUrGeymslu: husUrGeymslu,
     stada: function (id) { return meta(id, rod(id), felagRod()); }
   };
   console.log('[431] uppfærsluborð');
