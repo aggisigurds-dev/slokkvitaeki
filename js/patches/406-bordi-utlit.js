@@ -36,8 +36,10 @@
   // 15.10.2026: valið býr í Vidmot ('bordi.utlit', 472) — eitt val fyrir allar vélar; gamli localStorage-lykillinn
   // `bordi_utlit` er fluttur einu sinni sem upphafsgildi. Skrifað AÐEINS við smell á skiptinn (áður skrifaði hleðslan líka).
   const LYK = 'bordi.utlit';
-  const ROD = ['glod', 'stal', 'hreinn', 'eldur'];
-  const HEITI = { glod: '1 · Glóð', stal: '2 · Stál', hreinn: '3 · Hreinn', eldur: '0 · Eldur (upprunalegi)' };
+  const ROD = ['glod', 'stal', 'hreinn', 'eldur', 'premium-hreinn', 'premium-eldur'];
+  const NUMER = {glod:'1', stal:'2', hreinn:'3', eldur:'0', 'premium-hreinn':'4', 'premium-eldur':'5'};
+  const HEITI = { glod: '1 · Glóð', stal: '2 · Stál', hreinn: '3 · Hreinn', eldur: '0 · Eldur (upprunalegi)',
+    'premium-hreinn': '4 · Premium hreinn', 'premium-eldur': '5 · Premium með eldi' };
   try { if (window.Vidmot) Vidmot.flytja(LYK, 'bordi_utlit', v => (ROD.indexOf(v) >= 0 ? v : undefined)); } catch (_) {}
 
   function lesa() {
@@ -57,6 +59,7 @@
 
   const B = '#bstal-banner';
   const H = (v) => 'html[data-bordi="' + v + '"] ';
+  const P = 'html:is([data-bordi="premium-hreinn"],[data-bordi="premium-eldur"]) ' + B;
 
   const css = [
     /* ── sameiginlegt: glóðar-/æðaröndin er teiknuð á .bb-face, sem á engin
@@ -84,6 +87,23 @@
     H('hreinn') + B + ' .bb-clock{color:#ffd27a!important;text-shadow:none!important}',
     H('hreinn') + B + ' .bb-eyebrow{color:#8a7f66!important}',
     H('hreinn') + B + ' .bb-clockbox{border-color:rgba(211,171,78,.28)!important}',
+
+    /* 4–5 · Premium. Existing banner controls and positioning remain in place. */
+    B + ' .bb-premium-word{display:none}',
+    P + ' .bb-face{background:repeating-linear-gradient(122deg,#ffffff07 0 1px,transparent 1px 5px),radial-gradient(ellipse at 26% 115%,#793510 0%,transparent 48%),linear-gradient(145deg,#1a1c20,#0a0c0f 67%)!important}',
+    P + ' .bb-face::after{content:"";position:absolute;inset:auto 2px 2px;height:2px;z-index:4;pointer-events:none;background:linear-gradient(90deg,#5c2409 0%,#f08a32 16%,#ffe0a8 20%,#ec6830 38%,#812f14 78%,#271210 100%);box-shadow:0 0 9px #ff773d9c}',
+    P + ' .bb-clockbox{border-color:#b9743c!important;background:linear-gradient(155deg,#1b1716,#0a0b0c)!important}',
+    P + ' .bb-clock{color:#ffca83!important;text-shadow:0 0 11px #f98d3e66!important}',
+    P + ' .bb-rightwrap::before{content:"ÞJÓNUSTUGÁTT  v2.0";flex:none;white-space:nowrap;padding:6px 9px;border:1px solid #ad6734;border-radius:5px;background:#101012;color:#ffcc8c;font:650 10px/1.2 system-ui,sans-serif}',
+    '@media(max-width:1100px){' + P + ' .bb-rightwrap::before{display:none}}',
+    H('premium-hreinn') + B + ' .bb-flames{display:none!important}',
+    H('premium-hreinn') + B + ' .bb-logo{align-self:stretch;display:flex!important;align-items:center}',
+    H('premium-hreinn') + B + ' .bb-logo>img,' + H('premium-hreinn') + B + ' .bb-word{display:none!important}',
+    H('premium-hreinn') + B + ' .bb-logo::before{inset:-10px -16px -6px -20px;background:linear-gradient(130deg,#1e2025,#0c0e10)!important;clip-path:polygon(0 0,100% 0,84% 100%,0 100%)}',
+    H('premium-hreinn') + B + ' .bb-premium-word{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;align-items:center;gap:1px 7px;color:#fff;font:750 clamp(13px,1.6vw,21px)/1 system-ui,sans-serif;white-space:nowrap}',
+    H('premium-hreinn') + B + ' .bb-premium-word i{grid-row:1/3;font-style:normal;font-size:1.25em}',
+    H('premium-hreinn') + B + ' .bb-premium-word small{grid-column:2;color:#ffad64;font-size:.54em;letter-spacing:.22em}',
+    H('premium-eldur') + B + ' .bb-flames{display:block!important;opacity:1!important}',
 
     /* ── málningartáknið: minna og hreinna (svg-ið í 262 ósnert) ── */
     /* min-height:0 er NAUÐSYNLEGT: 262 setur sjálft `min-height:32px` á hnappinn
@@ -114,7 +134,7 @@
 
   function merki() {
     const v = document.documentElement.getAttribute('data-bordi') || 'glod';
-    return String(ROD.indexOf(v) + 1 === 4 ? 0 : ROD.indexOf(v) + 1);
+    return NUMER[v] || NUMER.glod;
   }
 
   function skipta() {
@@ -127,6 +147,13 @@
   }
 
   function settur() {
+    const logo = document.querySelector(B + ' .bb-logo');
+    if (logo && !logo.querySelector('.bb-premium-word')) {
+      const title = document.createElement('span');
+      title.className = 'bb-premium-word';
+      title.innerHTML = '<i aria-hidden="true">🔥</i><b>BRUNAHÓLF V2</b><small>PREMIUM</small>';
+      logo.appendChild(title);
+    }
     const wrap = document.querySelector(B + ' .bb-rightwrap');
     const klukka = wrap && wrap.querySelector('.bb-clockbox');
     if (!wrap || !klukka) return;
@@ -136,7 +163,7 @@
       b = document.createElement('button');
       b.id = '_bd-skipta';
       b.type = 'button';
-      b.title = 'Skipta um borða — 1 Glóð · 2 Stál · 3 Hreinn · 0 Eldur (til prófunar)';
+      b.title = 'Skipta um borða — 1 Glóð · 2 Stál · 3 Hreinn · 0 Eldur · 4 Premium hreinn · 5 Premium með eldi';
       b.setAttribute('aria-label', 'Skipta um borða');
       b.textContent = merki();
       b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); skipta(); });
