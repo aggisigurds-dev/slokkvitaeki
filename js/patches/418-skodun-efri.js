@@ -257,7 +257,7 @@
     r('table._sk-tbl tbody tr._sk-row:nth-child(odd) td', 'background:#fafbfd'),
     r('table._sk-tbl tbody tr._sk-row:hover td', 'background:#f3f5f9!important')
   ];
-  var css = '@media (min-width:901px){' + rules.join('\n') + '}';
+  var css = '@media (min-width:901px){' + rules.join('\n') + '\n' + (window.BrunastalMetricCardStyles?.('b418', r) || '') + '}';
   var st = document.getElementById('_skodun-efri-418-css');
   if (!st) { st = document.createElement('style'); st.id = '_skodun-efri-418-css'; document.head.appendChild(st); }
   st.textContent = css;
