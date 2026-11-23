@@ -630,7 +630,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/148-date-format-unify.js?v=20261119snz"></script>
 <!-- 447a: Svar-stöð gögn + window.svKodi (merkið í sendingargluggum) — snemma, svo gluggar sem teiknast við ræsingu fái það -->
 <script defer src="/js/patches/447a-svarstod-gogn.js?v=20261120a"></script>
-<script defer src="/js/patches/00-legacy.js?v=20261029a"></script>
+<script defer src="/js/patches/00-legacy.js?v=20261123b"></script>
 <script defer src="/js/patches/290-api-key-header.js?v=20261119snz"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20261119snz"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
@@ -651,7 +651,7 @@ html[data-bh="1"],html[data-bh="1"] body{overflow-x:hidden}
 <script defer src="/js/patches/11-bokhalds-yfirlit.js?v=20261117c"></script>
 <script defer src="/js/patches/12-mapfix-kill-dots.js?v=20260503"></script>
 <script defer src="/js/patches/13-field-company-deeplink.js?v=20260510f"></script>
-<script defer src="/js/patches/14-companies-openedit.js?v=20261014mjor"></script>
+<script defer src="/js/patches/14-companies-openedit.js?v=20261123b"></script>
 <script defer src="/js/patches/527-audkenni-vidvorun.js?v=20261123a"></script>
 <script defer src="/js/patches/15-sidebar-counts.js?v=20261119snz"></script>
 <script defer src="/js/patches/16-switchview-dispatch.js?v=20260503"></script>
@@ -1253,18 +1253,18 @@ var Lanstaeki = {
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 144-kunnareikningur.js -->
 <script defer src="/js/patches/145-todo-board.js?v=20260921h"></script>
 <script defer src="/js/patches/146-companies-click-fix.js?v=20261119snz"></script>
-<script defer src="/js/patches/147-brunakerfi.js?v=20261029a"></script>
+<script defer src="/js/patches/147-brunakerfi.js?v=20261123b"></script>
 <script defer src="/js/patches/149-dd-mm-yyyy-date-inputs.js?v=20260515a"></script>
 <script defer src="/js/patches/150-brunakerfi-pricelist.js?v=20261119snz"></script>
 <script defer src="/js/patches/151-brunakerfi-doc-import.js?v=20261029a"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 152-til-rukkun.js -->
 <script defer src="/js/patches/476-i-vinnslu-kjarni.js?v=20261021a"></script>
-<script defer src="/js/patches/153-arsskodun.js?v=20261122raun"></script>
+<script defer src="/js/patches/153-arsskodun.js?v=20261123b"></script>
 <script defer src="/js/patches/154-last-view-memory.js?v=20260912dagskratm"></script>
 <script defer src="/js/patches/155-arsskodun-map-embed.js?v=20261023kort"></script>
 <script defer src="/js/patches/177-inservice-clients.js?v=20260921d"></script>
 <script defer src="/js/patches/156-geocode-prewarm.js?v=20261008yf"></script>
-<script defer src="/js/patches/157-allir-vidskiptavinir.js?v=20261119snz"></script>
+<script defer src="/js/patches/157-allir-vidskiptavinir.js?v=20261123b"></script>
 <script defer src="/js/patches/158-vidsk-detail.js?v=20261023skjal"></script>
 <script defer src="/js/patches/159-data-quality-banner.js?v=20261119snz"></script>
 <script defer src="/js/patches/160-company-delete.js?v=20260908fid2"></script>
@@ -1305,7 +1305,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/196-sidebar-settle.js?v=20260613a"></script>
 <script defer src="/js/patches/197-bokhald-yfirferd.js?v=20261119snz"></script>
 <script defer src="/js/patches/198-fyrirtaeki-yfirferd.js?v=20261014l6"></script>
-<script defer src="/js/patches/199-doc-year-grid.js?v=20261119a"></script>
+<script defer src="/js/patches/199-doc-year-grid.js?v=20261123b"></script>
 <script defer src="/js/patches/200-brunakerfi-tilbod.js?v=20261102b"></script>
 <script defer src="/js/patches/201-tilbod-hub.js?v=20261111e"></script>
 <script defer src="/js/patches/503-sprinkler-samningur.js?v=20261111e"></script>
@@ -1430,7 +1430,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/498-sala-samstilling.js?v=20261105a"></script>
 <!-- 07.11.2026: Verkferlis-yfirlit á Þjónustuborðinu — ein keyrsla sem mælir kröfur, póst, upplýsingareiti, skoðanir, verkefnalista, samþykktir og tengingar úr /api/combo-yfirlit -->
 <script defer src="/js/patches/499-combo-yfirlit.js?v=20261121nedst"></script>
-<script defer src="/js/patches/500-profill-i.js?v=20261120i"></script>
+<script defer src="/js/patches/500-profill-i.js?v=20261123b"></script>
 <script defer src="/js/patches/300-stillingasaga.js?v=20260805c"></script>
 <script defer src="/js/patches/301-stillingar-kerfi.js?v=20261119snz"></script>
 <script defer src="/js/patches/302-minar-sidur.js?v=20261029a"></script>
@@ -1683,7 +1683,7 @@ var Lanstaeki = {
      alltaf á Sölu. Sama vörn og patch 154 notar: hreint slug-hash (engin '=',
      ekkert '/') þýðir að notandinn bað um ákveðna síðu — snertum ekki. -->
 <script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){if(window.__salaLendingSkyrd)return;var h=(location.hash||"").replace(/^#/,"");if(h&&h.indexOf("=")===-1&&h.indexOf("/")===-1)return;if(document.querySelector(".view.active"))return;if(window.App&&App.switchView)App.switchView("sala");},500);});</script>
-<script defer src="/js/patches/369-krofu-vinnugluggi.js?v=20261011a"></script>
+<script defer src="/js/patches/369-krofu-vinnugluggi.js?v=20261123b"></script>
 <!-- 13.10.2026: djúpdvali — svæfð borð (kommentuð merki hér að ofan) opnast ekki sem autt svæði; sjá docs/DJUPDVALI.md -->
 <script defer src="/js/patches/465-djupdvali.js?v=20261119snz"></script>
 <script defer src="/js/patches/524-simi-adgerdir.js?v=20261123a"></script>

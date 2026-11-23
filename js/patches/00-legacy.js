@@ -2743,8 +2743,6 @@ console.log('[patch-master] loaded with all fixes');
           athugasemdir:document.getElementById('_ed_notes').value.trim()
         }; };
       var upphaf=lesa();
-      // 527: forskoðun á því sem fylgir nafn-/heimilisfangs-/kt-breytingu — þetta er glugginn sem „Breyta“ á fyrirtækjaspjaldinu opnar. Stöðvar aldrei vistun.
-      try{ if(window.AudkenniVidvorun) window.AudkenniVidvorun.festaVidForm({ sb:window.DB.sb, id:companyId, co:c, lesaForm:lesa, ids:{nafn:'_ed_nafn',kt:'_ed_kt',heimilisfang:'_ed_addr'}, eftir:document.getElementById('_ed_addr'), virkur:function(){ return document.body.contains(m); } }); }catch(_){}
       m.querySelector('._pm_save').onclick=function(){
         var update=lesa();
         Object.keys(update).forEach(function(k){ if(update[k]===upphaf[k]) delete update[k]; });
@@ -2772,6 +2770,8 @@ console.log('[patch-master] loaded with all fixes');
           else location.reload();
         });
       };
+      // 527: forskoðun á því sem fylgir nafn-/heimilisfangs-/kt-breytingu — þetta er glugginn sem „Breyta“ á fyrirtækjaspjaldinu opnar. Stöðvar aldrei vistun.
+      try{ if(window.AudkenniVidvorun) window.AudkenniVidvorun.festaVidForm({ sb:window.DB.sb, id:companyId, co:c, lesaForm:lesa, ids:{nafn:'_ed_nafn',kt:'_ed_kt',heimilisfang:'_ed_addr'}, eftir:document.getElementById('_ed_addr'), virkur:function(){ return document.body.contains(m); } }); }catch(_){}
     });
   }
   window._pmEditCompany = openEditModal;
