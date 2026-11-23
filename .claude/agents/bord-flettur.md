@@ -869,3 +869,5 @@ verk, með þessum mun:
 - **21.11.2026** — _radgjafinn.cjs:498 — stadfesta() hendir atriði sem vitnar í auðkenni utan til-settsins, sem er byggt á því sem safna() NÁÐI: hluti sem brást (omaelt) tekur ráðin sín með. Peningaráð þarf MAELD-heimild (:529).
 
 - **21.11.2026** — _radgjafinn.cjs:600 — skrifa() skilar {sleppt} (ekki villu) ef ↻ kemur innan BID_MIN=5 mín. eða morgunskrif innan 60 mín.: „ekkert gerðist" er rétt hegðun. prufa:true notar eigin lykil OG eigin lás.
+
+- **23.11.2026** — 218 og 88: hreint slug-hash (#markmid, #vorur) er djúptengill. Ræsing má ekki kalla switchView('sala') yfir það, og 218 má ekki skrifa hashið yfir þegar view-ið er þegar til. 514 sækir /api/bh-toki aðeins þegar /api/hub-adgangar segir authed.
