@@ -83,7 +83,7 @@ test('póstur: VIP fyrst, svo nýjast efst; þak 5 og „+ N í viðbót"; efni 
   assert.deepStrictEqual(win.BordNuna._thraedir().map(t => t.k), ['v', 'b', 'd', 'e', 'c', 'f', 'a']);
   const html = win.BordNuna.listi();
   assert.strictEqual((html.match(/data-t5="nuna-svara"/g) || []).length, 5);
-  assert.match(html, /\+ 2 í viðbót — öll 7 í Tölvupóstum/);
+  assert.match(html, /\+ 2 í viðbót — allir 7 í Tölvupóstum/);
   assert.ok(!/<img src=x/.test(html), 'efni þráðar má aldrei fara óbreytt í HTML');
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
   assert.match(html, /nu-vip/);

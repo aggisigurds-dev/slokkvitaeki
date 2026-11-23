@@ -152,7 +152,7 @@
       const l = thraedir();
       body = l.length
         ? l.slice(0, MAX_POSTUR).map(postLina).join('') +
-          '<button type="button" class="nu-meir" data-t5="nuna-ham" data-ham="tolvupostar">' + (l.length > MAX_POSTUR ? '+ ' + (l.length - MAX_POSTUR) + ' í viðbót — ' : '') + 'öll ' + l.length + ' í Tölvupóstum ›</button>'
+          '<button type="button" class="nu-meir" data-t5="nuna-ham" data-ham="tolvupostar">' + (l.length > MAX_POSTUR ? '+ ' + (l.length - MAX_POSTUR) + ' í viðbót — ' : '') + 'allir ' + l.length + ' í Tölvupóstum ›</button>'
         : '<div class="nu-tomt">Enginn póstur bíður svars. ✓</div>';
     }
     const fersk = T && T.loaded() && T.loadedAt() ? 'eldklar@ + bokhald@ · sótt kl. ' + klukka(T.loadedAt()) : 'eldklar@ + bokhald@';
@@ -192,7 +192,7 @@
     const sumSL = S.sl && S.sl.length ? ' · ' + tala(S.sl.reduce((a, x) => a + x.kr, 0)) + ' kr.' : '';
     return '<div class="nu-d"><div class="nu-h"><span>🧾 Reikningar sem bíða sendingar</span><small>' + esc(fersk + sumSL) + '</small></div>' +
       body + bhLina +
-      '<button type="button" class="nu-meir" data-t5="go" data-view="krofu-yfirlit">Öll krafan í Kröfu yfirliti ›</button></div>';
+      '<button type="button" class="nu-meir" data-t5="go" data-view="krofu-yfirlit">Allar kröfur í Kröfu yfirliti ›</button></div>';
   }
 
   function listi() {

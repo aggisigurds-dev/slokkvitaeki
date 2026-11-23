@@ -3784,7 +3784,7 @@
     // 23.11.2026 (Agnar, rauð lína undir síðasta verki dagsins: „þjappa þessu saman"): dagur sem á enga nótu tekur EINA línu
     // í stað tveggja + 40–56 px lágmarks — spjaldið endar þar sem efnið endar. Skrifað er í hana eins og áður (field-sizing
     // lætur hana vaxa með textanum); `tomt` er aðeins klasi svo CSS (368 og 507) geti minnkað hana.
-    const tomtNota = !g.trim();
+    const tomtNota = !g.trim() && nu() === 'Agnar';
     return '<div class="dnota' + (tomtNota ? ' tomt' : '') + '">' +
       '<textarea data-dn="' + esc(dk) + '" rows="' + (tomtNota ? 1 : Math.min(10, Math.max(2, g.split('\n').length + 1))) + '"' +
         ' aria-label="Nóta ' + d.d + ' ' + d.n + '." placeholder="Skrifaðu hér…">' + esc(g) + '</textarea>' +
@@ -3842,7 +3842,7 @@
      * tóma nótureitinn — spjaldið endar þar sem verkin enda (mælt: 223 → 176 px). ✎ í hausnum opnar nótuna ef maður vill skrifa;
      * sé nóta skrifuð (eða drög í gangi) er hún áfram sýnd eins og áður. Dagur án verka heldur eins línu reit (dagNotaHtml `tomt`). */
     const notaTexti = d => String(S.dnDrog[eigD + '|' + d.key] != null ? S.dnDrog[eigD + '|' + d.key] : dagNota(eigD, d.key));
-    const notaFalin = d => d.jobs.length > 0 && !S.dnOpen[eigD + '|' + d.key] && !notaTexti(d).trim();
+    const notaFalin = d => nu() === 'Agnar' && d.jobs.length > 0 && !S.dnOpen[eigD + '|' + d.key] && !notaTexti(d).trim();
     const vikuDalkar = mjoir.some(Boolean) ? ' style="grid-template-columns:' + mjoir.map(x => x ? 'minmax(84px,.55fr)' : 'minmax(0,1fr)').join(' ') + '"' : '';
     const body = '<div class="week"' + vikuDalkar + '>' + days.map((d, i) =>
       '<div class="day' + (d.today ? ' today' : '') + (mjoir[i] ? ' mjor' : '') + '">' +
@@ -3862,7 +3862,7 @@
       // 21.11.2026 (Agnar, eftir að reitirnir fóru í eigin einingu: „það átti ekki að taka út óráðstöfuðu verkefnin, hafa
       // 4x3 línur með þessum atriðum strax undir dagskránni hluti af þeim glugga"): reitirnir standa beint undir dögunum,
       // inni í Dagskrár-glugganum, 4 dálkar × 3 raðir. Aðeins sé eining 34 sjálf valin á borðið standa þeir þar í staðinn.
-      (open && !_dskAnOak && window.ThbOakvedin ? '<div class="dsk-oak">' + ThbOakvedin.html(dagskraSyn()) + '</div>' : '') +
+      (open && !_dskAnOak && window.ThbOakvedin ? '<div class="' + (nu() === 'Agnar' ? 'dsk-oak' : 'dsk-oak-opid') + '">' + ThbOakvedin.html(dagskraSyn()) + '</div>' : '') +
       (open ? '<div class="legend">' + VD_TEG.map(t => '<span><i class="dot" style="background:' + t[1] + '"></i>' + t[0] + '</span>').join('') + '</div>' : '');
     const syn = dagskraSyn();
     const val = '<label class="dgsyn"><span class="lbl">Dagskrá</span><select data-t5="dg-syn" aria-label="Hvers dagskrá er sýnd">' +
@@ -5160,9 +5160,6 @@
    * ekki felld saman. Haus sýnir samantektina (hve margir póstar og reikningar) þótt spjaldið sé lokað. */
   const NUNA_LYKILL = 'bord.nuna.opid';
   const nunaOpid = () => vmLesa(NUNA_LYKILL, true) !== false;
-  // Birtist hjá Agnari á vinnuborðinu og ekki í raðham (ritill); sama skilyrði og í `html` — notað til að VIP-póstur standi ekki tvisvar.
-  const nunaSynt = () => nu() === 'Agnar' && !!(M(cfg().mode) || {}).mitt && !(S.hamForm && S.hamForm.id) && nunaOpid() &&
-    !!(window.BordNuna && window.Tolvupostar && Tolvupostar.loaded());
   function nunaHtml() {
     const NU = window.BordNuna;
     if (!NU) return '';
@@ -5233,8 +5230,9 @@
         if (r.error) throw r.error;
         return r.data || [];
       }, 600000);
-      // 23.11.2026: ósvaraður VIP-póstur stendur í „Þarf þig núna" (526) þegar það spjald er opið — ekki líka hér.
-      const vipPostur = nunaSynt() ? '' : (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í 513 má aldrei fella borðið
+      // (23.11.2026: „Þarf þig núna" (526) sýnir líka ósvaraðan VIP-póst — ein lína getur því staðið á tveimur stöðum. VIP-vakt (513)
+      // er áfram eini staðurinn með ALLT VIP-ið (Hjá Claude, klukkan, ferskleikinn) og er ekki bæld niður.)
+      const vipPostur = (() => { try { return window.VipVakt ? VipVakt.html(n) : ''; } catch (_) { return ''; } })();   // villa í 513 má aldrei fella borðið
       const fel = Array.isArray(g.data) ? g.data : [];
       const heiti = f => String(f.nafn || '').split(/\s+[-–]\s+|,\s+/)[0].trim() || String(f.nafn || '');
       const hopLykill = f => String(f.kennitala || '').trim() || heiti(f);
@@ -6107,7 +6105,7 @@
             '<span class="fln">' + esc((MODS[k] && MODS[k].n) || '') + '</span>' + esc((MODS[k] && MODS[k].t) || k) + stj + '</button>';
         }).join('') +
         '<button type="button" class="flipi allt" role="tab" data-t5="flipi" data-m="*" aria-selected="' + (!flipiSyn.length) + '" title="Sýna allar einingar í stafla eins og áður">Allt · ' + einingaRod.length + '</button>' +
-        (veljaHtml ? '<span class="flipar-r" role="presentation">' + veljaHtml + '</span>' : '') +
+        (stjornStika && veljaHtml ? '<span class="flipar-r" role="presentation">' + veljaHtml + '</span>' : '') +
       '</div>');
     function frumaHtml(k, i, rod) {
       let sp = radar ? hfBreidd(k) : breiddAf(mode, k);
@@ -6317,7 +6315,7 @@
          * velja einingar. Nú stendur alltaf einn takki: sérsniðinn hamur fær „Breyta ham", vinnuborðið „Velja
          * einingar" og innbyggðir hamir opna „Mitt vinnuborð", þar sem einingarnar eru valdar. */
         // 23.11.2026: þegar flipastikan er sýnd stendur takkinn þar (sjá veljaHtml) — ekki tvisvar.
-        (flipaFaert ? '' : veljaHtml) +
+        (flipaFaert && stjornStika ? '' : veljaHtml) +
         '<span class="grow"></span>' + (mode.board ? '<div class="seg" role="group" aria-label="Borðið">' +
           '<button type="button" data-t5="bara-mitt" data-v="0" aria-pressed="' + !baraMitt + '">Master + mitt borð</button>' +
           '<button type="button" data-t5="bara-mitt" data-v="1" aria-pressed="' + baraMitt + '">Bara mitt borð</button></div>' : '') + '</div>' +

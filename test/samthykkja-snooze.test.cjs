@@ -118,8 +118,11 @@ test('hamaröðin: brotnar um (ekkert klippt af) og ber alltaf breytitakka', () 
   assert.match(T368, /'\.modes>\.seg\.modeseg\{flex:1 1 auto;min-width:0\}'/);
   assert.match(T368, /'\.modes>\.grow\{flex:0 0 0\}'/);
   assert.match(lesa('js/patches/507-bord-thema-bh2.js'), /\.seg\.modeseg\{flex:1 1 auto;/, 'V2-þemað (507) má ekki halda sinni eigin breidd');
-  const m = /\(mode\.ser \|\| mode\.mitt\n([\s\S]{0,900}?)\n\s*'<span class="grow">/.exec(T368);
+  // 23.11.2026: takkinn er smíðaður einu sinni (veljaHtml) og stendur á fliparöðinni hjá eigandanum þegar flipar sýna hann —
+  // annars í hamastikunni eins og áður.
+  const m = /const veljaHtml = \(mode\.ser \|\| mode\.mitt\)\n([\s\S]{0,900}?)\n\s*const flipaHtml/.exec(T368);
   assert.ok(m, 'breytitakka-blokkin fannst ekki');
+  assert.match(T368, /\(flipaFaert && stjornStika \? '' : veljaHtml\) \+\n\s*'<span class="grow">/, 'hamastikan ber takkann nema hann standi á fliparöðinni (aðeins hjá eigandanum)');
   assert.match(m[1], /data-t5="ham-breyta"/); assert.match(m[1], /data-t5="cfg"/, 'innbyggður hamur fær líka takka');
   assert.match(m[1], /: stjornStika \?/, 'en aðeins eigandi borðsins');
 });
