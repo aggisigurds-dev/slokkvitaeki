@@ -48,6 +48,10 @@
     'Allir Viðskiptavinir':  { d: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/>' },
     // 02.10.2026: hliðarstikan sýnir táknin aftur (391) — þessir fimm höfðu ekkert tákn og stóðu skakkir í línunni
     'Þjónustuborð':          { d: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>' },
+    // 23.11.2026: Markmið var EINI sýnilegi hnappurinn án data-sb-svg (mælt í loftinu,
+    // build efb1262). 391 felur svg sem ber ekki merkið, svo hann stóð táknlaus og
+    // heitið hans lenti utan táknagrindarinnar — sama og kom fyrir þessa fimm 02.10.
+    'Markmið':               { d: '<path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/>' },
     'Teikningar':            { d: '<path d="M3 3h18v18H3z"/><path d="M3 9h8v12M11 13h10"/>' },
     'Öpp':                   { d: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>' },
     'Aksturslisti':          { d: '<path d="M3 17V7a1 1 0 0 1 1-1h10v11"/><path d="M14 9h4l3 4v4h-7"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>' },
