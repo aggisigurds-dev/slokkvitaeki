@@ -2120,7 +2120,7 @@
     const active = api.active();
     const items = api.options().map(({id, label}) => {
       const branding = id === 'premium-hreinn'
-        ? '<span class="pe-banner-word">Brunahólf V2 <small>Premium</small></span>'
+        ? '<span class="pe-banner-word">Brunahólf <small>Slökkvitæki ehf.</small></span>'
         : '<img src="/img/theme/brunaholf-mark.png" alt="" loading="lazy">';
       return '<button type="button" class="pe-btn pe-banner-card" data-banner-choice="' + id +
         '" aria-pressed="' + (id === active) + '"' + (readOnly ? ' disabled' : '') + '>' +
