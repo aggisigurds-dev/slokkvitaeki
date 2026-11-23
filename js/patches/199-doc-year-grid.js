@@ -373,6 +373,18 @@
       return true;
     }catch(e){ console.warn('[savePair]', e); return false; } // auto-path is best-effort; manual path checks this
   }
+  // 23.11.2026 — SJÁLFVIRKA pörunin (autoSave) skrifaði par undir GAMLA greiðandanum þegar vafrinn hélt gömlu spjaldaröðinni eftir kt-breytingu:
+  // par 1742 (2025) varð til undir base 327 þótt allt hefði færst á 1295 (tvítak ofan á par 775). Aðeins sjálfvirka leiðin spyr nú grunninn um
+  // ferska stöðu staðarins; handvirk „🔗 Tengja“ er óbreytt (ALLTAF LEYFA VISTUN). Vitum við ekki svarið (villa, enginn greiðandi) er leyft — eins og áður.
+  async function baseErFersk(baseId, coId){
+    var sb=SB(); if(!sb||!baseId||coId==null) return true;
+    try{
+      var r=await sb.from('fyrirtaeki').select('customer_base_id').eq('id', coId).maybeSingle();
+      if(!r || r.error || !r.data || r.data.customer_base_id==null) return true;
+      return +r.data.customer_base_id===+baseId;
+    }catch(e){ return true; }
+  }
+
   function pdYear(p){ var s=String(p.created_date||p.due_date||''); var m=s.match(/(20[0-9]{2})/); return m?parseInt(m[1],10):null; }
   function pdChip(p){
     var lab='PD '+(p.number||p.payday_id||'');
@@ -1566,7 +1578,12 @@
         if(autoSave && baseId && !svc.ekkiVista){
           var rep=repArr[0];
           if(rep && inv && !rep._att && !inv._att && !inv._fromSolur && rep.id!=null && inv.id!=null){
-            savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
+            (function(b0, y0, k0, c0, p0){
+              baseErFersk(b0, c0).then(function(ok){
+                if(ok) savePair(b0, y0, k0, c0, p0);
+                else console.warn('[199] sjálfvirk pörun sleppt: spjaldið hélt gamla greiðandanum (base '+b0+') — hlaðið aftur');
+              });
+            })(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
           }
         }
         // Óháð rýni 17.11 (2): parið er ALDREI skrifað við það eitt að spjaldið opnist (regla hússins: ekkert tengist
