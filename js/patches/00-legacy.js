@@ -2749,6 +2749,8 @@ console.log('[patch-master] loaded with all fixes');
         if(!Object.keys(update).length){ m.remove(); return; }
         window.DB.sb.from('fyrirtaeki').update(update).eq('id',companyId).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
+          // 527: viðvörun um það sem þarf mannshönd eftir nafn-/heimilisfangs-/kt-breytingu — stöðvar aldrei vistun
+          try{ if(window.AudkenniVidvorun) window.AudkenniVidvorun.eftirVistun(window.DB.sb, companyId, c, Object.assign({}, c, update)); }catch(_){}
           // 2026-07-30 — nafnbreyting VERÐUR að fylgja tækjunum. `uttaeki` á engan
           // staðar-lykil; tækjalisti fyrirtækisins er fundinn með nákvæmum
           // strengjasamanburði (`features.js:104` u.client === c.nafn). Án þessa
@@ -2768,6 +2770,8 @@ console.log('[patch-master] loaded with all fixes');
           else location.reload();
         });
       };
+      // 527: forskoðun á því sem fylgir nafn-/heimilisfangs-/kt-breytingu — þetta er glugginn sem „Breyta“ á fyrirtækjaspjaldinu opnar. Stöðvar aldrei vistun.
+      try{ if(window.AudkenniVidvorun) window.AudkenniVidvorun.festaVidForm({ sb:window.DB.sb, id:companyId, co:c, lesaForm:lesa, ids:{nafn:'_ed_nafn',kt:'_ed_kt',heimilisfang:'_ed_addr'}, eftir:document.getElementById('_ed_addr'), virkur:function(){ return document.body.contains(m); } }); }catch(_){}
     });
   }
   window._pmEditCompany = openEditModal;

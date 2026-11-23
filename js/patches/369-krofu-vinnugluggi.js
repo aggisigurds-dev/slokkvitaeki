@@ -30,6 +30,8 @@
  *   krafa_ekki_stofnud Payday-reikningur án bankakröfu. Spegillinn veit það ekki, svo flaggið er mál í
  *                      krofu_verkferli (stofnað í glugganum eða með SQL-inu)
  *   faera_kt           rangur greiðandi → færa á aðra kennitölu (markfélag til / þarf að stofna)
+ *   ny_kt              félag sameinað / með nýja kennitölu og reikningur SENDUR á gömlu: ⊘ afturkalla → ↩ bakfæra → kt færð →
+ *                      ný sala + ný skýrsla → ósend (Agnar 23.11.2026, Óðinn regla 50). Hvert þrep lesið úr gögnunum.
  *   gleymt             úttektarskýrsla ársins án reiknings (v_gleymt_ad_rukka_uttekt), upphæð áætluð
  *   greitt_sidar       greitt-síðar drög eldri en 14 daga
  *   aud_sala           final/sótt sala án lína
@@ -102,7 +104,8 @@
 
   const STODUR = { opid: 'Opið', tilbuid_i_vinnslu: 'Tilbúið í vinnslu', i_vinnslu: 'Í vinnslu', i_yfirferd_agnars: 'Í yfirferð Agnars', lokid: 'Lokið', sleppt: 'Sleppt' };
   const LOKAD = { lokid: 1, sleppt: 1 };
-  const HANDVIRK = { faera_kt: 1, krafa_ekki_stofnud: 1, annad: 1 };
+  const HANDVIRK = { faera_kt: 1, ny_kt: 1, krafa_ekki_stofnud: 1, annad: 1 };
+  const KT_TEG = { faera_kt: 1, ny_kt: 1 };   // málategundir sem bera kennitölu nýs greiðanda (markkt)
   // Leyfðar breytingar á stöðu. Vinnslan (Claude) færir tilbuid_i_vinnslu → i_vinnslu → i_yfirferd_agnars.
   const LEYFT = {
     opid: ['tilbuid_i_vinnslu', 'sleppt'],
@@ -118,6 +121,7 @@
     payday_drog:        { l: 'Payday-drög',        t: 'Payday-drög → senda',            lina: 'Yfirfara drögin og senda úr Payday' },
     krafa_ekki_stofnud: { l: 'Krafa ekki stofnuð', t: 'Krafa ekki stofnuð í banka',     lina: 'Stofna kröfu eða senda greiðsluupplýsingar' },
     faera_kt:           { l: 'Færa á aðra kt.',    t: 'Færa reikning á aðra kennitölu', lina: 'Afturkalla, færa greiðanda og senda aftur' },
+    ny_kt:              { l: 'Ný kt félags',       t: 'Ný kt félags: afturkalla, bakfæra, ný sala + skýrsla', lina: 'Afturkalla → bakfæra → kt færð → ný sala og skýrsla' },
     gleymt:             { l: 'Gleymd úttekt',      t: 'Rukka gleymda úttekt',           lina: 'Gera reikning úr skýrslunni' },
     greitt_sidar:       { l: 'Greitt síðar',       t: 'Klára greitt-síðar sölu',        lina: 'Staðfesta greiðslumáta og færa í reikning' },
     aud_sala:           { l: 'Auð sala',           t: 'Laga auða sölu (engar línur)',   lina: 'Finna hvað var selt: bæta við línum eða ógilda' },
@@ -136,7 +140,7 @@
    */
   const HOPUR = {
     senda_krofu: 1, krafa_ekki_stofnud: 1, payday_drog: 1, gleymt: 1,
-    aud_sala: 1, greitt_sidar: 1, faera_kt: 1,
+    aud_sala: 1, greitt_sidar: 1, faera_kt: 1, ny_kt: 1,
     itreka: 2,
     stadfesta_greidslu: 3,
     annad: 4
@@ -156,10 +160,11 @@
   const TEG_ROD = Object.keys(TEG);
   const LEIDIR = { payday: 'Stofna kröfu í Payday', uppl: 'Senda greiðsluupplýsingar', endursenda: 'Afturkalla og senda aftur' };
   const VIDVORUN = {
-    itreka: 'Ekki nota „Kredit + endurútgáfu" (26) á ógreiddan sendan reikning — hún kallar aldrei á Payday og bankakrafan stendur eftir.',
+    itreka: 'Ekki nota „Kredit + endurútgáfu" (26) til að ítreka ógreiddan sendan reikning: FULLT kredit afturkallar kröfuna í Payday (síðan 08.10.2026), hlutakredit eða kredit á reikning án Payday-númers skilur bankakröfuna eftir.',
     payday_drog: '„⊘ Afturkalla" (payday-push cancel) setur reikninginn fyrst í SENT og fellir hann svo. Á drögum gæti það SENT reikninginn — óprófað gegn Payday. Sendu drögin frekar beint úr Payday.',
     krafa_ekki_stofnud: 'Svarnetfang Eignaumsjónar er no-reply: svar við þeirra pósti berst ekki. Senda þarf NÝJAN póst á gjaldkeri@eignaumsjon.is.',
-    faera_kt: '⚠-þrepin eru unnin í þessari röð og hvert lesið til baka: afturkalla → uppfæra sölu → salan situr ósend. „Kredit + endurútgáfa" (26) er röng leið — hún kallar ekki á Payday.',
+    faera_kt: '⚠-þrepin eru unnin í þessari röð og hvert lesið til baka: afturkalla → uppfæra sölu → salan situr ósend. Sameining eða NÝ kennitala sjálfs félagsins er önnur leið: „Ný kt félags“ (afturkalla → bakfæra → ný sala + skýrsla).',
+    ny_kt: '⚠-þrepin eru unnin í þessari röð og hvert lesið til baka (orð Agnars 23.11.2026): FYRST ⊘ Afturkalla í Payday, SÍÐAN ↩ Bakfæra (kreditreikningur), kt félagsins færð (sjálfvirka keðjan færir greiðanda, skjöl, tæki, mál og sögu; customer id helst), ný sala með sömu línum og ný úttektarskýrsla. Nýja salan situr ÓSEND — Agnar sendir kröfuna og svarið.',
     greitt_sidar: 'Aðeins í aðra áttina: greitt síðar → reikningur. Aldrei til baka.',
     gleymt: 'Stólpi (fyrri eigendur): reikningur „opið við yfirtöku" telst greiddur til fyrri eiganda og er aldrei rukkaður. Hér er hann aðeins verðviðmið.'
   };
@@ -351,7 +356,7 @@
       case 'senda_krofu': return 'aldrei send · ' + dagaMunur(m.stofnad) + ' d.';
       case 'payday_drog': return 'aðeins drög í Payday' + (p && p.due_date && p.due_date < idag ? ' · gjalddagi dróganna liðinn' : '');
       case 'krafa_ekki_stofnud': return 'engin bankakrafa' + (p && p.due_date ? ' · gjalddagi ' + dags(p.due_date) : '');
-      case 'faera_kt': { const g = (m.vf && m.vf.gogn) || {}; return 'á ' + (g.markkt ? 'kt. ' + ktBirt(g.markkt) : '(kennitölu vantar)'); }
+      case 'faera_kt': case 'ny_kt': { const g = (m.vf && m.vf.gogn) || {}; return 'á ' + (g.markkt ? 'kt. ' + ktBirt(g.markkt) : '(kennitölu vantar)'); }
       case 'gleymt': return 'skoðun ' + skodunTexti(m.gleymt) + (m.gleymt && m.gleymt.vinnublad_id ? ' · á vinnublaði' : '') +
         ' · ' + (m.aaetlad ? 'áætlað út frá ' + (m.vidmid.invoice_number || 'fyrri reikningi') : 'upphæð óþekkt');
       case 'greitt_sidar': return 'drög frá ' + dags(m.stofnad) + ' · ' + dagaMunur(m.stofnad) + ' d.';
@@ -565,17 +570,21 @@
       const baseId = (s && s.customer_base_id) || m.customer_base_id || null, fid = (s && s.customer_id) || m.fyrirtaeki_id || null;
       const markkt = tolur(g.markkt || '');
       const tomt = Promise.resolve({ data: null, error: null });
-      const [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr] = await Promise.all([
+      const nyKt = m.tegund === 'ny_kt' && fid && s;
+      const [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr, rnk, rsk] = await Promise.all([
         dkId ? c.from('payday_invoices_slokk').select('payday_id,number,kt,customer_name,amount_total,created_date,due_date,final_due_date,paid_date,status,reference,updated_at').eq('payday_id', dkId).limit(1) : tomt,
         baseId ? c.from('customers_base').select('id,nafn,kennitala,netfang,simi,heimilisfang,contact_email,contact_phone').eq('id', baseId).maybeSingle() : tomt,
-        fid ? c.from('fyrirtaeki').select('id,nafn,kennitala,netfang,simi,heimilisfang,customer_base_id').eq('id', fid).maybeSingle() : tomt,
+        fid ? c.from('fyrirtaeki').select('id,nafn,kennitala,netfang,simi,heimilisfang,customer_base_id,er_i_thjonustu').eq('id', fid).maybeSingle() : tomt,
         baseId ? c.from('felag_umsjonarpostur').select('email_id,sender_name,sender_email,subject,received_at').eq('customer_base_id', baseId).eq('fra_okkur', false).order('received_at', { ascending: false }).limit(5) : tomt,
         (m.tegund === 'senda_krofu' && s && s.customer_kt && +s.samtals) ? c.from('solur').select('id,num,samtals,krafa_sent_at,customer_kt,status,is_credit').eq('customer_kt', s.customer_kt).eq('samtals', s.samtals).neq('id', s.id).not('krafa_sent_at', 'is', null).limit(5) : tomt,
         markkt.length === 10 ? c.from('customers_base').select('id,nafn,kennitala').or('kennitala.eq.' + ktBirt(markkt) + ',kennitala.eq.' + markkt).limit(5) : tomt,
         markkt.length === 10 ? c.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,customer_base_id').or('kennitala.eq.' + ktBirt(markkt) + ',kennitala.eq.' + markkt).is('deleted_at', null).limit(10) : tomt,
         (m.tegund === 'gleymt' && fid) ? c.from('solur').select('id,num,samtals,created_at,krafa_sent_at,invoiced_at,dk_invoice_id,status').eq('customer_id', fid).gte('created_at', AR() + '-01-01').neq('status', 'void').order('created_at', { ascending: false }).limit(3) : tomt,
         (m.tegund === 'gleymt' && fid) ? c.from('v_gleymt_ad_rukka_uttekt').select('fyrirtaeki_id').eq('fyrirtaeki_id', fid).limit(1) : tomt,
-        s ? c.from('solur').select('id,num').eq('is_credit', true).eq('credit_of', s.id).limit(3) : tomt
+        s ? c.from('solur').select('id,num,samtals').eq('is_credit', true).eq('credit_of', s.id).limit(10) : tomt,
+        // ny_kt: salan sem kom í STAÐINN (sama staður, eftir upphaflegu söluna, ekki kredit/void) og skýrsla ársins (endurgerð skýrsla heldur skjalaröðinni — því engin tímasía, aðeins kt í slóðinni)
+        nyKt ? c.from('solur').select('id,num,customer_kt,customer_nafn,customer_base_id,samtals,status,is_credit,krafa_sent_at,invoiced_at,dk_invoice_id,created_at').eq('customer_id', fid).gte('created_at', s.created_at).neq('id', s.id).order('created_at', { ascending: false }).limit(30) : tomt,
+        nyKt ? c.from('customer_documents').select('id,doc_type,year,customer_name,file_name,storage_path,created_at').eq('fyrirtaeki_id', fid).eq('doc_type', 'uttektarskyrsla').eq('year', AR()).order('created_at', { ascending: false }).limit(6) : tomt
       ]);
       x.s = s;
       x.p = (rp.data && rp.data[0]) || null;
@@ -589,11 +598,18 @@
       x.nySala = (rny.data || [])[0] || null;
       x.iSyn = m.tegund === 'gleymt' ? !!((rsyn.data || [])[0]) : undefined;
       x.kreditfaert = !!(s && (s.is_credit || (rkr.data || []).length));
-      x.vantar = [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr].filter(r => r && r.error).map(r => r.error.message);
+      // FULLT kredit (ny_kt): summa kreditsalna dekkir söluna — hlutakredit er ekki „bakfært“ (reikningurinn stendur að mestu enn).
+      x.kreditFullt = !!(s && !s.is_credit && !rkr.error && (rkr.data || []).reduce((n, z) => n + Math.abs(+z.samtals || 0), 0) >= Math.abs(+s.samtals || 0) - 1 && (rkr.data || []).length);
+      // ny_kt: nýja salan = á nýju kt, ekki kredit, ekki void. Nýja skýrslan = skjal sem ber nýju kt í heiti/slóð (eða sama kt á staðnum).
+      x.nySalaKt = nyKt && markkt.length === 10 ? ((rnk.data || []).find(z => !z.is_credit && z.status !== 'void' && tolur(z.customer_kt) === markkt) || null) : undefined;
+      x.nySkyrsla = nyKt && markkt.length === 10 ? ((rsk.data || []).find(z => String(z.storage_path || z.file_name || '').indexOf(ktBirt(markkt)) >= 0) || null) : undefined;
+      x.vantar = [rp, rb, rf, ru, rt, rmb, rmf, rny, rsyn, rkr, rnk, rsk].filter(r => r && r.error).map(r => r.error.message);
       // Gögn sem vantar mega aldrei líta út eins og „í lagi": ✓ verður „… óvíst".
       if (rt.error) x.tvifari = undefined;
       if (rmb.error) x.markBase = undefined;
       if (rsyn.error) x.iSyn = undefined;
+      if (rnk.error) x.nySalaKt = undefined;
+      if (rsk.error) x.nySkyrsla = undefined;
       gl.x = x;
     } catch (e) {
       gl.villa = (e && e.message) || String(e);
@@ -730,6 +746,39 @@
         break;
       }
 
+      case 'ny_kt': {
+        // Agnar 23.11.2026 (Óðinn regla 50): FYRST afturkalla, SÍÐAN bakfæra; kt félagsins færð; ný sala + ný skýrsla; salan ósend.
+        // Hvert þrep er lesið úr gögnunum — „gert“ merkið er aðeins varaleið þegar gögnin vantar.
+        const mk = tolur(g.markkt);
+        const til = x.markBase === undefined ? null : !!x.markBase;
+        const stKt = x.stadur ? tolur(x.stadur.kennitala) : null;
+        const ktFaerd = (x.stadur && mk) ? stKt === mk : null;
+        const nyS = x.nySalaKt, nySk = x.nySkyrsla;
+        kerfi('markkt', 'Kennitala nýs greiðanda gild', mk ? ktGild(mk) : false, mk ? 'kt. ' + ktBirt(mk) + (g.marknafn ? ' · ' + g.marknafn : '') : 'Skráðu kennitölu nýs greiðanda hér til hliðar.');
+        // Forathugun helst græn eftir bakfærsluna: kreditfærð sala er þegar á leiðinni, ekki „stenst ekki“.
+        kerfi('forathugun', 'Forathugun: ógreitt og final — Payday SENT eða DRAFT (eða þegar afturkallað/bakfært)',
+          x.kreditFullt ? true : og(ogreitt, s ? s.status === 'final' : null, s ? (sent && !afturkallad ? (p ? (p.status === 'SENT' || p.status === 'DRAFT') : false) : true) : null),
+          [s ? 'Staða ' + s.status : '', x.kreditFullt ? 'þegar kreditfærð' : (x.kreditfaert ? 'kreditað að hluta — ekki bakfært' : ''), p ? 'Payday nr. ' + (p.number || '—') + ' · ' + p.status : (s && !sent ? 'krafan þegar afturkölluð' : 'enginn Payday-reikningur')].filter(Boolean).join(' · '));
+        // Hlutlaust (ekki ✗) meðan nýi greiðandinn er ekki til: sjálfvirka keðjan stofnar hann þegar kt félagsins er færð.
+        kerfi('markfelag', til === false ? 'Nýi greiðandinn er ekki enn til í kúnnaskrá' : 'Nýi greiðandinn er til í kúnnaskrá', til === false ? null : til,
+          x.markBase ? x.markBase.nafn + ' · #' + x.markBase.id : til === false ? 'Eðlilegt: sjálfvirka kt-keðjan stofnar greiðandann þegar kt félagsins er færð (þrep 5).' : '');
+        vinnsla('afturkalla', '⚠ 1) Afturkalla kröfu og reikning í Payday (⊘ í Kröfuyfirliti) og lesa til baka',
+          'FYRST afturkalla. Payday býr sjálft til kreditskjal (CANCELLED + CREDIT) — ekki afturkalla aftur. dk_invoice_id, invoiced_at og krafa_sent_at eiga að vera tóm.', s ? afturkallad : null, { vardur: true });   // gögnin ráða: „gert“-merki yfirskrifar aldrei false
+        vinnsla('bakfaera', '⚠ 2) Bakfæra (↩ kreditreikningur í Kröfuyfirliti, allar línur) og lesa til baka',
+          'SÍÐAN bakfæra, aðeins eftir afturköllun. Lesið: kreditsölur (is_credit, credit_of = þessi sala) dekka alla upphæðina — hlutakredit telst ekki.', s ? x.kreditFullt : null, { vardur: true });
+        vinnsla('breyta_kt', '⚠ 3) Færa kennitölu félagsins á nýju kt (spjaldið → Breyta) — sjálfvirka keðjan færir restina',
+          'Greiðandi, skjöl, pör, tæki, mál og saga færast með customer id (óbreytt) — kt_breyting_faera. Agnar staðfestir kennitölubreytinguna. Lesið: kt á spjaldinu = nýja kt.', ktFaerd, { vardur: true });
+        vinnsla('ny_sala', '4) Ný sala á nýja greiðandann með SÖMU línum og verðum (Leiðrétta / Klára heimsókn)',
+          'Klára sölu sendir ekkert. Lesið: til er ný sala á staðnum á nýju kt (ekki kredit/void).', nyS === undefined ? null : !!nyS);
+        vinnsla('ny_skyrsla', '5) Ný úttektarskýrsla með réttri kt og nafni (handskrifaði textinn óskertur)',
+          '„Búa til úttektarskýrslu“ á nýju sölunni; sú gamla er merkt leyst af hólmi, engu eytt. Lesið: skýrsla sem ber nýju kt.', nySk === undefined ? null : !!nySk);
+        kerfi('i_thjonustu', 'Félagið er enn í þjónustu og skráð á nýju kt', !x.stadur ? null : (ktFaerd ? !!x.stadur.er_i_thjonustu : null),
+          x.stadur ? x.stadur.nafn + ' · kt. ' + ktBirt(x.stadur.kennitala || '') : '');
+        markmid('osend', 'kerfi', 'Nýja salan situr ÓSEND í Kröfuyfirliti', nyS ? !merktSend(nyS) : null, 'Þá bíður hún yfirferðar þinnar.');
+        markmid('senda', 'agnar', 'Fara yfir skýrslu og reikning og senda á nýja greiðandann (og svara póstinum)', nyS ? merktSend(nyS) : null, 'Lokasending er alltaf þín. slokkvitaeki@ hefur enga sendileið — svarið sendir þú úr póstforritinu.');
+        break;
+      }
+
       case 'gleymt': {
         const gg = m.gleymt || {}, v = m.vidmid;
         kerfi('skyrsla', 'Úttektarskýrsla ' + AR() + ' skráð á staðnum', true,
@@ -812,7 +861,7 @@
   }
   function hindrunVinnslu(m, x, vf) {
     if (!x) return 'Bíddu — gögn málsins eru enn að hlaðast.';
-    if (m.tegund === 'faera_kt' && !ktGild(tolur(((vf && vf.gogn) || m.gognNy || {}).markkt))) return 'Skráðu gilda kennitölu nýs greiðanda áður en málið fer í vinnslu.';
+    if (KT_TEG[m.tegund] && !ktGild(tolur(((vf && vf.gogn) || m.gognNy || {}).markkt))) return 'Skráðu gilda kennitölu nýs greiðanda áður en málið fer í vinnslu.';
     return '';
   }
 
@@ -824,6 +873,7 @@
       case 'payday_drog': return 'Salan er merkt send, en reikningurinn er aðeins DRAFT í Payday: kúnninn hefur ekki fengið hann og engin krafa er í banka.';
       case 'krafa_ekki_stofnud': return 'Reikningurinn var sendur en bankakrafa stofnaðist ekki („Krafa stofnuð" = Nei). Greiðandinn sér enga kröfu í heimabanka og getur ekki greitt — algengt hjá húsfélögum í umsjón (Eignaumsjón: „engin krafa").';
       case 'faera_kt': return 'Reikningurinn á að greiðast af öðrum aðila en honum var sendur á' + (g.markkt ? ' (kt. ' + ktBirt(g.markkt) + (g.marknafn ? ', ' + g.marknafn : '') + ')' : '') + '. Hann er afturkallaður, greiðandinn færður á sölunni og krafan send aftur á rétta kennitölu.' + (g.texti ? ' ' + g.texti : '');
+      case 'ny_kt': return 'Félagið er sameinað eða komið með nýja kennitölu' + (g.markkt ? ' (kt. ' + ktBirt(g.markkt) + (g.marknafn ? ', ' + g.marknafn : '') + ')' : '') + ' og reikningurinn var sendur á gömlu kennitöluna. Hann er afturkallaður og bakfærður, kennitala félagsins færð og ný sala og ný skýrsla gerðar á nýju kennitöluna.' + (g.texti ? ' ' + g.texti : '');
       case 'gleymt': return 'Úttektarskýrsla ' + AR() + ' er skráð á staðnum en enginn reikningur — hvorki á staðnum, kúnnanum né systurstað á sömu kennitölu — og úttektin var ekki rukkuð gegnum Stólpa (fyrri eigendur).';
       case 'greitt_sidar': return 'Sala í „greitt síðar" síðan ' + dags(s && s.created_at) + ' (' + dagaMunur(s && s.created_at) + ' dagar). Hún er hvorki greidd né komin í kröfu.';
       case 'aud_sala': return 'Salan er ' + ((s && s.status) || '') + ' en ber engar línur. Reikningur yrði auður — verðirnir í 233/254 stöðva sendingu, en upphæðin sem átti að rukka er óþekkt.';
@@ -950,11 +1000,11 @@
   }
   function formHtml(gl, iNyju) {
     const d = gl.drog, teg = iNyju ? (d.f_teg || 'faera_kt') : gl.form, busy = !!gl.busy;
-    const velja = iNyju ? '<label class="kvlbl">Tegund máls<select data-kvreitur="f_teg">' + ['faera_kt', 'krafa_ekki_stofnud', 'annad'].map(t =>
+    const velja = iNyju ? '<label class="kvlbl">Tegund máls<select data-kvreitur="f_teg">' + ['faera_kt', 'ny_kt', 'krafa_ekki_stofnud', 'annad'].map(t =>
       '<option value="' + t + '"' + (teg === t ? ' selected' : '') + '>' + esc(TEG[t].t) + '</option>').join('') + '</select></label>' : '';
-    const kt = teg === 'faera_kt' ? '<label class="kvlbl">Kennitala nýs greiðanda<input data-kvreitur="f_kt" inputmode="numeric" autocomplete="off" value="' + esc(d.f_kt || '') + '" placeholder="000000-0000"></label>' +
+    const kt = KT_TEG[teg] ? '<label class="kvlbl">Kennitala nýs greiðanda<input data-kvreitur="f_kt" inputmode="numeric" autocomplete="off" value="' + esc(d.f_kt || '') + '" placeholder="000000-0000"></label>' +
       '<span class="kvmn" data-kvktst="f_kt"></span><label class="kvlbl">Nafn nýs greiðanda (valfrjálst)<input data-kvreitur="f_nafn" value="' + esc(d.f_nafn || '') + '"></label>' : '';
-    const textiL = teg === 'krafa_ekki_stofnud' ? 'Heimild (t.d. Payday: „Krafa stofnuð" = Nei)' : teg === 'faera_kt' ? 'Af hverju (t.d. hver á að greiða)' : 'Lýsing — hvað þarf að gera';
+    const textiL = teg === 'krafa_ekki_stofnud' ? 'Heimild (t.d. Payday: „Krafa stofnuð" = Nei)' : KT_TEG[teg] ? (teg === 'ny_kt' ? 'Af hverju (t.d. „húsfélagið sameinað við …“, bréf eða póstur)' : 'Af hverju (t.d. hver á að greiða)') : 'Lýsing — hvað þarf að gera';
     return '<div class="kvform">' + velja + kt +
       '<label class="kvlbl">' + esc(textiL) + '<textarea data-kvreitur="f_texti" rows="3">' + esc(d.f_texti || '') + '</textarea></label>' +
       '<div class="kvurr"><button type="button" class="btn gold sm" data-kv="stofna" data-v="' + (iNyju ? '' : teg) + '"' + (busy ? ' disabled' : '') + '>' + (gl.busy === 'stofna' ? 'Augnablik…' : 'Stofna mál') + '</button>' +
@@ -966,6 +1016,7 @@
     const b = (v, txt) => '<button type="button" class="btn iv sm" data-kv="form" data-v="' + v + '" aria-pressed="' + (gl.form === v) + '"' + (lok ? ' disabled' : '') + '>' + txt + '</button>';
     return '<div class="kvsect">Önnur úrræði á þessum reikningi</div><div class="kvurr">' +
       (m.tegund !== 'faera_kt' ? b('faera_kt', '↪ Rangur greiðandi') : '') +
+      (m.tegund !== 'ny_kt' && merktSend(s) ? b('ny_kt', '⇄ Ný kt félags') : '') +
       (m.tegund !== 'krafa_ekki_stofnud' && merktSend(s) ? b('krafa_ekki_stofnud', '⚑ Krafa ekki stofnuð') : '') +
       b('annad', '✎ Annað mál') + '</div>' + (gl.form ? formHtml(gl, false) : '');
   }
@@ -1029,7 +1080,7 @@
           '<p class="kv-skyr">✓ sjálfgreint = kerfið las það úr gögnunum · ⏳ bíður Agnars · 🤖 vinnsla = Claude vinnur eftir „Tilbúið í vinnslu" · ⚠ = varið þrep, keyrt í röð og lesið til baka</p>' +
         '</section><aside class="kv-hlid" aria-label="Tenglar og gögn">' +
           '<div class="kvsect">Tenglar</div><div class="kvurr">' + tenglarHtml(m, x) + '</div>' +
-          (m.tegund === 'faera_kt' ? markHtml(gl, lok) : '') +
+          (KT_TEG[m.tegund] ? markHtml(gl, lok) : '') +
           (m.tegund === 'krafa_ekki_stofnud' ? uppljHtml(m, x) : '') +
           '<div class="kvsect">Gögn</div>' + gognHtml(m, x, vf) +
           athHtml(gl, taflaVantar) + urraediHtml(gl, lok) + sagaHtml(vf) +
@@ -1218,7 +1269,7 @@
     const s = gl.x && gl.x.s;
     if (!s) { toast('Finndu reikninginn fyrst.', true); return; }
     const texti = String(gl.drog.f_texti || '').trim(), gogn = { stofnad_i: 'vinnugluggi' };
-    if (tegund === 'faera_kt') {
+    if (KT_TEG[tegund]) {
       const kt = tolur(gl.drog.f_kt);
       if (!ktGild(kt)) { toast('Kennitala nýs greiðanda er ekki gild — athugaðu vartöluna.', true); return; }
       if (kt === tolur(s.customer_kt)) { toast('Þetta er sama kennitala og er þegar á reikningnum.', true); return; }

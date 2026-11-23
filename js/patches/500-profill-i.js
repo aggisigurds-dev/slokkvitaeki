@@ -552,9 +552,11 @@
     /* skjöl og hreyfingar (403): talning í haus + reikningalínur */
     var sk = sel(m, '._dyg-section .b403-skyring');
     if (sk) { var sb = allt(sk, 'b').map(txt); var ad = /(\d+)\s*skjöl/.exec(txt(sel(sk, '.dauf'))); d.skjol = { komin: +(sb[0] || 0), vinnsla: +(sb[1] || 0), vantar: +(sb[2] || 0), alls: ad ? +ad[1] : 0 }; } else d.skjol = null;
+    /* kreditað að hluta (199: „kreditað að hluta −N kr“): sama frádráttur og samtalan í 199 — annars teldi spjaldið kreditaða upphæðina enn með */
+    var kreditHluti = function (el) { var n = 0; (el || []).forEach(function (e) { if (/hluta/i.test(txt(e))) { var v = parseInt(txt(e).replace(/[^\d]/g, ''), 10); if (v > 0) n += v; } }); return n; };
     d.hreyf = allt(m, '._dyg-section .b403-hreyf .b403-skjal-lina.hreyf').map(function (r) {
       var u = txt(sel(r, '.upph')).replace(/[^\d]/g, '');
-      return { teg: txt(sel(r, '.teg')), dags: txt(sel(r, '.dags')), nr: txt(sel(r, 'a.sk-doc.inv')), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(r, '.s-greitt') || /greitt/i.test(txt(r)) };
+      return { teg: txt(sel(r, '.teg')), dags: txt(sel(r, '.dags')), nr: txt(sel(r, 'a.sk-doc.inv')), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(r, '.s-greitt') || /greitt/i.test(txt(r)), kredit: !!sel(r, '.kredit'), hluti: kreditHluti(allt(r, '.s-kredit')) };
     });
     d.hreyfAlls = ''; allt(m, '._dyg-section .b403-kafli .b403-hint').forEach(function (e) { var t = txt(e); if (!d.hreyfAlls && /^[\d.]+\s*kr$/.test(t)) d.hreyfAlls = t; });
     if (!d.hreyf.length) {
@@ -564,7 +566,7 @@
         allt(bl, '.sk-svc-card').forEach(function (c) {
           var nr = sel(c, 'a.sk-doc.inv'); if (!nr) return;
           var u = txt(sel(c, '.sk-svc-amt')).replace(/[^\d]/g, '');
-          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt') });
+          d.hreyf.push({ teg: /brunakerfi/i.test(txt(sel(c, '.sk-svc-hd'))) ? 'Brunakerfi' : 'Úttekt', dags: ar || '', nr: txt(nr).replace(/[^\w-]/g, ''), upph: u ? parseInt(u, 10) : 0, greitt: !!sel(c, '.s-greitt'), kredit: !!sel(c, '.sk-doc.inv.kredit'), hluti: kreditHluti(allt(c, '.s-kredit')) });
         });
       });
     }
@@ -711,7 +713,7 @@
     var buidS = /(\d{4})$/.test(d.sidast || '') && +/(\d{4})$/.exec(d.sidast)[1] === Ys;
     var stS = manStada(Ms, buidS) || (d.utrunnin ? 'r' : 'g');
     var dagS = 0; if (stS === 'r' && Ms) { var idS = new Date(); idS.setHours(0, 0, 0, 0); dagS = Math.max(1, Math.round((idS - new Date(Ys, Ms, 0)) / 864e5)); }
-    var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph; })[0] || d.hreyf.filter(function (r) { return r.upph; })[0];
+    var su = d.hreyf.filter(function (r) { return /úttekt/i.test(r.teg) && r.upph && !r.kredit; })[0] || d.hreyf.filter(function (r) { return r.upph && !r.kredit; })[0];
     if (nT) {
       var storS = stS === 'r' ? (dagS ? '<div><span class="big">+' + dagS + '</span> <span class="bigl">dagar yfir</span></div>' : '<div><span class="big">' + d.utrunnin + '</span> <span class="bigl">útrunnin</span></div>')
         : stS === 'y' ? '<div><span class="big ord">Á dagskrá</span></div>'
@@ -744,7 +746,8 @@
     }
     /* Agnar 19.11.2026: „afhverju 2025, en ekki 2026“ → líðandi ár; fyrra ár stendur undir til samanburðar */
     var ar = new Date().getFullYear(), slt = 0, bkr = 0, fyrra = 0;
-    d.hreyf.forEach(function (r) { var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += r.upph; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += r.upph; else slt += r.upph; });
+    /* 23.11.2026: kreditfærður reikningur (.kredit, yfirstrikaður í 403/199) er EKKI velta — spjald sýndi 78.680 kr þegar R-001340 var kreditfærður og R-001341 kominn í staðinn (rétt: 39.340). Sama regla og „alls“ í 403 og Ársskoðun. */
+    d.hreyf.forEach(function (r) { if (r.kredit) return; var u = Math.max(0, (r.upph || 0) - (r.hluti || 0)); var y = /(\d{4})\s*$/.exec(r.dags); if (!y) return; if (+y[1] === ar - 1) { fyrra += u; return; } if (+y[1] !== ar) return; if (/brunakerfi/i.test(r.teg)) bkr += u; else slt += u; });
     if (slt + bkr || fyrra) k.push('<div class="p2-kp"><div class="cap s"></div><div class="in"><span class="lb">Viðskipti ' + ar + '</span><div><span class="big">' + tugir(slt + bkr) + '</span> <span class="bigl">kr</span></div>' +
       (slt && bkr ? '<div class="bar" role="img" aria-label="Slökkvitæki og brunakerfi"><i style="width:' + (100 * slt / (slt + bkr)).toFixed(1) + '%;background:#16783f"></i><i style="width:' + (100 * bkr / (slt + bkr)).toFixed(1) + '%;background:#a01818"></i></div><span class="sm">' + fx('Slt ' + tugir(slt)) + fx('Bk ' + tugir(bkr)) + '</span>' : '') +
       (fyrra ? '<span class="sm"><span class="fx">' + (ar - 1) + ' <b class="p2-n">' + tugir(fyrra) + ' kr</b></span>' + (slt + bkr ? fx((slt + bkr >= fyrra ? '▲ ' : '▼ ') + Math.round(100 * (slt + bkr) / fyrra) + '% af ' + (ar - 1)) : '') + '</span>' : '') +
