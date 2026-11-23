@@ -100,10 +100,13 @@
       document.head.appendChild(st);
     }
     v.innerHTML = '<div class="thm"><div class="app-page"><main class="app-main">' +
-      '<div class="page-title">' +
+      '<div class="page-title vorur-heading">' +
         '<div class="page-title__lead">' +
           '<span class="page-title__icon">📦</span>' +
           '<div><h1>Vörur og þjónusta</h1><p>Vörulistinn sem Sala notar — verð, birgðir og flokkar</p></div>' +
+        '</div>' +
+        '<div class="vorur-actions">' +
+          '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
         '</div>' +
         '<div class="page-title__tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
           // Verð-gluggarnir þrír (papp 410). Þeir sýna hvaða þjónustulínu hvert
@@ -112,25 +115,20 @@
           tengiTakki('slokkvitaeki','🧯','Slökkvit. verð') +
           tengiTakki('brunakerfi','🚨','Brunak. verð') +
           tengiTakki('slokkvikerfi','🍳','Slökkvikerfis verð') +
-          '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
         '</div>' +
       '</div>' +
-      // Search
-      '<div style="position:relative;margin-bottom:14px">' +
-        '<input id="vorur-search" type="search" placeholder="🔎 Leita eftir nafni, lýsingu eða flokki…" value="'+esc(_searchTerm)+'" ' +
-          'style="width:100%;padding:11px 14px 11px 14px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff">' +
-      '</div>' +
-      // Tabs — theme filter-chips
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">' +
+      '<div class="vorur-toolbar">' +
+        '<div class="vorur-types" role="group" aria-label="Tegund">' +
         tabBtn('allt','Allt · '+counts.allt) +
         tabBtn('vorur','Vörur · '+counts.vorur) +
         tabBtn('thjonusta','Þjónusta · '+counts.thjonusta) +
+        '</div>' +
+        '<input id="vorur-search" type="search" aria-label="Leita í vörulista" placeholder="🔎 Leita eftir nafni, lýsingu eða flokki…" value="'+esc(_searchTerm)+'">' +
         // Birgðir-hlekkur (18.11.2026, Agnar): birgðastaðan á söluvörum býr á Birgðum
         // (vorur.birgdir) — héðan er leiðin þangað. Silfur úr Brunastáli, engin emoji.
         birgdirTakki() +
       '</div>' +
-      // Undirflokkar — ein skrunanleg lína af chippum (sími-fyrst: aldrei margra lína veggur)
-      '<div style="display:flex;gap:6px;align-items:center;overflow-x:auto;white-space:nowrap;padding-bottom:6px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin">' +
+      '<div class="vorur-categories" role="group" aria-label="Flokkar">' +
         catChip('','Allir flokkar', tabRows.length) +
         cats.names.map(function(c){ return catChip(c, c, cats.counts[c]); }).join('') +
       '</div>' +
