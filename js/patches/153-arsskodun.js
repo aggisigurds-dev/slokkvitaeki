@@ -336,6 +336,70 @@
       .order('invoice_date', { ascending: false, nullsFirst: false })
       .then(r => (r && r.data) || [])
       .catch(() => []);
+    // 22.11.2026 — RAUNREIKNUNIN HANGIR Á EINUM REIT (Agnar: „raunreiknun ætti að miðast bara við þennan
+    // reit í ársskoðun og leggjast saman fyrir mánuðinn og síðan árið" · „setur kanski bara tengingu við
+    // alltaf bara þennann reit").
+    // Reiturinn er SAMTALS M. VSK neðst í kostnaðartöflu úttektarinnar (patch 129). Meðan heimsóknin er
+    // opin stendur hann í `inspection_trips[coId].computed.total`. Þegar heimsóknin er kláruð (165
+    // finalizeVisit) er ferðin HREINSUÐ — og þar slitnaði tengingin: aðeins 213 af 612 stöðum báru raun-
+    // tölu 21.11, hinir féllu aftur á áætlun og ↻ gat engu breytt (mælt í vafra: fetch keyrði, engin villa,
+    // engin tala hreyfðist). Salan sem verður til úr NÁKVÆMLEGA sama reit geymir hann hins vegar varanlega:
+    // `solur.samtals` er reiknað úr `linur` með sömu stærðfræði og taflan prentar (165 totalsFromLinur).
+    // Tengingin við reitinn er því: kláruð úttekt → salan · opin heimsókn → reiknivélin · annars → áætlun.
+    // Aðeins `vidskiptategund='uttekt'` — búðarsala og brunakerfi eru ekki ársþjónustan.
+    //
+    // KREDITNÓTUR (rýni 22.11.2026 — MÆLT BROT, lagað áður en þetta fór í loftið):
+    // Þær eru geymdar NEIKVÆÐAR (26-credit-invoice.js:283 `const total = -(ex + vsk)`) og teljast með, svo
+    // kreditfærður + endurgerður staður nettast rétt. EN kreditnóta sem vísar á BAKFÆRÐA (void) sölu má ekki
+    // telja: upprunasalan er þegar úti og sama salan dregst þá frá TVISVAR. Sama vörn og eina tekjureglan
+    // hefur (`netlify/functions/_tekjur.cjs:25`). Án hennar mældist einn staður með 6.468 kr þar sem
+    // reikningurinn sem stendur á staðnum er 58.987 kr — og talan var MERKT raunreiknuð, svo hún trompaði
+    // áætlunina þegjandi.
+    //
+    // NÚLL ER SVAR, EKKI ÞÖGN: staður sem var fullkreditfærður og ekkert endurgert nettast í 0. Það er RAUN-
+    // talan hans (ekkert var rukkað) og má ekki falla þegjandi á áætlun — annars teljast tekjur fyrir verk sem
+    // var bakfært. Þess vegna ræður `n` (fundust sölur) því hvort heimildin er salan, ekki `kr > 0`.
+    const CUR_YEAR = new Date().getFullYear();
+    const uttektSalurP = (async () => {
+      const m = {}, utan = { n: 0, kr: 0 };
+      try {
+        const velja = (stada) => (from, to) => SB.from('solur')
+          .select('id,customer_id,samtals,created_at,num,hidden,credit_of')
+          .eq('status', stada).eq('vidskiptategund', 'uttekt')
+          .gte('created_at', CUR_YEAR + '-01-01').lt('created_at', (CUR_YEAR + 1) + '-01-01')
+          .order('id').range(from, to);
+        const saekja = async (stada) => {
+          const q = velja(stada);
+          if (window.DB && DB.fetchAll) return await DB.fetchAll(q);
+          // Varaleiðin pagar sjálf. Fastur 1000-gluggi hefði skorið ÞEGJANDI þegar úttektarsölum ársins
+          // fjölgar yfir þúsund (~600 á ári núna) — og enginn vörður sér slíka klippingu (rýni 22.11).
+          const allt = [];
+          for (let from = 0; from < 20000; from += 1000) {
+            const d = (((await q(from, from + 999)) || {}).data) || [];
+            allt.push(...d);
+            if (d.length < 1000) break;
+          }
+          return allt;
+        };
+        const [rows, voidRows] = await Promise.all([saekja('final'), saekja('void')]);
+        const bakfaerdar = new Set((voidRows || []).map(s => String(s.id)));
+        (rows || []).forEach(s => {
+          if (s.hidden) return;
+          // Kreditnóta á bakfærða sölu: upprunasalan er þegar úti.
+          if (s.credit_of != null && bakfaerdar.has(String(s.credit_of))) return;
+          // Sala sem hangir ekki á stað kemst ekki inn í töluna — hún er TALIN, ekki þögguð
+          // (t.d. eftir `faera_kt`, sem færir `customer_id` á greiðandann, 369-krofu-vinnugluggi.js).
+          if (s.customer_id == null) { utan.n++; utan.kr += (+s.samtals || 0); return; }
+          const k = String(s.customer_id);
+          const e = m[k] || (m[k] = { kr: 0, n: 0, sidast: '', num: '' });
+          e.kr += (+s.samtals || 0);
+          e.n++;
+          if (!e.sidast || String(s.created_at) > e.sidast) { e.sidast = String(s.created_at); e.num = s.num || ''; }
+        });
+      } catch (_) {}
+      m._utan = utan;
+      return m;
+    })();
     // 2026-08-17 (Agnar — Pizzan: „everything yellow but still Skoðað 2026 …
     // link that also to the 26 label color"): fact-check staða yfirstandandi
     // árs (year_factcheck, sama tafla og árs-merkin í 187/199) TROMPAR
@@ -451,11 +515,16 @@
     // einn akstur og skeikar því — Center Hótel Plaza: áætlun 371þ, raun 397þ.
     // Við notum raun þegar hún er til og merkjum hana; annars áætlun.
     const tripMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('inspection_trips')) || {};
+    const uttektSalur = await uttektSalurP;   // fyrirtaeki_id → { kr, n, sidast, num } úr sölum ársins
+    _cache.salaUtan = uttektSalur._utan || { n: 0, kr: 0 };   // úttektarsölur ársins sem hanga ekki á stað
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
     const _ovissSet = await ovissP;
     const allCompanies = await companiesP;
-    if (!allCompanies) return;   // fetch failed — keep the previous cache (same early-out as before)
+    // 22.11.2026 (rýni): þessi þögla afturkoma lét ↻ segja „óbreytt" þegar sóknin hafði MISTEKIST — einmitt
+    // þögnin sem takkinn átti að drepa. Merkið er lesið í ↻-hlustaranum og sagt upphátt.
+    if (!allCompanies) { _cache.sottVilla = true; return; }
+    _cache.sottVilla = false;
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
@@ -794,13 +863,20 @@
             _ars._year_from_report = true;
           }
         }
+        // Reiturinn (SAMTALS m. vsk neðst á úttektinni) — sjá skýringuna við `uttektSalurP`.
+        // Salan TROMPAR opna ferð: hún er reiturinn eins og hann stóð þegar heimsóknin var kláruð.
         const _trip = tripMap[String(c.id)];
-        const _raun = (_trip && _trip.computed && +_trip.computed.total > 0)
+        const _ferd = (_trip && _trip.computed && +_trip.computed.total > 0)
           ? Math.round(+_trip.computed.total) : 0;
+        // `n > 0` ræður, ekki `kr > 0`: fullkreditfærður staður nettast í 0 og NÚLL er raun-talan hans.
+        const _sala = uttektSalur[String(c.id)];
+        const _raun = (_sala && _sala.n > 0) ? Math.max(0, Math.round(_sala.kr)) : _ferd;
+        const _raunHeim = (_sala && _sala.n > 0) ? 'sala' : (_ferd > 0 ? 'ferd' : '');
         return {
           ...c,
           _ars,
           _raun,
+          _raunHeim,
           _ovisst: _ovissSet.has(+c.id),
           _bru: bruMap[String(c.id)] || null
         };
@@ -1485,11 +1561,17 @@
   }
   // Talan sem sýnd er: RAUN úr reiknivélinni þegar hún er til, annars áætlun.
   // Ein skilgreining — svo röðin, samantektin og spjaldið geti ekki sagt sitt hvað.
+  // 22.11.2026: heimildin ræður, ekki hvort talan sé stærri en núll. Fullkreditfærður staður á RAUN-töluna 0
+  // (ekkert var rukkað) og féll áður þegjandi á áætlun — þá töldust tekjur fyrir verk sem var bakfært.
+  // ÁKVEÐIÐ (rýni 22.11): raun TROMPAR líka núllstillinguna „0 tæki mega aldrei bera áætlun" (:706–709).
+  // Hún var sett til að tómur prófíll gæti ekki búið til áætlaðar krónur; raun-talan er hins vegar ekki
+  // áætlun heldur reikningur sem var sannarlega gefinn út. Mælt 22.11: 2 staðir, 243.970 kr. Viljandi.
   function virdiOf(c) {
     if (!c) return 0;
-    return (+c._raun > 0) ? +c._raun : (+((c._ars || {}).estimated_yearly) || 0);
+    if (c._raunHeim) return +c._raun || 0;
+    return +((c._ars || {}).estimated_yearly) || 0;
   }
-  function erRaun(c) { return !!(c && +c._raun > 0); }
+  function erRaun(c) { return !!(c && c._raunHeim); }
 
   // 2026-09-08 (Agnar: „geturðu haldið í dekkri litina… mátt bara láta Allir
   // viðskiptavinir líta eins út, með dekkri litunum"): talnaspjöldin voru með
@@ -1762,7 +1844,9 @@
         const tb = Object.values(b._ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
         return ta - tb || String(a.nafn).localeCompare(b.nafn, 'is');
       },
-      estimate: (a, b) => (+a._ars.estimated_yearly || 0) - (+b._ars.estimated_yearly || 0)
+      // 22.11.2026 (rýni): raðaði eftir ÁÆTLUN þótt dálkurinn sýni `virdiOf` — „Raða eftir virði" leit út
+      // eins og hún virkaði ekki á hverri raun-raðri. Raðar nú eftir sömu tölu og stendur á skjánum.
+      estimate: (a, b) => virdiOf(a) - virdiOf(b)
                         || String(a.nafn).localeCompare(b.nafn, 'is'),
       status: (a, b) => {
         // 0=done, 1=fieldOnly, 2=overdue, 3=skipped, 4=pending — relevance order
@@ -2560,7 +2644,8 @@
     };
     const pnrChecked = p => state.postnr === null || state.postnr.includes(p);
     const pnrActive = state.postnr !== null;
-    const doneThisYear = arsAll.filter(c => +c._ars.last_year_inspected === curYear).length;
+    // (22.11.2026: `doneThisYear` var dauður kóði sem las `last_year_inspected` beint — eina leifin af
+    //  gömlu búið-reglunni á síðunni. Fjarlægt svo enginn taki hana upp aftur; notaðu `isDoneYear`.)
     // Talnakortin þrjú: AÐEINS viewið v_thjonustu_tolur (sjá athugasemd í
     // _loadAllInner) — engir staðbundnir útreikningar mega birtast þar.
     const T = _cache.tolur || {};
@@ -2570,9 +2655,21 @@
     // svo kassinn geti sagt það hreint út í stað þess að láta líta út fyrir að
     // allt sé reiknað.
     const raunFjoldi = arsAll.filter(erRaun).length;
-    const estDoneThisYear = arsAll
-      .filter(c => isDoneYear(c, curYear))
-      .reduce((s, c) => s + virdiOf(c), 0);
+    // 22.11.2026: hvaðan raun-talan kemur — kláruð úttekt (salan) eða opin heimsókn (reiknivélin).
+    const raunSala = arsAll.filter(c => c._raunHeim === 'sala').length;
+    const raunFerd = arsAll.filter(c => c._raunHeim === 'ferd').length;
+    const raunKr = arsAll.reduce((s, c) => s + (erRaun(c) ? virdiOf(c) : 0), 0);
+    const bunirStadir = arsAll.filter(c => isDoneYear(c, curYear));
+    const bunirAnRaunL = bunirStadir.filter(c => !erRaun(c));
+    const bunirAnRaun = bunirAnRaunL.length;
+    // 22.11.2026 (Agnar: „Erum við bara búnir með 294 úttektir í ár?"): textinn sagði ÁÐUR að staðir án
+    // raun-tölu væru „m.a. skoðanir fyrri eiganda jan.–apr." — ÓMÆLD fullyrðing og hún stóðst ekki. Mælt:
+    // af 179 slíkum eiga 164 úttektarskýrslu ársins, en 162 þeirra bera ENGA dagsetningu (hvorki doc_date
+    // né skodun_ar_man), svo kerfið getur ekki sagt hvenær verkið var unnið né hver rukkaði. Textinn segir
+    // nú það sem er mælt og ekkert umfram það.
+    const bunirAnRaunMedSkyrslu = bunirAnRaunL
+      .filter(c => ((c._ars || {})._docYears || []).map(Number).includes(curYear)).length;
+    const estDoneThisYear = bunirStadir.reduce((s, c) => s + virdiOf(c), 0);
     // 21.11.2026 — Yfirsýnarröndin efst á Þjónustuborði Agnars og Annþórs (523) sýnir virði ársþjónustunnar. EIN
     // skilgreining: sömu tölur og síðan sýnir — virðið úr hetjunni (arsAll) og staðafjöldinn úr spjöldunum Búið/Eftir
     // (sy: 459 búið + 162 eftir, 91 komin á tíma 21.11). Geymt AÐEINS þegar engin sía né leit er virk (siaVirk), því þá
@@ -2599,10 +2696,24 @@
     // Samantektin á að lýsa ÞVÍ SEM SÉST; hún telur því sömu raðir og listinn.
     const filteredAars = filtered;
     const filteredTotal = filteredAars.reduce((s, c) => s + virdiOf(c), 0);
+    // 22.11.2026 (Agnar: „leggjast saman fyrir mánuðinn og síðan árið"): samantektin notar NÚNA sömu
+    // búið-reglu og hetjan (isDoneYear — fact-check og klarad-par trompa staðnað blobb). Áður las hún
+    // `last_year_inspected` beint, svo mánaðar-samantektin gat sagt annað en spjöldin fyrir ofan hana.
     const filteredDone = filteredAars
-      .filter(c => +c._ars.last_year_inspected === curYear)
+      .filter(c => isDoneYear(c, curYear))
       .reduce((s, c) => s + virdiOf(c), 0);
     const filteredRemain = Math.max(0, filteredTotal - filteredDone);
+    const filteredRaunN = filteredAars.filter(erRaun).length;
+    const filteredRaunKr = filteredAars.reduce((s, c) => s + (erRaun(c) ? virdiOf(c) : 0), 0);
+    // 22.11.2026 (Agnar: „Ætti að vera jafnt fjölda skoðaðra eigna. Ekki kennitalna"):
+    // viðmiðið er EIGNIN sem var skoðuð, ekki greiðandinn og ekki borðið. Skoðuð eign = á úttektarskýrslu
+    // ársins (`_docYears`), sama heimild og „búið"-staðan byggir á. Salan hangir þegar á eigninni
+    // (`solur.customer_id` → `fyrirtaeki.id`): mælt 22.11 voru 283 úttektarsölur á 268 EIGNUM en aðeins
+    // 255 kennitölum, svo einingin er rétt — það sem vantar er bil milli skoðaðra eigna og þeirra sem
+    // bera reikning, og það bil á að SJÁST í stað þess að liggja í mismun tveggja talna.
+    const skodudIAr = c => ((c._ars || {})._docYears || []).map(Number).includes(curYear);
+    const filteredSkodud = filteredAars.filter(skodudIAr).length;
+    const filteredRaunAfSkodudum = filteredAars.filter(c => skodudIAr(c) && erRaun(c)).length;
     const filteredDonePct = filteredTotal > 0 ? Math.round(filteredDone / filteredTotal * 100) : 0;
     const filterLabel = (state.months && state.months.length)
       ? monthFilterLabel(curYear)
@@ -2696,7 +2807,7 @@
               <button id="_ars-virdi-refresh" type="button" title="Endurreikna út frá reiknivélinni inni í fyrirtækjunum (úttektarskýrslu/reikningi). Keyrist AÐEINS þegar ýtt er á hana." style="border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:7px;width:24px;height:24px;line-height:1;cursor:pointer;font-size:13px;padding:0;flex:0 0 auto">↻</button>
             </div>
             <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKrShort(totalEstimate)}</div>
-            <div style="font-size:10.5px;color:#86efac">þar af ${fmtKrShort(estDoneThisYear)} búið${raunFjoldi ? ` · <span title="Þessi félög bera töluna úr reiknivélinni sjálfri; hin bera áætlun (Σ tæki × verð + skýrslugerð + einn akstur)." style="border-bottom:1px dotted #86efac;cursor:help">${raunFjoldi} raunreiknuð</span>` : ''}</div>
+            <div style="font-size:10.5px;color:#86efac">þar af ${fmtKrShort(estDoneThisYear)} búið${raunFjoldi ? ` · <span title="Raunreiknuð = staðir sem bera töluna úr reitnum SAMTALS M. VSK neðst á úttektinni sjálfri: ${raunSala} úr sölunni sem varð til þegar heimsóknin var kláruð, ${raunFerd} úr reiknivélinni í opinni heimsókn. Samtals ${fmtKr(raunKr)} raunreiknað, M. VSK (Tekju-flísarnar telja án vsk — tölurnar eiga ekki að stemma). Talan er öll úttekt ársins á staðnum, kreditnótur frádregnar; eigi staðurinn tvo úttektarreikninga á árinu telst árstalan hans öll á skoðunarmánuðinn sem er skráður á hann. Fullkreditfærður staður ber 0 — ekkert var rukkað. Hinir bera áætlun (Σ tæki × verð + skýrslugerð + einn akstur)${bunirAnRaun ? ` — þar af ${bunirAnRaun} merktir búnir ${curYear} sem eiga ENGA sölu merkta „úttekt“ hjá okkur, og ${bunirAnRaunMedSkyrslu} af þeim eiga samt úttektarskýrslu ársins. Kerfið veit ekki hver rukkaði þá: skýrslurnar eru nær allar ódagsettar, svo hvorki fyrri eigandi né við verðum staðfest. Þetta er óuppgerður hópur, ekki tala sem vantar` : ''}.${(_cache.salaUtan && _cache.salaUtan.n) ? ` ⚠ ${_cache.salaUtan.n} úttektarsölur ársins (${fmtKr(_cache.salaUtan.kr)}) hanga ekki á stað og eru hvergi taldar hér.` : ''}" style="border-bottom:1px dotted #86efac;cursor:help">${raunFjoldi} raunreiknuð</span>` : ''}</div>
           </div>
         </div>
 
@@ -2845,6 +2956,7 @@
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(effFilterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px" title="Virðið að neðan er summa þessara — þau í sýninni sem eiga skráð tæki. Fjöldinn í sýninni sjálfri stendur fyrir ofan listann („Sýni N af …").">${filteredAars.length} af ${filtered.length} í sýninni með skráð tæki</div>
+            <div style="font-size:11.5px;color:var(--ink3);margin-top:2px" title="Viðmiðið er EIGNIN sem var skoðuð, ekki kennitalan: skoðuð eign = á úttektarskýrslu ${curYear}. Raunreiknað = reiturinn SAMTALS M. VSK neðst á úttektinni (salan þegar heimsóknin er kláruð, reiknivélin meðan hún er opin), m. vsk og kreditnótur frádregnar. Þetta er árstala hverrar eignar í sýninni — ekki það sem var reikningsfært í þessum mánuði. Eign sem var skoðuð en ber engan úttektarreikning hjá okkur er ÓUPPGERÐ, ekki núll: hún ber áætlun (Σ tæki × verð + skýrslugerð + einn akstur) þar til reikningur finnst.">${filteredSkodud ? `🧮 <b>${filteredRaunAfSkodudum} af ${filteredSkodud}</b> skoðuðum eignum raunreiknaðar${filteredSkodud > filteredRaunAfSkodudum ? ` · <b>${filteredSkodud - filteredRaunAfSkodudum}</b> skoðaðar eignir bera engan úttektarreikning hjá okkur` : ''}` : '🧮 engin skoðuð eign í þessari sýn'}${filteredRaunKr ? ` · ${fmtKr(filteredRaunKr)} raunreiknað` : ''}</div>
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
             <div style="text-align:right">
@@ -2920,14 +3032,34 @@
     // ↻ Endurreikna virðið. Sækir `inspection_trips` FERSKT úr Supabase (ekki úr
     // AppSettings-skyndiminninu) og keyrir loadAll svo raun-tölurnar rati inn.
     // Handvirkt að ósk Agnars — ekki við hverja opnun.
+    // 22.11.2026: takkinn sagði ekkert og virtist dauður — hann sótti AÐEINS `inspection_trips`-blobbið
+    // upp á nýtt, sem breytist ekki þegar heimsókn er kláruð (ferðin er hreinsuð). Nú sækir loadAll líka
+    // sölur ársins (reiturinn, varanlega geymdur) og takkinn SEGIR hverju hann breytti. Tómt svar er sagt
+    // hreint út — aldrei þögn sem lítur út eins og bilun.
     main.querySelector('#_ars-virdi-refresh')?.addEventListener('click', async (e) => {
       const b = e.currentTarget;
       const fyrra = b.textContent; b.textContent = '…'; b.disabled = true;
+      const fTotal = totalEstimate, fRaun = raunFjoldi;
       try {
         if (window.AppSettings && AppSettings.load) await AppSettings.load();
         await loadAll();
         render();
-        if (window.Toast && Toast.show) Toast.show('↻ Virðið endurreiknað');
+        // Mistókst sóknin heldur `loadAll` gamla skyndiminninu og ALLT lítur út fyrir að vera óbreytt.
+        // Það er bilun, ekki niðurstaða — og hún er sögð upphátt.
+        if (_cache.sottVilla) {
+          if (window.Toast && Toast.show) Toast.show('↻ Sóknin mistókst — tölurnar eru ÓUPPFÆRÐAR (netið?)');
+          return;
+        }
+        // Sama úrval og hetjan telur (arsAll): skráð tæki, og „fela slepptu" virt.
+        const eftirSokn = (_cache.list || []).filter(c => c && c._ars && c._ars.equipment
+          && !(skipHidden && isSkippedLastYear(c, curYear)));
+        const n = eftirSokn.filter(erRaun).length;
+        const kr = eftirSokn.reduce((s, c) => s + virdiOf(c), 0);
+        const dN = n - fRaun, dKr = Math.round(kr - fTotal);
+        const breyting = (dN || Math.abs(dKr) >= 1000)
+          ? ` (${dN >= 0 ? '+' : ''}${dN} raunreiknuð · ${dKr >= 0 ? '+' : '−'}${fmtKrShort(Math.abs(dKr))})`
+          : ' — óbreytt';
+        if (window.Toast && Toast.show) Toast.show('↻ ' + fmtKrShort(kr) + ' · ' + n + ' raunreiknuð' + breyting);
       } catch (err) {
         alert('Endurreikning mistókst: ' + ((err && err.message) || err));
       } finally { b.textContent = fyrra; b.disabled = false; }
