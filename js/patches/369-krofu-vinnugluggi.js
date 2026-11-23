@@ -774,7 +774,8 @@
           '„Búa til úttektarskýrslu“ á nýju sölunni; sú gamla er merkt leyst af hólmi, engu eytt. Lesið: skýrsla sem ber nýju kt.', nySk === undefined ? null : !!nySk);
         kerfi('i_thjonustu', 'Félagið er enn í þjónustu og skráð á nýju kt', !x.stadur ? null : (ktFaerd ? !!x.stadur.er_i_thjonustu : null),
           x.stadur ? x.stadur.nafn + ' · kt. ' + ktBirt(x.stadur.kennitala || '') : '');
-        markmid('osend', 'kerfi', 'Nýja salan situr ÓSEND í Kröfuyfirliti', nyS ? !merktSend(nyS) : null, 'Þá bíður hún yfirferðar þinnar.');
+        // Áfanginn „ósend“ er liðinn bæði þegar salan bíður og þegar Agnar hefur þegar sent hana (sama regla og í faera_kt) — annars sýndi sent mál „Ekki enn“.
+        markmid('osend', 'kerfi', 'Nýja salan situr ÓSEND í Kröfuyfirliti (áfangi)', nyS ? true : null, 'Þá bíður hún yfirferðar þinnar.');
         markmid('senda', 'agnar', 'Fara yfir skýrslu og reikning og senda á nýja greiðandann (og svara póstinum)', nyS ? merktSend(nyS) : null, 'Lokasending er alltaf þín. slokkvitaeki@ hefur enga sendileið — svarið sendir þú úr póstforritinu.');
         break;
       }

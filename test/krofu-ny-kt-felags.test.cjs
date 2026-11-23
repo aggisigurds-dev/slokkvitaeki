@@ -91,7 +91,7 @@ test('hvert þrep kviknar aðeins þegar gögnin sýna það', () => {
   // 6) Agnar sendi nýju kröfuna
   L = threp(M, x0({ s: afturkallad, kreditfaert: true, kreditFullt: true, stadur: stNy, nySalaKt: { ...NYSALA, krafa_sent_at: '2026-11-24', dk_invoice_id: 'PD-2' }, nySkyrsla: { id: 9 } }), null);
   assert.equal(stada(L, 'senda'), true);
-  assert.equal(stada(L, 'osend'), false, 'send sala situr ekki lengur ósend');
+  assert.equal(stada(L, 'osend'), true, 'áfanginn „ósend“ er liðinn — sent mál sýnir ekki „Ekki enn“');
 });
 
 test('kennitala nýs greiðanda ógild → þrep 1 fellur; gögn sem vantar eru „óvíst“, aldrei „búið“', () => {
