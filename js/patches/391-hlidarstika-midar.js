@@ -133,7 +133,10 @@
       B + '.nav-grp-start{margin-top:20px!important;border-top:0!important}',
       B + '.nav-grp-start::after{content:none!important;display:none!important}',
       B + '.nav-grp-start[data-sbm-sec]{margin-top:34px!important}',
-      B + '.nav-grp-start[data-sbm-sec]::before{content:""!important;position:absolute!important;left:-6px!important;right:-6px!important;top:-34px!important;bottom:auto!important;width:auto!important;height:152px!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.018) 38%,rgba(255,255,255,0) 76%)!important;box-shadow:none!important;pointer-events:none!important;z-index:-1!important}',
+      // 23.11.2026 (Agnar: „taka í burt multilayer bakgrunninn, hafa bara einn flottann"): ljósgradient-spjöldin á bak við hvern
+      // hluta (::before, 152 px há, 14 px horn) eru farin — stikan hefur EINN bakgrunn (gradientinn á .topbar hér efst). Heitið
+      // (::after) og bilið standa óbreytt.
+      B + '.nav-grp-start[data-sbm-sec]::before{content:none!important;display:none!important}',
       B + '.nav-grp-start[data-sbm-sec]::after{content:attr(data-sbm-sec)!important;display:block!important;position:absolute!important;inset:auto!important;left:47px!important;right:4px!important;top:-26px!important;height:18px!important;background:none!important;font:700 11.5px/18px ' + MONO + '!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:#d3ab4e!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;text-shadow:none!important;pointer-events:none!important}',
       // Aðlaga-hnappurinn og Tenglar neðst í listanum
       B + '._sc-launcher{color:#8f98a8!important;font-size:12.5px!important}',
