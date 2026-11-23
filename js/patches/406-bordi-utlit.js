@@ -137,13 +137,26 @@
     return NUMER[v] || NUMER.glod;
   }
 
+  function veljaBorða(next) {
+    if (!ROD.includes(next)) return false;
+    const previous = lesa();
+    beita(next);
+    const button = document.getElementById('_bd-skipta');
+    if (button) button.textContent = merki();
+    if (next === previous) return true;
+    setja(next);
+    try { if (window.Toast && Toast.show) Toast.show('Borði: ' + HEITI[next]); } catch (_) {}
+    return true;
+  }
+  window.BordiUtlit = {
+    options: () => ROD.map(id => ({id, label:HEITI[id]})),
+    active: () => document.documentElement.getAttribute('data-bordi') || 'glod',
+    select: veljaBorða
+  };
+
   function skipta() {
     const nu = document.documentElement.getAttribute('data-bordi') || 'glod';
-    const naest = ROD[(ROD.indexOf(nu) + 1) % ROD.length];
-    setja(naest);
-    const b = document.getElementById('_bd-skipta');
-    if (b) b.textContent = merki();
-    try { if (window.Toast && Toast.show) Toast.show('Borði: ' + HEITI[naest]); } catch (_) {}
+    veljaBorða(ROD[(ROD.indexOf(nu) + 1) % ROD.length]);
   }
 
   function settur() {
