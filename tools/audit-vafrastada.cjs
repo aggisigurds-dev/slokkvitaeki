@@ -98,8 +98,11 @@ const BANN = [
 //     beiðni til Claude) svo innsláttur tapist ekki við endurteikningu. Svarið sjálft, ákvörðunin og athugasemdin fara á
 //     þjóninn (/api/afgreidsla) þegar ýtt er á takkann, og drögunum er þá eytt. Sami flokkur og SS_PRUFA hér að ofan.
 //     Lykillinn kom inn 16.11 (8d50e57b) án þess að grunnlínan væri hækkuð — CI-kóðanetið var rautt þaðan í frá.
+// 23.11.2026: slokkvitaeki ls 92 -> 93. Nýi lykillinn er `_slokk_gc_stamp` (js/patches/156-geocode-prewarm.js, saekjaBreytt): stimpill á SÍÐUSTU umferð
+//   sem sótti breytt hnit úr geocode_cache (updated_at). Hann er bendill í skyndiminni þessarar vélar (_slokk_gc), ekki staða gagna: hnitin sjálf og
+//   updated_at búa í töflunni á þjóninum, og tapist stimpillinn sækir vélin aftur frá 2026-11-23 — idempotent. Sami flokkur og `_slokk_gc_synced_v1`.
 // Hækkað af því lyklarnir standast regluna, ekki til að fá grænt.
-const GRUNNLINA = { brunaholf: { ls: 41, ui: 53 }, slokkvitaeki: { ls: 92, ui: 0 } };
+const GRUNNLINA = { brunaholf: { ls: 41, ui: 53 }, slokkvitaeki: { ls: 93, ui: 0 } };
 
 function walk(d, out) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
